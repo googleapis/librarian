@@ -16,7 +16,9 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"io/fs"
 	"log"
 	"os"
 	"path/filepath"
@@ -80,7 +82,10 @@ func findRubyLibraries(repoPath string) ([]*config.Library, error) {
 		name := entry.Name()
 		owlBotPath := filepath.Join(repoPath, name, ".OwlBot.yaml")
 		if _, err := os.Stat(owlBotPath); err != nil {
-			continue
+			if errors.Is(err, fs.ErrNotExist) {
+				continue
+			}
+			return nil, fmt.Errorf("checking OwlBot config: %w", err)
 		}
 		libraries = append(libraries, &config.Library{
 			Name: name,
