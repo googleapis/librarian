@@ -258,7 +258,10 @@ func (m *Method) WithDiscoveryLro(info *DiscoveryLro) *Method {
 	return m
 }
 
-// WithSignature adds method signatures.
+// WithSignatures adds method signatures.
+//
+// A method signature typically maps to an overloads with a subset of
+// the request fields.
 func (m *Method) WithSignatures(signatures ...*MethodSignature) *Method {
 	if m.InputType == nil {
 		panic(fmt.Sprintf("missing InputType for method: %s", m.Name))
@@ -287,6 +290,10 @@ func NewTestOneOf(name string) *OneOf {
 	}
 }
 
+// WithFields adds fields to a oneof group.
+//
+// When the group is included in a message, all its fields are included into the
+// message too.
 func (o *OneOf) WithFields(fields ...*Field) *OneOf {
 	for _, f := range fields {
 		f.IsOneOf = true
