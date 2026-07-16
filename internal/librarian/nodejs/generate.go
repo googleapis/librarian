@@ -292,7 +292,7 @@ func runPostProcessor(ctx context.Context, cfg *config.Config, library *config.L
 	compileArgs := []string{"--no-comments"}
 	if library.Nodejs != nil && library.Nodejs.ESM {
 		protoDir = "esm/src"
-		compileArgs = append([]string{"--esm"}, compileArgs...)
+		compileArgs = append(compileArgs, "--esm")
 	}
 	runArgs := append([]string{protoDir}, compileArgs...)
 
