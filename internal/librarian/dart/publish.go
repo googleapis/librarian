@@ -45,7 +45,18 @@ type PublishParams struct {
 	Verbose bool
 }
 
-// Publish finds all the libraries that should be published and publishes them in topological order.
+// Publish all the libraries that should be published.
+//
+// The algorithm is:
+//  1. Find the dependencies of all packages in the repository.
+//  2. Order the packages so that no package appears before any of its dependencies.
+//  3. For each package in order, check if it should be published:
+//     a. If it has not been published before, it should be published.
+//     b. If it has been published before, check if the published version is less than the
+//     repository version. If it is, it should be published.
+//  4. If the package is being published, check for semver violations using dart-apitool
+//     (https://github.com/bmw-tech/dart_apitool).
+//  5. For each package in order that should be published, run `dart pub publish`.
 func Publish(ctx context.Context, params PublishParams) error {
 	if err := git.MatchesBranchPoint(ctx, command.Git, config.RemoteUpstream, config.BranchMain); err != nil {
 		if params.DryRunKeepGoing {
@@ -203,9 +214,13 @@ func getPublishedVersion(ctx context.Context, libName string) (string, error) {
 //
 // For example:
 //
-// getDeps(..., [<google_cloud_protobuf, google_cloud_logging_type, google_cloud_logging>]) =>
-// {"google_cloud_protobuf": [], "google_cloud_logging_type": ["google_cloud_protobuf"], "google_cloud_logging": ["google_cloud_logging_type"]}
-// {"google_cloud_protobuf": "1.2.3", "<google_cloud_logging_type": "4.5.6", "<google_cloud_logging": "5.6.7"}
+//		getDeps(..., [google_cloud_protobuf, google_cloud_logging_type, google_cloud_logging]) =>
+//		({"google_cloud_protobuf": [], "google_cloud_logging_type": ["google_cloud_protobuf"],
+//		 "google_cloud_logging": ["google_cloud_logging_type"]}
+//
+//		 {"google_cloud_protobuf": "1.2.3", "google_cloud_logging_type": "4.5.6", "google_cloud_logging": "5.6.7"},
+//
+//	  nil)
 func getDeps(ctx context.Context, libraries []*config.Library) (map[string][]string, map[string]string, error) {
 	output, err := command.Output(ctx, command.Dart, "pub", "deps", "--json")
 	if err != nil {

@@ -336,7 +336,7 @@ func setupMockPubdevServer(t *testing.T, mockPublishedVersions map[string]string
 	})
 }
 
-func setupTestRepo(t *testing.T, repoVersions map[string]string) string {
+func setupTestRepo(t *testing.T, repoVersions map[string]string) {
 	t.Helper()
 	remoteDir := testhelper.SetupRepoWithChange(t, "release-2001-02-03")
 	if err := command.Run(t.Context(), command.Git, "-C", remoteDir, "config", "receive.denyCurrentBranch", "ignore"); err != nil {
@@ -370,7 +370,6 @@ func setupTestRepo(t *testing.T, repoVersions map[string]string) string {
 	testhelper.RunGit(t, "add", ".")
 	testhelper.RunGit(t, "commit", "-m", "feat: added pubspec files", ".")
 	testhelper.RunGit(t, "push", config.RemoteUpstream, config.BranchMain)
-	return remoteDir
 }
 
 func setupFakeDartAndApitool(t *testing.T, repoVersions map[string]string, mockNeededVersions map[string]string, mockApitoolErrors map[string]string) string {
