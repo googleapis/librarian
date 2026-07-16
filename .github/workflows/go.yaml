@@ -33,6 +33,9 @@ jobs:
           persist-credentials: false
       - name: Run tests
         run: go run ./tool/cmd/coverage ./internal/librarian/golang
+      - name: Run librarian install
+        working-directory: google-cloud-go
+        run: librarian install
       - name: Generate a single library (integration test)
         working-directory: google-cloud-go
         run: librarian generate secretmanager
