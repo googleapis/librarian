@@ -19,7 +19,7 @@ $0.{{Codec.Name}} = {{Codec.Name}}
 {{/IsOneOf}}
 {{#IsOneOf}}
 {{^Optional}}
-$0.{{Group.Codec.PropertyName}} = .{{Codec.Name}}($0)
+$0.{{Group.Codec.PropertyName}} = .{{Codec.Name}}({{Codec.Name}})
 {{/Optional}}
 {{#Optional}}
 $0.{{Group.Codec.PropertyName}} = {{Codec.Name}}.map { .{{Codec.Name}}($0) }
