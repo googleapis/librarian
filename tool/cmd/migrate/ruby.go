@@ -52,7 +52,7 @@ func runRubyMigration(ctx context.Context, repoPath string) error {
 			},
 		},
 	}
-	libs, err := findRubyLibraryDirs(repoPath)
+	libs, err := findRubyLibraries(repoPath)
 	if err != nil {
 		return err
 	}
@@ -67,7 +67,7 @@ func runRubyMigration(ctx context.Context, repoPath string) error {
 	return nil
 }
 
-func findRubyLibraryDirs(repoPath string) ([]*config.Library, error) {
+func findRubyLibraries(repoPath string) ([]*config.Library, error) {
 	entries, err := os.ReadDir(repoPath)
 	if err != nil {
 		return nil, err
@@ -88,4 +88,3 @@ func findRubyLibraryDirs(repoPath string) ([]*config.Library, error) {
 	}
 	return libraries, nil
 }
-	
