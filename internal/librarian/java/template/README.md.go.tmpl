@@ -65,7 +65,9 @@ implementation platform('com.google.cloud:libraries-bom:{{ .BOMVersion }}')
 
 implementation '{{ .GroupID }}:{{ .ArtifactID }}'
 ```
-{{ end }}If you are using Gradle without BOM, add this to your dependencies:
+
+{{ end -}}
+If you are using Gradle without BOM, add this to your dependencies:
 
 ```Groovy
 implementation '{{ .GroupID }}:{{ .ArtifactID }}:{{ .Version }}'
