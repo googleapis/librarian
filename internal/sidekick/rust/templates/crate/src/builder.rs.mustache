@@ -220,7 +220,7 @@ pub mod {{Codec.ModuleName}} {
             {{/Model.Codec.LroStubOptions}}
 
             let stub = self.0.stub.clone();
-            let options = self.0.options.clone();
+            let mut options = self.0.options.clone();
             options.set_retry_policy(google_cloud_gax::retry_policy::NeverRetry);
             {{#Codec.PollingPathParameters}}
             let {{Name}} = self.0.request.{{Name}}.clone();
@@ -276,7 +276,8 @@ pub mod {{Codec.ModuleName}} {
         {
             let req = self.0.request.clone();
             let stub = self.0.stub.clone();
-            let options = self.0.options.clone();
+            let mut options = self.0.options.clone();
+            options.set_retry_policy(google_cloud_gax::retry_policy::NeverRetry);
 
             let polling_error_policy =
                 std::sync::Arc::new(google_cloud_gax::polling_error_policy::AlwaysContinue);
@@ -286,9 +287,8 @@ pub mod {{Codec.ModuleName}} {
 
             let query = move |name: String| {
                 let stub_clone = stub.clone();
-                let mut options_clone = options.clone();
+                let options_clone = options.clone();
                 let req_clone = req.clone();
-                options_clone.set_retry_policy(google_cloud_gax::retry_policy::NeverRetry);
                 async move {
                     let get_req = crate::model::GetJobRequest {
                         project_id: req_clone.project_id.clone(),
@@ -302,7 +302,7 @@ pub mod {{Codec.ModuleName}} {
                         _unknown_fields: std::default::Default::default(),
                     };
                     let job = stub_clone
-                        .get_job(get_req, options_clone.clone())
+                        .get_job(get_req, options_clone)
                         .await
                         .map(crate::Response::into_body)?;
 
@@ -354,7 +354,7 @@ pub mod {{Codec.ModuleName}} {
             {{/Model.Codec.LroStubOptions}}
 
             let stub = self.0.stub.clone();
-            let options = self.0.options.clone();
+            let mut options = self.0.options.clone();
             options.set_retry_policy(google_cloud_gax::retry_policy::NeverRetry);
             let query = move |name| {
                 let stub = stub.clone();
