@@ -64,6 +64,39 @@ func TestGenerateService_MethodSignatures(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "Pagination",
+			want: []expectedBlock{
+				{
+					start: "public func paginationMethod(\n  name: Swift.String,\n  optionalField: Swift.String?,",
+					end:   "    }\n",
+					want: `public func paginationMethod(
+  name: Swift.String,
+  optionalField: Swift.String?,
+) throws -> any AsyncSequence<Item, Swift.Error>
+ {
+    let request = Request().with {
+      $0.name = name
+      $0.group = optionalField.map { .optionalField($0) }
+    }
+`,
+				},
+				{
+					start: "public func paginationMethod(\n  name: Swift.String,\n  normalField: Swift.String,",
+					end:   "    }\n",
+					want: `public func paginationMethod(
+  name: Swift.String,
+  normalField: Swift.String,
+) throws -> any AsyncSequence<Item, Swift.Error>
+ {
+    let request = Request().with {
+      $0.name = name
+      $0.group = .normalField(normalField)
+    }
+`,
+				},
+			},
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			outDir := t.TempDir()
@@ -108,8 +141,10 @@ func newModelWithSignatures(t *testing.T) *api.API {
 		api.NewTestField("optional_field").WithType(api.TypezString).WithOptional(),
 		api.NewTestField("normal_field").WithType(api.TypezString),
 	)
+	pageToken := api.NewTestField("page_token").WithType(api.TypezString)
 	requestType := api.NewTestMessage("Request").WithPackage("test").
 		WithFields(api.NewTestField("name").WithType(api.TypezString)).
+		WithFields(pageToken).
 		WithOneOfs(oneof)
 	responseType := api.NewTestMessage("Response")
 
@@ -125,17 +160,14 @@ func newModelWithSignatures(t *testing.T) *api.API {
 
 	itemType := api.NewTestMessage("Item")
 	paginationResponseType := api.NewTestMessage("PaginationResponse").
-		WithFields(
-			api.NewTestField("items").WithMessageType(itemType).WithRepeated(),
+		WithPagination(
 			api.NewTestField("next_page_token").WithType(api.TypezString),
+			api.NewTestField("items").WithMessageType(itemType).WithRepeated(),
 		)
-	paginationResponseType.Pagination = &api.PaginationInfo{
-		PageableItem:  paginationResponseType.Fields[0],
-		NextPageToken: paginationResponseType.Fields[1],
-	}
 	paginationMethod := api.NewTestMethod("PaginationMethod").
 		WithInput(requestType).
 		WithOutput(paginationResponseType).
+		WithPagination(pageToken).
 		WithVerb("GET").
 		WithSignatures(
 			&api.MethodSignature{Names: []string{"name", "optional_field"}},

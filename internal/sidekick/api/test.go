@@ -129,6 +129,21 @@ func (m *Message) WithOneOfs(oneofs ...*OneOf) *Message {
 	return m
 }
 
+// WithPagination items and page token fields for a pagination response.
+func (m *Message) WithPagination(nextPageToken *Field, items *Field) *Message {
+	if nextPageToken.Parent != m {
+		m.WithFields(nextPageToken)
+	}
+	if items.Parent != m {
+		m.WithFields(items)
+	}
+	m.Pagination = &PaginationInfo{
+		NextPageToken: nextPageToken,
+		PageableItem:  items,
+	}
+	return m
+}
+
 // WithResource sets the resource definition on the message.
 func (m *Message) WithResource(resource *Resource) *Message {
 	m.Resource = resource
@@ -220,6 +235,13 @@ func (m *Method) WithSourceMethod(source *Method) *Method {
 		m.SourceServiceID = m.SourceService.ID
 	}
 	m.PathInfo = source.PathInfo
+	return m
+}
+
+// WithPagination sets the page token field for the request.
+func (m *Method) WithPagination(pageToken *Field) *Method {
+	m.IsList = true
+	m.Pagination = pageToken
 	return m
 }
 
