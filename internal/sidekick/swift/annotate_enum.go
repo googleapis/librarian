@@ -59,7 +59,7 @@ func (ann *enumAnnotations) IsGated() bool {
 // In the generated code this is used as:
 //
 // ```
-// #if {{GateExpression}}
+// #if {{{GateExpression}}}
 // ... all the normal code ...
 // #endif
 // ```

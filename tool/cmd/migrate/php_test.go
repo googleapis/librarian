@@ -72,12 +72,18 @@ func TestRunPHPMigration(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	commonResources := true
 	want := &config.Config{
 		Language: config.LanguagePhp,
 		Sources: &config.Sources{
 			Googleapis: &config.Source{
 				Commit: "abcd123",
 				SHA256: "sha123",
+			},
+		},
+		Default: &config.Default{
+			PHP: &config.PHPDefault{
+				CommonResources: &commonResources,
 			},
 		},
 		Libraries: []*config.Library{
@@ -91,9 +97,8 @@ func TestRunPHPMigration(t *testing.T) {
 				{
 					Name:    "google/gapic-generator-php",
 					Version: "v1.21.2",
-					Package: "https://github.com/googleapis/gapic-generator-php/archive/refs/tags/v1.21.2.tar.gz",
+					Repo:    "github.com/googleapis/gapic-generator-php",
 					SHA256:  "29635b02c6e505fe31cba2f88ae999f00d2710fe1d65cb7cad521a82e7c5a518",
-					Build:   []string{"composer install"},
 				},
 			},
 			Pip: []*config.PipTool{

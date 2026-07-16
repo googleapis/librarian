@@ -15,6 +15,7 @@
 package php
 
 import (
+	"errors"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -28,27 +29,44 @@ func TestTidy(t *testing.T) {
 		want *config.Library
 	}{
 		{
-			name: "nil configurations",
-			in:   &config.Library{},
-			want: &config.Library{},
-		},
-		{
-			name: "nilifies empty package config",
-			in: &config.Library{
-				PHP: &config.PHPPackage{},
-			},
-			want: &config.Library{
-				PHP: nil,
-			},
-		},
-		{
-			name: "sorts and deduplicates API additional protos",
+			name: "nil_configurations",
 			in: &config.Library{
 				APIs: []*config.API{
 					{
-						Path: "google/cloud/ces/v1",
+						Path: "google/cloud/secretmanager/v1",
+					},
+				},
+			},
+			want: &config.Library{
+				APIs: []*config.API{
+					{
+						Path: "google/cloud/secretmanager/v1",
+					},
+				},
+			},
+		},
+		{
+			name: "nilifies_empty_package_config",
+			in: &config.Library{
+				APIs: []*config.API{
+					{
+						PHP: &config.PHPAPI{},
+					},
+				},
+			},
+			want: &config.Library{
+				APIs: []*config.API{
+					{},
+				},
+			},
+		},
+		{
+			name: "sorts_and_deduplicates_API_additional_protos",
+			in: &config.Library{
+				APIs: []*config.API{
+					{
 						PHP: &config.PHPAPI{
-							AdditionalProtos: []string{"d.proto", "b.proto", "d.proto", "a.proto", "b.proto"},
+							AdditionalProtos: []string{"b.proto", "a.proto", "a.proto"},
 						},
 					},
 				},
@@ -56,9 +74,50 @@ func TestTidy(t *testing.T) {
 			want: &config.Library{
 				APIs: []*config.API{
 					{
-						Path: "google/cloud/ces/v1",
 						PHP: &config.PHPAPI{
-							AdditionalProtos: []string{"a.proto", "b.proto", "d.proto"},
+							AdditionalProtos: []string{"a.proto", "b.proto"},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "keeps_true_CommonResources",
+			in: &config.Library{
+				APIs: []*config.API{
+					{
+						PHP: &config.PHPAPI{
+							CommonResources: new(true),
+						},
+					},
+				},
+			},
+			want: &config.Library{
+				APIs: []*config.API{
+					{
+						PHP: &config.PHPAPI{
+							CommonResources: new(true),
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "keeps_false_CommonResources",
+			in: &config.Library{
+				APIs: []*config.API{
+					{
+						PHP: &config.PHPAPI{
+							CommonResources: new(false),
+						},
+					},
+				},
+			},
+			want: &config.Library{
+				APIs: []*config.API{
+					{
+						PHP: &config.PHPAPI{
+							CommonResources: new(false),
 						},
 					},
 				},
@@ -72,6 +131,109 @@ func TestTidy(t *testing.T) {
 			}
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestValidate(t *testing.T) {
+	for _, test := range []struct {
+		name string
+		cfg  *config.Config
+	}{
+		{
+			name: "valid when configured per-API",
+			cfg: &config.Config{
+				Language: config.LanguagePhp,
+				Libraries: []*config.Library{
+					{
+						Name: "secretmanager",
+						APIs: []*config.API{
+							{
+								Path: "google/cloud/secretmanager/v1",
+								PHP: &config.PHPAPI{
+									CommonResources: new(true),
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "valid when configured globally",
+			cfg: &config.Config{
+				Language: config.LanguagePhp,
+				Default: &config.Default{
+					PHP: &config.PHPDefault{
+						CommonResources: new(true),
+					},
+				},
+				Libraries: []*config.Library{
+					{
+						Name: "secretmanager",
+						APIs: []*config.API{
+							{
+								Path: "google/cloud/secretmanager/v1",
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "skips other languages",
+			cfg: &config.Config{
+				Language: config.LanguageGo,
+				Libraries: []*config.Library{
+					{
+						Name: "secretmanager",
+						APIs: []*config.API{
+							{
+								Path: "google/cloud/secretmanager/v1",
+							},
+						},
+					},
+				},
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			if err := Validate(test.cfg); err != nil {
+				t.Fatal(err)
+			}
+		})
+	}
+}
+
+func TestValidate_Error(t *testing.T) {
+	for _, test := range []struct {
+		name    string
+		cfg     *config.Config
+		wantErr error
+	}{
+		{
+			name: "invalid when not configured anywhere",
+			cfg: &config.Config{
+				Language: config.LanguagePhp,
+				Libraries: []*config.Library{
+					{
+						Name: "secretmanager",
+						APIs: []*config.API{
+							{
+								Path: "google/cloud/secretmanager/v1",
+							},
+						},
+					},
+				},
+			},
+			wantErr: ErrMissingCommonResources,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			err := Validate(test.cfg)
+			if !errors.Is(err, test.wantErr) {
+				t.Errorf("Validate() error = %v, wantErr %v", err, test.wantErr)
 			}
 		})
 	}

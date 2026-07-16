@@ -98,7 +98,6 @@ type readmeData struct {
 	Version           string
 	RepoShort         string
 	MigratedSplitRepo bool
-	Monorepo          bool
 	BOMVersion        string
 	RequiresBilling   bool
 }
@@ -153,7 +152,6 @@ func renderREADME(params libraryPostProcessParams, keepSet map[string]bool) erro
 		Version:           libraryVersion,
 		RepoShort:         repoShort,
 		MigratedSplitRepo: false,
-		Monorepo:          true,
 		BOMVersion:        bomVersion,
 		RequiresBilling:   apiRequiresBilling,
 	}

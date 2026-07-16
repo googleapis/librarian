@@ -46,7 +46,15 @@ var (
 
 // Install installs Node.js tool dependencies.
 func Install(ctx context.Context, tools *config.Tools) error {
-	if tools == nil || len(tools.PNPM) == 0 {
+	if tools == nil {
+		return errNoToolsSpecified
+	}
+	return InstallPNPM(ctx, tools.PNPM)
+}
+
+// InstallPNPM installs PNPM tools.
+func InstallPNPM(ctx context.Context, pnpmTools []*config.PNPMTool) error {
+	if len(pnpmTools) == 0 {
 		return errNoToolsSpecified
 	}
 
@@ -61,7 +69,7 @@ func Install(ctx context.Context, tools *config.Tools) error {
 		return err
 	}
 
-	for _, tool := range tools.PNPM {
+	for _, tool := range pnpmTools {
 		if len(tool.Build) > 0 {
 			if err := installPNPMToolFromSource(ctx, env, tool); err != nil {
 				return err
@@ -119,21 +127,16 @@ func getPNPMEnv() ([]string, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to resolve librarian cache directory: %w", err)
 	}
-	installDir, err := InstallDir()
-	if err != nil {
-		return nil, fmt.Errorf("failed to resolve librarian install directory: %w", err)
-	}
 	binDir, err := getBinDir()
 	if err != nil {
 		return nil, fmt.Errorf("failed to resolve librarian bin directory: %w", err)
 	}
 
 	env := os.Environ()
-	env = append(env, "PNPM_HOME="+installDir)
+	env = append(env, "PNPM_HOME="+binDir)
 	env = append(env, "PNPM_CONFIG_GLOBAL_BIN_DIR="+binDir)
 	env = append(env, "PNPM_CONFIG_GLOBAL_DIR="+filepath.Join(cacheDir, "pnpm-global"))
 	env = append(env, "PNPM_CONFIG_STORE_DIR="+filepath.Join(cacheDir, "pnpm-store"))
-	env = append(env, "PNPM_CONFIG_DANGEROUSLY_ALLOW_ALL_BUILDS=true")
 	env = append(env, "PATH="+binDir+string(os.PathListSeparator)+os.Getenv("PATH"))
 	return env, nil
 }

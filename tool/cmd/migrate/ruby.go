@@ -16,8 +16,12 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"io/fs"
 	"log"
+	"os"
+	"path/filepath"
 
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/librarian"
@@ -36,7 +40,7 @@ func runRubyMigration(ctx context.Context, repoPath string) error {
 		Tools: &config.Tools{
 			Gem: []*config.GemTool{
 				{
-					Name:    "gapic-generator",
+					Name:    "gapic-generator-cloud",
 					Version: "0.49.0",
 				},
 				{
@@ -50,6 +54,11 @@ func runRubyMigration(ctx context.Context, repoPath string) error {
 			},
 		},
 	}
+	libs, err := findRubyLibraries(repoPath)
+	if err != nil {
+		return err
+	}
+	cfg.Libraries = libs
 	// The directory name in Googleapis is present for migration code to look
 	// up API details. It shouldn't be persisted.
 	cfg.Sources.Googleapis.Dir = ""
@@ -58,4 +67,29 @@ func runRubyMigration(ctx context.Context, repoPath string) error {
 	}
 	log.Printf("Successfully migrated Ruby libraries configuration skeleton")
 	return nil
+}
+
+func findRubyLibraries(repoPath string) ([]*config.Library, error) {
+	entries, err := os.ReadDir(repoPath)
+	if err != nil {
+		return nil, fmt.Errorf("reading repository directory: %w", err)
+	}
+	var libraries []*config.Library
+	for _, entry := range entries {
+		if !entry.IsDir() {
+			continue
+		}
+		name := entry.Name()
+		owlBotPath := filepath.Join(repoPath, name, ".OwlBot.yaml")
+		if _, err := os.Stat(owlBotPath); err != nil {
+			if errors.Is(err, fs.ErrNotExist) {
+				continue
+			}
+			return nil, fmt.Errorf("checking OwlBot config: %w", err)
+		}
+		libraries = append(libraries, &config.Library{
+			Name: name,
+		})
+	}
+	return libraries, nil
 }
