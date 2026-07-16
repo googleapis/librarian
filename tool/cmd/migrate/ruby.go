@@ -18,6 +18,8 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"os"
+	"path/filepath"
 
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/librarian"
@@ -50,6 +52,11 @@ func runRubyMigration(ctx context.Context, repoPath string) error {
 			},
 		},
 	}
+	libs, err := findRubyLibraryDirs(repoPath)
+	if err != nil {
+		return err
+	}
+	cfg.Libraries = libs
 	// The directory name in Googleapis is present for migration code to look
 	// up API details. It shouldn't be persisted.
 	cfg.Sources.Googleapis.Dir = ""
@@ -59,3 +66,26 @@ func runRubyMigration(ctx context.Context, repoPath string) error {
 	log.Printf("Successfully migrated Ruby libraries configuration skeleton")
 	return nil
 }
+
+func findRubyLibraryDirs(repoPath string) ([]*config.Library, error) {
+	entries, err := os.ReadDir(repoPath)
+	if err != nil {
+		return nil, err
+	}
+	var libraries []*config.Library
+	for _, entry := range entries {
+		if !entry.IsDir() {
+			continue
+		}
+		name := entry.Name()
+		owlBotPath := filepath.Join(repoPath, name, ".OwlBot.yaml")
+		if _, err := os.Stat(owlBotPath); err != nil {
+			continue
+		}
+		libraries = append(libraries, &config.Library{
+			Name: name,
+		})
+	}
+	return libraries, nil
+}
+	
