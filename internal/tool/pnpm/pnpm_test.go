@@ -129,16 +129,12 @@ func TestInstall_Error(t *testing.T) {
 	for _, test := range []struct {
 		name      string
 		pnpmTools []*config.PNPMTool
-		setup     func(t *testing.T)
 		wantErr   error
 	}{
 		{
 			name: "missing package url for build tool",
 			pnpmTools: []*config.PNPMTool{
 				{Name: "tool", Build: []string{"echo 1"}},
-			},
-			setup: func(t *testing.T) {
-				stubExecutables(t)
 			},
 			wantErr: errMissingPackageURL,
 		},
@@ -147,16 +143,10 @@ func TestInstall_Error(t *testing.T) {
 			pnpmTools: []*config.PNPMTool{
 				{Name: "tool", Package: "invalid-url", Build: []string{"echo 1"}},
 			},
-			setup: func(t *testing.T) {
-				stubExecutables(t)
-			},
 			wantErr: errCannotExtractRepo,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			if test.setup != nil {
-				test.setup(t)
-			}
 			err := Install(t.Context(), test.pnpmTools, t.TempDir())
 			if !errors.Is(err, test.wantErr) {
 				t.Fatalf("Install() error = %v, wantErr = %v", err, test.wantErr)
