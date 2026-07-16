@@ -47,7 +47,7 @@ jobs:
       - name: Run librarian install
         working-directory: google-cloud-go
         run: librarian install
-      - name: Run librarian generate
+      - name: Generate a single library (integration test)
         working-directory: google-cloud-go
         run: librarian generate --all
   create-issue-on-failure:
