@@ -26,6 +26,7 @@ import (
 	"github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/fetch"
+	"github.com/googleapis/librarian/internal/librarian/nodejs"
 	"github.com/googleapis/librarian/internal/tool/pip"
 )
 
@@ -77,6 +78,12 @@ func Install(ctx context.Context, tools *config.Tools) error {
 	if len(tools.Pip) > 0 {
 		if err := pip.Install(ctx, tools.Pip); err != nil {
 			return err
+		}
+	}
+	// Install PNPM tools
+	if len(tools.PNPM) > 0 {
+		if err := nodejs.InstallPNPM(ctx, tools.PNPM); err != nil {
+			return fmt.Errorf("failed to install pnpm tools: %w", err)
 		}
 	}
 	return nil
