@@ -31,11 +31,286 @@ import (
 	"github.com/googleapis/librarian/internal/testhelper"
 )
 
-func TestPublish(t *testing.T) {
+func TestPublishSuccess(t *testing.T) {
 	testhelper.RequireCommand(t, "git")
 
-	// Start a local test server to mock pub.dev API responses
-	var mockPublishedVersions map[string]string
+	publishedVersions := map[string]string{
+		"a": "0.9.0",
+		"b": "0.9.0",
+	}
+	repoVersions := map[string]string{
+		"a": "1.0.0",
+		"b": "1.0.0",
+	}
+	mockNeededVersions := map[string]string{
+		"a": "1.0.0",
+		"b": "1.0.0",
+	}
+
+	setupMockPubdevServer(t, publishedVersions)
+	setupTestRepo(t, repoVersions)
+	logFile := setupFakeDartAndApitool(t, repoVersions, mockNeededVersions, nil)
+
+	cfg := &config.Config{
+		Default: &config.Default{
+			Output: "generated",
+		},
+		Libraries: []*config.Library{
+			{Name: "a", Version: "1.0.0"},
+			{Name: "b", Version: "1.0.0"},
+		},
+	}
+
+	err := Publish(t.Context(), PublishParams{
+		Config: cfg,
+		DryRun: true,
+	})
+	if err != nil {
+		t.Fatalf("Publish failed: %v", err)
+	}
+
+	gotInvocations := readLogFile(t, logFile)
+	workingDir, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+	wantInvocations := []string{
+		filepath.Join(workingDir, "generated/a") + "|pub publish --skip-validation --dry-run",
+		filepath.Join(workingDir, "generated/b") + "|pub publish --skip-validation --dry-run",
+	}
+
+	if diff := cmp.Diff(wantInvocations, gotInvocations); diff != "" {
+		t.Errorf("invocations mismatch (-want +got):\n%s", diff)
+	}
+}
+
+func TestPublishSuccessNotPublished(t *testing.T) {
+	testhelper.RequireCommand(t, "git")
+
+	publishedVersions := map[string]string{
+		"a": "",
+		"b": "",
+	}
+	repoVersions := map[string]string{
+		"a": "1.0.0",
+		"b": "1.0.0",
+	}
+
+	setupMockPubdevServer(t, publishedVersions)
+	setupTestRepo(t, repoVersions)
+	logFile := setupFakeDartAndApitool(t, repoVersions, nil, nil)
+
+	cfg := &config.Config{
+		Default: &config.Default{
+			Output: "generated",
+		},
+		Libraries: []*config.Library{
+			{Name: "a", Version: "1.0.0"},
+			{Name: "b", Version: "1.0.0"},
+		},
+	}
+
+	err := Publish(t.Context(), PublishParams{
+		Config: cfg,
+		DryRun: true,
+	})
+	if err != nil {
+		t.Fatalf("Publish failed: %v", err)
+	}
+
+	gotInvocations := readLogFile(t, logFile)
+	workingDir, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+	wantInvocations := []string{
+		filepath.Join(workingDir, "generated/a") + "|pub publish --skip-validation --dry-run",
+		filepath.Join(workingDir, "generated/b") + "|pub publish --skip-validation --dry-run",
+	}
+
+	if diff := cmp.Diff(wantInvocations, gotInvocations); diff != "" {
+		t.Errorf("invocations mismatch (-want +got):\n%s", diff)
+	}
+}
+
+func TestPublishNoop(t *testing.T) {
+	testhelper.RequireCommand(t, "git")
+
+	publishedVersions := map[string]string{
+		"a": "1.0.0",
+		"b": "1.0.0",
+	}
+	repoVersions := map[string]string{
+		"a": "1.0.0",
+		"b": "1.0.0",
+	}
+
+	setupMockPubdevServer(t, publishedVersions)
+	setupTestRepo(t, repoVersions)
+	logFile := setupFakeDartAndApitool(t, repoVersions, nil, nil)
+
+	cfg := &config.Config{
+		Default: &config.Default{
+			Output: "generated",
+		},
+		Libraries: []*config.Library{
+			{Name: "a", Version: "1.0.0"},
+			{Name: "b", Version: "1.0.0"},
+		},
+	}
+
+	err := Publish(t.Context(), PublishParams{
+		Config: cfg,
+		DryRun: true,
+	})
+	if err != nil {
+		t.Fatalf("Publish failed: %v", err)
+	}
+
+	gotInvocations := readLogFile(t, logFile)
+	if len(gotInvocations) > 0 {
+		t.Errorf("expected no publish invocations, got: %v", gotInvocations)
+	}
+}
+
+func TestPublishErrorGreaterPublishedVersion(t *testing.T) {
+	testhelper.RequireCommand(t, "git")
+
+	publishedVersions := map[string]string{
+		"a": "2.0.0",
+		"b": "1.0.0",
+	}
+	repoVersions := map[string]string{
+		"a": "1.0.0",
+		"b": "1.0.0",
+	}
+
+	setupMockPubdevServer(t, publishedVersions)
+	setupTestRepo(t, repoVersions)
+	_ = setupFakeDartAndApitool(t, repoVersions, nil, nil)
+
+	cfg := &config.Config{
+		Default: &config.Default{
+			Output: "generated",
+		},
+		Libraries: []*config.Library{
+			{Name: "a", Version: "1.0.0"},
+			{Name: "b", Version: "1.0.0"},
+		},
+	}
+
+	err := Publish(t.Context(), PublishParams{
+		Config: cfg,
+		DryRun: true,
+	})
+	wantErr := `published version "2.0.0" is greater than repo version "1.0.0" for package a`
+	if err == nil {
+		t.Fatalf("expected error containing %q, got nil", wantErr)
+	}
+	if !strings.Contains(err.Error(), wantErr) {
+		t.Fatalf("expected error containing %q, got %q", wantErr, err.Error())
+	}
+}
+
+func TestPublishSemverFailure(t *testing.T) {
+	testhelper.RequireCommand(t, "git")
+
+	publishedVersions := map[string]string{
+		"a": "0.9.0",
+		"b": "0.9.0",
+	}
+	repoVersions := map[string]string{
+		"a": "1.0.0",
+		"b": "1.0.0",
+	}
+	mockApitoolErrors := map[string]string{
+		"a": "package a version 1.0.0 is less than required version 2.0.0 recommended by dart-apitool",
+	}
+
+	setupMockPubdevServer(t, publishedVersions)
+	setupTestRepo(t, repoVersions)
+	_ = setupFakeDartAndApitool(t, repoVersions, nil, mockApitoolErrors)
+
+	cfg := &config.Config{
+		Default: &config.Default{
+			Output: "generated",
+		},
+		Libraries: []*config.Library{
+			{Name: "a", Version: "1.0.0"},
+			{Name: "b", Version: "1.0.0"},
+		},
+	}
+
+	err := Publish(t.Context(), PublishParams{
+		Config: cfg,
+		DryRun: true,
+	})
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+	want1 := "dart-apitool failed for a:"
+	want2 := "package a version 1.0.0 is less than required version 2.0.0 recommended by dart-apitool"
+	if !strings.Contains(err.Error(), want1) || !strings.Contains(err.Error(), want2) {
+		t.Fatalf("expected error containing %q and %q, got %q", want1, want2, err.Error())
+	}
+}
+
+func TestPublishSemverSkipByFlag(t *testing.T) {
+	testhelper.RequireCommand(t, "git")
+
+	publishedVersions := map[string]string{
+		"a": "0.9.0",
+		"b": "0.9.0",
+	}
+	repoVersions := map[string]string{
+		"a": "1.0.0",
+		"b": "1.0.0",
+	}
+	mockApitoolErrors := map[string]string{
+		"a": "package a version 1.0.0 is less than required version 2.0.0 recommended by dart-apitool",
+	}
+
+	setupMockPubdevServer(t, publishedVersions)
+	setupTestRepo(t, repoVersions)
+	logFile := setupFakeDartAndApitool(t, repoVersions, nil, mockApitoolErrors)
+
+	cfg := &config.Config{
+		Default: &config.Default{
+			Output: "generated",
+		},
+		Libraries: []*config.Library{
+			{Name: "a", Version: "1.0.0"},
+			{Name: "b", Version: "1.0.0"},
+		},
+	}
+
+	err := Publish(t.Context(), PublishParams{
+		Config:           cfg,
+		DryRun:           true,
+		SkipSemverChecks: true,
+	})
+	if err != nil {
+		t.Fatalf("Publish failed: %v", err)
+	}
+
+	gotInvocations := readLogFile(t, logFile)
+	workingDir, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+	wantInvocations := []string{
+		filepath.Join(workingDir, "generated/a") + "|pub publish --skip-validation --dry-run",
+		filepath.Join(workingDir, "generated/b") + "|pub publish --skip-validation --dry-run",
+	}
+
+	if diff := cmp.Diff(wantInvocations, gotInvocations); diff != "" {
+		t.Errorf("invocations mismatch (-want +got):\n%s", diff)
+	}
+}
+
+// Helpers
+
+func setupMockPubdevServer(t *testing.T, mockPublishedVersions map[string]string) {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		pkgName := filepath.Base(r.URL.Path)
 		version, ok := mockPublishedVersions[pkgName]
@@ -44,7 +319,6 @@ func TestPublish(t *testing.T) {
 			return
 		}
 
-		// Return JSON matching pub.dev structure
 		w.Header().Set("Content-Type", "application/json")
 		_ = json.NewEncoder(w).Encode(map[string]any{
 			"name": pkgName,
@@ -53,207 +327,79 @@ func TestPublish(t *testing.T) {
 			},
 		})
 	}))
-	defer ts.Close()
+	t.Cleanup(ts.Close)
 
-	// Redirect pub.dev requests to local test server
 	oldPubdevAPIURL := pubdevAPIURL
 	pubdevAPIURL = ts.URL + "/"
-	defer func() { pubdevAPIURL = oldPubdevAPIURL }()
+	t.Cleanup(func() {
+		pubdevAPIURL = oldPubdevAPIURL
+	})
+}
 
-	for _, tc := range []struct {
-		name              string
-		publishedVersions map[string]string
-		repoVersions      map[string]string
-		mockNeededVersion map[string]string
-		mockApitoolError  map[string]string
-		skipSemverChecks  bool
-		wantInvocations   []string
-		wantErr           string
-	}{
-		{
-			name: "needs publish (not published yet, skips apitool)",
-			publishedVersions: map[string]string{
-				"a": "",
-				"b": "",
-			},
-			repoVersions: map[string]string{
-				"a": "1.0.0",
-				"b": "1.0.0",
-			},
-			mockApitoolError: map[string]string{
-				"a": "Package not available on pub.dev",
-				"b": "Package not available on pub.dev",
-			},
-			wantInvocations: []string{
-				"generated/a|pub publish --dry-run",
-				"generated/b|pub publish --dry-run",
-			},
-		},
-		{
-			name: "needs publish (repo version is greater than published version, apitool check passes)",
-			publishedVersions: map[string]string{
-				"a": "0.9.0",
-				"b": "0.9.0",
-			},
-			repoVersions: map[string]string{
-				"a": "1.0.0",
-				"b": "1.0.0",
-			},
-			mockNeededVersion: map[string]string{
-				"a": "1.0.0",
-				"b": "1.0.0",
-			},
-			wantInvocations: []string{
-				"generated/a|pub publish --dry-run",
-				"generated/b|pub publish --dry-run",
-			},
-		},
-		{
-			name: "no-op (already published with same version)",
-			publishedVersions: map[string]string{
-				"a": "1.0.0",
-				"b": "1.0.0",
-			},
-			repoVersions: map[string]string{
-				"a": "1.0.0",
-				"b": "1.0.0",
-			},
-			wantInvocations: nil,
-		},
-		{
-			name: "error (published version is greater than repo version)",
-			publishedVersions: map[string]string{
-				"a": "2.0.0",
-				"b": "1.0.0",
-			},
-			repoVersions: map[string]string{
-				"a": "1.0.0",
-				"b": "1.0.0",
-			},
-			wantErr: `published version "2.0.0" is greater than repo version "1.0.0" for package a`,
-		},
-		{
-			name: "semver failure (repo version < apitool needed version)",
-			publishedVersions: map[string]string{
-				"a": "0.9.0",
-				"b": "0.9.0",
-			},
-			repoVersions: map[string]string{
-				"a": "1.0.0",
-				"b": "1.0.0",
-			},
-			mockNeededVersion: map[string]string{
-				"a": "2.0.0", // requires major bump but repo is only minor
-				"b": "1.0.0",
-			},
-			wantErr: `package a version 1.0.0 is less than required version 2.0.0 recommended by dart-apitool`,
-		},
-		{
-			name: "semver check skipped by flag",
-			publishedVersions: map[string]string{
-				"a": "0.9.0",
-				"b": "0.9.0",
-			},
-			repoVersions: map[string]string{
-				"a": "1.0.0",
-				"b": "1.0.0",
-			},
-			mockNeededVersion: map[string]string{
-				"a": "2.0.0", // normally fails, but flag skips
-				"b": "1.0.0",
-			},
-			skipSemverChecks: true,
-			wantInvocations: []string{
-				"generated/a|pub publish --dry-run",
-				"generated/b|pub publish --dry-run",
-			},
-		},
-		{
-			name: "apitool package not available (handled as first release)",
-			publishedVersions: map[string]string{
-				"a": "0.9.0",
-				"b": "0.9.0",
-			},
-			repoVersions: map[string]string{
-				"a": "1.0.0",
-				"b": "1.0.0",
-			},
-			mockApitoolError: map[string]string{
-				"a": "Package not available on pub.dev",
-			},
-			mockNeededVersion: map[string]string{
-				"b": "1.0.0",
-			},
-			wantInvocations: []string{
-				"generated/a|pub publish --dry-run",
-				"generated/b|pub publish --dry-run",
-			},
-		},
-	} {
-		t.Run(tc.name, func(t *testing.T) {
-			mockPublishedVersions = tc.publishedVersions
+func setupTestRepo(t *testing.T, repoVersions map[string]string) string {
+	t.Helper()
+	remoteDir := testhelper.SetupRepoWithChange(t, "release-2001-02-03")
+	if err := command.Run(t.Context(), command.Git, "-C", remoteDir, "config", "receive.denyCurrentBranch", "ignore"); err != nil {
+		t.Fatal(err)
+	}
+	testhelper.CloneRepository(t, remoteDir)
 
-			// Set up a fresh clone directory for this test case
-			remoteDir := testhelper.SetupRepoWithChange(t, "release-2001-02-03")
-			if err := command.Run(t.Context(), command.Git, "-C", remoteDir, "config", "receive.denyCurrentBranch", "ignore"); err != nil {
-				t.Fatal(err)
-			}
-			testhelper.CloneRepository(t, remoteDir)
+	if err := os.MkdirAll("generated/a", 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.MkdirAll("generated/b", 0755); err != nil {
+		t.Fatal(err)
+	}
 
-			if err := os.MkdirAll("generated/a", 0755); err != nil {
-				t.Fatal(err)
-			}
-			if err := os.MkdirAll("generated/b", 0755); err != nil {
-				t.Fatal(err)
-			}
+	pubspecA := "name: a\nversion: " + repoVersions["a"] + "\ndependencies:\n  sdk: \">=3.0.0 <4.0.0\"\n"
+	pubspecB := "name: b\nversion: " + repoVersions["b"] + "\ndependencies:\n  sdk: \">=3.0.0 <4.0.0\"\n  a: ^1.0.0\n"
 
-			pubspecA := "name: a\nversion: " + tc.repoVersions["a"] + "\ndependencies:\n  sdk: \">=3.0.0 <4.0.0\"\n"
-			pubspecB := "name: b\nversion: " + tc.repoVersions["b"] + "\ndependencies:\n  sdk: \">=3.0.0 <4.0.0\"\n  a: ^1.0.0\n"
+	if err := os.WriteFile("generated/a/pubspec.yaml", []byte(pubspecA), 0644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile("generated/b/pubspec.yaml", []byte(pubspecB), 0644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile("generated/a/lib.dart", []byte("// library a"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile("generated/b/lib.dart", []byte("// library b"), 0644); err != nil {
+		t.Fatal(err)
+	}
 
-			if err := os.WriteFile("generated/a/pubspec.yaml", []byte(pubspecA), 0644); err != nil {
-				t.Fatal(err)
-			}
-			if err := os.WriteFile("generated/b/pubspec.yaml", []byte(pubspecB), 0644); err != nil {
-				t.Fatal(err)
-			}
-			if err := os.WriteFile("generated/a/lib.dart", []byte("// library a"), 0644); err != nil {
-				t.Fatal(err)
-			}
-			if err := os.WriteFile("generated/b/lib.dart", []byte("// library b"), 0644); err != nil {
-				t.Fatal(err)
-			}
+	testhelper.RunGit(t, "add", ".")
+	testhelper.RunGit(t, "commit", "-m", "feat: added pubspec files", ".")
+	testhelper.RunGit(t, "push", config.RemoteUpstream, config.BranchMain)
+	return remoteDir
+}
 
-			testhelper.RunGit(t, "add", ".")
-			testhelper.RunGit(t, "commit", "-m", "feat: added pubspec files", ".")
-			testhelper.RunGit(t, "push", config.RemoteUpstream, config.BranchMain)
+func setupFakeDartAndApitool(t *testing.T, repoVersions map[string]string, mockNeededVersions map[string]string, mockApitoolErrors map[string]string) string {
+	t.Helper()
+	// Propagate mock expectations to environment for scripts to read
+	if mockNeededVersions != nil {
+		marshaled, _ := json.Marshal(mockNeededVersions)
+		t.Setenv("MOCK_NEEDED_VERSIONS", string(marshaled))
+	} else {
+		t.Setenv("MOCK_NEEDED_VERSIONS", "")
+	}
+	if mockApitoolErrors != nil {
+		marshaled, _ := json.Marshal(mockApitoolErrors)
+		t.Setenv("MOCK_APITOOL_ERRORS", string(marshaled))
+	} else {
+		t.Setenv("MOCK_APITOOL_ERRORS", "")
+	}
 
-			// Propagate mock expectations to environment for scripts to read
-			if tc.mockNeededVersion != nil {
-				marshaled, _ := json.Marshal(tc.mockNeededVersion)
-				t.Setenv("MOCK_NEEDED_VERSIONS", string(marshaled))
-			} else {
-				t.Setenv("MOCK_NEEDED_VERSIONS", "")
-			}
-			if tc.mockApitoolError != nil {
-				marshaled, _ := json.Marshal(tc.mockApitoolError)
-				t.Setenv("MOCK_APITOOL_ERRORS", string(marshaled))
-			} else {
-				t.Setenv("MOCK_APITOOL_ERRORS", "")
-			}
-
-			// Set up fake dart script
-			setupFakeScript(t, "dart", `#!/bin/bash
+	// Set up fake dart script
+	setupFakeScript(t, "dart", `#!/bin/bash
 if [ "$1" == "pub" ] && [ "$2" == "deps" ] && [ "$3" == "--json" ]; then
-	echo '{"packages":[{"name":"a","version":"`+tc.repoVersions["a"]+`","dependencies":[]},{"name":"b","version":"`+tc.repoVersions["b"]+`","dependencies":["a"]}]}'
+	echo '{"packages":[{"name":"a","version":"`+repoVersions["a"]+`","dependencies":[]},{"name":"b","version":"`+repoVersions["b"]+`","dependencies":["a"]}]}'
 else
-	# We also need to log the pub publish command, but we shouldn't log other commands
 	echo "$(pwd)|$*" >> "$TEST_LOG_FILE"
 fi
 `)
 
-			// Set up fake apitool script
-			setupFakeScript(t, "dart-apitool", `#!/bin/bash
-# Find package name from pub:// argument
+	// Set up fake apitool script
+	setupFakeScript(t, "dart-apitool", `#!/bin/bash
 pkg_name=""
 report_file=""
 while [ $# -gt 0 ]; do
@@ -265,7 +411,6 @@ while [ $# -gt 0 ]; do
   shift
 done
 
-# Check if there is a mocked error for this package
 if [ -n "$MOCK_APITOOL_ERRORS" ]; then
   err_msg=$(echo "$MOCK_APITOOL_ERRORS" | jq -r ".${pkg_name} // \"\"")
   if [ -n "$err_msg" ] && [ "$err_msg" != "null" ]; then
@@ -274,7 +419,6 @@ if [ -n "$MOCK_APITOOL_ERRORS" ]; then
   fi
 fi
 
-# Write report with needed version
 if [ -n "$report_file" ] && [ -n "$MOCK_NEEDED_VERSIONS" ]; then
   needed_version=$(echo "$MOCK_NEEDED_VERSIONS" | jq -r ".${pkg_name} // \"\"")
   if [ -n "$needed_version" ] && [ "$needed_version" != "null" ]; then
@@ -283,66 +427,9 @@ if [ -n "$report_file" ] && [ -n "$MOCK_NEEDED_VERSIONS" ]; then
 fi
 `)
 
-			// Set up common log file path in environment for fake dart script to write to
-			logFile := filepath.Join(t.TempDir(), "invocations.log")
-			t.Setenv("TEST_LOG_FILE", logFile)
-
-			cfg := &config.Config{
-				Default: &config.Default{
-					Output: "generated",
-				},
-				Libraries: []*config.Library{
-					{Name: "a", Version: tc.repoVersions["a"]},
-					{Name: "b", Version: tc.repoVersions["b"]},
-				},
-			}
-
-			err := Publish(t.Context(), PublishParams{
-				Config:           cfg,
-				DryRun:           true,
-				SkipSemverChecks: tc.skipSemverChecks,
-			})
-
-			if tc.wantErr != "" {
-				if err == nil {
-					t.Fatalf("expected error containing %q, got nil", tc.wantErr)
-				}
-				if !strings.Contains(err.Error(), tc.wantErr) {
-					t.Fatalf("expected error containing %q, got %q", tc.wantErr, err.Error())
-				}
-				return
-			}
-
-			if err != nil {
-				t.Fatalf("Publish failed: %v", err)
-			}
-
-			var gotInvocations []string
-			if _, err := os.Stat(logFile); err == nil {
-				logContent, err := os.ReadFile(logFile)
-				if err != nil {
-					t.Fatal(err)
-				}
-				gotInvocations = strings.Split(strings.TrimSpace(string(logContent)), "\n")
-				gotInvocations = slices.DeleteFunc(gotInvocations, func(s string) bool { return s == "" })
-			}
-
-			workingDir, err := os.Getwd()
-			if err != nil {
-				t.Fatal(err)
-			}
-
-			var wantInvocations []string
-			for _, inv := range tc.wantInvocations {
-				parts := strings.SplitN(inv, "|", 2)
-				wantInvocations = append(wantInvocations, filepath.Join(workingDir, parts[0])+"|"+parts[1])
-			}
-
-			if diff := cmp.Diff(wantInvocations, gotInvocations); diff != "" {
-				t.Errorf("invocations mismatch (-want +got):\n%s", diff)
-			}
-		})
-	}
+	logFile := filepath.Join(t.TempDir(), "invocations.log")
+	t.Setenv("TEST_LOG_FILE", logFile)
+	return logFile
 }
 
 func setupFakeScript(t *testing.T, name, script string) {
@@ -356,4 +443,18 @@ func setupFakeScript(t *testing.T, name, script string) {
 		t.Fatal(err)
 	}
 	t.Setenv("PATH", tmpDir+string(os.PathListSeparator)+os.Getenv("PATH"))
+}
+
+func readLogFile(t *testing.T, logFile string) []string {
+	t.Helper()
+	var gotInvocations []string
+	if _, err := os.Stat(logFile); err == nil {
+		logContent, err := os.ReadFile(logFile)
+		if err != nil {
+			t.Fatal(err)
+		}
+		gotInvocations = strings.Split(strings.TrimSpace(string(logContent)), "\n")
+		gotInvocations = slices.DeleteFunc(gotInvocations, func(s string) bool { return s == "" })
+	}
+	return gotInvocations
 }
