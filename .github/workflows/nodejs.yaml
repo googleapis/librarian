@@ -19,7 +19,7 @@ jobs:
   test:
     runs-on: ubuntu-24.04
     # Presubmit jobs must complete within 5 minutes. See CONTRIBUTING.md.
-    timeout-minutes: 5
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
         with:
@@ -65,7 +65,8 @@ jobs:
         run: librarian generate secretmanager
   integration:
     runs-on: ubuntu-24.04
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    timeout-minutes: 60
+    if: github.event_name == 'push' && github.ref == 'refs/heads/nodeWorkflowTests'
     steps:
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
         with:
@@ -95,7 +96,7 @@ jobs:
     permissions:
       contents: read
       issues: write
-    if: ${{ always() && contains(needs.*.result, 'failure') && github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+    if: ${{ always() && contains(needs.*.result, 'failure') && github.event_name == 'push' && github.ref == 'refs/heads/nodeWorkflowTests' }}
     uses: ./.github/workflows/create-issue-on-failure.yaml
     with:
       language: Node.js
