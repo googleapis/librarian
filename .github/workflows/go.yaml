@@ -27,6 +27,9 @@ jobs:
       - uses: ./.github/actions/setup-librarian
       - name: Run tests
         run: go run ./tool/cmd/coverage ./internal/librarian/golang
+      - name: Run single library generation
+        working-directory: google-cloud-go
+        run: librarian generate secretmanager
   integration:
     runs-on: ubuntu-24.04
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
