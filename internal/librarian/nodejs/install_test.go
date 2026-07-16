@@ -173,26 +173,6 @@ func TestInstall(t *testing.T) {
 				stubExecutables(t)
 			},
 		},
-		{
-			name: "legacy tool configuration style fallback",
-			tools: &config.Tools{
-				PNPM: []*config.PNPMTool{
-					{
-						Name:    "pnpm",
-						Version: "7.32.2",
-					},
-					{
-						Name:    "gapic-node-processing",
-						Version: "0.1.8",
-					},
-				},
-			},
-			setup: func(t *testing.T) {
-				t.Setenv("LIBRARIAN_CACHE", t.TempDir())
-				t.Setenv("LIBRARIAN_BIN", t.TempDir())
-				stubExecutables(t)
-			},
-		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			if test.setup != nil {
