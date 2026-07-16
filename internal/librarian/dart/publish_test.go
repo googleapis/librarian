@@ -42,14 +42,9 @@ func TestPublishSuccess(t *testing.T) {
 		"a": "1.0.0",
 		"b": "1.0.0",
 	}
-	mockNeededVersions := map[string]string{
-		"a": "1.0.0",
-		"b": "1.0.0",
-	}
-
 	setupMockPubdevServer(t, publishedVersions)
 	setupTestRepo(t, repoVersions)
-	logFile := setupFakeDartAndApitool(t, repoVersions, mockNeededVersions, nil)
+	logFile := setupFakeDartAndApitool(t, repoVersions, nil)
 
 	cfg := &config.Config{
 		Default: &config.Default{
@@ -98,7 +93,7 @@ func TestPublishSuccessNotPublished(t *testing.T) {
 
 	setupMockPubdevServer(t, publishedVersions)
 	setupTestRepo(t, repoVersions)
-	logFile := setupFakeDartAndApitool(t, repoVersions, nil, nil)
+	logFile := setupFakeDartAndApitool(t, repoVersions, nil)
 
 	cfg := &config.Config{
 		Default: &config.Default{
@@ -147,7 +142,7 @@ func TestPublishNoop(t *testing.T) {
 
 	setupMockPubdevServer(t, publishedVersions)
 	setupTestRepo(t, repoVersions)
-	logFile := setupFakeDartAndApitool(t, repoVersions, nil, nil)
+	logFile := setupFakeDartAndApitool(t, repoVersions, nil)
 
 	cfg := &config.Config{
 		Default: &config.Default{
@@ -187,7 +182,7 @@ func TestPublishErrorGreaterPublishedVersion(t *testing.T) {
 
 	setupMockPubdevServer(t, publishedVersions)
 	setupTestRepo(t, repoVersions)
-	_ = setupFakeDartAndApitool(t, repoVersions, nil, nil)
+	_ = setupFakeDartAndApitool(t, repoVersions, nil)
 
 	cfg := &config.Config{
 		Default: &config.Default{
@@ -229,7 +224,7 @@ func TestPublishSemverFailure(t *testing.T) {
 
 	setupMockPubdevServer(t, publishedVersions)
 	setupTestRepo(t, repoVersions)
-	_ = setupFakeDartAndApitool(t, repoVersions, nil, mockApitoolErrors)
+	_ = setupFakeDartAndApitool(t, repoVersions, mockApitoolErrors)
 
 	cfg := &config.Config{
 		Default: &config.Default{
@@ -272,7 +267,7 @@ func TestPublishSemverSkipByFlag(t *testing.T) {
 
 	setupMockPubdevServer(t, publishedVersions)
 	setupTestRepo(t, repoVersions)
-	logFile := setupFakeDartAndApitool(t, repoVersions, nil, mockApitoolErrors)
+	logFile := setupFakeDartAndApitool(t, repoVersions, mockApitoolErrors)
 
 	cfg := &config.Config{
 		Default: &config.Default{
@@ -372,15 +367,9 @@ func setupTestRepo(t *testing.T, repoVersions map[string]string) {
 	testhelper.RunGit(t, "push", config.RemoteUpstream, config.BranchMain)
 }
 
-func setupFakeDartAndApitool(t *testing.T, repoVersions map[string]string, mockNeededVersions map[string]string, mockApitoolErrors map[string]string) string {
+func setupFakeDartAndApitool(t *testing.T, repoVersions map[string]string, mockApitoolErrors map[string]string) string {
 	t.Helper()
 	// Propagate mock expectations to environment for scripts to read
-	if mockNeededVersions != nil {
-		marshaled, _ := json.Marshal(mockNeededVersions)
-		t.Setenv("MOCK_NEEDED_VERSIONS", string(marshaled))
-	} else {
-		t.Setenv("MOCK_NEEDED_VERSIONS", "")
-	}
 	if mockApitoolErrors != nil {
 		marshaled, _ := json.Marshal(mockApitoolErrors)
 		t.Setenv("MOCK_APITOOL_ERRORS", string(marshaled))
@@ -400,12 +389,9 @@ fi
 	// Set up fake apitool script
 	setupFakeScript(t, "dart-apitool", `#!/bin/bash
 pkg_name=""
-report_file=""
 while [ $# -gt 0 ]; do
   if [[ "$1" == pub://* ]]; then
     pkg_name="${1#pub://}"
-  elif [ "$1" == "--report-file-path" ]; then
-    report_file="$2"
   fi
   shift
 done
@@ -415,13 +401,6 @@ if [ -n "$MOCK_APITOOL_ERRORS" ]; then
   if [ -n "$err_msg" ] && [ "$err_msg" != "null" ]; then
     echo "$err_msg" >&2
     exit 1
-  fi
-fi
-
-if [ -n "$report_file" ] && [ -n "$MOCK_NEEDED_VERSIONS" ]; then
-  needed_version=$(echo "$MOCK_NEEDED_VERSIONS" | jq -r ".${pkg_name} // \"\"")
-  if [ -n "$needed_version" ] && [ "$needed_version" != "null" ]; then
-    echo "{\"version\":{\"needed\":\"$needed_version\"}}" > "$report_file"
   fi
 fi
 `)

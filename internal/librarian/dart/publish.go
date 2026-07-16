@@ -21,7 +21,6 @@ import (
 	"log/slog"
 	"net/http"
 	"net/url"
-	"os"
 	"path/filepath"
 	"slices"
 
@@ -126,7 +125,7 @@ func Publish(ctx context.Context, params PublishParams) error {
 	if !params.SkipSemverChecks {
 		for _, lib := range librariesToPublish {
 			if _, ok := publishedVersions[lib.Name]; ok {
-				if err := runSemverCheck(ctx, lib, params.Config.Default); err != nil {
+				if err := runSemverCheck(ctx, lib, params.Config.Default, params.Verbose); err != nil {
 					if params.DryRunKeepGoing {
 						slog.Warn("semver check failed but continuing due to --keep-going",
 							"package", lib.Name, "error", err)
@@ -167,13 +166,19 @@ func Publish(ctx context.Context, params PublishParams) error {
 	return nil
 }
 
-func runSemverCheck(ctx context.Context, lib *config.Library, defaultCfg *config.Default) error {
+func runSemverCheck(ctx context.Context, lib *config.Library, defaultCfg *config.Default, verbose bool) error {
 	libDir := libraryOutput(lib, defaultCfg)
-	reportPath := filepath.Join(os.TempDir(), fmt.Sprintf("report-%s-publish.json", lib.Name))
-	output, err := command.Output(ctx, command.DartAPITool, "diff", "--old", "pub://"+lib.Name, "--new", libDir,
-		"--report-format", "json", "--report-file-path", reportPath)
-	if err != nil {
-		return fmt.Errorf("dart-apitool failed for %s: %w (output: %s, see %s)", lib.Name, err, output, reportPath)
+	args := []string{"diff", "--old", "pub://" + lib.Name, "--new", "."}
+
+	var runErr error
+	if verbose {
+		runErr = command.RunStreamingInDir(ctx, libDir, command.DartAPITool, args...)
+	} else {
+		runErr = command.RunInDir(ctx, libDir, command.DartAPITool, args...)
+
+	}
+	if runErr != nil {
+		return fmt.Errorf("dart-apitool failed for %s: %w", lib.Name, runErr)
 	}
 	return nil
 }
