@@ -230,23 +230,29 @@ func TestInstall_Error(t *testing.T) {
 			wantErr: errCannotExtractRepo,
 		},
 		{
-			name: "missing pnpm_version in tools configuration",
+			name: "missing pnpm version and missing pnpm in PATH",
 			tools: &config.Tools{
 				PNPM: []*config.PNPMTool{
 					{Name: "tool", Version: "1.0"},
 				},
 			},
-			wantErr: errMissingPNPMVersion,
+			setup: func(t *testing.T) {
+				t.Setenv("PATH", t.TempDir())
+			},
+			wantErr: errMissingExecutable,
 		},
 		{
-			name: "empty pnpm_version in tools configuration",
+			name: "empty pnpm version and missing pnpm in PATH",
 			tools: &config.Tools{
 				PNPMVersion: "",
 				PNPM: []*config.PNPMTool{
 					{Name: "tool", Version: "1.0"},
 				},
 			},
-			wantErr: errMissingPNPMVersion,
+			setup: func(t *testing.T) {
+				t.Setenv("PATH", t.TempDir())
+			},
+			wantErr: errMissingExecutable,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {

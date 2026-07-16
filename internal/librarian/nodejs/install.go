@@ -62,11 +62,6 @@ func Install(ctx context.Context, tools *config.Tools) error {
 	if err != nil {
 		return err
 	}
-
-	installDir, err := InstallDir()
-	if err != nil {
-		return err
-	}
 	pnpmVersion := tools.PNPMVersion
 	if pnpmVersion == "" {
 		for _, tool := range tools.PNPM {
@@ -77,11 +72,18 @@ func Install(ctx context.Context, tools *config.Tools) error {
 		}
 	}
 	if pnpmVersion == "" {
-		return errMissingPNPMVersion
-	}
-	npmCacheDir := filepath.Join(cacheDir, "npm-cache")
-	if err := command.RunStreaming(ctx, "npm", "install", "--prefix", installDir, "--cache", npmCacheDir, "-g", "pnpm@"+pnpmVersion); err != nil {
-		return fmt.Errorf("failed to bootstrap pnpm: %w", err)
+		if _, err := exec.LookPath("pnpm"); err != nil {
+			return fmt.Errorf("pnpm %w: %w", errMissingExecutable, err)
+		}
+	} else {
+		installDir, err := InstallDir()
+		if err != nil {
+			return err
+		}
+		npmCacheDir := filepath.Join(cacheDir, "npm-cache")
+		if err := command.RunStreaming(ctx, "npm", "install", "--prefix", installDir, "--cache", npmCacheDir, "-g", "pnpm@"+pnpmVersion); err != nil {
+			return fmt.Errorf("failed to bootstrap pnpm: %w", err)
+		}
 	}
 
 	env, err := getPNPMEnv()
