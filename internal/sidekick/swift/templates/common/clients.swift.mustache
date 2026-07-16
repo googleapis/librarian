@@ -25,9 +25,7 @@ import Foundation
 #if canImport(FoundationNetworking)
   import FoundationNetworking
 #endif
-{{#Codec.ServiceImports}}
-import {{.}}
-{{/Codec.ServiceImports}}
+import GoogleCloudGax
 
 // Defines concrete implementations of the client protocols.
 public enum Clients {
