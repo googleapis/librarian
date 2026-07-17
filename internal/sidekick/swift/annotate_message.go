@@ -69,7 +69,6 @@ type messageAnnotations struct {
 	// For discovery-based APIs, the request are synthetic and generated within
 	// a scope. They need to be fully qualified.
 	ParameterTypeName string
-	NativeTypeName    string
 	ProtoTypeName     string
 	ModulePath        string
 }
@@ -151,7 +150,6 @@ func (c *codec) annotateMessage(message *api.Message, model *modelAnnotations) e
 		DependsOn:           map[string]*Dependency{},
 		SampleField:         sampleField,
 		ParameterTypeName:   parameterTypeName,
-		NativeTypeName:      parameterTypeName,
 		ProtoTypeName:       c.protoMessageTypeName(message),
 		ModulePath:          c.ModulePath,
 	}
