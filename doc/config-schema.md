@@ -504,6 +504,7 @@ This document describes the schema for the librarian.yaml.
 | `post_process_protos` | string | Indicates whether to post-process protos. |
 | `documentation_overrides` | list of [RustDocumentationOverride](#rustdocumentationoverride-configuration) | Contains overrides for element documentation. |
 | `pagination_overrides` | list of [RustPaginationOverride](#rustpaginationoverride-configuration) | Contains overrides for pagination configuration. |
+| `idempotency_overrides` | list of [RustIdempotencyOverride](#rustidempotencyoverride-configuration) | Contains overrides for method idempotency. |
 | `name_overrides` | string | Contains codec-level overrides for type and service names. |
 | `discovery` | RustDiscovery (optional) | Contains discovery-specific configuration for LRO polling. |
 | `quickstart_service_override` | string | Overrides the default heuristically selected service for the package-level quickstart. |
@@ -527,6 +528,13 @@ This document describes the schema for the librarian.yaml.
 | `id` | string | Is the fully qualified element ID (e.g., .google.cloud.dialogflow.v2.Message.field). |
 | `match` | string | Is the text to match in the documentation. |
 | `replace` | string | Is the replacement text. |
+
+## RustIdempotencyOverride Configuration
+
+| Field | Type | Description |
+| :--- | :--- | :--- |
+| `id` | string | Is the fully qualified method ID (e.g., .google.cloud.sql.v1.Service.Method). |
+| `is_idempotent` | bool | Is whether the method is considered idempotent. |
 
 ## RustModule Configuration
 

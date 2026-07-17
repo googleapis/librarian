@@ -270,6 +270,9 @@ type RustCrate struct {
 	// PaginationOverrides contains overrides for pagination configuration.
 	PaginationOverrides []RustPaginationOverride `yaml:"pagination_overrides,omitempty"`
 
+	// IdempotencyOverrides contains overrides for method idempotency.
+	IdempotencyOverrides []RustIdempotencyOverride `yaml:"idempotency_overrides,omitempty"`
+
 	// NameOverrides contains codec-level overrides for type and service names.
 	NameOverrides string `yaml:"name_overrides,omitempty"`
 
@@ -327,6 +330,15 @@ type RustPaginationOverride struct {
 
 	// ItemField is the name of the field used for items.
 	ItemField string `yaml:"item_field"`
+}
+
+// RustIdempotencyOverride represents an idempotency override for a specific method.
+type RustIdempotencyOverride struct {
+	// ID is the fully qualified method ID (e.g., .google.cloud.sql.v1.Service.Method).
+	ID string `yaml:"id"`
+
+	// IsIdempotent is whether the method is considered idempotent.
+	IsIdempotent bool `yaml:"is_idempotent"`
 }
 
 // RustDiscovery contains discovery-specific configuration for LRO polling.

@@ -110,13 +110,7 @@ impl super::stub::{{Codec.Name}} for {{Codec.Name}} {
         use gaxi::{prost::ToProto, grpc::tonic::{GrpcMethod, Extensions}};
         let options = google_cloud_gax::options::internal::set_default_idempotency(
             options,
-            {{! TODO(#2588) - resolve this in the model }}
-            {{#HasAutoPopulatedFields}}
-            true,
-            {{/HasAutoPopulatedFields}}
-            {{^HasAutoPopulatedFields}}
             {{PathInfo.Codec.IsIdempotent}},
-            {{/HasAutoPopulatedFields}}
         );
         let extensions = {
             let mut e = Extensions::new();

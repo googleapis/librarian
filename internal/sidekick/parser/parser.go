@@ -48,8 +48,9 @@ type ModelConfig struct {
 	Codec map[string]string
 
 	// Documentation/pagination overrides
-	CommentOverrides    []api.DocumentationOverride
-	PaginationOverrides []api.PaginationOverride
+	CommentOverrides     []api.DocumentationOverride
+	PaginationOverrides  []api.PaginationOverride
+	IdempotencyOverrides []api.IdempotencyOverride
 
 	// Discovery poller configurations
 	Discovery *api.Discovery
@@ -83,6 +84,7 @@ func CreateModel(cfg *ModelConfig) (*api.API, error) {
 		return nil, err
 	}
 	api.UpdateMethodPagination(cfg.PaginationOverrides, model)
+	api.UpdateMethodIdempotency(cfg.IdempotencyOverrides, model)
 	api.LabelRecursiveFields(model)
 	if err := api.CrossReference(model); err != nil {
 		return nil, err

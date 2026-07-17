@@ -93,12 +93,6 @@ impl super::stub::{{Codec.Name}} for {{Codec.Name}} {
         use gaxi::path_parameter::try_match;
         use gaxi::routing_parameter::Segment;
         {{/Codec.HasBindingSubstitutions}}
-        {{#HasAutoPopulatedFields}}
-        let options = google_cloud_gax::options::internal::set_default_idempotency(
-            options,
-            true,
-        );
-        {{/HasAutoPopulatedFields}}
         {{#Codec.HasResourceNameGeneration}}
         {{#Codec.DetailedTracingAttributes}}
         let (builder, method, _path_template, _resource_name) = None
@@ -212,8 +206,12 @@ impl super::stub::{{Codec.Name}} for {{Codec.Name}} {
         {{/Codec.DetailedTracingAttributes}}
         let options = google_cloud_gax::options::internal::set_default_idempotency(
             options,
-            {{! TODO(#4156) - return idempotency from the above closure }}
+            {{#PathInfo.Codec.HasIdempotencyOverride}}
+            {{PathInfo.Codec.IsIdempotent}},
+            {{/PathInfo.Codec.HasIdempotencyOverride}}
+            {{^PathInfo.Codec.HasIdempotencyOverride}}
             gaxi::http::default_idempotency(&method),
+            {{/PathInfo.Codec.HasIdempotencyOverride}}
         );
         let builder = builder
                 {{#Codec.SystemParameters}}

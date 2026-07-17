@@ -88,6 +88,15 @@ func libraryToModelConfig(library *config.Library, ch *config.API, srcs *sources
 				}
 			}
 		}
+		if len(library.Rust.IdempotencyOverrides) > 0 {
+			modelCfg.IdempotencyOverrides = make([]api.IdempotencyOverride, len(library.Rust.IdempotencyOverrides))
+			for i, override := range library.Rust.IdempotencyOverrides {
+				modelCfg.IdempotencyOverrides[i] = api.IdempotencyOverride{
+					ID:           override.ID,
+					IsIdempotent: override.IsIdempotent,
+				}
+			}
+		}
 		if library.Rust.Discovery != nil {
 			pollers := make([]*api.Poller, len(library.Rust.Discovery.Pollers))
 			for i, poller := range library.Rust.Discovery.Pollers {
@@ -284,6 +293,15 @@ func moduleToModelConfig(library *config.Library, module *config.RustModule, src
 			modelCfg.PaginationOverrides[i] = api.PaginationOverride{
 				ID:        override.ID,
 				ItemField: override.ItemField,
+			}
+		}
+	}
+	if len(library.Rust.IdempotencyOverrides) > 0 {
+		modelCfg.IdempotencyOverrides = make([]api.IdempotencyOverride, len(library.Rust.IdempotencyOverrides))
+		for i, override := range library.Rust.IdempotencyOverrides {
+			modelCfg.IdempotencyOverrides[i] = api.IdempotencyOverride{
+				ID:           override.ID,
+				IsIdempotent: override.IsIdempotent,
 			}
 		}
 	}
