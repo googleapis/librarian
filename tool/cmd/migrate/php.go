@@ -113,7 +113,7 @@ func extractAPIPaths(source string) []string {
 
 // resolveStagingSubdir extracts the target staging subdirectory path relative to the staging root
 // from the OwlBot destination path. If the path contains "$1" it is replaced with the provided version.
-// e.g. "owl-bot-staging/google-cloud-pubsub/src/$1" with version "v1" returns "src/v1".
+// e.g. "/owl-bot-staging/PubSub/$1/$2" with version "v1" returns "v1".
 // If "owl-bot-staging" is not found in dest, or if the path is invalid, returns empty string.
 //
 // For paths that target the library root directly (meaning there are no subdirectory segments
