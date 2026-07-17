@@ -163,3 +163,69 @@ func TestMessageAndEnumFileName(t *testing.T) {
 		}
 	})
 }
+
+func TestProtoFieldName(t *testing.T) {
+	for _, test := range []struct {
+		input string
+		want  string
+	}{
+		{input: "self", want: "self_p"},
+		{input: "name", want: "name"},
+		{input: "display_name", want: "displayName"},
+		{input: "_leading_underscore", want: "leadingUnderscore"},
+		{input: "__multiple_leading", want: "multipleLeading"},
+		{input: "description", want: "description_p"},
+		{input: "debug_description", want: "debugDescription_p"},
+		{input: "debugDescription", want: "debugDescription_p"},
+		{input: "hash_value", want: "hashValue_p"},
+		{input: "hashValue", want: "hashValue_p"},
+		{input: "is_initialized", want: "isInitialized_p"},
+		{input: "isInitialized", want: "isInitialized_p"},
+		{input: "serialized_size", want: "serializedSize_p"},
+		{input: "serializedSize", want: "serializedSize_p"},
+		{input: "unknown_fields", want: "unknownFields_p"},
+		{input: "unknownFields", want: "unknownFields_p"},
+		{input: "some_id", want: "someID"},
+	} {
+		t.Run(test.input, func(t *testing.T) {
+			got := protoFieldName(test.input)
+			if got != test.want {
+				t.Errorf("protoFieldName(%q) = %q, want %q", test.input, got, test.want)
+			}
+		})
+	}
+}
+
+func TestProtoFieldNamePascal(t *testing.T) {
+	for _, test := range []struct {
+		input string
+		want  string
+	}{
+		{input: "name", want: "Name"},
+		{input: "display_name", want: "DisplayName"},
+		{input: "_leading_underscore", want: "LeadingUnderscore"},
+		{input: "__multiple_leading", want: "MultipleLeading"},
+		{input: "description", want: "Description_p"},
+		{input: "debug_description", want: "DebugDescription_p"},
+		{input: "debugDescription", want: "DebugDescription_p"},
+		{input: "hash_value", want: "HashValue_p"},
+		{input: "hashValue", want: "HashValue_p"},
+		{input: "is_initialized", want: "IsInitialized_p"},
+		{input: "isInitialized", want: "IsInitialized_p"},
+		{input: "serialized_size", want: "SerializedSize_p"},
+		{input: "serializedSize", want: "SerializedSize_p"},
+		{input: "unknown_fields", want: "UnknownFields_p"},
+		{input: "unknownFields", want: "UnknownFields_p"},
+		{input: "some_id", want: "SomeID"},
+		{input: "self", want: "Self_p"},
+		{input: "class", want: "Class"},
+		{input: "protocol", want: "Protocol"},
+	} {
+		t.Run(test.input, func(t *testing.T) {
+			got := protoFieldNamePascal(test.input)
+			if got != test.want {
+				t.Errorf("protoFieldNamePascal(%q) = %q, want %q", test.input, got, test.want)
+			}
+		})
+	}
+}
