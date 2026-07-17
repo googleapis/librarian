@@ -410,7 +410,7 @@ func TestBuildGeneratorArgs(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			nodejsAPI := resolveNodejsAPI(test.library, test.api)
-			got, err := buildGeneratorArgs(test.api, test.library, absGoogleapisDir, "staging", nodejsAPI)
+			got, err := buildGeneratorArgs("gapic-generator-typescript", test.api, test.library, absGoogleapisDir, "staging", nodejsAPI)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -1696,6 +1696,69 @@ func TestMoveKeep_Errors(t *testing.T) {
 			err := moveKeep(test.filesToKeep, srcDir, dstDir)
 			if !errors.Is(err, test.wantErr) {
 				t.Errorf("moveKeep() error = %v, want %v", err, test.wantErr)
+			}
+		})
+	}
+}
+
+func TestRequireCachedTool(t *testing.T) {
+	tempBin := t.TempDir()
+	t.Setenv("LIBRARIAN_BIN", tempBin)
+	nodeBinDir := filepath.Join(tempBin, "nodejs_tools", "bin")
+	if err := os.MkdirAll(nodeBinDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	toolPath := filepath.Join(nodeBinDir, "compileProtos")
+	if err := os.WriteFile(toolPath, []byte("#!/bin/sh"), 0755); err != nil {
+		t.Fatal(err)
+	}
+
+	gotPath, err := requireCachedTool("compileProtos")
+	if err != nil {
+		t.Errorf("requireCachedTool(%q) unexpected error = %v", "compileProtos", err)
+	}
+	if gotPath != toolPath {
+		t.Errorf("requireCachedTool(%q) = %q, want %q", "compileProtos", gotPath, toolPath)
+	}
+}
+
+func TestRequireCachedTool_Error(t *testing.T) {
+	for _, test := range []struct {
+		name     string
+		setup    func(t *testing.T, binDir string)
+		toolName string
+		wantErr  error
+	}{
+		{
+			name: "returns errToolNotInstalled when tool is missing from cache",
+			setup: func(t *testing.T, binDir string) {
+			},
+			toolName: "missingTool",
+			wantErr:  errToolNotInstalled,
+		},
+		{
+			name: "returns errToolNotInstalled when tool path is a directory",
+			setup: func(t *testing.T, binDir string) {
+				dirPath := filepath.Join(binDir, "dirTool")
+				if err := os.MkdirAll(dirPath, 0755); err != nil {
+					t.Fatal(err)
+				}
+			},
+			toolName: "dirTool",
+			wantErr:  errToolNotInstalled,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			tempBin := t.TempDir()
+			t.Setenv("LIBRARIAN_BIN", tempBin)
+			nodeBinDir := filepath.Join(tempBin, "nodejs_tools", "bin")
+			if err := os.MkdirAll(nodeBinDir, 0755); err != nil {
+				t.Fatal(err)
+			}
+			test.setup(t, nodeBinDir)
+			_, err := requireCachedTool(test.toolName)
+			if !errors.Is(err, test.wantErr) {
+				t.Errorf("requireCachedTool(%q) error = %v, wantErr %v", test.toolName, err, test.wantErr)
 			}
 		})
 	}
