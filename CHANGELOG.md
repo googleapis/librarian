@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.27.1](https://github.com/googleapis/librarian/compare/v0.27.0...v0.27.1) (2026-07-17)
+
+
+### Bug Fixes
+
+* **nodejs:** require cached tools and prevent host binary fallback ([#6874](https://github.com/googleapis/librarian/issues/6874)) ([599bde4](https://github.com/googleapis/librarian/commit/599bde4b85c6ca6bda5c694e29bb29b3a165a231))
+* **nodejs:** unify pnpm v7 and v8+ global bin environment configuration ([#6873](https://github.com/googleapis/librarian/issues/6873)) ([ac5d9cc](https://github.com/googleapis/librarian/commit/ac5d9cc9bd1f5638e7c8d969338e6bd1789f96c5))
+
 ## [0.27.0](https://github.com/googleapis/librarian/compare/v0.26.0...v0.27.0) (2026-07-17)
 
 
