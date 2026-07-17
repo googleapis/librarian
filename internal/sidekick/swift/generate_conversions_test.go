@@ -20,6 +20,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/sidekick/api"
 	"github.com/googleapis/librarian/internal/sidekick/parser"
 )
@@ -99,13 +100,15 @@ func TestGenerateConversions_Message(t *testing.T) {
 	}
 
 	// Check conversion logic
+	got := extractBlock(t, contentStr, "  internal init(proto: ProtoType) throws {", "\n  }")
 	wantInit := "  internal init(proto: ProtoType) throws {\n    self.name = proto.name\n    self.metageneration = proto.metageneration\n    self.self_ = proto.hasSelf_p ? proto.self_p : nil\n  }"
-	if !strings.Contains(contentStr, wantInit) {
-		t.Errorf("expected generated file to contain init(proto:) implementation:\n%s\nGot:\n%s", wantInit, contentStr)
+	if diff := cmp.Diff(wantInit, got); diff != "" {
+		t.Errorf("init(proto:) mismatch (-want +got):\n%s", diff)
 	}
 
+	got = extractBlock(t, contentStr, "  internal func toProto() throws -> ProtoType {", "\n  }")
 	wantToProto := "  internal func toProto() throws -> ProtoType {\n    var proto = ProtoType()\n    proto.name = self.name\n    proto.metageneration = self.metageneration\n    if let self_ = self.self_ { proto.self_p = self_ }\n    return proto\n  }"
-	if !strings.Contains(contentStr, wantToProto) {
-		t.Errorf("expected generated file to contain toProto() implementation:\n%s\nGot:\n%s", wantToProto, contentStr)
+	if diff := cmp.Diff(wantToProto, got); diff != "" {
+		t.Errorf("toProto() mismatch (-want +got):\n%s", diff)
 	}
 }
