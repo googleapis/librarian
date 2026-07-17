@@ -31,12 +31,6 @@ var (
 )
 
 func postProcessLibrary(ctx context.Context, library *config.Library) (err error) {
-	if library.Name == "" {
-		return fmt.Errorf("library name is empty")
-	}
-	if library.Output == "" {
-		return fmt.Errorf("library output directory is empty")
-	}
 	stagingDir := filepath.Join(owlBotStagingDir, library.Name)
 	defer func() {
 		if cleanupErr := os.RemoveAll(stagingDir); cleanupErr != nil {

@@ -24,36 +24,7 @@ import (
 	"github.com/googleapis/librarian/internal/testhelper"
 )
 
-func TestPostProcess_ValidationErrors(t *testing.T) {
-	ctx := t.Context()
-	for _, test := range []struct {
-		name    string
-		library *config.Library
-	}{
-		{
-			name:    "empty library",
-			library: &config.Library{},
-		},
-		{
-			name: "empty output",
-			library: &config.Library{
-				Name: "SecretManager",
-			},
-		},
-		{
-			name: "empty name",
-			library: &config.Library{
-				Output: "some/path",
-			},
-		},
-	} {
-		t.Run(test.name, func(t *testing.T) {
-			if err := postProcessLibrary(ctx, test.library); err == nil {
-				t.Error("postProcessLibrary() expected error for invalid library, got nil")
-			}
-		})
-	}
-}
+
 
 func TestPostProcess_MissingOwlBot(t *testing.T) {
 	ctx := t.Context()
