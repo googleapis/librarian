@@ -19,7 +19,7 @@ import (
 	"maps"
 )
 
-// API represents and API surface.
+// API represents an API surface.
 type API struct {
 	// Name of the API (e.g. secretmanager).
 	Name string

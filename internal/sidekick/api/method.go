@@ -107,7 +107,7 @@ type Method struct {
 	// IsAIPStandardList is true if the method is an AIP standard list method.
 	IsAIPStandardList bool
 	// SampleInfo may contain sample generation information for this method,
-	// usually if it is an AIP conforming metho.
+	// usually if it is an AIP conforming method.
 	SampleInfo *SampleInfo
 	// Signatures defines alternative signatures (overloads) for the method.
 	Signatures []*MethodSignature
