@@ -35,6 +35,16 @@ sibling repositories (typically under a common parent directory, e.g.,
 When modifying the PHP generator or adding PHP support, use the following
 workflow to test and verify your changes:
 
+### Step 0: Checkout a specific commit (Optional, for consistency testing)
+
+If you want to verify the generator output against a known baseline, checkout a specific commit of `google-cloud-php` before running migration:
+
+```bash
+cd ../google-cloud-php
+git checkout 1831905d
+cd ../librarian
+```
+
 ### Step 1: Run the Migration Tool
 Before running generation, you must first generate the `librarian.yaml`
 configuration file for the `google-cloud-php` repository. This tool will
