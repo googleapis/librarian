@@ -31,8 +31,6 @@ func TestGenerate(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skipping slow integration test")
 	}
-	testhelper.RequireCommand(t, "protoc")
-	testhelper.RequireCommand(t, "python3")
 	requirePHPGenerator(t)
 	// Use mock googleapis checked in as test data
 	googleapisDir := "../../testdata/googleapis"
@@ -87,6 +85,8 @@ func TestGenerate(t *testing.T) {
 
 func requirePHPGenerator(t *testing.T) {
 	t.Helper()
+	testhelper.RequireCommand(t, "protoc")
+	testhelper.RequireCommand(t, "python3")
 	testhelper.RequireCommand(t, "php")
 	genDir, err := generatorDir(t.Context())
 	if err != nil {
@@ -99,6 +99,7 @@ func requirePHPGenerator(t *testing.T) {
 }
 
 func TestGenerate_Error(t *testing.T) {
+	requirePHPGenerator(t)
 	for _, test := range []struct {
 		name    string
 		lib     *config.Library
