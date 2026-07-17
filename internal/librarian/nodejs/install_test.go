@@ -18,6 +18,7 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/googleapis/librarian/internal/config"
@@ -303,5 +304,48 @@ func TestGetToolsEnv(t *testing.T) {
 				t.Errorf("getToolsEnv()[PATH] = %q, want %q", got, want)
 			}
 		})
+	}
+}
+
+func TestGetPNPMEnv(t *testing.T) {
+	cacheDir := t.TempDir()
+	binDir := t.TempDir()
+	t.Setenv("LIBRARIAN_CACHE", cacheDir)
+	t.Setenv("LIBRARIAN_BIN", binDir)
+
+	envList, err := getPNPMEnv()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	wantBinDir := filepath.Join(binDir, "nodejs_tools", "bin")
+	wantGlobalDir := filepath.Join(cacheDir, "pnpm-global")
+	wantStoreDir := filepath.Join(cacheDir, "pnpm-store")
+
+	envMap := make(map[string]string)
+	for _, entry := range envList {
+		parts := strings.SplitN(entry, "=", 2)
+		if len(parts) == 2 {
+			envMap[parts[0]] = parts[1]
+		}
+	}
+
+	if got := envMap["PNPM_HOME"]; got != wantBinDir {
+		t.Errorf("PNPM_HOME = %q, want %q", got, wantBinDir)
+	}
+	if got := envMap["PNPM_CONFIG_GLOBAL_BIN_DIR"]; got != wantBinDir {
+		t.Errorf("PNPM_CONFIG_GLOBAL_BIN_DIR = %q, want %q", got, wantBinDir)
+	}
+	if got := envMap["NPM_CONFIG_GLOBAL_BIN_DIR"]; got != wantBinDir {
+		t.Errorf("NPM_CONFIG_GLOBAL_BIN_DIR = %q, want %q", got, wantBinDir)
+	}
+	if got := envMap["npm_config_global_bin_dir"]; got != wantBinDir {
+		t.Errorf("npm_config_global_bin_dir = %q, want %q", got, wantBinDir)
+	}
+	if got := envMap["PNPM_CONFIG_GLOBAL_DIR"]; got != wantGlobalDir {
+		t.Errorf("PNPM_CONFIG_GLOBAL_DIR = %q, want %q", got, wantGlobalDir)
+	}
+	if got := envMap["PNPM_CONFIG_STORE_DIR"]; got != wantStoreDir {
+		t.Errorf("PNPM_CONFIG_STORE_DIR = %q, want %q", got, wantStoreDir)
 	}
 }
