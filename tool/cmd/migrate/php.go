@@ -24,6 +24,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"slices"
 	"strings"
 
 	"github.com/bazelbuild/buildtools/build"
@@ -106,6 +107,44 @@ func extractAPIPaths(source string) []string {
 	return nil
 }
 
+// resolveStagingSubdir extracts the target staging subdirectory path relative to the staging root
+// from the OwlBot destination path. If the path contains "$1" it is replaced with the provided version.
+// e.g. "owl-bot-staging/google-cloud-pubsub/src/$1" with version "v1" returns "src/v1".
+// If "owl-bot-staging" is not found in dest, or if the path is invalid, returns empty string.
+//
+// For paths that target the library root directly (meaning there are no subdirectory segments
+// between the library name and the file wildcard), it returns "." to represent the root.
+// This is for GeoCommonProtos and ShoppingCommonProtos (dest="/owl-bot-staging/ShoppingCommonProtos/$1").
+func resolveStagingSubdir(dest string, version string) string {
+	parts := strings.Split(dest, "/")
+	idx := slices.Index(parts, "owl-bot-staging")
+	if idx == -1 || idx+2 >= len(parts) {
+		return ""
+	}
+	subdirParts := parts[idx+2 : len(parts)-1]
+	subdir := strings.ReplaceAll(strings.Join(subdirParts, "/"), "$1", version)
+	if subdir == "" {
+		return "."
+	}
+	return subdir
+}
+
+func createAPIConfig(path string, dest string) (*config.API, error) {
+	parts := strings.Split(path, "/")
+	ver := parts[len(parts)-1]
+
+	stagingSubdir := resolveStagingSubdir(dest, ver)
+	if stagingSubdir == "" {
+		return nil, fmt.Errorf("unable to resolve staging subdir for %s from destination %q", path, dest)
+	}
+	return &config.API{
+		Path: path,
+		PHP: &config.PHPAPI{
+			StagingSubdir: stagingSubdir,
+		},
+	}, nil
+}
+
 func extractAPIsFromOwlBot(owlbotPath string) ([]*config.API, error) {
 	if !fileExists(owlbotPath) {
 		return nil, nil
@@ -120,7 +159,11 @@ func extractAPIsFromOwlBot(owlbotPath string) ([]*config.API, error) {
 		for _, path := range extractAPIPaths(spec.Source) {
 			if !seenAPIs[path] {
 				seenAPIs[path] = true
-				apis = append(apis, &config.API{Path: path})
+				api, err := createAPIConfig(path, spec.Dest)
+				if err != nil {
+					return nil, err
+				}
+				apis = append(apis, api)
 			}
 		}
 	}
@@ -167,9 +210,10 @@ func findPHPLibraries(repoPath string, googleapisDir string) ([]*config.Library,
 				continue
 			}
 			if len(additionalProtos) > 0 {
-				api.PHP = &config.PHPAPI{
-					AdditionalProtos: additionalProtos,
+				if api.PHP == nil {
+					api.PHP = &config.PHPAPI{}
 				}
+				api.PHP.AdditionalProtos = additionalProtos
 			}
 		}
 

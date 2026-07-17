@@ -192,8 +192,8 @@ deep-copy-regex:
     dest: /owl-bot-staging/Ces/$1/$2
   - source: /google/identity/accesscontextmanager/type/.*-php/(.*)
     dest: /owl-bot-staging/AccessContextManager/type-protos/$1
-  - source: /google/cloud/ces/(v1)/.*-php/(.*)
-    dest: /owl-bot-staging/Ces/$1/$2
+  - source: /google/apps/card/(v1)/.*-php/(.*)
+    dest: /owl-bot-staging/AppsChat/card-protos/$1/$2
 api-name: Ces
 `
 				path := filepath.Join(dir, ".OwlBot.yaml")
@@ -203,8 +203,48 @@ api-name: Ces
 				return path
 			},
 			want: []*config.API{
-				{Path: "google/cloud/ces/v1"},
-				{Path: "google/identity/accesscontextmanager/type"},
+				{
+					Path: "google/cloud/ces/v1",
+					PHP: &config.PHPAPI{
+						StagingSubdir: "v1",
+					},
+				},
+				{
+					Path: "google/identity/accesscontextmanager/type",
+					PHP: &config.PHPAPI{
+						StagingSubdir: "type-protos",
+					},
+				},
+				{
+					Path: "google/apps/card/v1",
+					PHP: &config.PHPAPI{
+						StagingSubdir: "card-protos/v1",
+					},
+				},
+			},
+		},
+		{
+			name: "destination with library root (dot)",
+			setupFile: func(dir string) string {
+				content := `
+deep-copy-regex:
+  - source: /google/geo/type/.*-php/(.*)
+    dest: /owl-bot-staging/GeoCommonProtos/$1
+api-name: GeoCommonProtos
+`
+				path := filepath.Join(dir, ".OwlBot.yaml")
+				if err := os.WriteFile(path, []byte(content), 0644); err != nil {
+					t.Fatal(err)
+				}
+				return path
+			},
+			want: []*config.API{
+				{
+					Path: "google/geo/type",
+					PHP: &config.PHPAPI{
+						StagingSubdir: ".",
+					},
+				},
 			},
 		},
 	} {
@@ -231,6 +271,22 @@ func TestExtractAPIsFromOwlBot_Error(t *testing.T) {
 			name: "invalid file",
 			setupFile: func(dir string) string {
 				content := `{invalid`
+				path := filepath.Join(dir, ".OwlBot.yaml")
+				if err := os.WriteFile(path, []byte(content), 0644); err != nil {
+					t.Fatal(err)
+				}
+				return path
+			},
+		},
+		{
+			name: "missing staging marker",
+			setupFile: func(dir string) string {
+				content := `
+deep-copy-regex:
+  - source: /google/cloud/ces/(v1)/.*-php/(.*)
+    dest: /no-staging/Ces/$1/$2
+api-name: Ces
+`
 				path := filepath.Join(dir, ".OwlBot.yaml")
 				if err := os.WriteFile(path, []byte(content), 0644); err != nil {
 					t.Fatal(err)
