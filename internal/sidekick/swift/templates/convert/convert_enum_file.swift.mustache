@@ -29,9 +29,6 @@ import GoogleCloudGax
 internal import {{.}}
 {{/Codec.ModulePath}}
 internal import SwiftProtobuf
-{{#Codec.ConvertImports}}
-{{{.}}}
-{{/Codec.ConvertImports}}
 
 {{> /templates/convert/convert_enum}}
 {{#Codec.IsGated}}
