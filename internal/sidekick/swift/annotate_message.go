@@ -32,7 +32,6 @@ type messageAnnotations struct {
 	Model               *modelAnnotations
 	TypeURL             string
 	CustomSerialization bool
-	CopyrightYear       string
 
 	IsPaginatedResponse bool
 	PageableItemField   string
@@ -75,18 +74,11 @@ type messageAnnotations struct {
 	ModulePath        string
 }
 
-// ConvertImports returns the sorted list of import statements for message conversions.
+// ConvertImports returns the sorted list of dynamic import statements for message conversions.
 func (ann *messageAnnotations) ConvertImports() []string {
-	importMap := map[string]bool{
-		"import Foundation":             true,
-		"import GoogleCloudGax":         true,
-		"internal import SwiftProtobuf": true,
-	}
-	if ann.ModulePath != "" {
-		importMap["internal import "+ann.ModulePath] = true
-	}
+	importMap := map[string]bool{}
 	for _, dep := range ann.DependsOn {
-		if dep.Name == "GoogleCloudGax" {
+		if dep.Name == "GoogleCloudGax" || dep.Name == ann.ModulePath {
 			continue
 		}
 		importMap["import "+dep.Name] = true
@@ -162,7 +154,6 @@ func (c *codec) annotateMessage(message *api.Message, model *modelAnnotations) e
 		NativeTypeName:      parameterTypeName,
 		ProtoTypeName:       c.protoMessageTypeName(message),
 		ModulePath:          c.ModulePath,
-		CopyrightYear:       model.CopyrightYear,
 	}
 	if message.ServicePlaceholder {
 		annotations.PlaceholderName = pascalCase(message.Name + "Client")

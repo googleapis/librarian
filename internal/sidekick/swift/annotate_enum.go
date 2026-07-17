@@ -16,15 +16,13 @@ package swift
 
 import (
 	"fmt"
-	"slices"
 	"strings"
 
 	"github.com/googleapis/librarian/internal/sidekick/api"
 )
 
 type enumAnnotations struct {
-	CopyrightYear     string
-	BoilerPlate       []string
+	Model             *modelAnnotations
 	Name              string
 	DocLines          []string
 	DefaultCaseName   string
@@ -127,8 +125,7 @@ func (c *codec) annotateEnum(enum *api.Enum, model *modelAnnotations) error {
 		return err
 	}
 	annotations := &enumAnnotations{
-		CopyrightYear:     model.CopyrightYear,
-		BoilerPlate:       model.BoilerPlate,
+		Model:             model,
 		Name:              pascalCase(enum.Name),
 		DocLines:          docLines,
 		DefaultCaseName:   defaultCaseName,
@@ -146,14 +143,5 @@ func (c *codec) annotateEnum(enum *api.Enum, model *modelAnnotations) error {
 
 // ConvertImports returns the sorted list of import statements for enum conversions.
 func (ann *enumAnnotations) ConvertImports() []string {
-	imports := []string{
-		"import Foundation",
-		"import GoogleCloudGax",
-		"internal import SwiftProtobuf",
-	}
-	if ann.ModulePath != "" {
-		imports = append(imports, "internal import "+ann.ModulePath)
-	}
-	slices.Sort(imports)
-	return imports
+	return nil
 }
