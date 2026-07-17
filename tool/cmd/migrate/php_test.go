@@ -316,14 +316,16 @@ api-name: Ces
 
 func TestParsePHPBazel(t *testing.T) {
 	for _, test := range []struct {
-		name       string
-		bazelRules string
-		want       []string
+		name                string
+		bazelRules          string
+		want                []string
+		wantCommonResources bool
 	}{
 		{
-			name:       "no BUILD.bazel",
-			bazelRules: "",
-			want:       nil,
+			name:                "no BUILD.bazel",
+			bazelRules:          "",
+			want:                nil,
+			wantCommonResources: false,
 		},
 		{
 			name: "valid BUILD.bazel with location and iam mixins",
@@ -343,6 +345,7 @@ proto_library_with_info(
 				"google/cloud/location/locations.proto",
 				"google/iam/v1/iam_policy.proto",
 			},
+			wantCommonResources: true,
 		},
 		{
 			name: "valid BUILD.bazel with no mixins",
@@ -355,7 +358,21 @@ proto_library_with_info(
     ],
 )
 `,
-			want: nil,
+			want:                nil,
+			wantCommonResources: true,
+		},
+		{
+			name: "valid BUILD.bazel with no common resources",
+			bazelRules: `
+proto_library_with_info(
+    name = "ces_proto_with_info",
+    deps = [
+        ":ces_proto",
+    ],
+)
+`,
+			want:                nil,
+			wantCommonResources: false,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
@@ -369,7 +386,81 @@ proto_library_with_info(
 					t.Fatal(err)
 				}
 			}
-			got, err := parsePHPBazel(tempDir, "google/cloud/ces/v1")
+			got, gotCommonResources, err := parsePHPBazel(tempDir, "google/cloud/ces/v1")
+			if err != nil {
+				t.Fatal(err)
+			}
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch additional protos (-want +got):\n%s", diff)
+			}
+			if gotCommonResources != test.wantCommonResources {
+				t.Errorf("mismatch common resources flag: want %t, got %t", test.wantCommonResources, gotCommonResources)
+			}
+		})
+	}
+}
+
+func TestFindPHPLibraries(t *testing.T) {
+	googleapisDir := "testdata/googleapis"
+
+	for _, test := range []struct {
+		name                         string
+		setupLib                     func(t *testing.T, dir string)
+		globalDefaultCommonResources bool
+		want                         []*config.Library
+	}{
+		{
+			name: "common resources configuration",
+			setupLib: func(t *testing.T, dir string) {
+				libDir := filepath.Join(dir, "SecretManager")
+				if err := os.Mkdir(libDir, 0755); err != nil {
+					t.Fatal(err)
+				}
+				if err := os.WriteFile(filepath.Join(libDir, "VERSION"), []byte("2.3.0\n"), 0644); err != nil {
+					t.Fatal(err)
+				}
+				if err := os.WriteFile(filepath.Join(libDir, "composer.json"), []byte("{}"), 0644); err != nil {
+					t.Fatal(err)
+				}
+				owlbotContent := `
+deep-copy-regex:
+  - source: /google/cloud/secretmanager/(v1)/.*-php/(.*)
+    dest: /owl-bot-staging/SecretManager/$1/$2
+  - source: /google/cloud/multipygapic/.*-php/(.*)
+    dest: /owl-bot-staging/SecretManager/multipygapic/$1
+`
+				if err := os.WriteFile(filepath.Join(libDir, ".OwlBot.yaml"), []byte(owlbotContent), 0644); err != nil {
+					t.Fatal(err)
+				}
+			},
+			globalDefaultCommonResources: true,
+			want: []*config.Library{
+				{
+					Name:    "SecretManager",
+					Version: "2.3.0",
+					APIs: []*config.API{
+						{
+							Path: "google/cloud/secretmanager/v1",
+							PHP: &config.PHPAPI{
+								StagingSubdir: "v1",
+							},
+						},
+						{
+							Path: "google/cloud/multipygapic",
+							PHP: &config.PHPAPI{
+								StagingSubdir:   "multipygapic",
+								CommonResources: new(false),
+							},
+						},
+					},
+				},
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			dir := t.TempDir()
+			test.setupLib(t, dir)
+			got, err := findPHPLibraries(dir, googleapisDir, test.globalDefaultCommonResources)
 			if err != nil {
 				t.Fatal(err)
 			}
