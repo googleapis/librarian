@@ -49,7 +49,7 @@ func TestProtoMessageAndEnumTypeName(t *testing.T) {
 
 	t.Run("with empty ModulePath", func(t *testing.T) {
 		codec := newTestCodec(t, model, map[string]string{})
-		
+
 		gotMsg := codec.protoMessageTypeName(parentMsg)
 		wantMsg := "Test_OuterMessage"
 		if gotMsg != wantMsg {

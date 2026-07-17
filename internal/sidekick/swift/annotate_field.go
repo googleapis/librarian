@@ -75,7 +75,6 @@ type fieldAnnotations struct {
 
 	// The PascalCase name of the field on the underlying SwiftProtobuf type (used for hasField helpers).
 	ProtoFieldNamePascal string
-
 }
 
 // DecodingStyle defines an enumeration for decoding fields.
