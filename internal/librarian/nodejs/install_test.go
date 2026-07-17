@@ -97,6 +97,31 @@ func TestInstall(t *testing.T) {
 			},
 		},
 		{
+			name: "build tool with custom src_dir",
+			tools: &config.Tools{
+				PNPM: []*config.PNPMTool{
+					{
+						Name:    "gapic-tools",
+						Version: "1.1.0",
+						Package: "https://github.com/googleapis/google-cloud-node/archive/gapic-tools-v1.1.0.tar.gz",
+						SrcDir:  "core/packages/tools",
+						Build:   []string{"true"},
+					},
+				},
+			},
+			setup: func(t *testing.T) {
+				cache := t.TempDir()
+				t.Setenv("LIBRARIAN_CACHE", cache)
+				binDir := t.TempDir()
+				t.Setenv("LIBRARIAN_BIN", binDir)
+				toolsDir := filepath.Join(cache, "github.com/googleapis/google-cloud-node@1.1.0", "core/packages/tools")
+				if err := os.MkdirAll(toolsDir, 0o755); err != nil {
+					t.Fatal(err)
+				}
+				stubExecutables(t)
+			},
+		},
+		{
 			name: "non-build tool",
 			tools: &config.Tools{
 				PNPM: []*config.PNPMTool{

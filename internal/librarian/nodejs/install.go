@@ -177,7 +177,11 @@ func installPNPMToolFromSource(ctx context.Context, env []string, tool *config.P
 	}
 
 	// Run build steps.
-	genDir := filepath.Join(dir, gapicGeneratorSubdir)
+	subdir := tool.SrcDir
+	if subdir == "" {
+		subdir = gapicGeneratorSubdir
+	}
+	genDir := filepath.Join(dir, subdir)
 	for _, cmd := range tool.Build {
 		if err := runPNPMBuildCmd(ctx, genDir, env, cmd); err != nil {
 			return err
