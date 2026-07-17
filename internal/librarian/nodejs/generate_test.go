@@ -1727,7 +1727,7 @@ func TestRequireCachedTool_Error(t *testing.T) {
 		name      string
 		setup     func(t *testing.T, binDir string)
 		toolName  string
-		wantErrIs error
+		wantErr error
 	}{
 		{
 			name: "returns errToolNotInstalled when tool is missing from cache",
