@@ -324,4 +324,3 @@ func TestGetPNPMEnv(t *testing.T) {
 		t.Errorf("PNPM_CONFIG_STORE_DIR = %q, want %q", got, wantStoreDir)
 	}
 }
-
