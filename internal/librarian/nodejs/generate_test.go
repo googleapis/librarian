@@ -410,7 +410,7 @@ func TestBuildGeneratorArgs(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			nodejsAPI := resolveNodejsAPI(test.library, test.api)
-			got, err := buildGeneratorArgs(test.api, test.library, absGoogleapisDir, "staging", nodejsAPI)
+			got, err := buildGeneratorArgs("gapic-generator-typescript", test.api, test.library, absGoogleapisDir, "staging", nodejsAPI)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -1713,8 +1713,12 @@ func TestRequireCachedTool(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if err := requireCachedTool("compileProtos"); err != nil {
+	gotPath, err := requireCachedTool("compileProtos")
+	if err != nil {
 		t.Errorf("requireCachedTool(%q) unexpected error = %v", "compileProtos", err)
+	}
+	if gotPath != toolPath {
+		t.Errorf("requireCachedTool(%q) = %q, want %q", "compileProtos", gotPath, toolPath)
 	}
 }
 
@@ -1752,7 +1756,7 @@ func TestRequireCachedTool_Error(t *testing.T) {
 				t.Fatal(err)
 			}
 			test.setup(t, nodeBinDir)
-			err := requireCachedTool(test.toolName)
+			_, err := requireCachedTool(test.toolName)
 			if !errors.Is(err, test.wantErrIs) {
 				t.Errorf("requireCachedTool(%q) error = %v, wantErrIs %v", test.toolName, err, test.wantErrIs)
 			}
