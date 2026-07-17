@@ -81,7 +81,7 @@ func TestAnnotateField(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			if diff := cmp.Diff(test.want, field.Codec, cmpopts.IgnoreFields(fieldAnnotations{}, "Name", "DocLines", "Model", "ToGapicStatement", "ToProtoStatement")); diff != "" {
+			if diff := cmp.Diff(test.want, field.Codec, cmpopts.IgnoreFields(fieldAnnotations{}, "Name", "DocLines", "Model", "ProtoFieldName", "ProtoFieldNamePascal")); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
@@ -192,7 +192,7 @@ func TestAnnotateField_Discovery(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			if diff := cmp.Diff(test.want, test.input.Codec, cmpopts.IgnoreFields(fieldAnnotations{}, "Name", "DocLines", "Model", "ToGapicStatement", "ToProtoStatement")); diff != "" {
+			if diff := cmp.Diff(test.want, test.input.Codec, cmpopts.IgnoreFields(fieldAnnotations{}, "Name", "DocLines", "Model", "ProtoFieldName", "ProtoFieldNamePascal")); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
@@ -235,7 +235,7 @@ func TestAnnotateField_TypeNames(t *testing.T) {
 				DocLines:      []string{"Test documentation."},
 				Model:         model.Codec.(*modelAnnotations),
 			}
-			if diff := cmp.Diff(want, field.Codec, cmpopts.IgnoreFields(fieldAnnotations{}, "ToGapicStatement", "ToProtoStatement")); diff != "" {
+			if diff := cmp.Diff(want, field.Codec, cmpopts.IgnoreFields(fieldAnnotations{}, "ProtoFieldName", "ProtoFieldNamePascal")); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
@@ -283,7 +283,7 @@ func TestAnnotateField_PackageName(t *testing.T) {
 		DocLines:      []string{"The external message."},
 		Model:         model.Codec.(*modelAnnotations),
 	}
-	if diff := cmp.Diff(want, got, cmpopts.IgnoreFields(fieldAnnotations{}, "ToGapicStatement", "ToProtoStatement")); diff != "" {
+	if diff := cmp.Diff(want, got, cmpopts.IgnoreFields(fieldAnnotations{}, "ProtoFieldName", "ProtoFieldNamePascal")); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
@@ -370,7 +370,7 @@ func TestAnnotateField_Recursive(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			if diff := cmp.Diff(test.want, field.Codec, cmpopts.IgnoreFields(fieldAnnotations{}, "Name", "DocLines", "PackageName", "Model", "ToGapicStatement", "ToProtoStatement")); diff != "" {
+			if diff := cmp.Diff(test.want, field.Codec, cmpopts.IgnoreFields(fieldAnnotations{}, "Name", "DocLines", "PackageName", "Model", "ProtoFieldName", "ProtoFieldNamePascal")); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})

@@ -70,11 +70,12 @@ type fieldAnnotations struct {
 	// Model points to the annotations for the model.
 	Model *modelAnnotations
 
-	// ToGapicStatement converts the field from a proto representation to a GAPIC model.
-	ToGapicStatement string
+	// The name of the field on the underlying SwiftProtobuf type.
+	ProtoFieldName string
 
-	// ToProtoStatement converts the field from a GAPIC model representation to a proto.
-	ToProtoStatement string
+	// The PascalCase name of the field on the underlying SwiftProtobuf type (used for hasField helpers).
+	ProtoFieldNamePascal string
+
 }
 
 // DecodingStyle defines an enumeration for decoding fields.
@@ -247,29 +248,6 @@ func (c *codec) fieldPackage(field *api.Field) (string, error) {
 }
 
 func (c *codec) computeFieldConversionStatements(field *api.Field, ann *fieldAnnotations) {
-	fieldName := ann.Name
-	pFieldName := protoFieldName(field.Name)
-	protoFieldNamePascal := protoFieldNamePascal(field.Name)
-
-	// Oneof fields are handled in a subsequent PR.
-	if field.IsOneOf {
-		return
-	}
-	// Map and Repeated fields are handled in subsequent PRs.
-	if field.Map || field.Repeated {
-		return
-	}
-	switch field.Typez {
-	// Nested Message and Enum type fields are handled in a subsequent PR.
-	case api.TypezMessage, api.TypezEnum:
-		return
-	default:
-		if field.Optional {
-			ann.ToGapicStatement = fmt.Sprintf("self.%s = proto.has%s ? proto.%s : nil", fieldName, protoFieldNamePascal, pFieldName)
-			ann.ToProtoStatement = fmt.Sprintf("if let %s = self.%s { proto.%s = %s }", fieldName, fieldName, pFieldName, fieldName)
-		} else {
-			ann.ToGapicStatement = fmt.Sprintf("self.%s = proto.%s", fieldName, pFieldName)
-			ann.ToProtoStatement = fmt.Sprintf("proto.%s = self.%s", pFieldName, fieldName)
-		}
-	}
+	ann.ProtoFieldName = protoFieldName(field.Name)
+	ann.ProtoFieldNamePascal = protoFieldNamePascal(field.Name)
 }
