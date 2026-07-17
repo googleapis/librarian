@@ -16,6 +16,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"os"
 	"path/filepath"
 	"testing"
@@ -192,8 +193,8 @@ deep-copy-regex:
     dest: /owl-bot-staging/Ces/$1/$2
   - source: /google/identity/accesscontextmanager/type/.*-php/(.*)
     dest: /owl-bot-staging/AccessContextManager/type-protos/$1
-  - source: /google/cloud/ces/(v1)/.*-php/(.*)
-    dest: /owl-bot-staging/Ces/$1/$2
+  - source: /google/apps/card/(v1)/.*-php/(.*)
+    dest: /owl-bot-staging/AppsChat/card-protos/$1/$2
 api-name: Ces
 `
 				path := filepath.Join(dir, ".OwlBot.yaml")
@@ -203,8 +204,48 @@ api-name: Ces
 				return path
 			},
 			want: []*config.API{
-				{Path: "google/cloud/ces/v1"},
-				{Path: "google/identity/accesscontextmanager/type"},
+				{
+					Path: "google/cloud/ces/v1",
+					PHP: &config.PHPAPI{
+						StagingSubdir: "v1",
+					},
+				},
+				{
+					Path: "google/identity/accesscontextmanager/type",
+					PHP: &config.PHPAPI{
+						StagingSubdir: "type-protos",
+					},
+				},
+				{
+					Path: "google/apps/card/v1",
+					PHP: &config.PHPAPI{
+						StagingSubdir: "card-protos/v1",
+					},
+				},
+			},
+		},
+		{
+			name: "destination with library root (dot)",
+			setupFile: func(dir string) string {
+				content := `
+deep-copy-regex:
+  - source: /google/geo/type/.*-php/(.*)
+    dest: /owl-bot-staging/GeoCommonProtos/$1
+api-name: GeoCommonProtos
+`
+				path := filepath.Join(dir, ".OwlBot.yaml")
+				if err := os.WriteFile(path, []byte(content), 0644); err != nil {
+					t.Fatal(err)
+				}
+				return path
+			},
+			want: []*config.API{
+				{
+					Path: "google/geo/type",
+					PHP: &config.PHPAPI{
+						StagingSubdir: ".",
+					},
+				},
 			},
 		},
 	} {
@@ -226,6 +267,7 @@ func TestExtractAPIsFromOwlBot_Error(t *testing.T) {
 	for _, test := range []struct {
 		name      string
 		setupFile func(dir string) string
+		wantErr   error
 	}{
 		{
 			name: "invalid file",
@@ -237,6 +279,25 @@ func TestExtractAPIsFromOwlBot_Error(t *testing.T) {
 				}
 				return path
 			},
+			// wantErr is nil as we only assert that a YAML parsing error is returned.
+			wantErr: nil,
+		},
+		{
+			name: "missing staging marker",
+			setupFile: func(dir string) string {
+				content := `
+deep-copy-regex:
+  - source: /google/cloud/ces/(v1)/.*-php/(.*)
+    dest: /no-staging/Ces/$1/$2
+api-name: Ces
+`
+				path := filepath.Join(dir, ".OwlBot.yaml")
+				if err := os.WriteFile(path, []byte(content), 0644); err != nil {
+					t.Fatal(err)
+				}
+				return path
+			},
+			wantErr: errUnableToResolveStagingSubdir,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
@@ -245,6 +306,9 @@ func TestExtractAPIsFromOwlBot_Error(t *testing.T) {
 			_, err := extractAPIsFromOwlBot(path)
 			if err == nil {
 				t.Fatal("expected error, got nil")
+			}
+			if test.wantErr != nil && !errors.Is(err, test.wantErr) {
+				t.Errorf("expected error %v, got %v", test.wantErr, err)
 			}
 		})
 	}
