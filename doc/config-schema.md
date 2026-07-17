@@ -583,6 +583,7 @@ This document describes the schema for the librarian.yaml.
 | Field | Type | Description |
 | :--- | :--- | :--- |
 | `dependencies` | list of [SwiftDependency](#swiftdependency-configuration) | Is a list of package dependencies. |
+| `default_version` | string | The default version for new libraries. |
 
 ## SwiftDependency Configuration
 
