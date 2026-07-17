@@ -1724,17 +1724,17 @@ func TestRequireCachedTool(t *testing.T) {
 
 func TestRequireCachedTool_Error(t *testing.T) {
 	for _, test := range []struct {
-		name      string
-		setup     func(t *testing.T, binDir string)
-		toolName  string
-		wantErr error
+		name     string
+		setup    func(t *testing.T, binDir string)
+		toolName string
+		wantErr  error
 	}{
 		{
 			name: "returns errToolNotInstalled when tool is missing from cache",
 			setup: func(t *testing.T, binDir string) {
 			},
-			toolName:  "missingTool",
-			wantErrIs: errToolNotInstalled,
+			toolName: "missingTool",
+			wantErr:  errToolNotInstalled,
 		},
 		{
 			name: "returns errToolNotInstalled when tool path is a directory",
@@ -1744,8 +1744,8 @@ func TestRequireCachedTool_Error(t *testing.T) {
 					t.Fatal(err)
 				}
 			},
-			toolName:  "dirTool",
-			wantErrIs: errToolNotInstalled,
+			toolName: "dirTool",
+			wantErr:  errToolNotInstalled,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
@@ -1757,8 +1757,8 @@ func TestRequireCachedTool_Error(t *testing.T) {
 			}
 			test.setup(t, nodeBinDir)
 			_, err := requireCachedTool(test.toolName)
-			if !errors.Is(err, test.wantErrIs) {
-				t.Errorf("requireCachedTool(%q) error = %v, wantErrIs %v", test.toolName, err, test.wantErrIs)
+			if !errors.Is(err, test.wantErr) {
+				t.Errorf("requireCachedTool(%q) error = %v, wantErr %v", test.toolName, err, test.wantErr)
 			}
 		})
 	}
