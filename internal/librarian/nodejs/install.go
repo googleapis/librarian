@@ -132,11 +132,16 @@ func getPNPMEnv() ([]string, error) {
 		return nil, fmt.Errorf("failed to resolve librarian bin directory: %w", err)
 	}
 
+	globalDir := filepath.Join(cacheDir, "pnpm-global")
+	storeDir := filepath.Join(cacheDir, "pnpm-store")
+
 	env := os.Environ()
 	env = append(env, "PNPM_HOME="+binDir)
 	env = append(env, "PNPM_CONFIG_GLOBAL_BIN_DIR="+binDir)
-	env = append(env, "PNPM_CONFIG_GLOBAL_DIR="+filepath.Join(cacheDir, "pnpm-global"))
-	env = append(env, "PNPM_CONFIG_STORE_DIR="+filepath.Join(cacheDir, "pnpm-store"))
+	env = append(env, "PNPM_CONFIG_GLOBAL_DIR="+globalDir)
+	env = append(env, "PNPM_CONFIG_STORE_DIR="+storeDir)
+	env = append(env, "NPM_CONFIG_GLOBAL_BIN_DIR="+binDir)
+	env = append(env, "npm_config_global_bin_dir="+binDir)
 	env = append(env, "PATH="+binDir+string(os.PathListSeparator)+os.Getenv("PATH"))
 	return env, nil
 }
