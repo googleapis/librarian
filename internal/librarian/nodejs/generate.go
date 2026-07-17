@@ -94,10 +94,7 @@ func requireCachedTool(toolName string) (string, error) {
 	toolPath := filepath.Join(binDir, toolName)
 	info, err := os.Stat(toolPath)
 	if err != nil {
-		if errors.Is(err, os.ErrNotExist) {
-			return "", fmt.Errorf("tool %s %w at %s (did you run 'librarian install nodejs'?): %w", toolName, errToolNotInstalled, toolPath, err)
-		}
-		return "", err
+		return "", fmt.Errorf("tool %s %w at %s (did you run 'librarian install nodejs'?): %w", toolName, errToolNotInstalled, toolPath, err)
 	}
 	if info.IsDir() {
 		return "", fmt.Errorf("tool path %s is a directory: %w", toolPath, errToolNotInstalled)
