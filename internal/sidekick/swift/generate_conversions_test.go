@@ -15,9 +15,9 @@
 package swift
 
 import (
+	"bytes"
 	"os"
 	"path/filepath"
-	"strings"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -95,7 +95,7 @@ func TestGenerateConversions_Message(t *testing.T) {
 	contentStr := string(content)
 
 	// Check output imports
-	if !strings.Contains(contentStr, "internal import StorageControlProtos") {
+	if !bytes.Contains(content, []byte("internal import StorageControlProtos")) {
 		t.Errorf("expected generated file to import StorageControlProtos")
 	}
 
