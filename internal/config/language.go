@@ -828,4 +828,7 @@ type PHPAPI struct {
 	// CommonResources indicates whether to include common resources in generation.
 	// Must be configured either globally or per-API.
 	CommonResources *bool `yaml:"common_resources,omitempty"`
+
+	// StagingSubdir is the subdirectory in staging where the generated files should be placed.
+	StagingSubdir string `yaml:"staging_subdir,omitempty"`
 }

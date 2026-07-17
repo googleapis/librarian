@@ -34,10 +34,12 @@ import (
 
 const (
 	commonResourcesProto = "google/cloud/common_resources.proto"
+	owlBotStagingDir     = "owl-bot-staging"
 )
 
 var (
 	errCommonResourcesUnconfigured = errors.New("common_resources must be set (either per-API or globally under default.php)")
+	errMissingStagingSubdir        = errors.New("staging_subdir is required for PHP configurations")
 )
 
 // Generate generates a PHP client library.
@@ -86,9 +88,24 @@ func Generate(ctx context.Context, cfg *config.Config, library *config.Library, 
 		}
 	}()
 
+	stagingDir := filepath.Join(owlBotStagingDir, library.Name)
+	if err := os.RemoveAll(stagingDir); err != nil {
+		return err
+	}
+	if err := os.MkdirAll(stagingDir, 0755); err != nil {
+		return err
+	}
 	outputZipPath := filepath.Join(tempDir, "output.zip")
 	srcCfg := sources.NewSourceConfig(src, library.Roots)
 	for _, api := range library.APIs {
+		if api.PHP == nil || api.PHP.StagingSubdir == "" {
+			return fmt.Errorf("API %q: %w", api.Path, errMissingStagingSubdir)
+		}
+		destDir := filepath.Join(stagingDir, api.PHP.StagingSubdir)
+		if err := os.MkdirAll(destDir, 0755); err != nil {
+			return err
+		}
+
 		params := &generateAPIParams{
 			cfg:           cfg,
 			api:           api,
@@ -96,12 +113,16 @@ func Generate(ctx context.Context, cfg *config.Config, library *config.Library, 
 			srcCfg:        srcCfg,
 			wrapperPath:   wrapperPath,
 			outputZipPath: outputZipPath,
+			destDir:       destDir,
 		}
 		if err := generateAPI(ctx, params); err != nil {
 			return err
 		}
 		// Cleanup output zip for subsequent APIs in the same library package
 		_ = os.Remove(outputZipPath)
+	}
+	if err := postProcessLibrary(ctx, library); err != nil {
+		return fmt.Errorf("failed to postprocess: %w", err)
 	}
 	return nil
 }
@@ -113,6 +134,7 @@ type generateAPIParams struct {
 	srcCfg        *sources.SourceConfig
 	wrapperPath   string
 	outputZipPath string
+	destDir       string
 }
 
 // generateAPI generates a single target API by resolving its service config, gathering
@@ -151,7 +173,7 @@ func generateAPI(ctx context.Context, params *generateAPIParams) error {
 	if err := protoc.RunOrSystem(ctx, map[string]string{"GOOGLEAPIS_DIR": googleapisDir}, pc, protocArgs...); err != nil {
 		return fmt.Errorf("failed to generate PHP API %s: %w", params.api.Path, err)
 	}
-	return extractOutput(ctx, params.outputZipPath, params.library.Output)
+	return extractOutput(ctx, params.outputZipPath, params.destDir)
 }
 
 // gatherTargetProtos collects all proto files inside the target API directory,
