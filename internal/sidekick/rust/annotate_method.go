@@ -85,6 +85,9 @@ type pathInfoAnnotation struct {
 	//
 	// This is only used for gRPC-based clients.
 	IsIdempotent string
+
+	// Whether an explicit idempotency override or auto-populated field exists.
+	HasIdempotencyOverride bool
 }
 
 type operationInfo struct {
@@ -516,9 +519,10 @@ func (c *codec) annotatePathInfo(m *api.Method) error {
 	}
 
 	m.PathInfo.Codec = &pathInfoAnnotation{
-		HasBody:          m.PathInfo.BodyFieldPath != "",
-		UniqueParameters: uniqueParameters,
-		IsIdempotent:     isIdempotent(m.PathInfo),
+		HasBody:                m.PathInfo.BodyFieldPath != "",
+		UniqueParameters:       uniqueParameters,
+		IsIdempotent:           isIdempotent(m),
+		HasIdempotencyOverride: m.IdempotencyOverride != nil || m.HasAutoPopulatedFields(),
 	}
 	return nil
 }
@@ -639,11 +643,20 @@ func formatResourceNameArgs(fieldPaths [][]string) []string {
 	return args
 }
 
-func isIdempotent(p *api.PathInfo) string {
-	if len(p.Bindings) == 0 {
+func isIdempotent(m *api.Method) string {
+	if m.IdempotencyOverride != nil {
+		if *m.IdempotencyOverride {
+			return "true"
+		}
 		return "false"
 	}
-	for _, b := range p.Bindings {
+	if len(m.AutoPopulated) > 0 {
+		return "true"
+	}
+	if m.PathInfo == nil || len(m.PathInfo.Bindings) == 0 {
+		return "false"
+	}
+	for _, b := range m.PathInfo.Bindings {
 		if b.Verb == "POST" || b.Verb == "PATCH" {
 			return "false"
 		}

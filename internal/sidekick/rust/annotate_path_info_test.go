@@ -118,21 +118,28 @@ func TestPathInfoAnnotations(t *testing.T) {
 				WithLiteral("resource"),
 		}
 	}
+	boolPtr := func(b bool) *bool { return &b }
 
 	for _, test := range []struct {
-		name               string
-		Bindings           []*api.PathBinding
-		DefaultIdempotency string
+		name                   string
+		Bindings               []*api.PathBinding
+		IdempotencyOverride    *bool
+		AutoPopulated          []*api.Field
+		DefaultIdempotency     string
+		HasIdempotencyOverride bool
 	}{
-		{"empty", []*api.PathBinding{}, "false"},
-		{"GET", []*api.PathBinding{binding("GET")}, "true"},
-		{"PUT", []*api.PathBinding{binding("PUT")}, "true"},
-		{"DELETE", []*api.PathBinding{binding("DELETE")}, "true"},
-		{"POST", []*api.PathBinding{binding("POST")}, "false"},
-		{"PATCH", []*api.PathBinding{binding("PATCH")}, "false"},
-		{"GET_GET", []*api.PathBinding{binding("GET"), binding("GET")}, "true"},
-		{"GET_POST", []*api.PathBinding{binding("GET"), binding("POST")}, "false"},
-		{"POST_POST", []*api.PathBinding{binding("POST"), binding("POST")}, "false"},
+		{"empty", []*api.PathBinding{}, nil, nil, "false", false},
+		{"GET", []*api.PathBinding{binding("GET")}, nil, nil, "true", false},
+		{"PUT", []*api.PathBinding{binding("PUT")}, nil, nil, "true", false},
+		{"DELETE", []*api.PathBinding{binding("DELETE")}, nil, nil, "true", false},
+		{"POST", []*api.PathBinding{binding("POST")}, nil, nil, "false", false},
+		{"PATCH", []*api.PathBinding{binding("PATCH")}, nil, nil, "false", false},
+		{"GET_GET", []*api.PathBinding{binding("GET"), binding("GET")}, nil, nil, "true", false},
+		{"GET_POST", []*api.PathBinding{binding("GET"), binding("POST")}, nil, nil, "false", false},
+		{"POST_POST", []*api.PathBinding{binding("POST"), binding("POST")}, nil, nil, "false", false},
+		{"OverrideTrue", []*api.PathBinding{binding("POST")}, boolPtr(true), nil, "true", true},
+		{"OverrideFalse", []*api.PathBinding{binding("GET")}, boolPtr(false), nil, "false", true},
+		{"AutoPopulated", []*api.PathBinding{binding("POST")}, nil, []*api.Field{{Name: "request_id"}}, "true", true},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			request := &api.Message{
@@ -146,10 +153,12 @@ func TestPathInfoAnnotations(t *testing.T) {
 				ID:      ".test.v1.Response",
 			}
 			method := &api.Method{
-				Name:         "GetResource",
-				ID:           ".test.v1.Service.GetResource",
-				InputTypeID:  ".test.v1.Request",
-				OutputTypeID: ".test.v1.Response",
+				Name:                "GetResource",
+				ID:                  ".test.v1.Service.GetResource",
+				InputTypeID:         ".test.v1.Request",
+				OutputTypeID:        ".test.v1.Response",
+				IdempotencyOverride: test.IdempotencyOverride,
+				AutoPopulated:       test.AutoPopulated,
 				PathInfo: &api.PathInfo{
 					Bindings: test.Bindings,
 				},
@@ -173,7 +182,10 @@ func TestPathInfoAnnotations(t *testing.T) {
 
 			pathInfoAnn := method.PathInfo.Codec.(*pathInfoAnnotation)
 			if pathInfoAnn.IsIdempotent != test.DefaultIdempotency {
-				t.Errorf("fail")
+				t.Errorf("expected IsIdempotent=%q, got %q", test.DefaultIdempotency, pathInfoAnn.IsIdempotent)
+			}
+			if pathInfoAnn.HasIdempotencyOverride != test.HasIdempotencyOverride {
+				t.Errorf("expected HasIdempotencyOverride=%v, got %v", test.HasIdempotencyOverride, pathInfoAnn.HasIdempotencyOverride)
 			}
 		})
 	}

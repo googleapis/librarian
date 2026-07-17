@@ -416,6 +416,8 @@ type Method struct {
 	//
 	// If this is empty, then the method does not have a version annotation.
 	APIVersion string
+	// IdempotencyOverride overrides the default HTTP-verb-based idempotency classification if not nil.
+	IdempotencyOverride *bool
 	// Model is the model this method belongs to, mustache templates use this field to
 	// navigate the data structure.
 	Model *API
