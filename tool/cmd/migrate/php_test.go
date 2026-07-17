@@ -27,16 +27,16 @@ import (
 )
 
 func TestRunPHPMigration(t *testing.T) {
-	oldFetchSource := fetchSource
+	oldFetchSource := phpFetchSource
 	t.Cleanup(func() {
-		fetchSource = oldFetchSource
+		phpFetchSource = oldFetchSource
 	})
 	absGoogleapis, err := filepath.Abs("../../internal/testdata/googleapis")
 	if err != nil {
 		t.Fatal(err)
 	}
-	// Override fetchSource.
-	fetchSource = func(ctx context.Context) (*config.Source, error) {
+	// Override phpFetchSource.
+	phpFetchSource = func(ctx context.Context) (*config.Source, error) {
 		return &config.Source{
 			Commit: "abcd123",
 			SHA256: "sha123",

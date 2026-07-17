@@ -45,8 +45,14 @@ var (
 	errUnableToResolveStagingSubdir = errors.New("unable to resolve staging subdir")
 )
 
+var phpFetchSource = func(ctx context.Context) (*config.Source, error) {
+	// Temp codepath to pin googleapis commit for consistency testing.
+	// TODO(https://github.com/googleapis/librarian/issues/6898): remove before migration
+	return fetchGoogleapisWithCommit(ctx, githubEndpoints, "6145fa8cc2b137bf4c0ed114e2e39c1157ea9722")
+}
+
 func runPHPMigration(ctx context.Context, repoPath string) error {
-	src, err := fetchSource(ctx)
+	src, err := phpFetchSource(ctx)
 	if err != nil {
 		return errFetchSource
 	}
