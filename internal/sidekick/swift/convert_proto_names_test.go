@@ -105,3 +105,61 @@ func TestProtoMessageAndEnumTypeName(t *testing.T) {
 		}
 	})
 }
+
+func TestMessageAndEnumFileName(t *testing.T) {
+	parentMsg := &api.Message{
+		Name: "OuterMessage",
+	}
+	nestedMsg := &api.Message{
+		Name:   "InnerMessage",
+		Parent: parentMsg,
+	}
+	doubleNestedMsg := &api.Message{
+		Name:   "LeafMessage",
+		Parent: nestedMsg,
+	}
+	topEnum := &api.Enum{
+		Name: "TopEnum",
+	}
+	nestedEnum := &api.Enum{
+		Name:   "InnerEnum",
+		Parent: parentMsg,
+	}
+
+	model := api.NewTestAPI([]*api.Message{parentMsg, nestedMsg, doubleNestedMsg}, []*api.Enum{topEnum, nestedEnum}, []*api.Service{})
+	codec := newTestCodec(t, model, map[string]string{})
+
+	t.Run("message conversion filenames", func(t *testing.T) {
+		gotParent := codec.messageFileName(parentMsg)
+		wantParent := "OuterMessage"
+		if gotParent != wantParent {
+			t.Errorf("messageFileName(parentMsg) = %q, want %q", gotParent, wantParent)
+		}
+
+		gotNested := codec.messageFileName(nestedMsg)
+		wantNested := "OuterMessage+InnerMessage"
+		if gotNested != wantNested {
+			t.Errorf("messageFileName(nestedMsg) = %q, want %q", gotNested, wantNested)
+		}
+
+		gotLeaf := codec.messageFileName(doubleNestedMsg)
+		wantLeaf := "OuterMessage+InnerMessage+LeafMessage"
+		if gotLeaf != wantLeaf {
+			t.Errorf("messageFileName(doubleNestedMsg) = %q, want %q", gotLeaf, wantLeaf)
+		}
+	})
+
+	t.Run("enum conversion filenames", func(t *testing.T) {
+		gotTop := codec.enumFileName(topEnum)
+		wantTop := "TopEnum"
+		if gotTop != wantTop {
+			t.Errorf("enumFileName(topEnum) = %q, want %q", gotTop, wantTop)
+		}
+
+		gotNested := codec.enumFileName(nestedEnum)
+		wantNested := "OuterMessage+InnerEnum"
+		if gotNested != wantNested {
+			t.Errorf("enumFileName(nestedEnum) = %q, want %q", gotNested, wantNested)
+		}
+	})
+}

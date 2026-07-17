@@ -54,3 +54,21 @@ func (c *codec) protoEnumTypeName(e *api.Enum) string {
 	}
 	return fmt.Sprintf("%s.%s", c.protoMessageTypeName(e.Parent), pascalCase(e.Name))
 }
+
+func (c *codec) messageFileName(m *api.Message) string {
+	var path []string
+	curr := m
+	for curr != nil {
+		path = append(path, pascalCase(curr.Name))
+		curr = curr.Parent
+	}
+	slices.Reverse(path)
+	return strings.Join(path, "+")
+}
+
+func (c *codec) enumFileName(e *api.Enum) string {
+	if e.Parent == nil {
+		return pascalCase(e.Name)
+	}
+	return c.messageFileName(e.Parent) + "+" + pascalCase(e.Name)
+}

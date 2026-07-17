@@ -61,9 +61,10 @@ func GenerateConversions(ctx context.Context, model *api.API, outdir string, cfg
 
 func (c *codec) generateEnumConversions(outdir string, model *api.API, provider language.TemplateProvider) error {
 	for _, e := range model.Enums {
-		output := filepath.Join("Convert", e.Name+"+Convert.swift")
+		name := c.enumFileName(e)
+		output := filepath.Join("Convert", name+"+Convert.swift")
 		if !c.Module {
-			output = filepath.Join("Sources", c.PackageName, "Convert", e.Name+"+Convert.swift")
+			output = filepath.Join("Sources", c.PackageName, "Convert", name+"+Convert.swift")
 		}
 		generated := language.GeneratedFile{
 			TemplatePath: "templates/convert/convert_enum_file.swift.mustache",
@@ -84,9 +85,10 @@ func (c *codec) generateMessageConversions(outdir string, model *api.API, provid
 		if m.ServicePlaceholder {
 			continue
 		}
-		output := filepath.Join("Convert", m.Name+"+Convert.swift")
+		name := c.messageFileName(m)
+		output := filepath.Join("Convert", name+"+Convert.swift")
 		if !c.Module {
-			output = filepath.Join("Sources", c.PackageName, "Convert", m.Name+"+Convert.swift")
+			output = filepath.Join("Sources", c.PackageName, "Convert", name+"+Convert.swift")
 		}
 		generated := language.GeneratedFile{
 			TemplatePath: "templates/convert/convert_message_file.swift.mustache",
