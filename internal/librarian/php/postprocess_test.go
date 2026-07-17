@@ -24,8 +24,6 @@ import (
 	"github.com/googleapis/librarian/internal/testhelper"
 )
 
-
-
 func TestPostProcess_MissingOwlBot(t *testing.T) {
 	ctx := t.Context()
 	destDir := t.TempDir()
