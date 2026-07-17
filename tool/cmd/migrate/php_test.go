@@ -391,7 +391,7 @@ proto_library_with_info(
 				t.Fatal(err)
 			}
 			if diff := cmp.Diff(test.want, got); diff != "" {
-				t.Errorf("mismatch additional protos (-want +got):\n%s", diff)
+				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 			if gotCommonResources != test.wantCommonResources {
 				t.Errorf("mismatch common resources flag: want %t, got %t", test.wantCommonResources, gotCommonResources)
