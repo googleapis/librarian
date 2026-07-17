@@ -41,6 +41,10 @@ var protoMappings = map[string]string{
 	"//google/iam/v1:iam_policy_proto":       "google/iam/v1/iam_policy.proto",
 }
 
+var (
+	errUnableToResolveStagingSubdir = errors.New("unable to resolve staging subdir")
+)
+
 func runPHPMigration(ctx context.Context, repoPath string) error {
 	src, err := fetchSource(ctx)
 	if err != nil {
@@ -135,7 +139,7 @@ func createAPIConfig(path string, dest string) (*config.API, error) {
 
 	stagingSubdir := resolveStagingSubdir(dest, ver)
 	if stagingSubdir == "" {
-		return nil, fmt.Errorf("unable to resolve staging subdir for %s from destination %q", path, dest)
+		return nil, fmt.Errorf("%w: path %s from destination %q", errUnableToResolveStagingSubdir, path, dest)
 	}
 	return &config.API{
 		Path: path,

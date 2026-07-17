@@ -16,6 +16,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"os"
 	"path/filepath"
 	"testing"
@@ -266,6 +267,7 @@ func TestExtractAPIsFromOwlBot_Error(t *testing.T) {
 	for _, test := range []struct {
 		name      string
 		setupFile func(dir string) string
+		wantErr   error
 	}{
 		{
 			name: "invalid file",
@@ -277,6 +279,8 @@ func TestExtractAPIsFromOwlBot_Error(t *testing.T) {
 				}
 				return path
 			},
+			// wantErr is nil as we only assert that a YAML parsing error is returned.
+			wantErr: nil,
 		},
 		{
 			name: "missing staging marker",
@@ -293,6 +297,7 @@ api-name: Ces
 				}
 				return path
 			},
+			wantErr: errUnableToResolveStagingSubdir,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
@@ -301,6 +306,9 @@ api-name: Ces
 			_, err := extractAPIsFromOwlBot(path)
 			if err == nil {
 				t.Fatal("expected error, got nil")
+			}
+			if test.wantErr != nil && !errors.Is(err, test.wantErr) {
+				t.Errorf("expected error %v, got %v", test.wantErr, err)
 			}
 		})
 	}
