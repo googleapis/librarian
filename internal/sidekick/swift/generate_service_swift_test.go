@@ -313,8 +313,8 @@ func TestGenerateService_WithImports(t *testing.T) {
 	}
 	contentStr := string(content)
 
-	expectedImports := `import GoogleCloudAuth
-import GoogleCloudExternalV1
+	expectedImports := `import GoogleCloudExternalV1
+import GoogleCloudWkt
 import GoogleCloudGax`
 
 	if !strings.Contains(contentStr, expectedImports) {

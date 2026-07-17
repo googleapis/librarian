@@ -46,6 +46,12 @@ type serviceAnnotations struct {
 func (ann *serviceAnnotations) ServiceImports() []string {
 	result := make([]string, 0, len(ann.DependsOn))
 	for _, dep := range ann.DependsOn {
+		if dep.RequiredByServices {
+			// Skip dependencies configured in the librarian.yaml file.
+			// These are needed in some files, but not others, and sometimes we
+			// need to import just an specific type to minimize clashes.
+			continue
+		}
 		result = append(result, dep.Name)
 	}
 	slices.Sort(result)
