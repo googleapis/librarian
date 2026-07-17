@@ -35,9 +35,9 @@ sibling repositories (typically under a common parent directory, e.g.,
 When modifying the PHP generator or adding PHP support, use the following
 workflow to test and verify your changes:
 
-### Step 0: Checkout a specific commit (Optional, for consistency testing)
+### Step 0: Check out a specific commit (Optional, for consistency testing)
 
-If you want to verify the generator output against a known baseline, checkout a specific commit of `google-cloud-php` before running migration:
+If you want to verify the generator output against a known baseline, check out a specific commit of `google-cloud-php` before running `migrate`:
 
 ```bash
 cd ../google-cloud-php

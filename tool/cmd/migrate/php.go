@@ -47,7 +47,7 @@ var (
 
 var phpFetchSource = func(ctx context.Context) (*config.Source, error) {
 	// Temp codepath to pin googleapis commit for consistency testing.
-	// TODO(https://github.com/googleapis/librarian/issues/6898): remove before merging.
+	// TODO(https://github.com/googleapis/librarian/issues/6898): remove before migration
 	return fetchGoogleapisWithCommit(ctx, githubEndpoints, "6145fa8cc2b137bf4c0ed114e2e39c1157ea9722")
 }
 
