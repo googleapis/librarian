@@ -1700,3 +1700,63 @@ func TestMoveKeep_Errors(t *testing.T) {
 		})
 	}
 }
+
+func TestRequireCachedTool(t *testing.T) {
+	tempBin := t.TempDir()
+	t.Setenv("LIBRARIAN_BIN", tempBin)
+	nodeBinDir := filepath.Join(tempBin, "nodejs_tools", "bin")
+	if err := os.MkdirAll(nodeBinDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	toolPath := filepath.Join(nodeBinDir, "compileProtos")
+	if err := os.WriteFile(toolPath, []byte("#!/bin/sh"), 0755); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := requireCachedTool("compileProtos"); err != nil {
+		t.Errorf("requireCachedTool(%q) unexpected error = %v", "compileProtos", err)
+	}
+}
+
+func TestRequireCachedTool_Error(t *testing.T) {
+	for _, test := range []struct {
+		name      string
+		setup     func(t *testing.T, binDir string)
+		toolName  string
+		wantErrIs error
+	}{
+		{
+			name: "returns errToolNotInstalled when tool is missing from cache",
+			setup: func(t *testing.T, binDir string) {
+			},
+			toolName:  "missingTool",
+			wantErrIs: errToolNotInstalled,
+		},
+		{
+			name: "returns errToolNotInstalled when tool path is a directory",
+			setup: func(t *testing.T, binDir string) {
+				dirPath := filepath.Join(binDir, "dirTool")
+				if err := os.MkdirAll(dirPath, 0755); err != nil {
+					t.Fatal(err)
+				}
+			},
+			toolName:  "dirTool",
+			wantErrIs: errToolNotInstalled,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			tempBin := t.TempDir()
+			t.Setenv("LIBRARIAN_BIN", tempBin)
+			nodeBinDir := filepath.Join(tempBin, "nodejs_tools", "bin")
+			if err := os.MkdirAll(nodeBinDir, 0755); err != nil {
+				t.Fatal(err)
+			}
+			test.setup(t, nodeBinDir)
+			err := requireCachedTool(test.toolName)
+			if !errors.Is(err, test.wantErrIs) {
+				t.Errorf("requireCachedTool(%q) error = %v, wantErrIs %v", test.toolName, err, test.wantErrIs)
+			}
+		})
+	}
+}
+

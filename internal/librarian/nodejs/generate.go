@@ -82,7 +82,36 @@ func Generate(ctx context.Context, cfg *config.Config, library *config.Library, 
 	return nil
 }
 
+var (
+	errToolNotInstalled = errors.New("tool not installed in librarian cache")
+)
+
+func requireCachedTool(toolName string) error {
+	binDir, err := getBinDir()
+	if err != nil {
+		return fmt.Errorf("failed to get bin directory: %w", err)
+	}
+	toolPath := filepath.Join(binDir, toolName)
+	info, err := os.Stat(toolPath)
+	if err != nil {
+		if errors.Is(err, os.ErrNotExist) {
+			return fmt.Errorf("tool %s %w", toolName, errToolNotInstalled)
+		}
+		return err
+	}
+	if info.IsDir() {
+		return fmt.Errorf("tool path %s is a directory: %w", toolPath, errToolNotInstalled)
+	}
+	return nil
+}
+
 func generateAPI(ctx context.Context, api *config.API, library *config.Library, googleapisDir, repoRoot string) error {
+	for _, requiredTool := range []string{"gapic-generator-typescript", "compileProtos", "gapic-node-processing"} {
+		if err := requireCachedTool(requiredTool); err != nil {
+			return err
+		}
+	}
+
 	version := filepath.Base(api.Path)
 	stagingDir := filepath.Join(repoRoot, "owl-bot-staging", library.Name, version)
 	if err := os.MkdirAll(stagingDir, 0755); err != nil {
