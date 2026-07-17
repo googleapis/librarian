@@ -26,7 +26,7 @@ import (
 
 func TestPostProcess_ValidationErrors(t *testing.T) {
 	ctx := t.Context()
-	tests := []struct {
+	for _, test := range []struct {
 		name    string
 		library *config.Library
 	}{
@@ -46,10 +46,9 @@ func TestPostProcess_ValidationErrors(t *testing.T) {
 				Output: "some/path",
 			},
 		},
-	}
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			if err := postProcessLibrary(ctx, tc.library); err == nil {
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			if err := postProcessLibrary(ctx, test.library); err == nil {
 				t.Error("postProcessLibrary() expected error for invalid library, got nil")
 			}
 		})
