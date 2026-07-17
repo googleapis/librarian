@@ -289,10 +289,10 @@ func runPostProcessor(ctx context.Context, cfg *config.Config, library *config.L
 		return fmt.Errorf("failed to copy missing protos: %w", err)
 	}
 	protoDir := "src"
-	var compileArgs []string
+	compileArgs := []string{"--no-comments"}
 	if library.Nodejs != nil && library.Nodejs.ESM {
 		protoDir = "esm/src"
-		compileArgs = []string{"--esm"}
+		compileArgs = append(compileArgs, "--esm")
 	}
 	runArgs := append([]string{protoDir}, compileArgs...)
 
