@@ -248,6 +248,20 @@ func (c *codec) fieldPackage(field *api.Field) (string, error) {
 }
 
 func (c *codec) computeFieldConversionStatements(field *api.Field, ann *fieldAnnotations) {
+	if field.IsOneOf {
+		// TODO(#5272): Oneof fields are handled in a subsequent PR.
+		return
+	}
+	if field.Map || field.Repeated {
+		// TODO(#5272): Map and Repeated fields are handled in subsequent PRs.
+		return
+	}
+	switch field.Typez {
+	case api.TypezMessage, api.TypezEnum:
+		// TODO(#5272): Nested Message and Enum type fields are handled in a subsequent PR.
+		return
+	}
+
 	ann.ProtoFieldName = protoFieldName(field.Name)
 	ann.ProtoFieldNamePascal = protoFieldNamePascal(field.Name)
 }

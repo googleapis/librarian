@@ -18,40 +18,28 @@ extension {{Codec.NativeTypeName}} {
 
   internal init(proto: ProtoType) throws {
     {{#Fields}}
-    {{^IsOneOf}}
-    {{#Singular}}
-    {{^IsEnum}}
-    {{^IsObject}}
+    {{#Codec.ProtoFieldName}}
     {{#Optional}}
     self.{{Codec.Name}} = proto.has{{Codec.ProtoFieldNamePascal}} ? proto.{{Codec.ProtoFieldName}} : nil
     {{/Optional}}
     {{^Optional}}
     self.{{Codec.Name}} = proto.{{Codec.ProtoFieldName}}
     {{/Optional}}
-    {{/IsObject}}
-    {{/IsEnum}}
-    {{/Singular}}
-    {{/IsOneOf}}
+    {{/Codec.ProtoFieldName}}
     {{/Fields}}
   }
 
   internal func toProto() throws -> ProtoType {
     var proto = ProtoType()
     {{#Fields}}
-    {{^IsOneOf}}
-    {{#Singular}}
-    {{^IsEnum}}
-    {{^IsObject}}
+    {{#Codec.ProtoFieldName}}
     {{#Optional}}
     if let {{Codec.Name}} = self.{{Codec.Name}} { proto.{{Codec.ProtoFieldName}} = {{Codec.Name}} }
     {{/Optional}}
     {{^Optional}}
     proto.{{Codec.ProtoFieldName}} = self.{{Codec.Name}}
     {{/Optional}}
-    {{/IsObject}}
-    {{/IsEnum}}
-    {{/Singular}}
-    {{/IsOneOf}}
+    {{/Codec.ProtoFieldName}}
     {{/Fields}}
     return proto
   }
