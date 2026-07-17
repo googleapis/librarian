@@ -40,34 +40,19 @@ func TestGenerate(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	absOwlbotCopy, err := filepath.Abs(filepath.Join("testdata", "owlbot_copy.py"))
+	if err != nil {
+		t.Fatal(err)
+	}
 	repoRoot := t.TempDir()
 	t.Chdir(repoRoot)
-
 	destDir := filepath.Join(repoRoot, "output")
 	if err := os.MkdirAll(destDir, 0755); err != nil {
 		t.Fatal(err)
 	}
-	// Create a mock owlbot.py. In production, owlbot.py also runs prettier formatting
-	// (which requires Node.js/pnpm). In this integration test, we use a simplified stub
-	// that only handles file copying to keep the test hermetic and avoid Node.js dependencies.
-	owlbotContent := `import os
-import shutil
-import sys
-
-staging = "../owl-bot-staging/secretmanager/v1"
-if not os.path.exists(staging):
-    sys.exit(0)
-for item in os.listdir(staging):
-    s = os.path.join(staging, item)
-    d = os.path.join(".", item)
-    if os.path.isdir(s):
-        if os.path.exists(d):
-            shutil.rmtree(d)
-        shutil.copytree(s, d)
-    else:
-        shutil.copy2(s, d)
-`
-	if err := os.WriteFile(filepath.Join(destDir, "owlbot.py"), []byte(owlbotContent), 0755); err != nil {
+	// Symlink mock owlbot.py. Tests use a simplified copy-only stub to
+	// avoid Node.js/prettier dependencies.
+	if err := os.Symlink(absOwlbotCopy, filepath.Join(destDir, "owlbot.py")); err != nil {
 		t.Fatal(err)
 	}
 	library := &config.Library{

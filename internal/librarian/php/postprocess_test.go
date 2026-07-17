@@ -72,21 +72,18 @@ func TestPostProcess_MissingOwlBot(t *testing.T) {
 func TestPostProcess_OwlBot(t *testing.T) {
 	testhelper.RequireCommand(t, "python3")
 	ctx := t.Context()
+	absOwlbotRan, err := filepath.Abs(filepath.Join("testdata", "owlbot_ran.py"))
+	if err != nil {
+		t.Fatal(err)
+	}
 	repoRoot := t.TempDir()
 	t.Chdir(repoRoot)
-
 	destDir := filepath.Join(repoRoot, "SecretManager")
 	if err := os.MkdirAll(destDir, 0755); err != nil {
 		t.Fatal(err)
 	}
-	// Create a mock owlbot.py that writes a file "owlbot_ran.txt" when executed.
-	owlbotContent := `
-import os
-with open("owlbot_ran.txt", "w") as f:
-    f.write("yes")
-`
-	owlbotPy := filepath.Join(destDir, "owlbot.py")
-	if err := os.WriteFile(owlbotPy, []byte(owlbotContent), 0755); err != nil {
+	// Symlink mock owlbot.py from testdata that writes "owlbot_ran.txt" when executed.
+	if err := os.Symlink(absOwlbotRan, filepath.Join(destDir, "owlbot.py")); err != nil {
 		t.Fatal(err)
 	}
 	lib := &config.Library{
@@ -94,7 +91,7 @@ with open("owlbot_ran.txt", "w") as f:
 		Output: destDir,
 	}
 	if err := postProcessLibrary(ctx, lib); err != nil {
-		t.Fatalf("postProcessLibrary() failed: %v", err)
+		t.Fatal(err)
 	}
 	// Verify owlbot.py ran
 	expectedFile := filepath.Join(destDir, "owlbot_ran.txt")
