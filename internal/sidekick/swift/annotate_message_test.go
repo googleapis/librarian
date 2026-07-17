@@ -20,6 +20,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
+	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/sidekick/api"
 )
 
@@ -552,6 +553,9 @@ func TestAnnotateMessage_Gating(t *testing.T) {
 func TestAnnotateMessage_PlaceholderGating(t *testing.T) {
 	model := makeRequiredServicesTestModel()
 	codec := newTestCodec(t, model, nil)
+	codec.withExtraDependencies(t, []config.SwiftDependency{
+		{ApiPackage: "external", Name: "GoogleCloudExternal"},
+	})
 	codec.PerServiceTraits = true
 
 	if err := codec.annotateModel(); err != nil {

@@ -277,6 +277,9 @@ func TestModelAnnotations_Pagination(t *testing.T) {
 func TestModelAnnotations_Gating(t *testing.T) {
 	model := makeRequiredServicesTestModel()
 	codec := newTestCodec(t, model, nil)
+	codec.withExtraDependencies(t, []config.SwiftDependency{
+		{ApiPackage: "external", Name: "GoogleCloudExternal"},
+	})
 	codec.PerServiceTraits = true
 	codec.DefaultTraits = []string{"TestService"}
 
