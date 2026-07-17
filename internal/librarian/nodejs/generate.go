@@ -95,7 +95,7 @@ func requireCachedTool(toolName string) (string, error) {
 	info, err := os.Stat(toolPath)
 	if err != nil {
 		if errors.Is(err, os.ErrNotExist) {
-			return "", fmt.Errorf("tool %s %w", toolName, errToolNotInstalled)
+			return "", fmt.Errorf("tool %s %w at %s (did you run 'librarian install nodejs'?): %w", toolName, errToolNotInstalled, toolPath, err)
 		}
 		return "", err
 	}
