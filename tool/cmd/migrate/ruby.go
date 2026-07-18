@@ -101,9 +101,21 @@ func findRubyLibraries(repoPath string) ([]*config.Library, error) {
 			}
 			return nil, fmt.Errorf("checking OwlBot config: %w", err)
 		}
-		libraries = append(libraries, &config.Library{
+		lib := &config.Library{
 			Name: name,
-		})
+		}
+		api, err := parseAPIFromOwlBot(owlBotPath)
+		if err != nil {
+			return nil, err
+		}
+		if api != "" {
+			lib.APIs = []*config.API{
+				{
+					Path: api,
+				},
+			}
+		}
+		libraries = append(libraries, lib)
 	}
 	return libraries, nil
 }
