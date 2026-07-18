@@ -22,10 +22,24 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"regexp"
 
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/librarian"
+	"github.com/googleapis/librarian/internal/yaml"
 )
+
+var (
+	versionedAPIPath = regexp.MustCompile(`^/(.+/(v\d+\w*))/(.+)-ruby/(.*)$`)
+)
+
+type owlbotYaml struct {
+	DeepCopyRegex []owlbotSrc `yaml:"deep-copy-regex"`
+}
+
+type owlbotSrc struct {
+	Source string `yaml:"source"`
+}
 
 func runRubyMigration(ctx context.Context, repoPath string) error {
 	src, err := fetchSource(ctx)
@@ -65,7 +79,7 @@ func runRubyMigration(ctx context.Context, repoPath string) error {
 	if err := librarian.RunTidyOnConfig(ctx, repoPath, cfg); err != nil {
 		return fmt.Errorf("%w: %w", errTidyFailed, err)
 	}
-	log.Printf("Successfully migrated Ruby libraries configuration skeleton")
+	log.Printf("Successfully migrated Ruby libraries configuration")
 	return nil
 }
 
@@ -87,9 +101,45 @@ func findRubyLibraries(repoPath string) ([]*config.Library, error) {
 			}
 			return nil, fmt.Errorf("checking OwlBot config: %w", err)
 		}
-		libraries = append(libraries, &config.Library{
+		lib := &config.Library{
 			Name: name,
-		})
+		}
+		api, err := parseAPIFromOwlBot(owlBotPath)
+		if err != nil {
+			return nil, err
+		}
+		if api != "" {
+			lib.APIs = []*config.API{
+				{
+					Path: api,
+				},
+			}
+		}
+		libraries = append(libraries, lib)
 	}
 	return libraries, nil
+}
+
+func parseAPIFromOwlBot(owlBotPath string) (string, error) {
+	data, err := os.ReadFile(owlBotPath)
+	if err != nil {
+		return "", fmt.Errorf("reading OwlBot config %s: %w", owlBotPath, err)
+	}
+	owlbot, err := yaml.Unmarshal[owlbotYaml](data)
+	if err != nil {
+		return "", fmt.Errorf("parsing OwlBot config %s: %w", owlBotPath, err)
+	}
+	// Skip .github/.Owlbot.yaml.
+	if len(owlbot.DeepCopyRegex) == 0 {
+		return "", nil
+	}
+	// We only need the first entry since wrapper library will
+	// have different parsing logic.
+	src := owlbot.DeepCopyRegex[0].Source
+	matches := versionedAPIPath.FindStringSubmatch(src)
+	if len(matches) != 5 {
+		// A wrapper library doesn't have versioned API path.
+		return "", nil
+	}
+	return matches[1], nil
 }

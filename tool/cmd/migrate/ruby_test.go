@@ -139,3 +139,42 @@ func TestFindRubyLibraries(t *testing.T) {
 		})
 	}
 }
+
+func TestParseAPIFromOwlBot(t *testing.T) {
+	for _, test := range []struct {
+		name string
+		path string
+		want string
+	}{
+		{
+			name: "apigeeconnect v1 api",
+			path: "testdata/ruby/parse_api_from_owlbot/apigeeconnect_v1.yaml",
+			want: "google/cloud/apigeeconnect/v1",
+		},
+		{
+			name: "marketingplatform admin v1alpha api",
+			path: "testdata/ruby/parse_api_from_owlbot/marketing_v1alpha.yaml",
+			want: "google/marketingplatform/admin/v1alpha",
+		},
+		{
+			name: "video livestream v1 api",
+			path: "testdata/ruby/parse_api_from_owlbot/video_v1.yaml",
+			want: "google/cloud/video/livestream/v1",
+		},
+		{
+			name: "wrapper library",
+			path: "testdata/ruby/parse_api_from_owlbot/wrapper.yaml",
+			want: "",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got, err := parseAPIFromOwlBot(test.path)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
