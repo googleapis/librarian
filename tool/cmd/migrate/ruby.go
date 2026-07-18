@@ -129,6 +129,9 @@ func parseAPIFromOwlBot(owlBotPath string) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("parsing OwlBot config: %w", err)
 	}
+	if len(owlbot.DeepCopyRegex) == 0 {
+		return "", nil
+	}
 	// We only need to first entry since wrapper library will
 	// have different parsing logic.
 	src := owlbot.DeepCopyRegex[0].Source
