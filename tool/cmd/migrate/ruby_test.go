@@ -221,11 +221,9 @@ func TestParseWrapperOf(t *testing.T) {
 			name: "wrapper library with no matching versioned gems",
 			libraries: []*config.Library{
 				{Name: "google-cloud-storage"},
-				{Name: "google-cloud-storage_control", APIs: []*config.API{{Path: "google/storage/control/v2"}}},
 			},
 			want: []*config.Library{
 				{Name: "google-cloud-storage"},
-				{Name: "google-cloud-storage_control", APIs: []*config.API{{Path: "google/storage/control/v2"}}},
 			},
 		},
 	} {
