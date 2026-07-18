@@ -123,11 +123,11 @@ func findRubyLibraries(repoPath string) ([]*config.Library, error) {
 func parseAPIFromOwlBot(owlBotPath string) (string, error) {
 	data, err := os.ReadFile(owlBotPath)
 	if err != nil {
-		return "", fmt.Errorf("reading OwlBot config: %w", err)
+		return "", fmt.Errorf("reading OwlBot config %s: %w", owlBotPath, err)
 	}
 	owlbot, err := yaml.Unmarshal[owlbotYaml](data)
 	if err != nil {
-		return "", fmt.Errorf("parsing OwlBot config: %w", err)
+		return "", fmt.Errorf("parsing OwlBot config %s: %w", owlBotPath, err)
 	}
 	if len(owlbot.DeepCopyRegex) == 0 {
 		return "", nil
