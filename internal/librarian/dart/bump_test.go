@@ -124,3 +124,112 @@ dependencies:
 		t.Errorf("pubspec.yaml content mismatch:\ngot:\n%s\nwant:\n%s", got, want)
 	}
 }
+
+func TestUpdateChangelog_New(t *testing.T) {
+	tempDir := t.TempDir()
+
+	err := updateChangelog(tempDir, "1.2.3", []string{"feat: added support for something", "fix: resolved a bug"})
+	if err != nil {
+		t.Fatalf("updateChangelog failed: %v", err)
+	}
+
+	changelogPath := filepath.Join(tempDir, "CHANGELOG.md")
+	content, err := os.ReadFile(changelogPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	got := string(content)
+	want := `# Changelog
+
+## 1.2.3
+
+- feat: added support for something
+- fix: resolved a bug
+
+`
+	if got != want {
+		t.Errorf("CHANGELOG.md content mismatch:\ngot:\n%s\nwant:\n%s", got, want)
+	}
+}
+
+func TestUpdateChangelog_Existing(t *testing.T) {
+	tempDir := t.TempDir()
+	changelogPath := filepath.Join(tempDir, "CHANGELOG.md")
+	initialContent := `# Changelog
+
+## 1.2.2
+
+- chore: release 1.2.2
+`
+	if err := os.WriteFile(changelogPath, []byte(initialContent), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	err := updateChangelog(tempDir, "1.2.3", []string{"feat: added support for something", "fix: resolved a bug"})
+	if err != nil {
+		t.Fatalf("updateChangelog failed: %v", err)
+	}
+
+	content, err := os.ReadFile(changelogPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	got := string(content)
+	want := `# Changelog
+
+## 1.2.3
+
+- feat: added support for something
+- fix: resolved a bug
+
+## 1.2.2
+
+- chore: release 1.2.2
+`
+	if got != want {
+		t.Errorf("CHANGELOG.md content mismatch:\ngot:\n%s\nwant:\n%s", got, want)
+	}
+}
+
+func TestHasChangesIn(t *testing.T) {
+	for _, test := range []struct {
+		name         string
+		dir          string
+		filesChanged []string
+		want         bool
+	}{
+		{
+			name:         "match exact prefix with trailing slash",
+			dir:          "packages/my_package/",
+			filesChanged: []string{"packages/my_package/lib/src/foo.dart"},
+			want:         true,
+		},
+		{
+			name:         "match prefix without trailing slash",
+			dir:          "packages/my_package",
+			filesChanged: []string{"packages/my_package/lib/src/foo.dart"},
+			want:         true,
+		},
+		{
+			name:         "no match different package",
+			dir:          "packages/my_package",
+			filesChanged: []string{"packages/other_package/lib/src/foo.dart"},
+			want:         false,
+		},
+		{
+			name:         "no match partial name",
+			dir:          "packages/my",
+			filesChanged: []string{"packages/my_package/lib/src/foo.dart"},
+			want:         false,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := hasChangesIn(test.dir, test.filesChanged)
+			if got != test.want {
+				t.Errorf("hasChangesIn(%q, %v) = %v; want %v", test.dir, test.filesChanged, got, test.want)
+			}
+		})
+	}
+}

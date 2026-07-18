@@ -25,6 +25,7 @@ import (
 
 	"github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/git"
 	"github.com/googleapis/librarian/internal/semver"
 )
 
@@ -120,8 +121,30 @@ func bumpLibrary(ctx context.Context, cloudDeps []string, newVersions map[string
 		return "", fmt.Errorf("version not set for library %s", lib.Name)
 	}
 
+	packageDir := libraryOutput(lib, defaults)
+
 	depsChanged := false
-	libraryChanged := true
+	libraryChanged := false
+	var lastReleaseTagCommit string
+	if defaults != nil && defaults.TagFormat != "" {
+		tagName := formatTagName(defaults.TagFormat, lib)
+		commit, err := git.GetCommitHash(ctx, command.Git, tagName)
+		if err != nil {
+			// If tag doesn't exist yet, we treat it as changed.
+			libraryChanged = true
+		} else {
+			lastReleaseTagCommit = commit
+			filesChanged, err := git.FilesChangedSince(ctx, command.Git, lastReleaseTagCommit, IgnoredChanges)
+			if err != nil {
+				return "", err
+			}
+			libraryChanged = hasChangesIn(packageDir, filesChanged)
+		}
+	} else {
+		// If tag format is not configured, fallback to true.
+		libraryChanged = true
+	}
+
 	newDeps := make(map[string]string)
 	for _, dep := range cloudDeps {
 		if v, ok := newVersions[dep]; ok && v != "" {
@@ -130,7 +153,6 @@ func bumpLibrary(ctx context.Context, cloudDeps []string, newVersions map[string
 		}
 	}
 
-	packageDir := libraryOutput(lib, defaults)
 	reportPath := filepath.Join(os.TempDir(), fmt.Sprintf("report-%s.json", lib.Name))
 	defer os.Remove(reportPath)
 	pubspecPath := filepath.Join(packageDir, "pubspec.yaml")
@@ -187,11 +209,101 @@ func bumpLibrary(ctx context.Context, cloudDeps []string, newVersions map[string
 		newVersion = bumped
 	}
 
-	if err := updatePubspecVersion(pubspecPath, newVersion); err != nil {
-		return "", err
+	if newVersion != oldVersion {
+		if err := updatePubspecVersion(pubspecPath, newVersion); err != nil {
+			return "", err
+		}
+
+		var commits []string
+		if lastReleaseTagCommit != "" {
+			var err error
+			commits, err = getCommitsSince(ctx, lastReleaseTagCommit, packageDir)
+			if err != nil {
+				return "", err
+			}
+		}
+
+		if len(commits) == 0 {
+			if lastReleaseTagCommit == "" {
+				commits = []string{"Initial release."}
+			} else {
+				commits = []string{"Dependency updates."}
+			}
+		}
+
+		if err := updateChangelog(packageDir, newVersion, commits); err != nil {
+			return "", err
+		}
 	}
 
 	return newVersion, nil
+}
+
+func formatTagName(tagFormat string, lib *config.Library) string {
+	return strings.NewReplacer("{name}", lib.Name, "{version}", lib.Version).Replace(tagFormat)
+}
+
+func hasChangesIn(dir string, filesChanged []string) bool {
+	if !strings.HasSuffix(dir, "/") {
+		dir += "/"
+	}
+	for _, f := range filesChanged {
+		if strings.HasPrefix(f, dir) {
+			return true
+		}
+	}
+	return false
+}
+
+func getCommitsSince(ctx context.Context, lastReleaseTagCommit, packageDir string) ([]string, error) {
+	if lastReleaseTagCommit == "" {
+		return nil, nil
+	}
+	output, err := command.Output(ctx, command.Git, "log", fmt.Sprintf("%s..HEAD", lastReleaseTagCommit), "--format=%s", "--", packageDir)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get commits since %s for %s: %w", lastReleaseTagCommit, packageDir, err)
+	}
+	var commits []string
+	for _, line := range strings.Split(output, "\n") {
+		trimmed := strings.TrimSpace(line)
+		if trimmed != "" {
+			commits = append(commits, trimmed)
+		}
+	}
+	return commits, nil
+}
+
+func updateChangelog(packageDir, version string, commits []string) error {
+	changelogPath := filepath.Join(packageDir, "CHANGELOG.md")
+	var entry []string
+	entry = append(entry, fmt.Sprintf("## %s", version))
+	entry = append(entry, "")
+	for _, commit := range commits {
+		entry = append(entry, fmt.Sprintf("- %s", commit))
+	}
+	entryStr := strings.Join(entry, "\n") + "\n\n"
+
+	content, err := os.ReadFile(changelogPath)
+	if err != nil {
+		if !os.IsNotExist(err) {
+			return err
+		}
+		// File does not exist, create new
+		newContent := "# Changelog\n\n" + entryStr
+		return os.WriteFile(changelogPath, []byte(newContent), 0644)
+	}
+
+	// File exists, prepend entry after heading
+	changelogContent := string(content)
+	if strings.HasPrefix(changelogContent, "# Changelog") {
+		rest := strings.TrimPrefix(changelogContent, "# Changelog")
+		rest = strings.TrimLeft(rest, "\r\n ")
+		newContent := "# Changelog\n\n" + entryStr + rest
+		return os.WriteFile(changelogPath, []byte(newContent), 0644)
+	}
+
+	newContent := entryStr + changelogContent
+	return os.WriteFile(changelogPath, []byte(newContent), 0644)
 }
 
 func libraryOutput(lib *config.Library, defaults *config.Default) string {
