@@ -844,5 +844,6 @@ type RubyAPI struct {
 	// EnvPrefix is the environment variable prefix.
 	EnvPrefix string `yaml:"env_prefix,omitempty"`
 
+	// ExtraDependencies contains extra runtime dependencies to the .gemspec file.
 	ExtraDependencies string `yaml:"extra_dependencies,omitempty"`
 }
