@@ -89,9 +89,9 @@ public enum {{Codec.Name}}: Codable, Equatable, Sendable {
   /// If the value is unknown, this initializes to ``.{{Codec.UnknownIntName}}(_:)``.
   public init(intValue: Int) {
     switch intValue {
-    {{#Values}}
+    {{#UniqueNumberValues}}
     case {{Number}}: self = .{{Codec.CaseName}}
-    {{/Values}}
+    {{/UniqueNumberValues}}
     default: self = .{{Codec.UnknownIntName}}(intValue)
     }
   }
