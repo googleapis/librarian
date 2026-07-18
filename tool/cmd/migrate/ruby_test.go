@@ -156,6 +156,11 @@ func TestParseAPIFromOwlBot(t *testing.T) {
 			path: "testdata/ruby/parse_api_from_owlbot/marketing_v1alpha.yaml",
 			want: "google/marketingplatform/admin/v1alpha",
 		},
+		{
+			name: "wrapper library",
+			path: "testdata/ruby/parse_api_from_owlbot/wrapper.yaml",
+			want: "",
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			got, err := parseAPIFromOwlBot(test.path)

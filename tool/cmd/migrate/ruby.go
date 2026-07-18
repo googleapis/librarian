@@ -122,7 +122,8 @@ func parseAPIFromOwlBot(owlBotPath string) (string, error) {
 	src := owlbot.DeepCopyRegex[0].Source
 	matches := versionedAPIPath.FindStringSubmatch(src)
 	if len(matches) != 5 {
-		return "", fmt.Errorf("unexpected source format: %s", src)
+		// A wrapper library doesn't have versioned API path.
+		return "", nil
 	}
 	return matches[1], nil
 }
