@@ -142,9 +142,9 @@ func TestFindRubyLibraries(t *testing.T) {
 
 func TestParseAPIFromOwlBot(t *testing.T) {
 	for _, test := range []struct {
-		name    string
-		path    string
-		want    string
+		name string
+		path string
+		want string
 	}{
 		{
 			name: "apigeeconnect v1 api",
