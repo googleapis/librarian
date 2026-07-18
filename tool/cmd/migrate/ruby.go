@@ -22,10 +22,24 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"regexp"
 
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/librarian"
+	"github.com/googleapis/librarian/internal/yaml"
 )
+
+var (
+	versionedAPIPath = regexp.MustCompile(`^/(.+/(v\w+))/(.+)-ruby/(.*)$`)
+)
+
+type owlbotYaml struct {
+	DeepCopyRegex []owlbotSrc `yaml:"deep-copy-regex"`
+}
+
+type owlbotSrc struct {
+	Source string `yaml:"source"`
+}
 
 func runRubyMigration(ctx context.Context, repoPath string) error {
 	src, err := fetchSource(ctx)
@@ -92,4 +106,23 @@ func findRubyLibraries(repoPath string) ([]*config.Library, error) {
 		})
 	}
 	return libraries, nil
+}
+
+func parseAPIFromOwlBot(owlBotPath string) (string, error) {
+	data, err := os.ReadFile(owlBotPath)
+	if err != nil {
+		return "", fmt.Errorf("reading OwlBot config: %w", err)
+	}
+	owlbot, err := yaml.Unmarshal[owlbotYaml](data)
+	if err != nil {
+		return "", fmt.Errorf("parsing OwlBot config: %w", err)
+	}
+	// We only need to first entry since wrapper library will
+	// have different parsing logic.
+	src := owlbot.DeepCopyRegex[0].Source
+	matches := versionedAPIPath.FindStringSubmatch(src)
+	if len(matches) != 5 {
+		return "", fmt.Errorf("unexpected source format: %s", src)
+	}
+	return matches[1], nil
 }
