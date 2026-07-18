@@ -141,7 +141,7 @@ func tag(ctx context.Context, releaseCommit string, createReleaseTag bool) error
 		if err != nil {
 			return err
 		}
-		tagName := formatTagName(tagFormat, lib)
+		tagName := git.FormatTagName(tagFormat, lib.Name, lib.Version)
 		err = git.Tag(ctx, command.Git, tagName, releaseCommit)
 		if err != nil {
 			return fmt.Errorf("error creating tag %s: %w", tagName, err)

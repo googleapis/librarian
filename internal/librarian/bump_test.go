@@ -496,7 +496,7 @@ func TestFindLibrariesToBump(t *testing.T) {
 				// commit the config, tag it.
 				cfg.Libraries[1].Version = sample.NextVersion
 				writeConfigAndCommit(t, cfg)
-				tagName := formatTagName(cfg.Default.TagFormat, cfg.Libraries[1])
+				tagName := git.FormatTagName(cfg.Default.TagFormat, cfg.Libraries[1].Name, cfg.Libraries[1].Version)
 				git.Tag(t.Context(), "git", tagName, "HEAD")
 			},
 		},

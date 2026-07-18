@@ -597,3 +597,85 @@ func TestGetCommitSubject_Error(t *testing.T) {
 		t.Fatal("wanted an error; got none")
 	}
 }
+
+func TestFormatTagName(t *testing.T) {
+	for _, test := range []struct {
+		name      string
+		tagFormat string
+		pkgName   string
+		version   string
+		want      string
+	}{
+		{
+			name:      "standard tag",
+			tagFormat: "{name}/v{version}",
+			pkgName:   "storage",
+			version:   "1.2.3",
+			want:      "storage/v1.2.3",
+		},
+		{
+			name:      "different format",
+			tagFormat: "release-{name}-{version}",
+			pkgName:   "pubsub",
+			version:   "0.4.0",
+			want:      "release-pubsub-0.4.0",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := FormatTagName(test.tagFormat, test.pkgName, test.version)
+			if got != test.want {
+				t.Errorf("FormatTagName(%q, %q, %q) = %q; want %q", test.tagFormat, test.pkgName, test.version, got, test.want)
+			}
+		})
+	}
+}
+
+func TestHasChangesIn(t *testing.T) {
+	for _, test := range []struct {
+		name         string
+		dir          string
+		exclusion    string
+		filesChanged []string
+		want         bool
+	}{
+		{
+			name:         "match exact prefix with trailing slash",
+			dir:          "packages/my_package/",
+			filesChanged: []string{"packages/my_package/lib/src/foo.dart"},
+			want:         true,
+		},
+		{
+			name:         "match prefix without trailing slash",
+			dir:          "packages/my_package",
+			filesChanged: []string{"packages/my_package/lib/src/foo.dart"},
+			want:         true,
+		},
+		{
+			name:         "no match different package",
+			dir:          "packages/my_package",
+			filesChanged: []string{"packages/other_package/lib/src/foo.dart"},
+			want:         false,
+		},
+		{
+			name:         "exclusion matches",
+			dir:          "packages/my_package",
+			exclusion:    "packages/my_package/ignored",
+			filesChanged: []string{"packages/my_package/ignored/foo.dart"},
+			want:         false,
+		},
+		{
+			name:         "exclusion does not match change",
+			dir:          "packages/my_package",
+			exclusion:    "packages/my_package/ignored",
+			filesChanged: []string{"packages/my_package/lib/src/foo.dart"},
+			want:         true,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := HasChangesIn(test.dir, test.exclusion, test.filesChanged)
+			if got != test.want {
+				t.Errorf("HasChangesIn(%q, %q, %v) = %v; want %v", test.dir, test.exclusion, test.filesChanged, got, test.want)
+			}
+		})
+	}
+}

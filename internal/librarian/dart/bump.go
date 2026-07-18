@@ -127,7 +127,7 @@ func bumpLibrary(ctx context.Context, cloudDeps []string, newVersions map[string
 	libraryChanged := false
 	var lastReleaseTagCommit string
 	if defaults != nil && defaults.TagFormat != "" {
-		tagName := formatTagName(defaults.TagFormat, lib)
+		tagName := git.FormatTagName(defaults.TagFormat, lib.Name, lib.Version)
 		commit, err := git.GetCommitHash(ctx, command.Git, tagName)
 		if err != nil {
 			// If tag doesn't exist yet, we treat it as changed.
@@ -138,7 +138,7 @@ func bumpLibrary(ctx context.Context, cloudDeps []string, newVersions map[string
 			if err != nil {
 				return "", err
 			}
-			libraryChanged = hasChangesIn(packageDir, filesChanged)
+			libraryChanged = git.HasChangesIn(packageDir, "", filesChanged)
 		}
 	} else {
 		// If tag format is not configured, fallback to true.
@@ -237,22 +237,6 @@ func bumpLibrary(ctx context.Context, cloudDeps []string, newVersions map[string
 	}
 
 	return newVersion, nil
-}
-
-func formatTagName(tagFormat string, lib *config.Library) string {
-	return strings.NewReplacer("{name}", lib.Name, "{version}", lib.Version).Replace(tagFormat)
-}
-
-func hasChangesIn(dir string, filesChanged []string) bool {
-	if !strings.HasSuffix(dir, "/") {
-		dir += "/"
-	}
-	for _, f := range filesChanged {
-		if strings.HasPrefix(f, dir) {
-			return true
-		}
-	}
-	return false
 }
 
 func getCommitsSince(ctx context.Context, lastReleaseTagCommit, packageDir string) ([]string, error) {
@@ -421,166 +405,4 @@ func Bump(ctx context.Context, cfg *config.Config, all bool, libraryName, versio
 	}
 
 	return nil
-	/*
-
-		adj := make(map[string][]string)
-		inDegree := make(map[string]int)
-		for name := range libraryByName {
-			inDegree[name] = 0
-		}
-
-		for _, lib := range cfg.Libraries {
-			if lib.SkipRelease {
-				continue
-			}
-			if lib.Dart == nil || lib.Dart.Packages == nil {
-				continue
-			}
-			for dep := range lib.Dart.Packages {
-				depName := strings.TrimPrefix(dep, "package:")
-				if _, ok := libraryByName[depName]; ok {
-					adj[depName] = append(adj[depName], lib.Name)
-					inDegree[lib.Name]++
-				}
-			}
-		}
-
-		initiallyChanged := make(map[string]bool)
-		if !all {
-			lib, ok := libraryByName[libraryName]
-			if !ok {
-				return fmt.Errorf("library %s not found in configuration", libraryName)
-			}
-			initiallyChanged[lib.Name] = true
-		} else {
-			for _, lib := range cfg.Libraries {
-				if lib.SkipRelease || lib.Version == "" {
-					continue
-				}
-				lastReleaseTagName := formatTagName(cfg.Default.TagFormat, lib)
-				lastReleaseTagCommit, err := git.GetCommitHash(ctx, gitExe, lastReleaseTagName)
-				if err != nil {
-					// If tag doesn't exist yet, treat it as changed
-					initiallyChanged[lib.Name] = true
-					continue
-				}
-				filesChanged, err := git.FilesChangedSince(ctx, gitExe, lastReleaseTagCommit, IgnoredChanges)
-				if err != nil {
-					return err
-				}
-				if libraryChanged(cfg, lib, filesChanged) {
-					initiallyChanged[lib.Name] = true
-				}
-			}
-		}
-
-		var queue []string
-		for name, deg := range inDegree {
-			if deg == 0 {
-				queue = append(queue, name)
-			}
-		}
-		slices.Sort(queue)
-
-		newVersions := make(map[string]string)
-		versionChanged := make(map[string]bool)
-		for _, lib := range cfg.Libraries {
-			newVersions[lib.Name] = lib.Version
-		}
-
-		processedCount := 0
-		for len(queue) > 0 {
-			currName := queue[0]
-			queue = queue[1:]
-			processedCount++
-
-			currLib := libraryByName[currName]
-			var depsChanged bool
-
-			// Check if dependencies changed, and update constraints
-			if currLib.Dart != nil && currLib.Dart.Packages != nil {
-				for dep := range currLib.Dart.Packages {
-					depName := strings.TrimPrefix(dep, "package:")
-					if versionChanged[depName] {
-						depsChanged = true
-						currLib.Dart.Packages[dep] = "^" + newVersions[depName]
-					}
-				}
-			}
-
-			// Check if we should bump the version of currLib
-			shouldBump := initiallyChanged[currName] || depsChanged
-			if shouldBump {
-				var nextVer string
-				var err error
-				if currName == libraryName && versionOverride != "" {
-					nextVer, err = deriveNextVersion(currLib, versionOverride)
-				} else {
-					nextVer, err = deriveNextVersion(currLib, "")
-				}
-				if err != nil {
-					return err
-				}
-				currLib.Version = nextVer
-				newVersions[currName] = nextVer
-				versionChanged[currName] = true
-			}
-
-			// If the version or dependencies changed, update the pubspec.yaml file
-			if shouldBump {
-				pubspecPath := filepath.Join(libraryOutput(currLib, cfg.Default), "pubspec.yaml")
-				if err := updatePubspecFile(pubspecPath, newVersions[currName], currLib.Dart.Packages); err != nil {
-					return err
-				}
-			}
-
-			for _, dep := range adj[currName] {
-				inDegree[dep]--
-				if inDegree[dep] == 0 {
-					queue = append(queue, dep)
-				}
-			}
-			slices.Sort(queue)
-		}
-
-		if processedCount < len(libraryByName) {
-			return fmt.Errorf("cycle detected in dependency DAG")
-		}
-
-		return nil
-	*/
 }
-
-/*
-func deriveNextVersion(library *config.Library, versionOverride string) (string, error) {
-	if versionOverride != "" {
-		if err := semver.ValidateNext(library.Version, versionOverride); err != nil {
-			return "", err
-		}
-		return versionOverride, nil
-	}
-	if library.Version == "" {
-		return defaultVersion, nil
-	}
-	return semver.DeriveNext(semver.Minor, library.Version, semver.DeriveNextOptions{})
-}
-
-func formatTagName(tagFormat string, library *config.Library) string {
-	tag := strings.ReplaceAll(tagFormat, "{name}", library.Name)
-	return strings.ReplaceAll(tag, "{version}", library.Version)
-}
-
-func libraryChanged(cfg *config.Config, library *config.Library, filesChanged []string) bool {
-	output := libraryOutput(library, cfg.Default)
-	if !strings.HasSuffix(output, "/") {
-		output += "/"
-	}
-	for _, f := range filesChanged {
-		if strings.HasPrefix(f, output) {
-			return true
-		}
-	}
-	return false
-}
-
-*/

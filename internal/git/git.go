@@ -187,3 +187,24 @@ func GetCommitSubject(ctx context.Context, gitExe, revision string) (string, err
 	}
 	return strings.TrimSuffix(output, "\n"), nil
 }
+
+// FormatTagName formats a tag name using tagFormat, name and version.
+func FormatTagName(tagFormat, name, version string) string {
+	return strings.NewReplacer("{name}", name, "{version}", version).Replace(tagFormat)
+}
+
+// HasChangesIn checks if any of the filesChanged are inside dir (excluding exclusion if non-empty).
+func HasChangesIn(dir, exclusion string, filesChanged []string) bool {
+	if !strings.HasSuffix(dir, "/") {
+		dir += "/"
+	}
+	for _, f := range filesChanged {
+		if strings.HasPrefix(f, dir) {
+			if exclusion != "" && strings.HasPrefix(f, exclusion) {
+				continue
+			}
+			return true
+		}
+	}
+	return false
+}
