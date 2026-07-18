@@ -43,6 +43,10 @@ type owlbotSrc struct {
 	Source string `yaml:"source"`
 }
 
+type VersionedBuild struct {
+	EnvPrefix string
+}
+
 func runRubyMigration(ctx context.Context, repoPath string) error {
 	src, err := fetchSource(ctx)
 	if err != nil {
@@ -70,7 +74,7 @@ func runRubyMigration(ctx context.Context, repoPath string) error {
 			},
 		},
 	}
-	libs, err := findRubyLibraries(repoPath)
+	libs, err := findRubyLibraries(src.Dir, repoPath)
 	if err != nil {
 		return err
 	}
@@ -85,7 +89,7 @@ func runRubyMigration(ctx context.Context, repoPath string) error {
 	return nil
 }
 
-func findRubyLibraries(repoPath string) ([]*config.Library, error) {
+func findRubyLibraries(googleapisPath, repoPath string) ([]*config.Library, error) {
 	entries, err := os.ReadDir(repoPath)
 	if err != nil {
 		return nil, fmt.Errorf("reading repository directory: %w", err)
@@ -115,6 +119,15 @@ func findRubyLibraries(repoPath string) ([]*config.Library, error) {
 				{
 					Path: api,
 				},
+			}
+			vb, err := parseVersionedBuild(googleapisPath, api)
+			if err != nil {
+				return nil, err
+			}
+			if vb != nil {
+				lib.APIs[0].Ruby = &config.RubyAPI{
+					EnvPrefix: vb.EnvPrefix,
+				}
 			}
 		}
 		libraries = append(libraries, lib)
@@ -177,4 +190,27 @@ func parseWrapperOf(libraries []*config.Library) {
 			}
 		}
 	}
+}
+
+func parseVersionedBuild(googleapisDir, apiPath string) (*VersionedBuild, error) {
+	file, err := parseBazel(googleapisDir, apiPath)
+	if err != nil {
+		return nil, err
+	}
+	if file == nil {
+		return nil, nil
+	}
+	vb := &VersionedBuild{}
+	if rules := file.Rules("ruby_cloud_gapic_library"); len(rules) > 0 {
+		rule := rules[0]
+		if attr := rule.Attr("extra_protoc_parameters"); attr != nil {
+			for _, dep := range extractStrings(attr) {
+				switch {
+				case strings.HasPrefix(dep, "ruby-cloud-env-prefix="):
+					vb.EnvPrefix, _ = strings.CutPrefix(dep, "ruby-cloud-env-prefix=")
+				}
+			}
+		}
+	}
+	return vb, nil
 }
