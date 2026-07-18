@@ -129,6 +129,7 @@ func parseAPIFromOwlBot(owlBotPath string) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("parsing OwlBot config %s: %w", owlBotPath, err)
 	}
+	// Skip .github/.Owlbot.yaml.
 	if len(owlbot.DeepCopyRegex) == 0 {
 		return "", nil
 	}
