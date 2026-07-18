@@ -376,6 +376,9 @@ type Library struct {
 	// Python contains Python-specific library configuration.
 	Python *PythonPackage `yaml:"python,omitempty"`
 
+	// Ruby contains Ruby-specific library configuration.
+	Ruby *RubyPackage `yaml:"ruby,omitempty"`
+
 	// Rust contains Rust-specific library configuration.
 	Rust *RustCrate `yaml:"rust,omitempty"`
 
