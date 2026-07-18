@@ -835,6 +835,6 @@ type PHPAPI struct {
 
 // RubyPackage contains Ruby-specific library configuration.
 type RubyPackage struct {
-	// WrapperOf contains the names of versioned libraries that this wrapper library wraps.
+	// WrapperOf contains the names of versioned libraries that this library wraps.
 	WrapperOf []string `yaml:"wrapper_of,omitempty"`
 }
