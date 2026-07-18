@@ -91,6 +91,18 @@ func TestFindRubyLibraries(t *testing.T) {
 	}
 	want := []*config.Library{
 		{
+			Name: "google-cloud-compute-v1",
+			APIs: []*config.API{
+				{
+					Path: "google/cloud/compute/v1",
+					Ruby: &config.RubyAPI{
+						EnvPrefix:         "COMPUTE",
+						ExtraDependencies: "google-cloud-common=~> 1.0",
+					},
+				},
+			},
+		},
+		{
 			Name: "google-cloud-secret_manager",
 			Ruby: &config.RubyPackage{
 				WrapperOf: []string{

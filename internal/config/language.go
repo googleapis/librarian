@@ -843,4 +843,6 @@ type RubyPackage struct {
 type RubyAPI struct {
 	// EnvPrefix is the environment variable prefix.
 	EnvPrefix string `yaml:"env_prefix,omitempty"`
+
+	ExtraDependencies string `yaml:"extra_dependencies,omitempty"`
 }
