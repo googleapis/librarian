@@ -84,6 +84,7 @@ func TestRunRubyMigration(t *testing.T) {
 }
 
 func TestFindRubyLibraries(t *testing.T) {
+	googleapisPath := filepath.Join("../../../", "testdata", "googleapis")
 	for _, test := range []struct {
 		name  string
 		files []string
@@ -129,7 +130,7 @@ func TestFindRubyLibraries(t *testing.T) {
 					t.Fatal(err)
 				}
 			}
-			got, err := findRubyLibraries(dir)
+			got, err := findRubyLibraries(googleapisPath, dir)
 			if err != nil {
 				t.Fatal(err)
 			}
