@@ -210,3 +210,43 @@ func TestParseWrapperOf(t *testing.T) {
 		})
 	}
 }
+
+func TestParseVersionedBuild(t *testing.T) {
+	for _, test := range []struct {
+		name          string
+		googleapisDir string
+		apiPath       string
+		want          *VersionedBuild
+	}{
+		{
+			name:          "valid BUILD.bazel with env prefix",
+			googleapisDir: "testdata/googleapis",
+			apiPath:       "google/cloud/secretmanager/v1",
+			want: &VersionedBuild{
+				EnvPrefix: "SECRET_MANAGER",
+			},
+		},
+		{
+			name:          "BUILD.bazel without ruby_cloud_gapic_library rule",
+			googleapisDir: "testdata/googleapis",
+			apiPath:       "google/cloud/bigquery/connection/v1",
+			want:          &VersionedBuild{},
+		},
+		{
+			name:          "nonexistent BUILD.bazel returns nil",
+			googleapisDir: "testdata/googleapis",
+			apiPath:       "google/cloud/nonexistent/v1",
+			want:          nil,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got, err := parseVersionedBuild(test.googleapisDir, test.apiPath)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
