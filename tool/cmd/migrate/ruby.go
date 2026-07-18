@@ -23,6 +23,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"slices"
 	"sort"
 	"strings"
 
@@ -33,6 +34,8 @@ import (
 
 var (
 	versionedAPIPath = regexp.MustCompile(`^/(.+/(v\d+\w*))/(.+)-ruby/(.*)$`)
+	// Skip these directories when searching for libraries.
+	skippedDirs = []string{".github"}
 )
 
 type owlbotYaml struct {
@@ -43,6 +46,7 @@ type owlbotSrc struct {
 	Source string `yaml:"source"`
 }
 
+// VersionedBuild represents build configuration parsed from BUILD.bazel for a Ruby API version.
 type VersionedBuild struct {
 	EnvPrefix string
 }
@@ -100,6 +104,9 @@ func findRubyLibraries(googleapisPath, repoPath string) ([]*config.Library, erro
 			continue
 		}
 		name := entry.Name()
+		if slices.Contains(skippedDirs, name) {
+			continue
+		}
 		owlBotPath := filepath.Join(repoPath, name, ".OwlBot.yaml")
 		if _, err := os.Stat(owlBotPath); err != nil {
 			if errors.Is(err, fs.ErrNotExist) {

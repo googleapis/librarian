@@ -16,7 +16,6 @@ package main
 
 import (
 	"context"
-	"os"
 	"path/filepath"
 	"testing"
 
@@ -84,60 +83,35 @@ func TestRunRubyMigration(t *testing.T) {
 }
 
 func TestFindRubyLibraries(t *testing.T) {
-	googleapisPath := filepath.Join("../../../", "testdata", "googleapis")
-	for _, test := range []struct {
-		name  string
-		files []string
-		want  []*config.Library
-	}{
+	googleapisPath := filepath.Join("testdata", "googleapis")
+	repoPath := filepath.Join("testdata", "google-cloud-ruby")
+	got, err := findRubyLibraries(googleapisPath, repoPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := []*config.Library{
 		{
-			name: "single library with .OwlBot.yaml",
-			files: []string{
-				"google-cloud-secret_manager/.OwlBot.yaml",
-			},
-			want: []*config.Library{
-				{Name: "google-cloud-secret_manager"},
+			Name: "google-cloud-secret_manager",
+			Ruby: &config.RubyPackage{
+				WrapperOf: []string{
+					"google-cloud-secret_manager-v1",
+				},
 			},
 		},
 		{
-			name: "multiple libraries with non-library files and directories",
-			files: []string{
-				"google-cloud-secret_manager/.OwlBot.yaml",
-				"google-cloud-storage/.OwlBot.yaml",
-				"README.md",
-				".OwlBot.yaml",
-				"script/helper.rb",
-			},
-			want: []*config.Library{
-				{Name: "google-cloud-secret_manager"},
-				{Name: "google-cloud-storage"},
+			Name: "google-cloud-secret_manager-v1",
+			APIs: []*config.API{
+				{
+					Path: "google/cloud/secretmanager/v1",
+					Ruby: &config.RubyAPI{
+						EnvPrefix: "SECRET_MANAGER",
+					},
+				},
 			},
 		},
-		{
-			name:  "no libraries found",
-			files: []string{"README.md", "script/helper.rb"},
-			want:  nil,
-		},
-	} {
-		t.Run(test.name, func(t *testing.T) {
-			dir := t.TempDir()
-			for _, f := range test.files {
-				path := filepath.Join(dir, f)
-				if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
-					t.Fatal(err)
-				}
-				if err := os.WriteFile(path, []byte(""), 0644); err != nil {
-					t.Fatal(err)
-				}
-			}
-			got, err := findRubyLibraries(googleapisPath, dir)
-			if err != nil {
-				t.Fatal(err)
-			}
-			if diff := cmp.Diff(test.want, got); diff != "" {
-				t.Errorf("mismatch (-want +got):\n%s", diff)
-			}
-		})
+	}
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
 
