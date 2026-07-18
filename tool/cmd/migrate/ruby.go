@@ -30,7 +30,7 @@ import (
 )
 
 var (
-	versionedAPIPath = regexp.MustCompile(`^/(.+/(v\w+))/(.+)-ruby/(.*)$`)
+	versionedAPIPath = regexp.MustCompile(`^/(.+/(v\d+\w*))/(.+)-ruby/(.*)$`)
 )
 
 type owlbotYaml struct {
@@ -79,7 +79,7 @@ func runRubyMigration(ctx context.Context, repoPath string) error {
 	if err := librarian.RunTidyOnConfig(ctx, repoPath, cfg); err != nil {
 		return fmt.Errorf("%w: %w", errTidyFailed, err)
 	}
-	log.Printf("Successfully migrated Ruby libraries configuration skeleton")
+	log.Printf("Successfully migrated Ruby libraries configuration")
 	return nil
 }
 

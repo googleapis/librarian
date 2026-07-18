@@ -157,6 +157,11 @@ func TestParseAPIFromOwlBot(t *testing.T) {
 			want: "google/marketingplatform/admin/v1alpha",
 		},
 		{
+			name: "video livestream v1 api",
+			path: "testdata/ruby/parse_api_from_owlbot/video_v1.yaml",
+			want: "google/cloud/video/livestream/v1",
+		},
+		{
 			name: "wrapper library",
 			path: "testdata/ruby/parse_api_from_owlbot/wrapper.yaml",
 			want: "",
