@@ -214,6 +214,7 @@ This document describes the schema for the librarian.yaml.
 | `java` | [JavaAPI](#javaapi-configuration) (optional) | Contains Java-specific API configuration. |
 | `nodejs` | [NodejsAPI](#nodejsapi-configuration) (optional) | Contains Node.js-specific API configuration. |
 | `php` | [PHPAPI](#phpapi-configuration) (optional) | Contains PHP-specific API configuration. |
+| `ruby` | [RubyAPI](#rubyapi-configuration) (optional) | Contains Ruby-specific API configuration. |
 
 ## GoDefault Configuration
 
@@ -481,6 +482,12 @@ This document describes the schema for the librarian.yaml.
 | `issue_tracker_override` | string | Allows the issue_tracker field in .repo-metadata.json to be overridden, to reduce diffs while migrating. TODO(https://github.com/googleapis/librarian/issues/4175): remove this field. |
 | `metadata_name_override` | string | Allows the name in .repo-metadata.json (which is also used as part of the client documentation URI) to be overridden. By default, it's the package name, but older packages use the API short name instead. |
 | `default_version` | string | Is the default version of the API to use. When omitted, the version in the first API path is used. |
+
+## RubyAPI Configuration
+
+| Field | Type | Description |
+| :--- | :--- | :--- |
+| `env_prefix` | string | Is the environment variable prefix. |
 
 ## RubyPackage Configuration
 
