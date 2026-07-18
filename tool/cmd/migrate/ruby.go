@@ -158,6 +158,8 @@ func parseWrapperOf(libraries []*config.Library) {
 		}
 		var wrapperOf []string
 		prefix := lib.Name + "-"
+		// Since libraries are sorted by name, the wrapped libraries
+		// are guaranteed to appear after the wrapper library.
 		for j := i + 1; j < len(libraries); j++ {
 			other := libraries[j]
 			if strings.HasPrefix(other.Name, prefix) {
