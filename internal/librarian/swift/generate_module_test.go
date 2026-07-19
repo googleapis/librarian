@@ -180,7 +180,7 @@ func TestGrpcFileBoilerplate(t *testing.T) {
 		t.Errorf("missing ' Copyright 2345' in:\n%s", full)
 	}
 	gotLines := strings.Count(full, "\n")
-	wantLines := len(license.Header("2345")) + 1
+	wantLines := len(license.Header("2345")) + 2
 	if wantLines != gotLines {
 		t.Errorf("mismatched line count, want=%d, got=%d", wantLines, gotLines)
 	}
