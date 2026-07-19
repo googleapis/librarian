@@ -98,21 +98,15 @@ func compileProtobufs(ctx context.Context, library *config.Library, module *conf
 // notice. It is only called from `computeProtobufs()`, we split it to keep the
 // functions small-ish.
 func addBoilerplateToGrpc(module *config.SwiftModule, library *config.Library) error {
+	want := gRPCFileBoilerplate(library.CopyrightYear)
 	return filepath.WalkDir(module.Output, func(path string, d os.DirEntry, err error) error {
-		if err != nil {
+		if err != nil || d.IsDir() || !strings.HasSuffix(path, ".grpc.swift") {
 			return err
-		}
-		if d.IsDir() {
-			return nil
-		}
-		if !strings.HasSuffix(path, ".grpc.swift") {
-			return nil
 		}
 		contents, err := os.ReadFile(path)
 		if err != nil {
 			return err
 		}
-		want := gRPCFileBoilerplate(library.CopyrightYear)
 		got := contents[0:min(len(want), len(contents))]
 		if bytes.Equal(want, got) {
 			return nil
