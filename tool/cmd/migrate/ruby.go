@@ -24,7 +24,6 @@ import (
 	"path/filepath"
 	"regexp"
 	"slices"
-	"sort"
 	"strings"
 
 	"github.com/googleapis/librarian/internal/config"
