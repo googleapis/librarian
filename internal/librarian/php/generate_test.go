@@ -359,9 +359,6 @@ func TestGatherGAPICProtos_Error(t *testing.T) {
 				}
 			}
 			_, err := gatherGAPICProtos(tempDir, test.apiPath, nil, true)
-			if err == nil {
-				t.Fatal("gatherGAPICProtos() expected error, got nil")
-			}
 			if !errors.Is(err, test.wantErr) {
 				t.Errorf("gatherGAPICProtos() error = %v, wantErr = %v", err, test.wantErr)
 			}
