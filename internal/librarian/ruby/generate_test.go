@@ -27,7 +27,6 @@ import (
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/serviceconfig"
 	"github.com/googleapis/librarian/internal/sources"
-	"github.com/googleapis/librarian/internal/testhelper"
 )
 
 const testdataGoogleapis = "../../testdata/googleapis"
@@ -315,9 +314,6 @@ exit 0
 
 func TestGenerate(t *testing.T) {
 	setupDummyProtoc(t)
-	testhelper.RequireCommand(t, "protoc")
-	testhelper.RequireCommand(t, "grpc_tools_ruby_protoc_plugin")
-	testhelper.RequireCommand(t, "protoc-gen-ruby_cloud")
 
 	googleapisDir, err := filepath.Abs(testdataGoogleapis)
 	if err != nil {
@@ -345,9 +341,6 @@ func TestGenerate(t *testing.T) {
 
 func TestGenerateAPI(t *testing.T) {
 	setupDummyProtoc(t)
-	testhelper.RequireCommand(t, "protoc")
-	testhelper.RequireCommand(t, "grpc_tools_ruby_protoc_plugin")
-	testhelper.RequireCommand(t, "protoc-gen-ruby_cloud")
 
 	googleapisDir, err := filepath.Abs(testdataGoogleapis)
 	if err != nil {
