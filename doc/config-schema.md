@@ -483,12 +483,15 @@ This document describes the schema for the librarian.yaml.
 | `metadata_name_override` | string | Allows the name in .repo-metadata.json (which is also used as part of the client documentation URI) to be overridden. By default, it's the package name, but older packages use the API short name instead. |
 | `default_version` | string | Is the default version of the API to use. When omitted, the version in the first API path is used. |
 
+<<<<<<< HEAD
 ## RubyAPI Configuration
 
 | Field | Type | Description |
 | :--- | :--- | :--- |
 | `env_prefix` | string | Is the environment variable prefix. |
 
+=======
+>>>>>>> main
 ## RubyPackage Configuration
 
 | Field | Type | Description |
@@ -515,6 +518,7 @@ This document describes the schema for the librarian.yaml.
 | `routing_required` | bool | Indicates whether routing is required. |
 | `include_grpc_only_methods` | bool | Indicates whether to include gRPC-only methods. |
 | `include_streaming_methods` | bool | Indicates whether to include gRPC streaming methods. |
+| `include_bidi_streaming_methods` | bool | Indicates whether to include gRPC bi-directional streaming methods. |
 | `post_process_protos` | string | Indicates whether to post-process protos. |
 | `documentation_overrides` | list of [RustDocumentationOverride](#rustdocumentationoverride-configuration) | Contains overrides for element documentation. |
 | `pagination_overrides` | list of [RustPaginationOverride](#rustpaginationoverride-configuration) | Contains overrides for pagination configuration. |
@@ -558,6 +562,7 @@ This document describes the schema for the librarian.yaml.
 | `include_grpc_only_methods` | bool | Indicates whether to include gRPC-only methods. |
 | `include_list` | yaml.StringSlice | Is a list of proto files to include (e.g., "date.proto", "expr.proto"). |
 | `include_streaming_methods` | bool | Indicates whether to include gRPC streaming methods. |
+| `include_bidi_streaming_methods` | bool | Indicates whether to include gRPC bi-directional streaming methods. |
 | `internal_builders` | bool | Indicates whether generated builders should be internal to the crate. |
 | `module_path` | string | Is the Rust module path for converters (e.g., "crate::generated::gapic::model"). |
 | `module_roots` | map[string]string |  |
