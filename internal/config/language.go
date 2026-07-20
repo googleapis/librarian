@@ -840,3 +840,9 @@ type PHPAPI struct {
 	// StagingSubdir is the subdirectory in staging where the generated files should be placed.
 	StagingSubdir string `yaml:"staging_subdir,omitempty"`
 }
+
+// RubyPackage contains Ruby-specific library configuration.
+type RubyPackage struct {
+	// WrapperOf contains the names of versioned libraries that this library wraps.
+	WrapperOf []string `yaml:"wrapper_of,omitempty"`
+}

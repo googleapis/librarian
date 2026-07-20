@@ -23,6 +23,8 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"sort"
+	"strings"
 
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/librarian"
@@ -117,6 +119,7 @@ func findRubyLibraries(repoPath string) ([]*config.Library, error) {
 		}
 		libraries = append(libraries, lib)
 	}
+	parseWrapperOf(libraries)
 	return libraries, nil
 }
 
@@ -142,4 +145,36 @@ func parseAPIFromOwlBot(owlBotPath string) (string, error) {
 		return "", nil
 	}
 	return matches[1], nil
+}
+
+// parseWrapperOf sets the WrapperOf field for wrapper libraries.
+func parseWrapperOf(libraries []*config.Library) {
+	sort.Slice(libraries, func(i, j int) bool {
+		return libraries[i].Name < libraries[j].Name
+	})
+	for i, lib := range libraries {
+		if len(lib.APIs) != 0 {
+			// Skip non-wrapper libraries.
+			continue
+		}
+		var wrapperOf []string
+		prefix := lib.Name + "-"
+		// Since libraries are sorted by name, the wrapped libraries
+		// are guaranteed to appear after the wrapper library.
+		for j := i + 1; j < len(libraries); j++ {
+			other := libraries[j]
+			if strings.HasPrefix(other.Name, prefix) {
+				wrapperOf = append(wrapperOf, other.Name)
+			} else {
+				// Since libraries are sorted by name, the wrapped libraries
+				// must be consecutive.
+				break
+			}
+		}
+		if len(wrapperOf) > 0 {
+			lib.Ruby = &config.RubyPackage{
+				WrapperOf: wrapperOf,
+			}
+		}
+	}
 }
