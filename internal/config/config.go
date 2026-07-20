@@ -376,6 +376,9 @@ type Library struct {
 	// Python contains Python-specific library configuration.
 	Python *PythonPackage `yaml:"python,omitempty"`
 
+	// Ruby contains Ruby-specific library configuration.
+	Ruby *RubyPackage `yaml:"ruby,omitempty"`
+
 	// Rust contains Rust-specific library configuration.
 	Rust *RustCrate `yaml:"rust,omitempty"`
 
@@ -469,6 +472,9 @@ type API struct {
 
 	// PHP contains PHP-specific API configuration.
 	PHP *PHPAPI `yaml:"php,omitempty"`
+
+	// Ruby contains Ruby-specific API configuration.
+	Ruby *RubyAPI `yaml:"ruby,omitempty"`
 }
 
 // GoDefault defines Go-specific default configuration.

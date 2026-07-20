@@ -1,5 +1,57 @@
 # Changelog
 
+## [0.27.1](https://github.com/googleapis/librarian/compare/v0.27.0...v0.27.1) (2026-07-17)
+
+
+### Bug Fixes
+
+* **nodejs:** require cached tools and prevent host binary fallback ([#6874](https://github.com/googleapis/librarian/issues/6874)) ([599bde4](https://github.com/googleapis/librarian/commit/599bde4b85c6ca6bda5c694e29bb29b3a165a231))
+* **nodejs:** unify pnpm v7 and v8+ global bin environment configuration ([#6873](https://github.com/googleapis/librarian/issues/6873)) ([ac5d9cc](https://github.com/googleapis/librarian/commit/ac5d9cc9bd1f5638e7c8d969338e6bd1789f96c5))
+
+## [0.27.0](https://github.com/googleapis/librarian/compare/v0.26.0...v0.27.0) (2026-07-17)
+
+
+### Features
+
+* **internal/config:** add additional_protos configuration support for php ([#6801](https://github.com/googleapis/librarian/issues/6801)) ([26c1029](https://github.com/googleapis/librarian/commit/26c1029998095e3a4b9b0884b87c7adfb06c061c)), closes [#6743](https://github.com/googleapis/librarian/issues/6743)
+* **internal/librarian/golang:** support protoc tool configuration ([#6767](https://github.com/googleapis/librarian/issues/6767)) ([7013350](https://github.com/googleapis/librarian/commit/7013350d238e507cbd2b8a2b108873ff7dd8d569))
+* **internal/librarian/java:** populate RequiresBilling from API config in README template ([#6737](https://github.com/googleapis/librarian/issues/6737)) ([da3bc04](https://github.com/googleapis/librarian/commit/da3bc04ef2c4b1ff7eaf9da3d9f7a735baf51440))
+* **internal/librarian/java:** pre-validate java libraries bom version in config ([#6674](https://github.com/googleapis/librarian/issues/6674)) ([620a505](https://github.com/googleapis/librarian/commit/620a505367f2f6141e8605668a7c42a9f7d7f8e9))
+* **internal/librarian/nodejs:** support src_dir for pnpm tool sourcebuilds ([#6877](https://github.com/googleapis/librarian/issues/6877)) ([c58e52d](https://github.com/googleapis/librarian/commit/c58e52d4fb5bd2348e737f859556bcb124842371))
+* **internal/librarian/php:** add tidying logic for additional_protos ([#6819](https://github.com/googleapis/librarian/issues/6819)) ([ec61444](https://github.com/googleapis/librarian/commit/ec61444c1fe8e2516240dcc0e756b06a264a9afc)), closes [#6743](https://github.com/googleapis/librarian/issues/6743)
+* **internal/librarian/php:** install tools using composer ([#6799](https://github.com/googleapis/librarian/issues/6799)) ([482238f](https://github.com/googleapis/librarian/commit/482238f63fc23785324c11f6626a5b39676df7dc))
+* **internal/librarian/php:** integrate additional_protos into client generation ([#6810](https://github.com/googleapis/librarian/issues/6810)) ([51bfdd2](https://github.com/googleapis/librarian/commit/51bfdd20e2dde592dbb71c7aedbf3a0144d49f8f)), closes [#6743](https://github.com/googleapis/librarian/issues/6743)
+* **internal/librarian/php:** make CommonResources configurable for php ([#6823](https://github.com/googleapis/librarian/issues/6823)) ([f30d232](https://github.com/googleapis/librarian/commit/f30d232684436cded93b71b70d3f11bae0b830de)), closes [#6813](https://github.com/googleapis/librarian/issues/6813)
+* **internal/librarian/php:** run owlbot.py in generate phase ([#6869](https://github.com/googleapis/librarian/issues/6869)) ([2d4b208](https://github.com/googleapis/librarian/commit/2d4b20874adbd2e66e691b122dcd3009fdbeca6e)), closes [#6773](https://github.com/googleapis/librarian/issues/6773)
+* **internal/librarian/php:** support install PNPM tools ([#6839](https://github.com/googleapis/librarian/issues/6839)) ([192e469](https://github.com/googleapis/librarian/commit/192e469301a2bae0761ba0388923d6b823ac719e)), closes [#6830](https://github.com/googleapis/librarian/issues/6830)
+* **librarian:** config get libraries apiPath ([#6655](https://github.com/googleapis/librarian/issues/6655)) ([e5cd774](https://github.com/googleapis/librarian/commit/e5cd774a50337bc2e9392d3704d9598dca2b457a))
+* **sidekick/rust:** generate LRO `Poller` for bigquery `InsertJob` ([#6841](https://github.com/googleapis/librarian/issues/6841)) ([d5ce8a9](https://github.com/googleapis/librarian/commit/d5ce8a9d2faad987ad1ab1d61b54c915db03644d))
+* **sidekick/swift:** `oneof` in method signatures ([#6863](https://github.com/googleapis/librarian/issues/6863)) ([9ebd4bc](https://github.com/googleapis/librarian/commit/9ebd4bc82f846af802c54896d2431e0b00b73ca6))
+* **sidekick/swift:** generate core package versions ([#6812](https://github.com/googleapis/librarian/issues/6812)) ([1a08672](https://github.com/googleapis/librarian/commit/1a08672e0ccc004ac5d72a90a8be8ca0b2e38762)), closes [#5940](https://github.com/googleapis/librarian/issues/5940)
+* **sidekick/swift:** generate telemetry headers ([#6820](https://github.com/googleapis/librarian/issues/6820)) ([b24d086](https://github.com/googleapis/librarian/commit/b24d086b214ba14df165d07481bbf92759c94537))
+* **sidekick/swift:** use `$apiVersion` ([#6794](https://github.com/googleapis/librarian/issues/6794)) ([0b309b8](https://github.com/googleapis/librarian/commit/0b309b813e97f625d43e2e8efec314266460ce9d))
+* **sidekick/swift:** use internal import over @_implementationOnly ([#6817](https://github.com/googleapis/librarian/issues/6817)) ([096d91c](https://github.com/googleapis/librarian/commit/096d91c81da87053cf4b11c2e77aec2476daa186))
+* **swift:** add convert-swift functionality ([#6802](https://github.com/googleapis/librarian/issues/6802)) ([7813442](https://github.com/googleapis/librarian/commit/781344218cd1744fb46bdbc0ea0389f98564e7ec))
+* **swift:** format all module output directories ([#6840](https://github.com/googleapis/librarian/issues/6840)) ([eb684c9](https://github.com/googleapis/librarian/commit/eb684c96123bdf925191694e1092ae80d9bb0723))
+* **too/cmd/migrate:** specify protoc version in tools section ([#6793](https://github.com/googleapis/librarian/issues/6793)) ([201fa99](https://github.com/googleapis/librarian/commit/201fa99928ef26bd669e130089e1d2a8cf1b7546)), closes [#6791](https://github.com/googleapis/librarian/issues/6791)
+* **tool/cmd/migrate:** add prettier formatting tools to PHP migration template ([#6831](https://github.com/googleapis/librarian/issues/6831)) ([9c06b20](https://github.com/googleapis/librarian/commit/9c06b20eeb454dda36fb8449ec61d8622708961c))
+* **tool/cmd/migrate:** discover ruby libraries during migration ([#6856](https://github.com/googleapis/librarian/issues/6856)) ([fefcc0e](https://github.com/googleapis/librarian/commit/fefcc0eb387afed0412ad32311d90bfb1446c0ef)), closes [#6632](https://github.com/googleapis/librarian/issues/6632)
+* **tool/cmd/migrate:** parse BUILD.bazel and populate AdditionalProtos for php ([#6814](https://github.com/googleapis/librarian/issues/6814)) ([53e3f4b](https://github.com/googleapis/librarian/commit/53e3f4b07a3732229582579590c97919c4bbe502)), closes [#6743](https://github.com/googleapis/librarian/issues/6743)
+* **tool/cmd/migrate:** set php default for common_resources ([#6836](https://github.com/googleapis/librarian/issues/6836)) ([b2df615](https://github.com/googleapis/librarian/commit/b2df6153b76ce0b6ec71a563c20d3661941e19fa)), closes [#6813](https://github.com/googleapis/librarian/issues/6813)
+
+
+### Bug Fixes
+
+* **.github:** restore pnpm version ([#6851](https://github.com/googleapis/librarian/issues/6851)) ([0735cac](https://github.com/googleapis/librarian/commit/0735cac5691c433e449968a5479f4e1cfadb463b))
+* **internal/config:** remove PHPPackage.AdditionalProtos and simplify logic ([#6818](https://github.com/googleapis/librarian/issues/6818)) ([19c4a93](https://github.com/googleapis/librarian/commit/19c4a9313aade80040bea86d3397f6fc71f82cab)), closes [#6743](https://github.com/googleapis/librarian/issues/6743)
+* **internal/librarian/nodejs:** fallback to Checksum if SHA256 is empty ([#6804](https://github.com/googleapis/librarian/issues/6804)) ([cf906e6](https://github.com/googleapis/librarian/commit/cf906e68395726b82f7ad8be28329b4dee4ebd04)), closes [#6803](https://github.com/googleapis/librarian/issues/6803)
+* **internal/librarian/nodejs:** pass --no-comments to compileProtos ([#6866](https://github.com/googleapis/librarian/issues/6866)) ([e749b3e](https://github.com/googleapis/librarian/commit/e749b3ed2e385f119f85443dc4dedd2e15db6ec3))
+* **sidekick/swift:** clashes for `Logging` ([#6878](https://github.com/googleapis/librarian/issues/6878)) ([faf0c22](https://github.com/googleapis/librarian/commit/faf0c22f4a55d6cdfb675d8a464c2a99ed601084))
+* **sidekick/swift:** dependencies on `Clients.swift` ([#6864](https://github.com/googleapis/librarian/issues/6864)) ([c5bca34](https://github.com/googleapis/librarian/commit/c5bca346e5b7ee074f09ec95e181fad38813b261))
+* **sidekick/swift:** no escaping for `GateExpression` ([#6829](https://github.com/googleapis/librarian/issues/6829)) ([b26b680](https://github.com/googleapis/librarian/commit/b26b68022f12d8a4859de0b5fbfa325c9813c2e7))
+* **sidekick/swift:** skip external package traits ([#6848](https://github.com/googleapis/librarian/issues/6848)) ([ba9041c](https://github.com/googleapis/librarian/commit/ba9041c6fe2739f14575c8b5ecd9f56adacbfef4))
+* **tool/cmd/migrate:** add SHA256 for protoc version in php migrate ([#6798](https://github.com/googleapis/librarian/issues/6798)) ([0a47b2f](https://github.com/googleapis/librarian/commit/0a47b2f6b7f5202df79758b1e04184d57b31c59f))
+
 ## [0.26.0](https://github.com/googleapis/librarian/compare/v0.25.0...v0.26.0) (2026-07-13)
 
 

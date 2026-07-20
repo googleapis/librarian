@@ -256,6 +256,8 @@ func addNewLibrary(cfg *config.Config, api *config.API) (string, *config.Config,
 		}
 	case config.LanguageRust:
 		lib = rust.Add(lib)
+	case config.LanguageSwift:
+		lib = swift.Add(lib, cfg)
 	case config.LanguageFake:
 		lib = fakeAdd(lib, defaultVersion)
 	}

@@ -16,6 +16,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"os"
 	"path/filepath"
 	"testing"
@@ -26,16 +27,16 @@ import (
 )
 
 func TestRunPHPMigration(t *testing.T) {
-	oldFetchSource := fetchSource
+	oldFetchSource := phpFetchSource
 	t.Cleanup(func() {
-		fetchSource = oldFetchSource
+		phpFetchSource = oldFetchSource
 	})
 	absGoogleapis, err := filepath.Abs("../../internal/testdata/googleapis")
 	if err != nil {
 		t.Fatal(err)
 	}
-	// Override fetchSource.
-	fetchSource = func(ctx context.Context) (*config.Source, error) {
+	// Override phpFetchSource.
+	phpFetchSource = func(ctx context.Context) (*config.Source, error) {
 		return &config.Source{
 			Commit: "abcd123",
 			SHA256: "sha123",
@@ -192,8 +193,8 @@ deep-copy-regex:
     dest: /owl-bot-staging/Ces/$1/$2
   - source: /google/identity/accesscontextmanager/type/.*-php/(.*)
     dest: /owl-bot-staging/AccessContextManager/type-protos/$1
-  - source: /google/cloud/ces/(v1)/.*-php/(.*)
-    dest: /owl-bot-staging/Ces/$1/$2
+  - source: /google/apps/card/(v1)/.*-php/(.*)
+    dest: /owl-bot-staging/AppsChat/card-protos/$1/$2
 api-name: Ces
 `
 				path := filepath.Join(dir, ".OwlBot.yaml")
@@ -203,8 +204,48 @@ api-name: Ces
 				return path
 			},
 			want: []*config.API{
-				{Path: "google/cloud/ces/v1"},
-				{Path: "google/identity/accesscontextmanager/type"},
+				{
+					Path: "google/cloud/ces/v1",
+					PHP: &config.PHPAPI{
+						StagingSubdir: "v1",
+					},
+				},
+				{
+					Path: "google/identity/accesscontextmanager/type",
+					PHP: &config.PHPAPI{
+						StagingSubdir: "type-protos",
+					},
+				},
+				{
+					Path: "google/apps/card/v1",
+					PHP: &config.PHPAPI{
+						StagingSubdir: "card-protos/v1",
+					},
+				},
+			},
+		},
+		{
+			name: "destination with library root (dot)",
+			setupFile: func(dir string) string {
+				content := `
+deep-copy-regex:
+  - source: /google/geo/type/.*-php/(.*)
+    dest: /owl-bot-staging/GeoCommonProtos/$1
+api-name: GeoCommonProtos
+`
+				path := filepath.Join(dir, ".OwlBot.yaml")
+				if err := os.WriteFile(path, []byte(content), 0644); err != nil {
+					t.Fatal(err)
+				}
+				return path
+			},
+			want: []*config.API{
+				{
+					Path: "google/geo/type",
+					PHP: &config.PHPAPI{
+						StagingSubdir: ".",
+					},
+				},
 			},
 		},
 	} {
@@ -226,6 +267,7 @@ func TestExtractAPIsFromOwlBot_Error(t *testing.T) {
 	for _, test := range []struct {
 		name      string
 		setupFile func(dir string) string
+		wantErr   error
 	}{
 		{
 			name: "invalid file",
@@ -237,6 +279,25 @@ func TestExtractAPIsFromOwlBot_Error(t *testing.T) {
 				}
 				return path
 			},
+			// wantErr is nil as we only assert that a YAML parsing error is returned.
+			wantErr: nil,
+		},
+		{
+			name: "missing staging marker",
+			setupFile: func(dir string) string {
+				content := `
+deep-copy-regex:
+  - source: /google/cloud/ces/(v1)/.*-php/(.*)
+    dest: /no-staging/Ces/$1/$2
+api-name: Ces
+`
+				path := filepath.Join(dir, ".OwlBot.yaml")
+				if err := os.WriteFile(path, []byte(content), 0644); err != nil {
+					t.Fatal(err)
+				}
+				return path
+			},
+			wantErr: errUnableToResolveStagingSubdir,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
@@ -246,20 +307,25 @@ func TestExtractAPIsFromOwlBot_Error(t *testing.T) {
 			if err == nil {
 				t.Fatal("expected error, got nil")
 			}
+			if test.wantErr != nil && !errors.Is(err, test.wantErr) {
+				t.Errorf("expected error %v, got %v", test.wantErr, err)
+			}
 		})
 	}
 }
 
 func TestParsePHPBazel(t *testing.T) {
 	for _, test := range []struct {
-		name       string
-		bazelRules string
-		want       []string
+		name                string
+		bazelRules          string
+		want                []string
+		wantCommonResources bool
 	}{
 		{
-			name:       "no BUILD.bazel",
-			bazelRules: "",
-			want:       nil,
+			name:                "no BUILD.bazel",
+			bazelRules:          "",
+			want:                nil,
+			wantCommonResources: false,
 		},
 		{
 			name: "valid BUILD.bazel with location and iam mixins",
@@ -279,6 +345,7 @@ proto_library_with_info(
 				"google/cloud/location/locations.proto",
 				"google/iam/v1/iam_policy.proto",
 			},
+			wantCommonResources: true,
 		},
 		{
 			name: "valid BUILD.bazel with no mixins",
@@ -291,7 +358,21 @@ proto_library_with_info(
     ],
 )
 `,
-			want: nil,
+			want:                nil,
+			wantCommonResources: true,
+		},
+		{
+			name: "valid BUILD.bazel with no common resources",
+			bazelRules: `
+proto_library_with_info(
+    name = "ces_proto_with_info",
+    deps = [
+        ":ces_proto",
+    ],
+)
+`,
+			want:                nil,
+			wantCommonResources: false,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
@@ -305,7 +386,81 @@ proto_library_with_info(
 					t.Fatal(err)
 				}
 			}
-			got, err := parsePHPBazel(tempDir, "google/cloud/ces/v1")
+			got, gotCommonResources, err := parsePHPBazel(tempDir, "google/cloud/ces/v1")
+			if err != nil {
+				t.Fatal(err)
+			}
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+			if gotCommonResources != test.wantCommonResources {
+				t.Errorf("mismatch common resources flag: want %t, got %t", test.wantCommonResources, gotCommonResources)
+			}
+		})
+	}
+}
+
+func TestFindPHPLibraries(t *testing.T) {
+	googleapisDir := "testdata/googleapis"
+
+	for _, test := range []struct {
+		name                         string
+		setupLib                     func(t *testing.T, dir string)
+		globalDefaultCommonResources bool
+		want                         []*config.Library
+	}{
+		{
+			name: "common resources configuration",
+			setupLib: func(t *testing.T, dir string) {
+				libDir := filepath.Join(dir, "SecretManager")
+				if err := os.Mkdir(libDir, 0755); err != nil {
+					t.Fatal(err)
+				}
+				if err := os.WriteFile(filepath.Join(libDir, "VERSION"), []byte("2.3.0\n"), 0644); err != nil {
+					t.Fatal(err)
+				}
+				if err := os.WriteFile(filepath.Join(libDir, "composer.json"), []byte("{}"), 0644); err != nil {
+					t.Fatal(err)
+				}
+				owlbotContent := `
+deep-copy-regex:
+  - source: /google/cloud/secretmanager/(v1)/.*-php/(.*)
+    dest: /owl-bot-staging/SecretManager/$1/$2
+  - source: /google/cloud/multipygapic/.*-php/(.*)
+    dest: /owl-bot-staging/SecretManager/multipygapic/$1
+`
+				if err := os.WriteFile(filepath.Join(libDir, ".OwlBot.yaml"), []byte(owlbotContent), 0644); err != nil {
+					t.Fatal(err)
+				}
+			},
+			globalDefaultCommonResources: true,
+			want: []*config.Library{
+				{
+					Name:    "SecretManager",
+					Version: "2.3.0",
+					APIs: []*config.API{
+						{
+							Path: "google/cloud/secretmanager/v1",
+							PHP: &config.PHPAPI{
+								StagingSubdir: "v1",
+							},
+						},
+						{
+							Path: "google/cloud/multipygapic",
+							PHP: &config.PHPAPI{
+								StagingSubdir:   "multipygapic",
+								CommonResources: new(false),
+							},
+						},
+					},
+				},
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			dir := t.TempDir()
+			test.setupLib(t, dir)
+			got, err := findPHPLibraries(dir, googleapisDir, test.globalDefaultCommonResources)
 			if err != nil {
 				t.Fatal(err)
 			}

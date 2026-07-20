@@ -24,6 +24,7 @@ import (
 	"time"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/sample"
 	"github.com/googleapis/librarian/internal/yaml"
@@ -649,5 +650,77 @@ func TestAddLibraryCommand_Java(t *testing.T) {
 	}
 	if diff := cmp.Diff(wantLibraries, gotCfg.Libraries); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+}
+
+func TestAddLibrary_Swift(t *testing.T) {
+	copyrightYear := strconv.Itoa(time.Now().Year())
+	for _, test := range []struct {
+		name               string
+		swiftDefault       *config.SwiftDefault
+		wantFinalLibraries []*config.Library
+	}{
+		{
+			name:         "new library stable",
+			swiftDefault: &config.SwiftDefault{DefaultVersion: "1.0.0"},
+			wantFinalLibraries: []*config.Library{
+				{
+					Name:          "GoogleCloudSecretmanagerV1",
+					CopyrightYear: copyrightYear,
+					Version:       "1.0.0",
+				},
+			},
+		},
+		{
+			name:         "new library preview",
+			swiftDefault: &config.SwiftDefault{DefaultVersion: "0.1.2-preview"},
+			wantFinalLibraries: []*config.Library{
+				{
+					Name:          "GoogleCloudSecretmanagerV1",
+					CopyrightYear: copyrightYear,
+					Version:       "0.1.2-preview",
+				},
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			googleapisDir, err := filepath.Abs("../testdata/googleapis")
+			if err != nil {
+				t.Fatal(err)
+			}
+			tmpDir := t.TempDir()
+			t.Chdir(tmpDir)
+
+			cfg := &config.Config{
+				Language: config.LanguageSwift,
+				Default: &config.Default{
+					Swift:  test.swiftDefault,
+					Output: "output",
+				},
+				Libraries: []*config.Library{},
+				Sources: &config.Sources{
+					Googleapis: &config.Source{
+						Dir: googleapisDir,
+					},
+				},
+			}
+			if err := yaml.Write(config.LibrarianYAML, cfg); err != nil {
+				t.Fatal(err)
+			}
+			err = runAdd(t.Context(), cfg, "google/cloud/secretmanager/v1")
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			gotCfg, err := yaml.Read[config.Config](config.LibrarianYAML)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			less := func(a, b *config.Library) bool { return a.Name < b.Name }
+			if diff := cmp.Diff(test.wantFinalLibraries, gotCfg.Libraries, cmpopts.SortSlices(less), cmpopts.IgnoreFields(config.Library{}, "APIs")); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
 	}
 }

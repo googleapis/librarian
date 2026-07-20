@@ -18,6 +18,9 @@ package config
 type SwiftDefault struct {
 	// Dependencies is a list of package dependencies.
 	Dependencies []SwiftDependency `yaml:"dependencies,omitempty"`
+
+	// The default version for new libraries.
+	DefaultVersion string `yaml:"default_version,omitempty"`
 }
 
 // SwiftPackage contains Swift-specific configuration for a Swift library.

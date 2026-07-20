@@ -228,6 +228,15 @@ func TestParseOptions(t *testing.T) {
 		{
 			Format: libconfig.SpecProtobuf,
 			Options: map[string]string{
+				"include-bidi-streaming-methods": "true",
+			},
+			Update: func(c *codec) {
+				c.includeBidiStreamingMethods = true
+			},
+		},
+		{
+			Format: libconfig.SpecProtobuf,
+			Options: map[string]string{
 				"per-service-features": "true",
 			},
 			Update: func(c *codec) {
@@ -384,6 +393,7 @@ func TestParseOptionsErrors(t *testing.T) {
 		{Options: map[string]string{"package:": ""}},
 		{Options: map[string]string{"include-grpc-only-methods": ""}},
 		{Options: map[string]string{"include-streaming-methods": ""}},
+		{Options: map[string]string{"include-bidi-streaming-methods": ""}},
 		{Options: map[string]string{"per-service-features": ""}},
 		{Options: map[string]string{"detailed-tracing-attributes": ""}},
 		{Options: map[string]string{"lro-stub-options": ""}},
