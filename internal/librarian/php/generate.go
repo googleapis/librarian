@@ -95,8 +95,6 @@ func Generate(ctx context.Context, cfg *config.Config, library *config.Library, 
 	if err := os.MkdirAll(stagingDir, 0755); err != nil {
 		return err
 	}
-	gapicZipPath := filepath.Join(tempDir, "output.zip")
-	protoZipPath := filepath.Join(tempDir, "proto.zip")
 	srcCfg := sources.NewSourceConfig(src, library.Roots)
 	for _, api := range library.APIs {
 		if api.PHP == nil || api.PHP.StagingSubdir == "" {
@@ -111,20 +109,12 @@ func Generate(ctx context.Context, cfg *config.Config, library *config.Library, 
 			library:      library,
 			srcCfg:       srcCfg,
 			wrapperPath:  wrapperPath,
-			gapicZipPath: gapicZipPath,
-			protoZipPath: protoZipPath,
+			tempDir:      tempDir,
 			gapicDestDir: gapicDestDir,
 			protoDestDir: protoDestDir,
 		}
 		if err := generateAPI(ctx, params); err != nil {
 			return err
-		}
-		// Cleanup output zips for subsequent APIs in the same library package
-		if err := os.Remove(gapicZipPath); err != nil && !errors.Is(err, os.ErrNotExist) {
-			return fmt.Errorf("failed to remove gapic zip: %w", err)
-		}
-		if err := os.Remove(protoZipPath); err != nil && !errors.Is(err, os.ErrNotExist) {
-			return fmt.Errorf("failed to remove proto zip: %w", err)
 		}
 	}
 	if err := postProcessLibrary(ctx, library); err != nil {
@@ -139,8 +129,7 @@ type generateAPIParams struct {
 	library      *config.Library
 	srcCfg       *sources.SourceConfig
 	wrapperPath  string
-	gapicZipPath string
-	protoZipPath string
+	tempDir      string
 	gapicDestDir string
 	protoDestDir string
 }
@@ -148,10 +137,22 @@ type generateAPIParams struct {
 // generateAPI generates a single target API by resolving its service config, gathering
 // all target proto files, and executing the PHP generator plugin via protoc.
 // It extracts the resulting ZIP archive directly to the library output directory.
-func generateAPI(ctx context.Context, params *generateAPIParams) error {
+func generateAPI(ctx context.Context, params *generateAPIParams) (retErr error) {
 	if params.api.PHP == nil || params.api.PHP.CommonResources == nil {
 		return errCommonResourcesUnconfigured
 	}
+	sanitizedPath := strings.ReplaceAll(params.api.Path, "/", "_")
+	gapicZipPath := filepath.Join(params.tempDir, sanitizedPath+"-gapic.zip")
+	protoZipPath := filepath.Join(params.tempDir, sanitizedPath+"-proto.zip")
+
+	defer func() {
+		if cleanupErr := os.Remove(gapicZipPath); cleanupErr != nil && !errors.Is(cleanupErr, os.ErrNotExist) {
+			retErr = errors.Join(retErr, fmt.Errorf("failed to remove gapic zip: %w", cleanupErr))
+		}
+		if cleanupErr := os.Remove(protoZipPath); cleanupErr != nil && !errors.Is(cleanupErr, os.ErrNotExist) {
+			retErr = errors.Join(retErr, fmt.Errorf("failed to remove proto zip: %w", cleanupErr))
+		}
+	}()
 	googleapisDir := params.srcCfg.Root("googleapis")
 	// Resolve service config files
 	grpcConfigPath, err := serviceconfig.FindGRPCServiceConfig(googleapisDir, params.api.Path)
@@ -179,19 +180,19 @@ func generateAPI(ctx context.Context, params *generateAPIParams) error {
 		pc = params.cfg.Tools.Protoc
 	}
 	// Run 1: GAPIC Client Generation
-	gapicArgs := buildGapicProtocArgs(params, opts, gapicProtos)
+	gapicArgs := buildGapicProtocArgs(params, gapicZipPath, opts, gapicProtos)
 	if err := protoc.RunOrSystem(ctx, map[string]string{"GOOGLEAPIS_DIR": googleapisDir}, pc, gapicArgs...); err != nil {
 		return fmt.Errorf("failed to generate PHP GAPIC API %s: %w", params.api.Path, err)
 	}
-	if err := extractOutput(ctx, params.gapicZipPath, params.gapicDestDir); err != nil {
+	if err := extractOutput(ctx, gapicZipPath, params.gapicDestDir); err != nil {
 		return err
 	}
 	// Run 2: Proto Message Generation
-	protoArgs := buildProtoProtocArgs(params, mainProtos)
+	protoArgs := buildProtoProtocArgs(params, protoZipPath, mainProtos)
 	if err := protoc.RunOrSystem(ctx, map[string]string{"GOOGLEAPIS_DIR": googleapisDir}, pc, protoArgs...); err != nil {
 		return fmt.Errorf("failed to generate PHP Proto API %s: %w", params.api.Path, err)
 	}
-	return extractOutput(ctx, params.protoZipPath, params.protoDestDir)
+	return extractOutput(ctx, protoZipPath, params.protoDestDir)
 }
 
 // gatherGAPICProtos collects all proto files inside the target API directory,
@@ -212,8 +213,8 @@ func gatherGAPICProtos(googleapisDir, apiPath string, additionalProtos []string,
 	return targetProtos, nil
 }
 
-func buildGapicProtocArgs(params *generateAPIParams, opts []string, targetProtos []string) []string {
-	gapicOutArg := fmt.Sprintf("--gapic_out=%s:%s", strings.Join(opts, ","), params.gapicZipPath)
+func buildGapicProtocArgs(params *generateAPIParams, gapicZipPath string, opts []string, targetProtos []string) []string {
+	gapicOutArg := fmt.Sprintf("--gapic_out=%s:%s", strings.Join(opts, ","), gapicZipPath)
 	outputArgs := []string{
 		"--plugin=protoc-gen-gapic=" + params.wrapperPath,
 		gapicOutArg,
@@ -221,8 +222,8 @@ func buildGapicProtocArgs(params *generateAPIParams, opts []string, targetProtos
 	return buildBaseProtocArgs(params.srcCfg, outputArgs, targetProtos)
 }
 
-func buildProtoProtocArgs(params *generateAPIParams, targetProtos []string) []string {
-	phpOutArg := fmt.Sprintf("--php_out=%s", params.protoZipPath)
+func buildProtoProtocArgs(params *generateAPIParams, protoZipPath string, targetProtos []string) []string {
+	phpOutArg := fmt.Sprintf("--php_out=%s", protoZipPath)
 	return buildBaseProtocArgs(params.srcCfg, []string{phpOutArg}, targetProtos)
 }
 

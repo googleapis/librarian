@@ -365,13 +365,12 @@ func TestBuildGapicProtocArgs(t *testing.T) {
 	}
 	srcCfg := sources.NewSourceConfig(src, []string{"googleapis"})
 	params := &generateAPIParams{
-		srcCfg:       srcCfg,
-		wrapperPath:  "/path/to/wrapper.sh",
-		gapicZipPath: "/path/to/output.zip",
+		srcCfg:      srcCfg,
+		wrapperPath: "/path/to/wrapper.sh",
 	}
 	opts := []string{"metadata", "generate-snippets"}
 	targetProtos := []string{"/path/to/proto1.proto", "/path/to/proto2.proto"}
-	got := buildGapicProtocArgs(params, opts, targetProtos)
+	got := buildGapicProtocArgs(params, "/path/to/output.zip", opts, targetProtos)
 	want := []string{
 		"--experimental_allow_proto3_optional",
 		"--plugin=protoc-gen-gapic=/path/to/wrapper.sh",
@@ -392,11 +391,10 @@ func TestBuildProtoProtocArgs(t *testing.T) {
 	}
 	srcCfg := sources.NewSourceConfig(src, []string{"googleapis"})
 	params := &generateAPIParams{
-		srcCfg:       srcCfg,
-		protoZipPath: "/path/to/proto.zip",
+		srcCfg: srcCfg,
 	}
 	targetProtos := []string{"/path/to/proto1.proto", "/path/to/proto2.proto"}
-	got := buildProtoProtocArgs(params, targetProtos)
+	got := buildProtoProtocArgs(params, "/path/to/proto.zip", targetProtos)
 	want := []string{
 		"--experimental_allow_proto3_optional",
 		"--php_out=/path/to/proto.zip",
