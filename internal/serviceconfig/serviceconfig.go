@@ -104,6 +104,13 @@ func findAPI(path, language string) (*API, error) {
 	return validateAPI(path, language, result)
 }
 
+// CheckAllowed checks if the given API path is allowed for the specified language.
+// It returns ErrNotAllowed if the API is restricted from the language.
+func CheckAllowed(path, language string) error {
+	_, err := findAPI(path, language)
+	return err
+}
+
 // Find looks up the service config path and title override for a given API path,
 // and validates that the API is allowed for the specified language.
 //

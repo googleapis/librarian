@@ -134,7 +134,10 @@ func runGenerate(ctx context.Context, cfg *config.Config, all bool, libraryName 
 		for _, v := range variants {
 			allowlisted := true
 			for _, api := range v.APIs {
-				if _, err := serviceconfig.Find(sources.Googleapis, api.Path, cfg.Language); err != nil {
+				if cfg.Language == config.LanguageFake {
+					continue
+				}
+				if err := serviceconfig.CheckAllowed(api.Path, cfg.Language); err != nil {
 					if errors.Is(err, serviceconfig.ErrNotAllowed) {
 						allowlisted = false
 						break
