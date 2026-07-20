@@ -483,15 +483,12 @@ This document describes the schema for the librarian.yaml.
 | `metadata_name_override` | string | Allows the name in .repo-metadata.json (which is also used as part of the client documentation URI) to be overridden. By default, it's the package name, but older packages use the API short name instead. |
 | `default_version` | string | Is the default version of the API to use. When omitted, the version in the first API path is used. |
 
-<<<<<<< HEAD
 ## RubyAPI Configuration
 
 | Field | Type | Description |
 | :--- | :--- | :--- |
 | `env_prefix` | string | Is the environment variable prefix. |
 
-=======
->>>>>>> main
 ## RubyPackage Configuration
 
 | Field | Type | Description |
