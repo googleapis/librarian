@@ -40,6 +40,7 @@ const (
 var (
 	errCommonResourcesUnconfigured = errors.New("common_resources must be set (either per-API or globally under default.php)")
 	errMissingStagingSubdir        = errors.New("staging_subdir is required for PHP configurations")
+	errNoProtos                    = errors.New("no target protos found")
 )
 
 // Generate generates a PHP client library.
@@ -255,10 +256,13 @@ func gatherMainProtos(googleapisDir, apiPath string) ([]string, error) {
 	apiDir := filepath.Join(googleapisDir, filepath.FromSlash(apiPath))
 	protos, err := gatherProtos(apiDir)
 	if err != nil {
+		if errors.Is(err, os.ErrNotExist) {
+			return nil, fmt.Errorf("%w for API %s: %w", errNoProtos, apiPath, err)
+		}
 		return nil, err
 	}
 	if len(protos) == 0 {
-		return nil, fmt.Errorf("no target protos found for API %s", apiPath)
+		return nil, fmt.Errorf("%w for API %s", errNoProtos, apiPath)
 	}
 	return protos, nil
 }
