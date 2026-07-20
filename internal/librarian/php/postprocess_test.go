@@ -140,7 +140,7 @@ func TestPostProcess_CleanupError(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	stagingDir := filepath.Join(repoRoot, "owl-bot-staging", "SecretManager")
+	stagingDir := filepath.Join(repoRoot, owlBotStagingDir, "SecretManager")
 	if err := os.MkdirAll(stagingDir, 0755); err != nil {
 		t.Fatal(err)
 	}
