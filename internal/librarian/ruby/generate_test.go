@@ -234,12 +234,38 @@ func TestGenerate_Error(t *testing.T) {
 }
 
 func TestToolsEnv(t *testing.T) {
-	env, err := toolsEnv()
-	if err != nil {
-		t.Fatal(err)
-	}
-	if env["PATH"] == "" {
-		t.Error("toolsEnv() PATH is empty")
+	for _, test := range []struct {
+		name        string
+		gemPath     string
+		wantGemPath string
+	}{
+		{
+			name:        "default gem path",
+			gemPath:     "",
+			wantGemPath: "",
+		},
+		{
+			name:        "custom gem path set",
+			gemPath:     "/custom/gem/path",
+			wantGemPath: "/custom/gem/path",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			t.Setenv("GEM_PATH", test.gemPath)
+			env, err := toolsEnv()
+			if err != nil {
+				t.Fatal(err)
+			}
+			if env["PATH"] == "" {
+				t.Error("toolsEnv() PATH is empty")
+			}
+			if env["GEM_HOME"] == "" {
+				t.Error("toolsEnv() GEM_HOME is empty")
+			}
+			if test.wantGemPath != "" && !strings.Contains(env["GEM_PATH"], test.wantGemPath) {
+				t.Errorf("toolsEnv() GEM_PATH = %q, want to contain %q", env["GEM_PATH"], test.wantGemPath)
+			}
+		})
 	}
 }
 
@@ -269,16 +295,6 @@ func TestGenerate(t *testing.T) {
 	wantFile := filepath.Join(outDir, "lib", "google", "cloud", "secret_manager", "v1.rb")
 	if _, err := os.Stat(wantFile); err != nil {
 		t.Errorf("expected generated file %s to exist: %v", wantFile, err)
-	}
-}
-func TestToolsEnv_GemPathSet(t *testing.T) {
-	t.Setenv("GEM_PATH", "/custom/gem/path")
-	env, err := toolsEnv()
-	if err != nil {
-		t.Fatal(err)
-	}
-	if !strings.Contains(env["GEM_PATH"], "/custom/gem/path") {
-		t.Errorf("toolsEnv() GEM_PATH = %q, want to contain /custom/gem/path", env["GEM_PATH"])
 	}
 }
 
