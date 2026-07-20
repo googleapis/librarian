@@ -16,10 +16,12 @@ package php
 
 import (
 	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/config"
 )
 
@@ -187,6 +189,46 @@ func TestInstall_Error(t *testing.T) {
 			err := Install(t.Context(), test.tools)
 			if !errors.Is(err, test.wantErr) {
 				t.Fatalf("Install() error = %v, wantErr = %v", err, test.wantErr)
+			}
+		})
+	}
+}
+
+func TestCreateBinWrapper(t *testing.T) {
+	for _, test := range []struct {
+		name        string
+		wrapperName string
+	}{
+		{
+			name:        "simple wrapper",
+			wrapperName: "foo",
+		},
+		{
+			name:        "nested wrapper",
+			wrapperName: "nested/dir/foo",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			binDir := t.TempDir()
+			destPath := "/path/to/dest"
+			if err := createBinWrapper(test.wrapperName, destPath, binDir); err != nil {
+				t.Fatal(err)
+			}
+			wrapperPath := filepath.Join(binDir, test.wrapperName)
+			b, err := os.ReadFile(wrapperPath)
+			if err != nil {
+				t.Fatal(err)
+			}
+			want := fmt.Sprintf("#!/bin/sh\nexec %q \"$@\"\n", destPath)
+			if diff := cmp.Diff(want, string(b)); diff != "" {
+				t.Errorf("wrapper content mismatch (-want +got):\n%s", diff)
+			}
+			info, err := os.Stat(wrapperPath)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if info.Mode().Perm() != 0755 {
+				t.Errorf("wrapper permissions = %04o, want 0755", info.Mode().Perm())
 			}
 		})
 	}
