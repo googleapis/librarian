@@ -840,3 +840,18 @@ type PHPAPI struct {
 	// StagingSubdir is the subdirectory in staging where the generated files should be placed.
 	StagingSubdir string `yaml:"staging_subdir,omitempty"`
 }
+
+// RubyPackage contains Ruby-specific library configuration.
+type RubyPackage struct {
+	// WrapperOf contains the names of versioned libraries that this library wraps.
+	WrapperOf []string `yaml:"wrapper_of,omitempty"`
+}
+
+// RubyAPI represents configuration for a single API within a Ruby package.
+type RubyAPI struct {
+	// EnvPrefix is the environment variable prefix.
+	EnvPrefix string `yaml:"env_prefix,omitempty"`
+
+	// ExtraDependencies contains extra runtime dependencies to the .gemspec file.
+	ExtraDependencies string `yaml:"extra_dependencies,omitempty"`
+}

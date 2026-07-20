@@ -53,20 +53,48 @@ func GenerateConversions(ctx context.Context, model *api.API, outdir string, cfg
 	if err := codec.generateEnumConversions(outdir, model, provider); err != nil {
 		return err
 	}
+	if err := codec.generateMessageConversions(outdir, model, provider); err != nil {
+		return err
+	}
 	return nil
 }
 
 func (c *codec) generateEnumConversions(outdir string, model *api.API, provider language.TemplateProvider) error {
 	for _, e := range model.Enums {
-		output := filepath.Join("Convert", e.Name+"+Convert.swift")
+		name := c.enumFileName(e)
+		output := filepath.Join("Convert", name+"+Convert.swift")
 		if !c.Module {
-			output = filepath.Join("Sources", c.PackageName, "Convert", e.Name+"+Convert.swift")
+			output = filepath.Join("Sources", c.PackageName, "Convert", name+"+Convert.swift")
 		}
 		generated := language.GeneratedFile{
 			TemplatePath: "templates/convert/convert_enum_file.swift.mustache",
 			OutputPath:   output,
 		}
 		if err := language.GenerateEnum(outdir, e, provider, generated); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (c *codec) generateMessageConversions(outdir string, model *api.API, provider language.TemplateProvider) error {
+	for _, m := range model.Messages {
+		if m.IsMap {
+			continue
+		}
+		if m.ServicePlaceholder {
+			continue
+		}
+		name := c.messageFileName(m)
+		output := filepath.Join("Convert", name+"+Convert.swift")
+		if !c.Module {
+			output = filepath.Join("Sources", c.PackageName, "Convert", name+"+Convert.swift")
+		}
+		generated := language.GeneratedFile{
+			TemplatePath: "templates/convert/convert_message_file.swift.mustache",
+			OutputPath:   output,
+		}
+		if err := language.GenerateMessage(outdir, m, provider, generated); err != nil {
 			return err
 		}
 	}

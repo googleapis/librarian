@@ -9,8 +9,9 @@ Before starting, ensure you have the following installed and available on your
 system `PATH`:
 *   **Go** (to build the Librarian CLI)
 *   **PHP** and **Composer** (required to install and run the PHP generator
+    plugin) and **bcmath** to run mathematical operations on any size number in the generator
+    *   On Debian/Ubuntu (gLinux): `sudo apt-get install php-cli php-bcmath composer`
     plugin)
-    *   On Debian/Ubuntu (gLinux): `sudo apt-get install php-cli composer`
 *   **Node.js** and **npm** (required for `prettier` formatting during post-processing)
     *   Follow oncall guide for Node to install
 *   **Python 3** and **venv** (required to run `synthtool` and `owlbot.py` post-processing in an isolated environment)

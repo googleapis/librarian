@@ -357,3 +357,105 @@ func TestAnnotateService_LRO(t *testing.T) {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
+
+func TestAnnotateService_Pagination(t *testing.T) {
+	itemType := api.NewTestMessage("Item").WithPackage("external")
+
+	pageToken := api.NewTestField("page_token").WithType(api.TypezString)
+	inputType := api.NewTestMessage("ListItemsRequest").
+		WithFields(api.NewTestField("name").WithType(api.TypezString)).
+		WithFields(pageToken)
+	outputType := api.NewTestMessage("ListItemsResponse").
+		WithPagination(
+			api.NewTestField("next_page_token").WithType(api.TypezString),
+			api.NewTestField("items").WithMessageType(itemType).WithRepeated(),
+		)
+	list := api.NewTestMethod("ListItems").
+		WithInput(inputType).
+		WithOutput(outputType).
+		WithPagination(pageToken).
+		WithVerb("GET").
+		WithPathTemplate((&api.PathTemplate{}).WithLiteral("v1").WithLiteral("items"))
+
+	service := api.NewTestService("TestService").WithMethods(list)
+
+	model := api.NewTestAPI([]*api.Message{inputType, outputType}, nil, []*api.Service{service})
+	model.PackageName = "test"
+	model.AddMessage(itemType)
+	if err := api.CrossReference(model); err != nil {
+		t.Fatal(err)
+	}
+
+	codec := newTestCodec(t, model, nil)
+	codec.withExtraDependencies(t, []config.SwiftDependency{
+		{
+			ApiPackage: "external",
+			Name:       "GoogleCloudExternal",
+		},
+	})
+
+	if err := codec.annotateModel(); err != nil {
+		t.Fatal(err)
+	}
+
+	annotations := service.Codec.(*serviceAnnotations)
+	wantImports := []string{"GoogleCloudExternal", "GoogleCloudWkt"}
+	if diff := cmp.Diff(wantImports, annotations.ServiceImports()); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+}
+
+func TestAnnotateService_MapPagination(t *testing.T) {
+	itemType := api.NewTestMessage("Item").WithPackage("external")
+	mapType := api.NewTestMessage("$map<string, Item>").
+		WithPackage("test").
+		WithFields(
+			api.NewTestField("key").WithType(api.TypezString),
+			api.NewTestField("value").WithMessageType(itemType),
+		)
+	mapType.IsMap = true
+
+	pageToken := api.NewTestField("page_token").WithType(api.TypezString)
+	inputType := api.NewTestMessage("ListItemsRequest").
+		WithFields(api.NewTestField("name").WithType(api.TypezString)).
+		WithFields(pageToken)
+	outputType := api.NewTestMessage("ListItemsResponse").
+		WithPagination(
+			api.NewTestField("next_page_token").WithType(api.TypezString),
+			api.NewTestField("items").WithMessageType(mapType).WithMap(),
+		)
+	list := api.NewTestMethod("ListItems").
+		WithInput(inputType).
+		WithOutput(outputType).
+		WithPagination(pageToken).
+		WithVerb("GET").
+		WithPathTemplate((&api.PathTemplate{}).WithLiteral("v1").WithLiteral("items"))
+
+	service := api.NewTestService("TestService").WithMethods(list)
+
+	model := api.NewTestAPI([]*api.Message{inputType, outputType}, nil, []*api.Service{service})
+	model.PackageName = "test"
+	model.AddMessage(itemType)
+	model.AddMessage(mapType)
+	if err := api.CrossReference(model); err != nil {
+		t.Fatal(err)
+	}
+
+	codec := newTestCodec(t, model, nil)
+	codec.withExtraDependencies(t, []config.SwiftDependency{
+		{
+			ApiPackage: "external",
+			Name:       "GoogleCloudExternal",
+		},
+	})
+
+	if err := codec.annotateModel(); err != nil {
+		t.Fatal(err)
+	}
+
+	annotations := service.Codec.(*serviceAnnotations)
+	wantImports := []string{"GoogleCloudExternal", "GoogleCloudWkt"}
+	if diff := cmp.Diff(wantImports, annotations.ServiceImports()); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+}

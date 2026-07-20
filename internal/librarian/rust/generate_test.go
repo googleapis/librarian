@@ -663,20 +663,17 @@ func TestFindModuleByOutput(t *testing.T) {
 		})
 	}
 }
+
 func TestCreateRepoMetadata(t *testing.T) {
 	googleapisDir, err := filepath.Abs("../../testdata/googleapis")
 	if err != nil {
 		t.Fatal(err)
 	}
-	showcaseDir, err := filepath.Abs("../../testdata/gapic-showcase")
-	if err != nil {
-		t.Fatal(err)
-	}
-
 	for _, test := range []struct {
 		name    string
 		library *config.Library
 		sources *sources.Sources
+		needed  bool
 		want    *repometadata.RepoMetadata
 	}{
 		{
@@ -693,6 +690,7 @@ func TestCreateRepoMetadata(t *testing.T) {
 			sources: &sources.Sources{
 				Googleapis: googleapisDir,
 			},
+			needed: true,
 			want: &repometadata.RepoMetadata{
 				Name:                 "secretmanager",
 				NamePretty:           "Secret Manager",
@@ -707,33 +705,6 @@ func TestCreateRepoMetadata(t *testing.T) {
 				APIDescription:       "Stores sensitive data such as API keys, passwords, and certificates.\nProvides convenience while improving security.",
 				ReleaseLevel:         "preview",
 				LibraryType:          "GAPIC_AUTO",
-			},
-		},
-		{
-			name: "showcase",
-			library: &config.Library{
-				Name:    "google-cloud-showcase-v1beta1",
-				Version: "0.1.0",
-				APIs: []*config.API{
-					{
-						Path: "schema/google/showcase/v1beta1",
-					},
-				},
-			},
-			sources: &sources.Sources{
-				Showcase: showcaseDir,
-			},
-			want: &repometadata.RepoMetadata{
-				Name:                "showcase",
-				NamePretty:          "Client Libraries Showcase",
-				ClientDocumentation: "https://docs.rs/google-cloud-showcase-v1beta1/latest",
-				Language:            config.LanguageRust,
-				Repo:                "googleapis/google-cloud-rust",
-				DistributionName:    "google-cloud-showcase-v1beta1",
-				APIID:               "showcase.googleapis.com",
-				APIShortname:        "showcase",
-				ReleaseLevel:        "preview",
-				LibraryType:         "GAPIC_AUTO",
 			},
 		},
 	} {

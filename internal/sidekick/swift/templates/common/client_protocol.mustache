@@ -130,7 +130,7 @@ extension Clients.{{Codec.StubPrefix}}Protocol {
   }
 
   public func {{> /templates/common/method_signature/pagination_options}} {
-    let listRpc = { (token: String) async throws -> {{Codec.ReturnType}} in
+    let listRpc = { (token: Swift.String) async throws -> {{Codec.ReturnType}} in
       throw GoogleCloudGax.RequestError.unimplemented
     }
     return GoogleCloudGax.PaginatedResponseSequence(listRpc: listRpc)

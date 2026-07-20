@@ -35,8 +35,10 @@ func TestAnnotateField(t *testing.T) {
 			optional: false,
 			repeated: false,
 			want: &fieldAnnotations{
-				FieldType:     "Swift.String",
-				BaseFieldType: "Swift.String",
+				FieldType:            "Swift.String",
+				BaseFieldType:        "Swift.String",
+				ProtoFieldName:       "secretPayload",
+				ProtoFieldNamePascal: "SecretPayload",
 			},
 		},
 		{
@@ -44,9 +46,11 @@ func TestAnnotateField(t *testing.T) {
 			optional: true,
 			repeated: false,
 			want: &fieldAnnotations{
-				FieldType:     "Swift.String?",
-				BaseFieldType: "Swift.String",
-				Decoding:      DecodingOptional,
+				FieldType:            "Swift.String?",
+				BaseFieldType:        "Swift.String",
+				Decoding:             DecodingOptional,
+				ProtoFieldName:       "secretPayload",
+				ProtoFieldNamePascal: "SecretPayload",
 			},
 		},
 		{
@@ -56,6 +60,7 @@ func TestAnnotateField(t *testing.T) {
 			want: &fieldAnnotations{
 				FieldType:     "[Swift.String]",
 				BaseFieldType: "Swift.String",
+				// Map and Repeated fields are not annotated for conversions yet
 			},
 		},
 	} {
@@ -112,9 +117,11 @@ func TestAnnotateField_Discovery(t *testing.T) {
 				Typez: api.TypezBytes,
 			},
 			want: &fieldAnnotations{
-				FieldType:     "Foundation.Data",
-				BaseFieldType: "Foundation.Data",
-				UrlSafeValue:  true,
+				FieldType:            "Foundation.Data",
+				BaseFieldType:        "Foundation.Data",
+				UrlSafeValue:         true,
+				ProtoFieldName:       "name",
+				ProtoFieldNamePascal: "Name",
 			},
 		},
 		{
@@ -125,8 +132,10 @@ func TestAnnotateField_Discovery(t *testing.T) {
 				Typez: api.TypezString,
 			},
 			want: &fieldAnnotations{
-				FieldType:     "Swift.String",
-				BaseFieldType: "Swift.String",
+				FieldType:            "Swift.String",
+				BaseFieldType:        "Swift.String",
+				ProtoFieldName:       "name",
+				ProtoFieldNamePascal: "Name",
 			},
 		},
 		{
@@ -138,10 +147,12 @@ func TestAnnotateField_Discovery(t *testing.T) {
 				Typez:    api.TypezBytes,
 			},
 			want: &fieldAnnotations{
-				FieldType:     "Foundation.Data?",
-				BaseFieldType: "Foundation.Data",
-				UrlSafeValue:  true,
-				Decoding:      DecodingOptional,
+				FieldType:            "Foundation.Data?",
+				BaseFieldType:        "Foundation.Data",
+				UrlSafeValue:         true,
+				Decoding:             DecodingOptional,
+				ProtoFieldName:       "name",
+				ProtoFieldNamePascal: "Name",
 			},
 		},
 		{
@@ -229,11 +240,13 @@ func TestAnnotateField_TypeNames(t *testing.T) {
 				t.Fatal(err)
 			}
 			want := &fieldAnnotations{
-				Name:          "testField",
-				FieldType:     test.wantType,
-				BaseFieldType: test.wantType,
-				DocLines:      []string{"Test documentation."},
-				Model:         model.Codec.(*modelAnnotations),
+				Name:                 "testField",
+				FieldType:            test.wantType,
+				BaseFieldType:        test.wantType,
+				DocLines:             []string{"Test documentation."},
+				Model:                model.Codec.(*modelAnnotations),
+				ProtoFieldName:       "testField",
+				ProtoFieldNamePascal: "TestField",
 			}
 			if diff := cmp.Diff(want, field.Codec); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)

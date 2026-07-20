@@ -49,6 +49,8 @@ func TestAnnotateMessage(t *testing.T) {
 				CustomSerialization: false,
 				SampleField:         "secretKey",
 				ParameterTypeName:   "Secret",
+				ProtoTypeName:       "Test_Secret",
+				ModulePath:          "",
 			},
 			wantImports: []string{"GoogleCloudWkt"},
 		},
@@ -67,6 +69,8 @@ func TestAnnotateMessage(t *testing.T) {
 				CustomSerialization: false,
 				SampleField:         "<placeholder>",
 				ParameterTypeName:   "Protocol_",
+				ProtoTypeName:       "Test_Protocol_",
+				ModulePath:          "",
 			},
 			wantImports: []string{"GoogleCloudWkt"},
 		},
@@ -84,6 +88,8 @@ func TestAnnotateMessage(t *testing.T) {
 				CustomSerialization: true,
 				SampleField:         "<placeholder>",
 				ParameterTypeName:   "WithOneof",
+				ProtoTypeName:       "Test_WithOneof",
+				ModulePath:          "",
 			},
 			wantImports: []string{"GoogleCloudWkt"},
 		},
@@ -103,6 +109,8 @@ func TestAnnotateMessage(t *testing.T) {
 				CustomSerialization: true,
 				SampleField:         "secretKey",
 				ParameterTypeName:   "WithCustomJSON",
+				ProtoTypeName:       "Test_WithCustomJSON",
+				ModulePath:          "",
 			},
 			wantImports: []string{"GoogleCloudWkt"},
 		},
@@ -129,6 +137,8 @@ func TestAnnotateMessage(t *testing.T) {
 				PageableItemType:    "SecretKey",
 				SampleField:         "secretKey",
 				ParameterTypeName:   "WithPagination",
+				ProtoTypeName:       "Test_WithPagination",
+				ModulePath:          "",
 			},
 			wantImports: []string{"GoogleCloudGax", "GoogleCloudWkt"},
 		},
@@ -147,6 +157,8 @@ func TestAnnotateMessage(t *testing.T) {
 				SampleField:         "<placeholder>",
 				ParameterTypeName:   "ServiceClient",
 				PlaceholderName:     "ServiceClient",
+				ProtoTypeName:       "Test_Service",
+				ModulePath:          "",
 			},
 			wantImports: []string{"GoogleCloudWkt"},
 		},
@@ -202,6 +214,8 @@ func TestAnnotateMessage_Discovery(t *testing.T) {
 				CustomSerialization: false,
 				SampleField:         "field",
 				ParameterTypeName:   "Secret",
+				ProtoTypeName:       "Test_Secret",
+				ModulePath:          "",
 			},
 		},
 		{
@@ -220,6 +234,8 @@ func TestAnnotateMessage_Discovery(t *testing.T) {
 				CustomSerialization: true,
 				SampleField:         "field",
 				ParameterTypeName:   "Secret",
+				ProtoTypeName:       "Test_Secret",
+				ModulePath:          "",
 			},
 		},
 		{
@@ -238,6 +254,8 @@ func TestAnnotateMessage_Discovery(t *testing.T) {
 				CustomSerialization: true,
 				SampleField:         "field",
 				ParameterTypeName:   "Secret",
+				ProtoTypeName:       "Test_Secret",
+				ModulePath:          "",
 			},
 		},
 		{
@@ -256,6 +274,8 @@ func TestAnnotateMessage_Discovery(t *testing.T) {
 				CustomSerialization: true,
 				SampleField:         "field",
 				ParameterTypeName:   "Secret",
+				ProtoTypeName:       "Test_Secret",
+				ModulePath:          "",
 			},
 		},
 		{
@@ -281,6 +301,8 @@ func TestAnnotateMessage_Discovery(t *testing.T) {
 				CustomSerialization: true,
 				SampleField:         "field",
 				ParameterTypeName:   "Secret",
+				ProtoTypeName:       "Test_Secret",
+				ModulePath:          "",
 			},
 		},
 	} {
@@ -318,6 +340,8 @@ func TestAnnotateMessage_DiscoveryRequests(t *testing.T) {
 				TypeURL:           "type.googleapis.com/test.Service.getRequest",
 				SampleField:       "<placeholder>",
 				ParameterTypeName: "ServiceClient.GetRequest",
+				ProtoTypeName:     "Test_Service.GetRequest",
+				ModulePath:        "",
 			},
 		},
 		{
@@ -329,6 +353,8 @@ func TestAnnotateMessage_DiscoveryRequests(t *testing.T) {
 				TypeURL:           "type.googleapis.com/test.Protocol.listRequest",
 				SampleField:       "<placeholder>",
 				ParameterTypeName: "ProtocolClient.ListRequest",
+				ProtoTypeName:     "Test_Protocol_.ListRequest",
+				ModulePath:        "",
 			},
 		},
 	} {
@@ -427,6 +453,8 @@ func TestAnnotateMessage_Pagination(t *testing.T) {
 		TypeURL:           "type.googleapis.com/google.cloud.secretmanager.v1.ListSecretsRequest",
 		SampleField:       "pageSize",
 		ParameterTypeName: "ListSecretsRequest",
+		ProtoTypeName:     "Google_Cloud_Secretmanager_V1_ListSecretsRequest",
+		ModulePath:        "",
 	}
 	if diff := cmp.Diff(wantRequest, gotRequest, cmpopts.IgnoreFields(messageAnnotations{}, "Model", "DependsOn")); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
@@ -446,6 +474,8 @@ func TestAnnotateMessage_Pagination(t *testing.T) {
 		PageableItemType:    "Secret",
 		SampleField:         "secrets",
 		ParameterTypeName:   "ListSecretsResponse",
+		ProtoTypeName:       "Google_Cloud_Secretmanager_V1_ListSecretsResponse",
+		ModulePath:          "",
 	}
 	if diff := cmp.Diff(wantResponse, gotResponse, cmpopts.IgnoreFields(messageAnnotations{}, "Model", "DependsOn")); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
@@ -499,6 +529,8 @@ func TestAnnotateMessage_RecursiveNested(t *testing.T) {
 		TypeURL:           "type.googleapis.com/google.cloud.secretmanager.v1.OuterMessage",
 		SampleField:       "<placeholder>",
 		ParameterTypeName: "OuterMessage",
+		ProtoTypeName:     "Google_Cloud_Secretmanager_V1_OuterMessage",
+		ModulePath:        "",
 	}
 	if diff := cmp.Diff(wantOuter, gotOuter, cmpopts.IgnoreFields(messageAnnotations{}, "Model", "DependsOn")); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
