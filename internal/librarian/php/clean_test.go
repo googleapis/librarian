@@ -139,3 +139,105 @@ func createFileAndDirectories(t *testing.T, path, content string) {
 		t.Fatal(err)
 	}
 }
+
+func TestClean_StatError(t *testing.T) {
+	t.Parallel()
+	repoRoot := t.TempDir()
+	lib := &config.Library{
+		Name:   "test",
+		Output: filepath.Join(repoRoot, "test"),
+	}
+	dir := filepath.Join(lib.Output, "src")
+	if err := os.MkdirAll(dir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Chmod(lib.Output, 0000); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() {
+		_ = os.Chmod(lib.Output, 0755)
+	})
+	err := Clean(lib)
+	if err == nil {
+		t.Error("Clean() expected error, got nil")
+	}
+	if !errors.Is(err, os.ErrPermission) {
+		t.Errorf("Clean() error = %v, want os.ErrPermission", err)
+	}
+}
+
+func TestClean_ReadFileError(t *testing.T) {
+	t.Parallel()
+	repoRoot := t.TempDir()
+	lib := &config.Library{
+		Name:   "test",
+		Output: filepath.Join(repoRoot, "test"),
+	}
+	filePath := filepath.Join(lib.Output, "src/V1/Service.php")
+	createFileAndDirectories(t, filePath, "<?php // "+string(gapicMarker))
+	if err := os.Chmod(filePath, 0000); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() {
+		_ = os.Chmod(filePath, 0644)
+	})
+	err := Clean(lib)
+	if err == nil {
+		t.Error("Clean() expected error, got nil")
+	}
+	if !errors.Is(err, os.ErrPermission) {
+		t.Errorf("Clean() error = %v, want os.ErrPermission", err)
+	}
+}
+
+func TestClean_RemoveError(t *testing.T) {
+	t.Parallel()
+	repoRoot := t.TempDir()
+	lib := &config.Library{
+		Name:   "test",
+		Output: filepath.Join(repoRoot, "test"),
+	}
+	dirPath := filepath.Join(lib.Output, "src/V1")
+	filePath := filepath.Join(dirPath, gapicMetadataFile)
+	createFileAndDirectories(t, filePath, "{}")
+	if err := os.Chmod(dirPath, 0500); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() {
+		_ = os.Chmod(dirPath, 0755)
+	})
+	err := Clean(lib)
+	if err == nil {
+		t.Error("Clean() expected error, got nil")
+	}
+	if !errors.Is(err, os.ErrPermission) {
+		t.Errorf("Clean() error = %v, want os.ErrPermission", err)
+	}
+}
+
+func TestClean_WalkDirError(t *testing.T) {
+	t.Parallel()
+	repoRoot := t.TempDir()
+	lib := &config.Library{
+		Name:   "test",
+		Output: filepath.Join(repoRoot, "test"),
+	}
+	dir := filepath.Join(lib.Output, "src")
+	subdir := filepath.Join(dir, "V1")
+	if err := os.MkdirAll(subdir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Chmod(subdir, 0000); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() {
+		_ = os.Chmod(subdir, 0755)
+	})
+	err := Clean(lib)
+	if err == nil {
+		t.Error("Clean() expected error, got nil")
+	}
+	if !errors.Is(err, os.ErrPermission) {
+		t.Errorf("Clean() error = %v, want os.ErrPermission", err)
+	}
+}
