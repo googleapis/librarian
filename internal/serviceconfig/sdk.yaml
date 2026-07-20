@@ -771,11 +771,7 @@
 - path: google/cloud/billing/budgets/v1
   documentation_uri: https://cloud.google.com/billing/docs/how-to/budget-api-overview
   languages:
-    - go
-    - java
-    - nodejs
-    - php
-    - python
+    - all
   new_issue_uri: https://issuetracker.google.com/savedsearches/559770
 - path: google/cloud/billing/budgets/v1beta1
   documentation_uri: https://cloud.google.com/billing/docs/how-to/budget-api-overview
