@@ -19,6 +19,7 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"syscall"
 	"testing"
@@ -269,7 +270,70 @@ func TestToolsEnv(t *testing.T) {
 	}
 }
 
+func setupDummyProtoc(t *testing.T) {
+	t.Helper()
+	binDir := t.TempDir()
+	t.Setenv("LIBRARIAN_BIN", binDir)
+
+	installDir := filepath.Join(binDir, "ruby_tools", "bin")
+	if err := os.MkdirAll(installDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+
+	stubName := "protoc"
+	if runtime.GOOS == "windows" {
+		stubName += ".cmd"
+	}
+	protocPath := filepath.Join(binDir, stubName)
+	script := `#!/bin/sh
+outDir=""
+for arg in "$@"; do
+  case "$arg" in
+    --ruby_cloud_out=*) outDir="${arg#--ruby_cloud_out=}" ;;
+    --ruby_out=*) if [ -z "$outDir" ]; then outDir="${arg#--ruby_out=}"; fi ;;
+  esac
+done
+if [ -n "$outDir" ]; then
+  mkdir -p "$outDir/lib/google/cloud/secret_manager"
+  touch "$outDir/lib/google/cloud/secret_manager/v1.rb"
+fi
+exit 0
+`
+	if runtime.GOOS == "windows" {
+		script = `@echo off
+mkdir "%~dp0\..\..\lib\google\cloud\secret_manager" 2>nul
+type nul > "%~dp0\..\..\lib\google\cloud\secret_manager\v1.rb" 2>nul
+exit /b 0
+`
+	}
+	if err := os.WriteFile(protocPath, []byte(script), 0755); err != nil {
+		t.Fatal(err)
+	}
+
+	for _, plugin := range []string{"grpc_tools_ruby_protoc_plugin", "protoc-gen-ruby_cloud"} {
+		pName := plugin
+		if runtime.GOOS == "windows" {
+			pName += ".cmd"
+		}
+		pPathInBin := filepath.Join(binDir, pName)
+		pPathInInstallDir := filepath.Join(installDir, pName)
+		pScript := "#!/bin/sh\nexit 0\n"
+		if runtime.GOOS == "windows" {
+			pScript = "@echo off\r\nexit /b 0\r\n"
+		}
+		if err := os.WriteFile(pPathInBin, []byte(pScript), 0755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(pPathInInstallDir, []byte(pScript), 0755); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	t.Setenv("PATH", binDir+string(filepath.ListSeparator)+os.Getenv("PATH"))
+}
+
 func TestGenerate(t *testing.T) {
+	setupDummyProtoc(t)
 	testhelper.RequireCommand(t, "protoc")
 	testhelper.RequireCommand(t, "grpc_tools_ruby_protoc_plugin")
 	testhelper.RequireCommand(t, "protoc-gen-ruby_cloud")
@@ -299,6 +363,7 @@ func TestGenerate(t *testing.T) {
 }
 
 func TestGenerateAPI(t *testing.T) {
+	setupDummyProtoc(t)
 	testhelper.RequireCommand(t, "protoc")
 	testhelper.RequireCommand(t, "grpc_tools_ruby_protoc_plugin")
 	testhelper.RequireCommand(t, "protoc-gen-ruby_cloud")
