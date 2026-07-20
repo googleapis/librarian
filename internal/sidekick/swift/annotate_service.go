@@ -188,7 +188,7 @@ func (c *codec) addPaginationDependencies(annotations *serviceAnnotations, metho
 	if itemsField == nil {
 		return fmt.Errorf("inconsistent pagination info for method: %s", method.ID)
 	}
-	if itemsField.Repeated && itemsField.Typez == api.TypezMessage {
+	if itemsField.Repeated {
 		return c.addFieldDependencies(annotations, itemsField)
 	}
 	if itemsField.Map {
