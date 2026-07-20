@@ -214,7 +214,7 @@ func TestParseWrapperOf(t *testing.T) {
 			},
 		},
 		{
-			name: "do not wrap a library if the version suffix does not match",
+			name: "ignore libraries with non-version suffix",
 			libraries: []*config.Library{
 				{Name: "google-cloud-storage"},
 				{Name: "google-cloud-storage-transfer-v1", APIs: []*config.API{{Path: "google/cloud/storage/transfer/v1"}}},
