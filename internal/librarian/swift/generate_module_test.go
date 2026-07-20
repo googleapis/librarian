@@ -22,6 +22,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/license"
 	"github.com/googleapis/librarian/internal/sidekick/parser"
 	"github.com/googleapis/librarian/internal/sources"
 	"github.com/googleapis/librarian/internal/testhelper"
@@ -107,6 +108,81 @@ func TestGenerateModule_SwiftProtobuf(t *testing.T) {
 	expectedFile := filepath.Join(outDir, "ProtoJSON", "google", "type", "expr.pb.swift")
 	if _, err := os.Stat(expectedFile); err != nil {
 		t.Error(err)
+	}
+}
+
+func TestGenerateModule_SwiftGRPC(t *testing.T) {
+	testhelper.RequireCommand(t, "protoc")
+	testhelper.RequireCommand(t, "protoc-gen-swift")
+	testhelper.RequireCommand(t, "protoc-gen-grpc-swift")
+
+	googleapisDir, err := filepath.Abs("../../testdata/googleapis")
+	if err != nil {
+		t.Fatal(err)
+	}
+	outDir := t.TempDir()
+	library := &config.Library{
+		Name:          "GoogleTypeModule",
+		CopyrightYear: "2038",
+		Swift:         defaultSwiftConfig(t),
+		Output:        outDir,
+	}
+	library.Swift.Modules = []*config.SwiftModule{
+		{
+			APIPath:    "google/iam/v1",
+			Output:     filepath.Join(outDir, "ProtoJSON"),
+			ModuleType: "swift-protobuf",
+		},
+	}
+	src := &sources.Sources{
+		Googleapis: googleapisDir,
+	}
+	cfg := &config.Config{}
+
+	if err := Generate(t.Context(), cfg, library, src); err != nil {
+		t.Fatal(err)
+	}
+
+	wantFiles := []string{
+		"iam_policy.pb.swift",
+		"options.pb.swift",
+		"policy.pb.swift",
+		"iam_policy.grpc.swift",
+	}
+	want := copyrightComments("2038")
+	for _, file := range wantFiles {
+		t.Run(file, func(t *testing.T) {
+			expectedFile := filepath.Join(outDir, "ProtoJSON", "google", "iam", "v1", file)
+			if _, err := os.Stat(expectedFile); err != nil {
+				t.Error(err)
+			}
+			if strings.HasSuffix(expectedFile, ".grpc.swift") {
+				got, err := os.ReadFile(expectedFile)
+				if err != nil {
+					t.Fatal(err)
+				}
+				got = got[0:min(len(want), len(got))]
+				if diff := cmp.Diff(want, got); diff != "" {
+					t.Errorf("mismatch (-want +got):\n%s", diff)
+				}
+			}
+		})
+	}
+}
+
+func TestGrpcCopyrightComments(t *testing.T) {
+	full := string(copyrightComments("2345"))
+	got := full[0:min(len(full), len(gRPCFileStart))]
+	if diff := cmp.Diff(gRPCFileStart, got); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+	if !strings.Contains(full, " Copyright 2345 ") {
+		t.Errorf("missing ' Copyright 2345' in:\n%s", full)
+	}
+	gotLines := strings.Count(full, "\n")
+	wantLines := len(license.Header("2345")) + 2
+	if wantLines != gotLines {
+		t.Errorf("mismatched line count, want=%d, got=%d", wantLines, gotLines)
 	}
 }
 
