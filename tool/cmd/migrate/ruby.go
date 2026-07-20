@@ -184,12 +184,18 @@ func parseWrapperOf(libraries []*config.Library) {
 		// are guaranteed to appear after the wrapper library.
 		for j := i + 1; j < len(libraries); j++ {
 			other := libraries[j]
-			if strings.HasPrefix(other.Name, prefix) {
-				wrapperOf = append(wrapperOf, other.Name)
-			} else {
+			if !strings.HasPrefix(other.Name, prefix) {
 				// Since libraries are sorted by name, the wrapped libraries
 				// must be consecutive.
 				break
+			}
+			suffix := strings.TrimPrefix(other.Name, prefix)
+			// Verify that the suffix after the prefix represents a valid version,
+			// e.g., starting with v followed by a digit.
+			// We use simple, string comparison because the migration tool will
+			// be removed after language onboarding.
+			if len(suffix) > 1 && suffix[0] == 'v' && suffix[1] >= '0' && suffix[1] <= '9' {
+				wrapperOf = append(wrapperOf, other.Name)
 			}
 		}
 		if len(wrapperOf) > 0 {
