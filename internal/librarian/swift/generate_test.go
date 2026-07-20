@@ -113,6 +113,51 @@ func TestGenerate(t *testing.T) {
 	}
 }
 
+func TestGenerateWithService(t *testing.T) {
+	testhelper.RequireCommand(t, "protoc")
+
+	googleapisDir, err := filepath.Abs("../../testdata/googleapis")
+	if err != nil {
+		t.Fatal(err)
+	}
+	outDir := t.TempDir()
+	library := &config.Library{
+		Name:                "GoogleCloudSecretmanagerV1",
+		APIs:                []*config.API{{Path: "google/cloud/secretmanager/v1"}},
+		CopyrightYear:       "2038",
+		SpecificationFormat: config.SpecProtobuf,
+		Swift: &config.SwiftPackage{
+			SwiftDefault: config.SwiftDefault{
+				Dependencies: []config.SwiftDependency{
+					{Name: "GoogleCloudWkt", ApiPackage: "google.protobuf"},
+					{Name: "GoogleCloudGax", RequiredByServices: true},
+					{Name: "GoogleCloudAuth", RequiredByServices: true},
+					{Name: "GoogleCloudLocation", ApiPackage: "google.cloud.location"},
+					{Name: "GoogleIamV1", ApiPackage: "google.iam.v1"},
+				},
+			},
+		},
+	}
+	library.Output = filepath.Join(outDir, "generated", "google-cloud-secretmanager-v1")
+	src := &sources.Sources{Googleapis: googleapisDir}
+	cfg := &config.Config{}
+	if err := Generate(t.Context(), cfg, library, src); err != nil {
+		t.Fatal(err)
+	}
+
+	wantFiles := []string{
+		"README.md",
+		".repo-metadata.json",
+		"Package.swift",
+	}
+	for _, name := range wantFiles {
+		expectedFile := filepath.Join(library.Output, name)
+		if _, err := os.Stat(expectedFile); err != nil {
+			t.Errorf("Stat(%s) returned error: %v", expectedFile, err)
+		}
+	}
+}
+
 func TestFormat(t *testing.T) {
 	testhelper.RequireCommand(t, "swift-format")
 
