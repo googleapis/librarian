@@ -23,6 +23,8 @@
 # If you need to update the default tool versions for future migrations, update them here.
 language: php
 default:
+  keep:
+    - VERSION
   php:
     common_resources: true
 tools:
