@@ -30,6 +30,7 @@ import (
 	"github.com/googleapis/librarian/internal/librarian/ruby"
 	"github.com/googleapis/librarian/internal/librarian/rust"
 	"github.com/googleapis/librarian/internal/librarian/swift"
+	"github.com/googleapis/librarian/internal/serviceconfig"
 	"github.com/googleapis/librarian/internal/sources"
 	"github.com/googleapis/librarian/internal/yaml"
 	"github.com/urfave/cli/v3"
@@ -117,14 +118,34 @@ func runGenerate(ctx context.Context, cfg *config.Config, all bool, libraryName 
 		if err != nil {
 			return err
 		}
+
+		var variants []*config.Library
 		if !all && isPreview {
-			prepared = ResolvePreview(prepared, cfg.Language)
+			variants = append(variants, ResolvePreview(prepared, cfg.Language))
 		} else if all && lib.Preview != nil {
 			// Generate both stable and preview libraries by first appending the
 			// resolved library config for the preview variant.
-			libraries = append(libraries, ResolvePreview(prepared, cfg.Language))
+			variants = append(variants, ResolvePreview(prepared, cfg.Language))
+			variants = append(variants, prepared)
+		} else {
+			variants = append(variants, prepared)
 		}
-		libraries = append(libraries, prepared)
+
+		for _, v := range variants {
+			allowlisted := true
+			for _, api := range v.APIs {
+				if _, err := serviceconfig.Find(sources.Googleapis, api.Path, cfg.Language); err != nil {
+					if errors.Is(err, serviceconfig.ErrNotAllowed) {
+						allowlisted = false
+						break
+					}
+				}
+			}
+			if !allowlisted && all {
+				continue
+			}
+			libraries = append(libraries, v)
+		}
 	}
 	if len(libraries) == 0 {
 		if all {

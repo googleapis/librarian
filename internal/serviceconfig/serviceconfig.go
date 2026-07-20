@@ -46,7 +46,7 @@ type (
 )
 
 var (
-	errNotAllowed = errors.New("API is not allowlisted")
+	ErrNotAllowed = errors.New("API is not allowlisted")
 )
 
 // Read reads a service config from a YAML file and returns it as a Service
@@ -234,7 +234,7 @@ func validateAPI(path string, language string, api *API) (*API, error) {
 			return api, nil
 		}
 	}
-	return nil, fmt.Errorf("%s for language %s: %w", path, language, errNotAllowed)
+	return nil, fmt.Errorf("%s for language %s: %w", path, language, ErrNotAllowed)
 }
 
 // isServiceConfigFile checks if the file contains "type: google.api.Service".
