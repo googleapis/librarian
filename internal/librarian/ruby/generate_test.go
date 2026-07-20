@@ -298,6 +298,29 @@ func TestGenerate(t *testing.T) {
 	}
 }
 
+func TestGenerateAPI(t *testing.T) {
+	testhelper.RequireCommand(t, "protoc")
+	testhelper.RequireCommand(t, "grpc_tools_ruby_protoc_plugin")
+	testhelper.RequireCommand(t, "protoc-gen-ruby_cloud")
+
+	googleapisDir, err := filepath.Abs(testdataGoogleapis)
+	if err != nil {
+		t.Fatal(err)
+	}
+	stagingDir := t.TempDir()
+	apiPath := "google/cloud/secretmanager/v1"
+	gemName := "google-cloud-secret_manager-v1"
+
+	err = generateAPI(t.Context(), apiPath, gemName, nil, googleapisDir, stagingDir)
+	if err != nil {
+		t.Fatalf("generateAPI() error = %v", err)
+	}
+	wantFile := filepath.Join(stagingDir, "lib", "google", "cloud", "secret_manager", "v1.rb")
+	if _, err := os.Stat(wantFile); err != nil {
+		t.Errorf("expected generated file %s to exist: %v", wantFile, err)
+	}
+}
+
 func TestGenerateAPI_Error(t *testing.T) {
 	googleapisDir, err := filepath.Abs(testdataGoogleapis)
 	if err != nil {
