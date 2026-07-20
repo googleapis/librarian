@@ -119,9 +119,6 @@ func TestPostProcess_StatError(t *testing.T) {
 		Output: inaccessibleDir,
 	}
 	err := postProcessLibrary(ctx, lib)
-	if err == nil {
-		t.Fatal("postProcessLibrary() expected error, got nil")
-	}
 	if !errors.Is(err, os.ErrPermission) {
 		t.Errorf("expected permission error, got: %v", err)
 	}
@@ -160,9 +157,6 @@ func TestPostProcess_CleanupError(t *testing.T) {
 		Output: destDir,
 	}
 	err := postProcessLibrary(ctx, lib)
-	if err == nil {
-		t.Fatal("postProcessLibrary() expected error, got nil")
-	}
 	if !errors.Is(err, os.ErrPermission) {
 		t.Errorf("expected permission error, got: %v", err)
 	}
