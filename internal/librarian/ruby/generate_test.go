@@ -19,6 +19,7 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"strings"
 	"syscall"
 	"testing"
 
@@ -270,9 +271,6 @@ func TestGenerate(t *testing.T) {
 		t.Errorf("expected generated file %s to exist: %v", wantFile, err)
 	}
 }
-
-}
-
 func TestToolsEnv_GemPathSet(t *testing.T) {
 	t.Setenv("GEM_PATH", "/custom/gem/path")
 	env, err := toolsEnv()
