@@ -132,9 +132,7 @@ func (c *codec) annotateEnum(enum *api.Enum, model *modelAnnotations) error {
 		UnknownIntName:    uniqueCaseName("unknownIntValue"),
 		UnknownStringName: uniqueCaseName("unknownStringValue"),
 		ModulePath:        c.ModulePath,
-	}
-	if c.ModulePath != "" {
-		annotations.ProtoTypeName = c.protoEnumTypeName(enum)
+		ProtoTypeName:     c.protoEnumTypeName(enum),
 	}
 
 	enum.Codec = annotations

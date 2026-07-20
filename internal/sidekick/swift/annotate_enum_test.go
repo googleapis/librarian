@@ -44,6 +44,8 @@ func TestAnnotateEnum(t *testing.T) {
 				DefaultCaseName:   "unspecified",
 				UnknownIntName:    "unknownIntValue",
 				UnknownStringName: "unknownStringValue",
+				ProtoTypeName:     "Test_Color",
+				ModulePath:        "",
 			},
 		},
 		{
@@ -59,6 +61,8 @@ func TestAnnotateEnum(t *testing.T) {
 				DefaultCaseName:   "unspecified",
 				UnknownIntName:    "unknownIntValue",
 				UnknownStringName: "unknownStringValue",
+				ProtoTypeName:     "Test_Protocol_",
+				ModulePath:        "",
 			},
 		},
 		{
@@ -76,6 +80,8 @@ func TestAnnotateEnum(t *testing.T) {
 				DefaultCaseName:   "unspecified",
 				UnknownIntName:    "unknownIntValue_",
 				UnknownStringName: "unknownStringValue_",
+				ProtoTypeName:     "Test_Weird",
+				ModulePath:        "",
 			},
 		},
 	} {
@@ -189,18 +195,16 @@ func TestAnnotateEnum_ModulePath(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	ann, ok := enum.Codec.(*enumAnnotations)
-	if !ok {
-		t.Fatalf("expected enum.Codec to be *enumAnnotations, got %T", enum.Codec)
+	want := &enumAnnotations{
+		Name:              "Color",
+		DefaultCaseName:   "unspecified",
+		UnknownIntName:    "unknownIntValue",
+		UnknownStringName: "unknownStringValue",
+		ModulePath:        "TestProtos",
+		ProtoTypeName:     "TestProtos.Test_Color",
 	}
-
-	if ann.ModulePath != "TestProtos" {
-		t.Errorf("ann.ModulePath = %q, want %q", ann.ModulePath, "TestProtos")
-	}
-
-	wantProtoTypeName := "TestProtos.Test_Color"
-	if ann.ProtoTypeName != wantProtoTypeName {
-		t.Errorf("ann.ProtoTypeName = %q, want %q", ann.ProtoTypeName, wantProtoTypeName)
+	if diff := cmp.Diff(want, enum.Codec, cmpopts.IgnoreFields(enumAnnotations{}, "Model")); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
 
@@ -232,17 +236,15 @@ func TestAnnotateEnum_NestedModulePath(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	ann, ok := enum.Codec.(*enumAnnotations)
-	if !ok {
-		t.Fatalf("expected enum.Codec to be *enumAnnotations, got %T", enum.Codec)
+	want := &enumAnnotations{
+		Name:              "InnerEnum",
+		DefaultCaseName:   "unspecified",
+		UnknownIntName:    "unknownIntValue",
+		UnknownStringName: "unknownStringValue",
+		ModulePath:        "TestProtos",
+		ProtoTypeName:     "TestProtos.Test_OuterMessage.InnerEnum",
 	}
-
-	if ann.ModulePath != "TestProtos" {
-		t.Errorf("ann.ModulePath = %q, want %q", ann.ModulePath, "TestProtos")
-	}
-
-	wantProtoTypeName := "TestProtos.Test_OuterMessage.InnerEnum"
-	if ann.ProtoTypeName != wantProtoTypeName {
-		t.Errorf("ann.ProtoTypeName = %q, want %q", ann.ProtoTypeName, wantProtoTypeName)
+	if diff := cmp.Diff(want, enum.Codec, cmpopts.IgnoreFields(enumAnnotations{}, "Model")); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
