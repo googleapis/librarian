@@ -17,6 +17,7 @@ package php
 import (
 	"errors"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"testing"
 
@@ -65,5 +66,104 @@ func TestPostProcess_OwlBot(t *testing.T) {
 	expectedFile := filepath.Join(destDir, "owlbot_ran.txt")
 	if _, err := os.Stat(expectedFile); err != nil {
 		t.Errorf("expected file %s to exist (indicating owlbot.py ran)", expectedFile)
+	}
+}
+
+func TestPostProcess_OwlBotError(t *testing.T) {
+	testhelper.RequireCommand(t, "python3")
+	ctx := t.Context()
+	repoRoot := t.TempDir()
+	t.Chdir(repoRoot)
+	destDir := filepath.Join(repoRoot, "SecretManager")
+	if err := os.MkdirAll(destDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	owlbotPy := filepath.Join(destDir, "owlbot.py")
+	if err := os.WriteFile(owlbotPy, []byte("import sys; sys.exit(1)"), 0755); err != nil {
+		t.Fatal(err)
+	}
+	lib := &config.Library{
+		Name:   "SecretManager",
+		Output: destDir,
+	}
+	err := postProcessLibrary(ctx, lib)
+	if err == nil {
+		t.Fatal("postProcessLibrary() expected error, got nil")
+	}
+	var exitErr *exec.ExitError
+	if !errors.As(err, &exitErr) {
+		t.Errorf("expected exit error, got: %v", err)
+	}
+}
+
+func TestPostProcess_StatError(t *testing.T) {
+	ctx := t.Context()
+	repoRoot := t.TempDir()
+	destDir := filepath.Join(repoRoot, "SecretManager")
+	if err := os.MkdirAll(destDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	inaccessibleDir := filepath.Join(destDir, "inaccessible")
+	if err := os.MkdirAll(inaccessibleDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Chmod(inaccessibleDir, 0000); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() {
+		_ = os.Chmod(inaccessibleDir, 0755)
+	})
+
+	lib := &config.Library{
+		Name:   "SecretManager",
+		Output: inaccessibleDir,
+	}
+	err := postProcessLibrary(ctx, lib)
+	if err == nil {
+		t.Fatal("postProcessLibrary() expected error, got nil")
+	}
+	if !errors.Is(err, os.ErrPermission) {
+		t.Errorf("expected permission error, got: %v", err)
+	}
+}
+
+func TestPostProcess_CleanupError(t *testing.T) {
+	ctx := t.Context()
+	repoRoot := t.TempDir()
+	t.Chdir(repoRoot)
+	destDir := filepath.Join(repoRoot, "SecretManager")
+	if err := os.MkdirAll(destDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	owlbotPy := filepath.Join(destDir, "owlbot.py")
+	if err := os.WriteFile(owlbotPy, []byte("import sys; sys.exit(0)"), 0755); err != nil {
+		t.Fatal(err)
+	}
+
+	stagingDir := filepath.Join(repoRoot, "owl-bot-staging", "SecretManager")
+	if err := os.MkdirAll(stagingDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	inaccessibleSubdir := filepath.Join(stagingDir, "inaccessible")
+	if err := os.MkdirAll(inaccessibleSubdir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Chmod(stagingDir, 0555); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() {
+		_ = os.Chmod(stagingDir, 0755)
+	})
+
+	lib := &config.Library{
+		Name:   "SecretManager",
+		Output: destDir,
+	}
+	err := postProcessLibrary(ctx, lib)
+	if err == nil {
+		t.Fatal("postProcessLibrary() expected error, got nil")
+	}
+	if !errors.Is(err, os.ErrPermission) {
+		t.Errorf("expected permission error, got: %v", err)
 	}
 }
