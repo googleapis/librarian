@@ -44,6 +44,8 @@ func TestAnnotateEnum(t *testing.T) {
 				DefaultCaseName:   "unspecified",
 				UnknownIntName:    "unknownIntValue",
 				UnknownStringName: "unknownStringValue",
+				ProtoTypeName:     "Test_Color",
+				ModulePath:        "",
 			},
 		},
 		{
@@ -59,6 +61,8 @@ func TestAnnotateEnum(t *testing.T) {
 				DefaultCaseName:   "unspecified",
 				UnknownIntName:    "unknownIntValue",
 				UnknownStringName: "unknownStringValue",
+				ProtoTypeName:     "Test_Protocol_",
+				ModulePath:        "",
 			},
 		},
 		{
@@ -76,6 +80,8 @@ func TestAnnotateEnum(t *testing.T) {
 				DefaultCaseName:   "unspecified",
 				UnknownIntName:    "unknownIntValue_",
 				UnknownStringName: "unknownStringValue_",
+				ProtoTypeName:     "Test_Weird",
+				ModulePath:        "",
 			},
 		},
 	} {
@@ -97,7 +103,7 @@ func TestAnnotateEnum(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			if diff := cmp.Diff(test.want, enum.Codec, cmpopts.IgnoreFields(enumAnnotations{}, "BoilerPlate", "CopyrightYear")); diff != "" {
+			if diff := cmp.Diff(test.want, enum.Codec, cmpopts.IgnoreFields(enumAnnotations{}, "Model")); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
@@ -189,17 +195,56 @@ func TestAnnotateEnum_ModulePath(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	ann, ok := enum.Codec.(*enumAnnotations)
-	if !ok {
-		t.Fatalf("expected enum.Codec to be *enumAnnotations, got %T", enum.Codec)
+	want := &enumAnnotations{
+		Name:              "Color",
+		DefaultCaseName:   "unspecified",
+		UnknownIntName:    "unknownIntValue",
+		UnknownStringName: "unknownStringValue",
+		ModulePath:        "TestProtos",
+		ProtoTypeName:     "TestProtos.Test_Color",
+	}
+	if diff := cmp.Diff(want, enum.Codec, cmpopts.IgnoreFields(enumAnnotations{}, "Model")); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+}
+
+func TestAnnotateEnum_NestedModulePath(t *testing.T) {
+	parent := &api.Message{
+		Name:    "OuterMessage",
+		ID:      ".test.OuterMessage",
+		Package: "test",
+	}
+	enum := &api.Enum{
+		Name:    "InnerEnum",
+		ID:      ".test.OuterMessage.InnerEnum",
+		Package: "test",
+		Values: []*api.EnumValue{
+			{Name: "INNER_ENUM_UNSPECIFIED", Number: 0},
+			{Name: "INNER_ENUM_VALUE_A", Number: 1},
+		},
+		Parent: parent,
+	}
+	enum.UniqueNumberValues = enum.Values
+	for _, ev := range enum.Values {
+		ev.Parent = enum
+	}
+	model := api.NewTestAPI([]*api.Message{parent}, []*api.Enum{enum}, []*api.Service{})
+	codec := newTestCodec(t, model, map[string]string{
+		"module-path": "TestProtos",
+	})
+	if err := codec.annotateModel(); err != nil {
+		t.Fatal(err)
 	}
 
-	if ann.ModulePath != "TestProtos" {
-		t.Errorf("ann.ModulePath = %q, want %q", ann.ModulePath, "TestProtos")
+	want := &enumAnnotations{
+		Name:              "InnerEnum",
+		DefaultCaseName:   "unspecified",
+		UnknownIntName:    "unknownIntValue",
+		UnknownStringName: "unknownStringValue",
+		ModulePath:        "TestProtos",
+		ProtoTypeName:     "TestProtos.Test_OuterMessage.InnerEnum",
 	}
-
-	wantProtoTypeName := "TestProtos.Test_Color"
-	if ann.ProtoTypeName != wantProtoTypeName {
-		t.Errorf("ann.ProtoTypeName = %q, want %q", ann.ProtoTypeName, wantProtoTypeName)
+	if diff := cmp.Diff(want, enum.Codec, cmpopts.IgnoreFields(enumAnnotations{}, "Model")); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }

@@ -69,6 +69,12 @@ type fieldAnnotations struct {
 
 	// Model points to the annotations for the model.
 	Model *modelAnnotations
+
+	// The name of the field on the underlying SwiftProtobuf type.
+	ProtoFieldName string
+
+	// The PascalCase name of the field on the underlying SwiftProtobuf type (used for hasField helpers).
+	ProtoFieldNamePascal string
 }
 
 // DecodingStyle defines an enumeration for decoding fields.
@@ -196,6 +202,7 @@ func (c *codec) annotateField(field *api.Field, model *modelAnnotations) (*field
 			annotations.UrlSafeValue = true
 		}
 	}
+	c.computeFieldConversionStatements(field, annotations)
 	field.Codec = annotations
 	return annotations, nil
 }
@@ -237,4 +244,23 @@ func (c *codec) fieldPackage(field *api.Field) (string, error) {
 		return e.Package, nil
 	}
 	return "", nil
+}
+
+func (c *codec) computeFieldConversionStatements(field *api.Field, ann *fieldAnnotations) {
+	if field.IsOneOf {
+		// TODO(#5272): Oneof fields are handled in a subsequent PR.
+		return
+	}
+	if field.Map || field.Repeated {
+		// TODO(#5272): Map and Repeated fields are handled in subsequent PRs.
+		return
+	}
+	switch field.Typez {
+	case api.TypezMessage, api.TypezEnum:
+		// TODO(#5272): Nested Message and Enum type fields are handled in a subsequent PR.
+		return
+	}
+
+	ann.ProtoFieldName = protoFieldName(field.Name)
+	ann.ProtoFieldNamePascal = protoFieldNamePascal(field.Name)
 }

@@ -22,8 +22,7 @@ import (
 )
 
 type enumAnnotations struct {
-	CopyrightYear     string
-	BoilerPlate       []string
+	Model             *modelAnnotations
 	Name              string
 	DocLines          []string
 	DefaultCaseName   string
@@ -126,17 +125,14 @@ func (c *codec) annotateEnum(enum *api.Enum, model *modelAnnotations) error {
 		return err
 	}
 	annotations := &enumAnnotations{
-		CopyrightYear:     model.CopyrightYear,
-		BoilerPlate:       model.BoilerPlate,
+		Model:             model,
 		Name:              pascalCase(enum.Name),
 		DocLines:          docLines,
 		DefaultCaseName:   defaultCaseName,
 		UnknownIntName:    uniqueCaseName("unknownIntValue"),
 		UnknownStringName: uniqueCaseName("unknownStringValue"),
 		ModulePath:        c.ModulePath,
-	}
-	if c.ModulePath != "" {
-		annotations.ProtoTypeName = fmt.Sprintf("%s.%s%s", c.ModulePath, ProtoPackagePrefix(enum.Package), pascalCase(enum.Name))
+		ProtoTypeName:     c.protoEnumTypeName(enum),
 	}
 
 	enum.Codec = annotations
