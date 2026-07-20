@@ -19,7 +19,6 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
-	"runtime"
 	"strings"
 	"syscall"
 	"testing"
@@ -280,11 +279,7 @@ func setupDummyProtoc(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	stubName := "protoc"
-	if runtime.GOOS == "windows" {
-		stubName += ".cmd"
-	}
-	protocPath := filepath.Join(binDir, stubName)
+	protocPath := filepath.Join(binDir, "protoc")
 	script := `#!/bin/sh
 outDir=""
 for arg in "$@"; do
@@ -299,28 +294,14 @@ if [ -n "$outDir" ]; then
 fi
 exit 0
 `
-	if runtime.GOOS == "windows" {
-		script = `@echo off
-mkdir "%~dp0\..\..\lib\google\cloud\secret_manager" 2>nul
-type nul > "%~dp0\..\..\lib\google\cloud\secret_manager\v1.rb" 2>nul
-exit /b 0
-`
-	}
 	if err := os.WriteFile(protocPath, []byte(script), 0755); err != nil {
 		t.Fatal(err)
 	}
 
 	for _, plugin := range []string{"grpc_tools_ruby_protoc_plugin", "protoc-gen-ruby_cloud"} {
-		pName := plugin
-		if runtime.GOOS == "windows" {
-			pName += ".cmd"
-		}
-		pPathInBin := filepath.Join(binDir, pName)
-		pPathInInstallDir := filepath.Join(installDir, pName)
+		pPathInBin := filepath.Join(binDir, plugin)
+		pPathInInstallDir := filepath.Join(installDir, plugin)
 		pScript := "#!/bin/sh\nexit 0\n"
-		if runtime.GOOS == "windows" {
-			pScript = "@echo off\r\nexit /b 0\r\n"
-		}
 		if err := os.WriteFile(pPathInBin, []byte(pScript), 0755); err != nil {
 			t.Fatal(err)
 		}
