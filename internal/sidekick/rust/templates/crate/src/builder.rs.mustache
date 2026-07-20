@@ -62,9 +62,9 @@ pub mod {{Codec.ModuleName}} {
     /// Common implementation for [crate::client::{{Codec.Name}}] request builders.
     #[derive(Clone, Debug)]
     pub(crate) struct RequestBuilder<R: std::default::Default> {
-        stub: std::sync::Arc<dyn super::super::stub::dynamic::{{Codec.Name}}>,
-        request: R,
-        options: crate::RequestOptions,
+        pub(crate) stub: std::sync::Arc<dyn super::super::stub::dynamic::{{Codec.Name}}>,
+        pub(crate) request: R,
+        pub(crate) options: crate::RequestOptions,
     }
 
     impl<R> RequestBuilder<R>
@@ -117,7 +117,7 @@ pub mod {{Codec.ModuleName}} {
     /// ```
     {{/Codec.InternalBuilders}}
     #[derive(Clone, Debug)]
-    {{Codec.BuilderVisibility}} struct {{Codec.BuilderName}}(RequestBuilder<{{InputType.Codec.QualifiedName}}>);
+    {{Codec.BuilderVisibility}} struct {{Codec.BuilderName}}(pub(crate) RequestBuilder<{{InputType.Codec.QualifiedName}}>);
 
     impl {{Codec.BuilderName}} {
         pub(crate) fn new(stub: std::sync::Arc<dyn super::super::stub::dynamic::{{Codec.ServiceNameToPascal}}>) -> Self {
