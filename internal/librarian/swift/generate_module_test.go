@@ -149,7 +149,7 @@ func TestGenerateModule_SwiftGRPC(t *testing.T) {
 		"policy.pb.swift",
 		"iam_policy.grpc.swift",
 	}
-	want := gRPCFileBoilerplate("2038")
+	want := copyrightComments("2038")
 	for _, file := range wantFiles {
 		t.Run(file, func(t *testing.T) {
 			expectedFile := filepath.Join(outDir, "ProtoJSON", "google", "iam", "v1", file)
@@ -170,8 +170,8 @@ func TestGenerateModule_SwiftGRPC(t *testing.T) {
 	}
 }
 
-func TestGrpcFileBoilerplate(t *testing.T) {
-	full := string(gRPCFileBoilerplate("2345"))
+func TestGrpcCopyrightComments(t *testing.T) {
+	full := string(copyrightComments("2345"))
 	got := full[0:min(len(full), len(gRPCFileStart))]
 	if diff := cmp.Diff(gRPCFileStart, got); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
