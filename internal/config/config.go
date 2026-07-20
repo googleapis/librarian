@@ -472,6 +472,9 @@ type API struct {
 
 	// PHP contains PHP-specific API configuration.
 	PHP *PHPAPI `yaml:"php,omitempty"`
+
+	// Ruby contains Ruby-specific API configuration.
+	Ruby *RubyAPI `yaml:"ruby,omitempty"`
 }
 
 // GoDefault defines Go-specific default configuration.

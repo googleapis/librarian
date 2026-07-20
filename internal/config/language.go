@@ -846,3 +846,9 @@ type RubyPackage struct {
 	// WrapperOf contains the names of versioned libraries that this library wraps.
 	WrapperOf []string `yaml:"wrapper_of,omitempty"`
 }
+
+// RubyAPI represents configuration for a single API within a Ruby package.
+type RubyAPI struct {
+	// EnvPrefix is the environment variable prefix.
+	EnvPrefix string `yaml:"env_prefix,omitempty"`
+}
