@@ -17,8 +17,11 @@ package ruby
 
 import (
 	"context"
+	"fmt"
+	"path/filepath"
 
 	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/serviceconfig"
 	"github.com/googleapis/librarian/internal/sources"
 )
 
@@ -26,4 +29,39 @@ import (
 func Generate(ctx context.Context, cfg *config.Config, library *config.Library, src *sources.Sources) error {
 	// TODO(https://github.com/googleapis/librarian/issues/6633): implement Ruby generation
 	return nil
+}
+
+func buildGAPICOpts(apiPath, gemName, googleapisDir string) ([]string, error) {
+	sc, err := serviceconfig.Find(googleapisDir, apiPath, config.LanguageRuby)
+	if err != nil {
+		return nil, err
+	}
+	gc, err := serviceconfig.FindGRPCServiceConfig(googleapisDir, apiPath)
+	if err != nil {
+		return nil, err
+	}
+	var opts []string
+	if gemName != "" {
+		opts = append(opts, "ruby-cloud-gem-name="+gemName)
+	}
+	if sc != nil && sc.ServiceConfig != "" {
+		opts = append(opts, "service-yaml="+filepath.Join(googleapisDir, sc.ServiceConfig))
+	}
+	if gc != "" {
+		opts = append(opts, "grpc-service-config="+filepath.Join(googleapisDir, gc))
+	}
+	if trans := transport(sc); trans != "" {
+		opts = append(opts, fmt.Sprintf("transport=%s", trans))
+	}
+	if sc != nil && sc.HasRESTNumericEnums(config.LanguageRuby) {
+		opts = append(opts, "ruby-cloud-rest-numeric-enums=true")
+	}
+	return opts, nil
+}
+
+func transport(sc *serviceconfig.API) serviceconfig.Transport {
+	if sc != nil {
+		return sc.Transport(config.LanguageRuby)
+	}
+	return serviceconfig.GRPCRest
 }
