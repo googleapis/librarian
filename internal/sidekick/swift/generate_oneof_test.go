@@ -139,7 +139,7 @@ func TestGenerateOneOf(t *testing.T) {
     return copy
   }
 
-  private enum CodingKeys: String, CodingKey {
+  private enum CodingKeys: Swift.String, CodingKey {
     case stringField = "stringField"
     case messageField = "messageField"
     case regularInt32 = "regularInt32"
@@ -191,7 +191,9 @@ func TestGenerateOneOf(t *testing.T) {
     indirect case messageField(Inner)
   }
 
-  public static var _anyTypeUrl: String { return "type.googleapis.com/google.cloud.test.v1.Outer" }
+  public static var _anyTypeUrl: Swift.String {
+    return "type.googleapis.com/google.cloud.test.v1.Outer"
+  }
   public init(fromAny any: GoogleCloudWkt.` + "`Any`" + `) throws {
     self = try GoogleCloudWkt._slowAnyDeserialize(Self.self, from: any)
   }
@@ -291,7 +293,7 @@ func TestGenerateOneOfWithKeyword(t *testing.T) {
     return copy
   }
 
-  private enum CodingKeys: String, CodingKey {
+  private enum CodingKeys: Swift.String, CodingKey {
     case header = "header"
     case query = "query"
     case cookie = "cookie"

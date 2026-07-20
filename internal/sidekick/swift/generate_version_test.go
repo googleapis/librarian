@@ -52,7 +52,7 @@ func TestGenerateVersion(t *testing.T) {
 		want  string
 	}{
 		{"// Copyright ", "// Copyright 2038 Google LLC\n"},
-		{"static let version:", "static let version: String = \"1.2.3-test\"\n"},
+		{"static let version:", "static let version: Swift.String = \"1.2.3-test\"\n"},
 	} {
 		t.Run(test.start, func(t *testing.T) {
 			got := extractBlock(t, contentStr, test.start, "\n")
