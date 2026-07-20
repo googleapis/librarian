@@ -24,11 +24,7 @@ import (
 )
 
 func createRepoMetadata(cfg *config.Config, library *config.Library, sources *sources.Sources) (*repometadata.RepoMetadata, error) {
-	googleapisDir := sources.Googleapis
-	if len(library.APIs) > 0 && library.APIs[0].Path == "schema/google/showcase/v1beta1" {
-		googleapisDir = sources.Showcase
-	}
-	metadata, err := repometadata.FromLibrary(cfg, library, googleapisDir)
+	metadata, err := repometadata.FromLibrary(cfg, library, sources.Googleapis)
 	if err != nil {
 		return nil, err
 	}
