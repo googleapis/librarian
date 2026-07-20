@@ -391,6 +391,12 @@ func (r *Resource) WithSingular(singular string) *Resource {
 	return r
 }
 
+// WithPlural sets the plural name of the resource.
+func (r *Resource) WithPlural(name string) *Resource {
+	r.Plural = name
+	return r
+}
+
 // ParseTemplateForTest converts a string literal into a []PathSegment slice for testing purposes.
 func ParseTemplateForTest(template string) []PathSegment {
 	var segments []PathSegment
