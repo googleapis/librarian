@@ -1,0 +1,53 @@
+// Copyright 2026 Google LLC
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     https://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+package ruby
+
+import (
+	"path/filepath"
+	"testing"
+
+	"github.com/google/go-cmp/cmp"
+	"github.com/googleapis/librarian/internal/serviceconfig"
+)
+
+const testdataGoogleapis = "../../testdata/googleapis"
+
+func TestBuildGAPICOpts(t *testing.T) {
+	googleapisDir, err := filepath.Abs(testdataGoogleapis)
+	if err != nil {
+		t.Fatal(err)
+	}
+	got, err := buildGAPICOpts("google/cloud/secretmanager/v1", "google-cloud-secret_manager-v1", googleapisDir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := []string{
+		"ruby-cloud-gem-name=google-cloud-secret_manager-v1",
+		"service-yaml=" + filepath.Join(googleapisDir, "google/cloud/secretmanager/v1/secretmanager_v1.yaml"),
+		"grpc-service-config=" + filepath.Join(googleapisDir, "google/cloud/secretmanager/v1/secretmanager_grpc_service_config.json"),
+		"transport=grpc+rest",
+		"ruby-cloud-rest-numeric-enums=true",
+	}
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+}
+
+func TestTransport_Nil(t *testing.T) {
+	got := transport(nil)
+	if got != serviceconfig.GRPCRest {
+		t.Errorf("transport(nil) = %v, want %v", got, serviceconfig.GRPCRest)
+	}
+}
