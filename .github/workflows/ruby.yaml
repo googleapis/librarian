@@ -25,5 +25,12 @@ jobs:
         with:
           persist-credentials: false
       - uses: ./.github/actions/setup-librarian
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.3'
+      - name: Install Ruby dependencies
+        run: |
+          (cd internal/librarian/ruby && librarian install ruby)
+          echo "$HOME/.cache/librarian/bin/ruby_tools/bin" >> $GITHUB_PATH
       - name: Run tests
         run: go run ./tool/cmd/coverage ./internal/librarian/ruby
