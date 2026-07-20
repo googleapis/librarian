@@ -192,7 +192,7 @@ func parseWrapperOf(libraries []*config.Library) {
 			suffix := strings.TrimPrefix(other.Name, prefix)
 			// Verify that the suffix after the prefix represents a valid version,
 			// e.g., starting with v followed by a digit.
-			// We use simple, string comparsion because the migration tool will
+			// We use simple, string comparison because the migration tool will
 			// be removed after language onboarding.
 			if len(suffix) > 1 && suffix[0] == 'v' && suffix[1] >= '0' && suffix[1] <= '9' {
 				wrapperOf = append(wrapperOf, other.Name)
