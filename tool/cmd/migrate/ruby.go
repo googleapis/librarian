@@ -171,8 +171,8 @@ func parseAPIFromOwlBot(owlBotPath string) (string, error) {
 
 // parseWrapperOf sets the WrapperOf field for wrapper libraries.
 func parseWrapperOf(libraries []*config.Library) {
-	sort.Slice(libraries, func(i, j int) bool {
-		return libraries[i].Name < libraries[j].Name
+	slices.SortFunc(libraries, func(a, b *config.Library) int {
+		return strings.Compare(a.Name, b.Name)
 	})
 	for i, lib := range libraries {
 		if len(lib.APIs) != 0 {
