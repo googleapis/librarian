@@ -158,7 +158,7 @@ func annotateModel(model *api.API, codec *codec) (*modelAnnotations, error) {
 	hasLROs := false
 	for _, s := range model.Services {
 		for _, m := range s.Methods {
-			if m.OperationInfo != nil || m.DiscoveryLro != nil {
+			if m.OperationInfo != nil || m.DiscoveryLro != nil || m.ID == ".google.cloud.bigquery.v2.JobService.InsertJob" {
 				hasLROs = true
 			}
 			if !codec.generateMethod(m) {

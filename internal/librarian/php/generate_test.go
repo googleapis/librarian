@@ -32,22 +32,36 @@ func TestGenerate(t *testing.T) {
 		t.Skip("skipping slow integration test")
 	}
 	requirePHPGenerator(t)
-
 	// Use mock googleapis checked in as test data
 	googleapisDir := "../../testdata/googleapis"
 	absGoogleapis, err := filepath.Abs(googleapisDir)
 	if err != nil {
 		t.Fatal(err)
 	}
+	absOwlbotCopy, err := filepath.Abs(filepath.Join("testdata", "owlbot_copy.py"))
+	if err != nil {
+		t.Fatal(err)
+	}
 	repoRoot := t.TempDir()
+	t.Chdir(repoRoot)
+	destDir := filepath.Join(repoRoot, "output")
+	if err := os.MkdirAll(destDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	// Symlink mock owlbot.py. Tests use a simplified copy-only stub to
+	// avoid Node.js/prettier dependencies.
+	if err := os.Symlink(absOwlbotCopy, filepath.Join(destDir, "owlbot.py")); err != nil {
+		t.Fatal(err)
+	}
 	library := &config.Library{
 		Name:   "secretmanager",
-		Output: filepath.Join(repoRoot, "output"),
+		Output: destDir,
 		APIs: []*config.API{
 			{
 				Path: "google/cloud/secretmanager/v1",
 				PHP: &config.PHPAPI{
 					CommonResources: new(true),
+					StagingSubdir:   "v1",
 				},
 			},
 		},
@@ -72,6 +86,7 @@ func TestGenerate(t *testing.T) {
 func requirePHPGenerator(t *testing.T) {
 	t.Helper()
 	testhelper.RequireCommand(t, "protoc")
+	testhelper.RequireCommand(t, "python3")
 	testhelper.RequireCommand(t, "php")
 	genDir, err := generatorDir(t.Context())
 	if err != nil {
@@ -91,7 +106,7 @@ func TestGenerate_Error(t *testing.T) {
 		wantErr error
 	}{
 		{
-			name: "missing PHP config",
+			name: "missing PHP config (requires staging_subdir)",
 			lib: &config.Library{
 				Name: "SecretManager",
 				APIs: []*config.API{
@@ -100,7 +115,7 @@ func TestGenerate_Error(t *testing.T) {
 					},
 				},
 			},
-			wantErr: errCommonResourcesUnconfigured,
+			wantErr: errMissingStagingSubdir,
 		},
 		{
 			name: "missing common_resources config",
@@ -109,7 +124,9 @@ func TestGenerate_Error(t *testing.T) {
 				APIs: []*config.API{
 					{
 						Path: "google/cloud/secretmanager/v1",
-						PHP:  &config.PHPAPI{},
+						PHP: &config.PHPAPI{
+							StagingSubdir: "v1",
+						},
 					},
 				},
 			},
@@ -228,7 +245,7 @@ func TestGapicOpts(t *testing.T) {
 	}
 }
 
-func TestGatherTargetProtos(t *testing.T) {
+func TestGatherGAPICProtos(t *testing.T) {
 	for _, test := range []struct {
 		name                   string
 		setupFiles             []string
@@ -241,40 +258,46 @@ func TestGatherTargetProtos(t *testing.T) {
 			name: "protos found, common resources enabled",
 			setupFiles: []string{
 				"google/cloud/secretmanager/v1/service.proto",
+				"google/cloud/secretmanager/v1/resources.proto",
+				commonResourcesProto,
 			},
 			apiPath:                "google/cloud/secretmanager/v1",
 			includeCommonResources: true,
 			wantProtos: []string{
+				"google/cloud/secretmanager/v1/resources.proto",
 				"google/cloud/secretmanager/v1/service.proto",
-				"google/cloud/common_resources.proto",
+				commonResourcesProto,
 			},
 		},
 		{
 			name: "protos found, common resources disabled",
 			setupFiles: []string{
 				"google/cloud/secretmanager/v1/service.proto",
+				"google/cloud/secretmanager/v1/resources.proto",
+				commonResourcesProto,
 			},
 			apiPath:                "google/cloud/secretmanager/v1",
 			includeCommonResources: false,
 			wantProtos: []string{
+				"google/cloud/secretmanager/v1/resources.proto",
 				"google/cloud/secretmanager/v1/service.proto",
 			},
 		},
 		{
-			name: "protos found, common resources and additional protos present",
+			name: "additional protos added",
 			setupFiles: []string{
 				"google/cloud/secretmanager/v1/service.proto",
-				"google/cloud/location/location.proto",
+				"google/cloud/secretmanager/v1/resources.proto",
+				"google/cloud/location/locations.proto",
 			},
 			apiPath: "google/cloud/secretmanager/v1",
 			additionalProtos: []string{
-				"google/cloud/location/location.proto",
+				"google/cloud/location/locations.proto",
 			},
-			includeCommonResources: true,
 			wantProtos: []string{
+				"google/cloud/secretmanager/v1/resources.proto",
 				"google/cloud/secretmanager/v1/service.proto",
-				"google/cloud/common_resources.proto",
-				"google/cloud/location/location.proto",
+				"google/cloud/location/locations.proto",
 			},
 		},
 	} {
@@ -289,7 +312,7 @@ func TestGatherTargetProtos(t *testing.T) {
 					t.Fatal(err)
 				}
 			}
-			got, err := gatherTargetProtos(tempDir, test.apiPath, test.additionalProtos, test.includeCommonResources)
+			got, err := gatherGAPICProtos(tempDir, test.apiPath, test.additionalProtos, test.includeCommonResources)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -304,16 +327,24 @@ func TestGatherTargetProtos(t *testing.T) {
 	}
 }
 
-func TestGatherTargetProtos_Error(t *testing.T) {
+func TestGatherGAPICProtos_Error(t *testing.T) {
 	for _, test := range []struct {
 		name       string
 		setupFiles []string
 		apiPath    string
+		wantErr    error
 	}{
 		{
-			name:       "no protos found",
+			name:       "directory not found",
 			setupFiles: nil,
 			apiPath:    "google/cloud/secretmanager/v1",
+			wantErr:    errNoProtos,
+		},
+		{
+			name:       "empty directory",
+			setupFiles: []string{"google/cloud/secretmanager/v1/not-a-proto.txt"},
+			apiPath:    "google/cloud/secretmanager/v1",
+			wantErr:    errNoProtos,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
@@ -327,32 +358,54 @@ func TestGatherTargetProtos_Error(t *testing.T) {
 					t.Fatal(err)
 				}
 			}
-			_, err := gatherTargetProtos(tempDir, test.apiPath, nil, true)
-			if err == nil {
-				t.Fatal("gatherTargetProtos() expected error, got nil")
+			_, err := gatherGAPICProtos(tempDir, test.apiPath, nil, true)
+			if !errors.Is(err, test.wantErr) {
+				t.Errorf("gatherGAPICProtos() error = %v, wantErr = %v", err, test.wantErr)
 			}
 		})
 	}
 }
 
-func TestBuildProtocArgs(t *testing.T) {
+func TestBuildGapicProtocArgs(t *testing.T) {
 	tempDir := t.TempDir()
 	src := &sources.Sources{
 		Googleapis: tempDir,
 	}
 	srcCfg := sources.NewSourceConfig(src, []string{"googleapis"})
 	params := &generateAPIParams{
-		srcCfg:        srcCfg,
-		wrapperPath:   "/path/to/wrapper.sh",
-		outputZipPath: "/path/to/output.zip",
+		srcCfg:      srcCfg,
+		wrapperPath: "/path/to/wrapper.sh",
 	}
 	opts := []string{"metadata", "generate-snippets"}
 	targetProtos := []string{"/path/to/proto1.proto", "/path/to/proto2.proto"}
-	got := buildProtocArgs(params, opts, targetProtos)
+	got := buildGapicProtocArgs(params, "/path/to/output.zip", opts, targetProtos)
 	want := []string{
 		"--experimental_allow_proto3_optional",
 		"--plugin=protoc-gen-gapic=/path/to/wrapper.sh",
 		"--gapic_out=metadata,generate-snippets:/path/to/output.zip",
+		"-I", tempDir,
+		"/path/to/proto1.proto",
+		"/path/to/proto2.proto",
+	}
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+}
+
+func TestBuildProtoProtocArgs(t *testing.T) {
+	tempDir := t.TempDir()
+	src := &sources.Sources{
+		Googleapis: tempDir,
+	}
+	srcCfg := sources.NewSourceConfig(src, []string{"googleapis"})
+	params := &generateAPIParams{
+		srcCfg: srcCfg,
+	}
+	targetProtos := []string{"/path/to/proto1.proto", "/path/to/proto2.proto"}
+	got := buildProtoProtocArgs(params, "/path/to/proto.zip", targetProtos)
+	want := []string{
+		"--experimental_allow_proto3_optional",
+		"--php_out=/path/to/proto.zip",
 		"-I", tempDir,
 		"/path/to/proto1.proto",
 		"/path/to/proto2.proto",

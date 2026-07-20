@@ -9,8 +9,12 @@ Before starting, ensure you have the following installed and available on your
 system `PATH`:
 *   **Go** (to build the Librarian CLI)
 *   **PHP** and **Composer** (required to install and run the PHP generator
+    plugin) and **bcmath** to run mathematical operations on any size number in the generator
+    *   On Debian/Ubuntu (gLinux): `sudo apt-get install php-cli php-bcmath composer`
     plugin)
-    *   On Debian/Ubuntu (gLinux): `sudo apt-get install php-cli composer`
+*   **Node.js** and **npm** (required for `prettier` formatting during post-processing)
+    *   Follow oncall guide for Node to install
+*   **Python 3** and **venv** (required to run `synthtool` and `owlbot.py` post-processing in an isolated environment)
 *   **protoc** (Protocol Buffers compiler, version 33.2 is recommended). If
     `protoc` is not configured in `librarian.yaml` under `tools.protoc`, Librarian
     falls back to using the system-installed `protoc`.
@@ -31,6 +35,16 @@ sibling repositories (typically under a common parent directory, e.g.,
 
 When modifying the PHP generator or adding PHP support, use the following
 workflow to test and verify your changes:
+
+### Step 0: Check out a specific commit (Optional, for consistency testing)
+
+If you want to verify the generator output against a known baseline, check out a specific commit of `google-cloud-php` before running `migrate`:
+
+```bash
+cd ../google-cloud-php
+git checkout 1831905d
+cd ../librarian
+```
 
 ### Step 1: Run the Migration Tool
 Before running generation, you must first generate the `librarian.yaml`
@@ -60,13 +74,19 @@ go build -o bin/librarian ./cmd/librarian
 Before generating code, you must install the language-specific generator
 tools and plugins (e.g. `gapic-generator-php` and `protoc`).
 
-Navigate to the `google-cloud-php` repository and run `librarian install`:
+Since `synthtool` is installed via `pip`, you should use a Python virtual environment to avoid PEP 668 system package restrictions.
+
+Navigate to the `google-cloud-php` repository, set up the virtual environment, and run `librarian install`:
 ```bash
 cd ../google-cloud-php
+python3 -m venv .venv
+source .venv/bin/activate
 ../librarian/bin/librarian install
 ```
-This downloads the PHP generator and writes a wrapper script in your local
-workspace.
+> [!IMPORTANT]
+> Keep the virtual environment activated when running code generation in the next step, so that `owlbot.py` can import `synthtool`.
+
+This downloads the PHP generator, writes a wrapper script, and installs required formatting and synthesis tools in your local workspace.
 
 ### Step 4: Run Code Generation
 Run the compiled `librarian` binary to generate code for a target library

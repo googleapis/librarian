@@ -28,17 +28,18 @@ import Foundation
 #if canImport(FoundationNetworking)
   import FoundationNetworking
 #endif
-
 {{#Codec.ServiceImports}}
 import {{.}}
 {{/Codec.ServiceImports}}
+import GoogleCloudGax
+import struct Logging.Logger
 
 extension Clients {
   final class {{Codec.StubPrefix}}Logging: {{Codec.StubPrefix}}Stub {
     let inner: any {{Codec.StubPrefix}}Stub
-    let logger: Logging.Logger
+    let logger: Logger
 
-    public init(_ inner: any {{Codec.StubPrefix}}Stub, logger: Logging.Logger) {
+    public init(_ inner: any {{Codec.StubPrefix}}Stub, logger: Logger) {
       var logger = logger
       logger[metadataKey: "gcp.artifact.id"] = "{{Codec.Model.PackageName}}"
       logger[metadataKey: "gcp.client.service"] = "{{Codec.HostnameShort}}"
@@ -50,7 +51,7 @@ extension Clients {
     func _intercept<Input, Output>(
         request: Input,
         options: GoogleCloudGax.RequestOptions,
-        name: String,
+        name: Swift.String,
         action: (Input, GoogleCloudGax.RequestOptions) async throws -> Output,
     ) async throws -> Output {
       var logger = logger

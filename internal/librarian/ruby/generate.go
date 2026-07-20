@@ -17,13 +17,171 @@ package ruby
 
 import (
 	"context"
+	"errors"
+	"fmt"
+	"os"
+	"path/filepath"
+	"sort"
+	"strings"
 
 	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/filesystem"
+	"github.com/googleapis/librarian/internal/serviceconfig"
 	"github.com/googleapis/librarian/internal/sources"
+	"github.com/googleapis/librarian/internal/tool/protoc"
 )
 
+var errNoAPIs = errors.New("no apis configured for library")
+
 // Generate generates a Ruby client library.
-func Generate(ctx context.Context, cfg *config.Config, library *config.Library, src *sources.Sources) error {
-	// TODO(https://github.com/googleapis/librarian/issues/6633): implement Ruby generation
+func Generate(ctx context.Context, cfg *config.Config, library *config.Library, srcs *sources.Sources) (err error) {
+	if len(library.APIs) == 0 {
+		return errNoAPIs
+	}
+	outDir, err := filepath.Abs(library.Output)
+	if err != nil {
+		return fmt.Errorf("failed to get absolute path of output directory: %w", err)
+	}
+	if err := os.MkdirAll(outDir, 0755); err != nil {
+		return fmt.Errorf("failed to create output directory: %w", err)
+	}
+	tempDir, err := os.MkdirTemp(outDir, "librarian-ruby-")
+	if err != nil {
+		return fmt.Errorf("failed to create temp directory: %w", err)
+	}
+	defer func() {
+		if removeErr := os.RemoveAll(tempDir); removeErr != nil {
+			err = errors.Join(err, removeErr)
+		}
+	}()
+	googleapisDir := srcs.Googleapis
+	var pc *config.Protoc
+	if cfg != nil && cfg.Tools != nil {
+		pc = cfg.Tools.Protoc
+	}
+
+	// TODO(https://github.com/googleapis/librarian/issues/6885): Implement main client gem wrapper generation
+	// for libraries configured with `ruby.wrapper_of`.
+	for _, api := range library.APIs {
+		if err := generateAPI(ctx, api.Path, library.Name, pc, googleapisDir, tempDir); err != nil {
+			return fmt.Errorf("api %q: %w", api.Path, err)
+		}
+	}
+	if err := filesystem.MoveAndMerge(tempDir, outDir); err != nil {
+		return fmt.Errorf("failed to move generated files: %w", err)
+	}
 	return nil
+}
+
+func generateAPI(ctx context.Context, apiPath, gemName string, pc *config.Protoc, googleapisDir, stagingDir string) error {
+	protoFiles, err := collectProtoFiles(googleapisDir, apiPath)
+	if err != nil {
+		return err
+	}
+	gapicOpts, err := buildGAPICOpts(apiPath, gemName, googleapisDir)
+	if err != nil {
+		return err
+	}
+	installDir, err := InstallDir()
+	if err != nil {
+		return err
+	}
+	grpcPluginPath := filepath.Join(installDir, "bin", "grpc_tools_ruby_protoc_plugin")
+	args := []string{
+		"--experimental_allow_proto3_optional",
+		"-I=" + googleapisDir,
+		"--ruby_out=" + stagingDir,
+		"--grpc_out=" + stagingDir,
+		"--plugin=protoc-gen-grpc=" + grpcPluginPath,
+		"--ruby_cloud_out=" + stagingDir,
+	}
+	if len(gapicOpts) > 0 {
+		args = append(args, "--ruby_cloud_opt="+strings.Join(gapicOpts, ","))
+	}
+	args = append(args, protoFiles...)
+	env, err := toolsEnv()
+	if err != nil {
+		return err
+	}
+	return protoc.RunOrSystem(ctx, env, pc, args...)
+}
+
+func buildGAPICOpts(apiPath, gemName, googleapisDir string) ([]string, error) {
+	sc, err := serviceconfig.Find(googleapisDir, apiPath, config.LanguageRuby)
+	if err != nil {
+		return nil, err
+	}
+	gc, err := serviceconfig.FindGRPCServiceConfig(googleapisDir, apiPath)
+	if err != nil {
+		return nil, err
+	}
+	var opts []string
+	if gemName != "" {
+		opts = append(opts, "ruby-cloud-gem-name="+gemName)
+	}
+	if sc != nil && sc.ServiceConfig != "" {
+		opts = append(opts, "service-yaml="+filepath.Join(googleapisDir, sc.ServiceConfig))
+	}
+	if gc != "" {
+		opts = append(opts, "grpc-service-config="+filepath.Join(googleapisDir, gc))
+	}
+	if trans := transport(sc); trans != "" {
+		opts = append(opts, fmt.Sprintf("transport=%s", trans))
+	}
+	if sc != nil && sc.HasRESTNumericEnums(config.LanguageRuby) {
+		opts = append(opts, "ruby-cloud-rest-numeric-enums=true")
+	}
+	return opts, nil
+}
+
+func transport(sc *serviceconfig.API) serviceconfig.Transport {
+	if sc != nil {
+		return sc.Transport(config.LanguageRuby)
+	}
+	return serviceconfig.GRPCRest
+}
+
+func collectProtoFiles(googleapisDir, apiPath string) ([]string, error) {
+	apiDir := filepath.Join(googleapisDir, apiPath)
+	entries, err := os.ReadDir(apiDir)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read API directory %s: %w", apiDir, err)
+	}
+
+	var files []string
+	for _, entry := range entries {
+		if entry.IsDir() {
+			continue
+		}
+		if filepath.Ext(entry.Name()) == ".proto" {
+			files = append(files, filepath.Join(apiDir, entry.Name()))
+		}
+	}
+	sort.Strings(files)
+	if len(files) == 0 {
+		return nil, fmt.Errorf("no .proto files found in %s", apiDir)
+	}
+	return files, nil
+}
+
+func toolsEnv() (map[string]string, error) {
+	installDir, err := InstallDir()
+	if err != nil {
+		return nil, err
+	}
+	binDir := filepath.Join(installDir, "bin")
+	path := binDir
+	if currentPath := os.Getenv("PATH"); currentPath != "" {
+		path = binDir + string(os.PathListSeparator) + currentPath
+	}
+	env := map[string]string{
+		"PATH":     path,
+		"GEM_HOME": installDir,
+	}
+	if gemPath := os.Getenv("GEM_PATH"); gemPath != "" {
+		env["GEM_PATH"] = installDir + string(os.PathListSeparator) + gemPath
+	} else {
+		env["GEM_PATH"] = installDir
+	}
+	return env, nil
 }

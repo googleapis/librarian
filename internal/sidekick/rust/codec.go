@@ -132,6 +132,12 @@ func newCodec(specificationFormat string, options map[string]string) (*codec, er
 				return nil, fmt.Errorf("cannot convert `include-streaming-methods` value %q to boolean: %w", definition, err)
 			}
 			codec.includeStreamingMethods = value
+		case key == "include-bidi-streaming-methods":
+			value, err := strconv.ParseBool(definition)
+			if err != nil {
+				return nil, fmt.Errorf("cannot convert `include-bidi-streaming-methods` value %q to boolean: %w", definition, err)
+			}
+			codec.includeBidiStreamingMethods = value
 		case key == "per-service-features":
 			value, err := strconv.ParseBool(definition)
 			if err != nil {
@@ -306,6 +312,8 @@ type codec struct {
 	includeGrpcOnlyMethods bool
 	// If true, this includes gRPC streaming methods.
 	includeStreamingMethods bool
+	// If true, this includes gRPC bi-directional streaming methods.
+	includeBidiStreamingMethods bool
 	// If true, the generator will produce per-client features.
 	perServiceFeatures bool
 	// If not empty, and if `perServiceFeatures` is true, the default features
@@ -385,7 +393,7 @@ func resolveUsedPackages(model *api.API, extraPackages []*packagez) {
 		// not save us any computations.
 
 		for _, m := range s.Methods {
-			if m.OperationInfo != nil || m.IsLroPoller {
+			if m.OperationInfo != nil || m.IsLroPoller || m.ID == ".google.cloud.bigquery.v2.JobService.InsertJob" {
 				hasLROs = true
 			}
 			if len(m.AutoPopulated) != 0 {

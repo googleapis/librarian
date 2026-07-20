@@ -16,7 +16,6 @@ package main
 
 import (
 	"context"
-	"os"
 	"path/filepath"
 	"testing"
 
@@ -84,52 +83,187 @@ func TestRunRubyMigration(t *testing.T) {
 }
 
 func TestFindRubyLibraries(t *testing.T) {
-	for _, test := range []struct {
-		name  string
-		files []string
-		want  []*config.Library
-	}{
+	googleapisPath := filepath.Join("testdata", "googleapis")
+	repoPath := filepath.Join("testdata", "google-cloud-ruby")
+	got, err := findRubyLibraries(googleapisPath, repoPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := []*config.Library{
 		{
-			name: "single library with .OwlBot.yaml",
-			files: []string{
-				"google-cloud-secret_manager/.OwlBot.yaml",
-			},
-			want: []*config.Library{
-				{Name: "google-cloud-secret_manager"},
+			Name: "google-cloud-compute-v1",
+			APIs: []*config.API{
+				{
+					Path: "google/cloud/compute/v1",
+					Ruby: &config.RubyAPI{
+						EnvPrefix:         "COMPUTE",
+						ExtraDependencies: "google-cloud-common=~> 1.0",
+					},
+				},
 			},
 		},
 		{
-			name: "multiple libraries with non-library files and directories",
-			files: []string{
-				"google-cloud-secret_manager/.OwlBot.yaml",
-				"google-cloud-storage/.OwlBot.yaml",
-				"README.md",
-				".OwlBot.yaml",
-				"script/helper.rb",
+			Name: "google-cloud-secret_manager",
+			Ruby: &config.RubyPackage{
+				WrapperOf: []string{
+					"google-cloud-secret_manager-v1",
+				},
+			},
+		},
+		{
+			Name: "google-cloud-secret_manager-v1",
+			APIs: []*config.API{
+				{
+					Path: "google/cloud/secretmanager/v1",
+					Ruby: &config.RubyAPI{
+						EnvPrefix: "SECRET_MANAGER",
+					},
+				},
+			},
+		},
+	}
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+}
+
+func TestParseAPIFromOwlBot(t *testing.T) {
+	for _, test := range []struct {
+		name string
+		path string
+		want string
+	}{
+		{
+			name: "apigeeconnect v1 api",
+			path: "testdata/ruby/parse_api_from_owlbot/apigeeconnect_v1.yaml",
+			want: "google/cloud/apigeeconnect/v1",
+		},
+		{
+			name: "marketingplatform admin v1alpha api",
+			path: "testdata/ruby/parse_api_from_owlbot/marketing_v1alpha.yaml",
+			want: "google/marketingplatform/admin/v1alpha",
+		},
+		{
+			name: "video livestream v1 api",
+			path: "testdata/ruby/parse_api_from_owlbot/video_v1.yaml",
+			want: "google/cloud/video/livestream/v1",
+		},
+		{
+			name: "wrapper library",
+			path: "testdata/ruby/parse_api_from_owlbot/wrapper.yaml",
+			want: "",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got, err := parseAPIFromOwlBot(test.path)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestParseWrapperOf(t *testing.T) {
+	for _, test := range []struct {
+		name      string
+		libraries []*config.Library
+		want      []*config.Library
+	}{
+		{
+			name: "wrapper library with multiple versioned libraries",
+			libraries: []*config.Library{
+				{Name: "google-cloud-secret_manager-v1", APIs: []*config.API{{Path: "google/cloud/secretmanager/v1"}}},
+				{Name: "google-cloud-secret_manager-v1beta1", APIs: []*config.API{{Path: "google/cloud/secretmanager/v1beta1"}}},
+				{Name: "google-cloud-secret_manager"},
 			},
 			want: []*config.Library{
-				{Name: "google-cloud-secret_manager"},
+				{
+					Name: "google-cloud-secret_manager",
+					Ruby: &config.RubyPackage{
+						WrapperOf: []string{
+							"google-cloud-secret_manager-v1",
+							"google-cloud-secret_manager-v1beta1",
+						},
+					},
+				},
+				{Name: "google-cloud-secret_manager-v1", APIs: []*config.API{{Path: "google/cloud/secretmanager/v1"}}},
+				{Name: "google-cloud-secret_manager-v1beta1", APIs: []*config.API{{Path: "google/cloud/secretmanager/v1beta1"}}},
+			},
+		},
+		{
+			name: "library with APIs set is not treated as wrapper",
+			libraries: []*config.Library{
+				{Name: "google-cloud-storage-v2", APIs: []*config.API{{Path: "google/cloud/storage/v2"}}},
+				{Name: "google-cloud-storage-v1", APIs: []*config.API{{Path: "google/cloud/storage/v1"}}},
+			},
+			want: []*config.Library{
+				{Name: "google-cloud-storage-v1", APIs: []*config.API{{Path: "google/cloud/storage/v1"}}},
+				{Name: "google-cloud-storage-v2", APIs: []*config.API{{Path: "google/cloud/storage/v2"}}},
+			},
+		},
+		{
+			name: "wrapper library with no matching versioned gems",
+			libraries: []*config.Library{
+				{Name: "google-cloud-storage"},
+			},
+			want: []*config.Library{
 				{Name: "google-cloud-storage"},
 			},
 		},
 		{
-			name:  "no libraries found",
-			files: []string{"README.md", "script/helper.rb"},
-			want:  nil,
+			name: "ignore libraries with non-version suffix",
+			libraries: []*config.Library{
+				{Name: "google-cloud-storage"},
+				{Name: "google-cloud-storage-transfer-v1", APIs: []*config.API{{Path: "google/cloud/storage/transfer/v1"}}},
+			},
+			want: []*config.Library{
+				{Name: "google-cloud-storage"},
+				{Name: "google-cloud-storage-transfer-v1", APIs: []*config.API{{Path: "google/cloud/storage/transfer/v1"}}},
+			},
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			dir := t.TempDir()
-			for _, f := range test.files {
-				path := filepath.Join(dir, f)
-				if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
-					t.Fatal(err)
-				}
-				if err := os.WriteFile(path, []byte(""), 0644); err != nil {
-					t.Fatal(err)
-				}
+			parseWrapperOf(test.libraries)
+			if diff := cmp.Diff(test.want, test.libraries); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
-			got, err := findRubyLibraries(dir)
+		})
+	}
+}
+
+func TestParseVersionedBuild(t *testing.T) {
+	for _, test := range []struct {
+		name          string
+		googleapisDir string
+		apiPath       string
+		want          *VersionedBuild
+	}{
+		{
+			name:          "valid BUILD.bazel with env prefix",
+			googleapisDir: "testdata/googleapis",
+			apiPath:       "google/cloud/secretmanager/v1",
+			want: &VersionedBuild{
+				EnvPrefix: "SECRET_MANAGER",
+			},
+		},
+		{
+			name:          "BUILD.bazel without ruby_cloud_gapic_library rule",
+			googleapisDir: "testdata/googleapis",
+			apiPath:       "google/cloud/bigquery/connection/v1",
+			want:          &VersionedBuild{},
+		},
+		{
+			name:          "nonexistent BUILD.bazel returns nil",
+			googleapisDir: "testdata/googleapis",
+			apiPath:       "google/cloud/nonexistent/v1",
+			want:          nil,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got, err := parseVersionedBuild(test.googleapisDir, test.apiPath)
 			if err != nil {
 				t.Fatal(err)
 			}
