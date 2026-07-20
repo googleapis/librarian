@@ -81,7 +81,7 @@ func cleanFiles(lib *config.Library, keepSet map[string]bool, subDir string) err
 		if err != nil {
 			return err
 		}
-		if keepSet[relPath] {
+		if keepSet[filepath.ToSlash(relPath)] {
 			return nil
 		}
 		if d.Name() == gapicMetadataFile {
