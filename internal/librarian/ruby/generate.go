@@ -66,7 +66,34 @@ func Generate(ctx context.Context, cfg *config.Config, library *config.Library, 
 			return fmt.Errorf("api %q: %w", api.Path, err)
 		}
 	}
+	if err := copyDir(tempDir, outDir); err != nil {
+		return fmt.Errorf("failed to copy generated files: %w", err)
+	}
 	return nil
+}
+
+func copyDir(srcDir, dstDir string) error {
+	return filepath.WalkDir(srcDir, func(path string, d os.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		rel, err := filepath.Rel(srcDir, path)
+		if err != nil {
+			return err
+		}
+		if rel == "." {
+			return nil
+		}
+		target := filepath.Join(dstDir, rel)
+		if d.IsDir() {
+			return os.MkdirAll(target, 0755)
+		}
+		data, err := os.ReadFile(path)
+		if err != nil {
+			return err
+		}
+		return os.WriteFile(target, data, 0644)
+	})
 }
 
 func generateAPI(ctx context.Context, apiPath, gemName string, pc *config.Protoc, googleapisDir, stagingDir string) error {
@@ -78,11 +105,17 @@ func generateAPI(ctx context.Context, apiPath, gemName string, pc *config.Protoc
 	if err != nil {
 		return err
 	}
+	installDir, err := InstallDir()
+	if err != nil {
+		return err
+	}
+	grpcPluginPath := filepath.Join(installDir, "bin", "grpc_tools_ruby_protoc_plugin")
 	args := []string{
 		"--experimental_allow_proto3_optional",
 		"-I=" + googleapisDir,
 		"--ruby_out=" + stagingDir,
 		"--grpc_out=" + stagingDir,
+		"--plugin=protoc-gen-grpc=" + grpcPluginPath,
 		"--ruby_cloud_out=" + stagingDir,
 	}
 	if len(gapicOpts) > 0 {
@@ -164,5 +197,14 @@ func toolsEnv() (map[string]string, error) {
 	if currentPath := os.Getenv("PATH"); currentPath != "" {
 		path = binDir + string(os.PathListSeparator) + currentPath
 	}
-	return map[string]string{"PATH": path}, nil
+	env := map[string]string{
+		"PATH":     path,
+		"GEM_HOME": installDir,
+	}
+	if gemPath := os.Getenv("GEM_PATH"); gemPath != "" {
+		env["GEM_PATH"] = installDir + string(os.PathListSeparator) + gemPath
+	} else {
+		env["GEM_PATH"] = installDir
+	}
+	return env, nil
 }
