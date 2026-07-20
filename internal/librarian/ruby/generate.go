@@ -25,6 +25,7 @@ import (
 	"strings"
 
 	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/filesystem"
 	"github.com/googleapis/librarian/internal/serviceconfig"
 	"github.com/googleapis/librarian/internal/sources"
 	"github.com/googleapis/librarian/internal/tool/protoc"
@@ -66,34 +67,10 @@ func Generate(ctx context.Context, cfg *config.Config, library *config.Library, 
 			return fmt.Errorf("api %q: %w", api.Path, err)
 		}
 	}
-	if err := copyDir(tempDir, outDir); err != nil {
-		return fmt.Errorf("failed to copy generated files: %w", err)
+	if err := filesystem.MoveAndMerge(tempDir, outDir); err != nil {
+		return fmt.Errorf("failed to move generated files: %w", err)
 	}
 	return nil
-}
-
-func copyDir(srcDir, dstDir string) error {
-	return filepath.WalkDir(srcDir, func(path string, d os.DirEntry, err error) error {
-		if err != nil {
-			return err
-		}
-		rel, err := filepath.Rel(srcDir, path)
-		if err != nil {
-			return err
-		}
-		if rel == "." {
-			return nil
-		}
-		target := filepath.Join(dstDir, rel)
-		if d.IsDir() {
-			return os.MkdirAll(target, 0755)
-		}
-		data, err := os.ReadFile(path)
-		if err != nil {
-			return err
-		}
-		return os.WriteFile(target, data, 0644)
-	})
 }
 
 func generateAPI(ctx context.Context, apiPath, gemName string, pc *config.Protoc, googleapisDir, stagingDir string) error {

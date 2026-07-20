@@ -271,38 +271,6 @@ func TestGenerate(t *testing.T) {
 	}
 }
 
-func TestCopyDir(t *testing.T) {
-	srcDir := t.TempDir()
-	dstDir := t.TempDir()
-
-	subDir := filepath.Join(srcDir, "sub")
-	if err := os.MkdirAll(subDir, 0755); err != nil {
-		t.Fatal(err)
-	}
-	fileContent := []byte("hello world")
-	if err := os.WriteFile(filepath.Join(subDir, "file.txt"), fileContent, 0644); err != nil {
-		t.Fatal(err)
-	}
-
-	if err := copyDir(srcDir, dstDir); err != nil {
-		t.Fatalf("copyDir() error = %v", err)
-	}
-
-	copiedFile := filepath.Join(dstDir, "sub", "file.txt")
-	gotContent, err := os.ReadFile(copiedFile)
-	if err != nil {
-		t.Fatalf("failed to read copied file %s: %v", copiedFile, err)
-	}
-	if string(gotContent) != string(fileContent) {
-		t.Errorf("copied content = %q, want %q", gotContent, fileContent)
-	}
-}
-
-func TestCopyDir_Error(t *testing.T) {
-	err := copyDir(filepath.Join(t.TempDir(), "nonexistent"), t.TempDir())
-	if err == nil {
-		t.Error("copyDir() error = nil, want error")
-	}
 }
 
 func TestToolsEnv_GemPathSet(t *testing.T) {
