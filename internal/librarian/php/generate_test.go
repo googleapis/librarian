@@ -332,11 +332,19 @@ func TestGatherGAPICProtos_Error(t *testing.T) {
 		name       string
 		setupFiles []string
 		apiPath    string
+		wantErr    error
 	}{
 		{
-			name:       "no protos found",
+			name:       "directory not found",
 			setupFiles: nil,
 			apiPath:    "google/cloud/secretmanager/v1",
+			wantErr:    errNoProtos,
+		},
+		{
+			name:       "empty directory",
+			setupFiles: []string{"google/cloud/secretmanager/v1/not-a-proto.txt"},
+			apiPath:    "google/cloud/secretmanager/v1",
+			wantErr:    errNoProtos,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
@@ -351,8 +359,8 @@ func TestGatherGAPICProtos_Error(t *testing.T) {
 				}
 			}
 			_, err := gatherGAPICProtos(tempDir, test.apiPath, nil, true)
-			if err == nil {
-				t.Fatal("gatherGAPICProtos() expected error, got nil")
+			if !errors.Is(err, test.wantErr) {
+				t.Errorf("gatherGAPICProtos() error = %v, wantErr = %v", err, test.wantErr)
 			}
 		})
 	}
