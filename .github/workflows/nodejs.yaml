@@ -62,7 +62,7 @@ jobs:
         run: go run ./tool/cmd/coverage ./internal/librarian/nodejs
       - name: Generate a single library (integration test)
         working-directory: google-cloud-node
-        run: librarian generate secretmanager
+        run: librarian generate google-cloud-secretmanager
   integration:
     runs-on: ubuntu-24.04
     timeout-minutes: 60
