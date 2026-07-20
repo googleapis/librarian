@@ -30,19 +30,35 @@ func TestBuildGAPICOpts(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	got, err := buildGAPICOpts("google/cloud/secretmanager/v1", "google-cloud-secret_manager-v1", googleapisDir)
-	if err != nil {
-		t.Fatal(err)
-	}
-	want := []string{
-		"ruby-cloud-gem-name=google-cloud-secret_manager-v1",
-		"service-yaml=" + filepath.Join(googleapisDir, "google/cloud/secretmanager/v1/secretmanager_v1.yaml"),
-		"grpc-service-config=" + filepath.Join(googleapisDir, "google/cloud/secretmanager/v1/secretmanager_grpc_service_config.json"),
-		"transport=grpc+rest",
-		"ruby-cloud-rest-numeric-enums=true",
-	}
-	if diff := cmp.Diff(want, got); diff != "" {
-		t.Errorf("mismatch (-want +got):\n%s", diff)
+
+	for _, test := range []struct {
+		name    string
+		apiPath string
+		gemName string
+		want    []string
+	}{
+		{
+			name:    "secretmanager v1",
+			apiPath: "google/cloud/secretmanager/v1",
+			gemName: "google-cloud-secret_manager-v1",
+			want: []string{
+				"ruby-cloud-gem-name=google-cloud-secret_manager-v1",
+				"service-yaml=" + filepath.Join(googleapisDir, "google/cloud/secretmanager/v1/secretmanager_v1.yaml"),
+				"grpc-service-config=" + filepath.Join(googleapisDir, "google/cloud/secretmanager/v1/secretmanager_grpc_service_config.json"),
+				"transport=grpc+rest",
+				"ruby-cloud-rest-numeric-enums=true",
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got, err := buildGAPICOpts(test.apiPath, test.gemName, googleapisDir)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
 	}
 }
 
