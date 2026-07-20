@@ -24,7 +24,6 @@ import (
 	"path/filepath"
 	"regexp"
 	"slices"
-	"sort"
 	"strings"
 
 	"github.com/googleapis/librarian/internal/config"
@@ -49,6 +48,7 @@ type owlbotSrc struct {
 // VersionedBuild represents build configuration parsed from BUILD.bazel for a Ruby API version.
 type VersionedBuild struct {
 	EnvPrefix string
+	ExtraDeps string
 }
 
 func runRubyMigration(ctx context.Context, repoPath string) error {
@@ -133,7 +133,8 @@ func findRubyLibraries(googleapisPath, repoPath string) ([]*config.Library, erro
 			}
 			if vb != nil {
 				lib.APIs[0].Ruby = &config.RubyAPI{
-					EnvPrefix: vb.EnvPrefix,
+					EnvPrefix:         vb.EnvPrefix,
+					ExtraDependencies: vb.ExtraDeps,
 				}
 			}
 		}
@@ -169,8 +170,8 @@ func parseAPIFromOwlBot(owlBotPath string) (string, error) {
 
 // parseWrapperOf sets the WrapperOf field for wrapper libraries.
 func parseWrapperOf(libraries []*config.Library) {
-	sort.Slice(libraries, func(i, j int) bool {
-		return libraries[i].Name < libraries[j].Name
+	slices.SortFunc(libraries, func(a, b *config.Library) int {
+		return strings.Compare(a.Name, b.Name)
 	})
 	for i, lib := range libraries {
 		if len(lib.APIs) != 0 {
@@ -215,6 +216,8 @@ func parseVersionedBuild(googleapisDir, apiPath string) (*VersionedBuild, error)
 				switch {
 				case strings.HasPrefix(dep, "ruby-cloud-env-prefix="):
 					vb.EnvPrefix, _ = strings.CutPrefix(dep, "ruby-cloud-env-prefix=")
+				case strings.HasPrefix(dep, "ruby-cloud-extra-dependencies="):
+					vb.ExtraDeps, _ = strings.CutPrefix(dep, "ruby-cloud-extra-dependencies=")
 				}
 			}
 		}
