@@ -103,13 +103,7 @@ func Generate(ctx context.Context, cfg *config.Config, library *config.Library, 
 			return fmt.Errorf("API %q: %w", api.Path, errMissingStagingSubdir)
 		}
 		gapicDestDir := filepath.Join(stagingDir, api.PHP.StagingSubdir)
-		if err := os.MkdirAll(gapicDestDir, 0755); err != nil {
-			return err
-		}
 		protoDestDir := filepath.Join(gapicDestDir, "proto/src")
-		if err := os.MkdirAll(protoDestDir, 0755); err != nil {
-			return err
-		}
 
 		params := &generateAPIParams{
 			cfg:          cfg,
