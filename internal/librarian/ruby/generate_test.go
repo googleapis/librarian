@@ -19,6 +19,7 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/serviceconfig"
 )
 
@@ -45,9 +46,41 @@ func TestBuildGAPICOpts(t *testing.T) {
 	}
 }
 
-func TestTransport_Nil(t *testing.T) {
-	got := transport(nil)
-	if got != serviceconfig.GRPCRest {
-		t.Errorf("transport(nil) = %v, want %v", got, serviceconfig.GRPCRest)
+func TestTransport(t *testing.T) {
+	for _, test := range []struct {
+		name string
+		sc   *serviceconfig.API
+		want serviceconfig.Transport
+	}{
+		{
+			name: "nil api",
+			sc:   nil,
+			want: serviceconfig.GRPCRest,
+		},
+		{
+			name: "rest only",
+			sc: &serviceconfig.API{
+				Transports: map[string]serviceconfig.Transport{
+					config.LanguageRuby: serviceconfig.Rest,
+				},
+			},
+			want: serviceconfig.Rest,
+		},
+		{
+			name: "rest and grpc",
+			sc: &serviceconfig.API{
+				Transports: map[string]serviceconfig.Transport{
+					config.LanguageRuby: serviceconfig.GRPCRest,
+				},
+			},
+			want: serviceconfig.GRPCRest,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := transport(test.sc)
+			if got != test.want {
+				t.Errorf("transport() = %v, want %v", got, test.want)
+			}
+		})
 	}
 }
