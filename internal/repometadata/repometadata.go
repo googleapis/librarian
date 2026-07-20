@@ -33,6 +33,12 @@ const (
 
 	// GAPICAutoLibraryType is the library_type to use for GAPIC libraries.
 	GAPICAutoLibraryType = "GAPIC_AUTO"
+
+	// Never generate a .repo-metadata.json file for showcase.
+	//
+	// It serves no purpose, and the result has problems. For example, the short
+	// name is invalid.
+	ShowcasePath = "schema/google/showcase/v1beta1"
 )
 
 var (
