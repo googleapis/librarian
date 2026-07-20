@@ -116,7 +116,8 @@ func protoFieldName(s string) string {
 	return escapeKeyword(result.String())
 }
 
-// protoFieldNamePascal converts a protobuf field name to its corresponding SwiftProtobuf PascalCase name (used for hasField helpers).
+// protoFieldNamePascal converts a protobuf field name to its corresponding
+// SwiftProtobuf PascalCase name (used for hasField helpers).
 func protoFieldNamePascal(s string) string {
 	// SwiftProtobuf appends a "_p" suffix to fields that conflict with standard Swift library
 	// protocols (e.g. CustomStringConvertible, CustomDebugStringConvertible, Hashable)
