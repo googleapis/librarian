@@ -120,8 +120,12 @@ func Generate(ctx context.Context, cfg *config.Config, library *config.Library, 
 			return err
 		}
 		// Cleanup output zips for subsequent APIs in the same library package
-		_ = os.Remove(gapicZipPath)
-		_ = os.Remove(protoZipPath)
+		if err := os.Remove(gapicZipPath); err != nil && !errors.Is(err, os.ErrNotExist) {
+			return fmt.Errorf("failed to remove gapic zip: %w", err)
+		}
+		if err := os.Remove(protoZipPath); err != nil && !errors.Is(err, os.ErrNotExist) {
+			return fmt.Errorf("failed to remove proto zip: %w", err)
+		}
 	}
 	if err := postProcessLibrary(ctx, library); err != nil {
 		return fmt.Errorf("failed to postprocess: %w", err)
