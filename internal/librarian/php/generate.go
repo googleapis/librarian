@@ -19,6 +19,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io/fs"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -147,10 +148,10 @@ func generateAPI(ctx context.Context, params *generateAPIParams) (retErr error) 
 	protoZipPath := filepath.Join(params.tempDir, sanitizedPath+"-proto.zip")
 
 	defer func() {
-		if cleanupErr := os.Remove(gapicZipPath); cleanupErr != nil && !errors.Is(cleanupErr, os.ErrNotExist) {
+		if cleanupErr := os.Remove(gapicZipPath); cleanupErr != nil && !errors.Is(cleanupErr, fs.ErrNotExist) {
 			retErr = errors.Join(retErr, fmt.Errorf("failed to remove gapic zip: %w", cleanupErr))
 		}
-		if cleanupErr := os.Remove(protoZipPath); cleanupErr != nil && !errors.Is(cleanupErr, os.ErrNotExist) {
+		if cleanupErr := os.Remove(protoZipPath); cleanupErr != nil && !errors.Is(cleanupErr, fs.ErrNotExist) {
 			retErr = errors.Join(retErr, fmt.Errorf("failed to remove proto zip: %w", cleanupErr))
 		}
 	}()
@@ -256,7 +257,7 @@ func gatherMainProtos(googleapisDir, apiPath string) ([]string, error) {
 	apiDir := filepath.Join(googleapisDir, filepath.FromSlash(apiPath))
 	protos, err := gatherProtos(apiDir)
 	if err != nil {
-		if errors.Is(err, os.ErrNotExist) {
+		if errors.Is(err, fs.ErrNotExist) {
 			return nil, fmt.Errorf("%w for API %s: %w", errNoProtos, apiPath, err)
 		}
 		return nil, err
