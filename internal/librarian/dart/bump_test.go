@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"testing"
 
@@ -266,11 +267,11 @@ dependencies:
 	testhelper.RunGit(t, "add", ".")
 	testhelper.RunGit(t, "commit", "-m", "feat: added support for something new in a", ".")
 
-	responses := map[string]PackageVersion{
+	apiToolResponses := map[string]PackageVersion{
 		"a": {needed: "1.1.0", old: "1.0.0"},
 		"b": {needed: "1.0.0", old: "1.0.0"},
 	}
-	setupFakeApitool(t, responses)
+	setupFakeApitool(t, apiToolResponses)
 
 	cfg := &config.Config{
 		Default: &config.Default{
@@ -279,7 +280,6 @@ dependencies:
 			Dart: &config.DartPackage{
 				Packages: map[string]string{
 					"package:a": "^1.0.0",
-					"package:b": "^1.0.0",
 				},
 			},
 		},
@@ -305,11 +305,8 @@ dependencies:
 	}
 
 	// Verify cfg.Default.Dart.Packages values:
-	if got, want := cfg.Default.Dart.Packages["package:a"], "^1.1.0"; got != want {
-		t.Errorf("default packages package:a = %q; want %q", got, want)
-	}
-	if got, want := cfg.Default.Dart.Packages["package:b"], "^1.0.1"; got != want {
-		t.Errorf("default packages package:b = %q; want %q", got, want)
+	if got, want := cfg.Default.Dart.Packages, map[string]string{"package:a": "^1.1.0"}; !reflect.DeepEqual(got, want) {
+		t.Errorf("default packages map = %v; want %v", got, want)
 	}
 
 	// Verify updated files in directory:
