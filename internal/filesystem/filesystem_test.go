@@ -17,9 +17,11 @@ package filesystem
 import (
 	"archive/zip"
 	"errors"
+	"fmt"
 	"io/fs"
 	"os"
 	"path/filepath"
+	"syscall"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -512,6 +514,52 @@ func TestRemoveEmptyDirs(t *testing.T) {
 				if _, err := os.Stat(p); !errors.Is(err, fs.ErrNotExist) {
 					t.Errorf("expected %s to be absent, but stat got: %v", path, err)
 				}
+			}
+		})
+	}
+}
+
+func TestIsDirNotEmpty(t *testing.T) {
+	for _, test := range []struct {
+		name string
+		err  error
+		want bool
+	}{
+		{
+			name: "nil error",
+			err:  nil,
+			want: false,
+		},
+		{
+			name: "generic error",
+			err:  errors.New("generic error"),
+			want: false,
+		},
+		{
+			name: "ENOTEMPTY",
+			err:  &os.PathError{Op: "remove", Path: "/tmp", Err: syscall.ENOTEMPTY},
+			want: true,
+		},
+		{
+			name: "EEXIST",
+			err:  &os.PathError{Op: "remove", Path: "/tmp", Err: syscall.EEXIST},
+			want: true,
+		},
+		{
+			name: "EACCES",
+			err:  &os.PathError{Op: "remove", Path: "/tmp", Err: syscall.EACCES},
+			want: false,
+		},
+		{
+			name: "wrapped ENOTEMPTY",
+			err:  fmt.Errorf("failed: %w", &os.PathError{Op: "remove", Path: "/tmp", Err: syscall.ENOTEMPTY}),
+			want: true,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := isDirNotEmpty(test.err)
+			if got != test.want {
+				t.Errorf("isDirNotEmpty(%v) = %v, want %v", test.err, got, test.want)
 			}
 		})
 	}
