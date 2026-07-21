@@ -274,11 +274,9 @@ func TestClean_RemovesEmptyDirectories(t *testing.T) {
 		t.Fatal(err)
 	}
 	lib.Keep = []string{"src/V1/Kept/Handwritten.php"}
-
 	if err := Clean(lib); err != nil {
 		t.Fatal(err)
 	}
-
 	dirsAbsent := []string{
 		emptyDir,
 		dirWithDeletedFile,

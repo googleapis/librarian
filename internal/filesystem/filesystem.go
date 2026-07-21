@@ -151,16 +151,17 @@ func RemoveEmptyDirs(targetPath, root string, keepFunc func(string) bool) error 
 		if err != nil {
 			return err
 		}
-		if d.IsDir() {
-			rel, err := filepath.Rel(root, path)
-			if err != nil {
-				return err
-			}
-			if keepFunc != nil && keepFunc(filepath.ToSlash(rel)) {
-				return filepath.SkipDir
-			}
-			dirs = append(dirs, path)
+		if !d.IsDir() {
+			return nil
 		}
+		rel, err := filepath.Rel(root, path)
+		if err != nil {
+			return err
+		}
+		if keepFunc != nil && keepFunc(filepath.ToSlash(rel)) {
+			return filepath.SkipDir
+		}
+		dirs = append(dirs, path)
 		return nil
 	})
 	if err != nil && !errors.Is(err, fs.ErrNotExist) {
