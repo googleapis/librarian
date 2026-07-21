@@ -442,7 +442,7 @@ func TestDefaultOutput(t *testing.T) {
 	}
 }
 
-func TestGenerateAllowlist(t *testing.T) {
+func TestGenerateAllowlist_Error(t *testing.T) {
 	tempDir := t.TempDir()
 	t.Chdir(tempDir)
 	googleapisDir := createGoogleapisServiceConfigs(t, tempDir, map[string]string{
@@ -473,9 +473,8 @@ libraries:
 
 	t.Run("all libraries", func(t *testing.T) {
 		err := Run(t.Context(), "librarian", "generate", "--all")
-		wantErr := "no libraries to generate: all libraries have skip_generate set"
-		if err == nil || err.Error() != wantErr {
-			t.Errorf("want %q, got %v", wantErr, err)
+		if !errors.Is(err, errNoLibrariesToGenerate) {
+			t.Errorf("want errNoLibrariesToGenerate, got %v", err)
 		}
 	})
 }

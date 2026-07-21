@@ -44,6 +44,7 @@ var (
 	errSkipGenerate            = errors.New("library has skip_generate set")
 	errNoPreviewVariant        = errors.New("library does not have a preview variant")
 	errUnsupportedLanguage     = errors.New("language does not support generation")
+	errNoLibrariesToGenerate   = errors.New("no libraries to generate: all libraries have skip_generate set")
 )
 
 func generateCommand() *cli.Command {
@@ -156,7 +157,7 @@ func runGenerate(ctx context.Context, cfg *config.Config, all bool, libraryName 
 	}
 	if len(libraries) == 0 {
 		if all {
-			return errors.New("no libraries to generate: all libraries have skip_generate set")
+			return errNoLibrariesToGenerate
 		}
 		for _, lib := range cfg.Libraries {
 			if lib.Name == baseName {
