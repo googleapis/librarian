@@ -46,7 +46,19 @@ func Generate(ctx context.Context, cfg *config.Config, library *config.Library, 
 	if err != nil {
 		return err
 	}
-	return sidekickswift.Generate(ctx, model, library.Output, modelConfig, library.Swift)
+	if err = sidekickswift.Generate(ctx, model, library.Output, modelConfig, library.Swift); err != nil {
+		return err
+	}
+	if needsRepoMetadata(model, library) {
+		repoMetadata, err := createRepoMetadata(cfg, library, src)
+		if err != nil {
+			return err
+		}
+		if err := repoMetadata.Write(library.Output); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // Format formats a generated Swift library.
