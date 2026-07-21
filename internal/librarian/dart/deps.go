@@ -36,6 +36,17 @@ func libraryOutput(lib *config.Library, defaults *config.Default) string {
 	return filepath.Join(defaultOut, lib.Name)
 }
 
+// getDeps returns the dependencies and versions for the given libraries as found in the GitHub repository.
+//
+// For example:
+//
+//		getDeps(..., [google_cloud_protobuf, google_cloud_logging_type, google_cloud_logging]) =>
+//		({"google_cloud_protobuf": [], "google_cloud_logging_type": ["google_cloud_protobuf"],
+//		 "google_cloud_logging": ["google_cloud_logging_type"]}
+//
+//		 {"google_cloud_protobuf": "1.2.3", "google_cloud_logging_type": "4.5.6", "google_cloud_logging": "5.6.7"},
+//
+//	  nil)
 func getDeps(ctx context.Context, libraries []*config.Library) (map[string][]string, map[string]string, error) {
 	output, err := command.Output(ctx, command.Dart, "pub", "deps", "--json")
 	if err != nil {
@@ -77,6 +88,8 @@ func getDeps(ctx context.Context, libraries []*config.Library) (map[string][]str
 	return depsMap, versionsMap, nil
 }
 
+// sortByDeps performs a topological sort of the libraries by their dependencies such that dependencies
+// always appear before the libraries that depend on them.
 func sortByDeps(libraryByName map[string]*config.Library, deps map[string][]string) ([]string, error) {
 	inDegree := make(map[string]int)
 	dependents := make(map[string][]string)
