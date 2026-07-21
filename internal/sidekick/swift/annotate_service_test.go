@@ -477,7 +477,7 @@ func TestAnnotateService_MethodSignatures(t *testing.T) {
 			wantImports: []string{"GoogleCloudWkt"},
 		},
 		{
-			name:        "unrealistic, but good for testing",
+			name:        "with external field",
 			signatures:  []*api.MethodSignature{{Names: []string{"parent", "thing_id", "thing"}}},
 			wantImports: []string{"GoogleCloudExternal", "GoogleCloudWkt"},
 		},
