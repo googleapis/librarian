@@ -206,8 +206,8 @@ func updateChangelog(ctx context.Context, packageDir, version, lastReleaseTagCom
 	}
 
 	rest := string(content)
-	if strings.HasPrefix(rest, "# Changelog") {
-		rest = strings.TrimPrefix(rest, "# Changelog")
+	if after, ok := strings.CutPrefix(rest, "# Changelog"); ok {
+		rest = after
 		rest = strings.TrimLeft(rest, "\r\n ")
 	}
 
