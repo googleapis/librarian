@@ -166,7 +166,6 @@ func RemoveEmptyDirs(targetPath, root string, keepFunc func(string) bool) error 
 	if err != nil && !errors.Is(err, fs.ErrNotExist) {
 		return err
 	}
-
 	for _, dir := range slices.Backward(dirs) {
 		if err := os.Remove(dir); err != nil && !errors.Is(err, fs.ErrNotExist) && !isDirNotEmpty(err) {
 			return err
@@ -175,6 +174,7 @@ func RemoveEmptyDirs(targetPath, root string, keepFunc func(string) bool) error 
 	return nil
 }
 
+// isDirNotEmpty returns true if err indicates the directory is not empty.
 func isDirNotEmpty(err error) bool {
 	return errors.Is(err, syscall.ENOTEMPTY) || errors.Is(err, syscall.EEXIST)
 }

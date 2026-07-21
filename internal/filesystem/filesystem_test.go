@@ -498,11 +498,9 @@ func TestRemoveEmptyDirs(t *testing.T) {
 					t.Fatal(err)
 				}
 			}
-
 			if err := RemoveEmptyDirs(root, root, test.keepFunc); err != nil {
 				t.Fatal(err)
 			}
-
 			for _, path := range test.wantExist {
 				p := filepath.Join(root, path)
 				if _, err := os.Stat(p); err != nil {

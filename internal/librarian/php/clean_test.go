@@ -250,13 +250,11 @@ func TestClean_RemovesEmptyDirectories(t *testing.T) {
 		Name:   "test",
 		Output: filepath.Join(repoRoot, "test"),
 	}
-
 	// Setup: empty directory under src
 	emptyDir := filepath.Join(lib.Output, "src", "V1", "Empty")
 	if err := os.MkdirAll(emptyDir, 0755); err != nil {
 		t.Fatal(err)
 	}
-
 	// Setup: directory with a file that will be deleted
 	dirWithDeletedFile := filepath.Join(lib.Output, "src", "V1", "Deleted")
 	fileToDelete := filepath.Join(dirWithDeletedFile, "gapic_metadata.json")
@@ -266,7 +264,6 @@ func TestClean_RemovesEmptyDirectories(t *testing.T) {
 	if err := os.WriteFile(fileToDelete, []byte("{}"), 0644); err != nil {
 		t.Fatal(err)
 	}
-
 	// Setup: directory with a kept file
 	dirWithKeptFile := filepath.Join(lib.Output, "src", "V1", "Kept")
 	fileToKeep := filepath.Join(dirWithKeptFile, "Handwritten.php")
@@ -291,7 +288,6 @@ func TestClean_RemovesEmptyDirectories(t *testing.T) {
 			t.Errorf("expected directory %s to be deleted, but stat got: %v", d, err)
 		}
 	}
-
 	dirsExist := []string{
 		dirWithKeptFile,
 		filepath.Join(lib.Output, "src", "V1"),
