@@ -133,20 +133,23 @@ func runGenerate(ctx context.Context, cfg *config.Config, all bool, libraryName 
 		}
 
 		for _, v := range variants {
-			allowlisted := true
+			var allowlistErr error
 			for _, api := range v.APIs {
 				if cfg.Language == config.LanguageFake {
 					continue
 				}
 				if err := serviceconfig.CheckAllowed(api.Path, cfg.Language); err != nil {
 					if errors.Is(err, serviceconfig.ErrNotAllowed) {
-						allowlisted = false
+						allowlistErr = err
 						break
 					}
 				}
 			}
-			if !allowlisted && all {
-				continue
+			if allowlistErr != nil {
+				if all {
+					continue
+				}
+				return allowlistErr
 			}
 			libraries = append(libraries, v)
 		}
