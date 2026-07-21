@@ -51,6 +51,11 @@ type methodAnnotation struct {
 	ServerSideStreaming       bool
 }
 
+// IsBidiStreaming returns true if the method is a bidirectional streaming RPC.
+func (m *methodAnnotation) IsBidiStreaming() bool {
+	return m.ClientSideStreaming && m.ServerSideStreaming
+}
+
 // HasGrpcResourceNameArgs returns true if the method has gRPC resource name arguments.
 func (m *methodAnnotation) HasGrpcResourceNameArgs() bool {
 	return len(m.GrpcResourceNameArgs) > 0
