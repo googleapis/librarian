@@ -21,6 +21,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 
 	"github.com/googleapis/librarian/internal/cache"
 	"github.com/googleapis/librarian/internal/command"
@@ -59,6 +60,8 @@ func Install(ctx context.Context, tools *config.Tools) error {
 		if tool.Repo == "" {
 			return fmt.Errorf("%w: composer tool %s", errMissingRepo, tool.Name)
 		}
+
+		isGenerator := strings.Contains(tool.Repo, "gapic-generator-php")
 		dir, err := fetch.Repo(ctx, tool.Repo, tool.Version, tool.SHA256)
 		if err != nil {
 			return fmt.Errorf("fetching %s: %w", tool.Name, err)
@@ -67,13 +70,39 @@ func Install(ctx context.Context, tools *config.Tools) error {
 		if err := os.RemoveAll(filepath.Join(dir, "vendor")); err != nil {
 			return fmt.Errorf("failed to clear vendor directory for %s: %w", tool.Name, err)
 		}
-		if err := command.RunInDir(ctx, dir, "composer", "install", "--no-dev", "--no-interaction", "--prefer-dist"); err != nil {
-			return err
+		args := []string{"install", "--no-interaction", "--prefer-dist"}
+		if !isGenerator {
+			args = append(args, "--no-dev")
 		}
-
-		destPath := filepath.Join(dir, "vendor", "bin", tool.Name)
-		if err := createBinWrapper(tool.Name, destPath, bin); err != nil {
-			return err
+		if _, err := exec.LookPath("composer"); err != nil {
+			return fmt.Errorf("composer is not installed or not in PATH, which is required for PHP tool installation: %w", err)
+		}
+		if err := command.RunInDir(ctx, dir, "composer", args...); err != nil {
+			return fmt.Errorf("failed to run composer install: %w", err)
+		}
+		if isGenerator {
+			phpPath, err := exec.LookPath("php")
+			if err != nil {
+				return fmt.Errorf("failed to find php: %w", err)
+			}
+			destPath := filepath.Join(dir, "src", "Main.php")
+			wrapperName := filepath.Base(tool.Repo)
+			wrapperPath := filepath.Join(bin, wrapperName)
+			wrapperContent := fmt.Sprintf("#!/bin/bash\nexec %q -d display_errors=stderr -d memory_limit=1024M %q --side_loaded_root_dir \"$GOOGLEAPIS_DIR\" \"$@\"\n", phpPath, destPath)
+			f, err := os.OpenFile(wrapperPath, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0755)
+			if err != nil {
+				return fmt.Errorf("failed to create wrapper script: %w", err)
+			}
+			if _, err := f.WriteString(wrapperContent); err != nil {
+				f.Close()
+				return fmt.Errorf("failed to write wrapper script: %w", err)
+			}
+			f.Close()
+		} else {
+			destPath := filepath.Join(dir, "vendor", "bin", tool.Name)
+			if err := createBinWrapper(tool.Name, destPath, bin); err != nil {
+				return err
+			}
 		}
 	}
 	// The PHP client library generation process relies on Python-based
