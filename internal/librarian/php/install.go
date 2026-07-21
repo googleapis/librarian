@@ -67,9 +67,6 @@ func Install(ctx context.Context, tools *config.Tools) error {
 			return fmt.Errorf("fetching %s: %w", tool.Name, err)
 		}
 
-		if err := os.RemoveAll(filepath.Join(dir, "vendor")); err != nil {
-			return fmt.Errorf("failed to clear vendor directory for %s: %w", tool.Name, err)
-		}
 		args := []string{"install", "--no-interaction", "--prefer-dist"}
 		if !isGenerator {
 			args = append(args, "--no-dev")
@@ -89,15 +86,9 @@ func Install(ctx context.Context, tools *config.Tools) error {
 			wrapperName := filepath.Base(tool.Repo)
 			wrapperPath := filepath.Join(bin, wrapperName)
 			wrapperContent := fmt.Sprintf("#!/bin/bash\nexec %q -d display_errors=stderr -d memory_limit=1024M %q --side_loaded_root_dir \"$GOOGLEAPIS_DIR\" \"$@\"\n", phpPath, destPath)
-			f, err := os.OpenFile(wrapperPath, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0755)
-			if err != nil {
+			if err := os.WriteFile(wrapperPath, []byte(wrapperContent), 0755); err != nil {
 				return fmt.Errorf("failed to create wrapper script: %w", err)
 			}
-			if _, err := f.WriteString(wrapperContent); err != nil {
-				f.Close()
-				return fmt.Errorf("failed to write wrapper script: %w", err)
-			}
-			f.Close()
 		} else {
 			destPath := filepath.Join(dir, "vendor", "bin", tool.Name)
 			if err := createBinWrapper(tool.Name, destPath, bin); err != nil {
@@ -155,11 +146,7 @@ func installGenerator(ctx context.Context) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	// Ensure Composer dependencies are installed cleanly
-	vendorDir := filepath.Join(generatorDir, "vendor")
-	if err := os.RemoveAll(vendorDir); err != nil {
-		return "", fmt.Errorf("failed to clear vendor directory: %w", err)
-	}
+	// Ensure Composer dependencies are installed
 	if _, err := exec.LookPath("composer"); err == nil {
 		if err := command.RunInDir(ctx, generatorDir, "composer", "install"); err != nil {
 			return "", fmt.Errorf("failed to run composer install: %w", err)
@@ -198,12 +185,5 @@ func createBinWrapper(wrapperName, destPath, binDir string) error {
 	if err := os.MkdirAll(filepath.Dir(wrapperPath), 0755); err != nil {
 		return fmt.Errorf("failed to create directory for wrapper: %w", err)
 	}
-	_ = os.Remove(wrapperPath)
-	f, err := os.OpenFile(wrapperPath, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0755)
-	if err != nil {
-		return err
-	}
-	defer f.Close()
-	_, err = f.WriteString(content)
-	return err
+	return os.WriteFile(wrapperPath, []byte(content), 0755)
 }
