@@ -296,7 +296,7 @@ dependencies:
 
 	// Verify versions in config:
 	// a should be bumped to 1.1.0
-	// b should be bumped to 1.0.1 (patch bump because its dependency a was updated)
+	// b should be bumped to 1.0.1 (patch bump because its dependency "a" was updated)
 	if got, want := cfg.Libraries[0].Version, "1.1.0"; got != want {
 		t.Errorf("library a version = %q; want %q", got, want)
 	}
