@@ -233,217 +233,6 @@ func TestFillDefaults(t *testing.T) {
 	}
 }
 
-func TestFillDefaults_Java(t *testing.T) {
-	defaults := &config.Default{
-		Java: &config.JavaDefault{
-			CustomGroupIDs: map[string]string{
-				"google/shopping":  "com.google.shopping",
-				"google/exact/v1":  "com.google.exact",
-				"google/maps":      "com.google.maps",
-				"google/ads":       "com.google.api-ads",
-				"google/analytics": "com.google.analytics",
-			},
-		},
-	}
-	for _, test := range []struct {
-		name     string
-		lib      *config.Library
-		defaults *config.Default
-		want     *config.Library
-	}{
-		{
-			name: "shopping library",
-			lib: &config.Library{
-				Name: "shopping-merchant-issue-resolution",
-				APIs: []*config.API{
-					{Path: "google/shopping/merchant/issueresolution/v1"},
-					{Path: "google/shopping/merchant/issueresolution/v1beta"},
-				},
-			},
-			defaults: defaults,
-			want: &config.Library{
-				Name: "shopping-merchant-issue-resolution",
-				APIs: []*config.API{
-					{Path: "google/shopping/merchant/issueresolution/v1"},
-					{Path: "google/shopping/merchant/issueresolution/v1beta"},
-				},
-				Java: &config.JavaModule{
-					GroupID: "com.google.shopping",
-				},
-			},
-		},
-		{
-			name: "do not override custom artifact id",
-			lib: &config.Library{
-				Name: "custom-shopping",
-				APIs: []*config.API{
-					{Path: "google/shopping/merchant/issueresolution/v1"},
-					{Path: "google/shopping/merchant/issueresolution/v1beta"},
-				},
-				Java: &config.JavaModule{
-					ArtifactID: "custom-shopping-id",
-				},
-			},
-			defaults: defaults,
-			want: &config.Library{
-				Name: "custom-shopping",
-				APIs: []*config.API{
-					{Path: "google/shopping/merchant/issueresolution/v1"},
-					{Path: "google/shopping/merchant/issueresolution/v1beta"},
-				},
-				Java: &config.JavaModule{
-					ArtifactID: "custom-shopping-id",
-					GroupID:    "com.google.shopping",
-				},
-			},
-		},
-		{
-			name: "maps library",
-			lib: &config.Library{
-				Name: "maps-routeoptimization",
-				APIs: []*config.API{{Path: "google/maps/routeoptimization/v1"}},
-			},
-			defaults: defaults,
-			want: &config.Library{
-				Name: "maps-routeoptimization",
-				APIs: []*config.API{{Path: "google/maps/routeoptimization/v1"}},
-				Java: &config.JavaModule{
-					GroupID: "com.google.maps",
-				},
-			},
-		},
-		{
-			name: "ads library",
-			lib: &config.Library{
-				Name: "admanager",
-				APIs: []*config.API{{Path: "google/ads/admanager/v1"}},
-			},
-			defaults: defaults,
-			want: &config.Library{
-				Name: "admanager",
-				APIs: []*config.API{{Path: "google/ads/admanager/v1"}},
-				Java: &config.JavaModule{
-					GroupID: "com.google.api-ads",
-				},
-			},
-		},
-		{
-			name: "analytics library",
-			lib: &config.Library{
-				Name: "analytics-admin",
-				APIs: []*config.API{
-					{Path: "google/analytics/admin/v1beta"},
-					{Path: "google/analytics/admin/v1alpha"},
-				},
-			},
-			defaults: defaults,
-			want: &config.Library{
-				Name: "analytics-admin",
-				APIs: []*config.API{
-					{Path: "google/analytics/admin/v1beta"},
-					{Path: "google/analytics/admin/v1alpha"},
-				},
-				Java: &config.JavaModule{
-					GroupID: "com.google.analytics",
-				},
-			},
-		},
-		{
-			name: "do not fill if group id already set",
-			lib: &config.Library{
-				Name: "common-protos",
-				APIs: []*config.API{
-					{Path: "google/shopping/type"},
-				},
-				Java: &config.JavaModule{
-					GroupID: "com.google.api.grpc",
-				},
-			},
-			defaults: defaults,
-			want: &config.Library{
-				Name: "common-protos",
-				APIs: []*config.API{
-					{Path: "google/shopping/type"},
-				},
-				Java: &config.JavaModule{
-					GroupID: "com.google.api.grpc",
-				},
-			},
-		},
-		{
-			name: "prefix match respects path segment boundaries",
-			lib: &config.Library{
-				Name: "shopping-foo",
-				APIs: []*config.API{
-					{Path: "google/shopping-foo/v1"},
-				},
-			},
-			defaults: defaults,
-			want: &config.Library{
-				Name: "shopping-foo",
-				APIs: []*config.API{
-					{Path: "google/shopping-foo/v1"},
-				},
-				Java: &config.JavaModule{},
-			},
-		},
-		{
-			name: "no matching api prefix leaves group id empty",
-			lib: &config.Library{
-				Name: "unknown",
-				APIs: []*config.API{{Path: "google/unknown/v1"}},
-			},
-			defaults: defaults,
-			want: &config.Library{
-				Name: "unknown",
-				APIs: []*config.API{{Path: "google/unknown/v1"}},
-				Java: &config.JavaModule{},
-			},
-		},
-		{
-			name: "library does not change with nil map",
-			lib: &config.Library{
-				Name: "lib",
-				APIs: []*config.API{{Path: "google/example/v1"}},
-			},
-			defaults: &config.Default{
-				Java: &config.JavaDefault{},
-			},
-			want: &config.Library{
-				Name: "lib",
-				APIs: []*config.API{{Path: "google/example/v1"}},
-				Java: &config.JavaModule{},
-			},
-		},
-		{
-			name: "api path exact match",
-			lib: &config.Library{
-				Name: "exact",
-				APIs: []*config.API{
-					{Path: "google/exact/v1"},
-				},
-			},
-			defaults: defaults,
-			want: &config.Library{
-				Name: "exact",
-				APIs: []*config.API{
-					{Path: "google/exact/v1"},
-				},
-				Java: &config.JavaModule{
-					GroupID: "com.google.exact",
-				},
-			},
-		},
-	} {
-		t.Run(test.name, func(t *testing.T) {
-			got := fillJava(test.lib, test.defaults)
-			if diff := cmp.Diff(test.want, got); diff != "" {
-				t.Errorf("mismatch (-want +got):\n%s", diff)
-			}
-		})
-	}
-}
-
 func TestFillDefaults_Rust(t *testing.T) {
 	defaults := &config.Default{
 		Rust: &config.RustDefault{
@@ -838,6 +627,75 @@ func TestFillDefaults_Go(t *testing.T) {
 	}
 }
 
+func TestFillDefaults_PHP(t *testing.T) {
+	for _, test := range []struct {
+		name     string
+		lib      *config.Library
+		defaults *config.PHPDefault
+		want     *config.Library
+	}{
+		{
+			name: "fills common_resources default when nil",
+			lib: &config.Library{
+				APIs: []*config.API{
+					{
+						Path: "google/cloud/secretmanager/v1",
+					},
+				},
+			},
+			defaults: &config.PHPDefault{
+				CommonResources: new(true),
+			},
+			want: &config.Library{
+				APIs: []*config.API{
+					{
+						Path: "google/cloud/secretmanager/v1",
+						PHP: &config.PHPAPI{
+							CommonResources: new(true),
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "does not override API level common_resources",
+			lib: &config.Library{
+				APIs: []*config.API{
+					{
+						Path: "google/cloud/secretmanager/v1",
+						PHP: &config.PHPAPI{
+							CommonResources: new(false),
+						},
+					},
+				},
+			},
+			defaults: &config.PHPDefault{
+				CommonResources: new(true),
+			},
+			want: &config.Library{
+				APIs: []*config.API{
+					{
+						Path: "google/cloud/secretmanager/v1",
+						PHP: &config.PHPAPI{
+							CommonResources: new(false),
+						},
+					},
+				},
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			defaults := &config.Default{
+				PHP: test.defaults,
+			}
+			got := fillDefaults(test.lib, defaults)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
 func TestApplyDefaults(t *testing.T) {
 	for _, test := range []struct {
 		name        string
@@ -907,6 +765,17 @@ func TestApplyDefaults(t *testing.T) {
 			language:    config.LanguageGo,
 			nilDefaults: true,
 			wantOutput:  "google-cloud-secretmanager-v1",
+		},
+		{
+			name:       "java empty output derives path",
+			language:   config.LanguageJava,
+			wantOutput: "src/generated/java-google-cloud-secretmanager-v1",
+		},
+		{
+			name:        "java nil defaults is handled safely",
+			language:    config.LanguageJava,
+			nilDefaults: true,
+			wantOutput:  "java-google-cloud-secretmanager-v1",
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
@@ -1760,6 +1629,41 @@ func TestMergeRust(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			got := mergeRust(test.dst, test.src)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestMergePHP(t *testing.T) {
+	for _, test := range []struct {
+		name string
+		dst  *config.PHPPackage
+		src  *config.PHPPackage
+		want *config.PHPPackage
+	}{
+		{
+			name: "nil src returns dst",
+			dst:  &config.PHPPackage{},
+			src:  nil,
+			want: &config.PHPPackage{},
+		},
+		{
+			name: "nil dst returns src",
+			dst:  nil,
+			src:  &config.PHPPackage{},
+			want: &config.PHPPackage{},
+		},
+		{
+			name: "both non-nil",
+			dst:  &config.PHPPackage{},
+			src:  &config.PHPPackage{},
+			want: &config.PHPPackage{},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := mergePHP(test.dst, test.src)
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}

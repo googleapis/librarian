@@ -22,8 +22,7 @@ import (
 )
 
 type enumAnnotations struct {
-	CopyrightYear     string
-	BoilerPlate       []string
+	Model             *modelAnnotations
 	Name              string
 	DocLines          []string
 	DefaultCaseName   string
@@ -41,6 +40,12 @@ type enumAnnotations struct {
 	// that needs them is enabled. Messages that do not map to any service use
 	// " && ".
 	GatedOp string
+
+	// The target import module containing raw stubs.
+	ModulePath string
+
+	// The full name of the raw proto enum under the private module target.
+	ProtoTypeName string
 }
 
 // IsGated returns true if this message is gated by some package traits.
@@ -53,7 +58,7 @@ func (ann *enumAnnotations) IsGated() bool {
 // In the generated code this is used as:
 //
 // ```
-// #if {{GateExpression}}
+// #if {{{GateExpression}}}
 // ... all the normal code ...
 // #endif
 // ```
@@ -120,13 +125,14 @@ func (c *codec) annotateEnum(enum *api.Enum, model *modelAnnotations) error {
 		return err
 	}
 	annotations := &enumAnnotations{
-		CopyrightYear:     model.CopyrightYear,
-		BoilerPlate:       model.BoilerPlate,
+		Model:             model,
 		Name:              pascalCase(enum.Name),
 		DocLines:          docLines,
 		DefaultCaseName:   defaultCaseName,
 		UnknownIntName:    uniqueCaseName("unknownIntValue"),
 		UnknownStringName: uniqueCaseName("unknownStringValue"),
+		ModulePath:        c.ModulePath,
+		ProtoTypeName:     c.protoEnumTypeName(enum),
 	}
 
 	enum.Codec = annotations

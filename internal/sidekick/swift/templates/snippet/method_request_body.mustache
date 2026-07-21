@@ -25,25 +25,30 @@ limitations under the License.
 {{InputType.Codec.ParameterTypeName}}()
   {{#SampleInfo}}
   .with {
-  {{#IsRequestResourceName}}
+    {{#IsRequestResourceName}}
+    {{#ResourceNameField.Singular}}
     $0.{{Codec.Name}} = "{{Codec.FormatString}}"
-  {{/IsRequestResourceName}}
-  {{#ResourceIDField}}
+    {{/ResourceNameField.Singular}}
+    {{#ResourceNameField.Repeated}}
+    $0.{{Codec.Name}} = ["{{Codec.FormatString}}"]
+    {{/ResourceNameField.Repeated}}
+    {{/IsRequestResourceName}}
+    {{#ResourceIDField}}
     $0.{{Codec.Name}} = "[replace with a valid ID]"
-  {{/ResourceIDField}}
-  {{#IsMessageResourceName}}
+    {{/ResourceIDField}}
+    {{#IsMessageResourceName}}
     $0.{{MessageField.Codec.Name}} = {{MessageField.Codec.BaseFieldType}}().with {
       $0.{{Codec.Name}} = "{{Codec.FormatString}}"
     }
-  {{/IsMessageResourceName}}
-  {{^IsMessageResourceName}}
-  {{#MessageField}}
+    {{/IsMessageResourceName}}
+    {{^IsMessageResourceName}}
+    {{#MessageField}}
     $0.{{Codec.Name}} = {{Codec.BaseFieldType}}() /* .with { ... } */
-  {{/MessageField}}
-  {{/IsMessageResourceName}}
-  {{#UpdateMaskField}}
+    {{/MessageField}}
+    {{/IsMessageResourceName}}
+    {{#UpdateMaskField}}
     $0.{{Codec.Name}} = {{Service.Codec.Model.WktPackage}}.FieldMask(paths: ["field.path1", "field.path2"])
-  {{/UpdateMaskField}}
+    {{/UpdateMaskField}}
   }
   {{/SampleInfo}}
   {{^SampleInfo}}

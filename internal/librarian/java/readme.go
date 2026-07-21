@@ -30,6 +30,7 @@ import (
 	"unicode/utf8"
 
 	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/serviceconfig"
 	"github.com/googleapis/librarian/internal/yaml"
 )
 
@@ -90,15 +91,15 @@ type readmeData struct {
 	Repo              *repoMetadata
 	Samples           []codeSample
 	MinJavaVersion    int
-	Partials          map[string]interface{}
+	Partials          map[string]any
 	Snippets          map[string]string
 	GroupID           string
 	ArtifactID        string
 	Version           string
 	RepoShort         string
 	MigratedSplitRepo bool
-	Monorepo          bool
 	BOMVersion        string
+	RequiresBilling   bool
 }
 
 // renderREADME generates README.md using the embedded Markdown template.
@@ -114,10 +115,7 @@ func renderREADME(params libraryPostProcessParams, keepSet map[string]bool) erro
 	if err != nil {
 		return err
 	}
-	bomVersion, err := findBOMVersion(params.cfg)
-	if err != nil {
-		return fmt.Errorf("failed to find BOM version: %w", err)
-	}
+	bomVersion := params.cfg.Default.Java.LibrariesBOMVersion
 	partials, err := loadReadmePartials(params.outDir)
 	if err != nil {
 		return err
@@ -129,6 +127,21 @@ func renderREADME(params libraryPostProcessParams, keepSet map[string]bool) erro
 	if err != nil {
 		return fmt.Errorf("failed to extract samples: %w", err)
 	}
+
+	apiRequiresBilling := false
+	if len(params.library.APIs) > 0 {
+		api, err := serviceconfig.Find(params.primaryDir, params.library.APIs[0].Path, params.cfg.Language)
+		if err != nil {
+			return fmt.Errorf("failed to find api config for %s: %w", params.library.APIs[0].Path, err)
+		}
+		if api.RequiresBilling != nil {
+			apiRequiresBilling = *api.RequiresBilling
+		} else {
+			// TODO(// https://github.com/googleapis/librarian/issues/6285): Remove this logic once backward compatibility for google-cloud-java/librarian.yaml is no longer needed.
+			apiRequiresBilling = !params.library.Java.BillingNotRequired
+		}
+	}
+
 	data := readmeData{
 		Repo:              params.metadata,
 		Samples:           samples,
@@ -139,8 +152,8 @@ func renderREADME(params libraryPostProcessParams, keepSet map[string]bool) erro
 		Version:           libraryVersion,
 		RepoShort:         repoShort,
 		MigratedSplitRepo: false,
-		Monorepo:          true,
 		BOMVersion:        bomVersion,
+		RequiresBilling:   apiRequiresBilling,
 	}
 	var buf bytes.Buffer
 	if err := readmeTmplParsed.Execute(&buf, data); err != nil {
@@ -334,7 +347,7 @@ func parseRepoShortName(repo string) string {
 }
 
 // loadReadmePartials loads and camel-cases README partials from .readme-partials.yaml.
-func loadReadmePartials(dir string) (map[string]interface{}, error) {
+func loadReadmePartials(dir string) (map[string]any, error) {
 	if dir == "" {
 		return nil, errEmptyDir
 	}
@@ -348,14 +361,14 @@ func loadReadmePartials(dir string) (map[string]interface{}, error) {
 	if len(partialsBytes) == 0 {
 		return nil, nil
 	}
-	rawPartials, err := yaml.Unmarshal[map[string]interface{}](partialsBytes)
+	rawPartials, err := yaml.Unmarshal[map[string]any](partialsBytes)
 	if err != nil {
 		return nil, fmt.Errorf("%w: failed to unmarshal partials: %w", errInvalidYAML, err)
 	}
 	if rawPartials == nil || len(*rawPartials) == 0 {
 		return nil, nil
 	}
-	result := make(map[string]interface{}, len(*rawPartials))
+	result := make(map[string]any, len(*rawPartials))
 	for k, v := range *rawPartials {
 		result[toCamelCase(k)] = v
 	}

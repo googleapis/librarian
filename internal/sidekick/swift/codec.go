@@ -57,6 +57,12 @@ type codec struct {
 	// The name of the swift package (e.g. "GoogleCloudSecretManagerV1")
 	PackageName string
 
+	// The package version (e.g. "1.2.3")
+	PackageVersion string
+
+	// The release level (e.g. "preview" or "stable")
+	ReleaseLevel string
+
 	// The location of the monorepo, relative to the current directory.
 	//
 	// Recall that sidekick only generates clients within a monorepo, so this
@@ -104,6 +110,10 @@ type codec struct {
 	// each (lowercased) name are tracked in this hash, and if necessary, the
 	// output file is disambiguated by appending `+${Counter}` to the basename.
 	GeneratedFiles map[string]int
+
+	// The name of the private module containing raw stubs (e.g. "StorageControlProtos").
+	// Used by convert-swift to generate internal imports and prefix raw types.
+	ModulePath string
 }
 
 func newCodec(model *api.API, cfg *parser.ModelConfig, swiftCfg *config.SwiftPackage, outdir string) (*codec, error) {
@@ -127,6 +137,8 @@ func newCodec(model *api.API, cfg *parser.ModelConfig, swiftCfg *config.SwiftPac
 		Model:              model,
 		GenerationYear:     fmt.Sprintf("%04d", year),
 		PackageName:        PackageName(model),
+		PackageVersion:     "0.0.0",
+		ReleaseLevel:       "preview",
 		MonorepoRoot:       rel,
 		RootName:           "googleapis",
 		ApiPackages:        map[string]*Dependency{},
@@ -149,6 +161,10 @@ func newCodec(model *api.API, cfg *parser.ModelConfig, swiftCfg *config.SwiftPac
 		switch key {
 		case "copyright-year":
 			result.GenerationYear = definition
+		case "version":
+			result.PackageVersion = definition
+		case "release-level":
+			result.ReleaseLevel = definition
 		case "package-name-override":
 			result.PackageName = definition
 		case "root-name":
@@ -159,6 +175,8 @@ func newCodec(model *api.API, cfg *parser.ModelConfig, swiftCfg *config.SwiftPac
 				return nil, fmt.Errorf("cannot convert `module` value %q to boolean: %w", definition, err)
 			}
 			result.Module = value
+		case "module-path":
+			result.ModulePath = definition
 		default:
 			// Ignore other options.
 		}

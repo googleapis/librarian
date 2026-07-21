@@ -48,7 +48,7 @@ func fillDefaults(lib *config.Library, d *config.Default) *config.Library {
 	case d.Go != nil:
 		return fillGo(lib, d)
 	case d.Java != nil:
-		return fillJava(lib, d)
+		return java.FillDefaultJava(lib, d)
 	case d.Rust != nil:
 		return fillRust(lib, d)
 	case d.Dart != nil:
@@ -57,9 +57,27 @@ func fillDefaults(lib *config.Library, d *config.Default) *config.Library {
 		return fillPython(lib, d)
 	case d.Swift != nil:
 		return fillSwift(lib, d)
+	case d.PHP != nil:
+		return fillPHP(lib, d)
 	default:
 		return lib
 	}
+}
+
+// fillPHP populates empty PHP-specific fields in lib from the provided default.
+func fillPHP(lib *config.Library, d *config.Default) *config.Library {
+	if d == nil || d.PHP == nil {
+		return lib
+	}
+	for _, api := range lib.APIs {
+		if api.PHP == nil {
+			api.PHP = &config.PHPAPI{}
+		}
+		if api.PHP.CommonResources == nil && d.PHP.CommonResources != nil {
+			api.PHP.CommonResources = d.PHP.CommonResources
+		}
+	}
+	return lib
 }
 
 // fillGo populates empty Go-specific fields in lib from the provided default.
@@ -95,32 +113,6 @@ func union(a, b []string) []string {
 		}
 	}
 	return res
-}
-
-// fillJava populates empty Java-specific fields in lib from the provided default.
-func fillJava(lib *config.Library, d *config.Default) *config.Library {
-	if lib.Java == nil {
-		lib.Java = &config.JavaModule{}
-	}
-	fillGroupIDIfEmpty(lib, d)
-	return lib
-}
-
-// fillGroupIDIfEmpty sets the Java group ID on lib if one is not already configured.
-// It matches the library's API paths against the custom group ID prefixes in default
-// and assigns the first matching group ID.
-func fillGroupIDIfEmpty(lib *config.Library, d *config.Default) {
-	if lib.Java.GroupID != "" || d.Java.CustomGroupIDs == nil {
-		return
-	}
-	for _, api := range lib.APIs {
-		for apiPrefix, groupID := range d.Java.CustomGroupIDs {
-			if api.Path == apiPrefix || strings.HasPrefix(api.Path, apiPrefix+"/") {
-				lib.Java.GroupID = groupID
-				return
-			}
-		}
-	}
 }
 
 // fillRust populates empty Rust-specific fields in lib from the provided default.
@@ -229,7 +221,7 @@ func mergeSwiftDependencies(defaults, lib []config.SwiftDependency) []config.Swi
 func mergeDartDependencies(libDeps, defaultDeps string) string {
 	seen := make(map[string]bool)
 	var deps []string
-	for _, dep := range strings.Split(libDeps, ",") {
+	for dep := range strings.SplitSeq(libDeps, ",") {
 		dep = strings.TrimSpace(dep)
 		if dep == "" {
 			continue
@@ -237,7 +229,7 @@ func mergeDartDependencies(libDeps, defaultDeps string) string {
 		seen[dep] = true
 		deps = append(deps, dep)
 	}
-	for _, dep := range strings.Split(defaultDeps, ",") {
+	for dep := range strings.SplitSeq(defaultDeps, ",") {
 		dep = strings.TrimSpace(dep)
 		if dep == "" || seen[dep] {
 			continue
@@ -338,7 +330,7 @@ func applyDefaults(language string, lib *config.Library, defaults *config.Defaul
 // derive the API path.
 func canDeriveAPIPath(language string) bool {
 	switch language {
-	case config.LanguageGo, config.LanguagePython, config.LanguageNodejs, config.LanguageJava:
+	case config.LanguageGo, config.LanguagePython, config.LanguageNodejs, config.LanguageJava, config.LanguagePhp:
 		return false
 	default:
 		return true
@@ -438,6 +430,8 @@ func ResolvePreview(lib *config.Library, language string) *config.Library {
 		res.Python = mergePython(res.Python, p.Python)
 	case config.LanguageRust:
 		res.Rust = mergeRust(res.Rust, p.Rust)
+	case config.LanguagePhp:
+		res.PHP = mergePHP(res.PHP, p.PHP)
 	}
 	res.Preview = nil
 	return &res
@@ -845,5 +839,16 @@ func mergeRustDiscovery(dst, src *config.RustDiscovery) *config.RustDiscovery {
 	if src.Pollers != nil {
 		res.Pollers = src.Pollers
 	}
+	return &res
+}
+
+func mergePHP(dst, src *config.PHPPackage) *config.PHPPackage {
+	if src == nil {
+		return dst
+	}
+	if dst == nil {
+		return src
+	}
+	res := *dst
 	return &res
 }

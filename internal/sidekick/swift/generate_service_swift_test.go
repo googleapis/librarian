@@ -313,8 +313,8 @@ func TestGenerateService_WithImports(t *testing.T) {
 	}
 	contentStr := string(content)
 
-	expectedImports := `import GoogleCloudAuth
-import GoogleCloudExternalV1
+	expectedImports := `import GoogleCloudExternalV1
+import GoogleCloudWkt
 import GoogleCloudGax`
 
 	if !strings.Contains(contentStr, expectedImports) {
@@ -583,7 +583,7 @@ func verifyGeneratedService(t *testing.T, outDir string) {
     byItem: ListSecretsRequest, options: GoogleCloudGax.RequestOptions
 ) throws -> any AsyncSequence<Secret, Swift.Error>
  {
-    let listRpc = { (token: String) async throws -> GoogleCloudSecretmanagerV1.ListSecretsResponse in
+    let listRpc = { (token: Swift.String) async throws -> GoogleCloudSecretmanagerV1.ListSecretsResponse in
       var request = byItem
       request.pageToken = token
       return try await self.listSecrets(request: request, options: options)

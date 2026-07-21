@@ -51,7 +51,29 @@ func Generate(ctx context.Context, cfg *config.Config, library *config.Library, 
 
 // Format formats a generated Swift library.
 func Format(ctx context.Context, library *config.Library) error {
-	return command.Run(ctx, "swift-format", "format", "--in-place", "--recursive", library.Output)
+	// Collect unique output directories to format to avoid running the formatter
+	// multiple times on the same directory (e.g. library.Output and module.Output mapping to same path).
+	dirs := map[string]struct{}{}
+	if library.Output != "" {
+		dirs[library.Output] = struct{}{}
+	}
+	if library.Swift != nil {
+		for _, module := range library.Swift.Modules {
+			if module.Output != "" {
+				dirs[module.Output] = struct{}{}
+			}
+		}
+	}
+
+	if len(dirs) == 0 {
+		return nil
+	}
+
+	args := []string{"format", "--in-place", "--recursive"}
+	for dir := range dirs {
+		args = append(args, dir)
+	}
+	return command.Run(ctx, "swift-format", args...)
 }
 
 // DefaultLibraryName derives a library name from an API path.
@@ -90,6 +112,7 @@ func libraryToModelConfig(library *config.Library, apiCfg *config.API, src *sour
 		specFormat = library.SpecificationFormat
 	}
 
+	releaseLevel := svcConfig.ReleaseLevel(config.LanguageSwift, library.Version)
 	modelCfg := &parser.ModelConfig{
 		Language:            config.LanguageSwift,
 		SpecificationFormat: specFormat,
@@ -99,6 +122,7 @@ func libraryToModelConfig(library *config.Library, apiCfg *config.API, src *sour
 		Codec: map[string]string{
 			"copyright-year": library.CopyrightYear,
 			"version":        library.Version,
+			"release-level":  releaseLevel,
 		},
 	}
 	if library.Swift != nil && library.Swift.Discovery != nil {

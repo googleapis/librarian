@@ -47,7 +47,7 @@ func TestPostGenerate(t *testing.T) {
 			{Name: "aiplatform", Version: "3.89.0"},
 		},
 	}
-	if err := PostGenerate(t.Context(), tmpDir, cfg, nil); err != nil {
+	if err := PostGenerate(t.Context(), tmpDir, cfg); err != nil {
 		t.Fatal(err)
 	}
 	// Verify root pom.xml
@@ -200,7 +200,7 @@ func TestPostGenerate_SearchError(t *testing.T) {
 			{Name: parentPOM, Version: "1.2.3"},
 		},
 	}
-	err := PostGenerate(t.Context(), tmpDir, cfg, nil)
+	err := PostGenerate(t.Context(), tmpDir, cfg)
 	if !errors.Is(err, errModuleDiscovery) {
 		t.Errorf("got error %v, want %v", err, errModuleDiscovery)
 	}
@@ -220,7 +220,7 @@ func TestPostGenerate_Error(t *testing.T) {
 			{Name: parentPOM, Version: "1.2.3"},
 		},
 	}
-	err := PostGenerate(t.Context(), tmpDir, cfg, nil)
+	err := PostGenerate(t.Context(), tmpDir, cfg)
 	if !errors.Is(err, errRootPOMGeneration) {
 		t.Errorf("got error %v, want %v", err, errRootPOMGeneration)
 	}
@@ -290,108 +290,4 @@ func copyDir(src, dest string) error {
 		}
 		return filesystem.CopyFile(path, target)
 	})
-}
-
-func TestAppendVersions(t *testing.T) {
-	for _, test := range []struct {
-		name    string
-		initial string
-		lines   []string
-		want    string
-	}{
-		{
-			name:    "empty file",
-			initial: "",
-			lines:   []string{"a:1.0.0"},
-			want:    "a:1.0.0\n",
-		},
-		{
-			name:    "already has newline",
-			initial: "a:1.0.0\n",
-			lines:   []string{"b:2.0.0"},
-			want:    "a:1.0.0\nb:2.0.0\n",
-		},
-		{
-			name:    "missing newline",
-			initial: "a:1.0.0",
-			lines:   []string{"b:2.0.0"},
-			want:    "a:1.0.0\nb:2.0.0\n",
-		},
-		{
-			name:    "multiple lines missing newline",
-			initial: "a:1.0.0",
-			lines:   []string{"b:2.0.0", "c:3.0.0"},
-			want:    "a:1.0.0\nb:2.0.0\nc:3.0.0\n",
-		},
-		{
-			name:    "no lines does nothing",
-			initial: "a:1.0.0\n",
-			lines:   nil,
-			want:    "a:1.0.0\n",
-		},
-	} {
-		t.Run(test.name, func(t *testing.T) {
-			tmpDir := t.TempDir()
-			versionsPath := filepath.Join(tmpDir, versionsFileName)
-			if err := os.WriteFile(versionsPath, []byte(test.initial), 0644); err != nil {
-				t.Fatal(err)
-			}
-			if err := appendVersions(tmpDir, test.lines); err != nil {
-				t.Fatal(err)
-			}
-			got, err := os.ReadFile(versionsPath)
-			if err != nil {
-				t.Fatal(err)
-			}
-			if diff := cmp.Diff(test.want, string(got)); diff != "" {
-				t.Errorf("mismatch (-want +got):\n%s", diff)
-			}
-		})
-	}
-}
-
-func TestAppendVersions_Error(t *testing.T) {
-	t.Parallel()
-	if err := appendVersions("/non/existent/path", []string{"line"}); err == nil {
-		t.Error("appendVersions() expected error for non-existent file, got nil")
-	}
-}
-
-func TestDeriveVersionLines(t *testing.T) {
-	library := &config.Library{
-		Name:    "secretmanager",
-		Version: "1.2.3",
-		Java: &config.JavaModule{
-			ReleasedVersion: "1.2.3",
-		},
-	}
-	for _, test := range []struct {
-		name             string
-		missingArtifacts []MissingArtifact
-		want             []string
-	}{
-		{
-			name:             "empty input",
-			missingArtifacts: nil,
-			want:             nil,
-		},
-		{
-			name: "valid artifact IDs",
-			missingArtifacts: []MissingArtifact{
-				{ID: "proto-google-cloud-secretmanager-v1", Library: library},
-				{ID: "google-cloud-secretmanager", Library: library},
-			},
-			want: []string{
-				"proto-google-cloud-secretmanager-v1:1.2.3:1.2.3",
-				"google-cloud-secretmanager:1.2.3:1.2.3",
-			},
-		},
-	} {
-		t.Run(test.name, func(t *testing.T) {
-			got := constructVersionLines(test.missingArtifacts)
-			if diff := cmp.Diff(test.want, got); diff != "" {
-				t.Errorf("mismatch (-want +got):\n%s", diff)
-			}
-		})
-	}
 }

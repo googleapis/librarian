@@ -48,6 +48,16 @@ type Poller struct {
 	MethodID string
 }
 
+// DiscoveryLro contains old-style long-running operation descriptors.
+//
+// This is one of the `Method` attributes.
+type DiscoveryLro struct {
+	// The path parameters required by the polling operation.
+	PollingPathParameters []string
+	// Language specific annotations.
+	Codec any
+}
+
 // LroServices returns the set of Discovery LRO services.
 //
 // The discovery doc parser avoids generating LRO annotations for methods in
@@ -70,7 +80,7 @@ func (d *Discovery) LroServices() map[string]bool {
 // poll the operation. This method returns that subset.
 func (p *Poller) PathParameters() []string {
 	var parameters []string
-	for _, segment := range strings.Split(p.Prefix, "/") {
+	for segment := range strings.SplitSeq(p.Prefix, "/") {
 		if strings.HasPrefix(segment, "{") && strings.HasSuffix(segment, "}") {
 			parameters = append(parameters, segment[1:len(segment)-1])
 		}

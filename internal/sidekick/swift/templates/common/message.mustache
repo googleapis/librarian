@@ -16,6 +16,9 @@ limitations under the License.
 {{#Codec.DocLines}}
 /// {{{.}}}
 {{/Codec.DocLines}}
+{{#Deprecated}}
+@available(*, deprecated)
+{{/Deprecated}}
 public struct {{Codec.Name}}: Codable, Equatable, {{Codec.Model.WktPackage}}._AnyPackable,
   {{#Codec.IsPaginatedResponse}}
   GoogleCloudGax._PaginatedResponse,
@@ -27,6 +30,9 @@ public struct {{Codec.Name}}: Codable, Equatable, {{Codec.Model.WktPackage}}._An
   {{#Codec.DocLines}}
   /// {{{.}}}
   {{/Codec.DocLines}}
+  {{#Deprecated}}
+  @available(*, deprecated)
+  {{/Deprecated}}
   {{#Singular}}
   {{#Codec.Recursive}}
   public var {{Codec.Name}}: {{{Codec.FieldType}}} = nil
@@ -74,7 +80,7 @@ public struct {{Codec.Name}}: Codable, Equatable, {{Codec.Model.WktPackage}}._An
   }
 
   {{#Codec.CustomSerialization}}
-  private enum CodingKeys: String, CodingKey {
+  private enum CodingKeys: Swift.String, CodingKey {
     {{#Fields}}
     case {{Codec.Name}} = "{{JSONName}}"
     {{/Fields}}
@@ -149,7 +155,9 @@ public struct {{Codec.Name}}: Codable, Equatable, {{Codec.Model.WktPackage}}._An
   {{> /templates/common/oneof}}
   {{/OneOfs}}
 
-  public static var _anyTypeUrl: String { return "{{Codec.TypeURL}}" }
+  public static var _anyTypeUrl: Swift.String {
+    return "{{Codec.TypeURL}}"
+  }
   public init(fromAny any: {{Codec.Model.WktPackage}}.`Any`) throws {
     self = try {{Codec.Model.WktPackage}}._slowAnyDeserialize(Self.self, from: any)
   }

@@ -21,15 +21,7 @@ The Maven artifact coordinates (`{{ .GroupID }}:{{ .ArtifactID }}`) remain the s
 {{ end }}
 ## Quickstart
 
-{{ if and .Snippets (index .Snippets (print .Repo.APIShortname "_install_with_bom")) -}}
-If you are using Maven with [BOM][libraries-bom], add this to your pom.xml file:
-
-```xml
-{{ index .Snippets (print .Repo.APIShortname "_install_with_bom") }}
-```
-
-If you are using Maven without the BOM, add this to your dependencies:
-{{ else if and .Monorepo (or (eq .GroupID "com.google.cloud") (eq .GroupID "com.google.analytics") (eq .GroupID "com.google.area120")) }}
+{{ if or (eq .GroupID "com.google.cloud") (eq .GroupID "com.google.analytics") (eq .GroupID "com.google.area120") -}}
 If you are using Maven with [BOM][libraries-bom], add this to your pom.xml file:
 
 ```xml
@@ -58,18 +50,14 @@ If you are using Maven without the BOM, add this to your dependencies:
 {{ end }}
 
 ```xml
-{{ if and .Snippets (index .Snippets (print .Repo.APIShortname "_install_without_bom")) -}}
-{{ index .Snippets (print .Repo.APIShortname "_install_without_bom") }}
-{{- else -}}
 <dependency>
   <groupId>{{ .GroupID }}</groupId>
   <artifactId>{{ .ArtifactID }}</artifactId>
   <version>{{ .Version }}</version>
 </dependency>
-{{- end }}
 ```
 
-{{ if and .Snippets (index .Snippets (print .Repo.APIShortname "_install_with_bom")) -}}
+{{ if or (eq .GroupID "com.google.cloud") (eq .GroupID "com.google.analytics") (eq .GroupID "com.google.area120") -}}
 If you are using Gradle 5.x or later, add this to your dependencies:
 
 ```Groovy
@@ -77,7 +65,9 @@ implementation platform('com.google.cloud:libraries-bom:{{ .BOMVersion }}')
 
 implementation '{{ .GroupID }}:{{ .ArtifactID }}'
 ```
-{{ end }}If you are using Gradle without BOM, add this to your dependencies:
+
+{{ end -}}
+If you are using Gradle without BOM, add this to your dependencies:
 
 ```Groovy
 implementation '{{ .GroupID }}:{{ .ArtifactID }}:{{ .Version }}'
@@ -102,7 +92,7 @@ The client application making API calls must be granted [authorization scopes][a
 ### Prerequisites
 
 You will need a [Google Cloud Platform Console][developer-console] project with the {{ .Repo.NamePretty }} [API enabled][enable-api].
-{{ if .Repo.RequiresBilling }}You will need to [enable billing][enable-billing] to use Google {{ .Repo.NamePretty }}.{{ end }}
+{{ if .RequiresBilling }}You will need to [enable billing][enable-billing] to use Google {{ .Repo.NamePretty }}.{{ end }}
 [Follow these instructions][create-project] to get your project set up. You will also need to set up the local development environment by
 [installing the Google Cloud Command Line Interface][cloud-cli] and running the following commands in command line:
 `gcloud auth login` and `gcloud config set project [YOUR PROJECT ID]`.
@@ -243,7 +233,7 @@ Java is a registered trademark of Oracle and/or its affiliates.
 [contributing]: https://github.com/{{ .Repo.Repo }}/blob/main/CONTRIBUTING.md
 [code-of-conduct]: https://github.com/{{ .Repo.Repo }}/blob/main/CODE_OF_CONDUCT.md#contributor-code-of-conduct
 [license]: https://github.com/{{ .Repo.Repo }}/blob/main/LICENSE
-{{ if .Repo.RequiresBilling }}[enable-billing]: https://cloud.google.com/apis/docs/getting-started#enabling_billing{{ end }}
+{{ if .RequiresBilling }}[enable-billing]: https://cloud.google.com/apis/docs/getting-started#enabling_billing{{ end }}
 {{ if .Repo.APIID }}[enable-api]: https://console.cloud.google.com/flows/enableapi?apiid={{ .Repo.APIID }}{{ end }}
 [libraries-bom]: https://github.com/GoogleCloudPlatform/cloud-opensource-java/wiki/The-Google-Cloud-Platform-Libraries-BOM
 [shell_img]: https://gstatic.com/cloudssh/images/open-btn.png

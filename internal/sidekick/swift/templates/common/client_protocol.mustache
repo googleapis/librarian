@@ -19,45 +19,79 @@ extension Clients {
   /// To mock `{{Codec.ClientName}}` change your functions to receive
   /// `some {{Codec.StubPrefix}}Protocol` or `any {{Codec.StubPrefix}}Protocol`
   /// and pass a mock implementation in your tests.
+  {{#Deprecated}}
+  @available(*, deprecated)
+  {{/Deprecated}}
   public protocol {{Codec.StubPrefix}}Protocol {
     {{#Codec.RestMethods}}
+    {{^IsLroPoller}}
     /// See `{{Service.Codec.ClientName}}.{{Codec.Name}}`.
+    {{#Deprecated}}
+    @available(*, deprecated)
+    {{/Deprecated}}
     func {{> /templates/common/method_signature/request}}
     {{#Codec.PlainRPC}}
     {{#Signatures}}
     /// See `{{Service.Codec.ClientName}}.{{Codec.Name}}`.
+    {{#Deprecated}}
+    @available(*, deprecated)
+    {{/Deprecated}}
     func {{> /templates/common/method_signature/overload}}
     {{/Signatures}}
     {{/Codec.PlainRPC}}
     {{#Codec.Pagination}}
     /// See `{{Service.Codec.ClientName}}.{{Codec.Name}}`.
+    {{#Deprecated}}
+    @available(*, deprecated)
+    {{/Deprecated}}
     func {{> /templates/common/method_signature/pagination}}
     {{#Signatures}}
     /// See `{{Service.Codec.ClientName}}.{{Codec.Name}}`.
+    {{#Deprecated}}
+    @available(*, deprecated)
+    {{/Deprecated}}
     func {{> /templates/common/method_signature/pagination_overload}}
     {{/Signatures}}
     {{/Codec.Pagination}}
     {{#Codec.LRO}}
     /// See `{{Service.Codec.ClientName}}.{{Codec.Name}}`.
+    {{#Deprecated}}
+    @available(*, deprecated)
+    {{/Deprecated}}
     func {{> /templates/common/method_signature/lro}}
     {{#Signatures}}
     /// See `{{Service.Codec.ClientName}}.{{Codec.Name}}`.
+    {{#Deprecated}}
+    @available(*, deprecated)
+    {{/Deprecated}}
     func {{> /templates/common/method_signature/lro_overload}}
     {{/Signatures}}
     {{/Codec.LRO}}
+    {{/IsLroPoller}}
     {{/Codec.RestMethods}}
 
     {{#Codec.RestMethods}}
+    {{^IsLroPoller}}
     /// See `{{Service.Codec.ClientName}}.{{Codec.Name}}`.
+    {{#Deprecated}}
+    @available(*, deprecated)
+    {{/Deprecated}}
     func {{> /templates/common/method_signature/request_options}}
     {{#Codec.Pagination}}
     /// See `{{Service.Codec.ClientName}}.{{Codec.Name}}`.
+    {{#Deprecated}}
+    @available(*, deprecated)
+    {{/Deprecated}}
     func {{> /templates/common/method_signature/pagination_options}}
     {{/Codec.Pagination}}
     {{#Codec.LRO}}
     /// See `{{Service.Codec.ClientName}}.{{Codec.Name}}`.
+    {{#Deprecated}}
+    @available(*, deprecated)
+    {{/Deprecated}}
     func {{> /templates/common/method_signature/lro_options}}
     {{/Codec.LRO}}
+    {{/IsLroPoller}}
     {{/Codec.RestMethods}}
   }
 }
@@ -78,9 +112,7 @@ extension Clients.{{Codec.StubPrefix}}Protocol {
 
   public func {{> /templates/common/method_signature/overload}} {
     let request = {{Method.InputType.Codec.ParameterTypeName}}().with {
-      {{#Fields}}
-      $0.{{Codec.Name}} = {{Codec.Name}}
-      {{/Fields}}
+      {{> /templates/common/method_body/overload_fields}}
     }
     {{#Method.ReturnsEmpty}}
     try await self.{{Method.Codec.Name}}(request: request)
@@ -98,7 +130,7 @@ extension Clients.{{Codec.StubPrefix}}Protocol {
   }
 
   public func {{> /templates/common/method_signature/pagination_options}} {
-    let listRpc = { (token: String) async throws -> {{Codec.ReturnType}} in
+    let listRpc = { (token: Swift.String) async throws -> {{Codec.ReturnType}} in
       throw GoogleCloudGax.RequestError.unimplemented
     }
     return GoogleCloudGax.PaginatedResponseSequence(listRpc: listRpc)
@@ -107,9 +139,7 @@ extension Clients.{{Codec.StubPrefix}}Protocol {
 
   public func {{> /templates/common/method_signature/pagination_overload}} {
     let request = {{Method.InputType.Codec.ParameterTypeName}}().with {
-      {{#Fields}}
-      $0.{{Codec.Name}} = {{Codec.Name}}
-      {{/Fields}}
+      {{> /templates/common/method_body/overload_fields}}
     }
     return try self.{{Codec.Name}}(byItem: request)
   }
@@ -131,13 +161,33 @@ extension Clients.{{Codec.StubPrefix}}Protocol {
 
   public func {{> /templates/common/method_signature/lro_overload}} {
     let request = {{Method.InputType.Codec.ParameterTypeName}}().with {
-      {{#Fields}}
-      $0.{{Codec.Name}} = {{Codec.Name}}
-      {{/Fields}}
+      {{> /templates/common/method_body/overload_fields}}
     }
-    return try await self.{{Codec.Name}}(withPolling: request)
+    return try await self.{{Method.Codec.Name}}(withPolling: request)
   }
   {{/Signatures}}
   {{/Codec.LRO}}
+  {{#Codec.DiscoveryLRO}}
+
+  public func {{> /templates/common/method_signature/discovery_lro}} {
+    try await self.{{Codec.Name}}(withPolling: withPolling, options: .init())
+  }
+
+  public func {{> /templates/common/method_signature/discovery_lro_options}} {
+    let poll = { () async throws -> GoogleCloudGax._PollableOperationImpl<{{Codec.DiscoveryLRO.ReturnType}}>.State in
+      throw GoogleCloudGax.RequestError.unimplemented
+    }
+    return GoogleCloudGax._PollableOperationImpl(initialState: .init(done: false, result: nil), poll: poll)
+  }
+  {{#Signatures}}
+
+  public func {{> /templates/common/method_signature/discovery_lro_overload}} {
+    let request = {{Method.InputType.Codec.ParameterTypeName}}().with {
+      {{> /templates/common/method_body/overload_fields}}
+    }
+    return try await self.{{Method.Codec.Name}}(withPolling: request)
+  }
+  {{/Signatures}}
+  {{/Codec.DiscoveryLRO}}
   {{/Codec.RestMethods}}
 }

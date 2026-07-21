@@ -21,6 +21,9 @@ public enum {{Codec.Name}}: Codable, Equatable, Sendable {
   {{#Codec.DocLines}}
   /// {{{.}}}
   {{/Codec.DocLines}}
+  {{#Deprecated}}
+  @available(*, deprecated)
+  {{/Deprecated}}
   {{^IsObject}}
   case {{Codec.Name}}({{Codec.FieldType}})
   {{/IsObject}}

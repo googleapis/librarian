@@ -34,12 +34,24 @@ type serviceAnnotations struct {
 	Model            *modelAnnotations
 	DependsOn        map[string]*Dependency
 	IsGated          bool
+
+	// Any additional services required by this service.
+	//
+	// Typically this happens on discovery-based APIs where services with LROs
+	// depend on request messages provided by the service that can poll the LRO.
+	RequiredServices map[string]*api.Service
 }
 
 // ServiceImports returns the list of dependencies for this service.
 func (ann *serviceAnnotations) ServiceImports() []string {
 	result := make([]string, 0, len(ann.DependsOn))
 	for _, dep := range ann.DependsOn {
+		if dep.RequiredByServices {
+			// Skip dependencies configured in the librarian.yaml file.
+			// These are needed in some files, but not others, and sometimes we
+			// need to import just an specific type to minimize clashes.
+			continue
+		}
 		result = append(result, dep.Name)
 	}
 	slices.Sort(result)
@@ -66,18 +78,22 @@ func (ann *serviceAnnotations) SnippetImports() []string {
 	return result
 }
 
-func (c *codec) annotateService(service *api.Service, model *modelAnnotations) error {
+func (c *codec) annotateService(service *api.Service, model *modelAnnotations) (*serviceAnnotations, error) {
 	docLines, err := c.formatDocumentation(service.Documentation, service.Scopes())
 	if err != nil {
-		return err
+		return nil, err
 	}
+	requiredServices := make(map[string]*api.Service)
 	var restMethods []*api.Method
 	for _, method := range service.Methods {
 		if isGeneratedMethod(method) {
 			if err := c.annotateMethod(method, model); err != nil {
-				return err
+				return nil, err
 			}
 			restMethods = append(restMethods, method)
+			if method.IsLroPoller && method.SourceService != nil && method.SourceService.Package == service.Package {
+				requiredServices[method.SourceService.ID] = method.SourceService
+			}
 		}
 	}
 	var quickstartMethod *api.Method
@@ -85,8 +101,9 @@ func (c *codec) annotateService(service *api.Service, model *modelAnnotations) e
 		quickstartMethod = service.QuickstartMethod
 	}
 
+	name := pascalCase(service.Name)
 	annotations := &serviceAnnotations{
-		Name:             pascalCase(service.Name),
+		Name:             name,
 		ClientName:       pascalCase(service.Name + "Client"),
 		StubPrefix:       pascalCaseNoMangling(service.Name),
 		HostnameShort:    strings.TrimSuffix(service.DefaultHost, ".googleapis.com"),
@@ -96,7 +113,10 @@ func (c *codec) annotateService(service *api.Service, model *modelAnnotations) e
 		QuickstartMethod: quickstartMethod,
 		Model:            model,
 		DependsOn:        map[string]*Dependency{},
-		IsGated:          c.PerServiceTraits,
+	}
+	if c.PerServiceTraits {
+		annotations.IsGated = true
+		annotations.RequiredServices = requiredServices
 	}
 
 	// Iterate through the list of all dependencies declared in librarian.yaml
@@ -108,7 +128,7 @@ func (c *codec) annotateService(service *api.Service, model *modelAnnotations) e
 		}
 		if p.RequiredByServices {
 			if _, err := c.addDependency(p); err != nil {
-				return err
+				return nil, err
 			}
 			annotations.DependsOn[p.Name] = p
 		}
@@ -117,7 +137,7 @@ func (c *codec) annotateService(service *api.Service, model *modelAnnotations) e
 	// Services always depend on well known types
 	wktDep, err := c.addApiPackageDependency(wellKnownProtobufPackage)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	annotations.DependsOn[wktDep.Name] = wktDep
 
@@ -126,7 +146,7 @@ func (c *codec) annotateService(service *api.Service, model *modelAnnotations) e
 			if method.InputType.Package != c.Model.PackageName {
 				dep, err := c.addApiPackageDependency(method.InputType.Package)
 				if err != nil {
-					return err
+					return nil, err
 				}
 				if dep != nil {
 					annotations.DependsOn[dep.Name] = dep
@@ -137,64 +157,151 @@ func (c *codec) annotateService(service *api.Service, model *modelAnnotations) e
 			if method.OutputType.Package != c.Model.PackageName {
 				dep, err := c.addApiPackageDependency(method.OutputType.Package)
 				if err != nil {
-					return err
+					return nil, err
 				}
 				if dep != nil {
 					annotations.DependsOn[dep.Name] = dep
 				}
 			}
 		}
+		if method.Pagination != nil && method.OutputType != nil && method.OutputType.Pagination != nil {
+			if err := c.addPaginationDependencies(annotations, method); err != nil {
+				return nil, err
+			}
+		}
 		if method.IsLRO && method.OperationInfo != nil {
-			// LROs depend on PollableOperation package
-			lroDep, err := c.addPackageDependency(lroSwiftPackage)
-			if err != nil {
-				return err
+			if err := c.addLroDependencies(annotations, method); err != nil {
+				return nil, err
 			}
-			if lroDep != nil {
-				annotations.DependsOn[lroDep.Name] = lroDep
-			}
-
-			// LRO error mapping relies on GoogleRpc.Code, so we depend on GoogleRpc package
-			rpcDep, err := c.addApiPackageDependency("google.rpc")
-			if err != nil {
-				return err
-			}
-			if rpcDep != nil {
-				annotations.DependsOn[rpcDep.Name] = rpcDep
-			}
-
-			// Ensure we have the necessary dependencies for the LRO response and metadata types.
-			respMsg, err := lookupMessage(c.Model, method.OperationInfo.ResponseTypeID)
-			if err != nil {
-				return err
-			}
-			if respMsg.Package != c.Model.PackageName {
-				dep, err := c.addApiPackageDependency(respMsg.Package)
-				if err != nil {
-					return err
-				}
-				if dep != nil {
-					annotations.DependsOn[dep.Name] = dep
-				}
-			}
-			metaMsg, err := lookupMessage(c.Model, method.OperationInfo.MetadataTypeID)
-			if err != nil {
-				return err
-			}
-			if metaMsg.Package != c.Model.PackageName {
-				dep, err := c.addApiPackageDependency(metaMsg.Package)
-				if err != nil {
-					return err
-				}
-				if dep != nil {
-					annotations.DependsOn[dep.Name] = dep
-				}
+		}
+		for _, signature := range method.Signatures {
+			if err := c.addSignatureDependencies(annotations, signature); err != nil {
+				return nil, err
 			}
 		}
 	}
 
 	service.Codec = annotations
-	return c.addFeatureAnnotations(service)
+	if err := c.addFeatureAnnotations(service); err != nil {
+		return nil, err
+	}
+	return annotations, nil
+}
+
+func (c *codec) addPaginationDependencies(annotations *serviceAnnotations, method *api.Method) error {
+	itemsField := method.OutputType.Pagination.PageableItem
+	if itemsField == nil {
+		return fmt.Errorf("inconsistent pagination info for method: %s", method.ID)
+	}
+	if itemsField.Repeated {
+		return c.addFieldDependencies(annotations, itemsField)
+	}
+	if itemsField.Map {
+		mapType, err := lookupMessage(c.Model, itemsField.TypezID)
+		if err != nil {
+			return err
+		}
+		if len(mapType.Fields) != 2 {
+			return fmt.Errorf("missing key/value fields for map type: %s", itemsField.TypezID)
+		}
+		return c.addFieldDependencies(annotations, mapType.Fields[1])
+	}
+	return nil
+}
+
+func (c *codec) addFieldDependencies(annotations *serviceAnnotations, field *api.Field) error {
+	switch field.Typez {
+	case api.TypezMessage:
+		item, err := lookupMessage(c.Model, field.TypezID)
+		if err != nil {
+			return err
+		}
+		if item.Package != c.Model.PackageName {
+			dep, err := c.addApiPackageDependency(item.Package)
+			if err != nil {
+				return err
+			}
+			if dep != nil {
+				annotations.DependsOn[dep.Name] = dep
+			}
+		}
+		return nil
+	case api.TypezEnum:
+		item, err := lookupEnum(c.Model, field.TypezID)
+		if err != nil {
+			return err
+		}
+		if item.Package != c.Model.PackageName {
+			dep, err := c.addApiPackageDependency(item.Package)
+			if err != nil {
+				return err
+			}
+			if dep != nil {
+				annotations.DependsOn[dep.Name] = dep
+			}
+		}
+		return nil
+	default:
+		return nil
+	}
+}
+
+func (c *codec) addLroDependencies(annotations *serviceAnnotations, method *api.Method) error {
+	// LROs depend on PollableOperation package
+	lroDep, err := c.addPackageDependency(lroSwiftPackage)
+	if err != nil {
+		return err
+	}
+	if lroDep != nil {
+		annotations.DependsOn[lroDep.Name] = lroDep
+	}
+
+	// LRO error mapping relies on GoogleRpc.Code, so we depend on GoogleRpc package
+	rpcDep, err := c.addApiPackageDependency("google.rpc")
+	if err != nil {
+		return err
+	}
+	if rpcDep != nil {
+		annotations.DependsOn[rpcDep.Name] = rpcDep
+	}
+
+	// Ensure we have the necessary dependencies for the LRO response and metadata types.
+	respMsg, err := lookupMessage(c.Model, method.OperationInfo.ResponseTypeID)
+	if err != nil {
+		return err
+	}
+	if respMsg.Package != c.Model.PackageName {
+		dep, err := c.addApiPackageDependency(respMsg.Package)
+		if err != nil {
+			return err
+		}
+		if dep != nil {
+			annotations.DependsOn[dep.Name] = dep
+		}
+	}
+	metaMsg, err := lookupMessage(c.Model, method.OperationInfo.MetadataTypeID)
+	if err != nil {
+		return err
+	}
+	if metaMsg.Package != c.Model.PackageName {
+		dep, err := c.addApiPackageDependency(metaMsg.Package)
+		if err != nil {
+			return err
+		}
+		if dep != nil {
+			annotations.DependsOn[dep.Name] = dep
+		}
+	}
+	return nil
+}
+
+func (c *codec) addSignatureDependencies(annotations *serviceAnnotations, signature *api.MethodSignature) error {
+	for _, field := range signature.Fields {
+		if err := c.addFieldDependencies(annotations, field); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func isGeneratedMethod(method *api.Method) bool {
@@ -231,8 +338,12 @@ func (c *codec) addFeatureAnnotations(
 		if !ok {
 			return fmt.Errorf("bad annotation type for %s", id)
 		}
-		annotation.GatedBy = insertGatingTrait(annotation.GatedBy, traitName)
-		annotation.GatedOp = " || "
+		if !msg.ServicePlaceholder {
+			// Messages that are placeholders for services just get the same
+			// gating traits as the service.
+			annotation.GatedBy = insertGatingTrait(annotation.GatedBy, traitName)
+			annotation.GatedOp = " || "
+		}
 	}
 	return nil
 }

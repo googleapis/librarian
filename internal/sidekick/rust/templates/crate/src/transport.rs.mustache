@@ -35,6 +35,10 @@ use crate::Error;
 #[derive(Clone)]
 pub struct {{Codec.Name}} {
     inner: gaxi::http::ReqwestClient,
+    {{#Codec.HasBidiStreaming}}
+    #[cfg(google_cloud_unstable_gapic_streaming)]
+    grpc_inner: gaxi::grpc::Client,
+    {{/Codec.HasBidiStreaming}}
 }
 
 {{#Codec.PerServiceFeatures}}
@@ -42,9 +46,18 @@ pub struct {{Codec.Name}} {
 {{/Codec.PerServiceFeatures}}
 impl std::fmt::Debug for {{Codec.Name}} {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::result::Result<(), std::fmt::Error> {
+        {{^Codec.HasBidiStreaming}}
         f.debug_struct("{{Codec.Name}}")
             .field("inner", &self.inner)
             .finish()
+        {{/Codec.HasBidiStreaming}}
+        {{#Codec.HasBidiStreaming}}
+        let mut builder = f.debug_struct("{{Codec.Name}}");
+        builder.field("inner", &self.inner);
+        #[cfg(google_cloud_unstable_gapic_streaming)]
+        builder.field("grpc_inner", &self.grpc_inner);
+        builder.finish()
+        {{/Codec.HasBidiStreaming}}
     }
 }
 
@@ -53,6 +66,7 @@ impl std::fmt::Debug for {{Codec.Name}} {
 {{/Codec.PerServiceFeatures}}
 impl {{Codec.Name}} {
     pub async fn new(config: gaxi::options::ClientConfig) -> crate::ClientBuilderResult<Self> {
+        {{^Codec.HasBidiStreaming}}
         {{#Codec.DetailedTracingAttributes}}
         let tracing_is_enabled = gaxi::options::tracing_enabled(&config);
         let inner = gaxi::http::ReqwestClient::new(config, crate::DEFAULT_HOST).await?;
@@ -67,6 +81,44 @@ impl {{Codec.Name}} {
         let inner = gaxi::http::ReqwestClient::new(config, crate::DEFAULT_HOST).await?;
         Ok(Self { inner })
         {{/Codec.DetailedTracingAttributes}}
+        {{/Codec.HasBidiStreaming}}
+        {{#Codec.HasBidiStreaming}}
+        {{#Codec.DetailedTracingAttributes}}
+        let tracing_is_enabled = gaxi::options::tracing_enabled(&config);
+        let inner = gaxi::http::ReqwestClient::new(config.clone(), crate::DEFAULT_HOST).await?;
+        let inner = if tracing_is_enabled {
+            inner.with_instrumentation(&super::tracing::info::INSTRUMENTATION_CLIENT_INFO)
+        } else {
+            inner
+        };
+        #[cfg(google_cloud_unstable_gapic_streaming)]
+        let grpc_inner = if tracing_is_enabled {
+            gaxi::grpc::Client::new_with_instrumentation(
+                config,
+                crate::DEFAULT_HOST,
+                &super::tracing::info::INSTRUMENTATION_CLIENT_INFO,
+            )
+            .await?
+        } else {
+            gaxi::grpc::Client::new(config, crate::DEFAULT_HOST).await?
+        };
+        Ok(Self {
+            inner,
+            #[cfg(google_cloud_unstable_gapic_streaming)]
+            grpc_inner,
+        })
+        {{/Codec.DetailedTracingAttributes}}
+        {{^Codec.DetailedTracingAttributes}}
+        let inner = gaxi::http::ReqwestClient::new(config.clone(), crate::DEFAULT_HOST).await?;
+        #[cfg(google_cloud_unstable_gapic_streaming)]
+        let grpc_inner = gaxi::grpc::Client::new(config, crate::DEFAULT_HOST).await?;
+        Ok(Self {
+            inner,
+            #[cfg(google_cloud_unstable_gapic_streaming)]
+            grpc_inner,
+        })
+        {{/Codec.DetailedTracingAttributes}}
+        {{/Codec.HasBidiStreaming}}
     }
 }
 

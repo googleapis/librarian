@@ -26,6 +26,7 @@ import (
 	"github.com/googleapis/librarian/internal/librarian/golang"
 	"github.com/googleapis/librarian/internal/librarian/java"
 	"github.com/googleapis/librarian/internal/librarian/nodejs"
+	"github.com/googleapis/librarian/internal/librarian/php"
 	"github.com/googleapis/librarian/internal/librarian/python"
 	"github.com/googleapis/librarian/internal/librarian/rust"
 	"github.com/googleapis/librarian/internal/serviceconfig"
@@ -165,9 +166,6 @@ func validateLibraries(cfg *config.Config) error {
 				pathCount[ch.Path]++
 			}
 		}
-		if err := validateLanguageConfig(lib, cfg.Language); err != nil {
-			errs = append(errs, err)
-		}
 	}
 	for name, count := range nameCount {
 		if count > 1 {
@@ -179,6 +177,9 @@ func validateLibraries(cfg *config.Config) error {
 			errs = append(errs, fmt.Errorf("%w: %s (appears %d times)", errDuplicateAPIPath, path, count))
 		}
 	}
+	if err := validateLanguageConfig(cfg); err != nil {
+		errs = append(errs, err)
+	}
 	if len(errs) > 0 {
 		return errors.Join(errs...)
 	}
@@ -187,14 +188,15 @@ func validateLibraries(cfg *config.Config) error {
 
 // languageValidators maps a language to a function that validates the language-specific
 // configuration.
-var languageValidators = map[string]func(*config.Library) error{
+var languageValidators = map[string]func(*config.Config) error{
 	config.LanguageJava: java.Validate,
+	config.LanguagePhp:  php.Validate,
 }
 
 // validateLanguageConfig finds and executes the language-specific validator for a library.
-func validateLanguageConfig(lib *config.Library, language string) error {
-	if validator, ok := languageValidators[language]; ok {
-		return validator(lib)
+func validateLanguageConfig(cfg *config.Config) error {
+	if validator, ok := languageValidators[cfg.Language]; ok {
+		return validator(cfg)
 	}
 	return nil
 }
@@ -204,6 +206,7 @@ func validateLanguageConfig(lib *config.Library, language string) error {
 var languageTidiers = map[string]func(*config.Library) (*config.Library, error){
 	config.LanguageJava:   java.Tidy,
 	config.LanguageNodejs: nodejs.Tidy,
+	config.LanguagePhp:    php.Tidy,
 	config.LanguagePython: python.Tidy,
 	config.LanguageRust:   rust.Tidy,
 }
@@ -227,10 +230,12 @@ func tidyLanguageConfig(lib *config.Library, cfg *config.Config) (*config.Librar
 // isToolsEmpty returns true if the tools configuration is empty.
 func isToolsEmpty(tools *config.Tools) bool {
 	return len(tools.Cargo) == 0 &&
+		len(tools.Composer) == 0 &&
 		len(tools.Go) == 0 &&
 		len(tools.Maven) == 0 &&
 		len(tools.Pip) == 0 &&
 		len(tools.PNPM) == 0 &&
+		len(tools.Gem) == 0 &&
 		tools.Protoc == nil
 }
 
@@ -247,7 +252,8 @@ func isDefaultEmpty(defaults *config.Default) bool {
 		defaults.Nodejs == nil &&
 		defaults.Rust == nil &&
 		defaults.Python == nil &&
-		defaults.Swift == nil
+		defaults.Swift == nil &&
+		defaults.PHP == nil
 }
 
 // tidyConfig removes unused sections from the configuration.
@@ -264,6 +270,9 @@ func tidyConfig(cfg *config.Config) *config.Config {
 func formatConfig(cfg *config.Config) *config.Config {
 	if cfg.Tools != nil {
 		slices.SortFunc(cfg.Tools.Cargo, func(a, b *config.CargoTool) int {
+			return strings.Compare(a.Name, b.Name)
+		})
+		slices.SortFunc(cfg.Tools.Composer, func(a, b *config.ComposerTool) int {
 			return strings.Compare(a.Name, b.Name)
 		})
 		slices.SortFunc(cfg.Tools.PNPM, func(a, b *config.PNPMTool) int {

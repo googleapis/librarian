@@ -58,3 +58,6 @@ go.work.sum
 
 # VSCode file
 .vscode/*
+
+# Local bin directory (for local dev)
+/bin/

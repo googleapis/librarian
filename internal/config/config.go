@@ -97,8 +97,14 @@ type Tools struct {
 	// Cargo defines tools to install via cargo.
 	Cargo []*CargoTool `yaml:"cargo,omitempty"`
 
+	// Composer defines tools to install via Composer.
+	Composer []*ComposerTool `yaml:"composer,omitempty"`
+
 	// Go defines tools to install via go.
 	Go []*GoTool `yaml:"go,omitempty"`
+
+	// Gem defines tools to install via gem.
+	Gem []*GemTool `yaml:"gem,omitempty"`
 
 	// Maven defines tools to install via Maven.
 	Maven []*MavenTool `yaml:"maven,omitempty"`
@@ -116,6 +122,30 @@ type Tools struct {
 // CargoTool defines a tool to install via cargo.
 type CargoTool struct {
 	// Name is the cargo package name.
+	Name string `yaml:"name"`
+
+	// Version is the version to install.
+	Version string `yaml:"version"`
+}
+
+// ComposerTool defines a tool to install via Composer.
+type ComposerTool struct {
+	// Name is the composer package name.
+	Name string `yaml:"name"`
+
+	// Version is the version to install.
+	Version string `yaml:"version"`
+
+	// Repo is the GitHub repository to fetch the tool from (e.g. github.com/googleapis/gapic-generator-php).
+	Repo string `yaml:"repo,omitempty"`
+
+	// SHA256 is the SHA256 checksum of the package.
+	SHA256 string `yaml:"sha256,omitempty"`
+}
+
+// GemTool defines a tool to install via gem.
+type GemTool struct {
+	// Name is the gem name.
 	Name string `yaml:"name"`
 
 	// Version is the version to install.
@@ -187,11 +217,18 @@ type PNPMTool struct {
 	// Package is the URL or path of the package to install.
 	Package string `yaml:"package,omitempty"`
 
-	// Checksum is the SHA256 checksum of the package.
+	// SHA256 is the SHA256 checksum of the package.
+	SHA256 string `yaml:"sha256,omitempty"`
+
+	// Checksum is a deprecated alias for SHA256.
 	Checksum string `yaml:"checksum,omitempty"`
 
 	// Build defines the commands to run to build the tool after installation.
 	Build []string `yaml:"build,omitempty"`
+
+	// SrcDir is the path to the directory inside the fetched archive that should
+	// be treated as the root for operations.
+	SrcDir string `yaml:"src_dir,omitempty"`
 }
 
 // Protoc defines the configuration for installing the protoc compiler.
@@ -234,6 +271,9 @@ type Default struct {
 
 	// Nodejs contains Node.js-specific default configuration.
 	Nodejs *NodejsPackage `yaml:"nodejs,omitempty"`
+
+	// PHP contains PHP-specific default configuration.
+	PHP *PHPDefault `yaml:"php,omitempty"`
 
 	// Rust contains Rust-specific default configuration.
 	Rust *RustDefault `yaml:"rust,omitempty"`
@@ -336,6 +376,9 @@ type Library struct {
 	// Python contains Python-specific library configuration.
 	Python *PythonPackage `yaml:"python,omitempty"`
 
+	// Ruby contains Ruby-specific library configuration.
+	Ruby *RubyPackage `yaml:"ruby,omitempty"`
+
 	// Rust contains Rust-specific library configuration.
 	Rust *RustCrate `yaml:"rust,omitempty"`
 
@@ -429,6 +472,9 @@ type API struct {
 
 	// PHP contains PHP-specific API configuration.
 	PHP *PHPAPI `yaml:"php,omitempty"`
+
+	// Ruby contains Ruby-specific API configuration.
+	Ruby *RubyAPI `yaml:"ruby,omitempty"`
 }
 
 // GoDefault defines Go-specific default configuration.

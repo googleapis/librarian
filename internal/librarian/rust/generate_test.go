@@ -17,6 +17,7 @@ package rust
 import (
 	"context"
 	"errors"
+	"fmt"
 	"io/fs"
 	"os"
 	"path/filepath"
@@ -418,15 +419,6 @@ func TestGenerateLibrary(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	workspaceDir, err := filepath.Abs("testdata")
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	t.Cleanup(func() {
-		os.RemoveAll(filepath.Join(workspaceDir, "target"))
-		os.Remove(filepath.Join(workspaceDir, "Cargo.lock"))
-	})
 
 	// Mock validate to speed up the test.
 	oldValidate := validate
@@ -447,17 +439,24 @@ func TestGenerateLibrary(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			// Change to testdata directory so cargo fmt can find Cargo.toml
-			t.Chdir(workspaceDir)
+			// Do all the work in a temporary directory, to keep the source
+			// directory unchanged.
+			temp := t.TempDir()
+			t.Chdir(temp)
 
 			libName := "google-cloud-secretmanager-v1"
-			outDir := filepath.Join(workspaceDir, libName)
-
-			if err := os.RemoveAll(outDir); err != nil {
-				t.Fatal(err)
-			}
+			outDir := "src/generated/cloud/secretmanager/v1"
 			if test.preExists {
 				if err := os.MkdirAll(outDir, 0755); err != nil {
+					t.Fatal(err)
+				}
+				contents := fmt.Appendf(nil, formatTestCargoToml, fmt.Sprintf(`  "%s",`, outDir))
+				if err := os.WriteFile("Cargo.toml", contents, 0644); err != nil {
+					t.Fatal(err)
+				}
+			} else {
+				contents := fmt.Appendf(nil, formatTestCargoToml, "")
+				if err := os.WriteFile("Cargo.toml", contents, 0644); err != nil {
 					t.Fatal(err)
 				}
 			}
@@ -664,20 +663,17 @@ func TestFindModuleByOutput(t *testing.T) {
 		})
 	}
 }
+
 func TestCreateRepoMetadata(t *testing.T) {
 	googleapisDir, err := filepath.Abs("../../testdata/googleapis")
 	if err != nil {
 		t.Fatal(err)
 	}
-	showcaseDir, err := filepath.Abs("../../testdata/gapic-showcase")
-	if err != nil {
-		t.Fatal(err)
-	}
-
 	for _, test := range []struct {
 		name    string
 		library *config.Library
 		sources *sources.Sources
+		needed  bool
 		want    *repometadata.RepoMetadata
 	}{
 		{
@@ -694,6 +690,7 @@ func TestCreateRepoMetadata(t *testing.T) {
 			sources: &sources.Sources{
 				Googleapis: googleapisDir,
 			},
+			needed: true,
 			want: &repometadata.RepoMetadata{
 				Name:                 "secretmanager",
 				NamePretty:           "Secret Manager",
@@ -708,33 +705,6 @@ func TestCreateRepoMetadata(t *testing.T) {
 				APIDescription:       "Stores sensitive data such as API keys, passwords, and certificates.\nProvides convenience while improving security.",
 				ReleaseLevel:         "preview",
 				LibraryType:          "GAPIC_AUTO",
-			},
-		},
-		{
-			name: "showcase",
-			library: &config.Library{
-				Name:    "google-cloud-showcase-v1beta1",
-				Version: "0.1.0",
-				APIs: []*config.API{
-					{
-						Path: "schema/google/showcase/v1beta1",
-					},
-				},
-			},
-			sources: &sources.Sources{
-				Showcase: showcaseDir,
-			},
-			want: &repometadata.RepoMetadata{
-				Name:                "showcase",
-				NamePretty:          "Client Libraries Showcase",
-				ClientDocumentation: "https://docs.rs/google-cloud-showcase-v1beta1/latest",
-				Language:            config.LanguageRust,
-				Repo:                "googleapis/google-cloud-rust",
-				DistributionName:    "google-cloud-showcase-v1beta1",
-				APIID:               "showcase.googleapis.com",
-				APIShortname:        "showcase",
-				ReleaseLevel:        "preview",
-				LibraryType:         "GAPIC_AUTO",
 			},
 		},
 	} {

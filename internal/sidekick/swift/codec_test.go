@@ -43,6 +43,8 @@ func TestParseOptions(t *testing.T) {
 			want: &codec{
 				GenerationYear:     "2038",
 				PackageName:        "GoogleCloudBigtable",
+				PackageVersion:     "0.0.0",
+				ReleaseLevel:       "preview",
 				MonorepoRoot:       ".",
 				RootName:           "test-root",
 				Model:              model,
@@ -63,6 +65,8 @@ func TestParseOptions(t *testing.T) {
 			want: &codec{
 				GenerationYear:     "2038",
 				PackageName:        "GoogleCloudComputeV1",
+				PackageVersion:     "0.0.0",
+				ReleaseLevel:       "preview",
 				MonorepoRoot:       ".",
 				RootName:           "test-root",
 				Model:              model,
@@ -203,6 +207,62 @@ func makeGatedTestModel() *api.API {
 		[]*api.Service{s1, s2},
 	)
 	model.PackageName = "google.cloud.test.v1"
+	api.CrossReference(model)
+	return model
+}
+
+func makeRequiredServicesTestModel() *api.API {
+	externalRequest := api.NewTestMessage("Request").WithPackage("external")
+	externalResponse := api.NewTestMessage("Response").WithPackage("external")
+	externalMethod := api.NewTestMethod("GetThing").
+		WithVerb("GET").
+		WithPathTemplate((&api.PathTemplate{}).WithLiteral("v1").WithLiteral("things")).
+		WithInput(externalRequest).
+		WithOutput(externalResponse)
+	externalService := api.NewTestService("ExternalService").
+		WithPackage("external").
+		WithMethods(externalMethod)
+
+	placeholder := &api.Message{
+		Name:               "zoneOperations",
+		ID:                 ".test.zoneOperations",
+		Package:            "test",
+		ServicePlaceholder: true,
+	}
+	inputType := &api.Message{
+		Name:    "GetOperationRequest",
+		ID:      ".test.zoneOperations.GetOperationRequest",
+		Package: "test",
+		Parent:  placeholder,
+	}
+	outputType := &api.Message{
+		Name:    "Operation",
+		ID:      ".test.Operation",
+		Package: "test",
+	}
+	sourceMethod := api.NewTestMethod("GetOperation").
+		WithInput(inputType).
+		WithOutput(outputType).
+		WithVerb("GET").
+		WithPathTemplate(&api.PathTemplate{})
+	sourceService := api.NewTestService("zoneOperations").
+		WithPackage("test").
+		WithMethods(sourceMethod)
+	sourceMethod.Service = sourceService
+	internalMixin := api.NewTestMethod(sourceMethod.Name).
+		WithSourceMethod(sourceMethod)
+	internalMixin.IsLroPoller = true
+	externalMixin := api.NewTestMethod(externalMethod.Name).
+		WithSourceMethod(externalMethod)
+	externalMixin.IsLroPoller = true
+	targetService := api.NewTestService("TestService").
+		WithPackage("test").
+		WithMethods(internalMixin, externalMixin)
+
+	model := api.NewTestAPI([]*api.Message{placeholder, inputType, outputType}, nil, []*api.Service{sourceService, targetService})
+	model.AddMessage(externalRequest)
+	model.AddMessage(externalResponse)
+	model.AddService(externalService)
 	api.CrossReference(model)
 	return model
 }

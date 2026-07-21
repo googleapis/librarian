@@ -21,10 +21,6 @@ import (
 	"github.com/google/go-cmp/cmp"
 )
 
-func ptr(i int) *int {
-	return &i
-}
-
 func TestParse(t *testing.T) {
 	for _, test := range []struct {
 		name    string
@@ -50,7 +46,7 @@ func TestParse(t *testing.T) {
 				Patch:               3,
 				Prerelease:          "alpha",
 				PrereleaseSeparator: ".",
-				PrereleaseNumber:    ptr(1),
+				PrereleaseNumber:    new(1),
 				SpecVersion:         SpecV2,
 			},
 		},
@@ -62,7 +58,7 @@ func TestParse(t *testing.T) {
 				Minor:            2,
 				Patch:            3,
 				Prerelease:       "beta",
-				PrereleaseNumber: ptr(21),
+				PrereleaseNumber: new(21),
 				SpecVersion:      SpecV1,
 			},
 		},
@@ -95,7 +91,7 @@ func TestParse(t *testing.T) {
 				Minor:            2,
 				Patch:            3,
 				Prerelease:       "alpha",
-				PrereleaseNumber: ptr(1),
+				PrereleaseNumber: new(1),
 				SpecVersion:      SpecV1,
 			},
 		},
@@ -107,7 +103,7 @@ func TestParse(t *testing.T) {
 				Minor:            2,
 				Patch:            3,
 				Prerelease:       "beta",
-				PrereleaseNumber: ptr(2),
+				PrereleaseNumber: new(2),
 				SpecVersion:      SpecV1,
 			},
 		},
@@ -119,7 +115,7 @@ func TestParse(t *testing.T) {
 				Minor:            2,
 				Patch:            3,
 				Prerelease:       "rc",
-				PrereleaseNumber: ptr(3),
+				PrereleaseNumber: new(3),
 				SpecVersion:      SpecV1,
 			},
 		},
@@ -131,7 +127,7 @@ func TestParse(t *testing.T) {
 				Minor:            2,
 				Patch:            3,
 				Prerelease:       "preview",
-				PrereleaseNumber: ptr(4),
+				PrereleaseNumber: new(4),
 				SpecVersion:      SpecV1,
 			},
 		},
@@ -143,7 +139,7 @@ func TestParse(t *testing.T) {
 				Minor:            2,
 				Patch:            3,
 				Prerelease:       "a",
-				PrereleaseNumber: ptr(5),
+				PrereleaseNumber: new(5),
 				SpecVersion:      SpecV1,
 			},
 		},
@@ -155,7 +151,7 @@ func TestParse(t *testing.T) {
 				Minor:            2,
 				Patch:            3,
 				Prerelease:       "b",
-				PrereleaseNumber: ptr(6),
+				PrereleaseNumber: new(6),
 				SpecVersion:      SpecV1,
 			},
 		},
@@ -286,7 +282,7 @@ func TestVersion_String(t *testing.T) {
 				Patch:               3,
 				Prerelease:          "alpha",
 				PrereleaseSeparator: ".",
-				PrereleaseNumber:    ptr(1),
+				PrereleaseNumber:    new(1),
 			},
 			expected: "1.2.3-alpha.1",
 		},
@@ -297,7 +293,7 @@ func TestVersion_String(t *testing.T) {
 				Minor:            2,
 				Patch:            3,
 				Prerelease:       "beta",
-				PrereleaseNumber: ptr(21),
+				PrereleaseNumber: new(21),
 				SpecVersion:      SpecV1,
 			},
 			expected: "1.2.3-beta21",
@@ -309,7 +305,7 @@ func TestVersion_String(t *testing.T) {
 				Minor:            2,
 				Patch:            3,
 				Prerelease:       "beta",
-				PrereleaseNumber: ptr(2),
+				PrereleaseNumber: new(2),
 				SpecVersion:      SpecV1,
 			},
 			expected: "1.2.3-beta02",

@@ -38,7 +38,9 @@ This document describes the schema for the librarian.yaml.
 | Field | Type | Description |
 | :--- | :--- | :--- |
 | `cargo` | list of [CargoTool](#cargotool-configuration) (optional) | Defines tools to install via cargo. |
+| `composer` | list of [ComposerTool](#composertool-configuration) (optional) | Defines tools to install via Composer. |
 | `go` | list of [GoTool](#gotool-configuration) (optional) | Defines tools to install via go. |
+| `gem` | list of [GemTool](#gemtool-configuration) (optional) | Defines tools to install via gem. |
 | `maven` | list of [MavenTool](#maventool-configuration) (optional) | Defines tools to install via Maven. |
 | `pip` | list of [PipTool](#piptool-configuration) (optional) | Defines tools to install via pip. |
 | `pnpm` | list of [PNPMTool](#pnpmtool-configuration) (optional) | Defines tools to install via pnpm. |
@@ -49,6 +51,22 @@ This document describes the schema for the librarian.yaml.
 | Field | Type | Description |
 | :--- | :--- | :--- |
 | `name` | string | Is the cargo package name. |
+| `version` | string | Is the version to install. |
+
+## ComposerTool Configuration
+
+| Field | Type | Description |
+| :--- | :--- | :--- |
+| `name` | string | Is the composer package name. |
+| `version` | string | Is the version to install. |
+| `repo` | string | Is the GitHub repository to fetch the tool from (e.g. github.com/googleapis/gapic-generator-php). |
+| `sha256` | string | Is the SHA256 checksum of the package. |
+
+## GemTool Configuration
+
+| Field | Type | Description |
+| :--- | :--- | :--- |
+| `name` | string | Is the gem name. |
 | `version` | string | Is the version to install. |
 
 ## GoTool Configuration
@@ -87,8 +105,10 @@ This document describes the schema for the librarian.yaml.
 | `name` | string | Is the pnpm package name. |
 | `version` | string | Is the version to install. |
 | `package` | string | Is the URL or path of the package to install. |
-| `checksum` | string | Is the SHA256 checksum of the package. |
+| `sha256` | string | Is the SHA256 checksum of the package. |
+| `checksum` | string | Is a deprecated alias for SHA256. |
 | `build` | list of string | Defines the commands to run to build the tool after installation. |
+| `src_dir` | string | Is the path to the directory inside the fetched archive that should be treated as the root for operations. |
 
 ## Protoc Configuration
 
@@ -109,6 +129,7 @@ This document describes the schema for the librarian.yaml.
 | `go` | [GoDefault](#godefault-configuration) (optional) | Contains Go-specific default configuration. |
 | `java` | [JavaDefault](#javadefault-configuration) (optional) | Contains Java-specific default configuration. |
 | `nodejs` | [NodejsPackage](#nodejspackage-configuration) (optional) | Contains Node.js-specific default configuration. |
+| `php` | [PHPDefault](#phpdefault-configuration) (optional) | Contains PHP-specific default configuration. |
 | `rust` | [RustDefault](#rustdefault-configuration) (optional) | Contains Rust-specific default configuration. |
 | `python` | [PythonDefault](#pythondefault-configuration) (optional) | Contains Python-specific default configuration. |
 | `swift` | [SwiftDefault](#swiftdefault-configuration) (optional) | Contains Swift-specific default configuration. |
@@ -137,6 +158,7 @@ This document describes the schema for the librarian.yaml.
 | `nodejs` | [NodejsPackage](#nodejspackage-configuration) (optional) | Contains Node.js-specific library configuration. |
 | `php` | [PHPPackage](#phppackage-configuration) (optional) | Contains PHP-specific library configuration. |
 | `python` | [PythonPackage](#pythonpackage-configuration) (optional) | Contains Python-specific library configuration. |
+| `ruby` | [RubyPackage](#rubypackage-configuration) (optional) | Contains Ruby-specific library configuration. |
 | `rust` | [RustCrate](#rustcrate-configuration) (optional) | Contains Rust-specific library configuration. |
 | `swift` | [SwiftPackage](#swiftpackage-configuration) (optional) | Contains Swift-specific library configuration. |
 
@@ -192,6 +214,7 @@ This document describes the schema for the librarian.yaml.
 | `java` | [JavaAPI](#javaapi-configuration) (optional) | Contains Java-specific API configuration. |
 | `nodejs` | [NodejsAPI](#nodejsapi-configuration) (optional) | Contains Node.js-specific API configuration. |
 | `php` | [PHPAPI](#phpapi-configuration) (optional) | Contains PHP-specific API configuration. |
+| `ruby` | [RubyAPI](#rubyapi-configuration) (optional) | Contains Ruby-specific API configuration. |
 
 ## GoDefault Configuration
 
@@ -354,7 +377,7 @@ This document describes the schema for the librarian.yaml.
 | Field | Type | Description |
 | :--- | :--- | :--- |
 | `custom_group_ids` | map[string]string | Maps API path prefixes (e.g., "google/shopping") to their corresponding Maven Group IDs (e.g., "com.google.shopping"). Use this to override the default "com.google.cloud" Group ID for specific API paths (e.g., maps, ads, shopping). |
-| `libraries_bom_version` | string | Is the version of the libraries-bom to use for Java. |
+| `libraries_bom_version` | string | Is the version of the libraries-bom to use for Java. This must be set in the default configuration. |
 
 ## JavaFileCopy Configuration
 
@@ -424,7 +447,16 @@ This document describes the schema for the librarian.yaml.
 
 | Field | Type | Description |
 | :--- | :--- | :--- |
+| `additional_protos` | list of string | Is a list of additional proto files to include in generation. |
 | `migration_mode` | string | Controls migration mode setting for the PHP generator (e.g. "NEW_SURFACE_ONLY"). |
+| `common_resources` | bool (optional) | Indicates whether to include common resources in generation. Must be configured either globally or per-API. |
+| `staging_subdir` | string | Is the subdirectory in staging where the generated files should be placed. |
+
+## PHPDefault Configuration
+
+| Field | Type | Description |
+| :--- | :--- | :--- |
+| `common_resources` | bool (optional) | Indicates whether to include common resources in generation. Must be configured either globally or per-API. |
 
 ## PHPPackage Configuration
 
@@ -451,6 +483,19 @@ This document describes the schema for the librarian.yaml.
 | `metadata_name_override` | string | Allows the name in .repo-metadata.json (which is also used as part of the client documentation URI) to be overridden. By default, it's the package name, but older packages use the API short name instead. |
 | `default_version` | string | Is the default version of the API to use. When omitted, the version in the first API path is used. |
 
+## RubyAPI Configuration
+
+| Field | Type | Description |
+| :--- | :--- | :--- |
+| `env_prefix` | string | Is the environment variable prefix. |
+| `extra_dependencies` | string | Contains extra runtime dependencies to the .gemspec file. |
+
+## RubyPackage Configuration
+
+| Field | Type | Description |
+| :--- | :--- | :--- |
+| `wrapper_of` | list of string | Contains the names of versioned libraries that this library wraps. |
+
 ## RustCrate Configuration
 
 | Field | Type | Description |
@@ -471,6 +516,7 @@ This document describes the schema for the librarian.yaml.
 | `routing_required` | bool | Indicates whether routing is required. |
 | `include_grpc_only_methods` | bool | Indicates whether to include gRPC-only methods. |
 | `include_streaming_methods` | bool | Indicates whether to include gRPC streaming methods. |
+| `include_bidi_streaming_methods` | bool | Indicates whether to include gRPC bi-directional streaming methods. |
 | `post_process_protos` | string | Indicates whether to post-process protos. |
 | `documentation_overrides` | list of [RustDocumentationOverride](#rustdocumentationoverride-configuration) | Contains overrides for element documentation. |
 | `pagination_overrides` | list of [RustPaginationOverride](#rustpaginationoverride-configuration) | Contains overrides for pagination configuration. |
@@ -514,6 +560,7 @@ This document describes the schema for the librarian.yaml.
 | `include_grpc_only_methods` | bool | Indicates whether to include gRPC-only methods. |
 | `include_list` | yaml.StringSlice | Is a list of proto files to include (e.g., "date.proto", "expr.proto"). |
 | `include_streaming_methods` | bool | Indicates whether to include gRPC streaming methods. |
+| `include_bidi_streaming_methods` | bool | Indicates whether to include gRPC bi-directional streaming methods. |
 | `internal_builders` | bool | Indicates whether generated builders should be internal to the crate. |
 | `module_path` | string | Is the Rust module path for converters (e.g., "crate::generated::gapic::model"). |
 | `module_roots` | map[string]string |  |
@@ -553,6 +600,7 @@ This document describes the schema for the librarian.yaml.
 | Field | Type | Description |
 | :--- | :--- | :--- |
 | `dependencies` | list of [SwiftDependency](#swiftdependency-configuration) | Is a list of package dependencies. |
+| `default_version` | string | The default version for new libraries. |
 
 ## SwiftDependency Configuration
 
@@ -561,7 +609,7 @@ This document describes the schema for the librarian.yaml.
 | `name` | string | Is an identifier for the package within the project.<br><br>For example, `swift-protobuf`. This is usually the last component of the path or the URL. |
 | `path` | string | Configures the path for local (to the monorepo) packages.<br><br>For example, the authentication package definition will set this to `packages/auth`, which would generate the following snippet in the `Package.swift` files:<br><br>``` .package(path: "../../packages/auth") ``` |
 | `url` | string | Configures the `url:` parameter in the package definition.<br><br>For example, `https://github.com/apple/swift-protobuf` would generate the following snippet in the `Package.swift` files:<br><br>``` .package(url: "https://github.com/apple/swift-protobuf") ``` |
-| `version` | string | Configures the minimum version for exaternal package definitions.<br><br>For example, if the `swift-protobuf` package used `1.36.1`, then the codec would generate the following snippet in the `Package.swift` files:<br><br>``` .package(url: "https://github.com/apple/swift-protobuf", from: "1.36.1") ``` |
+| `version` | string | Configures the minimum version for external package definitions.<br><br>For example, if the `swift-protobuf` package used `1.36.1`, then the codec would generate the following snippet in the `Package.swift` files:<br><br>``` .package(url: "https://github.com/apple/swift-protobuf", from: "1.36.1") ``` |
 | `required_by_services` | bool | Is true if this dependency is required by packages with services.<br><br>This will be set for the `gax` library and the `auth` library. Maybe more if we split the HTTP and gRPC clients into separate libraries. |
 | `api_package` | string | Is the name of the API package provided by this library.<br><br>In Swift a package contains at most one channel for one API. For packages that implement an API, this field contains the name of the package in the specification language of that API. At the moment this is only used by Protobuf-based APIs, as OpenAPI and discovery doc APIs are self-contained.<br><br>Note that some packages, for example `auth` and `gax`, do not implement APIs. This field is empty for such libraries.<br><br>Examples:<br>- The `GoogleCloudWkt` package will set this to `google.cloud.protobuf`.<br>- The `GoogleCloudLocation` package will set this to `google.cloud.location`. |
 
@@ -571,6 +619,9 @@ This document describes the schema for the librarian.yaml.
 | :--- | :--- | :--- |
 | `output` | string | Is the directory where generated code is written (e.g., "Tests/ProtoJSON/generated"). |
 | `api_path` | string | Is the proto path to generate from (e.g., "google/storage/v2"). |
+| `module_type` | string | Is the type of module to generate (e.g., "swift-protobuf", "convert-swift", or empty/"default" for standard GAPIC). |
+| `include_list` | list of string | Is a subset of proto files under the target API path to include. This is typically reserved for special cases to avoid generating unused/dead code. For example, in Storage we need Protobuf gencode for a subset of the protos in the google/type directory. This code is private to the package (google-cloud-storage in Rust, GoogleCloudStorage in Swift). All other files in google/type would be dead code. |
+| `module_path` | string | Is the module import path or target containing stubs (used by convert-swift). |
 
 ## SwiftPackage Configuration
 

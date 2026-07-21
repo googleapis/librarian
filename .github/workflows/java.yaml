@@ -31,6 +31,19 @@ jobs:
           repository: googleapis/google-cloud-java
           path: google-cloud-java
           persist-credentials: false
+          sparse-checkout-cone-mode: false
+          sparse-checkout: |
+            librarian.yaml
+            pom.xml
+            sdk-platform-java/
+            java-shared-config/
+            google-auth-library-java/
+            java-common-protos/
+            gapic-libraries-bom/pom.xml
+            google-cloud-jar-parent/pom.xml
+            google-cloud-pom-parent/pom.xml
+            grpc-gcp-java/pom.xml
+            java-*/pom.xml
       - name: Display Go version
         run: go version
       - uses: actions/setup-java@c1e323688fd81a25caa38c78aa6df2d33d3e20d9 # v4
@@ -48,7 +61,7 @@ jobs:
           path: |
             ~/.cache/librarian
             venv
-          key: librarian-java-tools-v1-${{ runner.os }}-${{ hashFiles('google-cloud-java/librarian.yaml', 'google-cloud-java/sdk-platform-java/gapic-generator-java/**', 'google-cloud-java/sdk-platform-java/hermetic_build/library_generation/**') }}
+          key: librarian-java-tools-v2-${{ runner.os }}-${{ hashFiles('internal/config/**/*.go') }}-${{ hashFiles('google-cloud-java/librarian.yaml', 'google-cloud-java/sdk-platform-java/gapic-generator-java/**', 'google-cloud-java/sdk-platform-java/hermetic_build/library_generation/**') }}
       - name: Create Python virtual environment
         if: steps.cache-tools.outputs.cache-hit != 'true'
         run: python3 -m venv venv

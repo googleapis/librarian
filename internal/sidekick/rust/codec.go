@@ -84,7 +84,7 @@ func newCodec(specificationFormat string, options map[string]string) (*codec, er
 			codec.packageNameOverride = definition
 		case key == "name-overrides":
 			codec.nameOverrides = make(map[string]string)
-			for _, override := range strings.Split(definition, ",") {
+			for override := range strings.SplitSeq(definition, ",") {
 				tokens := strings.Split(override, "=")
 				if len(tokens) != 2 {
 					return nil, fmt.Errorf("cannot parse `name-overrides`. Expected input in the form of: 'n1=r1,n2=r2': %q", definition)
@@ -132,6 +132,12 @@ func newCodec(specificationFormat string, options map[string]string) (*codec, er
 				return nil, fmt.Errorf("cannot convert `include-streaming-methods` value %q to boolean: %w", definition, err)
 			}
 			codec.includeStreamingMethods = value
+		case key == "include-bidi-streaming-methods":
+			value, err := strconv.ParseBool(definition)
+			if err != nil {
+				return nil, fmt.Errorf("cannot convert `include-bidi-streaming-methods` value %q to boolean: %w", definition, err)
+			}
+			codec.includeBidiStreamingMethods = value
 		case key == "per-service-features":
 			value, err := strconv.ParseBool(definition)
 			if err != nil {
@@ -218,7 +224,7 @@ func parsePackageOption(key, definition string) (*packageOption, error) {
 	pkg := &packagez{
 		name: strings.TrimPrefix(key, "package:"),
 	}
-	for _, element := range strings.Split(definition, ",") {
+	for element := range strings.SplitSeq(definition, ",") {
 		s := strings.SplitN(element, "=", 2)
 		if len(s) != 2 {
 			return nil, fmt.Errorf("the definition for package %q should be a comma-separated list of key=value pairs, got=%q", key, definition)
@@ -306,6 +312,8 @@ type codec struct {
 	includeGrpcOnlyMethods bool
 	// If true, this includes gRPC streaming methods.
 	includeStreamingMethods bool
+	// If true, this includes gRPC bi-directional streaming methods.
+	includeBidiStreamingMethods bool
 	// If true, the generator will produce per-client features.
 	perServiceFeatures bool
 	// If not empty, and if `perServiceFeatures` is true, the default features
@@ -385,7 +393,7 @@ func resolveUsedPackages(model *api.API, extraPackages []*packagez) {
 		// not save us any computations.
 
 		for _, m := range s.Methods {
-			if m.OperationInfo != nil || m.IsLroPoller {
+			if m.OperationInfo != nil || m.IsLroPoller || m.ID == ".google.cloud.bigquery.v2.JobService.InsertJob" {
 				hasLROs = true
 			}
 			if len(m.AutoPopulated) != 0 {
@@ -1062,8 +1070,8 @@ func escapeUrls(line string) string {
 			lastIndex = match[1]
 		} else {
 			escapedLine.WriteString(line[lastIndex:match[0]])
-			if strings.HasSuffix(url, ".") {
-				fmt.Fprintf(&escapedLine, "<%s>.", strings.TrimSuffix(url, "."))
+			if before, ok := strings.CutSuffix(url, "."); ok {
+				fmt.Fprintf(&escapedLine, "<%s>.", before)
 			} else {
 				fmt.Fprintf(&escapedLine, "<%s>", url)
 			}

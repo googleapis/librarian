@@ -33,6 +33,13 @@ const (
 
 	// GAPICAutoLibraryType is the library_type to use for GAPIC libraries.
 	GAPICAutoLibraryType = "GAPIC_AUTO"
+
+	// ShowcasePath defines the API path for the showcase API.
+	//
+	// We never generate a .repo-metadata.json file for showcase. It serves no
+	// purpose, and the result has problems. For example, the short name is
+	// invalid.
+	ShowcasePath = "schema/google/showcase/v1beta1"
 )
 
 var (
@@ -201,7 +208,7 @@ func Read(libraryOutputDir string) (*RepoMetadata, error) {
 
 // WriteJSON marshals the given data to JSON with indentation and writes it to
 // the specified file in the output directory.
-func WriteJSON(data interface{}, indent, libraryOutputDir, filename string) error {
+func WriteJSON(data any, indent, libraryOutputDir, filename string) error {
 	content, err := json.MarshalIndent(data, "", indent)
 	if err != nil {
 		return fmt.Errorf("failed to marshal metadata to JSON: %w", err)

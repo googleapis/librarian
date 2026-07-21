@@ -16,16 +16,13 @@ package rust
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"io/fs"
-	"os"
 	"path/filepath"
 	"strings"
 
 	"github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/config"
-	"github.com/googleapis/librarian/internal/repometadata"
 	"github.com/googleapis/librarian/internal/serviceconfig"
 	"github.com/googleapis/librarian/internal/sidekick/parser"
 	sidekickrust "github.com/googleapis/librarian/internal/sidekick/rust"
@@ -73,12 +70,9 @@ func Generate(ctx context.Context, cfg *config.Config, library *config.Library, 
 	if err != nil {
 		return err
 	}
-	exists := true
-	if _, err := os.Stat(library.Output); err != nil {
-		if !errors.Is(err, fs.ErrNotExist) {
-			return fmt.Errorf("cannot access output directory %q: %w", library.Output, err)
-		}
-		exists = false
+	exists, err := crateExists(library.Output)
+	if err != nil {
+		return err
 	}
 	if !exists {
 		if err := create(ctx, library.Output); err != nil {
@@ -88,7 +82,7 @@ func Generate(ctx context.Context, cfg *config.Config, library *config.Library, 
 	if err := sidekickrust.Generate(ctx, model, library.Output, modelConfig); err != nil {
 		return err
 	}
-	if len(model.Services) > 0 {
+	if needsRepoMetadata(model, library) {
 		repoMetadata, err := createRepoMetadata(cfg, library, sources)
 		if err != nil {
 			return err
@@ -101,23 +95,6 @@ func Generate(ctx context.Context, cfg *config.Config, library *config.Library, 
 		validate(ctx, library.Output)
 	}
 	return nil
-}
-
-func createRepoMetadata(cfg *config.Config, library *config.Library, sources *sources.Sources) (*repometadata.RepoMetadata, error) {
-	googleapisDir := sources.Googleapis
-	if len(library.APIs) > 0 && library.APIs[0].Path == "schema/google/showcase/v1beta1" {
-		googleapisDir = sources.Showcase
-	}
-	metadata, err := repometadata.FromLibrary(cfg, library, googleapisDir)
-	if err != nil {
-		return nil, err
-	}
-
-	// Set fields not set by FromLibrary.
-	metadata.ClientDocumentation = fmt.Sprintf("https://docs.rs/%s/latest", library.Name)
-	metadata.LibraryType = repometadata.GAPICAutoLibraryType
-
-	return metadata, nil
 }
 
 // UpdateWorkspace updates dependencies for the entire Rust workspace.

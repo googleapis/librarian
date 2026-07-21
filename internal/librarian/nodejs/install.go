@@ -46,7 +46,15 @@ var (
 
 // Install installs Node.js tool dependencies.
 func Install(ctx context.Context, tools *config.Tools) error {
-	if tools == nil || len(tools.PNPM) == 0 {
+	if tools == nil {
+		return errNoToolsSpecified
+	}
+	return InstallPNPM(ctx, tools.PNPM)
+}
+
+// InstallPNPM installs PNPM tools.
+func InstallPNPM(ctx context.Context, pnpmTools []*config.PNPMTool) error {
+	if len(pnpmTools) == 0 {
 		return errNoToolsSpecified
 	}
 
@@ -61,7 +69,7 @@ func Install(ctx context.Context, tools *config.Tools) error {
 		return err
 	}
 
-	for _, tool := range tools.PNPM {
+	for _, tool := range pnpmTools {
 		if len(tool.Build) > 0 {
 			if err := installPNPMToolFromSource(ctx, env, tool); err != nil {
 				return err
@@ -119,21 +127,23 @@ func getPNPMEnv() ([]string, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to resolve librarian cache directory: %w", err)
 	}
-	installDir, err := InstallDir()
-	if err != nil {
-		return nil, fmt.Errorf("failed to resolve librarian install directory: %w", err)
-	}
 	binDir, err := getBinDir()
 	if err != nil {
 		return nil, fmt.Errorf("failed to resolve librarian bin directory: %w", err)
 	}
 
+	globalDir := filepath.Join(cacheDir, "pnpm-global")
+	storeDir := filepath.Join(cacheDir, "pnpm-store")
+
 	env := os.Environ()
-	env = append(env, "PNPM_HOME="+installDir)
+	env = append(env, "PNPM_HOME="+binDir)
 	env = append(env, "PNPM_CONFIG_GLOBAL_BIN_DIR="+binDir)
-	env = append(env, "PNPM_CONFIG_GLOBAL_DIR="+filepath.Join(cacheDir, "pnpm-global"))
-	env = append(env, "PNPM_CONFIG_STORE_DIR="+filepath.Join(cacheDir, "pnpm-store"))
-	env = append(env, "PNPM_CONFIG_DANGEROUSLY_ALLOW_ALL_BUILDS=true")
+	env = append(env, "PNPM_CONFIG_GLOBAL_DIR="+globalDir)
+	env = append(env, "PNPM_CONFIG_STORE_DIR="+storeDir)
+	// TODO(https://github.com/googleapis/librarian/issues/6889): Remove legacy NPM_CONFIG_*
+	// environment variables once pnpm is upgraded to version 8+.
+	env = append(env, "NPM_CONFIG_GLOBAL_BIN_DIR="+binDir)
+	env = append(env, "npm_config_global_bin_dir="+binDir)
 	env = append(env, "PATH="+binDir+string(os.PathListSeparator)+os.Getenv("PATH"))
 	return env, nil
 }
@@ -164,13 +174,21 @@ func installPNPMToolFromSource(ctx context.Context, env []string, tool *config.P
 	if err != nil {
 		return err
 	}
-	dir, err := fetch.Repo(ctx, repo, tool.Version, tool.Checksum)
+	sha := tool.SHA256
+	if sha == "" {
+		sha = tool.Checksum
+	}
+	dir, err := fetch.Repo(ctx, repo, tool.Version, sha)
 	if err != nil {
 		return fmt.Errorf("fetching %s: %w", tool.Name, err)
 	}
 
 	// Run build steps.
-	genDir := filepath.Join(dir, gapicGeneratorSubdir)
+	subdir := tool.SrcDir
+	if subdir == "" {
+		subdir = gapicGeneratorSubdir
+	}
+	genDir := filepath.Join(dir, subdir)
 	for _, cmd := range tool.Build {
 		if err := runPNPMBuildCmd(ctx, genDir, env, cmd); err != nil {
 			return err

@@ -593,7 +593,7 @@ func TestLoadReadmePartials(t *testing.T) {
 	for _, test := range []struct {
 		name       string
 		setupFiles func(t *testing.T, dir string)
-		want       map[string]interface{}
+		want       map[string]any
 	}{
 		{
 			name: "loads yaml partials with camel case conversion",
@@ -604,7 +604,7 @@ func TestLoadReadmePartials(t *testing.T) {
 					t.Fatal(err)
 				}
 			},
-			want: map[string]interface{}{"AboutText": "Custom about"},
+			want: map[string]any{"AboutText": "Custom about"},
 		},
 		{
 			name: "missing partials file returns nil",
@@ -890,12 +890,16 @@ func TestRenderREADME(t *testing.T) {
 	defaultBOMVersion := "1.0.0-BOM"
 	defaultLibraryVersion := "1.2.3-LIB"
 	for _, test := range []struct {
-		name       string
-		setupFiles func(t *testing.T, dir string)
-		goldenFile string
+		name        string
+		setupFiles  func(t *testing.T, dir string)
+		setupParams func(p *libraryPostProcessParams)
+		goldenFile  string
 	}{
 		{
-			name:       "renders standard README without partials",
+			name: "renders standard README without partials",
+			setupParams: func(p *libraryPostProcessParams) {
+				p.library.APIs = []*config.API{{Path: "foo"}}
+			},
 			goldenFile: filepath.Join("testdata", "readme", "standard.golden"),
 		},
 		{
@@ -919,6 +923,7 @@ func TestRenderREADME(t *testing.T) {
 				outDir: dir,
 				library: &config.Library{
 					Version: defaultLibraryVersion,
+					Java:    &config.JavaModule{},
 				},
 				cfg: &config.Config{
 					Default: &config.Default{
@@ -928,6 +933,9 @@ func TestRenderREADME(t *testing.T) {
 					},
 				},
 				metadata: defaultMetadata,
+			}
+			if test.setupParams != nil {
+				test.setupParams(&params)
 			}
 			if err := renderREADME(params, nil); err != nil {
 				t.Fatal(err)
@@ -978,7 +986,7 @@ func TestRenderREADME_KeepSet(t *testing.T) {
 
 func TestRenderREADME_Error(t *testing.T) {
 	validMeta := &repoMetadata{Repo: "repo", DistributionName: "com.google.cloud:google-cloud-foo"}
-	validLib := &config.Library{Version: "1.2.3"}
+	validLib := &config.Library{Version: "1.2.3", Java: &config.JavaModule{}}
 	validCfg := &config.Config{Default: &config.Default{Java: &config.JavaDefault{LibrariesBOMVersion: "1.0.0"}}}
 	for _, test := range []struct {
 		name    string
