@@ -46,7 +46,8 @@ type (
 )
 
 var (
-	errNotAllowed = errors.New("API is not allowlisted")
+	// ErrNotAllowed is returned when an API is not allowlisted.
+	ErrNotAllowed = errors.New("API is not allowlisted")
 )
 
 // Read reads a service config from a YAML file and returns it as a Service
@@ -102,6 +103,13 @@ func findAPI(path, language string) (*API, error) {
 		}
 	}
 	return validateAPI(path, language, result)
+}
+
+// CheckAllowed checks if the given API path is allowed for the specified language.
+// It returns ErrNotAllowed if the API is restricted from the language.
+func CheckAllowed(path, language string) error {
+	_, err := findAPI(path, language)
+	return err
 }
 
 // Find looks up the service config path and title override for a given API path,
@@ -234,7 +242,7 @@ func validateAPI(path string, language string, api *API) (*API, error) {
 			return api, nil
 		}
 	}
-	return nil, fmt.Errorf("%s for language %s: %w", path, language, errNotAllowed)
+	return nil, fmt.Errorf("%s for language %s: %w", path, language, ErrNotAllowed)
 }
 
 // isServiceConfigFile checks if the file contains "type: google.api.Service".
