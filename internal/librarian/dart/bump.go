@@ -179,7 +179,7 @@ func updateChangelog(ctx context.Context, packageDir, version, lastReleaseTagCom
 	}
 
 	if depsChanged {
-		changes = append(changes, "chore: Update dependencies")
+		changes = append(changes, "chore: update cloud dependencies")
 	}
 
 	if len(changes) == 0 {
