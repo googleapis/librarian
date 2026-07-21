@@ -489,6 +489,7 @@ This document describes the schema for the librarian.yaml.
 | :--- | :--- | :--- |
 | `env_prefix` | string | Is the environment variable prefix. |
 | `extra_dependencies` | string | Contains extra runtime dependencies to the .gemspec file. |
+| `path_override` | string | Overrides file/directory paths under lib/ and proto_docs/ |
 
 ## RubyPackage Configuration
 
