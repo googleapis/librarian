@@ -46,6 +46,7 @@ type (
 )
 
 var (
+	// ErrNotAllowed is returned when an API is not allowlisted.
 	ErrNotAllowed = errors.New("API is not allowlisted")
 )
 
