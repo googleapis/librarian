@@ -49,6 +49,7 @@ type owlbotSrc struct {
 type VersionedBuild struct {
 	EnvPrefix string
 	ExtraDeps string
+	PathOverride string
 }
 
 func runRubyMigration(ctx context.Context, repoPath string) error {
@@ -135,6 +136,7 @@ func findRubyLibraries(googleapisPath, repoPath string) ([]*config.Library, erro
 				lib.APIs[0].Ruby = &config.RubyAPI{
 					EnvPrefix:         vb.EnvPrefix,
 					ExtraDependencies: vb.ExtraDeps,
+					PathOverride:      vb.PathOverride,
 				}
 			}
 		}
@@ -224,6 +226,8 @@ func parseVersionedBuild(googleapisDir, apiPath string) (*VersionedBuild, error)
 					vb.EnvPrefix, _ = strings.CutPrefix(dep, "ruby-cloud-env-prefix=")
 				case strings.HasPrefix(dep, "ruby-cloud-extra-dependencies="):
 					vb.ExtraDeps, _ = strings.CutPrefix(dep, "ruby-cloud-extra-dependencies=")
+				case strings.HasPrefix(dep, "ruby-cloud-path-override="):
+					vb.PathOverride, _ = strings.CutPrefix(dep, "ruby-cloud-path-override=")
 				}
 			}
 		}
