@@ -855,6 +855,6 @@ type RubyAPI struct {
 	// ExtraDependencies contains extra runtime dependencies to the .gemspec file.
 	ExtraDependencies string `yaml:"extra_dependencies,omitempty"`
 
-	// PathOverride overrides file/directory paths under lib/ and proto_docs/
+	// PathOverride overrides file/directory paths under lib/ and proto_docs/.
 	PathOverride string `yaml:"path_override,omitempty"`
 }
