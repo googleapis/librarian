@@ -22,7 +22,6 @@ jobs:
     # Presubmit jobs must complete within 5 minutes. Integration might take longer.
     timeout-minutes: ${{ matrix.timeout }}
     # Skip integration test unless it's a push to main
-    if: matrix.task != 'integration' || (github.event_name == 'push' && github.ref == 'refs/heads/main')
     strategy:
       fail-fast: false
       matrix:
@@ -65,7 +64,7 @@ jobs:
             grpc-gcp-java/pom.xml
             java-*/pom.xml
       - name: Checkout google-cloud-java (Full)
-        if: matrix.sparse == false
+        if: matrix.sparse == false && github.event_name == 'push' && github.ref == 'refs/heads/main'
         uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
         with:
           repository: googleapis/google-cloud-java
@@ -126,7 +125,7 @@ jobs:
           PYTHONPATH: ${{ github.workspace }}/google-cloud-java/sdk-platform-java/hermetic_build/library_generation/owlbot
         run: librarian generate secretmanager
       - name: Run librarian generate all (integration test)
-        if: matrix.task == 'integration'
+        if: matrix.task == 'integration' && github.event_name == 'push' && github.ref == 'refs/heads/main'
         working-directory: google-cloud-java
         env:
           PYTHONPATH: ${{ github.workspace }}/google-cloud-java/sdk-platform-java/hermetic_build/library_generation/owlbot
