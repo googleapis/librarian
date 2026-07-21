@@ -118,8 +118,11 @@ func maybeBumpLibrary(ctx context.Context, cloudDeps []string, newVersions map[s
 		return "", err
 	}
 
-	if semver.MaxVersion(oldVersion, neededVersion) == oldVersion {
-		// The version has already been incremented to/past what is required.
+	if neededVersion != oldVersion && semver.MaxVersion(oldVersion, neededVersion) == oldVersion {
+		// The version has already been manually incremented past what is required.
+		return oldVersion, nil
+	}
+	if neededVersion == oldVersion && !depsChanged && !libraryChanged {
 		return oldVersion, nil
 	}
 
