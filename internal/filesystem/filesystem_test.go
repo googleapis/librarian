@@ -17,9 +17,12 @@ package filesystem
 import (
 	"archive/zip"
 	"errors"
+	"fmt"
 	"io/fs"
 	"os"
 	"path/filepath"
+	"slices"
+	"syscall"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -417,4 +420,147 @@ func checkDir(t *testing.T, dir string, want map[string]string) {
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("mismatch in %s (-want +got):\n%s", dir, diff)
 	}
+}
+
+func TestRemoveEmptyDirs(t *testing.T) {
+	t.Parallel()
+	for _, test := range []struct {
+		name       string
+		setupDirs  []string
+		setupFiles map[string]string
+		keepFunc   func(string) bool
+		want       []string
+	}{
+		{
+			name:      "empty dirs are removed",
+			setupDirs: []string{"dir1/dir2/dir3"},
+			want:      nil,
+		},
+		{
+			name:      "non-empty dirs are preserved",
+			setupDirs: []string{"dir1/dir2"},
+			setupFiles: map[string]string{
+				"dir1/dir2/file.txt": "content",
+			},
+			want: []string{
+				"dir1",
+				"dir1/dir2",
+				"dir1/dir2/file.txt",
+			},
+		},
+		{
+			name:      "partially empty dirs are cleaned",
+			setupDirs: []string{"dir1/dir2", "dir1/dir3"},
+			setupFiles: map[string]string{
+				"dir1/dir3/file.txt": "content",
+			},
+			want: []string{
+				"dir1",
+				"dir1/dir3",
+				"dir1/dir3/file.txt",
+			},
+		},
+		{
+			name:      "kept dirs are preserved",
+			setupDirs: []string{"dir1/dir2/dir3"},
+			keepFunc: func(rel string) bool {
+				return rel == "dir1/dir2"
+			},
+			want: []string{
+				"dir1",
+				"dir1/dir2",
+				"dir1/dir2/dir3",
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			root := t.TempDir()
+			setupDirStructure(t, root, test.setupDirs, test.setupFiles)
+			if err := RemoveEmptyDirs(root, root, test.keepFunc); err != nil {
+				t.Fatal(err)
+			}
+			var got []string
+			if _, err := os.Stat(root); err == nil {
+				err := filepath.WalkDir(root, func(path string, d fs.DirEntry, err error) error {
+					if err != nil {
+						return err
+					}
+					if path == root {
+						return nil
+					}
+					rel, err := filepath.Rel(root, path)
+					if err != nil {
+						return err
+					}
+					got = append(got, filepath.ToSlash(rel))
+					return nil
+				})
+				if err != nil {
+					t.Fatal(err)
+				}
+			}
+			slices.Sort(got)
+			slices.Sort(test.want)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestIsDirNotEmpty(t *testing.T) {
+	for _, test := range []struct {
+		name string
+		err  error
+		want bool
+	}{
+		{
+			name: "nil error",
+			err:  nil,
+			want: false,
+		},
+		{
+			name: "generic error",
+			err:  errors.New("generic error"),
+			want: false,
+		},
+		{
+			name: "ENOTEMPTY",
+			err:  &os.PathError{Op: "remove", Path: "/tmp", Err: syscall.ENOTEMPTY},
+			want: true,
+		},
+		{
+			name: "EEXIST",
+			err:  &os.PathError{Op: "remove", Path: "/tmp", Err: syscall.EEXIST},
+			want: true,
+		},
+		{
+			name: "EACCES",
+			err:  &os.PathError{Op: "remove", Path: "/tmp", Err: syscall.EACCES},
+			want: false,
+		},
+		{
+			name: "wrapped ENOTEMPTY",
+			err:  fmt.Errorf("failed: %w", &os.PathError{Op: "remove", Path: "/tmp", Err: syscall.ENOTEMPTY}),
+			want: true,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := isDirNotEmpty(test.err)
+			if got != test.want {
+				t.Errorf("isDirNotEmpty(%v) = %v, want %v", test.err, got, test.want)
+			}
+		})
+	}
+}
+
+func setupDirStructure(t *testing.T, root string, dirs []string, files map[string]string) {
+	t.Helper()
+	for _, d := range dirs {
+		if err := os.MkdirAll(filepath.Join(root, d), 0755); err != nil {
+			t.Fatal(err)
+		}
+	}
+	writeTestFiles(t, root, files)
 }

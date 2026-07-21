@@ -2318,10 +2318,11 @@ func TestParseOptionsGenerateRpcSamples(t *testing.T) {
 
 func TestGenerateMethod_Streaming(t *testing.T) {
 	for _, test := range []struct {
-		name                    string
-		includeStreamingMethods bool
-		method                  *api.Method
-		want                    bool
+		name                        string
+		includeStreamingMethods     bool
+		includeBidiStreamingMethods bool
+		method                      *api.Method
+		want                        bool
 	}{
 		{
 			name:                    "skips client-side streaming by default",
@@ -2360,7 +2361,7 @@ func TestGenerateMethod_Streaming(t *testing.T) {
 			want: true,
 		},
 		{
-			name:                    "includes bidirectional streaming when enabled",
+			name:                    "includes bidirectional streaming when includeStreamingMethods is enabled",
 			includeStreamingMethods: true,
 			method: &api.Method{
 				Name:                "BidiStreaming",
@@ -2369,10 +2370,30 @@ func TestGenerateMethod_Streaming(t *testing.T) {
 			},
 			want: true,
 		},
+		{
+			name:                        "skips bidirectional streaming method implementations when includeBidiStreamingMethods is enabled",
+			includeBidiStreamingMethods: true,
+			method: &api.Method{
+				Name:                "BidiStreaming",
+				ClientSideStreaming: true,
+				ServerSideStreaming: true,
+			},
+			want: false,
+		},
+		{
+			name:                        "skips client-only streaming when includeBidiStreamingMethods is enabled",
+			includeBidiStreamingMethods: true,
+			method: &api.Method{
+				Name:                "ClientStreaming",
+				ClientSideStreaming: true,
+			},
+			want: false,
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			c := &codec{
-				includeStreamingMethods: test.includeStreamingMethods,
+				includeStreamingMethods:     test.includeStreamingMethods,
+				includeBidiStreamingMethods: test.includeBidiStreamingMethods,
 			}
 			if got := c.generateMethod(test.method); got != test.want {
 				t.Errorf("generateMethod() = %v, want %v", got, test.want)

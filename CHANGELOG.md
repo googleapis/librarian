@@ -1,5 +1,32 @@
 # Changelog
 
+## [0.28.0](https://github.com/googleapis/librarian/compare/v0.27.1...v0.28.0) (2026-07-21)
+
+
+### Features
+
+* **internal/librarian/php:** implement selective clean before generate ([#6939](https://github.com/googleapis/librarian/issues/6939)) ([1553269](https://github.com/googleapis/librarian/commit/1553269ca71a2b2f5db2d715d69e68129e902fcf))
+* **rust:** add hybrid transport initialization for bidi streaming ([#6914](https://github.com/googleapis/librarian/issues/6914)) ([85f9227](https://github.com/googleapis/librarian/commit/85f92278988777192f5adf3953b7b524f50d9049)), closes [#6835](https://github.com/googleapis/librarian/issues/6835)
+* **rust:** add opt-in include_bidi_streaming_methods config option ([#6838](https://github.com/googleapis/librarian/issues/6838)) ([454473f](https://github.com/googleapis/librarian/commit/454473ffd2f9c9891caf983effd1dd123b7c78a9)), closes [#6835](https://github.com/googleapis/librarian/issues/6835)
+* **sidekick/swift:** default version on `add` ([#6890](https://github.com/googleapis/librarian/issues/6890)) ([000c0e0](https://github.com/googleapis/librarian/commit/000c0e0462e26bd83d5df7ffc265bafdb63dc5ca))
+* **swift:** convert message structs ([#6894](https://github.com/googleapis/librarian/issues/6894)) ([2ca6df3](https://github.com/googleapis/librarian/commit/2ca6df34a9bba743928f1f053a6e407a7692ceb7))
+* **tool/cmd/migrate:** parse common resources for php libraries ([#6904](https://github.com/googleapis/librarian/issues/6904)) ([f62507d](https://github.com/googleapis/librarian/commit/f62507d8b309d79fc78b808d8e719982700fc65b)), closes [#6813](https://github.com/googleapis/librarian/issues/6813)
+
+
+### Bug Fixes
+
+* **internal/librarian/php:** check error and add test case for TestGatherGAPICProtos_Error ([#6933](https://github.com/googleapis/librarian/issues/6933)) ([d969c59](https://github.com/googleapis/librarian/commit/d969c59e837e3834b40fd258359d7238f7b31777)), closes [#6629](https://github.com/googleapis/librarian/issues/6629)
+* **internal/librarian/php:** split protoc compilation for gapic and proto ([#6929](https://github.com/googleapis/librarian/issues/6929)) ([c8256f7](https://github.com/googleapis/librarian/commit/c8256f77d8680782292eb4341eb89e7660f870ef)), closes [#6927](https://github.com/googleapis/librarian/issues/6927)
+* **internal/librarian/php:** update instructions and recursively create folder structure ([#6843](https://github.com/googleapis/librarian/issues/6843)) ([542c972](https://github.com/googleapis/librarian/commit/542c972713f3cfae185e4116e97ce36a68ff7be5))
+* **librarian:** another API that is not allow listed ([#6937](https://github.com/googleapis/librarian/issues/6937)) ([e59cd3c](https://github.com/googleapis/librarian/commit/e59cd3c4206cf8ba74d70846172a11f5cc56e6e8))
+* **librarian:** enable `google/cloud/batch/v1` for all ([#6901](https://github.com/googleapis/librarian/issues/6901)) ([c4f21fd](https://github.com/googleapis/librarian/commit/c4f21fdde13a11c89dd44a6a0d751774d35b9e94))
+* **sidekick/rust:** no repo metadata for showcase ([#6936](https://github.com/googleapis/librarian/issues/6936)) ([44abb27](https://github.com/googleapis/librarian/commit/44abb271c86b13a632d3d775127a37d103dc7583))
+* **sidekick/swift:** pagination dependencies ([#6920](https://github.com/googleapis/librarian/issues/6920)) ([4fee381](https://github.com/googleapis/librarian/commit/4fee38136a6d12e363a56b3d8b538015782aa9b1))
+* **sidekick/swift:** unqualified String type ([#6925](https://github.com/googleapis/librarian/issues/6925)) ([8387337](https://github.com/googleapis/librarian/commit/838733783f2a075a06ab9cd650d10734a7bca74c))
+* **sidekick/swift:** warnings in enums with dups ([#6911](https://github.com/googleapis/librarian/issues/6911)) ([6795c76](https://github.com/googleapis/librarian/commit/6795c7691ddac3484db1382dab5a36a262cb0a67))
+* **tool/cmd/migrate:** resolve staging subdir for library-root destinations ([#6881](https://github.com/googleapis/librarian/issues/6881)) ([6159c06](https://github.com/googleapis/librarian/commit/6159c0615bf6b2383c9c9c9e683f8f15b98d4f13)), closes [#6773](https://github.com/googleapis/librarian/issues/6773)
+* **tool/cmd/migrate:** validate version suffix for ruby wrapper libraries ([#6926](https://github.com/googleapis/librarian/issues/6926)) ([5d2daf1](https://github.com/googleapis/librarian/commit/5d2daf1efb495d8a88e7144ee9780a4affcf2527))
+
 ## [0.27.1](https://github.com/googleapis/librarian/compare/v0.27.0...v0.27.1) (2026-07-17)
 
 

@@ -56,6 +56,8 @@ type serviceAnnotations struct {
 	DetailedTracingAttributes bool
 	// If true, the generated builders's visibility should be restricted to the crate.
 	InternalBuilders bool
+	// If true, the service has at least one bidirectional streaming RPC in the API definition.
+	HasBidiStreaming bool
 }
 
 // BuilderVisibility returns the visibility for client and request builders.
@@ -90,6 +92,15 @@ func (a *serviceAnnotations) FeatureName() string {
 }
 
 func (c *codec) annotateService(s *api.Service) (*serviceAnnotations, error) {
+	// Check if the service has bidirectional streaming RPCs in its API definition
+	// before methods are filtered by generateMethod. We check this before filtering
+	// because we are incrementally adding bidi-streaming support (initializing transport
+	// stubs like grpc_inner first before generating streaming method implementations in
+	// subsequent steps).
+	hasBidiStreaming := c.includeBidiStreamingMethods && slices.ContainsFunc(s.Methods, func(m *api.Method) bool {
+		return m.ClientSideStreaming && m.ServerSideStreaming
+	})
+
 	// Some codecs skip some methods.
 	methods := language.FilterSlice(s.Methods, func(m *api.Method) bool {
 		return c.generateMethod(m)
@@ -130,6 +141,7 @@ func (c *codec) annotateService(s *api.Service) (*serviceAnnotations, error) {
 		Incomplete:                slices.ContainsFunc(s.Methods, func(m *api.Method) bool { return !c.generateMethod(m) }),
 		DetailedTracingAttributes: c.detailedTracingAttributes,
 		InternalBuilders:          c.internalBuilders,
+		HasBidiStreaming:          hasBidiStreaming,
 	}
 	s.Codec = ann
 	return ann, nil

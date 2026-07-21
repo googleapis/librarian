@@ -174,6 +174,11 @@ func (c *codec) annotateService(service *api.Service, model *modelAnnotations) (
 				return nil, err
 			}
 		}
+		for _, signature := range method.Signatures {
+			if err := c.addSignatureDependencies(annotations, signature); err != nil {
+				return nil, err
+			}
+		}
 	}
 
 	service.Codec = annotations
@@ -285,6 +290,15 @@ func (c *codec) addLroDependencies(annotations *serviceAnnotations, method *api.
 		}
 		if dep != nil {
 			annotations.DependsOn[dep.Name] = dep
+		}
+	}
+	return nil
+}
+
+func (c *codec) addSignatureDependencies(annotations *serviceAnnotations, signature *api.MethodSignature) error {
+	for _, field := range signature.Fields {
+		if err := c.addFieldDependencies(annotations, field); err != nil {
+			return err
 		}
 	}
 	return nil
