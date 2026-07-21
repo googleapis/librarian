@@ -25,6 +25,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/sample"
+	"github.com/googleapis/librarian/internal/serviceconfig"
 	"github.com/googleapis/librarian/internal/yaml"
 )
 
@@ -438,5 +439,41 @@ func TestDefaultOutput(t *testing.T) {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
+	}
+}
+
+func TestGenerateAllowlist(t *testing.T) {
+	tempDir := t.TempDir()
+	t.Chdir(tempDir)
+	googleapisDir := createGoogleapisServiceConfigs(t, tempDir, map[string]string{
+		"google/ads/admanager/v1": "admanager_v1.yaml",
+	})
+
+	configContent := fmt.Sprintf(`language: go
+sources:
+  googleapis:
+    dir: %s
+libraries:
+  - name: admanager
+    output: out
+    apis:
+      - path: google/ads/admanager/v1
+`, googleapisDir)
+
+	if err := os.WriteFile(filepath.Join(tempDir, config.LibrarianYAML), []byte(configContent), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	// 1. Generating a specific library that is not allowlisted should fail fast.
+	err := Run(t.Context(), "librarian", "generate", "admanager")
+	if !errors.Is(err, serviceconfig.ErrNotAllowed) {
+		t.Errorf("want ErrNotAllowed, got %v", err)
+	}
+
+	// 2. Generating with --all should skip the non-allowlisted library.
+	err = Run(t.Context(), "librarian", "generate", "--all")
+	wantErr := "no libraries to generate: all libraries have skip_generate set"
+	if err == nil || err.Error() != wantErr {
+		t.Errorf("want %q, got %v", wantErr, err)
 	}
 }
