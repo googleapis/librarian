@@ -386,8 +386,8 @@ func (r *Resource) WithPatterns(patterns ...ResourcePattern) *Resource {
 }
 
 // WithSingular sets the singular name of the resource.
-func (r *Resource) WithSingular(singular string) *Resource {
-	r.Singular = singular
+func (r *Resource) WithSingular(name string) *Resource {
+	r.Singular = name
 	return r
 }
 
