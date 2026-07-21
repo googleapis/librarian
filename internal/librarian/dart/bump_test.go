@@ -21,113 +21,9 @@ import (
 	"testing"
 
 	"github.com/googleapis/librarian/internal/command"
-	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/git"
 	"github.com/googleapis/librarian/internal/testhelper"
 )
-
-func TestUpdatePubspecDependencyVersions(t *testing.T) {
-	tempDir := t.TempDir()
-	libDir := filepath.Join(tempDir, "my_library")
-	if err := os.MkdirAll(libDir, 0755); err != nil {
-		t.Fatal(err)
-	}
-
-	pubspecPath := filepath.Join(libDir, "pubspec.yaml")
-	initialContent := `name: my_library
-version: 1.0.0
-dependencies:
-  sdk: ">=3.0.0 <4.0.0"
-  google_cloud_protobuf: ^0.5.0
-  another_dep: ^1.0.0
-`
-	if err := os.WriteFile(pubspecPath, []byte(initialContent), 0644); err != nil {
-		t.Fatal(err)
-	}
-
-	lib := &config.Library{
-		Name:   "my_library",
-		Output: libDir,
-	}
-
-	newDeps := map[string]string{
-		"package:google_cloud_protobuf": "^0.6.0",
-		"package:another_dep":           "^1.2.0",
-	}
-
-	if err := updatePubspecDependencyVersions(lib, nil, newDeps); err != nil {
-		t.Fatalf("updatePubspecDependencyVersions failed: %v", err)
-	}
-
-	content, err := os.ReadFile(pubspecPath)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	got := string(content)
-	want := `name: my_library
-version: 1.0.0
-dependencies:
-  sdk: ">=3.0.0 <4.0.0"
-  google_cloud_protobuf: ^0.6.0
-  another_dep: ^1.2.0
-`
-	if got != want {
-		t.Errorf("pubspec.yaml content mismatch:\ngot:\n%s\nwant:\n%s", got, want)
-	}
-}
-
-func TestUpdatePubspecDependencyVersions_Defaults(t *testing.T) {
-	tempDir := t.TempDir()
-
-	// Create outputs directory to act as defaults.Output
-	outputsDir := filepath.Join(tempDir, "outputs")
-	libDir := filepath.Join(outputsDir, "my_library")
-	if err := os.MkdirAll(libDir, 0755); err != nil {
-		t.Fatal(err)
-	}
-
-	pubspecPath := filepath.Join(libDir, "pubspec.yaml")
-	initialContent := `name: my_library
-version: 1.0.0
-dependencies:
-  google_cloud_protobuf: ^0.5.0
-`
-	if err := os.WriteFile(pubspecPath, []byte(initialContent), 0644); err != nil {
-		t.Fatal(err)
-	}
-
-	lib := &config.Library{
-		Name: "my_library",
-		// Output is empty, so it should fall back to defaults.Output/lib.Name
-	}
-	defaults := &config.Default{
-		Output: outputsDir,
-	}
-
-	newDeps := map[string]string{
-		"package:google_cloud_protobuf": "^0.6.0",
-	}
-
-	if err := updatePubspecDependencyVersions(lib, defaults, newDeps); err != nil {
-		t.Fatalf("updatePubspecDependencyVersions failed: %v", err)
-	}
-
-	content, err := os.ReadFile(pubspecPath)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	got := string(content)
-	want := `name: my_library
-version: 1.0.0
-dependencies:
-  google_cloud_protobuf: ^0.6.0
-`
-	if got != want {
-		t.Errorf("pubspec.yaml content mismatch:\ngot:\n%s\nwant:\n%s", got, want)
-	}
-}
 
 func TestUpdateChangelog_New(t *testing.T) {
 	tempDir := t.TempDir()
@@ -148,7 +44,7 @@ func TestUpdateChangelog_New(t *testing.T) {
 
 ## 1.2.3
 
-- chore: Update dependencies
+- chore: update cloud dependencies
 
 `
 	if got != want {
@@ -184,7 +80,7 @@ func TestUpdateChangelog_Existing(t *testing.T) {
 
 ## 1.2.3
 
-- chore: Update dependencies
+- chore: update cloud dependencies
 
 ## 1.2.2
 

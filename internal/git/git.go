@@ -42,9 +42,7 @@ func AssertGitStatusClean(ctx context.Context, gitExe string) error {
 		return fmt.Errorf("failed to check git status: %w", err)
 	}
 	if len(output) > 0 {
-		// XXX
-		return nil
-		//		return ErrGitStatusUnclean
+		return ErrGitStatusUnclean
 	}
 	return nil
 }
