@@ -255,7 +255,8 @@ func Bump(ctx context.Context, cfg *config.Config, all bool, libraryName, versio
 
 			for _, other := range sorted {
 				if slices.Contains(deps[other], lib) {
-					if err := updatePubspecDependencyVersions(libraryByName[other], cfg.Default, newVersions); err != nil {
+					newDeps := map[string]string{lib: "^" + newVersion}
+					if err := updatePubspecDependencyVersions(libraryByName[other], cfg.Default, newDeps); err != nil {
 						return err
 					}
 				}
