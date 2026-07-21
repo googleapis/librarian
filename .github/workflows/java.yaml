@@ -34,7 +34,7 @@ jobs:
           - job-name: 'Smoke Test'
             task: 'smoke-test'
             timeout: 5
-            sparse: true
+            sparse: false
           - job-name: 'Integration Test'
             task: 'integration'
             timeout: 60
