@@ -476,20 +476,7 @@ func TestRemoveEmptyDirs(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
 			root := t.TempDir()
-			for _, d := range test.setupDirs {
-				if err := os.MkdirAll(filepath.Join(root, d), 0755); err != nil {
-					t.Fatal(err)
-				}
-			}
-			for f, content := range test.setupFiles {
-				p := filepath.Join(root, f)
-				if err := os.MkdirAll(filepath.Dir(p), 0755); err != nil {
-					t.Fatal(err)
-				}
-				if err := os.WriteFile(p, []byte(content), 0644); err != nil {
-					t.Fatal(err)
-				}
-			}
+			setupDirStructure(t, root, test.setupDirs, test.setupFiles)
 			if err := RemoveEmptyDirs(root, root, test.keepFunc); err != nil {
 				t.Fatal(err)
 			}
@@ -566,4 +553,14 @@ func TestIsDirNotEmpty(t *testing.T) {
 			}
 		})
 	}
+}
+
+func setupDirStructure(t *testing.T, root string, dirs []string, files map[string]string) {
+	t.Helper()
+	for _, d := range dirs {
+		if err := os.MkdirAll(filepath.Join(root, d), 0755); err != nil {
+			t.Fatal(err)
+		}
+	}
+	writeTestFiles(t, root, files)
 }
