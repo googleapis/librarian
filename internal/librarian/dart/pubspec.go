@@ -47,7 +47,7 @@ func updatePubspecDependencyVersions(lib *config.Library, defaults *config.Defau
 			parts := strings.SplitN(trimmed, ":", 2)
 			if len(parts) == 2 {
 				depName := strings.TrimSpace(parts[0])
-				if constraint, ok := newDeps["package:"+depName]; ok {
+				if constraint, ok := newDeps[depName]; ok {
 					indent := line[:len(line)-len(strings.TrimLeft(line, " \t"))]
 					newLines = append(newLines, fmt.Sprintf("%s%s: %s", indent, depName, constraint))
 					continue
