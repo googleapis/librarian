@@ -478,7 +478,7 @@ func TestAnnotateService_MethodSignatures(t *testing.T) {
 		},
 		{
 			name:        "with external field",
-			signatures:  []*api.MethodSignature{{Names: []string{"parent", "thing_id", "thing"}}},
+			signatures:  []*api.MethodSignature{{Names: []string{"parent", "thing_id", "external_thing"}}},
 			wantImports: []string{"GoogleCloudExternal", "GoogleCloudWkt"},
 		},
 	} {
@@ -488,7 +488,7 @@ func TestAnnotateService_MethodSignatures(t *testing.T) {
 				WithFields(
 					api.NewTestField("parent").WithType(api.TypezString),
 					api.NewTestField("thing_id").WithType(api.TypezString),
-					api.NewTestField("thing").WithMessageType(thing),
+					api.NewTestField("external_thing").WithMessageType(thing),
 				)
 			outputType := api.NewTestMessage("Response")
 			create := api.NewTestMethod("CreateThing").
