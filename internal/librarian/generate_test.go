@@ -464,16 +464,18 @@ libraries:
 		t.Fatal(err)
 	}
 
-	// 1. Generating a specific library that is not allowlisted should fail fast.
-	err := Run(t.Context(), "librarian", "generate", "admanager")
-	if !errors.Is(err, serviceconfig.ErrNotAllowed) {
-		t.Errorf("want ErrNotAllowed, got %v", err)
-	}
+	t.Run("specific library", func(t *testing.T) {
+		err := Run(t.Context(), "librarian", "generate", "admanager")
+		if !errors.Is(err, serviceconfig.ErrNotAllowed) {
+			t.Errorf("want ErrNotAllowed, got %v", err)
+		}
+	})
 
-	// 2. Generating with --all should skip the non-allowlisted library.
-	err = Run(t.Context(), "librarian", "generate", "--all")
-	wantErr := "no libraries to generate: all libraries have skip_generate set"
-	if err == nil || err.Error() != wantErr {
-		t.Errorf("want %q, got %v", wantErr, err)
-	}
+	t.Run("all libraries", func(t *testing.T) {
+		err := Run(t.Context(), "librarian", "generate", "--all")
+		wantErr := "no libraries to generate: all libraries have skip_generate set"
+		if err == nil || err.Error() != wantErr {
+			t.Errorf("want %q, got %v", wantErr, err)
+		}
+	})
 }
