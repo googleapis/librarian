@@ -58,6 +58,8 @@ type serviceAnnotations struct {
 	InternalBuilders bool
 	// If true, the service has at least one bidirectional streaming RPC in the API definition.
 	HasBidiStreaming bool
+	// If true, this is the BigQuery v2 service.
+	IsBigQueryV2 bool
 }
 
 // BuilderVisibility returns the visibility for client and request builders.
@@ -142,6 +144,7 @@ func (c *codec) annotateService(s *api.Service) (*serviceAnnotations, error) {
 		DetailedTracingAttributes: c.detailedTracingAttributes,
 		InternalBuilders:          c.internalBuilders,
 		HasBidiStreaming:          hasBidiStreaming,
+		IsBigQueryV2:              s.Package == "google.cloud.bigquery.v2",
 	}
 	s.Codec = ann
 	return ann, nil
