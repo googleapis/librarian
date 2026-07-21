@@ -22,7 +22,6 @@ jobs:
     # Presubmit jobs must complete within 5 minutes. Integration might take longer.
     timeout-minutes: ${{ matrix.timeout }}
     # Skip integration test unless it's a push to main
-    if: matrix.task != 'integration' || (github.event_name == 'push' && github.ref == 'refs/heads/main')
     strategy:
       fail-fast: false
       matrix:
@@ -65,7 +64,7 @@ jobs:
         run: librarian generate secretmanager
 
       - name: Run librarian generate all (integration test)
-        if: matrix.task == 'integration'
+        if: matrix.task == 'integration' && github.event_name == 'push' && github.ref == 'refs/heads/main'
         working-directory: google-cloud-go
         run: librarian generate --all
 
