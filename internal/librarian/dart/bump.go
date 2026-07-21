@@ -116,6 +116,10 @@ func sortLibraries(libraryByName map[string]*config.Library, deps map[string][]s
 }
 
 func bumpLibrary(ctx context.Context, cloudDeps []string, newVersions map[string]string, lib *config.Library, defaults *config.Default) (string, error) {
+	if lib.SkipRelease || lib.Version == "" {
+		return lib.Version, nil
+	}
+
 	oldVersion := lib.Version
 	if oldVersion == "" {
 		return "", fmt.Errorf("version not set for library %s", lib.Name)
@@ -358,25 +362,18 @@ func updatePubspecVersion(path string, newVersion string) error {
 func Bump(ctx context.Context, cfg *config.Config, all bool, libraryName, versionOverride string) error {
 	libraryByName := make(map[string]*config.Library)
 	for _, lib := range cfg.Libraries {
-		//		if lib.SkipRelease {
-		//			continue
-		//		}
 		libraryByName[lib.Name] = lib
 	}
-
-	fmt.Printf("libraryByName: %+#v\n", libraryByName)
 
 	deps, err := getCloudDeps(ctx, cfg.Libraries)
 	if err != nil {
 		return err
 	}
-	fmt.Printf("deps: %+#v\n", deps)
 
 	sorted, err := sortLibraries(libraryByName, deps)
 	if err != nil {
 		return err
 	}
-	fmt.Printf("sorted libraries: %v\n", sorted)
 
 	newVersions := make(map[string]string)
 
@@ -386,19 +383,22 @@ func Bump(ctx context.Context, cfg *config.Config, all bool, libraryName, versio
 			return err
 		}
 		newVersions[lib] = newVersion
-		libraryByName[lib].Version = newVersion
 
-		if cfg.Default != nil && cfg.Default.Dart != nil && cfg.Default.Dart.Packages != nil {
-			if _, ok := cfg.Default.Dart.Packages["package:"+lib]; ok {
-				cfg.Default.Dart.Packages["package:"+lib] = "^" + newVersion
+		if libraryByName[lib].Version != newVersion {
+			libraryByName[lib].Version = newVersion
+
+			if cfg.Default != nil && cfg.Default.Dart != nil && cfg.Default.Dart.Packages != nil {
+				if _, ok := cfg.Default.Dart.Packages["package:"+lib]; ok {
+					cfg.Default.Dart.Packages["package:"+lib] = "^" + newVersion
+				}
 			}
-		}
 
-		for _, other := range sorted {
-			if slices.Contains(deps[other], lib) {
-				newDeps := map[string]string{"package:" + lib: "^" + newVersion}
-				if err := updatePubspecDependencyVersions(libraryByName[other], cfg.Default, newDeps); err != nil {
-					return err
+			for _, other := range sorted {
+				if slices.Contains(deps[other], lib) {
+					newDeps := map[string]string{"package:" + lib: "^" + newVersion}
+					if err := updatePubspecDependencyVersions(libraryByName[other], cfg.Default, newDeps); err != nil {
+						return err
+					}
 				}
 			}
 		}
