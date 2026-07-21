@@ -21,6 +21,7 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"slices"
 	"syscall"
 	"testing"
 
@@ -428,17 +429,12 @@ func TestRemoveEmptyDirs(t *testing.T) {
 		setupDirs  []string
 		setupFiles map[string]string
 		keepFunc   func(string) bool
-		wantExist  []string
-		wantAbsent []string
+		want       []string
 	}{
 		{
 			name:      "empty dirs are removed",
 			setupDirs: []string{"dir1/dir2/dir3"},
-			wantAbsent: []string{
-				"dir1/dir2/dir3",
-				"dir1/dir2",
-				"dir1",
-			},
+			want:      nil,
 		},
 		{
 			name:      "non-empty dirs are preserved",
@@ -446,10 +442,10 @@ func TestRemoveEmptyDirs(t *testing.T) {
 			setupFiles: map[string]string{
 				"dir1/dir2/file.txt": "content",
 			},
-			wantExist: []string{
-				"dir1/dir2/file.txt",
-				"dir1/dir2",
+			want: []string{
 				"dir1",
+				"dir1/dir2",
+				"dir1/dir2/file.txt",
 			},
 		},
 		{
@@ -458,13 +454,10 @@ func TestRemoveEmptyDirs(t *testing.T) {
 			setupFiles: map[string]string{
 				"dir1/dir3/file.txt": "content",
 			},
-			wantExist: []string{
-				"dir1/dir3/file.txt",
-				"dir1/dir3",
+			want: []string{
 				"dir1",
-			},
-			wantAbsent: []string{
-				"dir1/dir2",
+				"dir1/dir3",
+				"dir1/dir3/file.txt",
 			},
 		},
 		{
@@ -473,12 +466,11 @@ func TestRemoveEmptyDirs(t *testing.T) {
 			keepFunc: func(rel string) bool {
 				return rel == "dir1/dir2"
 			},
-			wantExist: []string{
-				"dir1/dir2/dir3",
-				"dir1/dir2",
+			want: []string{
 				"dir1",
+				"dir1/dir2",
+				"dir1/dir2/dir3",
 			},
-			wantAbsent: nil,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
@@ -501,17 +493,30 @@ func TestRemoveEmptyDirs(t *testing.T) {
 			if err := RemoveEmptyDirs(root, root, test.keepFunc); err != nil {
 				t.Fatal(err)
 			}
-			for _, path := range test.wantExist {
-				p := filepath.Join(root, path)
-				if _, err := os.Stat(p); err != nil {
-					t.Errorf("expected %s to exist, but got error: %v", path, err)
+			var got []string
+			if _, err := os.Stat(root); err == nil {
+				err := filepath.WalkDir(root, func(path string, d fs.DirEntry, err error) error {
+					if err != nil {
+						return err
+					}
+					if path == root {
+						return nil
+					}
+					rel, err := filepath.Rel(root, path)
+					if err != nil {
+						return err
+					}
+					got = append(got, filepath.ToSlash(rel))
+					return nil
+				})
+				if err != nil {
+					t.Fatal(err)
 				}
 			}
-			for _, path := range test.wantAbsent {
-				p := filepath.Join(root, path)
-				if _, err := os.Stat(p); !errors.Is(err, fs.ErrNotExist) {
-					t.Errorf("expected %s to be absent, but stat got: %v", path, err)
-				}
+			slices.Sort(got)
+			slices.Sort(test.want)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
