@@ -158,6 +158,7 @@ This document describes the schema for the librarian.yaml.
 | `nodejs` | [NodejsPackage](#nodejspackage-configuration) (optional) | Contains Node.js-specific library configuration. |
 | `php` | [PHPPackage](#phppackage-configuration) (optional) | Contains PHP-specific library configuration. |
 | `python` | [PythonPackage](#pythonpackage-configuration) (optional) | Contains Python-specific library configuration. |
+| `ruby` | [RubyPackage](#rubypackage-configuration) (optional) | Contains Ruby-specific library configuration. |
 | `rust` | [RustCrate](#rustcrate-configuration) (optional) | Contains Rust-specific library configuration. |
 | `swift` | [SwiftPackage](#swiftpackage-configuration) (optional) | Contains Swift-specific library configuration. |
 
@@ -213,6 +214,7 @@ This document describes the schema for the librarian.yaml.
 | `java` | [JavaAPI](#javaapi-configuration) (optional) | Contains Java-specific API configuration. |
 | `nodejs` | [NodejsAPI](#nodejsapi-configuration) (optional) | Contains Node.js-specific API configuration. |
 | `php` | [PHPAPI](#phpapi-configuration) (optional) | Contains PHP-specific API configuration. |
+| `ruby` | [RubyAPI](#rubyapi-configuration) (optional) | Contains Ruby-specific API configuration. |
 
 ## GoDefault Configuration
 
@@ -448,6 +450,7 @@ This document describes the schema for the librarian.yaml.
 | `additional_protos` | list of string | Is a list of additional proto files to include in generation. |
 | `migration_mode` | string | Controls migration mode setting for the PHP generator (e.g. "NEW_SURFACE_ONLY"). |
 | `common_resources` | bool (optional) | Indicates whether to include common resources in generation. Must be configured either globally or per-API. |
+| `staging_subdir` | string | Is the subdirectory in staging where the generated files should be placed. |
 
 ## PHPDefault Configuration
 
@@ -480,6 +483,19 @@ This document describes the schema for the librarian.yaml.
 | `metadata_name_override` | string | Allows the name in .repo-metadata.json (which is also used as part of the client documentation URI) to be overridden. By default, it's the package name, but older packages use the API short name instead. |
 | `default_version` | string | Is the default version of the API to use. When omitted, the version in the first API path is used. |
 
+## RubyAPI Configuration
+
+| Field | Type | Description |
+| :--- | :--- | :--- |
+| `env_prefix` | string | Is the environment variable prefix. |
+| `extra_dependencies` | string | Contains extra runtime dependencies to the .gemspec file. |
+
+## RubyPackage Configuration
+
+| Field | Type | Description |
+| :--- | :--- | :--- |
+| `wrapper_of` | list of string | Contains the names of versioned libraries that this library wraps. |
+
 ## RustCrate Configuration
 
 | Field | Type | Description |
@@ -500,6 +516,7 @@ This document describes the schema for the librarian.yaml.
 | `routing_required` | bool | Indicates whether routing is required. |
 | `include_grpc_only_methods` | bool | Indicates whether to include gRPC-only methods. |
 | `include_streaming_methods` | bool | Indicates whether to include gRPC streaming methods. |
+| `include_bidi_streaming_methods` | bool | Indicates whether to include gRPC bi-directional streaming methods. |
 | `post_process_protos` | string | Indicates whether to post-process protos. |
 | `documentation_overrides` | list of [RustDocumentationOverride](#rustdocumentationoverride-configuration) | Contains overrides for element documentation. |
 | `pagination_overrides` | list of [RustPaginationOverride](#rustpaginationoverride-configuration) | Contains overrides for pagination configuration. |
@@ -543,6 +560,7 @@ This document describes the schema for the librarian.yaml.
 | `include_grpc_only_methods` | bool | Indicates whether to include gRPC-only methods. |
 | `include_list` | yaml.StringSlice | Is a list of proto files to include (e.g., "date.proto", "expr.proto"). |
 | `include_streaming_methods` | bool | Indicates whether to include gRPC streaming methods. |
+| `include_bidi_streaming_methods` | bool | Indicates whether to include gRPC bi-directional streaming methods. |
 | `internal_builders` | bool | Indicates whether generated builders should be internal to the crate. |
 | `module_path` | string | Is the Rust module path for converters (e.g., "crate::generated::gapic::model"). |
 | `module_roots` | map[string]string |  |
@@ -582,6 +600,7 @@ This document describes the schema for the librarian.yaml.
 | Field | Type | Description |
 | :--- | :--- | :--- |
 | `dependencies` | list of [SwiftDependency](#swiftdependency-configuration) | Is a list of package dependencies. |
+| `default_version` | string | The default version for new libraries. |
 
 ## SwiftDependency Configuration
 

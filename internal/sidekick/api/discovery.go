@@ -48,6 +48,16 @@ type Poller struct {
 	MethodID string
 }
 
+// DiscoveryLro contains old-style long-running operation descriptors.
+//
+// This is one of the `Method` attributes.
+type DiscoveryLro struct {
+	// The path parameters required by the polling operation.
+	PollingPathParameters []string
+	// Language specific annotations.
+	Codec any
+}
+
 // LroServices returns the set of Discovery LRO services.
 //
 // The discovery doc parser avoids generating LRO annotations for methods in

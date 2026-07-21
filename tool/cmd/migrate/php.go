@@ -24,6 +24,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"slices"
 	"strings"
 
 	"github.com/bazelbuild/buildtools/build"
@@ -40,18 +41,32 @@ var protoMappings = map[string]string{
 	"//google/iam/v1:iam_policy_proto":       "google/iam/v1/iam_policy.proto",
 }
 
+var (
+	errUnableToResolveStagingSubdir = errors.New("unable to resolve staging subdir")
+)
+
+var phpFetchSource = func(ctx context.Context) (*config.Source, error) {
+	// Temp codepath to pin googleapis commit for consistency testing.
+	// TODO(https://github.com/googleapis/librarian/issues/6898): remove before migration
+	return fetchGoogleapisWithCommit(ctx, githubEndpoints, "6145fa8cc2b137bf4c0ed114e2e39c1157ea9722")
+}
+
 func runPHPMigration(ctx context.Context, repoPath string) error {
-	src, err := fetchSource(ctx)
+	src, err := phpFetchSource(ctx)
 	if err != nil {
 		return errFetchSource
-	}
-	libs, err := findPHPLibraries(repoPath, src.Dir)
-	if err != nil {
-		return err
 	}
 	cfg, err := yaml.Unmarshal[config.Config](librarianPHPYAML)
 	if err != nil {
 		return fmt.Errorf("unmarshaling librarian_php.yaml: %w", err)
+	}
+	globalDefaultCommonResources := true
+	if cfg.Default != nil && cfg.Default.PHP != nil && cfg.Default.PHP.CommonResources != nil {
+		globalDefaultCommonResources = *cfg.Default.PHP.CommonResources
+	}
+	libs, err := findPHPLibraries(repoPath, src.Dir, globalDefaultCommonResources)
+	if err != nil {
+		return err
 	}
 	cfg.Sources = &config.Sources{
 		Googleapis: src,
@@ -106,6 +121,44 @@ func extractAPIPaths(source string) []string {
 	return nil
 }
 
+// resolveStagingSubdir extracts the target staging subdirectory path relative to the staging root
+// from the OwlBot destination path. If the path contains "$1" it is replaced with the provided version.
+// e.g. "/owl-bot-staging/PubSub/$1/$2" with version "v1" returns "v1".
+// If "owl-bot-staging" is not found in dest, or if the path is invalid, returns empty string.
+//
+// For paths that target the library root directly (meaning there are no subdirectory segments
+// between the library name and the file wildcard), it returns "." to represent the root.
+// This is for GeoCommonProtos and ShoppingCommonProtos (dest="/owl-bot-staging/ShoppingCommonProtos/$1").
+func resolveStagingSubdir(dest string, version string) string {
+	parts := strings.Split(dest, "/")
+	idx := slices.Index(parts, "owl-bot-staging")
+	if idx == -1 || idx+2 >= len(parts) {
+		return ""
+	}
+	subdirParts := parts[idx+2 : len(parts)-1]
+	subdir := strings.ReplaceAll(strings.Join(subdirParts, "/"), "$1", version)
+	if subdir == "" {
+		return "."
+	}
+	return subdir
+}
+
+func createAPIConfig(path string, dest string) (*config.API, error) {
+	parts := strings.Split(path, "/")
+	ver := parts[len(parts)-1]
+
+	stagingSubdir := resolveStagingSubdir(dest, ver)
+	if stagingSubdir == "" {
+		return nil, fmt.Errorf("%w: path %s from destination %q", errUnableToResolveStagingSubdir, path, dest)
+	}
+	return &config.API{
+		Path: path,
+		PHP: &config.PHPAPI{
+			StagingSubdir: stagingSubdir,
+		},
+	}, nil
+}
+
 func extractAPIsFromOwlBot(owlbotPath string) ([]*config.API, error) {
 	if !fileExists(owlbotPath) {
 		return nil, nil
@@ -120,7 +173,11 @@ func extractAPIsFromOwlBot(owlbotPath string) ([]*config.API, error) {
 		for _, path := range extractAPIPaths(spec.Source) {
 			if !seenAPIs[path] {
 				seenAPIs[path] = true
-				apis = append(apis, &config.API{Path: path})
+				api, err := createAPIConfig(path, spec.Dest)
+				if err != nil {
+					return nil, err
+				}
+				apis = append(apis, api)
 			}
 		}
 	}
@@ -132,7 +189,7 @@ func extractAPIsFromOwlBot(owlbotPath string) ([]*config.API, error) {
 // represents a PHP library, where the library name is the subdirectory's name and
 // the version is extracted from the VERSION file.
 // It also attempts to parse .OwlBot.yaml to extract API paths.
-func findPHPLibraries(repoPath string, googleapisDir string) ([]*config.Library, error) {
+func findPHPLibraries(repoPath string, googleapisDir string, globalDefaultCommonResources bool) ([]*config.Library, error) {
 	entries, err := os.ReadDir(repoPath)
 	if err != nil {
 		return nil, err
@@ -161,15 +218,21 @@ func findPHPLibraries(repoPath string, googleapisDir string) ([]*config.Library,
 		}
 
 		for _, api := range apis {
-			additionalProtos, err := parsePHPBazel(googleapisDir, api.Path)
+			additionalProtos, hasCommonResources, err := parsePHPBazel(googleapisDir, api.Path)
 			if err != nil {
 				log.Printf("Warning: failed to parse BUILD.bazel for %s: %v", api.Path, err)
 				continue
 			}
-			if len(additionalProtos) > 0 {
-				api.PHP = &config.PHPAPI{
-					AdditionalProtos: additionalProtos,
+			if len(additionalProtos) > 0 || hasCommonResources != globalDefaultCommonResources {
+				if api.PHP == nil {
+					api.PHP = &config.PHPAPI{}
 				}
+			}
+			if len(additionalProtos) > 0 {
+				api.PHP.AdditionalProtos = additionalProtos
+			}
+			if hasCommonResources != globalDefaultCommonResources {
+				api.PHP.CommonResources = &hasCommonResources
 			}
 		}
 
@@ -182,15 +245,16 @@ func findPHPLibraries(repoPath string, googleapisDir string) ([]*config.Library,
 	return libs, nil
 }
 
-func parsePHPBazel(googleapisDir, apiPath string) ([]string, error) {
+func parsePHPBazel(googleapisDir, apiPath string) ([]string, bool, error) {
 	file, err := parseBazel(googleapisDir, apiPath)
 	if err != nil {
-		return nil, err
+		return nil, false, err
 	}
 	if file == nil {
-		return nil, nil
+		return nil, false, nil
 	}
 	var additionalProtos []string
+	var hasCommonResources bool
 	if rules := file.Rules("proto_library_with_info"); len(rules) > 0 {
 		rule := rules[0]
 		if attr := rule.Attr("deps"); attr != nil {
@@ -199,10 +263,9 @@ func parsePHPBazel(googleapisDir, apiPath string) ([]string, error) {
 				if strings.HasPrefix(dep, ":") {
 					continue
 				}
-				// Ignore common resources which are handled natively.
-				// TODO(https://github.com/googleapis/librarian/issues/6813):
-				// load this to dedicated config
+				// Identify common resources usage.
 				if strings.Contains(dep, "common_resources_proto") {
+					hasCommonResources = true
 					continue
 				}
 				// Ignore LROs since PHP does not compile LRO methods as mixins.
@@ -221,7 +284,7 @@ func parsePHPBazel(googleapisDir, apiPath string) ([]string, error) {
 			}
 		}
 	}
-	return additionalProtos, nil
+	return additionalProtos, hasCommonResources, nil
 }
 
 func parseBazel(googleapisDir, dir string) (*build.File, error) {

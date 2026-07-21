@@ -352,8 +352,175 @@ func TestAnnotateService_LRO(t *testing.T) {
 	}
 
 	annotations := service.Codec.(*serviceAnnotations)
-	wantImports := []string{"GoogleCloudExternal", "GoogleCloudGax", "GoogleCloudWkt", "GoogleLongrunning", "GoogleRpc"}
+	wantImports := []string{"GoogleCloudExternal", "GoogleCloudWkt", "GoogleLongrunning", "GoogleRpc"}
 	if diff := cmp.Diff(wantImports, annotations.ServiceImports()); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+}
+
+func TestAnnotateService_Pagination(t *testing.T) {
+	itemType := api.NewTestMessage("Item").WithPackage("external")
+
+	pageToken := api.NewTestField("page_token").WithType(api.TypezString)
+	inputType := api.NewTestMessage("ListItemsRequest").
+		WithFields(api.NewTestField("name").WithType(api.TypezString)).
+		WithFields(pageToken)
+	outputType := api.NewTestMessage("ListItemsResponse").
+		WithPagination(
+			api.NewTestField("next_page_token").WithType(api.TypezString),
+			api.NewTestField("items").WithMessageType(itemType).WithRepeated(),
+		)
+	list := api.NewTestMethod("ListItems").
+		WithInput(inputType).
+		WithOutput(outputType).
+		WithPagination(pageToken).
+		WithVerb("GET").
+		WithPathTemplate((&api.PathTemplate{}).WithLiteral("v1").WithLiteral("items"))
+
+	service := api.NewTestService("TestService").WithMethods(list)
+
+	model := api.NewTestAPI([]*api.Message{inputType, outputType}, nil, []*api.Service{service})
+	model.PackageName = "test"
+	model.AddMessage(itemType)
+	if err := api.CrossReference(model); err != nil {
+		t.Fatal(err)
+	}
+
+	codec := newTestCodec(t, model, nil)
+	codec.withExtraDependencies(t, []config.SwiftDependency{
+		{
+			ApiPackage: "external",
+			Name:       "GoogleCloudExternal",
+		},
+	})
+
+	if err := codec.annotateModel(); err != nil {
+		t.Fatal(err)
+	}
+
+	annotations := service.Codec.(*serviceAnnotations)
+	wantImports := []string{"GoogleCloudExternal", "GoogleCloudWkt"}
+	if diff := cmp.Diff(wantImports, annotations.ServiceImports()); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+}
+
+func TestAnnotateService_MapPagination(t *testing.T) {
+	itemType := api.NewTestMessage("Item").WithPackage("external")
+	mapType := api.NewTestMessage("$map<string, Item>").
+		WithPackage("test").
+		WithFields(
+			api.NewTestField("key").WithType(api.TypezString),
+			api.NewTestField("value").WithMessageType(itemType),
+		)
+	mapType.IsMap = true
+
+	pageToken := api.NewTestField("page_token").WithType(api.TypezString)
+	inputType := api.NewTestMessage("ListItemsRequest").
+		WithFields(api.NewTestField("name").WithType(api.TypezString)).
+		WithFields(pageToken)
+	outputType := api.NewTestMessage("ListItemsResponse").
+		WithPagination(
+			api.NewTestField("next_page_token").WithType(api.TypezString),
+			api.NewTestField("items").WithMessageType(mapType).WithMap(),
+		)
+	list := api.NewTestMethod("ListItems").
+		WithInput(inputType).
+		WithOutput(outputType).
+		WithPagination(pageToken).
+		WithVerb("GET").
+		WithPathTemplate((&api.PathTemplate{}).WithLiteral("v1").WithLiteral("items"))
+
+	service := api.NewTestService("TestService").WithMethods(list)
+
+	model := api.NewTestAPI([]*api.Message{inputType, outputType}, nil, []*api.Service{service})
+	model.PackageName = "test"
+	model.AddMessage(itemType)
+	model.AddMessage(mapType)
+	if err := api.CrossReference(model); err != nil {
+		t.Fatal(err)
+	}
+
+	codec := newTestCodec(t, model, nil)
+	codec.withExtraDependencies(t, []config.SwiftDependency{
+		{
+			ApiPackage: "external",
+			Name:       "GoogleCloudExternal",
+		},
+	})
+
+	if err := codec.annotateModel(); err != nil {
+		t.Fatal(err)
+	}
+
+	annotations := service.Codec.(*serviceAnnotations)
+	wantImports := []string{"GoogleCloudExternal", "GoogleCloudWkt"}
+	if diff := cmp.Diff(wantImports, annotations.ServiceImports()); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+}
+
+func TestAnnotateService_MethodSignatures(t *testing.T) {
+	for _, test := range []struct {
+		name        string
+		signatures  []*api.MethodSignature
+		wantImports []string
+	}{
+		{
+			name:        "no signature",
+			signatures:  nil,
+			wantImports: []string{"GoogleCloudWkt"},
+		},
+		{
+			name:        "unrealistic, but good for testing",
+			signatures:  []*api.MethodSignature{{Names: []string{"parent", "thing_id"}}},
+			wantImports: []string{"GoogleCloudWkt"},
+		},
+		{
+			name:        "with external field",
+			signatures:  []*api.MethodSignature{{Names: []string{"parent", "thing_id", "external_thing"}}},
+			wantImports: []string{"GoogleCloudExternal", "GoogleCloudWkt"},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			thing := api.NewTestMessage("Thing").WithPackage("external")
+			inputType := api.NewTestMessage("Request").
+				WithFields(
+					api.NewTestField("parent").WithType(api.TypezString),
+					api.NewTestField("thing_id").WithType(api.TypezString),
+					api.NewTestField("external_thing").WithMessageType(thing),
+				)
+			outputType := api.NewTestMessage("Response")
+			create := api.NewTestMethod("CreateThing").
+				WithInput(inputType).
+				WithOutput(outputType).
+				WithSignatures(test.signatures...).
+				WithVerb("POST").
+				WithPathTemplate((&api.PathTemplate{}).WithLiteral("v1").WithLiteral("things"))
+			service := api.NewTestService("TestService").WithMethods(create)
+			model := api.NewTestAPI([]*api.Message{inputType, outputType}, nil, []*api.Service{service})
+			model.PackageName = "test"
+			model.AddMessage(thing)
+			if err := api.CrossReference(model); err != nil {
+				t.Fatal(err)
+			}
+			codec := newTestCodec(t, model, nil)
+			codec.withExtraDependencies(t, []config.SwiftDependency{
+				{
+					ApiPackage: "external",
+					Name:       "GoogleCloudExternal",
+				},
+			})
+			if err := codec.annotateModel(); err != nil {
+				t.Fatal(err)
+			}
+			annotations := service.Codec.(*serviceAnnotations)
+			if annotations == nil {
+				t.Fatalf("service should have a `serviceAnnotations`, got=%+v", service.Codec)
+			}
+			if diff := cmp.Diff(test.wantImports, annotations.ServiceImports()); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
 	}
 }

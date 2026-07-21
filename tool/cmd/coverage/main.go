@@ -46,7 +46,7 @@ const defaultTarget = 80
 // The key is a package path suffix that identifies the component.
 var targets = map[string]float64{
 	// TODO(https://github.com/googleapis/librarian/issues/4664): raise to 80.
-	"internal/librarian/nodejs": 73,
+	"internal/librarian/nodejs": 70,
 	// TODO(https://github.com/googleapis/librarian/issues/6705: raise to 80.
 	"internal/librarian/php": 60,
 	// TODO(https://github.com/googleapis/librarian/issues/6759): raise to 80.

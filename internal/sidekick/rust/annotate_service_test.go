@@ -361,3 +361,85 @@ func TestServiceAnnotations(t *testing.T) {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
+
+func TestServiceAnnotationsHasBidiStreaming(t *testing.T) {
+	createModel := func() (*api.API, *api.Service) {
+		msg := &api.Message{
+			Name:    "Request",
+			ID:      ".test.v1.Request",
+			Package: "test.v1",
+		}
+		service := &api.Service{
+			Name:    "BidiService",
+			ID:      ".test.v1.BidiService",
+			Package: "test.v1",
+			Methods: []*api.Method{
+				{
+					Name:                "Chat",
+					ID:                  ".test.v1.BidiService.Chat",
+					InputTypeID:         msg.ID,
+					OutputTypeID:        msg.ID,
+					InputType:           msg,
+					OutputType:          msg,
+					ClientSideStreaming: true,
+					ServerSideStreaming: true,
+					PathInfo:            &api.PathInfo{},
+				},
+				{
+					Name:                "Unary",
+					ID:                  ".test.v1.BidiService.Unary",
+					InputTypeID:         msg.ID,
+					OutputTypeID:        msg.ID,
+					InputType:           msg,
+					OutputType:          msg,
+					ClientSideStreaming: false,
+					ServerSideStreaming: false,
+					PathInfo:            &api.PathInfo{},
+				},
+			},
+		}
+		model := api.NewTestAPI([]*api.Message{msg}, []*api.Enum{}, []*api.Service{service})
+		if err := api.CrossReference(model); err != nil {
+			t.Fatal(err)
+		}
+		return model, service
+	}
+
+	t.Run("bidi service with option enabled", func(t *testing.T) {
+		model, service := createModel()
+		codec := newTestCodec(t, libconfig.SpecProtobuf, "", map[string]string{
+			"include-bidi-streaming-methods": "true",
+		})
+		annotateModel(model, codec)
+		serviceAnn := service.Codec.(*serviceAnnotations)
+		if !serviceAnn.HasBidiStreaming {
+			t.Errorf("serviceAnnotations.HasBidiStreaming = false, want true")
+		}
+	})
+
+	t.Run("bidi service with option omitted", func(t *testing.T) {
+		model, service := createModel()
+		codec := newTestCodec(t, libconfig.SpecProtobuf, "", map[string]string{})
+		annotateModel(model, codec)
+		serviceAnn := service.Codec.(*serviceAnnotations)
+		if serviceAnn.HasBidiStreaming {
+			t.Errorf("serviceAnnotations.HasBidiStreaming = true, want false")
+		}
+	})
+
+	t.Run("non-streaming service with option enabled", func(t *testing.T) {
+		model := serviceAnnotationsModel()
+		service := model.Service(".test.v1.ResourceService")
+		if service == nil {
+			t.Fatal("cannot find .test.v1.ResourceService")
+		}
+		codec := newTestCodec(t, libconfig.SpecProtobuf, "", map[string]string{
+			"include-bidi-streaming-methods": "true",
+		})
+		annotateModel(model, codec)
+		serviceAnn := service.Codec.(*serviceAnnotations)
+		if serviceAnn.HasBidiStreaming {
+			t.Errorf("serviceAnnotations.HasBidiStreaming = true, want false")
+		}
+	})
+}

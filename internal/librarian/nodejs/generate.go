@@ -82,7 +82,38 @@ func Generate(ctx context.Context, cfg *config.Config, library *config.Library, 
 	return nil
 }
 
+var (
+	errToolNotInstalled = errors.New("tool not installed in librarian cache")
+)
+
+func requireCachedTool(toolName string) (string, error) {
+	binDir, err := getBinDir()
+	if err != nil {
+		return "", fmt.Errorf("failed to get bin directory: %w", err)
+	}
+	toolPath := filepath.Join(binDir, toolName)
+	info, err := os.Stat(toolPath)
+	if err != nil {
+		return "", fmt.Errorf("tool %s %w at %s (did you run 'librarian install nodejs'?): %w", toolName, errToolNotInstalled, toolPath, err)
+	}
+	if info.IsDir() {
+		return "", fmt.Errorf("tool path %s is a directory: %w", toolPath, errToolNotInstalled)
+	}
+	return toolPath, nil
+}
+
 func generateAPI(ctx context.Context, api *config.API, library *config.Library, googleapisDir, repoRoot string) error {
+	generatorPath, err := requireCachedTool("gapic-generator-typescript")
+	if err != nil {
+		return err
+	}
+	if _, err := requireCachedTool("compileProtos"); err != nil {
+		return err
+	}
+	if _, err := requireCachedTool("gapic-node-processing"); err != nil {
+		return err
+	}
+
 	version := filepath.Base(api.Path)
 	stagingDir := filepath.Join(repoRoot, "owl-bot-staging", library.Name, version)
 	if err := os.MkdirAll(stagingDir, 0755); err != nil {
@@ -91,7 +122,7 @@ func generateAPI(ctx context.Context, api *config.API, library *config.Library, 
 
 	nodejsAPI := resolveNodejsAPI(library, api)
 
-	googleapisDir, err := filepath.Abs(googleapisDir)
+	googleapisDir, err = filepath.Abs(googleapisDir)
 	if err != nil {
 		return fmt.Errorf("failed to resolve googleapis directory path: %w", err)
 	}
@@ -115,7 +146,7 @@ func generateAPI(ctx context.Context, api *config.API, library *config.Library, 
 	// Add additional protos from configuration.
 	protos = append(protos, nodejsAPI.AdditionalProtos...)
 
-	args, err := buildGeneratorArgs(api, library, googleapisDir, stagingDir, nodejsAPI)
+	args, err := buildGeneratorArgs(generatorPath, api, library, googleapisDir, stagingDir, nodejsAPI)
 	if err != nil {
 		return err
 	}
@@ -192,14 +223,14 @@ func unique(ss []string) []string {
 
 // buildGeneratorArgs constructs the gapic-generator-typescript arguments,
 // excluding proto files.
-func buildGeneratorArgs(api *config.API, library *config.Library, googleapisDir, stagingDir string, nodejsAPI *config.NodejsAPI) ([]string, error) {
+func buildGeneratorArgs(generatorPath string, api *config.API, library *config.Library, googleapisDir, stagingDir string, nodejsAPI *config.NodejsAPI) ([]string, error) {
 	protocPath, err := exec.LookPath("protoc")
 	if err != nil {
 		return nil, fmt.Errorf("failed to find protoc: %w", err)
 	}
 
 	args := []string{
-		"gapic-generator-typescript",
+		generatorPath,
 		"--protoc=" + protocPath,
 		"--common-proto-path=.",
 		"-I", ".",
@@ -289,10 +320,10 @@ func runPostProcessor(ctx context.Context, cfg *config.Config, library *config.L
 		return fmt.Errorf("failed to copy missing protos: %w", err)
 	}
 	protoDir := "src"
-	var compileArgs []string
+	compileArgs := []string{"--no-comments"}
 	if library.Nodejs != nil && library.Nodejs.ESM {
 		protoDir = "esm/src"
-		compileArgs = []string{"--esm"}
+		compileArgs = append(compileArgs, "--esm")
 	}
 	runArgs := append([]string{protoDir}, compileArgs...)
 
@@ -301,7 +332,12 @@ func runPostProcessor(ctx context.Context, cfg *config.Config, library *config.L
 		return err
 	}
 
-	if err := command.RunInDirWithEnv(ctx, outDir, toolsEnv, "compileProtos", runArgs...); err != nil {
+	compileProtosPath, err := requireCachedTool("compileProtos")
+	if err != nil {
+		return err
+	}
+
+	if err := command.RunInDirWithEnv(ctx, outDir, toolsEnv, compileProtosPath, runArgs...); err != nil {
 		return fmt.Errorf("failed to compile protos: %w", err)
 	}
 
@@ -367,7 +403,11 @@ func movePackageFromStaging(ctx context.Context, library *config.Library, repoRo
 	if err != nil {
 		return err
 	}
-	if err := command.RunWithEnv(ctx, toolsEnv, "gapic-node-processing", combineArgs...); err != nil {
+	combineToolPath, err := requireCachedTool("gapic-node-processing")
+	if err != nil {
+		return err
+	}
+	if err := command.RunWithEnv(ctx, toolsEnv, combineToolPath, combineArgs...); err != nil {
 		return fmt.Errorf("combine-library: %w", err)
 	}
 	// Restore keep files.

@@ -112,9 +112,7 @@ extension Clients.{{Codec.StubPrefix}}Protocol {
 
   public func {{> /templates/common/method_signature/overload}} {
     let request = {{Method.InputType.Codec.ParameterTypeName}}().with {
-      {{#Fields}}
-      $0.{{Codec.Name}} = {{Codec.Name}}
-      {{/Fields}}
+      {{> /templates/common/method_body/overload_fields}}
     }
     {{#Method.ReturnsEmpty}}
     try await self.{{Method.Codec.Name}}(request: request)
@@ -132,7 +130,7 @@ extension Clients.{{Codec.StubPrefix}}Protocol {
   }
 
   public func {{> /templates/common/method_signature/pagination_options}} {
-    let listRpc = { (token: String) async throws -> {{Codec.ReturnType}} in
+    let listRpc = { (token: Swift.String) async throws -> {{Codec.ReturnType}} in
       throw GoogleCloudGax.RequestError.unimplemented
     }
     return GoogleCloudGax.PaginatedResponseSequence(listRpc: listRpc)
@@ -141,9 +139,7 @@ extension Clients.{{Codec.StubPrefix}}Protocol {
 
   public func {{> /templates/common/method_signature/pagination_overload}} {
     let request = {{Method.InputType.Codec.ParameterTypeName}}().with {
-      {{#Fields}}
-      $0.{{Codec.Name}} = {{Codec.Name}}
-      {{/Fields}}
+      {{> /templates/common/method_body/overload_fields}}
     }
     return try self.{{Codec.Name}}(byItem: request)
   }
@@ -165,9 +161,7 @@ extension Clients.{{Codec.StubPrefix}}Protocol {
 
   public func {{> /templates/common/method_signature/lro_overload}} {
     let request = {{Method.InputType.Codec.ParameterTypeName}}().with {
-      {{#Fields}}
-      $0.{{Codec.Name}} = {{Codec.Name}}
-      {{/Fields}}
+      {{> /templates/common/method_body/overload_fields}}
     }
     return try await self.{{Method.Codec.Name}}(withPolling: request)
   }
@@ -189,9 +183,7 @@ extension Clients.{{Codec.StubPrefix}}Protocol {
 
   public func {{> /templates/common/method_signature/discovery_lro_overload}} {
     let request = {{Method.InputType.Codec.ParameterTypeName}}().with {
-      {{#Fields}}
-      $0.{{Codec.Name}} = {{Codec.Name}}
-      {{/Fields}}
+      {{> /templates/common/method_body/overload_fields}}
     }
     return try await self.{{Method.Codec.Name}}(withPolling: request)
   }

@@ -162,6 +162,10 @@ type RustModule struct {
 	// methods.
 	IncludeStreamingMethods bool `yaml:"include_streaming_methods,omitempty"`
 
+	// IncludeBidiStreamingMethods indicates whether to include gRPC bi-directional streaming
+	// methods.
+	IncludeBidiStreamingMethods bool `yaml:"include_bidi_streaming_methods,omitempty"`
+
 	// InternalBuilders indicates whether generated builders should be internal to the crate.
 	InternalBuilders bool `yaml:"internal_builders,omitempty"`
 
@@ -260,6 +264,10 @@ type RustCrate struct {
 	// IncludeStreamingMethods indicates whether to include gRPC streaming
 	// methods.
 	IncludeStreamingMethods bool `yaml:"include_streaming_methods,omitempty"`
+
+	// IncludeBidiStreamingMethods indicates whether to include gRPC bi-directional streaming
+	// methods.
+	IncludeBidiStreamingMethods bool `yaml:"include_bidi_streaming_methods,omitempty"`
 
 	// PostProcessProtos indicates whether to post-process protos.
 	PostProcessProtos string `yaml:"post_process_protos,omitempty"`
@@ -828,4 +836,22 @@ type PHPAPI struct {
 	// CommonResources indicates whether to include common resources in generation.
 	// Must be configured either globally or per-API.
 	CommonResources *bool `yaml:"common_resources,omitempty"`
+
+	// StagingSubdir is the subdirectory in staging where the generated files should be placed.
+	StagingSubdir string `yaml:"staging_subdir,omitempty"`
+}
+
+// RubyPackage contains Ruby-specific library configuration.
+type RubyPackage struct {
+	// WrapperOf contains the names of versioned libraries that this library wraps.
+	WrapperOf []string `yaml:"wrapper_of,omitempty"`
+}
+
+// RubyAPI represents configuration for a single API within a Ruby package.
+type RubyAPI struct {
+	// EnvPrefix is the environment variable prefix.
+	EnvPrefix string `yaml:"env_prefix,omitempty"`
+
+	// ExtraDependencies contains extra runtime dependencies to the .gemspec file.
+	ExtraDependencies string `yaml:"extra_dependencies,omitempty"`
 }

@@ -116,6 +116,34 @@ func (m *Message) WithFields(fields ...*Field) *Message {
 	return m
 }
 
+// WithOneOfs adds oneofs to the message and updates their parent/ID.
+func (m *Message) WithOneOfs(oneofs ...*OneOf) *Message {
+	for _, o := range oneofs {
+		// If oneof ID is generic/default, re-scope it to the message.
+		if strings.HasPrefix(o.ID, ".test.") || o.ID == "" {
+			o.ID = fmt.Sprintf("%s.%s", m.ID, o.Name)
+		}
+		m.OneOfs = append(m.OneOfs, o)
+		m.WithFields(o.Fields...)
+	}
+	return m
+}
+
+// WithPagination items and page token fields for a pagination response.
+func (m *Message) WithPagination(nextPageToken *Field, items *Field) *Message {
+	if nextPageToken.Parent != m {
+		m.WithFields(nextPageToken)
+	}
+	if items.Parent != m {
+		m.WithFields(items)
+	}
+	m.Pagination = &PaginationInfo{
+		NextPageToken: nextPageToken,
+		PageableItem:  items,
+	}
+	return m
+}
+
 // WithResource sets the resource definition on the message.
 func (m *Message) WithResource(resource *Resource) *Message {
 	m.Resource = resource
@@ -210,6 +238,71 @@ func (m *Method) WithSourceMethod(source *Method) *Method {
 	return m
 }
 
+// WithPagination sets the page token field for the request.
+func (m *Method) WithPagination(pageToken *Field) *Method {
+	m.IsList = true
+	m.Pagination = pageToken
+	return m
+}
+
+// WithOperationInfo sets the LRO information and flag.
+func (m *Method) WithOperationInfo(info *OperationInfo) *Method {
+	m.IsLRO = true
+	m.OperationInfo = info
+	return m
+}
+
+// WithDiscoveryLro sets the discovery LRO information.
+func (m *Method) WithDiscoveryLro(info *DiscoveryLro) *Method {
+	m.DiscoveryLro = info
+	return m
+}
+
+// WithSignatures adds method signatures.
+//
+// A method signature typically maps to an overloads with a subset of
+// the request fields.
+func (m *Method) WithSignatures(signatures ...*MethodSignature) *Method {
+	if m.InputType == nil {
+		panic(fmt.Sprintf("missing InputType for method: %s", m.Name))
+	}
+	for _, s := range signatures {
+		s.Method = m
+		for _, name := range s.Names {
+			for _, f := range m.InputType.Fields {
+				if name != f.Name {
+					continue
+				}
+				s.Fields = append(s.Fields, f)
+				break
+			}
+		}
+		m.Signatures = append(m.Signatures, s)
+	}
+	return m
+}
+
+// NewTestOneOf creates a OneOf with defaults for testing.
+func NewTestOneOf(name string) *OneOf {
+	return &OneOf{
+		Name: name,
+		ID:   fmt.Sprintf(".test.%s", name),
+	}
+}
+
+// WithFields adds fields to a oneof group.
+//
+// When the group is included in a message, all its fields are included into the
+// message too.
+func (o *OneOf) WithFields(fields ...*Field) *OneOf {
+	for _, f := range fields {
+		f.IsOneOf = true
+		f.Group = o
+		o.Fields = append(o.Fields, f)
+	}
+	return o
+}
+
 // NewTestField creates a field with defaults for testing.
 // JSONName is automatically camelCased.
 func NewTestField(name string) *Field {
@@ -229,12 +322,24 @@ func (f *Field) WithType(t Typez) *Field {
 // WithRepeated marks the field as repeated.
 func (f *Field) WithRepeated() *Field {
 	f.Repeated = true
+	f.Optional = false
+	f.Map = false
+	return f
+}
+
+// WithOptional marks the field as optional.
+func (f *Field) WithOptional() *Field {
+	f.Optional = true
+	f.Repeated = false
+	f.Map = false
 	return f
 }
 
 // WithMap marks the field as a map.
 func (f *Field) WithMap() *Field {
 	f.Map = true
+	f.Repeated = false
+	f.Optional = false
 	return f
 }
 
@@ -281,8 +386,14 @@ func (r *Resource) WithPatterns(patterns ...ResourcePattern) *Resource {
 }
 
 // WithSingular sets the singular name of the resource.
-func (r *Resource) WithSingular(singular string) *Resource {
-	r.Singular = singular
+func (r *Resource) WithSingular(name string) *Resource {
+	r.Singular = name
+	return r
+}
+
+// WithPlural sets the plural name of the resource.
+func (r *Resource) WithPlural(name string) *Resource {
+	r.Plural = name
 	return r
 }
 
