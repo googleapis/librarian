@@ -17,6 +17,7 @@ package dart
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/googleapis/librarian/internal/config"
@@ -190,5 +191,100 @@ func TestUpdateChangelog_Existing(t *testing.T) {
 `
 	if got != want {
 		t.Errorf("CHANGELOG.md content mismatch:\ngot:\n%s\nwant:\n%s", got, want)
+	}
+}
+
+func TestUpdatePubspecDependencyVersions_PreservesComments(t *testing.T) {
+	tempDir := t.TempDir()
+	libDir := filepath.Join(tempDir, "my_library")
+	if err := os.MkdirAll(libDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+
+	pubspecPath := filepath.Join(libDir, "pubspec.yaml")
+	initialContent := `# A top level comment
+name: my_library
+version: 1.0.0
+
+dependencies:
+  # This is the SDK
+  sdk: ">=3.0.0 <4.0.0"
+
+  # The main protobuf dependency
+  google_cloud_protobuf: ^0.5.0 # inline comment
+  another_dep: ^1.0.0
+`
+	if err := os.WriteFile(pubspecPath, []byte(initialContent), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	lib := &config.Library{
+		Name:   "my_library",
+		Output: libDir,
+	}
+
+	newDeps := map[string]string{
+		"package:google_cloud_protobuf": "^0.6.0",
+		"package:another_dep":           "^1.2.0",
+	}
+
+	if err := updatePubspecDependencyVersions(lib, nil, newDeps); err != nil {
+		t.Fatalf("updatePubspecDependencyVersions failed: %v", err)
+	}
+
+	content, err := os.ReadFile(pubspecPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	got := string(content)
+	if !strings.Contains(got, "# A top level comment") {
+		t.Errorf("Expected top level comment to be preserved, got:\n%s", got)
+	}
+	if !strings.Contains(got, "# This is the SDK") {
+		t.Errorf("Expected SDK comment to be preserved, got:\n%s", got)
+	}
+	if !strings.Contains(got, "# The main protobuf dependency") {
+		t.Errorf("Expected dependency comment to be preserved, got:\n%s", got)
+	}
+	if !strings.Contains(got, "# inline comment") {
+		t.Errorf("Expected inline comment to be preserved, got:\n%s", got)
+	}
+	if !strings.Contains(got, "google_cloud_protobuf: ^0.6.0") && !strings.Contains(got, "google_cloud_protobuf: \"^0.6.0\"") {
+		t.Errorf("Expected dependency version to be updated, got:\n%s", got)
+	}
+}
+
+func TestUpdatePubspecVersion_PreservesComments(t *testing.T) {
+	tempDir := t.TempDir()
+	pubspecPath := filepath.Join(tempDir, "pubspec.yaml")
+	initialContent := `# Top level comment
+name: my_library
+version: 1.0.0 # inline version comment
+dependencies:
+  sdk: ">=3.0.0 <4.0.0"
+`
+	if err := os.WriteFile(pubspecPath, []byte(initialContent), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := updatePubspecVersion(pubspecPath, "1.1.0"); err != nil {
+		t.Fatalf("updatePubspecVersion failed: %v", err)
+	}
+
+	content, err := os.ReadFile(pubspecPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	got := string(content)
+	if !strings.Contains(got, "# Top level comment") {
+		t.Errorf("Expected top level comment to be preserved, got:\n%s", got)
+	}
+	if !strings.Contains(got, "# inline version comment") {
+		t.Errorf("Expected inline version comment to be preserved, got:\n%s", got)
+	}
+	if !strings.Contains(got, "version: 1.1.0") && !strings.Contains(got, "version: \"1.1.0\"") {
+		t.Errorf("Expected version to be updated, got:\n%s", got)
 	}
 }

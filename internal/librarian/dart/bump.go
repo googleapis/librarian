@@ -15,6 +15,7 @@
 package dart
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
@@ -28,6 +29,7 @@ import (
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/git"
 	"github.com/googleapis/librarian/internal/semver"
+	"gopkg.in/yaml.v3"
 )
 
 // IgnoredChanges is a list of files that are to be ignored as changes during the bump command.
@@ -309,54 +311,78 @@ func libraryOutput(lib *config.Library, defaults *config.Default) string {
 func updatePubspecDependencyVersions(lib *config.Library, defaults *config.Default, newDeps map[string]string) error {
 	packageDir := libraryOutput(lib, defaults)
 	pubspecPath := filepath.Join(packageDir, "pubspec.yaml")
-	content, err := os.ReadFile(pubspecPath)
-	if err != nil {
-		return err
-	}
-	lines := strings.Split(string(content), "\n")
-	var newLines []string
-	inDeps := false
-	for _, line := range lines {
-		trimmed := strings.TrimSpace(line)
-		if strings.HasPrefix(line, "dependencies:") {
-			inDeps = true
-			newLines = append(newLines, line)
-			continue
-		} else if inDeps && len(line) > 0 && !strings.HasPrefix(line, "  ") && !strings.HasPrefix(line, "#") {
-			inDeps = false
-		}
-		if inDeps && strings.HasPrefix(line, "  ") {
-			parts := strings.SplitN(trimmed, ":", 2)
-			if len(parts) == 2 {
-				depName := strings.TrimSpace(parts[0])
-				if constraint, ok := newDeps["package:"+depName]; ok {
-					indent := line[:len(line)-len(trimmed)]
-					newLines = append(newLines, fmt.Sprintf("%s%s: %s", indent, depName, constraint))
-					continue
+	return modifyPubspecYaml(pubspecPath, func(root *yaml.Node) {
+		for i := 0; i < len(root.Content); i += 2 {
+			keyNode := root.Content[i]
+			valNode := root.Content[i+1]
+
+			if keyNode.Value == "dependencies" && valNode.Kind == yaml.MappingNode {
+				for j := 0; j < len(valNode.Content); j += 2 {
+					depKeyNode := valNode.Content[j]
+					depValNode := valNode.Content[j+1]
+
+					if constraint, ok := newDeps["package:"+depKeyNode.Value]; ok {
+						depValNode.Kind = yaml.ScalarNode
+						depValNode.Tag = "!!str"
+						depValNode.Value = constraint
+						depValNode.Content = nil
+					}
 				}
+				return
 			}
 		}
-		newLines = append(newLines, line)
-	}
-	return os.WriteFile(pubspecPath, []byte(strings.Join(newLines, "\n")), 0644)
+	})
 }
 
 func updatePubspecVersion(path string, newVersion string) error {
+	return modifyPubspecYaml(path, func(root *yaml.Node) {
+		for i := 0; i < len(root.Content); i += 2 {
+			keyNode := root.Content[i]
+			valNode := root.Content[i+1]
+
+			if keyNode.Value == "version" {
+				valNode.Kind = yaml.ScalarNode
+				valNode.Tag = "!!str"
+				valNode.Value = newVersion
+				valNode.Content = nil
+				return
+			}
+		}
+	})
+}
+
+func modifyPubspecYaml(path string, fn func(*yaml.Node)) error {
 	content, err := os.ReadFile(path)
 	if err != nil {
 		return err
 	}
-	lines := strings.Split(string(content), "\n")
-	var newLines []string
-	for _, line := range lines {
-		trimmed := strings.TrimSpace(line)
-		if strings.HasPrefix(trimmed, "version:") {
-			newLines = append(newLines, fmt.Sprintf("version: %s", newVersion))
-			continue
-		}
-		newLines = append(newLines, line)
+
+	var node yaml.Node
+	if err := yaml.Unmarshal(content, &node); err != nil {
+		return fmt.Errorf("failed to parse pubspec.yaml: %w", err)
 	}
-	return os.WriteFile(path, []byte(strings.Join(newLines, "\n")), 0644)
+
+	if node.Kind != yaml.DocumentNode || len(node.Content) == 0 {
+		return errors.New("pubspec.yaml is empty")
+	}
+	root := node.Content[0]
+	if root.Kind != yaml.MappingNode {
+		return errors.New("pubspec.yaml is not a mapping")
+	}
+
+	fn(root)
+
+	var buf bytes.Buffer
+	enc := yaml.NewEncoder(&buf)
+	enc.SetIndent(2)
+	if err := enc.Encode(&node); err != nil {
+		return fmt.Errorf("failed to encode pubspec.yaml: %w", err)
+	}
+	if err := enc.Close(); err != nil {
+		return err
+	}
+
+	return os.WriteFile(path, buf.Bytes(), 0644)
 }
 
 // Bump updates the version number and dependencies of Dart packages in the workspace.
