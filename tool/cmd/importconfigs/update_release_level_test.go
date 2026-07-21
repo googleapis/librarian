@@ -53,13 +53,6 @@ func TestRunUpdateReleaseLevel(t *testing.T) {
 					},
 				},
 				{
-					Languages: []string{
-						config.LanguageDart,
-						config.LanguageGo,
-						config.LanguageJava,
-						config.LanguagePython,
-						config.LanguageRust,
-					},
 					Path: "google/cloud/workstations/v1",
 					ReleaseLevels: map[string]string{
 						config.LanguageGo:   "beta",
@@ -73,11 +66,6 @@ func TestRunUpdateReleaseLevel(t *testing.T) {
 			googleapisDir: "testdata/test-update-rl/add-non-cloud-api",
 			original: []*serviceconfig.API{
 				{
-					Languages: []string{
-						config.LanguageDart,
-						config.LanguageGo,
-						config.LanguageJava,
-					},
 					Path: "google/non-cloud/v1",
 					Transports: map[string]serviceconfig.Transport{
 						config.LanguageAll: serviceconfig.GRPC,
@@ -86,11 +74,6 @@ func TestRunUpdateReleaseLevel(t *testing.T) {
 			},
 			want: []*serviceconfig.API{
 				{
-					Languages: []string{
-						config.LanguageDart,
-						config.LanguageGo,
-						config.LanguageJava,
-					},
 					ReleaseLevels: map[string]string{
 						config.LanguageGo: "beta",
 					},
@@ -127,11 +110,6 @@ func TestRunUpdateReleaseLevel(t *testing.T) {
 			googleapisDir: "testdata/test-update-rl/no-change-non-cloud-api",
 			original: []*serviceconfig.API{
 				{
-					Languages: []string{
-						config.LanguageDart,
-						config.LanguageGo,
-						config.LanguageJava,
-					},
 					Path: "google/another-non-cloud/v1",
 				},
 			},
@@ -139,11 +117,6 @@ func TestRunUpdateReleaseLevel(t *testing.T) {
 			// the original sdk.yaml.
 			want: []*serviceconfig.API{
 				{
-					Languages: []string{
-						config.LanguageDart,
-						config.LanguageGo,
-						config.LanguageJava,
-					},
 					Path: "google/another-non-cloud/v1",
 				},
 			},

@@ -51,8 +51,7 @@ func TestRunAddNodejs_addsNodejsToExisting(t *testing.T) {
 	// Write an initial sdk.yaml with an entry that lacks nodejs.
 	initial := []serviceconfig.API{
 		{
-			Path:      "google/ads/admanager/v1",
-			Languages: []string{"python"},
+			Path: "google/ads/admanager/v1",
 		},
 	}
 	if err := yaml.Write(sdkPath, initial); err != nil {
@@ -73,8 +72,7 @@ func TestRunAddNodejs_addsNodejsToExisting(t *testing.T) {
 
 	want := []serviceconfig.API{
 		{
-			Path:      "google/ads/admanager/v1",
-			Languages: []string{"nodejs", "python"},
+			Path: "google/ads/admanager/v1",
 		},
 	}
 	if diff := cmp.Diff(want, *got); diff != "" {
@@ -89,8 +87,7 @@ func TestRunAddNodejs_doesNotDuplicate(t *testing.T) {
 	// Write an initial sdk.yaml with nodejs already present.
 	initial := []serviceconfig.API{
 		{
-			Path:      "google/ads/admanager/v1",
-			Languages: []string{"nodejs", "python"},
+			Path: "google/ads/admanager/v1",
 		},
 	}
 	if err := yaml.Write(sdkPath, initial); err != nil {
@@ -111,8 +108,7 @@ func TestRunAddNodejs_doesNotDuplicate(t *testing.T) {
 
 	want := []serviceconfig.API{
 		{
-			Path:      "google/ads/admanager/v1",
-			Languages: []string{"nodejs", "python"},
+			Path: "google/ads/admanager/v1",
 		},
 	}
 	if diff := cmp.Diff(want, *got); diff != "" {
@@ -145,8 +141,7 @@ func TestRunAddNodejs_addsNewEntryForNonCloudPath(t *testing.T) {
 	// paths are implicitly allowed.
 	want := []serviceconfig.API{
 		{
-			Path:      "google/ads/admanager/v1",
-			Languages: []string{"nodejs"},
+			Path: "google/ads/admanager/v1",
 		},
 	}
 	if diff := cmp.Diff(want, *got); diff != "" {
@@ -241,12 +236,10 @@ func TestRunAddNodejs_writesFile(t *testing.T) {
 
 	initial := []serviceconfig.API{
 		{
-			Path:      "google/ads/admanager/v1",
-			Languages: []string{"python"},
+			Path: "google/ads/admanager/v1",
 		},
 		{
-			Path:      "google/cloud/speech/v1",
-			Languages: []string{"go", "python"},
+			Path: "google/cloud/speech/v1",
 		},
 	}
 	if err := yaml.Write(sdkPath, initial); err != nil {
@@ -278,12 +271,10 @@ func TestRunAddNodejs_writesFile(t *testing.T) {
 	// already has an entry in sdk.yaml, so it gets updated.
 	want := []serviceconfig.API{
 		{
-			Path:      "google/ads/admanager/v1",
-			Languages: []string{"nodejs", "python"},
+			Path: "google/ads/admanager/v1",
 		},
 		{
-			Path:      "google/cloud/speech/v1",
-			Languages: []string{"go", "nodejs", "python"},
+			Path: "google/cloud/speech/v1",
 		},
 	}
 	if diff := cmp.Diff(want, *got); diff != "" {

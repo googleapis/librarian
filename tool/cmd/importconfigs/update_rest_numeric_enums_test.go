@@ -90,13 +90,6 @@ func TestRunUpdateRestNumericEnums(t *testing.T) {
 					},
 				},
 				{
-					Languages: []string{
-						config.LanguageDart,
-						config.LanguageGo,
-						config.LanguageJava,
-						config.LanguagePython,
-						config.LanguageRust,
-					},
 					Path:                 "google/cloud/workstations/v1",
 					SkipRESTNumericEnums: []string{"all"},
 				},
@@ -107,11 +100,6 @@ func TestRunUpdateRestNumericEnums(t *testing.T) {
 			googleapisDir: "testdata/test-update-rne/add-non-cloud-api",
 			original: []*serviceconfig.API{
 				{
-					Languages: []string{
-						config.LanguageDart,
-						config.LanguageGo,
-						config.LanguageJava,
-					},
 					Path: "google/non-cloud/v1",
 					Transports: map[string]serviceconfig.Transport{
 						config.LanguageAll: serviceconfig.GRPC,
@@ -120,11 +108,6 @@ func TestRunUpdateRestNumericEnums(t *testing.T) {
 			},
 			want: []*serviceconfig.API{
 				{
-					Languages: []string{
-						config.LanguageDart,
-						config.LanguageGo,
-						config.LanguageJava,
-					},
 					SkipRESTNumericEnums: []string{config.LanguageCsharp, config.LanguageGo},
 					Path:                 "google/non-cloud/v1",
 					Transports: map[string]serviceconfig.Transport{
@@ -160,11 +143,6 @@ func TestRunUpdateRestNumericEnums(t *testing.T) {
 			googleapisDir: "testdata/test-update-rne/no-change-non-cloud-api",
 			original: []*serviceconfig.API{
 				{
-					Languages: []string{
-						config.LanguageDart,
-						config.LanguageGo,
-						config.LanguageJava,
-					},
 					Path: "google/another-non-cloud/v1",
 				},
 			},
@@ -172,11 +150,6 @@ func TestRunUpdateRestNumericEnums(t *testing.T) {
 			// the original sdk.yaml.
 			want: []*serviceconfig.API{
 				{
-					Languages: []string{
-						config.LanguageDart,
-						config.LanguageGo,
-						config.LanguageJava,
-					},
 					Path: "google/another-non-cloud/v1",
 				},
 			},

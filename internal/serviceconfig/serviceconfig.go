@@ -45,10 +45,6 @@ type (
 	OAuthRequirements  = serviceconfig.OAuthRequirements
 )
 
-var (
-	errNotAllowed = errors.New("API is not allowlisted")
-)
-
 // Read reads a service config from a YAML file and returns it as a Service
 // proto. The file is parsed as YAML, converted to JSON, and then unmarshaled
 // into a Service proto.
@@ -80,14 +76,12 @@ func Read(serviceConfigPath string) (*Service, error) {
 	return cfg, nil
 }
 
-// findAPI looks up the API by path in sdk.yaml and validates that it is
-// allowed for the specified language. If the API is not explicitly
-// configured in sdk.yaml, it is assumed to be allowed and an entry is returned.
-func findAPI(path, language string) (*API, error) {
+// findAPI looks up the API by path in sdk.yaml. If the API is not explicitly
+// configured in sdk.yaml, an entry is returned.
+func findAPI(path string) *API {
 	if path == "" {
-		return &API{}, nil
+		return &API{}
 	}
-	var result *API
 	for _, api := range APIs {
 		// The path for OpenAPI and discovery documents are in
 		// googleapis/google-cloud-rust and
@@ -97,17 +91,15 @@ func findAPI(path, language string) (*API, error) {
 			// Create a copy of the API struct to allow modifications to
 			// result.ServiceConfig without affecting the APIs slice.
 			r := api
-			result = &r
-			break
+			return &r
 		}
 	}
-	return validateAPI(path, language, result)
+	return &API{Path: path}
 }
 
-// Find looks up the service config path and title override for a given API path,
-// and validates that the API is allowed for the specified language.
+// Find looks up the service config path and title override for a given API path.
 //
-// It first checks the API list for overrides and language restrictions,
+// It first checks the API list for overrides,
 // then searches for YAML files containing "type: google.api.Service",
 // skipping any files ending in _gapic.yaml.
 //
@@ -119,10 +111,7 @@ func findAPI(path, language string) (*API, error) {
 // it does not live under https://github.com/googleapis/googleapis.
 // For this API only, googleapisDir should point to showcase source dir instead.
 func Find(googleapisDir, path string, language string) (*API, error) {
-	result, err := findAPI(path, language)
-	if err != nil {
-		return nil, err
-	}
+	result := findAPI(path)
 
 	// Find the service config if it hasn't been specified.
 	if result.ServiceConfig == "" {
@@ -212,29 +201,6 @@ func populateFromServiceConfig(api *API, cfg *Service) *API {
 		api.ShortName = defaultShortName(api.ServiceName)
 	}
 	return api
-}
-
-// validateAPI checks if the given API path is allowed for the specified language.
-//
-// API paths starting with "google/cloud/" are allowed for all languages by default.
-// If such a path is explicitly included in the allowlist, it must satisfy any
-// language restrictions defined there.
-//
-// API paths not starting with "google/cloud/" must be explicitly included in the
-// allowlist and satisfy its language restrictions.
-func validateAPI(path string, language string, api *API) (*API, error) {
-	if api == nil {
-		return &API{Path: path}, nil
-	}
-	if len(api.Languages) == 0 {
-		return api, nil
-	}
-	for _, l := range api.Languages {
-		if l == config.LanguageAll || l == language {
-			return api, nil
-		}
-	}
-	return nil, fmt.Errorf("%s for language %s: %w", path, language, errNotAllowed)
 }
 
 // isServiceConfigFile checks if the file contains "type: google.api.Service".

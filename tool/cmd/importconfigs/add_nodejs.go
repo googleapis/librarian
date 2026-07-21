@@ -23,7 +23,6 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
-	"slices"
 	"sort"
 	"strings"
 
@@ -85,16 +84,9 @@ func runAddNodejs(sdkYAMLPath, nodeRepo, googleapisDir string) error {
 		pathIndex[api.Path] = i
 	}
 
-	var added, updated int
+	var added int
 	for _, p := range apiPaths {
-		if idx, ok := pathIndex[p]; ok {
-			// Entry exists. Add "nodejs" if not already present.
-			if slices.Contains((*apis)[idx].Languages, "nodejs") {
-				continue
-			}
-			(*apis)[idx].Languages = append((*apis)[idx].Languages, "nodejs")
-			sort.Strings((*apis)[idx].Languages)
-			updated++
+		if _, ok := pathIndex[p]; ok {
 			continue
 		}
 		// Entry does not exist. Only add if it does not start with "google/cloud/"
@@ -103,8 +95,7 @@ func runAddNodejs(sdkYAMLPath, nodeRepo, googleapisDir string) error {
 			continue
 		}
 		*apis = append(*apis, serviceconfig.API{
-			Path:      p,
-			Languages: []string{"nodejs"},
+			Path: p,
 		})
 		pathIndex[p] = len(*apis) - 1
 		added++

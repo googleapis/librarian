@@ -15,7 +15,6 @@
 package serviceconfig
 
 import (
-	"errors"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -49,8 +48,7 @@ func TestHasAPIPath(t *testing.T) {
 		language string
 		want     bool
 	}{
-		{"matching path and language", "google/cloud/accessapproval/v1", config.LanguageRust, true},
-		{"matching path but not language", "google/ads/admanager/v1", config.LanguageFake, false},
+		{"matching path", "google/cloud/secretmanager/v1", config.LanguageRust, true},
 		{"unknown path", "google/does/not/exist/v1", config.LanguageRust, false},
 		{"empty path", "", config.LanguageRust, false},
 	} {
@@ -423,29 +421,6 @@ func TestFindTransport(t *testing.T) {
 			}
 			if got != test.want {
 				t.Errorf("FindTransport(%q, %q) = %q, want %q", test.path, test.language, got, test.want)
-			}
-		})
-	}
-}
-
-func TestFindTransport_Error(t *testing.T) {
-	for _, test := range []struct {
-		name     string
-		path     string
-		language string
-		want     error
-	}{
-		{
-			name:     "matching path but not allowed language",
-			path:     "google/ads/admanager/v1",
-			language: config.LanguageGo,
-			want:     errNotAllowed,
-		},
-	} {
-		t.Run(test.name, func(t *testing.T) {
-			_, err := FindTransport(test.path, test.language)
-			if !errors.Is(err, test.want) {
-				t.Errorf("FindTransport(%q, %q) expected %v, got %v", test.path, test.language, test.want, err)
 			}
 		})
 	}
