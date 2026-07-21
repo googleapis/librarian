@@ -192,7 +192,7 @@ if [ -n "$report_file" ]; then
 	setupFakeScript(t, "dart-apitool", script.String())
 }
 
-func TestBump_Leaf(t *testing.T) {
+func TestBump_FileChanged_APIUnchanged(t *testing.T) {
 	testhelper.RequireCommand(t, "git")
 
 	t.Helper()
@@ -261,14 +261,16 @@ dependencies:
 	testhelper.RunGit(t, "tag", "b-v1.0.0")
 
 	// Now make a commit with changes to package a.
-	if err := os.WriteFile("generated/a/lib.dart", []byte("// library a: new feature"), 0644); err != nil {
+	if err := os.WriteFile("generated/a/lib.dart", []byte("// library a: new fix"), 0644); err != nil {
 		t.Fatal(err)
 	}
 	testhelper.RunGit(t, "add", ".")
-	testhelper.RunGit(t, "commit", "-m", "feat: added support for something new in a", ".")
+	testhelper.RunGit(t, "commit", "-m", "fix: generator bug", ".")
 
+	// Since the API surfaces didn't change, dart-apitool will report that the versions do not
+	// need to be bumped.
 	apiToolResponses := map[string]PackageVersion{
-		"a": {needed: "1.1.0", old: "1.0.0"},
+		"a": {needed: "1.0.0", old: "1.0.0"},
 		"b": {needed: "1.0.0", old: "1.0.0"},
 	}
 	setupFakeApitool(t, apiToolResponses)
@@ -297,7 +299,7 @@ dependencies:
 	// Verify versions in config:
 	// a should be bumped to 1.1.0
 	// b should be bumped to 1.0.1 (patch bump because its dependency "a" was updated)
-	if got, want := cfg.Libraries[0].Version, "1.1.0"; got != want {
+	if got, want := cfg.Libraries[0].Version, "1.0.1"; got != want {
 		t.Errorf("library a version = %q; want %q", got, want)
 	}
 	if got, want := cfg.Libraries[1].Version, "1.0.1"; got != want {
@@ -305,7 +307,7 @@ dependencies:
 	}
 
 	// Verify cfg.Default.Dart.Packages values:
-	if got, want := cfg.Default.Dart.Packages, map[string]string{"package:a": "^1.1.0"}; !reflect.DeepEqual(got, want) {
+	if got, want := cfg.Default.Dart.Packages, map[string]string{"package:a": "^1.0.1"}; !reflect.DeepEqual(got, want) {
 		t.Errorf("default packages map = %v; want %v", got, want)
 	}
 
@@ -317,7 +319,7 @@ dependencies:
 		t.Fatal(err)
 	}
 	wantPubspecA := `name: a
-version: 1.1.0
+version: 1.0.1
 environment:
   sdk: ^3.9.0
 resolution: workspace
@@ -336,7 +338,7 @@ environment:
   sdk: ^3.9.0
 resolution: workspace
 dependencies:
-  a: ^1.1.0
+  a: ^1.0.1
 `
 	if got := string(pubspecB); got != wantPubspecB {
 		t.Errorf("b/pubspec.yaml content mismatch:\ngot:\n%s\nwant:\n%s", got, wantPubspecB)
