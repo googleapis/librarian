@@ -23,6 +23,7 @@ import (
 	"strings"
 
 	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/filesystem"
 )
 
 const (
@@ -51,6 +52,13 @@ func Clean(library *config.Library) error {
 	}
 	for _, dir := range directoriesToClean {
 		if err := cleanFiles(library, keepSet, dir); err != nil {
+			return err
+		}
+		targetDir := filepath.Join(library.Output, dir)
+		keepFunc := func(rel string) bool {
+			return keepSet[rel]
+		}
+		if err := filesystem.RemoveEmptyDirs(targetDir, library.Output, keepFunc); err != nil {
 			return err
 		}
 	}

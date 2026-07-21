@@ -242,3 +242,58 @@ func TestClean_WalkDirError(t *testing.T) {
 		t.Errorf("Clean() error = %v, want os.ErrPermission", err)
 	}
 }
+
+func TestClean_RemovesEmptyDirectories(t *testing.T) {
+	t.Parallel()
+	repoRoot := t.TempDir()
+	lib := &config.Library{
+		Name:   "test",
+		Output: filepath.Join(repoRoot, "test"),
+	}
+	// Setup: empty directory under src
+	emptyDir := filepath.Join(lib.Output, "src", "V1", "Empty")
+	if err := os.MkdirAll(emptyDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	// Setup: directory with a file that will be deleted
+	dirWithDeletedFile := filepath.Join(lib.Output, "src", "V1", "Deleted")
+	fileToDelete := filepath.Join(dirWithDeletedFile, "gapic_metadata.json")
+	if err := os.MkdirAll(dirWithDeletedFile, 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(fileToDelete, []byte("{}"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	// Setup: directory with a kept file
+	dirWithKeptFile := filepath.Join(lib.Output, "src", "V1", "Kept")
+	fileToKeep := filepath.Join(dirWithKeptFile, "Handwritten.php")
+	if err := os.MkdirAll(dirWithKeptFile, 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(fileToKeep, []byte("<?php class Handwritten {}"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	lib.Keep = []string{"src/V1/Kept/Handwritten.php"}
+	if err := Clean(lib); err != nil {
+		t.Fatal(err)
+	}
+	dirsAbsent := []string{
+		emptyDir,
+		dirWithDeletedFile,
+	}
+	for _, d := range dirsAbsent {
+		if _, err := os.Stat(d); !errors.Is(err, fs.ErrNotExist) {
+			t.Errorf("expected directory %s to be deleted, but stat got: %v", d, err)
+		}
+	}
+	dirsExist := []string{
+		dirWithKeptFile,
+		filepath.Join(lib.Output, "src", "V1"),
+		filepath.Join(lib.Output, "src"),
+	}
+	for _, d := range dirsExist {
+		if _, err := os.Stat(d); err != nil {
+			t.Errorf("expected directory %s to exist, but got error: %v", d, err)
+		}
+	}
+}
