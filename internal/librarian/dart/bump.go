@@ -17,6 +17,7 @@ package dart
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -360,6 +361,10 @@ func updatePubspecVersion(path string, newVersion string) error {
 
 // Bump updates the version number and dependencies of Dart packages in the workspace.
 func Bump(ctx context.Context, cfg *config.Config, all bool, libraryName, versionOverride string) error {
+	if !all {
+		return errors.New("bumping a single Dart library not supported, use --all")
+	}
+
 	libraryByName := make(map[string]*config.Library)
 	for _, lib := range cfg.Libraries {
 		libraryByName[lib.Name] = lib
