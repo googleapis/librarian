@@ -217,7 +217,7 @@ func updateChangelog(ctx context.Context, packageDir, version, lastReleaseTagCom
 // Bump updates the version number and dependencies of Dart packages in the workspace.
 func Bump(ctx context.Context, cfg *config.Config, all bool, libraryName, versionOverride string) error {
 	if !all {
-		return errors.New("bumping a single Dart library not supported, use --all")
+		return errors.New("bumping a single Dart package not supported, use --all")
 	}
 
 	libraryByName := make(map[string]*config.Library)
