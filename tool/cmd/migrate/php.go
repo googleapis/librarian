@@ -236,6 +236,11 @@ func findPHPLibraries(repoPath string, googleapisDir string, globalDefaultCommon
 			}
 		}
 
+		// Skip libraries that do not have any APIs (e.g., fully handwritten libraries).
+		if len(apis) == 0 {
+			continue
+		}
+
 		libs = append(libs, &config.Library{
 			Name:    name,
 			Version: version,
