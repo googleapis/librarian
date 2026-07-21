@@ -418,3 +418,101 @@ func checkDir(t *testing.T, dir string, want map[string]string) {
 		t.Errorf("mismatch in %s (-want +got):\n%s", dir, diff)
 	}
 }
+
+func TestRemoveEmptyDirs(t *testing.T) {
+	t.Parallel()
+	for _, test := range []struct {
+		name       string
+		setupDirs  []string
+		setupFiles map[string]string
+		keepFunc   func(string) bool
+		wantExist  []string
+		wantAbsent []string
+	}{
+		{
+			name:      "empty dirs are removed",
+			setupDirs: []string{"dir1/dir2/dir3"},
+			wantAbsent: []string{
+				"dir1/dir2/dir3",
+				"dir1/dir2",
+				"dir1",
+			},
+		},
+		{
+			name:      "non-empty dirs are preserved",
+			setupDirs: []string{"dir1/dir2"},
+			setupFiles: map[string]string{
+				"dir1/dir2/file.txt": "content",
+			},
+			wantExist: []string{
+				"dir1/dir2/file.txt",
+				"dir1/dir2",
+				"dir1",
+			},
+		},
+		{
+			name:      "partially empty dirs are cleaned",
+			setupDirs: []string{"dir1/dir2", "dir1/dir3"},
+			setupFiles: map[string]string{
+				"dir1/dir3/file.txt": "content",
+			},
+			wantExist: []string{
+				"dir1/dir3/file.txt",
+				"dir1/dir3",
+				"dir1",
+			},
+			wantAbsent: []string{
+				"dir1/dir2",
+			},
+		},
+		{
+			name:      "kept dirs are preserved",
+			setupDirs: []string{"dir1/dir2/dir3"},
+			keepFunc: func(rel string) bool {
+				return rel == "dir1/dir2"
+			},
+			wantExist: []string{
+				"dir1/dir2/dir3",
+				"dir1/dir2",
+				"dir1",
+			},
+			wantAbsent: nil,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			root := t.TempDir()
+			for _, d := range test.setupDirs {
+				if err := os.MkdirAll(filepath.Join(root, d), 0755); err != nil {
+					t.Fatal(err)
+				}
+			}
+			for f, content := range test.setupFiles {
+				p := filepath.Join(root, f)
+				if err := os.MkdirAll(filepath.Dir(p), 0755); err != nil {
+					t.Fatal(err)
+				}
+				if err := os.WriteFile(p, []byte(content), 0644); err != nil {
+					t.Fatal(err)
+				}
+			}
+
+			if err := RemoveEmptyDirs(root, root, test.keepFunc); err != nil {
+				t.Fatal(err)
+			}
+
+			for _, path := range test.wantExist {
+				p := filepath.Join(root, path)
+				if _, err := os.Stat(p); err != nil {
+					t.Errorf("expected %s to exist, but got error: %v", path, err)
+				}
+			}
+			for _, path := range test.wantAbsent {
+				p := filepath.Join(root, path)
+				if _, err := os.Stat(p); !errors.Is(err, fs.ErrNotExist) {
+					t.Errorf("expected %s to be absent, but stat got: %v", path, err)
+				}
+			}
+		})
+	}
+}
