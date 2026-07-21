@@ -39,7 +39,7 @@ func TestClean(t *testing.T) {
 			setupFiles: []string{
 				"src/V1/gapic_metadata.json",
 				"src/gapic_metadata.json",
-				"gapic_metadata.json", // in root, won't be walked, so kept
+				"README.md", // does not delete because it is in the root directory
 			},
 			wantDeleted: []string{
 				"src/V1/gapic_metadata.json",
@@ -97,6 +97,7 @@ func TestClean(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
 			repoRoot := t.TempDir()
 			lib := &config.Library{
 				Name:   "test",
