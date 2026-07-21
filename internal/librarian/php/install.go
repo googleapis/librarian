@@ -48,6 +48,15 @@ func Install(ctx context.Context, tools *config.Tools) error {
 		return err
 	}
 
+	var phpPath string
+	if len(tools.Composer) > 0 {
+		var err error
+		phpPath, err = checkRequiredCommands()
+		if err != nil {
+			return err
+		}
+	}
+
 	bin, err := binDir()
 	if err != nil {
 		return err
@@ -71,17 +80,10 @@ func Install(ctx context.Context, tools *config.Tools) error {
 		if !isGenerator {
 			args = append(args, "--no-dev")
 		}
-		if _, err := exec.LookPath("composer"); err != nil {
-			return fmt.Errorf("composer is not installed or not in PATH, which is required for PHP tool installation: %w", err)
-		}
 		if err := command.RunInDir(ctx, dir, "composer", args...); err != nil {
 			return fmt.Errorf("failed to run composer install: %w", err)
 		}
 		if isGenerator {
-			phpPath, err := exec.LookPath("php")
-			if err != nil {
-				return fmt.Errorf("failed to find php: %w", err)
-			}
 			destPath := filepath.Join(dir, "src", "Main.php")
 			wrapperName := filepath.Base(tool.Repo)
 			wrapperPath := filepath.Join(bin, wrapperName)
@@ -110,6 +112,17 @@ func Install(ctx context.Context, tools *config.Tools) error {
 		}
 	}
 	return nil
+}
+
+func checkRequiredCommands() (string, error) {
+	if _, err := exec.LookPath("composer"); err != nil {
+		return "", fmt.Errorf("composer is not installed or not in PATH, which is required for PHP tool installation: %w", err)
+	}
+	phpPath, err := exec.LookPath("php")
+	if err != nil {
+		return "", fmt.Errorf("failed to find php: %w", err)
+	}
+	return phpPath, nil
 }
 
 // InstallDir gets the directory where tools should be installed.
