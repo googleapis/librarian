@@ -116,25 +116,21 @@ jobs:
           # Verify plugins are executable (they don't support --version)
           test -x "$(which protoc-gen-java_grpc)"
           test -x "$(which protoc-gen-java_gapic)"
-          
       - name: Run internal/librarian/java tests and check coverage
         if: matrix.task == 'unit-test'
         run: go run ./tool/cmd/coverage ./internal/librarian/java
-        
       - name: Generate a single library (smoke test)
         if: matrix.task == 'smoke-test'
         working-directory: google-cloud-java
         env:
           PYTHONPATH: ${{ github.workspace }}/google-cloud-java/sdk-platform-java/hermetic_build/library_generation/owlbot
         run: librarian generate secretmanager
-        
       - name: Run librarian generate all (integration test)
         if: matrix.task == 'integration'
         working-directory: google-cloud-java
         env:
           PYTHONPATH: ${{ github.workspace }}/google-cloud-java/sdk-platform-java/hermetic_build/library_generation/owlbot
         run: librarian generate --all
-
   create-issue-on-failure:
     needs: [build-and-test]
     permissions:
