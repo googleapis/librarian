@@ -133,7 +133,7 @@ dependencies:
 func TestUpdateChangelog_New(t *testing.T) {
 	tempDir := t.TempDir()
 
-	err := updateChangelog(context.Background(), tempDir, "1.2.3", "")
+	err := updateChangelog(context.Background(), tempDir, "1.2.3", "", true)
 	if err != nil {
 		t.Fatalf("updateChangelog failed: %v", err)
 	}
@@ -149,7 +149,7 @@ func TestUpdateChangelog_New(t *testing.T) {
 
 ## 1.2.3
 
-- Initial release.
+- chore: Update dependencies
 
 `
 	if got != want {
@@ -170,7 +170,7 @@ func TestUpdateChangelog_Existing(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	err := updateChangelog(context.Background(), tempDir, "1.2.3", "")
+	err := updateChangelog(context.Background(), tempDir, "1.2.3", "", true)
 	if err != nil {
 		t.Fatalf("updateChangelog failed: %v", err)
 	}
@@ -185,7 +185,7 @@ func TestUpdateChangelog_Existing(t *testing.T) {
 
 ## 1.2.3
 
-- Initial release.
+- chore: Update dependencies
 
 ## 1.2.2
 
@@ -225,7 +225,7 @@ func TestUpdateChangelog_WithCommits(t *testing.T) {
 	testhelper.RunGit(t, "add", ".")
 	testhelper.RunGit(t, "commit", "-m", "fix: resolved a bug")
 
-	err = updateChangelog(context.Background(), tempDir, "1.2.3", tagCommit)
+	err = updateChangelog(context.Background(), tempDir, "1.2.3", tagCommit, false)
 	if err != nil {
 		t.Fatalf("updateChangelog failed: %v", err)
 	}

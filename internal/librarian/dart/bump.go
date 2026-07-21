@@ -179,7 +179,7 @@ func updateChangelog(ctx context.Context, packageDir, version, lastReleaseTagCom
 	}
 
 	if depsChanged {
-		changes = append(changes, "[chore]: Update dependencies")
+		changes = append(changes, "chore: Update dependencies")
 	}
 
 	if len(changes) == 0 {
@@ -205,13 +205,10 @@ func updateChangelog(ctx context.Context, packageDir, version, lastReleaseTagCom
 		return os.WriteFile(changelogPath, []byte(newTopOfFile), 0644)
 	}
 
-	// File exists, prepend entry after heading
-	changelogContent := string(content)
-	rest := changelogContent
+	rest := string(content)
 	if strings.HasPrefix(rest, "# Changelog") {
 		rest = strings.TrimPrefix(rest, "# Changelog")
 		rest = strings.TrimLeft(rest, "\r\n ")
-		rest = "\n\n" + rest
 	}
 
 	return os.WriteFile(changelogPath, []byte(newTopOfFile+rest), 0644)
