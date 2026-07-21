@@ -459,3 +459,68 @@ func TestAnnotateService_MapPagination(t *testing.T) {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
+
+func TestAnnotateService_MethodSignatures(t *testing.T) {
+	for _, test := range []struct {
+		name        string
+		signatures  []*api.MethodSignature
+		wantImports []string
+	}{
+		{
+			name:        "no signature",
+			signatures:  nil,
+			wantImports: []string{"GoogleCloudWkt"},
+		},
+		{
+			name:        "unrealistic, but good for testing",
+			signatures:  []*api.MethodSignature{{Names: []string{"parent", "thing_id"}}},
+			wantImports: []string{"GoogleCloudWkt"},
+		},
+		{
+			name:        "unrealistic, but good for testing",
+			signatures:  []*api.MethodSignature{{Names: []string{"parent", "thing_id", "thing"}}},
+			wantImports: []string{"GoogleCloudExternal", "GoogleCloudWkt"},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			thing := api.NewTestMessage("Thing").WithPackage("external")
+			inputType := api.NewTestMessage("Request").
+				WithFields(
+					api.NewTestField("parent").WithType(api.TypezString),
+					api.NewTestField("thing_id").WithType(api.TypezString),
+					api.NewTestField("thing").WithMessageType(thing),
+				)
+			outputType := api.NewTestMessage("Response")
+			create := api.NewTestMethod("CreateThing").
+				WithInput(inputType).
+				WithOutput(outputType).
+				WithSignatures(test.signatures...).
+				WithVerb("POST").
+				WithPathTemplate((&api.PathTemplate{}).WithLiteral("v1").WithLiteral("things"))
+			service := api.NewTestService("TestService").WithMethods(create)
+			model := api.NewTestAPI([]*api.Message{inputType, outputType}, nil, []*api.Service{service})
+			model.PackageName = "test"
+			model.AddMessage(thing)
+			if err := api.CrossReference(model); err != nil {
+				t.Fatal(err)
+			}
+			codec := newTestCodec(t, model, nil)
+			codec.withExtraDependencies(t, []config.SwiftDependency{
+				{
+					ApiPackage: "external",
+					Name:       "GoogleCloudExternal",
+				},
+			})
+			if err := codec.annotateModel(); err != nil {
+				t.Fatal(err)
+			}
+			annotations := service.Codec.(*serviceAnnotations)
+			if annotations == nil {
+				t.Fatalf("service should have a `serviceAnnotations`, got=%+v", service.Codec)
+			}
+			if diff := cmp.Diff(test.wantImports, annotations.ServiceImports()); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
