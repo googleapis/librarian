@@ -259,7 +259,7 @@ func TestParseVersionedBuild(t *testing.T) {
 			name:          "BUILD.bazel with path override",
 			googleapisDir: "testdata/googleapis",
 			apiPath:       "google/cloud/automl/v1",
-			want:          &VersionedBuild{
+			want: &VersionedBuild{
 				EnvPrefix:    "AUTOML",
 				PathOverride: "auto_ml=automl",
 			},
