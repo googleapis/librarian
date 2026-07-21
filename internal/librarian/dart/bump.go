@@ -142,24 +142,7 @@ func maybeBumpLibrary(ctx context.Context, cloudDeps []string, newVersions map[s
 			return "", err
 		}
 
-		var commits []string
-		if lastReleaseTagCommit != "" {
-			var err error
-			commits, err = getCommitsSince(ctx, lastReleaseTagCommit, packageDir)
-			if err != nil {
-				return "", err
-			}
-		}
-
-		if len(commits) == 0 {
-			if lastReleaseTagCommit == "" {
-				commits = []string{"Initial release."}
-			} else {
-				commits = []string{"Dependency updates."}
-			}
-		}
-
-		if err := updateChangelog(packageDir, newVersion, commits); err != nil {
+		if err := updateChangelog(ctx, packageDir, newVersion, lastReleaseTagCommit, depsChanged); err != nil {
 			return "", err
 		}
 	}
@@ -185,37 +168,53 @@ func getCommitsSince(ctx context.Context, lastReleaseTagCommit, packageDir strin
 	return commits, nil
 }
 
-func updateChangelog(packageDir, version string, commits []string) error {
+func updateChangelog(ctx context.Context, packageDir, version, lastReleaseTagCommit string, depsChanged bool) error {
+	var changes []string
+	if lastReleaseTagCommit != "" {
+		var err error
+		changes, err = getCommitsSince(ctx, lastReleaseTagCommit, packageDir)
+		if err != nil {
+			return err
+		}
+	}
+
+	if depsChanged {
+		changes = append(changes, "[chore]: Update dependencies")
+	}
+
+	if len(changes) == 0 {
+		return fmt.Errorf("updating changelog for unchanged package: %s", packageDir)
+	}
+
 	changelogPath := filepath.Join(packageDir, "CHANGELOG.md")
 	var entry []string
 	entry = append(entry, fmt.Sprintf("## %s", version))
 	entry = append(entry, "")
-	for _, commit := range commits {
+	for _, commit := range changes {
 		entry = append(entry, fmt.Sprintf("- %s", commit))
 	}
 	entryStr := strings.Join(entry, "\n") + "\n\n"
 
 	content, err := os.ReadFile(changelogPath)
+	newTopOfFile := "# Changelog\n\n" + entryStr
 	if err != nil {
 		if !os.IsNotExist(err) {
 			return err
 		}
 		// File does not exist, create new
-		newContent := "# Changelog\n\n" + entryStr
-		return os.WriteFile(changelogPath, []byte(newContent), 0644)
+		return os.WriteFile(changelogPath, []byte(newTopOfFile), 0644)
 	}
 
 	// File exists, prepend entry after heading
 	changelogContent := string(content)
-	if strings.HasPrefix(changelogContent, "# Changelog") {
-		rest := strings.TrimPrefix(changelogContent, "# Changelog")
+	rest := changelogContent
+	if strings.HasPrefix(rest, "# Changelog") {
+		rest = strings.TrimPrefix(rest, "# Changelog")
 		rest = strings.TrimLeft(rest, "\r\n ")
-		newContent := "# Changelog\n\n" + entryStr + rest
-		return os.WriteFile(changelogPath, []byte(newContent), 0644)
+		rest = "\n\n" + rest
 	}
 
-	newContent := entryStr + changelogContent
-	return os.WriteFile(changelogPath, []byte(newContent), 0644)
+	return os.WriteFile(changelogPath, []byte(newTopOfFile+rest), 0644)
 }
 
 // Bump updates the version number and dependencies of Dart packages in the workspace.
