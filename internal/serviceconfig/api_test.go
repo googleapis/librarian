@@ -439,7 +439,7 @@ func TestFindTransport_Error(t *testing.T) {
 			name:     "matching path but not allowed language",
 			path:     "google/ads/admanager/v1",
 			language: config.LanguageGo,
-			want:     ErrNotAllowed,
+			want:     errNotAllowed,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {

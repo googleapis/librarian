@@ -18,7 +18,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"runtime"
 	"strings"
 
 	"github.com/googleapis/librarian/internal/config"
@@ -31,7 +30,6 @@ import (
 	"github.com/googleapis/librarian/internal/librarian/ruby"
 	"github.com/googleapis/librarian/internal/librarian/rust"
 	"github.com/googleapis/librarian/internal/librarian/swift"
-	"github.com/googleapis/librarian/internal/serviceconfig"
 	"github.com/googleapis/librarian/internal/sources"
 	"github.com/googleapis/librarian/internal/yaml"
 	"github.com/urfave/cli/v3"
@@ -119,37 +117,14 @@ func runGenerate(ctx context.Context, cfg *config.Config, all bool, libraryName 
 		if err != nil {
 			return err
 		}
-
-		var variants []*config.Library
 		if !all && isPreview {
-			variants = append(variants, ResolvePreview(prepared, cfg.Language))
+			prepared = ResolvePreview(prepared, cfg.Language)
 		} else if all && lib.Preview != nil {
 			// Generate both stable and preview libraries by first appending the
 			// resolved library config for the preview variant.
-			variants = append(variants, ResolvePreview(prepared, cfg.Language))
-			variants = append(variants, prepared)
-		} else {
-			variants = append(variants, prepared)
+			libraries = append(libraries, ResolvePreview(prepared, cfg.Language))
 		}
-
-		for _, v := range variants {
-			allowlisted := true
-			for _, api := range v.APIs {
-				if cfg.Language == config.LanguageFake {
-					continue
-				}
-				if err := serviceconfig.CheckAllowed(api.Path, cfg.Language); err != nil {
-					if errors.Is(err, serviceconfig.ErrNotAllowed) {
-						allowlisted = false
-						break
-					}
-				}
-			}
-			if !allowlisted && all {
-				continue
-			}
-			libraries = append(libraries, v)
-		}
+		libraries = append(libraries, prepared)
 	}
 	if len(libraries) == 0 {
 		if all {
@@ -216,7 +191,6 @@ func generateLibraries(ctx context.Context, cfg *config.Config, libraries []*con
 	switch cfg.Language {
 	case config.LanguageDart:
 		g, gctx := errgroup.WithContext(ctx)
-		g.SetLimit(runtime.NumCPU())
 		for _, library := range libraries {
 			g.Go(func() error {
 				if err := dart.Generate(gctx, library, src); err != nil {
@@ -241,7 +215,6 @@ func generateLibraries(ctx context.Context, cfg *config.Config, libraries []*con
 		return fakePostGenerate()
 	case config.LanguageGo:
 		g, gctx := errgroup.WithContext(ctx)
-		g.SetLimit(runtime.NumCPU())
 		for _, library := range libraries {
 			g.Go(func() error {
 				if err := golang.Generate(gctx, cfg, library, src); err != nil {
@@ -254,7 +227,6 @@ func generateLibraries(ctx context.Context, cfg *config.Config, libraries []*con
 			return err
 		}
 		g, gctx = errgroup.WithContext(ctx)
-		g.SetLimit(runtime.NumCPU())
 		for _, library := range libraries {
 			g.Go(func() error {
 				if err := golang.Format(gctx, library); err != nil {
@@ -276,7 +248,6 @@ func generateLibraries(ctx context.Context, cfg *config.Config, libraries []*con
 		return java.PostGenerate(ctx, ".", cfg)
 	case config.LanguageNodejs:
 		g, gctx := errgroup.WithContext(ctx)
-		g.SetLimit(runtime.NumCPU())
 		for _, library := range libraries {
 			g.Go(func() error {
 				if err := nodejs.Generate(gctx, cfg, library, src); err != nil {
@@ -288,7 +259,6 @@ func generateLibraries(ctx context.Context, cfg *config.Config, libraries []*con
 		return g.Wait()
 	case config.LanguagePhp:
 		g, gctx := errgroup.WithContext(ctx)
-		g.SetLimit(runtime.NumCPU())
 		for _, library := range libraries {
 			g.Go(func() error {
 				if err := php.Generate(gctx, cfg, library, src); err != nil {
@@ -303,7 +273,6 @@ func generateLibraries(ctx context.Context, cfg *config.Config, libraries []*con
 		return g.Wait()
 	case config.LanguagePython:
 		g, gctx := errgroup.WithContext(ctx)
-		g.SetLimit(runtime.NumCPU())
 		for _, library := range libraries {
 			g.Go(func() error {
 				// TODO(https://github.com/googleapis/librarian/issues/3730):
@@ -317,7 +286,6 @@ func generateLibraries(ctx context.Context, cfg *config.Config, libraries []*con
 		return g.Wait()
 	case config.LanguageRuby:
 		g, gctx := errgroup.WithContext(ctx)
-		g.SetLimit(runtime.NumCPU())
 		for _, library := range libraries {
 			g.Go(func() error {
 				if err := ruby.Generate(gctx, cfg, library, src); err != nil {
@@ -334,7 +302,6 @@ func generateLibraries(ctx context.Context, cfg *config.Config, libraries []*con
 		// Generation can be parallelized but formatting cannot because
 		// cargo fmt shares the Cargo.toml workspace file across libraries.
 		g, gctx := errgroup.WithContext(ctx)
-		g.SetLimit(runtime.NumCPU())
 		for _, library := range libraries {
 			g.Go(func() error {
 				if err := rust.Generate(gctx, cfg, library, src); err != nil {
@@ -354,7 +321,6 @@ func generateLibraries(ctx context.Context, cfg *config.Config, libraries []*con
 		return rust.UpdateWorkspace(ctx)
 	case config.LanguageSwift:
 		g, gctx := errgroup.WithContext(ctx)
-		g.SetLimit(runtime.NumCPU())
 		for _, library := range libraries {
 			g.Go(func() error {
 				if err := swift.Generate(gctx, cfg, library, src); err != nil {
