@@ -487,11 +487,6 @@ This document describes the schema for the librarian.yaml.
 
 | Field | Type | Description |
 | :--- | :--- | :--- |
-<<<<<<< HEAD
-| `env_prefix` | string | Is the environment variable prefix. |
-| `extra_dependencies` | string | Contains extra runtime dependencies to the .gemspec file. |
-| `path_override` | string | Overrides file/directory paths under lib/ and proto_docs/. |
-=======
 | `ruby_cloud_opts` | [RubyCloudOpts](#rubycloudopts-configuration) (optional) | Contains options passed to the Ruby Cloud GAPIC generator as the `--ruby_cloud_opt` option. |
 
 ## RubyCloudOpts Configuration
@@ -499,8 +494,8 @@ This document describes the schema for the librarian.yaml.
 | Field | Type | Description |
 | :--- | :--- | :--- |
 | `ruby-cloud-env-prefix` | string | Is the environment variable prefix. |
-| `ruby-cloud-extra-dependencies` | string | Contains extra runtime dependencies to the .gemspec file. |
->>>>>>> main
+| `extra_dependencies` | string | Contains extra runtime dependencies to the .gemspec file. |
+| `path_override` | string | Overrides file/directory paths under lib/ and proto_docs/. |
 
 ## RubyPackage Configuration
 
