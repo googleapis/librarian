@@ -96,8 +96,10 @@ func TestFindRubyLibraries(t *testing.T) {
 				{
 					Path: "google/cloud/compute/v1",
 					Ruby: &config.RubyAPI{
-						EnvPrefix:         "COMPUTE",
-						ExtraDependencies: "google-cloud-common=~> 1.0",
+						RubyCloudOpts: &config.RubyCloudOpts{
+							EnvPrefix:         "COMPUTE",
+							ExtraDependencies: "google-cloud-common=~> 1.0",
+						},
 					},
 				},
 			},
@@ -116,7 +118,9 @@ func TestFindRubyLibraries(t *testing.T) {
 				{
 					Path: "google/cloud/secretmanager/v1",
 					Ruby: &config.RubyAPI{
-						EnvPrefix: "SECRET_MANAGER",
+						RubyCloudOpts: &config.RubyCloudOpts{
+							EnvPrefix: "SECRET_MANAGER",
+						},
 					},
 				},
 			},
@@ -254,6 +258,23 @@ func TestParseVersionedBuild(t *testing.T) {
 			googleapisDir: "testdata/googleapis",
 			apiPath:       "google/cloud/bigquery/connection/v1",
 			want:          &VersionedBuild{},
+		},
+		{
+			name:          "BUILD.bazel with path override",
+			googleapisDir: "testdata/googleapis",
+			apiPath:       "google/cloud/automl/v1",
+			want: &VersionedBuild{
+				EnvPrefix:    "AUTOML",
+				PathOverride: "auto_ml=automl",
+			},
+		},
+		{
+			name:          "BUILD.bazel with service override",
+			googleapisDir: "testdata/googleapis",
+			apiPath:       "google/cloud/alloydb/v1",
+			want: &VersionedBuild{
+				ServiceOverride: "AlloyDBCSQLAdmin=AlloyDBCloudSQLAdmin",
+			},
 		},
 		{
 			name:          "nonexistent BUILD.bazel returns nil",
