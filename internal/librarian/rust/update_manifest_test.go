@@ -46,7 +46,7 @@ func TestShouldBumpManifestVersionSuccess(t *testing.T) {
 		t.Fatalf("expected a line starting with `version ` in %v", lines)
 	}
 	lines[idx] = `version = "2.3.4"`
-	if err := os.WriteFile(name, []byte(strings.Join(lines, "\n")), 0644); err != nil {
+	if err := os.WriteFile(name, []byte(strings.Join(lines, "\n")), 0o644); err != nil {
 		t.Fatal(err)
 	}
 	testhelper.RunGit(t, "commit", "-m", "updated version", ".")
@@ -227,7 +227,7 @@ func setupTestCargoFile(t *testing.T, content string) string {
 	}
 	dir := t.TempDir()
 	filePath := path.Join(dir, "Cargo.toml")
-	if err := os.WriteFile(filePath, []byte(content), 0644); err != nil {
+	if err := os.WriteFile(filePath, []byte(content), 0o644); err != nil {
 		t.Fatal(err)
 	}
 	return filePath

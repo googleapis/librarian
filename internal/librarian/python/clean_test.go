@@ -175,7 +175,7 @@ func TestClean_Error(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			dir := t.TempDir()
 			test.lib.Output = filepath.Join(dir, test.lib.Name)
-			if err := os.Mkdir(test.lib.Output, 0755); err != nil {
+			if err := os.Mkdir(test.lib.Output, 0o755); err != nil {
 				t.Fatal(err)
 			}
 			if test.setup != nil {
@@ -384,12 +384,12 @@ func TestCleanGAPIC_Error(t *testing.T) {
 			setup: func(t *testing.T, dir string) {
 				sourceDirectory := filepath.Join(dir, "google", "cloud", "functions_v1")
 				createFileAndDirectories(t, filepath.Join(sourceDirectory, "gapic_version.py"))
-				if err := os.Chmod(sourceDirectory, 0555); err != nil {
+				if err := os.Chmod(sourceDirectory, 0o555); err != nil {
 					t.Fatal(err)
 				}
 				t.Cleanup(func() {
 					// Fix the permission afterwards so that it can be deleted.
-					if err := os.Chmod(sourceDirectory, 0755); err != nil {
+					if err := os.Chmod(sourceDirectory, 0o755); err != nil {
 						t.Fatal(err)
 					}
 				})
@@ -497,12 +497,12 @@ func TestCleanGAPICCommon_Error(t *testing.T) {
 			setup: func(t *testing.T, dir string) {
 				createFileAndDirectories(t, filepath.Join(dir, "subdir", "file.txt"))
 				subdir := filepath.Join(dir, "subdir")
-				if err := os.Chmod(subdir, 0555); err != nil {
+				if err := os.Chmod(subdir, 0o555); err != nil {
 					t.Fatal(err)
 				}
 				t.Cleanup(func() {
 					// Fix the permission afterwards so that it can be deleted.
-					if err := os.Chmod(subdir, 0755); err != nil {
+					if err := os.Chmod(subdir, 0o755); err != nil {
 						t.Fatal(err)
 					}
 				})
@@ -595,12 +595,12 @@ func TestDeleteUnlessKept_Error(t *testing.T) {
 			name:       "can't delete file from read-only directory",
 			setupFiles: []string{"readonly.txt"},
 			setup: func(t *testing.T, dir string) {
-				if err := os.Chmod(dir, 0555); err != nil {
+				if err := os.Chmod(dir, 0o555); err != nil {
 					t.Fatal(err)
 				}
 				t.Cleanup(func() {
 					// Fix the permission afterwards so that it can be deleted.
-					if err := os.Chmod(dir, 0755); err != nil {
+					if err := os.Chmod(dir, 0o755); err != nil {
 						t.Fatal(err)
 					}
 				})
@@ -613,12 +613,12 @@ func TestDeleteUnlessKept_Error(t *testing.T) {
 			setupFiles: []string{"subdir/readonly.txt"},
 			setup: func(t *testing.T, dir string) {
 				subdir := filepath.Join(dir, "subdir")
-				if err := os.Chmod(subdir, 0555); err != nil {
+				if err := os.Chmod(subdir, 0o555); err != nil {
 					t.Fatal(err)
 				}
 				t.Cleanup(func() {
 					// Fix the permission afterwards so that it can be deleted.
-					if err := os.Chmod(subdir, 0755); err != nil {
+					if err := os.Chmod(subdir, 0o755); err != nil {
 						t.Fatal(err)
 					}
 				})
@@ -631,12 +631,12 @@ func TestDeleteUnlessKept_Error(t *testing.T) {
 			setupFiles: []string{"subdir/file.txt"},
 			setup: func(t *testing.T, dir string) {
 				subdir := filepath.Join(dir, "subdir")
-				if err := os.Chmod(subdir, 0444); err != nil {
+				if err := os.Chmod(subdir, 0o444); err != nil {
 					t.Fatal(err)
 				}
 				t.Cleanup(func() {
 					// Fix the permission afterwards so that it can be deleted.
-					if err := os.Chmod(subdir, 0755); err != nil {
+					if err := os.Chmod(subdir, 0o755); err != nil {
 						t.Fatal(err)
 					}
 				})
@@ -654,7 +654,7 @@ func TestDeleteUnlessKept_Error(t *testing.T) {
 				}
 				t.Cleanup(func() {
 					// Fix the permission afterwards so that it can be deleted.
-					if err := os.Chmod(subdir, 0755); err != nil {
+					if err := os.Chmod(subdir, 0o755); err != nil {
 						t.Fatal(err)
 					}
 				})
@@ -700,10 +700,10 @@ func verifyFileDeletions(t *testing.T, dir string, setupFiles, wantDeleted []str
 }
 
 func createFileAndDirectories(t *testing.T, path string) {
-	if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(path, []byte{}, 0644); err != nil {
+	if err := os.WriteFile(path, []byte{}, 0o644); err != nil {
 		t.Fatal(err)
 	}
 }

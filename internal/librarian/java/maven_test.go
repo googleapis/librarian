@@ -33,7 +33,7 @@ func TestParsePOM(t *testing.T) {
   <artifactId>gapic-generator-java</artifactId>
 </project>`
 	pomPath := filepath.Join(tmpDir, "pom.xml")
-	if err := os.WriteFile(pomPath, []byte(mockPOM), 0644); err != nil {
+	if err := os.WriteFile(pomPath, []byte(mockPOM), 0o644); err != nil {
 		t.Fatal(err)
 	}
 	got, err := parsePOM(pomPath)
@@ -69,7 +69,7 @@ func TestParsePOM_Error(t *testing.T) {
 			name:    "invalid XML syntax",
 			pomPath: filepath.Join(tmpDir, "invalid.xml"),
 			setup: func(t *testing.T) {
-				if err := os.WriteFile(filepath.Join(tmpDir, "invalid.xml"), []byte("<project><invalid"), 0644); err != nil {
+				if err := os.WriteFile(filepath.Join(tmpDir, "invalid.xml"), []byte("<project><invalid"), 0o644); err != nil {
 					t.Fatal(err)
 				}
 			},
@@ -79,7 +79,7 @@ func TestParsePOM_Error(t *testing.T) {
 			name:    "missing artifactId or version",
 			pomPath: filepath.Join(tmpDir, "empty.xml"),
 			setup: func(t *testing.T) {
-				if err := os.WriteFile(filepath.Join(tmpDir, "empty.xml"), []byte("<project></project>"), 0644); err != nil {
+				if err := os.WriteFile(filepath.Join(tmpDir, "empty.xml"), []byte("<project></project>"), 0o644); err != nil {
 					t.Fatal(err)
 				}
 			},

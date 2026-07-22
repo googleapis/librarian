@@ -117,7 +117,7 @@ func TestRunConfigGet_Error(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			tempDir := t.TempDir()
 			t.Chdir(tempDir)
-			if err := os.WriteFile("librarian.yaml", []byte(test.configYAML), 0644); err != nil {
+			if err := os.WriteFile("librarian.yaml", []byte(test.configYAML), 0o644); err != nil {
 				t.Fatal(err)
 			}
 			var buf bytes.Buffer
@@ -152,7 +152,7 @@ func TestRunConfigSet(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			tempDir := t.TempDir()
 			t.Chdir(tempDir)
-			if err := os.WriteFile("librarian.yaml", []byte(test.configYAML), 0644); err != nil {
+			if err := os.WriteFile("librarian.yaml", []byte(test.configYAML), 0o644); err != nil {
 				t.Fatal(err)
 			}
 			err := runConfigSet(test.path, test.value)
@@ -204,7 +204,7 @@ func TestRunConfigSet_Error(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			tempDir := t.TempDir()
 			t.Chdir(tempDir)
-			if err := os.WriteFile("librarian.yaml", []byte(test.configYAML), 0644); err != nil {
+			if err := os.WriteFile("librarian.yaml", []byte(test.configYAML), 0o644); err != nil {
 				t.Fatal(err)
 			}
 			err := runConfigSet(test.path, test.value)

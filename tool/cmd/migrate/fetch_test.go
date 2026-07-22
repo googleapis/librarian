@@ -55,10 +55,10 @@ func TestFetchGoogleapisWithCommit(t *testing.T) {
 	t.Setenv("LIBRARIAN_CACHE", tmp)
 	// Pre-populate cache to avoid RepoDir downloading (which ignores our mock download URL)
 	cachePath := filepath.Join(tmp, fmt.Sprintf("%s@%s", googleapisRepo, wantCommit))
-	if err := os.MkdirAll(cachePath, 0755); err != nil {
+	if err := os.MkdirAll(cachePath, 0o755); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(filepath.Join(cachePath, "dummy"), []byte("dummy"), 0644); err != nil {
+	if err := os.WriteFile(filepath.Join(cachePath, "dummy"), []byte("dummy"), 0o644); err != nil {
 		t.Fatal(err)
 	}
 

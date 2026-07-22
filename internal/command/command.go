@@ -165,7 +165,7 @@ func lookPath(cmdName string, pathEnv string) (string, error) {
 		}
 		commandPath := filepath.Join(dir, cmdName)
 		if fileInfo, err := os.Stat(commandPath); err == nil && !fileInfo.IsDir() {
-			if filepath.Separator != '\\' && fileInfo.Mode().Perm()&0111 == 0 {
+			if filepath.Separator != '\\' && fileInfo.Mode().Perm()&0o111 == 0 {
 				continue
 			}
 			return filepath.Abs(commandPath)

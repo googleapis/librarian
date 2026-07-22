@@ -187,7 +187,7 @@ func TestFormat(t *testing.T) {
 	testhelper.RequireCommand(t, "dart")
 	outDir := t.TempDir()
 	dartFile := filepath.Join(outDir, "test.dart")
-	if err := os.WriteFile(dartFile, []byte("void main() { print('hello'); }"), 0644); err != nil {
+	if err := os.WriteFile(dartFile, []byte("void main() { print('hello'); }"), 0o644); err != nil {
 		t.Fatal(err)
 	}
 

@@ -141,7 +141,7 @@ func TestRustFromOpenAPI(t *testing.T) {
 		if errors.Is(err, fs.ErrNotExist) {
 			t.Errorf("missing %s: %s", filename, err)
 		}
-		if stat.Mode().Perm()|0666 != 0666 {
+		if stat.Mode().Perm()|0o666 != 0o666 {
 			t.Errorf("generated files should not be executable %s: %o", filename, stat.Mode())
 		}
 	}
@@ -173,7 +173,7 @@ func TestRustFromDiscovery(t *testing.T) {
 		if errors.Is(err, fs.ErrNotExist) {
 			t.Errorf("missing %s: %s", filename, err)
 		}
-		if stat.Mode().Perm()|0666 != 0666 {
+		if stat.Mode().Perm()|0o666 != 0o666 {
 			t.Errorf("generated files should not be executable %s: %o", filename, stat.Mode())
 		}
 	}
@@ -216,7 +216,7 @@ func TestRustFromProtobuf(t *testing.T) {
 		if errors.Is(err, fs.ErrNotExist) {
 			t.Errorf("missing %s: %s", filename, err)
 		}
-		if stat.Mode().Perm()|0666 != 0666 {
+		if stat.Mode().Perm()|0o666 != 0o666 {
 			t.Errorf("generated files should not be executable %s: %o", filename, stat.Mode())
 		}
 	}
@@ -261,7 +261,7 @@ func TestRustClient(t *testing.T) {
 			if errors.Is(err, fs.ErrNotExist) {
 				t.Errorf("missing %s: %s", filename, err)
 			}
-			if stat.Mode().Perm()|0666 != 0666 {
+			if stat.Mode().Perm()|0o666 != 0o666 {
 				t.Errorf("generated files should not be executable %s: %o", filename, stat.Mode())
 			}
 		}
@@ -312,7 +312,7 @@ func TestRustNosvc(t *testing.T) {
 		if errors.Is(err, fs.ErrNotExist) {
 			t.Errorf("missing %s: %s", filename, err)
 		}
-		if stat.Mode().Perm()|0666 != 0666 {
+		if stat.Mode().Perm()|0o666 != 0o666 {
 			t.Errorf("generated files should not be executable %s: %o", filename, stat.Mode())
 		}
 	}
@@ -353,7 +353,7 @@ func TestRustModuleRpc(t *testing.T) {
 		if errors.Is(err, fs.ErrNotExist) {
 			t.Errorf("missing %s: %s", filename, err)
 		}
-		if stat.Mode().Perm()|0666 != 0666 {
+		if stat.Mode().Perm()|0o666 != 0o666 {
 			t.Errorf("generated files should not be executable %s: %o", filename, stat.Mode())
 		}
 	}
@@ -394,7 +394,7 @@ func TestRustBootstrapWkt(t *testing.T) {
 		if errors.Is(err, fs.ErrNotExist) {
 			t.Errorf("missing %s: %s", filename, err)
 		}
-		if stat.Mode().Perm()|0666 != 0666 {
+		if stat.Mode().Perm()|0o666 != 0o666 {
 			t.Errorf("generated files should not be executable %s: %o", filename, stat.Mode())
 		}
 	}

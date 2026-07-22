@@ -66,7 +66,7 @@ name                   = "%s"
 version                = "%s"
 edition                = "2021"
 `, library.Name, version.String())
-		if err := os.WriteFile(cargoFile, []byte(cargo), 0644); err != nil {
+		if err := os.WriteFile(cargoFile, []byte(cargo), 0o644); err != nil {
 			return err
 		}
 	default:
@@ -101,5 +101,5 @@ func updateREADME(readmeFile, libraryName, version string) error {
 		return err
 	}
 	result := re.ReplaceAllString(string(content), "${1}"+version)
-	return os.WriteFile(readmeFile, []byte(result), 0644)
+	return os.WriteFile(readmeFile, []byte(result), 0o644)
 }

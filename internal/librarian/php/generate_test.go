@@ -45,7 +45,7 @@ func TestGenerate(t *testing.T) {
 	repoRoot := t.TempDir()
 	t.Chdir(repoRoot)
 	destDir := filepath.Join(repoRoot, "output")
-	if err := os.MkdirAll(destDir, 0755); err != nil {
+	if err := os.MkdirAll(destDir, 0o755); err != nil {
 		t.Fatal(err)
 	}
 	// Symlink mock owlbot.py. Tests use a simplified copy-only stub to
@@ -158,10 +158,10 @@ func TestGatherProtos(t *testing.T) {
 	}
 	for _, f := range files {
 		p := filepath.Join(tmp, f.path)
-		if err := os.MkdirAll(filepath.Dir(p), 0755); err != nil {
+		if err := os.MkdirAll(filepath.Dir(p), 0o755); err != nil {
 			t.Fatal(err)
 		}
-		if err := os.WriteFile(p, []byte(""), 0644); err != nil {
+		if err := os.WriteFile(p, []byte(""), 0o644); err != nil {
 			t.Fatal(err)
 		}
 	}
@@ -305,10 +305,10 @@ func TestGatherGAPICProtos(t *testing.T) {
 			tempDir := t.TempDir()
 			for _, file := range test.setupFiles {
 				p := filepath.Join(tempDir, file)
-				if err := os.MkdirAll(filepath.Dir(p), 0755); err != nil {
+				if err := os.MkdirAll(filepath.Dir(p), 0o755); err != nil {
 					t.Fatal(err)
 				}
-				if err := os.WriteFile(p, []byte(""), 0644); err != nil {
+				if err := os.WriteFile(p, []byte(""), 0o644); err != nil {
 					t.Fatal(err)
 				}
 			}
@@ -351,10 +351,10 @@ func TestGatherGAPICProtos_Error(t *testing.T) {
 			tempDir := t.TempDir()
 			for _, file := range test.setupFiles {
 				p := filepath.Join(tempDir, file)
-				if err := os.MkdirAll(filepath.Dir(p), 0755); err != nil {
+				if err := os.MkdirAll(filepath.Dir(p), 0o755); err != nil {
 					t.Fatal(err)
 				}
-				if err := os.WriteFile(p, []byte(""), 0644); err != nil {
+				if err := os.WriteFile(p, []byte(""), 0o644); err != nil {
 					t.Fatal(err)
 				}
 			}

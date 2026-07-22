@@ -94,7 +94,7 @@ func Generate(ctx context.Context, cfg *config.Config, library *config.Library, 
 	if err := os.RemoveAll(stagingDir); err != nil {
 		return err
 	}
-	if err := os.MkdirAll(stagingDir, 0755); err != nil {
+	if err := os.MkdirAll(stagingDir, 0o755); err != nil {
 		return err
 	}
 	srcCfg := sources.NewSourceConfig(src, library.Roots)
@@ -244,7 +244,7 @@ func buildBaseProtocArgs(srcCfg *sources.SourceConfig, outputArgs []string, targ
 }
 
 func extractOutput(ctx context.Context, zipPath, outDir string) error {
-	if err := os.MkdirAll(outDir, 0755); err != nil {
+	if err := os.MkdirAll(outDir, 0o755); err != nil {
 		return fmt.Errorf("failed to create output directory %s: %w", outDir, err)
 	}
 	if err := filesystem.Unzip(ctx, zipPath, outDir); err != nil {

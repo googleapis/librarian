@@ -35,10 +35,10 @@ func TestMoveAndMerge_Success(t *testing.T) {
 	// Setup: src contains files and dirs, dst has no collisions.
 	writeFile := func(dir, path, content string) {
 		p := filepath.Join(dir, path)
-		if err := os.MkdirAll(filepath.Dir(p), 0755); err != nil {
+		if err := os.MkdirAll(filepath.Dir(p), 0o755); err != nil {
 			t.Fatal(err)
 		}
-		if err := os.WriteFile(p, []byte(content), 0644); err != nil {
+		if err := os.WriteFile(p, []byte(content), 0o644); err != nil {
 			t.Fatal(err)
 		}
 	}
@@ -97,10 +97,10 @@ func TestMoveAndMerge_Success(t *testing.T) {
 func TestMoveAndMerge_FileCollisionError(t *testing.T) {
 	t.Parallel()
 	src, dst := t.TempDir(), t.TempDir()
-	if err := os.WriteFile(filepath.Join(src, "file.txt"), []byte("src"), 0644); err != nil {
+	if err := os.WriteFile(filepath.Join(src, "file.txt"), []byte("src"), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(filepath.Join(dst, "file.txt"), []byte("dst"), 0644); err != nil {
+	if err := os.WriteFile(filepath.Join(dst, "file.txt"), []byte("dst"), 0o644); err != nil {
 		t.Fatal(err)
 	}
 	if err := MoveAndMerge(src, dst); err == nil {
@@ -119,11 +119,11 @@ func TestMoveAndMerge_RenameError(t *testing.T) {
 	t.Parallel()
 	src := t.TempDir()
 	dst := t.TempDir()
-	if err := os.WriteFile(filepath.Join(src, "file"), []byte("data"), 0644); err != nil {
+	if err := os.WriteFile(filepath.Join(src, "file"), []byte("data"), 0o644); err != nil {
 		t.Fatal(err)
 	}
 	// Create a directory with the same name as src file in destination
-	if err := os.Mkdir(filepath.Join(dst, "file"), 0755); err != nil {
+	if err := os.Mkdir(filepath.Join(dst, "file"), 0o755); err != nil {
 		t.Fatal(err)
 	}
 	if err := MoveAndMerge(src, dst); err == nil {
@@ -136,21 +136,21 @@ func TestMoveAndMerge_RecursiveError(t *testing.T) {
 	src := t.TempDir()
 	dst := t.TempDir()
 	// Create src/dir/file
-	if err := os.MkdirAll(filepath.Join(src, "dir"), 0755); err != nil {
+	if err := os.MkdirAll(filepath.Join(src, "dir"), 0o755); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(filepath.Join(src, "dir", "file"), []byte("data"), 0644); err != nil {
+	if err := os.WriteFile(filepath.Join(src, "dir", "file"), []byte("data"), 0o644); err != nil {
 		t.Fatal(err)
 	}
 	// Create dst/dir
-	if err := os.MkdirAll(filepath.Join(dst, "dir"), 0755); err != nil {
+	if err := os.MkdirAll(filepath.Join(dst, "dir"), 0o755); err != nil {
 		t.Fatal(err)
 	}
 	// Make src/dir unreadable to cause ReadDir failure inside MoveAndMerge
-	if err := os.Chmod(filepath.Join(src, "dir"), 0000); err != nil {
+	if err := os.Chmod(filepath.Join(src, "dir"), 0o000); err != nil {
 		t.Fatal(err)
 	}
-	defer os.Chmod(filepath.Join(src, "dir"), 0755) // cleanup for TempDir
+	defer os.Chmod(filepath.Join(src, "dir"), 0o755) // cleanup for TempDir
 	if err := MoveAndMerge(src, dst); err == nil {
 		t.Error("MoveAndMerge() expected error for recursive failure, got nil")
 	}
@@ -160,10 +160,10 @@ func TestMoveAndMerge_SameSourceAndTarget(t *testing.T) {
 	t.Parallel()
 	dir := t.TempDir()
 	subdir := filepath.Join(dir, "sub")
-	if err := os.Mkdir(subdir, 0755); err != nil {
+	if err := os.Mkdir(subdir, 0o755); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(filepath.Join(subdir, "file.txt"), []byte("data"), 0644); err != nil {
+	if err := os.WriteFile(filepath.Join(subdir, "file.txt"), []byte("data"), 0o644); err != nil {
 		t.Fatal(err)
 	}
 	if err := MoveAndMerge(dir, dir); err == nil {
@@ -237,7 +237,7 @@ func TestMoveAndMergeWithKeep_Error(t *testing.T) {
 			setupFunc: func(t *testing.T, root string) (string, string) {
 				src, dst := filepath.Join(root, "src"), filepath.Join(root, "dst")
 				writeTestFiles(t, src, map[string]string{"file.txt": "content"})
-				if err := os.MkdirAll(dst, 0444); err != nil {
+				if err := os.MkdirAll(dst, 0o444); err != nil {
 					t.Fatal(err)
 				}
 				return src, dst
@@ -262,7 +262,7 @@ func TestCopyFile_Success(t *testing.T) {
 	src := filepath.Join(tmp, "src.txt")
 	dst := filepath.Join(tmp, "dst.txt")
 	content := "hello world"
-	if err := os.WriteFile(src, []byte(content), 0644); err != nil {
+	if err := os.WriteFile(src, []byte(content), 0o644); err != nil {
 		t.Fatal(err)
 	}
 	if err := CopyFile(src, dst); err != nil {
@@ -284,7 +284,7 @@ func TestCopyFile_Error(t *testing.T) {
 		t.Error("CopyFile() expected error for non-existent source, got nil")
 	}
 	src := filepath.Join(tmp, "src")
-	if err := os.WriteFile(src, []byte("test"), 0644); err != nil {
+	if err := os.WriteFile(src, []byte("test"), 0o644); err != nil {
 		t.Fatal(err)
 	}
 	// Try to create file in a non-existent directory
@@ -330,8 +330,8 @@ func TestUnzip_Permissions(t *testing.T) {
 		"exec.sh": "#!/bin/sh\necho hi",
 	}
 	modes := map[string]os.FileMode{
-		"dir/":    0755,
-		"exec.sh": 0755,
+		"dir/":    0o755,
+		"exec.sh": 0o755,
 	}
 	createZip(t, zipPath, files, modes)
 
@@ -343,7 +343,7 @@ func TestUnzip_Permissions(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if info.Mode().Perm()&0111 == 0 {
+	if info.Mode().Perm()&0o111 == 0 {
 		t.Errorf("expected directory to be traversable, got %v", info.Mode().Perm())
 	}
 	info, err = os.Stat(filepath.Join(destDir, "exec.sh"))
@@ -351,7 +351,7 @@ func TestUnzip_Permissions(t *testing.T) {
 		t.Fatal(err)
 	}
 	// Check if the executable bit is set (0111)
-	if info.Mode()&0111 == 0 {
+	if info.Mode()&0o111 == 0 {
 		t.Errorf("expected file to be executable, got mode %v", info.Mode())
 	}
 }
@@ -386,10 +386,10 @@ func writeTestFiles(t *testing.T, dir string, files map[string]string) {
 	t.Helper()
 	for path, content := range files {
 		full := filepath.Join(dir, path)
-		if err := os.MkdirAll(filepath.Dir(full), 0755); err != nil {
+		if err := os.MkdirAll(filepath.Dir(full), 0o755); err != nil {
 			t.Fatal(err)
 		}
-		if err := os.WriteFile(full, []byte(content), 0644); err != nil {
+		if err := os.WriteFile(full, []byte(content), 0o644); err != nil {
 			t.Fatal(err)
 		}
 	}
@@ -558,7 +558,7 @@ func TestIsDirNotEmpty(t *testing.T) {
 func setupDirStructure(t *testing.T, root string, dirs []string, files map[string]string) {
 	t.Helper()
 	for _, d := range dirs {
-		if err := os.MkdirAll(filepath.Join(root, d), 0755); err != nil {
+		if err := os.MkdirAll(filepath.Join(root, d), 0o755); err != nil {
 			t.Fatal(err)
 		}
 	}

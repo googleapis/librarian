@@ -125,7 +125,7 @@ func Repo(ctx context.Context, repo, commit, expectedSHA256 string) (string, err
 		sha, err := computeSHA256(tgz)
 		if err == nil {
 			if sha == expectedSHA256 {
-				if err := os.MkdirAll(outDir, 0755); err != nil {
+				if err := os.MkdirAll(outDir, 0o755); err != nil {
 					return "", fmt.Errorf("failed creating %q: %w", outDir, err)
 				}
 				if err := extractTarball(tgz, outDir); err == nil {
@@ -140,10 +140,10 @@ func Repo(ctx context.Context, repo, commit, expectedSHA256 string) (string, err
 
 	// Step 3: Download tarball, compute SHA256, verify against expected, extract.
 	sourceURL := fmt.Sprintf("https://%s/archive/%s.tar.gz", repo, commit)
-	if err := os.MkdirAll(filepath.Dir(tgz), 0755); err != nil {
+	if err := os.MkdirAll(filepath.Dir(tgz), 0o755); err != nil {
 		return "", fmt.Errorf("failed creating %q: %w", filepath.Dir(tgz), err)
 	}
-	if err := os.MkdirAll(outDir, 0755); err != nil {
+	if err := os.MkdirAll(outDir, 0o755); err != nil {
 		return "", fmt.Errorf("failed creating %q: %w", outDir, err)
 	}
 	if err := Download(ctx, tgz, sourceURL, expectedSHA256); err != nil {
@@ -296,7 +296,7 @@ func Download(ctx context.Context, target, url, expectedSHA256 string) error {
 	if expectedSHA256 == "" {
 		return errMissingSHA256
 	}
-	if err := os.MkdirAll(filepath.Dir(target), 0755); err != nil {
+	if err := os.MkdirAll(filepath.Dir(target), 0o755); err != nil {
 		return err
 	}
 	tempFile, err := os.CreateTemp(filepath.Dir(target), "temp-")
@@ -431,11 +431,11 @@ func extractTarball(tarballPath, destDir string) error {
 		target := filepath.Join(destDir, name)
 		switch hdr.Typeflag {
 		case tar.TypeDir:
-			if err := os.MkdirAll(target, 0755); err != nil {
+			if err := os.MkdirAll(target, 0o755); err != nil {
 				return err
 			}
 		case tar.TypeReg:
-			if err := os.MkdirAll(filepath.Dir(target), 0755); err != nil {
+			if err := os.MkdirAll(filepath.Dir(target), 0o755); err != nil {
 				return err
 			}
 
@@ -460,7 +460,7 @@ func extractTarball(tarballPath, destDir string) error {
 			if err != nil || strings.Contains(relLink, "..") {
 				return fmt.Errorf("%w: symlink target %q escapes destination directory %q", errSymlinkEscape, linkTarget, destDir)
 			}
-			if err := os.MkdirAll(filepath.Dir(target), 0755); err != nil {
+			if err := os.MkdirAll(filepath.Dir(target), 0o755); err != nil {
 				return err
 			}
 			if err := os.Symlink(linkTarget, target); err != nil {
