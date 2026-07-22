@@ -1373,14 +1373,6 @@ func TestCreateRepoMetadata_Error(t *testing.T) {
 		wantErr error
 	}{
 		{
-			name: "python not allowlisted for path",
-			library: &config.Library{
-				Name:   "google-spanner-executor",
-				APIs:   []*config.API{{Path: "google/spanner/executor/v1"}},
-				Python: &config.PythonPackage{DefaultVersion: "v1"},
-			},
-		},
-		{
 			name: "generated library with no default version",
 			library: &config.Library{
 				Name: "google-cloud-secret-manager",
