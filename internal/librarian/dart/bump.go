@@ -41,10 +41,6 @@ func recommendedVersion(ctx context.Context, lib *config.Library, defaults *conf
 		"--report-format", "json", "--report-file-path", reportPath, "--version-check-mode", "fully",
 		"--no-set-exit-on-version-check-failure")
 	if err != nil {
-		if strings.Contains(err.Error(), "Package not available") {
-			// First release: no breaking changes to compare against, keep old version.
-			return lib.Version, lib.Version, nil
-		}
 		return "", "", fmt.Errorf("dart-apitool failed: %w (output: %s)", err, output)
 	}
 
@@ -85,23 +81,26 @@ func maybeBumpLibrary(ctx context.Context, cloudDeps []string, newVersions map[s
 
 	libraryChanged := false
 	var lastReleaseTagCommit string
-	if defaults != nil && defaults.TagFormat != "" {
-		tagName := git.FormatTagName(defaults.TagFormat, lib.Name, lib.Version)
-		commit, err := git.GetCommitHash(ctx, command.Git, tagName)
-		if err != nil {
-			// If tag doesn't exist yet then it has not been released, so it has not changed.
-			libraryChanged = false
-		} else {
-			lastReleaseTagCommit = commit
-			filesChanged, err := git.FilesChangedSince(ctx, command.Git, lastReleaseTagCommit, []string{})
-			if err != nil {
-				return "", err
-			}
-			libraryChanged = git.HasChangesIn(packageDir, "", filesChanged)
+	if defaults == nil || defaults.TagFormat == "" {
+		return "", errors.New("no tag format configured")
+	}
+
+	tagName := git.FormatTagName(defaults.TagFormat, lib.Name, lib.Version)
+	commit, err := git.GetCommitHash(ctx, command.Git, tagName)
+	if err != nil {
+		// If tag doesn't exist yet then then will be the first release so we just need
+		// to update CHANGELOG.md
+		if err := updateChangelog(ctx, packageDir, oldVersion, "", false); err != nil {
+			return "", err
 		}
+		return oldVersion, nil
 	} else {
-		// If tag format is not configured, fallback to true.
-		libraryChanged = true
+		lastReleaseTagCommit = commit
+		filesChanged, err := git.FilesChangedSince(ctx, command.Git, lastReleaseTagCommit, []string{})
+		if err != nil {
+			return "", err
+		}
+		libraryChanged = git.HasChangesIn(packageDir, "", filesChanged)
 	}
 
 	depsChanged := false
