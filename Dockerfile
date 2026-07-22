@@ -28,7 +28,7 @@ RUN CGO_ENABLED=0 GOOS=linux go build ./cmd/librarian
 # while in Docker. Note that for this to work, *this*
 # docker image should be run with
 #  -v /var/run/docker.sock:/var/run/docker.sock
-FROM golang:1.24.3
+FROM golang:1.26.5
 WORKDIR /app
 
 # From https://docs.docker.com/engine/install/debian/
