@@ -297,6 +297,8 @@ func gapicOpts(apiMetadata *serviceconfig.API, grpcConfigPath string) []string {
 		transport = apiMetadata.Transport(config.LanguagePhp)
 	}
 	opts := []string{"metadata", "transport=" + string(transport)}
+	// TODO(https://github.com/googleapis/gapic-generator-php/pull/834):
+	// remove when generator change is done
 	opts = append(opts, "migration-mode=NEW_SURFACE_ONLY")
 	if apiMetadata != nil && apiMetadata.HasRESTNumericEnums(config.LanguagePhp) {
 		opts = append(opts, "rest-numeric-enums")
