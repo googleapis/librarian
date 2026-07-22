@@ -493,8 +493,8 @@ This document describes the schema for the librarian.yaml.
 
 | Field | Type | Description |
 | :--- | :--- | :--- |
-| `env_prefix` | string | Is the environment variable prefix. |
-| `extra_dependencies` | string | Contains extra runtime dependencies to the .gemspec file. |
+| `ruby-cloud-env-prefix` | string | Is the environment variable prefix. |
+| `ruby-cloud-extra-dependencies` | string | Contains extra runtime dependencies to the .gemspec file. |
 
 ## RubyPackage Configuration
 

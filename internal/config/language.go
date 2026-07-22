@@ -850,10 +850,10 @@ type RubyPackage struct {
 // RubyCloudOpts contains options passed to the Ruby Cloud GAPIC generator.
 type RubyCloudOpts struct {
 	// EnvPrefix is the environment variable prefix.
-	EnvPrefix string `yaml:"env_prefix,omitempty"`
+	EnvPrefix string `yaml:"ruby-cloud-env-prefix,omitempty"`
 
 	// ExtraDependencies contains extra runtime dependencies to the .gemspec file.
-	ExtraDependencies string `yaml:"extra_dependencies,omitempty"`
+	ExtraDependencies string `yaml:"ruby-cloud-extra-dependencies,omitempty"`
 }
 
 // RubyAPI represents configuration for a single API within a Ruby package.
