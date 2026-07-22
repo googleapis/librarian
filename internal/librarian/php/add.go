@@ -46,9 +46,6 @@ func Add(lib *config.Library) *config.Library {
 		if api.PHP.StagingSubdir == "" {
 			api.PHP.StagingSubdir = serviceconfig.ExtractVersion(api.Path)
 		}
-		if api.PHP.MigrationMode == "" {
-			api.PHP.MigrationMode = "NEW_SURFACE_ONLY"
-		}
 	}
 	return lib
 }

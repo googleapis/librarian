@@ -182,28 +182,16 @@ func TestGatherProtos(t *testing.T) {
 func TestGapicOpts(t *testing.T) {
 	for _, test := range []struct {
 		name           string
-		api            *config.API
 		apiMetadata    *serviceconfig.API
 		grpcConfigPath string
 		want           []string
 	}{
 		{
 			name: "defaults",
-			api:  &config.API{},
 			want: []string{"metadata", "transport=grpc+rest", "migration-mode=NEW_SURFACE_ONLY", "generate-snippets"},
 		},
 		{
-			name: "custom migration mode",
-			api: &config.API{
-				PHP: &config.PHPAPI{
-					MigrationMode: "MIGRATING",
-				},
-			},
-			want: []string{"metadata", "transport=grpc+rest", "migration-mode=MIGRATING", "generate-snippets"},
-		},
-		{
 			name: "with grpc config and service yaml",
-			api:  &config.API{},
 			apiMetadata: &serviceconfig.API{
 				ServiceConfig: "service.yaml",
 			},
@@ -217,7 +205,6 @@ func TestGapicOpts(t *testing.T) {
 		},
 		{
 			name: "skip rest numeric enums",
-			api:  &config.API{},
 			apiMetadata: &serviceconfig.API{
 				SkipRESTNumericEnums: []string{"php"},
 			},
@@ -226,7 +213,6 @@ func TestGapicOpts(t *testing.T) {
 		},
 		{
 			name: "custom transport",
-			api:  &config.API{},
 			apiMetadata: &serviceconfig.API{
 				Transports: map[string]serviceconfig.Transport{
 					"php": serviceconfig.Transport("rest"),
@@ -237,7 +223,7 @@ func TestGapicOpts(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got := gapicOpts(test.api, test.apiMetadata, test.grpcConfigPath)
+			got := gapicOpts(test.apiMetadata, test.grpcConfigPath)
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}

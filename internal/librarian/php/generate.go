@@ -165,7 +165,7 @@ func generateAPI(ctx context.Context, params *generateAPIParams) (retErr error) 
 	if err != nil {
 		return err
 	}
-	opts := gapicOpts(params.api, apiMetadata, grpcConfigPath)
+	opts := gapicOpts(apiMetadata, grpcConfigPath)
 	additionalProtos := params.api.PHP.AdditionalProtos
 	includeCommonResources := *params.api.PHP.CommonResources
 	gapicProtos, err := gatherGAPICProtos(googleapisDir, params.api.Path, additionalProtos, includeCommonResources)
@@ -291,17 +291,15 @@ func gatherProtos(root string) ([]string, error) {
 	return protos, nil
 }
 
-func gapicOpts(api *config.API, apiMetadata *serviceconfig.API, grpcConfigPath string) []string {
+func gapicOpts(apiMetadata *serviceconfig.API, grpcConfigPath string) []string {
 	transport := serviceconfig.GRPCRest
 	if apiMetadata != nil {
 		transport = apiMetadata.Transport(config.LanguagePhp)
 	}
 	opts := []string{"metadata", "transport=" + string(transport)}
-	migrationMode := "NEW_SURFACE_ONLY"
-	if api.PHP != nil && api.PHP.MigrationMode != "" {
-		migrationMode = api.PHP.MigrationMode
-	}
-	opts = append(opts, "migration-mode="+migrationMode)
+	// TODO(https://github.com/googleapis/gapic-generator-php/pull/834):
+	// remove when generator change is done
+	opts = append(opts, "migration-mode=NEW_SURFACE_ONLY")
 	if apiMetadata != nil && apiMetadata.HasRESTNumericEnums(config.LanguagePhp) {
 		opts = append(opts, "rest-numeric-enums")
 	}
