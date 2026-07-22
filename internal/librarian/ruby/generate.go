@@ -107,9 +107,6 @@ func generateAPI(ctx context.Context, api *config.API, gemName string, pc *confi
 }
 
 func buildGAPICOpts(api *config.API, gemName, googleapisDir string) ([]string, error) {
-	if api == nil {
-		return nil, errors.New("api is nil")
-	}
 	sc, err := serviceconfig.Find(googleapisDir, api.Path, config.LanguageRuby)
 	if err != nil {
 		return nil, err
