@@ -20,7 +20,6 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
-	"slices"
 	"strings"
 	"testing"
 
@@ -154,15 +153,21 @@ func TestBump_NothingChanged(t *testing.T) {
 	testhelper.RequireCommand(t, "dart")
 	testhelper.RequireCommand(t, "git")
 
+	inputDir, err := filepath.Abs("testdata/nothing_changed/input")
+	if err != nil {
+		t.Fatal(err)
+	}
+	goldenDir, err := filepath.Abs("testdata/nothing_changed/golden_output")
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	repoVersions := map[string]string{
 		"a": "1.0.0",
 		"b": "1.0.0",
 		"c": "1.0.0",
 	}
-	deps := map[string][]string{
-		"b": {"a"},
-	}
-	setupRepo(t, repoVersions, deps)
+	setupRepoFromDir(t, inputDir, repoVersions)
 
 	apiToolResponses := map[string]packageVersion{
 		"a": {needed: "1.0.0", old: "1.0.0"},
@@ -188,7 +193,7 @@ func TestBump_NothingChanged(t *testing.T) {
 		},
 	}
 
-	err := Bump(t.Context(), cfg, true, "", "")
+	err = Bump(t.Context(), cfg, true, "", "")
 	if err != nil {
 		t.Fatalf("Bump failed: %v", err)
 	}
@@ -206,67 +211,28 @@ func TestBump_NothingChanged(t *testing.T) {
 		t.Errorf("default packages map = %v; want %v", got, want)
 	}
 
-	// Verify updated files in directory:
-	// a's pubspec should be 1.0.0
-	// b's pubspec should be 1.0.0 and depend on a: ^1.0.0
-	pubspecA, err := os.ReadFile("generated/a/pubspec.yaml")
-	if err != nil {
-		t.Fatal(err)
-	}
-	wantPubspecA := `name: a
-version: 1.0.0
-environment:
-  sdk: ^3.9.0
-resolution: workspace
-`
-	if got := string(pubspecA); got != wantPubspecA {
-		t.Errorf("a/pubspec.yaml content mismatch:\ngot:\n%s\nwant:\n%s", got, wantPubspecA)
-	}
-
-	pubspecB, err := os.ReadFile("generated/b/pubspec.yaml")
-	if err != nil {
-		t.Fatal(err)
-	}
-	wantPubspecB := `name: b
-version: 1.0.0
-environment:
-  sdk: ^3.9.0
-resolution: workspace
-dependencies:
-  a: ^1.0.0
-`
-	if got := string(pubspecB); got != wantPubspecB {
-		t.Errorf("b/pubspec.yaml content mismatch:\ngot:\n%s\nwant:\n%s", got, wantPubspecB)
-	}
-
-	pubspecC, err := os.ReadFile("generated/c/pubspec.yaml")
-	if err != nil {
-		t.Fatal(err)
-	}
-	wantPubspecC := `name: c
-version: 1.0.0
-environment:
-  sdk: ^3.9.0
-resolution: workspace
-`
-	if got := string(pubspecC); got != wantPubspecC {
-		t.Errorf("c/pubspec.yaml content mismatch:\ngot:\n%s\nwant:\n%s", got, wantPubspecC)
-	}
+	compareDirWithGolden(t, goldenDir)
 }
 
 func TestBump_APIChange(t *testing.T) {
 	testhelper.RequireCommand(t, "dart")
 	testhelper.RequireCommand(t, "git")
 
+	inputDir, err := filepath.Abs("testdata/api_change/input")
+	if err != nil {
+		t.Fatal(err)
+	}
+	goldenDir, err := filepath.Abs("testdata/api_change/golden_output")
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	repoVersions := map[string]string{
 		"a": "1.0.0",
 		"b": "1.0.0",
 		"c": "1.0.0",
 	}
-	deps := map[string][]string{
-		"b": {"a"},
-	}
-	setupRepo(t, repoVersions, deps)
+	setupRepoFromDir(t, inputDir, repoVersions)
 
 	// Now make a commit with changes to package a.
 	if err := os.WriteFile("generated/a/lib.dart", []byte("const a = 5"), 0644); err != nil {
@@ -301,7 +267,7 @@ func TestBump_APIChange(t *testing.T) {
 		},
 	}
 
-	err := Bump(t.Context(), cfg, true, "", "")
+	err = Bump(t.Context(), cfg, true, "", "")
 	if err != nil {
 		t.Fatalf("Bump failed: %v", err)
 	}
@@ -322,67 +288,28 @@ func TestBump_APIChange(t *testing.T) {
 		t.Errorf("default packages map = %v; want %v", got, want)
 	}
 
-	// Verify updated files in directory:
-	// a's pubspec should be 1.1.0
-	// b's pubspec should be 1.0.1 and depend on a: ^1.1.0
-	pubspecA, err := os.ReadFile("generated/a/pubspec.yaml")
-	if err != nil {
-		t.Fatal(err)
-	}
-	wantPubspecA := `name: a
-version: 1.1.0
-environment:
-  sdk: ^3.9.0
-resolution: workspace
-`
-	if got := string(pubspecA); got != wantPubspecA {
-		t.Errorf("a/pubspec.yaml content mismatch:\ngot:\n%s\nwant:\n%s", got, wantPubspecA)
-	}
-
-	pubspecB, err := os.ReadFile("generated/b/pubspec.yaml")
-	if err != nil {
-		t.Fatal(err)
-	}
-	wantPubspecB := `name: b
-version: 1.0.1
-environment:
-  sdk: ^3.9.0
-resolution: workspace
-dependencies:
-  a: ^1.1.0
-`
-	if got := string(pubspecB); got != wantPubspecB {
-		t.Errorf("b/pubspec.yaml content mismatch:\ngot:\n%s\nwant:\n%s", got, wantPubspecB)
-	}
-
-	pubspecC, err := os.ReadFile("generated/c/pubspec.yaml")
-	if err != nil {
-		t.Fatal(err)
-	}
-	wantPubspecC := `name: c
-version: 1.0.0
-environment:
-  sdk: ^3.9.0
-resolution: workspace
-`
-	if got := string(pubspecC); got != wantPubspecC {
-		t.Errorf("c/pubspec.yaml content mismatch:\ngot:\n%s\nwant:\n%s", got, wantPubspecC)
-	}
+	compareDirWithGolden(t, goldenDir)
 }
 
 func TestBump_FileChanged_APIUnchanged(t *testing.T) {
 	testhelper.RequireCommand(t, "git")
 	testhelper.RequireCommand(t, "dart")
 
+	inputDir, err := filepath.Abs("testdata/file_changed_api_unchanged/input")
+	if err != nil {
+		t.Fatal(err)
+	}
+	goldenDir, err := filepath.Abs("testdata/file_changed_api_unchanged/golden_output")
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	repoVersions := map[string]string{
 		"a": "1.0.0",
 		"b": "1.0.0",
 		"c": "1.0.0",
 	}
-	deps := map[string][]string{
-		"b": {"a"},
-	}
-	setupRepo(t, repoVersions, deps)
+	setupRepoFromDir(t, inputDir, repoVersions)
 
 	// Now make a commit with changes to package a.
 	if err := os.WriteFile("generated/a/lib.dart", []byte("// library a: new fix"), 0644); err != nil {
@@ -417,7 +344,7 @@ func TestBump_FileChanged_APIUnchanged(t *testing.T) {
 		},
 	}
 
-	err := Bump(t.Context(), cfg, true, "", "")
+	err = Bump(t.Context(), cfg, true, "", "")
 	if err != nil {
 		t.Fatalf("Bump failed: %v", err)
 	}
@@ -439,38 +366,7 @@ func TestBump_FileChanged_APIUnchanged(t *testing.T) {
 		t.Errorf("default packages map = %v; want %v", got, want)
 	}
 
-	// Verify updated files in directory:
-	// a's pubspec should be 1.0.1
-	// b's pubspec should be 1.0.1 and depend on a: ^1.0.1
-	pubspecA, err := os.ReadFile("generated/a/pubspec.yaml")
-	if err != nil {
-		t.Fatal(err)
-	}
-	wantPubspecA := `name: a
-version: 1.0.1
-environment:
-  sdk: ^3.9.0
-resolution: workspace
-`
-	if got := string(pubspecA); got != wantPubspecA {
-		t.Errorf("a/pubspec.yaml content mismatch:\ngot:\n%s\nwant:\n%s", got, wantPubspecA)
-	}
-
-	pubspecB, err := os.ReadFile("generated/b/pubspec.yaml")
-	if err != nil {
-		t.Fatal(err)
-	}
-	wantPubspecB := `name: b
-version: 1.0.1
-environment:
-  sdk: ^3.9.0
-resolution: workspace
-dependencies:
-  a: ^1.0.1
-`
-	if got := string(pubspecB); got != wantPubspecB {
-		t.Errorf("b/pubspec.yaml content mismatch:\ngot:\n%s\nwant:\n%s", got, wantPubspecB)
-	}
+	compareDirWithGolden(t, goldenDir)
 }
 
 func libraryVersions(libaries []*config.Library) map[string]string {
@@ -481,10 +377,13 @@ func libraryVersions(libaries []*config.Library) map[string]string {
 	return m
 }
 
-// repoVersions: {"a": "1.0.0", "b": "1.0.0", "c": "1.0.0"}
-// deps: {"a": ["b", "c"]}
-func setupRepo(t *testing.T, repoVersions map[string]string, deps map[string][]string) {
+func setupRepoFromDir(t *testing.T, sourceDir string, repoVersions map[string]string) {
 	t.Helper()
+
+	absSourceDir, err := filepath.Abs(sourceDir)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	remoteDir := testhelper.SetupRepoWithChange(t, "release-2001-02-03")
 	if err := command.Run(t.Context(), command.Git, "-C", remoteDir, "config", "receive.denyCurrentBranch", "ignore"); err != nil {
@@ -492,59 +391,81 @@ func setupRepo(t *testing.T, repoVersions map[string]string, deps map[string][]s
 	}
 	testhelper.CloneRepository(t, remoteDir)
 
-	var workspaceLines []string
-	workspaceLines = append(workspaceLines, "name: pkg_workspace", "publish_to: none", "", "environment:", "  sdk: ^3.9.0", "", "workspace:")
+	copyDir(t, absSourceDir, ".")
 
-	var pkgNames []string
-	for name := range repoVersions {
-		pkgNames = append(pkgNames, name)
-	}
-	slices.Sort(pkgNames)
-	for _, name := range pkgNames {
-		workspaceLines = append(workspaceLines, fmt.Sprintf("  - generated/%s", name))
-	}
-	workspacePubspec := strings.Join(workspaceLines, "\n") + "\n"
+	testhelper.RunGit(t, "add", ".")
+	testhelper.RunGit(t, "commit", "-m", "feat: added files from template", ".")
+	testhelper.RunGit(t, "push", config.RemoteUpstream, config.BranchMain)
 
-	if err := os.WriteFile("pubspec.yaml", []byte(workspacePubspec), 0644); err != nil {
+	for name, version := range repoVersions {
+		testhelper.RunGit(t, "tag", fmt.Sprintf("%s-v%s", name, version))
+	}
+}
+
+func copyDir(t *testing.T, src, dst string) {
+	t.Helper()
+	err := filepath.WalkDir(src, func(path string, d os.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		rel, err := filepath.Rel(src, path)
+		if err != nil {
+			return err
+		}
+		target := filepath.Join(dst, rel)
+		if d.IsDir() {
+			return os.MkdirAll(target, 0755)
+		}
+		data, err := os.ReadFile(path)
+		if err != nil {
+			return err
+		}
+		return os.WriteFile(target, data, 0644)
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
+func compareDirWithGolden(t *testing.T, goldenDir string) {
+	t.Helper()
+
+	absGoldenDir, err := filepath.Abs(goldenDir)
+	if err != nil {
 		t.Fatal(err)
 	}
 
-	for _, name := range pkgNames {
-		version := repoVersions[name]
-		if err := os.MkdirAll("generated/"+name, 0755); err != nil {
-			t.Fatal(err)
+	err = filepath.WalkDir(absGoldenDir, func(path string, d os.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		if d.IsDir() {
+			return nil
 		}
 
-		var dependencies string
-		if len(deps[name]) > 0 {
-			dependencies = "\ndependencies:\n"
-			for _, depName := range deps[name] {
-				dependencies += fmt.Sprintf("  %s: ^%s\n", depName, repoVersions[depName])
-			}
+		relPath, err := filepath.Rel(absGoldenDir, path)
+		if err != nil {
+			return err
 		}
 
-		pubspec := fmt.Sprintf(`name: %s
-version: %s
-environment:
-  sdk: ^3.9.0
-resolution: workspace%s`, name, version, dependencies)
-		pubspec = strings.TrimSuffix(pubspec, "\n") + "\n"
-		if err := os.WriteFile("generated/"+name+"/pubspec.yaml", []byte(pubspec), 0644); err != nil {
-			t.Fatal(err)
+		gotBytes, err := os.ReadFile(relPath)
+		if err != nil {
+			t.Errorf("expected file %s is missing in output: %v", relPath, err)
+			return nil
 		}
 
-		if err := os.WriteFile("generated/"+name+"/lib.dart", []byte("// library "+name), 0644); err != nil {
-			t.Fatal(err)
+		wantBytes, err := os.ReadFile(path)
+		if err != nil {
+			return err
 		}
-	}
 
-	testhelper.RunGit(t, "add", ".")
-	testhelper.RunGit(t, "commit", "-m", "feat: added pubspec files", ".")
-	testhelper.RunGit(t, "push", config.RemoteUpstream, config.BranchMain)
-
-	// Tag the initial releases
-	for name, version := range repoVersions {
-		testhelper.RunGit(t, "tag", fmt.Sprintf("%s-v%s", name, version))
+		if got, want := strings.TrimSpace(string(gotBytes)), strings.TrimSpace(string(wantBytes)); got != want {
+			t.Errorf("file %s content mismatch:\ngot:\n%s\nwant:\n%s", relPath, got, want)
+		}
+		return nil
+	})
+	if err != nil {
+		t.Fatal(err)
 	}
 }
 
