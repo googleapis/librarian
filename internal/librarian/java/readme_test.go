@@ -913,6 +913,17 @@ func TestRenderREADME(t *testing.T) {
 			},
 			goldenFile: filepath.Join("testdata", "readme", "partials.golden"),
 		},
+		{
+			name: "renders storage README with dual dependencies",
+			setupParams: func(p *libraryPostProcessParams) {
+				meta := *p.metadata
+				meta.DistributionName = "com.google.cloud:google-cloud-storage"
+				meta.NamePretty = "Storage"
+				meta.APIShortname = "storage"
+				p.metadata = &meta
+			},
+			goldenFile: filepath.Join("testdata", "readme", "storage.golden"),
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			dir := t.TempDir()

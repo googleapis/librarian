@@ -31,7 +31,7 @@ func TestRunPHPMigration(t *testing.T) {
 	t.Cleanup(func() {
 		phpFetchSource = oldFetchSource
 	})
-	absGoogleapis, err := filepath.Abs("../../internal/testdata/googleapis")
+	absGoogleapis, err := filepath.Abs("testdata/googleapis")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -55,12 +55,31 @@ func TestRunPHPMigration(t *testing.T) {
 	if err := os.WriteFile(filepath.Join(libDir, "composer.json"), []byte("{}"), 0644); err != nil {
 		t.Fatal(err)
 	}
+	owlbotContent := `
+deep-copy-regex:
+  - source: /google/cloud/secretmanager/(v1)/.*-php/(.*)
+    dest: /owl-bot-staging/SecretManager/$1/$2
+`
+	if err := os.WriteFile(filepath.Join(libDir, ".OwlBot.yaml"), []byte(owlbotContent), 0644); err != nil {
+		t.Fatal(err)
+	}
 	// Create a fake non-library directory to ensure it is ignored.
 	ignoredDir := filepath.Join(dir, "dev")
 	if err := os.Mkdir(ignoredDir, 0755); err != nil {
 		t.Fatal(err)
 	}
 	if err := os.WriteFile(filepath.Join(ignoredDir, "composer.json"), []byte("{}"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	// Create a fake library HandwrittenLib (no .OwlBot.yaml) to ensure it is skipped.
+	handwrittenLibDir := filepath.Join(dir, "HandwrittenLib")
+	if err := os.Mkdir(handwrittenLibDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(handwrittenLibDir, "VERSION"), []byte("1.0.0\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(handwrittenLibDir, "composer.json"), []byte("{}"), 0644); err != nil {
 		t.Fatal(err)
 	}
 	t.Chdir(dir)
@@ -91,6 +110,14 @@ func TestRunPHPMigration(t *testing.T) {
 			{
 				Name:    "SecretManager",
 				Version: "2.3.0",
+				APIs: []*config.API{
+					{
+						Path: "google/cloud/secretmanager/v1",
+						PHP: &config.PHPAPI{
+							StagingSubdir: "v1",
+						},
+					},
+				},
 			},
 		},
 		Tools: &config.Tools{

@@ -20,6 +20,7 @@ import (
 
 	"github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/librarian/dart"
 	"github.com/googleapis/librarian/internal/librarian/rust"
 	"github.com/googleapis/librarian/internal/yaml"
 	"github.com/urfave/cli/v3"
@@ -34,7 +35,7 @@ func publishCommand() *cli.Command {
 		Description: `publish releases the libraries that were updated in a release commit
 prepared by librarian bump.
 
-Only Rust is supported.`,
+Only Dart and Rust are supported.`,
 		Flags: []cli.Flag{
 			&cli.BoolFlag{
 				Name:  "dry-run",
@@ -62,9 +63,27 @@ Only Rust is supported.`,
 			if cfg.Language == config.LanguageRust {
 				return rustPublish(ctx, cfg, cmd)
 			}
+			if cfg.Language == config.LanguageDart {
+				return dartPublish(ctx, cfg, cmd)
+			}
 			return fmt.Errorf("publish is not supported for %q", cfg.Language)
 		},
 	}
+}
+
+func dartPublish(ctx context.Context, cfg *config.Config, cmd *cli.Command) error {
+	dryRun := cmd.Bool("dry-run")
+	skipSemverChecks := cmd.Bool("skip-semver-checks")
+	dryRunKeepGoing := cmd.Bool("dry-run-keep-going")
+	verbose := cmd.Bool("verbose")
+	command.Verbose = verbose
+	return dart.Publish(ctx, dart.PublishParams{
+		Config:           cfg,
+		DryRun:           dryRun,
+		DryRunKeepGoing:  dryRunKeepGoing,
+		SkipSemverChecks: skipSemverChecks,
+		Verbose:          verbose,
+	})
 }
 
 func rustPublish(ctx context.Context, cfg *config.Config, cmd *cli.Command) error {

@@ -48,24 +48,7 @@ library construction, it should be a configuration property in the
 language-specific library settings. For example, the Python library property
 `default_version` is unique to how Python libraries are packaged and consumed.
 
-### 2. Restricting Languages for an API
-
-By default, Librarian will allow client generation in all supported languages
-for all APIs. For some APIs, it is desirable to restrict client generation to
-a specific set of languages.
-
-**Example:**
-```yaml
-- path: google/ai/generativelanguage/v1
-  languages:
-    - go
-    - nodejs
-    - python
-```
-This ensures that for the Gemini Generative Language API, only Go, Node.js,
-and Python clients are generated, even if Librarian supports others.
-
-### 3. Overriding Release Levels
+### 2. Overriding Release Levels
 
 Librarian derives the release level (preview, stable) of a client based on the
 API version (e.g., `v1` is usually stable, `v1alpha` is preview). If an API
@@ -75,18 +58,13 @@ logic, it must be explicitly set.
 **Example:**
 ```yaml
 - path: google/analytics/admin/v1alpha
-  languages:
-    - go
-    - java
-    - nodejs
-    - python
   release_level:
     java: preview
 ```
 Here, the Java client for this alpha API is explicitly kept in "preview" state
 or similar override.
 
-### 4. Overriding Transports
+### 2. Overriding Transports
 
 Librarian defaults to using gRPC & REST. If a specific transport must be used
 for all languages or a subset of languages, it can be overridden.
@@ -99,7 +77,7 @@ for all languages or a subset of languages, it can be overridden.
 ```
 This forces the use of REST for all languages for the Ad Manager API.
 
-### 5. Overriding Rest Numeric Enums
+### 4. Overriding Rest Numeric Enums
 
 Some languages might need to skip REST numeric enums due to compatibility or
 legacy reasons.

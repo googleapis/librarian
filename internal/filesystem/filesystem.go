@@ -23,6 +23,8 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"slices"
+	"syscall"
 
 	"github.com/googleapis/librarian/internal/command"
 )
@@ -138,4 +140,42 @@ func CopyFile(src, dest string) error {
 // Unzip unzips the src archive into dest directory using the system unzip command.
 func Unzip(ctx context.Context, src, dest string) error {
 	return command.Run(ctx, "unzip", "-q", "-o", src, "-d", dest)
+}
+
+// RemoveEmptyDirs walks the targetPath and removes empty subdirectories bottom-up.
+// It preserves directories if keepFunc returns true.
+// root is used to calculate relative paths passed to keepFunc.
+func RemoveEmptyDirs(targetPath, root string, keepFunc func(string) bool) error {
+	var dirs []string
+	err := filepath.WalkDir(targetPath, func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		if !d.IsDir() {
+			return nil
+		}
+		rel, err := filepath.Rel(root, path)
+		if err != nil {
+			return err
+		}
+		if keepFunc != nil && keepFunc(filepath.ToSlash(rel)) {
+			return filepath.SkipDir
+		}
+		dirs = append(dirs, path)
+		return nil
+	})
+	if err != nil && !errors.Is(err, fs.ErrNotExist) {
+		return err
+	}
+	for _, dir := range slices.Backward(dirs) {
+		if err := os.Remove(dir); err != nil && !errors.Is(err, fs.ErrNotExist) && !isDirNotEmpty(err) {
+			return err
+		}
+	}
+	return nil
+}
+
+// isDirNotEmpty returns true if err indicates the directory is not empty.
+func isDirNotEmpty(err error) bool {
+	return errors.Is(err, syscall.ENOTEMPTY) || errors.Is(err, syscall.EEXIST)
 }

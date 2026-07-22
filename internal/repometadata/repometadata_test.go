@@ -128,14 +128,6 @@ func TestFromLibrary_Error(t *testing.T) {
 			},
 			wantErr: ErrNoAPIs,
 		},
-		{
-			name: "non-allowlisted API",
-			library: &config.Library{
-				Name: "google-cloud-spanner-executor",
-				APIs: []*config.API{{Path: "google/spanner/executor/v1"}},
-			},
-			// Error returned by serviceconfig.Find isn't easily distinguished
-		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			cfg := &config.Config{Language: config.LanguagePython}
