@@ -181,7 +181,7 @@ func TestBump_NothingChanged(t *testing.T) {
 	testhelper.RequireCommand(t, "dart")
 	testhelper.RequireCommand(t, "git")
 
-	inputDir, err := filepath.Abs("testdata/bump/nothing_changed/input")
+	inputDir, err := filepath.Abs("testdata/bump/input")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -223,7 +223,7 @@ func TestBump_APIChange(t *testing.T) {
 	testhelper.RequireCommand(t, "dart")
 	testhelper.RequireCommand(t, "git")
 
-	inputDir, err := filepath.Abs("testdata/bump/api_change/input")
+	inputDir, err := filepath.Abs("testdata/bump/input")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -274,7 +274,7 @@ func TestBump_FileChanged_APIUnchanged(t *testing.T) {
 	testhelper.RequireCommand(t, "dart")
 	testhelper.RequireCommand(t, "git")
 
-	inputDir, err := filepath.Abs("testdata/bump/file_changed_api_unchanged/input")
+	inputDir, err := filepath.Abs("testdata/bump/input")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -325,7 +325,7 @@ func TestBump_UnpublishedLibrary(t *testing.T) {
 	testhelper.RequireCommand(t, "git")
 	testhelper.RequireCommand(t, "dart")
 
-	inputDir, err := filepath.Abs("testdata/bump/unpublished_c/input")
+	inputDir, err := filepath.Abs("testdata/bump/input")
 	if err != nil {
 		t.Fatal(err)
 	}
