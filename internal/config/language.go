@@ -858,6 +858,10 @@ type RubyCloudOpts struct {
 
 	// PathOverride overrides file/directory paths under lib/ and proto_docs/.
 	PathOverride string `yaml:"ruby-cloud-path-override,omitempty"`
+
+	// ServiceOverride overrides generated service class names when proto package service
+	// names don't match desired Ruby conventions.
+	ServiceOverride string `yaml:"ruby-cloud-service-override,omitempty"`
 }
 
 // RubyAPI represents configuration for a single API within a Ruby package.
