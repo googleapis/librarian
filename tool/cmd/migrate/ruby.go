@@ -81,6 +81,7 @@ func runRubyMigration(ctx context.Context, repoPath string) error {
 			},
 		},
 	}
+	mergeConfig(cfg, repoPath)
 	existingLibs, err := parseExistingLibraries(repoPath)
 	if err != nil {
 		return err
@@ -101,15 +102,8 @@ func runRubyMigration(ctx context.Context, repoPath string) error {
 }
 
 func parseExistingLibraries(repoPath string) ([]*config.Library, error) {
-	absConfigPath, err := filepath.Abs(filepath.Join(repoPath, config.LibrarianYAML))
+	cfg, err := readExistingConfig(repoPath)
 	if err != nil {
-		return nil, fmt.Errorf("getting absolute path to %s: %w", config.LibrarianYAML, err)
-	}
-	cfg, err := yaml.Read[config.Config](absConfigPath)
-	if err != nil {
-		if errors.Is(err, fs.ErrNotExist) {
-			return nil, nil
-		}
 		return nil, err
 	}
 	return cfg.Libraries, nil
@@ -284,4 +278,31 @@ func toMap(libs []*config.Library) map[string]*config.Library {
 		libraryMap[lib.Name] = lib
 	}
 	return libraryMap
+}
+
+func mergeConfig(cfg *config.Config, repoPath string) error {
+	existingConfig, err := readExistingConfig(repoPath)
+	if err != nil {
+		return err
+	}
+	if existingConfig != nil {
+		cfg.Sources = existingConfig.Sources
+		cfg.Tools = existingConfig.Tools
+	}
+	return nil
+}
+
+func readExistingConfig(repoPath string) (*config.Config, error) {
+	absConfigPath, err := filepath.Abs(filepath.Join(repoPath, config.LibrarianYAML))
+	if err != nil {
+		return nil, fmt.Errorf("getting absolute path to %s: %w", config.LibrarianYAML, err)
+	}
+	cfg, err := yaml.Read[config.Config](absConfigPath)
+	if errors.Is(err, fs.ErrNotExist) {
+		return &config.Config{}, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	return cfg, nil
 }
