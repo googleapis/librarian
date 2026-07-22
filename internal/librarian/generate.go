@@ -31,7 +31,6 @@ import (
 	"github.com/googleapis/librarian/internal/librarian/ruby"
 	"github.com/googleapis/librarian/internal/librarian/rust"
 	"github.com/googleapis/librarian/internal/librarian/swift"
-	"github.com/googleapis/librarian/internal/serviceconfig"
 	"github.com/googleapis/librarian/internal/sources"
 	"github.com/googleapis/librarian/internal/yaml"
 	"github.com/urfave/cli/v3"
@@ -44,7 +43,6 @@ var (
 	errSkipGenerate            = errors.New("library has skip_generate set")
 	errNoPreviewVariant        = errors.New("library does not have a preview variant")
 	errUnsupportedLanguage     = errors.New("language does not support generation")
-	errNoLibrariesToGenerate   = errors.New("no libraries to generate: all libraries have skip_generate set")
 )
 
 func generateCommand() *cli.Command {
@@ -121,43 +119,18 @@ func runGenerate(ctx context.Context, cfg *config.Config, all bool, libraryName 
 			return err
 		}
 
-		var variants []*config.Library
 		if !all && isPreview {
-			variants = append(variants, ResolvePreview(prepared, cfg.Language))
+			prepared = ResolvePreview(prepared, cfg.Language)
 		} else if all && lib.Preview != nil {
 			// Generate both stable and preview libraries by first appending the
 			// resolved library config for the preview variant.
-			variants = append(variants, ResolvePreview(prepared, cfg.Language))
-			variants = append(variants, prepared)
-		} else {
-			variants = append(variants, prepared)
+			libraries = append(libraries, ResolvePreview(prepared, cfg.Language))
 		}
-
-		for _, v := range variants {
-			var allowlistErr error
-			for _, api := range v.APIs {
-				if cfg.Language == config.LanguageFake {
-					continue
-				}
-				if err := serviceconfig.CheckAllowed(api.Path, cfg.Language); err != nil {
-					if errors.Is(err, serviceconfig.ErrNotAllowed) {
-						allowlistErr = err
-						break
-					}
-				}
-			}
-			if allowlistErr != nil {
-				if all {
-					continue
-				}
-				return allowlistErr
-			}
-			libraries = append(libraries, v)
-		}
+		libraries = append(libraries, prepared)
 	}
 	if len(libraries) == 0 {
 		if all {
-			return errNoLibrariesToGenerate
+			return errors.New("no libraries to generate: all libraries have skip_generate set")
 		}
 		for _, lib := range cfg.Libraries {
 			if lib.Name == baseName {

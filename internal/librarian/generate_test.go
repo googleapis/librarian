@@ -25,7 +25,6 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/sample"
-	"github.com/googleapis/librarian/internal/serviceconfig"
 	"github.com/googleapis/librarian/internal/yaml"
 )
 
@@ -440,41 +439,4 @@ func TestDefaultOutput(t *testing.T) {
 			}
 		})
 	}
-}
-
-func TestGenerateAllowlist_Error(t *testing.T) {
-	tempDir := t.TempDir()
-	t.Chdir(tempDir)
-	googleapisDir := createGoogleapisServiceConfigs(t, tempDir, map[string]string{
-		"google/ads/admanager/v1": "admanager_v1.yaml",
-	})
-
-	configContent := fmt.Sprintf(`language: go
-sources:
-  googleapis:
-    dir: %s
-libraries:
-  - name: admanager
-    output: out
-    apis:
-      - path: google/ads/admanager/v1
-`, googleapisDir)
-
-	if err := os.WriteFile(filepath.Join(tempDir, config.LibrarianYAML), []byte(configContent), 0644); err != nil {
-		t.Fatal(err)
-	}
-
-	t.Run("specific library", func(t *testing.T) {
-		err := Run(t.Context(), "librarian", "generate", "admanager")
-		if !errors.Is(err, serviceconfig.ErrNotAllowed) {
-			t.Errorf("want ErrNotAllowed, got %v", err)
-		}
-	})
-
-	t.Run("all libraries", func(t *testing.T) {
-		err := Run(t.Context(), "librarian", "generate", "--all")
-		if !errors.Is(err, errNoLibrariesToGenerate) {
-			t.Errorf("want errNoLibrariesToGenerate, got %v", err)
-		}
-	})
 }
