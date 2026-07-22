@@ -17,12 +17,10 @@
 package testhelper
 
 import (
-	"bytes"
 	"fmt"
 	"os"
 	"os/exec"
 	"path"
-	"strings"
 	"testing"
 
 	"github.com/googleapis/librarian/internal/command"
@@ -39,16 +37,6 @@ func RequireCommand(t *testing.T, cmd string) {
 	t.Helper()
 	if _, err := exec.LookPath(cmd); err != nil {
 		t.Skipf("skipping test because %s is not installed", cmd)
-	}
-	if cmd == "google-java-format" || cmd == "swift-format" {
-		c := exec.CommandContext(t.Context(), cmd, "--version")
-		var out bytes.Buffer
-		c.Stdout = &out
-		c.Stderr = &out
-		_ = c.Run()
-		if strings.Contains(out.String(), "gclient sync") || strings.Contains(out.String(), "Could not find checkout") {
-			t.Skipf("skipping test because %s is a broken depot_tools wrapper", cmd)
-		}
 	}
 }
 
@@ -114,7 +102,7 @@ func configNewGitRepository(t *testing.T) {
 func initRepositoryContents(t *testing.T) {
 	t.Helper()
 	RequireCommand(t, command.Git)
-	if err := os.WriteFile(ReadmeFile, []byte(ReadmeContents), 0o644); err != nil {
+	if err := os.WriteFile(ReadmeFile, []byte(ReadmeContents), 0644); err != nil {
 		t.Fatal(err)
 	}
 	AddCrate(t, sample.Lib1Output, sample.Lib1Name)
@@ -128,7 +116,7 @@ func initRepositoryContents(t *testing.T) {
 func addGeneratedCrate(t *testing.T, location, name string) {
 	t.Helper()
 	AddCrate(t, location, name)
-	if err := os.WriteFile(path.Join(location, ".sidekick.toml"), []byte("# initial version"), 0o644); err != nil {
+	if err := os.WriteFile(path.Join(location, ".sidekick.toml"), []byte("# initial version"), 0644); err != nil {
 		t.Fatal(err)
 	}
 }
@@ -136,15 +124,15 @@ func addGeneratedCrate(t *testing.T, location, name string) {
 // AddCrate creates a new Rust crate at the specified location with the given name.
 func AddCrate(t *testing.T, location, name string) {
 	t.Helper()
-	_ = os.MkdirAll(path.Join(location, "src"), 0o755)
+	_ = os.MkdirAll(path.Join(location, "src"), 0755)
 	contents := fmt.Appendf(nil, InitialCargoContents, name)
-	if err := os.WriteFile(path.Join(location, "Cargo.toml"), contents, 0o644); err != nil {
+	if err := os.WriteFile(path.Join(location, "Cargo.toml"), contents, 0644); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(path.Join(location, "src", "lib.rs"), []byte(initialLibRsContents), 0o644); err != nil {
+	if err := os.WriteFile(path.Join(location, "src", "lib.rs"), []byte(initialLibRsContents), 0644); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(path.Join(location, ".repo-metadata.json"), []byte("{}"), 0o644); err != nil {
+	if err := os.WriteFile(path.Join(location, ".repo-metadata.json"), []byte("{}"), 0644); err != nil {
 		t.Fatal(err)
 	}
 }
@@ -215,7 +203,7 @@ func setup(t *testing.T, opts SetupOptions) {
 
 func touchFile(t *testing.T, path string) {
 	t.Helper()
-	f, err := os.OpenFile(path, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0o644)
+	f, err := os.OpenFile(path, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0644)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -248,7 +236,7 @@ func SetupRepoWithChange(t *testing.T, wantTag string) string {
 	remoteDir := SetupRepo(t)
 	RunGit(t, "tag", wantTag)
 	name := path.Join(sample.Lib1Output, "src", "lib.rs")
-	if err := os.WriteFile(name, []byte(NewLibRsContents), 0o644); err != nil {
+	if err := os.WriteFile(name, []byte(NewLibRsContents), 0644); err != nil {
 		t.Fatal(err)
 	}
 	RunGit(t, "commit", "-m", "feat: changed storage", ".")
