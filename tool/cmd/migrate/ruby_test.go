@@ -481,3 +481,141 @@ func TestParseExistingLibraries(t *testing.T) {
 		})
 	}
 }
+
+func TestMergeConfig(t *testing.T) {
+	for _, test := range []struct {
+		name       string
+		initialCfg *config.Config
+		setup      func(t *testing.T, dir string)
+		want       *config.Config
+	}{
+		{
+			name: "merge existing sources and tools",
+			initialCfg: &config.Config{
+				Language: config.LanguageRuby,
+			},
+			setup: func(t *testing.T, dir string) {
+				cfg := &config.Config{
+					Sources: &config.Sources{
+						Googleapis: &config.Source{
+							Commit: "abcd123",
+							SHA256: "sha123",
+						},
+					},
+					Tools: &config.Tools{
+						Gem: []*config.GemTool{
+							{
+								Name:    "gapic-generator-cloud",
+								Version: "0.49.0",
+							},
+						},
+					},
+				}
+				if err := yaml.Write(filepath.Join(dir, config.LibrarianYAML), cfg); err != nil {
+					t.Fatal(err)
+				}
+			},
+			want: &config.Config{
+				Language: config.LanguageRuby,
+				Sources: &config.Sources{
+					Googleapis: &config.Source{
+						Commit: "abcd123",
+						SHA256: "sha123",
+					},
+				},
+				Tools: &config.Tools{
+					Gem: []*config.GemTool{
+						{
+							Name:    "gapic-generator-cloud",
+							Version: "0.49.0",
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "preserve initial tool versions when librarian.yaml has tools",
+			initialCfg: &config.Config{
+				Language: config.LanguageRuby,
+				Tools: &config.Tools{
+					Gem: []*config.GemTool{
+						{
+							Name:    "grpc",
+							Version: "0.49.0",
+						},
+					},
+				},
+			},
+			setup: func(t *testing.T, dir string) {
+				cfg := &config.Config{
+					Sources: &config.Sources{
+						Googleapis: &config.Source{
+							Commit: "abcd123",
+							SHA256: "sha123",
+						},
+					},
+					Tools: &config.Tools{
+						Gem: []*config.GemTool{
+							{
+								Name:    "grpc-tools",
+								Version: "1.2.3",
+							},
+						},
+					},
+				}
+				if err := yaml.Write(filepath.Join(dir, config.LibrarianYAML), cfg); err != nil {
+					t.Fatal(err)
+				}
+			},
+			want: &config.Config{
+				Language: config.LanguageRuby,
+				Sources: &config.Sources{
+					Googleapis: &config.Source{
+						Commit: "abcd123",
+						SHA256: "sha123",
+					},
+				},
+				Tools: &config.Tools{
+					Gem: []*config.GemTool{
+						{
+							Name:    "grpc-tools",
+							Version: "1.2.3",
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "non-existent librarian.yaml preserves initial config",
+			initialCfg: &config.Config{
+				Language: config.LanguageRuby,
+				Sources: &config.Sources{
+					Googleapis: &config.Source{
+						Commit: "initial123",
+					},
+				},
+			},
+			setup: func(t *testing.T, dir string) {},
+			want: &config.Config{
+				Language: config.LanguageRuby,
+				Sources: &config.Sources{
+					Googleapis: &config.Source{
+						Commit: "initial123",
+					},
+				},
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			dir := t.TempDir()
+			test.setup(t, dir)
+			cfg := test.initialCfg
+			if err := mergeConfig(cfg, dir); err != nil {
+				t.Fatal(err)
+			}
+			if diff := cmp.Diff(test.want, cfg); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
