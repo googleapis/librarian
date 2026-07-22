@@ -56,7 +56,7 @@ func TestUpdateChangelog_New(t *testing.T) {
 	}
 }
 
-func TestUpdateChangelog_WithCommits(t *testing.T) {
+func TestUpdateChangelog_UpdateWithCommits(t *testing.T) {
 	tempDir := t.TempDir()
 
 	testhelper.ContinueInNewGitRepository(t, tempDir)
@@ -85,12 +85,22 @@ func TestUpdateChangelog_WithCommits(t *testing.T) {
 	testhelper.RunGit(t, "add", ".")
 	testhelper.RunGit(t, "commit", "-m", "fix: resolved a bug")
 
+	changelogPath := filepath.Join(tempDir, "CHANGELOG.md")
+	initialContent := `# Changelog
+
+## 1.2.2
+
+- chore: release 1.2.2
+`
+	if err := os.WriteFile(changelogPath, []byte(initialContent), 0644); err != nil {
+		t.Fatal(err)
+	}
+
 	err = updateChangelog(context.Background(), tempDir, "1.2.3", tagCommit, false)
 	if err != nil {
 		t.Fatalf("updateChangelog failed: %v", err)
 	}
 
-	changelogPath := filepath.Join(tempDir, "CHANGELOG.md")
 	content, err := os.ReadFile(changelogPath)
 	if err != nil {
 		t.Fatal(err)
@@ -104,13 +114,16 @@ func TestUpdateChangelog_WithCommits(t *testing.T) {
 - fix: resolved a bug
 - feat: added support for something
 
+## 1.2.2
+
+- chore: release 1.2.2
 `
 	if got != want {
 		t.Errorf("CHANGELOG.md content mismatch:\ngot:\n%s\nwant:\n%s", got, want)
 	}
 }
 
-func TestUpdateChangelog_UpdatedDeps(t *testing.T) {
+func TestUpdateChangelog_UpdateWithDeps(t *testing.T) {
 	tempDir := t.TempDir()
 
 	testhelper.ContinueInNewGitRepository(t, tempDir)
@@ -127,12 +140,22 @@ func TestUpdateChangelog_UpdatedDeps(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	changelogPath := filepath.Join(tempDir, "CHANGELOG.md")
+	initialContent := `# Changelog
+
+## 1.2.2
+
+- chore: release 1.2.2
+`
+	if err := os.WriteFile(changelogPath, []byte(initialContent), 0644); err != nil {
+		t.Fatal(err)
+	}
+
 	err = updateChangelog(context.Background(), tempDir, "1.2.3", tagCommit, true)
 	if err != nil {
 		t.Fatalf("updateChangelog failed: %v", err)
 	}
 
-	changelogPath := filepath.Join(tempDir, "CHANGELOG.md")
 	content, err := os.ReadFile(changelogPath)
 	if err != nil {
 		t.Fatal(err)
@@ -145,6 +168,9 @@ func TestUpdateChangelog_UpdatedDeps(t *testing.T) {
 
 - chore: update cloud dependencies
 
+## 1.2.2
+
+- chore: release 1.2.2
 `
 	if got != want {
 		t.Errorf("CHANGELOG.md content mismatch:\ngot:\n%s\nwant:\n%s", got, want)
