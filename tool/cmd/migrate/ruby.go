@@ -81,7 +81,9 @@ func runRubyMigration(ctx context.Context, repoPath string) error {
 			},
 		},
 	}
-	mergeConfig(cfg, repoPath)
+	if err := mergeConfig(cfg, repoPath); err != nil {
+		return err
+	}
 	existingLibs, err := parseExistingLibraries(repoPath)
 	if err != nil {
 		return err
@@ -105,6 +107,9 @@ func parseExistingLibraries(repoPath string) ([]*config.Library, error) {
 	cfg, err := readExistingConfig(repoPath)
 	if err != nil {
 		return nil, err
+	}
+	if cfg == nil {
+		return nil, nil
 	}
 	return cfg.Libraries, nil
 }
@@ -286,8 +291,12 @@ func mergeConfig(cfg *config.Config, repoPath string) error {
 		return err
 	}
 	if existingConfig != nil {
-		cfg.Sources = existingConfig.Sources
-		cfg.Tools = existingConfig.Tools
+		if existingConfig.Sources != nil {
+			cfg.Sources = existingConfig.Sources
+		}
+		if existingConfig.Tools != nil {
+			cfg.Tools = existingConfig.Tools
+		}
 	}
 	return nil
 }
@@ -299,7 +308,7 @@ func readExistingConfig(repoPath string) (*config.Config, error) {
 	}
 	cfg, err := yaml.Read[config.Config](absConfigPath)
 	if errors.Is(err, fs.ErrNotExist) {
-		return &config.Config{}, nil
+		return nil, nil
 	}
 	if err != nil {
 		return nil, err
