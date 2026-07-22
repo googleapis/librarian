@@ -68,8 +68,24 @@ func Install(ctx context.Context, tools *config.Tools) error {
 			return err
 		}
 
-		destPath := filepath.Join(dir, "vendor", "bin", tool.Name)
-		if err := createBinWrapper(tool.Name, destPath, bin); err != nil {
+		isGenerator := filepath.Base(tool.Repo) == "gapic-generator-php"
+
+		var wrapperName, wrapperContent string
+		if isGenerator {
+			phpPath, err := exec.LookPath("php")
+			if err != nil {
+				return fmt.Errorf("failed to find php: %w", err)
+			}
+			destPath := filepath.Join(dir, "src", "Main.php")
+			wrapperName = filepath.Base(tool.Repo)
+			wrapperContent = fmt.Sprintf("#!/bin/bash\nexec %q -d display_errors=stderr -d memory_limit=1024M %q --side_loaded_root_dir \"$GOOGLEAPIS_DIR\" \"$@\"\n", phpPath, destPath)
+		} else {
+			destPath := filepath.Join(dir, "vendor", "bin", tool.Name)
+			wrapperName = tool.Name
+			wrapperContent = fmt.Sprintf("#!/bin/sh\nexec %q \"$@\"\n", destPath)
+		}
+
+		if err := createBinWrapper(wrapperName, wrapperContent, bin); err != nil {
 			return err
 		}
 	}
@@ -162,9 +178,8 @@ func generatorDir(ctx context.Context) (string, error) {
 }
 
 // createBinWrapper creates a shell wrapper script in the bin directory that forwards executions to the tool.
-func createBinWrapper(wrapperName, destPath, binDir string) error {
+func createBinWrapper(wrapperName, wrapperContent, binDir string) error {
 	wrapperPath := filepath.Join(binDir, wrapperName)
-	content := fmt.Sprintf("#!/bin/sh\nexec %q \"$@\"\n", destPath)
 	if err := os.MkdirAll(filepath.Dir(wrapperPath), 0755); err != nil {
 		return fmt.Errorf("failed to create directory for wrapper: %w", err)
 	}
@@ -174,6 +189,6 @@ func createBinWrapper(wrapperName, destPath, binDir string) error {
 		return err
 	}
 	defer f.Close()
-	_, err = f.WriteString(content)
+	_, err = f.WriteString(wrapperContent)
 	return err
 }
