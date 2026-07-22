@@ -255,12 +255,13 @@ resolution: workspace
 }
 
 func TestBump_APIChange(t *testing.T) {
+	testhelper.RequireCommand(t, "dart")
 	testhelper.RequireCommand(t, "git")
 
-	t.Helper()
 	repoVersions := map[string]string{
 		"a": "1.0.0",
 		"b": "1.0.0",
+		"c": "1.0.0",
 	}
 	deps := map[string][]string{
 		"b": {"a"},
@@ -279,6 +280,7 @@ func TestBump_APIChange(t *testing.T) {
 	apiToolResponses := map[string]packageVersion{
 		"a": {needed: "1.1.0", old: "1.0.0"},
 		"b": {needed: "1.0.0", old: "1.0.0"},
+		"c": {needed: "1.0.0", old: "1.0.0"},
 	}
 	setupFakeApitool(t, apiToolResponses)
 
@@ -295,6 +297,7 @@ func TestBump_APIChange(t *testing.T) {
 		Libraries: []*config.Library{
 			{Name: "a", Version: "1.0.0"},
 			{Name: "b", Version: "1.0.0"},
+			{Name: "c", Version: "1.0.0"},
 		},
 	}
 
@@ -309,6 +312,7 @@ func TestBump_APIChange(t *testing.T) {
 	if got, want := libraryVersions(cfg.Libraries), map[string]string{
 		"a": "1.1.0",
 		"b": "1.0.1",
+		"c": "1.0.0",
 	}; !reflect.DeepEqual(got, want) {
 		t.Errorf("library versions = %v; want %v", got, want)
 	}
@@ -350,21 +354,25 @@ dependencies:
 	if got := string(pubspecB); got != wantPubspecB {
 		t.Errorf("b/pubspec.yaml content mismatch:\ngot:\n%s\nwant:\n%s", got, wantPubspecB)
 	}
-}
 
-func libraryVersions(libaries []*config.Library) map[string]string {
-	m := make(map[string]string)
-	for _, l := range libaries {
-		m[l.Name] = l.Version
+	pubspecC, err := os.ReadFile("generated/c/pubspec.yaml")
+	if err != nil {
+		t.Fatal(err)
 	}
-	return m
+	wantPubspecC := `name: c
+version: 1.0.0
+environment:
+  sdk: ^3.9.0
+resolution: workspace
+`
+	if got := string(pubspecC); got != wantPubspecC {
+		t.Errorf("c/pubspec.yaml content mismatch:\ngot:\n%s\nwant:\n%s", got, wantPubspecC)
+	}
 }
 
 func TestBump_FileChanged_APIUnchanged(t *testing.T) {
 	testhelper.RequireCommand(t, "git")
 	testhelper.RequireCommand(t, "dart")
-
-	t.Helper()
 
 	repoVersions := map[string]string{
 		"a": "1.0.0",
@@ -463,6 +471,14 @@ dependencies:
 	if got := string(pubspecB); got != wantPubspecB {
 		t.Errorf("b/pubspec.yaml content mismatch:\ngot:\n%s\nwant:\n%s", got, wantPubspecB)
 	}
+}
+
+func libraryVersions(libaries []*config.Library) map[string]string {
+	m := make(map[string]string)
+	for _, l := range libaries {
+		m[l.Name] = l.Version
+	}
+	return m
 }
 
 // repoVersions: {"a": "1.0.0", "b": "1.0.0", "c": "1.0.0"}
