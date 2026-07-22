@@ -150,53 +150,10 @@ func TestUpdateChangelog_WithCommits(t *testing.T) {
 	}
 }
 
-type PackageVersion struct {
-	needed string
-	old    string
-}
-
-func setupFakeApitool(t *testing.T, responses map[string]PackageVersion) {
-	t.Helper()
-
-	var script strings.Builder
-	script.WriteString(`#!/bin/bash
-report_file=""
-pkg_name=""
-while [ $# -gt 0 ]; do
-  if [ "$1" == "--report-file-path" ]; then
-    report_file="$2"
-    shift
-  elif [[ "$1" == pub://* ]]; then
-    pkg_name="${1#pub://}"
-  fi
-  shift
-done
-
-if [ -n "$report_file" ]; then
-`)
-
-	first := true
-	for pkg, res := range responses {
-		if first {
-			fmt.Fprintf(&script, "  if [ \"$pkg_name\" == %q ]; then\n", pkg)
-			first = false
-		} else {
-			fmt.Fprintf(&script, "  elif [ \"$pkg_name\" == %q ]; then\n", pkg)
-		}
-		fmt.Fprintf(&script, "    echo '{\"version\": {\"needed\": %q, \"old\": %q}}' > \"$report_file\"\n", res.needed, res.old)
-	}
-	if !first {
-		script.WriteString("  fi\n")
-	}
-	script.WriteString("fi\n")
-
-	setupFakeScript(t, "dart-apitool", script.String())
-}
-
 func TestBump_NothingChanged(t *testing.T) {
+	testhelper.RequireCommand(t, "dart")
 	testhelper.RequireCommand(t, "git")
 
-	t.Helper()
 	repoVersions := map[string]string{
 		"a": "1.0.0",
 		"b": "1.0.0",
@@ -207,9 +164,10 @@ func TestBump_NothingChanged(t *testing.T) {
 	}
 	setupRepo(t, repoVersions, deps)
 
-	apiToolResponses := map[string]PackageVersion{
+	apiToolResponses := map[string]packageVersion{
 		"a": {needed: "1.0.0", old: "1.0.0"},
 		"b": {needed: "1.0.0", old: "1.0.0"},
+		"c": {needed: "1.0.0", old: "1.0.0"},
 	}
 	setupFakeApitool(t, apiToolResponses)
 
@@ -226,6 +184,7 @@ func TestBump_NothingChanged(t *testing.T) {
 		Libraries: []*config.Library{
 			{Name: "a", Version: "1.0.0"},
 			{Name: "b", Version: "1.0.0"},
+			{Name: "c", Version: "1.0.0"},
 		},
 	}
 
@@ -237,6 +196,7 @@ func TestBump_NothingChanged(t *testing.T) {
 	if got, want := libraryVersions(cfg.Libraries), map[string]string{
 		"a": "1.0.0",
 		"b": "1.0.0",
+		"c": "1.0.0",
 	}; !reflect.DeepEqual(got, want) {
 		t.Errorf("library versions = %v; want %v", got, want)
 	}
@@ -278,6 +238,20 @@ dependencies:
 	if got := string(pubspecB); got != wantPubspecB {
 		t.Errorf("b/pubspec.yaml content mismatch:\ngot:\n%s\nwant:\n%s", got, wantPubspecB)
 	}
+
+	pubspecC, err := os.ReadFile("generated/c/pubspec.yaml")
+	if err != nil {
+		t.Fatal(err)
+	}
+	wantPubspecC := `name: c
+version: 1.0.0
+environment:
+  sdk: ^3.9.0
+resolution: workspace
+`
+	if got := string(pubspecC); got != wantPubspecC {
+		t.Errorf("c/pubspec.yaml content mismatch:\ngot:\n%s\nwant:\n%s", got, wantPubspecC)
+	}
 }
 
 func TestBump_APIChange(t *testing.T) {
@@ -302,7 +276,7 @@ func TestBump_APIChange(t *testing.T) {
 
 	// Since the API surfaces didn't change, dart-apitool will report that the versions do not
 	// need to be bumped.
-	apiToolResponses := map[string]PackageVersion{
+	apiToolResponses := map[string]packageVersion{
 		"a": {needed: "1.1.0", old: "1.0.0"},
 		"b": {needed: "1.0.0", old: "1.0.0"},
 	}
@@ -386,73 +360,6 @@ func libraryVersions(libaries []*config.Library) map[string]string {
 	return m
 }
 
-// repoVersions: {"a": "1.0.0", "b": "1.0.0", "c": "1.0.0"}
-// deps: {"a": ["b", "c"]}
-func setupRepo(t *testing.T, repoVersions map[string]string, deps map[string][]string) {
-	t.Helper()
-
-	remoteDir := testhelper.SetupRepoWithChange(t, "release-2001-02-03")
-	if err := command.Run(t.Context(), command.Git, "-C", remoteDir, "config", "receive.denyCurrentBranch", "ignore"); err != nil {
-		t.Fatal(err)
-	}
-	testhelper.CloneRepository(t, remoteDir)
-
-	var workspaceLines []string
-	workspaceLines = append(workspaceLines, "name: pkg_workspace", "publish_to: none", "", "environment:", "  sdk: ^3.9.0", "", "workspace:")
-
-	var pkgNames []string
-	for name := range repoVersions {
-		pkgNames = append(pkgNames, name)
-	}
-	slices.Sort(pkgNames)
-	for _, name := range pkgNames {
-		workspaceLines = append(workspaceLines, fmt.Sprintf("  - generated/%s", name))
-	}
-	workspacePubspec := strings.Join(workspaceLines, "\n") + "\n"
-
-	if err := os.WriteFile("pubspec.yaml", []byte(workspacePubspec), 0644); err != nil {
-		t.Fatal(err)
-	}
-
-	for _, name := range pkgNames {
-		version := repoVersions[name]
-		if err := os.MkdirAll("generated/"+name, 0755); err != nil {
-			t.Fatal(err)
-		}
-
-		var dependencies string
-		if len(deps[name]) > 0 {
-			dependencies = "\ndependencies:\n"
-			for _, depName := range deps[name] {
-				dependencies += fmt.Sprintf("  %s: ^%s\n", depName, repoVersions[depName])
-			}
-		}
-
-		pubspec := fmt.Sprintf(`name: %s
-version: %s
-environment:
-  sdk: ^3.9.0
-resolution: workspace%s`, name, version, dependencies)
-		pubspec = strings.TrimSuffix(pubspec, "\n") + "\n"
-		if err := os.WriteFile("generated/"+name+"/pubspec.yaml", []byte(pubspec), 0644); err != nil {
-			t.Fatal(err)
-		}
-
-		if err := os.WriteFile("generated/"+name+"/lib.dart", []byte("// library "+name), 0644); err != nil {
-			t.Fatal(err)
-		}
-	}
-
-	testhelper.RunGit(t, "add", ".")
-	testhelper.RunGit(t, "commit", "-m", "feat: added pubspec files", ".")
-	testhelper.RunGit(t, "push", config.RemoteUpstream, config.BranchMain)
-
-	// Tag the initial releases
-	for name, version := range repoVersions {
-		testhelper.RunGit(t, "tag", fmt.Sprintf("%s-v%s", name, version))
-	}
-}
-
 func TestBump_FileChanged_APIUnchanged(t *testing.T) {
 	testhelper.RequireCommand(t, "git")
 	testhelper.RequireCommand(t, "dart")
@@ -478,7 +385,7 @@ func TestBump_FileChanged_APIUnchanged(t *testing.T) {
 
 	// Since the API surfaces didn't change, dart-apitool will report that the versions do not
 	// need to be bumped.
-	apiToolResponses := map[string]PackageVersion{
+	apiToolResponses := map[string]packageVersion{
 		"a": {needed: "1.0.0", old: "1.0.0"},
 		"b": {needed: "1.0.0", old: "1.0.0"},
 		"c": {needed: "1.0.0", old: "1.0.0"},
@@ -556,4 +463,114 @@ dependencies:
 	if got := string(pubspecB); got != wantPubspecB {
 		t.Errorf("b/pubspec.yaml content mismatch:\ngot:\n%s\nwant:\n%s", got, wantPubspecB)
 	}
+}
+
+// repoVersions: {"a": "1.0.0", "b": "1.0.0", "c": "1.0.0"}
+// deps: {"a": ["b", "c"]}
+func setupRepo(t *testing.T, repoVersions map[string]string, deps map[string][]string) {
+	t.Helper()
+
+	remoteDir := testhelper.SetupRepoWithChange(t, "release-2001-02-03")
+	if err := command.Run(t.Context(), command.Git, "-C", remoteDir, "config", "receive.denyCurrentBranch", "ignore"); err != nil {
+		t.Fatal(err)
+	}
+	testhelper.CloneRepository(t, remoteDir)
+
+	var workspaceLines []string
+	workspaceLines = append(workspaceLines, "name: pkg_workspace", "publish_to: none", "", "environment:", "  sdk: ^3.9.0", "", "workspace:")
+
+	var pkgNames []string
+	for name := range repoVersions {
+		pkgNames = append(pkgNames, name)
+	}
+	slices.Sort(pkgNames)
+	for _, name := range pkgNames {
+		workspaceLines = append(workspaceLines, fmt.Sprintf("  - generated/%s", name))
+	}
+	workspacePubspec := strings.Join(workspaceLines, "\n") + "\n"
+
+	if err := os.WriteFile("pubspec.yaml", []byte(workspacePubspec), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	for _, name := range pkgNames {
+		version := repoVersions[name]
+		if err := os.MkdirAll("generated/"+name, 0755); err != nil {
+			t.Fatal(err)
+		}
+
+		var dependencies string
+		if len(deps[name]) > 0 {
+			dependencies = "\ndependencies:\n"
+			for _, depName := range deps[name] {
+				dependencies += fmt.Sprintf("  %s: ^%s\n", depName, repoVersions[depName])
+			}
+		}
+
+		pubspec := fmt.Sprintf(`name: %s
+version: %s
+environment:
+  sdk: ^3.9.0
+resolution: workspace%s`, name, version, dependencies)
+		pubspec = strings.TrimSuffix(pubspec, "\n") + "\n"
+		if err := os.WriteFile("generated/"+name+"/pubspec.yaml", []byte(pubspec), 0644); err != nil {
+			t.Fatal(err)
+		}
+
+		if err := os.WriteFile("generated/"+name+"/lib.dart", []byte("// library "+name), 0644); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	testhelper.RunGit(t, "add", ".")
+	testhelper.RunGit(t, "commit", "-m", "feat: added pubspec files", ".")
+	testhelper.RunGit(t, "push", config.RemoteUpstream, config.BranchMain)
+
+	// Tag the initial releases
+	for name, version := range repoVersions {
+		testhelper.RunGit(t, "tag", fmt.Sprintf("%s-v%s", name, version))
+	}
+}
+
+type packageVersion struct {
+	needed string
+	old    string
+}
+
+func setupFakeApitool(t *testing.T, responses map[string]packageVersion) {
+	t.Helper()
+
+	var script strings.Builder
+	script.WriteString(`#!/bin/bash
+report_file=""
+pkg_name=""
+while [ $# -gt 0 ]; do
+  if [ "$1" == "--report-file-path" ]; then
+    report_file="$2"
+    shift
+  elif [[ "$1" == pub://* ]]; then
+    pkg_name="${1#pub://}"
+  fi
+  shift
+done
+
+if [ -n "$report_file" ]; then
+`)
+
+	first := true
+	for pkg, res := range responses {
+		if first {
+			fmt.Fprintf(&script, "  if [ \"$pkg_name\" == %q ]; then\n", pkg)
+			first = false
+		} else {
+			fmt.Fprintf(&script, "  elif [ \"$pkg_name\" == %q ]; then\n", pkg)
+		}
+		fmt.Fprintf(&script, "    echo '{\"version\": {\"needed\": %q, \"old\": %q}}' > \"$report_file\"\n", res.needed, res.old)
+	}
+	if !first {
+		script.WriteString("  fi\n")
+	}
+	script.WriteString("fi\n")
+
+	setupFakeScript(t, "dart-apitool", script.String())
 }
