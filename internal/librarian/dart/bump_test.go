@@ -238,9 +238,7 @@ func TestBump_APIChange(t *testing.T) {
 	testhelper.RunGit(t, "tag", "c-v1.0.0")
 
 	// Now make a commit with changes to package a.
-	if err := os.WriteFile("generated/a/lib.dart", []byte("const a = 5;"), 0644); err != nil {
-		t.Fatal(err)
-	}
+	appendToFile(t, "generated/a/lib.dart", []byte("const a = 5;\n"))
 	testhelper.RunGit(t, "add", ".")
 	testhelper.RunGit(t, "commit", "-m", "feat: added new value", ".")
 
@@ -289,9 +287,7 @@ func TestBump_FileChanged_APIUnchanged(t *testing.T) {
 	testhelper.RunGit(t, "tag", "c-v1.0.0")
 
 	// Now make a commit with changes to package a.
-	if err := os.WriteFile("generated/a/lib.dart", []byte("// library a: new fix"), 0644); err != nil {
-		t.Fatal(err)
-	}
+	appendToFile(t, "generated/a/lib.dart", []byte("// library a: new fix\n"))
 	testhelper.RunGit(t, "add", ".")
 	testhelper.RunGit(t, "commit", "-m", "fix: generator bug", ".")
 
@@ -339,9 +335,7 @@ func TestBump_UnpublishedLibrary(t *testing.T) {
 	testhelper.RunGit(t, "tag", "b-v1.0.0")
 
 	// Now make a commit with changes to package c.
-	if err := os.WriteFile("generated/c/lib.dart", []byte("// library c: new changes"), 0644); err != nil {
-		t.Fatal(err)
-	}
+	appendToFile(t, "generated/c/lib.dart", []byte("// library c: new changes\n"))
 	testhelper.RunGit(t, "add", ".")
 	testhelper.RunGit(t, "commit", "-m", "feat: added support for c", ".")
 
@@ -507,4 +501,16 @@ if [ -n "$report_file" ]; then
 	script.WriteString("fi\n")
 
 	setupFakeScript(t, "dart-apitool", script.String())
+}
+
+func appendToFile(t *testing.T, filename string, content []byte) {
+	t.Helper()
+	f, err := os.OpenFile(filename, os.O_APPEND|os.O_WRONLY, 0644)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer f.Close()
+	if _, err := f.Write(content); err != nil {
+		t.Fatal(err)
+	}
 }
