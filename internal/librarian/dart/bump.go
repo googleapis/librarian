@@ -72,11 +72,6 @@ func maybeBumpLibrary(ctx context.Context, cloudDeps []string, newVersions map[s
 		return lib.Version, nil
 	}
 
-	oldVersion := lib.Version
-	if oldVersion == "" {
-		return "", fmt.Errorf("version not set for library %s", lib.Name)
-	}
-
 	packageDir := libraryOutput(lib, defaults)
 
 	libraryChanged := false
@@ -90,10 +85,10 @@ func maybeBumpLibrary(ctx context.Context, cloudDeps []string, newVersions map[s
 	if err != nil {
 		// If tag doesn't exist yet then then will be the first release so we just need
 		// to update CHANGELOG.md
-		if err := updateChangelog(ctx, packageDir, oldVersion, "", false); err != nil {
+		if err := updateChangelog(ctx, packageDir, lib.Version, "", false); err != nil {
 			return "", err
 		}
-		return oldVersion, nil
+		return lib.Version, nil
 	} else {
 		lastReleaseTagCommit = commit
 		filesChanged, err := git.FilesChangedSince(ctx, command.Git, lastReleaseTagCommit, []string{})
@@ -117,19 +112,19 @@ func maybeBumpLibrary(ctx context.Context, cloudDeps []string, newVersions map[s
 		return "", err
 	}
 
-	if neededVersion != oldVersion && semver.MaxVersion(oldVersion, neededVersion) == oldVersion {
+	if neededVersion != lib.Version && semver.MaxVersion(lib.Version, neededVersion) == lib.Version {
 		// The version has already been manually incremented past what is required.
-		return oldVersion, nil
+		return lib.Version, nil
 	}
-	if neededVersion == oldVersion && !depsChanged && !libraryChanged {
-		return oldVersion, nil
+	if neededVersion == lib.Version && !depsChanged && !libraryChanged {
+		return lib.Version, nil
 	}
 
 	newVersion := neededVersion
 	// If there are no changes to the package then `neededVersion` will be the published
 	// version of the package.
 	if (depsChanged || libraryChanged) && neededVersion == publishedVersion {
-		bumped, err := semver.DeriveNext(semver.Patch, oldVersion, semver.DeriveNextOptions{
+		bumped, err := semver.DeriveNext(semver.Patch, lib.Version, semver.DeriveNextOptions{
 			DowngradePreGAChanges: true,
 		})
 		if err != nil {
@@ -138,7 +133,7 @@ func maybeBumpLibrary(ctx context.Context, cloudDeps []string, newVersions map[s
 		newVersion = bumped
 	}
 
-	if newVersion != oldVersion {
+	if newVersion != lib.Version {
 		pubspecPath := filepath.Join(packageDir, "pubspec.yaml")
 		if err := updatePubspecVersion(pubspecPath, newVersion); err != nil {
 			return "", err
