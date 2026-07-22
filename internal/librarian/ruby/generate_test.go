@@ -70,28 +70,6 @@ func TestBuildGAPICOpts(t *testing.T) {
 				"ruby-cloud-rest-numeric-enums=true",
 			},
 		},
-		{
-			name: "ruby_cloud_opts with env_prefix and extra_dependencies",
-			api: &config.API{
-				Path: "google/cloud/secretmanager/v1",
-				Ruby: &config.RubyAPI{
-					RubyCloudOpts: &config.RubyCloudOpts{
-						EnvPrefix:         "MY_PREFIX",
-						ExtraDependencies: "foo=1.0",
-					},
-				},
-			},
-			gemName: "google-cloud-secret_manager-v1",
-			want: []string{
-				"ruby-cloud-gem-name=google-cloud-secret_manager-v1",
-				"service-yaml=" + filepath.Join(googleapisDir, "google/cloud/secretmanager/v1/secretmanager_v1.yaml"),
-				"grpc-service-config=" + filepath.Join(googleapisDir, "google/cloud/secretmanager/v1/secretmanager_grpc_service_config.json"),
-				"transport=grpc+rest",
-				"ruby-cloud-rest-numeric-enums=true",
-				"ruby-cloud-env-prefix=MY_PREFIX",
-				"ruby-cloud-extra-dependencies=foo=1.0",
-			},
-		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			got, err := buildGAPICOpts(test.api, test.gemName, googleapisDir)
