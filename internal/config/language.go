@@ -847,11 +847,17 @@ type RubyPackage struct {
 	WrapperOf []string `yaml:"wrapper_of,omitempty"`
 }
 
-// RubyAPI represents configuration for a single API within a Ruby package.
-type RubyAPI struct {
+// RubyCloudOpts contains options passed to the Ruby Cloud GAPIC generator.
+type RubyCloudOpts struct {
 	// EnvPrefix is the environment variable prefix.
 	EnvPrefix string `yaml:"env_prefix,omitempty"`
 
 	// ExtraDependencies contains extra runtime dependencies to the .gemspec file.
 	ExtraDependencies string `yaml:"extra_dependencies,omitempty"`
+}
+
+// RubyAPI represents configuration for a single API within a Ruby package.
+type RubyAPI struct {
+	// RubyCloudOpts contains options passed to the Ruby Cloud GAPIC generator.
+	RubyCloudOpts *RubyCloudOpts `yaml:"ruby_cloud_opts,omitempty"`
 }

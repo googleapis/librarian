@@ -487,6 +487,12 @@ This document describes the schema for the librarian.yaml.
 
 | Field | Type | Description |
 | :--- | :--- | :--- |
+| `ruby_cloud_opts` | [RubyCloudOpts](#rubycloudopts-configuration) (optional) | Contains options passed to the Ruby Cloud GAPIC generator. |
+
+## RubyCloudOpts Configuration
+
+| Field | Type | Description |
+| :--- | :--- | :--- |
 | `env_prefix` | string | Is the environment variable prefix. |
 | `extra_dependencies` | string | Contains extra runtime dependencies to the .gemspec file. |
 

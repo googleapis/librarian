@@ -63,7 +63,7 @@ func Generate(ctx context.Context, cfg *config.Config, library *config.Library, 
 	// TODO(https://github.com/googleapis/librarian/issues/6885): Implement main client gem wrapper generation
 	// for libraries configured with `ruby.wrapper_of`.
 	for _, api := range library.APIs {
-		if err := generateAPI(ctx, api.Path, library.Name, pc, googleapisDir, tempDir); err != nil {
+		if err := generateAPI(ctx, api, library.Name, pc, googleapisDir, tempDir); err != nil {
 			return fmt.Errorf("api %q: %w", api.Path, err)
 		}
 	}
@@ -73,12 +73,12 @@ func Generate(ctx context.Context, cfg *config.Config, library *config.Library, 
 	return nil
 }
 
-func generateAPI(ctx context.Context, apiPath, gemName string, pc *config.Protoc, googleapisDir, stagingDir string) error {
-	protoFiles, err := collectProtoFiles(googleapisDir, apiPath)
+func generateAPI(ctx context.Context, api *config.API, gemName string, pc *config.Protoc, googleapisDir, stagingDir string) error {
+	protoFiles, err := collectProtoFiles(googleapisDir, api.Path)
 	if err != nil {
 		return err
 	}
-	gapicOpts, err := buildGAPICOpts(apiPath, gemName, googleapisDir)
+	gapicOpts, err := buildGAPICOpts(api, gemName, googleapisDir)
 	if err != nil {
 		return err
 	}
@@ -106,12 +106,15 @@ func generateAPI(ctx context.Context, apiPath, gemName string, pc *config.Protoc
 	return protoc.RunOrSystem(ctx, env, pc, args...)
 }
 
-func buildGAPICOpts(apiPath, gemName, googleapisDir string) ([]string, error) {
-	sc, err := serviceconfig.Find(googleapisDir, apiPath, config.LanguageRuby)
+func buildGAPICOpts(api *config.API, gemName, googleapisDir string) ([]string, error) {
+	if api == nil {
+		return nil, errors.New("api is nil")
+	}
+	sc, err := serviceconfig.Find(googleapisDir, api.Path, config.LanguageRuby)
 	if err != nil {
 		return nil, err
 	}
-	gc, err := serviceconfig.FindGRPCServiceConfig(googleapisDir, apiPath)
+	gc, err := serviceconfig.FindGRPCServiceConfig(googleapisDir, api.Path)
 	if err != nil {
 		return nil, err
 	}
@@ -130,6 +133,14 @@ func buildGAPICOpts(apiPath, gemName, googleapisDir string) ([]string, error) {
 	}
 	if sc != nil && sc.HasRESTNumericEnums(config.LanguageRuby) {
 		opts = append(opts, "ruby-cloud-rest-numeric-enums=true")
+	}
+	if api.Ruby != nil && api.Ruby.RubyCloudOpts != nil {
+		if api.Ruby.RubyCloudOpts.EnvPrefix != "" {
+			opts = append(opts, "ruby-cloud-env-prefix="+api.Ruby.RubyCloudOpts.EnvPrefix)
+		}
+		if api.Ruby.RubyCloudOpts.ExtraDependencies != "" {
+			opts = append(opts, "ruby-cloud-extra-dependencies="+api.Ruby.RubyCloudOpts.ExtraDependencies)
+		}
 	}
 	return opts, nil
 }

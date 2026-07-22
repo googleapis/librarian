@@ -39,13 +39,15 @@ func TestBuildGAPICOpts(t *testing.T) {
 
 	for _, test := range []struct {
 		name    string
-		apiPath string
+		api     *config.API
 		gemName string
 		want    []string
 	}{
 		{
-			name:    "basic case with service and grpc configs",
-			apiPath: "google/cloud/secretmanager/v1",
+			name: "basic case with service and grpc configs",
+			api: &config.API{
+				Path: "google/cloud/secretmanager/v1",
+			},
 			gemName: "google-cloud-secret_manager-v1",
 			want: []string{
 				"ruby-cloud-gem-name=google-cloud-secret_manager-v1",
@@ -56,8 +58,10 @@ func TestBuildGAPICOpts(t *testing.T) {
 			},
 		},
 		{
-			name:    "rest transport from sdk.yaml",
-			apiPath: "google/cloud/compute/v1",
+			name: "rest transport from sdk.yaml",
+			api: &config.API{
+				Path: "google/cloud/compute/v1",
+			},
 			gemName: "google-cloud-compute-v1",
 			want: []string{
 				"ruby-cloud-gem-name=google-cloud-compute-v1",
@@ -66,9 +70,31 @@ func TestBuildGAPICOpts(t *testing.T) {
 				"ruby-cloud-rest-numeric-enums=true",
 			},
 		},
+		{
+			name: "ruby_cloud_opts with env_prefix and extra_dependencies",
+			api: &config.API{
+				Path: "google/cloud/secretmanager/v1",
+				Ruby: &config.RubyAPI{
+					RubyCloudOpts: &config.RubyCloudOpts{
+						EnvPrefix:         "MY_PREFIX",
+						ExtraDependencies: "foo=1.0",
+					},
+				},
+			},
+			gemName: "google-cloud-secret_manager-v1",
+			want: []string{
+				"ruby-cloud-gem-name=google-cloud-secret_manager-v1",
+				"service-yaml=" + filepath.Join(googleapisDir, "google/cloud/secretmanager/v1/secretmanager_v1.yaml"),
+				"grpc-service-config=" + filepath.Join(googleapisDir, "google/cloud/secretmanager/v1/secretmanager_grpc_service_config.json"),
+				"transport=grpc+rest",
+				"ruby-cloud-rest-numeric-enums=true",
+				"ruby-cloud-env-prefix=MY_PREFIX",
+				"ruby-cloud-extra-dependencies=foo=1.0",
+			},
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got, err := buildGAPICOpts(test.apiPath, test.gemName, googleapisDir)
+			got, err := buildGAPICOpts(test.api, test.gemName, googleapisDir)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -347,10 +373,10 @@ func TestGenerateAPI(t *testing.T) {
 		t.Fatal(err)
 	}
 	stagingDir := t.TempDir()
-	apiPath := "google/cloud/secretmanager/v1"
+	api := &config.API{Path: "google/cloud/secretmanager/v1"}
 	gemName := "google-cloud-secret_manager-v1"
 
-	err = generateAPI(t.Context(), apiPath, gemName, nil, googleapisDir, stagingDir)
+	err = generateAPI(t.Context(), api, gemName, nil, googleapisDir, stagingDir)
 	if err != nil {
 		t.Fatalf("generateAPI() error = %v", err)
 	}
@@ -365,7 +391,8 @@ func TestGenerateAPI_Error(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	err = generateAPI(t.Context(), "non/existent/path", "gem-name", nil, googleapisDir, t.TempDir())
+	api := &config.API{Path: "non/existent/path"}
+	err = generateAPI(t.Context(), api, "gem-name", nil, googleapisDir, t.TempDir())
 	if err == nil {
 		t.Error("generateAPI() error = nil, want error")
 	}
