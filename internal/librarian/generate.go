@@ -118,7 +118,6 @@ func runGenerate(ctx context.Context, cfg *config.Config, all bool, libraryName 
 		if err != nil {
 			return err
 		}
-
 		if !all && isPreview {
 			prepared = ResolvePreview(prepared, cfg.Language)
 		} else if all && lib.Preview != nil {
