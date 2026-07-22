@@ -933,9 +933,10 @@ func TestIsMixedLibrary(t *testing.T) {
 
 func TestResolvePreview(t *testing.T) {
 	for _, test := range []struct {
-		name string
-		lib  *config.Library
-		want *config.Library
+		name     string
+		language string
+		lib      *config.Library
+		want     *config.Library
 	}{
 		{
 			name: "nil lib returns nil",
@@ -948,7 +949,8 @@ func TestResolvePreview(t *testing.T) {
 			want: nil,
 		},
 		{
-			name: "overrides all supported fields",
+			name:     "overrides all supported fields Go",
+			language: config.LanguageGo,
 			lib: &config.Library{
 				Name:                "base-name",
 				Version:             "1.0.0",
@@ -996,9 +998,53 @@ func TestResolvePreview(t *testing.T) {
 				Preview: nil,
 			},
 		},
+		{
+			name:     "overrides all supported fields Ruby",
+			language: config.LanguageRuby,
+			lib: &config.Library{
+				Name: "base-name",
+				Ruby: &config.RubyPackage{
+					WrapperOf: []string{"a"},
+				},
+				Preview: &config.Library{
+					Ruby: &config.RubyPackage{
+						WrapperOf: []string{"b"},
+					},
+				},
+			},
+			want: &config.Library{
+				Name: "base-name",
+				Ruby: &config.RubyPackage{
+					WrapperOf: []string{"b"},
+				},
+				Preview: nil,
+			},
+		},
+		{
+			name:     "overrides all supported fields Swift",
+			language: config.LanguageSwift,
+			lib: &config.Library{
+				Name: "base-name",
+				Swift: &config.SwiftPackage{
+					IncludeList: []string{"a"},
+				},
+				Preview: &config.Library{
+					Swift: &config.SwiftPackage{
+						IncludeList: []string{"b"},
+					},
+				},
+			},
+			want: &config.Library{
+				Name: "base-name",
+				Swift: &config.SwiftPackage{
+					IncludeList: []string{"b"},
+				},
+				Preview: nil,
+			},
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got := ResolvePreview(test.lib, config.LanguageGo)
+			got := ResolvePreview(test.lib, test.language)
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
@@ -1414,6 +1460,8 @@ func TestMergeNodejs(t *testing.T) {
 				BundleConfig:                "bundle",
 				Dependencies:                map[string]string{"d": "v"},
 				ExtraProtocParameters:       []string{"p"},
+				AdditionalProtos:            []string{"proto"},
+				NodejsAPIs:                  []*config.NodejsAPI{{AdditionalProtos: []string{"api-proto"}}},
 				HandwrittenLayer:            true,
 				MainService:                 "service",
 				PackageName:                 "bar",
@@ -1423,6 +1471,8 @@ func TestMergeNodejs(t *testing.T) {
 				BundleConfig:                "bundle",
 				Dependencies:                map[string]string{"d": "v"},
 				ExtraProtocParameters:       []string{"p"},
+				AdditionalProtos:            []string{"proto"},
+				NodejsAPIs:                  []*config.NodejsAPI{{AdditionalProtos: []string{"api-proto"}}},
 				HandwrittenLayer:            true,
 				MainService:                 "service",
 				PackageName:                 "bar",
@@ -1463,8 +1513,9 @@ func TestMergePython(t *testing.T) {
 			dst:  &config.PythonPackage{PythonDefault: config.PythonDefault{LibraryType: "GAPIC"}},
 			src: &config.PythonPackage{
 				PythonDefault: config.PythonDefault{
-					CommonGAPICPaths: []string{"p"},
-					LibraryType:      "NEW",
+					CommonGAPICPaths:  []string{"p"},
+					AllowedNamespaces: []string{"ns"},
+					LibraryType:       "NEW",
 				},
 				OptArgsByAPI:                map[string][]string{"a": {"o"}},
 				ProtoOnlyAPIs:               []string{"proto"},
@@ -1475,8 +1526,9 @@ func TestMergePython(t *testing.T) {
 			},
 			want: &config.PythonPackage{
 				PythonDefault: config.PythonDefault{
-					CommonGAPICPaths: []string{"p"},
-					LibraryType:      "NEW",
+					CommonGAPICPaths:  []string{"p"},
+					AllowedNamespaces: []string{"ns"},
+					LibraryType:       "NEW",
 				},
 				OptArgsByAPI:                map[string][]string{"a": {"o"}},
 				ProtoOnlyAPIs:               []string{"proto"},
@@ -1664,6 +1716,112 @@ func TestMergePHP(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			got := mergePHP(test.dst, test.src)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestMergeRuby(t *testing.T) {
+	for _, test := range []struct {
+		name string
+		dst  *config.RubyPackage
+		src  *config.RubyPackage
+		want *config.RubyPackage
+	}{
+		{
+			name: "nil src returns dst",
+			dst:  &config.RubyPackage{WrapperOf: []string{"a"}},
+			src:  nil,
+			want: &config.RubyPackage{WrapperOf: []string{"a"}},
+		},
+		{
+			name: "nil dst returns src",
+			dst:  nil,
+			src:  &config.RubyPackage{WrapperOf: []string{"b"}},
+			want: &config.RubyPackage{WrapperOf: []string{"b"}},
+		},
+		{
+			name: "merges wrapper of",
+			dst:  &config.RubyPackage{WrapperOf: []string{"a"}},
+			src:  &config.RubyPackage{WrapperOf: []string{"b"}},
+			want: &config.RubyPackage{WrapperOf: []string{"b"}},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := mergeRuby(test.dst, test.src)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestMergeSwift(t *testing.T) {
+	for _, test := range []struct {
+		name string
+		dst  *config.SwiftPackage
+		src  *config.SwiftPackage
+		want *config.SwiftPackage
+	}{
+		{
+			name: "nil src returns dst",
+			dst:  &config.SwiftPackage{IncludeList: []string{"a"}},
+			src:  nil,
+			want: &config.SwiftPackage{IncludeList: []string{"a"}},
+		},
+		{
+			name: "nil dst returns src",
+			dst:  nil,
+			src:  &config.SwiftPackage{IncludeList: []string{"b"}},
+			want: &config.SwiftPackage{IncludeList: []string{"b"}},
+		},
+		{
+			name: "merges all fields",
+			dst: &config.SwiftPackage{
+				SwiftDefault: config.SwiftDefault{
+					Dependencies:   []config.SwiftDependency{{Name: "dep1"}},
+					DefaultVersion: "1.0.0",
+				},
+				IncludeList:      []string{"a"},
+				Modules:          []*config.SwiftModule{{Output: "out1"}},
+				PerServiceTraits: false,
+				DefaultTraits:    []string{"trait1"},
+				Discovery: &config.SwiftDiscovery{
+					OperationID: "op1",
+				},
+			},
+			src: &config.SwiftPackage{
+				SwiftDefault: config.SwiftDefault{
+					Dependencies:   []config.SwiftDependency{{Name: "dep2"}},
+					DefaultVersion: "2.0.0",
+				},
+				IncludeList:      []string{"b"},
+				Modules:          []*config.SwiftModule{{Output: "out2"}},
+				PerServiceTraits: true,
+				DefaultTraits:    []string{"trait2"},
+				Discovery: &config.SwiftDiscovery{
+					OperationID: "op2",
+				},
+			},
+			want: &config.SwiftPackage{
+				SwiftDefault: config.SwiftDefault{
+					Dependencies:   []config.SwiftDependency{{Name: "dep2"}},
+					DefaultVersion: "2.0.0",
+				},
+				IncludeList:      []string{"b"},
+				Modules:          []*config.SwiftModule{{Output: "out2"}},
+				PerServiceTraits: true,
+				DefaultTraits:    []string{"trait2"},
+				Discovery: &config.SwiftDiscovery{
+					OperationID: "op2",
+				},
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := mergeSwift(test.dst, test.src)
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
