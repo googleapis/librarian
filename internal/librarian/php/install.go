@@ -21,7 +21,6 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"strings"
 
 	"github.com/googleapis/librarian/internal/cache"
 	"github.com/googleapis/librarian/internal/command"
@@ -70,7 +69,6 @@ func Install(ctx context.Context, tools *config.Tools) error {
 			return fmt.Errorf("%w: composer tool %s", errMissingRepo, tool.Name)
 		}
 
-		isGenerator := strings.Contains(tool.Repo, "gapic-generator-php")
 		dir, err := fetch.Repo(ctx, tool.Repo, tool.Version, tool.SHA256)
 		if err != nil {
 			return fmt.Errorf("fetching %s: %w", tool.Name, err)
@@ -81,16 +79,16 @@ func Install(ctx context.Context, tools *config.Tools) error {
 			return fmt.Errorf("failed to run composer install: %w", err)
 		}
 
-		var wrapperName, wrapperContent string
-		if isGenerator {
-			destPath := filepath.Join(dir, "src", "Main.php")
-			wrapperName = filepath.Base(tool.Repo)
-			wrapperContent = fmt.Sprintf("#!/bin/bash\nexec %q -d display_errors=stderr -d memory_limit=1024M %q --side_loaded_root_dir \"$GOOGLEAPIS_DIR\" \"$@\"\n", phpPath, destPath)
-		} else {
-			destPath := filepath.Join(dir, "vendor", "bin", tool.Name)
-			wrapperName = tool.Name
-			wrapperContent = fmt.Sprintf("#!/bin/sh\nexec %q \"$@\"\n", destPath)
-		}
+		// TODO: We will need to add branching logic here when we add other tools
+		// (like the upcoming google-cloud tool in #6978).
+		// Currently, this assumes the tool is the gapic-generator-php. This specific
+		// wrapper logic will not work for generic Composer tools because:
+		// 1. It hardcodes the executable entry point to "src/Main.php" (ignoring Composer's vendor/bin/ paths).
+		// 2. It injects specific PHP configurations (e.g. memory_limit=1024M) required to prevent the generator from crashing.
+		// 3. It automatically injects the "--side_loaded_root_dir" argument which other tools will not expect.
+		destPath := filepath.Join(dir, "src", "Main.php")
+		wrapperName := filepath.Base(tool.Repo)
+		wrapperContent := fmt.Sprintf("#!/bin/bash\nexec %q -d display_errors=stderr -d memory_limit=1024M %q --side_loaded_root_dir \"$GOOGLEAPIS_DIR\" \"$@\"\n", phpPath, destPath)
 
 		if err := createBinWrapper(wrapperName, wrapperContent, bin); err != nil {
 			return err
@@ -114,7 +112,7 @@ func Install(ctx context.Context, tools *config.Tools) error {
 
 func checkRequiredCommands() (string, error) {
 	if _, err := exec.LookPath("composer"); err != nil {
-		return "", fmt.Errorf("composer is not installed or not in PATH, which is required for PHP tool installation: %w", err)
+		return "", fmt.Errorf("failed to find composer: %w", err)
 	}
 	phpPath, err := exec.LookPath("php")
 	if err != nil {
@@ -198,25 +196,13 @@ func generatorDir(ctx context.Context) (string, error) {
 // createBinWrapper creates a shell wrapper script in the bin directory that forwards executions to the tool.
 func createBinWrapper(wrapperName, content, binDir string) error {
 	wrapperPath := filepath.Join(binDir, wrapperName)
-if err := os.MkdirAll(filepath.Dir(wrapperPath), 0o755); err != nil {
+	if err := os.MkdirAll(filepath.Dir(wrapperPath), 0o755); err != nil {
 		return fmt.Errorf("failed to create directory for wrapper: %w", err)
 	}
 	_ = os.Remove(wrapperPath)
 	f, err := os.OpenFile(wrapperPath, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0o755)
 	if err != nil {
 		return fmt.Errorf("failed to create wrapper script: %w", err)
-	}
-	defer f.Close()
-	if err != nil {
-		if errors.Is(err, fs.ErrNotExist) {
-			_ = os.Remove(wrapperPath)
-			f, err = os.OpenFile(wrapperPath, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0755)
-			if err != nil {
-				return fmt.Errorf("failed to create wrapper script: %w", err)
-			}
-		} else {
-			return fmt.Errorf("failed to create wrapper script: %w", err)
-		}
 	}
 	defer f.Close()
 	if _, err := f.WriteString(content); err != nil {
