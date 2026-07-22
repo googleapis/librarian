@@ -161,7 +161,7 @@ func getCommitsSince(ctx context.Context, lastReleaseTagCommit, packageDir strin
 		return nil, fmt.Errorf("failed to get commits since %s for %s: %w", lastReleaseTagCommit, packageDir, err)
 	}
 	var commits []string
-	for _, line := range strings.Split(output, "\n") {
+	for line := range strings.SplitSeq(output, "\n") {
 		trimmed := strings.TrimSpace(line)
 		if trimmed != "" {
 			commits = append(commits, trimmed)
