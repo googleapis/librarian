@@ -51,6 +51,7 @@ type VersionedBuild struct {
 	ExtraDeps       string
 	PathOverride    string
 	ServiceOverride string
+	YardStrict      string
 }
 
 func runRubyMigration(ctx context.Context, repoPath string) error {
@@ -80,11 +81,18 @@ func runRubyMigration(ctx context.Context, repoPath string) error {
 			},
 		},
 	}
+	if err := mergeConfig(cfg, repoPath); err != nil {
+		return err
+	}
+	existingLibs, err := parseExistingLibraries(repoPath)
+	if err != nil {
+		return err
+	}
 	libs, err := findRubyLibraries(src.Dir, repoPath)
 	if err != nil {
 		return err
 	}
-	cfg.Libraries = libs
+	cfg.Libraries = mergeLibs(existingLibs, libs)
 	// The directory name in Googleapis is present for migration code to look
 	// up API details. It shouldn't be persisted.
 	cfg.Sources.Googleapis.Dir = ""
@@ -93,6 +101,17 @@ func runRubyMigration(ctx context.Context, repoPath string) error {
 	}
 	log.Printf("Successfully migrated Ruby libraries configuration")
 	return nil
+}
+
+func parseExistingLibraries(repoPath string) ([]*config.Library, error) {
+	cfg, err := readExistingConfig(repoPath)
+	if err != nil {
+		return nil, err
+	}
+	if cfg == nil {
+		return nil, nil
+	}
+	return cfg.Libraries, nil
 }
 
 func findRubyLibraries(googleapisPath, repoPath string) ([]*config.Library, error) {
@@ -140,6 +159,7 @@ func findRubyLibraries(googleapisPath, repoPath string) ([]*config.Library, erro
 						ExtraDependencies: vb.ExtraDeps,
 						PathOverride:      vb.PathOverride,
 						ServiceOverride:   vb.ServiceOverride,
+						YardStrict:        vb.YardStrict,
 					},
 				}
 			}
@@ -234,9 +254,64 @@ func parseVersionedBuild(googleapisDir, apiPath string) (*VersionedBuild, error)
 					vb.PathOverride, _ = strings.CutPrefix(dep, "ruby-cloud-path-override=")
 				case strings.HasPrefix(dep, "ruby-cloud-service-override="):
 					vb.ServiceOverride, _ = strings.CutPrefix(dep, "ruby-cloud-service-override=")
+				case strings.HasPrefix(dep, "ruby-cloud-yard-strict="):
+					vb.YardStrict, _ = strings.CutPrefix(dep, "ruby-cloud-yard-strict=")
 				}
 			}
 		}
 	}
 	return vb, nil
+}
+
+// mergeLibs merges existing libraries with discovered libraries. Existing libraries' configurations
+// are preserved and discovered libraries are appended to the result.
+func mergeLibs(existingLibs []*config.Library, libs []*config.Library) []*config.Library {
+	existingMap := toMap(existingLibs)
+	res := make([]*config.Library, len(existingLibs))
+	copy(res, existingLibs)
+	for _, lib := range libs {
+		if _, ok := existingMap[lib.Name]; !ok {
+			res = append(res, lib)
+		}
+	}
+	return res
+}
+
+func toMap(libs []*config.Library) map[string]*config.Library {
+	libraryMap := make(map[string]*config.Library)
+	for _, lib := range libs {
+		libraryMap[lib.Name] = lib
+	}
+	return libraryMap
+}
+
+func mergeConfig(cfg *config.Config, repoPath string) error {
+	existingConfig, err := readExistingConfig(repoPath)
+	if err != nil {
+		return err
+	}
+	if existingConfig != nil {
+		if existingConfig.Sources != nil {
+			cfg.Sources = existingConfig.Sources
+		}
+		if existingConfig.Tools != nil {
+			cfg.Tools = existingConfig.Tools
+		}
+	}
+	return nil
+}
+
+func readExistingConfig(repoPath string) (*config.Config, error) {
+	absConfigPath, err := filepath.Abs(filepath.Join(repoPath, config.LibrarianYAML))
+	if err != nil {
+		return nil, fmt.Errorf("getting absolute path to %s: %w", config.LibrarianYAML, err)
+	}
+	cfg, err := yaml.Read[config.Config](absConfigPath)
+	if errors.Is(err, fs.ErrNotExist) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	return cfg, nil
 }

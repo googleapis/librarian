@@ -134,7 +134,7 @@ func TestAdd(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			tmpDir := t.TempDir()
 			t.Chdir(tmpDir)
-			if err := os.WriteFile(versionsFileName, nil, 0644); err != nil {
+			if err := os.WriteFile(versionsFileName, nil, 0o644); err != nil {
 				t.Fatal(err)
 			}
 			got, err := Add(test.lib, nil)
@@ -237,7 +237,7 @@ func TestAdd_VersionsTxt(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			tmpDir := t.TempDir()
 			t.Chdir(tmpDir)
-			if err := os.WriteFile(versionsFileName, nil, 0644); err != nil {
+			if err := os.WriteFile(versionsFileName, nil, 0o644); err != nil {
 				t.Fatal(err)
 			}
 			_, err := Add(test.lib, nil)
@@ -273,7 +273,7 @@ func TestAdd_ExistingLibrary(t *testing.T) {
 		"grpc-google-cloud-secretmanager-v1:1.0.0:1.1.0-SNAPSHOT",
 		"google-cloud-secretmanager:1.0.0:1.1.0-SNAPSHOT",
 	}
-	if err := os.WriteFile(versionsFileName, []byte(strings.Join(initial, "\n")+"\n"), 0644); err != nil {
+	if err := os.WriteFile(versionsFileName, []byte(strings.Join(initial, "\n")+"\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
 
@@ -377,7 +377,7 @@ func TestAppendVersions(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			tmpDir := t.TempDir()
 			t.Chdir(tmpDir)
-			if err := os.WriteFile(versionsFileName, []byte(test.initial), 0644); err != nil {
+			if err := os.WriteFile(versionsFileName, []byte(test.initial), 0o644); err != nil {
 				t.Fatal(err)
 			}
 			if err := appendVersions(test.lines); err != nil {
@@ -397,7 +397,7 @@ func TestAppendVersions(t *testing.T) {
 func TestAppendVersions_Error(t *testing.T) {
 	tmpDir := t.TempDir()
 	t.Chdir(tmpDir)
-	if err := os.Mkdir(versionsFileName, 0755); err != nil {
+	if err := os.Mkdir(versionsFileName, 0o755); err != nil {
 		t.Fatal(err)
 	}
 	if err := appendVersions([]string{"line"}); err == nil {

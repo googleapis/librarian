@@ -97,12 +97,12 @@ func TestHasBulkReleasePleaseConfigs(t *testing.T) {
 				},
 			)
 			if test.createConfig {
-				if err := os.WriteFile(filepath.Join(tmp, configFile), []byte("{}"), 0644); err != nil {
+				if err := os.WriteFile(filepath.Join(tmp, configFile), []byte("{}"), 0o644); err != nil {
 					t.Fatal(err)
 				}
 			}
 			if test.createManifest {
-				if err := os.WriteFile(filepath.Join(tmp, manifestFile), []byte("{}"), 0644); err != nil {
+				if err := os.WriteFile(filepath.Join(tmp, manifestFile), []byte("{}"), 0o644); err != nil {
 					t.Fatal(err)
 				}
 			}
@@ -338,10 +338,10 @@ func TestSyncToReleasePlease(t *testing.T) {
 			)
 			manifestPath := filepath.Join(tmp, manifestFile)
 			configPath := filepath.Join(tmp, configFile)
-			if err := os.WriteFile(manifestPath, []byte(test.initialManifest), 0644); err != nil {
+			if err := os.WriteFile(manifestPath, []byte(test.initialManifest), 0o644); err != nil {
 				t.Fatal(err)
 			}
-			if err := os.WriteFile(configPath, []byte(test.initialConfig), 0644); err != nil {
+			if err := os.WriteFile(configPath, []byte(test.initialConfig), 0o644); err != nil {
 				t.Fatal(err)
 			}
 			cfg := &config.Config{
@@ -471,10 +471,10 @@ func TestSyncToReleasePlease_Errors(t *testing.T) {
 			tmp := t.TempDir()
 			manifestPath := filepath.Join(tmp, ".release-please-bulk-manifest.json")
 			configPath := filepath.Join(tmp, "release-please-bulk-config.json")
-			if err := os.WriteFile(manifestPath, []byte("{}"), 0644); err != nil {
+			if err := os.WriteFile(manifestPath, []byte("{}"), 0o644); err != nil {
 				t.Fatal(err)
 			}
-			if err := os.WriteFile(configPath, []byte(test.initialConfig), 0644); err != nil {
+			if err := os.WriteFile(configPath, []byte(test.initialConfig), 0o644); err != nil {
 				t.Fatal(err)
 			}
 			cfg := &config.Config{

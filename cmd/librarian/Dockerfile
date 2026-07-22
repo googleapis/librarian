@@ -107,7 +107,7 @@ RUN --mount=type=cache,target=/go/pkg/mod \
 COPY . .
 RUN --mount=type=cache,target=/go/pkg/mod \
     --mount=type=cache,target=/root/.cache/go-build \
-    CGO_ENABLED=0 go build -o /go/bin/librarian ./cmd/librarian
+    CGO_ENABLED=0 go build -buildvcs=false -o /go/bin/librarian ./cmd/librarian
 
 # ============== Base Stage ==============
 FROM debian:bookworm-slim AS base

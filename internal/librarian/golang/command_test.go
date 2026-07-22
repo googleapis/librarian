@@ -138,14 +138,14 @@ func TestToolsEnv_Error(t *testing.T) {
 
 func createStubExecutable(t *testing.T, path, recordFile string) {
 	t.Helper()
-	if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
 		t.Fatal(err)
 	}
 	content := fmt.Sprintf("#!/bin/sh\necho \"$0\" >> %q\nexit 0\n", recordFile)
 	if runtime.GOOS == "windows" {
 		content = fmt.Sprintf("@echo off\r\necho %%0 >> %q\r\nexit /b 0\r\n", recordFile)
 	}
-	if err := os.WriteFile(path, []byte(content), 0755); err != nil {
+	if err := os.WriteFile(path, []byte(content), 0o755); err != nil {
 		t.Fatal(err)
 	}
 }

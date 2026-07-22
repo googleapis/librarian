@@ -258,7 +258,7 @@ func TestLookPath(t *testing.T) {
 	tmpDir := t.TempDir()
 	exeName := "test-exe"
 	exePath := filepath.Join(tmpDir, exeName)
-	if err := os.WriteFile(exePath, []byte("dummy binary content"), 0755); err != nil {
+	if err := os.WriteFile(exePath, []byte("dummy binary content"), 0o755); err != nil {
 		t.Fatal(err)
 	}
 	for _, test := range []struct {
@@ -307,7 +307,7 @@ func TestLookPath(t *testing.T) {
 func TestLookPath_Error(t *testing.T) {
 	tmpDir := t.TempDir()
 	dirName := "test-dir"
-	if err := os.WriteFile(filepath.Join(tmpDir, dirName), []byte("non-executable file"), 0644); err != nil {
+	if err := os.WriteFile(filepath.Join(tmpDir, dirName), []byte("non-executable file"), 0o644); err != nil {
 		t.Fatal(err)
 	}
 

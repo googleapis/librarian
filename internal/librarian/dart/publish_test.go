@@ -339,26 +339,26 @@ func setupTestRepo(t *testing.T, repoVersions map[string]string) {
 	}
 	testhelper.CloneRepository(t, remoteDir)
 
-	if err := os.MkdirAll("generated/a", 0755); err != nil {
+	if err := os.MkdirAll("generated/a", 0o755); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.MkdirAll("generated/b", 0755); err != nil {
+	if err := os.MkdirAll("generated/b", 0o755); err != nil {
 		t.Fatal(err)
 	}
 
 	pubspecA := "name: a\nversion: " + repoVersions["a"] + "\ndependencies:\n  sdk: \">=3.0.0 <4.0.0\"\n"
 	pubspecB := "name: b\nversion: " + repoVersions["b"] + "\ndependencies:\n  sdk: \">=3.0.0 <4.0.0\"\n  a: ^1.0.0\n"
 
-	if err := os.WriteFile("generated/a/pubspec.yaml", []byte(pubspecA), 0644); err != nil {
+	if err := os.WriteFile("generated/a/pubspec.yaml", []byte(pubspecA), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile("generated/b/pubspec.yaml", []byte(pubspecB), 0644); err != nil {
+	if err := os.WriteFile("generated/b/pubspec.yaml", []byte(pubspecB), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile("generated/a/lib.dart", []byte("// library a"), 0644); err != nil {
+	if err := os.WriteFile("generated/a/lib.dart", []byte("// library a"), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile("generated/b/lib.dart", []byte("// library b"), 0644); err != nil {
+	if err := os.WriteFile("generated/b/lib.dart", []byte("// library b"), 0o644); err != nil {
 		t.Fatal(err)
 	}
 
@@ -417,7 +417,7 @@ func setupFakeScript(t *testing.T, name, script string) {
 	}
 	tmpDir := t.TempDir()
 	scriptPath := filepath.Join(tmpDir, name)
-	if err := os.WriteFile(scriptPath, []byte(script), 0755); err != nil {
+	if err := os.WriteFile(scriptPath, []byte(script), 0o755); err != nil {
 		t.Fatal(err)
 	}
 	t.Setenv("PATH", tmpDir+string(os.PathListSeparator)+os.Getenv("PATH"))

@@ -29,7 +29,7 @@ const fakeVersionFile = "VERSION"
 
 func fakeBumpLibrary(output, version string) error {
 	content := fmt.Sprintf("version=%s", version)
-	return os.WriteFile(filepath.Join(output, fakeVersionFile), []byte(content), 0644)
+	return os.WriteFile(filepath.Join(output, fakeVersionFile), []byte(content), 0o644)
 }
 
 func fakeGenerate(library *config.Library) error {
@@ -43,12 +43,12 @@ func fakeGenerate(library *config.Library) error {
 	}
 	content := fmt.Sprintf("# %s\n\nGenerated library\n", library.Name)
 	readmePath := filepath.Join(library.Output, "README.md")
-	if err := os.WriteFile(readmePath, []byte(content), 0644); err != nil {
+	if err := os.WriteFile(readmePath, []byte(content), 0o644); err != nil {
 		return err
 	}
 	versionPath := filepath.Join(library.Output, "VERSION")
 	if _, err := os.Stat(versionPath); errors.Is(err, fs.ErrNotExist) {
-		return os.WriteFile(versionPath, []byte("0.0.0"), 0644)
+		return os.WriteFile(versionPath, []byte("0.0.0"), 0o644)
 	}
 	return nil
 }
@@ -60,20 +60,20 @@ func fakeFormat(library *config.Library) error {
 		return err
 	}
 	formatted := string(content) + "\n---\nFormatted\n"
-	return os.WriteFile(readmePath, []byte(formatted), 0644)
+	return os.WriteFile(readmePath, []byte(formatted), 0o644)
 }
 
 func fakePostGenerate() error {
-	return os.WriteFile("POST_GENERATE_README.md", []byte("PostGenerated\n"), 0644)
+	return os.WriteFile("POST_GENERATE_README.md", []byte("PostGenerated\n"), 0o644)
 }
 
 func fakeCreateSkeleton(library *config.Library) error {
-	if err := os.MkdirAll(library.Output, 0755); err != nil {
+	if err := os.MkdirAll(library.Output, 0o755); err != nil {
 		return err
 	}
 	content := fmt.Sprintf("# %s\n\nThis is a starter file.\n", library.Name)
 	starterPath := filepath.Join(library.Output, "STARTER.md")
-	return os.WriteFile(starterPath, []byte(content), 0644)
+	return os.WriteFile(starterPath, []byte(content), 0o644)
 }
 
 // fakeDefaultLibraryName derives a library name from an API path by

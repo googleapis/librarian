@@ -29,6 +29,7 @@ import (
 	"github.com/googleapis/librarian/internal/librarian/golang"
 	"github.com/googleapis/librarian/internal/librarian/java"
 	"github.com/googleapis/librarian/internal/librarian/nodejs"
+	"github.com/googleapis/librarian/internal/librarian/php"
 	"github.com/googleapis/librarian/internal/librarian/python"
 	"github.com/googleapis/librarian/internal/librarian/rust"
 	"github.com/googleapis/librarian/internal/librarian/swift"
@@ -161,6 +162,8 @@ func deriveLibraryName(language string, api string) string {
 		return rust.DefaultLibraryName(api)
 	case config.LanguageSwift:
 		return swift.DefaultLibraryName(api)
+	case config.LanguagePhp:
+		return php.DefaultLibraryName(api)
 	default:
 		return strings.ReplaceAll(api, "/", "-")
 	}
@@ -258,6 +261,8 @@ func addNewLibrary(cfg *config.Config, api *config.API) (string, *config.Config,
 		lib = rust.Add(lib)
 	case config.LanguageSwift:
 		lib = swift.Add(lib, cfg)
+	case config.LanguagePhp:
+		lib = php.Add(lib)
 	case config.LanguageFake:
 		lib = fakeAdd(lib, defaultVersion)
 	}
@@ -290,6 +295,9 @@ func updateExistingLibrary(cfg *config.Config, existingLib *config.Library, api 
 		if err != nil {
 			return "", nil, err
 		}
+	case config.LanguagePhp:
+		existingLib.APIs = append(existingLib.APIs, api)
+		existingLib = php.Add(existingLib)
 	default:
 		return "", nil, fmt.Errorf("%w: %s", errLibraryAlreadyExists, existingLib.Name)
 	}

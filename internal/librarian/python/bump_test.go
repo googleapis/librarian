@@ -55,10 +55,10 @@ func TestBump(t *testing.T) {
 	dir := t.TempDir()
 	for file, content := range initial {
 		path := filepath.Join(dir, file)
-		if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
+		if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
 			t.Fatal(err)
 		}
-		if err := os.WriteFile(path, []byte(content), 0644); err != nil {
+		if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
 			t.Fatal(err)
 		}
 	}
@@ -98,7 +98,7 @@ func TestBump_Error(t *testing.T) {
 			setup: func(dir string) error {
 				textPath := filepath.Join(dir, "test.txt")
 				versionPath := filepath.Join(dir, gapicVersionFile)
-				if err := os.WriteFile(textPath, []byte("just a text file"), 0644); err != nil {
+				if err := os.WriteFile(textPath, []byte("just a text file"), 0o644); err != nil {
 					return err
 				}
 				return os.Symlink(textPath, versionPath)
@@ -109,7 +109,7 @@ func TestBump_Error(t *testing.T) {
 			name: "gapic_version.py has no version",
 			setup: func(dir string) error {
 				versionPath := filepath.Join(dir, gapicVersionFile)
-				return os.WriteFile(versionPath, []byte("no version here"), 0644)
+				return os.WriteFile(versionPath, []byte("no version here"), 0o644)
 			},
 			wantErr: errNoVersionFound,
 		},
@@ -117,10 +117,10 @@ func TestBump_Error(t *testing.T) {
 			name: "snippet metadata file is invalid",
 			setup: func(dir string) error {
 				snippetMetadataPath := filepath.Join(dir, "samples", "generated_samples", "snippet_metadata.json")
-				if err := os.MkdirAll(filepath.Dir(snippetMetadataPath), 0755); err != nil {
+				if err := os.MkdirAll(filepath.Dir(snippetMetadataPath), 0o755); err != nil {
 					t.Fatal(err)
 				}
-				return os.WriteFile(snippetMetadataPath, []byte("{}"), 0644)
+				return os.WriteFile(snippetMetadataPath, []byte("{}"), 0o644)
 			},
 			wantErr: snippetmetadata.ErrNoClientLibraryField,
 		},
@@ -144,7 +144,7 @@ func TestBumpSingleGapicVersionFile(t *testing.T) {
 		`line1
 __version__ = "before" # irrelevant
 line3`
-	if err := os.WriteFile(path, []byte(initialText), 0644); err != nil {
+	if err := os.WriteFile(path, []byte(initialText), 0o644); err != nil {
 		t.Fatal(err)
 	}
 	if err := bumpSingleGapicVersionFile(path, "1.2.3"); err != nil {
@@ -181,14 +181,14 @@ func TestBumpSingleGapicVersionFile_Error(t *testing.T) {
 			name: "multiple version lines",
 			setup: func(path string) error {
 				content := fmt.Sprintf("line1\n%s\"1.2.3\"\n%s\"4.5.6\"", gapicVersionLinePrefix, gapicVersionLinePrefix)
-				return os.WriteFile(path, []byte(content), 0644)
+				return os.WriteFile(path, []byte(content), 0o644)
 			},
 			wantErr: errMultipleVersions,
 		},
 		{
 			name: "no version line",
 			setup: func(path string) error {
-				return os.WriteFile(path, []byte("line1\nline2"), 0644)
+				return os.WriteFile(path, []byte("line1\nline2"), 0o644)
 			},
 			wantErr: errNoVersionFound,
 		},
@@ -197,7 +197,7 @@ func TestBumpSingleGapicVersionFile_Error(t *testing.T) {
 			setup: func(path string) error {
 				content := fmt.Sprintf("line1\n%s\"1.2.3\"\nline3", gapicVersionLinePrefix)
 				// 0444 is read-only, even for the owner
-				return os.WriteFile(path, []byte(content), 0444)
+				return os.WriteFile(path, []byte(content), 0o444)
 			},
 			wantErr: os.ErrPermission,
 		},

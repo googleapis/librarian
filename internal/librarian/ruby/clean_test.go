@@ -84,10 +84,10 @@ func TestClean(t *testing.T) {
 			if test.files != nil {
 				for _, file := range test.files {
 					path := filepath.Join(targetDir, file)
-					if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
+					if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
 						t.Fatal(err)
 					}
-					if err := os.WriteFile(path, []byte("test"), 0644); err != nil {
+					if err := os.WriteFile(path, []byte("test"), 0o644); err != nil {
 						t.Fatal(err)
 					}
 				}
@@ -143,7 +143,7 @@ func TestClean_Error(t *testing.T) {
 				Name: "test",
 			},
 			setup: func(t *testing.T, targetDir string) {
-				if err := os.WriteFile(targetDir, []byte("file"), 0644); err != nil {
+				if err := os.WriteFile(targetDir, []byte("file"), 0o644); err != nil {
 					t.Fatal(err)
 				}
 			},
@@ -204,10 +204,10 @@ func TestCleanSubdirectory(t *testing.T) {
 			if test.files != nil {
 				for _, file := range test.files {
 					path := filepath.Join(dir, file)
-					if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
+					if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
 						t.Fatal(err)
 					}
-					if err := os.WriteFile(path, []byte("test"), 0644); err != nil {
+					if err := os.WriteFile(path, []byte("test"), 0o644); err != nil {
 						t.Fatal(err)
 					}
 				}

@@ -60,14 +60,14 @@ func Install(ctx context.Context, tools *config.Tools) error {
 	if err != nil {
 		return err
 	}
-	if err := os.MkdirAll(binDir, 0755); err != nil {
+	if err := os.MkdirAll(binDir, 0o755); err != nil {
 		return fmt.Errorf("failed to create bin directory %q: %w", binDir, err)
 	}
 	libDir, err := getLibDir()
 	if err != nil {
 		return err
 	}
-	if err := os.MkdirAll(libDir, 0755); err != nil {
+	if err := os.MkdirAll(libDir, 0o755); err != nil {
 		return fmt.Errorf("failed to create lib directory %q: %w", libDir, err)
 	}
 	for _, mvnTool := range tools.Maven {
@@ -199,7 +199,7 @@ func copyArtifactToLib(srcPath, libDir string, makeExecutable bool) (string, err
 		return "", fmt.Errorf("failed to copy artifact to lib folder: %w", err)
 	}
 	if makeExecutable {
-		if err := os.Chmod(destPath, 0755); err != nil {
+		if err := os.Chmod(destPath, 0o755); err != nil {
 			return "", fmt.Errorf("failed to make copied exe executable: %w", err)
 		}
 	}
@@ -218,7 +218,7 @@ func createBinWrapper(wrapperName, destPath, binDir string, isExecutable bool, m
 	default:
 		content = fmt.Sprintf("#!/bin/sh\nexec java -jar %q \"$@\"\n", destPath)
 	}
-	return os.WriteFile(wrapperPath, []byte(content), 0755)
+	return os.WriteFile(wrapperPath, []byte(content), 0o755)
 }
 
 // buildLocalMavenProject builds the local Maven project at the target relative path under the monorepo root.

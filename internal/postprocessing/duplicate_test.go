@@ -122,7 +122,7 @@ public class TestClass {
 			t.Parallel()
 			dir := t.TempDir()
 			path := filepath.Join(dir, "TestClass.java")
-			if err := os.WriteFile(path, []byte(test.content), 0644); err != nil {
+			if err := os.WriteFile(path, []byte(test.content), 0o644); err != nil {
 				t.Fatal(err)
 			}
 			if err := DuplicateMethod(path, test.funcName, test.newName, "java"); err != nil {
@@ -237,7 +237,7 @@ public class TestClass {
 			t.Parallel()
 			dir := t.TempDir()
 			path := filepath.Join(dir, "TestClass.java")
-			if err := os.WriteFile(path, []byte(test.content), 0644); err != nil {
+			if err := os.WriteFile(path, []byte(test.content), 0o644); err != nil {
 				t.Fatal(err)
 			}
 			err := DuplicateMethod(path, test.funcName, test.newName, test.language)

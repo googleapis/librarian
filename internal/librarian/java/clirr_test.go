@@ -25,11 +25,11 @@ func TestGenerateClirrIgnore(t *testing.T) {
 	tmpDir := t.TempDir()
 	protoModulePath := filepath.Join(tmpDir, "proto-google-cloud-test-v1")
 	srcDir := filepath.Join(protoModulePath, "src", "main", "java", "com", "google", "cloud", "test", "v1")
-	if err := os.MkdirAll(srcDir, 0755); err != nil {
+	if err := os.MkdirAll(srcDir, 0o755); err != nil {
 		t.Fatal(err)
 	}
 	orBuilderFile := filepath.Join(srcDir, "TestOrBuilder.java")
-	if err := os.WriteFile(orBuilderFile, []byte("package com.google.cloud.test.v1; public interface TestOrBuilder {}"), 0644); err != nil {
+	if err := os.WriteFile(orBuilderFile, []byte("package com.google.cloud.test.v1; public interface TestOrBuilder {}"), 0o644); err != nil {
 		t.Fatal(err)
 	}
 
@@ -76,7 +76,7 @@ func TestClirrIgnoreShouldGenerate(t *testing.T) {
 			artifactID: "proto-google-cloud-test-v1",
 			setup: func(t *testing.T, dir string) {
 				path := filepath.Join(dir, clirrIgnoreFile)
-				if err := os.WriteFile(path, []byte("exists"), 0644); err != nil {
+				if err := os.WriteFile(path, []byte("exists"), 0o644); err != nil {
 					t.Fatal(err)
 				}
 			},

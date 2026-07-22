@@ -48,7 +48,7 @@ func TestPostProcess_OwlBot(t *testing.T) {
 	repoRoot := t.TempDir()
 	t.Chdir(repoRoot)
 	destDir := filepath.Join(repoRoot, "SecretManager")
-	if err := os.MkdirAll(destDir, 0755); err != nil {
+	if err := os.MkdirAll(destDir, 0o755); err != nil {
 		t.Fatal(err)
 	}
 	// Symlink mock owlbot.py from testdata that writes "owlbot_ran.txt" when executed.
@@ -75,11 +75,11 @@ func TestPostProcess_OwlBotError(t *testing.T) {
 	repoRoot := t.TempDir()
 	t.Chdir(repoRoot)
 	destDir := filepath.Join(repoRoot, "SecretManager")
-	if err := os.MkdirAll(destDir, 0755); err != nil {
+	if err := os.MkdirAll(destDir, 0o755); err != nil {
 		t.Fatal(err)
 	}
 	owlbotPy := filepath.Join(destDir, "owlbot.py")
-	if err := os.WriteFile(owlbotPy, []byte("import sys; sys.exit(1)"), 0755); err != nil {
+	if err := os.WriteFile(owlbotPy, []byte("import sys; sys.exit(1)"), 0o755); err != nil {
 		t.Fatal(err)
 	}
 	lib := &config.Library{
@@ -100,18 +100,18 @@ func TestPostProcess_StatError(t *testing.T) {
 	ctx := t.Context()
 	repoRoot := t.TempDir()
 	destDir := filepath.Join(repoRoot, "SecretManager")
-	if err := os.MkdirAll(destDir, 0755); err != nil {
+	if err := os.MkdirAll(destDir, 0o755); err != nil {
 		t.Fatal(err)
 	}
 	inaccessibleDir := filepath.Join(destDir, "inaccessible")
-	if err := os.MkdirAll(inaccessibleDir, 0755); err != nil {
+	if err := os.MkdirAll(inaccessibleDir, 0o755); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.Chmod(inaccessibleDir, 0000); err != nil {
+	if err := os.Chmod(inaccessibleDir, 0o000); err != nil {
 		t.Fatal(err)
 	}
 	t.Cleanup(func() {
-		_ = os.Chmod(inaccessibleDir, 0755)
+		_ = os.Chmod(inaccessibleDir, 0o755)
 	})
 
 	lib := &config.Library{
@@ -129,27 +129,27 @@ func TestPostProcess_CleanupError(t *testing.T) {
 	repoRoot := t.TempDir()
 	t.Chdir(repoRoot)
 	destDir := filepath.Join(repoRoot, "SecretManager")
-	if err := os.MkdirAll(destDir, 0755); err != nil {
+	if err := os.MkdirAll(destDir, 0o755); err != nil {
 		t.Fatal(err)
 	}
 	owlbotPy := filepath.Join(destDir, "owlbot.py")
-	if err := os.WriteFile(owlbotPy, []byte("import sys; sys.exit(0)"), 0755); err != nil {
+	if err := os.WriteFile(owlbotPy, []byte("import sys; sys.exit(0)"), 0o755); err != nil {
 		t.Fatal(err)
 	}
 
 	stagingDir := filepath.Join(repoRoot, owlBotStagingDir, "SecretManager")
-	if err := os.MkdirAll(stagingDir, 0755); err != nil {
+	if err := os.MkdirAll(stagingDir, 0o755); err != nil {
 		t.Fatal(err)
 	}
 	inaccessibleSubdir := filepath.Join(stagingDir, "inaccessible")
-	if err := os.MkdirAll(inaccessibleSubdir, 0755); err != nil {
+	if err := os.MkdirAll(inaccessibleSubdir, 0o755); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.Chmod(stagingDir, 0555); err != nil {
+	if err := os.Chmod(stagingDir, 0o555); err != nil {
 		t.Fatal(err)
 	}
 	t.Cleanup(func() {
-		_ = os.Chmod(stagingDir, 0755)
+		_ = os.Chmod(stagingDir, 0o755)
 	})
 
 	lib := &config.Library{

@@ -185,7 +185,7 @@ public class TestClass {
 			t.Parallel()
 			tmpDir := t.TempDir()
 			filePath := filepath.Join(tmpDir, "TestClass.java")
-			if err := os.WriteFile(filePath, []byte(test.inputContent), 0644); err != nil {
+			if err := os.WriteFile(filePath, []byte(test.inputContent), 0o644); err != nil {
 				t.Fatal(err)
 			}
 			if err := DeprecateMethod(filePath, test.funcName, test.deprecationMessage, config.LanguageJava); err != nil {
@@ -293,7 +293,7 @@ public class TestClass {
 			t.Parallel()
 			tmpDir := t.TempDir()
 			filePath := filepath.Join(tmpDir, "TestClass.java")
-			if err := os.WriteFile(filePath, []byte(test.inputContent), 0644); err != nil {
+			if err := os.WriteFile(filePath, []byte(test.inputContent), 0o644); err != nil {
 				t.Fatal(err)
 			}
 			err := DeprecateMethod(filePath, test.funcName, test.deprecationMessage, test.language)

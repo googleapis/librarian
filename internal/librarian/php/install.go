@@ -61,7 +61,7 @@ func Install(ctx context.Context, tools *config.Tools) error {
 	if err != nil {
 		return err
 	}
-	if err := os.MkdirAll(bin, 0755); err != nil {
+	if err := os.MkdirAll(bin, 0o755); err != nil {
 		return fmt.Errorf("failed to create bin directory: %w", err)
 	}
 
@@ -187,7 +187,7 @@ func installGenerator(ctx context.Context) (string, error) {
 exec %q -d display_errors=stderr -d memory_limit=1024M %q --side_loaded_root_dir "$GOOGLEAPIS_DIR" "$@"
 `, phpPath, filepath.Join(generatorDir, "src/Main.php"))
 
-	if err := os.WriteFile(wrapperPath, []byte(wrapperContent), 0755); err != nil {
+	if err := os.WriteFile(wrapperPath, []byte(wrapperContent), 0o755); err != nil {
 		return "", fmt.Errorf("failed to write wrapper script: %w", err)
 	}
 
@@ -201,10 +201,15 @@ func generatorDir(ctx context.Context) (string, error) {
 // createBinWrapper creates a shell wrapper script in the bin directory that forwards executions to the tool.
 func createBinWrapper(wrapperName, content, binDir string) error {
 	wrapperPath := filepath.Join(binDir, wrapperName)
-	if err := os.MkdirAll(filepath.Dir(wrapperPath), 0755); err != nil {
+if err := os.MkdirAll(filepath.Dir(wrapperPath), 0o755); err != nil {
 		return fmt.Errorf("failed to create directory for wrapper: %w", err)
 	}
-	f, err := os.OpenFile(wrapperPath, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0755)
+	_ = os.Remove(wrapperPath)
+	f, err := os.OpenFile(wrapperPath, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0o755)
+	if err != nil {
+		return fmt.Errorf("failed to create wrapper script: %w", err)
+	}
+	defer f.Close()
 	if err != nil {
 		if errors.Is(err, fs.ErrNotExist) {
 			_ = os.Remove(wrapperPath)

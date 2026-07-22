@@ -220,11 +220,11 @@ func TestFindGRPCServiceConfigMultipleFiles(t *testing.T) {
 	dir := t.TempDir()
 	apiPath := "google/example/v1"
 	apiDir := filepath.Join(dir, apiPath)
-	if err := os.MkdirAll(apiDir, 0755); err != nil {
+	if err := os.MkdirAll(apiDir, 0o755); err != nil {
 		t.Fatal(err)
 	}
 	for _, name := range []string{"foo_grpc_service_config.json", "bar_grpc_service_config.json"} {
-		if err := os.WriteFile(filepath.Join(apiDir, name), []byte("{}"), 0644); err != nil {
+		if err := os.WriteFile(filepath.Join(apiDir, name), []byte("{}"), 0o644); err != nil {
 			t.Fatal(err)
 		}
 	}
@@ -273,11 +273,11 @@ func TestFindGAPICConfigMultipleFiles(t *testing.T) {
 	dir := t.TempDir()
 	apiPath := "google/example/v1"
 	apiDir := filepath.Join(dir, apiPath)
-	if err := os.MkdirAll(apiDir, 0755); err != nil {
+	if err := os.MkdirAll(apiDir, 0o755); err != nil {
 		t.Fatal(err)
 	}
 	for _, name := range []string{"foo_gapic.yaml", "bar_gapic.yaml"} {
-		if err := os.WriteFile(filepath.Join(apiDir, name), []byte(""), 0644); err != nil {
+		if err := os.WriteFile(filepath.Join(apiDir, name), []byte(""), 0o644); err != nil {
 			t.Fatal(err)
 		}
 	}

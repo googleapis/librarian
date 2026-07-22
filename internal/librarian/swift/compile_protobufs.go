@@ -27,7 +27,7 @@ import (
 )
 
 func compileProtobufs(ctx context.Context, library *config.Library, module *config.SwiftModule, src *sources.Sources) error {
-	if err := os.MkdirAll(module.Output, 0755); err != nil {
+	if err := os.MkdirAll(module.Output, 0o755); err != nil {
 		return err
 	}
 

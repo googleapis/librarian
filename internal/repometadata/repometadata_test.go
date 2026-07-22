@@ -94,7 +94,7 @@ func TestFromLibrary(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			tmpDir := t.TempDir()
 			outDir := filepath.Join(tmpDir, "output")
-			if err := os.MkdirAll(outDir, 0755); err != nil {
+			if err := os.MkdirAll(outDir, 0o755); err != nil {
 				t.Fatal(err)
 			}
 
@@ -242,7 +242,7 @@ func TestRead_Error(t *testing.T) {
 		{
 			name: "not JSON",
 			setup: func(t *testing.T, dir string) {
-				if err := os.WriteFile(filepath.Join(dir, repoMetadataFile), []byte("not json"), 0644); err != nil {
+				if err := os.WriteFile(filepath.Join(dir, repoMetadataFile), []byte("not json"), 0o644); err != nil {
 					t.Fatal(err)
 				}
 			},

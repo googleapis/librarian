@@ -54,10 +54,10 @@ func TestCrateExists(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			d := t.TempDir()
 			t.Chdir(d)
-			if err := os.MkdirAll(test.makeDir, 0775); err != nil {
+			if err := os.MkdirAll(test.makeDir, 0o775); err != nil {
 				t.Fatal(err)
 			}
-			if err := os.WriteFile("Cargo.toml", fmt.Appendf(nil, formatTestCargoToml, test.cargoText), 0644); err != nil {
+			if err := os.WriteFile("Cargo.toml", fmt.Appendf(nil, formatTestCargoToml, test.cargoText), 0o644); err != nil {
 				t.Fatal(err)
 			}
 			got, err := crateExists(testDir)
@@ -97,10 +97,10 @@ func TestCrateExists_Errors(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			d := t.TempDir()
 			t.Chdir(d)
-			if err := os.MkdirAll(test.makeDir, 0775); err != nil {
+			if err := os.MkdirAll(test.makeDir, 0o775); err != nil {
 				t.Fatal(err)
 			}
-			if err := os.WriteFile("Cargo.toml", fmt.Appendf(nil, formatTestCargoToml, test.cargoText), 0644); err != nil {
+			if err := os.WriteFile("Cargo.toml", fmt.Appendf(nil, formatTestCargoToml, test.cargoText), 0o644); err != nil {
 				t.Fatal(err)
 			}
 			got, err := crateExists(testDir)
@@ -115,10 +115,10 @@ func TestCrateExistsDirectoryError(t *testing.T) {
 	d := t.TempDir()
 	t.Chdir(d)
 	// Create part of the path, but make it unreadable.
-	if err := os.MkdirAll("src", 0000); err != nil {
+	if err := os.MkdirAll("src", 0o000); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile("Cargo.toml", []byte("# test only"), 0644); err != nil {
+	if err := os.WriteFile("Cargo.toml", []byte("# test only"), 0o644); err != nil {
 		t.Fatal(err)
 	}
 	if got, err := crateExists("src/generated/unreachable"); err == nil {
@@ -130,7 +130,7 @@ func TestCrateExistsCargoTomlError(t *testing.T) {
 	d := t.TempDir()
 	t.Chdir(d)
 	// Create part of the path, but make it unreadable.
-	if err := os.MkdirAll("src/generated/test", 0755); err != nil {
+	if err := os.MkdirAll("src/generated/test", 0o755); err != nil {
 		t.Fatal(err)
 	}
 	if got, err := crateExists("src/generated/test"); err == nil {
