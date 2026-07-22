@@ -214,7 +214,7 @@ func TestBump_APIChange(t *testing.T) {
 	setupRepoFromDir(t, inputDir, repoVersions)
 
 	// Now make a commit with changes to package a.
-	if err := os.WriteFile("generated/a/lib.dart", []byte("const a = 5"), 0644); err != nil {
+	if err := os.WriteFile("generated/a/lib.dart", []byte("const a = 5;"), 0644); err != nil {
 		t.Fatal(err)
 	}
 	testhelper.RunGit(t, "add", ".")
