@@ -70,7 +70,7 @@ go_proto_library()
 `
 	tmpDir := t.TempDir()
 	buildPath := filepath.Join(tmpDir, "BUILD.bazel")
-	if err := os.WriteFile(buildPath, []byte(content), 0644); err != nil {
+	if err := os.WriteFile(buildPath, []byte(content), 0o644); err != nil {
 		t.Fatal(err)
 	}
 
@@ -159,7 +159,7 @@ func TestParse_Errors(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			tmpDir := t.TempDir()
 			buildPath := filepath.Join(tmpDir, "BUILD.bazel")
-			if err := os.WriteFile(buildPath, []byte(test.content), 0644); err != nil {
+			if err := os.WriteFile(buildPath, []byte(test.content), 0o644); err != nil {
 				t.Fatal(err)
 			}
 			if _, err := Parse(buildPath); err != nil {
@@ -305,7 +305,7 @@ go_gapic_library(
 		t.Run(test.name, func(t *testing.T) {
 			tmpDir := t.TempDir()
 			buildPath := filepath.Join(tmpDir, "BUILD.bazel")
-			if err := os.WriteFile(buildPath, []byte(test.content), 0644); err != nil {
+			if err := os.WriteFile(buildPath, []byte(test.content), 0o644); err != nil {
 				t.Fatal(err)
 			}
 			got, err := ParseTransports(buildPath)
@@ -357,7 +357,7 @@ go_gapic_library(
 		t.Run(test.name, func(t *testing.T) {
 			tmpDir := t.TempDir()
 			buildPath := filepath.Join(tmpDir, "BUILD.bazel")
-			if err := os.WriteFile(buildPath, []byte(test.content), 0644); err != nil {
+			if err := os.WriteFile(buildPath, []byte(test.content), 0o644); err != nil {
 				t.Fatal(err)
 			}
 			got, err := ParseRESTNumericEnums(buildPath)
@@ -410,7 +410,7 @@ go_gapic_library(
 		t.Run(test.name, func(t *testing.T) {
 			tmpDir := t.TempDir()
 			buildPath := filepath.Join(tmpDir, "BUILD.bazel")
-			if err := os.WriteFile(buildPath, []byte(test.content), 0644); err != nil {
+			if err := os.WriteFile(buildPath, []byte(test.content), 0o644); err != nil {
 				t.Fatal(err)
 			}
 			got, err := ParseReleaseLevel(buildPath)
@@ -428,7 +428,7 @@ func mustParse(t *testing.T, content string) *Config {
 	t.Helper()
 	tmpDir := t.TempDir()
 	buildPath := filepath.Join(tmpDir, "BUILD.bazel")
-	if err := os.WriteFile(buildPath, []byte(content), 0644); err != nil {
+	if err := os.WriteFile(buildPath, []byte(content), 0o644); err != nil {
 		t.Fatal(err)
 	}
 

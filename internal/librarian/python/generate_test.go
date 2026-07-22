@@ -298,7 +298,7 @@ func TestStageProtoFiles_Error(t *testing.T) {
 			relativeProtoPaths: []string{"google/cloud/gkehub/v1/feature.proto"},
 			setup: func(t *testing.T, targetDir string) {
 				// Create a file with the name of the directory we'd create.
-				if err := os.WriteFile(filepath.Join(targetDir, "google"), []byte{}, 0644); err != nil {
+				if err := os.WriteFile(filepath.Join(targetDir, "google"), []byte{}, 0o644); err != nil {
 					t.Fatal(err)
 				}
 			},
@@ -309,7 +309,7 @@ func TestStageProtoFiles_Error(t *testing.T) {
 			relativeProtoPaths: []string{"google/cloud/gkehub/v1/feature.proto"},
 			setup: func(t *testing.T, targetDir string) {
 				// Create a directory with the name of the file we'd create.
-				if err := os.MkdirAll(filepath.Join(targetDir, "google", "cloud", "gkehub", "v1", "feature.proto"), 0755); err != nil {
+				if err := os.MkdirAll(filepath.Join(targetDir, "google", "cloud", "gkehub", "v1", "feature.proto"), 0o755); err != nil {
 					t.Fatal(err)
 				}
 			},
@@ -347,13 +347,13 @@ func TestCopyReadmeToDocsDir(t *testing.T) {
 		{
 			name: "handwritten library, target already exists",
 			setup: func(t *testing.T, outdir string) {
-				if err := os.WriteFile(filepath.Join(outdir, "README.rst"), []byte("after"), 0644); err != nil {
+				if err := os.WriteFile(filepath.Join(outdir, "README.rst"), []byte("after"), 0o644); err != nil {
 					t.Fatal(err)
 				}
-				if err := os.MkdirAll(filepath.Join(outdir, "docs"), 0755); err != nil {
+				if err := os.MkdirAll(filepath.Join(outdir, "docs"), 0o755); err != nil {
 					t.Fatal(err)
 				}
-				if err := os.WriteFile(filepath.Join(outdir, "docs", "README.rst"), []byte("before"), 0644); err != nil {
+				if err := os.WriteFile(filepath.Join(outdir, "docs", "README.rst"), []byte("before"), 0o644); err != nil {
 					t.Fatal(err)
 				}
 			},
@@ -363,7 +363,7 @@ func TestCopyReadmeToDocsDir(t *testing.T) {
 		{
 			name: "handwritten library, target doesn't already exist",
 			setup: func(t *testing.T, outdir string) {
-				if err := os.WriteFile(filepath.Join(outdir, "README.rst"), []byte("after"), 0644); err != nil {
+				if err := os.WriteFile(filepath.Join(outdir, "README.rst"), []byte("after"), 0o644); err != nil {
 					t.Fatal(err)
 				}
 			},
@@ -372,7 +372,7 @@ func TestCopyReadmeToDocsDir(t *testing.T) {
 		{
 			name: "readme is a regular file",
 			setup: func(t *testing.T, outdir string) {
-				if err := os.WriteFile(filepath.Join(outdir, "README.rst"), []byte("hello"), 0644); err != nil {
+				if err := os.WriteFile(filepath.Join(outdir, "README.rst"), []byte("hello"), 0o644); err != nil {
 					t.Fatal(err)
 				}
 			},
@@ -381,7 +381,7 @@ func TestCopyReadmeToDocsDir(t *testing.T) {
 		{
 			name: "readme is a symlink",
 			setup: func(t *testing.T, outdir string) {
-				if err := os.WriteFile(filepath.Join(outdir, "REAL_README.rst"), []byte("hello"), 0644); err != nil {
+				if err := os.WriteFile(filepath.Join(outdir, "REAL_README.rst"), []byte("hello"), 0o644); err != nil {
 					t.Fatal(err)
 				}
 				if err := os.Symlink("REAL_README.rst", filepath.Join(outdir, "README.rst")); err != nil {
@@ -393,10 +393,10 @@ func TestCopyReadmeToDocsDir(t *testing.T) {
 		{
 			name: "dest is a symlink",
 			setup: func(t *testing.T, outdir string) {
-				if err := os.WriteFile(filepath.Join(outdir, "README.rst"), []byte("hello"), 0644); err != nil {
+				if err := os.WriteFile(filepath.Join(outdir, "README.rst"), []byte("hello"), 0o644); err != nil {
 					t.Fatal(err)
 				}
-				if err := os.MkdirAll(filepath.Join(outdir, "docs"), 0755); err != nil {
+				if err := os.MkdirAll(filepath.Join(outdir, "docs"), 0o755); err != nil {
 					t.Fatal(err)
 				}
 				if err := os.Symlink("../some/other/file", filepath.Join(outdir, "docs", "README.rst")); err != nil {
@@ -408,11 +408,11 @@ func TestCopyReadmeToDocsDir(t *testing.T) {
 		{
 			name: "unreadable readme",
 			setup: func(t *testing.T, outdir string) {
-				if err := os.WriteFile(filepath.Join(outdir, "README.rst"), []byte("hello"), 0000); err != nil {
+				if err := os.WriteFile(filepath.Join(outdir, "README.rst"), []byte("hello"), 0o000); err != nil {
 					t.Fatal(err)
 				}
 				t.Cleanup(func() {
-					os.Chmod(filepath.Join(outdir, "README.rst"), 0644)
+					os.Chmod(filepath.Join(outdir, "README.rst"), 0o644)
 				})
 			},
 			expectedErr: true,
@@ -420,10 +420,10 @@ func TestCopyReadmeToDocsDir(t *testing.T) {
 		{
 			name: "cannot create docs dir",
 			setup: func(t *testing.T, outdir string) {
-				if err := os.WriteFile(filepath.Join(outdir, "README.rst"), []byte("hello"), 0644); err != nil {
+				if err := os.WriteFile(filepath.Join(outdir, "README.rst"), []byte("hello"), 0o644); err != nil {
 					t.Fatal(err)
 				}
-				if err := os.WriteFile(filepath.Join(outdir, "docs"), []byte(""), 0644); err != nil {
+				if err := os.WriteFile(filepath.Join(outdir, "docs"), []byte(""), 0o644); err != nil {
 					t.Fatal(err)
 				}
 			},
@@ -475,10 +475,10 @@ func TestCleanUpFilesAfterPostProcessing(t *testing.T) {
 			name: "staging dir exists",
 			setup: func(t *testing.T, generationRoot, outputDir string) {
 				stagingDir := filepath.Join(generationRoot, "owl-bot-staging")
-				if err := os.MkdirAll(stagingDir, 0755); err != nil {
+				if err := os.MkdirAll(stagingDir, 0o755); err != nil {
 					t.Fatal(err)
 				}
-				if err := os.WriteFile(filepath.Join(stagingDir, "test.txt"), []byte("test"), 0644); err != nil {
+				if err := os.WriteFile(filepath.Join(stagingDir, "test.txt"), []byte("test"), 0o644); err != nil {
 					t.Fatal(err)
 				}
 			},
@@ -487,10 +487,10 @@ func TestCleanUpFilesAfterPostProcessing(t *testing.T) {
 			name: "scripts dir exists",
 			setup: func(t *testing.T, generationRoot, outputDir string) {
 				scriptsDir := filepath.Join(outputDir, "scripts")
-				if err := os.MkdirAll(scriptsDir, 0755); err != nil {
+				if err := os.MkdirAll(scriptsDir, 0o755); err != nil {
 					t.Fatal(err)
 				}
-				if err := os.WriteFile(filepath.Join(scriptsDir, "test.txt"), []byte("test"), 0644); err != nil {
+				if err := os.WriteFile(filepath.Join(scriptsDir, "test.txt"), []byte("test"), 0o644); err != nil {
 					t.Fatal(err)
 				}
 			},
@@ -535,19 +535,19 @@ func TestCleanUpFilesAfterPostProcessing_Error(t *testing.T) {
 			name: "error removing owl-bot-staging",
 			setup: func(t *testing.T, repoRoot, outputDir string) {
 				stagingDir := filepath.Join(repoRoot, "owl-bot-staging")
-				if err := os.MkdirAll(stagingDir, 0755); err != nil {
+				if err := os.MkdirAll(stagingDir, 0o755); err != nil {
 					t.Fatal(err)
 				}
 				// Create a file in the directory
-				if err := os.WriteFile(filepath.Join(stagingDir, "file"), []byte(""), 0644); err != nil {
+				if err := os.WriteFile(filepath.Join(stagingDir, "file"), []byte(""), 0o644); err != nil {
 					t.Fatal(err)
 				}
 				// Make the directory read-only to cause an error
-				if err := os.Chmod(stagingDir, 0400); err != nil {
+				if err := os.Chmod(stagingDir, 0o400); err != nil {
 					t.Fatal(err)
 				}
 				t.Cleanup(func() {
-					os.Chmod(stagingDir, 0755)
+					os.Chmod(stagingDir, 0o755)
 				})
 			},
 			wantErr: os.ErrPermission,
@@ -556,19 +556,19 @@ func TestCleanUpFilesAfterPostProcessing_Error(t *testing.T) {
 			name: "error removing scripts",
 			setup: func(t *testing.T, repoRoot, outputDir string) {
 				scriptsDir := filepath.Join(outputDir, "scripts")
-				if err := os.MkdirAll(scriptsDir, 0755); err != nil {
+				if err := os.MkdirAll(scriptsDir, 0o755); err != nil {
 					t.Fatal(err)
 				}
 				// Create a file in the directory
-				if err := os.WriteFile(filepath.Join(scriptsDir, "file"), []byte(""), 0644); err != nil {
+				if err := os.WriteFile(filepath.Join(scriptsDir, "file"), []byte(""), 0o644); err != nil {
 					t.Fatal(err)
 				}
 				// Make the directory read-only to cause an error
-				if err := os.Chmod(scriptsDir, 0400); err != nil {
+				if err := os.Chmod(scriptsDir, 0o400); err != nil {
 					t.Fatal(err)
 				}
 				t.Cleanup(func() {
-					os.Chmod(scriptsDir, 0755)
+					os.Chmod(scriptsDir, 0o755)
 				})
 			},
 			wantErr: os.ErrPermission,
@@ -594,7 +594,7 @@ func TestRunPostProcessor(t *testing.T) {
 	repoRoot := t.TempDir()
 	createReplacementScripts(t, repoRoot)
 	outdir := filepath.Join(repoRoot, "packages", "sample-package")
-	if err := os.MkdirAll(outdir, 0755); err != nil {
+	if err := os.MkdirAll(outdir, 0o755); err != nil {
 		t.Fatal(err)
 	}
 	generationRoot, err := prepareGenerationRoot(outdir)
@@ -602,7 +602,7 @@ func TestRunPostProcessor(t *testing.T) {
 		t.Fatal(err)
 	}
 	// Create minimal .repo-metadata.json that synthtool expects
-	if err := os.WriteFile(filepath.Join(outdir, ".repo-metadata.json"), []byte(`{"default_version":"v1"}`), 0644); err != nil {
+	if err := os.WriteFile(filepath.Join(outdir, ".repo-metadata.json"), []byte(`{"default_version":"v1"}`), 0o644); err != nil {
 		t.Fatal(err)
 	}
 	createMinimalNoxFile(t, outdir)
@@ -627,7 +627,7 @@ func TestRunPostProcessor_Error(t *testing.T) {
 			setup: func(t *testing.T, repoRoot, outputDir string) {
 				// Can't copy scripts into a "scripts" directory if that's a
 				// file...
-				if err := os.WriteFile(filepath.Join(outputDir, "scripts"), []byte{}, 0644); err != nil {
+				if err := os.WriteFile(filepath.Join(outputDir, "scripts"), []byte{}, 0o644); err != nil {
 					t.Fatal(err)
 				}
 			},
@@ -655,7 +655,7 @@ func TestRunPostProcessor_Error(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			repoRoot := t.TempDir()
 			outputDir := filepath.Join(repoRoot, "packages", "test")
-			if err := os.MkdirAll(outputDir, 0755); err != nil {
+			if err := os.MkdirAll(outputDir, 0o755); err != nil {
 				t.Fatal(err)
 			}
 			generationRoot, err := prepareGenerationRoot(outputDir)
@@ -664,7 +664,7 @@ func TestRunPostProcessor_Error(t *testing.T) {
 			}
 			createReplacementScripts(t, repoRoot)
 			createMinimalNoxFile(t, outputDir)
-			if err := os.WriteFile(filepath.Join(outputDir, ".repo-metadata.json"), []byte(`{"default_version":"v1"}`), 0644); err != nil {
+			if err := os.WriteFile(filepath.Join(outputDir, ".repo-metadata.json"), []byte(`{"default_version":"v1"}`), 0o644); err != nil {
 				t.Fatal(err)
 			}
 			if test.setup != nil {
@@ -721,7 +721,7 @@ func TestGenerateAPI_Error(t *testing.T) {
 			name: "error creating owl-bot-staging",
 			setup: func(t *testing.T, repoRoot, outputDir string) {
 				stagingDir := filepath.Join(repoRoot, "owl-bot-staging")
-				if err := os.WriteFile(stagingDir, []byte{}, 0644); err != nil {
+				if err := os.WriteFile(stagingDir, []byte{}, 0o644); err != nil {
 					t.Fatal(err)
 				}
 			},
@@ -761,7 +761,7 @@ func TestGenerateAPI_Error(t *testing.T) {
 			},
 			setup: func(t *testing.T, repoRoot, outputDir string) {
 				expectedProtoFile := filepath.Join(repoRoot, "owl-bot-staging", "pkg", "v1", "google", "cloud", "secretmanager", "v1", "resources.proto")
-				if err := os.MkdirAll(expectedProtoFile, 0755); err != nil {
+				if err := os.MkdirAll(expectedProtoFile, 0o755); err != nil {
 					t.Fatal(err)
 				}
 			},
@@ -887,7 +887,7 @@ func TestGenerate_Error(t *testing.T) {
 				Output: "exists-as-file",
 			},
 			setup: func(t *testing.T, lib *config.Library) {
-				if err := os.WriteFile(lib.Output, []byte{}, 0644); err != nil {
+				if err := os.WriteFile(lib.Output, []byte{}, 0o644); err != nil {
 					t.Fatal(err)
 				}
 			},
@@ -915,11 +915,11 @@ func TestGenerate_Error(t *testing.T) {
 				Python: &config.PythonPackage{DefaultVersion: "v1"},
 			},
 			setup: func(t *testing.T, lib *config.Library) {
-				if err := os.MkdirAll(lib.Output, 0755); err != nil {
+				if err := os.MkdirAll(lib.Output, 0o755); err != nil {
 					t.Fatal(err)
 				}
 				metadataFile := filepath.Join(lib.Output, ".repo-metadata.json")
-				if err := os.WriteFile(metadataFile, []byte{}, 0444); err != nil {
+				if err := os.WriteFile(metadataFile, []byte{}, 0o444); err != nil {
 					t.Fatal(err)
 				}
 			},
@@ -937,7 +937,7 @@ func TestGenerate_Error(t *testing.T) {
 			},
 			setup: func(t *testing.T, lib *config.Library) {
 				postProcessorScript := filepath.Join(".librarian", "generator-input", "client-post-processing", "bad.yaml")
-				if err := os.WriteFile(postProcessorScript, []byte("-"), 0644); err != nil {
+				if err := os.WriteFile(postProcessorScript, []byte("-"), 0o644); err != nil {
 					t.Fatal(err)
 				}
 			},
@@ -953,7 +953,7 @@ func TestGenerate_Error(t *testing.T) {
 				Python: &config.PythonPackage{DefaultVersion: "v1"},
 			},
 			setup: func(t *testing.T, lib *config.Library) {
-				if err := os.MkdirAll(filepath.Join(lib.Output, "docs", "README.rst"), 0755); err != nil {
+				if err := os.MkdirAll(filepath.Join(lib.Output, "docs", "README.rst"), 0o755); err != nil {
 					t.Fatal(err)
 				}
 			},
@@ -970,10 +970,10 @@ func TestGenerate_Error(t *testing.T) {
 				Python: &config.PythonPackage{DefaultVersion: "v1"},
 			},
 			setup: func(t *testing.T, lib *config.Library) {
-				if err := os.MkdirAll(filepath.Join(lib.Output, "docs"), 0755); err != nil {
+				if err := os.MkdirAll(filepath.Join(lib.Output, "docs"), 0o755); err != nil {
 					t.Fatal(err)
 				}
-				if err := os.WriteFile(filepath.Join(lib.Output, "docs", changelog), []byte{}, 0644); err != nil {
+				if err := os.WriteFile(filepath.Join(lib.Output, "docs", changelog), []byte{}, 0o644); err != nil {
 					t.Fatal(err)
 				}
 			},
@@ -1549,7 +1549,7 @@ func TestCreateChangelog(t *testing.T) {
 func TestCreateChangelog_FileExists(t *testing.T) {
 	libName := "google-cloud-test"
 	output := t.TempDir()
-	if err := os.WriteFile(filepath.Join(output, changelog), []byte{}, 0644); err != nil {
+	if err := os.WriteFile(filepath.Join(output, changelog), []byte{}, 0o644); err != nil {
 		t.Fatal(err)
 	}
 	if err := createChangelog(libName, output); err != nil {
@@ -1575,7 +1575,7 @@ func TestCreateChangelog_Error(t *testing.T) {
 		{
 			name: "docs is an existing file",
 			setup: func(t *testing.T, output string) {
-				if err := os.WriteFile(filepath.Join(output, "docs"), []byte{}, 0644); err != nil {
+				if err := os.WriteFile(filepath.Join(output, "docs"), []byte{}, 0o644); err != nil {
 					t.Fatal(err)
 				}
 			},
@@ -1584,11 +1584,11 @@ func TestCreateChangelog_Error(t *testing.T) {
 		{
 			name: "output directory is readonly",
 			setup: func(t *testing.T, output string) {
-				if err := os.Chmod(output, 0644); err != nil {
+				if err := os.Chmod(output, 0o644); err != nil {
 					t.Fatal(err)
 				}
 				t.Cleanup(func() {
-					if err := os.Chmod(output, 0755); err != nil {
+					if err := os.Chmod(output, 0o755); err != nil {
 						t.Fatal(err)
 					}
 				})
@@ -1598,7 +1598,7 @@ func TestCreateChangelog_Error(t *testing.T) {
 		{
 			name: "docs changelog is an existing directory",
 			setup: func(t *testing.T, output string) {
-				if err := os.MkdirAll(filepath.Join(output, "docs", changelog), 0755); err != nil {
+				if err := os.MkdirAll(filepath.Join(output, "docs", changelog), 0o755); err != nil {
 					t.Fatal(err)
 				}
 			},
@@ -1628,7 +1628,7 @@ func TestPrepareGenerationRoot_Error(t *testing.T) {
 		{
 			name: "tmp is an existing file",
 			setup: func(t *testing.T, output string) {
-				if err := os.WriteFile(filepath.Join(output, "tmp"), []byte{}, 0644); err != nil {
+				if err := os.WriteFile(filepath.Join(output, "tmp"), []byte{}, 0o644); err != nil {
 					t.Fatal(err)
 				}
 			},
@@ -1637,7 +1637,7 @@ func TestPrepareGenerationRoot_Error(t *testing.T) {
 		{
 			name: "symlink target already exists",
 			setup: func(t *testing.T, output string) {
-				if err := os.MkdirAll(filepath.Join(output, "tmp", "packages", filepath.Base(output)), 0755); err != nil {
+				if err := os.MkdirAll(filepath.Join(output, "tmp", "packages", filepath.Base(output)), 0o755); err != nil {
 					t.Fatal(err)
 				}
 			},
@@ -1668,7 +1668,7 @@ func requireSynthtool(t *testing.T) {
 // script in the .librarian/generator-input/client-post-processing directory.
 func createReplacementScripts(t *testing.T, repoRoot string) {
 	dir := filepath.Join(repoRoot, ".librarian", "generator-input", "client-post-processing")
-	if err := os.MkdirAll(dir, 0755); err != nil {
+	if err := os.MkdirAll(dir, 0o755); err != nil {
 		t.Fatal(err)
 	}
 	yaml := `description: Sample string replacement file
@@ -1680,7 +1680,7 @@ replacements:
     before: replace-me
     after: replaced
     count: 1`
-	if err := os.WriteFile(filepath.Join(dir, "sample.yaml"), []byte(yaml), 0644); err != nil {
+	if err := os.WriteFile(filepath.Join(dir, "sample.yaml"), []byte(yaml), 0o644); err != nil {
 		t.Fatal(err)
 	}
 }
@@ -1694,7 +1694,7 @@ nox.options.sessions = ["format"]
 def format(session):
 	print("This would format")
 `
-	if err := os.WriteFile(filepath.Join(outDir, "noxfile.py"), []byte(content), 0644); err != nil {
+	if err := os.WriteFile(filepath.Join(outDir, "noxfile.py"), []byte(content), 0o644); err != nil {
 		t.Fatalf("unable to create noxfile.py: %v", err)
 	}
 }

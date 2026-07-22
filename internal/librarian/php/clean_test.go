@@ -133,10 +133,10 @@ func verifyFileDeletions(t *testing.T, dir string, setupFiles, wantDeleted []str
 
 func createFileAndDirectories(t *testing.T, path, content string) {
 	t.Helper()
-	if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(path, []byte(content), 0644); err != nil {
+	if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
 		t.Fatal(err)
 	}
 }
@@ -149,14 +149,14 @@ func TestClean_StatError(t *testing.T) {
 		Output: filepath.Join(repoRoot, "test"),
 	}
 	dir := filepath.Join(lib.Output, "src")
-	if err := os.MkdirAll(dir, 0755); err != nil {
+	if err := os.MkdirAll(dir, 0o755); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.Chmod(lib.Output, 0000); err != nil {
+	if err := os.Chmod(lib.Output, 0o000); err != nil {
 		t.Fatal(err)
 	}
 	t.Cleanup(func() {
-		_ = os.Chmod(lib.Output, 0755)
+		_ = os.Chmod(lib.Output, 0o755)
 	})
 	err := Clean(lib)
 	if err == nil {
@@ -176,11 +176,11 @@ func TestClean_ReadFileError(t *testing.T) {
 	}
 	filePath := filepath.Join(lib.Output, "src/V1/Service.php")
 	createFileAndDirectories(t, filePath, "<?php // "+string(gapicMarker))
-	if err := os.Chmod(filePath, 0000); err != nil {
+	if err := os.Chmod(filePath, 0o000); err != nil {
 		t.Fatal(err)
 	}
 	t.Cleanup(func() {
-		_ = os.Chmod(filePath, 0644)
+		_ = os.Chmod(filePath, 0o644)
 	})
 	err := Clean(lib)
 	if err == nil {
@@ -201,11 +201,11 @@ func TestClean_RemoveError(t *testing.T) {
 	dirPath := filepath.Join(lib.Output, "src/V1")
 	filePath := filepath.Join(dirPath, gapicMetadataFile)
 	createFileAndDirectories(t, filePath, "{}")
-	if err := os.Chmod(dirPath, 0500); err != nil {
+	if err := os.Chmod(dirPath, 0o500); err != nil {
 		t.Fatal(err)
 	}
 	t.Cleanup(func() {
-		_ = os.Chmod(dirPath, 0755)
+		_ = os.Chmod(dirPath, 0o755)
 	})
 	err := Clean(lib)
 	if err == nil {
@@ -225,14 +225,14 @@ func TestClean_WalkDirError(t *testing.T) {
 	}
 	dir := filepath.Join(lib.Output, "src")
 	subdir := filepath.Join(dir, "V1")
-	if err := os.MkdirAll(subdir, 0755); err != nil {
+	if err := os.MkdirAll(subdir, 0o755); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.Chmod(subdir, 0000); err != nil {
+	if err := os.Chmod(subdir, 0o000); err != nil {
 		t.Fatal(err)
 	}
 	t.Cleanup(func() {
-		_ = os.Chmod(subdir, 0755)
+		_ = os.Chmod(subdir, 0o755)
 	})
 	err := Clean(lib)
 	if err == nil {
@@ -252,25 +252,25 @@ func TestClean_RemovesEmptyDirectories(t *testing.T) {
 	}
 	// Setup: empty directory under src
 	emptyDir := filepath.Join(lib.Output, "src", "V1", "Empty")
-	if err := os.MkdirAll(emptyDir, 0755); err != nil {
+	if err := os.MkdirAll(emptyDir, 0o755); err != nil {
 		t.Fatal(err)
 	}
 	// Setup: directory with a file that will be deleted
 	dirWithDeletedFile := filepath.Join(lib.Output, "src", "V1", "Deleted")
 	fileToDelete := filepath.Join(dirWithDeletedFile, "gapic_metadata.json")
-	if err := os.MkdirAll(dirWithDeletedFile, 0755); err != nil {
+	if err := os.MkdirAll(dirWithDeletedFile, 0o755); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(fileToDelete, []byte("{}"), 0644); err != nil {
+	if err := os.WriteFile(fileToDelete, []byte("{}"), 0o644); err != nil {
 		t.Fatal(err)
 	}
 	// Setup: directory with a kept file
 	dirWithKeptFile := filepath.Join(lib.Output, "src", "V1", "Kept")
 	fileToKeep := filepath.Join(dirWithKeptFile, "Handwritten.php")
-	if err := os.MkdirAll(dirWithKeptFile, 0755); err != nil {
+	if err := os.MkdirAll(dirWithKeptFile, 0o755); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(fileToKeep, []byte("<?php class Handwritten {}"), 0644); err != nil {
+	if err := os.WriteFile(fileToKeep, []byte("<?php class Handwritten {}"), 0o644); err != nil {
 		t.Fatal(err)
 	}
 	lib.Keep = []string{"src/V1/Kept/Handwritten.php"}

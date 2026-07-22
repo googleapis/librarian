@@ -177,11 +177,11 @@ func TestClean_Error(t *testing.T) {
 			},
 			outputFiles: []string{"README.md"},
 			setup: func(t *testing.T, base string) {
-				if err := os.Chmod(base, 0555); err != nil {
+				if err := os.Chmod(base, 0o555); err != nil {
 					t.Fatal(err)
 				}
 				t.Cleanup(func() {
-					if err := os.Chmod(base, 0755); err != nil {
+					if err := os.Chmod(base, 0o755); err != nil {
 						t.Fatal(err)
 					}
 				})
@@ -204,11 +204,11 @@ func TestClean_Error(t *testing.T) {
 			outputFiles: []string{"apiv1/doc.go"},
 			setup: func(t *testing.T, base string) {
 				base = filepath.Join(base, "apiv1")
-				if err := os.Chmod(base, 0555); err != nil {
+				if err := os.Chmod(base, 0o555); err != nil {
 					t.Fatal(err)
 				}
 				t.Cleanup(func() {
-					if err := os.Chmod(base, 0755); err != nil {
+					if err := os.Chmod(base, 0o755); err != nil {
 						t.Fatal(err)
 					}
 				})
@@ -231,11 +231,11 @@ func TestClean_Error(t *testing.T) {
 			outputFiles: []string{"examples/apiv1/snippet1.go"},
 			setup: func(t *testing.T, base string) {
 				base = filepath.Join(base, "examples/apiv1")
-				if err := os.Chmod(base, 0555); err != nil {
+				if err := os.Chmod(base, 0o555); err != nil {
 					t.Fatal(err)
 				}
 				t.Cleanup(func() {
-					if err := os.Chmod(base, 0755); err != nil {
+					if err := os.Chmod(base, 0o755); err != nil {
 						t.Fatal(err)
 					}
 				})
@@ -267,15 +267,15 @@ func TestClean_Error(t *testing.T) {
 
 func createFiles(t *testing.T, base string, files []string) {
 	t.Helper()
-	if err := os.MkdirAll(base, 0755); err != nil {
+	if err := os.MkdirAll(base, 0o755); err != nil {
 		t.Fatal(err)
 	}
 	for _, file := range files {
 		filePath := filepath.Join(base, file)
-		if err := os.MkdirAll(filepath.Dir(filePath), 0755); err != nil {
+		if err := os.MkdirAll(filepath.Dir(filePath), 0o755); err != nil {
 			t.Fatal(err)
 		}
-		if err := os.WriteFile(filePath, []byte("test"), 0644); err != nil {
+		if err := os.WriteFile(filePath, []byte("test"), 0o644); err != nil {
 			t.Fatal(err)
 		}
 	}

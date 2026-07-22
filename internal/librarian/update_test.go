@@ -333,7 +333,7 @@ func fakeGoList(target, want string) func(*testing.T) {
 		goDir := t.TempDir()
 		goPath := filepath.Join(goDir, "go")
 		script := fmt.Sprintf("#!/bin/bash\nif [[ \"$*\" == *\"list -m -f {{.Version}} github.com/googleapis/librarian@%s\"* ]]; then\n  echo %q\n  exit 0\nfi\nexit 1\n", target, want)
-		if err := os.WriteFile(goPath, []byte(script), 0755); err != nil {
+		if err := os.WriteFile(goPath, []byte(script), 0o755); err != nil {
 			t.Fatal(err)
 		}
 		t.Setenv("PATH", goDir+string(os.PathListSeparator)+os.Getenv("PATH"))

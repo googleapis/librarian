@@ -59,7 +59,7 @@ func TestSyncPOMs_Golden(t *testing.T) {
 	gapicArtifactID := "google-cloud-secretmanager"
 	bomArtifactID := "google-cloud-secretmanager-bom"
 	for _, artifact := range []string{protoArtifactID, gRPCArtifactID, gapicArtifactID, bomArtifactID} {
-		if err := os.MkdirAll(filepath.Join(tmpDir, artifact), 0755); err != nil {
+		if err := os.MkdirAll(filepath.Join(tmpDir, artifact), 0o755); err != nil {
 			t.Fatal(err)
 		}
 	}
@@ -107,10 +107,10 @@ func TestSyncPOMs_Golden(t *testing.T) {
 		}
 		goldenPath := filepath.Join(testdataDir, artifact, "pom.xml")
 		if *update {
-			if err := os.MkdirAll(filepath.Dir(goldenPath), 0755); err != nil {
+			if err := os.MkdirAll(filepath.Dir(goldenPath), 0o755); err != nil {
 				t.Fatal(err)
 			}
-			if err := os.WriteFile(goldenPath, got, 0644); err != nil {
+			if err := os.WriteFile(goldenPath, got, 0o644); err != nil {
 				t.Fatal(err)
 			}
 		}
@@ -134,7 +134,7 @@ func TestSyncPOMs_Update(t *testing.T) {
 	gapicArtifactID := "google-cloud-secretmanager"
 	bomArtifactID := "google-cloud-secretmanager-bom"
 	for _, artifact := range []string{protoArtifactID, gRPCArtifactID, gapicArtifactID, bomArtifactID} {
-		if err := os.MkdirAll(filepath.Join(tmpDir, artifact), 0755); err != nil {
+		if err := os.MkdirAll(filepath.Join(tmpDir, artifact), 0o755); err != nil {
 			t.Fatal(err)
 		}
 	}
@@ -185,7 +185,7 @@ func TestSyncPOMs_Update(t *testing.T) {
 				t.Fatal(err)
 			}
 		}
-		if err := os.WriteFile(filepath.Join(tmpDir, target.relPath), []byte(mangled), 0644); err != nil {
+		if err := os.WriteFile(filepath.Join(tmpDir, target.relPath), []byte(mangled), 0o644); err != nil {
 			t.Fatal(err)
 		}
 	}
@@ -254,11 +254,11 @@ func TestSyncPOMs_NoUpdate(t *testing.T) {
 	bomArtifactID := "google-cloud-secretmanager-bom"
 	for _, artifact := range []string{protoArtifactID, gRPCArtifactID, gapicArtifactID, bomArtifactID, ""} {
 		dir := filepath.Join(tmpDir, artifact)
-		if err := os.MkdirAll(dir, 0755); err != nil {
+		if err := os.MkdirAll(dir, 0o755); err != nil {
 			t.Fatal(err)
 		}
 		// Write a dummy pom.xml to ensure isMissing is false for all modules.
-		if err := os.WriteFile(filepath.Join(dir, "pom.xml"), []byte("<!-- {x-generated-dependencies-start} -->\n      <mangled>true</mangled>\n<!-- {x-generated-dependencies-end} -->"), 0644); err != nil {
+		if err := os.WriteFile(filepath.Join(dir, "pom.xml"), []byte("<!-- {x-generated-dependencies-start} -->\n      <mangled>true</mangled>\n<!-- {x-generated-dependencies-end} -->"), 0o644); err != nil {
 			t.Fatal(err)
 		}
 	}
@@ -352,7 +352,7 @@ func TestCollectModules(t *testing.T) {
 					"", // parent
 				}
 				for _, d := range dirs {
-					if err := os.MkdirAll(filepath.Join(libraryDir, d), 0755); err != nil {
+					if err := os.MkdirAll(filepath.Join(libraryDir, d), 0o755); err != nil {
 						t.Fatal(err)
 					}
 				}
@@ -396,7 +396,7 @@ func TestCollectModules(t *testing.T) {
 					"", // parent
 				}
 				for _, d := range dirs {
-					if err := os.MkdirAll(filepath.Join(libraryDir, d), 0755); err != nil {
+					if err := os.MkdirAll(filepath.Join(libraryDir, d), 0o755); err != nil {
 						t.Fatal(err)
 					}
 				}
@@ -441,10 +441,10 @@ func TestCollectModules(t *testing.T) {
 				}
 				for _, d := range dirs {
 					dir := filepath.Join(libraryDir, d)
-					if err := os.MkdirAll(dir, 0755); err != nil {
+					if err := os.MkdirAll(dir, 0o755); err != nil {
 						t.Fatal(err)
 					}
-					if err := os.WriteFile(filepath.Join(dir, "pom.xml"), []byte("<project/>"), 0644); err != nil {
+					if err := os.WriteFile(filepath.Join(dir, "pom.xml"), []byte("<project/>"), 0o644); err != nil {
 						t.Fatal(err)
 					}
 				}
@@ -489,7 +489,7 @@ func TestCollectModules(t *testing.T) {
 					"", // parent
 				}
 				for _, d := range dirs {
-					if err := os.MkdirAll(filepath.Join(libraryDir, d), 0755); err != nil {
+					if err := os.MkdirAll(filepath.Join(libraryDir, d), 0o755); err != nil {
 						t.Fatal(err)
 					}
 				}
@@ -534,7 +534,7 @@ func TestCollectModules(t *testing.T) {
 					"", // parent
 				}
 				for _, d := range dirs {
-					if err := os.MkdirAll(filepath.Join(libraryDir, d), 0755); err != nil {
+					if err := os.MkdirAll(filepath.Join(libraryDir, d), 0o755); err != nil {
 						t.Fatal(err)
 					}
 				}
@@ -579,7 +579,7 @@ func TestCollectModules(t *testing.T) {
 					"", // parent
 				}
 				for _, d := range dirs {
-					if err := os.MkdirAll(filepath.Join(libraryDir, d), 0755); err != nil {
+					if err := os.MkdirAll(filepath.Join(libraryDir, d), 0o755); err != nil {
 						t.Fatal(err)
 					}
 				}
@@ -629,7 +629,7 @@ func TestIsPOMMissing(t *testing.T) {
 			name: "pom exists",
 			setup: func(t *testing.T) string {
 				dir := t.TempDir()
-				if err := os.WriteFile(filepath.Join(dir, "pom.xml"), []byte("content"), 0644); err != nil {
+				if err := os.WriteFile(filepath.Join(dir, "pom.xml"), []byte("content"), 0o644); err != nil {
 					t.Fatal(err)
 				}
 				return dir
@@ -698,7 +698,7 @@ func TestIdentifyMissingModules(t *testing.T) {
 					"", // parent
 				}
 				for _, d := range dirs {
-					if err := os.MkdirAll(filepath.Join(libraryDir, d), 0755); err != nil {
+					if err := os.MkdirAll(filepath.Join(libraryDir, d), 0o755); err != nil {
 						t.Fatal(err)
 					}
 				}
@@ -723,10 +723,10 @@ func TestIdentifyMissingModules(t *testing.T) {
 				}
 				for _, d := range dirs {
 					dir := filepath.Join(libraryDir, d)
-					if err := os.MkdirAll(dir, 0755); err != nil {
+					if err := os.MkdirAll(dir, 0o755); err != nil {
 						t.Fatal(err)
 					}
-					if err := os.WriteFile(filepath.Join(dir, "pom.xml"), []byte("<project/>"), 0644); err != nil {
+					if err := os.WriteFile(filepath.Join(dir, "pom.xml"), []byte("<project/>"), 0o644); err != nil {
 						t.Fatal(err)
 					}
 				}
@@ -745,12 +745,12 @@ func TestIdentifyMissingModules(t *testing.T) {
 				}
 				for _, d := range dirs {
 					dir := filepath.Join(libraryDir, d)
-					if err := os.MkdirAll(dir, 0755); err != nil {
+					if err := os.MkdirAll(dir, 0o755); err != nil {
 						t.Fatal(err)
 					}
 					// Only write pom.xml for client and BOM and parent
 					if d == "google-cloud-secretmanager" || d == "google-cloud-secretmanager-bom" || d == "" {
-						if err := os.WriteFile(filepath.Join(dir, "pom.xml"), []byte("<project/>"), 0644); err != nil {
+						if err := os.WriteFile(filepath.Join(dir, "pom.xml"), []byte("<project/>"), 0o644); err != nil {
 							t.Fatal(err)
 						}
 					}
@@ -838,7 +838,7 @@ func TestIdentifyMissingModules_ExcludedPOMs(t *testing.T) {
 		"", // parent
 	}
 	for _, dir := range dirs {
-		if err := os.MkdirAll(filepath.Join(tmpDir, dir), 0755); err != nil {
+		if err := os.MkdirAll(filepath.Join(tmpDir, dir), 0o755); err != nil {
 			t.Fatal(err)
 		}
 	}
@@ -884,7 +884,7 @@ func TestIdentifyMissingModules_GenerateProtoFalse(t *testing.T) {
 		"", // parent
 	}
 	for _, dir := range dirs {
-		if err := os.MkdirAll(filepath.Join(tmpDir, dir), 0755); err != nil {
+		if err := os.MkdirAll(filepath.Join(tmpDir, dir), 0o755); err != nil {
 			t.Fatal(err)
 		}
 	}
@@ -930,7 +930,7 @@ func TestIdentifyMissingModules_GenerateGAPICFalse(t *testing.T) {
 		"", // parent
 	}
 	for _, dir := range dirs {
-		if err := os.MkdirAll(filepath.Join(tmpDir, dir), 0755); err != nil {
+		if err := os.MkdirAll(filepath.Join(tmpDir, dir), 0o755); err != nil {
 			t.Fatal(err)
 		}
 	}

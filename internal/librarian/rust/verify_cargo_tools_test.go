@@ -72,7 +72,7 @@ func TestPreFlightMissingCargo(t *testing.T) {
 	testhelper.RequireCommand(t, "git")
 	tmpDir := t.TempDir()
 	gitScript := filepath.Join(tmpDir, "git")
-	os.WriteFile(gitScript, []byte("#!/bin/sh\nexit 0"), 0755)
+	os.WriteFile(gitScript, []byte("#!/bin/sh\nexit 0"), 0o755)
 	t.Setenv("PATH", tmpDir)
 	if err := preFlight(t.Context(), nil); err == nil {
 		t.Fatal("expected an error, got nil")

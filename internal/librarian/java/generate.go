@@ -75,7 +75,7 @@ func Generate(ctx context.Context, cfg *config.Config, library *config.Library, 
 	if err != nil {
 		return fmt.Errorf("failed to resolve output directory path: %w", err)
 	}
-	if err := os.MkdirAll(outdir, 0755); err != nil {
+	if err := os.MkdirAll(outdir, 0o755); err != nil {
 		return fmt.Errorf("failed to create output directory %q: %w", outdir, err)
 	}
 	srcCfg := sources.NewSourceConfig(srcs, library.Roots)
@@ -151,7 +151,7 @@ func generateAPI(ctx context.Context, params generateAPIParams) error {
 	gRPCDir := postParams.gRPCDir()
 	protoDir := postParams.protoDir()
 	for _, dir := range []string{gapicDir, gRPCDir, protoDir} {
-		if err := os.MkdirAll(dir, 0755); err != nil {
+		if err := os.MkdirAll(dir, 0o755); err != nil {
 			return fmt.Errorf("failed to create directory %q: %w", dir, err)
 		}
 	}

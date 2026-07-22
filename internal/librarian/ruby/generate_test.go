@@ -179,7 +179,7 @@ func TestGenerate_Error(t *testing.T) {
 		t.Fatal(err)
 	}
 	fileAsDir := filepath.Join(t.TempDir(), "file.txt")
-	if err := os.WriteFile(fileAsDir, []byte("test"), 0644); err != nil {
+	if err := os.WriteFile(fileAsDir, []byte("test"), 0o644); err != nil {
 		t.Fatal(err)
 	}
 
@@ -278,7 +278,7 @@ func setupDummyProtoc(t *testing.T) {
 	t.Setenv("LIBRARIAN_BIN", binDir)
 
 	installDir := filepath.Join(binDir, "ruby_tools", "bin")
-	if err := os.MkdirAll(installDir, 0755); err != nil {
+	if err := os.MkdirAll(installDir, 0o755); err != nil {
 		t.Fatal(err)
 	}
 
@@ -297,7 +297,7 @@ if [ -n "$outDir" ]; then
 fi
 exit 0
 `
-	if err := os.WriteFile(protocPath, []byte(script), 0755); err != nil {
+	if err := os.WriteFile(protocPath, []byte(script), 0o755); err != nil {
 		t.Fatal(err)
 	}
 
@@ -305,10 +305,10 @@ exit 0
 		pPathInBin := filepath.Join(binDir, plugin)
 		pPathInInstallDir := filepath.Join(installDir, plugin)
 		pScript := "#!/bin/sh\nexit 0\n"
-		if err := os.WriteFile(pPathInBin, []byte(pScript), 0755); err != nil {
+		if err := os.WriteFile(pPathInBin, []byte(pScript), 0o755); err != nil {
 			t.Fatal(err)
 		}
-		if err := os.WriteFile(pPathInInstallDir, []byte(pScript), 0755); err != nil {
+		if err := os.WriteFile(pPathInInstallDir, []byte(pScript), 0o755); err != nil {
 			t.Fatal(err)
 		}
 	}

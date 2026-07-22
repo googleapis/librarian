@@ -60,7 +60,7 @@ func updateCargoVersion(path string, newVersion semver.Version) error {
 	// The number of spaces may seem weird. They match the number of spaces in
 	// the mustache template.
 	lines[idx] = fmt.Sprintf(`version                = "%s"`, newVersion.String())
-	return os.WriteFile(path, []byte(strings.Join(lines, "\n")), 0644)
+	return os.WriteFile(path, []byte(strings.Join(lines, "\n")), 0o644)
 }
 
 var versionRegex = regexp.MustCompile(`version\s*=\s*"[^"]*"`)
@@ -85,7 +85,7 @@ func updateWorkspaceVersion(path, crateName string, newVersion semver.Version) e
 	if !updated {
 		return nil
 	}
-	return os.WriteFile(path, []byte(strings.Join(lines, "\n")), 0644)
+	return os.WriteFile(path, []byte(strings.Join(lines, "\n")), 0o644)
 }
 
 // isDirectDependency checks if the line describes a dependency named directly as the crate.

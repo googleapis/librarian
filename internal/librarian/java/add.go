@@ -251,7 +251,7 @@ func appendLines(path string, lines []string) error {
 		buf.WriteString(line)
 		buf.WriteByte('\n')
 	}
-	return os.WriteFile(path, buf.Bytes(), 0644)
+	return os.WriteFile(path, buf.Bytes(), 0o644)
 }
 
 func setNonCloudMavenDefaults(lib *config.Library, groupID string) *config.Library {

@@ -98,7 +98,7 @@ func TestRunUpgrade_Error(t *testing.T) {
 				// Make writing the config file fail by creating a directory at its path.
 				repoDir := t.TempDir()
 				configPath := generateLibrarianConfigPath(t, repoDir)
-				if err := os.Mkdir(configPath, 0755); err != nil {
+				if err := os.Mkdir(configPath, 0o755); err != nil {
 					t.Fatal(err)
 				}
 				return repoDir

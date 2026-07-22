@@ -34,7 +34,7 @@ func TestFormat(t *testing.T) {
 		{
 			name: "successful format",
 			setup: func(t *testing.T, root string) {
-				if err := os.WriteFile(filepath.Join(root, "SomeClass.java"), []byte("public class SomeClass {}"), 0644); err != nil {
+				if err := os.WriteFile(filepath.Join(root, "SomeClass.java"), []byte("public class SomeClass {}"), 0o644); err != nil {
 					t.Fatal(err)
 				}
 			},
@@ -47,10 +47,10 @@ func TestFormat(t *testing.T) {
 			name: "nested files in subdirectories",
 			setup: func(t *testing.T, root string) {
 				dir := filepath.Join(root, "sub", "dir")
-				if err := os.MkdirAll(dir, 0755); err != nil {
+				if err := os.MkdirAll(dir, 0o755); err != nil {
 					t.Fatal(err)
 				}
-				if err := os.WriteFile(filepath.Join(dir, "Nested.java"), []byte("public class Nested {}"), 0644); err != nil {
+				if err := os.WriteFile(filepath.Join(dir, "Nested.java"), []byte("public class Nested {}"), 0o644); err != nil {
 					t.Fatal(err)
 				}
 			},
@@ -59,11 +59,11 @@ func TestFormat(t *testing.T) {
 			name: "files in excluded samples path are ignored",
 			setup: func(t *testing.T, root string) {
 				dir := filepath.Join(root, "samples", "snippets", "generated")
-				if err := os.MkdirAll(dir, 0755); err != nil {
+				if err := os.MkdirAll(dir, 0o755); err != nil {
 					t.Fatal(err)
 				}
 				// This file should NOT be passed to the formatter.
-				if err := os.WriteFile(filepath.Join(dir, "Ignored.java"), []byte("public class Ignored {}"), 0644); err != nil {
+				if err := os.WriteFile(filepath.Join(dir, "Ignored.java"), []byte("public class Ignored {}"), 0o644); err != nil {
 					t.Fatal(err)
 				}
 			},
@@ -82,7 +82,7 @@ func TestFormat(t *testing.T) {
 
 func TestFormat_LookPathError(t *testing.T) {
 	tmpDir := t.TempDir()
-	if err := os.WriteFile(filepath.Join(tmpDir, "SomeClass.java"), []byte("public class SomeClass {}"), 0644); err != nil {
+	if err := os.WriteFile(filepath.Join(tmpDir, "SomeClass.java"), []byte("public class SomeClass {}"), 0o644); err != nil {
 		t.Fatal(err)
 	}
 	t.Setenv("PATH", "")
@@ -106,10 +106,10 @@ func TestCollectJavaFiles(t *testing.T) {
 	}
 	for _, f := range filesToCreate {
 		path := filepath.Join(tmpDir, f)
-		if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
+		if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
 			t.Fatal(err)
 		}
-		if err := os.WriteFile(path, []byte("content"), 0644); err != nil {
+		if err := os.WriteFile(path, []byte("content"), 0o644); err != nil {
 			t.Fatal(err)
 		}
 	}

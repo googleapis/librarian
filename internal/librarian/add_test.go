@@ -167,7 +167,7 @@ func TestAddCommand(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			tmpDir := t.TempDir()
 			t.Chdir(tmpDir)
-			if err := os.WriteFile(filepath.Join(tmpDir, "versions.txt"), nil, 0644); err != nil {
+			if err := os.WriteFile(filepath.Join(tmpDir, "versions.txt"), nil, 0o644); err != nil {
 				t.Fatal(err)
 			}
 
@@ -225,7 +225,7 @@ func TestAddLibrary(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			tmpDir := t.TempDir()
 			t.Chdir(tmpDir)
-			if err := os.WriteFile(filepath.Join(tmpDir, "versions.txt"), nil, 0644); err != nil {
+			if err := os.WriteFile(filepath.Join(tmpDir, "versions.txt"), nil, 0o644); err != nil {
 				t.Fatal(err)
 			}
 
@@ -412,7 +412,7 @@ func TestAddLibrary_ExistingLibrary(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			tmpDir := t.TempDir()
 			t.Chdir(tmpDir)
-			if err := os.WriteFile(filepath.Join(tmpDir, "versions.txt"), nil, 0644); err != nil {
+			if err := os.WriteFile(filepath.Join(tmpDir, "versions.txt"), nil, 0o644); err != nil {
 				t.Fatal(err)
 			}
 			if err := yaml.Write(config.LibrarianYAML, test.cfg); err != nil {
@@ -461,7 +461,7 @@ func TestAddLibrary_ExistingLibrary_Error(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			tmpDir := t.TempDir()
 			t.Chdir(tmpDir)
-			if err := os.WriteFile(filepath.Join(tmpDir, "versions.txt"), nil, 0644); err != nil {
+			if err := os.WriteFile(filepath.Join(tmpDir, "versions.txt"), nil, 0o644); err != nil {
 				t.Fatal(err)
 			}
 			if err := yaml.Write(config.LibrarianYAML, test.cfg); err != nil {
@@ -611,7 +611,7 @@ func TestAddLibraryCommand_Java(t *testing.T) {
 	}
 	tmpDir := t.TempDir()
 	t.Chdir(tmpDir)
-	if err := os.WriteFile(filepath.Join(tmpDir, "versions.txt"), nil, 0644); err != nil {
+	if err := os.WriteFile(filepath.Join(tmpDir, "versions.txt"), nil, 0o644); err != nil {
 		t.Fatal(err)
 	}
 

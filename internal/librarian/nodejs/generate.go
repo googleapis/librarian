@@ -54,7 +54,7 @@ func Generate(ctx context.Context, cfg *config.Config, library *config.Library, 
 	if err != nil {
 		return fmt.Errorf("failed to resolve output directory path: %w", err)
 	}
-	if err := os.MkdirAll(outdir, 0755); err != nil {
+	if err := os.MkdirAll(outdir, 0o755); err != nil {
 		return fmt.Errorf("failed to create output directory: %w", err)
 	}
 	repoRoot := filepath.Dir(filepath.Dir(outdir))
@@ -116,7 +116,7 @@ func generateAPI(ctx context.Context, api *config.API, library *config.Library, 
 
 	version := filepath.Base(api.Path)
 	stagingDir := filepath.Join(repoRoot, "owl-bot-staging", library.Name, version)
-	if err := os.MkdirAll(stagingDir, 0755); err != nil {
+	if err := os.MkdirAll(stagingDir, 0o755); err != nil {
 		return err
 	}
 
@@ -504,7 +504,7 @@ func replaceCopyrightInDir(dir string, re *regexp.Regexp, replacement []byte) er
 		if bytes.Equal(updated, content) {
 			return nil
 		}
-		return os.WriteFile(path, updated, 0644)
+		return os.WriteFile(path, updated, 0o644)
 	})
 }
 
@@ -531,7 +531,7 @@ func writeRepoMetadata(cfg *config.Config, library *config.Library, googleapisDi
 		return err
 	}
 	content = bytes.ReplaceAll(content, []byte(`\u0026`), []byte(`&`))
-	return os.WriteFile(path, content, 0644)
+	return os.WriteFile(path, content, 0o644)
 }
 
 // copyMissingProtos reads *_proto_list.json files under outDir/src/ and copies
@@ -567,7 +567,7 @@ func copyMissingProtos(googleapisDir, outDir string) error {
 			if !ok {
 				continue
 			}
-			if err := os.MkdirAll(filepath.Dir(absPath), 0755); err != nil {
+			if err := os.MkdirAll(filepath.Dir(absPath), 0o755); err != nil {
 				return fmt.Errorf("failed to create directory for %s: %w", absPath, err)
 			}
 			srcPath := filepath.Join(googleapisDir, relPath)
@@ -614,14 +614,14 @@ func copySamplesFromStaging(stagingDir, outDir string) error {
 				return err
 			}
 			dst := filepath.Join(outDir, "samples", rel)
-			if err := os.MkdirAll(filepath.Dir(dst), 0755); err != nil {
+			if err := os.MkdirAll(filepath.Dir(dst), 0o755); err != nil {
 				return err
 			}
 			content, err := os.ReadFile(path)
 			if err != nil {
 				return err
 			}
-			return os.WriteFile(dst, content, 0644)
+			return os.WriteFile(dst, content, 0o644)
 		}); err != nil {
 			return err
 		}
@@ -706,7 +706,7 @@ func injectV1SmallExports(outDir string) error {
 	}
 	content = updated
 
-	return os.WriteFile(indexPath, []byte(content), 0644)
+	return os.WriteFile(indexPath, []byte(content), 0o644)
 }
 
 func moveKeep(files []string, srcDir, dstDir string) error {
@@ -716,7 +716,7 @@ func moveKeep(files []string, srcDir, dstDir string) error {
 			continue // file doesn't exist, nothing to save
 		}
 		dst := filepath.Join(dstDir, name)
-		if err := os.MkdirAll(filepath.Dir(dst), 0755); err != nil {
+		if err := os.MkdirAll(filepath.Dir(dst), 0o755); err != nil {
 			return fmt.Errorf("failed to create destination subdirectory for %s: %w", name, err)
 		}
 		if err := os.Rename(src, dst); err != nil {

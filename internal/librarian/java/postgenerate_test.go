@@ -152,13 +152,13 @@ func TestSearchForJavaModules(t *testing.T) {
 		"google-cloud-shared-deps",
 	}
 	for _, dir := range dirs {
-		if err := os.Mkdir(filepath.Join(tmpDir, dir), 0755); err != nil {
+		if err := os.Mkdir(filepath.Join(tmpDir, dir), 0o755); err != nil {
 			t.Fatal(err)
 		}
 	}
 	// Add pom.xml to modules (including an excluded one to verify filtering)
 	for _, mod := range []string{"module-a", "module-b", gapicBOM} {
-		if err := os.WriteFile(filepath.Join(tmpDir, mod, "pom.xml"), []byte("<project/>"), 0644); err != nil {
+		if err := os.WriteFile(filepath.Join(tmpDir, mod, "pom.xml"), []byte("<project/>"), 0o644); err != nil {
 			t.Fatal(err)
 		}
 	}
@@ -176,10 +176,10 @@ func TestSearchForJavaModules_Error(t *testing.T) {
 	t.Parallel()
 	tmpDir := t.TempDir()
 	// Make directory unreadable to cause os.ReadDir failure
-	if err := os.Chmod(tmpDir, 0000); err != nil {
+	if err := os.Chmod(tmpDir, 0o000); err != nil {
 		t.Fatal(err)
 	}
-	defer os.Chmod(tmpDir, 0755)
+	defer os.Chmod(tmpDir, 0o755)
 	_, err := searchForJavaModules(tmpDir)
 	if err == nil {
 		t.Error("searchForJavaModules expected error, got nil")
@@ -190,10 +190,10 @@ func TestPostGenerate_SearchError(t *testing.T) {
 	t.Parallel()
 	tmpDir := t.TempDir()
 	// Make directory unreadable to cause searchForJavaModules failure
-	if err := os.Chmod(tmpDir, 0000); err != nil {
+	if err := os.Chmod(tmpDir, 0o000); err != nil {
 		t.Fatal(err)
 	}
-	defer os.Chmod(tmpDir, 0755)
+	defer os.Chmod(tmpDir, 0o755)
 	cfg := &config.Config{
 		Libraries: []*config.Library{
 			{Name: rootLibrary, Version: "1.2.3"},
@@ -210,10 +210,10 @@ func TestPostGenerate_Error(t *testing.T) {
 	t.Parallel()
 	tmpDir := t.TempDir()
 	// Make directory read-only to cause os.Create("pom.xml") failure
-	if err := os.Chmod(tmpDir, 0555); err != nil {
+	if err := os.Chmod(tmpDir, 0o555); err != nil {
 		t.Fatal(err)
 	}
-	defer os.Chmod(tmpDir, 0755)
+	defer os.Chmod(tmpDir, 0o755)
 	cfg := &config.Config{
 		Libraries: []*config.Library{
 			{Name: rootLibrary, Version: "1.2.3"},
@@ -260,10 +260,10 @@ func TestExtractBOMConfig_Error(t *testing.T) {
 			tmpDir := t.TempDir()
 			if test.pom != "" {
 				dir := filepath.Join(tmpDir, test.library, test.bom)
-				if err := os.MkdirAll(dir, 0755); err != nil {
+				if err := os.MkdirAll(dir, 0o755); err != nil {
 					t.Fatal(err)
 				}
-				if err := os.WriteFile(filepath.Join(dir, "pom.xml"), []byte(test.pom), 0644); err != nil {
+				if err := os.WriteFile(filepath.Join(dir, "pom.xml"), []byte(test.pom), 0o644); err != nil {
 					t.Fatal(err)
 				}
 			}

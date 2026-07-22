@@ -62,7 +62,7 @@ func writeMetadata(path string, metadata map[string]any) error {
 	if len(content) > 0 && content[len(content)-1] == '\n' {
 		content = content[:len(content)-1]
 	}
-	if err := os.WriteFile(path, content, 0644); err != nil {
+	if err := os.WriteFile(path, content, 0o644); err != nil {
 		return fmt.Errorf("error writing snippet metadata file %s: %w", path, err)
 	}
 	return nil

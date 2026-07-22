@@ -110,11 +110,11 @@ exit 0
 `)
 	_ = testhelper.SetupRepoWithChange(t, "release-2001-02-03")
 	name := path.Join("src", "storage", "src", "lib.rs")
-	if err := os.WriteFile(name, []byte(testhelper.NewLibRsContents), 0644); err != nil {
+	if err := os.WriteFile(name, []byte(testhelper.NewLibRsContents), 0o644); err != nil {
 		t.Fatal(err)
 	}
 	name = path.Join("src", "storage", "Cargo.toml")
-	if err := os.WriteFile(name, []byte("bad-toml = {\n"), 0644); err != nil {
+	if err := os.WriteFile(name, []byte("bad-toml = {\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
 	testhelper.RunGit(t, "commit", "-m", "feat: changed storage", ".")
@@ -507,7 +507,7 @@ func setupFakeCargoScript(t *testing.T, script string) {
 	}
 	tmpDir := t.TempDir()
 	cargoScript := filepath.Join(tmpDir, "cargo")
-	if err := os.WriteFile(cargoScript, []byte(script), 0755); err != nil {
+	if err := os.WriteFile(cargoScript, []byte(script), 0o755); err != nil {
 		t.Fatal(err)
 	}
 	t.Setenv("PATH", tmpDir+string(os.PathListSeparator)+os.Getenv("PATH"))

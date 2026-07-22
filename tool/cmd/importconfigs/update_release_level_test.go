@@ -161,7 +161,7 @@ func TestRunUpdateReleaseLevel_Error(t *testing.T) {
 			name:    "invalid googleapis dir",
 			sdkYaml: filepath.Join(t.TempDir(), "empty.yaml"),
 			setup: func(t *testing.T, path string) {
-				if err := os.WriteFile(path, []byte(""), 0755); err != nil {
+				if err := os.WriteFile(path, []byte(""), 0o755); err != nil {
 					t.Fatal(err)
 				}
 			},
