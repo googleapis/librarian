@@ -268,14 +268,12 @@ func parseVersionedBuild(googleapisDir, apiPath string) (*VersionedBuild, error)
 // are preserved and discovered libraries are appended to the result.
 func mergeLibs(existingLibs []*config.Library, libs []*config.Library) []*config.Library {
 	existingMap := toMap(existingLibs)
-	var res []*config.Library
+	res := make([]*config.Library, len(existingLibs))
+	copy(res, existingLibs)
 	for _, lib := range libs {
-		if existing, ok := existingMap[lib.Name]; ok {
-			// Do not modify existing lib settings.
-			res = append(res, existing)
-			continue
+		if _, ok := existingMap[lib.Name]; !ok {
+			res = append(res, lib)
 		}
-		res = append(res, lib)
 	}
 	return res
 }
