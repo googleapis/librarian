@@ -1,5 +1,24 @@
 # Changelog
 
+## [0.29.0](https://github.com/googleapis/librarian/compare/v0.28.0...v0.29.0) (2026-07-22)
+
+
+### Features
+
+* **dart:** implement publish ([#6865](https://github.com/googleapis/librarian/issues/6865)) ([9c46c5d](https://github.com/googleapis/librarian/commit/9c46c5d09b913fb1f238f6b4067f897e6227df25))
+* **internal/librarian/php:** remove empty directories during cleanup ([#6947](https://github.com/googleapis/librarian/issues/6947)) ([13c7e38](https://github.com/googleapis/librarian/commit/13c7e3802bd5ab1c2c24886724ab7281578c8480))
+* **internal/librarian/ruby:** implement clean functionality ([#6943](https://github.com/googleapis/librarian/issues/6943)) ([2daa5d8](https://github.com/googleapis/librarian/commit/2daa5d80eeee5bf6e32b39a8a4f03e1f3ea56971))
+* **tool/cmd/migrate:** parse path override for ruby migration ([#6956](https://github.com/googleapis/librarian/issues/6956)) ([cf9e6fe](https://github.com/googleapis/librarian/commit/cf9e6feece8a57ab74a066c98989c93b1f70d417)), closes [#6632](https://github.com/googleapis/librarian/issues/6632)
+* **tool/cmd/migrate:** parse service override for ruby migration ([#6963](https://github.com/googleapis/librarian/issues/6963)) ([1cde964](https://github.com/googleapis/librarian/commit/1cde964d63fdf1696240d4ebebdc3c1985bd6a4b))
+
+
+### Bug Fixes
+
+* **internal/librarian/java:** customize README template for storage library dual dependencies ([#6950](https://github.com/googleapis/librarian/issues/6950)) ([fb88de3](https://github.com/googleapis/librarian/commit/fb88de386deac7198922616f72089e4906b51766))
+* **sidekick/swift:** deps added via method signatures ([#6946](https://github.com/googleapis/librarian/issues/6946)) ([10e25bc](https://github.com/googleapis/librarian/commit/10e25bcf5642cc8c87767bba15e8f708a674a9d9))
+* **sidekick/swift:** snippets and repeated fields ([#6945](https://github.com/googleapis/librarian/issues/6945)) ([bd90a4e](https://github.com/googleapis/librarian/commit/bd90a4e4553b35071ce9fa3024df569a0dc4429a))
+* **tool/cmd/migrate:** skip PHP libraries with no APIs during migration ([#6951](https://github.com/googleapis/librarian/issues/6951)) ([5280de4](https://github.com/googleapis/librarian/commit/5280de4f7816b9aa8c1324b6ede4d7a83cad54b8)), closes [#6746](https://github.com/googleapis/librarian/issues/6746)
+
 ## [0.28.0](https://github.com/googleapis/librarian/compare/v0.27.1...v0.28.0) (2026-07-21)
 
 
