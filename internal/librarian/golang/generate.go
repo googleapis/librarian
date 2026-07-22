@@ -53,7 +53,7 @@ func Generate(ctx context.Context, cfg *config.Config, library *config.Library, 
 	if err != nil {
 		return fmt.Errorf("failed to get absolute path of output directory: %w", err)
 	}
-	if err := os.MkdirAll(outDir, 0755); err != nil {
+	if err := os.MkdirAll(outDir, 0o755); err != nil {
 		return fmt.Errorf("failed to create output directory: %w", err)
 	}
 
@@ -247,7 +247,7 @@ func moveAPIDirectory(library *config.Library, goAPI *config.GoAPI, srcDir, outD
 	libraryDirPrefix := filepath.Join(srcDir, "cloud.google.com", "go")
 	librarySrc := filepath.Join(libraryDirPrefix, goAPI.ImportPath)
 	libraryDest := filepath.Join(repoRootPath(outDir, library.Name), clientPathFromRepoRoot(library, goAPI))
-	if err := os.MkdirAll(libraryDest, 0755); err != nil {
+	if err := os.MkdirAll(libraryDest, 0o755); err != nil {
 		return err
 	}
 	return filesystem.MoveAndMerge(librarySrc, libraryDest)
@@ -260,7 +260,7 @@ func moveAndUpdateSnippets(library *config.Library, goAPI *config.GoAPI, srcDir,
 	if snippetDest == "" {
 		return nil
 	}
-	if err := os.MkdirAll(snippetDest, 0755); err != nil {
+	if err := os.MkdirAll(snippetDest, 0o755); err != nil {
 		return err
 	}
 	snippetDirPrefix := filepath.Join(srcDir, "cloud.google.com", "go", "internal", "generated", "snippets")

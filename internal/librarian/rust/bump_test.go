@@ -80,7 +80,7 @@ func setupRelease(t *testing.T) *config.Config {
 
 func createCrate(t *testing.T, dir, name, version string) {
 	t.Helper()
-	if err := os.MkdirAll(dir, 0755); err != nil {
+	if err := os.MkdirAll(dir, 0o755); err != nil {
 		t.Fatal(err)
 	}
 
@@ -90,7 +90,7 @@ version                = "%s"
 edition                = "2021"
 `, name, version)
 
-	if err := os.WriteFile(filepath.Join(dir, "Cargo.toml"), []byte(cargo), 0644); err != nil {
+	if err := os.WriteFile(filepath.Join(dir, "Cargo.toml"), []byte(cargo), 0o644); err != nil {
 		t.Fatal(err)
 	}
 }
@@ -159,7 +159,7 @@ func TestBumpLibraryNoVersion(t *testing.T) {
 			dir := t.TempDir()
 			t.Chdir(dir)
 
-			if err := os.MkdirAll(libDir, 0755); err != nil {
+			if err := os.MkdirAll(libDir, 0o755); err != nil {
 				t.Fatal(err)
 			}
 			if test.createCargo {
@@ -238,7 +238,7 @@ google-cloud-storage = { version = "0.1.0", path = "storage" }
 			t.Chdir(tmpDir)
 
 			libDir := "storage"
-			if err := os.WriteFile("Cargo.toml", []byte(test.rootCargo), 0644); err != nil {
+			if err := os.WriteFile("Cargo.toml", []byte(test.rootCargo), 0o644); err != nil {
 				t.Fatal(err)
 			}
 			createCrate(t, libDir, test.libName, test.oldVersion)
@@ -320,7 +320,7 @@ func TestUpdateREADME(t *testing.T) {
 			t.Parallel()
 			tmpDir := t.TempDir()
 			readmePath := filepath.Join(tmpDir, "README.md")
-			if err := os.WriteFile(readmePath, []byte(test.content), 0644); err != nil {
+			if err := os.WriteFile(readmePath, []byte(test.content), 0o644); err != nil {
 				t.Fatal(err)
 			}
 

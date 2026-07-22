@@ -50,7 +50,7 @@ func TestPublishedCrateUnmarshalError(t *testing.T) {
 	tmpDir := t.TempDir()
 	testhelper.AddCrate(t, tmpDir, "google-cloud-storage")
 	manifest := path.Join(tmpDir, "Cargo.toml")
-	if err := os.WriteFile(manifest, []byte("invalid-toml={\n"), 0644); err != nil {
+	if err := os.WriteFile(manifest, []byte("invalid-toml={\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
 	if got, err := publishedCrate(manifest); err == nil {
@@ -64,7 +64,7 @@ func TestPublishedCrateNotForPublication(t *testing.T) {
 	manifest := path.Join(tmpDir, "Cargo.toml")
 	contents := fmt.Sprintf(testhelper.InitialCargoContents, "google-cloud-storage")
 	contents = contents + "\npublish = false\n"
-	if err := os.WriteFile(manifest, []byte(contents), 0644); err != nil {
+	if err := os.WriteFile(manifest, []byte(contents), 0o644); err != nil {
 		t.Fatal(err)
 	}
 	got, err := publishedCrate(manifest)

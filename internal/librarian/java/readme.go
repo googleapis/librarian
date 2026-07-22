@@ -160,7 +160,7 @@ func renderREADME(params libraryPostProcessParams, keepSet map[string]bool) erro
 		return fmt.Errorf("failed to execute template: %w", err)
 	}
 	outputPath := filepath.Join(params.outDir, readmeFile)
-	return os.WriteFile(outputPath, buf.Bytes(), 0644)
+	return os.WriteFile(outputPath, buf.Bytes(), 0o644)
 }
 
 // validateReadmeParams validates that required parameters are present before rendering README.md.

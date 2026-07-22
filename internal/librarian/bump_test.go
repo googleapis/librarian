@@ -588,7 +588,7 @@ func TestPostBump(t *testing.T) {
 			name: "rust language runs cargo update",
 			setup: func() {
 				script := "#!/bin/sh\nexit 0"
-				if err := os.WriteFile(fakeCargo, []byte(script), 0755); err != nil {
+				if err := os.WriteFile(fakeCargo, []byte(script), 0o755); err != nil {
 					t.Fatal(err)
 				}
 				t.Setenv("PATH", tmpDir+string(os.PathListSeparator)+os.Getenv("PATH"))
@@ -601,7 +601,7 @@ func TestPostBump(t *testing.T) {
 			name: "rust language runs cargo update fails",
 			setup: func() {
 				script := "#!/bin/sh\nexit 1"
-				if err := os.WriteFile(fakeCargo, []byte(script), 0755); err != nil {
+				if err := os.WriteFile(fakeCargo, []byte(script), 0o755); err != nil {
 					t.Fatal(err)
 				}
 				t.Setenv("PATH", tmpDir+string(os.PathListSeparator)+os.Getenv("PATH"))
@@ -1286,7 +1286,7 @@ func writeConfigAndCommitWithMessage(t *testing.T, cfg *config.Config, message s
 }
 
 func writeFileAndCommit(t *testing.T, path string, content []byte, message string) {
-	if err := os.WriteFile(path, content, 0644); err != nil {
+	if err := os.WriteFile(path, content, 0o644); err != nil {
 		t.Fatal(err)
 	}
 	testhelper.RunGit(t, "add", ".")

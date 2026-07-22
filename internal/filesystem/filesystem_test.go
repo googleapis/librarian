@@ -17,9 +17,12 @@ package filesystem
 import (
 	"archive/zip"
 	"errors"
+	"fmt"
 	"io/fs"
 	"os"
 	"path/filepath"
+	"slices"
+	"syscall"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -32,10 +35,10 @@ func TestMoveAndMerge_Success(t *testing.T) {
 	// Setup: src contains files and dirs, dst has no collisions.
 	writeFile := func(dir, path, content string) {
 		p := filepath.Join(dir, path)
-		if err := os.MkdirAll(filepath.Dir(p), 0755); err != nil {
+		if err := os.MkdirAll(filepath.Dir(p), 0o755); err != nil {
 			t.Fatal(err)
 		}
-		if err := os.WriteFile(p, []byte(content), 0644); err != nil {
+		if err := os.WriteFile(p, []byte(content), 0o644); err != nil {
 			t.Fatal(err)
 		}
 	}
@@ -94,10 +97,10 @@ func TestMoveAndMerge_Success(t *testing.T) {
 func TestMoveAndMerge_FileCollisionError(t *testing.T) {
 	t.Parallel()
 	src, dst := t.TempDir(), t.TempDir()
-	if err := os.WriteFile(filepath.Join(src, "file.txt"), []byte("src"), 0644); err != nil {
+	if err := os.WriteFile(filepath.Join(src, "file.txt"), []byte("src"), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(filepath.Join(dst, "file.txt"), []byte("dst"), 0644); err != nil {
+	if err := os.WriteFile(filepath.Join(dst, "file.txt"), []byte("dst"), 0o644); err != nil {
 		t.Fatal(err)
 	}
 	if err := MoveAndMerge(src, dst); err == nil {
@@ -116,11 +119,11 @@ func TestMoveAndMerge_RenameError(t *testing.T) {
 	t.Parallel()
 	src := t.TempDir()
 	dst := t.TempDir()
-	if err := os.WriteFile(filepath.Join(src, "file"), []byte("data"), 0644); err != nil {
+	if err := os.WriteFile(filepath.Join(src, "file"), []byte("data"), 0o644); err != nil {
 		t.Fatal(err)
 	}
 	// Create a directory with the same name as src file in destination
-	if err := os.Mkdir(filepath.Join(dst, "file"), 0755); err != nil {
+	if err := os.Mkdir(filepath.Join(dst, "file"), 0o755); err != nil {
 		t.Fatal(err)
 	}
 	if err := MoveAndMerge(src, dst); err == nil {
@@ -133,21 +136,21 @@ func TestMoveAndMerge_RecursiveError(t *testing.T) {
 	src := t.TempDir()
 	dst := t.TempDir()
 	// Create src/dir/file
-	if err := os.MkdirAll(filepath.Join(src, "dir"), 0755); err != nil {
+	if err := os.MkdirAll(filepath.Join(src, "dir"), 0o755); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(filepath.Join(src, "dir", "file"), []byte("data"), 0644); err != nil {
+	if err := os.WriteFile(filepath.Join(src, "dir", "file"), []byte("data"), 0o644); err != nil {
 		t.Fatal(err)
 	}
 	// Create dst/dir
-	if err := os.MkdirAll(filepath.Join(dst, "dir"), 0755); err != nil {
+	if err := os.MkdirAll(filepath.Join(dst, "dir"), 0o755); err != nil {
 		t.Fatal(err)
 	}
 	// Make src/dir unreadable to cause ReadDir failure inside MoveAndMerge
-	if err := os.Chmod(filepath.Join(src, "dir"), 0000); err != nil {
+	if err := os.Chmod(filepath.Join(src, "dir"), 0o000); err != nil {
 		t.Fatal(err)
 	}
-	defer os.Chmod(filepath.Join(src, "dir"), 0755) // cleanup for TempDir
+	defer os.Chmod(filepath.Join(src, "dir"), 0o755) // cleanup for TempDir
 	if err := MoveAndMerge(src, dst); err == nil {
 		t.Error("MoveAndMerge() expected error for recursive failure, got nil")
 	}
@@ -157,10 +160,10 @@ func TestMoveAndMerge_SameSourceAndTarget(t *testing.T) {
 	t.Parallel()
 	dir := t.TempDir()
 	subdir := filepath.Join(dir, "sub")
-	if err := os.Mkdir(subdir, 0755); err != nil {
+	if err := os.Mkdir(subdir, 0o755); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(filepath.Join(subdir, "file.txt"), []byte("data"), 0644); err != nil {
+	if err := os.WriteFile(filepath.Join(subdir, "file.txt"), []byte("data"), 0o644); err != nil {
 		t.Fatal(err)
 	}
 	if err := MoveAndMerge(dir, dir); err == nil {
@@ -234,7 +237,7 @@ func TestMoveAndMergeWithKeep_Error(t *testing.T) {
 			setupFunc: func(t *testing.T, root string) (string, string) {
 				src, dst := filepath.Join(root, "src"), filepath.Join(root, "dst")
 				writeTestFiles(t, src, map[string]string{"file.txt": "content"})
-				if err := os.MkdirAll(dst, 0444); err != nil {
+				if err := os.MkdirAll(dst, 0o444); err != nil {
 					t.Fatal(err)
 				}
 				return src, dst
@@ -259,7 +262,7 @@ func TestCopyFile_Success(t *testing.T) {
 	src := filepath.Join(tmp, "src.txt")
 	dst := filepath.Join(tmp, "dst.txt")
 	content := "hello world"
-	if err := os.WriteFile(src, []byte(content), 0644); err != nil {
+	if err := os.WriteFile(src, []byte(content), 0o644); err != nil {
 		t.Fatal(err)
 	}
 	if err := CopyFile(src, dst); err != nil {
@@ -281,7 +284,7 @@ func TestCopyFile_Error(t *testing.T) {
 		t.Error("CopyFile() expected error for non-existent source, got nil")
 	}
 	src := filepath.Join(tmp, "src")
-	if err := os.WriteFile(src, []byte("test"), 0644); err != nil {
+	if err := os.WriteFile(src, []byte("test"), 0o644); err != nil {
 		t.Fatal(err)
 	}
 	// Try to create file in a non-existent directory
@@ -327,8 +330,8 @@ func TestUnzip_Permissions(t *testing.T) {
 		"exec.sh": "#!/bin/sh\necho hi",
 	}
 	modes := map[string]os.FileMode{
-		"dir/":    0755,
-		"exec.sh": 0755,
+		"dir/":    0o755,
+		"exec.sh": 0o755,
 	}
 	createZip(t, zipPath, files, modes)
 
@@ -340,7 +343,7 @@ func TestUnzip_Permissions(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if info.Mode().Perm()&0111 == 0 {
+	if info.Mode().Perm()&0o111 == 0 {
 		t.Errorf("expected directory to be traversable, got %v", info.Mode().Perm())
 	}
 	info, err = os.Stat(filepath.Join(destDir, "exec.sh"))
@@ -348,7 +351,7 @@ func TestUnzip_Permissions(t *testing.T) {
 		t.Fatal(err)
 	}
 	// Check if the executable bit is set (0111)
-	if info.Mode()&0111 == 0 {
+	if info.Mode()&0o111 == 0 {
 		t.Errorf("expected file to be executable, got mode %v", info.Mode())
 	}
 }
@@ -383,10 +386,10 @@ func writeTestFiles(t *testing.T, dir string, files map[string]string) {
 	t.Helper()
 	for path, content := range files {
 		full := filepath.Join(dir, path)
-		if err := os.MkdirAll(filepath.Dir(full), 0755); err != nil {
+		if err := os.MkdirAll(filepath.Dir(full), 0o755); err != nil {
 			t.Fatal(err)
 		}
-		if err := os.WriteFile(full, []byte(content), 0644); err != nil {
+		if err := os.WriteFile(full, []byte(content), 0o644); err != nil {
 			t.Fatal(err)
 		}
 	}
@@ -417,4 +420,147 @@ func checkDir(t *testing.T, dir string, want map[string]string) {
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("mismatch in %s (-want +got):\n%s", dir, diff)
 	}
+}
+
+func TestRemoveEmptyDirs(t *testing.T) {
+	t.Parallel()
+	for _, test := range []struct {
+		name       string
+		setupDirs  []string
+		setupFiles map[string]string
+		keepFunc   func(string) bool
+		want       []string
+	}{
+		{
+			name:      "empty dirs are removed",
+			setupDirs: []string{"dir1/dir2/dir3"},
+			want:      nil,
+		},
+		{
+			name:      "non-empty dirs are preserved",
+			setupDirs: []string{"dir1/dir2"},
+			setupFiles: map[string]string{
+				"dir1/dir2/file.txt": "content",
+			},
+			want: []string{
+				"dir1",
+				"dir1/dir2",
+				"dir1/dir2/file.txt",
+			},
+		},
+		{
+			name:      "partially empty dirs are cleaned",
+			setupDirs: []string{"dir1/dir2", "dir1/dir3"},
+			setupFiles: map[string]string{
+				"dir1/dir3/file.txt": "content",
+			},
+			want: []string{
+				"dir1",
+				"dir1/dir3",
+				"dir1/dir3/file.txt",
+			},
+		},
+		{
+			name:      "kept dirs are preserved",
+			setupDirs: []string{"dir1/dir2/dir3"},
+			keepFunc: func(rel string) bool {
+				return rel == "dir1/dir2"
+			},
+			want: []string{
+				"dir1",
+				"dir1/dir2",
+				"dir1/dir2/dir3",
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			root := t.TempDir()
+			setupDirStructure(t, root, test.setupDirs, test.setupFiles)
+			if err := RemoveEmptyDirs(root, root, test.keepFunc); err != nil {
+				t.Fatal(err)
+			}
+			var got []string
+			if _, err := os.Stat(root); err == nil {
+				err := filepath.WalkDir(root, func(path string, d fs.DirEntry, err error) error {
+					if err != nil {
+						return err
+					}
+					if path == root {
+						return nil
+					}
+					rel, err := filepath.Rel(root, path)
+					if err != nil {
+						return err
+					}
+					got = append(got, filepath.ToSlash(rel))
+					return nil
+				})
+				if err != nil {
+					t.Fatal(err)
+				}
+			}
+			slices.Sort(got)
+			slices.Sort(test.want)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestIsDirNotEmpty(t *testing.T) {
+	for _, test := range []struct {
+		name string
+		err  error
+		want bool
+	}{
+		{
+			name: "nil error",
+			err:  nil,
+			want: false,
+		},
+		{
+			name: "generic error",
+			err:  errors.New("generic error"),
+			want: false,
+		},
+		{
+			name: "ENOTEMPTY",
+			err:  &os.PathError{Op: "remove", Path: "/tmp", Err: syscall.ENOTEMPTY},
+			want: true,
+		},
+		{
+			name: "EEXIST",
+			err:  &os.PathError{Op: "remove", Path: "/tmp", Err: syscall.EEXIST},
+			want: true,
+		},
+		{
+			name: "EACCES",
+			err:  &os.PathError{Op: "remove", Path: "/tmp", Err: syscall.EACCES},
+			want: false,
+		},
+		{
+			name: "wrapped ENOTEMPTY",
+			err:  fmt.Errorf("failed: %w", &os.PathError{Op: "remove", Path: "/tmp", Err: syscall.ENOTEMPTY}),
+			want: true,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := isDirNotEmpty(test.err)
+			if got != test.want {
+				t.Errorf("isDirNotEmpty(%v) = %v, want %v", test.err, got, test.want)
+			}
+		})
+	}
+}
+
+func setupDirStructure(t *testing.T, root string, dirs []string, files map[string]string) {
+	t.Helper()
+	for _, d := range dirs {
+		if err := os.MkdirAll(filepath.Join(root, d), 0o755); err != nil {
+			t.Fatal(err)
+		}
+	}
+	writeTestFiles(t, root, files)
 }

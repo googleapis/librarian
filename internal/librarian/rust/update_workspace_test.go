@@ -33,12 +33,12 @@ resolver = "2"
 [workspace.package]
 edition = "2024"
 `
-	if err := os.WriteFile(filepath.Join(workspaceDir, "Cargo.toml"), []byte(workspaceCargo), 0644); err != nil {
+	if err := os.WriteFile(filepath.Join(workspaceDir, "Cargo.toml"), []byte(workspaceCargo), 0o644); err != nil {
 		t.Fatal(err)
 	}
 	libDir := filepath.Join(workspaceDir, "test-lib")
 	srcDir := filepath.Join(libDir, "src")
-	if err := os.MkdirAll(srcDir, 0755); err != nil {
+	if err := os.MkdirAll(srcDir, 0o755); err != nil {
 		t.Fatal(err)
 	}
 	libCargo := `[package]
@@ -46,10 +46,10 @@ name = "test-lib"
 version = "0.1.0"
 edition.workspace = true
 `
-	if err := os.WriteFile(filepath.Join(libDir, "Cargo.toml"), []byte(libCargo), 0644); err != nil {
+	if err := os.WriteFile(filepath.Join(libDir, "Cargo.toml"), []byte(libCargo), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(filepath.Join(srcDir, "lib.rs"), []byte(""), 0644); err != nil {
+	if err := os.WriteFile(filepath.Join(srcDir, "lib.rs"), []byte(""), 0o644); err != nil {
 		t.Fatal(err)
 	}
 	t.Chdir(workspaceDir)

@@ -33,7 +33,7 @@ func TestFormat(t *testing.T) {
 	libName := "format-test-lib"
 	libDir := filepath.Join(workspaceDir, libName)
 	srcDir := filepath.Join(libDir, "src")
-	if err := os.MkdirAll(srcDir, 0755); err != nil {
+	if err := os.MkdirAll(srcDir, 0o755); err != nil {
 		t.Fatal(err)
 	}
 
@@ -45,7 +45,7 @@ resolver = "2"
 [workspace.package]
 edition = "2024"
 `
-	if err := os.WriteFile(filepath.Join(workspaceDir, "Cargo.toml"), []byte(workspaceCargo), 0644); err != nil {
+	if err := os.WriteFile(filepath.Join(workspaceDir, "Cargo.toml"), []byte(workspaceCargo), 0o644); err != nil {
 		t.Fatal(err)
 	}
 
@@ -55,14 +55,14 @@ name    =   "` + libName + `"
 version =    "0.1.0"
 edition.workspace  =    true
 `
-	if err := os.WriteFile(filepath.Join(libDir, "Cargo.toml"), []byte(libCargo), 0644); err != nil {
+	if err := os.WriteFile(filepath.Join(libDir, "Cargo.toml"), []byte(libCargo), 0o644); err != nil {
 		t.Fatal(err)
 	}
 
 	// Write unformatted Rust source.
 	unformatted := `fn   main(  )   {   println!(  "hello"  )  ;   }
 `
-	if err := os.WriteFile(filepath.Join(srcDir, "lib.rs"), []byte(unformatted), 0644); err != nil {
+	if err := os.WriteFile(filepath.Join(srcDir, "lib.rs"), []byte(unformatted), 0o644); err != nil {
 		t.Fatal(err)
 	}
 

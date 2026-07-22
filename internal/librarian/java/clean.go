@@ -24,9 +24,9 @@ import (
 	"regexp"
 	"slices"
 	"strings"
-	"syscall"
 
 	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/filesystem"
 )
 
 const (
@@ -101,7 +101,6 @@ func cleanPatterns(library *config.Library) map[string]bool {
 }
 
 func cleanPath(targetPath, root string, keepSet map[string]bool, useMarker bool) error {
-	var dirs []string
 	err := filepath.WalkDir(targetPath, func(path string, d os.DirEntry, err error) error {
 		if err != nil {
 			return err
@@ -114,7 +113,6 @@ func cleanPath(targetPath, root string, keepSet map[string]bool, useMarker bool)
 			if keepSet[filepath.ToSlash(rel)] {
 				return filepath.SkipDir
 			}
-			dirs = append(dirs, path)
 			return nil
 		}
 		rel, err := filepath.Rel(root, path)
@@ -142,24 +140,10 @@ func cleanPath(targetPath, root string, keepSet map[string]bool, useMarker bool)
 	if err != nil && !errors.Is(err, fs.ErrNotExist) {
 		return err
 	}
-	// Remove empty directories in reverse order (bottom-up).
-	for _, dir := range slices.Backward(dirs) {
-		rel, err := filepath.Rel(root, dir)
-		if err != nil {
-			return err
-		}
-		if !keepSet[filepath.ToSlash(rel)] {
-			if err := os.Remove(dir); err != nil && !errors.Is(err, fs.ErrNotExist) && !isDirNotEmpty(err) {
-				return err
-			}
-		}
+	keepFunc := func(rel string) bool {
+		return keepSet[rel]
 	}
-	return nil
-}
-
-// isDirNotEmpty returns true if err indicates the directory is not empty.
-func isDirNotEmpty(err error) bool {
-	return errors.Is(err, syscall.ENOTEMPTY) || errors.Is(err, syscall.EEXIST)
+	return filesystem.RemoveEmptyDirs(targetPath, root, keepFunc)
 }
 
 // shouldPreserve returns true if the given slash-separated path should be preserved

@@ -72,5 +72,5 @@ func findAndReplace(path string, version string) error {
 		return err
 	}
 	result := versionRegex.ReplaceAllString(string(content), `${1}`+version+`${3}`)
-	return os.WriteFile(path, []byte(result), 0644)
+	return os.WriteFile(path, []byte(result), 0o644)
 }

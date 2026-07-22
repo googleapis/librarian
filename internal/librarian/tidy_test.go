@@ -398,7 +398,7 @@ libraries:
   - name: google-cloud-bigquery-v1
     version: "2.0.0"
 `, sample.LibrarianVersion)
-	if err := os.WriteFile(configPath, []byte(configContent), 0644); err != nil {
+	if err := os.WriteFile(configPath, []byte(configContent), 0o644); err != nil {
 		t.Fatal(err)
 	}
 	if err := Run(t.Context(), "librarian", "tidy"); err != nil {

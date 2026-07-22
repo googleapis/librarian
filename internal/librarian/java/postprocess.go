@@ -255,7 +255,7 @@ func addMissingHeaders(params postProcessParams, dir string) error {
 		if license.HasHeader(content) {
 			return nil
 		}
-		return os.WriteFile(path, append(headerText, content...), 0644)
+		return os.WriteFile(path, append(headerText, content...), 0o644)
 	})
 }
 
@@ -290,7 +290,7 @@ func copyFiles(params postProcessParams) error {
 		if _, err := os.Stat(src); err != nil {
 			return fmt.Errorf("failed to stat copy source %s: %w", src, err)
 		}
-		if err := os.MkdirAll(filepath.Dir(dest), 0755); err != nil {
+		if err := os.MkdirAll(filepath.Dir(dest), 0o755); err != nil {
 			return fmt.Errorf("failed to create destination directory for %s: %w", dest, err)
 		}
 		if err := filesystem.CopyFile(src, dest); err != nil {
@@ -340,7 +340,7 @@ func restructureToStaging(params postProcessParams) error {
 	if params.javaAPI.Monolithic {
 		destRoot = filepath.Join(destRoot, "src")
 	}
-	if err := os.MkdirAll(destRoot, 0755); err != nil {
+	if err := os.MkdirAll(destRoot, 0o755); err != nil {
 		return fmt.Errorf("failed to create staging directory: %w", err)
 	}
 	return restructureModules(params, destRoot)
@@ -356,7 +356,7 @@ type moveAction struct {
 func restructure(actions []moveAction) error {
 	for _, action := range actions {
 		if _, err := os.Stat(action.src); err == nil {
-			if err := os.MkdirAll(action.dest, 0755); err != nil {
+			if err := os.MkdirAll(action.dest, 0o755); err != nil {
 				return fmt.Errorf("failed to create directory %s: %w", action.dest, err)
 			}
 			if err := filesystem.MoveAndMerge(action.src, action.dest); err != nil {
@@ -495,7 +495,7 @@ func runOwlBot(ctx context.Context, library *config.Library, outDir, bomVersion 
 func copyProtos(protos []protoFileToCopy, destDir string) error {
 	for _, proto := range protos {
 		target := filepath.Join(destDir, proto.relativePath)
-		if err := os.MkdirAll(filepath.Dir(target), 0755); err != nil {
+		if err := os.MkdirAll(filepath.Dir(target), 0o755); err != nil {
 			return fmt.Errorf("failed to create directory %s: %w", filepath.Dir(target), err)
 		}
 		if err := filesystem.CopyFile(proto.absolutePath, target); err != nil {
@@ -576,7 +576,7 @@ func createOrVerifyOwlbotPy(outDir string) (err error) {
 	owlbotPath := filepath.Join(outDir, "owlbot.py")
 	// Open with O_EXCL to atomically ensure we only create the script if it does not exist.
 	// Executable permissions (0755) are set because owlbot.py is executed during post-processing.
-	file, createErr := os.OpenFile(owlbotPath, os.O_RDWR|os.O_CREATE|os.O_EXCL, 0755)
+	file, createErr := os.OpenFile(owlbotPath, os.O_RDWR|os.O_CREATE|os.O_EXCL, 0o755)
 	if errors.Is(createErr, fs.ErrExist) {
 		return nil
 	}
@@ -605,7 +605,7 @@ func ApplyMoveActionsToLibrary(actions []moveAction, destRoot string, keepSet ma
 			}
 			return fmt.Errorf("failed to check source directory %s: %w", action.src, err)
 		}
-		if err := os.MkdirAll(action.dest, 0755); err != nil {
+		if err := os.MkdirAll(action.dest, 0o755); err != nil {
 			return fmt.Errorf("failed to create directory %s: %w", action.dest, err)
 		}
 		err := filesystem.MoveAndMergeWithKeep(action.src, action.dest, destRoot, func(rel string) bool {

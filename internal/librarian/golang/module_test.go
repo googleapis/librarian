@@ -669,7 +669,7 @@ func TestInitModule(t *testing.T) {
 	outDir := t.TempDir()
 	// Write an import so go mod tidy can generate a go.sum file.
 	content := []byte("package main\nimport _ \"golang.org/x/text\"\n")
-	if err := os.WriteFile(filepath.Join(outDir, "main.go"), content, 0644); err != nil {
+	if err := os.WriteFile(filepath.Join(outDir, "main.go"), content, 0o644); err != nil {
 		t.Fatal(err)
 	}
 	if err := initModule(t.Context(), outDir, "example.com/testmod", ""); err != nil {

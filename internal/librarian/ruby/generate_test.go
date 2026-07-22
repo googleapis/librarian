@@ -39,13 +39,15 @@ func TestBuildGAPICOpts(t *testing.T) {
 
 	for _, test := range []struct {
 		name    string
-		apiPath string
+		api     *config.API
 		gemName string
 		want    []string
 	}{
 		{
-			name:    "basic case with service and grpc configs",
-			apiPath: "google/cloud/secretmanager/v1",
+			name: "basic case with service and grpc configs",
+			api: &config.API{
+				Path: "google/cloud/secretmanager/v1",
+			},
 			gemName: "google-cloud-secret_manager-v1",
 			want: []string{
 				"ruby-cloud-gem-name=google-cloud-secret_manager-v1",
@@ -56,8 +58,10 @@ func TestBuildGAPICOpts(t *testing.T) {
 			},
 		},
 		{
-			name:    "rest transport from sdk.yaml",
-			apiPath: "google/cloud/compute/v1",
+			name: "rest transport from sdk.yaml",
+			api: &config.API{
+				Path: "google/cloud/compute/v1",
+			},
 			gemName: "google-cloud-compute-v1",
 			want: []string{
 				"ruby-cloud-gem-name=google-cloud-compute-v1",
@@ -68,7 +72,7 @@ func TestBuildGAPICOpts(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got, err := buildGAPICOpts(test.apiPath, test.gemName, googleapisDir)
+			got, err := buildGAPICOpts(test.api, test.gemName, googleapisDir)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -175,7 +179,7 @@ func TestGenerate_Error(t *testing.T) {
 		t.Fatal(err)
 	}
 	fileAsDir := filepath.Join(t.TempDir(), "file.txt")
-	if err := os.WriteFile(fileAsDir, []byte("test"), 0644); err != nil {
+	if err := os.WriteFile(fileAsDir, []byte("test"), 0o644); err != nil {
 		t.Fatal(err)
 	}
 
@@ -274,7 +278,7 @@ func setupDummyProtoc(t *testing.T) {
 	t.Setenv("LIBRARIAN_BIN", binDir)
 
 	installDir := filepath.Join(binDir, "ruby_tools", "bin")
-	if err := os.MkdirAll(installDir, 0755); err != nil {
+	if err := os.MkdirAll(installDir, 0o755); err != nil {
 		t.Fatal(err)
 	}
 
@@ -293,7 +297,7 @@ if [ -n "$outDir" ]; then
 fi
 exit 0
 `
-	if err := os.WriteFile(protocPath, []byte(script), 0755); err != nil {
+	if err := os.WriteFile(protocPath, []byte(script), 0o755); err != nil {
 		t.Fatal(err)
 	}
 
@@ -301,10 +305,10 @@ exit 0
 		pPathInBin := filepath.Join(binDir, plugin)
 		pPathInInstallDir := filepath.Join(installDir, plugin)
 		pScript := "#!/bin/sh\nexit 0\n"
-		if err := os.WriteFile(pPathInBin, []byte(pScript), 0755); err != nil {
+		if err := os.WriteFile(pPathInBin, []byte(pScript), 0o755); err != nil {
 			t.Fatal(err)
 		}
-		if err := os.WriteFile(pPathInInstallDir, []byte(pScript), 0755); err != nil {
+		if err := os.WriteFile(pPathInInstallDir, []byte(pScript), 0o755); err != nil {
 			t.Fatal(err)
 		}
 	}
@@ -347,10 +351,10 @@ func TestGenerateAPI(t *testing.T) {
 		t.Fatal(err)
 	}
 	stagingDir := t.TempDir()
-	apiPath := "google/cloud/secretmanager/v1"
+	api := &config.API{Path: "google/cloud/secretmanager/v1"}
 	gemName := "google-cloud-secret_manager-v1"
 
-	err = generateAPI(t.Context(), apiPath, gemName, nil, googleapisDir, stagingDir)
+	err = generateAPI(t.Context(), api, gemName, nil, googleapisDir, stagingDir)
 	if err != nil {
 		t.Fatalf("generateAPI() error = %v", err)
 	}
@@ -365,7 +369,8 @@ func TestGenerateAPI_Error(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	err = generateAPI(t.Context(), "non/existent/path", "gem-name", nil, googleapisDir, t.TempDir())
+	api := &config.API{Path: "non/existent/path"}
+	err = generateAPI(t.Context(), api, "gem-name", nil, googleapisDir, t.TempDir())
 	if err == nil {
 		t.Error("generateAPI() error = nil, want error")
 	}

@@ -122,12 +122,12 @@ func TestFormat(t *testing.T) {
 
 	for _, dir := range []string{libraryDir, moduleDir} {
 		sourcesDir := filepath.Join(dir, "Sources")
-		if err := os.MkdirAll(sourcesDir, 0755); err != nil {
+		if err := os.MkdirAll(sourcesDir, 0o755); err != nil {
 			t.Fatal(err)
 		}
 		filePath := filepath.Join(sourcesDir, "test.swift")
 		// Write a file that needs formatting.
-		if err := os.WriteFile(filePath, []byte("func foo(){\n  print(\"hello\")\n}\n"), 0644); err != nil {
+		if err := os.WriteFile(filePath, []byte("func foo(){\n  print(\"hello\")\n}\n"), 0o644); err != nil {
 			t.Fatal(err)
 		}
 	}

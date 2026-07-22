@@ -290,13 +290,13 @@ type Alpha struct {
 }
 `
 
-	if err := os.WriteFile(filepath.Join(dir, "config.go"), []byte(configContent), 0644); err != nil {
+	if err := os.WriteFile(filepath.Join(dir, "config.go"), []byte(configContent), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(filepath.Join(dir, "other.go"), []byte(otherContent), 0644); err != nil {
+	if err := os.WriteFile(filepath.Join(dir, "other.go"), []byte(otherContent), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(filepath.Join(dir, "go.mod"), []byte("module config\n"), 0644); err != nil {
+	if err := os.WriteFile(filepath.Join(dir, "go.mod"), []byte("module config\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
 

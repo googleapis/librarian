@@ -55,12 +55,12 @@ func GenerateVersion(ctx context.Context, outDir string, library *config.Library
 		return err
 	}
 	destination := filepath.Join(outDir, "PackageVersion.swift")
-	if err := os.MkdirAll(filepath.Dir(destination), 0755); err != nil {
+	if err := os.MkdirAll(filepath.Dir(destination), 0o755); err != nil {
 		return err
 	}
 	s, err := mustache.Render(string(contents), &versionView{library: library})
 	if err != nil {
 		return err
 	}
-	return os.WriteFile(destination, []byte(s), 0666)
+	return os.WriteFile(destination, []byte(s), 0o666)
 }

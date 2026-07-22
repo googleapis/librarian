@@ -264,7 +264,7 @@ func TestGenerateModule_NoProtos(t *testing.T) {
 	}
 	googleapisDir := t.TempDir()
 	emptyAPIPath := "google/empty"
-	if err := os.MkdirAll(filepath.Join(googleapisDir, emptyAPIPath), 0755); err != nil {
+	if err := os.MkdirAll(filepath.Join(googleapisDir, emptyAPIPath), 0o755); err != nil {
 		t.Fatal(err)
 	}
 

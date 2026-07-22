@@ -30,7 +30,7 @@ func TestGeneratePackageSwift_WithDependencies(t *testing.T) {
 	root := t.TempDir()
 	t.Chdir(root)
 	outDir := filepath.Join("generated", "google-cloud-workflows-v1")
-	if err := os.MkdirAll(outDir, 0755); err != nil {
+	if err := os.MkdirAll(outDir, 0o755); err != nil {
 		t.Fatal(err)
 	}
 	defer os.RemoveAll("generated")

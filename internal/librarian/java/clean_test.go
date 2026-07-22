@@ -20,7 +20,6 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
-	"syscall"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -42,7 +41,7 @@ func TestClean(t *testing.T) {
 		filepath.Join(tmpDir, "kept-dir"),
 	}
 	for _, dir := range dirs {
-		if err := os.MkdirAll(dir, 0755); err != nil {
+		if err := os.MkdirAll(dir, 0o755); err != nil {
 			t.Fatal(err)
 		}
 	}
@@ -58,7 +57,7 @@ func TestClean(t *testing.T) {
 		filepath.Join(tmpDir, "kept-dir", "file.txt"),
 	}
 	for _, file := range files {
-		if err := os.MkdirAll(filepath.Dir(file), 0755); err != nil {
+		if err := os.MkdirAll(filepath.Dir(file), 0o755); err != nil {
 			t.Fatal(err)
 		}
 		content := []byte("content")
@@ -66,7 +65,7 @@ func TestClean(t *testing.T) {
 			// Add marker to files we expect to be removed
 			content = []byte("// AUTO-GENERATED DOCUMENTATION AND CLASS.\n" + string(content))
 		}
-		if err := os.WriteFile(file, content, 0644); err != nil {
+		if err := os.WriteFile(file, content, 0o644); err != nil {
 			t.Fatal(err)
 		}
 	}
@@ -167,7 +166,7 @@ func TestShouldCleanMarkerPath(t *testing.T) {
 			t.Parallel()
 			tmpDir := t.TempDir()
 			path := filepath.Join(tmpDir, test.fileName)
-			if err := os.WriteFile(path, []byte(test.content), 0644); err != nil {
+			if err := os.WriteFile(path, []byte(test.content), 0o644); err != nil {
 				t.Fatal(err)
 			}
 
@@ -189,52 +188,6 @@ func TestShouldCleanMarkerPath(t *testing.T) {
 		})
 	}
 }
-func TestIsDirNotEmpty(t *testing.T) {
-	for _, test := range []struct {
-		name string
-		err  error
-		want bool
-	}{
-		{
-			name: "nil error",
-			err:  nil,
-			want: false,
-		},
-		{
-			name: "generic error",
-			err:  errors.New("generic error"),
-			want: false,
-		},
-		{
-			name: "ENOTEMPTY",
-			err:  &os.PathError{Op: "remove", Path: "/tmp", Err: syscall.ENOTEMPTY},
-			want: true,
-		},
-		{
-			name: "EEXIST",
-			err:  &os.PathError{Op: "remove", Path: "/tmp", Err: syscall.EEXIST},
-			want: true,
-		},
-		{
-			name: "EACCES",
-			err:  &os.PathError{Op: "remove", Path: "/tmp", Err: syscall.EACCES},
-			want: false,
-		},
-		{
-			name: "wrapped ENOTEMPTY",
-			err:  fmt.Errorf("failed: %w", &os.PathError{Op: "remove", Path: "/tmp", Err: syscall.ENOTEMPTY}),
-			want: true,
-		},
-	} {
-		t.Run(test.name, func(t *testing.T) {
-			got := isDirNotEmpty(test.err)
-			if got != test.want {
-				t.Errorf("isDirNotEmpty(%v) = %v, want %v", test.err, got, test.want)
-			}
-		})
-	}
-}
-
 func TestCleanPatterns(t *testing.T) {
 	t.Parallel()
 	for _, test := range []struct {

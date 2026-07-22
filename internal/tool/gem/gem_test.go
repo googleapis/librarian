@@ -33,11 +33,11 @@ func TestInstall(t *testing.T) {
 echo "gem $@" >> %q
 `, stubLogPath)
 	stubDir := filepath.Join(tmpDir, "bin")
-	if err := os.MkdirAll(stubDir, 0755); err != nil {
+	if err := os.MkdirAll(stubDir, 0o755); err != nil {
 		t.Fatal(err)
 	}
 	stubPath := filepath.Join(stubDir, "gem")
-	if err := os.WriteFile(stubPath, []byte(stubContent), 0755); err != nil {
+	if err := os.WriteFile(stubPath, []byte(stubContent), 0o755); err != nil {
 		t.Fatal(err)
 	}
 	t.Setenv("PATH", stubDir)
@@ -87,11 +87,11 @@ gem install rake -v 13.0.6 --bindir /tmp/ruby_tools/bin --install-dir /tmp/ruby_
 func TestInstall_Error(t *testing.T) {
 	tmpDir := t.TempDir()
 	stubDir := filepath.Join(tmpDir, "bin")
-	if err := os.MkdirAll(stubDir, 0755); err != nil {
+	if err := os.MkdirAll(stubDir, 0o755); err != nil {
 		t.Fatal(err)
 	}
 	stubPath := filepath.Join(stubDir, "gem")
-	if err := os.WriteFile(stubPath, []byte("#!/bin/sh\nexit 1\n"), 0755); err != nil {
+	if err := os.WriteFile(stubPath, []byte("#!/bin/sh\nexit 1\n"), 0o755); err != nil {
 		t.Fatal(err)
 	}
 

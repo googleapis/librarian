@@ -101,7 +101,6 @@ func TestFind(t *testing.T) {
 				OpenAPI:          "testdata/secretmanager_openapi_v1.json",
 				ServiceName:      "secretmanager.googleapis.com",
 				ShortName:        "secretmanager",
-				Languages:        []string{config.LanguageAll},
 				Title:            "Secret Manager API",
 			},
 		},
@@ -111,7 +110,6 @@ func TestFind(t *testing.T) {
 			want: &API{
 				Path:             "google/cloud/orgpolicy/v1",
 				Title:            "Organization Policy Types",
-				Languages:        []string{config.LanguageAll},
 				DocumentationURI: "https://cloud.google.com/resource-manager/docs/organization-policy/overview",
 			},
 		},
@@ -132,7 +130,6 @@ func TestFind(t *testing.T) {
 				ServiceName:          "aiplatform.googleapis.com",
 				ShortName:            "aiplatform",
 				Title:                "Vertex AI API",
-				Languages:            []string{config.LanguageAll},
 				Transports:           map[string]Transport{config.LanguagePython: GRPC},
 				SkipRESTNumericEnums: []string{"python"},
 			},
@@ -146,7 +143,6 @@ func TestFind(t *testing.T) {
 				OpenAPI:          "testdata/secretmanager_openapi_v1.json",
 				ServiceConfig:    "google/cloud/secretmanager/v1/secretmanager_v1.yaml",
 				Title:            "Secret Manager API",
-				Languages:        []string{config.LanguageAll},
 				NewIssueURI:      "https://issuetracker.google.com/issues/new?component=784854&template=1380926",
 				DocumentationURI: "https://cloud.google.com/secret-manager/docs/overview",
 				ServiceName:      "secretmanager.googleapis.com",
@@ -166,7 +162,6 @@ func TestFind(t *testing.T) {
 				ServiceName:          "compute.googleapis.com",
 				ShortName:            "compute",
 				Title:                "Google Compute Engine API",
-				Languages:            []string{config.LanguageAll},
 				Transports:           map[string]Transport{config.LanguageAll: Rest},
 				SkipRESTNumericEnums: []string{"go", "java", "python"},
 			},
@@ -225,11 +220,11 @@ func TestFindGRPCServiceConfigMultipleFiles(t *testing.T) {
 	dir := t.TempDir()
 	apiPath := "google/example/v1"
 	apiDir := filepath.Join(dir, apiPath)
-	if err := os.MkdirAll(apiDir, 0755); err != nil {
+	if err := os.MkdirAll(apiDir, 0o755); err != nil {
 		t.Fatal(err)
 	}
 	for _, name := range []string{"foo_grpc_service_config.json", "bar_grpc_service_config.json"} {
-		if err := os.WriteFile(filepath.Join(apiDir, name), []byte("{}"), 0644); err != nil {
+		if err := os.WriteFile(filepath.Join(apiDir, name), []byte("{}"), 0o644); err != nil {
 			t.Fatal(err)
 		}
 	}
@@ -278,11 +273,11 @@ func TestFindGAPICConfigMultipleFiles(t *testing.T) {
 	dir := t.TempDir()
 	apiPath := "google/example/v1"
 	apiDir := filepath.Join(dir, apiPath)
-	if err := os.MkdirAll(apiDir, 0755); err != nil {
+	if err := os.MkdirAll(apiDir, 0o755); err != nil {
 		t.Fatal(err)
 	}
 	for _, name := range []string{"foo_gapic.yaml", "bar_gapic.yaml"} {
-		if err := os.WriteFile(filepath.Join(apiDir, name), []byte(""), 0644); err != nil {
+		if err := os.WriteFile(filepath.Join(apiDir, name), []byte(""), 0o644); err != nil {
 			t.Fatal(err)
 		}
 	}
@@ -382,62 +377,6 @@ func TestPopulateFromServiceConfig(t *testing.T) {
 			got := populateFromServiceConfig(test.api, test.cfg)
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
-			}
-		})
-	}
-}
-
-func TestValidateAPI(t *testing.T) {
-	for _, test := range []struct {
-		name     string
-		path     string
-		language string
-		api      *API
-		wantErr  bool
-	}{
-		{
-			name:     "api in allowlist, all languages",
-			path:     "google/api",
-			language: config.LanguageGo,
-			api:      &API{Path: "google/api", Languages: []string{config.LanguageAll}},
-			wantErr:  false,
-		},
-		{
-			name:     "api in allowlist, restricted language allowed",
-			path:     "google/cloud/aiplatform/v1beta1",
-			language: config.LanguagePython,
-			api: &API{
-				Path:      "google/cloud/aiplatform/v1beta1",
-				Languages: []string{config.LanguagePython},
-			},
-			wantErr: false,
-		},
-		{
-			name:     "api not in list, default",
-			path:     "google/ads/newapi/v1",
-			language: config.LanguageGo,
-			api:      &API{Path: "google/ads/newapi/v1"},
-			wantErr:  false,
-		},
-		{
-			name:     "api in allowlist, restricted language not allowed",
-			path:     "google/cloud/aiplatform/v1beta1",
-			language: config.LanguageGo,
-			api: &API{
-				Path:      "google/cloud/aiplatform/v1beta1",
-				Languages: []string{config.LanguagePython},
-			},
-			wantErr: true,
-		},
-	} {
-		t.Run(test.name, func(t *testing.T) {
-			got, err := validateAPI(test.path, test.language, test.api)
-			if (err != nil) != test.wantErr {
-				t.Errorf("validateAPI() error = %v, wantErr %v", err, test.wantErr)
-				return
-			}
-			if !test.wantErr && got == nil {
-				t.Error("validateAPI() returned nil but want non-nil API")
 			}
 		})
 	}

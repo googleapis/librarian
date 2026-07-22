@@ -29,6 +29,10 @@ import (
 const (
 	// Cargo is the command name for the cargo executable.
 	Cargo = "cargo"
+	// Dart is the command name for the dart executable.
+	Dart = "dart"
+	// DartAPITool is the command name for the dart-apitool executable.
+	DartAPITool = "dart-apitool"
 	// Git is the command name for the git executable.
 	Git = "git"
 	// Go is the command name for the go executable.
@@ -161,7 +165,7 @@ func lookPath(cmdName string, pathEnv string) (string, error) {
 		}
 		commandPath := filepath.Join(dir, cmdName)
 		if fileInfo, err := os.Stat(commandPath); err == nil && !fileInfo.IsDir() {
-			if filepath.Separator != '\\' && fileInfo.Mode().Perm()&0111 == 0 {
+			if filepath.Separator != '\\' && fileInfo.Mode().Perm()&0o111 == 0 {
 				continue
 			}
 			return filepath.Abs(commandPath)

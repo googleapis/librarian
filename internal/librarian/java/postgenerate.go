@@ -278,7 +278,7 @@ func generateRootPOM(repoPath string, modules []string) error {
 // versions for all individual library BOMs in the monorepo.
 func generateGAPICLibrariesBOM(repoPath, version, parentVersion string, bomConfigs []*bomConfig) error {
 	bomDir := filepath.Join(repoPath, gapicBOM)
-	if err := os.MkdirAll(bomDir, 0755); err != nil {
+	if err := os.MkdirAll(bomDir, 0o755); err != nil {
 		return err
 	}
 	data := struct {
