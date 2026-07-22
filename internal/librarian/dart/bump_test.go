@@ -19,7 +19,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"reflect"
 	"strings"
 	"testing"
 
@@ -27,6 +26,7 @@ import (
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/git"
 	"github.com/googleapis/librarian/internal/testhelper"
+	"github.com/googleapis/librarian/internal/yaml"
 )
 
 func TestUpdateChangelog_New(t *testing.T) {
@@ -153,11 +153,11 @@ func TestBump_NothingChanged(t *testing.T) {
 	testhelper.RequireCommand(t, "dart")
 	testhelper.RequireCommand(t, "git")
 
-	inputDir, err := filepath.Abs("testdata/nothing_changed/input")
+	inputDir, err := filepath.Abs("testdata/bump/nothing_changed/input")
 	if err != nil {
 		t.Fatal(err)
 	}
-	goldenDir, err := filepath.Abs("testdata/nothing_changed/golden_output")
+	goldenDir, err := filepath.Abs("testdata/bump/nothing_changed/golden_output")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -176,21 +176,9 @@ func TestBump_NothingChanged(t *testing.T) {
 	}
 	setupFakeApitool(t, apiToolResponses)
 
-	cfg := &config.Config{
-		Default: &config.Default{
-			Output:    "generated",
-			TagFormat: "{name}-v{version}",
-			Dart: &config.DartPackage{
-				Packages: map[string]string{
-					"package:a": "^1.0.0",
-				},
-			},
-		},
-		Libraries: []*config.Library{
-			{Name: "a", Version: "1.0.0"},
-			{Name: "b", Version: "1.0.0"},
-			{Name: "c", Version: "1.0.0"},
-		},
+	cfg, err := yaml.Read[config.Config]("librarian.yaml")
+	if err != nil {
+		t.Fatal(err)
 	}
 
 	err = Bump(t.Context(), cfg, true, "", "")
@@ -198,17 +186,8 @@ func TestBump_NothingChanged(t *testing.T) {
 		t.Fatalf("Bump failed: %v", err)
 	}
 
-	if got, want := libraryVersions(cfg.Libraries), map[string]string{
-		"a": "1.0.0",
-		"b": "1.0.0",
-		"c": "1.0.0",
-	}; !reflect.DeepEqual(got, want) {
-		t.Errorf("library versions = %v; want %v", got, want)
-	}
-
-	// Verify cfg.Default.Dart.Packages values:
-	if got, want := cfg.Default.Dart.Packages, map[string]string{"package:a": "^1.0.0"}; !reflect.DeepEqual(got, want) {
-		t.Errorf("default packages map = %v; want %v", got, want)
+	if err := yaml.Write("librarian.yaml", cfg); err != nil {
+		t.Fatal(err)
 	}
 
 	compareDirWithGolden(t, goldenDir)
@@ -218,11 +197,11 @@ func TestBump_APIChange(t *testing.T) {
 	testhelper.RequireCommand(t, "dart")
 	testhelper.RequireCommand(t, "git")
 
-	inputDir, err := filepath.Abs("testdata/api_change/input")
+	inputDir, err := filepath.Abs("testdata/bump/api_change/input")
 	if err != nil {
 		t.Fatal(err)
 	}
-	goldenDir, err := filepath.Abs("testdata/api_change/golden_output")
+	goldenDir, err := filepath.Abs("testdata/bump/api_change/golden_output")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -250,21 +229,9 @@ func TestBump_APIChange(t *testing.T) {
 	}
 	setupFakeApitool(t, apiToolResponses)
 
-	cfg := &config.Config{
-		Default: &config.Default{
-			Output:    "generated",
-			TagFormat: "{name}-v{version}",
-			Dart: &config.DartPackage{
-				Packages: map[string]string{
-					"package:a": "^1.0.0",
-				},
-			},
-		},
-		Libraries: []*config.Library{
-			{Name: "a", Version: "1.0.0"},
-			{Name: "b", Version: "1.0.0"},
-			{Name: "c", Version: "1.0.0"},
-		},
+	cfg, err := yaml.Read[config.Config]("librarian.yaml")
+	if err != nil {
+		t.Fatal(err)
 	}
 
 	err = Bump(t.Context(), cfg, true, "", "")
@@ -272,34 +239,22 @@ func TestBump_APIChange(t *testing.T) {
 		t.Fatalf("Bump failed: %v", err)
 	}
 
-	// Verify versions in config:
-	// a should be bumped to 1.1.0
-	// b should be bumped to 1.0.1 (patch bump because its dependency "a" was updated)
-	if got, want := libraryVersions(cfg.Libraries), map[string]string{
-		"a": "1.1.0",
-		"b": "1.0.1",
-		"c": "1.0.0",
-	}; !reflect.DeepEqual(got, want) {
-		t.Errorf("library versions = %v; want %v", got, want)
-	}
-
-	// Verify cfg.Default.Dart.Packages values:
-	if got, want := cfg.Default.Dart.Packages, map[string]string{"package:a": "^1.1.0"}; !reflect.DeepEqual(got, want) {
-		t.Errorf("default packages map = %v; want %v", got, want)
+	if err := yaml.Write("librarian.yaml", cfg); err != nil {
+		t.Fatal(err)
 	}
 
 	compareDirWithGolden(t, goldenDir)
 }
 
 func TestBump_FileChanged_APIUnchanged(t *testing.T) {
-	testhelper.RequireCommand(t, "git")
 	testhelper.RequireCommand(t, "dart")
+	testhelper.RequireCommand(t, "git")
 
-	inputDir, err := filepath.Abs("testdata/file_changed_api_unchanged/input")
+	inputDir, err := filepath.Abs("testdata/bump/file_changed_api_unchanged/input")
 	if err != nil {
 		t.Fatal(err)
 	}
-	goldenDir, err := filepath.Abs("testdata/file_changed_api_unchanged/golden_output")
+	goldenDir, err := filepath.Abs("testdata/bump/file_changed_api_unchanged/golden_output")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -327,21 +282,9 @@ func TestBump_FileChanged_APIUnchanged(t *testing.T) {
 	}
 	setupFakeApitool(t, apiToolResponses)
 
-	cfg := &config.Config{
-		Default: &config.Default{
-			Output:    "generated",
-			TagFormat: "{name}-v{version}",
-			Dart: &config.DartPackage{
-				Packages: map[string]string{
-					"package:a": "^1.0.0",
-				},
-			},
-		},
-		Libraries: []*config.Library{
-			{Name: "a", Version: "1.0.0"},
-			{Name: "b", Version: "1.0.0"},
-			{Name: "c", Version: "1.0.0"},
-		},
+	cfg, err := yaml.Read[config.Config]("librarian.yaml")
+	if err != nil {
+		t.Fatal(err)
 	}
 
 	err = Bump(t.Context(), cfg, true, "", "")
@@ -349,32 +292,11 @@ func TestBump_FileChanged_APIUnchanged(t *testing.T) {
 		t.Fatalf("Bump failed: %v", err)
 	}
 
-	// Verify versions in config:
-	// a should be bumped to 1.0.1
-	// b should be bumped to 1.0.1 (patch bump because its dependency "a" was updated)
-
-	if got, want := libraryVersions(cfg.Libraries), map[string]string{
-		"a": "1.0.1",
-		"b": "1.0.1",
-		"c": "1.0.0",
-	}; !reflect.DeepEqual(got, want) {
-		t.Errorf("library versions = %v; want %v", got, want)
-	}
-
-	// Verify cfg.Default.Dart.Packages values:
-	if got, want := cfg.Default.Dart.Packages, map[string]string{"package:a": "^1.0.1"}; !reflect.DeepEqual(got, want) {
-		t.Errorf("default packages map = %v; want %v", got, want)
+	if err := yaml.Write("librarian.yaml", cfg); err != nil {
+		t.Fatal(err)
 	}
 
 	compareDirWithGolden(t, goldenDir)
-}
-
-func libraryVersions(libaries []*config.Library) map[string]string {
-	m := make(map[string]string)
-	for _, l := range libaries {
-		m[l.Name] = l.Version
-	}
-	return m
 }
 
 func setupRepoFromDir(t *testing.T, sourceDir string, repoVersions map[string]string) {
