@@ -245,10 +245,10 @@ func Bump(ctx context.Context, cfg *config.Config, all bool, libraryName, versio
 		if err != nil {
 			return err
 		}
-		newVersions[lib] = newVersion
 
 		if libraryByName[lib].Version != newVersion {
 			libraryByName[lib].Version = newVersion
+			newVersions[lib] = newVersion
 
 			if cfg.Default != nil && cfg.Default.Dart != nil && cfg.Default.Dart.Packages != nil {
 				if _, ok := cfg.Default.Dart.Packages["package:"+lib]; ok {

@@ -192,6 +192,147 @@ if [ -n "$report_file" ]; then
 	setupFakeScript(t, "dart-apitool", script.String())
 }
 
+func TestBump_NothingChanged(t *testing.T) {
+	testhelper.RequireCommand(t, "git")
+
+	t.Helper()
+	remoteDir := testhelper.SetupRepoWithChange(t, "release-2001-02-03")
+	if err := command.Run(t.Context(), command.Git, "-C", remoteDir, "config", "receive.denyCurrentBranch", "ignore"); err != nil {
+		t.Fatal(err)
+	}
+	testhelper.CloneRepository(t, remoteDir)
+
+	if err := os.MkdirAll("generated/a", 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.MkdirAll("generated/b", 0755); err != nil {
+		t.Fatal(err)
+	}
+
+	workspacePubspec := `name: pkg_workspace
+publish_to: none
+
+environment:
+  sdk: ^3.9.0
+
+workspace:
+  - generated/a
+  - generated/b
+`
+	originalPubspecA := `name: a
+version: 1.0.0
+environment:
+  sdk: ^3.9.0
+resolution: workspace
+`
+	originalPubspecB := `name: b
+version: 1.0.0
+environment:
+  sdk: ^3.9.0
+resolution: workspace
+dependencies:
+  a: ^1.0.0
+`
+
+	if err := os.WriteFile("pubspec.yaml", []byte(workspacePubspec), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := os.WriteFile("generated/a/pubspec.yaml", []byte(originalPubspecA), 0644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile("generated/b/pubspec.yaml", []byte(originalPubspecB), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := os.WriteFile("generated/a/lib.dart", []byte("// library a"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile("generated/b/lib.dart", []byte("// library b"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	testhelper.RunGit(t, "add", ".")
+	testhelper.RunGit(t, "commit", "-m", "feat: added pubspec files", ".")
+	testhelper.RunGit(t, "push", config.RemoteUpstream, config.BranchMain)
+
+	// Tag the initial 1.0.0 release.
+	testhelper.RunGit(t, "tag", "a-v1.0.0")
+	testhelper.RunGit(t, "tag", "b-v1.0.0")
+
+	apiToolResponses := map[string]PackageVersion{
+		"a": {needed: "1.0.0", old: "1.0.0"},
+		"b": {needed: "1.0.0", old: "1.0.0"},
+	}
+	setupFakeApitool(t, apiToolResponses)
+
+	cfg := &config.Config{
+		Default: &config.Default{
+			Output:    "generated",
+			TagFormat: "{name}-v{version}",
+			Dart: &config.DartPackage{
+				Packages: map[string]string{
+					"package:a": "^1.0.0",
+				},
+			},
+		},
+		Libraries: []*config.Library{
+			{Name: "a", Version: "1.0.0"},
+			{Name: "b", Version: "1.0.0"},
+		},
+	}
+
+	err := Bump(t.Context(), cfg, true, "", "")
+	if err != nil {
+		t.Fatalf("Bump failed: %v", err)
+	}
+
+	if got, want := cfg.Libraries[0].Version, "1.0.0"; got != want {
+		t.Errorf("library a version = %q; want %q", got, want)
+	}
+	if got, want := cfg.Libraries[1].Version, "1.0.0"; got != want {
+		t.Errorf("library b version = %q; want %q", got, want)
+	}
+
+	// Verify cfg.Default.Dart.Packages values:
+	if got, want := cfg.Default.Dart.Packages, map[string]string{"package:a": "^1.0.0"}; !reflect.DeepEqual(got, want) {
+		t.Errorf("default packages map = %v; want %v", got, want)
+	}
+
+	// Verify updated files in directory:
+	// a's pubspec should be 1.0.0
+	// b's pubspec should be 1.0.0 and depend on a: ^1.0.0
+	pubspecA, err := os.ReadFile("generated/a/pubspec.yaml")
+	if err != nil {
+		t.Fatal(err)
+	}
+	wantPubspecA := `name: a
+version: 1.0.0
+environment:
+  sdk: ^3.9.0
+resolution: workspace
+`
+	if got := string(pubspecA); got != wantPubspecA {
+		t.Errorf("a/pubspec.yaml content mismatch:\ngot:\n%s\nwant:\n%s", got, wantPubspecA)
+	}
+
+	pubspecB, err := os.ReadFile("generated/b/pubspec.yaml")
+	if err != nil {
+		t.Fatal(err)
+	}
+	wantPubspecB := `name: b
+version: 1.0.0
+environment:
+  sdk: ^3.9.0
+resolution: workspace
+dependencies:
+  a: ^1.0.0
+`
+	if got := string(pubspecB); got != wantPubspecB {
+		t.Errorf("b/pubspec.yaml content mismatch:\ngot:\n%s\nwant:\n%s", got, wantPubspecB)
+	}
+}
+
 func TestBump_APIChange(t *testing.T) {
 	testhelper.RequireCommand(t, "git")
 
@@ -345,22 +486,24 @@ dependencies:
 	}
 }
 
-func TestBump_FileChanged_APIUnchanged(t *testing.T) {
-	testhelper.RequireCommand(t, "git")
+func libraryVersions(libaries []*config.Library) map[string]string {
+	m := make(map[string]string)
+	for _, l := range libaries {
+		m[l.Name] = l.Version
+	}
+	return m
+}
 
+// repoVersions: {"a": "1.0.0", "b": "1.0.0", "c": "1.0.0"}
+// deps: {"a": ["b", "c"]}
+func setupRepo(t *testing.T, repoVersions map[string]string, deps map[string][]string) {
 	t.Helper()
+
 	remoteDir := testhelper.SetupRepoWithChange(t, "release-2001-02-03")
 	if err := command.Run(t.Context(), command.Git, "-C", remoteDir, "config", "receive.denyCurrentBranch", "ignore"); err != nil {
 		t.Fatal(err)
 	}
 	testhelper.CloneRepository(t, remoteDir)
-
-	if err := os.MkdirAll("generated/a", 0755); err != nil {
-		t.Fatal(err)
-	}
-	if err := os.MkdirAll("generated/b", 0755); err != nil {
-		t.Fatal(err)
-	}
 
 	workspacePubspec := `name: pkg_workspace
 publish_to: none
@@ -371,38 +514,34 @@ environment:
 workspace:
   - generated/a
   - generated/b
+  - generated/c
 `
-	originalPubspecA := `name: a
-version: 1.0.0
-environment:
-  sdk: ^3.9.0
-resolution: workspace
-`
-	originalPubspecB := `name: b
-version: 1.0.0
-environment:
-  sdk: ^3.9.0
-resolution: workspace
-dependencies:
-  a: ^1.0.0
-`
-
 	if err := os.WriteFile("pubspec.yaml", []byte(workspacePubspec), 0644); err != nil {
 		t.Fatal(err)
 	}
 
-	if err := os.WriteFile("generated/a/pubspec.yaml", []byte(originalPubspecA), 0644); err != nil {
-		t.Fatal(err)
-	}
-	if err := os.WriteFile("generated/b/pubspec.yaml", []byte(originalPubspecB), 0644); err != nil {
-		t.Fatal(err)
-	}
+	for name, version := range repoVersions {
+		if err := os.MkdirAll("generated/"+name, 0755); err != nil {
+			t.Fatal(err)
+		}
 
-	if err := os.WriteFile("generated/a/lib.dart", []byte("// library a"), 0644); err != nil {
-		t.Fatal(err)
-	}
-	if err := os.WriteFile("generated/b/lib.dart", []byte("// library b"), 0644); err != nil {
-		t.Fatal(err)
+		dependencies := "dependencies:\n"
+		for _, depName := range deps[name] {
+			dependencies += fmt.Sprintf("  %s: ^%s\n", depName, repoVersions[depName])
+		}
+
+		pubspec := fmt.Sprintf(`name: %s
+version: %s
+environment:
+  sdk: ^3.9.0
+resolution: workspace
+dependencies:
+%s)
+`, name, version, dependencies)
+		if err := os.WriteFile("generated/"+name+"/pubspec.yaml", []byte(pubspec), 0644); err != nil {
+			t.Fatal(err)
+		}
+
 	}
 
 	testhelper.RunGit(t, "add", ".")
@@ -410,8 +549,17 @@ dependencies:
 	testhelper.RunGit(t, "push", config.RemoteUpstream, config.BranchMain)
 
 	// Tag the initial 1.0.0 release.
+	// XXX use a loop
 	testhelper.RunGit(t, "tag", "a-v1.0.0")
 	testhelper.RunGit(t, "tag", "b-v1.0.0")
+	testhelper.RunGit(t, "tag", "c-v1.0.0")
+
+}
+
+func TestBump_FileChanged_APIUnchanged(t *testing.T) {
+	testhelper.RequireCommand(t, "git")
+
+	t.Helper()
 
 	// Now make a commit with changes to package a.
 	if err := os.WriteFile("generated/a/lib.dart", []byte("// library a: new fix"), 0644); err != nil {
@@ -425,6 +573,7 @@ dependencies:
 	apiToolResponses := map[string]PackageVersion{
 		"a": {needed: "1.0.0", old: "1.0.0"},
 		"b": {needed: "1.0.0", old: "1.0.0"},
+		"c": {needed: "1.0.0", old: "1.0.0"},
 	}
 	setupFakeApitool(t, apiToolResponses)
 
@@ -441,6 +590,7 @@ dependencies:
 		Libraries: []*config.Library{
 			{Name: "a", Version: "1.0.0"},
 			{Name: "b", Version: "1.0.0"},
+			{Name: "c", Version: "1.0.0"},
 		},
 	}
 
@@ -452,11 +602,13 @@ dependencies:
 	// Verify versions in config:
 	// a should be bumped to 1.0.1
 	// b should be bumped to 1.0.1 (patch bump because its dependency "a" was updated)
-	if got, want := cfg.Libraries[0].Version, "1.0.1"; got != want {
-		t.Errorf("library a version = %q; want %q", got, want)
-	}
-	if got, want := cfg.Libraries[1].Version, "1.0.1"; got != want {
-		t.Errorf("library b version = %q; want %q", got, want)
+
+	if got, want := libraryVersions(cfg.Libraries), map[string]string{
+		"a": "1.0.1",
+		"b": "1.0.1",
+		"c": "1.0.0",
+	}; !reflect.DeepEqual(got, want) {
+		t.Errorf("library versions = %v; want %v", got, want)
 	}
 
 	// Verify cfg.Default.Dart.Packages values:
