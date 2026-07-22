@@ -377,6 +377,35 @@ func TestMergeLibs(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "preserve existing libraries not in discovered list",
+			existingLibs: []*config.Library{
+				{
+					Name:    "google-cloud-secret_manager-v1",
+					Version: "1.2.0",
+				},
+				{
+					Name:    "google-cloud-recaptcha_enterprise-v1",
+					Version: "1.0.0",
+				},
+			},
+			libs: []*config.Library{
+				{
+					Name:    "google-cloud-secret_manager-v1",
+					Version: "0.1.0",
+				},
+			},
+			want: []*config.Library{
+				{
+					Name:    "google-cloud-secret_manager-v1",
+					Version: "1.2.0",
+				},
+				{
+					Name:    "google-cloud-recaptcha_enterprise-v1",
+					Version: "1.0.0",
+				},
+			},
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			got := mergeLibs(test.existingLibs, test.libs)
