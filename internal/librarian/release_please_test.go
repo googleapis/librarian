@@ -24,7 +24,7 @@ import (
 	"github.com/googleapis/librarian/internal/config"
 )
 
-func TestHasBulkReleasePleaseConfigs(t *testing.T) {
+func TestHasReleasePleaseConfigs(t *testing.T) {
 	for _, test := range []struct {
 		name           string
 		language       string
@@ -88,6 +88,34 @@ func TestHasBulkReleasePleaseConfigs(t *testing.T) {
 			createManifest: true,
 			want:           true,
 		},
+		{
+			name:           "both missing (Python)",
+			language:       config.LanguagePython,
+			createConfig:   false,
+			createManifest: false,
+			want:           false,
+		},
+		{
+			name:           "config missing (Python)",
+			language:       config.LanguagePython,
+			createConfig:   false,
+			createManifest: true,
+			want:           false,
+		},
+		{
+			name:           "manifest missing (Python)",
+			language:       config.LanguagePython,
+			createConfig:   true,
+			createManifest: false,
+			want:           false,
+		},
+		{
+			name:           "both exist (Python)",
+			language:       config.LanguagePython,
+			createConfig:   true,
+			createManifest: true,
+			want:           true,
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			tmp := t.TempDir()
@@ -106,9 +134,9 @@ func TestHasBulkReleasePleaseConfigs(t *testing.T) {
 					t.Fatal(err)
 				}
 			}
-			got := hasBulkReleasePleaseConfigs(tmp, &config.Config{Language: test.language})
+			got := hasReleasePleaseConfigs(tmp, &config.Config{Language: test.language})
 			if got != test.want {
-				t.Errorf("hasBulkReleasePleaseConfigs(%s, %s) = %t, want %t", tmp, test.language, got, test.want)
+				t.Errorf("hasReleasePleaseConfigs(%s, %s) = %t, want %t", tmp, test.language, got, test.want)
 			}
 		})
 	}
@@ -469,17 +497,18 @@ func TestSyncToReleasePlease_Errors(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			tmp := t.TempDir()
-			manifestPath := filepath.Join(tmp, ".release-please-bulk-manifest.json")
-			configPath := filepath.Join(tmp, "release-please-bulk-config.json")
+			cfg := &config.Config{
+				Language:  config.LanguagePython,
+				Libraries: []*config.Library{test.library},
+			}
+			manifestFile, configFile := releasePleaseFiles(cfg)
+			manifestPath := filepath.Join(tmp, manifestFile)
+			configPath := filepath.Join(tmp, configFile)
 			if err := os.WriteFile(manifestPath, []byte("{}"), 0o644); err != nil {
 				t.Fatal(err)
 			}
 			if err := os.WriteFile(configPath, []byte(test.initialConfig), 0o644); err != nil {
 				t.Fatal(err)
-			}
-			cfg := &config.Config{
-				Language:  config.LanguagePython,
-				Libraries: []*config.Library{test.library},
 			}
 			err := syncToReleasePlease(tmp, cfg, test.library.Name)
 			if err == nil {
