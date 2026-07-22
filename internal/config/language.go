@@ -862,6 +862,9 @@ type RubyCloudOpts struct {
 	// ServiceOverride overrides generated service class names when proto package service
 	// names don't match desired Ruby conventions.
 	ServiceOverride string `yaml:"ruby-cloud-service-override,omitempty"`
+
+	// YardStrict enables or disables strict YARD syntax checks during generation.
+	YardStrict string `yaml:"ruby-cloud-yard-strict,omitempty"`
 }
 
 // RubyAPI represents configuration for a single API within a Ruby package.

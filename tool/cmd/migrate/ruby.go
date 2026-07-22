@@ -51,6 +51,7 @@ type VersionedBuild struct {
 	ExtraDeps       string
 	PathOverride    string
 	ServiceOverride string
+	YardStrict      string
 }
 
 func runRubyMigration(ctx context.Context, repoPath string) error {
@@ -140,6 +141,7 @@ func findRubyLibraries(googleapisPath, repoPath string) ([]*config.Library, erro
 						ExtraDependencies: vb.ExtraDeps,
 						PathOverride:      vb.PathOverride,
 						ServiceOverride:   vb.ServiceOverride,
+						YardStrict:        vb.YardStrict,
 					},
 				}
 			}
@@ -234,6 +236,8 @@ func parseVersionedBuild(googleapisDir, apiPath string) (*VersionedBuild, error)
 					vb.PathOverride, _ = strings.CutPrefix(dep, "ruby-cloud-path-override=")
 				case strings.HasPrefix(dep, "ruby-cloud-service-override="):
 					vb.ServiceOverride, _ = strings.CutPrefix(dep, "ruby-cloud-service-override=")
+				case strings.HasPrefix(dep, "ruby-cloud-yard-strict="):
+					vb.YardStrict, _ = strings.CutPrefix(dep, "ruby-cloud-yard-strict=")
 				}
 			}
 		}

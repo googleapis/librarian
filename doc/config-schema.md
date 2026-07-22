@@ -497,6 +497,7 @@ This document describes the schema for the librarian.yaml.
 | `ruby-cloud-extra-dependencies` | string | Contains extra runtime dependencies to the .gemspec file. |
 | `ruby-cloud-path-override` | string | Overrides file/directory paths under lib/ and proto_docs/. |
 | `ruby-cloud-service-override` | string | Overrides generated service class names when proto package service names don't match desired Ruby conventions. |
+| `ruby-cloud-yard-strict` | string | Enables or disables strict YARD syntax checks during generation. |
 
 ## RubyPackage Configuration
 
