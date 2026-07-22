@@ -206,7 +206,7 @@ func createBinWrapper(wrapperName, content, binDir string) error {
 	}
 	f, err := os.OpenFile(wrapperPath, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0755)
 	if err != nil {
-		if os.IsExist(err) {
+		if errors.Is(err, fs.ErrNotExist) {
 			_ = os.Remove(wrapperPath)
 			f, err = os.OpenFile(wrapperPath, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0755)
 			if err != nil {
