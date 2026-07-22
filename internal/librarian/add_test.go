@@ -591,6 +591,9 @@ func TestDeriveLibraryName(t *testing.T) {
 		{config.LanguageNodejs, "google/cloud/secretmanager/v1beta2", "google-cloud-secretmanager"},
 		{config.LanguageNodejs, "google/cloud/storage/v2alpha", "google-cloud-storage"},
 		{config.LanguageNodejs, "google/maps/addressvalidation/v1", "google-maps-addressvalidation"},
+		{config.LanguagePhp, "google/cloud/secretmanager/v1", "Secretmanager"},
+		{config.LanguagePhp, "google/cloud/security/privateca/v1", "SecurityPrivateca"},
+		{config.LanguagePhp, "google/pubsub/v1", "Pubsub"},
 	} {
 		t.Run(test.language+"/"+test.apiPath, func(t *testing.T) {
 			got := deriveLibraryName(test.language, test.apiPath)
