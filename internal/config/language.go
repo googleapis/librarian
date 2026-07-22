@@ -847,11 +847,28 @@ type RubyPackage struct {
 	WrapperOf []string `yaml:"wrapper_of,omitempty"`
 }
 
-// RubyAPI represents configuration for a single API within a Ruby package.
-type RubyAPI struct {
+// RubyCloudOpts contains the options passed to the `--ruby_cloud_opt` argument of GAPIC generator Ruby.
+// The library entries in the librarian.yaml hold the exact parameter names appearing in the option value.
+type RubyCloudOpts struct {
 	// EnvPrefix is the environment variable prefix.
-	EnvPrefix string `yaml:"env_prefix,omitempty"`
+	EnvPrefix string `yaml:"ruby-cloud-env-prefix,omitempty"`
 
 	// ExtraDependencies contains extra runtime dependencies to the .gemspec file.
-	ExtraDependencies string `yaml:"extra_dependencies,omitempty"`
+	ExtraDependencies string `yaml:"ruby-cloud-extra-dependencies,omitempty"`
+
+	// PathOverride overrides file/directory paths under lib/ and proto_docs/.
+	PathOverride string `yaml:"ruby-cloud-path-override,omitempty"`
+
+	// ServiceOverride overrides generated service class names when proto package service
+	// names don't match desired Ruby conventions.
+	ServiceOverride string `yaml:"ruby-cloud-service-override,omitempty"`
+
+	// YardStrict enables or disables strict YARD syntax checks during generation.
+	YardStrict string `yaml:"ruby-cloud-yard-strict,omitempty"`
+}
+
+// RubyAPI represents configuration for a single API within a Ruby package.
+type RubyAPI struct {
+	// RubyCloudOpts contains options passed to the Ruby Cloud GAPIC generator as the `--ruby_cloud_opt` option.
+	RubyCloudOpts *RubyCloudOpts `yaml:"ruby_cloud_opts,omitempty"`
 }
