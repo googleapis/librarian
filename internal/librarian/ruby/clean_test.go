@@ -249,13 +249,11 @@ func TestCleanSubdirectory(t *testing.T) {
 }
 
 func TestIsKept(t *testing.T) {
-	t.Parallel()
 	keepSet := map[string]bool{
 		"README.md":          true,
 		"snippets":           true,
 		"lib/custom/file.rb": true,
 	}
-
 	for _, test := range []struct {
 		name     string
 		relSlash string
@@ -288,7 +286,6 @@ func TestIsKept(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			t.Parallel()
 			got := isKept(test.relSlash, keepSet)
 			if got != test.want {
 				t.Errorf("isKept(%q) = %v, want %v", test.relSlash, got, test.want)
