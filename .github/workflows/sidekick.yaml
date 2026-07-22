@@ -67,7 +67,6 @@ jobs:
     needs: [test, integration]
     permissions:
       contents: read
-      # zizmor: ignore[excessive-permissions] - {Creating issues requires issues:write}
       issues: write
     if: ${{ always() && contains(needs.*.result, 'failure') && github.event_name == 'push' && github.ref == 'refs/heads/main' }}
     uses: ./.github/workflows/create-issue-on-failure.yaml
