@@ -89,7 +89,7 @@ func maybeBumpLibrary(ctx context.Context, cloudDeps []string, newVersions map[s
 		tagName := git.FormatTagName(defaults.TagFormat, lib.Name, lib.Version)
 		commit, err := git.GetCommitHash(ctx, command.Git, tagName)
 		if err != nil {
-			// If tag doesn't exist yet, we treat it as changed.
+			// If tag doesn't exist yet then it has not been released, so it has not changed.
 			libraryChanged = false
 		} else {
 			lastReleaseTagCommit = commit
