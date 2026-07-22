@@ -295,3 +295,189 @@ func TestParseVersionedBuild(t *testing.T) {
 		})
 	}
 }
+
+func TestMergeLibs(t *testing.T) {
+	for _, test := range []struct {
+		name         string
+		existingLibs []*config.Library
+		libs         []*config.Library
+		want         []*config.Library
+	}{
+		{
+			name: "preserve existing library configuration",
+			existingLibs: []*config.Library{
+				{
+					Name:    "google-cloud-secret_manager-v1",
+					Version: "1.2.0",
+					APIs: []*config.API{
+						{Path: "google/cloud/secretmanager/v1"},
+					},
+				},
+			},
+			libs: []*config.Library{
+				{
+					Name:    "google-cloud-secret_manager-v1",
+					Version: "0.1.0",
+					APIs: []*config.API{
+						{Path: "google/cloud/secretmanager/v1"},
+					},
+				},
+			},
+			want: []*config.Library{
+				{
+					Name:    "google-cloud-secret_manager-v1",
+					Version: "1.2.0",
+					APIs: []*config.API{
+						{Path: "google/cloud/secretmanager/v1"},
+					},
+				},
+			},
+		},
+		{
+			name: "append new discovered libraries",
+			existingLibs: []*config.Library{
+				{
+					Name:    "google-cloud-secret_manager-v1",
+					Version: "1.2.0",
+				},
+			},
+			libs: []*config.Library{
+				{
+					Name:    "google-cloud-secret_manager-v1",
+					Version: "0.1.0",
+				},
+				{
+					Name:    "google-cloud-compute-v1",
+					Version: "0.1.0",
+				},
+			},
+			want: []*config.Library{
+				{
+					Name:    "google-cloud-secret_manager-v1",
+					Version: "1.2.0",
+				},
+				{
+					Name:    "google-cloud-compute-v1",
+					Version: "0.1.0",
+				},
+			},
+		},
+		{
+			name: "nil existing libraries returns discovered libraries",
+			libs: []*config.Library{
+				{
+					Name:    "google-cloud-compute-v1",
+					Version: "0.1.0",
+				},
+			},
+			want: []*config.Library{
+				{
+					Name:    "google-cloud-compute-v1",
+					Version: "0.1.0",
+				},
+			},
+		},
+		{
+			name: "preserve existing libraries not in discovered list",
+			existingLibs: []*config.Library{
+				{
+					Name:    "google-cloud-secret_manager-v1",
+					Version: "1.2.0",
+				},
+				{
+					Name:    "google-cloud-recaptcha_enterprise-v1",
+					Version: "1.0.0",
+				},
+			},
+			libs: []*config.Library{
+				{
+					Name:    "google-cloud-secret_manager-v1",
+					Version: "0.1.0",
+				},
+			},
+			want: []*config.Library{
+				{
+					Name:    "google-cloud-secret_manager-v1",
+					Version: "1.2.0",
+				},
+				{
+					Name:    "google-cloud-recaptcha_enterprise-v1",
+					Version: "1.0.0",
+				},
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := mergeLibs(test.existingLibs, test.libs)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestParseExistingLibraries(t *testing.T) {
+	for _, test := range []struct {
+		name  string
+		setup func(t *testing.T, dir string)
+		want  []*config.Library
+	}{
+		{
+			name: "valid librarian.yaml with libraries",
+			setup: func(t *testing.T, dir string) {
+				cfg := &config.Config{
+					Libraries: []*config.Library{
+						{
+							Name:    "google-cloud-secret_manager-v1",
+							Version: "1.2.0",
+							APIs: []*config.API{
+								{Path: "google/cloud/secretmanager/v1"},
+							},
+						},
+					},
+				}
+				if err := yaml.Write(filepath.Join(dir, config.LibrarianYAML), cfg); err != nil {
+					t.Fatal(err)
+				}
+			},
+			want: []*config.Library{
+				{
+					Name:    "google-cloud-secret_manager-v1",
+					Version: "1.2.0",
+					APIs: []*config.API{
+						{Path: "google/cloud/secretmanager/v1"},
+					},
+				},
+			},
+		},
+		{
+			name:  "librarian.yaml does not exist",
+			setup: func(t *testing.T, dir string) {},
+			want:  nil,
+		},
+		{
+			name: "librarian.yaml without libraries",
+			setup: func(t *testing.T, dir string) {
+				cfg := &config.Config{
+					Language: config.LanguageRuby,
+				}
+				if err := yaml.Write(filepath.Join(dir, config.LibrarianYAML), cfg); err != nil {
+					t.Fatal(err)
+				}
+			},
+			want: nil,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			dir := t.TempDir()
+			test.setup(t, dir)
+			got, err := parseExistingLibraries(dir)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
