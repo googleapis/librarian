@@ -20,6 +20,7 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"slices"
 	"strings"
 	"testing"
 
@@ -196,69 +197,15 @@ func TestBump_NothingChanged(t *testing.T) {
 	testhelper.RequireCommand(t, "git")
 
 	t.Helper()
-	remoteDir := testhelper.SetupRepoWithChange(t, "release-2001-02-03")
-	if err := command.Run(t.Context(), command.Git, "-C", remoteDir, "config", "receive.denyCurrentBranch", "ignore"); err != nil {
-		t.Fatal(err)
+	repoVersions := map[string]string{
+		"a": "1.0.0",
+		"b": "1.0.0",
+		"c": "1.0.0",
 	}
-	testhelper.CloneRepository(t, remoteDir)
-
-	if err := os.MkdirAll("generated/a", 0755); err != nil {
-		t.Fatal(err)
+	deps := map[string][]string{
+		"b": {"a"},
 	}
-	if err := os.MkdirAll("generated/b", 0755); err != nil {
-		t.Fatal(err)
-	}
-
-	workspacePubspec := `name: pkg_workspace
-publish_to: none
-
-environment:
-  sdk: ^3.9.0
-
-workspace:
-  - generated/a
-  - generated/b
-`
-	originalPubspecA := `name: a
-version: 1.0.0
-environment:
-  sdk: ^3.9.0
-resolution: workspace
-`
-	originalPubspecB := `name: b
-version: 1.0.0
-environment:
-  sdk: ^3.9.0
-resolution: workspace
-dependencies:
-  a: ^1.0.0
-`
-
-	if err := os.WriteFile("pubspec.yaml", []byte(workspacePubspec), 0644); err != nil {
-		t.Fatal(err)
-	}
-
-	if err := os.WriteFile("generated/a/pubspec.yaml", []byte(originalPubspecA), 0644); err != nil {
-		t.Fatal(err)
-	}
-	if err := os.WriteFile("generated/b/pubspec.yaml", []byte(originalPubspecB), 0644); err != nil {
-		t.Fatal(err)
-	}
-
-	if err := os.WriteFile("generated/a/lib.dart", []byte("// library a"), 0644); err != nil {
-		t.Fatal(err)
-	}
-	if err := os.WriteFile("generated/b/lib.dart", []byte("// library b"), 0644); err != nil {
-		t.Fatal(err)
-	}
-
-	testhelper.RunGit(t, "add", ".")
-	testhelper.RunGit(t, "commit", "-m", "feat: added pubspec files", ".")
-	testhelper.RunGit(t, "push", config.RemoteUpstream, config.BranchMain)
-
-	// Tag the initial 1.0.0 release.
-	testhelper.RunGit(t, "tag", "a-v1.0.0")
-	testhelper.RunGit(t, "tag", "b-v1.0.0")
+	setupRepo(t, repoVersions, deps)
 
 	apiToolResponses := map[string]PackageVersion{
 		"a": {needed: "1.0.0", old: "1.0.0"},
@@ -287,11 +234,11 @@ dependencies:
 		t.Fatalf("Bump failed: %v", err)
 	}
 
-	if got, want := cfg.Libraries[0].Version, "1.0.0"; got != want {
-		t.Errorf("library a version = %q; want %q", got, want)
-	}
-	if got, want := cfg.Libraries[1].Version, "1.0.0"; got != want {
-		t.Errorf("library b version = %q; want %q", got, want)
+	if got, want := libraryVersions(cfg.Libraries), map[string]string{
+		"a": "1.0.0",
+		"b": "1.0.0",
+	}; !reflect.DeepEqual(got, want) {
+		t.Errorf("library versions = %v; want %v", got, want)
 	}
 
 	// Verify cfg.Default.Dart.Packages values:
@@ -337,69 +284,14 @@ func TestBump_APIChange(t *testing.T) {
 	testhelper.RequireCommand(t, "git")
 
 	t.Helper()
-	remoteDir := testhelper.SetupRepoWithChange(t, "release-2001-02-03")
-	if err := command.Run(t.Context(), command.Git, "-C", remoteDir, "config", "receive.denyCurrentBranch", "ignore"); err != nil {
-		t.Fatal(err)
+	repoVersions := map[string]string{
+		"a": "1.0.0",
+		"b": "1.0.0",
 	}
-	testhelper.CloneRepository(t, remoteDir)
-
-	if err := os.MkdirAll("generated/a", 0755); err != nil {
-		t.Fatal(err)
+	deps := map[string][]string{
+		"b": {"a"},
 	}
-	if err := os.MkdirAll("generated/b", 0755); err != nil {
-		t.Fatal(err)
-	}
-
-	workspacePubspec := `name: pkg_workspace
-publish_to: none
-
-environment:
-  sdk: ^3.9.0
-
-workspace:
-  - generated/a
-  - generated/b
-`
-	originalPubspecA := `name: a
-version: 1.0.0
-environment:
-  sdk: ^3.9.0
-resolution: workspace
-`
-	originalPubspecB := `name: b
-version: 1.0.0
-environment:
-  sdk: ^3.9.0
-resolution: workspace
-dependencies:
-  a: ^1.0.0
-`
-
-	if err := os.WriteFile("pubspec.yaml", []byte(workspacePubspec), 0644); err != nil {
-		t.Fatal(err)
-	}
-
-	if err := os.WriteFile("generated/a/pubspec.yaml", []byte(originalPubspecA), 0644); err != nil {
-		t.Fatal(err)
-	}
-	if err := os.WriteFile("generated/b/pubspec.yaml", []byte(originalPubspecB), 0644); err != nil {
-		t.Fatal(err)
-	}
-
-	if err := os.WriteFile("generated/a/lib.dart", []byte("// library a"), 0644); err != nil {
-		t.Fatal(err)
-	}
-	if err := os.WriteFile("generated/b/lib.dart", []byte("// library b"), 0644); err != nil {
-		t.Fatal(err)
-	}
-
-	testhelper.RunGit(t, "add", ".")
-	testhelper.RunGit(t, "commit", "-m", "feat: added pubspec files", ".")
-	testhelper.RunGit(t, "push", config.RemoteUpstream, config.BranchMain)
-
-	// Tag the initial 1.0.0 release.
-	testhelper.RunGit(t, "tag", "a-v1.0.0")
-	testhelper.RunGit(t, "tag", "b-v1.0.0")
+	setupRepo(t, repoVersions, deps)
 
 	// Now make a commit with changes to package a.
 	if err := os.WriteFile("generated/a/lib.dart", []byte("const a = 5"), 0644); err != nil {
@@ -440,11 +332,11 @@ dependencies:
 	// Verify versions in config:
 	// a should be bumped to 1.1.0
 	// b should be bumped to 1.0.1 (patch bump because its dependency "a" was updated)
-	if got, want := cfg.Libraries[0].Version, "1.1.0"; got != want {
-		t.Errorf("library a version = %q; want %q", got, want)
-	}
-	if got, want := cfg.Libraries[1].Version, "1.0.1"; got != want {
-		t.Errorf("library b version = %q; want %q", got, want)
+	if got, want := libraryVersions(cfg.Libraries), map[string]string{
+		"a": "1.1.0",
+		"b": "1.0.1",
+	}; !reflect.DeepEqual(got, want) {
+		t.Errorf("library versions = %v; want %v", got, want)
 	}
 
 	// Verify cfg.Default.Dart.Packages values:
@@ -505,61 +397,77 @@ func setupRepo(t *testing.T, repoVersions map[string]string, deps map[string][]s
 	}
 	testhelper.CloneRepository(t, remoteDir)
 
-	workspacePubspec := `name: pkg_workspace
-publish_to: none
+	var workspaceLines []string
+	workspaceLines = append(workspaceLines, "name: pkg_workspace", "publish_to: none", "", "environment:", "  sdk: ^3.9.0", "", "workspace:")
 
-environment:
-  sdk: ^3.9.0
+	var pkgNames []string
+	for name := range repoVersions {
+		pkgNames = append(pkgNames, name)
+	}
+	slices.Sort(pkgNames)
+	for _, name := range pkgNames {
+		workspaceLines = append(workspaceLines, fmt.Sprintf("  - generated/%s", name))
+	}
+	workspacePubspec := strings.Join(workspaceLines, "\n") + "\n"
 
-workspace:
-  - generated/a
-  - generated/b
-  - generated/c
-`
 	if err := os.WriteFile("pubspec.yaml", []byte(workspacePubspec), 0644); err != nil {
 		t.Fatal(err)
 	}
 
-	for name, version := range repoVersions {
+	for _, name := range pkgNames {
+		version := repoVersions[name]
 		if err := os.MkdirAll("generated/"+name, 0755); err != nil {
 			t.Fatal(err)
 		}
 
-		dependencies := "dependencies:\n"
-		for _, depName := range deps[name] {
-			dependencies += fmt.Sprintf("  %s: ^%s\n", depName, repoVersions[depName])
+		var dependencies string
+		if len(deps[name]) > 0 {
+			dependencies = "\ndependencies:\n"
+			for _, depName := range deps[name] {
+				dependencies += fmt.Sprintf("  %s: ^%s\n", depName, repoVersions[depName])
+			}
 		}
 
 		pubspec := fmt.Sprintf(`name: %s
 version: %s
 environment:
   sdk: ^3.9.0
-resolution: workspace
-dependencies:
-%s)
-`, name, version, dependencies)
+resolution: workspace%s`, name, version, dependencies)
+		pubspec = strings.TrimSuffix(pubspec, "\n") + "\n"
 		if err := os.WriteFile("generated/"+name+"/pubspec.yaml", []byte(pubspec), 0644); err != nil {
 			t.Fatal(err)
 		}
 
+		if err := os.WriteFile("generated/"+name+"/lib.dart", []byte("// library "+name), 0644); err != nil {
+			t.Fatal(err)
+		}
 	}
 
 	testhelper.RunGit(t, "add", ".")
 	testhelper.RunGit(t, "commit", "-m", "feat: added pubspec files", ".")
 	testhelper.RunGit(t, "push", config.RemoteUpstream, config.BranchMain)
 
-	// Tag the initial 1.0.0 release.
-	// XXX use a loop
-	testhelper.RunGit(t, "tag", "a-v1.0.0")
-	testhelper.RunGit(t, "tag", "b-v1.0.0")
-	testhelper.RunGit(t, "tag", "c-v1.0.0")
-
+	// Tag the initial releases
+	for name, version := range repoVersions {
+		testhelper.RunGit(t, "tag", fmt.Sprintf("%s-v%s", name, version))
+	}
 }
 
 func TestBump_FileChanged_APIUnchanged(t *testing.T) {
 	testhelper.RequireCommand(t, "git")
+	testhelper.RequireCommand(t, "dart")
 
 	t.Helper()
+
+	repoVersions := map[string]string{
+		"a": "1.0.0",
+		"b": "1.0.0",
+		"c": "1.0.0",
+	}
+	deps := map[string][]string{
+		"b": {"a"},
+	}
+	setupRepo(t, repoVersions, deps)
 
 	// Now make a commit with changes to package a.
 	if err := os.WriteFile("generated/a/lib.dart", []byte("// library a: new fix"), 0644); err != nil {

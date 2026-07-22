@@ -83,7 +83,6 @@ func maybeBumpLibrary(ctx context.Context, cloudDeps []string, newVersions map[s
 
 	packageDir := libraryOutput(lib, defaults)
 
-	depsChanged := false
 	libraryChanged := false
 	var lastReleaseTagCommit string
 	if defaults != nil && defaults.TagFormat != "" {
@@ -105,9 +104,10 @@ func maybeBumpLibrary(ctx context.Context, cloudDeps []string, newVersions map[s
 		libraryChanged = true
 	}
 
+	depsChanged := false
 	newDeps := make(map[string]string)
 	for _, dep := range cloudDeps {
-		if v, ok := newVersions[dep]; ok && v != "" {
+		if v, ok := newVersions[dep]; ok {
 			depsChanged = true
 			newDeps["package:"+dep] = "^" + v
 		}
