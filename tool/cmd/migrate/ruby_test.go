@@ -295,3 +295,94 @@ func TestParseVersionedBuild(t *testing.T) {
 		})
 	}
 }
+
+func TestMergeLibs(t *testing.T) {
+	for _, test := range []struct {
+		name         string
+		existingLibs []*config.Library
+		libs         []*config.Library
+		want         []*config.Library
+	}{
+		{
+			name: "preserve existing library configuration",
+			existingLibs: []*config.Library{
+				{
+					Name:    "google-cloud-secret_manager-v1",
+					Version: "1.2.0",
+					APIs: []*config.API{
+						{Path: "google/cloud/secretmanager/v1"},
+					},
+				},
+			},
+			libs: []*config.Library{
+				{
+					Name:    "google-cloud-secret_manager-v1",
+					Version: "0.1.0",
+					APIs: []*config.API{
+						{Path: "google/cloud/secretmanager/v1"},
+					},
+				},
+			},
+			want: []*config.Library{
+				{
+					Name:    "google-cloud-secret_manager-v1",
+					Version: "1.2.0",
+					APIs: []*config.API{
+						{Path: "google/cloud/secretmanager/v1"},
+					},
+				},
+			},
+		},
+		{
+			name: "append new discovered libraries",
+			existingLibs: []*config.Library{
+				{
+					Name:    "google-cloud-secret_manager-v1",
+					Version: "1.2.0",
+				},
+			},
+			libs: []*config.Library{
+				{
+					Name:    "google-cloud-secret_manager-v1",
+					Version: "0.1.0",
+				},
+				{
+					Name:    "google-cloud-compute-v1",
+					Version: "0.1.0",
+				},
+			},
+			want: []*config.Library{
+				{
+					Name:    "google-cloud-secret_manager-v1",
+					Version: "1.2.0",
+				},
+				{
+					Name:    "google-cloud-compute-v1",
+					Version: "0.1.0",
+				},
+			},
+		},
+		{
+			name: "nil existing libraries returns discovered libraries",
+			libs: []*config.Library{
+				{
+					Name:    "google-cloud-compute-v1",
+					Version: "0.1.0",
+				},
+			},
+			want: []*config.Library{
+				{
+					Name:    "google-cloud-compute-v1",
+					Version: "0.1.0",
+				},
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := mergeLibs(test.existingLibs, test.libs)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}

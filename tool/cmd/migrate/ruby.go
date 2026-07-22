@@ -103,13 +103,13 @@ func runRubyMigration(ctx context.Context, repoPath string) error {
 func parseExistingLibraries(repoPath string) ([]*config.Library, error) {
 	absConfigPath, err := filepath.Abs(filepath.Join(repoPath, config.LibrarianYAML))
 	if err != nil {
-		if errors.Is(err, fs.ErrNotExist) {
-			return nil, nil
-		}
 		return nil, fmt.Errorf("getting absolute path to %s: %w", config.LibrarianYAML, err)
 	}
 	cfg, err := yaml.Read[config.Config](absConfigPath)
 	if err != nil {
+		if errors.Is(err, fs.ErrNotExist) {
+			return nil, nil
+		}
 		return nil, err
 	}
 	return cfg.Libraries, nil
