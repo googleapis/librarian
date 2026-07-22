@@ -847,8 +847,8 @@ type RubyPackage struct {
 	WrapperOf []string `yaml:"wrapper_of,omitempty"`
 }
 
-// RubyCloudOpts contains options passed to the Ruby Cloud GAPIC generator.
-// The library entries in the librarian.yaml holds the exact parameter names passed to GAPIC Generator Ruby.
+// RubyCloudOpts contains the options passed to the `--ruby_cloud_opt` argument of GAPIC generator Ruby.
+// The library entries in the librarian.yaml holds the exact parameter names appearing in the option value.
 type RubyCloudOpts struct {
 	// EnvPrefix is the environment variable prefix.
 	EnvPrefix string `yaml:"ruby-cloud-env-prefix,omitempty"`
