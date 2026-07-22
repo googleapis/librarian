@@ -1,0 +1,34 @@
+{
+  "configVersion": 2,
+  "packages": [
+    {
+      "name": "pkg_workspace",
+      "rootUri": "../",
+      "packageUri": "lib/",
+      "languageVersion": "3.9"
+    },
+    {
+      "name": "a",
+      "rootUri": "../generated/a",
+      "packageUri": "lib/",
+      "languageVersion": "3.9"
+    },
+    {
+      "name": "b",
+      "rootUri": "../generated/b",
+      "packageUri": "lib/",
+      "languageVersion": "3.9"
+    },
+    {
+      "name": "c",
+      "rootUri": "../generated/c",
+      "packageUri": "lib/",
+      "languageVersion": "3.9"
+    }
+  ],
+  "generator": "pub",
+  "generatorVersion": "3.10.3",
+  "flutterRoot": "file:///Users/bquinlan/flutter",
+  "flutterVersion": "3.38.4",
+  "pubCache": "file:///Users/bquinlan/.pub-cache"
+}

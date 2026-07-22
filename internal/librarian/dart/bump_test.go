@@ -162,12 +162,10 @@ func TestBump_NothingChanged(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	repoVersions := map[string]string{
-		"a": "1.0.0",
-		"b": "1.0.0",
-		"c": "1.0.0",
-	}
-	setupRepoFromDir(t, inputDir, repoVersions)
+	setupRepoFromDir(t, inputDir)
+	testhelper.RunGit(t, "tag", "a-v1.0.0")
+	testhelper.RunGit(t, "tag", "b-v1.0.0")
+	testhelper.RunGit(t, "tag", "c-v1.0.0")
 
 	apiToolResponses := map[string]packageVersion{
 		"a": {needed: "1.0.0", old: "1.0.0"},
@@ -206,12 +204,10 @@ func TestBump_APIChange(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	repoVersions := map[string]string{
-		"a": "1.0.0",
-		"b": "1.0.0",
-		"c": "1.0.0",
-	}
-	setupRepoFromDir(t, inputDir, repoVersions)
+	setupRepoFromDir(t, inputDir)
+	testhelper.RunGit(t, "tag", "a-v1.0.0")
+	testhelper.RunGit(t, "tag", "b-v1.0.0")
+	testhelper.RunGit(t, "tag", "c-v1.0.0")
 
 	// Now make a commit with changes to package a.
 	if err := os.WriteFile("generated/a/lib.dart", []byte("const a = 5;"), 0644); err != nil {
@@ -259,12 +255,10 @@ func TestBump_FileChanged_APIUnchanged(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	repoVersions := map[string]string{
-		"a": "1.0.0",
-		"b": "1.0.0",
-		"c": "1.0.0",
-	}
-	setupRepoFromDir(t, inputDir, repoVersions)
+	setupRepoFromDir(t, inputDir)
+	testhelper.RunGit(t, "tag", "a-v1.0.0")
+	testhelper.RunGit(t, "tag", "b-v1.0.0")
+	testhelper.RunGit(t, "tag", "c-v1.0.0")
 
 	// Now make a commit with changes to package a.
 	if err := os.WriteFile("generated/a/lib.dart", []byte("// library a: new fix"), 0644); err != nil {
@@ -299,7 +293,55 @@ func TestBump_FileChanged_APIUnchanged(t *testing.T) {
 	compareDirWithGolden(t, goldenDir)
 }
 
-func setupRepoFromDir(t *testing.T, sourceDir string, repoVersions map[string]string) {
+func TestBump_UnpublishedLibrary(t *testing.T) {
+	testhelper.RequireCommand(t, "git")
+	testhelper.RequireCommand(t, "dart")
+
+	inputDir, err := filepath.Abs("testdata/bump/unpublished_c/input")
+	if err != nil {
+		t.Fatal(err)
+	}
+	goldenDir, err := filepath.Abs("testdata/bump/unpublished_c/golden_output")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	setupRepoFromDir(t, inputDir)
+	testhelper.RunGit(t, "tag", "a-v1.0.0")
+	testhelper.RunGit(t, "tag", "b-v1.0.0")
+
+	// Now make a commit with changes to package c.
+	if err := os.WriteFile("generated/c/lib.dart", []byte("// library c: new changes"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	testhelper.RunGit(t, "add", ".")
+	testhelper.RunGit(t, "commit", "-m", "feat: added support for c", ".")
+
+	// responses map only has "a" and "b" but NOT "c"!
+	apiToolResponses := map[string]packageVersion{
+		"a": {needed: "1.0.0", old: "1.0.0"},
+		"b": {needed: "1.0.0", old: "1.0.0"},
+	}
+	setupFakeApitool(t, apiToolResponses)
+
+	cfg, err := yaml.Read[config.Config]("librarian.yaml")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	err = Bump(t.Context(), cfg, true, "", "")
+	if err != nil {
+		t.Fatalf("Bump failed: %v", err)
+	}
+
+	if err := yaml.Write("librarian.yaml", cfg); err != nil {
+		t.Fatal(err)
+	}
+
+	compareDirWithGolden(t, goldenDir)
+}
+
+func setupRepoFromDir(t *testing.T, sourceDir string) {
 	t.Helper()
 
 	absSourceDir, err := filepath.Abs(sourceDir)
@@ -318,10 +360,6 @@ func setupRepoFromDir(t *testing.T, sourceDir string, repoVersions map[string]st
 	testhelper.RunGit(t, "add", ".")
 	testhelper.RunGit(t, "commit", "-m", "feat: added files from template", ".")
 	testhelper.RunGit(t, "push", config.RemoteUpstream, config.BranchMain)
-
-	for name, version := range repoVersions {
-		testhelper.RunGit(t, "tag", fmt.Sprintf("%s-v%s", name, version))
-	}
 }
 
 func copyDir(t *testing.T, src, dst string) {
@@ -427,7 +465,13 @@ if [ -n "$report_file" ]; then
 		fmt.Fprintf(&script, "    echo '{\"version\": {\"needed\": %q, \"old\": %q}}' > \"$report_file\"\n", res.needed, res.old)
 	}
 	if !first {
+		script.WriteString("  else\n")
+		script.WriteString("    echo \"Package not available\" >&2\n")
+		script.WriteString("    exit 1\n")
 		script.WriteString("  fi\n")
+	} else {
+		script.WriteString("  echo \"Package not available\" >&2\n")
+		script.WriteString("  exit 1\n")
 	}
 	script.WriteString("fi\n")
 

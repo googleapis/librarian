@@ -1,0 +1,10 @@
+name: pkg_workspace
+publish_to: none
+
+environment:
+  sdk: ^3.9.0
+
+workspace:
+  - generated/a
+  - generated/b
+  - generated/c

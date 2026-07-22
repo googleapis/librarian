@@ -1,0 +1,37 @@
+{
+  "roots": [
+    "a",
+    "b",
+    "c",
+    "pkg_workspace"
+  ],
+  "packages": [
+    {
+      "name": "pkg_workspace",
+      "version": "0.0.0",
+      "dependencies": [],
+      "devDependencies": []
+    },
+    {
+      "name": "a",
+      "version": "1.0.0",
+      "dependencies": [],
+      "devDependencies": []
+    },
+    {
+      "name": "b",
+      "version": "1.0.0",
+      "dependencies": [
+        "a"
+      ],
+      "devDependencies": []
+    },
+    {
+      "name": "c",
+      "version": "1.0.0",
+      "dependencies": [],
+      "devDependencies": []
+    }
+  ],
+  "configVersion": 1
+}

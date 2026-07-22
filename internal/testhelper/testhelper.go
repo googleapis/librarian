@@ -17,10 +17,12 @@
 package testhelper
 
 import (
+	"bytes"
 	"fmt"
 	"os"
 	"os/exec"
 	"path"
+	"strings"
 	"testing"
 
 	"github.com/googleapis/librarian/internal/command"
@@ -37,6 +39,16 @@ func RequireCommand(t *testing.T, cmd string) {
 	t.Helper()
 	if _, err := exec.LookPath(cmd); err != nil {
 		t.Skipf("skipping test because %s is not installed", cmd)
+	}
+	if cmd == "google-java-format" || cmd == "swift-format" {
+		c := exec.CommandContext(t.Context(), cmd, "--version")
+		var out bytes.Buffer
+		c.Stdout = &out
+		c.Stderr = &out
+		_ = c.Run()
+		if strings.Contains(out.String(), "gclient sync") || strings.Contains(out.String(), "Could not find checkout") {
+			t.Skipf("skipping test because %s is a broken depot_tools wrapper", cmd)
+		}
 	}
 }
 
