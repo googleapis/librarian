@@ -96,8 +96,10 @@ func TestFindRubyLibraries(t *testing.T) {
 				{
 					Path: "google/cloud/compute/v1",
 					Ruby: &config.RubyAPI{
-						EnvPrefix:         "COMPUTE",
-						ExtraDependencies: "google-cloud-common=~> 1.0",
+						RubyCloudOpts: &config.RubyCloudOpts{
+							EnvPrefix:         "COMPUTE",
+							ExtraDependencies: "google-cloud-common=~> 1.0",
+						},
 					},
 				},
 			},
@@ -116,7 +118,9 @@ func TestFindRubyLibraries(t *testing.T) {
 				{
 					Path: "google/cloud/secretmanager/v1",
 					Ruby: &config.RubyAPI{
-						EnvPrefix: "SECRET_MANAGER",
+						RubyCloudOpts: &config.RubyCloudOpts{
+							EnvPrefix: "SECRET_MANAGER",
+						},
 					},
 				},
 			},

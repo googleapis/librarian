@@ -42,6 +42,13 @@ If you are using Maven with [BOM][libraries-bom], add this to your pom.xml file:
     <groupId>{{ .GroupID }}</groupId>
     <artifactId>{{ .ArtifactID }}</artifactId>
   </dependency>
+  {{- if eq .ArtifactID "google-cloud-storage" }}
+  {{- /* java-storage contains both storage and storage-control, which must both be listed in the README. */}}
+  <dependency>
+    <groupId>{{ .GroupID }}</groupId>
+    <artifactId>google-cloud-storage-control</artifactId>
+  </dependency>
+  {{- end }}
 </dependencies>
 ```
 
@@ -55,6 +62,13 @@ If you are using Maven without the BOM, add this to your dependencies:
   <artifactId>{{ .ArtifactID }}</artifactId>
   <version>{{ .Version }}</version>
 </dependency>
+{{- if eq .ArtifactID "google-cloud-storage" }}
+<dependency>
+  <groupId>{{ .GroupID }}</groupId>
+  <artifactId>google-cloud-storage-control</artifactId>
+  <version>{{ .Version }}</version>
+</dependency>
+{{- end }}
 ```
 
 {{ if or (eq .GroupID "com.google.cloud") (eq .GroupID "com.google.analytics") (eq .GroupID "com.google.area120") -}}
