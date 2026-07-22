@@ -538,13 +538,13 @@ func TestMergeConfig(t *testing.T) {
 			initialCfg: &config.Config{
 				Language: config.LanguageRuby,
 				Tools: &config.Tools{
-						Gem: []*config.GemTool{
-							{
-								Name:    "grpc",
-								Version: "0.49.0",
-							},
+					Gem: []*config.GemTool{
+						{
+							Name:    "grpc",
+							Version: "0.49.0",
 						},
 					},
+				},
 			},
 			setup: func(t *testing.T, dir string) {
 				cfg := &config.Config{
@@ -576,13 +576,13 @@ func TestMergeConfig(t *testing.T) {
 					},
 				},
 				Tools: &config.Tools{
-						Gem: []*config.GemTool{
-							{
-								Name:    "grpc-tools",
-								Version: "1.2.3",
-							},
+					Gem: []*config.GemTool{
+						{
+							Name:    "grpc-tools",
+							Version: "1.2.3",
 						},
 					},
+				},
 			},
 		},
 		{
