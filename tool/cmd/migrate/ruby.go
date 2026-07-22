@@ -47,9 +47,10 @@ type owlbotSrc struct {
 
 // VersionedBuild represents build configuration parsed from BUILD.bazel for a Ruby API version.
 type VersionedBuild struct {
-	EnvPrefix    string
-	ExtraDeps    string
-	PathOverride string
+	EnvPrefix       string
+	ExtraDeps       string
+	PathOverride    string
+	ServiceOverride string
 }
 
 func runRubyMigration(ctx context.Context, repoPath string) error {
@@ -132,12 +133,13 @@ func findRubyLibraries(googleapisPath, repoPath string) ([]*config.Library, erro
 			if err != nil {
 				return nil, err
 			}
-			if vb != nil && (vb.EnvPrefix != "" || vb.ExtraDeps != "") {
+			if vb != nil {
 				lib.APIs[0].Ruby = &config.RubyAPI{
 					RubyCloudOpts: &config.RubyCloudOpts{
 						EnvPrefix:         vb.EnvPrefix,
 						ExtraDependencies: vb.ExtraDeps,
 						PathOverride:      vb.PathOverride,
+						ServiceOverride:   vb.ServiceOverride,
 					},
 				}
 			}
@@ -230,6 +232,8 @@ func parseVersionedBuild(googleapisDir, apiPath string) (*VersionedBuild, error)
 					vb.ExtraDeps, _ = strings.CutPrefix(dep, "ruby-cloud-extra-dependencies=")
 				case strings.HasPrefix(dep, "ruby-cloud-path-override="):
 					vb.PathOverride, _ = strings.CutPrefix(dep, "ruby-cloud-path-override=")
+				case strings.HasPrefix(dep, "ruby-cloud-service-override="):
+					vb.ServiceOverride, _ = strings.CutPrefix(dep, "ruby-cloud-service-override=")
 				}
 			}
 		}

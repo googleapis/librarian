@@ -269,6 +269,14 @@ func TestParseVersionedBuild(t *testing.T) {
 			},
 		},
 		{
+			name:          "BUILD.bazel with service override",
+			googleapisDir: "testdata/googleapis",
+			apiPath:       "google/cloud/alloydb/v1",
+			want: &VersionedBuild{
+				ServiceOverride: "AlloyDBCSQLAdmin=AlloyDBCloudSQLAdmin",
+			},
+		},
+		{
 			name:          "nonexistent BUILD.bazel returns nil",
 			googleapisDir: "testdata/googleapis",
 			apiPath:       "google/cloud/nonexistent/v1",
