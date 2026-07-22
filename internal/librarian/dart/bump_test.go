@@ -48,7 +48,7 @@ func TestUpdateChangelog_New(t *testing.T) {
 
 ## 1.2.3
 
-- chore: update cloud dependencies
+- initial release
 
 `
 	if got != want {
@@ -84,7 +84,7 @@ func TestUpdateChangelog_Existing(t *testing.T) {
 
 ## 1.2.3
 
-- chore: update cloud dependencies
+- initial release
 
 ## 1.2.2
 

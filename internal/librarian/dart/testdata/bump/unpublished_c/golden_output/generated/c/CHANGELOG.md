@@ -1,6 +1,5 @@
 # Changelog
 
-## 1.0.1
+## 1.0.0
 
-- feat: added support for c
-- feat: added files from template
+- initial release
