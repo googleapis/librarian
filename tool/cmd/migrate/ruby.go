@@ -81,11 +81,15 @@ func runRubyMigration(ctx context.Context, repoPath string) error {
 			},
 		},
 	}
+	existingLibs, err := parseExistingLibraries(repoPath)
+	if err != nil {
+		return err
+	}
 	libs, err := findRubyLibraries(src.Dir, repoPath)
 	if err != nil {
 		return err
 	}
-	cfg.Libraries = libs
+	cfg.Libraries = mergeLibs(existingLibs, libs)
 	// The directory name in Googleapis is present for migration code to look
 	// up API details. It shouldn't be persisted.
 	cfg.Sources.Googleapis.Dir = ""
@@ -94,6 +98,21 @@ func runRubyMigration(ctx context.Context, repoPath string) error {
 	}
 	log.Printf("Successfully migrated Ruby libraries configuration")
 	return nil
+}
+
+func parseExistingLibraries(repoPath string) ([]*config.Library, error) {
+	absConfigPath, err := filepath.Abs(filepath.Join(repoPath, config.LibrarianYAML))
+	if err != nil {
+		if errors.Is(err, fs.ErrNotExist) {
+			return nil, nil
+		}
+		return nil, fmt.Errorf("getting absolute path to %s: %w", config.LibrarianYAML, err)
+	}
+	cfg, err := yaml.Read[config.Config](absConfigPath)
+	if err != nil {
+		return nil, err
+	}
+	return cfg.Libraries, nil
 }
 
 func findRubyLibraries(googleapisPath, repoPath string) ([]*config.Library, error) {
@@ -243,4 +262,28 @@ func parseVersionedBuild(googleapisDir, apiPath string) (*VersionedBuild, error)
 		}
 	}
 	return vb, nil
+}
+
+// mergeLibs merges existing libraries with discovered libraries. Existing libraries' configurations
+// are preserved and discovered libraries are appended to the result.
+func mergeLibs(existingLibs []*config.Library, libs []*config.Library) []*config.Library {
+	existingMap := toMap(existingLibs)
+	var res []*config.Library
+	for _, lib := range libs {
+		if existing, ok := existingMap[lib.Name]; ok {
+			// Do not modify existing lib settings.
+			res = append(res, existing)
+			continue
+		}
+		res = append(res, lib)
+	}
+	return res
+}
+
+func toMap(libs []*config.Library) map[string]*config.Library {
+	libraryMap := make(map[string]*config.Library)
+	for _, lib := range libs {
+		libraryMap[lib.Name] = lib
+	}
+	return libraryMap
 }
