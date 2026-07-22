@@ -83,19 +83,20 @@ func Install(ctx context.Context, tools *config.Tools) error {
 		if err := command.RunInDir(ctx, dir, "composer", args...); err != nil {
 			return fmt.Errorf("failed to run composer install: %w", err)
 		}
+
+		var wrapperName, wrapperContent string
 		if isGenerator {
 			destPath := filepath.Join(dir, "src", "Main.php")
-			wrapperName := filepath.Base(tool.Repo)
-			wrapperContent := fmt.Sprintf("#!/bin/bash\nexec %q -d display_errors=stderr -d memory_limit=1024M %q --side_loaded_root_dir \"$GOOGLEAPIS_DIR\" \"$@\"\n", phpPath, destPath)
-			if err := createBinWrapper(wrapperName, wrapperContent, bin); err != nil {
-				return err
-			}
+			wrapperName = filepath.Base(tool.Repo)
+			wrapperContent = fmt.Sprintf("#!/bin/bash\nexec %q -d display_errors=stderr -d memory_limit=1024M %q --side_loaded_root_dir \"$GOOGLEAPIS_DIR\" \"$@\"\n", phpPath, destPath)
 		} else {
 			destPath := filepath.Join(dir, "vendor", "bin", tool.Name)
-			wrapperContent := fmt.Sprintf("#!/bin/sh\nexec %q \"$@\"\n", destPath)
-			if err := createBinWrapper(tool.Name, wrapperContent, bin); err != nil {
-				return err
-			}
+			wrapperName = tool.Name
+			wrapperContent = fmt.Sprintf("#!/bin/sh\nexec %q \"$@\"\n", destPath)
+		}
+
+		if err := createBinWrapper(wrapperName, wrapperContent, bin); err != nil {
+			return err
 		}
 	}
 	// The PHP client library generation process relies on Python-based
@@ -197,6 +198,7 @@ func generatorDir(ctx context.Context) (string, error) {
 	return fetch.Repo(ctx, "github.com/googleapis/gapic-generator-php", generatorVersion, generatorSHA256)
 }
 
+// createBinWrapper creates a shell wrapper script in the bin directory that forwards executions to the tool.
 func createBinWrapper(wrapperName, content, binDir string) error {
 	wrapperPath := filepath.Join(binDir, wrapperName)
 	if err := os.MkdirAll(filepath.Dir(wrapperPath), 0755); err != nil {
