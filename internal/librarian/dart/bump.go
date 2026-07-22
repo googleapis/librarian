@@ -171,15 +171,22 @@ func getCommitsSince(ctx context.Context, lastReleaseTagCommit, packageDir strin
 }
 
 func updateChangelog(ctx context.Context, packageDir, version, lastReleaseTagCommit string, depsChanged bool) error {
-	var changes []string
-	if lastReleaseTagCommit != "" {
-		var err error
-		changes, err = getCommitsSince(ctx, lastReleaseTagCommit, packageDir)
-		if err != nil {
-			return err
-		}
+	changelogPath := filepath.Join(packageDir, "CHANGELOG.md")
+
+	if lastReleaseTagCommit == "" {
+		return os.WriteFile(changelogPath, fmt.Appendf(nil, `# Changelog
+
+## %s
+
+- initial release
+
+`, version), 0644)
 	}
 
+	changes, err := getCommitsSince(ctx, lastReleaseTagCommit, packageDir)
+	if err != nil {
+		return err
+	}
 	if depsChanged {
 		changes = append(changes, "chore: update cloud dependencies")
 	}
@@ -188,7 +195,6 @@ func updateChangelog(ctx context.Context, packageDir, version, lastReleaseTagCom
 		return fmt.Errorf("updating changelog for unchanged package: %s", packageDir)
 	}
 
-	changelogPath := filepath.Join(packageDir, "CHANGELOG.md")
 	var entry []string
 	entry = append(entry, fmt.Sprintf("## %s", version))
 	entry = append(entry, "")
@@ -200,11 +206,7 @@ func updateChangelog(ctx context.Context, packageDir, version, lastReleaseTagCom
 	content, err := os.ReadFile(changelogPath)
 	newTopOfFile := "# Changelog\n\n" + entryStr
 	if err != nil {
-		if !os.IsNotExist(err) {
-			return err
-		}
-		// File does not exist, create new
-		return os.WriteFile(changelogPath, []byte(newTopOfFile), 0644)
+		return err
 	}
 
 	rest := string(content)

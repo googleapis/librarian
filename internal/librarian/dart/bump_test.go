@@ -149,6 +149,47 @@ func TestUpdateChangelog_WithCommits(t *testing.T) {
 	}
 }
 
+func TestUpdateChangelog_UpdatedDeps(t *testing.T) {
+	tempDir := t.TempDir()
+
+	testhelper.ContinueInNewGitRepository(t, tempDir)
+	t.Chdir(tempDir)
+
+	if err := os.WriteFile("file.txt", []byte("init"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	testhelper.RunGit(t, "add", ".")
+	testhelper.RunGit(t, "commit", "-m", "Initial release.")
+
+	tagCommit, err := git.GetCommitHash(context.Background(), command.Git, "HEAD")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	err = updateChangelog(context.Background(), tempDir, "1.2.3", tagCommit, true)
+	if err != nil {
+		t.Fatalf("updateChangelog failed: %v", err)
+	}
+
+	changelogPath := filepath.Join(tempDir, "CHANGELOG.md")
+	content, err := os.ReadFile(changelogPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	got := string(content)
+	want := `# Changelog
+
+## 1.2.3
+
+- chore: update cloud dependencies
+
+`
+	if got != want {
+		t.Errorf("CHANGELOG.md content mismatch:\ngot:\n%s\nwant:\n%s", got, want)
+	}
+}
+
 func TestBump_NothingChanged(t *testing.T) {
 	testhelper.RequireCommand(t, "dart")
 	testhelper.RequireCommand(t, "git")
