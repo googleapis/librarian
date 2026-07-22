@@ -855,6 +855,9 @@ type RubyCloudOpts struct {
 
 	// ExtraDependencies contains extra runtime dependencies to the .gemspec file.
 	ExtraDependencies string `yaml:"ruby-cloud-extra-dependencies,omitempty"`
+
+	// PathOverride overrides file/directory paths under lib/ and proto_docs/.
+	PathOverride string `yaml:"ruby-cloud-path-override,omitempty"`
 }
 
 // RubyAPI represents configuration for a single API within a Ruby package.
