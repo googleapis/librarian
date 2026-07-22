@@ -211,8 +211,7 @@ func TestCreateBinWrapper(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			binDir := t.TempDir()
 			destPath := "/path/to/dest"
-			wrapperContent := fmt.Sprintf("#!/bin/sh\nexec %q \"$@\"\n", destPath)
-			if err := createBinWrapper(test.wrapperName, wrapperContent, binDir); err != nil {
+			if err := createBinWrapper(test.wrapperName, destPath, binDir); err != nil {
 				t.Fatal(err)
 			}
 			wrapperPath := filepath.Join(binDir, test.wrapperName)
@@ -220,7 +219,7 @@ func TestCreateBinWrapper(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			want := wrapperContent
+			want := fmt.Sprintf("#!/bin/sh\nexec %q \"$@\"\n", destPath)
 			if diff := cmp.Diff(want, string(b)); diff != "" {
 				t.Errorf("wrapper content mismatch (-want +got):\n%s", diff)
 			}
