@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.29.1](https://github.com/googleapis/librarian/compare/v0.29.0...v0.29.1) (2026-07-22)
+
+
+### Bug Fixes
+
+* **internal/librarian/python:** gapic-generator 1.37.1 ([#6966](https://github.com/googleapis/librarian/issues/6966)) ([ec8df9a](https://github.com/googleapis/librarian/commit/ec8df9a62c3cbc169bd9f2d2a3c57418a5981a6c))
+* **sdk.yaml:** remove all language restrictions ([#6959](https://github.com/googleapis/librarian/issues/6959)) ([84e171c](https://github.com/googleapis/librarian/commit/84e171c1934f13a4f1705a3a931bfb58e8753a93))
+
 ## [0.29.0](https://github.com/googleapis/librarian/compare/v0.28.0...v0.29.0) (2026-07-22)
 
 
