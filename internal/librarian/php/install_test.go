@@ -59,6 +59,7 @@ func TestInstall(t *testing.T) {
 		tools   *config.Tools
 		setup   func(t *testing.T)
 		wantErr error
+		check   func(t *testing.T)
 	}{
 		{
 			name:  "no tools, uses fallback generator",
@@ -75,6 +76,19 @@ func TestInstall(t *testing.T) {
 				writeExecutable(t, filepath.Join(bin, "php"), "#!/bin/sh\nexit 0\n")
 				writeExecutable(t, filepath.Join(bin, "composer"), "#!/bin/sh\nexit 0\n")
 				t.Setenv("PATH", bin+string(os.PathListSeparator)+os.Getenv("PATH"))
+			},
+			check: func(t *testing.T) {
+				repoDir := filepath.Join(os.Getenv("LIBRARIAN_CACHE"), "github.com/googleapis/gapic-generator-php@v1.21.2")
+				wrapperPath := filepath.Join(repoDir, "wrapper.sh")
+				b, err := os.ReadFile(wrapperPath)
+				if err != nil {
+					t.Fatalf("failed to read wrapper: %v", err)
+				}
+				phpPath, _ := exec.LookPath("php")
+				want := fmt.Sprintf("#!/bin/bash\nexec %q -d display_errors=stderr -d memory_limit=1024M %q --side_loaded_root_dir \"$GOOGLEAPIS_DIR\" \"$@\"\n", phpPath, filepath.Join(repoDir, "src/Main.php"))
+				if diff := cmp.Diff(want, string(b)); diff != "" {
+					t.Errorf("wrapper content mismatch (-want +got):\n%s", diff)
+				}
 			},
 		},
 		{
@@ -108,6 +122,20 @@ func TestInstall(t *testing.T) {
 				writeExecutable(t, filepath.Join(bin, "composer"), "#!/bin/sh\nexit 0\n")
 				writeExecutable(t, filepath.Join(bin, "pip"), "#!/bin/sh\nexit 0\n")
 				t.Setenv("PATH", bin+string(os.PathListSeparator)+os.Getenv("PATH"))
+			},
+			check: func(t *testing.T) {
+				binDir := filepath.Join(os.Getenv("LIBRARIAN_BIN"), "php_tools", "bin")
+				wrapperPath := filepath.Join(binDir, "fake-composer-tool")
+				b, err := os.ReadFile(wrapperPath)
+				if err != nil {
+					t.Fatalf("failed to read wrapper: %v", err)
+				}
+				repoDir := filepath.Join(os.Getenv("LIBRARIAN_CACHE"), "github.com/fake/fake-tool@1.0.0")
+				destPath := filepath.Join(repoDir, "vendor", "bin", "fake-composer-tool")
+				want := fmt.Sprintf("#!/bin/sh\nexec %q \"$@\"\n", destPath)
+				if diff := cmp.Diff(want, string(b)); diff != "" {
+					t.Errorf("wrapper content mismatch (-want +got):\n%s", diff)
+				}
 			},
 		},
 		{
@@ -150,6 +178,20 @@ func TestInstall(t *testing.T) {
 				writeExecutable(t, filepath.Join(bin, "pnpm"), "#!/bin/sh\nexit 0\n")
 				t.Setenv("PATH", bin+string(os.PathListSeparator)+os.Getenv("PATH"))
 			},
+			check: func(t *testing.T) {
+				binDir := filepath.Join(os.Getenv("LIBRARIAN_BIN"), "php_tools", "bin")
+				wrapperPath := filepath.Join(binDir, "fake-composer-tool")
+				b, err := os.ReadFile(wrapperPath)
+				if err != nil {
+					t.Fatalf("failed to read wrapper: %v", err)
+				}
+				repoDir := filepath.Join(os.Getenv("LIBRARIAN_CACHE"), "github.com/fake/fake-tool@1.0.0")
+				destPath := filepath.Join(repoDir, "vendor", "bin", "fake-composer-tool")
+				want := fmt.Sprintf("#!/bin/sh\nexec %q \"$@\"\n", destPath)
+				if diff := cmp.Diff(want, string(b)); diff != "" {
+					t.Errorf("wrapper content mismatch (-want +got):\n%s", diff)
+				}
+			},
 		},
 		{
 			name: "with gapic-generator-php tool",
@@ -179,6 +221,21 @@ func TestInstall(t *testing.T) {
 				writeExecutable(t, filepath.Join(bin, "php"), "#!/bin/sh\nexit 0\n")
 				t.Setenv("PATH", bin+string(os.PathListSeparator)+os.Getenv("PATH"))
 			},
+			check: func(t *testing.T) {
+				binDir := filepath.Join(os.Getenv("LIBRARIAN_BIN"), "php_tools", "bin")
+				wrapperPath := filepath.Join(binDir, "gapic-generator-php")
+				b, err := os.ReadFile(wrapperPath)
+				if err != nil {
+					t.Fatalf("failed to read wrapper: %v", err)
+				}
+				repoDir := filepath.Join(os.Getenv("LIBRARIAN_CACHE"), "github.com/googleapis/gapic-generator-php@1.0.0")
+				destPath := filepath.Join(repoDir, "src", "Main.php")
+				phpPath, _ := exec.LookPath("php")
+				want := fmt.Sprintf("#!/bin/bash\nexec %q -d display_errors=stderr -d memory_limit=1024M %q --side_loaded_root_dir \"$GOOGLEAPIS_DIR\" \"$@\"\n", phpPath, destPath)
+				if diff := cmp.Diff(want, string(b)); diff != "" {
+					t.Errorf("wrapper content mismatch (-want +got):\n%s", diff)
+				}
+			},
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
@@ -188,6 +245,9 @@ func TestInstall(t *testing.T) {
 			err := Install(t.Context(), test.tools)
 			if !errors.Is(err, test.wantErr) {
 				t.Fatalf("Install() error = %v, wantErr = %v", err, test.wantErr)
+			}
+			if test.check != nil {
+				test.check(t)
 			}
 		})
 	}
