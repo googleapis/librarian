@@ -83,7 +83,6 @@ func TestAdd(t *testing.T) {
 						Path: "google/cloud/speech/v2",
 						PHP: &config.PHPAPI{
 							StagingSubdir: "v2",
-							MigrationMode: "NEW_SURFACE_ONLY",
 						},
 					},
 				},
@@ -97,7 +96,6 @@ func TestAdd(t *testing.T) {
 						Path: "google/cloud/speech/v2",
 						PHP: &config.PHPAPI{
 							StagingSubdir: "custom_subdir",
-							MigrationMode: "MIGRATED",
 						},
 					},
 				},
@@ -108,7 +106,6 @@ func TestAdd(t *testing.T) {
 						Path: "google/cloud/speech/v2",
 						PHP: &config.PHPAPI{
 							StagingSubdir: "custom_subdir",
-							MigrationMode: "MIGRATED",
 						},
 					},
 				},
@@ -128,14 +125,12 @@ func TestAdd(t *testing.T) {
 						Path: "google/cloud/speech/v2",
 						PHP: &config.PHPAPI{
 							StagingSubdir: "v2",
-							MigrationMode: "NEW_SURFACE_ONLY",
 						},
 					},
 					{
 						Path: "google/cloud/speech/v2beta1",
 						PHP: &config.PHPAPI{
 							StagingSubdir: "v2beta1",
-							MigrationMode: "NEW_SURFACE_ONLY",
 						},
 					},
 				},
