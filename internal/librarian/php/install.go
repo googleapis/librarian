@@ -77,9 +77,6 @@ func Install(ctx context.Context, tools *config.Tools) error {
 		}
 
 		args := []string{"install", "--no-interaction", "--prefer-dist"}
-		if !isGenerator {
-			args = append(args, "--no-dev")
-		}
 		if err := command.RunInDir(ctx, dir, "composer", args...); err != nil {
 			return fmt.Errorf("failed to run composer install: %w", err)
 		}
