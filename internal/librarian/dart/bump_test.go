@@ -428,6 +428,9 @@ func compareDirWithGolden(t *testing.T, goldenDir string) {
 			return err
 		}
 		if d.IsDir() {
+			if d.Name() == ".dart_tool" {
+				return filepath.SkipDir
+			}
 			return nil
 		}
 
