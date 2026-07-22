@@ -47,9 +47,9 @@ type owlbotSrc struct {
 
 // VersionedBuild represents build configuration parsed from BUILD.bazel for a Ruby API version.
 type VersionedBuild struct {
-	EnvPrefix    string
-	ExtraDeps    string
-	PathOverride string
+	EnvPrefix       string
+	ExtraDeps       string
+	PathOverride    string
 	ServiceOverride string
 }
 
