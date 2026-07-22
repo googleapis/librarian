@@ -206,7 +206,11 @@ func updateChangelog(ctx context.Context, packageDir, version, lastReleaseTagCom
 	content, err := os.ReadFile(changelogPath)
 	newTopOfFile := "# Changelog\n\n" + entryStr
 	if err != nil {
-		return err
+		if !os.IsNotExist(err) {
+			return err
+		}
+		// File does not exist, create new
+		return os.WriteFile(changelogPath, []byte(newTopOfFile), 0644)
 	}
 
 	rest := string(content)
