@@ -494,8 +494,8 @@ This document describes the schema for the librarian.yaml.
 | Field | Type | Description |
 | :--- | :--- | :--- |
 | `ruby-cloud-env-prefix` | string | Is the environment variable prefix. |
-| `extra_dependencies` | string | Contains extra runtime dependencies to the .gemspec file. |
-| `path_override` | string | Overrides file/directory paths under lib/ and proto_docs/. |
+| `ruby-cloud-extra-dependencies` | string | Contains extra runtime dependencies to the .gemspec file. |
+| `ruby-cloud-path_override` | string | Overrides file/directory paths under lib/ and proto_docs/. |
 
 ## RubyPackage Configuration
 
