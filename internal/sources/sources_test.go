@@ -56,16 +56,16 @@ func TestRoot(t *testing.T) {
 func TestResolve(t *testing.T) {
 	tempDir := t.TempDir()
 	googleapis := filepath.Join(tempDir, "googleapis")
-	if err := os.Mkdir(googleapis, 0755); err != nil {
+	if err := os.Mkdir(googleapis, 0o755); err != nil {
 		t.Fatal(err)
 	}
 
 	specPath := "google/cloud/secretmanager/v1/secretmanager.yaml"
 	fullPath := filepath.Join(googleapis, specPath)
-	if err := os.MkdirAll(filepath.Dir(fullPath), 0755); err != nil {
+	if err := os.MkdirAll(filepath.Dir(fullPath), 0o755); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(fullPath, []byte("test"), 0644); err != nil {
+	if err := os.WriteFile(fullPath, []byte("test"), 0o644); err != nil {
 		t.Fatal(err)
 	}
 
@@ -123,7 +123,7 @@ func TestResolveDir(t *testing.T) {
 	googleapis := filepath.Join(tempDir, "googleapis")
 	dirPath := "google/cloud/secretmanager/v1"
 	fullDir := filepath.Join(googleapis, dirPath)
-	if err := os.MkdirAll(fullDir, 0755); err != nil {
+	if err := os.MkdirAll(fullDir, 0o755); err != nil {
 		t.Fatal(err)
 	}
 

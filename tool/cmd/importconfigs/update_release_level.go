@@ -25,7 +25,6 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/serviceconfig"
 	"github.com/googleapis/librarian/internal/yaml"
 	"github.com/googleapis/librarian/tool/cmd/importconfigs/bazel"
@@ -81,14 +80,6 @@ func runUpdateReleaseLevel(sdkYaml, googleapisDir string) error {
 		}
 		// Add the ReleaseLevels to a cloud API.
 		newAPIs = append(newAPIs, &serviceconfig.API{
-			// Add languages so they won't be blocked.
-			Languages: []string{
-				config.LanguageDart,
-				config.LanguageGo,
-				config.LanguageJava,
-				config.LanguagePython,
-				config.LanguageRust,
-			},
 			Path:          buildDir,
 			ReleaseLevels: releaseLevels,
 		})

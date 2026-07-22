@@ -66,16 +66,16 @@ func TestIsNewFileSuccess(t *testing.T) {
 	}
 	headCommit := strings.TrimSpace(string(out))
 	existingName := path.Join("src", "storage", "src", "lib.rs")
-	if err := os.WriteFile(existingName, []byte(newLibRsContents), 0644); err != nil {
+	if err := os.WriteFile(existingName, []byte(newLibRsContents), 0o644); err != nil {
 		t.Fatal(err)
 	}
 	gitExe := command.Git
 
 	newName := path.Join("src", "storage", "src", "new.rs")
-	if err := os.MkdirAll(path.Dir(newName), 0755); err != nil {
+	if err := os.MkdirAll(path.Dir(newName), 0o755); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(newName, []byte(newLibRsContents), 0644); err != nil {
+	if err := os.WriteFile(newName, []byte(newLibRsContents), 0o644); err != nil {
 		t.Fatal(err)
 	}
 	testhelper.RunGit(t, "add", ".")
@@ -204,7 +204,7 @@ func TestAssertGitStatusClean(t *testing.T) {
 			setup: func(t *testing.T) {
 				remoteDir := testhelper.SetupRepoWithChange(t, "release-1.2.3")
 				testhelper.CloneRepository(t, remoteDir)
-				if err := os.WriteFile("dirty.txt", []byte("uncommitted"), 0644); err != nil {
+				if err := os.WriteFile("dirty.txt", []byte("uncommitted"), 0o644); err != nil {
 					t.Fatal(err)
 				}
 			},

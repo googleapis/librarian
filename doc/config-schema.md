@@ -448,7 +448,6 @@ This document describes the schema for the librarian.yaml.
 | Field | Type | Description |
 | :--- | :--- | :--- |
 | `additional_protos` | list of string | Is a list of additional proto files to include in generation. |
-| `migration_mode` | string | Controls migration mode setting for the PHP generator (e.g. "NEW_SURFACE_ONLY"). |
 | `common_resources` | bool (optional) | Indicates whether to include common resources in generation. Must be configured either globally or per-API. |
 | `staging_subdir` | string | Is the subdirectory in staging where the generated files should be placed. |
 
@@ -487,8 +486,17 @@ This document describes the schema for the librarian.yaml.
 
 | Field | Type | Description |
 | :--- | :--- | :--- |
-| `env_prefix` | string | Is the environment variable prefix. |
-| `extra_dependencies` | string | Contains extra runtime dependencies to the .gemspec file. |
+| `ruby_cloud_opts` | [RubyCloudOpts](#rubycloudopts-configuration) (optional) | Contains options passed to the Ruby Cloud GAPIC generator as the `--ruby_cloud_opt` option. |
+
+## RubyCloudOpts Configuration
+
+| Field | Type | Description |
+| :--- | :--- | :--- |
+| `ruby-cloud-env-prefix` | string | Is the environment variable prefix. |
+| `ruby-cloud-extra-dependencies` | string | Contains extra runtime dependencies to the .gemspec file. |
+| `ruby-cloud-path-override` | string | Overrides file/directory paths under lib/ and proto_docs/. |
+| `ruby-cloud-service-override` | string | Overrides generated service class names when proto package service names don't match desired Ruby conventions. |
+| `ruby-cloud-yard-strict` | string | Enables or disables strict YARD syntax checks during generation. |
 
 ## RubyPackage Configuration
 

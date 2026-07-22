@@ -39,7 +39,7 @@ func generateInternalVersionFile(moduleDir, year, version string) (err error) {
 		version = "0.0.0"
 	}
 	internalDir := filepath.Join(moduleDir, "internal")
-	if err := os.MkdirAll(internalDir, 0755); err != nil {
+	if err := os.MkdirAll(internalDir, 0o755); err != nil {
 		return err
 	}
 	f, err := os.Create(filepath.Join(internalDir, "version.go"))
@@ -68,7 +68,7 @@ func generateClientVersionFile(library *config.Library, goAPI *config.GoAPI) (er
 		return nil
 	}
 	dir := filepath.Join(repoRootPath(library.Output, library.Name), clientPathFromRepoRoot(library, goAPI))
-	if err := os.MkdirAll(dir, 0755); err != nil {
+	if err := os.MkdirAll(dir, 0o755); err != nil {
 		return err
 	}
 	f, err := os.Create(filepath.Join(dir, "version.go"))

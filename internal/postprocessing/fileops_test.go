@@ -158,7 +158,7 @@ func TestReplace(t *testing.T) {
 	original := "World"
 	replacement := "Go"
 	want := "Hello Go"
-	if err := os.WriteFile(path, []byte(content), 0644); err != nil {
+	if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
 		t.Fatal(err)
 	}
 	if err := Replace(path, original, replacement); err != nil {
@@ -200,7 +200,7 @@ func TestReplaceRegex(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			dir := t.TempDir()
 			path := filepath.Join(dir, "test.txt")
-			if err := os.WriteFile(path, []byte(test.content), 0644); err != nil {
+			if err := os.WriteFile(path, []byte(test.content), 0o644); err != nil {
 				t.Fatal(err)
 			}
 			if err := ReplaceRegex(path, test.pattern, test.replacement); err != nil {
@@ -252,7 +252,7 @@ func TestReplace_Error(t *testing.T) {
 			path := filepath.Join(dir, "nonexistent.txt")
 			if test.content != "" {
 				path = filepath.Join(dir, "test.txt")
-				if err := os.WriteFile(path, []byte(test.content), 0644); err != nil {
+				if err := os.WriteFile(path, []byte(test.content), 0o644); err != nil {
 					t.Fatal(err)
 				}
 			}
@@ -298,7 +298,7 @@ func TestReplaceRegex_Error(t *testing.T) {
 			path := filepath.Join(dir, "nonexistent.txt")
 			if test.content != "" {
 				path = filepath.Join(dir, "test.txt")
-				if err := os.WriteFile(path, []byte(test.content), 0644); err != nil {
+				if err := os.WriteFile(path, []byte(test.content), 0o644); err != nil {
 					t.Fatal(err)
 				}
 			}
@@ -470,10 +470,10 @@ func createFiles(t *testing.T, dir string, files map[string]string) {
 	t.Helper()
 	for relPath, content := range files {
 		absPath := filepath.Join(dir, relPath)
-		if err := os.MkdirAll(filepath.Dir(absPath), 0755); err != nil {
+		if err := os.MkdirAll(filepath.Dir(absPath), 0o755); err != nil {
 			t.Fatal(err)
 		}
-		if err := os.WriteFile(absPath, []byte(content), 0644); err != nil {
+		if err := os.WriteFile(absPath, []byte(content), 0o644); err != nil {
 			t.Fatal(err)
 		}
 	}

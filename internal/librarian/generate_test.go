@@ -271,7 +271,7 @@ libraries:
     apis:
       - path: google/cloud/texttospeech/v1
 `, googleapisDir, lib1, lib1Output, lib2, lib2Output)
-			if err := os.WriteFile(filepath.Join(tempDir, config.LibrarianYAML), []byte(configContent), 0644); err != nil {
+			if err := os.WriteFile(filepath.Join(tempDir, config.LibrarianYAML), []byte(configContent), 0o644); err != nil {
 				t.Fatal(err)
 			}
 			err := Run(t.Context(), test.args...)
@@ -313,11 +313,11 @@ func TestGenerate_Java(t *testing.T) {
 
 	// Create a fake protoc that just exits successfully.
 	protocDir := filepath.Join(tempDir, "bin")
-	if err := os.MkdirAll(protocDir, 0755); err != nil {
+	if err := os.MkdirAll(protocDir, 0o755); err != nil {
 		t.Fatal(err)
 	}
 	protocPath := filepath.Join(protocDir, "protoc")
-	if err := os.WriteFile(protocPath, []byte("#!/bin/bash\nexit 0\n"), 0755); err != nil {
+	if err := os.WriteFile(protocPath, []byte("#!/bin/bash\nexit 0\n"), 0o755); err != nil {
 		t.Fatal(err)
 	}
 	t.Setenv("PATH", protocDir+string(os.PathListSeparator)+os.Getenv("PATH"))
@@ -337,7 +337,7 @@ libraries:
       - path: google/cloud/secretmanager/v1
 `, googleapisDir)
 
-	if err := os.WriteFile(filepath.Join(tempDir, config.LibrarianYAML), []byte(configContent), 0644); err != nil {
+	if err := os.WriteFile(filepath.Join(tempDir, config.LibrarianYAML), []byte(configContent), 0o644); err != nil {
 		t.Fatal(err)
 	}
 
@@ -365,10 +365,10 @@ func createGoogleapisServiceConfigs(t *testing.T, tempDir string, configs map[st
 
 	for apiPath, filename := range configs {
 		dir := filepath.Join(googleapisDir, apiPath)
-		if err := os.MkdirAll(dir, 0755); err != nil {
+		if err := os.MkdirAll(dir, 0o755); err != nil {
 			t.Fatal(err)
 		}
-		if err := os.WriteFile(filepath.Join(dir, filename), []byte(""), 0644); err != nil {
+		if err := os.WriteFile(filepath.Join(dir, filename), []byte(""), 0o644); err != nil {
 			t.Fatal(err)
 		}
 	}

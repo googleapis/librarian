@@ -37,7 +37,7 @@ func TestPostProcessAPI(t *testing.T) {
 	t.Parallel()
 	outdir := t.TempDir()
 	// Force routing to the legacy owlbot.py postprocessor.
-	if err := os.WriteFile(filepath.Join(outdir, "owlbot.py"), []byte("# dummy"), 0755); err != nil {
+	if err := os.WriteFile(filepath.Join(outdir, "owlbot.py"), []byte("# dummy"), 0o755); err != nil {
 		t.Fatal(err)
 	}
 	libraryName := "secretmanager"
@@ -45,35 +45,35 @@ func TestPostProcessAPI(t *testing.T) {
 	gapicDir := filepath.Join(outdir, apiBase, "gapic")
 	gRPCDir := filepath.Join(outdir, apiBase, "grpc")
 	protoDir := filepath.Join(outdir, apiBase, "proto")
-	if err := os.MkdirAll(filepath.Join(gapicDir, "src", "main", "java"), 0755); err != nil {
+	if err := os.MkdirAll(filepath.Join(gapicDir, "src", "main", "java"), 0o755); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.MkdirAll(gRPCDir, 0755); err != nil {
+	if err := os.MkdirAll(gRPCDir, 0o755); err != nil {
 		t.Fatal(err)
 	}
 	for _, artifact := range []string{"google-cloud-secretmanager", "proto-google-cloud-secretmanager-v1", "grpc-google-cloud-secretmanager-v1", "google-cloud-secretmanager-bom"} {
-		if err := os.MkdirAll(filepath.Join(outdir, artifact), 0755); err != nil {
+		if err := os.MkdirAll(filepath.Join(outdir, artifact), 0o755); err != nil {
 			t.Fatal(err)
 		}
 	}
 	content := "package com.google.cloud.secretmanager.v1;"
 	grpcFile := filepath.Join(gRPCDir, "GRPCFile.java")
-	if err := os.WriteFile(grpcFile, []byte(content), 0644); err != nil {
+	if err := os.WriteFile(grpcFile, []byte(content), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.MkdirAll(protoDir, 0755); err != nil {
+	if err := os.MkdirAll(protoDir, 0o755); err != nil {
 		t.Fatal(err)
 	}
 	protoFile := filepath.Join(protoDir, "ProtoFile.java")
-	if err := os.WriteFile(protoFile, []byte(content), 0644); err != nil {
+	if err := os.WriteFile(protoFile, []byte(content), 0o644); err != nil {
 		t.Fatal(err)
 	}
 	orBuilderDir := filepath.Join(protoDir, "com", "google", "cloud", "secretmanager", "v1")
-	if err := os.MkdirAll(orBuilderDir, 0755); err != nil {
+	if err := os.MkdirAll(orBuilderDir, 0o755); err != nil {
 		t.Fatal(err)
 	}
 	orBuilderFile := filepath.Join(orBuilderDir, "SomeOrBuilder.java")
-	if err := os.WriteFile(orBuilderFile, []byte("package com.google.cloud.secretmanager.v1; public interface SomeOrBuilder {}"), 0644); err != nil {
+	if err := os.WriteFile(orBuilderFile, []byte("package com.google.cloud.secretmanager.v1; public interface SomeOrBuilder {}"), 0o644); err != nil {
 		t.Fatal(err)
 	}
 
@@ -98,7 +98,7 @@ func TestPostProcessAPI(t *testing.T) {
 	if err := zw.Close(); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(srcjarPath, buf.Bytes(), 0644); err != nil {
+	if err := os.WriteFile(srcjarPath, buf.Bytes(), 0o644); err != nil {
 		t.Fatal(err)
 	}
 	apiProtos := []string{filepath.Join(googleapisDir, "google/cloud/secretmanager/v1/service.proto")}
@@ -187,18 +187,18 @@ func TestRestructureModules(t *testing.T) {
 		filepath.Join(tmpDir, apiBase, "proto"),
 	}
 	for _, dir := range dirs {
-		if err := os.MkdirAll(dir, 0755); err != nil {
+		if err := os.MkdirAll(dir, 0o755); err != nil {
 			t.Fatal(err)
 		}
 	}
 	// Create a dummy sample file
 	sampleFile := filepath.Join(tmpDir, apiBase, "gapic", "samples", "snippets", "generated", "src", "main", "java", "Sample.java")
-	if err := os.WriteFile(sampleFile, []byte("public class Sample {}"), 0644); err != nil {
+	if err := os.WriteFile(sampleFile, []byte("public class Sample {}"), 0o644); err != nil {
 		t.Fatal(err)
 	}
 	// Create a dummy reflect-config.json
 	reflectConfigPath := filepath.Join(tmpDir, apiBase, "gapic", "src", "main", "resources", "META-INF", "native-image", "reflect-config.json")
-	if err := os.WriteFile(reflectConfigPath, []byte("{}"), 0644); err != nil {
+	if err := os.WriteFile(reflectConfigPath, []byte("{}"), 0o644); err != nil {
 		t.Fatal(err)
 	}
 	protoPath := filepath.Join(googleapisDir, "google", "cloud", "secretmanager", "v1", "service.proto")
@@ -316,11 +316,11 @@ func setupLocationProtoFile(t *testing.T, tmpDir, apiBase string) {
 	t.Helper()
 	protoSrcDir := filepath.Join(tmpDir, apiBase, "proto")
 	locationDir := filepath.Join(protoSrcDir, "com", "google", "cloud", "location")
-	if err := os.MkdirAll(locationDir, 0755); err != nil {
+	if err := os.MkdirAll(locationDir, 0o755); err != nil {
 		t.Fatal(err)
 	}
 	dummyFile := filepath.Join(locationDir, "LocationsProto.java")
-	if err := os.WriteFile(dummyFile, []byte("public class LocationsProto {}"), 0644); err != nil {
+	if err := os.WriteFile(dummyFile, []byte("public class LocationsProto {}"), 0o644); err != nil {
 		t.Fatal(err)
 	}
 }
@@ -336,13 +336,13 @@ func TestRestructureModules_SamplesDisabled(t *testing.T) {
 		filepath.Join(tmpDir, apiBase, "gapic", "samples", "snippets", "generated", "src", "main", "java"),
 	}
 	for _, dir := range dirs {
-		if err := os.MkdirAll(dir, 0755); err != nil {
+		if err := os.MkdirAll(dir, 0o755); err != nil {
 			t.Fatal(err)
 		}
 	}
 	// Create a dummy sample file
 	sampleFile := filepath.Join(tmpDir, apiBase, "gapic", "samples", "snippets", "generated", "src", "main", "java", "Sample.java")
-	if err := os.WriteFile(sampleFile, []byte("public class Sample {}"), 0644); err != nil {
+	if err := os.WriteFile(sampleFile, []byte("public class Sample {}"), 0o644); err != nil {
 		t.Fatal(err)
 	}
 
@@ -383,21 +383,21 @@ func TestRestructureModules_Monolithic(t *testing.T) {
 		filepath.Join(tmpDir, apiBase, "proto"),
 	}
 	for _, dir := range dirs {
-		if err := os.MkdirAll(dir, 0755); err != nil {
+		if err := os.MkdirAll(dir, 0o755); err != nil {
 			t.Fatal(err)
 		}
 	}
 	// Create dummy files
 	gapicFile := filepath.Join(tmpDir, apiBase, "gapic", "src", "main", "java", "Gapic.java")
-	if err := os.WriteFile(gapicFile, []byte("public class Gapic {}"), 0644); err != nil {
+	if err := os.WriteFile(gapicFile, []byte("public class Gapic {}"), 0o644); err != nil {
 		t.Fatal(err)
 	}
 	grpcFile := filepath.Join(tmpDir, apiBase, "grpc", "Grpc.java")
-	if err := os.WriteFile(grpcFile, []byte("public class Grpc {}"), 0644); err != nil {
+	if err := os.WriteFile(grpcFile, []byte("public class Grpc {}"), 0o644); err != nil {
 		t.Fatal(err)
 	}
 	protoFile := filepath.Join(tmpDir, apiBase, "proto", "Proto.java")
-	if err := os.WriteFile(protoFile, []byte("public class Proto {}"), 0644); err != nil {
+	if err := os.WriteFile(protoFile, []byte("public class Proto {}"), 0o644); err != nil {
 		t.Fatal(err)
 	}
 	params := postProcessParams{
@@ -448,11 +448,11 @@ func TestPostProcessAPI_SkipHeaders(t *testing.T) {
 			outdir := t.TempDir()
 			apiBase := "v1"
 			gRPCDir := filepath.Join(outdir, apiBase, "grpc")
-			if err := os.MkdirAll(gRPCDir, 0755); err != nil {
+			if err := os.MkdirAll(gRPCDir, 0o755); err != nil {
 				t.Fatal(err)
 			}
 			grpcFile := filepath.Join(gRPCDir, "GRPCFile.java")
-			if err := os.WriteFile(grpcFile, []byte("package com.test;"), 0644); err != nil {
+			if err := os.WriteFile(grpcFile, []byte("package com.test;"), 0o644); err != nil {
 				t.Fatal(err)
 			}
 			params := postProcessParams{
@@ -480,11 +480,11 @@ func TestPostProcessAPI_AlternateHeaders(t *testing.T) {
 	outdir := t.TempDir()
 	apiBase := "v1"
 	gRPCDir := filepath.Join(outdir, apiBase, "grpc")
-	if err := os.MkdirAll(gRPCDir, 0755); err != nil {
+	if err := os.MkdirAll(gRPCDir, 0o755); err != nil {
 		t.Fatal(err)
 	}
 	grpcFile := filepath.Join(gRPCDir, "GRPCFile.java")
-	if err := os.WriteFile(grpcFile, []byte("package com.test;"), 0644); err != nil {
+	if err := os.WriteFile(grpcFile, []byte("package com.test;"), 0o644); err != nil {
 		t.Fatal(err)
 	}
 	params := postProcessParams{
@@ -495,7 +495,7 @@ func TestPostProcessAPI_AlternateHeaders(t *testing.T) {
 	}
 	altHeader := "/* Alternate */\n"
 	headerFile := filepath.Join(outdir, "header.txt")
-	if err := os.WriteFile(headerFile, []byte(altHeader), 0644); err != nil {
+	if err := os.WriteFile(headerFile, []byte(altHeader), 0o644); err != nil {
 		t.Fatal(err)
 	}
 	params.library.Java.AlternateHeaders = "header.txt"
@@ -510,7 +510,7 @@ func TestPostProcessAPI_AlternateHeaders(t *testing.T) {
 	if !bytes.HasPrefix(got, []byte(wantHeader)) {
 		t.Errorf("mismatch got = %q, want %q", got, wantHeader)
 	}
-	if err := os.WriteFile(grpcFile, []byte("package com.test;"), 0644); err != nil {
+	if err := os.WriteFile(grpcFile, []byte("package com.test;"), 0o644); err != nil {
 		t.Fatal(err)
 	}
 	params.javaAPI.Monolithic = true
@@ -604,7 +604,7 @@ func TestPostProcessLibrary(t *testing.T) {
 			},
 			setup: func(t *testing.T, outDir string) {
 				writeOwlBot(t, outDir, "sys.exit(0)")
-				if err := os.MkdirAll(filepath.Join(filepath.Dir(outDir), owlbotTemplatesRelPath), 0755); err != nil {
+				if err := os.MkdirAll(filepath.Join(filepath.Dir(outDir), owlbotTemplatesRelPath), 0o755); err != nil {
 					t.Fatal(err)
 				}
 			},
@@ -614,7 +614,7 @@ func TestPostProcessLibrary(t *testing.T) {
 			cfg:  defaultCfg,
 			setup: func(t *testing.T, outDir string) {
 				writeOwlBot(t, outDir, "sys.exit(0)")
-				if err := os.MkdirAll(filepath.Join(filepath.Dir(outDir), owlbotTemplatesRelPath), 0755); err != nil {
+				if err := os.MkdirAll(filepath.Join(filepath.Dir(outDir), owlbotTemplatesRelPath), 0o755); err != nil {
 					t.Fatal(err)
 				}
 				libCoords := deriveLibraryCoordinates(library)
@@ -626,7 +626,7 @@ func TestPostProcessLibrary(t *testing.T) {
 					filepath.Join(outDir, apiCoords.Parent.ArtifactID),
 					filepath.Join(outDir, apiCoords.BOM.ArtifactID),
 				} {
-					if err := os.MkdirAll(dir, 0755); err != nil {
+					if err := os.MkdirAll(dir, 0o755); err != nil {
 						t.Fatal(err)
 					}
 				}
@@ -707,7 +707,7 @@ func TestPostProcessLibrary_ErrorCase(t *testing.T) {
 			},
 			setup: func(t *testing.T, outDir string) {
 				writeOwlBot(t, outDir, "sys.exit(0)")
-				if err := os.MkdirAll(filepath.Join(filepath.Dir(outDir), owlbotTemplatesRelPath), 0755); err != nil {
+				if err := os.MkdirAll(filepath.Join(filepath.Dir(outDir), owlbotTemplatesRelPath), 0o755); err != nil {
 					t.Fatal(err)
 				}
 			},
@@ -718,7 +718,7 @@ func TestPostProcessLibrary_ErrorCase(t *testing.T) {
 			cfg:  defaultCfg,
 			setup: func(t *testing.T, outDir string) {
 				writeOwlBot(t, outDir, "sys.exit(1)")
-				if err := os.MkdirAll(filepath.Join(filepath.Dir(outDir), owlbotTemplatesRelPath), 0755); err != nil {
+				if err := os.MkdirAll(filepath.Join(filepath.Dir(outDir), owlbotTemplatesRelPath), 0o755); err != nil {
 					t.Fatal(err)
 				}
 			},
@@ -750,7 +750,7 @@ func TestPostProcessLibrary_ErrorCase(t *testing.T) {
 func writeOwlBot(t *testing.T, outDir, script string) {
 	t.Helper()
 	content := "import sys; " + script
-	if err := os.WriteFile(filepath.Join(outDir, "owlbot.py"), []byte(content), 0755); err != nil {
+	if err := os.WriteFile(filepath.Join(outDir, "owlbot.py"), []byte(content), 0o755); err != nil {
 		t.Fatal(err)
 	}
 }
@@ -760,11 +760,11 @@ func TestRunOwlBot(t *testing.T) {
 	testhelper.RequireCommand(t, "python3")
 	tmp := t.TempDir()
 	outDir := filepath.Join(tmp, "out")
-	if err := os.MkdirAll(outDir, 0755); err != nil {
+	if err := os.MkdirAll(outDir, 0o755); err != nil {
 		t.Fatal(err)
 	}
 	templatesDir := filepath.Join(tmp, "sdk-platform-java", "hermetic_build", "library_generation", "owlbot", "templates")
-	if err := os.MkdirAll(templatesDir, 0755); err != nil {
+	if err := os.MkdirAll(templatesDir, 0o755); err != nil {
 		t.Fatal(err)
 	}
 	// Create a dummy owlbot.py that checks environment variables.
@@ -789,7 +789,7 @@ if not templates or not templates.endswith("templates"):
 with open("owlbot-ran.txt", "w") as f:
     f.write("success")
 `
-	if err := os.WriteFile(filepath.Join(outDir, "owlbot.py"), []byte(owlbotContent), 0755); err != nil {
+	if err := os.WriteFile(filepath.Join(outDir, "owlbot.py"), []byte(owlbotContent), 0o755); err != nil {
 		t.Fatal(err)
 	}
 
@@ -812,17 +812,17 @@ func TestRunOwlBot_Error(t *testing.T) {
 	t.Parallel()
 	tmp := t.TempDir()
 	outDir := filepath.Join(tmp, "out")
-	if err := os.MkdirAll(outDir, 0755); err != nil {
+	if err := os.MkdirAll(outDir, 0o755); err != nil {
 		t.Fatal(err)
 	}
 	sDir := stagingDir(outDir)
-	if err := os.MkdirAll(sDir, 0755); err != nil {
+	if err := os.MkdirAll(sDir, 0o755); err != nil {
 		t.Fatal(err)
 	}
 	// Create a dummy file to ensure the staging directory is non-empty,
 	// verifying that the cleanup logic correctly removes everything.
 	dummyFile := filepath.Join(sDir, "dummy.txt")
-	if err := os.WriteFile(dummyFile, []byte("dummy"), 0644); err != nil {
+	if err := os.WriteFile(dummyFile, []byte("dummy"), 0o644); err != nil {
 		t.Fatal(err)
 	}
 	library := &config.Library{
@@ -875,7 +875,7 @@ func TestAddMissingHeaders(t *testing.T) {
 			t.Parallel()
 			tmpDir := t.TempDir()
 			path := filepath.Join(tmpDir, test.filename)
-			if err := os.WriteFile(path, []byte(test.content), 0644); err != nil {
+			if err := os.WriteFile(path, []byte(test.content), 0o644); err != nil {
 				t.Fatal(err)
 			}
 
@@ -883,10 +883,10 @@ func TestAddMissingHeaders(t *testing.T) {
 			params.outDir = tmpDir
 			if params.library != nil && params.library.Java != nil && params.library.Java.AlternateHeaders != "" {
 				headerPath := filepath.Join(tmpDir, params.library.Java.AlternateHeaders)
-				if err := os.MkdirAll(filepath.Dir(headerPath), 0755); err != nil {
+				if err := os.MkdirAll(filepath.Dir(headerPath), 0o755); err != nil {
 					t.Fatal(err)
 				}
-				if err := os.WriteFile(headerPath, []byte("/* Alternate Header */\n"), 0644); err != nil {
+				if err := os.WriteFile(headerPath, []byte("/* Alternate Header */\n"), 0o644); err != nil {
 					t.Fatal(err)
 				}
 			}
@@ -932,11 +932,11 @@ func TestCopyFiles(t *testing.T) {
 	destPath := "src/main/resources/com/google/storage/v2/gapic_metadata.json"
 
 	fullSrcPath := filepath.Join(gapicDir, srcPath)
-	if err := os.MkdirAll(filepath.Dir(fullSrcPath), 0755); err != nil {
+	if err := os.MkdirAll(filepath.Dir(fullSrcPath), 0o755); err != nil {
 		t.Fatal(err)
 	}
 	content := `{"schema": "1.0"}`
-	if err := os.WriteFile(fullSrcPath, []byte(content), 0644); err != nil {
+	if err := os.WriteFile(fullSrcPath, []byte(content), 0o644); err != nil {
 		t.Fatal(err)
 	}
 	params := postProcessParams{
@@ -1010,10 +1010,10 @@ func TestRemoveKeptFilesFromStaging(t *testing.T) {
 	nonExistentKeptFile := filepath.Join(stagingDir, "v1", "google-cloud-lib", "src", "main", "java", "com", "google", "kept", "NonExistent.java")
 
 	for _, file := range []string{keptFile, versionFile, regularFile, keptDirFile, nonExistentKeptFile} {
-		if err := os.MkdirAll(filepath.Dir(file), 0755); err != nil {
+		if err := os.MkdirAll(filepath.Dir(file), 0o755); err != nil {
 			t.Fatal(err)
 		}
-		if err := os.WriteFile(file, []byte("public class Dummy {}"), 0644); err != nil {
+		if err := os.WriteFile(file, []byte("public class Dummy {}"), 0o644); err != nil {
 			t.Fatal(err)
 		}
 	}
@@ -1025,10 +1025,10 @@ func TestRemoveKeptFilesFromStaging(t *testing.T) {
 	destKeptDirFile := filepath.Join(outDir, "google-cloud-lib", "src", "main", "java", "com", "google", "keptdir", "SubDir", "File.java")
 
 	for _, file := range []string{destKeptFile, destVersionFile, destKeptDirFile} {
-		if err := os.MkdirAll(filepath.Dir(file), 0755); err != nil {
+		if err := os.MkdirAll(filepath.Dir(file), 0o755); err != nil {
 			t.Fatal(err)
 		}
-		if err := os.WriteFile(file, []byte("public class Dummy {}"), 0644); err != nil {
+		if err := os.WriteFile(file, []byte("public class Dummy {}"), 0o644); err != nil {
 			t.Fatal(err)
 		}
 	}
@@ -1084,10 +1084,10 @@ func TestCreateOrVerifyOwlbotPy(t *testing.T) {
 	}
 	goldenPath := filepath.Join("testdata", "postprocess", "owlbot.py.golden")
 	if *update {
-		if err := os.MkdirAll(filepath.Dir(goldenPath), 0755); err != nil {
+		if err := os.MkdirAll(filepath.Dir(goldenPath), 0o755); err != nil {
 			t.Fatal(err)
 		}
-		if err := os.WriteFile(goldenPath, gotContent, 0644); err != nil {
+		if err := os.WriteFile(goldenPath, gotContent, 0o644); err != nil {
 			t.Fatal(err)
 		}
 	}
@@ -1107,7 +1107,7 @@ func TestCreateOrVerifyOwlbotPy_AlreadyExists(t *testing.T) {
 	outDir := t.TempDir()
 	owlbotPath := filepath.Join(outDir, "owlbot.py")
 	existingContent := "existing content"
-	if err := os.WriteFile(owlbotPath, []byte(existingContent), 0755); err != nil {
+	if err := os.WriteFile(owlbotPath, []byte(existingContent), 0o755); err != nil {
 		t.Fatal(err)
 	}
 	if err := createOrVerifyOwlbotPy(outDir); err != nil {
@@ -1127,10 +1127,10 @@ func TestCreateOrVerifyOwlbotPy_AlreadyExists(t *testing.T) {
 func TestCreateOrVerifyOwlbotPy_Error(t *testing.T) {
 	t.Parallel()
 	outDir := t.TempDir()
-	if err := os.Chmod(outDir, 0000); err != nil {
+	if err := os.Chmod(outDir, 0o000); err != nil {
 		t.Fatal(err)
 	}
-	defer os.Chmod(outDir, 0755)
+	defer os.Chmod(outDir, 0o755)
 	err := createOrVerifyOwlbotPy(outDir)
 	if !errors.Is(err, fs.ErrPermission) {
 		t.Errorf("error = %v, wantErr %v", err, fs.ErrPermission)
@@ -1221,10 +1221,10 @@ func TestApplyMoveActionsToLibrary_Error(t *testing.T) {
 			}
 			writeFiles(t, destDir, test.destFiles)
 			if test.readOnlySrcParent {
-				if err := os.Chmod(srcParent, 0000); err != nil {
+				if err := os.Chmod(srcParent, 0o000); err != nil {
 					t.Fatal(err)
 				}
-				defer os.Chmod(srcParent, 0755)
+				defer os.Chmod(srcParent, 0o755)
 			}
 			actions := []moveAction{
 				{src: srcDir, dest: destDir, description: "test files"},
@@ -1497,15 +1497,15 @@ func TestPostProcessLibrary_Go(t *testing.T) {
 
 func writeFiles(t *testing.T, dir string, files map[string]string) {
 	t.Helper()
-	if err := os.MkdirAll(dir, 0755); err != nil {
+	if err := os.MkdirAll(dir, 0o755); err != nil {
 		t.Fatal(err)
 	}
 	for rel, content := range files {
 		p := filepath.Join(dir, rel)
-		if err := os.MkdirAll(filepath.Dir(p), 0755); err != nil {
+		if err := os.MkdirAll(filepath.Dir(p), 0o755); err != nil {
 			t.Fatal(err)
 		}
-		if err := os.WriteFile(p, []byte(content), 0644); err != nil {
+		if err := os.WriteFile(p, []byte(content), 0o644); err != nil {
 			t.Fatal(err)
 		}
 	}

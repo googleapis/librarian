@@ -86,10 +86,10 @@ func TestCleanOutput(t *testing.T) {
 			dir := t.TempDir()
 			for _, f := range test.files {
 				path := filepath.Join(dir, f)
-				if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
+				if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
 					t.Fatal(err)
 				}
-				if err := os.WriteFile(path, []byte("test"), 0644); err != nil {
+				if err := os.WriteFile(path, []byte("test"), 0o644); err != nil {
 					t.Fatal(err)
 				}
 			}

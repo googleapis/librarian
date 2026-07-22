@@ -247,7 +247,7 @@ class B {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
 			tmpFile := filepath.Join(t.TempDir(), "test.java")
-			if err := os.WriteFile(tmpFile, []byte(test.content), 0644); err != nil {
+			if err := os.WriteFile(tmpFile, []byte(test.content), 0o644); err != nil {
 				t.Fatal(err)
 			}
 			if err := DeleteMethod(tmpFile, test.funcName, "java"); err != nil {
@@ -312,7 +312,7 @@ func TestDeleteMethod_Error(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
 			tmpFile := filepath.Join(t.TempDir(), "test.java")
-			if err := os.WriteFile(tmpFile, []byte(test.content), 0644); err != nil {
+			if err := os.WriteFile(tmpFile, []byte(test.content), 0o644); err != nil {
 				t.Fatal(err)
 			}
 			err := DeleteMethod(tmpFile, test.funcName, test.language)

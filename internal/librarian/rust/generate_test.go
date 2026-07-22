@@ -230,10 +230,10 @@ func TestKeepVeneer(t *testing.T) {
 		"src/generated/model.rs",
 	} {
 		path := filepath.Join(dir, f)
-		if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
+		if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
 			t.Fatal(err)
 		}
-		if err := os.WriteFile(path, []byte{}, 0644); err != nil {
+		if err := os.WriteFile(path, []byte{}, 0o644); err != nil {
 			t.Fatal(err)
 		}
 	}
@@ -277,7 +277,7 @@ func TestGenerate(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(filepath.Join(workspaceDir, "Cargo.toml"), cargoToml, 0644); err != nil {
+	if err := os.WriteFile(filepath.Join(workspaceDir, "Cargo.toml"), cargoToml, 0o644); err != nil {
 		t.Fatal(err)
 	}
 
@@ -370,7 +370,7 @@ func TestGenerate_Error(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(filepath.Join(workspaceDir, "Cargo.toml"), cargoToml, 0644); err != nil {
+	if err := os.WriteFile(filepath.Join(workspaceDir, "Cargo.toml"), cargoToml, 0o644); err != nil {
 		t.Fatal(err)
 	}
 
@@ -447,16 +447,16 @@ func TestGenerateLibrary(t *testing.T) {
 			libName := "google-cloud-secretmanager-v1"
 			outDir := "src/generated/cloud/secretmanager/v1"
 			if test.preExists {
-				if err := os.MkdirAll(outDir, 0755); err != nil {
+				if err := os.MkdirAll(outDir, 0o755); err != nil {
 					t.Fatal(err)
 				}
 				contents := fmt.Appendf(nil, formatTestCargoToml, fmt.Sprintf(`  "%s",`, outDir))
-				if err := os.WriteFile("Cargo.toml", contents, 0644); err != nil {
+				if err := os.WriteFile("Cargo.toml", contents, 0o644); err != nil {
 					t.Fatal(err)
 				}
 			} else {
 				contents := fmt.Appendf(nil, formatTestCargoToml, "")
-				if err := os.WriteFile("Cargo.toml", contents, 0644); err != nil {
+				if err := os.WriteFile("Cargo.toml", contents, 0o644); err != nil {
 					t.Fatal(err)
 				}
 			}

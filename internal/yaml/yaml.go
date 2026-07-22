@@ -95,7 +95,7 @@ func Write(path string, v any) error {
 	header := b.String()
 
 	data = append([]byte(header), data...)
-	return os.WriteFile(path, data, 0644)
+	return os.WriteFile(path, data, 0o644)
 }
 
 // Empty returns whether the given value serializes to an empty YAML object

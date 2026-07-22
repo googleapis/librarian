@@ -198,15 +198,15 @@ func TestBump(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			output := t.TempDir()
 			libraryDir := filepath.Join(output, test.library.Name)
-			if err := os.MkdirAll(libraryDir, 0755); err != nil {
+			if err := os.MkdirAll(libraryDir, 0o755); err != nil {
 				t.Fatal(err)
 			}
 			for path, content := range test.initialFiles {
 				fullPath := filepath.Join(output, path)
-				if err := os.MkdirAll(filepath.Dir(fullPath), 0755); err != nil {
+				if err := os.MkdirAll(filepath.Dir(fullPath), 0o755); err != nil {
 					t.Fatal(err)
 				}
-				if err := os.WriteFile(fullPath, []byte(content), 0644); err != nil {
+				if err := os.WriteFile(fullPath, []byte(content), 0o644); err != nil {
 					t.Fatal(err)
 				}
 			}
@@ -247,7 +247,7 @@ func TestBump_Error(t *testing.T) {
 			library: &config.Library{Name: "test-lib"},
 			version: "0.2.0",
 			setup: func(t *testing.T, dir string) {
-				if err := os.Chmod(filepath.Join(dir, "test-lib", "internal", "version.go"), 0444); err != nil {
+				if err := os.Chmod(filepath.Join(dir, "test-lib", "internal", "version.go"), 0o444); err != nil {
 					t.Fatal(err)
 				}
 			},
@@ -271,7 +271,7 @@ func TestBump_Error(t *testing.T) {
 			},
 			version: "0.2.0",
 			setup: func(t *testing.T, dir string) {
-				if err := os.Chmod(filepath.Join(dir, "test-lib", "examples", "apiv1", "snippet_metadata_foo.json"), 0444); err != nil {
+				if err := os.Chmod(filepath.Join(dir, "test-lib", "examples", "apiv1", "snippet_metadata_foo.json"), 0o444); err != nil {
 					t.Fatal(err)
 				}
 			},
@@ -294,20 +294,20 @@ func TestBump_Error(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			output := t.TempDir()
 			libraryDir := filepath.Join(output, test.library.Name)
-			if err := os.MkdirAll(libraryDir, 0755); err != nil {
+			if err := os.MkdirAll(libraryDir, 0o755); err != nil {
 				t.Fatal(err)
 			}
 			snippetsDir := filepath.Join(output, "internal", "generated", "snippets", test.library.Name)
-			if err := os.MkdirAll(snippetsDir, 0755); err != nil {
+			if err := os.MkdirAll(snippetsDir, 0o755); err != nil {
 				t.Fatal(err)
 			}
 
 			for path, content := range test.initialFiles {
 				fullPath := filepath.Join(output, path)
-				if err := os.MkdirAll(filepath.Dir(fullPath), 0755); err != nil {
+				if err := os.MkdirAll(filepath.Dir(fullPath), 0o755); err != nil {
 					t.Fatal(err)
 				}
-				if err := os.WriteFile(fullPath, []byte(content), 0644); err != nil {
+				if err := os.WriteFile(fullPath, []byte(content), 0o644); err != nil {
 					t.Fatal(err)
 				}
 			}

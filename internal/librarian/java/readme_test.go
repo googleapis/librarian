@@ -42,19 +42,19 @@ func TestExtractSamples(t *testing.T) {
 			name: "extract successfully",
 			setupFiles: func(t *testing.T, dir string) {
 				samplesDir := filepath.Join(dir, "samples", "src", "main", "java")
-				if err := os.MkdirAll(samplesDir, 0755); err != nil {
+				if err := os.MkdirAll(samplesDir, 0o755); err != nil {
 					t.Fatal(err)
 				}
 				file1 := filepath.Join(samplesDir, "RequesterPays.java")
 				content1 := `// sample-metadata:
 //   title: Custom Title Override
 public class RequesterPays {}`
-				if err := os.WriteFile(file1, []byte(content1), 0644); err != nil {
+				if err := os.WriteFile(file1, []byte(content1), 0o644); err != nil {
 					t.Fatal(err)
 				}
 				file2 := filepath.Join(samplesDir, "DemoSample.java")
 				content2 := `public class DemoSample {}`
-				if err := os.WriteFile(file2, []byte(content2), 0644); err != nil {
+				if err := os.WriteFile(file2, []byte(content2), 0o644); err != nil {
 					t.Fatal(err)
 				}
 			},
@@ -101,14 +101,14 @@ func TestExtractSamples_Error(t *testing.T) {
 			name: "error on empty title override",
 			setupFiles: func(t *testing.T, dir string) {
 				samplesDir := filepath.Join(dir, "samples", "src", "main", "java")
-				if err := os.MkdirAll(samplesDir, 0755); err != nil {
+				if err := os.MkdirAll(samplesDir, 0o755); err != nil {
 					t.Fatal(err)
 				}
 				file := filepath.Join(samplesDir, "Sample.java")
 				content := `// sample-metadata:
 //   title: ""
 public class Invalid {}`
-				if err := os.WriteFile(file, []byte(content), 0644); err != nil {
+				if err := os.WriteFile(file, []byte(content), 0o644); err != nil {
 					t.Fatal(err)
 				}
 			},
@@ -118,14 +118,14 @@ public class Invalid {}`
 			name: "error on missing title line immediately following sample-metadata",
 			setupFiles: func(t *testing.T, dir string) {
 				samplesDir := filepath.Join(dir, "samples", "src", "main", "java")
-				if err := os.MkdirAll(samplesDir, 0755); err != nil {
+				if err := os.MkdirAll(samplesDir, 0o755); err != nil {
 					t.Fatal(err)
 				}
 				file := filepath.Join(samplesDir, "Sample.java")
 				content := `// sample-metadata:
 //   description: missing title line
 public class Invalid {}`
-				if err := os.WriteFile(file, []byte(content), 0644); err != nil {
+				if err := os.WriteFile(file, []byte(content), 0o644); err != nil {
 					t.Fatal(err)
 				}
 			},
@@ -163,20 +163,20 @@ func TestCollectSampleFiles(t *testing.T) {
 			name: "collects production java files only",
 			setupFiles: func(t *testing.T, dir string) {
 				samplesDir := filepath.Join(dir, "samples", "src", "main", "java", "com", "example")
-				if err := os.MkdirAll(samplesDir, 0755); err != nil {
+				if err := os.MkdirAll(samplesDir, 0o755); err != nil {
 					t.Fatal(err)
 				}
 				testDir := filepath.Join(dir, "samples", "src", "test", "java", "com", "example")
-				if err := os.MkdirAll(testDir, 0755); err != nil {
+				if err := os.MkdirAll(testDir, 0o755); err != nil {
 					t.Fatal(err)
 				}
-				if err := os.WriteFile(filepath.Join(samplesDir, "SampleA.java"), []byte("public class SampleA {}"), 0644); err != nil {
+				if err := os.WriteFile(filepath.Join(samplesDir, "SampleA.java"), []byte("public class SampleA {}"), 0o644); err != nil {
 					t.Fatal(err)
 				}
-				if err := os.WriteFile(filepath.Join(samplesDir, "README.md"), []byte("# Docs"), 0644); err != nil {
+				if err := os.WriteFile(filepath.Join(samplesDir, "README.md"), []byte("# Docs"), 0o644); err != nil {
 					t.Fatal(err)
 				}
-				if err := os.WriteFile(filepath.Join(testDir, "SampleATest.java"), []byte("public class SampleATest {}"), 0644); err != nil {
+				if err := os.WriteFile(filepath.Join(testDir, "SampleATest.java"), []byte("public class SampleATest {}"), 0o644); err != nil {
 					t.Fatal(err)
 				}
 			},
@@ -190,19 +190,19 @@ func TestCollectSampleFiles(t *testing.T) {
 				pkg1 := filepath.Join(dir, "samples", "src", "main", "java", "com", "example")
 				pkg2 := filepath.Join(dir, "samples", "src", "main", "java", "com", "example", "subpkg")
 				fakeJavaDir := filepath.Join(dir, "samples", "src", "main", "java", "com", "example", "FakeDir.java")
-				if err := os.MkdirAll(pkg1, 0755); err != nil {
+				if err := os.MkdirAll(pkg1, 0o755); err != nil {
 					t.Fatal(err)
 				}
-				if err := os.MkdirAll(pkg2, 0755); err != nil {
+				if err := os.MkdirAll(pkg2, 0o755); err != nil {
 					t.Fatal(err)
 				}
-				if err := os.MkdirAll(fakeJavaDir, 0755); err != nil {
+				if err := os.MkdirAll(fakeJavaDir, 0o755); err != nil {
 					t.Fatal(err)
 				}
-				if err := os.WriteFile(filepath.Join(pkg1, "Alpha.java"), []byte("public class Alpha {}"), 0644); err != nil {
+				if err := os.WriteFile(filepath.Join(pkg1, "Alpha.java"), []byte("public class Alpha {}"), 0o644); err != nil {
 					t.Fatal(err)
 				}
-				if err := os.WriteFile(filepath.Join(pkg2, "Beta.java"), []byte("package com.example.subpkg; public class Beta {}"), 0644); err != nil {
+				if err := os.WriteFile(filepath.Join(pkg2, "Beta.java"), []byte("package com.example.subpkg; public class Beta {}"), 0o644); err != nil {
 					t.Fatal(err)
 				}
 			},
@@ -256,10 +256,10 @@ func TestParseCodeSample(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			tempDir := t.TempDir()
 			absPath := filepath.Join(tempDir, test.relPath)
-			if err := os.MkdirAll(filepath.Dir(absPath), 0755); err != nil {
+			if err := os.MkdirAll(filepath.Dir(absPath), 0o755); err != nil {
 				t.Fatal(err)
 			}
-			if err := os.WriteFile(absPath, []byte(test.content), 0644); err != nil {
+			if err := os.WriteFile(absPath, []byte(test.content), 0o644); err != nil {
 				t.Fatal(err)
 			}
 
@@ -297,10 +297,10 @@ func TestParseCodeSample_Error(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			tempDir := t.TempDir()
 			absPath := filepath.Join(tempDir, test.relPath)
-			if err := os.MkdirAll(filepath.Dir(absPath), 0755); err != nil {
+			if err := os.MkdirAll(filepath.Dir(absPath), 0o755); err != nil {
 				t.Fatal(err)
 			}
-			if err := os.WriteFile(absPath, []byte(test.content), 0644); err != nil {
+			if err := os.WriteFile(absPath, []byte(test.content), 0o644); err != nil {
 				t.Fatal(err)
 			}
 
@@ -433,7 +433,7 @@ public class Normal {}`,
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			tmpPath := filepath.Join(t.TempDir(), "Sample.java")
-			if err := os.WriteFile(tmpPath, []byte(test.content), 0644); err != nil {
+			if err := os.WriteFile(tmpPath, []byte(test.content), 0o644); err != nil {
 				t.Fatal(err)
 			}
 			got, err := extractTitle(tmpPath)
@@ -468,7 +468,7 @@ func TestExtractTitle_Error(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			tmpPath := filepath.Join(t.TempDir(), "Sample.java")
-			if err := os.WriteFile(tmpPath, []byte(test.content), 0644); err != nil {
+			if err := os.WriteFile(tmpPath, []byte(test.content), 0o644); err != nil {
 				t.Fatal(err)
 			}
 			_, gotErr := extractTitle(tmpPath)
@@ -600,7 +600,7 @@ func TestLoadReadmePartials(t *testing.T) {
 			setupFiles: func(t *testing.T, dir string) {
 				path := filepath.Join(dir, readmePartialsFile)
 				content := `about_text: "Custom about"`
-				if err := os.WriteFile(path, []byte(content), 0644); err != nil {
+				if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
 					t.Fatal(err)
 				}
 			},
@@ -617,7 +617,7 @@ func TestLoadReadmePartials(t *testing.T) {
 			name: "empty partials file returns nil",
 			setupFiles: func(t *testing.T, dir string) {
 				path := filepath.Join(dir, readmePartialsFile)
-				if err := os.WriteFile(path, []byte(""), 0644); err != nil {
+				if err := os.WriteFile(path, []byte(""), 0o644); err != nil {
 					t.Fatal(err)
 				}
 			},
@@ -627,7 +627,7 @@ func TestLoadReadmePartials(t *testing.T) {
 			name: "partials file with only comments returns nil",
 			setupFiles: func(t *testing.T, dir string) {
 				path := filepath.Join(dir, readmePartialsFile)
-				if err := os.WriteFile(path, []byte("# only comments\n# no keys defined"), 0644); err != nil {
+				if err := os.WriteFile(path, []byte("# only comments\n# no keys defined"), 0o644); err != nil {
 					t.Fatal(err)
 				}
 			},
@@ -665,7 +665,7 @@ func TestLoadReadmePartials_Error(t *testing.T) {
 			setupFiles: func(t *testing.T, dir string) {
 				path := filepath.Join(dir, readmePartialsFile)
 				content := `key: [unclosed list`
-				if err := os.WriteFile(path, []byte(content), 0644); err != nil {
+				if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
 					t.Fatal(err)
 				}
 			},
@@ -707,23 +707,23 @@ func TestCollectSnippetFiles(t *testing.T) {
 				testDir := filepath.Join(dir, "samples", "src", "test", "java")
 				genDir := filepath.Join(dir, "samples", "snippets", "generated")
 				for _, d := range []string{validJavaDir, validXMLDir, testDir, genDir} {
-					if err := os.MkdirAll(d, 0755); err != nil {
+					if err := os.MkdirAll(d, 0o755); err != nil {
 						t.Fatal(err)
 					}
 				}
-				if err := os.WriteFile(filepath.Join(validJavaDir, "Sample.java"), []byte("public class Sample {}"), 0644); err != nil {
+				if err := os.WriteFile(filepath.Join(validJavaDir, "Sample.java"), []byte("public class Sample {}"), 0o644); err != nil {
 					t.Fatal(err)
 				}
-				if err := os.WriteFile(filepath.Join(validXMLDir, "pom.xml"), []byte("<project></project>"), 0644); err != nil {
+				if err := os.WriteFile(filepath.Join(validXMLDir, "pom.xml"), []byte("<project></project>"), 0o644); err != nil {
 					t.Fatal(err)
 				}
-				if err := os.WriteFile(filepath.Join(validJavaDir, "README.md"), []byte("# Ignore"), 0644); err != nil {
+				if err := os.WriteFile(filepath.Join(validJavaDir, "README.md"), []byte("# Ignore"), 0o644); err != nil {
 					t.Fatal(err)
 				}
-				if err := os.WriteFile(filepath.Join(testDir, "TestSample.java"), []byte("public class TestSample {}"), 0644); err != nil {
+				if err := os.WriteFile(filepath.Join(testDir, "TestSample.java"), []byte("public class TestSample {}"), 0o644); err != nil {
 					t.Fatal(err)
 				}
-				if err := os.WriteFile(filepath.Join(genDir, "GenSnippet.java"), []byte("public class GenSnippet {}"), 0644); err != nil {
+				if err := os.WriteFile(filepath.Join(genDir, "GenSnippet.java"), []byte("public class GenSnippet {}"), 0o644); err != nil {
 					t.Fatal(err)
 				}
 			},
@@ -839,7 +839,7 @@ func TestExtractSnippetsFromFile(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
 			tmpPath := filepath.Join(t.TempDir(), "SampleSnippet.java")
-			if err := os.WriteFile(tmpPath, []byte(test.content), 0644); err != nil {
+			if err := os.WriteFile(tmpPath, []byte(test.content), 0o644); err != nil {
 				t.Fatal(err)
 			}
 			got, err := extractSnippetsFromFile(tmpPath)
@@ -907,11 +907,22 @@ func TestRenderREADME(t *testing.T) {
 			setupFiles: func(t *testing.T, dir string) {
 				path := filepath.Join(dir, readmePartialsFile)
 				content := `about: "This is a great API."`
-				if err := os.WriteFile(path, []byte(content), 0644); err != nil {
+				if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
 					t.Fatal(err)
 				}
 			},
 			goldenFile: filepath.Join("testdata", "readme", "partials.golden"),
+		},
+		{
+			name: "renders storage README with dual dependencies",
+			setupParams: func(p *libraryPostProcessParams) {
+				meta := *p.metadata
+				meta.DistributionName = "com.google.cloud:google-cloud-storage"
+				meta.NamePretty = "Storage"
+				meta.APIShortname = "storage"
+				p.metadata = &meta
+			},
+			goldenFile: filepath.Join("testdata", "readme", "storage.golden"),
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
@@ -946,10 +957,10 @@ func TestRenderREADME(t *testing.T) {
 				t.Fatal(err)
 			}
 			if *update {
-				if err := os.MkdirAll(filepath.Dir(test.goldenFile), 0755); err != nil {
+				if err := os.MkdirAll(filepath.Dir(test.goldenFile), 0o755); err != nil {
 					t.Fatal(err)
 				}
-				if err := os.WriteFile(test.goldenFile, outputBytes, 0644); err != nil {
+				if err := os.WriteFile(test.goldenFile, outputBytes, 0o644); err != nil {
 					t.Fatal(err)
 				}
 			}
@@ -968,7 +979,7 @@ func TestRenderREADME_KeepSet(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "README.md")
 	wantContent := "Custom README content"
-	if err := os.WriteFile(path, []byte(wantContent), 0644); err != nil {
+	if err := os.WriteFile(path, []byte(wantContent), 0o644); err != nil {
 		t.Fatal(err)
 	}
 	params := libraryPostProcessParams{outDir: dir}

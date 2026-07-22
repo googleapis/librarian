@@ -64,7 +64,7 @@ func TestGenerateReadme(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			output := filepath.Join(t.TempDir(), "packages", library.Name)
 			sampleDir := filepath.Join(output, "samples", "generated", "v1")
-			if err := os.MkdirAll(sampleDir, 0755); err != nil {
+			if err := os.MkdirAll(sampleDir, 0o755); err != nil {
 				t.Fatal(err)
 			}
 			for _, sample := range []string{
@@ -73,7 +73,7 @@ func TestGenerateReadme(t *testing.T) {
 				"secret_manager_service.create_secret.js",
 				"secret_manager_service.delete_secret.js",
 			} {
-				if err := os.WriteFile(filepath.Join(sampleDir, sample), []byte("example"), 0644); err != nil {
+				if err := os.WriteFile(filepath.Join(sampleDir, sample), []byte("example"), 0o644); err != nil {
 					t.Fatal(err)
 				}
 			}
@@ -131,7 +131,7 @@ func TestGenerateReadme_Error(t *testing.T) {
 			output: func(t *testing.T) string {
 				tempDir := t.TempDir()
 				filePath := filepath.Join(tempDir, "README.md")
-				if err := os.WriteFile(filePath, []byte("existing file"), 0644); err != nil {
+				if err := os.WriteFile(filePath, []byte("existing file"), 0o644); err != nil {
 					t.Fatal(err)
 				}
 				return filePath
@@ -147,11 +147,11 @@ func TestGenerateReadme_Error(t *testing.T) {
 			googleapisDir: absGoogleapisDir,
 			output: func(t *testing.T) string {
 				tempDir := t.TempDir()
-				if err := os.Chmod(tempDir, 0555); err != nil {
+				if err := os.Chmod(tempDir, 0o555); err != nil {
 					t.Fatal(err)
 				}
 				t.Cleanup(func() {
-					_ = os.Chmod(tempDir, 0755)
+					_ = os.Chmod(tempDir, 0o755)
 				})
 				return tempDir
 			},
@@ -214,10 +214,10 @@ func TestFindSampleMetadata(t *testing.T) {
 				}
 				for _, file := range files {
 					fullPath := filepath.Join(generatedDir, file.path)
-					if err := os.MkdirAll(filepath.Dir(fullPath), 0755); err != nil {
+					if err := os.MkdirAll(filepath.Dir(fullPath), 0o755); err != nil {
 						t.Fatal(err)
 					}
-					if err := os.WriteFile(fullPath, []byte(file.content), 0644); err != nil {
+					if err := os.WriteFile(fullPath, []byte(file.content), 0o644); err != nil {
 						t.Fatal(err)
 					}
 				}
@@ -252,15 +252,15 @@ func TestFindSampleMetadata(t *testing.T) {
 func TestFindSampleMetadata_Error(t *testing.T) {
 	tmpDir := t.TempDir()
 	generatedDir := filepath.Join(tmpDir, "samples", "generated")
-	if err := os.MkdirAll(generatedDir, 0755); err != nil {
+	if err := os.MkdirAll(generatedDir, 0o755); err != nil {
 		t.Fatal(err)
 	}
 	unreadableSubdir := filepath.Join(generatedDir, "unreadable")
-	if err := os.MkdirAll(unreadableSubdir, 0000); err != nil {
+	if err := os.MkdirAll(unreadableSubdir, 0o000); err != nil {
 		t.Fatal(err)
 	}
 	t.Cleanup(func() {
-		_ = os.Chmod(unreadableSubdir, 0755)
+		_ = os.Chmod(unreadableSubdir, 0o755)
 	})
 	_, err := findSampleMetadata(tmpDir)
 	if !errors.Is(err, errFindSampleMetadata) {

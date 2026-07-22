@@ -68,7 +68,7 @@ func DeleteMethod(path, funcName, language string) error {
 	for _, bound := range slices.Backward(boundsList) {
 		data = append(data[:bound.start], data[bound.end:]...)
 	}
-	return os.WriteFile(path, data, 0644)
+	return os.WriteFile(path, data, 0o644)
 }
 
 // findMethodBounds locates the physical byte boundaries of all valid matches for the signature.

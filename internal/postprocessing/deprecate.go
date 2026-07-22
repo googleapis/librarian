@@ -76,7 +76,7 @@ func DeprecateMethod(path, funcName, deprecationMessage, language string) error 
 	indentation := trimLineIndentation(lines[sigLineIdx])
 	lines = annotateMethod(lines, sigLineIdx, indentation, header)
 	lines = addJavadocTag(lines, indentation, header, "deprecated", deprecationMessage)
-	return os.WriteFile(path, bytes.Join(lines, []byte("\n")), 0644)
+	return os.WriteFile(path, bytes.Join(lines, []byte("\n")), 0o644)
 }
 
 // analyzeMethodHeader scans the lines above a method signature to identify existing Javadoc and annotations.

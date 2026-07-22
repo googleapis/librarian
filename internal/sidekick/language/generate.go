@@ -78,7 +78,7 @@ func generateElement(outDir string, element any, provider TemplateProvider, gen 
 		return err
 	}
 	destination := filepath.Join(outDir, gen.OutputPath)
-	if err := os.MkdirAll(filepath.Dir(destination), 0755); err != nil {
+	if err := os.MkdirAll(filepath.Dir(destination), 0o755); err != nil {
 		return err
 	}
 	nestedProvider := mustacheProvider{
@@ -89,5 +89,5 @@ func generateElement(outDir string, element any, provider TemplateProvider, gen 
 	if err != nil {
 		return err
 	}
-	return os.WriteFile(destination, []byte(s), 0666)
+	return os.WriteFile(destination, []byte(s), 0o666)
 }

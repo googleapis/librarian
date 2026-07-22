@@ -45,7 +45,7 @@ func TestGenerate(t *testing.T) {
 	repoRoot := t.TempDir()
 	t.Chdir(repoRoot)
 	destDir := filepath.Join(repoRoot, "output")
-	if err := os.MkdirAll(destDir, 0755); err != nil {
+	if err := os.MkdirAll(destDir, 0o755); err != nil {
 		t.Fatal(err)
 	}
 	// Symlink mock owlbot.py. Tests use a simplified copy-only stub to
@@ -158,10 +158,10 @@ func TestGatherProtos(t *testing.T) {
 	}
 	for _, f := range files {
 		p := filepath.Join(tmp, f.path)
-		if err := os.MkdirAll(filepath.Dir(p), 0755); err != nil {
+		if err := os.MkdirAll(filepath.Dir(p), 0o755); err != nil {
 			t.Fatal(err)
 		}
-		if err := os.WriteFile(p, []byte(""), 0644); err != nil {
+		if err := os.WriteFile(p, []byte(""), 0o644); err != nil {
 			t.Fatal(err)
 		}
 	}
@@ -182,28 +182,16 @@ func TestGatherProtos(t *testing.T) {
 func TestGapicOpts(t *testing.T) {
 	for _, test := range []struct {
 		name           string
-		api            *config.API
 		apiMetadata    *serviceconfig.API
 		grpcConfigPath string
 		want           []string
 	}{
 		{
 			name: "defaults",
-			api:  &config.API{},
 			want: []string{"metadata", "transport=grpc+rest", "migration-mode=NEW_SURFACE_ONLY", "generate-snippets"},
 		},
 		{
-			name: "custom migration mode",
-			api: &config.API{
-				PHP: &config.PHPAPI{
-					MigrationMode: "MIGRATING",
-				},
-			},
-			want: []string{"metadata", "transport=grpc+rest", "migration-mode=MIGRATING", "generate-snippets"},
-		},
-		{
 			name: "with grpc config and service yaml",
-			api:  &config.API{},
 			apiMetadata: &serviceconfig.API{
 				ServiceConfig: "service.yaml",
 			},
@@ -217,7 +205,6 @@ func TestGapicOpts(t *testing.T) {
 		},
 		{
 			name: "skip rest numeric enums",
-			api:  &config.API{},
 			apiMetadata: &serviceconfig.API{
 				SkipRESTNumericEnums: []string{"php"},
 			},
@@ -226,7 +213,6 @@ func TestGapicOpts(t *testing.T) {
 		},
 		{
 			name: "custom transport",
-			api:  &config.API{},
 			apiMetadata: &serviceconfig.API{
 				Transports: map[string]serviceconfig.Transport{
 					"php": serviceconfig.Transport("rest"),
@@ -237,7 +223,7 @@ func TestGapicOpts(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got := gapicOpts(test.api, test.apiMetadata, test.grpcConfigPath)
+			got := gapicOpts(test.apiMetadata, test.grpcConfigPath)
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
@@ -305,10 +291,10 @@ func TestGatherGAPICProtos(t *testing.T) {
 			tempDir := t.TempDir()
 			for _, file := range test.setupFiles {
 				p := filepath.Join(tempDir, file)
-				if err := os.MkdirAll(filepath.Dir(p), 0755); err != nil {
+				if err := os.MkdirAll(filepath.Dir(p), 0o755); err != nil {
 					t.Fatal(err)
 				}
-				if err := os.WriteFile(p, []byte(""), 0644); err != nil {
+				if err := os.WriteFile(p, []byte(""), 0o644); err != nil {
 					t.Fatal(err)
 				}
 			}
@@ -351,10 +337,10 @@ func TestGatherGAPICProtos_Error(t *testing.T) {
 			tempDir := t.TempDir()
 			for _, file := range test.setupFiles {
 				p := filepath.Join(tempDir, file)
-				if err := os.MkdirAll(filepath.Dir(p), 0755); err != nil {
+				if err := os.MkdirAll(filepath.Dir(p), 0o755); err != nil {
 					t.Fatal(err)
 				}
-				if err := os.WriteFile(p, []byte(""), 0644); err != nil {
+				if err := os.WriteFile(p, []byte(""), 0o644); err != nil {
 					t.Fatal(err)
 				}
 			}

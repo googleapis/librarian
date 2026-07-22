@@ -77,7 +77,7 @@ func Generate(ctx context.Context, cfg *config.Config, library *config.Library, 
 
 	// Create output directory in case it's a new library
 	// (or cleaning has removed everything).
-	if err := os.MkdirAll(outdir, 0755); err != nil {
+	if err := os.MkdirAll(outdir, 0o755); err != nil {
 		return fmt.Errorf("failed to create output directory: %w", err)
 	}
 
@@ -154,7 +154,7 @@ func Generate(ctx context.Context, cfg *config.Config, library *config.Library, 
 func prepareGenerationRoot(packageRoot string) (string, error) {
 	packageName := filepath.Base(packageRoot)
 	generationRoot := filepath.Join(packageRoot, "tmp")
-	if err := os.MkdirAll(filepath.Join(generationRoot, "packages"), 0755); err != nil {
+	if err := os.MkdirAll(filepath.Join(generationRoot, "packages"), 0o755); err != nil {
 		return "", err
 	}
 	if err := os.Symlink("../..", filepath.Join(generationRoot, "packages", packageName)); err != nil {
@@ -252,7 +252,7 @@ func generateAPI(ctx context.Context, api *config.API, library *config.Library, 
 	protoOnly := isProtoOnly(api, library)
 	stagingChildDirectory := getStagingChildDirectory(api.Path, protoOnly)
 	stagingDir := filepath.Join(generationRoot, "owl-bot-staging", library.Name, stagingChildDirectory)
-	if err := os.MkdirAll(stagingDir, 0755); err != nil {
+	if err := os.MkdirAll(stagingDir, 0o755); err != nil {
 		return err
 	}
 	protocOptions, err := createProtocOptions(api, library, googleapisDir, stagingDir)
@@ -298,7 +298,7 @@ func stageProtoFiles(googleapisDir, targetDir string, relativeProtoPaths []strin
 		sourceProtoFile := filepath.Join(googleapisDir, proto)
 		targetProtoFile := filepath.Join(targetDir, proto)
 		dir := filepath.Dir(targetProtoFile)
-		if err := os.MkdirAll(dir, 0755); err != nil {
+		if err := os.MkdirAll(dir, 0o755); err != nil {
 			return fmt.Errorf("creating directory %s failed: %w", dir, err)
 		}
 		if err := filesystem.CopyFile(sourceProtoFile, targetProtoFile); err != nil {
@@ -456,7 +456,7 @@ func copyReadmeToDocsDir(lib *config.Library, outdir string) error {
 	}
 
 	// Create docs directory if it doesn't exist
-	if err := os.MkdirAll(docsPath, 0755); err != nil {
+	if err := os.MkdirAll(docsPath, 0o755); err != nil {
 		return err
 	}
 
@@ -470,7 +470,7 @@ func copyReadmeToDocsDir(lib *config.Library, outdir string) error {
 	}
 
 	// Write content to destination as a real file
-	return os.WriteFile(destPath, content, 0644)
+	return os.WriteFile(destPath, content, 0o644)
 }
 
 // cleanUpFilesAfterPostProcessing cleans up files after post processing.
@@ -582,11 +582,11 @@ func createChangelog(libName, output string) error {
 		return statErr
 	}
 	docs := filepath.Join(output, "docs")
-	if err := os.MkdirAll(docs, 0755); err != nil {
+	if err := os.MkdirAll(docs, 0o755); err != nil {
 		return err
 	}
 	content := fmt.Sprintf(changelogTemplate, libName)
-	if err := os.WriteFile(rootChangelog, []byte(content), 0644); err != nil {
+	if err := os.WriteFile(rootChangelog, []byte(content), 0o644); err != nil {
 		return err
 	}
 	// Create a relative symlink in docs: CHANGELOG.md => ../CHANGELOG.md

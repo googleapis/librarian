@@ -10,7 +10,6 @@ This document describes the schema for the SDK YAML.
 | `description` | string | Provides the information for describing an API. |
 | `discovery` | string | Is the file path to a discovery document in github.com/googleapis/discovery-artifact-manager. Used by sidekick languages (Rust, Dart) as an alternative to proto files. |
 | `documentation_uri` | string | Overrides the product documentation URI from the service config's publishing section. |
-| `languages` | list of string | Restricts which languages can generate client libraries for this API. Use "all" to indicate all languages can use this API.<br><br>Restrictions exist for several reasons:<br>- Newer languages (Rust, Dart) skip older beta versions when stable versions exist<br>- Python has historical legacy APIs not available to other languages<br>- Some APIs (like DIREGAPIC protos) are only used by specific languages |
 | `new_issue_uri` | string | Overrides the new issue URI from the service config's publishing section. |
 | `skip_rest_numeric_enums` | list of string | Lists languages that should not pass the rest-numeric-enums flag to the generator. The special value "all" skips it for every language. If empty, all languages use numeric enums. |
 | `open_api` | string | Is the file path to an OpenAPI spec, currently in internal/testdata. This is not an official spec yet and exists only for Rust to validate OpenAPI support. |
