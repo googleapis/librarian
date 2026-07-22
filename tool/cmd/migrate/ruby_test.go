@@ -386,3 +386,69 @@ func TestMergeLibs(t *testing.T) {
 		})
 	}
 }
+
+func TestParseExistingLibraries(t *testing.T) {
+	for _, test := range []struct {
+		name  string
+		setup func(t *testing.T, dir string)
+		want  []*config.Library
+	}{
+		{
+			name: "valid librarian.yaml with libraries",
+			setup: func(t *testing.T, dir string) {
+				cfg := &config.Config{
+					Libraries: []*config.Library{
+						{
+							Name:    "google-cloud-secret_manager-v1",
+							Version: "1.2.0",
+							APIs: []*config.API{
+								{Path: "google/cloud/secretmanager/v1"},
+							},
+						},
+					},
+				}
+				if err := yaml.Write(filepath.Join(dir, config.LibrarianYAML), cfg); err != nil {
+					t.Fatal(err)
+				}
+			},
+			want: []*config.Library{
+				{
+					Name:    "google-cloud-secret_manager-v1",
+					Version: "1.2.0",
+					APIs: []*config.API{
+						{Path: "google/cloud/secretmanager/v1"},
+					},
+				},
+			},
+		},
+		{
+			name:  "librarian.yaml does not exist",
+			setup: func(t *testing.T, dir string) {},
+			want:  nil,
+		},
+		{
+			name: "librarian.yaml without libraries",
+			setup: func(t *testing.T, dir string) {
+				cfg := &config.Config{
+					Language: config.LanguageRuby,
+				}
+				if err := yaml.Write(filepath.Join(dir, config.LibrarianYAML), cfg); err != nil {
+					t.Fatal(err)
+				}
+			},
+			want: nil,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			dir := t.TempDir()
+			test.setup(t, dir)
+			got, err := parseExistingLibraries(dir)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
