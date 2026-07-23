@@ -119,6 +119,12 @@ func resolveDependencies(ctx context.Context, cfg *config.Config, name string) (
 			return nil, err
 		}
 		return java.ResolveMixinDependencies(cfg, lib, sources)
+	case config.LanguagePhp:
+		lib, sources, err := setupResolve(ctx, cfg, name)
+		if err != nil {
+			return nil, err
+		}
+		return php.ResolveMixinDependencies(cfg, lib, sources)
 	case config.LanguageRust:
 		lib, sources, err := setupResolve(ctx, cfg, name)
 		if err != nil {

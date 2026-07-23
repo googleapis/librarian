@@ -12,9 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package java
+package php
 
 import (
+	"slices"
 	"sort"
 
 	"github.com/googleapis/librarian/internal/config"
@@ -22,7 +23,7 @@ import (
 	"github.com/googleapis/librarian/internal/sources"
 )
 
-// ResolveMixinDependencies automatically resolves mixin dependencies for a Java library.
+// ResolveMixinDependencies automatically resolves mixin dependencies for a PHP library.
 func ResolveMixinDependencies(cfg *config.Config, lib *config.Library, srcs *sources.Sources) (*config.Config, error) {
 	if len(lib.APIs) == 0 {
 		return cfg, nil
@@ -37,42 +38,23 @@ func ResolveMixinDependencies(cfg *config.Config, lib *config.Library, srcs *sou
 
 // resolveAPIMixinDependencies automatically resolves mixin dependencies for a single API.
 // It parses the API's service config to identify and add required mixin dependencies
-// (e.g., locations, IAM policy) to the API's Java configuration.
+// (e.g., locations, IAM policy) to the API's PHP configuration.
 func resolveAPIMixinDependencies(lib *config.Library, apiCfg *config.API, srcs *sources.Sources) error {
-	if apiCfg.Java == nil {
-		apiCfg.Java = &config.JavaAPI{}
+	if apiCfg.PHP == nil {
+		apiCfg.PHP = &config.PHPAPI{}
 	}
 
 	srcCfg := sources.NewSourceConfig(srcs, lib.Roots)
 	primaryRoot := srcCfg.Root(srcCfg.ActiveRoots[0])
-	mixins, err := serviceconfig.ExtractMixinProtos(primaryRoot, apiCfg.Path, config.LanguageJava)
+	mixins, err := serviceconfig.ExtractMixinProtos(primaryRoot, apiCfg.Path, config.LanguagePhp)
 	if err != nil {
 		return err
 	}
 	for _, mixinProto := range mixins {
-		if !hasAdditionalProto(apiCfg.Java.AdditionalProtos, mixinProto) {
-			apiCfg.Java.AdditionalProtos = append(apiCfg.Java.AdditionalProtos, &config.AdditionalProto{
-				Path:                 mixinProto,
-				GenerateProtoClasses: false,
-				CopyToOutput:         false,
-			})
+		if !slices.Contains(apiCfg.PHP.AdditionalProtos, mixinProto) {
+			apiCfg.PHP.AdditionalProtos = append(apiCfg.PHP.AdditionalProtos, mixinProto)
 		}
 	}
-	sortAdditionalProtos(apiCfg.Java.AdditionalProtos)
+	sort.Strings(apiCfg.PHP.AdditionalProtos)
 	return nil
-}
-
-func hasAdditionalProto(protos []*config.AdditionalProto, path string) bool {
-	for _, p := range protos {
-		if p.Path == path {
-			return true
-		}
-	}
-	return false
-}
-
-func sortAdditionalProtos(protos []*config.AdditionalProto) {
-	sort.Slice(protos, func(i, j int) bool {
-		return protos[i].Path < protos[j].Path
-	})
 }
