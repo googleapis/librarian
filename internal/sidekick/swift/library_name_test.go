@@ -20,7 +20,7 @@ import (
 	"github.com/googleapis/librarian/internal/sidekick/api"
 )
 
-func TestPackageName(t *testing.T) {
+func TestLibraryName(t *testing.T) {
 	for _, test := range []struct {
 		name  string
 		input string
@@ -29,33 +29,33 @@ func TestPackageName(t *testing.T) {
 		{
 			name:  "cloud storage v2",
 			input: "google.cloud.storage.v2",
-			want:  "google-cloud-storage-v2",
+			want:  "GoogleCloudStorageV2",
 		},
 		{
 			name:  "iam v1",
 			input: "google.iam.v1",
-			want:  "google-iam-v1",
+			want:  "GoogleIamV1",
 		},
 		{
 			name:  "cloud location",
 			input: "google.cloud.location",
-			want:  "google-cloud-location",
+			want:  "GoogleCloudLocation",
 		},
 		{
 			name:  "api",
 			input: "google.api",
-			want:  "google-api",
+			want:  "GoogleApi",
 		},
 		{
 			name:  "grafeas v1",
 			input: "grafeas.v1",
-			want:  "grafeas-v1",
+			want:  "GoogleGrafeasV1",
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			model := api.NewTestAPI(nil, nil, nil)
 			model.PackageName = test.input
-			got := PackageName(model)
+			got := LibraryName(model, nil)
 			if got != test.want {
 				t.Errorf("mismatch got = %q, want %q", got, test.want)
 			}

@@ -36,10 +36,11 @@ func TestAnnotateService(t *testing.T) {
 			serviceName: "IAM",
 			doc:         "IAM service documentation.",
 			wantAnnotations: &serviceAnnotations{
-				Name:       "IAM",
-				ClientName: "IAMClient",
-				StubPrefix: "IAM",
-				DocLines:   []string{"IAM service documentation."},
+				Name:        "IAM",
+				LibraryName: "GoogleTest",
+				ClientName:  "IAMClient",
+				StubPrefix:  "IAM",
+				DocLines:    []string{"IAM service documentation."},
 			},
 			wantImports: []string{"GoogleCloudWkt"},
 		},
@@ -48,10 +49,11 @@ func TestAnnotateService(t *testing.T) {
 			serviceName: "Protocol",
 			doc:         "Docs are not relevant.",
 			wantAnnotations: &serviceAnnotations{
-				Name:       "Protocol_",
-				ClientName: "ProtocolClient",
-				StubPrefix: "Protocol",
-				DocLines:   []string{"Docs are not relevant."},
+				Name:        "Protocol_",
+				LibraryName: "GoogleTest",
+				ClientName:  "ProtocolClient",
+				StubPrefix:  "Protocol",
+				DocLines:    []string{"Docs are not relevant."},
 			},
 			wantImports: []string{"GoogleCloudWkt"},
 		},
@@ -60,10 +62,11 @@ func TestAnnotateService(t *testing.T) {
 			serviceName: "SecretManagerService",
 			doc:         "Secret Manager Service documentation.\nLine 2.",
 			wantAnnotations: &serviceAnnotations{
-				Name:       "SecretManagerService",
-				ClientName: "SecretManagerServiceClient",
-				StubPrefix: "SecretManagerService",
-				DocLines:   []string{"Secret Manager Service documentation.", "Line 2."},
+				Name:        "SecretManagerService",
+				LibraryName: "GoogleTest",
+				ClientName:  "SecretManagerServiceClient",
+				StubPrefix:  "SecretManagerService",
+				DocLines:    []string{"Secret Manager Service documentation.", "Line 2."},
 			},
 			wantImports: []string{"GoogleCloudWkt"},
 		},
@@ -74,13 +77,14 @@ func TestAnnotateService(t *testing.T) {
 				Documentation: test.doc,
 			}
 			model := api.NewTestAPI(nil, nil, []*api.Service{s})
+			model.PackageName = "test"
 			codec := newTestCodec(t, model, nil)
 
 			if err := codec.annotateModel(); err != nil {
 				t.Fatal(err)
 			}
 
-			if diff := cmp.Diff(test.wantAnnotations, s.Codec, cmpopts.IgnoreFields(serviceAnnotations{}, "PackageName", "QuickstartMethod", "Model", "DependsOn")); diff != "" {
+			if diff := cmp.Diff(test.wantAnnotations, s.Codec, cmpopts.IgnoreFields(serviceAnnotations{}, "QuickstartMethod", "Model", "DependsOn")); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 
