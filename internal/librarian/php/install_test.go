@@ -107,7 +107,7 @@ func TestInstall(t *testing.T) {
 				phpPath, _ := exec.LookPath("php")
 				want := phpWrapperContent(phpPath, destPath)
 				if diff := cmp.Diff(want, string(b)); diff != "" {
-					t.Errorf("wrapper content mismatch (-want +got):\n%s", diff)
+					t.Errorf("mismatch (-want +got):\n%s", diff)
 				}
 			},
 		},
@@ -164,7 +164,7 @@ func TestInstall(t *testing.T) {
 				phpPath, _ := exec.LookPath("php")
 				want := phpWrapperContent(phpPath, destPath)
 				if diff := cmp.Diff(want, string(b)); diff != "" {
-					t.Errorf("wrapper content mismatch (-want +got):\n%s", diff)
+					t.Errorf("mismatch (-want +got):\n%s", diff)
 				}
 			},
 		},
@@ -208,7 +208,7 @@ func TestInstall(t *testing.T) {
 				phpPath, _ := exec.LookPath("php")
 				want := phpWrapperContent(phpPath, destPath)
 				if diff := cmp.Diff(want, string(b)); diff != "" {
-					t.Errorf("wrapper content mismatch (-want +got):\n%s", diff)
+					t.Errorf("mismatch (-want +got):\n%s", diff)
 				}
 			},
 		},
@@ -327,7 +327,7 @@ func TestCreateBinWrapper(t *testing.T) {
 				t.Fatal(err)
 			}
 			if diff := cmp.Diff(content, string(b)); diff != "" {
-				t.Errorf("wrapper content mismatch (-want +got):\n%s", diff)
+				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 			info, err := os.Stat(wrapperPath)
 			if err != nil {
