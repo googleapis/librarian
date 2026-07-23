@@ -482,9 +482,9 @@ func (annotate *annotateModel) annotateModel(options map[string]string) error {
 	var exampleMethodResponseType string
 	var exampleMethodReturnsValue bool
 
-	if exampleMethod, exampleService := findExampleMethod(model.Services); exampleMethod != nil && exampleService != nil {
-		exampleServiceName = exampleMethod.Codec.(*serviceAnnotations).Name
-		mAnn := exampleService.Codec.(*methodAnnotation)
+	if exampleService, exampleMethod := findExampleMethod(model.Services); exampleService != nil && exampleMethod != nil {
+		exampleServiceName = exampleService.Codec.(*serviceAnnotations).Name
+		mAnn := exampleMethod.Codec.(*methodAnnotation)
 		exampleMethodName = mAnn.Name
 		exampleMethodRequestType = mAnn.RequestType
 		exampleMethodResponseType = mAnn.ResponseType
