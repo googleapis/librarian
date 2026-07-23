@@ -17,8 +17,10 @@ package dart
 import (
 	"fmt"
 	"maps"
+	"math/rand"
 	"slices"
 	"testing"
+	"time"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/sample"
@@ -2168,10 +2170,17 @@ func TestFindExampleMethod(t *testing.T) {
 	}
 
 	msgWithRequired := &api.Message{
-		Fields: []*api.Field{requiredField},
+		Fields:  []*api.Field{requiredField},
+		Package: "mypackage",
 	}
 	msgWithoutRequired := &api.Message{
-		Fields: []*api.Field{optionalField},
+		Fields:  []*api.Field{optionalField},
+		Package: "mypackage",
+	}
+
+	differentPackageMsg := &api.Message{
+		Fields:  []*api.Field{optionalField},
+		Package: "otherpackage",
 	}
 
 	lroMethod := &api.Method{
@@ -2207,6 +2216,14 @@ func TestFindExampleMethod(t *testing.T) {
 		OutputType:   msgWithRequired,
 	}
 
+	differentPackageMethod := &api.Method{
+		Name:         "DifferentPackageMethod",
+		IsSimple:     true,
+		ReturnsEmpty: false,
+		InputType:    differentPackageMsg,
+		OutputType:   differentPackageMsg,
+	}
+
 	perfectMethod := &api.Method{
 		Name:         "PerfectMethod",
 		IsSimple:     true,
@@ -2222,39 +2239,50 @@ func TestFindExampleMethod(t *testing.T) {
 	}{
 		{
 			name:    "perfect method exists",
-			methods: []*api.Method{lroMethod, streamingMethod, voidMethod, requiredOutputMethod, requiredInputMethod, perfectMethod},
+			methods: []*api.Method{perfectMethod, requiredInputMethod, requiredOutputMethod, voidMethod, differentPackageMethod, streamingMethod, lroMethod},
 			want:    perfectMethod,
 		},
 		{
-			name:    "relax input requirement",
-			methods: []*api.Method{lroMethod, streamingMethod, voidMethod, requiredOutputMethod, requiredInputMethod},
+			name:    "best method has a request type with a required field",
+			methods: []*api.Method{requiredInputMethod, requiredOutputMethod, voidMethod, differentPackageMethod, streamingMethod, lroMethod},
 			want:    requiredInputMethod,
 		},
 		{
-			name:    "relax return required requirement",
-			methods: []*api.Method{lroMethod, streamingMethod, voidMethod, requiredOutputMethod},
+			name:    "best method has a response type with a required field",
+			methods: []*api.Method{requiredOutputMethod, voidMethod, differentPackageMethod, streamingMethod, lroMethod},
 			want:    requiredOutputMethod,
 		},
 		{
-			name:    "relax return value requirement",
-			methods: []*api.Method{lroMethod, streamingMethod, voidMethod},
+			name:    "best method has void return",
+			methods: []*api.Method{voidMethod, differentPackageMethod, streamingMethod, lroMethod},
 			want:    voidMethod,
 		},
 		{
-			name:    "only LRO methods exist",
-			methods: []*api.Method{lroMethod},
+			name:    "best method has types from other packages",
+			methods: []*api.Method{differentPackageMethod, streamingMethod, lroMethod},
+			want:    differentPackageMethod,
+		},
+		{
+			name:    "only streaming and LRO methods exist",
+			methods: []*api.Method{streamingMethod, lroMethod},
 			want:    nil,
 		},
 		{
-			name:    "only LRO and streaming methods exist",
-			methods: []*api.Method{lroMethod, streamingMethod},
+			name:    "only LRO method exists",
+			methods: []*api.Method{lroMethod},
 			want:    nil,
 		},
 	} {
+		r := rand.New(rand.NewSource(time.Now().UnixNano()))
 		t.Run(test.name, func(t *testing.T) {
+			methods := slices.Clone(test.methods)
+			r.Shuffle(len(methods), func(i, j int) {
+				methods[i], methods[j] = methods[j], methods[i]
+			})
 			s := &api.Service{
+				Package: "mypackage",
 				Codec: &serviceAnnotations{
-					Methods: test.methods,
+					Methods: methods,
 				},
 			}
 			_, got := findExampleMethod([]*api.Service{s})

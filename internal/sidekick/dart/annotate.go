@@ -1504,29 +1504,36 @@ func findExampleMethod(services []*api.Service) (*api.Service, *api.Method) {
 		return false
 	}
 
-	type candidate struct {
-		service                 *api.Service
-		method                  *api.Method
-		ReturnsEmpty            bool
-		RequestTypeHasRequired  bool
-		ResponseTypeHasRequired bool
+	type exampleMethod struct {
+		service                   *api.Service
+		method                    *api.Method
+		requestTypeInSamePackage  bool
+		responseTypeInSamePackage bool
+		returnsEmpty              bool
+		requestTypeHasRequired    bool
+		responseTypeHasRequired   bool
 	}
-	var candidates []candidate
+	var candidates []exampleMethod
 	for _, s := range services {
 		if s.Codec == nil {
 			continue
+		}
+		inSamePackage := func(msg *api.Message) bool {
+			return msg != nil && msg.Package == s.Package
 		}
 		sAnn := s.Codec.(*serviceAnnotations)
 		for _, m := range sAnn.Methods {
 			if !m.IsSimple || m.OperationInfo != nil || m.OutputTypeID == ".google.longrunning.Operation" {
 				continue
 			}
-			candidates = append(candidates, candidate{
-				service:                 s,
-				method:                  m,
-				ReturnsEmpty:            m.ReturnsEmpty,
-				RequestTypeHasRequired:  hasRequired(m.InputType),
-				ResponseTypeHasRequired: hasRequired(m.OutputType),
+			candidates = append(candidates, exampleMethod{
+				service:                   s,
+				method:                    m,
+				requestTypeInSamePackage:  inSamePackage(m.InputType),
+				responseTypeInSamePackage: inSamePackage(m.OutputType),
+				returnsEmpty:              m.ReturnsEmpty,
+				requestTypeHasRequired:    hasRequired(m.InputType),
+				responseTypeHasRequired:   hasRequired(m.OutputType),
 			})
 		}
 	}
@@ -1536,7 +1543,7 @@ func findExampleMethod(services []*api.Service) (*api.Service, *api.Method) {
 	}
 
 	// Comparator to sort candidates such that the "best" comes first.
-	slices.SortFunc(candidates, func(a, b candidate) int {
+	slices.SortFunc(candidates, func(a, b exampleMethod) int {
 		boolToInt := func(b bool) int {
 			if b {
 				return 1
@@ -1544,9 +1551,11 @@ func findExampleMethod(services []*api.Service) (*api.Service, *api.Method) {
 			return 0
 		}
 		return cmp.Or(
-			cmp.Compare(boolToInt(a.ReturnsEmpty), boolToInt(b.ReturnsEmpty)),
-			cmp.Compare(boolToInt(a.ResponseTypeHasRequired), boolToInt(b.ResponseTypeHasRequired)),
-			cmp.Compare(boolToInt(a.RequestTypeHasRequired), boolToInt(b.RequestTypeHasRequired)),
+			cmp.Compare(boolToInt(b.requestTypeInSamePackage), boolToInt(a.requestTypeInSamePackage)),
+			cmp.Compare(boolToInt(b.responseTypeInSamePackage), boolToInt(a.responseTypeInSamePackage)),
+			cmp.Compare(boolToInt(a.returnsEmpty), boolToInt(b.returnsEmpty)),
+			cmp.Compare(boolToInt(a.responseTypeHasRequired), boolToInt(b.responseTypeHasRequired)),
+			cmp.Compare(boolToInt(a.requestTypeHasRequired), boolToInt(b.requestTypeHasRequired)),
 		)
 	})
 
