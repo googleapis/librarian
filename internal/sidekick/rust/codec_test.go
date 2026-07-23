@@ -2371,14 +2371,14 @@ func TestGenerateMethod_Streaming(t *testing.T) {
 			want: true,
 		},
 		{
-			name:                        "skips bidirectional streaming method implementations when includeBidiStreamingMethods is enabled",
+			name:                        "generates bidirectional streaming method implementations when includeBidiStreamingMethods is enabled",
 			includeBidiStreamingMethods: true,
 			method: &api.Method{
 				Name:                "BidiStreaming",
 				ClientSideStreaming: true,
 				ServerSideStreaming: true,
 			},
-			want: false,
+			want: true,
 		},
 		{
 			name:                        "skips client-only streaming when includeBidiStreamingMethods is enabled",
