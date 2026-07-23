@@ -20,7 +20,6 @@ import (
 	"math/rand"
 	"slices"
 	"testing"
-	"time"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/sample"
