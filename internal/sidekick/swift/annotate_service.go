@@ -123,7 +123,7 @@ func (c *codec) annotateService(service *api.Service, model *modelAnnotations) (
 	// If the dependency is marked as "required_by_services", then we force it
 	// as an import for the generated service files.
 	for _, p := range c.Dependencies {
-		if p.ApiPackage == c.Model.PackageName || p.Name == c.PackageName {
+		if p.ApiPackage == c.Model.PackageName || p.Name == c.LibraryName {
 			continue
 		}
 		if p.RequiredByServices {
