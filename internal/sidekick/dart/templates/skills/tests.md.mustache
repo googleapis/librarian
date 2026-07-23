@@ -27,18 +27,15 @@ You can inject behavior by passing optional function callbacks to the fake's
 constructor. Methods that are not provided will throw an `UnsupportedError`.
 
 ```dart
+import 'package:{{Codec.PackageName}}/{{Codec.MainFileNameWithExtension}}';
 import 'package:{{Codec.PackageName}}/testing.dart';
-import 'package:google_cloud_rpc/exceptions.dart';
-import 'package:http/http.dart' as http;
 
 final fake = Fake{{Codec.ExampleServiceName}}(
   {{Codec.ExampleMethodName}}: (request) async {
-    // Simulate being out of quota
-    throw TooManyRequestsException(
-      'Quota exceeded',
-      response: http.Response('', 429),
-      responseBody: '',
-    );
+    // Assert request contents here if needed.
+    {{#Codec.ExampleMethodReturnsValue}}
+    return {{Codec.ExampleMethodResponseType}}();
+    {{/Codec.ExampleMethodReturnsValue}}
   },
 );
 ```
@@ -49,6 +46,7 @@ override its methods. Methods that are not overriden will throw an
 `UnsupportedError`.
 
 ```dart
+import 'package:{{Codec.PackageName}}/{{Codec.MainFileNameWithExtension}}';
 import 'package:{{Codec.PackageName}}/testing.dart';
 
 final class MyFake{{Codec.ExampleServiceName}} extends Fake{{Codec.ExampleServiceName}} {
@@ -56,7 +54,7 @@ final class MyFake{{Codec.ExampleServiceName}} extends Fake{{Codec.ExampleServic
   Future<{{Codec.ExampleMethodResponseType}}> {{Codec.ExampleMethodName}}(
     {{Codec.ExampleMethodRequestType}} request,
   ) async {
-    // Assert request contents here if needed
+    // Assert request contents here if needed.
     {{#Codec.ExampleMethodReturnsValue}}
     return {{Codec.ExampleMethodResponseType}}();
     {{/Codec.ExampleMethodReturnsValue}}
@@ -71,9 +69,10 @@ import 'package:{{Codec.PackageName}}/{{Codec.MainFileNameWithExtension}}';
 import 'package:{{Codec.PackageName}}/testing.dart';
 import 'package:test/test.dart';
 
-Future<int> functionUnderTest({{Codec.ExampleServiceName}} service) async {
+Future<void> functionUnderTest({{Codec.ExampleServiceName}} service) async {
+  // Application logic here.
   await service.{{Codec.ExampleMethodName}}({{Codec.ExampleMethodRequestType}}());
-  return 5;
+  // More application logic here.
 }
 
 void main() {
@@ -86,7 +85,9 @@ void main() {
           {{/Codec.ExampleMethodReturnsValue}}
       },
     );
-    await expectLater(functionUnderTest(fake), 5);
+    // Instead of verifying that `functionUnderTest`, you should verify the
+    // relevant properties of the result.
+    await expectLater(functionUnderTest(fake), completes);
   });
 }
 ```

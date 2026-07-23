@@ -476,9 +476,9 @@ func (annotate *annotateModel) annotateModel(options map[string]string) error {
 	var exampleMethodResponseType string
 	var exampleMethodReturnsValue bool
 
-	if exS, exM := findExampleMethod(model.Services); exS != nil && exM != nil {
-		exampleServiceName = exS.Codec.(*serviceAnnotations).Name
-		mAnn := exM.Codec.(*methodAnnotation)
+	if exampleMethod, exampleService := findExampleMethod(model.Services); exampleMethod != nil && exampleService != nil {
+		exampleServiceName = exampleMethod.Codec.(*serviceAnnotations).Name
+		mAnn := exampleService.Codec.(*methodAnnotation)
 		exampleMethodName = mAnn.Name
 		exampleMethodRequestType = mAnn.RequestType
 		exampleMethodResponseType = mAnn.ResponseType
@@ -1498,13 +1498,12 @@ func findExampleMethod(services []*api.Service) (*api.Service, *api.Method) {
 		return false
 	}
 
-	isLro := func(m *api.Method) bool {
-		return m.OperationInfo != nil || m.OutputTypeID == ".google.longrunning.Operation"
-	}
-
 	type candidate struct {
-		service *api.Service
-		method  *api.Method
+		service                 *api.Service
+		method                  *api.Method
+		ReturnsEmpty            bool
+		RequestTypeHasRequired  bool
+		ResponseTypeHasRequired bool
 	}
 	var candidates []candidate
 	for _, s := range services {
@@ -1513,41 +1512,48 @@ func findExampleMethod(services []*api.Service) (*api.Service, *api.Method) {
 		}
 		sAnn := s.Codec.(*serviceAnnotations)
 		for _, m := range sAnn.Methods {
-			candidates = append(candidates, candidate{service: s, method: m})
+			if !m.IsSimple || m.OperationInfo != nil || m.OutputTypeID == ".google.longrunning.Operation" {
+				continue
+			}
+			candidates = append(candidates, candidate{
+				service:                 s,
+				method:                  m,
+				ReturnsEmpty:            m.ReturnsEmpty,
+				RequestTypeHasRequired:  hasRequired(m.InputType),
+				ResponseTypeHasRequired: hasRequired(m.OutputType),
+			})
 		}
 	}
 
-	// Condition 1: !isLro && hasReturnValue && !returnHasRequired && !inputHasRequired
-	for _, c := range candidates {
-		m := c.method
-		if !isLro(m) && !m.ReturnsEmpty && !hasRequired(m.OutputType) && !hasRequired(m.InputType) {
-			return c.service, m
-		}
+	if len(candidates) == 0 {
+		return nil, nil
 	}
 
-	// Condition 2: !isLro && hasReturnValue && !returnHasRequired
-	for _, c := range candidates {
-		m := c.method
-		if !isLro(m) && !m.ReturnsEmpty && !hasRequired(m.OutputType) {
-			return c.service, m
+	// Comparator to sort candidates such that the "best" comes first.
+	slices.SortFunc(candidates, func(a, b candidate) int {
+		if a.ReturnsEmpty != b.ReturnsEmpty {
+			if !a.ReturnsEmpty {
+				return -1
+			}
+			return 1
 		}
-	}
 
-	// Condition 3: !isLro && hasReturnValue
-	for _, c := range candidates {
-		m := c.method
-		if !isLro(m) && !m.ReturnsEmpty {
-			return c.service, m
+		if a.ResponseTypeHasRequired != b.ResponseTypeHasRequired {
+			if !a.ResponseTypeHasRequired {
+				return -1
+			}
+			return 1
 		}
-	}
 
-	// Condition 4: !isLro
-	for _, c := range candidates {
-		m := c.method
-		if !isLro(m) {
-			return c.service, m
+		if a.RequestTypeHasRequired != b.RequestTypeHasRequired {
+			if !a.RequestTypeHasRequired {
+				return -1
+			}
+			return 1
 		}
-	}
 
-	return nil, nil
+		return 0
+	})
+
+	return candidates[0].service, candidates[0].method
 }
