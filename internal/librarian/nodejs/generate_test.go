@@ -435,7 +435,7 @@ func TestGenerateAPI(t *testing.T) {
 
 	repoRoot := t.TempDir()
 	outDir := filepath.Join(repoRoot, "packages", "google-cloud-secretmanager")
-	if err := os.MkdirAll(outDir, 0755); err != nil {
+	if err := os.MkdirAll(outDir, 0o755); err != nil {
 		t.Fatal(err)
 	}
 
@@ -476,7 +476,7 @@ func TestGenerateAPI_MultipleVersions(t *testing.T) {
 		},
 	}
 	outDir := filepath.Join(repoRoot, "packages", library.Name)
-	if err := os.MkdirAll(outDir, 0755); err != nil {
+	if err := os.MkdirAll(outDir, 0o755); err != nil {
 		t.Fatal(err)
 	}
 	library.Output = outDir
@@ -507,7 +507,7 @@ func TestRunPostProcessor(t *testing.T) {
 		APIs: []*config.API{{Path: "google/cloud/secretmanager/v1"}},
 	}
 	outDir := filepath.Join(repoRoot, "packages", library.Name)
-	if err := os.MkdirAll(outDir, 0755); err != nil {
+	if err := os.MkdirAll(outDir, 0o755); err != nil {
 		t.Fatal(err)
 	}
 
@@ -540,27 +540,27 @@ func TestRunPostProcessor_RemovesOwlBotYaml(t *testing.T) {
 		APIs: []*config.API{{Path: "google/cloud/test/v1"}},
 	}
 	outDir := filepath.Join(repoRoot, "packages", library.Name)
-	if err := os.MkdirAll(outDir, 0755); err != nil {
+	if err := os.MkdirAll(outDir, 0o755); err != nil {
 		t.Fatal(err)
 	}
 
 	// Create staging structure with a .OwlBot.yaml file.
 	stagingBase := filepath.Join(repoRoot, "owl-bot-staging", library.Name, "v1")
 	srcDir := filepath.Join(stagingBase, "src", "v1")
-	if err := os.MkdirAll(srcDir, 0755); err != nil {
+	if err := os.MkdirAll(srcDir, 0o755); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(filepath.Join(srcDir, "index.ts"), []byte("export {};\n"), 0644); err != nil {
+	if err := os.WriteFile(filepath.Join(srcDir, "index.ts"), []byte("export {};\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
 	protoDir := filepath.Join(stagingBase, "protos", "google", "cloud", "test", "v1")
-	if err := os.MkdirAll(protoDir, 0755); err != nil {
+	if err := os.MkdirAll(protoDir, 0o755); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(filepath.Join(protoDir, "test.proto"), []byte("syntax = \"proto3\";\npackage google.cloud.test.v1;\n"), 0644); err != nil {
+	if err := os.WriteFile(filepath.Join(protoDir, "test.proto"), []byte("syntax = \"proto3\";\npackage google.cloud.test.v1;\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(filepath.Join(stagingBase, ".OwlBot.yaml"), []byte("deep-copy-regex:\n  - source: /owl-bot-staging\n"), 0644); err != nil {
+	if err := os.WriteFile(filepath.Join(stagingBase, ".OwlBot.yaml"), []byte("deep-copy-regex:\n  - source: /owl-bot-staging\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
 
@@ -583,27 +583,27 @@ func TestRunPostProcessor_RemovesCloudCommonResourcesProto(t *testing.T) {
 		APIs: []*config.API{{Path: "google/cloud/test/v1"}},
 	}
 	outDir := filepath.Join(repoRoot, "packages", library.Name)
-	if err := os.MkdirAll(outDir, 0755); err != nil {
+	if err := os.MkdirAll(outDir, 0o755); err != nil {
 		t.Fatal(err)
 	}
 
 	// Create staging structure with a common_resources.proto file.
 	stagingBase := filepath.Join(repoRoot, "owl-bot-staging", library.Name, "v1")
 	srcDir := filepath.Join(stagingBase, "src", "v1")
-	if err := os.MkdirAll(srcDir, 0755); err != nil {
+	if err := os.MkdirAll(srcDir, 0o755); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(filepath.Join(srcDir, "index.ts"), []byte("export {};\n"), 0644); err != nil {
+	if err := os.WriteFile(filepath.Join(srcDir, "index.ts"), []byte("export {};\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
 	protoDir := filepath.Join(stagingBase, "protos", "google", "cloud", "test", "v1")
-	if err := os.MkdirAll(protoDir, 0755); err != nil {
+	if err := os.MkdirAll(protoDir, 0o755); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(filepath.Join(protoDir, "test.proto"), []byte("syntax = \"proto3\";\npackage google.cloud.test.v1;\n"), 0644); err != nil {
+	if err := os.WriteFile(filepath.Join(protoDir, "test.proto"), []byte("syntax = \"proto3\";\npackage google.cloud.test.v1;\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(filepath.Join(stagingBase, "protos", cloudCommonResourcesProto), []byte("syntax = \"proto3\";\npackage google.cloud;\n"), 0644); err != nil {
+	if err := os.WriteFile(filepath.Join(stagingBase, "protos", cloudCommonResourcesProto), []byte("syntax = \"proto3\";\npackage google.cloud;\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
 
@@ -629,36 +629,36 @@ func TestRunPostProcessor_CustomScripts(t *testing.T) {
 		Keep: []string{"librarian.js", ".readme-partials.yaml"},
 	}
 	outDir := filepath.Join(repoRoot, "packages", library.Name)
-	if err := os.MkdirAll(outDir, 0755); err != nil {
+	if err := os.MkdirAll(outDir, 0o755); err != nil {
 		t.Fatal(err)
 	}
 
 	stagingBase := filepath.Join(repoRoot, "owl-bot-staging", library.Name, "v1")
 	srcDir := filepath.Join(stagingBase, "src", "v1")
-	if err := os.MkdirAll(srcDir, 0755); err != nil {
+	if err := os.MkdirAll(srcDir, 0o755); err != nil {
 		t.Fatal(err)
 	}
 	if err := os.WriteFile(
 		filepath.Join(srcDir, "index.ts"),
 		[]byte("export {SecretManagerServiceClient} from './secret_manager_service_client';\n"),
-		0644,
+		0o644,
 	); err != nil {
 		t.Fatal(err)
 	}
 	protoDir := filepath.Join(stagingBase, "protos", "google", "cloud", "secretmanager", "v1")
-	if err := os.MkdirAll(protoDir, 0755); err != nil {
+	if err := os.MkdirAll(protoDir, 0o755); err != nil {
 		t.Fatal(err)
 	}
 	protoContent := "syntax = \"proto3\";\npackage google.cloud.secretmanager.v1;\n"
-	if err := os.WriteFile(filepath.Join(protoDir, "service.proto"), []byte(protoContent), 0644); err != nil {
+	if err := os.WriteFile(filepath.Join(protoDir, "service.proto"), []byte(protoContent), 0o644); err != nil {
 		t.Fatal(err)
 	}
 	librarianJS := filepath.Join(outDir, "librarian.js")
-	if err := os.WriteFile(librarianJS, []byte("const fs = require('fs');\nfs.writeFileSync('librarian-ran.txt', 'yes');\n"), 0644); err != nil {
+	if err := os.WriteFile(librarianJS, []byte("const fs = require('fs');\nfs.writeFileSync('librarian-ran.txt', 'yes');\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
 	readmePartials := filepath.Join(outDir, ".readme-partials.yaml")
-	if err := os.WriteFile(readmePartials, []byte("introduction: 'intro text'\nbody: 'body text'"), 0644); err != nil {
+	if err := os.WriteFile(readmePartials, []byte("introduction: 'intro text'\nbody: 'body text'"), 0o644); err != nil {
 		t.Fatal(err)
 	}
 	cfg := &config.Config{
@@ -704,26 +704,26 @@ func TestRunPostProcessor_PreservesFiles(t *testing.T) {
 		Keep: []string{"README.md", ".readme-partials.yaml", "system-test/.eslintrc.yml"},
 	}
 	outDir := filepath.Join(repoRoot, "packages", library.Name)
-	if err := os.MkdirAll(outDir, 0755); err != nil {
+	if err := os.MkdirAll(outDir, 0o755); err != nil {
 		t.Fatal(err)
 	}
 
 	createStagingFixture(t, repoRoot, library.Name, []string{"v1"})
 
 	readmeContent := "# Test README"
-	if err := os.WriteFile(filepath.Join(outDir, "README.md"), []byte(readmeContent), 0644); err != nil {
+	if err := os.WriteFile(filepath.Join(outDir, "README.md"), []byte(readmeContent), 0o644); err != nil {
 		t.Fatal(err)
 	}
 	partialsContent := "introduction: ''\nbody: ''"
-	if err := os.WriteFile(filepath.Join(outDir, ".readme-partials.yaml"), []byte(partialsContent), 0644); err != nil {
+	if err := os.WriteFile(filepath.Join(outDir, ".readme-partials.yaml"), []byte(partialsContent), 0o644); err != nil {
 		t.Fatal(err)
 	}
 	eslintContent := "extends: eslint:recommended"
 	eslintDir := filepath.Join(outDir, "system-test")
-	if err := os.MkdirAll(eslintDir, 0755); err != nil {
+	if err := os.MkdirAll(eslintDir, 0o755); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(filepath.Join(eslintDir, ".eslintrc.yml"), []byte(eslintContent), 0644); err != nil {
+	if err := os.WriteFile(filepath.Join(eslintDir, ".eslintrc.yml"), []byte(eslintContent), 0o644); err != nil {
 		t.Fatal(err)
 	}
 
@@ -794,11 +794,11 @@ func TestRestoreCopyrightYear(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			outDir := t.TempDir()
 			dir := filepath.Join(outDir, test.dir)
-			if err := os.MkdirAll(dir, 0755); err != nil {
+			if err := os.MkdirAll(dir, 0o755); err != nil {
 				t.Fatal(err)
 			}
 			file := filepath.Join(dir, "index.ts")
-			if err := os.WriteFile(file, []byte(test.input), 0644); err != nil {
+			if err := os.WriteFile(file, []byte(test.input), 0o644); err != nil {
 				t.Fatal(err)
 			}
 			if err := restoreCopyrightYear(outDir, test.year); err != nil {
@@ -877,24 +877,24 @@ func TestCopyMissingProtos(t *testing.T) {
 	outDir := t.TempDir()
 
 	srcProto := filepath.Join(googleapisDir, "google", "logging", "type", "log_severity.proto")
-	if err := os.MkdirAll(filepath.Dir(srcProto), 0755); err != nil {
+	if err := os.MkdirAll(filepath.Dir(srcProto), 0o755); err != nil {
 		t.Fatal(err)
 	}
 	srcContent := []byte("syntax = \"proto3\";\npackage google.logging.type;\n")
-	if err := os.WriteFile(srcProto, srcContent, 0644); err != nil {
+	if err := os.WriteFile(srcProto, srcContent, 0o644); err != nil {
 		t.Fatal(err)
 	}
 
 	listDir := filepath.Join(outDir, "src", "v1")
-	if err := os.MkdirAll(listDir, 0755); err != nil {
+	if err := os.MkdirAll(listDir, 0o755); err != nil {
 		t.Fatal(err)
 	}
 
 	existingProto := filepath.Join(outDir, "protos", "google", "cloud", "foo", "v1", "existing.proto")
-	if err := os.MkdirAll(filepath.Dir(existingProto), 0755); err != nil {
+	if err := os.MkdirAll(filepath.Dir(existingProto), 0o755); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(existingProto, []byte("existing"), 0644); err != nil {
+	if err := os.WriteFile(existingProto, []byte("existing"), 0o644); err != nil {
 		t.Fatal(err)
 	}
 
@@ -911,7 +911,7 @@ func TestCopyMissingProtos(t *testing.T) {
 		t.Fatal(err)
 	}
 	listPath := filepath.Join(listDir, "foo_proto_list.json")
-	if err := os.WriteFile(listPath, listData, 0644); err != nil {
+	if err := os.WriteFile(listPath, listData, 0o644); err != nil {
 		t.Fatal(err)
 	}
 
@@ -950,15 +950,15 @@ func TestCopySamplesFromStaging(t *testing.T) {
 		{version: "v1beta1", metadataContent: `{"snippets":["beta"]}`},
 	} {
 		samplesDir := filepath.Join(stagingDir, v.version, "samples", "generated", v.version)
-		if err := os.MkdirAll(samplesDir, 0755); err != nil {
+		if err := os.MkdirAll(samplesDir, 0o755); err != nil {
 			t.Fatal(err)
 		}
 		if v.sampleContent != "" {
-			if err := os.WriteFile(filepath.Join(samplesDir, "sample.js"), []byte(v.sampleContent), 0644); err != nil {
+			if err := os.WriteFile(filepath.Join(samplesDir, "sample.js"), []byte(v.sampleContent), 0o644); err != nil {
 				t.Fatal(err)
 			}
 		}
-		if err := os.WriteFile(filepath.Join(samplesDir, "snippet_metadata_google.cloud.test."+v.version+".json"), []byte(v.metadataContent), 0644); err != nil {
+		if err := os.WriteFile(filepath.Join(samplesDir, "snippet_metadata_google.cloud.test."+v.version+".json"), []byte(v.metadataContent), 0o644); err != nil {
 			t.Fatal(err)
 		}
 	}
@@ -1013,11 +1013,11 @@ func TestGenerateAPI_NoProtos(t *testing.T) {
 	// Create an API directory with no .proto files.
 	apiPath := "google/cloud/emptyapi/v1"
 	apiDir := filepath.Join(googleapisDir, apiPath)
-	if err := os.MkdirAll(apiDir, 0755); err != nil {
+	if err := os.MkdirAll(apiDir, 0o755); err != nil {
 		t.Fatal(err)
 	}
 	// Write a non-proto file so the directory is not empty.
-	if err := os.WriteFile(filepath.Join(apiDir, "BUILD.bazel"), []byte("# empty"), 0644); err != nil {
+	if err := os.WriteFile(filepath.Join(apiDir, "BUILD.bazel"), []byte("# empty"), 0o644); err != nil {
 		t.Fatal(err)
 	}
 
@@ -1035,18 +1035,18 @@ func createStagingFixture(t *testing.T, repoRoot, libName string, versions []str
 	for _, v := range versions {
 		stagingBase := filepath.Join(repoRoot, "owl-bot-staging", libName, v)
 		srcDir := filepath.Join(stagingBase, "src", v)
-		if err := os.MkdirAll(srcDir, 0755); err != nil {
+		if err := os.MkdirAll(srcDir, 0o755); err != nil {
 			t.Fatal(err)
 		}
-		if err := os.WriteFile(filepath.Join(srcDir, "index.ts"), []byte("export {};\n"), 0644); err != nil {
+		if err := os.WriteFile(filepath.Join(srcDir, "index.ts"), []byte("export {};\n"), 0o644); err != nil {
 			t.Fatal(err)
 		}
 		protoDir := filepath.Join(stagingBase, "protos", "google", "cloud", "test", v)
-		if err := os.MkdirAll(protoDir, 0755); err != nil {
+		if err := os.MkdirAll(protoDir, 0o755); err != nil {
 			t.Fatal(err)
 		}
 		protoContent := fmt.Sprintf("syntax = \"proto3\";\npackage google.cloud.test.%s;\n", v)
-		if err := os.WriteFile(filepath.Join(protoDir, "service.proto"), []byte(protoContent), 0644); err != nil {
+		if err := os.WriteFile(filepath.Join(protoDir, "service.proto"), []byte(protoContent), 0o644); err != nil {
 			t.Fatal(err)
 		}
 	}
@@ -1186,7 +1186,7 @@ func TestRunPostProcessor_CustomScripts_RootRelativePath(t *testing.T) {
 	}
 
 	outDir := filepath.Join(repoRoot, "packages", library.Name)
-	if err := os.MkdirAll(outDir, 0755); err != nil {
+	if err := os.MkdirAll(outDir, 0o755); err != nil {
 		t.Fatal(err)
 	}
 	// This script uses a path relative to the repository root.
@@ -1195,7 +1195,7 @@ func TestRunPostProcessor_CustomScripts_RootRelativePath(t *testing.T) {
 	script := fmt.Sprintf("const fs = require('fs');\nfs.writeFileSync('%s', 'success');\n", relPath)
 
 	librarianJS := filepath.Join(outDir, "librarian.js")
-	if err := os.WriteFile(librarianJS, []byte(script), 0644); err != nil {
+	if err := os.WriteFile(librarianJS, []byte(script), 0o644); err != nil {
 		t.Fatal(err)
 	}
 	createStagingFixture(t, repoRoot, library.Name, []string{"v1"})
@@ -1467,11 +1467,11 @@ func TestInjectV1SmallExports(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			outDir := t.TempDir()
 			srcDir := filepath.Join(outDir, "src")
-			if err := os.MkdirAll(srcDir, 0755); err != nil {
+			if err := os.MkdirAll(srcDir, 0o755); err != nil {
 				t.Fatal(err)
 			}
 			indexPath := filepath.Join(srcDir, "index.ts")
-			if err := os.WriteFile(indexPath, []byte(test.input), 0644); err != nil {
+			if err := os.WriteFile(indexPath, []byte(test.input), 0o644); err != nil {
 				t.Fatal(err)
 			}
 
@@ -1525,7 +1525,7 @@ func TestRemoveRedundantLinterFiles(t *testing.T) {
 			outDir := t.TempDir()
 			for _, f := range test.files {
 				path := filepath.Join(outDir, f)
-				if err := os.WriteFile(path, []byte("content"), 0644); err != nil {
+				if err := os.WriteFile(path, []byte("content"), 0o644); err != nil {
 					t.Fatal(err)
 				}
 			}
@@ -1612,11 +1612,11 @@ func TestMoveKeep(t *testing.T) {
 		{
 			name: "moves existing files successfully",
 			setup: func(t *testing.T, srcDir string) {
-				if err := os.MkdirAll(filepath.Join(srcDir, "subdir"), 0755); err != nil {
+				if err := os.MkdirAll(filepath.Join(srcDir, "subdir"), 0o755); err != nil {
 					t.Fatal(err)
 				}
 				for _, file := range []string{"file1.txt", "subdir/file2.txt"} {
-					if err := os.WriteFile(filepath.Join(srcDir, file), []byte("content"), 0644); err != nil {
+					if err := os.WriteFile(filepath.Join(srcDir, file), []byte("content"), 0o644); err != nil {
 						t.Fatal(err)
 					}
 				}
@@ -1627,7 +1627,7 @@ func TestMoveKeep(t *testing.T) {
 		{
 			name: "skips missing files without error",
 			setup: func(t *testing.T, srcDir string) {
-				if err := os.WriteFile(filepath.Join(srcDir, "file1.txt"), []byte("content1"), 0644); err != nil {
+				if err := os.WriteFile(filepath.Join(srcDir, "file1.txt"), []byte("content1"), 0o644); err != nil {
 					t.Fatal(err)
 				}
 			},
@@ -1662,13 +1662,13 @@ func TestMoveKeep_Errors(t *testing.T) {
 		{
 			name: "mkdir failure when target parent is a regular file",
 			setup: func(t *testing.T, srcDir, dstDir string) {
-				if err := os.MkdirAll(filepath.Join(srcDir, "subdir"), 0755); err != nil {
+				if err := os.MkdirAll(filepath.Join(srcDir, "subdir"), 0o755); err != nil {
 					t.Fatal(err)
 				}
-				if err := os.WriteFile(filepath.Join(srcDir, "subdir", "file.txt"), []byte("content"), 0644); err != nil {
+				if err := os.WriteFile(filepath.Join(srcDir, "subdir", "file.txt"), []byte("content"), 0o644); err != nil {
 					t.Fatal(err)
 				}
-				if err := os.WriteFile(filepath.Join(dstDir, "subdir"), []byte("not-a-dir"), 0644); err != nil {
+				if err := os.WriteFile(filepath.Join(dstDir, "subdir"), []byte("not-a-dir"), 0o644); err != nil {
 					t.Fatal(err)
 				}
 			},
@@ -1678,10 +1678,10 @@ func TestMoveKeep_Errors(t *testing.T) {
 		{
 			name: "rename failure when target is an existing directory",
 			setup: func(t *testing.T, srcDir, dstDir string) {
-				if err := os.WriteFile(filepath.Join(srcDir, "file.txt"), []byte("content"), 0644); err != nil {
+				if err := os.WriteFile(filepath.Join(srcDir, "file.txt"), []byte("content"), 0o644); err != nil {
 					t.Fatal(err)
 				}
-				if err := os.MkdirAll(filepath.Join(dstDir, "file.txt"), 0755); err != nil {
+				if err := os.MkdirAll(filepath.Join(dstDir, "file.txt"), 0o755); err != nil {
 					t.Fatal(err)
 				}
 			},
@@ -1705,11 +1705,11 @@ func TestRequireCachedTool(t *testing.T) {
 	tempBin := t.TempDir()
 	t.Setenv("LIBRARIAN_BIN", tempBin)
 	nodeBinDir := filepath.Join(tempBin, "nodejs_tools", "bin")
-	if err := os.MkdirAll(nodeBinDir, 0755); err != nil {
+	if err := os.MkdirAll(nodeBinDir, 0o755); err != nil {
 		t.Fatal(err)
 	}
 	toolPath := filepath.Join(nodeBinDir, "compileProtos")
-	if err := os.WriteFile(toolPath, []byte("#!/bin/sh"), 0755); err != nil {
+	if err := os.WriteFile(toolPath, []byte("#!/bin/sh"), 0o755); err != nil {
 		t.Fatal(err)
 	}
 
@@ -1740,7 +1740,7 @@ func TestRequireCachedTool_Error(t *testing.T) {
 			name: "returns errToolNotInstalled when tool path is a directory",
 			setup: func(t *testing.T, binDir string) {
 				dirPath := filepath.Join(binDir, "dirTool")
-				if err := os.MkdirAll(dirPath, 0755); err != nil {
+				if err := os.MkdirAll(dirPath, 0o755); err != nil {
 					t.Fatal(err)
 				}
 			},
@@ -1752,7 +1752,7 @@ func TestRequireCachedTool_Error(t *testing.T) {
 			tempBin := t.TempDir()
 			t.Setenv("LIBRARIAN_BIN", tempBin)
 			nodeBinDir := filepath.Join(tempBin, "nodejs_tools", "bin")
-			if err := os.MkdirAll(nodeBinDir, 0755); err != nil {
+			if err := os.MkdirAll(nodeBinDir, 0o755); err != nil {
 				t.Fatal(err)
 			}
 			test.setup(t, nodeBinDir)

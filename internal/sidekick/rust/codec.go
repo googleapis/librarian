@@ -1534,6 +1534,9 @@ func (c *codec) generateMethod(m *api.Method) bool {
 	// TODO(#499) - switch to explicitly excluding such functions. Easier to
 	//     find them and fix them that way.
 	if m.ClientSideStreaming || m.ServerSideStreaming {
+		if m.ClientSideStreaming && m.ServerSideStreaming && c.includeBidiStreamingMethods {
+			return true
+		}
 		return c.includeStreamingMethods
 	}
 	if c.includeGrpcOnlyMethods {

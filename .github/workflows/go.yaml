@@ -16,39 +16,54 @@ on: [push, pull_request, merge_group]
 permissions:
   contents: read
 jobs:
-  test:
+  build-and-test:
+    name: ${{ matrix.job-name }}
     runs-on: ubuntu-24.04
-    # Presubmit jobs must complete within 5 minutes. See CONTRIBUTING.md.
-    timeout-minutes: 5
+    # Presubmit jobs must complete within 5 minutes. Integration might take longer.
+    timeout-minutes: ${{ matrix.timeout }}
+    # Skip integration test unless it's a push to main
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - job-name: 'Unit Tests'
+            task: 'unit-test'
+            timeout: 5
+          - job-name: 'Smoke Test'
+            task: 'smoke-test'
+            timeout: 5
+          - job-name: 'Integration Test'
+            task: 'integration'
+            timeout: 60
     steps:
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
-        with:
-          persist-credentials: false
-      - uses: ./.github/actions/setup-librarian
-      - name: Run tests
-        run: go run ./tool/cmd/coverage ./internal/librarian/golang
-  integration:
-    runs-on: ubuntu-24.04
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    steps:
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
           persist-credentials: false
       - uses: ./.github/actions/setup-librarian
       - name: Checkout google-cloud-go
-        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
+        if: matrix.task != 'unit-test'
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
           repository: googleapis/google-cloud-go
           path: google-cloud-go
           persist-credentials: false
       - name: Run librarian install
+        if: matrix.task != 'unit-test'
         working-directory: google-cloud-go
         run: librarian install
-      - name: Run librarian generate
+      - name: Run Unit Tests
+        if: matrix.task == 'unit-test'
+        run: go run ./tool/cmd/coverage ./internal/librarian/golang
+      - name: Generate a single library (smoke test)
+        if: matrix.task == 'smoke-test'
+        working-directory: google-cloud-go
+        run: librarian generate secretmanager
+      - name: Run librarian generate all (integration test)
+        if: matrix.task == 'integration' && github.event_name == 'push' && github.ref == 'refs/heads/main'
         working-directory: google-cloud-go
         run: librarian generate --all
   create-issue-on-failure:
-    needs: [integration]
+    needs: [build-and-test]
     permissions:
       contents: read
       issues: write

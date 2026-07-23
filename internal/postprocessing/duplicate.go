@@ -73,5 +73,5 @@ func DuplicateMethod(path, funcName, newName, language string) error {
 	newContent = append(newContent, '\n')
 	newContent = append(newContent, renamedBlock...)
 	newContent = append(newContent, content[b.end:]...)
-	return os.WriteFile(path, newContent, 0644)
+	return os.WriteFile(path, newContent, 0o644)
 }

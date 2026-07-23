@@ -167,7 +167,7 @@ func TestAddCommand(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			tmpDir := t.TempDir()
 			t.Chdir(tmpDir)
-			if err := os.WriteFile(filepath.Join(tmpDir, "versions.txt"), nil, 0644); err != nil {
+			if err := os.WriteFile(filepath.Join(tmpDir, "versions.txt"), nil, 0o644); err != nil {
 				t.Fatal(err)
 			}
 
@@ -225,7 +225,7 @@ func TestAddLibrary(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			tmpDir := t.TempDir()
 			t.Chdir(tmpDir)
-			if err := os.WriteFile(filepath.Join(tmpDir, "versions.txt"), nil, 0644); err != nil {
+			if err := os.WriteFile(filepath.Join(tmpDir, "versions.txt"), nil, 0o644); err != nil {
 				t.Fatal(err)
 			}
 
@@ -412,7 +412,7 @@ func TestAddLibrary_ExistingLibrary(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			tmpDir := t.TempDir()
 			t.Chdir(tmpDir)
-			if err := os.WriteFile(filepath.Join(tmpDir, "versions.txt"), nil, 0644); err != nil {
+			if err := os.WriteFile(filepath.Join(tmpDir, "versions.txt"), nil, 0o644); err != nil {
 				t.Fatal(err)
 			}
 			if err := yaml.Write(config.LibrarianYAML, test.cfg); err != nil {
@@ -461,7 +461,7 @@ func TestAddLibrary_ExistingLibrary_Error(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			tmpDir := t.TempDir()
 			t.Chdir(tmpDir)
-			if err := os.WriteFile(filepath.Join(tmpDir, "versions.txt"), nil, 0644); err != nil {
+			if err := os.WriteFile(filepath.Join(tmpDir, "versions.txt"), nil, 0o644); err != nil {
 				t.Fatal(err)
 			}
 			if err := yaml.Write(config.LibrarianYAML, test.cfg); err != nil {
@@ -591,6 +591,9 @@ func TestDeriveLibraryName(t *testing.T) {
 		{config.LanguageNodejs, "google/cloud/secretmanager/v1beta2", "google-cloud-secretmanager"},
 		{config.LanguageNodejs, "google/cloud/storage/v2alpha", "google-cloud-storage"},
 		{config.LanguageNodejs, "google/maps/addressvalidation/v1", "google-maps-addressvalidation"},
+		{config.LanguagePhp, "google/cloud/secretmanager/v1", "Secretmanager"},
+		{config.LanguagePhp, "google/cloud/security/privateca/v1", "SecurityPrivateca"},
+		{config.LanguagePhp, "google/pubsub/v1", "Pubsub"},
 	} {
 		t.Run(test.language+"/"+test.apiPath, func(t *testing.T) {
 			got := deriveLibraryName(test.language, test.apiPath)
@@ -608,7 +611,7 @@ func TestAddLibraryCommand_Java(t *testing.T) {
 	}
 	tmpDir := t.TempDir()
 	t.Chdir(tmpDir)
-	if err := os.WriteFile(filepath.Join(tmpDir, "versions.txt"), nil, 0644); err != nil {
+	if err := os.WriteFile(filepath.Join(tmpDir, "versions.txt"), nil, 0o644); err != nil {
 		t.Fatal(err)
 	}
 
@@ -665,7 +668,7 @@ func TestAddLibrary_Swift(t *testing.T) {
 			swiftDefault: &config.SwiftDefault{DefaultVersion: "1.0.0"},
 			wantFinalLibraries: []*config.Library{
 				{
-					Name:          "GoogleCloudSecretmanagerV1",
+					Name:          "google-cloud-secretmanager-v1",
 					CopyrightYear: copyrightYear,
 					Version:       "1.0.0",
 				},
@@ -676,7 +679,7 @@ func TestAddLibrary_Swift(t *testing.T) {
 			swiftDefault: &config.SwiftDefault{DefaultVersion: "0.1.2-preview"},
 			wantFinalLibraries: []*config.Library{
 				{
-					Name:          "GoogleCloudSecretmanagerV1",
+					Name:          "google-cloud-secretmanager-v1",
 					CopyrightYear: copyrightYear,
 					Version:       "0.1.2-preview",
 				},

@@ -96,10 +96,10 @@ func main() {
 `
 			for _, aPath := range test.goFilePath {
 				path := filepath.Join(repoRoot, aPath)
-				if err := os.MkdirAll(path, 0755); err != nil {
+				if err := os.MkdirAll(path, 0o755); err != nil {
 					t.Fatal(err)
 				}
-				if err := os.WriteFile(filepath.Join(path, "example.go"), []byte(unformatted), 0644); err != nil {
+				if err := os.WriteFile(filepath.Join(path, "example.go"), []byte(unformatted), 0o644); err != nil {
 					t.Fatal(err)
 				}
 			}

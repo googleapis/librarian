@@ -176,7 +176,7 @@ func TestResolveGAPICOptions_MultipleConfigsError(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			tmpDir := t.TempDir()
 			apiDir := filepath.Join(tmpDir, test.apiPath)
-			if err := os.MkdirAll(apiDir, 0755); err != nil {
+			if err := os.MkdirAll(apiDir, 0o755); err != nil {
 				t.Fatal(err)
 			}
 			for _, file := range test.files {
@@ -184,7 +184,7 @@ func TestResolveGAPICOptions_MultipleConfigsError(t *testing.T) {
 				if strings.HasSuffix(file, ".json") {
 					content = []byte("{}")
 				}
-				if err := os.WriteFile(filepath.Join(apiDir, file), content, 0644); err != nil {
+				if err := os.WriteFile(filepath.Join(apiDir, file), content, 0o644); err != nil {
 					t.Fatal(err)
 				}
 			}
@@ -272,7 +272,7 @@ func TestGenerateAPI(t *testing.T) {
 	testhelper.RequireCommand(t, "protoc-gen-java_grpc")
 	outdir := t.TempDir()
 	// Force routing to the legacy owlbot.py postprocessor.
-	if err := os.WriteFile(filepath.Join(outdir, "owlbot.py"), []byte("#!/usr/bin/env python3\npass"), 0755); err != nil {
+	if err := os.WriteFile(filepath.Join(outdir, "owlbot.py"), []byte("#!/usr/bin/env python3\npass"), 0o755); err != nil {
 		t.Fatal(err)
 	}
 	cfg := &config.Config{
@@ -302,7 +302,7 @@ func TestGenerateAPI(t *testing.T) {
 		t.Fatal(err)
 	}
 	for _, artifact := range []string{"google-cloud-secretmanager", "proto-google-cloud-secretmanager-v1", "grpc-google-cloud-secretmanager-v1", "google-cloud-secretmanager-bom"} {
-		if err := os.MkdirAll(filepath.Join(outdir, artifact), 0755); err != nil {
+		if err := os.MkdirAll(filepath.Join(outdir, artifact), 0o755); err != nil {
 			t.Fatal(err)
 		}
 	}
@@ -342,7 +342,7 @@ func TestGenerateAPI_ProtoOnly(t *testing.T) {
 	testhelper.RequireCommand(t, "protoc-gen-java_grpc")
 	outdir := t.TempDir()
 	// Force routing to the legacy owlbot.py postprocessor.
-	if err := os.WriteFile(filepath.Join(outdir, "owlbot.py"), []byte("#!/usr/bin/env python3\npass"), 0755); err != nil {
+	if err := os.WriteFile(filepath.Join(outdir, "owlbot.py"), []byte("#!/usr/bin/env python3\npass"), 0o755); err != nil {
 		t.Fatal(err)
 	}
 	cfg := &config.Config{
@@ -371,7 +371,7 @@ func TestGenerateAPI_ProtoOnly(t *testing.T) {
 		t.Fatal(err)
 	}
 	for _, artifact := range []string{"proto-google-cloud-gkehub-v1beta", "google-cloud-gkehub-bom"} {
-		if err := os.MkdirAll(filepath.Join(outdir, artifact), 0755); err != nil {
+		if err := os.MkdirAll(filepath.Join(outdir, artifact), 0o755); err != nil {
 			t.Fatal(err)
 		}
 	}
@@ -431,7 +431,7 @@ func TestGenerateAPI_NoTools(t *testing.T) {
 		t.Fatal(err)
 	}
 	for _, artifact := range []string{"google-cloud-secretmanager", "proto-google-cloud-secretmanager-v1", "grpc-google-cloud-secretmanager-v1", "google-cloud-secretmanager-bom"} {
-		if err := os.MkdirAll(filepath.Join(outdir, artifact), 0755); err != nil {
+		if err := os.MkdirAll(filepath.Join(outdir, artifact), 0o755); err != nil {
 			t.Fatal(err)
 		}
 	}
@@ -483,7 +483,7 @@ func TestGenerateAPI_WithAdditionalProtosToGenerateAndCopy(t *testing.T) {
 	testhelper.RequireCommand(t, "protoc-gen-java_grpc")
 	outdir := t.TempDir()
 	// Force routing to the legacy owlbot.py postprocessor.
-	if err := os.WriteFile(filepath.Join(outdir, "owlbot.py"), []byte("#!/usr/bin/env python3\npass"), 0755); err != nil {
+	if err := os.WriteFile(filepath.Join(outdir, "owlbot.py"), []byte("#!/usr/bin/env python3\npass"), 0o755); err != nil {
 		t.Fatal(err)
 	}
 	cfg := &config.Config{
@@ -519,7 +519,7 @@ func TestGenerateAPI_WithAdditionalProtosToGenerateAndCopy(t *testing.T) {
 		t.Fatal(err)
 	}
 	for _, artifact := range []string{"google-cloud-secretmanager", "proto-google-cloud-secretmanager-v1", "grpc-google-cloud-secretmanager-v1", "google-cloud-secretmanager-bom"} {
-		if err := os.MkdirAll(filepath.Join(outdir, artifact), 0755); err != nil {
+		if err := os.MkdirAll(filepath.Join(outdir, artifact), 0o755); err != nil {
 			t.Fatal(err)
 		}
 	}
@@ -583,7 +583,7 @@ func TestGenerateLibrary_Error(t *testing.T) {
 			},
 			setup: func(t *testing.T, library *config.Library) {
 				// Create a regular file where a directory is expected to cause os.MkdirAll to fail.
-				if err := os.WriteFile(library.Output, []byte(""), 0644); err != nil {
+				if err := os.WriteFile(library.Output, []byte(""), 0o644); err != nil {
 					t.Fatal(err)
 				}
 			},
@@ -602,15 +602,15 @@ func TestGenerateLibrary_Error(t *testing.T) {
 			setup: func(t *testing.T, library *config.Library) {
 				// Ensure output artifacts exist for postProcessAPI to succeed.
 				for _, artifact := range []string{"google-cloud-secretmanager", "proto-google-cloud-secretmanager-v1", "grpc-google-cloud-secretmanager-v1", "google-cloud-secretmanager-bom"} {
-					if err := os.MkdirAll(filepath.Join(library.Output, artifact), 0755); err != nil {
+					if err := os.MkdirAll(filepath.Join(library.Output, artifact), 0o755); err != nil {
 						t.Fatal(err)
 					}
 				}
-				if err := os.WriteFile(filepath.Join(library.Output, "owlbot.py"), []byte("#!/usr/bin/env python3\npass"), 0755); err != nil {
+				if err := os.WriteFile(filepath.Join(library.Output, "owlbot.py"), []byte("#!/usr/bin/env python3\npass"), 0o755); err != nil {
 					t.Fatal(err)
 				}
 				templatesDir := filepath.Join(filepath.Dir(library.Output), owlbotTemplatesRelPath)
-				if err := os.MkdirAll(templatesDir, 0755); err != nil {
+				if err := os.MkdirAll(templatesDir, 0o755); err != nil {
 					t.Fatal(err)
 				}
 			},
@@ -692,15 +692,15 @@ func TestGenerate_Logic(t *testing.T) {
 	}
 	// Setup mandatory files for postProcessAPI and syncPOMs
 	for _, artifact := range []string{"google-cloud-secretmanager", "proto-google-cloud-secretmanager-v1", "grpc-google-cloud-secretmanager-v1", "google-cloud-secretmanager-bom"} {
-		if err := os.MkdirAll(filepath.Join(outdir, artifact), 0755); err != nil {
+		if err := os.MkdirAll(filepath.Join(outdir, artifact), 0o755); err != nil {
 			t.Fatal(err)
 		}
 	}
-	if err := os.WriteFile(filepath.Join(outdir, "owlbot.py"), []byte("#!/usr/bin/env python3\npass"), 0755); err != nil {
+	if err := os.WriteFile(filepath.Join(outdir, "owlbot.py"), []byte("#!/usr/bin/env python3\npass"), 0o755); err != nil {
 		t.Fatal(err)
 	}
 	templatesDir := filepath.Join(filepath.Dir(outdir), owlbotTemplatesRelPath)
-	if err := os.MkdirAll(templatesDir, 0755); err != nil {
+	if err := os.MkdirAll(templatesDir, 0o755); err != nil {
 		t.Fatal(err)
 	}
 
@@ -742,15 +742,15 @@ func TestGenerate_ProtoExclusion(t *testing.T) {
 	}
 	// Setup mandatory files for postProcessAPI and syncPOMs
 	for _, artifact := range []string{"google-cloud-secretmanager", "proto-google-cloud-secretmanager-v1", "grpc-google-cloud-secretmanager-v1", "google-cloud-secretmanager-bom"} {
-		if err := os.MkdirAll(filepath.Join(outdir, artifact), 0755); err != nil {
+		if err := os.MkdirAll(filepath.Join(outdir, artifact), 0o755); err != nil {
 			t.Fatal(err)
 		}
 	}
-	if err := os.WriteFile(filepath.Join(outdir, "owlbot.py"), []byte("#!/usr/bin/env python3\npass"), 0755); err != nil {
+	if err := os.WriteFile(filepath.Join(outdir, "owlbot.py"), []byte("#!/usr/bin/env python3\npass"), 0o755); err != nil {
 		t.Fatal(err)
 	}
 	templatesDir := filepath.Join(filepath.Dir(outdir), owlbotTemplatesRelPath)
-	if err := os.MkdirAll(templatesDir, 0755); err != nil {
+	if err := os.MkdirAll(templatesDir, 0o755); err != nil {
 		t.Fatal(err)
 	}
 	cfg := &config.Config{
@@ -798,10 +798,10 @@ func TestGatherProtos(t *testing.T) {
 	}
 	for _, f := range files {
 		path := filepath.Join(tmpDir, f)
-		if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
+		if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
 			t.Fatal(err)
 		}
-		if err := os.WriteFile(path, []byte(""), 0644); err != nil {
+		if err := os.WriteFile(path, []byte(""), 0o644); err != nil {
 			t.Fatal(err)
 		}
 	}
@@ -1057,7 +1057,7 @@ func TestGenerateAPI_Gating(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			outdir := t.TempDir()
 			// Force routing to the legacy owlbot.py postprocessor.
-			if err := os.WriteFile(filepath.Join(outdir, "owlbot.py"), []byte("#!/usr/bin/env python3\npass"), 0755); err != nil {
+			if err := os.WriteFile(filepath.Join(outdir, "owlbot.py"), []byte("#!/usr/bin/env python3\npass"), 0o755); err != nil {
 				t.Fatal(err)
 			}
 			api := &config.API{Path: "google/cloud/secretmanager/v1"}

@@ -58,7 +58,7 @@ func TestUpdateLibraryVersion_Error(t *testing.T) {
 		{
 			name: "invalid json",
 			setup: func(t *testing.T, path string) {
-				if err := os.WriteFile(path, []byte("this isn't valid JSON"), 0644); err != nil {
+				if err := os.WriteFile(path, []byte("this isn't valid JSON"), 0o644); err != nil {
 					t.Fatal(err)
 				}
 			},
@@ -68,7 +68,7 @@ func TestUpdateLibraryVersion_Error(t *testing.T) {
 		{
 			name: "no clientLibrary field",
 			setup: func(t *testing.T, path string) {
-				if err := os.WriteFile(path, []byte("{}"), 0644); err != nil {
+				if err := os.WriteFile(path, []byte("{}"), 0o644); err != nil {
 					t.Fatal(err)
 				}
 			},
@@ -77,7 +77,7 @@ func TestUpdateLibraryVersion_Error(t *testing.T) {
 		{
 			name: "readonly file",
 			setup: func(t *testing.T, path string) {
-				if err := os.WriteFile(path, []byte("{\"clientLibrary\":{}}"), 0444); err != nil {
+				if err := os.WriteFile(path, []byte("{\"clientLibrary\":{}}"), 0o444); err != nil {
 					t.Fatal(err)
 				}
 			},
@@ -105,7 +105,7 @@ func TestUpdateAllLibraryVersions(t *testing.T) {
 	dir := filepath.Dir(metadataPath)
 	readmePath := filepath.Join(dir, "README.txt")
 	readmeContent := "This is a README file"
-	if err := os.WriteFile(readmePath, []byte(readmeContent), 0644); err != nil {
+	if err := os.WriteFile(readmePath, []byte(readmeContent), 0o644); err != nil {
 		t.Fatal(err)
 	}
 	if err := UpdateAllLibraryVersions(dir, "1.20.0"); err != nil {
@@ -144,7 +144,7 @@ func TestUpdateAllLibraryVersions_Error(t *testing.T) {
 		{
 			name: "unexpected directory",
 			setup: func(t *testing.T, dir string) {
-				if err := os.Mkdir(filepath.Join(dir, "snippet_metadata.json"), 0755); err != nil {
+				if err := os.Mkdir(filepath.Join(dir, "snippet_metadata.json"), 0o755); err != nil {
 					t.Fatal(err)
 				}
 			},
@@ -154,7 +154,7 @@ func TestUpdateAllLibraryVersions_Error(t *testing.T) {
 			name: "readonly file",
 			setup: func(t *testing.T, dir string) {
 				content := "{\"clientLibrary\":{}}"
-				if err := os.WriteFile(filepath.Join(dir, "snippet_metadata.json"), []byte(content), 0444); err != nil {
+				if err := os.WriteFile(filepath.Join(dir, "snippet_metadata.json"), []byte(content), 0o444); err != nil {
 					t.Fatal(err)
 				}
 			},
@@ -204,7 +204,7 @@ func TestReformat_Error(t *testing.T) {
 		{
 			name: "invalid json",
 			setup: func(t *testing.T, path string) {
-				if err := os.WriteFile(path, []byte("This isn't valid JSON"), 0644); err != nil {
+				if err := os.WriteFile(path, []byte("This isn't valid JSON"), 0o644); err != nil {
 					t.Fatal(err)
 				}
 			},
@@ -214,7 +214,7 @@ func TestReformat_Error(t *testing.T) {
 		{
 			name: "readonly file",
 			setup: func(t *testing.T, path string) {
-				if err := os.WriteFile(path, []byte("{}"), 0444); err != nil {
+				if err := os.WriteFile(path, []byte("{}"), 0o444); err != nil {
 					t.Fatal(err)
 				}
 			},
@@ -248,7 +248,7 @@ func TestReformatAll(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if err := os.WriteFile(unformattedPath, []byte(unformattedContent), 0644); err != nil {
+	if err := os.WriteFile(unformattedPath, []byte(unformattedContent), 0o644); err != nil {
 		t.Fatal(err)
 	}
 	if err := ReformatAll(dir); err != nil {
@@ -287,7 +287,7 @@ func TestReformatAll_Error(t *testing.T) {
 		{
 			name: "unexpected directory",
 			setup: func(t *testing.T, dir string) {
-				if err := os.Mkdir(filepath.Join(dir, "snippet_metadata.json"), 0755); err != nil {
+				if err := os.Mkdir(filepath.Join(dir, "snippet_metadata.json"), 0o755); err != nil {
 					t.Fatal(err)
 				}
 			},
@@ -296,7 +296,7 @@ func TestReformatAll_Error(t *testing.T) {
 		{
 			name: "readonly file",
 			setup: func(t *testing.T, dir string) {
-				if err := os.WriteFile(filepath.Join(dir, "snippet_metadata.json"), []byte("{}"), 0444); err != nil {
+				if err := os.WriteFile(filepath.Join(dir, "snippet_metadata.json"), []byte("{}"), 0o444); err != nil {
 					t.Fatal(err)
 				}
 			},
@@ -330,11 +330,11 @@ func TestFindAll(t *testing.T) {
 	allFiles := append(snippetMetadataFiles, nonSnippetMetadataFiles...)
 	for _, file := range allFiles {
 		path := filepath.Join(dir, file)
-		if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
+		if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
 			t.Fatal(err)
 		}
 		// The content doesn't matter for this test; empty files are fine.
-		if err := os.WriteFile(path, nil, 0644); err != nil {
+		if err := os.WriteFile(path, nil, 0o644); err != nil {
 			t.Fatal(err)
 		}
 	}
@@ -362,7 +362,7 @@ func TestFindAll_Error(t *testing.T) {
 		{
 			name: "match is a directory",
 			setup: func(t *testing.T, dir string) {
-				if err := os.Mkdir(filepath.Join(dir, "snippet_metadata.json"), 0755); err != nil {
+				if err := os.Mkdir(filepath.Join(dir, "snippet_metadata.json"), 0o755); err != nil {
 					t.Fatal(err)
 				}
 			},
@@ -373,7 +373,7 @@ func TestFindAll_Error(t *testing.T) {
 			setup: func(t *testing.T, dir string) {
 				normalPath := filepath.Join(dir, "test.txt")
 				matchPath := filepath.Join(dir, "snippet_metadata.json")
-				if err := os.WriteFile(normalPath, nil, 0644); err != nil {
+				if err := os.WriteFile(normalPath, nil, 0o644); err != nil {
 					t.Fatal(err)
 				}
 				if err := os.Symlink(normalPath, matchPath); err != nil {
@@ -404,7 +404,7 @@ func copyInputFileToTemp(t *testing.T, inputFile string) string {
 		t.Fatal(err)
 	}
 	path := filepath.Join(dir, "snippet_metadata.json")
-	err = os.WriteFile(path, content, 0644)
+	err = os.WriteFile(path, content, 0o644)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -453,7 +453,7 @@ func TestHTMLCharsNoEscape(t *testing.T) {
 			t.Parallel()
 			dir := t.TempDir()
 			path := filepath.Join(dir, "snippet_metadata.json")
-			if err := os.WriteFile(path, []byte(test.input), 0644); err != nil {
+			if err := os.WriteFile(path, []byte(test.input), 0o644); err != nil {
 				t.Fatal(err)
 			}
 			if err := test.run(path); err != nil {

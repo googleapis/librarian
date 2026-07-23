@@ -1,5 +1,46 @@
 # Changelog
 
+## [0.30.0](https://github.com/googleapis/librarian/compare/v0.29.1...v0.30.0) (2026-07-23)
+
+
+### Features
+
+* **internal/librarian/generate:** cap goroutine concurrency during `generate --all` ([#6942](https://github.com/googleapis/librarian/issues/6942)) ([4365f05](https://github.com/googleapis/librarian/commit/4365f0536eacd97fdaee2d0b68f857a7da8bcd2e)), closes [#6952](https://github.com/googleapis/librarian/issues/6952)
+* **internal/librarian/php:** implement add command support ([#6974](https://github.com/googleapis/librarian/issues/6974)) ([df5ce1e](https://github.com/googleapis/librarian/commit/df5ce1ed2fc5576f5b4e94c2fd6498ab5eb1787e)), closes [#6972](https://github.com/googleapis/librarian/issues/6972)
+* **rust:** generate method signatures for bidi streaming ([#6958](https://github.com/googleapis/librarian/issues/6958)) ([853dab0](https://github.com/googleapis/librarian/commit/853dab0ebe901453338dda697df8f9609a374f27)), closes [#6835](https://github.com/googleapis/librarian/issues/6835)
+
+
+### Bug Fixes
+
+* **cmd/librarian/Dockerfile:** go build in Dockerfile not to use Git ([#6986](https://github.com/googleapis/librarian/issues/6986)) ([c0e67d1](https://github.com/googleapis/librarian/commit/c0e67d1f3a9884067a64152b07b2cf7bf80a8748))
+
+## [0.29.1](https://github.com/googleapis/librarian/compare/v0.29.0...v0.29.1) (2026-07-22)
+
+
+### Bug Fixes
+
+* **internal/librarian/python:** gapic-generator 1.37.1 ([#6966](https://github.com/googleapis/librarian/issues/6966)) ([ec8df9a](https://github.com/googleapis/librarian/commit/ec8df9a62c3cbc169bd9f2d2a3c57418a5981a6c))
+* **sdk.yaml:** remove all language restrictions ([#6959](https://github.com/googleapis/librarian/issues/6959)) ([84e171c](https://github.com/googleapis/librarian/commit/84e171c1934f13a4f1705a3a931bfb58e8753a93))
+
+## [0.29.0](https://github.com/googleapis/librarian/compare/v0.28.0...v0.29.0) (2026-07-22)
+
+
+### Features
+
+* **dart:** implement publish ([#6865](https://github.com/googleapis/librarian/issues/6865)) ([9c46c5d](https://github.com/googleapis/librarian/commit/9c46c5d09b913fb1f238f6b4067f897e6227df25))
+* **internal/librarian/php:** remove empty directories during cleanup ([#6947](https://github.com/googleapis/librarian/issues/6947)) ([13c7e38](https://github.com/googleapis/librarian/commit/13c7e3802bd5ab1c2c24886724ab7281578c8480))
+* **internal/librarian/ruby:** implement clean functionality ([#6943](https://github.com/googleapis/librarian/issues/6943)) ([2daa5d8](https://github.com/googleapis/librarian/commit/2daa5d80eeee5bf6e32b39a8a4f03e1f3ea56971))
+* **tool/cmd/migrate:** parse path override for ruby migration ([#6956](https://github.com/googleapis/librarian/issues/6956)) ([cf9e6fe](https://github.com/googleapis/librarian/commit/cf9e6feece8a57ab74a066c98989c93b1f70d417)), closes [#6632](https://github.com/googleapis/librarian/issues/6632)
+* **tool/cmd/migrate:** parse service override for ruby migration ([#6963](https://github.com/googleapis/librarian/issues/6963)) ([1cde964](https://github.com/googleapis/librarian/commit/1cde964d63fdf1696240d4ebebdc3c1985bd6a4b))
+
+
+### Bug Fixes
+
+* **internal/librarian/java:** customize README template for storage library dual dependencies ([#6950](https://github.com/googleapis/librarian/issues/6950)) ([fb88de3](https://github.com/googleapis/librarian/commit/fb88de386deac7198922616f72089e4906b51766))
+* **sidekick/swift:** deps added via method signatures ([#6946](https://github.com/googleapis/librarian/issues/6946)) ([10e25bc](https://github.com/googleapis/librarian/commit/10e25bcf5642cc8c87767bba15e8f708a674a9d9))
+* **sidekick/swift:** snippets and repeated fields ([#6945](https://github.com/googleapis/librarian/issues/6945)) ([bd90a4e](https://github.com/googleapis/librarian/commit/bd90a4e4553b35071ce9fa3024df569a0dc4429a))
+* **tool/cmd/migrate:** skip PHP libraries with no APIs during migration ([#6951](https://github.com/googleapis/librarian/issues/6951)) ([5280de4](https://github.com/googleapis/librarian/commit/5280de4f7816b9aa8c1324b6ede4d7a83cad54b8)), closes [#6746](https://github.com/googleapis/librarian/issues/6746)
+
 ## [0.28.0](https://github.com/googleapis/librarian/compare/v0.27.1...v0.28.0) (2026-07-21)
 
 

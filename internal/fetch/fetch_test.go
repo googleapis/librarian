@@ -65,10 +65,10 @@ func TestTarballPath(t *testing.T) {
 func TestExtractedDir(t *testing.T) {
 	cachedir := t.TempDir()
 	want := filepath.Join(cachedir, testExtractedDir)
-	if err := os.MkdirAll(want, 0755); err != nil {
+	if err := os.MkdirAll(want, 0o755); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(filepath.Join(want, "test.txt"), []byte("content"), 0644); err != nil {
+	if err := os.WriteFile(filepath.Join(want, "test.txt"), []byte("content"), 0o644); err != nil {
 		t.Fatal(err)
 	}
 
@@ -93,10 +93,10 @@ func TestRepo_ExtractedDirExists(t *testing.T) {
 	t.Setenv(cache.EnvLibrarianCache, cachedir)
 
 	extractedDir := filepath.Join(cachedir, testExtractedDir)
-	if err := os.MkdirAll(extractedDir, 0755); err != nil {
+	if err := os.MkdirAll(extractedDir, 0o755); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(filepath.Join(extractedDir, "test.txt"), []byte("content"), 0644); err != nil {
+	if err := os.WriteFile(filepath.Join(extractedDir, "test.txt"), []byte("content"), 0o644); err != nil {
 		t.Fatal(err)
 	}
 
@@ -115,7 +115,7 @@ func TestRepo_TarballExists(t *testing.T) {
 	t.Setenv(cache.EnvLibrarianCache, cachedir)
 
 	tarballPath := filepath.Join(cachedir, testTarball)
-	if err := os.MkdirAll(filepath.Dir(tarballPath), 0755); err != nil {
+	if err := os.MkdirAll(filepath.Dir(tarballPath), 0o755); err != nil {
 		t.Fatal(err)
 	}
 
@@ -123,7 +123,7 @@ func TestRepo_TarballExists(t *testing.T) {
 		"README.md": "# Test Repo",
 		"main.go":   "package main",
 	})
-	if err := os.WriteFile(tarballPath, tarballData, 0644); err != nil {
+	if err := os.WriteFile(tarballPath, tarballData, 0o644); err != nil {
 		t.Fatal(err)
 	}
 
@@ -170,7 +170,7 @@ func TestRepo_MismatchTarball(t *testing.T) {
 	// Create an empty tarball file in the cache directory.
 	repo := strings.TrimPrefix(server.URL, "https://")
 	downloadDir := filepath.Join(cacheDir, "download")
-	if err := os.MkdirAll(downloadDir, 0755); err != nil {
+	if err := os.MkdirAll(downloadDir, 0o755); err != nil {
 		t.Fatal(err)
 	}
 	tarballName := fmt.Sprintf("%s@%s.tar.gz", repo, testCommit)
@@ -443,7 +443,7 @@ func TestDownload_TgzExists(t *testing.T) {
 	testDir := t.TempDir()
 	tarball := makeTestContents(t)
 	target := path.Join(testDir, "existing-file")
-	if err := os.WriteFile(target, tarball.Contents, 0644); err != nil {
+	if err := os.WriteFile(target, tarball.Contents, 0o644); err != nil {
 		t.Fatal(err)
 	}
 	if err := Download(t.Context(), target, "https://unused/placeholder.tar.gz", tarball.Sha256); err != nil {
@@ -552,7 +552,7 @@ func TestExtractTarball(t *testing.T) {
 	})
 
 	tarballPath := path.Join(t.TempDir(), "test.tar.gz")
-	if err := os.WriteFile(tarballPath, tarballData, 0644); err != nil {
+	if err := os.WriteFile(tarballPath, tarballData, 0o644); err != nil {
 		t.Fatal(err)
 	}
 
@@ -598,7 +598,7 @@ func createTestTarball(t *testing.T, topLevelDir string, files map[string]string
 		fullPath := topLevelDir + "/" + filePath
 		hdr := &tar.Header{
 			Name: fullPath,
-			Mode: 0644,
+			Mode: 0o644,
 			Size: int64(len(content)),
 		}
 		if err := tw.WriteHeader(hdr); err != nil {
@@ -629,7 +629,7 @@ func TestExtractTarball_Error(t *testing.T) {
 			name: "not a gzip file",
 			tarballPath: func(t *testing.T) string {
 				p := path.Join(t.TempDir(), "file.txt")
-				if err := os.WriteFile(p, []byte("not a tarball"), 0644); err != nil {
+				if err := os.WriteFile(p, []byte("not a tarball"), 0o644); err != nil {
 					t.Fatal(err)
 				}
 				return p
@@ -651,7 +651,7 @@ func TestExtractTarball_Error(t *testing.T) {
 					t.Fatal(err)
 				}
 				p := path.Join(t.TempDir(), "file.gz")
-				if err := os.WriteFile(p, buf.Bytes(), 0644); err != nil {
+				if err := os.WriteFile(p, buf.Bytes(), 0o644); err != nil {
 					t.Fatal(err)
 				}
 				return p
@@ -670,7 +670,7 @@ func TestExtractTarball_Error(t *testing.T) {
 				hdr := &tar.Header{
 					Typeflag: tar.TypeBlock,
 					Name:     "repo-abc123/src/block.dev",
-					Mode:     0644,
+					Mode:     0o644,
 				}
 				if err := tw.WriteHeader(hdr); err != nil {
 					t.Fatal(err)
@@ -682,7 +682,7 @@ func TestExtractTarball_Error(t *testing.T) {
 					t.Fatal(err)
 				}
 				p := path.Join(t.TempDir(), "unsupported.tar.gz")
-				if err := os.WriteFile(p, buf.Bytes(), 0644); err != nil {
+				if err := os.WriteFile(p, buf.Bytes(), 0o644); err != nil {
 					t.Fatal(err)
 				}
 				return p
@@ -703,7 +703,7 @@ func TestExtractTarball_Error(t *testing.T) {
 					Typeflag: tar.TypeSymlink,
 					Name:     "repo-abc123/src/link.txt",
 					Linkname: "/etc/passwd",
-					Mode:     0777,
+					Mode:     0o777,
 				}
 				if err := tw.WriteHeader(hdr); err != nil {
 					t.Fatal(err)
@@ -715,7 +715,7 @@ func TestExtractTarball_Error(t *testing.T) {
 					t.Fatal(err)
 				}
 				p := path.Join(t.TempDir(), "abs-symlink.tar.gz")
-				if err := os.WriteFile(p, buf.Bytes(), 0644); err != nil {
+				if err := os.WriteFile(p, buf.Bytes(), 0o644); err != nil {
 					t.Fatal(err)
 				}
 				return p
@@ -736,7 +736,7 @@ func TestExtractTarball_Error(t *testing.T) {
 					Typeflag: tar.TypeSymlink,
 					Name:     "repo-abc123/src/link.txt",
 					Linkname: "../../../escape.txt",
-					Mode:     0777,
+					Mode:     0o777,
 				}
 				if err := tw.WriteHeader(hdr); err != nil {
 					t.Fatal(err)
@@ -748,7 +748,7 @@ func TestExtractTarball_Error(t *testing.T) {
 					t.Fatal(err)
 				}
 				p := path.Join(t.TempDir(), "escaping-symlink.tar.gz")
-				if err := os.WriteFile(p, buf.Bytes(), 0644); err != nil {
+				if err := os.WriteFile(p, buf.Bytes(), 0o644); err != nil {
 					t.Fatal(err)
 				}
 				return p
@@ -788,14 +788,14 @@ func TestExtractTarball_PathError(t *testing.T) {
 			tarballPath: func(t *testing.T) string {
 				tarballData := createTestTarball(t, "repo-abc123", map[string]string{"file.txt": "content"})
 				p := path.Join(t.TempDir(), "test.tar.gz")
-				if err := os.WriteFile(p, tarballData, 0644); err != nil {
+				if err := os.WriteFile(p, tarballData, 0o644); err != nil {
 					t.Fatal(err)
 				}
 				return p
 			},
 			dest: func(t *testing.T) string {
 				p := path.Join(t.TempDir(), "destfile")
-				if err := os.WriteFile(p, []byte("i am a file"), 0644); err != nil {
+				if err := os.WriteFile(p, []byte("i am a file"), 0o644); err != nil {
 					t.Fatal(err)
 				}
 				return p
@@ -840,12 +840,12 @@ func TestDownload_Error(t *testing.T) {
 			target: func(t *testing.T) string {
 				// Create a read-only directory to trigger a permission error.
 				readOnlyDir := path.Join(t.TempDir(), "read-only")
-				if err := os.Mkdir(readOnlyDir, 0555); err != nil { // Read and execute only
+				if err := os.Mkdir(readOnlyDir, 0o555); err != nil { // Read and execute only
 					t.Fatal(err)
 				}
 				t.Cleanup(func() {
 					// Restore permissions so the temp dir can be cleaned up.
-					os.Chmod(readOnlyDir, 0755)
+					os.Chmod(readOnlyDir, 0o755)
 				})
 				return path.Join(readOnlyDir, "subdir", "target")
 			},
@@ -1082,7 +1082,7 @@ func TestExtractTarball_Symlink(t *testing.T) {
 	fileHdr := &tar.Header{
 		Typeflag: tar.TypeReg,
 		Name:     "repo-abc123/src/file.txt",
-		Mode:     0644,
+		Mode:     0o644,
 		Size:     4,
 	}
 	if err := tw.WriteHeader(fileHdr); err != nil {
@@ -1096,7 +1096,7 @@ func TestExtractTarball_Symlink(t *testing.T) {
 		Typeflag: tar.TypeSymlink,
 		Name:     "repo-abc123/src/link.txt",
 		Linkname: "file.txt",
-		Mode:     0777,
+		Mode:     0o777,
 	}
 	if err := tw.WriteHeader(linkHdr); err != nil {
 		t.Fatal(err)
@@ -1110,7 +1110,7 @@ func TestExtractTarball_Symlink(t *testing.T) {
 	}
 
 	tarballPath := filepath.Join(t.TempDir(), "test-symlink.tar.gz")
-	if err := os.WriteFile(tarballPath, buf.Bytes(), 0644); err != nil {
+	if err := os.WriteFile(tarballPath, buf.Bytes(), 0o644); err != nil {
 		t.Fatal(err)
 	}
 

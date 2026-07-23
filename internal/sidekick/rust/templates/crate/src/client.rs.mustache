@@ -128,11 +128,26 @@ impl {{Codec.Name}} {
     }
     {{#Codec.Methods}}
 
+    {{#Codec.IsBidiStreaming}}
+    #[cfg(google_cloud_unstable_gapic_streaming)]
+    {{> /templates/common/client_method_preamble}}
+    pub async fn {{Codec.Name}}(
+        &self,
+        options: crate::RequestOptions,
+    ) -> (
+        google_cloud_gax::streaming::RequestSender<{{InputType.Codec.QualifiedName}}>,
+        google_cloud_gax::streaming::ResponseReceiver<{{OutputType.Codec.QualifiedName}}>,
+    ) {
+        self.inner.{{Codec.Name}}(options).await
+    }
+    {{/Codec.IsBidiStreaming}}
+    {{^Codec.IsBidiStreaming}}
     {{> /templates/common/client_method_preamble}}
     {{Codec.BuilderVisibility}} fn {{Codec.Name}}(&self) -> super::builder::{{Codec.ServiceNameToSnake}}::{{Codec.BuilderName}}
     {
         super::builder::{{Codec.ServiceNameToSnake}}::{{Codec.BuilderName}}::new(self.inner.clone())
     }
+    {{/Codec.IsBidiStreaming}}
     {{/Codec.Methods}}
 }
 {{/Codec.Services}}

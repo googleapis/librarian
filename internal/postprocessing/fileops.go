@@ -85,7 +85,7 @@ func Replace(path, original, replacement string) error {
 		return fmt.Errorf("%w: %q in file %s", errTextNotFound, original, path)
 	}
 	newContent := bytes.ReplaceAll(content, oldBytes, []byte(replacement))
-	return os.WriteFile(path, newContent, 0644)
+	return os.WriteFile(path, newContent, 0o644)
 }
 
 // ReplaceRegex finds and replaces text in a file using a regular expression.
@@ -110,7 +110,7 @@ func ReplaceRegex(path, pattern, replacement string) error {
 		return fmt.Errorf("%w: pattern %q in file %s", errTextNotFound, pattern, path)
 	}
 	newContent := re.ReplaceAll(content, []byte(replacement))
-	return os.WriteFile(path, newContent, 0644)
+	return os.WriteFile(path, newContent, 0o644)
 }
 
 // CopyFiles copies files specified by copyConfigs from src to dst inside outDir.
@@ -121,7 +121,7 @@ func CopyFiles(outDir string, copyConfigs []config.CopyConfig) error {
 		if srcAbs == dstAbs {
 			return fmt.Errorf("invalid copy config for %s: %w", c.Src, errSameSourceAndDestination)
 		}
-		if err := os.MkdirAll(filepath.Dir(dstAbs), 0755); err != nil {
+		if err := os.MkdirAll(filepath.Dir(dstAbs), 0o755); err != nil {
 			return fmt.Errorf("failed to create directory for %s: %w", c.Dst, err)
 		}
 		if err := filesystem.CopyFile(srcAbs, dstAbs); err != nil {

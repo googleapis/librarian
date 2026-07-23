@@ -38,7 +38,7 @@ func TestCreate(t *testing.T) {
 [workspace]
 members = []
 `
-	if err := os.WriteFile("Cargo.toml", []byte(workspaceCargo), 0644); err != nil {
+	if err := os.WriteFile("Cargo.toml", []byte(workspaceCargo), 0o644); err != nil {
 		t.Fatal(err)
 	}
 
@@ -81,7 +81,7 @@ func TestValidate(t *testing.T) {
 [workspace]
 members = []
 `
-	if err := os.WriteFile("Cargo.toml", []byte(workspaceCargo), 0644); err != nil {
+	if err := os.WriteFile("Cargo.toml", []byte(workspaceCargo), 0o644); err != nil {
 		t.Fatal(err)
 	}
 

@@ -227,7 +227,7 @@ func TestCreateBinWrapper(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			if info.Mode().Perm() != 0755 {
+			if info.Mode().Perm() != 0o755 {
 				t.Errorf("wrapper permissions = %04o, want 0755", info.Mode().Perm())
 			}
 		})
@@ -237,7 +237,7 @@ func TestCreateBinWrapper(t *testing.T) {
 //nolint:unparam // content is the same for all calls but keeping parameter for flexibility
 func writeExecutable(t *testing.T, path string, content string) {
 	t.Helper()
-	f, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0755)
+	f, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0o755)
 	if err != nil {
 		t.Fatal(err)
 	}

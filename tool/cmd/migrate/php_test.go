@@ -46,13 +46,13 @@ func TestRunPHPMigration(t *testing.T) {
 	dir := t.TempDir()
 	// Create a fake library SecretManager.
 	libDir := filepath.Join(dir, "SecretManager")
-	if err := os.Mkdir(libDir, 0755); err != nil {
+	if err := os.Mkdir(libDir, 0o755); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(filepath.Join(libDir, "VERSION"), []byte("2.3.0\n"), 0644); err != nil {
+	if err := os.WriteFile(filepath.Join(libDir, "VERSION"), []byte("2.3.0\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(filepath.Join(libDir, "composer.json"), []byte("{}"), 0644); err != nil {
+	if err := os.WriteFile(filepath.Join(libDir, "composer.json"), []byte("{}"), 0o644); err != nil {
 		t.Fatal(err)
 	}
 	owlbotContent := `
@@ -60,26 +60,26 @@ deep-copy-regex:
   - source: /google/cloud/secretmanager/(v1)/.*-php/(.*)
     dest: /owl-bot-staging/SecretManager/$1/$2
 `
-	if err := os.WriteFile(filepath.Join(libDir, ".OwlBot.yaml"), []byte(owlbotContent), 0644); err != nil {
+	if err := os.WriteFile(filepath.Join(libDir, ".OwlBot.yaml"), []byte(owlbotContent), 0o644); err != nil {
 		t.Fatal(err)
 	}
 	// Create a fake non-library directory to ensure it is ignored.
 	ignoredDir := filepath.Join(dir, "dev")
-	if err := os.Mkdir(ignoredDir, 0755); err != nil {
+	if err := os.Mkdir(ignoredDir, 0o755); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(filepath.Join(ignoredDir, "composer.json"), []byte("{}"), 0644); err != nil {
+	if err := os.WriteFile(filepath.Join(ignoredDir, "composer.json"), []byte("{}"), 0o644); err != nil {
 		t.Fatal(err)
 	}
 	// Create a fake library HandwrittenLib (no .OwlBot.yaml) to ensure it is skipped.
 	handwrittenLibDir := filepath.Join(dir, "HandwrittenLib")
-	if err := os.Mkdir(handwrittenLibDir, 0755); err != nil {
+	if err := os.Mkdir(handwrittenLibDir, 0o755); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(filepath.Join(handwrittenLibDir, "VERSION"), []byte("1.0.0\n"), 0644); err != nil {
+	if err := os.WriteFile(filepath.Join(handwrittenLibDir, "VERSION"), []byte("1.0.0\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(filepath.Join(handwrittenLibDir, "composer.json"), []byte("{}"), 0644); err != nil {
+	if err := os.WriteFile(filepath.Join(handwrittenLibDir, "composer.json"), []byte("{}"), 0o644); err != nil {
 		t.Fatal(err)
 	}
 	t.Chdir(dir)
@@ -225,7 +225,7 @@ deep-copy-regex:
 api-name: Ces
 `
 				path := filepath.Join(dir, ".OwlBot.yaml")
-				if err := os.WriteFile(path, []byte(content), 0644); err != nil {
+				if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
 					t.Fatal(err)
 				}
 				return path
@@ -261,7 +261,7 @@ deep-copy-regex:
 api-name: GeoCommonProtos
 `
 				path := filepath.Join(dir, ".OwlBot.yaml")
-				if err := os.WriteFile(path, []byte(content), 0644); err != nil {
+				if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
 					t.Fatal(err)
 				}
 				return path
@@ -301,7 +301,7 @@ func TestExtractAPIsFromOwlBot_Error(t *testing.T) {
 			setupFile: func(dir string) string {
 				content := `{invalid`
 				path := filepath.Join(dir, ".OwlBot.yaml")
-				if err := os.WriteFile(path, []byte(content), 0644); err != nil {
+				if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
 					t.Fatal(err)
 				}
 				return path
@@ -319,7 +319,7 @@ deep-copy-regex:
 api-name: Ces
 `
 				path := filepath.Join(dir, ".OwlBot.yaml")
-				if err := os.WriteFile(path, []byte(content), 0644); err != nil {
+				if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
 					t.Fatal(err)
 				}
 				return path
@@ -406,10 +406,10 @@ proto_library_with_info(
 			tempDir := t.TempDir()
 			if test.bazelRules != "" {
 				apiDir := filepath.Join(tempDir, "google/cloud/ces/v1")
-				if err := os.MkdirAll(apiDir, 0755); err != nil {
+				if err := os.MkdirAll(apiDir, 0o755); err != nil {
 					t.Fatal(err)
 				}
-				if err := os.WriteFile(filepath.Join(apiDir, "BUILD.bazel"), []byte(test.bazelRules), 0644); err != nil {
+				if err := os.WriteFile(filepath.Join(apiDir, "BUILD.bazel"), []byte(test.bazelRules), 0o644); err != nil {
 					t.Fatal(err)
 				}
 			}
@@ -440,13 +440,13 @@ func TestFindPHPLibraries(t *testing.T) {
 			name: "common resources configuration",
 			setupLib: func(t *testing.T, dir string) {
 				libDir := filepath.Join(dir, "SecretManager")
-				if err := os.Mkdir(libDir, 0755); err != nil {
+				if err := os.Mkdir(libDir, 0o755); err != nil {
 					t.Fatal(err)
 				}
-				if err := os.WriteFile(filepath.Join(libDir, "VERSION"), []byte("2.3.0\n"), 0644); err != nil {
+				if err := os.WriteFile(filepath.Join(libDir, "VERSION"), []byte("2.3.0\n"), 0o644); err != nil {
 					t.Fatal(err)
 				}
-				if err := os.WriteFile(filepath.Join(libDir, "composer.json"), []byte("{}"), 0644); err != nil {
+				if err := os.WriteFile(filepath.Join(libDir, "composer.json"), []byte("{}"), 0o644); err != nil {
 					t.Fatal(err)
 				}
 				owlbotContent := `
@@ -456,7 +456,7 @@ deep-copy-regex:
   - source: /google/cloud/multipygapic/.*-php/(.*)
     dest: /owl-bot-staging/SecretManager/multipygapic/$1
 `
-				if err := os.WriteFile(filepath.Join(libDir, ".OwlBot.yaml"), []byte(owlbotContent), 0644); err != nil {
+				if err := os.WriteFile(filepath.Join(libDir, ".OwlBot.yaml"), []byte(owlbotContent), 0o644); err != nil {
 					t.Fatal(err)
 				}
 			},

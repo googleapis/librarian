@@ -63,15 +63,6 @@ type API struct {
 	// config's publishing section.
 	DocumentationURI string `yaml:"documentation_uri,omitempty"`
 
-	// Languages restricts which languages can generate client libraries for this API.
-	// Use "all" to indicate all languages can use this API.
-	//
-	// Restrictions exist for several reasons:
-	//   - Newer languages (Rust, Dart) skip older beta versions when stable versions exist
-	//   - Python has historical legacy APIs not available to other languages
-	//   - Some APIs (like DIREGAPIC protos) are only used by specific languages
-	Languages []string `yaml:"languages,omitempty"`
-
 	// NewIssueURI overrides the new issue URI from the service config's
 	// publishing section.
 	NewIssueURI string `yaml:"new_issue_uri,omitempty"`
@@ -203,7 +194,7 @@ var (
 )
 
 // HasAPIPath reports whether path matches the Path field of any API in
-// sdk.yaml that is available for the given language.
+// sdk.yaml.
 func HasAPIPath(path, language string) bool {
 	apisByPathOnce.Do(func() {
 		apisByPath = make(map[string]*API, len(APIs))
@@ -211,22 +202,14 @@ func HasAPIPath(path, language string) bool {
 			apisByPath[APIs[i].Path] = &APIs[i]
 		}
 	})
-	api, ok := apisByPath[path]
-	if !ok {
-		return false
-	}
-	return slices.Contains(api.Languages, config.LanguageAll) || slices.Contains(api.Languages, language)
+	_, ok := apisByPath[path]
+	return ok
 }
 
-// FindTransport looks up the API by path in sdk.yaml, validates that it is
-// allowed for the specified language, and returns its configured transport.
-// If the API is not explicitly configured in sdk.yaml, it is assumed to be
-// allowed and defaults to GRPCRest.
+// FindTransport looks up the API by path in sdk.yaml and returns its configured transport.
+// If the API is not explicitly configured in sdk.yaml, it is assumed to default to GRPCRest.
 func FindTransport(path, language string) (Transport, error) {
-	api, err := findAPI(path, language)
-	if err != nil {
-		return "", err
-	}
+	api := findAPI(path)
 	return api.Transport(language), nil
 }
 

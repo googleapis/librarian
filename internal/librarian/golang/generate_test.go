@@ -173,7 +173,7 @@ func TestGenerate_MkdirAllError(t *testing.T) {
 
 	tmpDir := t.TempDir()
 	filePath := filepath.Join(tmpDir, "file_blocking_dir")
-	if err := os.WriteFile(filePath, []byte("content"), 0644); err != nil {
+	if err := os.WriteFile(filePath, []byte("content"), 0o644); err != nil {
 		t.Fatal(err)
 	}
 
@@ -399,14 +399,14 @@ func TestGenerateLibrary(t *testing.T) {
 			t.Parallel()
 			repoRoot := t.TempDir()
 			setupSnippets(t, repoRoot)
-			if err := os.MkdirAll(filepath.Join(repoRoot, "internal"), 0777); err != nil {
+			if err := os.MkdirAll(filepath.Join(repoRoot, "internal"), 0o777); err != nil {
 				t.Fatal(err)
 			}
 			test.library.Output = filepath.Join(repoRoot, test.library.Name)
 			for _, file := range test.library.Keep {
 				src := filepath.Join("..", "..", "testdata/golang-generate", file)
 				dst := filepath.Join(test.library.Output, file)
-				if err := os.MkdirAll(filepath.Dir(dst), 0777); err != nil {
+				if err := os.MkdirAll(filepath.Dir(dst), 0o777); err != nil {
 					t.Fatal(err)
 				}
 				if err := filesystem.CopyFile(src, dst); err != nil {
@@ -486,7 +486,7 @@ func TestGenerateREADME(t *testing.T) {
 			t.Parallel()
 			dir := t.TempDir()
 			moduleRoot := filepath.Join(dir, "secretmanager")
-			if err := os.MkdirAll(moduleRoot, 0755); err != nil {
+			if err := os.MkdirAll(moduleRoot, 0o755); err != nil {
 				t.Fatal(err)
 			}
 			test.library.Output = dir
@@ -536,7 +536,7 @@ func TestGenerateREADME_Skipped(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			dir := t.TempDir()
 			moduleRoot := filepath.Join(dir, "secretmanager")
-			if err := os.MkdirAll(moduleRoot, 0755); err != nil {
+			if err := os.MkdirAll(moduleRoot, 0o755); err != nil {
 				t.Fatal(err)
 			}
 
@@ -831,33 +831,6 @@ func TestBuildGAPICOpts(t *testing.T) {
 	}
 }
 
-func TestBuildGAPICOpts_Error(t *testing.T) {
-	for _, test := range []struct {
-		name          string
-		apiPath       string
-		goAPI         *config.GoAPI
-		googleapisDir string
-	}{
-		{
-			name:    "api not allowed for go",
-			apiPath: "google/cloud/asset/v1p1beta1",
-			goAPI: &config.GoAPI{
-				ClientPackage: "asset",
-				ImportPath:    "asset/apiv1p1beta1",
-			},
-			googleapisDir: googleapisDir,
-		},
-	} {
-		t.Run(test.name, func(t *testing.T) {
-			t.Parallel()
-			_, err := buildGAPICOpts(test.apiPath, test.goAPI, "", test.googleapisDir)
-			if err == nil {
-				t.Fatal("expected error")
-			}
-		})
-	}
-}
-
 func TestMoveGeneratedFiles(t *testing.T) {
 	for _, test := range []struct {
 		name  string
@@ -869,18 +842,18 @@ func TestMoveGeneratedFiles(t *testing.T) {
 				repoRoot := filepath.Join(tmpDir, "repo")
 				outDir := filepath.Join(repoRoot, "lib")
 				srcDir := filepath.Join(outDir, "cloud.google.com", "go", "lib", "apiv1")
-				if err := os.MkdirAll(srcDir, 0755); err != nil {
+				if err := os.MkdirAll(srcDir, 0o755); err != nil {
 					t.Fatal(err)
 				}
-				if err := os.WriteFile(filepath.Join(srcDir, "main.go"), []byte("package foo"), 0644); err != nil {
+				if err := os.WriteFile(filepath.Join(srcDir, "main.go"), []byte("package foo"), 0o644); err != nil {
 					t.Fatal(err)
 				}
 				snippetDirSuffix := filepath.Join("internal", "generated", "snippets", "lib", "apiv1")
 				snippetDir := filepath.Join(outDir, "cloud.google.com", "go", snippetDirSuffix)
-				if err := os.MkdirAll(snippetDir, 0755); err != nil {
+				if err := os.MkdirAll(snippetDir, 0o755); err != nil {
 					t.Fatal(err)
 				}
-				if err := os.WriteFile(filepath.Join(snippetDir, "snippet.go"), []byte("package internal"), 0644); err != nil {
+				if err := os.WriteFile(filepath.Join(snippetDir, "snippet.go"), []byte("package internal"), 0o644); err != nil {
 					t.Fatal(err)
 				}
 				lib := &config.Library{
@@ -899,18 +872,18 @@ func TestMoveGeneratedFiles(t *testing.T) {
 				repoRoot := filepath.Join(tmpDir, "repo")
 				outDir := filepath.Join(repoRoot, "lib", "v2")
 				srcDir := filepath.Join(outDir, "cloud.google.com", "go", "lib", "v2", "apiv2")
-				if err := os.MkdirAll(srcDir, 0755); err != nil {
+				if err := os.MkdirAll(srcDir, 0o755); err != nil {
 					t.Fatal(err)
 				}
-				if err := os.WriteFile(filepath.Join(srcDir, "main.go"), []byte("package foo"), 0644); err != nil {
+				if err := os.WriteFile(filepath.Join(srcDir, "main.go"), []byte("package foo"), 0o644); err != nil {
 					t.Fatal(err)
 				}
 				snippetDirSuffix := filepath.Join("internal", "generated", "snippets", "lib", "v2", "apiv2")
 				snippetDir := filepath.Join(outDir, "cloud.google.com", "go", snippetDirSuffix)
-				if err := os.MkdirAll(snippetDir, 0755); err != nil {
+				if err := os.MkdirAll(snippetDir, 0o755); err != nil {
 					t.Fatal(err)
 				}
-				if err := os.WriteFile(filepath.Join(snippetDir, "snippet.go"), []byte("package internal"), 0644); err != nil {
+				if err := os.WriteFile(filepath.Join(snippetDir, "snippet.go"), []byte("package internal"), 0o644); err != nil {
 					t.Fatal(err)
 				}
 				lib := &config.Library{
@@ -929,18 +902,18 @@ func TestMoveGeneratedFiles(t *testing.T) {
 				repoRoot := filepath.Join(tmpDir, "repo")
 				outDir := filepath.Join(repoRoot, "lib")
 				srcDir := filepath.Join(outDir, "cloud.google.com", "go", "lib", "v2", "apiv1")
-				if err := os.MkdirAll(srcDir, 0755); err != nil {
+				if err := os.MkdirAll(srcDir, 0o755); err != nil {
 					t.Fatal(err)
 				}
-				if err := os.WriteFile(filepath.Join(srcDir, "main.go"), []byte("package foo"), 0644); err != nil {
+				if err := os.WriteFile(filepath.Join(srcDir, "main.go"), []byte("package foo"), 0o644); err != nil {
 					t.Fatal(err)
 				}
 				snippetDirSuffix := filepath.Join("internal", "generated", "snippets", "lib", "v2", "apiv1")
 				snippetDir := filepath.Join(outDir, "cloud.google.com", "go", snippetDirSuffix)
-				if err := os.MkdirAll(snippetDir, 0755); err != nil {
+				if err := os.MkdirAll(snippetDir, 0o755); err != nil {
 					t.Fatal(err)
 				}
-				if err := os.WriteFile(filepath.Join(snippetDir, "snippet.go"), []byte("package internal"), 0644); err != nil {
+				if err := os.WriteFile(filepath.Join(snippetDir, "snippet.go"), []byte("package internal"), 0o644); err != nil {
 					t.Fatal(err)
 				}
 				lib := &config.Library{
@@ -962,18 +935,18 @@ func TestMoveGeneratedFiles(t *testing.T) {
 				repoRoot := filepath.Join(tmpDir, "repo")
 				outDir := filepath.Join(repoRoot, "lib")
 				srcDir := filepath.Join(outDir, "cloud.google.com", "go", "lib", "apiv1")
-				if err := os.MkdirAll(srcDir, 0755); err != nil {
+				if err := os.MkdirAll(srcDir, 0o755); err != nil {
 					t.Fatal(err)
 				}
-				if err := os.WriteFile(filepath.Join(srcDir, "main.go"), []byte("package foo"), 0644); err != nil {
+				if err := os.WriteFile(filepath.Join(srcDir, "main.go"), []byte("package foo"), 0o644); err != nil {
 					t.Fatal(err)
 				}
 				snippetDirSuffix := filepath.Join("internal", "generated", "snippets", "lib", "apiv1")
 				snippetSrcDir := filepath.Join(outDir, "cloud.google.com", "go", snippetDirSuffix)
-				if err := os.MkdirAll(snippetSrcDir, 0755); err != nil {
+				if err := os.MkdirAll(snippetSrcDir, 0o755); err != nil {
 					t.Fatal(err)
 				}
-				if err := os.WriteFile(filepath.Join(snippetSrcDir, "snippet.go"), []byte("package internal"), 0644); err != nil {
+				if err := os.WriteFile(filepath.Join(snippetSrcDir, "snippet.go"), []byte("package internal"), 0o644); err != nil {
 					t.Fatal(err)
 				}
 				lib := &config.Library{
@@ -1013,11 +986,11 @@ func TestMoveGeneratedFiles(t *testing.T) {
 func setupSnippets(t *testing.T, repoRoot string) {
 	t.Helper()
 	snippetsDir := filepath.Join(repoRoot, "internal", "generated", "snippets")
-	if err := os.MkdirAll(snippetsDir, 0755); err != nil {
+	if err := os.MkdirAll(snippetsDir, 0o755); err != nil {
 		t.Fatal(err)
 	}
 	snippetsGoMod := filepath.Join(snippetsDir, "go.mod")
-	if err := os.WriteFile(snippetsGoMod, []byte("module cloud.google.com/go/internal/generated/snippets\n\ngo 1.22\n"), 0644); err != nil {
+	if err := os.WriteFile(snippetsGoMod, []byte("module cloud.google.com/go/internal/generated/snippets\n\ngo 1.22\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
 }

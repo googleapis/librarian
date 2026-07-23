@@ -33,16 +33,16 @@ func TestInstall(t *testing.T) {
 echo "pip $@" >> %q
 `, stubLogPath)
 	stubDir := filepath.Join(tmpDir, "bin")
-	if err := os.MkdirAll(stubDir, 0755); err != nil {
+	if err := os.MkdirAll(stubDir, 0o755); err != nil {
 		t.Fatal(err)
 	}
 	stubPath := filepath.Join(stubDir, "pip")
-	if err := os.WriteFile(stubPath, []byte(stubContent), 0755); err != nil {
+	if err := os.WriteFile(stubPath, []byte(stubContent), 0o755); err != nil {
 		t.Fatal(err)
 	}
 	t.Setenv("PATH", stubDir)
 	localPkgPath := filepath.Join(tmpDir, "mylocalpkg")
-	if err := os.MkdirAll(localPkgPath, 0755); err != nil {
+	if err := os.MkdirAll(localPkgPath, 0o755); err != nil {
 		t.Fatal(err)
 	}
 	for _, test := range []struct {
@@ -102,11 +102,11 @@ echo "pip $@" >> %q
 func TestInstall_Error(t *testing.T) {
 	tmpDir := t.TempDir()
 	stubDir := filepath.Join(tmpDir, "bin")
-	if err := os.MkdirAll(stubDir, 0755); err != nil {
+	if err := os.MkdirAll(stubDir, 0o755); err != nil {
 		t.Fatal(err)
 	}
 	stubPath := filepath.Join(stubDir, "pip")
-	if err := os.WriteFile(stubPath, []byte("#!/bin/sh\nexit 1\n"), 0755); err != nil {
+	if err := os.WriteFile(stubPath, []byte("#!/bin/sh\nexit 1\n"), 0o755); err != nil {
 		t.Fatal(err)
 	}
 	for _, test := range []struct {

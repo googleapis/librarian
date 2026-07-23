@@ -302,7 +302,7 @@ func updateClientPOM(pomPath string, data clientPOMData) error {
 	}
 	// compare to avoid unnecessary I/O
 	if updated != string(content) {
-		return os.WriteFile(pomPath, []byte(updated), 0644)
+		return os.WriteFile(pomPath, []byte(updated), 0o644)
 	}
 	return nil
 }
@@ -321,7 +321,7 @@ func updateBOMPOM(pomPath string, data bomParentPOMData) error {
 	}
 	// compare to avoid unnecessary I/O
 	if updated != string(content) {
-		return os.WriteFile(pomPath, []byte(updated), 0644)
+		return os.WriteFile(pomPath, []byte(updated), 0o644)
 	}
 	return nil
 }
@@ -343,7 +343,7 @@ func updateParentPOM(pomPath string, data bomParentPOMData) error {
 	}
 	// compare to avoid unnecessary I/O
 	if updated != string(content) {
-		return os.WriteFile(pomPath, []byte(updated), 0644)
+		return os.WriteFile(pomPath, []byte(updated), 0o644)
 	}
 	return nil
 }
@@ -499,7 +499,7 @@ func isPOMMissing(dir string) (bool, error) {
 }
 
 func writePOM(pomPath, templateName string, data any) (err error) {
-	if err := os.MkdirAll(filepath.Dir(pomPath), 0755); err != nil {
+	if err := os.MkdirAll(filepath.Dir(pomPath), 0o755); err != nil {
 		return fmt.Errorf("failed to create directory for %s: %w", pomPath, err)
 	}
 	f, err := os.Create(pomPath)

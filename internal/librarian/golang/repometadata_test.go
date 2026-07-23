@@ -103,7 +103,7 @@ func TestGenerateRepoMetadata(t *testing.T) {
 				Path:      test.path,
 			}
 			metadataDir := filepath.Join(tmpDir, "secretmanager", filepath.Base(test.importPath))
-			if err := os.MkdirAll(metadataDir, 0755); err != nil {
+			if err := os.MkdirAll(metadataDir, 0o755); err != nil {
 				t.Fatal(err)
 			}
 			if err := generateRepoMetadata(api, library, library.APIs[0].Go); err != nil {
@@ -152,10 +152,10 @@ func TestGenerateRepoMetadata_Error(t *testing.T) {
 			setup: func(library *config.Library, api *serviceconfig.API, output string) {
 				library.Output = filepath.Join(output, "secretmanager")
 				dir := filepath.Join(output, "secretmanager", "apiv1")
-				if err := os.MkdirAll(filepath.Dir(dir), 0755); err != nil {
+				if err := os.MkdirAll(filepath.Dir(dir), 0o755); err != nil {
 					t.Fatal(err)
 				}
-				if err := os.WriteFile(dir, []byte("not a directory"), 0644); err != nil {
+				if err := os.WriteFile(dir, []byte("not a directory"), 0o644); err != nil {
 					t.Fatal(err)
 				}
 

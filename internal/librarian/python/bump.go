@@ -84,7 +84,7 @@ func bumpSingleGapicVersionFile(path, version string) error {
 	if !foundLine {
 		return fmt.Errorf("failed to bump '%s': %w", path, errNoVersionFound)
 	}
-	if err := os.WriteFile(path, []byte(strings.Join(lines, "\n")), 0644); err != nil {
+	if err := os.WriteFile(path, []byte(strings.Join(lines, "\n")), 0o644); err != nil {
 		return fmt.Errorf("failed to bump '%s': %w", path, err)
 	}
 	return nil

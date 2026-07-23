@@ -60,10 +60,10 @@ func TestDefaultLibraryName(t *testing.T) {
 		api  string
 		want string
 	}{
-		{"google/cloud/secretmanager/v1", "GoogleCloudSecretmanagerV1"},
-		{"google/maps/addressvalidation/v1", "GoogleMapsAddressvalidationV1"},
-		{"google/api/v1", "GoogleApiV1"},
-		{"grafeas/v1", "GoogleGrafeasV1"},
+		{"google/cloud/secretmanager/v1", "google-cloud-secretmanager-v1"},
+		{"google/maps/addressvalidation/v1", "google-maps-addressvalidation-v1"},
+		{"google/api/v1", "google-api-v1"},
+		{"grafeas/v1", "grafeas-v1"},
 	} {
 		t.Run(test.api, func(t *testing.T) {
 			got := DefaultLibraryName(test.api)
@@ -122,12 +122,12 @@ func TestFormat(t *testing.T) {
 
 	for _, dir := range []string{libraryDir, moduleDir} {
 		sourcesDir := filepath.Join(dir, "Sources")
-		if err := os.MkdirAll(sourcesDir, 0755); err != nil {
+		if err := os.MkdirAll(sourcesDir, 0o755); err != nil {
 			t.Fatal(err)
 		}
 		filePath := filepath.Join(sourcesDir, "test.swift")
 		// Write a file that needs formatting.
-		if err := os.WriteFile(filePath, []byte("func foo(){\n  print(\"hello\")\n}\n"), 0644); err != nil {
+		if err := os.WriteFile(filePath, []byte("func foo(){\n  print(\"hello\")\n}\n"), 0o644); err != nil {
 			t.Fatal(err)
 		}
 	}
