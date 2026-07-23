@@ -60,10 +60,10 @@ func TestDefaultLibraryName(t *testing.T) {
 		api  string
 		want string
 	}{
-		{"google/cloud/secretmanager/v1", "GoogleCloudSecretmanagerV1"},
-		{"google/maps/addressvalidation/v1", "GoogleMapsAddressvalidationV1"},
-		{"google/api/v1", "GoogleApiV1"},
-		{"grafeas/v1", "GoogleGrafeasV1"},
+		{"google/cloud/secretmanager/v1", "google-cloud-secretmanager-v1"},
+		{"google/maps/addressvalidation/v1", "google-maps-addressvalidation-v1"},
+		{"google/api/v1", "google-api-v1"},
+		{"grafeas/v1", "grafeas-v1"},
 	} {
 		t.Run(test.api, func(t *testing.T) {
 			got := DefaultLibraryName(test.api)
