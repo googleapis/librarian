@@ -55,6 +55,25 @@ func defaultSwiftConfig(t *testing.T) *config.SwiftPackage {
 	}
 }
 
+func TestDefaultLibraryName(t *testing.T) {
+	for _, test := range []struct {
+		api  string
+		want string
+	}{
+		{"google/cloud/secretmanager/v1", "google-cloud-secretmanager-v1"},
+		{"google/maps/addressvalidation/v1", "google-maps-addressvalidation-v1"},
+		{"google/api/v1", "google-api-v1"},
+		{"grafeas/v1", "grafeas-v1"},
+	} {
+		t.Run(test.api, func(t *testing.T) {
+			got := DefaultLibraryName(test.api)
+			if got != test.want {
+				t.Errorf("DefaultLibraryName(%q) = %q, want %q", test.api, got, test.want)
+			}
+		})
+	}
+}
+
 func TestGenerate(t *testing.T) {
 	testhelper.RequireCommand(t, "protoc")
 
