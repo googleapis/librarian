@@ -456,3 +456,69 @@ func TestSortAPIs(t *testing.T) {
 		})
 	}
 }
+
+func TestExtractMixinProtos(t *testing.T) {
+	for _, test := range []struct {
+		name    string
+		apiPath string
+		want    []string
+	}{
+		{
+			name:    "locations mixin (developerconnect)",
+			apiPath: "google/cloud/developerconnect/v1",
+			want: []string{
+				"google/cloud/location/locations.proto",
+			},
+		},
+		{
+			name:    "locations mixin (secretmanager)",
+			apiPath: "google/cloud/secretmanager/v1",
+			want: []string{
+				"google/cloud/location/locations.proto",
+			},
+		},
+		{
+			name:    "no mixins (dataproc)",
+			apiPath: "google/cloud/dataproc/v1",
+			want:    nil,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got, err := ExtractMixinProtos(googleapisDir, test.apiPath, config.LanguageGo)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestExtractMixinProtos_NonexistentAPI(t *testing.T) {
+	got, err := ExtractMixinProtos(googleapisDir, "google/cloud/nonexistent/v1", config.LanguageGo)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got != nil {
+		t.Errorf("got %v, want nil", got)
+	}
+}
+
+func TestExtractMixinProtos_Error(t *testing.T) {
+	dir := t.TempDir()
+	apiPath := "google/example/v1"
+	apiDir := filepath.Join(dir, apiPath)
+	if err := os.MkdirAll(apiDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	// Write an invalid service config (invalid YAML but has correct type header)
+	content := []byte("type: google.api.Service\ninvalid: { {\n")
+	if err := os.WriteFile(filepath.Join(apiDir, "example_v1.yaml"), content, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	_, err := ExtractMixinProtos(dir, apiPath, config.LanguageGo)
+	if err == nil {
+		t.Fatal("expected error for invalid service config")
+	}
+}

@@ -43,7 +43,6 @@ func resolveAPIMixinDependencies(lib *config.Library, apiCfg *config.API, srcs *
 	if apiCfg.PHP == nil {
 		apiCfg.PHP = &config.PHPAPI{}
 	}
-
 	srcCfg := sources.NewSourceConfig(srcs, lib.Roots)
 	primaryRoot := srcCfg.Root(srcCfg.ActiveRoots[0])
 	mixins, err := serviceconfig.ExtractMixinProtos(primaryRoot, apiCfg.Path, config.LanguagePhp)
