@@ -145,6 +145,38 @@ func TestDerivePackageName(t *testing.T) {
 	}
 }
 
+func TestBuildStagingSubdirName(t *testing.T) {
+	for _, test := range []struct {
+		name    string
+		index   int
+		apiPath string
+		version string
+		want    string
+	}{
+		{
+			name:    "single api path",
+			index:   0,
+			apiPath: "google/bigtable/v2",
+			version: "v2",
+			want:    "0_google_bigtable_v2_v2",
+		},
+		{
+			name:    "second api path same version",
+			index:   1,
+			apiPath: "google/bigtable/admin/v2",
+			version: "v2",
+			want:    "1_google_bigtable_admin_v2_v2",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := buildStagingSubdirName(test.index, test.apiPath, test.version)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
 func TestDefaultOutput(t *testing.T) {
 	for _, test := range []struct {
 		name          string
@@ -441,6 +473,7 @@ func TestGenerateAPI(t *testing.T) {
 
 	err = generateAPI(
 		t.Context(),
+		0,
 		&config.API{Path: "google/cloud/secretmanager/v1"},
 		&config.Library{Name: "google-cloud-secretmanager", Output: outDir},
 		absGoogleapisDir,
@@ -450,7 +483,7 @@ func TestGenerateAPI(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	stagingDir := filepath.Join(repoRoot, "owl-bot-staging", "google-cloud-secretmanager", "v1")
+	stagingDir := filepath.Join(repoRoot, "owl-bot-staging", "google-cloud-secretmanager", buildStagingSubdirName(0, "google/cloud/secretmanager/v1", "v1"))
 	if _, err := os.Stat(stagingDir); err != nil {
 		t.Errorf("expected staging directory to exist: %v", err)
 	}
@@ -481,16 +514,16 @@ func TestGenerateAPI_MultipleVersions(t *testing.T) {
 	}
 	library.Output = outDir
 
-	for _, api := range library.APIs {
+	for i, api := range library.APIs {
 		t.Run(api.Path, func(t *testing.T) {
-			if err := generateAPI(t.Context(), api, library, absGoogleapisDir, repoRoot); err != nil {
+			if err := generateAPI(t.Context(), i, api, library, absGoogleapisDir, repoRoot); err != nil {
 				t.Fatal(err)
 			}
 		})
 	}
-	for _, api := range library.APIs {
+	for i, api := range library.APIs {
 		version := filepath.Base(api.Path)
-		stagingDir := filepath.Join(repoRoot, "owl-bot-staging", library.Name, version)
+		stagingDir := filepath.Join(repoRoot, "owl-bot-staging", library.Name, buildStagingSubdirName(i, api.Path, version))
 		if _, err := os.Stat(stagingDir); err != nil {
 			t.Errorf("expected staging directory for %s to exist: %v", version, err)
 		}
@@ -1025,7 +1058,7 @@ func TestGenerateAPI_NoProtos(t *testing.T) {
 		Name:   "google-cloud-emptyapi",
 		Output: filepath.Join(repoRoot, "packages", "google-cloud-emptyapi"),
 	}
-	if err := generateAPI(t.Context(), &config.API{Path: apiPath}, library, googleapisDir, repoRoot); err == nil {
+	if err := generateAPI(t.Context(), 0, &config.API{Path: apiPath}, library, googleapisDir, repoRoot); err == nil {
 		t.Fatal("expected error for API directory with no proto files")
 	}
 }

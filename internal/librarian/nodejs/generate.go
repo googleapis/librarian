@@ -58,14 +58,14 @@ func Generate(ctx context.Context, cfg *config.Config, library *config.Library, 
 		return fmt.Errorf("failed to create output directory: %w", err)
 	}
 	repoRoot := filepath.Dir(filepath.Dir(outdir))
-	for _, api := range library.APIs {
+	for i, api := range library.APIs {
 		// TODO(https://github.com/googleapis/google-cloud-node/issues/8149): Do not
 		// generate v1small. This package is not meant to be used and will be
 		// deprecated and removed in a future major release. Remove this workaround once resolved.
 		if api.Path == "google/cloud/compute/v1small" {
 			continue
 		}
-		if err := generateAPI(ctx, api, library, googleapisDir, repoRoot); err != nil {
+		if err := generateAPI(ctx, i, api, library, googleapisDir, repoRoot); err != nil {
 			return fmt.Errorf("failed to generate api %q: %w", api.Path, err)
 		}
 	}
@@ -102,7 +102,12 @@ func requireCachedTool(toolName string) (string, error) {
 	return toolPath, nil
 }
 
-func generateAPI(ctx context.Context, api *config.API, library *config.Library, googleapisDir, repoRoot string) error {
+func buildStagingSubdirName(index int, apiPath, version string) string {
+	slug := strings.ReplaceAll(apiPath, "/", "_")
+	return fmt.Sprintf("%d_%s_%s", index, slug, version)
+}
+
+func generateAPI(ctx context.Context, apiIndex int, api *config.API, library *config.Library, googleapisDir, repoRoot string) error {
 	generatorPath, err := requireCachedTool("gapic-generator-typescript")
 	if err != nil {
 		return err
@@ -115,7 +120,7 @@ func generateAPI(ctx context.Context, api *config.API, library *config.Library, 
 	}
 
 	version := filepath.Base(api.Path)
-	stagingDir := filepath.Join(repoRoot, "owl-bot-staging", library.Name, version)
+	stagingDir := filepath.Join(repoRoot, "owl-bot-staging", library.Name, buildStagingSubdirName(apiIndex, api.Path, version))
 	if err := os.MkdirAll(stagingDir, 0o755); err != nil {
 		return err
 	}
