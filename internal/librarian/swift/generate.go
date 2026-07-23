@@ -27,7 +27,6 @@ import (
 	"github.com/googleapis/librarian/internal/sidekick/parser"
 	sidekickswift "github.com/googleapis/librarian/internal/sidekick/swift"
 	"github.com/googleapis/librarian/internal/sources"
-	"github.com/iancoleman/strcase"
 )
 
 // Generate generates a Swift client library.
@@ -77,24 +76,12 @@ func Format(ctx context.Context, library *config.Library) error {
 }
 
 // DefaultLibraryName derives a library name from an API path.
-// For example: google/cloud/secretmanager/v1 -> GoogleCloudSecretmanagerV1.
+//
+// Note that what librarian calls "a library" is really a "package" in Swift.
+//
+// For example: google/cloud/secretmanager/v1 -> google-cloud-secretmanager-v1.
 func DefaultLibraryName(api string) string {
-	if clean, ok := strings.CutPrefix(api, "google/cloud/"); ok {
-		return "GoogleCloud" + camelLibraryName(clean)
-	}
-	if clean, ok := strings.CutPrefix(api, "google/"); ok {
-		return "Google" + camelLibraryName(clean)
-	}
-	return "Google" + camelLibraryName(api)
-}
-
-func camelLibraryName(api string) string {
-	parts := strings.Split(api, "/")
-	var name strings.Builder
-	for _, p := range parts {
-		name.WriteString(strcase.ToCamel(p))
-	}
-	return name.String()
+	return strings.ReplaceAll(api, "/", "-")
 }
 
 func libraryToModelConfig(library *config.Library, apiCfg *config.API, src *sources.Sources) (*parser.ModelConfig, error) {
