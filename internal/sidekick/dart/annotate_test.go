@@ -335,6 +335,7 @@ func TestAnnotateModel_HasMethods(t *testing.T) {
 
 func TestAnnotateModel_Examples_ValidMethod(t *testing.T) {
 	method := sample.MethodListSecretVersions()
+	method.IsSimple = true
 	serviceWithMethods := &api.Service{
 		Name:    "ServiceWithMethods",
 		Methods: []*api.Method{method},
@@ -405,8 +406,8 @@ func TestAnnotateModel_Examples_NoMethod(t *testing.T) {
 	if diff := cmp.Diff("", codec.ExampleMethodResponseType); diff != "" {
 		t.Errorf("mismatch ExampleMethodResponseType (-want +got):\n%s", diff)
 	}
-	if !codec.ExampleMethodReturnsValue {
-		t.Errorf("expected ExampleMethodReturnsValue to be true")
+	if codec.ExampleMethodReturnsValue {
+		t.Errorf("expected ExampleMethodReturnsValue to be false")
 	}
 }
 
