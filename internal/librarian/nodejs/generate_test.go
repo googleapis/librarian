@@ -150,26 +150,23 @@ func TestBuildStagingSubdirName(t *testing.T) {
 		name    string
 		index   int
 		apiPath string
-		version string
 		want    string
 	}{
 		{
 			name:    "single api path",
 			index:   0,
 			apiPath: "google/bigtable/v2",
-			version: "v2",
-			want:    "0_google_bigtable_v2_v2",
+			want:    "0_google_bigtable_v2",
 		},
 		{
 			name:    "second api path same version",
 			index:   1,
 			apiPath: "google/bigtable/admin/v2",
-			version: "v2",
-			want:    "1_google_bigtable_admin_v2_v2",
+			want:    "1_google_bigtable_admin_v2",
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got := buildStagingSubdirName(test.index, test.apiPath, test.version)
+			got := buildStagingSubdirName(test.index, test.apiPath)
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
@@ -483,7 +480,7 @@ func TestGenerateAPI(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	stagingDir := filepath.Join(repoRoot, "owl-bot-staging", "google-cloud-secretmanager", buildStagingSubdirName(0, "google/cloud/secretmanager/v1", "v1"))
+	stagingDir := filepath.Join(repoRoot, "owl-bot-staging", "google-cloud-secretmanager", buildStagingSubdirName(0, "google/cloud/secretmanager/v1"))
 	if _, err := os.Stat(stagingDir); err != nil {
 		t.Errorf("expected staging directory to exist: %v", err)
 	}
@@ -523,7 +520,7 @@ func TestGenerateAPI_MultipleVersions(t *testing.T) {
 	}
 	for i, api := range library.APIs {
 		version := filepath.Base(api.Path)
-		stagingDir := filepath.Join(repoRoot, "owl-bot-staging", library.Name, buildStagingSubdirName(i, api.Path, version))
+		stagingDir := filepath.Join(repoRoot, "owl-bot-staging", library.Name, buildStagingSubdirName(i, api.Path))
 		if _, err := os.Stat(stagingDir); err != nil {
 			t.Errorf("expected staging directory for %s to exist: %v", version, err)
 		}

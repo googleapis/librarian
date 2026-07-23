@@ -102,9 +102,9 @@ func requireCachedTool(toolName string) (string, error) {
 	return toolPath, nil
 }
 
-func buildStagingSubdirName(index int, apiPath, version string) string {
+func buildStagingSubdirName(index int, apiPath string) string {
 	slug := strings.ReplaceAll(apiPath, "/", "_")
-	return fmt.Sprintf("%d_%s_%s", index, slug, version)
+	return fmt.Sprintf("%d_%s", index, slug)
 }
 
 func generateAPI(ctx context.Context, apiIndex int, api *config.API, library *config.Library, googleapisDir, repoRoot string) error {
@@ -119,8 +119,7 @@ func generateAPI(ctx context.Context, apiIndex int, api *config.API, library *co
 		return err
 	}
 
-	version := filepath.Base(api.Path)
-	stagingDir := filepath.Join(repoRoot, "owl-bot-staging", library.Name, buildStagingSubdirName(apiIndex, api.Path, version))
+	stagingDir := filepath.Join(repoRoot, "owl-bot-staging", library.Name, buildStagingSubdirName(apiIndex, api.Path))
 	if err := os.MkdirAll(stagingDir, 0o755); err != nil {
 		return err
 	}
