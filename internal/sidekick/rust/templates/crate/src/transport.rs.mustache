@@ -127,6 +127,21 @@ impl {{Codec.Name}} {
 {{/Codec.PerServiceFeatures}}
 impl super::stub::{{Codec.Name}} for {{Codec.Name}} {
     {{#Codec.Methods}}
+    {{#Codec.IsBidiStreaming}}
+    #[cfg(google_cloud_unstable_gapic_streaming)]
+    async fn {{Codec.Name}}(
+        &self,
+        _options: crate::RequestOptions,
+    ) -> (
+        google_cloud_gax::streaming::RequestSender<{{InputType.Codec.QualifiedName}}>,
+        google_cloud_gax::streaming::ResponseReceiver<{{OutputType.Codec.QualifiedName}}>,
+    ) {
+        {{! TODO(#6835) - implement the body }}
+        unimplemented!()
+    }
+
+    {{/Codec.IsBidiStreaming}}
+    {{^Codec.IsBidiStreaming}}
     async fn {{Codec.Name}}(
         &self,
         req: {{InputType.Codec.QualifiedName}},
@@ -286,6 +301,7 @@ impl super::stub::{{Codec.Name}} for {{Codec.Name}} {
         {{/ReturnsEmpty}}
         {{/Codec.HasBindings}}
     }
+    {{/Codec.IsBidiStreaming}}
 
     {{/Codec.Methods}}
     {{#Codec.HasLROs}}

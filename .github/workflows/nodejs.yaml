@@ -36,11 +36,11 @@ jobs:
             task: 'integration'
             timeout: 60
     steps:
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
           persist-credentials: false
       - uses: ./.github/actions/setup-librarian
-      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: "22"
       - name: "Set up pnpm via corepack"
@@ -53,8 +53,7 @@ jobs:
           echo "npm=$(npm config get prefix)" >> "$GITHUB_OUTPUT"
       - name: "Checkout google-cloud-node"
         if: matrix.task != 'integration'
-        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
-        with:
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3        with:
           repository: googleapis/google-cloud-node
           path: google-cloud-node
           depth: 1

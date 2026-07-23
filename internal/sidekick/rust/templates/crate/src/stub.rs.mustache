@@ -53,6 +53,23 @@ pub trait {{Codec.Name}}: std::fmt::Debug + Send + Sync {
     {{#Codec.Methods}}
 
     /// Implements [super::client::{{Codec.ServiceNameToPascal}}::{{Codec.Name}}].
+    {{#Codec.IsBidiStreaming}}
+    #[cfg(google_cloud_unstable_gapic_streaming)]
+    fn {{Codec.Name}}(
+        &self,
+        _options: crate::RequestOptions,
+    ) -> impl std::future::Future<Output = (
+        google_cloud_gax::streaming::RequestSender<{{InputType.Codec.QualifiedName}}>,
+        google_cloud_gax::streaming::ResponseReceiver<{{OutputType.Codec.QualifiedName}}>,
+    )> + Send {
+        {{! TODO(#6835) - create a streaming unimplemented stub in gaxi }}
+        async {
+            let _ = gaxi::unimplemented::unimplemented_stub::<()>().await;
+            unreachable!() // satisfies the type checker; the stub above always panics.
+        }
+    }
+    {{/Codec.IsBidiStreaming}}
+    {{^Codec.IsBidiStreaming}}
     fn {{Codec.Name}}(
         &self,
         _req: {{InputType.Codec.QualifiedName}},
@@ -60,6 +77,7 @@ pub trait {{Codec.Name}}: std::fmt::Debug + Send + Sync {
     ) -> impl std::future::Future<Output = crate::Result<crate::Response<{{Codec.ReturnType}}>>> + Send {
         gaxi::unimplemented::unimplemented_stub()
     }
+    {{/Codec.IsBidiStreaming}}
     {{/Codec.Methods}}
     {{#Codec.HasLROs}}
 
