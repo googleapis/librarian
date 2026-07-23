@@ -333,6 +333,46 @@ func TestAnnotateModel_HasMethods(t *testing.T) {
 	}
 }
 
+func TestAnnotateModel_ExampleServiceMethod(t *testing.T) {
+	method := sample.MethodListSecretVersions()
+	serviceWithMethods := &api.Service{
+		Name:    "ServiceWithMethods",
+		Methods: []*api.Method{method},
+		Package: sample.Package,
+	}
+	model := api.NewTestAPI(
+		[]*api.Message{sample.ListSecretVersionsRequest(), sample.ListSecretVersionsResponse(),
+			sample.Secret(), sample.SecretVersion(), sample.Replication(), sample.Automatic(),
+			sample.CustomerManagedEncryption()},
+		[]*api.Enum{sample.EnumState()},
+		[]*api.Service{serviceWithMethods},
+	)
+	api.Validate(model)
+	annotate := newAnnotateModel(model)
+	err := annotate.annotateModel(requiredConfig)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	codec := model.Codec.(*modelAnnotations)
+
+	if diff := cmp.Diff("ServiceWithMethods", codec.ExampleServiceName); diff != "" {
+		t.Errorf("mismatch ExampleServiceName (-want +got):\n%s", diff)
+	}
+	if diff := cmp.Diff("listSecretVersions", codec.ExampleMethodName); diff != "" {
+		t.Errorf("mismatch ExampleMethodName (-want +got):\n%s", diff)
+	}
+	if diff := cmp.Diff("ListSecretVersionRequest", codec.ExampleMethodRequestType); diff != "" {
+		t.Errorf("mismatch ExampleMethodRequestType (-want +got):\n%s", diff)
+	}
+	if diff := cmp.Diff("ListSecretVersionsResponse", codec.ExampleMethodResponseType); diff != "" {
+		t.Errorf("mismatch ExampleMethodResponseType (-want +got):\n%s", diff)
+	}
+	if !codec.ExampleMethodReturnsValue {
+		t.Errorf("expected ExampleMethodReturnsValue to be true")
+	}
+}
+
 func TestAnnotateMethod(t *testing.T) {
 	method := sample.MethodListSecretVersions()
 	service := &api.Service{
@@ -2078,5 +2118,124 @@ func TestAnnotateField(t *testing.T) {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
+	}
+}
+
+func TestFindExampleMethod(t *testing.T) {
+	requiredField := &api.Field{
+		Behavior: []api.FieldBehavior{api.FieldBehaviorRequired},
+	}
+	optionalField := &api.Field{
+		Behavior: []api.FieldBehavior{},
+	}
+
+	msgWithRequired := &api.Message{
+		Fields: []*api.Field{requiredField},
+	}
+	msgWithoutRequired := &api.Message{
+		Fields: []*api.Field{optionalField},
+	}
+
+	// LRO method (should never be selected)
+	lroMethod := &api.Method{
+		Name:          "LroMethod",
+		OperationInfo: &api.OperationInfo{},
+	}
+
+	// Void return method
+	voidMethod := &api.Method{
+		Name:         "VoidMethod",
+		ReturnsEmpty: true,
+		InputType:    msgWithoutRequired,
+	}
+
+	// Method with required input
+	requiredInputMethod := &api.Method{
+		Name:         "RequiredInputMethod",
+		ReturnsEmpty: false,
+		InputType:    msgWithRequired,
+		OutputType:   msgWithoutRequired,
+	}
+
+	// Method with required output
+	requiredOutputMethod := &api.Method{
+		Name:         "RequiredOutputMethod",
+		ReturnsEmpty: false,
+		InputType:    msgWithoutRequired,
+		OutputType:   msgWithRequired,
+	}
+
+	// Perfect method (non-LRO, returns value, no required input, no required output)
+	perfectMethod := &api.Method{
+		Name:         "PerfectMethod",
+		ReturnsEmpty: false,
+		InputType:    msgWithoutRequired,
+		OutputType:   msgWithoutRequired,
+	}
+
+	// Let's test combinations!
+	// Test 1: Perfect method exists -> selects perfect method
+	{
+		s := &api.Service{
+			Codec: &serviceAnnotations{
+				Methods: []*api.Method{lroMethod, voidMethod, requiredInputMethod, perfectMethod},
+			},
+		}
+		_, got := findExampleMethod([]*api.Service{s})
+		if got != perfectMethod {
+			t.Errorf("Test 1: expected perfectMethod, got %v", got.Name)
+		}
+	}
+
+	// Test 2: Perfect method doesn't exist, but Condition 2 (relax input requirement) matches -> selects requiredInputMethod
+	{
+		s := &api.Service{
+			Codec: &serviceAnnotations{
+				Methods: []*api.Method{lroMethod, voidMethod, requiredOutputMethod, requiredInputMethod},
+			},
+		}
+		_, got := findExampleMethod([]*api.Service{s})
+		if got != requiredInputMethod {
+			t.Errorf("Test 2: expected requiredInputMethod, got %v", got.Name)
+		}
+	}
+
+	// Test 3: Condition 2 doesn't match, but Condition 3 (relax return required requirement) matches -> selects requiredOutputMethod
+	{
+		s := &api.Service{
+			Codec: &serviceAnnotations{
+				Methods: []*api.Method{lroMethod, voidMethod, requiredOutputMethod},
+			},
+		}
+		_, got := findExampleMethod([]*api.Service{s})
+		if got != requiredOutputMethod {
+			t.Errorf("Test 3: expected requiredOutputMethod, got %v", got.Name)
+		}
+	}
+
+	// Test 4: Condition 3 doesn't match, but Condition 4 (relax return value requirement) matches -> selects voidMethod
+	{
+		s := &api.Service{
+			Codec: &serviceAnnotations{
+				Methods: []*api.Method{lroMethod, voidMethod},
+			},
+		}
+		_, got := findExampleMethod([]*api.Service{s})
+		if got != voidMethod {
+			t.Errorf("Test 4: expected voidMethod, got %v", got.Name)
+		}
+	}
+
+	// Test 5: Only LRO method exists -> returns nil
+	{
+		s := &api.Service{
+			Codec: &serviceAnnotations{
+				Methods: []*api.Method{lroMethod},
+			},
+		}
+		_, got := findExampleMethod([]*api.Service{s})
+		if got != nil {
+			t.Errorf("Test 5: expected nil, got %v", got)
+		}
 	}
 }

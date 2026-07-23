@@ -86,7 +86,12 @@ type modelAnnotations struct {
 	FakeList    string
 	ProtoPrefix string
 	// UseWorkspace whether to include the resolution: workspace line in the generated pubspec.yaml.
-	UseWorkspace bool
+	UseWorkspace              bool
+	ExampleServiceName        string
+	ExampleMethodName         string
+	ExampleMethodRequestType  string
+	ExampleMethodResponseType string
+	ExampleMethodReturnsValue bool
 }
 
 // HasDocLines returns true if the generated package has doc comments.
@@ -465,9 +470,29 @@ func (annotate *annotateModel) annotateModel(options map[string]string) error {
 		mainFileNameWithExtension = libraryPathOverride
 	}
 
+	var exampleServiceName string
+	var exampleMethodName string
+	var exampleMethodRequestType string
+	var exampleMethodResponseType string
+	var exampleMethodReturnsValue bool
+
+	if exS, exM := findExampleMethod(model.Services); exS != nil && exM != nil {
+		exampleServiceName = exS.Codec.(*serviceAnnotations).Name
+		mAnn := exM.Codec.(*methodAnnotation)
+		exampleMethodName = mAnn.Name
+		exampleMethodRequestType = mAnn.RequestType
+		exampleMethodResponseType = mAnn.ResponseType
+		exampleMethodReturnsValue = mAnn.ReturnsValue
+	}
+
 	slices.Sort(devDependencies)
 	docLines := formatDocComments(model.Description, model)
 	ann := &modelAnnotations{
+		ExampleServiceName:        exampleServiceName,
+		ExampleMethodName:         exampleMethodName,
+		ExampleMethodRequestType:  exampleMethodRequestType,
+		ExampleMethodResponseType: exampleMethodResponseType,
+		ExampleMethodReturnsValue: exampleMethodReturnsValue,
 		Parent:                    model,
 		PackageName:               pkgName,
 		PackageVersion:            packageVersion,
@@ -1458,4 +1483,71 @@ func registerMissingWkt(model *api.API) {
 			})
 		}
 	}
+}
+
+func findExampleMethod(services []*api.Service) (*api.Service, *api.Method) {
+	hasRequired := func(m *api.Message) bool {
+		if m == nil {
+			return false
+		}
+		for _, f := range m.Fields {
+			if slices.Contains(f.Behavior, api.FieldBehaviorRequired) {
+				return true
+			}
+		}
+		return false
+	}
+
+	isLro := func(m *api.Method) bool {
+		return m.OperationInfo != nil || m.OutputTypeID == ".google.longrunning.Operation"
+	}
+
+	type candidate struct {
+		service *api.Service
+		method  *api.Method
+	}
+	var candidates []candidate
+	for _, s := range services {
+		if s.Codec == nil {
+			continue
+		}
+		sAnn := s.Codec.(*serviceAnnotations)
+		for _, m := range sAnn.Methods {
+			candidates = append(candidates, candidate{service: s, method: m})
+		}
+	}
+
+	// Condition 1: !isLro && hasReturnValue && !returnHasRequired && !inputHasRequired
+	for _, c := range candidates {
+		m := c.method
+		if !isLro(m) && !m.ReturnsEmpty && !hasRequired(m.OutputType) && !hasRequired(m.InputType) {
+			return c.service, m
+		}
+	}
+
+	// Condition 2: !isLro && hasReturnValue && !returnHasRequired
+	for _, c := range candidates {
+		m := c.method
+		if !isLro(m) && !m.ReturnsEmpty && !hasRequired(m.OutputType) {
+			return c.service, m
+		}
+	}
+
+	// Condition 3: !isLro && hasReturnValue
+	for _, c := range candidates {
+		m := c.method
+		if !isLro(m) && !m.ReturnsEmpty {
+			return c.service, m
+		}
+	}
+
+	// Condition 4: !isLro
+	for _, c := range candidates {
+		m := c.method
+		if !isLro(m) {
+			return c.service, m
+		}
+	}
+
+	return nil, nil
 }

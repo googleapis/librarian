@@ -15,7 +15,6 @@
 package dart
 
 import (
-	"errors"
 	"io/fs"
 	"maps"
 	"os"
@@ -71,14 +70,81 @@ func TestFromProtobuf(t *testing.T) {
 	if err := Generate(t.Context(), model, outDir, cfg.Codec); err != nil {
 		t.Fatal(err)
 	}
-	for _, expected := range []string{"pubspec.yaml", "lib/secretmanager.dart", "README.md"} {
+	for _, expected := range []string{"pubspec.yaml", "lib/secretmanager.dart", "README.md", "skills/google_cloud_secretmanager_v1-tests/SKILL.md"} {
 		filename := path.Join(outDir, expected)
 		stat, err := os.Stat(filename)
-		if errors.Is(err, fs.ErrNotExist) {
-			t.Errorf("missing %s: %s", filename, err)
+		if err != nil {
+			t.Errorf("missing or cannot stat %s: %s", filename, err)
+			continue
 		}
 		if stat.Mode().Perm()|0o666 != 0o666 {
 			t.Errorf("generated files should not be executable %s: %o", filename, stat.Mode())
+		}
+	}
+
+	skillContent, err := os.ReadFile(path.Join(outDir, "skills/google_cloud_secretmanager_v1-tests/SKILL.md"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	contentStr := string(skillContent)
+	if !strings.Contains(contentStr, "- Code that uses `SecretManagerService` can be tested by injecting the\n  fake `FakeSecretManagerService`.") {
+		t.Errorf("expected skill file to map SecretManagerService to its fake, got:\n%s", contentStr)
+	}
+	if !strings.Contains(contentStr, "FakeSecretManagerService") {
+		t.Errorf("expected skill file to mention FakeSecretManagerService, got:\n%s", contentStr)
+	}
+	if !strings.Contains(contentStr, "package:google_cloud_secretmanager_v1") {
+		t.Errorf("expected skill file to mention package:google_cloud_secretmanager_v1, got:\n%s", contentStr)
+	}
+	if !strings.Contains(contentStr, "throw TooManyRequestsException(") {
+		t.Errorf("expected skill file to throw TooManyRequestsException, got:\n%s", contentStr)
+	}
+	if !strings.Contains(contentStr, "response: http.Response('', 429),") {
+		t.Errorf("expected skill file to fill in TooManyRequestsException parameters, got:\n%s", contentStr)
+	}
+}
+
+func TestGeneratedFiles_Skills(t *testing.T) {
+	// Case 1: No services -> FakeList is empty -> skills file should not be generated.
+	{
+		model := api.NewTestAPI([]*api.Message{}, []*api.Enum{}, []*api.Service{})
+		model.PackageName = "test"
+		annotate := newAnnotateModel(model)
+		options := maps.Clone(requiredConfig)
+		if err := annotate.annotateModel(options); err != nil {
+			t.Fatal(err)
+		}
+		files := generatedFiles(model)
+		for _, fileInfo := range files {
+			if strings.Contains(fileInfo.OutputPath, "skills/") {
+				t.Errorf("expected no skill files to be generated when there are no services, got %q", fileInfo.OutputPath)
+			}
+		}
+	}
+
+	// Case 2: Has services -> FakeList is not empty -> skills file should be generated at the correct path.
+	{
+		service := &api.Service{
+			Name: "MyService",
+		}
+		model := api.NewTestAPI([]*api.Message{}, []*api.Enum{}, []*api.Service{service})
+		model.PackageName = "test"
+		annotate := newAnnotateModel(model)
+		options := maps.Clone(requiredConfig)
+		if err := annotate.annotateModel(options); err != nil {
+			t.Fatal(err)
+		}
+		files := generatedFiles(model)
+		foundSkill := false
+		expectedPath := filepath.Join("skills", "google_cloud_test-tests", "SKILL.md")
+		for _, fileInfo := range files {
+			if fileInfo.OutputPath == expectedPath {
+				foundSkill = true
+				break
+			}
+		}
+		if !foundSkill {
+			t.Errorf("expected skill file at %q, but not found", expectedPath)
 		}
 	}
 }
