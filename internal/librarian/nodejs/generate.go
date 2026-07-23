@@ -254,6 +254,7 @@ func buildGeneratorArgs(generatorPath string, api *config.API, library *config.L
 	}
 
 	args = append(args, "--package-name", derivePackageName(library))
+	args = append(args, "--directory", filepath.Join("packages", library.Name))
 	args = append(args, "--metadata")
 
 	// Only pass --transport for non-default values (default is grpc+rest).
