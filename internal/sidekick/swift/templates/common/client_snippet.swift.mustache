@@ -26,13 +26,13 @@ limitations under the License.
 {{/Codec.IsGated}}
 // snippet.show
 import Foundation
-import {{Codec.PackageName}}
+import {{Codec.LibraryName}}
 {{#Codec.SnippetImports}}
 import {{.}}
 {{/Codec.SnippetImports}}
 
 func sample({{#Codec.QuickstartMethod.SampleInfo}}{{#Codec.Parameters}}{{.}}: String, {{/Codec.Parameters}}{{/Codec.QuickstartMethod.SampleInfo}}) async throws {
-  let client = try {{Codec.PackageName}}.{{Codec.ClientName}}()
+  let client = try {{Codec.LibraryName}}.{{Codec.ClientName}}()
   {{#Codec.QuickstartMethod}}
   {{> /templates/snippet/generic}}
   {{/Codec.QuickstartMethod}}

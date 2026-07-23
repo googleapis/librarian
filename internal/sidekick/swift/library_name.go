@@ -17,10 +17,22 @@ package swift
 import (
 	"strings"
 
+	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/sidekick/api"
+	"github.com/iancoleman/strcase"
 )
 
-// PackageName returns the Swift package name for the API.
-func PackageName(api *api.API) string {
-	return strings.ReplaceAll(api.PackageName, ".", "-")
+// LibraryName returns the Swift library (and module) name for the API.
+func LibraryName(api *api.API, swiftCfg *config.SwiftPackage) string {
+	// TODO(https://github.com/googleapis/librarian/issues/6229) - use
+	// a better default.
+	parts := strings.Split(api.PackageName, ".")
+	for i, p := range parts {
+		parts[i] = strcase.ToCamel(p)
+	}
+	result := strings.Join(parts, "")
+	if strings.HasPrefix(result, "Google") {
+		return result
+	}
+	return "Google" + result
 }

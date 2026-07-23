@@ -26,6 +26,7 @@ import (
 type modelAnnotations struct {
 	CopyrightYear    string
 	BoilerPlate      []string
+	LibraryName      string
 	PackageName      string
 	PackageVersion   string
 	ReleaseLevel     string
@@ -79,6 +80,7 @@ func (c *codec) annotateModel() error {
 	annotations := &modelAnnotations{
 		CopyrightYear:  c.GenerationYear,
 		BoilerPlate:    license.HeaderBulk(),
+		LibraryName:    c.LibraryName,
 		PackageName:    c.PackageName,
 		PackageVersion: c.PackageVersion,
 		ReleaseLevel:   c.ReleaseLevel,
@@ -124,7 +126,7 @@ func (c *codec) annotateModel() error {
 		// The maximum (15) was chosen more or less arbitrarily circa 2026-05. At
 		// the time, only a handful of packages exceeded this number of services.
 		if len(c.Model.Services) > 15 {
-			slog.Warn("package has more than 15 services, consider enabling per-service features", "package", c.PackageName, "count", len(c.Model.Services))
+			slog.Warn("package has more than 15 services, consider enabling per-service features", "package", c.LibraryName, "count", len(c.Model.Services))
 		}
 		return nil
 	}

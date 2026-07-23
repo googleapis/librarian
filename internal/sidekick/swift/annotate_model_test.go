@@ -32,7 +32,8 @@ func TestModelAnnotations(t *testing.T) {
 		t.Fatal(err)
 	}
 	want := &modelAnnotations{
-		PackageName:    "GoogleCloudWorkflowsV1",
+		LibraryName:    "GoogleCloudWorkflowsV1",
+		PackageName:    "google-cloud-workflows-v1",
 		PackageVersion: "0.0.0",
 		ReleaseLevel:   "preview",
 		CopyrightYear:  "2038",

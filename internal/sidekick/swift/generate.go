@@ -94,7 +94,7 @@ func (c *codec) swiftFilename(basename string) string {
 	if c.Module {
 		return name
 	}
-	return filepath.Join("Sources", c.PackageName, name)
+	return filepath.Join("Sources", c.LibraryName, name)
 }
 
 func (c *codec) generateMessages(outdir string, model *api.API, provider language.TemplateProvider) error {

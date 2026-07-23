@@ -29,7 +29,7 @@ type serviceAnnotations struct {
 	HostnameShort    string
 	DocLines         []string
 	RestMethods      []*api.Method
-	PackageName      string
+	LibraryName      string
 	QuickstartMethod *api.Method
 	Model            *modelAnnotations
 	DependsOn        map[string]*Dependency
@@ -109,7 +109,7 @@ func (c *codec) annotateService(service *api.Service, model *modelAnnotations) (
 		HostnameShort:    strings.TrimSuffix(service.DefaultHost, ".googleapis.com"),
 		DocLines:         docLines,
 		RestMethods:      restMethods,
-		PackageName:      c.PackageName,
+		LibraryName:      c.LibraryName,
 		QuickstartMethod: quickstartMethod,
 		Model:            model,
 		DependsOn:        map[string]*Dependency{},
