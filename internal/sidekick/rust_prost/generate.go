@@ -60,8 +60,9 @@ func Generate(ctx context.Context, model *api.API, outdir string, template strin
 		return err
 	}
 	// Collect source root directories needed as include paths for protoc / prost-build
-	// compilation. For example, generating showcase protos requires both the "showcase"
-	// and "googleapis" roots.
+	// compilation. ActiveRoots contains all active root repositories (for example,
+	// generating showcase protos requires both "showcase" and "googleapis"). If
+	// ActiveRoots is empty, fall back to the codec's default root (codec.RootName).
 	var rootPaths []string
 	if cfg.Source != nil {
 		for _, r := range cfg.Source.ActiveRoots {

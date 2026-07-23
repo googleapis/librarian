@@ -24,12 +24,11 @@ fn main() {
         let root = std::env::var("SOURCE_ROOT")
             .expect("SOURCE_ROOT must be set");
         let includes: Vec<std::path::PathBuf> = std::env::split_paths(&root).collect();
-        let includes: Vec<&str> = includes.iter().filter_map(|p| p.to_str()).collect();
         let destination = std::env::var("DEST")
             .expect("DEST must be set");
-        let files = &[
+        let files: &[std::path::PathBuf] = &[
             {{#Codec.Files}}
-            "{{{.}}}",
+            std::path::PathBuf::from("{{{.}}}"),
             {{/Codec.Files}}
         ];
         let mut config = prost_build::Config::new();
