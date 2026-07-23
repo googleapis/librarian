@@ -66,7 +66,7 @@ jobs:
           sparse-checkout-cone-mode: false
           persist-credentials: false
       - name: "Checkout google-cloud-node (full)"
-        if: !matrix.sparse
+        if: matrix.sparse == false
         uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
           repository: googleapis/google-cloud-node
@@ -81,7 +81,7 @@ jobs:
             ~/.cache/librarian
           key: nodejs-tools-v4-${{ hashFiles('internal/config/**/*.go') }}-${{ hashFiles('google-cloud-node/librarian.yaml') }}
       - name: "Install Node.js dependencies (run librarian install)"
-        if: steps.tools-cache.outputs.cache-hit != 'true' || matrix.task == 'integration'
+        if: steps.tools-cache.outputs.cache-hit != 'true' || (matrix.task == 'integration' && github.event_name == 'push' && github.ref == 'refs/heads/main')
         run: librarian -v install nodejs
         working-directory: google-cloud-node
       - name: Run tests
