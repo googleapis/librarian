@@ -46,7 +46,9 @@ func Generate(ctx context.Context, model *api.API, outdir string, template strin
 	}
 
 	codec := newCodec(cfg)
-	codec.annotateModel(model, cfg)
+	if err := codec.annotateModel(model, cfg); err != nil {
+		return fmt.Errorf("annotating model: %w", err)
+	}
 	provider := templatesProvider()
 	generatedFiles := language.WalkTemplatesDir(templates, "templates/"+template)
 	tmpDir, err := os.MkdirTemp("", "rust-prost-*")
@@ -57,8 +59,11 @@ func Generate(ctx context.Context, model *api.API, outdir string, template strin
 	if err := language.GenerateFromModel(tmpDir, model, provider, generatedFiles); err != nil {
 		return err
 	}
+	// Collect source root directories needed as include paths for protoc / prost-build
+	// compilation. For example, generating showcase protos requires both the "showcase"
+	// and "googleapis" roots.
 	var rootPaths []string
-	if cfg != nil && cfg.Source != nil {
+	if cfg.Source != nil {
 		for _, r := range cfg.Source.ActiveRoots {
 			if rootPath := cfg.Source.Root(r); rootPath != "" {
 				rootPaths = append(rootPaths, rootPath)
@@ -94,6 +99,9 @@ func buildRS(ctx context.Context, rootPaths []string, tmpDir, outDir string) err
 	}
 	absOutDir, err := filepath.Abs(outDir)
 	if err != nil {
+		return err
+	}
+	if err := os.MkdirAll(absOutDir, 0755); err != nil {
 		return err
 	}
 	env := map[string]string{

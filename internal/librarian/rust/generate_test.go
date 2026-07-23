@@ -727,6 +727,9 @@ func TestCreateRepoMetadata(t *testing.T) {
 }
 
 func TestGenerateProstHybrid(t *testing.T) {
+	testhelper.RequireCommand(t, "protoc")
+	testhelper.RequireCommand(t, "cargo")
+
 	msg := &api.Message{
 		Name:    "Request",
 		ID:      ".test.v1.Request",
@@ -768,11 +771,13 @@ func TestGenerateProstHybrid(t *testing.T) {
 	}
 
 	bidiModel := api.NewTestAPI([]*api.Message{msg}, []*api.Enum{}, []*api.Service{bidiService})
+	bidiModel.PackageName = "google.cloud.test.v1"
 	if err := api.CrossReference(bidiModel); err != nil {
 		t.Fatal(err)
 	}
 
 	nonBidiModel := api.NewTestAPI([]*api.Message{msg}, []*api.Enum{}, []*api.Service{nonBidiService})
+	nonBidiModel.PackageName = "google.cloud.test.v1"
 	if err := api.CrossReference(nonBidiModel); err != nil {
 		t.Fatal(err)
 	}
@@ -803,16 +808,37 @@ func TestGenerateProstHybrid(t *testing.T) {
 			templateOverride:            "tonic",
 			wantProstDir:                false,
 		},
+		{
+			name:                        "feature enabled creates prost dir",
+			model:                       bidiModel,
+			includeBidiStreamingMethods: true,
+			wantProstDir:                true,
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			outDir := t.TempDir()
 			lib := &config.Library{
+				Name: "test-package",
 				Rust: &config.RustCrate{
 					IncludeBidiStreamingMethods: test.includeBidiStreamingMethods,
 					TemplateOverride:            test.templateOverride,
 				},
 			}
-			err := generateProstHybrid(t.Context(), test.model, lib, outDir, &parser.ModelConfig{})
+			absSpecSource, err := filepath.Abs("../../testdata/googleapis/google/type")
+			if err != nil {
+				t.Fatal(err)
+			}
+			srcs := &sources.Sources{
+				Googleapis: filepath.Dir(filepath.Dir(absSpecSource)),
+			}
+			err = generateProstHybrid(t.Context(), test.model, lib, outDir, &parser.ModelConfig{
+				SpecificationFormat: config.SpecProtobuf,
+				SpecificationSource: absSpecSource,
+				Source:              sources.NewSourceConfig(srcs, []string{"googleapis"}),
+				Codec: map[string]string{
+					"package-name-override": "google-cloud-test",
+				},
+			})
 			if err != nil {
 				t.Fatalf("unexpected error: %v", err)
 			}
