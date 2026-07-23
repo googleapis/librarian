@@ -333,7 +333,7 @@ func TestAnnotateModel_HasMethods(t *testing.T) {
 	}
 }
 
-func TestAnnotateModel_ExampleServiceMethod(t *testing.T) {
+func TestAnnotateModel_Examples_ValidMethod(t *testing.T) {
 	method := sample.MethodListSecretVersions()
 	serviceWithMethods := &api.Service{
 		Name:    "ServiceWithMethods",
@@ -366,6 +366,43 @@ func TestAnnotateModel_ExampleServiceMethod(t *testing.T) {
 		t.Errorf("mismatch ExampleMethodRequestType (-want +got):\n%s", diff)
 	}
 	if diff := cmp.Diff("ListSecretVersionsResponse", codec.ExampleMethodResponseType); diff != "" {
+		t.Errorf("mismatch ExampleMethodResponseType (-want +got):\n%s", diff)
+	}
+	if !codec.ExampleMethodReturnsValue {
+		t.Errorf("expected ExampleMethodReturnsValue to be true")
+	}
+}
+
+func TestAnnotateModel_Examples_NoMethod(t *testing.T) {
+	serviceWithoutMethods := &api.Service{
+		Name:    "ServiceWithMethods",
+		Methods: []*api.Method{},
+		Package: sample.Package,
+	}
+	model := api.NewTestAPI(
+		[]*api.Message{},
+		[]*api.Enum{},
+		[]*api.Service{serviceWithoutMethods},
+	)
+	api.Validate(model)
+	annotate := newAnnotateModel(model)
+	err := annotate.annotateModel(requiredConfig)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	codec := model.Codec.(*modelAnnotations)
+
+	if diff := cmp.Diff("", codec.ExampleServiceName); diff != "" {
+		t.Errorf("mismatch ExampleServiceName (-want +got):\n%s", diff)
+	}
+	if diff := cmp.Diff("", codec.ExampleMethodName); diff != "" {
+		t.Errorf("mismatch ExampleMethodName (-want +got):\n%s", diff)
+	}
+	if diff := cmp.Diff("", codec.ExampleMethodRequestType); diff != "" {
+		t.Errorf("mismatch ExampleMethodRequestType (-want +got):\n%s", diff)
+	}
+	if diff := cmp.Diff("", codec.ExampleMethodResponseType); diff != "" {
 		t.Errorf("mismatch ExampleMethodResponseType (-want +got):\n%s", diff)
 	}
 	if !codec.ExampleMethodReturnsValue {

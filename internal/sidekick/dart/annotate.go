@@ -87,11 +87,16 @@ type modelAnnotations struct {
 	FakeList    string
 	ProtoPrefix string
 	// UseWorkspace whether to include the resolution: workspace line in the generated pubspec.yaml.
-	UseWorkspace              bool
-	ExampleServiceName        string
-	ExampleMethodName         string
-	ExampleMethodRequestType  string
+	UseWorkspace bool
+	// The Dart name of a service to be used in documentation examples, e.g. "CacheService".
+	ExampleServiceName string
+	// The Dart name of a method of `ExampleServiceName` to use in documentation examples, e.g. "CreateCache"
+	ExampleMethodName string
+	// The Dart type name of a request message for `ExampleMethodName`, e.g. "CreateCacheRequest".
+	ExampleMethodRequestType string
+	// The Dart type name of a response message for `ExampleMethodName`, e.g. "Cache".
 	ExampleMethodResponseType string
+	// Whether `ExampleMethodName` returns a value (i.e. is not void).
 	ExampleMethodReturnsValue bool
 }
 
