@@ -30,6 +30,8 @@ import (
 )
 
 const (
+	individualManifestFile      = ".release-please-individual-manifest.json"
+	individualConfigFile        = "release-please-individual-config.json"
 	bulkManifestFile            = ".release-please-bulk-manifest.json"
 	bulkConfigFile              = "release-please-bulk-config.json"
 	defaultManifestFile         = ".release-please-manifest.json"
@@ -37,7 +39,7 @@ const (
 	defaultReleasePleaseVersion = "0.0.0"
 )
 
-func hasBulkReleasePleaseConfigs(dir string, cfg *config.Config) bool {
+func hasReleasePleaseConfigs(dir string, cfg *config.Config) bool {
 	manifestFile, configFile := releasePleaseFiles(cfg)
 	_, errM := os.Stat(filepath.Join(dir, manifestFile))
 	_, errC := os.Stat(filepath.Join(dir, configFile))
@@ -48,11 +50,15 @@ func hasBulkReleasePleaseConfigs(dir string, cfg *config.Config) bool {
 // and config file in this order, depending on the SDK language.
 func releasePleaseFiles(cfg *config.Config) (string, string) {
 	// google-cloud-node uses the default Release Please files to add a new library.
-	// google-cloud-python and google-cloud-go use the "-bulk-" files.
+	// google-cloud-python uses the "-individual-" files initially for new libraries.
+	// google-cloud-go uses the "-bulk-" files.
 	manifestFile := bulkManifestFile
 	configFile := bulkConfigFile
-	if cfg.Language == config.LanguageNodejs {
-		// google-cloud-node uses the default files
+	switch cfg.Language {
+	case config.LanguagePython:
+		manifestFile = individualManifestFile
+		configFile = individualConfigFile
+	case config.LanguageNodejs:
 		manifestFile = defaultManifestFile
 		configFile = defaultConfigFile
 	}
