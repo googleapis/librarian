@@ -26,12 +26,25 @@ limitations under the License.
 #[async_trait::async_trait]
 pub trait {{Codec.Name}}: std::fmt::Debug + Send + Sync {
     {{#Codec.Methods}}
+    {{#Codec.IsBidiStreaming}}
+    #[cfg(google_cloud_unstable_gapic_streaming)]
+    async fn {{Codec.Name}}(
+        &self,
+        options: crate::RequestOptions,
+    ) -> (
+        google_cloud_gax::streaming::RequestSender<{{InputType.Codec.QualifiedName}}>,
+        google_cloud_gax::streaming::ResponseReceiver<{{OutputType.Codec.QualifiedName}}>,
+    );
+
+    {{/Codec.IsBidiStreaming}}
+    {{^Codec.IsBidiStreaming}}
     async fn {{Codec.Name}}(
         &self,
         req: {{InputType.Codec.QualifiedName}},
         options: crate::RequestOptions,
     ) -> crate::Result<crate::Response<{{Codec.ReturnType}}>>;
 
+    {{/Codec.IsBidiStreaming}}
     {{/Codec.Methods}}
     {{#Codec.HasLROs}}
     fn get_polling_error_policy(
@@ -61,6 +74,20 @@ pub trait {{Codec.Name}}: std::fmt::Debug + Send + Sync {
 impl<T: super::{{Codec.Name}}> {{Codec.Name}} for T {
     {{#Codec.Methods}}
     /// Forwards the call to the implementation provided by `T`.
+    {{#Codec.IsBidiStreaming}}
+    #[cfg(google_cloud_unstable_gapic_streaming)]
+    async fn {{Codec.Name}}(
+        &self,
+        options: crate::RequestOptions,
+    ) -> (
+        google_cloud_gax::streaming::RequestSender<{{InputType.Codec.QualifiedName}}>,
+        google_cloud_gax::streaming::ResponseReceiver<{{OutputType.Codec.QualifiedName}}>,
+    ) {
+        T::{{Codec.Name}}(self, options).await
+    }
+
+    {{/Codec.IsBidiStreaming}}
+    {{^Codec.IsBidiStreaming}}
     async fn {{Codec.Name}}(
         &self,
         req: {{InputType.Codec.QualifiedName}},
@@ -69,6 +96,7 @@ impl<T: super::{{Codec.Name}}> {{Codec.Name}} for T {
         T::{{Codec.Name}}(self, req, options).await
     }
 
+    {{/Codec.IsBidiStreaming}}
     {{/Codec.Methods}}
     {{#Codec.HasLROs}}
     fn get_polling_error_policy(

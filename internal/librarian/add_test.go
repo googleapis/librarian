@@ -668,7 +668,7 @@ func TestAddLibrary_Swift(t *testing.T) {
 			swiftDefault: &config.SwiftDefault{DefaultVersion: "1.0.0"},
 			wantFinalLibraries: []*config.Library{
 				{
-					Name:          "GoogleCloudSecretmanagerV1",
+					Name:          "google-cloud-secretmanager-v1",
 					CopyrightYear: copyrightYear,
 					Version:       "1.0.0",
 				},
@@ -679,7 +679,7 @@ func TestAddLibrary_Swift(t *testing.T) {
 			swiftDefault: &config.SwiftDefault{DefaultVersion: "0.1.2-preview"},
 			wantFinalLibraries: []*config.Library{
 				{
-					Name:          "GoogleCloudSecretmanagerV1",
+					Name:          "google-cloud-secretmanager-v1",
 					CopyrightYear: copyrightYear,
 					Version:       "0.1.2-preview",
 				},
