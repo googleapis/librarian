@@ -23,7 +23,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"sort"
+	"slices"
 	"strings"
 
 	"github.com/googleapis/librarian/internal/config"
@@ -178,7 +178,7 @@ func generateAPI(ctx context.Context, params *generateAPIParams) (retErr error) 
 	}
 
 	var pc *config.Protoc
-	if params.cfg.Tools != nil && params.cfg.Tools.Protoc != nil {
+	if params.cfg.Tools != nil {
 		pc = params.cfg.Tools.Protoc
 	}
 	// Run 1: GAPIC Client Generation
@@ -287,7 +287,7 @@ func gatherProtos(root string) ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
-	sort.Strings(protos)
+	slices.Sort(protos)
 	return protos, nil
 }
 

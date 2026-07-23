@@ -569,3 +569,24 @@ func TestMethodAnnotationsDetailedTracing(t *testing.T) {
 		t.Errorf("methodAnnotation.DetailedTracingAttributes = %v, want %v", got.DetailedTracingAttributes, true)
 	}
 }
+
+func TestIsBidiStreaming(t *testing.T) {
+	for _, test := range []struct {
+		name   string
+		client bool
+		server bool
+		want   bool
+	}{
+		{"bidi streaming", true, true, true},
+		{"client-only streaming", true, false, false},
+		{"server-only streaming", false, true, false},
+		{"unary", false, false, false},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			ann := &methodAnnotation{ClientSideStreaming: test.client, ServerSideStreaming: test.server}
+			if got := ann.IsBidiStreaming(); got != test.want {
+				t.Errorf("methodAnnotation.IsBidiStreaming() = %v, want %v", got, test.want)
+			}
+		})
+	}
+}

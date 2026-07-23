@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.30.0](https://github.com/googleapis/librarian/compare/v0.29.1...v0.30.0) (2026-07-23)
+
+
+### Features
+
+* **internal/librarian/generate:** cap goroutine concurrency during `generate --all` ([#6942](https://github.com/googleapis/librarian/issues/6942)) ([4365f05](https://github.com/googleapis/librarian/commit/4365f0536eacd97fdaee2d0b68f857a7da8bcd2e)), closes [#6952](https://github.com/googleapis/librarian/issues/6952)
+* **internal/librarian/php:** implement add command support ([#6974](https://github.com/googleapis/librarian/issues/6974)) ([df5ce1e](https://github.com/googleapis/librarian/commit/df5ce1ed2fc5576f5b4e94c2fd6498ab5eb1787e)), closes [#6972](https://github.com/googleapis/librarian/issues/6972)
+* **rust:** generate method signatures for bidi streaming ([#6958](https://github.com/googleapis/librarian/issues/6958)) ([853dab0](https://github.com/googleapis/librarian/commit/853dab0ebe901453338dda697df8f9609a374f27)), closes [#6835](https://github.com/googleapis/librarian/issues/6835)
+
+
+### Bug Fixes
+
+* **cmd/librarian/Dockerfile:** go build in Dockerfile not to use Git ([#6986](https://github.com/googleapis/librarian/issues/6986)) ([c0e67d1](https://github.com/googleapis/librarian/commit/c0e67d1f3a9884067a64152b07b2cf7bf80a8748))
+
 ## [0.29.1](https://github.com/googleapis/librarian/compare/v0.29.0...v0.29.1) (2026-07-22)
 
 
