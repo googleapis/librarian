@@ -180,7 +180,7 @@ func newCodec(model *api.API, library *config.Library, module *config.SwiftModul
 	}
 
 	if !result.Module {
-		libraryName, err := LibraryName(model)
+		libraryName, err := LibraryName(model, swiftCfg)
 		if err != nil {
 			return nil, err
 		}

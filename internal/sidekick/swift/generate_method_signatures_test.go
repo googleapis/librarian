@@ -39,7 +39,7 @@ func TestGenerateService_MethodSignatures(t *testing.T) {
 					want: `public func simpleMethod(
   name: Swift.String,
   optionalField: Swift.String?,
-) async throws -> GoogleTest.Response
+) async throws -> Test.Response
  {
     let request = Request().with {
       $0.name = name
@@ -53,7 +53,7 @@ func TestGenerateService_MethodSignatures(t *testing.T) {
 					want: `public func simpleMethod(
   name: Swift.String,
   normalField: Swift.String,
-) async throws -> GoogleTest.Response
+) async throws -> Test.Response
  {
     let request = Request().with {
       $0.name = name
@@ -180,7 +180,7 @@ func TestGenerateService_MethodSignatures(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			filename := filepath.Join(outDir, "Sources", "GoogleTest", "TestService.swift")
+			filename := filepath.Join(outDir, "Sources", "Test", "TestService.swift")
 			content, err := os.ReadFile(filename)
 			if err != nil {
 				t.Fatal(err)

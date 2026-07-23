@@ -618,7 +618,7 @@ This document describes the schema for the librarian.yaml.
 
 | Field | Type | Description |
 | :--- | :--- | :--- |
-| `name` | string | Is an identifier for the package within the project.<br><br>For example, `swift-protobuf`. This is usually the last component of the path or the URL. |
+| `name` | string | Is the module imported from the dependency.<br><br>Examples:<br>- to import `Logging` from the `swift-log` package, create a dependency: {Name: "Logging", Version: "1.14.0", URL: "https://github.com/apple/swift-log"},<br>- to import `GoogleIamV1` from the `google-iam-v1` package. {Name: "GoogleIamV1", Path: "generated/google-iam-v1"} |
 | `path` | string | Configures the path for local (to the monorepo) packages.<br><br>For example, the authentication package definition will set this to `packages/auth`, which would generate the following snippet in the `Package.swift` files:<br><br>``` .package(path: "../../packages/auth") ``` |
 | `url` | string | Configures the `url:` parameter in the package definition.<br><br>For example, `https://github.com/apple/swift-protobuf` would generate the following snippet in the `Package.swift` files:<br><br>``` .package(url: "https://github.com/apple/swift-protobuf") ``` |
 | `version` | string | Configures the minimum version for external package definitions.<br><br>For example, if the `swift-protobuf` package used `1.36.1`, then the codec would generate the following snippet in the `Package.swift` files:<br><br>``` .package(url: "https://github.com/apple/swift-protobuf", from: "1.36.1") ``` |
@@ -640,6 +640,7 @@ This document describes the schema for the librarian.yaml.
 | Field | Type | Description |
 | :--- | :--- | :--- |
 | (embedded) | [SwiftDefault](#swiftdefault-configuration) |  |
+| `library_name_override` | string | Overrides the default library name.<br><br>In Swift, each GAPIC package consists of a single product (the library), which contains a single target and module name. For example, the package for the google/cloud/secretmanager/v1 API is called google-cloud-secretmanager-v1, and contains a single product: `GoogleCloudSecretManagerV1`, which in turn contains a single target and module of the same name.<br><br>To use the library applications use this import:<br><br>``` import GoogleCloudSecretManagerV1 ```<br><br>Normally the name is derived from:<br>- If the Protobuf namespace overrides for PHP, Ruby, and C# are consistent, sidekick uses this name.<br>- Otherwise, the name implied by the Protobuf package<br>- Or the package set in the service config yaml file |
 | `include_list` | list of string | Is a subset of proto files under the target API path to include (e.g., ["date.proto", "expr.proto"]). |
 | `modules` | list of [SwiftModule](#swiftmodule-configuration) (optional) | Specifies generation targets for veneers and test packages.<br><br>Each module defines a source proto path, and output location. |
 | `package_name_override` | string | Overrides the package name.<br><br>This may be useful if the protobuf package lacks the necessary prefixes, e.g. `grafeas.v1` may be published as `google-grafeas-v1` to match the other packages. |

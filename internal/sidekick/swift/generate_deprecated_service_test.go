@@ -63,7 +63,7 @@ func TestGenerateService_Deprecated(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			filename := filepath.Join(outDir, "Sources", "GoogleTest", "DeprecatedService.swift")
+			filename := filepath.Join(outDir, "Sources", "Test", "DeprecatedService.swift")
 			content, err := os.ReadFile(filename)
 			if err != nil {
 				t.Fatal(err)

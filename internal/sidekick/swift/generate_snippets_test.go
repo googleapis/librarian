@@ -37,7 +37,7 @@ func TestGenerateSnippets(t *testing.T) {
 			repeated: false,
 			file:     "TestServiceQuickstart.swift",
 			want: `func sample(name: String, ) async throws {
-  let client = try GoogleTest.TestServiceClient()
+  let client = try Test.TestServiceClient()
   let response = try await client.getThing(
     request: GetThingRequest()
   .with {
@@ -52,7 +52,7 @@ func TestGenerateSnippets(t *testing.T) {
 			repeated: true,
 			file:     "TestServiceQuickstart.swift",
 			want: `func sample(name: String, ) async throws {
-  let client = try GoogleTest.TestServiceClient()
+  let client = try Test.TestServiceClient()
   let response = try await client.getThing(
     request: GetThingRequest()
   .with {

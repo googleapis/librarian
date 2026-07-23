@@ -37,7 +37,7 @@ func TestAnnotateService(t *testing.T) {
 			doc:         "IAM service documentation.",
 			wantAnnotations: &serviceAnnotations{
 				Name:        "IAM",
-				LibraryName: "GoogleTest",
+				LibraryName: "Test",
 				ClientName:  "IAMClient",
 				StubPrefix:  "IAM",
 				DocLines:    []string{"IAM service documentation."},
@@ -50,7 +50,7 @@ func TestAnnotateService(t *testing.T) {
 			doc:         "Docs are not relevant.",
 			wantAnnotations: &serviceAnnotations{
 				Name:        "Protocol_",
-				LibraryName: "GoogleTest",
+				LibraryName: "Test",
 				ClientName:  "ProtocolClient",
 				StubPrefix:  "Protocol",
 				DocLines:    []string{"Docs are not relevant."},
@@ -63,7 +63,7 @@ func TestAnnotateService(t *testing.T) {
 			doc:         "Secret Manager Service documentation.\nLine 2.",
 			wantAnnotations: &serviceAnnotations{
 				Name:        "SecretManagerService",
-				LibraryName: "GoogleTest",
+				LibraryName: "Test",
 				ClientName:  "SecretManagerServiceClient",
 				StubPrefix:  "SecretManagerService",
 				DocLines:    []string{"Secret Manager Service documentation.", "Line 2."},

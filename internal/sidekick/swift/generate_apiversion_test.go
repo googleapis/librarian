@@ -100,7 +100,7 @@ func TestGenerateService_APIVersion(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			filename := filepath.Join(outDir, "Sources", "GoogleTest", "TestService+Stub.swift")
+			filename := filepath.Join(outDir, "Sources", "Test", "TestService+Stub.swift")
 			content, err := os.ReadFile(filename)
 			if err != nil {
 				t.Fatal(err)

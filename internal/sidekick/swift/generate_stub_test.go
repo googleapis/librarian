@@ -183,7 +183,7 @@ func TestGenerateService_QueryParameters(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	filename := filepath.Join(outDir, "Sources", "GoogleTest", "Service+Stub.swift")
+	filename := filepath.Join(outDir, "Sources", "Test", "Service+Stub.swift")
 	content, err := os.ReadFile(filename)
 	if err != nil {
 		t.Fatal(err)

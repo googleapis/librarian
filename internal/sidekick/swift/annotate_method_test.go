@@ -66,7 +66,7 @@ func TestAnnotateMethod(t *testing.T) {
 				DocLines:       []string{"Gets a thing.", "", "Test multiple comment lines.", ""},
 				HTTPMethod:     "GET",
 				HasBody:        false,
-				ReturnType:     "GoogleTest.Response",
+				ReturnType:     "Test.Response",
 			},
 		},
 		{
@@ -90,7 +90,7 @@ func TestAnnotateMethod(t *testing.T) {
 				HasBody:        true,
 				IsBodyWildcard: false,
 				BodyField:      "key",
-				ReturnType:     "GoogleTest.Response",
+				ReturnType:     "Test.Response",
 			},
 		},
 		{
@@ -113,7 +113,7 @@ func TestAnnotateMethod(t *testing.T) {
 				HTTPMethod:     "POST",
 				HasBody:        true,
 				IsBodyWildcard: true,
-				ReturnType:     "GoogleTest.Response",
+				ReturnType:     "Test.Response",
 			},
 		},
 		{
@@ -138,7 +138,7 @@ func TestAnnotateMethod(t *testing.T) {
 				HTTPMethod:     "GET",
 				HasBody:        false,
 				QueryParams:    []*api.Field{keyField},
-				ReturnType:     "GoogleTest.Response",
+				ReturnType:     "Test.Response",
 			},
 		},
 	} {
@@ -208,7 +208,7 @@ func TestAnnotateMethod_EscapedName(t *testing.T) {
 				DocLines:       []string{"Test documentation."},
 				PathExpression: "/",
 				HTTPMethod:     "GET",
-				ReturnType:     "GoogleTest.Response",
+				ReturnType:     "Test.Response",
 			}
 
 			if diff := cmp.Diff(want, method.Codec); diff != "" {
@@ -342,7 +342,7 @@ func TestAnnotateMethod_Pagination(t *testing.T) {
 		Pagination: &paginationAnnotations{
 			ItemType: "Item",
 		},
-		ReturnType: "GoogleTest.ListResponse",
+		ReturnType: "Test.ListResponse",
 	}
 	if diff := cmp.Diff(wantMethod, gotMethod); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
@@ -454,7 +454,7 @@ func TestAnnotateMethod_LRO(t *testing.T) {
 			MetadataType:    "LroMetadata",
 			ResponseIsEmpty: false,
 		},
-		ReturnType: "GoogleTest.Operation",
+		ReturnType: "Test.Operation",
 	}
 	if diff := cmp.Diff(wantMethod, gotMethod); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
@@ -525,7 +525,7 @@ func TestAnnotateMethod_LRO_Empty(t *testing.T) {
 			MetadataType:    "LroMetadata",
 			ResponseIsEmpty: true,
 		},
-		ReturnType: "GoogleTest.Operation",
+		ReturnType: "Test.Operation",
 	}
 	if diff := cmp.Diff(wantMethod, gotMethod); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
