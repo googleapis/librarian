@@ -38,6 +38,9 @@ func Generate(ctx context.Context, cfg *config.Config, library *config.Library, 
 	if len(library.APIs) == 0 {
 		return errNoAPIs
 	}
+	if err := Clean(library); err != nil {
+		return fmt.Errorf("failed to clean output directory: %w", err)
+	}
 	outDir, err := filepath.Abs(library.Output)
 	if err != nil {
 		return fmt.Errorf("failed to get absolute path of output directory: %w", err)

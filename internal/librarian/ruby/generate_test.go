@@ -324,6 +324,16 @@ func TestGenerate(t *testing.T) {
 		t.Fatal(err)
 	}
 	outDir := t.TempDir()
+	// AUTHENTICATION.md is a generated file.
+	oldFile := filepath.Join(outDir, "AUTHENTICATION.md")
+	if err := os.WriteFile(oldFile, []byte("old"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	// CHANGELOG.md should not be regenerated.
+	changelogFile := filepath.Join(outDir, "CHANGELOG.md")
+	if err := os.WriteFile(changelogFile, []byte("changelog"), 0o644); err != nil {
+		t.Fatal(err)
+	}
 	library := &config.Library{
 		Name:   "google-cloud-secret_manager-v1",
 		Output: outDir,
@@ -340,6 +350,12 @@ func TestGenerate(t *testing.T) {
 	wantFile := filepath.Join(outDir, "lib", "google", "cloud", "secret_manager", "v1.rb")
 	if _, err := os.Stat(wantFile); err != nil {
 		t.Errorf("expected generated file %s to exist: %v", wantFile, err)
+	}
+	if _, err := os.Stat(oldFile); !errors.Is(err, fs.ErrNotExist) {
+		t.Errorf("expected old generated file %s to be cleaned up", oldFile)
+	}
+	if _, err := os.Stat(changelogFile); err != nil {
+		t.Errorf("expected non-generated file %s to be preserved: %v", changelogFile, err)
 	}
 }
 
