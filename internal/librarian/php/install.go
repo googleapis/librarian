@@ -74,8 +74,7 @@ func Install(ctx context.Context, tools *config.Tools) error {
 			return fmt.Errorf("fetching %s: %w", tool.Name, err)
 		}
 
-		args := []string{"install", "--no-interaction", "--prefer-dist"}
-		if err := command.RunInDir(ctx, dir, "composer", args...); err != nil {
+		if err := command.RunInDir(ctx, dir, "composer", "install", "--no-interaction", "--prefer-dist"); err != nil {
 			return fmt.Errorf("failed to run composer install: %w", err)
 		}
 
