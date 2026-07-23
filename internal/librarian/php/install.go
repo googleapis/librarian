@@ -137,7 +137,7 @@ func binDir() (string, error) {
 }
 
 // createBinWrapper creates a shell wrapper script in the bin directory that forwards executions to the tool.
-func createBinWrapper(wrapperName, content, binDir string) error {
+func createBinWrapper(wrapperName, content, binDir string) (err error) {
 	wrapperPath := filepath.Join(binDir, wrapperName)
 	if err := os.MkdirAll(filepath.Dir(wrapperPath), 0o755); err != nil {
 		return fmt.Errorf("failed to create directory for wrapper: %w", err)
@@ -147,7 +147,11 @@ func createBinWrapper(wrapperName, content, binDir string) error {
 	if err != nil {
 		return fmt.Errorf("failed to create wrapper script: %w", err)
 	}
-	defer f.Close()
+	defer func() {
+		if closeErr := f.Close(); closeErr != nil && err == nil {
+			err = fmt.Errorf("failed to close wrapper script: %w", closeErr)
+		}
+	}()
 	if _, err := f.WriteString(content); err != nil {
 		return fmt.Errorf("failed to write wrapper script: %w", err)
 	}
