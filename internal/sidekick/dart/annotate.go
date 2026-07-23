@@ -1491,6 +1491,16 @@ func registerMissingWkt(model *api.API) {
 	}
 }
 
+// findExampleMethod tries to find a service method that can be easily used as an
+// example.
+//
+// It prefers methods:
+// - whose input and output types are defined in the same package as the service
+// - that do not return an empty message
+// - whose request and response message types have no required fields
+//
+// That makes it easier to construct Dart examples that pass analysis, e.g. because
+// they are not missing imports or are missing required constructor arguments.
 func findExampleMethod(services []*api.Service) (*api.Service, *api.Method) {
 	hasRequired := func(m *api.Message) bool {
 		if m == nil {
