@@ -16,7 +16,6 @@ package php
 
 import (
 	"slices"
-	"sort"
 
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/serviceconfig"
@@ -54,6 +53,6 @@ func resolveAPIMixinDependencies(lib *config.Library, apiCfg *config.API, srcs *
 			apiCfg.PHP.AdditionalProtos = append(apiCfg.PHP.AdditionalProtos, mixinProto)
 		}
 	}
-	sort.Strings(apiCfg.PHP.AdditionalProtos)
+	slices.Sort(apiCfg.PHP.AdditionalProtos)
 	return nil
 }
