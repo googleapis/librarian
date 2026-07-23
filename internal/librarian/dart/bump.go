@@ -30,41 +30,57 @@ import (
 	"github.com/googleapis/librarian/internal/semver"
 )
 
-func recommendedVersion(ctx context.Context, lib *config.Library, defaults *config.Default) (string, string, error) {
-	packageDir := libraryOutput(lib, defaults)
-	reportPath := filepath.Join(os.TempDir(), fmt.Sprintf("report-%s.json", lib.Name))
-	defer os.Remove(reportPath)
+// Bump updates the version number and dependencies of Dart packages in the workspace.
+func Bump(ctx context.Context, cfg *config.Config, all bool, libraryName, versionOverride string) error {
+	if !all {
+		return errors.New("bumping a single Dart package not supported, use --all")
+	}
 
-	var neededVersion string
-	var publishedVersion string
-	output, err := command.Output(ctx, command.DartAPITool, "diff", "--old", "pub://"+lib.Name, "--new", packageDir,
-		"--report-format", "json", "--report-file-path", reportPath, "--version-check-mode", "fully",
-		"--no-set-exit-on-version-check-failure")
+	libraryByName := make(map[string]*config.Library)
+	for _, lib := range cfg.Libraries {
+		libraryByName[lib.Name] = lib
+	}
+
+	deps, _, err := getDeps(ctx, cfg.Libraries)
 	if err != nil {
-		return "", "", fmt.Errorf("dart-apitool failed: %w (output: %s)", err, output)
+		return err
 	}
 
-	// Read the report file
-	reportContent, err := os.ReadFile(reportPath)
+	sorted, err := sortByDeps(libraryByName, deps)
 	if err != nil {
-		return "", "", fmt.Errorf("failed to read API report: %w", err)
+		return err
 	}
-	var report struct {
-		Version struct {
-			Needed string `json:"needed"`
-			Old    string `json:"old"` // The published version of the package.
-		} `json:"version"`
-	}
-	if err := json.Unmarshal(reportContent, &report); err != nil {
-		return "", "", fmt.Errorf("failed to parse API report: %w", err)
-	}
-	neededVersion = report.Version.Needed
-	if neededVersion == "" {
-		return "", "", fmt.Errorf("API report did not contain recommended version")
-	}
-	publishedVersion = report.Version.Old
 
-	return publishedVersion, neededVersion, nil
+	newVersions := make(map[string]string)
+
+	for _, lib := range sorted {
+		newVersion, err := maybeBumpLibrary(ctx, deps[lib], newVersions, libraryByName[lib], cfg.Default)
+		if err != nil {
+			return err
+		}
+
+		if libraryByName[lib].Version != newVersion {
+			libraryByName[lib].Version = newVersion
+			newVersions[lib] = newVersion
+
+			if cfg.Default != nil && cfg.Default.Dart != nil && cfg.Default.Dart.Packages != nil {
+				if _, ok := cfg.Default.Dart.Packages["package:"+lib]; ok {
+					cfg.Default.Dart.Packages["package:"+lib] = "^" + newVersion
+				}
+			}
+
+			for _, other := range sorted {
+				if slices.Contains(deps[other], lib) {
+					newDeps := map[string]string{lib: "^" + newVersion}
+					if err := updatePubspecDependencyVersions(libraryByName[other], cfg.Default, newDeps); err != nil {
+						return err
+					}
+				}
+			}
+		}
+	}
+
+	return nil
 }
 
 func maybeBumpLibrary(ctx context.Context, cloudDeps []string, newVersions map[string]string, lib *config.Library, defaults *config.Default) (string, error) {
@@ -147,6 +163,43 @@ func maybeBumpLibrary(ctx context.Context, cloudDeps []string, newVersions map[s
 	return newVersion, nil
 }
 
+func recommendedVersion(ctx context.Context, lib *config.Library, defaults *config.Default) (string, string, error) {
+	packageDir := libraryOutput(lib, defaults)
+	reportPath := filepath.Join(os.TempDir(), fmt.Sprintf("report-%s.json", lib.Name))
+	defer os.Remove(reportPath)
+
+	var neededVersion string
+	var publishedVersion string
+	output, err := command.Output(ctx, command.DartAPITool, "diff", "--old", "pub://"+lib.Name, "--new", packageDir,
+		"--report-format", "json", "--report-file-path", reportPath, "--version-check-mode", "fully",
+		"--no-set-exit-on-version-check-failure")
+	if err != nil {
+		return "", "", fmt.Errorf("dart-apitool failed: %w (output: %s)", err, output)
+	}
+
+	// Read the report file
+	reportContent, err := os.ReadFile(reportPath)
+	if err != nil {
+		return "", "", fmt.Errorf("failed to read API report: %w", err)
+	}
+	var report struct {
+		Version struct {
+			Needed string `json:"needed"`
+			Old    string `json:"old"` // The published version of the package.
+		} `json:"version"`
+	}
+	if err := json.Unmarshal(reportContent, &report); err != nil {
+		return "", "", fmt.Errorf("failed to parse API report: %w", err)
+	}
+	neededVersion = report.Version.Needed
+	if neededVersion == "" {
+		return "", "", fmt.Errorf("API report did not contain recommended version")
+	}
+	publishedVersion = report.Version.Old
+
+	return publishedVersion, neededVersion, nil
+}
+
 func getCommitsSince(ctx context.Context, lastReleaseTagCommit, packageDir string) ([]string, error) {
 	if lastReleaseTagCommit == "" {
 		return nil, nil
@@ -215,57 +268,4 @@ func updateChangelog(ctx context.Context, packageDir, version, lastReleaseTagCom
 	}
 
 	return os.WriteFile(changelogPath, []byte(newTopOfFile+rest), 0644)
-}
-
-// Bump updates the version number and dependencies of Dart packages in the workspace.
-func Bump(ctx context.Context, cfg *config.Config, all bool, libraryName, versionOverride string) error {
-	if !all {
-		return errors.New("bumping a single Dart package not supported, use --all")
-	}
-
-	libraryByName := make(map[string]*config.Library)
-	for _, lib := range cfg.Libraries {
-		libraryByName[lib.Name] = lib
-	}
-
-	deps, _, err := getDeps(ctx, cfg.Libraries)
-	if err != nil {
-		return err
-	}
-
-	sorted, err := sortByDeps(libraryByName, deps)
-	if err != nil {
-		return err
-	}
-
-	newVersions := make(map[string]string)
-
-	for _, lib := range sorted {
-		newVersion, err := maybeBumpLibrary(ctx, deps[lib], newVersions, libraryByName[lib], cfg.Default)
-		if err != nil {
-			return err
-		}
-
-		if libraryByName[lib].Version != newVersion {
-			libraryByName[lib].Version = newVersion
-			newVersions[lib] = newVersion
-
-			if cfg.Default != nil && cfg.Default.Dart != nil && cfg.Default.Dart.Packages != nil {
-				if _, ok := cfg.Default.Dart.Packages["package:"+lib]; ok {
-					cfg.Default.Dart.Packages["package:"+lib] = "^" + newVersion
-				}
-			}
-
-			for _, other := range sorted {
-				if slices.Contains(deps[other], lib) {
-					newDeps := map[string]string{lib: "^" + newVersion}
-					if err := updatePubspecDependencyVersions(libraryByName[other], cfg.Default, newDeps); err != nil {
-						return err
-					}
-				}
-			}
-		}
-	}
-
-	return nil
 }
