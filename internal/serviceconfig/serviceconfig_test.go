@@ -519,6 +519,6 @@ func TestExtractMixinProtos_Error(t *testing.T) {
 	}
 	_, err := ExtractMixinProtos(dir, apiPath, config.LanguageGo)
 	if err == nil {
-		t.Fatal("expected error for invalid service config")
+		t.Error("expected error for invalid service config")
 	}
 }
