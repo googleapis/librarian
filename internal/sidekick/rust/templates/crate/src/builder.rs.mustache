@@ -79,6 +79,7 @@ pub mod {{Codec.ModuleName}} {
     }
 
     {{#Codec.Methods}}
+    {{^Codec.IsBidiStreaming}}
     /// The request builder for [{{Codec.ServiceNameToPascal}}::{{Codec.NameNoMangling}}][crate::client::{{Codec.ServiceNameToPascal}}::{{Codec.NameNoMangling}}] calls.
     {{^Codec.InternalBuilders}}
     ///
@@ -604,6 +605,7 @@ pub mod {{Codec.ModuleName}} {
             &mut self.0.options
         }
     }
+    {{/Codec.IsBidiStreaming}}
 
     {{/Codec.Methods}}
 }
