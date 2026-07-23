@@ -105,7 +105,7 @@ func TestInstall(t *testing.T) {
 				repoDir := filepath.Join(os.Getenv("LIBRARIAN_CACHE"), "github.com/fake/fake-tool@1.0.0")
 				destPath := filepath.Join(repoDir, "src", "Main.php")
 				phpPath, _ := exec.LookPath("php")
-				want := fmt.Sprintf("#!/bin/bash\nexec %q -d display_errors=stderr -d memory_limit=1024M %q --side_loaded_root_dir \"$GOOGLEAPIS_DIR\" \"$@\"\n", phpPath, destPath)
+				want := phpWrapperContent(phpPath, destPath)
 				if diff := cmp.Diff(want, string(b)); diff != "" {
 					t.Errorf("wrapper content mismatch (-want +got):\n%s", diff)
 				}
@@ -162,7 +162,7 @@ func TestInstall(t *testing.T) {
 				repoDir := filepath.Join(os.Getenv("LIBRARIAN_CACHE"), "github.com/fake/fake-tool@1.0.0")
 				destPath := filepath.Join(repoDir, "src", "Main.php")
 				phpPath, _ := exec.LookPath("php")
-				want := fmt.Sprintf("#!/bin/bash\nexec %q -d display_errors=stderr -d memory_limit=1024M %q --side_loaded_root_dir \"$GOOGLEAPIS_DIR\" \"$@\"\n", phpPath, destPath)
+				want := phpWrapperContent(phpPath, destPath)
 				if diff := cmp.Diff(want, string(b)); diff != "" {
 					t.Errorf("wrapper content mismatch (-want +got):\n%s", diff)
 				}
@@ -206,7 +206,7 @@ func TestInstall(t *testing.T) {
 				repoDir := filepath.Join(os.Getenv("LIBRARIAN_CACHE"), "github.com/googleapis/gapic-generator-php@1.0.0")
 				destPath := filepath.Join(repoDir, "src", "Main.php")
 				phpPath, _ := exec.LookPath("php")
-				want := fmt.Sprintf("#!/bin/bash\nexec %q -d display_errors=stderr -d memory_limit=1024M %q --side_loaded_root_dir \"$GOOGLEAPIS_DIR\" \"$@\"\n", phpPath, destPath)
+				want := phpWrapperContent(phpPath, destPath)
 				if diff := cmp.Diff(want, string(b)); diff != "" {
 					t.Errorf("wrapper content mismatch (-want +got):\n%s", diff)
 				}

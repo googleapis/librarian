@@ -81,7 +81,7 @@ func Install(ctx context.Context, tools *config.Tools) error {
 		// TODO(https://github.com/googleapis/librarian/issues/7000): Remove the --side_loaded_root_dir once we pass full paths to generator
 		destPath := filepath.Join(dir, "src", "Main.php")
 		wrapperName := filepath.Base(tool.Repo)
-		wrapperContent := fmt.Sprintf("#!/bin/bash\nexec %q -d display_errors=stderr -d memory_limit=1024M %q --side_loaded_root_dir \"$GOOGLEAPIS_DIR\" \"$@\"\n", phpPath, destPath)
+		wrapperContent := phpWrapperContent(phpPath, destPath)
 
 		if err := createBinWrapper(wrapperName, wrapperContent, bin); err != nil {
 			return err
@@ -134,6 +134,11 @@ func binDir() (string, error) {
 		return "", err
 	}
 	return filepath.Join(installDir, "bin"), nil
+}
+
+// phpWrapperContent generates the bash script content for the PHP tool wrapper.
+func phpWrapperContent(phpExecutable, entrypoint string) string {
+	return fmt.Sprintf("#!/bin/bash\nexec %q -d display_errors=stderr -d memory_limit=1024M %q --side_loaded_root_dir \"$GOOGLEAPIS_DIR\" \"$@\"\n", phpExecutable, entrypoint)
 }
 
 // createBinWrapper creates a shell wrapper script in the bin directory that forwards executions to the tool.
