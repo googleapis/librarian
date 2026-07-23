@@ -16,10 +16,27 @@ on: [push, pull_request, merge_group]
 permissions:
   contents: read
 jobs:
-  test:
+  build-and-test:
+    name: ${{ matrix.job-name }}
     runs-on: ubuntu-24.04
-    # Presubmit jobs must complete within 5 minutes. See CONTRIBUTING.md.
-    timeout-minutes: 5
+    # Presubmit jobs must complete within 5 minutes. Integration might take longer.
+    timeout-minutes: ${{ matrix.timeout }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - job-name: 'Unit Tests'
+            task: 'unit-test'
+            timeout: 5
+            sparse: true
+          - job-name: 'Smoke Test'
+            task: 'smoke-test'
+            timeout: 5
+            sparse: true
+          - job-name: 'Integration Test'
+            task: 'integration'
+            timeout: 60
+            sparse: false
     steps:
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
@@ -36,15 +53,24 @@ jobs:
         id: tool-paths
         run: |
           echo "npm=$(npm config get prefix)" >> "$GITHUB_OUTPUT"
-      - name: "Checkout google-cloud-node"
-        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+      - name: "Checkout google-cloud-node (sparse)"
+        if: matrix.sparse
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3        
         with:
           repository: googleapis/google-cloud-node
           path: google-cloud-node
           depth: 1
           sparse-checkout: |
             librarian.yaml
+            google-cloud-secretmanager
           sparse-checkout-cone-mode: false
+          persist-credentials: false
+      - name: "Checkout google-cloud-node (full)"
+        if: matrix.sparse == false
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          repository: googleapis/google-cloud-node
+          path: google-cloud-node
           persist-credentials: false
       - name: "Install Node.js dependencies (restore cache)"
         uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
@@ -55,8 +81,27 @@ jobs:
             ~/.cache/librarian
           key: nodejs-tools-v4-${{ hashFiles('internal/config/**/*.go') }}-${{ hashFiles('google-cloud-node/librarian.yaml') }}
       - name: "Install Node.js dependencies (run librarian install)"
-        if: steps.tools-cache.outputs.cache-hit != 'true'
+        if: steps.tools-cache.outputs.cache-hit != 'true' || (matrix.task == 'integration' && github.event_name == 'push' && github.ref == 'refs/heads/main')
         run: librarian -v install nodejs
         working-directory: google-cloud-node
       - name: Run tests
+        if: matrix.task == 'unit-test'
         run: go run ./tool/cmd/coverage ./internal/librarian/nodejs
+      - name: Generate a single library (smoke test)
+        if: matrix.task == 'smoke-test' && !(github.event_name == 'push' && github.ref == 'refs/heads/main')
+        working-directory: google-cloud-node
+        run: librarian generate google-cloud-secretmanager
+      - name: Run librarian generate all (integration test)
+        if: matrix.task == 'integration' && github.event_name == 'push' && github.ref == 'refs/heads/main'
+        working-directory: google-cloud-node
+        run: librarian generate --all
+  create-issue-on-failure:
+    needs: [build-and-test]
+    permissions:
+      contents: read
+      issues: write
+    if: ${{ always() && contains(needs.*.result, 'failure') && github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+    uses: ./.github/workflows/create-issue-on-failure.yaml
+    with:
+      language: Node.js
+      repository: google-cloud-node
