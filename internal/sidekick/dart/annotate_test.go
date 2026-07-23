@@ -2136,106 +2136,101 @@ func TestFindExampleMethod(t *testing.T) {
 		Fields: []*api.Field{optionalField},
 	}
 
-	// LRO method (should never be selected)
 	lroMethod := &api.Method{
 		Name:          "LroMethod",
 		OperationInfo: &api.OperationInfo{},
 	}
 
-	// Void return method
+	streamingMethod := &api.Method{
+		Name:     "StreamingMethod",
+		IsSimple: false,
+	}
+
 	voidMethod := &api.Method{
 		Name:         "VoidMethod",
+		IsSimple:     true,
 		ReturnsEmpty: true,
 		InputType:    msgWithoutRequired,
 	}
 
-	// Method with required input
 	requiredInputMethod := &api.Method{
 		Name:         "RequiredInputMethod",
+		IsSimple:     true,
 		ReturnsEmpty: false,
 		InputType:    msgWithRequired,
 		OutputType:   msgWithoutRequired,
 	}
 
-	// Method with required output
 	requiredOutputMethod := &api.Method{
 		Name:         "RequiredOutputMethod",
+		IsSimple:     true,
 		ReturnsEmpty: false,
 		InputType:    msgWithoutRequired,
 		OutputType:   msgWithRequired,
 	}
 
-	// Perfect method (non-LRO, returns value, no required input, no required output)
 	perfectMethod := &api.Method{
 		Name:         "PerfectMethod",
+		IsSimple:     true,
 		ReturnsEmpty: false,
 		InputType:    msgWithoutRequired,
 		OutputType:   msgWithoutRequired,
 	}
 
-	// Let's test combinations!
-	// Test 1: Perfect method exists -> selects perfect method
-	{
-		s := &api.Service{
-			Codec: &serviceAnnotations{
-				Methods: []*api.Method{lroMethod, voidMethod, requiredInputMethod, perfectMethod},
-			},
-		}
-		_, got := findExampleMethod([]*api.Service{s})
-		if got != perfectMethod {
-			t.Errorf("Test 1: expected perfectMethod, got %v", got.Name)
-		}
-	}
-
-	// Test 2: Perfect method doesn't exist, but Condition 2 (relax input requirement) matches -> selects requiredInputMethod
-	{
-		s := &api.Service{
-			Codec: &serviceAnnotations{
-				Methods: []*api.Method{lroMethod, voidMethod, requiredOutputMethod, requiredInputMethod},
-			},
-		}
-		_, got := findExampleMethod([]*api.Service{s})
-		if got != requiredInputMethod {
-			t.Errorf("Test 2: expected requiredInputMethod, got %v", got.Name)
-		}
-	}
-
-	// Test 3: Condition 2 doesn't match, but Condition 3 (relax return required requirement) matches -> selects requiredOutputMethod
-	{
-		s := &api.Service{
-			Codec: &serviceAnnotations{
-				Methods: []*api.Method{lroMethod, voidMethod, requiredOutputMethod},
-			},
-		}
-		_, got := findExampleMethod([]*api.Service{s})
-		if got != requiredOutputMethod {
-			t.Errorf("Test 3: expected requiredOutputMethod, got %v", got.Name)
-		}
-	}
-
-	// Test 4: Condition 3 doesn't match, but Condition 4 (relax return value requirement) matches -> selects voidMethod
-	{
-		s := &api.Service{
-			Codec: &serviceAnnotations{
-				Methods: []*api.Method{lroMethod, voidMethod},
-			},
-		}
-		_, got := findExampleMethod([]*api.Service{s})
-		if got != voidMethod {
-			t.Errorf("Test 4: expected voidMethod, got %v", got.Name)
-		}
-	}
-
-	// Test 5: Only LRO method exists -> returns nil
-	{
-		s := &api.Service{
-			Codec: &serviceAnnotations{
-				Methods: []*api.Method{lroMethod},
-			},
-		}
-		_, got := findExampleMethod([]*api.Service{s})
-		if got != nil {
-			t.Errorf("Test 5: expected nil, got %v", got)
-		}
+	for _, test := range []struct {
+		name    string
+		methods []*api.Method
+		want    *api.Method
+	}{
+		{
+			name:    "perfect method exists",
+			methods: []*api.Method{lroMethod, streamingMethod, voidMethod, requiredOutputMethod, requiredInputMethod, perfectMethod},
+			want:    perfectMethod,
+		},
+		{
+			name:    "relax input requirement",
+			methods: []*api.Method{lroMethod, streamingMethod, voidMethod, requiredOutputMethod, requiredInputMethod},
+			want:    requiredInputMethod,
+		},
+		{
+			name:    "relax return required requirement",
+			methods: []*api.Method{lroMethod, streamingMethod, voidMethod, requiredOutputMethod},
+			want:    requiredOutputMethod,
+		},
+		{
+			name:    "relax return value requirement",
+			methods: []*api.Method{lroMethod, streamingMethod, voidMethod},
+			want:    voidMethod,
+		},
+		{
+			name:    "only LRO methods exist",
+			methods: []*api.Method{lroMethod},
+			want:    nil,
+		},
+		{
+			name:    "only LRO and streaming methods exist",
+			methods: []*api.Method{lroMethod, streamingMethod},
+			want:    nil,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			s := &api.Service{
+				Codec: &serviceAnnotations{
+					Methods: test.methods,
+				},
+			}
+			_, got := findExampleMethod([]*api.Service{s})
+			if got != test.want {
+				gotName := "nil"
+				if got != nil {
+					gotName = got.Name
+				}
+				wantName := "nil"
+				if test.want != nil {
+					wantName = test.want.Name
+				}
+				t.Errorf("mismatch, got %v, want %v", gotName, wantName)
+			}
+		})
 	}
 }
