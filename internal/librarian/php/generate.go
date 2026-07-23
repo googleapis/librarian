@@ -69,14 +69,7 @@ func Generate(ctx context.Context, cfg *config.Config, library *config.Library, 
 	}
 
 	if wrapperPath == "" {
-		generatorDir, err := generatorDir(ctx)
-		if err != nil {
-			return fmt.Errorf("failed to locate PHP generator: %w", err)
-		}
-		wrapperPath = filepath.Join(generatorDir, "wrapper.sh")
-		if _, err := os.Stat(wrapperPath); err != nil {
-			return fmt.Errorf("PHP generator wrapper not found (did you run 'librarian install'?): %w", err)
-		}
+		return errors.New("PHP generator wrapper not found (did you run 'librarian install'?)")
 	}
 
 	// Setup sandbox staging dir

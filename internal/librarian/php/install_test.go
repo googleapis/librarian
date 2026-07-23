@@ -61,36 +61,7 @@ func TestInstall(t *testing.T) {
 		wantErr error
 		check   func(t *testing.T)
 	}{
-		{
-			name:  "no tools, uses fallback generator",
-			tools: nil,
-			setup: func(t *testing.T) {
-				cache := t.TempDir()
-				t.Setenv("LIBRARIAN_CACHE", cache)
-				t.Setenv("LIBRARIAN_BIN", filepath.Join(cache, "bin"))
-				repoDir := filepath.Join(cache, "github.com/googleapis/gapic-generator-php@v1.21.2")
-				if err := os.MkdirAll(filepath.Join(repoDir, "dummy"), 0o755); err != nil {
-					t.Fatal(err)
-				}
-				bin := t.TempDir()
-				writeExecutable(t, filepath.Join(bin, "php"), "#!/bin/sh\nexit 0\n")
-				writeExecutable(t, filepath.Join(bin, "composer"), "#!/bin/sh\nexit 0\n")
-				t.Setenv("PATH", bin+string(os.PathListSeparator)+os.Getenv("PATH"))
-			},
-			check: func(t *testing.T) {
-				repoDir := filepath.Join(os.Getenv("LIBRARIAN_CACHE"), "github.com/googleapis/gapic-generator-php@v1.21.2")
-				wrapperPath := filepath.Join(repoDir, "wrapper.sh")
-				b, err := os.ReadFile(wrapperPath)
-				if err != nil {
-					t.Fatal(err)
-				}
-				phpPath, _ := exec.LookPath("php")
-				want := fmt.Sprintf("#!/bin/bash\nexec %q -d display_errors=stderr -d memory_limit=1024M %q --side_loaded_root_dir \"$GOOGLEAPIS_DIR\" \"$@\"\n", phpPath, filepath.Join(repoDir, "src/Main.php"))
-				if diff := cmp.Diff(want, string(b)); diff != "" {
-					t.Errorf("wrapper content mismatch (-want +got):\n%s", diff)
-				}
-			},
-		},
+
 		{
 			name: "with composer and pip tools",
 			tools: &config.Tools{
@@ -264,6 +235,23 @@ func TestInstall_Error(t *testing.T) {
 		setup   func(t *testing.T)
 		wantErr error
 	}{
+		{
+			name:    "no tools specified",
+			tools:   nil,
+			wantErr: errNoComposer,
+		},
+		{
+			name: "no composer tools specified",
+			tools: &config.Tools{
+				Pip: []*config.PipTool{
+					{
+						Name:    "fake-pip-tool",
+						Version: "1.0.0",
+					},
+				},
+			},
+			wantErr: errNoComposer,
+		},
 		{
 			name: "missing repo URL",
 			tools: &config.Tools{

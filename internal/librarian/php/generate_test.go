@@ -88,11 +88,11 @@ func requirePHPGenerator(t *testing.T) {
 	testhelper.RequireCommand(t, "protoc")
 	testhelper.RequireCommand(t, "python3")
 	testhelper.RequireCommand(t, "php")
-	genDir, err := generatorDir(t.Context())
+	bin, err := binDir()
 	if err != nil {
-		t.Skipf("skipping test: failed to locate PHP generator: %v", err)
+		t.Skipf("skipping test: failed to locate PHP generator bin dir: %v", err)
 	}
-	wrapperPath := filepath.Join(genDir, "wrapper.sh")
+	wrapperPath := filepath.Join(bin, "gapic-generator-php")
 	if _, err := os.Stat(wrapperPath); err != nil {
 		t.Skip("skipping test: PHP generator is not installed (run 'librarian install php' first)")
 	}

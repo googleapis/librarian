@@ -31,29 +31,23 @@ import (
 )
 
 const (
-	generatorVersion = "v1.21.2"
-	generatorSHA256  = "29635b02c6e505fe31cba2f88ae999f00d2710fe1d65cb7cad521a82e7c5a518"
-	toolsDir         = "php_tools"
+	toolsDir = "php_tools"
 )
 
 var (
 	errMissingRepo = errors.New("repo URL missing")
+	errNoComposer  = errors.New("no composer tools specified")
 )
 
 // Install installs the PHP generator tool dependencies.
 func Install(ctx context.Context, tools *config.Tools) error {
-	if tools == nil || (len(tools.Composer) == 0 && len(tools.Pip) == 0) {
-		_, err := installGenerator(ctx)
-		return err
+	if tools == nil || len(tools.Composer) == 0 {
+		return errNoComposer
 	}
 
-	var phpPath string
-	if len(tools.Composer) > 0 {
-		var err error
-		phpPath, err = checkRequiredCommands()
-		if err != nil {
-			return err
-		}
+	phpPath, err := checkRequiredCommands()
+	if err != nil {
+		return err
 	}
 
 	bin, err := binDir()
@@ -68,23 +62,23 @@ func Install(ctx context.Context, tools *config.Tools) error {
 		if tool.Repo == "" {
 			return fmt.Errorf("%w: composer tool %s", errMissingRepo, tool.Name)
 		}
-
 		dir, err := fetch.Repo(ctx, tool.Repo, tool.Version, tool.SHA256)
 		if err != nil {
 			return fmt.Errorf("fetching %s: %w", tool.Name, err)
 		}
-
 		if err := command.RunInDir(ctx, dir, "composer", "install", "--no-interaction", "--prefer-dist"); err != nil {
 			return fmt.Errorf("failed to run composer install: %w", err)
 		}
 
-		// TODO: We will need to add branching logic here when we add other tools
-		// (like the upcoming google-cloud tool in #6978).
+		// We will likely need to add branching logic here when we add other tools
+		// (potentially the upcoming google-cloud tool in issue #6978).
 		// Currently, this assumes the tool is the gapic-generator-php. This specific
 		// wrapper logic will not work for generic Composer tools because:
 		// 1. It hardcodes the executable entry point to "src/Main.php" (ignoring Composer's vendor/bin/ paths).
 		// 2. It injects specific PHP configurations (e.g. memory_limit=1024M) required to prevent the generator from crashing.
 		// 3. It automatically injects the "--side_loaded_root_dir" argument which other tools will not expect.
+		// (this argument is to pass through relative paths for config files)
+		// TODO(https://github.com/googleapis/librarian/issues/7000): Remove the --side_loaded_root_dir once we pass full paths to generator
 		destPath := filepath.Join(dir, "src", "Main.php")
 		wrapperName := filepath.Base(tool.Repo)
 		wrapperContent := fmt.Sprintf("#!/bin/bash\nexec %q -d display_errors=stderr -d memory_limit=1024M %q --side_loaded_root_dir \"$GOOGLEAPIS_DIR\" \"$@\"\n", phpPath, destPath)
@@ -140,56 +134,6 @@ func binDir() (string, error) {
 		return "", err
 	}
 	return filepath.Join(installDir, "bin"), nil
-}
-
-// installGenerator is a temp function for testing purposes.
-// TODO(https://github.com/googleapis/librarian/issues/6630): remove after install command is ready.
-func installGenerator(ctx context.Context) (string, error) {
-	phpPath, err := exec.LookPath("php")
-	if err != nil {
-		return "", fmt.Errorf("failed to find php: %w", err)
-	}
-
-	generatorDir, err := generatorDir(ctx)
-	if err != nil {
-		return "", err
-	}
-	// Ensure Composer dependencies are installed
-	vendorDir := filepath.Join(generatorDir, "vendor")
-	if _, err := os.Stat(vendorDir); err != nil {
-		if !errors.Is(err, os.ErrNotExist) {
-			return "", err
-		}
-		if _, err := exec.LookPath("composer"); err == nil {
-			if err := command.RunInDir(ctx, generatorDir, "composer", "install"); err != nil {
-				return "", fmt.Errorf("failed to run composer install: %w", err)
-			}
-		} else {
-			composerPhar := filepath.Join(generatorDir, "rules_php_gapic", "resources", "composer.phar")
-			if _, err := os.Stat(composerPhar); err == nil {
-				if err := command.RunInDir(ctx, generatorDir, phpPath, composerPhar, "install"); err != nil {
-					return "", fmt.Errorf("failed to run composer.phar install: %w", err)
-				}
-			} else {
-				return "", fmt.Errorf("neither system composer nor composer.phar was found")
-			}
-		}
-	}
-	// Write wrapper script
-	wrapperPath := filepath.Join(generatorDir, "wrapper.sh")
-	wrapperContent := fmt.Sprintf(`#!/bin/bash
-exec %q -d display_errors=stderr -d memory_limit=1024M %q --side_loaded_root_dir "$GOOGLEAPIS_DIR" "$@"
-`, phpPath, filepath.Join(generatorDir, "src/Main.php"))
-
-	if err := os.WriteFile(wrapperPath, []byte(wrapperContent), 0o755); err != nil {
-		return "", fmt.Errorf("failed to write wrapper script: %w", err)
-	}
-
-	return generatorDir, nil
-}
-
-func generatorDir(ctx context.Context) (string, error) {
-	return fetch.Repo(ctx, "github.com/googleapis/gapic-generator-php", generatorVersion, generatorSHA256)
 }
 
 // createBinWrapper creates a shell wrapper script in the bin directory that forwards executions to the tool.
