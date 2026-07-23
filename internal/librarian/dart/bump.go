@@ -31,6 +31,19 @@ import (
 )
 
 // Bump updates the version number and dependencies of Dart packages in the workspace.
+//
+// The algorithm (minus edge cases) is:
+//  1. Find the dependencies of all packages in the repository.
+//  2. Order the packages so that no package appears before any of its dependencies.
+//  3. For each package in order:
+//     a. Check if any files changed since the last release
+//     b. Use dart-apitool to see what the recommended next version is.
+//     c. If the version should be updated based:
+//     - Update the version in pubspec.yaml.
+//     - Update CHANGELOG.md.
+//     - Update the "dependencies:" section of each dependent package.
+//     - Update the version for the package in cfg.Default.Dart.Packages if the package
+//     has an entry there.
 func Bump(ctx context.Context, cfg *config.Config, all bool, libraryName, versionOverride string) error {
 	if !all {
 		return errors.New("bumping a single Dart package not supported, use --all")
