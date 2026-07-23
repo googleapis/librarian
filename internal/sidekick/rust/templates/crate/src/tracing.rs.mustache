@@ -64,6 +64,7 @@ where T: super::stub::{{Codec.Name}} + std::fmt::Debug + Send + Sync {
     {{#Codec.Methods}}
 
     {{#Codec.IsBidiStreaming}}
+    {{! TODO(#6835) - add tracing for bidi streaming methods }}
     #[cfg(google_cloud_unstable_gapic_streaming)]
     async fn {{Codec.Name}}(
         &self,

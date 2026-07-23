@@ -52,9 +52,9 @@ pub(crate) mod dynamic;
 pub trait {{Codec.Name}}: std::fmt::Debug + Send + Sync {
     {{#Codec.Methods}}
 
+    /// Implements [super::client::{{Codec.ServiceNameToPascal}}::{{Codec.Name}}].
     {{#Codec.IsBidiStreaming}}
     #[cfg(google_cloud_unstable_gapic_streaming)]
-    /// Implements [super::client::{{Codec.ServiceNameToPascal}}::{{Codec.Name}}].
     fn {{Codec.Name}}(
         &self,
         _options: crate::RequestOptions,
@@ -62,7 +62,11 @@ pub trait {{Codec.Name}}: std::fmt::Debug + Send + Sync {
         google_cloud_gax::streaming::RequestSender<{{InputType.Codec.QualifiedName}}>,
         google_cloud_gax::streaming::ResponseReceiver<{{OutputType.Codec.QualifiedName}}>,
     )> + Send {
-        async { unimplemented!() }
+        {{! TODO(#6835) - create a streaming unimplemented stub in gaxi }}
+        async {
+            let _ = gaxi::unimplemented::unimplemented_stub::<()>().await;
+            unreachable!() // satisfies the type checker; the stub above always panics.
+        }
     }
     {{/Codec.IsBidiStreaming}}
     {{^Codec.IsBidiStreaming}}
