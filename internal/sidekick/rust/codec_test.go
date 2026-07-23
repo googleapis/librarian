@@ -551,14 +551,14 @@ func TestGeneratedFiles(t *testing.T) {
 	}
 	files := c.generatedFiles(false)
 	if len(files) == 0 {
-		t.Errorf("expected a non-empty list of template files from generatedFiles(true, false)")
+		t.Errorf("expected a non-empty list of template files from generatedFiles(false)")
 	}
 	// No crate for module-only files
 	unexpectedGeneratedFile(t, "Cargo.toml", files)
 
 	files = c.generatedFiles(true)
 	if len(files) == 0 {
-		t.Errorf("expected a non-empty list of template files from generatedFiles(true, true)")
+		t.Errorf("expected a non-empty list of template files from generatedFiles(true)")
 	}
 	// No crate for module-only files
 	unexpectedGeneratedFile(t, "Cargo.toml", files)
@@ -566,7 +566,7 @@ func TestGeneratedFiles(t *testing.T) {
 	c.templateOverride = ""
 	files = c.generatedFiles(false)
 	if len(files) == 0 {
-		t.Errorf("expected a non-empty list of template files from generatedFiles(false, false)")
+		t.Errorf("expected a non-empty list of template files from generatedFiles(false)")
 	}
 	// Must have crate crate for module-only files
 	expectGeneratedFile(t, "Cargo.toml", files)
@@ -575,7 +575,7 @@ func TestGeneratedFiles(t *testing.T) {
 
 	files = c.generatedFiles(true)
 	if len(files) == 0 {
-		t.Errorf("expected a non-empty list of template files from generatedFiles(false, false)")
+		t.Errorf("expected a non-empty list of template files from generatedFiles(true)")
 	}
 	// Must have crate crate for module-only files
 	expectGeneratedFile(t, "Cargo.toml", files)

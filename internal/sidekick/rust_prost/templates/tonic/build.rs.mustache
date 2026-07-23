@@ -23,15 +23,13 @@ fn main() {
     {
         let root = std::env::var("SOURCE_ROOT")
             .expect("SOURCE_ROOT must be set");
+        let includes: Vec<std::path::PathBuf> = std::env::split_paths(&root).collect();
         let destination = std::env::var("DEST")
             .expect("DEST must be set");
-        let files = &[
+        let files: &[std::path::PathBuf] = &[
             {{#Codec.Files}}
-            "{{{.}}}",
+            std::path::PathBuf::from("{{{.}}}"),
             {{/Codec.Files}}
-        ];
-        let includes = &[
-            root.as_str()
         ];
         let mut config = prost_build::Config::new();
         config.disable_comments(&["."]);
@@ -49,7 +47,7 @@ fn main() {
             ])
             .type_attribute(".", "#[allow(clippy::large_enum_variant)]")
             .out_dir(&destination)
-            .compile_with_config(config, files, includes)
+            .compile_with_config(config, files, &includes)
             .expect("error compiling protos");
         {{#Codec.PostProcessProtos}}
         {{{.}}}

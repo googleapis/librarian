@@ -64,6 +64,11 @@ all-features = true
 {{/Codec.HasServices}}
 
 [dependencies]
+{{#Codec.HasBidiStreaming}}
+# TODO(#6838): Make prost and prost-types optional dependencies gated by the streaming feature flag.
+prost.workspace = true
+prost-types.workspace = true
+{{/Codec.HasBidiStreaming}}
 {{#Codec.RequiredPackages}}
 {{{.}}}
 {{/Codec.RequiredPackages}}
