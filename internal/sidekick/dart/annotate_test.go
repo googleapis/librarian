@@ -2273,7 +2273,7 @@ func TestFindExampleMethod(t *testing.T) {
 			want:    nil,
 		},
 	} {
-		r := rand.New(rand.NewSource(time.Now().UnixNano()))
+		r := rand.New(rand.NewSource(42))
 		t.Run(test.name, func(t *testing.T) {
 			methods := slices.Clone(test.methods)
 			r.Shuffle(len(methods), func(i, j int) {
