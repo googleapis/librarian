@@ -19,6 +19,7 @@ jobs:
   build-and-test:
     name: ${{ matrix.job-name }}
     runs-on: ubuntu-24.04
+    if: ${{ !(matrix.task == 'smoke-test' && github.event_name == 'push' && github.ref == 'refs/heads/main') }}
     # Presubmit jobs must complete within 5 minutes. Integration might take longer.
     timeout-minutes: ${{ matrix.timeout }}
     # Skip integration test unless it's a push to main
