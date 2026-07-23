@@ -28,6 +28,8 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/repometadata"
+	"github.com/googleapis/librarian/internal/sidekick/api"
+	"github.com/googleapis/librarian/internal/sidekick/parser"
 	"github.com/googleapis/librarian/internal/sources"
 	"github.com/googleapis/librarian/internal/testhelper"
 )
@@ -719,6 +721,106 @@ func TestCreateRepoMetadata(t *testing.T) {
 			}
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestGenerateProstHybrid(t *testing.T) {
+	msg := &api.Message{
+		Name:    "Request",
+		ID:      ".test.v1.Request",
+		Package: "test.v1",
+	}
+	bidiService := &api.Service{
+		Name:    "BidiService",
+		ID:      ".test.v1.BidiService",
+		Package: "test.v1",
+		Methods: []*api.Method{
+			{
+				Name:                "Chat",
+				ID:                  ".test.v1.BidiService.Chat",
+				InputTypeID:         msg.ID,
+				OutputTypeID:        msg.ID,
+				InputType:           msg,
+				OutputType:          msg,
+				ClientSideStreaming: true,
+				ServerSideStreaming: true,
+				PathInfo:            &api.PathInfo{},
+			},
+		},
+	}
+	nonBidiService := &api.Service{
+		Name:    "UnaryService",
+		ID:      ".test.v1.UnaryService",
+		Package: "test.v1",
+		Methods: []*api.Method{
+			{
+				Name:         "Get",
+				ID:           ".test.v1.UnaryService.Get",
+				InputTypeID:  msg.ID,
+				OutputTypeID: msg.ID,
+				InputType:    msg,
+				OutputType:   msg,
+				PathInfo:     &api.PathInfo{},
+			},
+		},
+	}
+
+	bidiModel := api.NewTestAPI([]*api.Message{msg}, []*api.Enum{}, []*api.Service{bidiService})
+	if err := api.CrossReference(bidiModel); err != nil {
+		t.Fatal(err)
+	}
+
+	nonBidiModel := api.NewTestAPI([]*api.Message{msg}, []*api.Enum{}, []*api.Service{nonBidiService})
+	if err := api.CrossReference(nonBidiModel); err != nil {
+		t.Fatal(err)
+	}
+
+	for _, test := range []struct {
+		name                        string
+		model                       *api.API
+		includeBidiStreamingMethods bool
+		templateOverride            string
+		wantProstDir                bool
+	}{
+		{
+			name:                        "feature disabled does not create prost dir",
+			model:                       bidiModel,
+			includeBidiStreamingMethods: false,
+			wantProstDir:                false,
+		},
+		{
+			name:                        "model without bidi streaming does not create prost dir",
+			model:                       nonBidiModel,
+			includeBidiStreamingMethods: true,
+			wantProstDir:                false,
+		},
+		{
+			name:                        "template override tonic does not create prost dir",
+			model:                       bidiModel,
+			includeBidiStreamingMethods: true,
+			templateOverride:            "tonic",
+			wantProstDir:                false,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			outDir := t.TempDir()
+			lib := &config.Library{
+				Rust: &config.RustCrate{
+					IncludeBidiStreamingMethods: test.includeBidiStreamingMethods,
+					TemplateOverride:            test.templateOverride,
+				},
+			}
+			err := generateProstHybrid(t.Context(), test.model, lib, outDir, &parser.ModelConfig{})
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+			prostDir := filepath.Join(outDir, "src", "prost")
+			_, err = os.Stat(prostDir)
+			exists := err == nil
+			if exists != test.wantProstDir {
+				t.Errorf("prostDir exists = %v, want %v", exists, test.wantProstDir)
 			}
 		})
 	}
