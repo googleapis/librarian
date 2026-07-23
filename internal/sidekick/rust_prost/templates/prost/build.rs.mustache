@@ -37,6 +37,9 @@ fn main() {
         config.disable_comments(&["."]);
         config.enable_type_names();
         config.type_name_domain(&["."], "type.googleapis.com");
+        {{#Codec.IncludeFile}}
+        config.include_file("{{.}}");
+        {{/Codec.IncludeFile}}
         config.out_dir(&destination);
         config.compile_protos(files, &includes).expect("error compiling protos");
         {{#Codec.PostProcessProtos}}

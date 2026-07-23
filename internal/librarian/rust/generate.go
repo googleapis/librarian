@@ -18,6 +18,7 @@ import (
 	"context"
 	"fmt"
 	"io/fs"
+	"maps"
 	"path/filepath"
 	"slices"
 	"strings"
@@ -111,8 +112,14 @@ func generateProstHybrid(ctx context.Context, model *api.API, library *config.Li
 		return nil
 	}
 
+	hybridConfig := *modelConfig
+	hybridConfig.Codec = maps.Clone(modelConfig.Codec)
+	if hybridConfig.Codec == nil {
+		hybridConfig.Codec = make(map[string]string)
+	}
+	hybridConfig.Codec["include-file"] = "includes.rs"
 	prostOutDir := filepath.Join(outdir, "src", "prost")
-	if err := rust_prost.Generate(ctx, model, prostOutDir, "prost_hybrid", modelConfig); err != nil {
+	if err := rust_prost.Generate(ctx, model, prostOutDir, "prost", &hybridConfig); err != nil {
 		return fmt.Errorf("generating prost module: %w", err)
 	}
 	return nil

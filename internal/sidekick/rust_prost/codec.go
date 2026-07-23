@@ -30,7 +30,8 @@ type codec struct {
 	PostProcessProtos []string
 	// Most libraries are generated from `googleapis`. Rarely, we use protobuf,
 	// gapic-showcase, or a different root.
-	RootName string
+	RootName    string
+	IncludeFile string
 }
 
 func newCodec(cfg *parser.ModelConfig) *codec {
@@ -50,6 +51,8 @@ func newCodec(cfg *parser.ModelConfig) *codec {
 			result.PostProcessProtos = strings.Split(definition, "\n")
 		case "root-name":
 			result.RootName = definition
+		case "include-file":
+			result.IncludeFile = definition
 		default:
 			// Ignore other options.
 		}
