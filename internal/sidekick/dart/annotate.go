@@ -15,6 +15,7 @@
 package dart
 
 import (
+	"cmp"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -1531,28 +1532,17 @@ func findExampleMethod(services []*api.Service) (*api.Service, *api.Method) {
 
 	// Comparator to sort candidates such that the "best" comes first.
 	slices.SortFunc(candidates, func(a, b candidate) int {
-		if a.ReturnsEmpty != b.ReturnsEmpty {
-			if !a.ReturnsEmpty {
-				return -1
+		boolToInt := func(b bool) int {
+			if b {
+				return 1
 			}
-			return 1
+			return 0
 		}
-
-		if a.ResponseTypeHasRequired != b.ResponseTypeHasRequired {
-			if !a.ResponseTypeHasRequired {
-				return -1
-			}
-			return 1
-		}
-
-		if a.RequestTypeHasRequired != b.RequestTypeHasRequired {
-			if !a.RequestTypeHasRequired {
-				return -1
-			}
-			return 1
-		}
-
-		return 0
+		return cmp.Or(
+			cmp.Compare(boolToInt(a.ReturnsEmpty), boolToInt(b.ReturnsEmpty)),
+			cmp.Compare(boolToInt(a.ResponseTypeHasRequired), boolToInt(b.ResponseTypeHasRequired)),
+			cmp.Compare(boolToInt(a.RequestTypeHasRequired), boolToInt(b.RequestTypeHasRequired)),
+		)
 	})
 
 	return candidates[0].service, candidates[0].method
