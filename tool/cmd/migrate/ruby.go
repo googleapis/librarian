@@ -47,8 +47,8 @@ type owlbotSrc struct {
 }
 
 type WrapperBuild struct {
-	path   string
-	params *ExtraProtoParams
+	Path   string
+	Params *ExtraProtoParams
 }
 
 // ExtraProtoParams represents extra protoc parameters parsed from BUILD.bazel for a Ruby API version.
@@ -337,6 +337,38 @@ func readExistingConfig(repoPath string) (*config.Config, error) {
 	return cfg, nil
 }
 
-// func parseUnversionedBuild(googleapisDir, apiPath string) (*WrapperBuild, error) {
+func parseUnversionedBuild(googleapisDir, apiPath string) (*WrapperBuild, error) {
+	file, err := parseBazel(googleapisDir, apiPath)
+	if err != nil {
+		return nil, err
+	}
+	if file == nil {
+		return nil, nil
+	}
+	api := parseAPIFromWrapperBuild(file)
+	if api == "" {
+		return nil, nil
+	}
+	params, err := parseExtraProtoParams(file)
+	if err != nil {
+		return nil, err
+	}
+	if params == nil {
+		return nil, nil
+	}
+	return &WrapperBuild{
+		Path:   api,
+		Params: params,
+	}, nil
+}
 
-// }
+func parseAPIFromWrapperBuild(file *build.File) string {
+	rules := file.Rules("ruby_cloud_gapic_library")
+	if len(rules) == 0 || rules[0].Attr("srcs") == nil {
+		return ""
+	}
+	res := extractStrings(rules[0].Attr("srcs"))[0]
+	res = strings.Split(res, ":")[0]
+	res, _ = strings.CutPrefix(res, "//")
+	return res
+}
