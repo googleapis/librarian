@@ -486,6 +486,7 @@ This document describes the schema for the librarian.yaml.
 
 | Field | Type | Description |
 | :--- | :--- | :--- |
+| `additional_protos` | list of string | Is a list of additional proto files to include in generation. |
 | `ruby_cloud_opts` | [RubyCloudOpts](#rubycloudopts-configuration) (optional) | Contains options passed to the Ruby Cloud GAPIC generator as the `--ruby_cloud_opt` option. |
 
 ## RubyCloudOpts Configuration
@@ -504,6 +505,7 @@ This document describes the schema for the librarian.yaml.
 
 | Field | Type | Description |
 | :--- | :--- | :--- |
+| `additional_protos` | list of string | Is a list of additional proto files to include in generation. |
 | `wrapper_of` | list of string | Contains the names of versioned libraries that this library wraps. |
 
 ## RustCrate Configuration

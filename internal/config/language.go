@@ -882,4 +882,3 @@ type RubyAPI struct {
 	// RubyCloudOpts contains options passed to the Ruby Cloud GAPIC generator as the `--ruby_cloud_opt` option.
 	RubyCloudOpts *RubyCloudOpts `yaml:"ruby_cloud_opts,omitempty"`
 }
-
