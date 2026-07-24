@@ -349,7 +349,7 @@ func TestGenerate(t *testing.T) {
 	}
 	gotChangelog, err := os.ReadFile(changelogPath)
 	if err != nil {
-		t.Fatalf("failed to read CHANGELOG.md: %v", err)
+		t.Fatal(err)
 	}
 	if diff := cmp.Diff(existingContent, string(gotChangelog)); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
