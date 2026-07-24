@@ -99,6 +99,7 @@ func TestFindRubyLibraries(t *testing.T) {
 						RubyCloudOpts: &config.RubyCloudOpts{
 							EnvPrefix:         "COMPUTE",
 							ExtraDependencies: "google-cloud-common=~> 1.0",
+							WrapperGemOverride: "value_for_testing",
 						},
 					},
 				},
