@@ -164,6 +164,7 @@ func findRubyLibraries(googleapisPath, repoPath string) ([]*config.Library, erro
 						NamespaceOverride: vb.NamespaceOverride,
 						PathOverride:      vb.PathOverride,
 						ServiceOverride:   vb.ServiceOverride,
+						WrapperGemOverride: vb.WrapperGemOverride,
 						YardStrict:        vb.YardStrict,
 					},
 				}
