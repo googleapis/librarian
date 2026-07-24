@@ -67,10 +67,8 @@ func updatePubspecVersion(path string, newVersion string) error {
 	lines := strings.Split(string(content), "\n")
 	var newLines []string
 	for _, line := range lines {
-		trimmed := strings.TrimSpace(line)
-		if strings.HasPrefix(trimmed, "version:") {
-			indent := line[:len(line)-len(strings.TrimLeft(line, " \t"))]
-			newLines = append(newLines, fmt.Sprintf("%sversion: %s", indent, newVersion))
+		if strings.HasPrefix(line, "version:") {
+			newLines = append(newLines, fmt.Sprintf("version: %s", newVersion))
 			continue
 		}
 		newLines = append(newLines, line)
