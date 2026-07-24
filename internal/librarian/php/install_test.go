@@ -25,6 +25,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/testhelper"
 )
 
 func TestInstallDir(t *testing.T) {
@@ -136,6 +137,7 @@ func TestInstall(t *testing.T) {
 }
 
 func TestInstall_Error(t *testing.T) {
+	testhelper.RequireCommand(t, "composer")
 	for _, test := range []struct {
 		name    string
 		tools   *config.Tools
