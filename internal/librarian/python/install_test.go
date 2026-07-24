@@ -29,10 +29,9 @@ func TestInstall(t *testing.T) {
 	}
 	t.Setenv("PATH", bin+string(os.PathListSeparator)+os.Getenv("PATH"))
 
-	tests := []struct {
-		name    string
-		tools   *config.Tools
-		wantErr bool
+	for _, test := range []struct {
+		name  string
+		tools *config.Tools
 	}{
 		{
 			name:  "fallback to embedded librarian.yaml",
@@ -46,12 +45,10 @@ func TestInstall(t *testing.T) {
 				},
 			},
 		},
-	}
-	for _, test := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			err := Install(t.Context(), tc.tools)
-			if (err != nil) != tc.wantErr {
-				t.Fatalf("Install() error = %v, wantErr %v", err, tc.wantErr)
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			if err := Install(t.Context(), test.tools); err != nil {
+				t.Fatal(err)
 			}
 		})
 	}
