@@ -432,6 +432,10 @@ func ResolvePreview(lib *config.Library, language string) *config.Library {
 		res.Rust = mergeRust(res.Rust, p.Rust)
 	case config.LanguagePhp:
 		res.PHP = mergePHP(res.PHP, p.PHP)
+	case config.LanguageRuby:
+		res.Ruby = mergeRuby(res.Ruby, p.Ruby)
+	case config.LanguageSwift:
+		res.Swift = mergeSwift(res.Swift, p.Swift)
 	}
 	res.Preview = nil
 	return &res
@@ -670,6 +674,12 @@ func mergeNodejs(dst, src *config.NodejsPackage) *config.NodejsPackage {
 	if src.Dependencies != nil {
 		res.Dependencies = src.Dependencies
 	}
+	if src.AdditionalProtos != nil {
+		res.AdditionalProtos = src.AdditionalProtos
+	}
+	if src.NodejsAPIs != nil {
+		res.NodejsAPIs = src.NodejsAPIs
+	}
 	if src.ESM {
 		res.ESM = src.ESM
 	}
@@ -707,6 +717,9 @@ func mergePython(dst, src *config.PythonPackage) *config.PythonPackage {
 	res := *dst
 	if src.CommonGAPICPaths != nil {
 		res.CommonGAPICPaths = src.CommonGAPICPaths
+	}
+	if src.AllowedNamespaces != nil {
+		res.AllowedNamespaces = src.AllowedNamespaces
 	}
 	if src.LibraryType != "" {
 		res.LibraryType = src.LibraryType
@@ -818,14 +831,14 @@ func mergeRust(dst, src *config.RustCrate) *config.RustCrate {
 	if src.NameOverrides != "" {
 		res.NameOverrides = src.NameOverrides
 	}
-	res.Discovery = mergeRustDiscovery(res.Discovery, src.Discovery)
+	res.Discovery = mergeCommonDiscovery(res.Discovery, src.Discovery)
 	if src.QuickstartServiceOverride != "" {
 		res.QuickstartServiceOverride = src.QuickstartServiceOverride
 	}
 	return &res
 }
 
-func mergeRustDiscovery(dst, src *config.RustDiscovery) *config.RustDiscovery {
+func mergeCommonDiscovery(dst, src *config.CommonDiscovery) *config.CommonDiscovery {
 	if src == nil {
 		return dst
 	}
@@ -839,6 +852,50 @@ func mergeRustDiscovery(dst, src *config.RustDiscovery) *config.RustDiscovery {
 	if src.Pollers != nil {
 		res.Pollers = src.Pollers
 	}
+	return &res
+}
+
+func mergeRuby(dst, src *config.RubyPackage) *config.RubyPackage {
+	if src == nil {
+		return dst
+	}
+	if dst == nil {
+		return src
+	}
+	res := *dst
+	if src.WrapperOf != nil {
+		res.WrapperOf = src.WrapperOf
+	}
+	return &res
+}
+
+func mergeSwift(dst, src *config.SwiftPackage) *config.SwiftPackage {
+	if src == nil {
+		return dst
+	}
+	if dst == nil {
+		return src
+	}
+	res := *dst
+	if src.Dependencies != nil {
+		res.Dependencies = src.Dependencies
+	}
+	if src.DefaultVersion != "" {
+		res.DefaultVersion = src.DefaultVersion
+	}
+	if src.IncludeList != nil {
+		res.IncludeList = src.IncludeList
+	}
+	if src.Modules != nil {
+		res.Modules = src.Modules
+	}
+	if src.PerServiceTraits {
+		res.PerServiceTraits = src.PerServiceTraits
+	}
+	if src.DefaultTraits != nil {
+		res.DefaultTraits = src.DefaultTraits
+	}
+	res.Discovery = mergeCommonDiscovery(res.Discovery, src.Discovery)
 	return &res
 }
 
