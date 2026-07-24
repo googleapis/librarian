@@ -61,23 +61,7 @@ func TestInstall(t *testing.T) {
 		wantErr error
 		check   func(t *testing.T)
 	}{
-		{
-			name:  "no tools, uses fallback generator",
-			tools: nil,
-			setup: func(t *testing.T) {
-				cache := t.TempDir()
-				t.Setenv("LIBRARIAN_CACHE", cache)
-				t.Setenv("LIBRARIAN_BIN", filepath.Join(cache, "bin"))
-				repoDir := filepath.Join(cache, "github.com/googleapis/gapic-generator-php@v1.21.2")
-				if err := os.MkdirAll(filepath.Join(repoDir, "dummy"), 0o755); err != nil {
-					t.Fatal(err)
-				}
-				bin := t.TempDir()
-				writeExecutable(t, filepath.Join(bin, "php"), "#!/bin/sh\nexit 0\n")
-				writeExecutable(t, filepath.Join(bin, "composer"), "#!/bin/sh\nexit 0\n")
-				t.Setenv("PATH", bin+string(os.PathListSeparator)+os.Getenv("PATH"))
-			},
-		},
+
 		{
 			name: "with composer and pip tools",
 			tools: &config.Tools{
@@ -262,6 +246,23 @@ func TestInstall_Error(t *testing.T) {
 				},
 			},
 			wantErr: errMissingRepo,
+		},
+		{
+			name:    "no tools",
+			tools:   nil,
+			wantErr: errMissingTools,
+		},
+		{
+			name: "no composer tools",
+			tools: &config.Tools{
+				Pip: []*config.PipTool{
+					{
+						Name:    "fake-pip-tool",
+						Version: "2.0.0",
+					},
+				},
+			},
+			wantErr: errMissingComposer,
 		},
 		{
 			name: "missing composer tool in PATH",
