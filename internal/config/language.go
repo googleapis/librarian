@@ -853,6 +853,9 @@ type RubyCloudOpts struct {
 	// ExtraDependencies contains extra runtime dependencies to the .gemspec file.
 	ExtraDependencies string `yaml:"ruby-cloud-extra-dependencies,omitempty"`
 
+	// GemNamespace is the root Ruby namespace.
+	GemNamespace string `yaml:"ruby-cloud-gem-namespace,omitempty"`
+
 	// PathOverride overrides file/directory paths under lib/ and proto_docs/.
 	PathOverride string `yaml:"ruby-cloud-path-override,omitempty"`
 
