@@ -127,16 +127,16 @@ func maybeBumpLibrary(ctx context.Context, cloudDeps []string, newVersions map[s
 	}
 
 	tagName := git.FormatTagName(defaults.TagFormat, lib.Name, lib.Version)
-	if commit, err := git.GetCommitHash(ctx, command.Git, tagName); err != nil {
+	commit, err := git.GetCommitHash(ctx, command.Git, tagName)
+	if err != nil {
 		return "", err
-	} else {
-		lastReleaseTagCommit = commit
-		filesChanged, err := git.FilesChangedSince(ctx, command.Git, lastReleaseTagCommit, []string{})
-		if err != nil {
-			return "", err
-		}
-		libraryChanged = git.HasChangesIn(packageDir, "", filesChanged)
 	}
+	lastReleaseTagCommit = commit
+	filesChanged, err := git.FilesChangedSince(ctx, command.Git, lastReleaseTagCommit, []string{})
+	if err != nil {
+		return "", err
+	}
+	libraryChanged = git.HasChangesIn(packageDir, "", filesChanged)
 
 	depsChanged := false
 	newDeps := make(map[string]string)
