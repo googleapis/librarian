@@ -307,6 +307,8 @@ if [ -n "$rubyCloudOut" ]; then
   mkdir -p "$rubyCloudOut/lib/google/cloud/secret_manager"
   touch "$rubyCloudOut/lib/google/cloud/secret_manager/v1.rb"
   touch "$rubyCloudOut/CHANGELOG.md"
+  mkdir -p "$rubyCloudOut/snippets"
+  printf '{\n  "clientLibrary": {\n    "name": "google-cloud-secret_manager-v1",\n    "version": "",\n    "language": "RUBY"\n  }\n}' > "$rubyCloudOut/snippets/snippet_metadata_google.cloud.secretmanager.v1.json"
 fi
 if [ -n "$rubyOut" ]; then
   mkdir -p "$rubyOut/google/cloud/secret_manager"
@@ -347,8 +349,9 @@ func TestGenerate(t *testing.T) {
 		t.Fatal(err)
 	}
 	library := &config.Library{
-		Name:   "google-cloud-secret_manager-v1",
-		Output: outDir,
+		Name:    "google-cloud-secret_manager-v1",
+		Version: "1.2.3",
+		Output:  outDir,
 		APIs: []*config.API{
 			{
 				Path: "google/cloud/secretmanager/v1",
@@ -372,6 +375,15 @@ func TestGenerate(t *testing.T) {
 		t.Fatal(err)
 	}
 	if diff := cmp.Diff(existingContent, string(gotChangelog)); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+	snippetMetadataPath := filepath.Join(outDir, "snippets", "snippet_metadata_google.cloud.secretmanager.v1.json")
+	gotSnippetMetadata, err := os.ReadFile(snippetMetadataPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	wantSnippetMetadata := "{\n  \"clientLibrary\": {\n    \"language\": \"RUBY\",\n    \"name\": \"google-cloud-secret_manager-v1\",\n    \"version\": \"1.2.3\"\n  }\n}"
+	if diff := cmp.Diff(wantSnippetMetadata, string(gotSnippetMetadata)); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
