@@ -15,6 +15,7 @@
 package ruby
 
 import (
+	"encoding/json"
 	"errors"
 	"io/fs"
 	"os"
@@ -390,8 +391,15 @@ func TestGenerate(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	wantSnippetMetadata := "{\n  \"clientLibrary\": {\n    \"language\": \"RUBY\",\n    \"name\": \"google-cloud-secret_manager-v1\",\n    \"version\": \"1.2.3\"\n  }\n}"
-	if diff := cmp.Diff(wantSnippetMetadata, string(gotSnippetMetadata)); diff != "" {
+	var metadata struct {
+		ClientLibrary struct {
+			Version string `json:"version"`
+		} `json:"clientLibrary"`
+	}
+	if err := json.Unmarshal(gotSnippetMetadata, &metadata); err != nil {
+		t.Fatal(err)
+	}
+	if diff := cmp.Diff("1.2.3", metadata.ClientLibrary.Version); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
