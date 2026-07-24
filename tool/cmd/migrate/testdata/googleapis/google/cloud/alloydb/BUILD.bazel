@@ -1,0 +1,15 @@
+# This file contains a wrapper build configuration for testing.
+load(
+    "@com_google_googleapis_imports//:imports.bzl",
+    "ruby_cloud_gapic_library",
+)
+
+ruby_cloud_gapic_library(
+    name = "alloydb_ruby_wrapper",
+    srcs = ["//google/cloud/alloydb/v1:alloydb_proto_with_info"],
+    extra_protoc_parameters = [
+        "ruby-cloud-gem-namespace=Google::Cloud::AlloyDB",
+        "ruby-cloud-service-override=AlloyDBCSQLAdmin=AlloyDBCloudSQLAdmin",
+        "ruby-cloud-yard-strict=false",
+    ],
+)

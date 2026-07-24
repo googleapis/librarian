@@ -46,6 +46,7 @@ type owlbotSrc struct {
 	Source string `yaml:"source"`
 }
 
+// WrapperBuild represents build configuration parsed from BUILD.bazel for an unversioned Ruby wrapper library.
 type WrapperBuild struct {
 	Path   string
 	Params *ExtraProtoParams

@@ -1,0 +1,15 @@
+# This file contains a wrapper build configuration for testing.
+load(
+    "@com_google_googleapis_imports//:imports.bzl",
+    "ruby_cloud_gapic_library",
+)
+
+ruby_cloud_gapic_library(
+    name = "compute_ruby_wrapper",
+    srcs = ["//google/cloud/compute/v1:compute_proto_with_info"],
+    extra_protoc_parameters = [
+        "ruby-cloud-env-prefix=COMPUTE",
+        "ruby-cloud-wrapper-gem-override=google-cloud-compute",
+        "ruby-cloud-extra-dependencies=google-cloud-common=~> 1.0",
+    ],
+)

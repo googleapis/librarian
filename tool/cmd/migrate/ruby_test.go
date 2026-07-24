@@ -309,6 +309,77 @@ func TestParseVersionedBuild(t *testing.T) {
 	}
 }
 
+func TestParseUnversionedBuild(t *testing.T) {
+	for _, test := range []struct {
+		name          string
+		googleapisDir string
+		apiPath       string
+		want          *WrapperBuild
+	}{
+		{
+			name:          "BUILD.bazel with env prefix and gem namespace",
+			googleapisDir: "testdata/googleapis",
+			apiPath:       "google/cloud/secretmanager",
+			want: &WrapperBuild{
+				Path: "google/cloud/secretmanager/v1",
+				Params: &ExtraProtoParams{
+					EnvPrefix:    "SECRET_MANAGER",
+					GemNamespace: "Google::Cloud::SecretManager",
+				},
+			},
+		},
+		{
+			name:          "BUILD.bazel with wrapper gem override and extra deps",
+			googleapisDir: "testdata/googleapis",
+			apiPath:       "google/cloud/compute",
+			want: &WrapperBuild{
+				Path: "google/cloud/compute/v1",
+				Params: &ExtraProtoParams{
+					EnvPrefix:          "COMPUTE",
+					ExtraDeps:          "google-cloud-common=~> 1.0",
+					WrapperGemOverride: "google-cloud-compute",
+				},
+			},
+		},
+		{
+			name:          "BUILD.bazel with namespace and path overrides",
+			googleapisDir: "testdata/googleapis",
+			apiPath:       "google/cloud/automl",
+			want: &WrapperBuild{
+				Path: "google/cloud/automl/v1",
+				Params: &ExtraProtoParams{
+					EnvPrefix:         "AUTOML",
+					NamespaceOverride: "AutoMl=AutoML;Automl=AutoML",
+					PathOverride:      "auto_ml=automl",
+				},
+			},
+		},
+		{
+			name:          "BUILD.bazel with service override and yard strict",
+			googleapisDir: "testdata/googleapis",
+			apiPath:       "google/cloud/alloydb",
+			want: &WrapperBuild{
+				Path: "google/cloud/alloydb/v1",
+				Params: &ExtraProtoParams{
+					GemNamespace:    "Google::Cloud::AlloyDB",
+					ServiceOverride: "AlloyDBCSQLAdmin=AlloyDBCloudSQLAdmin",
+					YardStrict:      "false",
+				},
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got, err := parseUnversionedBuild(test.googleapisDir, test.apiPath)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
 func TestMergeLibs(t *testing.T) {
 	for _, test := range []struct {
 		name         string
