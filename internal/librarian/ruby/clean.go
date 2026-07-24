@@ -95,10 +95,8 @@ func buildKeepSet(gemName string, keep []string) map[string]bool {
 	for _, file := range oneTimeGeneratedRootFiles {
 		keepSet[file] = true
 	}
-	if gemName != "" {
-		versionFile := "lib/" + strings.ReplaceAll(gemName, "-", "/") + "/version.rb"
-		keepSet[versionFile] = true
-	}
+	versionFile := "lib/" + strings.ReplaceAll(gemName, "-", "/") + "/version.rb"
+	keepSet[versionFile] = true
 	return keepSet
 }
 
