@@ -280,6 +280,16 @@ func TestParseVersionedBuild(t *testing.T) {
 			},
 		},
 		{
+			name:          "BUILD.bazel with wrapper gem override",
+			googleapisDir: "testdata/googleapis",
+			apiPath:       "google/cloud/compute/v1",
+			want: &VersionedBuild{
+				EnvPrefix:          "COMPUTE",
+				ExtraDeps:          "google-cloud-common=~> 1.0",
+				WrapperGemOverride: "value_for_testing",
+			},
+		},
+		{
 			name:          "nonexistent BUILD.bazel returns nil",
 			googleapisDir: "testdata/googleapis",
 			apiPath:       "google/cloud/nonexistent/v1",
