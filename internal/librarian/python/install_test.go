@@ -47,7 +47,6 @@ func TestInstall(t *testing.T) {
 			},
 		},
 	}
-
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			err := Install(t.Context(), tc.tools)
@@ -57,4 +56,3 @@ func TestInstall(t *testing.T) {
 		})
 	}
 }
-
