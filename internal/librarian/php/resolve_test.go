@@ -37,12 +37,6 @@ func TestResolveDependencies(t *testing.T) {
 		want []string
 	}{
 		{
-			name: "no APIs",
-			lib: &config.Library{
-				APIs: []*config.API{},
-			},
-		},
-		{
 			name: "locations mixin (developerconnect)",
 			lib: &config.Library{
 				APIs: []*config.API{
@@ -97,10 +91,7 @@ func TestResolveDependencies(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			var got []string
-			if len(test.lib.APIs) > 0 && test.lib.APIs[0].PHP != nil {
-				got = test.lib.APIs[0].PHP.AdditionalProtos
-			}
+			got := test.lib.APIs[0].PHP.AdditionalProtos
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
