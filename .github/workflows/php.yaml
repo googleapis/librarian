@@ -30,6 +30,8 @@ jobs:
           php-version: '8.2'
           extensions: mbstring, xml, bcmath
       - uses: ./.github/actions/setup-librarian
+      - name: Setup librarian.yaml for test tool dependency installation
+        run: cp tool/cmd/migrate/librarian_php.yaml librarian.yaml
       - name: Install dependencies
         run: librarian install php
       - name: Run tests
