@@ -15,6 +15,7 @@
 package serviceconfig
 
 import (
+	"errors"
 	"os"
 	"path/filepath"
 	"strings"
@@ -518,7 +519,7 @@ func TestExtractMixinProtos_Error(t *testing.T) {
 		t.Fatal(err)
 	}
 	_, err := ExtractMixinProtos(dir, apiPath, config.LanguageGo)
-	if err == nil {
-		t.Error("expected error for invalid service config")
+	if !errors.Is(err, ErrReadServiceConfig) {
+		t.Errorf("got error %v, wantErr %v", err, ErrReadServiceConfig)
 	}
 }
