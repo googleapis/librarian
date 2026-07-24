@@ -81,10 +81,8 @@ func Generate(ctx context.Context, cfg *config.Config, library *config.Library, 
 	if err := filesystem.MoveAndMergeWithKeep(tempDir, outDir, outDir, keepFunc); err != nil {
 		return fmt.Errorf("failed to move generated files: %w", err)
 	}
-	if library.Version != "" {
-		if err := snippetmetadata.UpdateAllLibraryVersions(outDir, library.Version); err != nil {
-			return fmt.Errorf("failed to update snippet metadata versions: %w", err)
-		}
+	if err := snippetmetadata.UpdateAllLibraryVersions(outDir, library.Version); err != nil {
+		return fmt.Errorf("failed to update snippet metadata versions: %w", err)
 	}
 	return nil
 }
