@@ -21,17 +21,15 @@ jobs:
     # Presubmit jobs must complete within 5 minutes. See CONTRIBUTING.md.
     timeout-minutes: 5
     steps:
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
         with:
           persist-credentials: false
       - name: Setup PHP
-        uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # 2.37.2
+        uses: shivammathur/setup-php@44454db4f0199b8b9685a5d763dc37cbf79108e1 # v2.31.1
         with:
           php-version: '8.2'
           extensions: mbstring, xml, bcmath
       - uses: ./.github/actions/setup-librarian
-      - name: Setup librarian.yaml for test tool dependency installation
-        run: cp tool/cmd/migrate/librarian_php.yaml librarian.yaml
       - name: Install dependencies
         run: librarian install php
       - name: Run tests
