@@ -47,12 +47,13 @@ type owlbotSrc struct {
 
 // VersionedBuild represents build configuration parsed from BUILD.bazel for a Ruby API version.
 type VersionedBuild struct {
-	EnvPrefix       string
-	ExtraDeps       string
-	GemNamespace    string
-	PathOverride    string
-	ServiceOverride string
-	YardStrict      string
+	EnvPrefix         string
+	ExtraDeps         string
+	GemNamespace      string
+	NamespaceOverride string
+	PathOverride      string
+	ServiceOverride   string
+	YardStrict        string
 }
 
 func runRubyMigration(ctx context.Context, repoPath string) error {
@@ -159,6 +160,7 @@ func findRubyLibraries(googleapisPath, repoPath string) ([]*config.Library, erro
 						EnvPrefix:         vb.EnvPrefix,
 						ExtraDependencies: vb.ExtraDeps,
 						GemNamespace:      vb.GemNamespace,
+						NamespaceOverride: vb.NamespaceOverride,
 						PathOverride:      vb.PathOverride,
 						ServiceOverride:   vb.ServiceOverride,
 						YardStrict:        vb.YardStrict,
@@ -254,6 +256,8 @@ func parseVersionedBuild(googleapisDir, apiPath string) (*VersionedBuild, error)
 					vb.ExtraDeps, _ = strings.CutPrefix(dep, "ruby-cloud-extra-dependencies=")
 				case strings.HasPrefix(dep, "ruby-cloud-gem-namespace="):
 					vb.GemNamespace, _ = strings.CutPrefix(dep, "ruby-cloud-gem-namespace=")
+				case strings.HasPrefix(dep, "ruby-cloud-namespace-override="):
+					vb.NamespaceOverride, _ = strings.CutPrefix(dep, "ruby-cloud-namespace-override=")
 				case strings.HasPrefix(dep, "ruby-cloud-path-override="):
 					vb.PathOverride, _ = strings.CutPrefix(dep, "ruby-cloud-path-override=")
 				case strings.HasPrefix(dep, "ruby-cloud-service-override="):
