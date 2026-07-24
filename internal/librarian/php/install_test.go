@@ -61,55 +61,7 @@ func TestInstall(t *testing.T) {
 		wantErr error
 		check   func(t *testing.T)
 	}{
-		{
-			name: "with composer and pip tools",
-			tools: &config.Tools{
-				Composer: []*config.ComposerTool{
-					{
-						Name:    "gapic-generator-php",
-						Version: "1.0.0",
-						Repo:    "github.com/googleapis/gapic-generator-php",
-						SHA256:  "29635b02c6e505fe31cba2f88ae999f00d2710fe1d65cb7cad521a82e7c5a518",
-					},
-				},
-				Pip: []*config.PipTool{
-					{
-						Name:    "fake-pip-tool",
-						Version: "2.0.0",
-					},
-				},
-			},
-			setup: func(t *testing.T) {
-				cache := t.TempDir()
-				t.Setenv("LIBRARIAN_CACHE", cache)
-				t.Setenv("LIBRARIAN_BIN", filepath.Join(cache, "bin"))
-				repoDir := filepath.Join(cache, "github.com/googleapis/gapic-generator-php@1.0.0")
-				if err := os.MkdirAll(filepath.Join(repoDir, "dummy"), 0o755); err != nil {
-					t.Fatal(err)
-				}
 
-				bin := t.TempDir()
-				writeExecutable(t, filepath.Join(bin, "composer"), "#!/bin/sh\nexit 0\n")
-				writeExecutable(t, filepath.Join(bin, "pip"), "#!/bin/sh\nexit 0\n")
-				writeExecutable(t, filepath.Join(bin, "php"), "#!/bin/sh\nexit 0\n")
-				t.Setenv("PATH", bin+string(os.PathListSeparator)+os.Getenv("PATH"))
-			},
-			check: func(t *testing.T) {
-				binDir := filepath.Join(os.Getenv("LIBRARIAN_BIN"), "php_tools", "bin")
-				wrapperPath := filepath.Join(binDir, "gapic-generator-php")
-				b, err := os.ReadFile(wrapperPath)
-				if err != nil {
-					t.Fatal(err)
-				}
-				repoDir := filepath.Join(os.Getenv("LIBRARIAN_CACHE"), "github.com/googleapis/gapic-generator-php@1.0.0")
-				destPath := filepath.Join(repoDir, "src", "Main.php")
-				phpPath, _ := exec.LookPath("php")
-				want := phpWrapperContent(phpPath, destPath)
-				if diff := cmp.Diff(want, string(b)); diff != "" {
-					t.Errorf("mismatch (-want +got):\n%s", diff)
-				}
-			},
-		},
 		{
 			name: "with composer, pip, and pnpm tools",
 			tools: &config.Tools{
@@ -167,57 +119,7 @@ func TestInstall(t *testing.T) {
 				}
 			},
 		},
-		{
-			name: "with gapic-generator-php tool",
-			tools: &config.Tools{
-				Composer: []*config.ComposerTool{
-					{
-						Name:    "fake-gapic-generator",
-						Version: "1.0.0",
-						Repo:    "github.com/googleapis/gapic-generator-php",
-						SHA256:  "29635b02c6e505fe31cba2f88ae999f00d2710fe1d65cb7cad521a82e7c5a518",
-					},
-				},
-				Pip: []*config.PipTool{
-					{
-						Name:    "fake-pip-tool",
-						Version: "2.0.0",
-					},
-				},
-			},
-			setup: func(t *testing.T) {
-				cache := t.TempDir()
-				t.Setenv("LIBRARIAN_CACHE", cache)
-				t.Setenv("LIBRARIAN_BIN", filepath.Join(cache, "bin"))
-				repoDir := filepath.Join(cache, "github.com/googleapis/gapic-generator-php@1.0.0")
-				if err := os.MkdirAll(filepath.Join(repoDir, "dummy"), 0o755); err != nil {
-					t.Fatal(err)
-				}
-				if err := os.MkdirAll(filepath.Join(repoDir, "src"), 0o755); err != nil {
-					t.Fatal(err)
-				}
-				bin := t.TempDir()
-				writeExecutable(t, filepath.Join(bin, "composer"), "#!/bin/sh\nexit 0\n")
-				writeExecutable(t, filepath.Join(bin, "pip"), "#!/bin/sh\nexit 0\n")
-				writeExecutable(t, filepath.Join(bin, "php"), "#!/bin/sh\nexit 0\n")
-				t.Setenv("PATH", bin+string(os.PathListSeparator)+os.Getenv("PATH"))
-			},
-			check: func(t *testing.T) {
-				binDir := filepath.Join(os.Getenv("LIBRARIAN_BIN"), "php_tools", "bin")
-				wrapperPath := filepath.Join(binDir, "gapic-generator-php")
-				b, err := os.ReadFile(wrapperPath)
-				if err != nil {
-					t.Fatal(err)
-				}
-				repoDir := filepath.Join(os.Getenv("LIBRARIAN_CACHE"), "github.com/googleapis/gapic-generator-php@1.0.0")
-				destPath := filepath.Join(repoDir, "src", "Main.php")
-				phpPath, _ := exec.LookPath("php")
-				want := phpWrapperContent(phpPath, destPath)
-				if diff := cmp.Diff(want, string(b)); diff != "" {
-					t.Errorf("mismatch (-want +got):\n%s", diff)
-				}
-			},
-		},
+
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			if test.setup != nil {
@@ -256,6 +158,12 @@ func TestInstall_Error(t *testing.T) {
 						Version: "2.0.0",
 					},
 				},
+				PNPM: []*config.PNPMTool{
+					{
+						Name:    "fake-pnpm-tool",
+						Version: "3.0.0",
+					},
+				},
 			},
 			wantErr: errMissingRepo,
 		},
@@ -290,6 +198,25 @@ func TestInstall_Error(t *testing.T) {
 			wantErr: errMissingPip,
 		},
 		{
+			name: "no pnpm tools",
+			tools: &config.Tools{
+				Composer: []*config.ComposerTool{
+					{
+						Name:    "gapic-generator-php",
+						Version: "1.0.0",
+						Repo:    "github.com/googleapis/gapic-generator-php",
+					},
+				},
+				Pip: []*config.PipTool{
+					{
+						Name:    "fake-pip-tool",
+						Version: "2.0.0",
+					},
+				},
+			},
+			wantErr: errMissingPNPM,
+		},
+		{
 			name: "missing composer tool in PATH",
 			tools: &config.Tools{
 				Composer: []*config.ComposerTool{
@@ -303,6 +230,12 @@ func TestInstall_Error(t *testing.T) {
 					{
 						Name:    "fake-pip-tool",
 						Version: "2.0.0",
+					},
+				},
+				PNPM: []*config.PNPMTool{
+					{
+						Name:    "fake-pnpm-tool",
+						Version: "3.0.0",
 					},
 				},
 			},

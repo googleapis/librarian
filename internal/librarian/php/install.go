@@ -41,6 +41,7 @@ var (
 	errMissingTools    = errors.New("tools configuration is missing")
 	errMissingComposer = errors.New("tools.composer configuration is missing")
 	errMissingPip      = errors.New("tools.pip configuration is missing")
+	errMissingPNPM     = errors.New("tools.pnpm configuration is missing")
 )
 
 // Install installs the PHP generator tool dependencies.
@@ -53,6 +54,9 @@ func Install(ctx context.Context, tools *config.Tools) error {
 	}
 	if len(tools.Pip) == 0 {
 		return errMissingPip
+	}
+	if len(tools.PNPM) == 0 {
+		return errMissingPNPM
 	}
 
 	phpPath, err := checkRequiredCommands()
@@ -106,10 +110,8 @@ func Install(ctx context.Context, tools *config.Tools) error {
 		return err
 	}
 	// Install PNPM tools
-	if len(tools.PNPM) > 0 {
-		if err := nodejs.InstallPNPM(ctx, tools.PNPM); err != nil {
-			return fmt.Errorf("failed to install pnpm tools: %w", err)
-		}
+	if err := nodejs.InstallPNPM(ctx, tools.PNPM); err != nil {
+		return fmt.Errorf("failed to install pnpm tools: %w", err)
 	}
 	return nil
 }
