@@ -111,7 +111,6 @@ func Install(ctx context.Context, tools *config.Tools) error {
 	}
 	// Install PNPM tools.
 	// We wrap the error here because InstallPNPM does not wrap its exec errors with context,
-	// unlike pip.Install which already wraps its errors with "failed to install python packages".
 	if err := nodejs.InstallPNPM(ctx, tools.PNPM); err != nil {
 		return fmt.Errorf("failed to install pnpm tools: %w", err)
 	}
