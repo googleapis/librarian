@@ -294,6 +294,7 @@ done
 if [ -n "$outDir" ]; then
   mkdir -p "$outDir/lib/google/cloud/secret_manager"
   touch "$outDir/lib/google/cloud/secret_manager/v1.rb"
+  touch "$outDir/CHANGELOG.md"
 fi
 exit 0
 `
@@ -324,6 +325,11 @@ func TestGenerate(t *testing.T) {
 		t.Fatal(err)
 	}
 	outDir := t.TempDir()
+	changelogPath := filepath.Join(outDir, "CHANGELOG.md")
+	const existingContent = "# Initial Changelog Content\n"
+	if err := os.WriteFile(changelogPath, []byte(existingContent), 0o644); err != nil {
+		t.Fatal(err)
+	}
 	library := &config.Library{
 		Name:   "google-cloud-secret_manager-v1",
 		Output: outDir,
@@ -340,6 +346,13 @@ func TestGenerate(t *testing.T) {
 	wantFile := filepath.Join(outDir, "lib", "google", "cloud", "secret_manager", "v1.rb")
 	if _, err := os.Stat(wantFile); err != nil {
 		t.Errorf("expected generated file %s to exist: %v", wantFile, err)
+	}
+	gotChangelog, err := os.ReadFile(changelogPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if diff := cmp.Diff(existingContent, string(gotChangelog)); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
 
