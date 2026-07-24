@@ -84,6 +84,7 @@ func Install(ctx context.Context, tools *config.Tools) error {
 		// wrapper logic will not work for generic Composer tools because:
 		// 1. It hardcodes the executable entry point to "src/Main.php" (ignoring Composer's vendor/bin/ paths).
 		// 2. It injects specific PHP configurations (e.g. memory_limit=1024M) required to prevent the generator from crashing.
+		// See https://github.com/googleapis/gapic-generator-php/commit/685b419f2220e2d19c74e7f1464067f995cf1a95
 		// 3. It automatically injects the "--side_loaded_root_dir" argument which other tools will not expect.
 		// (this argument is to pass through relative paths for config files)
 		// TODO(https://github.com/googleapis/librarian/issues/7000): Remove the --side_loaded_root_dir once we pass full paths to generator
