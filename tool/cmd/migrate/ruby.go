@@ -158,14 +158,14 @@ func findRubyLibraries(googleapisPath, repoPath string) ([]*config.Library, erro
 			if vb != nil {
 				lib.APIs[0].Ruby = &config.RubyAPI{
 					RubyCloudOpts: &config.RubyCloudOpts{
-						EnvPrefix:         vb.EnvPrefix,
-						ExtraDependencies: vb.ExtraDeps,
-						GemNamespace:      vb.GemNamespace,
-						NamespaceOverride: vb.NamespaceOverride,
-						PathOverride:      vb.PathOverride,
-						ServiceOverride:   vb.ServiceOverride,
+						EnvPrefix:          vb.EnvPrefix,
+						ExtraDependencies:  vb.ExtraDeps,
+						GemNamespace:       vb.GemNamespace,
+						NamespaceOverride:  vb.NamespaceOverride,
+						PathOverride:       vb.PathOverride,
+						ServiceOverride:    vb.ServiceOverride,
 						WrapperGemOverride: vb.WrapperGemOverride,
-						YardStrict:        vb.YardStrict,
+						YardStrict:         vb.YardStrict,
 					},
 				}
 			}
