@@ -495,6 +495,7 @@ This document describes the schema for the librarian.yaml.
 | `ruby-cloud-env-prefix` | string | Is the environment variable prefix. |
 | `ruby-cloud-extra-dependencies` | string | Contains extra runtime dependencies to the .gemspec file. |
 | `ruby-cloud-gem-namespace` | string | Is the root Ruby namespace. |
+| `ruby-cloud-namespace-override` | string | Overrides token / segment replacements applied across all generated module & class paths. |
 | `ruby-cloud-path-override` | string | Overrides file/directory paths under lib/ and proto_docs/. |
 | `ruby-cloud-service-override` | string | Overrides generated service class names when proto package service names don't match desired Ruby conventions. |
 | `ruby-cloud-yard-strict` | string | Enables or disables strict YARD syntax checks during generation. |
