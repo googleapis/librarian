@@ -26,6 +26,7 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/bazelbuild/buildtools/build"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/librarian"
 	"github.com/googleapis/librarian/internal/yaml"
@@ -43,6 +44,11 @@ type owlbotYaml struct {
 
 type owlbotSrc struct {
 	Source string `yaml:"source"`
+}
+
+type WrapperBuild struct {
+	path   string
+	params *ExtraProtoParams
 }
 
 // ExtraProtoParams represents extra protoc parameters parsed from BUILD.bazel for a Ruby API version.
@@ -246,29 +252,35 @@ func parseVersionedBuild(googleapisDir, apiPath string) (*ExtraProtoParams, erro
 	if file == nil {
 		return nil, nil
 	}
+	return parseExtraProtoParams(file)
+}
+
+func parseExtraProtoParams(file *build.File) (*ExtraProtoParams, error) {
 	vb := &ExtraProtoParams{}
-	if rules := file.Rules("ruby_cloud_gapic_library"); len(rules) > 0 {
-		rule := rules[0]
-		if attr := rule.Attr("extra_protoc_parameters"); attr != nil {
-			for _, dep := range extractStrings(attr) {
-				switch {
-				case strings.HasPrefix(dep, "ruby-cloud-env-prefix="):
-					vb.EnvPrefix, _ = strings.CutPrefix(dep, "ruby-cloud-env-prefix=")
-				case strings.HasPrefix(dep, "ruby-cloud-extra-dependencies="):
-					vb.ExtraDeps, _ = strings.CutPrefix(dep, "ruby-cloud-extra-dependencies=")
-				case strings.HasPrefix(dep, "ruby-cloud-gem-namespace="):
-					vb.GemNamespace, _ = strings.CutPrefix(dep, "ruby-cloud-gem-namespace=")
-				case strings.HasPrefix(dep, "ruby-cloud-namespace-override="):
-					vb.NamespaceOverride, _ = strings.CutPrefix(dep, "ruby-cloud-namespace-override=")
-				case strings.HasPrefix(dep, "ruby-cloud-path-override="):
-					vb.PathOverride, _ = strings.CutPrefix(dep, "ruby-cloud-path-override=")
-				case strings.HasPrefix(dep, "ruby-cloud-service-override="):
-					vb.ServiceOverride, _ = strings.CutPrefix(dep, "ruby-cloud-service-override=")
-				case strings.HasPrefix(dep, "ruby-cloud-wrapper-gem-override="):
-					vb.WrapperGemOverride, _ = strings.CutPrefix(dep, "ruby-cloud-wrapper-gem-override=")
-				case strings.HasPrefix(dep, "ruby-cloud-yard-strict="):
-					vb.YardStrict, _ = strings.CutPrefix(dep, "ruby-cloud-yard-strict=")
-				}
+	rules := file.Rules("ruby_cloud_gapic_library")
+	if len(rules) == 0 {
+		return vb, nil
+	}
+	rule := rules[0]
+	if attr := rule.Attr("extra_protoc_parameters"); attr != nil {
+		for _, dep := range extractStrings(attr) {
+			switch {
+			case strings.HasPrefix(dep, "ruby-cloud-env-prefix="):
+				vb.EnvPrefix, _ = strings.CutPrefix(dep, "ruby-cloud-env-prefix=")
+			case strings.HasPrefix(dep, "ruby-cloud-extra-dependencies="):
+				vb.ExtraDeps, _ = strings.CutPrefix(dep, "ruby-cloud-extra-dependencies=")
+			case strings.HasPrefix(dep, "ruby-cloud-gem-namespace="):
+				vb.GemNamespace, _ = strings.CutPrefix(dep, "ruby-cloud-gem-namespace=")
+			case strings.HasPrefix(dep, "ruby-cloud-namespace-override="):
+				vb.NamespaceOverride, _ = strings.CutPrefix(dep, "ruby-cloud-namespace-override=")
+			case strings.HasPrefix(dep, "ruby-cloud-path-override="):
+				vb.PathOverride, _ = strings.CutPrefix(dep, "ruby-cloud-path-override=")
+			case strings.HasPrefix(dep, "ruby-cloud-service-override="):
+				vb.ServiceOverride, _ = strings.CutPrefix(dep, "ruby-cloud-service-override=")
+			case strings.HasPrefix(dep, "ruby-cloud-wrapper-gem-override="):
+				vb.WrapperGemOverride, _ = strings.CutPrefix(dep, "ruby-cloud-wrapper-gem-override=")
+			case strings.HasPrefix(dep, "ruby-cloud-yard-strict="):
+				vb.YardStrict, _ = strings.CutPrefix(dep, "ruby-cloud-yard-strict=")
 			}
 		}
 	}
@@ -327,3 +339,7 @@ func readExistingConfig(repoPath string) (*config.Config, error) {
 	}
 	return cfg, nil
 }
+
+// func parseUnversionedBuild(googleapisDir, apiPath string) (*WrapperBuild, error) {
+
+// }
