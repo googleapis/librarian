@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.30.1](https://github.com/googleapis/librarian/compare/v0.30.0...v0.30.1) (2026-07-24)
+
+
+### Bug Fixes
+
+* **internal/librarian/ruby:** handle default output directory for Ruby libraries ([#7009](https://github.com/googleapis/librarian/issues/7009)) ([db36fb2](https://github.com/googleapis/librarian/commit/db36fb2f97e00ecf9bc5b3e13c41e219dab4af09))
+* **internal/librarian/ruby:** handle pre-existing CHANGELOG.md during generation ([#7008](https://github.com/googleapis/librarian/issues/7008)) ([7c7045a](https://github.com/googleapis/librarian/commit/7c7045a81976a5c854606c7c673557e5433dd8d8))
+* **internal/librarian/ruby:** pass lib directory to protoc for ruby_out and grpc_out ([#7010](https://github.com/googleapis/librarian/issues/7010)) ([32fc428](https://github.com/googleapis/librarian/commit/32fc428803d861f3a79081036c76b665b4acd596))
+* **internal/librarian/ruby:** pass ruby-cloud-generate-transports to gapic-generator-cloud ([#7013](https://github.com/googleapis/librarian/issues/7013)) ([267b088](https://github.com/googleapis/librarian/commit/267b088b6f5bd5fdc7686b14448ec7a1447d5517))
+* **internal/librarian:** complete slice field merging in ResolvePreview ([#6973](https://github.com/googleapis/librarian/issues/6973)) ([3041f1a](https://github.com/googleapis/librarian/commit/3041f1ad40920005595a55947fa4edac80af2c82))
+* **internal/librarian:** set canDeriveAPIPath to false for Ruby ([#7007](https://github.com/googleapis/librarian/issues/7007)) ([aceab2e](https://github.com/googleapis/librarian/commit/aceab2e5b61ddb5c8ddf84852e8c49a875d60c92))
+* **librarian/swift:** default library name ([#6994](https://github.com/googleapis/librarian/issues/6994)) ([1dd1bdc](https://github.com/googleapis/librarian/commit/1dd1bdc3a35eaf980eb1dda15b22a8ac0728b864))
+* **librarian:** add to individual release for python ([#6991](https://github.com/googleapis/librarian/issues/6991)) ([c226cdf](https://github.com/googleapis/librarian/commit/c226cdf18bb2f68a0c26bf53c509a073034b80e8))
+* **nodejs:** isolate staging subdirectories per api version ([#6993](https://github.com/googleapis/librarian/issues/6993)) ([b592226](https://github.com/googleapis/librarian/commit/b59222688b388325be32825d9b6c8f7bb03dfb24))
+
 ## [0.30.0](https://github.com/googleapis/librarian/compare/v0.29.1...v0.30.0) (2026-07-23)
 
 
