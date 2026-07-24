@@ -83,9 +83,9 @@ func TestInstall(t *testing.T) {
 			tools: &config.Tools{
 				Composer: []*config.ComposerTool{
 					{
-						Name:    "fake-composer-tool",
+						Name:    "gapic-generator-php",
 						Version: "1.0.0",
-						Repo:    "github.com/fake/fake-tool",
+						Repo:    "github.com/googleapis/gapic-generator-php",
 						SHA256:  "29635b02c6e505fe31cba2f88ae999f00d2710fe1d65cb7cad521a82e7c5a518",
 					},
 				},
@@ -100,7 +100,7 @@ func TestInstall(t *testing.T) {
 				cache := t.TempDir()
 				t.Setenv("LIBRARIAN_CACHE", cache)
 				t.Setenv("LIBRARIAN_BIN", filepath.Join(cache, "bin"))
-				repoDir := filepath.Join(cache, "github.com/fake/fake-tool@1.0.0")
+				repoDir := filepath.Join(cache, "github.com/googleapis/gapic-generator-php@1.0.0")
 				if err := os.MkdirAll(filepath.Join(repoDir, "dummy"), 0o755); err != nil {
 					t.Fatal(err)
 				}
@@ -113,12 +113,12 @@ func TestInstall(t *testing.T) {
 			},
 			check: func(t *testing.T) {
 				binDir := filepath.Join(os.Getenv("LIBRARIAN_BIN"), "php_tools", "bin")
-				wrapperPath := filepath.Join(binDir, "fake-tool")
+				wrapperPath := filepath.Join(binDir, "gapic-generator-php")
 				b, err := os.ReadFile(wrapperPath)
 				if err != nil {
 					t.Fatal(err)
 				}
-				repoDir := filepath.Join(os.Getenv("LIBRARIAN_CACHE"), "github.com/fake/fake-tool@1.0.0")
+				repoDir := filepath.Join(os.Getenv("LIBRARIAN_CACHE"), "github.com/googleapis/gapic-generator-php@1.0.0")
 				destPath := filepath.Join(repoDir, "src", "Main.php")
 				phpPath, _ := exec.LookPath("php")
 				want := phpWrapperContent(phpPath, destPath)
@@ -132,9 +132,9 @@ func TestInstall(t *testing.T) {
 			tools: &config.Tools{
 				Composer: []*config.ComposerTool{
 					{
-						Name:    "fake-composer-tool",
+						Name:    "gapic-generator-php",
 						Version: "1.0.0",
-						Repo:    "github.com/fake/fake-tool",
+						Repo:    "github.com/googleapis/gapic-generator-php",
 						SHA256:  "29635b02c6e505fe31cba2f88ae999f00d2710fe1d65cb7cad521a82e7c5a518",
 					},
 				},
@@ -155,7 +155,7 @@ func TestInstall(t *testing.T) {
 				cache := t.TempDir()
 				t.Setenv("LIBRARIAN_CACHE", cache)
 				t.Setenv("LIBRARIAN_BIN", filepath.Join(cache, "bin"))
-				repoDir := filepath.Join(cache, "github.com/fake/fake-tool@1.0.0")
+				repoDir := filepath.Join(cache, "github.com/googleapis/gapic-generator-php@1.0.0")
 				if err := os.MkdirAll(filepath.Join(repoDir, "dummy"), 0o755); err != nil {
 					t.Fatal(err)
 				}
@@ -170,12 +170,12 @@ func TestInstall(t *testing.T) {
 			},
 			check: func(t *testing.T) {
 				binDir := filepath.Join(os.Getenv("LIBRARIAN_BIN"), "php_tools", "bin")
-				wrapperPath := filepath.Join(binDir, "fake-tool")
+				wrapperPath := filepath.Join(binDir, "gapic-generator-php")
 				b, err := os.ReadFile(wrapperPath)
 				if err != nil {
 					t.Fatal(err)
 				}
-				repoDir := filepath.Join(os.Getenv("LIBRARIAN_CACHE"), "github.com/fake/fake-tool@1.0.0")
+				repoDir := filepath.Join(os.Getenv("LIBRARIAN_CACHE"), "github.com/googleapis/gapic-generator-php@1.0.0")
 				destPath := filepath.Join(repoDir, "src", "Main.php")
 				phpPath, _ := exec.LookPath("php")
 				want := phpWrapperContent(phpPath, destPath)
@@ -256,7 +256,7 @@ func TestInstall_Error(t *testing.T) {
 			tools: &config.Tools{
 				Composer: []*config.ComposerTool{
 					{
-						Name:    "fake-composer-tool",
+						Name:    "gapic-generator-php",
 						Version: "1.0.0",
 					},
 				},
@@ -268,9 +268,9 @@ func TestInstall_Error(t *testing.T) {
 			tools: &config.Tools{
 				Composer: []*config.ComposerTool{
 					{
-						Name:    "fake-composer-tool",
+						Name:    "gapic-generator-php",
 						Version: "1.0.0",
-						Repo:    "github.com/fake/fake-tool",
+						Repo:    "github.com/googleapis/gapic-generator-php",
 					},
 				},
 			},
@@ -278,7 +278,7 @@ func TestInstall_Error(t *testing.T) {
 				cache := t.TempDir()
 				t.Setenv("LIBRARIAN_CACHE", cache)
 				t.Setenv("LIBRARIAN_BIN", filepath.Join(cache, "bin"))
-				repoDir := filepath.Join(cache, "github.com/fake/fake-tool@1.0.0")
+				repoDir := filepath.Join(cache, "github.com/googleapis/gapic-generator-php@1.0.0")
 				if err := os.MkdirAll(filepath.Join(repoDir, "dummy"), 0o755); err != nil {
 					t.Fatal(err)
 				}
