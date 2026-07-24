@@ -856,6 +856,10 @@ type RubyCloudOpts struct {
 	// GemNamespace is the root Ruby namespace.
 	GemNamespace string `yaml:"ruby-cloud-gem-namespace,omitempty"`
 
+	// NamespaceOverride overrides token / segment replacements applied across all generated
+	// module & class paths.
+	NamespaceOverride string `yaml:"ruby-cloud-namespace-override,omitempty"`
+
 	// PathOverride overrides file/directory paths under lib/ and proto_docs/.
 	PathOverride string `yaml:"ruby-cloud-path-override,omitempty"`
 
