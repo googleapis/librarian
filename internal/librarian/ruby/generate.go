@@ -22,7 +22,6 @@ import (
 	"os"
 	"path/filepath"
 	"slices"
-	"sort"
 	"strings"
 
 	"github.com/googleapis/librarian/internal/config"
@@ -198,7 +197,7 @@ func collectProtoFiles(googleapisDir, apiPath string, additionalProtos []string)
 	for _, add := range additionalProtos {
 		files = append(files, filepath.Join(googleapisDir, add))
 	}
-	sort.Strings(files)
+	slices.Sort(files)
 	files = slices.Compact(files)
 	if len(files) == 0 {
 		return nil, fmt.Errorf("no .proto files found in %s", apiDir)
