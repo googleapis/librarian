@@ -19,6 +19,7 @@ import (
 	"os"
 	"os/exec"
 	"path"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -596,4 +597,24 @@ func TestGetCommitSubject_Error(t *testing.T) {
 	if err == nil {
 		t.Fatal("wanted an error; got none")
 	}
+}
+
+func TestGitConfigIgnoreGlobalSigning(t *testing.T) {
+	fakeHome := t.TempDir()
+	gitConfigContent := `
+[gpg]
+	format = ssh
+[commit]
+	gpgSign = true
+[tag]
+	gpgSign = true
+`
+	err := os.WriteFile(filepath.Join(fakeHome, ".gitconfig"), []byte(gitConfigContent), 0644)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	t.Setenv("HOME", fakeHome)
+
+	testhelper.SetupRepo(t)
 }
