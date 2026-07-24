@@ -33,4 +33,3 @@ runs:
         go install tool
         go install ./cmd/librarian
       shell: bash
-
