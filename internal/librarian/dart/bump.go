@@ -139,11 +139,10 @@ func maybeBumpLibrary(ctx context.Context, cloudDeps []string, newVersions map[s
 	}
 
 	depsChanged := false
-	newDeps := make(map[string]string)
 	for _, dep := range cloudDeps {
-		if v, ok := newVersions[dep]; ok {
+		if _, ok := newVersions[dep]; ok {
 			depsChanged = true
-			newDeps["package:"+dep] = "^" + v
+			break
 		}
 	}
 
