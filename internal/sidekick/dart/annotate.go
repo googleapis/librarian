@@ -15,6 +15,7 @@
 package dart
 
 import (
+	"cmp"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -87,6 +88,16 @@ type modelAnnotations struct {
 	ProtoPrefix string
 	// UseWorkspace whether to include the resolution: workspace line in the generated pubspec.yaml.
 	UseWorkspace bool
+	// The Dart name of a service to be used in documentation examples, e.g. "CacheService".
+	ExampleServiceName string
+	// The Dart name of a method of `ExampleServiceName` to use in documentation examples, e.g. "CreateCache"
+	ExampleMethodName string
+	// The Dart type name of a request message for `ExampleMethodName`, e.g. "CreateCacheRequest".
+	ExampleMethodRequestType string
+	// The Dart type name of a response message for `ExampleMethodName`, e.g. "Cache".
+	ExampleMethodResponseType string
+	// Whether `ExampleMethodName` returns a value (i.e. is not void).
+	ExampleMethodReturnsValue bool
 }
 
 // HasDocLines returns true if the generated package has doc comments.
@@ -465,9 +476,29 @@ func (annotate *annotateModel) annotateModel(options map[string]string) error {
 		mainFileNameWithExtension = libraryPathOverride
 	}
 
+	var exampleServiceName string
+	var exampleMethodName string
+	var exampleMethodRequestType string
+	var exampleMethodResponseType string
+	var exampleMethodReturnsValue bool
+
+	if exampleService, exampleMethod := findExampleMethod(model.Services); exampleService != nil && exampleMethod != nil {
+		exampleServiceName = exampleService.Codec.(*serviceAnnotations).Name
+		mAnn := exampleMethod.Codec.(*methodAnnotation)
+		exampleMethodName = mAnn.Name
+		exampleMethodRequestType = mAnn.RequestType
+		exampleMethodResponseType = mAnn.ResponseType
+		exampleMethodReturnsValue = mAnn.ReturnsValue
+	}
+
 	slices.Sort(devDependencies)
 	docLines := formatDocComments(model.Description, model)
 	ann := &modelAnnotations{
+		ExampleServiceName:        exampleServiceName,
+		ExampleMethodName:         exampleMethodName,
+		ExampleMethodRequestType:  exampleMethodRequestType,
+		ExampleMethodResponseType: exampleMethodResponseType,
+		ExampleMethodReturnsValue: exampleMethodReturnsValue,
 		Parent:                    model,
 		PackageName:               pkgName,
 		PackageVersion:            packageVersion,
@@ -1458,4 +1489,85 @@ func registerMissingWkt(model *api.API) {
 			})
 		}
 	}
+}
+
+// findExampleMethod tries to find a service method that can be easily used as an
+// example.
+//
+// It prefers methods:
+// - whose input and output types are defined in the same package as the service
+// - that do not return an empty message
+// - whose request and response message types have no required fields
+//
+// That makes it easier to construct Dart examples that pass analysis, e.g. because
+// they are not missing imports or are missing required constructor arguments.
+func findExampleMethod(services []*api.Service) (*api.Service, *api.Method) {
+	hasRequired := func(m *api.Message) bool {
+		if m == nil {
+			return false
+		}
+		for _, f := range m.Fields {
+			if slices.Contains(f.Behavior, api.FieldBehaviorRequired) {
+				return true
+			}
+		}
+		return false
+	}
+
+	type exampleMethod struct {
+		service                   *api.Service
+		method                    *api.Method
+		requestTypeInSamePackage  bool
+		responseTypeInSamePackage bool
+		returnsEmpty              bool
+		requestTypeHasRequired    bool
+		responseTypeHasRequired   bool
+	}
+	var candidates []exampleMethod
+	for _, s := range services {
+		if s.Codec == nil {
+			continue
+		}
+		inSamePackage := func(msg *api.Message) bool {
+			return msg != nil && msg.Package == s.Package
+		}
+		sAnn := s.Codec.(*serviceAnnotations)
+		for _, m := range sAnn.Methods {
+			if !m.IsSimple || m.OperationInfo != nil || m.OutputTypeID == ".google.longrunning.Operation" {
+				continue
+			}
+			candidates = append(candidates, exampleMethod{
+				service:                   s,
+				method:                    m,
+				requestTypeInSamePackage:  inSamePackage(m.InputType),
+				responseTypeInSamePackage: inSamePackage(m.OutputType),
+				returnsEmpty:              m.ReturnsEmpty,
+				requestTypeHasRequired:    hasRequired(m.InputType),
+				responseTypeHasRequired:   hasRequired(m.OutputType),
+			})
+		}
+	}
+
+	if len(candidates) == 0 {
+		return nil, nil
+	}
+
+	// Comparator to sort candidates such that the "best" comes first.
+	slices.SortFunc(candidates, func(a, b exampleMethod) int {
+		boolToInt := func(b bool) int {
+			if b {
+				return 1
+			}
+			return 0
+		}
+		return cmp.Or(
+			cmp.Compare(boolToInt(b.requestTypeInSamePackage), boolToInt(a.requestTypeInSamePackage)),
+			cmp.Compare(boolToInt(b.responseTypeInSamePackage), boolToInt(a.responseTypeInSamePackage)),
+			cmp.Compare(boolToInt(a.returnsEmpty), boolToInt(b.returnsEmpty)),
+			cmp.Compare(boolToInt(a.responseTypeHasRequired), boolToInt(b.responseTypeHasRequired)),
+			cmp.Compare(boolToInt(a.requestTypeHasRequired), boolToInt(b.requestTypeHasRequired)),
+		)
+	})
+
+	return candidates[0].service, candidates[0].method
 }

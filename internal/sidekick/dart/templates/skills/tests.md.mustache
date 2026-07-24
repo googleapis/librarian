@@ -1,0 +1,94 @@
+---
+name: {{Codec.PackageName}}-tests
+description: >-
+  Use this skill when writing tests for code that uses
+  package:{{Codec.PackageName}}
+---
+
+## Testing with Fakes
+
+Most unit tests should use fakes instead of making network requests to Google
+services.
+
+{{#Services}}
+- Code that uses `{{Name}}` can be tested by injecting the
+  fake `Fake{{Name}}`.
+{{/Services}}
+{{#Codec.ExampleMethodName}}
+
+Import the fakes from the testing library:
+
+```dart
+import 'package:{{Codec.PackageName}}/testing.dart';
+```
+
+### Option A: Using Constructor Closures (Recommended)
+You can inject behavior by passing optional function callbacks to the fake's
+constructor. Methods that are not provided will throw an `UnsupportedError`.
+
+```dart
+import 'package:{{Codec.PackageName}}/{{Codec.MainFileNameWithExtension}}';
+import 'package:{{Codec.PackageName}}/testing.dart';
+
+final fake = Fake{{Codec.ExampleServiceName}}(
+  {{Codec.ExampleMethodName}}: (request) async {
+    // Assert request contents here if needed.
+    {{#Codec.ExampleMethodReturnsValue}}
+    return {{Codec.ExampleMethodResponseType}}();
+    {{/Codec.ExampleMethodReturnsValue}}
+  },
+);
+```
+
+### Option B: Subclassing the Fake
+For more complex test setups or shared states, you can subclass the fake and
+override its methods. Methods that are not overridden will throw an
+`UnsupportedError`.
+
+```dart
+import 'package:{{Codec.PackageName}}/{{Codec.MainFileNameWithExtension}}';
+import 'package:{{Codec.PackageName}}/testing.dart';
+
+final class MyFake{{Codec.ExampleServiceName}} extends Fake{{Codec.ExampleServiceName}} {
+  @override
+  Future<{{Codec.ExampleMethodResponseType}}> {{Codec.ExampleMethodName}}(
+    {{Codec.ExampleMethodRequestType}} request,
+  ) async {
+    // Assert request contents here if needed.
+    {{#Codec.ExampleMethodReturnsValue}}
+    return {{Codec.ExampleMethodResponseType}}();
+    {{/Codec.ExampleMethodReturnsValue}}
+  }
+}
+```
+
+## A Simple Test
+
+```dart
+import 'package:{{Codec.PackageName}}/{{Codec.MainFileNameWithExtension}}';
+import 'package:{{Codec.PackageName}}/testing.dart';
+import 'package:test/test.dart';
+
+Future<void> functionUnderTest({{Codec.ExampleServiceName}} service) async {
+  // Application logic here.
+  await service.{{Codec.ExampleMethodName}}({{Codec.ExampleMethodRequestType}}());
+  // More application logic here.
+}
+
+void main() {
+  test('test', () async {
+    final fake = Fake{{Codec.ExampleServiceName}}(
+      {{Codec.ExampleMethodName}}: (request) async {
+          // Assert request contents here.
+          {{#Codec.ExampleMethodReturnsValue}}
+          return {{Codec.ExampleMethodResponseType}}();
+          {{/Codec.ExampleMethodReturnsValue}}
+      },
+    );
+    // Instead of verifying that `functionUnderTest`, you should verify the
+    // relevant properties of the result.
+    await expectLater(functionUnderTest(fake), completes);
+  });
+}
+```
+{{/Codec.ExampleMethodName}}
