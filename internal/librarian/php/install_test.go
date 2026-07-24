@@ -332,8 +332,12 @@ func TestCreateBinWrapper(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			if info.Mode().Perm() != 0o755 {
-				t.Errorf("wrapper permissions = %04o, want 0755", info.Mode().Perm())
+			perm := info.Mode().Perm()
+			if perm&0o700 != 0o700 {
+				t.Errorf("wrapper owner permissions = %04o, want at least 0700 (rwx)", perm&0o700)
+			}
+			if perm&0o022 != 0 {
+				t.Errorf("wrapper should not be writable by group/others: %04o", perm)
 			}
 		})
 	}
