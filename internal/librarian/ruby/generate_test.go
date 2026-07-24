@@ -352,7 +352,7 @@ func TestGenerate(t *testing.T) {
 		t.Fatalf("failed to read CHANGELOG.md: %v", err)
 	}
 	if diff := cmp.Diff(existingContent, string(gotChangelog)); diff != "" {
-		t.Errorf("CHANGELOG.md content mismatch (-want +got):\n%s", diff)
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
 
