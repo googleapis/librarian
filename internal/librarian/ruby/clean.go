@@ -30,6 +30,10 @@ import (
 var (
 	errNotADirectory = errors.New("output path is not a directory")
 
+	// oneTimeGeneratedRootFiles is the list of files generated only once upon initial library creation.
+	oneTimeGeneratedRootFiles = []string{
+		"CHANGELOG.md",
+	}
 	// generatedRootFiles is the list of specific root files generated for Ruby client gems.
 	generatedRootFiles = []string{
 		"AUTHENTICATION.md",
@@ -87,6 +91,9 @@ func buildKeepSet(keep []string) map[string]bool {
 	for _, keepPath := range keep {
 		cleaned := filepath.ToSlash(filepath.Clean(keepPath))
 		keepSet[cleaned] = true
+	}
+	for _, file := range oneTimeGeneratedRootFiles {
+		keepSet[file] = true
 	}
 	return keepSet
 }

@@ -264,9 +264,10 @@ func TestParseVersionedBuild(t *testing.T) {
 			googleapisDir: "testdata/googleapis",
 			apiPath:       "google/cloud/automl/v1",
 			want: &VersionedBuild{
-				EnvPrefix:    "AUTOML",
-				PathOverride: "auto_ml=automl",
-				YardStrict:   "false",
+				EnvPrefix:         "AUTOML",
+				NamespaceOverride: "AutoMl=AutoML;Automl=AutoML",
+				PathOverride:      "auto_ml=automl",
+				YardStrict:        "false",
 			},
 		},
 		{
@@ -274,6 +275,7 @@ func TestParseVersionedBuild(t *testing.T) {
 			googleapisDir: "testdata/googleapis",
 			apiPath:       "google/cloud/alloydb/v1",
 			want: &VersionedBuild{
+				GemNamespace:    "Google::Cloud::AlloyDB::V1",
 				ServiceOverride: "AlloyDBCSQLAdmin=AlloyDBCloudSQLAdmin",
 			},
 		},
