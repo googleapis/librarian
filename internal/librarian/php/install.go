@@ -91,7 +91,6 @@ func Install(ctx context.Context, tools *config.Tools) error {
 			// TODO(https://github.com/googleapis/librarian/issues/7000): Remove the --side_loaded_root_dir once we pass full paths to generator
 			destPath := filepath.Join(dir, "src", "Main.php")
 			wrapperContent := phpWrapperContent(phpPath, destPath)
-
 			if err := createBinWrapper(wrapperName, wrapperContent, bin); err != nil {
 				return err
 			}
