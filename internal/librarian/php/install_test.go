@@ -61,7 +61,6 @@ func TestInstall(t *testing.T) {
 		wantErr error
 		check   func(t *testing.T)
 	}{
-
 		{
 			name: "with composer and pip tools",
 			tools: &config.Tools{
