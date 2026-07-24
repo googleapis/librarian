@@ -67,7 +67,11 @@ func Generate(ctx context.Context, cfg *config.Config, library *config.Library, 
 			return fmt.Errorf("api %q: %w", api.Path, err)
 		}
 	}
-	if err := filesystem.MoveAndMerge(tempDir, outDir); err != nil {
+	keepSet := buildKeepSet(library.Keep)
+	keepFunc := func(rel string) bool {
+		return isKept(rel, keepSet)
+	}
+	if err := filesystem.MoveAndMergeWithKeep(tempDir, outDir, outDir, keepFunc); err != nil {
 		return fmt.Errorf("failed to move generated files: %w", err)
 	}
 	return nil
