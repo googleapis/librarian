@@ -42,13 +42,14 @@ var (
 
 // Install installs the PHP generator tool dependencies.
 func Install(ctx context.Context, tools *config.Tools) error {
-	// TODO(https://github.com/googleapis/librarian/issues/6824): remove the len assertion and instead add an error
 	if tools == nil || (len(tools.Composer) == 0 && len(tools.Pip) == 0) {
 		_, err := installGenerator(ctx)
 		return err
 	}
 
 	var phpPath string
+	// TODO(https://github.com/googleapis/librarian/issues/6824): remove the len assertion and instead add an error
+	// if tools.Composer is empty
 	if len(tools.Composer) > 0 {
 		var err error
 		phpPath, err = checkRequiredCommands()
