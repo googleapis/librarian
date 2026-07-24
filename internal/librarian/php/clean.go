@@ -125,5 +125,10 @@ func fileHasMarker(path string, maxLines int) (bool, error) {
 			return true, nil
 		}
 	}
-	return false, scanner.Err()
+	err = scanner.Err()
+	// A line >64KB is likely not in a generated file. Skip instead of failing.
+	if errors.Is(err, bufio.ErrTooLong) {
+		return false, nil
+	}
+	return false, err
 }

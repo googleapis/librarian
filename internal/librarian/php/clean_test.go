@@ -110,6 +110,16 @@ func TestClean(t *testing.T) {
 				"src/V1/Client/ShallowMarker.php",
 			},
 		},
+		{
+			name: "php files with extremely long lines do not cause failure",
+			setupFiles: []string{
+				"src/V1/LongLine.php",
+			},
+			contentMap: map[string]string{
+				"src/V1/LongLine.php": strings.Repeat("a", 65537) + "\n// " + string(gapicMarker),
+			},
+			wantDeleted: nil,
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
