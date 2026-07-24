@@ -129,9 +129,10 @@ func TestCollectProtoFiles(t *testing.T) {
 	}
 
 	for _, test := range []struct {
-		name    string
-		apiPath string
-		want    []string
+		name             string
+		apiPath          string
+		additionalProtos []string
+		want             []string
 	}{
 		{
 			name:    "standard api path",
@@ -148,9 +149,19 @@ func TestCollectProtoFiles(t *testing.T) {
 				filepath.Join(googleapisDir, "google/cloud/gkehub/v1/configmanagement/configmanagement.proto"),
 			},
 		},
+		{
+			name:             "with additional protos",
+			apiPath:          "google/cloud/secretmanager/v1",
+			additionalProtos: []string{"google/cloud/location/locations.proto"},
+			want: []string{
+				filepath.Join(googleapisDir, "google/cloud/location/locations.proto"),
+				filepath.Join(googleapisDir, "google/cloud/secretmanager/v1/resources.proto"),
+				filepath.Join(googleapisDir, "google/cloud/secretmanager/v1/service.proto"),
+			},
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got, err := collectProtoFiles(googleapisDir, test.apiPath)
+			got, err := collectProtoFiles(googleapisDir, test.apiPath, test.additionalProtos)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -167,7 +178,7 @@ func TestCollectProtoFiles_Error(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	_, err = collectProtoFiles(googleapisDir, "non/existent/path")
+	_, err = collectProtoFiles(googleapisDir, "non/existent/path", nil)
 	if !errors.Is(err, fs.ErrNotExist) {
 		t.Errorf("collectProtoFiles() error = %v, wantErr %v", err, fs.ErrNotExist)
 	}
@@ -375,8 +386,9 @@ func TestGenerateAPI(t *testing.T) {
 	stagingDir := t.TempDir()
 	api := &config.API{Path: "google/cloud/secretmanager/v1"}
 	gemName := "google-cloud-secret_manager-v1"
+	lib := &config.Library{Name: gemName}
 
-	err = generateAPI(t.Context(), api, gemName, nil, googleapisDir, stagingDir)
+	err = generateAPI(t.Context(), api, lib, nil, googleapisDir, stagingDir)
 	if err != nil {
 		t.Fatalf("generateAPI() error = %v", err)
 	}
@@ -396,7 +408,8 @@ func TestGenerateAPI_Error(t *testing.T) {
 		t.Fatal(err)
 	}
 	api := &config.API{Path: "non/existent/path"}
-	err = generateAPI(t.Context(), api, "gem-name", nil, googleapisDir, t.TempDir())
+	lib := &config.Library{Name: "gem-name"}
+	err = generateAPI(t.Context(), api, lib, nil, googleapisDir, t.TempDir())
 	if err == nil {
 		t.Error("generateAPI() error = nil, want error")
 	}

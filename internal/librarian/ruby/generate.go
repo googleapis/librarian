@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"slices"
 	"sort"
 	"strings"
 
@@ -69,7 +70,7 @@ func Generate(ctx context.Context, cfg *config.Config, library *config.Library, 
 	// TODO(https://github.com/googleapis/librarian/issues/6885): Implement main client gem wrapper generation
 	// for libraries configured with `ruby.wrapper_of`.
 	for _, api := range library.APIs {
-		if err := generateAPI(ctx, api, library.Name, pc, googleapisDir, tempDir); err != nil {
+		if err := generateAPI(ctx, api, library, pc, googleapisDir, tempDir); err != nil {
 			return fmt.Errorf("api %q: %w", api.Path, err)
 		}
 	}
@@ -83,10 +84,21 @@ func Generate(ctx context.Context, cfg *config.Config, library *config.Library, 
 	return nil
 }
 
-func generateAPI(ctx context.Context, api *config.API, gemName string, pc *config.Protoc, googleapisDir, stagingDir string) error {
-	protoFiles, err := collectProtoFiles(googleapisDir, api.Path)
+func generateAPI(ctx context.Context, api *config.API, library *config.Library, pc *config.Protoc, googleapisDir, stagingDir string) error {
+	var additionalProtos []string
+	if library != nil && library.Ruby != nil {
+		additionalProtos = append(additionalProtos, library.Ruby.AdditionalProtos...)
+	}
+	if api.Ruby != nil {
+		additionalProtos = append(additionalProtos, api.Ruby.AdditionalProtos...)
+	}
+	protoFiles, err := collectProtoFiles(googleapisDir, api.Path, additionalProtos)
 	if err != nil {
 		return err
+	}
+	gemName := ""
+	if library != nil {
+		gemName = library.Name
 	}
 	gapicOpts, err := buildGAPICOpts(api, gemName, googleapisDir)
 	if err != nil {
@@ -167,7 +179,7 @@ func transport(sc *serviceconfig.API) serviceconfig.Transport {
 	return serviceconfig.GRPCRest
 }
 
-func collectProtoFiles(googleapisDir, apiPath string) ([]string, error) {
+func collectProtoFiles(googleapisDir, apiPath string, additionalProtos []string) ([]string, error) {
 	apiDir := filepath.Join(googleapisDir, apiPath)
 	entries, err := os.ReadDir(apiDir)
 	if err != nil {
@@ -183,7 +195,11 @@ func collectProtoFiles(googleapisDir, apiPath string) ([]string, error) {
 			files = append(files, filepath.Join(apiDir, entry.Name()))
 		}
 	}
+	for _, add := range additionalProtos {
+		files = append(files, filepath.Join(googleapisDir, add))
+	}
 	sort.Strings(files)
+	files = slices.Compact(files)
 	if len(files) == 0 {
 		return nil, fmt.Errorf("no .proto files found in %s", apiDir)
 	}

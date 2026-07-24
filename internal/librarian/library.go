@@ -866,6 +866,9 @@ func mergeRuby(dst, src *config.RubyPackage) *config.RubyPackage {
 	if src.WrapperOf != nil {
 		res.WrapperOf = src.WrapperOf
 	}
+	if src.AdditionalProtos != nil {
+		res.AdditionalProtos = src.AdditionalProtos
+	}
 	return &res
 }
 
