@@ -41,4 +41,3 @@ func Install(ctx context.Context, tools *config.Tools) error {
 	}
 	return pip.Install(ctx, cfg.Tools.Pip)
 }
-
