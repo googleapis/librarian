@@ -85,9 +85,6 @@ func Generate(ctx context.Context, cfg *config.Config, library *config.Library, 
 
 func generateAPI(ctx context.Context, api *config.API, library *config.Library, pc *config.Protoc, googleapisDir, stagingDir string) error {
 	var additionalProtos []string
-	if library != nil && library.Ruby != nil {
-		additionalProtos = append(additionalProtos, library.Ruby.AdditionalProtos...)
-	}
 	if api.Ruby != nil {
 		additionalProtos = append(additionalProtos, api.Ruby.AdditionalProtos...)
 	}

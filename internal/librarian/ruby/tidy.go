@@ -24,7 +24,6 @@ import (
 // Tidy tidies Ruby-specific configuration for a library.
 func Tidy(lib *config.Library) (*config.Library, error) {
 	if lib.Ruby != nil {
-		lib.Ruby.AdditionalProtos = tidyAdditionalProtos(lib.Ruby.AdditionalProtos)
 		empty, err := yaml.Empty(lib.Ruby)
 		if err != nil {
 			return nil, err

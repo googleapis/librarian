@@ -840,9 +840,6 @@ type PHPAPI struct {
 
 // RubyPackage contains Ruby-specific library configuration.
 type RubyPackage struct {
-	// AdditionalProtos is a list of additional proto files to include in generation.
-	AdditionalProtos []string `yaml:"additional_protos,omitempty"`
-
 	// WrapperOf contains the names of versioned libraries that this library wraps.
 	WrapperOf []string `yaml:"wrapper_of,omitempty"`
 }

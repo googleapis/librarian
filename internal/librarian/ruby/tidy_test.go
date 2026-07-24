@@ -31,9 +31,6 @@ func TestTidy(t *testing.T) {
 			name: "sorts and compacts additional_protos",
 			lib: &config.Library{
 				Name: "google-cloud-asset-v1",
-				Ruby: &config.RubyPackage{
-					AdditionalProtos: []string{"b.proto", "a.proto", "a.proto"},
-				},
 				APIs: []*config.API{
 					{
 						Path: "google/cloud/asset/v1",
@@ -45,9 +42,6 @@ func TestTidy(t *testing.T) {
 			},
 			want: &config.Library{
 				Name: "google-cloud-asset-v1",
-				Ruby: &config.RubyPackage{
-					AdditionalProtos: []string{"a.proto", "b.proto"},
-				},
 				APIs: []*config.API{
 					{
 						Path: "google/cloud/asset/v1",
