@@ -17,13 +17,12 @@ package swift
 import (
 	"strings"
 
-	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/sidekick/api"
 	"github.com/iancoleman/strcase"
 )
 
 // LibraryName returns the Swift library (and module) name for the API.
-func LibraryName(api *api.API, swiftCfg *config.SwiftPackage) string {
+func LibraryName(api *api.API) string {
 	// TODO(https://github.com/googleapis/librarian/issues/6229) - use
 	// a better default.
 	parts := strings.Split(api.PackageName, ".")
