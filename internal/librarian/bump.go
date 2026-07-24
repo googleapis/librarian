@@ -19,11 +19,11 @@ import (
 	"errors"
 	"fmt"
 	"path/filepath"
-	"strings"
 
 	"github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/git"
+	"github.com/googleapis/librarian/internal/librarian/dart"
 	"github.com/googleapis/librarian/internal/librarian/golang"
 	"github.com/googleapis/librarian/internal/librarian/python"
 	"github.com/googleapis/librarian/internal/librarian/rust"
@@ -115,6 +115,12 @@ func runBump(ctx context.Context, cfg *config.Config, all bool, libraryName, ver
 	if cfg.Language == config.LanguageRust {
 		return legacyRustBump(ctx, cfg, all, libraryName, versionOverride)
 	}
+	if cfg.Language == config.LanguageDart {
+		if err := dart.Bump(ctx, cfg, all, libraryName, versionOverride); err != nil {
+			return err
+		}
+		return RunTidyOnConfig(ctx, ".", cfg)
+	}
 
 	librariesToBump, err := findLibrariesToBump(ctx, cfg, all, libraryName)
 	if err != nil {
@@ -155,7 +161,7 @@ func findLibrariesToBump(ctx context.Context, cfg *config.Config, all bool, libr
 		if lib.SkipRelease || lib.Version == "" {
 			continue
 		}
-		lastReleaseTagName := formatTagName(cfg.Default.TagFormat, lib)
+		lastReleaseTagName := git.FormatTagName(cfg.Default.TagFormat, lib.Name, lib.Version)
 		lastReleaseTagCommit, err := git.GetCommitHash(ctx, command.Git, lastReleaseTagName)
 		if err != nil {
 			return nil, fmt.Errorf("error retrieving commit for tag %s (from library %s version %s): %w", lastReleaseTagName, lib.Name, lib.Version, err)
@@ -186,22 +192,7 @@ func libraryChanged(cfg *config.Config, library *config.Library, filesChanged []
 	default:
 		output = libraryOutput(cfg.Language, library, cfg.Default)
 	}
-	return hasChangesIn(output, exclusion, filesChanged)
-}
-
-func hasChangesIn(dir, exclusion string, filesChanged []string) bool {
-	if !strings.HasSuffix(dir, "/") {
-		dir += "/"
-	}
-	for _, f := range filesChanged {
-		if strings.HasPrefix(f, dir) {
-			if exclusion != "" && strings.HasPrefix(f, exclusion) {
-				continue
-			}
-			return true
-		}
-	}
-	return false
+	return git.HasChangesIn(output, exclusion, filesChanged)
 }
 
 // bumpLibrary determines the next version of a library (using versionOverride
@@ -386,7 +377,7 @@ func legacyRustBumpAll(ctx context.Context, cfg *config.Config, lastTag string) 
 			continue
 		}
 		output := libraryOutput(cfg.Language, lib, cfg.Default)
-		if !hasChangesIn(output, "", filesChanged) {
+		if !git.HasChangesIn(output, "", filesChanged) {
 			continue
 		}
 		if err := legacyRustBumpLibrary(ctx, cfg, lib, lastTag, ""); err != nil {
@@ -416,10 +407,4 @@ func legacyRustBumpLibrary(ctx context.Context, cfg *config.Config, lib *config.
 	default:
 		return fmt.Errorf("%q should not be using legacyRustBumpLibrary", cfg.Language)
 	}
-}
-
-// formatTagName computes the name of the tag expected to be applied to the
-// commit that released the given library.
-func formatTagName(tagFormat string, lib *config.Library) string {
-	return strings.NewReplacer("{name}", lib.Name, "{version}", lib.Version).Replace(tagFormat)
 }
