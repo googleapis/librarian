@@ -867,6 +867,11 @@ func TestCanDeriveAPIPath(t *testing.T) {
 			language: config.LanguageNodejs,
 		},
 		{
+			name:     "ruby",
+			language: config.LanguageRuby,
+			want:     false,
+		},
+		{
 			name:     "rust",
 			language: config.LanguageRust,
 			want:     true,
