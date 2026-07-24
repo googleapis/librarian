@@ -45,8 +45,8 @@ type owlbotSrc struct {
 	Source string `yaml:"source"`
 }
 
-// VersionedBuild represents build configuration parsed from BUILD.bazel for a Ruby API version.
-type VersionedBuild struct {
+// ExtraProtoParams represents extra protoc parameters parsed from BUILD.bazel for a Ruby API version.
+type ExtraProtoParams struct {
 	EnvPrefix          string
 	ExtraDeps          string
 	GemNamespace       string
@@ -238,7 +238,7 @@ func parseWrapperOf(libraries []*config.Library) {
 	}
 }
 
-func parseVersionedBuild(googleapisDir, apiPath string) (*VersionedBuild, error) {
+func parseVersionedBuild(googleapisDir, apiPath string) (*ExtraProtoParams, error) {
 	file, err := parseBazel(googleapisDir, apiPath)
 	if err != nil {
 		return nil, err
@@ -246,7 +246,7 @@ func parseVersionedBuild(googleapisDir, apiPath string) (*VersionedBuild, error)
 	if file == nil {
 		return nil, nil
 	}
-	vb := &VersionedBuild{}
+	vb := &ExtraProtoParams{}
 	if rules := file.Rules("ruby_cloud_gapic_library"); len(rules) > 0 {
 		rule := rules[0]
 		if attr := rule.Attr("extra_protoc_parameters"); attr != nil {

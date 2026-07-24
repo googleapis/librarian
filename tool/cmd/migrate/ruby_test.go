@@ -244,13 +244,13 @@ func TestParseVersionedBuild(t *testing.T) {
 		name          string
 		googleapisDir string
 		apiPath       string
-		want          *VersionedBuild
+		want          *ExtraProtoParams
 	}{
 		{
 			name:          "valid BUILD.bazel with env prefix",
 			googleapisDir: "testdata/googleapis",
 			apiPath:       "google/cloud/secretmanager/v1",
-			want: &VersionedBuild{
+			want: &ExtraProtoParams{
 				EnvPrefix: "SECRET_MANAGER",
 			},
 		},
@@ -258,13 +258,13 @@ func TestParseVersionedBuild(t *testing.T) {
 			name:          "BUILD.bazel without ruby_cloud_gapic_library rule",
 			googleapisDir: "testdata/googleapis",
 			apiPath:       "google/cloud/bigquery/connection/v1",
-			want:          &VersionedBuild{},
+			want:          &ExtraProtoParams{},
 		},
 		{
 			name:          "BUILD.bazel with path override and yard strict",
 			googleapisDir: "testdata/googleapis",
 			apiPath:       "google/cloud/automl/v1",
-			want: &VersionedBuild{
+			want: &ExtraProtoParams{
 				EnvPrefix:         "AUTOML",
 				NamespaceOverride: "AutoMl=AutoML;Automl=AutoML",
 				PathOverride:      "auto_ml=automl",
@@ -275,7 +275,7 @@ func TestParseVersionedBuild(t *testing.T) {
 			name:          "BUILD.bazel with service override",
 			googleapisDir: "testdata/googleapis",
 			apiPath:       "google/cloud/alloydb/v1",
-			want: &VersionedBuild{
+			want: &ExtraProtoParams{
 				GemNamespace:    "Google::Cloud::AlloyDB::V1",
 				ServiceOverride: "AlloyDBCSQLAdmin=AlloyDBCloudSQLAdmin",
 			},
@@ -284,7 +284,7 @@ func TestParseVersionedBuild(t *testing.T) {
 			name:          "BUILD.bazel with wrapper gem override",
 			googleapisDir: "testdata/googleapis",
 			apiPath:       "google/cloud/compute/v1",
-			want: &VersionedBuild{
+			want: &ExtraProtoParams{
 				EnvPrefix:          "COMPUTE",
 				ExtraDeps:          "google-cloud-common=~> 1.0",
 				WrapperGemOverride: "value_for_testing",
