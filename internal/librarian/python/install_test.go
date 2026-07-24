@@ -18,6 +18,8 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+
+	"github.com/googleapis/librarian/internal/config"
 )
 
 func TestInstall(t *testing.T) {
@@ -27,7 +29,21 @@ func TestInstall(t *testing.T) {
 	}
 	t.Setenv("PATH", bin+string(os.PathListSeparator)+os.Getenv("PATH"))
 
-	if err := Install(t.Context()); err != nil {
-		t.Fatal(err)
-	}
+	t.Run("fallback to embedded librarian.yaml", func(t *testing.T) {
+		if err := Install(t.Context(), nil); err != nil {
+			t.Fatal(err)
+		}
+	})
+
+	t.Run("use tools from config", func(t *testing.T) {
+		tools := &config.Tools{
+			Pip: []*config.PipTool{
+				{Name: "ruff", Version: "0.14.14"},
+			},
+		}
+		if err := Install(t.Context(), tools); err != nil {
+			t.Fatal(err)
+		}
+	})
 }
+
