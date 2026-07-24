@@ -15,6 +15,7 @@
 package php
 
 import (
+	"bufio"
 	"bytes"
 	"errors"
 	"io/fs"
@@ -98,13 +99,31 @@ func cleanFiles(lib *config.Library, keepSet map[string]bool, subDir string) err
 		if !strings.HasSuffix(d.Name(), phpExtension) {
 			return nil
 		}
-		content, err := os.ReadFile(path)
+		hasMarker, err := fileHasMarker(path, 50)
 		if err != nil {
 			return err
 		}
-		if bytes.Contains(content, gapicMarker) || bytes.Contains(content, protobufMarker) {
+		if hasMarker {
 			return os.Remove(path)
 		}
 		return nil
 	})
+}
+
+// fileHasMarker checks if the file at path contains either gapicMarker or
+// protobufMarker within its first maxLines lines.
+func fileHasMarker(path string, maxLines int) (bool, error) {
+	f, err := os.Open(path)
+	if err != nil {
+		return false, err
+	}
+	defer f.Close()
+	scanner := bufio.NewScanner(f)
+	for i := 0; i < maxLines && scanner.Scan(); i++ {
+		line := scanner.Bytes()
+		if bytes.Contains(line, gapicMarker) || bytes.Contains(line, protobufMarker) {
+			return true, nil
+		}
+	}
+	return false, scanner.Err()
 }

@@ -20,6 +20,7 @@ import (
 	"os"
 	"path/filepath"
 	"slices"
+	"strings"
 	"testing"
 
 	"github.com/googleapis/librarian/internal/config"
@@ -94,6 +95,20 @@ func TestClean(t *testing.T) {
 				"other/V1/ServiceClient.php": "<?php\n// " + string(gapicMarker) + "\nclass ServiceClient {}",
 			},
 			wantDeleted: nil, // 'other' is not in directoriesToClean
+		},
+		{
+			name: "php files with markers beyond limit are not deleted",
+			setupFiles: []string{
+				"src/V1/Client/DeepMarker.php",
+				"src/V1/Client/ShallowMarker.php",
+			},
+			contentMap: map[string]string{
+				"src/V1/Client/DeepMarker.php":    strings.Repeat("\n", 51) + "// " + string(gapicMarker),
+				"src/V1/Client/ShallowMarker.php": strings.Repeat("\n", 48) + "// " + string(gapicMarker),
+			},
+			wantDeleted: []string{
+				"src/V1/Client/ShallowMarker.php",
+			},
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
