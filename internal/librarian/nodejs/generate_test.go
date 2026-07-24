@@ -468,14 +468,13 @@ func TestGenerateAPI(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	err = generateAPI(
-		t.Context(),
-		0,
-		&config.API{Path: "google/cloud/secretmanager/v1"},
-		&config.Library{Name: "google-cloud-secretmanager", Output: outDir},
-		absGoogleapisDir,
-		repoRoot,
-	)
+	err = generateAPI(t.Context(), generateAPIParams{
+		apiIndex:      0,
+		api:           &config.API{Path: "google/cloud/secretmanager/v1"},
+		library:       &config.Library{Name: "google-cloud-secretmanager", Output: outDir},
+		googleapisDir: absGoogleapisDir,
+		repoRoot:      repoRoot,
+	})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -513,7 +512,13 @@ func TestGenerateAPI_MultipleVersions(t *testing.T) {
 
 	for i, api := range library.APIs {
 		t.Run(api.Path, func(t *testing.T) {
-			if err := generateAPI(t.Context(), i, api, library, absGoogleapisDir, repoRoot); err != nil {
+			if err := generateAPI(t.Context(), generateAPIParams{
+				apiIndex:      i,
+				api:           api,
+				library:       library,
+				googleapisDir: absGoogleapisDir,
+				repoRoot:      repoRoot,
+			}); err != nil {
 				t.Fatal(err)
 			}
 		})
@@ -1055,7 +1060,13 @@ func TestGenerateAPI_NoProtos(t *testing.T) {
 		Name:   "google-cloud-emptyapi",
 		Output: filepath.Join(repoRoot, "packages", "google-cloud-emptyapi"),
 	}
-	if err := generateAPI(t.Context(), 0, &config.API{Path: apiPath}, library, googleapisDir, repoRoot); err == nil {
+	if err := generateAPI(t.Context(), generateAPIParams{
+		apiIndex:      0,
+		api:           &config.API{Path: apiPath},
+		library:       library,
+		googleapisDir: googleapisDir,
+		repoRoot:      repoRoot,
+	}); err == nil {
 		t.Fatal("expected error for API directory with no proto files")
 	}
 }

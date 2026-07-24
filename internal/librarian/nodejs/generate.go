@@ -65,7 +65,13 @@ func Generate(ctx context.Context, cfg *config.Config, library *config.Library, 
 		if api.Path == "google/cloud/compute/v1small" {
 			continue
 		}
-		if err := generateAPI(ctx, i, api, library, googleapisDir, repoRoot); err != nil {
+		if err := generateAPI(ctx, generateAPIParams{
+			apiIndex:      i,
+			api:           api,
+			library:       library,
+			googleapisDir: googleapisDir,
+			repoRoot:      repoRoot,
+		}); err != nil {
 			return fmt.Errorf("failed to generate api %q: %w", api.Path, err)
 		}
 	}
@@ -107,7 +113,15 @@ func buildStagingSubdirName(index int, apiPath string) string {
 	return fmt.Sprintf("%d_%s", index, slug)
 }
 
-func generateAPI(ctx context.Context, apiIndex int, api *config.API, library *config.Library, googleapisDir, repoRoot string) error {
+type generateAPIParams struct {
+	apiIndex      int
+	api           *config.API
+	library       *config.Library
+	googleapisDir string
+	repoRoot      string
+}
+
+func generateAPI(ctx context.Context, params generateAPIParams) error {
 	generatorPath, err := requireCachedTool("gapic-generator-typescript")
 	if err != nil {
 		return err
@@ -119,28 +133,28 @@ func generateAPI(ctx context.Context, apiIndex int, api *config.API, library *co
 		return err
 	}
 
-	stagingDir := filepath.Join(repoRoot, "owl-bot-staging", library.Name, buildStagingSubdirName(apiIndex, api.Path))
+	stagingDir := filepath.Join(params.repoRoot, "owl-bot-staging", params.library.Name, buildStagingSubdirName(params.apiIndex, params.api.Path))
 	if err := os.MkdirAll(stagingDir, 0o755); err != nil {
 		return err
 	}
 
-	nodejsAPI := resolveNodejsAPI(library, api)
+	nodejsAPI := resolveNodejsAPI(params.library, params.api)
 
-	googleapisDir, err = filepath.Abs(googleapisDir)
+	absGoogleapisDir, err := filepath.Abs(params.googleapisDir)
 	if err != nil {
 		return fmt.Errorf("failed to resolve googleapis directory path: %w", err)
 	}
 
-	apiDir := filepath.Join(googleapisDir, api.Path)
+	apiDir := filepath.Join(absGoogleapisDir, params.api.Path)
 	protos, err := filepath.Glob(apiDir + "/*.proto")
 	if err != nil {
 		return fmt.Errorf("failed to find protos: %w", err)
 	}
 	if len(protos) == 0 {
-		return fmt.Errorf("no protos found in api %q", api.Path)
+		return fmt.Errorf("no protos found in api %q", params.api.Path)
 	}
 	for index := range protos {
-		rel, err := filepath.Rel(googleapisDir, protos[index])
+		rel, err := filepath.Rel(absGoogleapisDir, protos[index])
 		if err != nil {
 			return fmt.Errorf("failed to make path %s relative: %w", protos[index], err)
 		}
@@ -150,7 +164,7 @@ func generateAPI(ctx context.Context, apiIndex int, api *config.API, library *co
 	// Add additional protos from configuration.
 	protos = append(protos, nodejsAPI.AdditionalProtos...)
 
-	args, err := buildGeneratorArgs(generatorPath, api, library, googleapisDir, stagingDir, nodejsAPI)
+	args, err := buildGeneratorArgs(generatorPath, params.api, params.library, absGoogleapisDir, stagingDir, nodejsAPI)
 	if err != nil {
 		return err
 	}
@@ -159,7 +173,7 @@ func generateAPI(ctx context.Context, apiIndex int, api *config.API, library *co
 		return err
 	}
 	cmdArgs := append(args[1:], protos...)
-	return command.RunInDirWithEnv(ctx, googleapisDir, toolsEnv, args[0], cmdArgs...)
+	return command.RunInDirWithEnv(ctx, absGoogleapisDir, toolsEnv, args[0], cmdArgs...)
 }
 
 // resolveNodejsAPI returns the Node.js-specific configuration for the given API,
