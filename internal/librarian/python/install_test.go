@@ -28,19 +28,33 @@ func TestInstall(t *testing.T) {
 		t.Fatal(err)
 	}
 	t.Setenv("PATH", bin+string(os.PathListSeparator)+os.Getenv("PATH"))
-	t.Run("fallback to embedded librarian.yaml", func(t *testing.T) {
-		if err := Install(t.Context(), nil); err != nil {
-			t.Fatal(err)
-		}
-	})
-	t.Run("use tools from config", func(t *testing.T) {
-		tools := &config.Tools{
-			Pip: []*config.PipTool{
-				{Name: "ruff", Version: "0.14.14"},
+
+	tests := []struct {
+		name    string
+		tools   *config.Tools
+		wantErr bool
+	}{
+		{
+			name:  "fallback to embedded librarian.yaml",
+			tools: nil,
+		},
+		{
+			name: "use tools from config",
+			tools: &config.Tools{
+				Pip: []*config.PipTool{
+					{Name: "ruff", Version: "0.14.14"},
+				},
 			},
-		}
-		if err := Install(t.Context(), tools); err != nil {
-			t.Fatal(err)
-		}
-	})
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			err := Install(t.Context(), tc.tools)
+			if (err != nil) != tc.wantErr {
+				t.Fatalf("Install() error = %v, wantErr %v", err, tc.wantErr)
+			}
+		})
+	}
 }
+
