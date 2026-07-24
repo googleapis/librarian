@@ -51,6 +51,11 @@ func TestLibraryName(t *testing.T) {
 			input: "grafeas.v1",
 			want:  "GoogleGrafeasV1",
 		},
+		{
+			name:  "corner case",
+			input: "google",
+			want:  "Google",
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			model := api.NewTestAPI(nil, nil, nil)
