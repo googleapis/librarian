@@ -101,6 +101,15 @@ func maybeBumpLibrary(ctx context.Context, cloudDeps []string, newVersions map[s
 		return lib.Version, nil
 	}
 
+	publishedVersion, err := getPublishedVersion(ctx, lib.Name)
+	if err != nil {
+		return "", err
+	}
+
+	if publishedVersion != "" && lib.Version != publishedVersion {
+		return "", fmt.Errorf("pub.dev version %s does not match librarian.yaml version %s", publishedVersion, lib.Version)
+	}
+
 	packageDir := libraryOutput(lib, defaults)
 
 	libraryChanged := false
@@ -141,10 +150,6 @@ func maybeBumpLibrary(ctx context.Context, cloudDeps []string, newVersions map[s
 		return "", err
 	}
 
-	if neededVersion != lib.Version && semver.MaxVersion(lib.Version, neededVersion) == lib.Version {
-		// The version has already been manually incremented past what is required.
-		return lib.Version, nil
-	}
 	if neededVersion == lib.Version && !depsChanged && !libraryChanged {
 		return lib.Version, nil
 	}

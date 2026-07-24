@@ -195,6 +195,9 @@ func TestBump_NothingChanged(t *testing.T) {
 	testhelper.RunGit(t, "tag", "b-v1.0.0")
 	testhelper.RunGit(t, "tag", "c-v1.0.0")
 
+	publishedVersions := map[string]string{"a": "1.0.0", "b": "1.0.0", "c": "1.0.0"}
+	setupMockPubdevServer(t, publishedVersions)
+
 	apiToolResponses := map[string]packageVersion{
 		"a": {needed: "1.0.0", old: "1.0.0"},
 		"b": {needed: "1.0.0", old: "1.0.0"},
@@ -241,6 +244,9 @@ func TestBump_APIChange(t *testing.T) {
 	appendToFile(t, "generated/a/lib.dart", []byte("const a = 5;\n"))
 	testhelper.RunGit(t, "add", ".")
 	testhelper.RunGit(t, "commit", "-m", "feat: added new value", ".")
+
+	publishedVersions := map[string]string{"a": "1.0.0", "b": "1.0.0", "c": "1.0.0"}
+	setupMockPubdevServer(t, publishedVersions)
 
 	// Since the API surfaces didn't change, dart-apitool will report that the versions do not
 	// need to be bumped.
@@ -291,6 +297,9 @@ func TestBump_FileChanged_APIUnchanged(t *testing.T) {
 	testhelper.RunGit(t, "add", ".")
 	testhelper.RunGit(t, "commit", "-m", "fix: generator bug", ".")
 
+	publishedVersions := map[string]string{"a": "1.0.0", "b": "1.0.0", "c": "1.0.0"}
+	setupMockPubdevServer(t, publishedVersions)
+
 	// Since the API surfaces didn't change, dart-apitool will report that the versions do not
 	// need to be bumped.
 	apiToolResponses := map[string]packageVersion{
@@ -339,6 +348,9 @@ func TestBump_UnpublishedLibrary(t *testing.T) {
 	testhelper.RunGit(t, "add", ".")
 	testhelper.RunGit(t, "commit", "-m", "feat: added support for c", ".")
 
+	publishedVersions := map[string]string{"a": "1.0.0", "b": "1.0.0"}
+	setupMockPubdevServer(t, publishedVersions)
+
 	// responses map only has "a" and "b" but NOT "c"!
 	apiToolResponses := map[string]packageVersion{
 		"a": {needed: "1.0.0", old: "1.0.0"},
@@ -361,6 +373,47 @@ func TestBump_UnpublishedLibrary(t *testing.T) {
 	}
 
 	compareDirWithGolden(t, goldenDir)
+}
+
+func TestBump_VersionMismatch(t *testing.T) {
+	testhelper.RequireCommand(t, "dart")
+	testhelper.RequireCommand(t, "git")
+
+	inputDir, err := filepath.Abs("testdata/bump/input")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	setupRepoFromDir(t, inputDir)
+	testhelper.RunGit(t, "tag", "a-v1.0.0")
+	testhelper.RunGit(t, "tag", "b-v1.0.0")
+	testhelper.RunGit(t, "tag", "c-v1.0.0")
+
+	publishedVersions := map[string]string{"a": "1.1.0", "b": "1.0.0", "c": "1.0.0"}
+	setupMockPubdevServer(t, publishedVersions)
+
+	// Set up fake apitool but mock published version of 'a' as 1.1.0 on pubdev,
+	// which mismatches the librarian config version (1.0.0).
+	apiToolResponses := map[string]packageVersion{
+		"a": {needed: "1.0.0", old: "1.1.0"},
+		"b": {needed: "1.0.0", old: "1.0.0"},
+		"c": {needed: "1.0.0", old: "1.0.0"},
+	}
+	setupFakeApitool(t, apiToolResponses)
+
+	cfg, err := yaml.Read[config.Config]("librarian.yaml")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	err = Bump(t.Context(), cfg, true, "", "")
+	wantErr := "pub.dev version 1.1.0 does not match librarian.yaml version 1.0.0"
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+	if !strings.Contains(err.Error(), wantErr) {
+		t.Fatalf("expected error containing %q, got %q", wantErr, err.Error())
+	}
 }
 
 func setupRepoFromDir(t *testing.T, sourceDir string) {
