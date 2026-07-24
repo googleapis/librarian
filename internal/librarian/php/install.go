@@ -40,6 +40,7 @@ var (
 	errMissingRepo     = errors.New("repo URL missing")
 	errMissingTools    = errors.New("tools configuration is missing")
 	errMissingComposer = errors.New("tools.composer configuration is missing")
+	errMissingPip      = errors.New("tools.pip configuration is missing")
 )
 
 // Install installs the PHP generator tool dependencies.
@@ -49,6 +50,9 @@ func Install(ctx context.Context, tools *config.Tools) error {
 	}
 	if len(tools.Composer) == 0 {
 		return errMissingComposer
+	}
+	if len(tools.Pip) == 0 {
+		return errMissingPip
 	}
 
 	phpPath, err := checkRequiredCommands()
@@ -98,10 +102,8 @@ func Install(ctx context.Context, tools *config.Tools) error {
 	}
 	// The PHP client library generation process relies on Python-based
 	// tools (such as synthtool or owlbot) for post-processing and generation.
-	if len(tools.Pip) > 0 {
-		if err := pip.Install(ctx, tools.Pip); err != nil {
-			return err
-		}
+	if err := pip.Install(ctx, tools.Pip); err != nil {
+		return err
 	}
 	// Install PNPM tools
 	if len(tools.PNPM) > 0 {

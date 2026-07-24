@@ -178,6 +178,12 @@ func TestInstall(t *testing.T) {
 						SHA256:  "29635b02c6e505fe31cba2f88ae999f00d2710fe1d65cb7cad521a82e7c5a518",
 					},
 				},
+				Pip: []*config.PipTool{
+					{
+						Name:    "fake-pip-tool",
+						Version: "2.0.0",
+					},
+				},
 			},
 			setup: func(t *testing.T) {
 				cache := t.TempDir()
@@ -192,6 +198,7 @@ func TestInstall(t *testing.T) {
 				}
 				bin := t.TempDir()
 				writeExecutable(t, filepath.Join(bin, "composer"), "#!/bin/sh\nexit 0\n")
+				writeExecutable(t, filepath.Join(bin, "pip"), "#!/bin/sh\nexit 0\n")
 				writeExecutable(t, filepath.Join(bin, "php"), "#!/bin/sh\nexit 0\n")
 				t.Setenv("PATH", bin+string(os.PathListSeparator)+os.Getenv("PATH"))
 			},
@@ -243,6 +250,12 @@ func TestInstall_Error(t *testing.T) {
 						Version: "1.0.0",
 					},
 				},
+				Pip: []*config.PipTool{
+					{
+						Name:    "fake-pip-tool",
+						Version: "2.0.0",
+					},
+				},
 			},
 			wantErr: errMissingRepo,
 		},
@@ -264,6 +277,19 @@ func TestInstall_Error(t *testing.T) {
 			wantErr: errMissingComposer,
 		},
 		{
+			name: "no pip tools",
+			tools: &config.Tools{
+				Composer: []*config.ComposerTool{
+					{
+						Name:    "gapic-generator-php",
+						Version: "1.0.0",
+						Repo:    "github.com/googleapis/gapic-generator-php",
+					},
+				},
+			},
+			wantErr: errMissingPip,
+		},
+		{
 			name: "missing composer tool in PATH",
 			tools: &config.Tools{
 				Composer: []*config.ComposerTool{
@@ -271,6 +297,12 @@ func TestInstall_Error(t *testing.T) {
 						Name:    "gapic-generator-php",
 						Version: "1.0.0",
 						Repo:    "github.com/googleapis/gapic-generator-php",
+					},
+				},
+				Pip: []*config.PipTool{
+					{
+						Name:    "fake-pip-tool",
+						Version: "2.0.0",
 					},
 				},
 			},
