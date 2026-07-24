@@ -129,9 +129,10 @@ func TestCollectProtoFiles(t *testing.T) {
 	}
 
 	for _, test := range []struct {
-		name    string
-		apiPath string
-		want    []string
+		name             string
+		apiPath          string
+		additionalProtos []string
+		want             []string
 	}{
 		{
 			name:    "standard api path",
@@ -148,9 +149,19 @@ func TestCollectProtoFiles(t *testing.T) {
 				filepath.Join(googleapisDir, "google/cloud/gkehub/v1/configmanagement/configmanagement.proto"),
 			},
 		},
+		{
+			name:             "with additional protos",
+			apiPath:          "google/cloud/secretmanager/v1",
+			additionalProtos: []string{"google/cloud/location/locations.proto"},
+			want: []string{
+				filepath.Join(googleapisDir, "google/cloud/location/locations.proto"),
+				filepath.Join(googleapisDir, "google/cloud/secretmanager/v1/resources.proto"),
+				filepath.Join(googleapisDir, "google/cloud/secretmanager/v1/service.proto"),
+			},
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got, err := collectProtoFiles(googleapisDir, test.apiPath)
+			got, err := collectProtoFiles(googleapisDir, test.apiPath, test.additionalProtos)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -167,7 +178,7 @@ func TestCollectProtoFiles_Error(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	_, err = collectProtoFiles(googleapisDir, "non/existent/path")
+	_, err = collectProtoFiles(googleapisDir, "non/existent/path", nil)
 	if !errors.Is(err, fs.ErrNotExist) {
 		t.Errorf("collectProtoFiles() error = %v, wantErr %v", err, fs.ErrNotExist)
 	}

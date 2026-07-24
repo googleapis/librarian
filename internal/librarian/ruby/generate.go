@@ -21,7 +21,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"sort"
+	"slices"
 	"strings"
 
 	"github.com/googleapis/librarian/internal/config"
@@ -84,7 +84,11 @@ func Generate(ctx context.Context, cfg *config.Config, library *config.Library, 
 }
 
 func generateAPI(ctx context.Context, api *config.API, gemName string, pc *config.Protoc, googleapisDir, stagingDir string) error {
-	protoFiles, err := collectProtoFiles(googleapisDir, api.Path)
+	var additionalProtos []string
+	if api.Ruby != nil {
+		additionalProtos = append(additionalProtos, api.Ruby.AdditionalProtos...)
+	}
+	protoFiles, err := collectProtoFiles(googleapisDir, api.Path, additionalProtos)
 	if err != nil {
 		return err
 	}
@@ -167,7 +171,7 @@ func transport(sc *serviceconfig.API) serviceconfig.Transport {
 	return serviceconfig.GRPCRest
 }
 
-func collectProtoFiles(googleapisDir, apiPath string) ([]string, error) {
+func collectProtoFiles(googleapisDir, apiPath string, additionalProtos []string) ([]string, error) {
 	apiDir := filepath.Join(googleapisDir, apiPath)
 	entries, err := os.ReadDir(apiDir)
 	if err != nil {
@@ -183,7 +187,11 @@ func collectProtoFiles(googleapisDir, apiPath string) ([]string, error) {
 			files = append(files, filepath.Join(apiDir, entry.Name()))
 		}
 	}
-	sort.Strings(files)
+	for _, add := range additionalProtos {
+		files = append(files, filepath.Join(googleapisDir, add))
+	}
+	slices.Sort(files)
+	files = slices.Compact(files)
 	if len(files) == 0 {
 		return nil, fmt.Errorf("no .proto files found in %s", apiDir)
 	}
