@@ -96,6 +96,8 @@ func configNewGitRepository(t *testing.T) {
 	RunGit(t, "config", "user.email", "test@test-only.com")
 	RunGit(t, "config", "user.name", "Test Account")
 	RunGit(t, "config", "gc.auto", "0")
+	RunGit(t, "config", "commit.gpgSign", "false")
+	RunGit(t, "config", "tag.gpgSign", "false")
 	RunGit(t, "remote", "add", TestRemote, testRemoteURL)
 }
 

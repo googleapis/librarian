@@ -21,12 +21,13 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"sort"
+	"slices"
 	"strings"
 
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/filesystem"
 	"github.com/googleapis/librarian/internal/serviceconfig"
+	"github.com/googleapis/librarian/internal/snippetmetadata"
 	"github.com/googleapis/librarian/internal/sources"
 	"github.com/googleapis/librarian/internal/tool/protoc"
 )
@@ -73,18 +74,25 @@ func Generate(ctx context.Context, cfg *config.Config, library *config.Library, 
 			return fmt.Errorf("api %q: %w", api.Path, err)
 		}
 	}
-	keepSet := buildKeepSet(library.Keep)
+	keepSet := buildKeepSet(library.Name, library.Keep)
 	keepFunc := func(rel string) bool {
 		return isKept(rel, keepSet)
 	}
 	if err := filesystem.MoveAndMergeWithKeep(tempDir, outDir, outDir, keepFunc); err != nil {
 		return fmt.Errorf("failed to move generated files: %w", err)
 	}
+	if err := snippetmetadata.UpdateAllLibraryVersions(outDir, library.Version); err != nil {
+		return fmt.Errorf("failed to update snippet metadata versions: %w", err)
+	}
 	return nil
 }
 
 func generateAPI(ctx context.Context, api *config.API, gemName string, pc *config.Protoc, googleapisDir, stagingDir string) error {
-	protoFiles, err := collectProtoFiles(googleapisDir, api.Path)
+	var additionalProtos []string
+	if api.Ruby != nil {
+		additionalProtos = append(additionalProtos, api.Ruby.AdditionalProtos...)
+	}
+	protoFiles, err := collectProtoFiles(googleapisDir, api.Path, additionalProtos)
 	if err != nil {
 		return err
 	}
@@ -167,7 +175,7 @@ func transport(sc *serviceconfig.API) serviceconfig.Transport {
 	return serviceconfig.GRPCRest
 }
 
-func collectProtoFiles(googleapisDir, apiPath string) ([]string, error) {
+func collectProtoFiles(googleapisDir, apiPath string, additionalProtos []string) ([]string, error) {
 	apiDir := filepath.Join(googleapisDir, apiPath)
 	entries, err := os.ReadDir(apiDir)
 	if err != nil {
@@ -183,7 +191,11 @@ func collectProtoFiles(googleapisDir, apiPath string) ([]string, error) {
 			files = append(files, filepath.Join(apiDir, entry.Name()))
 		}
 	}
-	sort.Strings(files)
+	for _, add := range additionalProtos {
+		files = append(files, filepath.Join(googleapisDir, add))
+	}
+	slices.Sort(files)
+	files = slices.Compact(files)
 	if len(files) == 0 {
 		return nil, fmt.Errorf("no .proto files found in %s", apiDir)
 	}

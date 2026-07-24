@@ -15,6 +15,7 @@
 package ruby
 
 import (
+	"encoding/json"
 	"errors"
 	"io/fs"
 	"os"
@@ -26,6 +27,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/serviceconfig"
+	"github.com/googleapis/librarian/internal/snippetmetadata"
 	"github.com/googleapis/librarian/internal/sources"
 )
 
@@ -129,9 +131,10 @@ func TestCollectProtoFiles(t *testing.T) {
 	}
 
 	for _, test := range []struct {
-		name    string
-		apiPath string
-		want    []string
+		name             string
+		apiPath          string
+		additionalProtos []string
+		want             []string
 	}{
 		{
 			name:    "standard api path",
@@ -148,9 +151,19 @@ func TestCollectProtoFiles(t *testing.T) {
 				filepath.Join(googleapisDir, "google/cloud/gkehub/v1/configmanagement/configmanagement.proto"),
 			},
 		},
+		{
+			name:             "with additional protos",
+			apiPath:          "google/cloud/secretmanager/v1",
+			additionalProtos: []string{"google/cloud/location/locations.proto"},
+			want: []string{
+				filepath.Join(googleapisDir, "google/cloud/location/locations.proto"),
+				filepath.Join(googleapisDir, "google/cloud/secretmanager/v1/resources.proto"),
+				filepath.Join(googleapisDir, "google/cloud/secretmanager/v1/service.proto"),
+			},
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got, err := collectProtoFiles(googleapisDir, test.apiPath)
+			got, err := collectProtoFiles(googleapisDir, test.apiPath, test.additionalProtos)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -167,7 +180,7 @@ func TestCollectProtoFiles_Error(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	_, err = collectProtoFiles(googleapisDir, "non/existent/path")
+	_, err = collectProtoFiles(googleapisDir, "non/existent/path", nil)
 	if !errors.Is(err, fs.ErrNotExist) {
 		t.Errorf("collectProtoFiles() error = %v, wantErr %v", err, fs.ErrNotExist)
 	}
@@ -293,9 +306,20 @@ for arg in "$@"; do
   esac
 done
 if [ -n "$rubyCloudOut" ]; then
-  mkdir -p "$rubyCloudOut/lib/google/cloud/secret_manager"
+  mkdir -p "$rubyCloudOut/lib/google/cloud/secret_manager/v1"
+  touch "$rubyCloudOut/lib/google/cloud/secret_manager/v1/version.rb"
   touch "$rubyCloudOut/lib/google/cloud/secret_manager/v1.rb"
   touch "$rubyCloudOut/CHANGELOG.md"
+  mkdir -p "$rubyCloudOut/snippets"
+  cat << 'EOF' > "$rubyCloudOut/snippets/snippet_metadata_google.cloud.secretmanager.v1.json"
+{
+  "clientLibrary": {
+    "name": "google-cloud-secret_manager-v1",
+    "version": "",
+    "language": "RUBY"
+  }
+}
+EOF
 fi
 if [ -n "$rubyOut" ]; then
   mkdir -p "$rubyOut/google/cloud/secret_manager"
@@ -335,9 +359,27 @@ func TestGenerate(t *testing.T) {
 	if err := os.WriteFile(changelogPath, []byte(existingContent), 0o644); err != nil {
 		t.Fatal(err)
 	}
+	versionPath := filepath.Join(outDir, "lib", "google", "cloud", "secret_manager", "v1", "version.rb")
+	if err := os.MkdirAll(filepath.Dir(versionPath), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	const existingVersionContent = `module Google
+  module Cloud
+    module SecretManager
+      module V1
+        VERSION = "1.2.3"
+      end
+    end
+  end
+end
+`
+	if err := os.WriteFile(versionPath, []byte(existingVersionContent), 0o644); err != nil {
+		t.Fatal(err)
+	}
 	library := &config.Library{
-		Name:   "google-cloud-secret_manager-v1",
-		Output: outDir,
+		Name:    "google-cloud-secret_manager-v1",
+		Version: "1.2.3",
+		Output:  outDir,
 		APIs: []*config.API{
 			{
 				Path: "google/cloud/secretmanager/v1",
@@ -361,6 +403,25 @@ func TestGenerate(t *testing.T) {
 		t.Fatal(err)
 	}
 	if diff := cmp.Diff(existingContent, string(gotChangelog)); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+	gotVersion, err := os.ReadFile(versionPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if diff := cmp.Diff(existingVersionContent, string(gotVersion)); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+	snippetMetadataPath := filepath.Join(outDir, "snippets", "snippet_metadata_google.cloud.secretmanager.v1.json")
+	gotSnippetMetadata, err := os.ReadFile(snippetMetadataPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var metadata snippetmetadata.SnippetMetadata
+	if err := json.Unmarshal(gotSnippetMetadata, &metadata); err != nil {
+		t.Fatal(err)
+	}
+	if diff := cmp.Diff("1.2.3", metadata.ClientLibrary.Version); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
