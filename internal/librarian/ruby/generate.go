@@ -33,6 +33,12 @@ import (
 
 var errNoAPIs = errors.New("no apis configured for library")
 
+// DefaultOutput derives an output path from a library name and a default
+// output path.
+func DefaultOutput(name, defaultOutput string) string {
+	return filepath.Join(defaultOutput, name)
+}
+
 // Generate generates a Ruby client library.
 func Generate(ctx context.Context, cfg *config.Config, library *config.Library, srcs *sources.Sources) (err error) {
 	if len(library.APIs) == 0 {
@@ -67,7 +73,11 @@ func Generate(ctx context.Context, cfg *config.Config, library *config.Library, 
 			return fmt.Errorf("api %q: %w", api.Path, err)
 		}
 	}
-	if err := filesystem.MoveAndMerge(tempDir, outDir); err != nil {
+	keepSet := buildKeepSet(library.Keep)
+	keepFunc := func(rel string) bool {
+		return isKept(rel, keepSet)
+	}
+	if err := filesystem.MoveAndMergeWithKeep(tempDir, outDir, outDir, keepFunc); err != nil {
 		return fmt.Errorf("failed to move generated files: %w", err)
 	}
 	return nil
@@ -86,12 +96,19 @@ func generateAPI(ctx context.Context, api *config.API, gemName string, pc *confi
 	if err != nil {
 		return err
 	}
+	// Output --ruby_out and --grpc_out into lib/ so _pb.rb files land under lib/google/...
+	// matching Bazel's ruby_gapic_assembly_pkg_impl:
+	// https://github.com/googleapis/gapic-generator-ruby/blob/8fed6b7c1/rules_ruby_gapic/ruby_gapic_pkg.bzl#L39-L41
+	libStagingDir := filepath.Join(stagingDir, "lib")
+	if err := os.MkdirAll(libStagingDir, 0o755); err != nil {
+		return fmt.Errorf("failed to create lib staging directory: %w", err)
+	}
 	grpcPluginPath := filepath.Join(installDir, "bin", "grpc_tools_ruby_protoc_plugin")
 	args := []string{
 		"--experimental_allow_proto3_optional",
 		"-I=" + googleapisDir,
-		"--ruby_out=" + stagingDir,
-		"--grpc_out=" + stagingDir,
+		"--ruby_out=" + libStagingDir,
+		"--grpc_out=" + libStagingDir,
 		"--plugin=protoc-gen-grpc=" + grpcPluginPath,
 		"--ruby_cloud_out=" + stagingDir,
 	}
@@ -126,7 +143,8 @@ func buildGAPICOpts(api *config.API, gemName, googleapisDir string) ([]string, e
 		opts = append(opts, "grpc-service-config="+filepath.Join(googleapisDir, gc))
 	}
 	if trans := transport(sc); trans != "" {
-		opts = append(opts, fmt.Sprintf("transport=%s", trans))
+		transports := strings.ReplaceAll(string(trans), "+", ";")
+		opts = append(opts, "ruby-cloud-generate-transports="+transports)
 	}
 	if sc != nil && sc.HasRESTNumericEnums(config.LanguageRuby) {
 		opts = append(opts, "ruby-cloud-rest-numeric-enums=true")
