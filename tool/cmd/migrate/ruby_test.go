@@ -274,6 +274,7 @@ func TestParseVersionedBuild(t *testing.T) {
 			googleapisDir: "testdata/googleapis",
 			apiPath:       "google/cloud/alloydb/v1",
 			want: &VersionedBuild{
+				GemNamespace:    "Google::Cloud::AlloyDB::V1",
 				ServiceOverride: "AlloyDBCSQLAdmin=AlloyDBCloudSQLAdmin",
 			},
 		},
