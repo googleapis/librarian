@@ -867,6 +867,9 @@ type RubyCloudOpts struct {
 	// names don't match desired Ruby conventions.
 	ServiceOverride string `yaml:"ruby-cloud-service-override,omitempty"`
 
+	// WrapperGemOverride overrides a versioned client gem to a custom non-standard main wrapper gem name.
+	WrapperGemOverride string `yaml:"ruby-cloud-wrapper-gem-override,omitempty"`
+
 	// YardStrict enables or disables strict YARD syntax checks during generation.
 	YardStrict string `yaml:"ruby-cloud-yard-strict,omitempty"`
 }

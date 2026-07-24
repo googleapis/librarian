@@ -48,12 +48,13 @@ type owlbotSrc struct {
 // VersionedBuild represents build configuration parsed from BUILD.bazel for a Ruby API version.
 type VersionedBuild struct {
 	EnvPrefix         string
-	ExtraDeps         string
-	GemNamespace      string
-	NamespaceOverride string
-	PathOverride      string
-	ServiceOverride   string
-	YardStrict        string
+	ExtraDeps          string
+	GemNamespace       string
+	NamespaceOverride  string
+	PathOverride       string
+	ServiceOverride    string
+	WrapperGemOverride string
+	YardStrict         string
 }
 
 func runRubyMigration(ctx context.Context, repoPath string) error {
@@ -262,6 +263,8 @@ func parseVersionedBuild(googleapisDir, apiPath string) (*VersionedBuild, error)
 					vb.PathOverride, _ = strings.CutPrefix(dep, "ruby-cloud-path-override=")
 				case strings.HasPrefix(dep, "ruby-cloud-service-override="):
 					vb.ServiceOverride, _ = strings.CutPrefix(dep, "ruby-cloud-service-override=")
+				case strings.HasPrefix(dep, "ruby-cloud-wrapper-gem-override="):
+					vb.WrapperGemOverride, _ = strings.CutPrefix(dep, "ruby-cloud-wrapper-gem-override=")
 				case strings.HasPrefix(dep, "ruby-cloud-yard-strict="):
 					vb.YardStrict, _ = strings.CutPrefix(dep, "ruby-cloud-yard-strict=")
 				}
