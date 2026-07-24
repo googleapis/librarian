@@ -101,16 +101,24 @@ func maybeBumpLibrary(ctx context.Context, cloudDeps []string, newVersions map[s
 		return lib.Version, nil
 	}
 
+	packageDir := libraryOutput(lib, defaults)
+
 	publishedVersion, err := getPublishedVersion(ctx, lib.Name)
 	if err != nil {
 		return "", err
 	}
 
-	if publishedVersion != "" && lib.Version != publishedVersion {
-		return "", fmt.Errorf("pub.dev version %s does not match librarian.yaml version %s", publishedVersion, lib.Version)
+	if publishedVersion == "" {
+		// The packaged is unpublished so the only work to do is create a CHANGELOG.md.
+		if err := updateChangelog(ctx, packageDir, lib.Version, "", false); err != nil {
+			return "", err
+		}
+		return lib.Version, nil
 	}
 
-	packageDir := libraryOutput(lib, defaults)
+	if lib.Version != publishedVersion {
+		return "", fmt.Errorf("pub.dev version %s does not match librarian.yaml version %s", publishedVersion, lib.Version)
+	}
 
 	libraryChanged := false
 	var lastReleaseTagCommit string
@@ -119,14 +127,8 @@ func maybeBumpLibrary(ctx context.Context, cloudDeps []string, newVersions map[s
 	}
 
 	tagName := git.FormatTagName(defaults.TagFormat, lib.Name, lib.Version)
-	commit, err := git.GetCommitHash(ctx, command.Git, tagName)
-	if err != nil {
-		// If tag doesn't exist yet then then will be the first release so we just need
-		// to update CHANGELOG.md
-		if err := updateChangelog(ctx, packageDir, lib.Version, "", false); err != nil {
-			return "", err
-		}
-		return lib.Version, nil
+	if commit, err := git.GetCommitHash(ctx, command.Git, tagName); err != nil {
+		return "", err
 	} else {
 		lastReleaseTagCommit = commit
 		filesChanged, err := git.FilesChangedSince(ctx, command.Git, lastReleaseTagCommit, []string{})
