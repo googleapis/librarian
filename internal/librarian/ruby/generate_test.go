@@ -386,9 +386,8 @@ func TestGenerateAPI(t *testing.T) {
 	stagingDir := t.TempDir()
 	api := &config.API{Path: "google/cloud/secretmanager/v1"}
 	gemName := "google-cloud-secret_manager-v1"
-	lib := &config.Library{Name: gemName}
 
-	err = generateAPI(t.Context(), api, lib, nil, googleapisDir, stagingDir)
+	err = generateAPI(t.Context(), api, gemName, nil, googleapisDir, stagingDir)
 	if err != nil {
 		t.Fatalf("generateAPI() error = %v", err)
 	}
@@ -408,8 +407,7 @@ func TestGenerateAPI_Error(t *testing.T) {
 		t.Fatal(err)
 	}
 	api := &config.API{Path: "non/existent/path"}
-	lib := &config.Library{Name: "gem-name"}
-	err = generateAPI(t.Context(), api, lib, nil, googleapisDir, t.TempDir())
+	err = generateAPI(t.Context(), api, "gem-name", nil, googleapisDir, t.TempDir())
 	if err == nil {
 		t.Error("generateAPI() error = nil, want error")
 	}

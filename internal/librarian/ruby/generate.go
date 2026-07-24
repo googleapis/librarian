@@ -69,7 +69,7 @@ func Generate(ctx context.Context, cfg *config.Config, library *config.Library, 
 	// TODO(https://github.com/googleapis/librarian/issues/6885): Implement main client gem wrapper generation
 	// for libraries configured with `ruby.wrapper_of`.
 	for _, api := range library.APIs {
-		if err := generateAPI(ctx, api, library, pc, googleapisDir, tempDir); err != nil {
+		if err := generateAPI(ctx, api, library.Name, pc, googleapisDir, tempDir); err != nil {
 			return fmt.Errorf("api %q: %w", api.Path, err)
 		}
 	}
@@ -83,7 +83,7 @@ func Generate(ctx context.Context, cfg *config.Config, library *config.Library, 
 	return nil
 }
 
-func generateAPI(ctx context.Context, api *config.API, library *config.Library, pc *config.Protoc, googleapisDir, stagingDir string) error {
+func generateAPI(ctx context.Context, api *config.API, gemName string, pc *config.Protoc, googleapisDir, stagingDir string) error {
 	var additionalProtos []string
 	if api.Ruby != nil {
 		additionalProtos = append(additionalProtos, api.Ruby.AdditionalProtos...)
@@ -91,10 +91,6 @@ func generateAPI(ctx context.Context, api *config.API, library *config.Library, 
 	protoFiles, err := collectProtoFiles(googleapisDir, api.Path, additionalProtos)
 	if err != nil {
 		return err
-	}
-	gemName := ""
-	if library != nil {
-		gemName = library.Name
 	}
 	gapicOpts, err := buildGAPICOpts(api, gemName, googleapisDir)
 	if err != nil {
