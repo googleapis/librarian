@@ -600,7 +600,7 @@ func TestGetCommitSubject_Error(t *testing.T) {
 }
 
 func TestGitConfigIgnoreGlobalSigning(t *testing.T) {
-	fakeHome := t.TempDir()
+	fakeGlobalConfig := filepath.Join(t.TempDir(), ".gitconfig")
 	gitConfigContent := `
 [gpg]
 	format = ssh
@@ -609,12 +609,12 @@ func TestGitConfigIgnoreGlobalSigning(t *testing.T) {
 [tag]
 	gpgSign = true
 `
-	err := os.WriteFile(filepath.Join(fakeHome, ".gitconfig"), []byte(gitConfigContent), 0644)
+	err := os.WriteFile(fakeGlobalConfig, []byte(gitConfigContent), 0o644)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	t.Setenv("HOME", fakeHome)
+	t.Setenv("GIT_CONFIG_GLOBAL", fakeGlobalConfig)
 
 	testhelper.SetupRepo(t)
 }
