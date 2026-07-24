@@ -61,9 +61,6 @@ type codec struct {
 	LibraryName string
 
 	// The name of the Swift package (e.g. "google-cloud-secretmanager-v1").
-	//
-	// Note that GAPIC packages contain a single product (the library), which
-	// contains a single target and module with the same names as the library.
 	PackageName string
 
 	// The package version (e.g. "1.2.3").
@@ -142,10 +139,14 @@ func newCodec(model *api.API, cfg *parser.ModelConfig, swiftCfg *config.SwiftPac
 	if err != nil {
 		return nil, err
 	}
+	libraryName, err := LibraryName(model)
+	if err != nil {
+		return nil, err
+	}
 	result := &codec{
 		Model:              model,
 		GenerationYear:     fmt.Sprintf("%04d", year),
-		LibraryName:        LibraryName(model),
+		LibraryName:        libraryName,
 		PackageName:        PackageName(model),
 		PackageVersion:     "0.0.0",
 		ReleaseLevel:       "preview",
@@ -176,7 +177,7 @@ func newCodec(model *api.API, cfg *parser.ModelConfig, swiftCfg *config.SwiftPac
 		case "release-level":
 			result.ReleaseLevel = definition
 		case "package-name-override":
-			result.LibraryName = definition
+			result.PackageName = definition
 		case "root-name":
 			result.RootName = definition
 		case "module":

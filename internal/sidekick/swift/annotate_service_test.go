@@ -75,6 +75,7 @@ func TestAnnotateService(t *testing.T) {
 			s := &api.Service{
 				Name:          test.serviceName,
 				Documentation: test.doc,
+				Package:       "test",
 			}
 			model := api.NewTestAPI(nil, nil, []*api.Service{s})
 			model.PackageName = "test"
@@ -202,6 +203,8 @@ func TestAnnotateService_Quickstart(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			service := &api.Service{
 				Name:             "TestService",
+				Package:          "test",
+				ID:               ".test.TestService",
 				QuickstartMethod: test.quickstartMethod,
 			}
 

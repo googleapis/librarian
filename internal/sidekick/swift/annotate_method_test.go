@@ -183,35 +183,16 @@ func TestAnnotateMethod_EscapedName(t *testing.T) {
 		{"escaped default", "Default", "`default`"},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			inputType := &api.Message{
-				Name: "Request",
-				ID:   ".test.Request",
-				Fields: []*api.Field{
-					{Name: "key", ID: ".test.Request.key", Typez: api.TypezString},
-				},
-			}
-			outputType := &api.Message{
-				Name: "Response",
-				ID:   ".test.Response",
-				Fields: []*api.Field{
-					{Name: "value", ID: ".test.Request.value", Typez: api.TypezString},
-				},
-			}
-			method := &api.Method{
-				Name:          test.methodName,
-				Documentation: "Test documentation.",
-				PathInfo: &api.PathInfo{
-					Bindings: []*api.PathBinding{{Verb: "GET", PathTemplate: &api.PathTemplate{}}},
-				},
-				InputTypeID:  inputType.ID,
-				InputType:    inputType,
-				OutputTypeID: outputType.ID,
-				OutputType:   outputType,
-			}
-			service := &api.Service{
-				Name:    "TestService",
-				Methods: []*api.Method{method},
-			}
+			inputType := api.NewTestMessage("Request").
+				WithFields(api.NewTestField("key").WithType(api.TypezString))
+			outputType := api.NewTestMessage("Response").
+				WithFields(api.NewTestField("value").WithType(api.TypezString))
+			method := api.NewTestMethod(test.methodName).
+				WithInput(inputType).
+				WithOutput(outputType).
+				WithVerb("GET").WithPathTemplate(&api.PathTemplate{})
+			method.Documentation = "Test documentation."
+			service := api.NewTestService("TestService").WithMethods(method)
 			model := api.NewTestAPI([]*api.Message{inputType, outputType}, nil, []*api.Service{service})
 			if err := api.CrossReference(model); err != nil {
 				t.Fatal(err)
@@ -227,7 +208,7 @@ func TestAnnotateMethod_EscapedName(t *testing.T) {
 				DocLines:       []string{"Test documentation."},
 				PathExpression: "/",
 				HTTPMethod:     "GET",
-				ReturnType:     "Response",
+				ReturnType:     "GoogleTest.Response",
 			}
 
 			if diff := cmp.Diff(want, method.Codec); diff != "" {

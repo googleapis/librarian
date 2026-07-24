@@ -55,10 +55,21 @@ func TestLibraryName(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			model := api.NewTestAPI(nil, nil, nil)
 			model.PackageName = test.input
-			got := LibraryName(model)
+			got, err := LibraryName(model)
+			if err != nil {
+				t.Fatal(err)
+			}
 			if got != test.want {
 				t.Errorf("mismatch got = %q, want %q", got, test.want)
 			}
 		})
+	}
+}
+
+func TestLibraryNameError(t *testing.T) {
+	model := api.NewTestAPI(nil, nil, nil)
+	got, err := LibraryName(model)
+	if err == nil {
+		t.Errorf("Expected an error, got: %s", got)
 	}
 }

@@ -15,6 +15,7 @@
 package swift
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/googleapis/librarian/internal/sidekick/api"
@@ -22,7 +23,10 @@ import (
 )
 
 // LibraryName returns the Swift library (and module) name for the API.
-func LibraryName(api *api.API) string {
+func LibraryName(api *api.API) (string, error) {
+	if api.PackageName == "" {
+		return "", fmt.Errorf("API package name must not be empty")
+	}
 	// TODO(https://github.com/googleapis/librarian/issues/6229) - use
 	// a better default.
 	parts := strings.Split(api.PackageName, ".")
@@ -31,7 +35,7 @@ func LibraryName(api *api.API) string {
 	}
 	result := strings.Join(parts, "")
 	if strings.HasPrefix(result, "Google") {
-		return result
+		return result, nil
 	}
-	return "Google" + result
+	return "Google" + result, nil
 }
