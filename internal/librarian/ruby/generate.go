@@ -96,12 +96,19 @@ func generateAPI(ctx context.Context, api *config.API, gemName string, pc *confi
 	if err != nil {
 		return err
 	}
+	// Output --ruby_out and --grpc_out into lib/ so _pb.rb files land under lib/google/...
+	// matching Bazel's ruby_gapic_assembly_pkg_impl:
+	// https://github.com/googleapis/gapic-generator-ruby/blob/8fed6b7c1/rules_ruby_gapic/ruby_gapic_pkg.bzl#L39-L41
+	libStagingDir := filepath.Join(stagingDir, "lib")
+	if err := os.MkdirAll(libStagingDir, 0o755); err != nil {
+		return fmt.Errorf("failed to create lib staging directory: %w", err)
+	}
 	grpcPluginPath := filepath.Join(installDir, "bin", "grpc_tools_ruby_protoc_plugin")
 	args := []string{
 		"--experimental_allow_proto3_optional",
 		"-I=" + googleapisDir,
-		"--ruby_out=" + stagingDir,
-		"--grpc_out=" + stagingDir,
+		"--ruby_out=" + libStagingDir,
+		"--grpc_out=" + libStagingDir,
 		"--plugin=protoc-gen-grpc=" + grpcPluginPath,
 		"--ruby_cloud_out=" + stagingDir,
 	}

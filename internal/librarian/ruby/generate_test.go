@@ -284,17 +284,22 @@ func setupDummyProtoc(t *testing.T) {
 
 	protocPath := filepath.Join(binDir, "protoc")
 	script := `#!/bin/sh
-outDir=""
+rubyOut=""
+rubyCloudOut=""
 for arg in "$@"; do
   case "$arg" in
-    --ruby_cloud_out=*) outDir="${arg#--ruby_cloud_out=}" ;;
-    --ruby_out=*) if [ -z "$outDir" ]; then outDir="${arg#--ruby_out=}"; fi ;;
+    --ruby_cloud_out=*) rubyCloudOut="${arg#--ruby_cloud_out=}" ;;
+    --ruby_out=*) rubyOut="${arg#--ruby_out=}" ;;
   esac
 done
-if [ -n "$outDir" ]; then
-  mkdir -p "$outDir/lib/google/cloud/secret_manager"
-  touch "$outDir/lib/google/cloud/secret_manager/v1.rb"
-  touch "$outDir/CHANGELOG.md"
+if [ -n "$rubyCloudOut" ]; then
+  mkdir -p "$rubyCloudOut/lib/google/cloud/secret_manager"
+  touch "$rubyCloudOut/lib/google/cloud/secret_manager/v1.rb"
+  touch "$rubyCloudOut/CHANGELOG.md"
+fi
+if [ -n "$rubyOut" ]; then
+  mkdir -p "$rubyOut/google/cloud/secret_manager"
+  touch "$rubyOut/google/cloud/secret_manager/v1_pb.rb"
 fi
 exit 0
 `
@@ -347,6 +352,10 @@ func TestGenerate(t *testing.T) {
 	if _, err := os.Stat(wantFile); err != nil {
 		t.Errorf("expected generated file %s to exist: %v", wantFile, err)
 	}
+	wantPbFile := filepath.Join(outDir, "lib", "google", "cloud", "secret_manager", "v1_pb.rb")
+	if _, err := os.Stat(wantPbFile); err != nil {
+		t.Errorf("expected generated pb file %s to exist: %v", wantPbFile, err)
+	}
 	gotChangelog, err := os.ReadFile(changelogPath)
 	if err != nil {
 		t.Fatal(err)
@@ -374,6 +383,10 @@ func TestGenerateAPI(t *testing.T) {
 	wantFile := filepath.Join(stagingDir, "lib", "google", "cloud", "secret_manager", "v1.rb")
 	if _, err := os.Stat(wantFile); err != nil {
 		t.Errorf("expected generated file %s to exist: %v", wantFile, err)
+	}
+	wantPbFile := filepath.Join(stagingDir, "lib", "google", "cloud", "secret_manager", "v1_pb.rb")
+	if _, err := os.Stat(wantPbFile); err != nil {
+		t.Errorf("expected generated pb file %s to exist: %v", wantPbFile, err)
 	}
 }
 
