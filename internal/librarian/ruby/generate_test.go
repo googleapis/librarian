@@ -308,7 +308,15 @@ if [ -n "$rubyCloudOut" ]; then
   touch "$rubyCloudOut/lib/google/cloud/secret_manager/v1.rb"
   touch "$rubyCloudOut/CHANGELOG.md"
   mkdir -p "$rubyCloudOut/snippets"
-  printf '{\n  "clientLibrary": {\n    "name": "google-cloud-secret_manager-v1",\n    "version": "",\n    "language": "RUBY"\n  }\n}' > "$rubyCloudOut/snippets/snippet_metadata_google.cloud.secretmanager.v1.json"
+  cat << 'EOF' > "$rubyCloudOut/snippets/snippet_metadata_google.cloud.secretmanager.v1.json"
+{
+  "clientLibrary": {
+    "name": "google-cloud-secret_manager-v1",
+    "version": "",
+    "language": "RUBY"
+  }
+}
+EOF
 fi
 if [ -n "$rubyOut" ]; then
   mkdir -p "$rubyOut/google/cloud/secret_manager"
