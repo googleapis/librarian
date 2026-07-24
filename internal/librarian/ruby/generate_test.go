@@ -27,6 +27,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/serviceconfig"
+	"github.com/googleapis/librarian/internal/snippetmetadata"
 	"github.com/googleapis/librarian/internal/sources"
 )
 
@@ -391,11 +392,7 @@ func TestGenerate(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	var metadata struct {
-		ClientLibrary struct {
-			Version string `json:"version"`
-		} `json:"clientLibrary"`
-	}
+	var metadata snippetmetadata.SnippetMetadata
 	if err := json.Unmarshal(gotSnippetMetadata, &metadata); err != nil {
 		t.Fatal(err)
 	}
