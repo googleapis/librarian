@@ -57,7 +57,7 @@ func Generate(ctx context.Context, cfg *config.Config, library *config.Library, 
 
 	bin, err := binDir()
 	if err != nil {
-		return fmt.Errorf("failed to get bin dir: %w", err)
+		return err
 	}
 	wrapperPath := filepath.Join(bin, "gapic-generator-php")
 	if _, err := os.Stat(wrapperPath); err != nil {
