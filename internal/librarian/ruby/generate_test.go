@@ -388,3 +388,32 @@ func TestGenerateAPI_Error(t *testing.T) {
 		t.Error("generateAPI() error = nil, want error")
 	}
 }
+
+func TestDefaultOutput(t *testing.T) {
+	for _, test := range []struct {
+		name          string
+		libName       string
+		defaultOutput string
+		want          string
+	}{
+		{
+			name:          "empty default output",
+			libName:       "google-cloud-secret_manager-v1",
+			defaultOutput: "",
+			want:          "google-cloud-secret_manager-v1",
+		},
+		{
+			name:          "with default output directory",
+			libName:       "google-cloud-secret_manager-v1",
+			defaultOutput: "gems",
+			want:          filepath.Join("gems", "google-cloud-secret_manager-v1"),
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := DefaultOutput(test.libName, test.defaultOutput)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}

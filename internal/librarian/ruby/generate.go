@@ -33,6 +33,12 @@ import (
 
 var errNoAPIs = errors.New("no apis configured for library")
 
+// DefaultOutput derives an output path from a library name and a default
+// output path.
+func DefaultOutput(name, defaultOutput string) string {
+	return filepath.Join(defaultOutput, name)
+}
+
 // Generate generates a Ruby client library.
 func Generate(ctx context.Context, cfg *config.Config, library *config.Library, srcs *sources.Sources) (err error) {
 	if len(library.APIs) == 0 {
