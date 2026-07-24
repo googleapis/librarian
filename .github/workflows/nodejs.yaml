@@ -42,7 +42,6 @@ jobs:
         with:
           persist-credentials: false
       - uses: ./.github/actions/setup-librarian
-
       - name: "Install Node.js dependencies (resolve cache paths)"
         id: tool-paths
         run: |
