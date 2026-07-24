@@ -74,7 +74,7 @@ func Generate(ctx context.Context, cfg *config.Config, library *config.Library, 
 			return fmt.Errorf("api %q: %w", api.Path, err)
 		}
 	}
-	keepSet := buildKeepSet(library.Keep)
+	keepSet := buildKeepSet(library.Name, library.Keep)
 	keepFunc := func(rel string) bool {
 		return isKept(rel, keepSet)
 	}

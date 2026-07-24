@@ -306,7 +306,8 @@ for arg in "$@"; do
   esac
 done
 if [ -n "$rubyCloudOut" ]; then
-  mkdir -p "$rubyCloudOut/lib/google/cloud/secret_manager"
+  mkdir -p "$rubyCloudOut/lib/google/cloud/secret_manager/v1"
+  touch "$rubyCloudOut/lib/google/cloud/secret_manager/v1/version.rb"
   touch "$rubyCloudOut/lib/google/cloud/secret_manager/v1.rb"
   touch "$rubyCloudOut/CHANGELOG.md"
   mkdir -p "$rubyCloudOut/snippets"
@@ -358,6 +359,23 @@ func TestGenerate(t *testing.T) {
 	if err := os.WriteFile(changelogPath, []byte(existingContent), 0o644); err != nil {
 		t.Fatal(err)
 	}
+	versionPath := filepath.Join(outDir, "lib", "google", "cloud", "secret_manager", "v1", "version.rb")
+	if err := os.MkdirAll(filepath.Dir(versionPath), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	const existingVersionContent = `module Google
+  module Cloud
+    module SecretManager
+      module V1
+        VERSION = "1.2.3"
+      end
+    end
+  end
+end
+`
+	if err := os.WriteFile(versionPath, []byte(existingVersionContent), 0o644); err != nil {
+		t.Fatal(err)
+	}
 	library := &config.Library{
 		Name:    "google-cloud-secret_manager-v1",
 		Version: "1.2.3",
@@ -385,6 +403,13 @@ func TestGenerate(t *testing.T) {
 		t.Fatal(err)
 	}
 	if diff := cmp.Diff(existingContent, string(gotChangelog)); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+	gotVersion, err := os.ReadFile(versionPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if diff := cmp.Diff(existingVersionContent, string(gotVersion)); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 	snippetMetadataPath := filepath.Join(outDir, "snippets", "snippet_metadata_google.cloud.secretmanager.v1.json")
