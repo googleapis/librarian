@@ -21,6 +21,8 @@ import (
 	"path/filepath"
 	"testing"
 
+	"os/exec"
+
 	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/config"
 )
@@ -57,6 +59,7 @@ func TestInstall(t *testing.T) {
 		tools   *config.Tools
 		setup   func(t *testing.T)
 		wantErr error
+		check   func(t *testing.T)
 	}{
 		{
 			name:  "no tools, uses fallback generator",
@@ -80,9 +83,9 @@ func TestInstall(t *testing.T) {
 			tools: &config.Tools{
 				Composer: []*config.ComposerTool{
 					{
-						Name:    "fake-composer-tool",
+						Name:    "gapic-generator-php",
 						Version: "1.0.0",
-						Repo:    "github.com/fake/fake-tool",
+						Repo:    "github.com/googleapis/gapic-generator-php",
 						SHA256:  "29635b02c6e505fe31cba2f88ae999f00d2710fe1d65cb7cad521a82e7c5a518",
 					},
 				},
@@ -97,7 +100,7 @@ func TestInstall(t *testing.T) {
 				cache := t.TempDir()
 				t.Setenv("LIBRARIAN_CACHE", cache)
 				t.Setenv("LIBRARIAN_BIN", filepath.Join(cache, "bin"))
-				repoDir := filepath.Join(cache, "github.com/fake/fake-tool@1.0.0")
+				repoDir := filepath.Join(cache, "github.com/googleapis/gapic-generator-php@1.0.0")
 				if err := os.MkdirAll(filepath.Join(repoDir, "dummy"), 0o755); err != nil {
 					t.Fatal(err)
 				}
@@ -105,7 +108,23 @@ func TestInstall(t *testing.T) {
 				bin := t.TempDir()
 				writeExecutable(t, filepath.Join(bin, "composer"), "#!/bin/sh\nexit 0\n")
 				writeExecutable(t, filepath.Join(bin, "pip"), "#!/bin/sh\nexit 0\n")
+				writeExecutable(t, filepath.Join(bin, "php"), "#!/bin/sh\nexit 0\n")
 				t.Setenv("PATH", bin+string(os.PathListSeparator)+os.Getenv("PATH"))
+			},
+			check: func(t *testing.T) {
+				binDir := filepath.Join(os.Getenv("LIBRARIAN_BIN"), "php_tools", "bin")
+				wrapperPath := filepath.Join(binDir, "gapic-generator-php")
+				b, err := os.ReadFile(wrapperPath)
+				if err != nil {
+					t.Fatal(err)
+				}
+				repoDir := filepath.Join(os.Getenv("LIBRARIAN_CACHE"), "github.com/googleapis/gapic-generator-php@1.0.0")
+				destPath := filepath.Join(repoDir, "src", "Main.php")
+				phpPath, _ := exec.LookPath("php")
+				want := phpWrapperContent(phpPath, destPath)
+				if diff := cmp.Diff(want, string(b)); diff != "" {
+					t.Errorf("mismatch (-want +got):\n%s", diff)
+				}
 			},
 		},
 		{
@@ -113,9 +132,9 @@ func TestInstall(t *testing.T) {
 			tools: &config.Tools{
 				Composer: []*config.ComposerTool{
 					{
-						Name:    "fake-composer-tool",
+						Name:    "gapic-generator-php",
 						Version: "1.0.0",
-						Repo:    "github.com/fake/fake-tool",
+						Repo:    "github.com/googleapis/gapic-generator-php",
 						SHA256:  "29635b02c6e505fe31cba2f88ae999f00d2710fe1d65cb7cad521a82e7c5a518",
 					},
 				},
@@ -136,7 +155,7 @@ func TestInstall(t *testing.T) {
 				cache := t.TempDir()
 				t.Setenv("LIBRARIAN_CACHE", cache)
 				t.Setenv("LIBRARIAN_BIN", filepath.Join(cache, "bin"))
-				repoDir := filepath.Join(cache, "github.com/fake/fake-tool@1.0.0")
+				repoDir := filepath.Join(cache, "github.com/googleapis/gapic-generator-php@1.0.0")
 				if err := os.MkdirAll(filepath.Join(repoDir, "dummy"), 0o755); err != nil {
 					t.Fatal(err)
 				}
@@ -146,7 +165,67 @@ func TestInstall(t *testing.T) {
 				writeExecutable(t, filepath.Join(bin, "pip"), "#!/bin/sh\nexit 0\n")
 				writeExecutable(t, filepath.Join(bin, "node"), "#!/bin/sh\nexit 0\n")
 				writeExecutable(t, filepath.Join(bin, "pnpm"), "#!/bin/sh\nexit 0\n")
+				writeExecutable(t, filepath.Join(bin, "php"), "#!/bin/sh\nexit 0\n")
 				t.Setenv("PATH", bin+string(os.PathListSeparator)+os.Getenv("PATH"))
+			},
+			check: func(t *testing.T) {
+				binDir := filepath.Join(os.Getenv("LIBRARIAN_BIN"), "php_tools", "bin")
+				wrapperPath := filepath.Join(binDir, "gapic-generator-php")
+				b, err := os.ReadFile(wrapperPath)
+				if err != nil {
+					t.Fatal(err)
+				}
+				repoDir := filepath.Join(os.Getenv("LIBRARIAN_CACHE"), "github.com/googleapis/gapic-generator-php@1.0.0")
+				destPath := filepath.Join(repoDir, "src", "Main.php")
+				phpPath, _ := exec.LookPath("php")
+				want := phpWrapperContent(phpPath, destPath)
+				if diff := cmp.Diff(want, string(b)); diff != "" {
+					t.Errorf("mismatch (-want +got):\n%s", diff)
+				}
+			},
+		},
+		{
+			name: "with gapic-generator-php tool",
+			tools: &config.Tools{
+				Composer: []*config.ComposerTool{
+					{
+						Name:    "fake-gapic-generator",
+						Version: "1.0.0",
+						Repo:    "github.com/googleapis/gapic-generator-php",
+						SHA256:  "29635b02c6e505fe31cba2f88ae999f00d2710fe1d65cb7cad521a82e7c5a518",
+					},
+				},
+			},
+			setup: func(t *testing.T) {
+				cache := t.TempDir()
+				t.Setenv("LIBRARIAN_CACHE", cache)
+				t.Setenv("LIBRARIAN_BIN", filepath.Join(cache, "bin"))
+				repoDir := filepath.Join(cache, "github.com/googleapis/gapic-generator-php@1.0.0")
+				if err := os.MkdirAll(filepath.Join(repoDir, "dummy"), 0o755); err != nil {
+					t.Fatal(err)
+				}
+				if err := os.MkdirAll(filepath.Join(repoDir, "src"), 0o755); err != nil {
+					t.Fatal(err)
+				}
+				bin := t.TempDir()
+				writeExecutable(t, filepath.Join(bin, "composer"), "#!/bin/sh\nexit 0\n")
+				writeExecutable(t, filepath.Join(bin, "php"), "#!/bin/sh\nexit 0\n")
+				t.Setenv("PATH", bin+string(os.PathListSeparator)+os.Getenv("PATH"))
+			},
+			check: func(t *testing.T) {
+				binDir := filepath.Join(os.Getenv("LIBRARIAN_BIN"), "php_tools", "bin")
+				wrapperPath := filepath.Join(binDir, "gapic-generator-php")
+				b, err := os.ReadFile(wrapperPath)
+				if err != nil {
+					t.Fatal(err)
+				}
+				repoDir := filepath.Join(os.Getenv("LIBRARIAN_CACHE"), "github.com/googleapis/gapic-generator-php@1.0.0")
+				destPath := filepath.Join(repoDir, "src", "Main.php")
+				phpPath, _ := exec.LookPath("php")
+				want := phpWrapperContent(phpPath, destPath)
+				if diff := cmp.Diff(want, string(b)); diff != "" {
+					t.Errorf("mismatch (-want +got):\n%s", diff)
+				}
 			},
 		},
 	} {
@@ -157,6 +236,9 @@ func TestInstall(t *testing.T) {
 			err := Install(t.Context(), test.tools)
 			if !errors.Is(err, test.wantErr) {
 				t.Fatalf("Install() error = %v, wantErr = %v", err, test.wantErr)
+			}
+			if test.check != nil {
+				test.check(t)
 			}
 		})
 	}
@@ -174,12 +256,35 @@ func TestInstall_Error(t *testing.T) {
 			tools: &config.Tools{
 				Composer: []*config.ComposerTool{
 					{
-						Name:    "fake-composer-tool",
+						Name:    "gapic-generator-php",
 						Version: "1.0.0",
 					},
 				},
 			},
 			wantErr: errMissingRepo,
+		},
+		{
+			name: "missing composer tool in PATH",
+			tools: &config.Tools{
+				Composer: []*config.ComposerTool{
+					{
+						Name:    "gapic-generator-php",
+						Version: "1.0.0",
+						Repo:    "github.com/googleapis/gapic-generator-php",
+					},
+				},
+			},
+			setup: func(t *testing.T) {
+				cache := t.TempDir()
+				t.Setenv("LIBRARIAN_CACHE", cache)
+				t.Setenv("LIBRARIAN_BIN", filepath.Join(cache, "bin"))
+				repoDir := filepath.Join(cache, "github.com/googleapis/gapic-generator-php@1.0.0")
+				if err := os.MkdirAll(filepath.Join(repoDir, "dummy"), 0o755); err != nil {
+					t.Fatal(err)
+				}
+				t.Setenv("PATH", t.TempDir())
+			},
+			wantErr: exec.ErrNotFound,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
@@ -211,7 +316,8 @@ func TestCreateBinWrapper(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			binDir := t.TempDir()
 			destPath := "/path/to/dest"
-			if err := createBinWrapper(test.wrapperName, destPath, binDir); err != nil {
+			content := fmt.Sprintf("#!/bin/sh\nexec %q \"$@\"\n", destPath)
+			if err := createBinWrapper(test.wrapperName, content, binDir); err != nil {
 				t.Fatal(err)
 			}
 			wrapperPath := filepath.Join(binDir, test.wrapperName)
@@ -219,9 +325,8 @@ func TestCreateBinWrapper(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			want := fmt.Sprintf("#!/bin/sh\nexec %q \"$@\"\n", destPath)
-			if diff := cmp.Diff(want, string(b)); diff != "" {
-				t.Errorf("wrapper content mismatch (-want +got):\n%s", diff)
+			if diff := cmp.Diff(content, string(b)); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 			info, err := os.Stat(wrapperPath)
 			if err != nil {
