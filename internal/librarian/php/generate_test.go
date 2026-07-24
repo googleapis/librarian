@@ -90,7 +90,7 @@ func requirePHPGenerator(t *testing.T) {
 	testhelper.RequireCommand(t, "php")
 	bin, err := binDir()
 	if err != nil {
-		t.Fatalf("failed to locate bin dir: %v", err)
+		t.Fatal(err)
 	}
 	wrapperPath := filepath.Join(bin, "gapic-generator-php")
 	if _, err := os.Stat(wrapperPath); err != nil {
