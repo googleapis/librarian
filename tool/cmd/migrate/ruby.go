@@ -183,6 +183,28 @@ func findRubyLibraries(googleapisPath, repoPath string) ([]*config.Library, erro
 						},
 					}
 				}
+			} else {
+				wb, err := parseUnversionedBuild(googleapisPath, name)
+				if err != nil {
+					return nil, err
+				}
+				if wb != nil {
+					lib.APIs[0] = &config.API{
+						Path: wb.Path,
+						Ruby: &config.RubyAPI{
+							RubyCloudOpts: &config.RubyCloudOpts{
+								EnvPrefix:          wb.Params.EnvPrefix,
+								ExtraDependencies:  wb.Params.ExtraDeps,
+								GemNamespace:       wb.Params.GemNamespace,
+								NamespaceOverride:  wb.Params.NamespaceOverride,
+								PathOverride:       wb.Params.PathOverride,
+								ServiceOverride:    wb.Params.ServiceOverride,
+								WrapperGemOverride: wb.Params.WrapperGemOverride,
+								YardStrict:         wb.Params.YardStrict,
+							},
+						},
+					}
+				}
 			}
 			libraries = append(libraries, lib)
 		}
@@ -367,9 +389,6 @@ func parseUnversionedBuild(googleapisDir, apiPath string) (*WrapperBuild, error)
 	params, err := parseExtraProtoParams(file)
 	if err != nil {
 		return nil, err
-	}
-	if params == nil {
-		return nil, nil
 	}
 	return &WrapperBuild{
 		Path:   api,
