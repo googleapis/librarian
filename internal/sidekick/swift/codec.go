@@ -54,13 +54,19 @@ type codec struct {
 	// library.
 	GenerationYear string
 
-	// The name of the swift package (e.g. "GoogleCloudSecretManagerV1")
+	// LibraryName is the name of the Swift library (e.g. "GoogleCloudSecretManagerV1").
+	//
+	// Note that GAPIC packages contain a single product (the library), which
+	// contains a single target and module with the same names as the library.
+	LibraryName string
+
+	// The name of the Swift package (e.g. "google-cloud-secretmanager-v1").
 	PackageName string
 
-	// The package version (e.g. "1.2.3")
+	// The package version (e.g. "1.2.3").
 	PackageVersion string
 
-	// The release level (e.g. "preview" or "stable")
+	// The release level (e.g. "preview" or "stable").
 	ReleaseLevel string
 
 	// The location of the monorepo, relative to the current directory.
@@ -181,6 +187,13 @@ func newCodec(model *api.API, cfg *parser.ModelConfig, swiftCfg *config.SwiftPac
 			// Ignore other options.
 		}
 	}
+	if !result.Module {
+		libraryName, err := LibraryName(model)
+		if err != nil {
+			return nil, err
+		}
+		result.LibraryName = libraryName
+	}
 	return result, nil
 }
 
@@ -207,7 +220,7 @@ func (c *codec) addDependency(dep *Dependency) (*Dependency, error) {
 		return nil, fmt.Errorf("attempting to add nil dependency")
 	}
 	// Skip including self as a dependency
-	if dep.Name == c.PackageName {
+	if dep.Name == c.LibraryName {
 		return nil, nil
 	}
 	if ann, ok := c.Model.Codec.(*modelAnnotations); ok {

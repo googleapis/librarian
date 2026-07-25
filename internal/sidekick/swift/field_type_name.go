@@ -175,7 +175,7 @@ func (c *codec) fullyQualifiedMessageTypeName(m *api.Message) (string, error) {
 		}
 		if m.Package == c.Model.PackageName {
 			// this is the current package
-			return fmt.Sprintf("%s.%s", c.PackageName, name), nil
+			return fmt.Sprintf("%s.%s", c.LibraryName, name), nil
 		}
 		dep, ok := c.ApiPackages[m.Package]
 		if !ok {

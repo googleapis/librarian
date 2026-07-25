@@ -66,6 +66,13 @@ func TestGeneratePackageSwift_WithDependencies(t *testing.T) {
 	}
 	contentStr := string(content)
 
+	gotPackage := extractBlock(t, contentStr, "let package = Package(", "\n  platforms:")
+	wantPackage := `let package = Package(
+  name: "GoogleCloudWorkflowsV1",
+  platforms:`
+	if diff := cmp.Diff(wantPackage, gotPackage); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
 	gotPackageDeps := extractBlock(t, contentStr, "  dependencies: [", "\n  ],")
 	wantPackageDeps := `  dependencies: [
     .package(path: "../../packages/gax"),

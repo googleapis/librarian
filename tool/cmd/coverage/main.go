@@ -47,8 +47,6 @@ const defaultTarget = 80
 var targets = map[string]float64{
 	// TODO(https://github.com/googleapis/librarian/issues/4664): raise to 80.
 	"internal/librarian/nodejs": 70,
-	// TODO(https://github.com/googleapis/librarian/issues/6705: raise to 80.
-	"internal/librarian/php": 60,
 	// TODO(https://github.com/googleapis/librarian/issues/6759): raise to 80.
 	"internal/librarian/ruby": 65,
 }

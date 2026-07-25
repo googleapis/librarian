@@ -22,7 +22,8 @@ import (
 )
 
 func TestFormatDocumentation(t *testing.T) {
-	codec := newTestCodec(t, api.NewTestAPI(nil, nil, nil), nil)
+
+	codec := newTestCodec(t, api.NewTestAPI(nil, nil, nil).WithPackageName("test"), nil)
 
 	for _, test := range []struct {
 		name string
