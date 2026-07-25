@@ -76,6 +76,7 @@ func NewTestAPI(messages []*Message, enums []*Enum, services []*Service) *API {
 	return model
 }
 
+// WithPackageName changes the package name of an API instance.
 func (a *API) WithPackageName(name string) *API {
 	a.PackageName = name
 	return a
