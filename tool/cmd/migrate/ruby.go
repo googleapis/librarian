@@ -184,12 +184,12 @@ func findRubyLibraries(googleapisPath, repoPath string) ([]*config.Library, erro
 					}
 				}
 			} else {
-				wb, err := parseUnversionedBuild(googleapisPath, name)
+				wb, err := parseUnversionedBuild(googleapisPath, api)
 				if err != nil {
 					return nil, err
 				}
 				if wb != nil {
-					lib.APIs[0] = &config.API{
+					rubyAPI := &config.API{
 						Path: wb.Path,
 						Ruby: &config.RubyAPI{
 							RubyCloudOpts: &config.RubyCloudOpts{
@@ -204,6 +204,7 @@ func findRubyLibraries(googleapisPath, repoPath string) ([]*config.Library, erro
 							},
 						},
 					}
+					lib.APIs = append(lib.APIs, rubyAPI)
 				}
 			}
 			libraries = append(libraries, lib)
