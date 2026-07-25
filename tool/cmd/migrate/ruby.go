@@ -191,6 +191,8 @@ func findRubyLibraries(googleapisPath, repoPath string) ([]*config.Library, erro
 	return libraries, nil
 }
 
+// parseAPIFromOwlBot parses API details from OwlBot config and determines if the library is a wrapper.
+// It returns the API path, whether the library is a wrapper, and an error if parsing fails.
 func parseAPIFromOwlBot(owlBotPath string) (string, bool, error) {
 	data, err := os.ReadFile(owlBotPath)
 	if err != nil {
