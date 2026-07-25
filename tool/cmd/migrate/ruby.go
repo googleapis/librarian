@@ -399,8 +399,15 @@ func parseAPIFromWrapperBuild(file *build.File) string {
 	if len(rules) == 0 || rules[0].Attr("srcs") == nil {
 		return ""
 	}
-	res := extractStrings(rules[0].Attr("srcs"))[0]
-	res = strings.Split(res, ":")[0]
+	srcs := extractStrings(rules[0].Attr("srcs"))
+	if len(srcs) == 0 {
+		return ""
+	}
+	res := srcs[0]
+	parts := strings.SplitN(res, ":", 2)
+	if len(parts) > 0 {
+		res = parts[0]
+	}
 	res, _ = strings.CutPrefix(res, "//")
 	return res
 }
