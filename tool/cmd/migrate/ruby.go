@@ -39,7 +39,7 @@ var (
 	//   2: API version (e.g. "v1") or empty string for unversioned wrapper libraries
 	//   3: Gem directory name token (e.g. "[^/]+" or "google-cloud-automl-v1")
 	//   4: Trailing path contents after "-ruby/"
-	regexAPIPath = regexp.MustCompile(`^/(.+?)(?:/(v\d+\w*))?/([^/]+)-ruby/(.*)$`)
+	regexAPIPath = regexp.MustCompile(`^/(.+?)(?:/(v\d+\w*))?/(\[\^/\]\+|[^/]+)-ruby/(.*)$`)
 	// Skip these directories when searching for libraries.
 	skippedDirs = []string{".github"}
 )
@@ -182,8 +182,6 @@ func findRubyLibraries(googleapisPath, repoPath string) ([]*config.Library, erro
 							YardStrict:         vb.YardStrict,
 						},
 					}
-				} else {
-
 				}
 			}
 			libraries = append(libraries, lib)

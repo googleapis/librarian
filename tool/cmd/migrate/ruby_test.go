@@ -160,7 +160,7 @@ func TestParseAPIFromOwlBot(t *testing.T) {
 		{
 			name:        "wrapper library",
 			path:        "testdata/ruby/parse_api_from_owlbot/wrapper.yaml",
-			wantPath:    "",
+			wantPath:    "google/cloud/apigeeconnect",
 			wantWrapper: true,
 		},
 	} {
