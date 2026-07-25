@@ -81,6 +81,12 @@ func generatedFiles(model *api.API) []language.GeneratedFile {
 			}
 			fileInfo.OutputPath = filepath.Join("skills", codec.PackageName+"-tests", "SKILL.md")
 		}
+		if strings.HasSuffix(filepath.ToSlash(fileInfo.TemplatePath), "skills/setup.md.mustache") {
+			if codec.ExampleMethodName == "" {
+				continue
+			}
+			fileInfo.OutputPath = filepath.Join("skills", codec.PackageName+"-setup", "SKILL.md")
+		}
 		result = append(result, fileInfo)
 	}
 
