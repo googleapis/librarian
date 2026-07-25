@@ -15,6 +15,7 @@
 package ruby
 
 import (
+	"encoding/json"
 	"errors"
 	"io/fs"
 	"os"
@@ -26,6 +27,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/serviceconfig"
+	"github.com/googleapis/librarian/internal/snippetmetadata"
 	"github.com/googleapis/librarian/internal/sources"
 )
 
@@ -53,7 +55,7 @@ func TestBuildGAPICOpts(t *testing.T) {
 				"ruby-cloud-gem-name=google-cloud-secret_manager-v1",
 				"service-yaml=" + filepath.Join(googleapisDir, "google/cloud/secretmanager/v1/secretmanager_v1.yaml"),
 				"grpc-service-config=" + filepath.Join(googleapisDir, "google/cloud/secretmanager/v1/secretmanager_grpc_service_config.json"),
-				"transport=grpc+rest",
+				"ruby-cloud-generate-transports=grpc;rest",
 				"ruby-cloud-rest-numeric-enums=true",
 			},
 		},
@@ -66,7 +68,7 @@ func TestBuildGAPICOpts(t *testing.T) {
 			want: []string{
 				"ruby-cloud-gem-name=google-cloud-compute-v1",
 				"service-yaml=" + filepath.Join(googleapisDir, "google/cloud/compute/v1/compute_v1.yaml"),
-				"transport=rest",
+				"ruby-cloud-generate-transports=rest",
 				"ruby-cloud-rest-numeric-enums=true",
 			},
 		},
@@ -129,9 +131,10 @@ func TestCollectProtoFiles(t *testing.T) {
 	}
 
 	for _, test := range []struct {
-		name    string
-		apiPath string
-		want    []string
+		name             string
+		apiPath          string
+		additionalProtos []string
+		want             []string
 	}{
 		{
 			name:    "standard api path",
@@ -148,9 +151,19 @@ func TestCollectProtoFiles(t *testing.T) {
 				filepath.Join(googleapisDir, "google/cloud/gkehub/v1/configmanagement/configmanagement.proto"),
 			},
 		},
+		{
+			name:             "with additional protos",
+			apiPath:          "google/cloud/secretmanager/v1",
+			additionalProtos: []string{"google/cloud/location/locations.proto"},
+			want: []string{
+				filepath.Join(googleapisDir, "google/cloud/location/locations.proto"),
+				filepath.Join(googleapisDir, "google/cloud/secretmanager/v1/resources.proto"),
+				filepath.Join(googleapisDir, "google/cloud/secretmanager/v1/service.proto"),
+			},
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got, err := collectProtoFiles(googleapisDir, test.apiPath)
+			got, err := collectProtoFiles(googleapisDir, test.apiPath, test.additionalProtos)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -167,7 +180,7 @@ func TestCollectProtoFiles_Error(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	_, err = collectProtoFiles(googleapisDir, "non/existent/path")
+	_, err = collectProtoFiles(googleapisDir, "non/existent/path", nil)
 	if !errors.Is(err, fs.ErrNotExist) {
 		t.Errorf("collectProtoFiles() error = %v, wantErr %v", err, fs.ErrNotExist)
 	}
@@ -284,16 +297,33 @@ func setupDummyProtoc(t *testing.T) {
 
 	protocPath := filepath.Join(binDir, "protoc")
 	script := `#!/bin/sh
-outDir=""
+rubyOut=""
+rubyCloudOut=""
 for arg in "$@"; do
   case "$arg" in
-    --ruby_cloud_out=*) outDir="${arg#--ruby_cloud_out=}" ;;
-    --ruby_out=*) if [ -z "$outDir" ]; then outDir="${arg#--ruby_out=}"; fi ;;
+    --ruby_cloud_out=*) rubyCloudOut="${arg#--ruby_cloud_out=}" ;;
+    --ruby_out=*) rubyOut="${arg#--ruby_out=}" ;;
   esac
 done
-if [ -n "$outDir" ]; then
-  mkdir -p "$outDir/lib/google/cloud/secret_manager"
-  touch "$outDir/lib/google/cloud/secret_manager/v1.rb"
+if [ -n "$rubyCloudOut" ]; then
+  mkdir -p "$rubyCloudOut/lib/google/cloud/secret_manager/v1"
+  touch "$rubyCloudOut/lib/google/cloud/secret_manager/v1/version.rb"
+  touch "$rubyCloudOut/lib/google/cloud/secret_manager/v1.rb"
+  touch "$rubyCloudOut/CHANGELOG.md"
+  mkdir -p "$rubyCloudOut/snippets"
+  cat << 'EOF' > "$rubyCloudOut/snippets/snippet_metadata_google.cloud.secretmanager.v1.json"
+{
+  "clientLibrary": {
+    "name": "google-cloud-secret_manager-v1",
+    "version": "",
+    "language": "RUBY"
+  }
+}
+EOF
+fi
+if [ -n "$rubyOut" ]; then
+  mkdir -p "$rubyOut/google/cloud/secret_manager"
+  touch "$rubyOut/google/cloud/secret_manager/v1_pb.rb"
 fi
 exit 0
 `
@@ -324,9 +354,32 @@ func TestGenerate(t *testing.T) {
 		t.Fatal(err)
 	}
 	outDir := t.TempDir()
+	changelogPath := filepath.Join(outDir, "CHANGELOG.md")
+	const existingContent = "# Initial Changelog Content\n"
+	if err := os.WriteFile(changelogPath, []byte(existingContent), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	versionPath := filepath.Join(outDir, "lib", "google", "cloud", "secret_manager", "v1", "version.rb")
+	if err := os.MkdirAll(filepath.Dir(versionPath), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	const existingVersionContent = `module Google
+  module Cloud
+    module SecretManager
+      module V1
+        VERSION = "1.2.3"
+      end
+    end
+  end
+end
+`
+	if err := os.WriteFile(versionPath, []byte(existingVersionContent), 0o644); err != nil {
+		t.Fatal(err)
+	}
 	library := &config.Library{
-		Name:   "google-cloud-secret_manager-v1",
-		Output: outDir,
+		Name:    "google-cloud-secret_manager-v1",
+		Version: "1.2.3",
+		Output:  outDir,
 		APIs: []*config.API{
 			{
 				Path: "google/cloud/secretmanager/v1",
@@ -340,6 +393,36 @@ func TestGenerate(t *testing.T) {
 	wantFile := filepath.Join(outDir, "lib", "google", "cloud", "secret_manager", "v1.rb")
 	if _, err := os.Stat(wantFile); err != nil {
 		t.Errorf("expected generated file %s to exist: %v", wantFile, err)
+	}
+	wantPbFile := filepath.Join(outDir, "lib", "google", "cloud", "secret_manager", "v1_pb.rb")
+	if _, err := os.Stat(wantPbFile); err != nil {
+		t.Errorf("expected generated pb file %s to exist: %v", wantPbFile, err)
+	}
+	gotChangelog, err := os.ReadFile(changelogPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if diff := cmp.Diff(existingContent, string(gotChangelog)); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+	gotVersion, err := os.ReadFile(versionPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if diff := cmp.Diff(existingVersionContent, string(gotVersion)); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+	snippetMetadataPath := filepath.Join(outDir, "snippets", "snippet_metadata_google.cloud.secretmanager.v1.json")
+	gotSnippetMetadata, err := os.ReadFile(snippetMetadataPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var metadata snippetmetadata.SnippetMetadata
+	if err := json.Unmarshal(gotSnippetMetadata, &metadata); err != nil {
+		t.Fatal(err)
+	}
+	if diff := cmp.Diff("1.2.3", metadata.ClientLibrary.Version); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
 
@@ -362,6 +445,10 @@ func TestGenerateAPI(t *testing.T) {
 	if _, err := os.Stat(wantFile); err != nil {
 		t.Errorf("expected generated file %s to exist: %v", wantFile, err)
 	}
+	wantPbFile := filepath.Join(stagingDir, "lib", "google", "cloud", "secret_manager", "v1_pb.rb")
+	if _, err := os.Stat(wantPbFile); err != nil {
+		t.Errorf("expected generated pb file %s to exist: %v", wantPbFile, err)
+	}
 }
 
 func TestGenerateAPI_Error(t *testing.T) {
@@ -373,5 +460,34 @@ func TestGenerateAPI_Error(t *testing.T) {
 	err = generateAPI(t.Context(), api, "gem-name", nil, googleapisDir, t.TempDir())
 	if err == nil {
 		t.Error("generateAPI() error = nil, want error")
+	}
+}
+
+func TestDefaultOutput(t *testing.T) {
+	for _, test := range []struct {
+		name          string
+		libName       string
+		defaultOutput string
+		want          string
+	}{
+		{
+			name:          "empty default output",
+			libName:       "google-cloud-secret_manager-v1",
+			defaultOutput: "",
+			want:          "google-cloud-secret_manager-v1",
+		},
+		{
+			name:          "with default output directory",
+			libName:       "google-cloud-secret_manager-v1",
+			defaultOutput: "gems",
+			want:          filepath.Join("gems", "google-cloud-secret_manager-v1"),
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := DefaultOutput(test.libName, test.defaultOutput)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
 	}
 }

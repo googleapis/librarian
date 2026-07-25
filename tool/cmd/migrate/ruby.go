@@ -47,11 +47,14 @@ type owlbotSrc struct {
 
 // VersionedBuild represents build configuration parsed from BUILD.bazel for a Ruby API version.
 type VersionedBuild struct {
-	EnvPrefix       string
-	ExtraDeps       string
-	PathOverride    string
-	ServiceOverride string
-	YardStrict      string
+	EnvPrefix          string
+	ExtraDeps          string
+	GemNamespace       string
+	NamespaceOverride  string
+	PathOverride       string
+	ServiceOverride    string
+	WrapperGemOverride string
+	YardStrict         string
 }
 
 func runRubyMigration(ctx context.Context, repoPath string) error {
@@ -155,11 +158,14 @@ func findRubyLibraries(googleapisPath, repoPath string) ([]*config.Library, erro
 			if vb != nil {
 				lib.APIs[0].Ruby = &config.RubyAPI{
 					RubyCloudOpts: &config.RubyCloudOpts{
-						EnvPrefix:         vb.EnvPrefix,
-						ExtraDependencies: vb.ExtraDeps,
-						PathOverride:      vb.PathOverride,
-						ServiceOverride:   vb.ServiceOverride,
-						YardStrict:        vb.YardStrict,
+						EnvPrefix:          vb.EnvPrefix,
+						ExtraDependencies:  vb.ExtraDeps,
+						GemNamespace:       vb.GemNamespace,
+						NamespaceOverride:  vb.NamespaceOverride,
+						PathOverride:       vb.PathOverride,
+						ServiceOverride:    vb.ServiceOverride,
+						WrapperGemOverride: vb.WrapperGemOverride,
+						YardStrict:         vb.YardStrict,
 					},
 				}
 			}
@@ -250,10 +256,16 @@ func parseVersionedBuild(googleapisDir, apiPath string) (*VersionedBuild, error)
 					vb.EnvPrefix, _ = strings.CutPrefix(dep, "ruby-cloud-env-prefix=")
 				case strings.HasPrefix(dep, "ruby-cloud-extra-dependencies="):
 					vb.ExtraDeps, _ = strings.CutPrefix(dep, "ruby-cloud-extra-dependencies=")
+				case strings.HasPrefix(dep, "ruby-cloud-gem-namespace="):
+					vb.GemNamespace, _ = strings.CutPrefix(dep, "ruby-cloud-gem-namespace=")
+				case strings.HasPrefix(dep, "ruby-cloud-namespace-override="):
+					vb.NamespaceOverride, _ = strings.CutPrefix(dep, "ruby-cloud-namespace-override=")
 				case strings.HasPrefix(dep, "ruby-cloud-path-override="):
 					vb.PathOverride, _ = strings.CutPrefix(dep, "ruby-cloud-path-override=")
 				case strings.HasPrefix(dep, "ruby-cloud-service-override="):
 					vb.ServiceOverride, _ = strings.CutPrefix(dep, "ruby-cloud-service-override=")
+				case strings.HasPrefix(dep, "ruby-cloud-wrapper-gem-override="):
+					vb.WrapperGemOverride, _ = strings.CutPrefix(dep, "ruby-cloud-wrapper-gem-override=")
 				case strings.HasPrefix(dep, "ruby-cloud-yard-strict="):
 					vb.YardStrict, _ = strings.CutPrefix(dep, "ruby-cloud-yard-strict=")
 				}

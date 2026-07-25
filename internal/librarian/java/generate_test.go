@@ -271,10 +271,6 @@ func TestGenerateAPI(t *testing.T) {
 	testhelper.RequireCommand(t, "protoc-gen-java_gapic")
 	testhelper.RequireCommand(t, "protoc-gen-java_grpc")
 	outdir := t.TempDir()
-	// Force routing to the legacy owlbot.py postprocessor.
-	if err := os.WriteFile(filepath.Join(outdir, "owlbot.py"), []byte("#!/usr/bin/env python3\npass"), 0o755); err != nil {
-		t.Fatal(err)
-	}
 	cfg := &config.Config{
 		Repo: "googleapis/google-cloud-java",
 		Default: &config.Default{
@@ -325,9 +321,8 @@ func TestGenerateAPI(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	// Verify that the output was restructured.
-	// Since postProcessAPI now calls restructureToStaging, we check in staging/v1/...
-	restructuredPath := filepath.Join(outdir, "owl-bot-staging", "v1", "google-cloud-secretmanager", "src", "main", "java")
+	// Verify that the output was restructured directly into the target module directory.
+	restructuredPath := filepath.Join(outdir, "google-cloud-secretmanager", "src", "main", "java")
 	if _, err := os.Stat(restructuredPath); err != nil {
 		t.Errorf("expected restructured path %s to exist: %v", restructuredPath, err)
 	}
@@ -341,10 +336,6 @@ func TestGenerateAPI_ProtoOnly(t *testing.T) {
 	testhelper.RequireCommand(t, "protoc")
 	testhelper.RequireCommand(t, "protoc-gen-java_grpc")
 	outdir := t.TempDir()
-	// Force routing to the legacy owlbot.py postprocessor.
-	if err := os.WriteFile(filepath.Join(outdir, "owlbot.py"), []byte("#!/usr/bin/env python3\npass"), 0o755); err != nil {
-		t.Fatal(err)
-	}
 	cfg := &config.Config{
 		Repo: "googleapis/google-cloud-java",
 		Default: &config.Default{
@@ -393,7 +384,7 @@ func TestGenerateAPI_ProtoOnly(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	restructuredPath := filepath.Join(outdir, "owl-bot-staging", "v1beta", "proto-google-cloud-gkehub-v1beta", "src", "main", "java")
+	restructuredPath := filepath.Join(outdir, "proto-google-cloud-gkehub-v1beta", "src", "main", "java")
 	if _, err := os.Stat(restructuredPath); err != nil {
 		t.Errorf("expected restructured path %s to exist: %v", restructuredPath, err)
 	}
@@ -482,10 +473,6 @@ func TestGenerateAPI_WithAdditionalProtosToGenerateAndCopy(t *testing.T) {
 	testhelper.RequireCommand(t, "protoc-gen-java_gapic")
 	testhelper.RequireCommand(t, "protoc-gen-java_grpc")
 	outdir := t.TempDir()
-	// Force routing to the legacy owlbot.py postprocessor.
-	if err := os.WriteFile(filepath.Join(outdir, "owlbot.py"), []byte("#!/usr/bin/env python3\npass"), 0o755); err != nil {
-		t.Fatal(err)
-	}
 	cfg := &config.Config{
 		Repo: "googleapis/google-cloud-java",
 		Default: &config.Default{
@@ -543,12 +530,12 @@ func TestGenerateAPI_WithAdditionalProtosToGenerateAndCopy(t *testing.T) {
 		t.Fatal(err)
 	}
 	// Verify that the additional proto was generated.
-	generatedJavaPath := filepath.Join(outdir, "owl-bot-staging", "v1", "proto-google-cloud-secretmanager-v1", "src", "main", "java", "com", "google", "cloud", "oslogin", "common", "OsLoginProto.java")
+	generatedJavaPath := filepath.Join(outdir, "proto-google-cloud-secretmanager-v1", "src", "main", "java", "com", "google", "cloud", "oslogin", "common", "OsLoginProto.java")
 	if _, err := os.Stat(generatedJavaPath); err != nil {
 		t.Errorf("expected generated java file %s to exist: %v", generatedJavaPath, err)
 	}
 	// Verify file copying
-	copiedProtoPath := filepath.Join(outdir, "owl-bot-staging", "v1", "proto-google-cloud-secretmanager-v1", "src", "main", "proto", additionalProto)
+	copiedProtoPath := filepath.Join(outdir, "proto-google-cloud-secretmanager-v1", "src", "main", "proto", additionalProto)
 	if _, err := os.Stat(copiedProtoPath); err != nil {
 		t.Errorf("expected copied proto file %s to exist: %v", copiedProtoPath, err)
 	}
@@ -605,13 +592,6 @@ func TestGenerateLibrary_Error(t *testing.T) {
 					if err := os.MkdirAll(filepath.Join(library.Output, artifact), 0o755); err != nil {
 						t.Fatal(err)
 					}
-				}
-				if err := os.WriteFile(filepath.Join(library.Output, "owlbot.py"), []byte("#!/usr/bin/env python3\npass"), 0o755); err != nil {
-					t.Fatal(err)
-				}
-				templatesDir := filepath.Join(filepath.Dir(library.Output), owlbotTemplatesRelPath)
-				if err := os.MkdirAll(templatesDir, 0o755); err != nil {
-					t.Fatal(err)
 				}
 			},
 			wantErr: errMonorepoVersion,
@@ -696,13 +676,6 @@ func TestGenerate_Logic(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	if err := os.WriteFile(filepath.Join(outdir, "owlbot.py"), []byte("#!/usr/bin/env python3\npass"), 0o755); err != nil {
-		t.Fatal(err)
-	}
-	templatesDir := filepath.Join(filepath.Dir(outdir), owlbotTemplatesRelPath)
-	if err := os.MkdirAll(templatesDir, 0o755); err != nil {
-		t.Fatal(err)
-	}
 
 	err := Generate(t.Context(), cfg, library, &sources.Sources{Googleapis: googleapisDir})
 	if err != nil {
@@ -746,13 +719,6 @@ func TestGenerate_ProtoExclusion(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	if err := os.WriteFile(filepath.Join(outdir, "owlbot.py"), []byte("#!/usr/bin/env python3\npass"), 0o755); err != nil {
-		t.Fatal(err)
-	}
-	templatesDir := filepath.Join(filepath.Dir(outdir), owlbotTemplatesRelPath)
-	if err := os.MkdirAll(templatesDir, 0o755); err != nil {
-		t.Fatal(err)
-	}
 	cfg := &config.Config{
 		Language: config.LanguageJava,
 		Repo:     "googleapis/google-cloud-java",
@@ -773,8 +739,7 @@ func TestGenerate_ProtoExclusion(t *testing.T) {
 	}
 
 	// Verify Step 1 (proto) excludes resources.proto by checking the filesystem.
-	// We check the staging directory because our dummy owlbot.py doesn't move files.
-	protoPkgDir := filepath.Join(outdir, "owl-bot-staging", "v1", "proto-google-cloud-secretmanager-v1", "src", "main", "java", "com", "google", "cloud", "secretmanager", "v1")
+	protoPkgDir := filepath.Join(outdir, "proto-google-cloud-secretmanager-v1", "src", "main", "java", "com", "google", "cloud", "secretmanager", "v1")
 
 	if _, err := os.Stat(filepath.Join(protoPkgDir, "ResourcesProto.java")); err == nil {
 		t.Errorf("ResourcesProto.java should NOT be generated when resources.proto is in SkipProtoClassGeneration")
@@ -966,41 +931,6 @@ func TestProcessAdditionalProtos(t *testing.T) {
 	}
 }
 
-func TestDeriveAPIBase(t *testing.T) {
-	for _, test := range []struct {
-		name    string
-		library *config.Library
-		apiPath string
-		want    string
-	}{
-		{
-			name:    "regular library",
-			library: &config.Library{Name: "secretmanager"},
-			apiPath: "google/cloud/secretmanager/v1",
-			want:    "v1",
-		},
-		{
-			name:    "common-protos fallback to v1",
-			library: &config.Library{Name: "common-protos"},
-			apiPath: "google/cloud/audit",
-			want:    "v1",
-		},
-		{
-			name:    "common-protos with versioned path",
-			library: &config.Library{Name: "common-protos"},
-			apiPath: "google/apps/card/v1",
-			want:    "v1",
-		},
-	} {
-		t.Run(test.name, func(t *testing.T) {
-			got := deriveAPIBase(test.library, test.apiPath)
-			if diff := cmp.Diff(test.want, got); diff != "" {
-				t.Errorf("mismatch (-want +got):\n%s", diff)
-			}
-		})
-	}
-}
-
 func TestGenerateAPI_Gating(t *testing.T) {
 	if testing.Short() {
 		t.Skip("slow test: Java GAPIC code generation integration")
@@ -1056,10 +986,6 @@ func TestGenerateAPI_Gating(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			outdir := t.TempDir()
-			// Force routing to the legacy owlbot.py postprocessor.
-			if err := os.WriteFile(filepath.Join(outdir, "owlbot.py"), []byte("#!/usr/bin/env python3\npass"), 0o755); err != nil {
-				t.Fatal(err)
-			}
 			api := &config.API{Path: "google/cloud/secretmanager/v1"}
 			cfg := &config.Config{
 				Repo: "googleapis/google-cloud-java",
@@ -1107,9 +1033,9 @@ func TestGenerateAPI_Gating(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			stagingProtoPath := filepath.Join(outdir, "owl-bot-staging", "v1", "proto-google-cloud-secretmanager-v1", "src", "main", "java")
-			stagingGRPCPath := filepath.Join(outdir, "owl-bot-staging", "v1", "grpc-google-cloud-secretmanager-v1", "src", "main", "java")
-			stagingGAPICPath := filepath.Join(outdir, "owl-bot-staging", "v1", "google-cloud-secretmanager", "src", "main", "java")
+			stagingProtoPath := filepath.Join(outdir, "proto-google-cloud-secretmanager-v1", "src", "main", "java")
+			stagingGRPCPath := filepath.Join(outdir, "grpc-google-cloud-secretmanager-v1", "src", "main", "java")
+			stagingGAPICPath := filepath.Join(outdir, "google-cloud-secretmanager", "src", "main", "java")
 			gotProtoDir := assertDirExists(t, stagingProtoPath, test.wantProtoDir, "proto dir")
 			assertDirExists(t, stagingGRPCPath, test.wantGRPCDir, "grpc dir")
 			assertDirExists(t, stagingGAPICPath, test.wantGAPICDir, "gapic dir")

@@ -362,6 +362,8 @@ func defaultOutput(language string, name, api, defaultOut string) string {
 		return php.DefaultOutput(name, defaultOut)
 	case config.LanguagePython:
 		return python.DefaultOutput(name, defaultOut)
+	case config.LanguageRuby:
+		return ruby.DefaultOutput(name, defaultOut)
 	case config.LanguageRust:
 		return rust.DefaultOutput(api, defaultOut)
 	case config.LanguageSwift:

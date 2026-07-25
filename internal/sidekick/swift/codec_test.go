@@ -25,7 +25,8 @@ import (
 )
 
 func TestParseOptions(t *testing.T) {
-	model := api.NewTestAPI([]*api.Message{}, []*api.Enum{}, []*api.Service{})
+	model := api.NewTestAPI([]*api.Message{}, []*api.Enum{}, []*api.Service{}).
+		WithPackageName("test")
 	for _, test := range []struct {
 		name string
 		cfg  *parser.ModelConfig
@@ -36,13 +37,14 @@ func TestParseOptions(t *testing.T) {
 			cfg: &parser.ModelConfig{
 				Codec: map[string]string{
 					"copyright-year":        "2038",
-					"package-name-override": "GoogleCloudBigtable",
+					"package-name-override": "google-cloud-bigtable",
 					"root-name":             "test-root",
 				},
 			},
 			want: &codec{
 				GenerationYear:     "2038",
-				PackageName:        "GoogleCloudBigtable",
+				LibraryName:        "GoogleTest",
+				PackageName:        "google-cloud-bigtable",
 				PackageVersion:     "0.0.0",
 				ReleaseLevel:       "preview",
 				MonorepoRoot:       ".",
@@ -57,14 +59,15 @@ func TestParseOptions(t *testing.T) {
 			cfg: &parser.ModelConfig{
 				Codec: map[string]string{
 					"copyright-year":        "2038",
-					"package-name-override": "GoogleCloudComputeV1",
+					"package-name-override": "google-cloud-compute-v1",
 					"root-name":             "test-root",
 				},
 				SpecificationFormat: config.SpecDiscovery,
 			},
 			want: &codec{
 				GenerationYear:     "2038",
-				PackageName:        "GoogleCloudComputeV1",
+				LibraryName:        "GoogleTest",
+				PackageName:        "google-cloud-compute-v1",
 				PackageVersion:     "0.0.0",
 				ReleaseLevel:       "preview",
 				MonorepoRoot:       ".",
@@ -98,7 +101,7 @@ func TestNewCodec_WithSwiftCfg(t *testing.T) {
 		},
 	}
 	cfg := &parser.ModelConfig{}
-	model := api.NewTestAPI([]*api.Message{}, []*api.Enum{}, []*api.Service{})
+	model := api.NewTestAPI([]*api.Message{}, []*api.Enum{}, []*api.Service{}).WithPackageName("test")
 	got, err := newCodec(model, cfg, swiftCfg, ".")
 	if err != nil {
 		t.Fatal(err)

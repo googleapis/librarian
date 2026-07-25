@@ -76,6 +76,11 @@ func NewTestAPI(messages []*Message, enums []*Enum, services []*Service) *API {
 	return model
 }
 
+func (a *API) WithPackageName(name string) *API {
+	a.PackageName = name
+	return a
+}
+
 // parentName returns the parent's name from a fully qualified identifier.
 func parentName(id string) string {
 	if lastIndex := strings.LastIndex(id, "."); lastIndex != -1 {

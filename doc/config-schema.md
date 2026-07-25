@@ -486,6 +486,7 @@ This document describes the schema for the librarian.yaml.
 
 | Field | Type | Description |
 | :--- | :--- | :--- |
+| `additional_protos` | list of string | Is a list of additional proto files to include in generation. |
 | `ruby_cloud_opts` | [RubyCloudOpts](#rubycloudopts-configuration) (optional) | Contains options passed to the Ruby Cloud GAPIC generator as the `--ruby_cloud_opt` option. |
 
 ## RubyCloudOpts Configuration
@@ -494,8 +495,11 @@ This document describes the schema for the librarian.yaml.
 | :--- | :--- | :--- |
 | `ruby-cloud-env-prefix` | string | Is the environment variable prefix. |
 | `ruby-cloud-extra-dependencies` | string | Contains extra runtime dependencies to the .gemspec file. |
+| `ruby-cloud-gem-namespace` | string | Is the root Ruby namespace. |
+| `ruby-cloud-namespace-override` | string | Overrides token / segment replacements applied across all generated module & class paths. |
 | `ruby-cloud-path-override` | string | Overrides file/directory paths under lib/ and proto_docs/. |
 | `ruby-cloud-service-override` | string | Overrides generated service class names when proto package service names don't match desired Ruby conventions. |
+| `ruby-cloud-wrapper-gem-override` | string | Overrides a versioned client gem to a custom non-standard main wrapper gem name. |
 | `ruby-cloud-yard-strict` | string | Enables or disables strict YARD syntax checks during generation. |
 
 ## RubyPackage Configuration

@@ -37,13 +37,30 @@ const (
 )
 
 var (
-	errMissingRepo = errors.New("repo URL missing")
+	errMissingRepo     = errors.New("repo URL missing")
+	errMissingTools    = errors.New("tools configuration is missing")
+	errMissingComposer = errors.New("tools.composer configuration is missing")
+	errMissingPip      = errors.New("tools.pip configuration is missing")
+	errMissingPNPM     = errors.New("tools.pnpm configuration is missing")
 )
 
 // Install installs the PHP generator tool dependencies.
 func Install(ctx context.Context, tools *config.Tools) error {
-	if tools == nil || (len(tools.Composer) == 0 && len(tools.Pip) == 0) {
-		_, err := installGenerator(ctx)
+	if tools == nil {
+		return errMissingTools
+	}
+	if len(tools.Composer) == 0 {
+		return errMissingComposer
+	}
+	if len(tools.Pip) == 0 {
+		return errMissingPip
+	}
+	if len(tools.PNPM) == 0 {
+		return errMissingPNPM
+	}
+
+	phpPath, err := checkRequiredCommands()
+	if err != nil {
 		return err
 	}
 
@@ -63,30 +80,52 @@ func Install(ctx context.Context, tools *config.Tools) error {
 		if err != nil {
 			return fmt.Errorf("fetching %s: %w", tool.Name, err)
 		}
-
-		if err := command.RunInDir(ctx, dir, "composer", "install", "--no-dev", "--no-interaction", "--prefer-dist"); err != nil {
-			return err
+		if err := command.RunInDir(ctx, dir, "composer", "install", "--no-interaction", "--prefer-dist"); err != nil {
+			return fmt.Errorf("failed to run composer install: %w", err)
 		}
 
-		destPath := filepath.Join(dir, "vendor", "bin", tool.Name)
-		if err := createBinWrapper(tool.Name, destPath, bin); err != nil {
-			return err
+		wrapperName := filepath.Base(tool.Repo)
+
+		if wrapperName == "gapic-generator-php" {
+			// Currently, this assumes the tool is the gapic-generator-php. This specific
+			// wrapper logic will not work for generic Composer tools because:
+			// 1. It hardcodes the executable entry point to "src/Main.php" (ignoring Composer's vendor/bin/ paths).
+			// 2. It injects specific PHP configurations (e.g. memory_limit=1024M) required to prevent the generator from crashing.
+			// See https://github.com/googleapis/gapic-generator-php/commit/685b419f2220e2d19c74e7f1464067f995cf1a95
+			// 3. It automatically injects the "--side_loaded_root_dir" argument which other tools will not expect.
+			// (this argument is to pass through relative paths for config files)
+			// TODO(https://github.com/googleapis/librarian/issues/7000): Remove the --side_loaded_root_dir once we pass full paths to generator
+			destPath := filepath.Join(dir, "src", "Main.php")
+			wrapperContent := phpWrapperContent(phpPath, destPath)
+			if err := createBinWrapper(wrapperName, wrapperContent, bin); err != nil {
+				return err
+			}
+		} else {
+			return fmt.Errorf("tool installation for non-generator composer tools is not yet supported")
 		}
 	}
 	// The PHP client library generation process relies on Python-based
 	// tools (such as synthtool or owlbot) for post-processing and generation.
-	if len(tools.Pip) > 0 {
-		if err := pip.Install(ctx, tools.Pip); err != nil {
-			return err
-		}
+	if err := pip.Install(ctx, tools.Pip); err != nil {
+		return err
 	}
-	// Install PNPM tools
-	if len(tools.PNPM) > 0 {
-		if err := nodejs.InstallPNPM(ctx, tools.PNPM); err != nil {
-			return fmt.Errorf("failed to install pnpm tools: %w", err)
-		}
+	// Install PNPM tools.
+	// We wrap the error here because InstallPNPM does not wrap its exec errors with context,
+	if err := nodejs.InstallPNPM(ctx, tools.PNPM); err != nil {
+		return fmt.Errorf("failed to install pnpm tools: %w", err)
 	}
 	return nil
+}
+
+func checkRequiredCommands() (string, error) {
+	if _, err := exec.LookPath("composer"); err != nil {
+		return "", fmt.Errorf("failed to find composer: %w", err)
+	}
+	phpPath, err := exec.LookPath("php")
+	if err != nil {
+		return "", fmt.Errorf("failed to find php: %w", err)
+	}
+	return phpPath, nil
 }
 
 // InstallDir gets the directory where tools should be installed.
@@ -111,69 +150,29 @@ func binDir() (string, error) {
 	return filepath.Join(installDir, "bin"), nil
 }
 
-// installGenerator is a temp function for testing purposes.
-// TODO(https://github.com/googleapis/librarian/issues/6630): remove after install command is ready.
-func installGenerator(ctx context.Context) (string, error) {
-	phpPath, err := exec.LookPath("php")
-	if err != nil {
-		return "", fmt.Errorf("failed to find php: %w", err)
-	}
-
-	generatorDir, err := generatorDir(ctx)
-	if err != nil {
-		return "", err
-	}
-	// Ensure Composer dependencies are installed
-	vendorDir := filepath.Join(generatorDir, "vendor")
-	if _, err := os.Stat(vendorDir); err != nil {
-		if !errors.Is(err, os.ErrNotExist) {
-			return "", err
-		}
-		if _, err := exec.LookPath("composer"); err == nil {
-			if err := command.RunInDir(ctx, generatorDir, "composer", "install"); err != nil {
-				return "", fmt.Errorf("failed to run composer install: %w", err)
-			}
-		} else {
-			composerPhar := filepath.Join(generatorDir, "rules_php_gapic", "resources", "composer.phar")
-			if _, err := os.Stat(composerPhar); err == nil {
-				if err := command.RunInDir(ctx, generatorDir, phpPath, composerPhar, "install"); err != nil {
-					return "", fmt.Errorf("failed to run composer.phar install: %w", err)
-				}
-			} else {
-				return "", fmt.Errorf("neither system composer nor composer.phar was found")
-			}
-		}
-	}
-	// Write wrapper script
-	wrapperPath := filepath.Join(generatorDir, "wrapper.sh")
-	wrapperContent := fmt.Sprintf(`#!/bin/bash
-exec %q -d display_errors=stderr -d memory_limit=1024M %q --side_loaded_root_dir "$GOOGLEAPIS_DIR" "$@"
-`, phpPath, filepath.Join(generatorDir, "src/Main.php"))
-
-	if err := os.WriteFile(wrapperPath, []byte(wrapperContent), 0o755); err != nil {
-		return "", fmt.Errorf("failed to write wrapper script: %w", err)
-	}
-
-	return generatorDir, nil
-}
-
-func generatorDir(ctx context.Context) (string, error) {
-	return fetch.Repo(ctx, "github.com/googleapis/gapic-generator-php", generatorVersion, generatorSHA256)
+// phpWrapperContent generates the bash script content for the PHP tool wrapper.
+func phpWrapperContent(phpExecutable, entrypoint string) string {
+	return fmt.Sprintf("#!/bin/bash\nexec %q -d display_errors=stderr -d memory_limit=1024M %q --side_loaded_root_dir \"$GOOGLEAPIS_DIR\" \"$@\"\n", phpExecutable, entrypoint)
 }
 
 // createBinWrapper creates a shell wrapper script in the bin directory that forwards executions to the tool.
-func createBinWrapper(wrapperName, destPath, binDir string) error {
+func createBinWrapper(wrapperName, content, binDir string) (err error) {
 	wrapperPath := filepath.Join(binDir, wrapperName)
-	content := fmt.Sprintf("#!/bin/sh\nexec %q \"$@\"\n", destPath)
 	if err := os.MkdirAll(filepath.Dir(wrapperPath), 0o755); err != nil {
 		return fmt.Errorf("failed to create directory for wrapper: %w", err)
 	}
 	_ = os.Remove(wrapperPath)
 	f, err := os.OpenFile(wrapperPath, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0o755)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to create wrapper script: %w", err)
 	}
-	defer f.Close()
-	_, err = f.WriteString(content)
-	return err
+	defer func() {
+		if closeErr := f.Close(); closeErr != nil && err == nil {
+			err = fmt.Errorf("failed to close wrapper script: %w", closeErr)
+		}
+	}()
+	if _, err := f.WriteString(content); err != nil {
+		return fmt.Errorf("failed to write wrapper script: %w", err)
+	}
+	return nil
 }

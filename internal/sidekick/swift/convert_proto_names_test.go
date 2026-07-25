@@ -126,7 +126,8 @@ func TestMessageAndEnumFileName(t *testing.T) {
 		Parent: parentMsg,
 	}
 
-	model := api.NewTestAPI([]*api.Message{parentMsg, nestedMsg, doubleNestedMsg}, []*api.Enum{topEnum, nestedEnum}, []*api.Service{})
+	model := api.NewTestAPI([]*api.Message{parentMsg, nestedMsg, doubleNestedMsg}, []*api.Enum{topEnum, nestedEnum}, []*api.Service{}).
+		WithPackageName("test")
 	codec := newTestCodec(t, model, map[string]string{})
 
 	t.Run("message conversion filenames", func(t *testing.T) {

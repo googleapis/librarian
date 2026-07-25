@@ -81,8 +81,8 @@ func Generate(ctx context.Context, cfg *config.Config, library *config.Library, 
 	srcCfg := sources.NewSourceConfig(srcs, library.Roots)
 	primaryDir := srcCfg.Root(srcCfg.ActiveRoots[0])
 
-	// generate repo metadata prior to client because info is needed for
-	// owlbot.py to generate README.md
+	// Generate repo metadata prior to client generation because this info is needed
+	// for README.md and pom.xml generation during post-processing.
 	metadata, err := generateRepoMetadata(cfg, library, outdir, primaryDir)
 	if err != nil {
 		return fmt.Errorf("failed to generate .repo-metadata.json: %w", err)
@@ -109,7 +109,7 @@ func Generate(ctx context.Context, cfg *config.Config, library *config.Library, 
 		}
 	}
 
-	if err := postProcessLibrary(ctx, libraryPostProcessParams{
+	if err := postProcessLibrary(libraryPostProcessParams{
 		cfg:        cfg,
 		library:    library,
 		outDir:     outdir,
@@ -120,15 +120,6 @@ func Generate(ctx context.Context, cfg *config.Config, library *config.Library, 
 		return err
 	}
 	return nil
-}
-
-func deriveAPIBase(library *config.Library, apiPath string) string {
-	// TODO(https://github.com/googleapis/librarian/issues/5728):
-	// remove this after updated owlbot.py
-	if library.Name == commonProtosLibrary {
-		return "v1"
-	}
-	return path.Base(apiPath)
 }
 
 func generateAPI(ctx context.Context, params generateAPIParams) error {
@@ -144,7 +135,7 @@ func generateAPI(ctx context.Context, params generateAPIParams) error {
 		javaAPI:        javaAPI,
 		metadata:       params.metadata,
 		outDir:         params.outdir,
-		apiBase:        deriveAPIBase(params.library, params.api.Path),
+		apiBase:        path.Base(params.api.Path),
 		includeSamples: *javaAPI.Samples,
 	}
 	gapicDir := postParams.gapicDir()
