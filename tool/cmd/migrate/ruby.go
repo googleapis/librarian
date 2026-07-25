@@ -250,10 +250,6 @@ func parseWrapperOf(libraries []*config.Library) {
 		return strings.Compare(a.Name, b.Name)
 	})
 	for i, lib := range libraries {
-		if len(lib.APIs) != 0 {
-			// Skip non-wrapper libraries.
-			continue
-		}
 		var wrapperOf []string
 		prefix := lib.Name + "-"
 		// Since libraries are sorted by name, the wrapped libraries
