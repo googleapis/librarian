@@ -38,6 +38,9 @@ type SwiftPackage struct {
 	// Each module defines a source proto path, and output location.
 	Modules []*SwiftModule `yaml:"modules,omitempty"`
 
+	// PackageNameOverride overrides the package name.
+	PackageNameOverride string `yaml:"package_name_override,omitempty"`
+
 	// PerServiceTraits enables per-service compile-time flags.
 	PerServiceTraits bool `yaml:"per_service_traits,omitempty"`
 

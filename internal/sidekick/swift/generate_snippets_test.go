@@ -15,13 +15,14 @@
 package swift
 
 import (
+	"github.com/googleapis/librarian/internal/config"
+
 	"os"
 	"path/filepath"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/sidekick/api"
-	"github.com/googleapis/librarian/internal/sidekick/parser"
 )
 
 func TestGenerateSnippets(t *testing.T) {
@@ -120,8 +121,10 @@ func TestGenerateSnippets(t *testing.T) {
 			if err := api.CrossReference(model); err != nil {
 				t.Fatal(err)
 			}
-			cfg := &parser.ModelConfig{}
-			if err := Generate(t.Context(), model, outDir, cfg, swiftConfig(t, nil)); err != nil {
+			library := &config.Library{
+				Swift: swiftConfig(t, nil),
+			}
+			if err := Generate(t.Context(), model, outDir, library, nil); err != nil {
 				t.Fatal(err)
 			}
 			contentsBytes, err := os.ReadFile(filepath.Join(outDir, "Snippets", test.file))

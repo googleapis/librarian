@@ -41,7 +41,7 @@ func generateModule(ctx context.Context, library *config.Library, src *sources.S
 			if err != nil {
 				return err
 			}
-			if err := sidekickswift.GenerateConversions(ctx, model, module.Output, modelConfig, library.Swift); err != nil {
+			if err := sidekickswift.GenerateConversions(ctx, model, module.Output, library, module); err != nil {
 				return err
 			}
 		case "", "default":
@@ -50,7 +50,7 @@ func generateModule(ctx context.Context, library *config.Library, src *sources.S
 			if err != nil {
 				return err
 			}
-			if err := sidekickswift.Generate(ctx, model, module.Output, modelConfig, library.Swift); err != nil {
+			if err := sidekickswift.Generate(ctx, model, module.Output, library, module); err != nil {
 				return err
 			}
 		default:
@@ -70,18 +70,9 @@ func moduleToModelConfig(library *config.Library, module *config.SwiftModule, sr
 		specFormat = library.SpecificationFormat
 	}
 
-	codecMap := map[string]string{
-		"copyright-year": library.CopyrightYear,
-		"module":         "true",
-	}
-	if module.ModulePath != "" {
-		codecMap["module-path"] = module.ModulePath
-	}
-
 	return &parser.ModelConfig{
 		SpecificationFormat: specFormat,
 		SpecificationSource: module.APIPath,
 		Source:              sourceConfig,
-		Codec:               codecMap,
 	}
 }

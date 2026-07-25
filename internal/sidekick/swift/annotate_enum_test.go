@@ -19,6 +19,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
+	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/sidekick/api"
 )
 
@@ -98,7 +99,7 @@ func TestAnnotateEnum(t *testing.T) {
 				ev.Parent = enum
 			}
 			model := api.NewTestAPI([]*api.Message{}, []*api.Enum{enum}, []*api.Service{})
-			codec := newTestCodec(t, model, map[string]string{})
+			codec := newTestCodec(t, model, nil)
 			if err := codec.annotateModel(); err != nil {
 				t.Fatal(err)
 			}
@@ -117,7 +118,7 @@ func TestAnnotateEnum_Error(t *testing.T) {
 		Package: "test",
 	}
 	model := api.NewTestAPI([]*api.Message{}, []*api.Enum{enum}, []*api.Service{})
-	codec := newTestCodec(t, model, map[string]string{})
+	codec := newTestCodec(t, model, nil)
 
 	err := codec.annotateModel()
 	if err == nil {
@@ -188,9 +189,10 @@ func TestAnnotateEnum_ModulePath(t *testing.T) {
 		ev.Parent = enum
 	}
 	model := api.NewTestAPI([]*api.Message{}, []*api.Enum{enum}, []*api.Service{})
-	codec := newTestCodec(t, model, map[string]string{
-		"module-path": "TestProtos",
-	})
+	codec, err := newCodec(model, &config.Library{}, &config.SwiftModule{ModulePath: "TestProtos"}, ".")
+	if err != nil {
+		t.Fatal(err)
+	}
 	if err := codec.annotateModel(); err != nil {
 		t.Fatal(err)
 	}
@@ -229,9 +231,10 @@ func TestAnnotateEnum_NestedModulePath(t *testing.T) {
 		ev.Parent = enum
 	}
 	model := api.NewTestAPI([]*api.Message{parent}, []*api.Enum{enum}, []*api.Service{})
-	codec := newTestCodec(t, model, map[string]string{
-		"module-path": "TestProtos",
-	})
+	codec, err := newCodec(model, &config.Library{}, &config.SwiftModule{ModulePath: "TestProtos"}, ".")
+	if err != nil {
+		t.Fatal(err)
+	}
 	if err := codec.annotateModel(); err != nil {
 		t.Fatal(err)
 	}

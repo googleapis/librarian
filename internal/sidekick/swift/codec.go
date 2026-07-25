@@ -17,12 +17,10 @@ package swift
 import (
 	"fmt"
 	"path/filepath"
-	"strconv"
 	"time"
 
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/sidekick/api"
-	"github.com/googleapis/librarian/internal/sidekick/parser"
 )
 
 const (
@@ -66,18 +64,11 @@ type codec struct {
 	// The package version (e.g. "1.2.3").
 	PackageVersion string
 
-	// The release level (e.g. "preview" or "stable").
-	ReleaseLevel string
-
 	// The location of the monorepo, relative to the current directory.
 	//
 	// Recall that sidekick only generates clients within a monorepo, so this
 	// always makes sense.
 	MonorepoRoot string
-
-	// Most libraries are generated from `googleapis`. Rarely, we use protobuf,
-	// gapic-showcase, or a different root.
-	RootName string
 
 	// Modules have a different directory structure.
 	Module bool
@@ -122,7 +113,7 @@ type codec struct {
 	ModulePath string
 }
 
-func newCodec(model *api.API, cfg *parser.ModelConfig, swiftCfg *config.SwiftPackage, outdir string) (*codec, error) {
+func newCodec(model *api.API, library *config.Library, module *config.SwiftModule, outdir string) (*codec, error) {
 	year, _, _ := time.Now().Date()
 	absOutdir, err := filepath.Abs(outdir)
 	if err != nil {
@@ -139,18 +130,37 @@ func newCodec(model *api.API, cfg *parser.ModelConfig, swiftCfg *config.SwiftPac
 	if err != nil {
 		return nil, err
 	}
+
+	generationYear := library.CopyrightYear
+	if generationYear == "" {
+		generationYear = fmt.Sprintf("%04d", year)
+	}
+
+	packageVersion := library.Version
+	if packageVersion == "" {
+		packageVersion = "0.0.0"
+	}
+
+	packageName := ""
+	if library.Swift != nil {
+		packageName = library.Swift.PackageNameOverride
+	}
+	if packageName == "" {
+		packageName = PackageName(model)
+	}
+
 	result := &codec{
 		Model:              model,
-		GenerationYear:     fmt.Sprintf("%04d", year),
-		PackageName:        PackageName(model),
-		PackageVersion:     "0.0.0",
-		ReleaseLevel:       "preview",
+		GenerationYear:     generationYear,
+		PackageName:        packageName,
+		PackageVersion:     packageVersion,
 		MonorepoRoot:       rel,
-		RootName:           "googleapis",
 		ApiPackages:        map[string]*Dependency{},
 		DependenciesByName: map[string]*Dependency{},
-		UrlSafeForBytes:    cfg.SpecificationFormat == config.SpecDiscovery,
+		UrlSafeForBytes:    library.SpecificationFormat == config.SpecDiscovery,
 	}
+
+	swiftCfg := library.Swift
 	if swiftCfg != nil {
 		for _, d := range swiftCfg.Dependencies {
 			dependency := Dependency{SwiftDependency: d}
@@ -163,30 +173,12 @@ func newCodec(model *api.API, cfg *parser.ModelConfig, swiftCfg *config.SwiftPac
 		result.PerServiceTraits = swiftCfg.PerServiceTraits
 		result.DefaultTraits = swiftCfg.DefaultTraits
 	}
-	for key, definition := range cfg.Codec {
-		switch key {
-		case "copyright-year":
-			result.GenerationYear = definition
-		case "version":
-			result.PackageVersion = definition
-		case "release-level":
-			result.ReleaseLevel = definition
-		case "package-name-override":
-			result.PackageName = definition
-		case "root-name":
-			result.RootName = definition
-		case "module":
-			value, err := strconv.ParseBool(definition)
-			if err != nil {
-				return nil, fmt.Errorf("cannot convert `module` value %q to boolean: %w", definition, err)
-			}
-			result.Module = value
-		case "module-path":
-			result.ModulePath = definition
-		default:
-			// Ignore other options.
-		}
+
+	if module != nil {
+		result.Module = true
+		result.ModulePath = module.ModulePath
 	}
+
 	if !result.Module {
 		libraryName, err := LibraryName(model)
 		if err != nil {

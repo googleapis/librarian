@@ -15,13 +15,14 @@
 package swift
 
 import (
+	"github.com/googleapis/librarian/internal/config"
+
 	"os"
 	"path/filepath"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/sidekick/api"
-	"github.com/googleapis/librarian/internal/sidekick/parser"
 )
 
 func TestGenerateEnum_Files(t *testing.T) {
@@ -44,8 +45,8 @@ func TestGenerateEnum_Files(t *testing.T) {
 
 	model := api.NewTestAPI([]*api.Message{}, []*api.Enum{color, kind, clash0, clash1}, []*api.Service{})
 	model.PackageName = "google.cloud.test.v1"
-	cfg := &parser.ModelConfig{}
-	if err := Generate(t.Context(), model, outDir, cfg, nil); err != nil {
+	library := &config.Library{}
+	if err := Generate(t.Context(), model, outDir, library, nil); err != nil {
 		t.Fatal(err)
 	}
 
@@ -77,8 +78,8 @@ func TestGenerateEnum_UniqueNumbers(t *testing.T) {
 
 	model := api.NewTestAPI(nil, []*api.Enum{kind}, nil)
 	model.PackageName = "google.cloud.test.v1"
-	cfg := &parser.ModelConfig{}
-	if err := Generate(t.Context(), model, outDir, cfg, nil); err != nil {
+	library := &config.Library{}
+	if err := Generate(t.Context(), model, outDir, library, nil); err != nil {
 		t.Fatal(err)
 	}
 
@@ -123,8 +124,8 @@ func TestGenerateEnum_DocComments(t *testing.T) {
 
 	model := api.NewTestAPI([]*api.Message{}, []*api.Enum{color}, []*api.Service{})
 	model.PackageName = "google.cloud.test.v1"
-	cfg := &parser.ModelConfig{}
-	if err := Generate(t.Context(), model, outDir, cfg, nil); err != nil {
+	library := &config.Library{}
+	if err := Generate(t.Context(), model, outDir, library, nil); err != nil {
 		t.Fatal(err)
 	}
 

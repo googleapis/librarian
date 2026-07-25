@@ -15,13 +15,14 @@
 package swift
 
 import (
+	"github.com/googleapis/librarian/internal/config"
+
 	"os"
 	"path/filepath"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/sidekick/api"
-	"github.com/googleapis/librarian/internal/sidekick/parser"
 )
 
 func TestGenerateService_Telemetry(t *testing.T) {
@@ -58,12 +59,11 @@ func TestGenerateService_Telemetry(t *testing.T) {
 
 	model := api.NewTestAPI([]*api.Message{req, res}, []*api.Enum{}, []*api.Service{service})
 	model.PackageName = "google.cloud.test.v1"
-	cfg := &parser.ModelConfig{
-		Codec: map[string]string{
-			"version": "1.2.3-preview",
-		},
+	library := &config.Library{
+		Version: "1.2.3-preview",
+		Swift:   swiftConfig(t, nil),
 	}
-	if err := Generate(t.Context(), model, outDir, cfg, swiftConfig(t, nil)); err != nil {
+	if err := Generate(t.Context(), model, outDir, library, nil); err != nil {
 		t.Fatal(err)
 	}
 	checkClientsContents(t, outDir)

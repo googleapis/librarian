@@ -27,7 +27,7 @@ func TestModelAnnotations(t *testing.T) {
 	model := api.NewTestAPI(
 		[]*api.Message{}, []*api.Enum{},
 		[]*api.Service{{Name: "Workflows", Package: "google.cloud.workflows.v1"}})
-	codec := newTestCodec(t, model, map[string]string{"copyright-year": "2038"})
+	codec := newTestCodec(t, model, &config.Library{CopyrightYear: "2038"})
 	if err := codec.annotateModel(); err != nil {
 		t.Fatal(err)
 	}
@@ -35,7 +35,6 @@ func TestModelAnnotations(t *testing.T) {
 		LibraryName:    "GoogleCloudWorkflowsV1",
 		PackageName:    "google-cloud-workflows-v1",
 		PackageVersion: "0.0.0",
-		ReleaseLevel:   "preview",
 		CopyrightYear:  "2038",
 		MonorepoRoot:   ".",
 		WktPackage:     "GoogleCloudWkt",
@@ -69,7 +68,7 @@ func TestModelAnnotations_MessagesWithWkt(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			codec := newTestCodec(t, test.model, map[string]string{})
+			codec := newTestCodec(t, test.model, nil)
 			if err := codec.annotateModel(); err != nil {
 				t.Fatal(err)
 			}

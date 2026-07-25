@@ -21,24 +21,39 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/sidekick/api"
-	"github.com/googleapis/librarian/internal/sidekick/parser"
 )
 
 func TestParseOptions(t *testing.T) {
 	model := api.NewTestAPI([]*api.Message{}, []*api.Enum{}, []*api.Service{}).
 		WithPackageName("test")
 	for _, test := range []struct {
-		name string
-		cfg  *parser.ModelConfig
-		want *codec
+		name    string
+		library *config.Library
+		module  *config.SwiftModule
+		want    *codec
 	}{
 		{
 			name: "baseline",
-			cfg: &parser.ModelConfig{
-				Codec: map[string]string{
-					"copyright-year":        "2038",
-					"package-name-override": "google-cloud-bigtable",
-					"root-name":             "test-root",
+			library: &config.Library{
+				CopyrightYear: "2038",
+			},
+			want: &codec{
+				GenerationYear:     "2038",
+				LibraryName:        "GoogleTest",
+				PackageName:        "test",
+				PackageVersion:     "0.0.0",
+				MonorepoRoot:       ".",
+				Model:              model,
+				ApiPackages:        map[string]*Dependency{},
+				DependenciesByName: map[string]*Dependency{},
+			},
+		},
+		{
+			name: "package name override",
+			library: &config.Library{
+				CopyrightYear: "2038",
+				Swift: &config.SwiftPackage{
+					PackageNameOverride: "google-cloud-bigtable",
 				},
 			},
 			want: &codec{
@@ -46,9 +61,7 @@ func TestParseOptions(t *testing.T) {
 				LibraryName:        "GoogleTest",
 				PackageName:        "google-cloud-bigtable",
 				PackageVersion:     "0.0.0",
-				ReleaseLevel:       "preview",
 				MonorepoRoot:       ".",
-				RootName:           "test-root",
 				Model:              model,
 				ApiPackages:        map[string]*Dependency{},
 				DependenciesByName: map[string]*Dependency{},
@@ -56,21 +69,18 @@ func TestParseOptions(t *testing.T) {
 		},
 		{
 			name: "module",
-			cfg: &parser.ModelConfig{
-				Codec: map[string]string{
-					"copyright-year": "2038",
-					"module":         "true",
-					"module-path":    "GoogleTestProtos",
-				},
+			library: &config.Library{
+				CopyrightYear: "2038",
+			},
+			module: &config.SwiftModule{
+				ModulePath: "GoogleTestProtos",
 			},
 			want: &codec{
 				Module:             true,
 				GenerationYear:     "2038",
 				PackageName:        "test",
 				PackageVersion:     "0.0.0",
-				ReleaseLevel:       "preview",
 				MonorepoRoot:       ".",
-				RootName:           "googleapis",
 				Model:              model,
 				ModulePath:         "GoogleTestProtos",
 				ApiPackages:        map[string]*Dependency{},
@@ -78,45 +88,17 @@ func TestParseOptions(t *testing.T) {
 			},
 		},
 		{
-			name: "module with local root",
-			cfg: &parser.ModelConfig{
-				Codec: map[string]string{
-					"copyright-year": "2038",
-					"module":         "true",
-					"root-name":      "Tests/ProtoJSON/protos",
-				},
-			},
-			want: &codec{
-				Module:             true,
-				GenerationYear:     "2038",
-				PackageName:        "test",
-				PackageVersion:     "0.0.0",
-				ReleaseLevel:       "preview",
-				MonorepoRoot:       ".",
-				RootName:           "Tests/ProtoJSON/protos",
-				Model:              model,
-				ApiPackages:        map[string]*Dependency{},
-				DependenciesByName: map[string]*Dependency{},
-			},
-		},
-		{
 			name: "discovery",
-			cfg: &parser.ModelConfig{
-				Codec: map[string]string{
-					"copyright-year":        "2038",
-					"package-name-override": "google-cloud-compute-v1",
-					"root-name":             "test-root",
-				},
+			library: &config.Library{
+				CopyrightYear:       "2038",
 				SpecificationFormat: config.SpecDiscovery,
 			},
 			want: &codec{
 				GenerationYear:     "2038",
 				LibraryName:        "GoogleTest",
-				PackageName:        "google-cloud-compute-v1",
+				PackageName:        "test",
 				PackageVersion:     "0.0.0",
-				ReleaseLevel:       "preview",
 				MonorepoRoot:       ".",
-				RootName:           "test-root",
 				Model:              model,
 				ApiPackages:        map[string]*Dependency{},
 				DependenciesByName: map[string]*Dependency{},
@@ -125,7 +107,7 @@ func TestParseOptions(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got, err := newCodec(model, test.cfg, nil, ".")
+			got, err := newCodec(model, test.library, test.module, ".")
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -145,9 +127,11 @@ func TestNewCodec_WithSwiftCfg(t *testing.T) {
 			},
 		},
 	}
-	cfg := &parser.ModelConfig{}
+	library := &config.Library{
+		Swift: swiftCfg,
+	}
 	model := api.NewTestAPI([]*api.Message{}, []*api.Enum{}, []*api.Service{}).WithPackageName("test")
-	got, err := newCodec(model, cfg, swiftCfg, ".")
+	got, err := newCodec(model, library, nil, ".")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -169,21 +153,23 @@ func TestNewCodec_WithSwiftCfg(t *testing.T) {
 }
 
 // newTestCodec creates a simple codec for the tests.
-func newTestCodec(t *testing.T, model *api.API, options map[string]string) *codec {
+func newTestCodec(t *testing.T, model *api.API, library *config.Library) *codec {
 	t.Helper()
-	cfg := &parser.ModelConfig{
-		Codec: options,
+	if library == nil {
+		library = &config.Library{}
 	}
-	// Configure the package for well-known types by default.
-	swiftCfg := &config.SwiftPackage{
-		SwiftDefault: config.SwiftDefault{
-			Dependencies: []config.SwiftDependency{
-				{Name: wellKnownSwiftPackage, ApiPackage: wellKnownProtobufPackage},
-				{Name: paginationSwiftPackage, RequiredByServices: true},
+	if library.Swift == nil {
+		// Configure the package for well-known types by default.
+		library.Swift = &config.SwiftPackage{
+			SwiftDefault: config.SwiftDefault{
+				Dependencies: []config.SwiftDependency{
+					{Name: wellKnownSwiftPackage, ApiPackage: wellKnownProtobufPackage},
+					{Name: paginationSwiftPackage, RequiredByServices: true},
+				},
 			},
-		},
+		}
 	}
-	codec, err := newCodec(model, cfg, swiftCfg, ".")
+	codec, err := newCodec(model, library, nil, ".")
 	if err != nil {
 		t.Fatal(err)
 	}

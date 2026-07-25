@@ -88,7 +88,7 @@ func TestFieldTypeName_BaseMessage(t *testing.T) {
 
 	model := api.NewTestAPI([]*api.Message{outer, simple}, nil, nil)
 	model.AddMessage(nested)
-	c := newTestCodec(t, model, map[string]string{})
+	c := newTestCodec(t, model, nil)
 
 	for _, test := range []struct {
 		name  string
@@ -148,7 +148,7 @@ func TestFieldTypeName_BaseEnum(t *testing.T) {
 
 	model := api.NewTestAPI([]*api.Message{outer}, []*api.Enum{simple}, nil)
 	model.AddEnum(nested)
-	c := newTestCodec(t, model, map[string]string{})
+	c := newTestCodec(t, model, nil)
 
 	for _, test := range []struct {
 		name  string
@@ -358,7 +358,7 @@ func TestFieldTypeName_Map(t *testing.T) {
 	model := api.NewTestAPI(nil, nil, nil)
 	model.PackageName = mapEntry.Package
 	model.AddMessage(mapEntry)
-	c := newTestCodec(t, model, map[string]string{})
+	c := newTestCodec(t, model, nil)
 
 	field := &api.Field{
 		Typez:   api.TypezMessage,
