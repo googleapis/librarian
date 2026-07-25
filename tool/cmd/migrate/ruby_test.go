@@ -134,38 +134,46 @@ func TestFindRubyLibraries(t *testing.T) {
 
 func TestParseAPIFromOwlBot(t *testing.T) {
 	for _, test := range []struct {
-		name string
-		path string
-		want string
+		name        string
+		path        string
+		wantPath    string
+		wantWrapper bool
 	}{
 		{
-			name: "apigeeconnect v1 api",
-			path: "testdata/ruby/parse_api_from_owlbot/apigeeconnect_v1.yaml",
-			want: "google/cloud/apigeeconnect/v1",
+			name:        "apigeeconnect v1 api",
+			path:        "testdata/ruby/parse_api_from_owlbot/apigeeconnect_v1.yaml",
+			wantPath:    "google/cloud/apigeeconnect/v1",
+			wantWrapper: false,
 		},
 		{
-			name: "marketingplatform admin v1alpha api",
-			path: "testdata/ruby/parse_api_from_owlbot/marketing_v1alpha.yaml",
-			want: "google/marketingplatform/admin/v1alpha",
+			name:        "marketingplatform admin v1alpha api",
+			path:        "testdata/ruby/parse_api_from_owlbot/marketing_v1alpha.yaml",
+			wantPath:    "google/marketingplatform/admin/v1alpha",
+			wantWrapper: false,
 		},
 		{
-			name: "video livestream v1 api",
-			path: "testdata/ruby/parse_api_from_owlbot/video_v1.yaml",
-			want: "google/cloud/video/livestream/v1",
+			name:        "video livestream v1 api",
+			path:        "testdata/ruby/parse_api_from_owlbot/video_v1.yaml",
+			wantPath:    "google/cloud/video/livestream/v1",
+			wantWrapper: false,
 		},
 		{
-			name: "wrapper library",
-			path: "testdata/ruby/parse_api_from_owlbot/wrapper.yaml",
-			want: "",
+			name:        "wrapper library",
+			path:        "testdata/ruby/parse_api_from_owlbot/wrapper.yaml",
+			wantPath:    "",
+			wantWrapper: true,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got, err := parseAPIFromOwlBot(test.path)
+			gotPath, gotWrapper, err := parseAPIFromOwlBot(test.path)
 			if err != nil {
 				t.Fatal(err)
 			}
-			if diff := cmp.Diff(test.want, got); diff != "" {
-				t.Errorf("mismatch (-want +got):\n%s", diff)
+			if diff := cmp.Diff(test.wantPath, gotPath); diff != "" {
+				t.Errorf("path mismatch (-want +got):\n%s", diff)
+			}
+			if diff := cmp.Diff(test.wantWrapper, gotWrapper); diff != "" {
+				t.Errorf("wrapper mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}

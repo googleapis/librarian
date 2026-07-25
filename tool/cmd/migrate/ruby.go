@@ -33,7 +33,13 @@ import (
 )
 
 var (
-	versionedAPIPath = regexp.MustCompile(`^/(.+/(v\d+\w*))/(.+)-ruby/(.*)$`)
+	// regexAPIPath matches OwlBot deep-copy-regex source paths for Ruby libraries.
+	// Capturing groups:
+	//   1: Base API path (e.g. "google/cloud/automl")
+	//   2: API version (e.g. "v1") or empty string for unversioned wrapper libraries
+	//   3: Gem directory name token (e.g. "[^/]+" or "google-cloud-automl-v1")
+	//   4: Trailing path contents after "-ruby/"
+	regexAPIPath = regexp.MustCompile(`^/(.+?)(?:/(v\d+\w*))?/([^/]+)-ruby/(.*)$`)
 	// Skip these directories when searching for libraries.
 	skippedDirs = []string{".github"}
 )
@@ -148,63 +154,71 @@ func findRubyLibraries(googleapisPath, repoPath string) ([]*config.Library, erro
 		lib := &config.Library{
 			Name: name,
 		}
-		api, err := parseAPIFromOwlBot(owlBotPath)
+		api, isWrapper, err := parseAPIFromOwlBot(owlBotPath)
 		if err != nil {
 			return nil, err
 		}
 		if api != "" {
-			lib.APIs = []*config.API{
-				{
-					Path: api,
-				},
-			}
-			vb, err := parseVersionedBuild(googleapisPath, api)
-			if err != nil {
-				return nil, err
-			}
-			if vb != nil {
-				lib.APIs[0].Ruby = &config.RubyAPI{
-					RubyCloudOpts: &config.RubyCloudOpts{
-						EnvPrefix:          vb.EnvPrefix,
-						ExtraDependencies:  vb.ExtraDeps,
-						GemNamespace:       vb.GemNamespace,
-						NamespaceOverride:  vb.NamespaceOverride,
-						PathOverride:       vb.PathOverride,
-						ServiceOverride:    vb.ServiceOverride,
-						WrapperGemOverride: vb.WrapperGemOverride,
-						YardStrict:         vb.YardStrict,
+			if !isWrapper {
+				lib.APIs = []*config.API{
+					{
+						Path: api,
 					},
 				}
+				vb, err := parseVersionedBuild(googleapisPath, api)
+				if err != nil {
+					return nil, err
+				}
+				if vb != nil {
+					lib.APIs[0].Ruby = &config.RubyAPI{
+						RubyCloudOpts: &config.RubyCloudOpts{
+							EnvPrefix:          vb.EnvPrefix,
+							ExtraDependencies:  vb.ExtraDeps,
+							GemNamespace:       vb.GemNamespace,
+							NamespaceOverride:  vb.NamespaceOverride,
+							PathOverride:       vb.PathOverride,
+							ServiceOverride:    vb.ServiceOverride,
+							WrapperGemOverride: vb.WrapperGemOverride,
+							YardStrict:         vb.YardStrict,
+						},
+					}
+				} else {
+
+				}
 			}
+			libraries = append(libraries, lib)
 		}
-		libraries = append(libraries, lib)
 	}
 	parseWrapperOf(libraries)
 	return libraries, nil
 }
 
-func parseAPIFromOwlBot(owlBotPath string) (string, error) {
+func parseAPIFromOwlBot(owlBotPath string) (string, bool, error) {
 	data, err := os.ReadFile(owlBotPath)
 	if err != nil {
-		return "", fmt.Errorf("reading OwlBot config %s: %w", owlBotPath, err)
+		return "", false, fmt.Errorf("reading OwlBot config %s: %w", owlBotPath, err)
 	}
 	owlbot, err := yaml.Unmarshal[owlbotYaml](data)
 	if err != nil {
-		return "", fmt.Errorf("parsing OwlBot config %s: %w", owlBotPath, err)
+		return "", false, fmt.Errorf("parsing OwlBot config %s: %w", owlBotPath, err)
 	}
 	// Skip .github/.Owlbot.yaml.
 	if len(owlbot.DeepCopyRegex) == 0 {
-		return "", nil
+		return "", false, nil
 	}
-	// We only need the first entry since wrapper library will
-	// have different parsing logic.
 	src := owlbot.DeepCopyRegex[0].Source
-	matches := versionedAPIPath.FindStringSubmatch(src)
+	matches := regexAPIPath.FindStringSubmatch(src)
 	if len(matches) != 5 {
-		// A wrapper library doesn't have versioned API path.
-		return "", nil
+		return "", false, nil
 	}
-	return matches[1], nil
+	basePath := matches[1]
+	version := matches[2]
+	if version == "" {
+		// Unversioned wrapper library
+		return basePath, true, nil
+	}
+	// Versioned library
+	return basePath + "/" + version, false, nil
 }
 
 // parseWrapperOf sets the WrapperOf field for wrapper libraries.
