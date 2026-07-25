@@ -139,14 +139,9 @@ func newCodec(model *api.API, cfg *parser.ModelConfig, swiftCfg *config.SwiftPac
 	if err != nil {
 		return nil, err
 	}
-	libraryName, err := LibraryName(model)
-	if err != nil {
-		return nil, err
-	}
 	result := &codec{
 		Model:              model,
 		GenerationYear:     fmt.Sprintf("%04d", year),
-		LibraryName:        libraryName,
 		PackageName:        PackageName(model),
 		PackageVersion:     "0.0.0",
 		ReleaseLevel:       "preview",
@@ -191,6 +186,13 @@ func newCodec(model *api.API, cfg *parser.ModelConfig, swiftCfg *config.SwiftPac
 		default:
 			// Ignore other options.
 		}
+	}
+	if !result.Module {
+		libraryName, err := LibraryName(model)
+		if err != nil {
+			return nil, err
+		}
+		result.LibraryName = libraryName
 	}
 	return result, nil
 }

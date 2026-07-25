@@ -55,6 +55,51 @@ func TestParseOptions(t *testing.T) {
 			},
 		},
 		{
+			name: "module",
+			cfg: &parser.ModelConfig{
+				Codec: map[string]string{
+					"copyright-year": "2038",
+					"module":         "true",
+					"module-path":    "GoogleTestProtos",
+				},
+			},
+			want: &codec{
+				Module:             true,
+				GenerationYear:     "2038",
+				PackageName:        "test",
+				PackageVersion:     "0.0.0",
+				ReleaseLevel:       "preview",
+				MonorepoRoot:       ".",
+				RootName:           "googleapis",
+				Model:              model,
+				ModulePath:         "GoogleTestProtos",
+				ApiPackages:        map[string]*Dependency{},
+				DependenciesByName: map[string]*Dependency{},
+			},
+		},
+		{
+			name: "module with local root",
+			cfg: &parser.ModelConfig{
+				Codec: map[string]string{
+					"copyright-year": "2038",
+					"module":         "true",
+					"root-name":      "Tests/ProtoJSON/protos",
+				},
+			},
+			want: &codec{
+				Module:             true,
+				GenerationYear:     "2038",
+				PackageName:        "test",
+				PackageVersion:     "0.0.0",
+				ReleaseLevel:       "preview",
+				MonorepoRoot:       ".",
+				RootName:           "Tests/ProtoJSON/protos",
+				Model:              model,
+				ApiPackages:        map[string]*Dependency{},
+				DependenciesByName: map[string]*Dependency{},
+			},
+		},
+		{
 			name: "discovery",
 			cfg: &parser.ModelConfig{
 				Codec: map[string]string{
@@ -208,8 +253,7 @@ func makeGatedTestModel() *api.API {
 		[]*api.Message{sharedMessage, s1Message, s2Message, unusedMessage},
 		[]*api.Enum{sharedEnum, s1Enum, s2Enum, unusedEnum},
 		[]*api.Service{s1, s2},
-	)
-	model.PackageName = "google.cloud.test.v1"
+	).WithPackageName("google.cloud.test.v1")
 	api.CrossReference(model)
 	return model
 }
