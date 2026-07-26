@@ -87,7 +87,6 @@ func TestValidateLibraries(t *testing.T) {
 				{
 					Name: "google-cloud-example",
 					APIs: []*config.API{{Path: "google/cloud/example/v1"}},
-
 				},
 				{
 					Name: "google-cloud-example-v1",
