@@ -81,6 +81,21 @@ func TestValidateLibraries(t *testing.T) {
 			language: config.LanguagePython,
 			wantErr:  errDuplicateAPIPath,
 		},
+		{
+			name: "allowed duplicate api paths for ruby",
+			libraries: []*config.Library{
+				{
+					Name: "google-cloud-example",
+					APIs: []*config.API{{Path: "google/cloud/example/v1"}},
+
+				},
+				{
+					Name: "google-cloud-example-v1",
+					APIs: []*config.API{{Path: "google/cloud/example/v1"}},
+				},
+			},
+			language: config.LanguageRuby,
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			cfg := &config.Config{
