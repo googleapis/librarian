@@ -28,42 +28,9 @@ func TestFillStagingSubdir(t *testing.T) {
 		want *config.Library
 	}{
 		{
-			name: "lib.PHP is nil",
-			lib: &config.Library{
-				Name: "google-cloud-secretmanager",
-				APIs: []*config.API{
-					{Path: "google/cloud/secretmanager/v1", PHP: &config.PHPAPI{}},
-				},
-			},
-			want: &config.Library{
-				Name: "google-cloud-secretmanager",
-				APIs: []*config.API{
-					{Path: "google/cloud/secretmanager/v1", PHP: &config.PHPAPI{}},
-				},
-			},
-		},
-		{
-			name: "api.PHP is nil",
-			lib: &config.Library{
-				Name: "google-cloud-secretmanager",
-				PHP:  &config.PHPPackage{},
-				APIs: []*config.API{
-					{Path: "google/cloud/secretmanager/v1"},
-				},
-			},
-			want: &config.Library{
-				Name: "google-cloud-secretmanager",
-				PHP:  &config.PHPPackage{},
-				APIs: []*config.API{
-					{Path: "google/cloud/secretmanager/v1"},
-				},
-			},
-		},
-		{
 			name: "preserve existing staging subdir",
 			lib: &config.Library{
 				Name: "google-cloud-secretmanager",
-				PHP:  &config.PHPPackage{},
 				APIs: []*config.API{
 					{
 						Path: "google/cloud/secretmanager/v1",
@@ -75,7 +42,6 @@ func TestFillStagingSubdir(t *testing.T) {
 			},
 			want: &config.Library{
 				Name: "google-cloud-secretmanager",
-				PHP:  &config.PHPPackage{},
 				APIs: []*config.API{
 					{
 						Path: "google/cloud/secretmanager/v1",
@@ -90,17 +56,14 @@ func TestFillStagingSubdir(t *testing.T) {
 			name: "fill empty staging subdir",
 			lib: &config.Library{
 				Name: "google-cloud-secretmanager",
-				PHP:  &config.PHPPackage{},
 				APIs: []*config.API{
 					{
 						Path: "google/cloud/secretmanager/v1",
-						PHP:  &config.PHPAPI{},
 					},
 				},
 			},
 			want: &config.Library{
 				Name: "google-cloud-secretmanager",
-				PHP:  &config.PHPPackage{},
 				APIs: []*config.API{
 					{
 						Path: "google/cloud/secretmanager/v1",
@@ -115,11 +78,9 @@ func TestFillStagingSubdir(t *testing.T) {
 			name: "multiple apis mixed",
 			lib: &config.Library{
 				Name: "google-cloud-example",
-				PHP:  &config.PHPPackage{},
 				APIs: []*config.API{
 					{
 						Path: "google/cloud/example/v1",
-						PHP:  &config.PHPAPI{},
 					},
 					{
 						Path: "google/cloud/example/v2",
@@ -129,13 +90,11 @@ func TestFillStagingSubdir(t *testing.T) {
 					},
 					{
 						Path: "google/cloud/example/v3beta1",
-						PHP:  &config.PHPAPI{},
 					},
 				},
 			},
 			want: &config.Library{
 				Name: "google-cloud-example",
-				PHP:  &config.PHPPackage{},
 				APIs: []*config.API{
 					{
 						Path: "google/cloud/example/v1",

@@ -27,10 +27,10 @@ func Fill(lib *config.Library) *config.Library {
 }
 
 func fillStagingSubdir(lib *config.Library) {
-	if lib.PHP == nil {
-		lib.PHP = &config.PHPPackage{}
-	}
 	for _, api := range lib.APIs {
+		if api.PHP == nil {
+			api.PHP = &config.PHPAPI{}
+		}
 		// Do not override existing library configuration.
 		if api.PHP.StagingSubdir != "" {
 			continue
