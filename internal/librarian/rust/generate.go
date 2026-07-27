@@ -27,6 +27,7 @@ import (
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/serviceconfig"
 	"github.com/googleapis/librarian/internal/sidekick/api"
+	"github.com/googleapis/librarian/internal/sidekick/language"
 	"github.com/googleapis/librarian/internal/sidekick/parser"
 	sidekickrust "github.com/googleapis/librarian/internal/sidekick/rust"
 	"github.com/googleapis/librarian/internal/sidekick/rust_prost"
@@ -112,17 +113,151 @@ func generateProstHybrid(ctx context.Context, model *api.API, library *config.Li
 		return nil
 	}
 
+	hybridModel, err := filterModelToStreaming(model)
+	if err != nil {
+		return fmt.Errorf("filtering model for streaming: %w", err)
+	}
+
 	hybridConfig := *modelConfig
 	hybridConfig.Codec = maps.Clone(modelConfig.Codec)
 	if hybridConfig.Codec == nil {
 		hybridConfig.Codec = make(map[string]string)
 	}
 	hybridConfig.Codec["include-file"] = "includes.rs"
+	postProcess := fmt.Sprintf(`let name = format!("{destination}/includes.rs");
+let content = std::fs::read_to_string(&name).expect("error reading includes.rs");
+let content = content.replace("include!(\"%s.rs\");", "include!(\"%s.rs\");\n            include!(\"../convert.rs\");");
+std::fs::write(&name, content).expect("error writing includes.rs");`, model.PackageName, model.PackageName)
+	if existing, ok := hybridConfig.Codec["post-process-protos"]; ok && existing != "" {
+		hybridConfig.Codec["post-process-protos"] = existing + "\n" + postProcess
+	} else {
+		hybridConfig.Codec["post-process-protos"] = postProcess
+	}
 	prostOutDir := filepath.Join(outdir, "src", "prost")
-	if err := rust_prost.Generate(ctx, model, prostOutDir, "prost", &hybridConfig); err != nil {
+	if err := rust_prost.Generate(ctx, hybridModel, prostOutDir, "prost", &hybridConfig); err != nil {
 		return fmt.Errorf("generating prost module: %w", err)
 	}
+
+	convertModelCfg := *modelConfig
+	convertModelCfg.Codec = maps.Clone(modelConfig.Codec)
+	convertModelCfg.Codec["template-override"] = "templates/convert-prost"
+	convertOutDir := filepath.Join(outdir, "src")
+	if err := sidekickrust.Generate(ctx, hybridModel, convertOutDir, &convertModelCfg); err != nil {
+		return fmt.Errorf("generating convert.rs: %w", err)
+	}
 	return nil
+}
+
+func filterModelToStreaming(model *api.API) (*api.API, error) {
+	type streamingTypeItem struct {
+		id       string
+		rpc      string
+		methodID string
+		path     string
+	}
+
+	streamingMsgs := make(map[string]bool)
+	streamingEnums := make(map[string]bool)
+	var queue []streamingTypeItem
+
+	for _, s := range model.Services {
+		for _, m := range s.Methods {
+			if m.ClientSideStreaming && m.ServerSideStreaming {
+				rpcName := s.Name + "." + m.Name
+				if m.InputTypeID != "" {
+					queue = append(queue, streamingTypeItem{
+						id:       m.InputTypeID,
+						rpc:      rpcName,
+						methodID: m.ID,
+						path:     m.InputTypeID,
+					})
+				}
+				if m.OutputTypeID != "" {
+					queue = append(queue, streamingTypeItem{
+						id:       m.OutputTypeID,
+						rpc:      rpcName,
+						methodID: m.ID,
+						path:     m.OutputTypeID,
+					})
+				}
+			}
+		}
+	}
+
+	visited := make(map[string]bool)
+	for len(queue) > 0 {
+		item := queue[0]
+		queue = queue[1:]
+		if visited[item.id] {
+			continue
+		}
+		visited[item.id] = true
+
+		anyError := func(path string) error {
+			return fmt.Errorf("cannot generate prost conversion for streaming RPC %q: type google.protobuf.Any is unsupported (path: %s)\n"+
+				"To resolve this, add the RPC method ID to skipped_ids in librarian.yaml (e.g. skipped_ids: [%s])",
+				item.rpc, path, item.methodID)
+		}
+
+		if item.id == ".google.protobuf.Any" || item.id == "google.protobuf.Any" {
+			return nil, anyError(item.path)
+		}
+
+		msg := model.Message(item.id)
+		if msg != nil {
+			streamingMsgs[msg.ID] = true
+			for _, f := range msg.Fields {
+				fieldPath := item.path + "." + f.Name
+				if f.TypezID == ".google.protobuf.Any" || f.TypezID == "google.protobuf.Any" {
+					return nil, anyError(fieldPath)
+				}
+				if f.Typez == api.TypezMessage && f.TypezID != "" {
+					queue = append(queue, streamingTypeItem{
+						id:       f.TypezID,
+						rpc:      item.rpc,
+						methodID: item.methodID,
+						path:     fieldPath,
+					})
+				}
+				if f.Typez == api.TypezEnum && f.TypezID != "" {
+					streamingEnums[f.TypezID] = true
+				}
+			}
+			for _, o := range msg.OneOfs {
+				for _, f := range o.Fields {
+					fieldPath := item.path + "." + o.Name + "." + f.Name
+					if f.TypezID == ".google.protobuf.Any" || f.TypezID == "google.protobuf.Any" {
+						return nil, anyError(fieldPath)
+					}
+					if f.Typez == api.TypezMessage && f.TypezID != "" {
+						queue = append(queue, streamingTypeItem{
+							id:       f.TypezID,
+							rpc:      item.rpc,
+							methodID: item.methodID,
+							path:     fieldPath,
+						})
+					}
+					if f.Typez == api.TypezEnum && f.TypezID != "" {
+						streamingEnums[f.TypezID] = true
+					}
+				}
+			}
+		}
+
+		enum := model.Enum(item.id)
+		if enum != nil {
+			streamingEnums[enum.ID] = true
+		}
+	}
+
+	hybridModel := *model
+	hybridModel.Messages = language.FilterSlice(model.Messages, func(m *api.Message) bool {
+		return streamingMsgs[m.ID]
+	})
+	hybridModel.Enums = language.FilterSlice(model.Enums, func(e *api.Enum) bool {
+		return streamingEnums[e.ID]
+	})
+	return &hybridModel, nil
 }
 
 // UpdateWorkspace updates dependencies for the entire Rust workspace.

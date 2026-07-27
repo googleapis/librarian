@@ -729,20 +729,19 @@ func TestCreateRepoMetadata(t *testing.T) {
 func TestGenerateProstHybrid(t *testing.T) {
 	testhelper.RequireCommand(t, "protoc")
 	testhelper.RequireCommand(t, "cargo")
-
 	msg := &api.Message{
 		Name:    "Request",
-		ID:      ".test.v1.Request",
-		Package: "test.v1",
+		ID:      ".google.cloud.test.v1.Request",
+		Package: "google.cloud.test.v1",
 	}
 	bidiService := &api.Service{
 		Name:    "BidiService",
-		ID:      ".test.v1.BidiService",
-		Package: "test.v1",
+		ID:      ".google.cloud.test.v1.BidiService",
+		Package: "google.cloud.test.v1",
 		Methods: []*api.Method{
 			{
 				Name:                "Chat",
-				ID:                  ".test.v1.BidiService.Chat",
+				ID:                  ".google.cloud.test.v1.BidiService.Chat",
 				InputTypeID:         msg.ID,
 				OutputTypeID:        msg.ID,
 				InputType:           msg,
@@ -755,12 +754,12 @@ func TestGenerateProstHybrid(t *testing.T) {
 	}
 	nonBidiService := &api.Service{
 		Name:    "UnaryService",
-		ID:      ".test.v1.UnaryService",
-		Package: "test.v1",
+		ID:      ".google.cloud.test.v1.UnaryService",
+		Package: "google.cloud.test.v1",
 		Methods: []*api.Method{
 			{
 				Name:         "Get",
-				ID:           ".test.v1.UnaryService.Get",
+				ID:           ".google.cloud.test.v1.UnaryService.Get",
 				InputTypeID:  msg.ID,
 				OutputTypeID: msg.ID,
 				InputType:    msg,
@@ -837,6 +836,7 @@ func TestGenerateProstHybrid(t *testing.T) {
 				Source:              sources.NewSourceConfig(srcs, []string{"googleapis"}),
 				Codec: map[string]string{
 					"package-name-override": "google-cloud-test",
+					"package:g3-wkt":        "package=google-cloud-wkt,source=google.protobuf",
 				},
 			})
 			if err != nil {
@@ -848,6 +848,97 @@ func TestGenerateProstHybrid(t *testing.T) {
 			if exists != test.wantProstDir {
 				t.Errorf("prostDir exists = %v, want %v", exists, test.wantProstDir)
 			}
+
+			convertFile := filepath.Join(outDir, "src", "convert.rs")
+			_, err = os.Stat(convertFile)
+			exists = err == nil
+			if exists != test.wantProstDir {
+				t.Errorf("convert file exists = %v, want %v", exists, test.wantProstDir)
+			}
 		})
+	}
+}
+
+func TestFilterModelToStreaming(t *testing.T) {
+	streamingMsg := &api.Message{
+		Name:    "StreamMsg",
+		ID:      ".google.test.v1.StreamMsg",
+		Package: "google.test.v1",
+	}
+	unusedMsg := &api.Message{
+		Name:    "UnusedMsg",
+		ID:      ".google.test.v1.UnusedMsg",
+		Package: "google.test.v1",
+	}
+	bidiService := &api.Service{
+		Name:    "BidiService",
+		ID:      ".google.test.v1.BidiService",
+		Package: "google.test.v1",
+		Methods: []*api.Method{
+			{
+				Name:                "Chat",
+				ID:                  ".google.test.v1.BidiService.Chat",
+				InputTypeID:         streamingMsg.ID,
+				OutputTypeID:        streamingMsg.ID,
+				InputType:           streamingMsg,
+				OutputType:          streamingMsg,
+				ClientSideStreaming: true,
+				ServerSideStreaming: true,
+			},
+		},
+	}
+	model := api.NewTestAPI([]*api.Message{streamingMsg, unusedMsg}, []*api.Enum{}, []*api.Service{bidiService})
+	model.PackageName = "google.test.v1"
+
+	filtered, err := filterModelToStreaming(model)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if len(filtered.Messages) != 1 || filtered.Messages[0].ID != streamingMsg.ID {
+		t.Errorf("got messages %v, want [%s]", filtered.Messages, streamingMsg.ID)
+	}
+}
+
+func TestFilterModelToStreamingAnyError(t *testing.T) {
+	// Verify google.protobuf.Any in streaming path returns error with recommendation
+	anyMsg := &api.Message{
+		Name:    "AnyReq",
+		ID:      ".google.test.v1.AnyReq",
+		Package: "google.test.v1",
+		Fields: []*api.Field{
+			{
+				Name:    "details",
+				TypezID: ".google.protobuf.Any",
+				Typez:   api.TypezMessage,
+			},
+		},
+	}
+	anyService := &api.Service{
+		Name:    "AnyService",
+		ID:      ".google.test.v1.AnyService",
+		Package: "google.test.v1",
+		Methods: []*api.Method{
+			{
+				Name:                "ChatAny",
+				ID:                  ".google.test.v1.AnyService.ChatAny",
+				InputTypeID:         anyMsg.ID,
+				OutputTypeID:        anyMsg.ID,
+				InputType:           anyMsg,
+				OutputType:          anyMsg,
+				ClientSideStreaming: true,
+				ServerSideStreaming: true,
+			},
+		},
+	}
+	anyModel := api.NewTestAPI([]*api.Message{anyMsg}, []*api.Enum{}, []*api.Service{anyService})
+	anyModel.PackageName = "google.test.v1"
+
+	_, err := filterModelToStreaming(anyModel)
+	if err == nil {
+		t.Fatal("expected error for google.protobuf.Any, got nil")
+	}
+	if !strings.Contains(err.Error(), "skipped_ids") {
+		t.Errorf("expected error to contain recommendation 'skipped_ids', got: %v", err)
 	}
 }
