@@ -113,9 +113,6 @@ deep-copy-regex:
 				APIs: []*config.API{
 					{
 						Path: "google/cloud/secretmanager/v1",
-						PHP: &config.PHPAPI{
-							StagingSubdir: "v1",
-						},
 					},
 				},
 			},
@@ -233,9 +230,7 @@ api-name: Ces
 			want: []*config.API{
 				{
 					Path: "google/cloud/ces/v1",
-					PHP: &config.PHPAPI{
-						StagingSubdir: "v1",
-					},
+					PHP:  &config.PHPAPI{},
 				},
 				{
 					Path: "google/identity/accesscontextmanager/type",
@@ -468,14 +463,11 @@ deep-copy-regex:
 					APIs: []*config.API{
 						{
 							Path: "google/cloud/secretmanager/v1",
-							PHP: &config.PHPAPI{
-								StagingSubdir: "v1",
-							},
+							PHP:  &config.PHPAPI{},
 						},
 						{
 							Path: "google/cloud/multipygapic",
 							PHP: &config.PHPAPI{
-								StagingSubdir:   "multipygapic",
 								CommonResources: new(false),
 							},
 						},
@@ -491,6 +483,47 @@ deep-copy-regex:
 			if err != nil {
 				t.Fatal(err)
 			}
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestNormalizeStagingSubdir(t *testing.T) {
+	for _, test := range []struct {
+		name       string
+		apiPath    string
+		stagingDir string
+		want       string
+	}{
+		{
+			name:       "derivable subdur",
+			apiPath:    "google/cloud/secretmanager/v1",
+			stagingDir: "v1",
+			want:       "",
+		},
+		{
+			name:       "custom subdir",
+			apiPath:    "google/identity/accesscontextmanager/type",
+			stagingDir: "type-protos",
+			want:       "type-protos",
+		},
+		{
+			name:       "root subdir",
+			apiPath:    "google/geo/type",
+			stagingDir: ".",
+			want:       ".",
+		},
+		{
+			name:       "nested subdir",
+			apiPath:    "google/bigtable/admin/v2",
+			stagingDir: "v2/Admin",
+			want:       "v2/Admin",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := normalizeStagingSubdir(test.apiPath, test.stagingDir)
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
