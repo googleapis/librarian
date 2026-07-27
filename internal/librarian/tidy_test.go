@@ -30,61 +30,60 @@ import (
 
 func TestValidateLibraries(t *testing.T) {
 	for _, test := range []struct {
-		name      string
-		libraries []*config.Library
-		language  string
+		name string
+		cfg  *config.Config
 	}{
 		{
 			name: "valid libraries",
-			libraries: []*config.Library{
-				{Name: "google-cloud-secretmanager-v1"},
-				{Name: "google-cloud-storage-v1"},
+			cfg: &config.Config{
+				Libraries: []*config.Library{
+					{Name: "google-cloud-secretmanager-v1"},
+					{Name: "google-cloud-storage-v1"},
+				},
 			},
 		},
 		{
 			name: "skipped duplicate api paths",
-			libraries: []*config.Library{
-				{
-					Name: "lib1",
-					APIs: []*config.API{{Path: "google/iam/v1"}},
-					Java: &config.JavaModule{ReleasedVersion: "1.0.0"},
-				},
-				{
-					Name: "lib2",
-					APIs: []*config.API{{Path: "google/iam/v1"}},
-					Java: &config.JavaModule{ReleasedVersion: "1.0.0"},
-				},
-			},
-			language: config.LanguageJava,
-		},
-		{
-			name: "allowed duplicate api paths for ruby",
-			libraries: []*config.Library{
-				{
-					Name: "google-cloud-example",
-					APIs: []*config.API{{Path: "google/cloud/example/v1"}},
-				},
-				{
-					Name: "google-cloud-example-v1",
-					APIs: []*config.API{{Path: "google/cloud/example/v1"}},
-				},
-			},
-			language: config.LanguageRuby,
-		},
-	} {
-		t.Run(test.name, func(t *testing.T) {
-			cfg := &config.Config{
-				Language:  test.language,
-				Libraries: test.libraries,
-			}
-			if test.language == config.LanguageJava {
-				cfg.Default = &config.Default{
+			cfg: &config.Config{
+				Language: config.LanguageJava,
+				Default: &config.Default{
 					Java: &config.JavaDefault{
 						LibrariesBOMVersion: "1.2.3",
 					},
-				}
-			}
-			if err := validateLibraries(cfg); err != nil {
+				},
+				Libraries: []*config.Library{
+					{
+						Name: "lib1",
+						APIs: []*config.API{{Path: "google/iam/v1"}},
+						Java: &config.JavaModule{ReleasedVersion: "1.0.0"},
+					},
+					{
+						Name: "lib2",
+						APIs: []*config.API{{Path: "google/iam/v1"}},
+						Java: &config.JavaModule{ReleasedVersion: "1.0.0"},
+					},
+				},
+			},
+		},
+		{
+			name: "allowed duplicate api paths for ruby",
+			cfg: &config.Config{
+				Language: config.LanguageRuby,
+				Libraries: []*config.Library{
+					{
+						Name: "google-cloud-example",
+						APIs: []*config.API{{Path: "google/cloud/example/v1"}},
+					},
+					{
+						Name: "google-cloud-example-v1",
+						APIs: []*config.API{{Path: "google/cloud/example/v1"}},
+					},
+				},
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			if err := validateLibraries(test.cfg); err != nil {
 				t.Fatal(err)
 			}
 		})
@@ -117,7 +116,7 @@ func TestValidateLibraries_Error(t *testing.T) {
 					APIs: []*config.API{{Path: "google/iam/v1"}},
 				},
 			},
-			wantErr:  errDuplicateAPIPath,
+			wantErr: errDuplicateAPIPath,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
