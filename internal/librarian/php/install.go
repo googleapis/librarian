@@ -156,22 +156,12 @@ func phpWrapperContent(phpExecutable, entrypoint string) string {
 }
 
 // createBinWrapper creates a shell wrapper script in the bin directory that forwards executions to the tool.
-func createBinWrapper(wrapperName, content, binDir string) (err error) {
+func createBinWrapper(wrapperName, content, binDir string) error {
 	wrapperPath := filepath.Join(binDir, wrapperName)
 	if err := os.MkdirAll(filepath.Dir(wrapperPath), 0o755); err != nil {
 		return fmt.Errorf("failed to create directory for wrapper: %w", err)
 	}
-	_ = os.Remove(wrapperPath)
-	f, err := os.OpenFile(wrapperPath, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0o755)
-	if err != nil {
-		return fmt.Errorf("failed to create wrapper script: %w", err)
-	}
-	defer func() {
-		if closeErr := f.Close(); closeErr != nil && err == nil {
-			err = fmt.Errorf("failed to close wrapper script: %w", closeErr)
-		}
-	}()
-	if _, err := f.WriteString(content); err != nil {
+	if err := os.WriteFile(wrapperPath, []byte(content), 0o755); err != nil {
 		return fmt.Errorf("failed to write wrapper script: %w", err)
 	}
 	return nil
