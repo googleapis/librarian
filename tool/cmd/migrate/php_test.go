@@ -497,3 +497,44 @@ deep-copy-regex:
 		})
 	}
 }
+
+func TestNormalizeStagingSubdir(t *testing.T) {
+	for _, test := range []struct {
+		name       string
+		apiPath    string
+		stagingDir string
+		want       string
+	}{
+		{
+			name:       "matches default derivable base",
+			apiPath:    "google/cloud/secretmanager/v1",
+			stagingDir: "v1",
+			want:       "",
+		},
+		{
+			name:       "custom override preserved",
+			apiPath:    "google/identity/accesscontextmanager/type",
+			stagingDir: "type-protos",
+			want:       "type-protos",
+		},
+		{
+			name:       "matches library root",
+			apiPath:    "google/geo/type",
+			stagingDir: ".",
+			want:       ".",
+		},
+		{
+			name:       "nested path with custom staging subdir",
+			apiPath:    "google/bigtable/admin/v2",
+			stagingDir: "v2/Admin",
+			want:       "v2/Admin",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := normalizeStagingSubdir(test.apiPath, test.stagingDir)
+			if got != test.want {
+				t.Errorf("expected %q, got %q", test.want, got)
+			}
+		})
+	}
+}
