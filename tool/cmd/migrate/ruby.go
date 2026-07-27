@@ -420,6 +420,9 @@ func parseAPIFromWrapperBuild(file *build.File) string {
 func parseKeep(path string) ([]string, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
+		if errors.Is(err, fs.ErrNotExist) {
+			return nil, nil
+		}
 		return nil, err
 	}
 	var manifest owlbotManifest
