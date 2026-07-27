@@ -524,8 +524,8 @@ func TestNormalizeStagingSubdir(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			got := normalizeStagingSubdir(test.apiPath, test.stagingDir)
-			if got != test.want {
-				t.Errorf("expected %q, got %q", test.want, got)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
