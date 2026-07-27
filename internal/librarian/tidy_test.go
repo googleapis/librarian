@@ -133,9 +133,8 @@ func TestValidateLibraries_Error(t *testing.T) {
 
 func TestValidateTools(t *testing.T) {
 	for _, test := range []struct {
-		name    string
-		config  *config.Config
-		wantErr error
+		name   string
+		config *config.Config
 	}{
 		{
 			name:   "no tools",
@@ -151,6 +150,21 @@ func TestValidateTools(t *testing.T) {
 				},
 			},
 		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			if err := validateTools(test.config); err != nil {
+				t.Fatal(err)
+			}
+		})
+	}
+}
+
+func TestValidateTools_Error(t *testing.T) {
+	for _, test := range []struct {
+		name    string
+		config  *config.Config
+		wantErr error
+	}{
 		{
 			name: "missing version",
 			config: &config.Config{
@@ -165,15 +179,6 @@ func TestValidateTools(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			err := validateTools(test.config)
-			if test.wantErr == nil {
-				if err != nil {
-					t.Fatal(err)
-				}
-				return
-			}
-			if err == nil {
-				t.Fatalf("expected %v, got nil", test.wantErr)
-			}
 			if !errors.Is(err, test.wantErr) {
 				t.Errorf("expected %v, got %v", test.wantErr, err)
 			}
