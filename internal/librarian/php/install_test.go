@@ -16,16 +16,15 @@ package php
 
 import (
 	"errors"
-	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
 
 	"os/exec"
 
-	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/testhelper"
+	"github.com/googleapis/librarian/internal/tool/composer"
 )
 
 func TestInstallDir(t *testing.T) {
@@ -107,16 +106,8 @@ func TestInstall(t *testing.T) {
 			check: func(t *testing.T) {
 				binDir := filepath.Join(os.Getenv("LIBRARIAN_BIN"), "php_tools", "bin")
 				wrapperPath := filepath.Join(binDir, "gapic-generator-php")
-				b, err := os.ReadFile(wrapperPath)
-				if err != nil {
-					t.Fatal(err)
-				}
-				repoDir := filepath.Join(os.Getenv("LIBRARIAN_CACHE"), "github.com/googleapis/gapic-generator-php@1.0.0")
-				destPath := filepath.Join(repoDir, "src", "Main.php")
-				phpPath, _ := exec.LookPath("php")
-				want := phpWrapperContent(phpPath, destPath)
-				if diff := cmp.Diff(want, string(b)); diff != "" {
-					t.Errorf("mismatch (-want +got):\n%s", diff)
+				if _, err := os.Stat(wrapperPath); err != nil {
+					t.Errorf("wrapper file %s not found: %v", wrapperPath, err)
 				}
 			},
 		},
@@ -166,7 +157,7 @@ func TestInstall_Error(t *testing.T) {
 					},
 				},
 			},
-			wantErr: errMissingRepo,
+			wantErr: composer.ErrMissingRepo,
 		},
 		{
 			name:    "no tools",
@@ -260,50 +251,6 @@ func TestInstall_Error(t *testing.T) {
 			err := Install(t.Context(), test.tools)
 			if !errors.Is(err, test.wantErr) {
 				t.Fatalf("Install() error = %v, wantErr = %v", err, test.wantErr)
-			}
-		})
-	}
-}
-
-func TestCreateBinWrapper(t *testing.T) {
-	for _, test := range []struct {
-		name        string
-		wrapperName string
-	}{
-		{
-			name:        "simple wrapper",
-			wrapperName: "foo",
-		},
-		{
-			name:        "nested wrapper",
-			wrapperName: "nested/dir/foo",
-		},
-	} {
-		t.Run(test.name, func(t *testing.T) {
-			binDir := t.TempDir()
-			destPath := "/path/to/dest"
-			content := fmt.Sprintf("#!/bin/sh\nexec %q \"$@\"\n", destPath)
-			if err := createBinWrapper(test.wrapperName, content, binDir); err != nil {
-				t.Fatal(err)
-			}
-			wrapperPath := filepath.Join(binDir, test.wrapperName)
-			b, err := os.ReadFile(wrapperPath)
-			if err != nil {
-				t.Fatal(err)
-			}
-			if diff := cmp.Diff(content, string(b)); diff != "" {
-				t.Errorf("mismatch (-want +got):\n%s", diff)
-			}
-			info, err := os.Stat(wrapperPath)
-			if err != nil {
-				t.Fatal(err)
-			}
-			perm := info.Mode().Perm()
-			if perm&0o700 != 0o700 {
-				t.Errorf("wrapper permissions = %04o, want at least 0700 (rwx) for owner", perm)
-			}
-			if perm&0o022 != 0 {
-				t.Errorf("wrapper should not be writable by group/others: %04o", perm)
 			}
 		})
 	}
