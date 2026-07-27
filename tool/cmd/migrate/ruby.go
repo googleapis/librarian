@@ -433,8 +433,7 @@ func parseKeepFromManifest(path string) ([]string, error) {
 	}
 	var manifest owlbotManifest
 	if err := json.Unmarshal(data, &manifest); err != nil {
-		slog.Error("failed to unmarshal owlbot-manifest.json", "path", path, "error", err)
-		return nil, err
+		return nil, fmt.Errorf("unmarshaling owlbot manifest %s: %w", path, err)
 	}
 	manifest.Static = slices.DeleteFunc(manifest.Static, func(s string) bool {
 		return s == ".OwlBot.yaml"
