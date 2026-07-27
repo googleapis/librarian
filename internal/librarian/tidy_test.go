@@ -106,7 +106,7 @@ func TestValidateLibraries_Error(t *testing.T) {
 			wantErr: errDuplicateLibraryName,
 		},
 		{
-			name: "duplicate api paths not skipped for non-java",
+			name: "duplicate api paths",
 			libraries: []*config.Library{
 				{
 					Name: "lib1",
