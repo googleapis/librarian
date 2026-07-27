@@ -33,7 +33,6 @@ func TestValidateLibraries(t *testing.T) {
 		name      string
 		libraries []*config.Library
 		language  string
-		wantErr   error
 	}{
 		{
 			name: "valid libraries",
@@ -41,14 +40,6 @@ func TestValidateLibraries(t *testing.T) {
 				{Name: "google-cloud-secretmanager-v1"},
 				{Name: "google-cloud-storage-v1"},
 			},
-		},
-		{
-			name: "duplicate library names",
-			libraries: []*config.Library{
-				{Name: "google-cloud-secretmanager-v1"},
-				{Name: "google-cloud-secretmanager-v1"},
-			},
-			wantErr: errDuplicateLibraryName,
 		},
 		{
 			name: "skipped duplicate api paths",
@@ -65,21 +56,6 @@ func TestValidateLibraries(t *testing.T) {
 				},
 			},
 			language: config.LanguageJava,
-		},
-		{
-			name: "duplicate api paths not skipped for non-java",
-			libraries: []*config.Library{
-				{
-					Name: "lib1",
-					APIs: []*config.API{{Path: "google/iam/v1"}},
-				},
-				{
-					Name: "lib2",
-					APIs: []*config.API{{Path: "google/iam/v1"}},
-				},
-			},
-			language: config.LanguagePython,
-			wantErr:  errDuplicateAPIPath,
 		},
 		{
 			name: "allowed duplicate api paths for ruby",
@@ -108,16 +84,57 @@ func TestValidateLibraries(t *testing.T) {
 					},
 				}
 			}
-			err := validateLibraries(cfg)
-			if test.wantErr == nil {
-				if err != nil {
-					t.Fatal(err)
+			if err := validateLibraries(cfg); err != nil {
+				t.Fatal(err)
+			}
+		})
+	}
+}
+
+func TestValidateLibraries_Error(t *testing.T) {
+	for _, test := range []struct {
+		name      string
+		libraries []*config.Library
+		language  string
+		wantErr   error
+	}{
+		{
+			name: "duplicate library names",
+			libraries: []*config.Library{
+				{Name: "google-cloud-secretmanager-v1"},
+				{Name: "google-cloud-secretmanager-v1"},
+			},
+			wantErr: errDuplicateLibraryName,
+		},
+		{
+			name: "duplicate api paths not skipped for non-java",
+			libraries: []*config.Library{
+				{
+					Name: "lib1",
+					APIs: []*config.API{{Path: "google/iam/v1"}},
+				},
+				{
+					Name: "lib2",
+					APIs: []*config.API{{Path: "google/iam/v1"}},
+				},
+			},
+			language: config.LanguagePython,
+			wantErr:  errDuplicateAPIPath,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			cfg := &config.Config{
+				Language:  test.language,
+				Libraries: test.libraries,
+			}
+			if test.language == config.LanguageJava {
+				cfg.Default = &config.Default{
+					Java: &config.JavaDefault{
+						LibrariesBOMVersion: "1.2.3",
+					},
 				}
-				return
 			}
-			if err == nil {
-				t.Fatalf("expected %v, got nil", test.wantErr)
-			}
+			err := validateLibraries(cfg)
 			if !errors.Is(err, test.wantErr) {
 				t.Errorf("expected %v, got %v", test.wantErr, err)
 			}
