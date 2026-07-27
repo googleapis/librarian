@@ -20,6 +20,7 @@ import (
 	"github.com/googleapis/librarian/internal/config"
 )
 
+// Fill populates default PHP configuration values for the library.
 func Fill(lib *config.Library) *config.Library {
 	fillStagingSubdir(lib)
 	return lib
@@ -27,11 +28,11 @@ func Fill(lib *config.Library) *config.Library {
 
 func fillStagingSubdir(lib *config.Library) {
 	if lib.PHP == nil {
-		return
+		lib.PHP = &config.PHPPackage{}
 	}
 	for _, api := range lib.APIs {
 		// Do not override existing library configuration.
-		if api.PHP == nil || api.PHP.StagingSubdir != "" {
+		if api.PHP.StagingSubdir != "" {
 			continue
 		}
 		name := filepath.Base(api.Path)
