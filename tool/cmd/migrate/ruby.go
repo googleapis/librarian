@@ -16,6 +16,7 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io/fs"
@@ -50,6 +51,10 @@ type owlbotYaml struct {
 
 type owlbotSrc struct {
 	Source string `yaml:"source"`
+}
+
+type owlbotManifest struct {
+	Static []string `json:"static"`
 }
 
 // WrapperBuild represents build configuration parsed from BUILD.bazel for an unversioned Ruby wrapper library.
@@ -410,4 +415,16 @@ func parseAPIFromWrapperBuild(file *build.File) string {
 	}
 	res, _ = strings.CutPrefix(res, "//")
 	return res
+}
+
+func parseKeep(path string) ([]string, error) {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return nil, err
+	}
+	var manifest owlbotManifest
+	if err := json.Unmarshal(data, &manifest); err != nil {
+		return nil, err
+	}
+	return manifest.Static, nil
 }

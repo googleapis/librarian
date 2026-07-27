@@ -16,6 +16,7 @@ package main
 
 import (
 	"context"
+	"os"
 	"path/filepath"
 	"testing"
 
@@ -740,5 +741,22 @@ func TestMergeConfig(t *testing.T) {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
+	}
+}
+
+func TestParseKeep(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, ".owlbot-manifest.json")
+	content := []byte(`{"static": ["file1.rb", "file2.rb"]}`)
+	if err := os.WriteFile(path, content, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	got, err := parseKeep(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := []string{"file1.rb", "file2.rb"}
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
