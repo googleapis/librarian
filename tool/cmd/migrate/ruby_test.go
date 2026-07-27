@@ -745,18 +745,58 @@ func TestMergeConfig(t *testing.T) {
 }
 
 func TestParseKeep(t *testing.T) {
-	dir := t.TempDir()
-	path := filepath.Join(dir, ".owlbot-manifest.json")
-	content := []byte(`{"static": [".OwlBot.yaml", "file1.rb", "file2.rb"]}`)
-	if err := os.WriteFile(path, content, 0o644); err != nil {
-		t.Fatal(err)
-	}
-	got, err := parseKeep(path)
-	if err != nil {
-		t.Fatal(err)
-	}
-	want := []string{"file1.rb", "file2.rb"}
-	if diff := cmp.Diff(want, got); diff != "" {
-		t.Errorf("mismatch (-want +got):\n%s", diff)
+	for _, test := range []struct {
+		name    string
+		content string
+		noFile  bool
+		want    []string
+	}{
+		{
+			name:    "filters out .OwlBot.yaml",
+			content: `{"static": [".OwlBot.yaml", "file1.rb", "file2.rb"]}`,
+			want:    []string{"file1.rb", "file2.rb"},
+		},
+		{
+			name:    "filters out .OwlBot.yaml in middle",
+			content: `{"static": ["file1.rb", ".OwlBot.yaml", "file2.rb"]}`,
+			want:    []string{"file1.rb", "file2.rb"},
+		},
+		{
+			name:    "no files to filter",
+			content: `{"static": ["file1.rb", "file2.rb"]}`,
+			want:    []string{"file1.rb", "file2.rb"},
+		},
+		{
+			name:    "only .OwlBot.yaml leaves empty slice",
+			content: `{"static": [".OwlBot.yaml"]}`,
+			want:    []string{},
+		},
+		{
+			name:    "empty static list",
+			content: `{"static": []}`,
+			want:    []string{},
+		},
+		{
+			name:   "file does not exist",
+			noFile: true,
+			want:   nil,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			dir := t.TempDir()
+			path := filepath.Join(dir, ".owlbot-manifest.json")
+			if !test.noFile {
+				if err := os.WriteFile(path, []byte(test.content), 0o644); err != nil {
+					t.Fatal(err)
+				}
+			}
+			got, err := parseKeep(path)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
 	}
 }
