@@ -96,11 +96,11 @@ func TestInstall(t *testing.T) {
 				}
 
 				bin := t.TempDir()
-				writeExecutable(t, filepath.Join(bin, "composer"), "#!/bin/sh\nexit 0\n")
-				writeExecutable(t, filepath.Join(bin, "pip"), "#!/bin/sh\nexit 0\n")
-				writeExecutable(t, filepath.Join(bin, "node"), "#!/bin/sh\nexit 0\n")
-				writeExecutable(t, filepath.Join(bin, "pnpm"), "#!/bin/sh\nexit 0\n")
-				writeExecutable(t, filepath.Join(bin, "php"), "#!/bin/sh\nexit 0\n")
+				testhelper.WriteExecutable(t, filepath.Join(bin, "composer"), "#!/bin/sh\nexit 0\n")
+				testhelper.WriteExecutable(t, filepath.Join(bin, "pip"), "#!/bin/sh\nexit 0\n")
+				testhelper.WriteExecutable(t, filepath.Join(bin, "node"), "#!/bin/sh\nexit 0\n")
+				testhelper.WriteExecutable(t, filepath.Join(bin, "pnpm"), "#!/bin/sh\nexit 0\n")
+				testhelper.WriteExecutable(t, filepath.Join(bin, "php"), "#!/bin/sh\nexit 0\n")
 				t.Setenv("PATH", bin+string(os.PathListSeparator)+os.Getenv("PATH"))
 			},
 			check: func(t *testing.T) {
@@ -256,15 +256,3 @@ func TestInstall_Error(t *testing.T) {
 	}
 }
 
-//nolint:unparam // content is the same for all calls but keeping parameter for flexibility
-func writeExecutable(t *testing.T, path string, content string) {
-	t.Helper()
-	f, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0o755)
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer f.Close()
-	if _, err := f.WriteString(content); err != nil {
-		t.Fatal(err)
-	}
-}

@@ -268,3 +268,19 @@ func RunGit(t *testing.T, args ...string) {
 		t.Fatal(err)
 	}
 }
+
+// WriteExecutable creates an executable file with the given content.
+// It is useful for mocking executable commands in tests.
+//
+//nolint:unparam // content is the same for all calls but keeping parameter for flexibility
+func WriteExecutable(t *testing.T, path string, content string) {
+	t.Helper()
+	f, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0o755)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer f.Close()
+	if _, err := f.WriteString(content); err != nil {
+		t.Fatal(err)
+	}
+}
