@@ -463,14 +463,11 @@ deep-copy-regex:
 					APIs: []*config.API{
 						{
 							Path: "google/cloud/secretmanager/v1",
-							PHP: &config.PHPAPI{
-								StagingSubdir: "v1",
-							},
+							PHP:  &config.PHPAPI{},
 						},
 						{
 							Path: "google/cloud/multipygapic",
 							PHP: &config.PHPAPI{
-								StagingSubdir:   "multipygapic",
 								CommonResources: new(false),
 							},
 						},
