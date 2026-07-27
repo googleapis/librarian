@@ -748,7 +748,6 @@ func TestParseKeepFromManifest(t *testing.T) {
 	for _, test := range []struct {
 		name    string
 		content string
-		noFile  bool
 		want    []string
 	}{
 		{
@@ -777,15 +776,14 @@ func TestParseKeepFromManifest(t *testing.T) {
 			want:    []string{},
 		},
 		{
-			name:   "file does not exist",
-			noFile: true,
-			want:   nil,
+			name: "file does not exist",
+			want: nil,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			dir := t.TempDir()
 			path := filepath.Join(dir, ".owlbot-manifest.json")
-			if !test.noFile {
+			if test.content != "" {
 				if err := os.WriteFile(path, []byte(test.content), 0o644); err != nil {
 					t.Fatal(err)
 				}
