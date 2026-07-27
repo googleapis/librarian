@@ -95,7 +95,6 @@ func TestValidateLibraries_Error(t *testing.T) {
 	for _, test := range []struct {
 		name      string
 		libraries []*config.Library
-		language  string
 		wantErr   error
 	}{
 		{
@@ -118,21 +117,12 @@ func TestValidateLibraries_Error(t *testing.T) {
 					APIs: []*config.API{{Path: "google/iam/v1"}},
 				},
 			},
-			language: config.LanguagePython,
 			wantErr:  errDuplicateAPIPath,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			cfg := &config.Config{
-				Language:  test.language,
 				Libraries: test.libraries,
-			}
-			if test.language == config.LanguageJava {
-				cfg.Default = &config.Default{
-					Java: &config.JavaDefault{
-						LibrariesBOMVersion: "1.2.3",
-					},
-				}
 			}
 			err := validateLibraries(cfg)
 			if !errors.Is(err, test.wantErr) {
