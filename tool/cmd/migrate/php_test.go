@@ -506,25 +506,25 @@ func TestNormalizeStagingSubdir(t *testing.T) {
 		want       string
 	}{
 		{
-			name:       "matches default derivable base",
+			name:       "derivable subdur",
 			apiPath:    "google/cloud/secretmanager/v1",
 			stagingDir: "v1",
 			want:       "",
 		},
 		{
-			name:       "custom override preserved",
+			name:       "custom subdir",
 			apiPath:    "google/identity/accesscontextmanager/type",
 			stagingDir: "type-protos",
 			want:       "type-protos",
 		},
 		{
-			name:       "matches library root",
+			name:       "root subdir",
 			apiPath:    "google/geo/type",
 			stagingDir: ".",
 			want:       ".",
 		},
 		{
-			name:       "nested path with custom staging subdir",
+			name:       "nested subdir",
 			apiPath:    "google/bigtable/admin/v2",
 			stagingDir: "v2/Admin",
 			want:       "v2/Admin",
