@@ -113,9 +113,6 @@ deep-copy-regex:
 				APIs: []*config.API{
 					{
 						Path: "google/cloud/secretmanager/v1",
-						PHP: &config.PHPAPI{
-							StagingSubdir: "v1",
-						},
 					},
 				},
 			},
