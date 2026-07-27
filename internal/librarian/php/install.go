@@ -161,6 +161,7 @@ func createBinWrapper(wrapperName, content, binDir string) error {
 	if err := os.MkdirAll(filepath.Dir(wrapperPath), 0o755); err != nil {
 		return fmt.Errorf("failed to create directory for wrapper: %w", err)
 	}
+	_ = os.Remove(wrapperPath)
 	if err := os.WriteFile(wrapperPath, []byte(content), 0o755); err != nil {
 		return fmt.Errorf("failed to write wrapper script: %w", err)
 	}
