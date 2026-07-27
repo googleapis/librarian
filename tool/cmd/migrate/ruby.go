@@ -160,7 +160,7 @@ func findRubyLibraries(googleapisPath, repoPath string) ([]*config.Library, erro
 		lib := &config.Library{
 			Name: name,
 		}
-		keep, err := parseKeep(filepath.Join(repoPath, name, ".owlbot-manifest.json"))
+		keep, err := parseKeepFromManifest(filepath.Join(repoPath, name, ".owlbot-manifest.json"))
 		if err != nil {
 			return nil, err
 		}
@@ -423,7 +423,7 @@ func parseAPIFromWrapperBuild(file *build.File) string {
 	return res
 }
 
-func parseKeep(path string) ([]string, error) {
+func parseKeepFromManifest(path string) ([]string, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
 		if errors.Is(err, fs.ErrNotExist) {

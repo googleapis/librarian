@@ -744,7 +744,7 @@ func TestMergeConfig(t *testing.T) {
 	}
 }
 
-func TestParseKeep(t *testing.T) {
+func TestParseKeepFromManifest(t *testing.T) {
 	for _, test := range []struct {
 		name    string
 		content string
@@ -790,7 +790,7 @@ func TestParseKeep(t *testing.T) {
 					t.Fatal(err)
 				}
 			}
-			got, err := parseKeep(path)
+			got, err := parseKeepFromManifest(path)
 			if err != nil {
 				t.Fatal(err)
 			}
