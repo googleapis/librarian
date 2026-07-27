@@ -19,6 +19,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"slices"
@@ -31,6 +32,8 @@ import (
 	"github.com/googleapis/librarian/internal/sources"
 	"github.com/googleapis/librarian/internal/tool/protoc"
 )
+
+const commonResourcesProto = "google/cloud/common_resources.proto"
 
 var errNoAPIs = errors.New("no apis configured for library")
 
@@ -88,7 +91,7 @@ func Generate(ctx context.Context, cfg *config.Config, library *config.Library, 
 }
 
 func generateAPI(ctx context.Context, api *config.API, gemName string, pc *config.Protoc, googleapisDir, stagingDir string) error {
-	var additionalProtos []string
+	additionalProtos := []string{commonResourcesProto}
 	if api.Ruby != nil {
 		additionalProtos = append(additionalProtos, api.Ruby.AdditionalProtos...)
 	}
@@ -128,7 +131,19 @@ func generateAPI(ctx context.Context, api *config.API, gemName string, pc *confi
 	if err != nil {
 		return err
 	}
-	return protoc.RunOrSystem(ctx, env, pc, args...)
+	if err := protoc.RunOrSystem(ctx, env, pc, args...); err != nil {
+		return err
+	}
+	// Remove google/cloud/common_resources_pb.rb from staging after generation.
+	// Because librarian passes all protoFiles (including common_resources.proto) to protoc
+	// in a single invocation, protoc outputs common_resources_pb.rb into the lib/ directory.
+	// We delete it unconditionally so individual client gems do not bundle unused shared
+	// protobuf definitions, which would cause class redefinition warnings and collisions.
+	commonResourcesPB := filepath.Join(stagingDir, "lib", "google", "cloud", "common_resources_pb.rb")
+	if err := os.Remove(commonResourcesPB); err != nil && !errors.Is(err, fs.ErrNotExist) {
+		return fmt.Errorf("failed to remove %s: %w", commonResourcesPB, err)
+	}
+	return nil
 }
 
 func buildGAPICOpts(api *config.API, gemName, googleapisDir string) ([]string, error) {

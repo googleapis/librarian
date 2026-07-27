@@ -324,6 +324,14 @@ fi
 if [ -n "$rubyOut" ]; then
   mkdir -p "$rubyOut/google/cloud/secret_manager"
   touch "$rubyOut/google/cloud/secret_manager/v1_pb.rb"
+  for arg in "$@"; do
+    case "$arg" in
+      *common_resources.proto)
+        mkdir -p "$rubyOut/google/cloud"
+        touch "$rubyOut/google/cloud/common_resources_pb.rb"
+        ;;
+    esac
+  done
 fi
 exit 0
 `
@@ -448,6 +456,10 @@ func TestGenerateAPI(t *testing.T) {
 	wantPbFile := filepath.Join(stagingDir, "lib", "google", "cloud", "secret_manager", "v1_pb.rb")
 	if _, err := os.Stat(wantPbFile); err != nil {
 		t.Errorf("expected generated pb file %s to exist: %v", wantPbFile, err)
+	}
+	unexpectedCommonPbFile := filepath.Join(stagingDir, "lib", "google", "cloud", "common_resources_pb.rb")
+	if _, err := os.Stat(unexpectedCommonPbFile); !errors.Is(err, fs.ErrNotExist) {
+		t.Errorf("expected common_resources_pb.rb %s to be removed, but err = %v", unexpectedCommonPbFile, err)
 	}
 }
 
