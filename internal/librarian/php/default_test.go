@@ -119,8 +119,8 @@ func TestFillStagingSubdir(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			fillStagingSubdir(test.lib)
-			if diff := cmp.Diff(test.want, test.lib); diff != "" {
+			got := fillStagingSubdir(test.lib)
+			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})

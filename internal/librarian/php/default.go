@@ -22,11 +22,10 @@ import (
 
 // Fill populates default PHP configuration values for the library.
 func Fill(lib *config.Library) *config.Library {
-	fillStagingSubdir(lib)
-	return lib
+	return fillStagingSubdir(lib)
 }
 
-func fillStagingSubdir(lib *config.Library) {
+func fillStagingSubdir(lib *config.Library) *config.Library {
 	for _, api := range lib.APIs {
 		if api.PHP == nil {
 			api.PHP = &config.PHPAPI{}
@@ -38,4 +37,5 @@ func fillStagingSubdir(lib *config.Library) {
 		name := filepath.Base(api.Path)
 		api.PHP.StagingSubdir = name
 	}
+	return lib
 }
