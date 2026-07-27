@@ -778,7 +778,7 @@ func TestApplyDefaults(t *testing.T) {
 			wantOutput:  "java-google-cloud-secretmanager-v1",
 		},
 		{
-			name: "php fills library defaults",
+			name:     "php fills library defaults",
 			language: config.LanguagePhp,
 			apis: []*config.API{
 				{
