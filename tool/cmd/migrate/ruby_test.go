@@ -747,7 +747,7 @@ func TestMergeConfig(t *testing.T) {
 func TestParseKeep(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, ".owlbot-manifest.json")
-	content := []byte(`{"static": ["file1.rb", "file2.rb"]}`)
+	content := []byte(`{"static": [".OwlBot.yaml", "file1.rb", "file2.rb"]}`)
 	if err := os.WriteFile(path, content, 0o644); err != nil {
 		t.Fatal(err)
 	}

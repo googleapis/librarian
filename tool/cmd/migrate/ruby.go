@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"io/fs"
 	"log"
+	"log/slog"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -432,7 +433,11 @@ func parseKeep(path string) ([]string, error) {
 	}
 	var manifest owlbotManifest
 	if err := json.Unmarshal(data, &manifest); err != nil {
+		slog.Error("failed to unmarshal owlbot-manifest.json", "path", path, "error", err)
 		return nil, err
 	}
+	manifest.Static = slices.DeleteFunc(manifest.Static, func(s string) bool {
+		return s == ".OwlBot.yaml"
+	})
 	return manifest.Static, nil
 }
