@@ -230,9 +230,7 @@ api-name: Ces
 			want: []*config.API{
 				{
 					Path: "google/cloud/ces/v1",
-					PHP: &config.PHPAPI{
-						StagingSubdir: "v1",
-					},
+					PHP:  &config.PHPAPI{},
 				},
 				{
 					Path: "google/identity/accesscontextmanager/type",
