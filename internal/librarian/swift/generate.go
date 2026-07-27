@@ -45,7 +45,7 @@ func Generate(ctx context.Context, cfg *config.Config, library *config.Library, 
 	if err != nil {
 		return err
 	}
-	return sidekickswift.Generate(ctx, model, library.Output, modelConfig, library.Swift)
+	return sidekickswift.Generate(ctx, model, library.Output, library, nil)
 }
 
 // Format formats a generated Swift library.
@@ -99,18 +99,12 @@ func libraryToModelConfig(library *config.Library, apiCfg *config.API, src *sour
 		specFormat = library.SpecificationFormat
 	}
 
-	releaseLevel := svcConfig.ReleaseLevel(config.LanguageSwift, library.Version)
 	modelCfg := &parser.ModelConfig{
 		Language:            config.LanguageSwift,
 		SpecificationFormat: specFormat,
 		ServiceConfig:       svcConfig.ServiceConfig,
 		SpecificationSource: apiCfg.Path,
 		Source:              sourceConfig,
-		Codec: map[string]string{
-			"copyright-year": library.CopyrightYear,
-			"version":        library.Version,
-			"release-level":  releaseLevel,
-		},
 	}
 	if library.Swift != nil && library.Swift.Discovery != nil {
 		pollers := make([]*api.Poller, len(library.Swift.Discovery.Pollers))

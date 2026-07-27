@@ -173,7 +173,9 @@ func validateLibraries(cfg *config.Config) error {
 		}
 	}
 	for path, count := range pathCount {
-		if count > 1 {
+		// Relax unique API path validation for Ruby because wrapper libraries share
+		// API paths with the versioned libraries they wrap.
+		if count > 1 && cfg.Language != config.LanguageRuby {
 			errs = append(errs, fmt.Errorf("%w: %s (appears %d times)", errDuplicateAPIPath, path, count))
 		}
 	}

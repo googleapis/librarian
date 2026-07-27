@@ -86,7 +86,6 @@ func TestGenerate(t *testing.T) {
 		{
 			Name:                "GoogleType",
 			APIs:                []*config.API{{Path: "google/type"}},
-			CopyrightYear:       "2038",
 			SpecificationFormat: config.SpecProtobuf,
 			Swift:               defaultSwiftConfig(t),
 		},
@@ -171,9 +170,8 @@ func TestLibraryToModelConfig(t *testing.T) {
 		{
 			name: "minimal config",
 			library: &config.Library{
-				Name:          "google-cloud-secretmanager",
-				CopyrightYear: "2038",
-				Version:       "1.2.3",
+				Name:    "google-cloud-secretmanager",
+				Version: "1.2.3",
 			},
 			api: &config.API{
 				Path: "google/cloud/secretmanager/v1",
@@ -183,11 +181,6 @@ func TestLibraryToModelConfig(t *testing.T) {
 				SpecificationFormat: config.SpecProtobuf,
 				SpecificationSource: "google/cloud/secretmanager/v1",
 				ServiceConfig:       "google/cloud/secretmanager/v1/secretmanager_v1.yaml",
-				Codec: map[string]string{
-					"copyright-year": "2038",
-					"release-level":  "stable",
-					"version":        "1.2.3",
-				},
 				Source: &sources.SourceConfig{
 					ActiveRoots: []string{"googleapis"},
 				},
@@ -196,9 +189,8 @@ func TestLibraryToModelConfig(t *testing.T) {
 		{
 			name: "minimal config preview",
 			library: &config.Library{
-				Name:          "google-cloud-secretmanager",
-				CopyrightYear: "2038",
-				Version:       "0.2.3",
+				Name:    "google-cloud-secretmanager",
+				Version: "0.2.3",
 			},
 			api: &config.API{
 				Path: "google/cloud/secretmanager/v1",
@@ -208,11 +200,6 @@ func TestLibraryToModelConfig(t *testing.T) {
 				SpecificationFormat: config.SpecProtobuf,
 				SpecificationSource: "google/cloud/secretmanager/v1",
 				ServiceConfig:       "google/cloud/secretmanager/v1/secretmanager_v1.yaml",
-				Codec: map[string]string{
-					"copyright-year": "2038",
-					"release-level":  "preview",
-					"version":        "0.2.3",
-				},
 				Source: &sources.SourceConfig{
 					ActiveRoots: []string{"googleapis"},
 				},
@@ -222,7 +209,6 @@ func TestLibraryToModelConfig(t *testing.T) {
 			name: "explicit specification format",
 			library: &config.Library{
 				Name:                "google-cloud-secretmanager",
-				CopyrightYear:       "2038",
 				Version:             "1.2.3",
 				SpecificationFormat: config.SpecProtobuf,
 			},
@@ -234,11 +220,6 @@ func TestLibraryToModelConfig(t *testing.T) {
 				SpecificationFormat: config.SpecProtobuf,
 				SpecificationSource: "google/cloud/secretmanager/v1",
 				ServiceConfig:       "google/cloud/secretmanager/v1/secretmanager_v1.yaml",
-				Codec: map[string]string{
-					"copyright-year": "2038",
-					"release-level":  "stable",
-					"version":        "1.2.3",
-				},
 				Source: &sources.SourceConfig{
 					ActiveRoots: []string{"googleapis"},
 				},
@@ -248,7 +229,6 @@ func TestLibraryToModelConfig(t *testing.T) {
 			name: "discovery config",
 			library: &config.Library{
 				Name:                "google-cloud-compute-v1",
-				CopyrightYear:       "2038",
 				Version:             "1.2.3",
 				Roots:               []string{"discovery", "googleapis"},
 				SpecificationFormat: config.SpecDiscovery,
@@ -261,11 +241,6 @@ func TestLibraryToModelConfig(t *testing.T) {
 				SpecificationFormat: config.SpecDiscovery,
 				SpecificationSource: "discoveries/compute.v1.json",
 				ServiceConfig:       "google/cloud/compute/v1/compute_v1.yaml",
-				Codec: map[string]string{
-					"copyright-year": "2038",
-					"release-level":  "stable",
-					"version":        "1.2.3",
-				},
 				Source: &sources.SourceConfig{
 					ActiveRoots: []string{"discovery", "googleapis"},
 				},
@@ -275,7 +250,6 @@ func TestLibraryToModelConfig(t *testing.T) {
 			name: "discovery config with LRO",
 			library: &config.Library{
 				Name:                "google-cloud-compute-v1",
-				CopyrightYear:       "2038",
 				Version:             "1.2.3",
 				Roots:               []string{"discovery", "googleapis"},
 				SpecificationFormat: config.SpecDiscovery,
@@ -299,11 +273,6 @@ func TestLibraryToModelConfig(t *testing.T) {
 				SpecificationFormat: config.SpecDiscovery,
 				SpecificationSource: "discoveries/compute.v1.json",
 				ServiceConfig:       "google/cloud/compute/v1/compute_v1.yaml",
-				Codec: map[string]string{
-					"copyright-year": "2038",
-					"release-level":  "stable",
-					"version":        "1.2.3",
-				},
 				Source: &sources.SourceConfig{
 					ActiveRoots: []string{"discovery", "googleapis"},
 				},

@@ -12,15 +12,30 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package swift
+package php
 
 import (
-	"strings"
+	"path/filepath"
 
-	"github.com/googleapis/librarian/internal/sidekick/api"
+	"github.com/googleapis/librarian/internal/config"
 )
 
-// PackageName returns the Swift package name for the API.
-func PackageName(api *api.API) string {
-	return strings.ReplaceAll(api.PackageName, ".", "-")
+// Fill populates default PHP configuration values for the library.
+func Fill(lib *config.Library) *config.Library {
+	return fillStagingSubdir(lib)
+}
+
+func fillStagingSubdir(lib *config.Library) *config.Library {
+	for _, api := range lib.APIs {
+		if api.PHP == nil {
+			api.PHP = &config.PHPAPI{}
+		}
+		// Do not override existing library configuration.
+		if api.PHP.StagingSubdir != "" {
+			continue
+		}
+		name := filepath.Base(api.Path)
+		api.PHP.StagingSubdir = name
+	}
+	return lib
 }

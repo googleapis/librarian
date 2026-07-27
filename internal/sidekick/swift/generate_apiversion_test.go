@@ -22,7 +22,6 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/sidekick/api"
-	"github.com/googleapis/librarian/internal/sidekick/parser"
 )
 
 func TestGenerateService_APIVersion(t *testing.T) {
@@ -90,12 +89,14 @@ func TestGenerateService_APIVersion(t *testing.T) {
 			service := api.NewTestService("TestService").WithMethods(method)
 			model := api.NewTestAPI([]*api.Message{requestType, responseType}, nil, []*api.Service{service})
 			model.PackageName = "test"
-			cfg := &parser.ModelConfig{}
 			swiftCfg := swiftConfig(t, []config.SwiftDependency{
 				{Name: "GoogleCloudGax", RequiredByServices: true},
 			})
 
-			if err := Generate(t.Context(), model, outDir, cfg, swiftCfg); err != nil {
+			library := &config.Library{
+				Swift: swiftCfg,
+			}
+			if err := Generate(t.Context(), model, outDir, library, nil); err != nil {
 				t.Fatal(err)
 			}
 

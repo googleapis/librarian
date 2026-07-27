@@ -499,6 +499,7 @@ This document describes the schema for the librarian.yaml.
 | `ruby-cloud-namespace-override` | string | Overrides token / segment replacements applied across all generated module & class paths. |
 | `ruby-cloud-path-override` | string | Overrides file/directory paths under lib/ and proto_docs/. |
 | `ruby-cloud-service-override` | string | Overrides generated service class names when proto package service names don't match desired Ruby conventions. |
+| `ruby-cloud-wrapper-gem-override` | string | Overrides a versioned client gem to a custom non-standard main wrapper gem name. |
 | `ruby-cloud-yard-strict` | string | Enables or disables strict YARD syntax checks during generation. |
 
 ## RubyPackage Configuration
@@ -641,6 +642,7 @@ This document describes the schema for the librarian.yaml.
 | (embedded) | [SwiftDefault](#swiftdefault-configuration) |  |
 | `include_list` | list of string | Is a subset of proto files under the target API path to include (e.g., ["date.proto", "expr.proto"]). |
 | `modules` | list of [SwiftModule](#swiftmodule-configuration) (optional) | Specifies generation targets for veneers and test packages.<br><br>Each module defines a source proto path, and output location. |
+| `package_name_override` | string | Overrides the package name.<br><br>This may be useful if the protobuf package lacks the necessary prefixes, e.g. `grafeas.v1` may be published as `google-grafeas-v1` to match the other packages. |
 | `per_service_traits` | bool | Enables per-service compile-time flags. |
 | `default_traits` | list of string | Is a list of compile-time traits enabled by default. |
 | `discovery` | SwiftDiscovery (optional) | Contains discovery-specific configuration for LRO polling. |

@@ -22,13 +22,13 @@ import (
 )
 
 func TestAnnotateEnumValue_WithDocs(t *testing.T) {
-	enum := &api.Enum{Name: "Color"}
+	enum := &api.Enum{Name: "Color", Package: "test"}
 	ev := &api.EnumValue{Name: "COLOR_RED", Number: 1, Documentation: "Red color", Parent: enum}
 	enum.Values = []*api.EnumValue{ev}
 	enum.UniqueNumberValues = enum.Values
 
 	model := api.NewTestAPI([]*api.Message{}, []*api.Enum{enum}, []*api.Service{})
-	codec := newTestCodec(t, model, map[string]string{})
+	codec := newTestCodec(t, model, nil)
 	if err := codec.annotateModel(); err != nil {
 		t.Fatal(err)
 	}
@@ -50,7 +50,7 @@ func TestAnnotateEnumValue_WithDocs(t *testing.T) {
 }
 
 func TestAnnotateEnumValue_Multiple(t *testing.T) {
-	enum := &api.Enum{Name: "Color"}
+	enum := &api.Enum{Name: "Color", Package: "test"}
 	enum.Values = []*api.EnumValue{
 		{Name: "COLOR_RED", Number: 1, Parent: enum},
 		{Name: "COLOR_GREEN", Number: 2, Parent: enum},
@@ -58,7 +58,7 @@ func TestAnnotateEnumValue_Multiple(t *testing.T) {
 	enum.UniqueNumberValues = enum.Values
 
 	model := api.NewTestAPI([]*api.Message{}, []*api.Enum{enum}, []*api.Service{})
-	codec := newTestCodec(t, model, map[string]string{})
+	codec := newTestCodec(t, model, nil)
 	if err := codec.annotateModel(); err != nil {
 		t.Fatal(err)
 	}
@@ -86,7 +86,7 @@ func TestAnnotateEnumValue_Multiple(t *testing.T) {
 }
 
 func TestAnnotateEnumValue_Aliases(t *testing.T) {
-	enum := &api.Enum{Name: "Color"}
+	enum := &api.Enum{Name: "Color", Package: "test"}
 	// This may seem weird, but they do happen in Google Cloud APIs, see:
 	//     https://github.com/search?q=repo%3Agoogleapis%2Fgoogleapis+%22option+allow_alias+%3D+true%3B%22&type=code
 	enum.Values = []*api.EnumValue{
@@ -96,7 +96,7 @@ func TestAnnotateEnumValue_Aliases(t *testing.T) {
 	enum.UniqueNumberValues = []*api.EnumValue{enum.Values[0]}
 
 	model := api.NewTestAPI([]*api.Message{}, []*api.Enum{enum}, []*api.Service{})
-	codec := newTestCodec(t, model, map[string]string{})
+	codec := newTestCodec(t, model, nil)
 	if err := codec.annotateModel(); err != nil {
 		t.Fatal(err)
 	}

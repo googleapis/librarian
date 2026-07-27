@@ -168,7 +168,7 @@ func TestAnnotateMessage(t *testing.T) {
 				f.Parent = test.message
 			}
 			model := api.NewTestAPI([]*api.Message{test.message}, []*api.Enum{}, []*api.Service{})
-			codec := newTestCodec(t, model, map[string]string{})
+			codec := newTestCodec(t, model, nil)
 			if err := codec.annotateModel(); err != nil {
 				t.Fatal(err)
 			}
@@ -312,7 +312,7 @@ func TestAnnotateMessage_Discovery(t *testing.T) {
 			}
 			model := api.NewTestAPI([]*api.Message{test.message}, []*api.Enum{}, []*api.Service{})
 			model.AddMessage(mapMessage)
-			codec := newTestCodec(t, model, map[string]string{})
+			codec := newTestCodec(t, model, nil)
 			codec.UrlSafeForBytes = true
 			if err := codec.annotateModel(); err != nil {
 				t.Fatal(err)
@@ -372,7 +372,7 @@ func TestAnnotateMessage_DiscoveryRequests(t *testing.T) {
 			servicePlaceholder.Messages = append(servicePlaceholder.Messages, test.request)
 			model := api.NewTestAPI([]*api.Message{servicePlaceholder}, []*api.Enum{}, []*api.Service{test.service})
 			model.AddMessage(test.request)
-			codec := newTestCodec(t, model, map[string]string{})
+			codec := newTestCodec(t, model, nil)
 			if err := codec.annotateModel(); err != nil {
 				t.Fatal(err)
 			}

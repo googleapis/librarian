@@ -43,7 +43,7 @@ type fieldAnnotations struct {
 	// ValueType is the value's Swift type for maps and empty otherwise.
 	ValueType string
 
-	// PackageName is the name of the package defining the type of this field.
+	// PackageName is the name of the source specification (Protobuf) package defining the type of this field.
 	PackageName string
 
 	// DocLines is the field documentation broken by lines with any filtering / corrections for Swift.

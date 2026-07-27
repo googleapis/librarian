@@ -509,3 +509,101 @@ func TestGenerateSetterSamples(t *testing.T) {
 		t.Errorf("GenerateSetterSamples should be true")
 	}
 }
+
+func TestModelAnnotationsHasBidiStreaming(t *testing.T) {
+	msg := &api.Message{
+		Name:    "Request",
+		ID:      ".test.v1.Request",
+		Package: "test.v1",
+	}
+	bidiService := &api.Service{
+		Name:    "BidiService",
+		ID:      ".test.v1.BidiService",
+		Package: "test.v1",
+		Methods: []*api.Method{
+			{
+				Name:                "Chat",
+				ID:                  ".test.v1.BidiService.Chat",
+				InputTypeID:         msg.ID,
+				OutputTypeID:        msg.ID,
+				InputType:           msg,
+				OutputType:          msg,
+				ClientSideStreaming: true,
+				ServerSideStreaming: true,
+				PathInfo:            &api.PathInfo{},
+			},
+		},
+	}
+	unaryService := &api.Service{
+		Name:    "UnaryService",
+		ID:      ".test.v1.UnaryService",
+		Package: "test.v1",
+		Methods: []*api.Method{
+			{
+				Name:         "Get",
+				ID:           ".test.v1.UnaryService.Get",
+				InputTypeID:  msg.ID,
+				OutputTypeID: msg.ID,
+				InputType:    msg,
+				OutputType:   msg,
+				PathInfo:     &api.PathInfo{},
+			},
+		},
+	}
+
+	for _, test := range []struct {
+		name    string
+		service *api.Service
+		options map[string]string
+		want    bool
+	}{
+		{
+			name:    "bidi streaming enabled with bidi method",
+			service: bidiService,
+			options: map[string]string{
+				"include-bidi-streaming-methods": "true",
+			},
+			want: true,
+		},
+		{
+			name:    "bidi streaming disabled with bidi method",
+			service: bidiService,
+			options: map[string]string{
+				"include-bidi-streaming-methods": "false",
+			},
+			want: false,
+		},
+		{
+			name:    "bidi streaming enabled with unary method",
+			service: unaryService,
+			options: map[string]string{
+				"include-bidi-streaming-methods": "true",
+			},
+			want: false,
+		},
+		{
+			name:    "template override with bidi method",
+			service: bidiService,
+			options: map[string]string{
+				"include-bidi-streaming-methods": "true",
+				"template-override":              "templates/tonic",
+			},
+			want: false,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			model := api.NewTestAPI([]*api.Message{msg}, []*api.Enum{}, []*api.Service{test.service})
+			if err := api.CrossReference(model); err != nil {
+				t.Fatal(err)
+			}
+			codec := newTestCodec(t, libconfig.SpecProtobuf, "", test.options)
+			got, err := annotateModel(model, codec)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if got.HasBidiStreaming != test.want {
+				t.Errorf("HasBidiStreaming = %v, want %v", got.HasBidiStreaming, test.want)
+			}
+		})
+	}
+}

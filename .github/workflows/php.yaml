@@ -30,6 +30,15 @@ jobs:
           php-version: '8.2'
           extensions: mbstring, xml, bcmath
       - uses: ./.github/actions/setup-librarian
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: "22"
+      - name: "Set up pnpm via corepack"
+        run: |
+          corepack enable pnpm
+          corepack prepare pnpm@7.32.2 --activate
+      - name: Setup test configuration
+        run: cp ./tool/cmd/migrate/librarian_php.yaml librarian.yaml
       - name: Install dependencies
         run: librarian install php
       - name: Run tests

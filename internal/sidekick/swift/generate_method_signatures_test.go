@@ -23,7 +23,6 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/sidekick/api"
-	"github.com/googleapis/librarian/internal/sidekick/parser"
 )
 
 func TestGenerateService_MethodSignatures(t *testing.T) {
@@ -167,7 +166,6 @@ func TestGenerateService_MethodSignatures(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			outDir := t.TempDir()
 			model := newModelWithSignatures(t)
-			cfg := &parser.ModelConfig{}
 			swiftCfg := swiftConfig(t, []config.SwiftDependency{
 				{Name: "GoogleCloudGax", RequiredByServices: true},
 				{Name: "GoogleCloudAuth", RequiredByServices: true},
@@ -175,7 +173,10 @@ func TestGenerateService_MethodSignatures(t *testing.T) {
 				{ApiPackage: "google.rpc", Name: "GoogleRpc"},
 			})
 
-			if err := Generate(t.Context(), model, outDir, cfg, swiftCfg); err != nil {
+			library := &config.Library{
+				Swift: swiftCfg,
+			}
+			if err := Generate(t.Context(), model, outDir, library, nil); err != nil {
 				t.Fatal(err)
 			}
 

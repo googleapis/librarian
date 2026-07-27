@@ -21,8 +21,8 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/sidekick/api"
-	"github.com/googleapis/librarian/internal/sidekick/parser"
 )
 
 func TestGenerateConversions_MissingModulePath(t *testing.T) {
@@ -30,9 +30,7 @@ func TestGenerateConversions_MissingModulePath(t *testing.T) {
 	model := api.NewTestAPI([]*api.Message{}, []*api.Enum{}, []*api.Service{})
 	model.PackageName = "google.cloud.test.v1"
 
-	cfg := &parser.ModelConfig{}
-
-	err := GenerateConversions(t.Context(), model, outDir, cfg, nil)
+	err := GenerateConversions(t.Context(), model, outDir, &config.Library{}, nil)
 	if err == nil {
 		t.Fatal("GenerateConversions expected error due to missing module-path, got nil")
 	}
@@ -75,15 +73,12 @@ func TestGenerateConversions_Message(t *testing.T) {
 	model := api.NewTestAPI([]*api.Message{folder}, []*api.Enum{}, []*api.Service{})
 	model.PackageName = "google.storage.control.v2"
 
-	cfg := &parser.ModelConfig{
-		Codec: map[string]string{
-			"copyright-year": "2038",
-			"module-path":    "StorageControlProtos",
-			"module":         "true",
-		},
+	library := &config.Library{}
+	module := &config.SwiftModule{
+		ModulePath: "StorageControlProtos",
 	}
 
-	if err := GenerateConversions(t.Context(), model, outDir, cfg, nil); err != nil {
+	if err := GenerateConversions(t.Context(), model, outDir, library, module); err != nil {
 		t.Fatal(err)
 	}
 

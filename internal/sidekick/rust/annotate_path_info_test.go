@@ -225,6 +225,14 @@ func TestPathBindingAnnotations(t *testing.T) {
 		Optional: true,
 	}
 
+	f_oneof := &api.Field{
+		Name:     "oneofField",
+		JSONName: "oneofField",
+		ID:       ".test.Request.oneofField",
+		Typez:    api.TypezString,
+		IsOneOf:  true,
+	}
+
 	request := &api.Message{
 		Name:    "Request",
 		Package: "test",
@@ -236,6 +244,7 @@ func TestPathBindingAnnotations(t *testing.T) {
 			f_id,
 			f_optional,
 			f_child,
+			f_oneof,
 		},
 	}
 	response := &api.Message{
@@ -349,6 +358,24 @@ func TestPathBindingAnnotations(t *testing.T) {
 		PathFmt:     "/v2/foos",
 		QueryParams: []*api.Field{f_name, f_optional, f_child},
 	}
+	b4 := &api.PathBinding{
+		Verb: "POST",
+		PathTemplate: (&api.PathTemplate{}).
+			WithLiteral("v1").
+			WithLiteral("projects").
+			WithVariableNamed("oneofField").
+			WithVerb("actionOnOneof"),
+	}
+	want_b4 := &pathBindingAnnotation{
+		PathFmt: "/v1/projects/{}:actionOnOneof",
+		Substitutions: []*bindingSubstitution{
+			{
+				FieldAccessor: "Some(&req).and_then(|m| m.oneof_field()).map(|s| s.as_str())",
+				FieldName:     "oneof_field",
+				Template:      []string{"*"},
+			},
+		},
+	}
 	method := &api.Method{
 		Name:         "DoFoo",
 		ID:           ".test.Service.DoFoo",
@@ -356,7 +383,7 @@ func TestPathBindingAnnotations(t *testing.T) {
 		InputTypeID:  ".test.Request",
 		OutputTypeID: ".test.Response",
 		PathInfo: &api.PathInfo{
-			Bindings: []*api.PathBinding{b0, b1, b2, b3},
+			Bindings: []*api.PathBinding{b0, b1, b2, b3, b4},
 		},
 	}
 	service := &api.Service{
@@ -385,6 +412,10 @@ func TestPathBindingAnnotations(t *testing.T) {
 	}
 
 	if diff := cmp.Diff(want_b3, b3.Codec); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+
+	if diff := cmp.Diff(want_b4, b4.Codec); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }

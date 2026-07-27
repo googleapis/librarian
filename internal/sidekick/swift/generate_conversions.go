@@ -22,12 +22,11 @@ import (
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/sidekick/api"
 	"github.com/googleapis/librarian/internal/sidekick/language"
-	"github.com/googleapis/librarian/internal/sidekick/parser"
 )
 
 // GenerateConversions generates the user-facing clean types and conversion mappings.
-func GenerateConversions(ctx context.Context, model *api.API, outdir string, cfg *parser.ModelConfig, swiftCfg *config.SwiftPackage) error {
-	codec, err := newCodec(model, cfg, swiftCfg, outdir)
+func GenerateConversions(ctx context.Context, model *api.API, outdir string, library *config.Library, module *config.SwiftModule) error {
+	codec, err := newCodec(model, library, module, outdir)
 	if err != nil {
 		return err
 	}
@@ -64,7 +63,7 @@ func (c *codec) generateEnumConversions(outdir string, model *api.API, provider 
 		name := c.enumFileName(e)
 		output := filepath.Join("Convert", name+"+Convert.swift")
 		if !c.Module {
-			output = filepath.Join("Sources", c.PackageName, "Convert", name+"+Convert.swift")
+			output = filepath.Join("Sources", c.LibraryName, "Convert", name+"+Convert.swift")
 		}
 		generated := language.GeneratedFile{
 			TemplatePath: "templates/convert/convert_enum_file.swift.mustache",
@@ -88,7 +87,7 @@ func (c *codec) generateMessageConversions(outdir string, model *api.API, provid
 		name := c.messageFileName(m)
 		output := filepath.Join("Convert", name+"+Convert.swift")
 		if !c.Module {
-			output = filepath.Join("Sources", c.PackageName, "Convert", name+"+Convert.swift")
+			output = filepath.Join("Sources", c.LibraryName, "Convert", name+"+Convert.swift")
 		}
 		generated := language.GeneratedFile{
 			TemplatePath: "templates/convert/convert_message_file.swift.mustache",

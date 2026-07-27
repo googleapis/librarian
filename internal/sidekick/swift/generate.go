@@ -25,15 +25,14 @@ import (
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/sidekick/api"
 	"github.com/googleapis/librarian/internal/sidekick/language"
-	"github.com/googleapis/librarian/internal/sidekick/parser"
 )
 
 //go:embed all:templates
 var templates embed.FS
 
 // Generate generates code from the model.
-func Generate(ctx context.Context, model *api.API, outdir string, cfg *parser.ModelConfig, swiftCfg *config.SwiftPackage) error {
-	codec, err := newCodec(model, cfg, swiftCfg, outdir)
+func Generate(ctx context.Context, model *api.API, outdir string, library *config.Library, module *config.SwiftModule) error {
+	codec, err := newCodec(model, library, module, outdir)
 	if err != nil {
 		return err
 	}
@@ -94,7 +93,7 @@ func (c *codec) swiftFilename(basename string) string {
 	if c.Module {
 		return name
 	}
-	return filepath.Join("Sources", c.PackageName, name)
+	return filepath.Join("Sources", c.LibraryName, name)
 }
 
 func (c *codec) generateMessages(outdir string, model *api.API, provider language.TemplateProvider) error {

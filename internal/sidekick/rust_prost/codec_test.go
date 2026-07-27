@@ -34,6 +34,7 @@ func TestParseOptions(t *testing.T) {
 			"copyright-year":        "2038",
 			"package-name-override": "google-cloud-bigtable",
 			"root-name":             "test-root",
+			"include-file":          "include.rs",
 		},
 	}
 	got := newCodec(cfg)
@@ -41,6 +42,7 @@ func TestParseOptions(t *testing.T) {
 		GenerationYear: "2038",
 		PackageName:    "google-cloud-bigtable",
 		RootName:       "test-root",
+		IncludeFile:    "include.rs",
 	}
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
