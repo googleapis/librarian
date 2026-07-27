@@ -21,7 +21,6 @@ import (
 	"fmt"
 	"io/fs"
 	"log"
-	"log/slog"
 	"os"
 	"path/filepath"
 	"regexp"
