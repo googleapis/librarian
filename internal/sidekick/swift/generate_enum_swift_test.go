@@ -89,7 +89,7 @@ func TestGenerateEnum_UniqueNumbers(t *testing.T) {
 	got := extractBlock(t, string(contentsB), "/// Initialize from an integer value.", "\n  }")
 	want := `/// Initialize from an integer value.
   ///
-  /// If the value is unknown, this initializes to ` + "``.unknownIntValue(_:)``." + `
+  /// If the value is unknown, this initializes to ` + "[`unknownIntValue`](doc:Kind/unknownIntValue(_:))." + `
   public init(intValue: Int) {
     switch intValue {
     case 0: self = .test
