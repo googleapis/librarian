@@ -18,12 +18,15 @@ import (
 	"context"
 	"fmt"
 	"io/fs"
+	"maps"
 	"path/filepath"
+	"slices"
 	"strings"
 
 	"github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/serviceconfig"
+	"github.com/googleapis/librarian/internal/sidekick/api"
 	"github.com/googleapis/librarian/internal/sidekick/parser"
 	sidekickrust "github.com/googleapis/librarian/internal/sidekick/rust"
 	"github.com/googleapis/librarian/internal/sidekick/rust_prost"
@@ -82,6 +85,9 @@ func Generate(ctx context.Context, cfg *config.Config, library *config.Library, 
 	if err := sidekickrust.Generate(ctx, model, library.Output, modelConfig); err != nil {
 		return err
 	}
+	if err := generateProstHybrid(ctx, model, library, library.Output, modelConfig); err != nil {
+		return err
+	}
 	if needsRepoMetadata(model, library) {
 		repoMetadata, err := createRepoMetadata(cfg, library, sources)
 		if err != nil {
@@ -93,6 +99,28 @@ func Generate(ctx context.Context, cfg *config.Config, library *config.Library, 
 	}
 	if !exists {
 		validate(ctx, library.Output)
+	}
+	return nil
+}
+
+func generateProstHybrid(ctx context.Context, model *api.API, library *config.Library, outdir string, modelConfig *parser.ModelConfig) error {
+	if library.Rust == nil || !library.Rust.IncludeBidiStreamingMethods || library.Rust.TemplateOverride != "" {
+		return nil
+	}
+	hasBidiStreaming := slices.ContainsFunc(model.Services, (*api.Service).HasBidiStreaming)
+	if !hasBidiStreaming {
+		return nil
+	}
+
+	hybridConfig := *modelConfig
+	hybridConfig.Codec = maps.Clone(modelConfig.Codec)
+	if hybridConfig.Codec == nil {
+		hybridConfig.Codec = make(map[string]string)
+	}
+	hybridConfig.Codec["include-file"] = "includes.rs"
+	prostOutDir := filepath.Join(outdir, "src", "prost")
+	if err := rust_prost.Generate(ctx, model, prostOutDir, "prost", &hybridConfig); err != nil {
+		return fmt.Errorf("generating prost module: %w", err)
 	}
 	return nil
 }

@@ -22,7 +22,6 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/sidekick/api"
-	"github.com/googleapis/librarian/internal/sidekick/parser"
 )
 
 func TestGenerateService_StubStructure(t *testing.T) {
@@ -60,19 +59,16 @@ func TestGenerateService_StubStructure(t *testing.T) {
 	model := api.NewTestAPI([]*api.Message{request, response}, nil, []*api.Service{service})
 	model.PackageName = "google.cloud.test.v1"
 
-	cfg := &parser.ModelConfig{
-		Codec: map[string]string{
-			"copyright-year": "2038",
-		},
-	}
-
 	swiftCfg := swiftConfig(t, []config.SwiftDependency{
 		{
 			Name:       "SomeTestPackage",
 			ApiPackage: "test",
 		},
 	})
-	if err := Generate(t.Context(), model, outDir, cfg, swiftCfg); err != nil {
+	library := &config.Library{
+		Swift: swiftCfg,
+	}
+	if err := Generate(t.Context(), model, outDir, library, nil); err != nil {
 		t.Fatal(err)
 	}
 
@@ -179,14 +175,11 @@ func TestGenerateService_QueryParameters(t *testing.T) {
 	model := api.NewTestAPI([]*api.Message{request, response}, nil, []*api.Service{service})
 	model.PackageName = "test"
 
-	cfg := &parser.ModelConfig{
-		Codec: map[string]string{
-			"copyright-year": "2038",
-		},
-	}
-
 	swiftCfg := swiftConfig(t, []config.SwiftDependency{})
-	if err := Generate(t.Context(), model, outDir, cfg, swiftCfg); err != nil {
+	library := &config.Library{
+		Swift: swiftCfg,
+	}
+	if err := Generate(t.Context(), model, outDir, library, nil); err != nil {
 		t.Fatal(err)
 	}
 

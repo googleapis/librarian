@@ -642,6 +642,7 @@ This document describes the schema for the librarian.yaml.
 | (embedded) | [SwiftDefault](#swiftdefault-configuration) |  |
 | `include_list` | list of string | Is a subset of proto files under the target API path to include (e.g., ["date.proto", "expr.proto"]). |
 | `modules` | list of [SwiftModule](#swiftmodule-configuration) (optional) | Specifies generation targets for veneers and test packages.<br><br>Each module defines a source proto path, and output location. |
+| `package_name_override` | string | Overrides the package name. |
 | `per_service_traits` | bool | Enables per-service compile-time flags. |
 | `default_traits` | list of string | Is a list of compile-time traits enabled by default. |
 | `discovery` | SwiftDiscovery (optional) | Contains discovery-specific configuration for LRO polling. |

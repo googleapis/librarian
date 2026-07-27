@@ -23,7 +23,6 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/sidekick/api"
-	"github.com/googleapis/librarian/internal/sidekick/parser"
 )
 
 func swiftConfig(t *testing.T, extraDependencies []config.SwiftDependency) *config.SwiftPackage {
@@ -51,13 +50,10 @@ func TestGenerateMessage_Files(t *testing.T) {
 	model := api.NewTestAPI([]*api.Message{secret, volume, clash0, clash1, clash2}, []*api.Enum{}, []*api.Service{})
 	model.PackageName = "google.cloud.test.v1"
 
-	cfg := &parser.ModelConfig{
-		Codec: map[string]string{
-			"copyright-year": "2038",
-		},
+	library := &config.Library{
+		Swift: swiftConfig(t, nil),
 	}
-
-	if err := Generate(t.Context(), model, outDir, cfg, swiftConfig(t, nil)); err != nil {
+	if err := Generate(t.Context(), model, outDir, library, nil); err != nil {
 		t.Fatal(err)
 	}
 
@@ -92,13 +88,10 @@ func TestGenerateMessage_WithNestedMessages(t *testing.T) {
 	model := api.NewTestAPI([]*api.Message{withNested}, []*api.Enum{}, []*api.Service{})
 	model.PackageName = "google.cloud.test.v1"
 
-	cfg := &parser.ModelConfig{
-		Codec: map[string]string{
-			"copyright-year": "2038",
-		},
+	library := &config.Library{
+		Swift: swiftConfig(t, nil),
 	}
-
-	if err := Generate(t.Context(), model, outDir, cfg, swiftConfig(t, nil)); err != nil {
+	if err := Generate(t.Context(), model, outDir, library, nil); err != nil {
 		t.Fatal(err)
 	}
 
@@ -165,13 +158,10 @@ func TestGenerateMessage_WithNestedEnum(t *testing.T) {
 	model := api.NewTestAPI([]*api.Message{withNested}, []*api.Enum{}, []*api.Service{})
 	model.PackageName = "google.cloud.test.v1"
 
-	cfg := &parser.ModelConfig{
-		Codec: map[string]string{
-			"copyright-year": "2038",
-		},
+	library := &config.Library{
+		Swift: swiftConfig(t, nil),
 	}
-
-	if err := Generate(t.Context(), model, outDir, cfg, swiftConfig(t, nil)); err != nil {
+	if err := Generate(t.Context(), model, outDir, library, nil); err != nil {
 		t.Fatal(err)
 	}
 
@@ -221,12 +211,6 @@ func TestGenerateMessage_WithExternalImports(t *testing.T) {
 	model.PackageName = "google.cloud.test.v1"
 	model.AddMessage(externalMessage)
 
-	cfg := &parser.ModelConfig{
-		Codec: map[string]string{
-			"copyright-year": "2038",
-		},
-	}
-
 	swiftCfg := swiftConfig(t, []config.SwiftDependency{
 		{
 			ApiPackage: "google.cloud.external.v1",
@@ -238,7 +222,10 @@ func TestGenerateMessage_WithExternalImports(t *testing.T) {
 		},
 	})
 
-	if err := Generate(t.Context(), model, outDir, cfg, swiftCfg); err != nil {
+	library := &config.Library{
+		Swift: swiftCfg,
+	}
+	if err := Generate(t.Context(), model, outDir, library, nil); err != nil {
 		t.Fatal(err)
 	}
 
@@ -300,13 +287,10 @@ func TestGenerateMessage_WithRecursiveTypes(t *testing.T) {
 	// Run LabelRecursiveFields to mark recursive fields
 	api.LabelRecursiveFields(model)
 
-	cfg := &parser.ModelConfig{
-		Codec: map[string]string{
-			"copyright-year": "2038",
-		},
+	library := &config.Library{
+		Swift: swiftConfig(t, nil),
 	}
-
-	if err := Generate(t.Context(), model, outDir, cfg, swiftConfig(t, nil)); err != nil {
+	if err := Generate(t.Context(), model, outDir, library, nil); err != nil {
 		t.Fatal(err)
 	}
 
@@ -356,13 +340,10 @@ func TestGenerateMessage_SelfRecursive(t *testing.T) {
 	// Run LabelRecursiveFields to mark recursive fields
 	api.LabelRecursiveFields(model)
 
-	cfg := &parser.ModelConfig{
-		Codec: map[string]string{
-			"copyright-year": "2038",
-		},
+	library := &config.Library{
+		Swift: swiftConfig(t, nil),
 	}
-
-	if err := Generate(t.Context(), model, outDir, cfg, swiftConfig(t, nil)); err != nil {
+	if err := Generate(t.Context(), model, outDir, library, nil); err != nil {
 		t.Fatal(err)
 	}
 
@@ -443,13 +424,10 @@ func TestGenerateMessage_RecursiveChain(t *testing.T) {
 	// Run LabelRecursiveFields to mark recursive fields
 	api.LabelRecursiveFields(model)
 
-	cfg := &parser.ModelConfig{
-		Codec: map[string]string{
-			"copyright-year": "2038",
-		},
+	library := &config.Library{
+		Swift: swiftConfig(t, nil),
 	}
-
-	if err := Generate(t.Context(), model, outDir, cfg, swiftConfig(t, nil)); err != nil {
+	if err := Generate(t.Context(), model, outDir, library, nil); err != nil {
 		t.Fatal(err)
 	}
 
@@ -524,9 +502,11 @@ func TestGenerateMessage_DocComments(t *testing.T) {
 
 	model := api.NewTestAPI([]*api.Message{msg}, []*api.Enum{}, []*api.Service{})
 	model.PackageName = "google.cloud.test.v1"
-	cfg := &parser.ModelConfig{}
 
-	if err := Generate(t.Context(), model, outDir, cfg, swiftConfig(t, nil)); err != nil {
+	library := &config.Library{
+		Swift: swiftConfig(t, nil),
+	}
+	if err := Generate(t.Context(), model, outDir, library, nil); err != nil {
 		t.Fatal(err)
 	}
 

@@ -36,10 +36,9 @@ func TestGenerateModule(t *testing.T) {
 	}
 	outDir := t.TempDir()
 	library := &config.Library{
-		Name:          "GoogleTypeModule",
-		CopyrightYear: "2038",
-		Swift:         defaultSwiftConfig(t),
-		Output:        outDir,
+		Name:   "GoogleTypeModule",
+		Swift:  defaultSwiftConfig(t),
+		Output: outDir,
 	}
 	library.Swift.Modules = []*config.SwiftModule{
 		{
@@ -83,10 +82,9 @@ func TestGenerateModule_SwiftProtobuf(t *testing.T) {
 	}
 	outDir := t.TempDir()
 	library := &config.Library{
-		Name:          "GoogleTypeModule",
-		CopyrightYear: "2038",
-		Swift:         defaultSwiftConfig(t),
-		Output:        outDir,
+		Name:   "GoogleTypeModule",
+		Swift:  defaultSwiftConfig(t),
+		Output: outDir,
 	}
 	library.Swift.Modules = []*config.SwiftModule{
 		{
@@ -131,10 +129,6 @@ func TestModuleToModelConfig(t *testing.T) {
 					Sources:     &sources.Sources{},
 					ActiveRoots: []string{"googleapis"},
 				},
-				Codec: map[string]string{
-					"copyright-year": "",
-					"module":         "true",
-				},
 			},
 		},
 		{
@@ -153,10 +147,6 @@ func TestModuleToModelConfig(t *testing.T) {
 					ActiveRoots: []string{"googleapis"},
 					IncludeList: []string{"a.proto", "b.proto"},
 				},
-				Codec: map[string]string{
-					"copyright-year": "",
-					"module":         "true",
-				},
 			},
 		},
 		{
@@ -170,36 +160,11 @@ func TestModuleToModelConfig(t *testing.T) {
 					Sources:     &sources.Sources{},
 					ActiveRoots: []string{"googleapis"},
 				},
-				Codec: map[string]string{
-					"copyright-year": "",
-					"module":         "true",
-				},
-			},
-		},
-		{
-			name: "with copyright year",
-			lib: &config.Library{
-				CopyrightYear: "2038",
-				Swift:         &config.SwiftPackage{},
-			},
-			module: &config.SwiftModule{APIPath: "foo"},
-			want: &parser.ModelConfig{
-				SpecificationFormat: config.SpecProtobuf,
-				SpecificationSource: "foo",
-				Source: &sources.SourceConfig{
-					Sources:     &sources.Sources{},
-					ActiveRoots: []string{"googleapis"},
-				},
-				Codec: map[string]string{
-					"copyright-year": "2038",
-					"module":         "true",
-				},
 			},
 		},
 		{
 			name: "discovery",
 			lib: &config.Library{
-				CopyrightYear:       "2038",
 				Swift:               &config.SwiftPackage{},
 				SpecificationFormat: config.SpecDiscovery,
 				Roots:               []string{"discovery"},
@@ -211,10 +176,6 @@ func TestModuleToModelConfig(t *testing.T) {
 				Source: &sources.SourceConfig{
 					Sources:     &sources.Sources{},
 					ActiveRoots: []string{"discovery"},
-				},
-				Codec: map[string]string{
-					"copyright-year": "2038",
-					"module":         "true",
 				},
 			},
 		},
@@ -230,10 +191,9 @@ func TestModuleToModelConfig(t *testing.T) {
 
 func TestGenerateModule_UnsupportedModuleType(t *testing.T) {
 	library := &config.Library{
-		Name:          "UnsupportedModule",
-		CopyrightYear: "2038",
-		Swift:         defaultSwiftConfig(t),
-		Output:        t.TempDir(),
+		Name:   "UnsupportedModule",
+		Swift:  defaultSwiftConfig(t),
+		Output: t.TempDir(),
 	}
 	library.Swift.Modules = []*config.SwiftModule{
 		{
@@ -257,10 +217,9 @@ func TestGenerateModule_UnsupportedModuleType(t *testing.T) {
 
 func TestGenerateModule_NoProtos(t *testing.T) {
 	library := &config.Library{
-		Name:          "NoProtosModule",
-		CopyrightYear: "2038",
-		Swift:         defaultSwiftConfig(t),
-		Output:        t.TempDir(),
+		Name:   "NoProtosModule",
+		Swift:  defaultSwiftConfig(t),
+		Output: t.TempDir(),
 	}
 	googleapisDir := t.TempDir()
 	emptyAPIPath := "google/empty"

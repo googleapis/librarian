@@ -29,7 +29,6 @@ type modelAnnotations struct {
 	LibraryName      string
 	PackageName      string
 	PackageVersion   string
-	ReleaseLevel     string
 	MonorepoRoot     string
 	DependsOn        map[string]*Dependency
 	WktPackage       string
@@ -83,7 +82,6 @@ func (c *codec) annotateModel() error {
 		LibraryName:    c.LibraryName,
 		PackageName:    c.PackageName,
 		PackageVersion: c.PackageVersion,
-		ReleaseLevel:   c.ReleaseLevel,
 		MonorepoRoot:   c.MonorepoRoot,
 		DependsOn:      map[string]*Dependency{},
 		WktPackage:     wellKnownSwiftPackage,

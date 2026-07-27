@@ -22,7 +22,6 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/sidekick/api"
-	"github.com/googleapis/librarian/internal/sidekick/parser"
 )
 
 type expectedBlock struct {
@@ -188,12 +187,6 @@ func TestGenerateService_DeprecatedMethods(t *testing.T) {
 			}, nil, []*api.Service{service})
 			model.PackageName = "test"
 
-			cfg := &parser.ModelConfig{
-				Codec: map[string]string{
-					"copyright-year": "2038",
-				},
-			}
-
 			swiftCfg := swiftConfig(t, []config.SwiftDependency{
 				{Name: "GoogleCloudGax", RequiredByServices: true},
 				{Name: "GoogleCloudAuth", RequiredByServices: true},
@@ -201,7 +194,11 @@ func TestGenerateService_DeprecatedMethods(t *testing.T) {
 				{ApiPackage: "google.rpc", Name: "GoogleRpc"},
 			})
 
-			if err := Generate(t.Context(), model, outDir, cfg, swiftCfg); err != nil {
+			library := &config.Library{
+				Swift: swiftCfg,
+			}
+
+			if err := Generate(t.Context(), model, outDir, library, nil); err != nil {
 				t.Fatal(err)
 			}
 

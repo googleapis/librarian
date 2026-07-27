@@ -34,7 +34,7 @@ func TestAnnotateOneOf(t *testing.T) {
 	}
 	model := api.NewTestAPI([]*api.Message{message}, nil, nil)
 	model.PackageName = "google.cloud.test.v1"
-	codec := newTestCodec(t, model, map[string]string{})
+	codec := newTestCodec(t, model, nil)
 	if err := codec.annotateModel(); err != nil {
 		t.Fatal(err)
 	}

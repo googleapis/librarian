@@ -38,6 +38,13 @@ type SwiftPackage struct {
 	// Each module defines a source proto path, and output location.
 	Modules []*SwiftModule `yaml:"modules,omitempty"`
 
+	// PackageNameOverride overrides the package name.
+	//
+	// This may be useful if the protobuf package lacks the necessary prefixes,
+	// e.g. `grafeas.v1` may be published as `google-grafeas-v1` to match the
+	// other packages.
+	PackageNameOverride string `yaml:"package_name_override,omitempty"`
+
 	// PerServiceTraits enables per-service compile-time flags.
 	PerServiceTraits bool `yaml:"per_service_traits,omitempty"`
 

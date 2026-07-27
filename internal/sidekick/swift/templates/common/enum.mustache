@@ -74,7 +74,7 @@ public enum {{Codec.Name}}: Codable, Equatable, Sendable {
 
   /// Initialize from a string value.
   ///
-  /// If the value is unknown, this initializes to ``.{{Codec.UnknownStringName}}(_:)``.
+  /// If the value is unknown, this initializes to [`{{Codec.UnknownStringName}}`](doc:{{Codec.Name}}/{{Codec.UnknownStringName}}(_:)).
   public init(stringValue: Swift.String) {
     switch stringValue {
     {{#Values}}
@@ -86,7 +86,7 @@ public enum {{Codec.Name}}: Codable, Equatable, Sendable {
 
   /// Initialize from an integer value.
   ///
-  /// If the value is unknown, this initializes to ``.{{Codec.UnknownIntName}}(_:)``.
+  /// If the value is unknown, this initializes to [`{{Codec.UnknownIntName}}`](doc:{{Codec.Name}}/{{Codec.UnknownIntName}}(_:)).
   public init(intValue: Int) {
     switch intValue {
     {{#UniqueNumberValues}}
