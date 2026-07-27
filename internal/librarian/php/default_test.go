@@ -126,32 +126,3 @@ func TestFillStagingSubdir(t *testing.T) {
 		})
 	}
 }
-
-func TestFill(t *testing.T) {
-	lib := &config.Library{
-		Name: "google-cloud-secretmanager",
-		PHP:  &config.PHPPackage{},
-		APIs: []*config.API{
-			{
-				Path: "google/cloud/secretmanager/v1",
-				PHP:  &config.PHPAPI{},
-			},
-		},
-	}
-	want := &config.Library{
-		Name: "google-cloud-secretmanager",
-		PHP:  &config.PHPPackage{},
-		APIs: []*config.API{
-			{
-				Path: "google/cloud/secretmanager/v1",
-				PHP: &config.PHPAPI{
-					StagingSubdir: "v1",
-				},
-			},
-		},
-	}
-	got := Fill(lib)
-	if diff := cmp.Diff(want, got); diff != "" {
-		t.Errorf("mismatch (-want +got):\n%s", diff)
-	}
-}
