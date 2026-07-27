@@ -151,11 +151,11 @@ func createAPIConfig(path string, dest string) (*config.API, error) {
 	if stagingSubdir == "" {
 		return nil, fmt.Errorf("%w: path %s from destination %q", errUnableToResolveStagingSubdir, path, dest)
 	}
-	derivedStagingSubdir := deriveStagingSubdir(path, stagingSubdir)
+	normalizedStagingSubdir := normalizeStagingSubdir(path, stagingSubdir)
 	return &config.API{
 		Path: path,
 		PHP: &config.PHPAPI{
-			StagingSubdir: derivedStagingSubdir,
+			StagingSubdir: normalizedStagingSubdir,
 		},
 	}, nil
 }
@@ -325,7 +325,7 @@ func fileExists(path string) bool {
 	return err == nil
 }
 
-func deriveStagingSubdir(apiPath, stagingDir string) string {
+func normalizeStagingSubdir(apiPath, stagingDir string) string {
 	base := filepath.Base(apiPath)
 	if base == stagingDir {
 		// We can derive staging subdir during generation,
