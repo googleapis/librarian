@@ -30,6 +30,8 @@ import (
 // errQuickstartServiceNotFound is returned when the requested quickstart service override is not found.
 var errQuickstartServiceNotFound = errors.New("quickstart_service_override not found")
 
+const gaxiPackageName = "gaxi"
+
 type modelAnnotations struct {
 	PackageName           string
 	PackageVersion        string
@@ -239,7 +241,7 @@ func annotateModel(model *api.API, codec *codec) (*modelAnnotations, error) {
 	hasBidiStreaming := codec.templateOverride == "" && codec.includeBidiStreamingMethods && slices.ContainsFunc(model.Services, (*api.Service).HasBidiStreaming)
 	if hasBidiStreaming {
 		for _, pkg := range codec.extraPackages {
-			if pkg.name == "gaxi" && !slices.Contains(pkg.features, "_internal-grpc-client") {
+			if pkg.name == gaxiPackageName && !slices.Contains(pkg.features, "_internal-grpc-client") {
 				pkg.features = append(pkg.features, "_internal-grpc-client")
 			}
 		}

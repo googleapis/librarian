@@ -139,8 +139,9 @@ impl super::stub::{{Codec.Name}} for {{Codec.Name}} {
         use gaxi::prost::{FromProto, ToProto};
         use futures::stream::StreamExt as _;
 
-        let (req_tx, mut req_rx) = tokio::sync::mpsc::channel::<{{InputType.Codec.QualifiedName}}>(100);
-        let (resp_tx, resp_rx) = tokio::sync::mpsc::channel::<crate::Result<{{OutputType.Codec.QualifiedName}}>>(100);
+        {{! TODO(#6835) - provide a way to configure the channel size }}
+        let (req_tx, mut req_rx) = tokio::sync::mpsc::channel::<{{InputType.Codec.QualifiedName}}>(16);
+        let (resp_tx, resp_rx) = tokio::sync::mpsc::channel::<crate::Result<{{OutputType.Codec.QualifiedName}}>>(16);
 
         let grpc_client = self.grpc_inner.clone();
         tokio::spawn(async move {
@@ -188,7 +189,8 @@ impl super::stub::{{Codec.Name}} for {{Codec.Name}} {
                     while let Some(res) = response_stream.next().await {
                         let item = res
                             .map_err(gaxi::grpc::from_status::to_gax_error)
-                            .and_then(|m| m.cnv().map_err(google_cloud_gax::error::Error::deser));
+                            .and_then(|m| m.cnv().map_err(google_cloud_gax::error::Error::deser))
+                            .map_err(Into::into);
                         if resp_tx.send(item).await.is_err() {
                             break;
                         }

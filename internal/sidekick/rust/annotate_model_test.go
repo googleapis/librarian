@@ -612,18 +612,14 @@ func TestModelAnnotationsHasBidiStreaming(t *testing.T) {
 				t.Errorf("HasBidiStreaming = %v, want %v", got.HasBidiStreaming, test.want)
 			}
 			if len(test.wantGaxiFeatures) > 0 {
-				var gaxiPkg *packagez
-				for _, pkg := range codec.extraPackages {
-					if pkg.name == "gaxi" {
-						gaxiPkg = pkg
-						break
-					}
-				}
-				if gaxiPkg == nil {
+				idx := slices.IndexFunc(codec.extraPackages, func(pkg *packagez) bool {
+					return pkg.name == gaxiPackageName
+				})
+				if idx == -1 {
 					t.Fatalf("gaxi package not found in extraPackages")
 				}
-				if !slices.Equal(gaxiPkg.features, test.wantGaxiFeatures) {
-					t.Errorf("gaxi features = %v, want %v", gaxiPkg.features, test.wantGaxiFeatures)
+				if diff := cmp.Diff(test.wantGaxiFeatures, codec.extraPackages[idx].features); diff != "" {
+					t.Errorf("gaxi features mismatch (-want +got):\n%s", diff)
 				}
 			}
 		})
