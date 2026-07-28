@@ -162,7 +162,7 @@ func TestVerify(t *testing.T) {
 	}
 }
 
-func TestVerifyError(t *testing.T) {
+func TestVerify_Error(t *testing.T) {
 	for _, test := range []struct {
 		name    string
 		tools   []*config.ComposerTool
