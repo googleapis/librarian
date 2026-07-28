@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.31.1](https://github.com/googleapis/librarian/compare/v0.31.0...v0.31.1) (2026-07-28)
+
+
+### Bug Fixes
+
+* **internal/serviceconfig:** skip rest numeric enums for nodejs compute ([#7074](https://github.com/googleapis/librarian/issues/7074)) ([8399304](https://github.com/googleapis/librarian/commit/8399304ae1385c9e71a6ecbb152ee7daa4e9dd1a))
+
 ## [0.31.0](https://github.com/googleapis/librarian/compare/v0.30.1...v0.31.0) (2026-07-28)
 
 
