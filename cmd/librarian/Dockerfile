@@ -344,12 +344,6 @@ ARG JAVA_PROTOC_VERSION
 ARG JAVA_PROTOC_CHECKSUM
 ARG JAVA_VERSION
 
-# Copy librarian from build stage
-COPY --from=build /go/bin/librarian /app/librarian
-
-WORKDIR /app
-ENTRYPOINT ["/app/librarian"]
-
 # Configure Adoptium APT repository and install Temurin 17 JDK, Maven, and runtime tools
 RUN apt-get update && apt-get install -y --no-install-recommends \
     unzip \
