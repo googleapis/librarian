@@ -422,13 +422,30 @@ func TestParsePackageOptionError(t *testing.T) {
 		{Definition: "--invalid--=a,package=b"},
 	} {
 		t.Run(test.Definition, func(t *testing.T) {
-			if got, err := parsePackageOption("package:test", test.Definition); err == nil {
+			if got, err := parsePackageOptions("package:test", test.Definition); err == nil {
 				t.Errorf("expected an error parsing the options, got=%v, options=%v", got, test.Definition)
 			}
 		})
 	}
-	if got, err := parsePackageOption("package:", "unused"); err == nil {
+	if got, err := parsePackageOptions("package:", "unused"); err == nil {
 		t.Errorf("expected an error parsing the options, got=%v", got)
+	}
+}
+
+func TestParsePackageOptionsMultiple(t *testing.T) {
+	definition := "package=google-cloud-gax-internal,used-if=services,feature=_internal-http-client;package=google-cloud-gax-internal,used-if=hybrid_services,feature=_internal-grpc-client"
+	got, err := parsePackageOptions("package:gaxi", definition)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(got) != 2 {
+		t.Fatalf("expected 2 package options, got %d", len(got))
+	}
+	if got[0].pkg.name != "gaxi" || got[0].pkg.features[0] != "_internal-http-client" {
+		t.Errorf("unexpected first package option: %+v", got[0].pkg)
+	}
+	if got[1].pkg.name != "gaxi" || got[1].pkg.features[0] != "_internal-grpc-client" {
+		t.Errorf("unexpected second package option: %+v", got[1].pkg)
 	}
 }
 

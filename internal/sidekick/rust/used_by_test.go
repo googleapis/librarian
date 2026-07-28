@@ -427,7 +427,7 @@ func TestUsedByHybridServices(t *testing.T) {
 		{
 			name:        "gaxi",
 			packageName: "google-cloud-gax-internal",
-			features:    []string{"_internal-http-client", "_internal-grpc-client"},
+			features:    []string{"_internal-grpc-client"},
 			usedIf:      []string{"hybrid_services"},
 		},
 	}
@@ -467,7 +467,7 @@ func TestUsedByServicesWithHybridServicesConfigured(t *testing.T) {
 		{
 			name:        "gaxi",
 			packageName: "google-cloud-gax-internal",
-			features:    []string{"_internal-http-client", "_internal-grpc-client"},
+			features:    []string{"_internal-grpc-client"},
 			usedIf:      []string{"hybrid_services"},
 		},
 	}

@@ -106,13 +106,15 @@ func newCodec(specificationFormat string, options map[string]string) (*codec, er
 		case key == "release-level":
 			codec.releaseLevel = definition
 		case strings.HasPrefix(key, "package:"):
-			pkgOption, err := parsePackageOption(key, definition)
+			pkgOptions, err := parsePackageOptions(key, definition)
 			if err != nil {
 				return nil, err
 			}
-			codec.extraPackages = append(codec.extraPackages, pkgOption.pkg)
-			for _, source := range pkgOption.otherNames {
-				codec.packageMapping[source] = pkgOption.pkg
+			for _, pkgOption := range pkgOptions {
+				codec.extraPackages = append(codec.extraPackages, pkgOption.pkg)
+				for _, source := range pkgOption.otherNames {
+					codec.packageMapping[source] = pkgOption.pkg
+				}
 			}
 		case key == "disabled-rustdoc-warnings":
 			codec.disabledRustdocWarnings = splitOption(definition)
@@ -219,7 +221,19 @@ type packageOption struct {
 	otherNames []string
 }
 
-func parsePackageOption(key, definition string) (*packageOption, error) {
+func parsePackageOptions(key, definition string) ([]*packageOption, error) {
+	var opts []*packageOption
+	for def := range strings.SplitSeq(definition, ";") {
+		pkgOpt, err := parseSinglePackageOption(key, def)
+		if err != nil {
+			return nil, err
+		}
+		opts = append(opts, pkgOpt)
+	}
+	return opts, nil
+}
+
+func parseSinglePackageOption(key, definition string) (*packageOption, error) {
 	var specificationPackages []string
 	pkg := &packagez{
 		name: strings.TrimPrefix(key, "package:"),
@@ -384,6 +398,8 @@ type packagez struct {
 }
 
 func resolveUsedPackages(model *api.API, extraPackages []*packagez, includeBidiStreamingMethods bool) {
+	hasServices := len(model.Services) > 0
+
 	hasHybridServices := false
 	hasLROs := false
 	hasAutoPopulation := false
@@ -404,7 +420,6 @@ func resolveUsedPackages(model *api.API, extraPackages []*packagez, includeBidiS
 			}
 		}
 	}
-	hasServices := len(model.Services) > 0 && !hasHybridServices
 	for _, pkg := range extraPackages {
 		if pkg.used {
 			continue
@@ -1460,15 +1475,41 @@ func requiredPackageLine(pkg *packagez) string {
 	return fmt.Sprintf("%-20s = true", pkg.name+".workspace")
 }
 
+func mergePackages(extraPackages []*packagez) []*packagez {
+	var merged []*packagez
+	indexByName := make(map[string]int)
+
+	for _, pkg := range extraPackages {
+		if pkg.ignore || !pkg.used {
+			continue
+		}
+		idx, found := indexByName[pkg.name]
+		if !found {
+			p := &packagez{
+				ignore:      pkg.ignore,
+				packageName: pkg.packageName,
+				features:    append([]string{}, pkg.features...),
+				used:        pkg.used,
+				usedIf:      append([]string{}, pkg.usedIf...),
+				name:        pkg.name,
+			}
+			indexByName[pkg.name] = len(merged)
+			merged = append(merged, p)
+		} else {
+			m := merged[idx]
+			for _, f := range pkg.features {
+				if !slices.Contains(m.features, f) {
+					m.features = append(m.features, f)
+				}
+			}
+		}
+	}
+	return merged
+}
+
 func requiredPackages(extraPackages []*packagez) []string {
 	lines := []string{}
-	for _, pkg := range extraPackages {
-		if pkg.ignore {
-			continue
-		}
-		if !pkg.used {
-			continue
-		}
+	for _, pkg := range mergePackages(extraPackages) {
 		lines = append(lines, requiredPackageLine(pkg))
 	}
 	sort.Strings(lines)
@@ -1477,10 +1518,7 @@ func requiredPackages(extraPackages []*packagez) []string {
 
 func externPackages(extraPackages []*packagez) []string {
 	names := []string{}
-	for _, pkg := range extraPackages {
-		if pkg.ignore || !pkg.used {
-			continue
-		}
+	for _, pkg := range mergePackages(extraPackages) {
 		names = append(names, packageNameToRootModule(pkg.name))
 	}
 	sort.Strings(names)

@@ -178,8 +178,16 @@ func newLibraryCodec(library *config.Library) map[string]string {
 		codec["package-name-override"] = library.Name
 	}
 	if library.Rust != nil {
+		depsByName := make(map[string][]string)
+		var names []string
 		for _, dep := range library.Rust.PackageDependencies {
-			codec["package:"+dep.Name] = formatPackageDependency(dep)
+			if _, seen := depsByName[dep.Name]; !seen {
+				names = append(names, dep.Name)
+			}
+			depsByName[dep.Name] = append(depsByName[dep.Name], formatPackageDependency(dep))
+		}
+		for _, name := range names {
+			codec["package:"+name] = strings.Join(depsByName[name], ";")
 		}
 		if len(library.Rust.DisabledRustdocWarnings) > 0 {
 			codec["disabled-rustdoc-warnings"] = strings.Join(library.Rust.DisabledRustdocWarnings, ",")
