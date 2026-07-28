@@ -1,5 +1,33 @@
 # Changelog
 
+## [0.31.0](https://github.com/googleapis/librarian/compare/v0.30.1...v0.31.0) (2026-07-28)
+
+
+### Features
+
+* **dart:** export rpc exceptions ([#7044](https://github.com/googleapis/librarian/issues/7044)) ([8d98203](https://github.com/googleapis/librarian/commit/8d982033d13cdccf0d3bc5d68a57544f576e9d0a))
+* **internal/librarian/php:** fill default staging subdir ([#7069](https://github.com/googleapis/librarian/issues/7069)) ([e56ef3f](https://github.com/googleapis/librarian/commit/e56ef3f5519b7b0e48cb248e1330ff7dbe5d9c39))
+* **internal/librarian/php:** parse and populate additional protos in add ([#7002](https://github.com/googleapis/librarian/issues/7002)) ([fc0fef2](https://github.com/googleapis/librarian/commit/fc0fef21fa231aee16e4375f7c79489b166bb315))
+* **internal/librarian/ruby:** automatically include common_resources.proto and remove generated pb file ([#7059](https://github.com/googleapis/librarian/issues/7059)) ([702a9d6](https://github.com/googleapis/librarian/commit/702a9d629d97f5ce020ba0df2cffb420158f949e))
+* **internal/librarian/ruby:** support additional_protos in librarian.yaml ([#7018](https://github.com/googleapis/librarian/issues/7018)) ([df3b941](https://github.com/googleapis/librarian/commit/df3b94174e4ab8c94e17a497530ed6ba355c40d4))
+* **internal/librarian/ruby:** support ruby-cloud-migration-version in librarian.yaml ([#7080](https://github.com/googleapis/librarian/issues/7080)) ([bb57ff7](https://github.com/googleapis/librarian/commit/bb57ff7b4f60ae4441047612602db5dcc6f82b5d))
+* **python:** read python tools from librarian.yaml config ([#7019](https://github.com/googleapis/librarian/issues/7019)) ([c9127b9](https://github.com/googleapis/librarian/commit/c9127b9c37a2f62799e348a57d60da56cbeebc66))
+* **rust:** generate prost submodule for hybrid clients ([#6992](https://github.com/googleapis/librarian/issues/6992)) ([746740d](https://github.com/googleapis/librarian/commit/746740de6003184715cad99105a56f49bdfe5716)), refs [#6838](https://github.com/googleapis/librarian/issues/6838)
+
+
+### Bug Fixes
+
+* **internal/librarian/php:** install dev dependencies and create wrapper script for php generator ([#6941](https://github.com/googleapis/librarian/issues/6941)) ([a7106a6](https://github.com/googleapis/librarian/commit/a7106a609810ffb66feabe7cb21a13939ee9a0b2))
+* **internal/librarian/php:** optimize generated file marker detection ([#7036](https://github.com/googleapis/librarian/issues/7036)) ([424d53b](https://github.com/googleapis/librarian/commit/424d53b308739896531fc3f97937401b486438cd)), refs [#7017](https://github.com/googleapis/librarian/issues/7017)
+* **internal/librarian/php:** remove php fallback generator installation ([#7038](https://github.com/googleapis/librarian/issues/7038)) ([cf36be0](https://github.com/googleapis/librarian/commit/cf36be033ed08f287506197d517a227918f654ee))
+* **internal/librarian/ruby:** pass client library version to snippet metadata ([#7026](https://github.com/googleapis/librarian/issues/7026)) ([3a52836](https://github.com/googleapis/librarian/commit/3a52836d8500633247d29fe70e9a76c9c2f4c3b2))
+* **internal/librarian/ruby:** preserve .repo-metadata.json during regeneration ([#7077](https://github.com/googleapis/librarian/issues/7077)) ([bf22946](https://github.com/googleapis/librarian/commit/bf22946d8c8f5f32b7f15b1045a01bfef95285a0))
+* **internal/librarian/ruby:** preserve existing version.rb file on regeneration ([#7032](https://github.com/googleapis/librarian/issues/7032)) ([583b27e](https://github.com/googleapis/librarian/commit/583b27e10d23fc2ac397424d8c4b3dd65346c5d0))
+* **internal/librarian:** relax unique API path validation for Ruby ([#7053](https://github.com/googleapis/librarian/issues/7053)) ([6bdf861](https://github.com/googleapis/librarian/commit/6bdf861442015d16463ce5cb208b6ababa5c9e14)), refs [#6632](https://github.com/googleapis/librarian/issues/6632)
+* **sidekick/rust:** support oneof fields in binding substitutions ([#7049](https://github.com/googleapis/librarian/issues/7049)) ([8380265](https://github.com/googleapis/librarian/commit/838026511bd75f4615dbf7421ba4e49c7f858032)), refs [#7045](https://github.com/googleapis/librarian/issues/7045)
+* **sidekick/swift:** docc warnings in generated code ([#7060](https://github.com/googleapis/librarian/issues/7060)) ([038a417](https://github.com/googleapis/librarian/commit/038a41743d1f0fc3ddb7fddd5d05ed5c8fc506c7))
+* **sidekick/swift:** modules and library name ([#7047](https://github.com/googleapis/librarian/issues/7047)) ([c8a1e3e](https://github.com/googleapis/librarian/commit/c8a1e3e31a79c8e8121886110fe0b9f0c845002e))
+
 ## [0.30.1](https://github.com/googleapis/librarian/compare/v0.30.0...v0.30.1) (2026-07-24)
 
 
