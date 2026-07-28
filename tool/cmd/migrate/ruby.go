@@ -65,15 +65,16 @@ type WrapperBuild struct {
 
 // ExtraProtoParams represents extra protoc parameters parsed from BUILD.bazel for a Ruby API version.
 type ExtraProtoParams struct {
-	EnvPrefix          string
-	ExtraDeps          string
-	GemNamespace       string
-	MigrationVersion   string
-	NamespaceOverride  string
-	PathOverride       string
-	ServiceOverride    string
-	WrapperGemOverride string
-	YardStrict         string
+	EnvPrefix           string
+	ExtraDeps           string
+	FactoryMethodSuffix string
+	GemNamespace        string
+	MigrationVersion    string
+	NamespaceOverride   string
+	PathOverride        string
+	ServiceOverride     string
+	WrapperGemOverride  string
+	YardStrict          string
 }
 
 func runRubyMigration(ctx context.Context, repoPath string) error {
@@ -204,15 +205,16 @@ func findRubyLibraries(googleapisPath, repoPath string) ([]*config.Library, erro
 						Path: wb.Path,
 						Ruby: &config.RubyAPI{
 							RubyCloudOpts: &config.RubyCloudOpts{
-								EnvPrefix:          wb.Params.EnvPrefix,
-								ExtraDependencies:  wb.Params.ExtraDeps,
-								GemNamespace:       wb.Params.GemNamespace,
-								MigrationVersion:   wb.Params.MigrationVersion,
-								NamespaceOverride:  wb.Params.NamespaceOverride,
-								PathOverride:       wb.Params.PathOverride,
-								ServiceOverride:    wb.Params.ServiceOverride,
-								WrapperGemOverride: wb.Params.WrapperGemOverride,
-								YardStrict:         wb.Params.YardStrict,
+								EnvPrefix:           wb.Params.EnvPrefix,
+								ExtraDependencies:   wb.Params.ExtraDeps,
+								FactoryMethodSuffix: wb.Params.FactoryMethodSuffix,
+								GemNamespace:        wb.Params.GemNamespace,
+								MigrationVersion:    wb.Params.MigrationVersion,
+								NamespaceOverride:   wb.Params.NamespaceOverride,
+								PathOverride:        wb.Params.PathOverride,
+								ServiceOverride:     wb.Params.ServiceOverride,
+								WrapperGemOverride:  wb.Params.WrapperGemOverride,
+								YardStrict:          wb.Params.YardStrict,
 							},
 						},
 					}
@@ -313,6 +315,8 @@ func parseExtraProtoParams(file *build.File) (*ExtraProtoParams, error) {
 			vb.EnvPrefix, _ = strings.CutPrefix(dep, "ruby-cloud-env-prefix=")
 		case strings.HasPrefix(dep, "ruby-cloud-extra-dependencies="):
 			vb.ExtraDeps, _ = strings.CutPrefix(dep, "ruby-cloud-extra-dependencies=")
+		case strings.HasPrefix(dep, "ruby-cloud-factory-method-suffix="):
+			vb.FactoryMethodSuffix, _ = strings.CutPrefix(dep, "ruby-cloud-factory-method-suffix=")
 		case strings.HasPrefix(dep, "ruby-cloud-gem-namespace="):
 			vb.GemNamespace, _ = strings.CutPrefix(dep, "ruby-cloud-gem-namespace=")
 		case strings.HasPrefix(dep, "ruby-cloud-migration-version="):
