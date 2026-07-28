@@ -407,6 +407,18 @@ func TestParseUnversionedBuild(t *testing.T) {
 				},
 			},
 		},
+		{
+			name:          "BUILD.bazel with migration version",
+			googleapisDir: "testdata/googleapis",
+			apiPath:       "google/cloud/asset",
+			want: &WrapperBuild{
+				Path: "google/cloud/asset/v1",
+				Params: &ExtraProtoParams{
+					EnvPrefix:        "ASSET",
+					MigrationVersion: "1.0",
+				},
+			},
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			got, err := parseUnversionedBuild(test.googleapisDir, test.apiPath)

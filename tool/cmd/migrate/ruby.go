@@ -68,7 +68,7 @@ type ExtraProtoParams struct {
 	EnvPrefix          string
 	ExtraDeps          string
 	GemNamespace       string
-	MigrationVersion string
+	MigrationVersion   string
 	NamespaceOverride  string
 	PathOverride       string
 	ServiceOverride    string
