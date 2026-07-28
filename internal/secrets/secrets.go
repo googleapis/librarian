@@ -35,16 +35,17 @@ type SecretsClient interface {
 // the secret payload is a UTF-8 string.
 func Get(ctx context.Context, project string, secretName string, secretsClient SecretsClient) (_ string, err error) {
 	if secretsClient == nil {
-		secretsClient, err := secretmanager.NewClient(ctx)
-		if err != nil {
-			return "", err
+		client, clientErr := secretmanager.NewClient(ctx)
+		if clientErr != nil {
+			return "", clientErr
 		}
 		defer func() {
-			cerr := secretsClient.Close()
+			cerr := client.Close()
 			if err == nil {
 				err = cerr
 			}
 		}()
+		secretsClient = client
 	}
 	request := &secretmanagerpb.AccessSecretVersionRequest{
 		Name: fmt.Sprintf("projects/%s/secrets/%s/versions/latest", project, secretName),
