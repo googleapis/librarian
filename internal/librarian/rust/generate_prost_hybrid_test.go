@@ -30,54 +30,23 @@ import (
 func TestGenerateProstHybrid(t *testing.T) {
 	testhelper.RequireCommand(t, "protoc")
 	testhelper.RequireCommand(t, "cargo")
-	msg := &api.Message{
-		Name:    "Request",
-		ID:      ".google.cloud.test.v1.Request",
-		Package: "google.cloud.test.v1",
-	}
-	bidiService := &api.Service{
-		Name:    "BidiService",
-		ID:      ".google.cloud.test.v1.BidiService",
-		Package: "google.cloud.test.v1",
-		Methods: []*api.Method{
-			{
-				Name:                "Chat",
-				ID:                  ".google.cloud.test.v1.BidiService.Chat",
-				InputTypeID:         msg.ID,
-				OutputTypeID:        msg.ID,
-				InputType:           msg,
-				OutputType:          msg,
-				ClientSideStreaming: true,
-				ServerSideStreaming: true,
-				PathInfo:            &api.PathInfo{},
-			},
-		},
-	}
-	nonBidiService := &api.Service{
-		Name:    "UnaryService",
-		ID:      ".google.cloud.test.v1.UnaryService",
-		Package: "google.cloud.test.v1",
-		Methods: []*api.Method{
-			{
-				Name:         "Get",
-				ID:           ".google.cloud.test.v1.UnaryService.Get",
-				InputTypeID:  msg.ID,
-				OutputTypeID: msg.ID,
-				InputType:    msg,
-				OutputType:   msg,
-				PathInfo:     &api.PathInfo{},
-			},
-		},
-	}
+	msg := api.NewTestMessage("Request").WithPackage("google.cloud.test.v1")
+
+	chatMethod := api.NewTestMethod("Chat").WithInput(msg).WithOutput(msg)
+	chatMethod.ClientSideStreaming = true
+	chatMethod.ServerSideStreaming = true
+
+	bidiService := api.NewTestService("BidiService").WithPackage("google.cloud.test.v1").WithMethods(chatMethod)
+
+	getMethod := api.NewTestMethod("Get").WithInput(msg).WithOutput(msg)
+	nonBidiService := api.NewTestService("UnaryService").WithPackage("google.cloud.test.v1").WithMethods(getMethod)
 
 	bidiModel := api.NewTestAPI([]*api.Message{msg}, []*api.Enum{}, []*api.Service{bidiService})
-	bidiModel.PackageName = "google.cloud.test.v1"
 	if err := api.CrossReference(bidiModel); err != nil {
 		t.Fatal(err)
 	}
 
 	nonBidiModel := api.NewTestAPI([]*api.Message{msg}, []*api.Enum{}, []*api.Service{nonBidiService})
-	nonBidiModel.PackageName = "google.cloud.test.v1"
 	if err := api.CrossReference(nonBidiModel); err != nil {
 		t.Fatal(err)
 	}
@@ -161,35 +130,15 @@ func TestGenerateProstHybrid(t *testing.T) {
 }
 
 func TestFilterModelToStreaming(t *testing.T) {
-	streamingMsg := &api.Message{
-		Name:    "StreamMsg",
-		ID:      ".google.test.v1.StreamMsg",
-		Package: "google.test.v1",
-	}
-	unusedMsg := &api.Message{
-		Name:    "UnusedMsg",
-		ID:      ".google.test.v1.UnusedMsg",
-		Package: "google.test.v1",
-	}
-	bidiService := &api.Service{
-		Name:    "BidiService",
-		ID:      ".google.test.v1.BidiService",
-		Package: "google.test.v1",
-		Methods: []*api.Method{
-			{
-				Name:                "Chat",
-				ID:                  ".google.test.v1.BidiService.Chat",
-				InputTypeID:         streamingMsg.ID,
-				OutputTypeID:        streamingMsg.ID,
-				InputType:           streamingMsg,
-				OutputType:          streamingMsg,
-				ClientSideStreaming: true,
-				ServerSideStreaming: true,
-			},
-		},
-	}
+	streamingMsg := api.NewTestMessage("StreamMsg").WithPackage("google.test.v1")
+	unusedMsg := api.NewTestMessage("UnusedMsg").WithPackage("google.test.v1")
+
+	chatMethod := api.NewTestMethod("Chat").WithInput(streamingMsg).WithOutput(streamingMsg)
+	chatMethod.ClientSideStreaming = true
+	chatMethod.ServerSideStreaming = true
+
+	bidiService := api.NewTestService("BidiService").WithPackage("google.test.v1").WithMethods(chatMethod)
 	model := api.NewTestAPI([]*api.Message{streamingMsg, unusedMsg}, []*api.Enum{}, []*api.Service{bidiService})
-	model.PackageName = "google.test.v1"
 
 	filtered, err := filterModelToStreaming(model)
 	if err != nil {
@@ -206,64 +155,25 @@ func TestFilterModelToStreaming(t *testing.T) {
 }
 
 func TestFilterModelToStreamingNonStreamingFieldLookup(t *testing.T) {
-	streamMsg := &api.Message{
-		Name:    "StreamMsg",
-		ID:      ".google.test.v1.StreamMsg",
-		Package: "google.test.v1",
-	}
-	childData := &api.Message{
-		Name:    "ChildData",
-		ID:      ".google.test.v1.ChildData",
-		Package: "google.test.v1",
-	}
-	unaryReq := &api.Message{
-		Name:    "UnaryReq",
-		ID:      ".google.test.v1.UnaryReq",
-		Package: "google.test.v1",
-		Fields: []*api.Field{
-			{
-				Name:    "info",
-				TypezID: childData.ID,
-				Typez:   api.TypezMessage,
-			},
+	streamMsg := api.NewTestMessage("StreamMsg").WithPackage("google.test.v1")
+	childData := api.NewTestMessage("ChildData").WithPackage("google.test.v1")
+	unaryReq := api.NewTestMessage("UnaryReq").WithPackage("google.test.v1").WithFields(
+		&api.Field{
+			Name:    "info",
+			TypezID: childData.ID,
+			Typez:   api.TypezMessage,
 		},
-	}
-	bidiService := &api.Service{
-		Name:    "BidiService",
-		ID:      ".google.test.v1.BidiService",
-		Package: "google.test.v1",
-		Methods: []*api.Method{
-			{
-				Name:                "Chat",
-				ID:                  ".google.test.v1.BidiService.Chat",
-				InputTypeID:         streamMsg.ID,
-				OutputTypeID:        streamMsg.ID,
-				InputType:           streamMsg,
-				OutputType:          streamMsg,
-				ClientSideStreaming: true,
-				ServerSideStreaming: true,
-			},
-		},
-	}
-	unaryService := &api.Service{
-		Name:    "UnaryService",
-		ID:      ".google.test.v1.UnaryService",
-		Package: "google.test.v1",
-		Methods: []*api.Method{
-			{
-				Name:                "UnaryMethod",
-				ID:                  ".google.test.v1.UnaryService.UnaryMethod",
-				InputTypeID:         unaryReq.ID,
-				OutputTypeID:        unaryReq.ID,
-				InputType:           unaryReq,
-				OutputType:          unaryReq,
-				ClientSideStreaming: false,
-				ServerSideStreaming: false,
-			},
-		},
-	}
+	)
+
+	chatMethod := api.NewTestMethod("Chat").WithInput(streamMsg).WithOutput(streamMsg)
+	chatMethod.ClientSideStreaming = true
+	chatMethod.ServerSideStreaming = true
+	bidiService := api.NewTestService("BidiService").WithPackage("google.test.v1").WithMethods(chatMethod)
+
+	unaryMethod := api.NewTestMethod("UnaryMethod").WithInput(unaryReq).WithOutput(unaryReq)
+	unaryService := api.NewTestService("UnaryService").WithPackage("google.test.v1").WithMethods(unaryMethod)
+
 	model := api.NewTestAPI([]*api.Message{streamMsg, unaryReq, childData}, []*api.Enum{}, []*api.Service{bidiService, unaryService})
-	model.PackageName = "google.test.v1"
 
 	filtered, err := filterModelToStreaming(model)
 	if err != nil {
@@ -283,37 +193,19 @@ func TestFilterModelToStreamingNonStreamingFieldLookup(t *testing.T) {
 
 func TestFilterModelToStreamingAnyError(t *testing.T) {
 	// Verify google.protobuf.Any in streaming path returns error with recommendation
-	anyMsg := &api.Message{
-		Name:    "AnyReq",
-		ID:      ".google.test.v1.AnyReq",
-		Package: "google.test.v1",
-		Fields: []*api.Field{
-			{
-				Name:    "details",
-				TypezID: ".google.protobuf.Any",
-				Typez:   api.TypezMessage,
-			},
+	anyMsg := api.NewTestMessage("AnyReq").WithPackage("google.test.v1").WithFields(
+		&api.Field{
+			Name:    "details",
+			TypezID: ".google.protobuf.Any",
+			Typez:   api.TypezMessage,
 		},
-	}
-	anyService := &api.Service{
-		Name:    "AnyService",
-		ID:      ".google.test.v1.AnyService",
-		Package: "google.test.v1",
-		Methods: []*api.Method{
-			{
-				Name:                "ChatAny",
-				ID:                  ".google.test.v1.AnyService.ChatAny",
-				InputTypeID:         anyMsg.ID,
-				OutputTypeID:        anyMsg.ID,
-				InputType:           anyMsg,
-				OutputType:          anyMsg,
-				ClientSideStreaming: true,
-				ServerSideStreaming: true,
-			},
-		},
-	}
+	)
+	chatAnyMethod := api.NewTestMethod("ChatAny").WithInput(anyMsg).WithOutput(anyMsg)
+	chatAnyMethod.ClientSideStreaming = true
+	chatAnyMethod.ServerSideStreaming = true
+	anyService := api.NewTestService("AnyService").WithPackage("google.test.v1").WithMethods(chatAnyMethod)
+
 	anyModel := api.NewTestAPI([]*api.Message{anyMsg}, []*api.Enum{}, []*api.Service{anyService})
-	anyModel.PackageName = "google.test.v1"
 
 	_, err := filterModelToStreaming(anyModel)
 	if err == nil {
