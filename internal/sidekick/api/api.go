@@ -61,7 +61,7 @@ type API struct {
 
 	// RubyPackage captures the package name override for Ruby.
 	//
-	// Normally, the Protobuf package name is capitalized element by elemend and
+	// Normally, the Protobuf package name is capitalized element by element and
 	// then used to construct the Ruby package name. For example,
 	// `google.cloud.secretmanager.v1` becomes
 	// `Google::Cloud::Secretmanager::V1`. In this example,
@@ -76,7 +76,7 @@ type API struct {
 
 	// PhpNamespace captures the namespace override for PHP.
 	//
-	// Normally, the Protobuf package name is capitalized element by elemend and
+	// Normally, the Protobuf package name is capitalized element by element and
 	// then used to construct the PHP namespace. For example,
 	// `google.cloud.secretmanager.v1` becomes
 	// `Google\\Cloud\\Secretmanager\\V1`. In this example,
@@ -91,7 +91,7 @@ type API struct {
 
 	// CshapNamespace captures the namespace override for C#.
 	//
-	// Normally, the Protobuf package name is capitalized element by elemend and
+	// Normally, the Protobuf package name is capitalized element by element and
 	// then used to construct the C# namespace. For example,
 	// `google.cloud.secretmanager.v1` becomes `Google.Cloud.Secretmanager.V1`.
 	// In this example, `Google.Cloud.SecretManager.V1` would be more idiomatic.
