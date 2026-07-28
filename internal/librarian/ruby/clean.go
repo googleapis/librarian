@@ -33,6 +33,8 @@ var (
 	// oneTimeGeneratedRootFiles is the list of files generated only once upon initial library creation.
 	oneTimeGeneratedRootFiles = []string{
 		"CHANGELOG.md",
+		// Do not regenerate .repo-metadata.json until we decide the future plan of the file (b/536937442).
+		".repo-metadata.json",
 	}
 	// generatedRootFiles is the list of specific root files generated for Ruby client gems.
 	generatedRootFiles = []string{

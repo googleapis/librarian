@@ -387,6 +387,11 @@ func TestGenerate(t *testing.T) {
 	if err := os.WriteFile(changelogPath, []byte(existingContent), 0o644); err != nil {
 		t.Fatal(err)
 	}
+	repoMetadataPath := filepath.Join(outDir, ".repo-metadata.json")
+	const existingRepoMetadataContent = "{\n  \"release_level\": \"ga\"\n}\n"
+	if err := os.WriteFile(repoMetadataPath, []byte(existingRepoMetadataContent), 0o644); err != nil {
+		t.Fatal(err)
+	}
 	versionPath := filepath.Join(outDir, "lib", "google", "cloud", "secret_manager", "v1", "version.rb")
 	if err := os.MkdirAll(filepath.Dir(versionPath), 0o755); err != nil {
 		t.Fatal(err)
@@ -431,6 +436,13 @@ end
 		t.Fatal(err)
 	}
 	if diff := cmp.Diff(existingContent, string(gotChangelog)); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+	gotRepoMetadata, err := os.ReadFile(repoMetadataPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if diff := cmp.Diff(existingRepoMetadataContent, string(gotRepoMetadata)); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 	gotVersion, err := os.ReadFile(versionPath)
