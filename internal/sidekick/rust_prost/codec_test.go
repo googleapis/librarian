@@ -31,9 +31,9 @@ func TestParseOptions(t *testing.T) {
 			IncludeList: []string{"f1.proto", "f2.proto"},
 		},
 		Codec: map[string]string{
-			"copyright-year":           "2038",
-			"package-name-override":    "google-cloud-bigtable",
-			"root-name":                "test-root",
+			"copyright-year":          "2038",
+			"package-name-override":   "google-cloud-bigtable",
+			"root-name":               "test-root",
 			"convert-include-package": "google.showcase.v1beta1",
 		},
 	}
