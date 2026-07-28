@@ -149,6 +149,7 @@ impl super::stub::{{Codec.Name}} for {{Codec.Name}} {
                 None => return,
             };
 
+            {{! TODO(#6835) - propagate request serialization errors back to send() instead of using expect() }}
             let req_stream = futures::stream::once(async move { first_req })
                 .chain(tokio_stream::wrappers::ReceiverStream::new(req_rx))
                 .map(|v| v.to_proto().expect("request serialization failed"));
@@ -194,6 +195,7 @@ impl super::stub::{{Codec.Name}} for {{Codec.Name}} {
                     }
                 }
                 Err(err) => {
+                    {{! TODO(#6835) - propagate stream setup errors (result of bidi_stream) back to send() }}
                     let _ = resp_tx.send(Err(err.into())).await;
                 }
             }
