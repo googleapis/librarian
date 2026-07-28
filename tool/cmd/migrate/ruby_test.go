@@ -852,7 +852,7 @@ OwlBot.prevent_overwrite_of_existing 'lib/file2.rb'`,
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			dir := t.TempDir()
-			path := filepath.Join(dir, "owlbot.rb")
+			path := filepath.Join(dir, ".owlbot.rb")
 			if test.content != "" {
 				if err := os.WriteFile(path, []byte(test.content), 0o644); err != nil {
 					t.Fatal(err)

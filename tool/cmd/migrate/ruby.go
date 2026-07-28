@@ -166,7 +166,7 @@ func findRubyLibraries(googleapisPath, repoPath string) ([]*config.Library, erro
 			return nil, err
 		}
 		lib.Keep = keep
-		keepFromOwlbot, err := parseKeepFromOwlbotRb(filepath.Join(repoPath, name, "owlbot.rb"))
+		keepFromOwlbot, err := parseKeepFromOwlbotRb(filepath.Join(repoPath, name, ".owlbot.rb"))
 		if err != nil {
 			return nil, err
 		}
