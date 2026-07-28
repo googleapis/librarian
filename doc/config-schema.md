@@ -495,6 +495,7 @@ This document describes the schema for the librarian.yaml.
 | :--- | :--- | :--- |
 | `ruby-cloud-env-prefix` | string | Is the environment variable prefix. |
 | `ruby-cloud-extra-dependencies` | string | Contains extra runtime dependencies to the .gemspec file. |
+| `ruby-cloud-factory-method-suffix` | string | Appends a suffix to client constructor helper methods. |
 | `ruby-cloud-gem-namespace` | string | Is the root Ruby namespace. |
 | `ruby-cloud-migration-version` | string | Specifies the gem version milestone at which the library was migrated to GAPIC, generating a migration section in the README file. |
 | `ruby-cloud-namespace-override` | string | Overrides token / segment replacements applied across all generated module & class paths. |
