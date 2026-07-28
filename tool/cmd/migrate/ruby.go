@@ -166,6 +166,11 @@ func findRubyLibraries(googleapisPath, repoPath string) ([]*config.Library, erro
 			return nil, err
 		}
 		lib.Keep = keep
+		keepFromOwlbot, err := parseKeepFromOwlbotRb(filepath.Join(repoPath, name, "owlbot.rb"))
+		if err != nil {
+			return nil, err
+		}
+		lib.Keep = append(lib.Keep, keepFromOwlbot...)
 		api, isWrapper, err := parseAPIFromOwlBot(owlBotPath)
 		if err != nil {
 			return nil, err
@@ -446,4 +451,21 @@ func parseKeepFromManifest(path string) ([]string, error) {
 		return s == ".OwlBot.yaml"
 	})
 	return manifest.Static, nil
+}
+
+func parseKeepFromOwlbotRb(path string) ([]string, error) {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		if errors.Is(err, fs.ErrNotExist) {
+			return nil, nil
+		}
+		return nil, err
+	}
+	var keep []string
+	for line := range strings.SplitSeq(string(data), "\n") {
+		if keepFile, ok := strings.CutPrefix(line, "OwlBot.prevent_overwrite_of_existing"); ok {
+			keep = append(keep, strings.TrimSpace(keepFile))
+		}
+	}
+	return keep, nil
 }
