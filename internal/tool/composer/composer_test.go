@@ -49,7 +49,7 @@ func TestInstall(t *testing.T) {
 			name: "invalid tool configuration",
 			tools: []*config.ComposerTool{
 				{
-					Name: "",
+					Name:    "",
 					Version: "1.0.0",
 				},
 			},
