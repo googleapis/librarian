@@ -250,13 +250,34 @@ func filterModelToStreaming(model *api.API) (*api.API, error) {
 		}
 	}
 
-	hybridModel := *model
-	hybridModel.Messages = language.FilterSlice(model.Messages, func(m *api.Message) bool {
-		return streamingMsgs[m.ID]
-	})
-	hybridModel.Enums = language.FilterSlice(model.Enums, func(e *api.Enum) bool {
-		return streamingEnums[e.ID]
-	})
+	hybridModel := api.API{
+		Name:                model.Name,
+		PackageName:         model.PackageName,
+		Title:               model.Title,
+		Description:         model.Description,
+		Revision:            model.Revision,
+		Services:            model.Services,
+		Messages:            language.FilterSlice(model.Messages, func(m *api.Message) bool { return streamingMsgs[m.ID] }),
+		Enums:               language.FilterSlice(model.Enums, func(e *api.Enum) bool { return streamingEnums[e.ID] }),
+		ResourceDefinitions: model.ResourceDefinitions,
+		QuickstartService:   model.QuickstartService,
+		Codec:               model.Codec,
+	}
+	for _, s := range hybridModel.Services {
+		hybridModel.AddService(s)
+		for _, m := range s.Methods {
+			hybridModel.AddMethod(m)
+		}
+	}
+	for _, m := range hybridModel.Messages {
+		hybridModel.AddMessage(m)
+	}
+	for _, e := range hybridModel.Enums {
+		hybridModel.AddEnum(e)
+	}
+	for _, r := range hybridModel.ResourceDefinitions {
+		hybridModel.AddResource(r)
+	}
 	return &hybridModel, nil
 }
 
