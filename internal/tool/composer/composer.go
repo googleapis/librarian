@@ -43,9 +43,7 @@ func Install(ctx context.Context, tools []*config.ComposerTool, phpPath, bin str
 		if err := command.RunInDir(ctx, dir, "composer", "install", "--no-interaction", "--prefer-dist"); err != nil {
 			return fmt.Errorf("failed to run composer install: %w", err)
 		}
-
 		wrapperName := filepath.Base(tool.Repo)
-
 		if wrapperName == "gapic-generator-php" {
 			// Currently, this assumes the tool is the gapic-generator-php. This specific
 			// wrapper logic will not work for generic Composer tools because:
