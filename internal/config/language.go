@@ -853,6 +853,9 @@ type RubyCloudOpts struct {
 	// ExtraDependencies contains extra runtime dependencies to the .gemspec file.
 	ExtraDependencies string `yaml:"ruby-cloud-extra-dependencies,omitempty"`
 
+	// FactoryMethodSuffix appends a suffix to client constructor helper methods.
+	FactoryMethodSuffix string `yaml:"ruby-cloud-factory-method-suffix,omitempty"`
+
 	// GemNamespace is the root Ruby namespace.
 	GemNamespace string `yaml:"ruby-cloud-gem-namespace,omitempty"`
 
