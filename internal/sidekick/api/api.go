@@ -58,50 +58,6 @@ type API struct {
 	enumByID map[string]*Enum
 	// resourceByType returns a resource that is associated with the API.
 	resourceByType map[string]*Resource
-
-	// RubyPackage captures the package name override for Ruby.
-	//
-	// Normally, the Protobuf package name is capitalized element by element and
-	// then used to construct the Ruby package name. For example,
-	// `google.cloud.secretmanager.v1` becomes
-	// `Google::Cloud::Secretmanager::V1`. In this example,
-	// `Google::Cloud::SecretManager::V1` would be more idiomatic. The Protobuf
-	// file options can set this override.
-	//
-	// In sidekick, a codec for Ruby might use this field directly. The codec
-	// for Swift uses this to emit warnings if: (1) the Ruby override differs
-	// from the standard name, and (2) there is no override in the
-	// `librarian.yaml` file.
-	RubyPackage string
-
-	// PhpNamespace captures the namespace override for PHP.
-	//
-	// Normally, the Protobuf package name is capitalized element by element and
-	// then used to construct the PHP namespace. For example,
-	// `google.cloud.secretmanager.v1` becomes
-	// `Google\\Cloud\\Secretmanager\\V1`. In this example,
-	// `Google\\Cloud\\SecretManager\\V1` would be more idiomatic. The Protobuf
-	// file options can set this override.
-	//
-	// In sidekick, a codec for PHP might use this field directly. The codec
-	// for Swift uses this to emit warnings if: (1) the PHP override differs
-	// from the standard name, and (2) there is no override in the
-	// `librarian.yaml` file.
-	PhpNamespace string
-
-	// CshapNamespace captures the namespace override for C#.
-	//
-	// Normally, the Protobuf package name is capitalized element by element and
-	// then used to construct the C# namespace. For example,
-	// `google.cloud.secretmanager.v1` becomes `Google.Cloud.Secretmanager.V1`.
-	// In this example, `Google.Cloud.SecretManager.V1` would be more idiomatic.
-	// The Protobuf file options can set this override.
-	//
-	// In sidekick, a codec for C# might use this field directly. The codec
-	// for Swift uses this to emit warnings if: (1) the C# override differs
-	// from the standard name, and (2) there is no override in the
-	// `librarian.yaml` file.
-	CsharpNamespace string
 }
 
 // ModelOverride holds configuration overrides for an API model.

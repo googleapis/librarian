@@ -328,22 +328,6 @@ func makeAPIForProtobuf(serviceConfig *serviceconfig.Service, req *pluginpb.Code
 		var fileServices []*api.Service
 		fFQN := "." + f.GetPackage()
 
-		if value, err := protobufUpdateFileOption(result.CsharpNamespace, f.GetOptions().GetCsharpNamespace()); err == nil {
-			result.CsharpNamespace = value
-		} else {
-			return nil, err
-		}
-		if value, err := protobufUpdateFileOption(result.PhpNamespace, f.GetOptions().GetPhpNamespace()); err == nil {
-			result.PhpNamespace = value
-		} else {
-			return nil, err
-		}
-		if value, err := protobufUpdateFileOption(result.RubyPackage, f.GetOptions().GetRubyPackage()); err == nil {
-			result.RubyPackage = value
-		} else {
-			return nil, err
-		}
-
 		// Messages
 		for _, m := range f.MessageType {
 			mFQN := fFQN + "." + m.GetName()
@@ -492,22 +476,6 @@ var descriptorpbToTypez = map[descriptorpb.FieldDescriptorProto_Type]api.Typez{
 	descriptorpb.FieldDescriptorProto_TYPE_GROUP:    api.TypezGroup,
 	descriptorpb.FieldDescriptorProto_TYPE_MESSAGE:  api.TypezMessage,
 	descriptorpb.FieldDescriptorProto_TYPE_ENUM:     api.TypezEnum,
-}
-
-// protobufUpdateFileOption validates an update of `current` to `got`.
-//
-// This returns an error if `current` != "" and `current` != got.
-func protobufUpdateFileOption(current, got string) (string, error) {
-	if current == "" {
-		return got, nil
-	}
-	if current == got {
-		return got, nil
-	}
-	if got == "" {
-		return current, nil
-	}
-	return "", fmt.Errorf("mismatched file option value, want=%s got=%s", current, got)
 }
 
 func normalizeTypes(model *api.API, in *descriptorpb.FieldDescriptorProto, field *api.Field) {
