@@ -36,15 +36,10 @@ impl gaxi::prost::FromProto<{{Codec.QualifiedName}}> for {{Codec.RelativeName}} 
         match self {
             {{#Fields}}
             {{^IsEnum}}
-            {{^Codec.IsBoxed}}
-            Self::{{Codec.BranchName}}(v) => Ok(T::{{Codec.BranchName}}(v.cnv()?)),
-            {{/Codec.IsBoxed}}
-            {{#Codec.IsBoxed}}
-            Self::{{Codec.BranchName}}(v) => Ok(T::{{Codec.BranchName}}(std::boxed::Box::new(v.cnv()?))),
-            {{/Codec.IsBoxed}}
+            Self::{{Codec.BranchName}}(v) => Ok(T::from_{{Codec.SetterName}}(v.cnv()?)),
             {{/IsEnum}}
             {{#IsEnum}}
-            Self::{{Codec.BranchName}}(v) => Ok(T::{{Codec.BranchName}}(v.into())),
+            Self::{{Codec.BranchName}}(v) => Ok(T::from_{{Codec.SetterName}}(v)),
             {{/IsEnum}}
             {{/Fields}}
         }
