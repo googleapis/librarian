@@ -76,6 +76,12 @@ func TestClean(t *testing.T) {
 			keep:      nil,
 			wantFiles: []string{"CHANGELOG.md"},
 		},
+		{
+			name:      "preserves snippet metadata files",
+			files:     []string{"CHANGELOG.md", "snippets/snippet_metadata_google.cloud.asset.v1.json", "snippets/s1.rb", "lib/foo.rb"},
+			keep:      nil,
+			wantFiles: []string{"CHANGELOG.md", "snippets/snippet_metadata_google.cloud.asset.v1.json"},
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()

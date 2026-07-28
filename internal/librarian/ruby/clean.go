@@ -186,6 +186,10 @@ func cleanSubdirectory(libraryDir, subDirPath string, keepSet map[string]bool) e
 // isKept returns true if the specified relative path or any of its parent
 // directories is present in keepSet.
 func isKept(relSlash string, keepSet map[string]bool) bool {
+	// TODO(https://github.com/googleapis/librarian/issues/7055): Remove this logic once after snippet metadata deprecation.
+	if strings.HasPrefix(relSlash, "snippets/snippet_metadata_") && strings.HasSuffix(relSlash, ".json") {
+		return true
+	}
 	currentPath := relSlash
 	for currentPath != "." {
 		if keepSet[currentPath] {
