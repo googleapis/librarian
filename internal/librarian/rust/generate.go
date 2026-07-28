@@ -148,6 +148,9 @@ std::fs::write(&name, content).expect("error writing includes.rs");`, model.Pack
 	return nil
 }
 
+// filterModelToStreaming constructs a hybrid api.API model containing only
+// bidirectional streaming RPC types for prost conversion generation.
+// Errors if Any is encountered.
 func filterModelToStreaming(model *api.API) (*api.API, error) {
 	type streamingTypeItem struct {
 		id       string
@@ -160,6 +163,7 @@ func filterModelToStreaming(model *api.API) (*api.API, error) {
 	streamingEnums := make(map[string]bool)
 	var queue []streamingTypeItem
 
+	// Collect initial input/output message types from all bidirectional streaming RPCs.
 	for _, s := range model.Services {
 		for _, m := range s.Methods {
 			if m.ClientSideStreaming && m.ServerSideStreaming {
@@ -184,6 +188,7 @@ func filterModelToStreaming(model *api.API) (*api.API, error) {
 		}
 	}
 
+	// Discover all transitively reachable messages and enums.
 	visited := make(map[string]bool)
 	for len(queue) > 0 {
 		item := queue[0]
@@ -199,7 +204,7 @@ func filterModelToStreaming(model *api.API) (*api.API, error) {
 				item.rpc, path, item.methodID)
 		}
 
-		if item.id == ".google.protobuf.Any" || item.id == "google.protobuf.Any" {
+		if isAnyType(item.id) {
 			return nil, anyError(item.path)
 		}
 
@@ -208,7 +213,7 @@ func filterModelToStreaming(model *api.API) (*api.API, error) {
 			streamingMsgs[msg.ID] = true
 			for _, f := range msg.Fields {
 				fieldPath := item.path + "." + f.Name
-				if f.TypezID == ".google.protobuf.Any" || f.TypezID == "google.protobuf.Any" {
+				if isAnyType(f.TypezID) {
 					return nil, anyError(fieldPath)
 				}
 				if f.Typez == api.TypezMessage && f.TypezID != "" {
@@ -226,7 +231,7 @@ func filterModelToStreaming(model *api.API) (*api.API, error) {
 			for _, o := range msg.OneOfs {
 				for _, f := range o.Fields {
 					fieldPath := item.path + "." + o.Name + "." + f.Name
-					if f.TypezID == ".google.protobuf.Any" || f.TypezID == "google.protobuf.Any" {
+					if isAnyType(f.TypezID) {
 						return nil, anyError(fieldPath)
 					}
 					if f.Typez == api.TypezMessage && f.TypezID != "" {
@@ -250,13 +255,16 @@ func filterModelToStreaming(model *api.API) (*api.API, error) {
 		}
 	}
 
+	// Construct hybridModel for prost conversion code generation.
 	hybridModel := api.API{
-		Name:                model.Name,
-		PackageName:         model.PackageName,
-		Title:               model.Title,
-		Description:         model.Description,
-		Revision:            model.Revision,
-		Services:            model.Services,
+		Name:        model.Name,
+		PackageName: model.PackageName,
+		Title:       model.Title,
+		Description: model.Description,
+		Revision:    model.Revision,
+		Services:    model.Services,
+		// Messages and Enums slices are filtered to only streaming types so convert.rs
+		// only contains conversion implementations for streaming RPCs.
 		Messages:            language.FilterSlice(model.Messages, func(m *api.Message) bool { return streamingMsgs[m.ID] }),
 		Enums:               language.FilterSlice(model.Enums, func(e *api.Enum) bool { return streamingEnums[e.ID] }),
 		ResourceDefinitions: model.ResourceDefinitions,
@@ -269,16 +277,23 @@ func filterModelToStreaming(model *api.API) (*api.API, error) {
 			hybridModel.AddMethod(m)
 		}
 	}
-	for _, m := range hybridModel.Messages {
+	// Populate messageByID and enumByID with ALL package messages and enums (not just
+	// streaming types). This avoids aliasing model.messageByID while allowing model
+	// annotation to resolve field types across the entire package.
+	for m := range model.AllMessages() {
 		hybridModel.AddMessage(m)
 	}
-	for _, e := range hybridModel.Enums {
+	for e := range model.AllEnums() {
 		hybridModel.AddEnum(e)
 	}
 	for _, r := range hybridModel.ResourceDefinitions {
 		hybridModel.AddResource(r)
 	}
 	return &hybridModel, nil
+}
+
+func isAnyType(id string) bool {
+	return strings.TrimPrefix(id, ".") == "google.protobuf.Any"
 }
 
 // UpdateWorkspace updates dependencies for the entire Rust workspace.

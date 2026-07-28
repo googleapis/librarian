@@ -898,6 +898,86 @@ func TestFilterModelToStreaming(t *testing.T) {
 	if len(filtered.Messages) != 1 || filtered.Messages[0].ID != streamingMsg.ID {
 		t.Errorf("got messages %v, want [%s]", filtered.Messages, streamingMsg.ID)
 	}
+
+	if got := filtered.Message(unusedMsg.ID); got != unusedMsg {
+		t.Errorf("filtered.Message(%q) = %v, want %v", unusedMsg.ID, got, unusedMsg)
+	}
+}
+
+func TestFilterModelToStreamingNonStreamingFieldLookup(t *testing.T) {
+	streamMsg := &api.Message{
+		Name:    "StreamMsg",
+		ID:      ".google.test.v1.StreamMsg",
+		Package: "google.test.v1",
+	}
+	childData := &api.Message{
+		Name:    "ChildData",
+		ID:      ".google.test.v1.ChildData",
+		Package: "google.test.v1",
+	}
+	unaryReq := &api.Message{
+		Name:    "UnaryReq",
+		ID:      ".google.test.v1.UnaryReq",
+		Package: "google.test.v1",
+		Fields: []*api.Field{
+			{
+				Name:    "info",
+				TypezID: childData.ID,
+				Typez:   api.TypezMessage,
+			},
+		},
+	}
+	bidiService := &api.Service{
+		Name:    "BidiService",
+		ID:      ".google.test.v1.BidiService",
+		Package: "google.test.v1",
+		Methods: []*api.Method{
+			{
+				Name:                "Chat",
+				ID:                  ".google.test.v1.BidiService.Chat",
+				InputTypeID:         streamMsg.ID,
+				OutputTypeID:        streamMsg.ID,
+				InputType:           streamMsg,
+				OutputType:          streamMsg,
+				ClientSideStreaming: true,
+				ServerSideStreaming: true,
+			},
+		},
+	}
+	unaryService := &api.Service{
+		Name:    "UnaryService",
+		ID:      ".google.test.v1.UnaryService",
+		Package: "google.test.v1",
+		Methods: []*api.Method{
+			{
+				Name:                "UnaryMethod",
+				ID:                  ".google.test.v1.UnaryService.UnaryMethod",
+				InputTypeID:         unaryReq.ID,
+				OutputTypeID:        unaryReq.ID,
+				InputType:           unaryReq,
+				OutputType:          unaryReq,
+				ClientSideStreaming: false,
+				ServerSideStreaming: false,
+			},
+		},
+	}
+	model := api.NewTestAPI([]*api.Message{streamMsg, unaryReq, childData}, []*api.Enum{}, []*api.Service{bidiService, unaryService})
+	model.PackageName = "google.test.v1"
+
+	filtered, err := filterModelToStreaming(model)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if len(filtered.Messages) != 1 || filtered.Messages[0].ID != streamMsg.ID {
+		t.Errorf("got messages %v, want [%s]", filtered.Messages, streamMsg.ID)
+	}
+	if got := filtered.Message(childData.ID); got != childData {
+		t.Errorf("filtered.Message(%q) = %v, want %v", childData.ID, got, childData)
+	}
+	if got := filtered.Message(unaryReq.ID); got != unaryReq {
+		t.Errorf("filtered.Message(%q) = %v, want %v", unaryReq.ID, got, unaryReq)
+	}
 }
 
 func TestFilterModelToStreamingAnyError(t *testing.T) {
