@@ -39,9 +39,6 @@ func Install(ctx context.Context, tools []*config.ComposerTool, phpPath, bin str
 		return err
 	}
 	for _, tool := range tools {
-		if tool.Repo == "" {
-			return fmt.Errorf("%w: composer tool %s", ErrMissingRepo, tool.Name)
-		}
 		dir, err := fetch.Repo(ctx, tool.Repo, tool.Version, tool.SHA256)
 		if err != nil {
 			return fmt.Errorf("fetching %s: %w", tool.Name, err)
@@ -93,6 +90,9 @@ func verify(tools []*config.ComposerTool) error {
 	for _, tool := range tools {
 		if tool.Name == "" || tool.Version == "" {
 			return fmt.Errorf("%w: name and version must be specified: %+v", ErrInvalidTool, tool)
+		}
+		if tool.Repo == "" {
+			return fmt.Errorf("%w: composer tool %s", ErrMissingRepo, tool.Name)
 		}
 	}
 	return nil

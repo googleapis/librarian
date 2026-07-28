@@ -155,7 +155,7 @@ func TestCreateBinWrapper(t *testing.T) {
 
 func TestVerify(t *testing.T) {
 	tools := []*config.ComposerTool{
-		{Name: "gapic-generator-php", Version: "1.0.0"},
+		{Name: "gapic-generator-php", Version: "1.0.0", Repo: "github.com/googleapis/gapic-generator-php"},
 	}
 	if err := verify(tools); err != nil {
 		t.Errorf("verify() error = %v, want nil", err)
@@ -171,16 +171,23 @@ func TestVerify_Error(t *testing.T) {
 		{
 			name: "missing name",
 			tools: []*config.ComposerTool{
-				{Name: "", Version: "1.0.0"},
+				{Name: "", Version: "1.0.0", Repo: "github.com"},
 			},
 			wantErr: ErrInvalidTool,
 		},
 		{
 			name: "missing version",
 			tools: []*config.ComposerTool{
-				{Name: "gapic-generator-php", Version: ""},
+				{Name: "gapic-generator-php", Version: "", Repo: "github.com"},
 			},
 			wantErr: ErrInvalidTool,
+		},
+		{
+			name: "missing repo",
+			tools: []*config.ComposerTool{
+				{Name: "gapic-generator-php", Version: "1.0.0", Repo: ""},
+			},
+			wantErr: ErrMissingRepo,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
