@@ -15,7 +15,6 @@
 package ruby
 
 import (
-	"encoding/json"
 	"errors"
 	"io/fs"
 	"os"
@@ -27,7 +26,6 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/serviceconfig"
-	"github.com/googleapis/librarian/internal/snippetmetadata"
 	"github.com/googleapis/librarian/internal/sources"
 )
 
@@ -70,6 +68,26 @@ func TestBuildGAPICOpts(t *testing.T) {
 				"service-yaml=" + filepath.Join(googleapisDir, "google/cloud/compute/v1/compute_v1.yaml"),
 				"ruby-cloud-generate-transports=rest",
 				"ruby-cloud-rest-numeric-enums=true",
+			},
+		},
+		{
+			name: "ruby cloud opts with migration version",
+			api: &config.API{
+				Path: "google/cloud/secretmanager/v1",
+				Ruby: &config.RubyAPI{
+					RubyCloudOpts: &config.RubyCloudOpts{
+						MigrationVersion: "1.0",
+					},
+				},
+			},
+			gemName: "google-cloud-secret_manager",
+			want: []string{
+				"ruby-cloud-gem-name=google-cloud-secret_manager",
+				"service-yaml=" + filepath.Join(googleapisDir, "google/cloud/secretmanager/v1/secretmanager_v1.yaml"),
+				"grpc-service-config=" + filepath.Join(googleapisDir, "google/cloud/secretmanager/v1/secretmanager_grpc_service_config.json"),
+				"ruby-cloud-generate-transports=grpc;rest",
+				"ruby-cloud-rest-numeric-enums=true",
+				"ruby-cloud-migration-version=1.0",
 			},
 		},
 	} {
@@ -367,6 +385,11 @@ func TestGenerate(t *testing.T) {
 	if err := os.WriteFile(changelogPath, []byte(existingContent), 0o644); err != nil {
 		t.Fatal(err)
 	}
+	repoMetadataPath := filepath.Join(outDir, ".repo-metadata.json")
+	const existingRepoMetadataContent = "{\n  \"release_level\": \"ga\"\n}\n"
+	if err := os.WriteFile(repoMetadataPath, []byte(existingRepoMetadataContent), 0o644); err != nil {
+		t.Fatal(err)
+	}
 	versionPath := filepath.Join(outDir, "lib", "google", "cloud", "secret_manager", "v1", "version.rb")
 	if err := os.MkdirAll(filepath.Dir(versionPath), 0o755); err != nil {
 		t.Fatal(err)
@@ -382,6 +405,14 @@ func TestGenerate(t *testing.T) {
 end
 `
 	if err := os.WriteFile(versionPath, []byte(existingVersionContent), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	snippetMetadataPath := filepath.Join(outDir, "snippets", "snippet_metadata_google.cloud.secretmanager.v1.json")
+	if err := os.MkdirAll(filepath.Dir(snippetMetadataPath), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	const existingSnippetMetadataContent = "{\n  \"client_library\": {\n    \"version\": \"1.2.0\"\n  }\n}\n"
+	if err := os.WriteFile(snippetMetadataPath, []byte(existingSnippetMetadataContent), 0o644); err != nil {
 		t.Fatal(err)
 	}
 	library := &config.Library{
@@ -413,6 +444,13 @@ end
 	if diff := cmp.Diff(existingContent, string(gotChangelog)); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
+	gotRepoMetadata, err := os.ReadFile(repoMetadataPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if diff := cmp.Diff(existingRepoMetadataContent, string(gotRepoMetadata)); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
 	gotVersion, err := os.ReadFile(versionPath)
 	if err != nil {
 		t.Fatal(err)
@@ -420,16 +458,11 @@ end
 	if diff := cmp.Diff(existingVersionContent, string(gotVersion)); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
-	snippetMetadataPath := filepath.Join(outDir, "snippets", "snippet_metadata_google.cloud.secretmanager.v1.json")
 	gotSnippetMetadata, err := os.ReadFile(snippetMetadataPath)
 	if err != nil {
 		t.Fatal(err)
 	}
-	var metadata snippetmetadata.SnippetMetadata
-	if err := json.Unmarshal(gotSnippetMetadata, &metadata); err != nil {
-		t.Fatal(err)
-	}
-	if diff := cmp.Diff("1.2.3", metadata.ClientLibrary.Version); diff != "" {
+	if diff := cmp.Diff(existingSnippetMetadataContent, string(gotSnippetMetadata)); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }

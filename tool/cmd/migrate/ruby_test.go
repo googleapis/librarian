@@ -407,6 +407,30 @@ func TestParseUnversionedBuild(t *testing.T) {
 				},
 			},
 		},
+		{
+			name:          "BUILD.bazel with migration version",
+			googleapisDir: "testdata/googleapis",
+			apiPath:       "google/cloud/asset",
+			want: &WrapperBuild{
+				Path: "google/cloud/asset/v1",
+				Params: &ExtraProtoParams{
+					EnvPrefix:        "ASSET",
+					MigrationVersion: "1.0",
+				},
+			},
+		},
+		{
+			name:          "BUILD.bazel with factory method suffix",
+			googleapisDir: "testdata/googleapis",
+			apiPath:       "google/cloud/billing",
+			want: &WrapperBuild{
+				Path: "google/cloud/billing/v1",
+				Params: &ExtraProtoParams{
+					EnvPrefix:           "BILLING",
+					FactoryMethodSuffix: "_service",
+				},
+			},
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			got, err := parseUnversionedBuild(test.googleapisDir, test.apiPath)

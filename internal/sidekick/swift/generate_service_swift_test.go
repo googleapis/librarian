@@ -46,7 +46,7 @@ func TestGenerateService_Files(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	expectedDir := filepath.Join(outDir, "Sources", "GoogleTest")
+	expectedDir := filepath.Join(outDir, "Sources", "Test")
 	wantFiles := []string{
 		"IAM.swift",
 		"Clients.swift",

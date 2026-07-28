@@ -436,6 +436,7 @@
   skip_rest_numeric_enums:
     - go
     - java
+    - nodejs
     - python
   transports:
     all: rest
@@ -445,6 +446,7 @@
   new_issue_uri: https://issuetracker.google.com/issues/new?component=187134&template=0
   skip_rest_numeric_enums:
     - go
+    - nodejs
     - python
   transports:
     all: rest
