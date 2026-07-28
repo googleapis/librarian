@@ -36,7 +36,7 @@ func TestUsedByServicesWithServices(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	resolveUsedPackages(model, c.extraPackages)
+	resolveUsedPackages(model, c.extraPackages, c.includeBidiStreamingMethods)
 	want := []*packagez{
 		{
 			name:        "location",
@@ -64,7 +64,7 @@ func TestUsedByServicesNoServices(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	resolveUsedPackages(model, c.extraPackages)
+	resolveUsedPackages(model, c.extraPackages, c.includeBidiStreamingMethods)
 	want := []*packagez{
 		{
 			name:        "location",
@@ -100,7 +100,7 @@ func TestUsedByLROsWithLRO(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	resolveUsedPackages(model, c.extraPackages)
+	resolveUsedPackages(model, c.extraPackages, c.includeBidiStreamingMethods)
 	want := []*packagez{
 		{
 			name:        "location",
@@ -136,7 +136,7 @@ func TestUsedByLROsWithoutLRO(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	resolveUsedPackages(model, c.extraPackages)
+	resolveUsedPackages(model, c.extraPackages, c.includeBidiStreamingMethods)
 	want := []*packagez{
 		{
 			name:        "location",
@@ -176,7 +176,7 @@ func TestUsedByUuidWithAutoPopulation(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	resolveUsedPackages(model, c.extraPackages)
+	resolveUsedPackages(model, c.extraPackages, c.includeBidiStreamingMethods)
 	want := []*packagez{
 		{
 			name:        "location",
@@ -213,7 +213,7 @@ func TestUsedByUuidWithoutAutoPopulation(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	resolveUsedPackages(model, c.extraPackages)
+	resolveUsedPackages(model, c.extraPackages, c.includeBidiStreamingMethods)
 	want := []*packagez{
 		{
 			name:        "location",
@@ -399,6 +399,88 @@ func TestFindUsedPackages_MapFields(t *testing.T) {
 	}
 	less := func(a, b *packagez) bool { return a.name < b.name }
 	if diff := cmp.Diff(want, c.extraPackages, cmp.AllowUnexported(packagez{}), cmpopts.SortSlices(less)); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+}
+
+func TestUsedByHybridServices(t *testing.T) {
+	service := &api.Service{
+		Name: "TestService",
+		ID:   ".test.Service",
+		Methods: []*api.Method{
+			{
+				Name:                "BidiStream",
+				ID:                  ".test.Service.BidiStream",
+				ServerSideStreaming: true,
+				ClientSideStreaming: true,
+			},
+		},
+	}
+	model := api.NewTestAPI([]*api.Message{}, []*api.Enum{}, []*api.Service{service})
+	extraPackages := []*packagez{
+		{
+			name:        "gaxi",
+			packageName: "google-cloud-gax-internal",
+			features:    []string{"_internal-http-client"},
+			usedIf:      []string{"services"},
+		},
+		{
+			name:        "gaxi",
+			packageName: "google-cloud-gax-internal",
+			features:    []string{"_internal-http-client", "_internal-grpc-client"},
+			usedIf:      []string{"hybrid_services"},
+		},
+	}
+	c := &codec{
+		includeBidiStreamingMethods: true,
+		extraPackages:               extraPackages,
+	}
+	resolveUsedPackages(model, c.extraPackages, c.includeBidiStreamingMethods)
+	got := requiredPackages(extraPackages)
+	want := []string{
+		"gaxi                 = { workspace = true, features = [\"_internal-http-client\", \"_internal-grpc-client\"] }",
+	}
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+}
+
+func TestUsedByServicesWithHybridServicesConfigured(t *testing.T) {
+	service := &api.Service{
+		Name: "TestService",
+		ID:   ".test.Service",
+		Methods: []*api.Method{
+			{
+				Name: "UnaryRpc",
+				ID:   ".test.Service.UnaryRpc",
+			},
+		},
+	}
+	model := api.NewTestAPI([]*api.Message{}, []*api.Enum{}, []*api.Service{service})
+	extraPackages := []*packagez{
+		{
+			name:        "gaxi",
+			packageName: "google-cloud-gax-internal",
+			features:    []string{"_internal-http-client"},
+			usedIf:      []string{"services"},
+		},
+		{
+			name:        "gaxi",
+			packageName: "google-cloud-gax-internal",
+			features:    []string{"_internal-http-client", "_internal-grpc-client"},
+			usedIf:      []string{"hybrid_services"},
+		},
+	}
+	c := &codec{
+		includeBidiStreamingMethods: true,
+		extraPackages:               extraPackages,
+	}
+	resolveUsedPackages(model, c.extraPackages, c.includeBidiStreamingMethods)
+	got := requiredPackages(extraPackages)
+	want := []string{
+		"gaxi                 = { workspace = true, features = [\"_internal-http-client\"] }",
+	}
+	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }

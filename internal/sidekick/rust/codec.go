@@ -383,8 +383,8 @@ type packagez struct {
 	usedIf []string
 }
 
-func resolveUsedPackages(model *api.API, extraPackages []*packagez) {
-	hasServices := len(model.Services) > 0
+func resolveUsedPackages(model *api.API, extraPackages []*packagez, includeBidiStreamingMethods bool) {
+	hasHybridServices := false
 	hasLROs := false
 	hasAutoPopulation := false
 	for _, s := range model.Services {
@@ -399,14 +399,22 @@ func resolveUsedPackages(model *api.API, extraPackages []*packagez) {
 			if len(m.AutoPopulated) != 0 {
 				hasAutoPopulation = true
 			}
+			if includeBidiStreamingMethods && m.ClientSideStreaming && m.ServerSideStreaming {
+				hasHybridServices = true
+			}
 		}
 	}
+	hasServices := len(model.Services) > 0 && !hasHybridServices
 	for _, pkg := range extraPackages {
 		if pkg.used {
 			continue
 		}
 		for _, namedFeature := range pkg.usedIf {
 			if namedFeature == "services" && hasServices {
+				pkg.used = true
+				break
+			}
+			if namedFeature == "hybrid_services" && hasHybridServices {
 				pkg.used = true
 				break
 			}

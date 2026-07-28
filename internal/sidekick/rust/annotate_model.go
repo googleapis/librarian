@@ -123,7 +123,7 @@ func (m *modelAnnotations) ReleaseLevelIsGA() bool {
 func annotateModel(model *api.API, codec *codec) (*modelAnnotations, error) {
 	codec.hasServices = len(model.Services) > 0
 
-	resolveUsedPackages(model, codec.extraPackages)
+	resolveUsedPackages(model, codec.extraPackages, codec.includeBidiStreamingMethods)
 	// Annotate enums and messages that we intend to generate. In the
 	// process we discover the external dependencies and trim the list of
 	// packages used by this API.
