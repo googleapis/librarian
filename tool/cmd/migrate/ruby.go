@@ -68,6 +68,7 @@ type ExtraProtoParams struct {
 	EnvPrefix          string
 	ExtraDeps          string
 	GemNamespace       string
+	MigrationVersion string
 	NamespaceOverride  string
 	PathOverride       string
 	ServiceOverride    string
@@ -206,6 +207,7 @@ func findRubyLibraries(googleapisPath, repoPath string) ([]*config.Library, erro
 								EnvPrefix:          wb.Params.EnvPrefix,
 								ExtraDependencies:  wb.Params.ExtraDeps,
 								GemNamespace:       wb.Params.GemNamespace,
+								MigrationVersion:   wb.Params.MigrationVersion,
 								NamespaceOverride:  wb.Params.NamespaceOverride,
 								PathOverride:       wb.Params.PathOverride,
 								ServiceOverride:    wb.Params.ServiceOverride,
@@ -313,6 +315,8 @@ func parseExtraProtoParams(file *build.File) (*ExtraProtoParams, error) {
 			vb.ExtraDeps, _ = strings.CutPrefix(dep, "ruby-cloud-extra-dependencies=")
 		case strings.HasPrefix(dep, "ruby-cloud-gem-namespace="):
 			vb.GemNamespace, _ = strings.CutPrefix(dep, "ruby-cloud-gem-namespace=")
+		case strings.HasPrefix(dep, "ruby-cloud-migration-version="):
+			vb.MigrationVersion, _ = strings.CutPrefix(dep, "ruby-cloud-migration-version=")
 		case strings.HasPrefix(dep, "ruby-cloud-namespace-override="):
 			vb.NamespaceOverride, _ = strings.CutPrefix(dep, "ruby-cloud-namespace-override=")
 		case strings.HasPrefix(dep, "ruby-cloud-path-override="):
