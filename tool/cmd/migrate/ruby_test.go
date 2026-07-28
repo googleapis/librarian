@@ -795,6 +795,11 @@ func TestParseKeepFromManifest(t *testing.T) {
 			want:    []string{},
 		},
 		{
+			name:    "filters out .OwlBot.yaml and .owlbot.rb",
+			content: `{"static": [".OwlBot.yaml", "file1.rb", ".owlbot.rb", "file2.rb"]}`,
+			want:    []string{"file1.rb", "file2.rb"},
+		},
+		{
 			name:    "empty static list",
 			content: `{"static": []}`,
 			want:    []string{},
