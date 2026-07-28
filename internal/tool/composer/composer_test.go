@@ -142,4 +142,3 @@ func TestCreateBinWrapper(t *testing.T) {
 		})
 	}
 }
-

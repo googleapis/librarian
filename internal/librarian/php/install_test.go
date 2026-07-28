@@ -255,4 +255,3 @@ func TestInstall_Error(t *testing.T) {
 		})
 	}
 }
-
