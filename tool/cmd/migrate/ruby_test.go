@@ -822,3 +822,49 @@ func TestParseKeepFromManifest(t *testing.T) {
 		})
 	}
 }
+
+func TestParseKeepFromOwlbotRb(t *testing.T) {
+	for _, test := range []struct {
+		name    string
+		content string
+		want    []string
+	}{
+		{
+			name:    "parses single prevent_overwrite_of_existing statement",
+			content: `OwlBot.prevent_overwrite_of_existing "lib/google/cloud/automl/v1/helpers.rb"`,
+			want:    []string{"lib/google/cloud/automl/v1/helpers.rb"},
+		},
+		{
+			name: "parses multiple prevent_overwrite_of_existing statements",
+			content: `OwlBot.prevent_overwrite_of_existing "lib/file1.rb"
+OwlBot.prevent_overwrite_of_existing "lib/file2.rb"`,
+			want: []string{"lib/file1.rb", "lib/file2.rb"},
+		},
+		{
+			name:    "no matching statements",
+			content: `# Standard owlbot.rb file without prevent_overwrite_of_existing`,
+			want:    nil,
+		},
+		{
+			name: "file does not exist",
+			want: nil,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			dir := t.TempDir()
+			path := filepath.Join(dir, ".owlbot.rb")
+			if test.content != "" {
+				if err := os.WriteFile(path, []byte(test.content), 0o644); err != nil {
+					t.Fatal(err)
+				}
+			}
+			got, err := parseKeepFromOwlbotRb(path)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
