@@ -30,8 +30,14 @@ import (
 // ErrMissingRepo indicates that a repository URL is missing for a Composer tool.
 var ErrMissingRepo = errors.New("repo URL missing")
 
+// errInvalidTool indicates that a Composer tool configuration is invalid.
+var errInvalidTool = errors.New("invalid tool configuration")
+
 // Install installs a list of Composer tools into the environment.
 func Install(ctx context.Context, tools []*config.ComposerTool, phpPath, bin string) error {
+	if err := verify(tools); err != nil {
+		return err
+	}
 	for _, tool := range tools {
 		if tool.Repo == "" {
 			return fmt.Errorf("%w: composer tool %s", ErrMissingRepo, tool.Name)
@@ -79,6 +85,15 @@ func createBinWrapper(wrapperName, content, binDir string) error {
 	_ = os.Remove(wrapperPath)
 	if err := os.WriteFile(wrapperPath, []byte(content), 0o755); err != nil {
 		return fmt.Errorf("failed to write wrapper script: %w", err)
+	}
+	return nil
+}
+
+func verify(tools []*config.ComposerTool) error {
+	for _, tool := range tools {
+		if tool.Name == "" || tool.Version == "" {
+			return fmt.Errorf("%w: name and version must be specified: %+v", errInvalidTool, tool)
+		}
 	}
 	return nil
 }

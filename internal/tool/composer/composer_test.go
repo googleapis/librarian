@@ -142,3 +142,42 @@ func TestCreateBinWrapper(t *testing.T) {
 		})
 	}
 }
+
+func TestVerify(t *testing.T) {
+	tools := []*config.ComposerTool{
+		{Name: "gapic-generator-php", Version: "1.0.0"},
+	}
+	if err := verify(tools); err != nil {
+		t.Errorf("verify() error = %v, want nil", err)
+	}
+}
+
+func TestVerify_Error(t *testing.T) {
+	for _, test := range []struct {
+		name    string
+		tools   []*config.ComposerTool
+		wantErr error
+	}{
+		{
+			name: "missing name",
+			tools: []*config.ComposerTool{
+				{Name: "", Version: "1.0.0"},
+			},
+			wantErr: errInvalidTool,
+		},
+		{
+			name: "missing version",
+			tools: []*config.ComposerTool{
+				{Name: "gapic-generator-php", Version: ""},
+			},
+			wantErr: errInvalidTool,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			err := verify(test.tools)
+			if !errors.Is(err, test.wantErr) {
+				t.Errorf("verify() error = %v, wantErr = %v", err, test.wantErr)
+			}
+		})
+	}
+}
