@@ -23,7 +23,10 @@ import (
 	"github.com/iancoleman/strcase"
 )
 
-const requiresLibraryNameOverrideFormat = "Other languages with PascalCase style use different names for the %s library.\nConsider these alternatives and use library_name_override to silence this error:\n%s"
+const requiresLibraryNameOverrideFormat = `default library name for %s needs override.
+Other languages with PascalCase style deviate from the default name for this library,
+most likely, that indicates the default library name is not a good choice. Consider
+these alternatives and use library_name_override to silence this error:\n%s`
 
 // LibraryName returns the Swift library (and module) name for the API.
 func LibraryName(api *api.API, swiftCfg *config.SwiftPackage) (string, error) {
