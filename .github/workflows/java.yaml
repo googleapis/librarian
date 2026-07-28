@@ -79,22 +79,13 @@ jobs:
           java-version: "17"
           distribution: "temurin"
           cache: "maven"
-      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
-        with:
-          python-version: "3.12"
-      - name: Cache Librarian Tools & Venv
+      - name: Cache Librarian Tools
         id: cache-tools
         uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
         with:
           path: |
             ~/.cache/librarian
-            venv
-          key: librarian-java-tools-v2-${{ runner.os }}-${{ hashFiles('internal/config/**/*.go') }}-${{ hashFiles('google-cloud-java/librarian.yaml', 'google-cloud-java/sdk-platform-java/gapic-generator-java/**', 'google-cloud-java/sdk-platform-java/hermetic_build/library_generation/**') }}
-      - name: Create Python virtual environment
-        if: steps.cache-tools.outputs.cache-hit != 'true'
-        run: python3 -m venv venv
-      - name: Activate virtual environment
-        run: echo "$GITHUB_WORKSPACE/venv/bin" >> $GITHUB_PATH
+          key: librarian-java-tools-v2-${{ runner.os }}-${{ hashFiles('internal/config/**/*.go') }}-${{ hashFiles('google-cloud-java/librarian.yaml', 'google-cloud-java/sdk-platform-java/gapic-generator-java/**') }}
       - name: Verify Java and Maven installation
         if: steps.cache-tools.outputs.cache-hit != 'true'
         run: |
@@ -123,14 +114,10 @@ jobs:
       - name: Generate a single library (smoke test)
         if: matrix.task == 'smoke-test' && !(github.event_name == 'push' && github.ref == 'refs/heads/main')
         working-directory: google-cloud-java
-        env:
-          PYTHONPATH: ${{ github.workspace }}/google-cloud-java/sdk-platform-java/hermetic_build/library_generation/owlbot
         run: librarian generate secretmanager
       - name: Run librarian generate all (integration test)
         if: matrix.task == 'integration' && github.event_name == 'push' && github.ref == 'refs/heads/main'
         working-directory: google-cloud-java
-        env:
-          PYTHONPATH: ${{ github.workspace }}/google-cloud-java/sdk-platform-java/hermetic_build/library_generation/owlbot
         run: librarian generate --all
   create-issue-on-failure:
     needs: [build-and-test]

@@ -30,10 +30,6 @@ func TestInstall(t *testing.T) {
 	t.Chdir(tmpDir)
 	tempHome := t.TempDir()
 	t.Setenv("HOME", tempHome)
-	localPkgDir := filepath.Join(tmpDir, "sdk-platform-java", "hermetic_build", "library_generation")
-	if err := os.MkdirAll(localPkgDir, 0o755); err != nil {
-		t.Fatal(err)
-	}
 	localMvnDir := filepath.Join(tmpDir, "sdk-platform-java", "gapic-generator-java")
 	if err := os.MkdirAll(filepath.Join(localMvnDir, "target"), 0o755); err != nil {
 		t.Fatal(err)
@@ -74,11 +70,6 @@ func TestInstall(t *testing.T) {
 		logFilename string
 		wantArgs    string
 	}{
-		{
-			name:        "pip",
-			logFilename: "pip_invocations.log",
-			wantArgs:    "pip install PyYAML==6.0.2 jinja2==3.1.6 " + localPkgDir,
-		},
 		{
 			name:        "mvn",
 			logFilename: "mvn_invocations.log",
@@ -126,20 +117,6 @@ func TestInstall(t *testing.T) {
 				LocalPath: "sdk-platform-java/gapic-generator-java",
 				MainClass: "com.google.api.generator.Main",
 				Packaging: "jar",
-			},
-		},
-		Pip: []*config.PipTool{
-			{
-				Name:    "PyYAML",
-				Version: "6.0.2",
-			},
-			{
-				Name:    "jinja2",
-				Version: "3.1.6",
-			},
-			{
-				Name:      "synthtool",
-				LocalPath: "sdk-platform-java/hermetic_build/library_generation",
 			},
 		},
 	}

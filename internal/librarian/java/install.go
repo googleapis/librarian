@@ -27,7 +27,6 @@ import (
 	"github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/filesystem"
-	"github.com/googleapis/librarian/internal/tool/pip"
 )
 
 const (
@@ -43,17 +42,12 @@ var errNoToolsSpecified = errors.New("no tools specified in configuration")
 // - bin/ ($LIBRARIAN_BIN/java_tools/bin) stores the generated executable wrapper scripts.
 // - lib/ ($LIBRARIAN_BIN/java_tools/lib) isolates the downloaded compiled .jar/.exe files.
 func Install(ctx context.Context, tools *config.Tools) error {
-	if tools == nil || (len(tools.Maven) == 0 && len(tools.Pip) == 0) {
+	if tools == nil || len(tools.Maven) == 0 {
 		return errNoToolsSpecified
 	}
-	for _, cmd := range []string{"java", "mvn", "pip"} {
+	for _, cmd := range []string{"java", "mvn"} {
 		if _, err := exec.LookPath(cmd); err != nil {
 			return fmt.Errorf("%s is not installed or not in PATH, which is required for Java tool installation: %w", cmd, err)
-		}
-	}
-	if len(tools.Pip) > 0 {
-		if err := pip.Install(ctx, tools.Pip); err != nil {
-			return fmt.Errorf("failed to install pip tools: %w", err)
 		}
 	}
 	binDir, err := getBinDir()
