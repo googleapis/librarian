@@ -46,6 +46,16 @@ func TestInstall(t *testing.T) {
 			wantErr: ErrMissingRepo,
 		},
 		{
+			name: "invalid tool configuration",
+			tools: []*config.ComposerTool{
+				{
+					Name: "",
+					Version: "1.0.0",
+				},
+			},
+			wantErr: ErrInvalidTool,
+		},
+		{
 			name: "success",
 			tools: []*config.ComposerTool{
 				{
@@ -152,7 +162,7 @@ func TestVerify(t *testing.T) {
 	}
 }
 
-func TestVerify_Error(t *testing.T) {
+func TestVerifyError(t *testing.T) {
 	for _, test := range []struct {
 		name    string
 		tools   []*config.ComposerTool
@@ -163,14 +173,14 @@ func TestVerify_Error(t *testing.T) {
 			tools: []*config.ComposerTool{
 				{Name: "", Version: "1.0.0"},
 			},
-			wantErr: errInvalidTool,
+			wantErr: ErrInvalidTool,
 		},
 		{
 			name: "missing version",
 			tools: []*config.ComposerTool{
 				{Name: "gapic-generator-php", Version: ""},
 			},
-			wantErr: errInvalidTool,
+			wantErr: ErrInvalidTool,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
