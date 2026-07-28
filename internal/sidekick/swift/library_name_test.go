@@ -17,6 +17,7 @@ package swift
 import (
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/sidekick/api"
 )
@@ -89,5 +90,53 @@ func TestLibraryNameError(t *testing.T) {
 	got, err := LibraryName(model, nil)
 	if err == nil {
 		t.Errorf("Expected an error, got: %s", got)
+	}
+}
+
+func TestLibraryNameConflicts(t *testing.T) {
+	for _, test := range []struct {
+		name  string
+		model *api.API
+	}{
+		{
+			name:  "C#",
+			model: api.NewTestAPI(nil, nil, nil).WithCsharpNamespace("Conflict"),
+		},
+		{
+			name:  "PHP",
+			model: api.NewTestAPI(nil, nil, nil).WithPhpNamespace("Conflict"),
+		},
+		{
+			name:  "Ruby",
+			model: api.NewTestAPI(nil, nil, nil).WithRubyPackage("Conflict"),
+		},
+		{
+			name: "Multiple",
+			model: api.NewTestAPI(nil, nil, nil).
+				WithCsharpNamespace("CsharpConflict").
+				WithPhpNamespace("PHPConflict").
+				WithRubyPackage("RubyConflict"),
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got, err := LibraryName(test.model, nil)
+			if err == nil {
+				t.Errorf("expected an error, got=%+v", got)
+			}
+		})
+	}
+}
+
+func TestLibraryNameOverrideSilencesConflict(t *testing.T) {
+	model := api.NewTestAPI(nil, nil, nil).
+		WithCsharpNamespace("CsharpConflict").
+		WithPhpNamespace("PHPConflict").
+		WithRubyPackage("RubyConflict")
+	got, err := LibraryName(model, &config.SwiftPackage{LibraryNameOverride: "Override"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if diff := cmp.Diff("Override", got); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }

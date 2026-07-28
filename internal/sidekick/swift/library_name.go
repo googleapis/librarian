@@ -23,6 +23,8 @@ import (
 	"github.com/iancoleman/strcase"
 )
 
+const requiresLibraryNameOverrideFormat = "Other languages with PascalCase style use different names for the %s library.\nConsider these alternatives and use library_name_override to silence this error:\n%s"
+
 // LibraryName returns the Swift library (and module) name for the API.
 func LibraryName(api *api.API, swiftCfg *config.SwiftPackage) (string, error) {
 	if swiftCfg != nil && swiftCfg.LibraryNameOverride != "" {
@@ -31,11 +33,28 @@ func LibraryName(api *api.API, swiftCfg *config.SwiftPackage) (string, error) {
 	if api.PackageName == "" {
 		return "", fmt.Errorf("API package name must not be empty")
 	}
-	// TODO(https://github.com/googleapis/librarian/issues/6229) - use
-	// the api.PackageNamePascalCase
 	parts := strings.Split(api.PackageName, ".")
 	for i, p := range parts {
 		parts[i] = strcase.ToCamel(p)
 	}
-	return strings.Join(parts, ""), nil
+	libraryName := strings.Join(parts, "")
+	alternatives := map[string]string{
+		"C#":   strings.ReplaceAll(api.CsharpNamespace, ".", ""),
+		"PHP":  strings.ReplaceAll(api.PhpNamespace, "\\", ""),
+		"Ruby": strings.ReplaceAll(api.RubyPackage, "::", ""),
+	}
+	var messages []string
+	for lang, alt := range alternatives {
+		if alt == "" {
+			continue
+		}
+		if alt != libraryName {
+			messages = append(messages, fmt.Sprintf("%s suggests using %s", lang, alt))
+		}
+	}
+	if len(messages) != 0 {
+		return "", fmt.Errorf(requiresLibraryNameOverrideFormat, api.PackageName, strings.Join(messages, "\n"))
+	}
+
+	return libraryName, nil
 }
