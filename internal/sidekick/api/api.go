@@ -89,7 +89,7 @@ type API struct {
 	// `librarian.yaml` file.
 	PhpNamespace string
 
-	// CshapNamespace captures the namespace override for C#.
+	// CsharpNamespace captures the namespace override for C#.
 	//
 	// Normally, the Protobuf package name is capitalized element by element and
 	// then used to construct the C# namespace. For example,
