@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.3](https://github.com/googleapis/librarian/compare/v0.1.2...v0.1.3) (2026-07-28)
+
+
+### Bug Fixes
+
+* variaible shadowing bug in secretsClient ([#7098](https://github.com/googleapis/librarian/issues/7098)) ([a89c5b0](https://github.com/googleapis/librarian/commit/a89c5b05619901d402759424e84bf4644094daa6))
+
 ## [0.1.2](https://github.com/googleapis/librarian/compare/v0.1.0...v0.1.2) (2026-06-18)
 
 
