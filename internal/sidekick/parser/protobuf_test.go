@@ -2159,7 +2159,7 @@ func TestProtobuf_ParseBadFiles(t *testing.T) {
 	}
 }
 
-func newTestCodeGeneratorRequest(t *testing.T, filename string) *pluginpb.CodeGeneratorRequest {
+func newTestCodeGeneratorRequest(t *testing.T, filename ...string) *pluginpb.CodeGeneratorRequest {
 	t.Helper()
 	src := &sources.SourceConfig{
 		Sources: &sources.Sources{
@@ -2167,7 +2167,7 @@ func newTestCodeGeneratorRequest(t *testing.T, filename string) *pluginpb.CodeGe
 			ProtobufSrc: "testdata",
 		},
 		ActiveRoots: []string{"googleapis", "protobuf-src"},
-		IncludeList: []string{filename},
+		IncludeList: append([]string{}, filename...),
 	}
 	request, err := codeGeneratorRequestFromSource("testdata", src)
 	if err != nil {
