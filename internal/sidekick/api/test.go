@@ -258,6 +258,13 @@ func (m *Method) WithOperationInfo(info *OperationInfo) *Method {
 	return m
 }
 
+// WithBidiStreaming sets the method as bidirectional streaming.
+func (m *Method) WithBidiStreaming() *Method {
+	m.ClientSideStreaming = true
+	m.ServerSideStreaming = true
+	return m
+}
+
 // WithDiscoveryLro sets the discovery LRO information.
 func (m *Method) WithDiscoveryLro(info *DiscoveryLro) *Method {
 	m.DiscoveryLro = info

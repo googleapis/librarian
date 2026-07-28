@@ -32,9 +32,7 @@ func TestGenerateProstHybrid(t *testing.T) {
 	testhelper.RequireCommand(t, "cargo")
 	msg := api.NewTestMessage("Request").WithPackage("google.cloud.test.v1")
 
-	chatMethod := api.NewTestMethod("Chat").WithInput(msg).WithOutput(msg)
-	chatMethod.ClientSideStreaming = true
-	chatMethod.ServerSideStreaming = true
+	chatMethod := api.NewTestMethod("Chat").WithInput(msg).WithOutput(msg).WithBidiStreaming()
 
 	bidiService := api.NewTestService("BidiService").WithPackage("google.cloud.test.v1").WithMethods(chatMethod)
 
@@ -133,9 +131,7 @@ func TestFilterModelToStreaming(t *testing.T) {
 	streamingMsg := api.NewTestMessage("StreamMsg").WithPackage("google.test.v1")
 	unusedMsg := api.NewTestMessage("UnusedMsg").WithPackage("google.test.v1")
 
-	chatMethod := api.NewTestMethod("Chat").WithInput(streamingMsg).WithOutput(streamingMsg)
-	chatMethod.ClientSideStreaming = true
-	chatMethod.ServerSideStreaming = true
+	chatMethod := api.NewTestMethod("Chat").WithInput(streamingMsg).WithOutput(streamingMsg).WithBidiStreaming()
 
 	bidiService := api.NewTestService("BidiService").WithPackage("google.test.v1").WithMethods(chatMethod)
 	model := api.NewTestAPI([]*api.Message{streamingMsg, unusedMsg}, []*api.Enum{}, []*api.Service{bidiService})
@@ -165,9 +161,7 @@ func TestFilterModelToStreamingNonStreamingFieldLookup(t *testing.T) {
 		},
 	)
 
-	chatMethod := api.NewTestMethod("Chat").WithInput(streamMsg).WithOutput(streamMsg)
-	chatMethod.ClientSideStreaming = true
-	chatMethod.ServerSideStreaming = true
+	chatMethod := api.NewTestMethod("Chat").WithInput(streamMsg).WithOutput(streamMsg).WithBidiStreaming()
 	bidiService := api.NewTestService("BidiService").WithPackage("google.test.v1").WithMethods(chatMethod)
 
 	unaryMethod := api.NewTestMethod("UnaryMethod").WithInput(unaryReq).WithOutput(unaryReq)
@@ -203,9 +197,7 @@ func TestFilterModelToStreamingAnyError(t *testing.T) {
 			Typez:   api.TypezMessage,
 		},
 	)
-	chatAnyMethod := api.NewTestMethod("ChatAny").WithInput(anyMsg).WithOutput(anyMsg)
-	chatAnyMethod.ClientSideStreaming = true
-	chatAnyMethod.ServerSideStreaming = true
+	chatAnyMethod := api.NewTestMethod("ChatAny").WithInput(anyMsg).WithOutput(anyMsg).WithBidiStreaming()
 	anyService := api.NewTestService("AnyService").WithPackage("google.test.v1").WithMethods(chatAnyMethod)
 
 	anyModel := api.NewTestAPI([]*api.Message{anyMsg}, []*api.Enum{}, []*api.Service{anyService})
