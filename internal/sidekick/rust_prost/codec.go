@@ -30,8 +30,13 @@ type codec struct {
 	PostProcessProtos []string
 	// Most libraries are generated from `googleapis`. Rarely, we use protobuf,
 	// gapic-showcase, or a different root.
-	RootName    string
-	IncludeFile string
+	RootName string
+	// ConvertIncludePackage is the proto package name (e.g., "google.cloud.secretmanager.v1")
+	// whose include statement in `includes.rs` will be post-processed to append
+	// `include!("../convert.rs");`. When set, prost_build creates an `includes.rs` file
+	// and build.rs appends the convert module inclusion after the specified package's
+	// include line. Used for generating conversion traits in hybrid crates.
+	ConvertIncludePackage string
 }
 
 func newCodec(cfg *parser.ModelConfig) *codec {
@@ -51,8 +56,8 @@ func newCodec(cfg *parser.ModelConfig) *codec {
 			result.PostProcessProtos = strings.Split(definition, "\n")
 		case "root-name":
 			result.RootName = definition
-		case "include-file":
-			result.IncludeFile = definition
+		case "convert-include-package":
+			result.ConvertIncludePackage = definition
 		default:
 			// Ignore other options.
 		}

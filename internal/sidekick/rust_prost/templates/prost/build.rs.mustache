@@ -36,11 +36,20 @@ fn main() {
         config.disable_comments(&["."]);
         config.enable_type_names();
         config.type_name_domain(&["."], "type.googleapis.com");
-        {{#Codec.IncludeFile}}
-        config.include_file("{{.}}");
-        {{/Codec.IncludeFile}}
+        {{#Codec.ConvertIncludePackage}}
+        config.include_file("includes.rs");
+        {{/Codec.ConvertIncludePackage}}
         config.out_dir(&destination);
         config.compile_protos(files, &includes).expect("error compiling protos");
+        {{#Codec.ConvertIncludePackage}}
+        let name = format!("{destination}/includes.rs");
+        let content = std::fs::read_to_string(&name).expect("error reading includes.rs");
+        let content = content.replace(
+            "include!(\"{{Codec.ConvertIncludePackage}}.rs\");",
+            "include!(\"{{Codec.ConvertIncludePackage}}.rs\");\n            include!(\"../convert.rs\");",
+        );
+        std::fs::write(&name, content).expect("error writing includes.rs");
+        {{/Codec.ConvertIncludePackage}}
         {{#Codec.PostProcessProtos}}
         {{{.}}}
         {{/Codec.PostProcessProtos}}

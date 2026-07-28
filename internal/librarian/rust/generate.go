@@ -123,16 +123,7 @@ func generateProstHybrid(ctx context.Context, model *api.API, library *config.Li
 	if hybridConfig.Codec == nil {
 		hybridConfig.Codec = make(map[string]string)
 	}
-	hybridConfig.Codec["include-file"] = "includes.rs"
-	postProcess := fmt.Sprintf(`let name = format!("{destination}/includes.rs");
-let content = std::fs::read_to_string(&name).expect("error reading includes.rs");
-let content = content.replace("include!(\"%s.rs\");", "include!(\"%s.rs\");\n            include!(\"../convert.rs\");");
-std::fs::write(&name, content).expect("error writing includes.rs");`, model.PackageName, model.PackageName)
-	if existing, ok := hybridConfig.Codec["post-process-protos"]; ok && existing != "" {
-		hybridConfig.Codec["post-process-protos"] = existing + "\n" + postProcess
-	} else {
-		hybridConfig.Codec["post-process-protos"] = postProcess
-	}
+	hybridConfig.Codec["convert-include-package"] = model.PackageName
 	prostOutDir := filepath.Join(outdir, "src", "prost")
 	if err := rust_prost.Generate(ctx, hybridModel, prostOutDir, "prost", &hybridConfig); err != nil {
 		return fmt.Errorf("generating prost module: %w", err)
