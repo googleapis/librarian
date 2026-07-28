@@ -496,7 +496,7 @@ var descriptorpbToTypez = map[descriptorpb.FieldDescriptorProto_Type]api.Typez{
 
 // protobufUpdateFileOption validates an update of `current` to `got`.
 //
-// This returns an error if `current` != "" and `current` != got
+// This returns an error if `current` != "" and `current` != got.
 func protobufUpdateFileOption(current, got string) (string, error) {
 	if current == "" {
 		return got, nil
