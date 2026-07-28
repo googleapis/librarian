@@ -36,16 +36,6 @@ func TestInstall(t *testing.T) {
 		check   func(t *testing.T, binDir string)
 	}{
 		{
-			name: "missing repo URL",
-			tools: []*config.ComposerTool{
-				{
-					Name:    "gapic-generator-php",
-					Version: "1.0.0",
-				},
-			},
-			wantErr: ErrMissingRepo,
-		},
-		{
 			name: "invalid tool configuration",
 			tools: []*config.ComposerTool{
 				{
@@ -98,9 +88,9 @@ func TestInstall(t *testing.T) {
 			if test.setup != nil {
 				test.setup(t, binDir)
 			}
-			err := Install(t.Context(), test.tools, "php", binDir)
-			if !errors.Is(err, test.wantErr) {
-				t.Fatalf("Install() error = %v, wantErr = %v", err, test.wantErr)
+			gotErr := Install(t.Context(), test.tools, "php", binDir)
+			if !errors.Is(gotErr, test.wantErr) {
+				t.Fatalf("Install() error = %v, wantErr = %v", gotErr, test.wantErr)
 			}
 			if test.check != nil {
 				test.check(t, binDir)
@@ -191,9 +181,9 @@ func TestVerify_Error(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			err := verify(test.tools)
-			if !errors.Is(err, test.wantErr) {
-				t.Errorf("verify() error = %v, wantErr = %v", err, test.wantErr)
+			gotErr := verify(test.tools)
+			if !errors.Is(gotErr, test.wantErr) {
+				t.Errorf("verify() error = %v, wantErr = %v", gotErr, test.wantErr)
 			}
 		})
 	}

@@ -27,11 +27,13 @@ import (
 	"github.com/googleapis/librarian/internal/fetch"
 )
 
-// ErrMissingRepo indicates that a repository URL is missing for a Composer tool.
-var ErrMissingRepo = errors.New("repo URL missing")
+var (
+	// ErrMissingRepo indicates that a repository URL is missing for a Composer tool.
+	ErrMissingRepo = errors.New("repo URL missing")
 
-// ErrInvalidTool indicates that a Composer tool configuration is invalid.
-var ErrInvalidTool = errors.New("invalid tool configuration")
+	// ErrInvalidTool indicates that a Composer tool configuration is invalid.
+	ErrInvalidTool = errors.New("invalid tool configuration")
+)
 
 // Install installs a list of Composer tools into the environment.
 func Install(ctx context.Context, tools []*config.ComposerTool, phpPath, bin string) error {
