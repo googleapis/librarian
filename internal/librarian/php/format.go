@@ -16,12 +16,48 @@ package php
 
 import (
 	"context"
+	"fmt"
+	"os"
+	"path/filepath"
 
+	"github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/librarian/nodejs"
 )
 
 // Format formats a generated PHP library.
 func Format(ctx context.Context, library *config.Library) error {
-	// TODO(https://github.com/googleapis/librarian/issues/6629): implement PHP formatting
-	return nil
+	nodeInstallDir, err := nodejs.InstallDir()
+	if err != nil {
+		return err
+	}
+	prettierPath := filepath.Join(nodeInstallDir, "bin", "prettier")
+	if _, err := os.Stat(prettierPath); err != nil {
+		return fmt.Errorf("prettier not found at %s: %w", prettierPath, err)
+	}
+
+	outdir, err := filepath.Abs(library.Output)
+	if err != nil {
+		return fmt.Errorf("failed to resolve output directory path: %w", err)
+	}
+
+	binDir := filepath.Dir(prettierPath)
+	env := map[string]string{
+		"PATH": binDir + string(os.PathListSeparator) + os.Getenv("PATH"),
+	}
+
+	// In pnpm 8, global packages are installed in PNPM_HOME/global/5.
+	// In librarian, PNPM_HOME is configured to nodeInstallDir/bin.
+	// Note: pnpm 9+ uses hashed directories for global packages, which is not supported by this path resolution.
+	pluginPath := filepath.Join(nodeInstallDir, "bin", "global", "5", "node_modules", "@prettier", "plugin-php")
+
+	// Run prettier '**/Client/*' --write --parser=php --single-quote --print-width=120 --plugin=<pluginPath>
+	return command.RunInDirWithEnv(ctx, outdir, env, prettierPath,
+		"**/Client/*",
+		"--write",
+		"--parser=php",
+		"--single-quote",
+		"--print-width=120",
+		"--plugin="+pluginPath,
+	)
 }
