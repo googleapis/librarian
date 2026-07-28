@@ -39,7 +39,7 @@ func generateProstHybrid(ctx context.Context, model *api.API, library *config.Li
 		return nil
 	}
 
-	hybridModel, err := filterModelToStreaming(model)
+	hybridModel, unusedTypes, err := filterModelToStreaming(model)
 	if err != nil {
 		return err
 	}
@@ -50,6 +50,9 @@ func generateProstHybrid(ctx context.Context, model *api.API, library *config.Li
 		hybridConfig.Codec = make(map[string]string)
 	}
 	hybridConfig.Codec["convert-include-package"] = model.PackageName
+	if len(unusedTypes) > 0 {
+		hybridConfig.Codec["unused-types"] = strings.Join(unusedTypes, "\n")
+	}
 	prostOutDir := filepath.Join(outdir, "src", "prost")
 	if err := rust_prost.Generate(ctx, hybridModel, prostOutDir, "prost", &hybridConfig); err != nil {
 		return fmt.Errorf("generating prost module: %w", err)
@@ -66,9 +69,10 @@ func generateProstHybrid(ctx context.Context, model *api.API, library *config.Li
 }
 
 // filterModelToStreaming constructs a hybrid api.API model containing only
-// bidirectional streaming RPC types for prost conversion generation.
-// Errors if Any is encountered.
-func filterModelToStreaming(model *api.API) (*api.API, error) {
+// bidirectional streaming RPC types for prost conversion generation. It also returns
+// a sorted slice of all non-WKT unused type IDs to exclude via prost_build extern_path.
+// Errors if Any is encountered in the streaming reachability path.
+func filterModelToStreaming(model *api.API) (*api.API, []string, error) {
 	type streamingTypeItem struct {
 		id       string
 		rpc      string
@@ -122,7 +126,7 @@ func filterModelToStreaming(model *api.API) (*api.API, error) {
 		}
 
 		if isAnyType(item.id) {
-			return nil, anyError(item.path)
+			return nil, nil, anyError(item.path)
 		}
 
 		msg := model.Message(item.id)
@@ -131,7 +135,7 @@ func filterModelToStreaming(model *api.API) (*api.API, error) {
 			for _, f := range msg.Fields {
 				fieldPath := item.path + "." + f.Name
 				if isAnyType(f.TypezID) {
-					return nil, anyError(fieldPath)
+					return nil, nil, anyError(fieldPath)
 				}
 				if f.Typez == api.TypezMessage && f.TypezID != "" {
 					queue = append(queue, streamingTypeItem{
@@ -149,7 +153,7 @@ func filterModelToStreaming(model *api.API) (*api.API, error) {
 				for _, f := range o.Fields {
 					fieldPath := item.path + "." + o.Name + "." + f.Name
 					if isAnyType(f.TypezID) {
-						return nil, anyError(fieldPath)
+						return nil, nil, anyError(fieldPath)
 					}
 					if f.Typez == api.TypezMessage && f.TypezID != "" {
 						queue = append(queue, streamingTypeItem{
@@ -206,9 +210,27 @@ func filterModelToStreaming(model *api.API) (*api.API, error) {
 	for _, r := range hybridModel.ResourceDefinitions {
 		hybridModel.AddResource(r)
 	}
-	return &hybridModel, nil
+
+	var unusedTypes []string
+	for m := range model.AllMessages() {
+		if m.ID != "" && !isWKT(m.ID) && !streamingMsgs[m.ID] {
+			unusedTypes = append(unusedTypes, m.ID)
+		}
+	}
+	for e := range model.AllEnums() {
+		if e.ID != "" && !isWKT(e.ID) && !streamingEnums[e.ID] {
+			unusedTypes = append(unusedTypes, e.ID)
+		}
+	}
+	slices.Sort(unusedTypes)
+
+	return &hybridModel, slices.Compact(unusedTypes), nil
 }
 
 func isAnyType(id string) bool {
 	return strings.TrimPrefix(id, ".") == "google.protobuf.Any"
+}
+
+func isWKT(id string) bool {
+	return strings.HasPrefix(strings.TrimPrefix(id, "."), "google.protobuf.")
 }

@@ -36,6 +36,9 @@ fn main() {
         config.disable_comments(&["."]);
         config.enable_type_names();
         config.type_name_domain(&["."], "type.googleapis.com");
+        {{#Codec.UnusedTypes}}
+        config.extern_path("{{{.}}}", "crate::prost::unused::NonexistentType");
+        {{/Codec.UnusedTypes}}
         {{#Codec.ConvertIncludePackage}}
         config.include_file("includes.rs");
         {{/Codec.ConvertIncludePackage}}

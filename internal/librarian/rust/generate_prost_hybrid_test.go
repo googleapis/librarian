@@ -136,13 +136,16 @@ func TestFilterModelToStreaming(t *testing.T) {
 	bidiService := api.NewTestService("BidiService").WithPackage("google.test.v1").WithMethods(chatMethod)
 	model := api.NewTestAPI([]*api.Message{streamingMsg, unusedMsg}, []*api.Enum{}, []*api.Service{bidiService})
 
-	filtered, err := filterModelToStreaming(model)
+	filtered, unused, err := filterModelToStreaming(model)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
 	if len(filtered.Messages) != 1 || filtered.Messages[0].ID != streamingMsg.ID {
 		t.Errorf("got messages %v, want [%s]", filtered.Messages, streamingMsg.ID)
+	}
+	if len(unused) != 1 || unused[0] != unusedMsg.ID {
+		t.Errorf("got unused %v, want [%s]", unused, unusedMsg.ID)
 	}
 
 	if got := filtered.Message(unusedMsg.ID); got != unusedMsg {
@@ -169,7 +172,7 @@ func TestFilterModelToStreamingNonStreamingFieldLookup(t *testing.T) {
 
 	model := api.NewTestAPI([]*api.Message{streamMsg, unaryReq, childData}, []*api.Enum{}, []*api.Service{bidiService, unaryService})
 
-	filtered, err := filterModelToStreaming(model)
+	filtered, _, err := filterModelToStreaming(model)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -202,7 +205,7 @@ func TestFilterModelToStreamingAnyError(t *testing.T) {
 
 	anyModel := api.NewTestAPI([]*api.Message{anyMsg}, []*api.Enum{}, []*api.Service{anyService})
 
-	_, err := filterModelToStreaming(anyModel)
+	_, _, err := filterModelToStreaming(anyModel)
 	if err == nil {
 		t.Fatal("expected error for google.protobuf.Any, got nil")
 	}

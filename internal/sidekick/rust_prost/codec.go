@@ -37,6 +37,10 @@ type codec struct {
 	// and build.rs appends the convert module inclusion after the specified package's
 	// include line. Used for generating conversion traits in hybrid crates.
 	ConvertIncludePackage string
+	// UnusedTypes is a list of proto type IDs that are not used in streaming RPCs.
+	// They are configured with prost_build's extern_path to be mapped to a nonexistent
+	// type so prost omits them from generation.
+	UnusedTypes []string
 }
 
 func newCodec(cfg *parser.ModelConfig) *codec {
@@ -58,6 +62,10 @@ func newCodec(cfg *parser.ModelConfig) *codec {
 			result.RootName = definition
 		case "convert-include-package":
 			result.ConvertIncludePackage = definition
+		case "unused-types":
+			if definition != "" {
+				result.UnusedTypes = strings.Split(definition, "\n")
+			}
 		default:
 			// Ignore other options.
 		}
