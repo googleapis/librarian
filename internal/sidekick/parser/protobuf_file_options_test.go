@@ -23,7 +23,7 @@ import (
 	"github.com/googleapis/librarian/internal/sidekick/api"
 )
 
-func TestProtobufFileOptions(t *testing.T) {
+func TestProtobuf_FileOptions(t *testing.T) {
 	requireProtoc(t)
 
 	serviceConfig := &serviceconfig.Service{
@@ -46,7 +46,7 @@ func TestProtobufFileOptions(t *testing.T) {
 	}
 }
 
-func TestProtobufInconsistentFileOptions(t *testing.T) {
+func TestProtobuf_InconsistentFileOptions(t *testing.T) {
 	requireProtoc(t)
 
 	for _, test := range []struct {
@@ -76,5 +76,35 @@ func TestProtobufInconsistentFileOptions(t *testing.T) {
 				t.Errorf("expected an error, got=%+v", model)
 			}
 		})
+	}
+}
+
+func TestProtobuf_UpdateFileOption(t *testing.T) {
+	for _, test := range []struct {
+		name    string
+		current string
+		update  string
+		want    string
+	}{
+		{"initial", "", "Value", "Value"},
+		{"no update", "Value", "", "Value"},
+		{"matches", "Value", "Value", "Value"},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got, err := protobufUpdateFileOption(test.current, test.update)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestProtobuf_UpdateFileOptionError(t *testing.T) {
+	got, err := protobufUpdateFileOption("Value", "InconsistentValue")
+	if err == nil {
+		t.Errorf("expected an error, got=%s", got)
 	}
 }

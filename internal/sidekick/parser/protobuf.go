@@ -504,6 +504,9 @@ func protobufUpdateFileOption(current, got string) (string, error) {
 	if current == got {
 		return got, nil
 	}
+	if got == "" {
+		return current, nil
+	}
 	return "", fmt.Errorf("mismatched file option value, want=%s got=%s", current, got)
 }
 
