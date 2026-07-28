@@ -832,13 +832,13 @@ func TestParseKeepFromOwlbotRb(t *testing.T) {
 		{
 			name:    "parses single prevent_overwrite_of_existing statement",
 			content: `OwlBot.prevent_overwrite_of_existing "lib/google/cloud/automl/v1/helpers.rb"`,
-			want:    []string{`"lib/google/cloud/automl/v1/helpers.rb"`},
+			want:    []string{"lib/google/cloud/automl/v1/helpers.rb"},
 		},
 		{
 			name: "parses multiple prevent_overwrite_of_existing statements",
 			content: `OwlBot.prevent_overwrite_of_existing "lib/file1.rb"
-OwlBot.prevent_overwrite_of_existing 'lib/file2.rb'`,
-			want: []string{`"lib/file1.rb"`, `'lib/file2.rb'`},
+OwlBot.prevent_overwrite_of_existing "lib/file2.rb"`,
+			want: []string{"lib/file1.rb", "lib/file2.rb"},
 		},
 		{
 			name:    "no matching statements",

@@ -464,7 +464,10 @@ func parseKeepFromOwlbotRb(path string) ([]string, error) {
 	var keep []string
 	for line := range strings.SplitSeq(string(data), "\n") {
 		if keepFile, ok := strings.CutPrefix(line, "OwlBot.prevent_overwrite_of_existing"); ok {
-			keep = append(keep, strings.TrimSpace(keepFile))
+			keepFile = strings.TrimSpace(keepFile)
+			keepFile, _ = strings.CutPrefix(keepFile, "\"")
+			keepFile, _ = strings.CutSuffix(keepFile, "\"")
+			keep = append(keep, keepFile)
 		}
 	}
 	return keep, nil
