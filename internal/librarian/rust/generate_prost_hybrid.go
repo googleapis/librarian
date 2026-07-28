@@ -41,7 +41,7 @@ func generateProstHybrid(ctx context.Context, model *api.API, library *config.Li
 
 	hybridModel, err := filterModelToStreaming(model)
 	if err != nil {
-		return fmt.Errorf("filtering model for streaming: %w", err)
+		return err
 	}
 
 	hybridConfig := *modelConfig
@@ -179,9 +179,9 @@ func filterModelToStreaming(model *api.API) (*api.API, error) {
 		Title:       model.Title,
 		Description: model.Description,
 		Revision:    model.Revision,
-		Services:    model.Services,
-		// Messages and Enums slices are filtered to only streaming types so convert.rs
+		// Services, Messages and Enums slices are filtered to only streaming types so convert.rs
 		// only contains conversion implementations for streaming RPCs.
+		Services:            language.FilterSlice(model.Services, (*api.Service).HasBidiStreaming),
 		Messages:            language.FilterSlice(model.Messages, func(m *api.Message) bool { return streamingMsgs[m.ID] }),
 		Enums:               language.FilterSlice(model.Enums, func(e *api.Enum) bool { return streamingEnums[e.ID] }),
 		ResourceDefinitions: model.ResourceDefinitions,

@@ -180,6 +180,9 @@ func TestFilterModelToStreamingNonStreamingFieldLookup(t *testing.T) {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
+	if len(filtered.Services) != 1 || filtered.Services[0].ID != bidiService.ID {
+		t.Errorf("got services %v, want [%s]", filtered.Services, bidiService.ID)
+	}
 	if len(filtered.Messages) != 1 || filtered.Messages[0].ID != streamMsg.ID {
 		t.Errorf("got messages %v, want [%s]", filtered.Messages, streamMsg.ID)
 	}
