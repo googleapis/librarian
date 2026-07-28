@@ -23,10 +23,9 @@ import (
 	"path/filepath"
 
 	"github.com/googleapis/librarian/internal/cache"
-	"github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/config"
-	"github.com/googleapis/librarian/internal/fetch"
 	"github.com/googleapis/librarian/internal/librarian/nodejs"
+	"github.com/googleapis/librarian/internal/tool/composer"
 	"github.com/googleapis/librarian/internal/tool/pip"
 )
 
@@ -37,7 +36,6 @@ const (
 )
 
 var (
-	errMissingRepo     = errors.New("repo URL missing")
 	errMissingTools    = errors.New("tools configuration is missing")
 	errMissingComposer = errors.New("tools.composer configuration is missing")
 	errMissingPip      = errors.New("tools.pip configuration is missing")
@@ -72,37 +70,8 @@ func Install(ctx context.Context, tools *config.Tools) error {
 		return fmt.Errorf("failed to create bin directory: %w", err)
 	}
 
-	for _, tool := range tools.Composer {
-		if tool.Repo == "" {
-			return fmt.Errorf("%w: composer tool %s", errMissingRepo, tool.Name)
-		}
-		dir, err := fetch.Repo(ctx, tool.Repo, tool.Version, tool.SHA256)
-		if err != nil {
-			return fmt.Errorf("fetching %s: %w", tool.Name, err)
-		}
-		if err := command.RunInDir(ctx, dir, "composer", "install", "--no-interaction", "--prefer-dist"); err != nil {
-			return fmt.Errorf("failed to run composer install: %w", err)
-		}
-
-		wrapperName := filepath.Base(tool.Repo)
-
-		if wrapperName == "gapic-generator-php" {
-			// Currently, this assumes the tool is the gapic-generator-php. This specific
-			// wrapper logic will not work for generic Composer tools because:
-			// 1. It hardcodes the executable entry point to "src/Main.php" (ignoring Composer's vendor/bin/ paths).
-			// 2. It injects specific PHP configurations (e.g. memory_limit=1024M) required to prevent the generator from crashing.
-			// See https://github.com/googleapis/gapic-generator-php/commit/685b419f2220e2d19c74e7f1464067f995cf1a95
-			// 3. It automatically injects the "--side_loaded_root_dir" argument which other tools will not expect.
-			// (this argument is to pass through relative paths for config files)
-			// TODO(https://github.com/googleapis/librarian/issues/7000): Remove the --side_loaded_root_dir once we pass full paths to generator
-			destPath := filepath.Join(dir, "src", "Main.php")
-			wrapperContent := phpWrapperContent(phpPath, destPath)
-			if err := createBinWrapper(wrapperName, wrapperContent, bin); err != nil {
-				return err
-			}
-		} else {
-			return fmt.Errorf("tool installation for non-generator composer tools is not yet supported")
-		}
+	if err := composer.Install(ctx, tools.Composer, phpPath, bin); err != nil {
+		return err
 	}
 	// The PHP client library generation process relies on Python-based
 	// tools (such as synthtool or owlbot) for post-processing and generation.
@@ -148,22 +117,4 @@ func binDir() (string, error) {
 		return "", err
 	}
 	return filepath.Join(installDir, "bin"), nil
-}
-
-// phpWrapperContent generates the bash script content for the PHP tool wrapper.
-func phpWrapperContent(phpExecutable, entrypoint string) string {
-	return fmt.Sprintf("#!/bin/bash\nexec %q -d display_errors=stderr -d memory_limit=1024M %q --side_loaded_root_dir \"$GOOGLEAPIS_DIR\" \"$@\"\n", phpExecutable, entrypoint)
-}
-
-// createBinWrapper creates a shell wrapper script in the bin directory that forwards executions to the tool.
-func createBinWrapper(wrapperName, content, binDir string) error {
-	wrapperPath := filepath.Join(binDir, wrapperName)
-	if err := os.MkdirAll(filepath.Dir(wrapperPath), 0o755); err != nil {
-		return fmt.Errorf("failed to create directory for wrapper: %w", err)
-	}
-	_ = os.Remove(wrapperPath)
-	if err := os.WriteFile(wrapperPath, []byte(content), 0o755); err != nil {
-		return fmt.Errorf("failed to write wrapper script: %w", err)
-	}
-	return nil
 }
