@@ -739,22 +739,32 @@ func TestGenerateService_LRO(t *testing.T) {
 	}
 
 	filename := filepath.Join(outDir, "Sources", "GoogleCloudWorkflowsV1", "WorkflowsService.swift")
-	content, err := os.ReadFile(filename)
+	contentBytes, err := os.ReadFile(filename)
 	if err != nil {
 		t.Fatal(err)
 	}
-	contentStr := string(content)
+	content := string(contentBytes)
 
 	wantContains := []string{
 		"import GoogleRpc",
 		"public func createWorkflow(withPolling: CreateWorkflowRequest) async throws -> any GoogleCloudGax.PollableOperation<Workflow>",
-		"GoogleCloudGax._PollableOperationImpl(initialState: initialState, poll: poll)",
 		"self.getOperation(request: .init().with { $0.name = rawOp.name }, options: options)",
 	}
 	for _, want := range wantContains {
-		if !strings.Contains(contentStr, want) {
-			t.Errorf("expected %q in WorkflowsService.swift, got:\n%s", want, contentStr)
+		if !strings.Contains(content, want) {
+			t.Errorf("expected %q in WorkflowsService.swift, got:\n%s", want, content)
 		}
+	}
+
+	got := extractBlock(t, content, "GoogleCloudGax._PollableOperationImpl(", "\n    )")
+	want := `GoogleCloudGax._PollableOperationImpl(
+      initialState: initialState,
+      polling: options.pollingErrorPolicy ?? self.pollingErrorPolicy,
+      backoff: options.pollingBackoffPolicy ?? self.pollingBackoffPolicy,
+      poll: poll,
+    )`
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
 

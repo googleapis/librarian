@@ -150,6 +150,12 @@ func TestAnnotateService_SkipNoBindings(t *testing.T) {
 	}
 
 	serviceCodec := service.Codec.(*serviceAnnotations)
+	if serviceCodec == nil {
+		t.Fatalf("mismatched service annotations, got=%T", service.Codec)
+	}
+	if serviceCodec.HasLROs() {
+		t.Errorf("expected HasLROs() == false, annotations=%+v", serviceCodec)
+	}
 	var gotNames []string
 	for _, m := range serviceCodec.RestMethods {
 		gotNames = append(gotNames, m.Name)
@@ -359,6 +365,12 @@ func TestAnnotateService_LRO(t *testing.T) {
 	}
 
 	annotations := service.Codec.(*serviceAnnotations)
+	if annotations == nil {
+		t.Fatalf("expected `serviceAnnotations`, got=%T", service.Codec)
+	}
+	if !annotations.HasLROs() {
+		t.Errorf("expected HasLROs() == true, annotations=%+v", annotations)
+	}
 	wantImports := []string{"GoogleCloudExternal", "GoogleCloudWkt", "GoogleLongrunning", "GoogleRpc"}
 	if diff := cmp.Diff(wantImports, annotations.ServiceImports()); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)

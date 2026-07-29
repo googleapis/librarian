@@ -78,6 +78,14 @@ func (ann *serviceAnnotations) SnippetImports() []string {
 	return result
 }
 
+// HasLROs returns true if one of the methods is an LRO.
+func (ann *serviceAnnotations) HasLROs() bool {
+	return slices.ContainsFunc(ann.RestMethods, func(m *api.Method) bool {
+		ma := m.Codec.(*methodAnnotations)
+		return ma != nil && (ma.LRO != nil || ma.DiscoveryLRO != nil)
+	})
+}
+
 func (c *codec) annotateService(service *api.Service, model *modelAnnotations) (*serviceAnnotations, error) {
 	docLines, err := c.formatDocumentation(service.Documentation, service.Scopes())
 	if err != nil {
