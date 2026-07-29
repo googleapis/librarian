@@ -197,6 +197,16 @@ func TestInstall_LocalPath(t *testing.T) {
 	if err := Install(t.Context(), tools, "php", binDir); err != nil {
 		t.Fatalf("Install() with LocalPath error = %v", err)
 	}
+	wrapperPath := filepath.Join(binDir, "gapic-generator-php")
+	b, err := os.ReadFile(wrapperPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	destPath := filepath.Join(localDir, "src", "Main.php")
+	want := phpWrapperContent("php", destPath)
+	if diff := cmp.Diff(want, string(b)); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
 }
 
 func TestInstall_LocalPath_Error(t *testing.T) {
