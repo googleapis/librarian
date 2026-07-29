@@ -69,10 +69,8 @@ func Generate(ctx context.Context, cfg *config.Config, library *config.Library, 
 		pc = cfg.Tools.Protoc
 	}
 
-	// TODO(https://github.com/googleapis/librarian/issues/6885): Implement main client gem wrapper generation
-	// for libraries configured with `ruby.wrapper_of`.
 	for _, api := range library.APIs {
-		if err := generateAPI(ctx, api, library.Name, pc, googleapisDir, tempDir); err != nil {
+		if err := generateAPI(ctx, api, library, cfg, pc, googleapisDir, tempDir); err != nil {
 			return fmt.Errorf("api %q: %w", api.Path, err)
 		}
 	}
@@ -86,7 +84,7 @@ func Generate(ctx context.Context, cfg *config.Config, library *config.Library, 
 	return nil
 }
 
-func generateAPI(ctx context.Context, api *config.API, gemName string, pc *config.Protoc, googleapisDir, stagingDir string) error {
+func generateAPI(ctx context.Context, api *config.API, library *config.Library, cfg *config.Config, pc *config.Protoc, googleapisDir, stagingDir string) error {
 	additionalProtos := []string{commonResourcesProto}
 	if api.Ruby != nil {
 		additionalProtos = append(additionalProtos, api.Ruby.AdditionalProtos...)
@@ -95,7 +93,7 @@ func generateAPI(ctx context.Context, api *config.API, gemName string, pc *confi
 	if err != nil {
 		return err
 	}
-	gapicOpts, err := buildGAPICOpts(api, gemName, googleapisDir)
+	gapicOpts, err := buildGAPICOpts(api, library, cfg, googleapisDir)
 	if err != nil {
 		return err
 	}
@@ -142,7 +140,7 @@ func generateAPI(ctx context.Context, api *config.API, gemName string, pc *confi
 	return nil
 }
 
-func buildGAPICOpts(api *config.API, gemName, googleapisDir string) ([]string, error) {
+func buildGAPICOpts(api *config.API, library *config.Library, cfg *config.Config, googleapisDir string) ([]string, error) {
 	sc, err := serviceconfig.Find(googleapisDir, api.Path, config.LanguageRuby)
 	if err != nil {
 		return nil, err
@@ -152,8 +150,8 @@ func buildGAPICOpts(api *config.API, gemName, googleapisDir string) ([]string, e
 		return nil, err
 	}
 	var opts []string
-	if gemName != "" {
-		opts = append(opts, "ruby-cloud-gem-name="+gemName)
+	if library != nil && library.Name != "" {
+		opts = append(opts, "ruby-cloud-gem-name="+library.Name)
 	}
 	if sc != nil && sc.ServiceConfig != "" {
 		opts = append(opts, "service-yaml="+filepath.Join(googleapisDir, sc.ServiceConfig))
@@ -182,7 +180,41 @@ func buildGAPICOpts(api *config.API, gemName, googleapisDir string) ([]string, e
 			opts = append(opts, "ruby-cloud-migration-version="+api.Ruby.RubyCloudOpts.MigrationVersion)
 		}
 	}
+	if library != nil && library.Ruby != nil && len(library.Ruby.WrapperOf) > 0 {
+		wrapperOfOpt := buildWrapperOfOpt(cfg, library.Ruby.WrapperOf)
+		if wrapperOfOpt != "" {
+			opts = append(opts, "ruby-cloud-wrapper-of="+wrapperOfOpt)
+		}
+	}
 	return opts, nil
+}
+
+func buildWrapperOfOpt(cfg *config.Config, wrapperOf []string) string {
+	var parts []string
+	for _, raw := range wrapperOf {
+		target, minVersion, hasVersion := strings.Cut(raw, ":")
+		if !hasVersion {
+			minVersion = "0.0"
+		}
+		apiVersion := ""
+		if cfg != nil {
+			for _, lib := range cfg.Libraries {
+				if lib.Name == target && len(lib.APIs) > 0 {
+					apiVersion = filepath.Base(lib.APIs[0].Path)
+					break
+				}
+			}
+		}
+		if apiVersion == "" {
+			if idx := strings.LastIndex(target, "-"); idx != -1 {
+				apiVersion = target[idx+1:]
+			} else {
+				apiVersion = target
+			}
+		}
+		parts = append(parts, apiVersion+":"+minVersion)
+	}
+	return strings.Join(parts, ";")
 }
 
 func transport(sc *serviceconfig.API) serviceconfig.Transport {

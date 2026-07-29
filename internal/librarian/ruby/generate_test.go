@@ -40,7 +40,8 @@ func TestBuildGAPICOpts(t *testing.T) {
 	for _, test := range []struct {
 		name    string
 		api     *config.API
-		gemName string
+		library *config.Library
+		cfg     *config.Config
 		want    []string
 	}{
 		{
@@ -48,7 +49,9 @@ func TestBuildGAPICOpts(t *testing.T) {
 			api: &config.API{
 				Path: "google/cloud/secretmanager/v1",
 			},
-			gemName: "google-cloud-secret_manager-v1",
+			library: &config.Library{
+				Name: "google-cloud-secret_manager-v1",
+			},
 			want: []string{
 				"ruby-cloud-gem-name=google-cloud-secret_manager-v1",
 				"service-yaml=" + filepath.Join(googleapisDir, "google/cloud/secretmanager/v1/secretmanager_v1.yaml"),
@@ -63,7 +66,9 @@ func TestBuildGAPICOpts(t *testing.T) {
 			api: &config.API{
 				Path: "google/cloud/compute/v1",
 			},
-			gemName: "google-cloud-compute-v1",
+			library: &config.Library{
+				Name: "google-cloud-compute-v1",
+			},
 			want: []string{
 				"ruby-cloud-gem-name=google-cloud-compute-v1",
 				"service-yaml=" + filepath.Join(googleapisDir, "google/cloud/compute/v1/compute_v1.yaml"),
@@ -82,7 +87,9 @@ func TestBuildGAPICOpts(t *testing.T) {
 					},
 				},
 			},
-			gemName: "google-cloud-secret_manager",
+			library: &config.Library{
+				Name: "google-cloud-secret_manager",
+			},
 			want: []string{
 				"ruby-cloud-gem-name=google-cloud-secret_manager",
 				"service-yaml=" + filepath.Join(googleapisDir, "google/cloud/secretmanager/v1/secretmanager_v1.yaml"),
@@ -93,9 +100,40 @@ func TestBuildGAPICOpts(t *testing.T) {
 				"ruby-cloud-migration-version=1.0",
 			},
 		},
+		{
+			name: "wrapper library with wrapper_of option",
+			api: &config.API{
+				Path: "google/cloud/secretmanager/v1",
+			},
+			library: &config.Library{
+				Name: "google-cloud-secret_manager",
+				Ruby: &config.RubyPackage{
+					WrapperOf: []string{"google-cloud-secret_manager-v1:0.29"},
+				},
+			},
+			cfg: &config.Config{
+				Libraries: []*config.Library{
+					{
+						Name: "google-cloud-secret_manager-v1",
+						APIs: []*config.API{
+							{Path: "google/cloud/secretmanager/v1"},
+						},
+					},
+				},
+			},
+			want: []string{
+				"ruby-cloud-gem-name=google-cloud-secret_manager",
+				"service-yaml=" + filepath.Join(googleapisDir, "google/cloud/secretmanager/v1/secretmanager_v1.yaml"),
+				"ruby-cloud-description=Stores sensitive data such as API keys\\, passwords\\, and certificates.\nProvides convenience while improving security.",
+				"grpc-service-config=" + filepath.Join(googleapisDir, "google/cloud/secretmanager/v1/secretmanager_grpc_service_config.json"),
+				"ruby-cloud-generate-transports=grpc;rest",
+				"ruby-cloud-rest-numeric-enums=true",
+				"ruby-cloud-wrapper-of=v1:0.29",
+			},
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got, err := buildGAPICOpts(test.api, test.gemName, googleapisDir)
+			got, err := buildGAPICOpts(test.api, test.library, test.cfg, googleapisDir)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -479,9 +517,9 @@ func TestGenerateAPI(t *testing.T) {
 	}
 	stagingDir := t.TempDir()
 	api := &config.API{Path: "google/cloud/secretmanager/v1"}
-	gemName := "google-cloud-secret_manager-v1"
+	library := &config.Library{Name: "google-cloud-secret_manager-v1"}
 
-	err = generateAPI(t.Context(), api, gemName, nil, googleapisDir, stagingDir)
+	err = generateAPI(t.Context(), api, library, nil, nil, googleapisDir, stagingDir)
 	if err != nil {
 		t.Fatalf("generateAPI() error = %v", err)
 	}
@@ -505,9 +543,68 @@ func TestGenerateAPI_Error(t *testing.T) {
 		t.Fatal(err)
 	}
 	api := &config.API{Path: "non/existent/path"}
-	err = generateAPI(t.Context(), api, "gem-name", nil, googleapisDir, t.TempDir())
+	library := &config.Library{Name: "gem-name"}
+	err = generateAPI(t.Context(), api, library, nil, nil, googleapisDir, t.TempDir())
 	if err == nil {
 		t.Error("generateAPI() error = nil, want error")
+	}
+}
+
+func TestBuildWrapperOfOpt(t *testing.T) {
+	cfg := &config.Config{
+		Libraries: []*config.Library{
+			{
+				Name: "google-cloud-asset-v1",
+				APIs: []*config.API{
+					{Path: "google/cloud/asset/v1"},
+				},
+			},
+			{
+				Name: "google-cloud-asset-v1p1beta1",
+				APIs: []*config.API{
+					{Path: "google/cloud/asset/v1p1beta1"},
+				},
+			},
+		},
+	}
+
+	for _, test := range []struct {
+		name      string
+		cfg       *config.Config
+		wrapperOf []string
+		want      string
+	}{
+		{
+			name:      "single target resolved via cfg",
+			cfg:       cfg,
+			wrapperOf: []string{"google-cloud-asset-v1:0.29"},
+			want:      "v1:0.29",
+		},
+		{
+			name:      "multiple targets resolved via cfg",
+			cfg:       cfg,
+			wrapperOf: []string{"google-cloud-asset-v1:0.29", "google-cloud-asset-v1p1beta1:0.10"},
+			want:      "v1:0.29;v1p1beta1:0.10",
+		},
+		{
+			name:      "without minimal version defaulted to 0.0",
+			cfg:       cfg,
+			wrapperOf: []string{"google-cloud-asset-v1"},
+			want:      "v1:0.0",
+		},
+		{
+			name:      "fallback extraction from target string",
+			cfg:       nil,
+			wrapperOf: []string{"google-cloud-asset-v1:0.29"},
+			want:      "v1:0.29",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := buildWrapperOfOpt(test.cfg, test.wrapperOf)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
 	}
 }
 
