@@ -40,28 +40,34 @@ type semverData struct {
 	verbose         bool
 }
 
-// semverCheckCPUDivisor scales the concurrency limit based on available CPUs to balance
-// throughput against resource contention.
-//
-// Why a limit?
-// `cargo semver-checks` is internally multithreaded during the compilation phase.
-// Running it completely unbounded, or even 1:1 with CPU cores, can cause severe CPU
-// thrashing and RAM exhaustion, as multiple instances of the Rust compiler
-// compete for the same physical cores and memory bandwidth.
-//
-// Why a divisor of 8?
-// Performance testing on 64-core workstations revealed a "sweet spot":
-// Running 8 concurrent jobs (64 cores / 8) reduced execution time from ~2 hours
-// down to ~17 minutes. Pushing concurrency higher yielded negligible gains (e.g.,
-// 15 mins at 16-way) but massively increased system load and OOM (Out Of Memory) risks.
-//
-// By using a divisor instead of a hard cap, we dynamically apply this optimal 1/8th
-// ratio across varied hardware. This prevents smaller CI runners or local dev machines
-// from being overwhelmed while still safely maximizing throughput on larger workstations.
 const (
-	semverCheckCPUDivisor  = 8
+	// semverCheckCPUDivisor scales the concurrency limit based on available CPUs to balance
+	// throughput against resource contention.
+	//
+	// Why a limit?
+	// `cargo semver-checks` is internally multithreaded during the compilation phase.
+	// Running it completely unbounded, or even 1:1 with CPU cores, can cause severe CPU
+	// thrashing and RAM exhaustion, as multiple instances of the Rust compiler
+	// compete for the same physical cores and memory bandwidth.
+	//
+	// Why a divisor of 8?
+	// Performance testing on 64-core workstations revealed a "sweet spot":
+	// Running 8 concurrent jobs (64 cores / 8) reduced execution time from ~2 hours
+	// down to ~17 minutes. Pushing concurrency higher yielded negligible gains (e.g.,
+	// 15 mins at 16-way) but massively increased system load and OOM (Out Of Memory) risks.
+	//
+	// By using a divisor instead of a hard cap, we dynamically apply this optimal 1/8th
+	// ratio across varied hardware. This prevents smaller CI runners or local dev machines
+	// from being overwhelmed while still safely maximizing throughput on larger workstations.
+	semverCheckCPUDivisor = 8
+	// defaultPublishInterval is the pause in seconds between publish batches.
+	// A 60-second delay helps ensure that crates published in a batch have propagated to the
+	// crates.io registry index before subsequent batches depending on them are compiled/published.
 	defaultPublishInterval = 60
-	defaultBatchSize       = 5
+	// defaultBatchSize is the maximum number of independent crates published in a single batch.
+	// Publishing 5 crates per batch with a 60-second interval results in ~5 publishes/minute,
+	// staying safely below crates.io API rate limits (30 publishes/minute).
+	defaultBatchSize = 5
 )
 
 // errSemverCheck is returned when a semver check fails.
