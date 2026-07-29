@@ -143,7 +143,7 @@ type ComposerTool struct {
 	SHA256 string `yaml:"sha256,omitempty"`
 
 	// LocalPath is the path to a local composer project.
-	// When present, Name, Version, Repo, and SHA256 are ignored.
+	// When present, Version, Repo, and SHA256 are ignored.
 	LocalPath string `yaml:"local_path,omitempty"`
 }
 

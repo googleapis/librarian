@@ -112,12 +112,12 @@ func verify(tools []*config.ComposerTool) error {
 			return fmt.Errorf("%w: name must be specified: %+v", ErrInvalidTool, tool)
 		}
 		hasLocal := tool.LocalPath != ""
-		hasRemote := tool.Version != "" || tool.Repo != ""
+		hasRemote := tool.Version != "" || tool.Repo != "" || tool.SHA256 != ""
 		if hasLocal && hasRemote {
-			return fmt.Errorf("%w: cannot specify both local_path and version/repo: %+v", ErrInvalidTool, tool)
+			return fmt.Errorf("%w: cannot specify both local_path and version/repo/sha256: %+v", ErrInvalidTool, tool)
 		}
 		if !hasLocal && !hasRemote {
-			return fmt.Errorf("%w: must specify either local_path or version/repo: %+v", ErrInvalidTool, tool)
+			return fmt.Errorf("%w: must specify either local_path or version/repo/sha256: %+v", ErrInvalidTool, tool)
 		}
 		if hasRemote {
 			if tool.Version == "" {
