@@ -62,6 +62,19 @@ func Install(ctx context.Context, tools *config.Tools) error {
 		return err
 	}
 
+	_, err = os.Stat("composer.json")
+	if err != nil && !errors.Is(err, os.ErrNotExist) {
+		return fmt.Errorf("failed to stat composer.json: %w", err)
+	}
+	if err == nil {
+		cmd := exec.CommandContext(ctx, "composer", "install")
+		cmd.Stdout = os.Stdout
+		cmd.Stderr = os.Stderr
+		if err := cmd.Run(); err != nil {
+			return fmt.Errorf("failed to run composer install: %w", err)
+		}
+	}
+
 	bin, err := binDir()
 	if err != nil {
 		return err

@@ -21,6 +21,7 @@ import (
 	"testing"
 
 	"os/exec"
+	"strings"
 
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/testhelper"
@@ -254,3 +255,131 @@ func TestInstall_Error(t *testing.T) {
 		})
 	}
 }
+
+func TestInstall_ComposerInstall(t *testing.T) {
+	cache := t.TempDir()
+	t.Setenv("LIBRARIAN_CACHE", cache)
+	t.Setenv("LIBRARIAN_BIN", filepath.Join(cache, "bin"))
+
+	tools := &config.Tools{
+		Composer: []*config.ComposerTool{
+			{Name: "gapic-generator-php", Version: "1.0.0", Repo: "github.com/googleapis/gapic-generator-php", SHA256: "29635b02c6e505fe31cba2f88ae999f00d2710fe1d65cb7cad521a82e7c5a518"},
+		},
+		Pip: []*config.PipTool{{Name: "fake-pip-tool", Version: "2.0.0"}},
+		PNPM: []*config.PNPMTool{{Name: "fake-pnpm-tool", Version: "3.0.0"}},
+	}
+	repoDir := filepath.Join(cache, "github.com/googleapis/gapic-generator-php@1.0.0")
+	if err := os.MkdirAll(filepath.Join(repoDir, "dummy"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+
+	bin := t.TempDir()
+	// Mock composer to write to a file so we can inspect its arguments
+	composerScript := `#!/bin/bash
+if [ "$1" = "install" ]; then
+	touch composer_install_called
+fi
+`
+	testhelper.WriteExecutable(t, filepath.Join(bin, "composer"), composerScript)
+	testhelper.WriteExecutable(t, filepath.Join(bin, "pip"), "#!/bin/sh\nexit 0\n")
+	testhelper.WriteExecutable(t, filepath.Join(bin, "node"), "#!/bin/sh\nexit 0\n")
+	testhelper.WriteExecutable(t, filepath.Join(bin, "pnpm"), "#!/bin/sh\nexit 0\n")
+	testhelper.WriteExecutable(t, filepath.Join(bin, "php"), "#!/bin/sh\nexit 0\n")
+	t.Setenv("PATH", bin+string(os.PathListSeparator)+os.Getenv("PATH"))
+
+	// Create a temp directory to act as the workspace root with a composer.json
+	workspace := t.TempDir()
+	composerJson := filepath.Join(workspace, "composer.json")
+	if err := os.WriteFile(composerJson, []byte("{}"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	// Change to workspace directory for this test
+	origWd, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() {
+		os.Chdir(origWd)
+	})
+	if err := os.Chdir(workspace); err != nil {
+		t.Fatal(err)
+	}
+
+	err = Install(t.Context(), tools)
+	if err != nil {
+		t.Fatalf("Install() error = %v, want nil", err)
+	}
+
+	// Assert that composer install was called (our mock creates a file)
+	if _, err := os.Stat("composer_install_called"); err != nil {
+		if os.IsNotExist(err) {
+			t.Errorf("composer install was not executed in the current directory")
+		} else {
+			t.Errorf("failed to check if composer install was called: %v", err)
+		}
+	}
+}
+
+func TestInstall_ComposerInstall_Error(t *testing.T) {
+	cache := t.TempDir()
+	t.Setenv("LIBRARIAN_CACHE", cache)
+	t.Setenv("LIBRARIAN_BIN", filepath.Join(cache, "bin"))
+
+	tools := &config.Tools{
+		Composer: []*config.ComposerTool{
+			{Name: "gapic-generator-php", Version: "1.0.0", Repo: "github.com/googleapis/gapic-generator-php", SHA256: "29635b02c6e505fe31cba2f88ae999f00d2710fe1d65cb7cad521a82e7c5a518"},
+		},
+		Pip: []*config.PipTool{{Name: "fake-pip-tool", Version: "2.0.0"}},
+		PNPM: []*config.PNPMTool{{Name: "fake-pnpm-tool", Version: "3.0.0"}},
+	}
+	repoDir := filepath.Join(cache, "github.com/googleapis/gapic-generator-php@1.0.0")
+	if err := os.MkdirAll(filepath.Join(repoDir, "dummy"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+
+	bin := t.TempDir()
+	// Mock composer to return an error when install is called
+	composerScript := `#!/bin/bash
+if [ "$1" = "install" ]; then
+	echo "Mock composer install failed" >&2
+	exit 1
+fi
+`
+	testhelper.WriteExecutable(t, filepath.Join(bin, "composer"), composerScript)
+	testhelper.WriteExecutable(t, filepath.Join(bin, "pip"), "#!/bin/sh\nexit 0\n")
+	testhelper.WriteExecutable(t, filepath.Join(bin, "node"), "#!/bin/sh\nexit 0\n")
+	testhelper.WriteExecutable(t, filepath.Join(bin, "pnpm"), "#!/bin/sh\nexit 0\n")
+	testhelper.WriteExecutable(t, filepath.Join(bin, "php"), "#!/bin/sh\nexit 0\n")
+	t.Setenv("PATH", bin+string(os.PathListSeparator)+os.Getenv("PATH"))
+
+	// Create a temp directory to act as the workspace root with a composer.json
+	workspace := t.TempDir()
+	composerJson := filepath.Join(workspace, "composer.json")
+	if err := os.WriteFile(composerJson, []byte("{}"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	// Change to workspace directory for this test
+	origWd, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() {
+		os.Chdir(origWd)
+	})
+	if err := os.Chdir(workspace); err != nil {
+		t.Fatal(err)
+	}
+
+	err = Install(t.Context(), tools)
+	if err == nil {
+		t.Fatalf("Install() error = nil, want error")
+	}
+	
+	wantPrefix := "failed to run composer install:"
+	if !strings.HasPrefix(err.Error(), wantPrefix) {
+		t.Errorf("Install() error = %v, want prefix %q", err, wantPrefix)
+	}
+}
+

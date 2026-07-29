@@ -63,12 +63,7 @@ func TestInstall(t *testing.T) {
 
 func TestInstall_Error(t *testing.T) {
 	binDir := t.TempDir()
-	tools := []*config.ComposerTool{
-		{
-			Name:    "",
-			Version: "1.0.0",
-		},
-	}
+	tools := []*config.ComposerTool{{Name: "", Version: "1.0.0"}}
 	gotErr := Install(t.Context(), tools, "php", binDir)
 	if !errors.Is(gotErr, ErrInvalidTool) {
 		t.Fatalf("Install() error = %v, wantErr = %v", gotErr, ErrInvalidTool)
