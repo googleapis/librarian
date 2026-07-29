@@ -116,6 +116,8 @@ func phpSupported(ctx context.Context, prettierPath string) bool {
 // requirePrettier skips the test if prettier or the PHP plugin is not available.
 func requirePrettier(t *testing.T) {
 	t.Helper()
+	// TODO(https://github.com/googleapis/librarian/issues/7118): 
+	// Use testhelper.RequireCommand once it supports cached tools.
 	prettierPath, _, err := prettierToolPaths()
 	if err != nil {
 		t.Skipf("prettier tools not available: %v", err)
