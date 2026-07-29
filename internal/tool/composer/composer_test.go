@@ -28,7 +28,6 @@ import (
 
 func TestInstall(t *testing.T) {
 	testhelper.RequireCommand(t, "composer")
-
 	cache := t.TempDir()
 	t.Setenv("LIBRARIAN_CACHE", cache)
 	repoDir := filepath.Join(cache, "github.com/googleapis/gapic-generator-php@1.0.0")
