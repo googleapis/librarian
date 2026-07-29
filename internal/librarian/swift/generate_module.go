@@ -62,7 +62,12 @@ func generateModule(ctx context.Context, library *config.Library, src *sources.S
 
 func moduleToModelConfig(library *config.Library, module *config.SwiftModule, src *sources.Sources) *parser.ModelConfig {
 	sourceConfig := sources.NewSourceConfig(src, library.Roots)
-	if library.Swift != nil && len(library.Swift.IncludeList) > 0 {
+	// Prefer the module-specific include list if configured, allowing per-module filtering
+	// (e.g., selecting only specific dependency `.proto` files for conversion generation).
+	// Fall back to the library-wide include list if the module does not define its own.
+	if len(module.IncludeList) > 0 {
+		sourceConfig.IncludeList = module.IncludeList
+	} else if library.Swift != nil && len(library.Swift.IncludeList) > 0 {
 		sourceConfig.IncludeList = library.Swift.IncludeList
 	}
 	specFormat := config.SpecProtobuf

@@ -15,7 +15,7 @@
 package swift
 
 import (
-	"bytes"
+	"strings"
 	"os"
 	"path/filepath"
 	"testing"
@@ -82,26 +82,25 @@ func TestGenerateConversions_Message(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	filename := filepath.Join(outDir, "Convert", "Folder+Convert.swift")
-	content, err := os.ReadFile(filename)
+	b, err := os.ReadFile(filepath.Join(outDir, "Folder+Convert.swift"))
 	if err != nil {
 		t.Fatal(err)
 	}
-	contentStr := string(content)
+	gotContent := string(b)
 
 	// Check output imports
-	if !bytes.Contains(content, []byte("internal import StorageControlProtos")) {
+	if !strings.Contains(gotContent, "internal import StorageControlProtos") {
 		t.Errorf("expected generated file to import StorageControlProtos")
 	}
 
 	// Check conversion logic
-	got := extractBlock(t, contentStr, "  internal init(proto: ProtoType) throws {", "\n  }")
-	wantInit := "  internal init(proto: ProtoType) throws {\n    self.name = proto.name\n    self.metageneration = proto.metageneration\n    self.self_ = proto.hasSelf_p ? proto.self_p : nil\n  }"
+	got := extractBlock(t, gotContent, "  internal init(proto: ProtoType) throws {", "\n  }")
+	wantInit := "  internal init(proto: ProtoType) throws {\n    self.init()\n    self.name = proto.name\n    self.metageneration = proto.metageneration\n    self.self_ = proto.hasSelf_p ? proto.self_p : nil\n  }"
 	if diff := cmp.Diff(wantInit, got); diff != "" {
 		t.Errorf("init(proto:) mismatch (-want +got):\n%s", diff)
 	}
 
-	got = extractBlock(t, contentStr, "  internal func toProto() throws -> ProtoType {", "\n  }")
+	got = extractBlock(t, gotContent, "  internal func toProto() throws -> ProtoType {", "\n  }")
 	wantToProto := "  internal func toProto() throws -> ProtoType {\n    var proto = ProtoType()\n    proto.name = self.name\n    proto.metageneration = self.metageneration\n    if let self_ = self.self_ { proto.self_p = self_ }\n    return proto\n  }"
 	if diff := cmp.Diff(wantToProto, got); diff != "" {
 		t.Errorf("toProto() mismatch (-want +got):\n%s", diff)

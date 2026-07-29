@@ -175,6 +175,14 @@ func (c *codec) fullyQualifiedMessageTypeName(m *api.Message) (string, error) {
 		}
 		if m.Package == c.Model.PackageName {
 			// this is the current package
+			if c.Module || c.LibraryName == "" {
+				// LibraryName is intentionally left empty when generating a module
+				// (c.Module == true) because modules cannot have top-level library names.
+				// Without this check, formatting "%s.%s" with an empty LibraryName
+				// emits an illegal Swift type starting with a leading dot (e.g., "-> .IntelligenceConfig").
+				// Whenever we are generating a module or LibraryName is unset, use the bare type name.
+				return name, nil
+			}
 			return fmt.Sprintf("%s.%s", c.LibraryName, name), nil
 		}
 		dep, ok := c.ApiPackages[m.Package]

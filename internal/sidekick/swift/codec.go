@@ -212,7 +212,7 @@ func (c *codec) addDependency(dep *Dependency) (*Dependency, error) {
 		return nil, fmt.Errorf("attempting to add nil dependency")
 	}
 	// Skip including self as a dependency
-	if dep.Name == c.LibraryName {
+	if dep.Name == c.LibraryName || (c.Module && dep.Name == c.ModulePath) {
 		return nil, nil
 	}
 	if ann, ok := c.Model.Codec.(*modelAnnotations); ok {
