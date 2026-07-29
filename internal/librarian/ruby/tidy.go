@@ -56,6 +56,9 @@ func tidyAdditionalProtos(protos []string) []string {
 	return slices.Compact(protos)
 }
 
+// clearIfEmpty sets the value pointed to by v to its zero value if it serializes
+// to an empty YAML document. This is useful for removing empty optional fields
+// from the configuration.
 func clearIfEmpty[T any](v *T) error {
 	if v == nil {
 		return nil
