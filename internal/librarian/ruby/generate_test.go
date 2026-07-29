@@ -550,33 +550,6 @@ func TestGenerateAPI_Error(t *testing.T) {
 	}
 }
 
-func TestRemoveProtoPBFiles(t *testing.T) {
-	stagingDir := t.TempDir()
-	libDir := filepath.Join(stagingDir, "lib", "google", "cloud", "asset", "v1")
-	if err := os.MkdirAll(libDir, 0o755); err != nil {
-		t.Fatal(err)
-	}
-	pbFile := filepath.Join(libDir, "asset_service_pb.rb")
-	if err := os.WriteFile(pbFile, []byte("# pb content"), 0o644); err != nil {
-		t.Fatal(err)
-	}
-	rbFile := filepath.Join(libDir, "asset_service.rb")
-	if err := os.WriteFile(rbFile, []byte("# rb content"), 0o644); err != nil {
-		t.Fatal(err)
-	}
-
-	if err := removeProtoPBFiles(stagingDir); err != nil {
-		t.Fatal(err)
-	}
-
-	if _, err := os.Stat(pbFile); !errors.Is(err, fs.ErrNotExist) {
-		t.Errorf("expected pb file %s to be removed, got err = %v", pbFile, err)
-	}
-	if _, err := os.Stat(rbFile); err != nil {
-		t.Errorf("expected non-pb file %s to exist, got err = %v", rbFile, err)
-	}
-}
-
 func TestBuildWrapperOfOpt(t *testing.T) {
 	cfg := &config.Config{
 		Libraries: []*config.Library{

@@ -108,14 +108,19 @@ func generateAPI(ctx context.Context, api *config.API, library *config.Library, 
 	if err := os.MkdirAll(libStagingDir, 0o755); err != nil {
 		return fmt.Errorf("failed to create lib staging directory: %w", err)
 	}
-	grpcPluginPath := filepath.Join(installDir, "bin", "grpc_tools_ruby_protoc_plugin")
+	isWrapper := library != nil && library.Ruby != nil && len(library.Ruby.WrapperOf) > 0
 	args := []string{
 		"--experimental_allow_proto3_optional",
 		"-I=" + googleapisDir,
-		"--ruby_out=" + libStagingDir,
-		"--grpc_out=" + libStagingDir,
-		"--plugin=protoc-gen-grpc=" + grpcPluginPath,
 		"--ruby_cloud_out=" + stagingDir,
+	}
+	if !isWrapper {
+		grpcPluginPath := filepath.Join(installDir, "bin", "grpc_tools_ruby_protoc_plugin")
+		args = append(args,
+			"--ruby_out="+libStagingDir,
+			"--grpc_out="+libStagingDir,
+			"--plugin=protoc-gen-grpc="+grpcPluginPath,
+		)
 	}
 	if len(gapicOpts) > 0 {
 		args = append(args, "--ruby_cloud_opt="+strings.Join(gapicOpts, ","))
@@ -128,11 +133,7 @@ func generateAPI(ctx context.Context, api *config.API, library *config.Library, 
 	if err := protoc.RunOrSystem(ctx, env, pc, args...); err != nil {
 		return err
 	}
-	if library != nil && library.Ruby != nil && len(library.Ruby.WrapperOf) > 0 {
-		if err := removeProtoPBFiles(stagingDir); err != nil {
-			return fmt.Errorf("failed to remove pb files for wrapper gem: %w", err)
-		}
-	} else {
+	if !isWrapper {
 		// Remove google/cloud/common_resources_pb.rb from staging after generation.
 		// Because librarian passes all protoFiles (including common_resources.proto) to protoc
 		// in a single invocation, protoc outputs common_resources_pb.rb into the lib/ directory.
@@ -144,24 +145,6 @@ func generateAPI(ctx context.Context, api *config.API, library *config.Library, 
 		}
 	}
 	return nil
-}
-
-func removeProtoPBFiles(stagingDir string) error {
-	libDir := filepath.Join(stagingDir, "lib")
-	return filepath.WalkDir(libDir, func(path string, d fs.DirEntry, err error) error {
-		if err != nil {
-			if errors.Is(err, fs.ErrNotExist) {
-				return nil
-			}
-			return err
-		}
-		if !d.IsDir() && strings.HasSuffix(d.Name(), "_pb.rb") {
-			if err := os.Remove(path); err != nil && !errors.Is(err, fs.ErrNotExist) {
-				return err
-			}
-		}
-		return nil
-	})
 }
 
 func buildGAPICOpts(api *config.API, library *config.Library, cfg *config.Config, googleapisDir string) ([]string, error) {
