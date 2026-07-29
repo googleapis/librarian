@@ -265,7 +265,7 @@ func TestInstall_ComposerInstall(t *testing.T) {
 		Composer: []*config.ComposerTool{
 			{Name: "gapic-generator-php", Version: "1.0.0", Repo: "github.com/googleapis/gapic-generator-php", SHA256: "29635b02c6e505fe31cba2f88ae999f00d2710fe1d65cb7cad521a82e7c5a518"},
 		},
-		Pip: []*config.PipTool{{Name: "fake-pip-tool", Version: "2.0.0"}},
+		Pip:  []*config.PipTool{{Name: "fake-pip-tool", Version: "2.0.0"}},
 		PNPM: []*config.PNPMTool{{Name: "fake-pnpm-tool", Version: "3.0.0"}},
 	}
 	repoDir := filepath.Join(cache, "github.com/googleapis/gapic-generator-php@1.0.0")
@@ -330,7 +330,7 @@ func TestInstall_ComposerInstall_Error(t *testing.T) {
 		Composer: []*config.ComposerTool{
 			{Name: "gapic-generator-php", Version: "1.0.0", Repo: "github.com/googleapis/gapic-generator-php", SHA256: "29635b02c6e505fe31cba2f88ae999f00d2710fe1d65cb7cad521a82e7c5a518"},
 		},
-		Pip: []*config.PipTool{{Name: "fake-pip-tool", Version: "2.0.0"}},
+		Pip:  []*config.PipTool{{Name: "fake-pip-tool", Version: "2.0.0"}},
 		PNPM: []*config.PNPMTool{{Name: "fake-pnpm-tool", Version: "3.0.0"}},
 	}
 	repoDir := filepath.Join(cache, "github.com/googleapis/gapic-generator-php@1.0.0")
@@ -376,10 +376,9 @@ fi
 	if err == nil {
 		t.Fatalf("Install() error = nil, want error")
 	}
-	
+
 	wantPrefix := "failed to run composer install:"
 	if !strings.HasPrefix(err.Error(), wantPrefix) {
 		t.Errorf("Install() error = %v, want prefix %q", err, wantPrefix)
 	}
 }
-
