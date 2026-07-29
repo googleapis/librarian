@@ -29,11 +29,22 @@ import (
 func TestInstall(t *testing.T) {
 	testhelper.RequireCommand(t, "composer")
 	for _, test := range []struct {
-		name  string
-		tools []*config.ComposerTool
-		setup func(t *testing.T, binDir string)
-		check func(t *testing.T, binDir string)
+		name    string
+		tools   []*config.ComposerTool
+		setup   func(t *testing.T, binDir string)
+		wantErr error
+		check   func(t *testing.T, binDir string)
 	}{
+		{
+			name: "invalid tool configuration",
+			tools: []*config.ComposerTool{
+				{
+					Name:    "",
+					Version: "1.0.0",
+				},
+			},
+			wantErr: ErrInvalidTool,
+		},
 		{
 			name: "success",
 			tools: []*config.ComposerTool{
@@ -78,42 +89,11 @@ func TestInstall(t *testing.T) {
 				test.setup(t, binDir)
 			}
 			gotErr := Install(t.Context(), test.tools, "php", binDir)
-			if gotErr != nil {
-				t.Fatalf("Install() error = %v", gotErr)
+			if !errors.Is(gotErr, test.wantErr) {
+				t.Fatalf("Install() error = %v, wantErr = %v", gotErr, test.wantErr)
 			}
 			if test.check != nil {
 				test.check(t, binDir)
-			}
-		})
-	}
-}
-
-func TestInstall_Error(t *testing.T) {
-	for _, test := range []struct {
-		name    string
-		tools   []*config.ComposerTool
-		setup   func(t *testing.T, binDir string)
-		wantErr error
-	}{
-		{
-			name: "invalid tool configuration",
-			tools: []*config.ComposerTool{
-				{
-					Name:    "",
-					Version: "1.0.0",
-				},
-			},
-			wantErr: ErrInvalidTool,
-		},
-	} {
-		t.Run(test.name, func(t *testing.T) {
-			binDir := t.TempDir()
-			if test.setup != nil {
-				test.setup(t, binDir)
-			}
-			gotErr := Install(t.Context(), test.tools, "php", binDir)
-			if !errors.Is(gotErr, test.wantErr) {
-				t.Fatalf("Install() error = %v, wantErr = %v", gotErr, test.wantErr)
 			}
 		})
 	}
