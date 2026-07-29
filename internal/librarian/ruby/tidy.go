@@ -65,8 +65,7 @@ func clearIfEmpty[T any](v *T) error {
 		return err
 	}
 	if empty {
-		var zero T
-		*v = zero
+		*v = *new(T)
 	}
 	return nil
 }
