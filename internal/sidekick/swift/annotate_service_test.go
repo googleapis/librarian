@@ -149,8 +149,8 @@ func TestAnnotateService_SkipNoBindings(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	serviceCodec := service.Codec.(*serviceAnnotations)
-	if serviceCodec == nil {
+	serviceCodec, ok := service.Codec.(*serviceAnnotations)
+	if !ok {
 		t.Fatalf("mismatched service annotations, got=%T", service.Codec)
 	}
 	if serviceCodec.HasLROs() {
@@ -364,9 +364,9 @@ func TestAnnotateService_LRO(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	annotations := service.Codec.(*serviceAnnotations)
-	if annotations == nil {
-		t.Fatalf("expected `serviceAnnotations`, got=%T", service.Codec)
+	annotations, ok := service.Codec.(*serviceAnnotations)
+	if !ok {
+		t.Fatalf("expected `serviceAnnotations`, got %T", service.Codec)
 	}
 	if !annotations.HasLROs() {
 		t.Errorf("expected HasLROs() == true, annotations=%+v", annotations)
