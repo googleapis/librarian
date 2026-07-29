@@ -295,25 +295,16 @@ fi
 	}
 
 	// Change to workspace directory for this test
-	origWd, err := os.Getwd()
-	if err != nil {
-		t.Fatal(err)
-	}
-	t.Cleanup(func() {
-		os.Chdir(origWd)
-	})
-	if err := os.Chdir(workspace); err != nil {
-		t.Fatal(err)
-	}
+	t.Chdir(workspace)
 
-	err = Install(t.Context(), tools)
+	err := Install(t.Context(), tools)
 	if err != nil {
 		t.Fatalf("Install() error = %v, want nil", err)
 	}
 
 	// Assert that composer install was called (our mock creates a file)
 	if _, err := os.Stat("composer_install_called"); err != nil {
-		if os.IsNotExist(err) {
+		if errors.Is(err, os.ErrNotExist) {
 			t.Errorf("composer install was not executed in the current directory")
 		} else {
 			t.Errorf("failed to check if composer install was called: %v", err)
@@ -361,18 +352,9 @@ fi
 	}
 
 	// Change to workspace directory for this test
-	origWd, err := os.Getwd()
-	if err != nil {
-		t.Fatal(err)
-	}
-	t.Cleanup(func() {
-		os.Chdir(origWd)
-	})
-	if err := os.Chdir(workspace); err != nil {
-		t.Fatal(err)
-	}
+	t.Chdir(workspace)
 
-	err = Install(t.Context(), tools)
+	err := Install(t.Context(), tools)
 	if err == nil {
 		t.Fatalf("Install() error = nil, want error")
 	}
