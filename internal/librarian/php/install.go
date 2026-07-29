@@ -23,6 +23,7 @@ import (
 	"path/filepath"
 
 	"github.com/googleapis/librarian/internal/cache"
+	"github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/librarian/nodejs"
 	"github.com/googleapis/librarian/internal/tool/composer"
@@ -60,17 +61,13 @@ func Install(ctx context.Context, tools *config.Tools) error {
 	if err != nil {
 		return err
 	}
-	_, err = os.Stat("composer.json")
-	if err != nil && !errors.Is(err, os.ErrNotExist) {
-		return fmt.Errorf("failed to stat composer.json: %w", err)
-	}
-	if err == nil {
-		cmd := exec.CommandContext(ctx, "composer", "install")
-		cmd.Stdout = os.Stdout
-		cmd.Stderr = os.Stderr
-		if err := cmd.Run(); err != nil {
+	if _, err := os.Stat("composer.json"); err == nil {
+		// Install dependencies for the current PHP project in the workspace.
+		if err := command.RunStreaming(ctx, "composer", "install"); err != nil {
 			return fmt.Errorf("failed to run composer install: %w", err)
 		}
+	} else if !errors.Is(err, os.ErrNotExist) {
+		return fmt.Errorf("failed to stat composer.json: %w", err)
 	}
 	bin, err := binDir()
 	if err != nil {
@@ -79,6 +76,7 @@ func Install(ctx context.Context, tools *config.Tools) error {
 	if err := os.MkdirAll(bin, 0o755); err != nil {
 		return fmt.Errorf("failed to create bin directory: %w", err)
 	}
+	// Install global PHP tools required by librarian (e.g., gapic-generator-php).
 	if err := composer.Install(ctx, tools.Composer, phpPath, bin); err != nil {
 		return err
 	}
