@@ -24,9 +24,6 @@ import (
 // Tidy tidies Ruby-specific configuration for a library.
 func Tidy(lib *config.Library) (*config.Library, error) {
 	for _, api := range lib.APIs {
-		if api.Ruby == nil {
-			continue
-		}
 		if err := tidyAPI(api); err != nil {
 			return nil, err
 		}
@@ -38,6 +35,9 @@ func Tidy(lib *config.Library) (*config.Library, error) {
 }
 
 func tidyAPI(api *config.API) error {
+	if api == nil || api.Ruby == nil {
+		return nil
+	}
 	api.Ruby.AdditionalProtos = tidyAdditionalProtos(api.Ruby.AdditionalProtos)
 	if err := clearIfEmpty(&api.Ruby.RubyCloudOpts); err != nil {
 		return err
