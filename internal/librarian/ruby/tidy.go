@@ -28,21 +28,13 @@ func Tidy(lib *config.Library) (*config.Library, error) {
 			continue
 		}
 		api.Ruby.AdditionalProtos = tidyAdditionalProtos(api.Ruby.AdditionalProtos)
-		empty, err := yaml.Empty(api.Ruby)
-		if err != nil {
+		if err := setNilIfEmpty(&api.Ruby); err != nil {
 			return nil, err
-		}
-		if empty {
-			api.Ruby = nil
 		}
 	}
 	if lib.Ruby != nil {
-		empty, err := yaml.Empty(lib.Ruby)
-		if err != nil {
+		if err := setNilIfEmpty(&lib.Ruby); err != nil {
 			return nil, err
-		}
-		if empty {
-			lib.Ruby = nil
 		}
 	}
 	return lib, nil
@@ -54,4 +46,15 @@ func tidyAdditionalProtos(protos []string) []string {
 	}
 	slices.Sort(protos)
 	return slices.Compact(protos)
+}
+
+func setNilIfEmpty[T any](v *T) error {
+	empty, err := yaml.Empty(v)
+	if err != nil {
+		return err
+	}
+	if empty {
+		v = nil
+	}
+	return nil
 }
