@@ -55,11 +55,10 @@ func TestBinDir(t *testing.T) {
 
 func TestInstall(t *testing.T) {
 	for _, test := range []struct {
-		name    string
-		tools   *config.Tools
-		setup   func(t *testing.T)
-		wantErr error
-		check   func(t *testing.T)
+		name  string
+		tools *config.Tools
+		setup func(t *testing.T)
+		check func(t *testing.T)
 	}{
 
 		{
@@ -117,8 +116,8 @@ func TestInstall(t *testing.T) {
 				test.setup(t)
 			}
 			err := Install(t.Context(), test.tools)
-			if !errors.Is(err, test.wantErr) {
-				t.Fatalf("Install() error = %v, wantErr = %v", err, test.wantErr)
+			if err != nil {
+				t.Fatal(err)
 			}
 			if test.check != nil {
 				test.check(t)
