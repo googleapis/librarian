@@ -607,3 +607,36 @@ func TestModelAnnotationsHasBidiStreaming(t *testing.T) {
 		})
 	}
 }
+
+func TestModelAnnotationsBidiStreamingServices(t *testing.T) {
+	msg := api.NewTestMessage("Request").WithPackage("test.v1")
+
+	bidiMethod := api.NewTestMethod("Chat").WithInput(msg).WithOutput(msg).WithBidiStreaming()
+	bidiMethod.PathInfo = &api.PathInfo{}
+	bidiService := api.NewTestService("BidiService").WithPackage("test.v1").WithMethods(bidiMethod)
+
+	unaryMethod := api.NewTestMethod("Get").WithInput(msg).WithOutput(msg)
+	unaryMethod.PathInfo = &api.PathInfo{}
+	unaryService := api.NewTestService("UnaryService").WithPackage("test.v1").WithMethods(unaryMethod)
+
+	model := api.NewTestAPI([]*api.Message{msg}, []*api.Enum{}, []*api.Service{bidiService, unaryService})
+	if err := api.CrossReference(model); err != nil {
+		t.Fatal(err)
+	}
+
+	codec := newTestCodec(t, libconfig.SpecProtobuf, "", map[string]string{
+		"include-bidi-streaming-methods": "true",
+		"per-service-features":           "true",
+	})
+	got, err := annotateModel(model, codec)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if len(got.BidiStreamingServices) != 1 {
+		t.Fatalf("expected 1 BidiStreamingService, got %d", len(got.BidiStreamingServices))
+	}
+	if got.BidiStreamingServices[0].Name != "BidiService" {
+		t.Errorf("expected BidiStreamingServices[0].Name == %q, got %q", "BidiService", got.BidiStreamingServices[0].Name)
+	}
+}

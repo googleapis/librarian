@@ -127,6 +127,13 @@ pub(crate) mod transport;
 
 {{#Codec.HasBidiStreaming}}
 #[cfg(google_cloud_unstable_gapic_streaming)]
+{{#Codec.PerServiceFeatures}}
+#[cfg(any(
+{{#Codec.BidiStreamingServices}}
+    feature = "{{Codec.FeatureName}}",
+{{/Codec.BidiStreamingServices}}
+))]
+{{/Codec.PerServiceFeatures}}
 #[doc(hidden)]
 #[allow(clippy::all)]
 #[allow(unused_imports)]
