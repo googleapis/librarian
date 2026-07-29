@@ -188,6 +188,7 @@ func buildGAPICOpts(api *config.API, library *config.Library, cfg *config.Config
 	}
 	if library.Ruby != nil && len(library.Ruby.WrapperOf) > 0 {
 		if wrapperOfOpt := buildWrapperOfOpt(cfg, library.Ruby.WrapperOf); wrapperOfOpt != "" {
+			// This controls the dependency range declaration in the gemspec file.
 			opts = append(opts, "ruby-cloud-wrapper-of="+wrapperOfOpt)
 		}
 	}
