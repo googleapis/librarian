@@ -70,7 +70,7 @@ func Generate(ctx context.Context, cfg *config.Config, library *config.Library, 
 	}
 
 	for _, api := range library.APIs {
-		if err := generateAPI(ctx, api, library, cfg, pc, googleapisDir, tempDir); err != nil {
+		if err := generateAPI(ctx, api, library, pc, googleapisDir, tempDir); err != nil {
 			return fmt.Errorf("api %q: %w", api.Path, err)
 		}
 	}
@@ -84,7 +84,7 @@ func Generate(ctx context.Context, cfg *config.Config, library *config.Library, 
 	return nil
 }
 
-func generateAPI(ctx context.Context, api *config.API, library *config.Library, cfg *config.Config, pc *config.Protoc, googleapisDir, stagingDir string) error {
+func generateAPI(ctx context.Context, api *config.API, library *config.Library, pc *config.Protoc, googleapisDir, stagingDir string) error {
 	additionalProtos := []string{commonResourcesProto}
 	if api.Ruby != nil {
 		additionalProtos = append(additionalProtos, api.Ruby.AdditionalProtos...)
@@ -93,7 +93,7 @@ func generateAPI(ctx context.Context, api *config.API, library *config.Library, 
 	if err != nil {
 		return err
 	}
-	gapicOpts, err := buildGAPICOpts(api, library, cfg, googleapisDir)
+	gapicOpts, err := buildGAPICOpts(api, library, googleapisDir)
 	if err != nil {
 		return err
 	}
@@ -146,7 +146,7 @@ func generateAPI(ctx context.Context, api *config.API, library *config.Library, 
 	return nil
 }
 
-func buildGAPICOpts(api *config.API, library *config.Library, cfg *config.Config, googleapisDir string) ([]string, error) {
+func buildGAPICOpts(api *config.API, library *config.Library, googleapisDir string) ([]string, error) {
 	sc, err := serviceconfig.Find(googleapisDir, api.Path, config.LanguageRuby)
 	if err != nil {
 		return nil, err
@@ -186,42 +186,10 @@ func buildGAPICOpts(api *config.API, library *config.Library, cfg *config.Config
 		}
 	}
 	if library.Ruby != nil && len(library.Ruby.WrapperOf) > 0 {
-		if wrapperOfOpt := buildWrapperOfOpt(cfg, library.Ruby.WrapperOf); wrapperOfOpt != "" {
-			// This controls the dependency range declaration in the gemspec file.
-			opts = append(opts, "ruby-cloud-wrapper-of="+wrapperOfOpt)
-		}
+		// This controls the dependency range declaration in the gemspec file.
+		opts = append(opts, "ruby-cloud-wrapper-of="+strings.Join(library.Ruby.WrapperOf, ";"))
 	}
 	return opts, nil
-}
-
-// buildWrapperOfOpt converts library wrapper definitions (e.g., ["google-cloud-asset-v1:0.29"])
-// into the format expected by gapic-generator-cloud (e.g., "v1:0.29").
-func buildWrapperOfOpt(cfg *config.Config, wrapperOf []string) string {
-	var parts []string
-	for _, raw := range wrapperOf {
-		target, minVersion, hasVersion := strings.Cut(raw, ":")
-		if !hasVersion {
-			minVersion = "0.0"
-		}
-		apiVersion := ""
-		if cfg != nil {
-			for _, lib := range cfg.Libraries {
-				if lib.Name == target && len(lib.APIs) > 0 {
-					apiVersion = filepath.Base(lib.APIs[0].Path)
-					break
-				}
-			}
-		}
-		if apiVersion == "" {
-			if idx := strings.LastIndex(target, "-"); idx != -1 {
-				apiVersion = target[idx+1:]
-			} else {
-				apiVersion = target
-			}
-		}
-		parts = append(parts, apiVersion+":"+minVersion)
-	}
-	return strings.Join(parts, ";")
 }
 
 func transport(sc *serviceconfig.API) serviceconfig.Transport {

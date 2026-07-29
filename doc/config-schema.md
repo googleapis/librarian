@@ -508,7 +508,7 @@ This document describes the schema for the librarian.yaml.
 
 | Field | Type | Description |
 | :--- | :--- | :--- |
-| `wrapper_of` | list of string | Contains the names of versioned libraries that this library wraps. |
+| `wrapper_of` | list of string | Contains the API versions (e.g. "v1:0.29") of versioned libraries that this library wraps. |
 
 ## RustCrate Configuration
 

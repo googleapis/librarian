@@ -108,17 +108,7 @@ func TestBuildGAPICOpts(t *testing.T) {
 			library: &config.Library{
 				Name: "google-cloud-secret_manager",
 				Ruby: &config.RubyPackage{
-					WrapperOf: []string{"google-cloud-secret_manager-v1:0.29"},
-				},
-			},
-			cfg: &config.Config{
-				Libraries: []*config.Library{
-					{
-						Name: "google-cloud-secret_manager-v1",
-						APIs: []*config.API{
-							{Path: "google/cloud/secretmanager/v1"},
-						},
-					},
+					WrapperOf: []string{"v1:0.29"},
 				},
 			},
 			want: []string{
@@ -133,7 +123,7 @@ func TestBuildGAPICOpts(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got, err := buildGAPICOpts(test.api, test.library, test.cfg, googleapisDir)
+			got, err := buildGAPICOpts(test.api, test.library, googleapisDir)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -519,7 +509,7 @@ func TestGenerateAPI(t *testing.T) {
 	api := &config.API{Path: "google/cloud/secretmanager/v1"}
 	library := &config.Library{Name: "google-cloud-secret_manager-v1"}
 
-	err = generateAPI(t.Context(), api, library, nil, nil, googleapisDir, stagingDir)
+	err = generateAPI(t.Context(), api, library, nil, googleapisDir, stagingDir)
 	if err != nil {
 		t.Fatalf("generateAPI() error = %v", err)
 	}
@@ -544,67 +534,9 @@ func TestGenerateAPI_Error(t *testing.T) {
 	}
 	api := &config.API{Path: "non/existent/path"}
 	library := &config.Library{Name: "gem-name"}
-	err = generateAPI(t.Context(), api, library, nil, nil, googleapisDir, t.TempDir())
+	err = generateAPI(t.Context(), api, library, nil, googleapisDir, t.TempDir())
 	if err == nil {
 		t.Error("generateAPI() error = nil, want error")
-	}
-}
-
-func TestBuildWrapperOfOpt(t *testing.T) {
-	cfg := &config.Config{
-		Libraries: []*config.Library{
-			{
-				Name: "google-cloud-asset-v1",
-				APIs: []*config.API{
-					{Path: "google/cloud/asset/v1"},
-				},
-			},
-			{
-				Name: "google-cloud-asset-v1p1beta1",
-				APIs: []*config.API{
-					{Path: "google/cloud/asset/v1p1beta1"},
-				},
-			},
-		},
-	}
-
-	for _, test := range []struct {
-		name      string
-		cfg       *config.Config
-		wrapperOf []string
-		want      string
-	}{
-		{
-			name:      "single target resolved via cfg",
-			cfg:       cfg,
-			wrapperOf: []string{"google-cloud-asset-v1:0.29"},
-			want:      "v1:0.29",
-		},
-		{
-			name:      "multiple targets resolved via cfg",
-			cfg:       cfg,
-			wrapperOf: []string{"google-cloud-asset-v1:0.29", "google-cloud-asset-v1p1beta1:0.10"},
-			want:      "v1:0.29;v1p1beta1:0.10",
-		},
-		{
-			name:      "without minimal version defaulted to 0.0",
-			cfg:       cfg,
-			wrapperOf: []string{"google-cloud-asset-v1"},
-			want:      "v1:0.0",
-		},
-		{
-			name:      "fallback extraction from target string",
-			cfg:       nil,
-			wrapperOf: []string{"google-cloud-asset-v1:0.29"},
-			want:      "v1:0.29",
-		},
-	} {
-		t.Run(test.name, func(t *testing.T) {
-			got := buildWrapperOfOpt(test.cfg, test.wrapperOf)
-			if diff := cmp.Diff(test.want, got); diff != "" {
-				t.Errorf("mismatch (-want +got):\n%s", diff)
-			}
-		})
 	}
 }
 
