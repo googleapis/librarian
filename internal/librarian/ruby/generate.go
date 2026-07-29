@@ -108,6 +108,7 @@ func generateAPI(ctx context.Context, api *config.API, library *config.Library, 
 	if err := os.MkdirAll(libStagingDir, 0o755); err != nil {
 		return fmt.Errorf("failed to create lib staging directory: %w", err)
 	}
+	// A main client is a wrapper of a versioned client
 	isWrapper := library.Ruby != nil && len(library.Ruby.WrapperOf) > 0
 	args := []string{
 		"--experimental_allow_proto3_optional",
