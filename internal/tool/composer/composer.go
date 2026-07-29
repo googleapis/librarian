@@ -94,6 +94,14 @@ func localPath(path string) (string, error) {
 	return absPath, nil
 }
 
+// InstallProject installs dependencies for the current PHP project in the workspace.
+func InstallProject(ctx context.Context) error {
+	if err := command.RunStreaming(ctx, "composer", "install"); err != nil {
+		return fmt.Errorf("failed to run composer install: %w", err)
+	}
+	return nil
+}
+
 // phpWrapperContent generates the bash script content for the PHP tool wrapper.
 func phpWrapperContent(phpExecutable, entrypoint string) string {
 	return fmt.Sprintf("#!/bin/bash\nexec %q -d display_errors=stderr -d memory_limit=1024M %q --side_loaded_root_dir \"$GOOGLEAPIS_DIR\" \"$@\"\n", phpExecutable, entrypoint)

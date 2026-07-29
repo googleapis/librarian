@@ -23,7 +23,6 @@ import (
 	"path/filepath"
 
 	"github.com/googleapis/librarian/internal/cache"
-	"github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/librarian/nodejs"
 	"github.com/googleapis/librarian/internal/tool/composer"
@@ -63,8 +62,8 @@ func Install(ctx context.Context, tools *config.Tools) error {
 	}
 	if _, err := os.Stat("composer.json"); err == nil {
 		// Install dependencies for the current PHP project in the workspace.
-		if err := command.RunStreaming(ctx, "composer", "install"); err != nil {
-			return fmt.Errorf("failed to run composer install: %w", err)
+		if err := composer.InstallProject(ctx); err != nil {
+			return err
 		}
 	} else if !errors.Is(err, os.ErrNotExist) {
 		return fmt.Errorf("failed to stat composer.json: %w", err)
