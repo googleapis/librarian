@@ -317,7 +317,7 @@ func TestParseUnversionedBuild(t *testing.T) {
 				Params: &ExtraProtoParams{
 					EnvPrefix:    "SECRET_MANAGER",
 					GemNamespace: "Google::Cloud::SecretManager",
-					WrapperOf:          []string{"v1:1.2"},
+					WrapperOf:    []string{"v1:1.2"},
 				},
 			},
 		},
@@ -370,7 +370,7 @@ func TestParseUnversionedBuild(t *testing.T) {
 				Params: &ExtraProtoParams{
 					EnvPrefix:        "ASSET",
 					MigrationVersion: "1.0",
-					WrapperOf:          []string{"v1:0.29"},
+					WrapperOf:        []string{"v1:0.29"},
 				},
 			},
 		},
@@ -383,7 +383,7 @@ func TestParseUnversionedBuild(t *testing.T) {
 				Params: &ExtraProtoParams{
 					EnvPrefix:           "BILLING",
 					FactoryMethodSuffix: "_service",
-					WrapperOf:          []string{"v1:0.17"},
+					WrapperOf:           []string{"v1:0.17"},
 				},
 			},
 		},
