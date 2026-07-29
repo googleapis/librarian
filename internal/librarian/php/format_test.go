@@ -17,6 +17,8 @@ package php
 import (
 	"bytes"
 	"context"
+	"errors"
+	"io/fs"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -25,29 +27,15 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/config"
-	"github.com/googleapis/librarian/internal/librarian/nodejs"
 )
 
 func TestFormat(t *testing.T) {
-	nodeInstallDir, err := nodejs.InstallDir()
-	if err != nil {
-		t.Skipf("nodejs InstallDir failed: %v", err)
-	}
-	prettierPath := filepath.Join(nodeInstallDir, "bin", "prettier")
-	if _, err := os.Stat(prettierPath); err != nil {
-		t.Skipf("prettier not found at %s: %v", prettierPath, err)
-	}
-
-	if !phpSupported(t.Context(), prettierPath) {
-		t.Skip("prettier does not support PHP (missing plugin?)")
-	}
-
+	requirePrettier(t)
 	tmpDir := t.TempDir()
 	library := &config.Library{
 		Name:   "test-library",
 		Output: tmpDir,
 	}
-
 	// Write an unformatted PHP file.
 	unformatted := `<?php
 class Foo {
@@ -67,7 +55,6 @@ class Foo
     }
 }
 `
-
 	targetFile := filepath.Join(tmpDir, "Client", "Foo.php")
 	if err := os.MkdirAll(filepath.Dir(targetFile), 0o755); err != nil {
 		t.Fatal(err)
@@ -75,19 +62,44 @@ class Foo
 	if err := os.WriteFile(targetFile, []byte(unformatted), 0o644); err != nil {
 		t.Fatal(err)
 	}
-
 	if err := Format(t.Context(), library); err != nil {
-		t.Fatalf("Format() failed: %v", err)
+		t.Fatal(err)
 	}
-
 	gotBytes, err := os.ReadFile(targetFile)
 	if err != nil {
 		t.Fatal(err)
 	}
 	got := string(gotBytes)
-
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+}
+
+func TestFormat_Error(t *testing.T) {
+	for _, test := range []struct {
+		name         string
+		librarianBin string
+		wantErr      error
+	}{
+		{
+			name:         "prettier missing",
+			librarianBin: t.TempDir(),
+			wantErr:      fs.ErrNotExist,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			if test.librarianBin != "" {
+				t.Setenv("LIBRARIAN_BIN", test.librarianBin)
+			}
+			library := &config.Library{
+				Name:   "test-library",
+				Output: t.TempDir(),
+			}
+			err := Format(t.Context(), library)
+			if !errors.Is(err, test.wantErr) {
+				t.Errorf("Format() error = %v, want wrap of %v", err, test.wantErr)
+			}
+		})
 	}
 }
 
@@ -99,4 +111,26 @@ func phpSupported(ctx context.Context, prettierPath string) bool {
 		return false
 	}
 	return strings.Contains(stdout.String(), `"PHP"`)
+}
+
+// requirePrettier skips the test if prettier or the PHP plugin is not available.
+func requirePrettier(t *testing.T) {
+	t.Helper()
+	prettierPath, _, err := prettierToolPaths()
+	if err != nil {
+		t.Skipf("prettier tools not available: %v", err)
+	}
+	if !phpSupported(t.Context(), prettierPath) {
+		t.Skip("prettier does not support PHP (missing plugin?)")
+	}
+}
+
+func TestPrettierEnv(t *testing.T) {
+	got := prettierEnv("/path/to/bin/prettier")
+	want := map[string]string{
+		"PATH": "/path/to/bin",
+	}
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
 }
