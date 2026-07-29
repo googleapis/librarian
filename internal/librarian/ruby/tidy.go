@@ -27,11 +27,7 @@ func Tidy(lib *config.Library) (*config.Library, error) {
 		if api.Ruby == nil {
 			continue
 		}
-		api.Ruby.AdditionalProtos = tidyAdditionalProtos(api.Ruby.AdditionalProtos)
-		if err := setNilIfEmpty(&api.Ruby.RubyCloudOpts); err != nil {
-			return nil, err
-		}
-		if err := setNilIfEmpty(&api.Ruby); err != nil {
+		if err := tidyAPI(api); err != nil {
 			return nil, err
 		}
 	}
@@ -39,6 +35,17 @@ func Tidy(lib *config.Library) (*config.Library, error) {
 		return nil, err
 	}
 	return lib, nil
+}
+
+func tidyAPI(api *config.API) error {
+	api.Ruby.AdditionalProtos = tidyAdditionalProtos(api.Ruby.AdditionalProtos)
+	if err := setNilIfEmpty(&api.Ruby.RubyCloudOpts); err != nil {
+		return err
+	}
+	if err := setNilIfEmpty(&api.Ruby); err != nil {
+		return err
+	}
+	return nil
 }
 
 func tidyAdditionalProtos(protos []string) []string {
