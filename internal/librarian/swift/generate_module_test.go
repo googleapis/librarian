@@ -150,6 +150,46 @@ func TestModuleToModelConfig(t *testing.T) {
 			},
 		},
 		{
+			name: "with module include list",
+			lib: &config.Library{
+				Swift: &config.SwiftPackage{},
+			},
+			module: &config.SwiftModule{
+				APIPath:     "foo",
+				IncludeList: []string{"mod_a.proto", "mod_b.proto"},
+			},
+			want: &parser.ModelConfig{
+				SpecificationFormat: config.SpecProtobuf,
+				SpecificationSource: "foo",
+				Source: &sources.SourceConfig{
+					Sources:     &sources.Sources{},
+					ActiveRoots: []string{"googleapis"},
+					IncludeList: []string{"mod_a.proto", "mod_b.proto"},
+				},
+			},
+		},
+		{
+			name: "with module include list overriding library include list",
+			lib: &config.Library{
+				Swift: &config.SwiftPackage{
+					IncludeList: []string{"lib_a.proto", "lib_b.proto"},
+				},
+			},
+			module: &config.SwiftModule{
+				APIPath:     "foo",
+				IncludeList: []string{"mod_a.proto"},
+			},
+			want: &parser.ModelConfig{
+				SpecificationFormat: config.SpecProtobuf,
+				SpecificationSource: "foo",
+				Source: &sources.SourceConfig{
+					Sources:     &sources.Sources{},
+					ActiveRoots: []string{"googleapis"},
+					IncludeList: []string{"mod_a.proto"},
+				},
+			},
+		},
+		{
 			name:   "nil swift",
 			lib:    &config.Library{},
 			module: &config.SwiftModule{APIPath: "foo"},
