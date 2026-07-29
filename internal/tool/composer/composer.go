@@ -27,15 +27,20 @@ import (
 	"github.com/googleapis/librarian/internal/fetch"
 )
 
-// ErrMissingRepo indicates that a repository URL is missing for a Composer tool.
-var ErrMissingRepo = errors.New("repo URL missing")
+var (
+	// ErrMissingRepo indicates that a repository URL is missing for a Composer tool.
+	ErrMissingRepo = errors.New("repo URL missing")
+
+	// ErrInvalidTool indicates that a Composer tool configuration is invalid.
+	ErrInvalidTool = errors.New("invalid tool configuration")
+)
 
 // Install installs a list of Composer tools into the environment.
 func Install(ctx context.Context, tools []*config.ComposerTool, phpPath, bin string) error {
+	if err := verify(tools); err != nil {
+		return err
+	}
 	for _, tool := range tools {
-		if tool.Repo == "" {
-			return fmt.Errorf("%w: composer tool %s", ErrMissingRepo, tool.Name)
-		}
 		dir, err := fetch.Repo(ctx, tool.Repo, tool.Version, tool.SHA256)
 		if err != nil {
 			return fmt.Errorf("fetching %s: %w", tool.Name, err)
@@ -79,6 +84,18 @@ func createBinWrapper(wrapperName, content, binDir string) error {
 	_ = os.Remove(wrapperPath)
 	if err := os.WriteFile(wrapperPath, []byte(content), 0o755); err != nil {
 		return fmt.Errorf("failed to write wrapper script: %w", err)
+	}
+	return nil
+}
+
+func verify(tools []*config.ComposerTool) error {
+	for _, tool := range tools {
+		if tool.Name == "" || tool.Version == "" {
+			return fmt.Errorf("%w: name and version must be specified: %+v", ErrInvalidTool, tool)
+		}
+		if tool.Repo == "" {
+			return fmt.Errorf("%w: composer tool %s", ErrMissingRepo, tool.Name)
+		}
 	}
 	return nil
 }

@@ -36,14 +36,14 @@ func TestInstall(t *testing.T) {
 		check   func(t *testing.T, binDir string)
 	}{
 		{
-			name: "missing repo URL",
+			name: "invalid tool configuration",
 			tools: []*config.ComposerTool{
 				{
-					Name:    "gapic-generator-php",
+					Name:    "",
 					Version: "1.0.0",
 				},
 			},
-			wantErr: ErrMissingRepo,
+			wantErr: ErrInvalidTool,
 		},
 		{
 			name: "success",
@@ -88,9 +88,9 @@ func TestInstall(t *testing.T) {
 			if test.setup != nil {
 				test.setup(t, binDir)
 			}
-			err := Install(t.Context(), test.tools, "php", binDir)
-			if !errors.Is(err, test.wantErr) {
-				t.Fatalf("Install() error = %v, wantErr = %v", err, test.wantErr)
+			gotErr := Install(t.Context(), test.tools, "php", binDir)
+			if !errors.Is(gotErr, test.wantErr) {
+				t.Fatalf("Install() error = %v, wantErr = %v", gotErr, test.wantErr)
 			}
 			if test.check != nil {
 				test.check(t, binDir)
@@ -138,6 +138,52 @@ func TestCreateBinWrapper(t *testing.T) {
 			}
 			if perm&0o022 != 0 {
 				t.Errorf("wrapper should not be writable by group/others: %04o", perm)
+			}
+		})
+	}
+}
+
+func TestVerify(t *testing.T) {
+	tools := []*config.ComposerTool{
+		{Name: "gapic-generator-php", Version: "1.0.0", Repo: "github.com/googleapis/gapic-generator-php"},
+	}
+	if err := verify(tools); err != nil {
+		t.Errorf("verify() error = %v, want nil", err)
+	}
+}
+
+func TestVerify_Error(t *testing.T) {
+	for _, test := range []struct {
+		name    string
+		tools   []*config.ComposerTool
+		wantErr error
+	}{
+		{
+			name: "missing name",
+			tools: []*config.ComposerTool{
+				{Name: "", Version: "1.0.0", Repo: "github.com"},
+			},
+			wantErr: ErrInvalidTool,
+		},
+		{
+			name: "missing version",
+			tools: []*config.ComposerTool{
+				{Name: "gapic-generator-php", Version: "", Repo: "github.com"},
+			},
+			wantErr: ErrInvalidTool,
+		},
+		{
+			name: "missing repo",
+			tools: []*config.ComposerTool{
+				{Name: "gapic-generator-php", Version: "1.0.0", Repo: ""},
+			},
+			wantErr: ErrMissingRepo,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			gotErr := verify(test.tools)
+			if !errors.Is(gotErr, test.wantErr) {
+				t.Errorf("verify() error = %v, wantErr = %v", gotErr, test.wantErr)
 			}
 		})
 	}
