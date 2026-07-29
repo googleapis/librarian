@@ -155,6 +155,20 @@ func TestVerify_Error(t *testing.T) {
 			},
 			wantErr: ErrMissingRepo,
 		},
+		{
+			name: "both local path and remote provided",
+			tools: []*config.ComposerTool{
+				{Name: "gapic-generator-php", Version: "1.0.0", Repo: "github.com", LocalPath: "."},
+			},
+			wantErr: ErrInvalidTool,
+		},
+		{
+			name: "neither local path nor remote provided",
+			tools: []*config.ComposerTool{
+				{},
+			},
+			wantErr: ErrInvalidTool,
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			gotErr := verify(test.tools)
@@ -162,5 +176,43 @@ func TestVerify_Error(t *testing.T) {
 				t.Errorf("verify() error = %v, wantErr = %v", gotErr, test.wantErr)
 			}
 		})
+	}
+}
+
+func TestInstall_LocalPath(t *testing.T) {
+	testhelper.RequireCommand(t, "composer")
+	bin := t.TempDir()
+	// Create a dummy composer executable that just exits 0 to simulate success.
+	testhelper.WriteExecutable(t, filepath.Join(bin, "composer"), "#!/bin/sh\nexit 0\n")
+	t.Setenv("PATH", bin+string(os.PathListSeparator)+os.Getenv("PATH"))
+
+	localDir := t.TempDir()
+	tools := []*config.ComposerTool{
+		{
+			LocalPath: localDir,
+		},
+	}
+	binDir := t.TempDir()
+	if err := Install(t.Context(), tools, "php", binDir); err != nil {
+		t.Fatalf("Install() with LocalPath error = %v", err)
+	}
+}
+
+func TestInstall_LocalPath_Error(t *testing.T) {
+	testhelper.RequireCommand(t, "composer")
+	bin := t.TempDir()
+	// Create a dummy composer executable that exits 1 to simulate failure.
+	testhelper.WriteExecutable(t, filepath.Join(bin, "composer"), "#!/bin/sh\nexit 1\n")
+	t.Setenv("PATH", bin+string(os.PathListSeparator)+os.Getenv("PATH"))
+
+	localDir := t.TempDir()
+	tools := []*config.ComposerTool{
+		{
+			LocalPath: localDir,
+		},
+	}
+	binDir := t.TempDir()
+	if err := Install(t.Context(), tools, "php", binDir); err == nil {
+		t.Fatal("Install() with LocalPath error = nil, want error")
 	}
 }

@@ -41,6 +41,19 @@ func Install(ctx context.Context, tools []*config.ComposerTool, phpPath, bin str
 		return err
 	}
 	for _, tool := range tools {
+		if tool.LocalPath != "" {
+			absPath, err := filepath.Abs(tool.LocalPath)
+			if err != nil {
+				return fmt.Errorf("failed to resolve absolute path for %s: %w", tool.LocalPath, err)
+			}
+			if _, err := os.Stat(absPath); err != nil {
+				return fmt.Errorf("local composer path not found: %w", err)
+			}
+			if err := command.RunInDir(ctx, absPath, "composer", "install", "--no-interaction", "--prefer-dist"); err != nil {
+				return fmt.Errorf("failed to run composer install: %w", err)
+			}
+			continue
+		}
 		dir, err := fetch.Repo(ctx, tool.Repo, tool.Version, tool.SHA256)
 		if err != nil {
 			return fmt.Errorf("fetching %s: %w", tool.Name, err)
@@ -90,11 +103,21 @@ func createBinWrapper(wrapperName, content, binDir string) error {
 
 func verify(tools []*config.ComposerTool) error {
 	for _, tool := range tools {
-		if tool.Name == "" || tool.Version == "" {
-			return fmt.Errorf("%w: name and version must be specified: %+v", ErrInvalidTool, tool)
+		hasLocal := tool.LocalPath != ""
+		hasRemote := tool.Name != "" || tool.Version != "" || tool.Repo != ""
+		if hasLocal && hasRemote {
+			return fmt.Errorf("%w: cannot specify both local_path and name/version/repo: %+v", ErrInvalidTool, tool)
 		}
-		if tool.Repo == "" {
-			return fmt.Errorf("%w: composer tool %s", ErrMissingRepo, tool.Name)
+		if !hasLocal && !hasRemote {
+			return fmt.Errorf("%w: must specify either local_path or name/version/repo: %+v", ErrInvalidTool, tool)
+		}
+		if hasRemote {
+			if tool.Name == "" || tool.Version == "" {
+				return fmt.Errorf("%w: name and version must be specified: %+v", ErrInvalidTool, tool)
+			}
+			if tool.Repo == "" {
+				return fmt.Errorf("%w: composer tool %s", ErrMissingRepo, tool.Name)
+			}
 		}
 	}
 	return nil
