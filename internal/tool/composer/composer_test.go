@@ -34,11 +34,9 @@ func TestInstall(t *testing.T) {
 	if err := os.MkdirAll(filepath.Join(repoDir, "dummy"), 0o755); err != nil {
 		t.Fatal(err)
 	}
-
 	bin := t.TempDir()
 	testhelper.WriteExecutable(t, filepath.Join(bin, "composer"), "#!/bin/sh\nexit 0\n")
 	t.Setenv("PATH", bin+string(os.PathListSeparator)+os.Getenv("PATH"))
-
 	binDir := t.TempDir()
 	tools := []*config.ComposerTool{
 		{
@@ -48,11 +46,9 @@ func TestInstall(t *testing.T) {
 			SHA256:  "29635b02c6e505fe31cba2f88ae999f00d2710fe1d65cb7cad521a82e7c5a518",
 		},
 	}
-
 	if err := Install(t.Context(), tools, "php", binDir); err != nil {
 		t.Fatalf("Install() error = %v", err)
 	}
-
 	wrapperPath := filepath.Join(binDir, "gapic-generator-php")
 	b, err := os.ReadFile(wrapperPath)
 	if err != nil {
