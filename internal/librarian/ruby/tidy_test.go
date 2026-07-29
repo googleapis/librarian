@@ -87,6 +87,28 @@ func TestTidy(t *testing.T) {
 			},
 		},
 		{
+			name: "nilifies empty cloud opts",
+			in: &config.Library{
+				Name: "google-cloud-secretmanager",
+				APIs: []*config.API{
+					{
+						Path: "google/cloud/secretmanager/v1",
+						Ruby: &config.RubyAPI{
+							RubyCloudOpts: &config.RubyCloudOpts{},
+						},
+					},
+				},
+			},
+			want: &config.Library{
+				Name: "google-cloud-secretmanager",
+				APIs: []*config.API{
+					{
+						Path: "google/cloud/secretmanager/v1",
+					},
+				},
+			},
+		},
+		{
 			name: "sorts and deduplicates additional protos",
 			in: &config.Library{
 				Name: "google-cloud-secretmanager-v1",
