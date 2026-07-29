@@ -74,7 +74,7 @@ type ExtraProtoParams struct {
 	PathOverride        string
 	ServiceOverride     string
 	WrapperGemOverride  string
-	WrapperOf []string
+	WrapperOf           []string
 	YardStrict          string
 }
 

@@ -158,6 +158,26 @@ func TestFindRubyLibraries(t *testing.T) {
 				},
 			},
 		},
+		{
+			// This test verifies multiple WrapperOf entries are parsed correctly.
+			Name: "google-cloud-speech",
+			APIs: []*config.API{
+				{
+					Path: "google/cloud/speech/v2",
+					Ruby: &config.RubyAPI{
+						RubyCloudOpts: &config.RubyCloudOpts{
+							EnvPrefix:    "SPEECH",
+						},
+					},
+				},
+			},
+			Ruby: &config.RubyPackage{
+				WrapperOf: []string{
+					"v2:1.0",
+					"v1:1.2",
+				},
+			},
+		},
 	}
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
