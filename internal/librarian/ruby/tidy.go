@@ -27,10 +27,7 @@ func Tidy(lib *config.Library) (*config.Library, error) {
 		if api.Ruby == nil {
 			continue
 		}
-		if len(api.Ruby.AdditionalProtos) > 0 {
-			slices.Sort(api.Ruby.AdditionalProtos)
-			api.Ruby.AdditionalProtos = slices.Compact(api.Ruby.AdditionalProtos)
-		}
+		api.Ruby.AdditionalProtos = tidyAdditionalProtos(api.Ruby.AdditionalProtos)
 		empty, err := yaml.Empty(api.Ruby)
 		if err != nil {
 			return nil, err
@@ -49,4 +46,12 @@ func Tidy(lib *config.Library) (*config.Library, error) {
 		}
 	}
 	return lib, nil
+}
+
+func tidyAdditionalProtos(protos []string) []string {
+	if len(protos) == 0 {
+		return nil
+	}
+	slices.Sort(protos)
+	return slices.Compact(protos)
 }
