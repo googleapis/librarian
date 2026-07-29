@@ -236,7 +236,6 @@ func findRubyLibraries(googleapisPath, repoPath string) ([]*config.Library, erro
 			libraries = append(libraries, lib)
 		}
 	}
-	parseWrapperOf(libraries)
 	return libraries, nil
 }
 
@@ -268,40 +267,6 @@ func parseAPIFromOwlBot(owlBotPath string) (string, bool, error) {
 	}
 	// Versioned library
 	return basePath + "/" + version, false, nil
-}
-
-// parseWrapperOf sets the WrapperOf field for wrapper libraries.
-func parseWrapperOf(libraries []*config.Library) {
-	slices.SortFunc(libraries, func(a, b *config.Library) int {
-		return strings.Compare(a.Name, b.Name)
-	})
-	for i, lib := range libraries {
-		var wrapperOf []string
-		prefix := lib.Name + "-"
-		// Since libraries are sorted by name, the wrapped libraries
-		// are guaranteed to appear after the wrapper library.
-		for j := i + 1; j < len(libraries); j++ {
-			other := libraries[j]
-			if !strings.HasPrefix(other.Name, prefix) {
-				// Since libraries are sorted by name, the wrapped libraries
-				// must be consecutive.
-				break
-			}
-			suffix := strings.TrimPrefix(other.Name, prefix)
-			// Verify that the suffix after the prefix represents a valid version,
-			// e.g., starting with v followed by a digit.
-			// We use simple, string comparison because the migration tool will
-			// be removed after language onboarding.
-			if len(suffix) > 1 && suffix[0] == 'v' && suffix[1] >= '0' && suffix[1] <= '9' {
-				wrapperOf = append(wrapperOf, other.Name)
-			}
-		}
-		if len(wrapperOf) > 0 {
-			lib.Ruby = &config.RubyPackage{
-				WrapperOf: wrapperOf,
-			}
-		}
-	}
 }
 
 func parseVersionedBuild(googleapisDir, apiPath string) (*ExtraProtoParams, error) {

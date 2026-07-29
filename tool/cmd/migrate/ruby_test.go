@@ -107,7 +107,7 @@ func TestFindRubyLibraries(t *testing.T) {
 			},
 			Ruby: &config.RubyPackage{
 				WrapperOf: []string{
-					"google-cloud-compute-v1",
+					"v1:2.15",
 				},
 			},
 		},
@@ -141,7 +141,7 @@ func TestFindRubyLibraries(t *testing.T) {
 			},
 			Ruby: &config.RubyPackage{
 				WrapperOf: []string{
-					"google-cloud-secret_manager-v1",
+					"v1:1.2",
 				},
 			},
 		},
@@ -206,74 +206,6 @@ func TestParseAPIFromOwlBot(t *testing.T) {
 			}
 			if diff := cmp.Diff(test.wantWrapper, gotWrapper); diff != "" {
 				t.Errorf("wrapper mismatch (-want +got):\n%s", diff)
-			}
-		})
-	}
-}
-
-func TestParseWrapperOf(t *testing.T) {
-	for _, test := range []struct {
-		name      string
-		libraries []*config.Library
-		want      []*config.Library
-	}{
-		{
-			name: "wrapper library with multiple versioned libraries",
-			libraries: []*config.Library{
-				{Name: "google-cloud-secret_manager-v1", APIs: []*config.API{{Path: "google/cloud/secretmanager/v1"}}},
-				{Name: "google-cloud-secret_manager-v1beta1", APIs: []*config.API{{Path: "google/cloud/secretmanager/v1beta1"}}},
-				{Name: "google-cloud-secret_manager"},
-			},
-			want: []*config.Library{
-				{
-					Name: "google-cloud-secret_manager",
-					Ruby: &config.RubyPackage{
-						WrapperOf: []string{
-							"google-cloud-secret_manager-v1",
-							"google-cloud-secret_manager-v1beta1",
-						},
-					},
-				},
-				{Name: "google-cloud-secret_manager-v1", APIs: []*config.API{{Path: "google/cloud/secretmanager/v1"}}},
-				{Name: "google-cloud-secret_manager-v1beta1", APIs: []*config.API{{Path: "google/cloud/secretmanager/v1beta1"}}},
-			},
-		},
-		{
-			name: "library with APIs set is not treated as wrapper",
-			libraries: []*config.Library{
-				{Name: "google-cloud-storage-v2", APIs: []*config.API{{Path: "google/cloud/storage/v2"}}},
-				{Name: "google-cloud-storage-v1", APIs: []*config.API{{Path: "google/cloud/storage/v1"}}},
-			},
-			want: []*config.Library{
-				{Name: "google-cloud-storage-v1", APIs: []*config.API{{Path: "google/cloud/storage/v1"}}},
-				{Name: "google-cloud-storage-v2", APIs: []*config.API{{Path: "google/cloud/storage/v2"}}},
-			},
-		},
-		{
-			name: "wrapper library with no matching versioned gems",
-			libraries: []*config.Library{
-				{Name: "google-cloud-storage"},
-			},
-			want: []*config.Library{
-				{Name: "google-cloud-storage"},
-			},
-		},
-		{
-			name: "ignore libraries with non-version suffix",
-			libraries: []*config.Library{
-				{Name: "google-cloud-storage"},
-				{Name: "google-cloud-storage-transfer-v1", APIs: []*config.API{{Path: "google/cloud/storage/transfer/v1"}}},
-			},
-			want: []*config.Library{
-				{Name: "google-cloud-storage"},
-				{Name: "google-cloud-storage-transfer-v1", APIs: []*config.API{{Path: "google/cloud/storage/transfer/v1"}}},
-			},
-		},
-	} {
-		t.Run(test.name, func(t *testing.T) {
-			parseWrapperOf(test.libraries)
-			if diff := cmp.Diff(test.want, test.libraries); diff != "" {
-				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
