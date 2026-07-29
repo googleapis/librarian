@@ -162,7 +162,8 @@ func buildGAPICOpts(api *config.API, library *config.Library, googleapisDir stri
 		opts = append(opts, "service-yaml="+filepath.Join(googleapisDir, sc.ServiceConfig))
 	}
 	if sc != nil && sc.Description != "" {
-		opts = append(opts, "ruby-cloud-description="+escapeRubyCloudOptValue(sc.Description))
+		desc := escapeRubyCloudOptValue(sc.Description)
+		opts = append(opts, "ruby-cloud-description="+desc, "ruby-cloud-summary="+desc)
 	}
 	if gc != "" {
 		opts = append(opts, "grpc-service-config="+filepath.Join(googleapisDir, gc))
