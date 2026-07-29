@@ -46,6 +46,7 @@ func TestParseOptions(t *testing.T) {
 				Model:              model,
 				ApiPackages:        map[string]*Dependency{},
 				DependenciesByName: map[string]*Dependency{},
+				ResponseEncoding:   defaultResponseEncoding,
 			},
 		},
 		{
@@ -65,6 +66,7 @@ func TestParseOptions(t *testing.T) {
 				Model:              model,
 				ApiPackages:        map[string]*Dependency{},
 				DependenciesByName: map[string]*Dependency{},
+				ResponseEncoding:   defaultResponseEncoding,
 			},
 		},
 		{
@@ -85,6 +87,7 @@ func TestParseOptions(t *testing.T) {
 				ModulePath:         "GoogleTestProtos",
 				ApiPackages:        map[string]*Dependency{},
 				DependenciesByName: map[string]*Dependency{},
+				ResponseEncoding:   defaultResponseEncoding,
 			},
 		},
 		{
@@ -103,6 +106,7 @@ func TestParseOptions(t *testing.T) {
 				ApiPackages:        map[string]*Dependency{},
 				DependenciesByName: map[string]*Dependency{},
 				UrlSafeForBytes:    true,
+				ResponseEncoding:   discoveryResponseEncoding,
 			},
 		},
 	} {

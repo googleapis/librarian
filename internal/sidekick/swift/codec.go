@@ -111,7 +111,20 @@ type codec struct {
 	// The name of the private module containing raw stubs (e.g. "StorageControlProtos").
 	// Used by convert-swift to generate internal imports and prefix raw types.
 	ModulePath string
+
+	// ResponseEncoding sets the `$alt` query parameter value.
+	//
+	// All RPCS over HTTP sent the `$alt` query parameter. In Google cloud this
+	// query parameter controls the format of the response. For most client
+	// libraries we use `json;enum-encoding=int`, but for discovery we need to
+	// use just `json` as the integer values for enums may not match our values.
+	ResponseEncoding string
 }
+
+const (
+	defaultResponseEncoding   = "json;enum-encoding=int"
+	discoveryResponseEncoding = "json"
+)
 
 func newCodec(model *api.API, library *config.Library, module *config.SwiftModule, outdir string) (*codec, error) {
 	year, _, _ := time.Now().Date()
@@ -148,7 +161,10 @@ func newCodec(model *api.API, library *config.Library, module *config.SwiftModul
 	if packageName == "" {
 		packageName = PackageName(model)
 	}
-
+	responseEncoding := defaultResponseEncoding
+	if library.SpecificationFormat == config.SpecDiscovery {
+		responseEncoding = discoveryResponseEncoding
+	}
 	result := &codec{
 		Model:              model,
 		GenerationYear:     generationYear,
@@ -158,6 +174,7 @@ func newCodec(model *api.API, library *config.Library, module *config.SwiftModul
 		ApiPackages:        map[string]*Dependency{},
 		DependenciesByName: map[string]*Dependency{},
 		UrlSafeForBytes:    library.SpecificationFormat == config.SpecDiscovery,
+		ResponseEncoding:   responseEncoding,
 	}
 
 	swiftCfg := library.Swift

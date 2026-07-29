@@ -22,9 +22,10 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/sidekick/api"
+	"github.com/googleapis/librarian/internal/sidekick/parser"
 )
 
-func TestGenerateService_StubStructure(t *testing.T) {
+func TestGenerateStub_Structure(t *testing.T) {
 	outDir := t.TempDir()
 
 	request := &api.Message{
@@ -104,9 +105,15 @@ func TestGenerateService_StubStructure(t *testing.T) {
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
+
+	got = extractBlock(t, contentStr, `URLQueryItem(name: "$alt",`, ")")
+	want = `URLQueryItem(name: "$alt", value: "json;enum-encoding=int")`
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
 }
 
-func TestGenerateService_QueryParameters(t *testing.T) {
+func TestGenerateStub_QueryParameters(t *testing.T) {
 	outDir := t.TempDir()
 
 	oneof := &api.OneOf{Name: "expiration"}
@@ -200,6 +207,42 @@ func TestGenerateService_QueryParameters(t *testing.T) {
 	want = `request.expiration.flatMap { (oneof) -> Swift.String? in
             if case let .ttlDays(v) = oneof { v } else { nil }
           }, prefix: "ttlDays")`
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+}
+
+func TestGenerateStub_Discovery(t *testing.T) {
+	testdataDir, err := filepath.Abs("../../testdata")
+	if err != nil {
+		t.Fatal(err)
+	}
+	outDir := t.TempDir()
+
+	cfg := &parser.ModelConfig{
+		SpecificationFormat: config.SpecDiscovery,
+		ServiceConfig:       filepath.Join(testdataDir, "googleapis/google/cloud/compute/v1/small-compute_v1.yaml"),
+		SpecificationSource: filepath.Join(testdataDir, "discovery/small-compute.v1.json"),
+	}
+	model, err := parser.CreateModel(cfg)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	library := &config.Library{
+		SpecificationFormat: config.SpecDiscovery,
+		Swift:               swiftConfig(t, nil),
+	}
+	if err := Generate(t.Context(), model, outDir, library, nil); err != nil {
+		t.Fatal(err)
+	}
+
+	contentBytes, err := os.ReadFile(filepath.Join(outDir, "Sources", "GoogleCloudComputeV1", "addresses+Stub.swift"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	got := extractBlock(t, string(contentBytes), `URLQueryItem(name: "$alt",`, ")")
+	want := `URLQueryItem(name: "$alt", value: "json")`
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}

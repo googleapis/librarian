@@ -61,12 +61,13 @@ func TestAnnotateMethod(t *testing.T) {
 				},
 			},
 			want: &methodAnnotations{
-				Name:           "getOperation",
-				PathExpression: "/v1/operations",
-				DocLines:       []string{"Gets a thing.", "", "Test multiple comment lines.", ""},
-				HTTPMethod:     "GET",
-				HasBody:        false,
-				ReturnType:     "Test.Response",
+				Name:             "getOperation",
+				PathExpression:   "/v1/operations",
+				DocLines:         []string{"Gets a thing.", "", "Test multiple comment lines.", ""},
+				HTTPMethod:       "GET",
+				HasBody:          false,
+				ReturnType:       "Test.Response",
+				ResponseEncoding: "json;enum-encoding=int",
 			},
 		},
 		{
@@ -84,13 +85,14 @@ func TestAnnotateMethod(t *testing.T) {
 				},
 			},
 			want: &methodAnnotations{
-				Name:           "createKey",
-				PathExpression: "/v1/keys",
-				HTTPMethod:     "POST",
-				HasBody:        true,
-				IsBodyWildcard: false,
-				BodyField:      "key",
-				ReturnType:     "Test.Response",
+				Name:             "createKey",
+				PathExpression:   "/v1/keys",
+				HTTPMethod:       "POST",
+				HasBody:          true,
+				IsBodyWildcard:   false,
+				BodyField:        "key",
+				ReturnType:       "Test.Response",
+				ResponseEncoding: "json;enum-encoding=int",
 			},
 		},
 		{
@@ -108,12 +110,13 @@ func TestAnnotateMethod(t *testing.T) {
 				},
 			},
 			want: &methodAnnotations{
-				Name:           "uploadData",
-				PathExpression: "/v1/data",
-				HTTPMethod:     "POST",
-				HasBody:        true,
-				IsBodyWildcard: true,
-				ReturnType:     "Test.Response",
+				Name:             "uploadData",
+				PathExpression:   "/v1/data",
+				HTTPMethod:       "POST",
+				HasBody:          true,
+				IsBodyWildcard:   true,
+				ReturnType:       "Test.Response",
+				ResponseEncoding: "json;enum-encoding=int",
 			},
 		},
 		{
@@ -132,13 +135,14 @@ func TestAnnotateMethod(t *testing.T) {
 				},
 			},
 			want: &methodAnnotations{
-				Name:           "listThings",
-				PathExpression: "/v1/things",
-				DocLines:       []string{"Lists things."},
-				HTTPMethod:     "GET",
-				HasBody:        false,
-				QueryParams:    []*api.Field{keyField},
-				ReturnType:     "Test.Response",
+				Name:             "listThings",
+				PathExpression:   "/v1/things",
+				DocLines:         []string{"Lists things."},
+				HTTPMethod:       "GET",
+				HasBody:          false,
+				QueryParams:      []*api.Field{keyField},
+				ReturnType:       "Test.Response",
+				ResponseEncoding: "json;enum-encoding=int",
 			},
 		},
 	} {
@@ -204,11 +208,12 @@ func TestAnnotateMethod_EscapedName(t *testing.T) {
 			}
 
 			want := &methodAnnotations{
-				Name:           test.wantName,
-				DocLines:       []string{"Test documentation."},
-				PathExpression: "/",
-				HTTPMethod:     "GET",
-				ReturnType:     "Test.Response",
+				Name:             test.wantName,
+				DocLines:         []string{"Test documentation."},
+				PathExpression:   "/",
+				HTTPMethod:       "GET",
+				ReturnType:       "Test.Response",
+				ResponseEncoding: "json;enum-encoding=int",
 			}
 
 			if diff := cmp.Diff(want, method.Codec); diff != "" {
@@ -342,7 +347,8 @@ func TestAnnotateMethod_Pagination(t *testing.T) {
 		Pagination: &paginationAnnotations{
 			ItemType: "Item",
 		},
-		ReturnType: "Test.ListResponse",
+		ReturnType:       "Test.ListResponse",
+		ResponseEncoding: "json;enum-encoding=int",
 	}
 	if diff := cmp.Diff(wantMethod, gotMethod); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
@@ -454,7 +460,8 @@ func TestAnnotateMethod_LRO(t *testing.T) {
 			MetadataType:    "LroMetadata",
 			ResponseIsEmpty: false,
 		},
-		ReturnType: "Test.Operation",
+		ReturnType:       "Test.Operation",
+		ResponseEncoding: "json;enum-encoding=int",
 	}
 	if diff := cmp.Diff(wantMethod, gotMethod); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
@@ -525,7 +532,8 @@ func TestAnnotateMethod_LRO_Empty(t *testing.T) {
 			MetadataType:    "LroMetadata",
 			ResponseIsEmpty: true,
 		},
-		ReturnType: "Test.Operation",
+		ReturnType:       "Test.Operation",
+		ResponseEncoding: "json;enum-encoding=int",
 	}
 	if diff := cmp.Diff(wantMethod, gotMethod); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
