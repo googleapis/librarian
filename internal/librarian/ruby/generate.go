@@ -133,16 +133,14 @@ func generateAPI(ctx context.Context, api *config.API, library *config.Library, 
 	if err := protoc.RunOrSystem(ctx, env, pc, args...); err != nil {
 		return err
 	}
-	if !isWrapper {
-		// Remove google/cloud/common_resources_pb.rb from staging after generation.
-		// Because librarian passes all protoFiles (including common_resources.proto) to protoc
-		// in a single invocation, protoc outputs common_resources_pb.rb into the lib/ directory.
-		// We delete it unconditionally so individual client gems do not bundle unused shared
-		// protobuf definitions, which would cause class redefinition warnings and collisions.
-		commonResourcesPB := filepath.Join(stagingDir, "lib", "google", "cloud", "common_resources_pb.rb")
-		if err := os.Remove(commonResourcesPB); err != nil && !errors.Is(err, fs.ErrNotExist) {
-			return fmt.Errorf("failed to remove %s: %w", commonResourcesPB, err)
-		}
+	// Remove google/cloud/common_resources_pb.rb from staging after generation.
+	// Because librarian passes all protoFiles (including common_resources.proto) to protoc
+	// in a single invocation, protoc outputs common_resources_pb.rb into the lib/ directory.
+	// We delete it unconditionally so individual client gems do not bundle unused shared
+	// protobuf definitions, which would cause class redefinition warnings and collisions.
+	commonResourcesPB := filepath.Join(stagingDir, "lib", "google", "cloud", "common_resources_pb.rb")
+	if err := os.Remove(commonResourcesPB); err != nil && !errors.Is(err, fs.ErrNotExist) {
+		return fmt.Errorf("failed to remove %s: %w", commonResourcesPB, err)
 	}
 	return nil
 }
@@ -196,6 +194,8 @@ func buildGAPICOpts(api *config.API, library *config.Library, cfg *config.Config
 	return opts, nil
 }
 
+// buildWrapperOfOpt converts library wrapper definitions (e.g., ["google-cloud-asset-v1:0.29"])
+// into the format expected by gapic-generator-cloud (e.g., "v1:0.29").
 func buildWrapperOfOpt(cfg *config.Config, wrapperOf []string) string {
 	var parts []string
 	for _, raw := range wrapperOf {
