@@ -619,7 +619,7 @@ func TestModelAnnotationsHasBidiStreaming(t *testing.T) {
 					t.Fatalf("gaxi package not found in extraPackages")
 				}
 				if diff := cmp.Diff(test.wantGaxiFeatures, codec.extraPackages[idx].features); diff != "" {
-					t.Errorf("gaxi features mismatch (-want +got):\n%s", diff)
+					t.Errorf("mismatch (-want +got):\n%s", diff)
 				}
 			}
 		})
