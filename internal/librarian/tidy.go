@@ -28,6 +28,7 @@ import (
 	"github.com/googleapis/librarian/internal/librarian/nodejs"
 	"github.com/googleapis/librarian/internal/librarian/php"
 	"github.com/googleapis/librarian/internal/librarian/python"
+	"github.com/googleapis/librarian/internal/librarian/ruby"
 	"github.com/googleapis/librarian/internal/librarian/rust"
 	"github.com/googleapis/librarian/internal/serviceconfig"
 	"github.com/googleapis/librarian/internal/yaml"
@@ -210,6 +211,7 @@ var languageTidiers = map[string]func(*config.Library) (*config.Library, error){
 	config.LanguageNodejs: nodejs.Tidy,
 	config.LanguagePhp:    php.Tidy,
 	config.LanguagePython: python.Tidy,
+	config.LanguageRuby:   ruby.Tidy,
 	config.LanguageRust:   rust.Tidy,
 }
 
