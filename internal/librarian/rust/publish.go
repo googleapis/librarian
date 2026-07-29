@@ -19,13 +19,16 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"os"
 	"runtime"
 	"slices"
 	"strings"
+	"time"
 
 	"github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/git"
+	"github.com/pelletier/go-toml/v2"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -55,7 +58,11 @@ type semverData struct {
 // By using a divisor instead of a hard cap, we dynamically apply this optimal 1/8th
 // ratio across varied hardware. This prevents smaller CI runners or local dev machines
 // from being overwhelmed while still safely maximizing throughput on larger workstations.
-const semverCheckCPUDivisor = 8
+const (
+	semverCheckCPUDivisor  = 8
+	defaultPublishInterval = 60
+	defaultBatchSize       = 5
+)
 
 // errSemverCheck is returned when a semver check fails.
 var errSemverCheck = errors.New("semver check failed")
@@ -74,6 +81,10 @@ type PublishParams struct {
 	Verbose bool
 	// IgnoredChanges is a list of file paths/patterns to ignore when detecting changed crates.
 	IgnoredChanges []string
+	// PublishInterval is the number of seconds to wait between publish batches.
+	PublishInterval int
+	// BatchSize is the maximum number of crates to publish in a single batch.
+	BatchSize int
 }
 
 // Publish finds all the crates that should be published. It can optionally
@@ -134,16 +145,136 @@ func publishCrates(ctx context.Context, params PublishParams, lastTag string, fi
 			return err
 		}
 	}
-	args := []string{"workspaces", "publish", "--skip-published", "--publish-interval=60", "--no-git-commit", "--from-git", "skip"}
-	if params.DryRunKeepGoing {
-		args = append(args, "--dry-run", "--keep-going")
-	} else if params.DryRun {
+	interval := params.PublishInterval
+	if interval <= 0 {
+		interval = defaultPublishInterval
+	}
+	batchSize := params.BatchSize
+	if batchSize <= 0 {
+		batchSize = defaultBatchSize
+	}
+
+	batches, err := batchCrates(plannedCrates, manifests, batchSize)
+	if err != nil {
+		return err
+	}
+
+	for i, batch := range batches {
+		for _, crate := range batch {
+			if err := publishSingleCrate(ctx, params, crate); err != nil {
+				if params.DryRunKeepGoing {
+					slog.Warn("publish failed, but continuing due to --keep-going", "crate", crate, "error", err)
+					continue
+				}
+				return err
+			}
+		}
+		if i < len(batches)-1 && interval > 0 {
+			slog.Info("waiting between publish batches", "seconds", interval, "completed_batch", i+1, "total_batches", len(batches))
+			select {
+			case <-ctx.Done():
+				return ctx.Err()
+			case <-time.After(time.Duration(interval) * time.Second):
+			}
+		}
+	}
+	return nil
+}
+
+// publishSingleCrate publishes an individual crate using cargo publish.
+func publishSingleCrate(ctx context.Context, params PublishParams, crate string) error {
+	args := []string{"publish", "-p", crate}
+	if params.DryRun || params.DryRunKeepGoing {
 		args = append(args, "--dry-run")
 	}
 	if params.Verbose {
 		return command.RunStreaming(ctx, command.Cargo, args...)
 	}
 	return command.Run(ctx, command.Cargo, args...)
+}
+
+type cargoManifestDependencies struct {
+	Dependencies      map[string]any `toml:"dependencies"`
+	DevDependencies   map[string]any `toml:"dev-dependencies"`
+	BuildDependencies map[string]any `toml:"build-dependencies"`
+}
+
+type crateInfo struct {
+	name string
+	deps map[string]bool
+}
+
+// crateWorkspaceDeps reads a manifest file and returns workspace crate dependencies wrapped in crateInfo.
+func crateWorkspaceDeps(crate string, manifestPath string, workspaceCrates map[string]string) (crateInfo, error) {
+	contents, err := os.ReadFile(manifestPath)
+	if err != nil {
+		return crateInfo{}, err
+	}
+	var manifest cargoManifestDependencies
+	if err := toml.Unmarshal(contents, &manifest); err != nil {
+		return crateInfo{}, err
+	}
+	info := crateInfo{
+		name: crate,
+		deps: make(map[string]bool),
+	}
+	addDeps := func(m map[string]any) {
+		for name := range m {
+			if _, ok := workspaceCrates[name]; ok {
+				info.deps[name] = true
+			}
+		}
+	}
+	addDeps(manifest.Dependencies)
+	addDeps(manifest.DevDependencies)
+	addDeps(manifest.BuildDependencies)
+	return info, nil
+}
+
+// batchCrates splits planned crates into batches of up to batchSize, ensuring no crate in a batch
+// depends on another crate in the same batch.
+func batchCrates(plannedCrates []string, manifests map[string]string, batchSize int) ([][]string, error) {
+	if batchSize <= 0 {
+		batchSize = defaultBatchSize
+	}
+	crateInfos := make(map[string]crateInfo, len(plannedCrates))
+	for _, crate := range plannedCrates {
+		manifest := manifests[crate]
+		info, err := crateWorkspaceDeps(crate, manifest, manifests)
+		if err != nil {
+			return nil, fmt.Errorf("failed to read dependencies for %s: %w", crate, err)
+		}
+		crateInfos[crate] = info
+	}
+
+	var batches [][]string
+	var currBatch []string
+	currBatchSet := map[string]bool{}
+
+	for _, crate := range plannedCrates {
+		info := crateInfos[crate]
+		hasIntraBatchDep := false
+		for dep := range info.deps {
+			if currBatchSet[dep] {
+				hasIntraBatchDep = true
+				break
+			}
+		}
+		if len(currBatch) >= batchSize || hasIntraBatchDep {
+			if len(currBatch) > 0 {
+				batches = append(batches, currBatch)
+			}
+			currBatch = []string{crate}
+			currBatchSet = map[string]bool{crate: true}
+		} else {
+			currBatch = append(currBatch, crate)
+			currBatchSet[crate] = true
+		}
+	}
+	if len(currBatch) > 0 {
+		batches = append(batches, currBatch)
+	}
+	return batches, nil
 }
 
 // runSemverChecks iterates through manifests and runs semver checks for each.

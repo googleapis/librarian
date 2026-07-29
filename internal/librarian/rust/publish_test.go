@@ -296,7 +296,7 @@ func TestPublishCratesDryRunKeepGoing(t *testing.T) {
 	script := `#!/bin/bash
 if [ "$1" == "workspaces" ] && [ "$2" == "plan" ]; then
 	echo "google-cloud-storage"
-elif [ "$1" == "workspaces" ] && [ "$2" == "publish" ]; then
+elif [ "$1" == "publish" ]; then
 	echo $@ >> "` + filepath.Join(tmpDir, "cargo_args.txt") + `"
 else
 	exit 0
@@ -321,13 +321,13 @@ fi
 		t.Fatal(err)
 	}
 
-	// Verify that arguments were passed to cargo workspaces publish.
+	// Verify that arguments were passed to cargo publish.
 	output, err := os.ReadFile(filepath.Join(tmpDir, "cargo_args.txt"))
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !strings.Contains(string(output), "--keep-going") {
-		t.Errorf("expected cargo command to contain '--keep-going', got: %s", string(output))
+	if !strings.Contains(string(output), "-p google-cloud-storage") {
+		t.Errorf("expected cargo command to contain '-p google-cloud-storage', got: %s", string(output))
 	}
 	if count := strings.Count(string(output), "--dry-run"); count != 1 {
 		t.Errorf("expected cargo command to contain '--dry-run' once, but found %d times: %s", count, string(output))
@@ -511,4 +511,74 @@ func setupFakeCargoScript(t *testing.T, script string) {
 		t.Fatal(err)
 	}
 	t.Setenv("PATH", tmpDir+string(os.PathListSeparator)+os.Getenv("PATH"))
+}
+
+func TestBatchCrates(t *testing.T) {
+	tmpDir := t.TempDir()
+
+	crateADir := filepath.Join(tmpDir, "crate-a")
+	crateBDir := filepath.Join(tmpDir, "crate-b")
+	crateCDir := filepath.Join(tmpDir, "crate-c")
+
+	if err := os.MkdirAll(crateADir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.MkdirAll(crateBDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.MkdirAll(crateCDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+
+	manifestA := filepath.Join(crateADir, "Cargo.toml")
+	manifestB := filepath.Join(crateBDir, "Cargo.toml")
+	manifestC := filepath.Join(crateCDir, "Cargo.toml")
+
+	if err := os.WriteFile(manifestA, []byte(`[package]
+name = "crate-a"
+version = "0.1.0"
+`), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := os.WriteFile(manifestB, []byte(`[package]
+name = "crate-b"
+version = "0.1.0"
+
+[dependencies]
+crate-a = { path = "../crate-a", version = "0.1.0" }
+`), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := os.WriteFile(manifestC, []byte(`[package]
+name = "crate-c"
+version = "0.1.0"
+`), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	manifests := map[string]string{
+		"crate-a": manifestA,
+		"crate-b": manifestB,
+		"crate-c": manifestC,
+	}
+
+	plannedCrates := []string{"crate-a", "crate-b", "crate-c"}
+
+	// When batchSize = 5, crate-a and crate-b cannot be in the same batch because crate-b depends on crate-a.
+	// Therefore, crate-a is in Batch 1, and crate-b & crate-c are in Batch 2.
+	batches, err := batchCrates(plannedCrates, manifests, 5)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	want := [][]string{
+		{"crate-a"},
+		{"crate-b", "crate-c"},
+	}
+
+	if diff := cmp.Diff(want, batches); diff != "" {
+		t.Errorf("batchCrates() mismatch (-want +got):\n%s", diff)
+	}
 }
