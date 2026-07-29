@@ -117,7 +117,7 @@ func TestInstall(t *testing.T) {
 			}
 			err := Install(t.Context(), test.tools)
 			if err != nil {
-				t.Fatalf("Install() error = %v", err)
+				t.Fatal(err)
 			}
 			if test.check != nil {
 				test.check(t)
