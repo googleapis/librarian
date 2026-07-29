@@ -26,7 +26,9 @@ import (
 const requiresLibraryNameOverrideFormat = `default library name for %s needs override.
 Other languages with PascalCase style deviate from the default name for this library,
 most likely, that indicates the default library name is not a good choice. Consider
-these alternatives and use library_name_override to silence this error:\n%s`
+these alternatives and use library_name_override to silence this error:
+%s
+`
 
 // LibraryName returns the Swift library (and module) name for the API.
 func LibraryName(api *api.API, swiftCfg *config.SwiftPackage) (string, error) {
@@ -41,18 +43,21 @@ func LibraryName(api *api.API, swiftCfg *config.SwiftPackage) (string, error) {
 		parts[i] = strcase.ToCamel(p)
 	}
 	libraryName := strings.Join(parts, "")
-	alternatives := map[string]string{
-		"C#":   strings.ReplaceAll(api.CsharpNamespace, ".", ""),
-		"PHP":  strings.ReplaceAll(api.PhpNamespace, "\\", ""),
-		"Ruby": strings.ReplaceAll(api.RubyPackage, "::", ""),
+	alternatives := []struct {
+		lang  string
+		value string
+	}{
+		{"C#", strings.ReplaceAll(api.CsharpNamespace, ".", "")},
+		{"PHP", strings.ReplaceAll(api.PhpNamespace, "\\", "")},
+		{"Ruby", strings.ReplaceAll(api.RubyPackage, "::", "")},
 	}
 	var messages []string
-	for lang, alt := range alternatives {
-		if alt == "" {
+	for _, alt := range alternatives {
+		if alt.value == "" {
 			continue
 		}
-		if alt != libraryName {
-			messages = append(messages, fmt.Sprintf("%s suggests using %s", lang, alt))
+		if alt.value != libraryName {
+			messages = append(messages, fmt.Sprintf("%s suggests using %s", alt.lang, alt.value))
 		}
 	}
 	if len(messages) != 0 {
