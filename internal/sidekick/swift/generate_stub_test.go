@@ -237,7 +237,7 @@ func TestGenerateStub_Discovery(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	contentBytes, err := os.ReadFile(filepath.Join(outDir, "Sources", "GoogleCloudComputeV1", "addresses+Stub.swift"))
+	contentBytes, err := os.ReadFile(filepath.Join(outDir, "Sources", "GoogleCloudComputeV1", "Addresses+Stub.swift"))
 	if err != nil {
 		t.Fatal(err)
 	}
