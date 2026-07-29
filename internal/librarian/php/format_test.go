@@ -75,31 +75,15 @@ class Foo
 	}
 }
 
-func TestFormat_Error(t *testing.T) {
-	for _, test := range []struct {
-		name         string
-		librarianBin string
-		wantErr      error
-	}{
-		{
-			name:         "prettier missing",
-			librarianBin: t.TempDir(),
-			wantErr:      fs.ErrNotExist,
-		},
-	} {
-		t.Run(test.name, func(t *testing.T) {
-			if test.librarianBin != "" {
-				t.Setenv("LIBRARIAN_BIN", test.librarianBin)
-			}
-			library := &config.Library{
-				Name:   "test-library",
-				Output: t.TempDir(),
-			}
-			err := Format(t.Context(), library)
-			if !errors.Is(err, test.wantErr) {
-				t.Errorf("Format() error = %v, want wrap of %v", err, test.wantErr)
-			}
-		})
+func TestFormat_ErrorPrettierMissing(t *testing.T) {
+	t.Setenv("LIBRARIAN_BIN", t.TempDir())
+	library := &config.Library{
+		Name:   "test-library",
+		Output: t.TempDir(),
+	}
+	err := Format(t.Context(), library)
+	if !errors.Is(err, fs.ErrNotExist) {
+		t.Fatalf("Format() error = %v, want wrap of %v", err, fs.ErrNotExist)
 	}
 }
 
@@ -116,7 +100,7 @@ func phpSupported(ctx context.Context, prettierPath string) bool {
 // requirePrettier skips the test if prettier or the PHP plugin is not available.
 func requirePrettier(t *testing.T) {
 	t.Helper()
-	// TODO(https://github.com/googleapis/librarian/issues/7118): 
+	// TODO(https://github.com/googleapis/librarian/issues/7118):
 	// Use testhelper.RequireCommand once it supports cached tools.
 	prettierPath, _, err := prettierToolPaths()
 	if err != nil {
