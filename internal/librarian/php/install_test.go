@@ -93,7 +93,6 @@ func TestInstall(t *testing.T) {
 				if err := os.MkdirAll(filepath.Join(repoDir, "dummy"), 0o755); err != nil {
 					t.Fatal(err)
 				}
-
 				bin := t.TempDir()
 				testhelper.WriteExecutable(t, filepath.Join(bin, "composer"), "#!/bin/sh\nexit 0\n")
 				testhelper.WriteExecutable(t, filepath.Join(bin, "pip"), "#!/bin/sh\nexit 0\n")
