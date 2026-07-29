@@ -28,94 +28,55 @@ import (
 
 func TestInstall(t *testing.T) {
 	testhelper.RequireCommand(t, "composer")
-	for _, test := range []struct {
-		name  string
-		tools []*config.ComposerTool
-		setup func(t *testing.T, binDir string)
-		check func(t *testing.T, binDir string)
-	}{
-		{
-			name: "success",
-			tools: []*config.ComposerTool{
-				{
-					Name:    "gapic-generator-php",
-					Version: "1.0.0",
-					Repo:    "github.com/googleapis/gapic-generator-php",
-					SHA256:  "29635b02c6e505fe31cba2f88ae999f00d2710fe1d65cb7cad521a82e7c5a518",
-				},
-			},
-			setup: func(t *testing.T, binDir string) {
-				cache := t.TempDir()
-				t.Setenv("LIBRARIAN_CACHE", cache)
-				repoDir := filepath.Join(cache, "github.com/googleapis/gapic-generator-php@1.0.0")
-				if err := os.MkdirAll(filepath.Join(repoDir, "dummy"), 0o755); err != nil {
-					t.Fatal(err)
-				}
 
-				bin := t.TempDir()
-				testhelper.WriteExecutable(t, filepath.Join(bin, "composer"), "#!/bin/sh\nexit 0\n")
-				t.Setenv("PATH", bin+string(os.PathListSeparator)+os.Getenv("PATH"))
-			},
-			check: func(t *testing.T, binDir string) {
-				wrapperPath := filepath.Join(binDir, "gapic-generator-php")
-				b, err := os.ReadFile(wrapperPath)
-				if err != nil {
-					t.Fatal(err)
-				}
-				repoDir := filepath.Join(os.Getenv("LIBRARIAN_CACHE"), "github.com/googleapis/gapic-generator-php@1.0.0")
-				destPath := filepath.Join(repoDir, "src", "Main.php")
-				phpPath := "php"
-				want := phpWrapperContent(phpPath, destPath)
-				if diff := cmp.Diff(want, string(b)); diff != "" {
-					t.Errorf("mismatch (-want +got):\n%s", diff)
-				}
-			},
+	cache := t.TempDir()
+	t.Setenv("LIBRARIAN_CACHE", cache)
+	repoDir := filepath.Join(cache, "github.com/googleapis/gapic-generator-php@1.0.0")
+	if err := os.MkdirAll(filepath.Join(repoDir, "dummy"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+
+	bin := t.TempDir()
+	testhelper.WriteExecutable(t, filepath.Join(bin, "composer"), "#!/bin/sh\nexit 0\n")
+	t.Setenv("PATH", bin+string(os.PathListSeparator)+os.Getenv("PATH"))
+
+	binDir := t.TempDir()
+	tools := []*config.ComposerTool{
+		{
+			Name:    "gapic-generator-php",
+			Version: "1.0.0",
+			Repo:    "github.com/googleapis/gapic-generator-php",
+			SHA256:  "29635b02c6e505fe31cba2f88ae999f00d2710fe1d65cb7cad521a82e7c5a518",
 		},
-	} {
-		t.Run(test.name, func(t *testing.T) {
-			binDir := t.TempDir()
-			if test.setup != nil {
-				test.setup(t, binDir)
-			}
-			gotErr := Install(t.Context(), test.tools, "php", binDir)
-			if gotErr != nil {
-				t.Fatalf("Install() error = %v", gotErr)
-			}
-			if test.check != nil {
-				test.check(t, binDir)
-			}
-		})
+	}
+
+	if err := Install(t.Context(), tools, "php", binDir); err != nil {
+		t.Fatalf("Install() error = %v", err)
+	}
+
+	wrapperPath := filepath.Join(binDir, "gapic-generator-php")
+	b, err := os.ReadFile(wrapperPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	destPath := filepath.Join(repoDir, "src", "Main.php")
+	want := phpWrapperContent("php", destPath)
+	if diff := cmp.Diff(want, string(b)); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
 
 func TestInstall_Error(t *testing.T) {
-	for _, test := range []struct {
-		name    string
-		tools   []*config.ComposerTool
-		setup   func(t *testing.T, binDir string)
-		wantErr error
-	}{
+	binDir := t.TempDir()
+	tools := []*config.ComposerTool{
 		{
-			name: "invalid tool configuration",
-			tools: []*config.ComposerTool{
-				{
-					Name:    "",
-					Version: "1.0.0",
-				},
-			},
-			wantErr: ErrInvalidTool,
+			Name:    "",
+			Version: "1.0.0",
 		},
-	} {
-		t.Run(test.name, func(t *testing.T) {
-			binDir := t.TempDir()
-			if test.setup != nil {
-				test.setup(t, binDir)
-			}
-			gotErr := Install(t.Context(), test.tools, "php", binDir)
-			if !errors.Is(gotErr, test.wantErr) {
-				t.Fatalf("Install() error = %v, wantErr = %v", gotErr, test.wantErr)
-			}
-		})
+	}
+	gotErr := Install(t.Context(), tools, "php", binDir)
+	if !errors.Is(gotErr, ErrInvalidTool) {
+		t.Fatalf("Install() error = %v, wantErr = %v", gotErr, ErrInvalidTool)
 	}
 }
 
