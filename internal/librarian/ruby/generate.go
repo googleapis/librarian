@@ -108,7 +108,7 @@ func generateAPI(ctx context.Context, api *config.API, library *config.Library, 
 	if err := os.MkdirAll(libStagingDir, 0o755); err != nil {
 		return fmt.Errorf("failed to create lib staging directory: %w", err)
 	}
-	isWrapper := library != nil && library.Ruby != nil && len(library.Ruby.WrapperOf) > 0
+	isWrapper := library.Ruby != nil && len(library.Ruby.WrapperOf) > 0
 	args := []string{
 		"--experimental_allow_proto3_optional",
 		"-I=" + googleapisDir,
@@ -155,7 +155,7 @@ func buildGAPICOpts(api *config.API, library *config.Library, cfg *config.Config
 		return nil, err
 	}
 	var opts []string
-	if library != nil && library.Name != "" {
+	if library.Name != "" {
 		opts = append(opts, "ruby-cloud-gem-name="+library.Name)
 	}
 	if sc != nil && sc.ServiceConfig != "" {
@@ -185,9 +185,8 @@ func buildGAPICOpts(api *config.API, library *config.Library, cfg *config.Config
 			opts = append(opts, "ruby-cloud-migration-version="+api.Ruby.RubyCloudOpts.MigrationVersion)
 		}
 	}
-	if library != nil && library.Ruby != nil && len(library.Ruby.WrapperOf) > 0 {
-		wrapperOfOpt := buildWrapperOfOpt(cfg, library.Ruby.WrapperOf)
-		if wrapperOfOpt != "" {
+	if library.Ruby != nil && len(library.Ruby.WrapperOf) > 0 {
+		if wrapperOfOpt := buildWrapperOfOpt(cfg, library.Ruby.WrapperOf); wrapperOfOpt != "" {
 			opts = append(opts, "ruby-cloud-wrapper-of="+wrapperOfOpt)
 		}
 	}
