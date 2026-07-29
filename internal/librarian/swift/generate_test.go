@@ -121,7 +121,7 @@ func TestGenerateWithService(t *testing.T) {
 	}
 	outDir := t.TempDir()
 	library := &config.Library{
-		Name:                "GoogleCloudSecretmanagerV1",
+		Name:                "google-cloud-secretmanager-v1",
 		APIs:                []*config.API{{Path: "google/cloud/secretmanager/v1"}},
 		CopyrightYear:       "2038",
 		SpecificationFormat: config.SpecProtobuf,
@@ -135,6 +135,7 @@ func TestGenerateWithService(t *testing.T) {
 					{Name: "GoogleIamV1", ApiPackage: "google.iam.v1"},
 				},
 			},
+			LibraryNameOverride: "GoogleCloudSecretManagerV1",
 		},
 	}
 	library.Output = filepath.Join(outDir, "generated", "google-cloud-secretmanager-v1")
