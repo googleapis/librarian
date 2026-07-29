@@ -307,8 +307,9 @@ func parseExtraProtoParams(file *build.File) (*ExtraProtoParams, error) {
 		case strings.HasPrefix(dep, "ruby-cloud-wrapper-gem-override="):
 			vb.WrapperGemOverride, _ = strings.CutPrefix(dep, "ruby-cloud-wrapper-gem-override=")
 		case strings.HasPrefix(dep, "ruby-cloud-wrapper-of="):
-			wrapperOf, _ := strings.CutPrefix(dep, "ruby-cloud-wrapper-of=")
-			vb.WrapperOf = strings.Split(wrapperOf, ";")
+			if wrapperOf, _ := strings.CutPrefix(dep, "ruby-cloud-wrapper-of="); wrapperOf != "" {
+				vb.WrapperOf = strings.Split(wrapperOf, ";")
+			}
 		case strings.HasPrefix(dep, "ruby-cloud-yard-strict="):
 			vb.YardStrict, _ = strings.CutPrefix(dep, "ruby-cloud-yard-strict=")
 		}

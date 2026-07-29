@@ -166,7 +166,7 @@ func TestFindRubyLibraries(t *testing.T) {
 					Path: "google/cloud/speech/v2",
 					Ruby: &config.RubyAPI{
 						RubyCloudOpts: &config.RubyCloudOpts{
-							EnvPrefix:    "SPEECH",
+							EnvPrefix: "SPEECH",
 						},
 					},
 				},
