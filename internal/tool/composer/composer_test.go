@@ -165,7 +165,7 @@ func TestVerify_Error(t *testing.T) {
 		{
 			name: "neither local path nor remote provided",
 			tools: []*config.ComposerTool{
-				{},
+				{Name: "gapic-generator-php"},
 			},
 			wantErr: ErrInvalidTool,
 		},
@@ -189,6 +189,7 @@ func TestInstall_LocalPath(t *testing.T) {
 	localDir := t.TempDir()
 	tools := []*config.ComposerTool{
 		{
+			Name:      "gapic-generator-php",
 			LocalPath: localDir,
 		},
 	}
@@ -208,6 +209,7 @@ func TestInstall_LocalPath_Error(t *testing.T) {
 	localDir := t.TempDir()
 	tools := []*config.ComposerTool{
 		{
+			Name:      "gapic-generator-php",
 			LocalPath: localDir,
 		},
 	}
