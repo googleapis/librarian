@@ -74,6 +74,7 @@ type ExtraProtoParams struct {
 	PathOverride        string
 	ServiceOverride     string
 	WrapperGemOverride  string
+	WrapperOf []string
 	YardStrict          string
 }
 
@@ -224,6 +225,12 @@ func findRubyLibraries(googleapisPath, repoPath string) ([]*config.Library, erro
 						},
 					}
 					lib.APIs = append(lib.APIs, rubyAPI)
+					if wb.Params != nil && len(wb.Params.WrapperOf) > 0 {
+						if lib.Ruby == nil {
+							lib.Ruby = &config.RubyPackage{}
+						}
+						lib.Ruby.WrapperOf = wb.Params.WrapperOf
+					}
 				}
 			}
 			libraries = append(libraries, lib)
@@ -334,9 +341,11 @@ func parseExtraProtoParams(file *build.File) (*ExtraProtoParams, error) {
 			vb.ServiceOverride, _ = strings.CutPrefix(dep, "ruby-cloud-service-override=")
 		case strings.HasPrefix(dep, "ruby-cloud-wrapper-gem-override="):
 			vb.WrapperGemOverride, _ = strings.CutPrefix(dep, "ruby-cloud-wrapper-gem-override=")
+		case strings.HasPrefix(dep, "ruby-cloud-wrapper-of="):
+			wrapperOf, _ := strings.CutPrefix(dep, "ruby-cloud-wrapper-of=")
+			vb.WrapperOf = strings.Split(wrapperOf, ";")
 		case strings.HasPrefix(dep, "ruby-cloud-yard-strict="):
 			vb.YardStrict, _ = strings.CutPrefix(dep, "ruby-cloud-yard-strict=")
-
 		}
 	}
 	return vb, nil
