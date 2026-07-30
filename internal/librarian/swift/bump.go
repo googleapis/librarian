@@ -49,6 +49,9 @@ func Bump(ctx context.Context, library *config.Library, output, version, gitExe,
 		}
 		return nil
 	})
+	if err != nil {
+		return err
+	}
 	if actualFile == "" {
 		return nil
 	}
