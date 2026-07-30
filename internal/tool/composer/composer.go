@@ -59,8 +59,8 @@ func Install(ctx context.Context, tools []*config.ComposerTool, phpPath, bin str
 		}
 		paths = append(paths, dir)
 
-		if tool.Name == "" {
-			continue // No wrapper needed for unnamed tools (e.g. the project itself)
+		if tool.Name == "google-cloud-php" {
+			continue // No wrapper needed for the project itself
 		}
 		wrapperName := filepath.Base(tool.Name)
 		if wrapperName == "gapic-generator-php" {
@@ -125,10 +125,10 @@ func createBinWrapper(wrapperName, content, binDir string) error {
 
 func verify(tools []*config.ComposerTool) error {
 	for _, tool := range tools {
-		hasLocal := tool.LocalPath != ""
-		if tool.Name == "" && !hasLocal {
-			return fmt.Errorf("%w: name must be specified for remote tools: %+v", ErrInvalidTool, tool)
+		if tool.Name == "" {
+			return fmt.Errorf("%w: name must be specified: %+v", ErrInvalidTool, tool)
 		}
+		hasLocal := tool.LocalPath != ""
 		hasRemote := tool.Version != "" || tool.Repo != "" || tool.SHA256 != ""
 		if hasLocal && hasRemote {
 			return fmt.Errorf("%w: cannot specify both local_path and version/repo/sha256: %+v", ErrInvalidTool, tool)

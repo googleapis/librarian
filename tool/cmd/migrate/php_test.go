@@ -120,6 +120,7 @@ deep-copy-regex:
 		Tools: &config.Tools{
 			Composer: []*config.ComposerTool{
 				{
+					Name:      "google-cloud-php",
 					LocalPath: ".",
 				},
 				{
