@@ -47,7 +47,7 @@ func TestInstall(t *testing.T) {
 		},
 	}
 	if err := Install(t.Context(), tools, "php", binDir); err != nil {
-		t.Fatalf("Install() error = %v", err)
+		t.Fatal(err)
 	}
 	wrapperPath := filepath.Join(binDir, "gapic-generator-php")
 	b, err := os.ReadFile(wrapperPath)
@@ -55,7 +55,7 @@ func TestInstall(t *testing.T) {
 		t.Fatal(err)
 	}
 	destPath := filepath.Join(repoDir, "src", "Main.php")
-	want := phpWrapperContent("php", destPath)
+	want := fmt.Sprintf("#!/bin/bash\nexec %q -d display_errors=stderr -d memory_limit=1024M %q \"$@\"\n", "php", destPath)
 	if diff := cmp.Diff(want, string(b)); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
@@ -124,7 +124,7 @@ func TestVerify(t *testing.T) {
 		{Name: "gapic-generator-php", Version: "1.0.0", Repo: "github.com/googleapis/gapic-generator-php", SHA256: "somehash"},
 	}
 	if err := verify(tools); err != nil {
-		t.Errorf("verify() error = %v, want nil", err)
+		t.Fatal(err)
 	}
 }
 
@@ -202,7 +202,7 @@ func TestInstall_LocalPath(t *testing.T) {
 	}
 	binDir := t.TempDir()
 	if err := Install(t.Context(), tools, "php", binDir); err != nil {
-		t.Fatalf("Install() with LocalPath error = %v", err)
+		t.Fatal(err)
 	}
 	wrapperPath := filepath.Join(binDir, "gapic-generator-php")
 	b, err := os.ReadFile(wrapperPath)
@@ -210,7 +210,7 @@ func TestInstall_LocalPath(t *testing.T) {
 		t.Fatal(err)
 	}
 	destPath := filepath.Join(localDir, "src", "Main.php")
-	want := phpWrapperContent("php", destPath)
+	want := fmt.Sprintf("#!/bin/bash\nexec %q -d display_errors=stderr -d memory_limit=1024M %q \"$@\"\n", "php", destPath)
 	if diff := cmp.Diff(want, string(b)); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}

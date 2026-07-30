@@ -19,6 +19,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
 
@@ -64,9 +65,6 @@ func Install(ctx context.Context, tools []*config.ComposerTool, phpPath, bin str
 			// 1. It hardcodes the executable entry point to "src/Main.php" (ignoring Composer's vendor/bin/ paths).
 			// 2. It injects specific PHP configurations (e.g. memory_limit=1024M) required to prevent the generator from crashing.
 			// See https://github.com/googleapis/gapic-generator-php/commit/685b419f2220e2d19c74e7f1464067f995cf1a95
-			// 3. It automatically injects the "--side_loaded_root_dir" argument which other tools will not expect.
-			// (this argument is to pass through relative paths for config files)
-			// TODO(https://github.com/googleapis/librarian/issues/7000): Remove the --side_loaded_root_dir once we pass full paths to generator
 			destPath := filepath.Join(dir, "src", "Main.php")
 			wrapperContent := phpWrapperContent(phpPath, destPath)
 			if err := createBinWrapper(wrapperName, wrapperContent, bin); err != nil {
@@ -86,7 +84,7 @@ func localPath(path string) (string, error) {
 		return "", fmt.Errorf("failed to resolve absolute path for %s: %w", path, err)
 	}
 	if _, err := os.Stat(absPath); err != nil {
-		if errors.Is(err, os.ErrNotExist) {
+		if errors.Is(err, fs.ErrNotExist) {
 			return "", fmt.Errorf("local composer path not found: %w", err)
 		}
 		return "", fmt.Errorf("failed to stat local composer path: %w", err)
@@ -96,7 +94,7 @@ func localPath(path string) (string, error) {
 
 // phpWrapperContent generates the bash script content for the PHP tool wrapper.
 func phpWrapperContent(phpExecutable, entrypoint string) string {
-	return fmt.Sprintf("#!/bin/bash\nexec %q -d display_errors=stderr -d memory_limit=1024M %q --side_loaded_root_dir \"$GOOGLEAPIS_DIR\" \"$@\"\n", phpExecutable, entrypoint)
+	return fmt.Sprintf("#!/bin/bash\nexec %q -d display_errors=stderr -d memory_limit=1024M %q \"$@\"\n", phpExecutable, entrypoint)
 }
 
 // createBinWrapper creates a shell wrapper script in the bin directory that forwards executions to the tool.
