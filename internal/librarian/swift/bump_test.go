@@ -40,6 +40,9 @@ func TestVersionAlreadyBumpedSuccess(t *testing.T) {
 
 	name := testManifest()
 	contents, err := os.ReadFile(name)
+	if err != nil {
+		t.Fatal(err)
+	}
 	contents = bytes.ReplaceAll(contents, []byte("1.0.0"), []byte("2.3.4"))
 	if err := os.WriteFile(name, contents, 0o644); err != nil {
 		t.Fatal(err)
