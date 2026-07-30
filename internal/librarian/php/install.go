@@ -60,9 +60,10 @@ func Install(ctx context.Context, tools *config.Tools) error {
 	if err != nil {
 		return err
 	}
-	var projectPath string
 	if _, err := os.Stat("composer.json"); err == nil {
-		projectPath = "."
+		tools.Composer = append(tools.Composer, &config.ComposerTool{
+			LocalPath: ".",
+		})
 	} else if !errors.Is(err, os.ErrNotExist) {
 		return fmt.Errorf("failed to stat composer.json: %w", err)
 	}
@@ -74,7 +75,7 @@ func Install(ctx context.Context, tools *config.Tools) error {
 		return fmt.Errorf("failed to create bin directory: %w", err)
 	}
 	// Install global PHP tools required by librarian (e.g., gapic-generator-php).
-	if err := composer.Install(ctx, projectPath, tools.Composer, phpPath, bin); err != nil {
+	if err := composer.Install(ctx, tools.Composer, phpPath, bin); err != nil {
 		return err
 	}
 	// The PHP client library generation process relies on Python-based

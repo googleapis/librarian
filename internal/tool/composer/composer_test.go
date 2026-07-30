@@ -46,7 +46,7 @@ func TestInstall(t *testing.T) {
 			SHA256:  "29635b02c6e505fe31cba2f88ae999f00d2710fe1d65cb7cad521a82e7c5a518",
 		},
 	}
-	if err := Install(t.Context(), "", tools, "php", binDir); err != nil {
+	if err := Install(t.Context(), tools, "php", binDir); err != nil {
 		t.Fatalf("Install() error = %v", err)
 	}
 	wrapperPath := filepath.Join(binDir, "gapic-generator-php")
@@ -64,7 +64,7 @@ func TestInstall(t *testing.T) {
 func TestInstall_Error(t *testing.T) {
 	binDir := t.TempDir()
 	tools := []*config.ComposerTool{{Name: "", Version: "1.0.0"}}
-	gotErr := Install(t.Context(), "", tools, "php", binDir)
+	gotErr := Install(t.Context(), tools, "php", binDir)
 	if !errors.Is(gotErr, ErrInvalidTool) {
 		t.Fatalf("Install() error = %v, wantErr = %v", gotErr, ErrInvalidTool)
 	}
@@ -196,7 +196,7 @@ func TestInstall_LocalPath(t *testing.T) {
 		},
 	}
 	binDir := t.TempDir()
-	if err := Install(t.Context(), "", tools, "php", binDir); err != nil {
+	if err := Install(t.Context(), tools, "php", binDir); err != nil {
 		t.Fatalf("Install() with LocalPath error = %v", err)
 	}
 	wrapperPath := filepath.Join(binDir, "gapic-generator-php")
@@ -226,7 +226,7 @@ func TestInstall_LocalPath_Error(t *testing.T) {
 		},
 	}
 	binDir := t.TempDir()
-	if err := Install(t.Context(), "", tools, "php", binDir); err == nil {
+	if err := Install(t.Context(), tools, "php", binDir); err == nil {
 		t.Fatal("Install() with LocalPath error = nil, want error")
 	}
 }

@@ -36,12 +36,9 @@ var (
 )
 
 // Install installs a list of Composer tools into the environment.
-// If projectPath is provided, it also installs dependencies for that PHP project.
-func Install(ctx context.Context, projectPath string, tools []*config.ComposerTool, phpPath, bin string) error {
+// It also installs dependencies for the PHP project if "." is provided as a local_path tool.
+func Install(ctx context.Context, tools []*config.ComposerTool, phpPath, bin string) error {
 	paths := []string{}
-	if projectPath != "" {
-		paths = append(paths, projectPath)
-	}
 
 	if err := verify(tools); err != nil {
 		return err
@@ -62,6 +59,9 @@ func Install(ctx context.Context, projectPath string, tools []*config.ComposerTo
 		}
 		paths = append(paths, dir)
 
+		if tool.Name == "" {
+			continue // No wrapper needed for unnamed tools (e.g. the project itself)
+		}
 		wrapperName := filepath.Base(tool.Name)
 		if wrapperName == "gapic-generator-php" {
 			// Currently, this assumes the tool is the gapic-generator-php. This specific
@@ -125,10 +125,10 @@ func createBinWrapper(wrapperName, content, binDir string) error {
 
 func verify(tools []*config.ComposerTool) error {
 	for _, tool := range tools {
-		if tool.Name == "" {
-			return fmt.Errorf("%w: name must be specified: %+v", ErrInvalidTool, tool)
-		}
 		hasLocal := tool.LocalPath != ""
+		if tool.Name == "" && !hasLocal {
+			return fmt.Errorf("%w: name must be specified for remote tools: %+v", ErrInvalidTool, tool)
+		}
 		hasRemote := tool.Version != "" || tool.Repo != "" || tool.SHA256 != ""
 		if hasLocal && hasRemote {
 			return fmt.Errorf("%w: cannot specify both local_path and version/repo/sha256: %+v", ErrInvalidTool, tool)
