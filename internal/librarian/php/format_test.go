@@ -86,6 +86,15 @@ func TestFormat_ErrorPrettierMissing(t *testing.T) {
 		t.Fatalf("Format() error = %v, want wrap of %v", err, fs.ErrNotExist)
 	}
 }
+func TestPrettierEnv(t *testing.T) {
+	got := prettierEnv("/path/to/bin/prettier")
+	want := map[string]string{
+		"PATH": "/path/to/bin",
+	}
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+}
 
 func phpSupported(ctx context.Context, prettierPath string) bool {
 	var stdout bytes.Buffer
@@ -108,15 +117,5 @@ func requirePrettier(t *testing.T) {
 	}
 	if !phpSupported(t.Context(), prettierPath) {
 		t.Skip("prettier does not support PHP (missing plugin?)")
-	}
-}
-
-func TestPrettierEnv(t *testing.T) {
-	got := prettierEnv("/path/to/bin/prettier")
-	want := map[string]string{
-		"PATH": "/path/to/bin",
-	}
-	if diff := cmp.Diff(want, got); diff != "" {
-		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
