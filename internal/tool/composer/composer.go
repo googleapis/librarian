@@ -39,7 +39,6 @@ var (
 // It also installs dependencies for the PHP project if "." is provided as a local_path tool.
 func Install(ctx context.Context, tools []*config.ComposerTool, phpPath, bin string) error {
 	paths := []string{}
-
 	if err := verify(tools); err != nil {
 		return err
 	}
@@ -58,7 +57,6 @@ func Install(ctx context.Context, tools []*config.ComposerTool, phpPath, bin str
 			return err
 		}
 		paths = append(paths, dir)
-
 		if tool.Name == "google-cloud-php" {
 			continue // No wrapper needed for the project itself
 		}
@@ -81,7 +79,6 @@ func Install(ctx context.Context, tools []*config.ComposerTool, phpPath, bin str
 			return fmt.Errorf("tool installation for non-generator composer tools is not yet supported")
 		}
 	}
-
 	for _, path := range paths {
 		if err := command.RunStreamingInDir(ctx, path, "composer", "install", "--no-interaction", "--prefer-dist"); err != nil {
 			return fmt.Errorf("failed to run composer install: %w", err)
