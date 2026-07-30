@@ -40,6 +40,7 @@ func TestParseOptions(t *testing.T) {
 			want: &codec{
 				GenerationYear:     "2038",
 				LibraryName:        "Test",
+				TargetPackageName:  "Test",
 				PackageName:        "test",
 				PackageVersion:     "0.0.0",
 				MonorepoRoot:       ".",
@@ -60,6 +61,7 @@ func TestParseOptions(t *testing.T) {
 			want: &codec{
 				GenerationYear:     "2038",
 				LibraryName:        "Test",
+				TargetPackageName:  "Test",
 				PackageName:        "google-cloud-bigtable",
 				PackageVersion:     "0.0.0",
 				MonorepoRoot:       ".",
@@ -72,6 +74,7 @@ func TestParseOptions(t *testing.T) {
 		{
 			name: "module",
 			library: &config.Library{
+				Name:          "google-cloud-wkt",
 				CopyrightYear: "2038",
 			},
 			module: &config.SwiftModule{
@@ -80,6 +83,7 @@ func TestParseOptions(t *testing.T) {
 			want: &codec{
 				Module:             true,
 				GenerationYear:     "2038",
+				TargetPackageName:  "GoogleCloudWkt",
 				PackageName:        "test",
 				PackageVersion:     "0.0.0",
 				MonorepoRoot:       ".",
@@ -99,6 +103,7 @@ func TestParseOptions(t *testing.T) {
 			want: &codec{
 				GenerationYear:     "2038",
 				LibraryName:        "Test",
+				TargetPackageName:  "Test",
 				PackageName:        "test",
 				PackageVersion:     "0.0.0",
 				MonorepoRoot:       ".",
@@ -302,4 +307,66 @@ func makeRequiredServicesTestModel() *api.API {
 	model.AddService(externalService)
 	api.CrossReference(model)
 	return model
+}
+
+func TestSkipDependency(t *testing.T) {
+	tests := []struct {
+		name              string
+		targetPackageName string
+		libraryName       string
+		packageName       string
+		module            bool
+		depName           string
+		wantSkip          bool
+	}{
+		{
+			name:              "multi-module self import skipped (e.g. wkt messages importing GoogleCloudWkt)",
+			targetPackageName: "GoogleCloudWkt",
+			packageName:       "google-protobuf",
+			module:            true,
+			depName:           "GoogleCloudWkt",
+			wantSkip:          true,
+		},
+		{
+			name:              "multi-module non-self import preserved (e.g. storage convert importing GoogleType)",
+			targetPackageName: "GoogleCloudStorage",
+			packageName:       "GoogleType",
+			module:            true,
+			depName:           "GoogleType",
+			wantSkip:          false,
+		},
+		{
+			name:              "single-module self import skipped",
+			targetPackageName: "GoogleCloudSecretManagerV1",
+			libraryName:       "GoogleCloudSecretManagerV1",
+			packageName:       "google-cloud-secretmanager-v1",
+			module:            false,
+			depName:           "GoogleCloudSecretManagerV1",
+			wantSkip:          true,
+		},
+		{
+			name:              "single-module non-self import preserved",
+			targetPackageName: "GoogleCloudSecretManagerV1",
+			libraryName:       "GoogleCloudSecretManagerV1",
+			packageName:       "google-cloud-secretmanager-v1",
+			module:            false,
+			depName:           "GoogleCloudGax",
+			wantSkip:          false,
+		},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			c := &codec{
+				TargetPackageName: tc.targetPackageName,
+				LibraryName:       tc.libraryName,
+				PackageName:       tc.packageName,
+				Module:            tc.module,
+			}
+			dep := &Dependency{SwiftDependency: config.SwiftDependency{Name: tc.depName}}
+			got := c.skipDependency(dep)
+			if got != tc.wantSkip {
+				t.Errorf("skipDependency(%q) = %v, want %v", tc.depName, got, tc.wantSkip)
+			}
+		})
+	}
 }

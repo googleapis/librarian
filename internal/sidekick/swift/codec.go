@@ -58,6 +58,17 @@ type codec struct {
 	// contains a single target and module with the same names as the library.
 	LibraryName string
 
+	// TargetPackageName is the PascalCase name of the Swift SPM target/package being built
+	// (e.g. "GoogleCloudSecretManagerV1", "GoogleCloudStorage", or "GoogleCloudWkt").
+	//
+	// We need TargetPackageName to correctly identify self-imports in skipDependency.
+	//
+	// In librarian.yaml, "modules" refers to individual generator
+	// sub-components (such as messages, or convert-swift for wkt/google.type). However,
+	// all those generated files are compiled into a single overarching Swift package target
+	// named after the PascalCase version of library.Name.
+	TargetPackageName string
+
 	// The name of the Swift package (e.g. "google-cloud-secretmanager-v1").
 	PackageName string
 
@@ -196,12 +207,17 @@ func newCodec(model *api.API, library *config.Library, module *config.SwiftModul
 		result.ModulePath = module.ModulePath
 	}
 
-	if !result.Module {
+	if result.Module {
+		if library != nil && library.Name != "" {
+			result.TargetPackageName = pascalCaseNoMangling(library.Name)
+		}
+	} else {
 		libraryName, err := LibraryName(model, swiftCfg)
 		if err != nil {
 			return nil, err
 		}
 		result.LibraryName = libraryName
+		result.TargetPackageName = libraryName
 	}
 	return result, nil
 }
@@ -228,12 +244,33 @@ func (c *codec) addDependency(dep *Dependency) (*Dependency, error) {
 	if dep == nil {
 		return nil, fmt.Errorf("attempting to add nil dependency")
 	}
-	// Skip including self as a dependency
-	if dep.Name == c.LibraryName || (c.Module && dep.Name == c.ModulePath) {
+	if c.skipDependency(dep) {
 		return nil, nil
 	}
 	if ann, ok := c.Model.Codec.(*modelAnnotations); ok {
 		ann.DependsOn[dep.Name] = dep
 	}
 	return dep, nil
+}
+
+// skipDependency returns true if the dependency should be omitted from imports and dependency lists.
+func (c *codec) skipDependency(dep *Dependency) bool {
+	if dep == nil {
+		return true
+	}
+
+	// Do not import the Swift SPM package target that we are currently compiling into.
+	if c.TargetPackageName != "" && dep.Name == c.TargetPackageName {
+		return true
+	}
+
+	// During conversion generation, the raw Protobuf stubs module (c.ModulePath, e.g., "StorageControlProtos")
+	// is already statically imported via internal import statements in the conversion file template.
+	// We skip it dynamically to avoid emitting duplicate "import StorageControlProtos" statements.
+	// if c.Module && dep.Name == c.ModulePath {
+	if c.Module && dep.Name == c.ModulePath {
+		return true
+	}
+
+	return false
 }
