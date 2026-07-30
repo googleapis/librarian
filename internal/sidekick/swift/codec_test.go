@@ -40,7 +40,7 @@ func TestParseOptions(t *testing.T) {
 			want: &codec{
 				GenerationYear:     "2038",
 				LibraryName:        "Test",
-				TargetPackageName:  "Test",
+				TargetLibraryName:  "Test",
 				PackageName:        "test",
 				PackageVersion:     "0.0.0",
 				MonorepoRoot:       ".",
@@ -61,7 +61,7 @@ func TestParseOptions(t *testing.T) {
 			want: &codec{
 				GenerationYear:     "2038",
 				LibraryName:        "Test",
-				TargetPackageName:  "Test",
+				TargetLibraryName:  "Test",
 				PackageName:        "google-cloud-bigtable",
 				PackageVersion:     "0.0.0",
 				MonorepoRoot:       ".",
@@ -76,6 +76,9 @@ func TestParseOptions(t *testing.T) {
 			library: &config.Library{
 				Name:          "google-cloud-wkt",
 				CopyrightYear: "2038",
+				Swift: &config.SwiftPackage{
+					LibraryNameOverride: "GoogleCloudWkt",
+				},
 			},
 			module: &config.SwiftModule{
 				ModulePath: "GoogleTestProtos",
@@ -83,8 +86,35 @@ func TestParseOptions(t *testing.T) {
 			want: &codec{
 				Module:             true,
 				GenerationYear:     "2038",
-				TargetPackageName:  "GoogleCloudWkt",
+				TargetLibraryName:  "GoogleCloudWkt",
 				PackageName:        "test",
+				PackageVersion:     "0.0.0",
+				MonorepoRoot:       ".",
+				Model:              model,
+				ModulePath:         "GoogleTestProtos",
+				ApiPackages:        map[string]*Dependency{},
+				DependenciesByName: map[string]*Dependency{},
+				ResponseEncoding:   defaultResponseEncoding,
+			},
+		},
+		{
+			name: "module with library name override",
+			library: &config.Library{
+				Name:          "google-cloud-bigquery",
+				CopyrightYear: "2038",
+				Swift: &config.SwiftPackage{
+					PackageNameOverride: "GoogleCloudBigQuery",
+					LibraryNameOverride: "GoogleCloudBigQuery",
+				},
+			},
+			module: &config.SwiftModule{
+				ModulePath: "GoogleTestProtos",
+			},
+			want: &codec{
+				Module:             true,
+				GenerationYear:     "2038",
+				TargetLibraryName:  "GoogleCloudBigQuery",
+				PackageName:        "GoogleCloudBigQuery",
 				PackageVersion:     "0.0.0",
 				MonorepoRoot:       ".",
 				Model:              model,
@@ -103,7 +133,7 @@ func TestParseOptions(t *testing.T) {
 			want: &codec{
 				GenerationYear:     "2038",
 				LibraryName:        "Test",
-				TargetPackageName:  "Test",
+				TargetLibraryName:  "Test",
 				PackageName:        "test",
 				PackageVersion:     "0.0.0",
 				MonorepoRoot:       ".",
@@ -310,9 +340,9 @@ func makeRequiredServicesTestModel() *api.API {
 }
 
 func TestSkipDependency(t *testing.T) {
-	tests := []struct {
+	for _, tc := range []struct {
 		name              string
-		targetPackageName string
+		targetLibraryName string
 		libraryName       string
 		packageName       string
 		module            bool
@@ -321,7 +351,7 @@ func TestSkipDependency(t *testing.T) {
 	}{
 		{
 			name:              "multi-module self import skipped (e.g. wkt messages importing GoogleCloudWkt)",
-			targetPackageName: "GoogleCloudWkt",
+			targetLibraryName: "GoogleCloudWkt",
 			packageName:       "google-protobuf",
 			module:            true,
 			depName:           "GoogleCloudWkt",
@@ -329,7 +359,7 @@ func TestSkipDependency(t *testing.T) {
 		},
 		{
 			name:              "multi-module non-self import preserved (e.g. storage convert importing GoogleType)",
-			targetPackageName: "GoogleCloudStorage",
+			targetLibraryName: "GoogleCloudStorage",
 			packageName:       "GoogleType",
 			module:            true,
 			depName:           "GoogleType",
@@ -337,7 +367,7 @@ func TestSkipDependency(t *testing.T) {
 		},
 		{
 			name:              "single-module self import skipped",
-			targetPackageName: "GoogleCloudSecretManagerV1",
+			targetLibraryName: "GoogleCloudSecretManagerV1",
 			libraryName:       "GoogleCloudSecretManagerV1",
 			packageName:       "google-cloud-secretmanager-v1",
 			module:            false,
@@ -346,18 +376,17 @@ func TestSkipDependency(t *testing.T) {
 		},
 		{
 			name:              "single-module non-self import preserved",
-			targetPackageName: "GoogleCloudSecretManagerV1",
+			targetLibraryName: "GoogleCloudSecretManagerV1",
 			libraryName:       "GoogleCloudSecretManagerV1",
 			packageName:       "google-cloud-secretmanager-v1",
 			module:            false,
 			depName:           "GoogleCloudGax",
 			wantSkip:          false,
 		},
-	}
-	for _, tc := range tests {
+	} {
 		t.Run(tc.name, func(t *testing.T) {
 			c := &codec{
-				TargetPackageName: tc.targetPackageName,
+				TargetLibraryName: tc.targetLibraryName,
 				LibraryName:       tc.libraryName,
 				PackageName:       tc.packageName,
 				Module:            tc.module,
