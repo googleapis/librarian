@@ -66,30 +66,14 @@ func TestInstall(t *testing.T) {
 	if err := os.WriteFile(grpcExePath, []byte("grpc exe content"), 0o755); err != nil {
 		t.Fatal(err)
 	}
-	stubs := []struct {
-		name        string
-		logFilename string
-		wantArgs    string
-	}{
-		{
-			name:        "mvn",
-			logFilename: "mvn_invocations.log",
-			wantArgs: "mvn dependency:get -Dartifact=com.google.googlejavaformat:google-java-format:1.25.2:jar:all-deps\n" +
-				"mvn dependency:get -Dartifact=io.grpc:protoc-gen-grpc-java:1.81.0:exe:linux-x86_64\n" +
-				"mvn package -B -ntp -T 1.5C -DskipTests -Dcheckstyle.skip -Dclirr.skip -Denforcer.skip -Dfmt.skip " +
-				"-pl sdk-platform-java/gapic-generator-java --also-make",
-		},
-	}
 	stubDir := filepath.Join(tmpDir, "bin")
 	if err := os.MkdirAll(stubDir, 0o755); err != nil {
 		t.Fatal(err)
 	}
-	for _, s := range stubs {
-		logPath := filepath.Join(tmpDir, s.logFilename)
-		content := fmt.Sprintf("#!/bin/sh\necho %q \"$@\" >> %q\n", s.name, logPath)
-		if err := os.WriteFile(filepath.Join(stubDir, s.name), []byte(content), 0o755); err != nil {
-			t.Fatal(err)
-		}
+	mvnLogPath := filepath.Join(tmpDir, "mvn_invocations.log")
+	mvnContent := fmt.Sprintf("#!/bin/sh\necho mvn \"$@\" >> %q\n", mvnLogPath)
+	if err := os.WriteFile(filepath.Join(stubDir, "mvn"), []byte(mvnContent), 0o755); err != nil {
+		t.Fatal(err)
 	}
 	if err := os.WriteFile(filepath.Join(stubDir, "java"), []byte("#!/bin/sh\nexit 0\n"), 0o755); err != nil {
 		t.Fatal(err)
@@ -131,16 +115,17 @@ func TestInstall(t *testing.T) {
 	if err := Install(t.Context(), tools, binDir, libDir); err != nil {
 		t.Fatal(err)
 	}
-	for _, s := range stubs {
-		logPath := filepath.Join(tmpDir, s.logFilename)
-		data, err := os.ReadFile(logPath)
-		if err != nil {
-			t.Fatal(err)
-		}
-		got := strings.TrimSpace(string(data))
-		if diff := cmp.Diff(s.wantArgs, got); diff != "" {
-			t.Errorf("mismatch (-want +got):\n%s", diff)
-		}
+	mvnData, err := os.ReadFile(mvnLogPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	gotMvn := strings.TrimSpace(string(mvnData))
+	wantMvn := "mvn dependency:get -Dartifact=com.google.googlejavaformat:google-java-format:1.25.2:jar:all-deps\n" +
+		"mvn dependency:get -Dartifact=io.grpc:protoc-gen-grpc-java:1.81.0:exe:linux-x86_64\n" +
+		"mvn package -B -ntp -T 1.5C -DskipTests -Dcheckstyle.skip -Dclirr.skip -Denforcer.skip -Dfmt.skip " +
+		"-pl sdk-platform-java/gapic-generator-java --also-make"
+	if diff := cmp.Diff(wantMvn, gotMvn); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 	for _, test := range []struct {
 		name        string
