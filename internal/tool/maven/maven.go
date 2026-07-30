@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Package maven provides utilities for installing Maven tool dependencies.
 package maven
 
 import (
