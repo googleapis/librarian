@@ -60,14 +60,7 @@ func Install(ctx context.Context, tools *config.Tools) error {
 	if err != nil {
 		return err
 	}
-	if _, err := os.Stat("composer.json"); err == nil {
-		tools.Composer = append(tools.Composer, &config.ComposerTool{
-			Name:      "google-cloud-php",
-			LocalPath: ".",
-		})
-	} else if !errors.Is(err, os.ErrNotExist) {
-		return fmt.Errorf("failed to stat composer.json: %w", err)
-	}
+
 	bin, err := binDir()
 	if err != nil {
 		return err
