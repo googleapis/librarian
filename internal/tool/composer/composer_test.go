@@ -58,7 +58,7 @@ func TestInstall(t *testing.T) {
 		t.Fatal(err)
 	}
 	destPath := filepath.Join(repoDir, "src", "Main.php")
-	want := fmt.Sprintf("#!/bin/bash\nexec %q -d display_errors=stderr -d memory_limit=1024M %q \"$@\"\n", "php", destPath)
+	want := phpWrapperContent("php", destPath)
 	if diff := cmp.Diff(want, string(b)); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
@@ -219,7 +219,7 @@ func TestInstall_LocalPath(t *testing.T) {
 		t.Fatal(err)
 	}
 	destPath := filepath.Join(localDir, "src", "Main.php")
-	want := fmt.Sprintf("#!/bin/bash\nexec %q -d display_errors=stderr -d memory_limit=1024M %q \"$@\"\n", "php", destPath)
+	want := phpWrapperContent("php", destPath)
 	if diff := cmp.Diff(want, string(b)); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
