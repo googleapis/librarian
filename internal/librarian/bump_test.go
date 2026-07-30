@@ -1229,7 +1229,7 @@ func TestLegacySwiftBumpLibrary(t *testing.T) {
 			// Unused string param: lastTag.
 			err := legacySidekickBumpLibrary(t.Context(), test.cfg, targetLibCfg, testUnusedStringParam, test.versionOverride)
 			if err != nil {
-				t.Fatalf("legacyRustBumpLibrary() error = %v", err)
+				t.Fatalf("legacySidekickBumpLibrary() error = %v", err)
 			}
 			if targetLibCfg.Version != test.wantVersion {
 				t.Errorf("library %q version mismatch: want %q, got %q", targetLibCfg.Name, test.wantVersion, targetLibCfg.Version)
