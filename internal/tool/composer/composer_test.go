@@ -121,7 +121,7 @@ func TestCreateBinWrapper(t *testing.T) {
 
 func TestVerify(t *testing.T) {
 	tools := []*config.ComposerTool{
-		{Name: "gapic-generator-php", Version: "1.0.0", Repo: "github.com/googleapis/gapic-generator-php"},
+		{Name: "gapic-generator-php", Version: "1.0.0", Repo: "github.com/googleapis/gapic-generator-php", SHA256: "somehash"},
 	}
 	if err := verify(tools); err != nil {
 		t.Errorf("verify() error = %v, want nil", err)
@@ -137,28 +137,35 @@ func TestVerify_Error(t *testing.T) {
 		{
 			name: "missing name",
 			tools: []*config.ComposerTool{
-				{Name: "", Version: "1.0.0", Repo: "github.com"},
+				{Name: "", Version: "1.0.0", Repo: "github.com", SHA256: "somehash"},
 			},
 			wantErr: ErrInvalidTool,
 		},
 		{
 			name: "missing version",
 			tools: []*config.ComposerTool{
-				{Name: "gapic-generator-php", Version: "", Repo: "github.com"},
+				{Name: "gapic-generator-php", Version: "", Repo: "github.com", SHA256: "somehash"},
 			},
 			wantErr: ErrInvalidTool,
 		},
 		{
 			name: "missing repo",
 			tools: []*config.ComposerTool{
-				{Name: "gapic-generator-php", Version: "1.0.0", Repo: ""},
+				{Name: "gapic-generator-php", Version: "1.0.0", Repo: "", SHA256: "somehash"},
 			},
 			wantErr: ErrMissingRepo,
 		},
 		{
+			name: "missing sha256",
+			tools: []*config.ComposerTool{
+				{Name: "gapic-generator-php", Version: "1.0.0", Repo: "github.com", SHA256: ""},
+			},
+			wantErr: ErrInvalidTool,
+		},
+		{
 			name: "both local path and remote provided",
 			tools: []*config.ComposerTool{
-				{Name: "gapic-generator-php", Version: "1.0.0", Repo: "github.com", LocalPath: "."},
+				{Name: "gapic-generator-php", Version: "1.0.0", Repo: "github.com", SHA256: "somehash", LocalPath: "."},
 			},
 			wantErr: ErrInvalidTool,
 		},

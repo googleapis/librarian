@@ -42,24 +42,17 @@ func Install(ctx context.Context, tools []*config.ComposerTool, phpPath, bin str
 	}
 	for _, tool := range tools {
 		var dir string
+		var err error
 		if tool.LocalPath != "" {
-			absPath, err := filepath.Abs(tool.LocalPath)
-			if err != nil {
-				return fmt.Errorf("failed to resolve absolute path for %s: %w", tool.LocalPath, err)
-			}
-			if _, err := os.Stat(absPath); err != nil {
-				if errors.Is(err, os.ErrNotExist) {
-					return fmt.Errorf("local composer path not found: %w", err)
-				}
-				return fmt.Errorf("failed to stat local composer path: %w", err)
-			}
-			dir = absPath
+			dir, err = localPath(tool.LocalPath)
 		} else {
-			fetchedDir, err := fetch.Repo(ctx, tool.Repo, tool.Version, tool.SHA256)
+			dir, err = fetch.Repo(ctx, tool.Repo, tool.Version, tool.SHA256)
 			if err != nil {
-				return fmt.Errorf("fetching %s: %w", tool.Name, err)
+				err = fmt.Errorf("fetching %s: %w", tool.Name, err)
 			}
-			dir = fetchedDir
+		}
+		if err != nil {
+			return err
 		}
 		if err := command.RunInDir(ctx, dir, "composer", "install", "--no-interaction", "--prefer-dist"); err != nil {
 			return fmt.Errorf("failed to run composer install: %w", err)
@@ -84,6 +77,21 @@ func Install(ctx context.Context, tools []*config.ComposerTool, phpPath, bin str
 		}
 	}
 	return nil
+}
+
+// localPath resolves and validates the absolute path for a local composer tool.
+func localPath(path string) (string, error) {
+	absPath, err := filepath.Abs(path)
+	if err != nil {
+		return "", fmt.Errorf("failed to resolve absolute path for %s: %w", path, err)
+	}
+	if _, err := os.Stat(absPath); err != nil {
+		if errors.Is(err, os.ErrNotExist) {
+			return "", fmt.Errorf("local composer path not found: %w", err)
+		}
+		return "", fmt.Errorf("failed to stat local composer path: %w", err)
+	}
+	return absPath, nil
 }
 
 // phpWrapperContent generates the bash script content for the PHP tool wrapper.
@@ -123,6 +131,9 @@ func verify(tools []*config.ComposerTool) error {
 			}
 			if tool.Repo == "" {
 				return fmt.Errorf("%w: composer tool %s", ErrMissingRepo, tool.Name)
+			}
+			if tool.SHA256 == "" {
+				return fmt.Errorf("%w: sha256 must be specified: %+v", ErrInvalidTool, tool)
 			}
 		}
 	}
