@@ -36,7 +36,13 @@ var (
 )
 
 // Install installs a list of Composer tools into the environment.
-func Install(ctx context.Context, tools []*config.ComposerTool, phpPath, bin string) error {
+// If projectPath is provided, it also installs dependencies for that PHP project.
+func Install(ctx context.Context, projectPath string, tools []*config.ComposerTool, phpPath, bin string) error {
+	paths := []string{}
+	if projectPath != "" {
+		paths = append(paths, projectPath)
+	}
+
 	if err := verify(tools); err != nil {
 		return err
 	}
@@ -54,9 +60,8 @@ func Install(ctx context.Context, tools []*config.ComposerTool, phpPath, bin str
 		if err != nil {
 			return err
 		}
-		if err := command.RunInDir(ctx, dir, "composer", "install", "--no-interaction", "--prefer-dist"); err != nil {
-			return fmt.Errorf("failed to run composer install: %w", err)
-		}
+		paths = append(paths, dir)
+
 		wrapperName := filepath.Base(tool.Name)
 		if wrapperName == "gapic-generator-php" {
 			// Currently, this assumes the tool is the gapic-generator-php. This specific
@@ -76,6 +81,12 @@ func Install(ctx context.Context, tools []*config.ComposerTool, phpPath, bin str
 			return fmt.Errorf("tool installation for non-generator composer tools is not yet supported")
 		}
 	}
+
+	for _, path := range paths {
+		if err := command.RunStreamingInDir(ctx, path, "composer", "install", "--no-interaction", "--prefer-dist"); err != nil {
+			return fmt.Errorf("failed to run composer install: %w", err)
+		}
+	}
 	return nil
 }
 
@@ -92,14 +103,6 @@ func localPath(path string) (string, error) {
 		return "", fmt.Errorf("failed to stat local composer path: %w", err)
 	}
 	return absPath, nil
-}
-
-// InstallProject installs dependencies for the current PHP project in the workspace.
-func InstallProject(ctx context.Context) error {
-	if err := command.RunStreaming(ctx, "composer", "install"); err != nil {
-		return fmt.Errorf("failed to run composer install: %w", err)
-	}
-	return nil
 }
 
 // phpWrapperContent generates the bash script content for the PHP tool wrapper.
