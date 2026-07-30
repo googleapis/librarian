@@ -95,36 +95,40 @@ func TestInstall(t *testing.T) {
 		t.Fatal(err)
 	}
 	t.Setenv("PATH", stubDir)
-	tools := &config.Tools{
-		Maven: []*config.MavenTool{
-			{
-				Name:       "google-java-format",
-				GroupID:    "com.google.googlejavaformat",
-				ArtifactID: "google-java-format",
-				Version:    "1.25.2",
-				Classifier: "all-deps",
-				Packaging:  "jar",
-			},
-			{
-				Name:       "protoc-gen-java_grpc",
-				GroupID:    "io.grpc",
-				ArtifactID: "protoc-gen-grpc-java",
-				Version:    "1.81.0",
-				Classifier: "linux-x86_64",
-				Packaging:  "exe",
-			},
-			{
-				Name:      "protoc-gen-java_gapic",
-				LocalPath: "sdk-platform-java/gapic-generator-java",
-				MainClass: "com.google.api.generator.Main",
-				Packaging: "jar",
-			},
+	tools := []*config.MavenTool{
+		{
+			Name:       "google-java-format",
+			GroupID:    "com.google.googlejavaformat",
+			ArtifactID: "google-java-format",
+			Version:    "1.25.2",
+			Classifier: "all-deps",
+			Packaging:  "jar",
+		},
+		{
+			Name:       "protoc-gen-java_grpc",
+			GroupID:    "io.grpc",
+			ArtifactID: "protoc-gen-grpc-java",
+			Version:    "1.81.0",
+			Classifier: "linux-x86_64",
+			Packaging:  "exe",
+		},
+		{
+			Name:      "protoc-gen-java_gapic",
+			LocalPath: "sdk-platform-java/gapic-generator-java",
+			MainClass: "com.google.api.generator.Main",
+			Packaging: "jar",
 		},
 	}
 	binDir := filepath.Join(tmpDir, "java_tools", "bin")
+	if err := os.MkdirAll(binDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
 	libDir := filepath.Join(tmpDir, "java_tools", "lib")
+	if err := os.MkdirAll(libDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
 	t.Setenv("LIBRARIAN_BIN", tmpDir)
-	if err := Install(t.Context(), tools.Maven, binDir, libDir); err != nil {
+	if err := Install(t.Context(), tools, binDir, libDir); err != nil {
 		t.Fatal(err)
 	}
 	for _, s := range stubs {
