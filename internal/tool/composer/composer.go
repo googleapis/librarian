@@ -59,19 +59,21 @@ func Install(ctx context.Context, tools []*config.ComposerTool, phpPath, bin str
 			return fmt.Errorf("failed to run composer install: %w", err)
 		}
 		wrapperName := filepath.Base(tool.Name)
-		if wrapperName == "gapic-generator-php" {
-			// Currently, this assumes the tool is the gapic-generator-php. This specific
-			// wrapper logic will not work for generic Composer tools because:
-			// 1. It hardcodes the executable entry point to "src/Main.php" (ignoring Composer's vendor/bin/ paths).
-			// 2. It injects specific PHP configurations (e.g. memory_limit=1024M) required to prevent the generator from crashing.
-			// See https://github.com/googleapis/gapic-generator-php/commit/685b419f2220e2d19c74e7f1464067f995cf1a95
-			destPath := filepath.Join(dir, "src", "Main.php")
-			wrapperContent := phpWrapperContent(phpPath, destPath)
-			if err := createBinWrapper(wrapperName, wrapperContent, bin); err != nil {
-				return err
+
+		// Determine the executable entry point. By default, composer tools expose
+		// their binaries in vendor/bin/. Some tools (like gapic-generator-php)
+		// might not publish a bin, so we fallback to src/Main.php if present.
+		destPath := filepath.Join(dir, "vendor", "bin", wrapperName)
+		if _, err := os.Stat(destPath); errors.Is(err, fs.ErrNotExist) {
+			fallbackPath := filepath.Join(dir, "src", "Main.php")
+			if _, err := os.Stat(fallbackPath); err == nil {
+				destPath = fallbackPath
 			}
-		} else {
-			return fmt.Errorf("tool installation for non-generator composer tools is not yet supported")
+		}
+
+		wrapperContent := phpWrapperContent(phpPath, destPath)
+		if err := createBinWrapper(wrapperName, wrapperContent, bin); err != nil {
+			return err
 		}
 	}
 	return nil

@@ -31,7 +31,10 @@ func TestInstall(t *testing.T) {
 	cache := t.TempDir()
 	t.Setenv("LIBRARIAN_CACHE", cache)
 	repoDir := filepath.Join(cache, "github.com/googleapis/gapic-generator-php@1.0.0")
-	if err := os.MkdirAll(filepath.Join(repoDir, "dummy"), 0o755); err != nil {
+	if err := os.MkdirAll(filepath.Join(repoDir, "src"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(repoDir, "src", "Main.php"), nil, 0o644); err != nil {
 		t.Fatal(err)
 	}
 	bin := t.TempDir()
@@ -194,6 +197,12 @@ func TestInstall_LocalPath(t *testing.T) {
 	t.Setenv("PATH", bin+string(os.PathListSeparator)+os.Getenv("PATH"))
 
 	localDir := t.TempDir()
+	if err := os.MkdirAll(filepath.Join(localDir, "src"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(localDir, "src", "Main.php"), nil, 0o644); err != nil {
+		t.Fatal(err)
+	}
 	tools := []*config.ComposerTool{
 		{
 			Name:      "gapic-generator-php",
