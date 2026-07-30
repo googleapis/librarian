@@ -19,7 +19,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"io/fs"
 	"os"
 	"path/filepath"
 
@@ -64,7 +63,7 @@ func Install(ctx context.Context, tools []*config.ComposerTool, phpPath, bin str
 		// their binaries in vendor/bin/. Some tools (like gapic-generator-php)
 		// might not publish a bin, so we fallback to src/Main.php if present.
 		destPath := filepath.Join(dir, "vendor", "bin", wrapperName)
-		if _, err := os.Stat(destPath); errors.Is(err, fs.ErrNotExist) {
+		if _, err := os.Stat(destPath); errors.Is(err, os.ErrNotExist) {
 			fallbackPath := filepath.Join(dir, "src", "Main.php")
 			if _, err := os.Stat(fallbackPath); err == nil {
 				destPath = fallbackPath
@@ -86,7 +85,7 @@ func localPath(path string) (string, error) {
 		return "", fmt.Errorf("failed to resolve absolute path for %s: %w", path, err)
 	}
 	if _, err := os.Stat(absPath); err != nil {
-		if errors.Is(err, fs.ErrNotExist) {
+		if errors.Is(err, os.ErrNotExist) {
 			return "", fmt.Errorf("local composer path not found: %w", err)
 		}
 		return "", fmt.Errorf("failed to stat local composer path: %w", err)
