@@ -184,8 +184,14 @@ func SetupRepo(t *testing.T) string {
 	return remoteDir
 }
 
-// SetupRepo creates a git repository for testing with some initial content. It
-// returns the path of the remote repository.
+// SetupSwiftRepo creates a git repository configured to test the `bump` command.
+//
+// In the tests we need a repository with:
+// - An upstream remote
+// - A previous tag
+// - The minimal contents to simulate some package version bumps
+//
+// Returns the path of the remote repository.
 func SetupSwiftRepo(t *testing.T) string {
 	remoteDir := t.TempDir()
 	ContinueInNewGitRepository(t, remoteDir)

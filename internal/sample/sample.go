@@ -32,9 +32,9 @@ const (
 	// InitialLegacyRustTag is the tag form of [InitialVersion] for use in
 	// tests of the legacy Rust behavior where each release has a single tag.
 	InitialLegacyRustTag = "v1.0.0"
-	// InitialLegacyRustTag is the tag form of [InitialVersion] for use in
-	// tests of the legacy Rust behavior where each release has a single tag.
-	InitialLegacySwiftTag = "v1.0.0"
+	// InitialSwiftTag is the tag form of [InitialVersion] for use in
+	// tests of the Swift behavior where each release has a single tag.
+	InitialSwiftTag = "preview-20260809"
 	// InitialLib1Tag is the tag form of [Lib1Name] [InitialVersion] for use in
 	// tests.
 	InitialLib1Tag = "google-cloud-storage/v1.0.0"

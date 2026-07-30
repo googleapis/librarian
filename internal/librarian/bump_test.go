@@ -1287,7 +1287,7 @@ func TestLegacySwiftBump(t *testing.T) {
 			opts := testhelper.SetupOptions{
 				Clone:       true,
 				Config:      cfg,
-				Tags:        []string{sample.InitialLegacySwiftTag},
+				Tags:        []string{sample.InitialSwiftTag},
 				WithChanges: test.withChanges,
 			}
 			testhelper.Setup(t, opts)
@@ -1346,11 +1346,11 @@ func TestLegacySwiftBumpAll(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			targetCfg := test.cfg
 			targetCfg.Language = config.LanguageSwift
-			sinceTag := sample.InitialLegacySwiftTag
+			sinceTag := sample.InitialSwiftTag
 			opts := testhelper.SetupOptions{
 				Clone:       true,
 				Config:      test.cfg,
-				Tags:        []string{sample.InitialLegacySwiftTag},
+				Tags:        []string{sample.InitialSwiftTag},
 				WithChanges: test.withChanges,
 			}
 			testhelper.Setup(t, opts)
