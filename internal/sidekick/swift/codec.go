@@ -267,7 +267,6 @@ func (c *codec) skipDependency(dep *Dependency) bool {
 	// During conversion generation, the raw Protobuf stubs module (c.ModulePath, e.g., "StorageControlProtos")
 	// is already statically imported via internal import statements in the conversion file template.
 	// We skip it dynamically to avoid emitting duplicate "import StorageControlProtos" statements.
-	// if c.Module && dep.Name == c.ModulePath {
 	if c.Module && dep.Name == c.ModulePath {
 		return true
 	}
