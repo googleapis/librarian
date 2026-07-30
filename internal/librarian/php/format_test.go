@@ -15,9 +15,9 @@
 package php
 
 import (
-	"bytes"
 	"context"
 	"errors"
+	"io"
 	"io/fs"
 	"os"
 	"os/exec"
@@ -46,7 +46,6 @@ class Foo {
 `
 	// Prettier PHP formatting should standardize spaces and convert double quotes to single quotes.
 	want := `<?php
-
 class Foo
 {
     public function bar($a, $b)
@@ -96,14 +95,16 @@ func TestPrettierEnv(t *testing.T) {
 	}
 }
 
-func phpSupported(ctx context.Context, prettierPath string) bool {
-	var stdout bytes.Buffer
-	cmd := exec.CommandContext(ctx, prettierPath, "--support-info")
-	cmd.Stdout = &stdout
-	if err := cmd.Run(); err != nil {
-		return false
-	}
-	return strings.Contains(stdout.String(), `"PHP"`)
+// phpSupported checks if prettier supports PHP by attempting to format a dummy snippet.
+// We must test actual formatting with the --plugin flag because:
+// 1. pnpm's symlinked node_modules structure prevents automatic plugin discovery.
+// 2. Prettier 2's --support-info command ignores the --plugin flag, so we cannot query it directly.
+func phpSupported(ctx context.Context, prettierPath, pluginPath string) bool {
+	cmd := exec.CommandContext(ctx, prettierPath, "--plugin="+pluginPath, "--parser=php")
+	cmd.Stdin = strings.NewReader("<?php class Foo {}")
+	cmd.Stdout = io.Discard
+	cmd.Stderr = io.Discard
+	return cmd.Run() == nil
 }
 
 // requirePrettier skips the test if prettier or the PHP plugin is not available.
@@ -111,11 +112,11 @@ func requirePrettier(t *testing.T) {
 	t.Helper()
 	// TODO(https://github.com/googleapis/librarian/issues/7118):
 	// Use testhelper.RequireCommand once it supports cached tools.
-	prettierPath, _, err := prettierToolPaths()
+	prettierPath, pluginPath, err := prettierToolPaths()
 	if err != nil {
 		t.Skipf("prettier tools not available: %v", err)
 	}
-	if !phpSupported(t.Context(), prettierPath) {
+	if !phpSupported(t.Context(), prettierPath, pluginPath) {
 		t.Skip("prettier does not support PHP (missing plugin?)")
 	}
 }
