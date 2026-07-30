@@ -58,7 +58,7 @@ func prettierToolPaths() (string, string, error) {
 	if _, err := os.Stat(prettierPath); err != nil {
 		return "", "", fmt.Errorf("prettier not found at %s: %w", prettierPath, err)
 	}
-	// In pnpm 8, global packages are installed in PNPM_HOME/global/5.
+	// In pnpm 7.16+ and pnpm 8, global packages are installed in PNPM_HOME/global/5.
 	// In librarian, PNPM_HOME is configured to nodeInstallDir/bin.
 	// Note: pnpm 9+ uses hashed directories for global packages, which is not supported by this path resolution.
 	pluginPath := filepath.Join(nodeInstallDir, "bin", "global", "5", "node_modules", "@prettier", "plugin-php")
