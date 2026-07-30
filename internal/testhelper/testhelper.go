@@ -163,7 +163,7 @@ func AddCrate(t *testing.T, location, name string) {
 func AddSwiftPackage(t *testing.T, location, name string) {
 	t.Helper()
 	_ = os.MkdirAll(path.Join(location, "Sources", name), 0o755)
-	contents := fmt.Appendf(nil, InitialCargoContents, name)
+	contents := fmt.Appendf(nil, "// Swift package %s\n", name)
 	if err := os.WriteFile(path.Join(location, "Package.swift"), contents, 0o644); err != nil {
 		t.Fatal(err)
 	}

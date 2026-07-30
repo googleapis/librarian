@@ -82,12 +82,12 @@ func TestVersionAlreadyBumpedNoChange(t *testing.T) {
 	testhelper.RequireCommand(t, "git")
 	setupForSwiftVersionBump(t, tag)
 	name := testManifest()
-	ok, err := versionAlreadyBumped(t.Context(), "git", tag, name)
+	bumped, err := versionAlreadyBumped(t.Context(), "git", tag, name)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if ok {
-		t.Errorf("expected versionAlreadyBumped() == true, got false")
+	if bumped {
+		t.Errorf("expected versionAlreadyBumped() == false, got true")
 	}
 }
 
