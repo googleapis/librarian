@@ -69,10 +69,7 @@ func Install(ctx context.Context, tools []*config.ComposerTool, phpPath, bin str
 			}
 			fallbackPath := filepath.Join(dir, "src", "Main.php")
 			if _, err := os.Stat(fallbackPath); err != nil {
-				if errors.Is(err, os.ErrNotExist) {
-					return fmt.Errorf("executable entry point not found for tool %s (checked %s and %s)", tool.Name, destPath, fallbackPath)
-				}
-				return fmt.Errorf("failed to stat fallback binary %s: %w", fallbackPath, err)
+				return fmt.Errorf("executable entry point not found for tool %s (checked %s and %s): %w", tool.Name, destPath, fallbackPath, err)
 			}
 			destPath = fallbackPath
 		}
