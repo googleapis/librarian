@@ -14,7 +14,6 @@ See the License for the specific language governing permissions and
 limitations under the License.
 }}
 
-{{> /templates/common/feature_gate}}
 impl gaxi::prost::ToProto<crate::prost::google::rpc::Status> for google_cloud_rpc::model::Status {
     type Output = crate::prost::google::rpc::Status;
     fn to_proto(self) -> std::result::Result<crate::prost::google::rpc::Status, gaxi::prost::ConvertError> {
@@ -30,7 +29,6 @@ impl gaxi::prost::ToProto<crate::prost::google::rpc::Status> for google_cloud_rp
     }
 }
 
-{{> /templates/common/feature_gate}}
 impl gaxi::prost::FromProto<google_cloud_rpc::model::Status> for crate::prost::google::rpc::Status {
     fn cnv(self) -> std::result::Result<google_cloud_rpc::model::Status, gaxi::prost::ConvertError> {
         let mut status = google_cloud_rpc::model::Status::new();
