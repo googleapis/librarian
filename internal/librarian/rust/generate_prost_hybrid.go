@@ -39,7 +39,7 @@ func generateProstHybrid(ctx context.Context, model *api.API, library *config.Li
 		return nil
 	}
 
-	hybridModel, unusedTypes, err := filterModelToStreaming(model)
+	hybridModel, unusedTypes, hasGoogleRpcStatus, err := filterModelToStreaming(model)
 	if err != nil {
 		return err
 	}
@@ -60,6 +60,9 @@ func generateProstHybrid(ctx context.Context, model *api.API, library *config.Li
 
 	convertModelCfg := *modelConfig
 	convertModelCfg.Codec = maps.Clone(modelConfig.Codec)
+	if hasGoogleRpcStatus {
+		convertModelCfg.Codec["include-rpc-status-conversion"] = "true"
+	}
 	convertModelCfg.Codec["template-override"] = "templates/convert-prost"
 	convertOutDir := filepath.Join(outdir, "src")
 	if err := sidekickrust.Generate(ctx, hybridModel, convertOutDir, &convertModelCfg); err != nil {
@@ -70,9 +73,10 @@ func generateProstHybrid(ctx context.Context, model *api.API, library *config.Li
 
 // filterModelToStreaming constructs a hybrid api.API model containing only
 // bidirectional streaming RPC types for prost conversion generation. It also returns
-// a sorted slice of all non-WKT unused type IDs to exclude via prost_build extern_path.
+// a sorted slice of all non-WKT unused type IDs to exclude via prost_build extern_path,
+// and a boolean indicating whether google.rpc.Status is referenced in the streaming path.
 // Errors if Any is encountered in the streaming reachability path.
-func filterModelToStreaming(model *api.API) (*api.API, []string, error) {
+func filterModelToStreaming(model *api.API) (*api.API, []string, bool, error) {
 	type streamingTypeItem struct {
 		id       string
 		rpc      string
@@ -111,9 +115,11 @@ func filterModelToStreaming(model *api.API) (*api.API, []string, error) {
 
 	// Discover all transitively reachable messages and enums.
 	visited := make(map[string]bool)
+	hasGoogleRpcStatus := false
 	for len(queue) > 0 {
 		item := queue[0]
 		queue = queue[1:]
+
 		if visited[item.id] {
 			continue
 		}
@@ -126,16 +132,23 @@ func filterModelToStreaming(model *api.API) (*api.API, []string, error) {
 		}
 
 		if isAnyType(item.id) {
-			return nil, nil, anyError(item.path)
+			return nil, nil, false, anyError(item.path)
 		}
 
 		msg := model.Message(item.id)
 		if msg != nil {
 			streamingMsgs[msg.ID] = true
+
+			// Shortcircuit search for google.rpc.Status to avoid inspecting its fields,
+			// which would otherwise error on Status.details (google.protobuf.Any).
+			if isGoogleRpcStatus(item.id) {
+				hasGoogleRpcStatus = true
+				continue
+			}
 			for _, f := range msg.Fields {
 				fieldPath := item.path + "." + f.Name
 				if isAnyType(f.TypezID) {
-					return nil, nil, anyError(fieldPath)
+					return nil, nil, false, anyError(fieldPath)
 				}
 				if f.Typez == api.TypezMessage && f.TypezID != "" {
 					queue = append(queue, streamingTypeItem{
@@ -153,7 +166,7 @@ func filterModelToStreaming(model *api.API) (*api.API, []string, error) {
 				for _, f := range o.Fields {
 					fieldPath := item.path + "." + o.Name + "." + f.Name
 					if isAnyType(f.TypezID) {
-						return nil, nil, anyError(fieldPath)
+						return nil, nil, false, anyError(fieldPath)
 					}
 					if f.Typez == api.TypezMessage && f.TypezID != "" {
 						queue = append(queue, streamingTypeItem{
@@ -224,11 +237,15 @@ func filterModelToStreaming(model *api.API) (*api.API, []string, error) {
 	}
 	slices.Sort(unusedTypes)
 
-	return &hybridModel, slices.Compact(unusedTypes), nil
+	return &hybridModel, slices.Compact(unusedTypes), hasGoogleRpcStatus, nil
 }
 
 func isAnyType(id string) bool {
 	return strings.TrimPrefix(id, ".") == "google.protobuf.Any"
+}
+
+func isGoogleRpcStatus(id string) bool {
+	return strings.TrimPrefix(id, ".") == "google.rpc.Status"
 }
 
 func isWKT(id string) bool {
