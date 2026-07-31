@@ -181,24 +181,23 @@ func TestGatherProtos(t *testing.T) {
 
 func TestGapicOpts(t *testing.T) {
 	for _, test := range []struct {
-		name           string
-		apiMetadata    *serviceconfig.API
-		grpcConfigPath string
-		googleapisDir  string
-		want           []string
+		name               string
+		apiMetadata        *serviceconfig.API
+		grpcConfigAbsPath  string
+		serviceYamlAbsPath string
+		want               []string
 	}{
 		{
-			name:          "defaults",
-			googleapisDir: "/absolute/path/to/googleapis",
-			want:          []string{"metadata", "transport=grpc+rest", "migration-mode=NEW_SURFACE_ONLY", "generate-snippets"},
+			name: "defaults",
+			want: []string{"metadata", "transport=grpc+rest", "migration-mode=NEW_SURFACE_ONLY", "generate-snippets"},
 		},
 		{
 			name: "with grpc config and service yaml",
 			apiMetadata: &serviceconfig.API{
-				ServiceConfig: "service.yaml",
+				ServiceConfig: "service.yaml", // The API struct might just hold it for transport, though we pass it below
 			},
-			grpcConfigPath: "grpc_config.json",
-			googleapisDir:  "/absolute/path/to/googleapis",
+			grpcConfigAbsPath:  "/absolute/path/to/googleapis/grpc_config.json",
+			serviceYamlAbsPath: "/absolute/path/to/googleapis/service.yaml",
 			want: []string{
 				"metadata", "transport=grpc+rest", "migration-mode=NEW_SURFACE_ONLY",
 				"rest-numeric-enums", "generate-snippets",
@@ -211,7 +210,6 @@ func TestGapicOpts(t *testing.T) {
 			apiMetadata: &serviceconfig.API{
 				SkipRESTNumericEnums: []string{"php"},
 			},
-			googleapisDir: "/absolute/path/to/googleapis",
 			want: []string{"metadata", "transport=grpc+rest", "migration-mode=NEW_SURFACE_ONLY",
 				"generate-snippets"},
 		},
@@ -222,13 +220,12 @@ func TestGapicOpts(t *testing.T) {
 					"php": serviceconfig.Transport("rest"),
 				},
 			},
-			googleapisDir: "/absolute/path/to/googleapis",
 			want: []string{"metadata", "transport=rest", "migration-mode=NEW_SURFACE_ONLY",
 				"rest-numeric-enums", "generate-snippets"},
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got := gapicOpts(test.apiMetadata, test.grpcConfigPath, test.googleapisDir)
+			got := gapicOpts(test.apiMetadata, test.grpcConfigAbsPath, test.serviceYamlAbsPath)
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
