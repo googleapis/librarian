@@ -40,7 +40,8 @@ jobs:
       - name: Setup test configuration
         run: |
           cp ./tool/cmd/migrate/librarian_php.yaml librarian.yaml
-          echo '{"config": {"vendor-dir": "php-vendor"}}' > composer.json
+          mkdir dev
+          echo '{"config": {"vendor-dir": "php-vendor"}}' > dev/composer.json
       - name: Install dependencies
         run: librarian install php
       - name: Run tests
