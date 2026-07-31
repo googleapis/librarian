@@ -41,6 +41,7 @@ func TestAnnotateEnum(t *testing.T) {
 			},
 			want: &enumAnnotations{
 				Name:              "Color",
+				ExtensionTypeName: "Color",
 				DocLines:          []string{"A color enum.", "With two lines."},
 				DefaultCaseName:   "unspecified",
 				UnknownIntName:    "unknownIntValue",
@@ -58,6 +59,7 @@ func TestAnnotateEnum(t *testing.T) {
 			},
 			want: &enumAnnotations{
 				Name:              "Protocol_",
+				ExtensionTypeName: "Protocol_",
 				DocLines:          []string{"An enum named Protocol."},
 				DefaultCaseName:   "unspecified",
 				UnknownIntName:    "unknownIntValue",
@@ -77,6 +79,7 @@ func TestAnnotateEnum(t *testing.T) {
 			},
 			want: &enumAnnotations{
 				Name:              "Weird",
+				ExtensionTypeName: "Weird",
 				DocLines:          []string{"An enum named Weird."},
 				DefaultCaseName:   "unspecified",
 				UnknownIntName:    "unknownIntValue_",
@@ -199,6 +202,7 @@ func TestAnnotateEnum_ModulePath(t *testing.T) {
 
 	want := &enumAnnotations{
 		Name:              "Color",
+		ExtensionTypeName: "Color",
 		DefaultCaseName:   "unspecified",
 		UnknownIntName:    "unknownIntValue",
 		UnknownStringName: "unknownStringValue",
@@ -241,6 +245,7 @@ func TestAnnotateEnum_NestedModulePath(t *testing.T) {
 
 	want := &enumAnnotations{
 		Name:              "InnerEnum",
+		ExtensionTypeName: "OuterMessage.InnerEnum",
 		DefaultCaseName:   "unspecified",
 		UnknownIntName:    "unknownIntValue",
 		UnknownStringName: "unknownStringValue",
