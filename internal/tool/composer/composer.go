@@ -36,7 +36,7 @@ var (
 )
 
 // Install installs a list of Composer tools into the environment.
-// It also installs dependencies for the PHP project if "." is provided as a local_path tool.
+// It also installs dependencies for the PHP project if a local_path tool (like "dev") is provided.
 func Install(ctx context.Context, tools []*config.ComposerTool, phpPath, bin string) error {
 	paths := []string{}
 	if err := verify(tools); err != nil {
