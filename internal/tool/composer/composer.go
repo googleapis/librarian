@@ -58,6 +58,9 @@ func Install(ctx context.Context, tools []*config.ComposerTool, phpPath, bin str
 			return fmt.Errorf("failed to run composer install: %w", err)
 		}
 		wrapperName := filepath.Base(tool.Name)
+		// Currently, this assumes the tool is the gapic-generator-php. This specific
+		// wrapper logic will not work for generic Composer tools because:
+		// It hardcodes the executable entry point to "src/Main.php" (ignoring Composer's vendor/bin/ paths).
 		destPath := filepath.Join(dir, "src", "Main.php")
 		if _, err := os.Stat(destPath); err != nil {
 			return fmt.Errorf("executable entry point not found for tool %s (checked %s): %w", tool.Name, destPath, err)
