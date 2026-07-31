@@ -107,28 +107,27 @@ func TestInstall_NoEntrypoint(t *testing.T) {
 }
 
 func TestVerify_Entrypoint(t *testing.T) {
-	tests := []struct {
+	for _, tt := range []struct {
 		name    string
 		tool    *config.ComposerTool
 		wantErr error
 	}{
 		{
-			name: "absolute entrypoint",
-			tool: &config.ComposerTool{Name: "foo", Version: "1.0.0", Repo: "bar", SHA256: "baz", Entrypoint: "/etc/passwd"},
+			name:    "absolute entrypoint",
+			tool:    &config.ComposerTool{Name: "foo", Version: "1.0.0", Repo: "bar", SHA256: "baz", Entrypoint: "/etc/passwd"},
 			wantErr: ErrInvalidTool,
 		},
 		{
-			name: "relative traversal",
-			tool: &config.ComposerTool{Name: "foo", Version: "1.0.0", Repo: "bar", SHA256: "baz", Entrypoint: "../foo.php"},
+			name:    "relative traversal",
+			tool:    &config.ComposerTool{Name: "foo", Version: "1.0.0", Repo: "bar", SHA256: "baz", Entrypoint: "../foo.php"},
 			wantErr: ErrInvalidTool,
 		},
 		{
-			name: "valid entrypoint",
-			tool: &config.ComposerTool{Name: "foo", Version: "1.0.0", Repo: "bar", SHA256: "baz", Entrypoint: "src/foo.php"},
+			name:    "valid entrypoint",
+			tool:    &config.ComposerTool{Name: "foo", Version: "1.0.0", Repo: "bar", SHA256: "baz", Entrypoint: "src/foo.php"},
 			wantErr: nil,
 		},
-	}
-	for _, tt := range tests {
+	} {
 		t.Run(tt.name, func(t *testing.T) {
 			err := verify([]*config.ComposerTool{tt.tool})
 			if !errors.Is(err, tt.wantErr) {

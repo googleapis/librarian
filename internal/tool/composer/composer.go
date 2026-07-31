@@ -39,7 +39,6 @@ var (
 // Install installs a list of Composer tools into the environment.
 // It also installs dependencies for the PHP project if a local_path tool (like "dev") is provided.
 func Install(ctx context.Context, tools []*config.ComposerTool, phpPath, bin string) error {
-	paths := []string{}
 	if err := verify(tools); err != nil {
 		return err
 	}
@@ -57,7 +56,9 @@ func Install(ctx context.Context, tools []*config.ComposerTool, phpPath, bin str
 		if err != nil {
 			return err
 		}
-		paths = append(paths, dir)
+		if err := command.RunInDir(ctx, dir, "composer", "install", "--no-interaction", "--prefer-dist"); err != nil {
+			return fmt.Errorf("failed to run composer install: %w", err)
+		}
 		if tool.Entrypoint == "" {
 			continue // No wrapper needed
 		}
@@ -66,14 +67,6 @@ func Install(ctx context.Context, tools []*config.ComposerTool, phpPath, bin str
 		wrapperContent := phpWrapperContent(phpPath, destPath)
 		if err := createBinWrapper(wrapperName, wrapperContent, bin); err != nil {
 			return err
-		}
-	}
-	for _, path := range paths {
-		if _, err := os.Stat(filepath.Join(path, "composer.json")); err != nil {
-			return fmt.Errorf("failed to stat composer.json in %s: %w", path, err)
-		}
-		if err := command.RunStreamingInDir(ctx, path, "composer", "install", "--no-interaction", "--prefer-dist"); err != nil {
-			return fmt.Errorf("failed to run composer install: %w", err)
 		}
 	}
 	return nil
