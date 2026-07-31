@@ -120,8 +120,8 @@ deep-copy-regex:
 		Tools: &config.Tools{
 			Composer: []*config.ComposerTool{
 				{
-					Name:      "google-cloud-php",
-					LocalPath: ".",
+					Name:      "google-cloud-php/dev",
+					LocalPath: "dev",
 				},
 				{
 					Name:    "google/gapic-generator-php",

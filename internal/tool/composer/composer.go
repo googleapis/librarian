@@ -57,7 +57,7 @@ func Install(ctx context.Context, tools []*config.ComposerTool, phpPath, bin str
 			return err
 		}
 		paths = append(paths, dir)
-		if tool.Name == "google-cloud-php" {
+		if tool.Name == "google-cloud-php/dev" {
 			continue // No wrapper needed for the project itself
 		}
 		wrapperName := filepath.Base(tool.Name)
