@@ -150,14 +150,12 @@ func generateAPI(ctx context.Context, params *generateAPIParams) (retErr error) 
 	if err != nil {
 		return err
 	}
-	var grpcConfigAbsPath, serviceYamlAbsPath string
-	if grpcConfigPath != "" {
-		grpcConfigAbsPath = filepath.Join(googleapisDir, grpcConfigPath)
+	grpcConfigAbsPath := absConfigPath(googleapisDir, grpcConfigPath)
+	serviceConfigPath := ""
+	if apiMetadata != nil {
+		serviceConfigPath = apiMetadata.ServiceConfig
 	}
-	if apiMetadata != nil && apiMetadata.ServiceConfig != "" {
-		serviceYamlAbsPath = filepath.Join(googleapisDir, apiMetadata.ServiceConfig)
-	}
-	opts := gapicOpts(apiMetadata, grpcConfigAbsPath, serviceYamlAbsPath)
+	opts := gapicOpts(apiMetadata, grpcConfigAbsPath, absConfigPath(googleapisDir, serviceConfigPath))
 	additionalProtos := params.api.PHP.AdditionalProtos
 	includeCommonResources := *params.api.PHP.CommonResources
 	gapicProtos, err := gatherGAPICProtos(googleapisDir, params.api.Path, additionalProtos, includeCommonResources)
@@ -281,6 +279,13 @@ func gatherProtos(root string) ([]string, error) {
 	}
 	slices.Sort(protos)
 	return protos, nil
+}
+
+func absConfigPath(baseDir, configPath string) string {
+	if configPath == "" {
+		return ""
+	}
+	return filepath.Join(baseDir, configPath)
 }
 
 func gapicOpts(apiMetadata *serviceconfig.API, grpcConfigAbsPath, serviceYamlAbsPath string) []string {
