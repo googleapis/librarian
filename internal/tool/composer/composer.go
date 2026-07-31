@@ -33,9 +33,6 @@ var (
 
 	// ErrInvalidTool indicates that a Composer tool configuration is invalid.
 	ErrInvalidTool = errors.New("invalid tool configuration")
-
-	// ErrMissingComposerConfig indicates that composer.json was not found in the tool directory.
-	ErrMissingComposerConfig = errors.New("composer.json not found")
 )
 
 // Install installs a list of Composer tools into the environment.
@@ -84,9 +81,6 @@ func Install(ctx context.Context, tools []*config.ComposerTool, phpPath, bin str
 	}
 	for _, path := range paths {
 		if _, err := os.Stat(filepath.Join(path, "composer.json")); err != nil {
-			if errors.Is(err, os.ErrNotExist) {
-				return fmt.Errorf("%w in %s", ErrMissingComposerConfig, path)
-			}
 			return fmt.Errorf("failed to stat composer.json in %s: %w", path, err)
 		}
 		if err := command.RunStreamingInDir(ctx, path, "composer", "install", "--no-interaction", "--prefer-dist"); err != nil {
@@ -103,9 +97,6 @@ func localPath(path string) (string, error) {
 		return "", fmt.Errorf("failed to resolve absolute path for %s: %w", path, err)
 	}
 	if _, err := os.Stat(absPath); err != nil {
-		if errors.Is(err, os.ErrNotExist) {
-			return "", fmt.Errorf("local composer path not found: %w", err)
-		}
 		return "", fmt.Errorf("failed to stat local composer path: %w", err)
 	}
 	return absPath, nil
