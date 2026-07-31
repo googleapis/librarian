@@ -212,30 +212,31 @@ func TestDeriveRepoMetadata_Overrides(t *testing.T) {
 }
 
 func TestRepoMetadata_NoExcludedFields(t *testing.T) {
+	t.Parallel()
 	s := sample.RepoMetadata()
 	meta := &repoMetadata{
 		APIShortname: s.APIShortname,
 	}
 	tmpDir := t.TempDir()
 	if err := meta.write(tmpDir); err != nil {
-		t.Fatalf("write() = %v", err)
+		t.Fatal(err)
 	}
 
 	gotPath := filepath.Join(tmpDir, ".repo-metadata.json")
 	gotBytes, err := os.ReadFile(gotPath)
 	if err != nil {
-		t.Fatalf("os.ReadFile() = %v", err)
+		t.Fatal(err)
 	}
 
 	var got map[string]any
 	if err := json.Unmarshal(gotBytes, &got); err != nil {
-		t.Fatalf("json.Unmarshal() = %v", err)
+		t.Fatal(err)
 	}
 
-	if _, ok := got["excluded_dependencies"]; ok {
-		t.Errorf(".repo-metadata.json unexpectedly contains excluded_dependencies")
-	}
-	if _, ok := got["excluded_poms"]; ok {
-		t.Errorf(".repo-metadata.json unexpectedly contains excluded_poms")
+	forbiddenKeys := []string{"excluded_dependencies", "excluded_poms"}
+	for _, key := range forbiddenKeys {
+		if _, ok := got[key]; ok {
+			t.Error("unexpectedly contains " + key)
+		}
 	}
 }

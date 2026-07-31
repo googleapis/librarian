@@ -58,22 +58,10 @@ func Install(ctx context.Context, tools []*config.ComposerTool, phpPath, bin str
 			return fmt.Errorf("failed to run composer install: %w", err)
 		}
 		wrapperName := filepath.Base(tool.Name)
-
-		// Determine the executable entry point. By default, composer tools expose
-		// their binaries in vendor/bin/. Some tools (like gapic-generator-php)
-		// might not publish a bin, so we fallback to src/Main.php if present.
-		destPath := filepath.Join(dir, "vendor", "bin", wrapperName)
+		destPath := filepath.Join(dir, "src", "Main.php")
 		if _, err := os.Stat(destPath); err != nil {
-			if !errors.Is(err, os.ErrNotExist) {
-				return fmt.Errorf("failed to stat tool binary %s: %w", destPath, err)
-			}
-			fallbackPath := filepath.Join(dir, "src", "Main.php")
-			if _, err := os.Stat(fallbackPath); err != nil {
-				return fmt.Errorf("executable entry point not found for tool %s (checked %s and %s): %w", tool.Name, destPath, fallbackPath, err)
-			}
-			destPath = fallbackPath
+			return fmt.Errorf("executable entry point not found for tool %s (checked %s): %w", tool.Name, destPath, err)
 		}
-
 		wrapperContent := phpWrapperContent(phpPath, destPath)
 		if err := createBinWrapper(wrapperName, wrapperContent, bin); err != nil {
 			return err
