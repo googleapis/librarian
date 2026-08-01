@@ -1804,3 +1804,115 @@ func TestRequireCachedTool_Error(t *testing.T) {
 		})
 	}
 }
+
+func TestMovePackageFromStaging(t *testing.T) {
+	for _, test := range []struct {
+		name string
+		esm  bool
+		keep []string
+	}{
+		{
+			name: "standard commonjs",
+			esm:  false,
+		},
+		{
+			name: "esm library with keep files",
+			esm:  true,
+			keep: []string{"custom.txt"},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			repoRoot := t.TempDir()
+			binDir := t.TempDir()
+			t.Setenv("LIBRARIAN_BIN", binDir)
+
+			toolsBin := filepath.Join(binDir, "nodejs_tools", "bin")
+			if err := os.MkdirAll(toolsBin, 0o755); err != nil {
+				t.Fatal(err)
+			}
+			stubPath := filepath.Join(toolsBin, "gapic-node-processing")
+			if err := os.WriteFile(stubPath, []byte("#!/bin/sh\nexit 0\n"), 0o755); err != nil {
+				t.Fatal(err)
+			}
+
+			libName := "google-cloud-test"
+			stagingDir := filepath.Join(repoRoot, "owl-bot-staging", libName, "src")
+			if err := os.MkdirAll(stagingDir, 0o755); err != nil {
+				t.Fatal(err)
+			}
+			if err := os.WriteFile(filepath.Join(stagingDir, "index.ts"), []byte("console.log('hello');"), 0o644); err != nil {
+				t.Fatal(err)
+			}
+
+			outDir := filepath.Join(repoRoot, "packages", libName)
+			if err := os.MkdirAll(outDir, 0o755); err != nil {
+				t.Fatal(err)
+			}
+			for _, k := range test.keep {
+				if err := os.WriteFile(filepath.Join(outDir, k), []byte("keep content"), 0o644); err != nil {
+					t.Fatal(err)
+				}
+			}
+
+			lib := &config.Library{
+				Name: libName,
+				Keep: test.keep,
+				Nodejs: &config.NodejsPackage{
+					ESM: test.esm,
+				},
+			}
+			if err := movePackageFromStaging(t.Context(), lib, repoRoot, outDir); err != nil {
+				t.Fatal(err)
+			}
+		})
+	}
+}
+
+func TestMovePackageFromStaging_Error(t *testing.T) {
+	for _, test := range []struct {
+		name    string
+		setup   func(t *testing.T, repoRoot, toolsBin string)
+		wantErr error
+	}{
+		{
+			name: "missing gapic-node-processing tool",
+			setup: func(t *testing.T, repoRoot, toolsBin string) {
+			},
+			wantErr: errToolNotInstalled,
+		},
+		{
+			name: "combine-library execution fails",
+			setup: func(t *testing.T, repoRoot, toolsBin string) {
+				if err := os.WriteFile(filepath.Join(toolsBin, "gapic-node-processing"), []byte("#!/bin/sh\nexit 1\n"), 0o755); err != nil {
+					t.Fatal(err)
+				}
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			repoRoot := t.TempDir()
+			binDir := t.TempDir()
+			t.Setenv("LIBRARIAN_BIN", binDir)
+
+			toolsBin := filepath.Join(binDir, "nodejs_tools", "bin")
+			if err := os.MkdirAll(toolsBin, 0o755); err != nil {
+				t.Fatal(err)
+			}
+			outDir := filepath.Join(repoRoot, "packages", "google-cloud-test")
+			if err := os.MkdirAll(outDir, 0o755); err != nil {
+				t.Fatal(err)
+			}
+			lib := &config.Library{Name: "google-cloud-test"}
+			if test.setup != nil {
+				test.setup(t, repoRoot, toolsBin)
+			}
+			err := movePackageFromStaging(t.Context(), lib, repoRoot, outDir)
+			if err == nil {
+				t.Error("expected error, got nil")
+			}
+			if test.wantErr != nil && !errors.Is(err, test.wantErr) {
+				t.Errorf("error = %v, wantErr %v", err, test.wantErr)
+			}
+		})
+	}
+}
