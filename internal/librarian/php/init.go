@@ -48,6 +48,8 @@ func namespace(googleapisDir, apiPath string) (string, error) {
 			continue
 		}
 		if matches := namespaceRe.FindStringSubmatch(line); len(matches) > 1 {
+			// Backslashes are escapping chars in protobuf string literals, php namespace
+			// in proto need to use double slashes.
 			ns := strings.ReplaceAll(matches[1], `\\`, `\`)
 			// Stripe the version suffix.
 			return versionSuffixRe.ReplaceAllString(ns, ""), nil
