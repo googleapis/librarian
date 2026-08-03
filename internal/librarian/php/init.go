@@ -35,7 +35,6 @@ func namespace(file string) (string, error) {
 	for scanner.Scan() {
 		line := strings.TrimSpace(scanner.Text())
 		if matches := namespaceRe.FindStringSubmatch(line); len(matches) > 1 {
-
 			return strings.ReplaceAll(matches[1], `\\`, `\`), nil
 		}
 	}
