@@ -53,7 +53,6 @@ jobs:
           sparse-checkout-cone-mode: false
           sparse-checkout: |
             librarian.yaml
-            composer.json
             # Note: If changing the target of the smoke test below, update this sparse checkout rule.
             google-cloud-asset-v1/
       - name: Checkout google-cloud-ruby (Full)
@@ -86,7 +85,7 @@ jobs:
       - name: Verify tools
         run: |
           protoc --version
-          gem --Version
+          gem --version
       - name: Run internal/librarian/ruby tests and check coverage
         if: matrix.task == 'unit-test'
         run: go run ./tool/cmd/coverage ./internal/librarian/ruby
