@@ -27,7 +27,7 @@ import (
 var (
 	namespaceRe       = regexp.MustCompile(`php_namespace\)?\s*=\s*"([^"]+)"`)
 	versionSuffixRe   = regexp.MustCompile(`[\\.][vV]\d+.*$`)
-	packageRe         = regexp.MustCompile(`^package\s+([^\s;]+);`)
+	packageRe         = regexp.MustCompile(`^package\s+([^\s;]+)\s*;`)
 	errNoProtoPackage = errors.New("no proto package found")
 )
 
