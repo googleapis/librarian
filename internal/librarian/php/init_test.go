@@ -129,3 +129,34 @@ func TestNamespace_Error(t *testing.T) {
 		})
 	}
 }
+
+func TestComponentName(t *testing.T) {
+	for _, test := range []struct {
+		name      string
+		namespace string
+		want      string
+	}{
+		{
+			name:      "google cloud component",
+			namespace: `Google\Cloud\SecretManager`,
+			want:      "SecretManager",
+		},
+		{
+			name:      "google ads",
+			namespace: `Google\Ads\GoogleAds`,
+			want:      "AdsGoogleAds",
+		},
+		{
+			name:      "google shopping",
+			namespace: `Google\Shopping\Merchant\Conversions`,
+			want:      "ShoppingMerchantConversions",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := componentName(test.namespace)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}

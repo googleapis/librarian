@@ -61,6 +61,15 @@ func namespace(googleapisDir, apiPath string) (string, error) {
 	return backupNamespace(apiPath), nil
 }
 
+// componentName returns the component name from a namespace.
+func componentName(namespace string) string {
+	if comp, ok := strings.CutPrefix(namespace, `Google\Cloud\`); ok {
+		return comp
+	}
+	comp := strings.TrimPrefix(namespace, `Google\`)
+	return strings.ReplaceAll(comp, `\`, "")
+}
+
 // searchForProto finds the first .proto file in the API directory.
 func searchForProto(googleapisDir, apiPath string) (string, error) {
 	dir := filepath.Join(googleapisDir, apiPath)
