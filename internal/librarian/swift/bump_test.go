@@ -67,7 +67,7 @@ func TestVersionAlreadyBumpedNewPackage(t *testing.T) {
 	testhelper.RunGit(t, "add", ".")
 	testhelper.RunGit(t, "commit", "-m", "new package", ".")
 
-	name := testManifest()
+	name := path.Join(testPackageName, "Sources", "GoogleCloudNew", manifestFile)
 	bumped, err := versionAlreadyBumped(t.Context(), "git", tag, name)
 	if err != nil {
 		t.Fatal(err)
@@ -97,7 +97,7 @@ func TestVersionAlreadyBumpedBadDiff(t *testing.T) {
 	setupForSwiftVersionBump(t, tag)
 	name := testManifest()
 	if updated, err := versionAlreadyBumped(t.Context(), "git", "not-a-valid-tag", name); err == nil {
-		t.Errorf("expected an error with an valid tag, got=%v", updated)
+		t.Errorf("expected an error with an invalid tag, got=%v", updated)
 	}
 }
 
@@ -107,7 +107,7 @@ func TestVersionBadDirectory(t *testing.T) {
 	setupForSwiftVersionBump(t, tag)
 	name := path.Join("not-the-right-package", "Sources", "NotTheRightLibrary", manifestFile)
 	if updated, err := versionAlreadyBumped(t.Context(), "git", "not-a-valid-tag", name); err == nil {
-		t.Errorf("expected an error with an valid tag, got=%v", updated)
+		t.Errorf("expected an error with an invalid tag, got=%v", updated)
 	}
 }
 

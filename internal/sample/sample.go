@@ -59,10 +59,10 @@ const (
 	// RustNextNonGAVersion is the next version of non-GA Rust client library
 	// starting from [RustNonGAVersion].
 	RustNextNonGAVersion = "0.1.1-beta"
-	// SwiftNonGAVersion is a non-GA client library version typical of a Rust
+	// SwiftNonGAVersion is a non-GA client library version typical of a Swift
 	// client library.
 	SwiftNonGAVersion = "0.1.0-preview"
-	// SwiftNextNonGAVersion is the next version of non-GA Rust client library
+	// SwiftNextNonGAVersion is the next version of non-GA Swift client library
 	// starting from [RustNonGAVersion].
 	SwiftNextNonGAVersion = "0.2.0-preview"
 )
