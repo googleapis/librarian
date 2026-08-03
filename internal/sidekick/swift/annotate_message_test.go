@@ -52,7 +52,7 @@ func TestAnnotateMessage(t *testing.T) {
 				ProtoTypeName:       "Test_Secret",
 				ModulePath:          "",
 			},
-			wantImports: []string{"GoogleCloudWkt"},
+			wantImports: []string{"GoogleCloudWKT"},
 		},
 		{
 			name: "escaped name",
@@ -72,7 +72,7 @@ func TestAnnotateMessage(t *testing.T) {
 				ProtoTypeName:       "Test_Protocol_",
 				ModulePath:          "",
 			},
-			wantImports: []string{"GoogleCloudWkt"},
+			wantImports: []string{"GoogleCloudWKT"},
 		},
 		{
 			name: "with oneof",
@@ -91,7 +91,7 @@ func TestAnnotateMessage(t *testing.T) {
 				ProtoTypeName:       "Test_WithOneof",
 				ModulePath:          "",
 			},
-			wantImports: []string{"GoogleCloudWkt"},
+			wantImports: []string{"GoogleCloudWKT"},
 		},
 		{
 			name: "with custom json name",
@@ -112,7 +112,7 @@ func TestAnnotateMessage(t *testing.T) {
 				ProtoTypeName:       "Test_WithCustomJSON",
 				ModulePath:          "",
 			},
-			wantImports: []string{"GoogleCloudWkt"},
+			wantImports: []string{"GoogleCloudWKT"},
 		},
 		{
 			name: "with pagination",
@@ -140,7 +140,7 @@ func TestAnnotateMessage(t *testing.T) {
 				ProtoTypeName:       "Test_WithPagination",
 				ModulePath:          "",
 			},
-			wantImports: []string{"GoogleCloudGax", "GoogleCloudWkt"},
+			wantImports: []string{"GoogleCloudGax", "GoogleCloudWKT"},
 		},
 		{
 			name: "service placeholder",
@@ -160,7 +160,7 @@ func TestAnnotateMessage(t *testing.T) {
 				ProtoTypeName:       "Test_Service",
 				ModulePath:          "",
 			},
-			wantImports: []string{"GoogleCloudWkt"},
+			wantImports: []string{"GoogleCloudWKT"},
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
@@ -459,7 +459,7 @@ func TestAnnotateMessage_Pagination(t *testing.T) {
 	if diff := cmp.Diff(wantRequest, gotRequest, cmpopts.IgnoreFields(messageAnnotations{}, "Model", "DependsOn")); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
-	wantRequestImports := []string{"GoogleCloudWkt"}
+	wantRequestImports := []string{"GoogleCloudWKT"}
 	if diff := cmp.Diff(wantRequestImports, gotRequest.MessageImports()); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
@@ -480,7 +480,7 @@ func TestAnnotateMessage_Pagination(t *testing.T) {
 	if diff := cmp.Diff(wantResponse, gotResponse, cmpopts.IgnoreFields(messageAnnotations{}, "Model", "DependsOn")); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
-	wantResponseImports := []string{"GoogleCloudGax", "GoogleCloudWkt"}
+	wantResponseImports := []string{"GoogleCloudGax", "GoogleCloudWKT"}
 	if diff := cmp.Diff(wantResponseImports, gotResponse.MessageImports()); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
@@ -536,7 +536,7 @@ func TestAnnotateMessage_RecursiveNested(t *testing.T) {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 
-	wantImports := []string{"GoogleCloudGax", "GoogleCloudWkt"}
+	wantImports := []string{"GoogleCloudGax", "GoogleCloudWKT"}
 	if diff := cmp.Diff(wantImports, gotOuter.MessageImports()); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}

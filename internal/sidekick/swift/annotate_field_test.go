@@ -316,8 +316,8 @@ func TestAnnotateField_Recursive(t *testing.T) {
 			repeated: false,
 			isOneOf:  false,
 			want: &fieldAnnotations{
-				FieldType:     "GoogleCloudWkt.Recursive<Node>?",
-				BaseFieldType: "GoogleCloudWkt.Recursive<Node>",
+				FieldType:     "GoogleCloudWKT.Recursive<Node>?",
+				BaseFieldType: "GoogleCloudWKT.Recursive<Node>",
 				Recursive:     true,
 				Decoding:      DecodingOptional,
 			},

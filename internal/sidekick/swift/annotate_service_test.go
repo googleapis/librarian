@@ -42,7 +42,7 @@ func TestAnnotateService(t *testing.T) {
 				StubPrefix:  "IAM",
 				DocLines:    []string{"IAM service documentation."},
 			},
-			wantImports: []string{"GoogleCloudWkt"},
+			wantImports: []string{"GoogleCloudWKT"},
 		},
 		{
 			name:        "Service with mangled name",
@@ -55,7 +55,7 @@ func TestAnnotateService(t *testing.T) {
 				StubPrefix:  "Protocol",
 				DocLines:    []string{"Docs are not relevant."},
 			},
-			wantImports: []string{"GoogleCloudWkt"},
+			wantImports: []string{"GoogleCloudWKT"},
 		},
 		{
 			name:        "SecretManagerService",
@@ -68,7 +68,7 @@ func TestAnnotateService(t *testing.T) {
 				StubPrefix:  "SecretManagerService",
 				DocLines:    []string{"Secret Manager Service documentation.", "Line 2."},
 			},
-			wantImports: []string{"GoogleCloudWkt"},
+			wantImports: []string{"GoogleCloudWKT"},
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
@@ -371,7 +371,7 @@ func TestAnnotateService_LRO(t *testing.T) {
 	if !annotations.HasLROs() {
 		t.Errorf("expected HasLROs() == true, annotations=%+v", annotations)
 	}
-	wantImports := []string{"GoogleCloudExternal", "GoogleCloudWkt", "GoogleLongrunning", "GoogleRpc"}
+	wantImports := []string{"GoogleCloudExternal", "GoogleCloudWKT", "GoogleLongrunning", "GoogleRpc"}
 	if diff := cmp.Diff(wantImports, annotations.ServiceImports()); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
@@ -418,7 +418,7 @@ func TestAnnotateService_Pagination(t *testing.T) {
 	}
 
 	annotations := service.Codec.(*serviceAnnotations)
-	wantImports := []string{"GoogleCloudExternal", "GoogleCloudWkt"}
+	wantImports := []string{"GoogleCloudExternal", "GoogleCloudWKT"}
 	if diff := cmp.Diff(wantImports, annotations.ServiceImports()); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
@@ -473,7 +473,7 @@ func TestAnnotateService_MapPagination(t *testing.T) {
 	}
 
 	annotations := service.Codec.(*serviceAnnotations)
-	wantImports := []string{"GoogleCloudExternal", "GoogleCloudWkt"}
+	wantImports := []string{"GoogleCloudExternal", "GoogleCloudWKT"}
 	if diff := cmp.Diff(wantImports, annotations.ServiceImports()); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
@@ -488,17 +488,17 @@ func TestAnnotateService_MethodSignatures(t *testing.T) {
 		{
 			name:        "no signature",
 			signatures:  nil,
-			wantImports: []string{"GoogleCloudWkt"},
+			wantImports: []string{"GoogleCloudWKT"},
 		},
 		{
 			name:        "unrealistic, but good for testing",
 			signatures:  []*api.MethodSignature{{Names: []string{"parent", "thing_id"}}},
-			wantImports: []string{"GoogleCloudWkt"},
+			wantImports: []string{"GoogleCloudWKT"},
 		},
 		{
 			name:        "with external field",
 			signatures:  []*api.MethodSignature{{Names: []string{"parent", "thing_id", "external_thing"}}},
-			wantImports: []string{"GoogleCloudExternal", "GoogleCloudWkt"},
+			wantImports: []string{"GoogleCloudExternal", "GoogleCloudWKT"},
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {

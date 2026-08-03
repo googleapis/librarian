@@ -98,8 +98,8 @@ func TestGenerateStub_Structure(t *testing.T) {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 
-	got = extractBlock(t, contentStr, `return try GoogleCloudWkt._ProtoJSONDecoder()`, ", from: data)\n    }")
-	want = `return try GoogleCloudWkt._ProtoJSONDecoder().decode(
+	got = extractBlock(t, contentStr, `return try GoogleCloudWKT._ProtoJSONDecoder()`, ", from: data)\n    }")
+	want = `return try GoogleCloudWKT._ProtoJSONDecoder().decode(
         SomeTestPackage.Response.self, from: data)
     }`
 	if diff := cmp.Diff(want, got); diff != "" {
