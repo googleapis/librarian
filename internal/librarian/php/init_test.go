@@ -30,7 +30,7 @@ func TestNamespace(t *testing.T) {
 		want    string
 	}{
 		{
-			name:    "option without parentheses",
+			name:    "php_namespace option",
 			content: `option php_namespace = "Google\\Cloud\\SecretManager\\V1";`,
 			want:    `Google\Cloud\SecretManager\V1`,
 		},
@@ -38,6 +38,11 @@ func TestNamespace(t *testing.T) {
 			name:    "extra whitespace",
 			content: `option php_namespace   =   "Google\\Cloud\\Storage";`,
 			want:    `Google\Cloud\Storage`,
+		},
+		{
+			name:    "no php_namespace option",
+			content: `syntax = "proto3";`,
+			want:    `Google\Cloud\Test\V1`,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
@@ -54,7 +59,7 @@ func TestNamespace(t *testing.T) {
 			}
 			got, err := namespace(tmpDir, apiPath)
 			if err != nil {
-				t.Fatalf("namespace() failed: %v", err)
+				t.Fatal(err)
 			}
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
