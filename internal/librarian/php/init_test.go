@@ -42,6 +42,11 @@ func TestNamespace(t *testing.T) {
 			want:    `Google\Cloud\Storage`,
 		},
 		{
+			name:    "ignore comments",
+			content: `//option php_namespace = "Google\\Cloud\\SecretManager\\V1";`,
+			want:    `Google\Cloud\Test\V1`,
+		},
+		{
 			name:    "no php_namespace option",
 			content: `syntax = "proto3";`,
 			want:    `Google\Cloud\Test\V1`,
