@@ -146,6 +146,11 @@ func TestComponentName(t *testing.T) {
 			namespace: `Google\Ads\GoogleAds`,
 			want:      "AdsGoogleAds",
 		},
+		{
+			name:      "google shopping",
+			namespace: `Google\Shopping\Merchant\Conversions`,
+			want:      "ShoppingMerchantConversions",
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			got := componentName(test.namespace)
