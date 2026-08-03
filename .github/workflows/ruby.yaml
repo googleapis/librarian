@@ -76,14 +76,6 @@ jobs:
           path: |
             ~/.cache/librarian
           key: librarian-ruby-tools-v2-${{ runner.os }}-${{ hashFiles('internal/config/**/*.go') }}-${{ hashFiles('google-cloud-ruby/librarian.yaml') }}
-      - name: Verify Ruby and Bundler installation
-        if: steps.cache-tools.outputs.cache-hit != 'true'
-        run: |
-          ruby -version
-          if ! command -v bundle &> /dev/null; then
-            sudo apt-get update && sudo apt-get install -y bundler
-          fi
-          bundle --version
       - name: Add Ruby tools to PATH
         run: echo "$HOME/.cache/librarian/bin/ruby_tools/bin" >> $GITHUB_PATH
       - name: Run librarian install
@@ -94,6 +86,7 @@ jobs:
       - name: Verify tools
         run: |
           protoc --version
+          gem --Version
       - name: Run internal/librarian/ruby tests and check coverage
         if: matrix.task == 'unit-test'
         run: go run ./tool/cmd/coverage ./internal/librarian/ruby
