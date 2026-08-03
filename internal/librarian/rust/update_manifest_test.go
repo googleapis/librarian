@@ -99,7 +99,7 @@ func TestShouldBumpManifestVersionBadDiff(t *testing.T) {
 	testhelper.SetupForVersionBump(t, tag)
 	name := path.Join("src", "storage", "Cargo.toml")
 	if updated, err := shouldBumpManifestVersion(t.Context(), "git", "not-a-valid-tag", name); err == nil {
-		t.Errorf("expected an error with an valid tag, got=%v", updated)
+		t.Errorf("expected an error with an invalid tag, got=%v", updated)
 	}
 }
 
