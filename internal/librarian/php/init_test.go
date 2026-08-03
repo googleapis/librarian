@@ -24,37 +24,6 @@ import (
 	"github.com/google/go-cmp/cmp"
 )
 
-func TestComponentName(t *testing.T) {
-	for _, test := range []struct {
-		name      string
-		namespace string
-		want      string
-	}{
-		{
-			name:      "google cloud component",
-			namespace: `Google\Cloud\SecretManager`,
-			want:      "SecretManager",
-		},
-		{
-			name:      "google ads",
-			namespace: `Google\Ads\GoogleAds`,
-			want:      "AdsGoogleAds",
-		},
-		{
-			name:      "google shopping",
-			namespace: `Google\Shopping\Merchant\Conversions`,
-			want:      "ShoppingMerchantConversions",
-		},
-	} {
-		t.Run(test.name, func(t *testing.T) {
-			got := componentName(test.namespace)
-			if diff := cmp.Diff(test.want, got); diff != "" {
-				t.Errorf("mismatch (-want +got):\n%s", diff)
-			}
-		})
-	}
-}
-
 func TestParseProto(t *testing.T) {
 	t.Parallel()
 	for _, test := range []struct {
@@ -221,5 +190,36 @@ option php_namespace = "Google\\Cloud\\SecretManager\\V1";`
 	}
 	if diff := cmp.Diff(want, got, cmp.AllowUnexported(initParams{})); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+}
+
+func TestDeriveComponentName(t *testing.T) {
+	for _, test := range []struct {
+		name      string
+		namespace string
+		want      string
+	}{
+		{
+			name:      "google cloud component",
+			namespace: `Google\Cloud\SecretManager`,
+			want:      "SecretManager",
+		},
+		{
+			name:      "google ads",
+			namespace: `Google\Ads\GoogleAds`,
+			want:      "AdsGoogleAds",
+		},
+		{
+			name:      "google shopping",
+			namespace: `Google\Shopping\Merchant\Conversions`,
+			want:      "ShoppingMerchantConversions",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := deriveComponentName(test.namespace)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
 	}
 }

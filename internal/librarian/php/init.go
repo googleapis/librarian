@@ -43,19 +43,10 @@ func newInitParams(googleapisDir, apiPath string) (*initParams, error) {
 		return nil, err
 	}
 	return &initParams{
-		componentName: componentName(ns),
+		componentName: deriveComponentName(ns),
 		namespace:     ns,
 		protoPackage:  pkg,
 	}, nil
-}
-
-// componentName returns the component name from a namespace.
-func componentName(namespace string) string {
-	if comp, ok := strings.CutPrefix(namespace, `Google\Cloud\`); ok {
-		return comp
-	}
-	comp := strings.TrimPrefix(namespace, `Google\`)
-	return strings.ReplaceAll(comp, `\`, "")
 }
 
 // parseProto reads the proto package and php_namespace option from the first .proto file
@@ -129,4 +120,13 @@ func backupNamespace(apiPath string) string {
 	ns := strings.Join(parts, `\`)
 	// Stripe the version suffix.
 	return versionSuffixRe.ReplaceAllString(ns, "")
+}
+
+// deriveComponentName returns the component name from a namespace.
+func deriveComponentName(namespace string) string {
+	if comp, ok := strings.CutPrefix(namespace, `Google\Cloud\`); ok {
+		return comp
+	}
+	comp := strings.TrimPrefix(namespace, `Google\`)
+	return strings.ReplaceAll(comp, `\`, "")
 }
