@@ -16,6 +16,7 @@ package php
 
 import (
 	"bufio"
+	"errors"
 	"io/fs"
 	"os"
 	"path/filepath"
@@ -24,9 +25,10 @@ import (
 )
 
 var (
-	namespaceRe     = regexp.MustCompile(`php_namespace\)?\s*=\s*"([^"]+)"`)
-	versionSuffixRe = regexp.MustCompile(`[\\.][vV]\d+.*$`)
-	packageRe       = regexp.MustCompile(`^package\s+([^\s;]+);`)
+	namespaceRe       = regexp.MustCompile(`php_namespace\)?\s*=\s*"([^"]+)"`)
+	versionSuffixRe   = regexp.MustCompile(`[\\.][vV]\d+.*$`)
+	packageRe         = regexp.MustCompile(`^package\s+([^\s;]+);`)
+	errNoProtoPackage = errors.New("no proto package found")
 )
 
 type initParams struct {
@@ -36,11 +38,7 @@ type initParams struct {
 }
 
 func newInitParams(googleapisDir, apiPath string) (*initParams, error) {
-	ns, err := namespace(googleapisDir, apiPath)
-	if err != nil {
-		return nil, err
-	}
-	pkg, err := protoPackage(googleapisDir, apiPath)
+	pkg, ns, err := parseProto(googleapisDir, apiPath)
 	if err != nil {
 		return nil, err
 	}
@@ -49,23 +47,6 @@ func newInitParams(googleapisDir, apiPath string) (*initParams, error) {
 		namespace:     ns,
 		protoPackage:  pkg,
 	}, nil
-}
-
-// namespace reads the php_namespace option from the first .proto file in the API directory.
-// If the option is not found, it generates a fallback namespace from the API path.
-func namespace(googleapisDir, apiPath string) (string, error) {
-	match, err := findInProto(googleapisDir, apiPath, namespaceRe)
-	if err != nil {
-		return "", err
-	}
-	if match == "" {
-		return backupNamespace(apiPath), nil
-	}
-	// Backslashes are escapping chars in protobuf string literals, php namespace
-	// in proto need to use double slashes.
-	ns := strings.ReplaceAll(match, `\\`, `\`)
-	// Stripe the version suffix.
-	return versionSuffixRe.ReplaceAllString(ns, ""), nil
 }
 
 // componentName returns the component name from a namespace.
@@ -77,35 +58,50 @@ func componentName(namespace string) string {
 	return strings.ReplaceAll(comp, `\`, "")
 }
 
-func protoPackage(googleapisDir, apiPath string) (string, error) {
-	match, err := findInProto(googleapisDir, apiPath, packageRe)
-	if err != nil || match == "" {
-		return match, err
-	}
-	return versionSuffixRe.ReplaceAllLiteralString(match, ""), nil
-}
-
-func findInProto(googleapisDir, apiPath string, re *regexp.Regexp) (string, error) {
+// parseProto reads the proto package and php_namespace option from the first .proto file
+// in the API directory. If the option is not found, it generates a fallback namespace
+// from the API path.
+func parseProto(googleapisDir, apiPath string) (string, string, error) {
 	file, err := searchForProto(googleapisDir, apiPath)
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
 	f, err := os.Open(file)
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
 	defer f.Close()
+	var pkg, ns string
 	scanner := bufio.NewScanner(f)
 	for scanner.Scan() {
 		line := strings.TrimSpace(scanner.Text())
 		if strings.HasPrefix(line, "//") {
 			continue
 		}
-		if matches := re.FindStringSubmatch(line); len(matches) > 1 {
-			return matches[1], nil
+		if matches := packageRe.FindStringSubmatch(line); len(matches) > 1 {
+			pkg = versionSuffixRe.ReplaceAllLiteralString(matches[1], "")
+		}
+		if matches := namespaceRe.FindStringSubmatch(line); len(matches) > 1 {
+			// Backslashes are escaping chars in protobuf string literals, php namespace
+			// in proto need to use double slashes.
+			raw := strings.ReplaceAll(matches[1], `\\`, `\`)
+			// Strip the version suffix.
+			ns = versionSuffixRe.ReplaceAllString(raw, "")
+		}
+		if pkg != "" && ns != "" {
+			break
 		}
 	}
-	return "", scanner.Err()
+	if err := scanner.Err(); err != nil {
+		return "", "", err
+	}
+	if pkg == "" {
+		return "", "", errNoProtoPackage
+	}
+	if ns == "" {
+		ns = backupNamespace(apiPath)
+	}
+	return pkg, ns, nil
 }
 
 // searchForProto finds the first .proto file in the API directory.

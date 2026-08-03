@@ -160,3 +160,78 @@ func TestComponentName(t *testing.T) {
 		})
 	}
 }
+
+func TestProtoPackage(t *testing.T) {
+	t.Parallel()
+	for _, test := range []struct {
+		name    string
+		content string
+		want    string
+		wantErr error
+	}{
+		{
+			name:    "valid package with version",
+			content: `package google.cloud.secretmanager.v1;`,
+			want:    `google.cloud.secretmanager`,
+		},
+		{
+			name:    "valid package without version",
+			content: `package google.backstory;`,
+			want:    `google.backstory`,
+		},
+		{
+			name:    "missing package",
+			content: `syntax = "proto3";`,
+			wantErr: errNoProtoPackage,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			tmpDir := t.TempDir()
+			apiPath := "google/cloud/test/v1"
+			dir := filepath.Join(tmpDir, apiPath)
+			if err := os.MkdirAll(dir, 0o755); err != nil {
+				t.Fatal(err)
+			}
+			file := filepath.Join(dir, "service.proto")
+			if err := os.WriteFile(file, []byte(test.content), 0o644); err != nil {
+				t.Fatal(err)
+			}
+			got, err := protoPackage(tmpDir, apiPath)
+			if !errors.Is(err, test.wantErr) {
+				t.Fatalf("protoPackage() error = %v, wantErr = %v", err, test.wantErr)
+			}
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestNewInitParams(t *testing.T) {
+	tmpDir := t.TempDir()
+	apiPath := "google/cloud/secretmanager/v1"
+	dir := filepath.Join(tmpDir, apiPath)
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	content := `
+package google.cloud.secretmanager.v1;
+option php_namespace = "Google\\Cloud\\SecretManager\\V1";
+`
+	if err := os.WriteFile(filepath.Join(dir, "service.proto"), []byte(content), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	want := &initParams{
+		componentName: "SecretManager",
+		namespace:     `Google\Cloud\SecretManager`,
+		protoPackage:  "google.cloud.secretmanager",
+	}
+	got, err := newInitParams(tmpDir, apiPath)
+	if err != nil {
+		t.Fatalf("newInitParams() error = %v", err)
+	}
+	if diff := cmp.Diff(want, got, cmp.AllowUnexported(initParams{})); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+}
