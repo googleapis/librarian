@@ -15,6 +15,8 @@
 package php
 
 import (
+	"errors"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"testing"
@@ -119,6 +121,77 @@ option php_namespace = "Google\\Backstory";`,
 			}
 			if diff := cmp.Diff(test.wantNS, gotNS); diff != "" {
 				t.Errorf("namespace mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestParseProto_Error(t *testing.T) {
+	t.Parallel()
+	for _, test := range []struct {
+		name    string
+		setup   func(t *testing.T, tmpDir string) string
+		wantErr error
+	}{
+		{
+			name: "missing api directory",
+			setup: func(t *testing.T, tmpDir string) string {
+				return "google/cloud/nonexistent/v1"
+			},
+			wantErr: fs.ErrNotExist,
+		},
+		{
+			name: "no proto files in directory",
+			setup: func(t *testing.T, tmpDir string) string {
+				apiPath := "google/cloud/test/v1"
+				dir := filepath.Join(tmpDir, apiPath)
+				if err := os.MkdirAll(dir, 0o755); err != nil {
+					t.Fatal(err)
+				}
+				if err := os.WriteFile(filepath.Join(dir, "README.md"), []byte("not a proto"), 0o644); err != nil {
+					t.Fatal(err)
+				}
+				return apiPath
+			},
+			wantErr: fs.ErrNotExist,
+		},
+		{
+			name: "ignore directory with proto extension",
+			setup: func(t *testing.T, tmpDir string) string {
+				apiPath := "google/cloud/test/v1"
+				dir := filepath.Join(tmpDir, apiPath, "fake.proto")
+				if err := os.MkdirAll(dir, 0o755); err != nil {
+					t.Fatal(err)
+				}
+				return apiPath
+			},
+			wantErr: fs.ErrNotExist,
+		},
+		{
+			name: "missing proto package",
+			setup: func(t *testing.T, tmpDir string) string {
+				apiPath := "google/cloud/test/v1"
+				dir := filepath.Join(tmpDir, apiPath)
+				if err := os.MkdirAll(dir, 0o755); err != nil {
+					t.Fatal(err)
+				}
+				content := `syntax = "proto3";
+option php_namespace = "Google\\Cloud\\Test";`
+				if err := os.WriteFile(filepath.Join(dir, "service.proto"), []byte(content), 0o644); err != nil {
+					t.Fatal(err)
+				}
+				return apiPath
+			},
+			wantErr: errNoProtoPackage,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			tmpDir := t.TempDir()
+			apiPath := test.setup(t, tmpDir)
+			_, _, err := parseProto(tmpDir, apiPath)
+			if !errors.Is(err, test.wantErr) {
+				t.Errorf("parseProto() error = %v, wantErr = %v", err, test.wantErr)
 			}
 		})
 	}
