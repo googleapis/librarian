@@ -43,35 +43,25 @@ func GenerateConversions(ctx context.Context, model *api.API, outdir string, lib
 		return string(contents), nil
 	}
 
-	var messages []*api.Message
-	for _, m := range model.Messages {
-		if m.Parent == nil && !m.IsMap && !m.ServicePlaceholder {
-			messages = append(messages, m)
-		}
-	}
-
-	var enums []*api.Enum
-	for _, e := range model.Enums {
-		if e.Parent == nil {
-			enums = append(enums, e)
-		}
-	}
-
-	if err := codec.generateEnumConversions(outdir, enums, provider); err != nil {
+	if err := codec.generateEnumConversions(outdir, provider); err != nil {
 		return err
 	}
-	if err := codec.generateMessageConversions(outdir, messages, provider); err != nil {
+	if err := codec.generateMessageConversions(outdir, provider); err != nil {
 		return err
 	}
 	return nil
 }
 
-func (c *codec) generateEnumConversions(outdir string, enums []*api.Enum, provider language.TemplateProvider) error {
-	for _, e := range enums {
+func (c *codec) generateEnumConversions(outdir string, provider language.TemplateProvider) error {
+	for _, e := range c.Model.Enums {
+		if e.Parent != nil {
+			continue
+		}
 		name := c.enumFileName(e)
+		output := c.conversionOutputPath(name)
 		generated := language.GeneratedFile{
 			TemplatePath: "templates/convert/convert_enum_file.swift.mustache",
-			OutputPath:   conversionFileName(name),
+			OutputPath:   output,
 		}
 		if err := language.GenerateEnum(outdir, e, provider, generated); err != nil {
 			return err
@@ -80,12 +70,16 @@ func (c *codec) generateEnumConversions(outdir string, enums []*api.Enum, provid
 	return nil
 }
 
-func (c *codec) generateMessageConversions(outdir string, messages []*api.Message, provider language.TemplateProvider) error {
-	for _, m := range messages {
+func (c *codec) generateMessageConversions(outdir string, provider language.TemplateProvider) error {
+	for _, m := range c.Model.Messages {
+		if m.Parent != nil || m.IsMap || m.ServicePlaceholder {
+			continue
+		}
 		name := c.messageFileName(m)
+		output := c.conversionOutputPath(name)
 		generated := language.GeneratedFile{
 			TemplatePath: "templates/convert/convert_message_file.swift.mustache",
-			OutputPath:   conversionFileName(name),
+			OutputPath:   output,
 		}
 		if err := language.GenerateMessage(outdir, m, provider, generated); err != nil {
 			return err
@@ -94,7 +88,7 @@ func (c *codec) generateMessageConversions(outdir string, messages []*api.Messag
 	return nil
 }
 
-func conversionFileName(typeName string) string {
+func (c *codec) conversionOutputPath(typeName string) string {
 	return typeName + "+Convert.swift"
 }
 
