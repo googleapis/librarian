@@ -89,11 +89,11 @@ jobs:
         if: matrix.task == 'unit-test'
         run: go run ./tool/cmd/coverage ./internal/librarian/ruby
       - name: Generate a single library (smoke test)
-        if: matrix.task == 'smoke-test'
+        if: matrix.task == 'smoke-test' && !(github.event_name == 'push' && github.ref == 'refs/heads/main')
         working-directory: google-cloud-ruby
         run: librarian generate google-cloud-asset-v1
       - name: Run librarian generate all (integration test)
-        if: matrix.task == 'integration'
+        if: matrix.task == 'integration' && !(github.event_name == 'push' && github.ref == 'refs/heads/main')
         working-directory: google-cloud-ruby
         run: librarian generate --all
   create-issue-on-failure:
