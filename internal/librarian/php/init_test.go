@@ -196,3 +196,30 @@ option php_namespace = "Google\\Cloud\\Test";`
 		})
 	}
 }
+
+func TestNewInitParams(t *testing.T) {
+	t.Parallel()
+	tmpDir := t.TempDir()
+	apiPath := "google/cloud/secretmanager/v1"
+	dir := filepath.Join(tmpDir, apiPath)
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	content := `package google.cloud.secretmanager.v1;
+option php_namespace = "Google\\Cloud\\SecretManager\\V1";`
+	if err := os.WriteFile(filepath.Join(dir, "service.proto"), []byte(content), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	got, err := newInitParams(tmpDir, apiPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := &initParams{
+		componentName: "SecretManager",
+		namespace:     `Google\Cloud\SecretManager`,
+		protoPackage:  "google.cloud.secretmanager",
+	}
+	if diff := cmp.Diff(want, got, cmp.AllowUnexported(initParams{})); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+}
