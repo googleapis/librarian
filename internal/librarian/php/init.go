@@ -75,6 +75,7 @@ func parseProto(googleapisDir, apiPath string) (string, string, error) {
 	scanner := bufio.NewScanner(f)
 	for scanner.Scan() {
 		line := strings.TrimSpace(scanner.Text())
+		// Ignore comments.
 		if strings.HasPrefix(line, "//") {
 			continue
 		}
