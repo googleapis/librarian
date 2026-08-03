@@ -76,8 +76,27 @@ func NewTestAPI(messages []*Message, enums []*Enum, services []*Service) *API {
 	return model
 }
 
+// WithPackageName changes the package name of an API instance.
 func (a *API) WithPackageName(name string) *API {
 	a.PackageName = name
+	return a
+}
+
+// WithCsharpNamespace changes the CsharpNamespace of an API instance.
+func (a *API) WithCsharpNamespace(name string) *API {
+	a.CsharpNamespace = name
+	return a
+}
+
+// WithPhpNamespace changes the PhpNamespace of an API instance.
+func (a *API) WithPhpNamespace(name string) *API {
+	a.PhpNamespace = name
+	return a
+}
+
+// WithRubyPackage changes the RubyNamespace of an API instance.
+func (a *API) WithRubyPackage(name string) *API {
+	a.RubyPackage = name
 	return a
 }
 
@@ -254,6 +273,13 @@ func (m *Method) WithPagination(pageToken *Field) *Method {
 func (m *Method) WithOperationInfo(info *OperationInfo) *Method {
 	m.IsLRO = true
 	m.OperationInfo = info
+	return m
+}
+
+// WithBidiStreaming sets the method as bidirectional streaming.
+func (m *Method) WithBidiStreaming() *Method {
+	m.ClientSideStreaming = true
+	m.ServerSideStreaming = true
 	return m
 }
 

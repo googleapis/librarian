@@ -840,7 +840,7 @@ type PHPAPI struct {
 
 // RubyPackage contains Ruby-specific library configuration.
 type RubyPackage struct {
-	// WrapperOf contains the names of versioned libraries that this library wraps.
+	// WrapperOf contains the API versions (e.g. "v1:0.29") of versioned libraries that this library wraps.
 	WrapperOf []string `yaml:"wrapper_of,omitempty"`
 }
 
@@ -853,8 +853,14 @@ type RubyCloudOpts struct {
 	// ExtraDependencies contains extra runtime dependencies to the .gemspec file.
 	ExtraDependencies string `yaml:"ruby-cloud-extra-dependencies,omitempty"`
 
+	// FactoryMethodSuffix appends a suffix to client constructor helper methods.
+	FactoryMethodSuffix string `yaml:"ruby-cloud-factory-method-suffix,omitempty"`
+
 	// GemNamespace is the root Ruby namespace.
 	GemNamespace string `yaml:"ruby-cloud-gem-namespace,omitempty"`
+
+	// MigrationVersion specifies the gem version milestone at which the library was migrated to GAPIC, generating a migration section in the README file.
+	MigrationVersion string `yaml:"ruby-cloud-migration-version,omitempty"`
 
 	// NamespaceOverride overrides token / segment replacements applied across all generated
 	// module & class paths.

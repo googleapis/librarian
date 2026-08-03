@@ -17,6 +17,7 @@ extension {{Codec.ParameterTypeName}} {
   internal typealias ProtoType = {{Codec.ProtoTypeName}}
 
   internal init(proto: ProtoType) throws {
+    self.init()
     {{#Fields}}
     {{#Codec.ProtoFieldName}}
     {{#Optional}}

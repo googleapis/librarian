@@ -164,7 +164,7 @@ func TestFind(t *testing.T) {
 				ShortName:            "compute",
 				Title:                "Google Compute Engine API",
 				Transports:           map[string]Transport{config.LanguageAll: Rest},
-				SkipRESTNumericEnums: []string{"go", "java", "python"},
+				SkipRESTNumericEnums: []string{"go", "java", "nodejs", "python"},
 			},
 		},
 	} {

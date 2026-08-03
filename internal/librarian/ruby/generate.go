@@ -19,6 +19,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"slices"
@@ -27,10 +28,11 @@ import (
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/filesystem"
 	"github.com/googleapis/librarian/internal/serviceconfig"
-	"github.com/googleapis/librarian/internal/snippetmetadata"
 	"github.com/googleapis/librarian/internal/sources"
 	"github.com/googleapis/librarian/internal/tool/protoc"
 )
+
+const commonResourcesProto = "google/cloud/common_resources.proto"
 
 var errNoAPIs = errors.New("no apis configured for library")
 
@@ -67,10 +69,8 @@ func Generate(ctx context.Context, cfg *config.Config, library *config.Library, 
 		pc = cfg.Tools.Protoc
 	}
 
-	// TODO(https://github.com/googleapis/librarian/issues/6885): Implement main client gem wrapper generation
-	// for libraries configured with `ruby.wrapper_of`.
 	for _, api := range library.APIs {
-		if err := generateAPI(ctx, api, library.Name, pc, googleapisDir, tempDir); err != nil {
+		if err := generateAPI(ctx, api, library, pc, googleapisDir, tempDir); err != nil {
 			return fmt.Errorf("api %q: %w", api.Path, err)
 		}
 	}
@@ -81,14 +81,11 @@ func Generate(ctx context.Context, cfg *config.Config, library *config.Library, 
 	if err := filesystem.MoveAndMergeWithKeep(tempDir, outDir, outDir, keepFunc); err != nil {
 		return fmt.Errorf("failed to move generated files: %w", err)
 	}
-	if err := snippetmetadata.UpdateAllLibraryVersions(outDir, library.Version); err != nil {
-		return fmt.Errorf("failed to update snippet metadata versions: %w", err)
-	}
 	return nil
 }
 
-func generateAPI(ctx context.Context, api *config.API, gemName string, pc *config.Protoc, googleapisDir, stagingDir string) error {
-	var additionalProtos []string
+func generateAPI(ctx context.Context, api *config.API, library *config.Library, pc *config.Protoc, googleapisDir, stagingDir string) error {
+	additionalProtos := []string{commonResourcesProto}
 	if api.Ruby != nil {
 		additionalProtos = append(additionalProtos, api.Ruby.AdditionalProtos...)
 	}
@@ -96,7 +93,7 @@ func generateAPI(ctx context.Context, api *config.API, gemName string, pc *confi
 	if err != nil {
 		return err
 	}
-	gapicOpts, err := buildGAPICOpts(api, gemName, googleapisDir)
+	gapicOpts, err := buildGAPICOpts(api, library, googleapisDir)
 	if err != nil {
 		return err
 	}
@@ -111,14 +108,20 @@ func generateAPI(ctx context.Context, api *config.API, gemName string, pc *confi
 	if err := os.MkdirAll(libStagingDir, 0o755); err != nil {
 		return fmt.Errorf("failed to create lib staging directory: %w", err)
 	}
-	grpcPluginPath := filepath.Join(installDir, "bin", "grpc_tools_ruby_protoc_plugin")
+	// A main client is a wrapper of a versioned client
+	isWrapper := library.Ruby != nil && len(library.Ruby.WrapperOf) > 0
 	args := []string{
 		"--experimental_allow_proto3_optional",
 		"-I=" + googleapisDir,
-		"--ruby_out=" + libStagingDir,
-		"--grpc_out=" + libStagingDir,
-		"--plugin=protoc-gen-grpc=" + grpcPluginPath,
 		"--ruby_cloud_out=" + stagingDir,
+	}
+	if !isWrapper {
+		grpcPluginPath := filepath.Join(installDir, "bin", "grpc_tools_ruby_protoc_plugin")
+		args = append(args,
+			"--ruby_out="+libStagingDir,
+			"--grpc_out="+libStagingDir,
+			"--plugin=protoc-gen-grpc="+grpcPluginPath,
+		)
 	}
 	if len(gapicOpts) > 0 {
 		args = append(args, "--ruby_cloud_opt="+strings.Join(gapicOpts, ","))
@@ -128,10 +131,22 @@ func generateAPI(ctx context.Context, api *config.API, gemName string, pc *confi
 	if err != nil {
 		return err
 	}
-	return protoc.RunOrSystem(ctx, env, pc, args...)
+	if err := protoc.RunOrSystem(ctx, env, pc, args...); err != nil {
+		return err
+	}
+	// Remove google/cloud/common_resources_pb.rb from staging after generation.
+	// Because librarian passes all protoFiles (including common_resources.proto) to protoc
+	// in a single invocation, protoc outputs common_resources_pb.rb into the lib/ directory.
+	// We delete it unconditionally so individual client gems do not bundle unused shared
+	// protobuf definitions, which would cause class redefinition warnings and collisions.
+	commonResourcesPB := filepath.Join(stagingDir, "lib", "google", "cloud", "common_resources_pb.rb")
+	if err := os.Remove(commonResourcesPB); err != nil && !errors.Is(err, fs.ErrNotExist) {
+		return fmt.Errorf("failed to remove %s: %w", commonResourcesPB, err)
+	}
+	return nil
 }
 
-func buildGAPICOpts(api *config.API, gemName, googleapisDir string) ([]string, error) {
+func buildGAPICOpts(api *config.API, library *config.Library, googleapisDir string) ([]string, error) {
 	sc, err := serviceconfig.Find(googleapisDir, api.Path, config.LanguageRuby)
 	if err != nil {
 		return nil, err
@@ -140,12 +155,15 @@ func buildGAPICOpts(api *config.API, gemName, googleapisDir string) ([]string, e
 	if err != nil {
 		return nil, err
 	}
-	var opts []string
-	if gemName != "" {
-		opts = append(opts, "ruby-cloud-gem-name="+gemName)
+	opts := []string{
+		"ruby-cloud-gem-name=" + library.Name,
 	}
 	if sc != nil && sc.ServiceConfig != "" {
 		opts = append(opts, "service-yaml="+filepath.Join(googleapisDir, sc.ServiceConfig))
+	}
+	if sc != nil && sc.Description != "" {
+		desc := escapeRubyCloudOptValue(strings.Join(strings.Fields(sc.Description), " "))
+		opts = append(opts, "ruby-cloud-description="+desc, "ruby-cloud-summary="+desc)
 	}
 	if gc != "" {
 		opts = append(opts, "grpc-service-config="+filepath.Join(googleapisDir, gc))
@@ -164,6 +182,13 @@ func buildGAPICOpts(api *config.API, gemName, googleapisDir string) ([]string, e
 		if api.Ruby.RubyCloudOpts.ExtraDependencies != "" {
 			opts = append(opts, "ruby-cloud-extra-dependencies="+api.Ruby.RubyCloudOpts.ExtraDependencies)
 		}
+		if api.Ruby.RubyCloudOpts.MigrationVersion != "" {
+			opts = append(opts, "ruby-cloud-migration-version="+api.Ruby.RubyCloudOpts.MigrationVersion)
+		}
+	}
+	if library.Ruby != nil && len(library.Ruby.WrapperOf) > 0 {
+		// This controls the dependency range declaration in the gemspec file.
+		opts = append(opts, "ruby-cloud-wrapper-of="+strings.Join(library.Ruby.WrapperOf, ";"))
 	}
 	return opts, nil
 }
@@ -222,4 +247,16 @@ func toolsEnv() (map[string]string, error) {
 		env["GEM_PATH"] = installDir
 	}
 	return env, nil
+}
+
+// escapeRubyCloudOptValue escapes backslashes and commas in generator option values
+// (such as ruby-cloud-description) so that protoc and gapic-generator-ruby parameter parsers
+// do not incorrectly split option strings when options are joined with commas.
+func escapeRubyCloudOptValue(val string) string {
+	// This follows the same escaping convention as Bazel's _escape_config_value in rules_ruby_gapic
+	// (rules_ruby_gapic/private/ruby_gapic_library_internal.bzl#L120-L121 in gapic-generator-ruby
+	// at commit 8fed6b7c117c7cebaeb5aa5c45eb3f866164eb75) and gapic-generator-ruby's unescaping
+	// logic in RequestParamParser (gapic-generator/lib/gapic/schema/request_param_parser.rb#L30-L32).
+	val = strings.ReplaceAll(val, "\\", "\\\\")
+	return strings.ReplaceAll(val, ",", "\\,")
 }

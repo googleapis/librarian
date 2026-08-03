@@ -17,12 +17,10 @@ package swift
 import (
 	"fmt"
 	"path/filepath"
-	"strconv"
 	"time"
 
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/sidekick/api"
-	"github.com/googleapis/librarian/internal/sidekick/parser"
 )
 
 const (
@@ -60,24 +58,28 @@ type codec struct {
 	// contains a single target and module with the same names as the library.
 	LibraryName string
 
+	// TargetLibraryName is the PascalCase name of the Swift SPM target/library being built
+	// (e.g. "GoogleCloudSecretManagerV1", "GoogleCloudStorage", or "GoogleCloudWkt").
+	//
+	// We need TargetLibraryName to correctly identify self-imports in skipDependency.
+	//
+	// In librarian.yaml, "modules" refers to individual generator
+	// sub-components (such as messages, or convert-swift for wkt/google.type). However,
+	// all those generated files are compiled into a single overarching Swift library target
+	// named after the PascalCase version of library.Name.
+	TargetLibraryName string
+
 	// The name of the Swift package (e.g. "google-cloud-secretmanager-v1").
 	PackageName string
 
 	// The package version (e.g. "1.2.3").
 	PackageVersion string
 
-	// The release level (e.g. "preview" or "stable").
-	ReleaseLevel string
-
 	// The location of the monorepo, relative to the current directory.
 	//
 	// Recall that sidekick only generates clients within a monorepo, so this
 	// always makes sense.
 	MonorepoRoot string
-
-	// Most libraries are generated from `googleapis`. Rarely, we use protobuf,
-	// gapic-showcase, or a different root.
-	RootName string
 
 	// Modules have a different directory structure.
 	Module bool
@@ -120,9 +122,22 @@ type codec struct {
 	// The name of the private module containing raw stubs (e.g. "StorageControlProtos").
 	// Used by convert-swift to generate internal imports and prefix raw types.
 	ModulePath string
+
+	// ResponseEncoding sets the `$alt` query parameter value.
+	//
+	// All RPCS over HTTP sent the `$alt` query parameter. In Google cloud this
+	// query parameter controls the format of the response. For most client
+	// libraries we use `json;enum-encoding=int`, but for discovery we need to
+	// use just `json` as the integer values for enums may not match our values.
+	ResponseEncoding string
 }
 
-func newCodec(model *api.API, cfg *parser.ModelConfig, swiftCfg *config.SwiftPackage, outdir string) (*codec, error) {
+const (
+	defaultResponseEncoding   = "json;enum-encoding=int"
+	discoveryResponseEncoding = "json"
+)
+
+func newCodec(model *api.API, library *config.Library, module *config.SwiftModule, outdir string) (*codec, error) {
 	year, _, _ := time.Now().Date()
 	absOutdir, err := filepath.Abs(outdir)
 	if err != nil {
@@ -139,23 +154,41 @@ func newCodec(model *api.API, cfg *parser.ModelConfig, swiftCfg *config.SwiftPac
 	if err != nil {
 		return nil, err
 	}
-	libraryName, err := LibraryName(model)
-	if err != nil {
-		return nil, err
+
+	generationYear := library.CopyrightYear
+	if generationYear == "" {
+		generationYear = fmt.Sprintf("%04d", year)
+	}
+
+	packageVersion := library.Version
+	if packageVersion == "" {
+		packageVersion = "0.0.0"
+	}
+
+	packageName := ""
+	if library.Swift != nil {
+		packageName = library.Swift.PackageNameOverride
+	}
+	if packageName == "" {
+		packageName = PackageName(model)
+	}
+	responseEncoding := defaultResponseEncoding
+	if library.SpecificationFormat == config.SpecDiscovery {
+		responseEncoding = discoveryResponseEncoding
 	}
 	result := &codec{
 		Model:              model,
-		GenerationYear:     fmt.Sprintf("%04d", year),
-		LibraryName:        libraryName,
-		PackageName:        PackageName(model),
-		PackageVersion:     "0.0.0",
-		ReleaseLevel:       "preview",
+		GenerationYear:     generationYear,
+		PackageName:        packageName,
+		PackageVersion:     packageVersion,
 		MonorepoRoot:       rel,
-		RootName:           "googleapis",
 		ApiPackages:        map[string]*Dependency{},
 		DependenciesByName: map[string]*Dependency{},
-		UrlSafeForBytes:    cfg.SpecificationFormat == config.SpecDiscovery,
+		UrlSafeForBytes:    library.SpecificationFormat == config.SpecDiscovery,
+		ResponseEncoding:   responseEncoding,
 	}
+
+	swiftCfg := library.Swift
 	if swiftCfg != nil {
 		for _, d := range swiftCfg.Dependencies {
 			dependency := Dependency{SwiftDependency: d}
@@ -168,29 +201,21 @@ func newCodec(model *api.API, cfg *parser.ModelConfig, swiftCfg *config.SwiftPac
 		result.PerServiceTraits = swiftCfg.PerServiceTraits
 		result.DefaultTraits = swiftCfg.DefaultTraits
 	}
-	for key, definition := range cfg.Codec {
-		switch key {
-		case "copyright-year":
-			result.GenerationYear = definition
-		case "version":
-			result.PackageVersion = definition
-		case "release-level":
-			result.ReleaseLevel = definition
-		case "package-name-override":
-			result.PackageName = definition
-		case "root-name":
-			result.RootName = definition
-		case "module":
-			value, err := strconv.ParseBool(definition)
-			if err != nil {
-				return nil, fmt.Errorf("cannot convert `module` value %q to boolean: %w", definition, err)
-			}
-			result.Module = value
-		case "module-path":
-			result.ModulePath = definition
-		default:
-			// Ignore other options.
-		}
+
+	if module != nil {
+		result.Module = true
+		result.ModulePath = module.ModulePath
+	}
+
+	libraryName, err := LibraryName(model, swiftCfg)
+	if err != nil {
+		return nil, err
+	}
+	result.TargetLibraryName = libraryName
+
+	if !result.Module {
+		// Modules cannot have library names, so they should not try to set the value.
+		result.LibraryName = libraryName
 	}
 	return result, nil
 }
@@ -217,12 +242,32 @@ func (c *codec) addDependency(dep *Dependency) (*Dependency, error) {
 	if dep == nil {
 		return nil, fmt.Errorf("attempting to add nil dependency")
 	}
-	// Skip including self as a dependency
-	if dep.Name == c.LibraryName {
+	if c.skipDependency(dep) {
 		return nil, nil
 	}
 	if ann, ok := c.Model.Codec.(*modelAnnotations); ok {
 		ann.DependsOn[dep.Name] = dep
 	}
 	return dep, nil
+}
+
+// skipDependency returns true if the dependency should be omitted from imports and dependency lists.
+func (c *codec) skipDependency(dep *Dependency) bool {
+	if dep == nil {
+		return true
+	}
+
+	// Do not import the Swift SPM library target that we are currently compiling into.
+	if c.TargetLibraryName != "" && dep.Name == c.TargetLibraryName {
+		return true
+	}
+
+	// During conversion generation, the raw Protobuf stubs module (c.ModulePath, e.g., "StorageControlProtos")
+	// is already statically imported via internal import statements in the conversion file template.
+	// We skip it dynamically to avoid emitting duplicate "import StorageControlProtos" statements.
+	if c.Module && dep.Name == c.ModulePath {
+		return true
+	}
+
+	return false
 }

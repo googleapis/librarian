@@ -16,6 +16,7 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io/fs"
@@ -26,13 +27,20 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/bazelbuild/buildtools/build"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/librarian"
 	"github.com/googleapis/librarian/internal/yaml"
 )
 
 var (
-	versionedAPIPath = regexp.MustCompile(`^/(.+/(v\d+\w*))/(.+)-ruby/(.*)$`)
+	// regexAPIPath matches OwlBot deep-copy-regex source paths for Ruby libraries.
+	// Capturing groups:
+	//   1: Base API path (e.g. "google/cloud/automl")
+	//   2: API version (e.g. "v1") or empty string for unversioned wrapper libraries
+	//   3: Gem directory name token (e.g. "[^/]+" or "google-cloud-automl-v1")
+	//   4: Trailing path contents after "-ruby/"
+	regexAPIPath = regexp.MustCompile(`^/(.+?)(?:/(v\d+\w*))?/(\[\^/\]\+|[^/]+)-ruby/(.*)$`)
 	// Skip these directories when searching for libraries.
 	skippedDirs = []string{".github"}
 )
@@ -45,16 +53,29 @@ type owlbotSrc struct {
 	Source string `yaml:"source"`
 }
 
-// VersionedBuild represents build configuration parsed from BUILD.bazel for a Ruby API version.
-type VersionedBuild struct {
-	EnvPrefix          string
-	ExtraDeps          string
-	GemNamespace       string
-	NamespaceOverride  string
-	PathOverride       string
-	ServiceOverride    string
-	WrapperGemOverride string
-	YardStrict         string
+type owlbotManifest struct {
+	Static []string `json:"static"`
+}
+
+// WrapperBuild represents build configuration parsed from BUILD.bazel for an unversioned Ruby wrapper library.
+type WrapperBuild struct {
+	Path   string
+	Params *ExtraProtoParams
+}
+
+// ExtraProtoParams represents extra protoc parameters parsed from BUILD.bazel for a Ruby API version.
+type ExtraProtoParams struct {
+	EnvPrefix           string
+	ExtraDeps           string
+	FactoryMethodSuffix string
+	GemNamespace        string
+	MigrationVersion    string
+	NamespaceOverride   string
+	PathOverride        string
+	ServiceOverride     string
+	WrapperGemOverride  string
+	WrapperOf           []string
+	YardStrict          string
 }
 
 func runRubyMigration(ctx context.Context, repoPath string) error {
@@ -141,104 +162,114 @@ func findRubyLibraries(googleapisPath, repoPath string) ([]*config.Library, erro
 		lib := &config.Library{
 			Name: name,
 		}
-		api, err := parseAPIFromOwlBot(owlBotPath)
+		keep, err := parseKeepFromManifest(filepath.Join(repoPath, name, ".owlbot-manifest.json"))
+		if err != nil {
+			return nil, err
+		}
+		lib.Keep = keep
+		keepFromOwlbot, err := parseKeepFromOwlbotRb(filepath.Join(repoPath, name, ".owlbot.rb"))
+		if err != nil {
+			return nil, err
+		}
+		lib.Keep = append(lib.Keep, keepFromOwlbot...)
+		api, isWrapper, err := parseAPIFromOwlBot(owlBotPath)
 		if err != nil {
 			return nil, err
 		}
 		if api != "" {
-			lib.APIs = []*config.API{
-				{
-					Path: api,
-				},
-			}
-			vb, err := parseVersionedBuild(googleapisPath, api)
-			if err != nil {
-				return nil, err
-			}
-			if vb != nil {
-				lib.APIs[0].Ruby = &config.RubyAPI{
-					RubyCloudOpts: &config.RubyCloudOpts{
-						EnvPrefix:          vb.EnvPrefix,
-						ExtraDependencies:  vb.ExtraDeps,
-						GemNamespace:       vb.GemNamespace,
-						NamespaceOverride:  vb.NamespaceOverride,
-						PathOverride:       vb.PathOverride,
-						ServiceOverride:    vb.ServiceOverride,
-						WrapperGemOverride: vb.WrapperGemOverride,
-						YardStrict:         vb.YardStrict,
+			if !isWrapper {
+				lib.APIs = []*config.API{
+					{
+						Path: api,
 					},
 				}
+				vb, err := parseVersionedBuild(googleapisPath, api)
+				if err != nil {
+					return nil, err
+				}
+				if vb != nil {
+					lib.APIs[0].Ruby = &config.RubyAPI{
+						RubyCloudOpts: &config.RubyCloudOpts{
+							EnvPrefix:          vb.EnvPrefix,
+							ExtraDependencies:  vb.ExtraDeps,
+							GemNamespace:       vb.GemNamespace,
+							NamespaceOverride:  vb.NamespaceOverride,
+							PathOverride:       vb.PathOverride,
+							ServiceOverride:    vb.ServiceOverride,
+							WrapperGemOverride: vb.WrapperGemOverride,
+							YardStrict:         vb.YardStrict,
+						},
+					}
+				}
+			} else {
+				wb, err := parseUnversionedBuild(googleapisPath, api)
+				if err != nil {
+					return nil, err
+				}
+				if wb != nil {
+					rubyAPI := &config.API{
+						Path: wb.Path,
+						Ruby: &config.RubyAPI{
+							RubyCloudOpts: &config.RubyCloudOpts{
+								EnvPrefix:           wb.Params.EnvPrefix,
+								ExtraDependencies:   wb.Params.ExtraDeps,
+								FactoryMethodSuffix: wb.Params.FactoryMethodSuffix,
+								GemNamespace:        wb.Params.GemNamespace,
+								MigrationVersion:    wb.Params.MigrationVersion,
+								NamespaceOverride:   wb.Params.NamespaceOverride,
+								PathOverride:        wb.Params.PathOverride,
+								ServiceOverride:     wb.Params.ServiceOverride,
+								WrapperGemOverride:  wb.Params.WrapperGemOverride,
+								YardStrict:          wb.Params.YardStrict,
+							},
+						},
+					}
+					lib.APIs = append(lib.APIs, rubyAPI)
+					if wb.Params != nil && len(wb.Params.WrapperOf) > 0 {
+						if lib.Ruby == nil {
+							lib.Ruby = &config.RubyPackage{}
+						}
+						lib.Ruby.WrapperOf = wb.Params.WrapperOf
+					}
+				}
 			}
+			libraries = append(libraries, lib)
 		}
-		libraries = append(libraries, lib)
 	}
-	parseWrapperOf(libraries)
 	return libraries, nil
 }
 
-func parseAPIFromOwlBot(owlBotPath string) (string, error) {
+// parseAPIFromOwlBot parses API details from OwlBot config and determines if the library is a wrapper.
+// It returns the API path, whether the library is a wrapper, and an error if parsing fails.
+func parseAPIFromOwlBot(owlBotPath string) (string, bool, error) {
 	data, err := os.ReadFile(owlBotPath)
 	if err != nil {
-		return "", fmt.Errorf("reading OwlBot config %s: %w", owlBotPath, err)
+		return "", false, fmt.Errorf("reading OwlBot config %s: %w", owlBotPath, err)
 	}
 	owlbot, err := yaml.Unmarshal[owlbotYaml](data)
 	if err != nil {
-		return "", fmt.Errorf("parsing OwlBot config %s: %w", owlBotPath, err)
+		return "", false, fmt.Errorf("parsing OwlBot config %s: %w", owlBotPath, err)
 	}
 	// Skip .github/.Owlbot.yaml.
 	if len(owlbot.DeepCopyRegex) == 0 {
-		return "", nil
+		return "", false, nil
 	}
-	// We only need the first entry since wrapper library will
-	// have different parsing logic.
 	src := owlbot.DeepCopyRegex[0].Source
-	matches := versionedAPIPath.FindStringSubmatch(src)
+	matches := regexAPIPath.FindStringSubmatch(src)
 	if len(matches) != 5 {
-		// A wrapper library doesn't have versioned API path.
-		return "", nil
+		return "", false, nil
 	}
-	return matches[1], nil
+	basePath := matches[1]
+	version := matches[2]
+	if version == "" {
+		// Unversioned wrapper library
+		return basePath, true, nil
+	}
+	// Versioned library
+	return basePath + "/" + version, false, nil
 }
 
-// parseWrapperOf sets the WrapperOf field for wrapper libraries.
-func parseWrapperOf(libraries []*config.Library) {
-	slices.SortFunc(libraries, func(a, b *config.Library) int {
-		return strings.Compare(a.Name, b.Name)
-	})
-	for i, lib := range libraries {
-		if len(lib.APIs) != 0 {
-			// Skip non-wrapper libraries.
-			continue
-		}
-		var wrapperOf []string
-		prefix := lib.Name + "-"
-		// Since libraries are sorted by name, the wrapped libraries
-		// are guaranteed to appear after the wrapper library.
-		for j := i + 1; j < len(libraries); j++ {
-			other := libraries[j]
-			if !strings.HasPrefix(other.Name, prefix) {
-				// Since libraries are sorted by name, the wrapped libraries
-				// must be consecutive.
-				break
-			}
-			suffix := strings.TrimPrefix(other.Name, prefix)
-			// Verify that the suffix after the prefix represents a valid version,
-			// e.g., starting with v followed by a digit.
-			// We use simple, string comparison because the migration tool will
-			// be removed after language onboarding.
-			if len(suffix) > 1 && suffix[0] == 'v' && suffix[1] >= '0' && suffix[1] <= '9' {
-				wrapperOf = append(wrapperOf, other.Name)
-			}
-		}
-		if len(wrapperOf) > 0 {
-			lib.Ruby = &config.RubyPackage{
-				WrapperOf: wrapperOf,
-			}
-		}
-	}
-}
-
-func parseVersionedBuild(googleapisDir, apiPath string) (*VersionedBuild, error) {
+func parseVersionedBuild(googleapisDir, apiPath string) (*ExtraProtoParams, error) {
 	file, err := parseBazel(googleapisDir, apiPath)
 	if err != nil {
 		return nil, err
@@ -246,30 +277,41 @@ func parseVersionedBuild(googleapisDir, apiPath string) (*VersionedBuild, error)
 	if file == nil {
 		return nil, nil
 	}
-	vb := &VersionedBuild{}
-	if rules := file.Rules("ruby_cloud_gapic_library"); len(rules) > 0 {
-		rule := rules[0]
-		if attr := rule.Attr("extra_protoc_parameters"); attr != nil {
-			for _, dep := range extractStrings(attr) {
-				switch {
-				case strings.HasPrefix(dep, "ruby-cloud-env-prefix="):
-					vb.EnvPrefix, _ = strings.CutPrefix(dep, "ruby-cloud-env-prefix=")
-				case strings.HasPrefix(dep, "ruby-cloud-extra-dependencies="):
-					vb.ExtraDeps, _ = strings.CutPrefix(dep, "ruby-cloud-extra-dependencies=")
-				case strings.HasPrefix(dep, "ruby-cloud-gem-namespace="):
-					vb.GemNamespace, _ = strings.CutPrefix(dep, "ruby-cloud-gem-namespace=")
-				case strings.HasPrefix(dep, "ruby-cloud-namespace-override="):
-					vb.NamespaceOverride, _ = strings.CutPrefix(dep, "ruby-cloud-namespace-override=")
-				case strings.HasPrefix(dep, "ruby-cloud-path-override="):
-					vb.PathOverride, _ = strings.CutPrefix(dep, "ruby-cloud-path-override=")
-				case strings.HasPrefix(dep, "ruby-cloud-service-override="):
-					vb.ServiceOverride, _ = strings.CutPrefix(dep, "ruby-cloud-service-override=")
-				case strings.HasPrefix(dep, "ruby-cloud-wrapper-gem-override="):
-					vb.WrapperGemOverride, _ = strings.CutPrefix(dep, "ruby-cloud-wrapper-gem-override=")
-				case strings.HasPrefix(dep, "ruby-cloud-yard-strict="):
-					vb.YardStrict, _ = strings.CutPrefix(dep, "ruby-cloud-yard-strict=")
-				}
+	return parseExtraProtoParams(file)
+}
+
+func parseExtraProtoParams(file *build.File) (*ExtraProtoParams, error) {
+	vb := &ExtraProtoParams{}
+	rules := file.Rules("ruby_cloud_gapic_library")
+	if len(rules) == 0 || rules[0].Attr("extra_protoc_parameters") == nil {
+		return vb, nil
+	}
+	for _, dep := range extractStrings(rules[0].Attr("extra_protoc_parameters")) {
+		switch {
+		case strings.HasPrefix(dep, "ruby-cloud-env-prefix="):
+			vb.EnvPrefix, _ = strings.CutPrefix(dep, "ruby-cloud-env-prefix=")
+		case strings.HasPrefix(dep, "ruby-cloud-extra-dependencies="):
+			vb.ExtraDeps, _ = strings.CutPrefix(dep, "ruby-cloud-extra-dependencies=")
+		case strings.HasPrefix(dep, "ruby-cloud-factory-method-suffix="):
+			vb.FactoryMethodSuffix, _ = strings.CutPrefix(dep, "ruby-cloud-factory-method-suffix=")
+		case strings.HasPrefix(dep, "ruby-cloud-gem-namespace="):
+			vb.GemNamespace, _ = strings.CutPrefix(dep, "ruby-cloud-gem-namespace=")
+		case strings.HasPrefix(dep, "ruby-cloud-migration-version="):
+			vb.MigrationVersion, _ = strings.CutPrefix(dep, "ruby-cloud-migration-version=")
+		case strings.HasPrefix(dep, "ruby-cloud-namespace-override="):
+			vb.NamespaceOverride, _ = strings.CutPrefix(dep, "ruby-cloud-namespace-override=")
+		case strings.HasPrefix(dep, "ruby-cloud-path-override="):
+			vb.PathOverride, _ = strings.CutPrefix(dep, "ruby-cloud-path-override=")
+		case strings.HasPrefix(dep, "ruby-cloud-service-override="):
+			vb.ServiceOverride, _ = strings.CutPrefix(dep, "ruby-cloud-service-override=")
+		case strings.HasPrefix(dep, "ruby-cloud-wrapper-gem-override="):
+			vb.WrapperGemOverride, _ = strings.CutPrefix(dep, "ruby-cloud-wrapper-gem-override=")
+		case strings.HasPrefix(dep, "ruby-cloud-wrapper-of="):
+			if wrapperOf, _ := strings.CutPrefix(dep, "ruby-cloud-wrapper-of="); wrapperOf != "" {
+				vb.WrapperOf = strings.Split(wrapperOf, ";")
 			}
+		case strings.HasPrefix(dep, "ruby-cloud-yard-strict="):
+			vb.YardStrict, _ = strings.CutPrefix(dep, "ruby-cloud-yard-strict=")
 		}
 	}
 	return vb, nil
@@ -326,4 +368,82 @@ func readExistingConfig(repoPath string) (*config.Config, error) {
 		return nil, err
 	}
 	return cfg, nil
+}
+
+func parseUnversionedBuild(googleapisDir, apiPath string) (*WrapperBuild, error) {
+	file, err := parseBazel(googleapisDir, apiPath)
+	if err != nil {
+		return nil, err
+	}
+	if file == nil {
+		return nil, nil
+	}
+	api := parseAPIFromWrapperBuild(file)
+	if api == "" {
+		return nil, nil
+	}
+	params, err := parseExtraProtoParams(file)
+	if err != nil {
+		return nil, err
+	}
+	return &WrapperBuild{
+		Path:   api,
+		Params: params,
+	}, nil
+}
+
+func parseAPIFromWrapperBuild(file *build.File) string {
+	rules := file.Rules("ruby_cloud_gapic_library")
+	if len(rules) == 0 || rules[0].Attr("srcs") == nil {
+		return ""
+	}
+	srcs := extractStrings(rules[0].Attr("srcs"))
+	if len(srcs) == 0 {
+		return ""
+	}
+	res := srcs[0]
+	parts := strings.SplitN(res, ":", 2)
+	if len(parts) > 0 {
+		res = parts[0]
+	}
+	res, _ = strings.CutPrefix(res, "//")
+	return res
+}
+
+func parseKeepFromManifest(path string) ([]string, error) {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		if errors.Is(err, fs.ErrNotExist) {
+			return nil, nil
+		}
+		return nil, err
+	}
+	var manifest owlbotManifest
+	if err := json.Unmarshal(data, &manifest); err != nil {
+		return nil, fmt.Errorf("unmarshaling owlbot manifest %s: %w", path, err)
+	}
+	manifest.Static = slices.DeleteFunc(manifest.Static, func(s string) bool {
+		return s == ".OwlBot.yaml" || s == ".owlbot.rb"
+	})
+	return manifest.Static, nil
+}
+
+func parseKeepFromOwlbotRb(path string) ([]string, error) {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		if errors.Is(err, fs.ErrNotExist) {
+			return nil, nil
+		}
+		return nil, err
+	}
+	var keep []string
+	for line := range strings.SplitSeq(string(data), "\n") {
+		if keepFile, ok := strings.CutPrefix(line, "OwlBot.prevent_overwrite_of_existing"); ok {
+			keepFile = strings.TrimSpace(keepFile)
+			keepFile, _ = strings.CutPrefix(keepFile, "\"")
+			keepFile, _ = strings.CutSuffix(keepFile, "\"")
+			keep = append(keep, keepFile)
+		}
+	}
+	return keep, nil
 }

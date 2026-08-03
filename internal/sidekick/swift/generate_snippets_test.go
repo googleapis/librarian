@@ -15,13 +15,14 @@
 package swift
 
 import (
+	"github.com/googleapis/librarian/internal/config"
+
 	"os"
 	"path/filepath"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/sidekick/api"
-	"github.com/googleapis/librarian/internal/sidekick/parser"
 )
 
 func TestGenerateSnippets(t *testing.T) {
@@ -36,7 +37,7 @@ func TestGenerateSnippets(t *testing.T) {
 			repeated: false,
 			file:     "TestServiceQuickstart.swift",
 			want: `func sample(name: String, ) async throws {
-  let client = try GoogleTest.TestServiceClient()
+  let client = try Test.TestServiceClient()
   let response = try await client.getThing(
     request: GetThingRequest()
   .with {
@@ -51,7 +52,7 @@ func TestGenerateSnippets(t *testing.T) {
 			repeated: true,
 			file:     "TestServiceQuickstart.swift",
 			want: `func sample(name: String, ) async throws {
-  let client = try GoogleTest.TestServiceClient()
+  let client = try Test.TestServiceClient()
   let response = try await client.getThing(
     request: GetThingRequest()
   .with {
@@ -120,8 +121,10 @@ func TestGenerateSnippets(t *testing.T) {
 			if err := api.CrossReference(model); err != nil {
 				t.Fatal(err)
 			}
-			cfg := &parser.ModelConfig{}
-			if err := Generate(t.Context(), model, outDir, cfg, swiftConfig(t, nil)); err != nil {
+			library := &config.Library{
+				Swift: swiftConfig(t, nil),
+			}
+			if err := Generate(t.Context(), model, outDir, library, nil); err != nil {
 				t.Fatal(err)
 			}
 			contentsBytes, err := os.ReadFile(filepath.Join(outDir, "Snippets", test.file))

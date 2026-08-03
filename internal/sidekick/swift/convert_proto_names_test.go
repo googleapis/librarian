@@ -17,6 +17,7 @@ package swift
 import (
 	"testing"
 
+	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/sidekick/api"
 )
 
@@ -48,7 +49,7 @@ func TestProtoMessageAndEnumTypeName(t *testing.T) {
 	model.PackageName = "test"
 
 	t.Run("with empty ModulePath", func(t *testing.T) {
-		codec := newTestCodec(t, model, map[string]string{})
+		codec := newTestCodec(t, model, nil)
 
 		gotMsg := codec.protoMessageTypeName(parentMsg)
 		wantMsg := "Test_OuterMessage"
@@ -76,9 +77,10 @@ func TestProtoMessageAndEnumTypeName(t *testing.T) {
 	})
 
 	t.Run("with populated ModulePath", func(t *testing.T) {
-		codec := newTestCodec(t, model, map[string]string{
-			"module-path": "TestProtos",
-		})
+		codec, err := newCodec(model, &config.Library{}, &config.SwiftModule{ModulePath: "TestProtos"}, ".")
+		if err != nil {
+			t.Fatal(err)
+		}
 
 		gotMsg := codec.protoMessageTypeName(parentMsg)
 		wantMsg := "TestProtos.Test_OuterMessage"
@@ -128,7 +130,7 @@ func TestMessageAndEnumFileName(t *testing.T) {
 
 	model := api.NewTestAPI([]*api.Message{parentMsg, nestedMsg, doubleNestedMsg}, []*api.Enum{topEnum, nestedEnum}, []*api.Service{}).
 		WithPackageName("test")
-	codec := newTestCodec(t, model, map[string]string{})
+	codec := newTestCodec(t, model, nil)
 
 	t.Run("message conversion filenames", func(t *testing.T) {
 		gotParent := codec.messageFileName(parentMsg)

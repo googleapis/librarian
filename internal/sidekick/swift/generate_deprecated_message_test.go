@@ -20,8 +20,8 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/sidekick/api"
-	"github.com/googleapis/librarian/internal/sidekick/parser"
 )
 
 func TestGenerateMessage_Deprecated(t *testing.T) {
@@ -83,8 +83,7 @@ func TestGenerateMessage_Deprecated(t *testing.T) {
 
 			model := api.NewTestAPI([]*api.Message{top}, nil, nil)
 			model.PackageName = "google.cloud.test.v1"
-			cfg := &parser.ModelConfig{}
-			if err := Generate(t.Context(), model, outDir, cfg, nil); err != nil {
+			if err := Generate(t.Context(), model, outDir, &config.Library{}, nil); err != nil {
 				t.Fatal(err)
 			}
 

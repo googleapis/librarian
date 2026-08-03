@@ -18,24 +18,50 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/sidekick/api"
 	"github.com/iancoleman/strcase"
 )
 
+const requiresLibraryNameOverrideFormat = `default library name for %s needs override.
+Other languages with PascalCase style deviate from the default name for this library,
+most likely, that indicates the default library name is not a good choice. Consider
+these alternatives and use library_name_override to silence this error:
+%s`
+
 // LibraryName returns the Swift library (and module) name for the API.
-func LibraryName(api *api.API) (string, error) {
+func LibraryName(api *api.API, swiftCfg *config.SwiftPackage) (string, error) {
+	if swiftCfg != nil && swiftCfg.LibraryNameOverride != "" {
+		return swiftCfg.LibraryNameOverride, nil
+	}
 	if api.PackageName == "" {
 		return "", fmt.Errorf("API package name must not be empty")
 	}
-	// TODO(https://github.com/googleapis/librarian/issues/6229) - use
-	// a better default.
 	parts := strings.Split(api.PackageName, ".")
 	for i, p := range parts {
 		parts[i] = strcase.ToCamel(p)
 	}
-	result := strings.Join(parts, "")
-	if strings.HasPrefix(result, "Google") {
-		return result, nil
+	libraryName := strings.Join(parts, "")
+	alternatives := []struct {
+		lang  string
+		value string
+	}{
+		{"C#", strings.ReplaceAll(api.CsharpNamespace, ".", "")},
+		{"PHP", strings.ReplaceAll(api.PhpNamespace, "\\", "")},
+		{"Ruby", strings.ReplaceAll(api.RubyPackage, "::", "")},
 	}
-	return "Google" + result, nil
+	var messages []string
+	for _, alt := range alternatives {
+		if alt.value == "" {
+			continue
+		}
+		if alt.value != libraryName {
+			messages = append(messages, fmt.Sprintf("%s suggests using %s", alt.lang, alt.value))
+		}
+	}
+	if len(messages) != 0 {
+		return "", fmt.Errorf(requiresLibraryNameOverrideFormat, api.PackageName, strings.Join(messages, "\n"))
+	}
+
+	return libraryName, nil
 }

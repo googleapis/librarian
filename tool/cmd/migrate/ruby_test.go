@@ -16,6 +16,7 @@ package main
 
 import (
 	"context"
+	"os"
 	"path/filepath"
 	"testing"
 
@@ -91,6 +92,26 @@ func TestFindRubyLibraries(t *testing.T) {
 	}
 	want := []*config.Library{
 		{
+			Name: "google-cloud-compute",
+			APIs: []*config.API{
+				{
+					Path: "google/cloud/compute/v1",
+					Ruby: &config.RubyAPI{
+						RubyCloudOpts: &config.RubyCloudOpts{
+							EnvPrefix:          "COMPUTE",
+							ExtraDependencies:  "google-cloud-common=~> 1.0",
+							WrapperGemOverride: "google-cloud-compute",
+						},
+					},
+				},
+			},
+			Ruby: &config.RubyPackage{
+				WrapperOf: []string{
+					"v1:2.15",
+				},
+			},
+		},
+		{
 			Name: "google-cloud-compute-v1",
 			APIs: []*config.API{
 				{
@@ -107,9 +128,20 @@ func TestFindRubyLibraries(t *testing.T) {
 		},
 		{
 			Name: "google-cloud-secret_manager",
+			APIs: []*config.API{
+				{
+					Path: "google/cloud/secretmanager/v1",
+					Ruby: &config.RubyAPI{
+						RubyCloudOpts: &config.RubyCloudOpts{
+							EnvPrefix:    "SECRET_MANAGER",
+							GemNamespace: "Google::Cloud::SecretManager",
+						},
+					},
+				},
+			},
 			Ruby: &config.RubyPackage{
 				WrapperOf: []string{
-					"google-cloud-secret_manager-v1",
+					"v1:1.2",
 				},
 			},
 		},
@@ -126,6 +158,26 @@ func TestFindRubyLibraries(t *testing.T) {
 				},
 			},
 		},
+		{
+			// This test verifies multiple WrapperOf entries are parsed correctly.
+			Name: "google-cloud-speech",
+			APIs: []*config.API{
+				{
+					Path: "google/cloud/speech/v2",
+					Ruby: &config.RubyAPI{
+						RubyCloudOpts: &config.RubyCloudOpts{
+							EnvPrefix: "SPEECH",
+						},
+					},
+				},
+			},
+			Ruby: &config.RubyPackage{
+				WrapperOf: []string{
+					"v2:1.0",
+					"v1:1.2",
+				},
+			},
+		},
 	}
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
@@ -134,106 +186,46 @@ func TestFindRubyLibraries(t *testing.T) {
 
 func TestParseAPIFromOwlBot(t *testing.T) {
 	for _, test := range []struct {
-		name string
-		path string
-		want string
+		name        string
+		path        string
+		wantPath    string
+		wantWrapper bool
 	}{
 		{
-			name: "apigeeconnect v1 api",
-			path: "testdata/ruby/parse_api_from_owlbot/apigeeconnect_v1.yaml",
-			want: "google/cloud/apigeeconnect/v1",
+			name:        "apigeeconnect v1 api",
+			path:        "testdata/ruby/parse_api_from_owlbot/apigeeconnect_v1.yaml",
+			wantPath:    "google/cloud/apigeeconnect/v1",
+			wantWrapper: false,
 		},
 		{
-			name: "marketingplatform admin v1alpha api",
-			path: "testdata/ruby/parse_api_from_owlbot/marketing_v1alpha.yaml",
-			want: "google/marketingplatform/admin/v1alpha",
+			name:        "marketingplatform admin v1alpha api",
+			path:        "testdata/ruby/parse_api_from_owlbot/marketing_v1alpha.yaml",
+			wantPath:    "google/marketingplatform/admin/v1alpha",
+			wantWrapper: false,
 		},
 		{
-			name: "video livestream v1 api",
-			path: "testdata/ruby/parse_api_from_owlbot/video_v1.yaml",
-			want: "google/cloud/video/livestream/v1",
+			name:        "video livestream v1 api",
+			path:        "testdata/ruby/parse_api_from_owlbot/video_v1.yaml",
+			wantPath:    "google/cloud/video/livestream/v1",
+			wantWrapper: false,
 		},
 		{
-			name: "wrapper library",
-			path: "testdata/ruby/parse_api_from_owlbot/wrapper.yaml",
-			want: "",
+			name:        "wrapper library",
+			path:        "testdata/ruby/parse_api_from_owlbot/wrapper.yaml",
+			wantPath:    "google/cloud/apigeeconnect",
+			wantWrapper: true,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got, err := parseAPIFromOwlBot(test.path)
+			gotPath, gotWrapper, err := parseAPIFromOwlBot(test.path)
 			if err != nil {
 				t.Fatal(err)
 			}
-			if diff := cmp.Diff(test.want, got); diff != "" {
-				t.Errorf("mismatch (-want +got):\n%s", diff)
+			if diff := cmp.Diff(test.wantPath, gotPath); diff != "" {
+				t.Errorf("path mismatch (-want +got):\n%s", diff)
 			}
-		})
-	}
-}
-
-func TestParseWrapperOf(t *testing.T) {
-	for _, test := range []struct {
-		name      string
-		libraries []*config.Library
-		want      []*config.Library
-	}{
-		{
-			name: "wrapper library with multiple versioned libraries",
-			libraries: []*config.Library{
-				{Name: "google-cloud-secret_manager-v1", APIs: []*config.API{{Path: "google/cloud/secretmanager/v1"}}},
-				{Name: "google-cloud-secret_manager-v1beta1", APIs: []*config.API{{Path: "google/cloud/secretmanager/v1beta1"}}},
-				{Name: "google-cloud-secret_manager"},
-			},
-			want: []*config.Library{
-				{
-					Name: "google-cloud-secret_manager",
-					Ruby: &config.RubyPackage{
-						WrapperOf: []string{
-							"google-cloud-secret_manager-v1",
-							"google-cloud-secret_manager-v1beta1",
-						},
-					},
-				},
-				{Name: "google-cloud-secret_manager-v1", APIs: []*config.API{{Path: "google/cloud/secretmanager/v1"}}},
-				{Name: "google-cloud-secret_manager-v1beta1", APIs: []*config.API{{Path: "google/cloud/secretmanager/v1beta1"}}},
-			},
-		},
-		{
-			name: "library with APIs set is not treated as wrapper",
-			libraries: []*config.Library{
-				{Name: "google-cloud-storage-v2", APIs: []*config.API{{Path: "google/cloud/storage/v2"}}},
-				{Name: "google-cloud-storage-v1", APIs: []*config.API{{Path: "google/cloud/storage/v1"}}},
-			},
-			want: []*config.Library{
-				{Name: "google-cloud-storage-v1", APIs: []*config.API{{Path: "google/cloud/storage/v1"}}},
-				{Name: "google-cloud-storage-v2", APIs: []*config.API{{Path: "google/cloud/storage/v2"}}},
-			},
-		},
-		{
-			name: "wrapper library with no matching versioned gems",
-			libraries: []*config.Library{
-				{Name: "google-cloud-storage"},
-			},
-			want: []*config.Library{
-				{Name: "google-cloud-storage"},
-			},
-		},
-		{
-			name: "ignore libraries with non-version suffix",
-			libraries: []*config.Library{
-				{Name: "google-cloud-storage"},
-				{Name: "google-cloud-storage-transfer-v1", APIs: []*config.API{{Path: "google/cloud/storage/transfer/v1"}}},
-			},
-			want: []*config.Library{
-				{Name: "google-cloud-storage"},
-				{Name: "google-cloud-storage-transfer-v1", APIs: []*config.API{{Path: "google/cloud/storage/transfer/v1"}}},
-			},
-		},
-	} {
-		t.Run(test.name, func(t *testing.T) {
-			parseWrapperOf(test.libraries)
-			if diff := cmp.Diff(test.want, test.libraries); diff != "" {
-				t.Errorf("mismatch (-want +got):\n%s", diff)
+			if diff := cmp.Diff(test.wantWrapper, gotWrapper); diff != "" {
+				t.Errorf("wrapper mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
@@ -244,13 +236,13 @@ func TestParseVersionedBuild(t *testing.T) {
 		name          string
 		googleapisDir string
 		apiPath       string
-		want          *VersionedBuild
+		want          *ExtraProtoParams
 	}{
 		{
 			name:          "valid BUILD.bazel with env prefix",
 			googleapisDir: "testdata/googleapis",
 			apiPath:       "google/cloud/secretmanager/v1",
-			want: &VersionedBuild{
+			want: &ExtraProtoParams{
 				EnvPrefix: "SECRET_MANAGER",
 			},
 		},
@@ -258,13 +250,13 @@ func TestParseVersionedBuild(t *testing.T) {
 			name:          "BUILD.bazel without ruby_cloud_gapic_library rule",
 			googleapisDir: "testdata/googleapis",
 			apiPath:       "google/cloud/bigquery/connection/v1",
-			want:          &VersionedBuild{},
+			want:          &ExtraProtoParams{},
 		},
 		{
 			name:          "BUILD.bazel with path override and yard strict",
 			googleapisDir: "testdata/googleapis",
 			apiPath:       "google/cloud/automl/v1",
-			want: &VersionedBuild{
+			want: &ExtraProtoParams{
 				EnvPrefix:         "AUTOML",
 				NamespaceOverride: "AutoMl=AutoML;Automl=AutoML",
 				PathOverride:      "auto_ml=automl",
@@ -275,7 +267,7 @@ func TestParseVersionedBuild(t *testing.T) {
 			name:          "BUILD.bazel with service override",
 			googleapisDir: "testdata/googleapis",
 			apiPath:       "google/cloud/alloydb/v1",
-			want: &VersionedBuild{
+			want: &ExtraProtoParams{
 				GemNamespace:    "Google::Cloud::AlloyDB::V1",
 				ServiceOverride: "AlloyDBCSQLAdmin=AlloyDBCloudSQLAdmin",
 			},
@@ -284,7 +276,7 @@ func TestParseVersionedBuild(t *testing.T) {
 			name:          "BUILD.bazel with wrapper gem override",
 			googleapisDir: "testdata/googleapis",
 			apiPath:       "google/cloud/compute/v1",
-			want: &VersionedBuild{
+			want: &ExtraProtoParams{
 				EnvPrefix:          "COMPUTE",
 				ExtraDeps:          "google-cloud-common=~> 1.0",
 				WrapperGemOverride: "value_for_testing",
@@ -299,6 +291,105 @@ func TestParseVersionedBuild(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			got, err := parseVersionedBuild(test.googleapisDir, test.apiPath)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestParseUnversionedBuild(t *testing.T) {
+	for _, test := range []struct {
+		name          string
+		googleapisDir string
+		apiPath       string
+		want          *WrapperBuild
+	}{
+		{
+			name:          "BUILD.bazel with env prefix and gem namespace",
+			googleapisDir: "testdata/googleapis",
+			apiPath:       "google/cloud/secretmanager",
+			want: &WrapperBuild{
+				Path: "google/cloud/secretmanager/v1",
+				Params: &ExtraProtoParams{
+					EnvPrefix:    "SECRET_MANAGER",
+					GemNamespace: "Google::Cloud::SecretManager",
+					WrapperOf:    []string{"v1:1.2"},
+				},
+			},
+		},
+		{
+			name:          "BUILD.bazel with wrapper gem override and extra deps",
+			googleapisDir: "testdata/googleapis",
+			apiPath:       "google/cloud/compute",
+			want: &WrapperBuild{
+				Path: "google/cloud/compute/v1",
+				Params: &ExtraProtoParams{
+					EnvPrefix:          "COMPUTE",
+					ExtraDeps:          "google-cloud-common=~> 1.0",
+					WrapperGemOverride: "google-cloud-compute",
+					WrapperOf:          []string{"v1:2.15"},
+				},
+			},
+		},
+		{
+			name:          "BUILD.bazel with namespace and path overrides",
+			googleapisDir: "testdata/googleapis",
+			apiPath:       "google/cloud/automl",
+			want: &WrapperBuild{
+				Path: "google/cloud/automl/v1",
+				Params: &ExtraProtoParams{
+					EnvPrefix:         "AUTOML",
+					NamespaceOverride: "AutoMl=AutoML;Automl=AutoML",
+					PathOverride:      "auto_ml=automl",
+				},
+			},
+		},
+		{
+			name:          "BUILD.bazel with service override and yard strict",
+			googleapisDir: "testdata/googleapis",
+			apiPath:       "google/cloud/alloydb",
+			want: &WrapperBuild{
+				Path: "google/cloud/alloydb/v1",
+				Params: &ExtraProtoParams{
+					GemNamespace:    "Google::Cloud::AlloyDB",
+					ServiceOverride: "AlloyDBCSQLAdmin=AlloyDBCloudSQLAdmin",
+					YardStrict:      "false",
+				},
+			},
+		},
+		{
+			name:          "BUILD.bazel with migration version",
+			googleapisDir: "testdata/googleapis",
+			apiPath:       "google/cloud/asset",
+			want: &WrapperBuild{
+				Path: "google/cloud/asset/v1",
+				Params: &ExtraProtoParams{
+					EnvPrefix:        "ASSET",
+					MigrationVersion: "1.0",
+					WrapperOf:        []string{"v1:0.29"},
+				},
+			},
+		},
+		{
+			name:          "BUILD.bazel with factory method suffix",
+			googleapisDir: "testdata/googleapis",
+			apiPath:       "google/cloud/billing",
+			want: &WrapperBuild{
+				Path: "google/cloud/billing/v1",
+				Params: &ExtraProtoParams{
+					EnvPrefix:           "BILLING",
+					FactoryMethodSuffix: "_service",
+					WrapperOf:           []string{"v1:0.17"},
+				},
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got, err := parseUnversionedBuild(test.googleapisDir, test.apiPath)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -627,6 +718,112 @@ func TestMergeConfig(t *testing.T) {
 				t.Fatal(err)
 			}
 			if diff := cmp.Diff(test.want, cfg); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestParseKeepFromManifest(t *testing.T) {
+	for _, test := range []struct {
+		name    string
+		content string
+		want    []string
+	}{
+		{
+			name:    "filters out .OwlBot.yaml",
+			content: `{"static": [".OwlBot.yaml", "file1.rb", "file2.rb"]}`,
+			want:    []string{"file1.rb", "file2.rb"},
+		},
+		{
+			name:    "filters out .OwlBot.yaml in middle",
+			content: `{"static": ["file1.rb", ".OwlBot.yaml", "file2.rb"]}`,
+			want:    []string{"file1.rb", "file2.rb"},
+		},
+		{
+			name:    "no files to filter",
+			content: `{"static": ["file1.rb", "file2.rb"]}`,
+			want:    []string{"file1.rb", "file2.rb"},
+		},
+		{
+			name:    "only .OwlBot.yaml leaves empty slice",
+			content: `{"static": [".OwlBot.yaml"]}`,
+			want:    []string{},
+		},
+		{
+			name:    "filters out .OwlBot.yaml and .owlbot.rb",
+			content: `{"static": [".OwlBot.yaml", "file1.rb", ".owlbot.rb", "file2.rb"]}`,
+			want:    []string{"file1.rb", "file2.rb"},
+		},
+		{
+			name:    "empty static list",
+			content: `{"static": []}`,
+			want:    []string{},
+		},
+		{
+			name: "file does not exist",
+			want: nil,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			dir := t.TempDir()
+			path := filepath.Join(dir, ".owlbot-manifest.json")
+			if test.content != "" {
+				if err := os.WriteFile(path, []byte(test.content), 0o644); err != nil {
+					t.Fatal(err)
+				}
+			}
+			got, err := parseKeepFromManifest(path)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestParseKeepFromOwlbotRb(t *testing.T) {
+	for _, test := range []struct {
+		name    string
+		content string
+		want    []string
+	}{
+		{
+			name:    "parses single prevent_overwrite_of_existing statement",
+			content: `OwlBot.prevent_overwrite_of_existing "lib/google/cloud/automl/v1/helpers.rb"`,
+			want:    []string{"lib/google/cloud/automl/v1/helpers.rb"},
+		},
+		{
+			name: "parses multiple prevent_overwrite_of_existing statements",
+			content: `OwlBot.prevent_overwrite_of_existing "lib/file1.rb"
+OwlBot.prevent_overwrite_of_existing "lib/file2.rb"`,
+			want: []string{"lib/file1.rb", "lib/file2.rb"},
+		},
+		{
+			name:    "no matching statements",
+			content: `# Standard owlbot.rb file without prevent_overwrite_of_existing`,
+			want:    nil,
+		},
+		{
+			name: "file does not exist",
+			want: nil,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			dir := t.TempDir()
+			path := filepath.Join(dir, ".owlbot.rb")
+			if test.content != "" {
+				if err := os.WriteFile(path, []byte(test.content), 0o644); err != nil {
+					t.Fatal(err)
+				}
+			}
+			got, err := parseKeepFromOwlbotRb(path)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})

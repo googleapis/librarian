@@ -81,7 +81,7 @@ func TestAnnotateField(t *testing.T) {
 			}
 			field.Parent = msg
 			model := api.NewTestAPI([]*api.Message{msg}, []*api.Enum{}, []*api.Service{})
-			codec := newTestCodec(t, model, map[string]string{})
+			codec := newTestCodec(t, model, nil)
 			if err := codec.annotateModel(); err != nil {
 				t.Fatal(err)
 			}
@@ -197,7 +197,7 @@ func TestAnnotateField_Discovery(t *testing.T) {
 			test.input.Parent = msg
 			model := api.NewTestAPI([]*api.Message{msg}, []*api.Enum{}, []*api.Service{})
 			model.AddMessage(mapMessage)
-			codec := newTestCodec(t, model, map[string]string{})
+			codec := newTestCodec(t, model, nil)
 			codec.UrlSafeForBytes = true
 			if err := codec.annotateModel(); err != nil {
 				t.Fatal(err)
@@ -235,7 +235,7 @@ func TestAnnotateField_TypeNames(t *testing.T) {
 			}
 			field.Parent = msg
 			model := api.NewTestAPI([]*api.Message{msg}, []*api.Enum{}, []*api.Service{})
-			codec := newTestCodec(t, model, map[string]string{})
+			codec := newTestCodec(t, model, nil)
 			if err := codec.annotateModel(); err != nil {
 				t.Fatal(err)
 			}
@@ -277,7 +277,7 @@ func TestAnnotateField_PackageName(t *testing.T) {
 	field.Parent = msg
 	model := api.NewTestAPI([]*api.Message{msg, referencedMsg}, nil, nil)
 	model.PackageName = "test"
-	codec := newTestCodec(t, model, map[string]string{})
+	codec := newTestCodec(t, model, nil)
 	codec.withExtraDependencies(t, []config.SwiftDependency{
 		{
 			ApiPackage: "google.cloud.external.v1",
@@ -378,7 +378,7 @@ func TestAnnotateField_Recursive(t *testing.T) {
 			}
 
 			model := api.NewTestAPI([]*api.Message{msg}, []*api.Enum{}, []*api.Service{})
-			codec := newTestCodec(t, model, map[string]string{})
+			codec := newTestCodec(t, model, nil)
 			if err := codec.annotateModel(); err != nil {
 				t.Fatal(err)
 			}

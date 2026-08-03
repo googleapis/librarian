@@ -38,4 +38,9 @@ let op = try await self.getOperation(request: .init().with {
   }, options: options)
   return try extractStatus(op)
 }
-return GoogleCloudGax._PollableOperationImpl(initialState: initialState, poll: poll)
+return GoogleCloudGax._PollableOperationImpl(
+  initialState: initialState,
+  polling: options.pollingErrorPolicy ?? self.pollingErrorPolicy,
+  backoff: options.pollingBackoffPolicy ?? self.pollingBackoffPolicy,
+  poll: poll
+)

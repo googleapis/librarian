@@ -21,66 +21,132 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/sidekick/api"
-	"github.com/googleapis/librarian/internal/sidekick/parser"
 )
 
 func TestParseOptions(t *testing.T) {
 	model := api.NewTestAPI([]*api.Message{}, []*api.Enum{}, []*api.Service{}).
 		WithPackageName("test")
 	for _, test := range []struct {
-		name string
-		cfg  *parser.ModelConfig
-		want *codec
+		name    string
+		library *config.Library
+		module  *config.SwiftModule
+		want    *codec
 	}{
 		{
 			name: "baseline",
-			cfg: &parser.ModelConfig{
-				Codec: map[string]string{
-					"copyright-year":        "2038",
-					"package-name-override": "google-cloud-bigtable",
-					"root-name":             "test-root",
+			library: &config.Library{
+				CopyrightYear: "2038",
+			},
+			want: &codec{
+				GenerationYear:     "2038",
+				LibraryName:        "Test",
+				TargetLibraryName:  "Test",
+				PackageName:        "test",
+				PackageVersion:     "0.0.0",
+				MonorepoRoot:       ".",
+				Model:              model,
+				ApiPackages:        map[string]*Dependency{},
+				DependenciesByName: map[string]*Dependency{},
+				ResponseEncoding:   defaultResponseEncoding,
+			},
+		},
+		{
+			name: "package name override",
+			library: &config.Library{
+				CopyrightYear: "2038",
+				Swift: &config.SwiftPackage{
+					PackageNameOverride: "google-cloud-bigtable",
 				},
 			},
 			want: &codec{
 				GenerationYear:     "2038",
-				LibraryName:        "GoogleTest",
+				LibraryName:        "Test",
+				TargetLibraryName:  "Test",
 				PackageName:        "google-cloud-bigtable",
 				PackageVersion:     "0.0.0",
-				ReleaseLevel:       "preview",
 				MonorepoRoot:       ".",
-				RootName:           "test-root",
 				Model:              model,
 				ApiPackages:        map[string]*Dependency{},
 				DependenciesByName: map[string]*Dependency{},
+				ResponseEncoding:   defaultResponseEncoding,
+			},
+		},
+		{
+			name: "module",
+			library: &config.Library{
+				Name:          "google-cloud-wkt",
+				CopyrightYear: "2038",
+				Swift: &config.SwiftPackage{
+					LibraryNameOverride: "GoogleCloudWkt",
+				},
+			},
+			module: &config.SwiftModule{
+				ModulePath: "GoogleTestProtos",
+			},
+			want: &codec{
+				Module:             true,
+				GenerationYear:     "2038",
+				TargetLibraryName:  "GoogleCloudWkt",
+				PackageName:        "test",
+				PackageVersion:     "0.0.0",
+				MonorepoRoot:       ".",
+				Model:              model,
+				ModulePath:         "GoogleTestProtos",
+				ApiPackages:        map[string]*Dependency{},
+				DependenciesByName: map[string]*Dependency{},
+				ResponseEncoding:   defaultResponseEncoding,
+			},
+		},
+		{
+			name: "module with library name override",
+			library: &config.Library{
+				Name:          "google-cloud-bigquery",
+				CopyrightYear: "2038",
+				Swift: &config.SwiftPackage{
+					PackageNameOverride: "GoogleCloudBigQuery",
+					LibraryNameOverride: "GoogleCloudBigQuery",
+				},
+			},
+			module: &config.SwiftModule{
+				ModulePath: "GoogleTestProtos",
+			},
+			want: &codec{
+				Module:             true,
+				GenerationYear:     "2038",
+				TargetLibraryName:  "GoogleCloudBigQuery",
+				PackageName:        "GoogleCloudBigQuery",
+				PackageVersion:     "0.0.0",
+				MonorepoRoot:       ".",
+				Model:              model,
+				ModulePath:         "GoogleTestProtos",
+				ApiPackages:        map[string]*Dependency{},
+				DependenciesByName: map[string]*Dependency{},
+				ResponseEncoding:   defaultResponseEncoding,
 			},
 		},
 		{
 			name: "discovery",
-			cfg: &parser.ModelConfig{
-				Codec: map[string]string{
-					"copyright-year":        "2038",
-					"package-name-override": "google-cloud-compute-v1",
-					"root-name":             "test-root",
-				},
+			library: &config.Library{
+				CopyrightYear:       "2038",
 				SpecificationFormat: config.SpecDiscovery,
 			},
 			want: &codec{
 				GenerationYear:     "2038",
-				LibraryName:        "GoogleTest",
-				PackageName:        "google-cloud-compute-v1",
+				LibraryName:        "Test",
+				TargetLibraryName:  "Test",
+				PackageName:        "test",
 				PackageVersion:     "0.0.0",
-				ReleaseLevel:       "preview",
 				MonorepoRoot:       ".",
-				RootName:           "test-root",
 				Model:              model,
 				ApiPackages:        map[string]*Dependency{},
 				DependenciesByName: map[string]*Dependency{},
 				UrlSafeForBytes:    true,
+				ResponseEncoding:   discoveryResponseEncoding,
 			},
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got, err := newCodec(model, test.cfg, nil, ".")
+			got, err := newCodec(model, test.library, test.module, ".")
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -100,9 +166,11 @@ func TestNewCodec_WithSwiftCfg(t *testing.T) {
 			},
 		},
 	}
-	cfg := &parser.ModelConfig{}
+	library := &config.Library{
+		Swift: swiftCfg,
+	}
 	model := api.NewTestAPI([]*api.Message{}, []*api.Enum{}, []*api.Service{}).WithPackageName("test")
-	got, err := newCodec(model, cfg, swiftCfg, ".")
+	got, err := newCodec(model, library, nil, ".")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -124,21 +192,23 @@ func TestNewCodec_WithSwiftCfg(t *testing.T) {
 }
 
 // newTestCodec creates a simple codec for the tests.
-func newTestCodec(t *testing.T, model *api.API, options map[string]string) *codec {
+func newTestCodec(t *testing.T, model *api.API, library *config.Library) *codec {
 	t.Helper()
-	cfg := &parser.ModelConfig{
-		Codec: options,
+	if library == nil {
+		library = &config.Library{}
 	}
-	// Configure the package for well-known types by default.
-	swiftCfg := &config.SwiftPackage{
-		SwiftDefault: config.SwiftDefault{
-			Dependencies: []config.SwiftDependency{
-				{Name: wellKnownSwiftPackage, ApiPackage: wellKnownProtobufPackage},
-				{Name: paginationSwiftPackage, RequiredByServices: true},
+	if library.Swift == nil {
+		// Configure the package for well-known types by default.
+		library.Swift = &config.SwiftPackage{
+			SwiftDefault: config.SwiftDefault{
+				Dependencies: []config.SwiftDependency{
+					{Name: wellKnownSwiftPackage, ApiPackage: wellKnownProtobufPackage},
+					{Name: paginationSwiftPackage, RequiredByServices: true},
+				},
 			},
-		},
+		}
 	}
-	codec, err := newCodec(model, cfg, swiftCfg, ".")
+	codec, err := newCodec(model, library, nil, ".")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -208,8 +278,7 @@ func makeGatedTestModel() *api.API {
 		[]*api.Message{sharedMessage, s1Message, s2Message, unusedMessage},
 		[]*api.Enum{sharedEnum, s1Enum, s2Enum, unusedEnum},
 		[]*api.Service{s1, s2},
-	)
-	model.PackageName = "google.cloud.test.v1"
+	).WithPackageName("google.cloud.test.v1")
 	api.CrossReference(model)
 	return model
 }
@@ -268,4 +337,65 @@ func makeRequiredServicesTestModel() *api.API {
 	model.AddService(externalService)
 	api.CrossReference(model)
 	return model
+}
+
+func TestSkipDependency(t *testing.T) {
+	for _, tc := range []struct {
+		name              string
+		targetLibraryName string
+		libraryName       string
+		packageName       string
+		module            bool
+		depName           string
+		wantSkip          bool
+	}{
+		{
+			name:              "multi-module self import skipped (e.g. wkt messages importing GoogleCloudWkt)",
+			targetLibraryName: "GoogleCloudWkt",
+			packageName:       "google-protobuf",
+			module:            true,
+			depName:           "GoogleCloudWkt",
+			wantSkip:          true,
+		},
+		{
+			name:              "multi-module non-self import preserved (e.g. storage convert importing GoogleType)",
+			targetLibraryName: "GoogleCloudStorage",
+			packageName:       "GoogleType",
+			module:            true,
+			depName:           "GoogleType",
+			wantSkip:          false,
+		},
+		{
+			name:              "single-module self import skipped",
+			targetLibraryName: "GoogleCloudSecretManagerV1",
+			libraryName:       "GoogleCloudSecretManagerV1",
+			packageName:       "google-cloud-secretmanager-v1",
+			module:            false,
+			depName:           "GoogleCloudSecretManagerV1",
+			wantSkip:          true,
+		},
+		{
+			name:              "single-module non-self import preserved",
+			targetLibraryName: "GoogleCloudSecretManagerV1",
+			libraryName:       "GoogleCloudSecretManagerV1",
+			packageName:       "google-cloud-secretmanager-v1",
+			module:            false,
+			depName:           "GoogleCloudGax",
+			wantSkip:          false,
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			c := &codec{
+				TargetLibraryName: tc.targetLibraryName,
+				LibraryName:       tc.libraryName,
+				PackageName:       tc.packageName,
+				Module:            tc.module,
+			}
+			dep := &Dependency{SwiftDependency: config.SwiftDependency{Name: tc.depName}}
+			got := c.skipDependency(dep)
+			if got != tc.wantSkip {
+				t.Errorf("skipDependency(%q) = %v, want %v", tc.depName, got, tc.wantSkip)
+			}
+		})
+	}
 }

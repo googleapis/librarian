@@ -23,7 +23,6 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/sidekick/api"
-	"github.com/googleapis/librarian/internal/sidekick/parser"
 )
 
 func TestGeneratePackageSwift_WithDependencies(t *testing.T) {
@@ -39,12 +38,6 @@ func TestGeneratePackageSwift_WithDependencies(t *testing.T) {
 	model := api.NewTestAPI(nil, nil, []*api.Service{service})
 	model.PackageName = "google.cloud.workflows.v1"
 
-	cfg := &parser.ModelConfig{
-		Codec: map[string]string{
-			"copyright-year": "2038",
-		},
-	}
-
 	swiftCfg := &config.SwiftPackage{
 		SwiftDefault: config.SwiftDefault{
 			Dependencies: []config.SwiftDependency{
@@ -55,7 +48,10 @@ func TestGeneratePackageSwift_WithDependencies(t *testing.T) {
 		},
 	}
 
-	if err := Generate(t.Context(), model, outDir, cfg, swiftCfg); err != nil {
+	library := &config.Library{
+		Swift: swiftCfg,
+	}
+	if err := Generate(t.Context(), model, outDir, library, nil); err != nil {
 		t.Fatal(err)
 	}
 

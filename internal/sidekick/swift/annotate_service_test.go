@@ -37,7 +37,7 @@ func TestAnnotateService(t *testing.T) {
 			doc:         "IAM service documentation.",
 			wantAnnotations: &serviceAnnotations{
 				Name:        "IAM",
-				LibraryName: "GoogleTest",
+				LibraryName: "Test",
 				ClientName:  "IAMClient",
 				StubPrefix:  "IAM",
 				DocLines:    []string{"IAM service documentation."},
@@ -50,7 +50,7 @@ func TestAnnotateService(t *testing.T) {
 			doc:         "Docs are not relevant.",
 			wantAnnotations: &serviceAnnotations{
 				Name:        "Protocol_",
-				LibraryName: "GoogleTest",
+				LibraryName: "Test",
 				ClientName:  "ProtocolClient",
 				StubPrefix:  "Protocol",
 				DocLines:    []string{"Docs are not relevant."},
@@ -63,7 +63,7 @@ func TestAnnotateService(t *testing.T) {
 			doc:         "Secret Manager Service documentation.\nLine 2.",
 			wantAnnotations: &serviceAnnotations{
 				Name:        "SecretManagerService",
-				LibraryName: "GoogleTest",
+				LibraryName: "Test",
 				ClientName:  "SecretManagerServiceClient",
 				StubPrefix:  "SecretManagerService",
 				DocLines:    []string{"Secret Manager Service documentation.", "Line 2."},
@@ -149,7 +149,13 @@ func TestAnnotateService_SkipNoBindings(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	serviceCodec := service.Codec.(*serviceAnnotations)
+	serviceCodec, ok := service.Codec.(*serviceAnnotations)
+	if !ok {
+		t.Fatalf("mismatched service annotations, got=%T", service.Codec)
+	}
+	if serviceCodec.HasLROs() {
+		t.Errorf("expected HasLROs() == false, annotations=%+v", serviceCodec)
+	}
 	var gotNames []string
 	for _, m := range serviceCodec.RestMethods {
 		gotNames = append(gotNames, m.Name)
@@ -358,7 +364,13 @@ func TestAnnotateService_LRO(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	annotations := service.Codec.(*serviceAnnotations)
+	annotations, ok := service.Codec.(*serviceAnnotations)
+	if !ok {
+		t.Fatalf("expected `serviceAnnotations`, got %T", service.Codec)
+	}
+	if !annotations.HasLROs() {
+		t.Errorf("expected HasLROs() == true, annotations=%+v", annotations)
+	}
 	wantImports := []string{"GoogleCloudExternal", "GoogleCloudWkt", "GoogleLongrunning", "GoogleRpc"}
 	if diff := cmp.Diff(wantImports, annotations.ServiceImports()); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)

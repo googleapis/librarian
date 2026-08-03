@@ -16,6 +16,7 @@ package rust
 
 import (
 	"errors"
+	"slices"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -507,5 +508,153 @@ func TestGenerateSetterSamples(t *testing.T) {
 	annotateModel(model, codec)
 	if !model.Codec.(*modelAnnotations).GenerateSetterSamples {
 		t.Errorf("GenerateSetterSamples should be true")
+	}
+}
+
+func TestModelAnnotationsHasBidiStreaming(t *testing.T) {
+	msg := &api.Message{
+		Name:    "Request",
+		ID:      ".test.v1.Request",
+		Package: "test.v1",
+	}
+	bidiService := &api.Service{
+		Name:    "BidiService",
+		ID:      ".test.v1.BidiService",
+		Package: "test.v1",
+		Methods: []*api.Method{
+			{
+				Name:                "Chat",
+				ID:                  ".test.v1.BidiService.Chat",
+				InputTypeID:         msg.ID,
+				OutputTypeID:        msg.ID,
+				InputType:           msg,
+				OutputType:          msg,
+				ClientSideStreaming: true,
+				ServerSideStreaming: true,
+				PathInfo:            &api.PathInfo{},
+			},
+		},
+	}
+	unaryService := &api.Service{
+		Name:    "UnaryService",
+		ID:      ".test.v1.UnaryService",
+		Package: "test.v1",
+		Methods: []*api.Method{
+			{
+				Name:         "Get",
+				ID:           ".test.v1.UnaryService.Get",
+				InputTypeID:  msg.ID,
+				OutputTypeID: msg.ID,
+				InputType:    msg,
+				OutputType:   msg,
+				PathInfo:     &api.PathInfo{},
+			},
+		},
+	}
+
+	for _, test := range []struct {
+		name             string
+		service          *api.Service
+		options          map[string]string
+		want             bool
+		wantGaxiFeatures []string
+	}{
+		{
+			name:    "bidi streaming enabled with bidi method",
+			service: bidiService,
+			options: map[string]string{
+				"include-bidi-streaming-methods": "true",
+				"package:gaxi":                   "package=google-cloud-gax,used-if=services",
+			},
+			want:             true,
+			wantGaxiFeatures: []string{"_internal-grpc-client"},
+		},
+		{
+			name:    "bidi streaming disabled with bidi method",
+			service: bidiService,
+			options: map[string]string{
+				"include-bidi-streaming-methods": "false",
+				"package:gaxi":                   "package=google-cloud-gax,used-if=services",
+			},
+			want: false,
+		},
+		{
+			name:    "bidi streaming enabled with unary method",
+			service: unaryService,
+			options: map[string]string{
+				"include-bidi-streaming-methods": "true",
+				"package:gaxi":                   "package=google-cloud-gax,used-if=services",
+			},
+			want: false,
+		},
+		{
+			name:    "template override with bidi method",
+			service: bidiService,
+			options: map[string]string{
+				"include-bidi-streaming-methods": "true",
+				"template-override":              "templates/tonic",
+				"package:gaxi":                   "package=google-cloud-gax,used-if=services",
+			},
+			want: false,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			model := api.NewTestAPI([]*api.Message{msg}, []*api.Enum{}, []*api.Service{test.service})
+			if err := api.CrossReference(model); err != nil {
+				t.Fatal(err)
+			}
+			codec := newTestCodec(t, libconfig.SpecProtobuf, "", test.options)
+			got, err := annotateModel(model, codec)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if got.HasBidiStreaming != test.want {
+				t.Errorf("HasBidiStreaming = %v, want %v", got.HasBidiStreaming, test.want)
+			}
+			if len(test.wantGaxiFeatures) > 0 {
+				idx := slices.IndexFunc(codec.extraPackages, func(pkg *packagez) bool {
+					return pkg.name == gaxiPackageName
+				})
+				if idx == -1 {
+					t.Fatalf("gaxi package not found in extraPackages")
+				}
+				if diff := cmp.Diff(test.wantGaxiFeatures, codec.extraPackages[idx].features); diff != "" {
+					t.Errorf("mismatch (-want +got):\n%s", diff)
+				}
+			}
+		})
+	}
+}
+
+func TestModelAnnotationsBidiStreamingServices(t *testing.T) {
+	msg := api.NewTestMessage("Request").WithPackage("test.v1")
+
+	bidiMethod := api.NewTestMethod("Chat").WithInput(msg).WithOutput(msg).WithBidiStreaming()
+	bidiMethod.PathInfo = &api.PathInfo{}
+	bidiService := api.NewTestService("BidiService").WithPackage("test.v1").WithMethods(bidiMethod)
+
+	unaryMethod := api.NewTestMethod("Get").WithInput(msg).WithOutput(msg)
+	unaryMethod.PathInfo = &api.PathInfo{}
+	unaryService := api.NewTestService("UnaryService").WithPackage("test.v1").WithMethods(unaryMethod)
+
+	model := api.NewTestAPI([]*api.Message{msg}, []*api.Enum{}, []*api.Service{bidiService, unaryService})
+	if err := api.CrossReference(model); err != nil {
+		t.Fatal(err)
+	}
+
+	codec := newTestCodec(t, libconfig.SpecProtobuf, "", map[string]string{
+		"include-bidi-streaming-methods": "true",
+		"per-service-features":           "true",
+	})
+	got, err := annotateModel(model, codec)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if len(got.BidiStreamingServices) != 1 {
+		t.Fatalf("expected 1 BidiStreamingService, got %d", len(got.BidiStreamingServices))
+	}
+	if got.BidiStreamingServices[0].Name != "BidiService" {
+		t.Errorf("expected BidiStreamingServices[0].Name == %q, got %q", "BidiService", got.BidiStreamingServices[0].Name)
 	}
 }
