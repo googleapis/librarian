@@ -138,12 +138,12 @@ func TestComponent(t *testing.T) {
 	}{
 		{
 			name:      "google cloud component",
-			namespace: "Google\\Cloud\\SecretManager",
+			namespace: `Google\Cloud\SecretManager`,
 			want:      "SecretManager",
 		},
 		{
 			name:      "non cloud",
-			namespace: "Google\\Ads\\GoogleAds",
+			namespace: `Google\Ads\GoogleAds`,
 			want:      "AdsGoogleAds",
 		},
 	} {
