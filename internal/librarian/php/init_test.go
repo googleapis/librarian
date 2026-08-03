@@ -43,11 +43,16 @@ func TestNamespace(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
 			tmpDir := t.TempDir()
-			file := filepath.Join(tmpDir, test.name+".proto")
+			apiPath := "google/cloud/test/v1"
+			dir := filepath.Join(tmpDir, apiPath)
+			if err := os.MkdirAll(dir, 0o755); err != nil {
+				t.Fatal(err)
+			}
+			file := filepath.Join(dir, "service.proto")
 			if err := os.WriteFile(file, []byte(test.content), 0o644); err != nil {
 				t.Fatal(err)
 			}
-			got, err := namespace(file)
+			got, err := namespace(tmpDir, apiPath)
 			if err != nil {
 				t.Fatalf("namespace() failed: %v", err)
 			}
