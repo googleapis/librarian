@@ -54,7 +54,7 @@ type fieldAnnotations struct {
 	// InitializerType is the Swift type name of this field as it appears in the initializer signature.
 	//
 	// For recursive fields, this is the unwrapped type with an optional suffix (e.g., `Node?`), rather
-	// than the boxed type (`GoogleCloudWkt.Recursive<Node>?`). For standard fields, it matches `FieldType`.
+	// than the boxed type (`GoogleCloudWKT.Recursive<Node>?`). For standard fields, it matches `FieldType`.
 	InitializerType string
 }
 

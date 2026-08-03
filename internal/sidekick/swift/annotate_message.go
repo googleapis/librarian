@@ -111,7 +111,7 @@ func (c *codec) annotateMessage(message *api.Message, model *modelAnnotations) e
 	if _, err := c.addApiPackageDependency(message.Package); err != nil {
 		return err
 	}
-	// All messages require the well known types for GoogleCloudWkt._AnyPackable.
+	// All messages require the well known types for GoogleCloudWKT._AnyPackable.
 	wktDep, err := c.addApiPackageDependency(wellKnownProtobufPackage)
 	if err != nil {
 		return err

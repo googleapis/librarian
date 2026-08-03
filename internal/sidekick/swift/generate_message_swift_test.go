@@ -29,7 +29,7 @@ import (
 func swiftConfig(t *testing.T, extraDependencies []config.SwiftDependency) *config.SwiftPackage {
 	t.Helper()
 	deps := []config.SwiftDependency{
-		{Name: "GoogleCloudWkt", ApiPackage: wellKnownProtobufPackage},
+		{Name: "GoogleCloudWKT", ApiPackage: wellKnownProtobufPackage},
 	}
 	deps = append(deps, extraDependencies...)
 	return &config.SwiftPackage{
@@ -116,7 +116,7 @@ func TestGenerateMessage_WithNestedMessages(t *testing.T) {
 		t.Fatal("missing { for Nested1")
 	}
 	decl1 := contentStr[startIdx1 : startIdx1+endIdx1]
-	for _, p := range []string{"Codable", "Equatable", "GoogleCloudWkt._AnyPackable", "Sendable"} {
+	for _, p := range []string{"Codable", "Equatable", "GoogleCloudWKT._AnyPackable", "Sendable"} {
 		if !strings.Contains(decl1, p) {
 			t.Errorf("expected %q in Nested1 declaration, got: %s", p, decl1)
 		}
@@ -131,7 +131,7 @@ func TestGenerateMessage_WithNestedMessages(t *testing.T) {
 		t.Fatal("missing { for Nested2")
 	}
 	decl2 := contentStr[startIdx2 : startIdx2+endIdx2]
-	for _, p := range []string{"Codable", "Equatable", "GoogleCloudWkt._AnyPackable", "Sendable"} {
+	for _, p := range []string{"Codable", "Equatable", "GoogleCloudWKT._AnyPackable", "Sendable"} {
 		if !strings.Contains(decl2, p) {
 			t.Errorf("expected %q in Nested2 declaration, got: %s", p, decl2)
 		}
@@ -309,7 +309,7 @@ func TestGenerateMessage_WithRecursiveTypes(t *testing.T) {
 	contentStrA := string(contentA)
 
 	// Verify struct property uses Recursive
-	wantProp := "public var nodeB: GoogleCloudWkt.Recursive<NodeB>?"
+	wantProp := "public var nodeB: GoogleCloudWKT.Recursive<NodeB>?"
 	if !strings.Contains(contentStrA, wantProp) {
 		t.Errorf("property definition mismatch: want %q; got:\n%s", wantProp, contentStrA)
 	}
@@ -365,7 +365,7 @@ func TestGenerateMessage_SelfRecursive(t *testing.T) {
 	contentStr := string(content)
 
 	// Verify struct property uses Recursive
-	wantProp := "public var child: GoogleCloudWkt.Recursive<Node>?"
+	wantProp := "public var child: GoogleCloudWKT.Recursive<Node>?"
 	if !strings.Contains(contentStr, wantProp) {
 		t.Errorf("property definition mismatch: want %q; got:\n%s", wantProp, contentStr)
 	}
@@ -453,7 +453,7 @@ func TestGenerateMessage_RecursiveChain(t *testing.T) {
 	}
 	contentStrA := string(contentA)
 	// Verify NodeA contains wrapped NodeB
-	wantPropA := "public var nodeB: GoogleCloudWkt.Recursive<NodeB>?"
+	wantPropA := "public var nodeB: GoogleCloudWKT.Recursive<NodeB>?"
 	if !strings.Contains(contentStrA, wantPropA) {
 		t.Errorf("nodeB property definition mismatch: want %q; got:\n%s", wantPropA, contentStrA)
 	}
@@ -469,7 +469,7 @@ func TestGenerateMessage_RecursiveChain(t *testing.T) {
 		t.Fatal(err)
 	}
 	contentStrB := string(contentB)
-	wantPropB := "public var nodeC: GoogleCloudWkt.Recursive<NodeC>?"
+	wantPropB := "public var nodeC: GoogleCloudWKT.Recursive<NodeC>?"
 	if !strings.Contains(contentStrB, wantPropB) {
 		t.Errorf("nodeC property definition mismatch: want %q; got:\n%s", wantPropB, contentStrB)
 	}
@@ -485,7 +485,7 @@ func TestGenerateMessage_RecursiveChain(t *testing.T) {
 		t.Fatal(err)
 	}
 	contentStrC := string(contentC)
-	wantPropC := "public var nodeA: GoogleCloudWkt.Recursive<NodeA>? = nil"
+	wantPropC := "public var nodeA: GoogleCloudWKT.Recursive<NodeA>? = nil"
 	if !strings.Contains(contentStrC, wantPropC) {
 		t.Errorf("nodeA property definition mismatch: want %q; got:\n%s", wantPropC, contentStrC)
 	}

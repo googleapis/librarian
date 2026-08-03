@@ -30,7 +30,7 @@ const (
 	wellKnownProtobufPackage = "google.protobuf"
 	// The name of the corresponding Swift package that contains the Swift implementations of these
 	// types.
-	wellKnownSwiftPackage = "GoogleCloudWkt"
+	wellKnownSwiftPackage = "GoogleCloudWKT"
 	// The name of the Swift package that contains the pagination helper types.
 	paginationSwiftPackage = "GoogleCloudGax"
 	// The name of the Swift package that contains the long-running operation helper types.
