@@ -16,7 +16,9 @@ package php
 
 import (
 	"bufio"
+	"io/fs"
 	"os"
+	"path/filepath"
 	"regexp"
 	"strings"
 )
@@ -25,7 +27,13 @@ var (
 	namespaceRe = regexp.MustCompile(`php_namespace\)?\s*=\s*"([^"]+)"`)
 )
 
-func namespace(file string) (string, error) {
+// namespace reads the php_namespace option from the first .proto file in the API directory.
+// If the option is not found, it generates a fallback namespace from the API path.
+func namespace(googleapisDir, apiPath string) (string, error) {
+	file, err := searchForProto(googleapisDir, apiPath)
+	if err != nil {
+		return "", err
+	}
 	f, err := os.Open(file)
 	if err != nil {
 		return "", err
@@ -38,5 +46,32 @@ func namespace(file string) (string, error) {
 			return strings.ReplaceAll(matches[1], `\\`, `\`), nil
 		}
 	}
-	return "", scanner.Err()
+	if scanner.Err() != nil {
+		return "", scanner.Err()
+	}
+	return backupNamespace(apiPath), nil
+}
+
+// searchForProto finds the first .proto file in the API directory.
+func searchForProto(googleapisDir, apiPath string) (string, error) {
+	dir := filepath.Join(googleapisDir, apiPath)
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		return "", err
+	}
+	for _, entry := range entries {
+		if !entry.IsDir() && filepath.Ext(entry.Name()) == ".proto" {
+			return filepath.Join(dir, entry.Name()), nil
+		}
+	}
+	return "", fs.ErrNotExist
+}
+
+// backupNamespace generates a fallback namespace from the API path.
+func backupNamespace(apiPath string) string {
+	parts := strings.Split(apiPath, "/")
+	for i, part := range parts {
+		parts[i] = strings.ToUpper(part[:1]) + part[1:]
+	}
+	return strings.Join(parts, `\`)
 }
