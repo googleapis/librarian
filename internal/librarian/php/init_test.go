@@ -34,22 +34,22 @@ func TestNamespace(t *testing.T) {
 		{
 			name:    "php_namespace option",
 			content: `option php_namespace = "Google\\Cloud\\SecretManager\\V1";`,
-			want:    `Google\Cloud\SecretManager\V1`,
+			want:    `Google\Cloud\SecretManager`,
 		},
 		{
 			name:    "extra whitespace",
-			content: `option php_namespace   =   "Google\\Cloud\\Storage";`,
+			content: `option php_namespace   =   "Google\\Cloud\\Storage\\V2beta";`,
 			want:    `Google\Cloud\Storage`,
 		},
 		{
 			name:    "ignore comments",
 			content: `// option php_namespace = "Google\\Cloud\\SecretManager\\V1";`,
-			want:    `Google\Cloud\Test\V1`,
+			want:    `Google\Cloud\Test`,
 		},
 		{
 			name:    "no php_namespace option",
 			content: `syntax = "proto3";`,
-			want:    `Google\Cloud\Test\V1`,
+			want:    `Google\Cloud\Test`,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {

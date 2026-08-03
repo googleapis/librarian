@@ -24,7 +24,8 @@ import (
 )
 
 var (
-	namespaceRe = regexp.MustCompile(`php_namespace\)?\s*=\s*"([^"]+)"`)
+	namespaceRe     = regexp.MustCompile(`php_namespace\)?\s*=\s*"([^"]+)"`)
+	versionSuffixRe = regexp.MustCompile(`\\V\d+.*$`)
 )
 
 // namespace reads the php_namespace option from the first .proto file in the API directory.
@@ -47,7 +48,9 @@ func namespace(googleapisDir, apiPath string) (string, error) {
 			continue
 		}
 		if matches := namespaceRe.FindStringSubmatch(line); len(matches) > 1 {
-			return strings.ReplaceAll(matches[1], `\\`, `\`), nil
+			ns := strings.ReplaceAll(matches[1], `\\`, `\`)
+			// Stripe the version suffix.
+			return versionSuffixRe.ReplaceAllString(ns, ""), nil
 		}
 	}
 	if scanner.Err() != nil {
@@ -77,5 +80,7 @@ func backupNamespace(apiPath string) string {
 	for i, part := range parts {
 		parts[i] = strings.ToUpper(part[:1]) + part[1:]
 	}
-	return strings.Join(parts, `\`)
+	ns := strings.Join(parts, `\`)
+	// Stripe the version suffix.
+	return versionSuffixRe.ReplaceAllString(ns, "")
 }
