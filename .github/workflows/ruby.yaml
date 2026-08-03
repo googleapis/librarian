@@ -65,11 +65,10 @@ jobs:
           persist-credentials: false
       - name: Display Go version
         run: go version
-      - uses: actions/setup-java@c1e323688fd81a25caa38c78aa6df2d33d3e20d9 # v4
+      - uses: ruby/setup-ruby@d45b1a4e94b71acab930e56e79c6aa188764e7f9 # v1.316.0
         with:
-          java-version: "17"
-          distribution: "temurin"
-          cache: "maven"
+          ruby-version: '4.0'
+          bundler-cache: true
       - name: Cache Librarian Tools
         id: cache-tools
         uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
