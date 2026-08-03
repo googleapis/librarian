@@ -142,7 +142,7 @@ func TestComponentName(t *testing.T) {
 			want:      "SecretManager",
 		},
 		{
-			name:      "non cloud",
+			name:      "google ads",
 			namespace: `Google\Ads\GoogleAds`,
 			want:      "AdsGoogleAds",
 		},
