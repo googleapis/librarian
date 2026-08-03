@@ -42,6 +42,10 @@ func namespace(googleapisDir, apiPath string) (string, error) {
 	scanner := bufio.NewScanner(f)
 	for scanner.Scan() {
 		line := strings.TrimSpace(scanner.Text())
+		// Ignore comments.
+		if strings.HasPrefix(line, "//") {
+			continue
+		}
 		if matches := namespaceRe.FindStringSubmatch(line); len(matches) > 1 {
 			return strings.ReplaceAll(matches[1], `\\`, `\`), nil
 		}
