@@ -70,10 +70,10 @@ func parseProto(googleapisDir, apiPath string) (string, string, error) {
 		if strings.HasPrefix(line, "//") {
 			continue
 		}
-		if matches := packageRe.FindStringSubmatch(line); len(matches) > 1 {
+		if matches := packageRe.FindStringSubmatch(line); pkg == "" && len(matches) > 1 {
 			pkg = versionSuffixRe.ReplaceAllLiteralString(matches[1], "")
 		}
-		if matches := namespaceRe.FindStringSubmatch(line); len(matches) > 1 {
+		if matches := namespaceRe.FindStringSubmatch(line); ns == "" && len(matches) > 1 {
 			// Backslashes are escaping chars in protobuf string literals, php namespace
 			// in proto need to use double slashes.
 			raw := strings.ReplaceAll(matches[1], `\\`, `\`)
