@@ -54,34 +54,18 @@ func newInitParams(googleapisDir, apiPath string) (*initParams, error) {
 // namespace reads the php_namespace option from the first .proto file in the API directory.
 // If the option is not found, it generates a fallback namespace from the API path.
 func namespace(googleapisDir, apiPath string) (string, error) {
-	file, err := searchForProto(googleapisDir, apiPath)
+	match, err := findInProto(googleapisDir, apiPath, namespaceRe)
 	if err != nil {
 		return "", err
 	}
-	f, err := os.Open(file)
-	if err != nil {
-		return "", err
+	if match == "" {
+		return backupNamespace(apiPath), nil
 	}
-	defer f.Close()
-	scanner := bufio.NewScanner(f)
-	for scanner.Scan() {
-		line := strings.TrimSpace(scanner.Text())
-		// Ignore comments.
-		if strings.HasPrefix(line, "//") {
-			continue
-		}
-		if matches := namespaceRe.FindStringSubmatch(line); len(matches) > 1 {
-			// Backslashes are escapping chars in protobuf string literals, php namespace
-			// in proto need to use double slashes.
-			ns := strings.ReplaceAll(matches[1], `\\`, `\`)
-			// Stripe the version suffix.
-			return versionSuffixRe.ReplaceAllString(ns, ""), nil
-		}
-	}
-	if scanner.Err() != nil {
-		return "", scanner.Err()
-	}
-	return backupNamespace(apiPath), nil
+	// Backslashes are escapping chars in protobuf string literals, php namespace
+	// in proto need to use double slashes.
+	ns := strings.ReplaceAll(match, `\\`, `\`)
+	// Stripe the version suffix.
+	return versionSuffixRe.ReplaceAllString(ns, ""), nil
 }
 
 // componentName returns the component name from a namespace.
@@ -94,6 +78,14 @@ func componentName(namespace string) string {
 }
 
 func protoPackage(googleapisDir, apiPath string) (string, error) {
+	match, err := findInProto(googleapisDir, apiPath, packageRe)
+	if err != nil || match == "" {
+		return match, err
+	}
+	return versionSuffixRe.ReplaceAllLiteralString(match, ""), nil
+}
+
+func findInProto(googleapisDir, apiPath string, re *regexp.Regexp) (string, error) {
 	file, err := searchForProto(googleapisDir, apiPath)
 	if err != nil {
 		return "", err
@@ -106,12 +98,11 @@ func protoPackage(googleapisDir, apiPath string) (string, error) {
 	scanner := bufio.NewScanner(f)
 	for scanner.Scan() {
 		line := strings.TrimSpace(scanner.Text())
-		// Ignore comments.
 		if strings.HasPrefix(line, "//") {
 			continue
 		}
-		if matches := packageRe.FindStringSubmatch(line); len(matches) > 1 {
-			return versionSuffixRe.ReplaceAllLiteralString(matches[1], ""), nil
+		if matches := re.FindStringSubmatch(line); len(matches) > 1 {
+			return matches[1], nil
 		}
 	}
 	return "", scanner.Err()
