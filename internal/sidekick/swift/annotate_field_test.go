@@ -375,10 +375,14 @@ func TestAnnotateField_Recursive(t *testing.T) {
 			isOneOf:       true,
 			oneofProperty: "alternatives",
 			want: &fieldAnnotations{
-				FieldType:     "Node",
-				BaseFieldType: "Node",
-				Recursive:     false,
-				OneOfChecker:  "alternativesCheckAndSet",
+				FieldType:            "Node",
+				BaseFieldType:        "Node",
+				Recursive:            false,
+				OneOfChecker:         "alternativesCheckAndSet",
+				OneOfPropertyName:    "alternatives",
+				ProtoFieldName:       "childNode",
+				ProtoFieldNamePascal: "ChildNode",
+				PrimitiveFieldType:   "Node",
 			},
 		},
 	} {
