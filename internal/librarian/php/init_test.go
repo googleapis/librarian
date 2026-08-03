@@ -130,7 +130,7 @@ func TestNamespace_Error(t *testing.T) {
 	}
 }
 
-func TestComponent(t *testing.T) {
+func TestComponentName(t *testing.T) {
 	for _, test := range []struct {
 		name      string
 		namespace string
@@ -148,7 +148,7 @@ func TestComponent(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got := component(test.namespace)
+			got := componentName(test.namespace)
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
