@@ -13,7 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 }}
-extension {{Codec.ExtensionTypeName}} {
+extension {{Codec.FullyQualifiedName}} {
   internal init(proto: {{Codec.ProtoTypeName}}) {
     switch proto {
     {{#UniqueNumberValues}}
@@ -34,7 +34,7 @@ extension {{Codec.ExtensionTypeName}} {
       return {{Codec.ProtoTypeName}}(rawValue: val)
         ?? .UNRECOGNIZED(val)
     case .{{Codec.UnknownStringName}}(let str):
-      throw GoogleCloudGax.ProtobufConversionError.noIntegerValue(enumType: "{{Codec.ExtensionTypeName}}", stringValue: str)
+      throw GoogleCloudGax.ProtobufConversionError.noIntegerValue(enumType: "{{Codec.FullyQualifiedName}}", stringValue: str)
     }
   }
 }

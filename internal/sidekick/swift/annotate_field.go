@@ -210,7 +210,11 @@ func (c *codec) annotateField(field *api.Field, model *modelAnnotations) (*field
 			annotations.UrlSafeValue = true
 		}
 	}
-	c.computeFieldConversionStatements(field, annotations, parts)
+	if !field.IsOneOf && !field.Map && !field.Repeated {
+		annotations.ProtoFieldName = protoFieldName(field.Name)
+		annotations.ProtoFieldNamePascal = protoFieldNamePascal(field.Name)
+		annotations.PrimitiveFieldType = parts.Base
+	}
 	field.Codec = annotations
 	return annotations, nil
 }
@@ -252,15 +256,4 @@ func (c *codec) fieldPackage(field *api.Field) (string, error) {
 		return e.Package, nil
 	}
 	return "", nil
-}
-
-func (c *codec) computeFieldConversionStatements(field *api.Field, ann *fieldAnnotations, parts *fieldTypeNames) {
-	if field.IsOneOf || field.Map || field.Repeated {
-		// TODO(#5272): Map, Repeated, and OneOf fields are handled in subsequent PRs.
-		return
-	}
-
-	ann.ProtoFieldName = protoFieldName(field.Name)
-	ann.ProtoFieldNamePascal = protoFieldNamePascal(field.Name)
-	ann.PrimitiveFieldType = parts.Base
 }
