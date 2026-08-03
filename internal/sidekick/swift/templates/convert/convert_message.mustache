@@ -24,14 +24,14 @@ extension {{Codec.ParameterTypeName}} {
     {{^Optional}}
     {{#IsObject}}
     {{#Codec.Recursive}}
-    self.{{Codec.Name}} = proto.has{{Codec.ProtoFieldNamePascal}} ? {{Codec.Model.WktPackage}}.Recursive(value: try {{Codec.PrimitiveFieldType}}(proto: proto.{{Codec.ProtoFieldName}})) : nil
+    self.{{Codec.Name}} = proto.has{{Codec.ProtoFieldNamePascal}} ? {{Codec.Model.WktPackage}}.Recursive(value: try .init(proto: proto.{{Codec.ProtoFieldName}})) : nil
     {{/Codec.Recursive}}
     {{^Codec.Recursive}}
-    self.{{Codec.Name}} = try {{Codec.PrimitiveFieldType}}(proto: proto.{{Codec.ProtoFieldName}})
+    self.{{Codec.Name}} = try .init(proto: proto.{{Codec.ProtoFieldName}})
     {{/Codec.Recursive}}
     {{/IsObject}}
     {{#IsEnum}}
-    self.{{Codec.Name}} = {{Codec.PrimitiveFieldType}}(proto: proto.{{Codec.ProtoFieldName}})
+    self.{{Codec.Name}} = .init(proto: proto.{{Codec.ProtoFieldName}})
     {{/IsEnum}}
     {{^IsObject}}
     {{^IsEnum}}
@@ -42,14 +42,14 @@ extension {{Codec.ParameterTypeName}} {
     {{#Optional}}
     {{#IsObject}}
     {{#Codec.Recursive}}
-    self.{{Codec.Name}} = proto.has{{Codec.ProtoFieldNamePascal}} ? {{Codec.Model.WktPackage}}.Recursive(value: try {{Codec.PrimitiveFieldType}}(proto: proto.{{Codec.ProtoFieldName}})) : nil
+    self.{{Codec.Name}} = proto.has{{Codec.ProtoFieldNamePascal}} ? {{Codec.Model.WktPackage}}.Recursive(value: try .init(proto: proto.{{Codec.ProtoFieldName}})) : nil
     {{/Codec.Recursive}}
     {{^Codec.Recursive}}
-    self.{{Codec.Name}} = proto.has{{Codec.ProtoFieldNamePascal}} ? try {{Codec.PrimitiveFieldType}}(proto: proto.{{Codec.ProtoFieldName}}) : nil
+    self.{{Codec.Name}} = proto.has{{Codec.ProtoFieldNamePascal}} ? try .init(proto: proto.{{Codec.ProtoFieldName}}) : nil
     {{/Codec.Recursive}}
     {{/IsObject}}
     {{#IsEnum}}
-    self.{{Codec.Name}} = proto.has{{Codec.ProtoFieldNamePascal}} ? {{Codec.PrimitiveFieldType}}(proto: proto.{{Codec.ProtoFieldName}}) : nil
+    self.{{Codec.Name}} = proto.has{{Codec.ProtoFieldNamePascal}} ? .init(proto: proto.{{Codec.ProtoFieldName}}) : nil
     {{/IsEnum}}
     {{^IsObject}}
     {{^IsEnum}}
