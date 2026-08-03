@@ -100,6 +100,7 @@ func TestNamespace_Error(t *testing.T) {
 			wantErr: fs.ErrNotExist,
 		},
 		{
+			// this test failed because fake.proto is a directory, not a file.
 			name: "ignore directory with proto extension",
 			setup: func(t *testing.T, tmpDir string) string {
 				apiPath := "google/cloud/test/v1"
