@@ -124,6 +124,12 @@ func newQueryMetadata(c *codec, model *api.API, skippedFields []string) (*unifie
 	})
 }
 
+func newQueryCreationMetadata(c *codec, model *api.API, skippedFields []string) (*unifiedMessage, error) {
+	return newUnifiedMessage(c, model, []string{"Job", "QueryResponse"}, func(f *api.Field) bool {
+		return slices.Contains(skippedFields, f.Name)
+	})
+}
+
 func runQueryBuilder(m *unifiedMessage) (*api.Message, error) {
 	msg, err := m.createSyntheticMessage("RunQuery")
 	if err != nil {
@@ -163,6 +169,10 @@ func (f *fieldGroup) QueryRequest() *api.Field {
 
 func (f *fieldGroup) JobConfigurationQuery() *api.Field {
 	return f.fields["JobConfigurationQuery"]
+}
+
+func (f *fieldGroup) Job() *api.Field {
+	return f.fields["Job"]
 }
 
 func (f *fieldGroup) QueryResponse() *api.Field {
