@@ -91,4 +91,3 @@ func (c *codec) generateMessageConversions(outdir string, provider language.Temp
 func (c *codec) conversionOutputPath(typeName string) string {
 	return typeName + "+Convert.swift"
 }
-

@@ -167,4 +167,3 @@ func TestGenerateConversions_RecursiveMessage(t *testing.T) {
 		t.Errorf("toProto() mismatch (-want +got):\n%s", diff)
 	}
 }
-
