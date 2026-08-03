@@ -25,7 +25,7 @@ import (
 
 var (
 	namespaceRe     = regexp.MustCompile(`php_namespace\)?\s*=\s*"([^"]+)"`)
-	versionSuffixRe = regexp.MustCompile(`\\V\d+.*$`)
+	versionSuffixRe = regexp.MustCompile(`[\\.][vV]\d+.*$`)
 	packageRe       = regexp.MustCompile(`^package\s+([^\s;]+);`)
 )
 
