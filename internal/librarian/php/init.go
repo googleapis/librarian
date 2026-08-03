@@ -77,7 +77,6 @@ func parseProto(googleapisDir, apiPath string) (string, string, error) {
 			// Backslashes are escaping chars in protobuf string literals, php namespace
 			// in proto need to use double slashes.
 			raw := strings.ReplaceAll(matches[1], `\\`, `\`)
-			// Strip the version suffix.
 			ns = versionSuffixRe.ReplaceAllString(raw, "")
 		}
 		if pkg != "" && ns != "" {
@@ -118,7 +117,6 @@ func backupNamespace(apiPath string) string {
 		parts[i] = strings.ToUpper(part[:1]) + part[1:]
 	}
 	ns := strings.Join(parts, `\`)
-	// Stripe the version suffix.
 	return versionSuffixRe.ReplaceAllString(ns, "")
 }
 
