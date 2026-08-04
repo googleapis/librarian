@@ -95,7 +95,7 @@ func TestAddWrapper(t *testing.T) {
 			}
 			got, err := addWrapper(cfg, test.in)
 			if err != nil {
-				t.Fatalf("addWrapper() error = %v", err)
+				t.Fatal(err)
 			}
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
@@ -202,7 +202,7 @@ func TestSearchVersionedAPI(t *testing.T) {
 			}
 			got, err := searchVersionedAPI(cfg, test.apiPath)
 			if err != nil {
-				t.Fatalf("searchVersionedAPI() error = %v", err)
+				t.Fatal(err)
 			}
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
