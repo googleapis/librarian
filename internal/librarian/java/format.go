@@ -44,8 +44,12 @@ func Format(ctx context.Context, libraries ...*config.Library) error {
 	}
 	defer os.Remove(tmpFile.Name())
 	content := "--replace\n" + strings.Join(allFiles, "\n")
-	if err := os.WriteFile(tmpFile.Name(), []byte(content), 0600); err != nil {
+	if _, err := tmpFile.WriteString(content); err != nil {
+		tmpFile.Close()
 		return fmt.Errorf("failed to write format args: %w", err)
+	}
+	if err := tmpFile.Close(); err != nil {
+		return fmt.Errorf("failed to close temp file: %w", err)
 	}
 	env, err := getToolsEnv()
 	if err != nil {
