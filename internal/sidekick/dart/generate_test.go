@@ -73,6 +73,7 @@ func TestFromProtobuf(t *testing.T) {
 	for _, expected := range []string{
 		"pubspec.yaml",
 		"lib/secretmanager.dart",
+		"LICENSE",
 		"README.md",
 		"skills/google_cloud_secretmanager_v1-tests/SKILL.md",
 		"skills/google_cloud_secretmanager_v1-setup/SKILL.md",
@@ -103,13 +104,9 @@ func TestGeneratedFiles(t *testing.T) {
 	}
 
 	// Validate that main.dart was replaced with {servicename}.dart,
-	// and that no skill files are generated when required template values are missing.
 	for _, fileInfo := range files {
 		if filepath.Base(fileInfo.OutputPath) == "main.dart" {
 			t.Errorf("expected the main.dart template to be generated as {servicename}.dart")
-		}
-		if filepath.Base(fileInfo.OutputPath) == "LICENSE.txt" {
-			t.Errorf("expected the LICENSE.txt template to be generated as LICENSE")
 		}
 	}
 }
