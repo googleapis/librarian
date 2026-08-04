@@ -55,7 +55,7 @@ func addWrapper(cfg *config.Config, lib *config.Library) (*config.Library, error
 	if err != nil {
 		return nil, err
 	}
-	update(lib, versionedAPI)
+	configureWrapper(lib, versionedAPI)
 	return lib, nil
 }
 
@@ -72,8 +72,8 @@ func searchVersionedAPI(cfg *config.Config, apiPath string) (string, error) {
 	return "", fmt.Errorf("%w: %q", errNoVersionedAPI, apiPath)
 }
 
-// update updates the library to be a main client.
-func update(lib *config.Library, versionedAPI string) {
+// configureWrapper configures the library to be a main client.
+func configureWrapper(lib *config.Library, versionedAPI string) {
 	lib.APIs = []*config.API{{Path: versionedAPI}}
 	lib.Ruby = &config.RubyPackage{
 		WrapperOf: []string{fmt.Sprintf("%s:0.0", filepath.Base(versionedAPI))},
