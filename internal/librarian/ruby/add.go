@@ -41,6 +41,7 @@ func Add(cfg *config.Config, lib *config.Library) (*config.Library, error) {
 	return newLib, nil
 }
 
+// addWrapper initializes a new Ruby main client library configuration.
 func addWrapper(cfg *config.Config, lib *config.Library) (*config.Library, error) {
 	if len(lib.APIs) != 1 {
 		return nil, fmt.Errorf("ruby libraries must have a single API. %w, got %d", errRequiresOneAPI, len(lib.APIs))
@@ -58,6 +59,8 @@ func addWrapper(cfg *config.Config, lib *config.Library) (*config.Library, error
 	return lib, nil
 }
 
+// searchVersionedAPI finds a versioned API in the config that is a prefix of the given API path,
+// otherwise it returns an error.
 func searchVersionedAPI(cfg *config.Config, apiPath string) (string, error) {
 	for _, lib := range cfg.Libraries {
 		for _, api := range lib.APIs {
@@ -69,6 +72,7 @@ func searchVersionedAPI(cfg *config.Config, apiPath string) (string, error) {
 	return "", fmt.Errorf("%w: %q", errNoVersionedAPI, apiPath)
 }
 
+// update updates the library to be a main client.
 func update(lib *config.Library, versionedAPI string) {
 	lib.APIs = []*config.API{{Path: versionedAPI}}
 	lib.Ruby = &config.RubyPackage{
