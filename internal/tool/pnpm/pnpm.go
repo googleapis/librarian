@@ -29,13 +29,6 @@ import (
 	"github.com/googleapis/librarian/internal/fetch"
 )
 
-const (
-	// gapicGeneratorSubdir is the sub-directory within the
-	// google-cloud-node repo that contains the gapic-generator-typescript
-	// source.
-	gapicGeneratorSubdir = "core/generator/gapic-generator-typescript"
-)
-
 var (
 	// ErrInstall indicates a failure to install pnpm packages or execute build steps.
 	ErrInstall = errors.New("failed to install pnpm packages")
@@ -45,6 +38,9 @@ var (
 
 	// ErrMissingPackageURL indicates that a tool configuration has build steps but no package URL.
 	ErrMissingPackageURL = errors.New("has build steps but no package URL")
+
+	// ErrMissingSrcDir indicates that a tool configuration has build steps but no source directory.
+	ErrMissingSrcDir = errors.New("has build steps but no source directory")
 
 	// ErrMissingExecutable indicates that node or pnpm is not installed or not in PATH.
 	ErrMissingExecutable = errors.New("missing required executable for pnpm tool installation")
@@ -62,14 +58,14 @@ func Install(ctx context.Context, pnpmTools []*config.PNPMTool, binDir string) e
 		}
 	}
 
-	env, err := getPNPMEnv(binDir)
+	toolEnv, err := env(binDir)
 	if err != nil {
 		return err
 	}
 
 	for _, tool := range pnpmTools {
 		if len(tool.Build) > 0 {
-			if err := installFromSource(ctx, env, tool); err != nil {
+			if err := installFromSource(ctx, toolEnv, tool); err != nil {
 				return err
 			}
 			continue
@@ -79,21 +75,21 @@ func Install(ctx context.Context, pnpmTools []*config.PNPMTool, binDir string) e
 		if pkg == "" {
 			pkg = fmt.Sprintf("%s@%s", tool.Name, tool.Version)
 		}
-		if err := run(ctx, "", env, "add", "-g", pkg); err != nil {
+		if err := run(ctx, "", toolEnv, "add", "-g", pkg); err != nil {
 			return fmt.Errorf("%w: %w", ErrInstall, err)
 		}
 	}
 	return nil
 }
 
-// getPNPMEnv constructs a transient environment variable block to configure pnpm.
+// env constructs a transient environment variable block to configure pnpm.
 //
 // This redirects all globally-installed pnpm binaries to LIBRARIAN_BIN, and
 // virtual stores / content-addressable storage caches to LIBRARIAN_CACHE.
 // This enables complete environment caching and restore on CI runners,
 // while permanently avoiding persistent side-effects on the host machine
 // (it does not modify the user's personal ~/.config/pnpm/rc files).
-func getPNPMEnv(binDir string) ([]string, error) {
+func env(binDir string) ([]string, error) {
 	cacheDir, err := cache.Directory()
 	if err != nil {
 		return nil, fmt.Errorf("failed to resolve librarian cache directory: %w", err)
@@ -132,9 +128,12 @@ func build(ctx context.Context, dir string, env []string, cmdStr string) error {
 	return cmd.Run()
 }
 
-func installFromSource(ctx context.Context, env []string, tool *config.PNPMTool) error {
+func installFromSource(ctx context.Context, toolEnv []string, tool *config.PNPMTool) error {
 	if tool.Package == "" {
 		return fmt.Errorf("%w: pnpm tool %s", ErrMissingPackageURL, tool.Name)
+	}
+	if tool.SrcDir == "" {
+		return fmt.Errorf("%w: pnpm tool %s", ErrMissingSrcDir, tool.Name)
 	}
 	repo, err := repoFromPackageURL(tool.Package)
 	if err != nil {
@@ -150,13 +149,9 @@ func installFromSource(ctx context.Context, env []string, tool *config.PNPMTool)
 	}
 
 	// Run build steps.
-	subdir := tool.SrcDir
-	if subdir == "" {
-		subdir = gapicGeneratorSubdir
-	}
-	buildDir := filepath.Join(dir, subdir)
+	buildDir := filepath.Join(dir, tool.SrcDir)
 	for _, cmd := range tool.Build {
-		if err := build(ctx, buildDir, env, cmd); err != nil {
+		if err := build(ctx, buildDir, toolEnv, cmd); err != nil {
 			return fmt.Errorf("%w: %w", ErrInstall, err)
 		}
 	}

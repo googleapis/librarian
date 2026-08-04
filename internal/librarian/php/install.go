@@ -78,7 +78,6 @@ func Install(ctx context.Context, tools *config.Tools) error {
 	if err := pip.Install(ctx, tools.Pip); err != nil {
 		return err
 	}
-	// Install PNPM tools.
 	if err := pnpm.Install(ctx, tools.PNPM, bin); err != nil {
 		return fmt.Errorf("failed to install pnpm tools: %w", err)
 	}

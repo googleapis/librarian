@@ -75,6 +75,7 @@ func TestInstall(t *testing.T) {
 						Name:    "gapic-generator-typescript",
 						Version: "4.12.1",
 						Package: "https://github.com/googleapis/google-cloud-node/archive/gapic-generator-v4.12.1.tar.gz",
+						SrcDir:  "core/generator/gapic-generator-typescript",
 						Build: []string{
 							"pnpm install",
 							"./node_modules/.bin/tsc",
@@ -194,10 +195,22 @@ func TestInstall_Error(t *testing.T) {
 			wantErr: pnpm.ErrMissingPackageURL,
 		},
 		{
+			name: "missing src_dir for build tool",
+			tools: &config.Tools{
+				PNPM: []*config.PNPMTool{
+					{Name: "tool", Package: "https://github.com/googleapis/google-cloud-node/archive/v1.0.0.tar.gz", Build: []string{"echo 1"}},
+				},
+			},
+			setup: func(t *testing.T) {
+				stubExecutables(t)
+			},
+			wantErr: pnpm.ErrMissingSrcDir,
+		},
+		{
 			name: "invalid package url for build tool",
 			tools: &config.Tools{
 				PNPM: []*config.PNPMTool{
-					{Name: "tool", Package: "invalid-url", Build: []string{"echo 1"}},
+					{Name: "tool", Package: "invalid-url", SrcDir: "some/dir", Build: []string{"echo 1"}},
 				},
 			},
 			setup: func(t *testing.T) {

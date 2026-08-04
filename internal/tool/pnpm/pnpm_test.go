@@ -39,12 +39,13 @@ func TestInstall(t *testing.T) {
 			pnpmTools: nil,
 		},
 		{
-			name: "source build tool with default src_dir",
+			name: "source build tool with explicit src_dir",
 			pnpmTools: []*config.PNPMTool{
 				{
 					Name:    "gapic-generator-typescript",
 					Version: "4.12.1",
 					Package: "https://github.com/googleapis/google-cloud-node/archive/gapic-generator-v4.12.1.tar.gz",
+					SrcDir:  "core/generator/gapic-generator-typescript",
 					Build: []string{
 						"pnpm install",
 						"./node_modules/.bin/tsc",
@@ -137,9 +138,17 @@ func TestInstall_Error(t *testing.T) {
 			wantErr: ErrMissingPackageURL,
 		},
 		{
+			name: "missing src_dir for build tool",
+			pnpmTools: []*config.PNPMTool{
+				{Name: "tool", Package: "https://github.com/googleapis/google-cloud-node/archive/v1.0.0.tar.gz", Build: []string{"echo 1"}},
+			},
+			setup:   stubExecutables,
+			wantErr: ErrMissingSrcDir,
+		},
+		{
 			name: "invalid package url for build tool",
 			pnpmTools: []*config.PNPMTool{
-				{Name: "tool", Package: "invalid-url", Build: []string{"echo 1"}},
+				{Name: "tool", Package: "invalid-url", SrcDir: "some/dir", Build: []string{"echo 1"}},
 			},
 			setup:   stubExecutables,
 			wantErr: ErrCannotExtractRepo,
@@ -178,6 +187,7 @@ func TestInstall_Error(t *testing.T) {
 					Name:    "gapic-generator-typescript",
 					Version: "4.12.1",
 					Package: "https://github.com/googleapis/google-cloud-node/archive/gapic-generator-v4.12.1.tar.gz",
+					SrcDir:  "core/generator/gapic-generator-typescript",
 					Build:   []string{"exit 1"},
 				},
 			},
@@ -205,12 +215,12 @@ func TestInstall_Error(t *testing.T) {
 	}
 }
 
-func TestGetPNPMEnv(t *testing.T) {
+func TestEnv(t *testing.T) {
 	cacheDir := t.TempDir()
 	binDir := filepath.Join(t.TempDir(), "test_tools", "bin")
 	t.Setenv("LIBRARIAN_CACHE", cacheDir)
 
-	envList, err := getPNPMEnv(binDir)
+	envList, err := env(binDir)
 	if err != nil {
 		t.Fatal(err)
 	}
