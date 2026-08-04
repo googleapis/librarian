@@ -150,7 +150,12 @@ func generateAPI(ctx context.Context, params *generateAPIParams) (retErr error) 
 	if err != nil {
 		return err
 	}
-	opts := gapicOpts(apiMetadata, grpcConfigPath)
+	grpcConfigAbsPath := absConfigPath(googleapisDir, grpcConfigPath)
+	serviceConfigPath := ""
+	if apiMetadata != nil {
+		serviceConfigPath = apiMetadata.ServiceConfig
+	}
+	opts := gapicOpts(apiMetadata, grpcConfigAbsPath, absConfigPath(googleapisDir, serviceConfigPath))
 	additionalProtos := params.api.PHP.AdditionalProtos
 	includeCommonResources := *params.api.PHP.CommonResources
 	gapicProtos, err := gatherGAPICProtos(googleapisDir, params.api.Path, additionalProtos, includeCommonResources)
@@ -276,7 +281,14 @@ func gatherProtos(root string) ([]string, error) {
 	return protos, nil
 }
 
-func gapicOpts(apiMetadata *serviceconfig.API, grpcConfigPath string) []string {
+func absConfigPath(baseDir, configPath string) string {
+	if configPath == "" {
+		return ""
+	}
+	return filepath.Join(baseDir, configPath)
+}
+
+func gapicOpts(apiMetadata *serviceconfig.API, grpcConfigAbsPath, serviceYamlAbsPath string) []string {
 	transport := serviceconfig.GRPCRest
 	if apiMetadata != nil {
 		transport = apiMetadata.Transport(config.LanguagePhp)
@@ -289,11 +301,11 @@ func gapicOpts(apiMetadata *serviceconfig.API, grpcConfigPath string) []string {
 		opts = append(opts, "rest-numeric-enums")
 	}
 	opts = append(opts, "generate-snippets")
-	if grpcConfigPath != "" {
-		opts = append(opts, "grpc_service_config="+grpcConfigPath)
+	if grpcConfigAbsPath != "" {
+		opts = append(opts, "grpc_service_config="+grpcConfigAbsPath)
 	}
-	if apiMetadata != nil && apiMetadata.ServiceConfig != "" {
-		opts = append(opts, "service_yaml="+apiMetadata.ServiceConfig)
+	if serviceYamlAbsPath != "" {
+		opts = append(opts, "service_yaml="+serviceYamlAbsPath)
 	}
 	return opts
 }

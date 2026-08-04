@@ -181,10 +181,11 @@ func TestGatherProtos(t *testing.T) {
 
 func TestGapicOpts(t *testing.T) {
 	for _, test := range []struct {
-		name           string
-		apiMetadata    *serviceconfig.API
-		grpcConfigPath string
-		want           []string
+		name               string
+		apiMetadata        *serviceconfig.API
+		grpcConfigAbsPath  string
+		serviceYamlAbsPath string
+		want               []string
 	}{
 		{
 			name: "defaults",
@@ -193,14 +194,15 @@ func TestGapicOpts(t *testing.T) {
 		{
 			name: "with grpc config and service yaml",
 			apiMetadata: &serviceconfig.API{
-				ServiceConfig: "service.yaml",
+				ServiceConfig: "service.yaml", // The API struct might just hold it for transport, though we pass it below
 			},
-			grpcConfigPath: "grpc_config.json",
+			grpcConfigAbsPath:  "/absolute/path/to/googleapis/grpc_config.json",
+			serviceYamlAbsPath: "/absolute/path/to/googleapis/service.yaml",
 			want: []string{
 				"metadata", "transport=grpc+rest", "migration-mode=NEW_SURFACE_ONLY",
 				"rest-numeric-enums", "generate-snippets",
-				"grpc_service_config=grpc_config.json",
-				"service_yaml=service.yaml",
+				"grpc_service_config=/absolute/path/to/googleapis/grpc_config.json",
+				"service_yaml=/absolute/path/to/googleapis/service.yaml",
 			},
 		},
 		{
@@ -223,7 +225,7 @@ func TestGapicOpts(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got := gapicOpts(test.apiMetadata, test.grpcConfigPath)
+			got := gapicOpts(test.apiMetadata, test.grpcConfigAbsPath, test.serviceYamlAbsPath)
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}

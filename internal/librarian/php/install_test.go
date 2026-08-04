@@ -90,7 +90,10 @@ func TestInstall(t *testing.T) {
 				t.Setenv("LIBRARIAN_CACHE", cache)
 				t.Setenv("LIBRARIAN_BIN", filepath.Join(cache, "bin"))
 				repoDir := filepath.Join(cache, "github.com/googleapis/gapic-generator-php@1.0.0")
-				if err := os.MkdirAll(filepath.Join(repoDir, "dummy"), 0o755); err != nil {
+				if err := os.MkdirAll(filepath.Join(repoDir, "src"), 0o755); err != nil {
+					t.Fatal(err)
+				}
+				if err := os.WriteFile(filepath.Join(repoDir, "src", "Main.php"), nil, 0o644); err != nil {
 					t.Fatal(err)
 				}
 
@@ -235,7 +238,10 @@ func TestInstall_Error(t *testing.T) {
 				t.Setenv("LIBRARIAN_CACHE", cache)
 				t.Setenv("LIBRARIAN_BIN", filepath.Join(cache, "bin"))
 				repoDir := filepath.Join(cache, "github.com/googleapis/gapic-generator-php@1.0.0")
-				if err := os.MkdirAll(filepath.Join(repoDir, "dummy"), 0o755); err != nil {
+				if err := os.MkdirAll(filepath.Join(repoDir, "src"), 0o755); err != nil {
+					t.Fatal(err)
+				}
+				if err := os.WriteFile(filepath.Join(repoDir, "src", "Main.php"), nil, 0o644); err != nil {
 					t.Fatal(err)
 				}
 				t.Setenv("PATH", t.TempDir())
