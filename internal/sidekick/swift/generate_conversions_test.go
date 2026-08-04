@@ -187,3 +187,54 @@ func TestGenerateConversions_RecursiveMessage(t *testing.T) {
 		t.Errorf("toProto() mismatch (-want +got):\n%s", diff)
 	}
 }
+
+func TestGenerateConversions_NoConvertedFields(t *testing.T) {
+	outDir := t.TempDir()
+
+	field1 := &api.Field{
+		Name:     "locations",
+		ID:       "1",
+		Repeated: true,
+		Typez:    api.TypezString,
+	}
+	field2 := &api.Field{
+		Name:  "labels",
+		ID:    "2",
+		Map:   true,
+		Typez: api.TypezString,
+	}
+	msg := &api.Message{
+		Name:    "EmptyOrRepeatedOnly",
+		ID:      ".test.EmptyOrRepeatedOnly",
+		Fields:  []*api.Field{field1, field2},
+		Package: "test",
+	}
+	field1.Parent = msg
+	field2.Parent = msg
+	model := api.NewTestAPI([]*api.Message{msg}, []*api.Enum{}, []*api.Service{})
+	model.PackageName = "test"
+
+	library := &config.Library{
+		Name: "GoogleCloudStorage",
+	}
+	module := &config.SwiftModule{
+		ModulePath: "StorageControlProtos",
+	}
+	if err := GenerateConversions(t.Context(), model, outDir, library, module); err != nil {
+		t.Fatal(err)
+	}
+
+	b, err := os.ReadFile(filepath.Join(outDir, "EmptyOrRepeatedOnly+Convert.swift"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	gotContent := string(b)
+	got := extractBlock(t, gotContent, "  internal func toProto() throws -> ProtoType {", "\n  }")
+	wantToProto := `  internal func toProto() throws -> ProtoType {
+    let proto = ProtoType()
+    return proto
+  }`
+	if diff := cmp.Diff(wantToProto, got); diff != "" {
+		t.Errorf("toProto() mismatch (-want +got):\n%s", diff)
+	}
+}
