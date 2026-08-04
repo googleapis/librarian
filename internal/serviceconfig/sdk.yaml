@@ -1275,6 +1275,64 @@
 - path: google/shopping/css/v1
   release_level:
     go: preview
+- path: google/shopping/merchant/accounts/v1
+  title: Shopping Merchant Accounts API
+- path: google/shopping/merchant/accounts/v1alpha
+  title: Shopping Merchant Accounts API
+- path: google/shopping/merchant/accounts/v1beta
+  title: Shopping Merchant Accounts API
+- path: google/shopping/merchant/conversions/v1
+  title: Shopping Merchant Conversions API
+- path: google/shopping/merchant/conversions/v1beta
+  title: Shopping Merchant Conversions API
+- path: google/shopping/merchant/datasources/v1
+  title: Shopping Merchant Data Sources API
+- path: google/shopping/merchant/datasources/v1beta
+  title: Shopping Merchant Data Sources API
+- path: google/shopping/merchant/inventories/v1
+  title: Shopping Merchant Inventories API
+- path: google/shopping/merchant/inventories/v1beta
+  title: Shopping Merchant Inventories API
+- path: google/shopping/merchant/issueresolution/v1
+  title: Shopping Merchant Issue Resolution API
+- path: google/shopping/merchant/issueresolution/v1beta
+  title: Shopping Merchant Issue Resolution API
+- path: google/shopping/merchant/lfp/v1
+  title: Shopping Merchant LFP API
+- path: google/shopping/merchant/lfp/v1beta
+  title: Shopping Merchant LFP API
+- path: google/shopping/merchant/notifications/v1
+  title: Shopping Merchant Notifications API
+- path: google/shopping/merchant/notifications/v1beta
+  title: Shopping Merchant Notifications API
+- path: google/shopping/merchant/ordertracking/v1
+  title: Shopping Merchant Order Tracking API
+- path: google/shopping/merchant/ordertracking/v1beta
+  title: Shopping Merchant Order Tracking API
+- path: google/shopping/merchant/products/v1
+  title: Shopping Merchant Products API
+- path: google/shopping/merchant/products/v1beta
+  title: Shopping Merchant Products API
+- path: google/shopping/merchant/productstudio/v1alpha
+  title: Shopping Merchant Product Studio API
+- path: google/shopping/merchant/promotions/v1
+  title: Shopping Merchant Promotions API
+- path: google/shopping/merchant/promotions/v1beta
+  title: Shopping Merchant Promotions API
+- path: google/shopping/merchant/quota/v1
+  title: Shopping Merchant Quota API
+- path: google/shopping/merchant/quota/v1beta
+  title: Shopping Merchant Quota API
+- path: google/shopping/merchant/reports/v1
+  title: Shopping Merchant Reports API
+- path: google/shopping/merchant/reports/v1alpha
+  title: Shopping Merchant Reports API
+- path: google/shopping/merchant/reports/v1beta
+  title: Shopping Merchant Reports API
+- path: google/shopping/merchant/reviews/v1beta
+  title: Shopping Merchant Reviews API
+- path: google/shopping/merchant/youtube/v1alpha
+  title: Shopping Merchant YouTube API
 - path: google/shopping/type
   documentation_uri: https://developers.google.com/merchant/api
   skip_rest_numeric_enums:
