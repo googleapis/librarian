@@ -147,13 +147,7 @@ func (c *codec) annotateMessage(message *api.Message, model *modelAnnotations) e
 	if len(message.Fields) != 0 {
 		sampleField = camelCase(message.Fields[0].Name)
 	}
-	hasConvertedFields := false
-	for _, f := range message.Fields {
-		if !f.IsOneOf && f.Singular() {
-			hasConvertedFields = true
-			break
-		}
-	}
+	hasConvertedFields := slices.IndexFunc(message.Fields, func(f *api.Field) bool { return !f.IsOneOf && f.Singular() }) != -1
 	parameterTypeName, err := c.messageTypeName(message)
 	if err != nil {
 		return err
