@@ -159,7 +159,7 @@ func fromAPI(cfg *config.Config, api *serviceconfig.API, library *config.Library
 		Language:             cfg.Language,
 		Name:                 api.ShortName,
 		NamePretty:           cleanTitle(api.Title),
-		ProductDocumentation: extractBaseProductURL(api.DocumentationURI),
+		ProductDocumentation: ExtractBaseProductURL(api.DocumentationURI),
 		ReleaseLevel:         api.ReleaseLevel(cfg.Language, library.Version),
 		Repo:                 cfg.Repo,
 		Transport:            transport,
@@ -167,9 +167,9 @@ func fromAPI(cfg *config.Config, api *serviceconfig.API, library *config.Library
 	}
 }
 
-// extractBaseProductURL extracts the base product URL from a documentation URI.
+// ExtractBaseProductURL extracts the base product URL from a documentation URI.
 // Example: "https://cloud.google.com/secret-manager/docs/overview" -> "https://cloud.google.com/secret-manager/"
-func extractBaseProductURL(docURI string) string {
+func ExtractBaseProductURL(docURI string) string {
 	// Strip off /docs/* suffix to get base product URL
 	if base, _, found := strings.Cut(docURI, "/docs/"); found {
 		return base + "/"
