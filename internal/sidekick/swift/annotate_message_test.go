@@ -697,4 +697,3 @@ func TestAnnotateMessage_HasConvertedFields(t *testing.T) {
 		})
 	}
 }
-
