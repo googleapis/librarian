@@ -19,11 +19,6 @@ import (
 	"strings"
 )
 
-type packageEntry struct {
-	component    string
-	version_file string
-}
-
 // AddManifest inserts a new package and its filler entry into a Release Please manifest map.
 func AddManifest(manifest map[string]string, name string) map[string]string {
 	if _, ok := manifest[name]; ok {
@@ -39,9 +34,9 @@ func AddPackage(packages map[string]any, name string) map[string]any {
 	if _, ok := packages[name]; ok {
 		return packages
 	}
-	packages[name] = &packageEntry{
-		component:    name,
-		version_file: toVersionFile(name),
+	packages[name] = map[string]any{
+		"component":    name,
+		"version_file": toVersionFile(name),
 	}
 	return packages
 }
