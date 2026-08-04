@@ -548,6 +548,9 @@
   documentation_uri: https://cloud.google.com/filestore/
 - path: google/cloud/financialservices/v1
   description: A unified AI platform for financial services, leveraging Google's global framework for security and compliance.
+- path: google/cloud/ftp/v1
+  transports:
+    all: rest
 - path: google/cloud/functions/v1
   documentation_uri: https://cloud.google.com/functions/
   new_issue_uri: https://issuetracker.google.com/savedsearches/559729
