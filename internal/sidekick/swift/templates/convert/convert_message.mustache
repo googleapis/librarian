@@ -58,6 +58,19 @@ extension {{Codec.ParameterTypeName}} {
     {{/IsObject}}
     {{/Optional}}
     {{/Singular}}
+    {{#Repeated}}
+    {{#IsObject}}
+    self.{{Codec.Name}} = try proto.{{Codec.ProtoFieldName}}.map { try .init(proto: $0) }
+    {{/IsObject}}
+    {{#IsEnum}}
+    self.{{Codec.Name}} = proto.{{Codec.ProtoFieldName}}.map { .init(proto: $0) }
+    {{/IsEnum}}
+    {{^IsObject}}
+    {{^IsEnum}}
+    self.{{Codec.Name}} = proto.{{Codec.ProtoFieldName}}
+    {{/IsEnum}}
+    {{/IsObject}}
+    {{/Repeated}}
     {{/IsOneOf}}
     {{/Fields}}
   }
@@ -109,6 +122,19 @@ extension {{Codec.ParameterTypeName}} {
     {{/IsObject}}
     {{/Optional}}
     {{/Singular}}
+    {{#Repeated}}
+    {{#IsObject}}
+    proto.{{Codec.ProtoFieldName}} = try self.{{Codec.Name}}.map { try $0.toProto() }
+    {{/IsObject}}
+    {{#IsEnum}}
+    proto.{{Codec.ProtoFieldName}} = try self.{{Codec.Name}}.map { try $0.toProto() }
+    {{/IsEnum}}
+    {{^IsObject}}
+    {{^IsEnum}}
+    proto.{{Codec.ProtoFieldName}} = self.{{Codec.Name}}
+    {{/IsEnum}}
+    {{/IsObject}}
+    {{/Repeated}}
     {{/IsOneOf}}
     {{/Fields}}
     return proto
