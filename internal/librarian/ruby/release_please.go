@@ -14,6 +14,16 @@
 
 package ruby
 
+import (
+	"fmt"
+	"strings"
+)
+
+type packageEntry struct {
+	component    string
+	version_file string
+}
+
 // AddManifest inserts a new package and its filler entry into a Release Please manifest map.
 func AddManifest(manifest map[string]string, name string) map[string]string {
 	if _, ok := manifest[name]; ok {
@@ -22,4 +32,20 @@ func AddManifest(manifest map[string]string, name string) map[string]string {
 	manifest[name] = defaultVersion
 	manifest[name+"+FILLER"] = "0.0.0"
 	return manifest
+}
+
+// AddPackage inserts a new package into a Release Please packages map.
+func AddPackage(packages map[string]any, name string) map[string]any {
+	if _, ok := packages[name]; ok {
+		return packages
+	}
+	packages[name] = &packageEntry{
+		component:    name,
+		version_file: toVersionFile(name),
+	}
+	return packages
+}
+
+func toVersionFile(name string) string {
+	return fmt.Sprintf("lib/%s/version.rb", strings.ReplaceAll(name, "-", "/"))
 }
