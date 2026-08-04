@@ -57,6 +57,29 @@ func templatesProvider() language.TemplateProvider {
 	}
 }
 
+type skillFile struct {
+	templatePath string
+	suffix       string
+	isRequired   func(codec *modelAnnotations) bool
+}
+
+var skillFiles = []skillFile{
+	{
+		templatePath: "skills/tests.md.mustache",
+		suffix:       "-tests",
+		isRequired: func(codec *modelAnnotations) bool {
+			return codec.FakeList != "" && codec.ExampleMethodName != ""
+		},
+	},
+	{
+		templatePath: "skills/setup.md.mustache",
+		suffix:       "-setup",
+		isRequired: func(codec *modelAnnotations) bool {
+			return codec.ExampleMethodName != ""
+		},
+	},
+}
+
 func generatedFiles(model *api.API) []language.GeneratedFile {
 	codec := model.Codec.(*modelAnnotations)
 	mainFileNameWithExtension := codec.MainFileNameWithExtension
@@ -75,17 +98,19 @@ func generatedFiles(model *api.API) []language.GeneratedFile {
 			outDir := filepath.Dir(fileInfo.OutputPath)
 			fileInfo.OutputPath = filepath.Join(outDir, "LICENSE")
 		}
-		if strings.HasSuffix(filepath.ToSlash(fileInfo.TemplatePath), "skills/tests.md.mustache") {
-			if codec.FakeList == "" {
-				continue
+		isSkill := false
+		for _, skill := range skillFiles {
+			if strings.HasSuffix(filepath.ToSlash(fileInfo.TemplatePath), skill.templatePath) {
+				isSkill = true
+				if skill.isRequired(codec) {
+					fileInfo.OutputPath = filepath.Join("skills", codec.PackageName+skill.suffix, "SKILL.md")
+					result = append(result, fileInfo)
+				}
+				break
 			}
-			fileInfo.OutputPath = filepath.Join("skills", codec.PackageName+"-tests", "SKILL.md")
 		}
-		if strings.HasSuffix(filepath.ToSlash(fileInfo.TemplatePath), "skills/setup.md.mustache") {
-			if codec.ExampleMethodName == "" {
-				continue
-			}
-			fileInfo.OutputPath = filepath.Join("skills", codec.PackageName+"-setup", "SKILL.md")
+		if isSkill {
+			continue
 		}
 		result = append(result, fileInfo)
 	}
