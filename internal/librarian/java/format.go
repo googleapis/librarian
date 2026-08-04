@@ -46,6 +46,7 @@ func FormatLibraries(ctx context.Context, libraries []*config.Library) error {
 	// Run google-java-format twice.
 	// The first run removes unused imports but might leave extra empty lines.
 	// The second run collapses those empty lines.
+	// TODO(https://github.com/google/google-java-format/issues/1436): Remove second pass once fixed upstream.
 	if err := command.RunWithEnv(ctx, env, "google-java-format", args...); err != nil {
 		return fmt.Errorf("failed to format files (pass 1): %w", err)
 	}
