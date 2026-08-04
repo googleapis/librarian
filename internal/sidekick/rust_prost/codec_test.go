@@ -31,16 +31,18 @@ func TestParseOptions(t *testing.T) {
 			IncludeList: []string{"f1.proto", "f2.proto"},
 		},
 		Codec: map[string]string{
-			"copyright-year":        "2038",
-			"package-name-override": "google-cloud-bigtable",
-			"root-name":             "test-root",
+			"copyright-year":          "2038",
+			"package-name-override":   "google-cloud-bigtable",
+			"root-name":               "test-root",
+			"convert-include-package": "google.showcase.v1beta1",
 		},
 	}
 	got := newCodec(cfg)
 	want := &codec{
-		GenerationYear: "2038",
-		PackageName:    "google-cloud-bigtable",
-		RootName:       "test-root",
+		GenerationYear:        "2038",
+		PackageName:           "google-cloud-bigtable",
+		RootName:              "test-root",
+		ConvertIncludePackage: "google.showcase.v1beta1",
 	}
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)

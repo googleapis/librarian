@@ -22,7 +22,6 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/sidekick/api"
-	"github.com/googleapis/librarian/internal/sidekick/parser"
 )
 
 type expectedBlock struct {
@@ -76,13 +75,13 @@ func TestGenerateService_DeprecatedMethods(t *testing.T) {
 			want: []expectedBlock{
 				{
 					start: "    /// See `TestServiceClient.simpleMethod`.",
-					end:   "-> GoogleTest.Response",
-					want:  "    /// See `TestServiceClient.simpleMethod`.\n    @available(*, deprecated)\n    func simpleMethod(request: Request) async throws -> GoogleTest.Response",
+					end:   "-> Test.Response",
+					want:  "    /// See `TestServiceClient.simpleMethod`.\n    @available(*, deprecated)\n    func simpleMethod(request: Request) async throws -> Test.Response",
 				},
 				{
 					start: "  /// -- simple marker --",
-					end:   "async throws -> GoogleTest.Response",
-					want:  "  /// -- simple marker --\n  ///\n  /// @Snippet(path: \"TestService_SimpleMethod\")\n  @available(*, deprecated)\n  public func simpleMethod(\n    request: Request, options: GoogleCloudGax.RequestOptions\n) async throws -> GoogleTest.Response",
+					end:   "async throws -> Test.Response",
+					want:  "  /// -- simple marker --\n  ///\n  /// @Snippet(path: \"TestService_SimpleMethod\")\n  @available(*, deprecated)\n  public func simpleMethod(\n    request: Request, options: GoogleCloudGax.RequestOptions\n) async throws -> Test.Response",
 				},
 			},
 		},
@@ -103,12 +102,12 @@ func TestGenerateService_DeprecatedMethods(t *testing.T) {
 				{
 					start: "    /// See `TestServiceClient.paginationMethod`.",
 					end:   "-> any AsyncSequence<Item, Swift.Error>",
-					want:  "    /// See `TestServiceClient.paginationMethod`.\n    @available(*, deprecated)\n    func paginationMethod(request: Request) async throws -> GoogleTest.PaginationResponse\n\n    /// See `TestServiceClient.paginationMethod`.\n    @available(*, deprecated)\n    func paginationMethod(\n  byItem: Request\n) throws -> any AsyncSequence<Item, Swift.Error>",
+					want:  "    /// See `TestServiceClient.paginationMethod`.\n    @available(*, deprecated)\n    func paginationMethod(request: Request) async throws -> Test.PaginationResponse\n\n    /// See `TestServiceClient.paginationMethod`.\n    @available(*, deprecated)\n    func paginationMethod(\n  byItem: Request\n) throws -> any AsyncSequence<Item, Swift.Error>",
 				},
 				{
 					start: "  /// -- pagination marker --",
 					end:   "-> any AsyncSequence<Item, Swift.Error>",
-					want:  "  /// -- pagination marker --\n  ///\n  /// @Snippet(path: \"TestService_PaginationMethod\")\n  @available(*, deprecated)\n  public func paginationMethod(\n    request: Request, options: GoogleCloudGax.RequestOptions\n) async throws -> GoogleTest.PaginationResponse\n {\n      try await self.inner.paginationMethod(request: request, options: options)\n  }\n\n  /// -- pagination marker --\n  ///\n  /// @Snippet(path: \"TestService_PaginationMethod\")\n  @available(*, deprecated)\n  public func paginationMethod(\n    byItem: Request, options: GoogleCloudGax.RequestOptions\n) throws -> any AsyncSequence<Item, Swift.Error>",
+					want:  "  /// -- pagination marker --\n  ///\n  /// @Snippet(path: \"TestService_PaginationMethod\")\n  @available(*, deprecated)\n  public func paginationMethod(\n    request: Request, options: GoogleCloudGax.RequestOptions\n) async throws -> Test.PaginationResponse\n {\n      try await self.inner.paginationMethod(request: request, options: options)\n  }\n\n  /// -- pagination marker --\n  ///\n  /// @Snippet(path: \"TestService_PaginationMethod\")\n  @available(*, deprecated)\n  public func paginationMethod(\n    byItem: Request, options: GoogleCloudGax.RequestOptions\n) throws -> any AsyncSequence<Item, Swift.Error>",
 				},
 			},
 		},
@@ -156,13 +155,13 @@ func TestGenerateService_DeprecatedMethods(t *testing.T) {
 			want: []expectedBlock{
 				{
 					start: "    /// See `TestServiceClient.notDeprecatedMethod`.",
-					end:   "-> GoogleTest.Response",
-					want:  "    /// See `TestServiceClient.notDeprecatedMethod`.\n    func notDeprecatedMethod(request: Request) async throws -> GoogleTest.Response",
+					end:   "-> Test.Response",
+					want:  "    /// See `TestServiceClient.notDeprecatedMethod`.\n    func notDeprecatedMethod(request: Request) async throws -> Test.Response",
 				},
 				{
 					start: "  /// -- not deprecated marker --",
-					end:   "async throws -> GoogleTest.Response",
-					want:  "  /// -- not deprecated marker --\n  ///\n  /// @Snippet(path: \"TestService_NotDeprecatedMethod\")\n  public func notDeprecatedMethod(\n    request: Request, options: GoogleCloudGax.RequestOptions\n) async throws -> GoogleTest.Response",
+					end:   "async throws -> Test.Response",
+					want:  "  /// -- not deprecated marker --\n  ///\n  /// @Snippet(path: \"TestService_NotDeprecatedMethod\")\n  public func notDeprecatedMethod(\n    request: Request, options: GoogleCloudGax.RequestOptions\n) async throws -> Test.Response",
 				},
 			},
 		},
@@ -188,12 +187,6 @@ func TestGenerateService_DeprecatedMethods(t *testing.T) {
 			}, nil, []*api.Service{service})
 			model.PackageName = "test"
 
-			cfg := &parser.ModelConfig{
-				Codec: map[string]string{
-					"copyright-year": "2038",
-				},
-			}
-
 			swiftCfg := swiftConfig(t, []config.SwiftDependency{
 				{Name: "GoogleCloudGax", RequiredByServices: true},
 				{Name: "GoogleCloudAuth", RequiredByServices: true},
@@ -201,11 +194,15 @@ func TestGenerateService_DeprecatedMethods(t *testing.T) {
 				{ApiPackage: "google.rpc", Name: "GoogleRpc"},
 			})
 
-			if err := Generate(t.Context(), model, outDir, cfg, swiftCfg); err != nil {
+			library := &config.Library{
+				Swift: swiftCfg,
+			}
+
+			if err := Generate(t.Context(), model, outDir, library, nil); err != nil {
 				t.Fatal(err)
 			}
 
-			filename := filepath.Join(outDir, "Sources", "GoogleTest", "TestService.swift")
+			filename := filepath.Join(outDir, "Sources", "Test", "TestService.swift")
 			content, err := os.ReadFile(filename)
 			if err != nil {
 				t.Fatal(err)

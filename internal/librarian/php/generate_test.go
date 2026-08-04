@@ -88,11 +88,11 @@ func requirePHPGenerator(t *testing.T) {
 	testhelper.RequireCommand(t, "protoc")
 	testhelper.RequireCommand(t, "python3")
 	testhelper.RequireCommand(t, "php")
-	genDir, err := generatorDir(t.Context())
+	bin, err := binDir()
 	if err != nil {
-		t.Skipf("skipping test: failed to locate PHP generator: %v", err)
+		t.Fatal(err)
 	}
-	wrapperPath := filepath.Join(genDir, "wrapper.sh")
+	wrapperPath := filepath.Join(bin, "gapic-generator-php")
 	if _, err := os.Stat(wrapperPath); err != nil {
 		t.Skip("skipping test: PHP generator is not installed (run 'librarian install php' first)")
 	}
@@ -398,34 +398,5 @@ func TestBuildProtoProtocArgs(t *testing.T) {
 	}
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
-	}
-}
-
-func TestDefaultOutput(t *testing.T) {
-	for _, test := range []struct {
-		name          string
-		libName       string
-		defaultOutput string
-		want          string
-	}{
-		{
-			name:          "standard",
-			libName:       "Ces",
-			defaultOutput: "packages",
-			want:          "packages/Ces",
-		},
-		{
-			name:          "empty default",
-			libName:       "Ces",
-			defaultOutput: "",
-			want:          "Ces",
-		},
-	} {
-		t.Run(test.name, func(t *testing.T) {
-			got := DefaultOutput(test.libName, test.defaultOutput)
-			if diff := cmp.Diff(test.want, got); diff != "" {
-				t.Errorf("mismatch (-want +got):\n%s", diff)
-			}
-		})
 	}
 }

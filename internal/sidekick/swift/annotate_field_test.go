@@ -39,6 +39,7 @@ func TestAnnotateField(t *testing.T) {
 				BaseFieldType:        "Swift.String",
 				ProtoFieldName:       "secretPayload",
 				ProtoFieldNamePascal: "SecretPayload",
+				PrimitiveFieldType:   "Swift.String",
 			},
 		},
 		{
@@ -51,6 +52,7 @@ func TestAnnotateField(t *testing.T) {
 				Decoding:             DecodingOptional,
 				ProtoFieldName:       "secretPayload",
 				ProtoFieldNamePascal: "SecretPayload",
+				PrimitiveFieldType:   "Swift.String",
 			},
 		},
 		{
@@ -81,7 +83,7 @@ func TestAnnotateField(t *testing.T) {
 			}
 			field.Parent = msg
 			model := api.NewTestAPI([]*api.Message{msg}, []*api.Enum{}, []*api.Service{})
-			codec := newTestCodec(t, model, map[string]string{})
+			codec := newTestCodec(t, model, nil)
 			if err := codec.annotateModel(); err != nil {
 				t.Fatal(err)
 			}
@@ -122,6 +124,7 @@ func TestAnnotateField_Discovery(t *testing.T) {
 				UrlSafeValue:         true,
 				ProtoFieldName:       "name",
 				ProtoFieldNamePascal: "Name",
+				PrimitiveFieldType:   "Foundation.Data",
 			},
 		},
 		{
@@ -136,6 +139,7 @@ func TestAnnotateField_Discovery(t *testing.T) {
 				BaseFieldType:        "Swift.String",
 				ProtoFieldName:       "name",
 				ProtoFieldNamePascal: "Name",
+				PrimitiveFieldType:   "Swift.String",
 			},
 		},
 		{
@@ -153,6 +157,7 @@ func TestAnnotateField_Discovery(t *testing.T) {
 				Decoding:             DecodingOptional,
 				ProtoFieldName:       "name",
 				ProtoFieldNamePascal: "Name",
+				PrimitiveFieldType:   "Foundation.Data",
 			},
 		},
 		{
@@ -197,7 +202,7 @@ func TestAnnotateField_Discovery(t *testing.T) {
 			test.input.Parent = msg
 			model := api.NewTestAPI([]*api.Message{msg}, []*api.Enum{}, []*api.Service{})
 			model.AddMessage(mapMessage)
-			codec := newTestCodec(t, model, map[string]string{})
+			codec := newTestCodec(t, model, nil)
 			codec.UrlSafeForBytes = true
 			if err := codec.annotateModel(); err != nil {
 				t.Fatal(err)
@@ -235,7 +240,7 @@ func TestAnnotateField_TypeNames(t *testing.T) {
 			}
 			field.Parent = msg
 			model := api.NewTestAPI([]*api.Message{msg}, []*api.Enum{}, []*api.Service{})
-			codec := newTestCodec(t, model, map[string]string{})
+			codec := newTestCodec(t, model, nil)
 			if err := codec.annotateModel(); err != nil {
 				t.Fatal(err)
 			}
@@ -247,6 +252,7 @@ func TestAnnotateField_TypeNames(t *testing.T) {
 				Model:                model.Codec.(*modelAnnotations),
 				ProtoFieldName:       "testField",
 				ProtoFieldNamePascal: "TestField",
+				PrimitiveFieldType:   test.wantType,
 			}
 			if diff := cmp.Diff(want, field.Codec); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
@@ -277,7 +283,7 @@ func TestAnnotateField_PackageName(t *testing.T) {
 	field.Parent = msg
 	model := api.NewTestAPI([]*api.Message{msg, referencedMsg}, nil, nil)
 	model.PackageName = "test"
-	codec := newTestCodec(t, model, map[string]string{})
+	codec := newTestCodec(t, model, nil)
 	codec.withExtraDependencies(t, []config.SwiftDependency{
 		{
 			ApiPackage: "google.cloud.external.v1",
@@ -289,12 +295,15 @@ func TestAnnotateField_PackageName(t *testing.T) {
 	}
 	got := field.Codec.(*fieldAnnotations)
 	want := &fieldAnnotations{
-		Name:          "externalMessage",
-		FieldType:     "GoogleCloudExternalV1.SomeMessage",
-		BaseFieldType: "GoogleCloudExternalV1.SomeMessage",
-		PackageName:   "google.cloud.external.v1",
-		DocLines:      []string{"The external message."},
-		Model:         model.Codec.(*modelAnnotations),
+		Name:                 "externalMessage",
+		FieldType:            "GoogleCloudExternalV1.SomeMessage",
+		BaseFieldType:        "GoogleCloudExternalV1.SomeMessage",
+		PackageName:          "google.cloud.external.v1",
+		DocLines:             []string{"The external message."},
+		Model:                model.Codec.(*modelAnnotations),
+		ProtoFieldName:       "externalMessage",
+		ProtoFieldNamePascal: "ExternalMessage",
+		PrimitiveFieldType:   "GoogleCloudExternalV1.SomeMessage",
 	}
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
@@ -316,10 +325,28 @@ func TestAnnotateField_Recursive(t *testing.T) {
 			repeated: false,
 			isOneOf:  false,
 			want: &fieldAnnotations{
-				FieldType:     "GoogleCloudWkt.Recursive<Node>?",
-				BaseFieldType: "GoogleCloudWkt.Recursive<Node>",
-				Recursive:     true,
-				Decoding:      DecodingOptional,
+				FieldType:            "GoogleCloudWkt.Recursive<Node>?",
+				BaseFieldType:        "GoogleCloudWkt.Recursive<Node>",
+				Recursive:            true,
+				Decoding:             DecodingOptional,
+				ProtoFieldName:       "childNode",
+				ProtoFieldNamePascal: "ChildNode",
+				PrimitiveFieldType:   "Node",
+			},
+		},
+		{
+			name:     "singular non-optional recursive",
+			optional: false,
+			repeated: false,
+			isOneOf:  false,
+			want: &fieldAnnotations{
+				FieldType:            "GoogleCloudWkt.Recursive<Node>?",
+				BaseFieldType:        "GoogleCloudWkt.Recursive<Node>",
+				Recursive:            true,
+				Decoding:             DecodingOptional,
+				ProtoFieldName:       "childNode",
+				ProtoFieldNamePascal: "ChildNode",
+				PrimitiveFieldType:   "Node",
 			},
 		},
 		{
@@ -378,7 +405,7 @@ func TestAnnotateField_Recursive(t *testing.T) {
 			}
 
 			model := api.NewTestAPI([]*api.Message{msg}, []*api.Enum{}, []*api.Service{})
-			codec := newTestCodec(t, model, map[string]string{})
+			codec := newTestCodec(t, model, nil)
 			if err := codec.annotateModel(); err != nil {
 				t.Fatal(err)
 			}

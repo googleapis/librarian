@@ -18,27 +18,9 @@ import (
 	"strings"
 
 	"github.com/googleapis/librarian/internal/sidekick/api"
-	"github.com/iancoleman/strcase"
 )
 
-// PackageName returns the package name for the API.
+// PackageName returns the Swift package name for the API.
 func PackageName(api *api.API) string {
-	var name string
-	if suffix, ok := strings.CutPrefix(api.PackageName, "google.cloud."); ok {
-		name = "Cloud" + pascalPackageName(suffix)
-	} else if suffix, ok := strings.CutPrefix(api.PackageName, "google."); ok {
-		name = pascalPackageName(suffix)
-	} else {
-		name = pascalPackageName(api.PackageName)
-	}
-	return "Google" + name
-}
-
-func pascalPackageName(packageName string) string {
-	parts := strings.Split(packageName, ".")
-	var name strings.Builder
-	for _, p := range parts {
-		name.WriteString(strcase.ToCamel(p))
-	}
-	return name.String()
+	return strings.ReplaceAll(api.PackageName, ".", "-")
 }

@@ -1,0 +1,35 @@
+# Copyright 2026 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# This file contains a wrapper build configuration for testing.
+load(
+    "@com_google_googleapis_imports//:imports.bzl",
+    "ruby_cloud_gapic_library",
+)
+
+ruby_cloud_gapic_library(
+    name = "secretmanager_ruby_wrapper",
+    srcs = ["//google/cloud/secretmanager/v1:secretmanager_proto_with_info"],
+    extra_protoc_parameters = [
+        "ruby-cloud-gem-name=google-cloud-secret_manager",
+        "ruby-cloud-env-prefix=SECRET_MANAGER",
+        "ruby-cloud-wrapper-of=v1:1.2",
+        "ruby-cloud-product-url=https://cloud.google.com/secret-manager",
+        "ruby-cloud-api-id=secretmanager.googleapis.com",
+        "ruby-cloud-api-shortname=secretmanager",
+        "ruby-cloud-gem-namespace=Google::Cloud::SecretManager",
+    ],
+    ruby_cloud_description = "Secret Manager is a secure and convenient storage system for API keys, passwords, certificates, and other sensitive data. Secret Manager provides a central place and single source of truth to manage, access, and audit secrets across Google Cloud.",
+    ruby_cloud_title = "Secret Manager",
+)

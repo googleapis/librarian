@@ -15,6 +15,7 @@
 package php
 
 import (
+	"bufio"
 	"bytes"
 	"errors"
 	"io/fs"
@@ -29,6 +30,9 @@ import (
 const (
 	gapicMetadataFile = "gapic_metadata.json"
 	phpExtension      = ".php"
+	// Limit reading to 50 lines. In google-cloud-php, markers are found early:
+	// line 2 for Protobuf files and line 19 for GAPIC files.
+	maxLinesToCheck = 50
 )
 
 var (
@@ -98,13 +102,36 @@ func cleanFiles(lib *config.Library, keepSet map[string]bool, subDir string) err
 		if !strings.HasSuffix(d.Name(), phpExtension) {
 			return nil
 		}
-		content, err := os.ReadFile(path)
+		hasMarker, err := fileHasMarker(path)
 		if err != nil {
 			return err
 		}
-		if bytes.Contains(content, gapicMarker) || bytes.Contains(content, protobufMarker) {
+		if hasMarker {
 			return os.Remove(path)
 		}
 		return nil
 	})
+}
+
+// fileHasMarker checks if the file at path contains either gapicMarker or
+// protobufMarker within its first maxLinesToCheck lines.
+func fileHasMarker(path string) (bool, error) {
+	f, err := os.Open(path)
+	if err != nil {
+		return false, err
+	}
+	defer f.Close()
+	scanner := bufio.NewScanner(f)
+	for i := 0; i < maxLinesToCheck && scanner.Scan(); i++ {
+		line := scanner.Bytes()
+		if bytes.Contains(line, gapicMarker) || bytes.Contains(line, protobufMarker) {
+			return true, nil
+		}
+	}
+	err = scanner.Err()
+	// A line >64KB is likely not in a generated file. Skip instead of failing.
+	if errors.Is(err, bufio.ErrTooLong) {
+		return false, nil
+	}
+	return false, err
 }

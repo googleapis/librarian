@@ -28,6 +28,7 @@ import (
 	"github.com/googleapis/librarian/internal/librarian/nodejs"
 	"github.com/googleapis/librarian/internal/librarian/php"
 	"github.com/googleapis/librarian/internal/librarian/python"
+	"github.com/googleapis/librarian/internal/librarian/ruby"
 	"github.com/googleapis/librarian/internal/librarian/rust"
 	"github.com/googleapis/librarian/internal/serviceconfig"
 	"github.com/googleapis/librarian/internal/yaml"
@@ -173,7 +174,9 @@ func validateLibraries(cfg *config.Config) error {
 		}
 	}
 	for path, count := range pathCount {
-		if count > 1 {
+		// Relax unique API path validation for Ruby because wrapper libraries share
+		// API paths with the versioned libraries they wrap.
+		if count > 1 && cfg.Language != config.LanguageRuby {
 			errs = append(errs, fmt.Errorf("%w: %s (appears %d times)", errDuplicateAPIPath, path, count))
 		}
 	}
@@ -208,6 +211,7 @@ var languageTidiers = map[string]func(*config.Library) (*config.Library, error){
 	config.LanguageNodejs: nodejs.Tidy,
 	config.LanguagePhp:    php.Tidy,
 	config.LanguagePython: python.Tidy,
+	config.LanguageRuby:   ruby.Tidy,
 	config.LanguageRust:   rust.Tidy,
 }
 

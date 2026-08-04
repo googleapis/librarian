@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"io/fs"
 	"os"
+	"path"
 	"path/filepath"
 	"slices"
 	"strings"
@@ -124,12 +125,12 @@ func loadTransports(library *config.Library) (map[string]serviceconfig.Transport
 	return transports, nil
 }
 
-func expectedAPIModules(library *config.Library, api *config.API, libCoord libraryCoordinate, transport serviceconfig.Transport) []expectedModule {
+func expectedAPIModules(api *config.API, libCoord libraryCoordinate, transport serviceconfig.Transport) []expectedModule {
 	javaAPI := api.Java
 	if javaAPI == nil {
 		javaAPI = &config.JavaAPI{}
 	}
-	apiBase := deriveAPIBase(library, api.Path)
+	apiBase := path.Base(api.Path)
 	apiCoord := deriveAPICoordinates(libCoord, apiBase, javaAPI)
 
 	var modules []expectedModule
@@ -163,7 +164,7 @@ func expectedModules(library *config.Library, transports map[string]serviceconfi
 			shouldGenerateClient = true
 		}
 		transport := transports[api.Path]
-		modules = append(modules, expectedAPIModules(library, api, libCoord, transport)...)
+		modules = append(modules, expectedAPIModules(api, libCoord, transport)...)
 	}
 
 	// Client module

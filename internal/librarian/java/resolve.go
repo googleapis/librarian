@@ -15,8 +15,6 @@
 package java
 
 import (
-	"fmt"
-	"path/filepath"
 	"sort"
 
 	"github.com/googleapis/librarian/internal/config"
@@ -44,30 +42,13 @@ func resolveAPIMixinDependencies(lib *config.Library, apiCfg *config.API, srcs *
 	if apiCfg.Java == nil {
 		apiCfg.Java = &config.JavaAPI{}
 	}
-
 	srcCfg := sources.NewSourceConfig(srcs, lib.Roots)
 	primaryRoot := srcCfg.Root(srcCfg.ActiveRoots[0])
-	svcConfig, err := serviceconfig.Find(primaryRoot, apiCfg.Path, config.LanguageJava)
+	mixins, err := serviceconfig.ExtractMixinProtos(primaryRoot, apiCfg.Path, config.LanguageJava)
 	if err != nil {
-		return fmt.Errorf("failed to find service config for %s: %w", apiCfg.Path, err)
+		return err
 	}
-	if svcConfig.ServiceConfig == "" {
-		return nil
-	}
-	serviceConfig, err := serviceconfig.Read(filepath.Join(primaryRoot, svcConfig.ServiceConfig))
-	if err != nil {
-		return fmt.Errorf("failed to read service config for %s: %w", apiCfg.Path, err)
-	}
-	for _, api := range serviceConfig.GetApis() {
-		var mixinProto string
-		switch api.GetName() {
-		case "google.cloud.location.Locations":
-			mixinProto = "google/cloud/location/locations.proto"
-		case "google.iam.v1.IAMPolicy":
-			mixinProto = "google/iam/v1/iam_policy.proto"
-		default:
-			continue
-		}
+	for _, mixinProto := range mixins {
 		if !hasAdditionalProto(apiCfg.Java.AdditionalProtos, mixinProto) {
 			apiCfg.Java.AdditionalProtos = append(apiCfg.Java.AdditionalProtos, &config.AdditionalProto{
 				Path:                 mixinProto,

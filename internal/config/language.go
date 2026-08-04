@@ -840,7 +840,7 @@ type PHPAPI struct {
 
 // RubyPackage contains Ruby-specific library configuration.
 type RubyPackage struct {
-	// WrapperOf contains the names of versioned libraries that this library wraps.
+	// WrapperOf contains the API versions (e.g. "v1:0.29") of versioned libraries that this library wraps.
 	WrapperOf []string `yaml:"wrapper_of,omitempty"`
 }
 
@@ -853,6 +853,19 @@ type RubyCloudOpts struct {
 	// ExtraDependencies contains extra runtime dependencies to the .gemspec file.
 	ExtraDependencies string `yaml:"ruby-cloud-extra-dependencies,omitempty"`
 
+	// FactoryMethodSuffix appends a suffix to client constructor helper methods.
+	FactoryMethodSuffix string `yaml:"ruby-cloud-factory-method-suffix,omitempty"`
+
+	// GemNamespace is the root Ruby namespace.
+	GemNamespace string `yaml:"ruby-cloud-gem-namespace,omitempty"`
+
+	// MigrationVersion specifies the gem version milestone at which the library was migrated to GAPIC, generating a migration section in the README file.
+	MigrationVersion string `yaml:"ruby-cloud-migration-version,omitempty"`
+
+	// NamespaceOverride overrides token / segment replacements applied across all generated
+	// module & class paths.
+	NamespaceOverride string `yaml:"ruby-cloud-namespace-override,omitempty"`
+
 	// PathOverride overrides file/directory paths under lib/ and proto_docs/.
 	PathOverride string `yaml:"ruby-cloud-path-override,omitempty"`
 
@@ -860,12 +873,18 @@ type RubyCloudOpts struct {
 	// names don't match desired Ruby conventions.
 	ServiceOverride string `yaml:"ruby-cloud-service-override,omitempty"`
 
+	// WrapperGemOverride overrides a versioned client gem to a custom non-standard main wrapper gem name.
+	WrapperGemOverride string `yaml:"ruby-cloud-wrapper-gem-override,omitempty"`
+
 	// YardStrict enables or disables strict YARD syntax checks during generation.
 	YardStrict string `yaml:"ruby-cloud-yard-strict,omitempty"`
 }
 
 // RubyAPI represents configuration for a single API within a Ruby package.
 type RubyAPI struct {
+	// AdditionalProtos is a list of additional proto files to include in generation.
+	AdditionalProtos []string `yaml:"additional_protos,omitempty"`
+
 	// RubyCloudOpts contains options passed to the Ruby Cloud GAPIC generator as the `--ruby_cloud_opt` option.
 	RubyCloudOpts *RubyCloudOpts `yaml:"ruby_cloud_opts,omitempty"`
 }
