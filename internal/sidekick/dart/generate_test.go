@@ -103,7 +103,7 @@ func TestGeneratedFiles(t *testing.T) {
 		t.Errorf("expected a non-empty list of template files from generatedFiles()")
 	}
 
-	// Validate that main.dart was replaced with {servicename}.dart,
+	// Validate that main.dart was replaced with {servicename}.dart.
 	for _, fileInfo := range files {
 		if filepath.Base(fileInfo.OutputPath) == "main.dart" {
 			t.Errorf("expected the main.dart template to be generated as {servicename}.dart")
