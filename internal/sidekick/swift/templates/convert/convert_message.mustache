@@ -63,7 +63,12 @@ extension {{Codec.ParameterTypeName}} {
   }
 
   internal func toProto() throws -> ProtoType {
+    {{#Codec.HasConvertedFields}}
     var proto = ProtoType()
+    {{/Codec.HasConvertedFields}}
+    {{^Codec.HasConvertedFields}}
+    let proto = ProtoType()
+    {{/Codec.HasConvertedFields}}
     {{#Fields}}
     {{^IsOneOf}}
     {{#Singular}}
