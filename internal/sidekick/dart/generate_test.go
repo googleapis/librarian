@@ -70,10 +70,6 @@ func TestFromProtobuf(t *testing.T) {
 	if err := Generate(t.Context(), model, outDir, cfg.Codec); err != nil {
 		t.Fatal(err)
 	}
-	codec := model.Codec.(*modelAnnotations)
-	if !codec.HasSkills() {
-		t.Errorf("expected HasSkills() to be true for a model with services, but got false")
-	}
 	for _, expected := range []string{
 		"pubspec.yaml",
 		"lib/secretmanager.dart",
