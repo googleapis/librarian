@@ -16,14 +16,93 @@ on: [push, pull_request, merge_group]
 permissions:
   contents: read
 jobs:
-  test:
+  build-and-test:
+    name: ${{ matrix.job-name }}
     runs-on: ubuntu-24.04
-    # Presubmit jobs must complete within 5 minutes. See CONTRIBUTING.md.
-    timeout-minutes: 5
+    # Presubmit jobs must complete within 5 minutes. Integration might take longer.
+    timeout-minutes: ${{ matrix.timeout }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - job-name: 'Unit Tests'
+            task: 'unit-test'
+            timeout: 5
+            sparse: true
+          - job-name: 'Smoke Test'
+            task: 'smoke-test'
+            timeout: 5
+            sparse: true
+          - job-name: 'Integration Test'
+            task: 'integration'
+            timeout: 120
+            sparse: false
     steps:
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
           persist-credentials: false
       - uses: ./.github/actions/setup-librarian
-      - name: Run tests
+      - name: Checkout google-cloud-ruby (Sparse)
+        if: matrix.sparse == true
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          repository: googleapis/google-cloud-ruby
+          path: google-cloud-ruby
+          persist-credentials: false
+          sparse-checkout-cone-mode: false
+          sparse-checkout: |
+            librarian.yaml
+            # Note: If changing the target of the smoke test below, update this sparse checkout rule.
+            google-cloud-asset-v1/
+      - name: Checkout google-cloud-ruby (Full)
+        if: matrix.sparse == false
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          repository: googleapis/google-cloud-ruby
+          path: google-cloud-ruby
+          persist-credentials: false
+      - name: Display Go version
+        run: go version
+      - uses: ruby/setup-ruby@d45b1a4e94b71acab930e56e79c6aa188764e7f9 # v1.316.0
+        with:
+          ruby-version: '4.0'
+          bundler-cache: true
+      - name: Cache Librarian Tools
+        id: cache-tools
+        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
+        with:
+          path: |
+            ~/.cache/librarian
+          key: librarian-ruby-tools-v2-${{ runner.os }}-${{ hashFiles('internal/config/**/*.go') }}-${{ hashFiles('google-cloud-ruby/librarian.yaml') }}
+      - name: Add Ruby tools to PATH
+        run: echo "$HOME/.cache/librarian/bin/ruby_tools/bin" >> $GITHUB_PATH
+      - name: Run librarian install
+        if: steps.cache-tools.outputs.cache-hit != 'true'
+        working-directory: google-cloud-ruby
+        run: |
+          librarian install
+      - name: Verify tools
+        run: |
+          protoc --version
+          gem --version
+      - name: Run internal/librarian/ruby tests and check coverage
+        if: matrix.task == 'unit-test'
         run: go run ./tool/cmd/coverage ./internal/librarian/ruby
+      - name: Generate a single library (smoke test)
+        if: matrix.task == 'smoke-test' && !(github.event_name == 'push' && github.ref == 'refs/heads/main')
+        working-directory: google-cloud-ruby
+        run: librarian generate google-cloud-asset-v1
+      - name: Run librarian generate all (integration test)
+        if: matrix.task == 'integration' && github.event_name == 'push' && github.ref == 'refs/heads/main'
+        working-directory: google-cloud-ruby
+        run: librarian generate --all
+  create-issue-on-failure:
+    needs: [build-and-test]
+    permissions:
+      contents: read
+      issues: write
+    if: ${{ always() && contains(needs.*.result, 'failure') && github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+    uses: ./.github/workflows/create-issue-on-failure.yaml
+    with:
+      language: Ruby
+      repository: google-cloud-ruby
