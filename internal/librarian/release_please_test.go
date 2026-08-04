@@ -316,7 +316,6 @@ func TestSyncToReleasePlease(t *testing.T) {
 				}
 			}`,
 		},
-
 		{
 			name:            "replace existing string extra-files with map if same path",
 			language:        config.LanguagePython,
@@ -352,6 +351,72 @@ func TestSyncToReleasePlease(t *testing.T) {
 								"type": "json"
 							}
 						]
+					}
+				}
+			}`,
+		},
+		{
+			name:            "new ruby versioned library",
+			language:        config.LanguageRuby,
+			initialManifest: `{}`,
+			initialConfig:   `{"packages": {}}`,
+			library: &config.Library{
+				Name:    "google-cloud-secret_manager-v1",
+				Version: "0.0.1",
+				APIs: []*config.API{
+					{Path: "google/cloud/secretmanager/v1"},
+				},
+			},
+			wantManifest: `{
+				"google-cloud-secret_manager-v1": "0.0.1",
+				"google-cloud-secret_manager-v1+FILLER": "0.0.0"
+			}`,
+			wantConfig: `{
+				"packages": {
+					"google-cloud-secret_manager-v1": {
+						"component": "google-cloud-secret_manager-v1",
+						"version_file": "lib/google/cloud/secret_manager/v1/version.rb"
+					}
+				}
+			}`,
+		},
+		{
+			name:     "new ruby main client",
+			language: config.LanguageRuby,
+			initialManifest: `{
+				"google-cloud-secret_manager-v1": "0.0.1",
+				"google-cloud-secret_manager-v1+FILLER": "0.0.0"
+			}`,
+			initialConfig: `{
+				"packages": {
+					"google-cloud-secret_manager-v1": {
+						"component": "google-cloud-secret_manager-v1",
+						"version_file": "lib/google/cloud/secret_manager/v1/version.rb"
+					}
+				}
+			}`,
+			library: &config.Library{
+				Name:    "google-cloud-secret_manager",
+				Version: "0.0.1",
+				APIs: []*config.API{
+					{Path: "google/cloud/secretmanager/v1"},
+				},
+			},
+			wantManifest: `{
+				"google-cloud-secret_manager": "0.0.1",
+				"google-cloud-secret_manager+FILLER": "0.0.0",
+				"google-cloud-secret_manager-v1": "0.0.1",
+				"google-cloud-secret_manager-v1+FILLER": "0.0.0"
+			}`,
+			wantConfig: `{
+				"packages": {
+					"google-cloud-secret_manager": {
+						"component": "google-cloud-secret_manager",
+						"version_file": "lib/google/cloud/secret_manager/version.rb"
+					},
+					"google-cloud-secret_manager-v1": {
+						"component": "google-cloud-secret_manager-v1",
+						"version_file": "lib/google/cloud/secret_manager/v1/version.rb"
 					}
 				}
 			}`,

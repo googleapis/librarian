@@ -105,6 +105,7 @@ func TestFindRubyLibraries(t *testing.T) {
 					},
 				},
 			},
+			SkipGenerate: true,
 			Ruby: &config.RubyPackage{
 				WrapperOf: []string{
 					"v1:2.15",
@@ -125,6 +126,7 @@ func TestFindRubyLibraries(t *testing.T) {
 					},
 				},
 			},
+			SkipGenerate: true,
 		},
 		{
 			Name: "google-cloud-secret_manager",
@@ -139,6 +141,7 @@ func TestFindRubyLibraries(t *testing.T) {
 					},
 				},
 			},
+			SkipGenerate: true,
 			Ruby: &config.RubyPackage{
 				WrapperOf: []string{
 					"v1:1.2",
@@ -157,6 +160,7 @@ func TestFindRubyLibraries(t *testing.T) {
 					},
 				},
 			},
+			SkipGenerate: true,
 		},
 		{
 			// This test verifies multiple WrapperOf entries are parsed correctly.
@@ -171,6 +175,7 @@ func TestFindRubyLibraries(t *testing.T) {
 					},
 				},
 			},
+			SkipGenerate: true,
 			Ruby: &config.RubyPackage{
 				WrapperOf: []string{
 					"v2:1.0",
