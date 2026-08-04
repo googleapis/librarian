@@ -334,7 +334,7 @@ func generateLibraries(ctx context.Context, cfg *config.Config, libraries []*con
 				return nil
 			})
 		}
-		if err := g.Wait(); err != nil {
+		if err := f.Wait(); err != nil {
 			return err
 		}
 		return rust.UpdateWorkspace(ctx)
