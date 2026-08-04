@@ -27,7 +27,7 @@ import (
 const defaultVersion = "0.0.1"
 
 var (
-	errRequiresOneAPI = errors.New("must provide exactly one API path for a Ruby library")
+	errRequiresOneAPI = errors.New("ruby libraries must have a single API")
 	errNoVersionedAPI = errors.New("no versioned API found")
 )
 
@@ -44,7 +44,7 @@ func Add(cfg *config.Config, lib *config.Library) (*config.Library, error) {
 // addWrapper initializes a new Ruby main client library configuration.
 func addWrapper(cfg *config.Config, lib *config.Library) (*config.Library, error) {
 	if len(lib.APIs) != 1 {
-		return nil, fmt.Errorf("ruby libraries must have a single API. %w, got %d", errRequiresOneAPI, len(lib.APIs))
+		return nil, fmt.Errorf("%w: got %d", errRequiresOneAPI, len(lib.APIs))
 	}
 	apiPath := lib.APIs[0].Path
 	// No need to add wrapperOf for a versioned client.
