@@ -36,10 +36,11 @@ func TestAnnotateService(t *testing.T) {
 			serviceName: "IAM",
 			doc:         "IAM service documentation.",
 			wantAnnotations: &serviceAnnotations{
-				Name:       "IAM",
-				ClientName: "IAMClient",
-				StubPrefix: "IAM",
-				DocLines:   []string{"IAM service documentation."},
+				Name:        "IAM",
+				LibraryName: "Test",
+				ClientName:  "IAMClient",
+				StubPrefix:  "IAM",
+				DocLines:    []string{"IAM service documentation."},
 			},
 			wantImports: []string{"GoogleCloudWkt"},
 		},
@@ -48,10 +49,11 @@ func TestAnnotateService(t *testing.T) {
 			serviceName: "Protocol",
 			doc:         "Docs are not relevant.",
 			wantAnnotations: &serviceAnnotations{
-				Name:       "Protocol_",
-				ClientName: "ProtocolClient",
-				StubPrefix: "Protocol",
-				DocLines:   []string{"Docs are not relevant."},
+				Name:        "Protocol_",
+				LibraryName: "Test",
+				ClientName:  "ProtocolClient",
+				StubPrefix:  "Protocol",
+				DocLines:    []string{"Docs are not relevant."},
 			},
 			wantImports: []string{"GoogleCloudWkt"},
 		},
@@ -60,10 +62,11 @@ func TestAnnotateService(t *testing.T) {
 			serviceName: "SecretManagerService",
 			doc:         "Secret Manager Service documentation.\nLine 2.",
 			wantAnnotations: &serviceAnnotations{
-				Name:       "SecretManagerService",
-				ClientName: "SecretManagerServiceClient",
-				StubPrefix: "SecretManagerService",
-				DocLines:   []string{"Secret Manager Service documentation.", "Line 2."},
+				Name:        "SecretManagerService",
+				LibraryName: "Test",
+				ClientName:  "SecretManagerServiceClient",
+				StubPrefix:  "SecretManagerService",
+				DocLines:    []string{"Secret Manager Service documentation.", "Line 2."},
 			},
 			wantImports: []string{"GoogleCloudWkt"},
 		},
@@ -72,15 +75,17 @@ func TestAnnotateService(t *testing.T) {
 			s := &api.Service{
 				Name:          test.serviceName,
 				Documentation: test.doc,
+				Package:       "test",
 			}
 			model := api.NewTestAPI(nil, nil, []*api.Service{s})
+			model.PackageName = "test"
 			codec := newTestCodec(t, model, nil)
 
 			if err := codec.annotateModel(); err != nil {
 				t.Fatal(err)
 			}
 
-			if diff := cmp.Diff(test.wantAnnotations, s.Codec, cmpopts.IgnoreFields(serviceAnnotations{}, "PackageName", "QuickstartMethod", "Model", "DependsOn")); diff != "" {
+			if diff := cmp.Diff(test.wantAnnotations, s.Codec, cmpopts.IgnoreFields(serviceAnnotations{}, "QuickstartMethod", "Model", "DependsOn")); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 
@@ -144,7 +149,13 @@ func TestAnnotateService_SkipNoBindings(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	serviceCodec := service.Codec.(*serviceAnnotations)
+	serviceCodec, ok := service.Codec.(*serviceAnnotations)
+	if !ok {
+		t.Fatalf("mismatched service annotations, got=%T", service.Codec)
+	}
+	if serviceCodec.HasLROs() {
+		t.Errorf("expected HasLROs() == false, annotations=%+v", serviceCodec)
+	}
 	var gotNames []string
 	for _, m := range serviceCodec.RestMethods {
 		gotNames = append(gotNames, m.Name)
@@ -198,6 +209,8 @@ func TestAnnotateService_Quickstart(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			service := &api.Service{
 				Name:             "TestService",
+				Package:          "test",
+				ID:               ".test.TestService",
 				QuickstartMethod: test.quickstartMethod,
 			}
 
@@ -351,7 +364,13 @@ func TestAnnotateService_LRO(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	annotations := service.Codec.(*serviceAnnotations)
+	annotations, ok := service.Codec.(*serviceAnnotations)
+	if !ok {
+		t.Fatalf("expected `serviceAnnotations`, got %T", service.Codec)
+	}
+	if !annotations.HasLROs() {
+		t.Errorf("expected HasLROs() == true, annotations=%+v", annotations)
+	}
 	wantImports := []string{"GoogleCloudExternal", "GoogleCloudWkt", "GoogleLongrunning", "GoogleRpc"}
 	if diff := cmp.Diff(wantImports, annotations.ServiceImports()); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)

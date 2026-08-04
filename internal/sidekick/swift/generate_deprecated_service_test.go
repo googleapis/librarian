@@ -20,8 +20,8 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/sidekick/api"
-	"github.com/googleapis/librarian/internal/sidekick/parser"
 )
 
 func TestGenerateService_Deprecated(t *testing.T) {
@@ -56,12 +56,14 @@ func TestGenerateService_Deprecated(t *testing.T) {
 
 			model := api.NewTestAPI(nil, nil, []*api.Service{service})
 			model.PackageName = "test"
-			cfg := &parser.ModelConfig{}
-			if err := Generate(t.Context(), model, outDir, cfg, swiftConfig(t, nil)); err != nil {
+			library := &config.Library{
+				Swift: swiftConfig(t, nil),
+			}
+			if err := Generate(t.Context(), model, outDir, library, nil); err != nil {
 				t.Fatal(err)
 			}
 
-			filename := filepath.Join(outDir, "Sources", "GoogleTest", "DeprecatedService.swift")
+			filename := filepath.Join(outDir, "Sources", "Test", "DeprecatedService.swift")
 			content, err := os.ReadFile(filename)
 			if err != nil {
 				t.Fatal(err)

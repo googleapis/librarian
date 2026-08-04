@@ -123,7 +123,7 @@ Examples:
 			case config.LanguagePhp:
 				return php.Install(ctx, tools)
 			case config.LanguagePython:
-				return python.Install(ctx)
+				return python.Install(ctx, tools)
 			case config.LanguageRuby:
 				return ruby.Install(ctx, tools)
 			case config.LanguageRust:

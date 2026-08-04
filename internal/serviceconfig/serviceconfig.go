@@ -33,6 +33,11 @@ import (
 	"google.golang.org/protobuf/encoding/protojson"
 )
 
+var (
+	// ErrReadServiceConfig is returned when a service config file cannot be read or parsed.
+	ErrReadServiceConfig = errors.New("failed to read service config")
+)
+
 // Type aliases for genproto service config types.
 type (
 	Service            = serviceconfig.Service
@@ -51,12 +56,12 @@ type (
 func Read(serviceConfigPath string) (*Service, error) {
 	y, err := os.ReadFile(serviceConfigPath)
 	if err != nil {
-		return nil, fmt.Errorf("failed to read service config %q: %w", serviceConfigPath, err)
+		return nil, fmt.Errorf("%w %q: %w", ErrReadServiceConfig, serviceConfigPath, err)
 	}
 
 	yamlData, err := yaml.Unmarshal[any](y)
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse YAML in %q: %w", serviceConfigPath, err)
+		return nil, fmt.Errorf("%w (YAML parse) in %q: %w", ErrReadServiceConfig, serviceConfigPath, err)
 	}
 	j, err := json.Marshal(yamlData)
 	if err != nil {
@@ -312,4 +317,34 @@ func SortAPIs(apis []*config.API) {
 
 func isStable(v string) bool {
 	return v != "" && !strings.Contains(v, "alpha") && !strings.Contains(v, "beta")
+}
+
+// ExtractMixinProtos finds the service config for the given API path and language,
+// and returns the paths of the mixin protos configured in it.
+func ExtractMixinProtos(primaryRoot, apiPath, language string) ([]string, error) {
+	svcConfig, err := Find(primaryRoot, apiPath, language)
+	if err != nil {
+		return nil, fmt.Errorf("failed to find service config for %s: %w", apiPath, err)
+	}
+	if svcConfig.ServiceConfig == "" {
+		return nil, nil
+	}
+	serviceConfig, err := Read(filepath.Join(primaryRoot, svcConfig.ServiceConfig))
+	if err != nil {
+		return nil, fmt.Errorf("failed to extract mixins for %s: %w", apiPath, err)
+	}
+	var mixins []string
+	for _, api := range serviceConfig.GetApis() {
+		var mixinProto string
+		switch api.GetName() {
+		case "google.cloud.location.Locations":
+			mixinProto = "google/cloud/location/locations.proto"
+		case "google.iam.v1.IAMPolicy":
+			mixinProto = "google/iam/v1/iam_policy.proto"
+		default:
+			continue
+		}
+		mixins = append(mixins, mixinProto)
+	}
+	return mixins, nil
 }

@@ -61,12 +61,13 @@ func TestAnnotateMethod(t *testing.T) {
 				},
 			},
 			want: &methodAnnotations{
-				Name:           "getOperation",
-				PathExpression: "/v1/operations",
-				DocLines:       []string{"Gets a thing.", "", "Test multiple comment lines.", ""},
-				HTTPMethod:     "GET",
-				HasBody:        false,
-				ReturnType:     "GoogleTest.Response",
+				Name:             "getOperation",
+				PathExpression:   "/v1/operations",
+				DocLines:         []string{"Gets a thing.", "", "Test multiple comment lines.", ""},
+				HTTPMethod:       "GET",
+				HasBody:          false,
+				ReturnType:       "Test.Response",
+				ResponseEncoding: "json;enum-encoding=int",
 			},
 		},
 		{
@@ -84,13 +85,14 @@ func TestAnnotateMethod(t *testing.T) {
 				},
 			},
 			want: &methodAnnotations{
-				Name:           "createKey",
-				PathExpression: "/v1/keys",
-				HTTPMethod:     "POST",
-				HasBody:        true,
-				IsBodyWildcard: false,
-				BodyField:      "key",
-				ReturnType:     "GoogleTest.Response",
+				Name:             "createKey",
+				PathExpression:   "/v1/keys",
+				HTTPMethod:       "POST",
+				HasBody:          true,
+				IsBodyWildcard:   false,
+				BodyField:        "key",
+				ReturnType:       "Test.Response",
+				ResponseEncoding: "json;enum-encoding=int",
 			},
 		},
 		{
@@ -108,12 +110,13 @@ func TestAnnotateMethod(t *testing.T) {
 				},
 			},
 			want: &methodAnnotations{
-				Name:           "uploadData",
-				PathExpression: "/v1/data",
-				HTTPMethod:     "POST",
-				HasBody:        true,
-				IsBodyWildcard: true,
-				ReturnType:     "GoogleTest.Response",
+				Name:             "uploadData",
+				PathExpression:   "/v1/data",
+				HTTPMethod:       "POST",
+				HasBody:          true,
+				IsBodyWildcard:   true,
+				ReturnType:       "Test.Response",
+				ResponseEncoding: "json;enum-encoding=int",
 			},
 		},
 		{
@@ -132,13 +135,14 @@ func TestAnnotateMethod(t *testing.T) {
 				},
 			},
 			want: &methodAnnotations{
-				Name:           "listThings",
-				PathExpression: "/v1/things",
-				DocLines:       []string{"Lists things."},
-				HTTPMethod:     "GET",
-				HasBody:        false,
-				QueryParams:    []*api.Field{keyField},
-				ReturnType:     "GoogleTest.Response",
+				Name:             "listThings",
+				PathExpression:   "/v1/things",
+				DocLines:         []string{"Lists things."},
+				HTTPMethod:       "GET",
+				HasBody:          false,
+				QueryParams:      []*api.Field{keyField},
+				ReturnType:       "Test.Response",
+				ResponseEncoding: "json;enum-encoding=int",
 			},
 		},
 	} {
@@ -183,35 +187,16 @@ func TestAnnotateMethod_EscapedName(t *testing.T) {
 		{"escaped default", "Default", "`default`"},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			inputType := &api.Message{
-				Name: "Request",
-				ID:   ".test.Request",
-				Fields: []*api.Field{
-					{Name: "key", ID: ".test.Request.key", Typez: api.TypezString},
-				},
-			}
-			outputType := &api.Message{
-				Name: "Response",
-				ID:   ".test.Response",
-				Fields: []*api.Field{
-					{Name: "value", ID: ".test.Request.value", Typez: api.TypezString},
-				},
-			}
-			method := &api.Method{
-				Name:          test.methodName,
-				Documentation: "Test documentation.",
-				PathInfo: &api.PathInfo{
-					Bindings: []*api.PathBinding{{Verb: "GET", PathTemplate: &api.PathTemplate{}}},
-				},
-				InputTypeID:  inputType.ID,
-				InputType:    inputType,
-				OutputTypeID: outputType.ID,
-				OutputType:   outputType,
-			}
-			service := &api.Service{
-				Name:    "TestService",
-				Methods: []*api.Method{method},
-			}
+			inputType := api.NewTestMessage("Request").
+				WithFields(api.NewTestField("key").WithType(api.TypezString))
+			outputType := api.NewTestMessage("Response").
+				WithFields(api.NewTestField("value").WithType(api.TypezString))
+			method := api.NewTestMethod(test.methodName).
+				WithInput(inputType).
+				WithOutput(outputType).
+				WithVerb("GET").WithPathTemplate(&api.PathTemplate{})
+			method.Documentation = "Test documentation."
+			service := api.NewTestService("TestService").WithMethods(method)
 			model := api.NewTestAPI([]*api.Message{inputType, outputType}, nil, []*api.Service{service})
 			if err := api.CrossReference(model); err != nil {
 				t.Fatal(err)
@@ -223,11 +208,12 @@ func TestAnnotateMethod_EscapedName(t *testing.T) {
 			}
 
 			want := &methodAnnotations{
-				Name:           test.wantName,
-				DocLines:       []string{"Test documentation."},
-				PathExpression: "/",
-				HTTPMethod:     "GET",
-				ReturnType:     "Response",
+				Name:             test.wantName,
+				DocLines:         []string{"Test documentation."},
+				PathExpression:   "/",
+				HTTPMethod:       "GET",
+				ReturnType:       "Test.Response",
+				ResponseEncoding: "json;enum-encoding=int",
 			}
 
 			if diff := cmp.Diff(want, method.Codec); diff != "" {
@@ -361,7 +347,8 @@ func TestAnnotateMethod_Pagination(t *testing.T) {
 		Pagination: &paginationAnnotations{
 			ItemType: "Item",
 		},
-		ReturnType: "GoogleTest.ListResponse",
+		ReturnType:       "Test.ListResponse",
+		ResponseEncoding: "json;enum-encoding=int",
 	}
 	if diff := cmp.Diff(wantMethod, gotMethod); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
@@ -378,7 +365,7 @@ func TestAnnotateMethod_Pagination(t *testing.T) {
 		SampleField:       "pageSize",
 		ParameterTypeName: "ListRequest",
 	}
-	if diff := cmp.Diff(wantRequest, gotRequest, cmpopts.IgnoreFields(messageAnnotations{}, "Model", "DependsOn", "ProtoTypeName", "ModulePath")); diff != "" {
+	if diff := cmp.Diff(wantRequest, gotRequest, cmpopts.IgnoreFields(messageAnnotations{}, "Model", "DependsOn", "ProtoTypeName", "ModulePath", "HasConvertedFields")); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 	wantRequestImports := []string{"GoogleCloudWkt"}
@@ -397,7 +384,7 @@ func TestAnnotateMethod_Pagination(t *testing.T) {
 		SampleField:         "items",
 		ParameterTypeName:   "ListResponse",
 	}
-	if diff := cmp.Diff(wantResponse, gotResponse, cmpopts.IgnoreFields(messageAnnotations{}, "Model", "DependsOn", "ProtoTypeName", "ModulePath")); diff != "" {
+	if diff := cmp.Diff(wantResponse, gotResponse, cmpopts.IgnoreFields(messageAnnotations{}, "Model", "DependsOn", "ProtoTypeName", "ModulePath", "HasConvertedFields")); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 	// Response type is a paginated response which depends on gax
@@ -473,7 +460,8 @@ func TestAnnotateMethod_LRO(t *testing.T) {
 			MetadataType:    "LroMetadata",
 			ResponseIsEmpty: false,
 		},
-		ReturnType: "GoogleTest.Operation",
+		ReturnType:       "Test.Operation",
+		ResponseEncoding: "json;enum-encoding=int",
 	}
 	if diff := cmp.Diff(wantMethod, gotMethod); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
@@ -544,7 +532,8 @@ func TestAnnotateMethod_LRO_Empty(t *testing.T) {
 			MetadataType:    "LroMetadata",
 			ResponseIsEmpty: true,
 		},
-		ReturnType: "GoogleTest.Operation",
+		ReturnType:       "Test.Operation",
+		ResponseEncoding: "json;enum-encoding=int",
 	}
 	if diff := cmp.Diff(wantMethod, gotMethod); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)

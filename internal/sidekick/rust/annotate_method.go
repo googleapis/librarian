@@ -406,7 +406,9 @@ func makeAccessors(fields []string, m *api.Method) ([]string, error) {
 		if field == nil {
 			return nil, fmt.Errorf("invalid routing/path field (%q) for request message %s", rustFieldName, message.ID)
 		}
-		if field.Optional {
+		if field.IsOneOf {
+			accessors = append(accessors, fmt.Sprintf(".and_then(|m| m.%s())", rustFieldName))
+		} else if field.Optional {
 			accessors = append(accessors, fmt.Sprintf(".and_then(|m| m.%s.as_ref())", rustFieldName))
 		} else {
 			accessors = append(accessors, fmt.Sprintf(".map(|m| &m.%s)", rustFieldName))

@@ -18,6 +18,7 @@ import (
 	"context"
 	"embed"
 	"path/filepath"
+	"strings"
 
 	"github.com/googleapis/librarian/internal/sidekick/api"
 	"github.com/googleapis/librarian/internal/sidekick/language"
@@ -62,22 +63,26 @@ func generatedFiles(model *api.API) []language.GeneratedFile {
 
 	files := language.WalkTemplatesDir(dartTemplates, "templates")
 
-	for index, fileInfo := range files {
+	var result []language.GeneratedFile
+	for _, fileInfo := range files {
 		// Replace 'main.dart' with '{servicename}.dart'
 		if filepath.Base(fileInfo.TemplatePath) == "main.dart.mustache" {
 			outDir := filepath.Dir(fileInfo.OutputPath)
 			fileInfo.OutputPath = filepath.Join(outDir, mainFileNameWithExtension)
-
-			files[index] = fileInfo
 		}
 		// Remove the extension from "LICENSE.txt".
 		if filepath.Base(fileInfo.OutputPath) == "LICENSE.txt" {
 			outDir := filepath.Dir(fileInfo.OutputPath)
 			fileInfo.OutputPath = filepath.Join(outDir, "LICENSE")
-
-			files[index] = fileInfo
 		}
+		if strings.HasSuffix(filepath.ToSlash(fileInfo.TemplatePath), "skills/tests.md.mustache") {
+			if codec.FakeList == "" {
+				continue
+			}
+			fileInfo.OutputPath = filepath.Join("skills", codec.PackageName+"-tests", "SKILL.md")
+		}
+		result = append(result, fileInfo)
 	}
 
-	return files
+	return result
 }

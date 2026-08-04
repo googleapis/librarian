@@ -32,6 +32,9 @@ const (
 	// InitialLegacyRustTag is the tag form of [InitialVersion] for use in
 	// tests of the legacy Rust behavior where each release has a single tag.
 	InitialLegacyRustTag = "v1.0.0"
+	// InitialSwiftTag is the tag form of [InitialVersion] for use in
+	// tests of the Swift behavior where each release has a single tag.
+	InitialSwiftTag = "preview-20260809"
 	// InitialLib1Tag is the tag form of [Lib1Name] [InitialVersion] for use in
 	// tests.
 	InitialLib1Tag = "google-cloud-storage/v1.0.0"
@@ -56,6 +59,12 @@ const (
 	// RustNextNonGAVersion is the next version of non-GA Rust client library
 	// starting from [RustNonGAVersion].
 	RustNextNonGAVersion = "0.1.1-beta"
+	// SwiftNonGAVersion is a non-GA client library version typical of a Swift
+	// client library.
+	SwiftNonGAVersion = "0.1.0-preview"
+	// SwiftNextNonGAVersion is the next version of non-GA Swift client library
+	// starting from [RustNonGAVersion].
+	SwiftNextNonGAVersion = "0.2.0-preview"
 )
 
 var (

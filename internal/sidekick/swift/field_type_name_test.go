@@ -88,7 +88,7 @@ func TestFieldTypeName_BaseMessage(t *testing.T) {
 
 	model := api.NewTestAPI([]*api.Message{outer, simple}, nil, nil)
 	model.AddMessage(nested)
-	c := newTestCodec(t, model, map[string]string{})
+	c := newTestCodec(t, model, nil)
 
 	for _, test := range []struct {
 		name  string
@@ -148,7 +148,7 @@ func TestFieldTypeName_BaseEnum(t *testing.T) {
 
 	model := api.NewTestAPI([]*api.Message{outer}, []*api.Enum{simple}, nil)
 	model.AddEnum(nested)
-	c := newTestCodec(t, model, map[string]string{})
+	c := newTestCodec(t, model, nil)
 
 	for _, test := range []struct {
 		name  string
@@ -358,7 +358,7 @@ func TestFieldTypeName_Map(t *testing.T) {
 	model := api.NewTestAPI(nil, nil, nil)
 	model.PackageName = mapEntry.Package
 	model.AddMessage(mapEntry)
-	c := newTestCodec(t, model, map[string]string{})
+	c := newTestCodec(t, model, nil)
 
 	field := &api.Field{
 		Typez:   api.TypezMessage,
@@ -483,4 +483,44 @@ func TestFieldTypeName_ExternalNestedMessage(t *testing.T) {
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
+}
+
+func TestFullyQualifiedMessageTypeName(t *testing.T) {
+	msg := &api.Message{
+		Name:    "TestMessage",
+		Package: "google.cloud.test.v1",
+		ID:      ".google.cloud.test.v1.TestMessage",
+	}
+	model := api.NewTestAPI([]*api.Message{msg}, nil, nil)
+	model.PackageName = "google.cloud.test.v1"
+
+	t.Run("standalone library with LibraryName", func(t *testing.T) {
+		c := newTestCodec(t, model, nil)
+		c.LibraryName = "TestLibrary"
+		c.Module = false
+
+		got, err := c.fullyQualifiedMessageTypeName(msg)
+		if err != nil {
+			t.Fatal(err)
+		}
+		want := "TestLibrary.TestMessage"
+		if got != want {
+			t.Errorf("got %q, want %q", got, want)
+		}
+	})
+
+	t.Run("module with empty LibraryName", func(t *testing.T) {
+		c := newTestCodec(t, model, nil)
+		c.LibraryName = ""
+		c.Module = true
+
+		got, err := c.fullyQualifiedMessageTypeName(msg)
+		if err != nil {
+			t.Fatal(err)
+		}
+		want := "TestMessage"
+		if got != want {
+			t.Errorf("got %q, want %q", got, want)
+		}
+	})
 }

@@ -29,27 +29,27 @@ func TestPackageName(t *testing.T) {
 		{
 			name:  "cloud storage v2",
 			input: "google.cloud.storage.v2",
-			want:  "GoogleCloudStorageV2",
+			want:  "google-cloud-storage-v2",
 		},
 		{
 			name:  "iam v1",
 			input: "google.iam.v1",
-			want:  "GoogleIamV1",
+			want:  "google-iam-v1",
 		},
 		{
 			name:  "cloud location",
 			input: "google.cloud.location",
-			want:  "GoogleCloudLocation",
+			want:  "google-cloud-location",
 		},
 		{
 			name:  "api",
 			input: "google.api",
-			want:  "GoogleApi",
+			want:  "google-api",
 		},
 		{
 			name:  "grafeas v1",
 			input: "grafeas.v1",
-			want:  "GoogleGrafeasV1",
+			want:  "grafeas-v1",
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {

@@ -41,7 +41,7 @@ func generateModule(ctx context.Context, library *config.Library, src *sources.S
 			if err != nil {
 				return err
 			}
-			if err := sidekickswift.GenerateConversions(ctx, model, module.Output, modelConfig, library.Swift); err != nil {
+			if err := sidekickswift.GenerateConversions(ctx, model, module.Output, library, module); err != nil {
 				return err
 			}
 		case "", "default":
@@ -50,7 +50,7 @@ func generateModule(ctx context.Context, library *config.Library, src *sources.S
 			if err != nil {
 				return err
 			}
-			if err := sidekickswift.Generate(ctx, model, module.Output, modelConfig, library.Swift); err != nil {
+			if err := sidekickswift.Generate(ctx, model, module.Output, library, module); err != nil {
 				return err
 			}
 		default:
@@ -62,7 +62,12 @@ func generateModule(ctx context.Context, library *config.Library, src *sources.S
 
 func moduleToModelConfig(library *config.Library, module *config.SwiftModule, src *sources.Sources) *parser.ModelConfig {
 	sourceConfig := sources.NewSourceConfig(src, library.Roots)
-	if library.Swift != nil && len(library.Swift.IncludeList) > 0 {
+	// Prefer the module-specific include list if configured, allowing per-module filtering
+	// (e.g., selecting only specific dependency `.proto` files for conversion generation).
+	// Fall back to the library-wide include list if the module does not define its own.
+	if len(module.IncludeList) > 0 {
+		sourceConfig.IncludeList = module.IncludeList
+	} else if library.Swift != nil && len(library.Swift.IncludeList) > 0 {
 		sourceConfig.IncludeList = library.Swift.IncludeList
 	}
 	specFormat := config.SpecProtobuf
@@ -70,18 +75,9 @@ func moduleToModelConfig(library *config.Library, module *config.SwiftModule, sr
 		specFormat = library.SpecificationFormat
 	}
 
-	codecMap := map[string]string{
-		"copyright-year": library.CopyrightYear,
-		"module":         "true",
-	}
-	if module.ModulePath != "" {
-		codecMap["module-path"] = module.ModulePath
-	}
-
 	return &parser.ModelConfig{
 		SpecificationFormat: specFormat,
 		SpecificationSource: module.APIPath,
 		Source:              sourceConfig,
-		Codec:               codecMap,
 	}
 }

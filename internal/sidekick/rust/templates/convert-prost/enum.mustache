@@ -14,6 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 }}
 
+{{> /templates/common/feature_gate}}
 impl gaxi::prost::ToProto<{{Codec.RelativeName}}> for {{Codec.QualifiedName}} {
     type Output = i32;
     fn to_proto(self) -> std::result::Result<Self::Output, gaxi::prost::ConvertError> {

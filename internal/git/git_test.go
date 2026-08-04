@@ -19,6 +19,7 @@ import (
 	"os"
 	"os/exec"
 	"path"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -678,4 +679,24 @@ func TestHasChangesIn(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestGitConfigIgnoreGlobalSigning(t *testing.T) {
+	fakeGlobalConfig := filepath.Join(t.TempDir(), ".gitconfig")
+	gitConfigContent := `
+[gpg]
+	format = ssh
+[commit]
+	gpgSign = true
+[tag]
+	gpgSign = true
+`
+	err := os.WriteFile(fakeGlobalConfig, []byte(gitConfigContent), 0o644)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	t.Setenv("GIT_CONFIG_GLOBAL", fakeGlobalConfig)
+
+	testhelper.SetupRepo(t)
 }

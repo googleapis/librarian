@@ -424,6 +424,14 @@ func TestDefaultOutput(t *testing.T) {
 			want:       "packages/google-cloud-secretmanager",
 		},
 		{
+			name:       "ruby",
+			language:   config.LanguageRuby,
+			libName:    "google-cloud-secret_manager-v1",
+			api:        "google/cloud/secretmanager/v1",
+			defaultOut: "",
+			want:       "google-cloud-secret_manager-v1",
+		},
+		{
 			name:       "unknown language",
 			language:   config.LanguageUnknown,
 			libName:    "google-cloud-secretmanager-v1",

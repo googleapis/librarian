@@ -23,7 +23,6 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/sidekick/api"
-	"github.com/googleapis/librarian/internal/sidekick/parser"
 )
 
 func TestGenerateService_MapPagination(t *testing.T) {
@@ -118,12 +117,6 @@ func TestGenerateService_MapPagination(t *testing.T) {
 			model := api.NewTestAPI([]*api.Message{inputType, outputType, secretType, mapEntryType}, nil, []*api.Service{iam})
 			model.PackageName = "google.cloud.secretmanager.v1"
 
-			cfg := &parser.ModelConfig{
-				Codec: map[string]string{
-					"copyright-year": "2038",
-				},
-			}
-
 			swiftCfg := swiftConfig(t, []config.SwiftDependency{
 				{
 					Name:               "GoogleCloudGax",
@@ -135,7 +128,10 @@ func TestGenerateService_MapPagination(t *testing.T) {
 				},
 			})
 
-			if err := Generate(t.Context(), model, outDir, cfg, swiftCfg); err != nil {
+			library := &config.Library{
+				Swift: swiftCfg,
+			}
+			if err := Generate(t.Context(), model, outDir, library, nil); err != nil {
 				t.Fatal(err)
 			}
 

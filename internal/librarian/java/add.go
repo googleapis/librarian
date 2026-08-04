@@ -117,7 +117,7 @@ func deriveAddedArtifactIDs(lib *config.Library, addedAPI *config.API) ([]string
 		if err != nil {
 			return nil, err
 		}
-		modules = expectedAPIModules(lib, addedAPI, libCoord, transport)
+		modules = expectedAPIModules(addedAPI, libCoord, transport)
 	} else {
 		var err error
 		modules, err = expectedNewLibraryModules(lib)

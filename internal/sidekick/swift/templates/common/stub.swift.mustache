@@ -59,7 +59,7 @@ extension Clients {
       }()
       {{#Codec.HasQueryParams}}
       var query = [
-        URLQueryItem(name: "$alt", value: "json;enum-encoding=int"),
+        URLQueryItem(name: "$alt", value: "{{{Codec.ResponseEncoding}}}"),
         {{#APIVersion}}
         URLQueryItem(name: "$apiVersion", value: "{{.}}"),
         {{/APIVersion}}
@@ -68,7 +68,7 @@ extension Clients {
       {{/Codec.HasQueryParams}}
       {{^Codec.HasQueryParams}}
       let query = [
-        URLQueryItem(name: "$alt", value: "json;enum-encoding=int"),
+        URLQueryItem(name: "$alt", value: "{{{Codec.ResponseEncoding}}}"),
         {{#APIVersion}}
         URLQueryItem(name: "$apiVersion", value: "{{.}}"),
         {{/APIVersion}}

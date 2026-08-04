@@ -19,6 +19,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
+	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/sidekick/api"
 )
 
@@ -39,13 +40,14 @@ func TestAnnotateEnum(t *testing.T) {
 				{Name: "COLOR_RED", Number: 1},
 			},
 			want: &enumAnnotations{
-				Name:              "Color",
-				DocLines:          []string{"A color enum.", "With two lines."},
-				DefaultCaseName:   "unspecified",
-				UnknownIntName:    "unknownIntValue",
-				UnknownStringName: "unknownStringValue",
-				ProtoTypeName:     "Test_Color",
-				ModulePath:        "",
+				Name:               "Color",
+				FullyQualifiedName: "Color",
+				DocLines:           []string{"A color enum.", "With two lines."},
+				DefaultCaseName:    "unspecified",
+				UnknownIntName:     "unknownIntValue",
+				UnknownStringName:  "unknownStringValue",
+				ProtoTypeName:      "Test_Color",
+				ModulePath:         "",
 			},
 		},
 		{
@@ -56,13 +58,14 @@ func TestAnnotateEnum(t *testing.T) {
 				{Name: "PROTOCOL_UNSPECIFIED", Number: 0},
 			},
 			want: &enumAnnotations{
-				Name:              "Protocol_",
-				DocLines:          []string{"An enum named Protocol."},
-				DefaultCaseName:   "unspecified",
-				UnknownIntName:    "unknownIntValue",
-				UnknownStringName: "unknownStringValue",
-				ProtoTypeName:     "Test_Protocol_",
-				ModulePath:        "",
+				Name:               "Protocol_",
+				FullyQualifiedName: "Protocol_",
+				DocLines:           []string{"An enum named Protocol."},
+				DefaultCaseName:    "unspecified",
+				UnknownIntName:     "unknownIntValue",
+				UnknownStringName:  "unknownStringValue",
+				ProtoTypeName:      "Test_Protocol_",
+				ModulePath:         "",
 			},
 		},
 		{
@@ -75,13 +78,14 @@ func TestAnnotateEnum(t *testing.T) {
 				{Name: "UNKNOWN_STRING_VALUE", Number: 2},
 			},
 			want: &enumAnnotations{
-				Name:              "Weird",
-				DocLines:          []string{"An enum named Weird."},
-				DefaultCaseName:   "unspecified",
-				UnknownIntName:    "unknownIntValue_",
-				UnknownStringName: "unknownStringValue_",
-				ProtoTypeName:     "Test_Weird",
-				ModulePath:        "",
+				Name:               "Weird",
+				FullyQualifiedName: "Weird",
+				DocLines:           []string{"An enum named Weird."},
+				DefaultCaseName:    "unspecified",
+				UnknownIntName:     "unknownIntValue_",
+				UnknownStringName:  "unknownStringValue_",
+				ProtoTypeName:      "Test_Weird",
+				ModulePath:         "",
 			},
 		},
 	} {
@@ -98,7 +102,7 @@ func TestAnnotateEnum(t *testing.T) {
 				ev.Parent = enum
 			}
 			model := api.NewTestAPI([]*api.Message{}, []*api.Enum{enum}, []*api.Service{})
-			codec := newTestCodec(t, model, map[string]string{})
+			codec := newTestCodec(t, model, nil)
 			if err := codec.annotateModel(); err != nil {
 				t.Fatal(err)
 			}
@@ -117,7 +121,7 @@ func TestAnnotateEnum_Error(t *testing.T) {
 		Package: "test",
 	}
 	model := api.NewTestAPI([]*api.Message{}, []*api.Enum{enum}, []*api.Service{})
-	codec := newTestCodec(t, model, map[string]string{})
+	codec := newTestCodec(t, model, nil)
 
 	err := codec.annotateModel()
 	if err == nil {
@@ -188,20 +192,22 @@ func TestAnnotateEnum_ModulePath(t *testing.T) {
 		ev.Parent = enum
 	}
 	model := api.NewTestAPI([]*api.Message{}, []*api.Enum{enum}, []*api.Service{})
-	codec := newTestCodec(t, model, map[string]string{
-		"module-path": "TestProtos",
-	})
+	codec, err := newCodec(model, &config.Library{}, &config.SwiftModule{ModulePath: "TestProtos"}, ".")
+	if err != nil {
+		t.Fatal(err)
+	}
 	if err := codec.annotateModel(); err != nil {
 		t.Fatal(err)
 	}
 
 	want := &enumAnnotations{
-		Name:              "Color",
-		DefaultCaseName:   "unspecified",
-		UnknownIntName:    "unknownIntValue",
-		UnknownStringName: "unknownStringValue",
-		ModulePath:        "TestProtos",
-		ProtoTypeName:     "TestProtos.Test_Color",
+		Name:               "Color",
+		FullyQualifiedName: "Color",
+		DefaultCaseName:    "unspecified",
+		UnknownIntName:     "unknownIntValue",
+		UnknownStringName:  "unknownStringValue",
+		ModulePath:         "TestProtos",
+		ProtoTypeName:      "TestProtos.Test_Color",
 	}
 	if diff := cmp.Diff(want, enum.Codec, cmpopts.IgnoreFields(enumAnnotations{}, "Model")); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
@@ -229,20 +235,22 @@ func TestAnnotateEnum_NestedModulePath(t *testing.T) {
 		ev.Parent = enum
 	}
 	model := api.NewTestAPI([]*api.Message{parent}, []*api.Enum{enum}, []*api.Service{})
-	codec := newTestCodec(t, model, map[string]string{
-		"module-path": "TestProtos",
-	})
+	codec, err := newCodec(model, &config.Library{}, &config.SwiftModule{ModulePath: "TestProtos"}, ".")
+	if err != nil {
+		t.Fatal(err)
+	}
 	if err := codec.annotateModel(); err != nil {
 		t.Fatal(err)
 	}
 
 	want := &enumAnnotations{
-		Name:              "InnerEnum",
-		DefaultCaseName:   "unspecified",
-		UnknownIntName:    "unknownIntValue",
-		UnknownStringName: "unknownStringValue",
-		ModulePath:        "TestProtos",
-		ProtoTypeName:     "TestProtos.Test_OuterMessage.InnerEnum",
+		Name:               "InnerEnum",
+		FullyQualifiedName: "OuterMessage.InnerEnum",
+		DefaultCaseName:    "unspecified",
+		UnknownIntName:     "unknownIntValue",
+		UnknownStringName:  "unknownStringValue",
+		ModulePath:         "TestProtos",
+		ProtoTypeName:      "TestProtos.Test_OuterMessage.InnerEnum",
 	}
 	if diff := cmp.Diff(want, enum.Codec, cmpopts.IgnoreFields(enumAnnotations{}, "Model")); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)

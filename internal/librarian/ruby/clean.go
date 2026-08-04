@@ -30,11 +30,16 @@ import (
 var (
 	errNotADirectory = errors.New("output path is not a directory")
 
+	// oneTimeGeneratedRootFiles is the list of files generated only once upon initial library creation.
+	oneTimeGeneratedRootFiles = []string{
+		"CHANGELOG.md",
+		// Do not regenerate .repo-metadata.json until we decide the future plan of the file (b/536937442).
+		".repo-metadata.json",
+	}
 	// generatedRootFiles is the list of specific root files generated for Ruby client gems.
 	generatedRootFiles = []string{
 		"AUTHENTICATION.md",
 		"Gemfile",
-		"Gemfile.lock",
 		"LICENSE",
 		"LICENSE.md",
 		"README.md",
@@ -74,20 +79,25 @@ func Clean(library *config.Library) error {
 	if !info.IsDir() {
 		return fmt.Errorf("%w: %q", errNotADirectory, dir)
 	}
-	keepSet := buildKeepSet(library.Keep)
+	keepSet := buildKeepSet(library.Name, library.Keep)
 	if err := cleanGeneratedRootFiles(dir, keepSet); err != nil {
 		return err
 	}
 	return cleanGeneratedDirectories(dir, keepSet)
 }
 
-// buildKeepSet builds a set of relative paths to keep from the given keep list.
-func buildKeepSet(keep []string) map[string]bool {
+// buildKeepSet builds a set of relative paths to keep from the given gem name and keep list.
+func buildKeepSet(gemName string, keep []string) map[string]bool {
 	keepSet := make(map[string]bool)
 	for _, keepPath := range keep {
 		cleaned := filepath.ToSlash(filepath.Clean(keepPath))
 		keepSet[cleaned] = true
 	}
+	for _, file := range oneTimeGeneratedRootFiles {
+		keepSet[file] = true
+	}
+	versionFile := "lib/" + strings.ReplaceAll(gemName, "-", "/") + "/version.rb"
+	keepSet[versionFile] = true
 	return keepSet
 }
 
@@ -175,6 +185,10 @@ func cleanSubdirectory(libraryDir, subDirPath string, keepSet map[string]bool) e
 // isKept returns true if the specified relative path or any of its parent
 // directories is present in keepSet.
 func isKept(relSlash string, keepSet map[string]bool) bool {
+	// TODO(https://github.com/googleapis/librarian/issues/7055): Remove this logic once after snippet metadata deprecation.
+	if strings.HasPrefix(relSlash, "snippets/snippet_metadata_") && strings.HasSuffix(relSlash, ".json") {
+		return true
+	}
 	currentPath := relSlash
 	for currentPath != "." {
 		if keepSet[currentPath] {
