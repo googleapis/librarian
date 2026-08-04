@@ -21,63 +21,7 @@ import (
 	"github.com/googleapis/librarian/internal/config"
 )
 
-func TestSearchVersionedAPI(t *testing.T) {
-
-	for _, test := range []struct {
-		name    string
-		apiPath string
-		want    string
-	}{
-		{
-			name:    "v1 api found",
-			apiPath: "google/cloud/secretmanager",
-			want:    "google/cloud/secretmanager/v1",
-		},
-		{
-			name:    "beta api found",
-			apiPath: "google/cloud/dialogflow/cx",
-			want:    "google/cloud/dialogflow/cx/v3beta1",
-		},
-		{
-			name:    "second api in library matched",
-			apiPath: "google/cloud/asset",
-			want:    "google/cloud/asset/v1",
-		},
-	} {
-		t.Run(test.name, func(t *testing.T) {
-			cfg := &config.Config{
-				Libraries: []*config.Library{
-					{
-						APIs: []*config.API{
-							{Path: "google/cloud/secretmanager/v1"},
-						},
-					},
-					{
-						APIs: []*config.API{
-							{Path: "google/cloud/dialogflow/cx/v3beta1"},
-						},
-					},
-					{
-						APIs: []*config.API{
-							{Path: "google/cloud/unrelated/v1"},
-							{Path: "google/cloud/asset/v1"},
-						},
-					},
-				},
-			}
-			got, err := searchVersionedAPI(cfg, test.apiPath)
-			if err != nil {
-				t.Fatalf("searchVersionedAPI() error = %v", err)
-			}
-			if diff := cmp.Diff(test.want, got); diff != "" {
-				t.Errorf("mismatch (-want +got):\n%s", diff)
-			}
-		})
-	}
-}
-
 func TestAddWrapper(t *testing.T) {
-
 	for _, test := range []struct {
 		name string
 		in   *config.Library
@@ -151,6 +95,60 @@ func TestAddWrapper(t *testing.T) {
 			got, err := addWrapper(cfg, test.in)
 			if err != nil {
 				t.Fatalf("addWrapper() error = %v", err)
+			}
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestSearchVersionedAPI(t *testing.T) {
+	for _, test := range []struct {
+		name    string
+		apiPath string
+		want    string
+	}{
+		{
+			name:    "v1 api found",
+			apiPath: "google/cloud/secretmanager",
+			want:    "google/cloud/secretmanager/v1",
+		},
+		{
+			name:    "beta api found",
+			apiPath: "google/cloud/dialogflow/cx",
+			want:    "google/cloud/dialogflow/cx/v3beta1",
+		},
+		{
+			name:    "second api in library matched",
+			apiPath: "google/cloud/asset",
+			want:    "google/cloud/asset/v1",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			cfg := &config.Config{
+				Libraries: []*config.Library{
+					{
+						APIs: []*config.API{
+							{Path: "google/cloud/secretmanager/v1"},
+						},
+					},
+					{
+						APIs: []*config.API{
+							{Path: "google/cloud/dialogflow/cx/v3beta1"},
+						},
+					},
+					{
+						APIs: []*config.API{
+							{Path: "google/cloud/unrelated/v1"},
+							{Path: "google/cloud/asset/v1"},
+						},
+					},
+				},
+			}
+			got, err := searchVersionedAPI(cfg, test.apiPath)
+			if err != nil {
+				t.Fatalf("searchVersionedAPI() error = %v", err)
 			}
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
