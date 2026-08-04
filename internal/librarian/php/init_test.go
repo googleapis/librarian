@@ -160,3 +160,21 @@ func TestComponentName(t *testing.T) {
 		})
 	}
 }
+
+func TestNewInitParams(t *testing.T) {
+	t.Parallel()
+	googleapisDir := filepath.Join("..", "..", "testdata", "googleapis")
+	apiPath := "google/cloud/secretmanager/v1"
+	params, err := newInitParams(googleapisDir, apiPath)
+	if err != nil {
+		t.Fatalf("newInitParams failed: %v", err)
+	}
+	want := &initParams{
+		apiShortName:    "secretmanager",
+		productDocs:     "https://cloud.google.com/secret-manager/docs/overview",
+		productHomepage: "https://cloud.google.com/secret-manager/",
+	}
+	if diff := cmp.Diff(want, params, cmp.AllowUnexported(initParams{})); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+}

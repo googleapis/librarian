@@ -31,6 +31,7 @@ import (
 	"github.com/googleapis/librarian/internal/librarian/nodejs"
 	"github.com/googleapis/librarian/internal/librarian/php"
 	"github.com/googleapis/librarian/internal/librarian/python"
+	"github.com/googleapis/librarian/internal/librarian/ruby"
 	"github.com/googleapis/librarian/internal/librarian/rust"
 	"github.com/googleapis/librarian/internal/librarian/swift"
 	"github.com/googleapis/librarian/internal/semver"
@@ -101,7 +102,10 @@ func runAdd(ctx context.Context, cfg *config.Config, api string) error {
 	if err != nil {
 		return err
 	}
-	if cfg.Language == config.LanguageGo || cfg.Language == config.LanguagePython || cfg.Language == config.LanguageNodejs {
+	if cfg.Language == config.LanguageGo ||
+		cfg.Language == config.LanguageNodejs ||
+		cfg.Language == config.LanguagePython ||
+		cfg.Language == config.LanguageRuby {
 		if hasReleasePleaseConfigs(".", cfg) {
 			if err := syncToReleasePlease(".", cfg, name); err != nil {
 				return err
@@ -269,6 +273,12 @@ func addNewLibrary(cfg *config.Config, api *config.API) (string, *config.Config,
 		lib = swift.Add(lib, cfg)
 	case config.LanguagePhp:
 		lib = php.Add(lib)
+	case config.LanguageRuby:
+		var err error
+		lib, err = ruby.Add(cfg, lib)
+		if err != nil {
+			return "", nil, err
+		}
 	case config.LanguageFake:
 		lib = fakeAdd(lib, defaultVersion)
 	}

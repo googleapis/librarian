@@ -172,7 +172,7 @@ func TestAnnotateMessage(t *testing.T) {
 			if err := codec.annotateModel(); err != nil {
 				t.Fatal(err)
 			}
-			if diff := cmp.Diff(test.want, test.message.Codec, cmpopts.IgnoreFields(messageAnnotations{}, "Model", "DependsOn")); diff != "" {
+			if diff := cmp.Diff(test.want, test.message.Codec, cmpopts.IgnoreFields(messageAnnotations{}, "Model", "DependsOn", "HasConvertedFields")); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 			if diff := cmp.Diff(test.wantImports, test.message.Codec.(*messageAnnotations).MessageImports()); diff != "" {
@@ -317,7 +317,7 @@ func TestAnnotateMessage_Discovery(t *testing.T) {
 			if err := codec.annotateModel(); err != nil {
 				t.Fatal(err)
 			}
-			if diff := cmp.Diff(test.want, test.message.Codec, cmpopts.IgnoreFields(messageAnnotations{}, "Model", "DependsOn")); diff != "" {
+			if diff := cmp.Diff(test.want, test.message.Codec, cmpopts.IgnoreFields(messageAnnotations{}, "Model", "DependsOn", "HasConvertedFields")); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
@@ -376,7 +376,7 @@ func TestAnnotateMessage_DiscoveryRequests(t *testing.T) {
 			if err := codec.annotateModel(); err != nil {
 				t.Fatal(err)
 			}
-			if diff := cmp.Diff(test.want, test.request.Codec, cmpopts.IgnoreFields(messageAnnotations{}, "Model", "DependsOn")); diff != "" {
+			if diff := cmp.Diff(test.want, test.request.Codec, cmpopts.IgnoreFields(messageAnnotations{}, "Model", "DependsOn", "HasConvertedFields")); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
@@ -456,7 +456,7 @@ func TestAnnotateMessage_Pagination(t *testing.T) {
 		ProtoTypeName:     "Google_Cloud_Secretmanager_V1_ListSecretsRequest",
 		ModulePath:        "",
 	}
-	if diff := cmp.Diff(wantRequest, gotRequest, cmpopts.IgnoreFields(messageAnnotations{}, "Model", "DependsOn")); diff != "" {
+	if diff := cmp.Diff(wantRequest, gotRequest, cmpopts.IgnoreFields(messageAnnotations{}, "Model", "DependsOn", "HasConvertedFields")); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 	wantRequestImports := []string{"GoogleCloudWKT"}
@@ -477,7 +477,7 @@ func TestAnnotateMessage_Pagination(t *testing.T) {
 		ProtoTypeName:       "Google_Cloud_Secretmanager_V1_ListSecretsResponse",
 		ModulePath:          "",
 	}
-	if diff := cmp.Diff(wantResponse, gotResponse, cmpopts.IgnoreFields(messageAnnotations{}, "Model", "DependsOn")); diff != "" {
+	if diff := cmp.Diff(wantResponse, gotResponse, cmpopts.IgnoreFields(messageAnnotations{}, "Model", "DependsOn", "HasConvertedFields")); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 	wantResponseImports := []string{"GoogleCloudGax", "GoogleCloudWKT"}
@@ -532,7 +532,7 @@ func TestAnnotateMessage_RecursiveNested(t *testing.T) {
 		ProtoTypeName:     "Google_Cloud_Secretmanager_V1_OuterMessage",
 		ModulePath:        "",
 	}
-	if diff := cmp.Diff(wantOuter, gotOuter, cmpopts.IgnoreFields(messageAnnotations{}, "Model", "DependsOn")); diff != "" {
+	if diff := cmp.Diff(wantOuter, gotOuter, cmpopts.IgnoreFields(messageAnnotations{}, "Model", "DependsOn", "HasConvertedFields")); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 
@@ -618,6 +618,81 @@ func TestAnnotateMessage_PlaceholderGating(t *testing.T) {
 
 			if !ann.IsGated() {
 				t.Error("expected IsGated() to be true")
+			}
+		})
+	}
+}
+
+func TestAnnotateMessage_HasConvertedFields(t *testing.T) {
+	for _, test := range []struct {
+		name   string
+		fields []*api.Field
+		want   bool
+	}{
+		{
+			name:   "empty_message",
+			fields: []*api.Field{},
+			want:   false,
+		},
+		{
+			name: "singular_field",
+			fields: []*api.Field{
+				{Name: "field1", ID: "1", Typez: api.TypezString},
+			},
+			want: true,
+		},
+		{
+			name: "repeated_field",
+			fields: []*api.Field{
+				{Name: "field1", ID: "1", Typez: api.TypezString, Repeated: true},
+			},
+			want: true,
+		},
+		{
+			name: "map_field",
+			fields: []*api.Field{
+				{Name: "field1", ID: "1", Typez: api.TypezString, Map: true},
+			},
+			want: false,
+		},
+		{
+			name: "oneof_field",
+			fields: []*api.Field{
+				{Name: "field1", ID: "1", Typez: api.TypezString, IsOneOf: true},
+			},
+			want: false,
+		},
+		{
+			name: "map_and_repeated_fields",
+			fields: []*api.Field{
+				{Name: "labels", ID: "1", Typez: api.TypezString, Map: true},
+				{Name: "names", ID: "2", Typez: api.TypezString, Repeated: true},
+			},
+			want: true,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			msg := &api.Message{
+				Name:    "TestMessage",
+				ID:      ".test.TestMessage",
+				Package: "test",
+				Fields:  test.fields,
+			}
+			for _, f := range msg.Fields {
+				f.Parent = msg
+			}
+			model := api.NewTestAPI([]*api.Message{msg}, []*api.Enum{}, []*api.Service{})
+			model.PackageName = "test"
+			codec := newTestCodec(t, model, nil)
+			if err := codec.annotateModel(); err != nil {
+				t.Fatal(err)
+			}
+			ann, ok := msg.Codec.(*messageAnnotations)
+			if !ok {
+				t.Fatalf("expected msg.Codec to be *messageAnnotations, got %T", msg.Codec)
+			}
+			if ann.HasConvertedFields != test.want {
+				t.Errorf("HasConvertedFields = %v, want %v", ann.HasConvertedFields, test.want)
 			}
 		})
 	}
