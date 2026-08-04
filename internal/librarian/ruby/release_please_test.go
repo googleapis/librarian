@@ -25,12 +25,14 @@ func TestAddManifest(t *testing.T) {
 		name     string
 		manifest map[string]string
 		pkgName  string
+		version  string
 		want     map[string]string
 	}{
 		{
 			name:     "add new package to empty manifest",
 			manifest: map[string]string{},
 			pkgName:  "google-cloud-secret_manager-v1",
+			version:  "0.0.1",
 			want: map[string]string{
 				"google-cloud-secret_manager-v1":        "0.0.1",
 				"google-cloud-secret_manager-v1+FILLER": "0.0.0",
@@ -42,9 +44,10 @@ func TestAddManifest(t *testing.T) {
 				"google-cloud-asset": "1.0.0",
 			},
 			pkgName: "google-cloud-secret_manager",
+			version: "0.1.0",
 			want: map[string]string{
 				"google-cloud-asset":                 "1.0.0",
-				"google-cloud-secret_manager":        "0.0.1",
+				"google-cloud-secret_manager":        "0.1.0",
 				"google-cloud-secret_manager+FILLER": "0.0.0",
 			},
 		},
@@ -55,6 +58,7 @@ func TestAddManifest(t *testing.T) {
 				"google-cloud-secret_manager+FILLER": "0.0.0",
 			},
 			pkgName: "google-cloud-secret_manager",
+			version: "2.1.0",
 			want: map[string]string{
 				"google-cloud-secret_manager":        "2.1.0",
 				"google-cloud-secret_manager+FILLER": "0.0.0",
@@ -62,7 +66,7 @@ func TestAddManifest(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got := AddManifest(test.manifest, test.pkgName)
+			got := AddManifest(test.manifest, test.pkgName, test.version)
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
