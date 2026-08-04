@@ -70,6 +70,10 @@ func TestFromProtobuf(t *testing.T) {
 	if err := Generate(t.Context(), model, outDir, cfg.Codec); err != nil {
 		t.Fatal(err)
 	}
+	codec := model.Codec.(*modelAnnotations)
+	if !codec.HasSkills() {
+		t.Errorf("expected HasSkills() to be true for a model with services, but got false")
+	}
 	for _, expected := range []string{
 		"pubspec.yaml",
 		"lib/secretmanager.dart",
@@ -86,6 +90,15 @@ func TestFromProtobuf(t *testing.T) {
 		if stat.Mode().Perm()|0o666 != 0o666 {
 			t.Errorf("generated files should not be executable %s: %o", filename, stat.Mode())
 		}
+		if expected == "README.md" {
+			content, err := os.ReadFile(filename)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if !strings.Contains(string(content), "## Agent Skills") {
+				t.Errorf("expected README.md to contain '## Agent Skills', but it did not:\n%s", string(content))
+			}
+		}
 	}
 }
 
@@ -97,6 +110,10 @@ func TestGeneratedFiles(t *testing.T) {
 	maps.Copy(options, map[string]string{"package:google_cloud_rpc": "^1.2.3", "package:http": "^4.5.6"})
 
 	annotate.annotateModel(options)
+	codec := model.Codec.(*modelAnnotations)
+	if codec.HasSkills() {
+		t.Errorf("expected HasSkills() to be false for a model with no services, but got true")
+	}
 	files := generatedFiles(model)
 	if len(files) == 0 {
 		t.Errorf("expected a non-empty list of template files from generatedFiles()")

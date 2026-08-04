@@ -68,6 +68,8 @@ var skillFiles = []skillFile{
 		templatePath: "skills/tests.md.mustache",
 		suffix:       "-tests",
 		isRequired: func(codec *modelAnnotations) bool {
+			// The test skill is not meaningful if there are no fakes to test with
+			// or if there are no methods on those fakes.
 			return codec.FakeList != "" && codec.ExampleMethodName != ""
 		},
 	},
@@ -75,6 +77,7 @@ var skillFiles = []skillFile{
 		templatePath: "skills/setup.md.mustache",
 		suffix:       "-setup",
 		isRequired: func(codec *modelAnnotations) bool {
+			// The setup skill is not meaningful if there are no methods to call.
 			return codec.ExampleMethodName != ""
 		},
 	},

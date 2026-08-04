@@ -123,6 +123,16 @@ func (m *modelAnnotations) HasDevDependencies() bool {
 	return len(m.DevDependencies) > 0
 }
 
+// HasSkills returns true if the package generates any agent skills.
+func (m *modelAnnotations) HasSkills() bool {
+	for _, skill := range skillFiles {
+		if skill.isRequired(m) {
+			return true
+		}
+	}
+	return false
+}
+
 type serviceAnnotations struct {
 	// The service name using Dart naming conventions.
 	Name        string
