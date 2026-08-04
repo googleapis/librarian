@@ -161,6 +161,7 @@ func findRubyLibraries(googleapisPath, repoPath string) ([]*config.Library, erro
 		}
 		lib := &config.Library{
 			Name: name,
+			SkipGenerate: true,
 		}
 		keep, err := parseKeepFromManifest(filepath.Join(repoPath, name, ".owlbot-manifest.json"))
 		if err != nil {
