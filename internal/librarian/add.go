@@ -31,6 +31,7 @@ import (
 	"github.com/googleapis/librarian/internal/librarian/nodejs"
 	"github.com/googleapis/librarian/internal/librarian/php"
 	"github.com/googleapis/librarian/internal/librarian/python"
+	"github.com/googleapis/librarian/internal/librarian/ruby"
 	"github.com/googleapis/librarian/internal/librarian/rust"
 	"github.com/googleapis/librarian/internal/librarian/swift"
 	"github.com/googleapis/librarian/internal/semver"
@@ -269,6 +270,12 @@ func addNewLibrary(cfg *config.Config, api *config.API) (string, *config.Config,
 		lib = swift.Add(lib, cfg)
 	case config.LanguagePhp:
 		lib = php.Add(lib)
+	case config.LanguageRuby:
+		var err error
+		lib, err = ruby.Add(cfg, lib)
+		if err != nil {
+			return "", nil, err
+		}
 	case config.LanguageFake:
 		lib = fakeAdd(lib, defaultVersion)
 	}

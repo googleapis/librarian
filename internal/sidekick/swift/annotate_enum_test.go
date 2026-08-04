@@ -40,13 +40,14 @@ func TestAnnotateEnum(t *testing.T) {
 				{Name: "COLOR_RED", Number: 1},
 			},
 			want: &enumAnnotations{
-				Name:              "Color",
-				DocLines:          []string{"A color enum.", "With two lines."},
-				DefaultCaseName:   "unspecified",
-				UnknownIntName:    "unknownIntValue",
-				UnknownStringName: "unknownStringValue",
-				ProtoTypeName:     "Test_Color",
-				ModulePath:        "",
+				Name:               "Color",
+				FullyQualifiedName: "Color",
+				DocLines:           []string{"A color enum.", "With two lines."},
+				DefaultCaseName:    "unspecified",
+				UnknownIntName:     "unknownIntValue",
+				UnknownStringName:  "unknownStringValue",
+				ProtoTypeName:      "Test_Color",
+				ModulePath:         "",
 			},
 		},
 		{
@@ -57,13 +58,14 @@ func TestAnnotateEnum(t *testing.T) {
 				{Name: "PROTOCOL_UNSPECIFIED", Number: 0},
 			},
 			want: &enumAnnotations{
-				Name:              "Protocol_",
-				DocLines:          []string{"An enum named Protocol."},
-				DefaultCaseName:   "unspecified",
-				UnknownIntName:    "unknownIntValue",
-				UnknownStringName: "unknownStringValue",
-				ProtoTypeName:     "Test_Protocol_",
-				ModulePath:        "",
+				Name:               "Protocol_",
+				FullyQualifiedName: "Protocol_",
+				DocLines:           []string{"An enum named Protocol."},
+				DefaultCaseName:    "unspecified",
+				UnknownIntName:     "unknownIntValue",
+				UnknownStringName:  "unknownStringValue",
+				ProtoTypeName:      "Test_Protocol_",
+				ModulePath:         "",
 			},
 		},
 		{
@@ -76,13 +78,14 @@ func TestAnnotateEnum(t *testing.T) {
 				{Name: "UNKNOWN_STRING_VALUE", Number: 2},
 			},
 			want: &enumAnnotations{
-				Name:              "Weird",
-				DocLines:          []string{"An enum named Weird."},
-				DefaultCaseName:   "unspecified",
-				UnknownIntName:    "unknownIntValue_",
-				UnknownStringName: "unknownStringValue_",
-				ProtoTypeName:     "Test_Weird",
-				ModulePath:        "",
+				Name:               "Weird",
+				FullyQualifiedName: "Weird",
+				DocLines:           []string{"An enum named Weird."},
+				DefaultCaseName:    "unspecified",
+				UnknownIntName:     "unknownIntValue_",
+				UnknownStringName:  "unknownStringValue_",
+				ProtoTypeName:      "Test_Weird",
+				ModulePath:         "",
 			},
 		},
 	} {
@@ -198,12 +201,13 @@ func TestAnnotateEnum_ModulePath(t *testing.T) {
 	}
 
 	want := &enumAnnotations{
-		Name:              "Color",
-		DefaultCaseName:   "unspecified",
-		UnknownIntName:    "unknownIntValue",
-		UnknownStringName: "unknownStringValue",
-		ModulePath:        "TestProtos",
-		ProtoTypeName:     "TestProtos.Test_Color",
+		Name:               "Color",
+		FullyQualifiedName: "Color",
+		DefaultCaseName:    "unspecified",
+		UnknownIntName:     "unknownIntValue",
+		UnknownStringName:  "unknownStringValue",
+		ModulePath:         "TestProtos",
+		ProtoTypeName:      "TestProtos.Test_Color",
 	}
 	if diff := cmp.Diff(want, enum.Codec, cmpopts.IgnoreFields(enumAnnotations{}, "Model")); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
@@ -240,12 +244,13 @@ func TestAnnotateEnum_NestedModulePath(t *testing.T) {
 	}
 
 	want := &enumAnnotations{
-		Name:              "InnerEnum",
-		DefaultCaseName:   "unspecified",
-		UnknownIntName:    "unknownIntValue",
-		UnknownStringName: "unknownStringValue",
-		ModulePath:        "TestProtos",
-		ProtoTypeName:     "TestProtos.Test_OuterMessage.InnerEnum",
+		Name:               "InnerEnum",
+		FullyQualifiedName: "OuterMessage.InnerEnum",
+		DefaultCaseName:    "unspecified",
+		UnknownIntName:     "unknownIntValue",
+		UnknownStringName:  "unknownStringValue",
+		ModulePath:         "TestProtos",
+		ProtoTypeName:      "TestProtos.Test_OuterMessage.InnerEnum",
 	}
 	if diff := cmp.Diff(want, enum.Codec, cmpopts.IgnoreFields(enumAnnotations{}, "Model")); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)

@@ -75,6 +75,14 @@ type fieldAnnotations struct {
 
 	// The PascalCase name of the field on the underlying SwiftProtobuf type (used for hasField helpers).
 	ProtoFieldNamePascal string
+
+	// PrimitiveFieldType is the raw Swift type name without any decorators or boxing wrappers (e.g. `Node`).
+	//
+	// This differs from `BaseFieldType` for recursive message fields: for recursive fields,
+	// `BaseFieldType` is boxed as `GoogleCloudWkt.Recursive<Node>` for struct property declarations,
+	// whereas `PrimitiveFieldType` remains the raw unwrapped type `Node` so that conversions can call
+	// `WktPackage.Recursive(value: try Node(proto: proto.childNode))`.
+	PrimitiveFieldType string
 }
 
 // DecodingStyle defines an enumeration for decoding fields.
@@ -202,7 +210,11 @@ func (c *codec) annotateField(field *api.Field, model *modelAnnotations) (*field
 			annotations.UrlSafeValue = true
 		}
 	}
-	c.computeFieldConversionStatements(field, annotations)
+	if !field.IsOneOf && !field.Map && !field.Repeated {
+		annotations.ProtoFieldName = protoFieldName(field.Name)
+		annotations.ProtoFieldNamePascal = protoFieldNamePascal(field.Name)
+		annotations.PrimitiveFieldType = parts.Base
+	}
 	field.Codec = annotations
 	return annotations, nil
 }
@@ -244,23 +256,4 @@ func (c *codec) fieldPackage(field *api.Field) (string, error) {
 		return e.Package, nil
 	}
 	return "", nil
-}
-
-func (c *codec) computeFieldConversionStatements(field *api.Field, ann *fieldAnnotations) {
-	if field.IsOneOf {
-		// TODO(#5272): Oneof fields are handled in a subsequent PR.
-		return
-	}
-	if field.Map || field.Repeated {
-		// TODO(#5272): Map and Repeated fields are handled in subsequent PRs.
-		return
-	}
-	switch field.Typez {
-	case api.TypezMessage, api.TypezEnum:
-		// TODO(#5272): Nested Message and Enum type fields are handled in a subsequent PR.
-		return
-	}
-
-	ann.ProtoFieldName = protoFieldName(field.Name)
-	ann.ProtoFieldNamePascal = protoFieldNamePascal(field.Name)
 }
