@@ -15,6 +15,8 @@
 package swift
 
 import (
+	"github.com/googleapis/librarian/internal/config"
+
 	"os"
 	"path/filepath"
 	"strings"
@@ -22,7 +24,6 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/sidekick/api"
-	"github.com/googleapis/librarian/internal/sidekick/parser"
 )
 
 func TestGenerateOneOf(t *testing.T) {
@@ -84,8 +85,10 @@ func TestGenerateOneOf(t *testing.T) {
 
 	model := api.NewTestAPI([]*api.Message{outer, inner}, []*api.Enum{}, []*api.Service{})
 	model.PackageName = "google.cloud.test.v1"
-	cfg := &parser.ModelConfig{}
-	if err := Generate(t.Context(), model, outDir, cfg, swiftConfig(t, nil)); err != nil {
+	library := &config.Library{
+		Swift: swiftConfig(t, nil),
+	}
+	if err := Generate(t.Context(), model, outDir, library, nil); err != nil {
 		t.Fatal(err)
 	}
 
@@ -251,8 +254,10 @@ func TestGenerateOneOfWithKeyword(t *testing.T) {
 
 	model := api.NewTestAPI([]*api.Message{jwtLocation}, []*api.Enum{}, []*api.Service{})
 	model.PackageName = "google.api"
-	cfg := &parser.ModelConfig{}
-	if err := Generate(t.Context(), model, outDir, cfg, swiftConfig(t, nil)); err != nil {
+	library := &config.Library{
+		Swift: swiftConfig(t, nil),
+	}
+	if err := Generate(t.Context(), model, outDir, library, nil); err != nil {
 		t.Fatal(err)
 	}
 

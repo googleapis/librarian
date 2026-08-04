@@ -33,6 +33,16 @@ type messageAnnotations struct {
 	TypeURL             string
 	CustomSerialization bool
 
+	// HasConvertedFields is true if any field in the message emits code in
+	// toProto(), which currently includes only singular, non-oneof fields.
+	// This prevents the Swift compiler error "variable 'proto' was never mutated"
+	// for messages containing only repeated, map, or oneof fields by emitting "let"
+	// instead of "var" in convert_message.mustache.
+	// This is a temporary workaround until protobuf conversions support repeated,
+	// map, and oneof fields.
+	// TODO(#5272): remove HasConvertedFields once all field types are converted.
+	HasConvertedFields bool
+
 	IsPaginatedResponse bool
 	PageableItemField   string
 	PageableItemType    string
@@ -137,6 +147,7 @@ func (c *codec) annotateMessage(message *api.Message, model *modelAnnotations) e
 	if len(message.Fields) != 0 {
 		sampleField = camelCase(message.Fields[0].Name)
 	}
+	hasConvertedFields := slices.IndexFunc(message.Fields, func(f *api.Field) bool { return !f.IsOneOf && !f.Map }) != -1
 	parameterTypeName, err := c.messageTypeName(message)
 	if err != nil {
 		return err
@@ -147,6 +158,7 @@ func (c *codec) annotateMessage(message *api.Message, model *modelAnnotations) e
 		Model:               model,
 		TypeURL:             typeURLPrefix + strings.TrimPrefix(message.ID, "."),
 		CustomSerialization: len(message.OneOfs) > 0,
+		HasConvertedFields:  hasConvertedFields,
 		DependsOn:           map[string]*Dependency{},
 		SampleField:         sampleField,
 		ParameterTypeName:   parameterTypeName,
@@ -158,8 +170,12 @@ func (c *codec) annotateMessage(message *api.Message, model *modelAnnotations) e
 	}
 
 	// Ensure the entire package depends on the package this message belongs to.
-	if _, err := c.addApiPackageDependency(message.Package); err != nil {
+	dep, err := c.addApiPackageDependency(message.Package)
+	if err != nil {
 		return err
+	}
+	if dep != nil {
+		annotations.DependsOn[dep.Name] = dep
 	}
 	// All messages require the well known types for GoogleCloudWkt._AnyPackable.
 	wktDep, err := c.addApiPackageDependency(wellKnownProtobufPackage)

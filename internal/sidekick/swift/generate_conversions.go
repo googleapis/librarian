@@ -17,17 +17,15 @@ package swift
 import (
 	"context"
 	"fmt"
-	"path/filepath"
 
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/sidekick/api"
 	"github.com/googleapis/librarian/internal/sidekick/language"
-	"github.com/googleapis/librarian/internal/sidekick/parser"
 )
 
 // GenerateConversions generates the user-facing clean types and conversion mappings.
-func GenerateConversions(ctx context.Context, model *api.API, outdir string, cfg *parser.ModelConfig, swiftCfg *config.SwiftPackage) error {
-	codec, err := newCodec(model, cfg, swiftCfg, outdir)
+func GenerateConversions(ctx context.Context, model *api.API, outdir string, library *config.Library, module *config.SwiftModule) error {
+	codec, err := newCodec(model, library, module, outdir)
 	if err != nil {
 		return err
 	}
@@ -44,28 +42,23 @@ func GenerateConversions(ctx context.Context, model *api.API, outdir string, cfg
 		}
 		return string(contents), nil
 	}
-	if err := codec.generateMessages(outdir, model, provider); err != nil {
+
+	if err := codec.generateEnumConversions(outdir, provider); err != nil {
 		return err
 	}
-	if err := codec.generateEnums(outdir, model, provider); err != nil {
-		return err
-	}
-	if err := codec.generateEnumConversions(outdir, model, provider); err != nil {
-		return err
-	}
-	if err := codec.generateMessageConversions(outdir, model, provider); err != nil {
+	if err := codec.generateMessageConversions(outdir, provider); err != nil {
 		return err
 	}
 	return nil
 }
 
-func (c *codec) generateEnumConversions(outdir string, model *api.API, provider language.TemplateProvider) error {
-	for _, e := range model.Enums {
-		name := c.enumFileName(e)
-		output := filepath.Join("Convert", name+"+Convert.swift")
-		if !c.Module {
-			output = filepath.Join("Sources", c.PackageName, "Convert", name+"+Convert.swift")
+func (c *codec) generateEnumConversions(outdir string, provider language.TemplateProvider) error {
+	for _, e := range c.Model.Enums {
+		if e.Parent != nil {
+			continue
 		}
+		name := c.enumFileName(e)
+		output := c.conversionOutputPath(name)
 		generated := language.GeneratedFile{
 			TemplatePath: "templates/convert/convert_enum_file.swift.mustache",
 			OutputPath:   output,
@@ -77,19 +70,13 @@ func (c *codec) generateEnumConversions(outdir string, model *api.API, provider 
 	return nil
 }
 
-func (c *codec) generateMessageConversions(outdir string, model *api.API, provider language.TemplateProvider) error {
-	for _, m := range model.Messages {
-		if m.IsMap {
-			continue
-		}
-		if m.ServicePlaceholder {
+func (c *codec) generateMessageConversions(outdir string, provider language.TemplateProvider) error {
+	for _, m := range c.Model.Messages {
+		if m.Parent != nil || m.IsMap || m.ServicePlaceholder {
 			continue
 		}
 		name := c.messageFileName(m)
-		output := filepath.Join("Convert", name+"+Convert.swift")
-		if !c.Module {
-			output = filepath.Join("Sources", c.PackageName, "Convert", name+"+Convert.swift")
-		}
+		output := c.conversionOutputPath(name)
 		generated := language.GeneratedFile{
 			TemplatePath: "templates/convert/convert_message_file.swift.mustache",
 			OutputPath:   output,
@@ -99,4 +86,8 @@ func (c *codec) generateMessageConversions(outdir string, model *api.API, provid
 		}
 	}
 	return nil
+}
+
+func (c *codec) conversionOutputPath(typeName string) string {
+	return typeName + "+Convert.swift"
 }

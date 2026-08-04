@@ -31,6 +31,10 @@ library;
 // ignore_for_file: lines_longer_than_80_chars {{! TODO(#25): improve the generated dartdocs }}
 // ignore_for_file: unintended_html_in_doc_comment {{! TODO(#25): improve the generated dartdocs }}
 
+{{#Codec.HasServices}}
+export 'package:google_cloud_rpc/exceptions.dart';
+
+{{/Codec.HasServices}}
 export 'src/api.g.dart' 
 {{#Codec.FakeList}}
 hide {{Codec.FakeList}}

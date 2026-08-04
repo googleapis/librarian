@@ -41,28 +41,28 @@ func TestClean(t *testing.T) {
 			wantFiles: nil,
 		},
 		{
-			name:      "removes generated root files and directories, leaving CHANGELOG.md and custom root files",
-			files:     []string{"CHANGELOG.md", "CHANGES.md", "README.md", "AUTHENTICATION.md", "google-cloud-secret_manager-v1.gemspec", "lib/foo.rb", "lib/bar.rb", "proto_docs/doc.rb", "snippets/s1.rb", "test/test_foo.rb"},
+			name:      "removes generated root files and directories, leaving CHANGELOG.md, .repo-metadata.json and custom root files",
+			files:     []string{"CHANGELOG.md", ".repo-metadata.json", "CHANGES.md", "README.md", "AUTHENTICATION.md", "google-cloud-secret_manager-v1.gemspec", "lib/foo.rb", "lib/bar.rb", "proto_docs/doc.rb", "snippets/s1.rb", "test/test_foo.rb"},
 			keep:      []string{"README.md"},
-			wantFiles: []string{"CHANGELOG.md", "CHANGES.md", "README.md"},
+			wantFiles: []string{"CHANGELOG.md", ".repo-metadata.json", "CHANGES.md", "README.md"},
 		},
 		{
 			name:      "removes generated root files except keep list",
-			files:     []string{"CHANGELOG.md", "README.md", "AUTHENTICATION.md", "lib/foo.rb"},
+			files:     []string{"CHANGELOG.md", ".repo-metadata.json", "README.md", "AUTHENTICATION.md", "lib/foo.rb", "Gemfile.lock"},
 			keep:      []string{"README.md"},
-			wantFiles: []string{"CHANGELOG.md", "README.md"},
+			wantFiles: []string{"CHANGELOG.md", ".repo-metadata.json", "README.md", "Gemfile.lock"},
 		},
 		{
 			name:      "keep is nil",
-			files:     []string{"CHANGELOG.md", "README.md", "AUTHENTICATION.md", "lib/foo.rb"},
+			files:     []string{"CHANGELOG.md", ".repo-metadata.json", "README.md", "AUTHENTICATION.md", "lib/foo.rb"},
 			keep:      nil,
-			wantFiles: []string{"CHANGELOG.md"},
+			wantFiles: []string{"CHANGELOG.md", ".repo-metadata.json"},
 		},
 		{
 			name:      "keep file does not exist",
-			files:     []string{"CHANGELOG.md", "README.md", "AUTHENTICATION.md", "lib/foo.rb"},
+			files:     []string{"CHANGELOG.md", ".repo-metadata.json", "README.md", "AUTHENTICATION.md", "lib/foo.rb"},
 			keep:      []string{"missing.rb"},
-			wantFiles: []string{"CHANGELOG.md"},
+			wantFiles: []string{"CHANGELOG.md", ".repo-metadata.json"},
 		},
 		{
 			name:      "keep directory preserves nested files",
@@ -75,6 +75,12 @@ func TestClean(t *testing.T) {
 			files:     []string{"lib/google/cloud/v1/gen.rb", "CHANGELOG.md"},
 			keep:      nil,
 			wantFiles: []string{"CHANGELOG.md"},
+		},
+		{
+			name:      "preserves snippet metadata files",
+			files:     []string{"CHANGELOG.md", "snippets/snippet_metadata_google.cloud.asset.v1.json", "snippets/s1.rb", "lib/foo.rb"},
+			keep:      nil,
+			wantFiles: []string{"CHANGELOG.md", "snippets/snippet_metadata_google.cloud.asset.v1.json"},
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {

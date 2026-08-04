@@ -141,6 +141,10 @@ type ComposerTool struct {
 
 	// SHA256 is the SHA256 checksum of the package.
 	SHA256 string `yaml:"sha256,omitempty"`
+
+	// LocalPath is the path to a local composer project.
+	// When present, Version, Repo, and SHA256 are ignored.
+	LocalPath string `yaml:"local_path,omitempty"`
 }
 
 // GemTool defines a tool to install via gem.

@@ -70,13 +70,7 @@ func TestFromProtobuf(t *testing.T) {
 	if err := Generate(t.Context(), model, outDir, cfg.Codec); err != nil {
 		t.Fatal(err)
 	}
-	for _, expected := range []string{
-		"pubspec.yaml",
-		"lib/secretmanager.dart",
-		"README.md",
-		"skills/google_cloud_secretmanager_v1-tests/SKILL.md",
-		"skills/google_cloud_secretmanager_v1-setup/SKILL.md",
-	} {
+	for _, expected := range []string{"pubspec.yaml", "lib/secretmanager.dart", "README.md", "skills/google_cloud_secretmanager_v1-tests/SKILL.md"} {
 		filename := path.Join(outDir, expected)
 		stat, err := os.Stat(filename)
 		if err != nil {

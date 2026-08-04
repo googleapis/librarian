@@ -82,6 +82,9 @@ func Generate(ctx context.Context, cfg *config.Config, library *config.Library, 
 	if err := sidekickrust.Generate(ctx, model, library.Output, modelConfig); err != nil {
 		return err
 	}
+	if err := generateProstHybrid(ctx, model, library, library.Output, modelConfig); err != nil {
+		return err
+	}
 	if needsRepoMetadata(model, library) {
 		repoMetadata, err := createRepoMetadata(cfg, library, sources)
 		if err != nil {

@@ -46,6 +46,12 @@ type enumAnnotations struct {
 
 	// The full name of the raw proto enum under the private module target.
 	ProtoTypeName string
+
+	// FullyQualifiedName is the parent-qualified Swift name (e.g. `FindingSummary.SummaryDetails.ResourceType` or `Color`).
+	//
+	// In Swift, extensions cannot be nested inside structs or other extensions. For nested enums,
+	// top-level extension declarations use FullyQualifiedName: `extension FindingSummary.SummaryDetails.ResourceType { ... }`.
+	FullyQualifiedName string
 }
 
 // IsGated returns true if this message is gated by some package traits.
@@ -124,15 +130,20 @@ func (c *codec) annotateEnum(enum *api.Enum, model *modelAnnotations) error {
 	if err != nil {
 		return err
 	}
+	extensionTypeName, err := c.enumTypeName(enum)
+	if err != nil {
+		return err
+	}
 	annotations := &enumAnnotations{
-		Model:             model,
-		Name:              pascalCase(enum.Name),
-		DocLines:          docLines,
-		DefaultCaseName:   defaultCaseName,
-		UnknownIntName:    uniqueCaseName("unknownIntValue"),
-		UnknownStringName: uniqueCaseName("unknownStringValue"),
-		ModulePath:        c.ModulePath,
-		ProtoTypeName:     c.protoEnumTypeName(enum),
+		Model:              model,
+		Name:               pascalCase(enum.Name),
+		FullyQualifiedName: extensionTypeName,
+		DocLines:           docLines,
+		DefaultCaseName:    defaultCaseName,
+		UnknownIntName:     uniqueCaseName("unknownIntValue"),
+		UnknownStringName:  uniqueCaseName("unknownStringValue"),
+		ModulePath:         c.ModulePath,
+		ProtoTypeName:      c.protoEnumTypeName(enum),
 	}
 
 	enum.Codec = annotations

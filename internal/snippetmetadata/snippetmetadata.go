@@ -34,6 +34,18 @@ var (
 	errSnippetMetadataLink      = errors.New("expected regular file; was a link")
 )
 
+// SnippetMetadata represents the top-level structure of a snippet metadata file.
+type SnippetMetadata struct {
+	ClientLibrary ClientLibrary `json:"clientLibrary"`
+}
+
+// ClientLibrary represents the clientLibrary object inside snippet metadata.
+type ClientLibrary struct {
+	Name     string `json:"name,omitempty"`
+	Version  string `json:"version,omitempty"`
+	Language string `json:"language,omitempty"`
+}
+
 // readMetadata reads and parses the file at the given path as a JSON file.
 func readMetadata(path string) (map[string]any, error) {
 	content, err := os.ReadFile(path)

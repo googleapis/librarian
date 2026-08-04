@@ -29,7 +29,7 @@ type serviceAnnotations struct {
 	HostnameShort    string
 	DocLines         []string
 	RestMethods      []*api.Method
-	PackageName      string
+	LibraryName      string
 	QuickstartMethod *api.Method
 	Model            *modelAnnotations
 	DependsOn        map[string]*Dependency
@@ -78,6 +78,14 @@ func (ann *serviceAnnotations) SnippetImports() []string {
 	return result
 }
 
+// HasLROs returns true if one of the methods is an LRO.
+func (ann *serviceAnnotations) HasLROs() bool {
+	return slices.ContainsFunc(ann.RestMethods, func(m *api.Method) bool {
+		ma := m.Codec.(*methodAnnotations)
+		return ma != nil && (ma.LRO != nil || ma.DiscoveryLRO != nil)
+	})
+}
+
 func (c *codec) annotateService(service *api.Service, model *modelAnnotations) (*serviceAnnotations, error) {
 	docLines, err := c.formatDocumentation(service.Documentation, service.Scopes())
 	if err != nil {
@@ -109,7 +117,7 @@ func (c *codec) annotateService(service *api.Service, model *modelAnnotations) (
 		HostnameShort:    strings.TrimSuffix(service.DefaultHost, ".googleapis.com"),
 		DocLines:         docLines,
 		RestMethods:      restMethods,
-		PackageName:      c.PackageName,
+		LibraryName:      c.LibraryName,
 		QuickstartMethod: quickstartMethod,
 		Model:            model,
 		DependsOn:        map[string]*Dependency{},
@@ -123,7 +131,7 @@ func (c *codec) annotateService(service *api.Service, model *modelAnnotations) (
 	// If the dependency is marked as "required_by_services", then we force it
 	// as an import for the generated service files.
 	for _, p := range c.Dependencies {
-		if p.ApiPackage == c.Model.PackageName || p.Name == c.PackageName {
+		if p.ApiPackage == c.Model.PackageName || p.Name == c.LibraryName {
 			continue
 		}
 		if p.RequiredByServices {

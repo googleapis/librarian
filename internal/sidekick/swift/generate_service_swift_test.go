@@ -41,17 +41,12 @@ func TestGenerateService_Files(t *testing.T) {
 	model := api.NewTestAPI([]*api.Message{clash0}, nil, []*api.Service{iam, secretManager, clash1})
 	model.PackageName = "test"
 
-	cfg := &parser.ModelConfig{
-		Codec: map[string]string{
-			"copyright-year": "2038",
-		},
-	}
-
-	if err := Generate(t.Context(), model, outDir, cfg, swiftConfig(t, nil)); err != nil {
+	library := &config.Library{Swift: swiftConfig(t, nil)}
+	if err := Generate(t.Context(), model, outDir, library, nil); err != nil {
 		t.Fatal(err)
 	}
 
-	expectedDir := filepath.Join(outDir, "Sources", "GoogleTest")
+	expectedDir := filepath.Join(outDir, "Sources", "Test")
 	wantFiles := []string{
 		"IAM.swift",
 		"Clients.swift",
@@ -82,13 +77,10 @@ func TestGenerateServiceSwift_SnippetReference(t *testing.T) {
 	model := api.NewTestAPI(nil, nil, []*api.Service{service})
 	model.PackageName = "google.cloud.test.v1"
 
-	cfg := &parser.ModelConfig{
-		Codec: map[string]string{
-			"copyright-year": "2038",
-		},
+	library := &config.Library{
+		Swift: swiftConfig(t, nil),
 	}
-
-	if err := Generate(t.Context(), model, outDir, cfg, swiftConfig(t, nil)); err != nil {
+	if err := Generate(t.Context(), model, outDir, library, nil); err != nil {
 		t.Fatal(err)
 	}
 
@@ -148,19 +140,16 @@ func TestGenerateService_Delegation(t *testing.T) {
 	model := api.NewTestAPI([]*api.Message{request, response}, nil, []*api.Service{iam})
 	model.PackageName = "google.cloud.test.v1"
 
-	cfg := &parser.ModelConfig{
-		Codec: map[string]string{
-			"copyright-year": "2038",
-		},
-	}
-
 	swiftCfg := swiftConfig(t, []config.SwiftDependency{
 		{
 			Name:       "SomeTestPackage",
 			ApiPackage: "test",
 		},
 	})
-	if err := Generate(t.Context(), model, outDir, cfg, swiftCfg); err != nil {
+	library := &config.Library{
+		Swift: swiftCfg,
+	}
+	if err := Generate(t.Context(), model, outDir, library, nil); err != nil {
 		t.Fatal(err)
 	}
 
@@ -215,13 +204,10 @@ func TestGenerateService_SnippetFiles(t *testing.T) {
 	model := api.NewTestAPI([]*api.Message{dummyMessage}, nil, []*api.Service{iam, secretManager})
 	model.PackageName = packageName
 
-	cfg := &parser.ModelConfig{
-		Codec: map[string]string{
-			"copyright-year": "2038",
-		},
+	library := &config.Library{
+		Swift: swiftConfig(t, nil),
 	}
-
-	if err := Generate(t.Context(), model, outDir, cfg, swiftConfig(t, nil)); err != nil {
+	if err := Generate(t.Context(), model, outDir, library, nil); err != nil {
 		t.Fatal(err)
 	}
 
@@ -280,12 +266,6 @@ func TestGenerateService_WithImports(t *testing.T) {
 	model.PackageName = "google.cloud.test.v1"
 	model.AddMessage(externalMessage)
 
-	cfg := &parser.ModelConfig{
-		Codec: map[string]string{
-			"copyright-year": "2038",
-		},
-	}
-
 	swiftCfg := swiftConfig(t, []config.SwiftDependency{
 		{
 			Name:               "GoogleCloudGax",
@@ -301,7 +281,10 @@ func TestGenerateService_WithImports(t *testing.T) {
 		},
 	})
 
-	if err := Generate(t.Context(), model, outDir, cfg, swiftCfg); err != nil {
+	library := &config.Library{
+		Swift: swiftCfg,
+	}
+	if err := Generate(t.Context(), model, outDir, library, nil); err != nil {
 		t.Fatal(err)
 	}
 
@@ -433,13 +416,10 @@ func TestGenerateService_PathParameters(t *testing.T) {
 			model := api.NewTestAPI([]*api.Message{requestMessage, secretMessage}, nil, []*api.Service{iam})
 			model.PackageName = "google.cloud.secretmanager.v1"
 
-			cfg := &parser.ModelConfig{
-				Codec: map[string]string{
-					"copyright-year": "2038",
-				},
+			library := &config.Library{
+				Swift: swiftConfig(t, nil),
 			}
-
-			if err := Generate(t.Context(), model, outDir, cfg, swiftConfig(t, nil)); err != nil {
+			if err := Generate(t.Context(), model, outDir, library, nil); err != nil {
 				t.Fatal(err)
 			}
 
@@ -538,12 +518,6 @@ func TestGenerateService_Pagination(t *testing.T) {
 			model := api.NewTestAPI([]*api.Message{inputType, outputType, secretType}, nil, []*api.Service{iam})
 			model.PackageName = "google.cloud.secretmanager.v1"
 
-			cfg := &parser.ModelConfig{
-				Codec: map[string]string{
-					"copyright-year": "2038",
-				},
-			}
-
 			swiftCfg := swiftConfig(t, []config.SwiftDependency{
 				{
 					Name:               "GoogleCloudGax",
@@ -555,7 +529,10 @@ func TestGenerateService_Pagination(t *testing.T) {
 				},
 			})
 
-			if err := Generate(t.Context(), model, outDir, cfg, swiftCfg); err != nil {
+			library := &config.Library{
+				Swift: swiftCfg,
+			}
+			if err := Generate(t.Context(), model, outDir, library, nil); err != nil {
 				t.Fatal(err)
 			}
 
@@ -735,12 +712,6 @@ func TestGenerateService_LRO(t *testing.T) {
 	model := api.NewTestAPI([]*api.Message{inputType, workflowType, metadataType, operationType, getOperationInputType}, nil, []*api.Service{workflows})
 	model.PackageName = "google.cloud.workflows.v1"
 
-	cfg := &parser.ModelConfig{
-		Codec: map[string]string{
-			"copyright-year": "2038",
-		},
-	}
-
 	swiftCfg := swiftConfig(t, []config.SwiftDependency{
 		{
 			Name:               "GoogleCloudGax",
@@ -760,27 +731,40 @@ func TestGenerateService_LRO(t *testing.T) {
 		},
 	})
 
-	if err := Generate(t.Context(), model, outDir, cfg, swiftCfg); err != nil {
+	library := &config.Library{
+		Swift: swiftCfg,
+	}
+	if err := Generate(t.Context(), model, outDir, library, nil); err != nil {
 		t.Fatal(err)
 	}
 
 	filename := filepath.Join(outDir, "Sources", "GoogleCloudWorkflowsV1", "WorkflowsService.swift")
-	content, err := os.ReadFile(filename)
+	contentBytes, err := os.ReadFile(filename)
 	if err != nil {
 		t.Fatal(err)
 	}
-	contentStr := string(content)
+	content := string(contentBytes)
 
 	wantContains := []string{
 		"import GoogleRpc",
 		"public func createWorkflow(withPolling: CreateWorkflowRequest) async throws -> any GoogleCloudGax.PollableOperation<Workflow>",
-		"GoogleCloudGax._PollableOperationImpl(initialState: initialState, poll: poll)",
 		"self.getOperation(request: .init().with { $0.name = rawOp.name }, options: options)",
 	}
 	for _, want := range wantContains {
-		if !strings.Contains(contentStr, want) {
-			t.Errorf("expected %q in WorkflowsService.swift, got:\n%s", want, contentStr)
+		if !strings.Contains(content, want) {
+			t.Errorf("expected %q in WorkflowsService.swift, got:\n%s", want, content)
 		}
+	}
+
+	got := extractBlock(t, content, "GoogleCloudGax._PollableOperationImpl(", "\n    )")
+	want := `GoogleCloudGax._PollableOperationImpl(
+      initialState: initialState,
+      polling: options.pollingErrorPolicy ?? self.pollingErrorPolicy,
+      backoff: options.pollingBackoffPolicy ?? self.pollingBackoffPolicy,
+      poll: poll,
+    )`
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
 
@@ -852,12 +836,6 @@ func TestGenerateService_LRO_Empty(t *testing.T) {
 	model := api.NewTestAPI([]*api.Message{inputType, metadataType, operationType, getOperationInputType}, nil, []*api.Service{workflows})
 	model.PackageName = "google.cloud.workflows.v1"
 
-	cfg := &parser.ModelConfig{
-		Codec: map[string]string{
-			"copyright-year": "2038",
-		},
-	}
-
 	swiftCfg := swiftConfig(t, []config.SwiftDependency{
 		{
 			Name:               "GoogleCloudGax",
@@ -877,7 +855,10 @@ func TestGenerateService_LRO_Empty(t *testing.T) {
 		},
 	})
 
-	if err := Generate(t.Context(), model, outDir, cfg, swiftCfg); err != nil {
+	library := &config.Library{
+		Swift: swiftCfg,
+	}
+	if err := Generate(t.Context(), model, outDir, library, nil); err != nil {
 		t.Fatal(err)
 	}
 
@@ -910,16 +891,17 @@ func TestGenerateDiscoveryService_Files(t *testing.T) {
 		SpecificationFormat: config.SpecDiscovery,
 		ServiceConfig:       filepath.Join(testdataDir, "googleapis/google/cloud/compute/v1/small-compute_v1.yaml"),
 		SpecificationSource: filepath.Join(testdataDir, "discovery/small-compute.v1.json"),
-		Codec: map[string]string{
-			"copyright-year": "2038",
-		},
 	}
 	model, err := parser.CreateModel(cfg)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	if err := Generate(t.Context(), model, outDir, cfg, swiftConfig(t, nil)); err != nil {
+	library := &config.Library{
+		SpecificationFormat: config.SpecDiscovery,
+		Swift:               swiftConfig(t, nil),
+	}
+	if err := Generate(t.Context(), model, outDir, library, nil); err != nil {
 		t.Fatal(err)
 	}
 

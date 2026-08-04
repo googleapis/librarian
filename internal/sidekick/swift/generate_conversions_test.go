@@ -15,14 +15,14 @@
 package swift
 
 import (
-	"bytes"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/sidekick/api"
-	"github.com/googleapis/librarian/internal/sidekick/parser"
 )
 
 func TestGenerateConversions_MissingModulePath(t *testing.T) {
@@ -30,9 +30,7 @@ func TestGenerateConversions_MissingModulePath(t *testing.T) {
 	model := api.NewTestAPI([]*api.Message{}, []*api.Enum{}, []*api.Service{})
 	model.PackageName = "google.cloud.test.v1"
 
-	cfg := &parser.ModelConfig{}
-
-	err := GenerateConversions(t.Context(), model, outDir, cfg, nil)
+	err := GenerateConversions(t.Context(), model, outDir, &config.Library{}, nil)
 	if err == nil {
 		t.Fatal("GenerateConversions expected error due to missing module-path, got nil")
 	}
@@ -75,39 +73,253 @@ func TestGenerateConversions_Message(t *testing.T) {
 	model := api.NewTestAPI([]*api.Message{folder}, []*api.Enum{}, []*api.Service{})
 	model.PackageName = "google.storage.control.v2"
 
-	cfg := &parser.ModelConfig{
-		Codec: map[string]string{
-			"copyright-year": "2038",
-			"module-path":    "StorageControlProtos",
-			"module":         "true",
-		},
+	library := &config.Library{}
+	module := &config.SwiftModule{
+		ModulePath: "StorageControlProtos",
 	}
 
-	if err := GenerateConversions(t.Context(), model, outDir, cfg, nil); err != nil {
+	if err := GenerateConversions(t.Context(), model, outDir, library, module); err != nil {
 		t.Fatal(err)
 	}
 
-	filename := filepath.Join(outDir, "Convert", "Folder+Convert.swift")
-	content, err := os.ReadFile(filename)
+	b, err := os.ReadFile(filepath.Join(outDir, "Folder+Convert.swift"))
 	if err != nil {
 		t.Fatal(err)
 	}
-	contentStr := string(content)
+	gotContent := string(b)
 
 	// Check output imports
-	if !bytes.Contains(content, []byte("internal import StorageControlProtos")) {
+	if !strings.Contains(gotContent, "internal import StorageControlProtos") {
 		t.Errorf("expected generated file to import StorageControlProtos")
 	}
 
 	// Check conversion logic
-	got := extractBlock(t, contentStr, "  internal init(proto: ProtoType) throws {", "\n  }")
-	wantInit := "  internal init(proto: ProtoType) throws {\n    self.name = proto.name\n    self.metageneration = proto.metageneration\n    self.self_ = proto.hasSelf_p ? proto.self_p : nil\n  }"
+	got := extractBlock(t, gotContent, "  internal init(proto: ProtoType) throws {", "\n  }")
+	wantInit := `  internal init(proto: ProtoType) throws {
+    self.init()
+    self.name = proto.name
+    self.metageneration = proto.metageneration
+    self.self_ = proto.hasSelf_p ? proto.self_p : nil
+  }`
 	if diff := cmp.Diff(wantInit, got); diff != "" {
 		t.Errorf("init(proto:) mismatch (-want +got):\n%s", diff)
 	}
 
-	got = extractBlock(t, contentStr, "  internal func toProto() throws -> ProtoType {", "\n  }")
-	wantToProto := "  internal func toProto() throws -> ProtoType {\n    var proto = ProtoType()\n    proto.name = self.name\n    proto.metageneration = self.metageneration\n    if let self_ = self.self_ { proto.self_p = self_ }\n    return proto\n  }"
+	got = extractBlock(t, gotContent, "  internal func toProto() throws -> ProtoType {", "\n  }")
+	wantToProto := `  internal func toProto() throws -> ProtoType {
+    var proto = ProtoType()
+    proto.name = self.name
+    proto.metageneration = self.metageneration
+    if let self_ = self.self_ { proto.self_p = self_ }
+    return proto
+  }`
+	if diff := cmp.Diff(wantToProto, got); diff != "" {
+		t.Errorf("toProto() mismatch (-want +got):\n%s", diff)
+	}
+}
+
+func TestGenerateConversions_RecursiveMessage(t *testing.T) {
+	outDir := t.TempDir()
+
+	field1 := &api.Field{
+		Name:          "child_node",
+		ID:            ".test.Node.child_node",
+		Typez:         api.TypezMessage,
+		TypezID:       ".test.Node",
+		Documentation: "Non-optional recursive child.",
+		Optional:      false,
+		Recursive:     true,
+	}
+	field2 := &api.Field{
+		Name:          "next_node",
+		ID:            ".test.Node.next_node",
+		Typez:         api.TypezMessage,
+		TypezID:       ".test.Node",
+		Documentation: "Optional recursive child.",
+		Optional:      true,
+		Recursive:     true,
+	}
+	node := &api.Message{
+		Name:    "Node",
+		Package: "test",
+		ID:      ".test.Node",
+		Fields:  []*api.Field{field1, field2},
+	}
+	field1.Parent = node
+	field2.Parent = node
+
+	model := api.NewTestAPI([]*api.Message{node}, []*api.Enum{}, []*api.Service{})
+	model.PackageName = "test"
+
+	library := &config.Library{}
+	module := &config.SwiftModule{
+		ModulePath: "TestProtos",
+	}
+
+	if err := GenerateConversions(t.Context(), model, outDir, library, module); err != nil {
+		t.Fatal(err)
+	}
+
+	b, err := os.ReadFile(filepath.Join(outDir, "Node+Convert.swift"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	gotContent := string(b)
+
+	got := extractBlock(t, gotContent, "  internal init(proto: ProtoType) throws {", "\n  }")
+	wantInit := `  internal init(proto: ProtoType) throws {
+    self.init()
+    self.childNode = proto.hasChildNode ? GoogleCloudWkt.Recursive(value: try .init(proto: proto.childNode)) : nil
+    self.nextNode = proto.hasNextNode ? GoogleCloudWkt.Recursive(value: try .init(proto: proto.nextNode)) : nil
+  }`
+	if diff := cmp.Diff(wantInit, got); diff != "" {
+		t.Errorf("init(proto:) mismatch (-want +got):\n%s", diff)
+	}
+
+	got = extractBlock(t, gotContent, "  internal func toProto() throws -> ProtoType {", "\n  }")
+	wantToProto := `  internal func toProto() throws -> ProtoType {
+    var proto = ProtoType()
+    if let childNode = self.childNode { proto.childNode = try childNode.value.toProto() }
+    if let nextNode = self.nextNode { proto.nextNode = try nextNode.value.toProto() }
+    return proto
+  }`
+	if diff := cmp.Diff(wantToProto, got); diff != "" {
+		t.Errorf("toProto() mismatch (-want +got):\n%s", diff)
+	}
+}
+
+func TestGenerateConversions_NoConvertedFields(t *testing.T) {
+	outDir := t.TempDir()
+
+	field1 := &api.Field{
+		Name:  "labels",
+		ID:    "1",
+		Map:   true,
+		Typez: api.TypezString,
+	}
+	msg := &api.Message{
+		Name:    "EmptyOrMapOnly",
+		ID:      ".test.EmptyOrMapOnly",
+		Fields:  []*api.Field{field1},
+		Package: "test",
+	}
+	field1.Parent = msg
+	model := api.NewTestAPI([]*api.Message{msg}, []*api.Enum{}, []*api.Service{})
+	model.PackageName = "test"
+
+	library := &config.Library{
+		Name: "GoogleCloudStorage",
+	}
+	module := &config.SwiftModule{
+		ModulePath: "StorageControlProtos",
+	}
+
+	if err := GenerateConversions(t.Context(), model, outDir, library, module); err != nil {
+		t.Fatal(err)
+	}
+
+	b, err := os.ReadFile(filepath.Join(outDir, "EmptyOrMapOnly+Convert.swift"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	gotContent := string(b)
+
+	got := extractBlock(t, gotContent, "  internal func toProto() throws -> ProtoType {", "\n  }")
+	wantToProto := `  internal func toProto() throws -> ProtoType {
+    let proto = ProtoType()
+    return proto
+  }`
+	if diff := cmp.Diff(wantToProto, got); diff != "" {
+		t.Errorf("toProto() mismatch (-want +got):\n%s", diff)
+	}
+}
+
+func TestGenerateConversions_RepeatedFields(t *testing.T) {
+	outDir := t.TempDir()
+
+	enumVal := &api.EnumValue{Name: "UNSPECIFIED", Number: 0}
+	enum := &api.Enum{
+		Name:               "Category",
+		ID:                 ".test.Category",
+		Package:            "test",
+		Values:             []*api.EnumValue{enumVal},
+		UniqueNumberValues: []*api.EnumValue{enumVal},
+	}
+	enumVal.Parent = enum
+
+	item := &api.Message{
+		Name:    "Item",
+		Package: "test",
+		ID:      ".test.Item",
+	}
+
+	field1 := &api.Field{
+		Name:     "names",
+		ID:       ".test.Container.names",
+		Typez:    api.TypezString,
+		Repeated: true,
+	}
+	field2 := &api.Field{
+		Name:     "items",
+		ID:       ".test.Container.items",
+		Typez:    api.TypezMessage,
+		TypezID:  ".test.Item",
+		Repeated: true,
+	}
+	field3 := &api.Field{
+		Name:     "categories",
+		ID:       ".test.Container.categories",
+		Typez:    api.TypezEnum,
+		TypezID:  ".test.Category",
+		Repeated: true,
+	}
+	container := &api.Message{
+		Name:    "Container",
+		Package: "test",
+		ID:      ".test.Container",
+		Fields:  []*api.Field{field1, field2, field3},
+	}
+	field1.Parent = container
+	field2.Parent = container
+	field3.Parent = container
+
+	model := api.NewTestAPI([]*api.Message{item, container}, []*api.Enum{enum}, []*api.Service{})
+	model.PackageName = "test"
+
+	library := &config.Library{}
+	module := &config.SwiftModule{
+		ModulePath: "TestProtos",
+	}
+
+	if err := GenerateConversions(t.Context(), model, outDir, library, module); err != nil {
+		t.Fatal(err)
+	}
+
+	b, err := os.ReadFile(filepath.Join(outDir, "Container+Convert.swift"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	gotContent := string(b)
+
+	got := extractBlock(t, gotContent, "  internal init(proto: ProtoType) throws {", "\n  }")
+	wantInit := `  internal init(proto: ProtoType) throws {
+    self.init()
+    self.names = proto.names
+    self.items = try proto.items.map { try .init(proto: $0) }
+    self.categories = proto.categories.map { .init(proto: $0) }
+  }`
+	if diff := cmp.Diff(wantInit, got); diff != "" {
+		t.Errorf("init(proto:) mismatch (-want +got):\n%s", diff)
+	}
+
+	got = extractBlock(t, gotContent, "  internal func toProto() throws -> ProtoType {", "\n  }")
+	wantToProto := `  internal func toProto() throws -> ProtoType {
+    var proto = ProtoType()
+    proto.names = self.names
+    proto.items = try self.items.map { try $0.toProto() }
+    proto.categories = try self.categories.map { try $0.toProto() }
+    return proto
+  }`
 	if diff := cmp.Diff(wantToProto, got); diff != "" {
 		t.Errorf("toProto() mismatch (-want +got):\n%s", diff)
 	}

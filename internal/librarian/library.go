@@ -24,6 +24,7 @@ import (
 	"github.com/googleapis/librarian/internal/librarian/golang"
 	"github.com/googleapis/librarian/internal/librarian/java"
 	"github.com/googleapis/librarian/internal/librarian/nodejs"
+	"github.com/googleapis/librarian/internal/librarian/php"
 	"github.com/googleapis/librarian/internal/librarian/python"
 	"github.com/googleapis/librarian/internal/librarian/rust"
 	"github.com/googleapis/librarian/internal/librarian/swift"
@@ -330,7 +331,7 @@ func applyDefaults(language string, lib *config.Library, defaults *config.Defaul
 // derive the API path.
 func canDeriveAPIPath(language string) bool {
 	switch language {
-	case config.LanguageGo, config.LanguagePython, config.LanguageNodejs, config.LanguageJava, config.LanguagePhp:
+	case config.LanguageGo, config.LanguagePython, config.LanguageNodejs, config.LanguageJava, config.LanguagePhp, config.LanguageRuby:
 		return false
 	default:
 		return true
@@ -356,6 +357,8 @@ func fillLibraryDefaults(language string, lib *config.Library) (*config.Library,
 		return golang.Fill(lib)
 	case config.LanguageJava:
 		return java.Fill(lib)
+	case config.LanguagePhp:
+		return php.Fill(lib), nil
 	case config.LanguagePython:
 		return python.Fill(lib)
 	default:

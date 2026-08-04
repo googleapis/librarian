@@ -1,0 +1,47 @@
+// Copyright 2026 Google LLC
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     https://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+package php
+
+import (
+	"path/filepath"
+
+	"github.com/googleapis/librarian/internal/config"
+)
+
+// DefaultOutput derives an output path from a library name and a default
+// output directory.
+func DefaultOutput(name, defaultOutput string) string {
+	return filepath.Join(defaultOutput, name)
+}
+
+// Fill populates default PHP configuration values for the library.
+func Fill(lib *config.Library) *config.Library {
+	return fillStagingSubdir(lib)
+}
+
+func fillStagingSubdir(lib *config.Library) *config.Library {
+	for _, api := range lib.APIs {
+		if api.PHP == nil {
+			api.PHP = &config.PHPAPI{}
+		}
+		// Do not override existing library configuration.
+		if api.PHP.StagingSubdir != "" {
+			continue
+		}
+		name := filepath.Base(api.Path)
+		api.PHP.StagingSubdir = name
+	}
+	return lib
+}

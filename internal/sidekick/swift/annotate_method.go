@@ -35,6 +35,12 @@ type methodAnnotations struct {
 	LRO            *lroAnnotations
 	DiscoveryLRO   *discoveryLroAnnotations
 	ReturnType     string
+
+	// ResponseEncoding sets the `$alt` query parameter value.
+	//
+	// To understand the motivation, see the field by the same in the the
+	// `codec` data structure.
+	ResponseEncoding string
 }
 
 type paginationAnnotations struct {
@@ -185,19 +191,20 @@ func (c *codec) annotateMethod(method *api.Method, modelAnn *modelAnnotations) e
 		}
 	}
 	method.Codec = &methodAnnotations{
-		Name:           camelCase(method.Name),
-		DocLines:       docLines,
-		PathExpression: pathExpression(binding.PathTemplate),
-		PathVariables:  pathVariables,
-		HTTPMethod:     binding.Verb,
-		HasBody:        hasBody,
-		IsBodyWildcard: isBodyWildcard,
-		BodyField:      bodyField,
-		QueryParams:    language.QueryParams(method, binding),
-		Pagination:     pagination,
-		LRO:            lro,
-		ReturnType:     returnType,
-		DiscoveryLRO:   discoveryLRO,
+		Name:             camelCase(method.Name),
+		DocLines:         docLines,
+		PathExpression:   pathExpression(binding.PathTemplate),
+		PathVariables:    pathVariables,
+		HTTPMethod:       binding.Verb,
+		HasBody:          hasBody,
+		IsBodyWildcard:   isBodyWildcard,
+		BodyField:        bodyField,
+		QueryParams:      language.QueryParams(method, binding),
+		Pagination:       pagination,
+		LRO:              lro,
+		ReturnType:       returnType,
+		DiscoveryLRO:     discoveryLRO,
+		ResponseEncoding: c.ResponseEncoding,
 	}
 	if method.SampleInfo != nil {
 		c.annotateSampleInfo(method)

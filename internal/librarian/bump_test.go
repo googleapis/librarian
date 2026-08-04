@@ -661,6 +661,27 @@ func TestDeriveNextVersion(t *testing.T) {
 			wantVersion: sample.NextVersion,
 		},
 		{
+			name: "swift library next non-GA version",
+			cfg: func() *config.Config {
+				c := sample.Config()
+				c.Language = config.LanguageSwift
+				c.Libraries[0].Version = sample.SwiftNonGAVersion
+				return c
+			}(),
+			versionOpts: languageVersioningOptions[config.LanguageSwift],
+			wantVersion: sample.SwiftNextNonGAVersion,
+		},
+		{
+			name: "swift library next GA version",
+			cfg: func() *config.Config {
+				c := sample.Config()
+				c.Language = config.LanguageSwift
+				return c
+			}(),
+			versionOpts: languageVersioningOptions[config.LanguageSwift],
+			wantVersion: sample.NextVersion,
+		},
+		{
 			name:        "default semver options next GA version",
 			cfg:         sample.Config(),
 			wantVersion: sample.NextVersion,
@@ -1030,7 +1051,7 @@ func TestLegacyRustBumpLibrary(t *testing.T) {
 
 			targetLibCfg := test.cfg.Libraries[0]
 			// Unused string param: lastTag.
-			err := legacyRustBumpLibrary(t.Context(), test.cfg, targetLibCfg, testUnusedStringParam, test.versionOverride)
+			err := legacySidekickBumpLibrary(t.Context(), test.cfg, targetLibCfg, testUnusedStringParam, test.versionOverride)
 			if err != nil {
 				t.Fatalf("legacyRustBumpLibrary() error = %v", err)
 			}
@@ -1094,7 +1115,7 @@ func TestLegacyRustBump(t *testing.T) {
 			}
 			testhelper.Setup(t, opts)
 
-			if err := legacyRustBump(t.Context(), cfg, test.all, test.libraryName, test.versionOverride); err != nil {
+			if err := legacySidekickBump(t.Context(), cfg, test.all, test.libraryName, test.versionOverride); err != nil {
 				t.Fatal(err)
 			}
 
@@ -1156,7 +1177,185 @@ func TestLegacyRustBumpAll(t *testing.T) {
 			}
 			testhelper.Setup(t, opts)
 
-			err := legacyRustBumpAll(t.Context(), targetCfg, sinceTag)
+			err := legacySidekickBumpAll(t.Context(), targetCfg, sinceTag)
+			if err != nil {
+				t.Fatal(err)
+			}
+			// releaseAll directly modifies the config provided, so we use it as
+			// our "got".
+			gotVersion := targetCfg.Libraries[0].Version
+			if gotVersion != test.wantVersion {
+				t.Errorf("got version %s, want %s", gotVersion, test.wantVersion)
+			}
+		})
+	}
+}
+
+func TestLegacySwiftBumpLibrary(t *testing.T) {
+	testhelper.RequireCommand(t, "git")
+
+	tests := []struct {
+		name            string
+		cfg             *config.Config
+		versionOverride string
+		wantVersion     string
+	}{
+		{
+			name:        "library released",
+			cfg:         sample.Config(),
+			wantVersion: sample.NextVersion,
+		},
+		{
+			name: "version override",
+			cfg: func() *config.Config {
+				c := sample.Config()
+				c.Libraries[0].Version = "1.3.0"
+				return c
+			}(),
+			versionOverride: "2.0.0",
+			wantVersion:     "2.0.0",
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			opts := testhelper.SetupOptions{
+				Clone:  true,
+				Config: test.cfg,
+			}
+			testhelper.Setup(t, opts)
+
+			targetLibCfg := test.cfg.Libraries[0]
+			// Unused string param: lastTag.
+			err := legacySidekickBumpLibrary(t.Context(), test.cfg, targetLibCfg, testUnusedStringParam, test.versionOverride)
+			if err != nil {
+				t.Fatalf("legacySidekickBumpLibrary() error = %v", err)
+			}
+			if targetLibCfg.Version != test.wantVersion {
+				t.Errorf("library %q version mismatch: want %q, got %q", targetLibCfg.Name, test.wantVersion, targetLibCfg.Version)
+			}
+		})
+	}
+}
+
+func TestLegacySwiftBump(t *testing.T) {
+	testhelper.RequireCommand(t, "git")
+
+	lib1Change := filepath.Join(sample.Lib1Output, "Package.swift")
+	lib2Change := filepath.Join(sample.Lib2Output, "Package.swift")
+
+	for _, test := range []struct {
+		name            string
+		libraryName     string
+		versionOverride string
+		all             bool
+		withChanges     []string
+		wantVersions    map[string]string
+	}{
+		{
+			name:         "library name",
+			libraryName:  sample.Lib1Name,
+			withChanges:  []string{lib1Change},
+			wantVersions: map[string]string{sample.Lib1Name: sample.NextVersion},
+		},
+		{
+			name:            "library name and explicit version",
+			libraryName:     sample.Lib1Name,
+			versionOverride: "1.2.3",
+			withChanges:     []string{lib1Change},
+			wantVersions:    map[string]string{sample.Lib1Name: "1.2.3"},
+		},
+		{
+			name:        "all flag all have changes",
+			all:         true,
+			withChanges: []string{lib1Change, lib2Change},
+			wantVersions: map[string]string{
+				sample.Lib1Name: sample.NextVersion,
+				sample.Lib2Name: sample.NextVersion,
+			},
+		},
+		{
+			name:         "all flag 1 has changes",
+			all:          true,
+			withChanges:  []string{lib1Change},
+			wantVersions: map[string]string{sample.Lib1Name: sample.NextVersion},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			cfg := sample.Config()
+			cfg.Language = config.LanguageSwift
+			opts := testhelper.SetupOptions{
+				Clone:       true,
+				Config:      cfg,
+				Tags:        []string{sample.InitialSwiftTag},
+				WithChanges: test.withChanges,
+			}
+			testhelper.Setup(t, opts)
+
+			if err := legacySidekickBump(t.Context(), cfg, test.all, test.libraryName, test.versionOverride); err != nil {
+				t.Fatal(err)
+			}
+
+			got, err := yaml.Read[config.Config](config.LibrarianYAML)
+			if err != nil {
+				t.Fatal(err)
+			}
+			for _, lib := range got.Libraries {
+				if want, ok := test.wantVersions[lib.Name]; ok {
+					if lib.Version != want {
+						t.Errorf("library %s: got version %q, want %q", lib.Name, lib.Version, want)
+					}
+				}
+			}
+		})
+	}
+}
+
+func TestLegacySwiftBumpAll(t *testing.T) {
+	testhelper.RequireCommand(t, "git")
+
+	for _, test := range []struct {
+		name        string
+		cfg         *config.Config
+		withChanges []string
+		skipPublish bool
+		wantVersion string
+	}{
+		{
+			name:        "library has changes",
+			cfg:         sample.Config(),
+			withChanges: []string{filepath.Join(sample.Lib1Output, "Package.swift")},
+			wantVersion: sample.NextVersion,
+		},
+		{
+			name:        "library does not have any changes",
+			cfg:         sample.Config(),
+			wantVersion: sample.InitialVersion,
+		},
+		{
+			name: "library has changes but skipPublish is true",
+			cfg: func() *config.Config {
+				c := sample.Config()
+				c.Libraries[0].SkipRelease = true
+				return c
+			}(),
+			withChanges: []string{filepath.Join(sample.Lib1Output, "Package.swift")},
+			wantVersion: sample.InitialVersion,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			targetCfg := test.cfg
+			targetCfg.Language = config.LanguageSwift
+			sinceTag := sample.InitialSwiftTag
+			opts := testhelper.SetupOptions{
+				Clone:       true,
+				Config:      test.cfg,
+				Tags:        []string{sample.InitialSwiftTag},
+				WithChanges: test.withChanges,
+			}
+			testhelper.Setup(t, opts)
+
+			err := legacySidekickBumpAll(t.Context(), targetCfg, sinceTag)
 			if err != nil {
 				t.Fatal(err)
 			}

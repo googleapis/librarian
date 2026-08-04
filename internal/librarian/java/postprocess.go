@@ -25,7 +25,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/filesystem"
 	"github.com/googleapis/librarian/internal/license"
@@ -33,15 +32,8 @@ import (
 	"github.com/googleapis/librarian/internal/serviceconfig"
 )
 
-const (
-	owlbotTemplatesRelPath = "sdk-platform-java/hermetic_build/library_generation/owlbot/templates"
-	owlbotStagingDir       = "owl-bot-staging"
-)
-
 var (
-	errTemplatesMissing = errors.New("templates directory not found")
-	errRunOwlBot        = errors.New("failed to run owlbot.py")
-	errSyncPOMs         = errors.New("failed to generate or update pom.xml files")
+	errSyncPOMs = errors.New("failed to generate or update pom.xml files")
 )
 
 type protoFileToCopy struct {
@@ -69,46 +61,15 @@ type libraryPostProcessParams struct {
 	primaryDir string
 }
 
-// TODO(https://github.com/googleapis/librarian/issues/6627): Remove legacy owlbot.py
-// postprocessing execution once native Go postprocessing is enabled.
-func postProcessLibrary(ctx context.Context, params libraryPostProcessParams) error {
-	var bomVersion string
-	if params.cfg != nil && params.cfg.Default != nil && params.cfg.Default.Java != nil {
-		bomVersion = params.cfg.Default.Java.LibrariesBOMVersion
-	}
-	if err := removeKeptFilesFromStaging(params.library, params.outDir); err != nil {
-		return fmt.Errorf("failed to remove kept files from staging: %w", err)
-	}
-	owlbotPath := filepath.Join(params.outDir, "owlbot.py")
-	_, err := os.Stat(owlbotPath)
-	if err != nil && !errors.Is(err, fs.ErrNotExist) {
-		return fmt.Errorf("failed to check for owlbot.py: %w", err)
-	}
-	owlbotExists := err == nil
-
-	if owlbotExists {
-		if err := createOrVerifyOwlbotPy(params.outDir); err != nil {
+func postProcessLibrary(params libraryPostProcessParams) error {
+	if params.library.Postprocess != nil {
+		if err := postprocessing.Apply(params.outDir, params.library.Postprocess); err != nil {
 			return err
 		}
-		if err := removeKeptFilesFromStaging(params.library, params.outDir); err != nil {
-			return fmt.Errorf("failed to remove kept files from staging: %w", err)
-		}
-		if err := runOwlBot(ctx, params.library, params.outDir, bomVersion); err != nil {
-			return fmt.Errorf("%w: %w", errRunOwlBot, err)
-		}
-	} else {
-		if params.library != nil && params.library.Postprocess != nil {
-			if err := postprocessing.Apply(params.outDir, params.library.Postprocess); err != nil {
-				return err
-			}
-		}
-		var keepSet map[string]bool
-		if params.library != nil {
-			keepSet = toKeepSet(params.library.Keep)
-		}
-		if err := renderREADME(params, keepSet); err != nil {
-			return fmt.Errorf("failed to render README: %w", err)
-		}
+	}
+	keepSet := toKeepSet(params.library.Keep)
+	if err := renderREADME(params, keepSet); err != nil {
+		return fmt.Errorf("failed to render README: %w", err)
 	}
 
 	monorepoVersion, err := findMonorepoVersion(params.cfg)
@@ -146,10 +107,6 @@ func (params postProcessParams) coords() apiCoordinate {
 	return deriveAPICoordinates(deriveLibraryCoordinates(params.library), params.apiBase, params.javaAPI)
 }
 
-// TODO(https://github.com/googleapis/librarian/issues/6627): Remove owl-bot-staging
-// directory path helper after eliminating legacy owlbot.py staging.
-func stagingDir(outDir string) string { return filepath.Join(outDir, owlbotStagingDir) }
-
 func postProcessAPI(ctx context.Context, params postProcessParams) error {
 	gapicDir := params.gapicDir()
 	gRPCDir := params.gRPCDir()
@@ -168,53 +125,24 @@ func postProcessAPI(ctx context.Context, params postProcessParams) error {
 		return fmt.Errorf("failed to copy files: %w", err)
 	}
 
-	owlbotPath := filepath.Join(params.outDir, "owlbot.py")
-	_, err := os.Stat(owlbotPath)
-	if err != nil && !errors.Is(err, fs.ErrNotExist) {
-		return fmt.Errorf("failed to check for owlbot.py: %w", err)
+	var keepSet map[string]bool
+	if params.library != nil {
+		keepSet = toKeepSet(params.library.Keep)
 	}
-	owlbotExists := err == nil
+	if err := restructureToLibrary(params, params.outDir, keepSet); err != nil {
+		return fmt.Errorf("failed to restructure to library root: %w", err)
+	}
 
-	if !owlbotExists {
-		var keepSet map[string]bool
-		if params.library != nil {
-			keepSet = toKeepSet(params.library.Keep)
-		}
-		if err := restructureToLibrary(params, params.outDir, keepSet); err != nil {
-			return fmt.Errorf("failed to restructure to library root: %w", err)
-		}
-
-		coords := params.coords()
-		// Generate clirr-ignored-differences.xml for the proto module.
-		protoModuleRepoRoot := filepath.Join(params.outDir, coords.Proto.ArtifactID)
-		shouldGenerate, err := clirrIgnoreShouldGenerate(coords.Proto.ArtifactID, protoModuleRepoRoot, params.javaAPI.Monolithic)
-		if err != nil {
-			return fmt.Errorf("failed to check for clirr ignore file: %w", err)
-		}
-		if shouldGenerate {
-			if err := generateClirrIgnore(protoModuleRepoRoot); err != nil {
-				return fmt.Errorf("failed to generate clirr ignore file: %w", err)
-			}
-		}
-	} else {
-		if err := restructureToStaging(params); err != nil {
-			return fmt.Errorf("failed to restructure to staging: %w", err)
-		}
-
-		// Generate clirr-ignored-differences.xml for the proto module.
-		// We target the staging directory because runOwlBot hasn't moved the files
-		// to their final destination yet.
-		coords := params.coords()
-		protoModuleRepoRoot := filepath.Join(params.outDir, coords.Proto.ArtifactID)
-		shouldGenerate, err := clirrIgnoreShouldGenerate(coords.Proto.ArtifactID, protoModuleRepoRoot, params.javaAPI.Monolithic)
-		if err != nil {
-			return fmt.Errorf("failed to check for clirr ignore file: %w", err)
-		}
-		if shouldGenerate {
-			protoModuleStagingRoot := filepath.Join(stagingDir(params.outDir), params.apiBase, coords.Proto.ArtifactID)
-			if err := generateClirrIgnore(protoModuleStagingRoot); err != nil {
-				return fmt.Errorf("failed to generate clirr ignore file: %w", err)
-			}
+	coords := params.coords()
+	// Generate clirr-ignored-differences.xml for the proto module.
+	protoModuleRepoRoot := filepath.Join(params.outDir, coords.Proto.ArtifactID)
+	shouldGenerate, err := clirrIgnoreShouldGenerate(coords.Proto.ArtifactID, protoModuleRepoRoot, params.javaAPI.Monolithic)
+	if err != nil {
+		return fmt.Errorf("failed to check for clirr ignore file: %w", err)
+	}
+	if shouldGenerate {
+		if err := generateClirrIgnore(protoModuleRepoRoot); err != nil {
+			return fmt.Errorf("failed to generate clirr ignore file: %w", err)
 		}
 	}
 
@@ -327,169 +255,9 @@ func removeConflictingFiles(protoSrcDir string) error {
 	return nil
 }
 
-// restructureToStaging moves the generated code into a temporary staging directory
-// that matches the structure expected by owlbot.py. It nests modules under the
-// {apiBase} directory (e.g., owl-bot-staging/v1/proto-google-cloud-chat-v1) to
-// ensure synthtool preserves the module structure.
-// TODO(https://github.com/googleapis/librarian/issues/6627): Remove legacy
-// owl-bot-staging directory creation and module nesting once native Go
-// postprocessing is enabled.
-func restructureToStaging(params postProcessParams) error {
-	stagingDir := stagingDir(params.outDir)
-	destRoot := filepath.Join(stagingDir, params.apiBase)
-	if params.javaAPI.Monolithic {
-		destRoot = filepath.Join(destRoot, "src")
-	}
-	if err := os.MkdirAll(destRoot, 0o755); err != nil {
-		return fmt.Errorf("failed to create staging directory: %w", err)
-	}
-	return restructureModules(params, destRoot)
-}
-
 type moveAction struct {
 	src, dest   string
 	description string
-}
-
-// TODO(https://github.com/googleapis/librarian/issues/6627): Remove legacy staging
-// move action executor once native Go postprocessing is enabled.
-func restructure(actions []moveAction) error {
-	for _, action := range actions {
-		if _, err := os.Stat(action.src); err == nil {
-			if err := os.MkdirAll(action.dest, 0o755); err != nil {
-				return fmt.Errorf("failed to create directory %s: %w", action.dest, err)
-			}
-			if err := filesystem.MoveAndMerge(action.src, action.dest); err != nil {
-				return fmt.Errorf("failed to move %s: %w", action.description, err)
-			}
-		}
-	}
-	return nil
-}
-
-// restructureModules moves the generated code from the temporary versioned directory
-// tree into the destination root directory for GAPIC, Proto, gRPC, and samples.
-// It also copies the relevant proto files into the proto module.
-// TODO(https://github.com/googleapis/librarian/issues/6627): Remove legacy module
-// restructuring to staging directory once native Go postprocessing is enabled.
-func restructureModules(params postProcessParams, destRoot string) error {
-	coords := params.coords()
-	tempProtoSrcDir := params.protoDir()
-	if params.library.Name != commonProtosLibrary {
-		if err := removeConflictingFiles(tempProtoSrcDir); err != nil {
-			return err
-		}
-	}
-
-	protoDest := filepath.Join(destRoot, coords.Proto.ArtifactID, "src", "main", "java")
-	grpcDest := filepath.Join(destRoot, coords.GRPC.ArtifactID, "src", "main", "java")
-	gapicMainDest := filepath.Join(destRoot, coords.GAPIC.ArtifactID, "src", "main")
-	gapicTestDest := filepath.Join(destRoot, coords.GAPIC.ArtifactID, "src", "test")
-	protoFilesDestDir := filepath.Join(destRoot, coords.Proto.ArtifactID, "src", "main", "proto")
-
-	if params.javaAPI.Monolithic {
-		protoDest = filepath.Join(destRoot, "main", "java")
-		grpcDest = filepath.Join(destRoot, "main", "java")
-		gapicMainDest = filepath.Join(destRoot, "main")
-		gapicTestDest = filepath.Join(destRoot, "test")
-		protoFilesDestDir = filepath.Join(destRoot, "main", "proto")
-	}
-
-	var actions []moveAction
-	if shouldGenerateProto(params.javaAPI) {
-		actions = append(actions, moveAction{
-			src:         tempProtoSrcDir,
-			dest:        protoDest,
-			description: "proto source",
-		})
-	}
-	if shouldGenerateGRPC(params.javaAPI) {
-		actions = append(actions, moveAction{
-			src:         params.gRPCDir(),
-			dest:        grpcDest,
-			description: "grpc source",
-		})
-	}
-	if shouldGenerateGAPIC(params.javaAPI) {
-		actions = append(actions, []moveAction{
-			{
-				src:         filepath.Join(params.gapicDir(), "src", "main"),
-				dest:        gapicMainDest,
-				description: "gapic source",
-			},
-			{
-				src:         filepath.Join(params.gapicDir(), "src", "test"),
-				dest:        gapicTestDest,
-				description: "gapic test",
-			},
-		}...)
-	}
-	if shouldGenerateResourceNames(params.javaAPI) {
-		actions = append(actions, moveAction{
-			src:         filepath.Join(params.gapicDir(), "proto", "src", "main", "java"),
-			dest:        protoDest,
-			description: "resource name source",
-		})
-	}
-	if params.includeSamples && shouldGenerateGAPIC(params.javaAPI) {
-		actions = append(actions, moveAction{
-			src:         filepath.Join(params.gapicDir(), "samples", "snippets", "generated", "src", "main", "java"),
-			dest:        filepath.Join(destRoot, "samples", "snippets", "generated"),
-			description: "samples",
-		})
-	}
-	if err := restructure(actions); err != nil {
-		return err
-	}
-	// Copy proto files to proto-*/src/main/proto
-	if shouldGenerateProto(params.javaAPI) {
-		if err := copyProtos(params.protosToCopy, protoFilesDestDir); err != nil {
-			return fmt.Errorf("failed to copy proto files: %w", err)
-		}
-	}
-	return nil
-}
-
-// runOwlBot executes the owlbot.py script located in outDir to restructure the
-// generated code and apply templates (e.g., for README.md).
-//
-// It assumes that:
-//  1. All APIs for the library have already been generated and staged into the
-//     "owl-bot-staging" directory (see restructureToStaging()).
-//  2. An owlbot.py file exists in the outDir.
-//  3. The SYNTHTOOL_TEMPLATES environment variable points to a valid templates
-//     directory in google-cloud-java/sdk-platform-java.
-//  4. python3 is available on the system PATH and has the synthtool package
-//     installed (from google-cloud-java/sdk-platform-java).
-//
-// TODO(https://github.com/googleapis/librarian/issues/6627): Remove python3
-// owlbot.py script runner once native Go postprocessing is active.
-func runOwlBot(ctx context.Context, library *config.Library, outDir, bomVersion string) (retErr error) {
-	// Clean up the staging directory on failure to avoid leaving dirty leftovers.
-	// If owlbot.py completes successfully, it is expected to clean it up.
-	defer func() {
-		if retErr != nil {
-			_ = os.RemoveAll(stagingDir(outDir))
-		}
-	}()
-
-	releasedVersion := library.Java.ReleasedVersion
-	// Versions used to populate README.md file.
-	env := map[string]string{
-		"SYNTHTOOL_LIBRARY_VERSION":       releasedVersion,
-		"SYNTHTOOL_LIBRARIES_BOM_VERSION": bomVersion,
-	}
-	// Path to templates used for README.md file.
-	templatesDir := filepath.Join(filepath.Dir(outDir), owlbotTemplatesRelPath)
-	if _, err := os.Stat(templatesDir); err != nil {
-		return fmt.Errorf("%w at %s: %w", errTemplatesMissing, templatesDir, err)
-	}
-	env["SYNTHTOOL_TEMPLATES"] = templatesDir
-	if err := command.RunInDirWithEnv(ctx, outDir, env, "python3", "owlbot.py"); err != nil {
-		return err
-	}
-	// Staging dirs cleans up as part of owlbot.py
-	return nil
 }
 
 func copyProtos(protos []protoFileToCopy, destDir string) error {
@@ -501,95 +269,6 @@ func copyProtos(protos []protoFileToCopy, destDir string) error {
 		if err := filesystem.CopyFile(proto.absolutePath, target); err != nil {
 			return fmt.Errorf("failed to copy file %s to %s: %w", proto.absolutePath, target, err)
 		}
-	}
-	return nil
-}
-
-// removeKeptFilesFromStaging removes files and directories from the staging area
-// that are marked to be preserved in the library configuration.
-//
-// It operates on the assumption that the staging directory structure nests
-// modules under an API base directory component (e.g., owl-bot-staging/v1/proto-google-cloud-library-v1/...).
-// It strips this first component (the API base like "v1") from the relative
-// path to reconstruct the expected path relative to the library root, which is
-// then matched against the library's Keep configuration.
-// TODO(https://github.com/googleapis/librarian/issues/6627): Remove legacy
-// keep-file removal from staging directory once native Go postprocessing is
-// enabled.
-func removeKeptFilesFromStaging(library *config.Library, outDir string) error {
-	stagingDir := stagingDir(outDir)
-	if _, err := os.Stat(stagingDir); os.IsNotExist(err) {
-		return nil
-	}
-	keepSet := make(map[string]bool)
-	for _, keep := range library.Keep {
-		normalized := strings.TrimSuffix(filepath.ToSlash(keep), "/")
-		keepSet[normalized] = true
-	}
-	return filepath.WalkDir(stagingDir, func(path string, d os.DirEntry, err error) error {
-		if err != nil {
-			return err
-		}
-		relToStaging, err := filepath.Rel(stagingDir, path)
-		if err != nil {
-			return err
-		}
-		relSlash := filepath.ToSlash(relToStaging)
-		_, after, ok := strings.Cut(relSlash, "/")
-		if !ok {
-			// Skip the staging root "." and API base directories (e.g., "v1").
-			return nil
-		}
-		keepPath := after
-		if d.IsDir() {
-			if keepSet[keepPath] {
-				destPath := filepath.Join(outDir, keepPath)
-				if _, err := os.Stat(destPath); err == nil {
-					if err := os.RemoveAll(path); err != nil {
-						return fmt.Errorf("failed to remove kept dir %s from staging: %w", path, err)
-					}
-				}
-				return filepath.SkipDir
-			}
-			return nil
-		}
-		if shouldPreserve(keepPath, keepSet) {
-			destPath := filepath.Join(outDir, keepPath)
-			if _, err := os.Stat(destPath); err == nil {
-				if err := os.Remove(path); err != nil {
-					return fmt.Errorf("failed to remove kept file %s from staging: %w", path, err)
-				}
-			}
-		}
-		return nil
-	})
-}
-
-// createOrVerifyOwlbotPy ensures that the post-processing script (owlbot.py) exists
-// in the library's output directory. If it is missing (which is typical for newly added
-// client libraries), it automatically creates it from an embedded template to allow
-// OwlBot post-processing and README generation to complete successfully.
-// TODO(https://github.com/googleapis/librarian/issues/6627): Remove legacy owlbot.py
-// template creation and fallback script generation once native Go
-// postprocessing is enabled.
-func createOrVerifyOwlbotPy(outDir string) (err error) {
-	owlbotPath := filepath.Join(outDir, "owlbot.py")
-	// Open with O_EXCL to atomically ensure we only create the script if it does not exist.
-	// Executable permissions (0755) are set because owlbot.py is executed during post-processing.
-	file, createErr := os.OpenFile(owlbotPath, os.O_RDWR|os.O_CREATE|os.O_EXCL, 0o755)
-	if errors.Is(createErr, fs.ErrExist) {
-		return nil
-	}
-	if createErr != nil {
-		return fmt.Errorf("failed to create owlbot.py: %w", createErr)
-	}
-	defer func() {
-		if closeErr := file.Close(); closeErr != nil && err == nil {
-			err = fmt.Errorf("failed to close owlbot.py: %w", closeErr)
-		}
-	}()
-	if executeErr := templates.ExecuteTemplate(file, "owlbot_py.tmpl", nil); executeErr != nil {
-		return fmt.Errorf("failed to write owlbot.py template: %w", executeErr)
 	}
 	return nil
 }

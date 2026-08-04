@@ -1,5 +1,5 @@
 ---
-name: {{Codec.PackageName}}-tests
+name: {{Codec.PackageSkillName}}-tests
 description: >-
   Use this skill when writing tests for code that uses
   package:{{Codec.PackageName}}
@@ -23,6 +23,7 @@ import 'package:{{Codec.PackageName}}/testing.dart';
 ```
 
 ### Option A: Using Constructor Closures (Recommended)
+
 You can inject behavior by passing optional function callbacks to the fake's
 constructor. Methods that are not provided will throw an `UnsupportedError`.
 
@@ -41,6 +42,7 @@ final fake = Fake{{Codec.ExampleServiceName}}(
 ```
 
 ### Option B: Subclassing the Fake
+
 For more complex test setups or shared states, you can subclass the fake and
 override its methods. Methods that are not overridden will throw an
 `UnsupportedError`.
