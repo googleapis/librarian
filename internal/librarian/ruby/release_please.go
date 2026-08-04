@@ -20,11 +20,11 @@ import (
 )
 
 // AddManifest inserts a new package and its filler entry into a Release Please manifest map.
-func AddManifest(manifest map[string]string, name string) map[string]string {
+func AddManifest(manifest map[string]string, name, version string) map[string]string {
 	if _, ok := manifest[name]; ok {
 		return manifest
 	}
-	manifest[name] = defaultVersion
+	manifest[name] = version
 	manifest[name+"+FILLER"] = "0.0.0"
 	return manifest
 }

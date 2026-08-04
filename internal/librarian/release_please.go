@@ -129,7 +129,7 @@ func syncToReleasePlease(dir string, cfg *config.Config, name string) error {
 		component = ""
 	}
 	if cfg.Language == config.LanguageRuby {
-		manifest = ruby.AddManifest(manifest, pkgPath)
+		manifest = ruby.AddManifest(manifest, pkgPath, lib.Version)
 		packages = ruby.AddPackage(packages, pkgPath)
 	}
 	if err := syncPackageToReleasePlease(manifest, packages, pkgPath, lib.Version, component, extraFiles); err != nil {
