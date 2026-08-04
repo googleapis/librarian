@@ -69,3 +69,67 @@ func TestAddManifest(t *testing.T) {
 		})
 	}
 }
+
+func TestAddPackage(t *testing.T) {
+	for _, test := range []struct {
+		name     string
+		packages map[string]any
+		pkgName  string
+		want     map[string]any
+	}{
+		{
+			name:     "add new versioned package",
+			packages: map[string]any{},
+			pkgName:  "google-cloud-secret_manager-v1",
+			want: map[string]any{
+				"google-cloud-secret_manager-v1": map[string]any{
+					"component":    "google-cloud-secret_manager-v1",
+					"version_file": "lib/google/cloud/secret_manager/v1/version.rb",
+				},
+			},
+		},
+		{
+			name: "add new unversioned package preserving existing entries",
+			packages: map[string]any{
+				"google-cloud-asset-v1": map[string]any{
+					"component":    "google-cloud-asset-v1",
+					"version_file": "lib/google/cloud/asset/v1/version.rb",
+				},
+			},
+			pkgName: "google-cloud-secret_manager",
+			want: map[string]any{
+				"google-cloud-asset-v1": map[string]any{
+					"component":    "google-cloud-asset-v1",
+					"version_file": "lib/google/cloud/asset/v1/version.rb",
+				},
+				"google-cloud-secret_manager": map[string]any{
+					"component":    "google-cloud-secret_manager",
+					"version_file": "lib/google/cloud/secret_manager/version.rb",
+				},
+			},
+		},
+		{
+			name: "existing package unchanged",
+			packages: map[string]any{
+				"google-cloud-secret_manager-v1": map[string]any{
+					"component":    "custom-component",
+					"version_file": "custom/path/version.rb",
+				},
+			},
+			pkgName: "google-cloud-secret_manager-v1",
+			want: map[string]any{
+				"google-cloud-secret_manager-v1": map[string]any{
+					"component":    "custom-component",
+					"version_file": "custom/path/version.rb",
+				},
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := AddPackage(test.packages, test.pkgName)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
