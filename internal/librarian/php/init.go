@@ -21,12 +21,34 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
+
+	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/repometadata"
+	"github.com/googleapis/librarian/internal/serviceconfig"
 )
 
 var (
 	namespaceRe     = regexp.MustCompile(`php_namespace\)?\s*=\s*"([^"]+)"`)
 	versionSuffixRe = regexp.MustCompile(`\\V\d+.*$`)
 )
+
+type initParams struct {
+	apiShortName    string
+	productDocs     string
+	productHomepage string
+}
+
+func newInitParams(googleapisDir, apiPath string) (*initParams, error) {
+	api, err := serviceconfig.Find(googleapisDir, apiPath, config.LanguagePhp)
+	if err != nil {
+		return nil, err
+	}
+	return &initParams{
+		apiShortName:    api.ShortName,
+		productDocs:     api.DocumentationURI,
+		productHomepage: repometadata.ExtractBaseProductURL(api.DocumentationURI),
+	}, nil
+}
 
 // namespace reads the php_namespace option from the first .proto file in the API directory.
 // If the option is not found, it generates a fallback namespace from the API path.
