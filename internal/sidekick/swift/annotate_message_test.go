@@ -622,3 +622,78 @@ func TestAnnotateMessage_PlaceholderGating(t *testing.T) {
 		})
 	}
 }
+
+func TestAnnotateMessage_HasConvertedFields(t *testing.T) {
+	for _, test := range []struct {
+		name   string
+		fields []*api.Field
+		want   bool
+	}{
+		{
+			name:   "empty_message",
+			fields: []*api.Field{},
+			want:   false,
+		},
+		{
+			name: "singular_field",
+			fields: []*api.Field{
+				{Name: "field1", ID: "1", Typez: api.TypezString},
+			},
+			want: true,
+		},
+		{
+			name: "repeated_field",
+			fields: []*api.Field{
+				{Name: "field1", ID: "1", Typez: api.TypezString, Repeated: true},
+			},
+			want: true,
+		},
+		{
+			name: "map_field",
+			fields: []*api.Field{
+				{Name: "field1", ID: "1", Typez: api.TypezString, Map: true},
+			},
+			want: false,
+		},
+		{
+			name: "oneof_field",
+			fields: []*api.Field{
+				{Name: "field1", ID: "1", Typez: api.TypezString, IsOneOf: true},
+			},
+			want: false,
+		},
+		{
+			name: "map_and_repeated_fields",
+			fields: []*api.Field{
+				{Name: "labels", ID: "1", Typez: api.TypezString, Map: true},
+				{Name: "names", ID: "2", Typez: api.TypezString, Repeated: true},
+			},
+			want: true,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			msg := &api.Message{
+				Name:    "TestMessage",
+				ID:      ".test.TestMessage",
+				Package: "test",
+				Fields:  test.fields,
+			}
+			for _, f := range msg.Fields {
+				f.Parent = msg
+			}
+			model := api.NewTestAPI([]*api.Message{msg}, []*api.Enum{}, []*api.Service{})
+			model.PackageName = "test"
+			codec := newTestCodec(t, model, nil)
+			if err := codec.annotateModel(); err != nil {
+				t.Fatal(err)
+			}
+			ann, ok := msg.Codec.(*messageAnnotations)
+			if !ok {
+				t.Fatalf("expected msg.Codec to be *messageAnnotations, got %T", msg.Codec)
+			}
+			if ann.HasConvertedFields != test.want {
+				t.Errorf("HasConvertedFields = %v, want %v", ann.HasConvertedFields, test.want)
+			}
+		})
+	}
+}
