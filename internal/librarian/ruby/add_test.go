@@ -15,6 +15,7 @@
 package ruby
 
 import (
+	"errors"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -98,6 +99,59 @@ func TestAddWrapper(t *testing.T) {
 			}
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestAddWrapper_Error(t *testing.T) {
+	for _, test := range []struct {
+		name    string
+		in      *config.Library
+		wantErr error
+	}{
+		{
+			name: "no APIs",
+			in: &config.Library{
+				Name: "google-cloud-secretmanager",
+			},
+			wantErr: errRequiresOneAPI,
+		},
+		{
+			name: "multiple APIs",
+			in: &config.Library{
+				Name: "google-cloud-secretmanager",
+				APIs: []*config.API{
+					{Path: "google/cloud/secretmanager/v1"},
+					{Path: "google/cloud/secretmanager/v2"},
+				},
+			},
+			wantErr: errRequiresOneAPI,
+		},
+		{
+			name: "missing versioned API for wrapper",
+			in: &config.Library{
+				Name: "google-cloud-nonexistent",
+				APIs: []*config.API{
+					{Path: "google/cloud/nonexistent"},
+				},
+			},
+			wantErr: errNoVersionedAPI,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			cfg := &config.Config{
+				Libraries: []*config.Library{
+					{
+						APIs: []*config.API{
+							{Path: "google/cloud/secretmanager/v1"},
+						},
+					},
+				},
+			}
+			_, err := addWrapper(cfg, test.in)
+			if !errors.Is(err, test.wantErr) {
+				t.Errorf("addWrapper() error = %v, wantErr = %v", err, test.wantErr)
 			}
 		})
 	}
