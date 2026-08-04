@@ -93,7 +93,7 @@ jobs:
         working-directory: google-cloud-ruby
         run: librarian generate google-cloud-asset-v1
       - name: Run librarian generate all (integration test)
-        if: matrix.task == 'integration' && !(github.event_name == 'push' && github.ref == 'refs/heads/main')
+        if: matrix.task == 'integration' && github.event_name == 'push' && github.ref == 'refs/heads/main'
         working-directory: google-cloud-ruby
         run: librarian generate --all
   create-issue-on-failure:
