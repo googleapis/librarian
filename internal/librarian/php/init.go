@@ -43,18 +43,10 @@ func newInitParams(googleapisDir, apiPath string) (*initParams, error) {
 	if err != nil {
 		return nil, err
 	}
-	var apiShortName, productDocs, productHomepage string
-	if api != nil {
-		apiShortName = api.ShortName
-		productDocs = api.DocumentationURI
-		if productDocs != "" {
-			productHomepage = repometadata.ExtractBaseProductURL(productDocs)
-		}
-	}
 	return &initParams{
-		apiShortName:    apiShortName,
-		productDocs:     productDocs,
-		productHomepage: productHomepage,
+		apiShortName:    api.ShortName,
+		productDocs:     api.DocumentationURI,
+		productHomepage: repometadata.ExtractBaseProductURL(api.DocumentationURI),
 	}, nil
 }
 
