@@ -381,8 +381,8 @@ func TestSyncToReleasePlease(t *testing.T) {
 			}`,
 		},
 		{
-			name:            "new ruby main client",
-			language:        config.LanguageRuby,
+			name:     "new ruby main client",
+			language: config.LanguageRuby,
 			initialManifest: `{
 				"google-cloud-secret_manager-v1": "0.0.1",
 				"google-cloud-secret_manager-v1+FILLER": "0.0.0"
