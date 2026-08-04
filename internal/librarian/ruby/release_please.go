@@ -14,6 +14,7 @@
 
 package ruby
 
+// AddManifest inserts a new package and its filler entry into a Release Please manifest map.
 func AddManifest(manifest map[string]string, name string) map[string]string {
 	if _, ok := manifest[name]; ok {
 		return manifest
