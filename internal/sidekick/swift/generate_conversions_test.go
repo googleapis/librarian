@@ -192,25 +192,18 @@ func TestGenerateConversions_NoConvertedFields(t *testing.T) {
 	outDir := t.TempDir()
 
 	field1 := &api.Field{
-		Name:     "locations",
-		ID:       "1",
-		Repeated: true,
-		Typez:    api.TypezString,
-	}
-	field2 := &api.Field{
 		Name:  "labels",
-		ID:    "2",
+		ID:    "1",
 		Map:   true,
 		Typez: api.TypezString,
 	}
 	msg := &api.Message{
-		Name:    "EmptyOrRepeatedOnly",
-		ID:      ".test.EmptyOrRepeatedOnly",
-		Fields:  []*api.Field{field1, field2},
+		Name:    "EmptyOrMapOnly",
+		ID:      ".test.EmptyOrMapOnly",
+		Fields:  []*api.Field{field1},
 		Package: "test",
 	}
 	field1.Parent = msg
-	field2.Parent = msg
 	model := api.NewTestAPI([]*api.Message{msg}, []*api.Enum{}, []*api.Service{})
 	model.PackageName = "test"
 
@@ -220,18 +213,111 @@ func TestGenerateConversions_NoConvertedFields(t *testing.T) {
 	module := &config.SwiftModule{
 		ModulePath: "StorageControlProtos",
 	}
+
 	if err := GenerateConversions(t.Context(), model, outDir, library, module); err != nil {
 		t.Fatal(err)
 	}
 
-	b, err := os.ReadFile(filepath.Join(outDir, "EmptyOrRepeatedOnly+Convert.swift"))
+	b, err := os.ReadFile(filepath.Join(outDir, "EmptyOrMapOnly+Convert.swift"))
 	if err != nil {
 		t.Fatal(err)
 	}
 	gotContent := string(b)
+
 	got := extractBlock(t, gotContent, "  internal func toProto() throws -> ProtoType {", "\n  }")
 	wantToProto := `  internal func toProto() throws -> ProtoType {
     let proto = ProtoType()
+    return proto
+  }`
+	if diff := cmp.Diff(wantToProto, got); diff != "" {
+		t.Errorf("toProto() mismatch (-want +got):\n%s", diff)
+	}
+}
+
+func TestGenerateConversions_RepeatedFields(t *testing.T) {
+	outDir := t.TempDir()
+
+	enumVal := &api.EnumValue{Name: "UNSPECIFIED", Number: 0}
+	enum := &api.Enum{
+		Name:               "Category",
+		ID:                 ".test.Category",
+		Package:            "test",
+		Values:             []*api.EnumValue{enumVal},
+		UniqueNumberValues: []*api.EnumValue{enumVal},
+	}
+	enumVal.Parent = enum
+
+	item := &api.Message{
+		Name:    "Item",
+		Package: "test",
+		ID:      ".test.Item",
+	}
+
+	field1 := &api.Field{
+		Name:     "names",
+		ID:       ".test.Container.names",
+		Typez:    api.TypezString,
+		Repeated: true,
+	}
+	field2 := &api.Field{
+		Name:     "items",
+		ID:       ".test.Container.items",
+		Typez:    api.TypezMessage,
+		TypezID:  ".test.Item",
+		Repeated: true,
+	}
+	field3 := &api.Field{
+		Name:     "categories",
+		ID:       ".test.Container.categories",
+		Typez:    api.TypezEnum,
+		TypezID:  ".test.Category",
+		Repeated: true,
+	}
+	container := &api.Message{
+		Name:    "Container",
+		Package: "test",
+		ID:      ".test.Container",
+		Fields:  []*api.Field{field1, field2, field3},
+	}
+	field1.Parent = container
+	field2.Parent = container
+	field3.Parent = container
+
+	model := api.NewTestAPI([]*api.Message{item, container}, []*api.Enum{enum}, []*api.Service{})
+	model.PackageName = "test"
+
+	library := &config.Library{}
+	module := &config.SwiftModule{
+		ModulePath: "TestProtos",
+	}
+
+	if err := GenerateConversions(t.Context(), model, outDir, library, module); err != nil {
+		t.Fatal(err)
+	}
+
+	b, err := os.ReadFile(filepath.Join(outDir, "Container+Convert.swift"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	gotContent := string(b)
+
+	got := extractBlock(t, gotContent, "  internal init(proto: ProtoType) throws {", "\n  }")
+	wantInit := `  internal init(proto: ProtoType) throws {
+    self.init()
+    self.names = proto.names
+    self.items = try proto.items.map { try .init(proto: $0) }
+    self.categories = proto.categories.map { .init(proto: $0) }
+  }`
+	if diff := cmp.Diff(wantInit, got); diff != "" {
+		t.Errorf("init(proto:) mismatch (-want +got):\n%s", diff)
+	}
+
+	got = extractBlock(t, gotContent, "  internal func toProto() throws -> ProtoType {", "\n  }")
+	wantToProto := `  internal func toProto() throws -> ProtoType {
+    var proto = ProtoType()
+    proto.names = self.names
+    proto.items = try self.items.map { try $0.toProto() }
+    proto.categories = try self.categories.map { try $0.toProto() }
     return proto
   }`
 	if diff := cmp.Diff(wantToProto, got); diff != "" {
