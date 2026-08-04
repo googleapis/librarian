@@ -25,21 +25,33 @@ import (
 	"github.com/googleapis/librarian/internal/config"
 )
 
-// Format formats a Java client library using google-java-format.
-func Format(ctx context.Context, library *config.Library) error {
-	files, err := collectJavaFiles(library.Output)
-	if err != nil {
-		return fmt.Errorf("failed to find java files for formatting: %w", err)
+// Format formats Java client libraries using a single google-java-format invocation via an argument file.
+func Format(ctx context.Context, libraries ...*config.Library) error {
+	var allFiles []string
+	for _, lib := range libraries {
+		files, err := collectJavaFiles(lib.Output)
+		if err != nil {
+			return fmt.Errorf("failed to find java files for formatting in %q: %w", lib.Name, err)
+		}
+		allFiles = append(allFiles, files...)
 	}
-	if len(files) == 0 {
+	if len(allFiles) == 0 {
 		return nil
 	}
-	args := append([]string{"--replace"}, files...)
+	tmpFile, err := os.CreateTemp("", "gjf-args-*.txt")
+	if err != nil {
+		return fmt.Errorf("failed to create temp file for format args: %w", err)
+	}
+	defer os.Remove(tmpFile.Name())
+	content := "--replace\n" + strings.Join(allFiles, "\n")
+	if err := os.WriteFile(tmpFile.Name(), []byte(content), 0600); err != nil {
+		return fmt.Errorf("failed to write format args: %w", err)
+	}
 	env, err := getToolsEnv()
 	if err != nil {
 		return err
 	}
-	if err := command.RunWithEnv(ctx, env, "google-java-format", args...); err != nil {
+	if err := command.RunWithEnv(ctx, env, "google-java-format", "@"+tmpFile.Name()); err != nil {
 		return fmt.Errorf("failed to format files: %w", err)
 	}
 	return nil

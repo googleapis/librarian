@@ -245,9 +245,9 @@ func generateLibraries(ctx context.Context, cfg *config.Config, libraries []*con
 			if err := java.Generate(ctx, cfg, library, src); err != nil {
 				return fmt.Errorf("generate library %q (%s): %w", library.Name, cfg.Language, err)
 			}
-			if err := java.Format(ctx, library); err != nil {
-				return fmt.Errorf("format library %q (%s): %w", library.Name, cfg.Language, err)
-			}
+		}
+		if err := java.Format(ctx, libraries...); err != nil {
+			return fmt.Errorf("format java libraries (%s): %w", cfg.Language, err)
 		}
 		return java.PostGenerate(ctx, ".", cfg)
 	case config.LanguageNodejs:
