@@ -307,8 +307,7 @@ func generateLibraries(ctx context.Context, cfg *config.Config, libraries []*con
 		}
 		return g.Wait()
 	case config.LanguageRust:
-		// Generation can be parallelized but formatting cannot because
-		// cargo fmt shares the Cargo.toml workspace file across libraries.
+		// Run the generation in parallel.
 		g, gctx := errgroup.WithContext(ctx)
 		g.SetLimit(runtime.NumCPU())
 		for _, library := range libraries {
@@ -322,10 +321,21 @@ func generateLibraries(ctx context.Context, cfg *config.Config, libraries []*con
 		if err := g.Wait(); err != nil {
 			return err
 		}
+		// Formatting can also happen in parallel, but must be after generation.
+		// During generation files are removed, and formatting reads the
+		// `Cargo.toml` file from dependencies.
+		f, fctx := errgroup.WithContext(ctx)
+		f.SetLimit(runtime.NumCPU())
 		for _, library := range libraries {
-			if err := rust.Format(ctx, library); err != nil {
-				return fmt.Errorf("format library %q (%s): %w", library.Name, cfg.Language, err)
-			}
+			f.Go(func() error {
+				if err := rust.Format(fctx, library); err != nil {
+					return fmt.Errorf("format library %q (%s): %w", library.Name, cfg.Language, err)
+				}
+				return nil
+			})
+		}
+		if err := f.Wait(); err != nil {
+			return err
 		}
 		return rust.UpdateWorkspace(ctx)
 	case config.LanguageSwift:
