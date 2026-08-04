@@ -14,11 +14,62 @@
 
 package ruby
 
-import "github.com/googleapis/librarian/internal/config"
+import (
+	"errors"
+	"fmt"
+	"path/filepath"
+	"strings"
+
+	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/serviceconfig"
+)
 
 const defaultVersion = "0.0.1"
 
-func Add(cfg *config.Config, lib *config.Library) *config.Library {
+var (
+	errRequiresOneAPI = errors.New("must provide exactly one API path for a Ruby library")
+	errNoVersionedAPI    = errors.New("no versioned API found")
+
+)
+
+func Add(cfg *config.Config, lib *config.Library) (*config.Library, error) {
 	lib.Version = defaultVersion
-	return lib
+	newLib, err := addWrapper(cfg, lib)
+	if err != nil {
+		return nil, err
+	}
+	return newLib, nil
+}
+
+func addWrapper(cfg *config.Config, lib *config.Library) (*config.Library, error) {
+	if len(lib.APIs) != 1 {
+		return nil, fmt.Errorf("ruby libraries must have a single API. %w, got %d", errRequiresOneAPI, len(lib.APIs))
+	}
+	apiPath := lib.APIs[0].Path
+	// No need to add wrapperOf for a versioned client.
+	if serviceconfig.ExtractVersion(apiPath) != "" {
+		return lib, nil
+	}
+	versionedAPI, err := searchVersionedAPI(cfg, apiPath)
+	if err != nil {
+		return nil, err
+	}
+	lib = &config.Library{
+		APIs: []*config.API{{Path: versionedAPI}},
+		Ruby: &config.RubyPackage{
+			WrapperOf: []string{fmt.Sprintf("%s:0.0", filepath.Base(versionedAPI))},
+		},
+	}
+	return lib, nil
+}
+
+func searchVersionedAPI(cfg *config.Config, apiPath string) (string, error) {
+	for _, lib := range cfg.Libraries {
+		for _, api := range lib.APIs {
+			if strings.HasPrefix(api.Path, apiPath+"/v") {
+				return api.Path, nil
+			}
+		}
+	}
+	return "", fmt.Errorf("%w: %q", errNoVersionedAPI, apiPath)
 }

@@ -271,7 +271,11 @@ func addNewLibrary(cfg *config.Config, api *config.API) (string, *config.Config,
 	case config.LanguagePhp:
 		lib = php.Add(lib)
 	case config.LanguageRuby:
-		lib = ruby.Add(cfg, lib)
+		var err error
+		lib, err = ruby.Add(cfg, lib)
+		if err != nil {
+			return "", nil, err
+		}
 	case config.LanguageFake:
 		lib = fakeAdd(lib, defaultVersion)
 	}
