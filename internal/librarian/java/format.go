@@ -25,33 +25,22 @@ import (
 	"github.com/googleapis/librarian/internal/config"
 )
 
-// FormatLibraries formats multiple Java client libraries using google-java-format in a single batch.
-func FormatLibraries(ctx context.Context, libraries []*config.Library) error {
-	var allFiles []string
-	for _, library := range libraries {
-		files, err := collectJavaFiles(library.Output)
-		if err != nil {
-			return fmt.Errorf("failed to find java files for formatting in %q: %w", library.Output, err)
-		}
-		allFiles = append(allFiles, files...)
+// Format formats a Java client library using google-java-format.
+func Format(ctx context.Context, library *config.Library) error {
+	files, err := collectJavaFiles(library.Output)
+	if err != nil {
+		return fmt.Errorf("failed to find java files for formatting: %w", err)
 	}
-	if len(allFiles) == 0 {
+	if len(files) == 0 {
 		return nil
 	}
-	args := append([]string{"--replace"}, allFiles...)
+	args := append([]string{"--replace"}, files...)
 	env, err := getToolsEnv()
 	if err != nil {
 		return err
 	}
-	// Run google-java-format twice.
-	// The first run removes unused imports but might leave extra empty lines.
-	// The second run collapses those empty lines.
-	// TODO(https://github.com/google/google-java-format/issues/1436): Remove second pass once fixed upstream.
 	if err := command.RunWithEnv(ctx, env, "google-java-format", args...); err != nil {
-		return fmt.Errorf("failed to format files (pass 1): %w", err)
-	}
-	if err := command.RunWithEnv(ctx, env, "google-java-format", args...); err != nil {
-		return fmt.Errorf("failed to format files (pass 2): %w", err)
+		return fmt.Errorf("failed to format files: %w", err)
 	}
 	return nil
 }

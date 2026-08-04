@@ -15,7 +15,6 @@
 package java
 
 import (
-	"bytes"
 	"os"
 	"path/filepath"
 	"sort"
@@ -74,8 +73,8 @@ func TestFormat(t *testing.T) {
 			t.Parallel()
 			tmpDir := t.TempDir()
 			test.setup(t, tmpDir)
-			if err := FormatLibraries(t.Context(), []*config.Library{{Output: tmpDir}}); err != nil {
-				t.Errorf("FormatLibraries() error = %v, want nil", err)
+			if err := Format(t.Context(), &config.Library{Output: tmpDir}); err != nil {
+				t.Errorf("Format() error = %v, want nil", err)
 			}
 		})
 	}
@@ -87,9 +86,9 @@ func TestFormat_LookPathError(t *testing.T) {
 		t.Fatal(err)
 	}
 	t.Setenv("PATH", "")
-	err := FormatLibraries(t.Context(), []*config.Library{{Output: tmpDir}})
+	err := Format(t.Context(), &config.Library{Output: tmpDir})
 	if err == nil {
-		t.Fatal("expected error, got nil")
+		t.Fatal(err)
 	}
 }
 
@@ -127,48 +126,5 @@ func TestCollectJavaFiles(t *testing.T) {
 	sort.Strings(want)
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
-	}
-}
-
-func TestFormatLibraries_MultipleLibraries(t *testing.T) {
-	testhelper.RequireCommand(t, "google-java-format")
-	t.Parallel()
-	tmpDir1 := t.TempDir()
-	tmpDir2 := t.TempDir()
-	// Create unformatted files in both directories.
-	// They have extra blank lines which should be collapsed.
-	content1 := []byte("package test;\n\n\npublic class One {}")
-	content2 := []byte("package test;\n\n\npublic class Two {}")
-	file1 := filepath.Join(tmpDir1, "One.java")
-	file2 := filepath.Join(tmpDir2, "Two.java")
-	if err := os.WriteFile(file1, content1, 0o644); err != nil {
-		t.Fatal(err)
-	}
-	if err := os.WriteFile(file2, content2, 0o644); err != nil {
-		t.Fatal(err)
-	}
-	libraries := []*config.Library{
-		{Output: tmpDir1},
-		{Output: tmpDir2},
-	}
-	if err := FormatLibraries(t.Context(), libraries); err != nil {
-		t.Fatalf("FormatLibraries() error = %v, want nil", err)
-	}
-	// Verify both files were formatted (empty lines collapsed).
-	wantContent1 := []byte("package test;\n\npublic class One {}\n")
-	wantContent2 := []byte("package test;\n\npublic class Two {}\n")
-	gotContent1, err := os.ReadFile(file1)
-	if err != nil {
-		t.Fatal(err)
-	}
-	gotContent2, err := os.ReadFile(file2)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if !bytes.Equal(gotContent1, wantContent1) {
-		t.Errorf("file1 content mismatch\ngot:  %q\nwant: %q", gotContent1, wantContent1)
-	}
-	if !bytes.Equal(gotContent2, wantContent2) {
-		t.Errorf("file2 content mismatch\ngot:  %q\nwant: %q", gotContent2, wantContent2)
 	}
 }
