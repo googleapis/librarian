@@ -27,6 +27,7 @@ import (
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/librarian/golang"
 	"github.com/googleapis/librarian/internal/librarian/python"
+	"github.com/googleapis/librarian/internal/librarian/ruby"
 )
 
 const (
@@ -127,7 +128,9 @@ func syncToReleasePlease(dir string, cfg *config.Config, name string) error {
 		// component value in package.
 		component = ""
 	}
-
+	if cfg.Language == config.LanguageRuby {
+		manifest = ruby.AddManifest(manifest, pkgPath)
+	}
 	if err := syncPackageToReleasePlease(manifest, packages, pkgPath, lib.Version, component, extraFiles); err != nil {
 		return err
 	}
