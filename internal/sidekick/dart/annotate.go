@@ -60,6 +60,9 @@ type modelAnnotations struct {
 	Parent *api.API
 	// The Dart package name (e.g. google_cloud_secretmanager).
 	PackageName string
+	// The package name as a valid prefix for an Agent skill name.
+	// See https://agentskills.io/specification
+	PackageSkillName string
 	// The version of the generated package.
 	PackageVersion string
 	// Name of the API in snake_format (e.g. secretmanager).
@@ -501,6 +504,7 @@ func (annotate *annotateModel) annotateModel(options map[string]string) error {
 		ExampleMethodReturnsValue: exampleMethodReturnsValue,
 		Parent:                    model,
 		PackageName:               pkgName,
+		PackageSkillName:          strings.ReplaceAll(pkgName, "_", "-"),
 		PackageVersion:            packageVersion,
 		MainFileNameWithExtension: mainFileNameWithExtension,
 		CopyrightYear:             generationYear,
