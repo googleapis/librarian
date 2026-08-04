@@ -22,26 +22,7 @@ import (
 )
 
 func TestSearchVersionedAPI(t *testing.T) {
-	cfg := &config.Config{
-		Libraries: []*config.Library{
-			{
-				APIs: []*config.API{
-					{Path: "google/cloud/secretmanager/v1"},
-				},
-			},
-			{
-				APIs: []*config.API{
-					{Path: "google/cloud/dialogflow/cx/v3beta1"},
-				},
-			},
-			{
-				APIs: []*config.API{
-					{Path: "google/cloud/unrelated/v1"},
-					{Path: "google/cloud/asset/v1"},
-				},
-			},
-		},
-	}
+
 	for _, test := range []struct {
 		name    string
 		apiPath string
@@ -64,9 +45,112 @@ func TestSearchVersionedAPI(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
+			cfg := &config.Config{
+				Libraries: []*config.Library{
+					{
+						APIs: []*config.API{
+							{Path: "google/cloud/secretmanager/v1"},
+						},
+					},
+					{
+						APIs: []*config.API{
+							{Path: "google/cloud/dialogflow/cx/v3beta1"},
+						},
+					},
+					{
+						APIs: []*config.API{
+							{Path: "google/cloud/unrelated/v1"},
+							{Path: "google/cloud/asset/v1"},
+						},
+					},
+				},
+			}
 			got, err := searchVersionedAPI(cfg, test.apiPath)
 			if err != nil {
 				t.Fatalf("searchVersionedAPI() error = %v", err)
+			}
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestAddWrapper(t *testing.T) {
+
+	for _, test := range []struct {
+		name string
+		in   *config.Library
+		want *config.Library
+	}{
+		{
+			name: "versioned client untouched",
+			in: &config.Library{
+				Name: "google-cloud-secretmanager-v1",
+				APIs: []*config.API{
+					{Path: "google/cloud/secretmanager/v1"},
+				},
+			},
+			want: &config.Library{
+				Name: "google-cloud-secretmanager-v1",
+				APIs: []*config.API{
+					{Path: "google/cloud/secretmanager/v1"},
+				},
+			},
+		},
+		{
+			name: "wrapper client configured for v1",
+			in: &config.Library{
+				Name: "google-cloud-secretmanager",
+				APIs: []*config.API{
+					{Path: "google/cloud/secretmanager"},
+				},
+			},
+			want: &config.Library{
+				APIs: []*config.API{
+					{Path: "google/cloud/secretmanager/v1"},
+				},
+				Ruby: &config.RubyPackage{
+					WrapperOf: []string{"v1:0.0"},
+				},
+			},
+		},
+		{
+			name: "wrapper client configured for beta",
+			in: &config.Library{
+				Name: "google-cloud-dialogflow-cx",
+				APIs: []*config.API{
+					{Path: "google/cloud/dialogflow/cx"},
+				},
+			},
+			want: &config.Library{
+				APIs: []*config.API{
+					{Path: "google/cloud/dialogflow/cx/v3beta1"},
+				},
+				Ruby: &config.RubyPackage{
+					WrapperOf: []string{"v3beta1:0.0"},
+				},
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			cfg := &config.Config{
+				Libraries: []*config.Library{
+					{
+						APIs: []*config.API{
+							{Path: "google/cloud/secretmanager/v1"},
+						},
+					},
+					{
+						APIs: []*config.API{
+							{Path: "google/cloud/dialogflow/cx/v3beta1"},
+						},
+					},
+				},
+			}
+			got, err := addWrapper(cfg, test.in)
+			if err != nil {
+				t.Fatalf("addWrapper() error = %v", err)
 			}
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
