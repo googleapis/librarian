@@ -49,7 +49,7 @@ func hasReleasePleaseConfigs(dir string, cfg *config.Config) bool {
 // releasePleaseFiles returns the file names for the Release Please manifest file
 // and config file in this order, depending on the SDK language.
 func releasePleaseFiles(cfg *config.Config) (string, string) {
-	// google-cloud-node uses the default Release Please files to add a new library.
+	// google-cloud-node and google-cloud-ruby use the default Release Please files to add a new library.
 	// google-cloud-python uses the "-individual-" files initially for new libraries.
 	// google-cloud-go uses the "-bulk-" files.
 	manifestFile := bulkManifestFile
@@ -58,7 +58,7 @@ func releasePleaseFiles(cfg *config.Config) (string, string) {
 	case config.LanguagePython:
 		manifestFile = individualManifestFile
 		configFile = individualConfigFile
-	case config.LanguageNodejs:
+	case config.LanguageNodejs, config.LanguageRuby:
 		manifestFile = defaultManifestFile
 		configFile = defaultConfigFile
 	}
