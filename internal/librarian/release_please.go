@@ -39,6 +39,12 @@ const (
 	defaultReleasePleaseVersion = "0.0.0"
 )
 
+type extraFile struct {
+	path   string
+	isMap  bool
+	rawMap map[string]any
+}
+
 func hasReleasePleaseConfigs(dir string, cfg *config.Config) bool {
 	manifestFile, configFile := releasePleaseFiles(cfg)
 	_, errM := os.Stat(filepath.Join(dir, manifestFile))
@@ -197,12 +203,6 @@ func syncPackageToReleasePlease(manifest map[string]string, packages map[string]
 		pkgCfg["extra-files"] = merged
 	}
 	return nil
-}
-
-type extraFile struct {
-	path   string
-	isMap  bool
-	rawMap map[string]any
 }
 
 // mergeExtraFiles merges existing and derived extra-files list while removing duplicates.
