@@ -20,6 +20,12 @@ import (
 	"github.com/googleapis/librarian/internal/config"
 )
 
+// DefaultOutput derives an output path from a library name and a default
+// output directory.
+func DefaultOutput(name, defaultOutput string) string {
+	return filepath.Join(defaultOutput, name)
+}
+
 // Fill populates default PHP configuration values for the library.
 func Fill(lib *config.Library) *config.Library {
 	return fillStagingSubdir(lib)
