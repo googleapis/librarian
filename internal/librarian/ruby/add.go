@@ -31,6 +31,7 @@ var (
 	errNoVersionedAPI = errors.New("no versioned API found")
 )
 
+// Add initializes a new Ruby library configuration.
 func Add(cfg *config.Config, lib *config.Library) (*config.Library, error) {
 	lib.Version = defaultVersion
 	newLib, err := addWrapper(cfg, lib)
