@@ -75,6 +75,7 @@ func TestAddWrapper(t *testing.T) {
 				},
 			},
 			want: &config.Library{
+				Name: "google-cloud-secretmanager",
 				APIs: []*config.API{
 					{Path: "google/cloud/secretmanager/v1"},
 				},
@@ -92,6 +93,7 @@ func TestAddWrapper(t *testing.T) {
 				},
 			},
 			want: &config.Library{
+				Name: "google-cloud-dialogflow-cx",
 				APIs: []*config.API{
 					{Path: "google/cloud/dialogflow/cx/v3beta1"},
 				},
