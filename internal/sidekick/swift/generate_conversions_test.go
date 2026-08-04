@@ -95,13 +95,94 @@ func TestGenerateConversions_Message(t *testing.T) {
 
 	// Check conversion logic
 	got := extractBlock(t, gotContent, "  internal init(proto: ProtoType) throws {", "\n  }")
-	wantInit := "  internal init(proto: ProtoType) throws {\n    self.init()\n    self.name = proto.name\n    self.metageneration = proto.metageneration\n    self.self_ = proto.hasSelf_p ? proto.self_p : nil\n  }"
+	wantInit := `  internal init(proto: ProtoType) throws {
+    self.init()
+    self.name = proto.name
+    self.metageneration = proto.metageneration
+    self.self_ = proto.hasSelf_p ? proto.self_p : nil
+  }`
 	if diff := cmp.Diff(wantInit, got); diff != "" {
 		t.Errorf("init(proto:) mismatch (-want +got):\n%s", diff)
 	}
 
 	got = extractBlock(t, gotContent, "  internal func toProto() throws -> ProtoType {", "\n  }")
-	wantToProto := "  internal func toProto() throws -> ProtoType {\n    var proto = ProtoType()\n    proto.name = self.name\n    proto.metageneration = self.metageneration\n    if let self_ = self.self_ { proto.self_p = self_ }\n    return proto\n  }"
+	wantToProto := `  internal func toProto() throws -> ProtoType {
+    var proto = ProtoType()
+    proto.name = self.name
+    proto.metageneration = self.metageneration
+    if let self_ = self.self_ { proto.self_p = self_ }
+    return proto
+  }`
+	if diff := cmp.Diff(wantToProto, got); diff != "" {
+		t.Errorf("toProto() mismatch (-want +got):\n%s", diff)
+	}
+}
+
+func TestGenerateConversions_RecursiveMessage(t *testing.T) {
+	outDir := t.TempDir()
+
+	field1 := &api.Field{
+		Name:          "child_node",
+		ID:            ".test.Node.child_node",
+		Typez:         api.TypezMessage,
+		TypezID:       ".test.Node",
+		Documentation: "Non-optional recursive child.",
+		Optional:      false,
+		Recursive:     true,
+	}
+	field2 := &api.Field{
+		Name:          "next_node",
+		ID:            ".test.Node.next_node",
+		Typez:         api.TypezMessage,
+		TypezID:       ".test.Node",
+		Documentation: "Optional recursive child.",
+		Optional:      true,
+		Recursive:     true,
+	}
+	node := &api.Message{
+		Name:    "Node",
+		Package: "test",
+		ID:      ".test.Node",
+		Fields:  []*api.Field{field1, field2},
+	}
+	field1.Parent = node
+	field2.Parent = node
+
+	model := api.NewTestAPI([]*api.Message{node}, []*api.Enum{}, []*api.Service{})
+	model.PackageName = "test"
+
+	library := &config.Library{}
+	module := &config.SwiftModule{
+		ModulePath: "TestProtos",
+	}
+
+	if err := GenerateConversions(t.Context(), model, outDir, library, module); err != nil {
+		t.Fatal(err)
+	}
+
+	b, err := os.ReadFile(filepath.Join(outDir, "Node+Convert.swift"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	gotContent := string(b)
+
+	got := extractBlock(t, gotContent, "  internal init(proto: ProtoType) throws {", "\n  }")
+	wantInit := `  internal init(proto: ProtoType) throws {
+    self.init()
+    self.childNode = proto.hasChildNode ? GoogleCloudWkt.Recursive(value: try .init(proto: proto.childNode)) : nil
+    self.nextNode = proto.hasNextNode ? GoogleCloudWkt.Recursive(value: try .init(proto: proto.nextNode)) : nil
+  }`
+	if diff := cmp.Diff(wantInit, got); diff != "" {
+		t.Errorf("init(proto:) mismatch (-want +got):\n%s", diff)
+	}
+
+	got = extractBlock(t, gotContent, "  internal func toProto() throws -> ProtoType {", "\n  }")
+	wantToProto := `  internal func toProto() throws -> ProtoType {
+    var proto = ProtoType()
+    if let childNode = self.childNode { proto.childNode = try childNode.value.toProto() }
+    if let nextNode = self.nextNode { proto.nextNode = try nextNode.value.toProto() }
+    return proto
+  }`
 	if diff := cmp.Diff(wantToProto, got); diff != "" {
 		t.Errorf("toProto() mismatch (-want +got):\n%s", diff)
 	}

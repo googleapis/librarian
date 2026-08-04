@@ -67,6 +67,13 @@ version = "1.0.0"
 
 	// testRemoteURL is the URL set for the [TestRemote] in the test repository.
 	testRemoteURL = "https://example.com/git.git"
+
+	// initialClientsSwiftContents defines the initial content for a Clients.swift file.
+	initialClientsSwiftContents = `import GoogleCloudGax
+
+public enum Clients {
+  static let clientHeader: Swift.String = GoogleCloudGax._gapicApiClientHeader(packageVersion: "1.0.0")
+}`
 )
 
 // SetupForVersionBump sets up a git repository for testing version bumping scenarios.
@@ -79,7 +86,7 @@ func SetupForVersionBump(t *testing.T, wantTag string) {
 	t.Chdir(cloneDir)
 	RunGit(t, "clone", remoteDir, ".")
 	RunGit(t, "remote", "rename", "origin", config.RemoteUpstream)
-	configNewGitRepository(t)
+	ConfigNewGitRepository(t)
 }
 
 // ContinueInNewGitRepository initializes a new git repository in a temporary directory
@@ -89,10 +96,11 @@ func ContinueInNewGitRepository(t *testing.T, tmpDir string) {
 	RequireCommand(t, command.Git)
 	t.Chdir(tmpDir)
 	RunGit(t, "init", "-b", config.BranchMain)
-	configNewGitRepository(t)
+	ConfigNewGitRepository(t)
 }
 
-func configNewGitRepository(t *testing.T) {
+// ConfigNewGitRepository configures a test repository so we can commit changes.
+func ConfigNewGitRepository(t *testing.T) {
 	RunGit(t, "config", "user.email", "test@test-only.com")
 	RunGit(t, "config", "user.name", "Test Account")
 	RunGit(t, "config", "gc.auto", "0")
@@ -111,6 +119,18 @@ func initRepositoryContents(t *testing.T) {
 	AddCrate(t, sample.Lib2Output, sample.Lib2Name)
 	AddCrate(t, path.Join(sample.Lib2Output, "echo-server"), "echo-server")
 	addGeneratedCrate(t, path.Join("src", "generated", "cloud", "secretmanager", "v1"), "google-cloud-secretmanager-v1")
+	RunGit(t, "add", ".")
+	RunGit(t, "commit", "-m", "initial version")
+}
+
+func initSwiftRepositoryContents(t *testing.T) {
+	t.Helper()
+	RequireCommand(t, command.Git)
+	if err := os.WriteFile(ReadmeFile, []byte(ReadmeContents), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	AddSwiftPackage(t, sample.Lib1Output, sample.Lib1Name)
+	AddSwiftPackage(t, sample.Lib2Output, sample.Lib2Name)
 	RunGit(t, "add", ".")
 	RunGit(t, "commit", "-m", "initial version")
 }
@@ -139,12 +159,43 @@ func AddCrate(t *testing.T, location, name string) {
 	}
 }
 
+// AddSwiftPackage creates a new Swift package at the specified location with the given name.
+func AddSwiftPackage(t *testing.T, location, name string) {
+	t.Helper()
+	_ = os.MkdirAll(path.Join(location, "Sources", name), 0o755)
+	contents := fmt.Appendf(nil, "// Swift package %s\n", name)
+	if err := os.WriteFile(path.Join(location, "Package.swift"), contents, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(path.Join(location, "Sources", name, "Clients.swift"), []byte(initialClientsSwiftContents), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(path.Join(location, ".repo-metadata.json"), []byte("{}"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+}
+
 // SetupRepo creates a git repository for testing with some initial content. It
 // returns the path of the remote repository.
 func SetupRepo(t *testing.T) string {
 	remoteDir := t.TempDir()
 	ContinueInNewGitRepository(t, remoteDir)
 	initRepositoryContents(t)
+	return remoteDir
+}
+
+// SetupSwiftRepo creates a git repository configured to test the `bump` command.
+//
+// In the tests we need a repository with:
+// - An upstream remote
+// - A previous tag
+// - The minimal contents to simulate some package version bumps
+//
+// Returns the path of the remote repository.
+func SetupSwiftRepo(t *testing.T) string {
+	remoteDir := t.TempDir()
+	ContinueInNewGitRepository(t, remoteDir)
+	initSwiftRepositoryContents(t)
 	return remoteDir
 }
 
@@ -175,8 +226,11 @@ type SetupOptions struct {
 // configured [SetupOptions].
 func Setup(t *testing.T, opts SetupOptions) {
 	t.Helper()
-	dir := SetupRepo(t)
-	opts.remoteDir = dir
+	if opts.Config != nil && opts.Config.Language == config.LanguageSwift {
+		opts.remoteDir = SetupSwiftRepo(t)
+	} else {
+		opts.remoteDir = SetupRepo(t)
+	}
 	setup(t, opts)
 }
 
@@ -259,7 +313,7 @@ func CloneRepositoryBranch(t *testing.T, remoteDir, branch string) {
 	t.Chdir(cloneDir)
 	RunGit(t, "clone", "--branch", branch, remoteDir, ".")
 	RunGit(t, "remote", "rename", "origin", config.RemoteUpstream)
-	configNewGitRepository(t)
+	ConfigNewGitRepository(t)
 }
 
 // RunGit runs git with the specified arguments, aborting the test on any error.
