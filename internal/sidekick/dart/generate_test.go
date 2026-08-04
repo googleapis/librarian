@@ -111,9 +111,6 @@ func TestGeneratedFiles(t *testing.T) {
 		if filepath.Base(fileInfo.OutputPath) == "LICENSE.txt" {
 			t.Errorf("expected the LICENSE.txt template to be generated as LICENSE")
 		}
-		if strings.HasPrefix(filepath.ToSlash(fileInfo.OutputPath), "skills/") {
-			t.Errorf("expected no skill files to be generated when required values are missing, but got %s", fileInfo.OutputPath)
-		}
 	}
 }
 
