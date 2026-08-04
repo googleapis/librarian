@@ -36,7 +36,7 @@ type messageAnnotations struct {
 	// HasConvertedFields is true if any field in the message emits code in
 	// toProto(), which currently includes only singular, non-oneof fields.
 	// This prevents the Swift compiler error "variable 'proto' was never mutated"
-	// for messages containing only repeated or oneof fields by emitting "let"
+	// for messages containing only repeated, map, or oneof fields by emitting "let"
 	// instead of "var" in convert_message.mustache.
 	// This is a temporary workaround until protobuf conversions support repeated,
 	// map, and oneof fields.
@@ -149,7 +149,7 @@ func (c *codec) annotateMessage(message *api.Message, model *modelAnnotations) e
 	}
 	hasConvertedFields := false
 	for _, f := range message.Fields {
-		if !f.IsOneOf && !f.Repeated {
+		if !f.IsOneOf && f.Singular() {
 			hasConvertedFields = true
 			break
 		}

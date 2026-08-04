@@ -197,13 +197,20 @@ func TestGenerateConversions_NoConvertedFields(t *testing.T) {
 		Repeated: true,
 		Typez:    api.TypezString,
 	}
+	field2 := &api.Field{
+		Name:  "labels",
+		ID:    "2",
+		Map:   true,
+		Typez: api.TypezString,
+	}
 	msg := &api.Message{
 		Name:    "EmptyOrRepeatedOnly",
 		ID:      ".test.EmptyOrRepeatedOnly",
-		Fields:  []*api.Field{field1},
+		Fields:  []*api.Field{field1, field2},
 		Package: "test",
 	}
 	field1.Parent = msg
+	field2.Parent = msg
 	model := api.NewTestAPI([]*api.Message{msg}, []*api.Enum{}, []*api.Service{})
 	model.PackageName = "test"
 
