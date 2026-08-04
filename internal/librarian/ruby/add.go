@@ -28,8 +28,7 @@ const defaultVersion = "0.0.1"
 
 var (
 	errRequiresOneAPI = errors.New("must provide exactly one API path for a Ruby library")
-	errNoVersionedAPI    = errors.New("no versioned API found")
-
+	errNoVersionedAPI = errors.New("no versioned API found")
 )
 
 func Add(cfg *config.Config, lib *config.Library) (*config.Library, error) {
