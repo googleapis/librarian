@@ -30,10 +30,10 @@ func TestAddManifest(t *testing.T) {
 		{
 			name:     "add new package to empty manifest",
 			manifest: map[string]string{},
-			pkgName:  "google-cloud-secret_manager",
+			pkgName:  "google-cloud-secret_manager-v1",
 			want: map[string]string{
-				"google-cloud-secret_manager":        "0.0.1",
-				"google-cloud-secret_manager+FILLER": "0.0.0",
+				"google-cloud-secret_manager-v1":        "0.0.1",
+				"google-cloud-secret_manager-v1+FILLER": "0.0.0",
 			},
 		},
 		{
