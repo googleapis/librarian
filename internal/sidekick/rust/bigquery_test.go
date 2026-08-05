@@ -229,3 +229,85 @@ func TestBigQuerySyntheticMessages(t *testing.T) {
 		t.Errorf("expected FieldName to remain 'foo', got %q", reqfAnn.FieldName)
 	}
 }
+
+func TestBigQueryQueryMetadata(t *testing.T) {
+	c, err := newCodec("protobuf", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	newTestField := func(name, id string) *api.Field {
+		return &api.Field{
+			ID:    id,
+			Name:  name,
+			Codec: &fieldAnnotations{},
+		}
+	}
+	newTestMsg := func(msgName string, fields []*api.Field) *api.Message {
+		return &api.Message{
+			ID:      ".google.cloud.bigquery.v2." + msgName,
+			Name:    msgName,
+			Package: "google.cloud.bigquery.v2",
+			Fields:  fields,
+		}
+	}
+
+	t.Run("QueryMetadata", func(t *testing.T) {
+		gqrMsg := newTestMsg("GetQueryResultsResponse", []*api.Field{
+			newTestField("job_reference", ".google.cloud.bigquery.v2.GetQueryResultsResponse.job_reference"),
+			newTestField("shared_field", ".google.cloud.bigquery.v2.GetQueryResultsResponse.shared_field"),
+			newTestField("skip_by_name", ".google.cloud.bigquery.v2.GetQueryResultsResponse.skip_by_name"),
+			newTestField("skip_by_id", ".google.cloud.bigquery.v2.GetQueryResultsResponse.skip_by_id"),
+		})
+		qrMsg := newTestMsg("QueryResponse", []*api.Field{
+			newTestField("query_id", ".google.cloud.bigquery.v2.QueryResponse.query_id"),
+			newTestField("shared_field", ".google.cloud.bigquery.v2.QueryResponse.shared_field"),
+		})
+
+		model := api.NewTestAPI([]*api.Message{gqrMsg, qrMsg}, []*api.Enum{}, []*api.Service{})
+		skipped := []string{"skip_by_name", ".google.cloud.bigquery.v2.GetQueryResultsResponse.skip_by_id"}
+
+		qm, err := newQueryMetadata(c, model, skipped)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+
+		var names []string
+		for _, fg := range qm.fieldGroupList() {
+			names = append(names, fg.name)
+		}
+		wantNames := []string{"job_reference", "query_id", "shared_field"}
+		if diff := cmp.Diff(wantNames, names); diff != "" {
+			t.Errorf("field names mismatch (-want +got):\n%s", diff)
+		}
+	})
+
+	t.Run("QueryCreationMetadata", func(t *testing.T) {
+		jobMsg := newTestMsg("Job", []*api.Field{
+			newTestField("job_ref", ".google.cloud.bigquery.v2.Job.job_ref"),
+			newTestField("common_field", ".google.cloud.bigquery.v2.Job.common_field"),
+			newTestField("ignored_field", ".google.cloud.bigquery.v2.Job.ignored_field"),
+		})
+		qrMsg := newTestMsg("QueryResponse", []*api.Field{
+			newTestField("kind", ".google.cloud.bigquery.v2.QueryResponse.kind"),
+			newTestField("common_field", ".google.cloud.bigquery.v2.QueryResponse.common_field"),
+		})
+
+		model := api.NewTestAPI([]*api.Message{jobMsg, qrMsg}, []*api.Enum{}, []*api.Service{})
+		skipped := []string{"ignored_field"}
+
+		qcm, err := newQueryCreationMetadata(c, model, skipped)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+
+		var names []string
+		for _, fg := range qcm.fieldGroupList() {
+			names = append(names, fg.name)
+		}
+		wantNames := []string{"common_field", "job_ref", "kind"}
+		if diff := cmp.Diff(wantNames, names); diff != "" {
+			t.Errorf("field names mismatch (-want +got):\n%s", diff)
+		}
+	})
+}
