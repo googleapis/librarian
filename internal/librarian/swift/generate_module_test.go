@@ -308,3 +308,40 @@ func TestGenerateModule_NoProtos(t *testing.T) {
 		t.Errorf("got error %q, want it to contain 'no proto files found in'", err.Error())
 	}
 }
+
+func TestModuleToModelConfig_SkippedIds(t *testing.T) {
+	src := &sources.Sources{}
+
+	t.Run("module level skipped_ids", func(t *testing.T) {
+		library := &config.Library{
+			Swift: &config.SwiftPackage{
+				SkippedIds: []string{".google.type.Color"},
+			},
+		}
+		module := &config.SwiftModule{
+			APIPath:    "google/type",
+			SkippedIds: []string{".google.type.Money"},
+		}
+		modelCfg := moduleToModelConfig(library, module, src)
+		expected := []string{".google.type.Money"}
+		if diff := cmp.Diff(expected, modelCfg.Override.SkippedIDs); diff != "" {
+			t.Errorf("moduleToModelConfig() mismatch (-want +got):\n%s", diff)
+		}
+	})
+
+	t.Run("library level fallback skipped_ids", func(t *testing.T) {
+		library := &config.Library{
+			Swift: &config.SwiftPackage{
+				SkippedIds: []string{".google.type.Color"},
+			},
+		}
+		module := &config.SwiftModule{
+			APIPath: "google/type",
+		}
+		modelCfg := moduleToModelConfig(library, module, src)
+		expected := []string{".google.type.Color"}
+		if diff := cmp.Diff(expected, modelCfg.Override.SkippedIDs); diff != "" {
+			t.Errorf("moduleToModelConfig() mismatch (-want +got):\n%s", diff)
+		}
+	})
+}
