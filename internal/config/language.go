@@ -836,6 +836,9 @@ type PHPAPI struct {
 	// Must be configured either globally or per-API.
 	CommonResources *bool `yaml:"common_resources,omitempty"`
 
+	// ProtoPackage overrides the derived proto package for the API.
+	ProtoPackage string `yaml:"proto_package,omitempty"`
+
 	// StagingSubdir is the subdirectory in staging where the generated files should be placed.
 	StagingSubdir string `yaml:"staging_subdir,omitempty"`
 }

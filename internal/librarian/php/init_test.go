@@ -22,6 +22,7 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/googleapis/librarian/internal/config"
 )
 
 func TestNamespace(t *testing.T) {
@@ -164,17 +165,104 @@ func TestComponentName(t *testing.T) {
 func TestNewInitParams(t *testing.T) {
 	t.Parallel()
 	googleapisDir := filepath.Join("..", "..", "testdata", "googleapis")
-	apiPath := "google/cloud/secretmanager/v1"
-	params, err := newInitParams(googleapisDir, apiPath)
-	if err != nil {
-		t.Fatalf("newInitParams failed: %v", err)
+	for _, test := range []struct {
+		name string
+		api  *config.API
+		want *initParams
+	}{
+		{
+			name: "default derived protoPackage",
+			api: &config.API{
+				Path: "google/cloud/secretmanager/v1",
+			},
+			want: &initParams{
+				apiShortName:    "secretmanager",
+				productDocs:     "https://cloud.google.com/secret-manager/docs/overview",
+				productHomepage: "https://cloud.google.com/secret-manager/",
+				protoPackage:    "google.cloud.secretmanager",
+				apiVersion:      "v1",
+			},
+		},
+		{
+			name: "custom protoPackage override",
+			api: &config.API{
+				Path: "google/cloud/secretmanager/v1",
+				PHP: &config.PHPAPI{
+					ProtoPackage: "google.cloud.secrets",
+				},
+			},
+			want: &initParams{
+				apiShortName:    "secretmanager",
+				productDocs:     "https://cloud.google.com/secret-manager/docs/overview",
+				productHomepage: "https://cloud.google.com/secret-manager/",
+				protoPackage:    "google.cloud.secrets",
+				apiVersion:      "v1",
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			params, err := newInitParams(googleapisDir, test.api)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if diff := cmp.Diff(test.want, params, cmp.AllowUnexported(initParams{})); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
 	}
-	want := &initParams{
-		apiShortName:    "secretmanager",
-		productDocs:     "https://cloud.google.com/secret-manager/docs/overview",
-		productHomepage: "https://cloud.google.com/secret-manager/",
-	}
-	if diff := cmp.Diff(want, params, cmp.AllowUnexported(initParams{})); diff != "" {
-		t.Errorf("mismatch (-want +got):\n%s", diff)
+}
+
+func TestProtoPackage(t *testing.T) {
+	for _, test := range []struct {
+		name string
+		api  *config.API
+		want string
+	}{
+		{
+			name: "speech v2",
+			api: &config.API{
+				Path: "google/cloud/speech/v2",
+			},
+			want: "google.cloud.speech",
+		},
+		{
+			name: "privateca v1",
+			api: &config.API{
+				Path: "google/cloud/security/privateca/v1",
+			},
+			want: "google.cloud.security.privateca",
+		},
+		{
+			name: "generativelanguage v1alpha",
+			api: &config.API{
+				Path: "google/ai/generativelanguage/v1alpha",
+			},
+			want: "google.ai.generativelanguage",
+		},
+		{
+			name: "unversioned path",
+			api: &config.API{
+				Path: "google/identity/accesscontextmanager/type",
+			},
+			want: "google.identity.accesscontextmanager.type",
+		},
+		{
+			name: "protoPackage override",
+			api: &config.API{
+				Path: "google/cloud/speech/v2",
+				PHP: &config.PHPAPI{
+					ProtoPackage: "google.cloud.speech.custom",
+				},
+			},
+			want: "google.cloud.speech.custom",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := protoPackage(test.api)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
 	}
 }

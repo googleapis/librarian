@@ -450,6 +450,7 @@ This document describes the schema for the librarian.yaml.
 | :--- | :--- | :--- |
 | `additional_protos` | list of string | Is a list of additional proto files to include in generation. |
 | `common_resources` | bool (optional) | Indicates whether to include common resources in generation. Must be configured either globally or per-API. |
+| `proto_package` | string | Overrides the derived proto package for the API. |
 | `staging_subdir` | string | Is the subdirectory in staging where the generated files should be placed. |
 
 ## PHPDefault Configuration
