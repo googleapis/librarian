@@ -25,7 +25,9 @@ import (
 	"github.com/googleapis/librarian/internal/config"
 )
 
-// Format formats Java client libraries using a single google-java-format invocation via an argument file.
+const maxFilesPerFormatBatch = 2000
+
+// Format formats Java client libraries using google-java-format in batches via argument files.
 func Format(ctx context.Context, libraries ...*config.Library) error {
 	var allFiles []string
 	for _, lib := range libraries {
@@ -38,27 +40,61 @@ func Format(ctx context.Context, libraries ...*config.Library) error {
 	if len(allFiles) == 0 {
 		return nil
 	}
-	tmpFile, err := os.CreateTemp("", "gjf-args-*.txt")
+	// Format files in chunks of maxFilesPerFormatBatch (2,000 files).
+	// Batching prevents JVM heap exhaustion (GC thrashing) on RAM-constrained CI runners
+	// while reducing 250+ JVM invocations down to ~10.
+	for i := 0; i < len(allFiles); i += maxFilesPerFormatBatch {
+		end := i + maxFilesPerFormatBatch
+		if end > len(allFiles) {
+			end = len(allFiles)
+		}
+		chunk := allFiles[i:end]
+		if err := formatBatch(ctx, chunk); err != nil {
+			return fmt.Errorf("failed to format batch [%d:%d]: %w", i, end, err)
+		}
+	}
+	return nil
+}
+
+// formatBatch formats a single chunk of Java files using an argument file.
+func formatBatch(ctx context.Context, files []string) error {
+	// We write file paths into a temporary argument file (@filename) rather than
+	// passing them as discrete CLI arguments to avoid exceeding the OS command-line
+	// length limit (ARG_MAX) when formatting thousands of files.
+	argFile, err := createArgFile(files)
 	if err != nil {
-		return fmt.Errorf("failed to create temp file for format args: %w", err)
+		return fmt.Errorf("failed to create format argument file: %w", err)
 	}
-	defer os.Remove(tmpFile.Name())
-	content := "--replace\n" + strings.Join(allFiles, "\n")
-	if _, err := tmpFile.WriteString(content); err != nil {
-		tmpFile.Close()
-		return fmt.Errorf("failed to write format args: %w", err)
-	}
-	if err := tmpFile.Close(); err != nil {
-		return fmt.Errorf("failed to close temp file: %w", err)
-	}
+	defer os.Remove(argFile)
 	env, err := getToolsEnv()
 	if err != nil {
 		return err
 	}
-	if err := command.RunWithEnv(ctx, env, "google-java-format", "@"+tmpFile.Name()); err != nil {
+	if err := command.RunWithEnv(ctx, env, "google-java-format", "@"+argFile); err != nil {
 		return fmt.Errorf("failed to format files: %w", err)
 	}
 	return nil
+}
+
+// createArgFile creates a temporary file containing --replace and all Java file paths,
+// flushes and closes the write handle, and returns the absolute file path.
+func createArgFile(files []string) (string, error) {
+	tmpFile, err := os.CreateTemp("", "gjf-args-*.txt")
+	if err != nil {
+		return "", err
+	}
+
+	content := "--replace\n" + strings.Join(files, "\n")
+	if _, err := tmpFile.WriteString(content); err != nil {
+		tmpFile.Close()
+		os.Remove(tmpFile.Name())
+		return "", err
+	}
+	if err := tmpFile.Close(); err != nil {
+		os.Remove(tmpFile.Name())
+		return "", err
+	}
+	return tmpFile.Name(), nil
 }
 
 func collectJavaFiles(root string) ([]string, error) {
