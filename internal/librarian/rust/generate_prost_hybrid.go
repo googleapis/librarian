@@ -115,7 +115,49 @@ func filterModelToStreaming(model *api.API) (*api.API, []string, bool, error) {
 
 	// Discover all transitively reachable messages and enums.
 	visited := make(map[string]bool)
+	var enqueueMsg func(m *api.Message, rpc, methodID, path string)
+	var enqueueEnum func(e *api.Enum, rpc, methodID, path string)
+
+	// enqueueMsg marks a message as used in streaming and enqueues it for field
+	// traversal. It recursively enqueues all parent ancestor messages to ensure:
+	// 1. Parent messages are not placed in unusedTypes (which would cause prost_build's
+	//    prefix-matching extern_path to hijack nested types like Partition.TemporalPartition).
+	// 2. Parent messages are enqueued for field traversal so their sibling field types
+	//    (e.g., Partition.SpatialPartition) are also included in streamingMsgs rather than
+	//    placed in unusedTypes, preventing missing type errors in convert.rs.
+	enqueueMsg = func(m *api.Message, rpc, methodID, path string) {
+		if m == nil {
+			return
+		}
+		if !streamingMsgs[m.ID] {
+			streamingMsgs[m.ID] = true
+			queue = append(queue, streamingTypeItem{
+				id:       m.ID,
+				rpc:      rpc,
+				methodID: methodID,
+				path:     path,
+			})
+		}
+		if m.Parent != nil {
+			enqueueMsg(m.Parent, rpc, methodID, path)
+		}
+	}
+
+	// enqueueEnum marks an enum as used in streaming. If the enum is nested inside a message,
+	// it recursively enqueues parent ancestor messages to ensure they and their sibling field
+	// types are not placed in unusedTypes.
+	enqueueEnum = func(e *api.Enum, rpc, methodID, path string) {
+		if e == nil {
+			return
+		}
+		streamingEnums[e.ID] = true
+		if e.Parent != nil {
+			enqueueMsg(e.Parent, rpc, methodID, path)
+		}
+	}
+
 	hasGoogleRpcStatus := false
+
 	for len(queue) > 0 {
 		item := queue[0]
 		queue = queue[1:]
@@ -145,6 +187,7 @@ func filterModelToStreaming(model *api.API) (*api.API, []string, bool, error) {
 				hasGoogleRpcStatus = true
 				continue
 			}
+			enqueueMsg(msg, item.rpc, item.methodID, item.path)
 			for _, f := range msg.Fields {
 				fieldPath := item.path + "." + f.Name
 				if isAnyType(f.TypezID) {
@@ -159,7 +202,7 @@ func filterModelToStreaming(model *api.API) (*api.API, []string, bool, error) {
 					})
 				}
 				if f.Typez == api.TypezEnum && f.TypezID != "" {
-					streamingEnums[f.TypezID] = true
+					enqueueEnum(model.Enum(f.TypezID), item.rpc, item.methodID, fieldPath)
 				}
 			}
 			for _, o := range msg.OneOfs {
@@ -177,7 +220,7 @@ func filterModelToStreaming(model *api.API) (*api.API, []string, bool, error) {
 						})
 					}
 					if f.Typez == api.TypezEnum && f.TypezID != "" {
-						streamingEnums[f.TypezID] = true
+						enqueueEnum(model.Enum(f.TypezID), item.rpc, item.methodID, fieldPath)
 					}
 				}
 			}
@@ -185,7 +228,7 @@ func filterModelToStreaming(model *api.API) (*api.API, []string, bool, error) {
 
 		enum := model.Enum(item.id)
 		if enum != nil {
-			streamingEnums[enum.ID] = true
+			enqueueEnum(enum, item.rpc, item.methodID, item.path)
 		}
 	}
 
