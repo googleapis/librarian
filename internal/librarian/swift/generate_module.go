@@ -78,6 +78,7 @@ func moduleToModelConfig(library *config.Library, module *config.SwiftModule, sr
 	return &parser.ModelConfig{
 		SpecificationFormat: specFormat,
 		SpecificationSource: module.APIPath,
+		ServiceConfig:       module.ServiceConfig,
 		Source:              sourceConfig,
 	}
 }
