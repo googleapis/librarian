@@ -34,6 +34,9 @@ func TestInstall(t *testing.T) {
 	if err := os.MkdirAll(filepath.Join(repoDir, "dummy"), 0o755); err != nil {
 		t.Fatal(err)
 	}
+	if err := os.WriteFile(filepath.Join(repoDir, "composer.json"), []byte("{}"), 0o644); err != nil {
+		t.Fatal(err)
+	}
 	bin := t.TempDir()
 	testhelper.WriteExecutable(t, filepath.Join(bin, "composer"), "#!/bin/sh\nexit 0\n")
 	t.Setenv("PATH", bin+string(os.PathListSeparator)+os.Getenv("PATH"))
@@ -63,12 +66,7 @@ func TestInstall(t *testing.T) {
 
 func TestInstall_Error(t *testing.T) {
 	binDir := t.TempDir()
-	tools := []*config.ComposerTool{
-		{
-			Name:    "",
-			Version: "1.0.0",
-		},
-	}
+	tools := []*config.ComposerTool{{Name: "", Version: "1.0.0"}}
 	gotErr := Install(t.Context(), tools, "php", binDir)
 	if !errors.Is(gotErr, ErrInvalidTool) {
 		t.Fatalf("Install() error = %v, wantErr = %v", gotErr, ErrInvalidTool)
@@ -194,6 +192,9 @@ func TestInstall_LocalPath(t *testing.T) {
 	t.Setenv("PATH", bin+string(os.PathListSeparator)+os.Getenv("PATH"))
 
 	localDir := t.TempDir()
+	if err := os.WriteFile(filepath.Join(localDir, "composer.json"), []byte("{}"), 0o644); err != nil {
+		t.Fatal(err)
+	}
 	tools := []*config.ComposerTool{
 		{
 			Name:      "gapic-generator-php",

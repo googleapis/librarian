@@ -36,7 +36,9 @@ var (
 )
 
 // Install installs a list of Composer tools into the environment.
+// It also installs dependencies for the PHP project if a local_path tool (like "dev") is provided.
 func Install(ctx context.Context, tools []*config.ComposerTool, phpPath, bin string) error {
+	paths := []string{}
 	if err := verify(tools); err != nil {
 		return err
 	}
@@ -54,8 +56,9 @@ func Install(ctx context.Context, tools []*config.ComposerTool, phpPath, bin str
 		if err != nil {
 			return err
 		}
-		if err := command.RunInDir(ctx, dir, "composer", "install", "--no-interaction", "--prefer-dist"); err != nil {
-			return fmt.Errorf("failed to run composer install: %w", err)
+		paths = append(paths, dir)
+		if tool.Name == "google-cloud-php/dev" {
+			continue // No wrapper needed for the project itself
 		}
 		wrapperName := filepath.Base(tool.Name)
 		if wrapperName == "gapic-generator-php" {
@@ -76,6 +79,14 @@ func Install(ctx context.Context, tools []*config.ComposerTool, phpPath, bin str
 			return fmt.Errorf("tool installation for non-generator composer tools is not yet supported")
 		}
 	}
+	for _, path := range paths {
+		if _, err := os.Stat(filepath.Join(path, "composer.json")); err != nil {
+			return fmt.Errorf("failed to stat composer.json in %s: %w", path, err)
+		}
+		if err := command.RunStreamingInDir(ctx, path, "composer", "install", "--no-interaction", "--prefer-dist"); err != nil {
+			return fmt.Errorf("failed to run composer install: %w", err)
+		}
+	}
 	return nil
 }
 
@@ -86,9 +97,6 @@ func localPath(path string) (string, error) {
 		return "", fmt.Errorf("failed to resolve absolute path for %s: %w", path, err)
 	}
 	if _, err := os.Stat(absPath); err != nil {
-		if errors.Is(err, os.ErrNotExist) {
-			return "", fmt.Errorf("local composer path not found: %w", err)
-		}
 		return "", fmt.Errorf("failed to stat local composer path: %w", err)
 	}
 	return absPath, nil

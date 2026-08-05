@@ -93,6 +93,9 @@ func TestInstall(t *testing.T) {
 				if err := os.MkdirAll(filepath.Join(repoDir, "dummy"), 0o755); err != nil {
 					t.Fatal(err)
 				}
+				if err := os.WriteFile(filepath.Join(repoDir, "composer.json"), []byte("{}"), 0o644); err != nil {
+					t.Fatal(err)
+				}
 
 				bin := t.TempDir()
 				testhelper.WriteExecutable(t, filepath.Join(bin, "composer"), "#!/bin/sh\nexit 0\n")
@@ -236,6 +239,9 @@ func TestInstall_Error(t *testing.T) {
 				t.Setenv("LIBRARIAN_BIN", filepath.Join(cache, "bin"))
 				repoDir := filepath.Join(cache, "github.com/googleapis/gapic-generator-php@1.0.0")
 				if err := os.MkdirAll(filepath.Join(repoDir, "dummy"), 0o755); err != nil {
+					t.Fatal(err)
+				}
+				if err := os.WriteFile(filepath.Join(repoDir, "composer.json"), []byte("{}"), 0o644); err != nil {
 					t.Fatal(err)
 				}
 				t.Setenv("PATH", t.TempDir())
