@@ -185,6 +185,9 @@ func buildGAPICOpts(api *config.API, library *config.Library, googleapisDir stri
 		if api.Ruby.RubyCloudOpts.MigrationVersion != "" {
 			opts = append(opts, "ruby-cloud-migration-version="+api.Ruby.RubyCloudOpts.MigrationVersion)
 		}
+		if api.Ruby.RubyCloudOpts.ServiceOverride != "" {
+			opts = append(opts, "ruby-cloud-service-override="+api.Ruby.RubyCloudOpts.ServiceOverride)
+		}
 	}
 	if library.Ruby != nil && len(library.Ruby.WrapperOf) > 0 {
 		// This controls the dependency range declaration in the gemspec file.
