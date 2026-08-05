@@ -110,6 +110,9 @@ deep-copy-regex:
 			{
 				Name:    "SecretManager",
 				Version: "2.3.0",
+				PHP: &config.PHPPackage{
+					ComponentName: "SecretManager",
+				},
 				APIs: []*config.API{
 					{
 						Path: "google/cloud/secretmanager/v1",
@@ -266,6 +269,30 @@ api-name: GeoCommonProtos
 					Path: "google/geo/type",
 					PHP: &config.PHPAPI{
 						StagingSubdir: ".",
+					},
+				},
+			},
+		},
+		{
+			name: "api path with proto package override",
+			setupFile: func(dir string) string {
+				content := `
+deep-copy-regex:
+  - source: /google/cloud/translate/(v3)/.*-php/(.*)
+    dest: /owl-bot-staging/Translate/$1/$2
+api-name: Translate
+`
+				path := filepath.Join(dir, ".OwlBot.yaml")
+				if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
+					t.Fatal(err)
+				}
+				return path
+			},
+			want: []*config.API{
+				{
+					Path: "google/cloud/translate/v3",
+					PHP: &config.PHPAPI{
+						ProtoPackage: "google.cloud.translation",
 					},
 				},
 			},
@@ -460,6 +487,9 @@ deep-copy-regex:
 				{
 					Name:    "SecretManager",
 					Version: "2.3.0",
+					PHP: &config.PHPPackage{
+						ComponentName: "SecretManager",
+					},
 					APIs: []*config.API{
 						{
 							Path: "google/cloud/secretmanager/v1",

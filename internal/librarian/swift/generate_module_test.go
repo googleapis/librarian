@@ -190,6 +190,27 @@ func TestModuleToModelConfig(t *testing.T) {
 			},
 		},
 		{
+			name: "with service config",
+			lib: &config.Library{
+				Swift: &config.SwiftPackage{},
+			},
+			module: &config.SwiftModule{
+				APIPath:       "foo",
+				ServiceConfig: "foo/foo_v7.yaml",
+				IncludeList:   []string{"mod_a.proto"},
+			},
+			want: &parser.ModelConfig{
+				SpecificationFormat: config.SpecProtobuf,
+				SpecificationSource: "foo",
+				ServiceConfig:       "foo/foo_v7.yaml",
+				Source: &sources.SourceConfig{
+					Sources:     &sources.Sources{},
+					ActiveRoots: []string{"googleapis"},
+					IncludeList: []string{"mod_a.proto"},
+				},
+			},
+		},
+		{
 			name:   "nil swift",
 			lib:    &config.Library{},
 			module: &config.SwiftModule{APIPath: "foo"},

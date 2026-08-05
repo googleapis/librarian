@@ -48,9 +48,9 @@ func TestClean(t *testing.T) {
 		},
 		{
 			name:      "removes generated root files except keep list",
-			files:     []string{"CHANGELOG.md", ".repo-metadata.json", "README.md", "AUTHENTICATION.md", "lib/foo.rb"},
+			files:     []string{"CHANGELOG.md", ".repo-metadata.json", "README.md", "AUTHENTICATION.md", "lib/foo.rb", "Gemfile.lock"},
 			keep:      []string{"README.md"},
-			wantFiles: []string{"CHANGELOG.md", ".repo-metadata.json", "README.md"},
+			wantFiles: []string{"CHANGELOG.md", ".repo-metadata.json", "README.md", "Gemfile.lock"},
 		},
 		{
 			name:      "keep is nil",

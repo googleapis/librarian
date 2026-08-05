@@ -40,7 +40,6 @@ var (
 	generatedRootFiles = []string{
 		"AUTHENTICATION.md",
 		"Gemfile",
-		"Gemfile.lock",
 		"LICENSE",
 		"LICENSE.md",
 		"README.md",
