@@ -41,17 +41,17 @@ type initParams struct {
 	apiVersion      string
 }
 
-func newInitParams(googleapisDir, apiPath string) (*initParams, error) {
-	api, err := serviceconfig.Find(googleapisDir, apiPath, config.LanguagePhp)
+func newInitParams(googleapisDir string, api *config.API) (*initParams, error) {
+	svcAPI, err := serviceconfig.Find(googleapisDir, api.Path, config.LanguagePhp)
 	if err != nil {
 		return nil, err
 	}
 	return &initParams{
-		apiShortName:    api.ShortName,
-		productDocs:     api.DocumentationURI,
-		productHomepage: repometadata.ExtractBaseProductURL(api.DocumentationURI),
-		protoPackage:    protoPackage(apiPath),
-		apiVersion:      serviceconfig.ExtractVersion(apiPath),
+		apiShortName:    svcAPI.ShortName,
+		productDocs:     svcAPI.DocumentationURI,
+		productHomepage: repometadata.ExtractBaseProductURL(svcAPI.DocumentationURI),
+		protoPackage:    protoPackage(api),
+		apiVersion:      serviceconfig.ExtractVersion(api.Path),
 	}, nil
 }
 
@@ -123,8 +123,12 @@ func backupNamespace(apiPath string) string {
 	return versionSuffixRe.ReplaceAllString(ns, "")
 }
 
-// protoPackage returns the unversioned proto package from the API path.
-func protoPackage(apiPath string) string {
+// protoPackage returns the unversioned proto package from the API configuration or derived from the path.
+func protoPackage(api *config.API) string {
+	if api.PHP != nil && api.PHP.ProtoPackage != "" {
+		return api.PHP.ProtoPackage
+	}
+	apiPath := api.Path
 	if serviceconfig.ExtractVersion(apiPath) != "" {
 		apiPath = path.Dir(apiPath)
 	}
