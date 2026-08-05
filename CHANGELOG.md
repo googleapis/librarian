@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.33.0](https://github.com/googleapis/librarian/compare/v0.32.0...v0.33.0) (2026-08-05)
+
+
+### Features
+
+* **internal/config:** support php component_name config and migration override ([#7196](https://github.com/googleapis/librarian/issues/7196)) ([48ef7df](https://github.com/googleapis/librarian/commit/48ef7dfbda61414fa44a52db7152133364819ba2)), refs [#7025](https://github.com/googleapis/librarian/issues/7025)
+* **internal/librarian/php:** derive proto package and version in initParams ([#7198](https://github.com/googleapis/librarian/issues/7198)) ([811b4fb](https://github.com/googleapis/librarian/commit/811b4fbc758450a772c3d1d51bdc254b653c15a9))
+* **librarian/swift:** modules with service configs ([#7194](https://github.com/googleapis/librarian/issues/7194)) ([3cacaac](https://github.com/googleapis/librarian/commit/3cacaacd05528a3caaf67eb493cd028d488cdfd3))
+
 ## [0.32.0](https://github.com/googleapis/librarian/compare/v0.31.1...v0.32.0) (2026-08-04)
 
 
