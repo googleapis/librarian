@@ -110,6 +110,9 @@ deep-copy-regex:
 			{
 				Name:    "SecretManager",
 				Version: "2.3.0",
+				PHP: &config.PHPPackage{
+					ComponentName: "SecretManager",
+				},
 				APIs: []*config.API{
 					{
 						Path: "google/cloud/secretmanager/v1",
@@ -460,6 +463,9 @@ deep-copy-regex:
 				{
 					Name:    "SecretManager",
 					Version: "2.3.0",
+					PHP: &config.PHPPackage{
+						ComponentName: "SecretManager",
+					},
 					APIs: []*config.API{
 						{
 							Path: "google/cloud/secretmanager/v1",
