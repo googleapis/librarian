@@ -79,14 +79,14 @@ extension {{Codec.ParameterTypeName}} {
       {{#Fields}}
       case .{{Codec.ProtoFieldName}}(let value):
         {{#IsObject}}
-        self.{{Codec.OneOfPropertyName}} = .{{Codec.Name}}(try .init(proto: value))
+        self.{{Group.Codec.PropertyName}} = .{{Codec.Name}}(try .init(proto: value))
         {{/IsObject}}
         {{#IsEnum}}
-        self.{{Codec.OneOfPropertyName}} = .{{Codec.Name}}(.init(proto: value))
+        self.{{Group.Codec.PropertyName}} = .{{Codec.Name}}(.init(proto: value))
         {{/IsEnum}}
         {{^IsObject}}
         {{^IsEnum}}
-        self.{{Codec.OneOfPropertyName}} = .{{Codec.Name}}(value)
+        self.{{Group.Codec.PropertyName}} = .{{Codec.Name}}(value)
         {{/IsEnum}}
         {{/IsObject}}
       {{/Fields}}
@@ -164,15 +164,15 @@ extension {{Codec.ParameterTypeName}} {
       case .{{Codec.Name}}(let value):
         {{#IsObject}}
         if let value = value {
-          proto.{{Codec.OneOfPropertyName}} = .{{Codec.ProtoFieldName}}(try value.toProto())
+          proto.{{Group.Codec.PropertyName}} = .{{Codec.ProtoFieldName}}(try value.toProto())
         }
         {{/IsObject}}
         {{#IsEnum}}
-        proto.{{Codec.OneOfPropertyName}} = .{{Codec.ProtoFieldName}}(try value.toProto())
+        proto.{{Group.Codec.PropertyName}} = .{{Codec.ProtoFieldName}}(try value.toProto())
         {{/IsEnum}}
         {{^IsObject}}
         {{^IsEnum}}
-        proto.{{Codec.OneOfPropertyName}} = .{{Codec.ProtoFieldName}}(value)
+        proto.{{Group.Codec.PropertyName}} = .{{Codec.ProtoFieldName}}(value)
         {{/IsEnum}}
         {{/IsObject}}
       {{/Fields}}

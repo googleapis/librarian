@@ -379,7 +379,6 @@ func TestAnnotateField_Recursive(t *testing.T) {
 				BaseFieldType:        "Node",
 				Recursive:            false,
 				OneOfChecker:         "alternativesCheckAndSet",
-				OneOfPropertyName:    "alternatives",
 				ProtoFieldName:       "childNode",
 				ProtoFieldNamePascal: "ChildNode",
 				PrimitiveFieldType:   "Node",

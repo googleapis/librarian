@@ -54,9 +54,6 @@ type fieldAnnotations struct {
 	// This is empty for fields that are not part of a oneof group.
 	OneOfChecker string
 
-	// OneOfPropertyName is the Swift property name of the oneof enum containing this field.
-	OneOfPropertyName string
-
 	// Recursive is true if the field is a recursive reference to another message.
 	Recursive bool
 
@@ -203,7 +200,6 @@ func (c *codec) annotateField(field *api.Field, model *modelAnnotations) (*field
 	if field.IsOneOf && field.Group != nil {
 		if oneofAnn, ok := field.Group.Codec.(*oneOfAnnotations); ok {
 			annotations.OneOfChecker = oneofAnn.Checker
-			annotations.OneOfPropertyName = oneofAnn.PropertyName
 		}
 	}
 	if c.UrlSafeForBytes {

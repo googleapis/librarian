@@ -418,4 +418,3 @@ func TestGenerateConversions_OneOf(t *testing.T) {
 		t.Errorf("toProto() mismatch (-want +got):\n%s", diff)
 	}
 }
-
