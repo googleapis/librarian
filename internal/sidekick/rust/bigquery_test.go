@@ -73,12 +73,13 @@ func TestBigQueryFiltering(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	newTestField := func(name string, outputOnly bool) *api.Field {
+	newTestField := func(name, id string, outputOnly bool) *api.Field {
 		b := []api.FieldBehavior{}
 		if outputOnly {
 			b = append(b, api.FieldBehaviorOutputOnly)
 		}
 		return &api.Field{
+			ID:       id,
 			Name:     name,
 			Behavior: b,
 			Codec:    &fieldAnnotations{},
@@ -93,12 +94,22 @@ func TestBigQueryFiltering(t *testing.T) {
 		}
 	}
 
-	qrMsg := newTestMsg("QueryRequest", []*api.Field{newTestField("output_only", true), newTestField("foo", false)})
-	jcqMsg := newTestMsg("JobConfigurationQuery", []*api.Field{newTestField("output_only", true), newTestField("foo", false)})
-	jcMsg := newTestMsg("JobConfiguration", []*api.Field{newTestField("output_only", true), newTestField("skip", false)})
+	qrMsg := newTestMsg("QueryRequest", []*api.Field{
+		newTestField("output_only", ".google.cloud.bigquery.v2.QueryRequest.output_only", true),
+		newTestField("foo", ".google.cloud.bigquery.v2.QueryRequest.foo", false),
+	})
+	jcqMsg := newTestMsg("JobConfigurationQuery", []*api.Field{
+		newTestField("output_only", ".google.cloud.bigquery.v2.JobConfigurationQuery.output_only", true),
+		newTestField("foo", ".google.cloud.bigquery.v2.JobConfigurationQuery.foo", false),
+		newTestField("skip", ".google.cloud.bigquery.v2.JobConfigurationQuery.skip", false),
+	})
+	jcMsg := newTestMsg("JobConfiguration", []*api.Field{
+		newTestField("output_only", ".google.cloud.bigquery.v2.JobConfiguration.output_only", true),
+		newTestField("skip", ".google.cloud.bigquery.v2.JobConfiguration.skip", false),
+	})
 
 	model := api.NewTestAPI([]*api.Message{qrMsg, jcqMsg, jcMsg}, []*api.Enum{}, []*api.Service{})
-	builder, err := newRunQuery(c, model, []string{"skip"})
+	builder, err := newRunQuery(c, model, []string{"skip", ".google.cloud.bigquery.v2.JobConfigurationQuery.skip"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -108,7 +119,9 @@ func TestBigQueryFiltering(t *testing.T) {
 		fieldNames = append(fieldNames, f.FieldName())
 	}
 
-	// "output_only" and "skip" must be skipped; "foo" must be present.
+	// "output_only", "skip" from JobConfiguration (by name) and "skip" from
+	// JobConfigurationQuery (by ID) must be filtered out.
+	// "foo" must be present.
 	want := []string{"foo"}
 	if diff := cmp.Diff(want, fieldNames); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)

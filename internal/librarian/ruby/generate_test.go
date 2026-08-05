@@ -76,7 +76,6 @@ func TestBuildGAPICOpts(t *testing.T) {
 				"ruby-cloud-description=Compute Engine is an infrastructure as a service (IaaS) product that offers self-managed virtual machine (VM) instances and bare metal instances.",
 				"ruby-cloud-summary=Compute Engine is an infrastructure as a service (IaaS) product that offers self-managed virtual machine (VM) instances and bare metal instances.",
 				"ruby-cloud-generate-transports=rest",
-				"ruby-cloud-rest-numeric-enums=true",
 			},
 		},
 		{

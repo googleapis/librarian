@@ -18,15 +18,42 @@ import (
 	"bufio"
 	"io/fs"
 	"os"
+	"path"
 	"path/filepath"
 	"regexp"
 	"strings"
+
+	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/repometadata"
+	"github.com/googleapis/librarian/internal/serviceconfig"
 )
 
 var (
 	namespaceRe     = regexp.MustCompile(`php_namespace\)?\s*=\s*"([^"]+)"`)
 	versionSuffixRe = regexp.MustCompile(`\\V\d+.*$`)
 )
+
+type initParams struct {
+	apiShortName    string
+	productDocs     string
+	productHomepage string
+	protoPackage    string
+	apiVersion      string
+}
+
+func newInitParams(googleapisDir string, api *config.API) (*initParams, error) {
+	svcAPI, err := serviceconfig.Find(googleapisDir, api.Path, config.LanguagePhp)
+	if err != nil {
+		return nil, err
+	}
+	return &initParams{
+		apiShortName:    svcAPI.ShortName,
+		productDocs:     svcAPI.DocumentationURI,
+		productHomepage: repometadata.ExtractBaseProductURL(svcAPI.DocumentationURI),
+		protoPackage:    protoPackage(api),
+		apiVersion:      serviceconfig.ExtractVersion(api.Path),
+	}, nil
+}
 
 // namespace reads the php_namespace option from the first .proto file in the API directory.
 // If the option is not found, it generates a fallback namespace from the API path.
@@ -94,4 +121,16 @@ func backupNamespace(apiPath string) string {
 	ns := strings.Join(parts, `\`)
 	// Stripe the version suffix.
 	return versionSuffixRe.ReplaceAllString(ns, "")
+}
+
+// protoPackage returns the unversioned proto package from the API configuration or derived from the path.
+func protoPackage(api *config.API) string {
+	if api.PHP != nil && api.PHP.ProtoPackage != "" {
+		return api.PHP.ProtoPackage
+	}
+	apiPath := api.Path
+	if serviceconfig.ExtractVersion(apiPath) != "" {
+		apiPath = path.Dir(apiPath)
+	}
+	return strings.ReplaceAll(apiPath, "/", ".")
 }

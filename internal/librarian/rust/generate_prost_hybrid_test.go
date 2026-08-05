@@ -266,3 +266,48 @@ func TestFilterModelToStreamingGoogleRpcStatus(t *testing.T) {
 		}
 	}
 }
+
+func TestFilterModelToStreamingNestedTypeParentPreservation(t *testing.T) {
+	parent := api.NewTestMessage("Parent").WithPackage("google.test.v1")
+	child := api.NewTestMessage("Child").WithPackage("google.test.v1")
+	sibling := api.NewTestMessage("Sibling").WithPackage("google.test.v1")
+	child.Parent = parent
+
+	parent.Fields = []*api.Field{
+		{
+			Name:    "sibling_ref",
+			TypezID: sibling.ID,
+			Typez:   api.TypezMessage,
+		},
+	}
+
+	streamReq := api.NewTestMessage("StreamReq").WithPackage("google.test.v1").WithFields(
+		&api.Field{
+			Name:    "child_ref",
+			TypezID: child.ID,
+			Typez:   api.TypezMessage,
+		},
+	)
+
+	chatMethod := api.NewTestMethod("Chat").WithInput(streamReq).WithOutput(streamReq).WithBidiStreaming()
+	bidiService := api.NewTestService("BidiService").WithPackage("google.test.v1").WithMethods(chatMethod)
+
+	model := api.NewTestAPI([]*api.Message{parent, child, sibling, streamReq}, []*api.Enum{}, []*api.Service{bidiService})
+
+	_, unusedTypes, _, err := filterModelToStreaming(model)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	for _, unused := range unusedTypes {
+		if unused == parent.ID {
+			t.Errorf("parent message %q should not be in unusedTypes", parent.ID)
+		}
+		if unused == child.ID {
+			t.Errorf("child message %q should not be in unusedTypes", child.ID)
+		}
+		if unused == sibling.ID {
+			t.Errorf("sibling field message %q of parent should not be in unusedTypes", sibling.ID)
+		}
+	}
+}

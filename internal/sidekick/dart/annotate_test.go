@@ -17,6 +17,7 @@ package dart
 import (
 	"fmt"
 	"maps"
+	"math/rand"
 	"slices"
 	"testing"
 
@@ -330,6 +331,84 @@ func TestAnnotateModel_HasMethods(t *testing.T) {
 	codec2 := serviceWithoutMethods.Codec.(*serviceAnnotations)
 	if codec2.HasMethods {
 		t.Errorf("Expected HasMethods to be false for ServiceWithoutMethods")
+	}
+}
+
+func TestAnnotateModel_Examples_ValidMethod(t *testing.T) {
+	method := sample.MethodListSecretVersions()
+	method.IsSimple = true
+	serviceWithMethods := &api.Service{
+		Name:    "ServiceWithMethods",
+		Methods: []*api.Method{method},
+		Package: sample.Package,
+	}
+	model := api.NewTestAPI(
+		[]*api.Message{sample.ListSecretVersionsRequest(), sample.ListSecretVersionsResponse(),
+			sample.Secret(), sample.SecretVersion(), sample.Replication(), sample.Automatic(),
+			sample.CustomerManagedEncryption()},
+		[]*api.Enum{sample.EnumState()},
+		[]*api.Service{serviceWithMethods},
+	)
+	api.Validate(model)
+	annotate := newAnnotateModel(model)
+	err := annotate.annotateModel(requiredConfig)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	codec := model.Codec.(*modelAnnotations)
+
+	if diff := cmp.Diff("ServiceWithMethods", codec.ExampleServiceName); diff != "" {
+		t.Errorf("mismatch ExampleServiceName (-want +got):\n%s", diff)
+	}
+	if diff := cmp.Diff("listSecretVersions", codec.ExampleMethodName); diff != "" {
+		t.Errorf("mismatch ExampleMethodName (-want +got):\n%s", diff)
+	}
+	if diff := cmp.Diff("ListSecretVersionRequest", codec.ExampleMethodRequestType); diff != "" {
+		t.Errorf("mismatch ExampleMethodRequestType (-want +got):\n%s", diff)
+	}
+	if diff := cmp.Diff("ListSecretVersionsResponse", codec.ExampleMethodResponseType); diff != "" {
+		t.Errorf("mismatch ExampleMethodResponseType (-want +got):\n%s", diff)
+	}
+	if !codec.ExampleMethodReturnsValue {
+		t.Errorf("expected ExampleMethodReturnsValue to be true")
+	}
+}
+
+func TestAnnotateModel_Examples_NoMethod(t *testing.T) {
+	serviceWithoutMethods := &api.Service{
+		Name:    "ServiceWithMethods",
+		Methods: []*api.Method{},
+		Package: sample.Package,
+	}
+	model := api.NewTestAPI(
+		[]*api.Message{},
+		[]*api.Enum{},
+		[]*api.Service{serviceWithoutMethods},
+	)
+	api.Validate(model)
+	annotate := newAnnotateModel(model)
+	err := annotate.annotateModel(requiredConfig)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	codec := model.Codec.(*modelAnnotations)
+
+	if diff := cmp.Diff("", codec.ExampleServiceName); diff != "" {
+		t.Errorf("mismatch ExampleServiceName (-want +got):\n%s", diff)
+	}
+	if diff := cmp.Diff("", codec.ExampleMethodName); diff != "" {
+		t.Errorf("mismatch ExampleMethodName (-want +got):\n%s", diff)
+	}
+	if diff := cmp.Diff("", codec.ExampleMethodRequestType); diff != "" {
+		t.Errorf("mismatch ExampleMethodRequestType (-want +got):\n%s", diff)
+	}
+	if diff := cmp.Diff("", codec.ExampleMethodResponseType); diff != "" {
+		t.Errorf("mismatch ExampleMethodResponseType (-want +got):\n%s", diff)
+	}
+	if codec.ExampleMethodReturnsValue {
+		t.Errorf("expected ExampleMethodReturnsValue to be false")
 	}
 }
 
@@ -2076,6 +2155,146 @@ func TestAnnotateField(t *testing.T) {
 
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestFindExampleMethod(t *testing.T) {
+	requiredField := &api.Field{
+		Behavior: []api.FieldBehavior{api.FieldBehaviorRequired},
+	}
+	optionalField := &api.Field{
+		Behavior: []api.FieldBehavior{},
+	}
+
+	msgWithRequired := &api.Message{
+		Fields:  []*api.Field{requiredField},
+		Package: "mypackage",
+	}
+	msgWithoutRequired := &api.Message{
+		Fields:  []*api.Field{optionalField},
+		Package: "mypackage",
+	}
+
+	differentPackageMsg := &api.Message{
+		Fields:  []*api.Field{optionalField},
+		Package: "otherpackage",
+	}
+
+	lroMethod := &api.Method{
+		Name:          "LroMethod",
+		OperationInfo: &api.OperationInfo{},
+	}
+
+	streamingMethod := &api.Method{
+		Name:     "StreamingMethod",
+		IsSimple: false,
+	}
+
+	voidMethod := &api.Method{
+		Name:         "VoidMethod",
+		IsSimple:     true,
+		ReturnsEmpty: true,
+		InputType:    msgWithoutRequired,
+	}
+
+	requiredInputMethod := &api.Method{
+		Name:         "RequiredInputMethod",
+		IsSimple:     true,
+		ReturnsEmpty: false,
+		InputType:    msgWithRequired,
+		OutputType:   msgWithoutRequired,
+	}
+
+	requiredOutputMethod := &api.Method{
+		Name:         "RequiredOutputMethod",
+		IsSimple:     true,
+		ReturnsEmpty: false,
+		InputType:    msgWithoutRequired,
+		OutputType:   msgWithRequired,
+	}
+
+	differentPackageMethod := &api.Method{
+		Name:         "DifferentPackageMethod",
+		IsSimple:     true,
+		ReturnsEmpty: false,
+		InputType:    differentPackageMsg,
+		OutputType:   differentPackageMsg,
+	}
+
+	perfectMethod := &api.Method{
+		Name:         "PerfectMethod",
+		IsSimple:     true,
+		ReturnsEmpty: false,
+		InputType:    msgWithoutRequired,
+		OutputType:   msgWithoutRequired,
+	}
+
+	for _, test := range []struct {
+		name    string
+		methods []*api.Method
+		want    *api.Method
+	}{
+		{
+			name:    "perfect method exists",
+			methods: []*api.Method{perfectMethod, requiredInputMethod, requiredOutputMethod, voidMethod, differentPackageMethod, streamingMethod, lroMethod},
+			want:    perfectMethod,
+		},
+		{
+			name:    "best method has a request type with a required field",
+			methods: []*api.Method{requiredInputMethod, requiredOutputMethod, voidMethod, differentPackageMethod, streamingMethod, lroMethod},
+			want:    requiredInputMethod,
+		},
+		{
+			name:    "best method has a response type with a required field",
+			methods: []*api.Method{requiredOutputMethod, voidMethod, differentPackageMethod, streamingMethod, lroMethod},
+			want:    requiredOutputMethod,
+		},
+		{
+			name:    "best method has void return",
+			methods: []*api.Method{voidMethod, differentPackageMethod, streamingMethod, lroMethod},
+			want:    voidMethod,
+		},
+		{
+			name:    "best method has types from other packages",
+			methods: []*api.Method{differentPackageMethod, streamingMethod, lroMethod},
+			want:    differentPackageMethod,
+		},
+		{
+			name:    "only streaming and LRO methods exist",
+			methods: []*api.Method{streamingMethod, lroMethod},
+			want:    nil,
+		},
+		{
+			name:    "only LRO method exists",
+			methods: []*api.Method{lroMethod},
+			want:    nil,
+		},
+	} {
+		r := rand.New(rand.NewSource(42))
+		t.Run(test.name, func(t *testing.T) {
+			methods := slices.Clone(test.methods)
+			r.Shuffle(len(methods), func(i, j int) {
+				methods[i], methods[j] = methods[j], methods[i]
+			})
+			s := &api.Service{
+				Package: "mypackage",
+				Codec: &serviceAnnotations{
+					Methods: methods,
+				},
+			}
+			_, got := findExampleMethod([]*api.Service{s})
+			if got != test.want {
+				gotName := "nil"
+				if got != nil {
+					gotName = got.Name
+				}
+				wantName := "nil"
+				if test.want != nil {
+					wantName = test.want.Name
+				}
+				t.Errorf("mismatch, got %v, want %v", gotName, wantName)
 			}
 		})
 	}

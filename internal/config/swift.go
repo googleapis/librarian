@@ -139,6 +139,9 @@ type SwiftModule struct {
 	// Output is the directory where generated code is written (e.g., "Tests/ProtoJSON/generated").
 	Output string `yaml:"output"`
 
+	// ServiceConfig is the path to the service config file (e.g., "google/storage/control/v2/storage_v2.yaml").
+	ServiceConfig string `yaml:"service_config,omitempty"`
+
 	// APIPath is the proto path to generate from (e.g., "google/storage/v2").
 	APIPath string `yaml:"api_path"`
 

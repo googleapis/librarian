@@ -450,6 +450,7 @@ This document describes the schema for the librarian.yaml.
 | :--- | :--- | :--- |
 | `additional_protos` | list of string | Is a list of additional proto files to include in generation. |
 | `common_resources` | bool (optional) | Indicates whether to include common resources in generation. Must be configured either globally or per-API. |
+| `proto_package` | string | Overrides the derived proto package for the API. |
 | `staging_subdir` | string | Is the subdirectory in staging where the generated files should be placed. |
 
 ## PHPDefault Configuration
@@ -462,6 +463,7 @@ This document describes the schema for the librarian.yaml.
 
 | Field | Type | Description |
 | :--- | :--- | :--- |
+| `component_name` | string | Overrides the derived component name used for output/staging. |
 
 ## PythonDefault Configuration
 
@@ -633,6 +635,7 @@ This document describes the schema for the librarian.yaml.
 | Field | Type | Description |
 | :--- | :--- | :--- |
 | `output` | string | Is the directory where generated code is written (e.g., "Tests/ProtoJSON/generated"). |
+| `service_config` | string | Is the path to the service config file (e.g., "google/storage/control/v2/storage_v2.yaml"). |
 | `api_path` | string | Is the proto path to generate from (e.g., "google/storage/v2"). |
 | `module_type` | string | Is the type of module to generate (e.g., "swift-protobuf", "convert-swift", or empty/"default" for standard GAPIC). |
 | `include_list` | list of string | Is a subset of proto files under the target API path to include. This is typically reserved for special cases to avoid generating unused/dead code. For example, in Storage we need Protobuf gencode for a subset of the protos in the google/type directory. This code is private to the package (google-cloud-storage in Rust, GoogleCloudStorage in Swift). All other files in google/type would be dead code. |
