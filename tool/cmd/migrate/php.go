@@ -245,7 +245,10 @@ func findPHPLibraries(repoPath string, googleapisDir string, globalDefaultCommon
 		libs = append(libs, &config.Library{
 			Name:    name,
 			Version: version,
-			APIs:    apis,
+			PHP: &config.PHPPackage{
+				ComponentName: name,
+			},
+			APIs: apis,
 		})
 	}
 	return libs, nil

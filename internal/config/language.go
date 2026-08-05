@@ -823,6 +823,8 @@ type PHPDefault struct {
 
 // PHPPackage contains PHP-specific library configuration.
 type PHPPackage struct {
+	// ComponentName overrides the derived component name used for output/staging.
+	ComponentName string `yaml:"component_name,omitempty"`
 }
 
 // PHPAPI represents configuration for a single API within a PHP package.
