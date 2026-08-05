@@ -18,6 +18,7 @@ import (
 	"bufio"
 	"io/fs"
 	"os"
+	"path"
 	"path/filepath"
 	"regexp"
 	"strings"
@@ -122,7 +123,10 @@ func backupNamespace(apiPath string) string {
 	return versionSuffixRe.ReplaceAllString(ns, "")
 }
 
-// protoPackage returns the versioned proto package from the API path.
+// protoPackage returns the unversioned proto package from the API path.
 func protoPackage(apiPath string) string {
+	if serviceconfig.ExtractVersion(apiPath) != "" {
+		apiPath = path.Dir(apiPath)
+	}
 	return strings.ReplaceAll(apiPath, "/", ".")
 }

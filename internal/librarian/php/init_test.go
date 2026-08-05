@@ -167,13 +167,13 @@ func TestNewInitParams(t *testing.T) {
 	apiPath := "google/cloud/secretmanager/v1"
 	params, err := newInitParams(googleapisDir, apiPath)
 	if err != nil {
-		t.Fatalf("newInitParams failed: %v", err)
+		t.Fatal(err)
 	}
 	want := &initParams{
 		apiShortName:    "secretmanager",
 		productDocs:     "https://cloud.google.com/secret-manager/docs/overview",
 		productHomepage: "https://cloud.google.com/secret-manager/",
-		protoPackage:    "google.cloud.secretmanager.v1",
+		protoPackage:    "google.cloud.secretmanager",
 		apiVersion:      "v1",
 	}
 	if diff := cmp.Diff(want, params, cmp.AllowUnexported(initParams{})); diff != "" {
@@ -190,17 +190,22 @@ func TestProtoPackage(t *testing.T) {
 		{
 			name:    "speech v2",
 			apiPath: "google/cloud/speech/v2",
-			want:    "google.cloud.speech.v2",
+			want:    "google.cloud.speech",
 		},
 		{
 			name:    "privateca v1",
 			apiPath: "google/cloud/security/privateca/v1",
-			want:    "google.cloud.security.privateca.v1",
+			want:    "google.cloud.security.privateca",
 		},
 		{
 			name:    "generativelanguage v1alpha",
 			apiPath: "google/ai/generativelanguage/v1alpha",
-			want:    "google.ai.generativelanguage.v1alpha",
+			want:    "google.ai.generativelanguage",
+		},
+		{
+			name:    "unversioned path",
+			apiPath: "google/identity/accesscontextmanager/type",
+			want:    "google.identity.accesscontextmanager.type",
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
