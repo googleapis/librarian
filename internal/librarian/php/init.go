@@ -36,6 +36,8 @@ type initParams struct {
 	apiShortName    string
 	productDocs     string
 	productHomepage string
+	protoPackage    string
+	apiVersion      string
 }
 
 func newInitParams(googleapisDir, apiPath string) (*initParams, error) {
@@ -47,6 +49,8 @@ func newInitParams(googleapisDir, apiPath string) (*initParams, error) {
 		apiShortName:    api.ShortName,
 		productDocs:     api.DocumentationURI,
 		productHomepage: repometadata.ExtractBaseProductURL(api.DocumentationURI),
+		protoPackage:    protoPackage(apiPath),
+		apiVersion:      serviceconfig.ExtractVersion(apiPath),
 	}, nil
 }
 
@@ -116,4 +120,9 @@ func backupNamespace(apiPath string) string {
 	ns := strings.Join(parts, `\`)
 	// Stripe the version suffix.
 	return versionSuffixRe.ReplaceAllString(ns, "")
+}
+
+// protoPackage returns the versioned proto package from the API path.
+func protoPackage(apiPath string) string {
+	return strings.ReplaceAll(apiPath, "/", ".")
 }

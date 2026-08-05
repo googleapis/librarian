@@ -173,8 +173,41 @@ func TestNewInitParams(t *testing.T) {
 		apiShortName:    "secretmanager",
 		productDocs:     "https://cloud.google.com/secret-manager/docs/overview",
 		productHomepage: "https://cloud.google.com/secret-manager/",
+		protoPackage:    "google.cloud.secretmanager.v1",
+		apiVersion:      "v1",
 	}
 	if diff := cmp.Diff(want, params, cmp.AllowUnexported(initParams{})); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+}
+
+func TestProtoPackage(t *testing.T) {
+	for _, test := range []struct {
+		name    string
+		apiPath string
+		want    string
+	}{
+		{
+			name:    "speech v2",
+			apiPath: "google/cloud/speech/v2",
+			want:    "google.cloud.speech.v2",
+		},
+		{
+			name:    "privateca v1",
+			apiPath: "google/cloud/security/privateca/v1",
+			want:    "google.cloud.security.privateca.v1",
+		},
+		{
+			name:    "generativelanguage v1alpha",
+			apiPath: "google/ai/generativelanguage/v1alpha",
+			want:    "google.ai.generativelanguage.v1alpha",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := protoPackage(test.apiPath)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
 	}
 }
