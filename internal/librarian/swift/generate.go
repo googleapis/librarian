@@ -111,12 +111,20 @@ func libraryToModelConfig(library *config.Library, apiCfg *config.API, src *sour
 		specFormat = library.SpecificationFormat
 	}
 
+	var skippedIDs []string
+	if library.Swift != nil && len(library.Swift.SkippedIds) > 0 {
+		skippedIDs = library.Swift.SkippedIds
+	}
+
 	modelCfg := &parser.ModelConfig{
 		Language:            config.LanguageSwift,
 		SpecificationFormat: specFormat,
 		ServiceConfig:       svcConfig.ServiceConfig,
 		SpecificationSource: apiCfg.Path,
 		Source:              sourceConfig,
+		Override: api.ModelOverride{
+			SkippedIDs: skippedIDs,
+		},
 	}
 	if library.Swift != nil && library.Swift.Discovery != nil {
 		pollers := make([]*api.Poller, len(library.Swift.Discovery.Pollers))

@@ -52,6 +52,9 @@ type SwiftPackage struct {
 	// include (e.g., ["date.proto", "expr.proto"]).
 	IncludeList []string `yaml:"include_list,omitempty"`
 
+	// SkippedIds is a list of proto IDs to skip in generation for the package.
+	SkippedIds []string `yaml:"skipped_ids,omitempty"`
+
 	// Modules specifies generation targets for veneers and test packages.
 	//
 	// Each module defines a source proto path, and output location.
@@ -154,6 +157,9 @@ type SwiftModule struct {
 	// directory. This code is private to the package (google-cloud-storage in Rust, GoogleCloudStorage
 	// in Swift). All other files in google/type would be dead code.
 	IncludeList []string `yaml:"include_list,omitempty"`
+
+	// SkippedIds is a list of proto IDs to skip in generation for this module.
+	SkippedIds []string `yaml:"skipped_ids,omitempty"`
 
 	// ModulePath is the module import path or target containing stubs (used by convert-swift).
 	ModulePath string `yaml:"module_path,omitempty"`
