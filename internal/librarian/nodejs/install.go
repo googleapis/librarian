@@ -17,75 +17,31 @@ package nodejs
 import (
 	"context"
 	"errors"
-	"fmt"
-	"os"
-	"os/exec"
 	"path/filepath"
-	"strings"
 
 	"github.com/googleapis/librarian/internal/cache"
 	"github.com/googleapis/librarian/internal/config"
-	"github.com/googleapis/librarian/internal/fetch"
+	"github.com/googleapis/librarian/internal/tool/pnpm"
 )
 
 const (
-	// gapicGeneratorSubdir is the sub-directory within the
-	// google-cloud-node repo that contains the gapic-generator-typescript
-	// source.
-	gapicGeneratorSubdir = "core/generator/gapic-generator-typescript"
-
 	toolsDir = "nodejs_tools"
 )
 
 var (
-	errNoToolsSpecified  = errors.New("no tools.pnpm field specified in configuration")
-	errCannotExtractRepo = errors.New("cannot extract repo from package URL")
-	errMissingExecutable = errors.New("is not installed or not in PATH, which is required for Node.js tool installation")
-	errMissingPackageURL = errors.New("has build steps but no package URL")
+	errNoToolsSpecified = errors.New("no tools.pnpm field specified in configuration")
 )
 
 // Install installs Node.js tool dependencies.
 func Install(ctx context.Context, tools *config.Tools) error {
-	if tools == nil {
+	if tools == nil || len(tools.PNPM) == 0 {
 		return errNoToolsSpecified
 	}
-	return InstallPNPM(ctx, tools.PNPM)
-}
-
-// InstallPNPM installs PNPM tools.
-func InstallPNPM(ctx context.Context, pnpmTools []*config.PNPMTool) error {
-	if len(pnpmTools) == 0 {
-		return errNoToolsSpecified
-	}
-
-	for _, cmd := range []string{"node", "pnpm"} {
-		if _, err := exec.LookPath(cmd); err != nil {
-			return fmt.Errorf("%s %w: %w", cmd, errMissingExecutable, err)
-		}
-	}
-
-	env, err := getPNPMEnv()
+	binDir, err := getBinDir()
 	if err != nil {
 		return err
 	}
-
-	for _, tool := range pnpmTools {
-		if len(tool.Build) > 0 {
-			if err := installPNPMToolFromSource(ctx, env, tool); err != nil {
-				return err
-			}
-			continue
-		}
-
-		pkg := tool.Package
-		if pkg == "" {
-			pkg = fmt.Sprintf("%s@%s", tool.Name, tool.Version)
-		}
-		if err := runPNPM(ctx, "", env, "add", "-g", pkg); err != nil {
-			return err
-		}
-	}
-	return nil
+	return pnpm.Install(ctx, tools.PNPM, binDir)
 }
 
 // InstallDir gets the directory where tools should be installed.
@@ -113,97 +69,4 @@ func getToolsEnv() (map[string]string, error) {
 		return nil, err
 	}
 	return map[string]string{"PATH": binDir}, nil
-}
-
-// getPNPMEnv constructs a transient environment variable block to configure pnpm.
-//
-// This redirects all globally-installed pnpm binaries to LIBRARIAN_BIN, and
-// virtual stores / content-addressable storage caches to LIBRARIAN_CACHE.
-// This enables complete environment caching and restore on CI runners,
-// while permanently avoiding persistent side-effects on the host machine
-// (it does not modify the user's personal ~/.config/pnpm/rc files).
-func getPNPMEnv() ([]string, error) {
-	cacheDir, err := cache.Directory()
-	if err != nil {
-		return nil, fmt.Errorf("failed to resolve librarian cache directory: %w", err)
-	}
-	binDir, err := getBinDir()
-	if err != nil {
-		return nil, fmt.Errorf("failed to resolve librarian bin directory: %w", err)
-	}
-
-	globalDir := filepath.Join(cacheDir, "pnpm-global")
-	storeDir := filepath.Join(cacheDir, "pnpm-store")
-
-	env := os.Environ()
-	env = append(env, "PNPM_HOME="+binDir)
-	env = append(env, "PNPM_CONFIG_GLOBAL_BIN_DIR="+binDir)
-	env = append(env, "PNPM_CONFIG_GLOBAL_DIR="+globalDir)
-	env = append(env, "PNPM_CONFIG_STORE_DIR="+storeDir)
-	// TODO(https://github.com/googleapis/librarian/issues/6889): Remove legacy NPM_CONFIG_*
-	// environment variables once pnpm is upgraded to version 8+.
-	env = append(env, "NPM_CONFIG_GLOBAL_BIN_DIR="+binDir)
-	env = append(env, "npm_config_global_bin_dir="+binDir)
-	env = append(env, "PATH="+binDir+string(os.PathListSeparator)+os.Getenv("PATH"))
-	return env, nil
-}
-
-func runPNPM(ctx context.Context, dir string, env []string, args ...string) error {
-	cmd := exec.CommandContext(ctx, "pnpm", args...)
-	cmd.Dir = dir
-	cmd.Env = env
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	return cmd.Run()
-}
-
-func runPNPMBuildCmd(ctx context.Context, dir string, env []string, cmdStr string) error {
-	cmd := exec.CommandContext(ctx, "sh", "-c", cmdStr)
-	cmd.Dir = dir
-	cmd.Env = env
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	return cmd.Run()
-}
-
-func installPNPMToolFromSource(ctx context.Context, env []string, tool *config.PNPMTool) error {
-	if tool.Package == "" {
-		return fmt.Errorf("pnpm tool %s %w", tool.Name, errMissingPackageURL)
-	}
-	repo, err := repoFromPackageURL(tool.Package)
-	if err != nil {
-		return err
-	}
-	sha := tool.SHA256
-	if sha == "" {
-		sha = tool.Checksum
-	}
-	dir, err := fetch.Repo(ctx, repo, tool.Version, sha)
-	if err != nil {
-		return fmt.Errorf("fetching %s: %w", tool.Name, err)
-	}
-
-	// Run build steps.
-	subdir := tool.SrcDir
-	if subdir == "" {
-		subdir = gapicGeneratorSubdir
-	}
-	genDir := filepath.Join(dir, subdir)
-	for _, cmd := range tool.Build {
-		if err := runPNPMBuildCmd(ctx, genDir, env, cmd); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-// repoFromPackageURL extracts the repository path (e.g.,
-// "github.com/googleapis/google-cloud-node") from a GitHub archive URL
-// like "https://github.com/googleapis/google-cloud-node/archive/<sha>.tar.gz".
-func repoFromPackageURL(packageURL string) (string, error) {
-	parts := strings.SplitN(packageURL, "/archive/", 2)
-	if len(parts) != 2 {
-		return "", fmt.Errorf("%w %q", errCannotExtractRepo, packageURL)
-	}
-	return strings.TrimPrefix(parts[0], "https://"), nil
 }
