@@ -109,7 +109,7 @@ pub mod {{Codec.ModuleName}} {
     ///
     {{#Codec.IsBidiStreaming}}
     /// let builder = prepare_request_builder();
-    /// let (sender, receiver) = builder.build().await;
+    /// let (sender, mut receiver) = builder.build().await;
     {{/Codec.IsBidiStreaming}}
     {{^Codec.IsBidiStreaming}}
     /// let builder = prepare_request_builder();
