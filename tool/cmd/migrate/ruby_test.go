@@ -761,6 +761,11 @@ func TestParseKeepFromManifest(t *testing.T) {
 			want:    []string{"file1.rb", "file2.rb"},
 		},
 		{
+			name:    "filters out Gemfile.lock",
+			content: `{"static": ["Gemfile.lock", "file1.rb", "file2.rb"]}`,
+			want:    []string{"file1.rb", "file2.rb"},
+		},
+		{
 			name:    "empty static list",
 			content: `{"static": []}`,
 			want:    []string{},
