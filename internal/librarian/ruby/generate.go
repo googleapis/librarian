@@ -261,6 +261,7 @@ func escapeRubyCloudOptValue(val string) string {
 	return strings.ReplaceAll(val, ",", "\\,")
 }
 
+// deleteAfterGeneration removes files from the staging directory after generation.
 func deleteAfterGeneration(api *config.API, stagingDir string) error {
 	if api.Ruby == nil {
 		return nil
