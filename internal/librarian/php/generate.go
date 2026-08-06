@@ -80,14 +80,12 @@ func Generate(ctx context.Context, cfg *config.Config, library *config.Library, 
 			return fmt.Errorf("API %q: %w", api.Path, errMissingStagingSubdir)
 		}
 	}
-
 	srcCfg := sources.NewSourceConfig(src, library.Roots)
 	googleapisDir := srcCfg.Root("googleapis")
 	componentName, err := ComponentNameForLibrary(googleapisDir, library)
 	if err != nil {
 		return err
 	}
-
 	stagingDir := filepath.Join(owlBotStagingDir, componentName)
 	if err := os.RemoveAll(stagingDir); err != nil {
 		return err
