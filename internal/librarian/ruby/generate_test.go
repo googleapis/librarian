@@ -229,7 +229,6 @@ func TestCollectProtoFiles(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-
 	for _, test := range []struct {
 		name             string
 		apiPath          string
@@ -249,6 +248,13 @@ func TestCollectProtoFiles(t *testing.T) {
 			apiPath: "google/cloud/gkehub/v1/configmanagement",
 			want: []string{
 				filepath.Join(googleapisDir, "google/cloud/gkehub/v1/configmanagement/configmanagement.proto"),
+			},
+		},
+		{
+			name:    "recursive search protos",
+			apiPath: "google/cloud/aiplatform/v1",
+			want: []string{
+				filepath.Join(googleapisDir, "google/cloud/aiplatform/v1/schema/schema.proto"),
 			},
 		},
 		{
