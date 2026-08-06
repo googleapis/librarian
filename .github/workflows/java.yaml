@@ -116,7 +116,7 @@ jobs:
         working-directory: google-cloud-java
         run: librarian generate secretmanager
       - name: Run librarian generate all (integration test)
-        if: matrix.task == 'integration'
+        if: matrix.task == 'integration' && github.event_name == 'push' && github.ref == 'refs/heads/main'
         working-directory: google-cloud-java
         run: librarian generate --all
   create-issue-on-failure:
