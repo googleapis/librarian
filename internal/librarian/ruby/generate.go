@@ -135,6 +135,11 @@ func generateAPI(ctx context.Context, api *config.API, library *config.Library, 
 	if err := protoc.RunOrSystem(ctx, env, pc, args...); err != nil {
 		return err
 	}
+	for _, path := range api.DeleteGenerationOutputPaths {
+		if err := os.RemoveAll(filepath.Join(stagingDir, "lib", path)); err != nil {
+			return fmt.Errorf("failed to remove %s: %w", path, err)
+		}
+	}
 	// Remove google/cloud/common_resources_pb.rb from staging after generation.
 	// Because librarian passes all protoFiles (including common_resources.proto) to protoc
 	// in a single invocation, protoc outputs common_resources_pb.rb into the lib/ directory.

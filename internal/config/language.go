@@ -890,6 +890,9 @@ type RubyAPI struct {
 	// AdditionalProtos is a list of additional proto files to include in generation.
 	AdditionalProtos []string `yaml:"additional_protos,omitempty"`
 
+	// DeleteGenerationOutputPaths is a list of directory paths relative to the output directory to delete after generation.
+	DeleteGenerationOutputPaths []string `yaml:"delete_generation_output_paths,omitempty"`
+
 	// RubyCloudOpts contains options passed to the Ruby Cloud GAPIC generator as the `--ruby_cloud_opt` option.
 	RubyCloudOpts *RubyCloudOpts `yaml:"ruby_cloud_opts,omitempty"`
 }
