@@ -19,13 +19,14 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io/fs"
 	"os"
 	"path"
 	"path/filepath"
-	"sort"
 	"strings"
 
 	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/proto"
 	"github.com/googleapis/librarian/internal/serviceconfig"
 	"github.com/googleapis/librarian/internal/sources"
 	"github.com/googleapis/librarian/internal/tool/protoc"
@@ -41,13 +42,7 @@ var (
 	errMonorepoVersion = fmt.Errorf("failed to find monorepo version for %q in config", rootLibrary)
 	errParentVersion   = fmt.Errorf("failed to find parent version for %q in config", parentPOM)
 	errUnrecognizedAPI = errors.New("unrecognized non-cloud API: configure java.group_id and java.distribution_name_override in librarian.yaml")
-	// nonRecursivePaths is a set of paths where proto gathering should not be recursive.
-	nonRecursivePaths = map[string]bool{
-		"google/api":   true,
-		"google/cloud": true,
-		"google/rpc":   true,
-	}
-	runProtoc = func(ctx context.Context, pc *config.Protoc, args []string) error {
+	runProtoc          = func(ctx context.Context, pc *config.Protoc, args []string) error {
 		env, err := getToolsEnv()
 		if err != nil {
 			return err
@@ -148,7 +143,10 @@ func generateAPI(ctx context.Context, params generateAPIParams) error {
 	}
 
 	apiDir := filepath.Join(primaryDir, params.api.Path)
-	apiProtos, err := gatherProtos(apiDir, params.api.Path)
+	apiProtos, err := proto.Gather(apiDir, params.api.Path)
+	if errors.Is(err, fs.ErrNotExist) {
+		return fmt.Errorf("%s: %w", params.api.Path, errNoProtos)
+	}
 	if err != nil {
 		return fmt.Errorf("failed to find protos: %w", err)
 	}
@@ -328,40 +326,6 @@ func resolveGAPICOptions(cfg *config.Config, library *config.Library, api *confi
 
 func gapicOpt(key, value string) string {
 	return fmt.Sprintf("%s=%s", key, value)
-}
-
-// gatherProtos returns a sorted list of proto files in the given root directory,
-// ensuring that subpackage protos (e.g., in a "schema" directory) are included
-// in the generation.
-//
-// recursion is disabled for certain base paths in nonRecursivePaths.
-func gatherProtos(root, relPath string) ([]string, error) {
-	var protos []string
-	recursive := !nonRecursivePaths[filepath.ToSlash(relPath)]
-
-	err := filepath.WalkDir(root, func(path string, d os.DirEntry, err error) error {
-		if err != nil {
-			return err
-		}
-		if d.IsDir() {
-			if !recursive && path != root {
-				return filepath.SkipDir
-			}
-			return nil
-		}
-		if d.Type().IsRegular() && filepath.Ext(path) == ".proto" {
-			protos = append(protos, path)
-		}
-		return nil
-	})
-	if errors.Is(err, os.ErrNotExist) {
-		return nil, errNoProtos
-	}
-	if err != nil {
-		return nil, err
-	}
-	sort.Strings(protos)
-	return protos, nil
 }
 
 // filterProtos returns entries from fullPaths that excludes root + relPath in relExcludes.
