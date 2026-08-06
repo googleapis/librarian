@@ -201,12 +201,14 @@ func (c *codec) annotateField(field *api.Field, model *modelAnnotations) (*field
 	}
 	if field.Map && field.TypezID != "" {
 		m, err := lookupMessage(c.Model, field.TypezID)
-		if err == nil {
-			fields, err := decomposeMap(m)
-			if err == nil {
-				annotations.ValueField = fields.Value
-			}
+		if err != nil {
+			return nil, err
 		}
+		fields, err := decomposeMap(m)
+		if err != nil {
+			return nil, err
+		}
+		annotations.ValueField = fields.Value
 	}
 	if field.Optional {
 		annotations.Decoding = DecodingOptional
