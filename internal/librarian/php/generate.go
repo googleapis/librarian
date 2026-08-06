@@ -82,7 +82,7 @@ func Generate(ctx context.Context, cfg *config.Config, library *config.Library, 
 	}
 	srcCfg := sources.NewSourceConfig(src, library.Roots)
 	googleapisDir := srcCfg.Root("googleapis")
-	componentName, err := ComponentNameForLibrary(googleapisDir, library)
+	componentName, err := componentNameForLibrary(googleapisDir, library)
 	if err != nil {
 		return err
 	}

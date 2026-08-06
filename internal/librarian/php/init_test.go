@@ -299,7 +299,7 @@ func TestComponentNameForLibrary(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got, err := ComponentNameForLibrary(googleapisDir, test.library)
+			got, err := componentNameForLibrary(googleapisDir, test.library)
 			if err != nil {
 				t.Fatal(err)
 			}

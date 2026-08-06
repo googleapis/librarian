@@ -56,10 +56,10 @@ func newInitParams(googleapisDir string, api *config.API) (*initParams, error) {
 	}, nil
 }
 
-// ComponentNameForLibrary resolves the component name for a PHP library.
+// componentNameForLibrary resolves the component name for a PHP library.
 // If library.PHP.ComponentName is set, it is returned as an explicit override.
 // Otherwise, the component name is derived on the fly from the php_namespace of the library's primary API.
-func ComponentNameForLibrary(googleapisDir string, library *config.Library) (string, error) {
+func componentNameForLibrary(googleapisDir string, library *config.Library) (string, error) {
 	if library.PHP != nil && library.PHP.ComponentName != "" {
 		return library.PHP.ComponentName, nil
 	}
