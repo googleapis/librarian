@@ -109,7 +109,7 @@ pub mod {{Codec.ModuleName}} {
     ///
     {{#Codec.IsBidiStreaming}}
     /// let builder = prepare_request_builder();
-    /// let (sender, mut receiver) = builder.build().await;
+    /// let (sender, mut receiver) = builder.send().await?;
     {{/Codec.IsBidiStreaming}}
     {{^Codec.IsBidiStreaming}}
     /// let builder = prepare_request_builder();
@@ -138,13 +138,11 @@ pub mod {{Codec.ModuleName}} {
             )
         }
 
-        {{^Codec.IsBidiStreaming}}
         /// Sets the full request, replacing any prior values.
         pub fn with_request<V: Into<{{InputType.Codec.QualifiedName}}>>(mut self, v: V) -> Self {
             self.0.request = v.into();
             self
         }
-        {{/Codec.IsBidiStreaming}}
 
         /// Sets all the options, replacing any prior values.
         pub fn with_options<V: Into<crate::RequestOptions>>(mut self, v: V) -> Self {
@@ -153,12 +151,14 @@ pub mod {{Codec.ModuleName}} {
         }
 
         {{#Codec.IsBidiStreaming}}
-        /// Builds the stream.
-        pub async fn build(self) -> (
+        /// Initiates the bidirectional stream.
+        pub async fn send(
+            self,
+        ) -> Result<(
             google_cloud_gax::streaming::RequestSender<{{InputType.Codec.QualifiedName}}>,
             google_cloud_gax::streaming::ResponseReceiver<{{OutputType.Codec.QualifiedName}}>,
-        ) {
-            (*self.0.stub).{{Codec.Name}}(self.0.options).await
+        )> {
+            (*self.0.stub).{{Codec.Name}}(self.0.request, self.0.options).await
         }
         {{/Codec.IsBidiStreaming}}
         {{^Codec.IsBidiStreaming}}
@@ -472,6 +472,7 @@ pub mod {{Codec.ModuleName}} {
             req
         }
         {{/HasAutoPopulatedFields}}
+        {{/Codec.IsBidiStreaming}}
         {{#InputType.Codec.BasicFields}}
 
         /// Sets the value of [{{Codec.FieldName}}][{{Codec.FQMessageName}}::{{Codec.SetterName}}].
@@ -620,7 +621,6 @@ pub mod {{Codec.ModuleName}} {
         {{/Map}}
         {{/Fields}}
         {{/InputType.OneOfs}}
-        {{/Codec.IsBidiStreaming}}
     }
 
     {{#Codec.IsBidiStreaming}}
