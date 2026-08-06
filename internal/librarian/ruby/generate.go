@@ -182,6 +182,9 @@ func buildGAPICOpts(api *config.API, library *config.Library, googleapisDir stri
 		if api.Ruby.RubyCloudOpts.ExtraDependencies != "" {
 			opts = append(opts, "ruby-cloud-extra-dependencies="+api.Ruby.RubyCloudOpts.ExtraDependencies)
 		}
+		if api.Ruby.RubyCloudOpts.GemNamespace != "" {
+			opts = append(opts, "ruby-cloud-gem-namespace="+api.Ruby.RubyCloudOpts.GemNamespace)
+		}
 		if api.Ruby.RubyCloudOpts.MigrationVersion != "" {
 			opts = append(opts, "ruby-cloud-migration-version="+api.Ruby.RubyCloudOpts.MigrationVersion)
 		}
