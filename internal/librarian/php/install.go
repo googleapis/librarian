@@ -24,9 +24,9 @@ import (
 
 	"github.com/googleapis/librarian/internal/cache"
 	"github.com/googleapis/librarian/internal/config"
-	"github.com/googleapis/librarian/internal/librarian/nodejs"
 	"github.com/googleapis/librarian/internal/tool/composer"
 	"github.com/googleapis/librarian/internal/tool/pip"
+	"github.com/googleapis/librarian/internal/tool/pnpm"
 )
 
 const (
@@ -78,9 +78,7 @@ func Install(ctx context.Context, tools *config.Tools) error {
 	if err := pip.Install(ctx, tools.Pip); err != nil {
 		return err
 	}
-	// Install PNPM tools.
-	// We wrap the error here because InstallPNPM does not wrap its exec errors with context,
-	if err := nodejs.InstallPNPM(ctx, tools.PNPM); err != nil {
+	if err := pnpm.Install(ctx, tools.PNPM, bin); err != nil {
 		return fmt.Errorf("failed to install pnpm tools: %w", err)
 	}
 	return nil

@@ -76,7 +76,6 @@ func TestBuildGAPICOpts(t *testing.T) {
 				"ruby-cloud-description=Compute Engine is an infrastructure as a service (IaaS) product that offers self-managed virtual machine (VM) instances and bare metal instances.",
 				"ruby-cloud-summary=Compute Engine is an infrastructure as a service (IaaS) product that offers self-managed virtual machine (VM) instances and bare metal instances.",
 				"ruby-cloud-generate-transports=rest",
-				"ruby-cloud-rest-numeric-enums=true",
 			},
 		},
 		{
@@ -101,6 +100,54 @@ func TestBuildGAPICOpts(t *testing.T) {
 				"ruby-cloud-generate-transports=grpc;rest",
 				"ruby-cloud-rest-numeric-enums=true",
 				"ruby-cloud-migration-version=1.0",
+			},
+		},
+		{
+			name: "ruby cloud opts with service override",
+			api: &config.API{
+				Path: "google/cloud/secretmanager/v1",
+				Ruby: &config.RubyAPI{
+					RubyCloudOpts: &config.RubyCloudOpts{
+						ServiceOverride: "SecretManager=secretmanager",
+					},
+				},
+			},
+			library: &config.Library{
+				Name: "google-cloud-secret_manager",
+			},
+			want: []string{
+				"ruby-cloud-gem-name=google-cloud-secret_manager",
+				"service-yaml=" + filepath.Join(googleapisDir, "google/cloud/secretmanager/v1/secretmanager_v1.yaml"),
+				"ruby-cloud-description=Stores sensitive data such as API keys\\, passwords\\, and certificates. Provides convenience while improving security.",
+				"ruby-cloud-summary=Stores sensitive data such as API keys\\, passwords\\, and certificates. Provides convenience while improving security.",
+				"grpc-service-config=" + filepath.Join(googleapisDir, "google/cloud/secretmanager/v1/secretmanager_grpc_service_config.json"),
+				"ruby-cloud-generate-transports=grpc;rest",
+				"ruby-cloud-rest-numeric-enums=true",
+				"ruby-cloud-service-override=SecretManager=secretmanager",
+			},
+		},
+		{
+			name: "ruby cloud opts with gem namespace",
+			api: &config.API{
+				Path: "google/cloud/secretmanager/v1",
+				Ruby: &config.RubyAPI{
+					RubyCloudOpts: &config.RubyCloudOpts{
+						GemNamespace: "Google::Cloud::SecretManager::V1",
+					},
+				},
+			},
+			library: &config.Library{
+				Name: "google-cloud-secret_manager",
+			},
+			want: []string{
+				"ruby-cloud-gem-name=google-cloud-secret_manager",
+				"service-yaml=" + filepath.Join(googleapisDir, "google/cloud/secretmanager/v1/secretmanager_v1.yaml"),
+				"ruby-cloud-description=Stores sensitive data such as API keys\\, passwords\\, and certificates. Provides convenience while improving security.",
+				"ruby-cloud-summary=Stores sensitive data such as API keys\\, passwords\\, and certificates. Provides convenience while improving security.",
+				"grpc-service-config=" + filepath.Join(googleapisDir, "google/cloud/secretmanager/v1/secretmanager_grpc_service_config.json"),
+				"ruby-cloud-generate-transports=grpc;rest",
+				"ruby-cloud-rest-numeric-enums=true",
+				"ruby-cloud-gem-namespace=Google::Cloud::SecretManager::V1",
 			},
 		},
 		{

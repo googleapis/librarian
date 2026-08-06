@@ -434,10 +434,7 @@
   documentation_uri: https://cloud.google.com/compute/
   new_issue_uri: https://issuetracker.google.com/issues/new?component=187134&template=0
   skip_rest_numeric_enums:
-    - go
-    - java
-    - nodejs
-    - python
+    - all
   transports:
     all: rest
 - path: google/cloud/compute/v1beta
@@ -445,9 +442,7 @@
   documentation_uri: https://cloud.google.com/compute/
   new_issue_uri: https://issuetracker.google.com/issues/new?component=187134&template=0
   skip_rest_numeric_enums:
-    - go
-    - nodejs
-    - python
+    - all
   transports:
     all: rest
 - path: google/cloud/config/v1

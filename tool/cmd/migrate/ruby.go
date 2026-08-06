@@ -424,7 +424,7 @@ func parseKeepFromManifest(path string) ([]string, error) {
 		return nil, fmt.Errorf("unmarshaling owlbot manifest %s: %w", path, err)
 	}
 	manifest.Static = slices.DeleteFunc(manifest.Static, func(s string) bool {
-		return s == ".OwlBot.yaml" || s == ".owlbot.rb"
+		return s == ".OwlBot.yaml" || s == ".owlbot.rb" || s == "Gemfile.lock"
 	})
 	return manifest.Static, nil
 }

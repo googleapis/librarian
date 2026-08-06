@@ -75,11 +75,19 @@ func generatedFiles(model *api.API) []language.GeneratedFile {
 			outDir := filepath.Dir(fileInfo.OutputPath)
 			fileInfo.OutputPath = filepath.Join(outDir, "LICENSE")
 		}
-		if strings.HasSuffix(filepath.ToSlash(fileInfo.TemplatePath), "skills/tests.md.mustache") {
-			if codec.FakeList == "" {
-				continue
+		isSkill := false
+		for _, skill := range skillFiles {
+			if strings.HasSuffix(filepath.ToSlash(fileInfo.TemplatePath), skill.templatePath) {
+				isSkill = true
+				if skill.relevant(codec) {
+					fileInfo.OutputPath = filepath.Join("skills", codec.PackageName+skill.suffix, "SKILL.md")
+					result = append(result, fileInfo)
+				}
+				break
 			}
-			fileInfo.OutputPath = filepath.Join("skills", codec.PackageName+"-tests", "SKILL.md")
+		}
+		if isSkill {
+			continue
 		}
 		result = append(result, fileInfo)
 	}

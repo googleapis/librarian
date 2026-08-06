@@ -16,8 +16,10 @@ package php
 
 import (
 	"bufio"
+	"fmt"
 	"io/fs"
 	"os"
+	"path"
 	"path/filepath"
 	"regexp"
 	"strings"
@@ -36,18 +38,39 @@ type initParams struct {
 	apiShortName    string
 	productDocs     string
 	productHomepage string
+	protoPackage    string
+	apiVersion      string
 }
 
-func newInitParams(googleapisDir, apiPath string) (*initParams, error) {
-	api, err := serviceconfig.Find(googleapisDir, apiPath, config.LanguagePhp)
+func newInitParams(googleapisDir string, api *config.API) (*initParams, error) {
+	svcAPI, err := serviceconfig.Find(googleapisDir, api.Path, config.LanguagePhp)
 	if err != nil {
 		return nil, err
 	}
 	return &initParams{
-		apiShortName:    api.ShortName,
-		productDocs:     api.DocumentationURI,
-		productHomepage: repometadata.ExtractBaseProductURL(api.DocumentationURI),
+		apiShortName:    svcAPI.ShortName,
+		productDocs:     svcAPI.DocumentationURI,
+		productHomepage: repometadata.ExtractBaseProductURL(svcAPI.DocumentationURI),
+		protoPackage:    protoPackage(api),
+		apiVersion:      serviceconfig.ExtractVersion(api.Path),
 	}, nil
+}
+
+// componentNameForLibrary resolves the component name for a PHP library.
+// If library.PHP.ComponentName is set, it is returned as an explicit override.
+// Otherwise, the component name is derived on the fly from the php_namespace of the library's primary API.
+func componentNameForLibrary(googleapisDir string, library *config.Library) (string, error) {
+	if library.PHP != nil && library.PHP.ComponentName != "" {
+		return library.PHP.ComponentName, nil
+	}
+	if len(library.APIs) == 0 {
+		return "", fmt.Errorf("no apis configured for library %q", library.Name)
+	}
+	ns, err := namespace(googleapisDir, library.APIs[0].Path)
+	if err != nil {
+		return "", err
+	}
+	return componentName(ns), nil
 }
 
 // namespace reads the php_namespace option from the first .proto file in the API directory.
@@ -116,4 +139,16 @@ func backupNamespace(apiPath string) string {
 	ns := strings.Join(parts, `\`)
 	// Stripe the version suffix.
 	return versionSuffixRe.ReplaceAllString(ns, "")
+}
+
+// protoPackage returns the unversioned proto package from the API configuration or derived from the path.
+func protoPackage(api *config.API) string {
+	if api.PHP != nil && api.PHP.ProtoPackage != "" {
+		return api.PHP.ProtoPackage
+	}
+	apiPath := api.Path
+	if serviceconfig.ExtractVersion(apiPath) != "" {
+		apiPath = path.Dir(apiPath)
+	}
+	return strings.ReplaceAll(apiPath, "/", ".")
 }

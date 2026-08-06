@@ -108,8 +108,11 @@ deep-copy-regex:
 		},
 		Libraries: []*config.Library{
 			{
-				Name:    "SecretManager",
+				Name:    "secretmanager",
 				Version: "2.3.0",
+				PHP: &config.PHPPackage{
+					ComponentName: "SecretManager",
+				},
 				APIs: []*config.API{
 					{
 						Path: "google/cloud/secretmanager/v1",
@@ -266,6 +269,30 @@ api-name: GeoCommonProtos
 					Path: "google/geo/type",
 					PHP: &config.PHPAPI{
 						StagingSubdir: ".",
+					},
+				},
+			},
+		},
+		{
+			name: "api path with proto package override",
+			setupFile: func(dir string) string {
+				content := `
+deep-copy-regex:
+  - source: /google/cloud/translate/(v3)/.*-php/(.*)
+    dest: /owl-bot-staging/Translate/$1/$2
+api-name: Translate
+`
+				path := filepath.Join(dir, ".OwlBot.yaml")
+				if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
+					t.Fatal(err)
+				}
+				return path
+			},
+			want: []*config.API{
+				{
+					Path: "google/cloud/translate/v3",
+					PHP: &config.PHPAPI{
+						ProtoPackage: "google.cloud.translation",
 					},
 				},
 			},
@@ -458,8 +485,11 @@ deep-copy-regex:
 			globalDefaultCommonResources: true,
 			want: []*config.Library{
 				{
-					Name:    "SecretManager",
+					Name:    "secretmanager",
 					Version: "2.3.0",
+					PHP: &config.PHPPackage{
+						ComponentName: "SecretManager",
+					},
 					APIs: []*config.API{
 						{
 							Path: "google/cloud/secretmanager/v1",
@@ -467,6 +497,47 @@ deep-copy-regex:
 						},
 						{
 							Path: "google/cloud/multipygapic",
+							PHP: &config.PHPAPI{
+								CommonResources: new(false),
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "nested API path deriving lowercase hyphenated library name",
+			setupLib: func(t *testing.T, dir string) {
+				libDir := filepath.Join(dir, "SecurityPrivateCa")
+				if err := os.Mkdir(libDir, 0o755); err != nil {
+					t.Fatal(err)
+				}
+				if err := os.WriteFile(filepath.Join(libDir, "VERSION"), []byte("1.0.0\n"), 0o644); err != nil {
+					t.Fatal(err)
+				}
+				if err := os.WriteFile(filepath.Join(libDir, "composer.json"), []byte("{}"), 0o644); err != nil {
+					t.Fatal(err)
+				}
+				owlbotContent := `
+deep-copy-regex:
+  - source: /google/cloud/security/privateca/(v1)/.*-php/(.*)
+    dest: /owl-bot-staging/SecurityPrivateCa/$1/$2
+`
+				if err := os.WriteFile(filepath.Join(libDir, ".OwlBot.yaml"), []byte(owlbotContent), 0o644); err != nil {
+					t.Fatal(err)
+				}
+			},
+			globalDefaultCommonResources: true,
+			want: []*config.Library{
+				{
+					Name:    "security-privateca",
+					Version: "1.0.0",
+					PHP: &config.PHPPackage{
+						ComponentName: "SecurityPrivateCa",
+					},
+					APIs: []*config.API{
+						{
+							Path: "google/cloud/security/privateca/v1",
 							PHP: &config.PHPAPI{
 								CommonResources: new(false),
 							},

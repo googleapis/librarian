@@ -823,6 +823,8 @@ type PHPDefault struct {
 
 // PHPPackage contains PHP-specific library configuration.
 type PHPPackage struct {
+	// ComponentName overrides the derived component name used for output/staging.
+	ComponentName string `yaml:"component_name,omitempty"`
 }
 
 // PHPAPI represents configuration for a single API within a PHP package.
@@ -833,6 +835,9 @@ type PHPAPI struct {
 	// CommonResources indicates whether to include common resources in generation.
 	// Must be configured either globally or per-API.
 	CommonResources *bool `yaml:"common_resources,omitempty"`
+
+	// ProtoPackage overrides the derived proto package for the API.
+	ProtoPackage string `yaml:"proto_package,omitempty"`
 
 	// StagingSubdir is the subdirectory in staging where the generated files should be placed.
 	StagingSubdir string `yaml:"staging_subdir,omitempty"`
