@@ -19,6 +19,7 @@ import (
 	"fmt"
 
 	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/sidekick/api"
 	"github.com/googleapis/librarian/internal/sidekick/parser"
 	sidekickswift "github.com/googleapis/librarian/internal/sidekick/swift"
 	"github.com/googleapis/librarian/internal/sources"
@@ -70,6 +71,14 @@ func moduleToModelConfig(library *config.Library, module *config.SwiftModule, sr
 	} else if library.Swift != nil && len(library.Swift.IncludeList) > 0 {
 		sourceConfig.IncludeList = library.Swift.IncludeList
 	}
+
+	var skippedIDs []string
+	if len(module.SkippedIds) > 0 {
+		skippedIDs = module.SkippedIds
+	} else if library.Swift != nil && len(library.Swift.SkippedIds) > 0 {
+		skippedIDs = library.Swift.SkippedIds
+	}
+
 	specFormat := config.SpecProtobuf
 	if library.SpecificationFormat != "" {
 		specFormat = library.SpecificationFormat
@@ -80,5 +89,8 @@ func moduleToModelConfig(library *config.Library, module *config.SwiftModule, sr
 		SpecificationSource: module.APIPath,
 		ServiceConfig:       module.ServiceConfig,
 		Source:              sourceConfig,
+		Override: api.ModelOverride{
+			SkippedIDs: skippedIDs,
+		},
 	}
 }
