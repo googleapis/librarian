@@ -19,6 +19,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io/fs"
 	"os"
 	"path"
 	"path/filepath"
@@ -143,6 +144,9 @@ func generateAPI(ctx context.Context, params generateAPIParams) error {
 
 	apiDir := filepath.Join(primaryDir, params.api.Path)
 	apiProtos, err := proto.Gather(apiDir, params.api.Path)
+	if errors.Is(err, fs.ErrNotExist) {
+		return fmt.Errorf("%s: %w", params.api.Path, errNoProtos)
+	}
 	if err != nil {
 		return fmt.Errorf("failed to find protos: %w", err)
 	}
