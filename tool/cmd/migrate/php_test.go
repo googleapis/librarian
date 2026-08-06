@@ -565,6 +565,45 @@ deep-copy-regex:
 			globalDefaultCommonResources: true,
 			want:                         nil,
 		},
+		{
+			name: "custom component name override when name has case-only difference from derived component name",
+			setupLib: func(t *testing.T, dir string) {
+				libDir := filepath.Join(dir, "secretmanager")
+				if err := os.Mkdir(libDir, 0o755); err != nil {
+					t.Fatal(err)
+				}
+				if err := os.WriteFile(filepath.Join(libDir, "VERSION"), []byte("2.3.0\n"), 0o644); err != nil {
+					t.Fatal(err)
+				}
+				if err := os.WriteFile(filepath.Join(libDir, "composer.json"), []byte("{}"), 0o644); err != nil {
+					t.Fatal(err)
+				}
+				owlbotContent := `
+deep-copy-regex:
+  - source: /google/cloud/secretmanager/(v1)/.*-php/(.*)
+    dest: /owl-bot-staging/secretmanager/$1/$2
+`
+				if err := os.WriteFile(filepath.Join(libDir, ".OwlBot.yaml"), []byte(owlbotContent), 0o644); err != nil {
+					t.Fatal(err)
+				}
+			},
+			globalDefaultCommonResources: true,
+			want: []*config.Library{
+				{
+					Name:    "secretmanager",
+					Version: "2.3.0",
+					PHP: &config.PHPPackage{
+						ComponentName: "secretmanager",
+					},
+					APIs: []*config.API{
+						{
+							Path: "google/cloud/secretmanager/v1",
+							PHP:  &config.PHPAPI{},
+						},
+					},
+				},
+			},
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			dir := t.TempDir()

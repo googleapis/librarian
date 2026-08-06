@@ -274,7 +274,7 @@ func findPHPLibraries(repoPath string, googleapisDir string, globalDefaultCommon
 			log.Printf("Warning: failed to derive component name for %s: %v", name, err)
 			continue
 		}
-		if !strings.EqualFold(derivedComp, name) {
+		if derivedComp != name {
 			log.Printf("DEBUG: %s: custom component_name=%q differs from derived=%q", name, name, derivedComp)
 			lib.PHP = &config.PHPPackage{
 				ComponentName: name,
