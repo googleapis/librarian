@@ -121,6 +121,9 @@ func TestGenerate_Error(t *testing.T) {
 			name: "missing common_resources config",
 			lib: &config.Library{
 				Name: "SecretManager",
+				PHP: &config.PHPPackage{
+					ComponentName: "SecretManager",
+				},
 				APIs: []*config.API{
 					{
 						Path: "google/cloud/secretmanager/v1",

@@ -16,6 +16,7 @@ package php
 
 import (
 	"bufio"
+	"fmt"
 	"io/fs"
 	"os"
 	"path"
@@ -53,6 +54,23 @@ func newInitParams(googleapisDir string, api *config.API) (*initParams, error) {
 		protoPackage:    protoPackage(api),
 		apiVersion:      serviceconfig.ExtractVersion(api.Path),
 	}, nil
+}
+
+// componentNameForLibrary resolves the component name for a PHP library.
+// If library.PHP.ComponentName is set, it is returned as an explicit override.
+// Otherwise, the component name is derived on the fly from the php_namespace of the library's primary API.
+func componentNameForLibrary(googleapisDir string, library *config.Library) (string, error) {
+	if library.PHP != nil && library.PHP.ComponentName != "" {
+		return library.PHP.ComponentName, nil
+	}
+	if len(library.APIs) == 0 {
+		return "", fmt.Errorf("no apis configured for library %q", library.Name)
+	}
+	ns, err := namespace(googleapisDir, library.APIs[0].Path)
+	if err != nil {
+		return "", err
+	}
+	return componentName(ns), nil
 }
 
 // namespace reads the php_namespace option from the first .proto file in the API directory.

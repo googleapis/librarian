@@ -31,8 +31,11 @@ func TestPostProcess_MissingOwlBot(t *testing.T) {
 	lib := &config.Library{
 		Name:   "SecretManager",
 		Output: destDir,
+		PHP: &config.PHPPackage{
+			ComponentName: "SecretManager",
+		},
 	}
-	err := postProcessLibrary(ctx, lib)
+	err := postProcessLibrary(ctx, lib, lib.PHP.ComponentName)
 	if !errors.Is(err, errOwlBotNotFound) {
 		t.Errorf("postProcessLibrary() error = %v, want = %v", err, errOwlBotNotFound)
 	}
@@ -58,8 +61,11 @@ func TestPostProcess_OwlBot(t *testing.T) {
 	lib := &config.Library{
 		Name:   "SecretManager",
 		Output: destDir,
+		PHP: &config.PHPPackage{
+			ComponentName: "SecretManager",
+		},
 	}
-	if err := postProcessLibrary(ctx, lib); err != nil {
+	if err := postProcessLibrary(ctx, lib, lib.PHP.ComponentName); err != nil {
 		t.Fatal(err)
 	}
 	// Verify owlbot.py ran
@@ -85,8 +91,11 @@ func TestPostProcess_OwlBotError(t *testing.T) {
 	lib := &config.Library{
 		Name:   "SecretManager",
 		Output: destDir,
+		PHP: &config.PHPPackage{
+			ComponentName: "SecretManager",
+		},
 	}
-	err := postProcessLibrary(ctx, lib)
+	err := postProcessLibrary(ctx, lib, lib.PHP.ComponentName)
 	if err == nil {
 		t.Fatal("postProcessLibrary() expected error, got nil")
 	}
@@ -117,8 +126,11 @@ func TestPostProcess_StatError(t *testing.T) {
 	lib := &config.Library{
 		Name:   "SecretManager",
 		Output: inaccessibleDir,
+		PHP: &config.PHPPackage{
+			ComponentName: "SecretManager",
+		},
 	}
-	err := postProcessLibrary(ctx, lib)
+	err := postProcessLibrary(ctx, lib, lib.PHP.ComponentName)
 	if !errors.Is(err, os.ErrPermission) {
 		t.Errorf("expected permission error, got: %v", err)
 	}
@@ -155,8 +167,11 @@ func TestPostProcess_CleanupError(t *testing.T) {
 	lib := &config.Library{
 		Name:   "SecretManager",
 		Output: destDir,
+		PHP: &config.PHPPackage{
+			ComponentName: "SecretManager",
+		},
 	}
-	err := postProcessLibrary(ctx, lib)
+	err := postProcessLibrary(ctx, lib, lib.PHP.ComponentName)
 	if !errors.Is(err, os.ErrPermission) {
 		t.Errorf("expected permission error, got: %v", err)
 	}

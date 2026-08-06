@@ -75,18 +75,25 @@ func Generate(ctx context.Context, cfg *config.Config, library *config.Library, 
 		}
 	}()
 
-	stagingDir := filepath.Join(owlBotStagingDir, library.Name)
+	for _, api := range library.APIs {
+		if api.PHP == nil || api.PHP.StagingSubdir == "" {
+			return fmt.Errorf("API %q: %w", api.Path, errMissingStagingSubdir)
+		}
+	}
+	srcCfg := sources.NewSourceConfig(src, library.Roots)
+	googleapisDir := srcCfg.Root("googleapis")
+	componentName, err := componentNameForLibrary(googleapisDir, library)
+	if err != nil {
+		return err
+	}
+	stagingDir := filepath.Join(owlBotStagingDir, componentName)
 	if err := os.RemoveAll(stagingDir); err != nil {
 		return err
 	}
 	if err := os.MkdirAll(stagingDir, 0o755); err != nil {
 		return err
 	}
-	srcCfg := sources.NewSourceConfig(src, library.Roots)
 	for _, api := range library.APIs {
-		if api.PHP == nil || api.PHP.StagingSubdir == "" {
-			return fmt.Errorf("API %q: %w", api.Path, errMissingStagingSubdir)
-		}
 		gapicDestDir := filepath.Join(stagingDir, api.PHP.StagingSubdir)
 		protoDestDir := filepath.Join(gapicDestDir, "proto/src")
 
@@ -104,7 +111,7 @@ func Generate(ctx context.Context, cfg *config.Config, library *config.Library, 
 			return err
 		}
 	}
-	if err := postProcessLibrary(ctx, library); err != nil {
+	if err := postProcessLibrary(ctx, library, componentName); err != nil {
 		return fmt.Errorf("failed to postprocess: %w", err)
 	}
 	return nil

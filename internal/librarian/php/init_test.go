@@ -266,3 +266,46 @@ func TestProtoPackage(t *testing.T) {
 		})
 	}
 }
+
+func TestComponentNameForLibrary(t *testing.T) {
+	googleapisDir := filepath.Join("..", "..", "testdata", "googleapis")
+	for _, test := range []struct {
+		name    string
+		library *config.Library
+		want    string
+	}{
+		{
+			name: "derived from proto namespace",
+			library: &config.Library{
+				Name: "SecretManager",
+				APIs: []*config.API{
+					{Path: "google/cloud/secretmanager/v1"},
+				},
+			},
+			want: "SecretManager",
+		},
+		{
+			name: "explicit config override",
+			library: &config.Library{
+				Name: "AccessContextManager",
+				PHP: &config.PHPPackage{
+					ComponentName: "AccessContextManager",
+				},
+				APIs: []*config.API{
+					{Path: "google/identity/accesscontextmanager/v1"},
+				},
+			},
+			want: "AccessContextManager",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got, err := componentNameForLibrary(googleapisDir, test.library)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if got != test.want {
+				t.Errorf("ComponentNameForLibrary() = %q, want %q", got, test.want)
+			}
+		})
+	}
+}
