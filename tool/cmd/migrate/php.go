@@ -270,6 +270,7 @@ func findPHPLibraries(repoPath string, googleapisDir string, globalDefaultCommon
 		if err != nil {
 			// If component name derivation fails (e.g. proto file missing or unresolvable in googleapis),
 			// log a warning and skip migrating this library so it does not block migration of other libraries.
+			// For example, ApigeeRegistry has proto files removed recently.
 			log.Printf("Warning: failed to derive component name for %s: %v", name, err)
 			continue
 		}
