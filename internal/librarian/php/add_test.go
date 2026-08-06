@@ -28,31 +28,31 @@ func TestDefaultLibraryName(t *testing.T) {
 	}{
 		{
 			apiPath: "google/cloud/speech/v2",
-			want:    "Speech",
+			want:    "speech",
 		},
 		{
 			apiPath: "google/cloud/security/privateca/v1",
-			want:    "SecurityPrivateca",
+			want:    "security-privateca",
 		},
 		{
 			apiPath: "google/cloud/bigquery/datatransfer/v1",
-			want:    "BigqueryDatatransfer",
+			want:    "bigquery-datatransfer",
 		},
 		{
 			apiPath: "google/pubsub/v1",
-			want:    "Pubsub",
+			want:    "pubsub",
 		},
 		{
 			apiPath: "google/cloud/vision",
-			want:    "Vision",
+			want:    "vision",
 		},
 		{
 			apiPath: "google/cloud/vision/v1",
-			want:    "Vision",
+			want:    "vision",
 		},
 		{
 			apiPath: "google/cloud/vision/v1p1beta1",
-			want:    "Vision",
+			want:    "vision",
 		},
 	} {
 		t.Run(test.apiPath, func(t *testing.T) {
