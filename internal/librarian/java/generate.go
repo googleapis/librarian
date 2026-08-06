@@ -41,7 +41,7 @@ var (
 	errMonorepoVersion = fmt.Errorf("failed to find monorepo version for %q in config", rootLibrary)
 	errParentVersion   = fmt.Errorf("failed to find parent version for %q in config", parentPOM)
 	errUnrecognizedAPI = errors.New("unrecognized non-cloud API: configure java.group_id and java.distribution_name_override in librarian.yaml")
-	runProtoc = func(ctx context.Context, pc *config.Protoc, args []string) error {
+	runProtoc          = func(ctx context.Context, pc *config.Protoc, args []string) error {
 		env, err := getToolsEnv()
 		if err != nil {
 			return err
