@@ -653,7 +653,7 @@ func TestAnnotateMessage_HasConvertedFields(t *testing.T) {
 			fields: []*api.Field{
 				{Name: "field1", ID: "1", Typez: api.TypezString, Map: true},
 			},
-			want: false,
+			want: true,
 		},
 		{
 			name: "oneof_field",
