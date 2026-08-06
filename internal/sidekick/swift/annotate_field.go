@@ -210,7 +210,7 @@ func (c *codec) annotateField(field *api.Field, model *modelAnnotations) (*field
 			annotations.UrlSafeValue = true
 		}
 	}
-	if !field.IsOneOf && !field.Map {
+	if !field.Map {
 		annotations.ProtoFieldName = protoFieldName(field.Name)
 		annotations.ProtoFieldNamePascal = protoFieldNamePascal(field.Name)
 		annotations.PrimitiveFieldType = parts.Base

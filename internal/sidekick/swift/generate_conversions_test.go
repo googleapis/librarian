@@ -324,3 +324,97 @@ func TestGenerateConversions_RepeatedFields(t *testing.T) {
 		t.Errorf("toProto() mismatch (-want +got):\n%s", diff)
 	}
 }
+
+func TestGenerateConversions_OneOf(t *testing.T) {
+	outDir := t.TempDir()
+
+	inner := &api.Message{
+		Name:    "Inner",
+		Package: "test",
+		ID:      ".test.Inner",
+	}
+
+	oneof := &api.OneOf{
+		Name: "choice",
+	}
+
+	field1 := &api.Field{
+		Name:    "string_field",
+		ID:      ".test.Outer.string_field",
+		Typez:   api.TypezString,
+		IsOneOf: true,
+		Group:   oneof,
+	}
+	field2 := &api.Field{
+		Name:    "message_field",
+		ID:      ".test.Outer.message_field",
+		Typez:   api.TypezMessage,
+		TypezID: ".test.Inner",
+		IsOneOf: true,
+		Group:   oneof,
+	}
+
+	outer := &api.Message{
+		Name:    "Outer",
+		Package: "test",
+		ID:      ".test.Outer",
+		Fields:  []*api.Field{field1, field2},
+		OneOfs:  []*api.OneOf{oneof},
+	}
+	oneof.Fields = []*api.Field{field1, field2}
+	field1.Parent = outer
+	field2.Parent = outer
+
+	model := api.NewTestAPI([]*api.Message{inner, outer}, []*api.Enum{}, []*api.Service{})
+	model.PackageName = "test"
+
+	library := &config.Library{}
+	module := &config.SwiftModule{
+		ModulePath: "TestProtos",
+	}
+
+	if err := GenerateConversions(t.Context(), model, outDir, library, module); err != nil {
+		t.Fatal(err)
+	}
+
+	b, err := os.ReadFile(filepath.Join(outDir, "Outer+Convert.swift"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	gotContent := string(b)
+
+	got := extractBlock(t, gotContent, "  internal init(proto: ProtoType) throws {", "\n  }")
+	wantInit := `  internal init(proto: ProtoType) throws {
+    self.init()
+    if let oneof = proto.choice {
+      switch oneof {
+      case .stringField(let value):
+        self.choice = .stringField(value)
+      case .messageField(let value):
+        self.choice = .messageField(try .init(proto: value))
+      }
+    }
+  }`
+	if diff := cmp.Diff(wantInit, got); diff != "" {
+		t.Errorf("init(proto:) mismatch (-want +got):\n%s", diff)
+	}
+
+	got = extractBlock(t, gotContent, "  internal func toProto() throws -> ProtoType {", "\n  }")
+	wantToProto := `  internal func toProto() throws -> ProtoType {
+    var proto = ProtoType()
+    if let oneof = self.choice {
+      switch oneof {
+      case .stringField(let value):
+        proto.choice = .stringField(value)
+      case .messageField(let value):
+        if let value = value {
+          proto.choice = .messageField(try value.toProto())
+        }
+      }
+    }
+    return proto
+  }`
+	if diff := cmp.Diff(wantToProto, got); diff != "" {
+		t.Errorf("toProto() mismatch (-want +got):\n%s", diff)
+	}
+}
