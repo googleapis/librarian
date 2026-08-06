@@ -260,9 +260,7 @@ func findPHPLibraries(repoPath string, googleapisDir string, globalDefaultCommon
 		if len(apis) == 0 {
 			continue
 		}
-
 		libraryName := php.DefaultLibraryName(apis[0].Path)
-
 		libs = append(libs, &config.Library{
 			Name:    libraryName,
 			Version: version,
