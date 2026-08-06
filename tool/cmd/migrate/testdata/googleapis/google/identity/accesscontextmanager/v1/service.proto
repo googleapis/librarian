@@ -1,0 +1,5 @@
+syntax = "proto3";
+
+package google.identity.accesscontextmanager.v1;
+
+option php_namespace = "Google\\Identity\\AccessContextManager\\V1";

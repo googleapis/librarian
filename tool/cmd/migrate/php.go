@@ -30,6 +30,7 @@ import (
 	"github.com/bazelbuild/buildtools/build"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/librarian"
+	"github.com/googleapis/librarian/internal/librarian/php"
 	"github.com/googleapis/librarian/internal/yaml"
 )
 
@@ -260,14 +261,26 @@ func findPHPLibraries(repoPath string, googleapisDir string, globalDefaultCommon
 			continue
 		}
 
-		libs = append(libs, &config.Library{
+		lib := &config.Library{
 			Name:    name,
 			Version: version,
-			PHP: &config.PHPPackage{
+			APIs:    apis,
+		}
+		derivedComp, err := php.ComponentNameForLibrary(googleapisDir, lib)
+		if err != nil {
+			// If component name derivation fails (e.g. proto file missing or unresolvable in googleapis),
+			// log a warning and skip migrating this library so it does not block migration of other libraries.
+			log.Printf("Warning: failed to derive component name for %s: %v", name, err)
+			continue
+		}
+		if !strings.EqualFold(derivedComp, name) {
+			log.Printf("DEBUG: %s: custom component_name=%q differs from derived=%q", name, name, derivedComp)
+			lib.PHP = &config.PHPPackage{
 				ComponentName: name,
-			},
-			APIs: apis,
-		})
+			}
+		}
+
+		libs = append(libs, lib)
 	}
 	return libs, nil
 }

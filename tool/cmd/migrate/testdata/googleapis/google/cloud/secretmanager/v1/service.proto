@@ -1,0 +1,5 @@
+syntax = "proto3";
+
+package google.cloud.secretmanager.v1;
+
+option php_namespace = "Google\\Cloud\\SecretManager\\V1";

@@ -110,9 +110,6 @@ deep-copy-regex:
 			{
 				Name:    "SecretManager",
 				Version: "2.3.0",
-				PHP: &config.PHPPackage{
-					ComponentName: "SecretManager",
-				},
 				APIs: []*config.API{
 					{
 						Path: "google/cloud/secretmanager/v1",
@@ -487,9 +484,6 @@ deep-copy-regex:
 				{
 					Name:    "SecretManager",
 					Version: "2.3.0",
-					PHP: &config.PHPPackage{
-						ComponentName: "SecretManager",
-					},
 					APIs: []*config.API{
 						{
 							Path: "google/cloud/secretmanager/v1",
@@ -504,6 +498,72 @@ deep-copy-regex:
 					},
 				},
 			},
+		},
+		{
+			name: "custom component name override when name differs from derived component name",
+			setupLib: func(t *testing.T, dir string) {
+				libDir := filepath.Join(dir, "AccessContextManager")
+				if err := os.Mkdir(libDir, 0o755); err != nil {
+					t.Fatal(err)
+				}
+				if err := os.WriteFile(filepath.Join(libDir, "VERSION"), []byte("1.0.0\n"), 0o644); err != nil {
+					t.Fatal(err)
+				}
+				if err := os.WriteFile(filepath.Join(libDir, "composer.json"), []byte("{}"), 0o644); err != nil {
+					t.Fatal(err)
+				}
+				owlbotContent := `
+deep-copy-regex:
+  - source: /google/identity/accesscontextmanager/(v1)/.*-php/(.*)
+    dest: /owl-bot-staging/AccessContextManager/$1/$2
+`
+				if err := os.WriteFile(filepath.Join(libDir, ".OwlBot.yaml"), []byte(owlbotContent), 0o644); err != nil {
+					t.Fatal(err)
+				}
+			},
+			globalDefaultCommonResources: true,
+			want: []*config.Library{
+				{
+					Name:    "AccessContextManager",
+					Version: "1.0.0",
+					PHP: &config.PHPPackage{
+						ComponentName: "AccessContextManager",
+					},
+					APIs: []*config.API{
+						{
+							Path: "google/identity/accesscontextmanager/v1",
+							PHP: &config.PHPAPI{
+								CommonResources: new(false),
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "skips library when component name derivation fails",
+			setupLib: func(t *testing.T, dir string) {
+				libDir := filepath.Join(dir, "NonExistentAPI")
+				if err := os.Mkdir(libDir, 0o755); err != nil {
+					t.Fatal(err)
+				}
+				if err := os.WriteFile(filepath.Join(libDir, "VERSION"), []byte("1.0.0\n"), 0o644); err != nil {
+					t.Fatal(err)
+				}
+				if err := os.WriteFile(filepath.Join(libDir, "composer.json"), []byte("{}"), 0o644); err != nil {
+					t.Fatal(err)
+				}
+				owlbotContent := `
+deep-copy-regex:
+  - source: /google/cloud/nonexistent/(v1)/.*-php/(.*)
+    dest: /owl-bot-staging/NonExistentAPI/$1/$2
+`
+				if err := os.WriteFile(filepath.Join(libDir, ".OwlBot.yaml"), []byte(owlbotContent), 0o644); err != nil {
+					t.Fatal(err)
+				}
+			},
+			globalDefaultCommonResources: true,
+			want:                         nil,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
