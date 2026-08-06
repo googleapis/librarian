@@ -266,7 +266,13 @@ func deleteAfterGeneration(api *config.API, stagingDir string) error {
 		return nil
 	}
 	for _, path := range api.Ruby.DeleteGenerationOutputPaths {
-		if err := os.RemoveAll(filepath.Join(stagingDir, "lib", path)); err != nil {
+		target := filepath.Join(stagingDir, "lib", path)
+		// Return an error for non-existent paths to keep the configurations
+		// up to date.
+		if _, err := os.Stat(target); err != nil {
+			return fmt.Errorf("failed to stat %s: %w", path, err)
+		}
+		if err := os.RemoveAll(target); err != nil {
 			return fmt.Errorf("failed to remove %s: %w", path, err)
 		}
 	}

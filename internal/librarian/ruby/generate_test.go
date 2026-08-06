@@ -720,22 +720,6 @@ func TestDeleteAfterGeneration(t *testing.T) {
 				"google/cloud/secret_manager/v1/version.rb",
 			},
 		},
-		{
-			name: "non-existent path to delete",
-			api: &config.API{
-				Ruby: &config.RubyAPI{
-					DeleteGenerationOutputPaths: []string{
-						"google/cloud/secret_manager/v1/nonexistent.rb",
-					},
-				},
-			},
-			files: []string{
-				"google/cloud/secret_manager/v1/version.rb",
-			},
-			wantFiles: []string{
-				"google/cloud/secret_manager/v1/version.rb",
-			},
-		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			stagingDir := t.TempDir()
@@ -788,6 +772,17 @@ func TestDeleteAfterGeneration_Error(t *testing.T) {
 		setup   func(t *testing.T, stagingDir string)
 		wantErr error
 	}{
+		{
+			name: "path does not exist",
+			api: &config.API{
+				Ruby: &config.RubyAPI{
+					DeleteGenerationOutputPaths: []string{
+						"google/cloud/secret_manager/v1/nonexistent.rb",
+					},
+				},
+			},
+			wantErr: fs.ErrNotExist,
+		},
 		{
 			name: "cannot delete file from read-only directory",
 			api: &config.API{
