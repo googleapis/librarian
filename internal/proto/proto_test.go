@@ -141,26 +141,8 @@ func TestGather(t *testing.T) {
 }
 
 func TestGather_Error(t *testing.T) {
-	t.Parallel()
-	for _, test := range []struct {
-		name    string
-		root    string
-		relPath string
-		wantErr error
-	}{
-		{
-			name:    "non-existent directory",
-			root:    "/non/existent/path",
-			relPath: "google/cloud/foo",
-			wantErr: fs.ErrNotExist,
-		},
-	} {
-		t.Run(test.name, func(t *testing.T) {
-			t.Parallel()
-			_, err := Gather(test.root, test.relPath)
-			if !errors.Is(err, test.wantErr) {
-				t.Errorf("Gather() error = %v, want %v", err, test.wantErr)
-			}
-		})
+	_, err := Gather("/non/existent/path", "google/cloud/foo")
+	if !errors.Is(err, fs.ErrNotExist) {
+		t.Errorf("Gather() error = %v, want %v", err, fs.ErrNotExist)
 	}
 }
