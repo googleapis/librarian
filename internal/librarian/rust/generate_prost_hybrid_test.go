@@ -191,6 +191,50 @@ func TestFilterModelToStreamingNonStreamingFieldLookup(t *testing.T) {
 	}
 }
 
+func TestFilterModelToStreamingExternalTypes(t *testing.T) {
+	streamMsg := api.NewTestMessage("StreamMsg").WithPackage("google.test.v1")
+	externalMsg := api.NewTestMessage("LatLng").WithPackage("google.type")
+	externalEnum := &api.Enum{Name: "DayOfWeek", ID: ".google.type.DayOfWeek", Package: "google.type"}
+
+	streamMsg.Fields = []*api.Field{
+		{
+			Name:    "location",
+			TypezID: externalMsg.ID,
+			Typez:   api.TypezMessage,
+		},
+		{
+			Name:    "day",
+			TypezID: externalEnum.ID,
+			Typez:   api.TypezEnum,
+		},
+	}
+
+	chatMethod := api.NewTestMethod("Chat").WithInput(streamMsg).WithOutput(streamMsg).WithBidiStreaming()
+	bidiService := api.NewTestService("BidiService").WithPackage("google.test.v1").WithMethods(chatMethod)
+
+	model := api.NewTestAPI([]*api.Message{streamMsg}, []*api.Enum{}, []*api.Service{bidiService})
+	model.AddMessage(externalMsg)
+	model.AddEnum(externalEnum)
+	if err := api.CrossReference(model); err != nil {
+		t.Fatal(err)
+	}
+
+	filtered, _, _, err := filterModelToStreaming(model)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if len(filtered.Messages) != 1 || filtered.Messages[0].ID != streamMsg.ID {
+		t.Errorf("got package messages %v, want [%s]", filtered.Messages, streamMsg.ID)
+	}
+	if len(filtered.ExternalMessages) != 1 || filtered.ExternalMessages[0].ID != externalMsg.ID {
+		t.Errorf("got ExternalMessages %v, want [%s]", filtered.ExternalMessages, externalMsg.ID)
+	}
+	if len(filtered.ExternalEnums) != 1 || filtered.ExternalEnums[0].ID != externalEnum.ID {
+		t.Errorf("got ExternalEnums %v, want [%s]", filtered.ExternalEnums, externalEnum.ID)
+	}
+}
+
 func TestFilterModelToStreamingAnyError(t *testing.T) {
 	// Verify google.protobuf.Any in streaming path returns error with recommendation
 	anyMsg := api.NewTestMessage("AnyReq").WithPackage("google.test.v1").WithFields(
