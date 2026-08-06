@@ -73,6 +73,26 @@ extension {{Codec.ParameterTypeName}} {
     {{/Repeated}}
     {{/IsOneOf}}
     {{/Fields}}
+    {{#OneOfs}}
+    if let oneof = proto.{{Codec.PropertyName}} {
+      switch oneof {
+      {{#Fields}}
+      case .{{Codec.ProtoFieldName}}(let value):
+        {{#IsObject}}
+        self.{{Group.Codec.PropertyName}} = .{{Codec.Name}}(try .init(proto: value))
+        {{/IsObject}}
+        {{#IsEnum}}
+        self.{{Group.Codec.PropertyName}} = .{{Codec.Name}}(.init(proto: value))
+        {{/IsEnum}}
+        {{^IsObject}}
+        {{^IsEnum}}
+        self.{{Group.Codec.PropertyName}} = .{{Codec.Name}}(value)
+        {{/IsEnum}}
+        {{/IsObject}}
+      {{/Fields}}
+      }
+    }
+    {{/OneOfs}}
   }
 
   internal func toProto() throws -> ProtoType {
@@ -137,6 +157,28 @@ extension {{Codec.ParameterTypeName}} {
     {{/Repeated}}
     {{/IsOneOf}}
     {{/Fields}}
+    {{#OneOfs}}
+    if let oneof = self.{{Codec.PropertyName}} {
+      switch oneof {
+      {{#Fields}}
+      case .{{Codec.Name}}(let value):
+        {{#IsObject}}
+        if let value = value {
+          proto.{{Group.Codec.PropertyName}} = .{{Codec.ProtoFieldName}}(try value.toProto())
+        }
+        {{/IsObject}}
+        {{#IsEnum}}
+        proto.{{Group.Codec.PropertyName}} = .{{Codec.ProtoFieldName}}(try value.toProto())
+        {{/IsEnum}}
+        {{^IsObject}}
+        {{^IsEnum}}
+        proto.{{Group.Codec.PropertyName}} = .{{Codec.ProtoFieldName}}(value)
+        {{/IsEnum}}
+        {{/IsObject}}
+      {{/Fields}}
+      }
+    }
+    {{/OneOfs}}
     return proto
   }
 }
