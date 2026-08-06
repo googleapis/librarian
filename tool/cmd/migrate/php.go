@@ -30,6 +30,7 @@ import (
 	"github.com/bazelbuild/buildtools/build"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/librarian"
+	"github.com/googleapis/librarian/internal/librarian/php"
 	"github.com/googleapis/librarian/internal/yaml"
 )
 
@@ -260,8 +261,10 @@ func findPHPLibraries(repoPath string, googleapisDir string, globalDefaultCommon
 			continue
 		}
 
+		libraryName := php.DefaultLibraryName(apis[0].Path)
+
 		libs = append(libs, &config.Library{
-			Name:    name,
+			Name:    libraryName,
 			Version: version,
 			PHP: &config.PHPPackage{
 				ComponentName: name,
