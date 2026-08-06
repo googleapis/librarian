@@ -79,7 +79,9 @@ pub mod {{Codec.ModuleName}} {
     }
 
     {{#Codec.Methods}}
-    {{^Codec.IsBidiStreaming}}
+    {{#Codec.IsBidiStreaming}}
+    #[cfg(google_cloud_unstable_gapic_streaming)]
+    {{/Codec.IsBidiStreaming}}
     /// The request builder for [{{Codec.ServiceNameToPascal}}::{{Codec.NameNoMangling}}][crate::client::{{Codec.ServiceNameToPascal}}::{{Codec.NameNoMangling}}] calls.
     {{^Codec.InternalBuilders}}
     ///
@@ -105,8 +107,14 @@ pub mod {{Codec.ModuleName}} {
     {{/Pagination}}
     {{^Pagination}}
     ///
+    {{#Codec.IsBidiStreaming}}
+    /// let builder = prepare_request_builder();
+    /// let (sender, mut receiver) = builder.build().await;
+    {{/Codec.IsBidiStreaming}}
+    {{^Codec.IsBidiStreaming}}
     /// let builder = prepare_request_builder();
     /// let response = builder.send().await?;
+    {{/Codec.IsBidiStreaming}}
     {{/Pagination}}
     {{/OperationInfo}}
     /// # Ok(()) }
@@ -120,6 +128,9 @@ pub mod {{Codec.ModuleName}} {
     #[derive(Clone, Debug)]
     {{Codec.BuilderVisibility}} struct {{Codec.BuilderName}}(RequestBuilder<{{InputType.Codec.QualifiedName}}>);
 
+    {{#Codec.IsBidiStreaming}}
+    #[cfg(google_cloud_unstable_gapic_streaming)]
+    {{/Codec.IsBidiStreaming}}
     impl {{Codec.BuilderName}} {
         pub(crate) fn new(stub: std::sync::Arc<dyn super::super::stub::dynamic::{{Codec.ServiceNameToPascal}}>) -> Self {
             Self(
@@ -127,11 +138,13 @@ pub mod {{Codec.ModuleName}} {
             )
         }
 
+        {{^Codec.IsBidiStreaming}}
         /// Sets the full request, replacing any prior values.
         pub fn with_request<V: Into<{{InputType.Codec.QualifiedName}}>>(mut self, v: V) -> Self {
             self.0.request = v.into();
             self
         }
+        {{/Codec.IsBidiStreaming}}
 
         /// Sets all the options, replacing any prior values.
         pub fn with_options<V: Into<crate::RequestOptions>>(mut self, v: V) -> Self {
@@ -139,6 +152,16 @@ pub mod {{Codec.ModuleName}} {
             self
         }
 
+        {{#Codec.IsBidiStreaming}}
+        /// Builds the stream.
+        pub async fn build(self) -> (
+            google_cloud_gax::streaming::RequestSender<{{InputType.Codec.QualifiedName}}>,
+            google_cloud_gax::streaming::ResponseReceiver<{{OutputType.Codec.QualifiedName}}>,
+        ) {
+            (*self.0.stub).{{Codec.Name}}(self.0.options).await
+        }
+        {{/Codec.IsBidiStreaming}}
+        {{^Codec.IsBidiStreaming}}
         /// Sends the request.
         {{#OperationInfo}}
         ///
@@ -597,15 +620,18 @@ pub mod {{Codec.ModuleName}} {
         {{/Map}}
         {{/Fields}}
         {{/InputType.OneOfs}}
+        {{/Codec.IsBidiStreaming}}
     }
 
+    {{#Codec.IsBidiStreaming}}
+    #[cfg(google_cloud_unstable_gapic_streaming)]
+    {{/Codec.IsBidiStreaming}}
     #[doc(hidden)]
     impl crate::RequestBuilder for {{Codec.BuilderName}} {
         fn request_options(&mut self) -> &mut crate::RequestOptions {
             &mut self.0.options
         }
     }
-    {{/Codec.IsBidiStreaming}}
 
     {{/Codec.Methods}}
 }
