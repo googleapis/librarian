@@ -37,9 +37,6 @@ func Format(ctx context.Context, libraries ...*config.Library) error {
 		}
 		allFiles = append(allFiles, files...)
 	}
-	if len(allFiles) == 0 {
-		return nil
-	}
 	env, err := getToolsEnv()
 	if err != nil {
 		return err
