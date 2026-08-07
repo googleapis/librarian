@@ -181,16 +181,17 @@ func TestNewInitParams(t *testing.T) {
 	t.Parallel()
 	googleapisDir := filepath.Join("..", "..", "testdata", "googleapis")
 	for _, test := range []struct {
-		name string
-		api  *config.API
-		want *initParams
+		name    string
+		library *config.Library
+		want    *initParams
 	}{
 		{
 			name: "default derived protoPackage",
-			api: &config.API{
-				Path: "google/cloud/secretmanager/v1",
+			library: &config.Library{
+				APIs: []*config.API{{Path: "google/cloud/secretmanager/v1"}},
 			},
 			want: &initParams{
+				componentName: "SecretManager",
 				phpNamespace:    `Google\Cloud\SecretManager`,
 				apiShortName:    "secretmanager",
 				productDocs:     "https://cloud.google.com/secret-manager/docs/overview",
@@ -201,13 +202,18 @@ func TestNewInitParams(t *testing.T) {
 		},
 		{
 			name: "custom protoPackage override",
-			api: &config.API{
-				Path: "google/cloud/secretmanager/v1",
-				PHP: &config.PHPAPI{
-					ProtoPackage: "google.cloud.secrets",
+			library: &config.Library{
+				APIs: []*config.API{
+					{
+						Path: "google/cloud/secretmanager/v1",
+						PHP: &config.PHPAPI{
+							ProtoPackage: "google.cloud.secrets",
+						},
+					},
 				},
 			},
 			want: &initParams{
+				componentName: "SecretManager",
 				phpNamespace:    `Google\Cloud\SecretManager`,
 				apiShortName:    "secretmanager",
 				productDocs:     "https://cloud.google.com/secret-manager/docs/overview",
@@ -219,7 +225,7 @@ func TestNewInitParams(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
-			params, err := newInitParams(googleapisDir, test.api)
+			params, err := newInitParams(googleapisDir, test.library)
 			if err != nil {
 				t.Fatal(err)
 			}
