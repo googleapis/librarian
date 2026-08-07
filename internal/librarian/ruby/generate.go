@@ -135,6 +135,9 @@ func generateAPI(ctx context.Context, api *config.API, library *config.Library, 
 	if err := protoc.RunOrSystem(ctx, env, pc, args...); err != nil {
 		return err
 	}
+	if err := deleteAfterGeneration(api, stagingDir); err != nil {
+		return err
+	}
 	// Remove google/cloud/common_resources_pb.rb from staging after generation.
 	// Because librarian passes all protoFiles (including common_resources.proto) to protoc
 	// in a single invocation, protoc outputs common_resources_pb.rb into the lib/ directory.
@@ -256,4 +259,23 @@ func escapeRubyCloudOptValue(val string) string {
 	// logic in RequestParamParser (gapic-generator/lib/gapic/schema/request_param_parser.rb#L30-L32).
 	val = strings.ReplaceAll(val, "\\", "\\\\")
 	return strings.ReplaceAll(val, ",", "\\,")
+}
+
+// deleteAfterGeneration removes files from the staging directory after generation.
+func deleteAfterGeneration(api *config.API, stagingDir string) error {
+	if api.Ruby == nil {
+		return nil
+	}
+	for _, path := range api.Ruby.DeleteGenerationOutputPaths {
+		target := filepath.Join(stagingDir, "lib", path)
+		// Return an error for non-existent paths to keep the configurations
+		// up to date.
+		if _, err := os.Stat(target); err != nil {
+			return fmt.Errorf("failed to stat %s: %w", path, err)
+		}
+		if err := os.RemoveAll(target); err != nil {
+			return fmt.Errorf("failed to remove %s: %w", path, err)
+		}
+	}
+	return nil
 }

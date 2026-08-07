@@ -191,19 +191,12 @@ func TestGenerateConversions_RecursiveMessage(t *testing.T) {
 func TestGenerateConversions_NoConvertedFields(t *testing.T) {
 	outDir := t.TempDir()
 
-	field1 := &api.Field{
-		Name:  "labels",
-		ID:    "1",
-		Map:   true,
-		Typez: api.TypezString,
-	}
 	msg := &api.Message{
-		Name:    "EmptyOrMapOnly",
-		ID:      ".test.EmptyOrMapOnly",
-		Fields:  []*api.Field{field1},
+		Name:    "EmptyMessage",
+		ID:      ".test.EmptyMessage",
+		Fields:  []*api.Field{},
 		Package: "test",
 	}
-	field1.Parent = msg
 	model := api.NewTestAPI([]*api.Message{msg}, []*api.Enum{}, []*api.Service{})
 	model.PackageName = "test"
 
@@ -218,7 +211,7 @@ func TestGenerateConversions_NoConvertedFields(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	b, err := os.ReadFile(filepath.Join(outDir, "EmptyOrMapOnly+Convert.swift"))
+	b, err := os.ReadFile(filepath.Join(outDir, "EmptyMessage+Convert.swift"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -412,6 +405,126 @@ func TestGenerateConversions_OneOf(t *testing.T) {
         }
       }
     }
+    return proto
+  }`
+	if diff := cmp.Diff(wantToProto, got); diff != "" {
+		t.Errorf("toProto() mismatch (-want +got):\n%s", diff)
+	}
+}
+
+func TestGenerateConversions_MapFields(t *testing.T) {
+	outDir := t.TempDir()
+
+	stringMapEntry := &api.Message{
+		Name:    "LabelsEntry",
+		ID:      ".test.LabelsEntry",
+		IsMap:   true,
+		Package: "test",
+		Fields: []*api.Field{
+			{Name: "key", JSONName: "key", Typez: api.TypezString},
+			{Name: "value", JSONName: "value", Typez: api.TypezString},
+		},
+	}
+	objectMessage := &api.Message{
+		Name:    "RapidCachePolicy",
+		ID:      ".test.RapidCachePolicy",
+		Package: "test",
+	}
+	objectMapEntry := &api.Message{
+		Name:    "PoliciesEntry",
+		ID:      ".test.PoliciesEntry",
+		IsMap:   true,
+		Package: "test",
+		Fields: []*api.Field{
+			{Name: "key", JSONName: "key", Typez: api.TypezString},
+			{Name: "value", JSONName: "value", Typez: api.TypezMessage, TypezID: objectMessage.ID},
+		},
+	}
+	enumVal := &api.EnumValue{Name: "UNSPECIFIED", ID: ".test.FindingCategory.UNSPECIFIED", Number: 0}
+	enumType := &api.Enum{
+		Name:               "FindingCategory",
+		ID:                 ".test.FindingCategory",
+		Package:            "test",
+		Values:             []*api.EnumValue{enumVal},
+		UniqueNumberValues: []*api.EnumValue{enumVal},
+	}
+	enumVal.Parent = enumType
+	enumMapEntry := &api.Message{
+		Name:    "CategoriesEntry",
+		ID:      ".test.CategoriesEntry",
+		IsMap:   true,
+		Package: "test",
+		Fields: []*api.Field{
+			{Name: "key", JSONName: "key", Typez: api.TypezString},
+			{Name: "value", JSONName: "value", Typez: api.TypezEnum, TypezID: enumType.ID},
+		},
+	}
+
+	fieldPrimitive := &api.Field{
+		Name:    "labels",
+		ID:      ".test.ObjectIndex.labels",
+		Map:     true,
+		Typez:   api.TypezMessage,
+		TypezID: stringMapEntry.ID,
+	}
+	fieldObject := &api.Field{
+		Name:    "policies",
+		ID:      ".test.ObjectIndex.policies",
+		Map:     true,
+		Typez:   api.TypezMessage,
+		TypezID: objectMapEntry.ID,
+	}
+	fieldEnum := &api.Field{
+		Name:    "categories",
+		ID:      ".test.ObjectIndex.categories",
+		Map:     true,
+		Typez:   api.TypezMessage,
+		TypezID: enumMapEntry.ID,
+	}
+
+	msg := &api.Message{
+		Name:    "ObjectIndex",
+		ID:      ".test.ObjectIndex",
+		Fields:  []*api.Field{fieldPrimitive, fieldObject, fieldEnum},
+		Package: "test",
+	}
+	fieldPrimitive.Parent = msg
+	fieldObject.Parent = msg
+	fieldEnum.Parent = msg
+
+	model := api.NewTestAPI([]*api.Message{msg, stringMapEntry, objectMessage, objectMapEntry, enumMapEntry}, []*api.Enum{enumType}, []*api.Service{})
+	model.PackageName = "test"
+
+	library := &config.Library{Name: "GoogleCloudStorage"}
+	module := &config.SwiftModule{ModulePath: "StorageControlProtos"}
+
+	if err := GenerateConversions(t.Context(), model, outDir, library, module); err != nil {
+		t.Fatal(err)
+	}
+
+	b, err := os.ReadFile(filepath.Join(outDir, "ObjectIndex+Convert.swift"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	gotContent := string(b)
+
+	got := extractBlock(t, gotContent, "  internal init(proto: ProtoType) throws {", "\n  }")
+	wantInit := `  internal init(proto: ProtoType) throws {
+    self.init()
+    self.labels = proto.labels
+    self.policies = try proto.policies.mapValues { try .init(proto: $0) }
+    self.categories = proto.categories.mapValues { .init(proto: $0) }
+  }`
+	if diff := cmp.Diff(wantInit, got); diff != "" {
+		t.Errorf("init(proto:) mismatch (-want +got):\n%s", diff)
+	}
+
+	got = extractBlock(t, gotContent, "  internal func toProto() throws -> ProtoType {", "\n  }")
+	wantToProto := `  internal func toProto() throws -> ProtoType {
+    var proto = ProtoType()
+    proto.labels = self.labels
+    proto.policies = try self.policies.mapValues { try $0.toProto() }
+    proto.categories = try self.categories.mapValues { try $0.toProto() }
     return proto
   }`
 	if diff := cmp.Diff(wantToProto, got); diff != "" {

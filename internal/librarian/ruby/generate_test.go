@@ -19,6 +19,7 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"syscall"
 	"testing"
@@ -652,6 +653,169 @@ func TestEscapeRubyCloudOptValue(t *testing.T) {
 			got := escapeRubyCloudOptValue(test.input)
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestDeleteAfterGeneration(t *testing.T) {
+	for _, test := range []struct {
+		name      string
+		api       *config.API
+		files     []string
+		wantFiles []string
+	}{
+		{
+			name: "nil ruby configuration",
+			api:  &config.API{},
+			files: []string{
+				"google/cloud/secret_manager/v1/version.rb",
+			},
+			wantFiles: []string{
+				"google/cloud/secret_manager/v1/version.rb",
+			},
+		},
+		{
+			name: "nil delete generation output paths",
+			api: &config.API{
+				Ruby: &config.RubyAPI{},
+			},
+			files: []string{
+				"google/cloud/secret_manager/v1/version.rb",
+			},
+			wantFiles: []string{
+				"google/cloud/secret_manager/v1/version.rb",
+			},
+		},
+		{
+			name: "empty delete generation output paths",
+			api: &config.API{
+				Ruby: &config.RubyAPI{
+					DeleteGenerationOutputPaths: []string{},
+				},
+			},
+			files: []string{
+				"google/cloud/secret_manager/v1/version.rb",
+			},
+			wantFiles: []string{
+				"google/cloud/secret_manager/v1/version.rb",
+			},
+		},
+		{
+			name: "delete files and directories",
+			api: &config.API{
+				Ruby: &config.RubyAPI{
+					DeleteGenerationOutputPaths: []string{
+						"google/cloud/secret_manager/v1/to_delete.rb",
+						"google/cloud/secret_manager/v1/delete_dir",
+					},
+				},
+			},
+			files: []string{
+				"google/cloud/secret_manager/v1/to_delete.rb",
+				"google/cloud/secret_manager/v1/delete_dir/nested.rb",
+				"google/cloud/secret_manager/v1/version.rb",
+			},
+			wantFiles: []string{
+				"google/cloud/secret_manager/v1/version.rb",
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			stagingDir := t.TempDir()
+			libDir := filepath.Join(stagingDir, "lib")
+			for _, file := range test.files {
+				p := filepath.Join(libDir, file)
+				if err := os.MkdirAll(filepath.Dir(p), 0o755); err != nil {
+					t.Fatal(err)
+				}
+				if err := os.WriteFile(p, []byte("test"), 0o644); err != nil {
+					t.Fatal(err)
+				}
+			}
+			if err := deleteAfterGeneration(test.api, stagingDir); err != nil {
+				t.Fatal(err)
+			}
+			var gotFiles []string
+			if _, err := os.Stat(libDir); err == nil {
+				err := filepath.WalkDir(libDir, func(path string, entry fs.DirEntry, err error) error {
+					if err != nil {
+						return err
+					}
+					if entry.IsDir() {
+						return nil
+					}
+					rel, err := filepath.Rel(libDir, path)
+					if err != nil {
+						return err
+					}
+					gotFiles = append(gotFiles, filepath.ToSlash(rel))
+					return nil
+				})
+				if err != nil {
+					t.Fatal(err)
+				}
+			}
+			slices.Sort(gotFiles)
+			slices.Sort(test.wantFiles)
+			if diff := cmp.Diff(test.wantFiles, gotFiles); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestDeleteAfterGeneration_Error(t *testing.T) {
+	for _, test := range []struct {
+		name    string
+		api     *config.API
+		setup   func(t *testing.T, stagingDir string)
+		wantErr error
+	}{
+		{
+			name: "path does not exist",
+			api: &config.API{
+				Ruby: &config.RubyAPI{
+					DeleteGenerationOutputPaths: []string{
+						"google/cloud/secret_manager/v1/nonexistent.rb",
+					},
+				},
+			},
+			wantErr: fs.ErrNotExist,
+		},
+		{
+			name: "cannot delete file from read-only directory",
+			api: &config.API{
+				Ruby: &config.RubyAPI{
+					DeleteGenerationOutputPaths: []string{"readonly/file.rb"},
+				},
+			},
+			setup: func(t *testing.T, stagingDir string) {
+				readOnlyDir := filepath.Join(stagingDir, "lib", "readonly")
+				if err := os.MkdirAll(readOnlyDir, 0o755); err != nil {
+					t.Fatal(err)
+				}
+				if err := os.WriteFile(filepath.Join(readOnlyDir, "file.rb"), []byte("test"), 0o644); err != nil {
+					t.Fatal(err)
+				}
+				if err := os.Chmod(readOnlyDir, 0o555); err != nil {
+					t.Fatal(err)
+				}
+				t.Cleanup(func() {
+					_ = os.Chmod(readOnlyDir, 0o755)
+				})
+			},
+			wantErr: fs.ErrPermission,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			stagingDir := t.TempDir()
+			if test.setup != nil {
+				test.setup(t, stagingDir)
+			}
+			gotErr := deleteAfterGeneration(test.api, stagingDir)
+			if !errors.Is(gotErr, test.wantErr) {
+				t.Errorf("deleteAfterGeneration() error = %v, wantErr %v", gotErr, test.wantErr)
 			}
 		})
 	}

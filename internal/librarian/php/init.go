@@ -16,6 +16,7 @@ package php
 
 import (
 	"bufio"
+	"context"
 	"fmt"
 	"io/fs"
 	"os"
@@ -24,6 +25,7 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/repometadata"
 	"github.com/googleapis/librarian/internal/serviceconfig"
@@ -34,12 +36,16 @@ var (
 	versionSuffixRe = regexp.MustCompile(`\\V\d+.*$`)
 )
 
+const devTool = "dev/google-cloud"
+
 type initParams struct {
+	componentName   string
+	phpNamespace    string
+	protoPackage    string
 	apiShortName    string
+	apiVersion      string
 	productDocs     string
 	productHomepage string
-	protoPackage    string
-	apiVersion      string
 }
 
 func newInitParams(googleapisDir string, api *config.API) (*initParams, error) {
@@ -47,19 +53,45 @@ func newInitParams(googleapisDir string, api *config.API) (*initParams, error) {
 	if err != nil {
 		return nil, err
 	}
+	ns, err := namespace(googleapisDir, api.Path)
+	if err != nil {
+		return nil, err
+	}
+	apiVersion := serviceconfig.ExtractVersion(api.Path)
 	return &initParams{
+		phpNamespace:    ns,
+		protoPackage:    protoPackage(api),
 		apiShortName:    svcAPI.ShortName,
+		apiVersion:      apiVersion,
 		productDocs:     svcAPI.DocumentationURI,
 		productHomepage: repometadata.ExtractBaseProductURL(svcAPI.DocumentationURI),
-		protoPackage:    protoPackage(api),
-		apiVersion:      serviceconfig.ExtractVersion(api.Path),
 	}, nil
 }
 
-// componentNameForLibrary resolves the component name for a PHP library.
+func initComponent(ctx context.Context, params *initParams) error {
+	args := []string{
+		"component:new",
+		"--no-update",
+		"--component-name=" + params.componentName,
+		"--php-namespace=" + params.phpNamespace,
+		"--proto-package=" + params.protoPackage,
+		"--api-short-name=" + params.apiShortName,
+		"--api-version=" + params.apiVersion,
+		"--product-docs=" + params.productDocs,
+		"--product-homepage=" + params.productHomepage,
+	}
+	if err := command.Run(ctx, devTool, args...); err != nil {
+		return fmt.Errorf("failed to init new PHP component %s: %w", params.componentName, err)
+	}
+	return nil
+}
+
+// ComponentNameForLibrary resolves the component name for a PHP library.
 // If library.PHP.ComponentName is set, it is returned as an explicit override.
 // Otherwise, the component name is derived on the fly from the php_namespace of the library's primary API.
-func componentNameForLibrary(googleapisDir string, library *config.Library) (string, error) {
+// TODO(https://github.com/googleapis/librarian/issues/7213):
+// Unexport ComponentNameForLibrary when the migrate tool code is removed.
+func ComponentNameForLibrary(googleapisDir string, library *config.Library) (string, error) {
 	if library.PHP != nil && library.PHP.ComponentName != "" {
 		return library.PHP.ComponentName, nil
 	}
