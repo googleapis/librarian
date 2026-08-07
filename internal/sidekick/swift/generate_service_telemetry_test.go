@@ -87,7 +87,7 @@ func checkClientsContents(t *testing.T, outDir string) {
 
 func checkStubContents(t *testing.T, outDir string) {
 	t.Helper()
-	filename := filepath.Join(outDir, "Sources", "GoogleCloudTestV1", "SecretManager+Stub.swift")
+	filename := filepath.Join(outDir, "Sources", "GoogleCloudTestV1", "SecretManager+Transport.swift")
 	content, err := os.ReadFile(filename)
 	if err != nil {
 		t.Fatal(err)
