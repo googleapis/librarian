@@ -140,14 +140,15 @@ impl super::stub::{{Codec.Name}} for {{Codec.Name}} {
         use gaxi::prost::{FromProto, ToProto};
         use futures::stream::StreamExt as _;
 
-        {{! TODO(#6835) - provide a way to configure the channel size }}
-        let (req_tx, req_rx) = tokio::sync::mpsc::channel::<{{InputType.Codec.QualifiedName}}>(16);
-        let (resp_tx, resp_rx) = tokio::sync::mpsc::channel::<crate::Result<{{OutputType.Codec.QualifiedName}}>>(16);
+        let first_req = req
+            .to_proto()
+            .map_err(google_cloud_gax::error::Error::ser)?;
 
-        {{! TODO(#6835) - propagate request serialization errors back to send() instead of using expect() }}
-        let req_stream = futures::stream::once(async move { req })
-            .chain(tokio_stream::wrappers::ReceiverStream::new(req_rx))
-            .map(|v| v.to_proto().expect("request serialization failed"));
+        {{! TODO(#6835) - provide a way to configure the channel size }}
+        let (req_tx, req_rx) = tokio::sync::mpsc::channel(16);
+
+        let req_stream = futures::stream::once(async move { first_req })
+            .chain(tokio_stream::wrappers::ReceiverStream::new(req_rx));
 
         let extensions = {
             let mut e = gaxi::grpc::tonic::Extensions::new();
@@ -177,22 +178,31 @@ impl super::stub::{{Codec.Name}} for {{Codec.Name}} {
             )
             .await?;
 
-        let mut response_stream = result.into_inner();
-        tokio::spawn(async move {
-            while let Some(res) = response_stream.next().await {
-                let item = res
-                    .map_err(gaxi::grpc::from_status::to_gax_error)
-                    .and_then(|m| m.cnv().map_err(google_cloud_gax::error::Error::deser));
-                if resp_tx.send(item).await.is_err() {
-                    break;
+        let request_sender = google_cloud_gax::streaming::RequestSender::from_fn(
+            move |item: {{InputType.Codec.QualifiedName}}| {
+                let req_tx = req_tx.clone();
+                async move {
+                    let prost_item = item
+                        .to_proto()
+                        .map_err(google_cloud_gax::error::Error::ser)?;
+                    req_tx
+                        .send(prost_item)
+                        .await
+                        .map_err(|_| {
+                            {{! TODO(#6835) - use a custom error kind for stream closed errors }}
+                            google_cloud_gax::error::Error::io("cannot send request: stream is closed")
+                        })
                 }
-            }
-        });
+            },
+        );
+        let response_receiver = google_cloud_gax::streaming::ResponseReceiver::from_stream(
+            result.into_inner().map(|res| {
+                res.map_err(gaxi::grpc::from_status::to_gax_error)
+                    .and_then(|m| m.cnv().map_err(google_cloud_gax::error::Error::deser))
+            }),
+        );
 
-        Ok((
-            google_cloud_gax::streaming::RequestSender::new(req_tx),
-            google_cloud_gax::streaming::ResponseReceiver::new(resp_rx),
-        ))
+        Ok((request_sender, response_receiver))
     }
 
     {{/Codec.IsBidiStreaming}}
