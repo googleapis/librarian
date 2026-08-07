@@ -15,6 +15,7 @@
 package rust
 
 import (
+	"cmp"
 	"context"
 	"fmt"
 	"maps"
@@ -232,6 +233,30 @@ func filterModelToStreaming(model *api.API) (*api.API, []string, bool, error) {
 		}
 	}
 
+	// Collect external top-level messages (e.g. google.type.LatLng) referenced by streaming RPCs.
+	// We sort external types by ID because model.AllMessages() iterates over a map whose
+	// iteration order is randomized by the Go runtime.
+	var externalMessages []*api.Message
+	for m := range model.AllMessages() {
+		if m.ID != "" && streamingMsgs[m.ID] && !isWKT(m.ID) && m.ID != ".google.rpc.Status" && !m.IsMap && m.Parent == nil {
+			if m.Package != model.PackageName && m.Package != api.ReservedPackageName {
+				externalMessages = append(externalMessages, m)
+			}
+		}
+	}
+	slices.SortFunc(externalMessages, func(a, b *api.Message) int { return cmp.Compare(a.ID, b.ID) })
+
+	// Collect external top-level enums referenced by streaming RPCs.
+	var externalEnums []*api.Enum
+	for e := range model.AllEnums() {
+		if e.ID != "" && streamingEnums[e.ID] && !isWKT(e.ID) && e.Parent == nil {
+			if e.Package != model.PackageName && e.Package != api.ReservedPackageName {
+				externalEnums = append(externalEnums, e)
+			}
+		}
+	}
+	slices.SortFunc(externalEnums, func(a, b *api.Enum) int { return cmp.Compare(a.ID, b.ID) })
+
 	// Construct hybridModel for prost conversion code generation.
 	hybridModel := api.API{
 		Name:        model.Name,
@@ -239,11 +264,14 @@ func filterModelToStreaming(model *api.API) (*api.API, []string, bool, error) {
 		Title:       model.Title,
 		Description: model.Description,
 		Revision:    model.Revision,
-		// Services, Messages and Enums slices are filtered to only streaming types so convert.rs
+		// Services, Messages, and Enums slices are filtered to only streaming types so convert.rs
 		// only contains conversion implementations for streaming RPCs.
+		// Filtering model.Messages and model.Enums preserves their original deterministic file order.
 		Services:            language.FilterSlice(model.Services, (*api.Service).HasBidiStreaming),
 		Messages:            language.FilterSlice(model.Messages, func(m *api.Message) bool { return streamingMsgs[m.ID] }),
+		ExternalMessages:    externalMessages,
 		Enums:               language.FilterSlice(model.Enums, func(e *api.Enum) bool { return streamingEnums[e.ID] }),
+		ExternalEnums:       externalEnums,
 		ResourceDefinitions: model.ResourceDefinitions,
 		QuickstartService:   model.QuickstartService,
 		Codec:               model.Codec,

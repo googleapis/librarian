@@ -56,6 +56,33 @@ var defaultValues = map[api.Typez]struct {
 	api.TypezUint64:   {"BigInt.zero", false},
 }
 
+type skillFile struct {
+	templatePath string
+	suffix       string
+	// Whether the skill is relevant for the current API.
+	relevant func(codec *modelAnnotations) bool
+}
+
+var skillFiles = []skillFile{
+	{
+		templatePath: "skills/tests.md.mustache",
+		suffix:       "-tests",
+		relevant: func(codec *modelAnnotations) bool {
+			// The test skill is not meaningful if there are no fakes to test with
+			// or if there are no methods on those fakes.
+			return codec.FakeList != "" && codec.ExampleMethodName != ""
+		},
+	},
+	{
+		templatePath: "skills/setup.md.mustache",
+		suffix:       "-setup",
+		relevant: func(codec *modelAnnotations) bool {
+			// The setup skill is not meaningful if there are no methods to call.
+			return codec.ExampleMethodName != ""
+		},
+	},
+}
+
 type modelAnnotations struct {
 	Parent *api.API
 	// The Dart package name (e.g. google_cloud_secretmanager).
@@ -121,6 +148,16 @@ func (m *modelAnnotations) HasDependencies() bool {
 // HasDevDependencies returns whether the generated package specified any dev_dependencies.
 func (m *modelAnnotations) HasDevDependencies() bool {
 	return len(m.DevDependencies) > 0
+}
+
+// HasSkills returns true if the package generates any agent skills.
+func (m *modelAnnotations) HasSkills() bool {
+	for _, skill := range skillFiles {
+		if skill.relevant(m) {
+			return true
+		}
+	}
+	return false
 }
 
 type serviceAnnotations struct {

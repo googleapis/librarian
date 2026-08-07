@@ -27,6 +27,7 @@ import (
 
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/filesystem"
+	"github.com/googleapis/librarian/internal/proto"
 	"github.com/googleapis/librarian/internal/serviceconfig"
 	"github.com/googleapis/librarian/internal/sources"
 	"github.com/googleapis/librarian/internal/tool/protoc"
@@ -182,8 +183,14 @@ func buildGAPICOpts(api *config.API, library *config.Library, googleapisDir stri
 		if api.Ruby.RubyCloudOpts.ExtraDependencies != "" {
 			opts = append(opts, "ruby-cloud-extra-dependencies="+api.Ruby.RubyCloudOpts.ExtraDependencies)
 		}
+		if api.Ruby.RubyCloudOpts.GemNamespace != "" {
+			opts = append(opts, "ruby-cloud-gem-namespace="+api.Ruby.RubyCloudOpts.GemNamespace)
+		}
 		if api.Ruby.RubyCloudOpts.MigrationVersion != "" {
 			opts = append(opts, "ruby-cloud-migration-version="+api.Ruby.RubyCloudOpts.MigrationVersion)
+		}
+		if api.Ruby.RubyCloudOpts.ServiceOverride != "" {
+			opts = append(opts, "ruby-cloud-service-override="+api.Ruby.RubyCloudOpts.ServiceOverride)
 		}
 	}
 	if library.Ruby != nil && len(library.Ruby.WrapperOf) > 0 {
@@ -202,19 +209,9 @@ func transport(sc *serviceconfig.API) serviceconfig.Transport {
 
 func collectProtoFiles(googleapisDir, apiPath string, additionalProtos []string) ([]string, error) {
 	apiDir := filepath.Join(googleapisDir, apiPath)
-	entries, err := os.ReadDir(apiDir)
+	files, err := proto.Gather(apiDir, apiPath)
 	if err != nil {
-		return nil, fmt.Errorf("failed to read API directory %s: %w", apiDir, err)
-	}
-
-	var files []string
-	for _, entry := range entries {
-		if entry.IsDir() {
-			continue
-		}
-		if filepath.Ext(entry.Name()) == ".proto" {
-			files = append(files, filepath.Join(apiDir, entry.Name()))
-		}
+		return nil, err
 	}
 	for _, add := range additionalProtos {
 		files = append(files, filepath.Join(googleapisDir, add))

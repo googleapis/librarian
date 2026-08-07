@@ -103,6 +103,54 @@ func TestBuildGAPICOpts(t *testing.T) {
 			},
 		},
 		{
+			name: "ruby cloud opts with service override",
+			api: &config.API{
+				Path: "google/cloud/secretmanager/v1",
+				Ruby: &config.RubyAPI{
+					RubyCloudOpts: &config.RubyCloudOpts{
+						ServiceOverride: "SecretManager=secretmanager",
+					},
+				},
+			},
+			library: &config.Library{
+				Name: "google-cloud-secret_manager",
+			},
+			want: []string{
+				"ruby-cloud-gem-name=google-cloud-secret_manager",
+				"service-yaml=" + filepath.Join(googleapisDir, "google/cloud/secretmanager/v1/secretmanager_v1.yaml"),
+				"ruby-cloud-description=Stores sensitive data such as API keys\\, passwords\\, and certificates. Provides convenience while improving security.",
+				"ruby-cloud-summary=Stores sensitive data such as API keys\\, passwords\\, and certificates. Provides convenience while improving security.",
+				"grpc-service-config=" + filepath.Join(googleapisDir, "google/cloud/secretmanager/v1/secretmanager_grpc_service_config.json"),
+				"ruby-cloud-generate-transports=grpc;rest",
+				"ruby-cloud-rest-numeric-enums=true",
+				"ruby-cloud-service-override=SecretManager=secretmanager",
+			},
+		},
+		{
+			name: "ruby cloud opts with gem namespace",
+			api: &config.API{
+				Path: "google/cloud/secretmanager/v1",
+				Ruby: &config.RubyAPI{
+					RubyCloudOpts: &config.RubyCloudOpts{
+						GemNamespace: "Google::Cloud::SecretManager::V1",
+					},
+				},
+			},
+			library: &config.Library{
+				Name: "google-cloud-secret_manager",
+			},
+			want: []string{
+				"ruby-cloud-gem-name=google-cloud-secret_manager",
+				"service-yaml=" + filepath.Join(googleapisDir, "google/cloud/secretmanager/v1/secretmanager_v1.yaml"),
+				"ruby-cloud-description=Stores sensitive data such as API keys\\, passwords\\, and certificates. Provides convenience while improving security.",
+				"ruby-cloud-summary=Stores sensitive data such as API keys\\, passwords\\, and certificates. Provides convenience while improving security.",
+				"grpc-service-config=" + filepath.Join(googleapisDir, "google/cloud/secretmanager/v1/secretmanager_grpc_service_config.json"),
+				"ruby-cloud-generate-transports=grpc;rest",
+				"ruby-cloud-rest-numeric-enums=true",
+				"ruby-cloud-gem-namespace=Google::Cloud::SecretManager::V1",
+			},
+		},
+		{
 			name: "wrapper library with wrapper_of option",
 			api: &config.API{
 				Path: "google/cloud/secretmanager/v1",
@@ -181,7 +229,6 @@ func TestCollectProtoFiles(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-
 	for _, test := range []struct {
 		name             string
 		apiPath          string
@@ -201,6 +248,13 @@ func TestCollectProtoFiles(t *testing.T) {
 			apiPath: "google/cloud/gkehub/v1/configmanagement",
 			want: []string{
 				filepath.Join(googleapisDir, "google/cloud/gkehub/v1/configmanagement/configmanagement.proto"),
+			},
+		},
+		{
+			name:    "recursive search protos",
+			apiPath: "google/cloud/aiplatform/v1",
+			want: []string{
+				filepath.Join(googleapisDir, "google/cloud/aiplatform/v1/schema/schema.proto"),
 			},
 		},
 		{
