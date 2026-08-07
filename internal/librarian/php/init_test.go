@@ -135,27 +135,41 @@ func TestNamespace_Error(t *testing.T) {
 func TestComponentName(t *testing.T) {
 	for _, test := range []struct {
 		name      string
+		library   *config.Library
 		namespace string
 		want      string
 	}{
 		{
 			name:      "google cloud component",
+			library:   &config.Library{},
 			namespace: `Google\Cloud\SecretManager`,
 			want:      "SecretManager",
 		},
 		{
 			name:      "google ads",
+			library:   &config.Library{},
 			namespace: `Google\Ads\GoogleAds`,
 			want:      "AdsGoogleAds",
 		},
 		{
 			name:      "google shopping",
+			library:   &config.Library{},
 			namespace: `Google\Shopping\Merchant\Conversions`,
 			want:      "ShoppingMerchantConversions",
 		},
+		{
+			name: "component name override",
+			library: &config.Library{
+				PHP: &config.PHPPackage{
+					ComponentName: "CustomComponentName",
+				},
+			},
+			namespace: `Google\Cloud\SecretManager`,
+			want:      "CustomComponentName",
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got := componentName(test.namespace)
+			got := componentName(test.library, test.namespace)
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
