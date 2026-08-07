@@ -58,14 +58,8 @@ func newInitParams(googleapisDir string, api *config.API) (*initParams, error) {
 		return nil, err
 	}
 	apiVersion := serviceconfig.ExtractVersion(api.Path)
-	// TODO(https://github.com/googleapis/librarian/issues/7226):
-	// Refactor namespace resolution to avoid stripping and re-appending the version suffix.
-	phpNS := ns
-	if apiVersion != "" {
-		phpNS = ns + `\` + strings.ToUpper(apiVersion[:1]) + apiVersion[1:]
-	}
 	return &initParams{
-		phpNamespace:    phpNS,
+		phpNamespace:    ns,
 		protoPackage:    protoPackage(api),
 		apiShortName:    svcAPI.ShortName,
 		apiVersion:      apiVersion,

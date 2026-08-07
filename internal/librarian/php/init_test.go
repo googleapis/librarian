@@ -177,7 +177,7 @@ func TestNewInitParams(t *testing.T) {
 				Path: "google/cloud/secretmanager/v1",
 			},
 			want: &initParams{
-				phpNamespace:    `Google\Cloud\SecretManager\V1`,
+				phpNamespace:    `Google\Cloud\SecretManager`,
 				apiShortName:    "secretmanager",
 				productDocs:     "https://cloud.google.com/secret-manager/docs/overview",
 				productHomepage: "https://cloud.google.com/secret-manager/",
@@ -194,7 +194,7 @@ func TestNewInitParams(t *testing.T) {
 				},
 			},
 			want: &initParams{
-				phpNamespace:    `Google\Cloud\SecretManager\V1`,
+				phpNamespace:    `Google\Cloud\SecretManager`,
 				apiShortName:    "secretmanager",
 				productDocs:     "https://cloud.google.com/secret-manager/docs/overview",
 				productHomepage: "https://cloud.google.com/secret-manager/",
