@@ -19,6 +19,7 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -176,6 +177,7 @@ func TestNewInitParams(t *testing.T) {
 				Path: "google/cloud/secretmanager/v1",
 			},
 			want: &initParams{
+				phpNamespace:    `Google\Cloud\SecretManager\V1`,
 				apiShortName:    "secretmanager",
 				productDocs:     "https://cloud.google.com/secret-manager/docs/overview",
 				productHomepage: "https://cloud.google.com/secret-manager/",
@@ -192,6 +194,7 @@ func TestNewInitParams(t *testing.T) {
 				},
 			},
 			want: &initParams{
+				phpNamespace:    `Google\Cloud\SecretManager\V1`,
 				apiShortName:    "secretmanager",
 				productDocs:     "https://cloud.google.com/secret-manager/docs/overview",
 				productHomepage: "https://cloud.google.com/secret-manager/",
@@ -210,6 +213,71 @@ func TestNewInitParams(t *testing.T) {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
+	}
+}
+
+// TODO(https://github.com/googleapis/librarian/issues/6978): Revise this test
+// once the install steps for the dev tool are ready.
+func TestInitComponent(t *testing.T) {
+	ctx := t.Context()
+	repoRoot := t.TempDir()
+	t.Chdir(repoRoot)
+	devDir := filepath.Join(repoRoot, "dev")
+	if err := os.MkdirAll(devDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	mockScript := filepath.Join(devDir, "google-cloud")
+	scriptContent := `#!/bin/sh
+echo "$@" > dev_output.txt
+`
+	if err := os.WriteFile(mockScript, []byte(scriptContent), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	params := &initParams{
+		componentName:   "Speech",
+		phpNamespace:    `Google\Cloud\Speech\V2`,
+		protoPackage:    "google.cloud.speech.v2",
+		apiShortName:    "speech",
+		apiVersion:      "v2",
+		productDocs:     "https://cloud.google.com/speech-to-text/docs",
+		productHomepage: "https://cloud.google.com/speech-to-text",
+	}
+	if err := initComponent(ctx, params); err != nil {
+		t.Fatal(err)
+	}
+	gotBytes, err := os.ReadFile(filepath.Join(repoRoot, "dev_output.txt"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	got := strings.TrimSpace(string(gotBytes))
+	want := `component:new --no-update --component-name=Speech --php-namespace=Google\Cloud\Speech\V2 --proto-package=google.cloud.speech.v2 --api-short-name=speech --api-version=v2 --product-docs=https://cloud.google.com/speech-to-text/docs --product-homepage=https://cloud.google.com/speech-to-text`
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+}
+
+// TODO(https://github.com/googleapis/librarian/issues/6978): Revise this test
+// once the install steps for the dev tool are ready.
+func TestInitComponent_Error(t *testing.T) {
+	ctx := t.Context()
+	repoRoot := t.TempDir()
+	t.Chdir(repoRoot)
+	devDir := filepath.Join(repoRoot, "dev")
+	if err := os.MkdirAll(devDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	mockScript := filepath.Join(devDir, "google-cloud")
+	scriptContent := `#!/bin/sh
+exit 1
+`
+	if err := os.WriteFile(mockScript, []byte(scriptContent), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	params := &initParams{
+		componentName: "Speech",
+	}
+	if err := initComponent(ctx, params); err == nil {
+		t.Fatal("initComponent() expected error, got nil")
 	}
 }
 
@@ -303,8 +371,8 @@ func TestComponentNameForLibrary(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			if got != test.want {
-				t.Errorf("ComponentNameForLibrary() = %q, want %q", got, test.want)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}

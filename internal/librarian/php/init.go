@@ -16,6 +16,7 @@ package php
 
 import (
 	"bufio"
+	"context"
 	"fmt"
 	"io/fs"
 	"os"
@@ -24,6 +25,7 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/repometadata"
 	"github.com/googleapis/librarian/internal/serviceconfig"
@@ -34,12 +36,16 @@ var (
 	versionSuffixRe = regexp.MustCompile(`\\V\d+.*$`)
 )
 
+const devTool = "dev/google-cloud"
+
 type initParams struct {
+	componentName   string
+	phpNamespace    string
+	protoPackage    string
 	apiShortName    string
+	apiVersion      string
 	productDocs     string
 	productHomepage string
-	protoPackage    string
-	apiVersion      string
 }
 
 func newInitParams(googleapisDir string, api *config.API) (*initParams, error) {
@@ -47,13 +53,43 @@ func newInitParams(googleapisDir string, api *config.API) (*initParams, error) {
 	if err != nil {
 		return nil, err
 	}
+	ns, err := namespace(googleapisDir, api.Path)
+	if err != nil {
+		return nil, err
+	}
+	apiVersion := serviceconfig.ExtractVersion(api.Path)
+	// TODO(https://github.com/googleapis/librarian/issues/7226):
+	// Refactor namespace resolution to avoid stripping and re-appending the version suffix.
+	phpNS := ns
+	if apiVersion != "" {
+		phpNS = ns + `\` + strings.ToUpper(apiVersion[:1]) + apiVersion[1:]
+	}
 	return &initParams{
+		phpNamespace:    phpNS,
+		protoPackage:    protoPackage(api),
 		apiShortName:    svcAPI.ShortName,
+		apiVersion:      apiVersion,
 		productDocs:     svcAPI.DocumentationURI,
 		productHomepage: repometadata.ExtractBaseProductURL(svcAPI.DocumentationURI),
-		protoPackage:    protoPackage(api),
-		apiVersion:      serviceconfig.ExtractVersion(api.Path),
 	}, nil
+}
+
+func initComponent(ctx context.Context, params *initParams) error {
+	args := []string{
+		"component:new",
+		"--no-update",
+		"--component-name=" + params.componentName,
+		"--php-namespace=" + params.phpNamespace,
+		"--proto-package=" + params.protoPackage,
+		"--api-short-name=" + params.apiShortName,
+		"--api-version=" + params.apiVersion,
+		"--product-docs=" + params.productDocs,
+		"--product-homepage=" + params.productHomepage,
+	}
+	if err := command.Run(ctx, devTool, args...); err != nil {
+		return fmt.Errorf("failed to init new PHP component %s: %w", params.componentName, err)
+	}
+	return nil
 }
 
 // ComponentNameForLibrary resolves the component name for a PHP library.
