@@ -19,9 +19,11 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/googleapis/librarian/internal/config"
 )
 
 func TestNamespace(t *testing.T) {
@@ -164,17 +166,214 @@ func TestComponentName(t *testing.T) {
 func TestNewInitParams(t *testing.T) {
 	t.Parallel()
 	googleapisDir := filepath.Join("..", "..", "testdata", "googleapis")
-	apiPath := "google/cloud/secretmanager/v1"
-	params, err := newInitParams(googleapisDir, apiPath)
+	for _, test := range []struct {
+		name string
+		api  *config.API
+		want *initParams
+	}{
+		{
+			name: "default derived protoPackage",
+			api: &config.API{
+				Path: "google/cloud/secretmanager/v1",
+			},
+			want: &initParams{
+				phpNamespace:    `Google\Cloud\SecretManager\V1`,
+				apiShortName:    "secretmanager",
+				productDocs:     "https://cloud.google.com/secret-manager/docs/overview",
+				productHomepage: "https://cloud.google.com/secret-manager/",
+				protoPackage:    "google.cloud.secretmanager",
+				apiVersion:      "v1",
+			},
+		},
+		{
+			name: "custom protoPackage override",
+			api: &config.API{
+				Path: "google/cloud/secretmanager/v1",
+				PHP: &config.PHPAPI{
+					ProtoPackage: "google.cloud.secrets",
+				},
+			},
+			want: &initParams{
+				phpNamespace:    `Google\Cloud\SecretManager\V1`,
+				apiShortName:    "secretmanager",
+				productDocs:     "https://cloud.google.com/secret-manager/docs/overview",
+				productHomepage: "https://cloud.google.com/secret-manager/",
+				protoPackage:    "google.cloud.secrets",
+				apiVersion:      "v1",
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			params, err := newInitParams(googleapisDir, test.api)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if diff := cmp.Diff(test.want, params, cmp.AllowUnexported(initParams{})); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+// TODO(https://github.com/googleapis/librarian/issues/6978): Revise this test
+// once the install steps for the dev tool are ready.
+func TestInitComponent(t *testing.T) {
+	ctx := t.Context()
+	repoRoot := t.TempDir()
+	t.Chdir(repoRoot)
+	devDir := filepath.Join(repoRoot, "dev")
+	if err := os.MkdirAll(devDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	mockScript := filepath.Join(devDir, "google-cloud")
+	scriptContent := `#!/bin/sh
+echo "$@" > dev_output.txt
+`
+	if err := os.WriteFile(mockScript, []byte(scriptContent), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	params := &initParams{
+		componentName:   "Speech",
+		phpNamespace:    `Google\Cloud\Speech\V2`,
+		protoPackage:    "google.cloud.speech.v2",
+		apiShortName:    "speech",
+		apiVersion:      "v2",
+		productDocs:     "https://cloud.google.com/speech-to-text/docs",
+		productHomepage: "https://cloud.google.com/speech-to-text",
+	}
+	if err := initComponent(ctx, params); err != nil {
+		t.Fatal(err)
+	}
+	gotBytes, err := os.ReadFile(filepath.Join(repoRoot, "dev_output.txt"))
 	if err != nil {
-		t.Fatalf("newInitParams failed: %v", err)
+		t.Fatal(err)
 	}
-	want := &initParams{
-		apiShortName:    "secretmanager",
-		productDocs:     "https://cloud.google.com/secret-manager/docs/overview",
-		productHomepage: "https://cloud.google.com/secret-manager/",
-	}
-	if diff := cmp.Diff(want, params, cmp.AllowUnexported(initParams{})); diff != "" {
+	got := strings.TrimSpace(string(gotBytes))
+	want := `component:new --no-update --component-name=Speech --php-namespace=Google\Cloud\Speech\V2 --proto-package=google.cloud.speech.v2 --api-short-name=speech --api-version=v2 --product-docs=https://cloud.google.com/speech-to-text/docs --product-homepage=https://cloud.google.com/speech-to-text`
+	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+}
+
+// TODO(https://github.com/googleapis/librarian/issues/6978): Revise this test
+// once the install steps for the dev tool are ready.
+func TestInitComponent_Error(t *testing.T) {
+	ctx := t.Context()
+	repoRoot := t.TempDir()
+	t.Chdir(repoRoot)
+	devDir := filepath.Join(repoRoot, "dev")
+	if err := os.MkdirAll(devDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	mockScript := filepath.Join(devDir, "google-cloud")
+	scriptContent := `#!/bin/sh
+exit 1
+`
+	if err := os.WriteFile(mockScript, []byte(scriptContent), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	params := &initParams{
+		componentName: "Speech",
+	}
+	if err := initComponent(ctx, params); err == nil {
+		t.Fatal("initComponent() expected error, got nil")
+	}
+}
+
+func TestProtoPackage(t *testing.T) {
+	for _, test := range []struct {
+		name string
+		api  *config.API
+		want string
+	}{
+		{
+			name: "speech v2",
+			api: &config.API{
+				Path: "google/cloud/speech/v2",
+			},
+			want: "google.cloud.speech",
+		},
+		{
+			name: "privateca v1",
+			api: &config.API{
+				Path: "google/cloud/security/privateca/v1",
+			},
+			want: "google.cloud.security.privateca",
+		},
+		{
+			name: "generativelanguage v1alpha",
+			api: &config.API{
+				Path: "google/ai/generativelanguage/v1alpha",
+			},
+			want: "google.ai.generativelanguage",
+		},
+		{
+			name: "unversioned path",
+			api: &config.API{
+				Path: "google/identity/accesscontextmanager/type",
+			},
+			want: "google.identity.accesscontextmanager.type",
+		},
+		{
+			name: "protoPackage override",
+			api: &config.API{
+				Path: "google/cloud/speech/v2",
+				PHP: &config.PHPAPI{
+					ProtoPackage: "google.cloud.speech.custom",
+				},
+			},
+			want: "google.cloud.speech.custom",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := protoPackage(test.api)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestComponentNameForLibrary(t *testing.T) {
+	googleapisDir := filepath.Join("..", "..", "testdata", "googleapis")
+	for _, test := range []struct {
+		name    string
+		library *config.Library
+		want    string
+	}{
+		{
+			name: "derived from proto namespace",
+			library: &config.Library{
+				Name: "SecretManager",
+				APIs: []*config.API{
+					{Path: "google/cloud/secretmanager/v1"},
+				},
+			},
+			want: "SecretManager",
+		},
+		{
+			name: "explicit config override",
+			library: &config.Library{
+				Name: "AccessContextManager",
+				PHP: &config.PHPPackage{
+					ComponentName: "AccessContextManager",
+				},
+				APIs: []*config.API{
+					{Path: "google/identity/accesscontextmanager/v1"},
+				},
+			},
+			want: "AccessContextManager",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got, err := ComponentNameForLibrary(googleapisDir, test.library)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
 	}
 }

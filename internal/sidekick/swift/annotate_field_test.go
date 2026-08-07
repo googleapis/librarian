@@ -60,9 +60,11 @@ func TestAnnotateField(t *testing.T) {
 			optional: false,
 			repeated: true,
 			want: &fieldAnnotations{
-				FieldType:     "[Swift.String]",
-				BaseFieldType: "Swift.String",
-				// Map and Repeated fields are not annotated for conversions yet
+				FieldType:            "[Swift.String]",
+				BaseFieldType:        "Swift.String",
+				ProtoFieldName:       "secretPayload",
+				ProtoFieldNamePascal: "SecretPayload",
+				PrimitiveFieldType:   "Swift.String",
 			},
 		},
 	} {
@@ -169,9 +171,12 @@ func TestAnnotateField_Discovery(t *testing.T) {
 				Typez:    api.TypezBytes,
 			},
 			want: &fieldAnnotations{
-				FieldType:     "[Foundation.Data]",
-				BaseFieldType: "Foundation.Data",
-				UrlSafeValue:  true,
+				FieldType:            "[Foundation.Data]",
+				BaseFieldType:        "Foundation.Data",
+				UrlSafeValue:         true,
+				ProtoFieldName:       "name",
+				ProtoFieldNamePascal: "Name",
+				PrimitiveFieldType:   "Foundation.Data",
 			},
 		},
 		{
@@ -355,9 +360,12 @@ func TestAnnotateField_Recursive(t *testing.T) {
 			repeated: true,
 			isOneOf:  false,
 			want: &fieldAnnotations{
-				FieldType:     "[Node]",
-				BaseFieldType: "Node",
-				Recursive:     false,
+				FieldType:            "[Node]",
+				BaseFieldType:        "Node",
+				Recursive:            false,
+				ProtoFieldName:       "childNode",
+				ProtoFieldNamePascal: "ChildNode",
+				PrimitiveFieldType:   "Node",
 			},
 		},
 		{
@@ -367,10 +375,13 @@ func TestAnnotateField_Recursive(t *testing.T) {
 			isOneOf:       true,
 			oneofProperty: "alternatives",
 			want: &fieldAnnotations{
-				FieldType:     "Node",
-				BaseFieldType: "Node",
-				Recursive:     false,
-				OneOfChecker:  "alternativesCheckAndSet",
+				FieldType:            "Node",
+				BaseFieldType:        "Node",
+				Recursive:            false,
+				OneOfChecker:         "alternativesCheckAndSet",
+				ProtoFieldName:       "childNode",
+				ProtoFieldNamePascal: "ChildNode",
+				PrimitiveFieldType:   "Node",
 			},
 		},
 	} {

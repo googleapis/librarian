@@ -20,21 +20,19 @@ import (
 
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/serviceconfig"
-	"github.com/iancoleman/strcase"
 )
 
-// DefaultLibraryName derives the library name (component name) for PHP purely from the API path.
-// E.g., "google/cloud/speech/v2" -> "Speech"
-// E.g., "google/cloud/security/privateca/v1" -> "SecurityPrivateca".
+// DefaultLibraryName derives the library name for PHP purely from the API path.
+// E.g., "google/cloud/speech/v2" -> "speech"
+// E.g., "google/cloud/security/privateca/v1" -> "security-privateca".
 func DefaultLibraryName(apiPath string) string {
 	apiPath = strings.TrimPrefix(apiPath, "google/cloud/")
 	apiPath = strings.TrimPrefix(apiPath, "google/")
 	if serviceconfig.ExtractVersion(apiPath) != "" {
 		apiPath = path.Dir(apiPath)
 	}
-	// Replace slash with underscore for strcase.ToCamel to handle nested paths
-	apiPath = strings.ReplaceAll(apiPath, "/", "_")
-	return strcase.ToCamel(apiPath)
+	apiPath = strings.ReplaceAll(apiPath, "/", "-")
+	return strings.ToLower(apiPath)
 }
 
 // Add populates PHP-specific default configuration for all APIs in the library.

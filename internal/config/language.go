@@ -823,6 +823,8 @@ type PHPDefault struct {
 
 // PHPPackage contains PHP-specific library configuration.
 type PHPPackage struct {
+	// ComponentName overrides the derived component name used for output/staging.
+	ComponentName string `yaml:"component_name,omitempty"`
 }
 
 // PHPAPI represents configuration for a single API within a PHP package.
@@ -833,6 +835,9 @@ type PHPAPI struct {
 	// CommonResources indicates whether to include common resources in generation.
 	// Must be configured either globally or per-API.
 	CommonResources *bool `yaml:"common_resources,omitempty"`
+
+	// ProtoPackage overrides the derived proto package for the API.
+	ProtoPackage string `yaml:"proto_package,omitempty"`
 
 	// StagingSubdir is the subdirectory in staging where the generated files should be placed.
 	StagingSubdir string `yaml:"staging_subdir,omitempty"`
@@ -884,6 +889,9 @@ type RubyCloudOpts struct {
 type RubyAPI struct {
 	// AdditionalProtos is a list of additional proto files to include in generation.
 	AdditionalProtos []string `yaml:"additional_protos,omitempty"`
+
+	// DeleteGenerationOutputPaths is a list of directory paths relative to the output directory to delete after generation.
+	DeleteGenerationOutputPaths []string `yaml:"delete_generation_output_paths,omitempty"`
 
 	// RubyCloudOpts contains options passed to the Ruby Cloud GAPIC generator as the `--ruby_cloud_opt` option.
 	RubyCloudOpts *RubyCloudOpts `yaml:"ruby_cloud_opts,omitempty"`

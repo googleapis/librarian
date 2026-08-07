@@ -27,6 +27,7 @@ import (
 
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/filesystem"
+	"github.com/googleapis/librarian/internal/proto"
 	"github.com/googleapis/librarian/internal/serviceconfig"
 	"github.com/googleapis/librarian/internal/sources"
 	"github.com/googleapis/librarian/internal/tool/protoc"
@@ -134,6 +135,9 @@ func generateAPI(ctx context.Context, api *config.API, library *config.Library, 
 	if err := protoc.RunOrSystem(ctx, env, pc, args...); err != nil {
 		return err
 	}
+	if err := deleteAfterGeneration(api, stagingDir); err != nil {
+		return err
+	}
 	// Remove google/cloud/common_resources_pb.rb from staging after generation.
 	// Because librarian passes all protoFiles (including common_resources.proto) to protoc
 	// in a single invocation, protoc outputs common_resources_pb.rb into the lib/ directory.
@@ -182,8 +186,14 @@ func buildGAPICOpts(api *config.API, library *config.Library, googleapisDir stri
 		if api.Ruby.RubyCloudOpts.ExtraDependencies != "" {
 			opts = append(opts, "ruby-cloud-extra-dependencies="+api.Ruby.RubyCloudOpts.ExtraDependencies)
 		}
+		if api.Ruby.RubyCloudOpts.GemNamespace != "" {
+			opts = append(opts, "ruby-cloud-gem-namespace="+api.Ruby.RubyCloudOpts.GemNamespace)
+		}
 		if api.Ruby.RubyCloudOpts.MigrationVersion != "" {
 			opts = append(opts, "ruby-cloud-migration-version="+api.Ruby.RubyCloudOpts.MigrationVersion)
+		}
+		if api.Ruby.RubyCloudOpts.ServiceOverride != "" {
+			opts = append(opts, "ruby-cloud-service-override="+api.Ruby.RubyCloudOpts.ServiceOverride)
 		}
 	}
 	if library.Ruby != nil && len(library.Ruby.WrapperOf) > 0 {
@@ -202,19 +212,9 @@ func transport(sc *serviceconfig.API) serviceconfig.Transport {
 
 func collectProtoFiles(googleapisDir, apiPath string, additionalProtos []string) ([]string, error) {
 	apiDir := filepath.Join(googleapisDir, apiPath)
-	entries, err := os.ReadDir(apiDir)
+	files, err := proto.Gather(apiDir, apiPath)
 	if err != nil {
-		return nil, fmt.Errorf("failed to read API directory %s: %w", apiDir, err)
-	}
-
-	var files []string
-	for _, entry := range entries {
-		if entry.IsDir() {
-			continue
-		}
-		if filepath.Ext(entry.Name()) == ".proto" {
-			files = append(files, filepath.Join(apiDir, entry.Name()))
-		}
+		return nil, err
 	}
 	for _, add := range additionalProtos {
 		files = append(files, filepath.Join(googleapisDir, add))
@@ -259,4 +259,23 @@ func escapeRubyCloudOptValue(val string) string {
 	// logic in RequestParamParser (gapic-generator/lib/gapic/schema/request_param_parser.rb#L30-L32).
 	val = strings.ReplaceAll(val, "\\", "\\\\")
 	return strings.ReplaceAll(val, ",", "\\,")
+}
+
+// deleteAfterGeneration removes files from the staging directory after generation.
+func deleteAfterGeneration(api *config.API, stagingDir string) error {
+	if api.Ruby == nil {
+		return nil
+	}
+	for _, path := range api.Ruby.DeleteGenerationOutputPaths {
+		target := filepath.Join(stagingDir, "lib", path)
+		// Return an error for non-existent paths to keep the configurations
+		// up to date.
+		if _, err := os.Stat(target); err != nil {
+			return fmt.Errorf("failed to stat %s: %w", path, err)
+		}
+		if err := os.RemoveAll(target); err != nil {
+			return fmt.Errorf("failed to remove %s: %w", path, err)
+		}
+	}
+	return nil
 }

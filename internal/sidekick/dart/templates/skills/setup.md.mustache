@@ -1,0 +1,126 @@
+---
+name: {{Codec.PackageSkillName}}-setup
+description: >-
+  Use this skill to help the developer get started with
+  package:{{Codec.PackageName}}
+---
+
+## Getting Started with package:{{Codec.PackageName}}
+
+### 1. Add the package to your pubspec.yaml
+
+```shell
+dart pub add {{Codec.PackageName}}
+```
+
+### 2. Import the library
+
+In your Dart code, import the library:
+
+```dart
+import 'package:{{Codec.PackageName}}/{{Codec.MainFileNameWithExtension}}';
+```
+
+### 3. Initialize the client
+
+To call the client, you need to create an instance of the service that
+you want to use, e.g., `{{Codec.ExampleServiceName}}`.
+
+There are two ways of creating an instance with the necessary credentials.
+
+#### Option A: Using Application Default Credentials (ADC) (Recommended)
+
+Recommended for production environments, server-side backends, and when
+running on Google Cloud (such as Cloud Run, GCE, GKE).
+
+When running on Google Cloud, Application Default Credentials are automatically
+available.
+
+When running locally, the `gcloud` command must be available (see
+[Install the Google Cloud CLI](https://docs.cloud.google.com/sdk/docs/install-sdk)).
+To obtain Application Default Credentials, run:
+
+```shell
+gcloud auth application-default login
+```
+
+Add `googleapis_auth` to your dependencies:
+
+```shell
+dart pub add googleapis_auth
+```
+
+```dart
+import 'package:googleapis_auth/auth_io.dart';
+import 'package:{{Codec.PackageName}}/{{Codec.MainFileNameWithExtension}}';
+
+Future<void> main() async {
+  final authClient = await clientViaApplicationDefaultCredentials(
+    scopes: [
+      'https://www.googleapis.com/auth/cloud-platform',
+    ],
+  );
+
+  final client = {{Codec.ExampleServiceName}}(client: authClient);
+
+  try {
+    // Call a method on the client.
+    {{#Codec.ExampleMethodReturnsValue}}
+    final response = await client.{{Codec.ExampleMethodName}}(
+      {{Codec.ExampleMethodRequestType}}(),
+    );
+    print('Response: $response');
+    {{/Codec.ExampleMethodReturnsValue}}
+    {{^Codec.ExampleMethodReturnsValue}}
+    await client.{{Codec.ExampleMethodName}}(
+      {{Codec.ExampleMethodRequestType}}(),
+    );
+    print('Method completed successfully.');
+    {{/Codec.ExampleMethodReturnsValue}}
+  } finally {
+    // Always close the client to release resources.
+    client.close();
+  }
+}
+```
+
+#### Option B: Using an API Key (Simple)
+
+Recommended for quick testing or prototyping because the setup is simple.
+
+If the user does not have an API key, then they can obtain one using the
+[Google Cloud Console](https://console.cloud.google.com/apis/credentials).
+
+Add the API key to one of these environment variables:
+{{#Codec.ApiKeyEnvironmentVariables}}
+- `{{{.}}}`
+{{/Codec.ApiKeyEnvironmentVariables}}
+
+
+```dart
+import 'package:{{Codec.PackageName}}/{{Codec.MainFileNameWithExtension}}';
+
+Future<void> main() async {
+  final client = {{Codec.ExampleServiceName}}.fromApiKey();
+
+  try {
+    // Call a method on the client.
+    {{#Codec.ExampleMethodReturnsValue}}
+    final response = await client.{{Codec.ExampleMethodName}}(
+      {{Codec.ExampleMethodRequestType}}(),
+    );
+    print('Response: $response');
+    {{/Codec.ExampleMethodReturnsValue}}
+    {{^Codec.ExampleMethodReturnsValue}}
+    await client.{{Codec.ExampleMethodName}}(
+      {{Codec.ExampleMethodRequestType}}(),
+    );
+    print('Method completed successfully.');
+    {{/Codec.ExampleMethodReturnsValue}}
+  } finally {
+    // Always close the client to release resources.
+    client.close();
+  }
+}
+```
+
