@@ -191,7 +191,7 @@ func TestNewInitParams(t *testing.T) {
 				APIs: []*config.API{{Path: "google/cloud/secretmanager/v1"}},
 			},
 			want: &initParams{
-				componentName: "SecretManager",
+				componentName:   "SecretManager",
 				phpNamespace:    `Google\Cloud\SecretManager`,
 				apiShortName:    "secretmanager",
 				productDocs:     "https://cloud.google.com/secret-manager/docs/overview",
@@ -213,7 +213,7 @@ func TestNewInitParams(t *testing.T) {
 				},
 			},
 			want: &initParams{
-				componentName: "SecretManager",
+				componentName:   "SecretManager",
 				phpNamespace:    `Google\Cloud\SecretManager`,
 				apiShortName:    "secretmanager",
 				productDocs:     "https://cloud.google.com/secret-manager/docs/overview",
