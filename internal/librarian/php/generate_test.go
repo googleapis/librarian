@@ -256,6 +256,12 @@ func requirePHPGenerator(t *testing.T) {
 
 func TestGenerate_Error(t *testing.T) {
 	requirePHPGenerator(t)
+	repoRoot := t.TempDir()
+	t.Chdir(repoRoot)
+	// Pre-create component directory so Generate skips component initialization and tests config validation.
+	if err := os.MkdirAll(filepath.Join(repoRoot, "SecretManager"), 0o755); err != nil {
+		t.Fatal(err)
+	}
 	for _, test := range []struct {
 		name    string
 		lib     *config.Library
