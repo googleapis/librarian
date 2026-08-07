@@ -86,6 +86,19 @@ func Generate(ctx context.Context, cfg *config.Config, library *config.Library, 
 	if err != nil {
 		return err
 	}
+	if _, err := os.Stat(componentName); err != nil {
+		if !errors.Is(err, fs.ErrNotExist) {
+			return err
+		}
+		params, err := newInitParams(googleapisDir, library.APIs[0])
+		if err != nil {
+			return err
+		}
+		params.componentName = componentName
+		if err := initComponent(ctx, params); err != nil {
+			return err
+		}
+	}
 	stagingDir := filepath.Join(owlBotStagingDir, componentName)
 	if err := os.RemoveAll(stagingDir); err != nil {
 		return err
