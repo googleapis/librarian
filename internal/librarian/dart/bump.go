@@ -184,7 +184,12 @@ func maybeBumpLibrary(ctx context.Context, cloudDeps []string, newVersions map[s
 
 func recommendedVersion(ctx context.Context, lib *config.Library, defaults *config.Default) (string, string, error) {
 	packageDir := libraryOutput(lib, defaults)
-	reportPath := filepath.Join(os.TempDir(), fmt.Sprintf("report-%s.json", lib.Name))
+	tmpFile, err := os.CreateTemp("", "report-*.json")
+	if err != nil {
+		return "", "", err
+	}
+	reportPath := tmpFile.Name()
+	tmpFile.Close()
 	defer os.Remove(reportPath)
 
 	var neededVersion string
