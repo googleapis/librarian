@@ -17,6 +17,7 @@ package php
 import (
 	"bufio"
 	"context"
+	"errors"
 	"fmt"
 	"io/fs"
 	"os"
@@ -31,12 +32,14 @@ import (
 	"github.com/googleapis/librarian/internal/serviceconfig"
 )
 
+const (
+	devTool = "dev/google-cloud"
+)
+
 var (
 	namespaceRe     = regexp.MustCompile(`php_namespace\)?\s*=\s*"([^"]+)"`)
 	versionSuffixRe = regexp.MustCompile(`\\V\d+.*$`)
 )
-
-const devTool = "dev/google-cloud"
 
 type initParams struct {
 	componentName   string
@@ -48,7 +51,26 @@ type initParams struct {
 	productHomepage string
 }
 
-func newInitParams(googleapisDir string, api *config.API) (*initParams, error) {
+func initIfNew(ctx context.Context, library *config.Library, googleapisDir string) error {
+	initParams, err := newInitParams(googleapisDir, library)
+	if err != nil {
+		return err
+	}
+	_, err = os.Stat(initParams.componentName)
+	if err == nil {
+		return nil
+	}
+	if !errors.Is(err, fs.ErrNotExist) {
+		return err
+	}
+	return initComponent(ctx, initParams)
+}
+
+func newInitParams(googleapisDir string, library *config.Library) (*initParams, error) {
+	if len(library.APIs) == 0 {
+		return nil, fmt.Errorf("no apis configured for library %q", library.Name)
+	}
+	api := library.APIs[0]
 	svcAPI, err := serviceconfig.Find(googleapisDir, api.Path, config.LanguagePhp)
 	if err != nil {
 		return nil, err
@@ -59,6 +81,7 @@ func newInitParams(googleapisDir string, api *config.API) (*initParams, error) {
 	}
 	apiVersion := serviceconfig.ExtractVersion(api.Path)
 	return &initParams{
+		componentName:   componentName(library, ns),
 		phpNamespace:    ns,
 		protoPackage:    protoPackage(api),
 		apiShortName:    svcAPI.ShortName,
@@ -66,24 +89,6 @@ func newInitParams(googleapisDir string, api *config.API) (*initParams, error) {
 		productDocs:     svcAPI.DocumentationURI,
 		productHomepage: repometadata.ExtractBaseProductURL(svcAPI.DocumentationURI),
 	}, nil
-}
-
-func initComponent(ctx context.Context, params *initParams) error {
-	args := []string{
-		"component:new",
-		"--no-update",
-		"--component-name=" + params.componentName,
-		"--php-namespace=" + params.phpNamespace,
-		"--proto-package=" + params.protoPackage,
-		"--api-short-name=" + params.apiShortName,
-		"--api-version=" + params.apiVersion,
-		"--product-docs=" + params.productDocs,
-		"--product-homepage=" + params.productHomepage,
-	}
-	if err := command.Run(ctx, devTool, args...); err != nil {
-		return fmt.Errorf("failed to init new PHP component %s: %w", params.componentName, err)
-	}
-	return nil
 }
 
 // ComponentNameForLibrary resolves the component name for a PHP library.
@@ -102,7 +107,7 @@ func ComponentNameForLibrary(googleapisDir string, library *config.Library) (str
 	if err != nil {
 		return "", err
 	}
-	return componentName(ns), nil
+	return componentName(library, ns), nil
 }
 
 // namespace reads the php_namespace option from the first .proto file in the API directory.
@@ -139,7 +144,10 @@ func namespace(googleapisDir, apiPath string) (string, error) {
 }
 
 // componentName returns the component name from a namespace.
-func componentName(namespace string) string {
+func componentName(library *config.Library, namespace string) string {
+	if library.PHP != nil && library.PHP.ComponentName != "" {
+		return library.PHP.ComponentName
+	}
 	if comp, ok := strings.CutPrefix(namespace, `Google\Cloud\`); ok {
 		return comp
 	}
@@ -183,4 +191,22 @@ func protoPackage(api *config.API) string {
 		apiPath = path.Dir(apiPath)
 	}
 	return strings.ReplaceAll(apiPath, "/", ".")
+}
+
+func initComponent(ctx context.Context, params *initParams) error {
+	args := []string{
+		"component:new",
+		"--no-update",
+		"--component-name=" + params.componentName,
+		"--php-namespace=" + params.phpNamespace,
+		"--proto-package=" + params.protoPackage,
+		"--api-short-name=" + params.apiShortName,
+		"--api-version=" + params.apiVersion,
+		"--product-docs=" + params.productDocs,
+		"--product-homepage=" + params.productHomepage,
+	}
+	if err := command.Run(ctx, devTool, args...); err != nil {
+		return fmt.Errorf("failed to init new PHP component %s: %w", params.componentName, err)
+	}
+	return nil
 }

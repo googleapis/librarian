@@ -44,6 +44,17 @@ var (
 	errNoProtos                    = errors.New("no target protos found")
 )
 
+type generateAPIParams struct {
+	cfg          *config.Config
+	api          *config.API
+	library      *config.Library
+	srcCfg       *sources.SourceConfig
+	wrapperPath  string
+	tempDir      string
+	gapicDestDir string
+	protoDestDir string
+}
+
 // Generate generates a PHP client library.
 func Generate(ctx context.Context, cfg *config.Config, library *config.Library, src *sources.Sources) (err error) {
 	if len(library.APIs) == 0 {
@@ -86,18 +97,8 @@ func Generate(ctx context.Context, cfg *config.Config, library *config.Library, 
 	if err != nil {
 		return err
 	}
-	if _, err := os.Stat(componentName); err != nil {
-		if !errors.Is(err, fs.ErrNotExist) {
-			return err
-		}
-		params, err := newInitParams(googleapisDir, library.APIs[0])
-		if err != nil {
-			return err
-		}
-		params.componentName = componentName
-		if err := initComponent(ctx, params); err != nil {
-			return err
-		}
+	if err := initIfNew(ctx, library, googleapisDir); err != nil {
+		return err
 	}
 	stagingDir := filepath.Join(owlBotStagingDir, componentName)
 	if err := os.RemoveAll(stagingDir); err != nil {
@@ -128,17 +129,6 @@ func Generate(ctx context.Context, cfg *config.Config, library *config.Library, 
 		return fmt.Errorf("failed to postprocess: %w", err)
 	}
 	return nil
-}
-
-type generateAPIParams struct {
-	cfg          *config.Config
-	api          *config.API
-	library      *config.Library
-	srcCfg       *sources.SourceConfig
-	wrapperPath  string
-	tempDir      string
-	gapicDestDir string
-	protoDestDir string
 }
 
 // generateAPI generates a single target API by resolving its service config, gathering
