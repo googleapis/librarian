@@ -27,6 +27,7 @@ import (
 
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/filesystem"
+	"github.com/googleapis/librarian/internal/proto"
 	"github.com/googleapis/librarian/internal/serviceconfig"
 	"github.com/googleapis/librarian/internal/sources"
 	"github.com/googleapis/librarian/internal/tool/protoc"
@@ -208,19 +209,9 @@ func transport(sc *serviceconfig.API) serviceconfig.Transport {
 
 func collectProtoFiles(googleapisDir, apiPath string, additionalProtos []string) ([]string, error) {
 	apiDir := filepath.Join(googleapisDir, apiPath)
-	entries, err := os.ReadDir(apiDir)
+	files, err := proto.Gather(apiDir, apiPath)
 	if err != nil {
-		return nil, fmt.Errorf("failed to read API directory %s: %w", apiDir, err)
-	}
-
-	var files []string
-	for _, entry := range entries {
-		if entry.IsDir() {
-			continue
-		}
-		if filepath.Ext(entry.Name()) == ".proto" {
-			files = append(files, filepath.Join(apiDir, entry.Name()))
-		}
+		return nil, err
 	}
 	for _, add := range additionalProtos {
 		files = append(files, filepath.Join(googleapisDir, add))
