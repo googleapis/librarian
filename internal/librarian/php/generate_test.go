@@ -84,6 +84,8 @@ func TestGenerate(t *testing.T) {
 	}
 }
 
+// TODO(https://github.com/googleapis/librarian/issues/6978): Revise this test
+// once the install steps for the dev tool are ready.
 func TestGenerate_NewLibrary(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skipping slow integration test")
@@ -143,6 +145,8 @@ cp %s SecretManager/owlbot.py
 	}
 }
 
+// TODO(https://github.com/googleapis/librarian/issues/6978): Revise this test
+// once the install steps for the dev tool are ready.
 func TestGenerate_InitComponentError(t *testing.T) {
 	requirePHPGenerator(t)
 	googleapisDir := "../../testdata/googleapis"
