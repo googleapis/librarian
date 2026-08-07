@@ -83,6 +83,9 @@ type fieldAnnotations struct {
 	// whereas `PrimitiveFieldType` remains the raw unwrapped type `Node` so that conversions can call
 	// `WktPackage.Recursive(value: try Node(proto: proto.childNode))`.
 	PrimitiveFieldType string
+
+	// ValueField holds the value field of a map, for inspecting whether the value is an object or enum.
+	ValueField *api.Field
 }
 
 // DecodingStyle defines an enumeration for decoding fields.
@@ -165,16 +168,18 @@ func (c *codec) annotateField(field *api.Field, model *modelAnnotations) (*field
 	}
 
 	annotations := &fieldAnnotations{
-		Name:          camelCase(field.Name),
-		FieldType:     parts.Full,
-		BaseFieldType: parts.Base,
-		KeyType:       parts.Key,
-		ValueType:     parts.Value,
-		PackageName:   packageName,
-		DocLines:      docLines,
-		Decoding:      DecodingSimple,
-		Encoding:      EncodingSimple,
-		Model:         model,
+		Name:                 camelCase(field.Name),
+		FieldType:            parts.Full,
+		BaseFieldType:        parts.Base,
+		KeyType:              parts.Key,
+		ValueType:            parts.Value,
+		PackageName:          packageName,
+		DocLines:             docLines,
+		Decoding:             DecodingSimple,
+		Encoding:             EncodingSimple,
+		Model:                model,
+		ProtoFieldName:       protoFieldName(field.Name),
+		ProtoFieldNamePascal: protoFieldNamePascal(field.Name),
 	}
 	// Swift value types (structs) cannot contain recursive references directly because their
 	// size must be known at compile time. To break the cycle, we wrap the reference in a box type
@@ -194,6 +199,17 @@ func (c *codec) annotateField(field *api.Field, model *modelAnnotations) (*field
 		annotations.Decoding = DecodingMapCustomKey
 		annotations.Encoding = EncodingMapCustomKey
 	}
+	if field.Map && field.TypezID != "" {
+		m, err := lookupMessage(c.Model, field.TypezID)
+		if err != nil {
+			return nil, err
+		}
+		fields, err := decomposeMap(m)
+		if err != nil {
+			return nil, err
+		}
+		annotations.ValueField = fields.Value
+	}
 	if field.Optional {
 		annotations.Decoding = DecodingOptional
 	}
@@ -210,9 +226,11 @@ func (c *codec) annotateField(field *api.Field, model *modelAnnotations) (*field
 			annotations.UrlSafeValue = true
 		}
 	}
+	// PrimitiveFieldType represents a single unwrapped primitive or message element type (e.g. `Node`).
+	// For map fields, parts.Base is the full dictionary type `[K: V]`,
+	// (which is not a single primitive/scalar type) so PrimitiveFieldType remains empty
+	// and map entry components are inspected via KeyType, ValueType, and ValueField instead.
 	if !field.Map {
-		annotations.ProtoFieldName = protoFieldName(field.Name)
-		annotations.ProtoFieldNamePascal = protoFieldNamePascal(field.Name)
 		annotations.PrimitiveFieldType = parts.Base
 	}
 	field.Codec = annotations

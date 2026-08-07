@@ -33,14 +33,9 @@ type messageAnnotations struct {
 	TypeURL             string
 	CustomSerialization bool
 
-	// HasConvertedFields is true if any field in the message emits code in
-	// toProto(), which currently includes only singular, non-oneof fields.
-	// This prevents the Swift compiler error "variable 'proto' was never mutated"
-	// for messages containing only repeated, map, or oneof fields by emitting "let"
-	// instead of "var" in convert_message.mustache.
-	// This is a temporary workaround until protobuf conversions support repeated,
-	// map, and oneof fields.
-	// TODO(#5272): remove HasConvertedFields once all field types are converted.
+	// HasConvertedFields is true if any field or oneof in the message emits code in
+	// toProto(). This prevents the Swift compiler warning "variable 'proto' was never mutated"
+	// for empty messages by emitting "let" instead of "var" in convert_message.mustache.
 	HasConvertedFields bool
 
 	IsPaginatedResponse bool
@@ -147,7 +142,7 @@ func (c *codec) annotateMessage(message *api.Message, model *modelAnnotations) e
 	if len(message.Fields) != 0 {
 		sampleField = camelCase(message.Fields[0].Name)
 	}
-	hasConvertedFields := slices.IndexFunc(message.Fields, func(f *api.Field) bool { return !f.Map }) != -1
+	hasConvertedFields := len(message.Fields) > 0
 	parameterTypeName, err := c.messageTypeName(message)
 	if err != nil {
 		return err

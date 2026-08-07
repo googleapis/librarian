@@ -71,6 +71,19 @@ extension {{Codec.ParameterTypeName}} {
     {{/IsEnum}}
     {{/IsObject}}
     {{/Repeated}}
+    {{#Map}}
+    {{#Codec.ValueField.IsObject}}
+    self.{{Codec.Name}} = try proto.{{Codec.ProtoFieldName}}.mapValues { try .init(proto: $0) }
+    {{/Codec.ValueField.IsObject}}
+    {{#Codec.ValueField.IsEnum}}
+    self.{{Codec.Name}} = proto.{{Codec.ProtoFieldName}}.mapValues { .init(proto: $0) }
+    {{/Codec.ValueField.IsEnum}}
+    {{^Codec.ValueField.IsObject}}
+    {{^Codec.ValueField.IsEnum}}
+    self.{{Codec.Name}} = proto.{{Codec.ProtoFieldName}}
+    {{/Codec.ValueField.IsEnum}}
+    {{/Codec.ValueField.IsObject}}
+    {{/Map}}
     {{/IsOneOf}}
     {{/Fields}}
     {{#OneOfs}}
@@ -155,6 +168,19 @@ extension {{Codec.ParameterTypeName}} {
     {{/IsEnum}}
     {{/IsObject}}
     {{/Repeated}}
+    {{#Map}}
+    {{#Codec.ValueField.IsObject}}
+    proto.{{Codec.ProtoFieldName}} = try self.{{Codec.Name}}.mapValues { try $0.toProto() }
+    {{/Codec.ValueField.IsObject}}
+    {{#Codec.ValueField.IsEnum}}
+    proto.{{Codec.ProtoFieldName}} = try self.{{Codec.Name}}.mapValues { try $0.toProto() }
+    {{/Codec.ValueField.IsEnum}}
+    {{^Codec.ValueField.IsObject}}
+    {{^Codec.ValueField.IsEnum}}
+    proto.{{Codec.ProtoFieldName}} = self.{{Codec.Name}}
+    {{/Codec.ValueField.IsEnum}}
+    {{/Codec.ValueField.IsObject}}
+    {{/Map}}
     {{/IsOneOf}}
     {{/Fields}}
     {{#OneOfs}}
