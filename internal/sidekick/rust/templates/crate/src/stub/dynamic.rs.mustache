@@ -30,11 +30,12 @@ pub trait {{Codec.Name}}: std::fmt::Debug + Send + Sync {
     #[cfg(google_cloud_unstable_gapic_streaming)]
     async fn {{Codec.Name}}(
         &self,
+        req: {{InputType.Codec.QualifiedName}},
         options: crate::RequestOptions,
-    ) -> (
+    ) -> crate::Result<(
         google_cloud_gax::streaming::RequestSender<{{InputType.Codec.QualifiedName}}>,
         google_cloud_gax::streaming::ResponseReceiver<{{OutputType.Codec.QualifiedName}}>,
-    );
+    )>;
 
     {{/Codec.IsBidiStreaming}}
     {{^Codec.IsBidiStreaming}}
@@ -78,12 +79,13 @@ impl<T: super::{{Codec.Name}}> {{Codec.Name}} for T {
     #[cfg(google_cloud_unstable_gapic_streaming)]
     async fn {{Codec.Name}}(
         &self,
+        req: {{InputType.Codec.QualifiedName}},
         options: crate::RequestOptions,
-    ) -> (
+    ) -> crate::Result<(
         google_cloud_gax::streaming::RequestSender<{{InputType.Codec.QualifiedName}}>,
         google_cloud_gax::streaming::ResponseReceiver<{{OutputType.Codec.QualifiedName}}>,
-    ) {
-        T::{{Codec.Name}}(self, options).await
+    )> {
+        T::{{Codec.Name}}(self, req, options).await
     }
 
     {{/Codec.IsBidiStreaming}}
