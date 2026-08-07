@@ -52,18 +52,18 @@ type initParams struct {
 }
 
 func initIfNew(ctx context.Context, library *config.Library, googleapisDir string) error {
-	initParams, err := newInitParams(googleapisDir, library)
+	params, err := newInitParams(googleapisDir, library)
 	if err != nil {
 		return err
 	}
-	_, err = os.Stat(initParams.componentName)
+	_, err = os.Stat(params.componentName)
 	if err == nil {
 		return nil
 	}
 	if !errors.Is(err, fs.ErrNotExist) {
 		return err
 	}
-	return initComponent(ctx, initParams)
+	return initComponent(ctx, params)
 }
 
 func newInitParams(googleapisDir string, library *config.Library) (*initParams, error) {
