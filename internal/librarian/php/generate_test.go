@@ -16,6 +16,7 @@ package php
 
 import (
 	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
@@ -44,7 +45,7 @@ func TestGenerate(t *testing.T) {
 	}
 	repoRoot := t.TempDir()
 	t.Chdir(repoRoot)
-	destDir := filepath.Join(repoRoot, "output")
+	destDir := filepath.Join(repoRoot, "SecretManager")
 	if err := os.MkdirAll(destDir, 0o755); err != nil {
 		t.Fatal(err)
 	}
@@ -83,6 +84,161 @@ func TestGenerate(t *testing.T) {
 	}
 }
 
+// TODO(https://github.com/googleapis/librarian/issues/6978): Revise this test
+// once the install steps for the dev tool are ready.
+func TestGenerate_NewLibrary(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping slow integration test")
+	}
+	requirePHPGenerator(t)
+	googleapisDir := "../../testdata/googleapis"
+	absGoogleapis, err := filepath.Abs(googleapisDir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	absOwlbotCopy, err := filepath.Abs(filepath.Join("testdata", "owlbot_copy.py"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	repoRoot := t.TempDir()
+	t.Chdir(repoRoot)
+	devDir := filepath.Join(repoRoot, "dev")
+	if err := os.MkdirAll(devDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	mockDevScript := filepath.Join(devDir, "google-cloud")
+	scriptContent := fmt.Sprintf(`#!/bin/sh
+mkdir -p SecretManager
+cp %s SecretManager/owlbot.py
+`, absOwlbotCopy)
+	if err := os.WriteFile(mockDevScript, []byte(scriptContent), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	destDir := filepath.Join(repoRoot, "SecretManager")
+	library := &config.Library{
+		Name:   "secretmanager",
+		Output: destDir,
+		APIs: []*config.API{
+			{
+				Path: "google/cloud/secretmanager/v1",
+				PHP: &config.PHPAPI{
+					CommonResources: new(true),
+					StagingSubdir:   "v1",
+				},
+			},
+		},
+	}
+	cfg := &config.Config{
+		Language: config.LanguagePhp,
+	}
+	err = Generate(t.Context(), cfg, library, &sources.Sources{Googleapis: absGoogleapis})
+	if err != nil {
+		t.Fatal(err)
+	}
+	// Verify output
+	outputDirs := []string{"src", "tests", "samples", "fragments"}
+	for _, dir := range outputDirs {
+		p := filepath.Join(library.Output, dir)
+		if stat, err := os.Stat(p); err != nil || !stat.IsDir() {
+			t.Errorf("expected directory %s to exist and be a directory", p)
+		}
+	}
+}
+
+// TODO(https://github.com/googleapis/librarian/issues/6978): Revise this test
+// once the install steps for the dev tool are ready.
+func TestGenerate_InitComponentError(t *testing.T) {
+	requirePHPGenerator(t)
+	googleapisDir := "../../testdata/googleapis"
+	absGoogleapis, err := filepath.Abs(googleapisDir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	repoRoot := t.TempDir()
+	t.Chdir(repoRoot)
+	devDir := filepath.Join(repoRoot, "dev")
+	if err := os.MkdirAll(devDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	mockDevScript := filepath.Join(devDir, "google-cloud")
+	scriptContent := `#!/bin/sh
+exit 1
+`
+	if err := os.WriteFile(mockDevScript, []byte(scriptContent), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	destDir := filepath.Join(repoRoot, "SecretManager")
+	library := &config.Library{
+		Name:   "secretmanager",
+		Output: destDir,
+		APIs: []*config.API{
+			{
+				Path: "google/cloud/secretmanager/v1",
+				PHP: &config.PHPAPI{
+					CommonResources: new(true),
+					StagingSubdir:   "v1",
+				},
+			},
+		},
+	}
+	cfg := &config.Config{
+		Language: config.LanguagePhp,
+	}
+	err = Generate(t.Context(), cfg, library, &sources.Sources{Googleapis: absGoogleapis})
+	if err == nil {
+		t.Fatal("Generate() expected error, got nil")
+	}
+}
+
+func TestGenerate_StatError(t *testing.T) {
+	requirePHPGenerator(t)
+	googleapisDir := "../../testdata/googleapis"
+	absGoogleapis, err := filepath.Abs(googleapisDir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	repoRoot := t.TempDir()
+	t.Chdir(repoRoot)
+	// Create an inaccessible component directory to trigger a permission error on Stat
+	componentDir := filepath.Join(repoRoot, "SecretManager")
+	if err := os.MkdirAll(componentDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	nestedDir := filepath.Join(componentDir, "nested")
+	if err := os.MkdirAll(nestedDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Chmod(componentDir, 0o000); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() {
+		_ = os.Chmod(componentDir, 0o755)
+	})
+	library := &config.Library{
+		Name:   "secretmanager",
+		Output: componentDir,
+		PHP: &config.PHPPackage{
+			ComponentName: "SecretManager/nested",
+		},
+		APIs: []*config.API{
+			{
+				Path: "google/cloud/secretmanager/v1",
+				PHP: &config.PHPAPI{
+					CommonResources: new(true),
+					StagingSubdir:   "v1",
+				},
+			},
+		},
+	}
+	cfg := &config.Config{
+		Language: config.LanguagePhp,
+	}
+	err = Generate(t.Context(), cfg, library, &sources.Sources{Googleapis: absGoogleapis})
+	if !errors.Is(err, os.ErrPermission) {
+		t.Errorf("Generate() error = %v, want wrap of %v", err, os.ErrPermission)
+	}
+}
+
 func requirePHPGenerator(t *testing.T) {
 	t.Helper()
 	testhelper.RequireCommand(t, "protoc")
@@ -100,6 +256,12 @@ func requirePHPGenerator(t *testing.T) {
 
 func TestGenerate_Error(t *testing.T) {
 	requirePHPGenerator(t)
+	repoRoot := t.TempDir()
+	t.Chdir(repoRoot)
+	// Pre-create component directory so Generate skips component initialization and tests config validation.
+	if err := os.MkdirAll(filepath.Join(repoRoot, "SecretManager"), 0o755); err != nil {
+		t.Fatal(err)
+	}
 	for _, test := range []struct {
 		name    string
 		lib     *config.Library
