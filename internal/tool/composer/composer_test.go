@@ -108,7 +108,7 @@ func TestInstall_NoEntrypoint(t *testing.T) {
 }
 
 func TestVerify_Entrypoint(t *testing.T) {
-	for _, tt := range []struct {
+	for _, test := range []struct {
 		name    string
 		tool    *config.ComposerTool
 		wantErr error
@@ -129,10 +129,10 @@ func TestVerify_Entrypoint(t *testing.T) {
 			wantErr: nil,
 		},
 	} {
-		t.Run(tt.name, func(t *testing.T) {
-			err := verify([]*config.ComposerTool{tt.tool})
-			if !errors.Is(err, tt.wantErr) {
-				t.Errorf("verify() error = %v, wantErr %v", err, tt.wantErr)
+		t.Run(test.name, func(t *testing.T) {
+			err := verify([]*config.ComposerTool{test.tool})
+			if !errors.Is(err, test.wantErr) {
+				t.Errorf("verify() error = %v, wantErr %v", err, test.wantErr)
 			}
 		})
 	}
