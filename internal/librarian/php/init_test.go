@@ -135,27 +135,41 @@ func TestNamespace_Error(t *testing.T) {
 func TestComponentName(t *testing.T) {
 	for _, test := range []struct {
 		name      string
+		library   *config.Library
 		namespace string
 		want      string
 	}{
 		{
 			name:      "google cloud component",
+			library:   &config.Library{},
 			namespace: `Google\Cloud\SecretManager`,
 			want:      "SecretManager",
 		},
 		{
 			name:      "google ads",
+			library:   &config.Library{},
 			namespace: `Google\Ads\GoogleAds`,
 			want:      "AdsGoogleAds",
 		},
 		{
 			name:      "google shopping",
+			library:   &config.Library{},
 			namespace: `Google\Shopping\Merchant\Conversions`,
 			want:      "ShoppingMerchantConversions",
 		},
+		{
+			name: "component name override",
+			library: &config.Library{
+				PHP: &config.PHPPackage{
+					ComponentName: "CustomComponentName",
+				},
+			},
+			namespace: `Google\Cloud\SecretManager`,
+			want:      "CustomComponentName",
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got := componentName(test.namespace)
+			got := componentName(test.library, test.namespace)
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
@@ -167,16 +181,17 @@ func TestNewInitParams(t *testing.T) {
 	t.Parallel()
 	googleapisDir := filepath.Join("..", "..", "testdata", "googleapis")
 	for _, test := range []struct {
-		name string
-		api  *config.API
-		want *initParams
+		name    string
+		library *config.Library
+		want    *initParams
 	}{
 		{
 			name: "default derived protoPackage",
-			api: &config.API{
-				Path: "google/cloud/secretmanager/v1",
+			library: &config.Library{
+				APIs: []*config.API{{Path: "google/cloud/secretmanager/v1"}},
 			},
 			want: &initParams{
+				componentName:   "SecretManager",
 				phpNamespace:    `Google\Cloud\SecretManager`,
 				apiShortName:    "secretmanager",
 				productDocs:     "https://cloud.google.com/secret-manager/docs/overview",
@@ -187,13 +202,18 @@ func TestNewInitParams(t *testing.T) {
 		},
 		{
 			name: "custom protoPackage override",
-			api: &config.API{
-				Path: "google/cloud/secretmanager/v1",
-				PHP: &config.PHPAPI{
-					ProtoPackage: "google.cloud.secrets",
+			library: &config.Library{
+				APIs: []*config.API{
+					{
+						Path: "google/cloud/secretmanager/v1",
+						PHP: &config.PHPAPI{
+							ProtoPackage: "google.cloud.secrets",
+						},
+					},
 				},
 			},
 			want: &initParams{
+				componentName:   "SecretManager",
 				phpNamespace:    `Google\Cloud\SecretManager`,
 				apiShortName:    "secretmanager",
 				productDocs:     "https://cloud.google.com/secret-manager/docs/overview",
@@ -205,12 +225,178 @@ func TestNewInitParams(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
-			params, err := newInitParams(googleapisDir, test.api)
+			params, err := newInitParams(googleapisDir, test.library)
 			if err != nil {
 				t.Fatal(err)
 			}
 			if diff := cmp.Diff(test.want, params, cmp.AllowUnexported(initParams{})); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestInitComponentIfMissing(t *testing.T) {
+	googleapisDir, err := filepath.Abs(filepath.Join("..", "..", "testdata", "googleapis"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, test := range []struct {
+		name          string
+		library       *config.Library
+		setup         func(t *testing.T, repoRoot string)
+		wantComponent string
+		wantInit      bool
+	}{
+		{
+			name: "component already exists",
+			library: &config.Library{
+				Name: "secretmanager",
+				APIs: []*config.API{
+					{Path: "google/cloud/secretmanager/v1"},
+				},
+			},
+			setup: func(t *testing.T, repoRoot string) {
+				if err := os.MkdirAll(filepath.Join(repoRoot, "SecretManager"), 0o755); err != nil {
+					t.Fatal(err)
+				}
+			},
+			wantComponent: "SecretManager",
+			wantInit:      false,
+		},
+		{
+			name: "new component initialized",
+			library: &config.Library{
+				Name: "secretmanager",
+				APIs: []*config.API{
+					{Path: "google/cloud/secretmanager/v1"},
+				},
+			},
+			setup: func(t *testing.T, repoRoot string) {
+				devDir := filepath.Join(repoRoot, "dev")
+				if err := os.MkdirAll(devDir, 0o755); err != nil {
+					t.Fatal(err)
+				}
+				mockScript := filepath.Join(devDir, "google-cloud")
+				scriptContent := "#!/bin/sh\ntouch initialized.txt\n"
+				if err := os.WriteFile(mockScript, []byte(scriptContent), 0o755); err != nil {
+					t.Fatal(err)
+				}
+			},
+			wantComponent: "SecretManager",
+			wantInit:      true,
+		},
+		{
+			name: "new component with component name override",
+			library: &config.Library{
+				Name: "secretmanager",
+				PHP: &config.PHPPackage{
+					ComponentName: "CustomSecretManager",
+				},
+				APIs: []*config.API{
+					{Path: "google/cloud/secretmanager/v1"},
+				},
+			},
+			setup: func(t *testing.T, repoRoot string) {
+				devDir := filepath.Join(repoRoot, "dev")
+				if err := os.MkdirAll(devDir, 0o755); err != nil {
+					t.Fatal(err)
+				}
+				mockScript := filepath.Join(devDir, "google-cloud")
+				scriptContent := "#!/bin/sh\ntouch initialized.txt\n"
+				if err := os.WriteFile(mockScript, []byte(scriptContent), 0o755); err != nil {
+					t.Fatal(err)
+				}
+			},
+			wantComponent: "CustomSecretManager",
+			wantInit:      true,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			repoRoot := t.TempDir()
+			t.Chdir(repoRoot)
+			if test.setup != nil {
+				test.setup(t, repoRoot)
+			}
+			got, err := initComponentIfMissing(t.Context(), test.library, googleapisDir)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if diff := cmp.Diff(test.wantComponent, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+			_, statErr := os.Stat(filepath.Join(repoRoot, "initialized.txt"))
+			wasInitialized := statErr == nil
+			if wasInitialized != test.wantInit {
+				t.Errorf("wasInitialized = %v, wantInit = %v", wasInitialized, test.wantInit)
+			}
+		})
+	}
+}
+
+func TestInitComponentIfMissing_Error(t *testing.T) {
+	googleapisDir, err := filepath.Abs(filepath.Join("..", "..", "testdata", "googleapis"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, test := range []struct {
+		name    string
+		library *config.Library
+		setup   func(t *testing.T, repoRoot string)
+		wantErr error
+	}{
+		{
+			name: "no apis configured in library",
+			library: &config.Library{
+				Name: "empty",
+			},
+			wantErr: errNoAPIs,
+		},
+		{
+			name: "api service config not found",
+			library: &config.Library{
+				Name: "nonexistent",
+				APIs: []*config.API{
+					{Path: "google/cloud/nonexistent/v1"},
+				},
+			},
+			wantErr: fs.ErrNotExist,
+		},
+		{
+			name: "stat error other than not exist",
+			library: &config.Library{
+				Name: "secretmanager",
+				PHP: &config.PHPPackage{
+					ComponentName: "unreadable/SecretManager",
+				},
+				APIs: []*config.API{
+					{Path: "google/cloud/secretmanager/v1"},
+				},
+			},
+			setup: func(t *testing.T, repoRoot string) {
+				unreadableDir := filepath.Join(repoRoot, "unreadable")
+				if err := os.MkdirAll(unreadableDir, 0o755); err != nil {
+					t.Fatal(err)
+				}
+				if err := os.Chmod(unreadableDir, 0o000); err != nil {
+					t.Fatal(err)
+				}
+				t.Cleanup(func() {
+					_ = os.Chmod(unreadableDir, 0o755)
+				})
+			},
+			wantErr: fs.ErrPermission,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			repoRoot := t.TempDir()
+			t.Chdir(repoRoot)
+			if test.setup != nil {
+				test.setup(t, repoRoot)
+			}
+			_, err := initComponentIfMissing(t.Context(), test.library, googleapisDir)
+			if !errors.Is(err, test.wantErr) {
+				t.Errorf("initComponentIfMissing() error = %v, wantErr = %v", err, test.wantErr)
 			}
 		})
 	}
