@@ -57,11 +57,12 @@ pub trait {{Codec.Name}}: std::fmt::Debug + Send + Sync {
     #[cfg(google_cloud_unstable_gapic_streaming)]
     fn {{Codec.Name}}(
         &self,
+        _req: {{InputType.Codec.QualifiedName}},
         _options: crate::RequestOptions,
-    ) -> impl std::future::Future<Output = (
+    ) -> impl std::future::Future<Output = crate::Result<(
         google_cloud_gax::streaming::RequestSender<{{InputType.Codec.QualifiedName}}>,
         google_cloud_gax::streaming::ResponseReceiver<{{OutputType.Codec.QualifiedName}}>,
-    )> + Send {
+    )>> + Send {
         {{! TODO(#6835) - create a streaming unimplemented stub in gaxi }}
         async {
             let _ = gaxi::unimplemented::unimplemented_stub::<()>().await;

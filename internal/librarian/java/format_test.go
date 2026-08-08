@@ -29,23 +29,46 @@ func TestFormat(t *testing.T) {
 	testhelper.RequireCommand(t, "google-java-format")
 	for _, test := range []struct {
 		name  string
-		setup func(t *testing.T, root string)
+		setup func(t *testing.T, root string) []*config.Library
 	}{
 		{
 			name: "successful format",
-			setup: func(t *testing.T, root string) {
+			setup: func(t *testing.T, root string) []*config.Library {
 				if err := os.WriteFile(filepath.Join(root, "SomeClass.java"), []byte("public class SomeClass {}"), 0o644); err != nil {
 					t.Fatal(err)
 				}
+				return []*config.Library{{Output: root}}
 			},
 		},
 		{
-			name:  "no files found",
-			setup: func(t *testing.T, root string) {},
+			name: "no files found",
+			setup: func(t *testing.T, root string) []*config.Library {
+				return []*config.Library{{Output: root}}
+			},
+		},
+		{
+			name: "multiple libraries formatted together",
+			setup: func(t *testing.T, root string) []*config.Library {
+				lib1Dir := filepath.Join(root, "lib1")
+				lib2Dir := filepath.Join(root, "lib2")
+				if err := os.MkdirAll(lib1Dir, 0o755); err != nil {
+					t.Fatal(err)
+				}
+				if err := os.MkdirAll(lib2Dir, 0o755); err != nil {
+					t.Fatal(err)
+				}
+				if err := os.WriteFile(filepath.Join(lib1Dir, "ClassA.java"), []byte("public class ClassA {}"), 0o644); err != nil {
+					t.Fatal(err)
+				}
+				if err := os.WriteFile(filepath.Join(lib2Dir, "ClassB.java"), []byte("public class ClassB {}"), 0o644); err != nil {
+					t.Fatal(err)
+				}
+				return []*config.Library{{Output: lib1Dir}, {Output: lib2Dir}}
+			},
 		},
 		{
 			name: "nested files in subdirectories",
-			setup: func(t *testing.T, root string) {
+			setup: func(t *testing.T, root string) []*config.Library {
 				dir := filepath.Join(root, "sub", "dir")
 				if err := os.MkdirAll(dir, 0o755); err != nil {
 					t.Fatal(err)
@@ -53,11 +76,12 @@ func TestFormat(t *testing.T) {
 				if err := os.WriteFile(filepath.Join(dir, "Nested.java"), []byte("public class Nested {}"), 0o644); err != nil {
 					t.Fatal(err)
 				}
+				return []*config.Library{{Output: root}}
 			},
 		},
 		{
 			name: "files in excluded samples path are ignored",
-			setup: func(t *testing.T, root string) {
+			setup: func(t *testing.T, root string) []*config.Library {
 				dir := filepath.Join(root, "samples", "snippets", "generated")
 				if err := os.MkdirAll(dir, 0o755); err != nil {
 					t.Fatal(err)
@@ -66,14 +90,15 @@ func TestFormat(t *testing.T) {
 				if err := os.WriteFile(filepath.Join(dir, "Ignored.java"), []byte("public class Ignored {}"), 0o644); err != nil {
 					t.Fatal(err)
 				}
+				return []*config.Library{{Output: root}}
 			},
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
 			tmpDir := t.TempDir()
-			test.setup(t, tmpDir)
-			if err := Format(t.Context(), &config.Library{Output: tmpDir}); err != nil {
+			libs := test.setup(t, tmpDir)
+			if err := Format(t.Context(), libs...); err != nil {
 				t.Errorf("Format() error = %v, want nil", err)
 			}
 		})

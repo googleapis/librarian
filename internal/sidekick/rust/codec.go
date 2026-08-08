@@ -200,6 +200,12 @@ func newCodec(specificationFormat string, options map[string]string) (*codec, er
 			codec.internalBuilders = value
 		case key == "quickstart-service-override":
 			codec.quickstartServiceOverride = definition
+		case key == "include-rpc-status-conversion":
+			value, err := strconv.ParseBool(definition)
+			if err != nil {
+				return nil, fmt.Errorf("cannot convert `include-rpc-status-conversion` value %q to boolean: %w", definition, err)
+			}
+			codec.includeRpcStatusConversion = value
 		default:
 			return nil, fmt.Errorf("unknown Rust codec option %q", key)
 		}
@@ -314,6 +320,8 @@ type codec struct {
 	includeStreamingMethods bool
 	// If true, this includes gRPC bi-directional streaming methods.
 	includeBidiStreamingMethods bool
+	// If true, google.rpc.Status conversion is generated in convert.rs.
+	includeRpcStatusConversion bool
 	// If true, the generator will produce per-client features.
 	perServiceFeatures bool
 	// If not empty, and if `perServiceFeatures` is true, the default features

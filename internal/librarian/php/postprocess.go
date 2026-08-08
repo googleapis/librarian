@@ -30,8 +30,8 @@ var (
 	errOwlBotNotFound = errors.New("owlbot.py not found")
 )
 
-func postProcessLibrary(ctx context.Context, library *config.Library) (err error) {
-	stagingDir := filepath.Join(owlBotStagingDir, library.Name)
+func postProcessLibrary(ctx context.Context, library *config.Library, componentName string) (err error) {
+	stagingDir := filepath.Join(owlBotStagingDir, componentName)
 	defer func() {
 		if cleanupErr := os.RemoveAll(stagingDir); cleanupErr != nil {
 			err = errors.Join(err, cleanupErr)

@@ -30,6 +30,7 @@ import (
 	"github.com/bazelbuild/buildtools/build"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/librarian"
+	"github.com/googleapis/librarian/internal/librarian/php"
 	"github.com/googleapis/librarian/internal/yaml"
 )
 
@@ -39,6 +40,20 @@ var librarianPHPYAML []byte
 var protoMappings = map[string]string{
 	"//google/cloud/location:location_proto": "google/cloud/location/locations.proto",
 	"//google/iam/v1:iam_policy_proto":       "google/iam/v1/iam_policy.proto",
+}
+
+// protoPackageOverrides maps API paths to explicit proto_package overrides.
+// These legacy APIs have declared proto package names that differ from their directory paths:
+//   - "google/maps/fleetengine/v1" uses "package maps.fleetengine.v1;" (omits "google.")
+//   - "google/maps/fleetengine/delivery/v1" uses "package maps.fleetengine.delivery.v1;" (omits "google.")
+//   - "google/cloud/translate/v3" uses "package google.cloud.translation.v3;" ("translation" vs "translate")
+//
+// Dynamic derivation would inspect the first .proto file in googleapisDir/apiPath and set
+// api.PHP.ProtoPackage if the package (excluding version) differs from [path.Dir](apiPath).
+var protoPackageOverrides = map[string]string{
+	"google/maps/fleetengine/v1":          "maps.fleetengine",
+	"google/maps/fleetengine/delivery/v1": "maps.fleetengine.delivery",
+	"google/cloud/translate/v3":           "google.cloud.translation",
 }
 
 var (
@@ -152,11 +167,15 @@ func createAPIConfig(path string, dest string) (*config.API, error) {
 		return nil, fmt.Errorf("%w: path %s from destination %q", errUnableToResolveStagingSubdir, path, dest)
 	}
 	normalizedStagingSubdir := normalizeStagingSubdir(path, stagingSubdir)
+	phpAPI := &config.PHPAPI{
+		StagingSubdir: normalizedStagingSubdir,
+	}
+	if override, ok := protoPackageOverrides[path]; ok {
+		phpAPI.ProtoPackage = override
+	}
 	return &config.API{
 		Path: path,
-		PHP: &config.PHPAPI{
-			StagingSubdir: normalizedStagingSubdir,
-		},
+		PHP:  phpAPI,
 	}, nil
 }
 
@@ -241,12 +260,28 @@ func findPHPLibraries(repoPath string, googleapisDir string, globalDefaultCommon
 		if len(apis) == 0 {
 			continue
 		}
-
-		libs = append(libs, &config.Library{
-			Name:    name,
+		libraryName := php.DefaultLibraryName(apis[0].Path)
+		lib := &config.Library{
+			Name:    libraryName,
 			Version: version,
 			APIs:    apis,
-		})
+		}
+		derivedComp, err := php.ComponentNameForLibrary(googleapisDir, lib)
+		if err != nil {
+			// If component name derivation fails (e.g. proto file missing or unresolvable in googleapis),
+			// log a warning and skip migrating this library so it does not block migration of other libraries.
+			// For example, ApigeeRegistry has proto files removed recently.
+			log.Printf("Warning: failed to derive component name for %s: %v", name, err)
+			continue
+		}
+		if derivedComp != name {
+			log.Printf("DEBUG: %s: custom component_name=%q differs from derived=%q", name, name, derivedComp)
+			lib.PHP = &config.PHPPackage{
+				ComponentName: name,
+			}
+		}
+
+		libs = append(libs, lib)
 	}
 	return libs, nil
 }

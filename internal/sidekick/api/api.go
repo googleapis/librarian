@@ -38,8 +38,12 @@ type API struct {
 	// Messages are a collection of messages used to process request and
 	// responses in the API.
 	Messages []*Message
+	// ExternalMessages are top-level messages from external packages (e.g. google.type.LatLng).
+	ExternalMessages []*Message
 	// Enums
 	Enums []*Enum
+	// ExternalEnums are top-level enums from external packages.
+	ExternalEnums []*Enum
 	// ResourceDefinitions contains the data from the `google.api.resource_definition` annotation.
 	ResourceDefinitions []*Resource
 	// QuickstartService is the service that will be used to generate the quickstart sample

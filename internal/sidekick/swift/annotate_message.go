@@ -33,6 +33,11 @@ type messageAnnotations struct {
 	TypeURL             string
 	CustomSerialization bool
 
+	// HasConvertedFields is true if any field or oneof in the message emits code in
+	// toProto(). This prevents the Swift compiler warning "variable 'proto' was never mutated"
+	// for empty messages by emitting "let" instead of "var" in convert_message.mustache.
+	HasConvertedFields bool
+
 	IsPaginatedResponse bool
 	PageableItemField   string
 	PageableItemType    string
@@ -137,6 +142,7 @@ func (c *codec) annotateMessage(message *api.Message, model *modelAnnotations) e
 	if len(message.Fields) != 0 {
 		sampleField = camelCase(message.Fields[0].Name)
 	}
+	hasConvertedFields := len(message.Fields) > 0
 	parameterTypeName, err := c.messageTypeName(message)
 	if err != nil {
 		return err
@@ -147,6 +153,7 @@ func (c *codec) annotateMessage(message *api.Message, model *modelAnnotations) e
 		Model:               model,
 		TypeURL:             typeURLPrefix + strings.TrimPrefix(message.ID, "."),
 		CustomSerialization: len(message.OneOfs) > 0,
+		HasConvertedFields:  hasConvertedFields,
 		DependsOn:           map[string]*Dependency{},
 		SampleField:         sampleField,
 		ParameterTypeName:   parameterTypeName,

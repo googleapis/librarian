@@ -25,9 +25,18 @@ limitations under the License.
 
 use crate as gaxi;
 {{/Codec.IsGaxiCrate}}
+{{#Codec.IncludeRpcStatusConversion}}
+{{> /templates/convert-prost/status}}
+{{/Codec.IncludeRpcStatusConversion}}
 {{#Enums}}
 {{> enum}}
 {{/Enums}}
+{{#ExternalEnums}}
+{{> enum}}
+{{/ExternalEnums}}
 {{#Messages}}
 {{> message}}
 {{/Messages}}
+{{#ExternalMessages}}
+{{> message}}
+{{/ExternalMessages}}
