@@ -17,6 +17,7 @@ package composer
 import (
 	"errors"
 	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"testing"
@@ -34,20 +35,24 @@ func TestInstall(t *testing.T) {
 	if err := os.MkdirAll(filepath.Join(repoDir, "dummy"), 0o755); err != nil {
 		t.Fatal(err)
 	}
+	if err := os.WriteFile(filepath.Join(repoDir, "composer.json"), []byte("{}"), 0o644); err != nil {
+		t.Fatal(err)
+	}
 	bin := t.TempDir()
 	testhelper.WriteExecutable(t, filepath.Join(bin, "composer"), "#!/bin/sh\nexit 0\n")
 	t.Setenv("PATH", bin+string(os.PathListSeparator)+os.Getenv("PATH"))
 	binDir := t.TempDir()
 	tools := []*config.ComposerTool{
 		{
-			Name:    "gapic-generator-php",
-			Version: "1.0.0",
-			Repo:    "github.com/googleapis/gapic-generator-php",
-			SHA256:  "29635b02c6e505fe31cba2f88ae999f00d2710fe1d65cb7cad521a82e7c5a518",
+			Name:       "gapic-generator-php",
+			Version:    "1.0.0",
+			Repo:       "github.com/googleapis/gapic-generator-php",
+			SHA256:     "29635b02c6e505fe31cba2f88ae999f00d2710fe1d65cb7cad521a82e7c5a518",
+			Entrypoint: "src/Main.php",
 		},
 	}
 	if err := Install(t.Context(), tools, "php", binDir); err != nil {
-		t.Fatalf("Install() error = %v", err)
+		t.Fatal(err)
 	}
 	wrapperPath := filepath.Join(binDir, "gapic-generator-php")
 	b, err := os.ReadFile(wrapperPath)
@@ -63,15 +68,73 @@ func TestInstall(t *testing.T) {
 
 func TestInstall_Error(t *testing.T) {
 	binDir := t.TempDir()
-	tools := []*config.ComposerTool{
-		{
-			Name:    "",
-			Version: "1.0.0",
-		},
-	}
+	tools := []*config.ComposerTool{{Name: "", Version: "1.0.0"}}
 	gotErr := Install(t.Context(), tools, "php", binDir)
 	if !errors.Is(gotErr, ErrInvalidTool) {
 		t.Fatalf("Install() error = %v, wantErr = %v", gotErr, ErrInvalidTool)
+	}
+}
+
+func TestInstall_NoEntrypoint(t *testing.T) {
+	testhelper.RequireCommand(t, "composer")
+	cache := t.TempDir()
+	t.Setenv("LIBRARIAN_CACHE", cache)
+	repoDir := filepath.Join(cache, "github.com/googleapis/google-cloud-php@1.0.0")
+	if err := os.MkdirAll(repoDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(repoDir, "composer.json"), []byte("{}"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	bin := t.TempDir()
+	testhelper.WriteExecutable(t, filepath.Join(bin, "composer"), "#!/bin/sh\nexit 0\n")
+	t.Setenv("PATH", bin+string(os.PathListSeparator)+os.Getenv("PATH"))
+	binDir := t.TempDir()
+	tools := []*config.ComposerTool{
+		{
+			Name:    "google-cloud-php/dev",
+			Version: "1.0.0",
+			Repo:    "github.com/googleapis/google-cloud-php",
+			SHA256:  "29635b02c6e505fe31cba2f88ae999f00d2710fe1d65cb7cad521a82e7c5a518",
+		},
+	}
+	if err := Install(t.Context(), tools, "php", binDir); err != nil {
+		t.Fatal(err)
+	}
+	wrapperPath := filepath.Join(binDir, "dev")
+	if _, err := os.Stat(wrapperPath); err == nil || !errors.Is(err, fs.ErrNotExist) {
+		t.Errorf("Stat() error = %v, want %v", err, fs.ErrNotExist)
+	}
+}
+
+func TestVerify_Entrypoint(t *testing.T) {
+	for _, test := range []struct {
+		name    string
+		tool    *config.ComposerTool
+		wantErr error
+	}{
+		{
+			name:    "absolute entrypoint",
+			tool:    &config.ComposerTool{Name: "foo", Version: "1.0.0", Repo: "bar", SHA256: "baz", Entrypoint: "/etc/passwd"},
+			wantErr: ErrInvalidTool,
+		},
+		{
+			name:    "relative traversal",
+			tool:    &config.ComposerTool{Name: "foo", Version: "1.0.0", Repo: "bar", SHA256: "baz", Entrypoint: "../foo.php"},
+			wantErr: ErrInvalidTool,
+		},
+		{
+			name:    "valid entrypoint",
+			tool:    &config.ComposerTool{Name: "foo", Version: "1.0.0", Repo: "bar", SHA256: "baz", Entrypoint: "src/foo.php"},
+			wantErr: nil,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			err := verify([]*config.ComposerTool{test.tool})
+			if !errors.Is(err, test.wantErr) {
+				t.Errorf("verify() error = %v, wantErr %v", err, test.wantErr)
+			}
+		})
 	}
 }
 
@@ -124,7 +187,7 @@ func TestVerify(t *testing.T) {
 		{Name: "gapic-generator-php", Version: "1.0.0", Repo: "github.com/googleapis/gapic-generator-php", SHA256: "somehash"},
 	}
 	if err := verify(tools); err != nil {
-		t.Errorf("verify() error = %v, want nil", err)
+		t.Error(err)
 	}
 }
 
@@ -194,15 +257,19 @@ func TestInstall_LocalPath(t *testing.T) {
 	t.Setenv("PATH", bin+string(os.PathListSeparator)+os.Getenv("PATH"))
 
 	localDir := t.TempDir()
+	if err := os.WriteFile(filepath.Join(localDir, "composer.json"), []byte("{}"), 0o644); err != nil {
+		t.Fatal(err)
+	}
 	tools := []*config.ComposerTool{
 		{
-			Name:      "gapic-generator-php",
-			LocalPath: localDir,
+			Name:       "gapic-generator-php",
+			LocalPath:  localDir,
+			Entrypoint: "src/Main.php",
 		},
 	}
 	binDir := t.TempDir()
 	if err := Install(t.Context(), tools, "php", binDir); err != nil {
-		t.Fatalf("Install() with LocalPath error = %v", err)
+		t.Fatal(err)
 	}
 	wrapperPath := filepath.Join(binDir, "gapic-generator-php")
 	b, err := os.ReadFile(wrapperPath)
@@ -226,8 +293,9 @@ func TestInstall_LocalPath_Error(t *testing.T) {
 	localDir := t.TempDir()
 	tools := []*config.ComposerTool{
 		{
-			Name:      "gapic-generator-php",
-			LocalPath: localDir,
+			Name:       "gapic-generator-php",
+			LocalPath:  localDir,
+			Entrypoint: "src/Main.php",
 		},
 	}
 	binDir := t.TempDir()

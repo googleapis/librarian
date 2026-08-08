@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/config"
@@ -36,6 +37,7 @@ var (
 )
 
 // Install installs a list of Composer tools into the environment.
+// It also installs dependencies for the PHP project if a local_path tool (like "dev") is provided.
 func Install(ctx context.Context, tools []*config.ComposerTool, phpPath, bin string) error {
 	if err := verify(tools); err != nil {
 		return err
@@ -57,23 +59,14 @@ func Install(ctx context.Context, tools []*config.ComposerTool, phpPath, bin str
 		if err := command.RunInDir(ctx, dir, "composer", "install", "--no-interaction", "--prefer-dist"); err != nil {
 			return fmt.Errorf("failed to run composer install: %w", err)
 		}
+		if tool.Entrypoint == "" {
+			continue // No wrapper needed
+		}
 		wrapperName := filepath.Base(tool.Name)
-		if wrapperName == "gapic-generator-php" {
-			// Currently, this assumes the tool is the gapic-generator-php. This specific
-			// wrapper logic will not work for generic Composer tools because:
-			// 1. It hardcodes the executable entry point to "src/Main.php" (ignoring Composer's vendor/bin/ paths).
-			// 2. It injects specific PHP configurations (e.g. memory_limit=1024M) required to prevent the generator from crashing.
-			// See https://github.com/googleapis/gapic-generator-php/commit/685b419f2220e2d19c74e7f1464067f995cf1a95
-			// 3. It automatically injects the "--side_loaded_root_dir" argument which other tools will not expect.
-			// (this argument is to pass through relative paths for config files)
-			// TODO(https://github.com/googleapis/librarian/issues/7000): Remove the --side_loaded_root_dir once we pass full paths to generator
-			destPath := filepath.Join(dir, "src", "Main.php")
-			wrapperContent := phpWrapperContent(phpPath, destPath)
-			if err := createBinWrapper(wrapperName, wrapperContent, bin); err != nil {
-				return err
-			}
-		} else {
-			return fmt.Errorf("tool installation for non-generator composer tools is not yet supported")
+		destPath := filepath.Join(dir, tool.Entrypoint)
+		wrapperContent := phpWrapperContent(phpPath, destPath)
+		if err := createBinWrapper(wrapperName, wrapperContent, bin); err != nil {
+			return err
 		}
 	}
 	return nil
@@ -86,9 +79,6 @@ func localPath(path string) (string, error) {
 		return "", fmt.Errorf("failed to resolve absolute path for %s: %w", path, err)
 	}
 	if _, err := os.Stat(absPath); err != nil {
-		if errors.Is(err, os.ErrNotExist) {
-			return "", fmt.Errorf("local composer path not found: %w", err)
-		}
 		return "", fmt.Errorf("failed to stat local composer path: %w", err)
 	}
 	return absPath, nil
@@ -116,6 +106,9 @@ func verify(tools []*config.ComposerTool) error {
 	for _, tool := range tools {
 		if tool.Name == "" {
 			return fmt.Errorf("%w: name must be specified: %+v", ErrInvalidTool, tool)
+		}
+		if filepath.IsAbs(tool.Entrypoint) || strings.Contains(tool.Entrypoint, "..") {
+			return fmt.Errorf("%w: entrypoint must be a clean relative path: %+v", ErrInvalidTool, tool)
 		}
 		hasLocal := tool.LocalPath != ""
 		hasRemote := tool.Version != "" || tool.Repo != "" || tool.SHA256 != ""

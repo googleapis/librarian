@@ -245,14 +245,34 @@ func TestGenerateBidiStreaming(t *testing.T) {
             .await?;`,
 		},
 		{
-			name:     "transport: return sender and receiver",
+			name:     "transport: request sender and response receiver",
 			file:     "src/transport.rs",
-			startStr: "        Ok((\n            google_cloud_gax::streaming::RequestSender::new(req_tx),",
-			endStr:   "        ))\n    }",
-			want: `        Ok((
-            google_cloud_gax::streaming::RequestSender::new(req_tx),
-            google_cloud_gax::streaming::ResponseReceiver::new(resp_rx),
-        ))
+			startStr: "        let request_sender = google_cloud_gax::streaming::RequestSender::from_fn(",
+			endStr:   "        Ok((request_sender, response_receiver))\n    }",
+			want: `        let request_sender = google_cloud_gax::streaming::RequestSender::from_fn(
+            move |item: crate::model::Request| {
+                let req_tx = req_tx.clone();
+                async move {
+                    let prost_item = item
+                        .to_proto()
+                        .map_err(google_cloud_gax::error::Error::ser)?;
+                    req_tx
+                        .send(prost_item)
+                        .await
+                        .map_err(|_| {
+                            google_cloud_gax::error::Error::io("cannot send request: stream is closed")
+                        })
+                }
+            },
+        );
+        let response_receiver = google_cloud_gax::streaming::ResponseReceiver::from_stream(
+            result.into_inner().map(|res| {
+                res.map_err(gaxi::grpc::from_status::to_gax_error)
+                    .and_then(|m| m.cnv().map_err(google_cloud_gax::error::Error::deser))
+            }),
+        );
+
+        Ok((request_sender, response_receiver))
     }`,
 		},
 	} {

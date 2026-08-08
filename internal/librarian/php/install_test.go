@@ -66,10 +66,11 @@ func TestInstall(t *testing.T) {
 			tools: &config.Tools{
 				Composer: []*config.ComposerTool{
 					{
-						Name:    "gapic-generator-php",
-						Version: "1.0.0",
-						Repo:    "github.com/googleapis/gapic-generator-php",
-						SHA256:  "29635b02c6e505fe31cba2f88ae999f00d2710fe1d65cb7cad521a82e7c5a518",
+						Name:       "gapic-generator-php",
+						Entrypoint: "src/Main.php",
+						Version:    "1.0.0",
+						Repo:       "github.com/googleapis/gapic-generator-php",
+						SHA256:     "29635b02c6e505fe31cba2f88ae999f00d2710fe1d65cb7cad521a82e7c5a518",
 					},
 				},
 				Pip: []*config.PipTool{
@@ -91,6 +92,9 @@ func TestInstall(t *testing.T) {
 				t.Setenv("LIBRARIAN_BIN", filepath.Join(cache, "bin"))
 				repoDir := filepath.Join(cache, "github.com/googleapis/gapic-generator-php@1.0.0")
 				if err := os.MkdirAll(filepath.Join(repoDir, "dummy"), 0o755); err != nil {
+					t.Fatal(err)
+				}
+				if err := os.WriteFile(filepath.Join(repoDir, "composer.json"), []byte("{}"), 0o644); err != nil {
 					t.Fatal(err)
 				}
 
@@ -139,8 +143,9 @@ func TestInstall_Error(t *testing.T) {
 			tools: &config.Tools{
 				Composer: []*config.ComposerTool{
 					{
-						Name:    "gapic-generator-php",
-						Version: "1.0.0",
+						Name:       "gapic-generator-php",
+						Entrypoint: "src/Main.php",
+						Version:    "1.0.0",
 					},
 				},
 				Pip: []*config.PipTool{
@@ -180,9 +185,10 @@ func TestInstall_Error(t *testing.T) {
 			tools: &config.Tools{
 				Composer: []*config.ComposerTool{
 					{
-						Name:    "gapic-generator-php",
-						Version: "1.0.0",
-						Repo:    "github.com/googleapis/gapic-generator-php",
+						Name:       "gapic-generator-php",
+						Entrypoint: "src/Main.php",
+						Version:    "1.0.0",
+						Repo:       "github.com/googleapis/gapic-generator-php",
 					},
 				},
 			},
@@ -193,9 +199,10 @@ func TestInstall_Error(t *testing.T) {
 			tools: &config.Tools{
 				Composer: []*config.ComposerTool{
 					{
-						Name:    "gapic-generator-php",
-						Version: "1.0.0",
-						Repo:    "github.com/googleapis/gapic-generator-php",
+						Name:       "gapic-generator-php",
+						Entrypoint: "src/Main.php",
+						Version:    "1.0.0",
+						Repo:       "github.com/googleapis/gapic-generator-php",
 					},
 				},
 				Pip: []*config.PipTool{
@@ -212,9 +219,10 @@ func TestInstall_Error(t *testing.T) {
 			tools: &config.Tools{
 				Composer: []*config.ComposerTool{
 					{
-						Name:    "gapic-generator-php",
-						Version: "1.0.0",
-						Repo:    "github.com/googleapis/gapic-generator-php",
+						Name:       "gapic-generator-php",
+						Entrypoint: "src/Main.php",
+						Version:    "1.0.0",
+						Repo:       "github.com/googleapis/gapic-generator-php",
 					},
 				},
 				Pip: []*config.PipTool{
@@ -236,6 +244,9 @@ func TestInstall_Error(t *testing.T) {
 				t.Setenv("LIBRARIAN_BIN", filepath.Join(cache, "bin"))
 				repoDir := filepath.Join(cache, "github.com/googleapis/gapic-generator-php@1.0.0")
 				if err := os.MkdirAll(filepath.Join(repoDir, "dummy"), 0o755); err != nil {
+					t.Fatal(err)
+				}
+				if err := os.WriteFile(filepath.Join(repoDir, "composer.json"), []byte("{}"), 0o644); err != nil {
 					t.Fatal(err)
 				}
 				t.Setenv("PATH", t.TempDir())

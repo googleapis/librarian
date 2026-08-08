@@ -145,6 +145,10 @@ type ComposerTool struct {
 	// LocalPath is the path to a local composer project.
 	// When present, Version, Repo, and SHA256 are ignored.
 	LocalPath string `yaml:"local_path,omitempty"`
+
+	// Entrypoint is the path to the main script to execute.
+	// If set, an executable wrapper is generated for this tool.
+	Entrypoint string `yaml:"entrypoint,omitempty"`
 }
 
 // GemTool defines a tool to install via gem.
