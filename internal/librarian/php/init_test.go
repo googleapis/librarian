@@ -236,7 +236,7 @@ func TestNewInitParams(t *testing.T) {
 	}
 }
 
-func TestInitIfNew(t *testing.T) {
+func TestInitComponentIfMissing(t *testing.T) {
 	googleapisDir, err := filepath.Abs(filepath.Join("..", "..", "testdata", "googleapis"))
 	if err != nil {
 		t.Fatal(err)
@@ -318,7 +318,7 @@ func TestInitIfNew(t *testing.T) {
 			if test.setup != nil {
 				test.setup(t, repoRoot)
 			}
-			got, err := initIfNew(t.Context(), test.library, googleapisDir)
+			got, err := initComponentIfMissing(t.Context(), test.library, googleapisDir)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -334,7 +334,7 @@ func TestInitIfNew(t *testing.T) {
 	}
 }
 
-func TestInitIfNew_Error(t *testing.T) {
+func TestInitComponentIfMissing_Error(t *testing.T) {
 	googleapisDir, err := filepath.Abs(filepath.Join("..", "..", "testdata", "googleapis"))
 	if err != nil {
 		t.Fatal(err)
@@ -394,9 +394,9 @@ func TestInitIfNew_Error(t *testing.T) {
 			if test.setup != nil {
 				test.setup(t, repoRoot)
 			}
-			_, err := initIfNew(t.Context(), test.library, googleapisDir)
+			_, err := initComponentIfMissing(t.Context(), test.library, googleapisDir)
 			if !errors.Is(err, test.wantErr) {
-				t.Errorf("initIfNew() error = %v, wantErr = %v", err, test.wantErr)
+				t.Errorf("initComponentIfMissing() error = %v, wantErr = %v", err, test.wantErr)
 			}
 		})
 	}

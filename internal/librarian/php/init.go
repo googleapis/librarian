@@ -51,9 +51,9 @@ type initParams struct {
 	productHomepage string
 }
 
-// initIfNew initializes a new PHP component if it doesn't already exist; returns the
-// component name on success.
-func initIfNew(ctx context.Context, library *config.Library, googleapisDir string) (string, error) {
+// initComponentIfMissing initializes a new PHP component if it doesn't already exist;
+// returns the component name on success.
+func initComponentIfMissing(ctx context.Context, library *config.Library, googleapisDir string) (string, error) {
 	params, err := newInitParams(googleapisDir, library)
 	if err != nil {
 		return "", err
