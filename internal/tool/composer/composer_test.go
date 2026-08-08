@@ -17,6 +17,7 @@ package composer
 import (
 	"errors"
 	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"testing"
@@ -101,8 +102,8 @@ func TestInstall_NoEntrypoint(t *testing.T) {
 		t.Fatal(err)
 	}
 	wrapperPath := filepath.Join(binDir, "dev")
-	if _, err := os.Stat(wrapperPath); err == nil || !errors.Is(err, os.ErrNotExist) {
-		t.Errorf("Stat() error = %v, want %v", err, os.ErrNotExist)
+	if _, err := os.Stat(wrapperPath); err == nil || !errors.Is(err, fs.ErrNotExist) {
+		t.Errorf("Stat() error = %v, want %v", err, fs.ErrNotExist)
 	}
 }
 
