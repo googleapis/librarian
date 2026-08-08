@@ -334,6 +334,74 @@ func TestInitIfNew(t *testing.T) {
 	}
 }
 
+func TestInitIfNew_Error(t *testing.T) {
+	googleapisDir, err := filepath.Abs(filepath.Join("..", "..", "testdata", "googleapis"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, test := range []struct {
+		name    string
+		library *config.Library
+		setup   func(t *testing.T, repoRoot string)
+		wantErr error
+	}{
+		{
+			name: "no apis configured in library",
+			library: &config.Library{
+				Name: "empty",
+			},
+			wantErr: errNoAPIs,
+		},
+		{
+			name: "api service config not found",
+			library: &config.Library{
+				Name: "nonexistent",
+				APIs: []*config.API{
+					{Path: "google/cloud/nonexistent/v1"},
+				},
+			},
+			wantErr: fs.ErrNotExist,
+		},
+		{
+			name: "stat error other than not exist",
+			library: &config.Library{
+				Name: "secretmanager",
+				PHP: &config.PHPPackage{
+					ComponentName: "unreadable/SecretManager",
+				},
+				APIs: []*config.API{
+					{Path: "google/cloud/secretmanager/v1"},
+				},
+			},
+			setup: func(t *testing.T, repoRoot string) {
+				unreadableDir := filepath.Join(repoRoot, "unreadable")
+				if err := os.MkdirAll(unreadableDir, 0o755); err != nil {
+					t.Fatal(err)
+				}
+				if err := os.Chmod(unreadableDir, 0o000); err != nil {
+					t.Fatal(err)
+				}
+				t.Cleanup(func() {
+					_ = os.Chmod(unreadableDir, 0o755)
+				})
+			},
+			wantErr: fs.ErrPermission,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			repoRoot := t.TempDir()
+			t.Chdir(repoRoot)
+			if test.setup != nil {
+				test.setup(t, repoRoot)
+			}
+			_, err := initIfNew(t.Context(), test.library, googleapisDir)
+			if !errors.Is(err, test.wantErr) {
+				t.Errorf("initIfNew() error = %v, wantErr = %v", err, test.wantErr)
+			}
+		})
+	}
+}
+
 // TODO(https://github.com/googleapis/librarian/issues/6978): Revise this test
 // once the install steps for the dev tool are ready.
 func TestInitComponent(t *testing.T) {

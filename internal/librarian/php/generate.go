@@ -42,6 +42,7 @@ var (
 	errCommonResourcesUnconfigured = errors.New("common_resources must be set (either per-API or globally under default.php)")
 	errMissingStagingSubdir        = errors.New("staging_subdir is required for PHP configurations")
 	errNoProtos                    = errors.New("no target protos found")
+	errNoAPIs                      = errors.New("no APIs configured")
 )
 
 type generateAPIParams struct {
@@ -58,7 +59,7 @@ type generateAPIParams struct {
 // Generate generates a PHP client library.
 func Generate(ctx context.Context, cfg *config.Config, library *config.Library, src *sources.Sources) (err error) {
 	if len(library.APIs) == 0 {
-		return fmt.Errorf("no apis configured for library %q", library.Name)
+		return fmt.Errorf("%w: %q", errNoAPIs, library.Name)
 	}
 	if cfg.Tools == nil || cfg.Tools.Protoc == nil {
 		if _, err := exec.LookPath("protoc"); err != nil {

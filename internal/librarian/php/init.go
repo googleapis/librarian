@@ -73,7 +73,7 @@ func initIfNew(ctx context.Context, library *config.Library, googleapisDir strin
 
 func newInitParams(googleapisDir string, library *config.Library) (*initParams, error) {
 	if len(library.APIs) == 0 {
-		return nil, fmt.Errorf("no apis configured for library %q", library.Name)
+		return nil, fmt.Errorf("%w: %q", errNoAPIs, library.Name)
 	}
 	api := library.APIs[0]
 	svcAPI, err := serviceconfig.Find(googleapisDir, api.Path, config.LanguagePhp)
