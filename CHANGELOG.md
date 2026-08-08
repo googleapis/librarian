@@ -1,5 +1,43 @@
 # Changelog
 
+## [0.34.0](https://github.com/googleapis/librarian/compare/v0.33.0...v0.34.0) (2026-08-08)
+
+
+### Features
+
+* **dart:** add a setup skill ([#7193](https://github.com/googleapis/librarian/issues/7193)) ([d322aa0](https://github.com/googleapis/librarian/commit/d322aa0d2095c853c0bba5eaea1207a2d6079630))
+* **dart:** implement bump ([#6989](https://github.com/googleapis/librarian/issues/6989)) ([5505997](https://github.com/googleapis/librarian/commit/5505997dcc497d012ed176ef04add0cec3694905))
+* **internal/librarian/php:** derive component name with config override in generate ([#7197](https://github.com/googleapis/librarian/issues/7197)) ([557e664](https://github.com/googleapis/librarian/commit/557e66440e7f60a474f8fae43985ecd296e7f551)), refs [#7025](https://github.com/googleapis/librarian/issues/7025)
+* **internal/librarian/php:** derive lowercase hyphenated php library names from api path ([#7215](https://github.com/googleapis/librarian/issues/7215)) ([4669112](https://github.com/googleapis/librarian/commit/4669112aeffacc6bdcc4a170a067c4daf4d5de6e))
+* **internal/librarian/php:** initialize new component before generation ([#7225](https://github.com/googleapis/librarian/issues/7225)) ([b6c50b4](https://github.com/googleapis/librarian/commit/b6c50b4fdc048186f255a9ce1c3f5382131d865f))
+* **internal/librarian/ruby:** support deleting output paths after generation ([#7223](https://github.com/googleapis/librarian/issues/7223)) ([609ffb7](https://github.com/googleapis/librarian/commit/609ffb7a31d92c9b6b5d5f10a4a4e2c97ac4a954)), refs [#6633](https://github.com/googleapis/librarian/issues/6633)
+* **internal/librarian/rust:** support external type conversions  ([#7212](https://github.com/googleapis/librarian/issues/7212)) ([5b72c52](https://github.com/googleapis/librarian/commit/5b72c52fcfd8adbb69026c5fbb8921a3db132871)), refs [#7144](https://github.com/googleapis/librarian/issues/7144)
+* **internal/proto:** add package to gather proto files ([#7218](https://github.com/googleapis/librarian/issues/7218)) ([9646f09](https://github.com/googleapis/librarian/commit/9646f093a8f3cb8181f6fe1dd0b90c4c9dc0c09f)), refs [#7217](https://github.com/googleapis/librarian/issues/7217)
+* **internal/sidekick/rust:** initialize bidi streaming RPCs eagerly ([#7221](https://github.com/googleapis/librarian/issues/7221)) ([cbfa368](https://github.com/googleapis/librarian/commit/cbfa3683de7ca5f8ed7ce728316742bb1d86896f)), refs [#6835](https://github.com/googleapis/librarian/issues/6835)
+* **internal/sidekick/rust:** support type-erased streaming handles ([#7229](https://github.com/googleapis/librarian/issues/7229)) ([17f5a3d](https://github.com/googleapis/librarian/commit/17f5a3d7567138003496afb18f038e00437e0c34)), refs [#6835](https://github.com/googleapis/librarian/issues/6835)
+* **internal/sidekick/rust:** use builder pattern for bidi methods ([#7203](https://github.com/googleapis/librarian/issues/7203)) ([bc90045](https://github.com/googleapis/librarian/commit/bc90045c1b6a87f1d4ee3f3880ced71753650d89)), refs [#6835](https://github.com/googleapis/librarian/issues/6835)
+* **internal/tool/composer:** use entrypoint configuration instead of package names ([#7156](https://github.com/googleapis/librarian/issues/7156)) ([e33192f](https://github.com/googleapis/librarian/commit/e33192f4783fdd80f5bd8925bcdaacbe51be2fbd))
+* **sidekick/rust:** bigquery query creation metadata ([#7167](https://github.com/googleapis/librarian/issues/7167)) ([d70f2a2](https://github.com/googleapis/librarian/commit/d70f2a289604ed095000a8156450a0c1ea9d2b65))
+* **swift:** conversions support map fields ([#7222](https://github.com/googleapis/librarian/issues/7222)) ([341f1e5](https://github.com/googleapis/librarian/commit/341f1e5082c5ae7d152e38b10557ace9ea64c457))
+* **swift:** protobuf conversions support oneofs ([#7205](https://github.com/googleapis/librarian/issues/7205)) ([40c48df](https://github.com/googleapis/librarian/commit/40c48dff907ca7ab3c9a04692508e5f6c17c0614))
+* **swift:** support skipped_ids in configuration ([#7206](https://github.com/googleapis/librarian/issues/7206)) ([95d3464](https://github.com/googleapis/librarian/commit/95d34648b22e177dc482ec26b402a4b80965668c))
+
+
+### Bug Fixes
+
+* **internal/librarian/php:** remove version suffix from init namespace ([#7227](https://github.com/googleapis/librarian/issues/7227)) ([7fb3b46](https://github.com/googleapis/librarian/commit/7fb3b46ccb0b5e1b5b96c6b1139b2c707e47793c))
+* **internal/librarian/ruby:** pass gem namespace option to generator ([#7210](https://github.com/googleapis/librarian/issues/7210)) ([817146f](https://github.com/googleapis/librarian/commit/817146fcb38f11ab4251d15ca4e73a1fa62fbae7))
+* **internal/librarian/ruby:** pass service override option to generator ([#7208](https://github.com/googleapis/librarian/issues/7208)) ([e9886bf](https://github.com/googleapis/librarian/commit/e9886bf0c493c13693d1c7dab77e16c598f3ade6)), refs [#6633](https://github.com/googleapis/librarian/issues/6633)
+* **internal/librarian/ruby:** search proto recursively in API path ([#7220](https://github.com/googleapis/librarian/issues/7220)) ([3d4a4a1](https://github.com/googleapis/librarian/commit/3d4a4a19464190984a8844ebe4f22f8f86f63d61)), refs [#7219](https://github.com/googleapis/librarian/issues/7219) [#7217](https://github.com/googleapis/librarian/issues/7217)
+* **internal/librarian/rust:** preserve parent messages of used types ([#7170](https://github.com/googleapis/librarian/issues/7170)) ([e51520c](https://github.com/googleapis/librarian/commit/e51520ca8d92976e2535da1a5b0506168c52e86d)), refs [#7143](https://github.com/googleapis/librarian/issues/7143)
+* **internal/serviceconfig:** update config for compute ([#7200](https://github.com/googleapis/librarian/issues/7200)) ([a08e565](https://github.com/googleapis/librarian/commit/a08e565983cef56aa49ea8508755187b89675be5))
+* **internal/sidekick/rust:** use from for repeated enum conversions in convert-prost ([#7211](https://github.com/googleapis/librarian/issues/7211)) ([ee4fb71](https://github.com/googleapis/librarian/commit/ee4fb71cfa61ac27635d53c7d30b241c3d3f4abf))
+
+
+### Performance Improvements
+
+* **java:** batch format all libraries using argument file ([#7186](https://github.com/googleapis/librarian/issues/7186)) ([5a7775a](https://github.com/googleapis/librarian/commit/5a7775a1535a48df6a6fc0197cd8a1d3ac045df7))
+
 ## [0.33.0](https://github.com/googleapis/librarian/compare/v0.32.0...v0.33.0) (2026-08-05)
 
 
