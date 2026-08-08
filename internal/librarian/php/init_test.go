@@ -236,6 +236,104 @@ func TestNewInitParams(t *testing.T) {
 	}
 }
 
+func TestInitIfNew(t *testing.T) {
+	googleapisDir, err := filepath.Abs(filepath.Join("..", "..", "testdata", "googleapis"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, test := range []struct {
+		name          string
+		library       *config.Library
+		setup         func(t *testing.T, repoRoot string)
+		wantComponent string
+		wantInit      bool
+	}{
+		{
+			name: "component already exists",
+			library: &config.Library{
+				Name: "secretmanager",
+				APIs: []*config.API{
+					{Path: "google/cloud/secretmanager/v1"},
+				},
+			},
+			setup: func(t *testing.T, repoRoot string) {
+				if err := os.MkdirAll(filepath.Join(repoRoot, "SecretManager"), 0o755); err != nil {
+					t.Fatal(err)
+				}
+			},
+			wantComponent: "SecretManager",
+			wantInit:      false,
+		},
+		{
+			name: "new component initialized",
+			library: &config.Library{
+				Name: "secretmanager",
+				APIs: []*config.API{
+					{Path: "google/cloud/secretmanager/v1"},
+				},
+			},
+			setup: func(t *testing.T, repoRoot string) {
+				devDir := filepath.Join(repoRoot, "dev")
+				if err := os.MkdirAll(devDir, 0o755); err != nil {
+					t.Fatal(err)
+				}
+				mockScript := filepath.Join(devDir, "google-cloud")
+				scriptContent := "#!/bin/sh\ntouch initialized.txt\n"
+				if err := os.WriteFile(mockScript, []byte(scriptContent), 0o755); err != nil {
+					t.Fatal(err)
+				}
+			},
+			wantComponent: "SecretManager",
+			wantInit:      true,
+		},
+		{
+			name: "new component with component name override",
+			library: &config.Library{
+				Name: "secretmanager",
+				PHP: &config.PHPPackage{
+					ComponentName: "CustomSecretManager",
+				},
+				APIs: []*config.API{
+					{Path: "google/cloud/secretmanager/v1"},
+				},
+			},
+			setup: func(t *testing.T, repoRoot string) {
+				devDir := filepath.Join(repoRoot, "dev")
+				if err := os.MkdirAll(devDir, 0o755); err != nil {
+					t.Fatal(err)
+				}
+				mockScript := filepath.Join(devDir, "google-cloud")
+				scriptContent := "#!/bin/sh\ntouch initialized.txt\n"
+				if err := os.WriteFile(mockScript, []byte(scriptContent), 0o755); err != nil {
+					t.Fatal(err)
+				}
+			},
+			wantComponent: "CustomSecretManager",
+			wantInit:      true,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			repoRoot := t.TempDir()
+			t.Chdir(repoRoot)
+			if test.setup != nil {
+				test.setup(t, repoRoot)
+			}
+			got, err := initIfNew(t.Context(), test.library, googleapisDir)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if diff := cmp.Diff(test.wantComponent, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+			_, statErr := os.Stat(filepath.Join(repoRoot, "initialized.txt"))
+			wasInitialized := statErr == nil
+			if wasInitialized != test.wantInit {
+				t.Errorf("wasInitialized = %v, wantInit = %v", wasInitialized, test.wantInit)
+			}
+		})
+	}
+}
+
 // TODO(https://github.com/googleapis/librarian/issues/6978): Revise this test
 // once the install steps for the dev tool are ready.
 func TestInitComponent(t *testing.T) {
