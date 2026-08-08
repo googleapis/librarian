@@ -130,7 +130,7 @@ type SwiftDependency struct {
 	// empty for such libraries.
 	//
 	// Examples:
-	// - The `GoogleCloudWkt` package will set this to `google.cloud.protobuf`.
+	// - The `GoogleCloudWKT` package will set this to `google.cloud.protobuf`.
 	// - The `GoogleCloudLocation` package will set this to `google.cloud.location`.
 	ApiPackage string `yaml:"api_package,omitempty"`
 }
