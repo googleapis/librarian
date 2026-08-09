@@ -100,14 +100,15 @@ func TestGenerateStub_Structure(t *testing.T) {
 
 	got = extractBlock(t, transportContentStr, `  class ProtocolTransport: `, `HTTPClient`)
 	want = `  class ProtocolTransport: ProtocolStub {
-    let inner: GoogleCloudGax.HTTPClient`
+    let inner: GoogleCloudGax._HTTPClient`
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 
-	got = extractBlock(t, transportContentStr, `return try GoogleCloudWkt._ProtoJSONDecoder()`, ", from: data)\n    }")
-	want = `return try GoogleCloudWkt._ProtoJSONDecoder().decode(
-        SomeTestPackage.Response.self, from: data)
+	got = extractBlock(t, transportContentStr, `return try await req.rpc(`, ".get()\n    }")
+	want = `return try await req.rpc(
+        SomeTestPackage.Response.self, timeout: options.attemptTimeout
+      ).get()
     }`
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)

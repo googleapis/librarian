@@ -31,14 +31,17 @@ import Foundation
 {{#Codec.ServiceImports}}
 import {{.}}
 {{/Codec.ServiceImports}}
-import GoogleCloudGax
+@_spi(GoogleCloudInternal) import GoogleCloudGax
 
 extension Clients {
   class {{Codec.StubPrefix}}Transport: {{Codec.StubPrefix}}Stub {
-    let inner: GoogleCloudGax.HTTPClient
+    let inner: GoogleCloudGax._HTTPClient
 
     public init(_ options: GoogleCloudGax.ClientOptions = .init()) throws {
-      self.inner = try GoogleCloudGax.HTTPClient(from: options, withDefaultEndpoint: "https://{{DefaultHost}}")
+      self.inner = try GoogleCloudGax._HTTPClient(
+        from: options,
+        withDefaultEndpoint: "https://{{DefaultHost}}",
+      )
     }
     {{#Codec.RestMethods}}
 
@@ -84,28 +87,28 @@ extension Clients {
       query.append(contentsOf: try encoder.encode(request.{{Codec.Name}}, prefix: "{{JSONName}}"))
       {{/IsOneOf}}
       {{/Codec.QueryParams}}
-      var req = try await self.inner.Request(path: path, query: query)
-      req.httpMethod = "{{Codec.HTTPMethod}}"
-      req.setValue(Clients.clientHeader, forHTTPHeaderField: "X-Goog-Api-Client")
+      var req = try await self.inner.newRequest(path: path, query: query)
+      req.setMethod(.{{Codec.HTTPMethod}})
+      req.addHeader(name: "X-Goog-Api-Client", value: Clients.clientHeader)
       {{#Codec.HasBody}}
       {{#Codec.IsBodyWildcard}}
-      req.setValue("application/json", forHTTPHeaderField: "Content-Type")
-      req.httpBody = try JSONEncoder().encode(request)
+      req.setBody(data: try JSONEncoder().encode(request), ofContentType: "application/json")
       {{/Codec.IsBodyWildcard}}
       {{^Codec.IsBodyWildcard}}
       if let body = request.{{Codec.BodyField}} {
-        req.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        req.httpBody = try JSONEncoder().encode(body)
+        req.setBody(data: try JSONEncoder().encode(body), ofContentType: "application/json")
       }
       {{/Codec.IsBodyWildcard}}
       {{/Codec.HasBody}}
       {{^ReturnsEmpty}}
-      let (data, _) = try await self.inner.rpc(for: req).get()
-      return try {{InputType.Codec.Model.WktPackage}}._ProtoJSONDecoder().decode(
-        {{Codec.ReturnType}}.self, from: data)
+      return try await req.rpc(
+        {{Codec.ReturnType}}.self, timeout: options.attemptTimeout
+      ).get()
       {{/ReturnsEmpty}}
       {{#ReturnsEmpty}}
-      _ = try await self.inner.rpc(for: req).get()
+      _ = try await req.rpc(
+        {{Codec.ReturnType}}.self, timeout: options.attemptTimeout
+      ).get()
       {{/ReturnsEmpty}}
     }
     {{/Codec.RestMethods}}
