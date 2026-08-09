@@ -7,7 +7,7 @@ require (
 	cloud.google.com/go/longrunning v0.8.0
 	github.com/bazelbuild/buildtools v0.0.0-20260202105709-e24971d9d1a7
 	github.com/cbroglie/mustache v1.4.0
-	github.com/go-git/go-git/v5 v5.19.1
+	github.com/go-git/go-git/v5 v5.19.2
 	github.com/google/go-cmp v0.7.0
 	github.com/google/yamlfmt v0.21.0
 	github.com/iancoleman/strcase v0.3.0
@@ -15,9 +15,9 @@ require (
 	github.com/pelletier/go-toml/v2 v2.2.4
 	github.com/urfave/cli/v3 v3.6.2
 	github.com/yuin/goldmark v1.7.16
-	golang.org/x/mod v0.35.0
-	golang.org/x/sync v0.20.0
-	golang.org/x/tools v0.44.0
+	golang.org/x/mod v0.37.0
+	golang.org/x/sync v0.21.0
+	golang.org/x/tools v0.47.0
 	google.golang.org/genproto v0.0.0-20260209200024-4cfbd4190f57
 	google.golang.org/genproto/googleapis/api v0.0.0-20260414002931-afd174a4e478
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20260414002931-afd174a4e478
@@ -231,10 +231,10 @@ require (
 	go.yaml.in/yaml/v3 v3.0.4 // indirect
 	go.yaml.in/yaml/v4 v4.0.0-rc.4 // indirect
 	golang.org/x/exp/typeparams v0.0.0-20260209203927-2842357ff358 // indirect
-	golang.org/x/net v0.55.0 // indirect
-	golang.org/x/sys v0.45.0 // indirect
-	golang.org/x/telemetry v0.0.0-20260409153401-be6f6cb8b1fa // indirect
-	golang.org/x/text v0.37.0 // indirect
+	golang.org/x/net v0.56.0 // indirect
+	golang.org/x/sys v0.46.0 // indirect
+	golang.org/x/telemetry v0.0.0-20260625142307-59b4966ccb57 // indirect
+	golang.org/x/text v0.39.0 // indirect
 	google.golang.org/grpc v1.82.1 // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect
 	gopkg.in/warnings.v0 v0.1.2 // indirect
