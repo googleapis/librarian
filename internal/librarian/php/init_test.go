@@ -314,7 +314,7 @@ func TestInitComponentIfMissing(t *testing.T) {
 		{
 			name: "new component initialized with library.Output",
 			library: &config.Library{
-				Name: "secretmanager",
+				Name:   "secretmanager",
 				Output: "custom/output/path",
 				APIs: []*config.API{
 					{Path: "google/cloud/secretmanager/v1"},
