@@ -36,7 +36,7 @@ func TestInstall(t *testing.T) {
 		tools *config.Tools
 	}{
 		{
-			name:  "nil tools",
+			name:  "fallback to embedded librarian.yaml",
 			tools: nil,
 		},
 		{
