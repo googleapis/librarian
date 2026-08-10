@@ -286,7 +286,8 @@ func TestBigQueryQueryMetadata(t *testing.T) {
 		jobMsg := newTestMsg("Job", []*api.Field{
 			newTestField("job_ref", ".google.cloud.bigquery.v2.Job.job_ref"),
 			newTestField("common_field", ".google.cloud.bigquery.v2.Job.common_field"),
-			newTestField("ignored_field", ".google.cloud.bigquery.v2.Job.ignored_field"),
+			newTestField("skip_by_name", ".google.cloud.bigquery.v2.Job.skip_by_name"),
+			newTestField("skip_by_id", ".google.cloud.bigquery.v2.Job.skip_by_id"),
 		})
 		qrMsg := newTestMsg("QueryResponse", []*api.Field{
 			newTestField("kind", ".google.cloud.bigquery.v2.QueryResponse.kind"),
@@ -294,7 +295,7 @@ func TestBigQueryQueryMetadata(t *testing.T) {
 		})
 
 		model := api.NewTestAPI([]*api.Message{jobMsg, qrMsg}, []*api.Enum{}, []*api.Service{})
-		skipped := []string{"ignored_field"}
+		skipped := []string{"skip_by_name", ".google.cloud.bigquery.v2.Job.skip_by_id"}
 
 		qcm, err := newQueryCreationMetadata(c, model, skipped)
 		if err != nil {

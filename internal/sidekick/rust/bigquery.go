@@ -126,7 +126,7 @@ func newQueryMetadata(c *codec, model *api.API, skippedFields []string) (*unifie
 
 func newQueryCreationMetadata(c *codec, model *api.API, skippedFields []string) (*unifiedMessage, error) {
 	return newUnifiedMessage(c, model, []string{"Job", "QueryResponse"}, func(f *api.Field) bool {
-		return slices.Contains(skippedFields, f.Name)
+		return slices.Contains(skippedFields, f.Name) || slices.Contains(skippedFields, f.ID)
 	})
 }
 
