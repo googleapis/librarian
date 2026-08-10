@@ -124,13 +124,13 @@ func TestDocLink(t *testing.T) {
 			name:   "method link",
 			link:   "SomeService.CreateFoo",
 			scopes: []string{"test.v1"},
-			want:   "<doc:SomeService/createFoo(request:)>",
+			want:   "<doc:SomeServiceClient/createFoo(request:)>",
 		},
 		{
 			name:   "service link",
 			link:   "SomeService",
 			scopes: []string{"test.v1"},
-			want:   "<doc:SomeService>",
+			want:   "<doc:SomeServiceClient>",
 		},
 		{
 			name:   "fully qualified message link",
