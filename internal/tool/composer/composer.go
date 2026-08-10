@@ -64,19 +64,14 @@ func Install(ctx context.Context, tools []*config.ComposerTool, phpPath, bin str
 		if tool.Entrypoint == "" {
 			continue // No wrapper needed
 		}
+		if tool.Entrypoint == "" {
+			continue // No wrapper needed
+		}
 		wrapperName := filepath.Base(tool.Name)
 		destPath := filepath.Join(dir, tool.Entrypoint)
 		wrapperContent := phpWrapperContent(phpPath, destPath)
 		if err := createBinWrapper(wrapperName, wrapperContent, bin); err != nil {
 			return err
-		}
-	}
-	for _, path := range paths {
-		if _, err := os.Stat(filepath.Join(path, "composer.json")); err != nil {
-			return fmt.Errorf("failed to stat composer.json in %s: %w", path, err)
-		}
-		if err := command.RunStreamingInDir(ctx, path, "composer", "install", "--no-interaction", "--prefer-dist"); err != nil {
-			return fmt.Errorf("failed to run composer install: %w", err)
 		}
 	}
 	return nil
