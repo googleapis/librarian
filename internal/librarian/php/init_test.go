@@ -278,7 +278,7 @@ func TestInitComponentIfMissing(t *testing.T) {
 					t.Fatal(err)
 				}
 				mockScript := filepath.Join(devDir, "google-cloud")
-				scriptContent := "#!/bin/sh\ntouch initialized.txt\n"
+				scriptContent := "#!/bin/sh\nmkdir SecretManager\ntouch initialized.txt\n"
 				if err := os.WriteFile(mockScript, []byte(scriptContent), 0o755); err != nil {
 					t.Fatal(err)
 				}
@@ -303,12 +303,35 @@ func TestInitComponentIfMissing(t *testing.T) {
 					t.Fatal(err)
 				}
 				mockScript := filepath.Join(devDir, "google-cloud")
-				scriptContent := "#!/bin/sh\ntouch initialized.txt\n"
+				scriptContent := "#!/bin/sh\nmkdir CustomSecretManager\ntouch initialized.txt\n"
 				if err := os.WriteFile(mockScript, []byte(scriptContent), 0o755); err != nil {
 					t.Fatal(err)
 				}
 			},
 			wantComponent: "CustomSecretManager",
+			wantInit:      true,
+		},
+		{
+			name: "new component initialized with library.Output",
+			library: &config.Library{
+				Name: "secretmanager",
+				Output: "custom/output/path",
+				APIs: []*config.API{
+					{Path: "google/cloud/secretmanager/v1"},
+				},
+			},
+			setup: func(t *testing.T, repoRoot string) {
+				devDir := filepath.Join(repoRoot, "dev")
+				if err := os.MkdirAll(devDir, 0o755); err != nil {
+					t.Fatal(err)
+				}
+				mockScript := filepath.Join(devDir, "google-cloud")
+				scriptContent := "#!/bin/sh\nmkdir SecretManager\ntouch initialized.txt\n"
+				if err := os.WriteFile(mockScript, []byte(scriptContent), 0o755); err != nil {
+					t.Fatal(err)
+				}
+			},
+			wantComponent: "SecretManager",
 			wantInit:      true,
 		},
 	} {
@@ -329,6 +352,11 @@ func TestInitComponentIfMissing(t *testing.T) {
 			wasInitialized := statErr == nil
 			if wasInitialized != test.wantInit {
 				t.Errorf("wasInitialized = %v, wantInit = %v", wasInitialized, test.wantInit)
+			}
+			if test.library.Output != "" {
+				if _, err := os.Stat(filepath.Join(repoRoot, test.library.Output)); err != nil {
+					t.Error(err)
+				}
 			}
 		})
 	}

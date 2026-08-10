@@ -58,7 +58,11 @@ func initComponentIfMissing(ctx context.Context, library *config.Library, google
 	if err != nil {
 		return "", err
 	}
-	_, err = os.Stat(params.componentName)
+	targetDir := params.componentName
+	if library.Output != "" {
+		targetDir = library.Output
+	}
+	_, err = os.Stat(targetDir)
 	if err == nil {
 		// Component exists, return the component name.
 		return params.componentName, nil
@@ -68,6 +72,17 @@ func initComponentIfMissing(ctx context.Context, library *config.Library, google
 	}
 	if err := initComponent(ctx, params); err != nil {
 		return "", err
+	}
+	if _, err := os.Stat(params.componentName); err != nil {
+		return "", fmt.Errorf("missing component %q: %w", params.componentName, err)
+	}
+	if targetDir != params.componentName {
+		if err := os.MkdirAll(filepath.Dir(targetDir), 0o755); err != nil {
+			return "", fmt.Errorf("mkdir %q: %w", filepath.Dir(targetDir), err)
+		}
+		if err := os.Rename(params.componentName, targetDir); err != nil {
+			return "", fmt.Errorf("rename %q to %q: %w", params.componentName, targetDir, err)
+		}
 	}
 	return params.componentName, nil
 }
