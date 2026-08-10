@@ -39,7 +39,6 @@ var (
 // Install installs a list of Composer tools into the environment.
 // It also installs dependencies for the PHP project if a local_path tool (like "dev") is provided.
 func Install(ctx context.Context, tools []*config.ComposerTool, phpPath, bin string) error {
-	paths := []string{}
 	if err := verify(tools); err != nil {
 		return err
 	}
@@ -57,12 +56,8 @@ func Install(ctx context.Context, tools []*config.ComposerTool, phpPath, bin str
 		if err != nil {
 			return err
 		}
-		paths = append(paths, dir)
-		if tool.Name == "google-cloud-php/dev" {
-			continue // No wrapper needed for the project itself
-		}
-		if tool.Entrypoint == "" {
-			continue // No wrapper needed
+		if err := command.RunInDir(ctx, dir, "composer", "install", "--no-interaction", "--prefer-dist"); err != nil {
+			return fmt.Errorf("failed to run composer install: %w", err)
 		}
 		if tool.Entrypoint == "" {
 			continue // No wrapper needed
