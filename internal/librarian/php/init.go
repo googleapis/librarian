@@ -58,24 +58,21 @@ func initComponentIfMissing(ctx context.Context, library *config.Library, google
 	if err != nil {
 		return "", err
 	}
-	targetDir := params.componentName
-	if library.Output != "" {
-		targetDir = library.Output
+	targetDir := library.Output
+	if targetDir == "" {
+		targetDir = params.componentName
 	}
-	_, err = os.Stat(targetDir)
-	if err == nil {
-		// Component exists, return the component name.
-		return params.componentName, nil
-	}
-	if !errors.Is(err, fs.ErrNotExist) {
+
+	if _, err := os.Stat(targetDir); err == nil {
+		return params.componentName, nil // Component already exists
+	} else if !errors.Is(err, fs.ErrNotExist) {
 		return "", err
 	}
+
 	if err := initComponent(ctx, params); err != nil {
 		return "", err
 	}
-	if _, err := os.Stat(params.componentName); err != nil {
-		return "", fmt.Errorf("missing component %q: %w", params.componentName, err)
-	}
+
 	if targetDir != params.componentName {
 		if err := os.MkdirAll(filepath.Dir(targetDir), 0o755); err != nil {
 			return "", fmt.Errorf("mkdir %q: %w", filepath.Dir(targetDir), err)
@@ -83,7 +80,10 @@ func initComponentIfMissing(ctx context.Context, library *config.Library, google
 		if err := os.Rename(params.componentName, targetDir); err != nil {
 			return "", fmt.Errorf("rename %q to %q: %w", params.componentName, targetDir, err)
 		}
+	} else if _, err := os.Stat(params.componentName); err != nil {
+		return "", fmt.Errorf("missing component %q: %w", params.componentName, err)
 	}
+
 	return params.componentName, nil
 }
 
