@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/config"
@@ -36,6 +37,7 @@ var (
 )
 
 // Install installs a list of Composer tools into the environment.
+// It also installs dependencies for the PHP project if a local_path tool (like "dev") is provided.
 func Install(ctx context.Context, tools []*config.ComposerTool, phpPath, bin string) error {
 	if err := verify(tools); err != nil {
 		return err
@@ -57,14 +59,11 @@ func Install(ctx context.Context, tools []*config.ComposerTool, phpPath, bin str
 		if err := command.RunInDir(ctx, dir, "composer", "install", "--no-interaction", "--prefer-dist"); err != nil {
 			return fmt.Errorf("failed to run composer install: %w", err)
 		}
-		wrapperName := filepath.Base(tool.Name)
-		// Currently, this assumes the tool is the gapic-generator-php. This specific
-		// wrapper logic will not work for generic Composer tools because:
-		// It hardcodes the executable entry point to "src/Main.php" (ignoring Composer's vendor/bin/ paths).
-		destPath := filepath.Join(dir, "src", "Main.php")
-		if _, err := os.Stat(destPath); err != nil {
-			return fmt.Errorf("executable entry point not found for tool %s (checked %s): %w", tool.Name, destPath, err)
+		if tool.Entrypoint == "" {
+			continue // No wrapper needed
 		}
+		wrapperName := filepath.Base(tool.Name)
+		destPath := filepath.Join(dir, tool.Entrypoint)
 		wrapperContent := phpWrapperContent(phpPath, destPath)
 		if err := createBinWrapper(wrapperName, wrapperContent, bin); err != nil {
 			return err
@@ -80,9 +79,6 @@ func localPath(path string) (string, error) {
 		return "", fmt.Errorf("failed to resolve absolute path for %s: %w", path, err)
 	}
 	if _, err := os.Stat(absPath); err != nil {
-		if errors.Is(err, os.ErrNotExist) {
-			return "", fmt.Errorf("local composer path not found: %w", err)
-		}
 		return "", fmt.Errorf("failed to stat local composer path: %w", err)
 	}
 	return absPath, nil
@@ -110,6 +106,9 @@ func verify(tools []*config.ComposerTool) error {
 	for _, tool := range tools {
 		if tool.Name == "" {
 			return fmt.Errorf("%w: name must be specified: %+v", ErrInvalidTool, tool)
+		}
+		if filepath.IsAbs(tool.Entrypoint) || strings.Contains(tool.Entrypoint, "..") {
+			return fmt.Errorf("%w: entrypoint must be a clean relative path: %+v", ErrInvalidTool, tool)
 		}
 		hasLocal := tool.LocalPath != ""
 		hasRemote := tool.Version != "" || tool.Repo != "" || tool.SHA256 != ""

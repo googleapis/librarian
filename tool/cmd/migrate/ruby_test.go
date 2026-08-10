@@ -105,6 +105,7 @@ func TestFindRubyLibraries(t *testing.T) {
 					},
 				},
 			},
+			SkipGenerate: true,
 			Ruby: &config.RubyPackage{
 				WrapperOf: []string{
 					"v1:2.15",
@@ -125,6 +126,7 @@ func TestFindRubyLibraries(t *testing.T) {
 					},
 				},
 			},
+			SkipGenerate: true,
 		},
 		{
 			Name: "google-cloud-secret_manager",
@@ -139,6 +141,7 @@ func TestFindRubyLibraries(t *testing.T) {
 					},
 				},
 			},
+			SkipGenerate: true,
 			Ruby: &config.RubyPackage{
 				WrapperOf: []string{
 					"v1:1.2",
@@ -157,6 +160,7 @@ func TestFindRubyLibraries(t *testing.T) {
 					},
 				},
 			},
+			SkipGenerate: true,
 		},
 		{
 			// This test verifies multiple WrapperOf entries are parsed correctly.
@@ -171,6 +175,7 @@ func TestFindRubyLibraries(t *testing.T) {
 					},
 				},
 			},
+			SkipGenerate: true,
 			Ruby: &config.RubyPackage{
 				WrapperOf: []string{
 					"v2:1.0",
@@ -753,6 +758,11 @@ func TestParseKeepFromManifest(t *testing.T) {
 		{
 			name:    "filters out .OwlBot.yaml and .owlbot.rb",
 			content: `{"static": [".OwlBot.yaml", "file1.rb", ".owlbot.rb", "file2.rb"]}`,
+			want:    []string{"file1.rb", "file2.rb"},
+		},
+		{
+			name:    "filters out Gemfile.lock",
+			content: `{"static": ["Gemfile.lock", "file1.rb", "file2.rb"]}`,
 			want:    []string{"file1.rb", "file2.rb"},
 		},
 		{

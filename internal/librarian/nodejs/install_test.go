@@ -18,11 +18,13 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
-	"strings"
 	"testing"
 
 	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/tool/pnpm"
 )
+
+const gapicGeneratorSubdir = "core/generator/gapic-generator-typescript"
 
 func stubExecutables(t *testing.T) {
 	t.Helper()
@@ -73,6 +75,7 @@ func TestInstall(t *testing.T) {
 						Name:    "gapic-generator-typescript",
 						Version: "4.12.1",
 						Package: "https://github.com/googleapis/google-cloud-node/archive/gapic-generator-v4.12.1.tar.gz",
+						SrcDir:  "core/generator/gapic-generator-typescript",
 						Build: []string{
 							"pnpm install",
 							"./node_modules/.bin/tsc",
@@ -177,7 +180,7 @@ func TestInstall_Error(t *testing.T) {
 			setup: func(t *testing.T) {
 				t.Setenv("PATH", t.TempDir())
 			},
-			wantErr: errMissingExecutable,
+			wantErr: pnpm.ErrMissingExecutable,
 		},
 		{
 			name: "missing package url for build tool",
@@ -189,19 +192,31 @@ func TestInstall_Error(t *testing.T) {
 			setup: func(t *testing.T) {
 				stubExecutables(t)
 			},
-			wantErr: errMissingPackageURL,
+			wantErr: pnpm.ErrMissingPackageURL,
 		},
 		{
-			name: "invalid package url for build tool",
+			name: "missing src_dir for build tool",
 			tools: &config.Tools{
 				PNPM: []*config.PNPMTool{
-					{Name: "tool", Package: "invalid-url", Build: []string{"echo 1"}},
+					{Name: "tool", Package: "https://github.com/googleapis/google-cloud-node/archive/v1.0.0.tar.gz", Build: []string{"echo 1"}},
 				},
 			},
 			setup: func(t *testing.T) {
 				stubExecutables(t)
 			},
-			wantErr: errCannotExtractRepo,
+			wantErr: pnpm.ErrMissingSrcDir,
+		},
+		{
+			name: "invalid package url for build tool",
+			tools: &config.Tools{
+				PNPM: []*config.PNPMTool{
+					{Name: "tool", Package: "invalid-url", SrcDir: "some/dir", Build: []string{"echo 1"}},
+				},
+			},
+			setup: func(t *testing.T) {
+				stubExecutables(t)
+			},
+			wantErr: pnpm.ErrCannotExtractRepo,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
@@ -211,51 +226,6 @@ func TestInstall_Error(t *testing.T) {
 			err := Install(t.Context(), test.tools)
 			if !errors.Is(err, test.wantErr) {
 				t.Fatalf("Install() error = %v, wantErr = %v", err, test.wantErr)
-			}
-		})
-	}
-}
-
-func TestRepoFromPackageURL(t *testing.T) {
-	for _, test := range []struct {
-		name       string
-		packageURL string
-		want       string
-	}{
-		{
-			name:       "valid archive url",
-			packageURL: "https://github.com/googleapis/google-cloud-node/archive/gapic-generator-v4.12.1.tar.gz",
-			want:       "github.com/googleapis/google-cloud-node",
-		},
-	} {
-		t.Run(test.name, func(t *testing.T) {
-			got, err := repoFromPackageURL(test.packageURL)
-			if err != nil {
-				t.Fatal(err)
-			}
-			if got != test.want {
-				t.Errorf("repoFromPackageURL(%q) = %q, want %q", test.packageURL, got, test.want)
-			}
-		})
-	}
-}
-
-func TestRepoFromPackageURL_Error(t *testing.T) {
-	for _, test := range []struct {
-		name       string
-		packageURL string
-		wantErr    error
-	}{
-		{
-			name:       "invalid archive url",
-			packageURL: "https://github.com/googleapis/google-cloud-node/invalid",
-			wantErr:    errCannotExtractRepo,
-		},
-	} {
-		t.Run(test.name, func(t *testing.T) {
-			_, err := repoFromPackageURL(test.packageURL)
-			if !errors.Is(err, test.wantErr) {
-				t.Fatalf("repoFromPackageURL(%q) error = %v, wantErr = %v", test.packageURL, err, test.wantErr)
 			}
 		})
 	}
@@ -304,48 +274,5 @@ func TestGetToolsEnv(t *testing.T) {
 				t.Errorf("getToolsEnv()[PATH] = %q, want %q", got, want)
 			}
 		})
-	}
-}
-
-func TestGetPNPMEnv(t *testing.T) {
-	cacheDir := t.TempDir()
-	binDir := t.TempDir()
-	t.Setenv("LIBRARIAN_CACHE", cacheDir)
-	t.Setenv("LIBRARIAN_BIN", binDir)
-
-	envList, err := getPNPMEnv()
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	wantBinDir := filepath.Join(binDir, "nodejs_tools", "bin")
-	wantGlobalDir := filepath.Join(cacheDir, "pnpm-global")
-	wantStoreDir := filepath.Join(cacheDir, "pnpm-store")
-
-	envMap := make(map[string]string)
-	for _, entry := range envList {
-		parts := strings.SplitN(entry, "=", 2)
-		if len(parts) == 2 {
-			envMap[parts[0]] = parts[1]
-		}
-	}
-
-	if got := envMap["PNPM_HOME"]; got != wantBinDir {
-		t.Errorf("PNPM_HOME = %q, want %q", got, wantBinDir)
-	}
-	if got := envMap["PNPM_CONFIG_GLOBAL_BIN_DIR"]; got != wantBinDir {
-		t.Errorf("PNPM_CONFIG_GLOBAL_BIN_DIR = %q, want %q", got, wantBinDir)
-	}
-	if got := envMap["NPM_CONFIG_GLOBAL_BIN_DIR"]; got != wantBinDir {
-		t.Errorf("NPM_CONFIG_GLOBAL_BIN_DIR = %q, want %q", got, wantBinDir)
-	}
-	if got := envMap["npm_config_global_bin_dir"]; got != wantBinDir {
-		t.Errorf("npm_config_global_bin_dir = %q, want %q", got, wantBinDir)
-	}
-	if got := envMap["PNPM_CONFIG_GLOBAL_DIR"]; got != wantGlobalDir {
-		t.Errorf("PNPM_CONFIG_GLOBAL_DIR = %q, want %q", got, wantGlobalDir)
-	}
-	if got := envMap["PNPM_CONFIG_STORE_DIR"]; got != wantStoreDir {
-		t.Errorf("PNPM_CONFIG_STORE_DIR = %q, want %q", got, wantStoreDir)
 	}
 }

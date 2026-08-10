@@ -75,6 +75,17 @@ type fieldAnnotations struct {
 
 	// The PascalCase name of the field on the underlying SwiftProtobuf type (used for hasField helpers).
 	ProtoFieldNamePascal string
+
+	// PrimitiveFieldType is the raw Swift type name without any decorators or boxing wrappers (e.g. `Node`).
+	//
+	// This differs from `BaseFieldType` for recursive message fields: for recursive fields,
+	// `BaseFieldType` is boxed as `GoogleCloudWkt.Recursive<Node>` for struct property declarations,
+	// whereas `PrimitiveFieldType` remains the raw unwrapped type `Node` so that conversions can call
+	// `WktPackage.Recursive(value: try Node(proto: proto.childNode))`.
+	PrimitiveFieldType string
+
+	// ValueField holds the value field of a map, for inspecting whether the value is an object or enum.
+	ValueField *api.Field
 }
 
 // DecodingStyle defines an enumeration for decoding fields.
@@ -157,16 +168,18 @@ func (c *codec) annotateField(field *api.Field, model *modelAnnotations) (*field
 	}
 
 	annotations := &fieldAnnotations{
-		Name:          camelCase(field.Name),
-		FieldType:     parts.Full,
-		BaseFieldType: parts.Base,
-		KeyType:       parts.Key,
-		ValueType:     parts.Value,
-		PackageName:   packageName,
-		DocLines:      docLines,
-		Decoding:      DecodingSimple,
-		Encoding:      EncodingSimple,
-		Model:         model,
+		Name:                 camelCase(field.Name),
+		FieldType:            parts.Full,
+		BaseFieldType:        parts.Base,
+		KeyType:              parts.Key,
+		ValueType:            parts.Value,
+		PackageName:          packageName,
+		DocLines:             docLines,
+		Decoding:             DecodingSimple,
+		Encoding:             EncodingSimple,
+		Model:                model,
+		ProtoFieldName:       protoFieldName(field.Name),
+		ProtoFieldNamePascal: protoFieldNamePascal(field.Name),
 	}
 	// Swift value types (structs) cannot contain recursive references directly because their
 	// size must be known at compile time. To break the cycle, we wrap the reference in a box type
@@ -186,6 +199,17 @@ func (c *codec) annotateField(field *api.Field, model *modelAnnotations) (*field
 		annotations.Decoding = DecodingMapCustomKey
 		annotations.Encoding = EncodingMapCustomKey
 	}
+	if field.Map && field.TypezID != "" {
+		m, err := lookupMessage(c.Model, field.TypezID)
+		if err != nil {
+			return nil, err
+		}
+		fields, err := decomposeMap(m)
+		if err != nil {
+			return nil, err
+		}
+		annotations.ValueField = fields.Value
+	}
 	if field.Optional {
 		annotations.Decoding = DecodingOptional
 	}
@@ -202,7 +226,13 @@ func (c *codec) annotateField(field *api.Field, model *modelAnnotations) (*field
 			annotations.UrlSafeValue = true
 		}
 	}
-	c.computeFieldConversionStatements(field, annotations)
+	// PrimitiveFieldType represents a single unwrapped primitive or message element type (e.g. `Node`).
+	// For map fields, parts.Base is the full dictionary type `[K: V]`,
+	// (which is not a single primitive/scalar type) so PrimitiveFieldType remains empty
+	// and map entry components are inspected via KeyType, ValueType, and ValueField instead.
+	if !field.Map {
+		annotations.PrimitiveFieldType = parts.Base
+	}
 	field.Codec = annotations
 	return annotations, nil
 }
@@ -244,23 +274,4 @@ func (c *codec) fieldPackage(field *api.Field) (string, error) {
 		return e.Package, nil
 	}
 	return "", nil
-}
-
-func (c *codec) computeFieldConversionStatements(field *api.Field, ann *fieldAnnotations) {
-	if field.IsOneOf {
-		// TODO(#5272): Oneof fields are handled in a subsequent PR.
-		return
-	}
-	if field.Map || field.Repeated {
-		// TODO(#5272): Map and Repeated fields are handled in subsequent PRs.
-		return
-	}
-	switch field.Typez {
-	case api.TypezMessage, api.TypezEnum:
-		// TODO(#5272): Nested Message and Enum type fields are handled in a subsequent PR.
-		return
-	}
-
-	ann.ProtoFieldName = protoFieldName(field.Name)
-	ann.ProtoFieldNamePascal = protoFieldNamePascal(field.Name)
 }

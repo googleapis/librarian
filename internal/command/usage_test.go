@@ -79,24 +79,6 @@ func TestLibrarianopsUsage(t *testing.T) {
 	}
 }
 
-func TestToolUsage(t *testing.T) {
-	for _, test := range []struct {
-		desc string
-		bin  string
-		args []string
-		want string
-	}{
-		{"import-configs root", "github.com/googleapis/librarian/tool/cmd/importconfigs", nil, "import-configs [command]"},
-	} {
-		t.Run(test.desc, func(t *testing.T) {
-			got := runUsage(t, test.bin, test.args)
-			if diff := cmp.Diff(test.want, got); diff != "" {
-				t.Errorf("mismatch (-want +got):\n%s", diff)
-			}
-		})
-	}
-}
-
 // runUsage executes the binary with the given args and the appropriate help flag,
 // returning the captured usage string.
 func runUsage(t *testing.T, bin string, args []string) string {

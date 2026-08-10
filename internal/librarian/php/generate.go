@@ -75,18 +75,38 @@ func Generate(ctx context.Context, cfg *config.Config, library *config.Library, 
 		}
 	}()
 
-	stagingDir := filepath.Join(owlBotStagingDir, library.Name)
+	for _, api := range library.APIs {
+		if api.PHP == nil || api.PHP.StagingSubdir == "" {
+			return fmt.Errorf("API %q: %w", api.Path, errMissingStagingSubdir)
+		}
+	}
+	srcCfg := sources.NewSourceConfig(src, library.Roots)
+	googleapisDir := srcCfg.Root("googleapis")
+	componentName, err := ComponentNameForLibrary(googleapisDir, library)
+	if err != nil {
+		return err
+	}
+	if _, err := os.Stat(componentName); err != nil {
+		if !errors.Is(err, fs.ErrNotExist) {
+			return err
+		}
+		params, err := newInitParams(googleapisDir, library.APIs[0])
+		if err != nil {
+			return err
+		}
+		params.componentName = componentName
+		if err := initComponent(ctx, params); err != nil {
+			return err
+		}
+	}
+	stagingDir := filepath.Join(owlBotStagingDir, componentName)
 	if err := os.RemoveAll(stagingDir); err != nil {
 		return err
 	}
 	if err := os.MkdirAll(stagingDir, 0o755); err != nil {
 		return err
 	}
-	srcCfg := sources.NewSourceConfig(src, library.Roots)
 	for _, api := range library.APIs {
-		if api.PHP == nil || api.PHP.StagingSubdir == "" {
-			return fmt.Errorf("API %q: %w", api.Path, errMissingStagingSubdir)
-		}
 		gapicDestDir := filepath.Join(stagingDir, api.PHP.StagingSubdir)
 		protoDestDir := filepath.Join(gapicDestDir, "proto/src")
 
@@ -104,7 +124,7 @@ func Generate(ctx context.Context, cfg *config.Config, library *config.Library, 
 			return err
 		}
 	}
-	if err := postProcessLibrary(ctx, library); err != nil {
+	if err := postProcessLibrary(ctx, library, componentName); err != nil {
 		return fmt.Errorf("failed to postprocess: %w", err)
 	}
 	return nil
@@ -308,10 +328,4 @@ func gapicOpts(apiMetadata *serviceconfig.API, grpcConfigAbsPath, serviceYamlAbs
 		opts = append(opts, "service_yaml="+serviceYamlAbsPath)
 	}
 	return opts
-}
-
-// DefaultOutput derives an output path from a library name and a default
-// output directory.
-func DefaultOutput(name, defaultOutput string) string {
-	return filepath.Join(defaultOutput, name)
 }

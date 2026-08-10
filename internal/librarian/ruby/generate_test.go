@@ -19,6 +19,7 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"syscall"
 	"testing"
@@ -76,7 +77,6 @@ func TestBuildGAPICOpts(t *testing.T) {
 				"ruby-cloud-description=Compute Engine is an infrastructure as a service (IaaS) product that offers self-managed virtual machine (VM) instances and bare metal instances.",
 				"ruby-cloud-summary=Compute Engine is an infrastructure as a service (IaaS) product that offers self-managed virtual machine (VM) instances and bare metal instances.",
 				"ruby-cloud-generate-transports=rest",
-				"ruby-cloud-rest-numeric-enums=true",
 			},
 		},
 		{
@@ -101,6 +101,54 @@ func TestBuildGAPICOpts(t *testing.T) {
 				"ruby-cloud-generate-transports=grpc;rest",
 				"ruby-cloud-rest-numeric-enums=true",
 				"ruby-cloud-migration-version=1.0",
+			},
+		},
+		{
+			name: "ruby cloud opts with service override",
+			api: &config.API{
+				Path: "google/cloud/secretmanager/v1",
+				Ruby: &config.RubyAPI{
+					RubyCloudOpts: &config.RubyCloudOpts{
+						ServiceOverride: "SecretManager=secretmanager",
+					},
+				},
+			},
+			library: &config.Library{
+				Name: "google-cloud-secret_manager",
+			},
+			want: []string{
+				"ruby-cloud-gem-name=google-cloud-secret_manager",
+				"service-yaml=" + filepath.Join(googleapisDir, "google/cloud/secretmanager/v1/secretmanager_v1.yaml"),
+				"ruby-cloud-description=Stores sensitive data such as API keys\\, passwords\\, and certificates. Provides convenience while improving security.",
+				"ruby-cloud-summary=Stores sensitive data such as API keys\\, passwords\\, and certificates. Provides convenience while improving security.",
+				"grpc-service-config=" + filepath.Join(googleapisDir, "google/cloud/secretmanager/v1/secretmanager_grpc_service_config.json"),
+				"ruby-cloud-generate-transports=grpc;rest",
+				"ruby-cloud-rest-numeric-enums=true",
+				"ruby-cloud-service-override=SecretManager=secretmanager",
+			},
+		},
+		{
+			name: "ruby cloud opts with gem namespace",
+			api: &config.API{
+				Path: "google/cloud/secretmanager/v1",
+				Ruby: &config.RubyAPI{
+					RubyCloudOpts: &config.RubyCloudOpts{
+						GemNamespace: "Google::Cloud::SecretManager::V1",
+					},
+				},
+			},
+			library: &config.Library{
+				Name: "google-cloud-secret_manager",
+			},
+			want: []string{
+				"ruby-cloud-gem-name=google-cloud-secret_manager",
+				"service-yaml=" + filepath.Join(googleapisDir, "google/cloud/secretmanager/v1/secretmanager_v1.yaml"),
+				"ruby-cloud-description=Stores sensitive data such as API keys\\, passwords\\, and certificates. Provides convenience while improving security.",
+				"ruby-cloud-summary=Stores sensitive data such as API keys\\, passwords\\, and certificates. Provides convenience while improving security.",
+				"grpc-service-config=" + filepath.Join(googleapisDir, "google/cloud/secretmanager/v1/secretmanager_grpc_service_config.json"),
+				"ruby-cloud-generate-transports=grpc;rest",
+				"ruby-cloud-rest-numeric-enums=true",
+				"ruby-cloud-gem-namespace=Google::Cloud::SecretManager::V1",
 			},
 		},
 		{
@@ -182,7 +230,6 @@ func TestCollectProtoFiles(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-
 	for _, test := range []struct {
 		name             string
 		apiPath          string
@@ -202,6 +249,13 @@ func TestCollectProtoFiles(t *testing.T) {
 			apiPath: "google/cloud/gkehub/v1/configmanagement",
 			want: []string{
 				filepath.Join(googleapisDir, "google/cloud/gkehub/v1/configmanagement/configmanagement.proto"),
+			},
+		},
+		{
+			name:    "recursive search protos",
+			apiPath: "google/cloud/aiplatform/v1",
+			want: []string{
+				filepath.Join(googleapisDir, "google/cloud/aiplatform/v1/schema/schema.proto"),
 			},
 		},
 		{
@@ -599,6 +653,169 @@ func TestEscapeRubyCloudOptValue(t *testing.T) {
 			got := escapeRubyCloudOptValue(test.input)
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestDeleteAfterGeneration(t *testing.T) {
+	for _, test := range []struct {
+		name      string
+		api       *config.API
+		files     []string
+		wantFiles []string
+	}{
+		{
+			name: "nil ruby configuration",
+			api:  &config.API{},
+			files: []string{
+				"google/cloud/secret_manager/v1/version.rb",
+			},
+			wantFiles: []string{
+				"google/cloud/secret_manager/v1/version.rb",
+			},
+		},
+		{
+			name: "nil delete generation output paths",
+			api: &config.API{
+				Ruby: &config.RubyAPI{},
+			},
+			files: []string{
+				"google/cloud/secret_manager/v1/version.rb",
+			},
+			wantFiles: []string{
+				"google/cloud/secret_manager/v1/version.rb",
+			},
+		},
+		{
+			name: "empty delete generation output paths",
+			api: &config.API{
+				Ruby: &config.RubyAPI{
+					DeleteGenerationOutputPaths: []string{},
+				},
+			},
+			files: []string{
+				"google/cloud/secret_manager/v1/version.rb",
+			},
+			wantFiles: []string{
+				"google/cloud/secret_manager/v1/version.rb",
+			},
+		},
+		{
+			name: "delete files and directories",
+			api: &config.API{
+				Ruby: &config.RubyAPI{
+					DeleteGenerationOutputPaths: []string{
+						"google/cloud/secret_manager/v1/to_delete.rb",
+						"google/cloud/secret_manager/v1/delete_dir",
+					},
+				},
+			},
+			files: []string{
+				"google/cloud/secret_manager/v1/to_delete.rb",
+				"google/cloud/secret_manager/v1/delete_dir/nested.rb",
+				"google/cloud/secret_manager/v1/version.rb",
+			},
+			wantFiles: []string{
+				"google/cloud/secret_manager/v1/version.rb",
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			stagingDir := t.TempDir()
+			libDir := filepath.Join(stagingDir, "lib")
+			for _, file := range test.files {
+				p := filepath.Join(libDir, file)
+				if err := os.MkdirAll(filepath.Dir(p), 0o755); err != nil {
+					t.Fatal(err)
+				}
+				if err := os.WriteFile(p, []byte("test"), 0o644); err != nil {
+					t.Fatal(err)
+				}
+			}
+			if err := deleteAfterGeneration(test.api, stagingDir); err != nil {
+				t.Fatal(err)
+			}
+			var gotFiles []string
+			if _, err := os.Stat(libDir); err == nil {
+				err := filepath.WalkDir(libDir, func(path string, entry fs.DirEntry, err error) error {
+					if err != nil {
+						return err
+					}
+					if entry.IsDir() {
+						return nil
+					}
+					rel, err := filepath.Rel(libDir, path)
+					if err != nil {
+						return err
+					}
+					gotFiles = append(gotFiles, filepath.ToSlash(rel))
+					return nil
+				})
+				if err != nil {
+					t.Fatal(err)
+				}
+			}
+			slices.Sort(gotFiles)
+			slices.Sort(test.wantFiles)
+			if diff := cmp.Diff(test.wantFiles, gotFiles); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestDeleteAfterGeneration_Error(t *testing.T) {
+	for _, test := range []struct {
+		name    string
+		api     *config.API
+		setup   func(t *testing.T, stagingDir string)
+		wantErr error
+	}{
+		{
+			name: "path does not exist",
+			api: &config.API{
+				Ruby: &config.RubyAPI{
+					DeleteGenerationOutputPaths: []string{
+						"google/cloud/secret_manager/v1/nonexistent.rb",
+					},
+				},
+			},
+			wantErr: fs.ErrNotExist,
+		},
+		{
+			name: "cannot delete file from read-only directory",
+			api: &config.API{
+				Ruby: &config.RubyAPI{
+					DeleteGenerationOutputPaths: []string{"readonly/file.rb"},
+				},
+			},
+			setup: func(t *testing.T, stagingDir string) {
+				readOnlyDir := filepath.Join(stagingDir, "lib", "readonly")
+				if err := os.MkdirAll(readOnlyDir, 0o755); err != nil {
+					t.Fatal(err)
+				}
+				if err := os.WriteFile(filepath.Join(readOnlyDir, "file.rb"), []byte("test"), 0o644); err != nil {
+					t.Fatal(err)
+				}
+				if err := os.Chmod(readOnlyDir, 0o555); err != nil {
+					t.Fatal(err)
+				}
+				t.Cleanup(func() {
+					_ = os.Chmod(readOnlyDir, 0o755)
+				})
+			},
+			wantErr: fs.ErrPermission,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			stagingDir := t.TempDir()
+			if test.setup != nil {
+				test.setup(t, stagingDir)
+			}
+			gotErr := deleteAfterGeneration(test.api, stagingDir)
+			if !errors.Is(gotErr, test.wantErr) {
+				t.Errorf("deleteAfterGeneration() error = %v, wantErr %v", gotErr, test.wantErr)
 			}
 		})
 	}

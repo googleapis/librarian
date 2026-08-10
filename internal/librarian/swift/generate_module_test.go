@@ -190,6 +190,27 @@ func TestModuleToModelConfig(t *testing.T) {
 			},
 		},
 		{
+			name: "with service config",
+			lib: &config.Library{
+				Swift: &config.SwiftPackage{},
+			},
+			module: &config.SwiftModule{
+				APIPath:       "foo",
+				ServiceConfig: "foo/foo_v7.yaml",
+				IncludeList:   []string{"mod_a.proto"},
+			},
+			want: &parser.ModelConfig{
+				SpecificationFormat: config.SpecProtobuf,
+				SpecificationSource: "foo",
+				ServiceConfig:       "foo/foo_v7.yaml",
+				Source: &sources.SourceConfig{
+					Sources:     &sources.Sources{},
+					ActiveRoots: []string{"googleapis"},
+					IncludeList: []string{"mod_a.proto"},
+				},
+			},
+		},
+		{
 			name:   "nil swift",
 			lib:    &config.Library{},
 			module: &config.SwiftModule{APIPath: "foo"},
@@ -286,4 +307,41 @@ func TestGenerateModule_NoProtos(t *testing.T) {
 	if !strings.Contains(err.Error(), "no proto files found in") {
 		t.Errorf("got error %q, want it to contain 'no proto files found in'", err.Error())
 	}
+}
+
+func TestModuleToModelConfig_SkippedIds(t *testing.T) {
+	src := &sources.Sources{}
+
+	t.Run("module level skipped_ids", func(t *testing.T) {
+		library := &config.Library{
+			Swift: &config.SwiftPackage{
+				SkippedIds: []string{".google.type.Color"},
+			},
+		}
+		module := &config.SwiftModule{
+			APIPath:    "google/type",
+			SkippedIds: []string{".google.type.Money"},
+		}
+		modelCfg := moduleToModelConfig(library, module, src)
+		expected := []string{".google.type.Money"}
+		if diff := cmp.Diff(expected, modelCfg.Override.SkippedIDs); diff != "" {
+			t.Errorf("moduleToModelConfig() mismatch (-want +got):\n%s", diff)
+		}
+	})
+
+	t.Run("library level fallback skipped_ids", func(t *testing.T) {
+		library := &config.Library{
+			Swift: &config.SwiftPackage{
+				SkippedIds: []string{".google.type.Color"},
+			},
+		}
+		module := &config.SwiftModule{
+			APIPath: "google/type",
+		}
+		modelCfg := moduleToModelConfig(library, module, src)
+		expected := []string{".google.type.Color"}
+		if diff := cmp.Diff(expected, modelCfg.Override.SkippedIDs); diff != "" {
+			t.Errorf("moduleToModelConfig() mismatch (-want +got):\n%s", diff)
+		}
+	})
 }

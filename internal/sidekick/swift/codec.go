@@ -58,6 +58,17 @@ type codec struct {
 	// contains a single target and module with the same names as the library.
 	LibraryName string
 
+	// TargetLibraryName is the PascalCase name of the Swift SPM target/library being built
+	// (e.g. "GoogleCloudSecretManagerV1", "GoogleCloudStorage", or "GoogleCloudWkt").
+	//
+	// We need TargetLibraryName to correctly identify self-imports in skipDependency.
+	//
+	// In librarian.yaml, "modules" refers to individual generator
+	// sub-components (such as messages, or convert-swift for wkt/google.type). However,
+	// all those generated files are compiled into a single overarching Swift library target
+	// named after the PascalCase version of library.Name.
+	TargetLibraryName string
+
 	// The name of the Swift package (e.g. "google-cloud-secretmanager-v1").
 	PackageName string
 
@@ -196,11 +207,14 @@ func newCodec(model *api.API, library *config.Library, module *config.SwiftModul
 		result.ModulePath = module.ModulePath
 	}
 
+	libraryName, err := LibraryName(model, swiftCfg)
+	if err != nil {
+		return nil, err
+	}
+	result.TargetLibraryName = libraryName
+
 	if !result.Module {
-		libraryName, err := LibraryName(model, swiftCfg)
-		if err != nil {
-			return nil, err
-		}
+		// Modules cannot have library names, so they should not try to set the value.
 		result.LibraryName = libraryName
 	}
 	return result, nil
@@ -228,12 +242,32 @@ func (c *codec) addDependency(dep *Dependency) (*Dependency, error) {
 	if dep == nil {
 		return nil, fmt.Errorf("attempting to add nil dependency")
 	}
-	// Skip including self as a dependency
-	if dep.Name == c.LibraryName || (c.Module && dep.Name == c.ModulePath) {
+	if c.skipDependency(dep) {
 		return nil, nil
 	}
 	if ann, ok := c.Model.Codec.(*modelAnnotations); ok {
 		ann.DependsOn[dep.Name] = dep
 	}
 	return dep, nil
+}
+
+// skipDependency returns true if the dependency should be omitted from imports and dependency lists.
+func (c *codec) skipDependency(dep *Dependency) bool {
+	if dep == nil {
+		return true
+	}
+
+	// Do not import the Swift SPM library target that we are currently compiling into.
+	if c.TargetLibraryName != "" && dep.Name == c.TargetLibraryName {
+		return true
+	}
+
+	// During conversion generation, the raw Protobuf stubs module (c.ModulePath, e.g., "StorageControlProtos")
+	// is already statically imported via internal import statements in the conversion file template.
+	// We skip it dynamically to avoid emitting duplicate "import StorageControlProtos" statements.
+	if c.Module && dep.Name == c.ModulePath {
+		return true
+	}
+
+	return false
 }

@@ -104,7 +104,7 @@ func (m *unifiedMessage) fieldGroupList() []*fieldGroup {
 func newRunQuery(c *codec, model *api.API, skippedFields []string) (*unifiedMessage, error) {
 	msg, err := newUnifiedMessage(c, model, []string{"QueryRequest", "JobConfigurationQuery", "JobConfiguration"}, func(f *api.Field) bool {
 		// skip fields that are output only or explicitly skipped
-		return slices.Contains(skippedFields, f.Name) || slices.Contains(f.Behavior, api.FieldBehaviorOutputOnly)
+		return slices.Contains(skippedFields, f.Name) || slices.Contains(skippedFields, f.ID) || slices.Contains(f.Behavior, api.FieldBehaviorOutputOnly)
 	})
 	if err != nil {
 		return nil, err
@@ -120,6 +120,12 @@ func newRunQuery(c *codec, model *api.API, skippedFields []string) (*unifiedMess
 
 func newQueryMetadata(c *codec, model *api.API, skippedFields []string) (*unifiedMessage, error) {
 	return newUnifiedMessage(c, model, []string{"GetQueryResultsResponse", "QueryResponse"}, func(f *api.Field) bool {
+		return slices.Contains(skippedFields, f.Name) || slices.Contains(skippedFields, f.ID)
+	})
+}
+
+func newQueryCreationMetadata(c *codec, model *api.API, skippedFields []string) (*unifiedMessage, error) {
+	return newUnifiedMessage(c, model, []string{"Job", "QueryResponse"}, func(f *api.Field) bool {
 		return slices.Contains(skippedFields, f.Name)
 	})
 }
@@ -163,6 +169,10 @@ func (f *fieldGroup) QueryRequest() *api.Field {
 
 func (f *fieldGroup) JobConfigurationQuery() *api.Field {
 	return f.fields["JobConfigurationQuery"]
+}
+
+func (f *fieldGroup) Job() *api.Field {
+	return f.fields["Job"]
 }
 
 func (f *fieldGroup) QueryResponse() *api.Field {

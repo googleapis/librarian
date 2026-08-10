@@ -62,6 +62,7 @@ This document describes the schema for the librarian.yaml.
 | `repo` | string | Is the GitHub repository to fetch the tool from (e.g. github.com/googleapis/gapic-generator-php). |
 | `sha256` | string | Is the SHA256 checksum of the package. |
 | `local_path` | string | Is the path to a local composer project. When present, Version, Repo, and SHA256 are ignored. |
+| `entrypoint` | string | Is the path to the main script to execute. If set, an executable wrapper is generated for this tool. |
 
 ## GemTool Configuration
 
@@ -450,6 +451,7 @@ This document describes the schema for the librarian.yaml.
 | :--- | :--- | :--- |
 | `additional_protos` | list of string | Is a list of additional proto files to include in generation. |
 | `common_resources` | bool (optional) | Indicates whether to include common resources in generation. Must be configured either globally or per-API. |
+| `proto_package` | string | Overrides the derived proto package for the API. |
 | `staging_subdir` | string | Is the subdirectory in staging where the generated files should be placed. |
 
 ## PHPDefault Configuration
@@ -462,6 +464,7 @@ This document describes the schema for the librarian.yaml.
 
 | Field | Type | Description |
 | :--- | :--- | :--- |
+| `component_name` | string | Overrides the derived component name used for output/staging. |
 
 ## PythonDefault Configuration
 
@@ -488,6 +491,7 @@ This document describes the schema for the librarian.yaml.
 | Field | Type | Description |
 | :--- | :--- | :--- |
 | `additional_protos` | list of string | Is a list of additional proto files to include in generation. |
+| `delete_generation_output_paths` | list of string | Is a list of directory paths relative to the output directory to delete after generation. |
 | `ruby_cloud_opts` | [RubyCloudOpts](#rubycloudopts-configuration) (optional) | Contains options passed to the Ruby Cloud GAPIC generator as the `--ruby_cloud_opt` option. |
 
 ## RubyCloudOpts Configuration
@@ -633,9 +637,11 @@ This document describes the schema for the librarian.yaml.
 | Field | Type | Description |
 | :--- | :--- | :--- |
 | `output` | string | Is the directory where generated code is written (e.g., "Tests/ProtoJSON/generated"). |
+| `service_config` | string | Is the path to the service config file (e.g., "google/storage/control/v2/storage_v2.yaml"). |
 | `api_path` | string | Is the proto path to generate from (e.g., "google/storage/v2"). |
 | `module_type` | string | Is the type of module to generate (e.g., "swift-protobuf", "convert-swift", or empty/"default" for standard GAPIC). |
 | `include_list` | list of string | Is a subset of proto files under the target API path to include. This is typically reserved for special cases to avoid generating unused/dead code. For example, in Storage we need Protobuf gencode for a subset of the protos in the google/type directory. This code is private to the package (google-cloud-storage in Rust, GoogleCloudStorage in Swift). All other files in google/type would be dead code. |
+| `skipped_ids` | list of string | Is a list of proto IDs to skip in generation for this module. |
 | `module_path` | string | Is the module import path or target containing stubs (used by convert-swift). |
 
 ## SwiftPackage Configuration
@@ -645,6 +651,7 @@ This document describes the schema for the librarian.yaml.
 | (embedded) | [SwiftDefault](#swiftdefault-configuration) |  |
 | `library_name_override` | string | Overrides the default library name.<br><br>In Swift, each GAPIC package consists of a single product (the library), which contains a single target and module name. For example, the package for the google/cloud/secretmanager/v1 API is called google-cloud-secretmanager-v1, and contains a single product: `GoogleCloudSecretManagerV1`, which in turn contains a single target and module of the same name.<br><br>To use the library applications use this import:<br><br>``` import GoogleCloudSecretManagerV1 ```<br><br>Normally the name is derived from:<br>- If the Protobuf namespace overrides for PHP, Ruby, and C# are consistent, sidekick uses this name.<br>- Otherwise, the name implied by the Protobuf package<br>- Or the package set in the service config yaml file |
 | `include_list` | list of string | Is a subset of proto files under the target API path to include (e.g., ["date.proto", "expr.proto"]). |
+| `skipped_ids` | list of string | Is a list of proto IDs to skip in generation for the package. |
 | `modules` | list of [SwiftModule](#swiftmodule-configuration) (optional) | Specifies generation targets for veneers and test packages.<br><br>Each module defines a source proto path, and output location. |
 | `package_name_override` | string | Overrides the package name.<br><br>This may be useful if the protobuf package lacks the necessary prefixes, e.g. `grafeas.v1` may be published as `google-grafeas-v1` to match the other packages. |
 | `per_service_traits` | bool | Enables per-service compile-time flags. |

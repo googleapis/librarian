@@ -27,6 +27,7 @@ import (
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/librarian/golang"
 	"github.com/googleapis/librarian/internal/librarian/python"
+	"github.com/googleapis/librarian/internal/librarian/ruby"
 )
 
 const (
@@ -39,6 +40,12 @@ const (
 	defaultReleasePleaseVersion = "0.0.0"
 )
 
+type extraFile struct {
+	path   string
+	isMap  bool
+	rawMap map[string]any
+}
+
 func hasReleasePleaseConfigs(dir string, cfg *config.Config) bool {
 	manifestFile, configFile := releasePleaseFiles(cfg)
 	_, errM := os.Stat(filepath.Join(dir, manifestFile))
@@ -49,7 +56,7 @@ func hasReleasePleaseConfigs(dir string, cfg *config.Config) bool {
 // releasePleaseFiles returns the file names for the Release Please manifest file
 // and config file in this order, depending on the SDK language.
 func releasePleaseFiles(cfg *config.Config) (string, string) {
-	// google-cloud-node uses the default Release Please files to add a new library.
+	// google-cloud-node and google-cloud-ruby use the default Release Please files to add a new library.
 	// google-cloud-python uses the "-individual-" files initially for new libraries.
 	// google-cloud-go uses the "-bulk-" files.
 	manifestFile := bulkManifestFile
@@ -58,7 +65,7 @@ func releasePleaseFiles(cfg *config.Config) (string, string) {
 	case config.LanguagePython:
 		manifestFile = individualManifestFile
 		configFile = individualConfigFile
-	case config.LanguageNodejs:
+	case config.LanguageNodejs, config.LanguageRuby:
 		manifestFile = defaultManifestFile
 		configFile = defaultConfigFile
 	}
@@ -121,7 +128,10 @@ func syncToReleasePlease(dir string, cfg *config.Config, name string) error {
 		// component value in package.
 		component = ""
 	}
-
+	if cfg.Language == config.LanguageRuby {
+		manifest = ruby.AddManifest(manifest, pkgPath, lib.Version)
+		packages = ruby.AddPackage(packages, pkgPath)
+	}
 	if err := syncPackageToReleasePlease(manifest, packages, pkgPath, lib.Version, component, extraFiles); err != nil {
 		return err
 	}
@@ -197,12 +207,6 @@ func syncPackageToReleasePlease(manifest map[string]string, packages map[string]
 		pkgCfg["extra-files"] = merged
 	}
 	return nil
-}
-
-type extraFile struct {
-	path   string
-	isMap  bool
-	rawMap map[string]any
 }
 
 // mergeExtraFiles merges existing and derived extra-files list while removing duplicates.
