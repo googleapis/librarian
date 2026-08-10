@@ -21,7 +21,6 @@ import (
 	"path/filepath"
 	"strings"
 	"syscall"
-
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -446,12 +445,12 @@ func TestGenerateAPI_NoTools(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	// Verify that runProtoc was called 1 time in single pass.
-	if len(calls) != 1 {
-		t.Errorf("expected 1 call to runProtoc, got %d", len(calls))
+	// Verify that runProtoc was called 2 times (Pass 1: Proto+gRPC combined, Pass 2: GAPIC).
+	if len(calls) != 2 {
+		t.Errorf("expected 2 calls to runProtoc, got %d", len(calls))
 	}
-	// Basic validation of GAPIC generation arguments.
-	gapicArgs := calls[0]
+	// Basic validation of GAPIC generation arguments (the 2nd call).
+	gapicArgs := calls[1]
 	foundGAPICOut := false
 	for _, arg := range gapicArgs {
 		if strings.HasPrefix(arg, "--java_gapic_out=") {
@@ -461,6 +460,73 @@ func TestGenerateAPI_NoTools(t *testing.T) {
 	}
 	if !foundGAPICOut {
 		t.Errorf("expected --java_gapic_out in gapicArgs, but not found: %v", gapicArgs)
+	}
+}
+
+func TestGenerateAPI_NoOutputDirectives_Safety(t *testing.T) {
+	oldRunProtoc := runProtoc
+	defer func() { runProtoc = oldRunProtoc }()
+	var calls [][]string
+	runProtoc = func(ctx context.Context, pc *config.Protoc, args []string) error {
+		calls = append(calls, args)
+		return nil
+	}
+	outdir := t.TempDir()
+	api := &config.API{
+		Path: "google/cloud/secretmanager/v1",
+		Java: &config.JavaAPI{
+			GenerateGAPIC:            new(bool),
+			GenerateGRPC:             new(bool),
+			GenerateResourceNames:    new(bool),
+			SkipProtoClassGeneration: []string{"google/cloud/secretmanager/v1/resources.proto", "google/cloud/secretmanager/v1/service.proto"},
+		},
+	}
+	cfg := &config.Config{
+		Repo: "googleapis/google-cloud-java",
+		Default: &config.Default{
+			Java: &config.JavaDefault{},
+		},
+		Libraries: []*config.Library{
+			{Name: "google-cloud-java", Version: "1.2.3"},
+		},
+	}
+	library := &config.Library{
+		Name:   "secretmanager",
+		Output: outdir,
+		APIs: []*config.API{
+			api,
+		},
+	}
+	if _, err := Fill(library); err != nil {
+		t.Fatal(err)
+	}
+	for _, artifact := range []string{"google-cloud-secretmanager", "proto-google-cloud-secretmanager-v1", "grpc-google-cloud-secretmanager-v1", "google-cloud-secretmanager-bom"} {
+		if err := os.MkdirAll(filepath.Join(outdir, artifact), 0o755); err != nil {
+			t.Fatal(err)
+		}
+	}
+	apiCfg, err := serviceconfig.Find(googleapisDir, api.Path, config.LanguageJava)
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = generateAPI(t.Context(), generateAPIParams{
+		cfg:     cfg,
+		api:     api,
+		library: library,
+		srcCfg:  sources.NewSourceConfig(&sources.Sources{Googleapis: googleapisDir}, nil),
+		outdir:  outdir,
+		metadata: &repoMetadata{
+			NamePretty:     "Secret Manager",
+			APIDescription: "Secret Manager API",
+		},
+		apiCfg: apiCfg,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if len(calls) != 1 {
+		t.Errorf("expected 1 call to runProtoc (for Step 2 GAPIC/ResourceNames), got %d", len(calls))
 	}
 }
 
