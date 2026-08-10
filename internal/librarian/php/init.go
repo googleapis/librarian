@@ -73,6 +73,9 @@ func initComponentIfMissing(ctx context.Context, library *config.Library, google
 		return "", err
 	}
 
+	// The dev tool hardcodes the scaffold output strictly to params.componentName.
+	// If a custom library.Output is requested, we must manually move the scaffolded
+	// directory to the correct target location.
 	if targetDir != params.componentName {
 		if err := os.MkdirAll(filepath.Dir(targetDir), 0o755); err != nil {
 			return "", fmt.Errorf("mkdir %q: %w", filepath.Dir(targetDir), err)
