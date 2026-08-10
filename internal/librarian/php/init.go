@@ -62,17 +62,14 @@ func initComponentIfMissing(ctx context.Context, library *config.Library, google
 	if targetDir == "" {
 		targetDir = params.componentName
 	}
-
 	if _, err := os.Stat(targetDir); err == nil {
 		return params.componentName, nil // Component already exists
 	} else if !errors.Is(err, fs.ErrNotExist) {
 		return "", err
 	}
-
 	if err := initComponent(ctx, params); err != nil {
 		return "", err
 	}
-
 	// The dev tool hardcodes the scaffold output strictly to params.componentName.
 	// If a custom library.Output is requested, we must manually move the scaffolded
 	// directory to the correct target location.
@@ -86,7 +83,6 @@ func initComponentIfMissing(ctx context.Context, library *config.Library, google
 	} else if _, err := os.Stat(params.componentName); err != nil {
 		return "", fmt.Errorf("missing component %q: %w", params.componentName, err)
 	}
-
 	return params.componentName, nil
 }
 
