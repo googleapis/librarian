@@ -63,11 +63,7 @@ pub trait {{Codec.Name}}: std::fmt::Debug + Send + Sync {
         google_cloud_gax::streaming::RequestSender<{{InputType.Codec.QualifiedName}}>,
         google_cloud_gax::streaming::ResponseReceiver<{{OutputType.Codec.QualifiedName}}>,
     )>> + Send {
-        {{! TODO(#6835) - create a streaming unimplemented stub in gaxi }}
-        async {
-            let _ = gaxi::unimplemented::unimplemented_stub::<()>().await;
-            unreachable!() // satisfies the type checker; the stub above always panics.
-        }
+        gaxi::unimplemented::unimplemented_bidi_stub()
     }
     {{/Codec.IsBidiStreaming}}
     {{^Codec.IsBidiStreaming}}

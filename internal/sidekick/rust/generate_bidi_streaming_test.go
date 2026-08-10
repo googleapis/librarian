@@ -144,7 +144,7 @@ func TestGenerateBidiStreaming(t *testing.T) {
 			name:     "stub: method signature and default body",
 			file:     "src/stub.rs",
 			startStr: "    #[cfg(google_cloud_unstable_gapic_streaming)]\n    fn chat(",
-			endStr:   "        }\n    }",
+			endStr:   "    }",
 			want: `    #[cfg(google_cloud_unstable_gapic_streaming)]
     fn chat(
         &self,
@@ -154,10 +154,7 @@ func TestGenerateBidiStreaming(t *testing.T) {
         google_cloud_gax::streaming::RequestSender<crate::model::Request>,
         google_cloud_gax::streaming::ResponseReceiver<crate::model::Response>,
     )>> + Send {
-        async {
-            let _ = gaxi::unimplemented::unimplemented_stub::<()>().await;
-            unreachable!() // satisfies the type checker; the stub above always panics.
-        }
+        gaxi::unimplemented::unimplemented_bidi_stub()
     }`,
 		},
 		{
