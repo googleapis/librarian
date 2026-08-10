@@ -256,6 +256,10 @@ func requirePHPGenerator(t *testing.T) {
 
 func TestGenerate_Error(t *testing.T) {
 	requirePHPGenerator(t)
+	googleapisDir, err := filepath.Abs(filepath.Join("..", "..", "testdata", "googleapis"))
+	if err != nil {
+		t.Fatal(err)
+	}
 	repoRoot := t.TempDir()
 	t.Chdir(repoRoot)
 	// Pre-create component directory so Generate skips component initialization and tests config validation.
@@ -267,6 +271,13 @@ func TestGenerate_Error(t *testing.T) {
 		lib     *config.Library
 		wantErr error
 	}{
+		{
+			name: "no APIs configured",
+			lib: &config.Library{
+				Name: "empty",
+			},
+			wantErr: errNoAPIs,
+		},
 		{
 			name: "missing PHP config (requires staging_subdir)",
 			lib: &config.Library{
@@ -302,7 +313,7 @@ func TestGenerate_Error(t *testing.T) {
 			cfg := &config.Config{
 				Language: config.LanguagePhp,
 			}
-			err := Generate(t.Context(), cfg, test.lib, &sources.Sources{Googleapis: t.TempDir()})
+			err := Generate(t.Context(), cfg, test.lib, &sources.Sources{Googleapis: googleapisDir})
 			if !errors.Is(err, test.wantErr) {
 				t.Errorf("Generate() error = %v, wantErr = %v", err, test.wantErr)
 			}

@@ -148,6 +148,7 @@ func (c *codec) generateStubs(outdir string, model *api.API, provider language.T
 			template string
 		}{
 			{suffix: "+Stub", template: "templates/common/stub.swift.mustache"},
+			{suffix: "+Transport", template: "templates/http/transport.swift.mustache"},
 			{suffix: "+Logging", template: "templates/common/logging.swift.mustache"},
 			{suffix: "+Retry", template: "templates/common/retry.swift.mustache"},
 		} {

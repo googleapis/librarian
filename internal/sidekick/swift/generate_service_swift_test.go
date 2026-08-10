@@ -52,11 +52,13 @@ func TestGenerateService_Files(t *testing.T) {
 		"Clients.swift",
 		"SecretManagerService.swift",
 		"SecretManagerService+Stub.swift",
+		"SecretManagerService+Transport.swift",
 		"SecretManagerService+Logging.swift",
 		"SecretManagerService+Retry.swift",
 		"InstanceSettings.swift",
 		"instanceSettings+000.swift",
 		"instanceSettings+Stub.swift",
+		"instanceSettings+Transport.swift",
 		"instanceSettings+Logging.swift",
 		"instanceSettings+Retry.swift",
 	}
@@ -423,7 +425,7 @@ func TestGenerateService_PathParameters(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			filename := filepath.Join(outDir, "Sources", "GoogleCloudSecretmanagerV1", "SecretManagerService+Stub.swift")
+			filename := filepath.Join(outDir, "Sources", "GoogleCloudSecretmanagerV1", "SecretManagerService+Transport.swift")
 			content, err := os.ReadFile(filename)
 			if err != nil {
 				t.Fatal(err)

@@ -42,12 +42,24 @@ var (
 	errCommonResourcesUnconfigured = errors.New("common_resources must be set (either per-API or globally under default.php)")
 	errMissingStagingSubdir        = errors.New("staging_subdir is required for PHP configurations")
 	errNoProtos                    = errors.New("no target protos found")
+	errNoAPIs                      = errors.New("no APIs configured")
 )
+
+type generateAPIParams struct {
+	cfg          *config.Config
+	api          *config.API
+	library      *config.Library
+	srcCfg       *sources.SourceConfig
+	wrapperPath  string
+	tempDir      string
+	gapicDestDir string
+	protoDestDir string
+}
 
 // Generate generates a PHP client library.
 func Generate(ctx context.Context, cfg *config.Config, library *config.Library, src *sources.Sources) (err error) {
 	if len(library.APIs) == 0 {
-		return fmt.Errorf("no apis configured for library %q", library.Name)
+		return fmt.Errorf("%w: %q", errNoAPIs, library.Name)
 	}
 	if cfg.Tools == nil || cfg.Tools.Protoc == nil {
 		if _, err := exec.LookPath("protoc"); err != nil {
@@ -82,22 +94,9 @@ func Generate(ctx context.Context, cfg *config.Config, library *config.Library, 
 	}
 	srcCfg := sources.NewSourceConfig(src, library.Roots)
 	googleapisDir := srcCfg.Root("googleapis")
-	componentName, err := ComponentNameForLibrary(googleapisDir, library)
+	componentName, err := initComponentIfMissing(ctx, library, googleapisDir)
 	if err != nil {
 		return err
-	}
-	if _, err := os.Stat(componentName); err != nil {
-		if !errors.Is(err, fs.ErrNotExist) {
-			return err
-		}
-		params, err := newInitParams(googleapisDir, library.APIs[0])
-		if err != nil {
-			return err
-		}
-		params.componentName = componentName
-		if err := initComponent(ctx, params); err != nil {
-			return err
-		}
 	}
 	stagingDir := filepath.Join(owlBotStagingDir, componentName)
 	if err := os.RemoveAll(stagingDir); err != nil {
@@ -128,17 +127,6 @@ func Generate(ctx context.Context, cfg *config.Config, library *config.Library, 
 		return fmt.Errorf("failed to postprocess: %w", err)
 	}
 	return nil
-}
-
-type generateAPIParams struct {
-	cfg          *config.Config
-	api          *config.API
-	library      *config.Library
-	srcCfg       *sources.SourceConfig
-	wrapperPath  string
-	tempDir      string
-	gapicDestDir string
-	protoDestDir string
 }
 
 // generateAPI generates a single target API by resolving its service config, gathering

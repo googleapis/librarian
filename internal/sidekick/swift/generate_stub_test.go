@@ -73,14 +73,14 @@ func TestGenerateStub_Structure(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	filename := filepath.Join(outDir, "Sources", "GoogleCloudTestV1", "Protocol+Stub.swift")
-	content, err := os.ReadFile(filename)
+	stubFilename := filepath.Join(outDir, "Sources", "GoogleCloudTestV1", "Protocol+Stub.swift")
+	stubContent, err := os.ReadFile(stubFilename)
 	if err != nil {
 		t.Fatal(err)
 	}
-	contentStr := string(content)
+	stubContentStr := string(stubContent)
 
-	got := extractBlock(t, contentStr, `  protocol ProtocolStub {`, "\n"+`  }`)
+	got := extractBlock(t, stubContentStr, `  protocol ProtocolStub {`, "\n"+`  }`)
 	want := `  protocol ProtocolStub {
     func getThing(
     request: SomeTestPackage.Request, options: GoogleCloudGax.RequestOptions
@@ -91,14 +91,21 @@ func TestGenerateStub_Structure(t *testing.T) {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 
-	got = extractBlock(t, contentStr, `  class ProtocolTransport: `, `HTTPClient`)
+	transportFilename := filepath.Join(outDir, "Sources", "GoogleCloudTestV1", "Protocol+Transport.swift")
+	transportContent, err := os.ReadFile(transportFilename)
+	if err != nil {
+		t.Fatal(err)
+	}
+	transportContentStr := string(transportContent)
+
+	got = extractBlock(t, transportContentStr, `  class ProtocolTransport: `, `HTTPClient`)
 	want = `  class ProtocolTransport: ProtocolStub {
     let inner: GoogleCloudGax.HTTPClient`
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 
-	got = extractBlock(t, contentStr, `return try GoogleCloudWkt._ProtoJSONDecoder()`, ", from: data)\n    }")
+	got = extractBlock(t, transportContentStr, `return try GoogleCloudWkt._ProtoJSONDecoder()`, ", from: data)\n    }")
 	want = `return try GoogleCloudWkt._ProtoJSONDecoder().decode(
         SomeTestPackage.Response.self, from: data)
     }`
@@ -106,7 +113,7 @@ func TestGenerateStub_Structure(t *testing.T) {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 
-	got = extractBlock(t, contentStr, `URLQueryItem(name: "$alt",`, ")")
+	got = extractBlock(t, transportContentStr, `URLQueryItem(name: "$alt",`, ")")
 	want = `URLQueryItem(name: "$alt", value: "json;enum-encoding=int")`
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
@@ -190,7 +197,7 @@ func TestGenerateStub_QueryParameters(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	filename := filepath.Join(outDir, "Sources", "Test", "Service+Stub.swift")
+	filename := filepath.Join(outDir, "Sources", "Test", "Service+Transport.swift")
 	content, err := os.ReadFile(filename)
 	if err != nil {
 		t.Fatal(err)
@@ -237,7 +244,7 @@ func TestGenerateStub_Discovery(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	contentBytes, err := os.ReadFile(filepath.Join(outDir, "Sources", "GoogleCloudComputeV1", "Addresses+Stub.swift"))
+	contentBytes, err := os.ReadFile(filepath.Join(outDir, "Sources", "GoogleCloudComputeV1", "Addresses+Transport.swift"))
 	if err != nil {
 		t.Fatal(err)
 	}
