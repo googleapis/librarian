@@ -354,8 +354,10 @@ func TestInitComponentIfMissing(t *testing.T) {
 				t.Errorf("wasInitialized = %v, wantInit = %v", wasInitialized, test.wantInit)
 			}
 			if test.library.Output != "" {
-				if _, err := os.Stat(filepath.Join(repoRoot, test.library.Output)); err != nil {
-					t.Error(err)
+				_, statErr := os.Stat(filepath.Join(repoRoot, test.library.Output))
+				wasMoved := statErr == nil
+				if !wasMoved {
+					t.Errorf("wasMoved = %v, wantMoved = true", wasMoved)
 				}
 			}
 		})
