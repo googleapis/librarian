@@ -17,6 +17,7 @@ package swift
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -253,5 +254,215 @@ func TestGenerateStub_Discovery(t *testing.T) {
 	want := `URLQueryItem(name: "$alt", value: "json")`
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+}
+
+func TestGenerateStub_Grpc(t *testing.T) {
+	outDir := t.TempDir()
+
+	parentField := &api.Field{
+		Name:     "parent",
+		JSONName: "parent",
+		ID:       ".google.storage.control.v2.CreateFolderRequest.parent",
+		Typez:    api.TypezString,
+	}
+	folderField := &api.Field{
+		Name:     "folder",
+		JSONName: "folder",
+		ID:       ".google.storage.control.v2.CreateFolderRequest.folder",
+		Typez:    api.TypezMessage,
+		TypezID:  ".google.storage.control.v2.Folder",
+		Optional: true,
+	}
+	nameField := &api.Field{
+		Name:     "name",
+		JSONName: "name",
+		ID:       ".google.storage.control.v2.DeleteFolderRequest.name",
+		Typez:    api.TypezString,
+	}
+
+	createFolderRequest := &api.Message{
+		Name:    "CreateFolderRequest",
+		ID:      ".google.storage.control.v2.CreateFolderRequest",
+		Package: "google.storage.control.v2",
+		Fields:  []*api.Field{parentField, folderField},
+	}
+	deleteFolderRequest := &api.Message{
+		Name:    "DeleteFolderRequest",
+		ID:      ".google.storage.control.v2.DeleteFolderRequest",
+		Package: "google.storage.control.v2",
+		Fields:  []*api.Field{nameField},
+	}
+	folder := &api.Message{
+		Name:    "Folder",
+		ID:      ".google.storage.control.v2.Folder",
+		Package: "google.storage.control.v2",
+	}
+	empty := &api.Message{
+		Name:    "Empty",
+		ID:      ".google.protobuf.Empty",
+		Package: "google.protobuf",
+	}
+	operation := &api.Message{
+		Name:    "Operation",
+		ID:      ".google.longrunning.Operation",
+		Package: "google.longrunning",
+	}
+	getOperationRequest := &api.Message{
+		Name:    "GetOperationRequest",
+		ID:      ".google.longrunning.GetOperationRequest",
+		Package: "google.longrunning",
+	}
+
+	service := &api.Service{
+		Name:        "StorageControl",
+		ID:          ".google.storage.control.v2.StorageControl",
+		Package:     "google.storage.control.v2",
+		DefaultHost: "storage.googleapis.com",
+		Methods: []*api.Method{
+			{
+				Name:         "CreateFolder",
+				ID:           ".google.storage.control.v2.StorageControl.CreateFolder",
+				InputTypeID:  createFolderRequest.ID,
+				InputType:    createFolderRequest,
+				OutputTypeID: folder.ID,
+				OutputType:   folder,
+				PathInfo: &api.PathInfo{
+					Bindings: []*api.PathBinding{{
+						Verb:         "POST",
+						PathTemplate: (&api.PathTemplate{}).WithLiteral("v2").WithLiteral("projects").WithVariableNamed("parent").WithLiteral("folders"),
+					}},
+				},
+			},
+			{
+				Name:         "DeleteFolder",
+				ID:           ".google.storage.control.v2.StorageControl.DeleteFolder",
+				InputTypeID:  deleteFolderRequest.ID,
+				InputType:    deleteFolderRequest,
+				OutputTypeID: empty.ID,
+				OutputType:   empty,
+				ReturnsEmpty: true,
+				PathInfo: &api.PathInfo{
+					Bindings: []*api.PathBinding{{
+						Verb:         "DELETE",
+						PathTemplate: (&api.PathTemplate{}).WithLiteral("v2").WithLiteral("projects").WithVariableNamed("name"),
+					}},
+				},
+			},
+			{
+				Name:         "GetOperation",
+				ID:           ".google.longrunning.Operations.GetOperation",
+				InputTypeID:  getOperationRequest.ID,
+				InputType:    getOperationRequest,
+				OutputTypeID: operation.ID,
+				OutputType:   operation,
+			},
+		},
+	}
+
+	model := api.NewTestAPI([]*api.Message{createFolderRequest, deleteFolderRequest, folder, empty, operation, getOperationRequest}, nil, []*api.Service{service})
+	model.PackageName = "google.storage.control.v2"
+
+	module := &config.SwiftModule{
+		Output:     outDir,
+		ModulePath: "StorageControlProtos",
+		Transport:  "grpc",
+	}
+	swiftPkg := swiftConfig(t, []config.SwiftDependency{
+		{Name: "GoogleLongRunning", ApiPackage: "google.longrunning"},
+	})
+	swiftPkg.PackageNameOverride = "GoogleCloudStorage"
+	swiftPkg.LibraryNameOverride = "GoogleCloudStorage"
+	library := &config.Library{
+		Name:  "google-cloud-storage",
+		Swift: swiftPkg,
+	}
+
+	if err := Generate(t.Context(), model, outDir, library, module); err != nil {
+		t.Fatal(err)
+	}
+
+	stubFilename := filepath.Join(outDir, "StorageControl+Stub.swift")
+	stubContent, err := os.ReadFile(stubFilename)
+	if err != nil {
+		t.Fatal(err)
+	}
+	stubStr := string(stubContent)
+	if !strings.Contains(stubStr, "protocol StorageControlStub {") {
+		t.Errorf("stub file missing StorageControlStub protocol:\n%s", stubStr)
+	}
+	if !strings.Contains(stubStr, "func createFolder(") || !strings.Contains(stubStr, "func deleteFolder(") || !strings.Contains(stubStr, "func getOperation(") {
+		t.Errorf("stub file missing methods:\n%s", stubStr)
+	}
+
+	transportFilename := filepath.Join(outDir, "StorageControl+Transport.swift")
+	transportContent, err := os.ReadFile(transportFilename)
+	if err != nil {
+		t.Fatal(err)
+	}
+	transportStr := string(transportContent)
+
+	// Check gRPC imports
+	if !strings.Contains(transportStr, "import GRPC") || !strings.Contains(transportStr, "import NIO") {
+		t.Errorf("transport missing GRPC/NIO imports:\n%s", transportStr)
+	}
+	if !strings.Contains(transportStr, "internal import StorageControlProtos") {
+		t.Errorf("transport missing internal import StorageControlProtos:\n%s", transportStr)
+	}
+
+	// Check gRPC Transport class definition and operations client
+	if !strings.Contains(transportStr, "class StorageControlTransport: StorageControlStub, @unchecked Sendable {") {
+		t.Errorf("transport missing StorageControlTransport class declaration:\n%s", transportStr)
+	}
+	if !strings.Contains(transportStr, "private let grpcClient: StorageControlProtos.Google_Storage_Control_V2_StorageControlAsyncClient") {
+		t.Errorf("transport missing grpcClient field:\n%s", transportStr)
+	}
+	if !strings.Contains(transportStr, "private let operationsClient: StorageControlProtos.Google_Longrunning_OperationsAsyncClient") {
+		t.Errorf("transport missing operationsClient field:\n%s", transportStr)
+	}
+
+	// Check connection factory and credentials
+	if !strings.Contains(transportStr, "private let credentials: GoogleCloudAuth.Credentials") {
+		t.Errorf("transport missing credentials field:\n%s", transportStr)
+	}
+	if !strings.Contains(transportStr, "self.connection = try Self.makeConnection(endpoint: options.endpoint)") {
+		t.Errorf("transport missing makeConnection call:\n%s", transportStr)
+	}
+	if !strings.Contains(transportStr, "guard let url = URLComponents(string: urlString)") {
+		t.Errorf("transport missing URLComponents parsing:\n%s", transportStr)
+	}
+
+	// Check makeCallOptions helper
+	if !strings.Contains(transportStr, "private func makeCallOptions(") {
+		t.Errorf("transport missing makeCallOptions helper:\n%s", transportStr)
+	}
+	if !strings.Contains(transportStr, `if let attemptTimeout = options.attemptTimeout {`) ||
+		!strings.Contains(transportStr, `callOptions.timeLimit = .timeout(.nanoseconds(nanoseconds))`) {
+		t.Errorf("transport missing timeout propagation in makeCallOptions:\n%s", transportStr)
+	}
+	if !strings.Contains(transportStr, `let authHeaders = try await self.credentials.headers()`) ||
+		!strings.Contains(transportStr, `callOptions.customMetadata.add(name: key, value: value)`) {
+		t.Errorf("transport missing auth headers metadata loop in makeCallOptions:\n%s", transportStr)
+	}
+	if !strings.Contains(transportStr, `callOptions.customMetadata.add(name: "x-goog-api-client", value: Clients.clientHeader)`) ||
+		!strings.Contains(transportStr, `name: "x-goog-request-params"`) {
+		t.Errorf("transport missing telemetry / routing metadata in makeCallOptions:\n%s", transportStr)
+	}
+
+	// Check method body conversions and operations client dispatch
+	if !strings.Contains(transportStr, "let protoRequest = try request.toProto()") {
+		t.Errorf("transport missing request.toProto() call:\n%s", transportStr)
+	}
+	if !strings.Contains(transportStr, "return try Folder(proto: protoResponse)") {
+		t.Errorf("transport missing Folder(proto: protoResponse) return:\n%s", transportStr)
+	}
+	if !strings.Contains(transportStr, "_ = try await self.grpcClient.deleteFolder(protoRequest, callOptions: callOptions)") {
+		t.Errorf("transport missing deleteFolder call:\n%s", transportStr)
+	}
+	if !strings.Contains(transportStr, "let protoResponse = try await self.operationsClient.getOperation(\n        protoRequest, callOptions: callOptions\n      )") {
+		t.Errorf("transport missing operationsClient.getOperation call:\n%s", transportStr)
+	}
+	if !strings.Contains(transportStr, `routingParams.append("parent=\(pathVariable0)")`) {
+		t.Errorf("transport missing routing parameter extraction in method body:\n%s", transportStr)
 	}
 }

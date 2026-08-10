@@ -23,17 +23,22 @@ import (
 )
 
 type serviceAnnotations struct {
-	Name             string
-	ClientName       string
-	StubPrefix       string
-	HostnameShort    string
-	DocLines         []string
-	RestMethods      []*api.Method
-	LibraryName      string
-	QuickstartMethod *api.Method
-	Model            *modelAnnotations
-	DependsOn        map[string]*Dependency
-	IsGated          bool
+	Name                     string
+	ClientName               string
+	StubPrefix               string
+	HostnameShort            string
+	DocLines                 []string
+	RestMethods              []*api.Method
+	LibraryName              string
+	QuickstartMethod         *api.Method
+	Model                    *modelAnnotations
+	DependsOn                map[string]*Dependency
+	IsGated                  bool
+	GrpcClientTypeName       string
+	ModulePath               string
+	IsGrpc                   bool
+	HasOperationsClient      bool
+	OperationsClientTypeName string
 
 	// Any additional services required by this service.
 	//
@@ -94,7 +99,7 @@ func (c *codec) annotateService(service *api.Service, model *modelAnnotations) (
 	requiredServices := make(map[string]*api.Service)
 	var restMethods []*api.Method
 	for _, method := range service.Methods {
-		if isGeneratedMethod(method) {
+		if c.isGeneratedMethod(method) {
 			if err := c.annotateMethod(method, model); err != nil {
 				return nil, err
 			}
@@ -105,22 +110,49 @@ func (c *codec) annotateService(service *api.Service, model *modelAnnotations) (
 		}
 	}
 	var quickstartMethod *api.Method
-	if service.QuickstartMethod != nil && isGeneratedMethod(service.QuickstartMethod) {
+	if service.QuickstartMethod != nil && c.isGeneratedMethod(service.QuickstartMethod) {
 		quickstartMethod = service.QuickstartMethod
+	}
+
+	var grpcClientTypeName string
+	var hasOperationsClient bool
+	var operationsClientTypeName string
+	if c.isGrpc() {
+		grpcClientTypeName = fmt.Sprintf("%s%sAsyncClient", ProtoPackagePrefix(service.Package), pascalCaseNoMangling(service.Name))
+		if c.ModulePath != "" {
+			grpcClientTypeName = fmt.Sprintf("%s.%s", c.ModulePath, grpcClientTypeName)
+		}
+		for _, m := range restMethods {
+			if m.SourceServiceID == ".google.longrunning.Operations" || (m.SourceService != nil && m.SourceService.ID == ".google.longrunning.Operations") || strings.HasPrefix(m.ID, ".google.longrunning.Operations.") {
+				hasOperationsClient = true
+				break
+			}
+		}
+		if hasOperationsClient {
+			operationsClientTypeName = "Google_Longrunning_OperationsAsyncClient"
+			if c.ModulePath != "" {
+				operationsClientTypeName = fmt.Sprintf("%s.%s", c.ModulePath, operationsClientTypeName)
+			}
+		}
 	}
 
 	name := pascalCase(service.Name)
 	annotations := &serviceAnnotations{
-		Name:             name,
-		ClientName:       pascalCase(service.Name + "Client"),
-		StubPrefix:       pascalCaseNoMangling(service.Name),
-		HostnameShort:    strings.TrimSuffix(service.DefaultHost, ".googleapis.com"),
-		DocLines:         docLines,
-		RestMethods:      restMethods,
-		LibraryName:      c.LibraryName,
-		QuickstartMethod: quickstartMethod,
-		Model:            model,
-		DependsOn:        map[string]*Dependency{},
+		Name:                     name,
+		ClientName:               pascalCase(service.Name + "Client"),
+		StubPrefix:               pascalCaseNoMangling(service.Name),
+		HostnameShort:            strings.TrimSuffix(service.DefaultHost, ".googleapis.com"),
+		DocLines:                 docLines,
+		RestMethods:              restMethods,
+		LibraryName:              c.LibraryName,
+		QuickstartMethod:         quickstartMethod,
+		Model:                    model,
+		DependsOn:                map[string]*Dependency{},
+		GrpcClientTypeName:       grpcClientTypeName,
+		ModulePath:               c.ModulePath,
+		IsGrpc:                   c.isGrpc(),
+		HasOperationsClient:      hasOperationsClient,
+		OperationsClientTypeName: operationsClientTypeName,
 	}
 	if c.PerServiceTraits {
 		annotations.IsGated = true
@@ -312,7 +344,10 @@ func (c *codec) addSignatureDependencies(annotations *serviceAnnotations, signat
 	return nil
 }
 
-func isGeneratedMethod(method *api.Method) bool {
+func (c *codec) isGeneratedMethod(method *api.Method) bool {
+	if c.isGrpc() {
+		return true
+	}
 	return method.PathInfo != nil && len(method.PathInfo.Bindings) != 0
 }
 

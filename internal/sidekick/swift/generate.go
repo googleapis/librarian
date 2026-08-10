@@ -142,13 +142,17 @@ func (c *codec) generateServices(outdir string, model *api.API, provider languag
 }
 
 func (c *codec) generateStubs(outdir string, model *api.API, provider language.TemplateProvider) error {
+	transportTemplate := "templates/http/transport.swift.mustache"
+	if c.isGrpc() {
+		transportTemplate = "templates/grpc/transport.swift.mustache"
+	}
 	for _, s := range model.Services {
 		for _, stub := range []struct {
 			suffix   string
 			template string
 		}{
 			{suffix: "+Stub", template: "templates/common/stub.swift.mustache"},
-			{suffix: "+Transport", template: "templates/http/transport.swift.mustache"},
+			{suffix: "+Transport", template: transportTemplate},
 			{suffix: "+Logging", template: "templates/common/logging.swift.mustache"},
 			{suffix: "+Retry", template: "templates/common/retry.swift.mustache"},
 		} {
@@ -189,7 +193,7 @@ func (c *codec) generateSnippets(outdir string, model *api.API, provider languag
 			return err
 		}
 		for _, m := range s.Methods {
-			if !isGeneratedMethod(m) || m.IsLroPoller {
+			if !c.isGeneratedMethod(m) || m.IsLroPoller {
 				continue
 			}
 			mGenerated := language.GeneratedFile{

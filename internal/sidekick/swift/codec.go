@@ -130,12 +130,19 @@ type codec struct {
 	// libraries we use `json;enum-encoding=int`, but for discovery we need to
 	// use just `json` as the integer values for enums may not match our values.
 	ResponseEncoding string
+
+	// Transport specifies which client transport to use ("grpc" or "http"). Defaults to "http".
+	Transport string
 }
 
 const (
 	defaultResponseEncoding   = "json;enum-encoding=int"
 	discoveryResponseEncoding = "json"
 )
+
+func (c *codec) isGrpc() bool {
+	return c.Transport == "grpc"
+}
 
 func newCodec(model *api.API, library *config.Library, module *config.SwiftModule, outdir string) (*codec, error) {
 	year, _, _ := time.Now().Date()
@@ -202,10 +209,15 @@ func newCodec(model *api.API, library *config.Library, module *config.SwiftModul
 		result.DefaultTraits = swiftCfg.DefaultTraits
 	}
 
+	transport := "http"
 	if module != nil {
 		result.Module = true
 		result.ModulePath = module.ModulePath
+		if module.Transport != "" {
+			transport = module.Transport
+		}
 	}
+	result.Transport = transport
 
 	libraryName, err := LibraryName(model, swiftCfg)
 	if err != nil {

@@ -16,25 +16,27 @@ package swift
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/googleapis/librarian/internal/sidekick/api"
 	"github.com/googleapis/librarian/internal/sidekick/language"
 )
 
 type methodAnnotations struct {
-	Name           string
-	DocLines       []string
-	PathVariables  []*pathVariable
-	PathExpression string
-	HTTPMethod     string
-	HasBody        bool
-	IsBodyWildcard bool
-	BodyField      string
-	QueryParams    []*api.Field
-	Pagination     *paginationAnnotations
-	LRO            *lroAnnotations
-	DiscoveryLRO   *discoveryLroAnnotations
-	ReturnType     string
+	Name               string
+	DocLines           []string
+	PathVariables      []*pathVariable
+	PathExpression     string
+	HTTPMethod         string
+	HasBody            bool
+	IsBodyWildcard     bool
+	BodyField          string
+	QueryParams        []*api.Field
+	Pagination         *paginationAnnotations
+	LRO                *lroAnnotations
+	DiscoveryLRO       *discoveryLroAnnotations
+	ReturnType         string
+	IsOperationsMethod bool
 
 	// ResponseEncoding sets the `$alt` query parameter value.
 	//
@@ -98,6 +100,11 @@ func (ann *methodAnnotations) HasQueryParams() bool {
 	return len(ann.QueryParams) != 0
 }
 
+// HasPathVariables returns true if the method has path variables for routing headers.
+func (ann *methodAnnotations) HasPathVariables() bool {
+	return len(ann.PathVariables) != 0
+}
+
 // PlainRPC returns true if the method is not a pagination or LRO.
 func (ann *methodAnnotations) PlainRPC() bool {
 	return ann.LRO == nil && ann.Pagination == nil && ann.DiscoveryLRO == nil
@@ -124,17 +131,31 @@ func (c *codec) annotateMethod(method *api.Method, modelAnn *modelAnnotations) e
 	if err != nil {
 		return err
 	}
-	binding := method.PathInfo.Bindings[0]
-	hasBody := method.PathInfo.BodyFieldPath != ""
-	isBodyWildcard := method.PathInfo.BodyFieldPath == "*"
+	var pathExpressionStr string
+	var pathVariables []*pathVariable
+	var httpMethod string
+	var hasBody bool
+	var isBodyWildcard bool
 	var bodyField string
-	if hasBody && !isBodyWildcard {
-		bodyField = camelCase(method.PathInfo.BodyFieldPath)
+	var queryParams []*api.Field
+
+	if method.PathInfo != nil && len(method.PathInfo.Bindings) > 0 {
+		binding := method.PathInfo.Bindings[0]
+		hasBody = method.PathInfo.BodyFieldPath != ""
+		isBodyWildcard = method.PathInfo.BodyFieldPath == "*"
+		if hasBody && !isBodyWildcard {
+			bodyField = camelCase(method.PathInfo.BodyFieldPath)
+		}
+		var err error
+		pathVariables, err = c.pathVariables(method.InputType, binding.PathTemplate)
+		if err != nil {
+			return err
+		}
+		pathExpressionStr = pathExpression(binding.PathTemplate)
+		httpMethod = binding.Verb
+		queryParams = language.QueryParams(method, binding)
 	}
-	pathVariables, err := c.pathVariables(method.InputType, binding.PathTemplate)
-	if err != nil {
-		return err
-	}
+
 	var pagination *paginationAnnotations
 	if method.Pagination != nil && method.OutputType != nil && method.OutputType.Pagination != nil {
 		itemField := method.OutputType.Pagination.PageableItem
@@ -190,21 +211,23 @@ func (c *codec) annotateMethod(method *api.Method, modelAnn *modelAnnotations) e
 			discoveryLRO.PollingPathParameters = append(discoveryLRO.PollingPathParameters, camelCase(p))
 		}
 	}
+	isOperationsMethod := method.SourceServiceID == ".google.longrunning.Operations" || (method.SourceService != nil && method.SourceService.ID == ".google.longrunning.Operations") || strings.HasPrefix(method.ID, ".google.longrunning.Operations.")
 	method.Codec = &methodAnnotations{
-		Name:             camelCase(method.Name),
-		DocLines:         docLines,
-		PathExpression:   pathExpression(binding.PathTemplate),
-		PathVariables:    pathVariables,
-		HTTPMethod:       binding.Verb,
-		HasBody:          hasBody,
-		IsBodyWildcard:   isBodyWildcard,
-		BodyField:        bodyField,
-		QueryParams:      language.QueryParams(method, binding),
-		Pagination:       pagination,
-		LRO:              lro,
-		ReturnType:       returnType,
-		DiscoveryLRO:     discoveryLRO,
-		ResponseEncoding: c.ResponseEncoding,
+		Name:               camelCase(method.Name),
+		DocLines:           docLines,
+		PathExpression:     pathExpressionStr,
+		PathVariables:      pathVariables,
+		HTTPMethod:         httpMethod,
+		HasBody:            hasBody,
+		IsBodyWildcard:     isBodyWildcard,
+		BodyField:          bodyField,
+		QueryParams:        queryParams,
+		Pagination:         pagination,
+		LRO:                lro,
+		ReturnType:         returnType,
+		DiscoveryLRO:       discoveryLRO,
+		ResponseEncoding:   c.ResponseEncoding,
+		IsOperationsMethod: isOperationsMethod,
 	}
 	if method.SampleInfo != nil {
 		c.annotateSampleInfo(method)

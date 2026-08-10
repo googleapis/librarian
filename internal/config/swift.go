@@ -163,6 +163,9 @@ type SwiftModule struct {
 
 	// ModulePath is the module import path or target containing stubs (used by convert-swift).
 	ModulePath string `yaml:"module_path,omitempty"`
+
+	// Transport specifies which client transport to use ("grpc" or "http"). Defaults to "http".
+	Transport string `yaml:"transport,omitempty"`
 }
 
 // SwiftDiscovery contains discovery-specific configuration for LRO polling.

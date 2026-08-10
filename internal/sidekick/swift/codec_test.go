@@ -48,6 +48,7 @@ func TestParseOptions(t *testing.T) {
 				ApiPackages:        map[string]*Dependency{},
 				DependenciesByName: map[string]*Dependency{},
 				ResponseEncoding:   defaultResponseEncoding,
+				Transport:          "http",
 			},
 		},
 		{
@@ -69,6 +70,7 @@ func TestParseOptions(t *testing.T) {
 				ApiPackages:        map[string]*Dependency{},
 				DependenciesByName: map[string]*Dependency{},
 				ResponseEncoding:   defaultResponseEncoding,
+				Transport:          "http",
 			},
 		},
 		{
@@ -95,6 +97,7 @@ func TestParseOptions(t *testing.T) {
 				ApiPackages:        map[string]*Dependency{},
 				DependenciesByName: map[string]*Dependency{},
 				ResponseEncoding:   defaultResponseEncoding,
+				Transport:          "http",
 			},
 		},
 		{
@@ -122,6 +125,36 @@ func TestParseOptions(t *testing.T) {
 				ApiPackages:        map[string]*Dependency{},
 				DependenciesByName: map[string]*Dependency{},
 				ResponseEncoding:   defaultResponseEncoding,
+				Transport:          "http",
+			},
+		},
+		{
+			name: "module with grpc transport",
+			library: &config.Library{
+				Name:          "google-cloud-storage",
+				CopyrightYear: "2038",
+				Swift: &config.SwiftPackage{
+					PackageNameOverride: "GoogleCloudStorage",
+					LibraryNameOverride: "GoogleCloudStorage",
+				},
+			},
+			module: &config.SwiftModule{
+				ModulePath: "StorageControlProtos",
+				Transport:  "grpc",
+			},
+			want: &codec{
+				Module:             true,
+				GenerationYear:     "2038",
+				TargetLibraryName:  "GoogleCloudStorage",
+				PackageName:        "GoogleCloudStorage",
+				PackageVersion:     "0.0.0",
+				MonorepoRoot:       ".",
+				Model:              model,
+				ModulePath:         "StorageControlProtos",
+				ApiPackages:        map[string]*Dependency{},
+				DependenciesByName: map[string]*Dependency{},
+				ResponseEncoding:   defaultResponseEncoding,
+				Transport:          "grpc",
 			},
 		},
 		{
@@ -142,6 +175,7 @@ func TestParseOptions(t *testing.T) {
 				DependenciesByName: map[string]*Dependency{},
 				UrlSafeForBytes:    true,
 				ResponseEncoding:   discoveryResponseEncoding,
+				Transport:          "http",
 			},
 		},
 	} {
