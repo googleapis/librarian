@@ -23,6 +23,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"slices"
 	"strings"
 
 	"github.com/googleapis/librarian/internal/config"
@@ -162,32 +163,74 @@ func generateAPI(ctx context.Context, params generateAPIParams) error {
 	if params.cfg.Tools != nil && params.cfg.Tools.Protoc != nil {
 		pc = params.cfg.Tools.Protoc
 	}
-	// 1. Generate standard Protocol Buffer Java classes.
+
+	// Step 1: Initialize base protoc flags and input proto deduplication list.
+	combinedArgs := baseProtocArgs(params.srcCfg)
+	var allInputProtos []string
+	addProto := func(p string) {
+		if !slices.Contains(allInputProtos, p) {
+			allInputProtos = append(allInputProtos, p)
+		}
+	}
+
+	// Step 2: Handle Proto class generation.
 	if shouldGenerateProto(javaAPI) {
-		protoProtos := filterProtos(apiProtos, javaAPI.SkipProtoClassGeneration, primaryDir)
-		protoProtos = append(protoProtos, additionalProtosToGenerateAbs...)
-		args := protoProtocArgs(protoProtos, params.srcCfg, protoDir)
-		if err := runProtoc(ctx, pc, args); err != nil {
-			return fmt.Errorf("failed to generate proto: %w", err)
+		if len(javaAPI.SkipProtoClassGeneration) > 0 {
+			// If specific protos are excluded from class generation, run --java_out separately for protoProtos.
+			protoProtos := filterProtos(apiProtos, javaAPI.SkipProtoClassGeneration, primaryDir)
+			protoProtos = append(protoProtos, additionalProtosToGenerateAbs...)
+			args := protoProtocArgs(protoProtos, params.srcCfg, protoDir)
+			if err := runProtoc(ctx, pc, args); err != nil {
+				return fmt.Errorf("failed to generate proto: %w", err)
+			}
+		} else {
+			combinedArgs = append(combinedArgs, fmt.Sprintf("--java_out=%s", protoDir))
+			for _, p := range apiProtos {
+				addProto(p)
+			}
+			for _, p := range additionalProtosToGenerateAbs {
+				addProto(p)
+			}
 		}
 	}
-	// 2. Generate gRPC service stubs (skipped if transport is rest).
-	transport := params.apiCfg.Transport(config.LanguageJava)
-	if shouldGenerateGRPC(javaAPI) && transport != "rest" {
-		if err := runProtoc(ctx, pc, gRPCProtocArgs(apiProtos, params.srcCfg, gRPCDir)); err != nil {
-			return fmt.Errorf("failed to generate gRPC module: %w", err)
+
+	// Step 3: Handle gRPC stub generation.
+	if shouldGenerateGRPC(javaAPI) && params.apiCfg.Transport(config.LanguageJava) != "rest" {
+		combinedArgs = append(combinedArgs, fmt.Sprintf("--java_grpc_out=%s", gRPCDir))
+		for _, p := range apiProtos {
+			addProto(p)
 		}
 	}
-	// 3. Generate GAPIC library.
+
+	// Step 4: Handle GAPIC client generation.
 	if shouldGenerateGAPIC(javaAPI) || shouldGenerateResourceNames(javaAPI) {
 		gapicOpts, err := resolveGAPICOptions(params.cfg, params.library, params.api, primaryDir, params.apiCfg)
 		if err != nil {
 			return fmt.Errorf("failed to resolve gapic options: %w", err)
 		}
-		args := gapicProtocArgs(apiProtos, allAdditionalProtosAbs, params.srcCfg, gapicDir, gapicOpts)
-		if err := runProtoc(ctx, pc, args); err != nil {
-			return fmt.Errorf("failed to generate gapic: %w", err)
+		combinedArgs = append(combinedArgs, fmt.Sprintf("--java_gapic_out=metadata:%s", gapicDir))
+		combinedArgs = append(combinedArgs, "--java_gapic_opt="+strings.Join(gapicOpts, ","))
+		for _, p := range apiProtos {
+			addProto(p)
 		}
+		for _, p := range allAdditionalProtosAbs {
+			addProto(p)
+		}
+	}
+
+	// Step 5: Fallback safety: if no input protos were added above, ensure primary apiProtos are included.
+	if len(allInputProtos) == 0 {
+		for _, p := range apiProtos {
+			addProto(p)
+		}
+	}
+
+	// Step 6: Append all deduplicated input proto files to arguments.
+	combinedArgs = append(combinedArgs, allInputProtos...)
+
+	// Step 7: Execute protoc in a single pass.
+	if err := runProtoc(ctx, pc, combinedArgs); err != nil {
+		return fmt.Errorf("failed to generate java api: %w", err)
 	}
 
 	if err := postProcessAPI(ctx, postParams); err != nil {
