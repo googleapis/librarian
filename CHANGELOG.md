@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.35.0](https://github.com/googleapis/librarian/compare/v0.34.0...v0.35.0) (2026-08-10)
+
+
+### Features
+
+* **swift:** split +stub into +transport.swift ([#7230](https://github.com/googleapis/librarian/issues/7230)) ([7898c6d](https://github.com/googleapis/librarian/commit/7898c6dd38c24bdf0fdc9bac680cf40b60f4bc06))
+
 ## [0.34.0](https://github.com/googleapis/librarian/compare/v0.33.0...v0.34.0) (2026-08-08)
 
 
