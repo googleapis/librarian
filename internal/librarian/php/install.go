@@ -21,6 +21,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 
 	"github.com/googleapis/librarian/internal/cache"
 	"github.com/googleapis/librarian/internal/config"
@@ -120,7 +121,7 @@ func binDir() (string, error) {
 
 func createPostProcessorWrapper(ctx context.Context, tools []*config.ComposerTool, phpPath, bin string) error {
 	for _, tool := range tools {
-		if tool.Name == "google/gapic-generator-php" || tool.Name == "gapic-generator-php" {
+		if strings.Contains(tool.Name, "gapic-generator-php") {
 			var dir string
 			var err error
 			if tool.LocalPath != "" {
