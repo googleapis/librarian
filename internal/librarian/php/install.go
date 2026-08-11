@@ -56,10 +56,12 @@ func Install(ctx context.Context, tools *config.Tools) error {
 	if len(tools.PNPM) == 0 {
 		return errMissingPNPM
 	}
+
 	phpPath, err := checkRequiredCommands()
 	if err != nil {
 		return err
 	}
+
 	bin, err := binDir()
 	if err != nil {
 		return err
@@ -67,6 +69,7 @@ func Install(ctx context.Context, tools *config.Tools) error {
 	if err := os.MkdirAll(bin, 0o755); err != nil {
 		return fmt.Errorf("failed to create bin directory: %w", err)
 	}
+
 	if err := composer.Install(ctx, tools.Composer, phpPath, bin); err != nil {
 		return err
 	}
