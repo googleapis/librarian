@@ -24,6 +24,7 @@ import (
 
 	"github.com/googleapis/librarian/internal/cache"
 	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/fetch"
 	"github.com/googleapis/librarian/internal/tool/composer"
 	"github.com/googleapis/librarian/internal/tool/pip"
 	"github.com/googleapis/librarian/internal/tool/pnpm"
@@ -56,12 +57,10 @@ func Install(ctx context.Context, tools *config.Tools) error {
 	if len(tools.PNPM) == 0 {
 		return errMissingPNPM
 	}
-
 	phpPath, err := checkRequiredCommands()
 	if err != nil {
 		return err
 	}
-
 	bin, err := binDir()
 	if err != nil {
 		return err
@@ -69,9 +68,38 @@ func Install(ctx context.Context, tools *config.Tools) error {
 	if err := os.MkdirAll(bin, 0o755); err != nil {
 		return fmt.Errorf("failed to create bin directory: %w", err)
 	}
-
 	if err := composer.Install(ctx, tools.Composer, phpPath, bin); err != nil {
 		return err
+	}
+	for _, tool := range tools.Composer {
+		if tool.Name == "google/gapic-generator-php" || tool.Name == "gapic-generator-php" {
+			var dir string
+			var err error
+			if tool.LocalPath != "" {
+				dir, err = filepath.Abs(tool.LocalPath)
+			} else {
+				dir, err = fetch.Repo(ctx, tool.Repo, tool.Version, tool.SHA256)
+			}
+			if err != nil {
+				return fmt.Errorf("fetching %s: %w", tool.Name, err)
+			}
+			wrapperPath := filepath.Join(bin, "php-post-processor")
+			script := fmt.Sprintf("#!/bin/bash\nexec %q -d display_errors=stderr -d memory_limit=1024M %q \"$@\"\n", phpPath, filepath.Join(dir, "src/PostProcessor/Main.php"))
+			_ = os.Remove(wrapperPath)
+			f, err := os.OpenFile(wrapperPath, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0755)
+			if err != nil {
+				return fmt.Errorf("failed to create php-post-processor wrapper: %w", err)
+			}
+			_, err = f.WriteString(script)
+			closeErr := f.Close()
+			if err != nil {
+				return fmt.Errorf("failed to write php-post-processor wrapper: %w", err)
+			}
+			if closeErr != nil {
+				return fmt.Errorf("failed to close php-post-processor wrapper: %w", closeErr)
+			}
+			break
+		}
 	}
 	// The PHP client library generation process relies on Python-based
 	// tools (such as synthtool or owlbot) for post-processing and generation.

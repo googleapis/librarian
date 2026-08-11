@@ -60,7 +60,6 @@ func TestInstall(t *testing.T) {
 		setup func(t *testing.T)
 		check func(t *testing.T)
 	}{
-
 		{
 			name: "with composer, pip, and pnpm tools",
 			tools: &config.Tools{
@@ -100,7 +99,6 @@ func TestInstall(t *testing.T) {
 				if err := os.WriteFile(filepath.Join(repoDir, "composer.json"), []byte("{}"), 0o644); err != nil {
 					t.Fatal(err)
 				}
-
 				bin := t.TempDir()
 				testhelper.WriteExecutable(t, filepath.Join(bin, "composer"), "#!/bin/sh\nexit 0\n")
 				testhelper.WriteExecutable(t, filepath.Join(bin, "pip"), "#!/bin/sh\nexit 0\n")
@@ -113,7 +111,16 @@ func TestInstall(t *testing.T) {
 				binDir := filepath.Join(os.Getenv("LIBRARIAN_BIN"), "php_tools", "bin")
 				wrapperPath := filepath.Join(binDir, "gapic-generator-php")
 				if _, err := os.Stat(wrapperPath); err != nil {
-					t.Errorf("wrapper file %s not found: %v", wrapperPath, err)
+					t.Error(err)
+				}
+				postProcessorPath := filepath.Join(binDir, "php-post-processor")
+				info, err := os.Stat(postProcessorPath)
+				if err != nil {
+					t.Error(err)
+				} else {
+					if info.Mode().Perm() != 0o755 {
+						t.Errorf("php-post-processor wrapper file has permissions %v, want 0755", info.Mode().Perm())
+					}
 				}
 			},
 		},
