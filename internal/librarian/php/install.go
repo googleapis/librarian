@@ -69,7 +69,6 @@ func Install(ctx context.Context, tools *config.Tools) error {
 	if err != nil {
 		return err
 	}
-
 	if err := os.MkdirAll(bin, 0o755); err != nil {
 		return fmt.Errorf("failed to create bin directory: %w", err)
 	}
