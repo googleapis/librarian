@@ -54,7 +54,7 @@ func postProcessLibrary(ctx context.Context, library *config.Library, componentN
 		return fmt.Errorf("failed to get bin dir: %w", err)
 	}
 	postProcessor := filepath.Join(bin, "php-post-processor")
-	if err := command.RunInDir(ctx, library.Output, postProcessor, "--input", library.Output); err != nil {
+	if err := command.RunInDir(ctx, library.Output, postProcessor, "--input", "."); err != nil {
 		return fmt.Errorf("failed to run php-post-processor: %w", err)
 	}
 	return nil
