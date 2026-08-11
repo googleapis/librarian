@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.36.0](https://github.com/googleapis/librarian/compare/v0.35.0...v0.36.0) (2026-08-11)
+
+
+### Features
+
+* **internal/librarian/php:** add google-cloud-php/dev as a tool to install ([#7122](https://github.com/googleapis/librarian/issues/7122)) ([97ed7e2](https://github.com/googleapis/librarian/commit/97ed7e2c604e3f65ca8d41e34f219b11dc1f6e72))
+* **sidekick/impl:** use `GoogleCloudGax._HTTPClient` ([#7237](https://github.com/googleapis/librarian/issues/7237)) ([7e0dc84](https://github.com/googleapis/librarian/commit/7e0dc84099ab7941e5bbe0f5d848af4ff1a1913c))
+* **swift:** qualify external package types in module conversions ([#7240](https://github.com/googleapis/librarian/issues/7240)) ([23f3754](https://github.com/googleapis/librarian/commit/23f3754b4d81f7d01cc44735e8e98f45dbf8a331))
+
+
+### Bug Fixes
+
+* **internal/librarian/php:** remove --side_loaded_root_dir option in install ([#7141](https://github.com/googleapis/librarian/issues/7141)) ([bf82078](https://github.com/googleapis/librarian/commit/bf8207875912ad1b79395ee655672f44a8a63689))
+* **sidekick/rust:** BQ query creation metadata not checking skip field id ([#7232](https://github.com/googleapis/librarian/issues/7232)) ([bda2a49](https://github.com/googleapis/librarian/commit/bda2a49b472957c7a4c82702e6132577685d77dc))
+* **sidekick/swift:** correct doc links for services ([#7236](https://github.com/googleapis/librarian/issues/7236)) ([f421d6c](https://github.com/googleapis/librarian/commit/f421d6c8b97c83f82479fe166a39c5f369eee70d))
+
 ## [0.35.0](https://github.com/googleapis/librarian/compare/v0.34.0...v0.35.0) (2026-08-10)
 
 

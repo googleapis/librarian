@@ -46,6 +46,40 @@ Comments for humans always have a single space after the slashes. See
 - **Good**: `// This is a comment.`
 - **Bad**: `//This is a comment.`
 
+### Explain "why", not just "what"
+
+Comments should explain the rationale behind non-obvious decisions, workarounds,
+or hacks.
+- If implementing a workaround for an external tool bug, include a link to the
+  issue tracker.
+- Use comments to explain nuanced generic helpers or complex type manipulations
+  (e.g., why a double pointer is used).
+
+Example:
+```go
+// We use a pointer generic here so we can reset the variable in-place
+// to release memory early. See b/12345678.
+func reset[T any](ptr *T) { ... }
+```
+
+### Keep implementation details out of doc comments
+
+Doc comments (comments preceding exported or unexported package symbols) should
+explain *what* the symbol does and its contract. Technical
+implementation details,
+historical context, or build-system-specific notes belong as standard comments
+*inside* the function body, not in the doc comment.
+
+Example:
+```go
+// FormatRuby formats the Ruby code using the standard formatter.
+func FormatRuby(code string) (string, error) {
+	// We need to escape backslashes here because the underlying rubocop
+	// tool interprets them differently in this context.
+	...
+}
+```
+
 ### Collection Names
 
 Use singular form for collection repo/folder name. See
@@ -111,6 +145,29 @@ Prefer `errors.Is(err, fs.ErrNotExist)` over `os.IsNotExist(err)` as described
 in the [documentation for `os.IsNotExist`](https://pkg.go.dev/os#IsNotExist),
 and prefer `fs.ErrNotExist` over `os.ErrNotExist` in general.
 
+### Export sentinel errors
+
+If a package exposes public functions that return sentinel errors, those errors
+must be exported (capitalized) and documented. This allows callers to
+programmatically inspect the error type using `errors.Is`.
+
+- **Good**:
+  ```go
+  // In serviceconfig package:
+
+  // ErrReadServiceConfig indicates that the service configuration could not be read.
+  var ErrReadServiceConfig = errors.New("failed to read service config")
+
+  func Read(...) error { ... return ErrReadServiceConfig }
+  ```
+- **Bad**:
+  ```go
+  // In serviceconfig package:
+
+  // bad: sentinel error is unexported, preventing callers from using errors.Is
+  var errReadServiceConfig = errors.New("failed to read service config")
+  ```
+
 ### Wrapping errors
 
 Whether to wrap an error or not is discussed at length in the
@@ -133,6 +190,26 @@ if err != nil {
 However, when including a sentinel error in the newly formatted error, the `%w`
 specifier for that sentinel error should appear at the front of the formatted
 error, as per the [Go Style Guide](https://google.github.io/styleguide/go/best-practices#sentinel-error-placement).
+
+### Avoid redundant error wrapping
+
+Only wrap errors when adding useful operational context. If a helper function
+already returns a highly descriptive error that explains the failure and
+resolution, do not wrap it with a generic message that only repeats what the
+function was doing.
+
+- **Good**:
+  ```go
+  if err := validateModel(model); err != nil {
+  	return err // validateModel already returns detailed validation error
+  }
+  ```
+- **Bad**:
+  ```go
+  if err := validateModel(model); err != nil {
+  	return fmt.Errorf("failed to validate model: %w", err)
+  }
+  ```
 
 ### Avoid unnecessary `else`
 
@@ -205,6 +282,149 @@ err := UpdateConfig(config)
 This pattern helps readers understand at a glance which functions modify their
 inputs versus which functions only read them.
 
+### Avoid magic numbers and hardcoded paths
+
+Do not embed unexplained numeric literals (such as arbitrary limits or buffer
+sizes) or hardcoded API and filesystem paths in business logic. Define them as
+named constants with a comment explaining why that value was chosen, or pass
+them via configuration.
+
+```go
+// Good
+const maxStagingLines = 50 // Keep generated staging headers within line limit.
+
+// Bad
+if len(lines) > 50 {
+    // ...
+}
+```
+
+### Group declarations
+
+When declaring multiple package-level or helper variables and constants, group
+them into a single block rather than writing separate consecutive declarations.
+
+```go
+// Good
+var (
+    errInvalidPath = errors.New("invalid path")
+    errMissingTool = errors.New("missing tool")
+)
+
+// Bad
+var errInvalidPath = errors.New("invalid path")
+var errMissingTool = errors.New("missing tool")
+```
+
+### Deterministic map iteration
+
+Map iteration order in Go is non-deterministic. When iterating over a map to
+generate code, produce user-facing output, or aggregate error lists, sort the
+map keys first to guarantee deterministic behavior.
+
+```go
+// Good
+keys := make([]string, 0, len(modules))
+for name := range modules {
+    keys = append(keys, name)
+}
+sort.Strings(keys)
+for _, name := range keys {
+    // Process modules in deterministic order
+}
+```
+
+### Raw string literals and escape sequences
+
+Raw string literals enclosed in backticks (`` ` ``) do not interpret escape
+sequences such as `\n` or `\t`. When string output requires interpreted escape
+characters, use double-quoted interpreted string literals or literal newlines
+in raw strings.
+
+### File length and organization
+
+When a file grows large or encompasses multiple distinct sub-concerns, split
+the logic into cohesive sub-files within the same package (for example,
+separating `generate_post_hybrid.go` from `generate.go`). Keep files focused on
+a well-defined scope.
+
+### Prefer standard library slices and maps
+
+Avoid writing manual loops to search, filter, clone, or compare slices and maps.
+Use the built-in functions from the standard library `slices` and `maps`
+packages (introduced in Go 1.21).
+
+- **Good**:
+  ```go
+  hasConvertedFields := slices.ContainsFunc(message.Fields, func(f *api.Field) bool {
+  	return !f.IsOneOf && f.Singular()
+  })
+  ```
+- **Bad**:
+  ```go
+  hasConvertedFields := false
+  for _, f := range message.Fields {
+  	if !f.IsOneOf && f.Singular() {
+  		hasConvertedFields = true
+  		break
+  	}
+  }
+  ```
+
+### Avoid variable shadowing
+
+Be careful when using the short variable declaration operator `:=` in nested
+blocks (like `if`, `for`, or `switch` blocks). If you intend to update a
+variable defined in an outer scope (like a parameter or a return value), use
+assignment `=` instead of `:=`.
+
+- **Good**:
+  ```go
+  var client *secretmanager.Client
+  if client == nil {
+  	var err error
+  	client, err = secretmanager.NewClient(ctx) // Updates the outer 'client'
+  	if err != nil {
+  		return err
+  	}
+  }
+  ```
+- **Bad**:
+  ```go
+  var client *secretmanager.Client
+  if client == nil {
+  	client, err := secretmanager.NewClient(ctx) // Shadowing! Creates a new 'client' local to this block
+  	if err != nil {
+  		return err
+  	}
+  	log.Printf("Initialized client: %v", client) // Compiler is happy with local usage
+  }
+  // Outer 'client' is still nil here, leading to a nil pointer panic
+  client.DoSomething()
+  ```
+
+### Clean function signatures
+
+- **Remove Unused Parameters**: If a parameter is no longer used within the
+function body, remove it from the signature and update all call sites.
+- **Avoid Over-Parameterizing**: Do not pass configuration options to internal
+helpers if they are constant across all current call sites. Use package or
+function-level constants instead.
+
+### Reuse and extend tool abstractions
+
+Prefer extending existing tool packages (e.g., `composer`, `pnpm`, `pip`) to
+support new use cases (such as local installations) rather than writing ad-hoc
+`exec.Command` calls in business logic. This ensures consistent execution
+environments, logging, and error handling.
+
+### Move generated code strings out of Go logic
+
+When generating code for other languages (e.g., Rust, Python, Swift), avoid
+embedding large blocks of foreign code directly as formatted inline strings.
+Move these code templates into package-level constants or separate template
+files (e.g., mustache templates) to keep the Go logic clean.
+
 ## Writing Tests
 
 When writing tests, we follow the patterns below to ensure consistency,
@@ -260,7 +480,7 @@ Use [`go-cmp`](https://pkg.go.dev/github.com/google/go-cmp/cmp) instead of
 `reflect.DeepEqual` for clearer diffs and better debugging.
 
 Always compare in `want, got` order, and use this exact format for the error
-message:
+message (do not modify or customize this format string):
 
 ```go
 t.Errorf("mismatch (-want +got):\n%s", diff)
@@ -292,8 +512,20 @@ Use this structure:
 - Write `for _, test := range []struct { ... }{ ... }` directly. Don't name the
   slice. This makes the code more concise and easier to grep.
 
+- **Loop Variable**: Always use `test` as the loop variable name
+  (avoid abbreviations like `tt` or `tc`).
+
 - Use `t.Run(test.name, ...)` to create subtests. Subtests can be run
   individually and parallelized when needed.
+
+- **Simplify Test Case Structs**: Avoid adding boolean flags to the test case
+  struct if the same logic can be controlled by checking the zero-value or empty
+  status of an existing field (e.g., checking `wantErr != nil` or
+  `content != ""`).
+
+- Do not use table-driven tests when there is only a single test case. Write a
+  straightforward unit test without the table boilerplate until more test cases
+  are added.
 
 Example:
 
@@ -319,12 +551,16 @@ func TestTransform(t *testing.T) {
 
 ### Verify with `errors.Is` and `errors.As`
 
-Avoid comparing error strings directly with `==` or `strings.Contains`, as these are fragile and can break if the error message is updated for humans.
+Avoid comparing error strings directly with `==` or `strings.Contains`, as these
+are fragile and can break if the error message is updated for humans.
 
 Instead:
 
-- Use `errors.Is(err, target)` to check if an error matches a specific sentinel error (e.g., `fs.ErrNotExist`). It correctly handles wrapped errors.
-- Use `errors.As(err, &target)` when you need to verify if an error is of a specific custom type and access its fields (e.g., a `ValidationError` struct with a list of invalid fields).
+- Use `errors.Is(err, target)` to check if an error matches a specific sentinel
+  error (e.g., `fs.ErrNotExist`). It correctly handles wrapped errors.
+- Use `errors.As(err, &target)` when you need to verify if an error is of a
+  specific custom type and access its fields (e.g., a `ValidationError` struct
+	with a list of invalid fields).
 
 ### Separate error tests
 
@@ -340,32 +576,32 @@ Example:
 
 ```go
 func TestSendMessage_Error(t *testing.T) {
-  for _, test := range []struct {
-    name      string
-    recipient string
-    message   string
-    wantErr   error
-  }{
-    {
-      name: "recipient does not exist",
-      recipient: "Does Not Exist",
-      message: "Hello, Mr. Not Exist",
-      wantErr: errRecipientDoesNotExist,
-    },
-    {
-      name: "empty message",
-      recipient: "Jane Doe",
-      message: "",
-      wantErr: errEmptyMessage,
-    },
-  }{
-    t.Run(test.name, func(t *testing.T) {
-      _, gotErr := SendMessage(test.recipient, test.message)
-      if !errors.Is(gotErr, test.wantErr) {
-        t.Errorf("SendMessage(%q, %q) error = %v, wantErr %v", test.recipient, test.message, gotErr, test.wantErr)
-      }
-    })
-  }
+	for _, test := range []struct {
+		name      string
+		recipient string
+		message   string
+		wantErr   error
+	}{
+		{
+			name:      "recipient does not exist",
+			recipient: "Does Not Exist",
+			message:   "Hello, Mr. Not Exist",
+			wantErr:   errRecipientDoesNotExist,
+		},
+		{
+			name:      "empty message",
+			recipient: "Jane Doe",
+			message:   "",
+			wantErr:   errEmptyMessage,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			_, gotErr := SendMessage(test.recipient, test.message)
+			if !errors.Is(gotErr, test.wantErr) {
+				t.Errorf("SendMessage(%q, %q) error = %v, wantErr %v", test.recipient, test.message, gotErr, test.wantErr)
+			}
+		})
+	}
 }
 ```
 
@@ -400,6 +636,40 @@ func TestTransform(t *testing.T) {
 	}
 }
 ```
+
+### Readability of test expectations
+
+Use raw string literals (backticks `` ` ``) when defining multi-line string
+expectations in tests (such as expected generated code, templates, or
+JSON payloads).
+This avoids the need for escape sequences (like `\n` or `\"`) and keeps the
+expected output readable.
+
+### Hardcode expected values
+
+When defining expected outputs (`want` values) in tests, write them as static,
+hardcoded literals rather than computing them using production helper functions.
+This ensures that bugs in the helpers don't mask bugs in the code being tested.
+
+### Keep tests hermetic
+
+Tests must not rely on files or directory structures outside of their own
+package or a `testdata/` subdirectory. If a test requires mock files or
+configurations, place them in `testdata/` or set them up dynamically in the
+test code.
+
+### Test file layout
+
+In test files, place test functions (`TestXxx`) at the top of the file and
+helper functions (e.g., custom assert helpers, setup/teardown functions)
+at the bottom.
+
+### Reuse existing test helpers
+
+Before creating new test helpers, custom mocks, or manually initializing
+complex structs, check `internal/testhelper` and existing package utilities
+(such as `api.*` test constructors in `internal/sidekick/api/test.go`).
+Reusing shared helpers keeps test data consistent and reduces duplication.
 
 ## Logging
 
