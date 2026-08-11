@@ -85,7 +85,7 @@ func TestPostProcess_OwlBot(t *testing.T) {
 	// Verify owlbot.py ran
 	expectedFile := filepath.Join(destDir, "owlbot_ran.txt")
 	if _, err := os.Stat(expectedFile); err != nil {
-		t.Error(err)
+		t.Errorf("expected file %s to exist (indicating owlbot.py ran)", expectedFile)
 	}
 }
 
