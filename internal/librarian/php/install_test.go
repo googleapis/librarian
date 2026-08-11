@@ -60,6 +60,7 @@ func TestInstall(t *testing.T) {
 		setup func(t *testing.T)
 		check func(t *testing.T)
 	}{
+
 		{
 			name: "with composer, pip, and pnpm tools",
 			tools: &config.Tools{
@@ -112,6 +113,7 @@ func TestInstall(t *testing.T) {
 				if err := os.WriteFile(filepath.Join(repoDir, "composer.json"), []byte("{}"), 0o644); err != nil {
 					t.Fatal(err)
 				}
+
 				bin := t.TempDir()
 				testhelper.WriteExecutable(t, filepath.Join(bin, "composer"), "#!/bin/sh\nexit 0\n")
 				testhelper.WriteExecutable(t, filepath.Join(bin, "pip"), "#!/bin/sh\nexit 0\n")
@@ -161,6 +163,7 @@ func TestInstall_Error(t *testing.T) {
 		setup   func(t *testing.T)
 		wantErr error
 	}{
+
 		{
 			name: "missing repo URL",
 			tools: &config.Tools{
