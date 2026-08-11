@@ -19,6 +19,7 @@ import (
 	"errors"
 	"fmt"
 	"io/fs"
+	"log/slog"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -62,6 +63,11 @@ type libraryPostProcessParams struct {
 }
 
 func postProcessLibrary(params libraryPostProcessParams) error {
+	start := time.Now()
+	defer func() {
+		slog.Info("postProcessLibrary completed", "library", params.library.Name, "duration", time.Since(start))
+	}()
+
 	if params.library.Postprocess != nil {
 		if err := postprocessing.Apply(params.outDir, params.library.Postprocess); err != nil {
 			return err
@@ -111,6 +117,8 @@ func postProcessAPI(ctx context.Context, params postProcessParams) error {
 	gapicDir := params.gapicDir()
 	gRPCDir := params.gRPCDir()
 	protoDir := params.protoDir()
+
+	unzipStart := time.Now()
 	// Unzip the temp-codegen.srcjar into temporary {gapicDir} directory.
 	srcjarPath := filepath.Join(gapicDir, "temp-codegen.srcjar")
 	if _, err := os.Stat(srcjarPath); err == nil {
@@ -118,9 +126,14 @@ func postProcessAPI(ctx context.Context, params postProcessParams) error {
 			return fmt.Errorf("failed to unzip %s: %w", srcjarPath, err)
 		}
 	}
+	slog.Info("unzip srcjar done", "api", params.apiBase, "duration", time.Since(unzipStart))
+
+	headerStart := time.Now()
 	if err := addHeaders(params, []string{gRPCDir, protoDir}); err != nil {
 		return err
 	}
+	slog.Info("addHeaders done", "api", params.apiBase, "duration", time.Since(headerStart))
+
 	if err := copyFiles(params); err != nil {
 		return fmt.Errorf("failed to copy files: %w", err)
 	}
@@ -129,9 +142,11 @@ func postProcessAPI(ctx context.Context, params postProcessParams) error {
 	if params.library != nil {
 		keepSet = toKeepSet(params.library.Keep)
 	}
+	moveStart := time.Now()
 	if err := restructureToLibrary(params, params.outDir, keepSet); err != nil {
 		return fmt.Errorf("failed to restructure to library root: %w", err)
 	}
+	slog.Info("restructureToLibrary done", "api", params.apiBase, "duration", time.Since(moveStart))
 
 	coords := params.coords()
 	// Generate clirr-ignored-differences.xml for the proto module.

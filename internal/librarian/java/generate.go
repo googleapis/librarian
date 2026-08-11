@@ -20,10 +20,12 @@ import (
 	"errors"
 	"fmt"
 	"io/fs"
+	"log/slog"
 	"os"
 	"path"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/proto"
@@ -63,6 +65,11 @@ type generateAPIParams struct {
 
 // Generate generates a Java client library.
 func Generate(ctx context.Context, cfg *config.Config, library *config.Library, srcs *sources.Sources) error {
+	genStart := time.Now()
+	defer func() {
+		slog.Info("java.Generate completed", "library", library.Name, "duration", time.Since(genStart))
+	}()
+
 	if library.Java.GroupID == fakeGroupID {
 		return errUnrecognizedAPI
 	}
@@ -118,6 +125,11 @@ func Generate(ctx context.Context, cfg *config.Config, library *config.Library, 
 }
 
 func generateAPI(ctx context.Context, params generateAPIParams) error {
+	apiStart := time.Now()
+	defer func() {
+		slog.Info("generateAPI completed", "api", params.api.Path, "duration", time.Since(apiStart))
+	}()
+
 	javaAPI := params.api.Java
 	primaryDir := params.srcCfg.Root(params.srcCfg.ActiveRoots[0])
 	googleapisDir := params.srcCfg.Root("googleapis")
@@ -164,22 +176,27 @@ func generateAPI(ctx context.Context, params generateAPIParams) error {
 	}
 	// 1. Generate standard Protocol Buffer Java classes.
 	if shouldGenerateProto(javaAPI) {
+		protoStart := time.Now()
 		protoProtos := filterProtos(apiProtos, javaAPI.SkipProtoClassGeneration, primaryDir)
 		protoProtos = append(protoProtos, additionalProtosToGenerateAbs...)
 		args := protoProtocArgs(protoProtos, params.srcCfg, protoDir)
 		if err := runProtoc(ctx, pc, args); err != nil {
 			return fmt.Errorf("failed to generate proto: %w", err)
 		}
+		slog.Info("protoc proto done", "api", params.api.Path, "duration", time.Since(protoStart))
 	}
 	// 2. Generate gRPC service stubs (skipped if transport is rest).
 	transport := params.apiCfg.Transport(config.LanguageJava)
 	if shouldGenerateGRPC(javaAPI) && transport != "rest" {
+		grpcStart := time.Now()
 		if err := runProtoc(ctx, pc, gRPCProtocArgs(apiProtos, params.srcCfg, gRPCDir)); err != nil {
 			return fmt.Errorf("failed to generate gRPC module: %w", err)
 		}
+		slog.Info("protoc gRPC done", "api", params.api.Path, "duration", time.Since(grpcStart))
 	}
 	// 3. Generate GAPIC library.
 	if shouldGenerateGAPIC(javaAPI) || shouldGenerateResourceNames(javaAPI) {
+		gapicStart := time.Now()
 		gapicOpts, err := resolveGAPICOptions(params.cfg, params.library, params.api, primaryDir, params.apiCfg)
 		if err != nil {
 			return fmt.Errorf("failed to resolve gapic options: %w", err)
@@ -188,11 +205,14 @@ func generateAPI(ctx context.Context, params generateAPIParams) error {
 		if err := runProtoc(ctx, pc, args); err != nil {
 			return fmt.Errorf("failed to generate gapic: %w", err)
 		}
+		slog.Info("protoc GAPIC done", "api", params.api.Path, "duration", time.Since(gapicStart))
 	}
 
+	postStart := time.Now()
 	if err := postProcessAPI(ctx, postParams); err != nil {
 		return fmt.Errorf("failed to post process: %w", err)
 	}
+	slog.Info("postProcessAPI done", "api", params.api.Path, "duration", time.Since(postStart))
 	return nil
 }
 
