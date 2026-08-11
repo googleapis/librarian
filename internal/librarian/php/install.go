@@ -21,6 +21,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"slices"
 	"strings"
 
 	"github.com/googleapis/librarian/internal/cache"
@@ -120,24 +121,23 @@ func binDir() (string, error) {
 }
 
 func createPostProcessorWrapper(ctx context.Context, tools []*config.ComposerTool, phpPath, bin string) error {
-	for _, tool := range tools {
-		if strings.Contains(tool.Name, "gapic-generator-php") {
-			var dir string
-			var err error
-			if tool.LocalPath != "" {
-				dir, err = filepath.Abs(tool.LocalPath)
-			} else {
-				dir, err = fetch.Repo(ctx, tool.Repo, tool.Version, tool.SHA256)
-			}
-			if err != nil {
-				return fmt.Errorf("fetching %s: %w", tool.Name, err)
-			}
-			content := composer.PHPWrapperContent(phpPath, filepath.Join(dir, "src/PostProcessor/Main.php"))
-			if err := composer.CreateBinWrapper("php-post-processor", content, bin); err != nil {
-				return err
-			}
-			break
-		}
+	idx := slices.IndexFunc(tools, func(t *config.ComposerTool) bool {
+		return strings.Contains(t.Name, "gapic-generator-php")
+	})
+	if idx == -1 {
+		return nil
 	}
-	return nil
+	tool := tools[idx]
+	var dir string
+	var err error
+	if tool.LocalPath != "" {
+		dir, err = filepath.Abs(tool.LocalPath)
+	} else {
+		dir, err = fetch.Repo(ctx, tool.Repo, tool.Version, tool.SHA256)
+	}
+	if err != nil {
+		return fmt.Errorf("fetching %s: %w", tool.Name, err)
+	}
+	content := composer.PHPWrapperContent(phpPath, filepath.Join(dir, "src/PostProcessor/Main.php"))
+	return composer.CreateBinWrapper("php-post-processor", content, bin)
 }
