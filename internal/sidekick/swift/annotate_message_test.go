@@ -697,3 +697,111 @@ func TestAnnotateMessage_HasConvertedFields(t *testing.T) {
 		})
 	}
 }
+
+func TestAnnotateMessage_ParameterTypeName_Qualification(t *testing.T) {
+	deepChild := &api.Message{
+		Name:    "DeepChild",
+		Package: "google.cloud.secretmanager.v1",
+		ID:      ".google.cloud.secretmanager.v1.Parent.Child.DeepChild",
+	}
+	child := &api.Message{
+		Name:     "Child",
+		Package:  "google.cloud.secretmanager.v1",
+		ID:       ".google.cloud.secretmanager.v1.Parent.Child",
+		Messages: []*api.Message{deepChild},
+	}
+	deepChild.Parent = child
+	parent := &api.Message{
+		Name:     "Parent",
+		Package:  "google.cloud.secretmanager.v1",
+		ID:       ".google.cloud.secretmanager.v1.Parent",
+		Messages: []*api.Message{child},
+	}
+	child.Parent = parent
+
+	extDeepChild := &api.Message{
+		Name:    "ExtDeepChild",
+		Package: "google.type",
+		ID:      ".google.type.ExtParent.ExtChild.ExtDeepChild",
+	}
+	extChild := &api.Message{
+		Name:     "ExtChild",
+		Package:  "google.type",
+		ID:       ".google.type.ExtParent.ExtChild",
+		Messages: []*api.Message{extDeepChild},
+	}
+	extDeepChild.Parent = extChild
+	extParent := &api.Message{
+		Name:     "ExtParent",
+		Package:  "google.type",
+		ID:       ".google.type.ExtParent",
+		Messages: []*api.Message{extChild},
+	}
+	extChild.Parent = extParent
+
+	model := api.NewTestAPI([]*api.Message{parent, extParent}, nil, nil)
+	model.PackageName = "google.cloud.secretmanager.v1"
+	swiftPkg := &config.SwiftPackage{
+		SwiftDefault: config.SwiftDefault{
+			Dependencies: []config.SwiftDependency{
+				{Name: "GoogleType", ApiPackage: "google.type"},
+			},
+		},
+	}
+	library := &config.Library{
+		Name:  "google-cloud-secret-manager",
+		Swift: swiftPkg,
+	}
+	codec := newTestCodec(t, model, library)
+
+	if err := codec.annotateModel(); err != nil {
+		t.Fatal(err)
+	}
+
+	for _, tc := range []struct {
+		name    string
+		msg     *api.Message
+		wantExt string
+	}{
+		{"local top-level", parent, "Parent"},
+		{"local nested", child, "Parent.Child"},
+		{"local deep-nested", deepChild, "Parent.Child.DeepChild"},
+		{"external top-level", extParent, "GoogleType.ExtParent"},
+		{"external nested", extChild, "GoogleType.ExtParent.ExtChild"},
+		{"external deep-nested", extDeepChild, "GoogleType.ExtParent.ExtChild.ExtDeepChild"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			ann, ok := tc.msg.Codec.(*messageAnnotations)
+			if !ok {
+				t.Fatalf("expected msg.Codec to be *messageAnnotations, got %T", tc.msg.Codec)
+			}
+			if ann.ParameterTypeName != tc.wantExt {
+				t.Errorf("ParameterTypeName = %q, want %q", ann.ParameterTypeName, tc.wantExt)
+			}
+		})
+	}
+
+	// Also verify module conversion for external packages (e.g. google/type inside GoogleCloudStorage)
+	extModuleModel := api.NewTestAPI([]*api.Message{extParent}, nil, nil)
+	extModuleModel.PackageName = "google.type"
+	extModuleCodec := newTestCodec(t, extModuleModel, &config.Library{
+		Name: "google-cloud-storage",
+		Swift: &config.SwiftPackage{
+			SwiftDefault: config.SwiftDefault{
+				Dependencies: []config.SwiftDependency{
+					{Name: "GoogleType", ApiPackage: "google.type"},
+				},
+			},
+			LibraryNameOverride: "GoogleCloudStorage",
+		},
+	})
+	extModuleCodec.Module = true
+	extModuleCodec.TargetLibraryName = "GoogleCloudStorage"
+	if err := extModuleCodec.annotateModel(); err != nil {
+		t.Fatal(err)
+	}
+	extAnn := extParent.Codec.(*messageAnnotations)
+	if extAnn.ParameterTypeName != "GoogleType.ExtParent" {
+		t.Errorf("module conversion ParameterTypeName = %q, want %q", extAnn.ParameterTypeName, "GoogleType.ExtParent")
+	}
+}

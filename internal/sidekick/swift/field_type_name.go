@@ -217,13 +217,25 @@ func (c *codec) enumTypeName(e *api.Enum) (string, error) {
 	return fmt.Sprintf("%s.%s", parent, name), nil
 }
 
+// externalTypePrefix returns the module namespace prefix (e.g., "GoogleType", "GoogleLongRunning")
+// required when referencing a type defined in packageName from the Swift target currently being generated.
+//
+// In Swift:
+//   - Types defined in the current package do not require a prefix when generating the package itself,
+//     or when generating internal modules targeting the same library (c.TargetLibraryName == dep.Name).
+//   - Types defined in external dependency packages (e.g. google.longrunning, google.type) must be qualified
+//     with the dependency's SPM module name (dep.Name) when referenced from another library target.
+//     This avoids ambiguous type lookup in Swift (e.g., Foundation.Operation vs GoogleLongRunning.Operation).
 func (c *codec) externalTypePrefix(packageName string) (string, error) {
-	if packageName == c.Model.PackageName {
-		return "", nil
-	}
 	dep, ok := c.ApiPackages[packageName]
 	if !ok {
+		if packageName == c.Model.PackageName {
+			return "", nil
+		}
 		return "", fmt.Errorf("package %q not found in ApiPackages", packageName)
+	}
+	if packageName == c.Model.PackageName && (!c.Module || c.TargetLibraryName == dep.Name) {
+		return "", nil
 	}
 	return dep.Name, nil
 }
