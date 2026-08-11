@@ -21,6 +21,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"syscall"
 	"testing"
@@ -698,6 +699,7 @@ func TestGenerateAPI(t *testing.T) {
 		t.Context(),
 		&config.API{Path: "google/cloud/secretmanager/v1"},
 		&config.Library{Name: "secretmanager", Output: repoRoot},
+		nil,
 		googleapisDir,
 		repoRoot,
 	)
@@ -767,6 +769,16 @@ func TestGenerateAPI_Error(t *testing.T) {
 			},
 			wantErr: syscall.EISDIR,
 		},
+		{
+			name: "protoc not found in PATH",
+			setup: func(t *testing.T, repoRoot, outputDir string) {
+				t.Setenv("PATH", t.TempDir())
+			},
+			api: &config.API{Path: "google/cloud/secretmanager/v1"},
+			library: &config.Library{
+				Name: "pkg",
+			},
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			repoRoot := t.TempDir()
@@ -774,7 +786,7 @@ func TestGenerateAPI_Error(t *testing.T) {
 			if test.setup != nil {
 				test.setup(t, repoRoot, outputDir)
 			}
-			gotErr := generateAPI(t.Context(), test.api, test.library, googleapisDir, repoRoot)
+			gotErr := generateAPI(t.Context(), test.api, test.library, nil, googleapisDir, repoRoot)
 			// Not all errors are easy to specify. (Most come from other
 			// packages, and we're just testing they're propagated.)
 			if test.wantErr != nil && !errors.Is(gotErr, test.wantErr) {
@@ -785,6 +797,40 @@ func TestGenerateAPI_Error(t *testing.T) {
 				t.Fatal("expected error; got none")
 			}
 		})
+	}
+}
+
+func TestGenerateAPI_ConfiguredProtoc(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("skipping execution test on Windows")
+	}
+	binaryName := "protoc"
+	binDir := t.TempDir()
+	t.Setenv("LIBRARIAN_BIN", binDir)
+	version := "33.5"
+	protocDir := filepath.Join(binDir, "protoc", "v"+version, "bin")
+	if err := os.MkdirAll(protocDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	// Create a stub protoc that records execution and exits with an error so we know it was called
+	stubProtoc := filepath.Join(protocDir, binaryName)
+	testhelper.WriteExecutable(t, stubProtoc, "#!/bin/sh\nexit 42\n")
+
+	repoRoot := t.TempDir()
+	pc := &config.Protoc{Version: version}
+	err := generateAPI(
+		t.Context(),
+		&config.API{Path: "google/cloud/secretmanager/v1"},
+		&config.Library{Name: "secretmanager", Output: repoRoot},
+		pc,
+		googleapisDir,
+		repoRoot,
+	)
+	if err == nil {
+		t.Fatal("expected error from stub protoc, got nil")
+	}
+	if !strings.Contains(err.Error(), "42") && !strings.Contains(err.Error(), "exit status") {
+		t.Fatalf("expected error from stub protoc, got: %v", err)
 	}
 }
 

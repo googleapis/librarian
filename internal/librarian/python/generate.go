@@ -31,6 +31,7 @@ import (
 	"github.com/googleapis/librarian/internal/repometadata"
 	"github.com/googleapis/librarian/internal/serviceconfig"
 	"github.com/googleapis/librarian/internal/sources"
+	"github.com/googleapis/librarian/internal/tool/protoc"
 )
 
 const (
@@ -81,6 +82,11 @@ func Generate(ctx context.Context, cfg *config.Config, library *config.Library, 
 		return fmt.Errorf("failed to create output directory: %w", err)
 	}
 
+	var pc *config.Protoc
+	if cfg != nil && cfg.Tools != nil {
+		pc = cfg.Tools.Protoc
+	}
+
 	// Some aspects of generation currently require the repo root. Compute it
 	// once here and pass it down.
 	repoRoot := filepath.Dir(filepath.Dir(outdir))
@@ -105,7 +111,7 @@ func Generate(ctx context.Context, cfg *config.Config, library *config.Library, 
 		return len(b.Path) - len(a.Path)
 	})
 	for _, api := range apisSortedByPathLength {
-		if err := generateAPI(ctx, api, library, googleapisDir, generationRoot); err != nil {
+		if err := generateAPI(ctx, api, library, pc, googleapisDir, generationRoot); err != nil {
 			return fmt.Errorf("failed to generate api %q: %w", api.Path, err)
 		}
 	}
@@ -242,7 +248,7 @@ func buildClientDocumentationURI(libraryName, repoMetadataName string) string {
 }
 
 // generateAPI generates part of a library for a single api.
-func generateAPI(ctx context.Context, api *config.API, library *config.Library, googleapisDir, generationRoot string) error {
+func generateAPI(ctx context.Context, api *config.API, library *config.Library, pc *config.Protoc, googleapisDir, generationRoot string) error {
 	// Note: the Python Librarian container generates to a temporary directory,
 	// then the results into owl-bot-staging. We generate straight into
 	// owl-bot-staging instead. The post-processor then moves the files into
@@ -278,8 +284,13 @@ func generateAPI(ctx context.Context, api *config.API, library *config.Library, 
 		protos[index] = rel
 	}
 
+	protocCmd, err := protoc.BinaryPathOrSystem(pc)
+	if err != nil {
+		return fmt.Errorf("failed to find protoc: %w", err)
+	}
+
 	cmdArgs := append(protos, protocOptions...)
-	if err := command.RunInDir(ctx, googleapisDir, "protoc", cmdArgs...); err != nil {
+	if err := command.RunInDir(ctx, googleapisDir, protocCmd, cmdArgs...); err != nil {
 		return fmt.Errorf("failed to execute protoc: %w", err)
 	}
 
