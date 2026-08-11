@@ -63,7 +63,7 @@ func TestInstall(t *testing.T) {
 		t.Fatal(err)
 	}
 	destPath := filepath.Join(repoDir, "src", "Main.php")
-	want := PHPWrapperContent("php", destPath)
+	want := phpWrapperContent("php", destPath)
 	if diff := cmp.Diff(want, string(b)); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
@@ -159,7 +159,7 @@ func TestCreateBinWrapper(t *testing.T) {
 			binDir := t.TempDir()
 			destPath := "/path/to/dest"
 			content := fmt.Sprintf("#!/bin/sh\nexec %q \"$@\"\n", destPath)
-			if err := CreateBinWrapper(test.wrapperName, content, binDir); err != nil {
+			if err := createBinWrapper(test.wrapperName, content, binDir); err != nil {
 				t.Fatal(err)
 			}
 			wrapperPath := filepath.Join(binDir, test.wrapperName)
@@ -280,7 +280,7 @@ func TestInstall_LocalPath(t *testing.T) {
 		t.Fatal(err)
 	}
 	destPath := filepath.Join(localDir, "src", "Main.php")
-	want := PHPWrapperContent("php", destPath)
+	want := phpWrapperContent("php", destPath)
 	if diff := cmp.Diff(want, string(b)); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
