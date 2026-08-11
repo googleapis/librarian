@@ -60,7 +60,6 @@ func TestInstall(t *testing.T) {
 		setup func(t *testing.T)
 		check func(t *testing.T)
 	}{
-
 		{
 			name: "with composer, pip, and pnpm tools",
 			tools: &config.Tools{
@@ -68,6 +67,13 @@ func TestInstall(t *testing.T) {
 					{
 						Name:       "gapic-generator-php",
 						Entrypoint: "src/Main.php",
+						Version:    "1.0.0",
+						Repo:       "github.com/googleapis/gapic-generator-php",
+						SHA256:     "29635b02c6e505fe31cba2f88ae999f00d2710fe1d65cb7cad521a82e7c5a518",
+					},
+					{
+						Name:       "php-post-processor",
+						Entrypoint: "src/PostProcessor/Main.php",
 						Version:    "1.0.0",
 						Repo:       "github.com/googleapis/gapic-generator-php",
 						SHA256:     "29635b02c6e505fe31cba2f88ae999f00d2710fe1d65cb7cad521a82e7c5a518",
@@ -97,10 +103,15 @@ func TestInstall(t *testing.T) {
 				if err := os.WriteFile(filepath.Join(repoDir, "src", "Main.php"), nil, 0o644); err != nil {
 					t.Fatal(err)
 				}
+				if err := os.MkdirAll(filepath.Join(repoDir, "src", "PostProcessor"), 0o755); err != nil {
+					t.Fatal(err)
+				}
+				if err := os.WriteFile(filepath.Join(repoDir, "src", "PostProcessor", "Main.php"), nil, 0o644); err != nil {
+					t.Fatal(err)
+				}
 				if err := os.WriteFile(filepath.Join(repoDir, "composer.json"), []byte("{}"), 0o644); err != nil {
 					t.Fatal(err)
 				}
-
 				bin := t.TempDir()
 				testhelper.WriteExecutable(t, filepath.Join(bin, "composer"), "#!/bin/sh\nexit 0\n")
 				testhelper.WriteExecutable(t, filepath.Join(bin, "pip"), "#!/bin/sh\nexit 0\n")

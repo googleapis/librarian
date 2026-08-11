@@ -21,12 +21,9 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"slices"
-	"strings"
 
 	"github.com/googleapis/librarian/internal/cache"
 	"github.com/googleapis/librarian/internal/config"
-	"github.com/googleapis/librarian/internal/fetch"
 	"github.com/googleapis/librarian/internal/tool/composer"
 	"github.com/googleapis/librarian/internal/tool/pip"
 	"github.com/googleapis/librarian/internal/tool/pnpm"
@@ -59,12 +56,10 @@ func Install(ctx context.Context, tools *config.Tools) error {
 	if len(tools.PNPM) == 0 {
 		return errMissingPNPM
 	}
-
 	phpPath, err := checkRequiredCommands()
 	if err != nil {
 		return err
 	}
-
 	bin, err := binDir()
 	if err != nil {
 		return err
@@ -72,11 +67,7 @@ func Install(ctx context.Context, tools *config.Tools) error {
 	if err := os.MkdirAll(bin, 0o755); err != nil {
 		return fmt.Errorf("failed to create bin directory: %w", err)
 	}
-
 	if err := composer.Install(ctx, tools.Composer, phpPath, bin); err != nil {
-		return err
-	}
-	if err := createPostProcessorWrapper(ctx, tools.Composer, phpPath, bin); err != nil {
 		return err
 	}
 	// The PHP client library generation process relies on Python-based
@@ -121,26 +112,4 @@ func binDir() (string, error) {
 		return "", err
 	}
 	return filepath.Join(installDir, "bin"), nil
-}
-
-func createPostProcessorWrapper(ctx context.Context, tools []*config.ComposerTool, phpPath, bin string) error {
-	idx := slices.IndexFunc(tools, func(t *config.ComposerTool) bool {
-		return strings.Contains(t.Name, "gapic-generator-php")
-	})
-	if idx == -1 {
-		return nil
-	}
-	tool := tools[idx]
-	var dir string
-	var err error
-	if tool.LocalPath != "" {
-		dir, err = filepath.Abs(tool.LocalPath)
-	} else {
-		dir, err = fetch.Repo(ctx, tool.Repo, tool.Version, tool.SHA256)
-	}
-	if err != nil {
-		return fmt.Errorf("fetching %s: %w", tool.Name, err)
-	}
-	content := composer.PHPWrapperContent(phpPath, filepath.Join(dir, "src/PostProcessor/Main.php"))
-	return composer.CreateBinWrapper("php-post-processor", content, bin)
 }
