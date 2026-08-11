@@ -17,8 +17,10 @@ package protoc
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"runtime"
 
@@ -48,6 +50,13 @@ var (
 
 // Install installs the protoc tool.
 func Install(ctx context.Context, protoc *config.Protoc) error {
+	binaryPath, err := BinaryPath(protoc.Version)
+	if err != nil {
+		return err
+	}
+	if _, err := os.Stat(binaryPath); err == nil {
+		return nil
+	}
 	url := downloadURL(protoc.Version, runtime.GOOS, runtime.GOARCH)
 	dir, err := InstallDir(protoc.Version)
 	if err != nil {
@@ -56,15 +65,36 @@ func Install(ctx context.Context, protoc *config.Protoc) error {
 	return downloadAndExtract(ctx, url, dir, protoc.SHA256)
 }
 
-// Run executes protoc with the given version and arguments.
-func Run(ctx context.Context, env map[string]string, protoc *config.Protoc, args ...string) error {
-	dir, err := InstallDir(protoc.Version)
+// BinaryPath returns the absolute path to the protoc binary for the given version.
+func BinaryPath(version string) (string, error) {
+	if version == "" {
+		return "", errors.New("protoc version cannot be empty")
+	}
+	dir, err := InstallDir(version)
 	if err != nil {
-		return err
+		return "", err
 	}
 	protocPath := filepath.Join(dir, "bin", protocDir)
 	if runtime.GOOS == osWindows {
 		protocPath += ".exe"
+	}
+	return protocPath, nil
+}
+
+// BinaryPathOrSystem returns the path to the configured protoc binary if pc is non-nil
+// and pc.Version is not empty, or falls back to looking up "protoc" in PATH.
+func BinaryPathOrSystem(pc *config.Protoc) (string, error) {
+	if pc != nil && pc.Version != "" {
+		return BinaryPath(pc.Version)
+	}
+	return exec.LookPath("protoc")
+}
+
+// Run executes protoc with the given version and arguments.
+func Run(ctx context.Context, env map[string]string, protoc *config.Protoc, args ...string) error {
+	protocPath, err := BinaryPath(protoc.Version)
+	if err != nil {
+		return err
 	}
 	return command.RunWithEnv(ctx, env, protocPath, args...)
 }
