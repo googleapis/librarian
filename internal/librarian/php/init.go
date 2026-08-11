@@ -62,8 +62,7 @@ func initComponentIfMissing(ctx context.Context, library *config.Library, google
 	if err == nil {
 		// Component exists, return the component name.
 		return params.componentName, nil
-	}
-	if !errors.Is(err, fs.ErrNotExist) {
+	} else if !errors.Is(err, fs.ErrNotExist) {
 		return "", err
 	}
 	if err := initComponent(ctx, params); err != nil {

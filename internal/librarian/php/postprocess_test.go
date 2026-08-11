@@ -27,7 +27,9 @@ import (
 
 func TestPostProcess_MissingOwlBot(t *testing.T) {
 	ctx := t.Context()
-	destDir := t.TempDir()
+	repoRoot := t.TempDir()
+	t.Chdir(repoRoot)
+	destDir := filepath.Join(repoRoot, "SecretManager")
 	lib := &config.Library{
 		Name:   "SecretManager",
 		Output: destDir,
@@ -110,23 +112,21 @@ func TestPostProcess_OwlBotError(t *testing.T) {
 		},
 	}
 	err := postProcessLibrary(ctx, lib, lib.PHP.ComponentName)
-	if err == nil {
-		t.Fatal("postProcessLibrary() expected error, got nil")
-	}
 	var exitErr *exec.ExitError
 	if !errors.As(err, &exitErr) {
-		t.Errorf("expected exit error, got: %v", err)
+		t.Fatalf("expected exit error, got: %v", err)
 	}
 }
 
 func TestPostProcess_StatError(t *testing.T) {
 	ctx := t.Context()
 	repoRoot := t.TempDir()
+	t.Chdir(repoRoot)
 	destDir := filepath.Join(repoRoot, "SecretManager")
 	if err := os.MkdirAll(destDir, 0o755); err != nil {
 		t.Fatal(err)
 	}
-	inaccessibleDir := filepath.Join(destDir, "inaccessible")
+	inaccessibleDir := filepath.Join(repoRoot, "SecretManager_inaccessible")
 	if err := os.MkdirAll(inaccessibleDir, 0o755); err != nil {
 		t.Fatal(err)
 	}
@@ -141,7 +141,7 @@ func TestPostProcess_StatError(t *testing.T) {
 		Name:   "SecretManager",
 		Output: inaccessibleDir,
 		PHP: &config.PHPPackage{
-			ComponentName: "SecretManager",
+			ComponentName: "SecretManager_inaccessible",
 		},
 	}
 	err := postProcessLibrary(ctx, lib, lib.PHP.ComponentName)
@@ -241,11 +241,8 @@ func TestPostProcess_PHPPostProcessorError(t *testing.T) {
 		},
 	}
 	err := postProcessLibrary(ctx, lib, lib.PHP.ComponentName)
-	if err == nil {
-		t.Fatal("postProcessLibrary() expected error, got nil")
-	}
 	var exitErr *exec.ExitError
 	if !errors.As(err, &exitErr) {
-		t.Errorf("expected exit error, got: %v", err)
+		t.Fatalf("expected exit error, got: %v", err)
 	}
 }

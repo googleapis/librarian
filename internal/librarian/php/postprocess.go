@@ -38,7 +38,7 @@ func postProcessLibrary(ctx context.Context, library *config.Library, componentN
 		}
 	}()
 
-	owlbotPy := filepath.Join(library.Output, "owlbot.py")
+	owlbotPy := filepath.Join(componentName, "owlbot.py")
 	if _, err := os.Stat(owlbotPy); err != nil {
 		if errors.Is(err, fs.ErrNotExist) {
 			return fmt.Errorf("library %q: %w", library.Name, errOwlBotNotFound)
@@ -46,7 +46,7 @@ func postProcessLibrary(ctx context.Context, library *config.Library, componentN
 		return err
 	}
 
-	if err := command.RunInDir(ctx, library.Output, "python3", "owlbot.py"); err != nil {
+	if err := command.RunInDir(ctx, componentName, "python3", "owlbot.py"); err != nil {
 		return fmt.Errorf("failed to run owlbot.py: %w", err)
 	}
 	bin, err := binDir()
@@ -54,7 +54,7 @@ func postProcessLibrary(ctx context.Context, library *config.Library, componentN
 		return fmt.Errorf("failed to get bin dir: %w", err)
 	}
 	postProcessor := filepath.Join(bin, "php-post-processor")
-	if err := command.RunInDir(ctx, library.Output, postProcessor, "--input", "."); err != nil {
+	if err := command.RunInDir(ctx, componentName, postProcessor, "--input", "."); err != nil {
 		return fmt.Errorf("failed to run php-post-processor: %w", err)
 	}
 	return nil

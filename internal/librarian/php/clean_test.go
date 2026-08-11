@@ -184,9 +184,6 @@ func TestClean_StatError(t *testing.T) {
 		_ = os.Chmod(lib.Output, 0o755)
 	})
 	err := Clean(lib)
-	if err == nil {
-		t.Error("Clean() expected error, got nil")
-	}
 	if !errors.Is(err, os.ErrPermission) {
 		t.Errorf("Clean() error = %v, want os.ErrPermission", err)
 	}
@@ -208,9 +205,6 @@ func TestClean_ReadFileError(t *testing.T) {
 		_ = os.Chmod(filePath, 0o644)
 	})
 	err := Clean(lib)
-	if err == nil {
-		t.Error("Clean() expected error, got nil")
-	}
 	if !errors.Is(err, os.ErrPermission) {
 		t.Errorf("Clean() error = %v, want os.ErrPermission", err)
 	}
@@ -233,9 +227,6 @@ func TestClean_RemoveError(t *testing.T) {
 		_ = os.Chmod(dirPath, 0o755)
 	})
 	err := Clean(lib)
-	if err == nil {
-		t.Error("Clean() expected error, got nil")
-	}
 	if !errors.Is(err, os.ErrPermission) {
 		t.Errorf("Clean() error = %v, want os.ErrPermission", err)
 	}
@@ -260,9 +251,6 @@ func TestClean_WalkDirError(t *testing.T) {
 		_ = os.Chmod(subdir, 0o755)
 	})
 	err := Clean(lib)
-	if err == nil {
-		t.Error("Clean() expected error, got nil")
-	}
 	if !errors.Is(err, os.ErrPermission) {
 		t.Errorf("Clean() error = %v, want os.ErrPermission", err)
 	}
