@@ -23,7 +23,6 @@ import (
 	"fmt"
 	"io/fs"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"regexp"
 	"slices"
@@ -34,6 +33,7 @@ import (
 	"github.com/googleapis/librarian/internal/filesystem"
 	"github.com/googleapis/librarian/internal/serviceconfig"
 	"github.com/googleapis/librarian/internal/sources"
+	"github.com/googleapis/librarian/internal/tool/protoc"
 )
 
 const (
@@ -57,6 +57,10 @@ func Generate(ctx context.Context, cfg *config.Config, library *config.Library, 
 	if err := os.MkdirAll(outdir, 0o755); err != nil {
 		return fmt.Errorf("failed to create output directory: %w", err)
 	}
+	var pc *config.Protoc
+	if cfg != nil && cfg.Tools != nil {
+		pc = cfg.Tools.Protoc
+	}
 	repoRoot := filepath.Dir(filepath.Dir(outdir))
 	for i, api := range library.APIs {
 		// TODO(https://github.com/googleapis/google-cloud-node/issues/8149): Do not
@@ -71,6 +75,7 @@ func Generate(ctx context.Context, cfg *config.Config, library *config.Library, 
 			library:       library,
 			googleapisDir: googleapisDir,
 			repoRoot:      repoRoot,
+			protoc:        pc,
 		}); err != nil {
 			return fmt.Errorf("failed to generate api %q: %w", api.Path, err)
 		}
@@ -119,6 +124,7 @@ type generateAPIParams struct {
 	library       *config.Library
 	googleapisDir string
 	repoRoot      string
+	protoc        *config.Protoc
 }
 
 func generateAPI(ctx context.Context, params generateAPIParams) error {
@@ -164,7 +170,7 @@ func generateAPI(ctx context.Context, params generateAPIParams) error {
 	// Add additional protos from configuration.
 	protos = append(protos, nodejsAPI.AdditionalProtos...)
 
-	args, err := buildGeneratorArgs(generatorPath, params.api, params.library, absGoogleapisDir, stagingDir, nodejsAPI)
+	args, err := buildGeneratorArgs(generatorPath, params.protoc, params.api, params.library, absGoogleapisDir, stagingDir, nodejsAPI)
 	if err != nil {
 		return err
 	}
@@ -241,8 +247,8 @@ func unique(ss []string) []string {
 
 // buildGeneratorArgs constructs the gapic-generator-typescript arguments,
 // excluding proto files.
-func buildGeneratorArgs(generatorPath string, api *config.API, library *config.Library, googleapisDir, stagingDir string, nodejsAPI *config.NodejsAPI) ([]string, error) {
-	protocPath, err := exec.LookPath("protoc")
+func buildGeneratorArgs(generatorPath string, pc *config.Protoc, api *config.API, library *config.Library, googleapisDir, stagingDir string, nodejsAPI *config.NodejsAPI) ([]string, error) {
+	protocPath, err := protoc.BinaryPathOrSystem(pc)
 	if err != nil {
 		return nil, fmt.Errorf("failed to find protoc: %w", err)
 	}

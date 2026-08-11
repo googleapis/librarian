@@ -22,6 +22,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"slices"
 	"strings"
 	"syscall"
@@ -209,17 +210,57 @@ func TestBuildGeneratorArgs(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	protocPath, err := exec.LookPath("protoc")
-	if err != nil {
-		t.Skipf("skipping test: protoc not found in PATH")
+	protocPath, systemProtocErr := exec.LookPath("protoc")
+
+	binaryName := "protoc"
+	if runtime.GOOS == "windows" {
+		binaryName += ".exe"
 	}
+	customBinDir := filepath.FromSlash("/custom/bin")
+	customProtocPath := filepath.Join(customBinDir, "protoc", "v33.2", "bin", binaryName)
 
 	for _, test := range []struct {
-		name    string
-		api     *config.API
-		library *config.Library
-		want    []string
+		name         string
+		api          *config.API
+		library      *config.Library
+		protoc       *config.Protoc
+		librarianBin string
+		setup        func(t *testing.T)
+		want         []string
+		wantErr      bool
 	}{
+		{
+			name: "protoc missing from PATH returns error",
+			api:  &config.API{Path: "google/cloud/secretmanager/v1"},
+			library: &config.Library{
+				Name: "google-cloud-secretmanager",
+			},
+			setup: func(t *testing.T) {
+				t.Setenv("PATH", t.TempDir())
+			},
+			wantErr: true,
+		},
+		{
+			name: "with configured protoc tool",
+			api:  &config.API{Path: "google/cloud/secretmanager/v1"},
+			library: &config.Library{
+				Name: "google-cloud-secretmanager",
+			},
+			protoc:       &config.Protoc{Version: "33.2"},
+			librarianBin: customBinDir,
+			want: []string{
+				"gapic-generator-typescript",
+				"--protoc=" + customProtocPath,
+				"--common-proto-path=.",
+				"-I", ".",
+				"--output-dir", "staging",
+				"--grpc-service-config", "google/cloud/secretmanager/v1/secretmanager_grpc_service_config.json",
+				"--service-yaml", "google/cloud/secretmanager/v1/secretmanager_v1.yaml",
+				"--package-name", "@google-cloud/secretmanager",
+				"--metadata",
+				"--rest-numeric-enums",
+			},
+		},
 		{
 			name: "basic case",
 			api:  &config.API{Path: "google/cloud/secretmanager/v1"},
@@ -438,13 +479,24 @@ func TestBuildGeneratorArgs(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			nodejsAPI := resolveNodejsAPI(test.library, test.api)
-			got, err := buildGeneratorArgs("gapic-generator-typescript", test.api, test.library, absGoogleapisDir, "staging", nodejsAPI)
-			if err != nil {
-				t.Fatal(err)
+			if test.setup != nil {
+				test.setup(t)
 			}
-			if diff := cmp.Diff(test.want, got); diff != "" {
-				t.Errorf("mismatch (-want +got):\n%s", diff)
+			if !test.wantErr && test.protoc == nil && systemProtocErr != nil {
+				t.Skipf("skipping test: protoc not found in PATH")
+			}
+			if test.librarianBin != "" {
+				t.Setenv("LIBRARIAN_BIN", test.librarianBin)
+			}
+			nodejsAPI := resolveNodejsAPI(test.library, test.api)
+			got, err := buildGeneratorArgs("gapic-generator-typescript", test.protoc, test.api, test.library, absGoogleapisDir, "staging", nodejsAPI)
+			if (err != nil) != test.wantErr {
+				t.Fatalf("buildGeneratorArgs() error = %v, wantErr = %v", err, test.wantErr)
+			}
+			if !test.wantErr {
+				if diff := cmp.Diff(test.want, got); diff != "" {
+					t.Errorf("mismatch (-want +got):\n%s", diff)
+				}
 			}
 		})
 	}
@@ -893,6 +945,9 @@ func TestGenerate(t *testing.T) {
 	cfg := &config.Config{
 		Language: config.LanguageNodejs,
 		Repo:     "googleapis/google-cloud-node",
+		Tools: &config.Tools{
+			Protoc: &config.Protoc{Version: "33.2"},
+		},
 	}
 	for _, library := range libraries {
 		if err := Generate(t.Context(), cfg, library, &sources.Sources{Googleapis: absGoogleapisDir}); err != nil {
