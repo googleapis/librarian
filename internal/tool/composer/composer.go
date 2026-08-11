@@ -64,8 +64,8 @@ func Install(ctx context.Context, tools []*config.ComposerTool, phpPath, bin str
 		}
 		wrapperName := filepath.Base(tool.Name)
 		destPath := filepath.Join(dir, tool.Entrypoint)
-		wrapperContent := phpWrapperContent(phpPath, destPath)
-		if err := createBinWrapper(wrapperName, wrapperContent, bin); err != nil {
+		wrapperContent := PHPWrapperContent(phpPath, destPath)
+		if err := CreateBinWrapper(wrapperName, wrapperContent, bin); err != nil {
 			return err
 		}
 	}
@@ -84,19 +84,24 @@ func localPath(path string) (string, error) {
 	return absPath, nil
 }
 
-// phpWrapperContent generates the bash script content for the PHP tool wrapper.
-func phpWrapperContent(phpExecutable, entrypoint string) string {
+// PHPWrapperContent generates the bash script content for the PHP tool wrapper.
+func PHPWrapperContent(phpExecutable, entrypoint string) string {
 	return fmt.Sprintf("#!/bin/bash\nexec %q -d display_errors=stderr -d memory_limit=1024M %q \"$@\"\n", phpExecutable, entrypoint)
 }
 
-// createBinWrapper creates a shell wrapper script in the bin directory that forwards executions to the tool.
-func createBinWrapper(wrapperName, content, binDir string) error {
+// CreateBinWrapper creates a shell wrapper script in the bin directory that forwards executions to the tool.
+func CreateBinWrapper(wrapperName, content, binDir string) error {
 	wrapperPath := filepath.Join(binDir, wrapperName)
 	if err := os.MkdirAll(filepath.Dir(wrapperPath), 0o755); err != nil {
 		return fmt.Errorf("failed to create directory for wrapper: %w", err)
 	}
 	_ = os.Remove(wrapperPath)
-	if err := os.WriteFile(wrapperPath, []byte(content), 0o755); err != nil {
+	f, err := os.OpenFile(wrapperPath, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0o755)
+	if err != nil {
+		return fmt.Errorf("failed to create wrapper script: %w", err)
+	}
+	defer f.Close()
+	if _, err := f.WriteString(content); err != nil {
 		return fmt.Errorf("failed to write wrapper script: %w", err)
 	}
 	return nil
