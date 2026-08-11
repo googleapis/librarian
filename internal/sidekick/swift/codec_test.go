@@ -48,7 +48,6 @@ func TestParseOptions(t *testing.T) {
 				ApiPackages:        map[string]*Dependency{},
 				DependenciesByName: map[string]*Dependency{},
 				ResponseEncoding:   defaultResponseEncoding,
-				Transport:          "http",
 			},
 		},
 		{
@@ -70,7 +69,6 @@ func TestParseOptions(t *testing.T) {
 				ApiPackages:        map[string]*Dependency{},
 				DependenciesByName: map[string]*Dependency{},
 				ResponseEncoding:   defaultResponseEncoding,
-				Transport:          "http",
 			},
 		},
 		{
@@ -97,7 +95,6 @@ func TestParseOptions(t *testing.T) {
 				ApiPackages:        map[string]*Dependency{},
 				DependenciesByName: map[string]*Dependency{},
 				ResponseEncoding:   defaultResponseEncoding,
-				Transport:          "http",
 			},
 		},
 		{
@@ -125,7 +122,6 @@ func TestParseOptions(t *testing.T) {
 				ApiPackages:        map[string]*Dependency{},
 				DependenciesByName: map[string]*Dependency{},
 				ResponseEncoding:   defaultResponseEncoding,
-				Transport:          "http",
 			},
 		},
 		{
@@ -140,7 +136,6 @@ func TestParseOptions(t *testing.T) {
 			},
 			module: &config.SwiftModule{
 				ModulePath: "StorageControlProtos",
-				Transport:  "grpc",
 			},
 			want: &codec{
 				Module:             true,
@@ -154,7 +149,6 @@ func TestParseOptions(t *testing.T) {
 				ApiPackages:        map[string]*Dependency{},
 				DependenciesByName: map[string]*Dependency{},
 				ResponseEncoding:   defaultResponseEncoding,
-				Transport:          "grpc",
 			},
 		},
 		{
@@ -175,7 +169,6 @@ func TestParseOptions(t *testing.T) {
 				DependenciesByName: map[string]*Dependency{},
 				UrlSafeForBytes:    true,
 				ResponseEncoding:   discoveryResponseEncoding,
-				Transport:          "http",
 			},
 		},
 	} {
@@ -186,6 +179,10 @@ func TestParseOptions(t *testing.T) {
 			}
 			if diff := cmp.Diff(test.want, got, cmpopts.IgnoreUnexported(api.API{})); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+			wantGrpc := test.module != nil && test.module.ModulePath != ""
+			if got.isGrpc() != wantGrpc {
+				t.Errorf("isGrpc() = %v, want %v", got.isGrpc(), wantGrpc)
 			}
 		})
 	}

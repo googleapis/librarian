@@ -642,8 +642,7 @@ This document describes the schema for the librarian.yaml.
 | `module_type` | string | Is the type of module to generate (e.g., "swift-protobuf", "convert-swift", or empty/"default" for standard GAPIC). |
 | `include_list` | list of string | Is a subset of proto files under the target API path to include. This is typically reserved for special cases to avoid generating unused/dead code. For example, in Storage we need Protobuf gencode for a subset of the protos in the google/type directory. This code is private to the package (google-cloud-storage in Rust, GoogleCloudStorage in Swift). All other files in google/type would be dead code. |
 | `skipped_ids` | list of string | Is a list of proto IDs to skip in generation for this module. |
-| `module_path` | string | Is the module import path or target containing stubs (used by convert-swift). |
-| `transport` | string | Specifies which client transport mechanism to use ("grpc" or "http"). Defaults to "http". |
+| `module_path` | string | Is the module import path or target containing stubs (used by convert-swift and to enable gRPC transports). |
 
 ## SwiftPackage Configuration
 

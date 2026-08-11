@@ -366,7 +366,6 @@ func TestGenerateStub_Grpc(t *testing.T) {
 	module := &config.SwiftModule{
 		Output:     outDir,
 		ModulePath: "StorageControlProtos",
-		Transport:  "grpc",
 	}
 	swiftPkg := swiftConfig(t, []config.SwiftDependency{
 		{Name: "GoogleLongRunning", ApiPackage: "google.longrunning"},

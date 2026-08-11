@@ -161,11 +161,8 @@ type SwiftModule struct {
 	// SkippedIds is a list of proto IDs to skip in generation for this module.
 	SkippedIds []string `yaml:"skipped_ids,omitempty"`
 
-	// ModulePath is the module import path or target containing stubs (used by convert-swift).
+	// ModulePath is the module import path or target containing stubs (used by convert-swift and gRPC transports).
 	ModulePath string `yaml:"module_path,omitempty"`
-
-	// Transport specifies which client transport to use ("grpc" or "http"). Defaults to "http".
-	Transport string `yaml:"transport,omitempty"`
 }
 
 // SwiftDiscovery contains discovery-specific configuration for LRO polling.
