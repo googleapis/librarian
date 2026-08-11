@@ -136,7 +136,7 @@ func TestFilterModelToStreaming(t *testing.T) {
 	bidiService := api.NewTestService("BidiService").WithPackage("google.test.v1").WithMethods(chatMethod)
 	model := api.NewTestAPI([]*api.Message{streamingMsg, unusedMsg}, []*api.Enum{}, []*api.Service{bidiService})
 
-	filtered, unused, err := filterModelToStreaming(model)
+	filtered, unused, _, err := filterModelToStreaming(model)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -172,7 +172,7 @@ func TestFilterModelToStreamingNonStreamingFieldLookup(t *testing.T) {
 
 	model := api.NewTestAPI([]*api.Message{streamMsg, unaryReq, childData}, []*api.Enum{}, []*api.Service{bidiService, unaryService})
 
-	filtered, _, err := filterModelToStreaming(model)
+	filtered, _, _, err := filterModelToStreaming(model)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -191,6 +191,50 @@ func TestFilterModelToStreamingNonStreamingFieldLookup(t *testing.T) {
 	}
 }
 
+func TestFilterModelToStreamingExternalTypes(t *testing.T) {
+	streamMsg := api.NewTestMessage("StreamMsg").WithPackage("google.test.v1")
+	externalMsg := api.NewTestMessage("LatLng").WithPackage("google.type")
+	externalEnum := &api.Enum{Name: "DayOfWeek", ID: ".google.type.DayOfWeek", Package: "google.type"}
+
+	streamMsg.Fields = []*api.Field{
+		{
+			Name:    "location",
+			TypezID: externalMsg.ID,
+			Typez:   api.TypezMessage,
+		},
+		{
+			Name:    "day",
+			TypezID: externalEnum.ID,
+			Typez:   api.TypezEnum,
+		},
+	}
+
+	chatMethod := api.NewTestMethod("Chat").WithInput(streamMsg).WithOutput(streamMsg).WithBidiStreaming()
+	bidiService := api.NewTestService("BidiService").WithPackage("google.test.v1").WithMethods(chatMethod)
+
+	model := api.NewTestAPI([]*api.Message{streamMsg}, []*api.Enum{}, []*api.Service{bidiService})
+	model.AddMessage(externalMsg)
+	model.AddEnum(externalEnum)
+	if err := api.CrossReference(model); err != nil {
+		t.Fatal(err)
+	}
+
+	filtered, _, _, err := filterModelToStreaming(model)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if len(filtered.Messages) != 1 || filtered.Messages[0].ID != streamMsg.ID {
+		t.Errorf("got package messages %v, want [%s]", filtered.Messages, streamMsg.ID)
+	}
+	if len(filtered.ExternalMessages) != 1 || filtered.ExternalMessages[0].ID != externalMsg.ID {
+		t.Errorf("got ExternalMessages %v, want [%s]", filtered.ExternalMessages, externalMsg.ID)
+	}
+	if len(filtered.ExternalEnums) != 1 || filtered.ExternalEnums[0].ID != externalEnum.ID {
+		t.Errorf("got ExternalEnums %v, want [%s]", filtered.ExternalEnums, externalEnum.ID)
+	}
+}
+
 func TestFilterModelToStreamingAnyError(t *testing.T) {
 	// Verify google.protobuf.Any in streaming path returns error with recommendation
 	anyMsg := api.NewTestMessage("AnyReq").WithPackage("google.test.v1").WithFields(
@@ -205,11 +249,109 @@ func TestFilterModelToStreamingAnyError(t *testing.T) {
 
 	anyModel := api.NewTestAPI([]*api.Message{anyMsg}, []*api.Enum{}, []*api.Service{anyService})
 
-	_, _, err := filterModelToStreaming(anyModel)
+	_, _, _, err := filterModelToStreaming(anyModel)
 	if err == nil {
 		t.Fatal("expected error for google.protobuf.Any, got nil")
 	}
 	if !strings.Contains(err.Error(), "skipped_ids") {
 		t.Errorf("expected error to contain recommendation 'skipped_ids', got: %v", err)
+	}
+}
+
+func TestFilterModelToStreamingGoogleRpcStatus(t *testing.T) {
+	// Verify google.rpc.Status in streaming path succeeds and does not error on Any details
+	statusMsg := api.NewTestMessage("Status").WithPackage("google.rpc").WithFields(
+		&api.Field{
+			Name:  "code",
+			Typez: api.TypezInt32,
+		},
+		&api.Field{
+			Name:  "message",
+			Typez: api.TypezString,
+		},
+		&api.Field{
+			Name:     "details",
+			TypezID:  ".google.protobuf.Any",
+			Typez:    api.TypezMessage,
+			Repeated: true,
+		},
+	)
+
+	reqMsg := api.NewTestMessage("StreamReq").WithPackage("google.test.v1").WithFields(
+		&api.Field{
+			Name:    "status",
+			TypezID: statusMsg.ID,
+			Typez:   api.TypezMessage,
+		},
+	)
+
+	chatMethod := api.NewTestMethod("ChatStatus").WithInput(reqMsg).WithOutput(reqMsg).WithBidiStreaming()
+	statusService := api.NewTestService("StatusService").WithPackage("google.test.v1").WithMethods(chatMethod)
+
+	statusModel := api.NewTestAPI([]*api.Message{reqMsg}, []*api.Enum{}, []*api.Service{statusService})
+	statusModel.AddMessage(statusMsg)
+
+	filtered, unused, hasStatus, err := filterModelToStreaming(statusModel)
+	if err != nil {
+		t.Fatalf("unexpected error for google.rpc.Status: %v", err)
+	}
+
+	if len(filtered.Messages) != 1 {
+		t.Errorf("got %d messages, want 1 (StreamReq only, google.rpc.Status handled via Codec)", len(filtered.Messages))
+	}
+
+	if !hasStatus {
+		t.Errorf("expected hasStatus boolean from filterModelToStreaming to be true, got false")
+	}
+
+	for _, u := range unused {
+		if u == statusMsg.ID {
+			t.Errorf("google.rpc.Status should not be in unused list, got: %v", unused)
+		}
+	}
+}
+
+func TestFilterModelToStreamingNestedTypeParentPreservation(t *testing.T) {
+	parent := api.NewTestMessage("Parent").WithPackage("google.test.v1")
+	child := api.NewTestMessage("Child").WithPackage("google.test.v1")
+	sibling := api.NewTestMessage("Sibling").WithPackage("google.test.v1")
+	child.Parent = parent
+
+	parent.Fields = []*api.Field{
+		{
+			Name:    "sibling_ref",
+			TypezID: sibling.ID,
+			Typez:   api.TypezMessage,
+		},
+	}
+
+	streamReq := api.NewTestMessage("StreamReq").WithPackage("google.test.v1").WithFields(
+		&api.Field{
+			Name:    "child_ref",
+			TypezID: child.ID,
+			Typez:   api.TypezMessage,
+		},
+	)
+
+	chatMethod := api.NewTestMethod("Chat").WithInput(streamReq).WithOutput(streamReq).WithBidiStreaming()
+	bidiService := api.NewTestService("BidiService").WithPackage("google.test.v1").WithMethods(chatMethod)
+
+	model := api.NewTestAPI([]*api.Message{parent, child, sibling, streamReq}, []*api.Enum{}, []*api.Service{bidiService})
+
+	_, unusedTypes, _, err := filterModelToStreaming(model)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	for _, unused := range unusedTypes {
+		if unused == parent.ID {
+			t.Errorf("parent message %q should not be in unusedTypes", parent.ID)
+		}
+		if unused == child.ID {
+			t.Errorf("child message %q should not be in unusedTypes", child.ID)
+		}
+		if unused == sibling.ID {
+			t.Errorf("sibling field message %q of parent should not be in unusedTypes", sibling.ID)
+		}
 	}
 }

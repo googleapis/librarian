@@ -15,7 +15,6 @@
 package dart
 
 import (
-	"errors"
 	"io/fs"
 	"maps"
 	"os"
@@ -71,11 +70,19 @@ func TestFromProtobuf(t *testing.T) {
 	if err := Generate(t.Context(), model, outDir, cfg.Codec); err != nil {
 		t.Fatal(err)
 	}
-	for _, expected := range []string{"pubspec.yaml", "lib/secretmanager.dart", "README.md"} {
+	for _, expected := range []string{
+		"pubspec.yaml",
+		"lib/secretmanager.dart",
+		"LICENSE",
+		"README.md",
+		"skills/google_cloud_secretmanager_v1-tests/SKILL.md",
+		"skills/google_cloud_secretmanager_v1-setup/SKILL.md",
+	} {
 		filename := path.Join(outDir, expected)
 		stat, err := os.Stat(filename)
-		if errors.Is(err, fs.ErrNotExist) {
-			t.Errorf("missing %s: %s", filename, err)
+		if err != nil {
+			t.Errorf("missing or cannot stat %s: %s", filename, err)
+			continue
 		}
 		if stat.Mode().Perm()|0o666 != 0o666 {
 			t.Errorf("generated files should not be executable %s: %o", filename, stat.Mode())
@@ -100,9 +107,6 @@ func TestGeneratedFiles(t *testing.T) {
 	for _, fileInfo := range files {
 		if filepath.Base(fileInfo.OutputPath) == "main.dart" {
 			t.Errorf("expected the main.dart template to be generated as {servicename}.dart")
-		}
-		if filepath.Base(fileInfo.OutputPath) == "LICENSE.txt" {
-			t.Errorf("expected the LICENSE.txt template to be generated as LICENSE")
 		}
 	}
 }

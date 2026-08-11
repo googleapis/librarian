@@ -105,14 +105,18 @@ func UpdateWorkspace(ctx context.Context) error {
 	return command.Run(ctx, command.Cargo, "update", "--workspace")
 }
 
-// Format formats a generated Rust library. Must be called sequentially;
-// parallel calls cause race conditions as cargo fmt runs cargo metadata,
-// which competes for locks on the workspace Cargo.toml and Cargo.lock.
+// Format formats a generated Rust library.
+//
+// Note the use of `--frozen` to avoid contention on the crate and build locks.
+// This can be called in parallel. Keep in mind that `cargo fmt -p foo` reads
+// the `Cargo.toml` of the `foo` package. Running `generate` and `format`
+// concurrently will not work as `generate` may delete files from one of the
+// dependencies.
 func Format(ctx context.Context, library *config.Library) error {
 	if err := command.Run(ctx, "taplo", "fmt", filepath.Join(library.Output, "Cargo.toml")); err != nil {
 		return err
 	}
-	if err := command.Run(ctx, command.Cargo, "fmt", "-p", library.Name); err != nil {
+	if err := command.Run(ctx, command.Cargo, "--frozen", "fmt", "-p", library.Name); err != nil {
 		return err
 	}
 	return nil

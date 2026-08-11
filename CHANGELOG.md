@@ -1,5 +1,125 @@
 # Changelog
 
+## [0.36.0](https://github.com/googleapis/librarian/compare/v0.35.0...v0.36.0) (2026-08-11)
+
+
+### Features
+
+* **internal/librarian/php:** add google-cloud-php/dev as a tool to install ([#7122](https://github.com/googleapis/librarian/issues/7122)) ([97ed7e2](https://github.com/googleapis/librarian/commit/97ed7e2c604e3f65ca8d41e34f219b11dc1f6e72))
+* **sidekick/impl:** use `GoogleCloudGax._HTTPClient` ([#7237](https://github.com/googleapis/librarian/issues/7237)) ([7e0dc84](https://github.com/googleapis/librarian/commit/7e0dc84099ab7941e5bbe0f5d848af4ff1a1913c))
+* **swift:** qualify external package types in module conversions ([#7240](https://github.com/googleapis/librarian/issues/7240)) ([23f3754](https://github.com/googleapis/librarian/commit/23f3754b4d81f7d01cc44735e8e98f45dbf8a331))
+
+
+### Bug Fixes
+
+* **internal/librarian/php:** remove --side_loaded_root_dir option in install ([#7141](https://github.com/googleapis/librarian/issues/7141)) ([bf82078](https://github.com/googleapis/librarian/commit/bf8207875912ad1b79395ee655672f44a8a63689))
+* **sidekick/rust:** BQ query creation metadata not checking skip field id ([#7232](https://github.com/googleapis/librarian/issues/7232)) ([bda2a49](https://github.com/googleapis/librarian/commit/bda2a49b472957c7a4c82702e6132577685d77dc))
+* **sidekick/swift:** correct doc links for services ([#7236](https://github.com/googleapis/librarian/issues/7236)) ([f421d6c](https://github.com/googleapis/librarian/commit/f421d6c8b97c83f82479fe166a39c5f369eee70d))
+
+## [0.35.0](https://github.com/googleapis/librarian/compare/v0.34.0...v0.35.0) (2026-08-10)
+
+
+### Features
+
+* **swift:** split +stub into +transport.swift ([#7230](https://github.com/googleapis/librarian/issues/7230)) ([7898c6d](https://github.com/googleapis/librarian/commit/7898c6dd38c24bdf0fdc9bac680cf40b60f4bc06))
+
+## [0.34.0](https://github.com/googleapis/librarian/compare/v0.33.0...v0.34.0) (2026-08-08)
+
+
+### Features
+
+* **dart:** add a setup skill ([#7193](https://github.com/googleapis/librarian/issues/7193)) ([d322aa0](https://github.com/googleapis/librarian/commit/d322aa0d2095c853c0bba5eaea1207a2d6079630))
+* **dart:** implement bump ([#6989](https://github.com/googleapis/librarian/issues/6989)) ([5505997](https://github.com/googleapis/librarian/commit/5505997dcc497d012ed176ef04add0cec3694905))
+* **internal/librarian/php:** derive component name with config override in generate ([#7197](https://github.com/googleapis/librarian/issues/7197)) ([557e664](https://github.com/googleapis/librarian/commit/557e66440e7f60a474f8fae43985ecd296e7f551)), refs [#7025](https://github.com/googleapis/librarian/issues/7025)
+* **internal/librarian/php:** derive lowercase hyphenated php library names from api path ([#7215](https://github.com/googleapis/librarian/issues/7215)) ([4669112](https://github.com/googleapis/librarian/commit/4669112aeffacc6bdcc4a170a067c4daf4d5de6e))
+* **internal/librarian/php:** initialize new component before generation ([#7225](https://github.com/googleapis/librarian/issues/7225)) ([b6c50b4](https://github.com/googleapis/librarian/commit/b6c50b4fdc048186f255a9ce1c3f5382131d865f))
+* **internal/librarian/ruby:** support deleting output paths after generation ([#7223](https://github.com/googleapis/librarian/issues/7223)) ([609ffb7](https://github.com/googleapis/librarian/commit/609ffb7a31d92c9b6b5d5f10a4a4e2c97ac4a954)), refs [#6633](https://github.com/googleapis/librarian/issues/6633)
+* **internal/librarian/rust:** support external type conversions  ([#7212](https://github.com/googleapis/librarian/issues/7212)) ([5b72c52](https://github.com/googleapis/librarian/commit/5b72c52fcfd8adbb69026c5fbb8921a3db132871)), refs [#7144](https://github.com/googleapis/librarian/issues/7144)
+* **internal/proto:** add package to gather proto files ([#7218](https://github.com/googleapis/librarian/issues/7218)) ([9646f09](https://github.com/googleapis/librarian/commit/9646f093a8f3cb8181f6fe1dd0b90c4c9dc0c09f)), refs [#7217](https://github.com/googleapis/librarian/issues/7217)
+* **internal/sidekick/rust:** initialize bidi streaming RPCs eagerly ([#7221](https://github.com/googleapis/librarian/issues/7221)) ([cbfa368](https://github.com/googleapis/librarian/commit/cbfa3683de7ca5f8ed7ce728316742bb1d86896f)), refs [#6835](https://github.com/googleapis/librarian/issues/6835)
+* **internal/sidekick/rust:** support type-erased streaming handles ([#7229](https://github.com/googleapis/librarian/issues/7229)) ([17f5a3d](https://github.com/googleapis/librarian/commit/17f5a3d7567138003496afb18f038e00437e0c34)), refs [#6835](https://github.com/googleapis/librarian/issues/6835)
+* **internal/sidekick/rust:** use builder pattern for bidi methods ([#7203](https://github.com/googleapis/librarian/issues/7203)) ([bc90045](https://github.com/googleapis/librarian/commit/bc90045c1b6a87f1d4ee3f3880ced71753650d89)), refs [#6835](https://github.com/googleapis/librarian/issues/6835)
+* **internal/tool/composer:** use entrypoint configuration instead of package names ([#7156](https://github.com/googleapis/librarian/issues/7156)) ([e33192f](https://github.com/googleapis/librarian/commit/e33192f4783fdd80f5bd8925bcdaacbe51be2fbd))
+* **sidekick/rust:** bigquery query creation metadata ([#7167](https://github.com/googleapis/librarian/issues/7167)) ([d70f2a2](https://github.com/googleapis/librarian/commit/d70f2a289604ed095000a8156450a0c1ea9d2b65))
+* **swift:** conversions support map fields ([#7222](https://github.com/googleapis/librarian/issues/7222)) ([341f1e5](https://github.com/googleapis/librarian/commit/341f1e5082c5ae7d152e38b10557ace9ea64c457))
+* **swift:** protobuf conversions support oneofs ([#7205](https://github.com/googleapis/librarian/issues/7205)) ([40c48df](https://github.com/googleapis/librarian/commit/40c48dff907ca7ab3c9a04692508e5f6c17c0614))
+* **swift:** support skipped_ids in configuration ([#7206](https://github.com/googleapis/librarian/issues/7206)) ([95d3464](https://github.com/googleapis/librarian/commit/95d34648b22e177dc482ec26b402a4b80965668c))
+
+
+### Bug Fixes
+
+* **internal/librarian/php:** remove version suffix from init namespace ([#7227](https://github.com/googleapis/librarian/issues/7227)) ([7fb3b46](https://github.com/googleapis/librarian/commit/7fb3b46ccb0b5e1b5b96c6b1139b2c707e47793c))
+* **internal/librarian/ruby:** pass gem namespace option to generator ([#7210](https://github.com/googleapis/librarian/issues/7210)) ([817146f](https://github.com/googleapis/librarian/commit/817146fcb38f11ab4251d15ca4e73a1fa62fbae7))
+* **internal/librarian/ruby:** pass service override option to generator ([#7208](https://github.com/googleapis/librarian/issues/7208)) ([e9886bf](https://github.com/googleapis/librarian/commit/e9886bf0c493c13693d1c7dab77e16c598f3ade6)), refs [#6633](https://github.com/googleapis/librarian/issues/6633)
+* **internal/librarian/ruby:** search proto recursively in API path ([#7220](https://github.com/googleapis/librarian/issues/7220)) ([3d4a4a1](https://github.com/googleapis/librarian/commit/3d4a4a19464190984a8844ebe4f22f8f86f63d61)), refs [#7219](https://github.com/googleapis/librarian/issues/7219) [#7217](https://github.com/googleapis/librarian/issues/7217)
+* **internal/librarian/rust:** preserve parent messages of used types ([#7170](https://github.com/googleapis/librarian/issues/7170)) ([e51520c](https://github.com/googleapis/librarian/commit/e51520ca8d92976e2535da1a5b0506168c52e86d)), refs [#7143](https://github.com/googleapis/librarian/issues/7143)
+* **internal/serviceconfig:** update config for compute ([#7200](https://github.com/googleapis/librarian/issues/7200)) ([a08e565](https://github.com/googleapis/librarian/commit/a08e565983cef56aa49ea8508755187b89675be5))
+* **internal/sidekick/rust:** use from for repeated enum conversions in convert-prost ([#7211](https://github.com/googleapis/librarian/issues/7211)) ([ee4fb71](https://github.com/googleapis/librarian/commit/ee4fb71cfa61ac27635d53c7d30b241c3d3f4abf))
+
+
+### Performance Improvements
+
+* **java:** batch format all libraries using argument file ([#7186](https://github.com/googleapis/librarian/issues/7186)) ([5a7775a](https://github.com/googleapis/librarian/commit/5a7775a1535a48df6a6fc0197cd8a1d3ac045df7))
+
+## [0.33.0](https://github.com/googleapis/librarian/compare/v0.32.0...v0.33.0) (2026-08-05)
+
+
+### Features
+
+* **internal/config:** support php component_name config and migration override ([#7196](https://github.com/googleapis/librarian/issues/7196)) ([48ef7df](https://github.com/googleapis/librarian/commit/48ef7dfbda61414fa44a52db7152133364819ba2)), refs [#7025](https://github.com/googleapis/librarian/issues/7025)
+* **internal/librarian/php:** derive proto package and version in initParams ([#7198](https://github.com/googleapis/librarian/issues/7198)) ([811b4fb](https://github.com/googleapis/librarian/commit/811b4fbc758450a772c3d1d51bdc254b653c15a9))
+* **librarian/swift:** modules with service configs ([#7194](https://github.com/googleapis/librarian/issues/7194)) ([3cacaac](https://github.com/googleapis/librarian/commit/3cacaacd05528a3caaf67eb493cd028d488cdfd3))
+
+## [0.32.0](https://github.com/googleapis/librarian/compare/v0.31.1...v0.32.0) (2026-08-04)
+
+
+### Features
+
+* **dart:** generate a testing skill ([#6997](https://github.com/googleapis/librarian/issues/6997)) ([53093a7](https://github.com/googleapis/librarian/commit/53093a776d71d996cd5849ece74e981fc0813896))
+* **internal/librarian/php:** implement code formatting using prettier ([#7119](https://github.com/googleapis/librarian/issues/7119)) ([dd2b2f7](https://github.com/googleapis/librarian/commit/dd2b2f7391ce2a4ff4922f595688e8129639bd3d))
+* **internal/librarian/php:** resolve API short name and product URLs ([#7179](https://github.com/googleapis/librarian/issues/7179)) ([a14298b](https://github.com/googleapis/librarian/commit/a14298b0e18263b27c6207b4a5923302baf7f843))
+* **internal/librarian/ruby:** add library initialization and wrappers ([#7181](https://github.com/googleapis/librarian/issues/7181)) ([3f99679](https://github.com/googleapis/librarian/commit/3f9967952920baa76e731aca6bef34010aa9d906)), refs [#7182](https://github.com/googleapis/librarian/issues/7182) [#6635](https://github.com/googleapis/librarian/issues/6635)
+* **internal/librarian/ruby:** add tidy function for ruby configuration ([#7115](https://github.com/googleapis/librarian/issues/7115)) ([aba444f](https://github.com/googleapis/librarian/commit/aba444f28efa7bc6d757240e53097dacc8027785)), refs [#6919](https://github.com/googleapis/librarian/issues/6919)
+* **internal/librarian/ruby:** support release please synchronization ([#7184](https://github.com/googleapis/librarian/issues/7184)) ([f3c1707](https://github.com/googleapis/librarian/commit/f3c170714402bfb994c86ce2d29532e427361ed4)), refs [#7185](https://github.com/googleapis/librarian/issues/7185) [#6635](https://github.com/googleapis/librarian/issues/6635)
+* **internal/librarian/ruby:** support ruby.wrapper_of main client gem wrapper generation ([#7110](https://github.com/googleapis/librarian/issues/7110)) ([fa48762](https://github.com/googleapis/librarian/commit/fa4876292d6d7571a931ffd0b953c80e71b1995d))
+* **internal/sidekick/rust:** support google.rpc.Status in hybrid crates ([#7142](https://github.com/googleapis/librarian/issues/7142)) ([fa8a0e6](https://github.com/googleapis/librarian/commit/fa8a0e61fd8cce2126309e3411925836e2ded4a6)), refs [#6835](https://github.com/googleapis/librarian/issues/6835)
+* **internal/sidekick/rust:** support per_service_features in hybrid crates ([#7112](https://github.com/googleapis/librarian/issues/7112)) ([0eb263a](https://github.com/googleapis/librarian/commit/0eb263a544ce5c99ca2ffc4f348570bd980de62a)), refs [#6835](https://github.com/googleapis/librarian/issues/6835)
+* **internal/tool/composer:** add verification for composer tools ([#7109](https://github.com/googleapis/librarian/issues/7109)) ([9c7f0b1](https://github.com/googleapis/librarian/commit/9c7f0b14df5a2d73fcf390f0ca02738987d4b0bd))
+* **internal/tool/composer:** support local_path in ComposerTool configuration ([#7131](https://github.com/googleapis/librarian/issues/7131)) ([e0d526e](https://github.com/googleapis/librarian/commit/e0d526edc69d68e1721aba11b63deec6b9f9fbde))
+* **librarian/rust:** parallelize formatting ([#7192](https://github.com/googleapis/librarian/issues/7192)) ([625fdf8](https://github.com/googleapis/librarian/commit/625fdf8e10113e8f98c9afe29caad657cf3a33ed))
+* **librarian/swift:** implement bump command ([#7136](https://github.com/googleapis/librarian/issues/7136)) ([72aaae1](https://github.com/googleapis/librarian/commit/72aaae1232a8dff8e6870e0775f79e7fa3611613))
+* **rust:** exclude non-streaming types from prost generation ([#7097](https://github.com/googleapis/librarian/issues/7097)) ([a74e30f](https://github.com/googleapis/librarian/commit/a74e30fe259e6c64cd712daccf4448afa280d4a3)), refs [#6835](https://github.com/googleapis/librarian/issues/6835)
+* **rust:** generate conversion traits for hybrid crates ([#7071](https://github.com/googleapis/librarian/issues/7071)) ([98d1549](https://github.com/googleapis/librarian/commit/98d154903c24bf2f7362fc8b04d36f7ada1bb4ad)), refs [#6835](https://github.com/googleapis/librarian/issues/6835)
+* **sidekick/rust:** bigquery skipped fields via librarian.yaml ([#7189](https://github.com/googleapis/librarian/issues/7189)) ([b07a8a7](https://github.com/googleapis/librarian/commit/b07a8a79b63a36e552c1afcceaa0a369bd388145))
+* **sidekick/rust:** implement bidi streaming transport stubs ([#7078](https://github.com/googleapis/librarian/issues/7078)) ([5042693](https://github.com/googleapis/librarian/commit/5042693f735f6785a56e9dc55a559054440a80bb)), refs [#6835](https://github.com/googleapis/librarian/issues/6835)
+* **sidekick/swift:** error on suspect library names ([#7107](https://github.com/googleapis/librarian/issues/7107)) ([b4df72d](https://github.com/googleapis/librarian/commit/b4df72df1c1b474f53d8724c1d820d64dd3894da)), refs [#6229](https://github.com/googleapis/librarian/issues/6229)
+* **sidekick/swift:** generate repo metadata ([#6940](https://github.com/googleapis/librarian/issues/6940)) ([0ea54b4](https://github.com/googleapis/librarian/commit/0ea54b41a63bae8af425b9fe3e2f79329eb52121))
+* **sidekick/swift:** support overrides for library names ([#7066](https://github.com/googleapis/librarian/issues/7066)) ([e9234a3](https://github.com/googleapis/librarian/commit/e9234a3c0c8b6952c14772f180a59ba61ab816f6))
+* **sidekick/swift:** use polling policies ([#7123](https://github.com/googleapis/librarian/issues/7123)) ([fa34184](https://github.com/googleapis/librarian/commit/fa34184d746948b1da7df000ffcf832979a3c488))
+* **sidekick:** capture C#, PHP, and Ruby file options ([#7081](https://github.com/googleapis/librarian/issues/7081)) ([1d27ba8](https://github.com/googleapis/librarian/commit/1d27ba8ab3b47073741c4ca4fab16dffd24b8109))
+* **sidekick:** capture C#, PHP, and Ruby file options ([#7092](https://github.com/googleapis/librarian/issues/7092)) ([9415901](https://github.com/googleapis/librarian/commit/94159019fdca7be5a58530fd32f39999db871140))
+* **swift:** Improve module generation ([#7129](https://github.com/googleapis/librarian/issues/7129)) ([a0c420d](https://github.com/googleapis/librarian/commit/a0c420d05eacebbe860f224efd18d30687815d08))
+* **swift:** support optional, nested fields ([#7164](https://github.com/googleapis/librarian/issues/7164)) ([26e5c8a](https://github.com/googleapis/librarian/commit/26e5c8a755c603198ce513427414572a9eccbbc4))
+* **swift:** support repeated fields in Protobuf conversions ([#7188](https://github.com/googleapis/librarian/issues/7188)) ([3ee87fc](https://github.com/googleapis/librarian/commit/3ee87fcd7ad6b6fbf47f468874451a32a0fbf909))
+
+
+### Bug Fixes
+
+* **cmd/librarian/Dockerfile:** bump protoc to 33.5 for Python ([#7139](https://github.com/googleapis/librarian/issues/7139)) ([e9da697](https://github.com/googleapis/librarian/commit/e9da697881de7de6ebf9e5b17ef6704a4c0dbc52))
+* **internal/librarian/ruby:** normalize newlines into spaces in description and summary options ([#7134](https://github.com/googleapis/librarian/issues/7134)) ([f52568e](https://github.com/googleapis/librarian/commit/f52568e7df469fa81067a70f9d1ec2058246246f))
+* **internal/librarian/ruby:** pass documentation summary as ruby-cloud-description option ([#7105](https://github.com/googleapis/librarian/issues/7105)) ([d10f2f3](https://github.com/googleapis/librarian/commit/d10f2f38f528aaa19bfac37185e35bd94a200ee9))
+* **internal/librarian/ruby:** pass ruby-cloud-summary generator option alongside description ([#7114](https://github.com/googleapis/librarian/issues/7114)) ([ff3a6d1](https://github.com/googleapis/librarian/commit/ff3a6d1add878bb551a16f85bf7cb5eceeeddb22))
+* **internal/librarian/ruby:** preserve snippet metadata files during regeneration ([#7085](https://github.com/googleapis/librarian/issues/7085)) ([d250f2b](https://github.com/googleapis/librarian/commit/d250f2b67dfe92ea331962fd91d9a4144d236e59))
+* **java:** batch formatting and run GJF twice ([#7155](https://github.com/googleapis/librarian/issues/7155)) ([f627180](https://github.com/googleapis/librarian/commit/f62718059977ee552ed7339a93321283d7b14b87))
+* **sdk.yaml:** configure ftp rest-only transport ([#7191](https://github.com/googleapis/librarian/issues/7191)) ([f933c87](https://github.com/googleapis/librarian/commit/f933c87a3310d94e56c760f8a0a99979f820d16f))
+* **sdk.yaml:** fix all shopping merchant titles ([#7190](https://github.com/googleapis/librarian/issues/7190)) ([0e22c54](https://github.com/googleapis/librarian/commit/0e22c5458df14e7e18846cb484ff2af23631f4a9))
+* **sidekick/rust:** fix prost oneof field conversion in templates ([#7093](https://github.com/googleapis/librarian/issues/7093)) ([709074c](https://github.com/googleapis/librarian/commit/709074cbf009bb57ed89da0afaa1a7712a119c04)), refs [#6835](https://github.com/googleapis/librarian/issues/6835)
+* **sidekick/swift:** discovery enums encoding ([#7126](https://github.com/googleapis/librarian/issues/7126)) ([8a4ed11](https://github.com/googleapis/librarian/commit/8a4ed11e314ebd2b3ebdce55f33cf8c7ecac384b))
+* **swift:** fix sub-module imports ([#7140](https://github.com/googleapis/librarian/issues/7140)) ([a02c282](https://github.com/googleapis/librarian/commit/a02c28273b3c9ddb33bbe5849a44b6a678d28404))
+* **swift:** use let for messages without converted fields ([#7175](https://github.com/googleapis/librarian/issues/7175)) ([662b048](https://github.com/googleapis/librarian/commit/662b048ce902d8603767f2ba3d069347570a548c))
+* **tool/cmd/migrate:** exclude `.owlbot.rb` from ruby keep list ([#7108](https://github.com/googleapis/librarian/issues/7108)) ([e2f27e1](https://github.com/googleapis/librarian/commit/e2f27e1a4ca0d3f2b57ef0463046920aa4057609)), refs [#6632](https://github.com/googleapis/librarian/issues/6632)
+* **tool/cmd/migrate:** parse WrapperOf from BUILD.bazel ([#7125](https://github.com/googleapis/librarian/issues/7125)) ([855a04b](https://github.com/googleapis/librarian/commit/855a04b91504390444326a177c7c57dde37e33ef)), refs [#7127](https://github.com/googleapis/librarian/issues/7127) [#6632](https://github.com/googleapis/librarian/issues/6632)
+
 ## [0.31.1](https://github.com/googleapis/librarian/compare/v0.31.0...v0.31.1) (2026-07-28)
 
 

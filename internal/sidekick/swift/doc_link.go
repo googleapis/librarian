@@ -141,9 +141,11 @@ func (c *codec) methodDocLink(m *api.Method) (string, error) {
 	if s == nil {
 		return "", nil
 	}
-	return c.docLink(s.Package, fmt.Sprintf("%s/%s(request:)", pascalCase(s.Name), camelCase(m.Name))), nil
+	name := fmt.Sprintf("%sClient/%s(request:)", pascalCaseNoMangling(s.Name), camelCase(m.Name))
+	return c.docLink(s.Package, name), nil
 }
 
 func (c *codec) serviceDocLink(s *api.Service) string {
-	return c.docLink(s.Package, pascalCase(s.Name))
+	name := fmt.Sprintf("%sClient", pascalCaseNoMangling(s.Name))
+	return c.docLink(s.Package, name)
 }

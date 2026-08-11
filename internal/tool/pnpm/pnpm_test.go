@@ -18,6 +18,7 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/googleapis/librarian/internal/config"
@@ -30,13 +31,21 @@ func TestInstall(t *testing.T) {
 		setup     func(t *testing.T)
 	}{
 		{
-			name: "source build tool",
+			name:      "empty tools",
+			pnpmTools: []*config.PNPMTool{},
+		},
+		{
+			name:      "nil tools",
+			pnpmTools: nil,
+		},
+		{
+			name: "source build tool with explicit src_dir",
 			pnpmTools: []*config.PNPMTool{
 				{
 					Name:    "gapic-generator-typescript",
 					Version: "4.12.1",
 					Package: "https://github.com/googleapis/google-cloud-node/archive/gapic-generator-v4.12.1.tar.gz",
-					SrcDir:  "gapic-generator-v4.12.1",
+					SrcDir:  "core/generator/gapic-generator-typescript",
 					Build: []string{
 						"pnpm install",
 						"./node_modules/.bin/tsc",
@@ -51,11 +60,34 @@ func TestInstall(t *testing.T) {
 				t.Setenv("LIBRARIAN_BIN", binDir)
 				genDir := filepath.Join(cache,
 					"github.com/googleapis/google-cloud-node@4.12.1",
-					"gapic-generator-v4.12.1")
+					"core/generator/gapic-generator-typescript")
 				for _, sub := range []string{"templates", "protos"} {
 					if err := os.MkdirAll(filepath.Join(genDir, sub), 0o755); err != nil {
 						t.Fatal(err)
 					}
+				}
+				stubExecutables(t)
+			},
+		},
+		{
+			name: "build tool with custom src_dir",
+			pnpmTools: []*config.PNPMTool{
+				{
+					Name:    "gapic-tools",
+					Version: "1.1.0",
+					Package: "https://github.com/googleapis/google-cloud-node/archive/gapic-tools-v1.1.0.tar.gz",
+					SrcDir:  "core/packages/tools",
+					Build:   []string{"true"},
+				},
+			},
+			setup: func(t *testing.T) {
+				cache := t.TempDir()
+				t.Setenv("LIBRARIAN_CACHE", cache)
+				binDir := t.TempDir()
+				t.Setenv("LIBRARIAN_BIN", binDir)
+				toolsDir := filepath.Join(cache, "github.com/googleapis/google-cloud-node@1.1.0", "core/packages/tools")
+				if err := os.MkdirAll(toolsDir, 0o755); err != nil {
+					t.Fatal(err)
 				}
 				stubExecutables(t)
 			},
@@ -94,6 +126,7 @@ func TestInstall_Error(t *testing.T) {
 	for _, test := range []struct {
 		name      string
 		pnpmTools []*config.PNPMTool
+		setup     func(t *testing.T)
 		wantErr   error
 	}{
 		{
@@ -101,22 +134,125 @@ func TestInstall_Error(t *testing.T) {
 			pnpmTools: []*config.PNPMTool{
 				{Name: "tool", Build: []string{"echo 1"}},
 			},
-			wantErr: errMissingPackageURL,
+			setup:   stubExecutables,
+			wantErr: ErrMissingPackageURL,
+		},
+		{
+			name: "missing src_dir for build tool",
+			pnpmTools: []*config.PNPMTool{
+				{Name: "tool", Package: "https://github.com/googleapis/google-cloud-node/archive/v1.0.0.tar.gz", Build: []string{"echo 1"}},
+			},
+			setup:   stubExecutables,
+			wantErr: ErrMissingSrcDir,
 		},
 		{
 			name: "invalid package url for build tool",
 			pnpmTools: []*config.PNPMTool{
-				{Name: "tool", Package: "invalid-url", Build: []string{"echo 1"}},
+				{Name: "tool", Package: "invalid-url", SrcDir: "some/dir", Build: []string{"echo 1"}},
 			},
-			wantErr: errCannotExtractRepo,
+			setup:   stubExecutables,
+			wantErr: ErrCannotExtractRepo,
+		},
+		{
+			name: "missing node or pnpm in path",
+			pnpmTools: []*config.PNPMTool{
+				{Name: "foo", Version: "1.0"},
+			},
+			setup: func(t *testing.T) {
+				t.Setenv("PATH", t.TempDir())
+			},
+			wantErr: ErrMissingExecutable,
+		},
+		{
+			name: "pnpm command fails",
+			pnpmTools: []*config.PNPMTool{
+				{Name: "failpkg", Version: "1.0.0"},
+			},
+			setup: func(t *testing.T) {
+				bin := t.TempDir()
+				if err := os.WriteFile(filepath.Join(bin, "pnpm"), []byte("#!/bin/sh\nexit 1\n"), 0o755); err != nil {
+					t.Fatal(err)
+				}
+				if err := os.WriteFile(filepath.Join(bin, "node"), []byte("#!/bin/sh\nexit 0\n"), 0o755); err != nil {
+					t.Fatal(err)
+				}
+				t.Setenv("PATH", bin+string(os.PathListSeparator)+os.Getenv("PATH"))
+			},
+			wantErr: ErrInstall,
+		},
+		{
+			name: "build command fails",
+			pnpmTools: []*config.PNPMTool{
+				{
+					Name:    "gapic-generator-typescript",
+					Version: "4.12.1",
+					Package: "https://github.com/googleapis/google-cloud-node/archive/gapic-generator-v4.12.1.tar.gz",
+					SrcDir:  "core/generator/gapic-generator-typescript",
+					Build:   []string{"exit 1"},
+				},
+			},
+			setup: func(t *testing.T) {
+				cache := t.TempDir()
+				t.Setenv("LIBRARIAN_CACHE", cache)
+				genDir := filepath.Join(cache, "github.com/googleapis/google-cloud-node@4.12.1", "core/generator/gapic-generator-typescript")
+				if err := os.MkdirAll(genDir, 0o755); err != nil {
+					t.Fatal(err)
+				}
+				stubExecutables(t)
+			},
+			wantErr: ErrInstall,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
+			if test.setup != nil {
+				test.setup(t)
+			}
 			err := Install(t.Context(), test.pnpmTools, t.TempDir())
 			if !errors.Is(err, test.wantErr) {
 				t.Fatalf("Install() error = %v, wantErr = %v", err, test.wantErr)
 			}
 		})
+	}
+}
+
+func TestEnv(t *testing.T) {
+	cacheDir := t.TempDir()
+	binDir := filepath.Join(t.TempDir(), "test_tools", "bin")
+	t.Setenv("LIBRARIAN_CACHE", cacheDir)
+
+	envList, err := env(binDir)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	wantGlobalDir := filepath.Join(cacheDir, "pnpm-global")
+	wantStoreDir := filepath.Join(cacheDir, "pnpm-store")
+
+	envMap := make(map[string]string)
+	for _, entry := range envList {
+		parts := strings.SplitN(entry, "=", 2)
+		if len(parts) == 2 {
+			envMap[parts[0]] = parts[1]
+		}
+	}
+
+	if got := envMap["PNPM_HOME"]; got != binDir {
+		t.Errorf("PNPM_HOME = %q, want %q", got, binDir)
+	}
+	if got := envMap["PNPM_CONFIG_GLOBAL_BIN_DIR"]; got != binDir {
+		t.Errorf("PNPM_CONFIG_GLOBAL_BIN_DIR = %q, want %q", got, binDir)
+	}
+	if got := envMap["NPM_CONFIG_GLOBAL_BIN_DIR"]; got != binDir {
+		t.Errorf("NPM_CONFIG_GLOBAL_BIN_DIR = %q, want %q", got, binDir)
+	}
+	if got := envMap["npm_config_global_bin_dir"]; got != binDir {
+		t.Errorf("npm_config_global_bin_dir = %q, want %q", got, binDir)
+	}
+	if got := envMap["PNPM_CONFIG_GLOBAL_DIR"]; got != wantGlobalDir {
+		t.Errorf("PNPM_CONFIG_GLOBAL_DIR = %q, want %q", got, wantGlobalDir)
+	}
+	if got := envMap["PNPM_CONFIG_STORE_DIR"]; got != wantStoreDir {
+		t.Errorf("PNPM_CONFIG_STORE_DIR = %q, want %q", got, wantStoreDir)
 	}
 }
 
@@ -153,7 +289,7 @@ func TestRepoFromPackageURL_Error(t *testing.T) {
 		{
 			name:       "invalid archive url",
 			packageURL: "https://github.com/googleapis/google-cloud-node/invalid",
-			wantErr:    errCannotExtractRepo,
+			wantErr:    ErrCannotExtractRepo,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {

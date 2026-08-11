@@ -42,17 +42,21 @@ func GenerateConversions(ctx context.Context, model *api.API, outdir string, lib
 		}
 		return string(contents), nil
 	}
-	if err := codec.generateEnumConversions(outdir, model, provider); err != nil {
+
+	if err := codec.generateEnumConversions(outdir, provider); err != nil {
 		return err
 	}
-	if err := codec.generateMessageConversions(outdir, model, provider); err != nil {
+	if err := codec.generateMessageConversions(outdir, provider); err != nil {
 		return err
 	}
 	return nil
 }
 
-func (c *codec) generateEnumConversions(outdir string, model *api.API, provider language.TemplateProvider) error {
-	for _, e := range model.Enums {
+func (c *codec) generateEnumConversions(outdir string, provider language.TemplateProvider) error {
+	for _, e := range c.Model.Enums {
+		if e.Parent != nil {
+			continue
+		}
 		name := c.enumFileName(e)
 		output := c.conversionOutputPath(name)
 		generated := language.GeneratedFile{
@@ -66,12 +70,9 @@ func (c *codec) generateEnumConversions(outdir string, model *api.API, provider 
 	return nil
 }
 
-func (c *codec) generateMessageConversions(outdir string, model *api.API, provider language.TemplateProvider) error {
-	for _, m := range model.Messages {
-		if m.IsMap {
-			continue
-		}
-		if m.ServicePlaceholder {
+func (c *codec) generateMessageConversions(outdir string, provider language.TemplateProvider) error {
+	for _, m := range c.Model.Messages {
+		if m.Parent != nil || m.IsMap || m.ServicePlaceholder {
 			continue
 		}
 		name := c.messageFileName(m)

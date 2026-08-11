@@ -19,14 +19,15 @@ import (
 	"errors"
 	"fmt"
 	"path/filepath"
-	"strings"
 
 	"github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/git"
+	"github.com/googleapis/librarian/internal/librarian/dart"
 	"github.com/googleapis/librarian/internal/librarian/golang"
 	"github.com/googleapis/librarian/internal/librarian/python"
 	"github.com/googleapis/librarian/internal/librarian/rust"
+	"github.com/googleapis/librarian/internal/librarian/swift"
 	"github.com/googleapis/librarian/internal/semver"
 	"github.com/googleapis/librarian/internal/yaml"
 	"github.com/urfave/cli/v3"
@@ -47,6 +48,9 @@ var (
 		config.LanguageRust: {
 			BumpVersionCore:       true,
 			DowngradePreGAChanges: true,
+		},
+		config.LanguageSwift: {
+			BumpVersionCore: true,
 		},
 	}
 	// IgnoredChanges defines the list of the files that are
@@ -113,7 +117,16 @@ func runBump(ctx context.Context, cfg *config.Config, all bool, libraryName, ver
 		return err
 	}
 	if cfg.Language == config.LanguageRust {
-		return legacyRustBump(ctx, cfg, all, libraryName, versionOverride)
+		return legacySidekickBump(ctx, cfg, all, libraryName, versionOverride)
+	}
+	if cfg.Language == config.LanguageSwift {
+		return legacySidekickBump(ctx, cfg, all, libraryName, versionOverride)
+	}
+	if cfg.Language == config.LanguageDart {
+		if err := dart.Bump(ctx, cfg, all, libraryName, versionOverride); err != nil {
+			return err
+		}
+		return RunTidyOnConfig(ctx, ".", cfg)
 	}
 
 	librariesToBump, err := findLibrariesToBump(ctx, cfg, all, libraryName)
@@ -155,7 +168,7 @@ func findLibrariesToBump(ctx context.Context, cfg *config.Config, all bool, libr
 		if lib.SkipRelease || lib.Version == "" {
 			continue
 		}
-		lastReleaseTagName := formatTagName(cfg.Default.TagFormat, lib)
+		lastReleaseTagName := git.FormatTagName(cfg.Default.TagFormat, lib.Name, lib.Version)
 		lastReleaseTagCommit, err := git.GetCommitHash(ctx, command.Git, lastReleaseTagName)
 		if err != nil {
 			return nil, fmt.Errorf("error retrieving commit for tag %s (from library %s version %s): %w", lastReleaseTagName, lib.Name, lib.Version, err)
@@ -186,22 +199,7 @@ func libraryChanged(cfg *config.Config, library *config.Library, filesChanged []
 	default:
 		output = libraryOutput(cfg.Language, library, cfg.Default)
 	}
-	return hasChangesIn(output, exclusion, filesChanged)
-}
-
-func hasChangesIn(dir, exclusion string, filesChanged []string) bool {
-	if !strings.HasSuffix(dir, "/") {
-		dir += "/"
-	}
-	for _, f := range filesChanged {
-		if strings.HasPrefix(f, dir) {
-			if exclusion != "" && strings.HasPrefix(f, exclusion) {
-				continue
-			}
-			return true
-		}
-	}
-	return false
+	return git.HasChangesIn(output, exclusion, filesChanged)
 }
 
 // bumpLibrary determines the next version of a library (using versionOverride
@@ -342,18 +340,20 @@ func findLatestReleaseCommitHash(ctx context.Context) (string, error) {
 	return "", errReleaseCommitNotFound
 }
 
-// legacyRustBump applies the legacy (but still in use) logic for Rust
-// releasing. This is separated from the main logic to allow non-Rust languages
-// to work on the newer "tag-per-library" logic without interrupting Rust
+// legacySidekickBump applies the legacy (but still in use) Sidekick logic for
+// releasing.
+//
+// This is separated from the main logic to allow non-Rust languages to work on
+// the newer "tag-per-library" logic without interrupting Rust and Swift
 // releases. The "fake" language is still valid here, for testing purposes.
-func legacyRustBump(ctx context.Context, cfg *config.Config, all bool, libraryName, versionOverride string) error {
+func legacySidekickBump(ctx context.Context, cfg *config.Config, all bool, libraryName, versionOverride string) error {
 	lastTag, err := git.GetLastTag(ctx, command.Git, config.RemoteUpstream, config.BranchMain)
 	if err != nil {
 		return err
 	}
 
 	if all {
-		if err := legacyRustBumpAll(ctx, cfg, lastTag); err != nil {
+		if err := legacySidekickBumpAll(ctx, cfg, lastTag); err != nil {
 			return err
 		}
 	} else {
@@ -361,7 +361,7 @@ func legacyRustBump(ctx context.Context, cfg *config.Config, all bool, libraryNa
 		if err != nil {
 			return err
 		}
-		if err := legacyRustBumpLibrary(ctx, cfg, lib, lastTag, versionOverride); err != nil {
+		if err := legacySidekickBumpLibrary(ctx, cfg, lib, lastTag, versionOverride); err != nil {
 			return err
 		}
 	}
@@ -372,11 +372,14 @@ func legacyRustBump(ctx context.Context, cfg *config.Config, all bool, libraryNa
 	return RunTidyOnConfig(ctx, ".", cfg)
 }
 
-// legacyRustBumpAll applies the legacy (but still in use) "bump all" approach
-// of assuming a single tag for the latest release, and checking everything
-// since that tag. (Compare this with findLibrariesToBump, which expects each
-// library to have its own tag for its last release.)
-func legacyRustBumpAll(ctx context.Context, cfg *config.Config, lastTag string) error {
+// legacySidekickBumpAll applies the legacy (but still in use) sidekick logic to
+// bump all.
+//
+// Sidekick (for Rust and Swift) assumes a single tag in the monorepo for the
+// latest release, and finds any changes since that tag. Compare this with
+// findLibrariesToBump, which expects each library to have its own tag for its
+// last release.
+func legacySidekickBumpAll(ctx context.Context, cfg *config.Config, lastTag string) error {
 	filesChanged, err := git.FilesChangedSince(ctx, command.Git, lastTag, IgnoredChanges)
 	if err != nil {
 		return err
@@ -386,21 +389,22 @@ func legacyRustBumpAll(ctx context.Context, cfg *config.Config, lastTag string) 
 			continue
 		}
 		output := libraryOutput(cfg.Language, lib, cfg.Default)
-		if !hasChangesIn(output, "", filesChanged) {
+		if !git.HasChangesIn(output, "", filesChanged) {
 			continue
 		}
-		if err := legacyRustBumpLibrary(ctx, cfg, lib, lastTag, ""); err != nil {
+		if err := legacySidekickBumpLibrary(ctx, cfg, lib, lastTag, ""); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-// legacyRustBumpLibrary applies the legacy (but still in use) approach of
+// legacySidekickBumpLibrary applies the legacy (but still in use) approach of
 // assuming a single tag for the latest release, and passing that tag into the
-// rust.Bump code. (Compare this with bumpLibrary, which only uses git to derive
-// the next version.)
-func legacyRustBumpLibrary(ctx context.Context, cfg *config.Config, lib *config.Library, lastTag, versionOverride string) error {
+// rust.Bump code.
+//
+// Compare this with bumpLibrary, which only uses git to derive the next version.
+func legacySidekickBumpLibrary(ctx context.Context, cfg *config.Config, lib *config.Library, lastTag, versionOverride string) error {
 	opts := languageVersioningOptions[cfg.Language]
 	version, err := deriveNextVersion(lib, opts, versionOverride)
 	if err != nil {
@@ -410,16 +414,12 @@ func legacyRustBumpLibrary(ctx context.Context, cfg *config.Config, lib *config.
 	switch cfg.Language {
 	case config.LanguageRust:
 		return rust.Bump(ctx, lib, output, version, command.Git, lastTag)
+	case config.LanguageSwift:
+		return swift.Bump(ctx, lib, output, version, command.Git, lastTag)
 	case config.LanguageFake:
 		lib.Version = version
 		return fakeBumpLibrary(output, version)
 	default:
-		return fmt.Errorf("%q should not be using legacyRustBumpLibrary", cfg.Language)
+		return fmt.Errorf("%q should not be using legacySidekickBumpLibrary", cfg.Language)
 	}
-}
-
-// formatTagName computes the name of the tag expected to be applied to the
-// commit that released the given library.
-func formatTagName(tagFormat string, lib *config.Library) string {
-	return strings.NewReplacer("{name}", lib.Name, "{version}", lib.Version).Replace(tagFormat)
 }

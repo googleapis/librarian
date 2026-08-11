@@ -84,7 +84,7 @@ impl gaxi::prost::FromProto<{{Codec.QualifiedName}}> for {{Codec.RelativeName}} 
                     .collect::<std::result::Result<std::vec::Vec<_>, _>>()?)
                 {{/IsEnum}}
                 {{#IsEnum}}
-                .set_{{Codec.SetterName}}(self.{{Codec.FieldName}}.into_iter().map(|v| v.into()))
+                .set_{{Codec.SetterName}}(self.{{Codec.FieldName}}.into_iter().map({{Codec.PrimitiveFieldType}}::from))
                 {{/IsEnum}}
                 {{/Repeated}}
                 {{#Map}}
@@ -96,7 +96,10 @@ impl gaxi::prost::FromProto<{{Codec.QualifiedName}}> for {{Codec.RelativeName}} 
                     https://protobuf.dev/programming-guides/proto3/#maps
                 }}
                 {{#Codec.ValueType.IsEnum}}
-                .set_{{Codec.SetterName}}(self.{{Codec.FieldName}}.into_iter().map(|(k, v)| (k.cnv(), v.into())))
+                .set_{{Codec.SetterName}}(self.{{Codec.FieldName}}.into_iter()
+                    .map(|(k, v)| {
+                        gaxi::prost::pair_transpose(k.cnv(), Ok({{Codec.ValueType.PrimitiveFieldType}}::from(v)))
+                    }).collect::<std::result::Result<std::collections::HashMap<_, _>, _>>()?)
                 {{/Codec.ValueType.IsEnum}}
                 {{^Codec.ValueType.IsEnum}}
                 .set_{{Codec.SetterName}}(self.{{Codec.FieldName}}.into_iter()

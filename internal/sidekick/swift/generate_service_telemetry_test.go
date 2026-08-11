@@ -87,14 +87,14 @@ func checkClientsContents(t *testing.T, outDir string) {
 
 func checkStubContents(t *testing.T, outDir string) {
 	t.Helper()
-	filename := filepath.Join(outDir, "Sources", "GoogleCloudTestV1", "SecretManager+Stub.swift")
+	filename := filepath.Join(outDir, "Sources", "GoogleCloudTestV1", "SecretManager+Transport.swift")
 	content, err := os.ReadFile(filename)
 	if err != nil {
 		t.Fatal(err)
 	}
 	contentStr := string(content)
-	got := extractBlock(t, contentStr, "req.setValue(Clients.clientHeader,", "\n")
-	want := "req.setValue(Clients.clientHeader, forHTTPHeaderField: \"X-Goog-Api-Client\")\n"
+	got := extractBlock(t, contentStr, "req.addHeader(name: ", "value: Clients.clientHeader)")
+	want := `req.addHeader(name: "X-Goog-Api-Client", value: Clients.clientHeader)`
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}

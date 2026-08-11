@@ -42,12 +42,24 @@ var (
 	errCommonResourcesUnconfigured = errors.New("common_resources must be set (either per-API or globally under default.php)")
 	errMissingStagingSubdir        = errors.New("staging_subdir is required for PHP configurations")
 	errNoProtos                    = errors.New("no target protos found")
+	errNoAPIs                      = errors.New("no APIs configured")
 )
+
+type generateAPIParams struct {
+	cfg          *config.Config
+	api          *config.API
+	library      *config.Library
+	srcCfg       *sources.SourceConfig
+	wrapperPath  string
+	tempDir      string
+	gapicDestDir string
+	protoDestDir string
+}
 
 // Generate generates a PHP client library.
 func Generate(ctx context.Context, cfg *config.Config, library *config.Library, src *sources.Sources) (err error) {
 	if len(library.APIs) == 0 {
-		return fmt.Errorf("no apis configured for library %q", library.Name)
+		return fmt.Errorf("%w: %q", errNoAPIs, library.Name)
 	}
 	if cfg.Tools == nil || cfg.Tools.Protoc == nil {
 		if _, err := exec.LookPath("protoc"); err != nil {
@@ -75,18 +87,25 @@ func Generate(ctx context.Context, cfg *config.Config, library *config.Library, 
 		}
 	}()
 
-	stagingDir := filepath.Join(owlBotStagingDir, library.Name)
+	for _, api := range library.APIs {
+		if api.PHP == nil || api.PHP.StagingSubdir == "" {
+			return fmt.Errorf("API %q: %w", api.Path, errMissingStagingSubdir)
+		}
+	}
+	srcCfg := sources.NewSourceConfig(src, library.Roots)
+	googleapisDir := srcCfg.Root("googleapis")
+	componentName, err := initComponentIfMissing(ctx, library, googleapisDir)
+	if err != nil {
+		return err
+	}
+	stagingDir := filepath.Join(owlBotStagingDir, componentName)
 	if err := os.RemoveAll(stagingDir); err != nil {
 		return err
 	}
 	if err := os.MkdirAll(stagingDir, 0o755); err != nil {
 		return err
 	}
-	srcCfg := sources.NewSourceConfig(src, library.Roots)
 	for _, api := range library.APIs {
-		if api.PHP == nil || api.PHP.StagingSubdir == "" {
-			return fmt.Errorf("API %q: %w", api.Path, errMissingStagingSubdir)
-		}
 		gapicDestDir := filepath.Join(stagingDir, api.PHP.StagingSubdir)
 		protoDestDir := filepath.Join(gapicDestDir, "proto/src")
 
@@ -104,21 +123,10 @@ func Generate(ctx context.Context, cfg *config.Config, library *config.Library, 
 			return err
 		}
 	}
-	if err := postProcessLibrary(ctx, library); err != nil {
+	if err := postProcessLibrary(ctx, library, componentName); err != nil {
 		return fmt.Errorf("failed to postprocess: %w", err)
 	}
 	return nil
-}
-
-type generateAPIParams struct {
-	cfg          *config.Config
-	api          *config.API
-	library      *config.Library
-	srcCfg       *sources.SourceConfig
-	wrapperPath  string
-	tempDir      string
-	gapicDestDir string
-	protoDestDir string
 }
 
 // generateAPI generates a single target API by resolving its service config, gathering
@@ -150,7 +158,19 @@ func generateAPI(ctx context.Context, params *generateAPIParams) (retErr error) 
 	if err != nil {
 		return err
 	}
-	opts := gapicOpts(apiMetadata, grpcConfigPath)
+	grpcConfigAbsPath, err := absConfigPath(googleapisDir, grpcConfigPath)
+	if err != nil {
+		return err
+	}
+	serviceConfigPath := ""
+	if apiMetadata != nil {
+		serviceConfigPath = apiMetadata.ServiceConfig
+	}
+	serviceYamlAbsPath, err := absConfigPath(googleapisDir, serviceConfigPath)
+	if err != nil {
+		return err
+	}
+	opts := gapicOpts(apiMetadata, grpcConfigAbsPath, serviceYamlAbsPath)
 	additionalProtos := params.api.PHP.AdditionalProtos
 	includeCommonResources := *params.api.PHP.CommonResources
 	gapicProtos, err := gatherGAPICProtos(googleapisDir, params.api.Path, additionalProtos, includeCommonResources)
@@ -276,7 +296,14 @@ func gatherProtos(root string) ([]string, error) {
 	return protos, nil
 }
 
-func gapicOpts(apiMetadata *serviceconfig.API, grpcConfigPath string) []string {
+func absConfigPath(baseDir, configPath string) (string, error) {
+	if configPath == "" {
+		return "", nil
+	}
+	return filepath.Abs(filepath.Join(baseDir, configPath))
+}
+
+func gapicOpts(apiMetadata *serviceconfig.API, grpcConfigAbsPath, serviceYamlAbsPath string) []string {
 	transport := serviceconfig.GRPCRest
 	if apiMetadata != nil {
 		transport = apiMetadata.Transport(config.LanguagePhp)
@@ -289,17 +316,11 @@ func gapicOpts(apiMetadata *serviceconfig.API, grpcConfigPath string) []string {
 		opts = append(opts, "rest-numeric-enums")
 	}
 	opts = append(opts, "generate-snippets")
-	if grpcConfigPath != "" {
-		opts = append(opts, "grpc_service_config="+grpcConfigPath)
+	if grpcConfigAbsPath != "" {
+		opts = append(opts, "grpc_service_config="+grpcConfigAbsPath)
 	}
-	if apiMetadata != nil && apiMetadata.ServiceConfig != "" {
-		opts = append(opts, "service_yaml="+apiMetadata.ServiceConfig)
+	if serviceYamlAbsPath != "" {
+		opts = append(opts, "service_yaml="+serviceYamlAbsPath)
 	}
 	return opts
-}
-
-// DefaultOutput derives an output path from a library name and a default
-// output directory.
-func DefaultOutput(name, defaultOutput string) string {
-	return filepath.Join(defaultOutput, name)
 }

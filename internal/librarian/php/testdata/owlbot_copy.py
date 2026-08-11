@@ -16,7 +16,7 @@ import os
 import shutil
 import sys
 
-staging = "../owl-bot-staging/secretmanager/v1"
+staging = "../owl-bot-staging/SecretManager/v1"
 if not os.path.exists(staging):
     sys.exit(0)
 for item in os.listdir(staging):

@@ -658,3 +658,37 @@ func TestModelAnnotationsBidiStreamingServices(t *testing.T) {
 		t.Errorf("expected BidiStreamingServices[0].Name == %q, got %q", "BidiService", got.BidiStreamingServices[0].Name)
 	}
 }
+
+func TestExternalTypesAnnotations(t *testing.T) {
+	extMsg := api.NewTestMessage("LatLng").WithPackage("google.type")
+	extEnum := &api.Enum{Name: "DayOfWeek", ID: ".google.type.DayOfWeek", Package: "google.type"}
+
+	model := api.NewTestAPI([]*api.Message{}, []*api.Enum{}, []*api.Service{})
+	model.ExternalMessages = []*api.Message{extMsg}
+	model.ExternalEnums = []*api.Enum{extEnum}
+
+	codec := newTestCodec(t, libconfig.SpecProtobuf, "", map[string]string{
+		"template-override": "templates/convert-prost",
+	})
+	codec.packageMapping["google.type"] = &packagez{name: "google_cloud_type", packageName: "google.type"}
+
+	if _, err := annotateModel(model, codec); err != nil {
+		t.Fatal(err)
+	}
+
+	msgAnn, ok := extMsg.Codec.(*messageAnnotation)
+	if !ok {
+		t.Fatalf("expected messageAnnotation on extMsg")
+	}
+	if want := "crate::prost::google::r#type::LatLng"; msgAnn.RelativeName != want {
+		t.Errorf("msgAnn.RelativeName = %q, want %q", msgAnn.RelativeName, want)
+	}
+
+	enumAnn, ok := extEnum.Codec.(*enumAnnotation)
+	if !ok {
+		t.Fatalf("expected enumAnnotation on extEnum")
+	}
+	if want := "crate::prost::google::r#type::DayOfWeek"; enumAnn.RelativeName != want {
+		t.Errorf("enumAnn.RelativeName = %q, want %q", enumAnn.RelativeName, want)
+	}
+}
