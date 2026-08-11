@@ -96,12 +96,7 @@ func createBinWrapper(wrapperName, content, binDir string) error {
 		return fmt.Errorf("failed to create directory for wrapper: %w", err)
 	}
 	_ = os.Remove(wrapperPath)
-	f, err := os.OpenFile(wrapperPath, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0o755)
-	if err != nil {
-		return fmt.Errorf("failed to create wrapper script: %w", err)
-	}
-	defer f.Close()
-	if _, err := f.WriteString(content); err != nil {
+	if err := os.WriteFile(wrapperPath, []byte(content), 0o755); err != nil {
 		return fmt.Errorf("failed to write wrapper script: %w", err)
 	}
 	return nil
