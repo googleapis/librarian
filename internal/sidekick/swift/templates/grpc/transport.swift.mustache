@@ -24,13 +24,11 @@ limitations under the License.
 #if {{Codec.Name}}
 {{/Codec.IsGated}}
 import Foundation
-import GRPC
 import GoogleCloudAuth
-import GoogleCloudGax
+@_spi(GoogleCloudInternal) import GoogleCloudGax
 {{#Codec.ServiceImports}}
 import {{.}}
 {{/Codec.ServiceImports}}
-import NIO
 
 {{#Codec.ModulePath}}
 internal import {{.}}
@@ -39,72 +37,14 @@ internal import GoogleCloudWktConvert
 internal import SwiftProtobuf
 
 extension Clients {
-  class {{Codec.StubPrefix}}Transport: {{Codec.StubPrefix}}Stub, @unchecked Sendable {
-    private let grpcClient: {{Codec.GrpcClientTypeName}}
-    {{#Codec.HasOperationsClient}}
-    private let operationsClient: {{Codec.OperationsClientTypeName}}
-    {{/Codec.HasOperationsClient}}
-    private let connection: ClientConnection
-    private let credentials: GoogleCloudAuth.Credentials
-    private let options: GoogleCloudGax.ClientOptions
+  class {{Codec.StubPrefix}}Transport: {{Codec.StubPrefix}}Stub {
+    let inner: GoogleCloudGax._GRPCClient
 
     public init(_ options: GoogleCloudGax.ClientOptions = .init()) throws {
-      self.options = options
-      self.credentials = try options.credentials ?? GoogleCloudAuth.Credentials()
-      self.connection = try Self.makeConnection(endpoint: options.endpoint)
-      self.grpcClient = {{Codec.GrpcClientTypeName}}(
-        channel: self.connection
+      self.inner = try GoogleCloudGax._GRPCClient(
+        from: options,
+        withDefaultEndpoint: "https://{{DefaultHost}}"
       )
-      {{#Codec.HasOperationsClient}}
-      self.operationsClient = {{Codec.OperationsClientTypeName}}(
-        channel: self.connection
-      )
-      {{/Codec.HasOperationsClient}}
-    }
-
-    deinit {
-      _ = self.connection.close()
-    }
-
-    private static func makeConnection(endpoint: String?) throws -> ClientConnection {
-      let raw = endpoint ?? "{{DefaultHost}}"
-      let urlString = raw.contains("://") ? raw : "https://\(raw)"
-      guard let url = URLComponents(string: urlString), let host = url.host, !host.isEmpty else {
-        throw GoogleCloudGax.ClientError.invalidEndpoint(raw)
-      }
-      let isSecure = url.scheme != "http"
-      let port = url.port ?? (isSecure ? 443 : 80)
-      let group = MultiThreadedEventLoopGroup.singleton
-      let builder =
-        isSecure
-        ? ClientConnection.usingPlatformAppropriateTLS(for: group)
-        : ClientConnection.insecure(group: group)
-      return builder.connect(host: host, port: port)
-    }
-
-    private func makeCallOptions(
-      options: GoogleCloudGax.RequestOptions,
-      routingParams: [String] = []
-    ) async throws -> GRPC.CallOptions {
-      var callOptions = GRPC.CallOptions()
-      if let attemptTimeout = options.attemptTimeout {
-        let nanoseconds =
-          attemptTimeout.components.seconds * 1_000_000_000
-          + attemptTimeout.components.attoseconds / 1_000_000_000
-        callOptions.timeLimit = .timeout(.nanoseconds(nanoseconds))
-      }
-      let authHeaders = try await self.credentials.headers()
-      for (key, value) in authHeaders {
-        callOptions.customMetadata.add(name: key, value: value)
-      }
-      callOptions.customMetadata.add(name: "x-goog-api-client", value: Clients.clientHeader)
-      if !routingParams.isEmpty {
-        callOptions.customMetadata.add(
-          name: "x-goog-request-params",
-          value: routingParams.joined(separator: "&")
-        )
-      }
-      return callOptions
     }
     {{#Codec.RestMethods}}
 
@@ -117,29 +57,26 @@ extension Clients {
       }
       {{/Codec.PathVariables}}
       {{/Codec.HasPathVariables}}
-      let callOptions = try await self.makeCallOptions(
-        options: options{{#Codec.HasPathVariables}}, routingParams: routingParams{{/Codec.HasPathVariables}})
+
       let protoRequest = try request.toProto()
       {{^ReturnsEmpty}}
-      {{#Codec.IsOperationsMethod}}
-      let protoResponse = try await self.operationsClient.{{Codec.Name}}(
-        protoRequest, callOptions: callOptions
+      let protoResponse: {{OutputType.Codec.ProtoTypeName}} = try await self.inner.execute(
+        path: "/{{SourceService.Package}}.{{SourceService.Name}}/{{Name}}",
+        request: protoRequest,
+        options: options,
+        clientHeader: Clients.clientHeader{{#Codec.HasPathVariables}},
+        routingParams: routingParams{{/Codec.HasPathVariables}}
       )
-      {{/Codec.IsOperationsMethod}}
-      {{^Codec.IsOperationsMethod}}
-      let protoResponse = try await self.grpcClient.{{Codec.Name}}(
-        protoRequest, callOptions: callOptions
-      )
-      {{/Codec.IsOperationsMethod}}
       return try {{Codec.ReturnType}}(proto: protoResponse)
       {{/ReturnsEmpty}}
       {{#ReturnsEmpty}}
-      {{#Codec.IsOperationsMethod}}
-      _ = try await self.operationsClient.{{Codec.Name}}(protoRequest, callOptions: callOptions)
-      {{/Codec.IsOperationsMethod}}
-      {{^Codec.IsOperationsMethod}}
-      _ = try await self.grpcClient.{{Codec.Name}}(protoRequest, callOptions: callOptions)
-      {{/Codec.IsOperationsMethod}}
+      let _: SwiftProtobuf.Google_Protobuf_Empty = try await self.inner.execute(
+        path: "/{{SourceService.Package}}.{{SourceService.Name}}/{{Name}}",
+        request: protoRequest,
+        options: options,
+        clientHeader: Clients.clientHeader{{#Codec.HasPathVariables}},
+        routingParams: routingParams{{/Codec.HasPathVariables}}
+      )
       {{/ReturnsEmpty}}
     }
     {{/Codec.RestMethods}}

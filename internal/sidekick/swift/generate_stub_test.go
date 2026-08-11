@@ -350,8 +350,14 @@ func TestGenerateStub_Grpc(t *testing.T) {
 				},
 			},
 			{
-				Name:         "GetOperation",
-				ID:           ".google.longrunning.Operations.GetOperation",
+				Name:            "GetOperation",
+				ID:              ".google.longrunning.Operations.GetOperation",
+				SourceServiceID: ".google.longrunning.Operations",
+				SourceService: &api.Service{
+					Name:    "Operations",
+					Package: "google.longrunning",
+					ID:      ".google.longrunning.Operations",
+				},
 				InputTypeID:  getOperationRequest.ID,
 				InputType:    getOperationRequest,
 				OutputTypeID: operation.ID,
@@ -360,8 +366,16 @@ func TestGenerateStub_Grpc(t *testing.T) {
 		},
 	}
 
-	model := api.NewTestAPI([]*api.Message{createFolderRequest, deleteFolderRequest, folder, empty, operation, getOperationRequest}, nil, []*api.Service{service})
+	operationsService := &api.Service{
+		Name:    "Operations",
+		ID:      ".google.longrunning.Operations",
+		Package: "google.longrunning",
+	}
+	model := api.NewTestAPI([]*api.Message{createFolderRequest, deleteFolderRequest, folder, empty, operation, getOperationRequest}, nil, []*api.Service{service, operationsService})
 	model.PackageName = "google.storage.control.v2"
+	if err := api.CrossReference(model); err != nil {
+		t.Fatal(err)
+	}
 
 	module := &config.SwiftModule{
 		Output:     outDir,
@@ -401,65 +415,42 @@ func TestGenerateStub_Grpc(t *testing.T) {
 	}
 	transportStr := string(transportContent)
 
-	// Check gRPC imports
-	if !strings.Contains(transportStr, "import GRPC") || !strings.Contains(transportStr, "import NIO") {
-		t.Errorf("transport missing GRPC/NIO imports:\n%s", transportStr)
+	// Check imports
+	if !strings.Contains(transportStr, "@_spi(GoogleCloudInternal) import GoogleCloudGax") {
+		t.Errorf("transport missing @_spi(GoogleCloudInternal) import GoogleCloudGax:\n%s", transportStr)
 	}
 	if !strings.Contains(transportStr, "internal import StorageControlProtos") {
 		t.Errorf("transport missing internal import StorageControlProtos:\n%s", transportStr)
 	}
 
-	// Check gRPC Transport class definition and operations client
-	if !strings.Contains(transportStr, "class StorageControlTransport: StorageControlStub, @unchecked Sendable {") {
+	// Check gRPC Transport class definition and inner client
+	if !strings.Contains(transportStr, "class StorageControlTransport: StorageControlStub {") {
 		t.Errorf("transport missing StorageControlTransport class declaration:\n%s", transportStr)
 	}
-	if !strings.Contains(transportStr, "private let grpcClient: StorageControlProtos.Google_Storage_Control_V2_StorageControlAsyncClient") {
-		t.Errorf("transport missing grpcClient field:\n%s", transportStr)
+	if !strings.Contains(transportStr, "let inner: GoogleCloudGax._GRPCClient") {
+		t.Errorf("transport missing inner: GoogleCloudGax._GRPCClient field:\n%s", transportStr)
 	}
-	if !strings.Contains(transportStr, "private let operationsClient: StorageControlProtos.Google_Longrunning_OperationsAsyncClient") {
-		t.Errorf("transport missing operationsClient field:\n%s", transportStr)
-	}
-
-	// Check connection factory and credentials
-	if !strings.Contains(transportStr, "private let credentials: GoogleCloudAuth.Credentials") {
-		t.Errorf("transport missing credentials field:\n%s", transportStr)
-	}
-	if !strings.Contains(transportStr, "self.connection = try Self.makeConnection(endpoint: options.endpoint)") {
-		t.Errorf("transport missing makeConnection call:\n%s", transportStr)
-	}
-	if !strings.Contains(transportStr, "guard let url = URLComponents(string: urlString)") {
-		t.Errorf("transport missing URLComponents parsing:\n%s", transportStr)
+	if !strings.Contains(transportStr, `self.inner = try GoogleCloudGax._GRPCClient(`) ||
+		!strings.Contains(transportStr, `withDefaultEndpoint: "https://storage.googleapis.com"`) {
+		t.Errorf("transport missing _GRPCClient initialization with default endpoint:\n%s", transportStr)
 	}
 
-	// Check makeCallOptions helper
-	if !strings.Contains(transportStr, "private func makeCallOptions(") {
-		t.Errorf("transport missing makeCallOptions helper:\n%s", transportStr)
-	}
-	if !strings.Contains(transportStr, `if let attemptTimeout = options.attemptTimeout {`) ||
-		!strings.Contains(transportStr, `callOptions.timeLimit = .timeout(.nanoseconds(nanoseconds))`) {
-		t.Errorf("transport missing timeout propagation in makeCallOptions:\n%s", transportStr)
-	}
-	if !strings.Contains(transportStr, `let authHeaders = try await self.credentials.headers()`) ||
-		!strings.Contains(transportStr, `callOptions.customMetadata.add(name: key, value: value)`) {
-		t.Errorf("transport missing auth headers metadata loop in makeCallOptions:\n%s", transportStr)
-	}
-	if !strings.Contains(transportStr, `callOptions.customMetadata.add(name: "x-goog-api-client", value: Clients.clientHeader)`) ||
-		!strings.Contains(transportStr, `name: "x-goog-request-params"`) {
-		t.Errorf("transport missing telemetry / routing metadata in makeCallOptions:\n%s", transportStr)
-	}
-
-	// Check method body conversions and operations client dispatch
+	// Check method body conversions and generic inner.execute dispatch
 	if !strings.Contains(transportStr, "let protoRequest = try request.toProto()") {
 		t.Errorf("transport missing request.toProto() call:\n%s", transportStr)
+	}
+	if !strings.Contains(transportStr, `path: "/google.storage.control.v2.StorageControl/CreateFolder"`) {
+		t.Errorf("transport missing CreateFolder gRPC path in execute:\n%s", transportStr)
 	}
 	if !strings.Contains(transportStr, "return try Folder(proto: protoResponse)") {
 		t.Errorf("transport missing Folder(proto: protoResponse) return:\n%s", transportStr)
 	}
-	if !strings.Contains(transportStr, "_ = try await self.grpcClient.deleteFolder(protoRequest, callOptions: callOptions)") {
-		t.Errorf("transport missing deleteFolder call:\n%s", transportStr)
+	if !strings.Contains(transportStr, "let _: SwiftProtobuf.Google_Protobuf_Empty = try await self.inner.execute(") ||
+		!strings.Contains(transportStr, `path: "/google.storage.control.v2.StorageControl/DeleteFolder"`) {
+		t.Errorf("transport missing empty response deleteFolder call:\n%s", transportStr)
 	}
-	if !strings.Contains(transportStr, "let protoResponse = try await self.operationsClient.getOperation(\n        protoRequest, callOptions: callOptions\n      )") {
-		t.Errorf("transport missing operationsClient.getOperation call:\n%s", transportStr)
+	if !strings.Contains(transportStr, `path: "/google.longrunning.Operations/GetOperation"`) {
+		t.Errorf("transport missing operations GetOperation gRPC path in execute:\n%s", transportStr)
 	}
 	if !strings.Contains(transportStr, `routingParams.append("parent=\(pathVariable0)")`) {
 		t.Errorf("transport missing routing parameter extraction in method body:\n%s", transportStr)
