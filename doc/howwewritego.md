@@ -65,7 +65,8 @@ func reset[T any](ptr *T) { ... }
 ### Keep implementation details out of doc comments
 
 Doc comments (comments preceding exported or unexported package symbols) should
-explain *what* the symbol does and its contract. Technical implementation details,
+explain *what* the symbol does and its contract. Technical
+implementation details,
 historical context, or build-system-specific notes belong as standard comments
 *inside* the function body, not in the doc comment.
 
@@ -422,7 +423,7 @@ environments, logging, and error handling.
 When generating code for other languages (e.g., Rust, Python, Swift), avoid
 embedding large blocks of foreign code directly as formatted inline strings.
 Move these code templates into package-level constants or separate template
-files(e.g., mustache templates) to keep the Go logic clean.
+files (e.g., mustache templates) to keep the Go logic clean.
 
 ## Writing Tests
 
@@ -519,7 +520,8 @@ Use this structure:
 
 - **Simplify Test Case Structs**: Avoid adding boolean flags to the test case
   struct if the same logic can be controlled by checking the zero-value or empty
-  status of an existing field (e.g., checking `wantErr != nil` or `content != ""`).
+  status of an existing field (e.g., checking `wantErr != nil` or
+  `content != ""`).
 
 - Do not use table-driven tests when there is only a single test case. Write a
   straightforward unit test without the table boilerplate until more test cases
@@ -638,7 +640,8 @@ func TestTransform(t *testing.T) {
 ### Readability of test expectations
 
 Use raw string literals (backticks `` ` ``) when defining multi-line string
-expectations in tests (such as expected generated code, templates, or JSON payloads).
+expectations in tests (such as expected generated code, templates, or
+JSON payloads).
 This avoids the need for escape sequences (like `\n` or `\"`) and keeps the
 expected output readable.
 
