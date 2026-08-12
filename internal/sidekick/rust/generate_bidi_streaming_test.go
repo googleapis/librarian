@@ -285,4 +285,3 @@ func TestGenerateBidiStreaming(t *testing.T) {
 		})
 	}
 }
-
