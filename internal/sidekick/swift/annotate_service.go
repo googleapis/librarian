@@ -32,13 +32,10 @@ type serviceAnnotations struct {
 	LibraryName              string
 	QuickstartMethod         *api.Method
 	Model                    *modelAnnotations
-	DependsOn                map[string]*Dependency
-	IsGated                  bool
-	GrpcClientTypeName       string
-	ModulePath               string
-	IsGrpc                   bool
-	HasOperationsClient      bool
-	OperationsClientTypeName string
+	DependsOn        map[string]*Dependency
+	IsGated          bool
+	ModulePath       string
+	IsGrpc           bool
 
 	// Any additional services required by this service.
 	//
@@ -114,45 +111,20 @@ func (c *codec) annotateService(service *api.Service, model *modelAnnotations) (
 		quickstartMethod = service.QuickstartMethod
 	}
 
-	var grpcClientTypeName string
-	var hasOperationsClient bool
-	var operationsClientTypeName string
-	if c.isGrpc() {
-		grpcClientTypeName = fmt.Sprintf("%s%sAsyncClient", ProtoPackagePrefix(service.Package), pascalCaseNoMangling(service.Name))
-		if c.ModulePath != "" {
-			grpcClientTypeName = fmt.Sprintf("%s.%s", c.ModulePath, grpcClientTypeName)
-		}
-		for _, m := range restMethods {
-			if m.SourceServiceID == ".google.longrunning.Operations" || (m.SourceService != nil && m.SourceService.ID == ".google.longrunning.Operations") || strings.HasPrefix(m.ID, ".google.longrunning.Operations.") {
-				hasOperationsClient = true
-				break
-			}
-		}
-		if hasOperationsClient {
-			operationsClientTypeName = "Google_Longrunning_OperationsAsyncClient"
-			if c.ModulePath != "" {
-				operationsClientTypeName = fmt.Sprintf("%s.%s", c.ModulePath, operationsClientTypeName)
-			}
-		}
-	}
-
 	name := pascalCase(service.Name)
 	annotations := &serviceAnnotations{
-		Name:                     name,
-		ClientName:               pascalCase(service.Name + "Client"),
-		StubPrefix:               pascalCaseNoMangling(service.Name),
-		HostnameShort:            strings.TrimSuffix(service.DefaultHost, ".googleapis.com"),
-		DocLines:                 docLines,
-		RestMethods:              restMethods,
-		LibraryName:              c.LibraryName,
-		QuickstartMethod:         quickstartMethod,
-		Model:                    model,
-		DependsOn:                map[string]*Dependency{},
-		GrpcClientTypeName:       grpcClientTypeName,
-		ModulePath:               c.ModulePath,
-		IsGrpc:                   c.isGrpc(),
-		HasOperationsClient:      hasOperationsClient,
-		OperationsClientTypeName: operationsClientTypeName,
+		Name:             name,
+		ClientName:       pascalCase(service.Name + "Client"),
+		StubPrefix:       pascalCaseNoMangling(service.Name),
+		HostnameShort:    strings.TrimSuffix(service.DefaultHost, ".googleapis.com"),
+		DocLines:         docLines,
+		RestMethods:      restMethods,
+		LibraryName:      c.LibraryName,
+		QuickstartMethod: quickstartMethod,
+		Model:            model,
+		DependsOn:        map[string]*Dependency{},
+		ModulePath:       c.ModulePath,
+		IsGrpc:           c.isGrpc(),
 	}
 	if c.PerServiceTraits {
 		annotations.IsGated = true
