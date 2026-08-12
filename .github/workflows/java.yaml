@@ -118,7 +118,7 @@ jobs:
       - name: Run librarian generate all (integration test)
         if: matrix.task == 'integration'
         working-directory: google-cloud-java
-        run: librarian generate --all -v
+        run: librarian generate --all
   create-issue-on-failure:
     needs: [build-and-test]
     permissions:

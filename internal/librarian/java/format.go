@@ -20,16 +20,14 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
-	"runtime"
 	"strings"
 	"time"
 
 	"github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/config"
-	"golang.org/x/sync/errgroup"
 )
 
-const maxFilesPerFormatBatch = 2000
+const maxFilesPerFormatBatch = 4000
 
 // Format formats Java client libraries using google-java-format in batches.
 func Format(ctx context.Context, libraries ...*config.Library) error {
@@ -48,27 +46,22 @@ func Format(ctx context.Context, libraries ...*config.Library) error {
 	totalBatches := (len(allFiles) + maxFilesPerFormatBatch - 1) / maxFilesPerFormatBatch
 	slog.Info("starting java format step", "total_files", len(allFiles), "total_batches", totalBatches)
 
-	// Batch file paths in chunks of maxFilesPerFormatBatch (2,000 files).
-	// Passing 2,000 files per CLI invocation avoids exceeding OS command-line length limits (ARG_MAX)
-	// while preventing JVM heap exhaustion on RAM-constrained CI runners.
-	g, gctx := errgroup.WithContext(ctx)
-	g.SetLimit(runtime.NumCPU())
+	// Batch file paths in chunks of maxFilesPerFormatBatch (4,000 files).
+	// Passing 4,000 files per CLI invocation avoids exceeding OS command-line length limits (ARG_MAX)
+	// while keeping JVM heap memory safe on RAM-constrained CI runners (~700MB Heap).
 	for i := 0; i < len(allFiles); i += maxFilesPerFormatBatch {
 		end := min(i+maxFilesPerFormatBatch, len(allFiles))
 		chunk := allFiles[i:end]
 		batchIdx := i/maxFilesPerFormatBatch + 1
 
-		g.Go(func() error {
-			batchStart := time.Now()
-			args := append([]string{"--replace"}, chunk...)
-			if err := command.RunWithEnv(gctx, env, "google-java-format", args...); err != nil {
-				return fmt.Errorf("failed to format batch %d/%d [%d:%d]: %w", batchIdx, totalBatches, i, end, err)
-			}
-			slog.Info("formatted java batch", "batch", batchIdx, "total", totalBatches, "files", len(chunk), "duration", time.Since(batchStart))
-			return nil
-		})
+		batchStart := time.Now()
+		args := append([]string{"--replace"}, chunk...)
+		if err := command.RunWithEnv(ctx, env, "google-java-format", args...); err != nil {
+			return fmt.Errorf("failed to format batch %d/%d [%d:%d]: %w", batchIdx, totalBatches, i, end, err)
+		}
+		slog.Info("formatted java batch", "batch", batchIdx, "total", totalBatches, "files", len(chunk), "duration", time.Since(batchStart))
 	}
-	return g.Wait()
+	return nil
 }
 
 func collectJavaFiles(root string) ([]string, error) {
