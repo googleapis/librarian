@@ -17,11 +17,9 @@ package java
 import (
 	"context"
 	"fmt"
-	"log/slog"
 	"os"
 	"path/filepath"
 	"strings"
-	"time"
 
 	"github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/config"
@@ -43,23 +41,16 @@ func Format(ctx context.Context, libraries ...*config.Library) error {
 	if err != nil {
 		return err
 	}
-	totalBatches := (len(allFiles) + maxFilesPerFormatBatch - 1) / maxFilesPerFormatBatch
-	slog.Info("starting java format step", "total_files", len(allFiles), "total_batches", totalBatches)
-
 	// Batch file paths in chunks of maxFilesPerFormatBatch (2,000 files).
 	// Passing 2,000 files per CLI invocation avoids exceeding OS command-line length limits (ARG_MAX)
-	// while preventing JVM heap exhaustion and google-java-format deadlock on RAM-constrained CI runners.
+	// while preventing JVM heap exhaustion on RAM-constrained CI runners.
 	for i := 0; i < len(allFiles); i += maxFilesPerFormatBatch {
 		end := min(i+maxFilesPerFormatBatch, len(allFiles))
 		chunk := allFiles[i:end]
-		batchIdx := i/maxFilesPerFormatBatch + 1
-
-		batchStart := time.Now()
 		args := append([]string{"--replace"}, chunk...)
 		if err := command.RunWithEnv(ctx, env, "google-java-format", args...); err != nil {
-			return fmt.Errorf("failed to format batch %d/%d [%d:%d]: %w", batchIdx, totalBatches, i, end, err)
+			return fmt.Errorf("failed to format batch [%d:%d]: %w", i, end, err)
 		}
-		slog.Info("formatted java batch", "batch", batchIdx, "total", totalBatches, "files", len(chunk), "duration", time.Since(batchStart))
 	}
 	return nil
 }
