@@ -27,7 +27,7 @@ import (
 	"github.com/googleapis/librarian/internal/config"
 )
 
-const maxFilesPerFormatBatch = 4000
+const maxFilesPerFormatBatch = 2000
 
 // Format formats Java client libraries using google-java-format in batches.
 func Format(ctx context.Context, libraries ...*config.Library) error {
@@ -46,9 +46,9 @@ func Format(ctx context.Context, libraries ...*config.Library) error {
 	totalBatches := (len(allFiles) + maxFilesPerFormatBatch - 1) / maxFilesPerFormatBatch
 	slog.Info("starting java format step", "total_files", len(allFiles), "total_batches", totalBatches)
 
-	// Batch file paths in chunks of maxFilesPerFormatBatch (4,000 files).
-	// Passing 4,000 files per CLI invocation avoids exceeding OS command-line length limits (ARG_MAX)
-	// while keeping JVM heap memory safe on RAM-constrained CI runners (~700MB Heap).
+	// Batch file paths in chunks of maxFilesPerFormatBatch (2,000 files).
+	// Passing 2,000 files per CLI invocation avoids exceeding OS command-line length limits (ARG_MAX)
+	// while preventing JVM heap exhaustion and google-java-format deadlock on RAM-constrained CI runners.
 	for i := 0; i < len(allFiles); i += maxFilesPerFormatBatch {
 		end := min(i+maxFilesPerFormatBatch, len(allFiles))
 		chunk := allFiles[i:end]
