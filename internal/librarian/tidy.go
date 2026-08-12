@@ -108,11 +108,6 @@ func tidyLibrary(cfg *config.Config, lib *config.Library) (*config.Library, erro
 	if lib.Output != "" && len(lib.APIs) == 1 && isDerivableOutput(cfg, lib) {
 		lib.Output = ""
 	}
-	if isMixedLibrary(cfg.Language, lib) {
-		// Mixed libraries with handwritten code or those that are fully handwritten
-		// are never generated, so ensure that skip_generate is false.
-		lib.SkipGenerate = false
-	}
 	if len(lib.Roots) == 1 && lib.Roots[0] == "googleapis" {
 		lib.Roots = nil
 	}
