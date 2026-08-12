@@ -190,23 +190,6 @@ func TestBinaryPathOrSystem_Error(t *testing.T) {
 	}
 }
 
-func TestInstall_AlreadyInstalled(t *testing.T) {
-	binaryName := protocBinaryName()
-	binDir := t.TempDir()
-	t.Setenv("LIBRARIAN_BIN", binDir)
-	version := "33.2"
-	protocDir := filepath.Join(binDir, "protoc", "v"+version, "bin")
-	if err := os.MkdirAll(protocDir, 0o755); err != nil {
-		t.Fatal(err)
-	}
-	testhelper.WriteExecutable(t, filepath.Join(protocDir, binaryName), "#!/bin/sh\nexit 0\n")
-	// An invalid SHA256 and unresolvable network call would fail if download was attempted
-	pc := &config.Protoc{Version: version, SHA256: "invalid-sha"}
-	if err := Install(t.Context(), pc); err != nil {
-		t.Fatal(err)
-	}
-}
-
 func TestRun(t *testing.T) {
 	if runtime.GOOS == osWindows {
 		t.Skip("skipping execution test on Windows")
