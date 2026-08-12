@@ -199,10 +199,10 @@ pub mod {{Codec.ModuleName}} {
         )> {
             {{#HasAutoPopulatedFields}}
             let req = Self::auto_populate(self.0.request, false);
-            (*self.0.stub).{{Codec.NameNoMangling}}(req, self.0.options).await
+            (*self.0.stub).{{Codec.Name}}(req, self.0.options).await
             {{/HasAutoPopulatedFields}}
             {{^HasAutoPopulatedFields}}
-            (*self.0.stub).{{Codec.NameNoMangling}}(self.0.request, self.0.options).await
+            (*self.0.stub).{{Codec.Name}}(self.0.request, self.0.options).await
             {{/HasAutoPopulatedFields}}
         }
         {{/Codec.IsBidiStreaming}}
