@@ -27,7 +27,9 @@ import (
 
 func TestPostProcess_MissingOwlBot(t *testing.T) {
 	ctx := t.Context()
-	destDir := t.TempDir()
+	repoRoot := t.TempDir()
+	t.Chdir(repoRoot)
+	destDir := filepath.Join(repoRoot, "SecretManager")
 	lib := &config.Library{
 		Name:   "SecretManager",
 		Output: destDir,
@@ -39,6 +41,19 @@ func TestPostProcess_MissingOwlBot(t *testing.T) {
 	if !errors.Is(err, errOwlBotNotFound) {
 		t.Errorf("postProcessLibrary() error = %v, want = %v", err, errOwlBotNotFound)
 	}
+}
+
+func setupMockPHPPostProcessor(t *testing.T, script string) {
+	t.Helper()
+	binDir := t.TempDir()
+	t.Setenv("LIBRARIAN_BIN", binDir)
+	phpBinDir := filepath.Join(binDir, "php_tools", "bin")
+	if err := os.MkdirAll(phpBinDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	mockPostProcessor := filepath.Join(phpBinDir, "php-post-processor")
+	testhelper.WriteExecutable(t, mockPostProcessor, script)
+	t.Setenv("PATH", phpBinDir+string(os.PathListSeparator)+os.Getenv("PATH"))
 }
 
 func TestPostProcess_OwlBot(t *testing.T) {
@@ -58,6 +73,7 @@ func TestPostProcess_OwlBot(t *testing.T) {
 	if err := os.Symlink(absOwlbotRan, filepath.Join(destDir, "owlbot.py")); err != nil {
 		t.Fatal(err)
 	}
+	setupMockPHPPostProcessor(t, "#!/bin/sh\nexit 0\n")
 	lib := &config.Library{
 		Name:   "SecretManager",
 		Output: destDir,
@@ -96,23 +112,21 @@ func TestPostProcess_OwlBotError(t *testing.T) {
 		},
 	}
 	err := postProcessLibrary(ctx, lib, lib.PHP.ComponentName)
-	if err == nil {
-		t.Fatal("postProcessLibrary() expected error, got nil")
-	}
 	var exitErr *exec.ExitError
 	if !errors.As(err, &exitErr) {
-		t.Errorf("expected exit error, got: %v", err)
+		t.Fatalf("expected exit error, got: %v", err)
 	}
 }
 
 func TestPostProcess_StatError(t *testing.T) {
 	ctx := t.Context()
 	repoRoot := t.TempDir()
+	t.Chdir(repoRoot)
 	destDir := filepath.Join(repoRoot, "SecretManager")
 	if err := os.MkdirAll(destDir, 0o755); err != nil {
 		t.Fatal(err)
 	}
-	inaccessibleDir := filepath.Join(destDir, "inaccessible")
+	inaccessibleDir := filepath.Join(repoRoot, "SecretManager_inaccessible")
 	if err := os.MkdirAll(inaccessibleDir, 0o755); err != nil {
 		t.Fatal(err)
 	}
@@ -127,7 +141,7 @@ func TestPostProcess_StatError(t *testing.T) {
 		Name:   "SecretManager",
 		Output: inaccessibleDir,
 		PHP: &config.PHPPackage{
-			ComponentName: "SecretManager",
+			ComponentName: "SecretManager_inaccessible",
 		},
 	}
 	err := postProcessLibrary(ctx, lib, lib.PHP.ComponentName)
@@ -174,5 +188,61 @@ func TestPostProcess_CleanupError(t *testing.T) {
 	err := postProcessLibrary(ctx, lib, lib.PHP.ComponentName)
 	if !errors.Is(err, os.ErrPermission) {
 		t.Errorf("expected permission error, got: %v", err)
+	}
+}
+
+func TestPostProcess_PHPPostProcessor(t *testing.T) {
+	ctx := t.Context()
+	repoRoot := t.TempDir()
+	t.Chdir(repoRoot)
+	destDir := filepath.Join(repoRoot, "SecretManager")
+	if err := os.MkdirAll(destDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	setupMockPHPPostProcessor(t, "#!/bin/sh\ntouch php_post_processor_ran.txt\n")
+	owlbotPy := filepath.Join(destDir, "owlbot.py")
+	if err := os.WriteFile(owlbotPy, []byte("import sys; sys.exit(0)"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	lib := &config.Library{
+		Name:   "SecretManager",
+		Output: destDir,
+		PHP: &config.PHPPackage{
+			ComponentName: "SecretManager",
+		},
+	}
+	if err := postProcessLibrary(ctx, lib, lib.PHP.ComponentName); err != nil {
+		t.Fatal(err)
+	}
+	expectedFile := filepath.Join(destDir, "php_post_processor_ran.txt")
+	if _, err := os.Stat(expectedFile); err != nil {
+		t.Error(err)
+	}
+}
+
+func TestPostProcess_PHPPostProcessorError(t *testing.T) {
+	ctx := t.Context()
+	repoRoot := t.TempDir()
+	t.Chdir(repoRoot)
+	destDir := filepath.Join(repoRoot, "SecretManager")
+	if err := os.MkdirAll(destDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	setupMockPHPPostProcessor(t, "#!/bin/sh\nexit 1\n")
+	owlbotPy := filepath.Join(destDir, "owlbot.py")
+	if err := os.WriteFile(owlbotPy, []byte("import sys; sys.exit(0)"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	lib := &config.Library{
+		Name:   "SecretManager",
+		Output: destDir,
+		PHP: &config.PHPPackage{
+			ComponentName: "SecretManager",
+		},
+	}
+	err := postProcessLibrary(ctx, lib, lib.PHP.ComponentName)
+	var exitErr *exec.ExitError
+	if !errors.As(err, &exitErr) {
+		t.Fatalf("expected exit error, got: %v", err)
 	}
 }

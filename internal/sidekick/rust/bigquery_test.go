@@ -15,6 +15,8 @@
 package rust
 
 import (
+	"fmt"
+	"slices"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -129,18 +131,34 @@ func TestBigQueryFiltering(t *testing.T) {
 }
 
 func TestBigQuerySyntheticMessages(t *testing.T) {
-	f1QR := &api.Field{
-		ID:    ".google.cloud.bigquery.v2.QueryRequest.foo",
-		Name:  "foo",
-		Typez: api.TypezBool,
-		Codec: &fieldAnnotations{FieldName: "foo", FieldType: "bool"},
+	var qrFields []*api.Field
+	var jcFields []*api.Field
+	// make QueryRequest have 40 fields and JobConfiguration have 20 fields.
+	// this causes stable sort order to matter and de-duplication to be exercised.
+	for i := range 40 {
+		name := fmt.Sprintf("field_%02d", i)
+		qrFields = append(qrFields, &api.Field{
+			ID:    fmt.Sprintf(".google.cloud.bigquery.v2.QueryRequest.%s", name),
+			Name:  name,
+			Typez: api.TypezBool,
+			Codec: &fieldAnnotations{FieldName: name, FieldType: "bool"},
+		})
+		if i < 20 {
+			jcFields = append(jcFields, &api.Field{
+				ID:    fmt.Sprintf(".google.cloud.bigquery.v2.JobConfiguration.%s", name),
+				Name:  name,
+				Typez: api.TypezBool,
+				Codec: &fieldAnnotations{FieldName: name, FieldType: "bool"},
+			})
+		}
 	}
+	slices.Reverse(jcFields)
 
 	qrMsg := &api.Message{
 		ID:      ".google.cloud.bigquery.v2.QueryRequest",
 		Name:    "QueryRequest",
 		Package: "google.cloud.bigquery.v2",
-		Fields:  []*api.Field{f1QR},
+		Fields:  qrFields,
 	}
 	jcqMsg := &api.Message{
 		ID:      ".google.cloud.bigquery.v2.JobConfigurationQuery",
@@ -152,7 +170,7 @@ func TestBigQuerySyntheticMessages(t *testing.T) {
 		ID:      ".google.cloud.bigquery.v2.JobConfiguration",
 		Name:    "JobConfiguration",
 		Package: "google.cloud.bigquery.v2",
-		Fields:  []*api.Field{},
+		Fields:  jcFields,
 	}
 
 	model := api.NewTestAPI([]*api.Message{qrMsg, jcqMsg, jcMsg}, []*api.Enum{}, []*api.Service{})
@@ -176,8 +194,14 @@ func TestBigQuerySyntheticMessages(t *testing.T) {
 	if syntheticMsg.Name != "MySyntheticMessage" {
 		t.Errorf("expected name 'MySyntheticMessage', got %q", syntheticMsg.Name)
 	}
-	if len(syntheticMsg.Fields) != 1 || syntheticMsg.Fields[0].Name != "foo" {
-		t.Fatalf("expected 1 field named 'foo'")
+	if len(syntheticMsg.Fields) != 40 {
+		t.Fatalf("expected 40 fields, got %d", len(syntheticMsg.Fields))
+	}
+	for _, f := range syntheticMsg.Fields {
+		wantID := fmt.Sprintf(".google.cloud.bigquery.v2.QueryRequest.%s", f.Name)
+		if f.ID != wantID {
+			t.Errorf("expected field ID %q, got %q", wantID, f.ID)
+		}
 	}
 
 	// 2. Verify builder() output has modified basic field annotations
@@ -192,15 +216,15 @@ func TestBigQuerySyntheticMessages(t *testing.T) {
 	if !ok {
 		t.Fatalf("expected messageAnnotation on RunQuery msg")
 	}
-	if len(msgAnn.BasicFields) != 1 {
-		t.Fatalf("expected 1 basic field annotation, got %d", len(msgAnn.BasicFields))
+	if len(msgAnn.BasicFields) != 40 {
+		t.Fatalf("expected 40 basic field annotations, got %d", len(msgAnn.BasicFields))
 	}
 	fAnn, ok := msgAnn.BasicFields[0].Codec.(*fieldAnnotations)
 	if !ok {
 		t.Fatalf("expected fieldAnnotations on the basic field")
 	}
-	if fAnn.FieldName != "request.foo" {
-		t.Errorf("expected FieldName to be 'request.foo', got %q", fAnn.FieldName)
+	if fAnn.FieldName != "request.field_00" {
+		t.Errorf("expected FieldName to be 'request.field_00', got %q", fAnn.FieldName)
 	}
 	if fAnn.FQMessageName != "crate::model::RunQueryRequest" {
 		t.Errorf("expected FQMessageName to be 'crate::model::RunQueryRequest', got %q", fAnn.FQMessageName)
@@ -213,20 +237,25 @@ func TestBigQuerySyntheticMessages(t *testing.T) {
 	if runQueryRequest.Name != "RunQueryRequest" {
 		t.Errorf("expected name 'RunQueryRequest', got %q", runQueryRequest.Name)
 	}
+	for _, f := range runQueryRequest.Fields {
+		wantID := fmt.Sprintf(".google.cloud.bigquery.v2.QueryRequest.%s", f.Name)
+		if f.ID != wantID {
+			t.Errorf("expected field ID %q, got %q", wantID, f.ID)
+		}
+	}
 	reqMsgAnn, ok := runQueryRequest.Codec.(*messageAnnotation)
 	if !ok {
 		t.Fatalf("expected messageAnnotation on RunQueryRequest msg")
 	}
-	if len(reqMsgAnn.BasicFields) != 1 {
-		t.Fatalf("expected 1 basic field annotation, got %d", len(reqMsgAnn.BasicFields))
+	if len(reqMsgAnn.BasicFields) != 40 {
+		t.Fatalf("expected 40 basic field annotations, got %d", len(reqMsgAnn.BasicFields))
 	}
 	reqfAnn, ok := reqMsgAnn.BasicFields[0].Codec.(*fieldAnnotations)
 	if !ok {
 		t.Fatalf("expected fieldAnnotations on the basic field")
 	}
-	// Annotations should remain unchanged (not prepended with 'request.')
-	if reqfAnn.FieldName != "foo" {
-		t.Errorf("expected FieldName to remain 'foo', got %q", reqfAnn.FieldName)
+	if reqfAnn.FieldName != "field_00" {
+		t.Errorf("expected FieldName to remain 'field_00', got %q", reqfAnn.FieldName)
 	}
 }
 

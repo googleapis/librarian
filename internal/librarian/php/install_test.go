@@ -72,6 +72,13 @@ func TestInstall(t *testing.T) {
 						Repo:       "github.com/googleapis/gapic-generator-php",
 						SHA256:     "29635b02c6e505fe31cba2f88ae999f00d2710fe1d65cb7cad521a82e7c5a518",
 					},
+					{
+						Name:       "php-post-processor",
+						Entrypoint: "src/PostProcessor/Main.php",
+						Version:    "1.0.0",
+						Repo:       "github.com/googleapis/gapic-generator-php",
+						SHA256:     "29635b02c6e505fe31cba2f88ae999f00d2710fe1d65cb7cad521a82e7c5a518",
+					},
 				},
 				Pip: []*config.PipTool{
 					{
@@ -97,6 +104,12 @@ func TestInstall(t *testing.T) {
 				if err := os.WriteFile(filepath.Join(repoDir, "src", "Main.php"), nil, 0o644); err != nil {
 					t.Fatal(err)
 				}
+				if err := os.MkdirAll(filepath.Join(repoDir, "src", "PostProcessor"), 0o755); err != nil {
+					t.Fatal(err)
+				}
+				if err := os.WriteFile(filepath.Join(repoDir, "src", "PostProcessor", "Main.php"), nil, 0o644); err != nil {
+					t.Fatal(err)
+				}
 				if err := os.WriteFile(filepath.Join(repoDir, "composer.json"), []byte("{}"), 0o644); err != nil {
 					t.Fatal(err)
 				}
@@ -113,7 +126,14 @@ func TestInstall(t *testing.T) {
 				binDir := filepath.Join(os.Getenv("LIBRARIAN_BIN"), "php_tools", "bin")
 				wrapperPath := filepath.Join(binDir, "gapic-generator-php")
 				if _, err := os.Stat(wrapperPath); err != nil {
-					t.Errorf("wrapper file %s not found: %v", wrapperPath, err)
+					t.Error(err)
+				}
+				postProcessorPath := filepath.Join(binDir, "php-post-processor")
+				info, err := os.Stat(postProcessorPath)
+				if err != nil {
+					t.Error(err)
+				} else if info.Mode().Perm() != 0o755 {
+					t.Errorf("php-post-processor wrapper file has permissions %v, want 0755", info.Mode().Perm())
 				}
 			},
 		},
