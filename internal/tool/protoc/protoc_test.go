@@ -82,7 +82,6 @@ func TestBinaryPath(t *testing.T) {
 		librarianBin string
 		cacheDir     string
 		want         string
-		wantErr      bool
 	}{
 		{
 			name:         "valid version with LIBRARIAN_BIN",
@@ -95,11 +94,6 @@ func TestBinaryPath(t *testing.T) {
 			version:  "26.0-rc1",
 			cacheDir: "/custom/cache",
 			want:     filepath.FromSlash("/custom/cache/bin/protoc/v26.0-rc1/bin/" + binaryName),
-		},
-		{
-			name:    "empty version returns error",
-			version: "",
-			wantErr: true,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
@@ -114,15 +108,19 @@ func TestBinaryPath(t *testing.T) {
 				t.Setenv("LIBRARIAN_CACHE", "")
 			}
 			got, err := BinaryPath(test.version)
-			if (err != nil) != test.wantErr {
-				t.Fatalf("BinaryPath() error = %v, wantErr = %v", err, test.wantErr)
+			if err != nil {
+				t.Fatal(err)
 			}
-			if !test.wantErr {
-				if diff := cmp.Diff(test.want, got); diff != "" {
-					t.Errorf("mismatch (-want +got):\n%s", diff)
-				}
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
+	}
+}
+
+func TestBinaryPath_Error(t *testing.T) {
+	if _, err := BinaryPath(""); err == nil {
+		t.Fatal("BinaryPath(\"\") expected error, got nil")
 	}
 }
 
@@ -135,7 +133,6 @@ func TestBinaryPathOrSystem(t *testing.T) {
 		librarianBin string
 		setupPATH    func(t *testing.T) string
 		want         func(t *testing.T, installedPath string) string
-		wantErr      bool
 	}{
 		{
 			name:         "configured protoc uses installed binary path",
@@ -165,15 +162,6 @@ func TestBinaryPathOrSystem(t *testing.T) {
 				return installedPath
 			},
 		},
-		{
-			name: "system protoc missing returns error",
-			pc:   nil,
-			setupPATH: func(t *testing.T) string {
-				t.Setenv("PATH", t.TempDir())
-				return ""
-			},
-			wantErr: true,
-		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			if test.librarianBin != "" {
@@ -184,16 +172,21 @@ func TestBinaryPathOrSystem(t *testing.T) {
 				installedPath = test.setupPATH(t)
 			}
 			got, err := BinaryPathOrSystem(test.pc)
-			if (err != nil) != test.wantErr {
-				t.Fatalf("BinaryPathOrSystem() error = %v, wantErr = %v", err, test.wantErr)
+			if err != nil {
+				t.Fatal(err)
 			}
-			if !test.wantErr {
-				want := test.want(t, installedPath)
-				if diff := cmp.Diff(want, got); diff != "" {
-					t.Errorf("mismatch (-want +got):\n%s", diff)
-				}
+			want := test.want(t, installedPath)
+			if diff := cmp.Diff(want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
+	}
+}
+
+func TestBinaryPathOrSystem_Error(t *testing.T) {
+	t.Setenv("PATH", t.TempDir())
+	if _, err := BinaryPathOrSystem(nil); err == nil {
+		t.Fatal("BinaryPathOrSystem(nil) with empty PATH expected error, got nil")
 	}
 }
 
