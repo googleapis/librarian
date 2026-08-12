@@ -171,11 +171,19 @@ func generateAPI(ctx context.Context, params generateAPIParams) error {
 	genGAPIC := shouldGenerateGAPIC(javaAPI) || shouldGenerateResourceNames(javaAPI)
 
 	sameProtos := sameStringSlice(protoProtos, apiProtos)
+	canCombineGRPCAndGAPIC := len(javaAPI.AdditionalProtos) == 0
 
 	if genProto && (!sameProtos || (!genGRPC && !genGAPIC)) {
 		args := protoProtocArgs(protoProtos, params.srcCfg, protoDir)
 		if err := runProtoc(ctx, pc, args); err != nil {
 			return fmt.Errorf("failed to generate proto: %w", err)
+		}
+	}
+
+	if genGRPC && !canCombineGRPCAndGAPIC {
+		args := gRPCProtocArgs(apiProtos, params.srcCfg, gRPCDir)
+		if err := runProtoc(ctx, pc, args); err != nil {
+			return fmt.Errorf("failed to generate gRPC module: %w", err)
 		}
 	}
 
@@ -186,7 +194,7 @@ func generateAPI(ctx context.Context, params generateAPIParams) error {
 		args = append(args, fmt.Sprintf("--java_out=%s", protoDir))
 		hasCombinedFlags = true
 	}
-	if genGRPC {
+	if genGRPC && canCombineGRPCAndGAPIC {
 		args = append(args, fmt.Sprintf("--java_grpc_out=%s", gRPCDir))
 		hasCombinedFlags = true
 	}
