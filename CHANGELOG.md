@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.37.0](https://github.com/googleapis/librarian/compare/v0.36.0...v0.37.0) (2026-08-12)
+
+
+### Features
+
+* **internal/librarian/php:** install and execute the post-processor ([#7244](https://github.com/googleapis/librarian/issues/7244)) ([5b51a25](https://github.com/googleapis/librarian/commit/5b51a25eeaa2be4ff5a6b6045281d36e077665dd)), refs [#7103](https://github.com/googleapis/librarian/issues/7103)
+
+
+### Bug Fixes
+
+* **internal/librarian:** preserve skip_generate on mixed libraries in tidy ([#7256](https://github.com/googleapis/librarian/issues/7256)) ([7e6db73](https://github.com/googleapis/librarian/commit/7e6db73b9c97aaaf240351dbcbff726880b98ba0))
+* **sidekick/rust:** preserve message priority when dedup BQ unified message fields ([#7255](https://github.com/googleapis/librarian/issues/7255)) ([89eb457](https://github.com/googleapis/librarian/commit/89eb4573ef499ae1cd048896bc71fd76bbab3071))
+
 ## [0.36.0](https://github.com/googleapis/librarian/compare/v0.35.0...v0.36.0) (2026-08-11)
 
 
