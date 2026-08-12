@@ -138,7 +138,7 @@ const (
 )
 
 func (c *codec) isGrpc() bool {
-	return c.ModulePath != ""
+	return c.Module && c.ModulePath != "" && c.ResponseEncoding != discoveryResponseEncoding
 }
 
 func newCodec(model *api.API, library *config.Library, module *config.SwiftModule, outdir string) (*codec, error) {
