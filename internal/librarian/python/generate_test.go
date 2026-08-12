@@ -829,8 +829,12 @@ func TestGenerateAPI_ConfiguredProtoc(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected error from stub protoc, got nil")
 	}
-	if !strings.Contains(err.Error(), "42") && !strings.Contains(err.Error(), "exit status") {
-		t.Fatalf("expected error from stub protoc, got: %v", err)
+	var exitErr *exec.ExitError
+	if !errors.As(err, &exitErr) {
+		t.Fatalf("expected *exec.ExitError from stub protoc, got: %v", err)
+	}
+	if got, want := exitErr.ExitCode(), 42; got != want {
+		t.Fatalf("exit code = %d, want %d", got, want)
 	}
 }
 
