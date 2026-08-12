@@ -902,7 +902,7 @@ func TestTidy_MissingGoogleApisSource(t *testing.T) {
 	}
 }
 
-func TestTidy_VeneerSkipGenerate(t *testing.T) {
+func TestTidy_SkipGenerate(t *testing.T) {
 	tempDir := t.TempDir()
 	cfg := &config.Config{
 		Language: config.LanguageRust,
@@ -930,7 +930,7 @@ func TestTidy_VeneerSkipGenerate(t *testing.T) {
 	if len(cfg.Libraries) != 1 {
 		t.Fatalf("expected 1 library, got %d", len(cfg.Libraries))
 	}
-	if cfg.Libraries[0].SkipGenerate {
-		t.Errorf("expected skip_generate to be false for veneer library, got true")
+	if !cfg.Libraries[0].SkipGenerate {
+		t.Errorf("expected skip_generate to be true for mixed library, got false")
 	}
 }

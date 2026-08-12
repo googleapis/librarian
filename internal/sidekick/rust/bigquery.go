@@ -35,6 +35,9 @@ type fieldGroup struct {
 	fields map[string]*api.Field
 }
 
+// newUnifiedMessage builds a new unifiedMessage from the provided message names.
+// If fields have the same name across messages, the field from the message that appears
+// earlier in `msgNames` is prioritized.
 func newUnifiedMessage(c *codec, model *api.API, msgNames []string, skipFieldFn func(*api.Field) bool) (*unifiedMessage, error) {
 	msg := &unifiedMessage{
 		c:           c,
@@ -64,7 +67,7 @@ func newUnifiedMessage(c *codec, model *api.API, msgNames []string, skipFieldFn 
 		}
 	}
 
-	slices.SortFunc(msg.fields, func(a, b *api.Field) int {
+	slices.SortStableFunc(msg.fields, func(a, b *api.Field) int {
 		return cmp.Compare(a.Name, b.Name)
 	})
 	msg.fields = slices.CompactFunc(msg.fields, func(a, b *api.Field) bool {
