@@ -27,6 +27,10 @@ limitations under the License.
 {{/Codec.Model.Codec.DisabledClippyWarnings}}
 {{#Codec.QueryMetadataMsg}}
 {{> /templates/common/message}}
+mod debug {
+    use super::*;
+    {{> /templates/common/model/debug/message}}
+}
 {{/Codec.QueryMetadataMsg}}
 
 impl std::convert::From<google_cloud_bigquery_v2::model::GetQueryResultsResponse> for QueryMetadata {

@@ -27,6 +27,10 @@ limitations under the License.
 {{/Codec.Model.Codec.DisabledClippyWarnings}}
 {{#Codec.RunQueryRequestMsg}}
 {{> /templates/common/message}}
+mod debug {
+    use super::*;
+    {{> /templates/common/model/debug/message}}
+}
 {{/Codec.RunQueryRequestMsg}}
 
 impl RunQueryRequest {
