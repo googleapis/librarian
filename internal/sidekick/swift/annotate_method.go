@@ -137,6 +137,12 @@ func (c *codec) annotateMethod(method *api.Method, modelAnn *modelAnnotations) e
 	var bodyField string
 	var queryParams []*api.Field
 
+	// In Protobuf APIs (such as Storage Control or pure gRPC services), some RPC
+	// methods do not define google.api.http annotations.
+	// - HTTP/REST methods: Continue to extract httpMethod, pathExpressionStr,
+	//   bodyField, queryParams, and pathVariables as before.
+	// - Pure gRPC methods (without HTTP annotations): Safely bypass the HTTP
+	//   extraction without crashing, leaving those fields as their default zero values.
 	if method.PathInfo != nil && len(method.PathInfo.Bindings) > 0 {
 		binding := method.PathInfo.Bindings[0]
 		hasBody = method.PathInfo.BodyFieldPath != ""
