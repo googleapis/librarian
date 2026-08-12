@@ -119,6 +119,9 @@ type codec struct {
 	// output file is disambiguated by appending `+${Counter}` to the basename.
 	GeneratedFiles map[string]int
 
+	// The type of module being generated (e.g. "grpc-client", "convert-swift", "default").
+	ModuleType string
+
 	// The name of the private module containing raw stubs (e.g. "StorageControlProtos").
 	// Used by convert-swift to generate internal imports and prefix raw types.
 	ModulePath string
@@ -138,7 +141,7 @@ const (
 )
 
 func (c *codec) isGrpc() bool {
-	return c.Module && c.ModulePath != "" && c.ResponseEncoding != discoveryResponseEncoding
+	return c.ModuleType == "grpc-client"
 }
 
 func newCodec(model *api.API, library *config.Library, module *config.SwiftModule, outdir string) (*codec, error) {
@@ -208,6 +211,7 @@ func newCodec(model *api.API, library *config.Library, module *config.SwiftModul
 
 	if module != nil {
 		result.Module = true
+		result.ModuleType = module.ModuleType
 		result.ModulePath = module.ModulePath
 	}
 

@@ -135,10 +135,12 @@ func TestParseOptions(t *testing.T) {
 				},
 			},
 			module: &config.SwiftModule{
+				ModuleType: "grpc-client",
 				ModulePath: "StorageControlProtos",
 			},
 			want: &codec{
 				Module:             true,
+				ModuleType:         "grpc-client",
 				GenerationYear:     "2038",
 				TargetLibraryName:  "GoogleCloudStorage",
 				PackageName:        "GoogleCloudStorage",
@@ -180,7 +182,7 @@ func TestParseOptions(t *testing.T) {
 			if diff := cmp.Diff(test.want, got, cmpopts.IgnoreUnexported(api.API{})); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
-			wantGrpc := test.module != nil && test.module.ModulePath != "" && (test.library == nil || test.library.SpecificationFormat != config.SpecDiscovery)
+			wantGrpc := test.module != nil && test.module.ModuleType == "grpc-client"
 			if got.isGrpc() != wantGrpc {
 				t.Errorf("isGrpc() = %v, want %v", got.isGrpc(), wantGrpc)
 			}

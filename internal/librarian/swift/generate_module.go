@@ -45,7 +45,7 @@ func generateModule(ctx context.Context, library *config.Library, src *sources.S
 			if err := sidekickswift.GenerateConversions(ctx, model, module.Output, library, module); err != nil {
 				return err
 			}
-		case "", "default":
+		case "", "default", "grpc-client":
 			modelConfig := moduleToModelConfig(library, module, src)
 			model, err := parser.CreateModel(modelConfig)
 			if err != nil {

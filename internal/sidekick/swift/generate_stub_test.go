@@ -379,6 +379,7 @@ func TestGenerateStub_Grpc(t *testing.T) {
 
 	module := &config.SwiftModule{
 		Output:     outDir,
+		ModuleType: "grpc-client",
 		ModulePath: "StorageControlProtos",
 	}
 	swiftPkg := swiftConfig(t, []config.SwiftDependency{
