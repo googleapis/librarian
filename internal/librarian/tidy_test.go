@@ -931,6 +931,6 @@ func TestTidy_SkipGenerate(t *testing.T) {
 		t.Fatalf("expected 1 library, got %d", len(cfg.Libraries))
 	}
 	if !cfg.Libraries[0].SkipGenerate {
-		t.Errorf("expected skip_generate to be true for mixed library, got true")
+		t.Errorf("expected skip_generate to be true for mixed library, got false")
 	}
 }
