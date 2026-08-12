@@ -130,7 +130,6 @@ type codec struct {
 	// libraries we use `json;enum-encoding=int`, but for discovery we need to
 	// use just `json` as the integer values for enums may not match our values.
 	ResponseEncoding string
-
 }
 
 const (

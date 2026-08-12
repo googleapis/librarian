@@ -208,10 +208,10 @@ func TestAnnotateMethod_EscapedName(t *testing.T) {
 			}
 
 			want := &methodAnnotations{
-				Name:                  test.wantName,
-				DocLines:              []string{"Test documentation."},
-				PathExpression:        "/",
-				HTTPMethod:            "GET",
+				Name:             test.wantName,
+				DocLines:         []string{"Test documentation."},
+				PathExpression:   "/",
+				HTTPMethod:       "GET",
 				ReturnType:       "Test.Response",
 				ResponseEncoding: "json;enum-encoding=int",
 			}

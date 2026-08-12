@@ -22,19 +22,19 @@ import (
 )
 
 type methodAnnotations struct {
-	Name               string
-	DocLines           []string
-	PathVariables      []*pathVariable
-	PathExpression     string
-	HTTPMethod         string
-	HasBody            bool
-	IsBodyWildcard     bool
-	BodyField          string
-	QueryParams        []*api.Field
-	Pagination         *paginationAnnotations
-	LRO                *lroAnnotations
-	DiscoveryLRO       *discoveryLroAnnotations
-	ReturnType string
+	Name           string
+	DocLines       []string
+	PathVariables  []*pathVariable
+	PathExpression string
+	HTTPMethod     string
+	HasBody        bool
+	IsBodyWildcard bool
+	BodyField      string
+	QueryParams    []*api.Field
+	Pagination     *paginationAnnotations
+	LRO            *lroAnnotations
+	DiscoveryLRO   *discoveryLroAnnotations
+	ReturnType     string
 
 	// ResponseEncoding sets the `$alt` query parameter value.
 	//
