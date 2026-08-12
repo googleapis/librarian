@@ -162,31 +162,52 @@ func generateAPI(ctx context.Context, params generateAPIParams) error {
 	if params.cfg.Tools != nil && params.cfg.Tools.Protoc != nil {
 		pc = params.cfg.Tools.Protoc
 	}
-	// 1. Generate standard Protocol Buffer Java classes.
-	if shouldGenerateProto(javaAPI) {
-		protoProtos := filterProtos(apiProtos, javaAPI.SkipProtoClassGeneration, primaryDir)
-		protoProtos = append(protoProtos, additionalProtosToGenerateAbs...)
+	protoProtos := filterProtos(apiProtos, javaAPI.SkipProtoClassGeneration, primaryDir)
+	protoProtos = append(protoProtos, additionalProtosToGenerateAbs...)
+
+	transport := params.apiCfg.Transport(config.LanguageJava)
+	genProto := shouldGenerateProto(javaAPI)
+	genGRPC := shouldGenerateGRPC(javaAPI) && transport != "rest"
+	genGAPIC := shouldGenerateGAPIC(javaAPI) || shouldGenerateResourceNames(javaAPI)
+
+	sameProtos := sameStringSlice(protoProtos, apiProtos)
+
+	if genProto && (!sameProtos || (!genGRPC && !genGAPIC)) {
 		args := protoProtocArgs(protoProtos, params.srcCfg, protoDir)
 		if err := runProtoc(ctx, pc, args); err != nil {
 			return fmt.Errorf("failed to generate proto: %w", err)
 		}
 	}
-	// 2. Generate gRPC service stubs (skipped if transport is rest).
-	transport := params.apiCfg.Transport(config.LanguageJava)
-	if shouldGenerateGRPC(javaAPI) && transport != "rest" {
-		if err := runProtoc(ctx, pc, gRPCProtocArgs(apiProtos, params.srcCfg, gRPCDir)); err != nil {
-			return fmt.Errorf("failed to generate gRPC module: %w", err)
-		}
+
+	args := baseProtocArgs(params.srcCfg)
+	hasCombinedFlags := false
+
+	if genProto && sameProtos {
+		args = append(args, fmt.Sprintf("--java_out=%s", protoDir))
+		hasCombinedFlags = true
 	}
-	// 3. Generate GAPIC library.
-	if shouldGenerateGAPIC(javaAPI) || shouldGenerateResourceNames(javaAPI) {
+	if genGRPC {
+		args = append(args, fmt.Sprintf("--java_grpc_out=%s", gRPCDir))
+		hasCombinedFlags = true
+	}
+	if genGAPIC {
 		gapicOpts, err := resolveGAPICOptions(params.cfg, params.library, params.api, primaryDir, params.apiCfg)
 		if err != nil {
 			return fmt.Errorf("failed to resolve gapic options: %w", err)
 		}
-		args := gapicProtocArgs(apiProtos, allAdditionalProtosAbs, params.srcCfg, gapicDir, gapicOpts)
+		args = append(args, fmt.Sprintf("--java_gapic_out=metadata:%s", gapicDir))
+		args = append(args, "--java_gapic_opt="+strings.Join(gapicOpts, ","))
+		hasCombinedFlags = true
+	}
+
+	if hasCombinedFlags {
+		args = append(args, apiProtos...)
+		if genGAPIC {
+			args = append(args, allAdditionalProtosAbs...)
+		}
+		args = dedupeStrings(args)
 		if err := runProtoc(ctx, pc, args); err != nil {
-			return fmt.Errorf("failed to generate gapic: %w", err)
+			return fmt.Errorf("failed to generate java client: %w", err)
 		}
 	}
 
@@ -374,4 +395,28 @@ func shouldGenerateResourceNames(javaAPI *config.JavaAPI) bool {
 		return *javaAPI.GenerateResourceNames
 	}
 	return shouldGenerateGAPIC(javaAPI)
+}
+
+func sameStringSlice(a, b []string) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for i := range a {
+		if a[i] != b[i] {
+			return false
+		}
+	}
+	return true
+}
+
+func dedupeStrings(items []string) []string {
+	seen := make(map[string]bool, len(items))
+	var res []string
+	for _, item := range items {
+		if item != "" && !seen[item] {
+			seen[item] = true
+			res = append(res, item)
+		}
+	}
+	return res
 }

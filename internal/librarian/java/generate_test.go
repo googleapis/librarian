@@ -446,12 +446,12 @@ func TestGenerateAPI_NoTools(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	// Verify that runProtoc was called 3 times: proto, grpc, and gapic.
-	if len(calls) != 3 {
-		t.Errorf("expected 3 calls to runProtoc, got %d", len(calls))
+	// Verify that runProtoc was called 1 time with combined args.
+	if len(calls) != 1 {
+		t.Errorf("expected 1 call to runProtoc, got %d", len(calls))
 	}
-	// Basic validation of GAPIC generation arguments (the 3rd call).
-	gapicArgs := calls[2]
+	// Basic validation of GAPIC generation arguments.
+	gapicArgs := calls[0]
 	foundGAPICOut := false
 	for _, arg := range gapicArgs {
 		if strings.HasPrefix(arg, "--java_gapic_out=") {
