@@ -16,7 +16,6 @@ package swift
 
 import (
 	"fmt"
-	"strings"
 
 	"github.com/googleapis/librarian/internal/sidekick/api"
 	"github.com/googleapis/librarian/internal/sidekick/language"
@@ -35,8 +34,7 @@ type methodAnnotations struct {
 	Pagination         *paginationAnnotations
 	LRO                *lroAnnotations
 	DiscoveryLRO       *discoveryLroAnnotations
-	ReturnType         string
-	IsOperationsMethod bool
+	ReturnType string
 
 	// ResponseEncoding sets the `$alt` query parameter value.
 	//
@@ -211,23 +209,21 @@ func (c *codec) annotateMethod(method *api.Method, modelAnn *modelAnnotations) e
 			discoveryLRO.PollingPathParameters = append(discoveryLRO.PollingPathParameters, camelCase(p))
 		}
 	}
-	isOperationsMethod := method.SourceServiceID == ".google.longrunning.Operations" || (method.SourceService != nil && method.SourceService.ID == ".google.longrunning.Operations") || strings.HasPrefix(method.ID, ".google.longrunning.Operations.")
 	method.Codec = &methodAnnotations{
-		Name:               camelCase(method.Name),
-		DocLines:           docLines,
-		PathExpression:     pathExpressionStr,
-		PathVariables:      pathVariables,
-		HTTPMethod:         httpMethod,
-		HasBody:            hasBody,
-		IsBodyWildcard:     isBodyWildcard,
-		BodyField:          bodyField,
-		QueryParams:        queryParams,
-		Pagination:         pagination,
-		LRO:                lro,
-		ReturnType:         returnType,
-		DiscoveryLRO:       discoveryLRO,
-		ResponseEncoding:   c.ResponseEncoding,
-		IsOperationsMethod: isOperationsMethod,
+		Name:             camelCase(method.Name),
+		DocLines:         docLines,
+		PathExpression:   pathExpressionStr,
+		PathVariables:    pathVariables,
+		HTTPMethod:       httpMethod,
+		HasBody:          hasBody,
+		IsBodyWildcard:   isBodyWildcard,
+		BodyField:        bodyField,
+		QueryParams:      queryParams,
+		Pagination:       pagination,
+		LRO:              lro,
+		ReturnType:       returnType,
+		DiscoveryLRO:     discoveryLRO,
+		ResponseEncoding: c.ResponseEncoding,
 	}
 	if method.SampleInfo != nil {
 		c.annotateSampleInfo(method)
