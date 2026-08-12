@@ -257,19 +257,25 @@ func generateLibraries(ctx context.Context, cfg *config.Config, libraries []*con
 		if err := g.Wait(); err != nil {
 			return err
 		}
-		slog.Info("java generation step completed", "duration", time.Since(genStart))
+		durGen := time.Since(genStart)
+		slog.Info("java generation step completed", "duration", durGen)
+		fmt.Printf("[BENCHMARK-CI] Phase 1: Java Code Generation Step Completed: %v\n", durGen)
 
 		fmtStart := time.Now()
 		if err := java.Format(ctx, libraries...); err != nil {
 			return fmt.Errorf("format java libraries (%s): %w", cfg.Language, err)
 		}
-		slog.Info("java format step completed", "duration", time.Since(fmtStart))
+		durFmt := time.Since(fmtStart)
+		slog.Info("java format step completed", "duration", durFmt)
+		fmt.Printf("[BENCHMARK-CI] Phase 2: Java Code Formatting Step Completed: %v\n", durFmt)
 
 		postStart := time.Now()
 		if err := java.PostGenerate(ctx, ".", cfg); err != nil {
 			return err
 		}
-		slog.Info("java post-generate step completed", "duration", time.Since(postStart))
+		durPost := time.Since(postStart)
+		slog.Info("java post-generate step completed", "duration", durPost)
+		fmt.Printf("[BENCHMARK-CI] Phase 3: Java Post-Generate Step Completed: %v\n", durPost)
 		return nil
 	case config.LanguageNodejs:
 		g, gctx := errgroup.WithContext(ctx)

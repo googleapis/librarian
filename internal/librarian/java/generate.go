@@ -183,7 +183,9 @@ func generateAPI(ctx context.Context, params generateAPIParams) error {
 		if err := runProtoc(ctx, pc, args); err != nil {
 			return fmt.Errorf("failed to generate proto: %w", err)
 		}
-		slog.Info("protoc proto done", "api", params.api.Path, "duration", time.Since(protoStart))
+		durProto := time.Since(protoStart)
+		slog.Info("protoc proto done", "api", params.api.Path, "duration", durProto)
+		fmt.Printf("[BENCHMARK-CI] API %s Protoc Proto: %v\n", params.api.Path, durProto)
 	}
 	// 2. Generate gRPC service stubs (skipped if transport is rest).
 	transport := params.apiCfg.Transport(config.LanguageJava)
@@ -192,7 +194,9 @@ func generateAPI(ctx context.Context, params generateAPIParams) error {
 		if err := runProtoc(ctx, pc, gRPCProtocArgs(apiProtos, params.srcCfg, gRPCDir)); err != nil {
 			return fmt.Errorf("failed to generate gRPC module: %w", err)
 		}
-		slog.Info("protoc gRPC done", "api", params.api.Path, "duration", time.Since(grpcStart))
+		durGrpc := time.Since(grpcStart)
+		slog.Info("protoc gRPC done", "api", params.api.Path, "duration", durGrpc)
+		fmt.Printf("[BENCHMARK-CI] API %s Protoc gRPC: %v\n", params.api.Path, durGrpc)
 	}
 	// 3. Generate GAPIC library.
 	if shouldGenerateGAPIC(javaAPI) || shouldGenerateResourceNames(javaAPI) {
@@ -205,14 +209,18 @@ func generateAPI(ctx context.Context, params generateAPIParams) error {
 		if err := runProtoc(ctx, pc, args); err != nil {
 			return fmt.Errorf("failed to generate gapic: %w", err)
 		}
-		slog.Info("protoc GAPIC done", "api", params.api.Path, "duration", time.Since(gapicStart))
+		durGapic := time.Since(gapicStart)
+		slog.Info("protoc GAPIC done", "api", params.api.Path, "duration", durGapic)
+		fmt.Printf("[BENCHMARK-CI] API %s Protoc GAPIC (JVM): %v\n", params.api.Path, durGapic)
 	}
 
 	postStart := time.Now()
 	if err := postProcessAPI(ctx, postParams); err != nil {
 		return fmt.Errorf("failed to post process: %w", err)
 	}
-	slog.Info("postProcessAPI done", "api", params.api.Path, "duration", time.Since(postStart))
+	durPost := time.Since(postStart)
+	slog.Info("postProcessAPI done", "api", params.api.Path, "duration", durPost)
+	fmt.Printf("[BENCHMARK-CI] API %s postProcessAPI: %v\n", params.api.Path, durPost)
 	return nil
 }
 
