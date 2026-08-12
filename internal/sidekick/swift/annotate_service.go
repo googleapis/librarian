@@ -23,15 +23,15 @@ import (
 )
 
 type serviceAnnotations struct {
-	Name                     string
-	ClientName               string
-	StubPrefix               string
-	HostnameShort            string
-	DocLines                 []string
-	RestMethods              []*api.Method
-	LibraryName              string
-	QuickstartMethod         *api.Method
-	Model                    *modelAnnotations
+	Name             string
+	ClientName       string
+	StubPrefix       string
+	HostnameShort    string
+	DocLines         []string
+	RestMethods      []*api.Method
+	LibraryName      string
+	QuickstartMethod *api.Method
+	Model            *modelAnnotations
 	DependsOn        map[string]*Dependency
 	IsGated          bool
 	ModulePath       string
