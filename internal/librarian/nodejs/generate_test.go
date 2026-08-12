@@ -225,21 +225,8 @@ func TestBuildGeneratorArgs(t *testing.T) {
 		library      *config.Library
 		protoc       *config.Protoc
 		librarianBin string
-		setup        func(t *testing.T)
 		want         []string
-		wantErr      bool
 	}{
-		{
-			name: "protoc missing from PATH returns error",
-			api:  &config.API{Path: "google/cloud/secretmanager/v1"},
-			library: &config.Library{
-				Name: "google-cloud-secretmanager",
-			},
-			setup: func(t *testing.T) {
-				t.Setenv("PATH", t.TempDir())
-			},
-			wantErr: true,
-		},
 		{
 			name: "with configured protoc tool",
 			api:  &config.API{Path: "google/cloud/secretmanager/v1"},
@@ -479,10 +466,7 @@ func TestBuildGeneratorArgs(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			if test.setup != nil {
-				test.setup(t)
-			}
-			if !test.wantErr && test.protoc == nil && systemProtocErr != nil {
+			if test.protoc == nil && systemProtocErr != nil {
 				t.Skipf("skipping test: protoc not found in PATH")
 			}
 			if test.librarianBin != "" {
@@ -490,15 +474,27 @@ func TestBuildGeneratorArgs(t *testing.T) {
 			}
 			nodejsAPI := resolveNodejsAPI(test.library, test.api)
 			got, err := buildGeneratorArgs("gapic-generator-typescript", test.protoc, test.api, test.library, absGoogleapisDir, "staging", nodejsAPI)
-			if (err != nil) != test.wantErr {
-				t.Fatalf("buildGeneratorArgs() error = %v, wantErr = %v", err, test.wantErr)
+			if err != nil {
+				t.Fatal(err)
 			}
-			if !test.wantErr {
-				if diff := cmp.Diff(test.want, got); diff != "" {
-					t.Errorf("mismatch (-want +got):\n%s", diff)
-				}
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
+	}
+}
+
+func TestBuildGeneratorArgs_Error(t *testing.T) {
+	t.Setenv("PATH", t.TempDir())
+	absGoogleapisDir, err := filepath.Abs(googleapisDir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	api := &config.API{Path: "google/cloud/secretmanager/v1"}
+	library := &config.Library{Name: "google-cloud-secretmanager"}
+	nodejsAPI := resolveNodejsAPI(library, api)
+	if _, err := buildGeneratorArgs("gapic-generator-typescript", nil, api, library, absGoogleapisDir, "staging", nodejsAPI); err == nil {
+		t.Fatal("buildGeneratorArgs() with missing protoc expected error, got nil")
 	}
 }
 
