@@ -75,7 +75,7 @@ func TestInstallDir(t *testing.T) {
 }
 
 func TestBinaryPath(t *testing.T) {
-	binaryName := protocBinaryName()
+	binaryName := protocBinaryName(t)
 	for _, test := range []struct {
 		name         string
 		version      string
@@ -125,7 +125,7 @@ func TestBinaryPath_Error(t *testing.T) {
 }
 
 func TestBinaryPathOrSystem(t *testing.T) {
-	binaryName := protocBinaryName()
+	binaryName := protocBinaryName(t)
 
 	for _, test := range []struct {
 		name         string
@@ -194,7 +194,7 @@ func TestRun(t *testing.T) {
 	if runtime.GOOS == osWindows {
 		t.Skip("skipping execution test on Windows")
 	}
-	binaryName := protocBinaryName()
+	binaryName := protocBinaryName(t)
 	binDir := t.TempDir()
 	t.Setenv("LIBRARIAN_BIN", binDir)
 	version := "33.2"
@@ -214,7 +214,7 @@ func TestRunOrSystem(t *testing.T) {
 	if runtime.GOOS == osWindows {
 		t.Skip("skipping execution test on Windows")
 	}
-	binaryName := protocBinaryName()
+	binaryName := protocBinaryName(t)
 	createFakeSystemExecutable(t, binaryName)
 
 	if err := RunOrSystem(t.Context(), nil, nil, "--version"); err != nil {
@@ -286,7 +286,8 @@ func TestDownloadAndExtract(t *testing.T) {
 	}
 }
 
-func protocBinaryName() string {
+func protocBinaryName(t *testing.T) string {
+	t.Helper()
 	if runtime.GOOS == osWindows {
 		return "protoc.exe"
 	}
