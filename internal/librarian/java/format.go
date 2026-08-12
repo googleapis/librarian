@@ -52,7 +52,7 @@ func Format(ctx context.Context, libraries ...*config.Library) error {
 	// Passing 2,000 files per CLI invocation avoids exceeding OS command-line length limits (ARG_MAX)
 	// while preventing JVM heap exhaustion on RAM-constrained CI runners.
 	g, gctx := errgroup.WithContext(ctx)
-	g.SetLimit(2 * runtime.NumCPU())
+	g.SetLimit(runtime.NumCPU())
 	for i := 0; i < len(allFiles); i += maxFilesPerFormatBatch {
 		end := min(i+maxFilesPerFormatBatch, len(allFiles))
 		chunk := allFiles[i:end]
