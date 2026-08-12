@@ -144,14 +144,7 @@ impl super::stub::{{Codec.Name}} for {{Codec.Name}} {
             .to_proto()
             .map_err(google_cloud_gax::error::Error::ser)?;
 
-        let capacity = options.request_channel_capacity();
-        if capacity == 0 || capacity > google_cloud_gax::options::MAX_REQUEST_CHANNEL_CAPACITY {
-            return Err(google_cloud_gax::error::Error::binding(format!(
-                "request channel capacity must be between 1 and {}",
-                google_cloud_gax::options::MAX_REQUEST_CHANNEL_CAPACITY
-            )));
-        }
-        let (req_tx, req_rx) = tokio::sync::mpsc::channel(capacity);
+        let (req_tx, req_rx) = tokio::sync::mpsc::channel(options.request_channel_capacity());
 
         let req_stream = futures::stream::once(async move { first_req })
             .chain(tokio_stream::wrappers::ReceiverStream::new(req_rx));
