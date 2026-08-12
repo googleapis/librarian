@@ -252,6 +252,10 @@ func requirePHPGenerator(t *testing.T) {
 	if _, err := os.Stat(wrapperPath); err != nil {
 		t.Skip("skipping test: PHP generator is not installed (run 'librarian install php' first)")
 	}
+	postProcessorPath := filepath.Join(bin, "php-post-processor")
+	if _, err := os.Stat(postProcessorPath); err != nil {
+		t.Skip("skipping test: PHP post processor is not installed (run 'librarian install php' first)")
+	}
 }
 
 func TestGenerate_Error(t *testing.T) {
