@@ -870,24 +870,10 @@ func TestDownload_Error(t *testing.T) {
 }
 
 func TestDownload_EmptySha(t *testing.T) {
-	testDir := t.TempDir()
-	tarball := makeTestContents(t)
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
-		w.Write(tarball.Contents)
-	}))
-	defer server.Close()
-
-	expected := path.Join(testDir, "new-file")
-	if err := Download(t.Context(), expected, server.URL, ""); err != nil {
-		t.Fatal(err)
-	}
-	got, err := os.ReadFile(expected)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if diff := cmp.Diff(tarball.Contents, got); diff != "" {
-		t.Errorf("mismatch (-want +got):\n%s", diff)
+	target := path.Join(t.TempDir(), "target")
+	err := Download(t.Context(), target, "https://any-url", "")
+	if !errors.Is(err, errMissingSHA256) {
+		t.Errorf("expected errMissingSHA256, got: %v", err)
 	}
 }
 

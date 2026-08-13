@@ -21,15 +21,12 @@ import (
 	"testing"
 
 	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/testhelper"
 	"github.com/googleapis/librarian/internal/tool/pip"
 )
 
 func TestInstall(t *testing.T) {
-	bin := t.TempDir()
-	if err := os.WriteFile(filepath.Join(bin, "pip"), []byte("#!/bin/sh\n"), 0o755); err != nil {
-		t.Fatal(err)
-	}
-	t.Setenv("PATH", bin+string(os.PathListSeparator)+os.Getenv("PATH"))
+	setupStubPip(t, "#!/bin/sh\n")
 
 	tools := &config.Tools{
 		Pip: []*config.PipTool{
@@ -75,11 +72,7 @@ func TestInstall_Error(t *testing.T) {
 				},
 			},
 			setup: func(t *testing.T) {
-				bin := t.TempDir()
-				if err := os.WriteFile(filepath.Join(bin, "pip"), []byte("#!/bin/sh\nexit 1\n"), 0o755); err != nil {
-					t.Fatal(err)
-				}
-				t.Setenv("PATH", bin+string(os.PathListSeparator)+os.Getenv("PATH"))
+				setupStubPip(t, "#!/bin/sh\nexit 1\n")
 			},
 			wantErr: pip.ErrInstall,
 		},
@@ -94,4 +87,11 @@ func TestInstall_Error(t *testing.T) {
 			}
 		})
 	}
+}
+
+func setupStubPip(t *testing.T, script string) {
+	t.Helper()
+	bin := t.TempDir()
+	testhelper.WriteExecutable(t, filepath.Join(bin, "pip"), script)
+	t.Setenv("PATH", bin+string(os.PathListSeparator)+os.Getenv("PATH"))
 }

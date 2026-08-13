@@ -42,6 +42,7 @@ const (
 var (
 	errAbsSymlinks         = errors.New("absolute symlinks are not allowed")
 	errChecksumMismatch    = errors.New("checksum mismatch")
+	errMissingSHA256       = errors.New("must provide expected SHA256")
 	errSymlinkEscape       = errors.New("symlinks are not allowed to escape destination")
 	errUnsupportedFileType = errors.New("unsupported file type")
 	defaultBackoff         = 10 * time.Second
@@ -285,12 +286,15 @@ func tarballLink(githubDownload string, repo *RepoRef, sha string) string {
 	return fmt.Sprintf("%s/%s/%s/archive/%s.tar.gz", githubDownload, repo.Org, repo.Name, sha)
 }
 
-// Download downloads a file from the given URL to the target path and verifies
-// its SHA256 checksum matches expectedSHA256 if non-empty. It retries up to
+// Download downloads a file from the given url to the target path, verifying
+// its SHA256 checksum matches expectedSHA256. It retries up to
 // maxDownloadRetries times with exponential backoff on failure.
 func Download(ctx context.Context, target, url, expectedSHA256 string) error {
 	if fileExists(target) {
 		return nil
+	}
+	if expectedSHA256 == "" {
+		return errMissingSHA256
 	}
 	if err := os.MkdirAll(filepath.Dir(target), 0o755); err != nil {
 		return err
@@ -311,14 +315,12 @@ func Download(ctx context.Context, target, url, expectedSHA256 string) error {
 	if err := downloadFile(ctx, tempPath, url); err != nil {
 		return err
 	}
-	if expectedSHA256 != "" {
-		sha, err := computeSHA256(tempPath)
-		if err != nil {
-			return err
-		}
-		if sha != expectedSHA256 {
-			return fmt.Errorf("%w: expected=%s, got=%s", errChecksumMismatch, expectedSHA256, sha)
-		}
+	sha, err := computeSHA256(tempPath)
+	if err != nil {
+		return err
+	}
+	if sha != expectedSHA256 {
+		return fmt.Errorf("%w: expected=%s, got=%s", errChecksumMismatch, expectedSHA256, sha)
 	}
 	return os.Rename(tempPath, target)
 }
