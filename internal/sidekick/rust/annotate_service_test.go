@@ -329,7 +329,7 @@ func TestServiceAnnotations(t *testing.T) {
 		Name:           "get_resource",
 		NameNoMangling: "get_resource",
 		BuilderName:    "GetResource",
-		Body:           "None::<gaxi::http::NoBody>",
+		Body:           "None::<wkt::Empty>",
 		PathInfo:       method.PathInfo,
 		SystemParameters: []systemParameter{
 			{Name: "$alt", Value: "json;enum-encoding=int"},
@@ -347,7 +347,7 @@ func TestServiceAnnotations(t *testing.T) {
 		Name:           "delete_resource",
 		NameNoMangling: "delete_resource",
 		BuilderName:    "DeleteResource",
-		Body:           "None::<gaxi::http::NoBody>",
+		Body:           "None::<wkt::Empty>",
 		PathInfo:       emptyMethod.PathInfo,
 		SystemParameters: []systemParameter{
 			{Name: "$alt", Value: "json;enum-encoding=int"},

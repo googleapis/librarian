@@ -2274,7 +2274,7 @@ func TestBodyAccessor(t *testing.T) {
 	}{
 		{"*", "Some(req)"},
 		{"field", "req.field"},
-		{"", "None::<gaxi::http::NoBody>"},
+		{"", "None::<wkt::Empty>"},
 	} {
 		method := &api.Method{
 			Name: "DoFoo",
