@@ -16,10 +16,13 @@ package php
 
 import (
 	"errors"
+	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"testing"
+
+	"github.com/google/go-cmp/cmp"
 
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/testhelper"
@@ -199,7 +202,8 @@ func TestPostProcess_PHPPostProcessor(t *testing.T) {
 	if err := os.MkdirAll(destDir, 0o755); err != nil {
 		t.Fatal(err)
 	}
-	setupMockPHPPostProcessor(t, "#!/bin/sh\ntouch php_post_processor_ran.txt\n")
+	expectedFile := filepath.Join(repoRoot, "php_post_processor_pwd.txt")
+	setupMockPHPPostProcessor(t, fmt.Sprintf("#!/bin/sh\npwd > %s\n", expectedFile))
 	owlbotPy := filepath.Join(destDir, "owlbot.py")
 	if err := os.WriteFile(owlbotPy, []byte("import sys; sys.exit(0)"), 0o755); err != nil {
 		t.Fatal(err)
@@ -207,16 +211,33 @@ func TestPostProcess_PHPPostProcessor(t *testing.T) {
 	lib := &config.Library{
 		Name:   "SecretManager",
 		Output: destDir,
+		APIs: []*config.API{
+			{
+				Path: "google/cloud/secretmanager/v1",
+				PHP: &config.PHPAPI{
+					StagingSubdir: "SecretManager/v1",
+				},
+			},
+		},
 		PHP: &config.PHPPackage{
 			ComponentName: "SecretManager",
 		},
 	}
+	stagingSubdir := filepath.Join(repoRoot, owlBotStagingDir, lib.PHP.ComponentName, "SecretManager/v1")
+	if err := os.MkdirAll(stagingSubdir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+
 	if err := postProcessLibrary(ctx, lib, lib.PHP.ComponentName); err != nil {
 		t.Fatal(err)
 	}
-	expectedFile := filepath.Join(destDir, "php_post_processor_ran.txt")
-	if _, err := os.Stat(expectedFile); err != nil {
-		t.Error(err)
+	out, err := os.ReadFile(expectedFile)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := stagingSubdir + "\n"
+	if got := string(out); got != want {
+		t.Errorf("php-post-processor ran in wrong directory (-want +got):\n%s", cmp.Diff(want, got))
 	}
 }
 
@@ -236,9 +257,21 @@ func TestPostProcess_PHPPostProcessorError(t *testing.T) {
 	lib := &config.Library{
 		Name:   "SecretManager",
 		Output: destDir,
+		APIs: []*config.API{
+			{
+				Path: "google/cloud/secretmanager/v1",
+				PHP: &config.PHPAPI{
+					StagingSubdir: "SecretManager/v1",
+				},
+			},
+		},
 		PHP: &config.PHPPackage{
 			ComponentName: "SecretManager",
 		},
+	}
+	stagingSubdir := filepath.Join(repoRoot, owlBotStagingDir, lib.PHP.ComponentName, "SecretManager/v1")
+	if err := os.MkdirAll(stagingSubdir, 0o755); err != nil {
+		t.Fatal(err)
 	}
 	err := postProcessLibrary(ctx, lib, lib.PHP.ComponentName)
 	var exitErr *exec.ExitError

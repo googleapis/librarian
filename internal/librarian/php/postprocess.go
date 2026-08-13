@@ -37,7 +37,7 @@ func postProcessLibrary(ctx context.Context, library *config.Library, componentN
 			err = errors.Join(err, cleanupErr)
 		}
 	}()
-
+	
 	// TODO(https://github.com/googleapis/librarian/issues/7153): We need to use component name as library output to maintain backward compatibility. Change this to library.Output when ready.
 	owlbotPy := filepath.Join(componentName, "owlbot.py")
 	if _, err := os.Stat(owlbotPy); err != nil {
@@ -47,16 +47,28 @@ func postProcessLibrary(ctx context.Context, library *config.Library, componentN
 		return err
 	}
 
-	if err := command.RunInDir(ctx, componentName, "python3", "owlbot.py"); err != nil {
-		return fmt.Errorf("failed to run owlbot.py: %w", err)
-	}
 	bin, err := binDir()
 	if err != nil {
 		return fmt.Errorf("failed to get bin dir: %w", err)
 	}
 	postProcessor := filepath.Join(bin, "php-post-processor")
-	if err := command.RunInDir(ctx, componentName, postProcessor, "--input", "."); err != nil {
-		return fmt.Errorf("failed to run php-post-processor: %w", err)
+	// Run post-processor in API staging directories before owlbot.py moves them.
+	for _, api := range library.APIs {
+		if api.PHP == nil {
+			continue
+		}
+		apiStagingDir := filepath.Join(stagingDir, api.PHP.StagingSubdir)
+		if _, err := os.Stat(apiStagingDir); err == nil {
+			if err := command.RunInDir(ctx, apiStagingDir, postProcessor, "--input", "."); err != nil {
+				return fmt.Errorf("failed to run php-post-processor on %s: %w", api.Path, err)
+			}
+		} else if !errors.Is(err, fs.ErrNotExist) {
+			return fmt.Errorf("failed to stat staging dir for %s: %w", api.Path, err)
+		}
 	}
+	if err := command.RunInDir(ctx, componentName, "python3", "owlbot.py"); err != nil {
+		return fmt.Errorf("failed to run owlbot.py: %w", err)
+	}
+
 	return nil
 }
