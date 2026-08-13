@@ -72,6 +72,13 @@ func moduleToModelConfig(library *config.Library, module *config.SwiftModule, sr
 		sourceConfig.IncludeList = library.Swift.IncludeList
 	}
 
+	var includedIDs []string
+	if len(module.IncludedIds) > 0 {
+		includedIDs = module.IncludedIds
+	} else if library.Swift != nil && len(library.Swift.IncludedIds) > 0 {
+		includedIDs = library.Swift.IncludedIds
+	}
+
 	var skippedIDs []string
 	if len(module.SkippedIds) > 0 {
 		skippedIDs = module.SkippedIds
@@ -90,7 +97,8 @@ func moduleToModelConfig(library *config.Library, module *config.SwiftModule, sr
 		ServiceConfig:       module.ServiceConfig,
 		Source:              sourceConfig,
 		Override: api.ModelOverride{
-			SkippedIDs: skippedIDs,
+			IncludedIDs: includedIDs,
+			SkippedIDs:  skippedIDs,
 		},
 	}
 }

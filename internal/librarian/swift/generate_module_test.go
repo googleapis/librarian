@@ -345,3 +345,40 @@ func TestModuleToModelConfig_SkippedIds(t *testing.T) {
 		}
 	})
 }
+
+func TestModuleToModelConfig_IncludedIds(t *testing.T) {
+	src := &sources.Sources{}
+
+	t.Run("module level included_ids", func(t *testing.T) {
+		library := &config.Library{
+			Swift: &config.SwiftPackage{
+				IncludedIds: []string{".google.type.Color"},
+			},
+		}
+		module := &config.SwiftModule{
+			APIPath:     "google/type",
+			IncludedIds: []string{".google.type.Money"},
+		}
+		modelCfg := moduleToModelConfig(library, module, src)
+		expected := []string{".google.type.Money"}
+		if diff := cmp.Diff(expected, modelCfg.Override.IncludedIDs); diff != "" {
+			t.Errorf("moduleToModelConfig() mismatch (-want +got):\n%s", diff)
+		}
+	})
+
+	t.Run("library level fallback included_ids", func(t *testing.T) {
+		library := &config.Library{
+			Swift: &config.SwiftPackage{
+				IncludedIds: []string{".google.type.Color"},
+			},
+		}
+		module := &config.SwiftModule{
+			APIPath: "google/type",
+		}
+		modelCfg := moduleToModelConfig(library, module, src)
+		expected := []string{".google.type.Color"}
+		if diff := cmp.Diff(expected, modelCfg.Override.IncludedIDs); diff != "" {
+			t.Errorf("moduleToModelConfig() mismatch (-want +got):\n%s", diff)
+		}
+	})
+}
