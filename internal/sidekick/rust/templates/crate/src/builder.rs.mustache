@@ -197,13 +197,7 @@ pub mod {{Codec.ModuleName}} {
             google_cloud_gax::streaming::RequestSender<{{InputType.Codec.QualifiedName}}>,
             google_cloud_gax::streaming::ResponseReceiver<{{OutputType.Codec.QualifiedName}}>,
         )> {
-            {{#HasAutoPopulatedFields}}
-            let req = Self::auto_populate(self.0.request, false);
-            (*self.0.stub).{{Codec.Name}}(req, self.0.options).await
-            {{/HasAutoPopulatedFields}}
-            {{^HasAutoPopulatedFields}}
             (*self.0.stub).{{Codec.Name}}(self.0.request, self.0.options).await
-            {{/HasAutoPopulatedFields}}
         }
         {{/Codec.IsBidiStreaming}}
         {{^Codec.IsBidiStreaming}}
@@ -501,8 +495,6 @@ pub mod {{Codec.ModuleName}} {
             {{/Model.Codec.LroStubOptions}}
         }
         {{/OperationInfo}}
-        {{/Codec.IsBidiStreaming}}
-
         {{#HasAutoPopulatedFields}}
 
         fn auto_populate(mut req: {{InputType.Codec.QualifiedName}}, force: bool) -> {{InputType.Codec.QualifiedName}} {
@@ -519,6 +511,7 @@ pub mod {{Codec.ModuleName}} {
             req
         }
         {{/HasAutoPopulatedFields}}
+        {{/Codec.IsBidiStreaming}}
         {{#InputType.Codec.BasicFields}}
 
         /// Sets the value of [{{Codec.FieldName}}][{{Codec.FQMessageName}}::{{Codec.SetterName}}].
