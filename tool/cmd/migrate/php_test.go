@@ -110,6 +110,7 @@ deep-copy-regex:
 			{
 				Name:    "secretmanager",
 				Version: "2.3.0",
+				Output:  "SecretManager",
 				APIs: []*config.API{
 					{
 						Path: "google/cloud/secretmanager/v1",
@@ -496,6 +497,7 @@ deep-copy-regex:
 				{
 					Name:    "secretmanager",
 					Version: "2.3.0",
+					Output:  "SecretManager",
 					APIs: []*config.API{
 						{
 							Path: "google/cloud/secretmanager/v1",
@@ -538,6 +540,7 @@ deep-copy-regex:
 				{
 					Name:    "security-privateca",
 					Version: "1.0.0",
+					Output:  "SecurityPrivateCa",
 					PHP: &config.PHPPackage{
 						ComponentName: "SecurityPrivateCa",
 					},
@@ -579,6 +582,7 @@ deep-copy-regex:
 				{
 					Name:    "identity-accesscontextmanager",
 					Version: "1.0.0",
+					Output:  "AccessContextManager",
 					PHP: &config.PHPPackage{
 						ComponentName: "AccessContextManager",
 					},
@@ -645,6 +649,7 @@ deep-copy-regex:
 				{
 					Name:    "secretmanager",
 					Version: "2.3.0",
+					Output:  "secretmanager",
 					PHP: &config.PHPPackage{
 						ComponentName: "secretmanager",
 					},

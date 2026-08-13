@@ -265,6 +265,7 @@ func findPHPLibraries(repoPath string, googleapisDir string, globalDefaultCommon
 			Name:    libraryName,
 			Version: version,
 			APIs:    apis,
+			Output:  name,
 		}
 		derivedComp, err := php.ComponentNameForLibrary(googleapisDir, lib)
 		if err != nil {
