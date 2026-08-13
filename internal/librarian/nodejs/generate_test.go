@@ -20,9 +20,7 @@ import (
 	"fmt"
 	"io/fs"
 	"os"
-	"os/exec"
 	"path/filepath"
-	"runtime"
 	"slices"
 	"strings"
 	"syscall"
@@ -210,44 +208,17 @@ func TestBuildGeneratorArgs(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	protocPath, systemProtocErr := exec.LookPath("protoc")
-
-	binaryName := "protoc"
-	if runtime.GOOS == "windows" {
-		binaryName += ".exe"
-	}
 	customBinDir := filepath.FromSlash("/custom/bin")
-	customProtocPath := filepath.Join(customBinDir, "protoc", "v33.2", "bin", binaryName)
+	t.Setenv("LIBRARIAN_BIN", customBinDir)
+	customProtocPath := filepath.FromSlash("/custom/bin/protoc/v33.2/bin/protoc")
+	defaultProtoc := &config.Protoc{Version: "33.2"}
 
 	for _, test := range []struct {
-		name         string
-		api          *config.API
-		library      *config.Library
-		protoc       *config.Protoc
-		librarianBin string
-		want         []string
+		name    string
+		api     *config.API
+		library *config.Library
+		want    []string
 	}{
-		{
-			name: "with configured protoc tool",
-			api:  &config.API{Path: "google/cloud/secretmanager/v1"},
-			library: &config.Library{
-				Name: "google-cloud-secretmanager",
-			},
-			protoc:       &config.Protoc{Version: "33.2"},
-			librarianBin: customBinDir,
-			want: []string{
-				"gapic-generator-typescript",
-				"--protoc=" + customProtocPath,
-				"--common-proto-path=.",
-				"-I", ".",
-				"--output-dir", "staging",
-				"--grpc-service-config", "google/cloud/secretmanager/v1/secretmanager_grpc_service_config.json",
-				"--service-yaml", "google/cloud/secretmanager/v1/secretmanager_v1.yaml",
-				"--package-name", "@google-cloud/secretmanager",
-				"--metadata",
-				"--rest-numeric-enums",
-			},
-		},
 		{
 			name: "basic case",
 			api:  &config.API{Path: "google/cloud/secretmanager/v1"},
@@ -256,7 +227,7 @@ func TestBuildGeneratorArgs(t *testing.T) {
 			},
 			want: []string{
 				"gapic-generator-typescript",
-				"--protoc=" + protocPath,
+				"--protoc=" + customProtocPath,
 				"--common-proto-path=.",
 				"-I", ".",
 				"--output-dir", "staging",
@@ -278,7 +249,7 @@ func TestBuildGeneratorArgs(t *testing.T) {
 			},
 			want: []string{
 				"gapic-generator-typescript",
-				"--protoc=" + protocPath,
+				"--protoc=" + customProtocPath,
 				"--common-proto-path=.",
 				"-I", ".",
 				"--output-dir", "staging",
@@ -308,7 +279,7 @@ func TestBuildGeneratorArgs(t *testing.T) {
 			},
 			want: []string{
 				"gapic-generator-typescript",
-				"--protoc=" + protocPath,
+				"--protoc=" + customProtocPath,
 				"--common-proto-path=.",
 				"-I", ".",
 				"--output-dir", "staging",
@@ -332,7 +303,7 @@ func TestBuildGeneratorArgs(t *testing.T) {
 			},
 			want: []string{
 				"gapic-generator-typescript",
-				"--protoc=" + protocPath,
+				"--protoc=" + customProtocPath,
 				"--common-proto-path=.",
 				"-I", ".",
 				"--output-dir", "staging",
@@ -350,7 +321,7 @@ func TestBuildGeneratorArgs(t *testing.T) {
 			},
 			want: []string{
 				"gapic-generator-typescript",
-				"--protoc=" + protocPath,
+				"--protoc=" + customProtocPath,
 				"--common-proto-path=.",
 				"-I", ".",
 				"--output-dir", "staging",
@@ -375,7 +346,7 @@ func TestBuildGeneratorArgs(t *testing.T) {
 			},
 			want: []string{
 				"gapic-generator-typescript",
-				"--protoc=" + protocPath,
+				"--protoc=" + customProtocPath,
 				"--common-proto-path=.",
 				"-I", ".",
 				"--output-dir", "staging",
@@ -398,7 +369,7 @@ func TestBuildGeneratorArgs(t *testing.T) {
 			},
 			want: []string{
 				"gapic-generator-typescript",
-				"--protoc=" + protocPath,
+				"--protoc=" + customProtocPath,
 				"--common-proto-path=.",
 				"-I", ".",
 				"--output-dir", "staging",
@@ -426,7 +397,7 @@ func TestBuildGeneratorArgs(t *testing.T) {
 			},
 			want: []string{
 				"gapic-generator-typescript",
-				"--protoc=" + protocPath,
+				"--protoc=" + customProtocPath,
 				"--common-proto-path=.",
 				"-I", ".",
 				"--output-dir", "staging",
@@ -452,7 +423,7 @@ func TestBuildGeneratorArgs(t *testing.T) {
 			},
 			want: []string{
 				"gapic-generator-typescript",
-				"--protoc=" + protocPath,
+				"--protoc=" + customProtocPath,
 				"--common-proto-path=.",
 				"-I", ".",
 				"--output-dir", "staging",
@@ -466,14 +437,8 @@ func TestBuildGeneratorArgs(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			if test.protoc == nil && systemProtocErr != nil {
-				t.Skipf("skipping test: protoc not found in PATH")
-			}
-			if test.librarianBin != "" {
-				t.Setenv("LIBRARIAN_BIN", test.librarianBin)
-			}
 			nodejsAPI := resolveNodejsAPI(test.library, test.api)
-			got, err := buildGeneratorArgs("gapic-generator-typescript", test.protoc, test.api, test.library, absGoogleapisDir, "staging", nodejsAPI)
+			got, err := buildGeneratorArgs("gapic-generator-typescript", defaultProtoc, test.api, test.library, absGoogleapisDir, "staging", nodejsAPI)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -485,7 +450,6 @@ func TestBuildGeneratorArgs(t *testing.T) {
 }
 
 func TestBuildGeneratorArgs_Error(t *testing.T) {
-	t.Setenv("PATH", t.TempDir())
 	absGoogleapisDir, err := filepath.Abs(googleapisDir)
 	if err != nil {
 		t.Fatal(err)
@@ -493,8 +457,25 @@ func TestBuildGeneratorArgs_Error(t *testing.T) {
 	api := &config.API{Path: "google/cloud/secretmanager/v1"}
 	library := &config.Library{Name: "google-cloud-secretmanager"}
 	nodejsAPI := resolveNodejsAPI(library, api)
-	if _, err := buildGeneratorArgs("gapic-generator-typescript", nil, api, library, absGoogleapisDir, "staging", nodejsAPI); err == nil {
-		t.Fatal("buildGeneratorArgs() with missing protoc expected error, got nil")
+
+	for _, test := range []struct {
+		name   string
+		protoc *config.Protoc
+	}{
+		{
+			name:   "nil protoc config",
+			protoc: nil,
+		},
+		{
+			name:   "empty protoc version",
+			protoc: &config.Protoc{Version: ""},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			if _, err := buildGeneratorArgs("gapic-generator-typescript", test.protoc, api, library, absGoogleapisDir, "staging", nodejsAPI); err == nil {
+				t.Fatal("expected error with unconfigured protoc, got nil")
+			}
+		})
 	}
 }
 
@@ -522,6 +503,7 @@ func TestGenerateAPI(t *testing.T) {
 		library:       &config.Library{Name: "google-cloud-secretmanager", Output: outDir},
 		googleapisDir: absGoogleapisDir,
 		repoRoot:      repoRoot,
+		protoc:        &config.Protoc{Version: "33.2"},
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -566,6 +548,7 @@ func TestGenerateAPI_MultipleVersions(t *testing.T) {
 				library:       library,
 				googleapisDir: absGoogleapisDir,
 				repoRoot:      repoRoot,
+				protoc:        &config.Protoc{Version: "33.2"},
 			}); err != nil {
 				t.Fatal(err)
 			}

@@ -58,7 +58,7 @@ func Generate(ctx context.Context, cfg *config.Config, library *config.Library, 
 		return fmt.Errorf("failed to create output directory: %w", err)
 	}
 	var pc *config.Protoc
-	if cfg != nil && cfg.Tools != nil {
+	if cfg.Tools != nil {
 		pc = cfg.Tools.Protoc
 	}
 	repoRoot := filepath.Dir(filepath.Dir(outdir))
@@ -248,7 +248,10 @@ func unique(ss []string) []string {
 // buildGeneratorArgs constructs the gapic-generator-typescript arguments,
 // excluding proto files.
 func buildGeneratorArgs(generatorPath string, pc *config.Protoc, api *config.API, library *config.Library, googleapisDir, stagingDir string, nodejsAPI *config.NodejsAPI) ([]string, error) {
-	protocPath, err := protoc.BinaryPathOrSystem(pc)
+	if pc == nil || pc.Version == "" {
+		return nil, errors.New("protoc is not configured in librarian.yaml under tools.protoc; try running `librarian install`")
+	}
+	protocPath, err := protoc.BinaryPath(pc.Version)
 	if err != nil {
 		return nil, fmt.Errorf("failed to find protoc: %w", err)
 	}
