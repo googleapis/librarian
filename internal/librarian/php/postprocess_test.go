@@ -16,9 +16,11 @@ package php
 
 import (
 	"errors"
+	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/googleapis/librarian/internal/config"
@@ -199,10 +201,6 @@ func TestPostProcess_PHPPostProcessor(t *testing.T) {
 	if err := os.MkdirAll(destDir, 0o755); err != nil {
 		t.Fatal(err)
 	}
-	stagingDir := filepath.Join(repoRoot, owlBotStagingDir, "SecretManager", "v1")
-	if err := os.MkdirAll(stagingDir, 0o755); err != nil {
-		t.Fatal(err)
-	}
 	setupMockPHPPostProcessor(t, "#!/bin/sh\ntouch php_post_processor_ran.txt\n")
 	owlbotPy := filepath.Join(destDir, "owlbot.py")
 	if err := os.WriteFile(owlbotPy, []byte("import sys; sys.exit(0)"), 0o755); err != nil {
@@ -211,12 +209,6 @@ func TestPostProcess_PHPPostProcessor(t *testing.T) {
 	lib := &config.Library{
 		Name:   "SecretManager",
 		Output: destDir,
-		APIs: []*config.API{{
-			Path: "my/api/v1",
-			PHP: &config.PHPAPI{
-				StagingSubdir: "v1",
-			},
-		}},
 		PHP: &config.PHPPackage{
 			ComponentName: "SecretManager",
 		},
@@ -224,7 +216,7 @@ func TestPostProcess_PHPPostProcessor(t *testing.T) {
 	if err := postProcessLibrary(ctx, lib, lib.PHP.ComponentName); err != nil {
 		t.Fatal(err)
 	}
-	expectedFile := filepath.Join(stagingDir, "php_post_processor_ran.txt")
+	expectedFile := filepath.Join(destDir, "php_post_processor_ran.txt")
 	if _, err := os.Stat(expectedFile); err != nil {
 		t.Error(err)
 	}
@@ -254,5 +246,56 @@ func TestPostProcess_PHPPostProcessorError(t *testing.T) {
 	var exitErr *exec.ExitError
 	if !errors.As(err, &exitErr) {
 		t.Fatalf("expected exit error, got: %v", err)
+	}
+}
+
+func TestPostProcess_PHPPostProcessor_WithAPIs(t *testing.T) {
+	ctx := t.Context()
+	repoRoot := t.TempDir()
+	t.Chdir(repoRoot)
+	destDir := filepath.Join(repoRoot, "SecretManager")
+	if err := os.MkdirAll(destDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	stagingDir := filepath.Join(repoRoot, owlBotStagingDir, "SecretManager", "v1")
+	if err := os.MkdirAll(stagingDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	mockScript := fmt.Sprintf("#!/bin/sh\npwd >> %s/php_post_processor_ran.txt\n", destDir)
+	setupMockPHPPostProcessor(t, mockScript)
+	owlbotPy := filepath.Join(destDir, "owlbot.py")
+	if err := os.WriteFile(owlbotPy, []byte("import sys; sys.exit(0)"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	lib := &config.Library{
+		Name:   "SecretManager",
+		Output: destDir,
+		APIs: []*config.API{{
+			Path: "my/api/v1",
+			PHP: &config.PHPAPI{
+				StagingSubdir: "v1",
+			},
+		}},
+		PHP: &config.PHPPackage{
+			ComponentName: "SecretManager",
+		},
+	}
+	if err := postProcessLibrary(ctx, lib, lib.PHP.ComponentName); err != nil {
+		t.Fatal(err)
+	}
+	expectedFile := filepath.Join(destDir, "php_post_processor_ran.txt")
+	content, err := os.ReadFile(expectedFile)
+	if err != nil {
+		t.Fatal(err)
+	}
+	lines := strings.Split(strings.TrimSpace(string(content)), "\n")
+	if len(lines) != 2 {
+		t.Fatalf("expected 2 runs, got %d", len(lines))
+	}
+	if lines[0] != stagingDir {
+		t.Errorf("expected post-processor to run first in %q, got %q", stagingDir, lines[0])
+	}
+	if lines[1] != destDir {
+		t.Errorf("expected post-processor to run second in %q, got %q", destDir, lines[1])
 	}
 }
