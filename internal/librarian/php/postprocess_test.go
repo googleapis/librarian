@@ -236,8 +236,9 @@ func TestPostProcess_PHPPostProcessor(t *testing.T) {
 		t.Fatal(err)
 	}
 	want := stagingSubdir + "\n"
-	if got := string(out); got != want {
-		t.Errorf("php-post-processor ran in wrong directory (-want +got):\n%s", cmp.Diff(want, got))
+	got := string(out)
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
 

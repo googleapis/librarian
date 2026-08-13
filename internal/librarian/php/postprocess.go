@@ -37,7 +37,7 @@ func postProcessLibrary(ctx context.Context, library *config.Library, componentN
 			err = errors.Join(err, cleanupErr)
 		}
 	}()
-	
+
 	// TODO(https://github.com/googleapis/librarian/issues/7153): We need to use component name as library output to maintain backward compatibility. Change this to library.Output when ready.
 	owlbotPy := filepath.Join(componentName, "owlbot.py")
 	if _, err := os.Stat(owlbotPy); err != nil {
