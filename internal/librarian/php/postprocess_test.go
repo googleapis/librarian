@@ -23,6 +23,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/testhelper"
 )
@@ -288,14 +289,9 @@ func TestPostProcess_PHPPostProcessor_WithAPIs(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	lines := strings.Split(strings.TrimSpace(string(content)), "\n")
-	if len(lines) != 2 {
-		t.Fatalf("expected 2 runs, got %d", len(lines))
-	}
-	if lines[0] != stagingDir {
-		t.Errorf("expected post-processor to run first in %q, got %q", stagingDir, lines[0])
-	}
-	if lines[1] != destDir {
-		t.Errorf("expected post-processor to run second in %q, got %q", destDir, lines[1])
+	got := strings.Split(strings.TrimSpace(string(content)), "\n")
+	want := []string{stagingDir, destDir}
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
