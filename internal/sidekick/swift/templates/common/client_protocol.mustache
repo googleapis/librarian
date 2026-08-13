@@ -23,7 +23,7 @@ extension Clients {
   @available(*, deprecated)
   {{/Deprecated}}
   public protocol {{Codec.StubPrefix}}Protocol {
-    {{#Codec.RestMethods}}
+    {{#Codec.Methods}}
     {{^IsLroPoller}}
     /// See `{{Service.Codec.ClientName}}.{{Codec.Name}}`.
     {{#Deprecated}}
@@ -68,9 +68,9 @@ extension Clients {
     {{/Signatures}}
     {{/Codec.LRO}}
     {{/IsLroPoller}}
-    {{/Codec.RestMethods}}
+    {{/Codec.Methods}}
 
-    {{#Codec.RestMethods}}
+    {{#Codec.Methods}}
     {{^IsLroPoller}}
     /// See `{{Service.Codec.ClientName}}.{{Codec.Name}}`.
     {{#Deprecated}}
@@ -92,13 +92,13 @@ extension Clients {
     func {{> /templates/common/method_signature/lro_options}}
     {{/Codec.LRO}}
     {{/IsLroPoller}}
-    {{/Codec.RestMethods}}
+    {{/Codec.Methods}}
   }
 }
 
 // Default implementations
 extension Clients.{{Codec.StubPrefix}}Protocol {
-  {{#Codec.RestMethods}}
+  {{#Codec.Methods}}
 
   public func {{> /templates/common/method_signature/request}} {
     try await self.{{Codec.Name}}(request: request, options: .init())
@@ -189,5 +189,5 @@ extension Clients.{{Codec.StubPrefix}}Protocol {
   }
   {{/Signatures}}
   {{/Codec.DiscoveryLRO}}
-  {{/Codec.RestMethods}}
+  {{/Codec.Methods}}
 }

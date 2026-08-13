@@ -28,7 +28,7 @@ type serviceAnnotations struct {
 	StubPrefix       string
 	HostnameShort    string
 	DocLines         []string
-	RestMethods      []*api.Method
+	Methods          []*api.Method
 	LibraryName      string
 	QuickstartMethod *api.Method
 	Model            *modelAnnotations
@@ -82,7 +82,7 @@ func (ann *serviceAnnotations) SnippetImports() []string {
 
 // HasLROs returns true if one of the methods is an LRO.
 func (ann *serviceAnnotations) HasLROs() bool {
-	return slices.ContainsFunc(ann.RestMethods, func(m *api.Method) bool {
+	return slices.ContainsFunc(ann.Methods, func(m *api.Method) bool {
 		ma := m.Codec.(*methodAnnotations)
 		return ma != nil && (ma.LRO != nil || ma.DiscoveryLRO != nil)
 	})
@@ -94,13 +94,13 @@ func (c *codec) annotateService(service *api.Service, model *modelAnnotations) (
 		return nil, err
 	}
 	requiredServices := make(map[string]*api.Service)
-	var restMethods []*api.Method
+	var methods []*api.Method
 	for _, method := range service.Methods {
 		if c.isGeneratedMethod(method) {
 			if err := c.annotateMethod(method, model); err != nil {
 				return nil, err
 			}
-			restMethods = append(restMethods, method)
+			methods = append(methods, method)
 			if method.IsLroPoller && method.SourceService != nil && method.SourceService.Package == service.Package {
 				requiredServices[method.SourceService.ID] = method.SourceService
 			}
@@ -118,7 +118,7 @@ func (c *codec) annotateService(service *api.Service, model *modelAnnotations) (
 		StubPrefix:       pascalCaseNoMangling(service.Name),
 		HostnameShort:    strings.TrimSuffix(service.DefaultHost, ".googleapis.com"),
 		DocLines:         docLines,
-		RestMethods:      restMethods,
+		Methods:          methods,
 		LibraryName:      c.LibraryName,
 		QuickstartMethod: quickstartMethod,
 		Model:            model,
@@ -153,7 +153,7 @@ func (c *codec) annotateService(service *api.Service, model *modelAnnotations) (
 	}
 	annotations.DependsOn[wktDep.Name] = wktDep
 
-	for _, method := range restMethods {
+	for _, method := range methods {
 		if method.InputType != nil {
 			if method.InputType.Package != c.Model.PackageName {
 				dep, err := c.addApiPackageDependency(method.InputType.Package)

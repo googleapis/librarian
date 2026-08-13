@@ -157,7 +157,7 @@ func TestAnnotateService_SkipNoBindings(t *testing.T) {
 		t.Errorf("expected HasLROs() == false, annotations=%+v", serviceCodec)
 	}
 	var gotNames []string
-	for _, m := range serviceCodec.RestMethods {
+	for _, m := range serviceCodec.Methods {
 		gotNames = append(gotNames, m.Name)
 	}
 	wantNames := []string{"ValidMethod"}

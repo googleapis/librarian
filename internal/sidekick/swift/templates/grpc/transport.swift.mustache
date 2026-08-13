@@ -47,7 +47,7 @@ extension Clients {
         withDefaultEndpoint: "https://{{DefaultHost}}"
       )
     }
-    {{#Codec.RestMethods}}
+    {{#Codec.Methods}}
 
     public func {{> /templates/common/method_signature/request_options}} {
       {{#Codec.HasPathVariables}}
@@ -81,7 +81,7 @@ extension Clients {
       )
       {{/ReturnsEmpty}}
     }
-    {{/Codec.RestMethods}}
+    {{/Codec.Methods}}
   }
 }
 {{#Codec.IsGated}}

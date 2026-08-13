@@ -61,7 +61,7 @@ public class {{Codec.ClientName}}: Clients.{{Codec.StubPrefix}}Protocol {
     self.pollingBackoffPolicy = options.pollingBackoffPolicy
     {{/Codec.HasLROs}}
   }
-  {{#Codec.RestMethods}}
+  {{#Codec.Methods}}
 
   {{#Codec.DocLines}}
   /// {{{.}}}
@@ -161,7 +161,7 @@ public class {{Codec.ClientName}}: Clients.{{Codec.StubPrefix}}Protocol {
     {{> /templates/common/method_body/discovery_lro}}
   }
   {{/Codec.DiscoveryLRO}}
-  {{/Codec.RestMethods}}
+  {{/Codec.Methods}}
 }
 
 {{> /templates/common/client_protocol}}

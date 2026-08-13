@@ -43,7 +43,7 @@ extension Clients {
         withDefaultEndpoint: "https://{{DefaultHost}}",
       )
     }
-    {{#Codec.RestMethods}}
+    {{#Codec.Methods}}
 
     public func {{> /templates/common/method_signature/request_options}} {
       let path = try { () throws -> Swift.String in
@@ -111,7 +111,7 @@ extension Clients {
       ).get()
       {{/ReturnsEmpty}}
     }
-    {{/Codec.RestMethods}}
+    {{/Codec.Methods}}
   }
 }
 {{#Codec.IsGated}}

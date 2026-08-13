@@ -59,7 +59,7 @@ extension Clients {
       }
       return try await loop.run(attempt: attempt)
     }
-    {{#Codec.RestMethods}}
+    {{#Codec.Methods}}
 
     public func {{> /templates/common/method_signature/request_options}} {
       try await self._intercept(
@@ -72,7 +72,7 @@ extension Clients {
               return try await self.inner.{{Codec.Name}}(request: r, options: o)
         })
     }
-    {{/Codec.RestMethods}}
+    {{/Codec.Methods}}
   }
 }
 {{#Codec.IsGated}}

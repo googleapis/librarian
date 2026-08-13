@@ -31,9 +31,9 @@ import GoogleCloudGax
 
 extension Clients {
   protocol {{Codec.StubPrefix}}Stub {
-    {{#Codec.RestMethods}}
+    {{#Codec.Methods}}
     func {{> /templates/common/method_signature/request_options}}
-    {{/Codec.RestMethods}}
+    {{/Codec.Methods}}
   }
 }
 {{#Codec.IsGated}}
