@@ -131,7 +131,7 @@ impl super::stub::{{Codec.Name}} for {{Codec.Name}} {
     #[cfg(google_cloud_unstable_gapic_streaming)]
     async fn {{Codec.Name}}(
         &self,
-        req: {{InputType.Codec.QualifiedName}},
+        req: std::option::Option<{{InputType.Codec.QualifiedName}}>,
         options: crate::BidiStreamOptions,
     ) -> Result<(
         google_cloud_gax::streaming::RequestSender<{{InputType.Codec.QualifiedName}}>,
@@ -139,6 +139,13 @@ impl super::stub::{{Codec.Name}} for {{Codec.Name}} {
     )> {
         use gaxi::prost::{FromProto, ToProto};
         use futures::stream::StreamExt as _;
+
+        let req = req.ok_or_else(|| {
+            {{! TODO(#6835) - determine appropriate error type for missing initial request }}
+            google_cloud_gax::error::Error::binding(
+                "a request is required"
+            )
+        })?;
 
         let first_req = req
             .to_proto()

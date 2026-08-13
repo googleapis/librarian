@@ -84,7 +84,7 @@ pub mod {{Codec.ModuleName}} {
     #[derive(Clone, Debug)]
     pub(crate) struct BidiStreamBuilder<R: std::default::Default> {
         stub: std::sync::Arc<dyn super::super::stub::dynamic::{{Codec.Name}}>,
-        request: R,
+        request: Option<R>,
         options: crate::BidiStreamOptions,
     }
 
@@ -94,7 +94,7 @@ pub mod {{Codec.ModuleName}} {
         pub(crate) fn new(stub: std::sync::Arc<dyn super::super::stub::dynamic::{{Codec.Name}}>) -> Self {
             Self {
                 stub,
-                request: R::default(),
+                request: None,
                 options: crate::BidiStreamOptions::default(),
             }
         }
@@ -179,7 +179,12 @@ pub mod {{Codec.ModuleName}} {
 
         /// Sets the full request, replacing any prior values.
         pub fn with_request<V: Into<{{InputType.Codec.QualifiedName}}>>(mut self, v: V) -> Self {
+            {{#Codec.IsBidiStreaming}}
+            self.0.request = std::option::Option::Some(v.into());
+            {{/Codec.IsBidiStreaming}}
+            {{^Codec.IsBidiStreaming}}
             self.0.request = v.into();
+            {{/Codec.IsBidiStreaming}}
             self
         }
 
@@ -525,7 +530,12 @@ pub mod {{Codec.ModuleName}} {
         {{#Singular}}
         {{^Optional}}
         pub fn set_{{Codec.SetterName}}<T: Into<{{{Codec.FieldType}}}>>(mut self, v: T) -> Self {
+            {{#IsBidiStreaming}}
+            self.0.request.get_or_insert_with(std::default::Default::default).{{Codec.FieldName}} = v.into();
+            {{/IsBidiStreaming}}
+            {{^IsBidiStreaming}}
             self.0.request.{{Codec.FieldName}} = v.into();
+            {{/IsBidiStreaming}}
             self
         }
         {{/Optional}}
@@ -534,7 +544,12 @@ pub mod {{Codec.ModuleName}} {
         pub fn set_{{Codec.SetterName}}<T>(mut self, v: T) -> Self
         where T: std::convert::Into<{{{Codec.PrimitiveFieldType}}}>
         {
+            {{#IsBidiStreaming}}
+            self.0.request.get_or_insert_with(std::default::Default::default).{{Codec.FieldName}} = std::option::Option::Some(v.into());
+            {{/IsBidiStreaming}}
+            {{^IsBidiStreaming}}
             self.0.request.{{Codec.FieldName}} = std::option::Option::Some(v.into());
+            {{/IsBidiStreaming}}
             self
         }
 
@@ -549,7 +564,12 @@ pub mod {{Codec.ModuleName}} {
         pub fn set_or_clear_{{Codec.SetterName}}<T>(mut self, v: std::option::Option<T>) -> Self
         where T: std::convert::Into<{{{Codec.PrimitiveFieldType}}}>
         {
+            {{#IsBidiStreaming}}
+            self.0.request.get_or_insert_with(std::default::Default::default).{{Codec.FieldName}} = v.map(|x| x.into());
+            {{/IsBidiStreaming}}
+            {{^IsBidiStreaming}}
             self.0.request.{{Codec.FieldName}} = v.map(|x| x.into());
+            {{/IsBidiStreaming}}
             self
         }
         {{/Codec.IsBoxed}}
@@ -557,7 +577,12 @@ pub mod {{Codec.ModuleName}} {
         pub fn set_{{Codec.SetterName}}<T>(mut self, v: T) -> Self
         where T: std::convert::Into<{{{Codec.PrimitiveFieldType}}}>
         {
+            {{#IsBidiStreaming}}
+            self.0.request.get_or_insert_with(std::default::Default::default).{{Codec.FieldName}} = std::option::Option::Some(std::boxed::Box::new(v.into()));
+            {{/IsBidiStreaming}}
+            {{^IsBidiStreaming}}
             self.0.request.{{Codec.FieldName}} = std::option::Option::Some(std::boxed::Box::new(v.into()));
+            {{/IsBidiStreaming}}
             self
         }
 
@@ -572,7 +597,12 @@ pub mod {{Codec.ModuleName}} {
         pub fn set_or_clear_{{Codec.SetterName}}<T>(mut self, v: std::option::Option<T>) -> Self
         where T: std::convert::Into<{{{Codec.PrimitiveFieldType}}}>
         {
+            {{#IsBidiStreaming}}
+            self.0.request.get_or_insert_with(std::default::Default::default).{{Codec.FieldName}} = v.map(|x| std::boxed::Box::new(x.into()));
+            {{/IsBidiStreaming}}
+            {{^IsBidiStreaming}}
             self.0.request.{{Codec.FieldName}} = v.map(|x| std::boxed::Box::new(x.into()));
+            {{/IsBidiStreaming}}
             self
         }
         {{/Codec.IsBoxed}}
@@ -585,7 +615,12 @@ pub mod {{Codec.ModuleName}} {
             V: std::convert::Into<{{{Codec.PrimitiveFieldType}}}>
         {
             use std::iter::Iterator;
+            {{#IsBidiStreaming}}
+            self.0.request.get_or_insert_with(std::default::Default::default).{{Codec.FieldName}} = v.into_iter().map(|i| i.into()).collect();
+            {{/IsBidiStreaming}}
+            {{^IsBidiStreaming}}
             self.0.request.{{Codec.FieldName}} = v.into_iter().map(|i| i.into()).collect();
+            {{/IsBidiStreaming}}
             self
         }
         {{/Repeated}}
@@ -596,7 +631,13 @@ pub mod {{Codec.ModuleName}} {
             K: std::convert::Into<{{{Codec.KeyType}}}>,
             V: std::convert::Into<{{{Codec.ValueType}}}>,
         {
+            use std::iter::Iterator;
+            {{#IsBidiStreaming}}
+            self.0.request.get_or_insert_with(std::default::Default::default).{{Codec.FieldName}} = v.into_iter().map(|(k, v)| (k.into(), v.into())).collect();
+            {{/IsBidiStreaming}}
+            {{^IsBidiStreaming}}
             self.0.request.{{Codec.FieldName}} = v.into_iter().map(|(k, v)| (k.into(), v.into())).collect();
+            {{/IsBidiStreaming}}
             self
         }
         {{/Map}}
@@ -608,7 +649,12 @@ pub mod {{Codec.ModuleName}} {
         /// Note that all the setters affecting `{{Codec.FieldName}}` are
         /// mutually exclusive.
         pub fn set_{{Codec.SetterName}}<T: Into<Option<{{{Codec.FieldType}}}>>>(mut self, v: T) ->Self {
+            {{#IsBidiStreaming}}
+            self.0.request.get_or_insert_with(std::default::Default::default).{{Codec.FieldName}} = v.into();
+            {{/IsBidiStreaming}}
+            {{^IsBidiStreaming}}
             self.0.request.{{Codec.FieldName}} = v.into();
+            {{/IsBidiStreaming}}
             self
         }
         {{#Fields}}
@@ -623,7 +669,13 @@ pub mod {{Codec.ModuleName}} {
         {{/Deprecated}}
         {{#Singular}}
         pub fn set_{{Codec.SetterName}}<T: std::convert::Into<{{{Codec.FieldType}}}>>(mut self, v: T) -> Self {
+            {{#IsBidiStreaming}}
+            let req = self.0.request.get_or_insert_with(std::default::Default::default);
+            *req = std::mem::take(req).set_{{Codec.SetterName}}(v);
+            {{/IsBidiStreaming}}
+            {{^IsBidiStreaming}}
             self.0.request = self.0.request.set_{{Codec.SetterName}}(v);
+            {{/IsBidiStreaming}}
             self
         }
         {{/Singular}}
@@ -634,11 +686,20 @@ pub mod {{Codec.ModuleName}} {
             V: std::convert::Into<{{{Codec.PrimitiveFieldType}}}>
         {
             use std::iter::Iterator;
-            self.{{Group.Codec.FieldName}} = std::option::Option::Some(
+            {{#IsBidiStreaming}}
+            self.0.request.get_or_insert_with(std::default::Default::default).{{Group.Codec.FieldName}} = std::option::Option::Some(
                 {{Group.Codec.QualifiedName}}::{{Codec.BranchName}}(
                     v.into_iter().map(|i| i.into()).collect()
                 )
             );
+            {{/IsBidiStreaming}}
+            {{^IsBidiStreaming}}
+            self.0.request.{{Group.Codec.FieldName}} = std::option::Option::Some(
+                {{Group.Codec.QualifiedName}}::{{Codec.BranchName}}(
+                    v.into_iter().map(|i| i.into()).collect()
+                )
+            );
+            {{/IsBidiStreaming}}
             self
         }
         {{/Repeated}}
@@ -650,11 +711,20 @@ pub mod {{Codec.ModuleName}} {
             V: std::convert::Into<{{{Codec.ValueType}}}>,
         {
             use std::iter::Iterator;
-            self.{{Group.Codec.FieldName}} = std::option::Option::Some(
+            {{#IsBidiStreaming}}
+            self.0.request.get_or_insert_with(std::default::Default::default).{{Group.Codec.FieldName}} = std::option::Option::Some(
                 {{Group.Codec.QualifiedName}}::{{Codec.BranchName}}(
                     v.into_iter().map(|(k, v)| (k.into(), v.into())).collect()
                 )
             );
+            {{/IsBidiStreaming}}
+            {{^IsBidiStreaming}}
+            self.0.request.{{Group.Codec.FieldName}} = std::option::Option::Some(
+                {{Group.Codec.QualifiedName}}::{{Codec.BranchName}}(
+                    v.into_iter().map(|(k, v)| (k.into(), v.into())).collect()
+                )
+            );
+            {{/IsBidiStreaming}}
             self
         }
         {{/Map}}

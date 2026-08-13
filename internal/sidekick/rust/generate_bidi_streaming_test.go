@@ -139,7 +139,18 @@ func TestGenerateBidiStreaming(t *testing.T) {
 			endStr:   "        }",
 			want: `        /// Sets the full request, replacing any prior values.
         pub fn with_request<V: Into<crate::model::Request>>(mut self, v: V) -> Self {
-            self.0.request = v.into();
+            self.0.request = std::option::Option::Some(v.into());
+            self
+        }`,
+		},
+		{
+			name:     "builder: field setter",
+			file:     "src/builder.rs",
+			startStr: "        /// Sets the value of [query]",
+			endStr:   "        }",
+			want: `        /// Sets the value of [query][crate::model::Request::query].
+        pub fn set_query<T: Into<std::string::String>>(mut self, v: T) -> Self {
+            self.0.request.get_or_insert_with(std::default::Default::default).query = v.into();
             self
         }`,
 		},
@@ -151,7 +162,7 @@ func TestGenerateBidiStreaming(t *testing.T) {
 			want: `    #[cfg(google_cloud_unstable_gapic_streaming)]
     fn chat(
         &self,
-        _req: crate::model::Request,
+        _req: std::option::Option<crate::model::Request>,
         _options: crate::BidiStreamOptions,
     ) -> impl std::future::Future<Output = crate::Result<(
         google_cloud_gax::streaming::RequestSender<crate::model::Request>,
@@ -168,7 +179,7 @@ func TestGenerateBidiStreaming(t *testing.T) {
 			want: `    #[cfg(google_cloud_unstable_gapic_streaming)]
     async fn chat(
         &self,
-        req: crate::model::Request,
+        req: std::option::Option<crate::model::Request>,
         options: crate::BidiStreamOptions,
     ) -> crate::Result<(
         google_cloud_gax::streaming::RequestSender<crate::model::Request>,
@@ -184,7 +195,7 @@ func TestGenerateBidiStreaming(t *testing.T) {
     #[cfg(google_cloud_unstable_gapic_streaming)]
     async fn chat(
         &self,
-        req: crate::model::Request,
+        req: std::option::Option<crate::model::Request>,
         options: crate::BidiStreamOptions,
     ) -> crate::Result<(
         google_cloud_gax::streaming::RequestSender<crate::model::Request>,
@@ -201,7 +212,7 @@ func TestGenerateBidiStreaming(t *testing.T) {
 			want: `    #[cfg(google_cloud_unstable_gapic_streaming)]
     async fn chat(
         &self,
-        req: crate::model::Request,
+        req: std::option::Option<crate::model::Request>,
         options: crate::BidiStreamOptions,
     ) -> Result<(
         google_cloud_gax::streaming::RequestSender<crate::model::Request>,
@@ -218,7 +229,7 @@ func TestGenerateBidiStreaming(t *testing.T) {
 			want: `    #[cfg(google_cloud_unstable_gapic_streaming)]
     async fn chat(
         &self,
-        req: crate::model::Request,
+        req: std::option::Option<crate::model::Request>,
         options: crate::BidiStreamOptions,
     ) -> Result<(
         google_cloud_gax::streaming::RequestSender<crate::model::Request>,

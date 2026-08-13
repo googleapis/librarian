@@ -199,6 +199,11 @@ func (m *Method) HasAutoPopulatedFields() bool {
 	return len(m.AutoPopulated) != 0
 }
 
+// IsBidiStreaming returns true if the method is a bidirectional streaming RPC.
+func (m *Method) IsBidiStreaming() bool {
+	return m.ClientSideStreaming && m.ServerSideStreaming
+}
+
 // SampleInfo contains sample generation information for a single method,
 // usually if it is an AIP conforming method.
 type SampleInfo struct {

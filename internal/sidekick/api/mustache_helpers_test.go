@@ -38,3 +38,38 @@ func TestHasMessages(t *testing.T) {
 		t.Errorf("expected HasMessages() == false for: %v", model)
 	}
 }
+
+func TestMethodIsBidiStreaming(t *testing.T) {
+	for _, tc := range []struct {
+		name   string
+		method *Method
+		want   bool
+	}{
+		{
+			name:   "unary method",
+			method: &Method{},
+			want:   false,
+		},
+		{
+			name:   "client streaming only",
+			method: &Method{ClientSideStreaming: true},
+			want:   false,
+		},
+		{
+			name:   "server streaming only",
+			method: &Method{ServerSideStreaming: true},
+			want:   false,
+		},
+		{
+			name:   "bidi streaming",
+			method: &Method{ClientSideStreaming: true, ServerSideStreaming: true},
+			want:   true,
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := tc.method.IsBidiStreaming(); got != tc.want {
+				t.Errorf("got %v, want %v", got, tc.want)
+			}
+		})
+	}
+}
