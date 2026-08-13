@@ -26,6 +26,7 @@ limitations under the License.
 import Foundation
 import GoogleCloudAuth
 @_spi(GoogleCloudInternal) import GoogleCloudGax
+@_spi(GoogleCloudInternal) import GoogleCloudGaxGRPC
 {{#Codec.ServiceImports}}
 import {{.}}
 {{/Codec.ServiceImports}}
@@ -38,10 +39,10 @@ internal import SwiftProtobuf
 
 extension Clients {
   class {{Codec.StubPrefix}}Transport: {{Codec.StubPrefix}}Stub {
-    let inner: GoogleCloudGax._GRPCClient
+    let inner: GoogleCloudGaxGRPC._GRPCClient
 
     public init(_ options: GoogleCloudGax.ClientOptions = .init()) throws {
-      self.inner = try GoogleCloudGax._GRPCClient(
+      self.inner = try GoogleCloudGaxGRPC._GRPCClient(
         from: options,
         withDefaultEndpoint: "https://{{DefaultHost}}"
       )

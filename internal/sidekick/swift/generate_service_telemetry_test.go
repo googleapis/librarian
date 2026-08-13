@@ -94,7 +94,7 @@ func checkStubContents(t *testing.T, outDir string) {
 	}
 	contentStr := string(content)
 	got := extractBlock(t, contentStr, "req.addHeader(name: ", "value: Clients.clientHeader)")
-	want := `req.addHeader(name: "X-Goog-Api-Client", value: Clients.clientHeader)`
+	want := `req.addHeader(name: GoogleCloudGax.HeaderNames.apiClient, value: Clients.clientHeader)`
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}

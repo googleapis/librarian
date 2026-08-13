@@ -428,10 +428,10 @@ func TestGenerateStub_Grpc(t *testing.T) {
 	if !strings.Contains(transportStr, "class StorageControlTransport: StorageControlStub {") {
 		t.Errorf("transport missing StorageControlTransport class declaration:\n%s", transportStr)
 	}
-	if !strings.Contains(transportStr, "let inner: GoogleCloudGax._GRPCClient") {
-		t.Errorf("transport missing inner: GoogleCloudGax._GRPCClient field:\n%s", transportStr)
+	if !strings.Contains(transportStr, "let inner: GoogleCloudGaxGRPC._GRPCClient") {
+		t.Errorf("transport missing inner: GoogleCloudGaxGRPC._GRPCClient field:\n%s", transportStr)
 	}
-	if !strings.Contains(transportStr, `self.inner = try GoogleCloudGax._GRPCClient(`) ||
+	if !strings.Contains(transportStr, `self.inner = try GoogleCloudGaxGRPC._GRPCClient(`) ||
 		!strings.Contains(transportStr, `withDefaultEndpoint: "https://storage.googleapis.com"`) {
 		t.Errorf("transport missing _GRPCClient initialization with default endpoint:\n%s", transportStr)
 	}
