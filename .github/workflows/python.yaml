@@ -36,7 +36,18 @@ jobs:
           pandoc --version
         env:
           VERSION: 3.8.2
+      - name: "Checkout google-cloud-python (sparse)"
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          repository: googleapis/google-cloud-python
+          path: google-cloud-python
+          depth: 1
+          sparse-checkout: |
+            librarian.yaml
+          sparse-checkout-cone-mode: false
+          persist-credentials: false
       - name: Install Python dependencies
-        run: librarian install python
+        run: librarian -v install python
+        working-directory: google-cloud-python
       - name: Run tests
         run: go run ./tool/cmd/coverage ./internal/librarian/python
