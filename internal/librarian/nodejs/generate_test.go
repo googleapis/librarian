@@ -449,7 +449,44 @@ func TestBuildGeneratorArgs(t *testing.T) {
 	}
 }
 
+func TestBuildGeneratorArgs_SystemProtocFallback(t *testing.T) {
+	absGoogleapisDir, err := filepath.Abs(googleapisDir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	fakeSystemProtoc := createFakeSystemExecutable(t, "protoc")
+	api := &config.API{Path: "google/cloud/secretmanager/v1"}
+	library := &config.Library{Name: "google-cloud-secretmanager"}
+	nodejsAPI := resolveNodejsAPI(library, api)
+
+	for _, test := range []struct {
+		name   string
+		protoc *config.Protoc
+	}{
+		{
+			name:   "nil protoc config falls back to system PATH",
+			protoc: nil,
+		},
+		{
+			name:   "empty protoc version falls back to system PATH",
+			protoc: &config.Protoc{},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got, err := buildGeneratorArgs("gapic-generator-typescript", test.protoc, api, library, absGoogleapisDir, "staging", nodejsAPI)
+			if err != nil {
+				t.Fatal(err)
+			}
+			wantArg := "--protoc=" + fakeSystemProtoc
+			if !slices.Contains(got, wantArg) {
+				t.Errorf("expected generator args to contain %q, got: %v", wantArg, got)
+			}
+		})
+	}
+}
+
 func TestBuildGeneratorArgs_Error(t *testing.T) {
+	t.Setenv("PATH", t.TempDir())
 	absGoogleapisDir, err := filepath.Abs(googleapisDir)
 	if err != nil {
 		t.Fatal(err)
@@ -463,17 +500,17 @@ func TestBuildGeneratorArgs_Error(t *testing.T) {
 		protoc *config.Protoc
 	}{
 		{
-			name:   "nil protoc config",
+			name:   "nil protoc config with empty PATH",
 			protoc: nil,
 		},
 		{
-			name:   "empty protoc version",
-			protoc: &config.Protoc{Version: ""},
+			name:   "empty protoc version with empty PATH",
+			protoc: &config.Protoc{},
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			if _, err := buildGeneratorArgs("gapic-generator-typescript", test.protoc, api, library, absGoogleapisDir, "staging", nodejsAPI); err == nil {
-				t.Fatal("expected error with unconfigured protoc, got nil")
+				t.Fatal("expected error when protoc is missing from PATH, got nil")
 			}
 		})
 	}
@@ -1837,4 +1874,13 @@ func TestRequireCachedTool_Error(t *testing.T) {
 			}
 		})
 	}
+}
+
+func createFakeSystemExecutable(t *testing.T, binaryName string) string {
+	t.Helper()
+	tempDir := t.TempDir()
+	fakePath := filepath.Join(tempDir, binaryName)
+	testhelper.WriteExecutable(t, fakePath, "#!/bin/sh\nexit 0\n")
+	t.Setenv("PATH", tempDir+string(filepath.ListSeparator)+os.Getenv("PATH"))
+	return fakePath
 }

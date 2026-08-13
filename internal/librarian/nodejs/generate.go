@@ -248,10 +248,7 @@ func unique(ss []string) []string {
 // buildGeneratorArgs constructs the gapic-generator-typescript arguments,
 // excluding proto files.
 func buildGeneratorArgs(generatorPath string, pc *config.Protoc, api *config.API, library *config.Library, googleapisDir, stagingDir string, nodejsAPI *config.NodejsAPI) ([]string, error) {
-	if pc == nil || pc.Version == "" {
-		return nil, errors.New("protoc is not configured in librarian.yaml under tools.protoc; try running `librarian install`")
-	}
-	protocPath, err := protoc.BinaryPath(pc.Version)
+	protocPath, err := protoc.BinaryPathOrSystem(pc)
 	if err != nil {
 		return nil, fmt.Errorf("failed to find protoc: %w", err)
 	}
