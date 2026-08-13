@@ -84,7 +84,7 @@ func TestProtoMessageAndEnumTypeName(t *testing.T) {
 		gotTypeEnum := codec.protoEnumTypeName(typeEnum)
 		wantTypeEnum := "Test_OuterMessage.TypeEnum"
 		if gotTypeEnum != wantTypeEnum {
-			t.Errorf("protoEnumTypeName(nestedEnum) = %q, want %q", gotNestedEnum, wantNestedEnum)
+			t.Errorf("protoEnumTypeName(typeEnum) = %q, want %q", gotNestedEnum, wantNestedEnum)
 		}
 	})
 
