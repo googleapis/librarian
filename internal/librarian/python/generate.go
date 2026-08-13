@@ -83,7 +83,7 @@ func Generate(ctx context.Context, cfg *config.Config, library *config.Library, 
 	}
 
 	var pc *config.Protoc
-	if cfg != nil && cfg.Tools != nil {
+	if cfg.Tools != nil {
 		pc = cfg.Tools.Protoc
 	}
 
