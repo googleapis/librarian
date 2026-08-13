@@ -631,7 +631,6 @@ pub mod {{Codec.ModuleName}} {
             K: std::convert::Into<{{{Codec.KeyType}}}>,
             V: std::convert::Into<{{{Codec.ValueType}}}>,
         {
-            use std::iter::Iterator;
             {{#IsBidiStreaming}}
             self.0.request.get_or_insert_with(std::default::Default::default).{{Codec.FieldName}} = v.into_iter().map(|(k, v)| (k.into(), v.into())).collect();
             {{/IsBidiStreaming}}
@@ -670,8 +669,8 @@ pub mod {{Codec.ModuleName}} {
         {{#Singular}}
         pub fn set_{{Codec.SetterName}}<T: std::convert::Into<{{{Codec.FieldType}}}>>(mut self, v: T) -> Self {
             {{#IsBidiStreaming}}
-            let req = self.0.request.get_or_insert_with(std::default::Default::default);
-            *req = std::mem::take(req).set_{{Codec.SetterName}}(v);
+            let req = self.0.request.take().unwrap_or_default().set_{{Codec.SetterName}}(v);
+            self.0.request = std::option::Option::Some(req);
             {{/IsBidiStreaming}}
             {{^IsBidiStreaming}}
             self.0.request = self.0.request.set_{{Codec.SetterName}}(v);
