@@ -52,7 +52,17 @@ func postProcessLibrary(ctx context.Context, library *config.Library, componentN
 		return fmt.Errorf("failed to get bin dir: %w", err)
 	}
 	postProcessor := filepath.Join(bin, "php-post-processor")
-	// Run post-processor in API staging directories before owlbot.py moves them.
+	if err := runPostProcessors(ctx, library, stagingDir, postProcessor); err != nil {
+		return err
+	}
+	if err := command.RunInDir(ctx, componentName, "python3", "owlbot.py"); err != nil {
+		return fmt.Errorf("failed to run owlbot.py: %w", err)
+	}
+
+	return nil
+}
+
+func runPostProcessors(ctx context.Context, library *config.Library, stagingDir, postProcessor string) error {
 	for _, api := range library.APIs {
 		if api.PHP == nil {
 			continue
@@ -66,9 +76,5 @@ func postProcessLibrary(ctx context.Context, library *config.Library, componentN
 			return fmt.Errorf("failed to stat staging dir for %s: %w", api.Path, err)
 		}
 	}
-	if err := command.RunInDir(ctx, componentName, "python3", "owlbot.py"); err != nil {
-		return fmt.Errorf("failed to run owlbot.py: %w", err)
-	}
-
 	return nil
 }
