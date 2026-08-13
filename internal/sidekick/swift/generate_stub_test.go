@@ -440,6 +440,9 @@ func TestGenerateStub_Grpc(t *testing.T) {
 	if !strings.Contains(transportStr, "let protoRequest = try request.toProto()") {
 		t.Errorf("transport missing request.toProto() call:\n%s", transportStr)
 	}
+	if !strings.Contains(transportStr, "pathVariable0.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed)") {
+		t.Errorf("transport missing addingPercentEncoding for routing params:\n%s", transportStr)
+	}
 	if !strings.Contains(transportStr, `path: "/google.storage.control.v2.StorageControl/CreateFolder"`) {
 		t.Errorf("transport missing CreateFolder gRPC path in execute:\n%s", transportStr)
 	}
@@ -453,7 +456,7 @@ func TestGenerateStub_Grpc(t *testing.T) {
 	if !strings.Contains(transportStr, `path: "/google.longrunning.Operations/GetOperation"`) {
 		t.Errorf("transport missing operations GetOperation gRPC path in execute:\n%s", transportStr)
 	}
-	if !strings.Contains(transportStr, `routingParams.append("parent=\(pathVariable0)")`) {
+	if !strings.Contains(transportStr, `routingParams.append("parent=\(encoded)")`) {
 		t.Errorf("transport missing routing parameter extraction in method body:\n%s", transportStr)
 	}
 }

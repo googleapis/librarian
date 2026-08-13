@@ -54,7 +54,8 @@ extension Clients {
       var routingParams: [String] = []
       {{#Codec.PathVariables}}
       if let {{Name}} = request{{Expression}}{{#Test}}, {{{.}}}{{/Test}} {
-        routingParams.append("{{FieldPath}}=\({{Name}})")
+        let encoded = {{Name}}.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? {{Name}}
+        routingParams.append("{{FieldPath}}=\(encoded)")
       }
       {{/Codec.PathVariables}}
       {{/Codec.HasPathVariables}}

@@ -89,7 +89,7 @@ extension Clients {
       {{/Codec.QueryParams}}
       var req = try await self.inner.newRequest(path: path, query: query)
       req.setMethod(.{{Codec.HTTPMethod}})
-      req.addHeader(name: GoogleCloudGax.HeaderNames.apiClient, value: Clients.clientHeader)
+      req.addHeader(name: GoogleCloudGax._HeaderNames.apiClient, value: Clients.clientHeader)
       {{#Codec.HasBody}}
       {{#Codec.IsBodyWildcard}}
       req.setBody(data: try JSONEncoder().encode(request), ofContentType: "application/json")
