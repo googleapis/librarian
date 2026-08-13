@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"io/fs"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"slices"
 	"strings"
@@ -438,7 +439,15 @@ func TestBuildGeneratorArgs(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			nodejsAPI := resolveNodejsAPI(test.library, test.api)
-			got, err := buildGeneratorArgs("gapic-generator-typescript", defaultProtoc, test.api, test.library, absGoogleapisDir, "staging", nodejsAPI)
+			got, err := buildGeneratorArgs(buildGeneratorArgsParams{
+				generatorPath: "gapic-generator-typescript",
+				protoc:        defaultProtoc,
+				api:           test.api,
+				library:       test.library,
+				googleapisDir: absGoogleapisDir,
+				stagingDir:    "staging",
+				nodejsAPI:     nodejsAPI,
+			})
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -473,7 +482,15 @@ func TestBuildGeneratorArgs_SystemProtocFallback(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got, err := buildGeneratorArgs("gapic-generator-typescript", test.protoc, api, library, absGoogleapisDir, "staging", nodejsAPI)
+			got, err := buildGeneratorArgs(buildGeneratorArgsParams{
+				generatorPath: "gapic-generator-typescript",
+				protoc:        test.protoc,
+				api:           api,
+				library:       library,
+				googleapisDir: absGoogleapisDir,
+				stagingDir:    "staging",
+				nodejsAPI:     nodejsAPI,
+			})
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -509,8 +526,17 @@ func TestBuildGeneratorArgs_Error(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			if _, err := buildGeneratorArgs("gapic-generator-typescript", test.protoc, api, library, absGoogleapisDir, "staging", nodejsAPI); err == nil {
-				t.Fatal("expected error when protoc is missing from PATH, got nil")
+			_, err := buildGeneratorArgs(buildGeneratorArgsParams{
+				generatorPath: "gapic-generator-typescript",
+				protoc:        test.protoc,
+				api:           api,
+				library:       library,
+				googleapisDir: absGoogleapisDir,
+				stagingDir:    "staging",
+				nodejsAPI:     nodejsAPI,
+			})
+			if !errors.Is(err, exec.ErrNotFound) {
+				t.Fatalf("buildGeneratorArgs() error = %v, want %v", err, exec.ErrNotFound)
 			}
 		})
 	}
