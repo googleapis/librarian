@@ -44,8 +44,14 @@ func TestProtoMessageAndEnumTypeName(t *testing.T) {
 		Package: "test",
 		Parent:  parentMsg,
 	}
+	typeEnum := &api.Enum{
+		Name:    "Type",
+		ID:      ".test.OuterMessage.Type",
+		Package: "test",
+		Parent:  parentMsg,
+	}
 
-	model := api.NewTestAPI([]*api.Message{parentMsg, nestedMsg}, []*api.Enum{topEnum, nestedEnum}, []*api.Service{})
+	model := api.NewTestAPI([]*api.Message{parentMsg, nestedMsg}, []*api.Enum{topEnum, nestedEnum, typeEnum}, []*api.Service{})
 	model.PackageName = "test"
 
 	t.Run("with empty ModulePath", func(t *testing.T) {
@@ -72,6 +78,12 @@ func TestProtoMessageAndEnumTypeName(t *testing.T) {
 		gotNestedEnum := codec.protoEnumTypeName(nestedEnum)
 		wantNestedEnum := "Test_OuterMessage.NestedEnum"
 		if gotNestedEnum != wantNestedEnum {
+			t.Errorf("protoEnumTypeName(nestedEnum) = %q, want %q", gotNestedEnum, wantNestedEnum)
+		}
+
+		gotTypeEnum := codec.protoEnumTypeName(typeEnum)
+		wantTypeEnum := "Test_OuterMessage.TypeEnum"
+		if gotTypeEnum != wantTypeEnum {
 			t.Errorf("protoEnumTypeName(nestedEnum) = %q, want %q", gotNestedEnum, wantNestedEnum)
 		}
 	})

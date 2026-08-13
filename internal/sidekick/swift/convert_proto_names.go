@@ -46,14 +46,19 @@ func (c *codec) protoMessageTypeName(m *api.Message) string {
 // for a given api.Enum. For top-level enums, it formats the package prefix and enum name.
 // For nested enums, it resolves the parent message's proto type name and appends the PascalCase enum name.
 func (c *codec) protoEnumTypeName(e *api.Enum) string {
+	mangled := pascalCase(e.Name)
+	if mangled == "Type_" {
+		//Protobuf uses `TypeEnum` in this case.
+		mangled = "TypeEnum"
+	}
 	if e.Parent == nil {
-		fullName := fmt.Sprintf("%s%s", ProtoPackagePrefix(e.Package), pascalCase(e.Name))
+		fullName := fmt.Sprintf("%s%s", ProtoPackagePrefix(e.Package), mangled)
 		if c.ModulePath != "" {
 			return fmt.Sprintf("%s.%s", c.ModulePath, fullName)
 		}
 		return fullName
 	}
-	return fmt.Sprintf("%s.%s", c.protoMessageTypeName(e.Parent), pascalCase(e.Name))
+	return fmt.Sprintf("%s.%s", c.protoMessageTypeName(e.Parent), mangled)
 }
 
 func (c *codec) messageFileName(m *api.Message) string {
