@@ -199,6 +199,10 @@ func TestPostProcess_PHPPostProcessor(t *testing.T) {
 	if err := os.MkdirAll(destDir, 0o755); err != nil {
 		t.Fatal(err)
 	}
+	stagingDir := filepath.Join(repoRoot, owlBotStagingDir, "SecretManager", "v1")
+	if err := os.MkdirAll(stagingDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
 	setupMockPHPPostProcessor(t, "#!/bin/sh\ntouch php_post_processor_ran.txt\n")
 	owlbotPy := filepath.Join(destDir, "owlbot.py")
 	if err := os.WriteFile(owlbotPy, []byte("import sys; sys.exit(0)"), 0o755); err != nil {
@@ -207,6 +211,12 @@ func TestPostProcess_PHPPostProcessor(t *testing.T) {
 	lib := &config.Library{
 		Name:   "SecretManager",
 		Output: destDir,
+		APIs: []*config.API{{
+			Path: "my/api/v1",
+			PHP: &config.PHPAPI{
+				StagingSubdir: "v1",
+			},
+		}},
 		PHP: &config.PHPPackage{
 			ComponentName: "SecretManager",
 		},
@@ -214,7 +224,7 @@ func TestPostProcess_PHPPostProcessor(t *testing.T) {
 	if err := postProcessLibrary(ctx, lib, lib.PHP.ComponentName); err != nil {
 		t.Fatal(err)
 	}
-	expectedFile := filepath.Join(destDir, "php_post_processor_ran.txt")
+	expectedFile := filepath.Join(stagingDir, "php_post_processor_ran.txt")
 	if _, err := os.Stat(expectedFile); err != nil {
 		t.Error(err)
 	}
