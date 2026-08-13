@@ -48,7 +48,7 @@ func (c *codec) protoMessageTypeName(m *api.Message) string {
 func (c *codec) protoEnumTypeName(e *api.Enum) string {
 	mangled := pascalCase(e.Name)
 	if mangled == "Type_" {
-		//Protobuf uses `TypeEnum` in this case.
+		// Protobuf uses `TypeEnum` in this case.
 		mangled = "TypeEnum"
 	}
 	if e.Parent == nil {
