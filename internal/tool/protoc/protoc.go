@@ -74,11 +74,7 @@ func BinaryPath(version string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	protocPath := filepath.Join(dir, "bin", protocDir)
-	if runtime.GOOS == osWindows {
-		protocPath += ".exe"
-	}
-	return protocPath, nil
+	return filepath.Join(dir, "bin", protocDir), nil
 }
 
 // BinaryPathOrSystem returns the path to the configured protoc binary if pc is non-nil
