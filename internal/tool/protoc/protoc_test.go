@@ -23,6 +23,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"runtime"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -74,6 +75,7 @@ func TestInstallDir(t *testing.T) {
 }
 
 func TestBinaryPath(t *testing.T) {
+	binaryName := protocBinaryName()
 	for _, test := range []struct {
 		name         string
 		version      string
@@ -85,13 +87,13 @@ func TestBinaryPath(t *testing.T) {
 			name:         "valid version with LIBRARIAN_BIN",
 			version:      "25.1",
 			librarianBin: "/custom/bin",
-			want:         filepath.FromSlash("/custom/bin/protoc/v25.1/bin/protoc"),
+			want:         filepath.FromSlash("/custom/bin/protoc/v25.1/bin/" + binaryName),
 		},
 		{
 			name:     "valid version with LIBRARIAN_CACHE fallback",
 			version:  "26.0-rc1",
 			cacheDir: "/custom/cache",
-			want:     filepath.FromSlash("/custom/cache/bin/protoc/v26.0-rc1/bin/protoc"),
+			want:     filepath.FromSlash("/custom/cache/bin/protoc/v26.0-rc1/bin/" + binaryName),
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
@@ -123,6 +125,8 @@ func TestBinaryPath_Error(t *testing.T) {
 }
 
 func TestBinaryPathOrSystem(t *testing.T) {
+	binaryName := protocBinaryName()
+
 	for _, test := range []struct {
 		name         string
 		pc           *config.Protoc
@@ -135,14 +139,14 @@ func TestBinaryPathOrSystem(t *testing.T) {
 			pc:           &config.Protoc{Version: "33.2"},
 			librarianBin: "/custom/bin",
 			want: func(t *testing.T, _ string) string {
-				return filepath.FromSlash("/custom/bin/protoc/v33.2/bin/protoc")
+				return filepath.FromSlash("/custom/bin/protoc/v33.2/bin/" + binaryName)
 			},
 		},
 		{
 			name: "nil config falls back to system PATH",
 			pc:   nil,
 			setupPATH: func(t *testing.T) string {
-				return createFakeSystemExecutable(t, "protoc")
+				return createFakeSystemExecutable(t, binaryName)
 			},
 			want: func(t *testing.T, installedPath string) string {
 				return installedPath
@@ -152,7 +156,7 @@ func TestBinaryPathOrSystem(t *testing.T) {
 			name: "empty version falls back to system PATH",
 			pc:   &config.Protoc{},
 			setupPATH: func(t *testing.T) string {
-				return createFakeSystemExecutable(t, "protoc")
+				return createFakeSystemExecutable(t, binaryName)
 			},
 			want: func(t *testing.T, installedPath string) string {
 				return installedPath
@@ -187,6 +191,10 @@ func TestBinaryPathOrSystem_Error(t *testing.T) {
 }
 
 func TestRun(t *testing.T) {
+	if runtime.GOOS == osWindows {
+		t.Skip("skipping execution test on Windows")
+	}
+	binaryName := protocBinaryName()
 	binDir := t.TempDir()
 	t.Setenv("LIBRARIAN_BIN", binDir)
 	version := "33.2"
@@ -194,7 +202,7 @@ func TestRun(t *testing.T) {
 	if err := os.MkdirAll(protocDir, 0o755); err != nil {
 		t.Fatal(err)
 	}
-	testhelper.WriteExecutable(t, filepath.Join(protocDir, "protoc"), "#!/bin/sh\nexit 0\n")
+	testhelper.WriteExecutable(t, filepath.Join(protocDir, binaryName), "#!/bin/sh\nexit 0\n")
 
 	pc := &config.Protoc{Version: version}
 	if err := Run(t.Context(), nil, pc, "--version"); err != nil {
@@ -203,7 +211,11 @@ func TestRun(t *testing.T) {
 }
 
 func TestRunOrSystem(t *testing.T) {
-	createFakeSystemExecutable(t, "protoc")
+	if runtime.GOOS == osWindows {
+		t.Skip("skipping execution test on Windows")
+	}
+	binaryName := protocBinaryName()
+	createFakeSystemExecutable(t, binaryName)
 
 	if err := RunOrSystem(t.Context(), nil, nil, "--version"); err != nil {
 		t.Fatal(err)
@@ -272,6 +284,13 @@ func TestDownloadAndExtract(t *testing.T) {
 	if _, err := os.Stat(filepath.Join(dir, "protoc.zip")); err == nil {
 		t.Errorf("zip file was not cleaned up")
 	}
+}
+
+func protocBinaryName() string {
+	if runtime.GOOS == osWindows {
+		return "protoc.exe"
+	}
+	return "protoc"
 }
 
 func createFakeSystemExecutable(t *testing.T, binaryName string) string {
