@@ -23,14 +23,14 @@ import (
 )
 
 var (
-	// errNoToolsSpecified indicates no pip tools were provided in the configuration.
-	errNoToolsSpecified = errors.New("no tools.pip field specified in configuration")
+	// ErrNoToolsSpecified indicates no pip tools were provided in the configuration.
+	ErrNoToolsSpecified = errors.New("no tools.pip field specified in configuration")
 )
 
 // Install installs Python pip tool dependencies.
 func Install(ctx context.Context, tools *config.Tools) error {
 	if tools == nil || len(tools.Pip) == 0 {
-		return errNoToolsSpecified
+		return ErrNoToolsSpecified
 	}
 	return pip.Install(ctx, tools.Pip)
 }

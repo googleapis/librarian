@@ -48,12 +48,12 @@ func TestInstall_Error(t *testing.T) {
 		{
 			name:    "nil tools config",
 			tools:   nil,
-			wantErr: errNoToolsSpecified,
+			wantErr: ErrNoToolsSpecified,
 		},
 		{
 			name:    "empty pip tools",
 			tools:   &config.Tools{},
-			wantErr: errNoToolsSpecified,
+			wantErr: ErrNoToolsSpecified,
 		},
 		{
 			name: "local path not found",
