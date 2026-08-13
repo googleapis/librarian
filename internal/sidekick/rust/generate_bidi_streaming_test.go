@@ -101,7 +101,7 @@ func TestGenerateBidiStreaming(t *testing.T) {
 			file:     "src/builder.rs",
 			startStr: "    #[derive(Clone, Debug)]\n    pub struct Chat(",
 			endStr:   ");",
-			want:     "    #[derive(Clone, Debug)]\n    pub struct Chat(RequestBuilder<crate::model::Request>);",
+			want:     "    #[derive(Clone, Debug)]\n    pub struct Chat(BidiStreamBuilder<crate::model::Request>);",
 		},
 		{
 			name:     "builder: send method",
@@ -119,6 +119,20 @@ func TestGenerateBidiStreaming(t *testing.T) {
         }`,
 		},
 		{
+			name:     "builder: with_request_channel_capacity method",
+			file:     "src/builder.rs",
+			startStr: "        /// Sets the buffer capacity of internal request channel.\n",
+			endStr:   "        }",
+			want: `        /// Sets the buffer capacity of internal request channel.
+        ///
+        /// Valid values must be between ` + "`1`" + ` and ` + "`google_cloud_gax::options::MAX_REQUEST_CHANNEL_CAPACITY`." + `
+        /// The default capacity is ` + "`16`." + `
+        pub fn with_request_channel_capacity(mut self, capacity: usize) -> Self {
+            self.0.options.set_request_channel_capacity(capacity);
+            self
+        }`,
+		},
+		{
 			name:     "builder: with_request method",
 			file:     "src/builder.rs",
 			startStr: "        /// Sets the full request, replacing any prior values.\n        pub fn with_request<",
@@ -126,17 +140,6 @@ func TestGenerateBidiStreaming(t *testing.T) {
 			want: `        /// Sets the full request, replacing any prior values.
         pub fn with_request<V: Into<crate::model::Request>>(mut self, v: V) -> Self {
             self.0.request = v.into();
-            self
-        }`,
-		},
-		{
-			name:     "builder: field setter",
-			file:     "src/builder.rs",
-			startStr: "        /// Sets the value of [query]",
-			endStr:   "        }",
-			want: `        /// Sets the value of [query][crate::model::Request::query].
-        pub fn set_query<T: Into<std::string::String>>(mut self, v: T) -> Self {
-            self.0.request.query = v.into();
             self
         }`,
 		},
@@ -149,7 +152,7 @@ func TestGenerateBidiStreaming(t *testing.T) {
     fn chat(
         &self,
         _req: crate::model::Request,
-        _options: crate::RequestOptions,
+        _options: crate::BidiStreamOptions,
     ) -> impl std::future::Future<Output = crate::Result<(
         google_cloud_gax::streaming::RequestSender<crate::model::Request>,
         google_cloud_gax::streaming::ResponseReceiver<crate::model::Response>,
@@ -166,7 +169,7 @@ func TestGenerateBidiStreaming(t *testing.T) {
     async fn chat(
         &self,
         req: crate::model::Request,
-        options: crate::RequestOptions,
+        options: crate::BidiStreamOptions,
     ) -> crate::Result<(
         google_cloud_gax::streaming::RequestSender<crate::model::Request>,
         google_cloud_gax::streaming::ResponseReceiver<crate::model::Response>,
@@ -182,7 +185,7 @@ func TestGenerateBidiStreaming(t *testing.T) {
     async fn chat(
         &self,
         req: crate::model::Request,
-        options: crate::RequestOptions,
+        options: crate::BidiStreamOptions,
     ) -> crate::Result<(
         google_cloud_gax::streaming::RequestSender<crate::model::Request>,
         google_cloud_gax::streaming::ResponseReceiver<crate::model::Response>,
@@ -199,7 +202,7 @@ func TestGenerateBidiStreaming(t *testing.T) {
     async fn chat(
         &self,
         req: crate::model::Request,
-        options: crate::RequestOptions,
+        options: crate::BidiStreamOptions,
     ) -> Result<(
         google_cloud_gax::streaming::RequestSender<crate::model::Request>,
         google_cloud_gax::streaming::ResponseReceiver<crate::model::Response>,
@@ -216,7 +219,7 @@ func TestGenerateBidiStreaming(t *testing.T) {
     async fn chat(
         &self,
         req: crate::model::Request,
-        options: crate::RequestOptions,
+        options: crate::BidiStreamOptions,
     ) -> Result<(
         google_cloud_gax::streaming::RequestSender<crate::model::Request>,
         google_cloud_gax::streaming::ResponseReceiver<crate::model::Response>,
@@ -235,7 +238,7 @@ func TestGenerateBidiStreaming(t *testing.T) {
                 extensions,
                 path,
                 req_stream,
-                options,
+                options.into(),
                 &crate::info::X_GOOG_API_CLIENT_HEADER,
                 x_goog_request_params,
             )

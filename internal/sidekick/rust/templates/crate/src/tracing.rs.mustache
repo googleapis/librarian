@@ -69,7 +69,7 @@ where T: super::stub::{{Codec.Name}} + std::fmt::Debug + Send + Sync {
     async fn {{Codec.Name}}(
         &self,
         req: {{InputType.Codec.QualifiedName}},
-        options: crate::RequestOptions,
+        options: crate::BidiStreamOptions,
     ) -> Result<(
         google_cloud_gax::streaming::RequestSender<{{InputType.Codec.QualifiedName}}>,
         google_cloud_gax::streaming::ResponseReceiver<{{OutputType.Codec.QualifiedName}}>,
