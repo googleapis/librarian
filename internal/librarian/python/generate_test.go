@@ -21,7 +21,6 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"runtime"
 	"strings"
 	"syscall"
 	"testing"
@@ -801,10 +800,6 @@ func TestGenerateAPI_Error(t *testing.T) {
 }
 
 func TestGenerateAPI_ConfiguredProtoc(t *testing.T) {
-	if runtime.GOOS == "windows" {
-		t.Skip("skipping execution test on Windows")
-	}
-	binaryName := "protoc"
 	binDir := t.TempDir()
 	t.Setenv("LIBRARIAN_BIN", binDir)
 	version := "33.5"
@@ -813,7 +808,7 @@ func TestGenerateAPI_ConfiguredProtoc(t *testing.T) {
 		t.Fatal(err)
 	}
 	// Create a stub protoc that records execution and exits with an error so we know it was called
-	stubProtoc := filepath.Join(protocDir, binaryName)
+	stubProtoc := filepath.Join(protocDir, "protoc")
 	testhelper.WriteExecutable(t, stubProtoc, "#!/bin/sh\nexit 42\n")
 
 	repoRoot := t.TempDir()
