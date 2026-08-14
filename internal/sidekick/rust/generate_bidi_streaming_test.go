@@ -271,7 +271,10 @@ func TestGenerateBidiStreaming(t *testing.T) {
                         .send(prost_item)
                         .await
                         .map_err(|_| {
-                            google_cloud_gax::error::Error::io("cannot send request: stream is closed")
+                            google_cloud_gax::error::Error::io(std::io::Error::new(
+                                std::io::ErrorKind::BrokenPipe,
+                                "cannot send request: stream is closed",
+                            ))
                         })
                 }
             },
