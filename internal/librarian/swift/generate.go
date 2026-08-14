@@ -115,6 +115,11 @@ func libraryToModelConfig(library *config.Library, apiCfg *config.API, src *sour
 		specFormat = library.SpecificationFormat
 	}
 
+	var includedIDs []string
+	if library.Swift != nil && len(library.Swift.IncludedIDs) > 0 {
+		includedIDs = library.Swift.IncludedIDs
+	}
+
 	var skippedIDs []string
 	if library.Swift != nil && len(library.Swift.SkippedIds) > 0 {
 		skippedIDs = library.Swift.SkippedIds
@@ -128,7 +133,8 @@ func libraryToModelConfig(library *config.Library, apiCfg *config.API, src *sour
 		Source:              sourceConfig,
 		Protoc:              pc,
 		Override: api.ModelOverride{
-			SkippedIDs: skippedIDs,
+			IncludedIDs: includedIDs,
+			SkippedIDs:  skippedIDs,
 		},
 	}
 	if library.Swift != nil && library.Swift.Discovery != nil {
