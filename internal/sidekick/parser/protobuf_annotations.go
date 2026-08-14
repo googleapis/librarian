@@ -87,7 +87,8 @@ func processRule(httpRule *httpRule, model *api.API, mID string) (*api.PathInfo,
 		}
 		if pathInfo.BodyFieldPath != "" && body != "" && body != pathInfo.BodyFieldPath {
 			if _, ok := suppressedAip127Warnings[mID]; !ok {
-				// Deviations from AIP-127 can result in bad generated code for
+				// Deviations from AIP-127 can result in bad generated code, but we know it is safe for some specific messages.
+				// Generate a warning if this happens when unexpecfted.
 				slog.Warn("mismatched body in additional binding (see AIP-127)", "message", mID, "topLevelBody", pathInfo.BodyFieldPath, "additionalBindingBody", body)
 			}
 		}
