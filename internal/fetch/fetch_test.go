@@ -804,8 +804,7 @@ func TestExtractTarball_PathError(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			err := extractTarball(test.tarballPath(t), test.dest(t))
-			var pathErr *fs.PathError
-			if !errors.As(err, &pathErr) {
+			if _, ok := errors.AsType[*fs.PathError](err); !ok {
 				t.Fatalf("got error %v, want *fs.PathError", err)
 			}
 		})

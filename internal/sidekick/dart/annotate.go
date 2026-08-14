@@ -640,9 +640,7 @@ func calculateImports(imports map[string]bool, curPkgName string, curMainFileNam
 			continue
 		} else if scheme == "package" {
 			if after, ok := strings.CutPrefix(body, curPkgName+"/"); ok {
-				pathAndAlias := after
-
-				pathOnly := strings.Split(pathAndAlias, " ")[0]
+				pathOnly, _, _ := strings.Cut(after, " ")
 				if pathOnly == curMainFileName {
 					continue
 				}
@@ -650,7 +648,7 @@ func calculateImports(imports map[string]bool, curPkgName string, curMainFileNam
 				// If the package is imported from the "src" directory, then remove
 				// the "src/" prefix because the generated file is also in the "src/"
 				// directory.
-				localImports = append(localImports, formatImport(strings.TrimPrefix(pathAndAlias, "src/")))
+				localImports = append(localImports, formatImport(strings.TrimPrefix(after, "src/")))
 			} else {
 				packageImports = append(packageImports, formatImport(imp))
 			}

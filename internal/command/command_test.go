@@ -245,8 +245,7 @@ func TestRunStreaming_Error(t *testing.T) {
 		t.Fatal("expected error, got nil")
 	}
 
-	var exitErr *exec.ExitError
-	if !errors.As(err, &exitErr) {
+	if _, ok := errors.AsType[*exec.ExitError](err); !ok {
 		t.Fatalf("RunWithStreamingOutput() error = %v, want type *exec.ExitError", err)
 	}
 	if !strings.Contains(string(err.Error()), invalidSubcommand) {

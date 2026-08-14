@@ -178,8 +178,7 @@ func runCmd(ctx context.Context, dir string, env map[string]string, command stri
 	cmd := buildCmd(ctx, dir, env, command, arg...)
 	output, err := cmd.Output()
 	if err != nil {
-		var exitErr *exec.ExitError
-		if errors.As(err, &exitErr) {
+		if exitErr, ok := errors.AsType[*exec.ExitError](err); ok {
 			return "", fmt.Errorf("%s: %s: %w", cmd, exitErr.Stderr, err)
 		}
 		return "", fmt.Errorf("%s: %w", cmd, err)
