@@ -15,39 +15,39 @@
 package api
 
 const (
-	// WktAnyID is the well-known type ID for google.protobuf.Any
+	// WktAnyID is the well-known type ID for google.protobuf.Any.
 	WktAnyID = ".google.protobuf.Any"
-	// WktStructID is the well-known type ID for google.protobuf.Struct
+	// WktStructID is the well-known type ID for google.protobuf.Struct.
 	WktStructID = ".google.protobuf.Struct"
-	// WktValueID is the well-known type ID for google.protobuf.Value
+	// WktValueID is the well-known type ID for google.protobuf.Value.
 	WktValueID = ".google.protobuf.Value"
-	// WktListValueID is the well-known type ID for google.protobuf.ListValue
+	// WktListValueID is the well-known type ID for google.protobuf.ListValue.
 	WktListValueID = ".google.protobuf.ListValue"
-	// WktEmptyID is the well-known type ID for google.protobuf.Empty
+	// WktEmptyID is the well-known type ID for google.protobuf.Empty.
 	WktEmptyID = ".google.protobuf.Empty"
-	// WktFieldMaskID is the well-known type ID for google.protobuf.FieldMask
+	// WktFieldMaskID is the well-known type ID for google.protobuf.FieldMask.
 	WktFieldMaskID = ".google.protobuf.FieldMask"
-	// WktDurationID is the well-known type ID for google.protobuf.Duration
+	// WktDurationID is the well-known type ID for google.protobuf.Duration.
 	WktDurationID = ".google.protobuf.Duration"
-	// WktTimestampID is the well-known type ID for google.protobuf.Timestamp
+	// WktTimestampID is the well-known type ID for google.protobuf.Timestamp.
 	WktTimestampID = ".google.protobuf.Timestamp"
-	// WktNullValueID is the well-known type ID for google.protobuf.NullValue
+	// WktNullValueID is the well-known type ID for google.protobuf.NullValue.
 	WktNullValueID = ".google.protobuf.NullValue"
-	// WktBytesValueID is the well-known type ID for google.protobuf.BytesValue
+	// WktBytesValueID is the well-known type ID for google.protobuf.BytesValue.
 	WktBytesValueID = ".google.protobuf.BytesValue"
-	// WktUInt64ValueID is the well-known type ID for google.protobuf.UInt64Value
+	// WktUInt64ValueID is the well-known type ID for google.protobuf.UInt64Value.
 	WktUInt64ValueID = ".google.protobuf.UInt64Value"
-	// WktInt64ValueID is the well-known type ID for google.protobuf.Int64Value
+	// WktInt64ValueID is the well-known type ID for google.protobuf.Int64Value.
 	WktInt64ValueID = ".google.protobuf.Int64Value"
-	// WktUInt32ValueID is the well-known type ID for google.protobuf.UInt32Value
+	// WktUInt32ValueID is the well-known type ID for google.protobuf.UInt32Value.
 	WktUInt32ValueID = ".google.protobuf.UInt32Value"
-	// WktInt32ValueID is the well-known type ID for google.protobuf.Int32Value
+	// WktInt32ValueID is the well-known type ID for google.protobuf.Int32Value.
 	WktInt32ValueID = ".google.protobuf.Int32Value"
-	// WktFloatValueID is the well-known type ID for google.protobuf.FloatValue
+	// WktFloatValueID is the well-known type ID for google.protobuf.FloatValue.
 	WktFloatValueID = ".google.protobuf.FloatValue"
-	// WktDoubleValueID is the well-known type ID for google.protobuf.DoubleValue
+	// WktDoubleValueID is the well-known type ID for google.protobuf.DoubleValue.
 	WktDoubleValueID = ".google.protobuf.DoubleValue"
-	// WktBoolValueID is the well-known type ID for google.protobuf.BoolValue
+	// WktBoolValueID is the well-known type ID for google.protobuf.BoolValue.
 	WktBoolValueID = ".google.protobuf.BoolValue"
 )
 
