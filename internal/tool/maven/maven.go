@@ -17,9 +17,13 @@ package maven
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/xml"
 	"errors"
 	"fmt"
+	"io/fs"
+	"log/slog"
 	"os"
 	"path/filepath"
 	"strings"
@@ -45,6 +49,69 @@ type pomProject struct {
 	} `xml:"parent"`
 }
 
+// markerPath returns the path of the hidden file recording a completed install
+// of the named tool, alongside its wrapper in binDir.
+func markerPath(binDir, name string) string {
+	return filepath.Join(binDir, "."+name+".fingerprint")
+}
+
+// upToDate reports whether the named tool is already installed with the given
+// fingerprint: its bin wrapper exists and the recorded fingerprint matches.
+// This lets a repeated install skip the expensive mvn build/download.
+func upToDate(binDir, name, fingerprint string) bool {
+	if fingerprint == "" {
+		return false
+	}
+	if _, err := os.Stat(filepath.Join(binDir, name)); err != nil {
+		return false
+	}
+	recorded, err := os.ReadFile(markerPath(binDir, name))
+	return err == nil && string(recorded) == fingerprint
+}
+
+// writeMarker records fingerprint so a later install can skip redoing the work.
+func writeMarker(binDir, name, fingerprint string) error {
+	if fingerprint == "" {
+		return nil
+	}
+	return os.WriteFile(markerPath(binDir, name), []byte(fingerprint), 0o644)
+}
+
+// externalFingerprint identifies a prebuilt tool by its immutable Maven
+// coordinate, so a re-install of the same version is skipped.
+func externalFingerprint(mvnTool *config.MavenTool) string {
+	artifact, _ := getM2ArtifactSpec(mvnTool)
+	return "external:" + artifact
+}
+
+// localFingerprint hashes the source tree of a locally-built tool (path, size,
+// and modtime of every file), excluding build output and VCS directories, so an
+// unchanged source tree is not rebuilt.
+func localFingerprint(localPath string) (string, error) {
+	h := sha256.New()
+	err := filepath.WalkDir(localPath, func(p string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		if d.IsDir() {
+			if name := d.Name(); name == "target" || name == ".git" {
+				return fs.SkipDir
+			}
+			return nil
+		}
+		info, err := d.Info()
+		if err != nil {
+			return err
+		}
+		fmt.Fprintf(h, "%s\x00%d\x00%d\n", p, info.Size(), info.ModTime().UnixNano())
+		return nil
+	})
+	if err != nil {
+		return "", fmt.Errorf("failed to fingerprint %q: %w", localPath, err)
+	}
+	return "local:" + hex.EncodeToString(h.Sum(nil)), nil
+}
+
 // Install installs Maven tool dependencies.
 func Install(ctx context.Context, tools []*config.MavenTool, binDir, libDir string) error {
 	for _, mvnTool := range tools {
@@ -65,6 +132,11 @@ func Install(ctx context.Context, tools []*config.MavenTool, binDir, libDir stri
 // (.jar or .exe) to the sibling lib folder, and creates an executable wrapper script
 // in the bin folder pointing directly to that library file.
 func installExternalMavenTool(ctx context.Context, mvnTool *config.MavenTool, binDir, libDir string) error {
+	fingerprint := externalFingerprint(mvnTool)
+	if upToDate(binDir, mvnTool.Name, fingerprint) {
+		slog.Debug("maven tool already installed, skipping download", "tool", mvnTool.Name)
+		return nil
+	}
 	artifact, ext := getM2ArtifactSpec(mvnTool)
 	if err := downloadM2Artifact(ctx, artifact, binDir); err != nil {
 		return err
@@ -81,13 +153,24 @@ func installExternalMavenTool(ctx context.Context, mvnTool *config.MavenTool, bi
 	if err != nil {
 		return err
 	}
-	return createBinWrapper(mvnTool.Name, destPath, binDir, isExe, mvnTool.MainClass)
+	if err := createBinWrapper(mvnTool.Name, destPath, binDir, isExe, mvnTool.MainClass); err != nil {
+		return err
+	}
+	return writeMarker(binDir, mvnTool.Name, fingerprint)
 }
 
 // installLocalMavenTool compiles a local Maven project, parses its pom.xml metadata coordinates,
 // copies the built target artifact (.jar or .exe) to the sibling lib folder, and creates an executable
 // wrapper script in the bin folder.
 func installLocalMavenTool(ctx context.Context, mvnTool *config.MavenTool, binDir, libDir string) error {
+	fingerprint, err := localFingerprint(mvnTool.LocalPath)
+	if err != nil {
+		return err
+	}
+	if upToDate(binDir, mvnTool.Name, fingerprint) {
+		slog.Debug("maven tool source unchanged, skipping build", "tool", mvnTool.Name)
+		return nil
+	}
 	absLocalPath, err := filepath.Abs(mvnTool.LocalPath)
 	if err != nil {
 		return fmt.Errorf("failed to resolve absolute local path for %s: %w", mvnTool.LocalPath, err)
@@ -114,7 +197,10 @@ func installLocalMavenTool(ctx context.Context, mvnTool *config.MavenTool, binDi
 	if err != nil {
 		return err
 	}
-	return createBinWrapper(mvnTool.Name, destPath, binDir, isExe, mvnTool.MainClass)
+	if err := createBinWrapper(mvnTool.Name, destPath, binDir, isExe, mvnTool.MainClass); err != nil {
+		return err
+	}
+	return writeMarker(binDir, mvnTool.Name, fingerprint)
 }
 
 // parsePOM extracts the Maven metadata from the specified pom.xml path.
