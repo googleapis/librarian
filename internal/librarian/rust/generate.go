@@ -55,14 +55,18 @@ func IsMixedLibrary(lib *config.Library) bool {
 
 // Generate generates a Rust client library.
 func Generate(ctx context.Context, cfg *config.Config, library *config.Library, sources *sources.Sources) error {
+	var pc *config.Protoc
+	if cfg != nil && cfg.Tools != nil {
+		pc = cfg.Tools.Protoc
+	}
 	if IsMixedLibrary(library) {
-		return generateVeneer(ctx, library, sources)
+		return generateVeneer(ctx, pc, library, sources)
 	}
 	if len(library.APIs) != 1 {
 		return fmt.Errorf("the Rust generator only supports a single api per library")
 	}
 
-	modelConfig, err := libraryToModelConfig(library, library.APIs[0], sources)
+	modelConfig, err := libraryToModelConfig(library, library.APIs[0], sources, pc)
 	if err != nil {
 		return err
 	}
@@ -122,18 +126,18 @@ func Format(ctx context.Context, library *config.Library) error {
 	return nil
 }
 
-func generateVeneer(ctx context.Context, library *config.Library, sources *sources.Sources) error {
+func generateVeneer(ctx context.Context, pc *config.Protoc, library *config.Library, sources *sources.Sources) error {
 	if library.Rust == nil || len(library.Rust.Modules) == 0 {
 		return nil
 	}
 	for _, module := range library.Rust.Modules {
 		if module.Template == "storage" {
-			return generateRustStorage(ctx, library, module.Output, sources)
+			return generateRustStorage(ctx, pc, library, module.Output, sources)
 		}
 		if module.Template == "bigquery" {
-			return generateRustBigQuery(ctx, library, module.Output, sources)
+			return generateRustBigQuery(ctx, pc, library, module.Output, sources)
 		}
-		modelConfig, err := moduleToModelConfig(library, module, sources)
+		modelConfig, err := moduleToModelConfig(library, module, sources, pc)
 		if err != nil {
 			return fmt.Errorf("moduleToModelConfig %q: %w", module.Output, err)
 		}
@@ -211,13 +215,13 @@ func DefaultOutput(api, defaultOutput string) string {
 //
 // The StorageControl client depends on multiple specification sources.
 // We load them both here, and pass them along to `rust.GenerateStorage` which will merge them appropriately.
-func generateRustStorage(ctx context.Context, library *config.Library, moduleOutput string, sources *sources.Sources) error {
+func generateRustStorage(ctx context.Context, pc *config.Protoc, library *config.Library, moduleOutput string, sources *sources.Sources) error {
 	output := "src/storage/src/generated/gapic"
 	storageModule := findModuleByOutput(library, output)
 	if storageModule == nil {
 		return fmt.Errorf("module %q not found in library %q", output, library.Name)
 	}
-	storageConfig, err := moduleToModelConfig(library, storageModule, sources)
+	storageConfig, err := moduleToModelConfig(library, storageModule, sources, pc)
 	if err != nil {
 		return fmt.Errorf("failed to create storage model config: %w", err)
 	}
@@ -231,7 +235,7 @@ func generateRustStorage(ctx context.Context, library *config.Library, moduleOut
 	if controlModule == nil {
 		return fmt.Errorf("module %q not found in library %q", output, library.Name)
 	}
-	controlConfig, err := moduleToModelConfig(library, controlModule, sources)
+	controlConfig, err := moduleToModelConfig(library, controlModule, sources, pc)
 	if err != nil {
 		return fmt.Errorf("failed to create control model config: %w", err)
 	}
@@ -244,7 +248,7 @@ func generateRustStorage(ctx context.Context, library *config.Library, moduleOut
 }
 
 // generateRustBigQuery generates rust BigQuery query builder.
-func generateRustBigQuery(ctx context.Context, library *config.Library, moduleOutput string, sources *sources.Sources) error {
+func generateRustBigQuery(ctx context.Context, pc *config.Protoc, library *config.Library, moduleOutput string, sources *sources.Sources) error {
 	var bqModule *config.RustModule
 	for _, module := range library.Rust.Modules {
 		if module.Template == "bigquery" {
@@ -256,7 +260,7 @@ func generateRustBigQuery(ctx context.Context, library *config.Library, moduleOu
 		return fmt.Errorf("module with template 'bigquery' not found in library %q", library.Name)
 	}
 
-	modelConfig, err := moduleToModelConfig(library, bqModule, sources)
+	modelConfig, err := moduleToModelConfig(library, bqModule, sources, pc)
 	if err != nil {
 		return fmt.Errorf("failed to create bigquery model config: %w", err)
 	}

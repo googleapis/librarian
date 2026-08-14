@@ -32,12 +32,16 @@ import (
 // Generate generates a Swift client library.
 func Generate(ctx context.Context, cfg *config.Config, library *config.Library, src *sources.Sources) error {
 	if IsMixedLibrary(library) {
-		return generateModule(ctx, library, src)
+		return generateModule(ctx, cfg, library, src)
 	}
 	if len(library.APIs) != 1 {
 		return fmt.Errorf("the Swift generator only supports a single api per library")
 	}
-	modelConfig, err := libraryToModelConfig(library, library.APIs[0], src)
+	var pc *config.Protoc
+	if cfg != nil && cfg.Tools != nil {
+		pc = cfg.Tools.Protoc
+	}
+	modelConfig, err := libraryToModelConfig(library, library.APIs[0], src, pc)
 	if err != nil {
 		return err
 	}
@@ -96,7 +100,7 @@ func DefaultLibraryName(api string) string {
 	return strings.ReplaceAll(api, "/", "-")
 }
 
-func libraryToModelConfig(library *config.Library, apiCfg *config.API, src *sources.Sources) (*parser.ModelConfig, error) {
+func libraryToModelConfig(library *config.Library, apiCfg *config.API, src *sources.Sources, pc *config.Protoc) (*parser.ModelConfig, error) {
 	svcConfig, err := serviceconfig.Find(src.Googleapis, apiCfg.Path, config.LanguageSwift)
 	if err != nil {
 		return nil, err
@@ -122,6 +126,7 @@ func libraryToModelConfig(library *config.Library, apiCfg *config.API, src *sour
 		ServiceConfig:       svcConfig.ServiceConfig,
 		SpecificationSource: apiCfg.Path,
 		Source:              sourceConfig,
+		Protoc:              pc,
 		Override: api.ModelOverride{
 			SkippedIDs: skippedIDs,
 		},

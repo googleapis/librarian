@@ -310,11 +310,35 @@ func TestToModelConfig(t *testing.T) {
 		name          string
 		library       *config.Library
 		channel       *config.API
+		pc            *config.Protoc
 		googleapisDir string
 		showcaseDir   string
 		want          *parser.ModelConfig
 		wantErr       error
 	}{
+		{
+			name:    "with protoc",
+			library: &config.Library{},
+			channel: &config.API{
+				Path: "google/cloud/functions/v2",
+			},
+			pc:            &config.Protoc{Version: "29.3"},
+			googleapisDir: googleapisDir,
+			want: &parser.ModelConfig{
+				Language:            config.LanguageDart,
+				SpecificationFormat: config.SpecProtobuf,
+				SpecificationSource: "google/cloud/functions/v2",
+				Protoc:              &config.Protoc{Version: "29.3"},
+				Source: &sources.SourceConfig{
+					Sources: &sources.Sources{
+						Googleapis: googleapisDir,
+					},
+					ActiveRoots: []string{"googleapis"},
+				},
+				Codec:    map[string]string{},
+				Override: api.ModelOverride{},
+			},
+		},
 		{
 			name:    "empty library",
 			library: &config.Library{},
@@ -536,7 +560,10 @@ func TestToModelConfig(t *testing.T) {
 			if test.showcaseDir != "" {
 				sources.Showcase = test.showcaseDir
 			}
-			got, err := toModelConfig(test.library, test.channel, sources)
+			if test.want != nil && test.want.Language == "" {
+				test.want.Language = config.LanguageDart
+			}
+			got, err := toModelConfig(test.library, test.channel, sources, test.pc)
 			if test.wantErr != nil {
 				if !errors.Is(err, test.wantErr) {
 					t.Errorf("toModelConfig() error: %v, wantErr: %v", err, test.wantErr)

@@ -27,23 +27,31 @@ import (
 )
 
 func TestInstallCommand_WithLanguage(t *testing.T) {
-	t.Chdir(t.TempDir())
-	if err := Run(t.Context(), "librarian", "install", "fake"); err != nil {
-		t.Fatal(err)
+	for _, lang := range []string{"dart", "fake", "rust", "swift"} {
+		t.Run(lang, func(t *testing.T) {
+			t.Chdir(t.TempDir())
+			if err := Run(t.Context(), "librarian", "install", lang); err != nil {
+				t.Fatal(err)
+			}
+		})
 	}
 }
 
 func TestInstallCommand_FromConfig(t *testing.T) {
-	tmpDir := t.TempDir()
-	t.Chdir(tmpDir)
-	cfg := &config.Config{
-		Language: config.LanguageFake,
-	}
-	if err := yaml.Write(filepath.Join(tmpDir, config.LibrarianYAML), cfg); err != nil {
-		t.Fatal(err)
-	}
-	if err := Run(t.Context(), "librarian", "install"); err != nil {
-		t.Fatal(err)
+	for _, lang := range []string{config.LanguageDart, config.LanguageFake, config.LanguageRust, config.LanguageSwift} {
+		t.Run(lang, func(t *testing.T) {
+			tmpDir := t.TempDir()
+			t.Chdir(tmpDir)
+			cfg := &config.Config{
+				Language: lang,
+			}
+			if err := yaml.Write(filepath.Join(tmpDir, config.LibrarianYAML), cfg); err != nil {
+				t.Fatal(err)
+			}
+			if err := Run(t.Context(), "librarian", "install"); err != nil {
+				t.Fatal(err)
+			}
+		})
 	}
 }
 

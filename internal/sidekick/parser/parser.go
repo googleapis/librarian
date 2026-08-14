@@ -37,6 +37,12 @@ type ModelConfig struct {
 	SpecificationSource string
 	Source              *sources.SourceConfig
 
+	// Protoc configuration
+	//
+	// This is initialized in the tools configuration for `librarian.yaml`, we want to avoid passing the full
+	// librarian configuration to the parsers.
+	Protoc *config.Protoc
+
 	// File paths to descriptor files
 	DescriptorFilesToGenerate string
 	DescriptorFiles           string

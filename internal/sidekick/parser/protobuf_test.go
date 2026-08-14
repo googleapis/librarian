@@ -23,6 +23,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
+	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/sample"
 	"github.com/googleapis/librarian/internal/serviceconfig"
 	"github.com/googleapis/librarian/internal/sidekick/api"
@@ -2169,7 +2170,7 @@ func newTestCodeGeneratorRequest(t *testing.T, filename ...string) *pluginpb.Cod
 		ActiveRoots: []string{"googleapis", "protobuf-src"},
 		IncludeList: append([]string{}, filename...),
 	}
-	request, err := codeGeneratorRequestFromSource("testdata", src)
+	request, err := codeGeneratorRequestFromSource("testdata", src, nil)
 	if err != nil {
 		t.Fatalf("Failed to make API for Protobuf %v", err)
 	}
@@ -2232,6 +2233,25 @@ func TestParseProtobuf_Descriptors(t *testing.T) {
 	}
 	if got == nil {
 		t.Fatalf("ParseProtobuf returned nil model")
+	}
+}
+
+func TestParseProtobuf_ProtocConfig(t *testing.T) {
+	cfg := &ModelConfig{
+		SpecificationSource: "testdata",
+		ServiceConfig:       secretManagerYamlFullPath,
+		Protoc:              &config.Protoc{Version: "0.0.0-nonexistent"},
+		Source: &sources.SourceConfig{
+			Sources: &sources.Sources{
+				Googleapis:  "../../testdata/googleapis",
+				ProtobufSrc: "testdata",
+			},
+			ActiveRoots: []string{"googleapis", "protobuf-src"},
+			IncludeList: []string{"scalar.proto"},
+		},
+	}
+	if _, err := ParseProtobuf(cfg); err == nil {
+		t.Fatal("ParseProtobuf with nonexistent protoc binary expected error, got nil")
 	}
 }
 

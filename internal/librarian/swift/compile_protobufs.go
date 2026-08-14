@@ -21,12 +21,12 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/sources"
+	"github.com/googleapis/librarian/internal/tool/protoc"
 )
 
-func compileProtobufs(ctx context.Context, library *config.Library, module *config.SwiftModule, src *sources.Sources) error {
+func compileProtobufs(ctx context.Context, pc *config.Protoc, library *config.Library, module *config.SwiftModule, src *sources.Sources) error {
 	if err := os.MkdirAll(module.Output, 0o755); err != nil {
 		return err
 	}
@@ -76,5 +76,5 @@ func compileProtobufs(ctx context.Context, library *config.Library, module *conf
 	args = append(args, protoImports...)
 	args = append(args, protoFiles...)
 
-	return command.Run(ctx, "protoc", args...)
+	return protoc.RunOrSystem(ctx, nil, pc, args...)
 }

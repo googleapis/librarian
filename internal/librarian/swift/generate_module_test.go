@@ -114,8 +114,26 @@ func TestModuleToModelConfig(t *testing.T) {
 		name   string
 		lib    *config.Library
 		module *config.SwiftModule
+		pc     *config.Protoc
 		want   *parser.ModelConfig
 	}{
+		{
+			name: "with protoc config",
+			lib: &config.Library{
+				Swift: &config.SwiftPackage{},
+			},
+			module: &config.SwiftModule{APIPath: "foo"},
+			pc:     &config.Protoc{Version: "29.3"},
+			want: &parser.ModelConfig{
+				SpecificationFormat: config.SpecProtobuf,
+				SpecificationSource: "foo",
+				Protoc:              &config.Protoc{Version: "29.3"},
+				Source: &sources.SourceConfig{
+					Sources:     &sources.Sources{},
+					ActiveRoots: []string{"googleapis"},
+				},
+			},
+		},
 		{
 			name: "no include list",
 			lib: &config.Library{
@@ -242,7 +260,7 @@ func TestModuleToModelConfig(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got := moduleToModelConfig(test.lib, test.module, src)
+			got := moduleToModelConfig(test.lib, test.module, src, test.pc)
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
@@ -322,7 +340,7 @@ func TestModuleToModelConfig_SkippedIds(t *testing.T) {
 			APIPath:    "google/type",
 			SkippedIds: []string{".google.type.Money"},
 		}
-		modelCfg := moduleToModelConfig(library, module, src)
+		modelCfg := moduleToModelConfig(library, module, src, nil)
 		expected := []string{".google.type.Money"}
 		if diff := cmp.Diff(expected, modelCfg.Override.SkippedIDs); diff != "" {
 			t.Errorf("moduleToModelConfig() mismatch (-want +got):\n%s", diff)
@@ -338,7 +356,7 @@ func TestModuleToModelConfig_SkippedIds(t *testing.T) {
 		module := &config.SwiftModule{
 			APIPath: "google/type",
 		}
-		modelCfg := moduleToModelConfig(library, module, src)
+		modelCfg := moduleToModelConfig(library, module, src, nil)
 		expected := []string{".google.type.Color"}
 		if diff := cmp.Diff(expected, modelCfg.Override.SkippedIDs); diff != "" {
 			t.Errorf("moduleToModelConfig() mismatch (-want +got):\n%s", diff)

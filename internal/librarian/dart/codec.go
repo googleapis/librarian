@@ -28,7 +28,7 @@ import (
 
 var errInvalidSpecificationFormat = errors.New("dart generation requires protobuf specification format")
 
-func toModelConfig(library *config.Library, ch *config.API, srcs *sources.Sources) (*parser.ModelConfig, error) {
+func toModelConfig(library *config.Library, ch *config.API, srcs *sources.Sources, pc *config.Protoc) (*parser.ModelConfig, error) {
 	if library.SpecificationFormat != "" && library.SpecificationFormat != config.SpecProtobuf {
 		return nil, fmt.Errorf("%w, got %q", errInvalidSpecificationFormat, library.SpecificationFormat)
 	}
@@ -58,10 +58,12 @@ func toModelConfig(library *config.Library, ch *config.API, srcs *sources.Source
 	}
 
 	modelConfig := &parser.ModelConfig{
+		Language:            config.LanguageDart,
 		SpecificationFormat: config.SpecProtobuf,
 		ServiceConfig:       svcConfig.ServiceConfig,
 		SpecificationSource: ch.Path,
 		Source:              src,
+		Protoc:              pc,
 		Codec:               buildCodec(library),
 		Override: api.ModelOverride{
 			Name:        name,

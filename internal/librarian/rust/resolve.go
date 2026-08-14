@@ -31,7 +31,11 @@ func ResolveDependencies(ctx context.Context, cfg *config.Config, lib *config.Li
 	if len(lib.APIs) == 0 {
 		return cfg, nil
 	}
-	externalPackages, err := findExternalPackages(lib, sources)
+	var pc *config.Protoc
+	if cfg != nil && cfg.Tools != nil {
+		pc = cfg.Tools.Protoc
+	}
+	externalPackages, err := findExternalPackages(lib, sources, pc)
 	if err != nil {
 		return nil, err
 	}
@@ -41,10 +45,10 @@ func ResolveDependencies(ctx context.Context, cfg *config.Config, lib *config.Li
 // findExternalPackages identifies Protobuf packages that are used by the library
 // but not defined within it. It parses the library's APIs into a model,
 // finds all transitive dependencies, and returns the set of external Protobuf packages.
-func findExternalPackages(lib *config.Library, sources *sources.Sources) (map[string]bool, error) {
+func findExternalPackages(lib *config.Library, sources *sources.Sources, pc *config.Protoc) (map[string]bool, error) {
 	// Only resolve dependencies for the first API in the library.
 	// This is consistent with how the Rust generator works.
-	modelConfig, err := libraryToModelConfig(lib, lib.APIs[0], sources)
+	modelConfig, err := libraryToModelConfig(lib, lib.APIs[0], sources, pc)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create model config: %w", err)
 	}

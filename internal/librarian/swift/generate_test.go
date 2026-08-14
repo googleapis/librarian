@@ -211,8 +211,30 @@ func TestLibraryToModelConfig(t *testing.T) {
 		name    string
 		library *config.Library
 		api     *config.API
+		pc      *config.Protoc
 		want    *parser.ModelConfig
 	}{
+		{
+			name: "minimal config with protoc",
+			library: &config.Library{
+				Name:    "google-cloud-secretmanager",
+				Version: "1.2.3",
+			},
+			api: &config.API{
+				Path: "google/cloud/secretmanager/v1",
+			},
+			pc: &config.Protoc{Version: "29.3"},
+			want: &parser.ModelConfig{
+				Language:            config.LanguageSwift,
+				SpecificationFormat: config.SpecProtobuf,
+				SpecificationSource: "google/cloud/secretmanager/v1",
+				ServiceConfig:       "google/cloud/secretmanager/v1/secretmanager_v1.yaml",
+				Protoc:              &config.Protoc{Version: "29.3"},
+				Source: &sources.SourceConfig{
+					ActiveRoots: []string{"googleapis"},
+				},
+			},
+		},
 		{
 			name: "minimal config",
 			library: &config.Library{
@@ -345,7 +367,7 @@ func TestLibraryToModelConfig(t *testing.T) {
 			// Avoid typing this in every input
 			test.want.Source.Sources = srcs
 
-			got, err := libraryToModelConfig(test.library, test.api, srcs)
+			got, err := libraryToModelConfig(test.library, test.api, srcs, test.pc)
 			if err != nil {
 				t.Fatal(err)
 			}

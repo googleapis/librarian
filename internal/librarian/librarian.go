@@ -25,6 +25,7 @@ import (
 
 	"github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/librarian/dart"
 	"github.com/googleapis/librarian/internal/librarian/golang"
 	"github.com/googleapis/librarian/internal/librarian/java"
 	"github.com/googleapis/librarian/internal/librarian/nodejs"
@@ -32,6 +33,7 @@ import (
 	"github.com/googleapis/librarian/internal/librarian/python"
 	"github.com/googleapis/librarian/internal/librarian/ruby"
 	"github.com/googleapis/librarian/internal/librarian/rust"
+	"github.com/googleapis/librarian/internal/librarian/swift"
 	"github.com/googleapis/librarian/internal/tool/protoc"
 	"github.com/googleapis/librarian/internal/yaml"
 	"github.com/urfave/cli/v3"
@@ -112,6 +114,8 @@ Examples:
 				}
 			}
 			switch lang {
+			case config.LanguageDart:
+				return dart.Install(ctx, tools)
 			case config.LanguageFake:
 				return nil
 			case config.LanguageGo:
@@ -128,6 +132,8 @@ Examples:
 				return ruby.Install(ctx, tools)
 			case config.LanguageRust:
 				return rust.Install(ctx, tools)
+			case config.LanguageSwift:
+				return swift.Install(ctx, tools)
 			default:
 				return fmt.Errorf("language %q does not support install", lang)
 			}

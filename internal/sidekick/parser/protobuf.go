@@ -24,12 +24,14 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/serviceconfig"
 	"github.com/googleapis/librarian/internal/sidekick/api"
 	"github.com/googleapis/librarian/internal/sidekick/parser/httprule"
 	"github.com/googleapis/librarian/internal/sidekick/parser/svcconfig"
 	"github.com/googleapis/librarian/internal/sidekick/protobuf"
 	"github.com/googleapis/librarian/internal/sources"
+	"github.com/googleapis/librarian/internal/tool/protoc"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/descriptorpb"
 	"google.golang.org/protobuf/types/pluginpb"
@@ -51,7 +53,7 @@ func ParseProtobuf(cfg *ModelConfig) (*api.API, error) {
 		}
 	} else {
 		source := cfg.SpecificationSource
-		request, err = codeGeneratorRequestFromSource(source, cfg.Source)
+		request, err = codeGeneratorRequestFromSource(source, cfg.Source, cfg.Protoc)
 		if err != nil {
 			return nil, err
 		}
@@ -85,13 +87,13 @@ func codeGeneratorRequestFromDescriptors(descriptorFiles, generateFiles string) 
 }
 
 // Create a temporary files to store `protoc`'s output.
-func codeGeneratorRequestFromSource(source string, sourceCfg *sources.SourceConfig) (*pluginpb.CodeGeneratorRequest, error) {
+func codeGeneratorRequestFromSource(source string, sourceCfg *sources.SourceConfig, pc *config.Protoc) (*pluginpb.CodeGeneratorRequest, error) {
 	files, err := protobuf.DetermineInputFiles(source, sourceCfg)
 	if err != nil {
 		return nil, err
 	}
 
-	contents, err := runProtoc(files, sourceCfg)
+	contents, err := runProtoc(files, sourceCfg, pc)
 	if err != nil {
 		return nil, err
 	}
@@ -156,7 +158,7 @@ func filterTargetDescriptors(allFiles []*descriptorpb.FileDescriptorProto, gener
 	return target, nil
 }
 
-func runProtoc(files []string, sourceCfg *sources.SourceConfig) ([]byte, error) {
+func runProtoc(files []string, sourceCfg *sources.SourceConfig, pc *config.Protoc) ([]byte, error) {
 	tempFile, err := os.CreateTemp("", "protoc-out-")
 	if err != nil {
 		return nil, err
@@ -183,8 +185,13 @@ func runProtoc(files []string, sourceCfg *sources.SourceConfig) ([]byte, error) 
 
 	args = append(args, files...)
 
+	protocPath, err := protoc.BinaryPathOrSystem(pc)
+	if err != nil {
+		return nil, fmt.Errorf("failed to find protoc: %w", err)
+	}
+
 	var stderr, stdout bytes.Buffer
-	cmd := exec.Command("protoc", args...)
+	cmd := exec.Command(protocPath, args...)
 	cmd.Stderr = &stderr
 	cmd.Stdout = &stdout
 	if err := cmd.Run(); err != nil {

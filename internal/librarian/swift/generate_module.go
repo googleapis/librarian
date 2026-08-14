@@ -25,7 +25,11 @@ import (
 	"github.com/googleapis/librarian/internal/sources"
 )
 
-func generateModule(ctx context.Context, library *config.Library, src *sources.Sources) error {
+func generateModule(ctx context.Context, cfg *config.Config, library *config.Library, src *sources.Sources) error {
+	var pc *config.Protoc
+	if cfg != nil && cfg.Tools != nil {
+		pc = cfg.Tools.Protoc
+	}
 	for _, module := range library.Swift.Modules {
 		switch module.ModuleType {
 		case "package-version":
@@ -33,11 +37,11 @@ func generateModule(ctx context.Context, library *config.Library, src *sources.S
 				return err
 			}
 		case "swift-protobuf":
-			if err := compileProtobufs(ctx, library, module, src); err != nil {
+			if err := compileProtobufs(ctx, pc, library, module, src); err != nil {
 				return err
 			}
 		case "convert-swift":
-			modelConfig := moduleToModelConfig(library, module, src)
+			modelConfig := moduleToModelConfig(library, module, src, pc)
 			model, err := parser.CreateModel(modelConfig)
 			if err != nil {
 				return err
@@ -46,7 +50,7 @@ func generateModule(ctx context.Context, library *config.Library, src *sources.S
 				return err
 			}
 		case "", "default", "grpc-client":
-			modelConfig := moduleToModelConfig(library, module, src)
+			modelConfig := moduleToModelConfig(library, module, src, pc)
 			model, err := parser.CreateModel(modelConfig)
 			if err != nil {
 				return err
@@ -61,7 +65,7 @@ func generateModule(ctx context.Context, library *config.Library, src *sources.S
 	return nil
 }
 
-func moduleToModelConfig(library *config.Library, module *config.SwiftModule, src *sources.Sources) *parser.ModelConfig {
+func moduleToModelConfig(library *config.Library, module *config.SwiftModule, src *sources.Sources, pc *config.Protoc) *parser.ModelConfig {
 	sourceConfig := sources.NewSourceConfig(src, library.Roots)
 	// Prefer the module-specific include list if configured, allowing per-module filtering
 	// (e.g., selecting only specific dependency `.proto` files for conversion generation).
@@ -89,6 +93,7 @@ func moduleToModelConfig(library *config.Library, module *config.SwiftModule, sr
 		SpecificationSource: module.APIPath,
 		ServiceConfig:       module.ServiceConfig,
 		Source:              sourceConfig,
+		Protoc:              pc,
 		Override: api.ModelOverride{
 			SkippedIDs: skippedIDs,
 		},

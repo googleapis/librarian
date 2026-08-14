@@ -29,8 +29,12 @@ import (
 )
 
 // Generate generates a Dart client library.
-func Generate(ctx context.Context, library *config.Library, sources *sources.Sources) error {
-	modelConfig, err := toModelConfig(library, library.APIs[0], sources)
+func Generate(ctx context.Context, cfg *config.Config, library *config.Library, sources *sources.Sources) error {
+	var pc *config.Protoc
+	if cfg != nil && cfg.Tools != nil {
+		pc = cfg.Tools.Protoc
+	}
+	modelConfig, err := toModelConfig(library, library.APIs[0], sources, pc)
 	if err != nil {
 		return err
 	}

@@ -25,9 +25,9 @@ import (
 	"github.com/googleapis/librarian/internal/command"
 	libconfig "github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/sidekick/api"
-	"github.com/googleapis/librarian/internal/sidekick/parser"
-
 	"github.com/googleapis/librarian/internal/sidekick/language"
+	"github.com/googleapis/librarian/internal/sidekick/parser"
+	"github.com/googleapis/librarian/internal/tool/protoc"
 )
 
 //go:embed all:templates
@@ -41,7 +41,7 @@ func Generate(ctx context.Context, model *api.API, outdir string, template strin
 	if err := command.Run(ctx, command.Cargo, "--version"); err != nil {
 		return fmt.Errorf("got an error trying to run `cargo --version`, the instructions on https://www.rust-lang.org/learn/get-started may solve this problem: %w", err)
 	}
-	if err := command.Run(ctx, "protoc", "--version"); err != nil {
+	if err := protoc.RunOrSystem(ctx, nil, cfg.Protoc, "--version"); err != nil {
 		return fmt.Errorf("got an error trying to run `protoc --version`, the instructions on https://grpc.io/docs/protoc-installation/ may solve this problem: %w", err)
 	}
 
@@ -76,7 +76,7 @@ func Generate(ctx context.Context, model *api.API, outdir string, template strin
 			}
 		}
 	}
-	return buildRS(ctx, rootPaths, tmpDir, outdir)
+	return buildRS(ctx, cfg.Protoc, rootPaths, tmpDir, outdir)
 }
 
 func templatesProvider() language.TemplateProvider {
@@ -89,7 +89,7 @@ func templatesProvider() language.TemplateProvider {
 	}
 }
 
-func buildRS(ctx context.Context, rootPaths []string, tmpDir, outDir string) error {
+func buildRS(ctx context.Context, pc *libconfig.Protoc, rootPaths []string, tmpDir, outDir string) error {
 	var absRoots []string
 	for _, r := range rootPaths {
 		absRoot, err := filepath.Abs(r)
@@ -109,5 +109,10 @@ func buildRS(ctx context.Context, rootPaths []string, tmpDir, outDir string) err
 		"SOURCE_ROOT": strings.Join(absRoots, string(os.PathListSeparator)),
 		"DEST":        absOutDir,
 	}
+	protocPath, err := protoc.BinaryPathOrSystem(pc)
+	if err != nil {
+		return fmt.Errorf("failed to find protoc: %w", err)
+	}
+	env["PROTOC"] = protocPath
 	return command.RunInDirWithEnv(ctx, tmpDir, env, command.Cargo, "build", "--features", "_generate-protos")
 }

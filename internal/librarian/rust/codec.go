@@ -25,7 +25,7 @@ import (
 	"github.com/googleapis/librarian/internal/sources"
 )
 
-func libraryToModelConfig(library *config.Library, ch *config.API, srcs *sources.Sources) (*parser.ModelConfig, error) {
+func libraryToModelConfig(library *config.Library, ch *config.API, srcs *sources.Sources, pc *config.Protoc) (*parser.ModelConfig, error) {
 	specFormat := config.SpecProtobuf
 	if library.SpecificationFormat != "" {
 		specFormat = library.SpecificationFormat
@@ -56,6 +56,7 @@ func libraryToModelConfig(library *config.Library, ch *config.API, srcs *sources
 		SpecificationFormat: specFormat,
 		SpecificationSource: specSource,
 		Source:              src,
+		Protoc:              pc,
 		ServiceConfig:       svcConfig.ServiceConfig,
 		Codec:               buildCodec(library, svcConfig.ReleaseLevel(config.LanguageRust, library.Version)),
 		Override: api.ModelOverride{
@@ -228,7 +229,7 @@ func formatPackageDependency(dep *config.RustPackageDependency) string {
 	return strings.Join(parts, ",")
 }
 
-func moduleToModelConfig(library *config.Library, module *config.RustModule, srcs *sources.Sources) (*parser.ModelConfig, error) {
+func moduleToModelConfig(library *config.Library, module *config.RustModule, srcs *sources.Sources, pc *config.Protoc) (*parser.ModelConfig, error) {
 	src := sources.NewSourceConfig(srcs, library.Roots)
 	var title string
 	if module.APIPath != "" && len(src.ActiveRoots) == 1 && src.ActiveRoots[0] == "googleapis" {
@@ -263,6 +264,7 @@ func moduleToModelConfig(library *config.Library, module *config.RustModule, src
 		ServiceConfig:       module.ServiceConfig,
 		SpecificationSource: module.APIPath,
 		Source:              src,
+		Protoc:              pc,
 		Codec:               buildModuleCodec(library, module),
 		Override: api.ModelOverride{
 			Title:       title,

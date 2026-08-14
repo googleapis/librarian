@@ -49,9 +49,34 @@ func TestLibraryToModelConfig(t *testing.T) {
 		name             string
 		library          *config.Library
 		api              *config.API
+		pc               *config.Protoc
 		wantReleaseLevel string
 		want             *parser.ModelConfig
 	}{
+		{
+			name: "minimal config with protoc",
+			library: &config.Library{
+				Name: "google-cloud-secretmanager",
+			},
+			api: &config.API{
+				Path: "google/cloud/secretmanager/v1",
+			},
+			pc: &config.Protoc{Version: "29.3"},
+			want: &parser.ModelConfig{
+				Language:            config.LanguageRust,
+				SpecificationFormat: config.SpecProtobuf,
+				SpecificationSource: "google/cloud/secretmanager/v1",
+				ServiceConfig:       "google/cloud/secretmanager/v1/secretmanager_v1.yaml",
+				Protoc:              &config.Protoc{Version: "29.3"},
+				Source: &sources.SourceConfig{
+					ActiveRoots: []string{"googleapis"},
+				},
+				Override: api.ModelOverride{
+					Title:       "Secret Manager API",
+					Description: "Stores sensitive data such as API keys, passwords, and certificates.\nProvides convenience while improving security.",
+				},
+			},
+		},
 		{
 			name: "minimal config",
 			library: &config.Library{
@@ -584,7 +609,7 @@ func TestLibraryToModelConfig(t *testing.T) {
 			if test.want.Source.Sources == nil {
 				test.want.Source.Sources = srcs
 			}
-			got, err := libraryToModelConfig(test.library, test.api, srcs)
+			got, err := libraryToModelConfig(test.library, test.api, srcs, test.pc)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -606,8 +631,29 @@ func TestModuleToModelConfig(t *testing.T) {
 	for _, test := range []struct {
 		name    string
 		library *config.Library
+		pc      *config.Protoc
 		want    *parser.ModelConfig
 	}{
+		{
+			name: "with protoc config",
+			library: &config.Library{
+				Rust: &config.RustCrate{
+					Modules: []*config.RustModule{
+						{
+							APIPath: "google/cloud/secretmanager/v1",
+							Output:  "src/generated",
+						},
+					},
+				},
+			},
+			pc: &config.Protoc{Version: "29.3"},
+			want: &parser.ModelConfig{
+				Protoc: &config.Protoc{Version: "29.3"},
+				Source: &sources.SourceConfig{
+					ActiveRoots: []string{"googleapis"},
+				},
+			},
+		},
 		{
 			name: "with ResourceNameHeuristic false",
 			library: &config.Library{
@@ -887,12 +933,17 @@ func TestModuleToModelConfig(t *testing.T) {
 				if test.want.Source.Sources == nil {
 					test.want.Source.Sources = srcs
 				}
-				got, err := moduleToModelConfig(test.library, module, srcs)
+				got, err := moduleToModelConfig(test.library, module, srcs, test.pc)
 				if err != nil {
 					t.Fatal(err)
 				}
 				if diff := cmp.Diff(test.want.Source, got.Source); diff != "" {
 					t.Errorf("mismatch (-want +got):\n%s", diff)
+				}
+				if test.want.Protoc != nil {
+					if diff := cmp.Diff(test.want.Protoc, got.Protoc); diff != "" {
+						t.Errorf("mismatch (-want +got):\n%s", diff)
+					}
 				}
 				commentOverrides = append(commentOverrides, got.CommentOverrides...)
 				if diff := cmp.Diff(test.want.PaginationOverrides, got.PaginationOverrides); diff != "" {

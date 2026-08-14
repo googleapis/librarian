@@ -71,7 +71,7 @@ func TestGenerate(t *testing.T) {
 		Googleapis: googleapisDir,
 	}
 	for _, library := range libraries {
-		if err := Generate(t.Context(), library, sources); err != nil {
+		if err := Generate(t.Context(), &config.Config{Language: "dart"}, library, sources); err != nil {
 			t.Fatal(err)
 		}
 	}
@@ -105,10 +105,37 @@ func TestGenerate_Error(t *testing.T) {
 	sources := &sources.Sources{
 		Googleapis: googleapisDir,
 	}
-	gotErr := Generate(t.Context(), libraries[0], sources)
+	gotErr := Generate(t.Context(), &config.Config{Language: "dart"}, libraries[0], sources)
 	wantErr := errInvalidSpecificationFormat
 	if !errors.Is(gotErr, wantErr) {
 		t.Errorf("Generate error = %v, wantErr %v", gotErr, wantErr)
+	}
+}
+
+func TestGenerate_WithProtocConfigError(t *testing.T) {
+	testhelper.RequireCommand(t, "dart")
+
+	googleapisDir, err := filepath.Abs("../../testdata/googleapis")
+	if err != nil {
+		t.Fatal(err)
+	}
+	outDir := t.TempDir()
+	library := &config.Library{
+		Name:   "google_cloud_rpc",
+		APIs:   []*config.API{{Path: "google/rpc"}},
+		Output: filepath.Join(outDir, "google_cloud_rpc"),
+	}
+	sources := &sources.Sources{
+		Googleapis: googleapisDir,
+	}
+	cfg := &config.Config{
+		Language: "dart",
+		Tools: &config.Tools{
+			Protoc: &config.Protoc{Version: "0.0.0-nonexistent"},
+		},
+	}
+	if err := Generate(t.Context(), cfg, library, sources); err == nil {
+		t.Fatal("Generate with nonexistent protoc expected error, got nil")
 	}
 }
 
@@ -152,7 +179,7 @@ func TestGenerateLibrary(t *testing.T) {
 	sources := &sources.Sources{
 		Googleapis: googleapisDir,
 	}
-	if err := Generate(t.Context(), library, sources); err != nil {
+	if err := Generate(t.Context(), &config.Config{Language: "dart"}, library, sources); err != nil {
 		t.Fatal(err)
 	}
 	if err := Format(t.Context(), library); err != nil {
