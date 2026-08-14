@@ -58,7 +58,7 @@ jobs:
           persist-credentials: false
       - name: Run librarian install
         working-directory: google-cloud-rust
-        run: librarian install
+        run: librarian install -v
       - name: Run librarian generate
         working-directory: google-cloud-rust
         run: librarian generate --all
