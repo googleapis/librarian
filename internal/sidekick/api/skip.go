@@ -41,7 +41,10 @@ func SkipModelElements(model *API, overrides ModelOverride) error {
 			return err
 		}
 		skip := func(id string) bool { return !includedIds[id] }
-		skipModelElementsImpl(model, skip)
+		skipField := func(id string) bool { return false }
+		if err := skipModelElementsImpl(model, skip, skipField); err != nil {
+			return err
+		}
 	}
 
 	if len(overrides.SkippedIDs) > 0 {
@@ -50,27 +53,69 @@ func SkipModelElements(model *API, overrides ModelOverride) error {
 			skippedIDs[id] = true
 		}
 		skip := func(id string) bool { return skippedIDs[id] }
-		skipModelElementsImpl(model, skip)
+		skipField := func(id string) bool { return skippedIDs[id] }
+		if err := skipModelElementsImpl(model, skip, skipField); err != nil {
+			return err
+		}
 	}
 	return nil
 }
 
-func skipModelElementsImpl(model *API, skip func(id string) bool) {
+func skipModelElementsImpl(model *API, skip func(id string) bool, skipField func(id string) bool) error {
 	for _, m := range model.Messages {
-		skipMessageElements(m, skip)
+		skipMessageElements(m, skip, skipField)
 	}
 	model.Enums = slices.DeleteFunc(model.Enums, func(x *Enum) bool { return skip(x.ID) })
 	model.Messages = slices.DeleteFunc(model.Messages, func(x *Message) bool { return skip(x.ID) })
 	model.Services = slices.DeleteFunc(model.Services, func(x *Service) bool { return skip(x.ID) })
+
 	for service := range model.AllServices() {
 		service.Methods = slices.DeleteFunc(service.Methods, func(x *Method) bool { return skip(x.ID) })
+		for _, method := range service.Methods {
+			if method.Pagination != nil && skipField(method.Pagination.ID) {
+				return fmt.Errorf("unsupported: skipping field %s which enables pagination", method.Pagination.ID)
+			}
+			idx := slices.IndexFunc(method.Signatures, func(s *MethodSignature) bool {
+				return slices.ContainsFunc(s.Fields, func(f *Field) bool { return skipField(f.ID) })
+			})
+			if idx != -1 {
+				return fmt.Errorf("unsupported: skipping field that is in one of the method signatures for method: %s", method.ID)
+			}
+		}
 	}
+	if model.QuickstartService != nil && !slices.Contains(model.Services, model.QuickstartService) {
+		model.QuickstartService = findQuickstartService(model)
+	}
+	return nil
 }
 
-func skipMessageElements(message *Message, skip func(id string) bool) {
+func skipMessageElements(message *Message, skip func(id string) bool, skipField func(id string) bool) {
 	for _, m := range message.Messages {
-		skipMessageElements(m, skip)
+		skipMessageElements(m, skip, skipField)
 	}
 	message.Messages = slices.DeleteFunc(message.Messages, func(x *Message) bool { return skip(x.ID) })
 	message.Enums = slices.DeleteFunc(message.Enums, func(x *Enum) bool { return skip(x.ID) })
+	previous := slices.Clone(message.Fields)
+	skipped := func(x *Field) bool {
+		if skipField(x.ID) {
+			return true
+		}
+		if x.Group != nil && skipField(x.Group.ID) {
+			return true
+		}
+		return false
+	}
+	message.Fields = slices.DeleteFunc(slices.Clone(message.Fields), skipped)
+	message.SkippedFields = slices.DeleteFunc(previous, func(x *Field) bool { return !skipped(x) })
+	for _, oneof := range message.OneOfs {
+		oneof.Fields = slices.DeleteFunc(oneof.Fields, func(x *Field) bool {
+			return skipField(x.ID)
+		})
+		if len(oneof.Fields) > 0 {
+			oneof.ExampleField = slices.MaxFunc(oneof.Fields, sortOneOfFieldForExamples)
+		}
+	}
+	message.OneOfs = slices.DeleteFunc(message.OneOfs, func(x *OneOf) bool {
+		return skipField(x.ID) || len(x.Fields) == 0
+	})
 }

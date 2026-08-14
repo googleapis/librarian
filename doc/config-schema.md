@@ -267,6 +267,7 @@ This document describes the schema for the librarian.yaml.
 | `readme_after_title_text` | string | Is text to insert in the README after the title. |
 | `readme_quickstart_text` | string | Is text to use for the quickstart section in the README. |
 | `repository_url` | string | Is the URL to the repository for this package. |
+| `skipped_ids` | list of string | Is a list of proto IDs to skip in generation. |
 | `supports_sse` | bool | Indicates whether the target API supports Server-Sent Events (SSE) for methods where `ServerSideStreaming` is `true`. |
 | `title_override` | string | Overrides the API title. |
 | `version` | string | Is the version of the dart package. |

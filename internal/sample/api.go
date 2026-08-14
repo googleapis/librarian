@@ -357,6 +357,7 @@ func Automatic() *api.Message {
 		Fields: []*api.Field{
 			{
 				Name:          "customerManagedEncryption",
+				ID:            "..Automatic.customerManagedEncryption",
 				JSONName:      "customerManagedEncryption",
 				Documentation: "Optional. The customer-managed encryption configuration of the Secret.",
 				Typez:         api.TypezMessage,
@@ -385,6 +386,7 @@ func SecretPayload() *api.Message {
 		Fields: []*api.Field{
 			{
 				Name:          "data",
+				ID:            "..SecretPayload.data",
 				JSONName:      "data",
 				Documentation: "The secret data. Must be no larger than 64KiB.",
 				Typez:         api.TypezBytes,
@@ -393,6 +395,7 @@ func SecretPayload() *api.Message {
 			},
 			{
 				Name:          "dataCrc32c",
+				ID:            "..SecretPayload.dataCrc32c",
 				JSONName:      "dataCrc32c",
 				Documentation: "Optional. If specified, SecretManagerService will verify the integrity of the\nreceived data on SecretManagerService.AddSecretVersion calls using\nthe crc32c checksum and store it to include in future\nSecretManagerService.AccessSecretVersion responses. If a checksum is\nnot provided in the SecretManagerService.AddSecretVersion request, the\nSecretManagerService will generate and store one for you.\n\nThe CRC32C value is encoded as a Int64 for compatibility, and can be\nsafely downconverted to uint32 in languages that support this type.\nhttps://cloud.google.com/apis/design/design_patterns#integer_types",
 				Typez:         api.TypezInt64,

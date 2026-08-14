@@ -276,6 +276,7 @@ func makeRequestMessage(a *api.API, parent *api.Message, operation *v3.Operation
 		}
 		field := &api.Field{
 			Name:          p.Name,
+			ID:            fmt.Sprintf("%s.%s", message.ID, p.Name),
 			JSONName:      p.Name, // OpenAPI fields are already camelCase
 			Documentation: documentation,
 			Deprecated:    p.Deprecated,
@@ -306,6 +307,7 @@ func makeRequestMessage(a *api.API, parent *api.Message, operation *v3.Operation
 		bodyFieldPath = name
 		field := &api.Field{
 			Name:          name,
+			ID:            fmt.Sprintf("%s.%s", message.ID, name),
 			JSONName:      name,
 			Documentation: "The request body.",
 			Typez:         api.TypezMessage,
@@ -405,7 +407,7 @@ func makeField(model *api.API, packageName, messageName, name string, optional b
 	}
 	switch field.Type[0] {
 	case "boolean", "integer", "number", "string":
-		return makeScalarField(messageName, name, field, optional, field)
+		return makeScalarField(packageName, messageName, name, field, optional, field)
 	case "object":
 		return makeObjectField(model, packageName, messageName, name, field)
 	case "array":
@@ -415,13 +417,14 @@ func makeField(model *api.API, packageName, messageName, name string, optional b
 	}
 }
 
-func makeScalarField(messageName, name string, schema *base.Schema, optional bool, field *base.Schema) (*api.Field, error) {
+func makeScalarField(packageName, messageName, name string, schema *base.Schema, optional bool, field *base.Schema) (*api.Field, error) {
 	typez, typezID, err := scalarType(messageName, name, schema)
 	if err != nil {
 		return nil, err
 	}
 	return &api.Field{
 		Name:          name,
+		ID:            fmt.Sprintf(".%s.%s.%s", packageName, messageName, name),
 		JSONName:      name, // OpenAPI field names are always camelCase
 		Documentation: field.Description,
 		Typez:         typez,
@@ -447,6 +450,7 @@ func makeObjectField(model *api.API, packageName, messageName, name string, fiel
 			// Untyped message fields are .google.protobuf.Any
 			return &api.Field{
 				Name:          name,
+				ID:            fmt.Sprintf(".%s.%s.%s", packageName, messageName, name),
 				JSONName:      name, // OpenAPI field names are always camelCase
 				Documentation: field.Description,
 				Deprecated:    field.Deprecated != nil && *field.Deprecated,
@@ -461,6 +465,7 @@ func makeObjectField(model *api.API, packageName, messageName, name string, fiel
 		}
 		return &api.Field{
 			Name:          name,
+			ID:            fmt.Sprintf(".%s.%s.%s", packageName, messageName, name),
 			JSONName:      name, // OpenAPI field names are always camelCase
 			Documentation: field.Description,
 			Deprecated:    field.Deprecated != nil && *field.Deprecated,
@@ -476,6 +481,7 @@ func makeObjectField(model *api.API, packageName, messageName, name string, fiel
 		typezID := fmt.Sprintf(".%s.%s", packageName, strings.TrimPrefix(proxy.GetReference(), "#/components/schemas/"))
 		return &api.Field{
 			Name:          name,
+			ID:            fmt.Sprintf(".%s.%s.%s", packageName, messageName, name),
 			JSONName:      name, // OpenAPI field names are always camelCase
 			Documentation: field.Description,
 			Deprecated:    field.Deprecated != nil && *field.Deprecated,
@@ -502,12 +508,13 @@ func makeArrayField(model *api.API, packageName, messageName, name string, field
 	var result *api.Field
 	switch schema.Type[0] {
 	case "boolean", "integer", "number", "string":
-		result, err = makeScalarField(messageName, name, schema, false, field)
+		result, err = makeScalarField(packageName, messageName, name, schema, false, field)
 	case "object":
 		typezID := fmt.Sprintf(".%s.%s", packageName, strings.TrimPrefix(reference, "#/components/schemas/"))
 		if len(typezID) > 0 {
 			new := &api.Field{
 				Name:          name,
+				ID:            fmt.Sprintf(".%s.%s.%s", packageName, messageName, name),
 				JSONName:      name, // OpenAPI field names are always camelCase
 				Documentation: field.Description,
 				Deprecated:    field.Deprecated != nil && *field.Deprecated,
@@ -535,6 +542,7 @@ func makeObjectFieldAllOf(packageName, messageName, name string, field *base.Sch
 		typezID := fmt.Sprintf(".%s.%s", packageName, strings.TrimPrefix(proxy.GetReference(), "#/components/schemas/"))
 		return &api.Field{
 			Name:          name,
+			ID:            fmt.Sprintf(".%s.%s.%s", packageName, messageName, name),
 			JSONName:      name, // OpenAPI field names are always camelCase
 			Documentation: field.Description,
 			Deprecated:    field.Deprecated != nil && *field.Deprecated,

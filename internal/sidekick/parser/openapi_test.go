@@ -131,66 +131,78 @@ func TestOpenAPI_BasicTypes(t *testing.T) {
 		Fields: []*api.Field{
 			{
 				Name:     "fBool",
+				ID:       "..Fake.fBool",
 				JSONName: "fBool",
 				Typez:    api.TypezBool,
 				TypezID:  "bool",
 			},
 			{
 				Name:     "fInt64",
+				ID:       "..Fake.fInt64",
 				JSONName: "fInt64",
 				Typez:    api.TypezInt64,
 				TypezID:  "int64",
 			},
 			{
 				Name:     "fInt32",
+				ID:       "..Fake.fInt32",
 				JSONName: "fInt32",
 				Typez:    api.TypezInt32,
 				TypezID:  "int32",
 			},
 			{
 				Name:     "fUInt32",
+				ID:       "..Fake.fUInt32",
 				JSONName: "fUInt32",
 				Typez:    api.TypezUint32,
 				TypezID:  "uint32",
 			},
 			{
 				Name:     "fFloat",
+				ID:       "..Fake.fFloat",
 				JSONName: "fFloat",
 				Typez:    api.TypezFloat,
 				TypezID:  "float",
 			},
 			{
 				Name:     "fDouble",
+				ID:       "..Fake.fDouble",
 				JSONName: "fDouble",
 				Typez:    api.TypezDouble,
 				TypezID:  "double",
 			},
 			{
 				Name:     "fString",
+				ID:       "..Fake.fString",
 				JSONName: "fString",
 				Typez:    api.TypezString,
 				TypezID:  "string",
 			},
 			{
 				Name:     "fOptional",
+				ID:       "..Fake.fOptional",
 				JSONName: "fOptional",
 				Typez:    api.TypezString,
 				TypezID:  "string",
-				Optional: true},
+				Optional: true,
+			},
 			{
 				Name:     "fSInt64",
+				ID:       "..Fake.fSInt64",
 				JSONName: "fSInt64",
 				Typez:    api.TypezInt64,
 				TypezID:  "int64",
 			},
 			{
 				Name:     "fSUInt64",
+				ID:       "..Fake.fSUInt64",
 				JSONName: "fSUInt64",
 				Typez:    api.TypezUint64,
 				TypezID:  "uint64",
 			},
 			{
 				Name:     "fDuration",
+				ID:       "..Fake.fDuration",
 				JSONName: "fDuration",
 				Typez:    api.TypezMessage,
 				TypezID:  ".google.protobuf.Duration",
@@ -198,6 +210,7 @@ func TestOpenAPI_BasicTypes(t *testing.T) {
 			},
 			{
 				Name:     "fTimestamp",
+				ID:       "..Fake.fTimestamp",
 				JSONName: "fTimestamp",
 				Typez:    api.TypezMessage,
 				TypezID:  ".google.protobuf.Timestamp",
@@ -205,6 +218,7 @@ func TestOpenAPI_BasicTypes(t *testing.T) {
 			},
 			{
 				Name:     "fFieldMask",
+				ID:       "..Fake.fFieldMask",
 				JSONName: "fFieldMask",
 				Typez:    api.TypezMessage,
 				TypezID:  ".google.protobuf.FieldMask",
@@ -212,6 +226,7 @@ func TestOpenAPI_BasicTypes(t *testing.T) {
 			},
 			{
 				Name:     "fBytes",
+				ID:       "..Fake.fBytes",
 				JSONName: "fBytes",
 				Typez:    api.TypezBytes,
 				TypezID:  "bytes",
@@ -264,48 +279,56 @@ func TestOpenAPI_ArrayTypes(t *testing.T) {
 			{
 				Repeated: true,
 				Name:     "fBool",
+				ID:       "..Fake.fBool",
 				JSONName: "fBool",
 				Typez:    api.TypezBool,
 				TypezID:  "bool"},
 			{
 				Repeated: true,
 				Name:     "fInt64",
+				ID:       "..Fake.fInt64",
 				JSONName: "fInt64",
 				Typez:    api.TypezInt64,
 				TypezID:  "int64"},
 			{
 				Repeated: true,
 				Name:     "fInt32",
+				ID:       "..Fake.fInt32",
 				JSONName: "fInt32",
 				Typez:    api.TypezInt32,
 				TypezID:  "int32"},
 			{
 				Repeated: true,
 				Name:     "fUInt32",
+				ID:       "..Fake.fUInt32",
 				JSONName: "fUInt32",
 				Typez:    api.TypezUint32,
 				TypezID:  "uint32"},
 			{
 				Repeated: true,
 				Name:     "fString",
+				ID:       "..Fake.fString",
 				JSONName: "fString",
 				Typez:    api.TypezString,
 				TypezID:  "string"},
 			{
 				Repeated: true,
 				Name:     "fSInt64",
+				ID:       "..Fake.fSInt64",
 				JSONName: "fSInt64",
 				Typez:    api.TypezInt64,
 				TypezID:  "int64"},
 			{
 				Repeated: true,
 				Name:     "fSUInt64",
+				ID:       "..Fake.fSUInt64",
 				JSONName: "fSUInt64",
 				Typez:    api.TypezUint64,
 				TypezID:  "uint64"},
 			{
 				Repeated: true,
 				Name:     "fDuration",
+				ID:       "..Fake.fDuration",
 				JSONName: "fDuration",
 				Typez:    api.TypezMessage,
 				TypezID:  ".google.protobuf.Duration",
@@ -313,6 +336,7 @@ func TestOpenAPI_ArrayTypes(t *testing.T) {
 			{
 				Repeated: true,
 				Name:     "fTimestamp",
+				ID:       "..Fake.fTimestamp",
 				JSONName: "fTimestamp",
 				Typez:    api.TypezMessage,
 				TypezID:  ".google.protobuf.Timestamp",
@@ -320,6 +344,7 @@ func TestOpenAPI_ArrayTypes(t *testing.T) {
 			{
 				Repeated: true,
 				Name:     "fFieldMask",
+				ID:       "..Fake.fFieldMask",
 				JSONName: "fFieldMask",
 				Typez:    api.TypezMessage,
 				TypezID:  ".google.protobuf.FieldMask",
@@ -327,6 +352,7 @@ func TestOpenAPI_ArrayTypes(t *testing.T) {
 			{
 				Repeated: true,
 				Name:     "fBytes",
+				ID:       "..Fake.fBytes",
 				JSONName: "fBytes",
 				Typez:    api.TypezBytes,
 				TypezID:  "bytes",
@@ -373,6 +399,7 @@ func TestOpenAPI_SimpleObject(t *testing.T) {
 		Fields: []*api.Field{
 			{
 				Name:          "fObject",
+				ID:            "..Fake.fObject",
 				JSONName:      "fObject",
 				Typez:         api.TypezMessage,
 				TypezID:       "..Foo",
@@ -381,6 +408,7 @@ func TestOpenAPI_SimpleObject(t *testing.T) {
 			},
 			{
 				Name:          "fObjectArray",
+				ID:            "..Fake.fObjectArray",
 				JSONName:      "fObjectArray",
 				Typez:         api.TypezMessage,
 				TypezID:       "..Bar",
@@ -418,7 +446,7 @@ func TestOpenAPI_Any(t *testing.T) {
 		ID:            "..Fake",
 		Documentation: "A test message.",
 		Fields: []*api.Field{
-			{Name: "fMap", JSONName: "fMap", Typez: api.TypezMessage, TypezID: ".google.protobuf.Any", Optional: true},
+			{Name: "fMap", ID: "..Fake.fMap", JSONName: "fMap", Typez: api.TypezMessage, TypezID: ".google.protobuf.Any", Optional: true},
 		},
 	})
 }
@@ -453,6 +481,7 @@ func TestOpenAPI_MapString(t *testing.T) {
 		Fields: []*api.Field{
 			{
 				Name:     "fMap",
+				ID:       "..Fake.fMap",
 				JSONName: "fMap",
 				Typez:    api.TypezMessage,
 				TypezID:  "$map<string, string>",
@@ -460,6 +489,7 @@ func TestOpenAPI_MapString(t *testing.T) {
 			},
 			{
 				Name:     "fMapS32",
+				ID:       "..Fake.fMapS32",
 				JSONName: "fMapS32",
 				Typez:    api.TypezMessage,
 				TypezID:  "$map<string, int32>",
@@ -467,6 +497,7 @@ func TestOpenAPI_MapString(t *testing.T) {
 			},
 			{
 				Name:     "fMapS64",
+				ID:       "..Fake.fMapS64",
 				JSONName: "fMapS64",
 				Typez:    api.TypezMessage,
 				TypezID:  "$map<string, int64>",
@@ -505,6 +536,7 @@ func TestOpenAPI_MapInteger(t *testing.T) {
 		Fields: []*api.Field{
 			{
 				Name:     "fMapI32",
+				ID:       "..Fake.fMapI32",
 				JSONName: "fMapI32",
 				Typez:    api.TypezMessage,
 				TypezID:  "$map<string, int32>",
@@ -513,6 +545,7 @@ func TestOpenAPI_MapInteger(t *testing.T) {
 			},
 			{
 				Name:     "fMapI64",
+				ID:       "..Fake.fMapI64",
 				JSONName: "fMapI64",
 				Typez:    api.TypezMessage,
 				TypezID:  "$map<string, int64>",
@@ -556,6 +589,7 @@ func TestOpenAPI_MakeAPI(t *testing.T) {
 		Fields: []*api.Field{
 			{
 				Name:          "name",
+				ID:            "..Location.name",
 				JSONName:      "name",
 				Documentation: "Resource name for the location, which may vary between implementations." + "\nFor example: `\"projects/example-project/locations/us-east1\"`",
 				Typez:         api.TypezString,
@@ -564,6 +598,7 @@ func TestOpenAPI_MakeAPI(t *testing.T) {
 			},
 			{
 				Name:          "locationId",
+				ID:            "..Location.locationId",
 				JSONName:      "locationId",
 				Documentation: "The canonical id for this location. For example: `\"us-east1\"`.",
 				Typez:         api.TypezString,
@@ -572,6 +607,7 @@ func TestOpenAPI_MakeAPI(t *testing.T) {
 			},
 			{
 				Name:          "displayName",
+				ID:            "..Location.displayName",
 				JSONName:      "displayName",
 				Documentation: `The friendly name for this location, typically a nearby city name.` + "\n" + `For example, "Tokyo".`,
 				Typez:         api.TypezString,
@@ -580,6 +616,7 @@ func TestOpenAPI_MakeAPI(t *testing.T) {
 			},
 			{
 				Name:          "labels",
+				ID:            "..Location.labels",
 				JSONName:      "labels",
 				Documentation: "Cross-service attributes for the location. For example\n\n    {\"cloud.googleapis.com/region\": \"us-east1\"}",
 				Typez:         api.TypezMessage,
@@ -589,6 +626,7 @@ func TestOpenAPI_MakeAPI(t *testing.T) {
 			},
 			{
 				Name:          "metadata",
+				ID:            "..Location.metadata",
 				JSONName:      "metadata",
 				Documentation: `Service-specific metadata. For example the available capacity at the given` + "\n" + `location.`,
 				Typez:         api.TypezMessage,
@@ -610,6 +648,7 @@ func TestOpenAPI_MakeAPI(t *testing.T) {
 		Fields: []*api.Field{
 			{
 				Name:          "locations",
+				ID:            "..ListLocationsResponse.locations",
 				JSONName:      "locations",
 				Documentation: "A list of locations that matches the specified filter in the request.",
 				Typez:         api.TypezMessage,
@@ -618,6 +657,7 @@ func TestOpenAPI_MakeAPI(t *testing.T) {
 			},
 			{
 				Name:          "nextPageToken",
+				ID:            "..ListLocationsResponse.nextPageToken",
 				JSONName:      "nextPageToken",
 				Documentation: "The standard List next-page token.",
 				Typez:         api.TypezString,
@@ -628,6 +668,7 @@ func TestOpenAPI_MakeAPI(t *testing.T) {
 		Pagination: &api.PaginationInfo{
 			NextPageToken: &api.Field{
 				Name:          "nextPageToken",
+				ID:            "..ListLocationsResponse.nextPageToken",
 				JSONName:      "nextPageToken",
 				Documentation: "The standard List next-page token.",
 				Typez:         api.TypezString,
@@ -636,6 +677,7 @@ func TestOpenAPI_MakeAPI(t *testing.T) {
 			},
 			PageableItem: &api.Field{
 				Name:          "locations",
+				ID:            "..ListLocationsResponse.locations",
 				JSONName:      "locations",
 				Documentation: "A list of locations that matches the specified filter in the request.",
 				Typez:         api.TypezMessage,
@@ -655,6 +697,7 @@ func TestOpenAPI_MakeAPI(t *testing.T) {
 		Fields: []*api.Field{
 			{
 				Name:          "project",
+				ID:            "..Service.ListLocationsRequest.project",
 				JSONName:      "project",
 				Documentation: "The `{project}` component of the target path.\n\nThe full target path will be in the form `/v1/projects/{project}/locations`.",
 				Typez:         api.TypezString,
@@ -663,6 +706,7 @@ func TestOpenAPI_MakeAPI(t *testing.T) {
 			},
 			{
 				Name:     "filter",
+				ID:       "..Service.ListLocationsRequest.filter",
 				JSONName: "filter",
 				Documentation: "A filter to narrow down results to a preferred subset." +
 					"\nThe filtering language accepts strings like `\"displayName=tokyo" +
@@ -674,6 +718,7 @@ func TestOpenAPI_MakeAPI(t *testing.T) {
 			},
 			{
 				Name:          "pageSize",
+				ID:            "..Service.ListLocationsRequest.pageSize",
 				JSONName:      "pageSize",
 				Documentation: "The maximum number of results to return.\nIf not set, the service selects a default.",
 				Typez:         api.TypezInt32,
@@ -682,6 +727,7 @@ func TestOpenAPI_MakeAPI(t *testing.T) {
 			},
 			{
 				Name:          "pageToken",
+				ID:            "..Service.ListLocationsRequest.pageToken",
 				JSONName:      "pageToken",
 				Documentation: "A page token received from the `next_page_token` field in the response.\nSend that page token to receive the subsequent page.",
 				Typez:         api.TypezString,
@@ -745,6 +791,7 @@ func TestOpenAPI_MakeAPI(t *testing.T) {
 		},
 		Pagination: &api.Field{
 			Name:          "pageToken",
+			ID:            "..Service.ListLocationsRequest.pageToken",
 			JSONName:      "pageToken",
 			Documentation: "A page token received from the `next_page_token` field in the response.\nSend that page token to receive the subsequent page.",
 			Typez:         api.TypezString,
@@ -856,6 +903,7 @@ func TestOpenAPI_SyntheticMessageWithExistingBody(t *testing.T) {
 		Fields: []*api.Field{
 			{
 				Name:          "project",
+				ID:            "..Service.SetIamPolicyByProjectAndLocationAndSecretRequest.project",
 				JSONName:      "project",
 				Documentation: "The `{project}` component of the target path.\n\nThe full target path will be in the form `/v1/projects/{project}/locations/{location}/secrets/{secret}:setIamPolicy`.",
 				Typez:         api.TypezString,
@@ -864,6 +912,7 @@ func TestOpenAPI_SyntheticMessageWithExistingBody(t *testing.T) {
 			},
 			{
 				Name:          "location",
+				ID:            "..Service.SetIamPolicyByProjectAndLocationAndSecretRequest.location",
 				JSONName:      "location",
 				Documentation: "The `{location}` component of the target path.\n\nThe full target path will be in the form `/v1/projects/{project}/locations/{location}/secrets/{secret}:setIamPolicy`.",
 				Typez:         api.TypezString,
@@ -872,6 +921,7 @@ func TestOpenAPI_SyntheticMessageWithExistingBody(t *testing.T) {
 			},
 			{
 				Name:          "secret",
+				ID:            "..Service.SetIamPolicyByProjectAndLocationAndSecretRequest.secret",
 				JSONName:      "secret",
 				Documentation: "The `{secret}` component of the target path.\n\nThe full target path will be in the form `/v1/projects/{project}/locations/{location}/secrets/{secret}:setIamPolicy`.",
 				Typez:         api.TypezString,
@@ -880,6 +930,7 @@ func TestOpenAPI_SyntheticMessageWithExistingBody(t *testing.T) {
 			},
 			{
 				Name:          "body",
+				ID:            "..Service.SetIamPolicyByProjectAndLocationAndSecretRequest.body",
 				JSONName:      "body",
 				Documentation: "The request body.",
 				Typez:         api.TypezMessage,
@@ -903,6 +954,7 @@ func TestOpenAPI_SyntheticMessageWithExistingBody(t *testing.T) {
 		Fields: []*api.Field{
 			{
 				Name:          "project",
+				ID:            "..Service.SetIamPolicyRequest.project",
 				JSONName:      "project",
 				Documentation: "The `{project}` component of the target path.\n\nThe full target path will be in the form `/v1/projects/{project}/secrets/{secret}:setIamPolicy`.",
 				Typez:         api.TypezString,
@@ -911,6 +963,7 @@ func TestOpenAPI_SyntheticMessageWithExistingBody(t *testing.T) {
 			},
 			{
 				Name:          "secret",
+				ID:            "..Service.SetIamPolicyRequest.secret",
 				JSONName:      "secret",
 				Documentation: "The `{secret}` component of the target path.\n\nThe full target path will be in the form `/v1/projects/{project}/secrets/{secret}:setIamPolicy`.",
 				Typez:         api.TypezString,
@@ -919,6 +972,7 @@ func TestOpenAPI_SyntheticMessageWithExistingBody(t *testing.T) {
 			},
 			{
 				Name:          "body",
+				ID:            "..Service.SetIamPolicyRequest.body",
 				JSONName:      "body",
 				Documentation: "The request body.",
 				Typez:         api.TypezMessage,
@@ -979,6 +1033,7 @@ func TestOpenAPI_Pagination(t *testing.T) {
 				},
 				Pagination: &api.Field{
 					Name:          "pageToken",
+					ID:            "..Service.ListFoosRequest.pageToken",
 					JSONName:      "pageToken",
 					Documentation: "The `{pageToken}` component of the target path.\n\nThe full target path will be in the form `/v1/projects/{project}/foos`.",
 					Typez:         api.TypezString,
@@ -999,6 +1054,7 @@ func TestOpenAPI_Pagination(t *testing.T) {
 		Fields: []*api.Field{
 			{
 				Name:     "nextPageToken",
+				ID:       "..ListFoosResponse.nextPageToken",
 				Typez:    9,
 				TypezID:  "string",
 				JSONName: "nextPageToken",
@@ -1006,6 +1062,7 @@ func TestOpenAPI_Pagination(t *testing.T) {
 			},
 			{
 				Name:     "secrets",
+				ID:       "..ListFoosResponse.secrets",
 				Typez:    api.TypezMessage,
 				TypezID:  "..Foo",
 				JSONName: "secrets",
@@ -1015,6 +1072,7 @@ func TestOpenAPI_Pagination(t *testing.T) {
 		Pagination: &api.PaginationInfo{
 			NextPageToken: &api.Field{
 				Name:     "nextPageToken",
+				ID:       "..ListFoosResponse.nextPageToken",
 				Typez:    9,
 				TypezID:  "string",
 				JSONName: "nextPageToken",
@@ -1022,6 +1080,7 @@ func TestOpenAPI_Pagination(t *testing.T) {
 			},
 			PageableItem: &api.Field{
 				Name:     "secrets",
+				ID:       "..ListFoosResponse.secrets",
 				Typez:    api.TypezMessage,
 				TypezID:  "..Foo",
 				JSONName: "secrets",
@@ -1074,6 +1133,7 @@ func TestOpenAPI_AutoPopulated(t *testing.T) {
 
 	request_id := &api.Field{
 		Name:          "requestId",
+		ID:            ".test.TestService.CreateFooRequest.requestId",
 		JSONName:      "requestId",
 		Documentation: "Test-only Description",
 		Typez:         api.TypezString,
@@ -1083,6 +1143,7 @@ func TestOpenAPI_AutoPopulated(t *testing.T) {
 	}
 	request_id_explicit := &api.Field{
 		Name:          "requestIdExplicitlyNotRequired",
+		ID:            ".test.TestService.CreateFooRequest.requestIdExplicitlyNotRequired",
 		JSONName:      "requestIdExplicitlyNotRequired",
 		Documentation: "Test-only Description",
 		Typez:         api.TypezString,
@@ -1099,6 +1160,7 @@ func TestOpenAPI_AutoPopulated(t *testing.T) {
 		Fields: []*api.Field{
 			{
 				Name:          "project",
+				ID:            ".test.TestService.CreateFooRequest.project",
 				JSONName:      "project",
 				Documentation: "The `{project}` component of the target path.\n\nThe full target path will be in the form `/v1/projects/{project}/foos`.",
 				Typez:         api.TypezString,
@@ -1107,6 +1169,7 @@ func TestOpenAPI_AutoPopulated(t *testing.T) {
 			},
 			{
 				Name:          "fooId",
+				ID:            ".test.TestService.CreateFooRequest.fooId",
 				JSONName:      "fooId",
 				Documentation: "Test-only Description",
 				Typez:         api.TypezString,
@@ -1117,6 +1180,7 @@ func TestOpenAPI_AutoPopulated(t *testing.T) {
 			request_id_explicit,
 			{
 				Name:          "notRequestIdRequired",
+				ID:            ".test.TestService.CreateFooRequest.notRequestIdRequired",
 				Documentation: "Test-only Description",
 				Typez:         api.TypezString,
 				TypezID:       "string",
@@ -1125,6 +1189,7 @@ func TestOpenAPI_AutoPopulated(t *testing.T) {
 			},
 			{
 				Name:          "notRequestIdMissingFormat",
+				ID:            ".test.TestService.CreateFooRequest.notRequestIdMissingFormat",
 				Documentation: "Test-only Description",
 				Typez:         api.TypezString,
 				TypezID:       "string",
@@ -1133,6 +1198,7 @@ func TestOpenAPI_AutoPopulated(t *testing.T) {
 			},
 			{
 				Name:          "notRequestIdMissingServiceConfig",
+				ID:            ".test.TestService.CreateFooRequest.notRequestIdMissingServiceConfig",
 				Documentation: "Test-only Description",
 				Typez:         api.TypezString,
 				TypezID:       "string",
@@ -1233,6 +1299,7 @@ func TestOpenAPI_Deprecated(t *testing.T) {
 		Fields: []*api.Field{
 			{
 				Name:     "name",
+				ID:       "..Response.name",
 				Typez:    api.TypezString,
 				TypezID:  "string",
 				JSONName: "name",
@@ -1240,6 +1307,7 @@ func TestOpenAPI_Deprecated(t *testing.T) {
 			},
 			{
 				Name:       "other",
+				ID:         "..Response.other",
 				Typez:      api.TypezString,
 				TypezID:    "string",
 				JSONName:   "other",
@@ -1261,6 +1329,7 @@ func TestOpenAPI_Deprecated(t *testing.T) {
 		Fields: []*api.Field{
 			{
 				Name:     "name",
+				ID:       "..DeprecatedMessage.name",
 				Typez:    api.TypezString,
 				TypezID:  "string",
 				JSONName: "name",

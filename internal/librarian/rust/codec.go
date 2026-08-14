@@ -258,6 +258,11 @@ func moduleToModelConfig(library *config.Library, module *config.RustModule, src
 		resourceNameHeuristic = *module.ResourceNameHeuristic
 	}
 
+	skippedIDs := module.SkippedIds
+	if len(skippedIDs) == 0 && library.Rust != nil && len(library.Rust.SkippedIds) > 0 {
+		skippedIDs = library.Rust.SkippedIds
+	}
+
 	modelCfg := &parser.ModelConfig{
 		Language:            config.LanguageRust,
 		SpecificationFormat: specificationFormat,
@@ -269,7 +274,7 @@ func moduleToModelConfig(library *config.Library, module *config.RustModule, src
 		Override: api.ModelOverride{
 			Title:       title,
 			IncludedIDs: module.IncludedIds,
-			SkippedIDs:  module.SkippedIds,
+			SkippedIDs:  skippedIDs,
 		},
 		ResourceNameHeuristic: resourceNameHeuristic,
 	}

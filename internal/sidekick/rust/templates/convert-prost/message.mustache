@@ -31,10 +31,6 @@ impl gaxi::prost::ToProto<{{Codec.RelativeName}}> for {{Codec.QualifiedName}} {
         Ok(Self::Output {
             {{#Codec.BasicFields}}
             {{#Singular}}
-            {{#IsWktAny}}
-            {{Codec.FieldName}}: None,
-            {{/IsWktAny}}
-            {{^IsWktAny}}
             {{^Optional}}
             {{Codec.FieldName}}: self.{{Codec.FieldName}}.to_proto()?,
             {{/Optional}}
@@ -46,7 +42,6 @@ impl gaxi::prost::ToProto<{{Codec.RelativeName}}> for {{Codec.QualifiedName}} {
             {{Codec.FieldName}}: self.{{Codec.FieldName}}.map(|v| v.to_proto().map(std::boxed::Box::new)).transpose()?,
             {{/Codec.MapToBoxed}}
             {{/Optional}}
-            {{/IsWktAny}}
             {{/Singular}}
             {{! A sequence or map with `google.protobuf.Any` is unlikely. If it ever happens, we see a break and fix it with more understanding }}
             {{#Repeated}}
@@ -66,6 +61,9 @@ impl gaxi::prost::ToProto<{{Codec.RelativeName}}> for {{Codec.QualifiedName}} {
             {{#OneOfs}}
             {{Codec.FieldName}}: self.{{Codec.FieldName}}.map(|v| v.to_proto()).transpose()?,
             {{/OneOfs}}
+            {{#HasSkippedFields}}
+            ..Self::Output::default()
+            {{/HasSkippedFields}}
         })
     }
 }
@@ -77,14 +75,12 @@ impl gaxi::prost::FromProto<{{Codec.QualifiedName}}> for {{Codec.RelativeName}} 
             {{Codec.QualifiedName}}::new()
                 {{#Codec.BasicFields}}
                 {{#Singular}}
-                {{^IsWktAny}}
                 {{^Optional}}
                 .set_{{Codec.SetterName}}(self.{{Codec.FieldName}})
                 {{/Optional}}
                 {{#Optional}}
                 .set_or_clear_{{Codec.SetterName}}(self.{{Codec.FieldName}}.map(|v| v.cnv()).transpose()?)
                 {{/Optional}}
-                {{/IsWktAny}}
                 {{/Singular}}
                 {{! A sequence or map with `google.protobuf.Any` is unlikely. If it ever happens, we see a break and fix it with more understanding }}
                 {{#Repeated}}

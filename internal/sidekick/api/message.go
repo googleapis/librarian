@@ -32,6 +32,11 @@ type Message struct {
 	// OpenAPI specifications. The query and request parameters for each method
 	// are grouped into a synthetic message.
 	SyntheticRequest bool
+	// If true, some of the fields were removed.
+	//
+	// When generating Sidekick-gencode <-> Protobuf-gencode converters this is useful to know because
+	// the emitted code for the protos may need additional initializers.
+	SkippedFields []*Field
 	// If true, this message is a placeholder / doppelganger for a `api.Service`.
 	//
 	// These messages are created by sidekick when parsing Discovery docs and
@@ -69,4 +74,9 @@ type Message struct {
 // HasFields returns true if the message has fields.
 func (m *Message) HasFields() bool {
 	return len(m.Fields) != 0
+}
+
+// HasSkippedFields returns true if the message has fields affected by the `skipped_ids` configuration.
+func (m *Message) HasSkippedFields() bool {
+	return len(m.SkippedFields) != 0
 }

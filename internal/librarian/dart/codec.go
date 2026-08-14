@@ -50,11 +50,13 @@ func toModelConfig(library *config.Library, ch *config.API, srcs *sources.Source
 
 	title := svcConfig.Title
 	var name string
+	var skippedIDs []string
 	if library.Dart != nil {
 		name = library.Dart.NameOverride
 		if library.Dart.TitleOverride != "" {
 			title = library.Dart.TitleOverride
 		}
+		skippedIDs = library.Dart.SkippedIds
 	}
 
 	modelConfig := &parser.ModelConfig{
@@ -69,6 +71,7 @@ func toModelConfig(library *config.Library, ch *config.API, srcs *sources.Source
 			Name:        name,
 			Description: svcConfig.Description,
 			Title:       title,
+			SkippedIDs:  skippedIDs,
 		},
 	}
 	return modelConfig, nil

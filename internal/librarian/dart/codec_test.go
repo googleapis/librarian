@@ -542,6 +542,32 @@ func TestToModelConfig(t *testing.T) {
 			},
 		},
 		{
+			name: "with skipped ids",
+			library: &config.Library{
+				Dart: &config.DartPackage{
+					SkippedIds: []string{".google.cloud.secretmanager.v1.Secret.name"},
+				},
+			},
+			channel: &config.API{
+				Path: "google/cloud/functions/v2",
+			},
+			googleapisDir: googleapisDir,
+			want: &parser.ModelConfig{
+				SpecificationFormat: config.SpecProtobuf,
+				SpecificationSource: "google/cloud/functions/v2",
+				Source: &sources.SourceConfig{
+					Sources: &sources.Sources{
+						Googleapis: googleapisDir,
+					},
+					ActiveRoots: []string{"googleapis"},
+				},
+				Codec: map[string]string{},
+				Override: api.ModelOverride{
+					SkippedIDs: []string{".google.cloud.secretmanager.v1.Secret.name"},
+				},
+			},
+		},
+		{
 			name: "unsupported specification format",
 			library: &config.Library{
 				SpecificationFormat: "openapi",

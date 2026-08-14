@@ -377,6 +377,33 @@ func TestLibraryToModelConfig(t *testing.T) {
 			},
 		},
 		{
+			name: "with skipped ids",
+			library: &config.Library{
+				Name:  "google-cloud-secretmanager",
+				Roots: []string{"googleapis"},
+				Rust: &config.RustCrate{
+					SkippedIds: []string{".google.cloud.secretmanager.v1.Secret.name"},
+				},
+			},
+			api: &config.API{
+				Path: "google/cloud/secretmanager/v1",
+			},
+			want: &parser.ModelConfig{
+				Language:            config.LanguageRust,
+				SpecificationFormat: config.SpecProtobuf,
+				SpecificationSource: "google/cloud/secretmanager/v1",
+				ServiceConfig:       "google/cloud/secretmanager/v1/secretmanager_v1.yaml",
+				Source: &sources.SourceConfig{
+					ActiveRoots: []string{"googleapis"},
+				},
+				Override: api.ModelOverride{
+					Title:       "Secret Manager API",
+					Description: "Stores sensitive data such as API keys, passwords, and certificates.\nProvides convenience while improving security.",
+					SkippedIDs:  []string{".google.cloud.secretmanager.v1.Secret.name"},
+				},
+			},
+		},
+		{
 			name: "with openapi format",
 			library: &config.Library{
 				Name:                "secretmanager-openapi-v1",
@@ -1460,4 +1487,51 @@ func TestBuildCodec(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestModuleToModelConfig_SkippedIds(t *testing.T) {
+	srcs := &sources.Sources{
+		Googleapis: absPath(t, googleapisRoot),
+	}
+
+	t.Run("module level skipped_ids", func(t *testing.T) {
+		library := &config.Library{
+			Name: "google-cloud-secretmanager",
+			Rust: &config.RustCrate{
+				SkippedIds: []string{".google.cloud.secretmanager.v1.Secret.name"},
+			},
+		}
+		module := &config.RustModule{
+			APIPath:    "google/cloud/secretmanager/v1",
+			SkippedIds: []string{".google.cloud.secretmanager.v1.Secret.labels"},
+		}
+		modelCfg, err := moduleToModelConfig(library, module, srcs, nil)
+		if err != nil {
+			t.Fatal(err)
+		}
+		expected := []string{".google.cloud.secretmanager.v1.Secret.labels"}
+		if diff := cmp.Diff(expected, modelCfg.Override.SkippedIDs); diff != "" {
+			t.Errorf("moduleToModelConfig() mismatch (-want +got):\n%s", diff)
+		}
+	})
+
+	t.Run("library level fallback skipped_ids", func(t *testing.T) {
+		library := &config.Library{
+			Name: "google-cloud-secretmanager",
+			Rust: &config.RustCrate{
+				SkippedIds: []string{".google.cloud.secretmanager.v1.Secret.name"},
+			},
+		}
+		module := &config.RustModule{
+			APIPath: "google/cloud/secretmanager/v1",
+		}
+		modelCfg, err := moduleToModelConfig(library, module, srcs, nil)
+		if err != nil {
+			t.Fatal(err)
+		}
+		expected := []string{".google.cloud.secretmanager.v1.Secret.name"}
+		if diff := cmp.Diff(expected, modelCfg.Override.SkippedIDs); diff != "" {
+			t.Errorf("moduleToModelConfig() mismatch (-want +got):\n%s", diff)
+		}
+	})
 }
