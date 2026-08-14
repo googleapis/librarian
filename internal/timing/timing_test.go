@@ -88,12 +88,10 @@ func TestSummaryContainsPhases(t *testing.T) {
 func TestConcurrentRecord(t *testing.T) {
 	c := New()
 	var wg sync.WaitGroup
-	for i := 0; i < 50; i++ {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
+	for range 50 {
+		wg.Go(func() {
 			c.Record("shared", time.Millisecond)
-		}()
+		})
 	}
 	wg.Wait()
 	c.mu.Lock()

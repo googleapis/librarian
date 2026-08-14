@@ -60,16 +60,17 @@ type (
 // The cached *Service is shared, so callers must treat it as read-only; all
 // current callers do (Find populates a fresh *API via getters, and no caller
 // mutates the returned Service).
+// The cache value is an anonymous struct on purpose: a named package-level
+// struct here would be picked up by the sdk.yaml schema doc generator (which
+// documents every named struct in this package).
 var (
 	readCacheMu sync.RWMutex
-	readCache   = make(map[string]readCacheEntry)
+	readCache   = map[string]struct {
+		modTime time.Time
+		size    int64
+		svc     *Service
+	}{}
 )
-
-type readCacheEntry struct {
-	modTime time.Time
-	size    int64
-	svc     *Service
-}
 
 // Read reads a service config from a YAML file and returns it as a Service
 // proto. The file is parsed as YAML, converted to JSON, and then unmarshaled
@@ -112,7 +113,11 @@ func Read(serviceConfigPath string) (*Service, error) {
 
 	if statErr == nil {
 		readCacheMu.Lock()
-		readCache[serviceConfigPath] = readCacheEntry{modTime: info.ModTime(), size: info.Size(), svc: cfg}
+		readCache[serviceConfigPath] = struct {
+			modTime time.Time
+			size    int64
+			svc     *Service
+		}{modTime: info.ModTime(), size: info.Size(), svc: cfg}
 		readCacheMu.Unlock()
 	}
 	return cfg, nil

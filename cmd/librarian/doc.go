@@ -119,7 +119,10 @@ Examples:
 
 Flags:
 
-	--all       generate all libraries
+	--all               generate all libraries
+	--timing            print a per-phase timing summary to stderr after generation
+	--jobs int, -j int  maximum number of libraries to generate concurrently (default: number of CPUs) (default: 0)
+	--changed-only      skip regenerating libraries whose inputs are unchanged (Java only; opt-in)
 
 A typical librarian workflow for regenerating every library against the
 latest API definitions is:
