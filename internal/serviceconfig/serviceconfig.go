@@ -26,6 +26,8 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"sync"
+	"time"
 
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/yaml"
@@ -50,10 +52,39 @@ type (
 	OAuthRequirements  = serviceconfig.OAuthRequirements
 )
 
+// readCache memoizes parsed service configs by path. Parsing a service config
+// (YAML -> JSON -> protojson) costs hundreds of microseconds and is repeated
+// per API — several times per API for Java. Entries are validated against the
+// file's size and modtime so an edit during a run invalidates the cache.
+//
+// The cached *Service is shared, so callers must treat it as read-only; all
+// current callers do (Find populates a fresh *API via getters, and no caller
+// mutates the returned Service).
+var (
+	readCacheMu sync.RWMutex
+	readCache   = make(map[string]readCacheEntry)
+)
+
+type readCacheEntry struct {
+	modTime time.Time
+	size    int64
+	svc     *Service
+}
+
 // Read reads a service config from a YAML file and returns it as a Service
 // proto. The file is parsed as YAML, converted to JSON, and then unmarshaled
-// into a Service proto.
+// into a Service proto. Results are memoized per path (see readCache).
 func Read(serviceConfigPath string) (*Service, error) {
+	info, statErr := os.Stat(serviceConfigPath)
+	if statErr == nil {
+		readCacheMu.RLock()
+		entry, ok := readCache[serviceConfigPath]
+		readCacheMu.RUnlock()
+		if ok && entry.size == info.Size() && entry.modTime.Equal(info.ModTime()) {
+			return entry.svc, nil
+		}
+	}
+
 	y, err := os.ReadFile(serviceConfigPath)
 	if err != nil {
 		return nil, fmt.Errorf("%w %q: %w", ErrReadServiceConfig, serviceConfigPath, err)
@@ -77,6 +108,12 @@ func Read(serviceConfigPath string) (*Service, error) {
 	// it's an invalid config.
 	if cfg.GetName() == "" {
 		return nil, fmt.Errorf("missing name in service config %q", serviceConfigPath)
+	}
+
+	if statErr == nil {
+		readCacheMu.Lock()
+		readCache[serviceConfigPath] = readCacheEntry{modTime: info.ModTime(), size: info.Size(), svc: cfg}
+		readCacheMu.Unlock()
 	}
 	return cfg, nil
 }
