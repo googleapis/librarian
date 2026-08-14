@@ -45,7 +45,7 @@ func TestBigQueryQueryFieldOverride(t *testing.T) {
 	jcMsg := newTestMsgWithQuery("JobConfiguration")
 
 	model := api.NewTestAPI([]*api.Message{qrMsg, jcqMsg, jcMsg}, []*api.Enum{}, []*api.Service{})
-	builder, err := newRunQuery(c, model, nil)
+	builder, err := newQueryBuilder(c, model, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -111,7 +111,7 @@ func TestBigQueryFiltering(t *testing.T) {
 	})
 
 	model := api.NewTestAPI([]*api.Message{qrMsg, jcqMsg, jcMsg}, []*api.Enum{}, []*api.Service{})
-	builder, err := newRunQuery(c, model, []string{"skip", ".google.cloud.bigquery.v2.JobConfigurationQuery.skip"})
+	builder, err := newQueryBuilder(c, model, []string{"skip", ".google.cloud.bigquery.v2.JobConfigurationQuery.skip"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -179,7 +179,7 @@ func TestBigQuerySyntheticMessages(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	builder, err := newRunQuery(c, model, nil)
+	builder, err := newQueryBuilder(c, model, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -204,17 +204,17 @@ func TestBigQuerySyntheticMessages(t *testing.T) {
 		}
 	}
 
-	// 2. Verify builder() output has modified basic field annotations
-	runQuery, err := runQueryBuilder(builder)
+	// Verify builder() output has modified basic field annotations
+	queryBuilder, err := queryBuilder(builder)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if runQuery.Name != "RunQuery" {
-		t.Errorf("expected name 'RunQuery', got %q", runQuery.Name)
+	if queryBuilder.Name != "Query" {
+		t.Errorf("expected name 'Query', got %q", queryBuilder.Name)
 	}
-	msgAnn, ok := runQuery.Codec.(*messageAnnotation)
+	msgAnn, ok := queryBuilder.Codec.(*messageAnnotation)
 	if !ok {
-		t.Fatalf("expected messageAnnotation on RunQuery msg")
+		t.Fatalf("expected messageAnnotation on Query msg")
 	}
 	if len(msgAnn.BasicFields) != 40 {
 		t.Fatalf("expected 40 basic field annotations, got %d", len(msgAnn.BasicFields))
@@ -226,24 +226,24 @@ func TestBigQuerySyntheticMessages(t *testing.T) {
 	if fAnn.FieldName != "request.field_00" {
 		t.Errorf("expected FieldName to be 'request.field_00', got %q", fAnn.FieldName)
 	}
-	if fAnn.FQMessageName != "crate::model::RunQueryRequest" {
-		t.Errorf("expected FQMessageName to be 'crate::model::RunQueryRequest', got %q", fAnn.FQMessageName)
+	if fAnn.FQMessageName != "crate::model::QueryRequest" {
+		t.Errorf("expected FQMessageName to be 'crate::model::QueryRequest', got %q", fAnn.FQMessageName)
 	}
 
-	runQueryRequest, err := builder.createSyntheticMessage("RunQueryRequest")
+	queryRequest, err := queryBuilder.createSyntheticMessage("QueryRequest")
 	if err != nil {
 		t.Fatal(err)
 	}
-	if runQueryRequest.Name != "RunQueryRequest" {
-		t.Errorf("expected name 'RunQueryRequest', got %q", runQueryRequest.Name)
+	if queryRequest.Name != "QueryRequest" {
+		t.Errorf("expected name 'QueryRequest', got %q", queryRequest.Name)
 	}
-	for _, f := range runQueryRequest.Fields {
+	for _, f := range queryRequest.Fields {
 		wantID := fmt.Sprintf(".google.cloud.bigquery.v2.QueryRequest.%s", f.Name)
 		if f.ID != wantID {
 			t.Errorf("expected field ID %q, got %q", wantID, f.ID)
 		}
 	}
-	reqMsgAnn, ok := runQueryRequest.Codec.(*messageAnnotation)
+	reqMsgAnn, ok := queryRequest.Codec.(*messageAnnotation)
 	if !ok {
 		t.Fatalf("expected messageAnnotation on RunQueryRequest msg")
 	}
@@ -281,7 +281,7 @@ func TestBigQueryQueryMetadata(t *testing.T) {
 		}
 	}
 
-	t.Run("QueryMetadata", func(t *testing.T) {
+	t.Run("CompleteQueryMetadata", func(t *testing.T) {
 		gqrMsg := newTestMsg("GetQueryResultsResponse", []*api.Field{
 			newTestField("job_reference", ".google.cloud.bigquery.v2.GetQueryResultsResponse.job_reference"),
 			newTestField("shared_field", ".google.cloud.bigquery.v2.GetQueryResultsResponse.shared_field"),
@@ -296,13 +296,13 @@ func TestBigQueryQueryMetadata(t *testing.T) {
 		model := api.NewTestAPI([]*api.Message{gqrMsg, qrMsg}, []*api.Enum{}, []*api.Service{})
 		skipped := []string{"skip_by_name", ".google.cloud.bigquery.v2.GetQueryResultsResponse.skip_by_id"}
 
-		qm, err := newQueryMetadata(c, model, skipped)
+		cqm, err := newCompleteQueryMetadata(c, model, skipped)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
 
 		var names []string
-		for _, fg := range qm.fieldGroupList() {
+		for _, fg := range cqm.fieldGroupList() {
 			names = append(names, fg.name)
 		}
 		wantNames := []string{"job_reference", "query_id", "shared_field"}
@@ -311,7 +311,7 @@ func TestBigQueryQueryMetadata(t *testing.T) {
 		}
 	})
 
-	t.Run("QueryCreationMetadata", func(t *testing.T) {
+	t.Run("QueryMetadata", func(t *testing.T) {
 		jobMsg := newTestMsg("Job", []*api.Field{
 			newTestField("job_ref", ".google.cloud.bigquery.v2.Job.job_ref"),
 			newTestField("common_field", ".google.cloud.bigquery.v2.Job.common_field"),
@@ -326,13 +326,13 @@ func TestBigQueryQueryMetadata(t *testing.T) {
 		model := api.NewTestAPI([]*api.Message{jobMsg, qrMsg}, []*api.Enum{}, []*api.Service{})
 		skipped := []string{"skip_by_name", ".google.cloud.bigquery.v2.Job.skip_by_id"}
 
-		qcm, err := newQueryCreationMetadata(c, model, skipped)
+		qm, err := newQueryMetadata(c, model, skipped)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
 
 		var names []string
-		for _, fg := range qcm.fieldGroupList() {
+		for _, fg := range qm.fieldGroupList() {
 			names = append(names, fg.name)
 		}
 		wantNames := []string{"common_field", "job_ref", "kind"}

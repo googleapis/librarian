@@ -25,68 +25,69 @@ limitations under the License.
 {{#Codec.Model.Codec.DisabledClippyWarnings}}
 #![allow(clippy::{{.}})]
 {{/Codec.Model.Codec.DisabledClippyWarnings}}
-{{#Codec.RunQueryRequestMsg}}
+{{#Codec.QueryBuilderRequestMsg}}
 {{> /templates/common/message}}
+
 mod debug {
     {{> /templates/common/model/debug/message}}
 }
-{{/Codec.RunQueryRequestMsg}}
+{{/Codec.QueryBuilderRequestMsg}}
 
-impl RunQueryRequest {
+impl QueryBuilderRequest {
     {{! Clippy doesn't like this expression since false is not needed for the bool expression }}
     #[allow(clippy::nonminimal_bool)]
     pub(crate) fn force_job_path(&self) -> bool {
         false
-        {{#Codec.RunQueryFields}}
+        {{#Codec.QueryBuilderFields}}
         {{#JobOnly}}
         || !wkt::internal::is_default(&self.{{FieldName}})
         {{/JobOnly}}
-        {{/Codec.RunQueryFields}}
+        {{/Codec.QueryBuilderFields}}
     }
 }
 
-impl std::convert::From<RunQueryRequest> for google_cloud_bigquery_v2::model::QueryRequest {
-    fn from(req: RunQueryRequest) -> Self {
+impl std::convert::From<QueryBuilderRequest> for google_cloud_bigquery_v2::model::QueryRequest {
+    fn from(req: QueryBuilderRequest) -> Self {
         let mut out = Self::default();
-        {{#Codec.RunQueryFields}}
+        {{#Codec.QueryBuilderFields}}
         {{#QueryRequest}}
         out.{{FieldName}} = req.{{FieldName}};
         {{/QueryRequest}}
-        {{/Codec.RunQueryFields}}
+        {{/Codec.QueryBuilderFields}}
         out
     }
 }
 
-impl std::convert::From<RunQueryRequest> for google_cloud_bigquery_v2::model::JobConfigurationQuery {
-    fn from(req: RunQueryRequest) -> Self {
+impl std::convert::From<QueryBuilderRequest> for google_cloud_bigquery_v2::model::JobConfigurationQuery {
+    fn from(req: QueryBuilderRequest) -> Self {
         let mut out = Self::default();
-        {{#Codec.RunQueryFields}}
+        {{#Codec.QueryBuilderFields}}
         {{#JobConfigurationQuery}}
         out.{{FieldName}} = req.{{FieldName}};
         {{/JobConfigurationQuery}}
-        {{/Codec.RunQueryFields}}
+        {{/Codec.QueryBuilderFields}}
         out
     }
 }
 
-impl std::convert::From<RunQueryRequest> for google_cloud_bigquery_v2::model::JobConfiguration {
+impl std::convert::From<QueryBuilderRequest> for google_cloud_bigquery_v2::model::JobConfiguration {
     {{! The `dry_run` field is a `bool` in `QueryRequest`, but a `wkt::BoolValue` in `JobConfiguration`. We use `into()` to normalize these. }}
     {{! Clippy complains about the other fields that don't require this conversion, hence this allowance. }}
     #[allow(clippy::useless_conversion)]
-    fn from(req: RunQueryRequest) -> Self {
+    fn from(req: QueryBuilderRequest) -> Self {
         let mut query = google_cloud_bigquery_v2::model::JobConfigurationQuery::default();
-        {{#Codec.RunQueryFields}}
+        {{#Codec.QueryBuilderFields}}
         {{#JobConfigurationQuery}}
         query.{{FieldName}} = req.{{FieldName}};
         {{/JobConfigurationQuery}}
-        {{/Codec.RunQueryFields}}
+        {{/Codec.QueryBuilderFields}}
         let mut out = Self::default();
         out.query = Some(query);
-        {{#Codec.RunQueryFields}}
+        {{#Codec.QueryBuilderFields}}
         {{#JobConfiguration}}
         out.{{FieldName}} = req.{{FieldName}}.into();
         {{/JobConfiguration}}
-        {{/Codec.RunQueryFields}}
+        {{/Codec.QueryBuilderFields}}
         out
     }
 }

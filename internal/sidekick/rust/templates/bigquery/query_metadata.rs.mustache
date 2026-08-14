@@ -27,18 +27,19 @@ limitations under the License.
 {{/Codec.Model.Codec.DisabledClippyWarnings}}
 {{#Codec.QueryMetadataMsg}}
 {{> /templates/common/message}}
+
 mod debug {
     {{> /templates/common/model/debug/message}}
 }
 {{/Codec.QueryMetadataMsg}}
 
-impl std::convert::From<google_cloud_bigquery_v2::model::GetQueryResultsResponse> for QueryMetadata {
-    fn from(resp: google_cloud_bigquery_v2::model::GetQueryResultsResponse) -> Self {
+impl std::convert::From<google_cloud_bigquery_v2::model::Job> for QueryMetadata {
+    fn from(resp: google_cloud_bigquery_v2::model::Job) -> Self {
         Self{
             {{#Codec.QueryMetadataFields}}
-            {{#GetQueryResultsResponse}}
+            {{#Job}}
             {{FieldName}}: resp.{{FieldName}},
-            {{/GetQueryResultsResponse}}
+            {{/Job}}
             {{/Codec.QueryMetadataFields}}
             ..Default::default()
         }
@@ -51,6 +52,19 @@ impl std::convert::From<google_cloud_bigquery_v2::model::QueryResponse> for Quer
             {{#Codec.QueryMetadataFields}}
             {{#QueryResponse}}
             {{FieldName}}: resp.{{FieldName}},
+            {{/QueryResponse}}
+            {{/Codec.QueryMetadataFields}}
+            ..Default::default()
+        }
+    }
+}
+
+impl std::convert::From<QueryMetadata> for crate::generated::CompleteQueryMetadata {
+    fn from(md: QueryMetadata) -> Self {
+        crate::generated::CompleteQueryMetadata {
+            {{#Codec.QueryMetadataFields}}
+            {{#QueryResponse}}
+            {{FieldName}}: md.{{FieldName}},
             {{/QueryResponse}}
             {{/Codec.QueryMetadataFields}}
             ..Default::default()

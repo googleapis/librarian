@@ -25,47 +25,35 @@ limitations under the License.
 {{#Codec.Model.Codec.DisabledClippyWarnings}}
 #![allow(clippy::{{.}})]
 {{/Codec.Model.Codec.DisabledClippyWarnings}}
-{{#Codec.QueryCreationMetadataMsg}}
+{{#Codec.CompleteQueryMetadataMsg}}
 {{> /templates/common/message}}
+
 mod debug {
     {{> /templates/common/model/debug/message}}
 }
-{{/Codec.QueryCreationMetadataMsg}}
+{{/Codec.CompleteQueryMetadataMsg}}
 
-impl std::convert::From<google_cloud_bigquery_v2::model::Job> for QueryCreationMetadata {
-    fn from(resp: google_cloud_bigquery_v2::model::Job) -> Self {
+impl std::convert::From<google_cloud_bigquery_v2::model::GetQueryResultsResponse> for CompleteQueryMetadata {
+    fn from(resp: google_cloud_bigquery_v2::model::GetQueryResultsResponse) -> Self {
         Self{
-            {{#Codec.QueryCreationMetadataFields}}
-            {{#Job}}
+            {{#Codec.CompleteQueryMetadataFields}}
+            {{#GetQueryResultsResponse}}
             {{FieldName}}: resp.{{FieldName}},
-            {{/Job}}
-            {{/Codec.QueryCreationMetadataFields}}
+            {{/GetQueryResultsResponse}}
+            {{/Codec.CompleteQueryMetadataFields}}
             ..Default::default()
         }
     }
 }
 
-impl std::convert::From<google_cloud_bigquery_v2::model::QueryResponse> for QueryCreationMetadata {
+impl std::convert::From<google_cloud_bigquery_v2::model::QueryResponse> for CompleteQueryMetadata {
     fn from(resp: google_cloud_bigquery_v2::model::QueryResponse) -> Self {
         Self{
-            {{#Codec.QueryCreationMetadataFields}}
+            {{#Codec.CompleteQueryMetadataFields}}
             {{#QueryResponse}}
             {{FieldName}}: resp.{{FieldName}},
             {{/QueryResponse}}
-            {{/Codec.QueryCreationMetadataFields}}
-            ..Default::default()
-        }
-    }
-}
-
-impl std::convert::From<QueryCreationMetadata> for crate::generated::QueryMetadata {
-    fn from(md: QueryCreationMetadata) -> Self {
-        crate::generated::QueryMetadata {
-            {{#Codec.QueryCreationMetadataFields}}
-            {{#QueryResponse}}
-            {{FieldName}}: md.{{FieldName}},
-            {{/QueryResponse}}
-            {{/Codec.QueryCreationMetadataFields}}
+            {{/Codec.CompleteQueryMetadataFields}}
             ..Default::default()
         }
     }

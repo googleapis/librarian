@@ -104,7 +104,7 @@ func (m *unifiedMessage) fieldGroupList() []*fieldGroup {
 	return list
 }
 
-func newRunQuery(c *codec, model *api.API, skippedFields []string) (*unifiedMessage, error) {
+func newQueryBuilder(c *codec, model *api.API, skippedFields []string) (*unifiedMessage, error) {
 	msg, err := newUnifiedMessage(c, model, []string{"QueryRequest", "JobConfigurationQuery", "JobConfiguration"}, func(f *api.Field) bool {
 		// skip fields that are output only or explicitly skipped
 		return slices.Contains(skippedFields, f.Name) || slices.Contains(skippedFields, f.ID) || slices.Contains(f.Behavior, api.FieldBehaviorOutputOnly)
@@ -121,20 +121,20 @@ func newRunQuery(c *codec, model *api.API, skippedFields []string) (*unifiedMess
 	return msg, nil
 }
 
-func newQueryMetadata(c *codec, model *api.API, skippedFields []string) (*unifiedMessage, error) {
+func newCompleteQueryMetadata(c *codec, model *api.API, skippedFields []string) (*unifiedMessage, error) {
 	return newUnifiedMessage(c, model, []string{"GetQueryResultsResponse", "QueryResponse"}, func(f *api.Field) bool {
 		return slices.Contains(skippedFields, f.Name) || slices.Contains(skippedFields, f.ID)
 	})
 }
 
-func newQueryCreationMetadata(c *codec, model *api.API, skippedFields []string) (*unifiedMessage, error) {
+func newQueryMetadata(c *codec, model *api.API, skippedFields []string) (*unifiedMessage, error) {
 	return newUnifiedMessage(c, model, []string{"Job", "QueryResponse"}, func(f *api.Field) bool {
 		return slices.Contains(skippedFields, f.Name) || slices.Contains(skippedFields, f.ID)
 	})
 }
 
-func runQueryBuilder(m *unifiedMessage) (*api.Message, error) {
-	msg, err := m.createSyntheticMessage("RunQuery")
+func createQueryBuilderMessage(m *unifiedMessage) (*api.Message, error) {
+	msg, err := m.createSyntheticMessage("QueryBuilder")
 	if err != nil {
 		return nil, err
 	}
@@ -148,7 +148,7 @@ func runQueryBuilder(m *unifiedMessage) (*api.Message, error) {
 			return nil, fmt.Errorf("expected field annotation for %q", f.ID)
 		}
 		fAnn.FieldName = fmt.Sprintf("request.%s", fAnn.FieldName)
-		fAnn.FQMessageName = "crate::model::RunQueryRequest"
+		fAnn.FQMessageName = "crate::generated::QueryBuilderRequest"
 	}
 	return msg, nil
 }

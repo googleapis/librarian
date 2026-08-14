@@ -88,16 +88,17 @@ func GenerateBigQueryBuilder(ctx context.Context, outdir string, model *api.API,
 	// configured via librarian.yaml
 	skippedFields := cfg.Override.SkippedIDs
 
-	runQuery, err := newRunQuery(c, model, skippedFields)
+	queryBuilder, err := newQueryBuilder(c, model, skippedFields)
 	if err != nil {
 		return err
 	}
 
-	runQueryMsg, err := runQueryBuilder(runQuery)
+	queryBuilderMsg, err := createQueryBuilderMessage(queryBuilder)
 	if err != nil {
 		return err
 	}
-	runQueryRequestMsg, err := runQuery.createSyntheticMessage("RunQueryRequest")
+
+	queryBuilderRequestMsg, err := queryBuilder.createSyntheticMessage("QueryBuilderRequest")
 	if err != nil {
 		return err
 	}
@@ -112,12 +113,12 @@ func GenerateBigQueryBuilder(ctx context.Context, outdir string, model *api.API,
 		return err
 	}
 
-	queryCreationMetadata, err := newQueryCreationMetadata(c, model, skippedFields)
+	completeQueryMetadata, err := newCompleteQueryMetadata(c, model, skippedFields)
 	if err != nil {
 		return err
 	}
 
-	queryCreationMetadataMsg, err := queryCreationMetadata.createSyntheticMessage("QueryCreationMetadata")
+	completeQueryMetadataMsg, err := completeQueryMetadata.createSyntheticMessage("CompleteQueryMetadata")
 	if err != nil {
 		return err
 	}
@@ -125,13 +126,13 @@ func GenerateBigQueryBuilder(ctx context.Context, outdir string, model *api.API,
 	model = &api.API{
 		Codec: &bigQueryAnnotations{
 			Model:                       model,
-			RunQueryFields:              runQuery.fieldGroupList(),
-			RunQueryMsg:                 runQueryMsg,
-			RunQueryRequestMsg:          runQueryRequestMsg,
+			QueryBuilderFields:          queryBuilder.fieldGroupList(),
+			QueryBuilderMsg:             queryBuilderMsg,
+			QueryBuilderRequestMsg:      queryBuilderRequestMsg,
 			QueryMetadataFields:         queryMetadata.fieldGroupList(),
 			QueryMetadataMsg:            queryMetadataMsg,
-			QueryCreationMetadataFields: queryCreationMetadata.fieldGroupList(),
-			QueryCreationMetadataMsg:    queryCreationMetadataMsg,
+			CompleteQueryMetadataFields: completeQueryMetadata.fieldGroupList(),
+			CompleteQueryMetadataMsg:    completeQueryMetadataMsg,
 		},
 	}
 
@@ -142,13 +143,13 @@ func GenerateBigQueryBuilder(ctx context.Context, outdir string, model *api.API,
 
 type bigQueryAnnotations struct {
 	Model                       *api.API
-	RunQueryFields              []*fieldGroup
-	RunQueryMsg                 *api.Message
-	RunQueryRequestMsg          *api.Message
+	QueryBuilderFields          []*fieldGroup
+	QueryBuilderMsg             *api.Message
+	QueryBuilderRequestMsg      *api.Message
 	QueryMetadataFields         []*fieldGroup
 	QueryMetadataMsg            *api.Message
-	QueryCreationMetadataFields []*fieldGroup
-	QueryCreationMetadataMsg    *api.Message
+	CompleteQueryMetadataFields []*fieldGroup
+	CompleteQueryMetadataMsg    *api.Message
 }
 
 func templatesProvider() language.TemplateProvider {
