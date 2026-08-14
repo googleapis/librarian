@@ -37,7 +37,7 @@ Check the diff rigorously against the project's standards defined in `doc/howwew
 - **Naming:** Name length corresponds to scope size. Use singular form for package/folder names (e.g., `image/`, not `images/`).
 - **Comments:** Do not explain standard Go concepts or comment on obvious logic.
 - **Vertical Density:** Use line breaks only to signal a shift in logic. Avoid unnecessary vertical padding. Group related lines tightly.
-- **Idiomatic Go:** Flag patterns that conflict with `doc/styleguide/go-code-review-comments.md` (e.g., use `errors.Is`/`errors.As`, early returns).
+- **Idiomatic Go:** Flag patterns that conflict with `doc/styleguide/go-code-review-comments.md` (e.g., use `errors.Is`/`errors.AsType`, early returns).
 
 **Project-Specific Rules:**
 - `internal/command`: Ensure `command.Run` is used for execution.

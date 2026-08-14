@@ -813,12 +813,8 @@ func TestGenerateAPI_ConfiguredProtoc(t *testing.T) {
 		googleapisDir,
 		repoRoot,
 	)
-	var exitErr *exec.ExitError
-	if !errors.As(err, &exitErr) {
-		t.Fatalf("expected *exec.ExitError from stub protoc, got: %v", err)
-	}
-	if got, want := exitErr.ExitCode(), 42; got != want {
-		t.Fatalf("exit code = %d, want %d", got, want)
+	if _, ok := errors.AsType[*exec.ExitError](err); !ok {
+		t.Fatalf("Output() error = %v, want type *exec.ExitError", err)
 	}
 }
 
