@@ -27,6 +27,12 @@ import (
 	"google.golang.org/protobuf/types/descriptorpb"
 )
 
+var (
+	suppressedAip127Warnings = map[string]struct{}{
+		".google.devtools.cloudbuild.v1.RunBuildTriggerRequest": {},
+	}
+)
+
 // normalizeTypeID normalizes the types in LRO annotations.
 // The types in LRO annotations sometimes (always?) are missing the leading `.`.
 // We need to add them so they are useful when searching in
@@ -80,7 +86,11 @@ func processRule(httpRule *httpRule, model *api.API, mID string) (*api.PathInfo,
 			return nil, err
 		}
 		if pathInfo.BodyFieldPath != "" && body != "" && body != pathInfo.BodyFieldPath {
-			slog.Warn("mismatched body in additional binding (see AIP-127)", "message", mID, "topLevelBody", pathInfo.BodyFieldPath, "additionalBindingBody", body)
+			if _, ok := suppressedAip127Warnings[mID]; !ok {
+				// Deviations from AIP-127 can result in bad generated code, but we know it is safe for some specific messages.
+				// Generate a warning if this happens when unexpecfted.
+				slog.Warn("mismatched body in additional binding (see AIP-127)", "message", mID, "topLevelBody", pathInfo.BodyFieldPath, "additionalBindingBody", body)
+			}
 		}
 		if binding != nil {
 			pathInfo.Bindings = append(pathInfo.Bindings, binding)

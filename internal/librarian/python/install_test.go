@@ -21,38 +21,20 @@ import (
 	"testing"
 
 	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/testhelper"
 	"github.com/googleapis/librarian/internal/tool/pip"
 )
 
 func TestInstall(t *testing.T) {
-	bin := t.TempDir()
-	if err := os.WriteFile(filepath.Join(bin, "pip"), []byte("#!/bin/sh\n"), 0o755); err != nil {
-		t.Fatal(err)
-	}
-	t.Setenv("PATH", bin+string(os.PathListSeparator)+os.Getenv("PATH"))
+	setupStubPip(t, "#!/bin/sh\n")
 
-	for _, test := range []struct {
-		name  string
-		tools *config.Tools
-	}{
-		{
-			name:  "fallback to embedded librarian.yaml",
-			tools: nil,
+	tools := &config.Tools{
+		Pip: []*config.PipTool{
+			{Name: "ruff", Version: "0.14.14"},
 		},
-		{
-			name: "use tools from config",
-			tools: &config.Tools{
-				Pip: []*config.PipTool{
-					{Name: "ruff", Version: "0.14.14"},
-				},
-			},
-		},
-	} {
-		t.Run(test.name, func(t *testing.T) {
-			if err := Install(t.Context(), test.tools); err != nil {
-				t.Fatal(err)
-			}
-		})
+	}
+	if err := Install(t.Context(), tools); err != nil {
+		t.Fatal(err)
 	}
 }
 
@@ -63,6 +45,16 @@ func TestInstall_Error(t *testing.T) {
 		setup   func(t *testing.T)
 		wantErr error
 	}{
+		{
+			name:    "nil tools config",
+			tools:   nil,
+			wantErr: ErrNoToolsSpecified,
+		},
+		{
+			name:    "empty pip tools",
+			tools:   &config.Tools{},
+			wantErr: ErrNoToolsSpecified,
+		},
 		{
 			name: "local path not found",
 			tools: &config.Tools{
@@ -80,11 +72,7 @@ func TestInstall_Error(t *testing.T) {
 				},
 			},
 			setup: func(t *testing.T) {
-				bin := t.TempDir()
-				if err := os.WriteFile(filepath.Join(bin, "pip"), []byte("#!/bin/sh\nexit 1\n"), 0o755); err != nil {
-					t.Fatal(err)
-				}
-				t.Setenv("PATH", bin+string(os.PathListSeparator)+os.Getenv("PATH"))
+				setupStubPip(t, "#!/bin/sh\nexit 1\n")
 			},
 			wantErr: pip.ErrInstall,
 		},
@@ -99,4 +87,11 @@ func TestInstall_Error(t *testing.T) {
 			}
 		})
 	}
+}
+
+func setupStubPip(t *testing.T, script string) {
+	t.Helper()
+	bin := t.TempDir()
+	testhelper.WriteExecutable(t, filepath.Join(bin, "pip"), script)
+	t.Setenv("PATH", bin+string(os.PathListSeparator)+os.Getenv("PATH"))
 }

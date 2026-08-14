@@ -30,7 +30,20 @@ import (
 // errQuickstartServiceNotFound is returned when the requested quickstart service override is not found.
 var errQuickstartServiceNotFound = errors.New("quickstart_service_override not found")
 
-const gaxiPackageName = "gaxi"
+const (
+	gaxiPackageName = "gaxi"
+	// An internal-only feature to enable the discovery-based LRO code, which is
+	// usually hand-crafted.
+	//
+	// Large APIs (such as compute) use feature-per-service. That is, the
+	// application can decide what services, if any, are enabled. In these
+	// services we also write a small amount of hand-crafted code to support LROs. This
+	// hand-crafted code must be enabled **ONLY** when any of the services that have LROs are enabled.
+	//
+	// We create a secret feature (with this name) that is enabled when any of the
+	// services with LROs is enabled.
+	lroOperationFeature = "__enable-discovery-LRO"
+)
 
 type modelAnnotations struct {
 	PackageName                string
@@ -66,6 +79,11 @@ type modelAnnotations struct {
 	// The set of default features, only applicable if `PerServiceFeatures` is
 	// true.
 	DefaultFeatures []string
+	// Additional features in this crate.
+	//
+	// At the moment this is used to define `__enableDiscoverLRO` but may grow to
+	// include other features beyond the feature-per-service stuff.
+	ExtraFeatures []string
 	// A list of additional modules loaded by the `lib.rs` file.
 	ExtraModules []string
 	// If true, at lease one service has a method we cannot wrap (yet).
@@ -179,13 +197,17 @@ func annotateModel(model *api.API, codec *codec) (*modelAnnotations, error) {
 		}
 	}
 	hasLROs := false
+	hasDiscoveryLROs := false
 	for _, s := range model.Services {
 		for _, m := range s.Methods {
+			if !codec.generateMethod(m) {
+				continue
+			}
 			if m.OperationInfo != nil || m.DiscoveryLro != nil || m.ID == ".google.cloud.bigquery.v2.JobService.InsertJob" {
 				hasLROs = true
 			}
-			if !codec.generateMethod(m) {
-				continue
+			if m.DiscoveryLro != nil {
+				hasDiscoveryLROs = true
 			}
 			if _, err := codec.annotateMethod(m); err != nil {
 				return nil, err
@@ -271,6 +293,12 @@ func annotateModel(model *api.API, codec *codec) (*modelAnnotations, error) {
 		includeRpcStatusConversion = true
 	}
 
+	perServiceFeatures := codec.perServiceFeatures && len(servicesSubset) > 0
+	var extraFeatures []string
+	if hasDiscoveryLROs && perServiceFeatures {
+		extraFeatures = []string{lroOperationFeature}
+	}
+
 	ann := &modelAnnotations{
 		PackageName:                codec.packageName(model),
 		PackageNamespace:           codec.rootModuleName(model),
@@ -293,7 +321,8 @@ func annotateModel(model *api.API, codec *codec) (*modelAnnotations, error) {
 		NotForPublication:       codec.doNotPublish,
 		DisabledRustdocWarnings: codec.disabledRustdocWarnings,
 		DisabledClippyWarnings:  codec.disabledClippyWarnings,
-		PerServiceFeatures:      codec.perServiceFeatures && len(servicesSubset) > 0,
+		PerServiceFeatures:      perServiceFeatures,
+		ExtraFeatures:           extraFeatures,
 		ExtraModules:            codec.extraModules,
 		Incomplete: slices.ContainsFunc(model.Services, func(s *api.Service) bool {
 			return slices.ContainsFunc(s.Methods, func(m *api.Method) bool { return !codec.generateMethod(m) })

@@ -91,6 +91,16 @@ func (a *serviceAnnotations) FeatureName() string {
 	return strcase.ToKebab(a.ModuleName)
 }
 
+// EnabledFeatures returns the other features enabled by the service.
+func (a *serviceAnnotations) EnabledFeatures() []string {
+	for _, m := range a.Methods {
+		if m.DiscoveryLro != nil {
+			return []string{lroOperationFeature}
+		}
+	}
+	return []string{}
+}
+
 func (c *codec) annotateService(s *api.Service) (*serviceAnnotations, error) {
 	// Check if the service has bidirectional streaming RPCs in its API definition
 	// before methods are filtered by generateMethod. We check this before filtering

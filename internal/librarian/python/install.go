@@ -16,28 +16,21 @@ package python
 
 import (
 	"context"
-	_ "embed"
-	"fmt"
+	"errors"
 
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/tool/pip"
-	"github.com/googleapis/librarian/internal/yaml"
 )
 
-//go:embed librarian.yaml
-var librarianYAML []byte
+var (
+	// ErrNoToolsSpecified indicates no pip tools were provided in the configuration.
+	ErrNoToolsSpecified = errors.New("no tools.pip field specified in configuration")
+)
 
 // Install installs Python pip tool dependencies.
 func Install(ctx context.Context, tools *config.Tools) error {
-	if tools != nil && len(tools.Pip) > 0 {
-		return pip.Install(ctx, tools.Pip)
+	if tools == nil || len(tools.Pip) == 0 {
+		return ErrNoToolsSpecified
 	}
-	cfg, err := yaml.Unmarshal[config.Config](librarianYAML)
-	if err != nil {
-		return fmt.Errorf("parsing embedded librarian.yaml: %w", err)
-	}
-	if len(cfg.Tools.Pip) == 0 {
-		return nil
-	}
-	return pip.Install(ctx, cfg.Tools.Pip)
+	return pip.Install(ctx, tools.Pip)
 }
