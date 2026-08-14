@@ -240,8 +240,7 @@ func TestPostProcess_PHPPostProcessorError(t *testing.T) {
 		},
 	}
 	err := postProcessLibrary(ctx, lib, lib.PHP.ComponentName)
-	var exitErr *exec.ExitError
-	if !errors.As(err, &exitErr) {
+	if _, ok := errors.AsType[*exec.ExitError](err); !ok {
 		t.Fatalf("expected exit error, got: %v", err)
 	}
 }
