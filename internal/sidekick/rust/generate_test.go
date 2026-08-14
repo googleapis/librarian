@@ -183,7 +183,7 @@ func TestRustFromDiscovery(t *testing.T) {
 	checkApiVersionComments(t, outDir)
 }
 
-func TestRustFromDiscoveryWitLro(t *testing.T) {
+func TestRustFromDiscoveryWithLro(t *testing.T) {
 	outDir := t.TempDir()
 
 	cfg := &parser.ModelConfig{
