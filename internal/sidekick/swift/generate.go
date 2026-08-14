@@ -52,18 +52,18 @@ func Generate(ctx context.Context, model *api.API, outdir string, library *confi
 	if err := codec.generateEnums(outdir, model, provider); err != nil {
 		return err
 	}
+	if err := codec.generateStubs(outdir, model, provider); err != nil {
+		return err
+	}
+	if codec.Module {
+		// Modules only get the top-level messages, enums, and stubs generated.
+		return nil
+	}
 	if err := codec.generateServices(outdir, model, provider); err != nil {
 		return err
 	}
 	if err := codec.generateClients(outdir, model, provider); err != nil {
 		return err
-	}
-	if err := codec.generateStubs(outdir, model, provider); err != nil {
-		return err
-	}
-	if codec.Module {
-		// Modules only get the top-level messages, enums, and services generated.
-		return nil
 	}
 	if err := codec.generateSnippets(outdir, model, provider); err != nil {
 		return err

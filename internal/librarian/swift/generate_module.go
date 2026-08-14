@@ -49,6 +49,10 @@ func generateModule(ctx context.Context, cfg *config.Config, library *config.Lib
 			if err := sidekickswift.GenerateConversions(ctx, model, module.Output, library, module); err != nil {
 				return err
 			}
+		case "storage":
+			if err := generateSwiftStorage(ctx, pc, library, module, src); err != nil {
+				return err
+			}
 		case "", "default", "grpc-client":
 			modelConfig := moduleToModelConfig(library, module, src, pc)
 			model, err := parser.CreateModel(modelConfig)
@@ -106,4 +110,38 @@ func moduleToModelConfig(library *config.Library, module *config.SwiftModule, sr
 			SkippedIDs:  skippedIDs,
 		},
 	}
+}
+
+func generateSwiftStorage(ctx context.Context, pc *config.Protoc, library *config.Library, module *config.SwiftModule, src *sources.Sources) error {
+	storageModule := findModule(library, "google/storage/v2")
+	if storageModule == nil {
+		return fmt.Errorf("storage module not found for library %q", library.Name)
+	}
+	storageModel, err := parser.CreateModel(moduleToModelConfig(library, storageModule, src, pc))
+	if err != nil {
+		return fmt.Errorf("failed to create storage model: %w", err)
+	}
+
+	controlModule := findModule(library, "google/storage/control/v2")
+	if controlModule == nil {
+		return fmt.Errorf("control module (api_path: google/storage/control/v2) not found for library %q", library.Name)
+	}
+	controlModel, err := parser.CreateModel(moduleToModelConfig(library, controlModule, src, pc))
+	if err != nil {
+		return fmt.Errorf("failed to create control model: %w", err)
+	}
+
+	return sidekickswift.GenerateStorage(ctx, module.Output, storageModel, storageModule, controlModel, controlModule, library)
+}
+
+func findModule(library *config.Library, apiPath string) *config.SwiftModule {
+	if library.Swift == nil {
+		return nil
+	}
+	for _, m := range library.Swift.Modules {
+		if m.APIPath == apiPath && m.ModuleType == "grpc-client" {
+			return m
+		}
+	}
+	return nil
 }

@@ -47,6 +47,10 @@ extension Clients {
         withDefaultEndpoint: "https://{{DefaultHost}}"
       )
     }
+
+    public init(_ inner: GoogleCloudGaxGRPC._GRPCClient) {
+      self.inner = inner
+    }
     {{#Codec.Methods}}
 
     public func {{> /templates/common/method_signature/request_options}} {

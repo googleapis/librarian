@@ -400,3 +400,37 @@ func TestModuleToModelConfig_IncludedIds(t *testing.T) {
 		}
 	})
 }
+
+func TestFindModule(t *testing.T) {
+	m1 := &config.SwiftModule{
+		Output:     "packages/storage/Sources/GoogleCloudStorage/generated/StorageControl",
+		APIPath:    "google/storage/control/v2",
+		ModuleType: "grpc-client",
+	}
+	m2 := &config.SwiftModule{
+		Output:     "packages/storage/Sources/GoogleCloudStorage/generated/Storage",
+		APIPath:    "google/storage/v2",
+		ModuleType: "default",
+	}
+	m3 := &config.SwiftModule{
+		Output:     "packages/storage/Sources/GoogleCloudStorage/generated/StorageControl",
+		APIPath:    "google/storage/v2",
+		ModuleType: "storage",
+	}
+
+	library := &config.Library{
+		Swift: &config.SwiftPackage{
+			Modules: []*config.SwiftModule{m1, m2, m3},
+		},
+	}
+
+	gotControl := findModule(library, "google/storage/control/v2")
+	if gotControl != m1 {
+		t.Errorf("findModule(control) = %v, want %v", gotControl, m1)
+	}
+
+	gotNotFound := findModule(library, "google/nonexistent")
+	if gotNotFound != nil {
+		t.Errorf("findModule(nonexistent) = %v, want nil", gotNotFound)
+	}
+}
