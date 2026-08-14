@@ -29,6 +29,7 @@ import (
 	"github.com/googleapis/librarian/internal/proto"
 	"github.com/googleapis/librarian/internal/serviceconfig"
 	"github.com/googleapis/librarian/internal/sources"
+	"github.com/googleapis/librarian/internal/timing"
 	"github.com/googleapis/librarian/internal/tool/protoc"
 )
 
@@ -73,12 +74,15 @@ func Generate(ctx context.Context, cfg *config.Config, library *config.Library, 
 	if err := os.MkdirAll(outdir, 0o755); err != nil {
 		return fmt.Errorf("failed to create output directory %q: %w", outdir, err)
 	}
+	tc := timing.FromContext(ctx)
 	srcCfg := sources.NewSourceConfig(srcs, library.Roots)
 	primaryDir := srcCfg.Root(srcCfg.ActiveRoots[0])
 
 	// Generate repo metadata prior to client generation because this info is needed
 	// for README.md and pom.xml generation during post-processing.
+	mdStop := tc.Span("java.repometadata")
 	metadata, err := generateRepoMetadata(cfg, library, outdir, primaryDir)
+	mdStop()
 	if err != nil {
 		return fmt.Errorf("failed to generate .repo-metadata.json: %w", err)
 	}
@@ -104,14 +108,17 @@ func Generate(ctx context.Context, cfg *config.Config, library *config.Library, 
 		}
 	}
 
-	if err := postProcessLibrary(libraryPostProcessParams{
+	ppStop := tc.Span("java.postprocess.library")
+	err = postProcessLibrary(libraryPostProcessParams{
 		cfg:        cfg,
 		library:    library,
 		outDir:     outdir,
 		metadata:   metadata,
 		transports: transports,
 		primaryDir: primaryDir,
-	}); err != nil {
+	})
+	ppStop()
+	if err != nil {
 		return err
 	}
 	return nil
@@ -162,19 +169,26 @@ func generateAPI(ctx context.Context, params generateAPIParams) error {
 	if params.cfg.Tools != nil && params.cfg.Tools.Protoc != nil {
 		pc = params.cfg.Tools.Protoc
 	}
+	tc := timing.FromContext(ctx)
 	// 1. Generate standard Protocol Buffer Java classes.
 	if shouldGenerateProto(javaAPI) {
 		protoProtos := filterProtos(apiProtos, javaAPI.SkipProtoClassGeneration, primaryDir)
 		protoProtos = append(protoProtos, additionalProtosToGenerateAbs...)
 		args := protoProtocArgs(protoProtos, params.srcCfg, protoDir)
-		if err := runProtoc(ctx, pc, args); err != nil {
+		stop := tc.Span("java.protoc.proto")
+		err := runProtoc(ctx, pc, args)
+		stop()
+		if err != nil {
 			return fmt.Errorf("failed to generate proto: %w", err)
 		}
 	}
 	// 2. Generate gRPC service stubs (skipped if transport is rest).
 	transport := params.apiCfg.Transport(config.LanguageJava)
 	if shouldGenerateGRPC(javaAPI) && transport != "rest" {
-		if err := runProtoc(ctx, pc, gRPCProtocArgs(apiProtos, params.srcCfg, gRPCDir)); err != nil {
+		stop := tc.Span("java.protoc.grpc")
+		err := runProtoc(ctx, pc, gRPCProtocArgs(apiProtos, params.srcCfg, gRPCDir))
+		stop()
+		if err != nil {
 			return fmt.Errorf("failed to generate gRPC module: %w", err)
 		}
 	}
@@ -185,12 +199,18 @@ func generateAPI(ctx context.Context, params generateAPIParams) error {
 			return fmt.Errorf("failed to resolve gapic options: %w", err)
 		}
 		args := gapicProtocArgs(apiProtos, allAdditionalProtosAbs, params.srcCfg, gapicDir, gapicOpts)
-		if err := runProtoc(ctx, pc, args); err != nil {
+		stop := tc.Span("java.protoc.gapic")
+		err = runProtoc(ctx, pc, args)
+		stop()
+		if err != nil {
 			return fmt.Errorf("failed to generate gapic: %w", err)
 		}
 	}
 
-	if err := postProcessAPI(ctx, postParams); err != nil {
+	ppStop := tc.Span("java.postprocess.api")
+	err = postProcessAPI(ctx, postParams)
+	ppStop()
+	if err != nil {
 		return fmt.Errorf("failed to post process: %w", err)
 	}
 	return nil

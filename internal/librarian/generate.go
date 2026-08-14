@@ -18,6 +18,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
 	"runtime"
 	"strings"
 
@@ -32,6 +33,7 @@ import (
 	"github.com/googleapis/librarian/internal/librarian/rust"
 	"github.com/googleapis/librarian/internal/librarian/swift"
 	"github.com/googleapis/librarian/internal/sources"
+	"github.com/googleapis/librarian/internal/timing"
 	"github.com/googleapis/librarian/internal/yaml"
 	"github.com/urfave/cli/v3"
 	"golang.org/x/sync/errgroup"
@@ -76,6 +78,10 @@ latest API definitions is:
 				Name:  "all",
 				Usage: "generate all libraries",
 			},
+			&cli.BoolFlag{
+				Name:  "timing",
+				Usage: "print a per-phase timing summary to stderr after generation",
+			},
 		},
 		Action: func(ctx context.Context, cmd *cli.Command) error {
 			all := cmd.Bool("all")
@@ -90,13 +96,23 @@ latest API definitions is:
 			if err != nil {
 				return err
 			}
+			if cmd.Bool("timing") {
+				tc := timing.New()
+				ctx = timing.WithCollector(ctx, tc)
+				defer func() { fmt.Fprint(os.Stderr, tc.Summary()) }()
+			}
 			return runGenerate(ctx, cfg, all, libraryName)
 		},
 	}
 }
 
 func runGenerate(ctx context.Context, cfg *config.Config, all bool, libraryName string) error {
+	tc := timing.FromContext(ctx)
+	defer tc.Span("generate.total")()
+
+	srcStop := tc.Span("sources.load")
 	sources, err := LoadSources(ctx, cfg.Sources)
+	srcStop()
 	if err != nil {
 		return err
 	}
@@ -139,9 +155,14 @@ func runGenerate(ctx context.Context, cfg *config.Config, all bool, libraryName 
 		return fmt.Errorf("%w: %q", ErrLibraryNotFound, libraryName)
 	}
 
-	if err := cleanLibraries(cfg.Language, libraries); err != nil {
+	cleanStop := tc.Span("clean.total")
+	err = cleanLibraries(cfg.Language, libraries)
+	cleanStop()
+	if err != nil {
 		return err
 	}
+
+	defer tc.Span("generate_libraries.total")()
 	return generateLibraries(ctx, cfg, libraries, sources)
 }
 
@@ -241,14 +262,22 @@ func generateLibraries(ctx context.Context, cfg *config.Config, libraries []*con
 		}
 		return g.Wait()
 	case config.LanguageJava:
+		tc := timing.FromContext(ctx)
 		for _, library := range libraries {
-			if err := java.Generate(ctx, cfg, library, src); err != nil {
+			libStop := tc.Span("java.generate.library")
+			err := java.Generate(ctx, cfg, library, src)
+			libStop()
+			if err != nil {
 				return fmt.Errorf("generate library %q (%s): %w", library.Name, cfg.Language, err)
 			}
 		}
-		if err := java.Format(ctx, libraries...); err != nil {
+		fmtStop := tc.Span("java.format.all")
+		err := java.Format(ctx, libraries...)
+		fmtStop()
+		if err != nil {
 			return fmt.Errorf("format java libraries (%s): %w", cfg.Language, err)
 		}
+		defer tc.Span("java.postgenerate")()
 		return java.PostGenerate(ctx, ".", cfg)
 	case config.LanguageNodejs:
 		g, gctx := errgroup.WithContext(ctx)
