@@ -57,12 +57,19 @@ func Install(ctx context.Context, protoc *config.Protoc) error {
 	if _, err := os.Stat(binaryPath); err == nil {
 		return nil
 	}
-	url := downloadURL(protoc.Version, runtime.GOOS, runtime.GOARCH)
+	url, err := downloadURL(protoc.Version, runtime.GOOS, runtime.GOARCH)
+	if err != nil {
+		return err
+	}
+	sha256, err := sha256ForPlatform(protoc, runtime.GOOS, runtime.GOARCH)
+	if err != nil {
+		return err
+	}
 	dir, err := InstallDir(protoc.Version)
 	if err != nil {
 		return err
 	}
-	return downloadAndExtract(ctx, url, dir, protoc.SHA256)
+	return downloadAndExtract(ctx, url, dir, sha256)
 }
 
 // BinaryPath returns the absolute path to the protoc binary for the given version.
@@ -128,16 +135,49 @@ func downloadAndExtract(ctx context.Context, url, dir, sha256 string) error {
 }
 
 // downloadURL returns the download URL for the protoc binary for the given version, OS, and arch.
-func downloadURL(version, os, arch string) string {
-	suffix := platformSuffix(os, arch)
-	return fmt.Sprintf("%s/protocolbuffers/protobuf/releases/download/v%s/protoc-%s-%s.zip", githubURLBase, version, version, suffix)
+func downloadURL(version, os, arch string) (string, error) {
+	suffix, err := platformSuffix(os, arch)
+	if err != nil {
+		return "", err
+	}
+	return fmt.Sprintf("%s/protocolbuffers/protobuf/releases/download/v%s/protoc-%s-%s.zip", githubURLBase, version, version, suffix), nil
 }
 
 // platformSuffix returns the platform suffix for the given OS and architecture.
-func platformSuffix(os, arch string) string {
+func platformSuffix(os, arch string) (string, error) {
 	if os == osWindows {
-		return "win64"
+		if arch == "386" {
+			return "win32", nil
+		}
+		if arch == "amd64" || arch == "arm64" {
+			return "win64", nil
+		}
+		return "", fmt.Errorf("unsupported windows architecture for protoc: %s", arch)
 	}
 
-	return osMap[os] + "-" + archMap[arch]
+	osName, ok := osMap[os]
+	if !ok {
+		return "", fmt.Errorf("unsupported OS for protoc: %s", os)
+	}
+	archName, ok := archMap[arch]
+	if !ok {
+		return "", fmt.Errorf("unsupported architecture for protoc: %s", arch)
+	}
+	return osName + "-" + archName, nil
+}
+
+func sha256ForPlatform(pc *config.Protoc, goos, goarch string) (string, error) {
+	platform, err := platformSuffix(goos, goarch)
+	if err != nil {
+		return "", err
+	}
+	if pc.SHA256ByPlatform != nil {
+		if hash, ok := pc.SHA256ByPlatform[platform]; ok && hash != "" {
+			return hash, nil
+		}
+	}
+	if platform == "linux-x86_64" && pc.SHA256 != "" {
+		return pc.SHA256, nil
+	}
+	return "", fmt.Errorf("missing sha256 checksum for protoc on platform %q", platform)
 }

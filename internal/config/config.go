@@ -244,8 +244,12 @@ type Protoc struct {
 	// Version is the version to install.
 	Version string `yaml:"version,omitempty"`
 
-	// SHA256 is the SHA256 checksum of the tarball.
+	// SHA256 is the default SHA256 checksum of the package (used for linux-x86_64 if not specified in SHA256ByPlatform).
 	SHA256 string `yaml:"sha256,omitempty"`
+
+	// SHA256ByPlatform defines SHA256 checksums indexed by the release platform name
+	// (e.g., "linux-x86_64", "osx-aarch_64", "osx-x86_64", "win64", "win32").
+	SHA256ByPlatform map[string]string `yaml:"sha256_by_platform,omitempty"`
 }
 
 // Default contains default settings for all libraries.
