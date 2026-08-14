@@ -27,6 +27,10 @@ import (
 //go:embed all:templates
 var templates embed.FS
 
+const (
+	templateConvertProst = "templates/convert-prost"
+)
+
 // Generate generates Rust code from the model.
 func Generate(ctx context.Context, model *api.API, outdir string, cfg *parser.ModelConfig) error {
 	c, err := newCodec(cfg.SpecificationFormat, cfg.Codec)

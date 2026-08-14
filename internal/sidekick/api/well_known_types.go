@@ -14,6 +14,26 @@
 
 package api
 
+const (
+	WktAnyID         = ".google.protobuf.Any"
+	WktStructID      = ".google.protobuf.Struct"
+	WktValueID       = ".google.protobuf.Value"
+	WktListValueID   = ".google.protobuf.ListValue"
+	WktEmptyID       = ".google.protobuf.Empty"
+	WktFieldMaskID   = ".google.protobuf.FieldMask"
+	WktDurationID    = ".google.protobuf.Duration"
+	WktTimestampID   = ".google.protobuf.Timestamp"
+	WktNullValueID   = ".google.protobuf.NullValue"
+	WktBytesValueID  = ".google.protobuf.BytesValue"
+	WktUInt64ValueID = ".google.protobuf.UInt64Value"
+	WktInt64ValueID  = ".google.protobuf.Int64Value"
+	WktUInt32ValueID = ".google.protobuf.UInt32Value"
+	WktInt32ValueID  = ".google.protobuf.Int32Value"
+	WktFloatValueID  = ".google.protobuf.FloatValue"
+	WktDoubleValueID = ".google.protobuf.DoubleValue"
+	WktBoolValueID   = ".google.protobuf.BoolValue"
+)
+
 // LoadWellKnownTypes adds well-known types to `state`.
 //
 // Some source specification formats (Discovery, OpenAPI) must manually add the
@@ -24,40 +44,40 @@ func (model *API) LoadWellKnownTypes() {
 		model.AddMessage(message)
 	}
 	model.AddEnum(&Enum{
+		ID:      WktNullValueID,
 		Name:    "NullValue",
 		Package: "google.protobuf",
-		ID:      ".google.protobuf.NullValue",
 	})
 }
 
 var wellKnownMessages = []*Message{
 	{
-		ID:      ".google.protobuf.Any",
+		ID:      WktAnyID,
 		Name:    "Any",
 		Package: "google.protobuf",
 	},
 	{
-		ID:      ".google.protobuf.Struct",
+		ID:      WktStructID,
 		Name:    "Struct",
 		Package: "google.protobuf",
 	},
 	{
-		ID:      ".google.protobuf.Value",
+		ID:      WktValueID,
 		Name:    "Value",
 		Package: "google.protobuf",
 	},
 	{
-		ID:      ".google.protobuf.ListValue",
+		ID:      WktListValueID,
 		Name:    "ListValue",
 		Package: "google.protobuf",
 	},
 	{
-		ID:      ".google.protobuf.Empty",
+		ID:      WktEmptyID,
 		Name:    "Empty",
 		Package: "google.protobuf",
 	},
 	{
-		ID:      ".google.protobuf.FieldMask",
+		ID:      WktFieldMaskID,
 		Name:    "FieldMask",
 		Package: "google.protobuf",
 		Fields: []*Field{
@@ -70,21 +90,21 @@ var wellKnownMessages = []*Message{
 		},
 	},
 	{
-		ID:      ".google.protobuf.Duration",
+		ID:      WktDurationID,
 		Name:    "Duration",
 		Package: "google.protobuf",
 	},
 	{
-		ID:      ".google.protobuf.Timestamp",
+		ID:      WktTimestampID,
 		Name:    "Timestamp",
 		Package: "google.protobuf",
 	},
-	{ID: ".google.protobuf.BytesValue", Name: "BytesValue", Package: "google.protobuf"},
-	{ID: ".google.protobuf.UInt64Value", Name: "UInt64Value", Package: "google.protobuf"},
-	{ID: ".google.protobuf.Int64Value", Name: "Int64Value", Package: "google.protobuf"},
-	{ID: ".google.protobuf.UInt32Value", Name: "UInt32Value", Package: "google.protobuf"},
-	{ID: ".google.protobuf.Int32Value", Name: "Int32Value", Package: "google.protobuf"},
-	{ID: ".google.protobuf.FloatValue", Name: "FloatValue", Package: "google.protobuf"},
-	{ID: ".google.protobuf.DoubleValue", Name: "DoubleValue", Package: "google.protobuf"},
-	{ID: ".google.protobuf.BoolValue", Name: "BoolValue", Package: "google.protobuf"},
+	{ID: WktBytesValueID, Name: "BytesValue", Package: "google.protobuf"},
+	{ID: WktUInt64ValueID, Name: "UInt64Value", Package: "google.protobuf"},
+	{ID: WktInt64ValueID, Name: "Int64Value", Package: "google.protobuf"},
+	{ID: WktUInt32ValueID, Name: "UInt32Value", Package: "google.protobuf"},
+	{ID: WktInt32ValueID, Name: "Int32Value", Package: "google.protobuf"},
+	{ID: WktFloatValueID, Name: "FloatValue", Package: "google.protobuf"},
+	{ID: WktDoubleValueID, Name: "DoubleValue", Package: "google.protobuf"},
+	{ID: WktBoolValueID, Name: "BoolValue", Package: "google.protobuf"},
 }
