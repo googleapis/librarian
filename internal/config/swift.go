@@ -52,10 +52,6 @@ type SwiftPackage struct {
 	// include (e.g., ["date.proto", "expr.proto"]).
 	IncludeList []string `yaml:"include_list,omitempty"`
 
-	// IncludedIDs is a list of proto IDs to include in generation for the package.
-	// If set, only these IDs and their dependencies are generated.
-	IncludedIDs []string `yaml:"included_ids,omitempty"`
-
 	// SkippedIds is a list of proto IDs to skip in generation for the package.
 	SkippedIds []string `yaml:"skipped_ids,omitempty"`
 
@@ -161,10 +157,6 @@ type SwiftModule struct {
 	// directory. This code is private to the package (google-cloud-storage in Rust, GoogleCloudStorage
 	// in Swift). All other files in google/type would be dead code.
 	IncludeList []string `yaml:"include_list,omitempty"`
-
-	// IncludedIDs is a list of proto IDs to include in generation for this module.
-	// If set, only these IDs and their dependencies are generated.
-	IncludedIDs []string `yaml:"included_ids,omitempty"`
 
 	// SkippedIds is a list of proto IDs to skip in generation for this module.
 	SkippedIds []string `yaml:"skipped_ids,omitempty"`

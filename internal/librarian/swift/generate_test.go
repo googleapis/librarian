@@ -294,32 +294,6 @@ func TestLibraryToModelConfig(t *testing.T) {
 			},
 		},
 		{
-			name: "library level included_ids",
-			library: &config.Library{
-				Name:                "google-cloud-secretmanager",
-				Version:             "1.2.3",
-				SpecificationFormat: config.SpecProtobuf,
-				Swift: &config.SwiftPackage{
-					IncludedIDs: []string{".google.cloud.secretmanager.v1.SecretManagerService.GetSecret"},
-				},
-			},
-			api: &config.API{
-				Path: "google/cloud/secretmanager/v1",
-			},
-			want: &parser.ModelConfig{
-				Language:            config.LanguageSwift,
-				SpecificationFormat: config.SpecProtobuf,
-				SpecificationSource: "google/cloud/secretmanager/v1",
-				ServiceConfig:       "google/cloud/secretmanager/v1/secretmanager_v1.yaml",
-				Source: &sources.SourceConfig{
-					ActiveRoots: []string{"googleapis"},
-				},
-				Override: api.ModelOverride{
-					IncludedIDs: []string{".google.cloud.secretmanager.v1.SecretManagerService.GetSecret"},
-				},
-			},
-		},
-		{
 			name: "discovery config",
 			library: &config.Library{
 				Name:                "google-cloud-compute-v1",
