@@ -90,7 +90,7 @@ func TestGenerateBidiStreaming(t *testing.T) {
 		return files[relPath]
 	}
 
-	for _, tc := range []struct {
+	for _, test := range []struct {
 		name     string
 		file     string
 		startStr string
@@ -304,10 +304,10 @@ func TestGenerateBidiStreaming(t *testing.T) {
     }`,
 		},
 	} {
-		t.Run(tc.name, func(t *testing.T) {
-			content := readFile(tc.file)
-			got := extractBlock(t, content, tc.startStr, tc.endStr)
-			if diff := cmp.Diff(tc.want, got); diff != "" {
+		t.Run(test.name, func(t *testing.T) {
+			content := readFile(test.file)
+			got := extractBlock(t, content, test.startStr, test.endStr)
+			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
@@ -315,7 +315,7 @@ func TestGenerateBidiStreaming(t *testing.T) {
 }
 
 func TestGenerateBidiStreamingWithRouting(t *testing.T) {
-	for _, tc := range []struct {
+	for _, test := range []struct {
 		name            string
 		routingRequired bool
 		wantSubstrings  []string
@@ -348,7 +348,7 @@ func TestGenerateBidiStreamingWithRouting(t *testing.T) {
 			},
 		},
 	} {
-		t.Run(tc.name, func(t *testing.T) {
+		t.Run(test.name, func(t *testing.T) {
 			outDir := t.TempDir()
 
 			request := api.NewTestMessage("Request").WithPackage("test.v1")
@@ -390,7 +390,7 @@ func TestGenerateBidiStreamingWithRouting(t *testing.T) {
 				Codec: map[string]string{
 					"package:wkt":                    "source=google.protobuf,package=google-cloud-wkt",
 					"include-bidi-streaming-methods": "true",
-					"routing-required":               strconv.FormatBool(tc.routingRequired),
+					"routing-required":               strconv.FormatBool(test.routingRequired),
 				},
 			}
 			if err := Generate(t.Context(), model, outDir, cfg); err != nil {
@@ -403,12 +403,12 @@ func TestGenerateBidiStreamingWithRouting(t *testing.T) {
 			}
 			content := string(transportContent)
 
-			for _, sub := range tc.wantSubstrings {
+			for _, sub := range test.wantSubstrings {
 				if !strings.Contains(content, sub) {
 					t.Errorf("missing expected substring %q in generated transport.rs", sub)
 				}
 			}
-			for _, absent := range tc.wantAbsent {
+			for _, absent := range test.wantAbsent {
 				if strings.Contains(content, absent) {
 					t.Errorf("unexpected substring %q found in generated transport.rs", absent)
 				}
