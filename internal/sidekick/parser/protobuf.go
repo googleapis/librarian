@@ -262,7 +262,12 @@ const (
 
 	// From https://pkg.go.dev/google.golang.org/protobuf/types/descriptorpb#EnumDescriptorProto
 
-	enumDescriptorValue = 2
+	enumDescriptorName          = 1
+	enumDescriptorValue         = 2
+	enumDescriptorOptions       = 3
+	enumDescriptorReservedRange = 4
+	enumDescriptorReservedName  = 5
+	enumDescriptorVisibility    = 6
 )
 
 func makeAPIForProtobuf(serviceConfig *serviceconfig.Service, req *pluginpb.CodeGeneratorRequest) (*api.API, error) {
@@ -873,12 +878,17 @@ func addMessageDocumentation(model *api.API, m *descriptorpb.DescriptorProto, p 
 
 // addEnumDocumentation adds documentation to an enum.
 func addEnumDocumentation(model *api.API, p []int32, doc string, eFQN string) {
-	if len(p) == 0 {
+	switch {
+	case len(p) == 0:
 		// This is a comment for an enum
 		model.Enum(eFQN).Documentation = trimLeadingSpacesInDocumentation(doc)
-	} else if len(p) == 2 && p[0] == enumDescriptorValue {
+	case p[0] == enumDescriptorValue && len(p) == 2:
 		model.Enum(eFQN).Values[p[1]].Documentation = trimLeadingSpacesInDocumentation(doc)
-	} else {
+	case p[0] == enumDescriptorValue:
+		slog.Warn("enumValue comments with missing index", "loc", p, "docs", doc)
+	case p[0] == enumDescriptorReservedRange:
+		// A comment for a reserved range, ignore, it does not emit any generated code.
+	default:
 		slog.Warn("enum dropped documentation", "loc", p, "docs", doc)
 	}
 }

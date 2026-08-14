@@ -147,6 +147,17 @@ impl super::stub::{{Codec.Name}} for {{Codec.Name}} {
             )
         })?;
 
+        {{!
+        Per AIP-4222, fallback to HTTP path templates only applies to unary RPCs.
+        Streaming RPCs only extract routing parameters if explicitly annotated.
+        }}
+        {{#HasRouting}}
+        {{> /templates/grpc-client/routinginfo}}
+        {{/HasRouting}}
+        {{^HasRouting}}
+        let x_goog_request_params = "";
+        {{/HasRouting}}
+
         let first_req = req
             .to_proto()
             .map_err(google_cloud_gax::error::Error::ser)?;
@@ -167,8 +178,6 @@ impl super::stub::{{Codec.Name}} for {{Codec.Name}} {
         let path = http::uri::PathAndQuery::from_static(
             "/{{SourceService.Package}}.{{SourceService.Name}}/{{Name}}"
         );
-        {{! TODO(#6835) - derive request params from initial request }}
-        let x_goog_request_params = "";
 
         let result = self.grpc_inner
             .bidi_stream::<
@@ -180,7 +189,7 @@ impl super::stub::{{Codec.Name}} for {{Codec.Name}} {
                 req_stream,
                 options.into(),
                 &crate::info::X_GOOG_API_CLIENT_HEADER,
-                x_goog_request_params,
+                &x_goog_request_params,
             )
             .await?;
 

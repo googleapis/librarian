@@ -17,6 +17,7 @@ package rust
 import (
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -89,7 +90,7 @@ func TestGenerateBidiStreaming(t *testing.T) {
 		return files[relPath]
 	}
 
-	for _, tc := range []struct {
+	for _, test := range []struct {
 		name     string
 		file     string
 		startStr string
@@ -237,6 +238,19 @@ func TestGenerateBidiStreaming(t *testing.T) {
     )> {`,
 		},
 		{
+			name:     "transport: request params without routing",
+			file:     "src/transport.rs",
+			startStr: "        let req = req.ok_or_else(|| {\n",
+			endStr:   "        let x_goog_request_params = \"\";",
+			want: `        let req = req.ok_or_else(|| {
+            google_cloud_gax::error::Error::binding(
+                "a request is required"
+            )
+        })?;
+
+        let x_goog_request_params = "";`,
+		},
+		{
 			name:     "transport: eager bidi_stream call",
 			file:     "src/transport.rs",
 			startStr: "        let result = self.grpc_inner\n            .bidi_stream::<",
@@ -251,7 +265,7 @@ func TestGenerateBidiStreaming(t *testing.T) {
                 req_stream,
                 options.into(),
                 &crate::info::X_GOOG_API_CLIENT_HEADER,
-                x_goog_request_params,
+                &x_goog_request_params,
             )
             .await?;`,
 		},
@@ -290,11 +304,114 @@ func TestGenerateBidiStreaming(t *testing.T) {
     }`,
 		},
 	} {
-		t.Run(tc.name, func(t *testing.T) {
-			content := readFile(tc.file)
-			got := extractBlock(t, content, tc.startStr, tc.endStr)
-			if diff := cmp.Diff(tc.want, got); diff != "" {
+		t.Run(test.name, func(t *testing.T) {
+			content := readFile(test.file)
+			got := extractBlock(t, content, test.startStr, test.endStr)
+			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestGenerateBidiStreamingWithRouting(t *testing.T) {
+	for _, test := range []struct {
+		name            string
+		routingRequired bool
+		wantSubstrings  []string
+		wantAbsent      []string
+	}{
+		{
+			name:            "without routing required",
+			routingRequired: false,
+			wantSubstrings: []string{
+				"let x_goog_request_params = {",
+				"gaxi::routing_parameter::format(&[",
+				`.map(|v| ("table_name", v))`,
+			},
+			wantAbsent: []string{
+				"BindingError",
+				"PathMismatchBuilder",
+			},
+		},
+		{
+			name:            "with routing required",
+			routingRequired: true,
+			wantSubstrings: []string{
+				"let x_goog_request_params = {",
+				"if x_goog_request_params.is_empty() {",
+				"use google_cloud_gax::error::binding::BindingError;",
+				"use gaxi::path_parameter::PathMismatchBuilder;",
+				"let builder = PathMismatchBuilder::default();",
+				`"projects/*/datasets/*/tables/*"`,
+				"return Err(google_cloud_gax::error::Error::binding(BindingError { paths }))",
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			outDir := t.TempDir()
+
+			request := api.NewTestMessage("Request").WithPackage("test.v1")
+			request.Fields = []*api.Field{
+				{
+					Name:     "table_name",
+					JSONName: "tableName",
+					ID:       ".test.v1.Request.table_name",
+					Typez:    api.TypezString,
+				},
+			}
+			response := api.NewTestMessage("Response").WithPackage("test.v1")
+
+			bidiMethod := api.NewTestMethod("AppendRows").WithInput(request).WithOutput(response).WithBidiStreaming()
+			bidiMethod.PathInfo = &api.PathInfo{
+				Bindings: []*api.PathBinding{{Verb: "GET", PathTemplate: &api.PathTemplate{}}},
+			}
+			bidiMethod.Routing = []*api.RoutingInfo{
+				{
+					Name: "table_name",
+					Variants: []*api.RoutingInfoVariant{
+						{
+							FieldPath: []string{"table_name"},
+							Matching:  api.RoutingPathSpec{Segments: []string{"projects", "*", "datasets", "*", "tables", "*"}},
+						},
+					},
+				},
+			}
+			service := api.NewTestService("WriteStream").WithPackage("test.v1").WithMethods(bidiMethod)
+
+			model := api.NewTestAPI([]*api.Message{request, response}, []*api.Enum{}, []*api.Service{service})
+			model.PackageName = "test.v1"
+			if err := api.CrossReference(model); err != nil {
+				t.Fatal(err)
+			}
+
+			cfg := &parser.ModelConfig{
+				SpecificationFormat: libconfig.SpecProtobuf,
+				Codec: map[string]string{
+					"package:wkt":                    "source=google.protobuf,package=google-cloud-wkt",
+					"include-bidi-streaming-methods": "true",
+					"routing-required":               strconv.FormatBool(test.routingRequired),
+				},
+			}
+			if err := Generate(t.Context(), model, outDir, cfg); err != nil {
+				t.Fatal(err)
+			}
+
+			transportContent, err := os.ReadFile(filepath.Join(outDir, "src/transport.rs"))
+			if err != nil {
+				t.Fatal(err)
+			}
+			content := string(transportContent)
+
+			for _, sub := range test.wantSubstrings {
+				if !strings.Contains(content, sub) {
+					t.Errorf("missing expected substring %q in generated transport.rs", sub)
+				}
+			}
+			for _, absent := range test.wantAbsent {
+				if strings.Contains(content, absent) {
+					t.Errorf("unexpected substring %q found in generated transport.rs", absent)
+				}
 			}
 		})
 	}
