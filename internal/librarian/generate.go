@@ -263,13 +263,25 @@ func generateLibraries(ctx context.Context, cfg *config.Config, libraries []*con
 		return g.Wait()
 	case config.LanguageJava:
 		tc := timing.FromContext(ctx)
+		// Generate libraries concurrently, matching every other language. Each
+		// library writes only within its own output directory (syncPOMs is
+		// scoped to library.Output); the repo-shared root/BOM POMs are written
+		// by the sequential PostGenerate below, after all libraries complete.
+		g, gctx := errgroup.WithContext(ctx)
+		g.SetLimit(runtime.NumCPU())
 		for _, library := range libraries {
-			libStop := tc.Span("java.generate.library")
-			err := java.Generate(ctx, cfg, library, src)
-			libStop()
-			if err != nil {
-				return fmt.Errorf("generate library %q (%s): %w", library.Name, cfg.Language, err)
-			}
+			g.Go(func() error {
+				libStop := tc.Span("java.generate.library")
+				err := java.Generate(gctx, cfg, library, src)
+				libStop()
+				if err != nil {
+					return fmt.Errorf("generate library %q (%s): %w", library.Name, cfg.Language, err)
+				}
+				return nil
+			})
+		}
+		if err := g.Wait(); err != nil {
+			return err
 		}
 		fmtStop := tc.Span("java.format.all")
 		err := java.Format(ctx, libraries...)
