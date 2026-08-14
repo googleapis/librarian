@@ -33,7 +33,7 @@ mod debug {
 }
 {{/Codec.QueryMetadataMsg}}
 
-impl std::convert::From<google_cloud_bigquery_v2::model::Job> for QueryMetadata {
+impl std::convert::From<google_cloud_bigquery_v2::model::Job> for {{Codec.QueryMetadataMsg.Codec.Name}} {
     fn from(resp: google_cloud_bigquery_v2::model::Job) -> Self {
         Self{
             {{#Codec.QueryMetadataFields}}
@@ -46,7 +46,7 @@ impl std::convert::From<google_cloud_bigquery_v2::model::Job> for QueryMetadata 
     }
 }
 
-impl std::convert::From<google_cloud_bigquery_v2::model::QueryResponse> for QueryMetadata {
+impl std::convert::From<google_cloud_bigquery_v2::model::QueryResponse> for {{Codec.QueryMetadataMsg.Codec.Name}} {
     fn from(resp: google_cloud_bigquery_v2::model::QueryResponse) -> Self {
         Self{
             {{#Codec.QueryMetadataFields}}
@@ -59,9 +59,9 @@ impl std::convert::From<google_cloud_bigquery_v2::model::QueryResponse> for Quer
     }
 }
 
-impl std::convert::From<QueryMetadata> for crate::generated::CompleteQueryMetadata {
-    fn from(md: QueryMetadata) -> Self {
-        crate::generated::CompleteQueryMetadata {
+impl std::convert::From<{{Codec.QueryMetadataMsg.Codec.Name}}> for crate::generated::{{Codec.CompleteQueryMetadataMsg.Codec.Name}} {
+    fn from(md: {{Codec.QueryMetadataMsg.Codec.Name}}) -> Self {
+        crate::generated::{{Codec.CompleteQueryMetadataMsg.Codec.Name}} {
             {{#Codec.QueryMetadataFields}}
             {{#QueryResponse}}
             {{FieldName}}: md.{{FieldName}},

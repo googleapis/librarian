@@ -25,7 +25,7 @@ limitations under the License.
 {{#Codec.Model.Codec.DisabledClippyWarnings}}
 #[allow(clippy::{{.}})]
 {{/Codec.Model.Codec.DisabledClippyWarnings}}
-impl QueryBuilder {
+impl {{Codec.QueryBuilderMsg.Codec.Name}} {
     {{#Codec.QueryBuilderMsg}}
     {{> /templates/common/setters}}
     {{/Codec.QueryBuilderMsg}}

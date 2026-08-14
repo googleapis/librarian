@@ -98,7 +98,7 @@ func GenerateBigQueryBuilder(ctx context.Context, outdir string, model *api.API,
 		return err
 	}
 
-	queryBuilderRequestMsg, err := queryBuilder.createSyntheticMessage("QueryBuilderRequest")
+	queryBuilderRequestMsg, err := queryBuilder.createSyntheticMessage("QueryRequest")
 	if err != nil {
 		return err
 	}

@@ -134,7 +134,7 @@ func newQueryMetadata(c *codec, model *api.API, skippedFields []string) (*unifie
 }
 
 func createQueryBuilderMessage(m *unifiedMessage) (*api.Message, error) {
-	msg, err := m.createSyntheticMessage("QueryBuilder")
+	msg, err := m.createSyntheticMessage("Query")
 	if err != nil {
 		return nil, err
 	}
@@ -148,7 +148,7 @@ func createQueryBuilderMessage(m *unifiedMessage) (*api.Message, error) {
 			return nil, fmt.Errorf("expected field annotation for %q", f.ID)
 		}
 		fAnn.FieldName = fmt.Sprintf("request.%s", fAnn.FieldName)
-		fAnn.FQMessageName = "crate::generated::QueryBuilderRequest"
+		fAnn.FQMessageName = "crate::builder::bigquery::QueryRequest"
 	}
 	return msg, nil
 }

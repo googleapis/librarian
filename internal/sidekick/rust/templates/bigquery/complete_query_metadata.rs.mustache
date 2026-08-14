@@ -33,7 +33,7 @@ mod debug {
 }
 {{/Codec.CompleteQueryMetadataMsg}}
 
-impl std::convert::From<google_cloud_bigquery_v2::model::GetQueryResultsResponse> for CompleteQueryMetadata {
+impl std::convert::From<google_cloud_bigquery_v2::model::GetQueryResultsResponse> for {{Codec.CompleteQueryMetadataMsg.Codec.Name}} {
     fn from(resp: google_cloud_bigquery_v2::model::GetQueryResultsResponse) -> Self {
         Self{
             {{#Codec.CompleteQueryMetadataFields}}
@@ -46,7 +46,7 @@ impl std::convert::From<google_cloud_bigquery_v2::model::GetQueryResultsResponse
     }
 }
 
-impl std::convert::From<google_cloud_bigquery_v2::model::QueryResponse> for CompleteQueryMetadata {
+impl std::convert::From<google_cloud_bigquery_v2::model::QueryResponse> for {{Codec.CompleteQueryMetadataMsg.Codec.Name}} {
     fn from(resp: google_cloud_bigquery_v2::model::QueryResponse) -> Self {
         Self{
             {{#Codec.CompleteQueryMetadataFields}}
