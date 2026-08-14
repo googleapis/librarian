@@ -54,8 +54,11 @@ default-rustls-provider = ["gaxi/_default-rustls-provider"]
 {{#Codec.PerServiceFeatures}}
 {{#Codec.Services}}
 # Enables `client::{{Codec.Name}}` and all the types it depends on.
-{{Codec.FeatureName}} = []
+{{Codec.FeatureName}} = [{{#Codec.EnabledFeatures}}"{{{.}}}", {{/Codec.EnabledFeatures}}]
 {{/Codec.Services}}
+{{#Codec.ExtraFeatures}}
+{{{.}}} = []
+{{/Codec.ExtraFeatures}}
 {{/Codec.PerServiceFeatures}}
 
 {{! We want docs for all features, not just the default features. }}

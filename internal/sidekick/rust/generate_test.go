@@ -26,7 +26,9 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
 	libconfig "github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/sidekick/api"
 	"github.com/googleapis/librarian/internal/sidekick/parser"
 	"github.com/googleapis/librarian/internal/sources"
 )
@@ -179,6 +181,73 @@ func TestRustFromDiscovery(t *testing.T) {
 	}
 	importsModelModules(t, path.Join(outDir, "src", "model.rs"))
 	checkApiVersionComments(t, outDir)
+}
+
+func TestRustFromDiscoveryWitLro(t *testing.T) {
+	outDir := t.TempDir()
+
+	cfg := &parser.ModelConfig{
+		SpecificationFormat: libconfig.SpecDiscovery,
+		ServiceConfig:       path.Join(testdataDir, "googleapis/google/cloud/compute/v1/compute_v1.yaml"),
+		SpecificationSource: path.Join(testdataDir, "discovery/compute.v1.json"),
+		Codec: map[string]string{
+			"package:wkt":          "source=google.protobuf,package=google-cloud-wkt",
+			"per-service-features": "true",
+		},
+		Discovery: &api.Discovery{
+			OperationID: ".google.cloud.compute.v1.Operation",
+			Pollers: []*api.Poller{
+				{
+					Prefix:   "compute/v1/projects/{project}/zones/{zone}",
+					MethodID: ".google.cloud.compute.v1.zoneOperations.get",
+				},
+				{
+					Prefix:   "compute/v1/projects/{project}/regions/{region}",
+					MethodID: ".google.cloud.compute.v1.regionOperations.get",
+				},
+				{
+					Prefix:   "compute/v1/projects/{project}",
+					MethodID: ".google.cloud.compute.v1.globalOperations.get",
+				},
+				{
+					Prefix:   "compute/v1/",
+					MethodID: ".google.cloud.compute.v1.globalOrganizationOperations.get",
+				},
+			},
+		},
+	}
+	model, err := parser.CreateModel(cfg)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := Generate(t.Context(), model, outDir, cfg); err != nil {
+		t.Fatal(err)
+	}
+	for _, expected := range expectedInCrate {
+		filename := path.Join(outDir, expected)
+		stat, err := os.Stat(filename)
+		if errors.Is(err, fs.ErrNotExist) {
+			t.Errorf("missing %s: %s", filename, err)
+		}
+		if stat.Mode().Perm()|0o666 != 0o666 {
+			t.Errorf("generated files should not be executable %s: %o", filename, stat.Mode())
+		}
+	}
+	contentBytes, err := os.ReadFile(path.Join(outDir, "Cargo.toml"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	contents := string(contentBytes)
+	got := extractBlock(t, contents, fmt.Sprintf("\n%s", lroOperationFeature), " = []\n")
+	want := fmt.Sprintf("\n%s = []\n", lroOperationFeature)
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s\n====\n%s", diff, contents)
+	}
+	got = extractBlock(t, contents, "\ninstances = ", "]\n")
+	want = fmt.Sprintf("\ninstances = [\"%s\", ]\n", lroOperationFeature)
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s\n====\n%s", diff, contents)
+	}
 }
 
 func TestRustFromProtobuf(t *testing.T) {
