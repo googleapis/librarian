@@ -235,12 +235,31 @@ func getM2ArtifactSpec(mvnTool *config.MavenTool) (string, string) {
 	return artifact, ext
 }
 
+// mavenOffline reports whether mvn should run in offline mode (-o). Enabled by
+// setting LIBRARIAN_MAVEN_OFFLINE to a truthy value once ~/.m2 is warm, which
+// skips all remote metadata lookups. Default is online (current behavior).
+func mavenOffline() bool {
+	switch strings.ToLower(os.Getenv("LIBRARIAN_MAVEN_OFFLINE")) {
+	case "1", "true", "yes":
+		return true
+	}
+	return false
+}
+
+// downloadArgs builds the mvn dependency:get arguments. -B (batch) and -ntp
+// (no transfer progress) keep output non-interactive and quiet, matching the
+// package build.
+func downloadArgs(artifact string, offline bool) []string {
+	args := []string{"dependency:get", "-B", "-ntp"}
+	if offline {
+		args = append(args, "-o")
+	}
+	return append(args, "-Dartifact="+artifact)
+}
+
 // downloadM2Artifact executes mvn dependency:get to download the target artifact.
 func downloadM2Artifact(ctx context.Context, artifact, workDir string) error {
-	args := []string{
-		"dependency:get",
-		"-Dartifact=" + artifact,
-	}
+	args := downloadArgs(artifact, mavenOffline())
 	if err := command.RunStreamingInDir(ctx, workDir, "mvn", args...); err != nil {
 		return fmt.Errorf("failed to download artifact %s: %w", artifact, err)
 	}
@@ -294,8 +313,10 @@ func createBinWrapper(wrapperName, destPath, binDir string, isExecutable bool, m
 	return os.WriteFile(wrapperPath, []byte(content), 0o755)
 }
 
-// buildLocalMavenProject builds the local Maven project at the target relative path under the monorepo root.
-func buildLocalMavenProject(ctx context.Context, localPath string) error {
+// packageArgs builds the mvn package arguments for a local project build:
+// batch mode, no transfer progress, parallel, and skipping tests and
+// static-analysis plugins the generator build does not need.
+func packageArgs(localPath string, offline bool) []string {
 	args := []string{
 		"package",
 		"-B",
@@ -306,9 +327,16 @@ func buildLocalMavenProject(ctx context.Context, localPath string) error {
 		"-Dclirr.skip",
 		"-Denforcer.skip",
 		"-Dfmt.skip",
-		"-pl", localPath,
-		"--also-make",
 	}
+	if offline {
+		args = append(args, "-o")
+	}
+	return append(args, "-pl", localPath, "--also-make")
+}
+
+// buildLocalMavenProject builds the local Maven project at the target relative path under the monorepo root.
+func buildLocalMavenProject(ctx context.Context, localPath string) error {
+	args := packageArgs(localPath, mavenOffline())
 	if err := command.RunStreaming(ctx, "mvn", args...); err != nil {
 		return fmt.Errorf("failed to build local Maven project %q: %w", localPath, err)
 	}

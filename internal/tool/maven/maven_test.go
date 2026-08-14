@@ -120,8 +120,8 @@ func TestInstall(t *testing.T) {
 		t.Fatal(err)
 	}
 	gotMvn := strings.TrimSpace(string(mvnData))
-	wantMvn := "mvn dependency:get -Dartifact=com.google.googlejavaformat:google-java-format:1.25.2:jar:all-deps\n" +
-		"mvn dependency:get -Dartifact=io.grpc:protoc-gen-grpc-java:1.81.0:exe:linux-x86_64\n" +
+	wantMvn := "mvn dependency:get -B -ntp -Dartifact=com.google.googlejavaformat:google-java-format:1.25.2:jar:all-deps\n" +
+		"mvn dependency:get -B -ntp -Dartifact=io.grpc:protoc-gen-grpc-java:1.81.0:exe:linux-x86_64\n" +
 		"mvn package -B -ntp -T 1.5C -DskipTests -Dcheckstyle.skip -Dclirr.skip -Denforcer.skip -Dfmt.skip " +
 		"-pl sdk-platform-java/gapic-generator-java --also-make"
 	if diff := cmp.Diff(wantMvn, gotMvn); diff != "" {
