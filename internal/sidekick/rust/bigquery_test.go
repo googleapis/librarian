@@ -205,16 +205,16 @@ func TestBigQuerySyntheticMessages(t *testing.T) {
 	}
 
 	// Verify builder() output has modified basic field annotations
-	queryBuilder, err := queryBuilder(builder)
+	queryBuilder, err := createQueryBuilderMessage(builder)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if queryBuilder.Name != "Query" {
-		t.Errorf("expected name 'Query', got %q", queryBuilder.Name)
+	if queryBuilder.Name != "QueryBuilder" {
+		t.Errorf("expected name 'QueryBuilder', got %q", queryBuilder.Name)
 	}
 	msgAnn, ok := queryBuilder.Codec.(*messageAnnotation)
 	if !ok {
-		t.Fatalf("expected messageAnnotation on Query msg")
+		t.Fatalf("expected messageAnnotation on QueryBuilder msg")
 	}
 	if len(msgAnn.BasicFields) != 40 {
 		t.Fatalf("expected 40 basic field annotations, got %d", len(msgAnn.BasicFields))
@@ -226,16 +226,16 @@ func TestBigQuerySyntheticMessages(t *testing.T) {
 	if fAnn.FieldName != "request.field_00" {
 		t.Errorf("expected FieldName to be 'request.field_00', got %q", fAnn.FieldName)
 	}
-	if fAnn.FQMessageName != "crate::model::QueryRequest" {
-		t.Errorf("expected FQMessageName to be 'crate::model::QueryRequest', got %q", fAnn.FQMessageName)
+	if fAnn.FQMessageName != "crate::generated::QueryBuilderRequest" {
+		t.Errorf("expected FQMessageName to be 'crate::generated::QueryBuilderRequest', got %q", fAnn.FQMessageName)
 	}
 
-	queryRequest, err := queryBuilder.createSyntheticMessage("QueryRequest")
+	queryRequest, err := builder.createSyntheticMessage("QueryBuilderRequest")
 	if err != nil {
 		t.Fatal(err)
 	}
-	if queryRequest.Name != "QueryRequest" {
-		t.Errorf("expected name 'QueryRequest', got %q", queryRequest.Name)
+	if queryRequest.Name != "QueryBuilderRequest" {
+		t.Errorf("expected name 'QueryBuilderRequest', got %q", queryRequest.Name)
 	}
 	for _, f := range queryRequest.Fields {
 		wantID := fmt.Sprintf(".google.cloud.bigquery.v2.QueryRequest.%s", f.Name)
