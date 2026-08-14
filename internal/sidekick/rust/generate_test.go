@@ -189,7 +189,7 @@ func TestRustFromDiscoveryWithLro(t *testing.T) {
 	cfg := &parser.ModelConfig{
 		SpecificationFormat: libconfig.SpecDiscovery,
 		ServiceConfig:       path.Join(testdataDir, "googleapis/google/cloud/compute/v1/compute_v1.yaml"),
-		SpecificationSource: path.Join(testdataDir, "discovery/compute.v1.json"),
+		SpecificationSource: path.Join(testdataDir, "discovery/small-compute.v1.json"),
 		Codec: map[string]string{
 			"package:wkt":          "source=google.protobuf,package=google-cloud-wkt",
 			"per-service-features": "true",
@@ -243,8 +243,8 @@ func TestRustFromDiscoveryWithLro(t *testing.T) {
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s\n====\n%s", diff, contents)
 	}
-	got = extractBlock(t, contents, "\ninstances = ", "]\n")
-	want = fmt.Sprintf("\ninstances = [\"%s\", ]\n", lroOperationFeature)
+	got = extractBlock(t, contents, "\nautoscalers = ", "]\n")
+	want = fmt.Sprintf("\nautoscalers = [\"%s\", ]\n", lroOperationFeature)
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s\n====\n%s", diff, contents)
 	}

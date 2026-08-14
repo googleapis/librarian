@@ -899,9 +899,19 @@ func TestGenerateDiscoveryService_Files(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	swiftCfg := swiftConfig(t, []config.SwiftDependency{
+		{
+			Name:               "GoogleCloudGax",
+			RequiredByServices: true,
+		},
+		{
+			Name:               "GoogleCloudAuth",
+			RequiredByServices: true,
+		},
+	})
 	library := &config.Library{
 		SpecificationFormat: config.SpecDiscovery,
-		Swift:               swiftConfig(t, nil),
+		Swift:               swiftCfg,
 	}
 	if err := Generate(t.Context(), model, outDir, library, nil); err != nil {
 		t.Fatal(err)
