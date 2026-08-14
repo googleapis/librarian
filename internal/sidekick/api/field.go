@@ -186,6 +186,14 @@ func (f *Field) IsObject() bool {
 	return f.Typez == TypezMessage
 }
 
+// IsWktAny returns true if the field is of type ".google.protobuf.Any"
+//
+// This is a well-known type that requires special treatment in some
+// sidekick gencode <-> Protobuf gencode conversions.
+func (f *Field) IsWktAny() bool {
+	return f.TypezID == WktAnyID
+}
+
 // IsResourceReference returns true if the field is annotated with google.api.resource_reference.
 func (f *Field) IsResourceReference() bool {
 	return f.ResourceReference != nil

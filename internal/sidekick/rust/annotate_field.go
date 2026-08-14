@@ -22,6 +22,17 @@ import (
 	"github.com/googleapis/librarian/internal/sidekick/language"
 )
 
+var (
+	// The annotations print a warning when generating code that converts between sidekick-gencode
+	// and Prost-gencode **and** has a field of type Any. The warning is suppressed for some
+	//  well-known cases where we decided it was fine.
+	suppressProstConvertAndAnyWarnings = map[string]struct{}{
+		".google.rpc.Status":                           {},
+		".google.longrunning.Operation":                {},
+		".google.storage.control.v2.ObjectFullContext": {},
+	}
+)
+
 type fieldAnnotations struct {
 	// In Rust, message fields are fields inside a struct. These must be
 	// `snake_case`. Possibly mangled with `r#` if the name is a Rust reserved
@@ -194,6 +205,11 @@ func (c *codec) annotateField(field *api.Field, message *api.Message, model *api
 	primitiveFieldType, err := c.fieldType(field, model, true, model.PackageName)
 	if err != nil {
 		return nil, err
+	}
+	if field.TypezID == api.WktAnyID && c.templateOverride == templateConvertProst {
+		if _, ok := suppressProstConvertAndAnyWarnings[message.ID]; !ok {
+			fmt.Printf("WARNING: unknown field of type wkt::Any, conversion skipped, consider ad-hoc code, message: %s\n", message.ID)
+		}
 	}
 	ann := &fieldAnnotations{
 		FieldName:          toSnake(field.Name),
