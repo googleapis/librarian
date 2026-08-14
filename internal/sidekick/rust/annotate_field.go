@@ -24,7 +24,7 @@ import (
 
 var (
 	// The annotations print a warning when generating code that converts between sidekick-gencode
-	// and Prost-gencode **and** has a field of type Any. The warning is supressed for some
+	// and Prost-gencode **and** has a field of type Any. The warning is suppressed for some
 	//  well-known cases where we decided it was fine.
 	suppressProstConvertAndAnyWarnings = map[string]struct{}{
 		".google.rpc.Status":                           {},
