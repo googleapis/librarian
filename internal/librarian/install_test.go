@@ -62,7 +62,7 @@ func TestGenerate(t *testing.T) {
 
 	tmpDir := t.TempDir()
 	t.Chdir(tmpDir)
-	if err := generateLibraries(t.Context(), cfg, []*config.Library{library}, nil); err != nil {
+	if err := generateLibraries(t.Context(), cfg, []*config.Library{library}, nil, 0); err != nil {
 		t.Fatal(err)
 	}
 
@@ -92,7 +92,7 @@ func TestCleanLibraries(t *testing.T) {
 
 	tmpDir := t.TempDir()
 	t.Chdir(tmpDir)
-	if err := generateLibraries(t.Context(), cfg, []*config.Library{library}, nil); err != nil {
+	if err := generateLibraries(t.Context(), cfg, []*config.Library{library}, nil, 0); err != nil {
 		t.Fatal(err)
 	}
 

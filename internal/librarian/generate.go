@@ -82,6 +82,11 @@ latest API definitions is:
 				Name:  "timing",
 				Usage: "print a per-phase timing summary to stderr after generation",
 			},
+			&cli.IntFlag{
+				Name:    "jobs",
+				Aliases: []string{"j"},
+				Usage:   "maximum number of libraries to generate concurrently (default: number of CPUs)",
+			},
 		},
 		Action: func(ctx context.Context, cmd *cli.Command) error {
 			all := cmd.Bool("all")
@@ -101,12 +106,12 @@ latest API definitions is:
 				ctx = timing.WithCollector(ctx, tc)
 				defer func() { fmt.Fprint(os.Stderr, tc.Summary()) }()
 			}
-			return runGenerate(ctx, cfg, all, libraryName)
+			return runGenerate(ctx, cfg, all, libraryName, cmd.Int("jobs"))
 		},
 	}
 }
 
-func runGenerate(ctx context.Context, cfg *config.Config, all bool, libraryName string) error {
+func runGenerate(ctx context.Context, cfg *config.Config, all bool, libraryName string, jobs int) error {
 	tc := timing.FromContext(ctx)
 	defer tc.Span("generate.total")()
 
@@ -163,7 +168,16 @@ func runGenerate(ctx context.Context, cfg *config.Config, all bool, libraryName 
 	}
 
 	defer tc.Span("generate_libraries.total")()
-	return generateLibraries(ctx, cfg, libraries, sources)
+	return generateLibraries(ctx, cfg, libraries, sources, jobs)
+}
+
+// concurrencyLimit resolves the effective worker count from the --jobs flag: a
+// positive value is used as-is, otherwise it falls back to the number of CPUs.
+func concurrencyLimit(jobs int) int {
+	if jobs > 0 {
+		return jobs
+	}
+	return runtime.NumCPU()
 }
 
 // cleanLibraries iterates over all the given libraries sequentially,
@@ -209,11 +223,12 @@ func cleanLibraries(language string, libraries []*config.Library) error {
 // generateLibraries generates and formats all the given libraries,
 // delegating to language-specific code. Each language chooses its own
 // concurrency strategy for these two steps.
-func generateLibraries(ctx context.Context, cfg *config.Config, libraries []*config.Library, src *sources.Sources) error {
+func generateLibraries(ctx context.Context, cfg *config.Config, libraries []*config.Library, src *sources.Sources, jobs int) error {
+	limit := concurrencyLimit(jobs)
 	switch cfg.Language {
 	case config.LanguageDart:
 		g, gctx := errgroup.WithContext(ctx)
-		g.SetLimit(runtime.NumCPU())
+		g.SetLimit(limit)
 		for _, library := range libraries {
 			g.Go(func() error {
 				if err := dart.Generate(gctx, library, src); err != nil {
@@ -238,7 +253,7 @@ func generateLibraries(ctx context.Context, cfg *config.Config, libraries []*con
 		return fakePostGenerate()
 	case config.LanguageGo:
 		g, gctx := errgroup.WithContext(ctx)
-		g.SetLimit(runtime.NumCPU())
+		g.SetLimit(limit)
 		for _, library := range libraries {
 			g.Go(func() error {
 				if err := golang.Generate(gctx, cfg, library, src); err != nil {
@@ -251,7 +266,7 @@ func generateLibraries(ctx context.Context, cfg *config.Config, libraries []*con
 			return err
 		}
 		g, gctx = errgroup.WithContext(ctx)
-		g.SetLimit(runtime.NumCPU())
+		g.SetLimit(limit)
 		for _, library := range libraries {
 			g.Go(func() error {
 				if err := golang.Format(gctx, library); err != nil {
@@ -268,7 +283,7 @@ func generateLibraries(ctx context.Context, cfg *config.Config, libraries []*con
 		// scoped to library.Output); the repo-shared root/BOM POMs are written
 		// by the sequential PostGenerate below, after all libraries complete.
 		g, gctx := errgroup.WithContext(ctx)
-		g.SetLimit(runtime.NumCPU())
+		g.SetLimit(limit)
 		for _, library := range libraries {
 			g.Go(func() error {
 				libStop := tc.Span("java.generate.library")
@@ -293,7 +308,7 @@ func generateLibraries(ctx context.Context, cfg *config.Config, libraries []*con
 		return java.PostGenerate(ctx, ".", cfg)
 	case config.LanguageNodejs:
 		g, gctx := errgroup.WithContext(ctx)
-		g.SetLimit(runtime.NumCPU())
+		g.SetLimit(limit)
 		for _, library := range libraries {
 			g.Go(func() error {
 				if err := nodejs.Generate(gctx, cfg, library, src); err != nil {
@@ -305,7 +320,7 @@ func generateLibraries(ctx context.Context, cfg *config.Config, libraries []*con
 		return g.Wait()
 	case config.LanguagePhp:
 		g, gctx := errgroup.WithContext(ctx)
-		g.SetLimit(runtime.NumCPU())
+		g.SetLimit(limit)
 		for _, library := range libraries {
 			g.Go(func() error {
 				if err := php.Generate(gctx, cfg, library, src); err != nil {
@@ -320,7 +335,7 @@ func generateLibraries(ctx context.Context, cfg *config.Config, libraries []*con
 		return g.Wait()
 	case config.LanguagePython:
 		g, gctx := errgroup.WithContext(ctx)
-		g.SetLimit(runtime.NumCPU())
+		g.SetLimit(limit)
 		for _, library := range libraries {
 			g.Go(func() error {
 				// TODO(https://github.com/googleapis/librarian/issues/3730):
@@ -334,7 +349,7 @@ func generateLibraries(ctx context.Context, cfg *config.Config, libraries []*con
 		return g.Wait()
 	case config.LanguageRuby:
 		g, gctx := errgroup.WithContext(ctx)
-		g.SetLimit(runtime.NumCPU())
+		g.SetLimit(limit)
 		for _, library := range libraries {
 			g.Go(func() error {
 				if err := ruby.Generate(gctx, cfg, library, src); err != nil {
@@ -350,7 +365,7 @@ func generateLibraries(ctx context.Context, cfg *config.Config, libraries []*con
 	case config.LanguageRust:
 		// Run the generation in parallel.
 		g, gctx := errgroup.WithContext(ctx)
-		g.SetLimit(runtime.NumCPU())
+		g.SetLimit(limit)
 		for _, library := range libraries {
 			g.Go(func() error {
 				if err := rust.Generate(gctx, cfg, library, src); err != nil {
@@ -366,7 +381,7 @@ func generateLibraries(ctx context.Context, cfg *config.Config, libraries []*con
 		// During generation files are removed, and formatting reads the
 		// `Cargo.toml` file from dependencies.
 		f, fctx := errgroup.WithContext(ctx)
-		f.SetLimit(runtime.NumCPU())
+		f.SetLimit(limit)
 		for _, library := range libraries {
 			f.Go(func() error {
 				if err := rust.Format(fctx, library); err != nil {
@@ -381,7 +396,7 @@ func generateLibraries(ctx context.Context, cfg *config.Config, libraries []*con
 		return rust.UpdateWorkspace(ctx)
 	case config.LanguageSwift:
 		g, gctx := errgroup.WithContext(ctx)
-		g.SetLimit(runtime.NumCPU())
+		g.SetLimit(limit)
 		for _, library := range libraries {
 			g.Go(func() error {
 				if err := swift.Generate(gctx, cfg, library, src); err != nil {
