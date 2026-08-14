@@ -23,7 +23,7 @@ import (
 )
 
 func TestRecordAggregates(t *testing.T) {
-	c := New()
+	c := New("")
 	c.Record("a", 10*time.Millisecond)
 	c.Record("a", 30*time.Millisecond)
 	c.Record("b", 5*time.Millisecond)
@@ -42,7 +42,7 @@ func TestRecordAggregates(t *testing.T) {
 }
 
 func TestSpanRecordsElapsed(t *testing.T) {
-	c := New()
+	c := New("")
 	stop := c.Span("work")
 	stop()
 	c.mu.Lock()
@@ -63,7 +63,7 @@ func TestNilCollectorIsNoOp(t *testing.T) {
 }
 
 func TestFromContextRoundTrip(t *testing.T) {
-	c := New()
+	c := New("")
 	ctx := WithCollector(context.Background(), c)
 	if FromContext(ctx) != c {
 		t.Error("FromContext did not return the stored collector")
@@ -74,7 +74,7 @@ func TestFromContextRoundTrip(t *testing.T) {
 }
 
 func TestSummaryContainsPhases(t *testing.T) {
-	c := New()
+	c := New("")
 	c.Record("alpha", 2*time.Millisecond)
 	c.Record("beta", 1*time.Millisecond)
 	got := c.Summary()
@@ -85,8 +85,29 @@ func TestSummaryContainsPhases(t *testing.T) {
 	}
 }
 
+func TestSummaryShowsLanguage(t *testing.T) {
+	c := New("java")
+	c.Record("generate.library", time.Millisecond)
+	if got := c.Summary(); !strings.Contains(got, "language=java") {
+		t.Errorf("Summary() should include the language; got:\n%s", got)
+	}
+}
+
+func TestSpanConvenience(t *testing.T) {
+	c := New("")
+	ctx := WithCollector(context.Background(), c)
+	Span(ctx, "phase")()
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	if c.stats["phase"].count != 1 {
+		t.Error("Span(ctx, name) did not record via the context collector")
+	}
+	// Nil-safe on a bare context.
+	Span(context.Background(), "phase")()
+}
+
 func TestConcurrentRecord(t *testing.T) {
-	c := New()
+	c := New("")
 	var wg sync.WaitGroup
 	for range 50 {
 		wg.Go(func() {

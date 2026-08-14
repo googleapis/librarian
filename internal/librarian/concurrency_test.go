@@ -15,9 +15,59 @@
 package librarian
 
 import (
+	"context"
+	"errors"
 	"runtime"
+	"strings"
+	"sync"
+	"sync/atomic"
 	"testing"
+
+	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/timing"
 )
+
+func TestForEachLibraryRunsAllAndRecordsSpans(t *testing.T) {
+	libs := []*config.Library{{Name: "a"}, {Name: "b"}, {Name: "c"}}
+	tc := timing.New("test")
+	ctx := timing.WithCollector(context.Background(), tc)
+
+	var seen sync.Map
+	var count atomic.Int64
+	err := forEachLibrary(ctx, libs, 2, timing.PhaseGenerateLibrary, func(_ context.Context, lib *config.Library) error {
+		seen.Store(lib.Name, true)
+		count.Add(1)
+		return nil
+	})
+	if err != nil {
+		t.Fatalf("forEachLibrary returned error: %v", err)
+	}
+	if count.Load() != int64(len(libs)) {
+		t.Errorf("ran %d libraries, want %d", count.Load(), len(libs))
+	}
+	for _, lib := range libs {
+		if _, ok := seen.Load(lib.Name); !ok {
+			t.Errorf("library %q was not processed", lib.Name)
+		}
+	}
+	if got := tc.Summary(); !strings.Contains(got, timing.PhaseGenerateLibrary) {
+		t.Errorf("expected a %q span in the summary; got:\n%s", timing.PhaseGenerateLibrary, got)
+	}
+}
+
+func TestForEachLibraryPropagatesError(t *testing.T) {
+	libs := []*config.Library{{Name: "a"}, {Name: "b"}}
+	wantErr := errors.New("boom")
+	err := forEachLibrary(context.Background(), libs, 4, timing.PhaseGenerateLibrary, func(_ context.Context, lib *config.Library) error {
+		if lib.Name == "b" {
+			return wantErr
+		}
+		return nil
+	})
+	if !errors.Is(err, wantErr) {
+		t.Errorf("forEachLibrary error = %v, want %v", err, wantErr)
+	}
+}
 
 func TestConcurrencyLimit(t *testing.T) {
 	cpus := runtime.NumCPU()

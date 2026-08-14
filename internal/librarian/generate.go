@@ -107,7 +107,7 @@ latest API definitions is:
 				return err
 			}
 			if cmd.Bool("timing") {
-				tc := timing.New()
+				tc := timing.New(cfg.Language)
 				ctx = timing.WithCollector(ctx, tc)
 				defer func() { fmt.Fprint(os.Stderr, tc.Summary()) }()
 			}
@@ -239,27 +239,40 @@ func cleanLibraries(language string, libraries []*config.Library) error {
 	return nil
 }
 
-// generateLibraries generates and formats all the given libraries,
-// delegating to language-specific code. Each language chooses its own
-// concurrency strategy for these two steps.
+// forEachLibrary runs fn for every library concurrently, bounded by limit, and
+// records a per-library timing span named phase. It is the single place that
+// owns the generate/format concurrency, so every language gets consistent
+// parallelism and per-library benchmarking for free — instrumenting a new
+// language is just routing its work through here.
+func forEachLibrary(ctx context.Context, libraries []*config.Library, limit int, phase string, fn func(context.Context, *config.Library) error) error {
+	g, gctx := errgroup.WithContext(ctx)
+	g.SetLimit(limit)
+	tc := timing.FromContext(ctx)
+	for _, library := range libraries {
+		g.Go(func() error {
+			defer tc.Span(phase)()
+			return fn(gctx, library)
+		})
+	}
+	return g.Wait()
+}
+
+// generateLibraries generates and formats all the given libraries, delegating
+// to language-specific code via forEachLibrary, which provides the shared
+// concurrency and per-library timing.
 func generateLibraries(ctx context.Context, cfg *config.Config, libraries []*config.Library, src *sources.Sources, jobs int, fingerprints map[string]string) error {
 	limit := concurrencyLimit(jobs)
 	switch cfg.Language {
 	case config.LanguageDart:
-		g, gctx := errgroup.WithContext(ctx)
-		g.SetLimit(limit)
-		for _, library := range libraries {
-			g.Go(func() error {
-				if err := dart.Generate(gctx, library, src); err != nil {
-					return fmt.Errorf("generate library %q (%s): %w", library.Name, cfg.Language, err)
-				}
-				if err := dart.Format(gctx, library); err != nil {
-					return fmt.Errorf("format library %q (%s): %w", library.Name, cfg.Language, err)
-				}
-				return nil
-			})
-		}
-		return g.Wait()
+		return forEachLibrary(ctx, libraries, limit, timing.PhaseGenerateLibrary, func(ctx context.Context, library *config.Library) error {
+			if err := dart.Generate(ctx, library, src); err != nil {
+				return fmt.Errorf("generate library %q (%s): %w", library.Name, cfg.Language, err)
+			}
+			if err := dart.Format(ctx, library); err != nil {
+				return fmt.Errorf("format library %q (%s): %w", library.Name, cfg.Language, err)
+			}
+			return nil
+		})
 	case config.LanguageFake:
 		for _, library := range libraries {
 			if err := fakeGenerate(library); err != nil {
@@ -271,170 +284,114 @@ func generateLibraries(ctx context.Context, cfg *config.Config, libraries []*con
 		}
 		return fakePostGenerate()
 	case config.LanguageGo:
-		g, gctx := errgroup.WithContext(ctx)
-		g.SetLimit(limit)
-		for _, library := range libraries {
-			g.Go(func() error {
-				if err := golang.Generate(gctx, cfg, library, src); err != nil {
-					return fmt.Errorf("generate library %q (%s): %w", library.Name, cfg.Language, err)
-				}
-				return nil
-			})
-		}
-		if err := g.Wait(); err != nil {
+		if err := forEachLibrary(ctx, libraries, limit, timing.PhaseGenerateLibrary, func(ctx context.Context, library *config.Library) error {
+			if err := golang.Generate(ctx, cfg, library, src); err != nil {
+				return fmt.Errorf("generate library %q (%s): %w", library.Name, cfg.Language, err)
+			}
+			return nil
+		}); err != nil {
 			return err
 		}
-		g, gctx = errgroup.WithContext(ctx)
-		g.SetLimit(limit)
-		for _, library := range libraries {
-			g.Go(func() error {
-				if err := golang.Format(gctx, library); err != nil {
-					return fmt.Errorf("format library %q (%s): %w", library.Name, cfg.Language, err)
-				}
-				return nil
-			})
-		}
-		return g.Wait()
+		return forEachLibrary(ctx, libraries, limit, timing.PhaseFormatLibrary, func(ctx context.Context, library *config.Library) error {
+			if err := golang.Format(ctx, library); err != nil {
+				return fmt.Errorf("format library %q (%s): %w", library.Name, cfg.Language, err)
+			}
+			return nil
+		})
 	case config.LanguageJava:
-		tc := timing.FromContext(ctx)
-		// Generate libraries concurrently, matching every other language. Each
-		// library writes only within its own output directory (syncPOMs is
+		// Each library writes only within its own output directory (syncPOMs is
 		// scoped to library.Output); the repo-shared root/BOM POMs are written
 		// by the sequential PostGenerate below, after all libraries complete.
-		g, gctx := errgroup.WithContext(ctx)
-		g.SetLimit(limit)
-		for _, library := range libraries {
-			g.Go(func() error {
-				libStop := tc.Span("java.generate.library")
-				err := java.Generate(gctx, cfg, library, src)
-				libStop()
-				if err != nil {
-					return fmt.Errorf("generate library %q (%s): %w", library.Name, cfg.Language, err)
+		if err := forEachLibrary(ctx, libraries, limit, timing.PhaseGenerateLibrary, func(ctx context.Context, library *config.Library) error {
+			if err := java.Generate(ctx, cfg, library, src); err != nil {
+				return fmt.Errorf("generate library %q (%s): %w", library.Name, cfg.Language, err)
+			}
+			// Record the input fingerprint so a later --changed-only run can
+			// skip this library while its inputs are unchanged.
+			if fp := fingerprints[library.Name]; fp != "" {
+				if werr := writeGeneratedManifest(library.Output, fp); werr != nil {
+					slog.Warn("changed-only: failed to write manifest", "library", library.Name, "err", werr)
 				}
-				// Record the input fingerprint so a later --changed-only run
-				// can skip this library while its inputs are unchanged.
-				if fp := fingerprints[library.Name]; fp != "" {
-					if werr := writeGeneratedManifest(library.Output, fp); werr != nil {
-						slog.Warn("changed-only: failed to write manifest", "library", library.Name, "err", werr)
-					}
-				}
-				return nil
-			})
-		}
-		if err := g.Wait(); err != nil {
+			}
+			return nil
+		}); err != nil {
 			return err
 		}
-		fmtStop := tc.Span("java.format.all")
+		tc := timing.FromContext(ctx)
+		fmtStop := tc.Span("format.all")
 		err := java.Format(ctx, libraries...)
 		fmtStop()
 		if err != nil {
 			return fmt.Errorf("format java libraries (%s): %w", cfg.Language, err)
 		}
-		defer tc.Span("java.postgenerate")()
+		defer tc.Span("postgenerate")()
 		return java.PostGenerate(ctx, ".", cfg)
 	case config.LanguageNodejs:
-		g, gctx := errgroup.WithContext(ctx)
-		g.SetLimit(limit)
-		for _, library := range libraries {
-			g.Go(func() error {
-				if err := nodejs.Generate(gctx, cfg, library, src); err != nil {
-					return fmt.Errorf("generate library %q (%s): %w", library.Name, cfg.Language, err)
-				}
-				return nil
-			})
-		}
-		return g.Wait()
+		return forEachLibrary(ctx, libraries, limit, timing.PhaseGenerateLibrary, func(ctx context.Context, library *config.Library) error {
+			if err := nodejs.Generate(ctx, cfg, library, src); err != nil {
+				return fmt.Errorf("generate library %q (%s): %w", library.Name, cfg.Language, err)
+			}
+			return nil
+		})
 	case config.LanguagePhp:
-		g, gctx := errgroup.WithContext(ctx)
-		g.SetLimit(limit)
-		for _, library := range libraries {
-			g.Go(func() error {
-				if err := php.Generate(gctx, cfg, library, src); err != nil {
-					return fmt.Errorf("generate library %q (%s): %w", library.Name, cfg.Language, err)
-				}
-				if err := php.Format(gctx, library); err != nil {
-					return fmt.Errorf("format library %q (%s): %w", library.Name, cfg.Language, err)
-				}
-				return nil
-			})
-		}
-		return g.Wait()
+		return forEachLibrary(ctx, libraries, limit, timing.PhaseGenerateLibrary, func(ctx context.Context, library *config.Library) error {
+			if err := php.Generate(ctx, cfg, library, src); err != nil {
+				return fmt.Errorf("generate library %q (%s): %w", library.Name, cfg.Language, err)
+			}
+			if err := php.Format(ctx, library); err != nil {
+				return fmt.Errorf("format library %q (%s): %w", library.Name, cfg.Language, err)
+			}
+			return nil
+		})
 	case config.LanguagePython:
-		g, gctx := errgroup.WithContext(ctx)
-		g.SetLimit(limit)
-		for _, library := range libraries {
-			g.Go(func() error {
-				// TODO(https://github.com/googleapis/librarian/issues/3730):
-				// separate generation and formatting for Python.
-				if err := python.Generate(gctx, cfg, library, src); err != nil {
-					return fmt.Errorf("generate library %q (%s): %w", library.Name, cfg.Language, err)
-				}
-				return nil
-			})
-		}
-		return g.Wait()
+		// TODO(https://github.com/googleapis/librarian/issues/3730):
+		// separate generation and formatting for Python.
+		return forEachLibrary(ctx, libraries, limit, timing.PhaseGenerateLibrary, func(ctx context.Context, library *config.Library) error {
+			if err := python.Generate(ctx, cfg, library, src); err != nil {
+				return fmt.Errorf("generate library %q (%s): %w", library.Name, cfg.Language, err)
+			}
+			return nil
+		})
 	case config.LanguageRuby:
-		g, gctx := errgroup.WithContext(ctx)
-		g.SetLimit(limit)
-		for _, library := range libraries {
-			g.Go(func() error {
-				if err := ruby.Generate(gctx, cfg, library, src); err != nil {
-					return fmt.Errorf("generate library %q (%s): %w", library.Name, cfg.Language, err)
-				}
-				if err := ruby.Format(gctx, library); err != nil {
-					return fmt.Errorf("format library %q (%s): %w", library.Name, cfg.Language, err)
-				}
-				return nil
-			})
-		}
-		return g.Wait()
+		return forEachLibrary(ctx, libraries, limit, timing.PhaseGenerateLibrary, func(ctx context.Context, library *config.Library) error {
+			if err := ruby.Generate(ctx, cfg, library, src); err != nil {
+				return fmt.Errorf("generate library %q (%s): %w", library.Name, cfg.Language, err)
+			}
+			if err := ruby.Format(ctx, library); err != nil {
+				return fmt.Errorf("format library %q (%s): %w", library.Name, cfg.Language, err)
+			}
+			return nil
+		})
 	case config.LanguageRust:
-		// Run the generation in parallel.
-		g, gctx := errgroup.WithContext(ctx)
-		g.SetLimit(limit)
-		for _, library := range libraries {
-			g.Go(func() error {
-				if err := rust.Generate(gctx, cfg, library, src); err != nil {
-					return fmt.Errorf("generate library %q (%s): %w", library.Name, cfg.Language, err)
-				}
-				return nil
-			})
-		}
-		if err := g.Wait(); err != nil {
+		if err := forEachLibrary(ctx, libraries, limit, timing.PhaseGenerateLibrary, func(ctx context.Context, library *config.Library) error {
+			if err := rust.Generate(ctx, cfg, library, src); err != nil {
+				return fmt.Errorf("generate library %q (%s): %w", library.Name, cfg.Language, err)
+			}
+			return nil
+		}); err != nil {
 			return err
 		}
-		// Formatting can also happen in parallel, but must be after generation.
-		// During generation files are removed, and formatting reads the
-		// `Cargo.toml` file from dependencies.
-		f, fctx := errgroup.WithContext(ctx)
-		f.SetLimit(limit)
-		for _, library := range libraries {
-			f.Go(func() error {
-				if err := rust.Format(fctx, library); err != nil {
-					return fmt.Errorf("format library %q (%s): %w", library.Name, cfg.Language, err)
-				}
-				return nil
-			})
-		}
-		if err := f.Wait(); err != nil {
+		// Formatting must run after generation: files are removed during
+		// generation, and formatting reads the Cargo.toml of dependencies.
+		if err := forEachLibrary(ctx, libraries, limit, timing.PhaseFormatLibrary, func(ctx context.Context, library *config.Library) error {
+			if err := rust.Format(ctx, library); err != nil {
+				return fmt.Errorf("format library %q (%s): %w", library.Name, cfg.Language, err)
+			}
+			return nil
+		}); err != nil {
 			return err
 		}
 		return rust.UpdateWorkspace(ctx)
 	case config.LanguageSwift:
-		g, gctx := errgroup.WithContext(ctx)
-		g.SetLimit(limit)
-		for _, library := range libraries {
-			g.Go(func() error {
-				if err := swift.Generate(gctx, cfg, library, src); err != nil {
-					return fmt.Errorf("generate library %q (%s): %w", library.Name, cfg.Language, err)
-				}
-				if err := swift.Format(gctx, library); err != nil {
-					return fmt.Errorf("format library %q (%s): %w", library.Name, cfg.Language, err)
-				}
-				return nil
-			})
-		}
-		return g.Wait()
+		return forEachLibrary(ctx, libraries, limit, timing.PhaseGenerateLibrary, func(ctx context.Context, library *config.Library) error {
+			if err := swift.Generate(ctx, cfg, library, src); err != nil {
+				return fmt.Errorf("generate library %q (%s): %w", library.Name, cfg.Language, err)
+			}
+			if err := swift.Format(ctx, library); err != nil {
+				return fmt.Errorf("format library %q (%s): %w", library.Name, cfg.Language, err)
+			}
+			return nil
+		})
 	default:
 		return fmt.Errorf("%w: %q", errUnsupportedLanguage, cfg.Language)
 	}

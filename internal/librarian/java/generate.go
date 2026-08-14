@@ -80,7 +80,7 @@ func Generate(ctx context.Context, cfg *config.Config, library *config.Library, 
 
 	// Generate repo metadata prior to client generation because this info is needed
 	// for README.md and pom.xml generation during post-processing.
-	mdStop := tc.Span("java.repometadata")
+	mdStop := tc.Span("repometadata")
 	metadata, err := generateRepoMetadata(cfg, library, outdir, primaryDir)
 	mdStop()
 	if err != nil {
@@ -108,7 +108,7 @@ func Generate(ctx context.Context, cfg *config.Config, library *config.Library, 
 		}
 	}
 
-	ppStop := tc.Span("java.postprocess.library")
+	ppStop := tc.Span("postprocess.library")
 	err = postProcessLibrary(libraryPostProcessParams{
 		cfg:        cfg,
 		library:    library,
@@ -175,7 +175,7 @@ func generateAPI(ctx context.Context, params generateAPIParams) error {
 		protoProtos := filterProtos(apiProtos, javaAPI.SkipProtoClassGeneration, primaryDir)
 		protoProtos = append(protoProtos, additionalProtosToGenerateAbs...)
 		args := protoProtocArgs(protoProtos, params.srcCfg, protoDir)
-		stop := tc.Span("java.protoc.proto")
+		stop := tc.Span("protoc.proto")
 		err := runProtoc(ctx, pc, args)
 		stop()
 		if err != nil {
@@ -185,7 +185,7 @@ func generateAPI(ctx context.Context, params generateAPIParams) error {
 	// 2. Generate gRPC service stubs (skipped if transport is rest).
 	transport := params.apiCfg.Transport(config.LanguageJava)
 	if shouldGenerateGRPC(javaAPI) && transport != "rest" {
-		stop := tc.Span("java.protoc.grpc")
+		stop := tc.Span("protoc.grpc")
 		err := runProtoc(ctx, pc, gRPCProtocArgs(apiProtos, params.srcCfg, gRPCDir))
 		stop()
 		if err != nil {
@@ -199,7 +199,7 @@ func generateAPI(ctx context.Context, params generateAPIParams) error {
 			return fmt.Errorf("failed to resolve gapic options: %w", err)
 		}
 		args := gapicProtocArgs(apiProtos, allAdditionalProtosAbs, params.srcCfg, gapicDir, gapicOpts)
-		stop := tc.Span("java.protoc.gapic")
+		stop := tc.Span("protoc.gapic")
 		err = runProtoc(ctx, pc, args)
 		stop()
 		if err != nil {
@@ -207,7 +207,7 @@ func generateAPI(ctx context.Context, params generateAPIParams) error {
 		}
 	}
 
-	ppStop := tc.Span("java.postprocess.api")
+	ppStop := tc.Span("postprocess.api")
 	err = postProcessAPI(ctx, postParams)
 	ppStop()
 	if err != nil {
