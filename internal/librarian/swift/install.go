@@ -23,6 +23,5 @@ import (
 // Install installs the tools required for Swift library generation.
 func Install(ctx context.Context, tools *config.Tools) error {
 	// TODO(https://github.com/googleapis/librarian/issues/6745): Install Swift plugins (e.g. protoc-gen-swift, protoc-gen-grpc-swift).
-	// This is currently used to bootstrap the command and just install `protoc`.
 	return nil
 }

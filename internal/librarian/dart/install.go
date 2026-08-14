@@ -22,6 +22,5 @@ import (
 
 // Install installs the tools required for Dart library generation.
 func Install(ctx context.Context, tools *config.Tools) error {
-	// This is currently used to bootstrap the command and just install `protoc`.
 	return nil
 }
