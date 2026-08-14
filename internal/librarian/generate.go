@@ -18,6 +18,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 	"os"
 	"runtime"
 	"strings"
@@ -87,6 +88,10 @@ latest API definitions is:
 				Aliases: []string{"j"},
 				Usage:   "maximum number of libraries to generate concurrently (default: number of CPUs)",
 			},
+			&cli.BoolFlag{
+				Name:  "changed-only",
+				Usage: "skip regenerating libraries whose inputs are unchanged (Java only; opt-in)",
+			},
 		},
 		Action: func(ctx context.Context, cmd *cli.Command) error {
 			all := cmd.Bool("all")
@@ -106,12 +111,12 @@ latest API definitions is:
 				ctx = timing.WithCollector(ctx, tc)
 				defer func() { fmt.Fprint(os.Stderr, tc.Summary()) }()
 			}
-			return runGenerate(ctx, cfg, all, libraryName, cmd.Int("jobs"))
+			return runGenerate(ctx, cfg, all, libraryName, cmd.Int("jobs"), cmd.Bool("changed-only"))
 		},
 	}
 }
 
-func runGenerate(ctx context.Context, cfg *config.Config, all bool, libraryName string, jobs int) error {
+func runGenerate(ctx context.Context, cfg *config.Config, all bool, libraryName string, jobs int, changedOnly bool) error {
 	tc := timing.FromContext(ctx)
 	defer tc.Span("generate.total")()
 
@@ -160,6 +165,20 @@ func runGenerate(ctx context.Context, cfg *config.Config, all bool, libraryName 
 		return fmt.Errorf("%w: %q", ErrLibraryNotFound, libraryName)
 	}
 
+	// --changed-only (Java) skips libraries whose inputs match their recorded
+	// manifest. This must happen before cleaning so skipped libraries keep
+	// their output (and manifest) untouched.
+	var fingerprints map[string]string
+	if changedOnly && cfg.Language == config.LanguageJava {
+		filterStop := tc.Span("changed_only.filter")
+		libraries, fingerprints = filterChangedLibraries(libraries, sources, configExtra(cfg))
+		filterStop()
+		if len(libraries) == 0 {
+			slog.Info("changed-only: no libraries changed, nothing to generate")
+			return nil
+		}
+	}
+
 	cleanStop := tc.Span("clean.total")
 	err = cleanLibraries(cfg.Language, libraries)
 	cleanStop()
@@ -168,7 +187,7 @@ func runGenerate(ctx context.Context, cfg *config.Config, all bool, libraryName 
 	}
 
 	defer tc.Span("generate_libraries.total")()
-	return generateLibraries(ctx, cfg, libraries, sources, jobs)
+	return generateLibraries(ctx, cfg, libraries, sources, jobs, fingerprints)
 }
 
 // concurrencyLimit resolves the effective worker count from the --jobs flag: a
@@ -223,7 +242,7 @@ func cleanLibraries(language string, libraries []*config.Library) error {
 // generateLibraries generates and formats all the given libraries,
 // delegating to language-specific code. Each language chooses its own
 // concurrency strategy for these two steps.
-func generateLibraries(ctx context.Context, cfg *config.Config, libraries []*config.Library, src *sources.Sources, jobs int) error {
+func generateLibraries(ctx context.Context, cfg *config.Config, libraries []*config.Library, src *sources.Sources, jobs int, fingerprints map[string]string) error {
 	limit := concurrencyLimit(jobs)
 	switch cfg.Language {
 	case config.LanguageDart:
@@ -291,6 +310,13 @@ func generateLibraries(ctx context.Context, cfg *config.Config, libraries []*con
 				libStop()
 				if err != nil {
 					return fmt.Errorf("generate library %q (%s): %w", library.Name, cfg.Language, err)
+				}
+				// Record the input fingerprint so a later --changed-only run
+				// can skip this library while its inputs are unchanged.
+				if fp := fingerprints[library.Name]; fp != "" {
+					if werr := writeGeneratedManifest(library.Output, fp); werr != nil {
+						slog.Warn("changed-only: failed to write manifest", "library", library.Name, "err", werr)
+					}
 				}
 				return nil
 			})
