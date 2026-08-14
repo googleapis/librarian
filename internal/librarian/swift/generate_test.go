@@ -278,7 +278,7 @@ func TestLibraryToModelConfig(t *testing.T) {
 				Version:             "1.2.3",
 				SpecificationFormat: config.SpecProtobuf,
 				Swift: &config.SwiftPackage{
-					IncludedIds: []string{".google.cloud.secretmanager.v1.SecretManagerService.GetSecret"},
+					IncludedIDs: []string{".google.cloud.secretmanager.v1.SecretManagerService.GetSecret"},
 				},
 			},
 			api: &config.API{

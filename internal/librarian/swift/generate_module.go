@@ -73,10 +73,10 @@ func moduleToModelConfig(library *config.Library, module *config.SwiftModule, sr
 	}
 
 	var includedIDs []string
-	if len(module.IncludedIds) > 0 {
-		includedIDs = module.IncludedIds
-	} else if library.Swift != nil && len(library.Swift.IncludedIds) > 0 {
-		includedIDs = library.Swift.IncludedIds
+	if len(module.IncludedIDs) > 0 {
+		includedIDs = module.IncludedIDs
+	} else if library.Swift != nil && len(library.Swift.IncludedIDs) > 0 {
+		includedIDs = library.Swift.IncludedIDs
 	}
 
 	var skippedIDs []string

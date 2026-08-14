@@ -352,12 +352,12 @@ func TestModuleToModelConfig_IncludedIds(t *testing.T) {
 	t.Run("module level included_ids", func(t *testing.T) {
 		library := &config.Library{
 			Swift: &config.SwiftPackage{
-				IncludedIds: []string{".google.type.Color"},
+				IncludedIDs: []string{".google.type.Color"},
 			},
 		}
 		module := &config.SwiftModule{
 			APIPath:     "google/type",
-			IncludedIds: []string{".google.type.Money"},
+			IncludedIDs: []string{".google.type.Money"},
 		}
 		modelCfg := moduleToModelConfig(library, module, src)
 		expected := []string{".google.type.Money"}
@@ -369,7 +369,7 @@ func TestModuleToModelConfig_IncludedIds(t *testing.T) {
 	t.Run("library level fallback included_ids", func(t *testing.T) {
 		library := &config.Library{
 			Swift: &config.SwiftPackage{
-				IncludedIds: []string{".google.type.Color"},
+				IncludedIDs: []string{".google.type.Color"},
 			},
 		}
 		module := &config.SwiftModule{

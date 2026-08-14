@@ -112,8 +112,8 @@ func libraryToModelConfig(library *config.Library, apiCfg *config.API, src *sour
 	}
 
 	var includedIDs []string
-	if library.Swift != nil && len(library.Swift.IncludedIds) > 0 {
-		includedIDs = library.Swift.IncludedIds
+	if library.Swift != nil && len(library.Swift.IncludedIDs) > 0 {
+		includedIDs = library.Swift.IncludedIDs
 	}
 
 	var skippedIDs []string
