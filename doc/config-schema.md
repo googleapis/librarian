@@ -117,7 +117,7 @@ This document describes the schema for the librarian.yaml.
 | Field | Type | Description |
 | :--- | :--- | :--- |
 | `version` | string | Is the version to install. |
-| `sha256` | string | Is the default SHA256 checksum of the package (used for linux-x86_64 if not specified in SHA256ByPlatform). |
+| `sha256` | string | Is the default SHA256 checksum of the package (used for linux-x86_64 if not specified in sha256_by_platform). |
 | `sha256_by_platform` | map[string]string | Defines SHA256 checksums indexed by the release platform name (e.g., "linux-x86_64", "osx-aarch_64", "osx-x86_64", "win64", "win32"). |
 
 ## Default Configuration

@@ -244,7 +244,7 @@ type Protoc struct {
 	// Version is the version to install.
 	Version string `yaml:"version,omitempty"`
 
-	// SHA256 is the default SHA256 checksum of the package (used for linux-x86_64 if not specified in SHA256ByPlatform).
+	// SHA256 is the default SHA256 checksum of the package (used for linux-x86_64 if not specified in sha256_by_platform).
 	SHA256 string `yaml:"sha256,omitempty"`
 
 	// SHA256ByPlatform defines SHA256 checksums indexed by the release platform name
