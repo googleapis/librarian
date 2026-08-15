@@ -117,6 +117,9 @@ type Tools struct {
 
 	// Protoc defines the protoc installation.
 	Protoc *Protoc `yaml:"protoc,omitempty"`
+
+	// Swift defines tools to install via Swift.
+	Swift []*SwiftTool `yaml:"swift,omitempty"`
 }
 
 // CargoTool defines a tool to install via cargo.

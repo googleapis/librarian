@@ -45,6 +45,7 @@ This document describes the schema for the librarian.yaml.
 | `pip` | list of [PipTool](#piptool-configuration) (optional) | Defines tools to install via pip. |
 | `pnpm` | list of [PNPMTool](#pnpmtool-configuration) (optional) | Defines tools to install via pnpm. |
 | `protoc` | [Protoc](#protoc-configuration) (optional) | Defines the protoc installation. |
+| `swift` | list of [SwiftTool](#swifttool-configuration) (optional) | Defines tools to install via Swift. |
 
 ## CargoTool Configuration
 
@@ -659,3 +660,13 @@ This document describes the schema for the librarian.yaml.
 | `per_service_traits` | bool | Enables per-service compile-time flags. |
 | `default_traits` | list of string | Is a list of compile-time traits enabled by default. |
 | `discovery` | SwiftDiscovery (optional) | Contains discovery-specific configuration for LRO polling. |
+
+## SwiftTool Configuration
+
+| Field | Type | Description |
+| :--- | :--- | :--- |
+| `name` | string | Is the tool name or binary name (e.g., "protoc-gen-swift", "protoc-gen-grpc-swift"). |
+| `version` | string | Is the git tag, branch, or commit to install (e.g., "1.38.1", "1.23.0"). |
+| `repo` | string | Is the git repository URL to fetch and build the tool from (e.g., "https://github.com/apple/swift-protobuf.git"). |
+| `product` | string | Is the SwiftPM product name passed to `swift build --product <product>`. If omitted, `swift build -c release` builds default targets. |
+| `local_path` | string | Is the path to a local Swift package directory.<br><br>When present, Version and Repo are ignored. This can be useful in tests, and to test tools under development. |

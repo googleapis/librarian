@@ -170,3 +170,24 @@ type SwiftDiscovery = CommonDiscovery
 
 // SwiftPoller defines how to find a suitable poller RPC for discovery APIs.
 type SwiftPoller = CommonPoller
+
+// SwiftTool defines a tool to install via Swift Package Manager.
+type SwiftTool struct {
+	// Name is the tool name or binary name (e.g., "protoc-gen-swift", "protoc-gen-grpc-swift").
+	Name string `yaml:"name"`
+
+	// Version is the git tag, branch, or commit to install (e.g., "1.38.1", "1.23.0").
+	Version string `yaml:"version,omitempty"`
+
+	// Repo is the git repository URL to fetch and build the tool from (e.g., "https://github.com/apple/swift-protobuf.git").
+	Repo string `yaml:"repo,omitempty"`
+
+	// Product is the SwiftPM product name passed to `swift build --product <product>`.
+	// If omitted, `swift build -c release` builds default targets.
+	Product string `yaml:"product,omitempty"`
+
+	// LocalPath is the path to a local Swift package directory.
+	//
+	// When present, Version and Repo are ignored. This can be useful in tests, and to test tools under development.
+	LocalPath string `yaml:"local_path,omitempty"`
+}

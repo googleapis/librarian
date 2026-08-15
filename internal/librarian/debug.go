@@ -25,6 +25,7 @@ import (
 	"github.com/googleapis/librarian/internal/librarian/java"
 	"github.com/googleapis/librarian/internal/librarian/nodejs"
 	"github.com/googleapis/librarian/internal/librarian/ruby"
+	"github.com/googleapis/librarian/internal/librarian/swift"
 	"github.com/urfave/cli/v3"
 )
 
@@ -62,6 +63,7 @@ func runEnv(w io.Writer) error {
 	javaToolsDir := dirOrErr(java.InstallDir())
 	nodejsToolsDir := dirOrErr(nodejs.InstallDir())
 	rubyToolsDir := dirOrErr(ruby.InstallDir())
+	swiftToolsDir := dirOrErr(swift.InstallDir())
 	var b strings.Builder
 	fmt.Fprintf(&b, "LIBRARIAN_CACHE=%s\n", cacheDir)
 	fmt.Fprintf(&b, "LIBRARIAN_BIN=%s\n", buildDir)
@@ -71,6 +73,7 @@ func runEnv(w io.Writer) error {
 	fmt.Fprintf(&b, "  java: %s\n", javaToolsDir)
 	fmt.Fprintf(&b, "  nodejs: %s\n", nodejsToolsDir)
 	fmt.Fprintf(&b, "  ruby: %s\n", rubyToolsDir)
+	fmt.Fprintf(&b, "  swift: %s\n", swiftToolsDir)
 	_, err := io.WriteString(w, b.String())
 	return err
 }

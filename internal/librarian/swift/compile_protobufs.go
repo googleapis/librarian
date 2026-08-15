@@ -76,5 +76,9 @@ func compileProtobufs(ctx context.Context, pc *config.Protoc, library *config.Li
 	args = append(args, protoImports...)
 	args = append(args, protoFiles...)
 
-	return protoc.RunOrSystem(ctx, nil, pc, args...)
+	env, err := toolsEnv()
+	if err != nil {
+		return err
+	}
+	return protoc.RunOrSystem(ctx, env, pc, args...)
 }

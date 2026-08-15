@@ -88,7 +88,11 @@ func Format(ctx context.Context, library *config.Library) error {
 	for dir := range dirs {
 		args = append(args, dir)
 	}
-	return command.Run(ctx, "swift-format", args...)
+	env, err := toolsEnv()
+	if err != nil {
+		return err
+	}
+	return command.RunWithEnv(ctx, env, "swift-format", args...)
 }
 
 // DefaultLibraryName derives a library name from an API path.
