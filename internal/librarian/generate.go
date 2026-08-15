@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"runtime"
 	"strings"
+	"time"
 
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/librarian/dart"
@@ -241,15 +242,29 @@ func generateLibraries(ctx context.Context, cfg *config.Config, libraries []*con
 		}
 		return g.Wait()
 	case config.LanguageJava:
+		genStart := time.Now()
 		for _, library := range libraries {
 			if err := java.Generate(ctx, cfg, library, src); err != nil {
 				return fmt.Errorf("generate library %q (%s): %w", library.Name, cfg.Language, err)
 			}
 		}
+		durGen := time.Since(genStart)
+		fmt.Printf("[BENCHMARK-CI] Phase 1: Java Code Generation Step Completed: %v\n", durGen)
+
+		fmtStart := time.Now()
 		if err := java.Format(ctx, libraries...); err != nil {
 			return fmt.Errorf("format java libraries (%s): %w", cfg.Language, err)
 		}
-		return java.PostGenerate(ctx, ".", cfg)
+		durFmt := time.Since(fmtStart)
+		fmt.Printf("[BENCHMARK-CI] Phase 2: Java Code Formatting Step Completed: %v\n", durFmt)
+
+		postStart := time.Now()
+		if err := java.PostGenerate(ctx, ".", cfg); err != nil {
+			return err
+		}
+		durPost := time.Since(postStart)
+		fmt.Printf("[BENCHMARK-CI] Phase 3: Java Post-Generate Step Completed: %v\n", durPost)
+		return nil
 	case config.LanguageNodejs:
 		g, gctx := errgroup.WithContext(ctx)
 		g.SetLimit(runtime.NumCPU())

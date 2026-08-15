@@ -114,13 +114,18 @@ func postProcessAPI(ctx context.Context, params postProcessParams) error {
 	// Unzip the temp-codegen.srcjar into temporary {gapicDir} directory.
 	srcjarPath := filepath.Join(gapicDir, "temp-codegen.srcjar")
 	if _, err := os.Stat(srcjarPath); err == nil {
+		unzipStart := time.Now()
 		if err := filesystem.Unzip(ctx, srcjarPath, gapicDir); err != nil {
 			return fmt.Errorf("failed to unzip %s: %w", srcjarPath, err)
 		}
+		fmt.Printf("[BENCHMARK-CI] API %s PostProcess Unzip Srcjar: %v\n", params.apiBase, time.Since(unzipStart))
 	}
+	headerStart := time.Now()
 	if err := addHeaders(params, []string{gRPCDir, protoDir}); err != nil {
 		return err
 	}
+	fmt.Printf("[BENCHMARK-CI] API %s PostProcess Add Headers: %v\n", params.apiBase, time.Since(headerStart))
+
 	if err := copyFiles(params); err != nil {
 		return fmt.Errorf("failed to copy files: %w", err)
 	}
@@ -129,9 +134,11 @@ func postProcessAPI(ctx context.Context, params postProcessParams) error {
 	if params.library != nil {
 		keepSet = toKeepSet(params.library.Keep)
 	}
+	moveStart := time.Now()
 	if err := restructureToLibrary(params, params.outDir, keepSet); err != nil {
 		return fmt.Errorf("failed to restructure to library root: %w", err)
 	}
+	fmt.Printf("[BENCHMARK-CI] API %s PostProcess Restructure Layout: %v\n", params.apiBase, time.Since(moveStart))
 
 	coords := params.coords()
 	// Generate clirr-ignored-differences.xml for the proto module.

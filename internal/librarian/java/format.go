@@ -20,6 +20,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/config"
@@ -47,10 +48,12 @@ func Format(ctx context.Context, libraries ...*config.Library) error {
 	for i := 0; i < len(allFiles); i += maxFilesPerFormatBatch {
 		end := min(i+maxFilesPerFormatBatch, len(allFiles))
 		chunk := allFiles[i:end]
+		batchStart := time.Now()
 		args := append([]string{"--replace"}, chunk...)
 		if err := command.RunWithEnv(ctx, env, "google-java-format", args...); err != nil {
 			return fmt.Errorf("failed to format batch [%d:%d]: %w", i, end, err)
 		}
+		fmt.Printf("[BENCHMARK-CI] Format Batch %d files: %v\n", len(chunk), time.Since(batchStart))
 	}
 	return nil
 }

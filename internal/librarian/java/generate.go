@@ -24,6 +24,7 @@ import (
 	"path"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/proto"
@@ -164,35 +165,49 @@ func generateAPI(ctx context.Context, params generateAPIParams) error {
 	}
 	// 1. Generate standard Protocol Buffer Java classes.
 	if shouldGenerateProto(javaAPI) {
+		protoStart := time.Now()
 		protoProtos := filterProtos(apiProtos, javaAPI.SkipProtoClassGeneration, primaryDir)
 		protoProtos = append(protoProtos, additionalProtosToGenerateAbs...)
 		args := protoProtocArgs(protoProtos, params.srcCfg, protoDir)
 		if err := runProtoc(ctx, pc, args); err != nil {
 			return fmt.Errorf("failed to generate proto: %w", err)
 		}
+		durProto := time.Since(protoStart)
+		fmt.Printf("[BENCHMARK-CI] API %s Protoc Proto: %v\n", params.api.Path, durProto)
 	}
 	// 2. Generate gRPC service stubs (skipped if transport is rest).
 	transport := params.apiCfg.Transport(config.LanguageJava)
 	if shouldGenerateGRPC(javaAPI) && transport != "rest" {
+		grpcStart := time.Now()
 		if err := runProtoc(ctx, pc, gRPCProtocArgs(apiProtos, params.srcCfg, gRPCDir)); err != nil {
 			return fmt.Errorf("failed to generate gRPC module: %w", err)
 		}
+		durGrpc := time.Since(grpcStart)
+		fmt.Printf("[BENCHMARK-CI] API %s Protoc gRPC: %v\n", params.api.Path, durGrpc)
 	}
 	// 3. Generate GAPIC library.
 	if shouldGenerateGAPIC(javaAPI) || shouldGenerateResourceNames(javaAPI) {
+		optsStart := time.Now()
 		gapicOpts, err := resolveGAPICOptions(params.cfg, params.library, params.api, primaryDir, params.apiCfg)
 		if err != nil {
 			return fmt.Errorf("failed to resolve gapic options: %w", err)
 		}
+		fmt.Printf("[BENCHMARK-CI] API %s GAPIC resolveGAPICOptions: %v\n", params.api.Path, time.Since(optsStart))
+
 		args := gapicProtocArgs(apiProtos, allAdditionalProtosAbs, params.srcCfg, gapicDir, gapicOpts)
+		gapicExecStart := time.Now()
 		if err := runProtoc(ctx, pc, args); err != nil {
 			return fmt.Errorf("failed to generate gapic: %w", err)
 		}
+		fmt.Printf("[BENCHMARK-CI] API %s GAPIC protoc-gen-java_gapic JVM Run: %v\n", params.api.Path, time.Since(gapicExecStart))
 	}
 
+	postStart := time.Now()
 	if err := postProcessAPI(ctx, postParams); err != nil {
 		return fmt.Errorf("failed to post process: %w", err)
 	}
+	durPost := time.Since(postStart)
+	fmt.Printf("[BENCHMARK-CI] API %s postProcessAPI total: %v\n", params.api.Path, durPost)
 	return nil
 }
 
