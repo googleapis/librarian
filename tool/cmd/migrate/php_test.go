@@ -157,8 +157,8 @@ deep-copy-regex:
 				},
 			},
 			Protoc: &config.Protoc{
-				Version: "31.0",
-				SHA256:  "24e2ed32060b7c990d5eb00d642fde04869d7f77c6d443f609353f097799dd42",
+				Version: "33.2",
+				SHA256:  "b24b53f87c151bfd48b112fe4c3a6e6574e5198874f38036aff41df3456b8caf",
 			},
 		},
 	}
