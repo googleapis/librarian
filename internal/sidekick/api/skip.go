@@ -105,7 +105,7 @@ func skipMessageElements(message *Message, skip func(id string) bool, skipField 
 		}
 		return false
 	}
-	message.Fields = slices.DeleteFunc(slices.Clone(message.Fields), skipped)
+	message.Fields = slices.DeleteFunc(message.Fields, skipped)
 	message.SkippedFields = slices.DeleteFunc(previous, func(x *Field) bool { return !skipped(x) })
 	for _, oneof := range message.OneOfs {
 		oneof.Fields = slices.DeleteFunc(oneof.Fields, func(x *Field) bool {
