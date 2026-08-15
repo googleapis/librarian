@@ -210,7 +210,6 @@ func formatRepoURL(repo string) string {
 }
 
 func copyExecutable(src, dst string) error {
-	fmt.Printf("DEBUG DEBUG copying %s to %s\n", src, dst)
 	if err := filesystem.CopyFile(src, dst); err != nil {
 		return err
 	}
