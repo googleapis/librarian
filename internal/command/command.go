@@ -114,7 +114,7 @@ func Output(ctx context.Context, command string, arg ...string) (string, error) 
 	return OutputWithEnv(ctx, nil, command, arg...)
 }
 
-// Output executes a program (with arguments) in a specific directory and returns stdout.
+// OutputInDir executes a program (with arguments) in a specific directory and returns stdout.
 func OutputInDir(ctx context.Context, dir string, command string, arg ...string) (string, error) {
 	return runCmd(ctx, dir, nil, command, arg...)
 }
