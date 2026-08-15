@@ -37,6 +37,8 @@ const (
 	Git = "git"
 	// Go is the command name for the go executable.
 	Go = "go"
+	// Swift is the command name for the swift executable.
+	Swift = "swift"
 	// envPath is the environment variable for the executable path.
 	envPath = "PATH"
 )
@@ -110,6 +112,11 @@ func RunStreamingInDir(ctx context.Context, dir, command string, arg ...string) 
 // convenience wrapper around OutputWithEnv.
 func Output(ctx context.Context, command string, arg ...string) (string, error) {
 	return OutputWithEnv(ctx, nil, command, arg...)
+}
+
+// Output executes a program (with arguments) in a specific directory and returns stdout.
+func OutputInDir(ctx context.Context, dir string, command string, arg ...string) (string, error) {
+	return runCmd(ctx, dir, nil, command, arg...)
 }
 
 // OutputWithEnv executes a program (with arguments) and optional environment

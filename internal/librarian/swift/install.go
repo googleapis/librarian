@@ -99,7 +99,7 @@ func toolsEnv() (map[string]string, error) {
 }
 
 func verifyPrerequisites(ctx context.Context, tools []*config.SwiftTool) error {
-	for _, cmd := range []string{"swift", "swift-format"} {
+	for _, cmd := range []string{command.Swift, "swift-format"} {
 		if _, err := exec.LookPath(cmd); err != nil {
 			return fmt.Errorf("%s %w: %w", cmd, errMissingExecutable, err)
 		}
@@ -132,7 +132,7 @@ func verifyPrerequisites(ctx context.Context, tools []*config.SwiftTool) error {
 }
 
 func verifySwiftVersion(ctx context.Context) error {
-	output, err := command.Output(ctx, "swift", "--version")
+	output, err := command.Output(ctx, command.Swift, "--version")
 	if err != nil {
 		return fmt.Errorf("failed to get swift version: %w", err)
 	}
@@ -186,14 +186,15 @@ func installTool(ctx context.Context, tool *config.SwiftTool, bin string) error 
 	if tool.Product != "" {
 		buildArgs = append(buildArgs, "--product", tool.Product)
 	}
-	if err := command.RunInDir(ctx, buildDir, "swift", buildArgs...); err != nil {
+	if err := command.RunInDir(ctx, buildDir, command.Swift, buildArgs...); err != nil {
 		return fmt.Errorf("failed to build %s: %w", tool.Name, err)
 	}
 
-	srcBinary, err := findBuiltBinary(buildDir, tool)
+	output, err := command.OutputInDir(ctx, buildDir, command.Swift, "build", "-c", "release", "--show-bin-path")
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to get bin path: %w", err)
 	}
+	srcBinary := filepath.Join(strings.TrimSpace(output), tool.Name)
 	destBinary := filepath.Join(bin, tool.Name)
 	return copyExecutable(srcBinary, destBinary)
 }
@@ -208,22 +209,8 @@ func formatRepoURL(repo string) string {
 	return "https://github.com/" + repo
 }
 
-func findBuiltBinary(buildDir string, tool *config.SwiftTool) (string, error) {
-	candidates := make([]string, 0, 4)
-	if tool.Product != "" {
-		candidates = append(candidates, tool.Product, tool.Product+".exe")
-	}
-	candidates = append(candidates, tool.Name, tool.Name+".exe")
-	for _, cand := range candidates {
-		p := filepath.Join(buildDir, ".build", "release", cand)
-		if info, err := os.Stat(p); err == nil && !info.IsDir() {
-			return p, nil
-		}
-	}
-	return "", fmt.Errorf("built binary for %s not found in %s", tool.Name, filepath.Join(buildDir, ".build", "release"))
-}
-
 func copyExecutable(src, dst string) error {
+	fmt.Printf("DEBUG DEBUG copying %s to %s\n", src, dst)
 	if err := filesystem.CopyFile(src, dst); err != nil {
 		return err
 	}

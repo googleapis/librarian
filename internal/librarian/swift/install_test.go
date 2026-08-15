@@ -250,6 +250,7 @@ if [ "$1" = "build" ]; then
     mkdir -p .build/release
     printf '#!/bin/sh\necho "built-tool"\n' > .build/release/local-tool
     chmod +x .build/release/local-tool
+		printf "${PWD}/.build/release"
     exit 0
 fi
 exit 1
@@ -300,6 +301,7 @@ if [ "$1" = "build" ]; then
     mkdir -p .build/release
     printf '#!/bin/sh\necho "grpc-plugin"\n' > .build/release/protoc-gen-grpc-swift
     chmod +x .build/release/protoc-gen-grpc-swift
+		printf "${PWD}/.build/release"
     exit 0
 fi
 exit 1
