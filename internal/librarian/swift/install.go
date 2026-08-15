@@ -18,7 +18,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -29,6 +28,7 @@ import (
 	"github.com/googleapis/librarian/internal/cache"
 	"github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/filesystem"
 )
 
 const (
@@ -221,19 +221,8 @@ func findBuiltBinary(buildDir string, tool *config.SwiftTool) (string, error) {
 }
 
 func copyExecutable(src, dst string) error {
-	in, err := os.Open(src)
-	if err != nil {
+	if err := filesystem.CopyFile(src, dst); err != nil {
 		return err
 	}
-	defer in.Close()
-	_ = os.Remove(dst)
-	out, err := os.OpenFile(dst, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0o755)
-	if err != nil {
-		return err
-	}
-	defer out.Close()
-	if _, err := io.Copy(out, in); err != nil {
-		return err
-	}
-	return nil
+	return os.Chmod(dst, 0o755)
 }
