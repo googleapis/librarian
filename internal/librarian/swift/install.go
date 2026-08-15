@@ -86,7 +86,10 @@ func binDir() (string, error) {
 	return filepath.Join(installDir, "bin"), nil
 }
 
-// toolsEnv returns an environment map with the Swift tools bin directory prepended to PATH.
+// toolsEnv returns an environment map with `PATH` set to the Swift tools bin directory.
+//
+// This is combined with the system PATH in `command.RunWithEnv()`, a strange idiom in my (coryan)
+// opinion, but seemingly consistent with the rest of the code in librarian.
 func toolsEnv() (map[string]string, error) {
 	bin, err := binDir()
 	if err != nil {
