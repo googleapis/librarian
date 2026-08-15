@@ -176,7 +176,7 @@ type SwiftTool struct {
 	// Name is the tool name or binary name (e.g., "protoc-gen-swift", "protoc-gen-grpc-swift").
 	Name string `yaml:"name"`
 
-	// Version is the git tag, branch, or commit to install (e.g., "1.38.1", "1.23.0").
+	// Version is the git tag or branch to install (e.g., "1.38.1", "1.23.0").
 	Version string `yaml:"version,omitempty"`
 
 	// Repo is the git repository URL to fetch and build the tool from (e.g., "https://github.com/apple/swift-protobuf.git").
