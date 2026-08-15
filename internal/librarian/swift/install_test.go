@@ -18,6 +18,7 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 
@@ -61,6 +62,9 @@ func TestInstall_NilOrEmptyTools(t *testing.T) {
 }
 
 func TestInstall_MissingSwift(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("skipping on windows, bash script set up does not work")
+	}
 	bin := t.TempDir()
 	testhelper.WriteExecutable(t, filepath.Join(bin, "swift-format"), "#!/bin/sh\nexit 0\n")
 	t.Setenv("PATH", bin)
@@ -77,6 +81,9 @@ func TestInstall_MissingSwift(t *testing.T) {
 }
 
 func TestInstall_MissingSwiftFormat(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("skipping on windows, bash script set up does not work")
+	}
 	bin := t.TempDir()
 	testhelper.WriteExecutable(t, filepath.Join(bin, "swift"), "#!/bin/sh\necho 'Swift version 6.2'\n")
 	t.Setenv("PATH", bin)
@@ -93,6 +100,9 @@ func TestInstall_MissingSwiftFormat(t *testing.T) {
 }
 
 func TestInstall_MissingGit(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("skipping on windows, bash script set up does not work")
+	}
 	bin := t.TempDir()
 	testhelper.WriteExecutable(t, filepath.Join(bin, "swift"), "#!/bin/sh\necho 'Swift version 6.2'\n")
 	testhelper.WriteExecutable(t, filepath.Join(bin, "swift-format"), "#!/bin/sh\nexit 0\n")
@@ -167,6 +177,9 @@ func TestCheckSwiftVersionOutput(t *testing.T) {
 }
 
 func TestInstall_InvalidToolConfig(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("skipping on windows, bash script set up does not work")
+	}
 	bin := t.TempDir()
 	testhelper.WriteExecutable(t, filepath.Join(bin, "swift"), "#!/bin/sh\necho 'Swift version 6.2'\n")
 	testhelper.WriteExecutable(t, filepath.Join(bin, "swift-format"), "#!/bin/sh\nexit 0\n")
@@ -220,6 +233,9 @@ func TestInstall_InvalidToolConfig(t *testing.T) {
 }
 
 func TestInstall_LocalPath(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("skipping on windows, bash script set up does not work")
+	}
 	localPkg := t.TempDir()
 	bin := t.TempDir()
 	testhelper.WriteExecutable(t, filepath.Join(bin, "swift-format"), "#!/bin/sh\nexit 0\n")
@@ -260,6 +276,9 @@ exit 1
 }
 
 func TestInstall_RemoteRepo(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("skipping on windows, bash script set up does not work")
+	}
 	bin := t.TempDir()
 	testhelper.WriteExecutable(t, filepath.Join(bin, "swift-format"), "#!/bin/sh\nexit 0\n")
 
