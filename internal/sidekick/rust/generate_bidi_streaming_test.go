@@ -265,7 +265,7 @@ func TestGenerateBidiStreaming(t *testing.T) {
                 req_stream,
                 options.into(),
                 &crate::info::X_GOOG_API_CLIENT_HEADER,
-                &x_goog_request_params,
+                x_goog_request_params,
             )
             .await?;`,
 		},
