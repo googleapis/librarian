@@ -71,6 +71,7 @@ func TestGenerateBidiStreaming(t *testing.T) {
 		Codec: map[string]string{
 			"package:wkt":                    "source=google.protobuf,package=google-cloud-wkt",
 			"include-bidi-streaming-methods": "true",
+			"generate-rpc-samples":           "true",
 		},
 	}
 	if err := Generate(t.Context(), model, outDir, cfg); err != nil {
@@ -97,6 +98,75 @@ func TestGenerateBidiStreaming(t *testing.T) {
 		endStr   string
 		want     string
 	}{
+		{
+			name:     "client: method docstring and example",
+			file:     "src/client.rs",
+			startStr: "    #[cfg(google_cloud_unstable_gapic_streaming)]\n    ///\n    /// # Example",
+			endStr:   "        super::builder::protocol::Chat::new(self.inner.clone())\n    }",
+			want: `    #[cfg(google_cloud_unstable_gapic_streaming)]
+    ///
+    /// # Example
+    /// ` + "```" + `
+    /// # use google_cloud_test_v1::client::Protocol;
+    /// # use google_cloud_test_v1::model::Request;
+    /// use google_cloud_test_v1::Result;
+    /// async fn sample(
+    ///    client: &Protocol
+    /// ) -> Result<()> {
+    ///     let (sender, mut receiver) = client.chat()
+    ///         .with_request(Request::default())
+    ///         .send()
+    ///         .await?;
+    ///
+    ///     sender.send(Request::default()).await?;
+    ///     drop(sender); // Half-close the stream
+    ///
+    ///     while let Some(response) = receiver.recv().await {
+    ///         let response = response?;
+    ///         println!("response {:?}", response);
+    ///     }
+    ///     Ok(())
+    /// }
+    /// ` + "```" + `
+    pub fn chat(&self) -> super::builder::protocol::Chat
+    {
+        super::builder::protocol::Chat::new(self.inner.clone())
+    }`,
+		},
+		{
+			name:     "builder: struct docstring and example",
+			file:     "src/builder.rs",
+			startStr: "    /// The request builder for [Protocol::chat][crate::client::Protocol::chat] calls.\n    ///\n    /// # Example",
+			endStr:   "    #[cfg(google_cloud_unstable_gapic_streaming)]",
+			want: `    /// The request builder for [Protocol::chat][crate::client::Protocol::chat] calls.
+    ///
+    /// # Example
+    /// ` + "```" + `
+    /// # use google_cloud_test_v1::builder::protocol::Chat;
+    /// # use google_cloud_test_v1::model::Request;
+    /// # async fn sample() -> google_cloud_test_v1::Result<()> {
+    /// let builder = prepare_request_builder();
+    /// let (sender, mut receiver) = builder
+    ///     .with_request(Request::default())
+    ///     .send()
+    ///     .await?;
+    ///
+    /// sender.send(Request::default()).await?;
+    /// drop(sender); // Half-close the stream
+    ///
+    /// while let Some(response) = receiver.recv().await {
+    ///     let response = response?;
+    ///     println!("response {:?}", response);
+    /// }
+    /// # Ok(()) }
+    ///
+    /// fn prepare_request_builder() -> Chat {
+    ///   # panic!();
+    ///   // ... details omitted ...
+    /// }
+    /// ` + "```" + `
+    #[cfg(google_cloud_unstable_gapic_streaming)]`,
+		},
 		{
 			name:     "builder: struct definition",
 			file:     "src/builder.rs",
