@@ -21,6 +21,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/sample"
 )
 
 func TestAdd(t *testing.T) {
@@ -137,7 +138,7 @@ func TestAdd(t *testing.T) {
 			if err := os.WriteFile(versionsFileName, nil, 0o644); err != nil {
 				t.Fatal(err)
 			}
-			got, err := Add(test.lib, nil)
+			got, err := Add(sample.Config(), test.lib, nil)
 			if err != nil {
 				t.Fatalf("Add() error = %v", err)
 			}
@@ -240,7 +241,7 @@ func TestAdd_VersionsTxt(t *testing.T) {
 			if err := os.WriteFile(versionsFileName, nil, 0o644); err != nil {
 				t.Fatal(err)
 			}
-			_, err := Add(test.lib, nil)
+			_, err := Add(sample.Config(), test.lib, nil)
 			if err != nil {
 				t.Fatalf("Add() error = %v", err)
 			}
@@ -287,7 +288,7 @@ func TestAdd_ExistingLibrary(t *testing.T) {
 	}
 	addedAPI := &config.API{Path: "google/cloud/secretmanager/v1beta1"}
 
-	got, err := Add(lib, addedAPI)
+	got, err := Add(nil, lib, addedAPI)
 	if err != nil {
 		t.Fatalf("Add() error = %v", err)
 	}
