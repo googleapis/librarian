@@ -64,9 +64,6 @@ func postProcessLibrary(ctx context.Context, library *config.Library, componentN
 
 func runPostProcessors(ctx context.Context, library *config.Library, stagingDir, postProcessor string) error {
 	for _, api := range library.APIs {
-		if api.PHP == nil {
-			continue
-		}
 		apiStagingDir := filepath.Join(stagingDir, api.PHP.StagingSubdir)
 		if err := command.RunInDir(ctx, apiStagingDir, postProcessor, "--input", "."); err != nil {
 			return fmt.Errorf("failed to run php-post-processor on %s: %w", api.Path, err)
