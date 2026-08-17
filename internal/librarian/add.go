@@ -261,6 +261,8 @@ func addNewLibrary(cfg *config.Config, api *config.API) (string, *config.Config,
 		if err != nil {
 			return "", nil, err
 		}
+	case config.LanguageNodejs:
+		lib = nodejs.Add(lib)
 	case config.LanguagePython:
 		var err error
 		lib, err = python.Add(cfg, lib)
