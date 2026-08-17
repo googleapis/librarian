@@ -85,22 +85,14 @@ func GenerateStorage(
 
 	var serviceImports []string
 	importSet := make(map[string]bool)
-	for _, s := range storageModel.Services {
-		if sa, ok := s.Codec.(*serviceAnnotations); ok {
-			for _, imp := range sa.ServiceImports() {
-				if !importSet[imp] && imp != "GoogleCloudGax" && imp != "GoogleCloudAuth" && imp != "Foundation" {
-					importSet[imp] = true
-					serviceImports = append(serviceImports, imp)
-				}
-			}
-		}
-	}
-	for _, s := range controlModel.Services {
-		if sa, ok := s.Codec.(*serviceAnnotations); ok {
-			for _, imp := range sa.ServiceImports() {
-				if !importSet[imp] && imp != "GoogleCloudGax" && imp != "GoogleCloudAuth" && imp != "Foundation" {
-					importSet[imp] = true
-					serviceImports = append(serviceImports, imp)
+	for _, model := range []*api.API{storageModel, controlModel} {
+		for _, s := range model.Services {
+			if sa, ok := s.Codec.(*serviceAnnotations); ok {
+				for _, imp := range sa.ServiceImports() {
+					if !importSet[imp] && imp != "GoogleCloudGax" && imp != "GoogleCloudAuth" && imp != "Foundation" {
+						importSet[imp] = true
+						serviceImports = append(serviceImports, imp)
+					}
 				}
 			}
 		}
