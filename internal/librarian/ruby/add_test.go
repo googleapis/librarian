@@ -22,26 +22,71 @@ import (
 	"github.com/googleapis/librarian/internal/config"
 )
 
+func TestDefaultLibraryName(t *testing.T) {
+	for _, test := range []struct {
+		apiPath string
+		want    string
+	}{
+		{"google/cloud/secretmanager/v1", "google-cloud-secretmanager-v1"},
+		{"google/cloud/secretmanager", "google-cloud-secretmanager"},
+	} {
+		t.Run(test.apiPath, func(t *testing.T) {
+			got := DefaultLibraryName(test.apiPath)
+			if got != test.want {
+				t.Errorf("DefaultLibraryName(%q) = %q, want %q", test.apiPath, got, test.want)
+			}
+		})
+	}
+}
+
 func TestAdd(t *testing.T) {
-	in := &config.Library{
-		Name: "google-cloud-secretmanager-v1",
-		APIs: []*config.API{
-			{Path: "google/cloud/secretmanager/v1"},
+	for _, test := range []struct {
+		name string
+		in   *config.Library
+		want *config.Library
+	}{
+		{
+			name: "default library name",
+			in: &config.Library{
+				Name: "google-cloud-secretmanager-v1",
+				APIs: []*config.API{
+					{Path: "google/cloud/secretmanager/v1"},
+				},
+			},
+			want: &config.Library{
+				Name:    "google-cloud-secretmanager-v1",
+				Version: "0.0.1",
+				APIs: []*config.API{
+					{Path: "google/cloud/secretmanager/v1"},
+				},
+			},
 		},
-	}
-	want := &config.Library{
-		Name:    "google-cloud-secretmanager-v1",
-		Version: "0.0.1",
-		APIs: []*config.API{
-			{Path: "google/cloud/secretmanager/v1"},
+		{
+			name: "custom library name",
+			in: &config.Library{
+				Name: "google-cloud-secret_manager-v1",
+				APIs: []*config.API{
+					{Path: "google/cloud/secretmanager/v1"},
+				},
+			},
+			want: &config.Library{
+				Name:    "google-cloud-secret_manager-v1",
+				Version: "0.0.1",
+				APIs: []*config.API{
+					{Path: "google/cloud/secretmanager/v1"},
+				},
+			},
 		},
-	}
-	got, err := Add(&config.Config{}, in)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if diff := cmp.Diff(want, got); diff != "" {
-		t.Errorf("mismatch (-want +got):\n%s", diff)
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got, err := Add(&config.Config{}, test.in)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
 	}
 }
 
