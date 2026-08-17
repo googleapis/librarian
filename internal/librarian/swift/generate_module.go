@@ -115,7 +115,7 @@ func moduleToModelConfig(library *config.Library, module *config.SwiftModule, sr
 func generateSwiftStorage(ctx context.Context, pc *config.Protoc, library *config.Library, module *config.SwiftModule, src *sources.Sources) error {
 	storageModule := findModule(library, "google/storage/v2")
 	if storageModule == nil {
-		return fmt.Errorf("storage module not found for library %q", library.Name)
+		return fmt.Errorf("storage module (api_path: google/storage/v2) not found for library %q", library.Name)
 	}
 	storageModel, err := parser.CreateModel(moduleToModelConfig(library, storageModule, src, pc))
 	if err != nil {
@@ -139,7 +139,7 @@ func findModule(library *config.Library, apiPath string) *config.SwiftModule {
 		return nil
 	}
 	for _, m := range library.Swift.Modules {
-		if m.APIPath == apiPath && m.ModuleType == "grpc-client" {
+		if m.APIPath == apiPath && (m.ModuleType == "grpc-client" || m.ModuleType == "default" || m.ModuleType == "") {
 			return m
 		}
 	}

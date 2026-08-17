@@ -221,8 +221,9 @@ func TestGenerateStorage_MultiModel(t *testing.T) {
 	swiftPkg.PackageNameOverride = "GoogleCloudStorage"
 	swiftPkg.LibraryNameOverride = "GoogleCloudStorage"
 	library := &config.Library{
-		Name:  "google-cloud-storage",
-		Swift: swiftPkg,
+		Name:          "google-cloud-storage",
+		CopyrightYear: "2026",
+		Swift:         swiftPkg,
 	}
 
 	if err := Generate(t.Context(), storageModel, storageModule.Output, library, storageModule); err != nil {
@@ -243,6 +244,9 @@ func TestGenerateStorage_MultiModel(t *testing.T) {
 	}
 	protocolStr := string(protocolContent)
 
+	if !strings.Contains(protocolStr, "// Copyright 2026 Google LLC") {
+		t.Errorf("StorageControlProtocol.swift missing Copyright header:\n%s", protocolStr)
+	}
 	if !strings.Contains(protocolStr, "public protocol StorageControlProtocol {") {
 		t.Errorf("StorageControlProtocol.swift missing StorageControlProtocol declaration:\n%s", protocolStr)
 	}
@@ -268,6 +272,9 @@ func TestGenerateStorage_MultiModel(t *testing.T) {
 	}
 	clientStr := string(clientContent)
 
+	if !strings.Contains(clientStr, "// Copyright 2026 Google LLC") {
+		t.Errorf("StorageControlClient.swift missing Copyright header:\n%s", clientStr)
+	}
 	if !strings.Contains(clientStr, "public class StorageControlClient: StorageControlProtocol {") {
 		t.Errorf("StorageControlClient.swift missing class declaration:\n%s", clientStr)
 	}

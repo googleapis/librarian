@@ -429,6 +429,11 @@ func TestFindModule(t *testing.T) {
 		t.Errorf("findModule(control) = %v, want %v", gotControl, m1)
 	}
 
+	gotStorage := findModule(library, "google/storage/v2")
+	if gotStorage != m2 {
+		t.Errorf("findModule(storage) = %v, want %v", gotStorage, m2)
+	}
+
 	gotNotFound := findModule(library, "google/nonexistent")
 	if gotNotFound != nil {
 		t.Errorf("findModule(nonexistent) = %v, want nil", gotNotFound)
