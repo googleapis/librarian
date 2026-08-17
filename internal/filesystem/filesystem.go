@@ -145,8 +145,11 @@ func Unzip(ctx context.Context, src, dest string) error {
 	if err != nil {
 		return err
 	}
-	defer r.Close()
-	if len(r.File) == 0 {
+	empty := len(r.File) == 0
+	// Do not use defer because we want to close the file before running unzip to avoid
+	// file contention.
+	r.Close()
+	if empty {
 		return nil
 	}
 	return command.Run(ctx, "unzip", "-q", "-o", src, "-d", dest)
