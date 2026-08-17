@@ -24,6 +24,7 @@ import (
 
 const defaultVersion = "0.0.0"
 
+// Add initializes Node.js-specific configuration for a library.
 func Add(lib *config.Library) *config.Library {
 	lib.Version = defaultVersion
 	return lib

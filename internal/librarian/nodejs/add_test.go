@@ -21,6 +21,26 @@ import (
 	"github.com/googleapis/librarian/internal/config"
 )
 
+func TestAdd(t *testing.T) {
+	in := &config.Library{
+		Name: "google-cloud-secretmanager",
+		APIs: []*config.API{
+			{Path: "google/cloud/secretmanager/v1"},
+		},
+	}
+	want := &config.Library{
+		Name:    "google-cloud-secretmanager",
+		Version: "0.0.0",
+		APIs: []*config.API{
+			{Path: "google/cloud/secretmanager/v1"},
+		},
+	}
+	got := Add(in)
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+}
+
 func TestDefaultLibraryName(t *testing.T) {
 	for _, test := range []struct {
 		api  string
