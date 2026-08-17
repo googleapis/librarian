@@ -237,3 +237,22 @@ func TestProtoPackagePrefix(t *testing.T) {
 		})
 	}
 }
+
+func TestOneOfName(t *testing.T) {
+	for _, test := range []struct {
+		input string
+		want  string
+	}{
+		{input: "branches", want: "OneOf_Branches"},
+		{input: "several_things", want: "OneOf_SeveralThings"},
+		{input: "type", want: "OneOf_Type"},
+		{input: "self", want: "OneOf_Self"},
+	} {
+		t.Run(test.input, func(t *testing.T) {
+			got := OneOfName(test.input)
+			if got != test.want {
+				t.Errorf("OneOfName(%q) = %q, want %q", test.input, got, test.want)
+			}
+		})
+	}
+}

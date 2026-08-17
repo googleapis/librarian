@@ -217,3 +217,13 @@ func ProtoPackagePrefix(packageName string) string {
 	}
 	return strings.Join(camelParts, "_") + "_"
 }
+
+// OneOfName returns the name for a `oneof`.
+//
+// In Swift, each `oneof` group is implemented by an `enum` (a sum type) in the
+// message that contains it. This function computes the (unqualified) name. By
+// convention, `oneof` names are `snake_case`, while Swift types are
+// `PascalCase`.
+func OneOfName(oneOfName string) string {
+	return "OneOf_" + pascalCaseNoMangling(oneOfName)
+}

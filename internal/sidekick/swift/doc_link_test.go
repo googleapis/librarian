@@ -43,26 +43,16 @@ func TestDocLink(t *testing.T) {
 		ID:      ".test.v1.SomeMessage.error",
 		IsOneOf: true,
 	}
-	typez := &api.Field{
-		Name: "type",
-		ID:   ".test.v1.SomeMessage.type",
-	}
-	someMessage := &api.Message{
-		Name:    "SomeMessage",
-		ID:      ".test.v1.SomeMessage",
-		Package: "test.v1",
-		Enums:   []*api.Enum{someEnum},
-		Fields: []*api.Field{
-			{Name: "unused"}, {Name: "field"}, response, errorz, typez,
-		},
-		OneOfs: []*api.OneOf{
-			{
-				Name:   "result",
-				ID:     ".test.v1.SomeMessage.result",
-				Fields: []*api.Field{response, errorz},
-			},
-		},
-	}
+	result := api.NewTestOneOf("result").WithFields(response, errorz)
+	someMessage := api.NewTestMessage("SomeMessage").
+		WithPackage("test.v1").
+		WithFields(
+			api.NewTestField("unused"),
+			api.NewTestField("field"),
+			api.NewTestField("typez"),
+		).
+		WithOneOfs(result)
+	someMessage.Enums = append(someMessage.Enums, someEnum)
 	otherMessage := &api.Message{
 		Name:    "OtherMessage",
 		ID:      ".other.v1.OtherMessage",
@@ -90,7 +80,7 @@ func TestDocLink(t *testing.T) {
 		{Name: "OtherPrefix", ApiPackage: "other.v1"},
 	})
 
-	tests := []struct {
+	for _, test := range []struct {
 		name   string
 		link   string
 		scopes []string
@@ -113,6 +103,18 @@ func TestDocLink(t *testing.T) {
 			link:   "SomeMessage.field",
 			scopes: []string{"test.v1"},
 			want:   "<doc:SomeMessage/field>",
+		},
+		{
+			name:   "oneof field link (1)",
+			link:   "SomeMessage.error",
+			scopes: []string{"test.v1"},
+			want:   "<doc:SomeMessage/OneOf_Result/error>",
+		},
+		{
+			name:   "oneof field link (2)",
+			link:   "SomeMessage.response",
+			scopes: []string{"test.v1"},
+			want:   "<doc:SomeMessage/OneOf_Result/response>",
 		},
 		{
 			name:   "enum value link",
@@ -144,16 +146,14 @@ func TestDocLink(t *testing.T) {
 			scopes: []string{},
 			want:   "https://www.google.com/search?q=Swift+other.v1+OtherPrefix.OtherMessage",
 		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got, err := c.linkDefinition(tt.link, tt.scopes)
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got, err := c.linkDefinition(test.link, test.scopes)
 			if err != nil {
 				t.Fatal(err)
 			}
-			if got != tt.want {
-				t.Errorf("docLink() = %q, want %q", got, tt.want)
+			if got != test.want {
+				t.Errorf("docLink() = %q, want %q", got, test.want)
 			}
 		})
 	}

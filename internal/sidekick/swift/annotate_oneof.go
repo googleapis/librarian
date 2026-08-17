@@ -31,7 +31,7 @@ func (c *codec) annotateOneOf(oneof *api.OneOf) error {
 		return err
 	}
 	annotations := &oneOfAnnotations{
-		Name:         "OneOf_" + pascalCase(oneof.Name),
+		Name:         OneOfName(oneof.Name),
 		PropertyName: camelCase(oneof.Name),
 		Checker:      camelCase(oneof.Name + "CheckAndSet"),
 		DocLines:     docLines,
