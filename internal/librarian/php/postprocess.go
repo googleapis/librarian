@@ -68,12 +68,8 @@ func runPostProcessors(ctx context.Context, library *config.Library, stagingDir,
 			continue
 		}
 		apiStagingDir := filepath.Join(stagingDir, api.PHP.StagingSubdir)
-		if _, err := os.Stat(apiStagingDir); err == nil {
-			if err := command.RunInDir(ctx, apiStagingDir, postProcessor, "--input", "."); err != nil {
-				return fmt.Errorf("failed to run php-post-processor on %s: %w", api.Path, err)
-			}
-		} else if !errors.Is(err, fs.ErrNotExist) {
-			return fmt.Errorf("failed to stat staging dir for %s: %w", api.Path, err)
+		if err := command.RunInDir(ctx, apiStagingDir, postProcessor, "--input", "."); err != nil {
+			return fmt.Errorf("failed to run php-post-processor on %s: %w", api.Path, err)
 		}
 	}
 	return nil
