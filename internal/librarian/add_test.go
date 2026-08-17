@@ -909,7 +909,6 @@ func TestAddLibraryCommand_Ruby(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			tmpDir := t.TempDir()
 			t.Chdir(tmpDir)
-
 			manifest := test.initialManifest
 			if manifest == nil {
 				manifest = map[string]string{}
@@ -921,7 +920,6 @@ func TestAddLibraryCommand_Ruby(t *testing.T) {
 			if err := os.WriteFile(filepath.Join(tmpDir, ".release-please-manifest.json"), manifestBytes, 0o644); err != nil {
 				t.Fatal(err)
 			}
-
 			packages := test.initialPackages
 			if packages == nil {
 				packages = map[string]any{}
@@ -933,7 +931,6 @@ func TestAddLibraryCommand_Ruby(t *testing.T) {
 			if err := os.WriteFile(filepath.Join(tmpDir, "release-please-config.json"), rpConfigBytes, 0o644); err != nil {
 				t.Fatal(err)
 			}
-
 			cfg := sample.Config()
 			cfg.Language = config.LanguageRuby
 			cfg.Default.Output = "output"
@@ -942,12 +939,10 @@ func TestAddLibraryCommand_Ruby(t *testing.T) {
 			if err := yaml.Write(config.LibrarianYAML, cfg); err != nil {
 				t.Fatal(err)
 			}
-
 			args := append([]string{"librarian", "add"}, test.args...)
 			if err := Run(t.Context(), args...); err != nil {
 				t.Fatal(err)
 			}
-
 			gotCfg, err := yaml.Read[config.Config](config.LibrarianYAML)
 			if err != nil {
 				t.Fatal(err)
@@ -958,7 +953,6 @@ func TestAddLibraryCommand_Ruby(t *testing.T) {
 			if diff := cmp.Diff(test.wantFinalLibraries, gotCfg.Libraries); diff != "" {
 				t.Errorf("libraries mismatch (-want +got):\n%s", diff)
 			}
-
 			gotManifest, err := readJSONFile[map[string]string](filepath.Join(tmpDir, ".release-please-manifest.json"))
 			if err != nil {
 				t.Fatal(err)
@@ -966,7 +960,6 @@ func TestAddLibraryCommand_Ruby(t *testing.T) {
 			if diff := cmp.Diff(test.wantManifest, gotManifest); diff != "" {
 				t.Errorf("manifest mismatch (-want +got):\n%s", diff)
 			}
-
 			gotRPConfig, err := readJSONFile[map[string]any](filepath.Join(tmpDir, "release-please-config.json"))
 			if err != nil {
 				t.Fatal(err)
@@ -1029,7 +1022,6 @@ func TestAddLibraryCommand_Ruby_Error(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			tmpDir := t.TempDir()
 			t.Chdir(tmpDir)
-
 			cfg := sample.Config()
 			cfg.Language = test.language
 			cfg.Default.Output = "output"
@@ -1038,7 +1030,6 @@ func TestAddLibraryCommand_Ruby_Error(t *testing.T) {
 			if err := yaml.Write(config.LibrarianYAML, cfg); err != nil {
 				t.Fatal(err)
 			}
-
 			args := append([]string{"librarian", "add"}, test.args...)
 			err := Run(t.Context(), args...)
 			if !errors.Is(err, test.wantErr) {
