@@ -108,10 +108,24 @@ pub mod {{Codec.ModuleName}} {
     /// # Example
     /// ```
     /// # use {{Model.Codec.PackageNamespace}}::builder::{{Service.Codec.ModuleName}}::{{Codec.BuilderName}};
+    {{#Codec.IsBidiStreaming}}
+    /// # use {{InputType.Codec.NameInExamples}};
+    {{/Codec.IsBidiStreaming}}
     /// # async fn sample() -> {{Model.Codec.PackageNamespace}}::Result<()> {
     {{#Codec.IsBidiStreaming}}
     /// let builder = prepare_request_builder();
-    /// let (sender, mut receiver) = builder.send().await?;
+    /// let (sender, mut receiver) = builder
+    ///     .with_request({{InputType.Codec.Name}}::default())
+    ///     .send()
+    ///     .await?;
+    ///
+    /// sender.send({{InputType.Codec.Name}}::default()).await?;
+    /// drop(sender); // Half-close the stream
+    ///
+    /// while let Some(response) = receiver.recv().await {
+    ///     let response = response?;
+    ///     println!("response {:?}", response);
+    /// }
     {{/Codec.IsBidiStreaming}}
     {{^Codec.IsBidiStreaming}}
     {{#OperationInfo}}
