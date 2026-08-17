@@ -16,6 +16,7 @@
 package filesystem
 
 import (
+	"archive/zip"
 	"context"
 	"errors"
 	"fmt"
@@ -138,7 +139,16 @@ func CopyFile(src, dest string) error {
 }
 
 // Unzip unzips the src archive into dest directory using the system unzip command.
+// If the archive contains 0 files, it returns nil without invoking unzip.
 func Unzip(ctx context.Context, src, dest string) error {
+	r, err := zip.OpenReader(src)
+	if err != nil {
+		return err
+	}
+	defer r.Close()
+	if len(r.File) == 0 {
+		return nil
+	}
 	return command.Run(ctx, "unzip", "-q", "-o", src, "-d", dest)
 }
 
