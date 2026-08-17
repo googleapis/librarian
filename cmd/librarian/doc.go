@@ -75,7 +75,7 @@ The <api> is a path within the configured googleapis source, such as
 "google/cloud/secretmanager/v1". The library name and other defaults are
 derived from the first API path using language-specific rules.
 
-When adding a Ruby library, the --library-name flag can be used to explicitly
+When adding a Ruby library, the --name flag can be used to explicitly
 specify the library name.
 
 If the API path should naturally be included in an existing library, and if the
@@ -92,7 +92,7 @@ To add a preview client of an existing library, prefix the API path with
 Examples:
 
 	librarian add google/cloud/secretmanager/v1
-	librarian add google/cloud/secretmanager/v1 --library-name google-cloud-secret_manager-v1
+	librarian add google/cloud/secretmanager/v1 --name google-cloud-secret_manager-v1
 	librarian add preview/google/cloud/secretmanager/v1beta
 
 A typical librarian workflow for adding a new client library is:
@@ -102,7 +102,7 @@ A typical librarian workflow for adding a new client library is:
 
 Flags:
 
-	--library-name string  explicitly specified library name; only applicable for Ruby
+	--name string  explicitly specified library name; only applicable for Ruby
 
 # Generate a client library
 

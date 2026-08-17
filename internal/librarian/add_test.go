@@ -786,7 +786,6 @@ func TestAddLibraryCommand_Ruby(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-
 	for _, test := range []struct {
 		name               string
 		initialLibraries   []*config.Library
@@ -799,7 +798,7 @@ func TestAddLibraryCommand_Ruby(t *testing.T) {
 	}{
 		{
 			name: "explicit library name for versioned gem with release please",
-			args: []string{"google/cloud/secretmanager/v1", "--library-name", "google-cloud-secret_manager-v1"},
+			args: []string{"google/cloud/secretmanager/v1", "--name", "google-cloud-secret_manager-v1"},
 			wantFinalLibraries: []*config.Library{
 				{
 					Name:          "google-cloud-secret_manager-v1",
@@ -843,7 +842,7 @@ func TestAddLibraryCommand_Ruby(t *testing.T) {
 					"version_file": "lib/google/cloud/secret_manager/v1/version.rb",
 				},
 			},
-			args: []string{"google/cloud/secretmanager", "--library-name", "google-cloud-secret_manager"},
+			args: []string{"google/cloud/secretmanager", "--name", "google-cloud-secret_manager"},
 			wantFinalLibraries: []*config.Library{
 				{
 					Name:          "google-cloud-secret_manager",
@@ -985,7 +984,6 @@ func TestAddLibraryCommand_Ruby_Error(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-
 	for _, test := range []struct {
 		name             string
 		language         string
@@ -994,10 +992,10 @@ func TestAddLibraryCommand_Ruby_Error(t *testing.T) {
 		wantErr          error
 	}{
 		{
-			name:     "library-name flag specified for non-ruby language",
+			name:     "name flag specified for non-ruby language",
 			language: config.LanguageGo,
-			args:     []string{"google/cloud/secretmanager/v1", "--library-name", "custom-name"},
-			wantErr:  errLibraryNameOnlyForRuby,
+			args:     []string{"google/cloud/secretmanager/v1", "--name", "custom-name"},
+			wantErr:  errNameOnlyForRuby,
 		},
 		{
 			name:     "duplicate API path",
@@ -1010,7 +1008,7 @@ func TestAddLibraryCommand_Ruby_Error(t *testing.T) {
 					},
 				},
 			},
-			args:    []string{"google/cloud/secretmanager/v1", "--library-name", "google-cloud-secret_manager-v1"},
+			args:    []string{"google/cloud/secretmanager/v1", "--name", "google-cloud-secret_manager-v1"},
 			wantErr: errAPIAlreadyExists,
 		},
 		{
@@ -1024,7 +1022,7 @@ func TestAddLibraryCommand_Ruby_Error(t *testing.T) {
 					},
 				},
 			},
-			args:    []string{"google/cloud/secretmanager/v1", "--library-name", "google-cloud-secret_manager-v1"},
+			args:    []string{"google/cloud/secretmanager/v1", "--name", "google-cloud-secret_manager-v1"},
 			wantErr: errLibraryAlreadyExists,
 		},
 	} {

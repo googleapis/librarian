@@ -43,7 +43,7 @@ import (
 var (
 	errAPIAlreadyExists       = errors.New("api already exists in library")
 	errLibraryAlreadyExists   = errors.New("library already exists in config")
-	errLibraryNameOnlyForRuby = errors.New("--library-name is only applicable for Ruby")
+	errNameOnlyForRuby        = errors.New("--name is only applicable for Ruby")
 	errPreviewAlreadyExists   = errors.New("preview library config already exists")
 	errPreviewRequiresLibrary = errors.New("only APIs with an existing Library can have a Preview")
 	errWrongAPICount          = errors.New("must provide exactly one API path")
@@ -60,7 +60,7 @@ The <api> is a path within the configured googleapis source, such as
 "google/cloud/secretmanager/v1". The library name and other defaults are
 derived from the first API path using language-specific rules.
 
-When adding a Ruby library, the --library-name flag can be used to explicitly
+When adding a Ruby library, the --name flag can be used to explicitly
 specify the library name.
 
 If the API path should naturally be included in an existing library, and if the
@@ -77,7 +77,7 @@ To add a preview client of an existing library, prefix the API path with
 Examples:
 
 	librarian add google/cloud/secretmanager/v1
-	librarian add google/cloud/secretmanager/v1 --library-name google-cloud-secret_manager-v1
+	librarian add google/cloud/secretmanager/v1 --name google-cloud-secret_manager-v1
 	librarian add preview/google/cloud/secretmanager/v1beta
 
 A typical librarian workflow for adding a new client library is:
@@ -86,7 +86,7 @@ A typical librarian workflow for adding a new client library is:
 	librarian generate <library>   # generate the client library`,
 		Flags: []cli.Flag{
 			&cli.StringFlag{
-				Name:  "library-name",
+				Name:  "name",
 				Usage: "explicitly specified library name; only applicable for Ruby",
 			},
 		},
@@ -95,7 +95,7 @@ A typical librarian workflow for adding a new client library is:
 			if len(apis) != 1 {
 				return errWrongAPICount
 			}
-			explicitLibraryName := c.String("library-name")
+			explicitLibraryName := c.String("name")
 			cfg, err := yaml.Read[config.Config](config.LibrarianYAML)
 			if err != nil {
 				return err
@@ -107,7 +107,7 @@ A typical librarian workflow for adding a new client library is:
 
 func runAdd(ctx context.Context, cfg *config.Config, api, explicitLibraryName string) error {
 	if explicitLibraryName != "" && cfg.Language != config.LanguageRuby {
-		return errLibraryNameOnlyForRuby
+		return errNameOnlyForRuby
 	}
 	name, cfg, err := addLibrary(cfg, api, explicitLibraryName)
 	if err != nil {
