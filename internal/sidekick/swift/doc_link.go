@@ -93,12 +93,12 @@ func (c *codec) tryFieldDocLink(id string) (string, error) {
 			if err != nil {
 				return "", err
 			}
-			fieldName := camelCase(f.Name)
+			swiftName := camelCase(f.Name)
 			if f.Group == nil {
-				return c.docLink(m.Package, fmt.Sprintf("%s/%s", messageName, fieldName)), nil
+				return c.docLink(m.Package, fmt.Sprintf("%s/%s", messageName, swiftName)), nil
 			}
 			groupName := OneOfName(f.Group.Name)
-			return c.docLink(m.Package, fmt.Sprintf("%s/%s/%s(_:)", messageName, groupName, fieldName)), nil
+			return c.docLink(m.Package, fmt.Sprintf("%s/%s/%s(_:)", messageName, groupName, swiftName)), nil
 		}
 	}
 	for _, o := range m.OneOfs {
