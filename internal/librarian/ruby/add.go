@@ -31,11 +31,6 @@ var (
 	errNoVersionedAPI = errors.New("no versioned API found")
 )
 
-// DefaultLibraryName derives the default library name from an API path.
-func DefaultLibraryName(api string) string {
-	return strings.ReplaceAll(api, "/", "-")
-}
-
 // Add initializes a new Ruby library configuration.
 func Add(cfg *config.Config, lib *config.Library) (*config.Library, error) {
 	lib.Version = defaultVersion

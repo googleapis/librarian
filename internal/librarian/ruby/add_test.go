@@ -22,23 +22,6 @@ import (
 	"github.com/googleapis/librarian/internal/config"
 )
 
-func TestDefaultLibraryName(t *testing.T) {
-	for _, test := range []struct {
-		apiPath string
-		want    string
-	}{
-		{"google/cloud/secretmanager/v1", "google-cloud-secretmanager-v1"},
-		{"google/cloud/secretmanager", "google-cloud-secretmanager"},
-	} {
-		t.Run(test.apiPath, func(t *testing.T) {
-			got := DefaultLibraryName(test.apiPath)
-			if got != test.want {
-				t.Errorf("DefaultLibraryName(%q) = %q, want %q", test.apiPath, got, test.want)
-			}
-		})
-	}
-}
-
 func TestAdd(t *testing.T) {
 	for _, test := range []struct {
 		name string

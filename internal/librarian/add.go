@@ -95,21 +95,21 @@ A typical librarian workflow for adding a new client library is:
 			if len(apis) != 1 {
 				return errWrongAPICount
 			}
-			libraryName := c.String("library-name")
+			explicitLibraryName := c.String("library-name")
 			cfg, err := yaml.Read[config.Config](config.LibrarianYAML)
 			if err != nil {
 				return err
 			}
-			return runAdd(ctx, cfg, apis[0], libraryName)
+			return runAdd(ctx, cfg, apis[0], explicitLibraryName)
 		},
 	}
 }
 
-func runAdd(ctx context.Context, cfg *config.Config, api, libraryName string) error {
-	if libraryName != "" && cfg.Language != config.LanguageRuby {
+func runAdd(ctx context.Context, cfg *config.Config, api, explicitLibraryName string) error {
+	if explicitLibraryName != "" && cfg.Language != config.LanguageRuby {
 		return errLibraryNameOnlyForRuby
 	}
-	name, cfg, err := addLibrary(cfg, api, libraryName)
+	name, cfg, err := addLibrary(cfg, api, explicitLibraryName)
 	if err != nil {
 		return err
 	}
@@ -183,8 +183,6 @@ func deriveLibraryName(language string, api string) string {
 		return nodejs.DefaultLibraryName(api)
 	case config.LanguagePython:
 		return python.DefaultLibraryName(api)
-	case config.LanguageRuby:
-		return ruby.DefaultLibraryName(api)
 	case config.LanguageRust:
 		return rust.DefaultLibraryName(api)
 	case config.LanguageSwift:
@@ -200,10 +198,10 @@ func deriveLibraryName(language string, api string) string {
 // It returns the name of the new or updated library, the updated config, and an
 // error if the API cannot be added (e.g. because it already exists, or the new
 // API is a preview and there is no corresponding stable library).
-func addLibrary(cfg *config.Config, apiPath, libraryName string) (string, *config.Config, error) {
+func addLibrary(cfg *config.Config, apiPath, explicitLibraryName string) (string, *config.Config, error) {
 	stablePath, isPreview := strings.CutPrefix(apiPath, "preview/")
 	api := &config.API{Path: stablePath}
-	existingLib := findExistingLibraryForAPI(cfg, stablePath, libraryName)
+	existingLib := findExistingLibraryForAPI(cfg, stablePath, explicitLibraryName)
 	if isPreview {
 		if existingLib == nil {
 			return "", nil, fmt.Errorf("%w: API path %s", errPreviewRequiresLibrary, apiPath)
@@ -213,7 +211,7 @@ func addLibrary(cfg *config.Config, apiPath, libraryName string) (string, *confi
 	if existingLib != nil {
 		return updateExistingLibrary(cfg, existingLib, api)
 	}
-	return addNewLibrary(cfg, api, libraryName)
+	return addNewLibrary(cfg, api, explicitLibraryName)
 }
 
 // findExistingLibraryForAPI determines if an existing library in cfg is
@@ -222,14 +220,14 @@ func addLibrary(cfg *config.Config, apiPath, libraryName string) (string, *confi
 // by deriving the library name from the API path and seeing if that library
 // already exists. In Python the mapping from API path to library name isn't
 // always as simple for historical reasons.
-func findExistingLibraryForAPI(cfg *config.Config, apiPath, libraryName string) *config.Library {
+func findExistingLibraryForAPI(cfg *config.Config, apiPath, explicitLibraryName string) *config.Library {
 	switch cfg.Language {
 	case config.LanguageNodejs:
 		return nodejs.FindExistingLibraryForNewAPI(cfg.Libraries, apiPath)
 	case config.LanguagePython:
 		return python.FindExistingLibraryForNewAPI(cfg.Libraries, apiPath)
 	default:
-		name := libraryName
+		name := explicitLibraryName
 		if name == "" {
 			name = deriveLibraryName(cfg.Language, apiPath)
 		}
@@ -265,8 +263,8 @@ func addPreviewLibrary(cfg *config.Config, lib *config.Library, api *config.API)
 }
 
 // addNewLibrary adds a new library to the config.
-func addNewLibrary(cfg *config.Config, api *config.API, libraryName string) (string, *config.Config, error) {
-	name := libraryName
+func addNewLibrary(cfg *config.Config, api *config.API, explicitLibraryName string) (string, *config.Config, error) {
+	name := explicitLibraryName
 	if name == "" {
 		name = deriveLibraryName(cfg.Language, api.Path)
 	}
