@@ -108,13 +108,13 @@ func TestDocLink(t *testing.T) {
 			name:   "oneof field link (1)",
 			link:   "SomeMessage.error",
 			scopes: []string{"test.v1"},
-			want:   "<doc:SomeMessage/OneOf_Result/error>",
+			want:   "<doc:SomeMessage/OneOf_Result/error(_:)>",
 		},
 		{
 			name:   "oneof field link (2)",
 			link:   "SomeMessage.response",
 			scopes: []string{"test.v1"},
-			want:   "<doc:SomeMessage/OneOf_Result/response>",
+			want:   "<doc:SomeMessage/OneOf_Result/response(_:)>",
 		},
 		{
 			name:   "enum value link",
