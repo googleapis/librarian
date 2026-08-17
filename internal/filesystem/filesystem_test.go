@@ -356,6 +356,17 @@ func TestUnzip_Permissions(t *testing.T) {
 	}
 }
 
+func TestUnzip_Empty(t *testing.T) {
+	t.Parallel()
+	tmp := t.TempDir()
+	zipPath := filepath.Join(tmp, "empty.zip")
+	destDir := filepath.Join(tmp, "dest")
+	createZip(t, zipPath, nil, nil)
+	if err := Unzip(t.Context(), zipPath, destDir); err != nil {
+		t.Fatalf("Unzip() error = %v", err)
+	}
+}
+
 func createZip(t *testing.T, path string, files map[string]string, modes map[string]os.FileMode) {
 	t.Helper()
 	f, err := os.Create(path)
