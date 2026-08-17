@@ -41,7 +41,7 @@ var (
 	errCannotParseSwiftVersion = errors.New("failed to parse swift version")
 	errInvalidTool             = errors.New("invalid tool configuration")
 	errMissingExecutable       = errors.New("is not installed or not in PATH, which is required for Swift tool installation")
-	errSwiftVersionTooLow      = errors.New("swift version is less than the required minimum version 6.2")
+	errSwiftVersionTooLow      = fmt.Errorf("swift version is less than the required minimum version %d.%d", minSwiftMajor, minSwiftMinor)
 	swiftVersionRegex          = regexp.MustCompile(`(?i)swift\s+version\s+(\d+)\.(\d+)`)
 )
 
