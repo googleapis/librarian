@@ -363,7 +363,7 @@ func TestUnzip_Empty(t *testing.T) {
 	destDir := filepath.Join(tmp, "dest")
 	createZip(t, zipPath, nil, nil)
 	if err := Unzip(t.Context(), zipPath, destDir); err != nil {
-		t.Fatalf("Unzip() error = %v", err)
+		t.Fatal(err)
 	}
 }
 
