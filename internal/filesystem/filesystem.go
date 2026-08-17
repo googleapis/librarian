@@ -146,8 +146,7 @@ func Unzip(ctx context.Context, src, dest string) error {
 		return err
 	}
 	empty := len(r.File) == 0
-	// Do not use defer because we want to close the file before running unzip to avoid
-	// file contention.
+	// Avoid file contention with potential unzip call by force closing the reader.
 	if err := r.Close(); err != nil {
 		return err
 	}
