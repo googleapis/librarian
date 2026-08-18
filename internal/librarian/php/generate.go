@@ -148,10 +148,6 @@ func generateAPI(ctx context.Context, params *generateAPIParams) (retErr error) 
 		}
 	}()
 	googleapisDir := params.srcCfg.Root("googleapis")
-	mainProtos, err := gatherMainProtos(googleapisDir, params.api.Path)
-	if err != nil {
-		return err
-	}
 	var pc *config.Protoc
 	if params.cfg.Tools != nil {
 		pc = params.cfg.Tools.Protoc
@@ -161,11 +157,7 @@ func generateAPI(ctx context.Context, params *generateAPIParams) (retErr error) 
 		return err
 	}
 	// Run 2: Proto Message Generation
-	protoArgs := buildProtoProtocArgs(params, protoZipPath, mainProtos)
-	if err := protoc.RunOrSystem(ctx, map[string]string{"GOOGLEAPIS_DIR": googleapisDir}, pc, protoArgs...); err != nil {
-		return fmt.Errorf("failed to generate PHP Proto API %s: %w", params.api.Path, err)
-	}
-	return extractOutput(ctx, protoZipPath, params.protoDestDir)
+	return generateProto(ctx, params, pc, googleapisDir, protoZipPath)
 }
 
 func generateGAPIC(ctx context.Context, params *generateAPIParams, pc *config.Protoc, googleapisDir, gapicZipPath string) error {
@@ -200,10 +192,19 @@ func generateGAPIC(ctx context.Context, params *generateAPIParams, pc *config.Pr
 	if err := protoc.RunOrSystem(ctx, map[string]string{"GOOGLEAPIS_DIR": googleapisDir}, pc, gapicArgs...); err != nil {
 		return fmt.Errorf("failed to generate PHP GAPIC API %s: %w", params.api.Path, err)
 	}
-	if err := extractOutput(ctx, gapicZipPath, params.gapicDestDir); err != nil {
+	return extractOutput(ctx, gapicZipPath, params.gapicDestDir)
+}
+
+func generateProto(ctx context.Context, params *generateAPIParams, pc *config.Protoc, googleapisDir, protoZipPath string) error {
+	mainProtos, err := gatherMainProtos(googleapisDir, params.api.Path)
+	if err != nil {
 		return err
 	}
-	return nil
+	protoArgs := buildProtoProtocArgs(params, protoZipPath, mainProtos)
+	if err := protoc.RunOrSystem(ctx, map[string]string{"GOOGLEAPIS_DIR": googleapisDir}, pc, protoArgs...); err != nil {
+		return fmt.Errorf("failed to generate PHP Proto API %s: %w", params.api.Path, err)
+	}
+	return extractOutput(ctx, protoZipPath, params.protoDestDir)
 }
 
 // gatherGAPICProtos collects all proto files inside the target API directory,
