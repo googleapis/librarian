@@ -71,8 +71,8 @@ type SwiftPackage struct {
 	// other packages.
 	PackageNameOverride string `yaml:"package_name_override,omitempty"`
 
-	// NameOverrides contains codec-level overrides for type and service names (e.g., ".google.storage.v2.Storage=StorageAdmin").
-	NameOverrides string `yaml:"name_overrides,omitempty"`
+	// NameOverrides contains codec-level overrides for type and service names (e.g., {".google.storage.v2.Storage": "StorageControl"}).
+	NameOverrides map[string]string `yaml:"name_overrides,omitempty"`
 
 	// PerServiceTraits enables per-service compile-time flags.
 	PerServiceTraits bool `yaml:"per_service_traits,omitempty"`
@@ -176,7 +176,7 @@ type SwiftModule struct {
 	ModulePath string `yaml:"module_path,omitempty"`
 
 	// NameOverrides contains codec-level overrides for type and service names for this module.
-	NameOverrides string `yaml:"name_overrides,omitempty"`
+	NameOverrides map[string]string `yaml:"name_overrides,omitempty"`
 }
 
 // SwiftDiscovery contains discovery-specific configuration for LRO polling.

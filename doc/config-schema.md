@@ -649,7 +649,7 @@ This document describes the schema for the librarian.yaml.
 | `included_ids` | list of string | Is a list of proto IDs to include in generation for this module. If set, only these IDs and their dependencies are generated. |
 | `skipped_ids` | list of string | Is a list of proto IDs to skip in generation for this module. |
 | `module_path` | string | Is the module import path or target containing stubs (used by convert-swift and gRPC transports). |
-| `name_overrides` | string | Contains codec-level overrides for type and service names for this module. |
+| `name_overrides` | mapping of string to string | Contains codec-level overrides for type and service names for this module. |
 
 ## SwiftPackage Configuration
 
@@ -661,7 +661,7 @@ This document describes the schema for the librarian.yaml.
 | `included_ids` | list of string | Is a list of proto IDs to include in generation for the package. If set, only these IDs and their dependencies are generated. |
 | `skipped_ids` | list of string | Is a list of proto IDs to skip in generation for the package. |
 | `modules` | list of [SwiftModule](#swiftmodule-configuration) (optional) | Specifies generation targets for veneers and test packages.<br><br>Each module defines a source proto path, and output location. |
-| `name_overrides` | string | Contains codec-level overrides for type and service names (e.g., ".google.storage.v2.Storage=StorageAdmin"). |
+| `name_overrides` | mapping of string to string | Contains codec-level overrides for type and service names (e.g., {".google.storage.v2.Storage": "StorageControl"}). |
 | `package_name_override` | string | Overrides the package name.<br><br>This may be useful if the protobuf package lacks the necessary prefixes, e.g. `grafeas.v1` may be published as `google-grafeas-v1` to match the other packages. |
 | `per_service_traits` | bool | Enables per-service compile-time flags. |
 | `default_traits` | list of string | Is a list of compile-time traits enabled by default. |

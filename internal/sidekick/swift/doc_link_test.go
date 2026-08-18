@@ -243,7 +243,9 @@ func TestDocLink_NameOverrides(t *testing.T) {
 	model := api.NewTestAPI([]*api.Message{}, []*api.Enum{}, []*api.Service{service})
 	library := &config.Library{
 		Swift: &config.SwiftPackage{
-			NameOverrides: ".google.storage.v2.Storage=StorageAdmin",
+			NameOverrides: map[string]string{
+				".google.storage.v2.Storage": "StorageAdmin",
+			},
 		},
 	}
 
@@ -265,5 +267,44 @@ func TestDocLink_NameOverrides(t *testing.T) {
 	wantMethod := "<doc:StorageAdminClient/createBucket(request:)>"
 	if gotMethod != wantMethod {
 		t.Errorf("methodDocLink() = %q, want %q", gotMethod, wantMethod)
+	}
+}
+
+func TestDocLink_ModuleNameOverrides(t *testing.T) {
+	service := &api.Service{
+		Name:    "Storage",
+		ID:      ".google.storage.v2.Storage",
+		Package: "google.storage.v2",
+		Methods: []*api.Method{
+			{
+				Name: "CreateBucket",
+				ID:   ".google.storage.v2.Storage.CreateBucket",
+			},
+		},
+	}
+
+	model := api.NewTestAPI([]*api.Message{}, []*api.Enum{}, []*api.Service{service})
+	library := &config.Library{
+		Swift: &config.SwiftPackage{
+			NameOverrides: map[string]string{
+				".google.storage.v2.Storage": "PackageDefault",
+			},
+		},
+	}
+	module := &config.SwiftModule{
+		NameOverrides: map[string]string{
+			".google.storage.v2.Storage": "ModuleOverride",
+		},
+	}
+
+	c, err := newCodec(model, library, module, ".")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	gotService := c.serviceDocLink(service)
+	wantService := "<doc:ModuleOverrideClient>"
+	if gotService != wantService {
+		t.Errorf("serviceDocLink() = %q, want %q", gotService, wantService)
 	}
 }

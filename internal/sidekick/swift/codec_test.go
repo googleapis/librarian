@@ -178,7 +178,10 @@ func TestParseOptions(t *testing.T) {
 			library: &config.Library{
 				CopyrightYear: "2038",
 				Swift: &config.SwiftPackage{
-					NameOverrides: ".google.storage.v2.Storage=StorageAdmin,.google.storage.control.v2.StorageControl=StorageAdmin",
+					NameOverrides: map[string]string{
+						".google.storage.v2.Storage":                "StorageAdmin",
+						".google.storage.control.v2.StorageControl": "StorageAdmin",
+					},
 				},
 			},
 			want: &codec{
@@ -193,7 +196,7 @@ func TestParseOptions(t *testing.T) {
 				DependenciesByName: map[string]*Dependency{},
 				ResponseEncoding:   defaultResponseEncoding,
 				NameOverrides: map[string]string{
-					".google.storage.v2.Storage":                 "StorageAdmin",
+					".google.storage.v2.Storage":                "StorageAdmin",
 					".google.storage.control.v2.StorageControl": "StorageAdmin",
 				},
 			},

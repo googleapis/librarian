@@ -17,7 +17,6 @@ package swift
 import (
 	"fmt"
 	"path/filepath"
-	"strings"
 	"time"
 
 	"github.com/googleapis/librarian/internal/config"
@@ -227,20 +226,19 @@ func newCodec(model *api.API, library *config.Library, module *config.SwiftModul
 		result.ModulePath = module.ModulePath
 	}
 
-	nameOverridesStr := ""
-	if module != nil && module.NameOverrides != "" {
-		nameOverridesStr = module.NameOverrides
-	} else if library.Swift != nil && library.Swift.NameOverrides != "" {
-		nameOverridesStr = library.Swift.NameOverrides
-	}
-	if nameOverridesStr != "" {
-		result.NameOverrides = make(map[string]string)
-		for override := range strings.SplitSeq(nameOverridesStr, ",") {
-			tokens := strings.Split(override, "=")
-			if len(tokens) == 2 {
-				result.NameOverrides[tokens[0]] = tokens[1]
-			}
+	nameOverrides := make(map[string]string)
+	if swiftCfg != nil {
+		for k, v := range swiftCfg.NameOverrides {
+			nameOverrides[k] = v
 		}
+	}
+	if module != nil {
+		for k, v := range module.NameOverrides {
+			nameOverrides[k] = v
+		}
+	}
+	if len(nameOverrides) > 0 {
+		result.NameOverrides = nameOverrides
 	}
 
 	libraryName, err := LibraryName(model, swiftCfg)
