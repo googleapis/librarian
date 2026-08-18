@@ -15,9 +15,7 @@ limitations under the License.
 }}
 {{#Codec.IsBidiStreaming}}
 ///     let (sender, mut receiver) = client.{{Codec.Name}}()
-///         .with_request({{InputType.Codec.Name}}::default())
-///         .send()
-///         .await?;
+///         .build();
 ///
 ///     sender.send({{InputType.Codec.Name}}::default()).await?;
 ///     drop(sender); // Half-close the stream
