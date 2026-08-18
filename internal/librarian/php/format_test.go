@@ -74,6 +74,18 @@ class Foo
 	}
 }
 
+func TestFormat_NoMatchingFiles(t *testing.T) {
+	requirePrettier(t)
+	tmpDir := t.TempDir()
+	library := &config.Library{
+		Name:   "test-library",
+		Output: tmpDir,
+	}
+	if err := Format(t.Context(), library); err != nil {
+		t.Fatal(err)
+	}
+}
+
 func TestFormat_ErrorPrettierMissing(t *testing.T) {
 	t.Setenv("LIBRARIAN_BIN", t.TempDir())
 	library := &config.Library{
