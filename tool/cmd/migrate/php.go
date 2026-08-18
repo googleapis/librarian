@@ -378,18 +378,11 @@ func normalizeStagingSubdir(apiPath, stagingDir string) string {
 	return stagingDir
 }
 
-func ignoreNotExist(err error) error {
-	if errors.Is(err, fs.ErrNotExist) {
-		return nil
-	}
-	return err
-}
-
 func extractOldestCopyrightYear(libraryDir string) (string, error) {
 	var oldest string
 	buffer := make([]byte, 4096)
 	err := filepath.WalkDir(libraryDir, func(path string, entry fs.DirEntry, err error) error {
-		if err = ignoreNotExist(err); err != nil {
+		if err != nil {
 			return err
 		}
 		if entry.IsDir() || !strings.HasSuffix(path, ".php") {
@@ -397,7 +390,7 @@ func extractOldestCopyrightYear(libraryDir string) (string, error) {
 		}
 
 		year, err := getOldestYearInFile(path, buffer)
-		if err = ignoreNotExist(err); err != nil {
+		if err != nil {
 			return err
 		}
 
