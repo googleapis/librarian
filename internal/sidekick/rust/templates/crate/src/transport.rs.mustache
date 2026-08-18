@@ -129,47 +129,26 @@ impl super::stub::{{Codec.Name}} for {{Codec.Name}} {
     {{#Codec.Methods}}
     {{#Codec.IsBidiStreaming}}
     #[cfg(google_cloud_unstable_gapic_streaming)]
-    async fn {{Codec.Name}}(
+    fn {{Codec.Name}}(
         &self,
-        req: std::option::Option<{{InputType.Codec.QualifiedName}}>,
         options: crate::RequestOptions,
-    ) -> Result<(
+    ) -> (
         google_cloud_gax::streaming::RequestSender<{{InputType.Codec.QualifiedName}}>,
         google_cloud_gax::streaming::ResponseReceiver<{{OutputType.Codec.QualifiedName}}>,
-    )> {
+    ) {
         use gaxi::prost::{FromProto, ToProto};
         use futures::stream::StreamExt as _;
+        use futures::FutureExt as _;
 
-        let req = req.ok_or_else(|| {
-            {{! TODO(#6835) - determine appropriate error type for missing initial request }}
-            google_cloud_gax::error::Error::binding(
-                "a request is required"
-            )
-        })?;
-
-        {{!
-        Per AIP-4222, fallback to HTTP path templates only applies to unary RPCs.
-        Streaming RPCs only extract routing parameters if explicitly annotated.
-        }}
-        {{#HasRouting}}
-        {{> /templates/grpc-client/routinginfo}}
-        {{/HasRouting}}
-        {{^HasRouting}}
+        {{! TODO(#6835) - support explicit routing parameters for bidirectional streaming RPCs }}
         let x_goog_request_params = "";
-        {{/HasRouting}}
-
-        let first_req = req
-            .to_proto()
-            .map_err(google_cloud_gax::error::Error::ser)?;
 
         let (req_tx, req_rx) = tokio::sync::mpsc::channel(
             options
                 .request_stream_channel_capacity()
                 .unwrap_or(google_cloud_gax::options::internal::DEFAULT_REQUEST_CHANNEL_CAPACITY),
         );
-
-        let req_stream = futures::stream::once(async move { first_req })
-            .chain(tokio_stream::wrappers::ReceiverStream::new(req_rx));
+        let req_stream = tokio_stream::wrappers::ReceiverStream::new(req_rx);
 
         let extensions = {
             let mut e = gaxi::grpc::tonic::Extensions::new();
@@ -183,19 +162,25 @@ impl super::stub::{{Codec.Name}} for {{Codec.Name}} {
             "/{{SourceService.Package}}.{{SourceService.Name}}/{{Name}}"
         );
 
-        let result = self.grpc_inner
-            .bidi_stream::<
-                crate::prost::{{InputType.Codec.PackageModuleName}}::{{InputType.Codec.Name}},
-                crate::prost::{{OutputType.Codec.PackageModuleName}}::{{OutputType.Codec.Name}},
-            >(
-                extensions,
-                path,
-                req_stream,
-                options,
-                &crate::info::X_GOOG_API_CLIENT_HEADER,
-                x_goog_request_params,
-            )
-            .await?;
+        let (resp_tx, resp_rx) = tokio::sync::oneshot::channel();
+
+        let grpc_inner = self.grpc_inner.clone();
+        tokio::spawn(async move {
+            let result = grpc_inner
+                .bidi_stream::<
+                    crate::prost::{{InputType.Codec.PackageModuleName}}::{{InputType.Codec.Name}},
+                    crate::prost::{{OutputType.Codec.PackageModuleName}}::{{OutputType.Codec.Name}},
+                >(
+                    extensions,
+                    path,
+                    req_stream,
+                    options,
+                    &crate::info::X_GOOG_API_CLIENT_HEADER,
+                    x_goog_request_params,
+                )
+                .await;
+            let _ = resp_tx.send(result);
+        });
 
         let request_sender = google_cloud_gax::streaming::RequestSender::from_fn(
             move |item: {{InputType.Codec.QualifiedName}}| {
@@ -207,23 +192,24 @@ impl super::stub::{{Codec.Name}} for {{Codec.Name}} {
                     req_tx
                         .send(prost_item)
                         .await
-                        .map_err(|_| {
-                            google_cloud_gax::error::Error::io(std::io::Error::new(
-                                std::io::ErrorKind::BrokenPipe,
-                                "cannot send request: stream is closed",
-                            ))
-                        })
+                        .map_err(|_| google_cloud_gax::streaming::SendError::StreamClosed)
                 }
             },
         );
-        let response_receiver = google_cloud_gax::streaming::ResponseReceiver::from_stream(
-            result.into_inner().map(|res| {
+        let future = resp_rx.map(|res| match res {
+            Ok(Ok(response)) => Ok(response.into_inner().map(|res| {
                 res.map_err(gaxi::grpc::from_status::to_gax_error)
                     .and_then(|m| m.cnv().map_err(google_cloud_gax::error::Error::deser))
-            }),
-        );
+            })),
+            Ok(Err(err)) => Err(err),
+            Err(_) => Err(google_cloud_gax::error::Error::io(std::io::Error::new(
+                std::io::ErrorKind::BrokenPipe,
+                "stream initialization task cancelled",
+            ))),
+        });
+        let response_receiver = google_cloud_gax::streaming::ResponseReceiver::from_future(future);
 
-        Ok((request_sender, response_receiver))
+        (request_sender, response_receiver)
     }
 
     {{/Codec.IsBidiStreaming}}
