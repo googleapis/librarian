@@ -72,7 +72,6 @@ type SwiftPackage struct {
 	PackageNameOverride string `yaml:"package_name_override,omitempty"`
 
 	// NameOverrides contains codec-level overrides for service names (e.g., {".google.storage.v2.Storage": "StorageControl"}).
-	// TODO(https://github.com/googleapis/google-cloud-swift/issues/308): Support overriding other symbol types (e.g., messages, enums, oneofs) if needed.
 	NameOverrides map[string]string `yaml:"name_overrides,omitempty"`
 
 	// PerServiceTraits enables per-service compile-time flags.

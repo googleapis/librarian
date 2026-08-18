@@ -136,6 +136,7 @@ type codec struct {
 	ResponseEncoding string
 
 	// Codec-level overrides for service names.
+	// TODO(https://github.com/googleapis/google-cloud-swift/issues/308): Support overriding other symbol types (e.g., messages, enums, oneofs) if needed.
 	NameOverrides map[string]string
 }
 

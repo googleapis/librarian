@@ -147,7 +147,7 @@ func (c *codec) methodDocLink(m *api.Method) (string, error) {
 		return "", nil
 	}
 	serviceName := c.ServiceName(s)
-	name := fmt.Sprintf("%sClient/%s(request:)", pascalCaseNoMangling(serviceName), camelCase(m.Name))
+	name := fmt.Sprintf("%sClient/%s(request:options:)", pascalCaseNoMangling(serviceName), camelCase(m.Name))
 	return c.docLink(s.Package, name), nil
 }
 

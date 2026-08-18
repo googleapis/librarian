@@ -126,7 +126,7 @@ func TestDocLink(t *testing.T) {
 			name:   "method link",
 			link:   "SomeService.CreateFoo",
 			scopes: []string{"test.v1"},
-			want:   "<doc:SomeServiceClient/createFoo(request:)>",
+			want:   "<doc:SomeServiceClient/createFoo(request:options:)>",
 		},
 		{
 			name:   "service link",
@@ -264,7 +264,7 @@ func TestDocLink_NameOverrides(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	wantMethod := "<doc:StorageAdminClient/createBucket(request:)>"
+	wantMethod := "<doc:StorageAdminClient/createBucket(request:options:)>"
 	if gotMethod != wantMethod {
 		t.Errorf("methodDocLink() = %q, want %q", gotMethod, wantMethod)
 	}
