@@ -137,6 +137,8 @@ type SwiftDependency struct {
 	// - The `GoogleCloudWkt` package will set this to `google.cloud.protobuf`.
 	// - The `GoogleCloudLocation` package will set this to `google.cloud.location`.
 	ApiPackage string `yaml:"api_package,omitempty"`
+	// SpiAttribute if set, the dependency requires an `@_spi(...)` attribute.
+	SpiAttribute string `yaml:"spi,omitempty"`
 }
 
 // SwiftModule defines a generation target within a larger crate. Typically a veneer, but sometimes also test targets.

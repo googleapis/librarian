@@ -25,7 +25,10 @@ limitations under the License.
 {{/Codec.IsGated}}
 import Foundation
 {{#Codec.MessageImports}}
-import {{.}}
+{{#Attributes}}
+{{{.}}}
+{{/Attributes}}
+import {{Module}}
 {{/Codec.MessageImports}}
 
 {{> /templates/common/placeholder}}
