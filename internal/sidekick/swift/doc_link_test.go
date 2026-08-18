@@ -226,3 +226,44 @@ func TestDocLinkAmbiguity(t *testing.T) {
 		})
 	}
 }
+
+func TestDocLink_NameOverrides(t *testing.T) {
+	service := &api.Service{
+		Name:    "Storage",
+		ID:      ".google.storage.v2.Storage",
+		Package: "google.storage.v2",
+		Methods: []*api.Method{
+			{
+				Name: "CreateBucket",
+				ID:   ".google.storage.v2.Storage.CreateBucket",
+			},
+		},
+	}
+
+	model := api.NewTestAPI([]*api.Message{}, []*api.Enum{}, []*api.Service{service})
+	library := &config.Library{
+		Swift: &config.SwiftPackage{
+			NameOverrides: ".google.storage.v2.Storage=StorageAdmin",
+		},
+	}
+
+	c, err := newCodec(model, library, nil, ".")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	gotService := c.serviceDocLink(service)
+	wantService := "<doc:StorageAdminClient>"
+	if gotService != wantService {
+		t.Errorf("serviceDocLink() = %q, want %q", gotService, wantService)
+	}
+
+	gotMethod, err := c.methodDocLink(service.Methods[0])
+	if err != nil {
+		t.Fatal(err)
+	}
+	wantMethod := "<doc:StorageAdminClient/createBucket(request:)>"
+	if gotMethod != wantMethod {
+		t.Errorf("methodDocLink() = %q, want %q", gotMethod, wantMethod)
+	}
+}

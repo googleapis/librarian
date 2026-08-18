@@ -17,6 +17,7 @@ package swift
 import (
 	"fmt"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/googleapis/librarian/internal/config"
@@ -133,6 +134,9 @@ type codec struct {
 	// libraries we use `json;enum-encoding=int`, but for discovery we need to
 	// use just `json` as the integer values for enums may not match our values.
 	ResponseEncoding string
+
+	// Codec-level overrides for type and service names.
+	NameOverrides map[string]string
 }
 
 const (
@@ -142,6 +146,14 @@ const (
 
 func (c *codec) isGrpc() bool {
 	return c.ModuleType == "grpc-client"
+}
+
+// ServiceName returns the service name, taking name_overrides into account.
+func (c *codec) ServiceName(service *api.Service) string {
+	if override, ok := c.NameOverrides[service.ID]; ok {
+		return override
+	}
+	return service.Name
 }
 
 func newCodec(model *api.API, library *config.Library, module *config.SwiftModule, outdir string) (*codec, error) {
@@ -213,6 +225,22 @@ func newCodec(model *api.API, library *config.Library, module *config.SwiftModul
 		result.Module = true
 		result.ModuleType = module.ModuleType
 		result.ModulePath = module.ModulePath
+	}
+
+	nameOverridesStr := ""
+	if module != nil && module.NameOverrides != "" {
+		nameOverridesStr = module.NameOverrides
+	} else if library.Swift != nil && library.Swift.NameOverrides != "" {
+		nameOverridesStr = library.Swift.NameOverrides
+	}
+	if nameOverridesStr != "" {
+		result.NameOverrides = make(map[string]string)
+		for override := range strings.SplitSeq(nameOverridesStr, ",") {
+			tokens := strings.Split(override, "=")
+			if len(tokens) == 2 {
+				result.NameOverrides[tokens[0]] = tokens[1]
+			}
+		}
 	}
 
 	libraryName, err := LibraryName(model, swiftCfg)
