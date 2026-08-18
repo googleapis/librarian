@@ -259,7 +259,8 @@ func extractOutput(ctx context.Context, zipPath, outDir string) error {
 }
 
 func gatherMainProtos(googleapisDir, apiPath string) ([]string, error) {
-	protos, err := proto.Gather(googleapisDir, apiPath)
+	apiDir := filepath.Join(googleapisDir, filepath.FromSlash(apiPath))
+	protos, err := proto.Gather(apiDir, apiPath)
 	if err != nil {
 		if errors.Is(err, fs.ErrNotExist) {
 			return nil, fmt.Errorf("%w for API %s: %w", errNoProtos, apiPath, err)
