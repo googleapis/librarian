@@ -132,7 +132,7 @@ impl super::stub::{{Codec.Name}} for {{Codec.Name}} {
     async fn {{Codec.Name}}(
         &self,
         req: std::option::Option<{{InputType.Codec.QualifiedName}}>,
-        options: crate::BidiStreamOptions,
+        options: crate::RequestOptions,
     ) -> Result<(
         google_cloud_gax::streaming::RequestSender<{{InputType.Codec.QualifiedName}}>,
         google_cloud_gax::streaming::ResponseReceiver<{{OutputType.Codec.QualifiedName}}>,
@@ -162,7 +162,11 @@ impl super::stub::{{Codec.Name}} for {{Codec.Name}} {
             .to_proto()
             .map_err(google_cloud_gax::error::Error::ser)?;
 
-        let (req_tx, req_rx) = tokio::sync::mpsc::channel(options.request_channel_capacity());
+        let (req_tx, req_rx) = tokio::sync::mpsc::channel(
+            options
+                .request_stream_channel_capacity()
+                .unwrap_or(google_cloud_gax::options::internal::DEFAULT_REQUEST_CHANNEL_CAPACITY),
+        );
 
         let req_stream = futures::stream::once(async move { first_req })
             .chain(tokio_stream::wrappers::ReceiverStream::new(req_rx));
@@ -187,7 +191,7 @@ impl super::stub::{{Codec.Name}} for {{Codec.Name}} {
                 extensions,
                 path,
                 req_stream,
-                options.into(),
+                options,
                 &crate::info::X_GOOG_API_CLIENT_HEADER,
                 x_goog_request_params,
             )

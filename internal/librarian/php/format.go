@@ -36,9 +36,10 @@ func Format(ctx context.Context, library *config.Library) error {
 	if err != nil {
 		return fmt.Errorf("failed to resolve output directory path: %w", err)
 	}
-	// Run prettier '**/Client/*' --write --parser=php --single-quote --print-width=120 --plugin=<pluginPath>
+	// Run prettier '**/Client/*' --no-error-on-unmatched-pattern --write --parser=php --single-quote --print-width=120 --plugin=<pluginPath>
 	return command.RunInDirWithEnv(ctx, outdir, prettierEnv(prettierPath), prettierPath,
 		"**/Client/*",
+		"--no-error-on-unmatched-pattern",
 		"--write",
 		"--parser=php",
 		"--single-quote",
