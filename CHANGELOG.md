@@ -1,5 +1,48 @@
 # Changelog
 
+## [0.38.0](https://github.com/googleapis/librarian/compare/v0.37.0...v0.38.0) (2026-08-18)
+
+
+### Features
+
+* **internal/librarian/nodejs:** set initial version for new libraries ([#7304](https://github.com/googleapis/librarian/issues/7304)) ([f996886](https://github.com/googleapis/librarian/commit/f99688645f9666b96c46db889c5a07cea0ff0e3d))
+* **internal/librarian/nodejs:** use protoc version from librarian.yaml ([#7249](https://github.com/googleapis/librarian/issues/7249)) ([2c9470c](https://github.com/googleapis/librarian/commit/2c9470c9dc6fe2b8638de5120e83841628398efe))
+* **internal/librarian/python:** use protoc version from librarian.yaml ([#7248](https://github.com/googleapis/librarian/issues/7248)) ([7dcde79](https://github.com/googleapis/librarian/commit/7dcde790c5e04b95d7ac1fcf5950a86318be7f2b))
+* **internal/librarian:** allow specifying library name in add command ([#7305](https://github.com/googleapis/librarian/issues/7305)) ([083dcdd](https://github.com/googleapis/librarian/commit/083dcddd96f689b83f2c2dcc2245d91e8ce0aabf))
+* **internal/sidekick/rust:** make request on BidiStreamBuilder optional ([#7264](https://github.com/googleapis/librarian/issues/7264)) ([2b06192](https://github.com/googleapis/librarian/commit/2b06192109d702d3a39b552b807306f77f07268a)), refs [#6835](https://github.com/googleapis/librarian/issues/6835)
+* **internal/sidekick/rust:** support BidiStreamOptions for bidi streaming ([#7246](https://github.com/googleapis/librarian/issues/7246)) ([3c30001](https://github.com/googleapis/librarian/commit/3c300011520c5a050496d6fe8d198f539aac814c)), refs [#6835](https://github.com/googleapis/librarian/issues/6835)
+* **internal/sidekick/rust:** support request headers for bidi streaming ([#7273](https://github.com/googleapis/librarian/issues/7273)) ([f8beaf0](https://github.com/googleapis/librarian/commit/f8beaf0627a76a756bc859c0916b594baa0c869f)), refs [#6835](https://github.com/googleapis/librarian/issues/6835)
+* **internal/sidekick/rust:** use RequestOptions for bidi streaming ([#7310](https://github.com/googleapis/librarian/issues/7310)) ([5c90564](https://github.com/googleapis/librarian/commit/5c90564c28558716aa91391653867c532f2c9fc2)), refs [#6835](https://github.com/googleapis/librarian/issues/6835)
+* **internal/sidekick/rust:** wrap stream closed errors in BrokenPipe io error ([#7291](https://github.com/googleapis/librarian/issues/7291)) ([27c21e3](https://github.com/googleapis/librarian/commit/27c21e38de2f35dbf317aa013a188eeb6e4441d5)), refs [#6835](https://github.com/googleapis/librarian/issues/6835)
+* **internal/tool/protoc:** add BinaryPath and BinaryPathOrSystem helpers ([#7247](https://github.com/googleapis/librarian/issues/7247)) ([819e8c8](https://github.com/googleapis/librarian/commit/819e8c8b4a6dc4345fa97ffe567b346196dadc67))
+* **librarian:** install tools for Swift ([#7296](https://github.com/googleapis/librarian/issues/7296)) ([60c3bb6](https://github.com/googleapis/librarian/commit/60c3bb69dacc98f5cb4c0270317da6b665d7aed1))
+* **librarian:** support SHA256-by-OS for protoc ([#7283](https://github.com/googleapis/librarian/issues/7283)) ([2dc70ba](https://github.com/googleapis/librarian/commit/2dc70bafe2e7ea33e2d19a7c080ac54393c86776))
+* **sidekick/rust:** add samples for bidi streaming methods and builders ([#7301](https://github.com/googleapis/librarian/issues/7301)) ([b901b7f](https://github.com/googleapis/librarian/commit/b901b7f152781d0a97ab74e040ebc497f5b97e29)), refs [#6835](https://github.com/googleapis/librarian/issues/6835)
+* **sidekick/rust:** derive Debug for generated types ([#7258](https://github.com/googleapis/librarian/issues/7258)) ([4fab542](https://github.com/googleapis/librarian/commit/4fab542fba933b5b40cb075e462992bfdb72817c))
+* **sidekick/rust:** skip convert for Any fields ([#7292](https://github.com/googleapis/librarian/issues/7292)) ([54acc44](https://github.com/googleapis/librarian/commit/54acc44453450853acf83a62cca858782a146204))
+* **sidekick:** install protoc via librarian ([#7286](https://github.com/googleapis/librarian/issues/7286)) ([ac64c4c](https://github.com/googleapis/librarian/commit/ac64c4c5861531e3e1fae8062a02f786e04c6930))
+* **sidekick:** support fields in skipped_ids ([#7295](https://github.com/googleapis/librarian/issues/7295)) ([85d1716](https://github.com/googleapis/librarian/commit/85d1716233af7d0b1cc32bfe59aaba991c0555bc))
+* **swift:** support gRPC transport template ([#7245](https://github.com/googleapis/librarian/issues/7245)) ([681ad71](https://github.com/googleapis/librarian/commit/681ad7177ec52ff33e0fd3475bd0c4bf48ee30b5))
+* **swift:** support included_ids in package and module configuration ([#7274](https://github.com/googleapis/librarian/issues/7274)) ([b79332c](https://github.com/googleapis/librarian/commit/b79332c799c44af7c66f6f830665b8d8ac4127ce))
+* **swift:** support unified StorageControlClient generation ([#7309](https://github.com/googleapis/librarian/issues/7309)) ([858b4d4](https://github.com/googleapis/librarian/commit/858b4d49dc615d7e7bbeb29afff52ace44695417))
+
+
+### Bug Fixes
+
+* **.github:** install protoc in rust integration ([#7290](https://github.com/googleapis/librarian/issues/7290)) ([231308c](https://github.com/googleapis/librarian/commit/231308c6aa60f3e9f1bdd5ecd96bc47e448349a9)), refs [#7289](https://github.com/googleapis/librarian/issues/7289)
+* **internal/filesystem:** skip unzip execution for empty archives ([#7307](https://github.com/googleapis/librarian/issues/7307)) ([78bd51d](https://github.com/googleapis/librarian/commit/78bd51d27276e6705698ef92d65d424f0cf89a8a)), refs [#7308](https://github.com/googleapis/librarian/issues/7308)
+* **internal/librarian/php:** ignore unmatched patterns in prettier ([#7315](https://github.com/googleapis/librarian/issues/7315)) ([224be1b](https://github.com/googleapis/librarian/commit/224be1bb09f752b242bde3d2f5111771a174f27c)), refs [#7314](https://github.com/googleapis/librarian/issues/7314)
+* **internal/librarian/php:** run post-processor in API staging directories before owlbot ([#7272](https://github.com/googleapis/librarian/issues/7272)) ([8922ba8](https://github.com/googleapis/librarian/commit/8922ba836a4a9cfa5e7b81a372920685a7f3aaf9))
+* **internal/proto:** enable recursive proto gathering for google/rpc ([#7320](https://github.com/googleapis/librarian/issues/7320)) ([e2b3baf](https://github.com/googleapis/librarian/commit/e2b3bafc01c6163e890b1597e029e6e1e77b4c80)), refs [#7321](https://github.com/googleapis/librarian/issues/7321)
+* **java:** add uses cfg.Default.Java group ids ([#7311](https://github.com/googleapis/librarian/issues/7311)) ([f4a39ca](https://github.com/googleapis/librarian/commit/f4a39caa5e0c513ad7c4aa5520107843a9187fc0))
+* **sidekick/rust:** discovery LROs and features ([#7275](https://github.com/googleapis/librarian/issues/7275)) ([cecd47a](https://github.com/googleapis/librarian/commit/cecd47a9776c46fc7159b49275b917f95acffd04))
+* **sidekick/rust:** lints in generated code ([#7299](https://github.com/googleapis/librarian/issues/7299)) ([01e160e](https://github.com/googleapis/librarian/commit/01e160eba49a8e46334c2d5ff9925c75662ed696))
+* **sidekick/swift:** doc links for `oneofs` ([#7306](https://github.com/googleapis/librarian/issues/7306)) ([1ea77db](https://github.com/googleapis/librarian/commit/1ea77db576903f47c75db82efd1080a87e124854))
+* **sidekick/swift:** mangling for `Type ([#7267](https://github.com/googleapis/librarian/issues/7267)) ([fa21f5b](https://github.com/googleapis/librarian/commit/fa21f5b744766c18201498269c9211e8feb6c69b))
+* **swift:** support included_ids in package and module configuration ([#7294](https://github.com/googleapis/librarian/issues/7294)) ([e70eda5](https://github.com/googleapis/librarian/commit/e70eda5ba2d60860a711cb616db9340508f1c4aa))
+* **tool/cmd/migrate/php:** programmatically set explicit Output during PHP migration ([#7268](https://github.com/googleapis/librarian/issues/7268)) ([3766f3f](https://github.com/googleapis/librarian/commit/3766f3fa614c33b6a5f7e36bc557b56a27fb5feb)), refs [#7262](https://github.com/googleapis/librarian/issues/7262)
+* update go-git to 5.19.2 ([#7302](https://github.com/googleapis/librarian/issues/7302)) ([2bde6b9](https://github.com/googleapis/librarian/commit/2bde6b9a3c001f684aa83d3a88d4dcb3203a8e7c))
+
 ## [0.37.0](https://github.com/googleapis/librarian/compare/v0.36.0...v0.37.0) (2026-08-12)
 
 
