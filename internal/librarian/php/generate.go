@@ -139,7 +139,6 @@ func generateAPI(ctx context.Context, params *generateAPIParams) (retErr error) 
 	sanitizedPath := strings.ReplaceAll(params.api.Path, "/", "_")
 	gapicZipPath := filepath.Join(params.tempDir, sanitizedPath+"-gapic.zip")
 	protoZipPath := filepath.Join(params.tempDir, sanitizedPath+"-proto.zip")
-
 	defer func() {
 		if cleanupErr := os.Remove(gapicZipPath); cleanupErr != nil && !errors.Is(cleanupErr, fs.ErrNotExist) {
 			retErr = errors.Join(retErr, fmt.Errorf("failed to remove gapic zip: %w", cleanupErr))
@@ -149,7 +148,19 @@ func generateAPI(ctx context.Context, params *generateAPIParams) (retErr error) 
 		}
 	}()
 	googleapisDir := params.srcCfg.Root("googleapis")
-	// Resolve service config files
+	var pc *config.Protoc
+	if params.cfg.Tools != nil {
+		pc = params.cfg.Tools.Protoc
+	}
+	// Run 1: GAPIC Client Generation
+	if err := generateGAPIC(ctx, params, pc, googleapisDir, gapicZipPath); err != nil {
+		return err
+	}
+	// Run 2: Proto Message Generation
+	return generateProto(ctx, params, pc, googleapisDir, protoZipPath)
+}
+
+func generateGAPIC(ctx context.Context, params *generateAPIParams, pc *config.Protoc, googleapisDir, gapicZipPath string) error {
 	grpcConfigPath, err := serviceconfig.FindGRPCServiceConfig(googleapisDir, params.api.Path)
 	if err != nil {
 		return err
@@ -177,24 +188,18 @@ func generateAPI(ctx context.Context, params *generateAPIParams) (retErr error) 
 	if err != nil {
 		return err
 	}
-	mainProtos, err := gatherMainProtos(googleapisDir, params.api.Path)
-	if err != nil {
-		return err
-	}
-
-	var pc *config.Protoc
-	if params.cfg.Tools != nil {
-		pc = params.cfg.Tools.Protoc
-	}
-	// Run 1: GAPIC Client Generation
 	gapicArgs := buildGapicProtocArgs(params, gapicZipPath, opts, gapicProtos)
 	if err := protoc.RunOrSystem(ctx, map[string]string{"GOOGLEAPIS_DIR": googleapisDir}, pc, gapicArgs...); err != nil {
 		return fmt.Errorf("failed to generate PHP GAPIC API %s: %w", params.api.Path, err)
 	}
-	if err := extractOutput(ctx, gapicZipPath, params.gapicDestDir); err != nil {
+	return extractOutput(ctx, gapicZipPath, params.gapicDestDir)
+}
+
+func generateProto(ctx context.Context, params *generateAPIParams, pc *config.Protoc, googleapisDir, protoZipPath string) error {
+	mainProtos, err := gatherMainProtos(googleapisDir, params.api.Path)
+	if err != nil {
 		return err
 	}
-	// Run 2: Proto Message Generation
 	protoArgs := buildProtoProtocArgs(params, protoZipPath, mainProtos)
 	if err := protoc.RunOrSystem(ctx, map[string]string{"GOOGLEAPIS_DIR": googleapisDir}, pc, protoArgs...); err != nil {
 		return fmt.Errorf("failed to generate PHP Proto API %s: %w", params.api.Path, err)
