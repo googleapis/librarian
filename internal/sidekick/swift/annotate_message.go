@@ -15,6 +15,7 @@
 package swift
 
 import (
+	"cmp"
 	"fmt"
 	"slices"
 	"strings"
@@ -111,7 +112,7 @@ func (ann *messageAnnotations) MessageImports() []*dependencyImport {
 		result = append(result, dep)
 	}
 	slices.SortFunc(result, func(a, b *dependencyImport) int {
-		return strings.Compare(a.Module, b.Module)
+		return cmp.Compare(a.Module, b.Module)
 	})
 	return result
 }
