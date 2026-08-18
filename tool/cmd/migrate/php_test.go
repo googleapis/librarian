@@ -662,6 +662,62 @@ deep-copy-regex:
 				},
 			},
 		},
+		{
+			name: "extracts oldest copyright year from .php files",
+			setupLib: func(t *testing.T, dir string) {
+				libDir := filepath.Join(dir, "SecretManagerTest")
+				if err := os.Mkdir(libDir, 0o755); err != nil {
+					t.Fatal(err)
+				}
+				if err := os.WriteFile(filepath.Join(libDir, "VERSION"), []byte("1.0.0\n"), 0o644); err != nil {
+					t.Fatal(err)
+				}
+				if err := os.WriteFile(filepath.Join(libDir, "composer.json"), []byte("{}"), 0o644); err != nil {
+					t.Fatal(err)
+				}
+				owlbotContent := `
+deep-copy-regex:
+  - source: /google/cloud/secretmanager/(v1)/.*-php/(.*)
+    dest: /owl-bot-staging/SecretManagerTest/$1/$2
+`
+				if err := os.WriteFile(filepath.Join(libDir, ".OwlBot.yaml"), []byte(owlbotContent), 0o644); err != nil {
+					t.Fatal(err)
+				}
+				// Create PHP files with different copyright years
+				srcDir := filepath.Join(libDir, "src")
+				if err := os.Mkdir(srcDir, 0o755); err != nil {
+					t.Fatal(err)
+				}
+				if err := os.WriteFile(filepath.Join(srcDir, "a.php"), []byte("<?php\n/*\n * Copyright 2023 Google LLC\n */\n"), 0o644); err != nil {
+					t.Fatal(err)
+				}
+				if err := os.WriteFile(filepath.Join(srcDir, "b.php"), []byte("<?php\n/*\n * Copyright 2020 Google LLC\n */\n"), 0o644); err != nil {
+					t.Fatal(err)
+				}
+				// Also create a file without copyright year
+				if err := os.WriteFile(filepath.Join(srcDir, "c.php"), []byte("<?php\n// No copyright\n"), 0o644); err != nil {
+					t.Fatal(err)
+				}
+			},
+			globalDefaultCommonResources: true,
+			want: []*config.Library{
+				{
+					Name:          "secretmanager",
+					Version:       "1.0.0",
+					Output:        "SecretManagerTest",
+					CopyrightYear: "2020",
+					PHP: &config.PHPPackage{
+						ComponentName: "SecretManagerTest",
+					},
+					APIs: []*config.API{
+						{
+							Path: "google/cloud/secretmanager/v1",
+							PHP:  &config.PHPAPI{},
+						},
+					},
+				},
+			},
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			dir := t.TempDir()

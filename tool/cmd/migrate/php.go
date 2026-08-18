@@ -19,6 +19,7 @@ import (
 	_ "embed"
 	"errors"
 	"fmt"
+	"io"
 	"io/fs"
 	"log"
 	"os"
@@ -101,6 +102,7 @@ func runPHPMigration(ctx context.Context, repoPath string) error {
 var (
 	owlbotSourceWithVersionRegexp    = regexp.MustCompile(`^/([a-zA-Z0-9_/]+)/\((v[0-9a-zA-Z|]+)\)/.*-php/.*$`)
 	owlbotSourceWithoutVersionRegexp = regexp.MustCompile(`^/([a-zA-Z0-9_/]+)/.*-php/.*$`)
+	copyrightYearRegexp              = regexp.MustCompile(`Copyright (\d{4})`)
 )
 
 type owlBotConfig struct {
@@ -261,11 +263,16 @@ func findPHPLibraries(repoPath string, googleapisDir string, globalDefaultCommon
 			continue
 		}
 		libraryName := php.DefaultLibraryName(apis[0].Path)
+		copyrightYear, err := extractOldestCopyrightYear(filepath.Join(repoPath, name))
+		if err != nil {
+			return nil, err
+		}
 		lib := &config.Library{
-			Name:    libraryName,
-			Version: version,
-			APIs:    apis,
-			Output:  name,
+			Name:          libraryName,
+			Version:       version,
+			APIs:          apis,
+			Output:        name,
+			CopyrightYear: copyrightYear,
 		}
 		derivedComp, err := php.ComponentNameForLibrary(googleapisDir, lib)
 		if err != nil {
@@ -369,4 +376,48 @@ func normalizeStagingSubdir(apiPath, stagingDir string) string {
 		return ""
 	}
 	return stagingDir
+}
+
+func extractOldestCopyrightYear(libraryDir string) (string, error) {
+	var oldest string
+	buffer := make([]byte, 4096)
+	err := filepath.WalkDir(libraryDir, func(path string, entry fs.DirEntry, err error) error {
+		if err != nil {
+			if os.IsNotExist(err) {
+				return nil
+			}
+			return err
+		}
+		if entry.IsDir() || !strings.HasSuffix(path, ".php") {
+			return nil
+		}
+		file, err := os.Open(path)
+		if err != nil {
+			if os.IsNotExist(err) {
+				return nil
+			}
+			return err
+		}
+		defer file.Close()
+
+		bytesRead, err := file.Read(buffer)
+		if err != nil && err != io.EOF {
+			return err
+		}
+		if bytesRead == 0 {
+			return nil
+		}
+
+		matches := copyrightYearRegexp.FindAllSubmatch(buffer[:bytesRead], -1)
+		for _, match := range matches {
+			if len(match) > 1 {
+				year := string(match[1])
+				if oldest == "" || year < oldest {
+					oldest = year
+				}
+			}
+		}
+		return nil
+	})
+	return oldest, err
 }
