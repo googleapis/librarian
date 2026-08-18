@@ -46,7 +46,7 @@ const (
 // Add initializes a new Java library with default values, or extends an
 // existing library with a new API path, and registers the appropriate
 // modules in versions.txt.
-func Add(lib *config.Library, addedAPI *config.API) (*config.Library, error) {
+func Add(cfg *config.Config, lib *config.Library, addedAPI *config.API) (*config.Library, error) {
 	if lib.Version == "" {
 		lib.Version = defaultVersion
 	}
@@ -61,24 +61,22 @@ func Add(lib *config.Library, addedAPI *config.API) (*config.Library, error) {
 		lib.Java.ReleasedVersion = defaultReleasedVersion
 	}
 
-	// We use the first API to infer the group ID.
-	// It is unrealistic for a single library to mix cloud and non-cloud APIs.
+	var d *config.Default
+	if cfg != nil {
+		d = cfg.Default
+	}
+	lib = FillDefaultJava(lib, d)
+
 	apiPath := lib.APIs[0].Path
-	switch {
-	case strings.HasPrefix(apiPath, "google/shopping/"):
-		lib = setNonCloudMavenDefaults(lib, "com.google.shopping")
-	case strings.HasPrefix(apiPath, "google/maps/"):
-		lib = setNonCloudMavenDefaults(lib, "com.google.maps")
-	case strings.HasPrefix(apiPath, "google/ads/"):
-		lib = setNonCloudMavenDefaults(lib, "com.google.api-ads")
-	default:
-		if !strings.HasPrefix(apiPath, "google/cloud/") {
+	if !strings.HasPrefix(apiPath, "google/cloud/") {
+		lib.Java.ArtifactID = "google-" + lib.Name
+		if lib.Java.GroupID == "" {
 			log.Printf(
 				"WARNING: unrecognized non-cloud API path %q. Setting fake GroupID %q. "+
 					"Please manually configure java.group_id and java.distribution_name_override in librarian.yaml.",
 				apiPath, fakeGroupID,
 			)
-			lib = setNonCloudMavenDefaults(lib, fakeGroupID)
+			lib.Java.GroupID = fakeGroupID
 		}
 	}
 
@@ -252,12 +250,6 @@ func appendLines(path string, lines []string) error {
 		buf.WriteByte('\n')
 	}
 	return os.WriteFile(path, buf.Bytes(), 0o644)
-}
-
-func setNonCloudMavenDefaults(lib *config.Library, groupID string) *config.Library {
-	lib.Java.ArtifactID = "google-" + lib.Name
-	lib.Java.GroupID = groupID
-	return lib
 }
 
 // DefaultLibraryName derives a default library name from an API path by stripping

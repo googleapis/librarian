@@ -87,6 +87,11 @@ func Config() *config.Config {
 			TagFormat: "{name}/v{version}",
 			Java: &config.JavaDefault{
 				LibrariesBOMVersion: "1.0.0",
+				CustomGroupIDs: map[string]string{
+					"google/shopping": "com.google.shopping",
+					"google/maps":     "com.google.maps",
+					"google/ads":      "com.google.api-ads",
+				},
 			},
 		},
 		Sources: &config.Sources{

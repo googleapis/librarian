@@ -278,7 +278,7 @@ func addNewLibrary(cfg *config.Config, api *config.API, explicitLibraryName stri
 		lib = golang.Add(lib)
 	case config.LanguageJava:
 		var err error
-		lib, err = java.Add(lib, nil)
+		lib, err = java.Add(cfg, lib, nil)
 		if err != nil {
 			return "", nil, err
 		}
@@ -330,7 +330,7 @@ func updateExistingLibrary(cfg *config.Config, existingLib *config.Library, api 
 	case config.LanguageJava:
 		existingLib.APIs = append(existingLib.APIs, api)
 		var err error
-		existingLib, err = java.Add(existingLib, api)
+		existingLib, err = java.Add(cfg, existingLib, api)
 		if err != nil {
 			return "", nil, err
 		}
