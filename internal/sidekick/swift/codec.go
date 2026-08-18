@@ -16,6 +16,7 @@ package swift
 
 import (
 	"fmt"
+	"maps"
 	"path/filepath"
 	"time"
 
@@ -228,14 +229,10 @@ func newCodec(model *api.API, library *config.Library, module *config.SwiftModul
 
 	nameOverrides := make(map[string]string)
 	if swiftCfg != nil {
-		for k, v := range swiftCfg.NameOverrides {
-			nameOverrides[k] = v
-		}
+		maps.Copy(nameOverrides, swiftCfg.NameOverrides)
 	}
 	if module != nil {
-		for k, v := range module.NameOverrides {
-			nameOverrides[k] = v
-		}
+		maps.Copy(nameOverrides, module.NameOverrides)
 	}
 	if len(nameOverrides) > 0 {
 		result.NameOverrides = nameOverrides
