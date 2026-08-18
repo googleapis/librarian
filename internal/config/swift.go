@@ -71,7 +71,8 @@ type SwiftPackage struct {
 	// other packages.
 	PackageNameOverride string `yaml:"package_name_override,omitempty"`
 
-	// NameOverrides contains codec-level overrides for type and service names (e.g., {".google.storage.v2.Storage": "StorageControl"}).
+	// NameOverrides contains codec-level overrides for service names (e.g., {".google.storage.v2.Storage": "StorageControl"}).
+	// TODO(https://github.com/googleapis/google-cloud-swift/issues/308): Support overriding other symbol types (e.g., messages, enums, oneofs) if needed.
 	NameOverrides map[string]string `yaml:"name_overrides,omitempty"`
 
 	// PerServiceTraits enables per-service compile-time flags.
@@ -175,7 +176,7 @@ type SwiftModule struct {
 	// ModulePath is the module import path or target containing stubs (used by convert-swift and gRPC transports).
 	ModulePath string `yaml:"module_path,omitempty"`
 
-	// NameOverrides contains codec-level overrides for type and service names for this module.
+	// NameOverrides contains codec-level overrides for service names for this module.
 	NameOverrides map[string]string `yaml:"name_overrides,omitempty"`
 }
 

@@ -134,7 +134,7 @@ type codec struct {
 	// use just `json` as the integer values for enums may not match our values.
 	ResponseEncoding string
 
-	// Codec-level overrides for type and service names.
+	// Codec-level overrides for service names.
 	NameOverrides map[string]string
 }
 
