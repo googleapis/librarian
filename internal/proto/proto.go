@@ -26,7 +26,6 @@ var (
 	nonRecursivePaths = map[string]bool{
 		"google/api":   true,
 		"google/cloud": true,
-		"google/rpc":   true,
 	}
 )
 
