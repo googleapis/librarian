@@ -378,46 +378,57 @@ func normalizeStagingSubdir(apiPath, stagingDir string) string {
 	return stagingDir
 }
 
+func ignoreNotExist(err error) error {
+	if errors.Is(err, fs.ErrNotExist) {
+		return nil
+	}
+	return err
+}
+
 func extractOldestCopyrightYear(libraryDir string) (string, error) {
 	var oldest string
 	buffer := make([]byte, 4096)
 	err := filepath.WalkDir(libraryDir, func(path string, entry fs.DirEntry, err error) error {
-		if err != nil {
-			if os.IsNotExist(err) {
-				return nil
-			}
+		if err = ignoreNotExist(err); err != nil {
 			return err
 		}
 		if entry.IsDir() || !strings.HasSuffix(path, ".php") {
 			return nil
 		}
-		file, err := os.Open(path)
-		if err != nil {
-			if os.IsNotExist(err) {
-				return nil
-			}
+
+		year, err := getOldestYearInFile(path, buffer)
+		if err = ignoreNotExist(err); err != nil {
 			return err
 		}
-		defer file.Close()
 
-		bytesRead, err := file.Read(buffer)
-		if err != nil && err != io.EOF {
-			return err
-		}
-		if bytesRead == 0 {
-			return nil
-		}
-
-		matches := copyrightYearRegexp.FindAllSubmatch(buffer[:bytesRead], -1)
-		for _, match := range matches {
-			if len(match) > 1 {
-				year := string(match[1])
-				if oldest == "" || year < oldest {
-					oldest = year
-				}
-			}
+		if year != "" && (oldest == "" || year < oldest) {
+			oldest = year
 		}
 		return nil
 	})
 	return oldest, err
+}
+
+func getOldestYearInFile(path string, buffer []byte) (string, error) {
+	file, err := os.Open(path)
+	if err != nil {
+		return "", err
+	}
+	defer file.Close()
+
+	bytesRead, err := file.Read(buffer)
+	if err != nil && err != io.EOF {
+		return "", err
+	}
+
+	var oldest string
+	for _, match := range copyrightYearRegexp.FindAllSubmatch(buffer[:bytesRead], -1) {
+		if len(match) > 1 {
+			year := string(match[1])
+			if oldest == "" || year < oldest {
+				oldest = year
+			}
+		}
+	}
+	return oldest, nil
 }
