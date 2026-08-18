@@ -162,7 +162,11 @@ impl super::stub::{{Codec.Name}} for {{Codec.Name}} {
             .to_proto()
             .map_err(google_cloud_gax::error::Error::ser)?;
 
-        let (req_tx, req_rx) = tokio::sync::mpsc::channel(options.request_stream_channel_capacity());
+        let (req_tx, req_rx) = tokio::sync::mpsc::channel(
+            options
+                .request_stream_channel_capacity()
+                .unwrap_or(google_cloud_gax::options::internal::DEFAULT_REQUEST_CHANNEL_CAPACITY),
+        );
 
         let req_stream = futures::stream::once(async move { first_req })
             .chain(tokio_stream::wrappers::ReceiverStream::new(req_rx));
