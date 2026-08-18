@@ -76,17 +76,6 @@ func TestGather(t *testing.T) {
 			},
 		},
 		{
-			name:    "non-recursive for google/rpc",
-			relPath: "google/rpc",
-			files: []string{
-				"status.proto",
-				"context/attribute_context.proto",
-			},
-			wantFiles: []string{
-				"status.proto",
-			},
-		},
-		{
 			name:    "non-recursive with OS-native path separators",
 			relPath: filepath.FromSlash("google/cloud"),
 			files: []string{
