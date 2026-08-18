@@ -594,7 +594,6 @@ pub mod {{Codec.ModuleName}} {
             K: std::convert::Into<{{{Codec.KeyType}}}>,
             V: std::convert::Into<{{{Codec.ValueType}}}>,
         {
-            use std::iter::Iterator;
             self.0.request.{{Codec.FieldName}} = v.into_iter().map(|(k, v)| (k.into(), v.into())).collect();
             self
         }
