@@ -23,11 +23,11 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"slices"
 	"strings"
 
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/filesystem"
+	"github.com/googleapis/librarian/internal/proto"
 	"github.com/googleapis/librarian/internal/serviceconfig"
 	"github.com/googleapis/librarian/internal/sources"
 	"github.com/googleapis/librarian/internal/tool/protoc"
@@ -259,8 +259,7 @@ func extractOutput(ctx context.Context, zipPath, outDir string) error {
 }
 
 func gatherMainProtos(googleapisDir, apiPath string) ([]string, error) {
-	apiDir := filepath.Join(googleapisDir, filepath.FromSlash(apiPath))
-	protos, err := gatherProtos(apiDir)
+	protos, err := proto.Gather(googleapisDir, apiPath)
 	if err != nil {
 		if errors.Is(err, fs.ErrNotExist) {
 			return nil, fmt.Errorf("%w for API %s: %w", errNoProtos, apiPath, err)
@@ -270,29 +269,6 @@ func gatherMainProtos(googleapisDir, apiPath string) ([]string, error) {
 	if len(protos) == 0 {
 		return nil, fmt.Errorf("%w for API %s", errNoProtos, apiPath)
 	}
-	return protos, nil
-}
-
-// gatherProtos walks the directory tree recursively from root and returns
-// a sorted list of absolute paths for all found proto files.
-func gatherProtos(root string) ([]string, error) {
-	var protos []string
-	err := filepath.WalkDir(root, func(path string, d os.DirEntry, err error) error {
-		if err != nil {
-			return err
-		}
-		if d.IsDir() {
-			return nil
-		}
-		if d.Type().IsRegular() && filepath.Ext(path) == ".proto" {
-			protos = append(protos, path)
-		}
-		return nil
-	})
-	if err != nil {
-		return nil, err
-	}
-	slices.Sort(protos)
 	return protos, nil
 }
 

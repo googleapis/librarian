@@ -325,40 +325,6 @@ func TestGenerate_Error(t *testing.T) {
 	}
 }
 
-func TestGatherProtos(t *testing.T) {
-	tmp := t.TempDir()
-	files := []struct {
-		path    string
-		isProto bool
-	}{
-		{"a.proto", true},
-		{"sub/b.proto", true},
-		{"c.txt", false},
-		{"sub/d.proto", true},
-	}
-	for _, f := range files {
-		p := filepath.Join(tmp, f.path)
-		if err := os.MkdirAll(filepath.Dir(p), 0o755); err != nil {
-			t.Fatal(err)
-		}
-		if err := os.WriteFile(p, []byte(""), 0o644); err != nil {
-			t.Fatal(err)
-		}
-	}
-	got, err := gatherProtos(tmp)
-	if err != nil {
-		t.Fatalf("gatherProtos failed: %v", err)
-	}
-	want := []string{
-		filepath.Join(tmp, "a.proto"),
-		filepath.Join(tmp, "sub/b.proto"),
-		filepath.Join(tmp, "sub/d.proto"),
-	}
-	if diff := cmp.Diff(want, got); diff != "" {
-		t.Errorf("mismatch (-want +got):\n%s", diff)
-	}
-}
-
 func TestGapicOpts(t *testing.T) {
 	for _, test := range []struct {
 		name               string
