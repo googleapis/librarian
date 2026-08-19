@@ -19,7 +19,6 @@ import (
 	_ "embed"
 	"errors"
 	"fmt"
-	"io"
 	"io/fs"
 	"log"
 	"os"
@@ -32,7 +31,6 @@ import (
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/librarian"
 	"github.com/googleapis/librarian/internal/librarian/php"
-	"github.com/googleapis/librarian/internal/license"
 	"github.com/googleapis/librarian/internal/yaml"
 )
 
@@ -263,16 +261,11 @@ func findPHPLibraries(repoPath string, googleapisDir string, globalDefaultCommon
 			continue
 		}
 		libraryName := php.DefaultLibraryName(apis[0].Path)
-		copyrightYear, err := extractOldestCopyrightYear(filepath.Join(repoPath, name))
-		if err != nil {
-			return nil, err
-		}
 		lib := &config.Library{
 			Name:          libraryName,
 			Version:       version,
 			APIs:          apis,
 			Output:        name,
-			CopyrightYear: copyrightYear,
 		}
 		derivedComp, err := php.ComponentNameForLibrary(googleapisDir, lib)
 		if err != nil {
@@ -378,41 +371,4 @@ func normalizeStagingSubdir(apiPath, stagingDir string) string {
 	return stagingDir
 }
 
-func extractOldestCopyrightYear(libraryDir string) (string, error) {
-	var oldest string
-	buffer := make([]byte, 4096)
-	err := filepath.WalkDir(libraryDir, func(path string, entry fs.DirEntry, err error) error {
-		if err != nil {
-			return err
-		}
-		if entry.IsDir() || !strings.HasSuffix(path, ".php") {
-			return nil
-		}
 
-		year, err := getYearInFile(path, buffer)
-		if err != nil {
-			return err
-		}
-
-		if year != "" && (oldest == "" || year < oldest) {
-			oldest = year
-		}
-		return nil
-	})
-	return oldest, err
-}
-
-func getYearInFile(path string, buffer []byte) (string, error) {
-	file, err := os.Open(path)
-	if err != nil {
-		return "", err
-	}
-	defer file.Close()
-
-	bytesRead, err := file.Read(buffer)
-	if err != nil && err != io.EOF {
-		return "", err
-	}
-
-	return license.GetYear(buffer[:bytesRead]), nil
-}

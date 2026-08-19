@@ -21,14 +21,12 @@ import (
 	"fmt"
 	"io/fs"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"regexp"
 	"strings"
 
 	"github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/config"
-	"github.com/googleapis/librarian/internal/license"
 )
 
 var (
@@ -129,12 +127,6 @@ func resolveOriginalPath(outDir, originalDir, path string) (string, error) {
 }
 
 func determineYearToUse(origPath, fallbackYear string) string {
-	// Assuming the current working directory is the repository root (which is true for `librarian generate`).
-	if origContent, err := exec.Command("git", "show", "HEAD:"+filepath.ToSlash(origPath)).CombinedOutput(); err == nil {
-		if year := license.GetYear(origContent); year != "" {
-			return year
-		}
-	}
 	return fallbackYear
 }
 

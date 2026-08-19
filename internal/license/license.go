@@ -18,7 +18,6 @@ package license
 import (
 	"bytes"
 	"fmt"
-	"regexp"
 )
 
 // HasHeader returns true if the content contains the Apache 2.0 license header.
@@ -52,15 +51,4 @@ func HeaderBulk() []string {
 	}
 }
 
-var copyrightYearRegexp = regexp.MustCompile(`Copyright (\d{4})`)
 
-// GetYear returns the first copyright year found in the content.
-// It returns an empty string if no copyright year is found.
-func GetYear(content []byte) string {
-	if match := copyrightYearRegexp.FindSubmatch(content); match != nil {
-		if len(match) > 1 {
-			return string(match[1])
-		}
-	}
-	return ""
-}
