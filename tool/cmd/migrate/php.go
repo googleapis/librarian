@@ -15,11 +15,11 @@
 package main
 
 import (
-	"bufio"
 	"context"
 	_ "embed"
 	"errors"
 	"fmt"
+	"io"
 	"io/fs"
 	"log"
 	"os"
@@ -32,6 +32,7 @@ import (
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/librarian"
 	"github.com/googleapis/librarian/internal/librarian/php"
+	"github.com/googleapis/librarian/internal/license"
 	"github.com/googleapis/librarian/internal/yaml"
 )
 
@@ -262,12 +263,16 @@ func findPHPLibraries(repoPath string, googleapisDir string, globalDefaultCommon
 			continue
 		}
 		libraryName := php.DefaultLibraryName(apis[0].Path)
+		copyrightYear, err := extractOldestCopyrightYear(filepath.Join(repoPath, name))
+		if err != nil {
+			return nil, err
+		}
 		lib := &config.Library{
 			Name:          libraryName,
 			Version:       version,
 			APIs:          apis,
 			Output:        name,
-			CopyrightYear: extractCopyrightYear(repoPath, name),
+			CopyrightYear: copyrightYear,
 		}
 		derivedComp, err := php.ComponentNameForLibrary(googleapisDir, lib)
 		if err != nil {
@@ -372,37 +377,42 @@ func normalizeStagingSubdir(apiPath, stagingDir string) string {
 	}
 	return stagingDir
 }
-func extractCopyrightYear(repoPath, libName string) string {
-	dir := filepath.Join(repoPath, libName)
-	var minYear string
-	re := regexp.MustCompile(`Copyright (\d{4}) Google`)
-	filepath.WalkDir(dir, func(path string, d fs.DirEntry, err error) error {
-		if err != nil || d.IsDir() || !strings.HasSuffix(path, ".php") {
-			return nil
-		}
-		f, err := os.Open(path)
+
+func extractOldestCopyrightYear(libraryDir string) (string, error) {
+	var oldest string
+	buffer := make([]byte, 4096)
+	err := filepath.WalkDir(libraryDir, func(path string, entry fs.DirEntry, err error) error {
 		if err != nil {
+			return err
+		}
+		if entry.IsDir() || !strings.HasSuffix(path, ".php") {
 			return nil
 		}
-		defer f.Close()
 
-		scanner := bufio.NewScanner(f)
-		linesChecked := 0
-		for scanner.Scan() {
-			if linesChecked >= 50 {
-				break
-			}
-			linesChecked++
+		year, err := getOldestYearInFile(path, buffer)
+		if err != nil {
+			return err
+		}
 
-			if match := re.FindSubmatch(scanner.Bytes()); match != nil {
-				year := string(match[1])
-				if minYear == "" || year < minYear {
-					minYear = year
-				}
-				break // Found the copyright year in this file, no need to keep scanning it
-			}
+		if year != "" && (oldest == "" || year < oldest) {
+			oldest = year
 		}
 		return nil
 	})
-	return minYear
+	return oldest, err
+}
+
+func getOldestYearInFile(path string, buffer []byte) (string, error) {
+	file, err := os.Open(path)
+	if err != nil {
+		return "", err
+	}
+	defer file.Close()
+
+	bytesRead, err := file.Read(buffer)
+	if err != nil && err != io.EOF {
+		return "", err
+	}
+
+	return license.OldestYear(buffer[:bytesRead]), nil
 }
