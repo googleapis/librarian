@@ -58,7 +58,7 @@ func postProcessLibrary(ctx context.Context, library *config.Library, componentN
 	if err := runPostProcessors(ctx, library, stagingDir, postProcessor); err != nil {
 		return err
 	}
-	if err := restoreCopyrightYear(stagingDir, componentName, library.CopyrightYear); err != nil {
+	if err := restoreCopyrightYear(stagingDir, library.CopyrightYear); err != nil {
 		return err
 	}
 	if err := command.RunInDir(ctx, componentName, "python3", "owlbot.py"); err != nil {
@@ -79,7 +79,11 @@ func runPostProcessors(ctx context.Context, library *config.Library, stagingDir,
 }
 
 // restoreCopyrightYear replaces the copyright year in generated source files.
-func restoreCopyrightYear(outDir, originalDir, fallbackYear string) error {
+func restoreCopyrightYear(outDir, yearToUse string) error {
+	if yearToUse == "" {
+		return nil
+	}
+
 	re := regexp.MustCompile(`Copyright \d{4} Google`)
 	err := filepath.WalkDir(outDir, func(path string, d os.DirEntry, err error) error {
 		if err != nil {
@@ -88,46 +92,12 @@ func restoreCopyrightYear(outDir, originalDir, fallbackYear string) error {
 		if d.IsDir() || !strings.HasSuffix(path, ".php") {
 			return nil
 		}
-
-		origPath, err := resolveOriginalPath(outDir, originalDir, path)
-		if err != nil {
-			return err
-		}
-
-		yearToUse := determineYearToUse(origPath, fallbackYear)
-		if yearToUse == "" {
-			return nil
-		}
-
 		return updateCopyrightYearInFile(path, yearToUse, re)
 	})
 	if err != nil && errors.Is(err, fs.ErrNotExist) {
 		return nil
 	}
 	return err
-}
-
-func resolveOriginalPath(outDir, originalDir, path string) (string, error) {
-	relPath, err := filepath.Rel(outDir, path)
-	if err != nil {
-		return "", err
-	}
-
-	mappedRelPath := relPath
-	for _, prefix := range []string{"src/", "tests/", "samples/", "metadata/"} {
-		if idx := strings.Index(filepath.ToSlash(relPath), "/"+prefix); idx != -1 {
-			mappedRelPath = relPath[idx+1:]
-			break
-		} else if strings.HasPrefix(filepath.ToSlash(relPath), prefix) {
-			mappedRelPath = relPath
-			break
-		}
-	}
-	return filepath.Join(originalDir, mappedRelPath), nil
-}
-
-func determineYearToUse(origPath, fallbackYear string) string {
-	return fallbackYear
 }
 
 func updateCopyrightYearInFile(path, year string, re *regexp.Regexp) error {

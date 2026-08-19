@@ -303,7 +303,6 @@ func TestRestoreCopyrightYear(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			outDir := t.TempDir()
-			originalDir := t.TempDir()
 
 			testFile := filepath.Join(outDir, "src", "Example.php")
 			if err := os.MkdirAll(filepath.Dir(testFile), 0755); err != nil {
@@ -313,7 +312,7 @@ func TestRestoreCopyrightYear(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			if err := restoreCopyrightYear(outDir, originalDir, test.fallbackYear); err != nil {
+			if err := restoreCopyrightYear(outDir, test.fallbackYear); err != nil {
 				t.Fatalf("restoreCopyrightYear() error = %v", err)
 			}
 
