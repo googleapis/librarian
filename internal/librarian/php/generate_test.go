@@ -136,7 +136,7 @@ func TestGenerate_GenerateGAPICFalse(t *testing.T) {
 	if stat, err := os.Stat(protoDir); err != nil || !stat.IsDir() {
 		t.Errorf("expected directory %s to exist and be a directory", protoDir)
 	}
-	for _, dir := range []string{"tests", "samples", "fragments"} {
+	for _, dir := range []string{"src", "tests", "samples"} {
 		p := filepath.Join(library.Output, dir)
 		if _, err := os.Stat(p); !errors.Is(err, fs.ErrNotExist) {
 			t.Errorf("expected directory %s to not exist", p)
