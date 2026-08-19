@@ -24,7 +24,7 @@ import (
 
 	"github.com/google/yamlfmt/formatters/basic"
 	"github.com/googleapis/librarian/internal/license"
-	"gopkg.in/yaml.v3"
+	"go.yaml.in/yaml/v3"
 )
 
 // StringSlice is a custom slice of strings that allows for fine-grained control

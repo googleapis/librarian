@@ -71,6 +71,9 @@ type SwiftPackage struct {
 	// other packages.
 	PackageNameOverride string `yaml:"package_name_override,omitempty"`
 
+	// NameOverrides contains codec-level overrides for service names (e.g., {".google.storage.v2.Storage": "StorageControl"}).
+	NameOverrides map[string]string `yaml:"name_overrides,omitempty"`
+
 	// PerServiceTraits enables per-service compile-time flags.
 	PerServiceTraits bool `yaml:"per_service_traits,omitempty"`
 
@@ -137,6 +140,8 @@ type SwiftDependency struct {
 	// - The `GoogleCloudWkt` package will set this to `google.cloud.protobuf`.
 	// - The `GoogleCloudLocation` package will set this to `google.cloud.location`.
 	ApiPackage string `yaml:"api_package,omitempty"`
+	// SpiAttribute if set, the dependency requires an `@_spi(...)` attribute.
+	SpiAttribute string `yaml:"spi,omitempty"`
 }
 
 // SwiftModule defines a generation target within a larger crate. Typically a veneer, but sometimes also test targets.
@@ -171,6 +176,9 @@ type SwiftModule struct {
 
 	// ModulePath is the module import path or target containing stubs (used by convert-swift and gRPC transports).
 	ModulePath string `yaml:"module_path,omitempty"`
+
+	// NameOverrides contains codec-level overrides for service names for this module.
+	NameOverrides map[string]string `yaml:"name_overrides,omitempty"`
 }
 
 // SwiftDiscovery contains discovery-specific configuration for LRO polling.

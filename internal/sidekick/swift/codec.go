@@ -16,6 +16,7 @@ package swift
 
 import (
 	"fmt"
+	"maps"
 	"path/filepath"
 	"time"
 
@@ -133,6 +134,10 @@ type codec struct {
 	// libraries we use `json;enum-encoding=int`, but for discovery we need to
 	// use just `json` as the integer values for enums may not match our values.
 	ResponseEncoding string
+
+	// Codec-level overrides for service names.
+	// TODO(https://github.com/googleapis/google-cloud-swift/issues/308): Support overriding other symbol types (e.g., messages, enums, oneofs) if needed.
+	NameOverrides map[string]string
 }
 
 const (
@@ -142,6 +147,14 @@ const (
 
 func (c *codec) isGrpc() bool {
 	return c.ModuleType == "grpc-client"
+}
+
+// ServiceName returns the service name, taking name_overrides into account.
+func (c *codec) ServiceName(service *api.Service) string {
+	if override, ok := c.NameOverrides[service.ID]; ok {
+		return override
+	}
+	return service.Name
 }
 
 func newCodec(model *api.API, library *config.Library, module *config.SwiftModule, outdir string) (*codec, error) {
@@ -213,6 +226,17 @@ func newCodec(model *api.API, library *config.Library, module *config.SwiftModul
 		result.Module = true
 		result.ModuleType = module.ModuleType
 		result.ModulePath = module.ModulePath
+	}
+
+	nameOverrides := make(map[string]string)
+	if swiftCfg != nil {
+		maps.Copy(nameOverrides, swiftCfg.NameOverrides)
+	}
+	if module != nil {
+		maps.Copy(nameOverrides, module.NameOverrides)
+	}
+	if len(nameOverrides) > 0 {
+		result.NameOverrides = nameOverrides
 	}
 
 	libraryName, err := LibraryName(model, swiftCfg)

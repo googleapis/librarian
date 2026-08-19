@@ -368,7 +368,7 @@ func TestAnnotateMethod_Pagination(t *testing.T) {
 	if diff := cmp.Diff(wantRequest, gotRequest, cmpopts.IgnoreFields(messageAnnotations{}, "Model", "DependsOn", "ProtoTypeName", "ModulePath", "HasConvertedFields")); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
-	wantRequestImports := []string{"GoogleCloudWkt"}
+	wantRequestImports := []*dependencyImport{{Module: "GoogleCloudWkt"}}
 	if diff := cmp.Diff(wantRequestImports, gotRequest.MessageImports()); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
@@ -388,7 +388,7 @@ func TestAnnotateMethod_Pagination(t *testing.T) {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 	// Response type is a paginated response which depends on gax
-	wantResponseImports := []string{"GoogleCloudGax", "GoogleCloudWkt"}
+	wantResponseImports := []*dependencyImport{{Module: "GoogleCloudGax"}, {Module: "GoogleCloudWkt"}}
 	if diff := cmp.Diff(wantResponseImports, gotResponse.MessageImports()); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}

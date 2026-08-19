@@ -173,6 +173,34 @@ func TestParseOptions(t *testing.T) {
 				ResponseEncoding:   discoveryResponseEncoding,
 			},
 		},
+		{
+			name: "name_overrides",
+			library: &config.Library{
+				CopyrightYear: "2038",
+				Swift: &config.SwiftPackage{
+					NameOverrides: map[string]string{
+						".google.storage.v2.Storage":                "StorageAdmin",
+						".google.storage.control.v2.StorageControl": "StorageAdmin",
+					},
+				},
+			},
+			want: &codec{
+				GenerationYear:     "2038",
+				LibraryName:        "Test",
+				TargetLibraryName:  "Test",
+				PackageName:        "test",
+				PackageVersion:     "0.0.0",
+				MonorepoRoot:       ".",
+				Model:              model,
+				ApiPackages:        map[string]*Dependency{},
+				DependenciesByName: map[string]*Dependency{},
+				ResponseEncoding:   defaultResponseEncoding,
+				NameOverrides: map[string]string{
+					".google.storage.v2.Storage":                "StorageAdmin",
+					".google.storage.control.v2.StorageControl": "StorageAdmin",
+				},
+			},
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			got, err := newCodec(model, test.library, test.module, ".")

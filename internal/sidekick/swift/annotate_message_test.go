@@ -29,7 +29,7 @@ func TestAnnotateMessage(t *testing.T) {
 		name        string
 		message     *api.Message
 		want        *messageAnnotations
-		wantImports []string
+		wantImports []*dependencyImport
 	}{
 		{
 			name: "simple",
@@ -52,7 +52,7 @@ func TestAnnotateMessage(t *testing.T) {
 				ProtoTypeName:       "Test_Secret",
 				ModulePath:          "",
 			},
-			wantImports: []string{"GoogleCloudWkt"},
+			wantImports: []*dependencyImport{{Module: "GoogleCloudWkt"}},
 		},
 		{
 			name: "escaped name",
@@ -72,7 +72,7 @@ func TestAnnotateMessage(t *testing.T) {
 				ProtoTypeName:       "Test_Protocol_",
 				ModulePath:          "",
 			},
-			wantImports: []string{"GoogleCloudWkt"},
+			wantImports: []*dependencyImport{{Module: "GoogleCloudWkt"}},
 		},
 		{
 			name: "with oneof",
@@ -91,7 +91,7 @@ func TestAnnotateMessage(t *testing.T) {
 				ProtoTypeName:       "Test_WithOneof",
 				ModulePath:          "",
 			},
-			wantImports: []string{"GoogleCloudWkt"},
+			wantImports: []*dependencyImport{{Module: "GoogleCloudWkt"}},
 		},
 		{
 			name: "with custom json name",
@@ -112,7 +112,7 @@ func TestAnnotateMessage(t *testing.T) {
 				ProtoTypeName:       "Test_WithCustomJSON",
 				ModulePath:          "",
 			},
-			wantImports: []string{"GoogleCloudWkt"},
+			wantImports: []*dependencyImport{{Module: "GoogleCloudWkt"}},
 		},
 		{
 			name: "with pagination",
@@ -140,7 +140,7 @@ func TestAnnotateMessage(t *testing.T) {
 				ProtoTypeName:       "Test_WithPagination",
 				ModulePath:          "",
 			},
-			wantImports: []string{"GoogleCloudGax", "GoogleCloudWkt"},
+			wantImports: []*dependencyImport{{Module: "GoogleCloudGax"}, {Module: "GoogleCloudWkt"}},
 		},
 		{
 			name: "service placeholder",
@@ -160,7 +160,7 @@ func TestAnnotateMessage(t *testing.T) {
 				ProtoTypeName:       "Test_Service",
 				ModulePath:          "",
 			},
-			wantImports: []string{"GoogleCloudWkt"},
+			wantImports: []*dependencyImport{{Module: "GoogleCloudWkt"}},
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
@@ -174,6 +174,84 @@ func TestAnnotateMessage(t *testing.T) {
 			}
 			if diff := cmp.Diff(test.want, test.message.Codec, cmpopts.IgnoreFields(messageAnnotations{}, "Model", "DependsOn", "HasConvertedFields")); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+			if diff := cmp.Diff(test.wantImports, test.message.Codec.(*messageAnnotations).MessageImports()); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestAnnotateMessage_ImportAttributes(t *testing.T) {
+	noSpiConfig := &config.Library{
+		Swift: &config.SwiftPackage{
+			SwiftDefault: config.SwiftDefault{
+				Dependencies: []config.SwiftDependency{
+					{Name: wellKnownSwiftPackage, ApiPackage: wellKnownProtobufPackage},
+					{Name: paginationSwiftPackage, RequiredByServices: true},
+				},
+			},
+		},
+	}
+	withSpiConfig := &config.Library{
+		Swift: &config.SwiftPackage{
+			SwiftDefault: config.SwiftDefault{
+				Dependencies: []config.SwiftDependency{
+					{Name: wellKnownSwiftPackage, ApiPackage: wellKnownProtobufPackage, SpiAttribute: "Test001"},
+					{Name: paginationSwiftPackage, RequiredByServices: true, SpiAttribute: "Test002"},
+				},
+			},
+		},
+	}
+
+	for _, test := range []struct {
+		name        string
+		message     *api.Message
+		config      *config.Library
+		wantImports []*dependencyImport
+	}{
+		{
+			name:        "simple",
+			message:     api.NewTestMessage("Secret"),
+			config:      noSpiConfig,
+			wantImports: []*dependencyImport{{Module: "GoogleCloudWkt"}},
+		},
+		{
+			name:        "with spi attribute",
+			message:     api.NewTestMessage("Secret"),
+			config:      withSpiConfig,
+			wantImports: []*dependencyImport{{Module: "GoogleCloudWkt", Attributes: []string{"@_spi(Test001)"}}},
+		},
+		{
+			name: "with pagination",
+			message: api.NewTestMessage("WithPagination").WithPagination(
+				api.NewTestField("next_page_token").WithType(api.TypezString),
+				api.NewTestField("pageable_item").WithType(api.TypezString).WithRepeated(),
+			),
+			config:      noSpiConfig,
+			wantImports: []*dependencyImport{{Module: "GoogleCloudGax"}, {Module: "GoogleCloudWkt"}},
+		},
+		{
+			name: "with pagination and attributes",
+			message: api.NewTestMessage("WithPagination").WithPagination(
+				api.NewTestField("next_page_token").WithType(api.TypezString),
+				api.NewTestField("pageable_item").WithType(api.TypezString).WithRepeated(),
+			),
+			config: withSpiConfig,
+			wantImports: []*dependencyImport{
+				{Module: "GoogleCloudGax", Attributes: []string{"@_spi(Test002)"}},
+				{Module: "GoogleCloudWkt", Attributes: []string{"@_spi(Test001)"}},
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			for _, f := range test.message.Fields {
+				f.Parent = test.message
+			}
+			model := api.NewTestAPI([]*api.Message{test.message}, []*api.Enum{}, []*api.Service{})
+			codec := newTestCodec(t, model, test.config)
+			if err := codec.annotateModel(); err != nil {
+				t.Fatal(err)
 			}
 			if diff := cmp.Diff(test.wantImports, test.message.Codec.(*messageAnnotations).MessageImports()); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
@@ -459,7 +537,7 @@ func TestAnnotateMessage_Pagination(t *testing.T) {
 	if diff := cmp.Diff(wantRequest, gotRequest, cmpopts.IgnoreFields(messageAnnotations{}, "Model", "DependsOn", "HasConvertedFields")); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
-	wantRequestImports := []string{"GoogleCloudWkt"}
+	wantRequestImports := []*dependencyImport{{Module: "GoogleCloudWkt"}}
 	if diff := cmp.Diff(wantRequestImports, gotRequest.MessageImports()); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
@@ -480,7 +558,7 @@ func TestAnnotateMessage_Pagination(t *testing.T) {
 	if diff := cmp.Diff(wantResponse, gotResponse, cmpopts.IgnoreFields(messageAnnotations{}, "Model", "DependsOn", "HasConvertedFields")); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
-	wantResponseImports := []string{"GoogleCloudGax", "GoogleCloudWkt"}
+	wantResponseImports := []*dependencyImport{{Module: "GoogleCloudGax"}, {Module: "GoogleCloudWkt"}}
 	if diff := cmp.Diff(wantResponseImports, gotResponse.MessageImports()); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
@@ -536,7 +614,7 @@ func TestAnnotateMessage_RecursiveNested(t *testing.T) {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 
-	wantImports := []string{"GoogleCloudGax", "GoogleCloudWkt"}
+	wantImports := []*dependencyImport{{Module: "GoogleCloudGax"}, {Module: "GoogleCloudWkt"}}
 	if diff := cmp.Diff(wantImports, gotOuter.MessageImports()); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}

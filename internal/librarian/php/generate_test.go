@@ -17,6 +17,7 @@ package php
 import (
 	"errors"
 	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"testing"
@@ -80,6 +81,65 @@ func TestGenerate(t *testing.T) {
 		p := filepath.Join(library.Output, dir)
 		if stat, err := os.Stat(p); err != nil || !stat.IsDir() {
 			t.Errorf("expected directory %s to exist and be a directory", p)
+		}
+	}
+}
+
+func TestGenerate_GenerateGAPICFalse(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping slow integration test")
+	}
+	requirePHPGenerator(t)
+	googleapisDir := "../../testdata/googleapis"
+	absGoogleapis, err := filepath.Abs(googleapisDir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	absOwlbotCopy, err := filepath.Abs(filepath.Join("testdata", "owlbot_copy.py"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	repoRoot := t.TempDir()
+	t.Chdir(repoRoot)
+	destDir := filepath.Join(repoRoot, "SecretManager")
+	if err := os.MkdirAll(destDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	// Symlink mock owlbot.py. Tests use a simplified copy-only stub to
+	// avoid Node.js/prettier dependencies.
+	if err := os.Symlink(absOwlbotCopy, filepath.Join(destDir, "owlbot.py")); err != nil {
+		t.Fatal(err)
+	}
+	library := &config.Library{
+		Name:   "secretmanager",
+		Output: destDir,
+		APIs: []*config.API{
+			{
+				Path: "google/cloud/secretmanager/v1",
+				PHP: &config.PHPAPI{
+					GenerateGAPIC:   new(false),
+					CommonResources: new(false),
+					StagingSubdir:   "v1",
+				},
+			},
+		},
+	}
+	cfg := &config.Config{
+		Language: config.LanguagePhp,
+	}
+	err = Generate(t.Context(), cfg, library, &sources.Sources{Googleapis: absGoogleapis})
+	if err != nil {
+		t.Fatal(err)
+	}
+	// Verify output: proto directory exists, but GAPIC output directories do not.
+	protoDir := filepath.Join(library.Output, "proto")
+	if stat, err := os.Stat(protoDir); err != nil || !stat.IsDir() {
+		t.Errorf("expected directory %s to exist and be a directory", protoDir)
+	}
+	for _, dir := range []string{"src", "tests", "samples"} {
+		p := filepath.Join(library.Output, dir)
+		if _, err := os.Stat(p); !errors.Is(err, fs.ErrNotExist) {
+			t.Errorf("expected directory %s to not exist", p)
 		}
 	}
 }
@@ -385,6 +445,7 @@ func TestGatherGAPICProtos(t *testing.T) {
 		setupFiles             []string
 		apiPath                string
 		additionalProtos       []string
+		excludeProtos          []string
 		includeCommonResources bool
 		wantProtos             []string
 	}{
@@ -434,6 +495,20 @@ func TestGatherGAPICProtos(t *testing.T) {
 				"google/cloud/location/locations.proto",
 			},
 		},
+		{
+			name: "excluded protos removed",
+			setupFiles: []string{
+				"google/cloud/secretmanager/v1/service.proto",
+				"google/cloud/secretmanager/v1/resources.proto",
+			},
+			apiPath: "google/cloud/secretmanager/v1",
+			excludeProtos: []string{
+				"google/cloud/secretmanager/v1/resources.proto",
+			},
+			wantProtos: []string{
+				"google/cloud/secretmanager/v1/service.proto",
+			},
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			tempDir := t.TempDir()
@@ -446,7 +521,7 @@ func TestGatherGAPICProtos(t *testing.T) {
 					t.Fatal(err)
 				}
 			}
-			got, err := gatherGAPICProtos(tempDir, test.apiPath, test.additionalProtos, test.includeCommonResources)
+			got, err := gatherGAPICProtos(tempDir, test.apiPath, test.additionalProtos, test.excludeProtos, test.includeCommonResources)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -463,10 +538,11 @@ func TestGatherGAPICProtos(t *testing.T) {
 
 func TestGatherGAPICProtos_Error(t *testing.T) {
 	for _, test := range []struct {
-		name       string
-		setupFiles []string
-		apiPath    string
-		wantErr    error
+		name          string
+		setupFiles    []string
+		apiPath       string
+		excludeProtos []string
+		wantErr       error
 	}{
 		{
 			name:       "directory not found",
@@ -480,6 +556,17 @@ func TestGatherGAPICProtos_Error(t *testing.T) {
 			apiPath:    "google/cloud/secretmanager/v1",
 			wantErr:    errNoProtos,
 		},
+		{
+			name: "all protos excluded",
+			setupFiles: []string{
+				"google/cloud/secretmanager/v1/service.proto",
+			},
+			apiPath: "google/cloud/secretmanager/v1",
+			excludeProtos: []string{
+				"google/cloud/secretmanager/v1/service.proto",
+			},
+			wantErr: errNoProtos,
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			tempDir := t.TempDir()
@@ -492,9 +579,48 @@ func TestGatherGAPICProtos_Error(t *testing.T) {
 					t.Fatal(err)
 				}
 			}
-			_, err := gatherGAPICProtos(tempDir, test.apiPath, nil, true)
+			_, err := gatherGAPICProtos(tempDir, test.apiPath, nil, test.excludeProtos, true)
 			if !errors.Is(err, test.wantErr) {
 				t.Errorf("gatherGAPICProtos() error = %v, wantErr = %v", err, test.wantErr)
+			}
+		})
+	}
+}
+
+func TestFilterProtos(t *testing.T) {
+	for _, test := range []struct {
+		name          string
+		protos        []string
+		excludeProtos []string
+		want          []string
+	}{
+		{
+			name: "exclude matches",
+			protos: []string{
+				"/path/to/google/cloud/secretmanager/v1/service.proto",
+				"/path/to/google/cloud/secretmanager/v1/resources.proto",
+			},
+			excludeProtos: []string{
+				"google/cloud/secretmanager/v1/resources.proto",
+			},
+			want: []string{
+				"/path/to/google/cloud/secretmanager/v1/service.proto",
+			},
+		},
+		{
+			name: "no exclude",
+			protos: []string{
+				"/path/to/google/cloud/secretmanager/v1/service.proto",
+			},
+			want: []string{
+				"/path/to/google/cloud/secretmanager/v1/service.proto",
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := filterProtos("/path/to", test.protos, test.excludeProtos)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
@@ -546,5 +672,46 @@ func TestBuildProtoProtocArgs(t *testing.T) {
 	}
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+}
+
+func TestShouldGenerateGAPIC(t *testing.T) {
+	for _, test := range []struct {
+		name string
+		api  *config.API
+		want bool
+	}{
+		{
+			name: "unset defaults to true",
+			api: &config.API{
+				PHP: &config.PHPAPI{},
+			},
+			want: true,
+		},
+		{
+			name: "explicitly true",
+			api: &config.API{
+				PHP: &config.PHPAPI{
+					GenerateGAPIC: new(true),
+				},
+			},
+			want: true,
+		},
+		{
+			name: "explicitly false",
+			api: &config.API{
+				PHP: &config.PHPAPI{
+					GenerateGAPIC: new(false),
+				},
+			},
+			want: false,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := shouldGenerateGAPIC(test.api)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
 	}
 }

@@ -15,6 +15,7 @@
 package swift
 
 import (
+	"cmp"
 	"fmt"
 	"slices"
 	"strings"
@@ -99,12 +100,20 @@ func (ann *messageAnnotations) ConvertImports() []string {
 }
 
 // MessageImports returns the list of dependencies for this message.
-func (ann *messageAnnotations) MessageImports() []string {
-	result := make([]string, 0, len(ann.DependsOn))
-	for _, dep := range ann.DependsOn {
-		result = append(result, dep.Name)
+func (ann *messageAnnotations) MessageImports() []*dependencyImport {
+	result := make([]*dependencyImport, 0, len(ann.DependsOn))
+	for _, d := range ann.DependsOn {
+		dep := &dependencyImport{
+			Module: d.Name,
+		}
+		if d.SpiAttribute != "" {
+			dep.Attributes = append(dep.Attributes, fmt.Sprintf("@_spi(%s)", d.SpiAttribute))
+		}
+		result = append(result, dep)
 	}
-	slices.Sort(result)
+	slices.SortFunc(result, func(a, b *dependencyImport) int {
+		return cmp.Compare(a.Module, b.Module)
+	})
 	return result
 }
 

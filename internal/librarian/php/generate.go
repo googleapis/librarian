@@ -23,6 +23,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"slices"
 	"strings"
 
 	"github.com/googleapis/librarian/internal/config"
@@ -160,7 +161,11 @@ func generateAPI(ctx context.Context, params *generateAPIParams) (retErr error) 
 	return generateProto(ctx, params, pc, googleapisDir, protoZipPath)
 }
 
+// generateGAPIC generates the GAPIC client surface.
 func generateGAPIC(ctx context.Context, params *generateAPIParams, pc *config.Protoc, googleapisDir, gapicZipPath string) error {
+	if !shouldGenerateGAPIC(params.api) {
+		return nil
+	}
 	grpcConfigPath, err := serviceconfig.FindGRPCServiceConfig(googleapisDir, params.api.Path)
 	if err != nil {
 		return err
@@ -184,7 +189,7 @@ func generateGAPIC(ctx context.Context, params *generateAPIParams, pc *config.Pr
 	opts := gapicOpts(apiMetadata, grpcConfigAbsPath, serviceYamlAbsPath)
 	additionalProtos := params.api.PHP.AdditionalProtos
 	includeCommonResources := *params.api.PHP.CommonResources
-	gapicProtos, err := gatherGAPICProtos(googleapisDir, params.api.Path, additionalProtos, includeCommonResources)
+	gapicProtos, err := gatherGAPICProtos(googleapisDir, params.api.Path, additionalProtos, params.api.PHP.ExcludedProtos, includeCommonResources)
 	if err != nil {
 		return err
 	}
@@ -195,8 +200,16 @@ func generateGAPIC(ctx context.Context, params *generateAPIParams, pc *config.Pr
 	return extractOutput(ctx, gapicZipPath, params.gapicDestDir)
 }
 
+// shouldGenerateGAPIC checks if GAPIC client generation should proceed.
+func shouldGenerateGAPIC(api *config.API) bool {
+	if api.PHP.GenerateGAPIC != nil {
+		return *api.PHP.GenerateGAPIC
+	}
+	return true
+}
+
 func generateProto(ctx context.Context, params *generateAPIParams, pc *config.Protoc, googleapisDir, protoZipPath string) error {
-	mainProtos, err := gatherMainProtos(googleapisDir, params.api.Path)
+	mainProtos, err := gatherMainProtos(googleapisDir, params.api.Path, params.api.PHP.ExcludedProtos)
 	if err != nil {
 		return err
 	}
@@ -209,8 +222,8 @@ func generateProto(ctx context.Context, params *generateAPIParams, pc *config.Pr
 
 // gatherGAPICProtos collects all proto files inside the target API directory,
 // appends common resources, and appends any configured additional protos.
-func gatherGAPICProtos(googleapisDir, apiPath string, additionalProtos []string, includeCommonResources bool) ([]string, error) {
-	targetProtos, err := gatherMainProtos(googleapisDir, apiPath)
+func gatherGAPICProtos(googleapisDir, apiPath string, additionalProtos, excludeProtos []string, includeCommonResources bool) ([]string, error) {
+	targetProtos, err := gatherMainProtos(googleapisDir, apiPath, excludeProtos)
 	if err != nil {
 		return nil, err
 	}
@@ -263,7 +276,7 @@ func extractOutput(ctx context.Context, zipPath, outDir string) error {
 	return nil
 }
 
-func gatherMainProtos(googleapisDir, apiPath string) ([]string, error) {
+func gatherMainProtos(googleapisDir, apiPath string, excludeProtos []string) ([]string, error) {
 	apiDir := filepath.Join(googleapisDir, filepath.FromSlash(apiPath))
 	protos, err := proto.Gather(apiDir, apiPath)
 	if err != nil {
@@ -272,10 +285,21 @@ func gatherMainProtos(googleapisDir, apiPath string) ([]string, error) {
 		}
 		return nil, err
 	}
+	protos = filterProtos(googleapisDir, protos, excludeProtos)
 	if len(protos) == 0 {
 		return nil, fmt.Errorf("%w for API %s", errNoProtos, apiPath)
 	}
 	return protos, nil
+}
+
+func filterProtos(googleapisDir string, protos, excludeProtos []string) []string {
+	for _, exclude := range excludeProtos {
+		fullPath := filepath.Join(googleapisDir, filepath.FromSlash(exclude))
+		protos = slices.DeleteFunc(protos, func(p string) bool {
+			return p == fullPath
+		})
+	}
+	return protos
 }
 
 func absConfigPath(baseDir, configPath string) (string, error) {

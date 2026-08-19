@@ -454,6 +454,8 @@ This document describes the schema for the librarian.yaml.
 | :--- | :--- | :--- |
 | `additional_protos` | list of string | Is a list of additional proto files to include in generation. |
 | `common_resources` | bool (optional) | Indicates whether to include common resources in generation. Must be configured either globally or per-API. |
+| `excluded_protos` | list of string | Is a list of proto files to exclude from generation. It expects the full path starting from the root of the googleapis directory (e.g., "google/cloud/aiplatform/v1/schema/io_format.proto"). |
+| `generate_gapic` | bool (optional) | Indicates whether to generate the GAPIC client surface. Defaults to true. |
 | `proto_package` | string | Overrides the derived proto package for the API. |
 | `staging_subdir` | string | Is the subdirectory in staging where the generated files should be placed. |
 
@@ -634,6 +636,7 @@ This document describes the schema for the librarian.yaml.
 | `version` | string | Configures the minimum version for external package definitions.<br><br>For example, if the `swift-protobuf` package used `1.36.1`, then the codec would generate the following snippet in the `Package.swift` files:<br><br>``` .package(url: "https://github.com/apple/swift-protobuf", from: "1.36.1") ``` |
 | `required_by_services` | bool | Is true if this dependency is required by packages with services.<br><br>This will be set for the `gax` library and the `auth` library. Maybe more if we split the HTTP and gRPC clients into separate libraries. |
 | `api_package` | string | Is the name of the API package provided by this library.<br><br>In Swift a package contains at most one channel for one API. For packages that implement an API, this field contains the name of the package in the specification language of that API. At the moment this is only used by Protobuf-based APIs, as OpenAPI and discovery doc APIs are self-contained.<br><br>Note that some packages, for example `auth` and `gax`, do not implement APIs. This field is empty for such libraries.<br><br>Examples:<br>- The `GoogleCloudWkt` package will set this to `google.cloud.protobuf`.<br>- The `GoogleCloudLocation` package will set this to `google.cloud.location`. |
+| `spi` | string | If set, the dependency requires an `@_spi(...)` attribute. |
 
 ## SwiftModule Configuration
 
@@ -647,6 +650,7 @@ This document describes the schema for the librarian.yaml.
 | `included_ids` | list of string | Is a list of proto IDs to include in generation for this module. If set, only these IDs and their dependencies are generated. |
 | `skipped_ids` | list of string | Is a list of proto IDs to skip in generation for this module. |
 | `module_path` | string | Is the module import path or target containing stubs (used by convert-swift and gRPC transports). |
+| `name_overrides` | map[string]string | Contains codec-level overrides for service names for this module. |
 
 ## SwiftPackage Configuration
 
@@ -659,6 +663,7 @@ This document describes the schema for the librarian.yaml.
 | `skipped_ids` | list of string | Is a list of proto IDs to skip in generation for the package. |
 | `modules` | list of [SwiftModule](#swiftmodule-configuration) (optional) | Specifies generation targets for veneers and test packages.<br><br>Each module defines a source proto path, and output location. |
 | `package_name_override` | string | Overrides the package name.<br><br>This may be useful if the protobuf package lacks the necessary prefixes, e.g. `grafeas.v1` may be published as `google-grafeas-v1` to match the other packages. |
+| `name_overrides` | map[string]string | Contains codec-level overrides for service names (e.g., {".google.storage.v2.Storage": "StorageControl"}). |
 | `per_service_traits` | bool | Enables per-service compile-time flags. |
 | `default_traits` | list of string | Is a list of compile-time traits enabled by default. |
 | `discovery` | SwiftDiscovery (optional) | Contains discovery-specific configuration for LRO polling. |

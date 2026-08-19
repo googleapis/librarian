@@ -17,7 +17,7 @@ package yaml
 import (
 	"fmt"
 
-	"gopkg.in/yaml.v3"
+	"go.yaml.in/yaml/v3"
 )
 
 // RefString is a string that is a reference to another resource.
