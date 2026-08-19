@@ -26,11 +26,22 @@ import (
 // E.g., "google/cloud/speech/v2" -> "speech"
 // E.g., "google/cloud/security/privateca/v1" -> "security-privateca".
 func DefaultLibraryName(apiPath string) string {
-	apiPath = strings.TrimPrefix(apiPath, "google/cloud/")
-	apiPath = strings.TrimPrefix(apiPath, "google/")
 	if serviceconfig.ExtractVersion(apiPath) != "" {
 		apiPath = path.Dir(apiPath)
 	}
+
+	parts := strings.Split(apiPath, "/")
+	if len(parts) >= 3 && parts[0] == "google" {
+		serviceName := parts[len(parts)-1]
+		if serviceName == "admin" || serviceName == "type" {
+			apiPath = strings.TrimPrefix(apiPath, "google/")
+		} else {
+			apiPath = strings.TrimPrefix(apiPath, "google/"+parts[1]+"/")
+		}
+	} else {
+		apiPath = strings.TrimPrefix(apiPath, "google/")
+	}
+
 	apiPath = strings.ReplaceAll(apiPath, "/", "-")
 	return strings.ToLower(apiPath)
 }
