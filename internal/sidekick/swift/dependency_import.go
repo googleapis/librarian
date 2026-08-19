@@ -17,6 +17,9 @@ package swift
 // dependencyImport defines how a dependency should be imported.
 type dependencyImport struct {
 	// The name of the module to import
-	Module     string
+	Module string
+	// Any number of attributes that predece the import.
+	//
+	// At the moment this is only used for the `@_spi(...)` attribute.
 	Attributes []string
 }
