@@ -15,9 +15,28 @@
 package librarian
 
 import (
+	"context"
+	"fmt"
 	"runtime/debug"
 	"strings"
+
+	"github.com/urfave/cli/v3"
 )
+
+func versionCommand() *cli.Command {
+	return &cli.Command{
+		Name:      "version",
+		Usage:     "print the binary version",
+		UsageText: "librarian version",
+		Description: `version prints the librarian binary version and exits. The version is
+embedded at build time and follows the conventions described at
+https://go.dev/ref/mod#versions.`,
+		Action: func(ctx context.Context, cmd *cli.Command) error {
+			fmt.Printf("librarian version %s\n", Version())
+			return nil
+		},
+	}
+}
 
 // versionDevel is the version string for local builds without a module version.
 const versionDevel = "(devel)"

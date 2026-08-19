@@ -1,0 +1,98 @@
+// Copyright 2025 Google LLC
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     https://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+package librarian
+
+import (
+	"context"
+	"fmt"
+
+	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/librarian/dart"
+	"github.com/googleapis/librarian/internal/librarian/golang"
+	"github.com/googleapis/librarian/internal/librarian/java"
+	"github.com/googleapis/librarian/internal/librarian/nodejs"
+	"github.com/googleapis/librarian/internal/librarian/php"
+	"github.com/googleapis/librarian/internal/librarian/python"
+	"github.com/googleapis/librarian/internal/librarian/ruby"
+	"github.com/googleapis/librarian/internal/librarian/rust"
+	"github.com/googleapis/librarian/internal/librarian/swift"
+	"github.com/googleapis/librarian/internal/tool/protoc"
+	"github.com/googleapis/librarian/internal/yaml"
+	"github.com/urfave/cli/v3"
+)
+
+func installCommand() *cli.Command {
+	return &cli.Command{
+		Name:      "install",
+		Usage:     "install tool dependencies for a language",
+		UsageText: "librarian install [language]",
+		Description: `install installs the language-specific tools that librarian uses to
+generate and build client libraries (for example, language SDKs and code
+generators).
+
+If [language] is omitted, the language is read from librarian.yaml in the
+current directory.
+
+Examples:
+
+	librarian install              # use language from librarian.yaml
+	librarian install go           # install Go-specific tools`,
+		Action: func(ctx context.Context, cmd *cli.Command) error {
+			lang := cmd.Args().First()
+			cfg, err := yaml.Read[config.Config](config.LibrarianYAML)
+			if err != nil && lang == "" {
+				return err
+			}
+			if lang == "" {
+				lang = cfg.Language
+			}
+			var tools *config.Tools
+			if cfg != nil {
+				tools = cfg.Tools
+			}
+			// TODO(https://github.com/googleapis/librarian/issues/6558): Remove this check after adding protoc
+			// in librarian.yaml.
+			if tools != nil && tools.Protoc != nil {
+				if err := protoc.Install(ctx, tools.Protoc); err != nil {
+					return fmt.Errorf("failed to install protoc: %w", err)
+				}
+			}
+			switch lang {
+			case config.LanguageDart:
+				return dart.Install(ctx, tools)
+			case config.LanguageFake:
+				return nil
+			case config.LanguageGo:
+				return golang.Install(ctx, tools)
+			case config.LanguageJava:
+				return java.Install(ctx, tools)
+			case config.LanguageNodejs:
+				return nodejs.Install(ctx, tools)
+			case config.LanguagePhp:
+				return php.Install(ctx, tools)
+			case config.LanguagePython:
+				return python.Install(ctx, tools)
+			case config.LanguageRuby:
+				return ruby.Install(ctx, tools)
+			case config.LanguageRust:
+				return rust.Install(ctx, tools)
+			case config.LanguageSwift:
+				return swift.Install(ctx, tools)
+			default:
+				return fmt.Errorf("language %q does not support install", lang)
+			}
+		},
+	}
+}
