@@ -87,55 +87,66 @@ func restoreCopyrightYear(outDir, originalDir, fallbackYear string) error {
 		if err != nil {
 			return err
 		}
-		if d.IsDir() {
-			return nil
-		}
-		if !strings.HasSuffix(path, ".php") {
+		if d.IsDir() || !strings.HasSuffix(path, ".php") {
 			return nil
 		}
 
-		relPath, err := filepath.Rel(outDir, path)
+		origPath, err := resolveOriginalPath(outDir, originalDir, path)
 		if err != nil {
 			return err
 		}
 
-		mappedRelPath := relPath
-		for _, prefix := range []string{"src/", "tests/", "samples/", "metadata/"} {
-			if idx := strings.Index(filepath.ToSlash(relPath), "/"+prefix); idx != -1 {
-				mappedRelPath = relPath[idx+1:]
-				break
-			} else if strings.HasPrefix(filepath.ToSlash(relPath), prefix) {
-				mappedRelPath = relPath
-				break
-			}
-		}
-
-		yearToUse := fallbackYear
-		origPath := filepath.Join(originalDir, mappedRelPath)
-		// Assuming the current working directory is the repository root (which is true for `librarian generate`).
-		if origContent, err := exec.Command("git", "show", "HEAD:"+filepath.ToSlash(origPath)).CombinedOutput(); err == nil {
-			if year := license.Year(origContent); year != "" {
-				yearToUse = year
-			}
-		}
-
+		yearToUse := determineYearToUse(origPath, fallbackYear)
 		if yearToUse == "" {
 			return nil
 		}
 
-		content, err := os.ReadFile(path)
-		if err != nil {
-			return fmt.Errorf("reading %s: %w", path, err)
-		}
-		replacement := []byte(fmt.Sprintf("Copyright %s Google", yearToUse))
-		updated := re.ReplaceAll(content, replacement)
-		if bytes.Equal(content, updated) {
-			return nil
-		}
-		return os.WriteFile(path, updated, 0644)
+		return updateCopyrightYearInFile(path, yearToUse, re)
 	})
 	if err != nil && errors.Is(err, fs.ErrNotExist) {
 		return nil
 	}
 	return err
+}
+
+func resolveOriginalPath(outDir, originalDir, path string) (string, error) {
+	relPath, err := filepath.Rel(outDir, path)
+	if err != nil {
+		return "", err
+	}
+
+	mappedRelPath := relPath
+	for _, prefix := range []string{"src/", "tests/", "samples/", "metadata/"} {
+		if idx := strings.Index(filepath.ToSlash(relPath), "/"+prefix); idx != -1 {
+			mappedRelPath = relPath[idx+1:]
+			break
+		} else if strings.HasPrefix(filepath.ToSlash(relPath), prefix) {
+			mappedRelPath = relPath
+			break
+		}
+	}
+	return filepath.Join(originalDir, mappedRelPath), nil
+}
+
+func determineYearToUse(origPath, fallbackYear string) string {
+	// Assuming the current working directory is the repository root (which is true for `librarian generate`).
+	if origContent, err := exec.Command("git", "show", "HEAD:"+filepath.ToSlash(origPath)).CombinedOutput(); err == nil {
+		if year := license.GetYear(origContent); year != "" {
+			return year
+		}
+	}
+	return fallbackYear
+}
+
+func updateCopyrightYearInFile(path, year string, re *regexp.Regexp) error {
+	content, err := os.ReadFile(path)
+	if err != nil {
+		return fmt.Errorf("reading %s: %w", path, err)
+	}
+	replacement := []byte(fmt.Sprintf("Copyright %s Google", year))
+	updated := re.ReplaceAll(content, replacement)
+	if bytes.Equal(content, updated) {
+		return nil
+	}
+	return os.WriteFile(path, updated, 0644)
 }

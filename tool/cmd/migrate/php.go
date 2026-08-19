@@ -414,5 +414,5 @@ func getYearInFile(path string, buffer []byte) (string, error) {
 		return "", err
 	}
 
-	return license.Year(buffer[:bytesRead]), nil
+	return license.GetYear(buffer[:bytesRead]), nil
 }
