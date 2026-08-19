@@ -389,7 +389,7 @@ func extractOldestCopyrightYear(libraryDir string) (string, error) {
 			return nil
 		}
 
-		year, err := getOldestYearInFile(path, buffer)
+		year, err := getYearInFile(path, buffer)
 		if err != nil {
 			return err
 		}
@@ -402,7 +402,7 @@ func extractOldestCopyrightYear(libraryDir string) (string, error) {
 	return oldest, err
 }
 
-func getOldestYearInFile(path string, buffer []byte) (string, error) {
+func getYearInFile(path string, buffer []byte) (string, error) {
 	file, err := os.Open(path)
 	if err != nil {
 		return "", err
@@ -414,5 +414,5 @@ func getOldestYearInFile(path string, buffer []byte) (string, error) {
 		return "", err
 	}
 
-	return license.OldestYear(buffer[:bytesRead]), nil
+	return license.Year(buffer[:bytesRead]), nil
 }
