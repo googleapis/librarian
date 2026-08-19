@@ -160,7 +160,11 @@ func generateAPI(ctx context.Context, params *generateAPIParams) (retErr error) 
 	return generateProto(ctx, params, pc, googleapisDir, protoZipPath)
 }
 
+// generateGAPIC generates the GAPIC client surface.
 func generateGAPIC(ctx context.Context, params *generateAPIParams, pc *config.Protoc, googleapisDir, gapicZipPath string) error {
+	if !shouldGenerateGAPIC(params.api) {
+		return nil
+	}
 	grpcConfigPath, err := serviceconfig.FindGRPCServiceConfig(googleapisDir, params.api.Path)
 	if err != nil {
 		return err
@@ -193,6 +197,14 @@ func generateGAPIC(ctx context.Context, params *generateAPIParams, pc *config.Pr
 		return fmt.Errorf("failed to generate PHP GAPIC API %s: %w", params.api.Path, err)
 	}
 	return extractOutput(ctx, gapicZipPath, params.gapicDestDir)
+}
+
+// shouldGenerateGAPIC checks if GAPIC client generation should proceed.
+func shouldGenerateGAPIC(api *config.API) bool {
+	if api.PHP.GenerateGAPIC != nil {
+		return *api.PHP.GenerateGAPIC
+	}
+	return true
 }
 
 func generateProto(ctx context.Context, params *generateAPIParams, pc *config.Protoc, googleapisDir, protoZipPath string) error {
