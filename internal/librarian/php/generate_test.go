@@ -548,3 +548,44 @@ func TestBuildProtoProtocArgs(t *testing.T) {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
+
+func TestShouldGenerateGAPIC(t *testing.T) {
+	for _, test := range []struct {
+		name string
+		api  *config.API
+		want bool
+	}{
+		{
+			name: "unset defaults to true",
+			api: &config.API{
+				PHP: &config.PHPAPI{},
+			},
+			want: true,
+		},
+		{
+			name: "explicitly true",
+			api: &config.API{
+				PHP: &config.PHPAPI{
+					GenerateGAPIC: new(true),
+				},
+			},
+			want: true,
+		},
+		{
+			name: "explicitly false",
+			api: &config.API{
+				PHP: &config.PHPAPI{
+					GenerateGAPIC: new(false),
+				},
+			},
+			want: false,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := shouldGenerateGAPIC(test.api)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
