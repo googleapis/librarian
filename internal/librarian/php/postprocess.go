@@ -79,8 +79,8 @@ func runPostProcessors(ctx context.Context, library *config.Library, stagingDir,
 }
 
 // restoreCopyrightYear replaces the copyright year in generated source files.
-func restoreCopyrightYear(outDir, yearToUse string) error {
-	if yearToUse == "" {
+func restoreCopyrightYear(outDir, year string) error {
+	if year == "" {
 		return nil
 	}
 
@@ -92,7 +92,7 @@ func restoreCopyrightYear(outDir, yearToUse string) error {
 		if d.IsDir() || !strings.HasSuffix(path, ".php") {
 			return nil
 		}
-		return updateCopyrightYearInFile(path, yearToUse, re)
+		return updateCopyrightYearInFile(path, year, re)
 	})
 	if errors.Is(err, fs.ErrNotExist) {
 		return nil

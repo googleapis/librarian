@@ -282,19 +282,19 @@ func TestPostProcess_PHPPostProcessorError(t *testing.T) {
 func TestRestoreCopyrightYear(t *testing.T) {
 	for _, test := range []struct {
 		name         string
-		fallbackYear string
+		year string
 		content      string
 		want         string
 	}{
 		{
 			name:         "success",
-			fallbackYear: "2026",
+			year: "2026",
 			content:      "<?php\n// Copyright 2024 Google LLC\nclass Example {}\n",
 			want:         "<?php\n// Copyright 2026 Google LLC\nclass Example {}\n",
 		},
 		{
 			name:         "empty fallback year skips update",
-			fallbackYear: "",
+			year: "",
 			content:      "<?php\n// Copyright 2024 Google LLC\nclass Example {}\n",
 			want:         "<?php\n// Copyright 2024 Google LLC\nclass Example {}\n",
 		},
@@ -308,7 +308,7 @@ func TestRestoreCopyrightYear(t *testing.T) {
 			if err := os.WriteFile(testFile, []byte(test.content), 0o644); err != nil {
 				t.Fatal(err)
 			}
-			if err := restoreCopyrightYear(outDir, test.fallbackYear); err != nil {
+			if err := restoreCopyrightYear(outDir, test.year); err != nil {
 				t.Fatalf("restoreCopyrightYear() error = %v", err)
 			}
 			got, err := os.ReadFile(testFile)
