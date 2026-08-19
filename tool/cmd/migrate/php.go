@@ -32,6 +32,7 @@ import (
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/librarian"
 	"github.com/googleapis/librarian/internal/librarian/php"
+	"github.com/googleapis/librarian/internal/license"
 	"github.com/googleapis/librarian/internal/yaml"
 )
 
@@ -102,7 +103,6 @@ func runPHPMigration(ctx context.Context, repoPath string) error {
 var (
 	owlbotSourceWithVersionRegexp    = regexp.MustCompile(`^/([a-zA-Z0-9_/]+)/\((v[0-9a-zA-Z|]+)\)/.*-php/.*$`)
 	owlbotSourceWithoutVersionRegexp = regexp.MustCompile(`^/([a-zA-Z0-9_/]+)/.*-php/.*$`)
-	copyrightYearRegexp              = regexp.MustCompile(`Copyright (\d{4})`)
 )
 
 type owlBotConfig struct {
@@ -414,14 +414,5 @@ func getOldestYearInFile(path string, buffer []byte) (string, error) {
 		return "", err
 	}
 
-	var oldest string
-	for _, match := range copyrightYearRegexp.FindAllSubmatch(buffer[:bytesRead], -1) {
-		if len(match) > 1 {
-			year := string(match[1])
-			if oldest == "" || year < oldest {
-				oldest = year
-			}
-		}
-	}
-	return oldest, nil
+	return license.OldestYear(buffer[:bytesRead]), nil
 }
