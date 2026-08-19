@@ -254,6 +254,7 @@ func findPHPLibraries(repoPath string, googleapisDir string, globalDefaultCommon
 			if hasCommonResources != globalDefaultCommonResources {
 				api.PHP.CommonResources = &hasCommonResources
 			}
+			specialCases(api)
 		}
 
 		// Skip libraries that do not have any APIs (e.g., fully handwritten libraries).
@@ -369,4 +370,30 @@ func normalizeStagingSubdir(apiPath, stagingDir string) string {
 		return ""
 	}
 	return stagingDir
+}
+
+// Apply specical case rules to the API config.
+func specialCases(api *config.API) {
+	switch api.Path {
+	case "google/iam/v1":
+		if api.PHP == nil {
+			api.PHP = &config.PHPAPI{}
+		}
+		api.PHP.GenerateGAPIC = new(false)
+	case "google/cloud":
+		if api.PHP == nil {
+			api.PHP = &config.PHPAPI{}
+		}
+		api.PHP.ExcludedProtos = append(api.PHP.ExcludedProtos, "google/cloud/common_resources.proto")
+	case "google/rpc":
+		if api.PHP == nil {
+			api.PHP = &config.PHPAPI{}
+		}
+		api.PHP.ExcludedProtos = append(api.PHP.ExcludedProtos, "google/rpc/http.proto")
+	case "google/cloud/location":
+		if api.PHP == nil {
+			api.PHP = &config.PHPAPI{}
+		}
+		api.PHP.GenerateGAPIC = new(false)
+	}
 }
