@@ -25,6 +25,7 @@ type methodAnnotations struct {
 	Name           string
 	DocLines       []string
 	PathVariables  []*pathVariable
+	RoutingParams  []*routingParam
 	PathExpression string
 	HTTPMethod     string
 	HasBody        bool
@@ -103,6 +104,11 @@ func (ann *methodAnnotations) HasPathVariables() bool {
 	return len(ann.PathVariables) != 0
 }
 
+// HasRoutingParams returns true if the method has routing parameters for gRPC x-goog-request-params header.
+func (ann *methodAnnotations) HasRoutingParams() bool {
+	return len(ann.RoutingParams) != 0
+}
+
 // PlainRPC returns true if the method is not a pagination or LRO.
 func (ann *methodAnnotations) PlainRPC() bool {
 	return ann.LRO == nil && ann.Pagination == nil && ann.DiscoveryLRO == nil
@@ -131,16 +137,26 @@ func (c *codec) annotateMethod(method *api.Method, modelAnn *modelAnnotations) e
 	}
 	var pathExpressionStr string
 	var pathVariables []*pathVariable
+	var routingParams []*routingParam
 	var httpMethod string
 	var hasBody bool
 	var isBodyWildcard bool
 	var bodyField string
 	var queryParams []*api.Field
 
+	// Extract routing parameters for gRPC per AIP-4222:
+	// - Prefer explicit google.api.routing annotations if present.
+	// - Fall back to extracting path parameters from the google.api.http path template.
+	if method.HasRouting() {
+		routingParams = c.routingParamsFromRouting(method.Routing)
+	} else if method.PathInfo != nil && len(method.PathInfo.Bindings) > 0 {
+		routingParams = c.routingParamsFromPathTemplate(method.PathInfo.Bindings[0].PathTemplate)
+	}
+
 	// In Protobuf APIs (such as Storage Control or pure gRPC services), some RPC
 	// methods do not define google.api.http annotations.
-	// - HTTP/REST methods: Continue to extract httpMethod, pathExpressionStr,
-	//   bodyField, queryParams, and pathVariables as before.
+	// - HTTP/REST methods: Extract httpMethod, pathExpressionStr, bodyField,
+	//   queryParams, and pathVariables as before.
 	// - Pure gRPC methods (without HTTP annotations): Safely bypass the HTTP
 	//   extraction without crashing, leaving those fields as their default zero values.
 	if method.PathInfo != nil && len(method.PathInfo.Bindings) > 0 {
@@ -220,6 +236,7 @@ func (c *codec) annotateMethod(method *api.Method, modelAnn *modelAnnotations) e
 		DocLines:         docLines,
 		PathExpression:   pathExpressionStr,
 		PathVariables:    pathVariables,
+		RoutingParams:    routingParams,
 		HTTPMethod:       httpMethod,
 		HasBody:          hasBody,
 		IsBodyWildcard:   isBodyWildcard,

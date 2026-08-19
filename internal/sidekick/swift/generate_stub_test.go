@@ -352,11 +352,15 @@ func TestGenerateStub_Grpc(t *testing.T) {
 				OutputTypeID: empty.ID,
 				OutputType:   empty,
 				ReturnsEmpty: true,
-				PathInfo: &api.PathInfo{
-					Bindings: []*api.PathBinding{{
-						Verb:         "DELETE",
-						PathTemplate: (&api.PathTemplate{}).WithLiteral("v2").WithLiteral("projects").WithVariableNamed("name"),
-					}},
+				Routing: []*api.RoutingInfo{
+					{
+						Name: "bucket",
+						Variants: []*api.RoutingInfoVariant{
+							{
+								FieldPath: []string{"name"},
+							},
+						},
+					},
 				},
 			},
 			{
@@ -450,8 +454,8 @@ func TestGenerateStub_Grpc(t *testing.T) {
 	if !strings.Contains(transportStr, "let protoRequest = try request.toProto()") {
 		t.Errorf("transport missing request.toProto() call:\n%s", transportStr)
 	}
-	if !strings.Contains(transportStr, "pathVariable0.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed)") {
-		t.Errorf("transport missing addingPercentEncoding for routing params:\n%s", transportStr)
+	if !strings.Contains(transportStr, "GoogleCloudGaxGRPC._RoutingMatcher.value(") {
+		t.Errorf("transport missing GoogleCloudGaxGRPC._RoutingMatcher.value for routing params:\n%s", transportStr)
 	}
 	if !strings.Contains(transportStr, `path: "/google.storage.control.v2.StorageControl/CreateFolder"`) {
 		t.Errorf("transport missing CreateFolder gRPC path in execute:\n%s", transportStr)
@@ -466,7 +470,10 @@ func TestGenerateStub_Grpc(t *testing.T) {
 	if !strings.Contains(transportStr, `path: "/google.longrunning.Operations/GetOperation"`) {
 		t.Errorf("transport missing operations GetOperation gRPC path in execute:\n%s", transportStr)
 	}
-	if !strings.Contains(transportStr, `routingParams.append("parent=\(encoded)")`) {
-		t.Errorf("transport missing routing parameter extraction in method body:\n%s", transportStr)
+	if !strings.Contains(transportStr, `("parent",`) {
+		t.Errorf("transport missing parent routing parameter extraction in method body:\n%s", transportStr)
+	}
+	if !strings.Contains(transportStr, `("bucket",`) {
+		t.Errorf("transport missing bucket routing parameter extraction in method body:\n%s", transportStr)
 	}
 }

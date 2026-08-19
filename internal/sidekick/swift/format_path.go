@@ -118,3 +118,131 @@ func (*codec) fieldPathParameterExpression(optional bool, field *api.Field) (str
 	}
 	return fmt.Sprintf(".%s as %s?", fieldCodec.Name, fieldCodec.FieldType), nil
 }
+
+// routingParam describes a parameter used for gRPC x-goog-request-params routing metadata.
+type routingParam struct {
+	RoutingKey string
+	Variants   []*routingParamVariant
+}
+
+type routingParamVariant struct {
+	FieldAccessor    string
+	PrefixSegments   []string
+	MatchingSegments []string
+	SuffixSegments   []string
+	Last             bool
+}
+
+func formatFieldAccessor(fieldPath []string) string {
+	if len(fieldPath) == 0 {
+		return "request.name"
+	}
+	var parts []string
+	for _, p := range fieldPath {
+		parts = append(parts, camelCase(p))
+	}
+	return "request." + strings.Join(parts, "?.")
+}
+
+func annotateSegments(segments []string, isPrefix bool, isSuffix bool) []string {
+	if len(segments) == 0 {
+		return nil
+	}
+	var ann []string
+	literalBuffer := ""
+	flushBuffer := func() {
+		if literalBuffer != "" {
+			ann = append(ann, fmt.Sprintf(`.literal(%q)`, literalBuffer))
+		}
+		literalBuffer = ""
+	}
+	for index, segment := range segments {
+		switch segment {
+		case api.MultiSegmentWildcard:
+			flushBuffer()
+			if len(segments) == 1 && !isSuffix {
+				ann = append(ann, ".multiWildcard")
+			} else if len(segments) != index+1 {
+				ann = append(ann, ".multiWildcard")
+			} else {
+				ann = append(ann, ".trailingMultiWildcard")
+			}
+		case api.SingleSegmentWildcard:
+			if index != 0 || isSuffix {
+				literalBuffer += "/"
+			}
+			flushBuffer()
+			ann = append(ann, ".singleWildcard")
+		default:
+			if index != 0 || isSuffix {
+				literalBuffer += "/"
+			}
+			literalBuffer += segment
+		}
+	}
+	if isPrefix && len(segments) > 0 && segments[len(segments)-1] == api.SingleSegmentWildcard {
+		literalBuffer += "/"
+	}
+	flushBuffer()
+	return ann
+}
+
+func (c *codec) routingParamsFromRouting(routingInfos []*api.RoutingInfo) []*routingParam {
+	var params []*routingParam
+	for _, info := range routingInfos {
+		if info.Name == "" && len(info.Variants) > 0 && len(info.Variants[0].FieldPath) == 0 {
+			// Explicit empty routing annotation disables routing headers per AIP-4222.
+			continue
+		}
+		routingKey := info.Name
+
+		var variants []*routingParamVariant
+		for _, variant := range info.Variants {
+			if len(variant.FieldPath) == 0 {
+				continue
+			}
+			if routingKey == "" {
+				routingKey = strings.Join(variant.FieldPath, ".")
+			}
+			variants = append(variants, &routingParamVariant{
+				FieldAccessor:    formatFieldAccessor(variant.FieldPath),
+				PrefixSegments:   annotateSegments(variant.Prefix.Segments, true, false),
+				MatchingSegments: annotateSegments(variant.Matching.Segments, false, false),
+				SuffixSegments:   annotateSegments(variant.Suffix.Segments, false, true),
+			})
+		}
+
+		if len(variants) > 0 {
+			for i, v := range variants {
+				v.Last = (i == len(variants)-1)
+			}
+			params = append(params, &routingParam{
+				RoutingKey: routingKey,
+				Variants:   variants,
+			})
+		}
+	}
+	return params
+}
+
+func (c *codec) routingParamsFromPathTemplate(t *api.PathTemplate) []*routingParam {
+	var params []*routingParam
+	for _, segment := range t.Segments {
+		if segment.Variable != nil {
+			fieldPath := segment.Variable.FieldPath
+			params = append(params, &routingParam{
+				RoutingKey: strings.Join(fieldPath, "."),
+				Variants: []*routingParamVariant{
+					{
+						FieldAccessor:    formatFieldAccessor(fieldPath),
+						PrefixSegments:   nil,
+						MatchingSegments: []string{".multiWildcard"},
+						SuffixSegments:   nil,
+						Last:             true,
+					},
+				},
+			})
+		}
+	}
+	return params
+}
