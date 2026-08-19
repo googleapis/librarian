@@ -54,17 +54,13 @@ func HeaderBulk() []string {
 
 var copyrightYearRegexp = regexp.MustCompile(`Copyright (\d{4})`)
 
-// OldestYear returns the oldest copyright year found in the content.
+// Year returns the first copyright year found in the content.
 // It returns an empty string if no copyright year is found.
-func OldestYear(content []byte) string {
-	var oldest string
-	for _, match := range copyrightYearRegexp.FindAllSubmatch(content, -1) {
+func Year(content []byte) string {
+	if match := copyrightYearRegexp.FindSubmatch(content); match != nil {
 		if len(match) > 1 {
-			year := string(match[1])
-			if oldest == "" || year < oldest {
-				oldest = year
-			}
+			return string(match[1])
 		}
 	}
-	return oldest
+	return ""
 }
