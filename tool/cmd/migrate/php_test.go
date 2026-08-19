@@ -717,3 +717,92 @@ func TestNormalizeStagingSubdir(t *testing.T) {
 		})
 	}
 }
+
+func TestSpecialCases(t *testing.T) {
+	for _, test := range []struct {
+		name string
+		api  *config.API
+		want *config.API
+	}{
+		{
+			name: "iam v1 disables gapic",
+			api: &config.API{
+				Path: "google/iam/v1",
+			},
+			want: &config.API{
+				Path: "google/iam/v1",
+				PHP: &config.PHPAPI{
+					GenerateGAPIC: new(false),
+				},
+			},
+		},
+		{
+			name: "iam v1 with existing php config disables gapic",
+			api: &config.API{
+				Path: "google/iam/v1",
+				PHP: &config.PHPAPI{
+					StagingSubdir: "v1",
+				},
+			},
+			want: &config.API{
+				Path: "google/iam/v1",
+				PHP: &config.PHPAPI{
+					StagingSubdir: "v1",
+					GenerateGAPIC: new(false),
+				},
+			},
+		},
+		{
+			name: "cloud excludes common resources proto",
+			api: &config.API{
+				Path: "google/cloud",
+			},
+			want: &config.API{
+				Path: "google/cloud",
+				PHP: &config.PHPAPI{
+					ExcludedProtos: []string{"google/cloud/common_resources.proto"},
+				},
+			},
+		},
+		{
+			name: "rpc excludes http proto",
+			api: &config.API{
+				Path: "google/rpc",
+			},
+			want: &config.API{
+				Path: "google/rpc",
+				PHP: &config.PHPAPI{
+					ExcludedProtos: []string{"google/rpc/http.proto"},
+				},
+			},
+		},
+		{
+			name: "cloud location disables gapic",
+			api: &config.API{
+				Path: "google/cloud/location",
+			},
+			want: &config.API{
+				Path: "google/cloud/location",
+				PHP: &config.PHPAPI{
+					GenerateGAPIC: new(false),
+				},
+			},
+		},
+		{
+			name: "unmatched api is unchanged",
+			api: &config.API{
+				Path: "google/cloud/secretmanager/v1",
+			},
+			want: &config.API{
+				Path: "google/cloud/secretmanager/v1",
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			specialCases(test.api)
+			if diff := cmp.Diff(test.want, test.api); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
