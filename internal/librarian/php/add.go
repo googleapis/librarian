@@ -23,8 +23,10 @@ import (
 )
 
 // DefaultLibraryName derives the library name for PHP purely from the API path.
+// It strips the Product Area namespace from the library name, unless the remaining name is generic.
 // E.g., "google/cloud/speech/v2" -> "speech"
-// E.g., "google/cloud/security/privateca/v1" -> "security-privateca".
+// E.g., "google/identity/accesscontextmanager/v1" -> "accesscontextmanager"
+// E.g., "google/datastore/admin/v1" -> "datastore-admin"
 func DefaultLibraryName(apiPath string) string {
 	if serviceconfig.ExtractVersion(apiPath) != "" {
 		apiPath = path.Dir(apiPath)
@@ -34,8 +36,14 @@ func DefaultLibraryName(apiPath string) string {
 	if len(parts) >= 3 && parts[0] == "google" {
 		serviceName := parts[len(parts)-1]
 		if serviceName == "admin" || serviceName == "type" {
+			// Do not strip the Product Area (PA) for generic services to prevent collisions.
+			// E.g., "google/datastore/admin" -> "datastore/admin"
+			// E.g., "google/geo/type" -> "geo/type"
 			apiPath = strings.TrimPrefix(apiPath, "google/")
 		} else {
+			// Strip the PA segment unconditionally (e.g., cloud, identity) by removing parts[1].
+			// E.g., "google/cloud/speech" -> "speech"
+			// E.g., "google/identity/accesscontextmanager" -> "accesscontextmanager"
 			apiPath = strings.TrimPrefix(apiPath, "google/"+parts[1]+"/")
 		}
 	} else {
