@@ -839,6 +839,10 @@ type PHPAPI struct {
 	// Must be configured either globally or per-API.
 	CommonResources *bool `yaml:"common_resources,omitempty"`
 
+	// GenerateGAPIC indicates whether to generate the GAPIC client surface.
+	// Defaults to true.
+	GenerateGAPIC *bool `yaml:"generate_gapic,omitempty"`
+
 	// ProtoPackage overrides the derived proto package for the API.
 	ProtoPackage string `yaml:"proto_package,omitempty"`
 
