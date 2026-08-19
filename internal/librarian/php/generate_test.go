@@ -117,8 +117,9 @@ func TestGenerate_GenerateGAPICFalse(t *testing.T) {
 			{
 				Path: "google/cloud/secretmanager/v1",
 				PHP: &config.PHPAPI{
-					GenerateGAPIC: new(false),
-					StagingSubdir: "v1",
+					GenerateGAPIC:   new(false),
+					CommonResources: new(false),
+					StagingSubdir:   "v1",
 				},
 			},
 		},
