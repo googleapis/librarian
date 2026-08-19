@@ -83,7 +83,6 @@ func restoreCopyrightYear(outDir, year string) error {
 	if year == "" {
 		return nil
 	}
-
 	re := regexp.MustCompile(`Copyright \d{4} Google`)
 	err := filepath.WalkDir(outDir, func(path string, d os.DirEntry, err error) error {
 		if err != nil {
