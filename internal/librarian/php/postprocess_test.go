@@ -281,22 +281,22 @@ func TestPostProcess_PHPPostProcessorError(t *testing.T) {
 
 func TestRestoreCopyrightYear(t *testing.T) {
 	for _, test := range []struct {
-		name         string
-		year string
-		content      string
-		want         string
+		name    string
+		year    string
+		content string
+		want    string
 	}{
 		{
-			name:         "success",
-			year: "2026",
-			content:      "<?php\n// Copyright 2024 Google LLC\nclass Example {}\n",
-			want:         "<?php\n// Copyright 2026 Google LLC\nclass Example {}\n",
+			name:    "success",
+			year:    "2026",
+			content: "<?php\n// Copyright 2024 Google LLC\nclass Example {}\n",
+			want:    "<?php\n// Copyright 2026 Google LLC\nclass Example {}\n",
 		},
 		{
-			name:         "empty fallback year skips update",
-			year: "",
-			content:      "<?php\n// Copyright 2024 Google LLC\nclass Example {}\n",
-			want:         "<?php\n// Copyright 2024 Google LLC\nclass Example {}\n",
+			name:    "empty fallback year skips update",
+			year:    "",
+			content: "<?php\n// Copyright 2024 Google LLC\nclass Example {}\n",
+			want:    "<?php\n// Copyright 2024 Google LLC\nclass Example {}\n",
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
