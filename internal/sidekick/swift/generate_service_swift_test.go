@@ -872,8 +872,8 @@ func TestGenerateService_LRO_Empty(t *testing.T) {
 	contentStr := string(content)
 
 	wantContains := []string{
-		"public func deleteWorkflow(withPolling: DeleteWorkflowRequest) async throws -> any GoogleCloudGax.PollableOperation<Void>",
-		"GoogleCloudGax._PollableOperationImpl<Void>",
+		"public func deleteWorkflow(withPolling: DeleteWorkflowRequest) async throws -> any GoogleCloudGax.PollableOperation<Swift.Void>",
+		"GoogleCloudGax._PollableOperationImpl<Swift.Void>",
 	}
 	for _, want := range wantContains {
 		if !strings.Contains(contentStr, want) {
