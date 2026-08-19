@@ -812,7 +812,7 @@ func TestExtractCopyrightYear(t *testing.T) {
 			name:    "beyond max lines limit",
 			libName: "AccessApproval",
 			files: map[string]string{
-				"AccessApproval/src/foo.php": strings.Repeat("<?php\n", 55) + "/*\n * Copyright 2022 Google LLC\n */\n",
+				"AccessApproval/src/foo.php": strings.Repeat("<?php\n", 1000) + "/*\n * Copyright 2022 Google LLC\n */\n",
 			},
 			want: "",
 		},
@@ -831,9 +831,12 @@ func TestExtractCopyrightYear(t *testing.T) {
 				}
 			}
 
-			got := extractCopyrightYear(repoPath, test.libName)
+			got, err := extractOldestCopyrightYear(filepath.Join(repoPath, test.libName))
+			if err != nil {
+				t.Fatalf("extractOldestCopyrightYear() error = %v", err)
+			}
 			if got != test.want {
-				t.Errorf("extractCopyrightYear() = %v, want %v", got, test.want)
+				t.Errorf("extractOldestCopyrightYear() = %v, want %v", got, test.want)
 			}
 		})
 	}

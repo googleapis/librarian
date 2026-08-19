@@ -114,7 +114,7 @@ func restoreCopyrightYear(outDir, originalDir, fallbackYear string) error {
 		origPath := filepath.Join(originalDir, mappedRelPath)
 		// Assuming the current working directory is the repository root (which is true for `librarian generate`).
 		if origContent, err := exec.Command("git", "show", "HEAD:"+filepath.ToSlash(origPath)).CombinedOutput(); err == nil {
-			if year := license.OldestYear(origContent); year != "" {
+			if year := license.Year(origContent); year != "" {
 				yearToUse = year
 			}
 		}
