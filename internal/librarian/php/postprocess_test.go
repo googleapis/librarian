@@ -316,7 +316,7 @@ func TestRestoreCopyrightYear(t *testing.T) {
 				t.Fatal(err)
 			}
 			if diff := cmp.Diff(test.want, string(got)); diff != "" {
-				t.Errorf("restoreCopyrightYear() mismatch (-want +got):\n%s", diff)
+				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
