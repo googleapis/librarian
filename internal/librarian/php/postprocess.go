@@ -23,6 +23,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
+	"os/exec"
 
 	"github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/config"
@@ -96,9 +97,20 @@ func restoreCopyrightYear(outDir, originalDir, fallbackYear string) error {
 			return err
 		}
 
+		mappedRelPath := relPath
+		for _, prefix := range []string{"src/", "tests/", "samples/", "metadata/"} {
+			if idx := strings.Index(filepath.ToSlash(relPath), "/"+prefix); idx != -1 {
+				mappedRelPath = relPath[idx+1:]
+				break
+			} else if strings.HasPrefix(filepath.ToSlash(relPath), prefix) {
+				mappedRelPath = relPath
+				break
+			}
+		}
+
 		yearToUse := fallbackYear
-		origPath := filepath.Join(originalDir, relPath)
-		if origContent, err := os.ReadFile(origPath); err == nil {
+		origPath := filepath.Join(originalDir, mappedRelPath)
+		if origContent, err := exec.Command("git", "show", "HEAD:"+filepath.ToSlash(origPath)).CombinedOutput(); err == nil {
 			if matches := re.FindSubmatch(origContent); len(matches) > 0 {
 				yearRe := regexp.MustCompile(`\d{4}`)
 				if yearMatch := yearRe.Find(matches[0]); yearMatch != nil {
