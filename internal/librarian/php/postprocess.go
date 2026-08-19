@@ -28,6 +28,7 @@ import (
 
 	"github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/license"
 )
 
 var (
@@ -113,11 +114,8 @@ func restoreCopyrightYear(outDir, originalDir, fallbackYear string) error {
 		origPath := filepath.Join(originalDir, mappedRelPath)
 		// Assuming the current working directory is the repository root (which is true for `librarian generate`).
 		if origContent, err := exec.Command("git", "show", "HEAD:"+filepath.ToSlash(origPath)).CombinedOutput(); err == nil {
-			if matches := re.FindSubmatch(origContent); len(matches) > 0 {
-				yearRe := regexp.MustCompile(`\d{4}`)
-				if yearMatch := yearRe.Find(matches[0]); yearMatch != nil {
-					yearToUse = string(yearMatch)
-				}
+			if year := license.OldestYear(origContent); year != "" {
+				yearToUse = year
 			}
 		}
 
