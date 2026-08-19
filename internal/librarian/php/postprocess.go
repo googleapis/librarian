@@ -110,5 +110,5 @@ func updateCopyrightYearInFile(path, year string, re *regexp.Regexp) error {
 	if bytes.Equal(content, updated) {
 		return nil
 	}
-	return os.WriteFile(path, updated, 0644)
+	return os.WriteFile(path, updated, 0o644)
 }

@@ -305,7 +305,7 @@ func TestRestoreCopyrightYear(t *testing.T) {
 			if err := os.MkdirAll(filepath.Dir(testFile), 0755); err != nil {
 				t.Fatal(err)
 			}
-			if err := os.WriteFile(testFile, []byte(test.content), 0644); err != nil {
+			if err := os.WriteFile(testFile, []byte(test.content), 0o644); err != nil {
 				t.Fatal(err)
 			}
 			if err := restoreCopyrightYear(outDir, test.fallbackYear); err != nil {
