@@ -580,7 +580,7 @@ deep-copy-regex:
 			globalDefaultCommonResources: true,
 			want: []*config.Library{
 				{
-					Name:    "identity-accesscontextmanager",
+					Name:    "accesscontextmanager",
 					Version: "1.0.0",
 					Output:  "AccessContextManager",
 					PHP: &config.PHPPackage{

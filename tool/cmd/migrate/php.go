@@ -22,6 +22,7 @@ import (
 	"io/fs"
 	"log"
 	"os"
+	"path"
 	"path/filepath"
 	"regexp"
 	"slices"
@@ -31,6 +32,7 @@ import (
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/librarian"
 	"github.com/googleapis/librarian/internal/librarian/php"
+	"github.com/googleapis/librarian/internal/serviceconfig"
 	"github.com/googleapis/librarian/internal/yaml"
 )
 
@@ -260,7 +262,7 @@ func findPHPLibraries(repoPath string, googleapisDir string, globalDefaultCommon
 		if len(apis) == 0 {
 			continue
 		}
-		libraryName := php.DefaultLibraryName(apis[0].Path)
+		libraryName := deriveMigratedLibraryName(apis[0].Path)
 		lib := &config.Library{
 			Name:    libraryName,
 			Version: version,
@@ -369,4 +371,27 @@ func normalizeStagingSubdir(apiPath, stagingDir string) string {
 		return ""
 	}
 	return stagingDir
+}
+
+// deriveMigratedLibraryName derives the library name from the API path for migration.
+// It strips the PA segment (e.g. cloud, identity, geo) to conform to the new naming scheme.
+func deriveMigratedLibraryName(apiPath string) string {
+	if serviceconfig.ExtractVersion(apiPath) != "" {
+		apiPath = path.Dir(apiPath)
+	}
+
+	parts := strings.Split(apiPath, "/")
+	if len(parts) >= 3 && parts[0] == "google" {
+		serviceName := parts[len(parts)-1]
+		if serviceName == "admin" || serviceName == "type" {
+			apiPath = strings.TrimPrefix(apiPath, "google/")
+		} else {
+			apiPath = strings.TrimPrefix(apiPath, "google/"+parts[1]+"/")
+		}
+	} else {
+		apiPath = strings.TrimPrefix(apiPath, "google/")
+	}
+
+	apiPath = strings.ReplaceAll(apiPath, "/", "-")
+	return strings.ToLower(apiPath)
 }
