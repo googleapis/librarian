@@ -294,8 +294,8 @@ func gatherMainProtos(googleapisDir, apiPath string, excludeProtos []string) ([]
 
 func filterProtos(googleapisDir string, protos, excludeProtos []string) []string {
 	for _, exclude := range excludeProtos {
-		fullPath := filepath.Join(googleapisDir, exclude)
-		slices.DeleteFunc(protos, func(p string) bool {
+		fullPath := filepath.Join(googleapisDir, filepath.FromSlash(exclude))
+		protos = slices.DeleteFunc(protos, func(p string) bool {
 			return p == fullPath
 		})
 	}

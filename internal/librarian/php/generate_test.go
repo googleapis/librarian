@@ -445,6 +445,7 @@ func TestGatherGAPICProtos(t *testing.T) {
 		setupFiles             []string
 		apiPath                string
 		additionalProtos       []string
+		excludeProtos          []string
 		includeCommonResources bool
 		wantProtos             []string
 	}{
@@ -494,6 +495,20 @@ func TestGatherGAPICProtos(t *testing.T) {
 				"google/cloud/location/locations.proto",
 			},
 		},
+		{
+			name: "excluded protos removed",
+			setupFiles: []string{
+				"google/cloud/secretmanager/v1/service.proto",
+				"google/cloud/secretmanager/v1/resources.proto",
+			},
+			apiPath: "google/cloud/secretmanager/v1",
+			excludeProtos: []string{
+				"google/cloud/secretmanager/v1/resources.proto",
+			},
+			wantProtos: []string{
+				"google/cloud/secretmanager/v1/service.proto",
+			},
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			tempDir := t.TempDir()
@@ -506,7 +521,7 @@ func TestGatherGAPICProtos(t *testing.T) {
 					t.Fatal(err)
 				}
 			}
-			got, err := gatherGAPICProtos(tempDir, test.apiPath, test.additionalProtos, test.includeCommonResources)
+			got, err := gatherGAPICProtos(tempDir, test.apiPath, test.additionalProtos, test.excludeProtos, test.includeCommonResources)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -523,10 +538,11 @@ func TestGatherGAPICProtos(t *testing.T) {
 
 func TestGatherGAPICProtos_Error(t *testing.T) {
 	for _, test := range []struct {
-		name       string
-		setupFiles []string
-		apiPath    string
-		wantErr    error
+		name          string
+		setupFiles    []string
+		apiPath       string
+		excludeProtos []string
+		wantErr       error
 	}{
 		{
 			name:       "directory not found",
@@ -540,6 +556,17 @@ func TestGatherGAPICProtos_Error(t *testing.T) {
 			apiPath:    "google/cloud/secretmanager/v1",
 			wantErr:    errNoProtos,
 		},
+		{
+			name: "all protos excluded",
+			setupFiles: []string{
+				"google/cloud/secretmanager/v1/service.proto",
+			},
+			apiPath: "google/cloud/secretmanager/v1",
+			excludeProtos: []string{
+				"google/cloud/secretmanager/v1/service.proto",
+			},
+			wantErr: errNoProtos,
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			tempDir := t.TempDir()
@@ -552,9 +579,48 @@ func TestGatherGAPICProtos_Error(t *testing.T) {
 					t.Fatal(err)
 				}
 			}
-			_, err := gatherGAPICProtos(tempDir, test.apiPath, nil, true)
+			_, err := gatherGAPICProtos(tempDir, test.apiPath, nil, test.excludeProtos, true)
 			if !errors.Is(err, test.wantErr) {
 				t.Errorf("gatherGAPICProtos() error = %v, wantErr = %v", err, test.wantErr)
+			}
+		})
+	}
+}
+
+func TestFilterProtos(t *testing.T) {
+	for _, test := range []struct {
+		name          string
+		protos        []string
+		excludeProtos []string
+		want          []string
+	}{
+		{
+			name: "exclude matches",
+			protos: []string{
+				"/path/to/google/cloud/secretmanager/v1/service.proto",
+				"/path/to/google/cloud/secretmanager/v1/resources.proto",
+			},
+			excludeProtos: []string{
+				"google/cloud/secretmanager/v1/resources.proto",
+			},
+			want: []string{
+				"/path/to/google/cloud/secretmanager/v1/service.proto",
+			},
+		},
+		{
+			name: "no exclude",
+			protos: []string{
+				"/path/to/google/cloud/secretmanager/v1/service.proto",
+			},
+			want: []string{
+				"/path/to/google/cloud/secretmanager/v1/service.proto",
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := filterProtos("/path/to", test.protos, test.excludeProtos)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
