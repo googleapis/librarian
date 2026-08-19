@@ -379,7 +379,6 @@ func deriveMigratedLibraryName(apiPath string) string {
 	if serviceconfig.ExtractVersion(apiPath) != "" {
 		apiPath = path.Dir(apiPath)
 	}
-
 	parts := strings.Split(apiPath, "/")
 	if len(parts) >= 3 && parts[0] == "google" {
 		serviceName := parts[len(parts)-1]
