@@ -36,7 +36,7 @@ func TestUsedByServicesWithServices(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	resolveUsedPackages(model, c.extraPackages)
+	resolveUsedPackages(model, c.extraPackages, c.hasBidiStreaming(model))
 	want := []*packagez{
 		{
 			name:        "location",
@@ -64,7 +64,7 @@ func TestUsedByServicesNoServices(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	resolveUsedPackages(model, c.extraPackages)
+	resolveUsedPackages(model, c.extraPackages, c.hasBidiStreaming(model))
 	want := []*packagez{
 		{
 			name:        "location",
@@ -73,6 +73,7 @@ func TestUsedByServicesNoServices(t *testing.T) {
 		{
 			name:        "tracing",
 			packageName: "tracing",
+			used:        false,
 			usedIf:      []string{"services"},
 		},
 	}
@@ -100,7 +101,7 @@ func TestUsedByLROsWithLRO(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	resolveUsedPackages(model, c.extraPackages)
+	resolveUsedPackages(model, c.extraPackages, c.hasBidiStreaming(model))
 	want := []*packagez{
 		{
 			name:        "location",
@@ -136,7 +137,7 @@ func TestUsedByLROsWithoutLRO(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	resolveUsedPackages(model, c.extraPackages)
+	resolveUsedPackages(model, c.extraPackages, c.hasBidiStreaming(model))
 	want := []*packagez{
 		{
 			name:        "location",
@@ -176,7 +177,7 @@ func TestUsedByUuidWithAutoPopulation(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	resolveUsedPackages(model, c.extraPackages)
+	resolveUsedPackages(model, c.extraPackages, c.hasBidiStreaming(model))
 	want := []*packagez{
 		{
 			name:        "location",
@@ -213,7 +214,7 @@ func TestUsedByUuidWithoutAutoPopulation(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	resolveUsedPackages(model, c.extraPackages)
+	resolveUsedPackages(model, c.extraPackages, c.hasBidiStreaming(model))
 	want := []*packagez{
 		{
 			name:        "location",
@@ -225,6 +226,160 @@ func TestUsedByUuidWithoutAutoPopulation(t *testing.T) {
 			used:        false,
 			usedIf:      []string{"autopopulated"},
 			features:    []string{"v4"},
+		},
+	}
+	less := func(a, b *packagez) bool { return a.name < b.name }
+	if diff := cmp.Diff(want, c.extraPackages, cmp.AllowUnexported(packagez{}), cmpopts.SortSlices(less)); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+}
+
+func TestUsedByStreamingWithStreaming(t *testing.T) {
+	method := &api.Method{
+		Name:                "Chat",
+		ClientSideStreaming: true,
+		ServerSideStreaming: true,
+	}
+	service := &api.Service{
+		Name:    "TestService",
+		ID:      ".test.Service",
+		Methods: []*api.Method{method},
+	}
+	model := api.NewTestAPI([]*api.Message{}, []*api.Enum{}, []*api.Service{service})
+	c, err := newCodec(libconfig.SpecProtobuf, map[string]string{
+		"include-bidi-streaming-methods": "true",
+		"package:location":               "package=gcp-sdk-location,source=google.cloud.location",
+		"package:prost":                  "used-if=streaming,package=prost",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	resolveUsedPackages(model, c.extraPackages, c.hasBidiStreaming(model))
+	want := []*packagez{
+		{
+			name:        "location",
+			packageName: "gcp-sdk-location",
+		},
+		{
+			name:        "prost",
+			packageName: "prost",
+			used:        true,
+			usedIf:      []string{"streaming"},
+		},
+	}
+	less := func(a, b *packagez) bool { return a.name < b.name }
+	if diff := cmp.Diff(want, c.extraPackages, cmp.AllowUnexported(packagez{}), cmpopts.SortSlices(less)); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+}
+
+func TestUsedByStreamingWithoutStreaming(t *testing.T) {
+	method := &api.Method{
+		Name: "CreateResource",
+	}
+	service := &api.Service{
+		Name:    "TestService",
+		ID:      ".test.Service",
+		Methods: []*api.Method{method},
+	}
+	model := api.NewTestAPI([]*api.Message{}, []*api.Enum{}, []*api.Service{service})
+	c, err := newCodec(libconfig.SpecProtobuf, map[string]string{
+		"include-bidi-streaming-methods": "true",
+		"package:location":               "package=gcp-sdk-location,source=google.cloud.location",
+		"package:prost":                  "used-if=streaming,package=prost",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	resolveUsedPackages(model, c.extraPackages, c.hasBidiStreaming(model))
+	want := []*packagez{
+		{
+			name:        "location",
+			packageName: "gcp-sdk-location",
+		},
+		{
+			name:        "prost",
+			packageName: "prost",
+			used:        false,
+			usedIf:      []string{"streaming"},
+		},
+	}
+	less := func(a, b *packagez) bool { return a.name < b.name }
+	if diff := cmp.Diff(want, c.extraPackages, cmp.AllowUnexported(packagez{}), cmpopts.SortSlices(less)); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+}
+
+func TestUsedByStreamingServerStreamingOnly(t *testing.T) {
+	method := &api.Method{
+		Name:                "ServerStream",
+		ClientSideStreaming: false,
+		ServerSideStreaming: true,
+	}
+	service := &api.Service{
+		Name:    "TestService",
+		ID:      ".test.Service",
+		Methods: []*api.Method{method},
+	}
+	model := api.NewTestAPI([]*api.Message{}, []*api.Enum{}, []*api.Service{service})
+	c, err := newCodec(libconfig.SpecProtobuf, map[string]string{
+		"include-bidi-streaming-methods": "true",
+		"package:location":               "package=gcp-sdk-location,source=google.cloud.location",
+		"package:prost":                  "used-if=streaming,package=prost",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	resolveUsedPackages(model, c.extraPackages, c.hasBidiStreaming(model))
+	want := []*packagez{
+		{
+			name:        "location",
+			packageName: "gcp-sdk-location",
+		},
+		{
+			name:        "prost",
+			packageName: "prost",
+			used:        false,
+			usedIf:      []string{"streaming"},
+		},
+	}
+	less := func(a, b *packagez) bool { return a.name < b.name }
+	if diff := cmp.Diff(want, c.extraPackages, cmp.AllowUnexported(packagez{}), cmpopts.SortSlices(less)); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+}
+
+func TestUsedByStreamingBidiDisabled(t *testing.T) {
+	method := &api.Method{
+		Name:                "Chat",
+		ClientSideStreaming: true,
+		ServerSideStreaming: true,
+	}
+	service := &api.Service{
+		Name:    "TestService",
+		ID:      ".test.Service",
+		Methods: []*api.Method{method},
+	}
+	model := api.NewTestAPI([]*api.Message{}, []*api.Enum{}, []*api.Service{service})
+	c, err := newCodec(libconfig.SpecProtobuf, map[string]string{
+		"include-bidi-streaming-methods": "false",
+		"package:location":               "package=gcp-sdk-location,source=google.cloud.location",
+		"package:prost":                  "used-if=streaming,package=prost",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	resolveUsedPackages(model, c.extraPackages, c.hasBidiStreaming(model))
+	want := []*packagez{
+		{
+			name:        "location",
+			packageName: "gcp-sdk-location",
+		},
+		{
+			name:        "prost",
+			packageName: "prost",
+			used:        false,
+			usedIf:      []string{"streaming"},
 		},
 	}
 	less := func(a, b *packagez) bool { return a.name < b.name }

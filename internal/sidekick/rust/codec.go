@@ -391,7 +391,7 @@ type packagez struct {
 	usedIf []string
 }
 
-func resolveUsedPackages(model *api.API, extraPackages []*packagez) {
+func resolveUsedPackages(model *api.API, extraPackages []*packagez, hasBidiStreaming bool) {
 	hasServices := len(model.Services) > 0
 	hasLROs := false
 	hasAutoPopulation := false
@@ -423,6 +423,10 @@ func resolveUsedPackages(model *api.API, extraPackages []*packagez) {
 				break
 			}
 			if namedFeature == "autopopulated" && hasAutoPopulation {
+				pkg.used = true
+				break
+			}
+			if namedFeature == "streaming" && hasBidiStreaming {
 				pkg.used = true
 				break
 			}
@@ -1554,6 +1558,13 @@ func (c *codec) generateMethod(m *api.Method) bool {
 		return false
 	}
 	return m.PathInfo.Bindings[0].PathTemplate != nil
+}
+
+func (c *codec) hasBidiStreaming(model *api.API) bool {
+	if c.templateOverride != "" || !c.includeBidiStreamingMethods {
+		return false
+	}
+	return slices.ContainsFunc(model.Services, (*api.Service).HasBidiStreaming)
 }
 
 // escapeKeyword is the list of Rust keywords and reserved words can be found

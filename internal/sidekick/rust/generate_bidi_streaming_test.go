@@ -69,6 +69,8 @@ func TestGenerateBidiStreaming(t *testing.T) {
 		SpecificationFormat: libconfig.SpecProtobuf,
 		Codec: map[string]string{
 			"package:wkt":                    "source=google.protobuf,package=google-cloud-wkt",
+			"package:prost":                  "package=prost,used-if=streaming",
+			"package:prost-types":            "package=prost-types,used-if=streaming",
 			"include-bidi-streaming-methods": "true",
 			"generate-rpc-samples":           "true",
 		},
@@ -289,6 +291,16 @@ func TestGenerateBidiStreaming(t *testing.T) {
                 x_goog_request_params,
             )
     }`,
+		},
+		{
+			name:     "cargo.toml: dependencies block",
+			file:     "Cargo.toml",
+			startStr: "[dependencies]\n",
+			endStr:   "prost.workspace      = true\n",
+			want: `[dependencies]
+prost-types.workspace = true
+prost.workspace      = true
+`,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
