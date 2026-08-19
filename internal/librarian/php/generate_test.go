@@ -17,6 +17,7 @@ package php
 import (
 	"errors"
 	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"testing"
@@ -80,6 +81,64 @@ func TestGenerate(t *testing.T) {
 		p := filepath.Join(library.Output, dir)
 		if stat, err := os.Stat(p); err != nil || !stat.IsDir() {
 			t.Errorf("expected directory %s to exist and be a directory", p)
+		}
+	}
+}
+
+func TestGenerate_GenerateGAPICFalse(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping slow integration test")
+	}
+	requirePHPGenerator(t)
+	googleapisDir := "../../testdata/googleapis"
+	absGoogleapis, err := filepath.Abs(googleapisDir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	absOwlbotCopy, err := filepath.Abs(filepath.Join("testdata", "owlbot_copy.py"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	repoRoot := t.TempDir()
+	t.Chdir(repoRoot)
+	destDir := filepath.Join(repoRoot, "SecretManager")
+	if err := os.MkdirAll(destDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	// Symlink mock owlbot.py. Tests use a simplified copy-only stub to
+	// avoid Node.js/prettier dependencies.
+	if err := os.Symlink(absOwlbotCopy, filepath.Join(destDir, "owlbot.py")); err != nil {
+		t.Fatal(err)
+	}
+	library := &config.Library{
+		Name:   "secretmanager",
+		Output: destDir,
+		APIs: []*config.API{
+			{
+				Path: "google/cloud/secretmanager/v1",
+				PHP: &config.PHPAPI{
+					GenerateGAPIC: new(false),
+					StagingSubdir: "v1",
+				},
+			},
+		},
+	}
+	cfg := &config.Config{
+		Language: config.LanguagePhp,
+	}
+	err = Generate(t.Context(), cfg, library, &sources.Sources{Googleapis: absGoogleapis})
+	if err != nil {
+		t.Fatal(err)
+	}
+	// Verify output: proto directory exists, but GAPIC output directories do not.
+	protoDir := filepath.Join(library.Output, "proto")
+	if stat, err := os.Stat(protoDir); err != nil || !stat.IsDir() {
+		t.Errorf("expected directory %s to exist and be a directory", protoDir)
+	}
+	for _, dir := range []string{"tests", "samples", "fragments"} {
+		p := filepath.Join(library.Output, dir)
+		if _, err := os.Stat(p); !errors.Is(err, fs.ErrNotExist) {
+			t.Errorf("expected directory %s to not exist", p)
 		}
 	}
 }
