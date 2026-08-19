@@ -15,6 +15,7 @@
 package main
 
 import (
+	"bufio"
 	"context"
 	_ "embed"
 	"errors"
@@ -379,13 +380,26 @@ func extractCopyrightYear(repoPath, libName string) string {
 		if err != nil || d.IsDir() || !strings.HasSuffix(path, ".php") {
 			return nil
 		}
-		content, err := os.ReadFile(path)
-		if err == nil {
-			for _, match := range re.FindAllSubmatch(content, -1) {
+		f, err := os.Open(path)
+		if err != nil {
+			return nil
+		}
+		defer f.Close()
+
+		scanner := bufio.NewScanner(f)
+		linesChecked := 0
+		for scanner.Scan() {
+			if linesChecked >= 50 {
+				break
+			}
+			linesChecked++
+
+			if match := re.FindSubmatch(scanner.Bytes()); match != nil {
 				year := string(match[1])
 				if minYear == "" || year < minYear {
 					minYear = year
 				}
+				break // Found the copyright year in this file, no need to keep scanning it
 			}
 		}
 		return nil

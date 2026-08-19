@@ -20,10 +20,10 @@ import (
 	"fmt"
 	"io/fs"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"regexp"
 	"strings"
-	"os/exec"
 
 	"github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/config"
@@ -81,7 +81,7 @@ func runPostProcessors(ctx context.Context, library *config.Library, stagingDir,
 // restoreCopyrightYear replaces the copyright year in generated source files.
 func restoreCopyrightYear(outDir, originalDir, fallbackYear string) error {
 	re := regexp.MustCompile(`Copyright \d{4} Google`)
-	return filepath.WalkDir(outDir, func(path string, d os.DirEntry, err error) error {
+	err := filepath.WalkDir(outDir, func(path string, d os.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
@@ -110,6 +110,7 @@ func restoreCopyrightYear(outDir, originalDir, fallbackYear string) error {
 
 		yearToUse := fallbackYear
 		origPath := filepath.Join(originalDir, mappedRelPath)
+		// Assuming the current working directory is the repository root (which is true for `librarian generate`).
 		if origContent, err := exec.Command("git", "show", "HEAD:"+filepath.ToSlash(origPath)).CombinedOutput(); err == nil {
 			if matches := re.FindSubmatch(origContent); len(matches) > 0 {
 				yearRe := regexp.MustCompile(`\d{4}`)
@@ -131,4 +132,8 @@ func restoreCopyrightYear(outDir, originalDir, fallbackYear string) error {
 		updated := re.ReplaceAll(content, replacement)
 		return os.WriteFile(path, updated, 0644)
 	})
+	if err != nil && errors.Is(err, fs.ErrNotExist) {
+		return nil
+	}
+	return err
 }

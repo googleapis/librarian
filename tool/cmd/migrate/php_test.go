@@ -19,6 +19,7 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -713,6 +714,70 @@ func TestNormalizeStagingSubdir(t *testing.T) {
 			got := normalizeStagingSubdir(test.apiPath, test.stagingDir)
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestExtractCopyrightYear(t *testing.T) {
+	tests := []struct {
+		name    string
+		files   map[string]string // map of filename -> content
+		libName string
+		want    string
+	}{
+		{
+			name:    "single file with copyright",
+			libName: "AccessApproval",
+			files: map[string]string{
+				"AccessApproval/src/foo.php": "<?php\n/*\n * Copyright 2024 Google LLC\n */\n",
+			},
+			want: "2024",
+		},
+		{
+			name:    "multiple files returning minimum year",
+			libName: "AccessApproval",
+			files: map[string]string{
+				"AccessApproval/src/foo.php": "<?php\n/*\n * Copyright 2024 Google LLC\n */\n",
+				"AccessApproval/src/bar.php": "<?php\n/*\n * Copyright 2022 Google LLC\n */\n",
+				"AccessApproval/src/baz.php": "<?php\n/*\n * Copyright 2026 Google LLC\n */\n",
+			},
+			want: "2022",
+		},
+		{
+			name:    "no matches",
+			libName: "AccessApproval",
+			files: map[string]string{
+				"AccessApproval/src/foo.php": "<?php\n/*\n * No copyright string here\n */\n",
+			},
+			want: "",
+		},
+		{
+			name:    "beyond max lines limit",
+			libName: "AccessApproval",
+			files: map[string]string{
+				"AccessApproval/src/foo.php": strings.Repeat("<?php\n", 55) + "/*\n * Copyright 2022 Google LLC\n */\n",
+			},
+			want: "",
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			repoPath := t.TempDir()
+			for path, content := range test.files {
+				fullPath := filepath.Join(repoPath, path)
+				if err := os.MkdirAll(filepath.Dir(fullPath), 0755); err != nil {
+					t.Fatalf("failed to create dir: %v", err)
+				}
+				if err := os.WriteFile(fullPath, []byte(content), 0644); err != nil {
+					t.Fatalf("failed to write file: %v", err)
+				}
+			}
+
+			got := extractCopyrightYear(repoPath, test.libName)
+			if got != test.want {
+				t.Errorf("extractCopyrightYear() = %v, want %v", got, test.want)
 			}
 		})
 	}
