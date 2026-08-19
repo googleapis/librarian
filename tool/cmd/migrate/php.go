@@ -390,7 +390,6 @@ func deriveMigratedLibraryName(apiPath string) string {
 	} else {
 		apiPath = strings.TrimPrefix(apiPath, "google/")
 	}
-
 	apiPath = strings.ReplaceAll(apiPath, "/", "-")
 	return strings.ToLower(apiPath)
 }
