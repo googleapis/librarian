@@ -262,10 +262,11 @@ func findPHPLibraries(repoPath string, googleapisDir string, globalDefaultCommon
 		}
 		libraryName := php.DefaultLibraryName(apis[0].Path)
 		lib := &config.Library{
-			Name:    libraryName,
-			Version: version,
-			APIs:    apis,
-			Output:  name,
+			Name:          libraryName,
+			Version:       version,
+			APIs:          apis,
+			Output:        name,
+			CopyrightYear: extractCopyrightYear(repoPath, name),
 		}
 		derivedComp, err := php.ComponentNameForLibrary(googleapisDir, lib)
 		if err != nil {
@@ -369,4 +370,25 @@ func normalizeStagingSubdir(apiPath, stagingDir string) string {
 		return ""
 	}
 	return stagingDir
+}
+func extractCopyrightYear(repoPath, libName string) string {
+	dir := filepath.Join(repoPath, libName)
+	var minYear string
+	re := regexp.MustCompile(`Copyright (\d{4}) Google`)
+	filepath.WalkDir(dir, func(path string, d fs.DirEntry, err error) error {
+		if err != nil || d.IsDir() || !strings.HasSuffix(path, ".php") {
+			return nil
+		}
+		content, err := os.ReadFile(path)
+		if err == nil {
+			for _, match := range re.FindAllSubmatch(content, -1) {
+				year := string(match[1])
+				if minYear == "" || year < minYear {
+					minYear = year
+				}
+			}
+		}
+		return nil
+	})
+	return minYear
 }
