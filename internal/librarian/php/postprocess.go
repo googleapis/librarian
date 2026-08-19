@@ -15,6 +15,7 @@
 package php
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
@@ -130,6 +131,9 @@ func restoreCopyrightYear(outDir, originalDir, fallbackYear string) error {
 		}
 		replacement := []byte(fmt.Sprintf("Copyright %s Google", yearToUse))
 		updated := re.ReplaceAll(content, replacement)
+		if bytes.Equal(content, updated) {
+			return nil
+		}
 		return os.WriteFile(path, updated, 0644)
 	})
 	if err != nil && errors.Is(err, fs.ErrNotExist) {
