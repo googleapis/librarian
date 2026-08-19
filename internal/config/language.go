@@ -839,6 +839,11 @@ type PHPAPI struct {
 	// Must be configured either globally or per-API.
 	CommonResources *bool `yaml:"common_resources,omitempty"`
 
+	// ExcludedProtos is a list of proto files to exclude from generation.
+	// It expects the full path starting from the root of the googleapis
+	// directory (e.g., "google/cloud/aiplatform/v1/schema/io_format.proto").
+	ExcludedProtos []string `yaml:"excluded_protos,omitempty"`
+
 	// GenerateGAPIC indicates whether to generate the GAPIC client surface.
 	// Defaults to true.
 	GenerateGAPIC *bool `yaml:"generate_gapic,omitempty"`
