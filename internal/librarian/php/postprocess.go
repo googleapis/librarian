@@ -57,7 +57,7 @@ func postProcessLibrary(ctx context.Context, library *config.Library, componentN
 	if err := runPostProcessors(ctx, library, stagingDir, postProcessor); err != nil {
 		return err
 	}
-	if err := restoreCopyrightYear(stagingDir, library.CopyrightYear); err != nil {
+	if err := restoreCopyrightYear(stagingDir, componentName, library.CopyrightYear); err != nil {
 		return err
 	}
 	if err := command.RunInDir(ctx, componentName, "python3", "owlbot.py"); err != nil {
@@ -78,12 +78,8 @@ func runPostProcessors(ctx context.Context, library *config.Library, stagingDir,
 }
 
 // restoreCopyrightYear replaces the copyright year in generated source files.
-func restoreCopyrightYear(outDir, year string) error {
-	if year == "" {
-		return nil
-	}
+func restoreCopyrightYear(outDir, originalDir, fallbackYear string) error {
 	re := regexp.MustCompile(`Copyright \d{4} Google`)
-	replacement := fmt.Appendf(nil, "Copyright %s Google", year)
 	return filepath.WalkDir(outDir, func(path string, d os.DirEntry, err error) error {
 		if err != nil {
 			return err
@@ -94,10 +90,32 @@ func restoreCopyrightYear(outDir, year string) error {
 		if !strings.HasSuffix(path, ".php") {
 			return nil
 		}
+
+		relPath, err := filepath.Rel(outDir, path)
+		if err != nil {
+			return err
+		}
+
+		yearToUse := fallbackYear
+		origPath := filepath.Join(originalDir, relPath)
+		if origContent, err := os.ReadFile(origPath); err == nil {
+			if matches := re.FindSubmatch(origContent); len(matches) > 0 {
+				yearRe := regexp.MustCompile(`\d{4}`)
+				if yearMatch := yearRe.Find(matches[0]); yearMatch != nil {
+					yearToUse = string(yearMatch)
+				}
+			}
+		}
+
+		if yearToUse == "" {
+			return nil
+		}
+
 		content, err := os.ReadFile(path)
 		if err != nil {
 			return fmt.Errorf("reading %s: %w", path, err)
 		}
+		replacement := []byte(fmt.Sprintf("Copyright %s Google", yearToUse))
 		updated := re.ReplaceAll(content, replacement)
 		return os.WriteFile(path, updated, 0644)
 	})
