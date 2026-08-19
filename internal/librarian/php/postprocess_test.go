@@ -280,7 +280,7 @@ func TestPostProcess_PHPPostProcessorError(t *testing.T) {
 }
 
 func TestRestoreCopyrightYear(t *testing.T) {
-	tests := []struct {
+	for _, test := range []struct {
 		name         string
 		fallbackYear string
 		content      string
@@ -298,9 +298,7 @@ func TestRestoreCopyrightYear(t *testing.T) {
 			content:      "<?php\n// Copyright 2024 Google LLC\nclass Example {}\n",
 			want:         "<?php\n// Copyright 2024 Google LLC\nclass Example {}\n",
 		},
-	}
-
-	for _, test := range tests {
+	} {
 		t.Run(test.name, func(t *testing.T) {
 			outDir := t.TempDir()
 
