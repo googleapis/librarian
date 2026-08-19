@@ -271,12 +271,12 @@ func TestGenerateBidiStreaming(t *testing.T) {
     ) -> (`,
 		},
 		{
-			name:     "transport: bidi_streaming call",
+			name:     "transport: execute_bidi_streaming call",
 			file:     "src/transport.rs",
-			startStr: "        self.grpc_inner\n            .bidi_streaming::<",
+			startStr: "        self.grpc_inner\n            .execute_bidi_streaming::<",
 			endStr:   "x_goog_request_params,\n            )\n    }",
 			want: `        self.grpc_inner
-            .bidi_streaming::<
+            .execute_bidi_streaming::<
                 crate::model::Request,
                 crate::model::Response,
                 crate::prost::test::v1::Request,

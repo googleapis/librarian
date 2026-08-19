@@ -152,7 +152,7 @@ impl super::stub::{{Codec.Name}} for {{Codec.Name}} {
         );
 
         self.grpc_inner
-            .bidi_streaming::<
+            .execute_bidi_streaming::<
                 {{InputType.Codec.QualifiedName}},
                 {{OutputType.Codec.QualifiedName}},
                 crate::prost::{{InputType.Codec.PackageModuleName}}::{{InputType.Codec.Name}},
