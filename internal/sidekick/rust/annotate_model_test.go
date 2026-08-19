@@ -659,11 +659,9 @@ func TestModelAnnotationsHasBidiStreaming(t *testing.T) {
 					t.Errorf("mismatch (-want +got):\n%s", diff)
 				}
 			}
-			if len(test.wantRequiredPackages) > 0 {
-				less := func(a, b string) bool { return a < b }
-				if diff := cmp.Diff(test.wantRequiredPackages, got.RequiredPackages, cmpopts.SortSlices(less)); diff != "" {
-					t.Errorf("RequiredPackages mismatch (-want +got):\n%s", diff)
-				}
+			less := func(a, b string) bool { return a < b }
+			if diff := cmp.Diff(test.wantRequiredPackages, got.RequiredPackages, cmpopts.SortSlices(less), cmpopts.EquateEmpty()); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
