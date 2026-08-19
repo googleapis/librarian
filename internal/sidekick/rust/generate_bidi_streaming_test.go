@@ -327,11 +327,11 @@ func TestGenerateBidiStreaming(t *testing.T) {
                 async move {
                     let prost_item = item
                         .to_proto()
-                        .map_err(google_cloud_gax::error::Error::ser)?;
+                        .map_err(google_cloud_gax::streaming::SendError::ser)?;
                     req_tx
                         .send(prost_item)
                         .await
-                        .map_err(|_| google_cloud_gax::streaming::SendError::StreamClosed)
+                        .map_err(|_| google_cloud_gax::streaming::SendError::stream_closed())
                 }
             },
         );
