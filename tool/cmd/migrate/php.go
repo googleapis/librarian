@@ -370,5 +370,3 @@ func normalizeStagingSubdir(apiPath, stagingDir string) string {
 	}
 	return stagingDir
 }
-
-

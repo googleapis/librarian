@@ -50,5 +50,3 @@ func HeaderBulk() []string {
 		" limitations under the License.",
 	}
 }
-
-

@@ -717,4 +717,3 @@ func TestNormalizeStagingSubdir(t *testing.T) {
 		})
 	}
 }
-
