@@ -34,6 +34,7 @@ func libraryToModelConfig(library *config.Library, ch *config.API, srcs *sources
 	src := sources.NewSourceConfig(srcs, library.Roots)
 	root := srcs.Googleapis
 	if ch.Path == "schema/google/showcase/v1beta1" {
+		// TODO(https://github.com/googleapis/librarian/issues/7337) - clean this up
 		root = srcs.Showcase
 	}
 	svcConfig, err := serviceconfig.Find(root, ch.Path, config.LanguageRust)

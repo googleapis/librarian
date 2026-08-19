@@ -105,12 +105,16 @@ func DefaultLibraryName(api string) string {
 }
 
 func libraryToModelConfig(library *config.Library, apiCfg *config.API, src *sources.Sources, pc *config.Protoc) (*parser.ModelConfig, error) {
-	svcConfig, err := serviceconfig.Find(src.Googleapis, apiCfg.Path, config.LanguageSwift)
+	sourceConfig := sources.NewSourceConfig(src, library.Roots)
+	root := src.Googleapis
+	if apiCfg.Path == "schema/google/showcase/v1beta1" {
+		// TODO(https://github.com/googleapis/librarian/issues/7337) - clean this up
+		root = src.Showcase
+	}
+	svcConfig, err := serviceconfig.Find(root, apiCfg.Path, config.LanguageSwift)
 	if err != nil {
 		return nil, err
 	}
-
-	sourceConfig := sources.NewSourceConfig(src, library.Roots)
 	if library.Swift != nil && len(library.Swift.IncludeList) > 0 {
 		sourceConfig.IncludeList = library.Swift.IncludeList
 	}
