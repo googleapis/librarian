@@ -94,7 +94,7 @@ func restoreCopyrightYear(outDir, yearToUse string) error {
 		}
 		return updateCopyrightYearInFile(path, yearToUse, re)
 	})
-	if err != nil && errors.Is(err, fs.ErrNotExist) {
+	if errors.Is(err, fs.ErrNotExist) {
 		return nil
 	}
 	return err
