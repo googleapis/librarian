@@ -278,3 +278,52 @@ func TestPostProcess_PHPPostProcessorError(t *testing.T) {
 		t.Fatalf("expected exit error, got: %v", err)
 	}
 }
+
+func TestRestoreCopyrightYear(t *testing.T) {
+	tests := []struct {
+		name         string
+		fallbackYear string
+		content      string
+		want         string
+	}{
+		{
+			name:         "success",
+			fallbackYear: "2026",
+			content:      "<?php\n// Copyright 2024 Google LLC\nclass Example {}\n",
+			want:         "<?php\n// Copyright 2026 Google LLC\nclass Example {}\n",
+		},
+		{
+			name:         "empty fallback year skips update",
+			fallbackYear: "",
+			content:      "<?php\n// Copyright 2024 Google LLC\nclass Example {}\n",
+			want:         "<?php\n// Copyright 2024 Google LLC\nclass Example {}\n",
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			outDir := t.TempDir()
+			originalDir := t.TempDir()
+
+			testFile := filepath.Join(outDir, "src", "Example.php")
+			if err := os.MkdirAll(filepath.Dir(testFile), 0755); err != nil {
+				t.Fatal(err)
+			}
+			if err := os.WriteFile(testFile, []byte(test.content), 0644); err != nil {
+				t.Fatal(err)
+			}
+
+			if err := restoreCopyrightYear(outDir, originalDir, test.fallbackYear); err != nil {
+				t.Fatalf("restoreCopyrightYear() error = %v", err)
+			}
+
+			got, err := os.ReadFile(testFile)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if diff := cmp.Diff(test.want, string(got)); diff != "" {
+				t.Errorf("restoreCopyrightYear() mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
