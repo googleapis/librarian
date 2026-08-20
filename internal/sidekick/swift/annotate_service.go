@@ -111,7 +111,7 @@ func (c *codec) annotateService(service *api.Service, model *modelAnnotations) (
 		quickstartMethod = service.QuickstartMethod
 	}
 
-	name := pascalCase(service.Name)
+	name := c.traitName(service)
 	annotations := &serviceAnnotations{
 		Name:             name,
 		ClientName:       pascalCase(service.Name + "Client"),
