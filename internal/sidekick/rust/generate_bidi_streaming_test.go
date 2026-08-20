@@ -108,16 +108,13 @@ func TestGenerateBidiStreaming(t *testing.T) {
     /// ` + "```" + `
     /// # use google_cloud_test_v1::client::Protocol;
     /// # use google_cloud_test_v1::model::Request;
-    /// # use google_cloud_gax::streaming::SendError;
-    /// use google_cloud_test_v1::Result;
     /// async fn sample(
     ///    client: &Protocol
-    /// ) -> Result<()> {
+    /// ) -> anyhow::Result<()> {
     ///     let (sender, mut receiver) = client.chat()
     ///         .build();
     ///
-    ///     sender.send(Request::default()).await
-    ///         .map_err(SendError::into_error)?;
+    ///     sender.send(Request::default()).await?;
     ///     drop(sender); // Half-close the stream
     ///
     ///     while let Some(response) = receiver.recv().await {
@@ -143,13 +140,11 @@ func TestGenerateBidiStreaming(t *testing.T) {
     /// ` + "```" + `
     /// # use google_cloud_test_v1::builder::protocol::Chat;
     /// # use google_cloud_test_v1::model::Request;
-    /// # use google_cloud_gax::streaming::SendError;
-    /// # async fn sample() -> google_cloud_test_v1::Result<()> {
+    /// # async fn sample() -> anyhow::Result<()> {
     /// let builder = prepare_request_builder();
     /// let (sender, mut receiver) = builder.build();
     ///
-    /// sender.send(Request::default()).await
-    ///     .map_err(SendError::into_error)?;
+    /// sender.send(Request::default()).await?;
     /// drop(sender); // Half-close the stream
     ///
     /// while let Some(response) = receiver.recv().await {
