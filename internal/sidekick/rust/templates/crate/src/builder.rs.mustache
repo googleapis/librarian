@@ -107,8 +107,11 @@ pub mod {{Codec.ModuleName}} {
     /// # use {{Model.Codec.PackageNamespace}}::builder::{{Service.Codec.ModuleName}}::{{Codec.BuilderName}};
     {{#Codec.IsBidiStreaming}}
     /// # use {{InputType.Codec.NameInExamples}};
+    /// # async fn sample() -> anyhow::Result<()> {
     {{/Codec.IsBidiStreaming}}
+    {{^Codec.IsBidiStreaming}}
     /// # async fn sample() -> {{Model.Codec.PackageNamespace}}::Result<()> {
+    {{/Codec.IsBidiStreaming}}
     {{#Codec.IsBidiStreaming}}
     /// let builder = prepare_request_builder();
     /// let (sender, mut receiver) = builder.build();

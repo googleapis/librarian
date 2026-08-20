@@ -151,6 +151,9 @@ func generateAPI(ctx context.Context, apiPath string, goAPI *config.GoAPI, pc *c
 		"--go-grpc_out=" + outDir,
 		"--go-grpc_opt=require_unimplemented_servers=false",
 	}
+	if goAPI.ProtoAPILevel != "" {
+		args = append(args, "--go_opt=default_api_level="+goAPI.ProtoAPILevel)
+	}
 	if !goAPI.ProtoOnly {
 		gapicOpts, err := buildGAPICOpts(apiPath, goAPI, version, googleapisDir)
 		if err != nil {

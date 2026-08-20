@@ -551,13 +551,31 @@ func TestModelAnnotationsHasBidiStreaming(t *testing.T) {
 			},
 		},
 	}
+	serverStreamingService := &api.Service{
+		Name:    "ServerStreamingService",
+		ID:      ".test.v1.ServerStreamingService",
+		Package: "test.v1",
+		Methods: []*api.Method{
+			{
+				Name:                "List",
+				ID:                  ".test.v1.ServerStreamingService.List",
+				InputTypeID:         msg.ID,
+				OutputTypeID:        msg.ID,
+				InputType:           msg,
+				OutputType:          msg,
+				ServerSideStreaming: true,
+				PathInfo:            &api.PathInfo{},
+			},
+		},
+	}
 
 	for _, test := range []struct {
-		name             string
-		service          *api.Service
-		options          map[string]string
-		want             bool
-		wantGaxiFeatures []string
+		name                 string
+		service              *api.Service
+		options              map[string]string
+		want                 bool
+		wantGaxiFeatures     []string
+		wantRequiredPackages []string
 	}{
 		{
 			name:    "bidi streaming enabled with bidi method",
@@ -565,9 +583,11 @@ func TestModelAnnotationsHasBidiStreaming(t *testing.T) {
 			options: map[string]string{
 				"include-bidi-streaming-methods": "true",
 				"package:gaxi":                   "package=google-cloud-gax,used-if=services",
+				"package:prost":                  "package=prost,used-if=streaming",
 			},
-			want:             true,
-			wantGaxiFeatures: []string{"_internal-grpc-client"},
+			want:                 true,
+			wantGaxiFeatures:     []string{"_internal-grpc-client"},
+			wantRequiredPackages: []string{`gaxi                 = { workspace = true, features = ["_internal-grpc-client"] }`, "prost.workspace      = true"},
 		},
 		{
 			name:    "bidi streaming disabled with bidi method",
@@ -575,8 +595,10 @@ func TestModelAnnotationsHasBidiStreaming(t *testing.T) {
 			options: map[string]string{
 				"include-bidi-streaming-methods": "false",
 				"package:gaxi":                   "package=google-cloud-gax,used-if=services",
+				"package:prost":                  "package=prost,used-if=streaming",
 			},
-			want: false,
+			want:                 false,
+			wantRequiredPackages: []string{"gaxi.workspace       = true"},
 		},
 		{
 			name:    "bidi streaming enabled with unary method",
@@ -584,8 +606,21 @@ func TestModelAnnotationsHasBidiStreaming(t *testing.T) {
 			options: map[string]string{
 				"include-bidi-streaming-methods": "true",
 				"package:gaxi":                   "package=google-cloud-gax,used-if=services",
+				"package:prost":                  "package=prost,used-if=streaming",
 			},
-			want: false,
+			want:                 false,
+			wantRequiredPackages: []string{"gaxi.workspace       = true"},
+		},
+		{
+			name:    "bidi streaming enabled with server streaming method",
+			service: serverStreamingService,
+			options: map[string]string{
+				"include-bidi-streaming-methods": "true",
+				"package:gaxi":                   "package=google-cloud-gax,used-if=services",
+				"package:prost":                  "package=prost,used-if=streaming",
+			},
+			want:                 false,
+			wantRequiredPackages: []string{"gaxi.workspace       = true"},
 		},
 		{
 			name:    "template override with bidi method",
@@ -594,8 +629,10 @@ func TestModelAnnotationsHasBidiStreaming(t *testing.T) {
 				"include-bidi-streaming-methods": "true",
 				"template-override":              "templates/tonic",
 				"package:gaxi":                   "package=google-cloud-gax,used-if=services",
+				"package:prost":                  "package=prost,used-if=streaming",
 			},
-			want: false,
+			want:                 false,
+			wantRequiredPackages: []string{"gaxi.workspace       = true"},
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
@@ -621,6 +658,10 @@ func TestModelAnnotationsHasBidiStreaming(t *testing.T) {
 				if diff := cmp.Diff(test.wantGaxiFeatures, codec.extraPackages[idx].features); diff != "" {
 					t.Errorf("mismatch (-want +got):\n%s", diff)
 				}
+			}
+			less := func(a, b string) bool { return a < b }
+			if diff := cmp.Diff(test.wantRequiredPackages, got.RequiredPackages, cmpopts.SortSlices(less), cmpopts.EquateEmpty()); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}

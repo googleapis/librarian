@@ -323,3 +323,285 @@ func TestNewPathVariable(t *testing.T) {
 		})
 	}
 }
+
+func TestRoutingParams(t *testing.T) {
+	requestMessage := &api.Message{
+		Name:    "GetBucketRequest",
+		Package: "google.storage.v2",
+		ID:      ".google.storage.v2.GetBucketRequest",
+		Fields: []*api.Field{
+			{
+				Name:  "name",
+				Typez: api.TypezString,
+			},
+			{
+				Name:  "parent",
+				Typez: api.TypezString,
+			},
+		},
+	}
+
+	model := api.NewTestAPI([]*api.Message{requestMessage}, nil, []*api.Service{})
+	model.AddMessage(requestMessage)
+	codec := newTestCodec(t, model, nil)
+	if err := codec.annotateModel(); err != nil {
+		t.Fatal(err)
+	}
+
+	for _, test := range []struct {
+		name         string
+		routingInfos []*api.RoutingInfo
+		want         []*routingParam
+	}{
+		{
+			name: "explicit routing info with custom name",
+			routingInfos: []*api.RoutingInfo{
+				{
+					Name: "bucket",
+					Variants: []*api.RoutingInfoVariant{
+						{
+							FieldPath: []string{"name"},
+						},
+					},
+				},
+			},
+			want: []*routingParam{
+				{
+					RoutingKey: "bucket",
+					Variants: []*routingParamVariant{
+						{
+							FieldAccessor: "request.name",
+							Last:          true,
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "explicit routing info without custom name",
+			routingInfos: []*api.RoutingInfo{
+				{
+					Name: "",
+					Variants: []*api.RoutingInfoVariant{
+						{
+							FieldPath: []string{"parent"},
+						},
+					},
+				},
+			},
+			want: []*routingParam{
+				{
+					RoutingKey: "parent",
+					Variants: []*routingParamVariant{
+						{
+							FieldAccessor: "request.parent",
+							Last:          true,
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "routing info with pattern and suffix",
+			routingInfos: []*api.RoutingInfo{
+				{
+					Name: "bucket",
+					Variants: []*api.RoutingInfoVariant{
+						{
+							FieldPath: []string{"name"},
+							Matching: api.RoutingPathSpec{
+								Segments: []string{"projects", "*", "buckets", "*"},
+							},
+							Suffix: api.RoutingPathSpec{
+								Segments: []string{"**"},
+							},
+						},
+					},
+				},
+			},
+			want: []*routingParam{
+				{
+					RoutingKey: "bucket",
+					Variants: []*routingParamVariant{
+						{
+							FieldAccessor:    "request.name",
+							MatchingSegments: []string{`.literal("projects/")`, `.singleWildcard`, `.literal("/buckets/")`, `.singleWildcard`},
+							SuffixSegments:   []string{`.trailingMultiWildcard`},
+							Last:             true,
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "routing info with multiple fallback variants across different fields",
+			routingInfos: []*api.RoutingInfo{
+				{
+					Name: "routing_id",
+					Variants: []*api.RoutingInfoVariant{
+						{
+							FieldPath: []string{"name"},
+							Matching: api.RoutingPathSpec{
+								Segments: []string{"projects", "*"},
+							},
+						},
+						{
+							FieldPath: []string{"parent"},
+							Matching: api.RoutingPathSpec{
+								Segments: []string{"**"},
+							},
+						},
+					},
+				},
+			},
+			want: []*routingParam{
+				{
+					RoutingKey: "routing_id",
+					Variants: []*routingParamVariant{
+						{
+							FieldAccessor:    "request.name",
+							MatchingSegments: []string{`.literal("projects/")`, `.singleWildcard`},
+							Last:             false,
+						},
+						{
+							FieldAccessor:    "request.parent",
+							MatchingSegments: []string{`.multiWildcard`},
+							Last:             true,
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "routing info with literal prefix and nested field path",
+			routingInfos: []*api.RoutingInfo{
+				{
+					Name: "table",
+					Variants: []*api.RoutingInfoVariant{
+						{
+							FieldPath: []string{"table", "parent"},
+							Prefix: api.RoutingPathSpec{
+								Segments: []string{"projects"},
+							},
+							Matching: api.RoutingPathSpec{
+								Segments: []string{"*"},
+							},
+							Suffix: api.RoutingPathSpec{
+								Segments: []string{"tables", "*"},
+							},
+						},
+					},
+				},
+			},
+			want: []*routingParam{
+				{
+					RoutingKey: "table",
+					Variants: []*routingParamVariant{
+						{
+							FieldAccessor:    "request.table?.parent",
+							PrefixSegments:   []string{`.literal("projects/")`},
+							MatchingSegments: []string{`.singleWildcard`},
+							SuffixSegments:   []string{`.literal("/tables/")`, `.singleWildcard`},
+							Last:             true,
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "routing info with wildcard prefix",
+			routingInfos: []*api.RoutingInfo{
+				{
+					Name: "location",
+					Variants: []*api.RoutingInfoVariant{
+						{
+							FieldPath: []string{"name"},
+							Prefix: api.RoutingPathSpec{
+								Segments: []string{"projects", "*"},
+							},
+							Matching: api.RoutingPathSpec{
+								Segments: []string{"locations", "*"},
+							},
+						},
+					},
+				},
+			},
+			want: []*routingParam{
+				{
+					RoutingKey: "location",
+					Variants: []*routingParamVariant{
+						{
+							FieldAccessor:    "request.name",
+							PrefixSegments:   []string{`.literal("projects/")`, `.singleWildcard`, `.literal("/")`},
+							MatchingSegments: []string{`.literal("locations/")`, `.singleWildcard`},
+							Last:             true,
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "empty routing annotation disables routing",
+			routingInfos: []*api.RoutingInfo{
+				{
+					Name: "",
+					Variants: []*api.RoutingInfoVariant{
+						{
+							FieldPath: []string{},
+						},
+					},
+				},
+			},
+			want: nil,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := codec.routingParamsFromRouting(test.routingInfos)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestRoutingParamsFromPathTemplate(t *testing.T) {
+	requestMessage := &api.Message{
+		Name:    "GetBucketRequest",
+		Package: "google.storage.v2",
+		ID:      ".google.storage.v2.GetBucketRequest",
+		Fields: []*api.Field{
+			{
+				Name:  "name",
+				Typez: api.TypezString,
+			},
+		},
+	}
+	model := api.NewTestAPI([]*api.Message{requestMessage}, nil, []*api.Service{})
+	model.AddMessage(requestMessage)
+	codec := newTestCodec(t, model, nil)
+	if err := codec.annotateModel(); err != nil {
+		t.Fatal(err)
+	}
+
+	template := (&api.PathTemplate{}).
+		WithLiteral("v2").
+		WithVariableNamed("name")
+
+	got := codec.routingParamsFromPathTemplate(template)
+
+	want := []*routingParam{
+		{
+			RoutingKey: "name",
+			Variants: []*routingParamVariant{
+				{
+					FieldAccessor:    "request.name",
+					MatchingSegments: []string{".multiWildcard"},
+					Last:             true,
+				},
+			},
+		},
+	}
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+}

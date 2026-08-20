@@ -347,6 +347,7 @@ This document describes the schema for the librarian.yaml.
 | `nested_protos` | list of string | Is a list of nested proto files. |
 | `no_metadata` | bool | Indicates whether to skip generating gapic_metadata.json. This is typically false. |
 | `no_snippets` | bool | Indicates whether to skip generating snippets. This is typically false. |
+| `proto_api_level` | string | Allows direct control of protobuf plugin's code generation level. Values allowed are API_OPEN, API_HYBRID, and API_OPAQUE. The default is unset, which relies on proto file annotations. More info: https://protobuf.dev/reference/go/opaque-migration/ |
 | `proto_only` | bool | Determines whether to generate a Proto-only client. A proto-only client does not define a service in the proto files. |
 | `proto_package` | string | Is the proto package name. |
 

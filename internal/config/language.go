@@ -84,6 +84,11 @@ type GoAPI struct {
 	// NoSnippets indicates whether to skip generating snippets.
 	// This is typically false.
 	NoSnippets bool `yaml:"no_snippets,omitempty"`
+	// ProtoAPILevel allows direct control of protobuf plugin's code generation
+	// level. Values allowed are API_OPEN, API_HYBRID, and API_OPAQUE.
+	// The default is unset, which relies on proto file annotations.
+	// More info: https://protobuf.dev/reference/go/opaque-migration/
+	ProtoAPILevel string `yaml:"proto_api_level,omitempty"`
 	// ProtoOnly determines whether to generate a Proto-only client.
 	// A proto-only client does not define a service in the proto files.
 	ProtoOnly bool `yaml:"proto_only,omitempty"`

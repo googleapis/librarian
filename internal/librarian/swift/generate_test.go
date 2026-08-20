@@ -30,6 +30,7 @@ import (
 
 const (
 	googleapisRoot = "../../../internal/testdata/googleapis"
+	showcaseRoot   = "../../../internal/testdata/gapic-showcase"
 	discoveryRoot  = "fake/path/to/testdata/discovery"
 )
 
@@ -236,6 +237,27 @@ func TestLibraryToModelConfig(t *testing.T) {
 			},
 		},
 		{
+			name: "showcase",
+			library: &config.Library{
+				Name:  "google-cloud-showcase",
+				Roots: []string{"showcase", "googleapis"},
+			},
+			api: &config.API{
+				Path: "schema/google/showcase/v1beta1",
+			},
+			pc: &config.Protoc{Version: "29.3"},
+			want: &parser.ModelConfig{
+				Language:            config.LanguageSwift,
+				SpecificationFormat: config.SpecProtobuf,
+				SpecificationSource: "schema/google/showcase/v1beta1",
+				ServiceConfig:       "schema/google/showcase/v1beta1/showcase_v1beta1.yaml",
+				Protoc:              &config.Protoc{Version: "29.3"},
+				Source: &sources.SourceConfig{
+					ActiveRoots: []string{"showcase", "googleapis"},
+				},
+			},
+		},
+		{
 			name: "minimal config",
 			library: &config.Library{
 				Name:    "google-cloud-secretmanager",
@@ -386,6 +408,7 @@ func TestLibraryToModelConfig(t *testing.T) {
 			srcs := &sources.Sources{
 				Discovery:  absPath(t, discoveryRoot),
 				Googleapis: absPath(t, googleapisRoot),
+				Showcase:   absPath(t, showcaseRoot),
 			}
 			if test.want.Source == nil {
 				t.Fatal("bad test expectation: test.want.Sources should not be nil")

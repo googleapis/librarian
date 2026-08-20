@@ -30,7 +30,6 @@ import GoogleCloudAuth
 {{#Codec.ServiceImports}}
 import {{.}}
 {{/Codec.ServiceImports}}
-
 {{#Codec.ModulePath}}
 internal import {{.}}
 {{/Codec.ModulePath}}
@@ -51,18 +50,26 @@ extension Clients {
     public init(_ inner: GoogleCloudGaxGRPC._GRPCClient) {
       self.inner = inner
     }
+
     {{#Codec.Methods}}
 
     public func {{> /templates/common/method_signature/request_options}} {
-      {{#Codec.HasPathVariables}}
-      var routingParams: [String] = []
-      {{#Codec.PathVariables}}
-      if let {{Name}} = request{{Expression}}{{#Test}}, {{{.}}}{{/Test}} {
-        let encoded = {{Name}}.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? {{Name}}
-        routingParams.append("{{FieldPath}}=\(encoded)")
-      }
-      {{/Codec.PathVariables}}
-      {{/Codec.HasPathVariables}}
+      {{#Codec.HasRoutingParams}}
+      let routingParams = GoogleCloudGaxGRPC._RoutingMatcher.format([
+        {{#Codec.RoutingParams}}
+        ("{{RoutingKey}}",
+          {{#Variants}}
+          GoogleCloudGaxGRPC._RoutingMatcher.value(
+            {{{FieldAccessor}}},
+            prefix: [{{#PrefixSegments}}{{{.}}}, {{/PrefixSegments}}],
+            matching: [{{#MatchingSegments}}{{{.}}}, {{/MatchingSegments}}],
+            suffix: [{{#SuffixSegments}}{{{.}}}, {{/SuffixSegments}}]
+          ){{^Last}} ?? {{/Last}}
+          {{/Variants}}
+        ),
+        {{/Codec.RoutingParams}}
+      ])
+      {{/Codec.HasRoutingParams}}
 
       let protoRequest = try request.toProto()
       {{^ReturnsEmpty}}
@@ -70,8 +77,8 @@ extension Clients {
         path: "/{{SourceService.Package}}.{{SourceService.Name}}/{{Name}}",
         request: protoRequest,
         options: options,
-        clientHeader: Clients.clientHeader{{#Codec.HasPathVariables}},
-        routingParams: routingParams{{/Codec.HasPathVariables}}
+        clientHeader: Clients.clientHeader{{#Codec.HasRoutingParams}},
+        routingParams: routingParams{{/Codec.HasRoutingParams}}
       )
       return try {{Codec.ReturnType}}(proto: protoResponse)
       {{/ReturnsEmpty}}
@@ -80,8 +87,8 @@ extension Clients {
         path: "/{{SourceService.Package}}.{{SourceService.Name}}/{{Name}}",
         request: protoRequest,
         options: options,
-        clientHeader: Clients.clientHeader{{#Codec.HasPathVariables}},
-        routingParams: routingParams{{/Codec.HasPathVariables}}
+        clientHeader: Clients.clientHeader{{#Codec.HasRoutingParams}},
+        routingParams: routingParams{{/Codec.HasRoutingParams}}
       )
       {{/ReturnsEmpty}}
     }
