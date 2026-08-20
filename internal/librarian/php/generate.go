@@ -309,7 +309,7 @@ func absConfigPath(baseDir, configPath string) (string, error) {
 	return filepath.Abs(filepath.Join(baseDir, configPath))
 }
 
-func gapicOpts(apiMetadata *serviceconfig.API, grpcConfigAbsPath, serviceYamlAbsPath string) []string {
+func gapicOpts(apiMetadata *serviceconfig.API, grpcConfigAbsPath, serviceYamlAbsPath string, samples bool) []string {
 	transport := serviceconfig.GRPCRest
 	if apiMetadata != nil {
 		transport = apiMetadata.Transport(config.LanguagePhp)
@@ -318,7 +318,10 @@ func gapicOpts(apiMetadata *serviceconfig.API, grpcConfigAbsPath, serviceYamlAbs
 	if apiMetadata != nil && apiMetadata.HasRESTNumericEnums(config.LanguagePhp) {
 		opts = append(opts, "rest-numeric-enums")
 	}
-	opts = append(opts, "generate-snippets")
+	if samples {
+		opts = append(opts, "generate-snippets")
+	}
+
 	if grpcConfigAbsPath != "" {
 		opts = append(opts, "grpc_service_config="+grpcConfigAbsPath)
 	}
