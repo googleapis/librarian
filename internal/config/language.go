@@ -171,6 +171,10 @@ type RustModule struct {
 	// methods.
 	IncludeBidiStreamingMethods bool `yaml:"include_bidi_streaming_methods,omitempty"`
 
+	// IncludeServerStreamingMethods indicates whether to include gRPC server-side streaming
+	// methods.
+	IncludeServerStreamingMethods bool `yaml:"include_server_streaming_methods,omitempty"`
+
 	// InternalBuilders indicates whether generated builders should be internal to the crate.
 	InternalBuilders bool `yaml:"internal_builders,omitempty"`
 
@@ -273,6 +277,10 @@ type RustCrate struct {
 	// IncludeBidiStreamingMethods indicates whether to include gRPC bi-directional streaming
 	// methods.
 	IncludeBidiStreamingMethods bool `yaml:"include_bidi_streaming_methods,omitempty"`
+
+	// IncludeServerStreamingMethods indicates whether to include gRPC server-side streaming
+	// methods.
+	IncludeServerStreamingMethods bool `yaml:"include_server_streaming_methods,omitempty"`
 
 	// PostProcessProtos indicates whether to post-process protos.
 	PostProcessProtos string `yaml:"post_process_protos,omitempty"`

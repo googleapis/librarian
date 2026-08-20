@@ -125,13 +125,13 @@ pub(crate) mod tracing;
 #[doc(hidden)]
 pub(crate) mod transport;
 
-{{#Codec.HasBidiStreaming}}
+{{#Codec.HasStreaming}}
 #[cfg(google_cloud_unstable_gapic_streaming)]
 {{#Codec.PerServiceFeatures}}
 #[cfg(any(
-{{#Codec.BidiStreamingServices}}
+{{#Codec.StreamingServices}}
     feature = "{{Codec.FeatureName}}",
-{{/Codec.BidiStreamingServices}}
+{{/Codec.StreamingServices}}
 ))]
 {{/Codec.PerServiceFeatures}}
 #[doc(hidden)]
@@ -142,7 +142,7 @@ pub(crate) mod transport;
 pub(crate) mod prost {
     include!("prost/includes.rs");
 }
-{{/Codec.HasBidiStreaming}}
+{{/Codec.HasStreaming}}
 
 /// The default host used by the service.
 {{#Codec.PerServiceFeatures}}

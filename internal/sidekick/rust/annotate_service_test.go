@@ -362,84 +362,184 @@ func TestServiceAnnotations(t *testing.T) {
 	}
 }
 
-func TestServiceAnnotationsHasBidiStreaming(t *testing.T) {
-	createModel := func() (*api.API, *api.Service) {
-		msg := &api.Message{
-			Name:    "Request",
-			ID:      ".test.v1.Request",
-			Package: "test.v1",
-		}
-		service := &api.Service{
-			Name:    "BidiService",
-			ID:      ".test.v1.BidiService",
-			Package: "test.v1",
-			Methods: []*api.Method{
-				{
-					Name:                "Chat",
-					ID:                  ".test.v1.BidiService.Chat",
-					InputTypeID:         msg.ID,
-					OutputTypeID:        msg.ID,
-					InputType:           msg,
-					OutputType:          msg,
-					ClientSideStreaming: true,
-					ServerSideStreaming: true,
-					PathInfo:            &api.PathInfo{},
-				},
-				{
-					Name:                "Unary",
-					ID:                  ".test.v1.BidiService.Unary",
-					InputTypeID:         msg.ID,
-					OutputTypeID:        msg.ID,
-					InputType:           msg,
-					OutputType:          msg,
-					ClientSideStreaming: false,
-					ServerSideStreaming: false,
-					PathInfo:            &api.PathInfo{},
-				},
+func TestServiceAnnotationsStreaming(t *testing.T) {
+	msg := &api.Message{
+		Name:    "Request",
+		ID:      ".test.v1.Request",
+		Package: "test.v1",
+	}
+	bidiService := &api.Service{
+		Name:    "BidiService",
+		ID:      ".test.v1.BidiService",
+		Package: "test.v1",
+		Methods: []*api.Method{
+			{
+				Name:                "Chat",
+				ID:                  ".test.v1.BidiService.Chat",
+				InputTypeID:         msg.ID,
+				OutputTypeID:        msg.ID,
+				InputType:           msg,
+				OutputType:          msg,
+				ClientSideStreaming: true,
+				ServerSideStreaming: true,
+				PathInfo:            &api.PathInfo{},
 			},
-		}
-		model := api.NewTestAPI([]*api.Message{msg}, []*api.Enum{}, []*api.Service{service})
-		if err := api.CrossReference(model); err != nil {
-			t.Fatal(err)
-		}
-		return model, service
+			{
+				Name:                "Unary",
+				ID:                  ".test.v1.BidiService.Unary",
+				InputTypeID:         msg.ID,
+				OutputTypeID:        msg.ID,
+				InputType:           msg,
+				OutputType:          msg,
+				ClientSideStreaming: false,
+				ServerSideStreaming: false,
+				PathInfo:            &api.PathInfo{},
+			},
+		},
+	}
+	serverService := &api.Service{
+		Name:    "ServerService",
+		ID:      ".test.v1.ServerService",
+		Package: "test.v1",
+		Methods: []*api.Method{
+			{
+				Name:                "Expand",
+				ID:                  ".test.v1.ServerService.Expand",
+				InputTypeID:         msg.ID,
+				OutputTypeID:        msg.ID,
+				InputType:           msg,
+				OutputType:          msg,
+				ClientSideStreaming: false,
+				ServerSideStreaming: true,
+				PathInfo:            &api.PathInfo{},
+			},
+			{
+				Name:                "Unary",
+				ID:                  ".test.v1.ServerService.Unary",
+				InputTypeID:         msg.ID,
+				OutputTypeID:        msg.ID,
+				InputType:           msg,
+				OutputType:          msg,
+				ClientSideStreaming: false,
+				ServerSideStreaming: false,
+				PathInfo:            &api.PathInfo{},
+			},
+		},
+	}
+	unaryService := &api.Service{
+		Name:    "UnaryService",
+		ID:      ".test.v1.UnaryService",
+		Package: "test.v1",
+		Methods: []*api.Method{
+			{
+				Name:                "Get",
+				ID:                  ".test.v1.UnaryService.Get",
+				InputTypeID:         msg.ID,
+				OutputTypeID:        msg.ID,
+				InputType:           msg,
+				OutputType:          msg,
+				ClientSideStreaming: false,
+				ServerSideStreaming: false,
+				PathInfo:            &api.PathInfo{},
+			},
+		},
 	}
 
-	t.Run("bidi service with option enabled", func(t *testing.T) {
-		model, service := createModel()
-		codec := newTestCodec(t, libconfig.SpecProtobuf, "", map[string]string{
-			"include-bidi-streaming-methods": "true",
+	for _, test := range []struct {
+		name          string
+		service       *api.Service
+		options       map[string]string
+		wantBidi      bool
+		wantServer    bool
+		wantStreaming bool
+	}{
+		{
+			name:    "bidi service with option enabled",
+			service: bidiService,
+			options: map[string]string{
+				"include-bidi-streaming-methods": "true",
+			},
+			wantBidi:      true,
+			wantServer:    false,
+			wantStreaming: true,
+		},
+		{
+			name:          "bidi service with option omitted",
+			service:       bidiService,
+			options:       map[string]string{},
+			wantBidi:      false,
+			wantServer:    false,
+			wantStreaming: false,
+		},
+		{
+			name:    "server streaming service with option enabled",
+			service: serverService,
+			options: map[string]string{
+				"include-server-streaming-methods": "true",
+			},
+			wantBidi:      false,
+			wantServer:    true,
+			wantStreaming: true,
+		},
+		{
+			name:          "server streaming service with option omitted",
+			service:       serverService,
+			options:       map[string]string{},
+			wantBidi:      false,
+			wantServer:    false,
+			wantStreaming: false,
+		},
+		{
+			name:    "non-streaming service with options enabled",
+			service: unaryService,
+			options: map[string]string{
+				"include-bidi-streaming-methods":   "true",
+				"include-server-streaming-methods": "true",
+			},
+			wantBidi:      false,
+			wantServer:    false,
+			wantStreaming: false,
+		},
+		{
+			name:    "both options enabled with bidi service",
+			service: bidiService,
+			options: map[string]string{
+				"include-bidi-streaming-methods":   "true",
+				"include-server-streaming-methods": "true",
+			},
+			wantBidi:      true,
+			wantServer:    false,
+			wantStreaming: true,
+		},
+		{
+			name:    "both options enabled with server streaming service",
+			service: serverService,
+			options: map[string]string{
+				"include-bidi-streaming-methods":   "true",
+				"include-server-streaming-methods": "true",
+			},
+			wantBidi:      false,
+			wantServer:    true,
+			wantStreaming: true,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			model := api.NewTestAPI([]*api.Message{msg}, []*api.Enum{}, []*api.Service{test.service})
+			if err := api.CrossReference(model); err != nil {
+				t.Fatal(err)
+			}
+			codec := newTestCodec(t, libconfig.SpecProtobuf, "", test.options)
+			annotateModel(model, codec)
+			serviceAnn := test.service.Codec.(*serviceAnnotations)
+			if got := serviceAnn.HasBidiStreaming; got != test.wantBidi {
+				t.Errorf("serviceAnnotations.HasBidiStreaming = %v, want %v", got, test.wantBidi)
+			}
+			if got := serviceAnn.HasServerStreaming; got != test.wantServer {
+				t.Errorf("serviceAnnotations.HasServerStreaming = %v, want %v", got, test.wantServer)
+			}
+			if got := serviceAnn.HasStreaming; got != test.wantStreaming {
+				t.Errorf("serviceAnnotations.HasStreaming = %v, want %v", got, test.wantStreaming)
+			}
 		})
-		annotateModel(model, codec)
-		serviceAnn := service.Codec.(*serviceAnnotations)
-		if !serviceAnn.HasBidiStreaming {
-			t.Errorf("serviceAnnotations.HasBidiStreaming = false, want true")
-		}
-	})
-
-	t.Run("bidi service with option omitted", func(t *testing.T) {
-		model, service := createModel()
-		codec := newTestCodec(t, libconfig.SpecProtobuf, "", map[string]string{})
-		annotateModel(model, codec)
-		serviceAnn := service.Codec.(*serviceAnnotations)
-		if serviceAnn.HasBidiStreaming {
-			t.Errorf("serviceAnnotations.HasBidiStreaming = true, want false")
-		}
-	})
-
-	t.Run("non-streaming service with option enabled", func(t *testing.T) {
-		model := serviceAnnotationsModel()
-		service := model.Service(".test.v1.ResourceService")
-		if service == nil {
-			t.Fatal("cannot find .test.v1.ResourceService")
-		}
-		codec := newTestCodec(t, libconfig.SpecProtobuf, "", map[string]string{
-			"include-bidi-streaming-methods": "true",
-		})
-		annotateModel(model, codec)
-		serviceAnn := service.Codec.(*serviceAnnotations)
-		if serviceAnn.HasBidiStreaming {
-			t.Errorf("serviceAnnotations.HasBidiStreaming = true, want false")
-		}
-	})
+	}
 }
