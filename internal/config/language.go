@@ -851,6 +851,10 @@ type PHPAPI struct {
 	// ProtoPackage overrides the derived proto package for the API.
 	ProtoPackage string `yaml:"proto_package,omitempty"`
 
+	// NoSamples indicates whether to skip generating samples.
+	// This is typically false.
+	NoSamples bool `yaml:"no_samples,omitempty"`
+
 	// StagingSubdir is the subdirectory in staging where the generated files should be placed.
 	StagingSubdir string `yaml:"staging_subdir,omitempty"`
 }
