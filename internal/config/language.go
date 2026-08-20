@@ -89,6 +89,11 @@ type GoAPI struct {
 	ProtoOnly bool `yaml:"proto_only,omitempty"`
 	// ProtoPackage is the proto package name.
 	ProtoPackage string `yaml:"proto_package,omitempty"`
+	// ProtoAPILevel allows direct control of protobuf plugin's code generation
+	// level. Values allowed are API_OPEN, API_HYBRID, and API_OPAQUE.
+	// The default is unset, which relies on proto file annotations.
+	// More info: https://protobuf.dev/reference/go/opaque-migration/
+	ProtoAPILevel string `yaml:proto_api_level,omitempty"`
 }
 
 // RustDefault contains Rust-specific default configuration.

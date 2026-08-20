@@ -309,6 +309,28 @@ func TestGenerateLibrary(t *testing.T) {
 			},
 		},
 		{
+			name: "proto only with hybrid proto level",
+			library: &config.Library{
+				Name: "secretmanager",
+				APIs: []*config.API{{
+					Path: "google/cloud/secretmanager/v1",
+					Go: &config.GoAPI{
+						ClientPackage: "secretmanager",
+						ProtoOnly:     true,
+						ImportPath:    "secretmanager/apiv1",
+						ProtoAPILevel: "API_HYBRID",
+					},
+				}},
+			},
+			want: []string{
+				"secretmanager/apiv1/secretmanagerpb/service.pb.go",
+				"secretmanager/apiv1/secretmanagerpb/service_protoopaque.pb.go",
+			},
+			removed: []string{
+				"secretmanager/apiv1/secret_manager_client.go",
+			},
+		},
+		{
 			name: "nested protos",
 			library: &config.Library{
 				Name: "containeranalysis",
