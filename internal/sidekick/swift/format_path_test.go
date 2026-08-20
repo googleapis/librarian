@@ -473,6 +473,74 @@ func TestRoutingParams(t *testing.T) {
 			},
 		},
 		{
+			name: "routing info with literal prefix and nested field path",
+			routingInfos: []*api.RoutingInfo{
+				{
+					Name: "table",
+					Variants: []*api.RoutingInfoVariant{
+						{
+							FieldPath: []string{"table", "parent"},
+							Prefix: api.RoutingPathSpec{
+								Segments: []string{"projects"},
+							},
+							Matching: api.RoutingPathSpec{
+								Segments: []string{"*"},
+							},
+							Suffix: api.RoutingPathSpec{
+								Segments: []string{"tables", "*"},
+							},
+						},
+					},
+				},
+			},
+			want: []*routingParam{
+				{
+					RoutingKey: "table",
+					Variants: []*routingParamVariant{
+						{
+							FieldAccessor:    "request.table?.parent",
+							PrefixSegments:   []string{`.literal("projects/")`},
+							MatchingSegments: []string{`.singleWildcard`},
+							SuffixSegments:   []string{`.literal("/tables/")`, `.singleWildcard`},
+							Last:             true,
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "routing info with wildcard prefix",
+			routingInfos: []*api.RoutingInfo{
+				{
+					Name: "location",
+					Variants: []*api.RoutingInfoVariant{
+						{
+							FieldPath: []string{"name"},
+							Prefix: api.RoutingPathSpec{
+								Segments: []string{"projects", "*"},
+							},
+							Matching: api.RoutingPathSpec{
+								Segments: []string{"locations", "*"},
+							},
+						},
+					},
+				},
+			},
+			want: []*routingParam{
+				{
+					RoutingKey: "location",
+					Variants: []*routingParamVariant{
+						{
+							FieldAccessor:    "request.name",
+							PrefixSegments:   []string{`.literal("projects/")`, `.singleWildcard`, `.literal("/")`},
+							MatchingSegments: []string{`.literal("locations/")`, `.singleWildcard`},
+							Last:             true,
+						},
+					},
+				},
+			},
+		},
+		{
 			name: "empty routing annotation disables routing",
 			routingInfos: []*api.RoutingInfo{
 				{

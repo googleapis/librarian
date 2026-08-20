@@ -119,12 +119,14 @@ func (*codec) fieldPathParameterExpression(optional bool, field *api.Field) (str
 	return fmt.Sprintf(".%s as %s?", fieldCodec.Name, fieldCodec.FieldType), nil
 }
 
-// routingParam describes a parameter used for gRPC x-goog-request-params routing metadata.
+// Describes a parameter used for gRPC x-goog-request-params routing metadata.
 type routingParam struct {
 	RoutingKey string
 	Variants   []*routingParamVariant
 }
 
+// Represents a single candidate field path and pattern rule for extracting a routing
+// parameter value.
 type routingParamVariant struct {
 	FieldAccessor    string
 	PrefixSegments   []string
@@ -133,9 +135,14 @@ type routingParamVariant struct {
 	Last             bool
 }
 
+// Builds a Swift field access expression with optional chaining from a field path slice
+// (e.g., ["table", "parent"] -> "request.table?.parent").
+//
+// Returns an empty string if fieldPath is empty; callers are expected to filter out
+// empty field paths as AIP-4222 routing parameters must extract from a specific field.
 func formatFieldAccessor(fieldPath []string) string {
 	if len(fieldPath) == 0 {
-		return "request.name"
+		return ""
 	}
 	var parts []string
 	for _, p := range fieldPath {
@@ -144,6 +151,11 @@ func formatFieldAccessor(fieldPath []string) string {
 	return "request." + strings.Join(parts, "?.")
 }
 
+// Converts a list of path segments into Swift _RoutingMatcher token expressions
+// (e.g. .literal("projects/"), .singleWildcard, .multiWildcard).
+//
+// isPrefix ensures a trailing slash delimiter is appended before the matching segment.
+// isSuffix ensures leading/inter-segment slashes are preserved after the matching segment.
 func annotateSegments(segments []string, isPrefix bool, isSuffix bool) []string {
 	if len(segments) == 0 {
 		return nil
@@ -180,13 +192,14 @@ func annotateSegments(segments []string, isPrefix bool, isSuffix bool) []string 
 			literalBuffer += segment
 		}
 	}
-	if isPrefix && len(segments) > 0 && segments[len(segments)-1] == api.SingleSegmentWildcard {
+	if isPrefix && len(segments) > 0 {
 		literalBuffer += "/"
 	}
 	flushBuffer()
 	return ann
 }
 
+// Extracts routing parameters from explicit google.api.routing annotations per AIP-4222.
 func (c *codec) routingParamsFromRouting(routingInfos []*api.RoutingInfo) []*routingParam {
 	var params []*routingParam
 	for _, info := range routingInfos {
@@ -225,11 +238,16 @@ func (c *codec) routingParamsFromRouting(routingInfos []*api.RoutingInfo) []*rou
 	return params
 }
 
+// Extracts fallback routing parameters from a google.api.http path template when explicit
+// google.api.routing annotations are absent per AIP-4222.
 func (c *codec) routingParamsFromPathTemplate(t *api.PathTemplate) []*routingParam {
 	var params []*routingParam
 	for _, segment := range t.Segments {
 		if segment.Variable != nil {
 			fieldPath := segment.Variable.FieldPath
+			if len(fieldPath) == 0 {
+				continue
+			}
 			params = append(params, &routingParam{
 				RoutingKey: strings.Join(fieldPath, "."),
 				Variants: []*routingParamVariant{
