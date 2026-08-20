@@ -396,12 +396,12 @@ func TestGapicOpts(t *testing.T) {
 	}{
 		{
 			name: "defaults",
-			api: &config.API{PHP: &config.PHPAPI{}},
+			api:  &config.API{PHP: &config.PHPAPI{}},
 			want: []string{"metadata", "transport=grpc+rest", "generate-snippets"},
 		},
 		{
 			name: "with grpc config and service yaml",
-			api: &config.API{PHP: &config.PHPAPI{}},
+			api:  &config.API{PHP: &config.PHPAPI{}},
 			apiMetadata: &serviceconfig.API{
 				ServiceConfig: "service.yaml", // The API struct might just hold it for transport, though we pass it below
 			},
@@ -416,7 +416,7 @@ func TestGapicOpts(t *testing.T) {
 		},
 		{
 			name: "skip rest numeric enums",
-			api: &config.API{PHP: &config.PHPAPI{}},
+			api:  &config.API{PHP: &config.PHPAPI{}},
 			apiMetadata: &serviceconfig.API{
 				SkipRESTNumericEnums: []string{"php"},
 			},
@@ -425,7 +425,7 @@ func TestGapicOpts(t *testing.T) {
 		},
 		{
 			name: "custom transport",
-			api: &config.API{PHP: &config.PHPAPI{}},
+			api:  &config.API{PHP: &config.PHPAPI{}},
 			apiMetadata: &serviceconfig.API{
 				Transports: map[string]serviceconfig.Transport{
 					"php": serviceconfig.Transport("rest"),
