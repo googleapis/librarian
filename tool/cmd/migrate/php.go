@@ -282,7 +282,7 @@ func findPHPLibraries(repoPath string, googleapisDir string, globalDefaultCommon
 				ComponentName: name,
 			}
 		}
-
+		appendKeep(lib)
 		libs = append(libs, lib)
 	}
 	return libs, nil
@@ -395,5 +395,20 @@ func specialCases(api *config.API) {
 			api.PHP = &config.PHPAPI{}
 		}
 		api.PHP.GenerateGAPIC = new(false)
+	case "google/longrunning":
+		if api.PHP == nil {
+			api.PHP = &config.PHPAPI{}
+		}
+		api.PHP.Samples = new(false)
+		api.PHP.StagingSubdir = "."
+	}
+}
+
+func appendKeep(lib *config.Library) {
+	switch lib.Name {
+	case "longrunning":
+		lib.Keep = append(lib.Keep, "src/LongRunning/Gapic/OperationsGapicClient.php")
+		lib.Keep = append(lib.Keep, "src/LongRunning/OperationsClient.php")
+		lib.Keep = append(lib.Keep, "tests/Unit/OperationsClientTest.php")
 	}
 }
