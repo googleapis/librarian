@@ -375,6 +375,48 @@ func normalizeStagingSubdir(apiPath, stagingDir string) string {
 // Apply special case rules to the API config.
 func specialCases(api *config.API) {
 	switch api.Path {
+	case "google/cloud/aiplatform/v1":
+		if api.PHP == nil {
+			api.PHP = &config.PHPAPI{}
+		}
+		api.PHP.ExcludedProtos = []string{
+			"google/cloud/aiplatform/v1/schema/predict/instance/image_classification.proto",
+			"google/cloud/aiplatform/v1/schema/predict/instance/image_object_detection.proto",
+			"google/cloud/aiplatform/v1/schema/predict/instance/image_segmentation.proto",
+			"google/cloud/aiplatform/v1/schema/predict/instance/text_classification.proto",
+			"google/cloud/aiplatform/v1/schema/predict/instance/text_extraction.proto",
+			"google/cloud/aiplatform/v1/schema/predict/instance/text_sentiment.proto",
+			"google/cloud/aiplatform/v1/schema/predict/instance/video_action_recognition.proto",
+			"google/cloud/aiplatform/v1/schema/predict/instance/video_classification.proto",
+			"google/cloud/aiplatform/v1/schema/predict/instance/video_object_tracking.proto",
+			"google/cloud/aiplatform/v1/schema/predict/params/image_classification.proto",
+			"google/cloud/aiplatform/v1/schema/predict/params/image_object_detection.proto",
+			"google/cloud/aiplatform/v1/schema/predict/params/image_segmentation.proto",
+			"google/cloud/aiplatform/v1/schema/predict/params/video_action_recognition.proto",
+			"google/cloud/aiplatform/v1/schema/predict/params/video_classification.proto",
+			"google/cloud/aiplatform/v1/schema/predict/params/video_object_tracking.proto",
+			"google/cloud/aiplatform/v1/schema/predict/prediction/classification.proto",
+			"google/cloud/aiplatform/v1/schema/predict/prediction/image_object_detection.proto",
+			"google/cloud/aiplatform/v1/schema/predict/prediction/image_segmentation.proto",
+			"google/cloud/aiplatform/v1/schema/predict/prediction/tabular_classification.proto",
+			"google/cloud/aiplatform/v1/schema/predict/prediction/tabular_regression.proto",
+			"google/cloud/aiplatform/v1/schema/predict/prediction/text_extraction.proto",
+			"google/cloud/aiplatform/v1/schema/predict/prediction/text_sentiment.proto",
+			"google/cloud/aiplatform/v1/schema/predict/prediction/video_action_recognition.proto",
+			"google/cloud/aiplatform/v1/schema/predict/prediction/video_classification.proto",
+			"google/cloud/aiplatform/v1/schema/predict/prediction/video_object_tracking.proto",
+			"google/cloud/aiplatform/v1/schema/trainingjob/definition/automl_image_classification.proto",
+			"google/cloud/aiplatform/v1/schema/trainingjob/definition/automl_image_object_detection.proto",
+			"google/cloud/aiplatform/v1/schema/trainingjob/definition/automl_image_segmentation.proto",
+			"google/cloud/aiplatform/v1/schema/trainingjob/definition/automl_tables.proto",
+			"google/cloud/aiplatform/v1/schema/trainingjob/definition/automl_text_classification.proto",
+			"google/cloud/aiplatform/v1/schema/trainingjob/definition/automl_text_extraction.proto",
+			"google/cloud/aiplatform/v1/schema/trainingjob/definition/automl_text_sentiment.proto",
+			"google/cloud/aiplatform/v1/schema/trainingjob/definition/automl_video_action_recognition.proto",
+			"google/cloud/aiplatform/v1/schema/trainingjob/definition/automl_video_classification.proto",
+			"google/cloud/aiplatform/v1/schema/trainingjob/definition/automl_video_object_tracking.proto",
+			"google/cloud/aiplatform/v1/schema/trainingjob/definition/export_evaluated_data_items_config.proto",
+		}
 	case "google/iam/v1":
 		if api.PHP == nil {
 			api.PHP = &config.PHPAPI{}
