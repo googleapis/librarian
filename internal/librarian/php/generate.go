@@ -332,7 +332,7 @@ func gapicOpts(api *config.API, apiMetadata *serviceconfig.API, grpcConfigAbsPat
 }
 
 func shouldGenerateSamples(api *config.API) bool {
-	if api != nil && api.PHP != nil && api.PHP.Samples != nil {
+	if api.PHP.Samples != nil {
 		return *api.PHP.Samples
 	}
 	return true
