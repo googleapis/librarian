@@ -197,7 +197,7 @@ func (c *codec) annotateMethod(method *api.Method, modelAnn *modelAnnotations) e
 		}
 		responseIsEmpty := respMsg.ID == ".google.protobuf.Empty"
 		if responseIsEmpty {
-			respTypeName = "Void"
+			respTypeName = "Swift.Void"
 		}
 		lro = &lroAnnotations{
 			ReturnType:      respTypeName,

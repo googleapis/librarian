@@ -528,7 +528,7 @@ func TestAnnotateMethod_LRO_Empty(t *testing.T) {
 		PathExpression: "/",
 		HTTPMethod:     "POST",
 		LRO: &lroAnnotations{
-			ReturnType:      "Void",
+			ReturnType:      "Swift.Void",
 			MetadataType:    "LroMetadata",
 			ResponseIsEmpty: true,
 		},

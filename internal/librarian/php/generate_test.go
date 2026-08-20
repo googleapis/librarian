@@ -388,6 +388,7 @@ func TestGenerate_Error(t *testing.T) {
 func TestGapicOpts(t *testing.T) {
 	for _, test := range []struct {
 		name               string
+		api                *config.API
 		apiMetadata        *serviceconfig.API
 		grpcConfigAbsPath  string
 		serviceYamlAbsPath string
@@ -395,17 +396,19 @@ func TestGapicOpts(t *testing.T) {
 	}{
 		{
 			name: "defaults",
-			want: []string{"metadata", "transport=grpc+rest", "migration-mode=NEW_SURFACE_ONLY", "generate-snippets"},
+			api:  &config.API{PHP: &config.PHPAPI{}},
+			want: []string{"metadata", "transport=grpc+rest", "generate-snippets"},
 		},
 		{
 			name: "with grpc config and service yaml",
+			api:  &config.API{PHP: &config.PHPAPI{}},
 			apiMetadata: &serviceconfig.API{
 				ServiceConfig: "service.yaml", // The API struct might just hold it for transport, though we pass it below
 			},
 			grpcConfigAbsPath:  "/absolute/path/to/googleapis/grpc_config.json",
 			serviceYamlAbsPath: "/absolute/path/to/googleapis/service.yaml",
 			want: []string{
-				"metadata", "transport=grpc+rest", "migration-mode=NEW_SURFACE_ONLY",
+				"metadata", "transport=grpc+rest",
 				"rest-numeric-enums", "generate-snippets",
 				"grpc_service_config=/absolute/path/to/googleapis/grpc_config.json",
 				"service_yaml=/absolute/path/to/googleapis/service.yaml",
@@ -413,25 +416,36 @@ func TestGapicOpts(t *testing.T) {
 		},
 		{
 			name: "skip rest numeric enums",
+			api:  &config.API{PHP: &config.PHPAPI{}},
 			apiMetadata: &serviceconfig.API{
 				SkipRESTNumericEnums: []string{"php"},
 			},
-			want: []string{"metadata", "transport=grpc+rest", "migration-mode=NEW_SURFACE_ONLY",
+			want: []string{"metadata", "transport=grpc+rest",
 				"generate-snippets"},
 		},
 		{
 			name: "custom transport",
+			api:  &config.API{PHP: &config.PHPAPI{}},
 			apiMetadata: &serviceconfig.API{
 				Transports: map[string]serviceconfig.Transport{
 					"php": serviceconfig.Transport("rest"),
 				},
 			},
-			want: []string{"metadata", "transport=rest", "migration-mode=NEW_SURFACE_ONLY",
+			want: []string{"metadata", "transport=rest",
 				"rest-numeric-enums", "generate-snippets"},
+		},
+		{
+			name: "skip samples",
+			api: &config.API{
+				PHP: &config.PHPAPI{
+					Samples: new(false),
+				},
+			},
+			want: []string{"metadata", "transport=grpc+rest"},
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got := gapicOpts(test.apiMetadata, test.grpcConfigAbsPath, test.serviceYamlAbsPath)
+			got := gapicOpts(test.api, test.apiMetadata, test.grpcConfigAbsPath, test.serviceYamlAbsPath)
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
@@ -709,6 +723,47 @@ func TestShouldGenerateGAPIC(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			got := shouldGenerateGAPIC(test.api)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestShouldGenerateSamples(t *testing.T) {
+	for _, test := range []struct {
+		name string
+		api  *config.API
+		want bool
+	}{
+		{
+			name: "unset defaults to true",
+			api: &config.API{
+				PHP: &config.PHPAPI{},
+			},
+			want: true,
+		},
+		{
+			name: "explicitly true",
+			api: &config.API{
+				PHP: &config.PHPAPI{
+					Samples: new(true),
+				},
+			},
+			want: true,
+		},
+		{
+			name: "explicitly false",
+			api: &config.API{
+				PHP: &config.PHPAPI{
+					Samples: new(false),
+				},
+			},
+			want: false,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := shouldGenerateSamples(test.api)
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}

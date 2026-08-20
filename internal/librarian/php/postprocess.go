@@ -15,12 +15,15 @@
 package php
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
 	"io/fs"
 	"os"
 	"path/filepath"
+	"regexp"
+	"strings"
 
 	"github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/config"
@@ -55,6 +58,9 @@ func postProcessLibrary(ctx context.Context, library *config.Library, componentN
 	if err := runPostProcessors(ctx, library, stagingDir, postProcessor); err != nil {
 		return err
 	}
+	if err := restoreCopyrightYear(stagingDir, library.CopyrightYear); err != nil {
+		return err
+	}
 	if err := command.RunInDir(ctx, componentName, "python3", "owlbot.py"); err != nil {
 		return fmt.Errorf("failed to run owlbot.py: %w", err)
 	}
@@ -70,4 +76,38 @@ func runPostProcessors(ctx context.Context, library *config.Library, stagingDir,
 		}
 	}
 	return nil
+}
+
+// restoreCopyrightYear replaces the copyright year in generated source files.
+func restoreCopyrightYear(outDir, year string) error {
+	if year == "" {
+		return nil
+	}
+	re := regexp.MustCompile(`Copyright \d{4} Google`)
+	err := filepath.WalkDir(outDir, func(path string, d os.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		if d.IsDir() || !strings.HasSuffix(path, ".php") {
+			return nil
+		}
+		return updateCopyrightYearInFile(path, year, re)
+	})
+	if errors.Is(err, fs.ErrNotExist) {
+		return nil
+	}
+	return err
+}
+
+func updateCopyrightYearInFile(path, year string, re *regexp.Regexp) error {
+	content, err := os.ReadFile(path)
+	if err != nil {
+		return fmt.Errorf("reading %s: %w", path, err)
+	}
+	replacement := []byte(fmt.Sprintf("Copyright %s Google", year))
+	updated := re.ReplaceAll(content, replacement)
+	if bytes.Equal(content, updated) {
+		return nil
+	}
+	return os.WriteFile(path, updated, 0o644)
 }

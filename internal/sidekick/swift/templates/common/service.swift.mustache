@@ -105,36 +105,12 @@ public class {{Codec.ClientName}}: Clients.{{Codec.StubPrefix}}Protocol {
   {{/Deprecated}}
   public func {{> /templates/common/method_signature/lro_options}} {
     let extractStatus = { (op: {{Codec.ReturnType}}) throws -> GoogleCloudGax._PollableOperationImpl<{{Codec.LRO.ReturnType}}>.State in
-      guard op.done else {
-        return .init(done: false, result: nil)
-      }
-
-      switch op.result {
       {{#Codec.LRO.ResponseIsEmpty}}
-      case .response:
-        return .init(done: true, result: .success(()))
+      return try op._extractStatusEmpty()
       {{/Codec.LRO.ResponseIsEmpty}}
       {{^Codec.LRO.ResponseIsEmpty}}
-      case .response(let anyValue):
-        guard let anyValueUnwrapped = anyValue else {
-          return .init(done: true, result: .failure(GoogleCloudGax.RequestError.binding("Operation completed but response value was missing")))
-        }
-        let response = try {{Codec.LRO.ReturnType}}(fromAny: anyValueUnwrapped)
-        return .init(done: true, result: .success(response))
+      return try op._extractStatus({{Codec.LRO.ReturnType}}.self)
       {{/Codec.LRO.ResponseIsEmpty}}
-      case .error(let status):
-        guard let statusUnwrapped = status else {
-          return .init(done: true, result: .failure(GoogleCloudGax.RequestError.binding("Operation completed but error value was missing")))
-        }
-        let error = GoogleCloudGax.RequestError.service(
-          GoogleCloudGax.ServiceError(code: GoogleRpc.Code(intValue: Int(statusUnwrapped.code)), message: statusUnwrapped.message))
-        return .init(done: true, result: .failure(error))
-      case .none:
-        return .init(
-          done: true,
-          result: .failure(
-            GoogleCloudGax.RequestError.binding("Operation completed but result was missing")))
-      }
     }
     let rawOp = try await self.{{Codec.Name}}(request: withPolling, options: options)
     let initialState = try extractStatus(rawOp)
