@@ -76,7 +76,7 @@ func generatedFiles(model *api.API) []language.GeneratedFile {
 			fileInfo.OutputPath = filepath.Join(outDir, "LICENSE")
 		}
 		// Skip 'testing.dart' if the API has no services.
-		if filepath.Base(fileInfo.TemplatePath) == "testing.dart.mustache" && !codec.HasServices() {
+		if filepath.Base(fileInfo.TemplatePath) == "testing.dart.mustache" && !model.HasServices() {
 			continue
 		}
 		isSkill := false
