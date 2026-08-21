@@ -286,6 +286,7 @@ func findPHPLibraries(repoPath string, googleapisDir string, globalDefaultCommon
 			}
 		}
 		appendKeep(lib)
+		appendAPI(lib)
 		libs = append(libs, lib)
 	}
 	return libs, nil
@@ -468,5 +469,18 @@ func appendKeep(lib *config.Library) {
 		lib.Keep = append(lib.Keep, "src/LongRunning/Gapic/OperationsGapicClient.php")
 		lib.Keep = append(lib.Keep, "src/LongRunning/OperationsClient.php")
 		lib.Keep = append(lib.Keep, "tests/Unit/OperationsClientTest.php")
+	}
+}
+
+func appendAPI(lib *config.Library) {
+	switch lib.Name {
+	case "oslogin":
+		lib.APIs = append(lib.APIs, &config.API{
+			Path: "google/cloud/oslogin/common",
+			PHP: &config.PHPAPI{
+				GenerateGAPIC: new(false),
+				StagingSubdir: "common-protos",
+			},
+		})
 	}
 }
