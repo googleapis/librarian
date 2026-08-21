@@ -17,6 +17,7 @@ package rust
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -29,6 +30,13 @@ func TestGenerateServerStreaming(t *testing.T) {
 	outDir := t.TempDir()
 
 	request := api.NewTestMessage("ExpandRequest").WithPackage("test.v1")
+	requestId := &api.Field{
+		Name:          "request_id",
+		JSONName:      "requestId",
+		ID:            ".test.v1.ExpandRequest.request_id",
+		Typez:         api.TypezString,
+		AutoPopulated: true,
+	}
 	request.Fields = []*api.Field{
 		{
 			Name:     "content",
@@ -36,11 +44,13 @@ func TestGenerateServerStreaming(t *testing.T) {
 			ID:       ".test.v1.ExpandRequest.content",
 			Typez:    api.TypezString,
 		},
+		requestId,
 	}
 	response := api.NewTestMessage("EchoResponse").WithPackage("test.v1")
 
 	serverMethod := api.NewTestMethod("Expand").WithInput(request).WithOutput(response)
 	serverMethod.ServerSideStreaming = true
+	serverMethod.AutoPopulated = []*api.Field{requestId}
 	serverMethod.PathInfo = &api.PathInfo{
 		Bindings: []*api.PathBinding{{Verb: "POST", PathTemplate: &api.PathTemplate{}}},
 	}
@@ -237,6 +247,17 @@ func TestGenerateServerStreaming(t *testing.T) {
     }`,
 		},
 		{
+			name:     "builder: field setter",
+			file:     "src/builder.rs",
+			startStr: "        /// Sets the value of [request_id][crate::model::ExpandRequest::request_id].\n        pub fn set_request_id<T: Into<std::string::String>>(mut self, v: T) -> Self {",
+			endStr:   "        }",
+			want: `        /// Sets the value of [request_id][crate::model::ExpandRequest::request_id].
+        pub fn set_request_id<T: Into<std::string::String>>(mut self, v: T) -> Self {
+            self.0.request.request_id = v.into();
+            self
+        }`,
+		},
+		{
 			name:     "cargo.toml: dependencies block",
 			file:     "Cargo.toml",
 			startStr: "[dependencies]\n",
@@ -255,4 +276,11 @@ prost.workspace      = true
 			}
 		})
 	}
+
+	t.Run("builder: does not generate auto_populate for server streaming", func(t *testing.T) {
+		builderContent := readFile("src/builder.rs")
+		if strings.Contains(builderContent, "auto_populate") {
+			t.Errorf("expected builder.rs not to contain auto_populate helper for server streaming method")
+		}
+	})
 }

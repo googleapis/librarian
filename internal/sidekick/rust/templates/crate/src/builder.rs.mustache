@@ -518,7 +518,6 @@ pub mod {{Codec.ModuleName}} {
             {{/Model.Codec.LroStubOptions}}
         }
         {{/OperationInfo}}
-        {{/Codec.IsServerStreaming}}
         {{#HasAutoPopulatedFields}}
 
         fn auto_populate(mut req: {{InputType.Codec.QualifiedName}}, force: bool) -> {{InputType.Codec.QualifiedName}} {
@@ -535,6 +534,7 @@ pub mod {{Codec.ModuleName}} {
             req
         }
         {{/HasAutoPopulatedFields}}
+        {{/Codec.IsServerStreaming}}
         {{#InputType.Codec.BasicFields}}
 
         /// Sets the value of [{{Codec.FieldName}}][{{Codec.FQMessageName}}::{{Codec.SetterName}}].
