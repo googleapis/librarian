@@ -31,7 +31,7 @@ import Foundation
 {{#Codec.ServiceImports}}
 import {{.}}
 {{/Codec.ServiceImports}}
-import GoogleCloudGax
+@_spi(GoogleCloudInternal) import GoogleCloudGax
 
 extension Clients {
   final class {{Codec.StubPrefix}}Retry: {{Codec.StubPrefix}}Stub {
