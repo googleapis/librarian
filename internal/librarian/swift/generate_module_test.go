@@ -74,7 +74,6 @@ func TestGenerateModule(t *testing.T) {
 func TestGenerateModule_SwiftProtobuf(t *testing.T) {
 	testhelper.RequireCommand(t, "protoc")
 	testhelper.RequireCommand(t, "protoc-gen-swift")
-	testhelper.RequireCommand(t, "protoc-gen-grpc-swift")
 
 	googleapisDir, err := filepath.Abs("../../testdata/googleapis")
 	if err != nil {
