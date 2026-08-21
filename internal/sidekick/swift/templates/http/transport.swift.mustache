@@ -61,7 +61,7 @@ extension Clients {
         URLQueryItem(name: "$apiVersion", value: "{{.}}"),
         {{/APIVersion}}
       ]
-      let encoder = GoogleCloudGax.QueryParameterEncoder()
+      let encoder = GoogleCloudGax._QueryParameterEncoder()
       {{/Codec.HasQueryParams}}
       {{^Codec.HasQueryParams}}
       let query = [
