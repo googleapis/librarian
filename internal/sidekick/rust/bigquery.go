@@ -95,11 +95,7 @@ func (m *unifiedMessage) createSyntheticMessage(name string) (*api.Message, erro
 	}
 	// synthetic messages are not in the model, so we need to set their FQMessageName
 	// to point to crate::model_ext::{name}
-	msgAnn, ok := msg.Codec.(*messageAnnotation)
-	if !ok {
-		return nil, fmt.Errorf("expected message annotation for %q", msg.ID)
-	}
-	for _, f := range msgAnn.BasicFields {
+	for _, f := range msg.Fields {
 		fAnn, ok := f.Codec.(*fieldAnnotations)
 		if !ok {
 			return nil, fmt.Errorf("expected field annotation for %q", f.ID)
