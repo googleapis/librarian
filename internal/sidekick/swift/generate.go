@@ -46,9 +46,6 @@ func Generate(ctx context.Context, model *api.API, outdir string, library *confi
 		}
 		return string(contents), nil
 	}
-	if err := codec.generateDocc(outdir, model, provider); err != nil {
-		return err
-	}
 	if err := codec.generateMessages(outdir, model, provider); err != nil {
 		return err
 	}
@@ -69,6 +66,9 @@ func Generate(ctx context.Context, model *api.API, outdir string, library *confi
 		return err
 	}
 	if err := codec.generateSnippets(outdir, model, provider); err != nil {
+		return err
+	}
+	if err := codec.generateDocc(outdir, model, provider); err != nil {
 		return err
 	}
 	generatedFiles := language.WalkTemplatesDir(templates, "templates/package")
