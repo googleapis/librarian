@@ -392,6 +392,7 @@ func TestGapicOpts(t *testing.T) {
 		apiMetadata        *serviceconfig.API
 		grpcConfigAbsPath  string
 		serviceYamlAbsPath string
+		gapicYamlAbsPath   string
 		want               []string
 	}{
 		{
@@ -412,6 +413,16 @@ func TestGapicOpts(t *testing.T) {
 				"rest-numeric-enums", "generate-snippets",
 				"grpc_service_config=/absolute/path/to/googleapis/grpc_config.json",
 				"service_yaml=/absolute/path/to/googleapis/service.yaml",
+			},
+		},
+		{
+			name:             "with gapic yaml",
+			api:              &config.API{PHP: &config.PHPAPI{GapicYAML: "foo_gapic.yaml"}},
+			gapicYamlAbsPath: "/absolute/path/to/googleapis/foo_gapic.yaml",
+			want: []string{
+				"metadata", "transport=grpc+rest",
+				"generate-snippets",
+				"gapic_yaml=/absolute/path/to/googleapis/foo_gapic.yaml",
 			},
 		},
 		{
@@ -445,7 +456,7 @@ func TestGapicOpts(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got := gapicOpts(test.api, test.apiMetadata, test.grpcConfigAbsPath, test.serviceYamlAbsPath)
+			got := gapicOpts(test.api, test.apiMetadata, test.grpcConfigAbsPath, test.serviceYamlAbsPath, test.gapicYamlAbsPath)
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}

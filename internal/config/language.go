@@ -849,6 +849,11 @@ type PHPAPI struct {
 	// directory (e.g., "google/cloud/aiplatform/v1/schema/io_format.proto").
 	ExcludedProtos []string `yaml:"excluded_protos,omitempty"`
 
+	// GapicYAML is the GAPIC YAML configuration file, if provided.
+	// It expects the path relative to the config root or the googleapis directory
+	// (e.g., "google/cloud/aiplatform/v1/aiplatform_gapic.yaml").
+	GapicYAML string `yaml:"gapic_yaml,omitempty"`
+
 	// GenerateGAPIC indicates whether to generate the GAPIC client surface.
 	// Defaults to true.
 	GenerateGAPIC *bool `yaml:"generate_gapic,omitempty"`
