@@ -186,14 +186,29 @@ func buildGAPICOpts(api *config.API, library *config.Library, googleapisDir stri
 		if api.Ruby.RubyCloudOpts.ExtraDependencies != "" {
 			opts = append(opts, "ruby-cloud-extra-dependencies="+api.Ruby.RubyCloudOpts.ExtraDependencies)
 		}
+		if api.Ruby.RubyCloudOpts.FactoryMethodSuffix != "" {
+			opts = append(opts, "ruby-cloud-factory-method-suffix="+api.Ruby.RubyCloudOpts.FactoryMethodSuffix)
+		}
 		if api.Ruby.RubyCloudOpts.GemNamespace != "" {
 			opts = append(opts, "ruby-cloud-gem-namespace="+api.Ruby.RubyCloudOpts.GemNamespace)
 		}
 		if api.Ruby.RubyCloudOpts.MigrationVersion != "" {
 			opts = append(opts, "ruby-cloud-migration-version="+api.Ruby.RubyCloudOpts.MigrationVersion)
 		}
+		if api.Ruby.RubyCloudOpts.NamespaceOverride != "" {
+			opts = append(opts, "ruby-cloud-namespace-override="+api.Ruby.RubyCloudOpts.NamespaceOverride)
+		}
+		if api.Ruby.RubyCloudOpts.PathOverride != "" {
+			opts = append(opts, "ruby-cloud-path-override="+api.Ruby.RubyCloudOpts.PathOverride)
+		}
 		if api.Ruby.RubyCloudOpts.ServiceOverride != "" {
 			opts = append(opts, "ruby-cloud-service-override="+api.Ruby.RubyCloudOpts.ServiceOverride)
+		}
+		if api.Ruby.RubyCloudOpts.WrapperGemOverride != "" {
+			opts = append(opts, "ruby-cloud-wrapper-gem-override="+api.Ruby.RubyCloudOpts.WrapperGemOverride)
+		}
+		if api.Ruby.RubyCloudOpts.YardStrict != "" {
+			opts = append(opts, "ruby-cloud-yard-strict="+api.Ruby.RubyCloudOpts.YardStrict)
 		}
 	}
 	if library.Ruby != nil && len(library.Ruby.WrapperOf) > 0 {
