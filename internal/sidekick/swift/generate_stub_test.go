@@ -219,6 +219,16 @@ func TestGenerateStub_QueryParameters(t *testing.T) {
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
+
+	got = extractBlock(t, contentStr, `var query = [`, `query.append(`)
+	want = `var query = [
+        URLQueryItem(name: "$alt", value: "json;enum-encoding=int"),
+      ]
+      let encoder = GoogleCloudGax._QueryParameterEncoder()
+      query.append(`
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
 }
 
 func TestGenerateStub_Discovery(t *testing.T) {

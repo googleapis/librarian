@@ -186,7 +186,11 @@ func generateGAPIC(ctx context.Context, params *generateAPIParams, pc *config.Pr
 	if err != nil {
 		return err
 	}
-	opts := gapicOpts(params.api, apiMetadata, grpcConfigAbsPath, serviceYamlAbsPath)
+	gapicYamlAbsPath, err := absConfigPath(googleapisDir, params.api.PHP.GapicYAML)
+	if err != nil {
+		return err
+	}
+	opts := gapicOpts(params.api, apiMetadata, grpcConfigAbsPath, serviceYamlAbsPath, gapicYamlAbsPath)
 	additionalProtos := params.api.PHP.AdditionalProtos
 	includeCommonResources := *params.api.PHP.CommonResources
 	gapicProtos, err := gatherGAPICProtos(googleapisDir, params.api.Path, additionalProtos, params.api.PHP.ExcludedProtos, includeCommonResources)
@@ -309,7 +313,7 @@ func absConfigPath(baseDir, configPath string) (string, error) {
 	return filepath.Abs(filepath.Join(baseDir, configPath))
 }
 
-func gapicOpts(api *config.API, apiMetadata *serviceconfig.API, grpcConfigAbsPath, serviceYamlAbsPath string) []string {
+func gapicOpts(api *config.API, apiMetadata *serviceconfig.API, grpcConfigAbsPath, serviceYamlAbsPath, gapicYamlAbsPath string) []string {
 	transport := serviceconfig.GRPCRest
 	if apiMetadata != nil {
 		transport = apiMetadata.Transport(config.LanguagePhp)
@@ -327,6 +331,9 @@ func gapicOpts(api *config.API, apiMetadata *serviceconfig.API, grpcConfigAbsPat
 	}
 	if serviceYamlAbsPath != "" {
 		opts = append(opts, "service_yaml="+serviceYamlAbsPath)
+	}
+	if gapicYamlAbsPath != "" {
+		opts = append(opts, "gapic_yaml="+gapicYamlAbsPath)
 	}
 	return opts
 }

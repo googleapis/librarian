@@ -456,6 +456,7 @@ This document describes the schema for the librarian.yaml.
 | `additional_protos` | list of string | Is a list of additional proto files to include in generation. |
 | `common_resources` | bool (optional) | Indicates whether to include common resources in generation. Must be configured either globally or per-API. |
 | `excluded_protos` | list of string | Is a list of proto files to exclude from generation. It expects the full path starting from the root of the googleapis directory (e.g., "google/cloud/aiplatform/v1/schema/io_format.proto"). |
+| `gapic_yaml` | string | Is the GAPIC YAML configuration file, if provided. It expects the path relative to the config root or the googleapis directory (e.g., "google/cloud/aiplatform/v1/aiplatform_gapic.yaml"). |
 | `generate_gapic` | bool (optional) | Indicates whether to generate the GAPIC client surface. Defaults to true. |
 | `proto_package` | string | Overrides the derived proto package for the API. |
 | `samples` | bool (optional) | Determines whether to generate samples for the API. Default to true when omitted. |

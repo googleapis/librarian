@@ -121,8 +121,16 @@ type ModelOverride struct {
 //
 // This is useful in the mustache templates to skip code that only makes sense
 // when per-message code follows.
-func (api *API) HasMessages() bool {
-	return len(api.Messages) != 0
+func (a *API) HasMessages() bool {
+	return len(a.Messages) != 0
+}
+
+// HasServices returns true if the API contains services (most do).
+//
+// This is useful in the mustache templates to skip code that only makes sense
+// when per-service code follows.
+func (a *API) HasServices() bool {
+	return len(a.Services) != 0
 }
 
 // ModelCodec returns the Codec field with an alternative name.

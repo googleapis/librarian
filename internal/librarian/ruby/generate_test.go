@@ -152,6 +152,48 @@ func TestBuildGAPICOpts(t *testing.T) {
 			},
 		},
 		{
+			name: "ruby cloud opts with all options",
+			api: &config.API{
+				Path: "google/cloud/secretmanager/v1",
+				Ruby: &config.RubyAPI{
+					RubyCloudOpts: &config.RubyCloudOpts{
+						EnvPrefix:           "SECRET_MANAGER",
+						ExtraDependencies:   "google-cloud-core=~>1.6",
+						FactoryMethodSuffix: "service",
+						GemNamespace:        "Google::Cloud::SecretManager::V1",
+						MigrationVersion:    "1.0",
+						NamespaceOverride:   "SecretManager=Secretmanager",
+						PathOverride:        "secret_manager=secretmanager",
+						ServiceOverride:     "SecretManager=secretmanager",
+						WrapperGemOverride:  "google-cloud-secret_manager",
+						YardStrict:          "false",
+					},
+				},
+			},
+			library: &config.Library{
+				Name: "google-cloud-secret_manager",
+			},
+			want: []string{
+				"ruby-cloud-gem-name=google-cloud-secret_manager",
+				"service-yaml=" + filepath.Join(googleapisDir, "google/cloud/secretmanager/v1/secretmanager_v1.yaml"),
+				"ruby-cloud-description=Stores sensitive data such as API keys\\, passwords\\, and certificates. Provides convenience while improving security.",
+				"ruby-cloud-summary=Stores sensitive data such as API keys\\, passwords\\, and certificates. Provides convenience while improving security.",
+				"grpc-service-config=" + filepath.Join(googleapisDir, "google/cloud/secretmanager/v1/secretmanager_grpc_service_config.json"),
+				"ruby-cloud-generate-transports=grpc;rest",
+				"ruby-cloud-rest-numeric-enums=true",
+				"ruby-cloud-env-prefix=SECRET_MANAGER",
+				"ruby-cloud-extra-dependencies=google-cloud-core=~>1.6",
+				"ruby-cloud-factory-method-suffix=service",
+				"ruby-cloud-gem-namespace=Google::Cloud::SecretManager::V1",
+				"ruby-cloud-migration-version=1.0",
+				"ruby-cloud-namespace-override=SecretManager=Secretmanager",
+				"ruby-cloud-path-override=secret_manager=secretmanager",
+				"ruby-cloud-service-override=SecretManager=secretmanager",
+				"ruby-cloud-wrapper-gem-override=google-cloud-secret_manager",
+				"ruby-cloud-yard-strict=false",
+			},
+		},
+		{
 			name: "wrapper library with wrapper_of option",
 			api: &config.API{
 				Path: "google/cloud/secretmanager/v1",

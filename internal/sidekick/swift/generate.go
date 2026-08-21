@@ -68,6 +68,9 @@ func Generate(ctx context.Context, model *api.API, outdir string, library *confi
 	if err := codec.generateSnippets(outdir, model, provider); err != nil {
 		return err
 	}
+	if err := codec.generateDocc(outdir, model, provider); err != nil {
+		return err
+	}
 	generatedFiles := language.WalkTemplatesDir(templates, "templates/package")
 	return language.GenerateFromModel(outdir, model, provider, generatedFiles)
 }
@@ -94,6 +97,16 @@ func (c *codec) swiftFilename(basename string) string {
 		return name
 	}
 	return filepath.Join("Sources", c.LibraryName, name)
+}
+
+func (c *codec) generateDocc(outdir string, model *api.API, provider language.TemplateProvider) error {
+	output := filepath.Join("Sources", c.LibraryName, c.LibraryName+".docc", c.LibraryName+".md")
+	template := "templates/docc/landing_page.md.mustache"
+	generated := language.GeneratedFile{
+		TemplatePath: template,
+		OutputPath:   output,
+	}
+	return language.GenerateFromModel(outdir, model, provider, []language.GeneratedFile{generated})
 }
 
 func (c *codec) generateMessages(outdir string, model *api.API, provider language.TemplateProvider) error {

@@ -379,6 +379,7 @@ func TestParsePHPBazel(t *testing.T) {
 		bazelRules          string
 		want                []string
 		wantCommonResources bool
+		wantGapicYAML       string
 	}{
 		{
 			name:                "no BUILD.bazel",
@@ -433,6 +434,44 @@ proto_library_with_info(
 			want:                nil,
 			wantCommonResources: false,
 		},
+		{
+			name: "valid BUILD.bazel with gapic_yaml",
+			bazelRules: `
+php_gapic_library(
+    name = "ces_php_gapic",
+    srcs = [":ces_proto_with_info"],
+    gapic_yaml = ":ces_gapic.yaml",
+)
+proto_library_with_info(
+    name = "ces_proto_with_info",
+    deps = [
+        ":ces_proto",
+    ],
+)
+`,
+			want:                nil,
+			wantCommonResources: false,
+			wantGapicYAML:       "google/cloud/ces/v1/ces_gapic.yaml",
+		},
+		{
+			name: "valid BUILD.bazel with empty gapic_yaml",
+			bazelRules: `
+php_gapic_library(
+    name = "ces_php_gapic",
+    srcs = [":ces_proto_with_info"],
+    gapic_yaml = "",
+)
+proto_library_with_info(
+    name = "ces_proto_with_info",
+    deps = [
+        ":ces_proto",
+    ],
+)
+`,
+			want:                nil,
+			wantCommonResources: false,
+			wantGapicYAML:       "",
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			tempDir := t.TempDir()
@@ -445,7 +484,7 @@ proto_library_with_info(
 					t.Fatal(err)
 				}
 			}
-			got, gotCommonResources, err := parsePHPBazel(tempDir, "google/cloud/ces/v1")
+			got, gotCommonResources, gotGapicYAML, err := parsePHPBazel(tempDir, "google/cloud/ces/v1")
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -454,6 +493,9 @@ proto_library_with_info(
 			}
 			if gotCommonResources != test.wantCommonResources {
 				t.Errorf("mismatch common resources flag: want %t, got %t", test.wantCommonResources, gotCommonResources)
+			}
+			if gotGapicYAML != test.wantGapicYAML {
+				t.Errorf("mismatch gapic_yaml: want %q, got %q", test.wantGapicYAML, gotGapicYAML)
 			}
 		})
 	}
