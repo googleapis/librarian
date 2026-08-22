@@ -201,9 +201,9 @@ func createBinWrapper(wrapperName, destPath, binDir string, isExecutable bool, m
 	case isExecutable:
 		content = fmt.Sprintf("#!/bin/sh\nexec %q \"$@\"\n", destPath)
 	case mainClass != "":
-		content = fmt.Sprintf("#!/bin/sh\nexec java -cp %q %q \"$@\"\n", destPath, mainClass)
+		content = fmt.Sprintf("#!/bin/sh\nexec java --add-exports jdk.compiler/com.sun.tools.javac.api=ALL-UNNAMED --add-exports jdk.compiler/com.sun.tools.javac.file=ALL-UNNAMED --add-exports jdk.compiler/com.sun.tools.javac.parser=ALL-UNNAMED --add-exports jdk.compiler/com.sun.tools.javac.tree=ALL-UNNAMED --add-exports jdk.compiler/com.sun.tools.javac.util=ALL-UNNAMED -cp %q %q \"$@\"\n", destPath, mainClass)
 	default:
-		content = fmt.Sprintf("#!/bin/sh\nexec java -jar %q \"$@\"\n", destPath)
+		content = fmt.Sprintf("#!/bin/sh\nexec java --add-exports jdk.compiler/com.sun.tools.javac.api=ALL-UNNAMED --add-exports jdk.compiler/com.sun.tools.javac.file=ALL-UNNAMED --add-exports jdk.compiler/com.sun.tools.javac.parser=ALL-UNNAMED --add-exports jdk.compiler/com.sun.tools.javac.tree=ALL-UNNAMED --add-exports jdk.compiler/com.sun.tools.javac.util=ALL-UNNAMED -jar %q \"$@\"\n", destPath)
 	}
 	return os.WriteFile(wrapperPath, []byte(content), 0o755)
 }

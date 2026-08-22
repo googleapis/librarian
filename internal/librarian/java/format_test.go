@@ -111,6 +111,7 @@ func TestFormat_LookPathError(t *testing.T) {
 		t.Fatal(err)
 	}
 	t.Setenv("PATH", "")
+	t.Setenv("LIBRARIAN_BIN", t.TempDir())
 	err := Format(t.Context(), &config.Library{Output: tmpDir})
 	if err == nil {
 		t.Fatal(err)

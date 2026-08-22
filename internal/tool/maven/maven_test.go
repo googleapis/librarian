@@ -139,7 +139,7 @@ func TestInstall(t *testing.T) {
 			filename:    "google-java-format-1.25.2-all-deps.jar",
 			wantContent: "gjf jar content",
 			wrapperName: "google-java-format",
-			wantFormat:  "#!/bin/sh\nexec java -jar %q \"$@\"\n",
+			wantFormat:  "#!/bin/sh\nexec java --add-exports jdk.compiler/com.sun.tools.javac.api=ALL-UNNAMED --add-exports jdk.compiler/com.sun.tools.javac.file=ALL-UNNAMED --add-exports jdk.compiler/com.sun.tools.javac.parser=ALL-UNNAMED --add-exports jdk.compiler/com.sun.tools.javac.tree=ALL-UNNAMED --add-exports jdk.compiler/com.sun.tools.javac.util=ALL-UNNAMED -jar %q \"$@\"\n",
 		},
 		{
 			name:        "protoc-gen-java_grpc",
@@ -153,7 +153,7 @@ func TestInstall(t *testing.T) {
 			filename:    "gapic-generator-java-2.28.0-SNAPSHOT.jar",
 			wantContent: "local gapic jar content",
 			wrapperName: "protoc-gen-java_gapic",
-			wantFormat:  "#!/bin/sh\nexec java -cp %q \"com.google.api.generator.Main\" \"$@\"\n",
+			wantFormat:  "#!/bin/sh\nexec java --add-exports jdk.compiler/com.sun.tools.javac.api=ALL-UNNAMED --add-exports jdk.compiler/com.sun.tools.javac.file=ALL-UNNAMED --add-exports jdk.compiler/com.sun.tools.javac.parser=ALL-UNNAMED --add-exports jdk.compiler/com.sun.tools.javac.tree=ALL-UNNAMED --add-exports jdk.compiler/com.sun.tools.javac.util=ALL-UNNAMED -cp %q \"com.google.api.generator.Main\" \"$@\"\n",
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
