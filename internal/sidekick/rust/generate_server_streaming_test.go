@@ -48,8 +48,7 @@ func TestGenerateServerStreaming(t *testing.T) {
 	}
 	response := api.NewTestMessage("EchoResponse").WithPackage("test.v1")
 
-	serverMethod := api.NewTestMethod("Expand").WithInput(request).WithOutput(response)
-	serverMethod.ServerSideStreaming = true
+	serverMethod := api.NewTestMethod("Expand").WithInput(request).WithOutput(response).WithServerSideStreaming()
 	serverMethod.AutoPopulated = []*api.Field{requestId}
 	serverMethod.PathInfo = &api.PathInfo{
 		Bindings: []*api.PathBinding{{Verb: "POST", PathTemplate: &api.PathTemplate{}}},

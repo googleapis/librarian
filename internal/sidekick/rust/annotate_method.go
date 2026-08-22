@@ -56,7 +56,8 @@ func (m *methodAnnotation) IsBidiStreaming() bool {
 	return m.ClientSideStreaming && m.ServerSideStreaming
 }
 
-// IsServerStreaming returns true if the method is a server-side streaming RPC.
+// IsServerStreaming returns true if the method is a server-side streaming RPC
+// and is not bidirectional.
 func (m *methodAnnotation) IsServerStreaming() bool {
 	return !m.ClientSideStreaming && m.ServerSideStreaming
 }

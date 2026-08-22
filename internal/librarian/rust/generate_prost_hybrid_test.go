@@ -51,8 +51,7 @@ func TestGenerateProstHybrid(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	expandMethod := api.NewTestMethod("Expand").WithInput(msg).WithOutput(msg)
-	expandMethod.ServerSideStreaming = true
+	expandMethod := api.NewTestMethod("Expand").WithInput(msg).WithOutput(msg).WithServerSideStreaming()
 	serverService := api.NewTestService("ServerService").WithPackage("google.cloud.test.v1").WithMethods(expandMethod)
 	serverStreamingModel := api.NewTestAPI([]*api.Message{msg}, []*api.Enum{}, []*api.Service{serverService})
 	if err := api.CrossReference(serverStreamingModel); err != nil {
@@ -379,8 +378,7 @@ func TestFilterModelToStreamingServerStreaming(t *testing.T) {
 	respMsg := api.NewTestMessage("EchoResponse").WithPackage("google.test.v1")
 	unusedMsg := api.NewTestMessage("UnusedMsg").WithPackage("google.test.v1")
 
-	expandMethod := api.NewTestMethod("Expand").WithInput(reqMsg).WithOutput(respMsg)
-	expandMethod.ServerSideStreaming = true
+	expandMethod := api.NewTestMethod("Expand").WithInput(reqMsg).WithOutput(respMsg).WithServerSideStreaming()
 
 	serverService := api.NewTestService("EchoService").WithPackage("google.test.v1").WithMethods(expandMethod)
 	model := api.NewTestAPI([]*api.Message{reqMsg, respMsg, unusedMsg}, []*api.Enum{}, []*api.Service{serverService})
@@ -407,8 +405,7 @@ func TestFilterModelToStreamingIsolation(t *testing.T) {
 	serverResp := api.NewTestMessage("ServerResp").WithPackage("google.test.v1")
 
 	bidiMethod := api.NewTestMethod("Chat").WithInput(bidiMsg).WithOutput(bidiMsg).WithBidiStreaming()
-	serverMethod := api.NewTestMethod("Expand").WithInput(serverReq).WithOutput(serverResp)
-	serverMethod.ServerSideStreaming = true
+	serverMethod := api.NewTestMethod("Expand").WithInput(serverReq).WithOutput(serverResp).WithServerSideStreaming()
 
 	service := api.NewTestService("MixedService").WithPackage("google.test.v1").WithMethods(bidiMethod, serverMethod)
 	model := api.NewTestAPI([]*api.Message{bidiMsg, serverReq, serverResp}, []*api.Enum{}, []*api.Service{service})

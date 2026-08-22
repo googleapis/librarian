@@ -802,8 +802,7 @@ func TestModelAnnotationsStreamingServices(t *testing.T) {
 	bidiMethod.PathInfo = &api.PathInfo{}
 	bidiService := api.NewTestService("BidiService").WithPackage("test.v1").WithMethods(bidiMethod)
 
-	serverMethod := api.NewTestMethod("Expand").WithInput(msg).WithOutput(msg)
-	serverMethod.ServerSideStreaming = true
+	serverMethod := api.NewTestMethod("Expand").WithInput(msg).WithOutput(msg).WithServerSideStreaming()
 	serverMethod.PathInfo = &api.PathInfo{}
 	serverService := api.NewTestService("ServerService").WithPackage("test.v1").WithMethods(serverMethod)
 
