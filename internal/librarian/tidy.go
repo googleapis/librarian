@@ -187,6 +187,7 @@ func validateLibraries(cfg *config.Config) error {
 // languageValidators maps a language to a function that validates the language-specific
 // configuration.
 var languageValidators = map[string]func(*config.Config) error{
+	config.LanguageGo:   golang.Validate,
 	config.LanguageJava: java.Validate,
 	config.LanguagePhp:  php.Validate,
 }

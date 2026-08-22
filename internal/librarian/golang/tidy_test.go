@@ -322,6 +322,12 @@ func TestIsEmptyAPI(t *testing.T) {
 			},
 		},
 		{
+			name: "not empty with OpaqueCopy",
+			goAPI: &config.GoAPI{
+				OpaqueCopy: &config.GoOpaqueCopy{ImportPath: "foo/internal/opaquepb"},
+			},
+		},
+		{
 			name: "not empty with ProtoOnly",
 			goAPI: &config.GoAPI{
 				ProtoOnly: true,

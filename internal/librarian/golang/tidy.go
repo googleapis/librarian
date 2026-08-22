@@ -61,6 +61,7 @@ func isEmptyAPI(goAPI *config.GoAPI) bool {
 		len(goAPI.NestedProtos) == 0 &&
 		!goAPI.NoMetadata &&
 		!goAPI.NoSnippets &&
+		goAPI.OpaqueCopy == nil &&
 		!goAPI.ProtoOnly &&
 		goAPI.ProtoPackage == ""
 }

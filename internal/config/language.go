@@ -84,6 +84,9 @@ type GoAPI struct {
 	// NoSnippets indicates whether to skip generating snippets.
 	// This is typically false.
 	NoSnippets bool `yaml:"no_snippets,omitempty"`
+	// OpaqueCopy configures an additional internal opaque API copy of the API's
+	// protobuf messages.
+	OpaqueCopy *GoOpaqueCopy `yaml:"opaque_copy,omitempty"`
 	// ProtoAPILevel allows direct control of protobuf plugin's code generation
 	// level. Values allowed are API_OPEN, API_HYBRID, and API_OPAQUE.
 	// The default is unset, which relies on proto file annotations.
@@ -93,6 +96,18 @@ type GoAPI struct {
 	// A proto-only client does not define a service in the proto files.
 	ProtoOnly bool `yaml:"proto_only,omitempty"`
 	// ProtoPackage is the proto package name.
+	ProtoPackage string `yaml:"proto_package,omitempty"`
+}
+
+// GoOpaqueCopy configures an internal wire-compatible opaque API copy.
+type GoOpaqueCopy struct {
+	// ExtraProtos is a list of additional proto files to copy into the renamed
+	// proto package. Paths are relative to the googleapis or protoc include directory.
+	ExtraProtos []string `yaml:"extra_protos,omitempty"`
+	// ImportPath is the output directory and Go import path relative to the repository root.
+	ImportPath string `yaml:"import_path"`
+	// ProtoPackage is the renamed proto package. It defaults to the original
+	// package with an ".internalopaque" suffix.
 	ProtoPackage string `yaml:"proto_package,omitempty"`
 }
 

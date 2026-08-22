@@ -31,6 +31,109 @@ import (
 	"github.com/googleapis/librarian/internal/testhelper"
 )
 
+func TestRewriteOpaqueProto(t *testing.T) {
+	source := []byte(`syntax = "proto3";
+
+package google.spanner.v1;
+
+import "google/spanner/v1/type.proto";
+import "google/protobuf/struct.proto";
+
+option go_package = "cloud.google.com/go/spanner/apiv1/spannerpb;spannerpb";
+
+message Result {
+  google.spanner.v1.Type type = 1;
+  google.protobuf.Value value = 2;
+}
+
+service Spanner {
+  rpc Execute(Result) returns (google.spanner.v1.Type) {}
+}
+`)
+	want := `syntax = "proto3";
+
+package google.spanner.v1.internalopaque;
+
+import "librarian_opaque/google/spanner/v1/type.proto";
+import "librarian_opaque/google/protobuf/struct.proto";
+
+option go_package = "cloud.google.com/go/spanner/internal/opaquepb;opaquepb";
+
+message Result {
+  google.spanner.v1.internalopaque.Type type = 1;
+  google.spanner.v1.internalopaque.Value value = 2;
+}
+
+
+`
+	imports := map[string]string{
+		"google/spanner/v1/type.proto": "librarian_opaque/google/spanner/v1/type.proto",
+		"google/protobuf/struct.proto": "librarian_opaque/google/protobuf/struct.proto",
+	}
+	types := map[string][]string{
+		"google.spanner.v1": {"Result", "Type"},
+		"google.protobuf":   {"Value"},
+	}
+	got, err := rewriteOpaqueProto(source, "google.spanner.v1.internalopaque", "cloud.google.com/go/spanner/internal/opaquepb;opaquepb", imports, types)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if diff := cmp.Diff(want, string(got)); diff != "" {
+		t.Errorf("rewriteOpaqueProto() mismatch (-want +got):\n%s", diff)
+	}
+}
+
+func TestBuildOpaqueProtocArgs(t *testing.T) {
+	got := buildOpaqueProtocArgs(
+		"/tmp/source",
+		"/tmp/googleapis",
+		"/tmp/protoc/include",
+		"/tmp/output",
+		"cloud.google.com/go/spanner/internal/opaquepb",
+		[]string{
+			"librarian_opaque/google/protobuf/struct.proto",
+			"librarian_opaque/google/spanner/v1/spanner.proto",
+		},
+	)
+	want := []string{
+		"--experimental_allow_proto3_optional",
+		"--go_out=/tmp/output",
+		"--go_opt=default_api_level=API_OPAQUE",
+		"--go_opt=Mlibrarian_opaque/google/protobuf/struct.proto=cloud.google.com/go/spanner/internal/opaquepb",
+		"--go_opt=Mlibrarian_opaque/google/spanner/v1/spanner.proto=cloud.google.com/go/spanner/internal/opaquepb",
+		"-I=/tmp/source",
+		"-I=/tmp/googleapis",
+		"-I=/tmp/protoc/include",
+		"librarian_opaque/google/protobuf/struct.proto",
+		"librarian_opaque/google/spanner/v1/spanner.proto",
+	}
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Errorf("buildOpaqueProtocArgs() mismatch (-want +got):\n%s", diff)
+	}
+}
+
+func TestResolveOpaqueProto(t *testing.T) {
+	googleapisDir := t.TempDir()
+	includeDir := t.TempDir()
+	includeProto := filepath.Join(includeDir, "google", "protobuf", "struct.proto")
+	if err := os.MkdirAll(filepath.Dir(includeProto), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(includeProto, []byte("proto"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	got, err := resolveOpaqueProto("google/protobuf/struct.proto", googleapisDir, includeDir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if diff := cmp.Diff(includeProto, got); diff != "" {
+		t.Errorf("resolveOpaqueProto() mismatch (-want +got):\n%s", diff)
+	}
+	if _, err := resolveOpaqueProto("google/protobuf/missing.proto", googleapisDir, includeDir); !errors.Is(err, errOpaqueCopyExtraProto) {
+		t.Errorf("resolveOpaqueProto() error = %v, want %v", err, errOpaqueCopyExtraProto)
+	}
+}
+
 const googleapisDir = "../../testdata/googleapis"
 
 // TestGenerate performs simple testing that multiple libraries can be
@@ -328,6 +431,27 @@ func TestGenerateLibrary(t *testing.T) {
 			},
 			removed: []string{
 				"secretmanager/apiv1/secret_manager_client.go",
+			},
+		},
+		{
+			name: "additional opaque copy",
+			library: &config.Library{
+				Name: "secretmanager",
+				APIs: []*config.API{{
+					Path: "google/cloud/secretmanager/v1",
+					Go: &config.GoAPI{
+						ClientPackage: "secretmanager",
+						ImportPath:    "secretmanager/apiv1",
+						OpaqueCopy: &config.GoOpaqueCopy{
+							ImportPath: "secretmanager/internal/opaquepb",
+						},
+					},
+				}},
+			},
+			want: []string{
+				"secretmanager/apiv1/secretmanagerpb/service.pb.go",
+				"secretmanager/internal/opaquepb/doc.go",
+				"secretmanager/internal/opaquepb/service.pb.go",
 			},
 		},
 		{
