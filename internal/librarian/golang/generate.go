@@ -92,6 +92,11 @@ func Generate(ctx context.Context, cfg *config.Config, library *config.Library, 
 		if err := moveGeneratedFiles(library, goAPI, tempDir, outDir); err != nil {
 			return err
 		}
+		if goAPI.OpaqueCopy != nil {
+			if err := generateOpaqueCopy(ctx, library, api.Path, goAPI, pc, googleapisDir, tempDir, outDir); err != nil {
+				return fmt.Errorf("generate opaque copy: %w", err)
+			}
+		}
 		if err := generateClientVersionFile(library, goAPI); err != nil {
 			return fmt.Errorf("failed to generate client version file: %w", err)
 		}
