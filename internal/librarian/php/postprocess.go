@@ -23,6 +23,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"slices"
 	"strings"
 
 	"github.com/googleapis/librarian/internal/command"
@@ -68,14 +69,41 @@ func postProcessLibrary(ctx context.Context, library *config.Library, componentN
 	return nil
 }
 
-func runPostProcessors(ctx context.Context, library *config.Library, stagingDir, postProcessor string) error {
-	for _, api := range library.APIs {
-		apiStagingDir := filepath.Join(stagingDir, api.PHP.StagingSubdir)
+func runPostProcessors(ctx context.Context, library *config.Library, stagingDirBase, postProcessor string) error {
+	stagingDirs := removePrefixDirectories(library)
+	for _, stagingDir := range stagingDirs {
+		apiStagingDir := filepath.Join(stagingDirBase, stagingDir)
 		if err := command.RunInDir(ctx, apiStagingDir, postProcessor, "--input", "."); err != nil {
-			return fmt.Errorf("failed to run php-post-processor on %s: %w", api.Path, err)
+			return fmt.Errorf("failed to run php-post-processor on %s: %w", apiStagingDir, err)
 		}
 	}
 	return nil
+}
+
+func removePrefixDirectories(library *config.Library) []string {
+	stagingDirs := make([]string, 0, len(library.APIs))
+	for _, api := range library.APIs {
+		stagingDirs = append(stagingDirs, filepath.FromSlash(api.PHP.StagingSubdir))
+	}
+	var res []string
+	prefixes := make(map[string]bool)
+	slices.Sort(stagingDirs)
+	for _, dir := range stagingDirs {
+		originalDir := dir
+		found := false
+		for dir != "/" {
+			if prefixes[dir] {
+				found = true
+				break
+			}
+			dir = filepath.Dir(dir)
+		}
+		if !found {
+			res = append(res, originalDir)
+			prefixes[originalDir] = true
+		}
+	}
+	return res
 }
 
 // restoreCopyrightYear replaces the copyright year in generated source files.
@@ -104,7 +132,7 @@ func updateCopyrightYearInFile(path, year string, re *regexp.Regexp) error {
 	if err != nil {
 		return fmt.Errorf("reading %s: %w", path, err)
 	}
-	replacement := []byte(fmt.Sprintf("Copyright %s Google", year))
+	replacement := fmt.Appendf(nil, "Copyright %s Google", year)
 	updated := re.ReplaceAll(content, replacement)
 	if bytes.Equal(content, updated) {
 		return nil
