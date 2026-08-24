@@ -90,16 +90,13 @@ func Publish(ctx context.Context, params PublishParams) error {
 	}
 
 	for _, lib := range params.Config.Libraries {
-		if len(params.Libraries) > 0 && !slices.Contains(params.Libraries, lib.Name) && !slices.Contains(params.Libraries, lib.Output) {
-			continue
-		}
 		if lib.SkipRelease || lib.Version == "" {
 			continue
 		}
 
 		libDir := libraryOutput(lib, params.Config.Default)
-		if libDir == "" {
-			return fmt.Errorf("library %s has no output directory", lib.Name)
+		if len(params.Libraries) > 0 && !slices.Contains(params.Libraries, lib.Name) && !slices.Contains(params.Libraries, libDir) {
+			continue
 		}
 
 		if _, err := os.Stat(libDir); err != nil {

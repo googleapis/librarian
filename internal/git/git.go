@@ -229,7 +229,7 @@ func SubtreeSplit(ctx context.Context, gitExe, prefix, origin string) (string, e
 		return "", fmt.Errorf("failed to split subtree %s: %w", prefix, err)
 	}
 	splitSHA := strings.TrimSpace(output)
-	if len(splitSHA) != 40 {
+	if len(splitSHA) != 40 && len(splitSHA) != 64 {
 		return "", fmt.Errorf("unexpected git subtree split output for prefix %s: %q", prefix, output)
 	}
 	return splitSHA, nil
