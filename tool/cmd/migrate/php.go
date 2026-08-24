@@ -460,6 +460,11 @@ func specialCases(api *config.API) {
 		}
 		api.PHP.Samples = new(false)
 		api.PHP.StagingSubdir = "."
+	case "google/cloud/videointelligence/v1":
+		if api.PHP == nil {
+			api.PHP = &config.PHPAPI{}
+		}
+		api.PHP.GapicYAML = "google/cloud/videointelligence/v1/videointelligence_gapic.yaml"
 	}
 }
 
