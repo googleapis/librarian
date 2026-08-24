@@ -70,7 +70,7 @@ func postProcessLibrary(ctx context.Context, library *config.Library, componentN
 }
 
 func runPostProcessors(ctx context.Context, library *config.Library, stagingDirBase, postProcessor string) error {
-	stagingDirs := removePrefixDirectories(library)
+	stagingDirs := rootStagingDirs(library)
 	for _, stagingDir := range stagingDirs {
 		apiStagingDir := filepath.Join(stagingDirBase, stagingDir)
 		if err := command.RunInDir(ctx, apiStagingDir, postProcessor, "--input", "."); err != nil {
@@ -80,10 +80,11 @@ func runPostProcessors(ctx context.Context, library *config.Library, stagingDirB
 	return nil
 }
 
-func removePrefixDirectories(library *config.Library) []string {
+// rootStagingDirs returns a list of unique root directories from the library's staging directories.
+func rootStagingDirs(library *config.Library) []string {
 	stagingDirs := make([]string, 0, len(library.APIs))
 	for _, api := range library.APIs {
-		stagingDirs = append(stagingDirs, filepath.FromSlash(api.PHP.StagingSubdir))
+		stagingDirs = append(stagingDirs, filepath.Clean(filepath.FromSlash(api.PHP.StagingSubdir)))
 	}
 	var res []string
 	prefixes := make(map[string]bool)
@@ -91,7 +92,7 @@ func removePrefixDirectories(library *config.Library) []string {
 	for _, dir := range stagingDirs {
 		originalDir := dir
 		found := false
-		for dir != "/" {
+		for dir != "." {
 			if prefixes[dir] {
 				found = true
 				break
