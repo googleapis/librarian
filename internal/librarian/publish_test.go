@@ -85,7 +85,7 @@ func TestPublishCommand_Swift(t *testing.T) {
 	testhelper.RunGit(t, "clone", "--bare", splitRemote, splitBareRepo)
 
 	t.Chdir(cloneDir)
-	err = Run(t.Context(), "librarian", "publish", "--dry-run", "--remote-url-format", filepath.Dir(splitBareRepo)+"/{name}.git")
+	err := Run(t.Context(), "librarian", "publish", "--dry-run", "--remote-url-format", filepath.Dir(splitBareRepo)+"/{name}.git")
 	if err != nil {
 		t.Fatalf("librarian publish --dry-run failed: %v", err)
 	}

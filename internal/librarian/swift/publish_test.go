@@ -142,7 +142,7 @@ func TestPublishSuccess(t *testing.T) {
 		testhelper.RunGit(t, "clone", "--bare", remotePath, linkPath)
 	}
 
-	err = Publish(t.Context(), PublishParams{
+	err := Publish(t.Context(), PublishParams{
 		Config:          cfg,
 		RemoteURLFormat: filepath.Join(tempDir, "{name}.git"),
 		Origin:          "HEAD",
