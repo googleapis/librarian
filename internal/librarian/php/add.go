@@ -39,19 +39,10 @@ func DefaultLibraryName(apiPath string) string {
 
 // Add populates PHP-specific default configuration for all APIs in the library.
 func Add(lib *config.Library) *config.Library {
-	initVersion(lib)
-	initAPIs(lib.APIs)
-	return lib
-}
-
-func initVersion(lib *config.Library) {
 	if lib.Version == "" {
 		lib.Version = defaultVersion
 	}
-}
-
-func initAPIs(apis []*config.API) {
-	for _, api := range apis {
+	for _, api := range lib.APIs {
 		if api.PHP == nil {
 			api.PHP = &config.PHPAPI{}
 		}
@@ -59,4 +50,5 @@ func initAPIs(apis []*config.API) {
 			api.PHP.StagingSubdir = serviceconfig.ExtractVersion(api.Path)
 		}
 	}
+	return lib
 }
