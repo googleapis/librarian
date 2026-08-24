@@ -184,14 +184,6 @@ type bindingSubstitution struct {
 	//
 	// e.g. ["projects", "*"]
 	Template []string
-
-	// Whether the HTTP body is configured as "*"
-	fullBody bool
-}
-
-// FullBody returns true if the HTTP body is configured as "*".
-func (s *bindingSubstitution) FullBody() bool {
-	return s.fullBody
 }
 
 // TemplateAsArray returns Rust code that yields an array of path segments.
@@ -507,8 +499,8 @@ func makeBindingSubstitution(v *api.PathVariable, m *api.Method) (*bindingSubsti
 		rustNames = append(rustNames, toSnakeNoMangling(n))
 	}
 	var pathExtraction *PathExtraction
-	full_body := m.PathInfo != nil && m.PathInfo.BodyFieldPath == "*"
-	if full_body {
+	fullBody := m.PathInfo != nil && m.PathInfo.BodyFieldPath == "*"
+	if fullBody {
 		clears, err := makeClearAccessors(v.FieldPath, m)
 		if err != nil {
 			return nil, err
@@ -525,7 +517,6 @@ func makeBindingSubstitution(v *api.PathVariable, m *api.Method) (*bindingSubsti
 		FieldName:      strings.Join(rustNames, "."),
 		PathExtraction: pathExtraction,
 		Template:       v.Segments,
-		fullBody:       full_body,
 	}
 	return binding, nil
 }
