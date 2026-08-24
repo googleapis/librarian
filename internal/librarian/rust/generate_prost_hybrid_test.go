@@ -20,6 +20,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/sidekick/api"
 	"github.com/googleapis/librarian/internal/sidekick/parser"
@@ -49,12 +51,20 @@ func TestGenerateProstHybrid(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	expandMethod := api.NewTestMethod("Expand").WithInput(msg).WithOutput(msg).WithServerSideStreaming()
+	serverService := api.NewTestService("ServerService").WithPackage("google.cloud.test.v1").WithMethods(expandMethod)
+	serverStreamingModel := api.NewTestAPI([]*api.Message{msg}, []*api.Enum{}, []*api.Service{serverService})
+	if err := api.CrossReference(serverStreamingModel); err != nil {
+		t.Fatal(err)
+	}
+
 	for _, test := range []struct {
-		name                        string
-		model                       *api.API
-		includeBidiStreamingMethods bool
-		templateOverride            string
-		wantProstDir                bool
+		name                          string
+		model                         *api.API
+		includeBidiStreamingMethods   bool
+		includeServerStreamingMethods bool
+		templateOverride              string
+		wantProstDir                  bool
 	}{
 		{
 			name:                        "feature disabled does not create prost dir",
@@ -81,14 +91,21 @@ func TestGenerateProstHybrid(t *testing.T) {
 			includeBidiStreamingMethods: true,
 			wantProstDir:                true,
 		},
+		{
+			name:                          "server streaming enabled creates prost dir",
+			model:                         serverStreamingModel,
+			includeServerStreamingMethods: true,
+			wantProstDir:                  true,
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			outDir := t.TempDir()
 			lib := &config.Library{
 				Name: "test-package",
 				Rust: &config.RustCrate{
-					IncludeBidiStreamingMethods: test.includeBidiStreamingMethods,
-					TemplateOverride:            test.templateOverride,
+					IncludeBidiStreamingMethods:   test.includeBidiStreamingMethods,
+					IncludeServerStreamingMethods: test.includeServerStreamingMethods,
+					TemplateOverride:              test.templateOverride,
 				},
 			}
 			absSpecSource, err := filepath.Abs("../../testdata/googleapis/google/type")
@@ -136,7 +153,7 @@ func TestFilterModelToStreaming(t *testing.T) {
 	bidiService := api.NewTestService("BidiService").WithPackage("google.test.v1").WithMethods(chatMethod)
 	model := api.NewTestAPI([]*api.Message{streamingMsg, unusedMsg}, []*api.Enum{}, []*api.Service{bidiService})
 
-	filtered, unused, _, err := filterModelToStreaming(model)
+	filtered, unused, _, err := filterModelToStreaming(model, true, true)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -172,7 +189,7 @@ func TestFilterModelToStreamingNonStreamingFieldLookup(t *testing.T) {
 
 	model := api.NewTestAPI([]*api.Message{streamMsg, unaryReq, childData}, []*api.Enum{}, []*api.Service{bidiService, unaryService})
 
-	filtered, _, _, err := filterModelToStreaming(model)
+	filtered, _, _, err := filterModelToStreaming(model, true, true)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -219,7 +236,7 @@ func TestFilterModelToStreamingExternalTypes(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	filtered, _, _, err := filterModelToStreaming(model)
+	filtered, _, _, err := filterModelToStreaming(model, true, true)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -249,7 +266,7 @@ func TestFilterModelToStreamingAnyError(t *testing.T) {
 
 	anyModel := api.NewTestAPI([]*api.Message{anyMsg}, []*api.Enum{}, []*api.Service{anyService})
 
-	_, _, _, err := filterModelToStreaming(anyModel)
+	_, _, _, err := filterModelToStreaming(anyModel, true, true)
 	if err == nil {
 		t.Fatal("expected error for google.protobuf.Any, got nil")
 	}
@@ -291,7 +308,7 @@ func TestFilterModelToStreamingGoogleRpcStatus(t *testing.T) {
 	statusModel := api.NewTestAPI([]*api.Message{reqMsg}, []*api.Enum{}, []*api.Service{statusService})
 	statusModel.AddMessage(statusMsg)
 
-	filtered, unused, hasStatus, err := filterModelToStreaming(statusModel)
+	filtered, unused, hasStatus, err := filterModelToStreaming(statusModel, true, true)
 	if err != nil {
 		t.Fatalf("unexpected error for google.rpc.Status: %v", err)
 	}
@@ -338,7 +355,7 @@ func TestFilterModelToStreamingNestedTypeParentPreservation(t *testing.T) {
 
 	model := api.NewTestAPI([]*api.Message{parent, child, sibling, streamReq}, []*api.Enum{}, []*api.Service{bidiService})
 
-	_, unusedTypes, _, err := filterModelToStreaming(model)
+	_, unusedTypes, _, err := filterModelToStreaming(model, true, false)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -353,5 +370,91 @@ func TestFilterModelToStreamingNestedTypeParentPreservation(t *testing.T) {
 		if unused == sibling.ID {
 			t.Errorf("sibling field message %q of parent should not be in unusedTypes", sibling.ID)
 		}
+	}
+}
+
+func TestFilterModelToStreamingServerStreaming(t *testing.T) {
+	reqMsg := api.NewTestMessage("ExpandRequest").WithPackage("google.test.v1")
+	respMsg := api.NewTestMessage("EchoResponse").WithPackage("google.test.v1")
+	unusedMsg := api.NewTestMessage("UnusedMsg").WithPackage("google.test.v1")
+
+	expandMethod := api.NewTestMethod("Expand").WithInput(reqMsg).WithOutput(respMsg).WithServerSideStreaming()
+
+	serverService := api.NewTestService("EchoService").WithPackage("google.test.v1").WithMethods(expandMethod)
+	model := api.NewTestAPI([]*api.Message{reqMsg, respMsg, unusedMsg}, []*api.Enum{}, []*api.Service{serverService})
+
+	filtered, unused, _, err := filterModelToStreaming(model, false, true)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if len(filtered.Services) != 1 || filtered.Services[0].ID != serverService.ID {
+		t.Errorf("got services %v, want [%s]", filtered.Services, serverService.ID)
+	}
+	if len(filtered.Messages) != 2 {
+		t.Errorf("got messages %v, want [%s, %s]", filtered.Messages, reqMsg.ID, respMsg.ID)
+	}
+	if len(unused) != 1 || unused[0] != unusedMsg.ID {
+		t.Errorf("got unused %v, want [%s]", unused, unusedMsg.ID)
+	}
+}
+
+func TestFilterModelToStreamingIsolation(t *testing.T) {
+	bidiMsg := api.NewTestMessage("BidiMsg").WithPackage("google.test.v1")
+	serverReq := api.NewTestMessage("ServerReq").WithPackage("google.test.v1")
+	serverResp := api.NewTestMessage("ServerResp").WithPackage("google.test.v1")
+
+	bidiMethod := api.NewTestMethod("Chat").WithInput(bidiMsg).WithOutput(bidiMsg).WithBidiStreaming()
+	serverMethod := api.NewTestMethod("Expand").WithInput(serverReq).WithOutput(serverResp).WithServerSideStreaming()
+
+	service := api.NewTestService("MixedService").WithPackage("google.test.v1").WithMethods(bidiMethod, serverMethod)
+	model := api.NewTestAPI([]*api.Message{bidiMsg, serverReq, serverResp}, []*api.Enum{}, []*api.Service{service})
+
+	for _, test := range []struct {
+		name          string
+		includeBidi   bool
+		includeServer bool
+		wantMessages  []string
+		wantUnused    []string
+	}{
+		{
+			name:          "server streaming only ignores bidi types",
+			includeBidi:   false,
+			includeServer: true,
+			wantMessages:  []string{serverReq.ID, serverResp.ID},
+			wantUnused:    []string{bidiMsg.ID},
+		},
+		{
+			name:          "bidi streaming only ignores server streaming types",
+			includeBidi:   true,
+			includeServer: false,
+			wantMessages:  []string{bidiMsg.ID},
+			wantUnused:    []string{serverReq.ID, serverResp.ID},
+		},
+		{
+			name:          "both streaming types enabled includes all types",
+			includeBidi:   true,
+			includeServer: true,
+			wantMessages:  []string{bidiMsg.ID, serverReq.ID, serverResp.ID},
+			wantUnused:    nil,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			filtered, unused, _, err := filterModelToStreaming(model, test.includeBidi, test.includeServer)
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+			var gotMessages []string
+			for _, m := range filtered.Messages {
+				gotMessages = append(gotMessages, m.ID)
+			}
+			less := func(a, b string) bool { return a < b }
+			if diff := cmp.Diff(test.wantMessages, gotMessages, cmpopts.SortSlices(less), cmpopts.EquateEmpty()); diff != "" {
+				t.Errorf("mismatch in filtered messages (-want +got):\n%s", diff)
+			}
+			if diff := cmp.Diff(test.wantUnused, unused, cmpopts.SortSlices(less), cmpopts.EquateEmpty()); diff != "" {
+				t.Errorf("mismatch in unused messages (-want +got):\n%s", diff)
+			}
+		})
 	}
 }

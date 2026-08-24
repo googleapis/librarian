@@ -54,8 +54,12 @@ type modelAnnotations struct {
 	ExternPackages             []string
 	HasLROs                    bool
 	HasBidiStreaming           bool
+	HasServerStreaming         bool
+	HasStreaming               bool
 	IncludeRpcStatusConversion bool
 	BidiStreamingServices      []*api.Service
+	ServerStreamingServices    []*api.Service
+	StreamingServices          []*api.Service
 	CopyrightYear              string
 	BoilerPlate                []string
 	DefaultHost                string
@@ -145,7 +149,7 @@ func (m *modelAnnotations) ReleaseLevelIsGA() bool {
 func annotateModel(model *api.API, codec *codec) (*modelAnnotations, error) {
 	codec.hasServices = len(model.Services) > 0
 
-	resolveUsedPackages(model, codec.extraPackages, codec.hasBidiStreaming(model))
+	resolveUsedPackages(model, codec.extraPackages, codec.hasStreaming(model))
 	// Annotate enums and messages that we intend to generate. In the
 	// process we discover the external dependencies and trim the list of
 	// packages used by this API.
@@ -274,16 +278,30 @@ func annotateModel(model *api.API, codec *codec) (*modelAnnotations, error) {
 	}
 
 	var bidiStreamingServices []*api.Service
+	var serverStreamingServices []*api.Service
+	var streamingServices []*api.Service
 	for _, s := range servicesSubset {
-		if s.HasBidiStreaming() {
+		isBidi := codec.includeBidiStreamingMethods && s.HasBidiStreaming()
+		isServer := codec.includeServerStreamingMethods && s.HasServerSideStreaming()
+		if isBidi {
 			bidiStreamingServices = append(bidiStreamingServices, s)
 		}
+		if isServer {
+			serverStreamingServices = append(serverStreamingServices, s)
+		}
+		if isBidi || isServer {
+			streamingServices = append(streamingServices, s)
+		}
 	}
-	hasBidiStreaming := codec.hasBidiStreaming(model)
-	if hasBidiStreaming {
+	hasBidiStreaming := codec.templateOverride == "" && len(bidiStreamingServices) > 0
+	hasServerStreaming := codec.templateOverride == "" && len(serverStreamingServices) > 0
+	hasStreaming := hasBidiStreaming || hasServerStreaming
+	if hasStreaming {
 		for _, pkg := range codec.extraPackages {
-			if pkg.name == gaxiPackageName && !slices.Contains(pkg.features, "_internal-grpc-client") {
-				pkg.features = append(pkg.features, "_internal-grpc-client")
+			if pkg.name == gaxiPackageName {
+				if !slices.Contains(pkg.features, "_internal-grpc-client") {
+					pkg.features = append(pkg.features, "_internal-grpc-client")
+				}
 			}
 		}
 	}
@@ -308,8 +326,12 @@ func annotateModel(model *api.API, codec *codec) (*modelAnnotations, error) {
 		ExternPackages:             externPackages(codec.extraPackages),
 		HasLROs:                    hasLROs,
 		HasBidiStreaming:           hasBidiStreaming,
+		HasServerStreaming:         hasServerStreaming,
+		HasStreaming:               hasStreaming,
 		IncludeRpcStatusConversion: includeRpcStatusConversion,
 		BidiStreamingServices:      bidiStreamingServices,
+		ServerStreamingServices:    serverStreamingServices,
+		StreamingServices:          streamingServices,
 		CopyrightYear:              codec.generationYear,
 		BoilerPlate: append(license.HeaderBulk(),
 			"",

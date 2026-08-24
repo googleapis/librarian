@@ -204,6 +204,17 @@ func TestBigQuerySyntheticMessages(t *testing.T) {
 		}
 	}
 
+	// Verify that synthetic messages point to crate::model_ext
+	for _, f := range syntheticMsg.Fields {
+		fAnn, ok := f.Codec.(*fieldAnnotations)
+		if !ok {
+			t.Fatalf("expected fieldAnnotations on the field %q", f.ID)
+		}
+		if fAnn.FQMessageName != "crate::model_ext::MySyntheticMessage" {
+			t.Errorf("expected FQMessageName to be 'crate::model_ext::MySyntheticMessage', got %q", fAnn.FQMessageName)
+		}
+	}
+
 	// Verify builder() output has modified basic field annotations
 	queryBuilder, err := createQueryBuilderMessage(builder)
 	if err != nil {

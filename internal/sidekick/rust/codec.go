@@ -138,6 +138,12 @@ func newCodec(specificationFormat string, options map[string]string) (*codec, er
 				return nil, fmt.Errorf("cannot convert `include-bidi-streaming-methods` value %q to boolean: %w", definition, err)
 			}
 			codec.includeBidiStreamingMethods = value
+		case key == "include-server-streaming-methods":
+			value, err := strconv.ParseBool(definition)
+			if err != nil {
+				return nil, fmt.Errorf("cannot convert `include-server-streaming-methods` value %q to boolean: %w", definition, err)
+			}
+			codec.includeServerStreamingMethods = value
 		case key == "per-service-features":
 			value, err := strconv.ParseBool(definition)
 			if err != nil {
@@ -320,6 +326,8 @@ type codec struct {
 	includeStreamingMethods bool
 	// If true, this includes gRPC bi-directional streaming methods.
 	includeBidiStreamingMethods bool
+	// If true, this includes gRPC server-side streaming methods.
+	includeServerStreamingMethods bool
 	// If true, google.rpc.Status conversion is generated in convert.rs.
 	includeRpcStatusConversion bool
 	// If true, the generator will produce per-client features.
@@ -391,7 +399,7 @@ type packagez struct {
 	usedIf []string
 }
 
-func resolveUsedPackages(model *api.API, extraPackages []*packagez, hasBidiStreaming bool) {
+func resolveUsedPackages(model *api.API, extraPackages []*packagez, hasStreaming bool) {
 	hasServices := len(model.Services) > 0
 	hasLROs := false
 	hasAutoPopulation := false
@@ -426,7 +434,7 @@ func resolveUsedPackages(model *api.API, extraPackages []*packagez, hasBidiStrea
 				pkg.used = true
 				break
 			}
-			if namedFeature == "streaming" && hasBidiStreaming {
+			if namedFeature == "streaming" && hasStreaming {
 				pkg.used = true
 				break
 			}
@@ -1549,6 +1557,9 @@ func (c *codec) generateMethod(m *api.Method) bool {
 		if m.ClientSideStreaming && m.ServerSideStreaming && c.includeBidiStreamingMethods {
 			return true
 		}
+		if !m.ClientSideStreaming && m.ServerSideStreaming && c.includeServerStreamingMethods {
+			return true
+		}
 		return c.includeStreamingMethods
 	}
 	if c.includeGrpcOnlyMethods {
@@ -1565,6 +1576,17 @@ func (c *codec) hasBidiStreaming(model *api.API) bool {
 		return false
 	}
 	return slices.ContainsFunc(model.Services, (*api.Service).HasBidiStreaming)
+}
+
+func (c *codec) hasServerStreaming(model *api.API) bool {
+	if c.templateOverride != "" || !c.includeServerStreamingMethods {
+		return false
+	}
+	return slices.ContainsFunc(model.Services, (*api.Service).HasServerSideStreaming)
+}
+
+func (c *codec) hasStreaming(model *api.API) bool {
+	return c.hasBidiStreaming(model) || c.hasServerStreaming(model)
 }
 
 // escapeKeyword is the list of Rust keywords and reserved words can be found

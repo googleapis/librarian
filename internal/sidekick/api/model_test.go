@@ -324,3 +324,101 @@ func TestService_HasClientSideStreaming(t *testing.T) {
 		})
 	}
 }
+
+func TestService_HasBidiStreaming(t *testing.T) {
+	for _, test := range []struct {
+		name    string
+		methods []*Method
+		want    bool
+	}{
+		{
+			name: "no methods",
+			want: false,
+		},
+		{
+			name: "unary only",
+			methods: []*Method{
+				{Name: "m1", ClientSideStreaming: false, ServerSideStreaming: false},
+			},
+			want: false,
+		},
+		{
+			name: "server only streaming",
+			methods: []*Method{
+				{Name: "m1", ClientSideStreaming: false, ServerSideStreaming: true},
+			},
+			want: false,
+		},
+		{
+			name: "client only streaming",
+			methods: []*Method{
+				{Name: "m1", ClientSideStreaming: true, ServerSideStreaming: false},
+			},
+			want: false,
+		},
+		{
+			name: "bidi streaming",
+			methods: []*Method{
+				{Name: "m1", ClientSideStreaming: true, ServerSideStreaming: true},
+			},
+			want: true,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			s := &Service{Methods: test.methods}
+			got := s.HasBidiStreaming()
+			if got != test.want {
+				t.Errorf("got %v, want %v", got, test.want)
+			}
+		})
+	}
+}
+
+func TestService_HasServerSideStreaming(t *testing.T) {
+	for _, test := range []struct {
+		name    string
+		methods []*Method
+		want    bool
+	}{
+		{
+			name: "no methods",
+			want: false,
+		},
+		{
+			name: "unary only",
+			methods: []*Method{
+				{Name: "m1", ClientSideStreaming: false, ServerSideStreaming: false},
+			},
+			want: false,
+		},
+		{
+			name: "bidi streaming (not server-only)",
+			methods: []*Method{
+				{Name: "m1", ClientSideStreaming: true, ServerSideStreaming: true},
+			},
+			want: false,
+		},
+		{
+			name: "client only streaming",
+			methods: []*Method{
+				{Name: "m1", ClientSideStreaming: true, ServerSideStreaming: false},
+			},
+			want: false,
+		},
+		{
+			name: "server-side streaming",
+			methods: []*Method{
+				{Name: "m1", ClientSideStreaming: false, ServerSideStreaming: true},
+			},
+			want: true,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			s := &Service{Methods: test.methods}
+			got := s.HasServerSideStreaming()
+			if got != test.want {
+				t.Errorf("got %v, want %v", got, test.want)
+			}
+		})
+	}
+}

@@ -35,10 +35,10 @@ use crate::Error;
 #[derive(Clone)]
 pub struct {{Codec.Name}} {
     inner: gaxi::http::ReqwestClient,
-    {{#Codec.HasBidiStreaming}}
+    {{#Codec.HasStreaming}}
     #[cfg(google_cloud_unstable_gapic_streaming)]
     grpc_inner: gaxi::grpc::Client,
-    {{/Codec.HasBidiStreaming}}
+    {{/Codec.HasStreaming}}
 }
 
 {{#Codec.PerServiceFeatures}}
@@ -46,18 +46,18 @@ pub struct {{Codec.Name}} {
 {{/Codec.PerServiceFeatures}}
 impl std::fmt::Debug for {{Codec.Name}} {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::result::Result<(), std::fmt::Error> {
-        {{^Codec.HasBidiStreaming}}
+        {{^Codec.HasStreaming}}
         f.debug_struct("{{Codec.Name}}")
             .field("inner", &self.inner)
             .finish()
-        {{/Codec.HasBidiStreaming}}
-        {{#Codec.HasBidiStreaming}}
+        {{/Codec.HasStreaming}}
+        {{#Codec.HasStreaming}}
         let mut builder = f.debug_struct("{{Codec.Name}}");
         builder.field("inner", &self.inner);
         #[cfg(google_cloud_unstable_gapic_streaming)]
         builder.field("grpc_inner", &self.grpc_inner);
         builder.finish()
-        {{/Codec.HasBidiStreaming}}
+        {{/Codec.HasStreaming}}
     }
 }
 
@@ -66,7 +66,7 @@ impl std::fmt::Debug for {{Codec.Name}} {
 {{/Codec.PerServiceFeatures}}
 impl {{Codec.Name}} {
     pub async fn new(config: gaxi::options::ClientConfig) -> crate::ClientBuilderResult<Self> {
-        {{^Codec.HasBidiStreaming}}
+        {{^Codec.HasStreaming}}
         {{#Codec.DetailedTracingAttributes}}
         let tracing_is_enabled = gaxi::options::tracing_enabled(&config);
         let inner = gaxi::http::ReqwestClient::new(config, crate::DEFAULT_HOST).await?;
@@ -81,8 +81,8 @@ impl {{Codec.Name}} {
         let inner = gaxi::http::ReqwestClient::new(config, crate::DEFAULT_HOST).await?;
         Ok(Self { inner })
         {{/Codec.DetailedTracingAttributes}}
-        {{/Codec.HasBidiStreaming}}
-        {{#Codec.HasBidiStreaming}}
+        {{/Codec.HasStreaming}}
+        {{#Codec.HasStreaming}}
         {{#Codec.DetailedTracingAttributes}}
         let tracing_is_enabled = gaxi::options::tracing_enabled(&config);
         let inner = gaxi::http::ReqwestClient::new(config.clone(), crate::DEFAULT_HOST).await?;
@@ -118,7 +118,7 @@ impl {{Codec.Name}} {
             grpc_inner,
         })
         {{/Codec.DetailedTracingAttributes}}
-        {{/Codec.HasBidiStreaming}}
+        {{/Codec.HasStreaming}}
     }
 }
 
@@ -167,7 +167,72 @@ impl super::stub::{{Codec.Name}} for {{Codec.Name}} {
     }
 
     {{/Codec.IsBidiStreaming}}
+    {{#Codec.IsServerStreaming}}
+    #[cfg(google_cloud_unstable_gapic_streaming)]
+    async fn {{Codec.Name}}(
+        &self,
+        req: {{InputType.Codec.QualifiedName}},
+        options: crate::RequestOptions,
+    ) -> Result<google_cloud_gax::streaming::ResponseReceiver<{{OutputType.Codec.QualifiedName}}>> {
+        {{!
+        AIP-4222 says:
+
+            For any given RPC, if the explicit routing headers annotation is
+            present, the code generators **must** use it and **ignore** any
+            routing headers that might be implicitly specified in the
+            google.api.http annotation.
+
+        So we only need to generate one of the two code paths.
+        }}
+        {{#HasRouting}}
+        {{> /templates/grpc-client/routinginfo}}
+        {{/HasRouting}}
+        {{^HasRouting}}
+        let x_goog_request_params = [
+            {{#PathInfo.Codec.UniqueParameters}}
+                {{{FieldAccessor}}}.map(|v| format!("{{FieldName}}={v}")),
+            {{/PathInfo.Codec.UniqueParameters}}
+            {{^PathInfo.Codec.UniqueParameters}}
+            None::<String>; 0
+            {{/PathInfo.Codec.UniqueParameters}}
+        ]
+        .into_iter()
+        .flatten()
+        .fold(String::new(), |b, p| b + "&" + &p);
+        {{/HasRouting}}
+
+        let extensions = {
+            let mut e = gaxi::grpc::tonic::Extensions::new();
+            e.insert(gaxi::grpc::tonic::GrpcMethod::new(
+                "{{SourceService.Package}}.{{SourceService.Name}}",
+                "{{Name}}",
+            ));
+            e
+        };
+        let path = http::uri::PathAndQuery::from_static(
+            "/{{SourceService.Package}}.{{SourceService.Name}}/{{Name}}"
+        );
+
+        self.grpc_inner
+            .execute_server_streaming::<
+                {{InputType.Codec.QualifiedName}},
+                {{OutputType.Codec.QualifiedName}},
+                crate::prost::{{InputType.Codec.PackageModuleName}}::{{InputType.Codec.Name}},
+                crate::prost::{{OutputType.Codec.PackageModuleName}}::{{OutputType.Codec.Name}},
+            >(
+                extensions,
+                path,
+                req,
+                options,
+                &crate::info::X_GOOG_API_CLIENT_HEADER,
+                &x_goog_request_params,
+            )
+            .await
+    }
+
+    {{/Codec.IsServerStreaming}}
     {{^Codec.IsBidiStreaming}}
+    {{^Codec.IsServerStreaming}}
     async fn {{Codec.Name}}(
         &self,
         req: {{InputType.Codec.QualifiedName}},
@@ -327,6 +392,7 @@ impl super::stub::{{Codec.Name}} for {{Codec.Name}} {
         {{/ReturnsEmpty}}
         {{/Codec.HasBindings}}
     }
+    {{/Codec.IsServerStreaming}}
     {{/Codec.IsBidiStreaming}}
 
     {{/Codec.Methods}}

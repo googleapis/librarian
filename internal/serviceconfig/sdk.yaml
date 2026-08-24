@@ -254,6 +254,7 @@
 - path: google/cloud/batch/v1alpha
   documentation_uri: https://cloud.google.com/batch/docs
 - path: google/cloud/beyondcorp/appconnections/v1
+  title: BeyondCorp AppConnections API
   documentation_uri: https://cloud.google.com/beyondcorp/
   transports:
     csharp: grpc
@@ -261,6 +262,7 @@
     java: grpc
     ruby: grpc
 - path: google/cloud/beyondcorp/appconnectors/v1
+  title: BeyondCorp AppConnectors API
   documentation_uri: https://cloud.google.com/beyondcorp/
   transports:
     csharp: grpc
@@ -268,6 +270,7 @@
     java: grpc
     ruby: grpc
 - path: google/cloud/beyondcorp/appgateways/v1
+  title: BeyondCorp AppGateways API
   documentation_uri: https://cloud.google.com/beyondcorp/
   transports:
     csharp: grpc
@@ -275,6 +278,7 @@
     java: grpc
     ruby: grpc
 - path: google/cloud/beyondcorp/clientconnectorservices/v1
+  title: BeyondCorp ClientConnectorServices API
   documentation_uri: https://cloud.google.com/beyondcorp/
   transports:
     csharp: grpc
@@ -282,6 +286,7 @@
     java: grpc
     ruby: grpc
 - path: google/cloud/beyondcorp/clientgateways/v1
+  title: BeyondCorp ClientGateways API
   documentation_uri: https://cloud.google.com/beyondcorp/
   transports:
     csharp: grpc

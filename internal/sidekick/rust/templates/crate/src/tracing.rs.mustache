@@ -76,7 +76,19 @@ where T: super::stub::{{Codec.Name}} + std::fmt::Debug + Send + Sync {
         self.inner.{{Codec.Name}}(options)
     }
     {{/Codec.IsBidiStreaming}}
+    {{#Codec.IsServerStreaming}}
+    {{! TODO(#6835) - add tracing for server streaming methods }}
+    #[cfg(google_cloud_unstable_gapic_streaming)]
+    async fn {{Codec.Name}}(
+        &self,
+        req: {{InputType.Codec.QualifiedName}},
+        options: crate::RequestOptions,
+    ) -> Result<google_cloud_gax::streaming::ResponseReceiver<{{OutputType.Codec.QualifiedName}}>> {
+        self.inner.{{Codec.Name}}(req, options).await
+    }
+    {{/Codec.IsServerStreaming}}
     {{^Codec.IsBidiStreaming}}
+    {{^Codec.IsServerStreaming}}
     {{#Codec.DetailedTracingAttributes}}
     #[tracing::instrument(level = tracing::Level::DEBUG, ret)]
     {{/Codec.DetailedTracingAttributes}}
@@ -139,6 +151,7 @@ where T: super::stub::{{Codec.Name}} + std::fmt::Debug + Send + Sync {
         self.inner.{{Codec.Name}}(req, options).await
         {{/Codec.DetailedTracingAttributes}}
     }
+    {{/Codec.IsServerStreaming}}
     {{/Codec.IsBidiStreaming}}
     {{/Codec.Methods}}
     {{#Codec.HasLROs}}

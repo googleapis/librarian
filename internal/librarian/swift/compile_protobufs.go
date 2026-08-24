@@ -71,7 +71,6 @@ func compileProtobufs(ctx context.Context, pc *config.Protoc, library *config.Li
 
 	args := []string{
 		"--swift_out=Visibility=Public:" + module.Output,
-		"--grpc-swift_out=Visibility=Public:" + module.Output,
 	}
 	args = append(args, protoImports...)
 	args = append(args, protoFiles...)

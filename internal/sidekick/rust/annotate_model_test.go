@@ -511,7 +511,7 @@ func TestGenerateSetterSamples(t *testing.T) {
 	}
 }
 
-func TestModelAnnotationsHasBidiStreaming(t *testing.T) {
+func TestModelAnnotationsHasStreaming(t *testing.T) {
 	msg := &api.Message{
 		Name:    "Request",
 		ID:      ".test.v1.Request",
@@ -557,8 +557,36 @@ func TestModelAnnotationsHasBidiStreaming(t *testing.T) {
 		Package: "test.v1",
 		Methods: []*api.Method{
 			{
-				Name:                "List",
-				ID:                  ".test.v1.ServerStreamingService.List",
+				Name:                "Expand",
+				ID:                  ".test.v1.ServerStreamingService.Expand",
+				InputTypeID:         msg.ID,
+				OutputTypeID:        msg.ID,
+				InputType:           msg,
+				OutputType:          msg,
+				ServerSideStreaming: true,
+				PathInfo:            &api.PathInfo{},
+			},
+		},
+	}
+	mixedService := &api.Service{
+		Name:    "MixedService",
+		ID:      ".test.v1.MixedService",
+		Package: "test.v1",
+		Methods: []*api.Method{
+			{
+				Name:                "Chat",
+				ID:                  ".test.v1.MixedService.Chat",
+				InputTypeID:         msg.ID,
+				OutputTypeID:        msg.ID,
+				InputType:           msg,
+				OutputType:          msg,
+				ClientSideStreaming: true,
+				ServerSideStreaming: true,
+				PathInfo:            &api.PathInfo{},
+			},
+			{
+				Name:                "Expand",
+				ID:                  ".test.v1.MixedService.Expand",
 				InputTypeID:         msg.ID,
 				OutputTypeID:        msg.ID,
 				InputType:           msg,
@@ -573,7 +601,9 @@ func TestModelAnnotationsHasBidiStreaming(t *testing.T) {
 		name                 string
 		service              *api.Service
 		options              map[string]string
-		want                 bool
+		wantBidi             bool
+		wantServer           bool
+		wantStreaming        bool
 		wantGaxiFeatures     []string
 		wantRequiredPackages []string
 	}{
@@ -585,7 +615,38 @@ func TestModelAnnotationsHasBidiStreaming(t *testing.T) {
 				"package:gaxi":                   "package=google-cloud-gax,used-if=services",
 				"package:prost":                  "package=prost,used-if=streaming",
 			},
-			want:                 true,
+			wantBidi:             true,
+			wantServer:           false,
+			wantStreaming:        true,
+			wantGaxiFeatures:     []string{"_internal-grpc-client"},
+			wantRequiredPackages: []string{`gaxi                 = { workspace = true, features = ["_internal-grpc-client"] }`, "prost.workspace      = true"},
+		},
+		{
+			name:    "server streaming enabled with server streaming method",
+			service: serverStreamingService,
+			options: map[string]string{
+				"include-server-streaming-methods": "true",
+				"package:gaxi":                     "package=google-cloud-gax,used-if=services",
+				"package:prost":                    "package=prost,used-if=streaming",
+			},
+			wantBidi:             false,
+			wantServer:           true,
+			wantStreaming:        true,
+			wantGaxiFeatures:     []string{"_internal-grpc-client"},
+			wantRequiredPackages: []string{`gaxi                 = { workspace = true, features = ["_internal-grpc-client"] }`, "prost.workspace      = true"},
+		},
+		{
+			name:    "both streaming enabled with mixed service",
+			service: mixedService,
+			options: map[string]string{
+				"include-bidi-streaming-methods":   "true",
+				"include-server-streaming-methods": "true",
+				"package:gaxi":                     "package=google-cloud-gax,used-if=services",
+				"package:prost":                    "package=prost,used-if=streaming",
+			},
+			wantBidi:             true,
+			wantServer:           true,
+			wantStreaming:        true,
 			wantGaxiFeatures:     []string{"_internal-grpc-client"},
 			wantRequiredPackages: []string{`gaxi                 = { workspace = true, features = ["_internal-grpc-client"] }`, "prost.workspace      = true"},
 		},
@@ -597,7 +658,22 @@ func TestModelAnnotationsHasBidiStreaming(t *testing.T) {
 				"package:gaxi":                   "package=google-cloud-gax,used-if=services",
 				"package:prost":                  "package=prost,used-if=streaming",
 			},
-			want:                 false,
+			wantBidi:             false,
+			wantServer:           false,
+			wantStreaming:        false,
+			wantRequiredPackages: []string{"gaxi.workspace       = true"},
+		},
+		{
+			name:    "server streaming disabled with server streaming method",
+			service: serverStreamingService,
+			options: map[string]string{
+				"include-server-streaming-methods": "false",
+				"package:gaxi":                     "package=google-cloud-gax,used-if=services",
+				"package:prost":                    "package=prost,used-if=streaming",
+			},
+			wantBidi:             false,
+			wantServer:           false,
+			wantStreaming:        false,
 			wantRequiredPackages: []string{"gaxi.workspace       = true"},
 		},
 		{
@@ -608,7 +684,22 @@ func TestModelAnnotationsHasBidiStreaming(t *testing.T) {
 				"package:gaxi":                   "package=google-cloud-gax,used-if=services",
 				"package:prost":                  "package=prost,used-if=streaming",
 			},
-			want:                 false,
+			wantBidi:             false,
+			wantServer:           false,
+			wantStreaming:        false,
+			wantRequiredPackages: []string{"gaxi.workspace       = true"},
+		},
+		{
+			name:    "server streaming enabled with unary method",
+			service: unaryService,
+			options: map[string]string{
+				"include-server-streaming-methods": "true",
+				"package:gaxi":                     "package=google-cloud-gax,used-if=services",
+				"package:prost":                    "package=prost,used-if=streaming",
+			},
+			wantBidi:             false,
+			wantServer:           false,
+			wantStreaming:        false,
 			wantRequiredPackages: []string{"gaxi.workspace       = true"},
 		},
 		{
@@ -619,7 +710,22 @@ func TestModelAnnotationsHasBidiStreaming(t *testing.T) {
 				"package:gaxi":                   "package=google-cloud-gax,used-if=services",
 				"package:prost":                  "package=prost,used-if=streaming",
 			},
-			want:                 false,
+			wantBidi:             false,
+			wantServer:           false,
+			wantStreaming:        false,
+			wantRequiredPackages: []string{"gaxi.workspace       = true"},
+		},
+		{
+			name:    "server streaming enabled with bidi streaming method",
+			service: bidiService,
+			options: map[string]string{
+				"include-server-streaming-methods": "true",
+				"package:gaxi":                     "package=google-cloud-gax,used-if=services",
+				"package:prost":                    "package=prost,used-if=streaming",
+			},
+			wantBidi:             false,
+			wantServer:           false,
+			wantStreaming:        false,
 			wantRequiredPackages: []string{"gaxi.workspace       = true"},
 		},
 		{
@@ -631,7 +737,23 @@ func TestModelAnnotationsHasBidiStreaming(t *testing.T) {
 				"package:gaxi":                   "package=google-cloud-gax,used-if=services",
 				"package:prost":                  "package=prost,used-if=streaming",
 			},
-			want:                 false,
+			wantBidi:             false,
+			wantServer:           false,
+			wantStreaming:        false,
+			wantRequiredPackages: []string{"gaxi.workspace       = true"},
+		},
+		{
+			name:    "template override with server streaming method",
+			service: serverStreamingService,
+			options: map[string]string{
+				"include-server-streaming-methods": "true",
+				"template-override":                "templates/tonic",
+				"package:gaxi":                     "package=google-cloud-gax,used-if=services",
+				"package:prost":                    "package=prost,used-if=streaming",
+			},
+			wantBidi:             false,
+			wantServer:           false,
+			wantStreaming:        false,
 			wantRequiredPackages: []string{"gaxi.workspace       = true"},
 		},
 	} {
@@ -645,8 +767,14 @@ func TestModelAnnotationsHasBidiStreaming(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			if got.HasBidiStreaming != test.want {
-				t.Errorf("HasBidiStreaming = %v, want %v", got.HasBidiStreaming, test.want)
+			if got.HasBidiStreaming != test.wantBidi {
+				t.Errorf("HasBidiStreaming = %v, want %v", got.HasBidiStreaming, test.wantBidi)
+			}
+			if got.HasServerStreaming != test.wantServer {
+				t.Errorf("HasServerStreaming = %v, want %v", got.HasServerStreaming, test.wantServer)
+			}
+			if got.HasStreaming != test.wantStreaming {
+				t.Errorf("HasStreaming = %v, want %v", got.HasStreaming, test.wantStreaming)
 			}
 			if len(test.wantGaxiFeatures) > 0 {
 				idx := slices.IndexFunc(codec.extraPackages, func(pkg *packagez) bool {
@@ -667,25 +795,30 @@ func TestModelAnnotationsHasBidiStreaming(t *testing.T) {
 	}
 }
 
-func TestModelAnnotationsBidiStreamingServices(t *testing.T) {
+func TestModelAnnotationsStreamingServices(t *testing.T) {
 	msg := api.NewTestMessage("Request").WithPackage("test.v1")
 
 	bidiMethod := api.NewTestMethod("Chat").WithInput(msg).WithOutput(msg).WithBidiStreaming()
 	bidiMethod.PathInfo = &api.PathInfo{}
 	bidiService := api.NewTestService("BidiService").WithPackage("test.v1").WithMethods(bidiMethod)
 
+	serverMethod := api.NewTestMethod("Expand").WithInput(msg).WithOutput(msg).WithServerSideStreaming()
+	serverMethod.PathInfo = &api.PathInfo{}
+	serverService := api.NewTestService("ServerService").WithPackage("test.v1").WithMethods(serverMethod)
+
 	unaryMethod := api.NewTestMethod("Get").WithInput(msg).WithOutput(msg)
 	unaryMethod.PathInfo = &api.PathInfo{}
 	unaryService := api.NewTestService("UnaryService").WithPackage("test.v1").WithMethods(unaryMethod)
 
-	model := api.NewTestAPI([]*api.Message{msg}, []*api.Enum{}, []*api.Service{bidiService, unaryService})
+	model := api.NewTestAPI([]*api.Message{msg}, []*api.Enum{}, []*api.Service{bidiService, serverService, unaryService})
 	if err := api.CrossReference(model); err != nil {
 		t.Fatal(err)
 	}
 
 	codec := newTestCodec(t, libconfig.SpecProtobuf, "", map[string]string{
-		"include-bidi-streaming-methods": "true",
-		"per-service-features":           "true",
+		"include-bidi-streaming-methods":   "true",
+		"include-server-streaming-methods": "true",
+		"per-service-features":             "true",
 	})
 	got, err := annotateModel(model, codec)
 	if err != nil {
@@ -697,6 +830,15 @@ func TestModelAnnotationsBidiStreamingServices(t *testing.T) {
 	}
 	if got.BidiStreamingServices[0].Name != "BidiService" {
 		t.Errorf("expected BidiStreamingServices[0].Name == %q, got %q", "BidiService", got.BidiStreamingServices[0].Name)
+	}
+	if len(got.ServerStreamingServices) != 1 {
+		t.Fatalf("expected 1 ServerStreamingService, got %d", len(got.ServerStreamingServices))
+	}
+	if got.ServerStreamingServices[0].Name != "ServerService" {
+		t.Errorf("expected ServerStreamingServices[0].Name == %q, got %q", "ServerService", got.ServerStreamingServices[0].Name)
+	}
+	if len(got.StreamingServices) != 2 {
+		t.Fatalf("expected 2 StreamingServices, got %d", len(got.StreamingServices))
 	}
 }
 

@@ -283,6 +283,22 @@ func (m *Method) WithBidiStreaming() *Method {
 	return m
 }
 
+// WithServerSideStreaming sets the method as a server-side streaming
+// method. This method will not have client side streaming.
+func (m *Method) WithServerSideStreaming() *Method {
+	m.ClientSideStreaming = false
+	m.ServerSideStreaming = true
+	return m
+}
+
+// WithClientSideStreaming sets the method as a client-side streaming
+// method. This method will not have server-side streaming.
+func (m *Method) WithClientSideStreaming() *Method {
+	m.ClientSideStreaming = true
+	m.ServerSideStreaming = false
+	return m
+}
+
 // WithDiscoveryLro sets the discovery LRO information.
 func (m *Method) WithDiscoveryLro(info *DiscoveryLro) *Method {
 	m.DiscoveryLro = info

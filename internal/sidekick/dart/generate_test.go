@@ -24,6 +24,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/sidekick/api"
 	"github.com/googleapis/librarian/internal/sidekick/parser"
@@ -71,8 +72,11 @@ func TestFromProtobuf(t *testing.T) {
 		t.Fatal(err)
 	}
 	for _, expected := range []string{
+		".gitattributes",
 		"pubspec.yaml",
 		"lib/secretmanager.dart",
+		"lib/src/api.g.dart",
+		"lib/testing.dart",
 		"LICENSE",
 		"README.md",
 		"skills/google_cloud_secretmanager_v1-tests/SKILL.md",
@@ -87,6 +91,89 @@ func TestFromProtobuf(t *testing.T) {
 		if stat.Mode().Perm()|0o666 != 0o666 {
 			t.Errorf("generated files should not be executable %s: %o", filename, stat.Mode())
 		}
+	}
+
+	gitattributesContent, err := os.ReadFile(filepath.Join(outDir, ".gitattributes"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	wantGitattributes := `.gitattributes linguist-generated=true
+LICENSE linguist-generated=true
+README.md linguist-generated=true
+pubspec.yaml linguist-generated=true
+lib/secretmanager.dart linguist-generated=true
+lib/src/api.g.dart linguist-generated=true
+lib/testing.dart linguist-generated=true
+skills/** linguist-generated=true
+`
+	if diff := cmp.Diff(wantGitattributes, string(gitattributesContent)); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+}
+
+func TestFromProtobuf_NoServices(t *testing.T) {
+	requireProtoc(t)
+	outDir := t.TempDir()
+
+	cfg := &parser.ModelConfig{
+		SpecificationFormat: config.SpecProtobuf,
+		ServiceConfig:       "google/type/type.yaml",
+		SpecificationSource: "google/type",
+		Source: &sources.SourceConfig{
+			Sources: &sources.Sources{
+				Googleapis: path.Join(testdataDir, "../../testdata/googleapis"),
+			},
+			ActiveRoots: []string{"googleapis"},
+		},
+		Codec: map[string]string{
+			"issue-tracker-url":             "http://www.example.com/issues",
+			"copyright-year":                "2025",
+			"not-for-publication":           "true",
+			"version":                       "0.1.0",
+			"skip-format":                   "true",
+			"package:google_cloud_protobuf": "^0.1.2",
+			"proto:google.protobuf":         "package:google_cloud_protobuf/protobuf.dart",
+		},
+	}
+	model, err := parser.CreateModel(cfg)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := Generate(t.Context(), model, outDir, cfg.Codec); err != nil {
+		t.Fatal(err)
+	}
+	for _, expected := range []string{
+		".gitattributes",
+		"pubspec.yaml",
+		"lib/type.dart",
+		"lib/src/api.g.dart",
+		"LICENSE",
+		"README.md",
+	} {
+		filename := path.Join(outDir, expected)
+		stat, err := os.Stat(filename)
+		if err != nil {
+			t.Errorf("missing or cannot stat %s: %s", filename, err)
+			continue
+		}
+		if stat.Mode().Perm()|0o666 != 0o666 {
+			t.Errorf("generated files should not be executable %s: %o", filename, stat.Mode())
+		}
+	}
+
+	gitattributesContent, err := os.ReadFile(filepath.Join(outDir, ".gitattributes"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	wantGitattributes := `.gitattributes linguist-generated=true
+LICENSE linguist-generated=true
+README.md linguist-generated=true
+pubspec.yaml linguist-generated=true
+lib/type.dart linguist-generated=true
+lib/src/api.g.dart linguist-generated=true
+`
+	if diff := cmp.Diff(wantGitattributes, string(gitattributesContent)); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
 

@@ -58,6 +58,10 @@ type serviceAnnotations struct {
 	InternalBuilders bool
 	// If true, the service has at least one bidirectional streaming RPC in the API definition.
 	HasBidiStreaming bool
+	// If true, the service has at least one server-side streaming RPC in the API definition.
+	HasServerStreaming bool
+	// If true, the service has at least one streaming RPC (bidirectional or server-side) in the API definition.
+	HasStreaming bool
 }
 
 // BuilderVisibility returns the visibility for client and request builders.
@@ -102,14 +106,14 @@ func (a *serviceAnnotations) EnabledFeatures() []string {
 }
 
 func (c *codec) annotateService(s *api.Service) (*serviceAnnotations, error) {
-	// Check if the service has bidirectional streaming RPCs in its API definition
+	// Check if the service has bidirectional or server-side streaming RPCs in its API definition
 	// before methods are filtered by generateMethod. We check this before filtering
-	// because we are incrementally adding bidi-streaming support (initializing transport
+	// because we are incrementally adding streaming support (initializing transport
 	// stubs like grpc_inner first before generating streaming method implementations in
 	// subsequent steps).
-	hasBidiStreaming := c.includeBidiStreamingMethods && slices.ContainsFunc(s.Methods, func(m *api.Method) bool {
-		return m.ClientSideStreaming && m.ServerSideStreaming
-	})
+	hasBidiStreaming := c.includeBidiStreamingMethods && s.HasBidiStreaming()
+	hasServerStreaming := c.includeServerStreamingMethods && s.HasServerSideStreaming()
+	hasStreaming := hasBidiStreaming || hasServerStreaming
 
 	// Some codecs skip some methods.
 	methods := language.FilterSlice(s.Methods, func(m *api.Method) bool {
@@ -152,6 +156,8 @@ func (c *codec) annotateService(s *api.Service) (*serviceAnnotations, error) {
 		DetailedTracingAttributes: c.detailedTracingAttributes,
 		InternalBuilders:          c.internalBuilders,
 		HasBidiStreaming:          hasBidiStreaming,
+		HasServerStreaming:        hasServerStreaming,
+		HasStreaming:              hasStreaming,
 	}
 	s.Codec = ann
 	return ann, nil

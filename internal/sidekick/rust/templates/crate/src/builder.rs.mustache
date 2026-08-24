@@ -124,7 +124,12 @@ pub mod {{Codec.ModuleName}} {
     ///     println!("response {:?}", response);
     /// }
     {{/Codec.IsBidiStreaming}}
+    {{#Codec.IsServerStreaming}}
+    /// let builder = prepare_request_builder();
+    /// let mut receiver = builder.send().await?;
+    {{/Codec.IsServerStreaming}}
     {{^Codec.IsBidiStreaming}}
+    {{^Codec.IsServerStreaming}}
     {{#OperationInfo}}
     /// use google_cloud_lro::Poller;
     ///
@@ -147,6 +152,7 @@ pub mod {{Codec.ModuleName}} {
     /// let response = builder.send().await?;
     {{/Pagination}}
     {{/OperationInfo}}
+    {{/Codec.IsServerStreaming}}
     {{/Codec.IsBidiStreaming}}
     /// # Ok(()) }
     ///
@@ -162,6 +168,9 @@ pub mod {{Codec.ModuleName}} {
     {{Codec.BuilderVisibility}} struct {{Codec.BuilderName}}(BidiStreamBuilder);
     {{/Codec.IsBidiStreaming}}
     {{^Codec.IsBidiStreaming}}
+    {{#Codec.IsServerStreaming}}
+    #[cfg(google_cloud_unstable_gapic_streaming)]
+    {{/Codec.IsServerStreaming}}
     #[derive(Clone, Debug)]
     {{Codec.BuilderVisibility}} struct {{Codec.BuilderName}}(RequestBuilder<{{InputType.Codec.QualifiedName}}>);
     {{/Codec.IsBidiStreaming}}
@@ -169,6 +178,9 @@ pub mod {{Codec.ModuleName}} {
     {{#Codec.IsBidiStreaming}}
     #[cfg(google_cloud_unstable_gapic_streaming)]
     {{/Codec.IsBidiStreaming}}
+    {{#Codec.IsServerStreaming}}
+    #[cfg(google_cloud_unstable_gapic_streaming)]
+    {{/Codec.IsServerStreaming}}
     impl {{Codec.BuilderName}} {
         pub(crate) fn new(stub: std::sync::Arc<dyn super::super::stub::dynamic::{{Codec.ServiceNameToPascal}}>) -> Self {
             Self(
@@ -202,7 +214,16 @@ pub mod {{Codec.ModuleName}} {
             (*self.0.stub).{{Codec.Name}}(self.0.options)
         }
         {{/Codec.IsBidiStreaming}}
+        {{#Codec.IsServerStreaming}}
+        /// Initiates the server stream.
+        pub async fn send(
+            self,
+        ) -> Result<google_cloud_gax::streaming::ResponseReceiver<{{OutputType.Codec.QualifiedName}}>> {
+            (*self.0.stub).{{Codec.Name}}(self.0.request, self.0.options).await
+        }
+        {{/Codec.IsServerStreaming}}
         {{^Codec.IsBidiStreaming}}
+        {{^Codec.IsServerStreaming}}
         /// Sends the request.
         {{#OperationInfo}}
         ///
@@ -513,6 +534,7 @@ pub mod {{Codec.ModuleName}} {
             req
         }
         {{/HasAutoPopulatedFields}}
+        {{/Codec.IsServerStreaming}}
         {{#InputType.Codec.BasicFields}}
 
         /// Sets the value of [{{Codec.FieldName}}][{{Codec.FQMessageName}}::{{Codec.SetterName}}].
@@ -667,6 +689,9 @@ pub mod {{Codec.ModuleName}} {
     {{#Codec.IsBidiStreaming}}
     #[cfg(google_cloud_unstable_gapic_streaming)]
     {{/Codec.IsBidiStreaming}}
+    {{#Codec.IsServerStreaming}}
+    #[cfg(google_cloud_unstable_gapic_streaming)]
+    {{/Codec.IsServerStreaming}}
     #[doc(hidden)]
     impl crate::RequestBuilder for {{Codec.BuilderName}} {
         fn request_options(&mut self) -> &mut crate::RequestOptions {

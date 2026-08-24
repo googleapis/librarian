@@ -138,6 +138,9 @@ func buildCodec(library *config.Library, releaseLevel string) map[string]string 
 	if rust.IncludeBidiStreamingMethods {
 		codec["include-bidi-streaming-methods"] = "true"
 	}
+	if rust.IncludeServerStreamingMethods {
+		codec["include-server-streaming-methods"] = "true"
+	}
 	if rust.PerServiceFeatures {
 		codec["per-service-features"] = "true"
 	}
@@ -320,6 +323,9 @@ func buildModuleCodec(library *config.Library, module *config.RustModule) map[st
 	}
 	if module.IncludeBidiStreamingMethods {
 		codec["include-bidi-streaming-methods"] = "true"
+	}
+	if module.IncludeServerStreamingMethods {
+		codec["include-server-streaming-methods"] = "true"
 	}
 	detailedTracingAttributes := library.Rust != nil && library.Rust.DetailedTracingAttributes != nil && *library.Rust.DetailedTracingAttributes
 	if module.DetailedTracingAttributes != nil {

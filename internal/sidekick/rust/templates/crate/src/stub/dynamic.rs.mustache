@@ -37,13 +37,26 @@ pub trait {{Codec.Name}}: std::fmt::Debug + Send + Sync {
     );
 
     {{/Codec.IsBidiStreaming}}
+    {{#Codec.IsServerStreaming}}
+    #[cfg(google_cloud_unstable_gapic_streaming)]
+    async fn {{Codec.Name}}(
+        &self,
+        req: {{InputType.Codec.QualifiedName}},
+        options: crate::RequestOptions,
+    ) -> crate::Result<
+        google_cloud_gax::streaming::ResponseReceiver<{{OutputType.Codec.QualifiedName}}>,
+    >;
+
+    {{/Codec.IsServerStreaming}}
     {{^Codec.IsBidiStreaming}}
+    {{^Codec.IsServerStreaming}}
     async fn {{Codec.Name}}(
         &self,
         req: {{InputType.Codec.QualifiedName}},
         options: crate::RequestOptions,
     ) -> crate::Result<crate::Response<{{Codec.ReturnType}}>>;
 
+    {{/Codec.IsServerStreaming}}
     {{/Codec.IsBidiStreaming}}
     {{/Codec.Methods}}
     {{#Codec.HasLROs}}
@@ -87,7 +100,21 @@ impl<T: super::{{Codec.Name}}> {{Codec.Name}} for T {
     }
 
     {{/Codec.IsBidiStreaming}}
+    {{#Codec.IsServerStreaming}}
+    #[cfg(google_cloud_unstable_gapic_streaming)]
+    async fn {{Codec.Name}}(
+        &self,
+        req: {{InputType.Codec.QualifiedName}},
+        options: crate::RequestOptions,
+    ) -> crate::Result<
+        google_cloud_gax::streaming::ResponseReceiver<{{OutputType.Codec.QualifiedName}}>,
+    > {
+        T::{{Codec.Name}}(self, req, options).await
+    }
+
+    {{/Codec.IsServerStreaming}}
     {{^Codec.IsBidiStreaming}}
+    {{^Codec.IsServerStreaming}}
     async fn {{Codec.Name}}(
         &self,
         req: {{InputType.Codec.QualifiedName}},
@@ -96,6 +123,7 @@ impl<T: super::{{Codec.Name}}> {{Codec.Name}} for T {
         T::{{Codec.Name}}(self, req, options).await
     }
 
+    {{/Codec.IsServerStreaming}}
     {{/Codec.IsBidiStreaming}}
     {{/Codec.Methods}}
     {{#Codec.HasLROs}}
