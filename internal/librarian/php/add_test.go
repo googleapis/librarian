@@ -78,6 +78,7 @@ func TestAdd(t *testing.T) {
 				},
 			},
 			want: &config.Library{
+				Version: "0.0.0",
 				APIs: []*config.API{
 					{
 						Path: "google/cloud/speech/v2",
@@ -101,11 +102,32 @@ func TestAdd(t *testing.T) {
 				},
 			},
 			want: &config.Library{
+				Version: "0.0.0",
 				APIs: []*config.API{
 					{
 						Path: "google/cloud/speech/v2",
 						PHP: &config.PHPAPI{
 							StagingSubdir: "custom_subdir",
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "existing version",
+			lib: &config.Library{
+				Version: "1.2.3",
+				APIs: []*config.API{
+					{Path: "google/cloud/speech/v2"},
+				},
+			},
+			want: &config.Library{
+				Version: "1.2.3",
+				APIs: []*config.API{
+					{
+						Path: "google/cloud/speech/v2",
+						PHP: &config.PHPAPI{
+							StagingSubdir: "v2",
 						},
 					},
 				},
@@ -120,6 +142,7 @@ func TestAdd(t *testing.T) {
 				},
 			},
 			want: &config.Library{
+				Version: "0.0.0",
 				APIs: []*config.API{
 					{
 						Path: "google/cloud/speech/v2",

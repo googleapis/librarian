@@ -590,3 +590,24 @@ func TestIsBidiStreaming(t *testing.T) {
 		})
 	}
 }
+
+func TestIsServerStreaming(t *testing.T) {
+	for _, test := range []struct {
+		name   string
+		client bool
+		server bool
+		want   bool
+	}{
+		{"bidi streaming", true, true, false},
+		{"client-only streaming", true, false, false},
+		{"server-only streaming", false, true, true},
+		{"unary", false, false, false},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			ann := &methodAnnotation{ClientSideStreaming: test.client, ServerSideStreaming: test.server}
+			if got := ann.IsServerStreaming(); got != test.want {
+				t.Errorf("methodAnnotation.IsServerStreaming() = %v, want %v", got, test.want)
+			}
+		})
+	}
+}

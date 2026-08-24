@@ -60,3 +60,11 @@ func (s *Service) HasBidiStreaming() bool {
 		return m.ClientSideStreaming && m.ServerSideStreaming
 	})
 }
+
+// HasServerSideStreaming returns true if the service contains any methods
+// that support server-side streaming and are not bidirectional.
+func (s *Service) HasServerSideStreaming() bool {
+	return slices.ContainsFunc(s.Methods, func(m *Method) bool {
+		return !m.ClientSideStreaming && m.ServerSideStreaming
+	})
+}

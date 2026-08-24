@@ -65,7 +65,20 @@ pub trait {{Codec.Name}}: std::fmt::Debug + Send + Sync {
         gaxi::unimplemented::unimplemented_bidi_stub()
     }
     {{/Codec.IsBidiStreaming}}
+    {{#Codec.IsServerStreaming}}
+    #[cfg(google_cloud_unstable_gapic_streaming)]
+    fn {{Codec.Name}}(
+        &self,
+        _req: {{InputType.Codec.QualifiedName}},
+        _options: crate::RequestOptions,
+    ) -> impl std::future::Future<Output = crate::Result<
+        google_cloud_gax::streaming::ResponseReceiver<{{OutputType.Codec.QualifiedName}}>,
+    >> + Send {
+        gaxi::unimplemented::unimplemented_server_streaming_stub()
+    }
+    {{/Codec.IsServerStreaming}}
     {{^Codec.IsBidiStreaming}}
+    {{^Codec.IsServerStreaming}}
     fn {{Codec.Name}}(
         &self,
         _req: {{InputType.Codec.QualifiedName}},
@@ -73,6 +86,7 @@ pub trait {{Codec.Name}}: std::fmt::Debug + Send + Sync {
     ) -> impl std::future::Future<Output = crate::Result<crate::Response<{{Codec.ReturnType}}>>> + Send {
         gaxi::unimplemented::unimplemented_stub()
     }
+    {{/Codec.IsServerStreaming}}
     {{/Codec.IsBidiStreaming}}
     {{/Codec.Methods}}
     {{#Codec.HasLROs}}

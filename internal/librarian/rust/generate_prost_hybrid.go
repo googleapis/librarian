@@ -32,15 +32,22 @@ import (
 )
 
 func generateProstHybrid(ctx context.Context, model *api.API, library *config.Library, outdir string, modelConfig *parser.ModelConfig) error {
-	if library.Rust == nil || !library.Rust.IncludeBidiStreamingMethods || library.Rust.TemplateOverride != "" {
+	if library.Rust == nil || library.Rust.TemplateOverride != "" {
 		return nil
 	}
-	hasBidiStreaming := slices.ContainsFunc(model.Services, (*api.Service).HasBidiStreaming)
-	if !hasBidiStreaming {
+	includeBidi := library.Rust.IncludeBidiStreamingMethods
+	includeServer := library.Rust.IncludeServerStreamingMethods
+	if !includeBidi && !includeServer {
+		return nil
+	}
+	hasStreaming := slices.ContainsFunc(model.Services, func(s *api.Service) bool {
+		return (includeBidi && s.HasBidiStreaming()) || (includeServer && s.HasServerSideStreaming())
+	})
+	if !hasStreaming {
 		return nil
 	}
 
-	hybridModel, unusedTypes, hasGoogleRpcStatus, err := filterModelToStreaming(model)
+	hybridModel, unusedTypes, hasGoogleRpcStatus, err := filterModelToStreaming(model, includeBidi, includeServer)
 	if err != nil {
 		return err
 	}
@@ -73,11 +80,11 @@ func generateProstHybrid(ctx context.Context, model *api.API, library *config.Li
 }
 
 // filterModelToStreaming constructs a hybrid api.API model containing only
-// bidirectional streaming RPC types for prost conversion generation. It also returns
+// enabled bidirectional and server-side streaming RPC types for prost conversion generation. It also returns
 // a sorted slice of all non-WKT unused type IDs to exclude via prost_build extern_path,
 // and a boolean indicating whether google.rpc.Status is referenced in the streaming path.
 // Errors if Any is encountered in the streaming reachability path.
-func filterModelToStreaming(model *api.API) (*api.API, []string, bool, error) {
+func filterModelToStreaming(model *api.API, includeBidi bool, includeServer bool) (*api.API, []string, bool, error) {
 	type streamingTypeItem struct {
 		id       string
 		rpc      string
@@ -89,10 +96,12 @@ func filterModelToStreaming(model *api.API) (*api.API, []string, bool, error) {
 	streamingEnums := make(map[string]bool)
 	var queue []streamingTypeItem
 
-	// Collect initial input/output message types from all bidirectional streaming RPCs.
+	// Collect initial input/output message types from all enabled bidirectional and server-side streaming RPCs.
 	for _, s := range model.Services {
 		for _, m := range s.Methods {
-			if m.ClientSideStreaming && m.ServerSideStreaming {
+			isBidi := m.ClientSideStreaming && m.ServerSideStreaming && includeBidi
+			isServer := !m.ClientSideStreaming && m.ServerSideStreaming && includeServer
+			if isBidi || isServer {
 				rpcName := s.Name + "." + m.Name
 				if m.InputTypeID != "" {
 					queue = append(queue, streamingTypeItem{
@@ -267,7 +276,9 @@ func filterModelToStreaming(model *api.API) (*api.API, []string, bool, error) {
 		// Services, Messages, and Enums slices are filtered to only streaming types so convert.rs
 		// only contains conversion implementations for streaming RPCs.
 		// Filtering model.Messages and model.Enums preserves their original deterministic file order.
-		Services:            language.FilterSlice(model.Services, (*api.Service).HasBidiStreaming),
+		Services: language.FilterSlice(model.Services, func(s *api.Service) bool {
+			return (includeBidi && s.HasBidiStreaming()) || (includeServer && s.HasServerSideStreaming())
+		}),
 		Messages:            language.FilterSlice(model.Messages, func(m *api.Message) bool { return streamingMsgs[m.ID] }),
 		ExternalMessages:    externalMessages,
 		Enums:               language.FilterSlice(model.Enums, func(e *api.Enum) bool { return streamingEnums[e.ID] }),
