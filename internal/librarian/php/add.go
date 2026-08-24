@@ -22,6 +22,8 @@ import (
 	"github.com/googleapis/librarian/internal/serviceconfig"
 )
 
+const defaultVersion = "0.0.0"
+
 // DefaultLibraryName derives the library name for PHP purely from the API path.
 // E.g., "google/cloud/speech/v2" -> "speech"
 // E.g., "google/cloud/security/privateca/v1" -> "security-privateca".
@@ -37,7 +39,13 @@ func DefaultLibraryName(apiPath string) string {
 
 // Add populates PHP-specific default configuration for all APIs in the library.
 func Add(lib *config.Library) *config.Library {
-	for _, api := range lib.APIs {
+	lib.Version = defaultVersion
+	addPHPAPI(lib.APIs)
+	return lib
+}
+
+func addPHPAPI(apis []*config.API) {
+	for _, api := range apis {
 		if api.PHP == nil {
 			api.PHP = &config.PHPAPI{}
 		}
@@ -45,5 +53,4 @@ func Add(lib *config.Library) *config.Library {
 			api.PHP.StagingSubdir = serviceconfig.ExtractVersion(api.Path)
 		}
 	}
-	return lib
 }
