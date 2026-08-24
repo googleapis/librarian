@@ -45,12 +45,6 @@ func TestPublishCommand_Swift(t *testing.T) {
 	testhelper.RequireCommand(t, "git")
 
 	remoteDir := t.TempDir()
-	curDir, err := os.Getwd()
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer func() { _ = os.Chdir(curDir) }()
-
 	testhelper.ContinueInNewGitRepository(t, remoteDir)
 	if err := os.WriteFile("LICENSE", []byte("license"), 0o644); err != nil {
 		t.Fatal(err)

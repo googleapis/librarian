@@ -17,6 +17,7 @@ package swift
 import (
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 
@@ -75,13 +76,7 @@ func TestSplitSuccess(t *testing.T) {
 	}
 	files := strings.Fields(lsOut)
 	for _, expectedFile := range []string{"LICENSE", "CODE_OF_CONDUCT.md", "CONTRIBUTING.md", "Package.swift", "Sources"} {
-		found := false
-		for _, f := range files {
-			if f == expectedFile {
-				found = true
-				break
-			}
-		}
+		found := slices.Contains(files, expectedFile)
 		if !found {
 			t.Errorf("expected file %q in split tree, got files: %v", expectedFile, files)
 		}
@@ -103,13 +98,7 @@ func TestSplitSuccess(t *testing.T) {
 		}
 		cFiles := strings.Fields(tree)
 		for _, rf := range DefaultRootFiles {
-			found := false
-			for _, f := range cFiles {
-				if f == rf {
-					found = true
-					break
-				}
-			}
+			found := slices.Contains(cFiles, rf)
 			if !found {
 				t.Errorf("commit %s missing root file %s; found: %v", c, rf, cFiles)
 			}

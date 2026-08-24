@@ -76,10 +76,7 @@ func Split(ctx context.Context, params SplitParams) (string, error) {
 }
 
 func rewriteHistoryWithRootFiles(ctx context.Context, gitExe, rawSHA, origin string, rootFiles []string) (string, error) {
-	rootEntries, err := getRootEntries(ctx, gitExe, origin, rootFiles)
-	if err != nil {
-		return "", err
-	}
+	rootEntries := getRootEntries(ctx, gitExe, origin, rootFiles)
 	if len(rootEntries) == 0 {
 		return rawSHA, nil
 	}
@@ -132,7 +129,7 @@ func rewriteHistoryWithRootFiles(ctx context.Context, gitExe, rawSHA, origin str
 			return "", fmt.Errorf("failed to get parents for %s: %w", c, err)
 		}
 		var parentArgs []string
-		for _, p := range strings.Fields(parentsOut) {
+		for p := range strings.FieldsSeq(parentsOut) {
 			mappedP := p
 			if mapped, ok := commitMap[p]; ok {
 				mappedP = mapped
@@ -192,7 +189,7 @@ func rewriteHistoryWithRootFiles(ctx context.Context, gitExe, rawSHA, origin str
 	return lastNewCommit, nil
 }
 
-func getRootEntries(ctx context.Context, gitExe, origin string, rootFiles []string) ([]string, error) {
+func getRootEntries(ctx context.Context, gitExe, origin string, rootFiles []string) []string {
 	var entries []string
 	for _, f := range rootFiles {
 		out, err := command.Output(ctx, gitExe, "ls-tree", origin, "--", f)
@@ -206,5 +203,5 @@ func getRootEntries(ctx context.Context, gitExe, origin string, rootFiles []stri
 			}
 		}
 	}
-	return entries, nil
+	return entries
 }

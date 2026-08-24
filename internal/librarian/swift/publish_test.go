@@ -71,21 +71,18 @@ func TestFormatRemoteURL(t *testing.T) {
 	}
 }
 
-func setupSplitRemoteRepo(t *testing.T) string {
+func setupSplitRemoteRepo(t *testing.T, tag string) string {
 	t.Helper()
 	remoteDir := t.TempDir()
-	curDir, err := os.Getwd()
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer func() { _ = os.Chdir(curDir) }()
-
 	testhelper.ContinueInNewGitRepository(t, remoteDir)
 	if err := os.WriteFile("README.md", []byte("# Remote Repo"), 0o644); err != nil {
 		t.Fatal(err)
 	}
 	testhelper.RunGit(t, "add", ".")
 	testhelper.RunGit(t, "commit", "-m", "initial remote commit")
+	if tag != "" {
+		testhelper.RunGit(t, "tag", tag)
+	}
 	return remoteDir
 }
 
@@ -93,17 +90,8 @@ func TestPublishSuccess(t *testing.T) {
 	testhelper.RequireCommand(t, "git")
 
 	// Create remote split repos for two libraries: auth and storage
-	authRemote := setupSplitRemoteRepo(t)
-	storageRemote := setupSplitRemoteRepo(t)
-
-	// Pre-tag auth on its remote so auth is considered already published
-	curDir, err := os.Getwd()
-	if err != nil {
-		t.Fatal(err)
-	}
-	_ = os.Chdir(authRemote)
-	testhelper.RunGit(t, "tag", "1.0.0")
-	_ = os.Chdir(curDir)
+	authRemote := setupSplitRemoteRepo(t, "1.0.0")
+	storageRemote := setupSplitRemoteRepo(t, "")
 
 	// Set up monorepo
 	monorepoRemote := setupMonorepoWithRootFiles(t)
@@ -178,7 +166,7 @@ func TestPublishSuccess(t *testing.T) {
 func TestPublishDryRun(t *testing.T) {
 	testhelper.RequireCommand(t, "git")
 
-	storageRemote := setupSplitRemoteRepo(t)
+	storageRemote := setupSplitRemoteRepo(t, "")
 
 	monorepoRemote := setupMonorepoWithRootFiles(t)
 	cloneDir := t.TempDir()
