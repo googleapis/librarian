@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
+	"slices"
 	"strings"
 
 	"github.com/googleapis/librarian/internal/command"
@@ -30,6 +31,8 @@ import (
 type PublishParams struct {
 	// Config is the repository configuration.
 	Config *config.Config
+	// Libraries is an optional list of library names or paths to publish.
+	Libraries []string
 	// DryRun indicates whether to run publish without pushing.
 	DryRun bool
 	// DryRunKeepGoing indicates whether to run in dry-run mode without stopping on errors.
@@ -87,6 +90,9 @@ func Publish(ctx context.Context, params PublishParams) error {
 	}
 
 	for _, lib := range params.Config.Libraries {
+		if len(params.Libraries) > 0 && !slices.Contains(params.Libraries, lib.Name) && !slices.Contains(params.Libraries, lib.Output) {
+			continue
+		}
 		if lib.SkipRelease || lib.Version == "" {
 			continue
 		}

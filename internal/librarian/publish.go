@@ -131,6 +131,7 @@ func swiftPublish(ctx context.Context, cfg *config.Config, cmd *cli.Command) err
 	command.Verbose = verbose
 	return swift.Publish(ctx, swift.PublishParams{
 		Config:           cfg,
+		Libraries:        cmd.Args().Slice(),
 		DryRun:           dryRun,
 		DryRunKeepGoing:  dryRunKeepGoing,
 		SkipSemverChecks: skipSemverChecks,
