@@ -114,6 +114,26 @@ func TestAdd(t *testing.T) {
 			},
 		},
 		{
+			name: "existing version",
+			lib: &config.Library{
+				Version: "1.2.3",
+				APIs: []*config.API{
+					{Path: "google/cloud/speech/v2"},
+				},
+			},
+			want: &config.Library{
+				Version: "1.2.3",
+				APIs: []*config.API{
+					{
+						Path: "google/cloud/speech/v2",
+						PHP: &config.PHPAPI{
+							StagingSubdir: "v2",
+						},
+					},
+				},
+			},
+		},
+		{
 			name: "multiple APIs",
 			lib: &config.Library{
 				APIs: []*config.API{
