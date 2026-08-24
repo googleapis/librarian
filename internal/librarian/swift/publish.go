@@ -66,7 +66,7 @@ func Publish(ctx context.Context, params PublishParams) error {
 
 	if err := git.MatchesBranchPoint(ctx, gitExe, config.RemoteUpstream, config.BranchMain); err != nil {
 		if params.DryRunKeepGoing {
-			slog.Warn("Branch point check failed, but continuing due to --keep-going", "error", err)
+			slog.Error("Branch point check failed, but continuing due to --keep-going", "error", err)
 		} else {
 			return err
 		}
@@ -104,7 +104,7 @@ func Publish(ctx context.Context, params PublishParams) error {
 
 		if _, err := os.Stat(libDir); err != nil {
 			if params.DryRunKeepGoing {
-				slog.Warn("library directory not found, but continuing due to --keep-going", "library", lib.Name, "path", libDir, "error", err)
+				slog.Error("library directory not found, but continuing due to --keep-going", "library", lib.Name, "path", libDir, "error", err)
 				continue
 			}
 			return fmt.Errorf("library directory %s does not exist: %w", libDir, err)
@@ -116,7 +116,7 @@ func Publish(ctx context.Context, params PublishParams) error {
 		tagExists, err := git.RemoteTagExists(ctx, gitExe, remoteURL, tag)
 		if err != nil {
 			if params.DryRunKeepGoing {
-				slog.Warn("failed to check remote tags, but continuing due to --keep-going", "library", lib.Name, "remote", remoteURL, "error", err)
+				slog.Error("failed to check remote tags, but continuing due to --keep-going", "library", lib.Name, "remote", remoteURL, "error", err)
 				continue
 			}
 			return fmt.Errorf("failed to check remote tags for %s on %s: %w", lib.Name, remoteURL, err)
@@ -137,7 +137,7 @@ func Publish(ctx context.Context, params PublishParams) error {
 		})
 		if err != nil {
 			if params.DryRunKeepGoing {
-				slog.Warn("failed to split library, but continuing due to --keep-going", "library", lib.Name, "error", err)
+				slog.Error("failed to split library, but continuing due to --keep-going", "library", lib.Name, "error", err)
 				continue
 			}
 			return fmt.Errorf("failed to split %s: %w", lib.Name, err)
@@ -150,7 +150,7 @@ func Publish(ctx context.Context, params PublishParams) error {
 
 		if err := git.PushBranch(ctx, gitExe, remoteURL, splitSHA, remoteBranch, true); err != nil {
 			if params.DryRunKeepGoing {
-				slog.Warn("failed to push branch, but continuing due to --keep-going", "library", lib.Name, "remote", remoteURL, "error", err)
+				slog.Error("failed to push branch, but continuing due to --keep-going", "library", lib.Name, "remote", remoteURL, "error", err)
 				continue
 			}
 			return fmt.Errorf("failed to push branch for %s to %s: %w", lib.Name, remoteURL, err)
@@ -158,7 +158,7 @@ func Publish(ctx context.Context, params PublishParams) error {
 
 		if err := git.PushRefToTag(ctx, gitExe, remoteURL, splitSHA, tag, true); err != nil {
 			if params.DryRunKeepGoing {
-				slog.Warn("failed to push tag, but continuing due to --keep-going", "library", lib.Name, "remote", remoteURL, "error", err)
+				slog.Error("failed to push tag, but continuing due to --keep-going", "library", lib.Name, "remote", remoteURL, "error", err)
 				continue
 			}
 			return fmt.Errorf("failed to push tag %s for %s to %s: %w", tag, lib.Name, remoteURL, err)
