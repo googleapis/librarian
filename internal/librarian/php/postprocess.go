@@ -92,7 +92,7 @@ func rootStagingDirs(library *config.Library) []string {
 	for _, dir := range stagingDirs {
 		originalDir := dir
 		found := false
-		for dir != "." {
+		for dir != "." && dir != "/" {
 			if prefixes[dir] {
 				found = true
 				break
