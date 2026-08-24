@@ -101,7 +101,7 @@ func rootStagingDirs(library *config.Library) []string {
 			if parent == dir {
 				break
 			}
-			dir = filepath.Dir(dir)
+			dir = parent
 		}
 		if !found {
 			res = append(res, originalDir)
