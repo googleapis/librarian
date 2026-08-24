@@ -321,3 +321,127 @@ func TestRestoreCopyrightYear(t *testing.T) {
 		})
 	}
 }
+
+func TestRootStagingDirs(t *testing.T) {
+	for _, test := range []struct {
+		name    string
+		library *config.Library
+		want    []string
+	}{
+		{
+			name: "single API",
+			library: &config.Library{
+				APIs: []*config.API{
+					{
+						PHP: &config.PHPAPI{
+							StagingSubdir: "v1",
+						},
+					},
+				},
+			},
+			want: []string{"v1"},
+		},
+		{
+			name: "distinct APIs",
+			library: &config.Library{
+				APIs: []*config.API{
+					{
+						PHP: &config.PHPAPI{
+							StagingSubdir: "v1",
+						},
+					},
+					{
+						PHP: &config.PHPAPI{
+							StagingSubdir: "v2",
+						},
+					},
+				},
+			},
+			want: []string{"v1", "v2"},
+		},
+		{
+			name: "nested subdirectories excluded",
+			library: &config.Library{
+				APIs: []*config.API{
+					{
+						PHP: &config.PHPAPI{
+							StagingSubdir: "v1",
+						},
+					},
+					{
+						PHP: &config.PHPAPI{
+							StagingSubdir: "v1/Admin",
+						},
+					},
+				},
+			},
+			want: []string{"v1"},
+		},
+		{
+			name: "deeply nested subdirectories",
+			library: &config.Library{
+				APIs: []*config.API{
+					{
+						PHP: &config.PHPAPI{
+							StagingSubdir: "a/b/c",
+						},
+					},
+					{
+						PHP: &config.PHPAPI{
+							StagingSubdir: "a/b",
+						},
+					},
+					{
+						PHP: &config.PHPAPI{
+							StagingSubdir: "a/b/c/d",
+						},
+					},
+				},
+			},
+			want: []string{"a/b"},
+		},
+		{
+			name: "duplicate staging subdirs",
+			library: &config.Library{
+				APIs: []*config.API{
+					{
+						PHP: &config.PHPAPI{
+							StagingSubdir: "v1",
+						},
+					},
+					{
+						PHP: &config.PHPAPI{
+							StagingSubdir: "v1",
+						},
+					},
+				},
+			},
+			want: []string{"v1"},
+		},
+		{
+			name: "trailing slash and unnormalized paths",
+			library: &config.Library{
+				APIs: []*config.API{
+					{
+						PHP: &config.PHPAPI{
+							StagingSubdir: "v1/sub/",
+						},
+					},
+					{
+						PHP: &config.PHPAPI{
+							StagingSubdir: "v1/sub/nested",
+						},
+					},
+				},
+			},
+			want: []string{"v1/sub"},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := rootStagingDirs(test.library)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
