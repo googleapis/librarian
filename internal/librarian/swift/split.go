@@ -137,34 +137,17 @@ func rewriteHistoryWithRootFiles(ctx context.Context, gitExe, rawSHA, origin str
 			parentArgs = append(parentArgs, "-p", mappedP)
 		}
 
-		authorName, err := command.Output(ctx, gitExe, "log", "-n", "1", "--pretty=format:%an", c)
+		metaOut, err := command.Output(ctx, gitExe, "log", "-n", "1", "--pretty=format:%an%x00%ae%x00%ad%x00%cn%x00%ce%x00%cd%x00%B", c)
 		if err != nil {
 			return "", err
 		}
-		authorEmail, err := command.Output(ctx, gitExe, "log", "-n", "1", "--pretty=format:%ae", c)
-		if err != nil {
-			return "", err
+		parts := strings.SplitN(metaOut, "\x00", 7)
+		if len(parts) < 7 {
+			return "", fmt.Errorf("failed to parse metadata for commit %s", c)
 		}
-		authorDate, err := command.Output(ctx, gitExe, "log", "-n", "1", "--pretty=format:%ad", c)
-		if err != nil {
-			return "", err
-		}
-		committerName, err := command.Output(ctx, gitExe, "log", "-n", "1", "--pretty=format:%cn", c)
-		if err != nil {
-			return "", err
-		}
-		committerEmail, err := command.Output(ctx, gitExe, "log", "-n", "1", "--pretty=format:%ce", c)
-		if err != nil {
-			return "", err
-		}
-		committerDate, err := command.Output(ctx, gitExe, "log", "-n", "1", "--pretty=format:%cd", c)
-		if err != nil {
-			return "", err
-		}
-		commitMsg, err := command.Output(ctx, gitExe, "log", "-n", "1", "--pretty=format:%B", c)
-		if err != nil {
-			return "", err
-		}
+		authorName, authorEmail, authorDate := parts[0], parts[1], parts[2]
+		committerName, committerEmail, committerDate := parts[3], parts[4], parts[5]
+		commitMsg := parts[6]
 
 		env := map[string]string{
 			"GIT_AUTHOR_NAME":     authorName,
