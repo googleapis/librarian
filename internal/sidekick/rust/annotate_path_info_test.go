@@ -273,10 +273,10 @@ func TestPathBindingAnnotations(t *testing.T) {
 		QueryParams: []*api.Field{f_id},
 		Substitutions: []*bindingSubstitution{
 			{
-				FieldAccessor: "Some(&req).map(|m| &m.name).map(|s| s.as_str())",
-				FieldClear:    "Some(&mut req).map(|m| std::mem::take(&mut m.name))",
-				FieldName:     "name",
-				Template:      []string{"projects", "*", "locations", "*"},
+				FieldAccessor:  "Some(&req).map(|m| &m.name).map(|s| s.as_str())",
+				PathExtraction: &PathExtraction{FieldTake: "Some(&mut req).map(|m| std::mem::take(&mut m.name))"},
+				FieldName:      "name",
+				Template:       []string{"projects", "*", "locations", "*"},
 			},
 		},
 	}
@@ -297,22 +297,22 @@ func TestPathBindingAnnotations(t *testing.T) {
 		PathFmt: "/v1/projects/{}/locations/{}/ids/{}:action",
 		Substitutions: []*bindingSubstitution{
 			{
-				FieldAccessor: "Some(&req).map(|m| &m.project).map(|s| s.as_str())",
-				FieldClear:    "Some(&mut req).map(|m| std::mem::take(&mut m.project))",
-				FieldName:     "project",
-				Template:      []string{"*"},
+				FieldAccessor:  "Some(&req).map(|m| &m.project).map(|s| s.as_str())",
+				PathExtraction: &PathExtraction{FieldTake: "Some(&mut req).map(|m| std::mem::take(&mut m.project))"},
+				FieldName:      "project",
+				Template:       []string{"*"},
 			},
 			{
-				FieldAccessor: "Some(&req).map(|m| &m.location).map(|s| s.as_str())",
-				FieldClear:    "Some(&mut req).map(|m| std::mem::take(&mut m.location))",
-				FieldName:     "location",
-				Template:      []string{"*"},
+				FieldAccessor:  "Some(&req).map(|m| &m.location).map(|s| s.as_str())",
+				PathExtraction: &PathExtraction{FieldTake: "Some(&mut req).map(|m| std::mem::take(&mut m.location))"},
+				FieldName:      "location",
+				Template:       []string{"*"},
 			},
 			{
-				FieldAccessor: "Some(&req).map(|m| &m.id)",
-				FieldClear:    "Some(&mut req).map(|m| std::mem::take(&mut m.id))",
-				FieldName:     "id",
-				Template:      []string{"*"},
+				FieldAccessor:  "Some(&req).map(|m| &m.id)",
+				PathExtraction: &PathExtraction{FieldTake: "Some(&mut req).map(|m| std::mem::take(&mut m.id))"},
+				FieldName:      "id",
+				Template:       []string{"*"},
 			},
 		},
 	}
@@ -332,22 +332,22 @@ func TestPathBindingAnnotations(t *testing.T) {
 		PathFmt: "/v1/projects/{}/locations/{}/ids/{}:actionOnChild",
 		Substitutions: []*bindingSubstitution{
 			{
-				FieldAccessor: "Some(&req).and_then(|m| m.child.as_ref()).map(|m| &m.project).map(|s| s.as_str())",
-				FieldClear:    "Some(&mut req).and_then(|m| m.child.as_mut()).map(|m| std::mem::take(&mut m.project))",
-				FieldName:     "child.project",
-				Template:      []string{"*"},
+				FieldAccessor:  "Some(&req).and_then(|m| m.child.as_ref()).map(|m| &m.project).map(|s| s.as_str())",
+				PathExtraction: &PathExtraction{FieldTake: "Some(&mut req).and_then(|m| m.child.as_mut()).map(|m| std::mem::take(&mut m.project))"},
+				FieldName:      "child.project",
+				Template:       []string{"*"},
 			},
 			{
-				FieldAccessor: "Some(&req).and_then(|m| m.child.as_ref()).map(|m| &m.location).map(|s| s.as_str())",
-				FieldClear:    "Some(&mut req).and_then(|m| m.child.as_mut()).map(|m| std::mem::take(&mut m.location))",
-				FieldName:     "child.location",
-				Template:      []string{"*"},
+				FieldAccessor:  "Some(&req).and_then(|m| m.child.as_ref()).map(|m| &m.location).map(|s| s.as_str())",
+				PathExtraction: &PathExtraction{FieldTake: "Some(&mut req).and_then(|m| m.child.as_mut()).map(|m| std::mem::take(&mut m.location))"},
+				FieldName:      "child.location",
+				Template:       []string{"*"},
 			},
 			{
-				FieldAccessor: "Some(&req).and_then(|m| m.child.as_ref()).map(|m| &m.id)",
-				FieldClear:    "Some(&mut req).and_then(|m| m.child.as_mut()).map(|m| std::mem::take(&mut m.id))",
-				FieldName:     "child.id",
-				Template:      []string{"*"},
+				FieldAccessor:  "Some(&req).and_then(|m| m.child.as_ref()).map(|m| &m.id)",
+				PathExtraction: &PathExtraction{FieldTake: "Some(&mut req).and_then(|m| m.child.as_mut()).map(|m| std::mem::take(&mut m.id))"},
+				FieldName:      "child.id",
+				Template:       []string{"*"},
 			},
 		},
 	}
@@ -379,7 +379,6 @@ func TestPathBindingAnnotations(t *testing.T) {
 		Substitutions: []*bindingSubstitution{
 			{
 				FieldAccessor: "Some(&req).and_then(|m| m.oneof_field()).map(|s| s.as_str())",
-				FieldClear:    "Some(&mut req).map(|m| std::mem::take(&mut m.oneof_field))",
 				FieldName:     "oneof_field",
 				Template:      []string{"*"},
 			},
@@ -392,15 +391,26 @@ func TestPathBindingAnnotations(t *testing.T) {
 		InputTypeID:  ".test.Request",
 		OutputTypeID: ".test.Response",
 		PathInfo: &api.PathInfo{
-			Bindings:      []*api.PathBinding{b0, b1, b2, b3, b4},
+			Bindings:      []*api.PathBinding{b0, b1, b2, b3},
 			BodyFieldPath: "*",
+		},
+	}
+	methodBar := &api.Method{
+		Name:         "DoBar",
+		ID:           ".test.Service.DoBar",
+		InputType:    request,
+		InputTypeID:  ".test.Request",
+		OutputTypeID: ".test.Response",
+		PathInfo: &api.PathInfo{
+			Bindings:      []*api.PathBinding{b4},
+			BodyFieldPath: "",
 		},
 	}
 	service := &api.Service{
 		Name:    "FooService",
 		ID:      ".test.FooService",
 		Package: "test",
-		Methods: []*api.Method{method},
+		Methods: []*api.Method{method, methodBar},
 	}
 
 	model := api.NewTestAPI(
@@ -532,10 +542,10 @@ func TestPathBindingAnnotationsStyle(t *testing.T) {
 			PathFmt: "/v1/machines/{}:create",
 			Substitutions: []*bindingSubstitution{
 				{
-					FieldAccessor: test.WantAccessor,
-					FieldName:     test.WantFieldName,
-					FieldClear:    test.WantClear,
-					Template:      []string{"*"},
+					FieldAccessor:  test.WantAccessor,
+					FieldName:      test.WantFieldName,
+					PathExtraction: &PathExtraction{FieldTake: test.WantClear},
+					Template:       []string{"*"},
 				},
 			},
 		}
@@ -546,7 +556,8 @@ func TestPathBindingAnnotationsStyle(t *testing.T) {
 			InputTypeID:  ".test.Request",
 			OutputTypeID: ".test.Response",
 			PathInfo: &api.PathInfo{
-				Bindings: []*api.PathBinding{binding},
+				Bindings:      []*api.PathBinding{binding},
+				BodyFieldPath: "*",
 			},
 		}
 		service := &api.Service{

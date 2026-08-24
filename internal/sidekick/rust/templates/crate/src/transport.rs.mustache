@@ -310,9 +310,9 @@ impl super::stub::{{Codec.Name}} for {{Codec.Name}} {
             {{/Codec.ResourceNameTemplate}}
             {{/Codec.HasResourceNameGeneration}}
             {{#Codec.Substitutions}}
-            {{#FullBody}}
-            let _ = {{{FieldClear}}};
-            {{/FullBody}}
+            {{#PathExtraction}}
+            let _ = {{{FieldTake}}};
+            {{/PathExtraction}}
             {{/Codec.Substitutions}}
             let builder = self.inner.builder(Method::{{Verb}}, path);
             {{#Codec.QueryParamsCanFail}}

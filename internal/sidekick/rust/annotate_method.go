@@ -150,6 +150,12 @@ type routingVariantAnnotations struct {
 	SuffixSegments   []string
 }
 
+// PathExtraction represents the actions to extract path parameters from a request body.
+type PathExtraction struct {
+	// Rust code to take the leaf field.
+	FieldTake string
+}
+
 type bindingSubstitution struct {
 	// Rust code to access the leaf field, given a `req`
 	//
@@ -164,8 +170,8 @@ type bindingSubstitution struct {
 	// - assume context i.e. use the try operator: `?`
 	FieldAccessor string
 
-	// Rust code to safely take/clear the leaf field given a mutable `req`
-	FieldClear string
+	// Rust code to extract this field from the request body, if necessary.
+	PathExtraction *PathExtraction
 
 	// The field name
 	//
@@ -500,21 +506,26 @@ func makeBindingSubstitution(v *api.PathVariable, m *api.Method) (*bindingSubsti
 	for _, n := range v.FieldPath {
 		rustNames = append(rustNames, toSnakeNoMangling(n))
 	}
-	clears, err := makeClearAccessors(v.FieldPath, m)
-	if err != nil {
-		return nil, err
-	}
-	var fieldClear strings.Builder
-	fieldClear.WriteString("Some(&mut req)")
-	for _, c := range clears {
-		fieldClear.WriteString(c)
+	var pathExtraction *PathExtraction
+	full_body := m.PathInfo != nil && m.PathInfo.BodyFieldPath == "*"
+	if full_body {
+		clears, err := makeClearAccessors(v.FieldPath, m)
+		if err != nil {
+			return nil, err
+		}
+		var fieldClear strings.Builder
+		fieldClear.WriteString("Some(&mut req)")
+		for _, c := range clears {
+			fieldClear.WriteString(c)
+		}
+		pathExtraction = &PathExtraction{FieldTake: fieldClear.String()}
 	}
 	binding := &bindingSubstitution{
-		FieldAccessor: fieldAccessor.String(),
-		FieldName:     strings.Join(rustNames, "."),
-		FieldClear:    fieldClear.String(),
-		Template:      v.Segments,
-		fullBody:      m.PathInfo != nil && m.PathInfo.BodyFieldPath == "*",
+		FieldAccessor:  fieldAccessor.String(),
+		FieldName:      strings.Join(rustNames, "."),
+		PathExtraction: pathExtraction,
+		Template:       v.Segments,
+		fullBody:       full_body,
 	}
 	return binding, nil
 }
@@ -536,12 +547,13 @@ func makeClearAccessors(fields []string, m *api.Method) ([]string, error) {
 		if field == nil {
 			return nil, fmt.Errorf("invalid routing/path field (%q) for request message %s", rustFieldName, message.ID)
 		}
+		if field.IsOneOf {
+			return nil, fmt.Errorf("taking from a one-of is unsupported (%q) for request message %s", rustFieldName, message.ID)
+		}
 		if field.Typez != api.TypezMessage {
 			clears = append(clears, fmt.Sprintf(".map(|m| std::mem::take(&mut m.%s))", rustFieldName))
 		} else {
-			if field.IsOneOf {
-				clears = append(clears, fmt.Sprintf(".and_then(|m| m.%s_mut())", rustFieldName))
-			} else if field.Optional {
+			if field.Optional {
 				clears = append(clears, fmt.Sprintf(".and_then(|m| m.%s.as_mut())", rustFieldName))
 			} else {
 				clears = append(clears, fmt.Sprintf(".map(|m| &mut m.%s)", rustFieldName))
