@@ -115,7 +115,26 @@ func rewriteHistoryWithRootFiles(ctx context.Context, gitExe, rawSHA, origin str
 			currentEntries = append(currentEntries, line)
 		}
 
+		// Git tree objects require entries to be sorted alphabetically, with tree
+		// objects sorted as if they have a trailing slash. Unsorted entries cause git fsck to fail.
 		combined := append(currentEntries, rootEntries...)
+		slices.SortFunc(combined, func(a, b string) int {
+			partsA := strings.SplitN(a, "\t", 2)
+			partsB := strings.SplitN(b, "\t", 2)
+			if len(partsA) < 2 || len(partsB) < 2 {
+				return strings.Compare(a, b)
+			}
+			nameA, nameB := partsA[1], partsB[1]
+			isTreeA := strings.Contains(partsA[0], " tree ")
+			isTreeB := strings.Contains(partsB[0], " tree ")
+			if isTreeA {
+				nameA += "/"
+			}
+			if isTreeB {
+				nameB += "/"
+			}
+			return strings.Compare(nameA, nameB)
+		})
 		mktreeInput := strings.Join(combined, "\n") + "\n"
 
 		newTree, err := command.OutputWithStdin(ctx, strings.NewReader(mktreeInput), gitExe, "mktree")

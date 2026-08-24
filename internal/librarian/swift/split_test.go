@@ -104,6 +104,8 @@ func TestSplitSuccess(t *testing.T) {
 			}
 		}
 	}
+
+	testhelper.RunGit(t, "fsck", "--full")
 }
 
 func TestSplitNoRootFiles(t *testing.T) {
