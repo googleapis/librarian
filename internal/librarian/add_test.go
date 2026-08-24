@@ -690,6 +690,7 @@ func TestAddLibraryCommand_Php(t *testing.T) {
 	wantLibraries := []*config.Library{
 		{
 			Name:          "developerconnect",
+			Version:       "0.0.0",
 			CopyrightYear: strconv.Itoa(time.Now().Year()),
 			APIs: []*config.API{
 				{
