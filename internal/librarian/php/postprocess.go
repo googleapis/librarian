@@ -92,9 +92,13 @@ func rootStagingDirs(library *config.Library) []string {
 	for _, dir := range stagingDirs {
 		originalDir := dir
 		found := false
-		for dir != "." && dir != "/" {
+		for {
 			if prefixes[dir] {
 				found = true
+				break
+			}
+			parent := filepath.Dir(dir)
+			if parent == dir {
 				break
 			}
 			dir = filepath.Dir(dir)
