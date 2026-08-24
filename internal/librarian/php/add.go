@@ -39,9 +39,15 @@ func DefaultLibraryName(apiPath string) string {
 
 // Add populates PHP-specific default configuration for all APIs in the library.
 func Add(lib *config.Library) *config.Library {
-	lib.Version = defaultVersion
+	initVersion(lib)
 	initAPIs(lib.APIs)
 	return lib
+}
+
+func initVersion(lib *config.Library) {
+	if lib.Version == "" {
+		lib.Version = defaultVersion
+	}
 }
 
 func initAPIs(apis []*config.API) {

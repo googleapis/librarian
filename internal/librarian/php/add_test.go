@@ -78,6 +78,7 @@ func TestAdd(t *testing.T) {
 				},
 			},
 			want: &config.Library{
+				Version: "0.0.0",
 				APIs: []*config.API{
 					{
 						Path: "google/cloud/speech/v2",
@@ -101,6 +102,7 @@ func TestAdd(t *testing.T) {
 				},
 			},
 			want: &config.Library{
+				Version: "0.0.0",
 				APIs: []*config.API{
 					{
 						Path: "google/cloud/speech/v2",
@@ -120,6 +122,7 @@ func TestAdd(t *testing.T) {
 				},
 			},
 			want: &config.Library{
+				Version: "0.0.0",
 				APIs: []*config.API{
 					{
 						Path: "google/cloud/speech/v2",
