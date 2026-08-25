@@ -470,6 +470,11 @@ func specialCases(api *config.API) {
 			api.PHP = &config.PHPAPI{}
 		}
 		api.PHP.GapicYAML = "google/cloud/videointelligence/v1/videointelligence_gapic.yaml"
+	case "google/pubsub/v1":
+		if api.PHP == nil {
+			api.PHP = &config.PHPAPI{}
+		}
+		api.PHP.GapicYAML = "google/pubsub/v1/pubsub_gapic.yaml"
 	}
 }
 
@@ -508,6 +513,10 @@ func appendKeep(lib *config.Library) {
 		lib.Keep = append(lib.Keep, "src/LongRunning/Gapic/OperationsGapicClient.php")
 		lib.Keep = append(lib.Keep, "src/LongRunning/OperationsClient.php")
 		lib.Keep = append(lib.Keep, "tests/Unit/OperationsClientTest.php")
+	case "pubsub":
+		lib.Keep = append(lib.Keep, "tests/System/V1/PublisherSmokeTest.php")
+		lib.Keep = append(lib.Keep, "tests/System/testdata/generated/Metadata.php")
+		lib.Keep = append(lib.Keep, "tests/System/testdata/generated/StateProto.php")
 	}
 }
 
