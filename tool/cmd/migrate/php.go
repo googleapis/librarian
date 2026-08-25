@@ -479,11 +479,13 @@ func specialCases(api *config.API) {
 		if api.PHP == nil {
 			api.PHP = &config.PHPAPI{}
 		}
+		api.PHP.StagingSubdir = "Admin/Database/v1"
 		api.PHP.GapicYAML = "google/spanner/admin/database/v1/spanner_gapic.yaml"
 	case "google/spanner/admin/instance/v1":
 		if api.PHP == nil {
 			api.PHP = &config.PHPAPI{}
 		}
+		api.PHP.StagingSubdir = "Admin/Instance/v1"
 		api.PHP.GapicYAML = "google/spanner/admin/instance/v1/spanner_gapic.yaml"
 	}
 }
