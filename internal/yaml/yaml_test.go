@@ -23,6 +23,7 @@ import (
 	"time"
 
 	"github.com/google/go-cmp/cmp"
+	"go.yaml.in/yaml/v3"
 )
 
 type testConfig struct {
@@ -63,6 +64,180 @@ func TestMarshal(t *testing.T) {
 	}
 }
 
+func TestMarshal_Comments(t *testing.T) {
+	const input = `# Header comment
+name: test # Inline comment
+# Version comment
+version: v1.0.0
+`
+	t.Run("struct drops comments", func(t *testing.T) {
+		cfg, err := Unmarshal[testConfig]([]byte(input))
+		if err != nil {
+			t.Fatal(err)
+		}
+		got, err := Marshal(cfg)
+		if err != nil {
+			t.Fatal(err)
+		}
+		const want = `name: test
+version: v1.0.0
+`
+		if diff := cmp.Diff(want, string(got)); diff != "" {
+			t.Errorf("mismatch (-want +got):\n%s", diff)
+		}
+	})
+	t.Run("yaml.Node preserves comments", func(t *testing.T) {
+		node, err := Unmarshal[yaml.Node]([]byte(input))
+		if err != nil {
+			t.Fatal(err)
+		}
+		got, err := Marshal(node)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if diff := cmp.Diff(input, string(got)); diff != "" {
+			t.Errorf("mismatch (-want +got):\n%s", diff)
+		}
+	})
+	t.Run("yaml.Node preserves comments after mutation", func(t *testing.T) {
+		node, err := Unmarshal[yaml.Node]([]byte(input))
+		if err != nil {
+			t.Fatal(err)
+		}
+		mapping := node.Content[0]
+		for i := 0; i < len(mapping.Content); i += 2 {
+			if mapping.Content[i].Value == "version" {
+				mapping.Content[i+1].Value = "v2.0.0"
+			}
+		}
+		got, err := Marshal(node)
+		if err != nil {
+			t.Fatal(err)
+		}
+		const want = `# Header comment
+name: test # Inline comment
+# Version comment
+version: v2.0.0
+`
+		if diff := cmp.Diff(want, string(got)); diff != "" {
+			t.Errorf("mismatch (-want +got):\n%s", diff)
+		}
+	})
+}
+
+func TestMarshalWithComments(t *testing.T) {
+	type item struct {
+		Name string `yaml:"name"`
+		Path string `yaml:"path,omitempty"`
+	}
+	type itemConfig struct {
+		Items []item   `yaml:"items,omitempty"`
+		Roots []string `yaml:"roots,omitempty"`
+	}
+
+	for _, test := range []struct {
+		name     string
+		original string
+		value    any
+		want     string
+	}{
+		{
+			name: "struct with modified fields preserves comments",
+			original: `# Header comment
+name: test # Inline comment
+# Version comment
+version: v1.0.0
+`,
+			value: &testConfig{Name: "test", Version: "v2.0.0"},
+			want: `# Header comment
+name: test # Inline comment
+# Version comment
+version: v2.0.0
+`,
+		},
+		{
+			name: "reordered sequence items preserve comments",
+			original: `items:
+  - # Comment A
+    name: a # Inline A
+    path: path/a
+  - # Comment B
+    name: b
+    path: path/b
+`,
+			value: &itemConfig{
+				Items: []item{
+					{Name: "b", Path: "path/b"},
+					{Name: "a", Path: "path/a"},
+				},
+			},
+			want: `items:
+  - # Comment B
+    name: b
+    path: path/b
+  - # Comment A
+    name: a # Inline A
+    path: path/a
+`,
+		},
+		{
+			name: "added items do not inherit deleted item comments",
+			original: `items:
+  - # Comment old
+    name: old
+`,
+			value: &itemConfig{
+				Items: []item{
+					{Name: "new"},
+				},
+			},
+			want: `items:
+  - name: new
+`,
+		},
+		{
+			name: "scalar sequence items preserve comments",
+			original: `roots:
+  - googleapis # inline googleapis
+  - other
+`,
+			value: &itemConfig{
+				Roots: []string{"googleapis", "newroot"},
+			},
+			want: `roots:
+  - googleapis # inline googleapis
+  - newroot
+`,
+		},
+		{
+			name:     "empty original YAML",
+			original: "",
+			value:    &testConfig{Name: "test", Version: "v1.0.0"},
+			want: `name: test
+version: v1.0.0
+`,
+		},
+		{
+			name:     "invalid original YAML falls back to marshal",
+			original: "[invalid yaml",
+			value:    &testConfig{Name: "test", Version: "v1.0.0"},
+			want: `name: test
+version: v1.0.0
+`,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got, err := MarshalWithComments(test.value, []byte(test.original))
+			if err != nil {
+				t.Fatal(err)
+			}
+			if diff := cmp.Diff(test.want, string(got)); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
 func TestReadWrite(t *testing.T) {
 	want := &testConfig{Name: "test", Version: "v1.0.0"}
 	path := filepath.Join(t.TempDir(), "test.yaml")
@@ -94,21 +269,73 @@ const copyright = `# Copyright %s Google LLC
 `
 
 func TestWrite(t *testing.T) {
-	// Construct expected header
 	header := fmt.Sprintf(copyright, strconv.Itoa(time.Now().Year()))
-	want := header + `name: test
+
+	for _, test := range []struct {
+		name       string
+		existing   string
+		value      any
+		want       string
+		writeTwice bool
+	}{
+		{
+			name:  "new file adds license header",
+			value: &testConfig{Name: "test", Version: "v1.0.0"},
+			want: header + `name: test
 version: v1.0.0
-`
-	path := filepath.Join(t.TempDir(), "test.yaml")
-	if err := Write(path, &testConfig{Name: "test", Version: "v1.0.0"}); err != nil {
-		t.Fatal(err)
-	}
-	got, err := os.ReadFile(path)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if diff := cmp.Diff(want, string(got)); diff != "" {
-		t.Errorf("mismatch (-want +got):\n%s", diff)
+`,
+		},
+		{
+			name: "existing file preserves comments",
+			existing: header + `# Custom section comment
+name: test # Inline comment
+# Version comment
+version: v1.0.0
+`,
+			value: &testConfig{Name: "test", Version: "v2.0.0"},
+			want: header + `# Custom section comment
+name: test # Inline comment
+# Version comment
+version: v2.0.0
+`,
+			writeTwice: true,
+		},
+		{
+			name: "existing file without license header adds header",
+			existing: `# Custom comment
+name: test
+version: v1.0.0
+`,
+			value: &testConfig{Name: "test", Version: "v2.0.0"},
+			want: header + `# Custom comment
+name: test
+version: v2.0.0
+`,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			path := filepath.Join(t.TempDir(), "test.yaml")
+			if test.existing != "" {
+				if err := os.WriteFile(path, []byte(test.existing), 0o644); err != nil {
+					t.Fatal(err)
+				}
+			}
+			if err := Write(path, test.value); err != nil {
+				t.Fatal(err)
+			}
+			if test.writeTwice {
+				if err := Write(path, test.value); err != nil {
+					t.Fatal(err)
+				}
+			}
+			got, err := os.ReadFile(path)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if diff := cmp.Diff(test.want, string(got)); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
 	}
 }
 
