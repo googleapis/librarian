@@ -101,8 +101,8 @@ func Publish(ctx context.Context, params PublishParams) error {
 			continue
 		}
 
-		libDir := libraryOutput(lib, params.Config.Default)
-		if len(params.Libraries) > 0 && !matchLibrary(params.Libraries, lib.Name, libDir) {
+		libDir := packageDirectory(lib, params.Config.Default)
+		if len(params.Libraries) > 0 && !matchLibrary(params.Libraries, lib, libDir) {
 			continue
 		}
 
@@ -155,7 +155,7 @@ func Publish(ctx context.Context, params PublishParams) error {
 			return fmt.Errorf("failed to split %s: %w", lib.Name, err)
 		}
 
-		if params.DryRun {
+		if params.DryRun || params.DryRunKeepGoing {
 			slog.Info("[DRY-RUN] Would push to remote", "library", lib.Name, "remote", remoteURL, "branch", remoteBranch, "sha", splitSHA, "tag", tag)
 			continue
 		}
@@ -215,12 +215,34 @@ func libraryOutput(lib *config.Library, defaults *config.Default) string {
 	return DefaultOutput(apiPath, defaultOut)
 }
 
-func matchLibrary(targets []string, name, dir string) bool {
-	cleanDir := filepath.Clean(dir)
+func packageDirectory(lib *config.Library, defaults *config.Default) string {
+	dir := libraryOutput(lib, defaults)
+	if dir == "" {
+		return ""
+	}
+	current := dir
+	for current != "." && current != "/" && current != "" {
+		if _, err := os.Stat(filepath.Join(current, "Package.swift")); err == nil {
+			return current
+		}
+		parent := filepath.Dir(current)
+		if parent == current {
+			break
+		}
+		current = parent
+	}
+	return dir
+}
+
+func matchLibrary(targets []string, lib *config.Library, pkgDir string) bool {
+	cleanDir := filepath.Clean(pkgDir)
 	baseDir := filepath.Base(cleanDir)
 	for _, target := range targets {
 		cleanTarget := filepath.Clean(target)
-		if target == name || cleanTarget == cleanDir || cleanTarget == baseDir || target == dir {
+		if target == lib.Name || cleanTarget == cleanDir || cleanTarget == baseDir || target == pkgDir || target == lib.Output {
+			return true
+		}
+		if lib.Swift != nil && (target == lib.Swift.LibraryNameOverride || target == lib.Swift.PackageNameOverride) {
 			return true
 		}
 	}
