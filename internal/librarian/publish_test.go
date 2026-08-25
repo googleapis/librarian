@@ -94,4 +94,9 @@ func TestPublishCommand_Swift(t *testing.T) {
 	if err != nil {
 		t.Fatalf("librarian publish specific library failed: %v", err)
 	}
+
+	err = Run(t.Context(), "librarian", "publish", "--dry-run", "--upstream", config.RemoteUpstream, "--remote-url-format", filepath.Dir(splitBareRepo)+"/{name}.git", "google-cloud-auth")
+	if err != nil {
+		t.Fatalf("librarian publish with --upstream failed: %v", err)
+	}
 }

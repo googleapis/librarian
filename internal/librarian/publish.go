@@ -69,6 +69,11 @@ Only Dart, Rust, and Swift are supported.`,
 				Value: "main",
 				Usage: "branch name on the remote repository",
 			},
+			&cli.StringFlag{
+				Name:  "upstream",
+				Value: config.RemoteUpstream,
+				Usage: "name of the upstream git remote",
+			},
 		},
 		Action: func(ctx context.Context, cmd *cli.Command) error {
 			cfg, err := yaml.Read[config.Config](config.LibrarianYAML)
@@ -128,6 +133,7 @@ func swiftPublish(ctx context.Context, cfg *config.Config, cmd *cli.Command) err
 	remoteURLFormat := cmd.String("remote-url-format")
 	origin := cmd.String("origin")
 	remoteBranch := cmd.String("remote-branch")
+	upstream := cmd.String("upstream")
 	command.Verbose = verbose
 	return swift.Publish(ctx, swift.PublishParams{
 		Config:           cfg,
@@ -139,5 +145,6 @@ func swiftPublish(ctx context.Context, cfg *config.Config, cmd *cli.Command) err
 		RemoteURLFormat:  remoteURLFormat,
 		Origin:           origin,
 		RemoteBranch:     remoteBranch,
+		Upstream:         upstream,
 	})
 }

@@ -49,6 +49,8 @@ type PublishParams struct {
 	Origin string
 	// RemoteBranch is the target branch on the remote repository (default: main).
 	RemoteBranch string
+	// Upstream is the name of the upstream git remote (default: upstream).
+	Upstream string
 	// RootFiles is the list of root files to preserve (default: LICENSE, CODE_OF_CONDUCT.md, CONTRIBUTING.md).
 	RootFiles []string
 	// GitExe is the path to the git binary (default: command.Git).
@@ -64,7 +66,12 @@ func Publish(ctx context.Context, params PublishParams) error {
 		gitExe = command.Git
 	}
 
-	if err := git.MatchesBranchPoint(ctx, gitExe, config.RemoteUpstream, config.BranchMain); err != nil {
+	upstream := params.Upstream
+	if upstream == "" {
+		upstream = config.RemoteUpstream
+	}
+
+	if err := git.MatchesBranchPoint(ctx, gitExe, upstream, config.BranchMain); err != nil {
 		if params.DryRunKeepGoing {
 			slog.Error("Branch point check failed, but continuing due to --keep-going", "error", err)
 		} else {
