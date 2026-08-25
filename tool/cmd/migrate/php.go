@@ -270,6 +270,9 @@ func findPHPLibraries(repoPath string, googleapisDir string, globalDefaultCommon
 			APIs:    apis,
 			Output:  name,
 		}
+		if name == "ErrorReporting" {
+			lib.Keep = []string{"tests/System/V1beta1/ReportErrorsServiceSmokeTest.php"}
+		}
 		derivedComp, err := php.ComponentNameForLibrary(googleapisDir, lib)
 		if err != nil {
 			// If component name derivation fails (e.g. proto file missing or unresolvable in googleapis),
