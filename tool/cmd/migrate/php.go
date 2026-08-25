@@ -39,7 +39,9 @@ var librarianPHPYAML []byte
 
 var protoMappings = map[string]string{
 	"//google/cloud/location:location_proto": "google/cloud/location/locations.proto",
-	"//google/iam/v1:iam_policy_proto":       "google/iam/v1/iam_policy.proto",
+	"//google/iam/v1:iam_policy_proto":           "google/iam/v1/iam_policy.proto",
+	"//google/longrunning:longrunning_php_proto": "google/longrunning/operations.proto",
+	"//google/longrunning:operations_proto":      "google/longrunning/operations.proto",
 }
 
 // protoPackageOverrides maps API paths to explicit proto_package overrides.
@@ -324,10 +326,6 @@ func parsePHPBazel(googleapisDir, apiPath string) ([]string, bool, string, error
 				// Identify common resources usage.
 				if strings.Contains(dep, "common_resources_proto") {
 					hasCommonResources = true
-					continue
-				}
-				// Ignore LROs since PHP does not compile LRO methods as mixins.
-				if strings.HasPrefix(dep, "//google/longrunning:") {
 					continue
 				}
 				// Ignore policy_proto as it only defines structs; the IAMPolicy service is in iam_policy_proto.
