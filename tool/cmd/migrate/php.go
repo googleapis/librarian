@@ -475,6 +475,16 @@ func specialCases(api *config.API) {
 			api.PHP = &config.PHPAPI{}
 		}
 		api.PHP.GapicYAML = "google/pubsub/v1/pubsub_gapic.yaml"
+	case "google/spanner/admin/database/v1":
+		if api.PHP == nil {
+			api.PHP = &config.PHPAPI{}
+		}
+		api.PHP.GapicYAML = "google/spanner/admin/database/v1/spanner_gapic.yaml"
+	case "google/spanner/admin/instance/v1":
+		if api.PHP == nil {
+			api.PHP = &config.PHPAPI{}
+		}
+		api.PHP.GapicYAML = "google/spanner/admin/instance/v1/spanner_gapic.yaml"
 	}
 }
 
