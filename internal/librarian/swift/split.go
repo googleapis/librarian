@@ -76,7 +76,10 @@ func Split(ctx context.Context, params SplitParams) (string, error) {
 }
 
 func rewriteHistoryWithRootFiles(ctx context.Context, gitExe, rawSHA, origin string, rootFiles []string) (string, error) {
-	rootEntries := getRootEntries(ctx, gitExe, origin, rootFiles)
+	rootEntries, err := getRootEntries(ctx, gitExe, origin, rootFiles)
+	if err != nil {
+		return "", err
+	}
 	if len(rootEntries) == 0 {
 		return rawSHA, nil
 	}
@@ -191,12 +194,12 @@ func rewriteHistoryWithRootFiles(ctx context.Context, gitExe, rawSHA, origin str
 	return lastNewCommit, nil
 }
 
-func getRootEntries(ctx context.Context, gitExe, origin string, rootFiles []string) []string {
+func getRootEntries(ctx context.Context, gitExe, origin string, rootFiles []string) ([]string, error) {
 	var entries []string
 	for _, f := range rootFiles {
 		out, err := command.Output(ctx, gitExe, "ls-tree", origin, "--", f)
 		if err != nil {
-			continue
+			return nil, fmt.Errorf("failed to ls-tree for %s at %s: %w", f, origin, err)
 		}
 		for line := range strings.SplitSeq(out, "\n") {
 			line = strings.TrimSpace(line)
@@ -205,5 +208,5 @@ func getRootEntries(ctx context.Context, gitExe, origin string, rootFiles []stri
 			}
 		}
 	}
-	return entries
+	return entries, nil
 }
