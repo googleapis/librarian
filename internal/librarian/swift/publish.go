@@ -99,6 +99,14 @@ func Publish(ctx context.Context, params PublishParams) error {
 			continue
 		}
 
+		if libDir == "" {
+			if params.DryRunKeepGoing {
+				slog.Error("library directory is empty, skipping", "library", lib.Name)
+				continue
+			}
+			return fmt.Errorf("library %s has no output directory configured", lib.Name)
+		}
+
 		if _, err := os.Stat(libDir); err != nil {
 			if params.DryRunKeepGoing {
 				slog.Error("library directory not found, but continuing due to --keep-going", "library", lib.Name, "path", libDir, "error", err)

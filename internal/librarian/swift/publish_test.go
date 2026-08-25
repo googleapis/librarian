@@ -209,3 +209,44 @@ func TestPublishDryRun(t *testing.T) {
 		t.Errorf("tag 1.0.0 was pushed during dry-run; want not pushed")
 	}
 }
+
+func TestPublishEmptyOutputDir(t *testing.T) {
+	testhelper.RequireCommand(t, "git")
+
+	monorepoRemote := setupMonorepoWithRootFiles(t)
+	cloneDir := t.TempDir()
+	t.Chdir(cloneDir)
+	testhelper.RunGit(t, "clone", monorepoRemote, ".")
+	testhelper.RunGit(t, "remote", "rename", "origin", config.RemoteUpstream)
+	testhelper.ConfigNewGitRepository(t)
+
+	cfg := &config.Config{
+		Language: config.LanguageSwift,
+		Repo:     "googleapis/google-cloud-swift",
+		Libraries: []*config.Library{
+			{
+				Name:    "mixed-lib",
+				Version: "1.0.0",
+				Swift: &config.SwiftPackage{
+					Modules: []*config.SwiftModule{{Output: "Tests/generated", APIPath: "google/storage/v2"}},
+				},
+			},
+		},
+	}
+
+	err := Publish(t.Context(), PublishParams{
+		Config: cfg,
+	})
+	if err == nil {
+		t.Fatal("expected error for library without output directory, got nil")
+	}
+
+	// With DryRunKeepGoing, it should log and continue without error
+	err = Publish(t.Context(), PublishParams{
+		Config:          cfg,
+		DryRunKeepGoing: true,
+	})
+	if err != nil {
+		t.Fatalf("Publish() with DryRunKeepGoing failed: %v", err)
+	}
+}
