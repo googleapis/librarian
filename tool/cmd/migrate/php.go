@@ -38,7 +38,7 @@ import (
 var librarianPHPYAML []byte
 
 var protoMappings = map[string]string{
-	"//google/cloud/location:location_proto": "google/cloud/location/locations.proto",
+	"//google/cloud/location:location_proto":     "google/cloud/location/locations.proto",
 	"//google/iam/v1:iam_policy_proto":           "google/iam/v1/iam_policy.proto",
 	"//google/longrunning:longrunning_php_proto": "google/longrunning/operations.proto",
 	"//google/longrunning:operations_proto":      "google/longrunning/operations.proto",
