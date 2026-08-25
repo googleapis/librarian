@@ -37,35 +37,81 @@ func TestFormatRemoteURL(t *testing.T) {
 			name:    "default googleapis",
 			format:  "",
 			repo:    "googleapis/google-cloud-swift",
-			libName: "google-cloud-auth",
-			wantURL: "git@github.com:googleapis/google-cloud-auth.git",
+			libName: "swift-auth",
+			wantURL: "git@github.com:googleapis/swift-auth.git",
 		},
 		{
 			name:    "custom format",
 			format:  "git@github.com:test-org/{name}.git",
 			repo:    "googleapis/google-cloud-swift",
-			libName: "google-cloud-auth",
-			wantURL: "git@github.com:test-org/google-cloud-auth.git",
+			libName: "swift-auth",
+			wantURL: "git@github.com:test-org/swift-auth.git",
 		},
 		{
 			name:    "custom https format",
 			format:  "https://github.com/test-org/{name}.git",
 			repo:    "googleapis/google-cloud-swift",
-			libName: "google-rpc",
-			wantURL: "https://github.com/test-org/google-rpc.git",
+			libName: "swift-google-rpc",
+			wantURL: "https://github.com/test-org/swift-google-rpc.git",
 		},
 		{
 			name:    "empty repo fallback",
 			format:  "",
 			repo:    "",
-			libName: "google-cloud-auth",
-			wantURL: "git@github.com:googleapis/google-cloud-auth.git",
+			libName: "swift-auth",
+			wantURL: "git@github.com:googleapis/swift-auth.git",
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			got := FormatRemoteURL(tc.format, tc.repo, tc.libName)
 			if got != tc.wantURL {
 				t.Errorf("FormatRemoteURL(%q, %q, %q) = %q, want %q", tc.format, tc.repo, tc.libName, got, tc.wantURL)
+			}
+		})
+	}
+}
+
+func TestSplitRepoName(t *testing.T) {
+	for _, tc := range []struct {
+		name   string
+		libDir string
+		want   string
+	}{
+		{
+			name:   "packages wkt",
+			libDir: "packages/wkt",
+			want:   "swift-wkt",
+		},
+		{
+			name:   "generated google-rpc",
+			libDir: "generated/google-rpc",
+			want:   "swift-google-rpc",
+		},
+		{
+			name:   "packages auth",
+			libDir: "packages/auth",
+			want:   "swift-auth",
+		},
+		{
+			name:   "already prefixed with swift-",
+			libDir: "packages/swift-auth",
+			want:   "swift-auth",
+		},
+		{
+			name:   "empty",
+			libDir: "",
+			want:   "",
+		},
+		{
+			name:   "dot",
+			libDir: ".",
+			want:   "",
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			got := SplitRepoName(tc.libDir)
+			if got != tc.want {
+				t.Errorf("SplitRepoName(%q) = %q, want %q", tc.libDir, got, tc.want)
 			}
 		})
 	}
@@ -101,8 +147,8 @@ func TestPublishSuccess(t *testing.T) {
 	testhelper.RunGit(t, "remote", "rename", "origin", config.RemoteUpstream)
 	testhelper.ConfigNewGitRepository(t)
 	remotesMap := map[string]string{
-		"google-cloud-auth":    authRemote,
-		"google-cloud-storage": storageRemote,
+		"swift-auth":    authRemote,
+		"swift-storage": storageRemote,
 	}
 
 	cfg := &config.Config{
@@ -153,7 +199,7 @@ func TestPublishSuccess(t *testing.T) {
 	}
 
 	// Verify that storage remote now has tag 1.1.0
-	storageBareRepo := filepath.Join(tempDir, "google-cloud-storage.git")
+	storageBareRepo := filepath.Join(tempDir, "swift-storage.git")
 	hasTag, err := git.RemoteTagExists(t.Context(), command.Git, storageBareRepo, "1.1.0")
 	if err != nil {
 		t.Fatal(err)
@@ -176,7 +222,7 @@ func TestPublishDryRun(t *testing.T) {
 	testhelper.ConfigNewGitRepository(t)
 
 	tempDir := t.TempDir()
-	storageBareRepo := filepath.Join(tempDir, "google-cloud-storage.git")
+	storageBareRepo := filepath.Join(tempDir, "swift-auth.git")
 	testhelper.RunGit(t, "clone", "--bare", storageRemote, storageBareRepo)
 
 	cfg := &config.Config{

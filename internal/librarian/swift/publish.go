@@ -122,7 +122,8 @@ func Publish(ctx context.Context, params PublishParams) error {
 			return fmt.Errorf("library directory %s does not exist: %w", libDir, err)
 		}
 
-		remoteURL := FormatRemoteURL(params.RemoteURLFormat, params.Config.Repo, lib.Name)
+		repoName := SplitRepoName(libDir)
+		remoteURL := FormatRemoteURL(params.RemoteURLFormat, params.Config.Repo, repoName)
 		tag := lib.Version
 
 		tagExists, err := git.RemoteTagExists(ctx, gitExe, remoteURL, tag)
@@ -234,12 +235,29 @@ func packageDirectory(lib *config.Library, defaults *config.Default) string {
 	return dir
 }
 
+// SplitRepoName derives the split repository name for a library directory.
+// For example, packages/wkt -> swift-wkt, generated/google-rpc -> swift-google-rpc.
+func SplitRepoName(libDir string) string {
+	if libDir == "" {
+		return ""
+	}
+	base := filepath.Base(libDir)
+	if base == "." || base == "/" {
+		return ""
+	}
+	if !strings.HasPrefix(base, "swift-") {
+		return "swift-" + base
+	}
+	return base
+}
+
 func matchLibrary(targets []string, lib *config.Library, pkgDir string) bool {
 	cleanDir := filepath.Clean(pkgDir)
 	baseDir := filepath.Base(cleanDir)
+	repoName := SplitRepoName(pkgDir)
 	for _, target := range targets {
 		cleanTarget := filepath.Clean(target)
-		if target == lib.Name || cleanTarget == cleanDir || cleanTarget == baseDir || target == pkgDir || target == lib.Output {
+		if target == lib.Name || cleanTarget == cleanDir || cleanTarget == baseDir || target == pkgDir || target == lib.Output || target == repoName {
 			return true
 		}
 		if lib.Swift != nil && (target == lib.Swift.LibraryNameOverride || target == lib.Swift.PackageNameOverride) {

@@ -74,7 +74,7 @@ func TestPublishCommand_Swift(t *testing.T) {
 	testhelper.RunGit(t, "remote", "rename", "origin", config.RemoteUpstream)
 	testhelper.ConfigNewGitRepository(t)
 
-	splitBareRepo := filepath.Join(t.TempDir(), "google-cloud-auth.git")
+	splitBareRepo := filepath.Join(t.TempDir(), "swift-auth.git")
 	splitRemote := t.TempDir()
 	testhelper.ContinueInNewGitRepository(t, splitRemote)
 	if err := os.WriteFile("README.md", []byte("# Auth"), 0o644); err != nil {
