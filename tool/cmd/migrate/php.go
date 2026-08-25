@@ -527,6 +527,11 @@ func appendKeep(lib *config.Library) {
 		lib.Keep = append(lib.Keep, "tests/System/V1/PublisherSmokeTest.php")
 		lib.Keep = append(lib.Keep, "tests/System/testdata/generated/Metadata.php")
 		lib.Keep = append(lib.Keep, "tests/System/testdata/generated/StateProto.php")
+	case "spanner":
+		lib.Keep = append(lib.Keep, "tests/data/generated/GPBMetadata/Data/User.php")
+		lib.Keep = append(lib.Keep, "tests/data/generated/Testing/Data/Book.php")
+		lib.Keep = append(lib.Keep, "tests/data/generated/Testing/Data/User.php")
+		lib.Keep = append(lib.Keep, "tests/data/generated/Testing/Data/User/Address.php")
 	}
 }
 
