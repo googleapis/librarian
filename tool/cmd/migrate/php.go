@@ -329,10 +329,10 @@ func parsePHPBazel(googleapisDir, apiPath string) ([]string, bool, string, error
 					hasCommonResources = true
 					continue
 				}
-					// Ignore LROs since PHP does not compile LRO methods as mixins.
-					if strings.HasPrefix(dep, "//google/longrunning:") {
-						continue
-					}
+				// Ignore LROs since PHP does not compile LRO methods as mixins.
+				if strings.HasPrefix(dep, "//google/longrunning:") {
+					continue
+				}
 				// Ignore policy_proto as it only defines structs; the IAMPolicy service is in iam_policy_proto.
 				if dep == "//google/iam/v1:policy_proto" {
 					continue
