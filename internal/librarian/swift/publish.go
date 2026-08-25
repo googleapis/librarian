@@ -19,7 +19,7 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
-	"slices"
+	"path/filepath"
 	"strings"
 
 	"github.com/googleapis/librarian/internal/command"
@@ -102,7 +102,7 @@ func Publish(ctx context.Context, params PublishParams) error {
 		}
 
 		libDir := libraryOutput(lib, params.Config.Default)
-		if len(params.Libraries) > 0 && !slices.Contains(params.Libraries, lib.Name) && !slices.Contains(params.Libraries, libDir) {
+		if len(params.Libraries) > 0 && !matchLibrary(params.Libraries, lib.Name, libDir) {
 			continue
 		}
 
@@ -213,4 +213,16 @@ func libraryOutput(lib *config.Library, defaults *config.Default) string {
 		defaultOut = defaults.Output
 	}
 	return DefaultOutput(apiPath, defaultOut)
+}
+
+func matchLibrary(targets []string, name, dir string) bool {
+	cleanDir := filepath.Clean(dir)
+	baseDir := filepath.Base(cleanDir)
+	for _, target := range targets {
+		cleanTarget := filepath.Clean(target)
+		if target == name || cleanTarget == cleanDir || cleanTarget == baseDir || target == dir {
+			return true
+		}
+	}
+	return false
 }

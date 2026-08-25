@@ -250,3 +250,63 @@ func TestPublishEmptyOutputDir(t *testing.T) {
 		t.Fatalf("Publish() with DryRunKeepGoing failed: %v", err)
 	}
 }
+
+func TestMatchLibrary(t *testing.T) {
+	for _, tc := range []struct {
+		name    string
+		targets []string
+		libName string
+		libDir  string
+		want    bool
+	}{
+		{
+			name:    "match by name",
+			targets: []string{"google-cloud-wkt"},
+			libName: "google-cloud-wkt",
+			libDir:  "packages/wkt",
+			want:    true,
+		},
+		{
+			name:    "match by relative path",
+			targets: []string{"packages/wkt"},
+			libName: "google-cloud-wkt",
+			libDir:  "packages/wkt",
+			want:    true,
+		},
+		{
+			name:    "match by path with trailing slash",
+			targets: []string{"packages/wkt/"},
+			libName: "google-cloud-wkt",
+			libDir:  "packages/wkt",
+			want:    true,
+		},
+		{
+			name:    "match by path with leading dot-slash",
+			targets: []string{"./packages/wkt"},
+			libName: "google-cloud-wkt",
+			libDir:  "packages/wkt",
+			want:    true,
+		},
+		{
+			name:    "match by base directory name",
+			targets: []string{"wkt"},
+			libName: "google-cloud-wkt",
+			libDir:  "packages/wkt",
+			want:    true,
+		},
+		{
+			name:    "no match",
+			targets: []string{"packages/auth"},
+			libName: "google-cloud-wkt",
+			libDir:  "packages/wkt",
+			want:    false,
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			got := matchLibrary(tc.targets, tc.libName, tc.libDir)
+			if got != tc.want {
+				t.Errorf("matchLibrary(%v, %q, %q) = %v, want %v", tc.targets, tc.libName, tc.libDir, got, tc.want)
+			}
+		})
+	}
+}

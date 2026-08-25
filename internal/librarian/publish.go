@@ -100,6 +100,7 @@ func dartPublish(ctx context.Context, cfg *config.Config, cmd *cli.Command) erro
 	dryRunKeepGoing := cmd.Bool("dry-run-keep-going")
 	verbose := cmd.Bool("verbose")
 	command.Verbose = verbose
+	setupLogger(verbose)
 	return dart.Publish(ctx, dart.PublishParams{
 		Config:           cfg,
 		DryRun:           dryRun,
@@ -115,6 +116,7 @@ func rustPublish(ctx context.Context, cfg *config.Config, cmd *cli.Command) erro
 	dryRunKeepGoing := cmd.Bool("dry-run-keep-going")
 	verbose := cmd.Bool("verbose")
 	command.Verbose = verbose
+	setupLogger(verbose)
 	return rust.Publish(ctx, rust.PublishParams{
 		Config:           cfg,
 		DryRun:           dryRun,
@@ -135,6 +137,7 @@ func swiftPublish(ctx context.Context, cfg *config.Config, cmd *cli.Command) err
 	remoteBranch := cmd.String("remote-branch")
 	upstream := cmd.String("upstream")
 	command.Verbose = verbose
+	setupLogger(verbose)
 	return swift.Publish(ctx, swift.PublishParams{
 		Config:           cfg,
 		Libraries:        cmd.Args().Slice(),
