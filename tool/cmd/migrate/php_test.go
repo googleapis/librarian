@@ -108,9 +108,10 @@ deep-copy-regex:
 		},
 		Libraries: []*config.Library{
 			{
-				Name:    "secretmanager",
-				Version: "2.3.0",
-				Output:  "SecretManager",
+				CopyrightYear: "2026",
+				Name:          "secretmanager",
+				Version:       "2.3.0",
+				Output:        "SecretManager",
 				APIs: []*config.API{
 					{
 						Path: "google/cloud/secretmanager/v1",
@@ -537,9 +538,10 @@ deep-copy-regex:
 			globalDefaultCommonResources: true,
 			want: []*config.Library{
 				{
-					Name:    "secretmanager",
-					Version: "2.3.0",
-					Output:  "SecretManager",
+					CopyrightYear: "2026",
+					Name:          "secretmanager",
+					Version:       "2.3.0",
+					Output:        "SecretManager",
 					APIs: []*config.API{
 						{
 							Path: "google/cloud/secretmanager/v1",
@@ -580,9 +582,10 @@ deep-copy-regex:
 			globalDefaultCommonResources: true,
 			want: []*config.Library{
 				{
-					Name:    "security-privateca",
-					Version: "1.0.0",
-					Output:  "SecurityPrivateCa",
+					CopyrightYear: "2026",
+					Name:          "security-privateca",
+					Version:       "1.0.0",
+					Output:        "SecurityPrivateCa",
 					PHP: &config.PHPPackage{
 						ComponentName: "SecurityPrivateCa",
 					},
@@ -622,9 +625,10 @@ deep-copy-regex:
 			globalDefaultCommonResources: true,
 			want: []*config.Library{
 				{
-					Name:    "identity-accesscontextmanager",
-					Version: "1.0.0",
-					Output:  "AccessContextManager",
+					CopyrightYear: "2026",
+					Name:          "identity-accesscontextmanager",
+					Version:       "1.0.0",
+					Output:        "AccessContextManager",
 					PHP: &config.PHPPackage{
 						ComponentName: "AccessContextManager",
 					},
@@ -689,9 +693,10 @@ deep-copy-regex:
 			globalDefaultCommonResources: true,
 			want: []*config.Library{
 				{
-					Name:    "secretmanager",
-					Version: "2.3.0",
-					Output:  "secretmanager",
+					CopyrightYear: "2026",
+					Name:          "secretmanager",
+					Version:       "2.3.0",
+					Output:        "secretmanager",
 					PHP: &config.PHPPackage{
 						ComponentName: "secretmanager",
 					},
