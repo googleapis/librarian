@@ -1,5 +1,41 @@
 # Changelog
 
+## [0.39.0](https://github.com/googleapis/librarian/compare/v0.38.0...v0.39.0) (2026-08-25)
+
+
+### Features
+
+* **dart:** exclude all generate files ([#7367](https://github.com/googleapis/librarian/issues/7367)) ([7d03e50](https://github.com/googleapis/librarian/commit/7d03e50a4c96f1c1f576ce486de7e3119b517826))
+* **go:** add control for the protobuf code generation level ([#7351](https://github.com/googleapis/librarian/issues/7351)) ([1476dd0](https://github.com/googleapis/librarian/commit/1476dd00b384f67edb59b4e92b008c3a7bb3e5f5))
+* **internal/librarian/php:** allow skipping GAPIC client generation ([#7332](https://github.com/googleapis/librarian/issues/7332)) ([8702675](https://github.com/googleapis/librarian/commit/8702675baa83752973c97ea431b77fad9964c48c))
+* **internal/librarian/php:** allow skipping sample generation ([#7348](https://github.com/googleapis/librarian/issues/7348)) ([8ac4c94](https://github.com/googleapis/librarian/commit/8ac4c946a2dcced9ba6c1191f901b248610d38dc))
+* **internal/librarian/php:** explicitly set copyright years during post-processing ([#7328](https://github.com/googleapis/librarian/issues/7328)) ([5df5834](https://github.com/googleapis/librarian/commit/5df5834cd6b44905871c12ec0409d88dddee3c35))
+* **internal/librarian/php:** initialize default library version on add ([#7381](https://github.com/googleapis/librarian/issues/7381)) ([1baf7d9](https://github.com/googleapis/librarian/commit/1baf7d92dfdaa725df3947f3013efc0e8c2c40ac)), refs [#7382](https://github.com/googleapis/librarian/issues/7382)
+* **internal/librarian/php:** support excluding protos from generation ([#7335](https://github.com/googleapis/librarian/issues/7335)) ([f3a328b](https://github.com/googleapis/librarian/commit/f3a328be2b9d6b5466577c61ae8d4fec42bc2407))
+* **internal/librarian/ruby:** forward ruby cloud title option and add beyondcorp titles ([#7364](https://github.com/googleapis/librarian/issues/7364)) ([14f8e33](https://github.com/googleapis/librarian/commit/14f8e33621923527e0456c97994d5f19a7253559))
+* **internal/sidekick/rust:** refactor bidi streaming templates ([#7312](https://github.com/googleapis/librarian/issues/7312)) ([1119b7a](https://github.com/googleapis/librarian/commit/1119b7a55a47467e20851ae04517ff8273b8590b)), refs [#6835](https://github.com/googleapis/librarian/issues/6835)
+* **internal/sidekick/rust:** support server-side streaming in gapics ([#7372](https://github.com/googleapis/librarian/issues/7372)) ([7e1065d](https://github.com/googleapis/librarian/commit/7e1065dccdcde56204e7624c55901f91118ec90f)), refs [#7373](https://github.com/googleapis/librarian/issues/7373)
+* **internal/sidekick/rust:** support used_if streaming package deps ([#7345](https://github.com/googleapis/librarian/issues/7345)) ([084470b](https://github.com/googleapis/librarian/commit/084470b210566118c3b70ea008a0fa291c09258c)), refs [#6835](https://github.com/googleapis/librarian/issues/6835)
+* **sidekick/rust:** bigquery generated types will move to model_ext ([#7365](https://github.com/googleapis/librarian/issues/7365)) ([4eaeba5](https://github.com/googleapis/librarian/commit/4eaeba5d8e1a9a0ed9400945245474263044f899))
+* **sidekick/swift:** clients are `Sendable` ([#7390](https://github.com/googleapis/librarian/issues/7390)) ([605505f](https://github.com/googleapis/librarian/commit/605505fa328718311b309b3475cd887733ab2c1a))
+* **sidekick/swift:** generate doc landing page ([#7353](https://github.com/googleapis/librarian/issues/7353)) ([50fae5d](https://github.com/googleapis/librarian/commit/50fae5d7ce310381ae6e2588a521e371d1582e0f))
+* **sidekick/swift:** generate smaller LROs ([#7334](https://github.com/googleapis/librarian/issues/7334)) ([f945e9d](https://github.com/googleapis/librarian/commit/f945e9db60a68a3e2ba847b6f8772bb52e5d6ad4))
+* **sidekick/swift:** use `_QueryParameterEncoder` ([#7356](https://github.com/googleapis/librarian/issues/7356)) ([bed3922](https://github.com/googleapis/librarian/commit/bed3922764a24c9db1d44f0cccc250430c8dbab8))
+* **sidekick/swift:** use `@_spi` for some imports ([#7318](https://github.com/googleapis/librarian/issues/7318)) ([9d4a5b3](https://github.com/googleapis/librarian/commit/9d4a5b3eb5e5efb3655f3cedb30c8b2a7c869ef0))
+* **sidekick/swift:** use `@_spi` in retry stub ([#7357](https://github.com/googleapis/librarian/issues/7357)) ([c5c8aed](https://github.com/googleapis/librarian/commit/c5c8aedbee221b1886a7caaa52de4092507516f5))
+* **swift:** support gRPC routing parameter extraction ([#7346](https://github.com/googleapis/librarian/issues/7346)) ([2aa5ef5](https://github.com/googleapis/librarian/commit/2aa5ef5d4033ce2c41201c7786f6f4880de10623))
+* **swift:** support service name overrides for doc link resolution ([#7319](https://github.com/googleapis/librarian/issues/7319)) ([7637cf6](https://github.com/googleapis/librarian/commit/7637cf65fd254676f2806651b3a709e02c955133))
+
+
+### Bug Fixes
+
+* **dart:** use `[@doc](https://github.com/doc)Import` for service exceptions ([#7322](https://github.com/googleapis/librarian/issues/7322)) ([f72812a](https://github.com/googleapis/librarian/commit/f72812a888ca83f83e582123f1c992a58188b497))
+* **internal/librarian/ruby:** forward all ruby cloud opts to generator ([#7360](https://github.com/googleapis/librarian/issues/7360)) ([ba46b05](https://github.com/googleapis/librarian/commit/ba46b0534756a394d5ee7402c9c18bf058df00aa))
+* **internal/sidekick/rust:** use anyhow::Result in bidi streaming samples ([#7347](https://github.com/googleapis/librarian/issues/7347)) ([2c61bae](https://github.com/googleapis/librarian/commit/2c61baeaa4e4cf3178ac6bb5af734643b49c86ec))
+* **librarian/swift:** support showcase generation ([#7338](https://github.com/googleapis/librarian/issues/7338)) ([50aa62e](https://github.com/googleapis/librarian/commit/50aa62e53ea98ecf864f127e2844ae955b724041))
+* **sidekick/rust:** redundant body fields ([#7378](https://github.com/googleapis/librarian/issues/7378)) ([65ff2ca](https://github.com/googleapis/librarian/commit/65ff2ca5401eb211c4e68107957af2ca67ba8177))
+* **tool/cmd/migrate/php:** parse and extract gapic_yaml from BUILD.bazel ([#7355](https://github.com/googleapis/librarian/issues/7355)) ([1a47f13](https://github.com/googleapis/librarian/commit/1a47f13f330a6bb9c2c15b2dda98244412849113))
+
 ## [0.38.0](https://github.com/googleapis/librarian/compare/v0.37.0...v0.38.0) (2026-08-18)
 
 
