@@ -275,7 +275,7 @@ func TestGenerateStorage_MultiModel(t *testing.T) {
 	if !strings.Contains(clientStr, "// Copyright 2026 Google LLC") {
 		t.Errorf("StorageControlClient.swift missing Copyright header:\n%s", clientStr)
 	}
-	if !strings.Contains(clientStr, "public class StorageControlClient: StorageControlProtocol {") {
+	if !strings.Contains(clientStr, "public final class StorageControlClient: StorageControlProtocol, Sendable {") {
 		t.Errorf("StorageControlClient.swift missing class declaration:\n%s", clientStr)
 	}
 	if !strings.Contains(clientStr, "private let storage: any Clients.StorageStub") ||
