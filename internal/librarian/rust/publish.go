@@ -164,7 +164,7 @@ func runSemverChecks(ctx context.Context, semverData semverData) error {
 
 // semverCheck runs semver checks for a specific crate.
 func semverCheck(ctx context.Context, semverData semverData, name string) error {
-	_, err := command.Output(ctx, command.Cargo, "info", name, "--registry", "crates-io")
+	err := command.Run(ctx, command.Cargo, "info", name, "--registry", "crates-io")
 	if err != nil {
 		if exitErr, ok := errors.AsType[*exec.ExitError](err); ok {
 			if exitErr.ExitCode() == 101 && strings.Contains(err.Error(), "could not find") {
