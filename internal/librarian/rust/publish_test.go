@@ -458,7 +458,7 @@ func TestRunSemverChecks(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			script := `#!/bin/bash
-if [[ "$*" == *"fail-me"* ]]; then
+if [[ "$1" == "semver-checks" ]] && [[ "$*" == *"fail-me"* ]]; then
 	exit 1
 fi
 exit 0
@@ -483,6 +483,9 @@ func TestRunSemverChecks_Errors(t *testing.T) {
 	wantErr := errSemverCheck
 
 	script := `#!/bin/bash
+if [ "$1" == "info" ]; then
+	exit 0
+fi
 exit 1
 `
 	setupFakeCargoScript(t, script)
@@ -495,6 +498,46 @@ exit 1
 	}
 	if !errors.Is(err, wantErr) {
 		t.Errorf("runSemverChecks() error = %v, want to contain %v", err, wantErr)
+	}
+}
+
+func TestRunSemverChecks_CargoInfoCrateNotFoundSkips(t *testing.T) {
+	manifests := map[string]string{
+		"new-crate": "new/Cargo.toml",
+	}
+
+	// Exit code 101 with 'could not find' in stderr matches the crate not found error.
+	script := `#!/bin/bash
+echo "error: could not find 'new-crate' in registry" >&2
+exit 101
+`
+	setupFakeCargoScript(t, script)
+	sData := semverData{
+		manifests: manifests,
+	}
+	// Because the crate is not found, we should skip semver check and return nil error.
+	if err := runSemverChecks(t.Context(), sData); err != nil {
+		t.Errorf("runSemverChecks() expected nil error when cargo info fails with crate not found, got %v", err)
+	}
+}
+
+func TestRunSemverChecks_CargoInfoNetworkErrorDoesNotSkip(t *testing.T) {
+	manifests := map[string]string{
+		"existing-crate": "existing/Cargo.toml",
+	}
+
+	// Some other failure like connection timeout or lock failure shouldn't match "could not find".
+	script := `#!/bin/bash
+echo "error: failed to connect to registry" >&2
+exit 1
+`
+	setupFakeCargoScript(t, script)
+	sData := semverData{
+		manifests: manifests,
+	}
+	// Because of a network error, we should NOT skip, so we expect an error from cargo info.
+	if err := runSemverChecks(t.Context(), sData); err == nil {
+		t.Error("runSemverChecks() expected error when cargo info fails with network error, got nil")
 	}
 }
 

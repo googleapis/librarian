@@ -19,6 +19,7 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 	libconfig "github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/sidekick/api"
 )
@@ -272,9 +273,10 @@ func TestPathBindingAnnotations(t *testing.T) {
 		QueryParams: []*api.Field{f_id},
 		Substitutions: []*bindingSubstitution{
 			{
-				FieldAccessor: "Some(&req).map(|m| &m.name).map(|s| s.as_str())",
-				FieldName:     "name",
-				Template:      []string{"projects", "*", "locations", "*"},
+				FieldAccessor:  "Some(&req).map(|m| &m.name).map(|s| s.as_str())",
+				PathExtraction: &PathExtraction{FieldTake: "Some(&mut req).map(|m| std::mem::take(&mut m.name))"},
+				FieldName:      "name",
+				Template:       []string{"projects", "*", "locations", "*"},
 			},
 		},
 	}
@@ -295,19 +297,22 @@ func TestPathBindingAnnotations(t *testing.T) {
 		PathFmt: "/v1/projects/{}/locations/{}/ids/{}:action",
 		Substitutions: []*bindingSubstitution{
 			{
-				FieldAccessor: "Some(&req).map(|m| &m.project).map(|s| s.as_str())",
-				FieldName:     "project",
-				Template:      []string{"*"},
+				FieldAccessor:  "Some(&req).map(|m| &m.project).map(|s| s.as_str())",
+				PathExtraction: &PathExtraction{FieldTake: "Some(&mut req).map(|m| std::mem::take(&mut m.project))"},
+				FieldName:      "project",
+				Template:       []string{"*"},
 			},
 			{
-				FieldAccessor: "Some(&req).map(|m| &m.location).map(|s| s.as_str())",
-				FieldName:     "location",
-				Template:      []string{"*"},
+				FieldAccessor:  "Some(&req).map(|m| &m.location).map(|s| s.as_str())",
+				PathExtraction: &PathExtraction{FieldTake: "Some(&mut req).map(|m| std::mem::take(&mut m.location))"},
+				FieldName:      "location",
+				Template:       []string{"*"},
 			},
 			{
-				FieldAccessor: "Some(&req).map(|m| &m.id)",
-				FieldName:     "id",
-				Template:      []string{"*"},
+				FieldAccessor:  "Some(&req).map(|m| &m.id)",
+				PathExtraction: &PathExtraction{FieldTake: "Some(&mut req).map(|m| std::mem::take(&mut m.id))"},
+				FieldName:      "id",
+				Template:       []string{"*"},
 			},
 		},
 	}
@@ -327,19 +332,22 @@ func TestPathBindingAnnotations(t *testing.T) {
 		PathFmt: "/v1/projects/{}/locations/{}/ids/{}:actionOnChild",
 		Substitutions: []*bindingSubstitution{
 			{
-				FieldAccessor: "Some(&req).and_then(|m| m.child.as_ref()).map(|m| &m.project).map(|s| s.as_str())",
-				FieldName:     "child.project",
-				Template:      []string{"*"},
+				FieldAccessor:  "Some(&req).and_then(|m| m.child.as_ref()).map(|m| &m.project).map(|s| s.as_str())",
+				PathExtraction: &PathExtraction{FieldTake: "Some(&mut req).and_then(|m| m.child.as_mut()).map(|m| std::mem::take(&mut m.project))"},
+				FieldName:      "child.project",
+				Template:       []string{"*"},
 			},
 			{
-				FieldAccessor: "Some(&req).and_then(|m| m.child.as_ref()).map(|m| &m.location).map(|s| s.as_str())",
-				FieldName:     "child.location",
-				Template:      []string{"*"},
+				FieldAccessor:  "Some(&req).and_then(|m| m.child.as_ref()).map(|m| &m.location).map(|s| s.as_str())",
+				PathExtraction: &PathExtraction{FieldTake: "Some(&mut req).and_then(|m| m.child.as_mut()).map(|m| std::mem::take(&mut m.location))"},
+				FieldName:      "child.location",
+				Template:       []string{"*"},
 			},
 			{
-				FieldAccessor: "Some(&req).and_then(|m| m.child.as_ref()).map(|m| &m.id)",
-				FieldName:     "child.id",
-				Template:      []string{"*"},
+				FieldAccessor:  "Some(&req).and_then(|m| m.child.as_ref()).map(|m| &m.id)",
+				PathExtraction: &PathExtraction{FieldTake: "Some(&mut req).and_then(|m| m.child.as_mut()).map(|m| std::mem::take(&mut m.id))"},
+				FieldName:      "child.id",
+				Template:       []string{"*"},
 			},
 		},
 	}
@@ -383,14 +391,26 @@ func TestPathBindingAnnotations(t *testing.T) {
 		InputTypeID:  ".test.Request",
 		OutputTypeID: ".test.Response",
 		PathInfo: &api.PathInfo{
-			Bindings: []*api.PathBinding{b0, b1, b2, b3, b4},
+			Bindings:      []*api.PathBinding{b0, b1, b2, b3},
+			BodyFieldPath: "*",
+		},
+	}
+	methodBar := &api.Method{
+		Name:         "DoBar",
+		ID:           ".test.Service.DoBar",
+		InputType:    request,
+		InputTypeID:  ".test.Request",
+		OutputTypeID: ".test.Response",
+		PathInfo: &api.PathInfo{
+			Bindings:      []*api.PathBinding{b4},
+			BodyFieldPath: "",
 		},
 	}
 	service := &api.Service{
 		Name:    "FooService",
 		ID:      ".test.FooService",
 		Package: "test",
-		Methods: []*api.Method{method},
+		Methods: []*api.Method{method, methodBar},
 	}
 
 	model := api.NewTestAPI(
@@ -401,21 +421,21 @@ func TestPathBindingAnnotations(t *testing.T) {
 	codec := newTestCodec(t, libconfig.SpecProtobuf, "", map[string]string{})
 	annotateModel(model, codec)
 
-	if diff := cmp.Diff(want_b0, b0.Codec); diff != "" {
+	if diff := cmp.Diff(want_b0, b0.Codec, cmpopts.IgnoreUnexported(pathBindingAnnotation{}, bindingSubstitution{})); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
-	if diff := cmp.Diff(want_b1, b1.Codec); diff != "" {
+	if diff := cmp.Diff(want_b1, b1.Codec, cmpopts.IgnoreUnexported(pathBindingAnnotation{}, bindingSubstitution{})); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
-	if diff := cmp.Diff(want_b2, b2.Codec); diff != "" {
-		t.Errorf("mismatch (-want +got):\n%s", diff)
-	}
-
-	if diff := cmp.Diff(want_b3, b3.Codec); diff != "" {
+	if diff := cmp.Diff(want_b2, b2.Codec, cmpopts.IgnoreUnexported(pathBindingAnnotation{}, bindingSubstitution{})); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 
-	if diff := cmp.Diff(want_b4, b4.Codec); diff != "" {
+	if diff := cmp.Diff(want_b3, b3.Codec, cmpopts.IgnoreUnexported(pathBindingAnnotation{}, bindingSubstitution{})); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+
+	if diff := cmp.Diff(want_b4, b4.Codec, cmpopts.IgnoreUnexported(pathBindingAnnotation{}, bindingSubstitution{})); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
@@ -484,11 +504,12 @@ func TestPathBindingAnnotationsStyle(t *testing.T) {
 		FieldName     string
 		WantFieldName string
 		WantAccessor  string
+		WantClear     string
 	}{
-		{"machine", "machine", "Some(&req).map(|m| &m.machine).map(|s| s.as_str())"},
-		{"machineType", "machine_type", "Some(&req).map(|m| &m.machine_type).map(|s| s.as_str())"},
-		{"machine_type", "machine_type", "Some(&req).map(|m| &m.machine_type).map(|s| s.as_str())"},
-		{"type", "type", "Some(&req).map(|m| &m.r#type).map(|s| s.as_str())"},
+		{"machine", "machine", "Some(&req).map(|m| &m.machine).map(|s| s.as_str())", "Some(&mut req).map(|m| std::mem::take(&mut m.machine))"},
+		{"machineType", "machine_type", "Some(&req).map(|m| &m.machine_type).map(|s| s.as_str())", "Some(&mut req).map(|m| std::mem::take(&mut m.machine_type))"},
+		{"machine_type", "machine_type", "Some(&req).map(|m| &m.machine_type).map(|s| s.as_str())", "Some(&mut req).map(|m| std::mem::take(&mut m.machine_type))"},
+		{"type", "type", "Some(&req).map(|m| &m.r#type).map(|s| s.as_str())", "Some(&mut req).map(|m| std::mem::take(&mut m.r#type))"},
 	} {
 		field := &api.Field{
 			Name:     test.FieldName,
@@ -521,9 +542,10 @@ func TestPathBindingAnnotationsStyle(t *testing.T) {
 			PathFmt: "/v1/machines/{}:create",
 			Substitutions: []*bindingSubstitution{
 				{
-					FieldAccessor: test.WantAccessor,
-					FieldName:     test.WantFieldName,
-					Template:      []string{"*"},
+					FieldAccessor:  test.WantAccessor,
+					FieldName:      test.WantFieldName,
+					PathExtraction: &PathExtraction{FieldTake: test.WantClear},
+					Template:       []string{"*"},
 				},
 			},
 		}
@@ -534,7 +556,8 @@ func TestPathBindingAnnotationsStyle(t *testing.T) {
 			InputTypeID:  ".test.Request",
 			OutputTypeID: ".test.Response",
 			PathInfo: &api.PathInfo{
-				Bindings: []*api.PathBinding{binding},
+				Bindings:      []*api.PathBinding{binding},
+				BodyFieldPath: "*",
 			},
 		}
 		service := &api.Service{
@@ -550,7 +573,7 @@ func TestPathBindingAnnotationsStyle(t *testing.T) {
 		api.CrossReference(model)
 		codec := newTestCodec(t, libconfig.SpecProtobuf, "", map[string]string{})
 		annotateModel(model, codec)
-		if diff := cmp.Diff(wantBinding, binding.Codec); diff != "" {
+		if diff := cmp.Diff(wantBinding, binding.Codec, cmpopts.IgnoreUnexported(pathBindingAnnotation{}, bindingSubstitution{})); diff != "" {
 			t.Errorf("mismatch (-want +got):\n%s", diff)
 		}
 

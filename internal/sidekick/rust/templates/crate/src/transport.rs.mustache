@@ -250,6 +250,9 @@ impl super::stub::{{Codec.Name}} for {{Codec.Name}} {
         {{#Codec.HasBindingSubstitutions}}
         use gaxi::path_parameter::try_match;
         use gaxi::routing_parameter::Segment;
+        {{#Codec.FullBody}}
+        let mut req = req;
+        {{/Codec.FullBody}}
         {{/Codec.HasBindingSubstitutions}}
         {{#HasAutoPopulatedFields}}
         let options = google_cloud_gax::options::internal::set_default_idempotency(
@@ -306,6 +309,11 @@ impl super::stub::{{Codec.Name}} for {{Codec.Name}} {
             let resource_name = String::new();
             {{/Codec.ResourceNameTemplate}}
             {{/Codec.HasResourceNameGeneration}}
+            {{#Codec.Substitutions}}
+            {{#PathExtraction}}
+            let _ = {{{FieldTake}}};
+            {{/PathExtraction}}
+            {{/Codec.Substitutions}}
             let builder = self.inner.builder(Method::{{Verb}}, path);
             {{#Codec.QueryParamsCanFail}}
             let builder = (|| {

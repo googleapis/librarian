@@ -96,8 +96,8 @@ func TestGenerateService_DocComments(t *testing.T) {
 	contentStr := string(content)
 
 	// Verify service documentation
-	want := "/// Documentation for SecretManager service.\n///\n/// @Snippet(path: \"SecretManagerQuickstart\")\npublic class SecretManagerClient"
-	got := extractBlock(t, contentStr, "/// Documentation for SecretManager service.", "public class SecretManagerClient")
+	want := "/// Documentation for SecretManager service.\n///\n/// @Snippet(path: \"SecretManagerQuickstart\")\npublic final class SecretManagerClient: "
+	got := extractBlock(t, contentStr, "/// Documentation for SecretManager service.", "public final class SecretManagerClient: ")
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}

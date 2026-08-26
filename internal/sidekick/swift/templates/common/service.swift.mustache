@@ -41,7 +41,7 @@ import GoogleCloudGax
 {{#Deprecated}}
 @available(*, deprecated)
 {{/Deprecated}}
-public class {{Codec.ClientName}}: Clients.{{Codec.StubPrefix}}Protocol {
+public final class {{Codec.ClientName}}: Clients.{{Codec.StubPrefix}}Protocol, Sendable {
   let inner: any Clients.{{Codec.StubPrefix}}Stub
   {{#Codec.HasLROs}}
   let pollingErrorPolicy: GoogleCloudGax.PollingErrorPolicy

@@ -81,8 +81,8 @@ func TestGenerateStub_Structure(t *testing.T) {
 	}
 	stubContentStr := string(stubContent)
 
-	got := extractBlock(t, stubContentStr, `  protocol ProtocolStub {`, "\n"+`  }`)
-	want := `  protocol ProtocolStub {
+	got := extractBlock(t, stubContentStr, `  protocol ProtocolStub: Sendable {`, "\n"+`  }`)
+	want := `  protocol ProtocolStub: Sendable {
     func getThing(
     request: SomeTestPackage.Request, options: GoogleCloudGax.RequestOptions
 ) async throws -> SomeTestPackage.Response
@@ -99,8 +99,8 @@ func TestGenerateStub_Structure(t *testing.T) {
 	}
 	transportContentStr := string(transportContent)
 
-	got = extractBlock(t, transportContentStr, `  class ProtocolTransport: `, `HTTPClient`)
-	want = `  class ProtocolTransport: ProtocolStub {
+	got = extractBlock(t, transportContentStr, `  final class ProtocolTransport: `, `HTTPClient`)
+	want = `  final class ProtocolTransport: ProtocolStub {
     let inner: GoogleCloudGax._HTTPClient`
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
@@ -426,7 +426,7 @@ func TestGenerateStub_Grpc(t *testing.T) {
 		t.Fatal(err)
 	}
 	stubStr := string(stubContent)
-	if !strings.Contains(stubStr, "protocol StorageControlStub {") {
+	if !strings.Contains(stubStr, "protocol StorageControlStub: Sendable {") {
 		t.Errorf("stub file missing StorageControlStub protocol:\n%s", stubStr)
 	}
 	if !strings.Contains(stubStr, "func createFolder(") || !strings.Contains(stubStr, "func deleteFolder(") || !strings.Contains(stubStr, "func getOperation(") {
@@ -449,7 +449,7 @@ func TestGenerateStub_Grpc(t *testing.T) {
 	}
 
 	// Check gRPC Transport class definition and inner client
-	if !strings.Contains(transportStr, "class StorageControlTransport: StorageControlStub {") {
+	if !strings.Contains(transportStr, "final class StorageControlTransport: StorageControlStub {") {
 		t.Errorf("transport missing StorageControlTransport class declaration:\n%s", transportStr)
 	}
 	if !strings.Contains(transportStr, "let inner: GoogleCloudGaxGRPC._GRPCClient") {

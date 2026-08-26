@@ -56,6 +56,11 @@ func (m *methodAnnotation) IsBidiStreaming() bool {
 	return m.ClientSideStreaming && m.ServerSideStreaming
 }
 
+// FullBody returns true if the HTTP body is configured as "*".
+func (m *methodAnnotation) FullBody() bool {
+	return m.PathInfo != nil && m.PathInfo.BodyFieldPath == "*"
+}
+
 // IsServerStreaming returns true if the method is a server-side streaming RPC
 // and is not bidirectional.
 func (m *methodAnnotation) IsServerStreaming() bool {
@@ -145,6 +150,12 @@ type routingVariantAnnotations struct {
 	SuffixSegments   []string
 }
 
+// PathExtraction represents the actions to extract path parameters from a request body.
+type PathExtraction struct {
+	// Rust code to take the leaf field.
+	FieldTake string
+}
+
 type bindingSubstitution struct {
 	// Rust code to access the leaf field, given a `req`
 	//
@@ -158,6 +169,9 @@ type bindingSubstitution struct {
 	// - panic
 	// - assume context i.e. use the try operator: `?`
 	FieldAccessor string
+
+	// Rust code to extract this field from the request body, if necessary.
+	PathExtraction *PathExtraction
 
 	// The field name
 	//
@@ -484,12 +498,65 @@ func makeBindingSubstitution(v *api.PathVariable, m *api.Method) (*bindingSubsti
 	for _, n := range v.FieldPath {
 		rustNames = append(rustNames, toSnakeNoMangling(n))
 	}
+	var pathExtraction *PathExtraction
+	fullBody := m.PathInfo != nil && m.PathInfo.BodyFieldPath == "*"
+	if fullBody {
+		clears, err := makeClearAccessors(v.FieldPath, m)
+		if err != nil {
+			return nil, err
+		}
+		var fieldClear strings.Builder
+		fieldClear.WriteString("Some(&mut req)")
+		for _, c := range clears {
+			fieldClear.WriteString(c)
+		}
+		pathExtraction = &PathExtraction{FieldTake: fieldClear.String()}
+	}
 	binding := &bindingSubstitution{
-		FieldAccessor: fieldAccessor.String(),
-		FieldName:     strings.Join(rustNames, "."),
-		Template:      v.Segments,
+		FieldAccessor:  fieldAccessor.String(),
+		FieldName:      strings.Join(rustNames, "."),
+		PathExtraction: pathExtraction,
+		Template:       v.Segments,
 	}
 	return binding, nil
+}
+
+func makeClearAccessors(fields []string, m *api.Method) ([]string, error) {
+	findField := func(name string, message *api.Message) *api.Field {
+		for _, f := range message.Fields {
+			if f.Name == name {
+				return f
+			}
+		}
+		return nil
+	}
+	var clears []string
+	message := m.InputType
+	for _, name := range fields {
+		field := findField(name, message)
+		rustFieldName := toSnake(name)
+		if field == nil {
+			return nil, fmt.Errorf("invalid routing/path field (%q) for request message %s", rustFieldName, message.ID)
+		}
+		if field.IsOneOf {
+			return nil, fmt.Errorf("taking from a one-of is unsupported (%q) for request message %s", rustFieldName, message.ID)
+		}
+		if field.Typez != api.TypezMessage {
+			clears = append(clears, fmt.Sprintf(".map(|m| std::mem::take(&mut m.%s))", rustFieldName))
+		} else {
+			if field.Optional {
+				clears = append(clears, fmt.Sprintf(".and_then(|m| m.%s.as_mut())", rustFieldName))
+			} else {
+				clears = append(clears, fmt.Sprintf(".map(|m| &mut m.%s)", rustFieldName))
+			}
+		}
+		if field.Typez == api.TypezMessage {
+			if fieldMessage := m.Model.Message(field.TypezID); fieldMessage != nil {
+				message = fieldMessage
+			}
+		}
+	}
+	return clears, nil
 }
 
 func (c *codec) annotatePathBinding(b *api.PathBinding, m *api.Method) (*pathBindingAnnotation, error) {

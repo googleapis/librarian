@@ -40,7 +40,7 @@ import (
 var (
 	errMissingLibraryOrAllFlag = errors.New("must specify library name or use --all flag")
 	errBothLibraryAndAllFlag   = errors.New("cannot specify both library name and --all flag")
-	errSkipGenerate            = errors.New("library has skip_generate set")
+	errSkipGenerate            = errors.New("library has skip_generate set, remove it to generate")
 	errNoPreviewVariant        = errors.New("library does not have a preview variant")
 	errUnsupportedLanguage     = errors.New("language does not support generation")
 )

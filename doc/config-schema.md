@@ -510,6 +510,7 @@ This document describes the schema for the librarian.yaml.
 | `ruby-cloud-extra-dependencies` | string | Contains extra runtime dependencies to the .gemspec file. |
 | `ruby-cloud-factory-method-suffix` | string | Appends a suffix to client constructor helper methods. |
 | `ruby-cloud-gem-namespace` | string | Is the root Ruby namespace. |
+| `ruby-cloud-generic-endpoint` | bool | Specifies whether the client is for a generic endpoint service without a fixed default host or default credentials. |
 | `ruby-cloud-migration-version` | string | Specifies the gem version milestone at which the library was migrated to GAPIC, generating a migration section in the README file. |
 | `ruby-cloud-namespace-override` | string | Overrides token / segment replacements applied across all generated module & class paths. |
 | `ruby-cloud-path-override` | string | Overrides file/directory paths under lib/ and proto_docs/. |

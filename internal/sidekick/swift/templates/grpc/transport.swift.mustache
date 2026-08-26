@@ -37,7 +37,7 @@ internal import GoogleCloudWktConvert
 internal import SwiftProtobuf
 
 extension Clients {
-  class {{Codec.StubPrefix}}Transport: {{Codec.StubPrefix}}Stub {
+  final class {{Codec.StubPrefix}}Transport: {{Codec.StubPrefix}}Stub {
     let inner: GoogleCloudGaxGRPC._GRPCClient
 
     public init(_ options: GoogleCloudGax.ClientOptions = .init()) throws {

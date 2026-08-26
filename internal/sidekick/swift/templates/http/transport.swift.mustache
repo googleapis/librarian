@@ -34,7 +34,7 @@ import {{.}}
 @_spi(GoogleCloudInternal) import GoogleCloudGax
 
 extension Clients {
-  class {{Codec.StubPrefix}}Transport: {{Codec.StubPrefix}}Stub {
+  final class {{Codec.StubPrefix}}Transport: {{Codec.StubPrefix}}Stub {
     let inner: GoogleCloudGax._HTTPClient
 
     public init(_ options: GoogleCloudGax.ClientOptions = .init()) throws {

@@ -30,7 +30,7 @@ import {{.}}
 import GoogleCloudGax
 
 extension Clients {
-  protocol {{Codec.StubPrefix}}Stub {
+  protocol {{Codec.StubPrefix}}Stub: Sendable {
     {{#Codec.Methods}}
     func {{> /templates/common/method_signature/request_options}}
     {{/Codec.Methods}}
