@@ -494,6 +494,8 @@ func specialCases(api *config.API) {
 
 func appendKeep(lib *config.Library) {
 	switch lib.Name {
+	case "logging":
+		lib.Keep = append(lib.Keep, "tests/System/V2/LoggingServiceV2SmokeTest.php")
 	case "bigtable":
 		lib.Keep = append(lib.Keep, "tests/Conformance/proxy/src/GPBMetadata/Google/Bigtable/Testproxy/TestProxy.php")
 		lib.Keep = append(lib.Keep, "tests/Conformance/proxy/src/Google/Bigtable/Testproxy/CheckAndMutateRowRequest.php")
