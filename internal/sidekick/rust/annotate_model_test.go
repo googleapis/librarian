@@ -756,6 +756,21 @@ func TestModelAnnotationsHasStreaming(t *testing.T) {
 			wantStreaming:        false,
 			wantRequiredPackages: []string{"gaxi.workspace       = true"},
 		},
+		{
+			name:    "grpc-client template override with server streaming method",
+			service: serverStreamingService,
+			options: map[string]string{
+				"include-server-streaming-methods": "true",
+				"template-override":                "templates/grpc-client",
+				"package:gaxi":                     "package=google-cloud-gax,used-if=services",
+				"package:prost":                    "package=prost,used-if=streaming",
+			},
+			wantBidi:             false,
+			wantServer:           true,
+			wantStreaming:        true,
+			wantGaxiFeatures:     []string{"_internal-grpc-client"},
+			wantRequiredPackages: []string{`gaxi                 = { workspace = true, features = ["_internal-grpc-client"] }`, "prost.workspace      = true"},
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			model := api.NewTestAPI([]*api.Message{msg}, []*api.Enum{}, []*api.Service{test.service})

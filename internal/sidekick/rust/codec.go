@@ -1579,7 +1579,7 @@ func (c *codec) hasBidiStreaming(model *api.API) bool {
 }
 
 func (c *codec) hasServerStreaming(model *api.API) bool {
-	if c.templateOverride != "" || !c.includeServerStreamingMethods {
+	if (c.templateOverride != "" && c.templateOverride != "templates/grpc-client") || !c.includeServerStreamingMethods {
 		return false
 	}
 	return slices.ContainsFunc(model.Services, (*api.Service).HasServerSideStreaming)
