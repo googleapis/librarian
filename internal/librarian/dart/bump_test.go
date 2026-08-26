@@ -417,7 +417,7 @@ func TestBump_VersionMismatch(t *testing.T) {
 }
 
 func TestUpdateLibraryVersion(t *testing.T) {
-	for _, tc := range []struct {
+	for _, test := range []struct {
 		name       string
 		initial    string
 		newVersion string
@@ -452,18 +452,18 @@ const packageVersion = '1.1.0';
 `,
 		},
 	} {
-		t.Run(tc.name, func(t *testing.T) {
+		t.Run(test.name, func(t *testing.T) {
 			tempDir := t.TempDir()
 			srcDir := filepath.Join(tempDir, "lib", "src")
 			if err := os.MkdirAll(srcDir, 0755); err != nil {
 				t.Fatal(err)
 			}
 			versionPath := filepath.Join(srcDir, "version.dart")
-			if err := os.WriteFile(versionPath, []byte(tc.initial), 0644); err != nil {
+			if err := os.WriteFile(versionPath, []byte(test.initial), 0644); err != nil {
 				t.Fatal(err)
 			}
 
-			if err := updateLibraryVersion(tempDir, tc.newVersion); err != nil {
+			if err := updateLibraryVersion(tempDir, test.newVersion); err != nil {
 				t.Fatalf("updateVersionDart failed: %v", err)
 			}
 
@@ -471,8 +471,8 @@ const packageVersion = '1.1.0';
 			if err != nil {
 				t.Fatal(err)
 			}
-			if got := string(content); got != tc.want {
-				t.Errorf("version.dart content mismatch:\ngot:\n%s\nwant:\n%s", got, tc.want)
+			if got := string(content); got != test.want {
+				t.Errorf("version.dart content mismatch:\ngot:\n%s\nwant:\n%s", got, test.want)
 			}
 		})
 	}
