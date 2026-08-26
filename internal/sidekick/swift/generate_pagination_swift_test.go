@@ -178,7 +178,7 @@ func verifyGeneratedMapResponse(t *testing.T, outDir string, wantNextPageToken s
 	respContentStr := string(respContent)
 
 	gotResponseMessage := extractBlock(t, respContentStr, "public struct ListSecretsResponse: ", "{")
-	for _, p := range []string{"Codable", "Equatable", "GoogleCloudWkt._AnyPackable", "GoogleCloudGax._PaginatedResponse", "Sendable"} {
+	for _, p := range []string{"Codable", "Equatable", "GoogleCloudWKT._AnyPackable", "GoogleCloudGax._PaginatedResponse", "Sendable"} {
 		if !strings.Contains(gotResponseMessage, p) {
 			t.Errorf("expected %q in ListSecretsResponse declaration, got: %s", p, gotResponseMessage)
 		}

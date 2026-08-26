@@ -79,7 +79,7 @@ type fieldAnnotations struct {
 	// PrimitiveFieldType is the raw Swift type name without any decorators or boxing wrappers (e.g. `Node`).
 	//
 	// This differs from `BaseFieldType` for recursive message fields: for recursive fields,
-	// `BaseFieldType` is boxed as `GoogleCloudWkt.Recursive<Node>` for struct property declarations,
+	// `BaseFieldType` is boxed as `GoogleCloudWKT.Recursive<Node>` for struct property declarations,
 	// whereas `PrimitiveFieldType` remains the raw unwrapped type `Node` so that conversions can call
 	// `WktPackage.Recursive(value: try Node(proto: proto.childNode))`.
 	PrimitiveFieldType string

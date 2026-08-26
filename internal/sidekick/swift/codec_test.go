@@ -77,7 +77,7 @@ func TestParseOptions(t *testing.T) {
 				Name:          "google-cloud-wkt",
 				CopyrightYear: "2038",
 				Swift: &config.SwiftPackage{
-					LibraryNameOverride: "GoogleCloudWkt",
+					LibraryNameOverride: "GoogleCloudWKT",
 				},
 			},
 			module: &config.SwiftModule{
@@ -86,7 +86,7 @@ func TestParseOptions(t *testing.T) {
 			want: &codec{
 				Module:             true,
 				GenerationYear:     "2038",
-				TargetLibraryName:  "GoogleCloudWkt",
+				TargetLibraryName:  "GoogleCloudWKT",
 				PackageName:        "test",
 				PackageVersion:     "0.0.0",
 				MonorepoRoot:       ".",
@@ -411,11 +411,11 @@ func TestSkipDependency(t *testing.T) {
 		wantSkip          bool
 	}{
 		{
-			name:              "multi-module self import skipped (e.g. wkt messages importing GoogleCloudWkt)",
-			targetLibraryName: "GoogleCloudWkt",
+			name:              "multi-module self import skipped (e.g. wkt messages importing GoogleCloudWKT)",
+			targetLibraryName: "GoogleCloudWKT",
 			packageName:       "google-protobuf",
 			module:            true,
-			depName:           "GoogleCloudWkt",
+			depName:           "GoogleCloudWKT",
 			wantSkip:          true,
 		},
 		{

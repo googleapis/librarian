@@ -102,6 +102,71 @@ impl {{Codec.Name}} {
 {{/Codec.PerServiceFeatures}}
 impl super::stub::{{Codec.Name}} for {{Codec.Name}} {
     {{#Codec.Methods}}
+    {{#Codec.IsServerStreaming}}
+    #[cfg(google_cloud_unstable_gapic_streaming)]
+    async fn {{Codec.Name}}(
+        &self,
+        req: {{InputType.Codec.QualifiedName}},
+        options: crate::RequestOptions,
+    ) -> Result<google_cloud_gax::streaming::ResponseReceiver<{{OutputType.Codec.QualifiedName}}>> {
+        let extensions = {
+            let mut e = gaxi::grpc::tonic::Extensions::new();
+            e.insert(gaxi::grpc::tonic::GrpcMethod::new(
+                "{{SourceService.Package}}.{{SourceService.Name}}",
+                "{{Name}}",
+            ));
+            e
+        };
+        let path = http::uri::PathAndQuery::from_static(
+            "/{{SourceService.Package}}.{{SourceService.Name}}/{{Name}}"
+        );
+        {{!
+        AIP-4222 says:
+
+            For any given RPC, if the explicit routing headers annotation is
+            present, the code generators **must** use it and **ignore** any
+            routing headers that might be implicitly specified in the
+            google.api.http annotation.
+
+        So we only need to generate one of the two code paths.
+        }}
+        {{#HasRouting}}
+        {{> routinginfo}}
+        {{/HasRouting}}
+        {{^HasRouting}}
+        let x_goog_request_params = [
+            {{#PathInfo.Codec.UniqueParameters}}
+                {{{FieldAccessor}}}.map(|v| format!("{{FieldName}}={v}")),
+            {{/PathInfo.Codec.UniqueParameters}}
+            {{^PathInfo.Codec.UniqueParameters}}
+            ""; 0
+            {{/PathInfo.Codec.UniqueParameters}}
+        ]
+        .into_iter()
+        .flatten()
+        {{! TODO(#2548) - skip empty strings, and don't lead with a '&' }}
+        .fold(String::new(), |b, p| b + "&" + &p);
+        {{/HasRouting}}
+
+        self.inner
+            .execute_server_streaming::<
+                {{InputType.Codec.QualifiedName}},
+                {{OutputType.Codec.QualifiedName}},
+                crate::{{InputType.Codec.PackageModuleName}}::{{InputType.Codec.Name}},
+                crate::{{OutputType.Codec.PackageModuleName}}::{{OutputType.Codec.Name}},
+            >(
+                extensions,
+                path,
+                req,
+                options,
+                &info::X_GOOG_API_CLIENT_HEADER,
+                &x_goog_request_params,
+            )
+            .await
+    }
+
+    {{/Codec.IsServerStreaming}}
+    {{^Codec.IsServerStreaming}}
     async fn {{Codec.Name}}(
         &self,
         req: {{InputType.Codec.QualifiedName}},
@@ -200,6 +265,7 @@ impl super::stub::{{Codec.Name}} for {{Codec.Name}} {
             .and_then(gaxi::grpc::to_gax_response::<TR, {{Codec.ReturnType}}>)
     }
 
+    {{/Codec.IsServerStreaming}}
     {{/Codec.Methods}}
     {{#Codec.HasLROs}}
     fn get_polling_error_policy(

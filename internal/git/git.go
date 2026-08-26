@@ -206,3 +206,61 @@ func HasChangesIn(dir, exclusion string, filesChanged []string) bool {
 	}
 	return false
 }
+
+// RemoteTagExists checks if a tag exists on the remote repository.
+func RemoteTagExists(ctx context.Context, gitExe, remote, tag string) (bool, error) {
+	output, err := command.Output(ctx, gitExe, "ls-remote", "--tags", remote, "refs/tags/"+tag, "refs/tags/"+tag+"^{}")
+	if err != nil {
+		return false, fmt.Errorf("failed to check remote tags for %s: %w", remote, err)
+	}
+	for line := range strings.SplitSeq(output, "\n") {
+		line = strings.TrimSpace(line)
+		if strings.HasSuffix(line, "refs/tags/"+tag) || strings.HasSuffix(line, "refs/tags/"+tag+"^{}") {
+			return true, nil
+		}
+	}
+	return false, nil
+}
+
+// SubtreeSplit runs git subtree split for the given prefix and origin commit.
+func SubtreeSplit(ctx context.Context, gitExe, prefix, origin string) (string, error) {
+	output, err := command.Output(ctx, gitExe, "-c", "commit.gpgsign=false", "subtree", "split", "--prefix="+prefix, "-q", origin)
+	if err != nil {
+		return "", fmt.Errorf("failed to split subtree %s: %w", prefix, err)
+	}
+	splitSHA := strings.TrimSpace(output)
+	if len(splitSHA) != 40 && len(splitSHA) != 64 {
+		return "", fmt.Errorf("unexpected git subtree split output for prefix %s: %q", prefix, output)
+	}
+	return splitSHA, nil
+}
+
+// PushBranch pushes a local ref to a branch on the remote repository.
+func PushBranch(ctx context.Context, gitExe, remote, localRef, remoteBranch string, force bool) error {
+	args := []string{"push"}
+	if force {
+		args = append(args, "--force")
+	}
+	args = append(args, remote, fmt.Sprintf("%s:refs/heads/%s", localRef, remoteBranch))
+	return command.Run(ctx, gitExe, args...)
+}
+
+// PushTag pushes a tag to the remote repository.
+func PushTag(ctx context.Context, gitExe, remote, tag string, force bool) error {
+	args := []string{"push"}
+	if force {
+		args = append(args, "--force")
+	}
+	args = append(args, remote, "refs/tags/"+tag)
+	return command.Run(ctx, gitExe, args...)
+}
+
+// PushRefToTag pushes a specific commit hash to a tag on the remote repository.
+func PushRefToTag(ctx context.Context, gitExe, remote, localRef, tag string, force bool) error {
+	args := []string{"push"}
+	if force {
+		args = append(args, "--force")
+	}
+	args = append(args, remote, fmt.Sprintf("%s:refs/tags/%s", localRef, tag))
+	return command.Run(ctx, gitExe, args...)
+}
