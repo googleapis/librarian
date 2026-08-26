@@ -300,7 +300,7 @@ func updateChangelog(ctx context.Context, packageDir, version, lastReleaseTagCom
 	return os.WriteFile(changelogPath, []byte(newTopOfFile+rest), 0644)
 }
 
-var versionRegex = regexp.MustCompile(`(const packageVersion = ["'])([^"']*)(["'])`)
+var versionRegex = regexp.MustCompile(`(const\s+packageVersion\s*=\s*["'])([^"']*)(["'])`)
 
 func updateLibraryVersion(packageDir, newVersion string) error {
 	versionPath := filepath.Join(packageDir, "lib", "src", "version.dart")
