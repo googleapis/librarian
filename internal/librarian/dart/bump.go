@@ -19,7 +19,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/fs"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -177,7 +176,7 @@ func maybeBumpLibrary(ctx context.Context, cloudDeps []string, newVersions map[s
 			return "", err
 		}
 
-		if err := updateVersionDart(packageDir, newVersion); err != nil {
+		if err := updateLibraryVersion(packageDir, newVersion); err != nil {
 			return "", err
 		}
 
@@ -303,14 +302,14 @@ func updateChangelog(ctx context.Context, packageDir, version, lastReleaseTagCom
 
 var versionDartRegex = regexp.MustCompile(`(const packageVersion = ["'])([^"']*)(["'])`)
 
-func updateVersionDart(packageDir, newVersion string) error {
+func updateLibraryVersion(packageDir, newVersion string) error {
 	versionPath := filepath.Join(packageDir, "lib", "src", "version.dart")
 	content, err := os.ReadFile(versionPath)
 	if err != nil {
-		if errors.Is(err, fs.ErrNotExist) {
-			return nil
-		}
 		return err
+	}
+	if !versionDartRegex.Match(content) {
+		return fmt.Errorf("no version string found in %s", versionPath)
 	}
 	result := versionDartRegex.ReplaceAllString(string(content), `${1}`+newVersion+`${3}`)
 	return os.WriteFile(versionPath, []byte(result), 0644)
