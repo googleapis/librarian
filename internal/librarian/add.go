@@ -18,6 +18,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
+	"path/filepath"
 	"slices"
 	"sort"
 	"strconv"
@@ -42,6 +44,7 @@ import (
 
 var (
 	errAPIAlreadyExists       = errors.New("api already exists in library")
+	errAPINotFound            = errors.New("api path not found in googleapis source")
 	errLibraryAlreadyExists   = errors.New("library already exists in config")
 	errNameOnlyForRuby        = errors.New("--name is only applicable for Ruby")
 	errPreviewAlreadyExists   = errors.New("preview library config already exists")
@@ -109,6 +112,9 @@ func runAdd(ctx context.Context, cfg *config.Config, api, explicitLibraryName st
 	if explicitLibraryName != "" && cfg.Language != config.LanguageRuby {
 		return errNameOnlyForRuby
 	}
+	if err := validateAPIPathExistence(ctx, cfg, api); err != nil {
+		return err
+	}
 	name, cfg, err := addLibrary(cfg, api, explicitLibraryName)
 	if err != nil {
 		return err
@@ -128,6 +134,32 @@ func runAdd(ctx context.Context, cfg *config.Config, api, explicitLibraryName st
 		}
 	}
 	return RunTidyOnConfig(ctx, ".", cfg)
+}
+
+// validateAPIPathExistence verifies that the given API path exists as a directory
+// in the configured googleapis source repository.
+func validateAPIPathExistence(ctx context.Context, cfg *config.Config, api string) error {
+	if api == "" {
+		return fmt.Errorf("%w: %s", errAPINotFound, api)
+	}
+	if cfg.Sources == nil || cfg.Sources.Googleapis == nil {
+		return ErrMissingGoogleapisSource
+	}
+	googleapisDir, err := fetchSource(ctx, cfg.Sources.Googleapis, googleapisRepo)
+	if err != nil {
+		return err
+	}
+	fullPath := filepath.Join(googleapisDir, api)
+	// Ensure the path does not escape the source root and is not the root itself.
+	rel, err := filepath.Rel(googleapisDir, fullPath)
+	if err != nil || strings.HasPrefix(rel, "..") || rel == "." {
+		return fmt.Errorf("%w: %s", errAPINotFound, api)
+	}
+	stat, err := os.Stat(fullPath)
+	if err != nil || !stat.IsDir() {
+		return fmt.Errorf("%w: %s", errAPINotFound, api)
+	}
+	return nil
 }
 
 func resolveDependencies(ctx context.Context, cfg *config.Config, name string) (*config.Config, error) {

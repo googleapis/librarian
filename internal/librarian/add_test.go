@@ -17,6 +17,7 @@ package librarian
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
 	"sort"
@@ -26,6 +27,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
+	"github.com/googleapis/librarian/internal/cache"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/sample"
 	"github.com/googleapis/librarian/internal/yaml"
@@ -39,7 +41,6 @@ func TestAddLibraryCommand(t *testing.T) {
 		initialLibraries       []*config.Library
 		wantFinalLibraries     []*config.Library
 		wantGeneratedOutputDir string
-		wantError              error
 	}{
 		{
 			name:                   "create new library",
@@ -53,17 +54,6 @@ func TestAddLibraryCommand(t *testing.T) {
 					Version:       defaultVersion, // added by language-specific add
 				},
 			},
-		},
-		{
-			name:    "fail create existing library",
-			apiPath: "google/cloud/secretmanager/v1",
-			initialLibraries: []*config.Library{
-				{
-					Name: "google-cloud-secretmanager-v1",
-				},
-			},
-			wantGeneratedOutputDir: "existing-output",
-			wantError:              errLibraryAlreadyExists,
 		},
 		{
 			name:    "create new library and tidy existing",
@@ -107,14 +97,7 @@ func TestAddLibraryCommand(t *testing.T) {
 			if err := yaml.Write(config.LibrarianYAML, cfg); err != nil {
 				t.Fatal(err)
 			}
-			err = runAdd(t.Context(), cfg, test.apiPath, "")
-			if test.wantError != nil {
-				if !errors.Is(err, test.wantError) {
-					t.Errorf("expected error %v, got %v", test.wantError, err)
-				}
-				return
-			}
-			if err != nil {
+			if err := runAdd(t.Context(), cfg, test.apiPath, ""); err != nil {
 				t.Fatal(err)
 			}
 
@@ -134,6 +117,76 @@ func TestAddLibraryCommand(t *testing.T) {
 	}
 }
 
+func TestAddLibraryCommand_Error(t *testing.T) {
+	googleapisDir, err := filepath.Abs("../testdata/googleapis")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defaultCfg := func() *config.Config {
+		cfg := sample.Config()
+		cfg.Default.Output = "output"
+		cfg.Sources.Googleapis.Dir = googleapisDir
+		return cfg
+	}
+
+	for _, test := range []struct {
+		name    string
+		apiPath string
+		cfg     *config.Config
+		wantErr error
+	}{
+		{
+			name:    "fail create existing library",
+			apiPath: "google/cloud/secretmanager/v1",
+			cfg: func() *config.Config {
+				cfg := defaultCfg()
+				cfg.Libraries = []*config.Library{
+					{
+						Name: "google-cloud-secretmanager-v1",
+					},
+				}
+				return cfg
+			}(),
+			wantErr: errLibraryAlreadyExists,
+		},
+		{
+			name:    "fail on non-existent api path",
+			apiPath: "google/cloud/nonexistent/v1",
+			cfg:     defaultCfg(),
+			wantErr: errAPINotFound,
+		},
+		{
+			name:    "fail on empty api path",
+			apiPath: "",
+			cfg:     defaultCfg(),
+			wantErr: errAPINotFound,
+		},
+		{
+			name:    "missing googleapis source",
+			apiPath: "google/cloud/secretmanager/v1",
+			cfg: func() *config.Config {
+				cfg := defaultCfg()
+				cfg.Sources = nil
+				return cfg
+			}(),
+			wantErr: ErrMissingGoogleapisSource,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			tmpDir := t.TempDir()
+			t.Chdir(tmpDir)
+
+			if err := yaml.Write(config.LibrarianYAML, test.cfg); err != nil {
+				t.Fatal(err)
+			}
+			err = runAdd(t.Context(), test.cfg, test.apiPath, "")
+			if !errors.Is(err, test.wantErr) {
+				t.Errorf("expected error %v, got %v", test.wantErr, err)
+			}
+		})
+	}
+}
+
 func TestAddCommand(t *testing.T) {
 	googleapisDir, err := filepath.Abs("../testdata/googleapis")
 	if err != nil {
@@ -144,16 +197,57 @@ func TestAddCommand(t *testing.T) {
 		name     string
 		args     []string
 		wantName string
-		wantErr  error
 	}{
-		{
-			name:    "no args",
-			wantErr: errWrongAPICount,
-		},
 		{
 			name:     "single API",
 			args:     []string{"google/cloud/secretmanager/v1"},
 			wantName: "google-cloud-secretmanager-v1",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			tmpDir := t.TempDir()
+			t.Chdir(tmpDir)
+			if err := os.WriteFile(filepath.Join(tmpDir, "versions.txt"), nil, 0o644); err != nil {
+				t.Fatal(err)
+			}
+
+			cfg := sample.Config()
+			cfg.Default.Output = "output"
+			cfg.Libraries = nil
+			cfg.Sources.Googleapis.Dir = googleapisDir
+			if err := yaml.Write(config.LibrarianYAML, cfg); err != nil {
+				t.Fatal(err)
+			}
+			args := append([]string{"librarian", "add"}, test.args...)
+			if err := Run(t.Context(), args...); err != nil {
+				t.Fatal(err)
+			}
+
+			gotCfg, err := yaml.Read[config.Config](config.LibrarianYAML)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if _, err := FindLibrary(gotCfg, test.wantName); err != nil {
+				t.Fatal(err)
+			}
+		})
+	}
+}
+
+func TestAddCommand_Error(t *testing.T) {
+	googleapisDir, err := filepath.Abs("../testdata/googleapis")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	for _, test := range []struct {
+		name    string
+		args    []string
+		wantErr error
+	}{
+		{
+			name:    "no args",
+			wantErr: errWrongAPICount,
 		},
 		{
 			name: "multiple args",
@@ -163,6 +257,26 @@ func TestAddCommand(t *testing.T) {
 				"google/cloud/secrets/v1beta1",
 			},
 			wantErr: errWrongAPICount,
+		},
+		{
+			name:    "non-existent API",
+			args:    []string{"google/cloud/nonexistent/v1"},
+			wantErr: errAPINotFound,
+		},
+		{
+			name:    "non-existent preview API",
+			args:    []string{"preview/google/cloud/nonexistent/v1"},
+			wantErr: errAPINotFound,
+		},
+		{
+			name:    "directory traversal API",
+			args:    []string{"../../etc"},
+			wantErr: errAPINotFound,
+		},
+		{
+			name:    "file path instead of directory",
+			args:    []string{"google/cloud/secretmanager/v1/secretmanager.proto"},
+			wantErr: errAPINotFound,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
@@ -181,26 +295,9 @@ func TestAddCommand(t *testing.T) {
 			}
 			args := append([]string{"librarian", "add"}, test.args...)
 			err := Run(t.Context(), args...)
-			if test.wantErr != nil {
-				if !errors.Is(err, test.wantErr) {
-					t.Fatalf("want error %v, got %v", test.wantErr, err)
-				}
-				return
+			if !errors.Is(err, test.wantErr) {
+				t.Fatalf("want error %v, got %v", test.wantErr, err)
 			}
-			if err != nil {
-				t.Fatal(err)
-			}
-
-			gotCfg, err := yaml.Read[config.Config](config.LibrarianYAML)
-			if err != nil {
-				t.Fatal(err)
-			}
-			// Check that we've added a library with the expected name.
-			if _, err := FindLibrary(gotCfg, test.wantName); err != nil {
-				t.Fatal(err)
-			}
-			// We don't test the content of APIs here, as the fake language
-			// removes API paths that can be inferred.
 		})
 	}
 }
@@ -1037,5 +1134,39 @@ func TestAddLibraryCommand_Ruby_Error(t *testing.T) {
 				t.Fatalf("expected error %v, got %v", test.wantErr, err)
 			}
 		})
+	}
+}
+
+func TestAddLibraryCommand_GoogleapisCache(t *testing.T) {
+	googleapisDir, err := filepath.Abs("../testdata/googleapis")
+	if err != nil {
+		t.Fatal(err)
+	}
+	tmpDir := t.TempDir()
+	t.Chdir(tmpDir)
+	cacheDir := t.TempDir()
+	t.Setenv(cache.EnvLibrarianCache, cacheDir)
+
+	const commit = "abcdef123456"
+	cachedExtracted := filepath.Join(cacheDir, fmt.Sprintf("%s@%s", googleapisRepo, commit))
+	if err := os.CopyFS(cachedExtracted, os.DirFS(googleapisDir)); err != nil {
+		t.Fatal(err)
+	}
+
+	cfg := sample.Config()
+	cfg.Default.Output = "output"
+	cfg.Libraries = nil
+	cfg.Sources = &config.Sources{
+		Googleapis: &config.Source{
+			Commit: commit,
+			SHA256: "fake-sha",
+		},
+	}
+	if err := yaml.Write(config.LibrarianYAML, cfg); err != nil {
+		t.Fatal(err)
+	}
+	err = runAdd(t.Context(), cfg, "google/cloud/secretmanager/v1", "")
+	if err != nil {
+		t.Fatalf("expected runAdd to succeed with cached googleapis, got %v", err)
 	}
 }
