@@ -414,7 +414,7 @@ func TestAnnotateMethodResourceNameTemplate(t *testing.T) {
 				"SystemParameters", "ReturnType", "PathInfo", "Attributes",
 				"RoutingRequired", "DetailedTracingAttributes",
 				"ResourceNameTemplateGrpc", "GrpcResourceNameArgs",
-				"InternalBuilders")); diff != "" {
+				"InternalBuilders", "IsGrpc")); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 
@@ -607,6 +607,74 @@ func TestIsServerStreaming(t *testing.T) {
 			ann := &methodAnnotation{ClientSideStreaming: test.client, ServerSideStreaming: test.server}
 			if got := ann.IsServerStreaming(); got != test.want {
 				t.Errorf("methodAnnotation.IsServerStreaming() = %v, want %v", got, test.want)
+			}
+		})
+	}
+}
+
+func TestIsHttp(t *testing.T) {
+	for _, test := range []struct {
+		name   string
+		isGrpc bool
+		want   bool
+	}{
+		{"gRPC method", true, false},
+		{"HTTP method", false, true},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			ann := &methodAnnotation{IsGrpc: test.isGrpc}
+			if got := ann.IsHttp(); got != test.want {
+				t.Errorf("methodAnnotation.IsHttp() = %v, want %v", got, test.want)
+			}
+		})
+	}
+}
+
+func TestIsUnaryGrpc(t *testing.T) {
+	for _, test := range []struct {
+		name   string
+		isGrpc bool
+		client bool
+		server bool
+		want   bool
+	}{
+		{"unary gRPC", true, false, false, true},
+		{"unary HTTP", false, false, false, false},
+		{"server-streaming gRPC", true, false, true, false},
+		{"bidi-streaming gRPC", true, true, true, false},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			ann := &methodAnnotation{IsGrpc: test.isGrpc, ClientSideStreaming: test.client, ServerSideStreaming: test.server}
+			if got := ann.IsUnaryGrpc(); got != test.want {
+				t.Errorf("methodAnnotation.IsUnaryGrpc() = %v, want %v", got, test.want)
+			}
+		})
+	}
+}
+
+func TestMethodUsesGrpc(t *testing.T) {
+	unaryMethod := &api.Method{
+		ID:       ".test.Service.Unary",
+		PathInfo: &api.PathInfo{Bindings: []*api.PathBinding{{PathTemplate: &api.PathTemplate{}}}},
+	}
+	for _, test := range []struct {
+		name                  string
+		defaultUnaryTransport string
+		templateOverride      string
+		want                  bool
+	}{
+		{"default http", "", "", false},
+		{"explicit http", "http", "", false},
+		{"explicit grpc", "grpc", "", true},
+		{"template without grpc", "grpc", "templates/http-client", false},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			c := &codec{
+				defaultUnaryTransport: test.defaultUnaryTransport,
+				templateOverride:      test.templateOverride,
+			}
+			if got := c.methodUsesGrpc(unaryMethod); got != test.want {
+				t.Errorf("methodUsesGrpc() = %v, want %v", got, test.want)
 			}
 		})
 	}

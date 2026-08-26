@@ -89,6 +89,7 @@ func TestServiceAnnotationsPerServiceFeatures(t *testing.T) {
 		ModuleName:         "resource_service",
 		PerServiceFeatures: true,
 		Incomplete:         true,
+		HasHttp:            true,
 	}
 	if diff := cmp.Diff(wantService, service.Codec, cmpopts.IgnoreFields(serviceAnnotations{}, "Methods")); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
@@ -240,6 +241,7 @@ func TestServiceAnnotationsLROTypes(t *testing.T) {
 		Name:              "LroService",
 		PackageModuleName: "test",
 		ModuleName:        "lro_service",
+		HasGrpc:           true,
 		LROTypes: []*api.Message{
 			metadata,
 			resource,
@@ -275,12 +277,13 @@ func TestServiceAnnotationsNameOverrides(t *testing.T) {
 		Name:       "Renamed",
 		ModuleName: "renamed",
 		Incomplete: true,
+		HasHttp:    true,
 	}
 	if diff := cmp.Diff(wantService, service.Codec, serviceFilter); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 
-	methodFilter := cmpopts.IgnoreFields(methodAnnotation{}, "Name", "NameNoMangling", "BuilderName", "Body", "PathInfo", "SystemParameters", "ReturnType")
+	methodFilter := cmpopts.IgnoreFields(methodAnnotation{}, "Name", "NameNoMangling", "BuilderName", "Body", "PathInfo", "SystemParameters", "ReturnType", "IsGrpc")
 	wantMethod := &methodAnnotation{
 		ServiceNameToPascal: "Renamed",
 		ServiceNameToCamel:  "renamed",
@@ -312,6 +315,7 @@ func TestServiceAnnotations(t *testing.T) {
 		PackageModuleName: "test::v1",
 		ModuleName:        "resource_service",
 		Incomplete:        true,
+		HasHttp:           true,
 	}
 	if diff := cmp.Diff(wantService, service.Codec, cmpopts.IgnoreFields(serviceAnnotations{}, "Methods")); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
@@ -618,6 +622,66 @@ func TestServiceAnnotationsMethodKinds(t *testing.T) {
 			}
 			if got := serviceAnn.NeedsBidiStreamBuilder(); got != test.wantBidiStreamBuilder {
 				t.Errorf("serviceAnnotations.NeedsBidiStreamBuilder() = %v, want %v", got, test.wantBidiStreamBuilder)
+			}
+		})
+	}
+}
+
+func TestServiceAnnotationsTransportHelpers(t *testing.T) {
+	for _, test := range []struct {
+		name       string
+		hasGrpc    bool
+		hasHttp    bool
+		isPureGrpc bool
+		isPureHttp bool
+		isHybrid   bool
+	}{
+		{
+			name:       "pure gRPC",
+			hasGrpc:    true,
+			hasHttp:    false,
+			isPureGrpc: true,
+			isPureHttp: false,
+			isHybrid:   false,
+		},
+		{
+			name:       "pure HTTP",
+			hasGrpc:    false,
+			hasHttp:    true,
+			isPureGrpc: false,
+			isPureHttp: true,
+			isHybrid:   false,
+		},
+		{
+			name:       "hybrid",
+			hasGrpc:    true,
+			hasHttp:    true,
+			isPureGrpc: false,
+			isPureHttp: false,
+			isHybrid:   true,
+		},
+		{
+			name:       "neither",
+			hasGrpc:    false,
+			hasHttp:    false,
+			isPureGrpc: false,
+			isPureHttp: false,
+			isHybrid:   false,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			ann := &serviceAnnotations{
+				HasGrpc: test.hasGrpc,
+				HasHttp: test.hasHttp,
+			}
+			if got := ann.IsPureGrpc(); got != test.isPureGrpc {
+				t.Errorf("IsPureGrpc() = %v, want %v", got, test.isPureGrpc)
+			}
+			if got := ann.IsPureHttp(); got != test.isPureHttp {
+				t.Errorf("IsPureHttp() = %v, want %v", got, test.isPureHttp)
+			}
+			if got := ann.IsHybrid(); got != test.isHybrid {
+				t.Errorf("IsHybrid() = %v, want %v", got, test.isHybrid)
 			}
 		})
 	}

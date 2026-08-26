@@ -800,9 +800,6 @@ func TestModelAnnotationsHasStreaming(t *testing.T) {
 			if got.HasBidiStreaming != test.wantBidi {
 				t.Errorf("HasBidiStreaming = %v, want %v", got.HasBidiStreaming, test.wantBidi)
 			}
-			if got.HasServerStreaming != test.wantServer {
-				t.Errorf("HasServerStreaming = %v, want %v", got.HasServerStreaming, test.wantServer)
-			}
 			if got.HasStreaming != test.wantStreaming {
 				t.Errorf("HasStreaming = %v, want %v", got.HasStreaming, test.wantStreaming)
 			}
@@ -825,7 +822,7 @@ func TestModelAnnotationsHasStreaming(t *testing.T) {
 	}
 }
 
-func TestModelAnnotationsStreamingServices(t *testing.T) {
+func TestModelAnnotationsGrpcServices(t *testing.T) {
 	msg := api.NewTestMessage("Request").WithPackage("test.v1")
 
 	bidiMethod := api.NewTestMethod("Chat").WithInput(msg).WithOutput(msg).WithBidiStreaming()
@@ -855,20 +852,24 @@ func TestModelAnnotationsStreamingServices(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if len(got.BidiStreamingServices) != 1 {
-		t.Fatalf("expected 1 BidiStreamingService, got %d", len(got.BidiStreamingServices))
+	grpcServices := got.GrpcServices()
+	if len(grpcServices) != 2 {
+		t.Fatalf("expected 2 GrpcServices, got %d", len(grpcServices))
 	}
-	if got.BidiStreamingServices[0].Name != "BidiService" {
-		t.Errorf("expected BidiStreamingServices[0].Name == %q, got %q", "BidiService", got.BidiStreamingServices[0].Name)
+	if grpcServices[0].Name != "BidiService" {
+		t.Errorf("expected GrpcServices[0].Name == %q, got %q", "BidiService", grpcServices[0].Name)
 	}
-	if len(got.ServerStreamingServices) != 1 {
-		t.Fatalf("expected 1 ServerStreamingService, got %d", len(got.ServerStreamingServices))
+	if grpcServices[1].Name != "ServerService" {
+		t.Errorf("expected GrpcServices[1].Name == %q, got %q", "ServerService", grpcServices[1].Name)
 	}
-	if got.ServerStreamingServices[0].Name != "ServerService" {
-		t.Errorf("expected ServerStreamingServices[0].Name == %q, got %q", "ServerService", got.ServerStreamingServices[0].Name)
+	if !got.HasBidiStreaming {
+		t.Errorf("expected HasBidiStreaming == true")
 	}
-	if len(got.StreamingServices) != 2 {
-		t.Fatalf("expected 2 StreamingServices, got %d", len(got.StreamingServices))
+	if !got.HasStreaming {
+		t.Errorf("expected HasStreaming == true")
+	}
+	if !got.HasGrpc {
+		t.Errorf("expected HasGrpc == true")
 	}
 }
 

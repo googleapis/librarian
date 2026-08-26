@@ -49,6 +49,17 @@ type methodAnnotation struct {
 	IsBigQueryInsertJob       bool
 	ClientSideStreaming       bool
 	ServerSideStreaming       bool
+	IsGrpc                    bool
+}
+
+// IsHttp returns true if the method is routed over HTTP transport.
+func (m *methodAnnotation) IsHttp() bool {
+	return !m.IsGrpc
+}
+
+// IsUnaryGrpc returns true if the method is a unary RPC routed over gRPC.
+func (m *methodAnnotation) IsUnaryGrpc() bool {
+	return m.IsGrpc && !m.ClientSideStreaming && !m.ServerSideStreaming
 }
 
 // IsBidiStreaming returns true if the method is a bidirectional streaming RPC.
@@ -347,6 +358,7 @@ func (c *codec) annotateMethod(m *api.Method) (*methodAnnotation, error) {
 		IsBigQueryInsertJob:       m.ID == ".google.cloud.bigquery.v2.JobService.InsertJob",
 		ClientSideStreaming:       m.ClientSideStreaming,
 		ServerSideStreaming:       m.ServerSideStreaming,
+		IsGrpc:                    c.methodUsesGrpc(m),
 	}
 
 	if err := c.annotateResourceNameGeneration(m, annotation); err != nil {
@@ -561,13 +573,15 @@ func makeClearAccessors(fields []string, m *api.Method) ([]string, error) {
 
 func (c *codec) annotatePathBinding(b *api.PathBinding, m *api.Method) (*pathBindingAnnotation, error) {
 	var subs []*bindingSubstitution
-	for _, s := range b.PathTemplate.Segments {
-		if s.Variable != nil {
-			sub, err := makeBindingSubstitution(s.Variable, m)
-			if err != nil {
-				return nil, err
+	if b.PathTemplate != nil {
+		for _, s := range b.PathTemplate.Segments {
+			if s.Variable != nil {
+				sub, err := makeBindingSubstitution(s.Variable, m)
+				if err != nil {
+					return nil, err
+				}
+				subs = append(subs, sub)
 			}
-			subs = append(subs, sub)
 		}
 	}
 	binding := &pathBindingAnnotation{
@@ -733,4 +747,19 @@ func isIdempotent(p *api.PathInfo) string {
 		}
 	}
 	return "true"
+}
+
+func (c *codec) methodUsesGrpc(m *api.Method) bool {
+	if !c.templateSupportsGrpc() {
+		return false
+	}
+	if c.defaultUnaryTransport == "grpc" {
+		return true
+	}
+	if m.ClientSideStreaming || m.ServerSideStreaming {
+		return (m.ClientSideStreaming && m.ServerSideStreaming && c.includeBidiStreamingMethods) ||
+			(!m.ClientSideStreaming && m.ServerSideStreaming && c.includeServerStreamingMethods) ||
+			c.includeStreamingMethods
+	}
+	return c.includeGrpcOnlyMethods && (m.PathInfo == nil || len(m.PathInfo.Bindings) == 0)
 }

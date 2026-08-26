@@ -17,6 +17,7 @@ package rust
 import (
 	"cmp"
 	"context"
+	"errors"
 	"fmt"
 	"maps"
 	"path/filepath"
@@ -31,23 +32,16 @@ import (
 	"github.com/googleapis/librarian/internal/sidekick/rust_prost"
 )
 
-func generateProstHybrid(ctx context.Context, model *api.API, library *config.Library, outdir string, modelConfig *parser.ModelConfig) error {
-	if library.Rust == nil || library.Rust.TemplateOverride != "" {
-		return nil
-	}
-	includeBidi := library.Rust.IncludeBidiStreamingMethods != nil && *library.Rust.IncludeBidiStreamingMethods
-	includeServer := library.Rust.IncludeServerStreamingMethods != nil && *library.Rust.IncludeServerStreamingMethods
-	if !includeBidi && !includeServer {
-		return nil
-	}
-	hasStreaming := slices.ContainsFunc(model.Services, func(s *api.Service) bool {
-		return (includeBidi && s.HasBidiStreaming()) || (includeServer && s.HasServerSideStreaming())
-	})
-	if !hasStreaming {
+func generateProstHybrid(ctx context.Context, model *api.API, rootTypeIDs []string, library *config.Library, outdir string, modelConfig *parser.ModelConfig) error {
+	if library.Rust == nil || library.Rust.TemplateOverride != "" || len(rootTypeIDs) == 0 {
 		return nil
 	}
 
-	hybridModel, unusedTypes, hasGoogleRpcStatus, err := filterModelToStreaming(model, includeBidi, includeServer, library.Rust.AllowStreamingAnyTypes)
+	var allowStreamingAnyTypes []string
+	if library.Rust != nil {
+		allowStreamingAnyTypes = library.Rust.AllowStreamingAnyTypes
+	}
+	hybridModel, unusedTypes, hasGoogleRpcStatus, err := filterModelToTypes(model, rootTypeIDs, allowStreamingAnyTypes)
 	if err != nil {
 		return err
 	}
@@ -79,54 +73,34 @@ func generateProstHybrid(ctx context.Context, model *api.API, library *config.Li
 	return nil
 }
 
-// filterModelToStreaming constructs a hybrid api.API model containing only
-// enabled bidirectional and server-side streaming RPC types for prost conversion generation. It also returns
-// a sorted slice of all non-WKT unused type IDs to exclude via prost_build extern_path,
-// and a boolean indicating whether google.rpc.Status is referenced in the streaming path.
-// Errors if Any is encountered in the streaming reachability path unless explicitly allowed via allowStreamingAnyTypes.
-func filterModelToStreaming(model *api.API, includeBidi bool, includeServer bool, allowStreamingAnyTypes []string) (*api.API, []string, bool, error) {
-	type streamingTypeItem struct {
-		id       string
-		rpc      string
-		methodID string
-		path     string
+// filterModelToTypes constructs an api.API model containing only types reachable
+// from rootTypeIDs for prost conversion generation. It also returns a sorted slice
+// of all non-WKT unused type IDs to exclude via prost_build extern_path, and a boolean
+// indicating whether google.rpc.Status is referenced in the reachability path.
+// Errors if Any is encountered in the reachability path unless explicitly allowed via allowStreamingAnyTypes.
+func filterModelToTypes(model *api.API, rootTypeIDs []string, allowStreamingAnyTypes []string) (*api.API, []string, bool, error) {
+	type typeItem struct {
+		id   string
+		path string
 	}
 
 	streamingMsgs := make(map[string]bool)
 	streamingEnums := make(map[string]bool)
-	var queue []streamingTypeItem
+	var queue []typeItem
 
-	// Collect initial input/output message types from all enabled bidirectional and server-side streaming RPCs.
-	for _, s := range model.Services {
-		for _, m := range s.Methods {
-			isBidi := m.ClientSideStreaming && m.ServerSideStreaming && includeBidi
-			isServer := !m.ClientSideStreaming && m.ServerSideStreaming && includeServer
-			if isBidi || isServer {
-				rpcName := s.Name + "." + m.Name
-				if m.InputTypeID != "" {
-					queue = append(queue, streamingTypeItem{
-						id:       m.InputTypeID,
-						rpc:      rpcName,
-						methodID: m.ID,
-						path:     m.InputTypeID,
-					})
-				}
-				if m.OutputTypeID != "" {
-					queue = append(queue, streamingTypeItem{
-						id:       m.OutputTypeID,
-						rpc:      rpcName,
-						methodID: m.ID,
-						path:     m.OutputTypeID,
-					})
-				}
-			}
+	for _, id := range rootTypeIDs {
+		if id != "" {
+			queue = append(queue, typeItem{
+				id:   id,
+				path: id,
+			})
 		}
 	}
 
 	// Discover all transitively reachable messages and enums.
 	visited := make(map[string]bool)
-	var enqueueMsg func(m *api.Message, rpc, methodID, path string)
-	var enqueueEnum func(e *api.Enum, rpc, methodID, path string)
+	var enqueueMsg func(m *api.Message, path string)
+	var enqueueEnum func(e *api.Enum, path string)
 
 	// enqueueMsg marks a message as used in streaming and enqueues it for field
 	// traversal. It recursively enqueues all parent ancestor messages to ensure:
@@ -135,38 +109,37 @@ func filterModelToStreaming(model *api.API, includeBidi bool, includeServer bool
 	// 2. Parent messages are enqueued for field traversal so their sibling field types
 	//    (e.g., Partition.SpatialPartition) are also included in streamingMsgs rather than
 	//    placed in unusedTypes, preventing missing type errors in convert.rs.
-	enqueueMsg = func(m *api.Message, rpc, methodID, path string) {
+	enqueueMsg = func(m *api.Message, path string) {
 		if m == nil {
 			return
 		}
 		if !streamingMsgs[m.ID] {
 			streamingMsgs[m.ID] = true
-			queue = append(queue, streamingTypeItem{
-				id:       m.ID,
-				rpc:      rpc,
-				methodID: methodID,
-				path:     path,
+			queue = append(queue, typeItem{
+				id:   m.ID,
+				path: path,
 			})
 		}
 		if m.Parent != nil {
-			enqueueMsg(m.Parent, rpc, methodID, path)
+			enqueueMsg(m.Parent, path)
 		}
 	}
 
 	// enqueueEnum marks an enum as used in streaming. If the enum is nested inside a message,
 	// it recursively enqueues parent ancestor messages to ensure they and their sibling field
 	// types are not placed in unusedTypes.
-	enqueueEnum = func(e *api.Enum, rpc, methodID, path string) {
+	enqueueEnum = func(e *api.Enum, path string) {
 		if e == nil {
 			return
 		}
 		streamingEnums[e.ID] = true
 		if e.Parent != nil {
-			enqueueMsg(e.Parent, rpc, methodID, path)
+			enqueueMsg(e.Parent, path)
 		}
 	}
 
 	hasGoogleRpcStatus := false
+	var unsupportedAnyFields []string
 
 	for len(queue) > 0 {
 		item := queue[0]
@@ -177,23 +150,9 @@ func filterModelToStreaming(model *api.API, includeBidi bool, includeServer bool
 		}
 		visited[item.id] = true
 
-		anyError := func(path string, fieldID string) error {
-			if fieldID != "" && !isAnyType(fieldID) {
-				return fmt.Errorf("cannot generate prost conversion for streaming RPC %q: type google.protobuf.Any is unsupported (path: %s)\n"+
-					"To resolve this, allow dropping this Any field in prost conversion by adding it to allow_streaming_any_types in librarian.yaml:\n"+
-					"    rust:\n"+
-					"      allow_streaming_any_types:\n"+
-					"        - %s\n"+
-					"Or skip the RPC method by adding it to skipped_ids in librarian.yaml (e.g. skipped_ids: [%s])",
-					item.rpc, path, fieldID, item.methodID)
-			}
-			return fmt.Errorf("cannot generate prost conversion for streaming RPC %q: type google.protobuf.Any is unsupported (path: %s)\n"+
-				"To resolve this, add the RPC method ID to skipped_ids in librarian.yaml (e.g. skipped_ids: [%s])",
-				item.rpc, path, item.methodID)
-		}
-
 		if isAnyType(item.id) {
-			return nil, nil, false, anyError(item.path, item.id)
+			unsupportedAnyFields = append(unsupportedAnyFields, item.id)
+			continue
 		}
 
 		msg := model.Message(item.id)
@@ -206,7 +165,7 @@ func filterModelToStreaming(model *api.API, includeBidi bool, includeServer bool
 				hasGoogleRpcStatus = true
 				continue
 			}
-			enqueueMsg(msg, item.rpc, item.methodID, item.path)
+			enqueueMsg(msg, item.path)
 			for _, f := range msg.Fields {
 				fieldPath := item.path + "." + f.Name
 				if isAnyType(f.TypezID) {
@@ -214,18 +173,17 @@ func filterModelToStreaming(model *api.API, includeBidi bool, includeServer bool
 						f.SkipProtoConversion = true
 						continue
 					}
-					return nil, nil, false, anyError(fieldPath, f.ID)
+					unsupportedAnyFields = append(unsupportedAnyFields, f.ID)
+					continue
 				}
 				if f.Typez == api.TypezMessage && f.TypezID != "" {
-					queue = append(queue, streamingTypeItem{
-						id:       f.TypezID,
-						rpc:      item.rpc,
-						methodID: item.methodID,
-						path:     fieldPath,
+					queue = append(queue, typeItem{
+						id:   f.TypezID,
+						path: fieldPath,
 					})
 				}
 				if f.Typez == api.TypezEnum && f.TypezID != "" {
-					enqueueEnum(model.Enum(f.TypezID), item.rpc, item.methodID, fieldPath)
+					enqueueEnum(model.Enum(f.TypezID), fieldPath)
 				}
 			}
 			for _, o := range msg.OneOfs {
@@ -236,18 +194,17 @@ func filterModelToStreaming(model *api.API, includeBidi bool, includeServer bool
 							f.SkipProtoConversion = true
 							continue
 						}
-						return nil, nil, false, anyError(fieldPath, f.ID)
+						unsupportedAnyFields = append(unsupportedAnyFields, f.ID)
+						continue
 					}
 					if f.Typez == api.TypezMessage && f.TypezID != "" {
-						queue = append(queue, streamingTypeItem{
-							id:       f.TypezID,
-							rpc:      item.rpc,
-							methodID: item.methodID,
-							path:     fieldPath,
+						queue = append(queue, typeItem{
+							id:   f.TypezID,
+							path: fieldPath,
 						})
 					}
 					if f.Typez == api.TypezEnum && f.TypezID != "" {
-						enqueueEnum(model.Enum(f.TypezID), item.rpc, item.methodID, fieldPath)
+						enqueueEnum(model.Enum(f.TypezID), fieldPath)
 					}
 				}
 			}
@@ -255,8 +212,26 @@ func filterModelToStreaming(model *api.API, includeBidi bool, includeServer bool
 
 		enum := model.Enum(item.id)
 		if enum != nil {
-			enqueueEnum(enum, item.rpc, item.methodID, item.path)
+			enqueueEnum(enum, item.path)
 		}
+	}
+
+	slices.Sort(unsupportedAnyFields)
+	unsupportedAnyFields = slices.Compact(unsupportedAnyFields)
+
+	if len(unsupportedAnyFields) > 0 {
+		var b strings.Builder
+		b.WriteString("cannot generate prost conversion: type google.protobuf.Any is unsupported:\n")
+		for _, f := range unsupportedAnyFields {
+			fmt.Fprintf(&b, "  - %s\n", f)
+		}
+		b.WriteString("\nTo resolve this, allow dropping Any fields in prost conversion by adding them to allow_streaming_any_types in librarian.yaml:\n" +
+			"    rust:\n" +
+			"      allow_streaming_any_types:\n")
+		for _, f := range unsupportedAnyFields {
+			fmt.Fprintf(&b, "        - %s\n", f)
+		}
+		return nil, nil, false, errors.New(b.String())
 	}
 
 	// Collect external top-level messages (e.g. google.type.LatLng) referenced by streaming RPCs.
@@ -285,17 +260,12 @@ func filterModelToStreaming(model *api.API, includeBidi bool, includeServer bool
 
 	// Construct hybridModel for prost conversion code generation.
 	hybridModel := api.API{
-		Name:        model.Name,
-		PackageName: model.PackageName,
-		Title:       model.Title,
-		Description: model.Description,
-		Revision:    model.Revision,
-		// Services, Messages, and Enums slices are filtered to only streaming types so convert.rs
-		// only contains conversion implementations for streaming RPCs.
-		// Filtering model.Messages and model.Enums preserves their original deterministic file order.
-		Services: language.FilterSlice(model.Services, func(s *api.Service) bool {
-			return (includeBidi && s.HasBidiStreaming()) || (includeServer && s.HasServerSideStreaming())
-		}),
+		Name:                model.Name,
+		PackageName:         model.PackageName,
+		Title:               model.Title,
+		Description:         model.Description,
+		Revision:            model.Revision,
+		Services:            model.Services,
 		Messages:            language.FilterSlice(model.Messages, func(m *api.Message) bool { return streamingMsgs[m.ID] }),
 		ExternalMessages:    externalMessages,
 		Enums:               language.FilterSlice(model.Enums, func(e *api.Enum) bool { return streamingEnums[e.ID] }),
@@ -310,8 +280,8 @@ func filterModelToStreaming(model *api.API, includeBidi bool, includeServer bool
 			hybridModel.AddMethod(m)
 		}
 	}
-	// Populate messageByID and enumByID with ALL package messages and enums (not just
-	// streaming types). This avoids aliasing model.messageByID while allowing model
+	// Populate messageByID and enumByID with ALL package messages and enums.
+	// This avoids aliasing model.messageByID while allowing model
 	// annotation to resolve field types across the entire package.
 	for m := range model.AllMessages() {
 		hybridModel.AddMessage(m)

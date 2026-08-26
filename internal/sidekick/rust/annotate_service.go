@@ -62,6 +62,25 @@ type serviceAnnotations struct {
 	HasServerStreaming bool
 	// If true, the service has at least one streaming RPC (bidirectional or server-side) in the API definition.
 	HasStreaming bool
+	// If true, the service has at least one gRPC method.
+	HasGrpc bool
+	// If true, the service has at least one HTTP method.
+	HasHttp bool
+}
+
+// IsPureGrpc returns true if the service has gRPC methods and no HTTP methods.
+func (s *serviceAnnotations) IsPureGrpc() bool {
+	return s.HasGrpc && !s.HasHttp
+}
+
+// IsPureHttp returns true if the service has HTTP methods and no gRPC methods.
+func (s *serviceAnnotations) IsPureHttp() bool {
+	return s.HasHttp && !s.HasGrpc
+}
+
+// IsHybrid returns true if the service has both gRPC and HTTP methods.
+func (s *serviceAnnotations) IsHybrid() bool {
+	return s.HasGrpc && s.HasHttp
 }
 
 // BuilderVisibility returns the visibility for client and request builders.
@@ -129,8 +148,8 @@ func (c *codec) annotateService(s *api.Service) (*serviceAnnotations, error) {
 	// because we are incrementally adding streaming support (initializing transport
 	// stubs like grpc_inner first before generating streaming method implementations in
 	// subsequent steps).
-	hasBidiStreaming := c.includeBidiStreamingMethods && s.HasBidiStreaming()
-	hasServerStreaming := c.includeServerStreamingMethods && s.HasServerSideStreaming()
+	hasBidiStreaming := c.templateSupportsGrpc() && c.includeBidiStreamingMethods && s.HasBidiStreaming()
+	hasServerStreaming := c.templateSupportsGrpc() && c.includeServerStreamingMethods && s.HasServerSideStreaming()
 	hasStreaming := hasBidiStreaming || hasServerStreaming
 
 	// Some codecs skip some methods.
@@ -158,6 +177,19 @@ func (c *codec) annotateService(s *api.Service) (*serviceAnnotations, error) {
 	if err != nil {
 		return nil, err
 	}
+	hasGrpc := false
+	hasHttp := false
+	for _, m := range methods {
+		if ann, ok := m.Codec.(*methodAnnotation); ok {
+			if ann.IsGrpc {
+				hasGrpc = true
+			}
+			if ann.IsHttp() {
+				hasHttp = true
+			}
+		}
+	}
+
 	ann := &serviceAnnotations{
 		Name:                      toPascal(serviceName),
 		PackageModuleName:         packageToModuleName(s.Package),
@@ -176,6 +208,8 @@ func (c *codec) annotateService(s *api.Service) (*serviceAnnotations, error) {
 		HasBidiStreaming:          hasBidiStreaming,
 		HasServerStreaming:        hasServerStreaming,
 		HasStreaming:              hasStreaming,
+		HasGrpc:                   hasGrpc,
+		HasHttp:                   hasHttp,
 	}
 	s.Codec = ann
 	return ann, nil

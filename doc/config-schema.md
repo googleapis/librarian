@@ -531,6 +531,7 @@ This document describes the schema for the librarian.yaml.
 | Field | Type | Description |
 | :--- | :--- | :--- |
 | (embedded) | [RustDefault](#rustdefault-configuration) |  |
+| `default_unary_transport` | string | Specifies the default transport for unary RPC methods ("http" or "grpc"). Defaults to "http". When set to "grpc", unary methods default to gRPC. |
 | `modules` | list of [RustModule](#rustmodule-configuration) (optional) | Specifies generation targets for veneer crates. Each module defines a source proto path, output location, and template to use. |
 | `per_service_features` | bool | Enables per-service feature flags. |
 | `module_path` | string | Is the module path for the crate. |

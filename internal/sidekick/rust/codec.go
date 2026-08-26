@@ -212,6 +212,8 @@ func newCodec(specificationFormat string, options map[string]string) (*codec, er
 				return nil, fmt.Errorf("cannot convert `include-rpc-status-conversion` value %q to boolean: %w", definition, err)
 			}
 			codec.includeRpcStatusConversion = value
+		case key == "default-unary-transport" || key == "default-transport":
+			codec.defaultUnaryTransport = definition
 		default:
 			return nil, fmt.Errorf("unknown Rust codec option %q", key)
 		}
@@ -319,6 +321,8 @@ type codec struct {
 	bytesUseUrlSafeAlphabet bool
 	// Overrides the template subdirectory.
 	templateOverride string
+	// Default transport for unary methods ("http" or "grpc").
+	defaultUnaryTransport string
 	// If true, this includes gRPC-only methods, such as methods without HTTP
 	// annotations.
 	includeGrpcOnlyMethods bool
@@ -399,7 +403,7 @@ type packagez struct {
 	usedIf []string
 }
 
-func resolveUsedPackages(model *api.API, extraPackages []*packagez, hasStreaming bool) {
+func resolveUsedPackages(model *api.API, extraPackages []*packagez, hasGrpc bool) {
 	hasServices := len(model.Services) > 0
 	hasLROs := false
 	hasAutoPopulation := false
@@ -434,7 +438,7 @@ func resolveUsedPackages(model *api.API, extraPackages []*packagez, hasStreaming
 				pkg.used = true
 				break
 			}
-			if namedFeature == "streaming" && hasStreaming {
+			if namedFeature == "streaming" && hasGrpc {
 				pkg.used = true
 				break
 			}
@@ -790,6 +794,9 @@ func bodyAccessor(m *api.Method) string {
 }
 
 func httpPathFmt(t *api.PathTemplate) string {
+	if t == nil {
+		return ""
+	}
 	fmt := ""
 	for _, segment := range t.Segments {
 		if segment.Literal != "" {
@@ -1605,7 +1612,7 @@ func (c *codec) generateMethod(m *api.Method) bool {
 		}
 		return c.includeStreamingMethods
 	}
-	if c.includeGrpcOnlyMethods {
+	if c.defaultUnaryTransport == "grpc" || c.includeGrpcOnlyMethods {
 		return true
 	}
 	if m.PathInfo == nil || len(m.PathInfo.Bindings) == 0 {
@@ -1614,22 +1621,15 @@ func (c *codec) generateMethod(m *api.Method) bool {
 	return m.PathInfo.Bindings[0].PathTemplate != nil
 }
 
+func (c *codec) templateSupportsGrpc() bool {
+	return c.templateOverride == "" || c.templateOverride == "templates/grpc-client"
+}
+
 func (c *codec) hasBidiStreaming(model *api.API) bool {
-	if (c.templateOverride != "" && c.templateOverride != "templates/grpc-client") || !c.includeBidiStreamingMethods {
+	if !c.templateSupportsGrpc() || !c.includeBidiStreamingMethods {
 		return false
 	}
 	return slices.ContainsFunc(model.Services, (*api.Service).HasBidiStreaming)
-}
-
-func (c *codec) hasServerStreaming(model *api.API) bool {
-	if (c.templateOverride != "" && c.templateOverride != "templates/grpc-client") || !c.includeServerStreamingMethods {
-		return false
-	}
-	return slices.ContainsFunc(model.Services, (*api.Service).HasServerSideStreaming)
-}
-
-func (c *codec) hasStreaming(model *api.API) bool {
-	return c.hasBidiStreaming(model) || c.hasServerStreaming(model)
 }
 
 // escapeKeyword is the list of Rust keywords and reserved words can be found

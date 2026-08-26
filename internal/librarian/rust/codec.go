@@ -68,6 +68,9 @@ func libraryToModelConfig(library *config.Library, ch *config.API, srcs *sources
 	}
 
 	if library.Rust != nil {
+		if len(library.Rust.IncludedIds) > 0 {
+			modelCfg.Override.IncludedIDs = library.Rust.IncludedIds
+		}
 		if len(library.Rust.SkippedIds) > 0 {
 			modelCfg.Override.SkippedIDs = library.Rust.SkippedIds
 		}
@@ -170,6 +173,9 @@ func buildCodec(library *config.Library, releaseLevel string) map[string]string 
 	}
 	if rust.QuickstartServiceOverride != "" {
 		codec["quickstart-service-override"] = rust.QuickstartServiceOverride
+	}
+	if rust.DefaultUnaryTransport != "" {
+		codec["default-unary-transport"] = rust.DefaultUnaryTransport
 	}
 	return codec
 }

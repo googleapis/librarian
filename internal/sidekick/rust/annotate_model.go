@@ -54,12 +54,11 @@ type modelAnnotations struct {
 	ExternPackages             []string
 	HasLROs                    bool
 	HasBidiStreaming           bool
-	HasServerStreaming         bool
 	HasStreaming               bool
+	HasGrpc                    bool
+	HasHttp                    bool
+	GrpcRootTypeIDs            []string
 	IncludeRpcStatusConversion bool
-	BidiStreamingServices      []*api.Service
-	ServerStreamingServices    []*api.Service
-	StreamingServices          []*api.Service
 	CopyrightYear              string
 	BoilerPlate                []string
 	DefaultHost                string
@@ -142,14 +141,50 @@ func (m *modelAnnotations) ReleaseLevelIsGA() bool {
 	return m.ReleaseLevel == "GA" || m.ReleaseLevel == "stable"
 }
 
+// GrpcServices returns the subset of services that have at least one gRPC method.
+func (m *modelAnnotations) GrpcServices() []*api.Service {
+	return language.FilterSlice(m.Services, func(s *api.Service) bool {
+		if ann, ok := s.Codec.(*serviceAnnotations); ok {
+			return ann.HasGrpc
+		}
+		return false
+	})
+}
+
+// GrpcRootTypeIDs returns the sorted and deduplicated input and output message type IDs
+// for all enabled gRPC methods in the model.
+func GrpcRootTypeIDs(model *api.API) []string {
+	if ann, ok := model.Codec.(*modelAnnotations); ok {
+		return ann.GrpcRootTypeIDs
+	}
+	return nil
+}
+
+// ModelHasGrpc returns true if the model is annotated and has at least one gRPC service.
+func ModelHasGrpc(model *api.API) bool {
+	if ann, ok := model.Codec.(*modelAnnotations); ok {
+		return ann.HasGrpc
+	}
+	return false
+}
+
 // annotateModel creates a struct used as input for Mustache templates.
 // Fields and methods defined in this struct directly correspond to Mustache
 // tags. For example, the Mustache tag {{#Services}} uses the
 // [Template.Services] field.
 func annotateModel(model *api.API, codec *codec) (*modelAnnotations, error) {
 	codec.hasServices = len(model.Services) > 0
+	for _, s := range model.Services {
+		if s.Model == nil {
+			s.Model = model
+		}
+		for _, m := range s.Methods {
+			if m.Model == nil {
+				m.Model = model
+			}
+		}
+	}
 
-	resolveUsedPackages(model, codec.extraPackages, codec.hasStreaming(model))
 	// Annotate enums and messages that we intend to generate. In the
 	// process we discover the external dependencies and trim the list of
 	// packages used by this API.
@@ -197,6 +232,7 @@ func annotateModel(model *api.API, codec *codec) (*modelAnnotations, error) {
 	for _, s := range model.Services {
 		for _, m := range s.Methods {
 			if !codec.generateMethod(m) {
+				m.Codec = nil
 				continue
 			}
 			if m.OperationInfo != nil || m.DiscoveryLro != nil || m.ID == ".google.cloud.bigquery.v2.JobService.InsertJob" {
@@ -251,9 +287,6 @@ func annotateModel(model *api.API, codec *codec) (*modelAnnotations, error) {
 		slog.Warn("package has more than 15 services, consider enabling per-service features", "package", codec.packageName(model), "count", len(servicesSubset))
 	}
 
-	// Delay this until the Codec had a chance to compute what packages are
-	// used.
-	findUsedPackages(model, codec)
 	defaultHost := func() string {
 		if len(model.Services) > 0 {
 			return model.Services[0].DefaultHost
@@ -284,26 +317,40 @@ func annotateModel(model *api.API, codec *codec) (*modelAnnotations, error) {
 		}
 	}
 
-	var bidiStreamingServices []*api.Service
-	var serverStreamingServices []*api.Service
-	var streamingServices []*api.Service
+	hasBidiStreaming := false
+	hasStreaming := false
+	hasGrpc := false
+	hasHttp := false
+	var grpcRootTypeIDs []string
 	for _, s := range servicesSubset {
-		isBidi := codec.includeBidiStreamingMethods && s.HasBidiStreaming()
-		isServer := codec.includeServerStreamingMethods && s.HasServerSideStreaming()
-		if isBidi {
-			bidiStreamingServices = append(bidiStreamingServices, s)
-		}
-		if isServer {
-			serverStreamingServices = append(serverStreamingServices, s)
-		}
-		if isBidi || isServer {
-			streamingServices = append(streamingServices, s)
+		if sAnn, ok := s.Codec.(*serviceAnnotations); ok {
+			if sAnn.HasBidiStreaming {
+				hasBidiStreaming = true
+			}
+			if sAnn.HasStreaming {
+				hasStreaming = true
+			}
+			if sAnn.HasGrpc {
+				hasGrpc = true
+				for _, m := range s.Methods {
+					if mAnn, ok := m.Codec.(*methodAnnotation); ok && mAnn.IsGrpc {
+						if m.InputTypeID != "" {
+							grpcRootTypeIDs = append(grpcRootTypeIDs, m.InputTypeID)
+						}
+						if m.OutputTypeID != "" {
+							grpcRootTypeIDs = append(grpcRootTypeIDs, m.OutputTypeID)
+						}
+					}
+				}
+			}
+			if sAnn.HasHttp {
+				hasHttp = true
+			}
 		}
 	}
-	hasBidiStreaming := (codec.templateOverride == "" || codec.templateOverride == "templates/grpc-client") && len(bidiStreamingServices) > 0
-	hasServerStreaming := (codec.templateOverride == "" || codec.templateOverride == "templates/grpc-client") && len(serverStreamingServices) > 0
-	hasStreaming := hasBidiStreaming || hasServerStreaming
-	if hasStreaming {
+	slices.Sort(grpcRootTypeIDs)
+	grpcRootTypeIDs = slices.Compact(grpcRootTypeIDs)
+	if hasGrpc {
 		for _, pkg := range codec.extraPackages {
 			if pkg.name == gaxiPackageName {
 				if !slices.Contains(pkg.features, "_internal-grpc-client") {
@@ -312,6 +359,9 @@ func annotateModel(model *api.API, codec *codec) (*modelAnnotations, error) {
 			}
 		}
 	}
+
+	resolveUsedPackages(model, codec.extraPackages, hasGrpc)
+	findUsedPackages(model, codec)
 
 	includeRpcStatusConversion := codec.includeRpcStatusConversion
 	if codecMap, ok := model.Codec.(map[string]string); ok && codecMap["include-rpc-status-conversion"] == "true" {
@@ -333,12 +383,11 @@ func annotateModel(model *api.API, codec *codec) (*modelAnnotations, error) {
 		ExternPackages:             externPackages(codec.extraPackages),
 		HasLROs:                    hasLROs,
 		HasBidiStreaming:           hasBidiStreaming,
-		HasServerStreaming:         hasServerStreaming,
 		HasStreaming:               hasStreaming,
+		HasGrpc:                    hasGrpc,
+		HasHttp:                    hasHttp,
+		GrpcRootTypeIDs:            grpcRootTypeIDs,
 		IncludeRpcStatusConversion: includeRpcStatusConversion,
-		BidiStreamingServices:      bidiStreamingServices,
-		ServerStreamingServices:    serverStreamingServices,
-		StreamingServices:          streamingServices,
 		CopyrightYear:              codec.generationYear,
 		BoilerPlate: append(license.HeaderBulk(),
 			"",

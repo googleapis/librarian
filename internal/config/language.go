@@ -239,6 +239,10 @@ type RustModule struct {
 type RustCrate struct {
 	RustDefault `yaml:",inline"`
 
+	// DefaultUnaryTransport specifies the default transport for unary RPC methods ("http" or "grpc").
+	// Defaults to "http". When set to "grpc", unary methods default to gRPC.
+	DefaultUnaryTransport string `yaml:"default_unary_transport,omitempty"`
+
 	// Modules specifies generation targets for veneer crates. Each module
 	// defines a source proto path, output location, and template to use.
 	Modules []*RustModule `yaml:"modules,omitempty"`

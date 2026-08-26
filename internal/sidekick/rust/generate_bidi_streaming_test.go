@@ -135,7 +135,7 @@ func TestGenerateBidiStreaming(t *testing.T) {
 			name:     "builder: struct docstring and example",
 			file:     "src/builder.rs",
 			startStr: "    /// The request builder for [Protocol::chat][crate::client::Protocol::chat] calls.\n    ///\n    /// # Example",
-			endStr:   "    #[derive(Clone, Debug)]",
+			endStr:   "    #[derive(Clone, Debug)]\n    pub struct Chat(BidiStreamBuilder);",
 			want: `    /// The request builder for [Protocol::chat][crate::client::Protocol::chat] calls.
     ///
     /// # Example
@@ -160,7 +160,8 @@ func TestGenerateBidiStreaming(t *testing.T) {
     ///   // ... details omitted ...
     /// }
     /// ` + "```" + `
-    #[derive(Clone, Debug)]`,
+    #[derive(Clone, Debug)]
+    pub struct Chat(BidiStreamBuilder);`,
 		},
 		{
 			name:     "builder: struct definition",

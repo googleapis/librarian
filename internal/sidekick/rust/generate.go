@@ -42,6 +42,16 @@ func Generate(ctx context.Context, model *api.API, outdir string, cfg *parser.Mo
 	return language.GenerateFromModel(outdir, model, provider, generatedFiles)
 }
 
+// AnnotateModel annotates the model for Rust generation.
+func AnnotateModel(model *api.API, cfg *parser.ModelConfig) error {
+	c, err := newCodec(cfg.SpecificationFormat, cfg.Codec)
+	if err != nil {
+		return err
+	}
+	_, err = annotateModel(model, c)
+	return err
+}
+
 // GenerateStorage generates Rust code for the storage service.
 func GenerateStorage(ctx context.Context, outdir string, storageModel *api.API, storageConfig *parser.ModelConfig, controlModel *api.API, controlConfig *parser.ModelConfig) error {
 	storageCodec, err := newCodec(storageConfig.SpecificationFormat, storageConfig.Codec)
