@@ -271,12 +271,6 @@ func findPHPLibraries(repoPath string, googleapisDir string, globalDefaultCommon
 			APIs:    apis,
 			Output:  name,
 		}
-		if name == "Datastore" {
-			lib.Keep = []string{"src/V1/TransactionOptions/ReadOnly.php"}
-		}
-		if name == "ErrorReporting" {
-			lib.Keep = []string{"tests/System/V1beta1/ReportErrorsServiceSmokeTest.php"}
-		}
 		derivedComp, err := php.ComponentNameForLibrary(googleapisDir, lib)
 		if err != nil {
 			// If component name derivation fails (e.g. proto file missing or unresolvable in googleapis),
@@ -527,6 +521,10 @@ func appendKeep(lib *config.Library) {
 		lib.Keep = append(lib.Keep, "tests/Conformance/proxy/src/Google/Bigtable/Testproxy/SampleRowKeysResult.php")
 		lib.Keep = append(lib.Keep, "tests/Conformance/proxy/src/Google/Bigtable/Testproxy/SqlRow.php")
 		lib.Keep = append(lib.Keep, "tests/Conformance/proxy/src/Google/Cloud/Bigtable/V2/BigtableInterface.php")
+	case "datastore":
+		lib.Keep = append(lib.Keep, "src/V1/TransactionOptions/ReadOnly.php")
+	case "devtools-clouderrorreporting":
+		lib.Keep = append(lib.Keep, "tests/System/V1beta1/ReportErrorsServiceSmokeTest.php")
 	case "longrunning":
 		lib.Keep = append(lib.Keep, "src/LongRunning/Gapic/OperationsGapicClient.php")
 		lib.Keep = append(lib.Keep, "src/LongRunning/OperationsClient.php")
