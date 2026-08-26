@@ -258,6 +258,7 @@ func findPHPLibraries(repoPath string, googleapisDir string, globalDefaultCommon
 			if gapicYAML != "" {
 				api.PHP.GapicYAML = gapicYAML
 			}
+			specialCases(api)
 		}
 
 		// Skip libraries that do not have any APIs (e.g., fully handwritten libraries).
@@ -266,10 +267,11 @@ func findPHPLibraries(repoPath string, googleapisDir string, globalDefaultCommon
 		}
 		libraryName := php.DefaultLibraryName(apis[0].Path)
 		lib := &config.Library{
-			Name:    libraryName,
-			Version: version,
-			APIs:    apis,
-			Output:  name,
+			CopyrightYear: "2026",
+			Name:          libraryName,
+			Version:       version,
+			APIs:          apis,
+			Output:        name,
 		}
 		derivedComp, err := php.ComponentNameForLibrary(googleapisDir, lib)
 		if err != nil {
@@ -285,7 +287,8 @@ func findPHPLibraries(repoPath string, googleapisDir string, globalDefaultCommon
 				ComponentName: name,
 			}
 		}
-
+		appendKeep(lib)
+		appendAPI(lib)
 		libs = append(libs, lib)
 	}
 	return libs, nil
@@ -382,4 +385,170 @@ func normalizeStagingSubdir(apiPath, stagingDir string) string {
 		return ""
 	}
 	return stagingDir
+}
+
+// Apply special case rules to the API config.
+func specialCases(api *config.API) {
+	switch api.Path {
+	case "google/bigtable/admin/v2":
+		if api.PHP == nil {
+			api.PHP = &config.PHPAPI{}
+		}
+		api.PHP.GapicYAML = "google/bigtable/admin/v2/bigtableadmin_gapic.yaml"
+		api.PHP.StagingSubdir = "Admin/v2"
+	case "google/cloud/aiplatform/v1":
+		if api.PHP == nil {
+			api.PHP = &config.PHPAPI{}
+		}
+		api.PHP.ExcludedProtos = []string{
+			"google/cloud/aiplatform/v1/schema/predict/instance/image_classification.proto",
+			"google/cloud/aiplatform/v1/schema/predict/instance/image_object_detection.proto",
+			"google/cloud/aiplatform/v1/schema/predict/instance/image_segmentation.proto",
+			"google/cloud/aiplatform/v1/schema/predict/instance/text_classification.proto",
+			"google/cloud/aiplatform/v1/schema/predict/instance/text_extraction.proto",
+			"google/cloud/aiplatform/v1/schema/predict/instance/text_sentiment.proto",
+			"google/cloud/aiplatform/v1/schema/predict/instance/video_action_recognition.proto",
+			"google/cloud/aiplatform/v1/schema/predict/instance/video_classification.proto",
+			"google/cloud/aiplatform/v1/schema/predict/instance/video_object_tracking.proto",
+			"google/cloud/aiplatform/v1/schema/predict/params/image_classification.proto",
+			"google/cloud/aiplatform/v1/schema/predict/params/image_object_detection.proto",
+			"google/cloud/aiplatform/v1/schema/predict/params/image_segmentation.proto",
+			"google/cloud/aiplatform/v1/schema/predict/params/video_action_recognition.proto",
+			"google/cloud/aiplatform/v1/schema/predict/params/video_classification.proto",
+			"google/cloud/aiplatform/v1/schema/predict/params/video_object_tracking.proto",
+			"google/cloud/aiplatform/v1/schema/predict/prediction/classification.proto",
+			"google/cloud/aiplatform/v1/schema/predict/prediction/image_object_detection.proto",
+			"google/cloud/aiplatform/v1/schema/predict/prediction/image_segmentation.proto",
+			"google/cloud/aiplatform/v1/schema/predict/prediction/tabular_classification.proto",
+			"google/cloud/aiplatform/v1/schema/predict/prediction/tabular_regression.proto",
+			"google/cloud/aiplatform/v1/schema/predict/prediction/text_extraction.proto",
+			"google/cloud/aiplatform/v1/schema/predict/prediction/text_sentiment.proto",
+			"google/cloud/aiplatform/v1/schema/predict/prediction/video_action_recognition.proto",
+			"google/cloud/aiplatform/v1/schema/predict/prediction/video_classification.proto",
+			"google/cloud/aiplatform/v1/schema/predict/prediction/video_object_tracking.proto",
+			"google/cloud/aiplatform/v1/schema/trainingjob/definition/automl_image_classification.proto",
+			"google/cloud/aiplatform/v1/schema/trainingjob/definition/automl_image_object_detection.proto",
+			"google/cloud/aiplatform/v1/schema/trainingjob/definition/automl_image_segmentation.proto",
+			"google/cloud/aiplatform/v1/schema/trainingjob/definition/automl_tables.proto",
+			"google/cloud/aiplatform/v1/schema/trainingjob/definition/automl_text_classification.proto",
+			"google/cloud/aiplatform/v1/schema/trainingjob/definition/automl_text_extraction.proto",
+			"google/cloud/aiplatform/v1/schema/trainingjob/definition/automl_text_sentiment.proto",
+			"google/cloud/aiplatform/v1/schema/trainingjob/definition/automl_video_action_recognition.proto",
+			"google/cloud/aiplatform/v1/schema/trainingjob/definition/automl_video_classification.proto",
+			"google/cloud/aiplatform/v1/schema/trainingjob/definition/automl_video_object_tracking.proto",
+			"google/cloud/aiplatform/v1/schema/trainingjob/definition/export_evaluated_data_items_config.proto",
+		}
+	case "google/iam/v1":
+		if api.PHP == nil {
+			api.PHP = &config.PHPAPI{}
+		}
+		api.PHP.GenerateGAPIC = new(false)
+	case "google/cloud":
+		if api.PHP == nil {
+			api.PHP = &config.PHPAPI{}
+		}
+		api.PHP.ExcludedProtos = append(api.PHP.ExcludedProtos, "google/cloud/common_resources.proto")
+	case "google/rpc":
+		if api.PHP == nil {
+			api.PHP = &config.PHPAPI{}
+		}
+		api.PHP.ExcludedProtos = append(api.PHP.ExcludedProtos, "google/rpc/http.proto")
+	case "google/cloud/location":
+		if api.PHP == nil {
+			api.PHP = &config.PHPAPI{}
+		}
+		api.PHP.GenerateGAPIC = new(false)
+	case "google/longrunning":
+		if api.PHP == nil {
+			api.PHP = &config.PHPAPI{}
+		}
+		api.PHP.Samples = new(false)
+		api.PHP.StagingSubdir = "."
+	case "google/cloud/videointelligence/v1":
+		if api.PHP == nil {
+			api.PHP = &config.PHPAPI{}
+		}
+		api.PHP.GapicYAML = "google/cloud/videointelligence/v1/videointelligence_gapic.yaml"
+	case "google/pubsub/v1":
+		if api.PHP == nil {
+			api.PHP = &config.PHPAPI{}
+		}
+		api.PHP.GapicYAML = "google/pubsub/v1/pubsub_gapic.yaml"
+	case "google/spanner/admin/database/v1":
+		if api.PHP == nil {
+			api.PHP = &config.PHPAPI{}
+		}
+		api.PHP.StagingSubdir = "Admin/Database/v1"
+		api.PHP.GapicYAML = "google/spanner/admin/database/v1/spanner_gapic.yaml"
+	case "google/spanner/admin/instance/v1":
+		if api.PHP == nil {
+			api.PHP = &config.PHPAPI{}
+		}
+		api.PHP.StagingSubdir = "Admin/Instance/v1"
+		api.PHP.GapicYAML = "google/spanner/admin/instance/v1/spanner_gapic.yaml"
+	}
+}
+
+func appendKeep(lib *config.Library) {
+	switch lib.Name {
+	case "bigtable":
+		lib.Keep = append(lib.Keep, "tests/Conformance/proxy/src/GPBMetadata/Google/Bigtable/Testproxy/TestProxy.php")
+		lib.Keep = append(lib.Keep, "tests/Conformance/proxy/src/Google/Bigtable/Testproxy/CheckAndMutateRowRequest.php")
+		lib.Keep = append(lib.Keep, "tests/Conformance/proxy/src/Google/Bigtable/Testproxy/CheckAndMutateRowResult.php")
+		lib.Keep = append(lib.Keep, "tests/Conformance/proxy/src/Google/Bigtable/Testproxy/CloseClientRequest.php")
+		lib.Keep = append(lib.Keep, "tests/Conformance/proxy/src/Google/Bigtable/Testproxy/CloseClientResponse.php")
+		lib.Keep = append(lib.Keep, "tests/Conformance/proxy/src/Google/Bigtable/Testproxy/CloudBigtableV2TestProxyInterface.php")
+		lib.Keep = append(lib.Keep, "tests/Conformance/proxy/src/Google/Bigtable/Testproxy/OptionalFeatureConfig.php")
+		lib.Keep = append(lib.Keep, "tests/Conformance/proxy/src/Google/Bigtable/Testproxy/ReadModifyWriteRowRequest.php")
+		lib.Keep = append(lib.Keep, "tests/Conformance/proxy/src/Google/Bigtable/Testproxy/ReadRowRequest.php")
+		lib.Keep = append(lib.Keep, "tests/Conformance/proxy/src/Google/Bigtable/Testproxy/ReadRowsRequest.php")
+		lib.Keep = append(lib.Keep, "tests/Conformance/proxy/src/Google/Bigtable/Testproxy/RemoveClientRequest.php")
+		lib.Keep = append(lib.Keep, "tests/Conformance/proxy/src/Google/Bigtable/Testproxy/RemoveClientResponse.php")
+		lib.Keep = append(lib.Keep, "tests/Conformance/proxy/src/Google/Bigtable/Testproxy/CreateClientRequest.php")
+		lib.Keep = append(lib.Keep, "tests/Conformance/proxy/src/Google/Bigtable/Testproxy/CreateClientRequest/SecurityOptions.php")
+		lib.Keep = append(lib.Keep, "tests/Conformance/proxy/src/Google/Bigtable/Testproxy/CreateClientResponse.php")
+		lib.Keep = append(lib.Keep, "tests/Conformance/proxy/src/Google/Bigtable/Testproxy/ExecuteQueryRequest.php")
+		lib.Keep = append(lib.Keep, "tests/Conformance/proxy/src/Google/Bigtable/Testproxy/ExecuteQueryResult.php")
+		lib.Keep = append(lib.Keep, "tests/Conformance/proxy/src/Google/Bigtable/Testproxy/MutateRowRequest.php")
+		lib.Keep = append(lib.Keep, "tests/Conformance/proxy/src/Google/Bigtable/Testproxy/MutateRowResult.php")
+		lib.Keep = append(lib.Keep, "tests/Conformance/proxy/src/Google/Bigtable/Testproxy/MutateRowsRequest.php")
+		lib.Keep = append(lib.Keep, "tests/Conformance/proxy/src/Google/Bigtable/Testproxy/MutateRowsResult.php")
+		lib.Keep = append(lib.Keep, "tests/Conformance/proxy/src/Google/Bigtable/Testproxy/ResultSetMetadata.php")
+		lib.Keep = append(lib.Keep, "tests/Conformance/proxy/src/Google/Bigtable/Testproxy/RowResult.php")
+		lib.Keep = append(lib.Keep, "tests/Conformance/proxy/src/Google/Bigtable/Testproxy/RowsResult.php")
+		lib.Keep = append(lib.Keep, "tests/Conformance/proxy/src/Google/Bigtable/Testproxy/SampleRowKeysRequest.php")
+		lib.Keep = append(lib.Keep, "tests/Conformance/proxy/src/Google/Bigtable/Testproxy/SampleRowKeysResult.php")
+		lib.Keep = append(lib.Keep, "tests/Conformance/proxy/src/Google/Bigtable/Testproxy/SqlRow.php")
+		lib.Keep = append(lib.Keep, "tests/Conformance/proxy/src/Google/Cloud/Bigtable/V2/BigtableInterface.php")
+	case "datastore":
+		lib.Keep = append(lib.Keep, "src/V1/TransactionOptions/ReadOnly.php")
+	case "devtools-clouderrorreporting":
+		lib.Keep = append(lib.Keep, "tests/System/V1beta1/ReportErrorsServiceSmokeTest.php")
+	case "longrunning":
+		lib.Keep = append(lib.Keep, "src/LongRunning/Gapic/OperationsGapicClient.php")
+		lib.Keep = append(lib.Keep, "src/LongRunning/OperationsClient.php")
+		lib.Keep = append(lib.Keep, "tests/Unit/OperationsClientTest.php")
+	case "pubsub":
+		lib.Keep = append(lib.Keep, "tests/System/V1/PublisherSmokeTest.php")
+		lib.Keep = append(lib.Keep, "tests/System/testdata/generated/Metadata.php")
+		lib.Keep = append(lib.Keep, "tests/System/testdata/generated/StateProto.php")
+	case "spanner":
+		lib.Keep = append(lib.Keep, "tests/data/generated/GPBMetadata/Data/User.php")
+		lib.Keep = append(lib.Keep, "tests/data/generated/Testing/Data/Book.php")
+		lib.Keep = append(lib.Keep, "tests/data/generated/Testing/Data/User.php")
+		lib.Keep = append(lib.Keep, "tests/data/generated/Testing/Data/User/Address.php")
+	}
+}
+
+func appendAPI(lib *config.Library) {
+	switch lib.Name {
+	case "oslogin":
+		lib.APIs = append(lib.APIs, &config.API{
+			Path: "google/cloud/oslogin/common",
+			PHP: &config.PHPAPI{
+				GenerateGAPIC: new(false),
+				StagingSubdir: "common-protos",
+			},
+		})
+	}
 }

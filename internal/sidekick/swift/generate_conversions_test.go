@@ -169,8 +169,8 @@ func TestGenerateConversions_RecursiveMessage(t *testing.T) {
 	got := extractBlock(t, gotContent, "  internal init(proto: ProtoType) throws {", "\n  }")
 	wantInit := `  internal init(proto: ProtoType) throws {
     self.init()
-    self.childNode = proto.hasChildNode ? GoogleCloudWkt.Recursive(value: try .init(proto: proto.childNode)) : nil
-    self.nextNode = proto.hasNextNode ? GoogleCloudWkt.Recursive(value: try .init(proto: proto.nextNode)) : nil
+    self.childNode = proto.hasChildNode ? GoogleCloudWKT.Recursive(value: try .init(proto: proto.childNode)) : nil
+    self.nextNode = proto.hasNextNode ? GoogleCloudWKT.Recursive(value: try .init(proto: proto.nextNode)) : nil
   }`
 	if diff := cmp.Diff(wantInit, got); diff != "" {
 		t.Errorf("init(proto:) mismatch (-want +got):\n%s", diff)

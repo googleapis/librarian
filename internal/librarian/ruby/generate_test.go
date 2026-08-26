@@ -152,6 +152,31 @@ func TestBuildGAPICOpts(t *testing.T) {
 			},
 		},
 		{
+			// The generic endpoint option is used for APIs like Grafeas (grafeas/v1), but tested here using Secret Manager testdata.
+			name: "ruby cloud opts with generic endpoint",
+			api: &config.API{
+				Path: "google/cloud/secretmanager/v1",
+				Ruby: &config.RubyAPI{
+					RubyCloudOpts: &config.RubyCloudOpts{
+						GenericEndpoint: true,
+					},
+				},
+			},
+			library: &config.Library{
+				Name: "google-cloud-secret_manager",
+			},
+			want: []string{
+				"ruby-cloud-gem-name=google-cloud-secret_manager",
+				"service-yaml=" + filepath.Join(googleapisDir, "google/cloud/secretmanager/v1/secretmanager_v1.yaml"),
+				"ruby-cloud-description=Stores sensitive data such as API keys\\, passwords\\, and certificates. Provides convenience while improving security.",
+				"ruby-cloud-summary=Stores sensitive data such as API keys\\, passwords\\, and certificates. Provides convenience while improving security.",
+				"grpc-service-config=" + filepath.Join(googleapisDir, "google/cloud/secretmanager/v1/secretmanager_grpc_service_config.json"),
+				"ruby-cloud-generate-transports=grpc;rest",
+				"ruby-cloud-rest-numeric-enums=true",
+				"ruby-cloud-generic-endpoint=true",
+			},
+		},
+		{
 			name: "ruby cloud opts with all options",
 			api: &config.API{
 				Path: "google/cloud/secretmanager/v1",
@@ -161,6 +186,7 @@ func TestBuildGAPICOpts(t *testing.T) {
 						ExtraDependencies:   "google-cloud-core=~>1.6",
 						FactoryMethodSuffix: "service",
 						GemNamespace:        "Google::Cloud::SecretManager::V1",
+						GenericEndpoint:     true,
 						MigrationVersion:    "1.0",
 						NamespaceOverride:   "SecretManager=Secretmanager",
 						PathOverride:        "secret_manager=secretmanager",
@@ -186,6 +212,7 @@ func TestBuildGAPICOpts(t *testing.T) {
 				"ruby-cloud-extra-dependencies=google-cloud-core=~>1.6",
 				"ruby-cloud-factory-method-suffix=service",
 				"ruby-cloud-gem-namespace=Google::Cloud::SecretManager::V1",
+				"ruby-cloud-generic-endpoint=true",
 				"ruby-cloud-migration-version=1.0",
 				"ruby-cloud-namespace-override=SecretManager=Secretmanager",
 				"ruby-cloud-path-override=secret_manager=secretmanager",

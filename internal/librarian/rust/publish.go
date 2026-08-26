@@ -19,6 +19,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"os/exec"
 	"runtime"
 	"slices"
 	"strings"
@@ -150,9 +151,9 @@ func publishCrates(ctx context.Context, params PublishParams, lastTag string, fi
 func runSemverChecks(ctx context.Context, semverData semverData) error {
 	group, ctx := errgroup.WithContext(ctx)
 	group.SetLimit(max(runtime.NumCPU()/semverCheckCPUDivisor, 1))
-	for name, manifest := range semverData.manifests {
+	for name := range semverData.manifests {
 		group.Go(func() error {
-			if err := semverCheck(ctx, semverData, name, manifest); err != nil {
+			if err := semverCheck(ctx, semverData, name); err != nil {
 				return fmt.Errorf("%s: %w: %v", name, errSemverCheck, err)
 			}
 			return nil
@@ -162,12 +163,17 @@ func runSemverChecks(ctx context.Context, semverData semverData) error {
 }
 
 // semverCheck runs semver checks for a specific crate.
-func semverCheck(ctx context.Context, semverData semverData, name string, manifest string) error {
-	if git.IsNewFile(ctx, command.Git, semverData.lastTag, manifest) {
-		// If the manifest is new, we can skip semver checks, since there is no previous version to compare against.
-		return nil
+func semverCheck(ctx context.Context, semverData semverData, name string) error {
+	err := command.Run(ctx, command.Cargo, "info", name, "--registry", "crates-io")
+	if err != nil {
+		if exitErr, ok := errors.AsType[*exec.ExitError](err); ok {
+			if exitErr.ExitCode() == 101 && strings.Contains(err.Error(), "could not find") {
+				// The crate was not found on crates.io, so we can skip the semver check.
+				return nil
+			}
+		}
+		return err
 	}
-	var err error
 	if semverData.verbose {
 		err = command.RunStreaming(ctx, command.Cargo, "semver-checks", "--all-features", "-p", name)
 	} else {
