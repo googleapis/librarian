@@ -37,7 +37,7 @@ func TestModelAnnotations(t *testing.T) {
 		PackageVersion: "0.0.0",
 		CopyrightYear:  "2038",
 		MonorepoRoot:   ".",
-		WktPackage:     "GoogleCloudWkt",
+		WktPackage:     "GoogleCloudWKT",
 	}
 	if diff := cmp.Diff(want, model.Codec, cmpopts.IgnoreFields(modelAnnotations{}, "BoilerPlate", "DependsOn")); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
@@ -59,7 +59,7 @@ func TestModelAnnotations_MessagesWithWkt(t *testing.T) {
 			name: "Messages with wkt",
 			model: api.NewTestAPI(
 				[]*api.Message{{Name: "Request", ID: ".test.Request", Package: "test"}}, nil, nil),
-			want: []string{"GoogleCloudWkt"},
+			want: []string{"GoogleCloudWKT"},
 		},
 		{
 			name:  "Enum with wkt",
@@ -132,7 +132,7 @@ func TestModelAnnotations_WithExternalDependencies(t *testing.T) {
 	want := map[string]bool{
 		"GoogleCloudExternalWithOverrideV1": true,
 		"GoogleCloudGax":                    true, // required by the service
-		"GoogleCloudWkt":                    true,
+		"GoogleCloudWKT":                    true,
 		"GoogleUnusedPackage":               false,
 	}
 	got := map[string]bool{}
@@ -185,7 +185,7 @@ func TestModelAnnotations_IgnoreSelfDependency(t *testing.T) {
 		"GoogleCloudGax":           true,  // always required by services
 		"GoogleCloudOtherV1":       true,  // required by the service
 		"GoogleCloudPlaceholderV1": false, // this is the current package and should not be included as a dependency
-		"GoogleCloudWkt":           true,  // always required by message types
+		"GoogleCloudWKT":           true,  // always required by message types
 	}
 	got := map[string]bool{}
 	for _, dep := range codec.Dependencies {
