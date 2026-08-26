@@ -270,6 +270,9 @@ func findPHPLibraries(repoPath string, googleapisDir string, globalDefaultCommon
 			APIs:    apis,
 			Output:  name,
 		}
+		if name == "Datastore" {
+			lib.Keep = []string{"src/V1/TransactionOptions/ReadOnly.php"}
+		}
 		if name == "ErrorReporting" {
 			lib.Keep = []string{"tests/System/V1beta1/ReportErrorsServiceSmokeTest.php"}
 		}
