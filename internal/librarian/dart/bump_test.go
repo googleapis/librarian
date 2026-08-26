@@ -464,7 +464,7 @@ const packageVersion = '1.1.0';
 			}
 
 			if err := updateLibraryVersion(tempDir, test.newVersion); err != nil {
-				t.Fatalf("updateVersionDart failed: %v", err)
+				t.Fatalf("updateLibraryVersion failed: %v", err)
 			}
 
 			content, err := os.ReadFile(versionPath)
