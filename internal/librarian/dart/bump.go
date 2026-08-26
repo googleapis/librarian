@@ -19,8 +19,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
+	"regexp"
 	"slices"
 	"strings"
 
@@ -40,6 +42,7 @@ import (
 //     b. Use dart-apitool to see what the recommended next version is.
 //     c. If the version should be updated based:
 //     - Update the version in pubspec.yaml.
+//     - Update the version in lib/src/version.dart.
 //     - Update CHANGELOG.md.
 //     - Update the "dependencies:" section of each dependent package.
 //     - Update the version for the package in cfg.Default.Dart.Packages if the package
@@ -174,6 +177,10 @@ func maybeBumpLibrary(ctx context.Context, cloudDeps []string, newVersions map[s
 			return "", err
 		}
 
+		if err := updateVersionDart(packageDir, newVersion); err != nil {
+			return "", err
+		}
+
 		if err := updateChangelog(ctx, packageDir, newVersion, lastReleaseTagCommit, depsChanged); err != nil {
 			return "", err
 		}
@@ -292,4 +299,19 @@ func updateChangelog(ctx context.Context, packageDir, version, lastReleaseTagCom
 	}
 
 	return os.WriteFile(changelogPath, []byte(newTopOfFile+rest), 0644)
+}
+
+var versionDartRegex = regexp.MustCompile(`(const packageVersion = ["'])([^"']*)(["'])`)
+
+func updateVersionDart(packageDir, newVersion string) error {
+	versionPath := filepath.Join(packageDir, "lib", "src", "version.dart")
+	content, err := os.ReadFile(versionPath)
+	if err != nil {
+		if errors.Is(err, fs.ErrNotExist) {
+			return nil
+		}
+		return err
+	}
+	result := versionDartRegex.ReplaceAllString(string(content), `${1}`+newVersion+`${3}`)
+	return os.WriteFile(versionPath, []byte(result), 0644)
 }

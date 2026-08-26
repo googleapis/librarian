@@ -416,6 +416,139 @@ func TestBump_VersionMismatch(t *testing.T) {
 	}
 }
 
+func TestUpdateVersionDart(t *testing.T) {
+	for _, tc := range []struct {
+		name       string
+		initial    string
+		newVersion string
+		want       string
+	}{
+		{
+			name: "double quotes",
+			initial: `// Copyright 2026 Google LLC
+
+/// The version of the a client library.
+const packageVersion = "1.0.0";
+`,
+			newVersion: "1.1.0",
+			want: `// Copyright 2026 Google LLC
+
+/// The version of the a client library.
+const packageVersion = "1.1.0";
+`,
+		},
+		{
+			name: "single quotes",
+			initial: `// Copyright 2026 Google LLC
+
+/// The version of the a client library.
+const packageVersion = '1.0.0';
+`,
+			newVersion: "1.1.0",
+			want: `// Copyright 2026 Google LLC
+
+/// The version of the a client library.
+const packageVersion = '1.1.0';
+`,
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			tempDir := t.TempDir()
+			srcDir := filepath.Join(tempDir, "lib", "src")
+			if err := os.MkdirAll(srcDir, 0755); err != nil {
+				t.Fatal(err)
+			}
+			versionPath := filepath.Join(srcDir, "version.dart")
+			if err := os.WriteFile(versionPath, []byte(tc.initial), 0644); err != nil {
+				t.Fatal(err)
+			}
+
+			if err := updateVersionDart(tempDir, tc.newVersion); err != nil {
+				t.Fatalf("updateVersionDart failed: %v", err)
+			}
+
+			content, err := os.ReadFile(versionPath)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if got := string(content); got != tc.want {
+				t.Errorf("version.dart content mismatch:\ngot:\n%s\nwant:\n%s", got, tc.want)
+			}
+		})
+	}
+}
+
+func TestUpdateVersionDart_NotExist(t *testing.T) {
+	tempDir := t.TempDir()
+	if err := updateVersionDart(tempDir, "1.1.0"); err != nil {
+		t.Fatalf("expected nil when file does not exist, got: %v", err)
+	}
+}
+
+func TestBump_WithVersionDart(t *testing.T) {
+	testhelper.RequireCommand(t, "dart")
+	testhelper.RequireCommand(t, "git")
+
+	inputDir, err := filepath.Abs("testdata/bump/input")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	setupRepoFromDir(t, inputDir)
+	testhelper.RunGit(t, "tag", "a-v1.0.0")
+	testhelper.RunGit(t, "tag", "b-v1.0.0")
+	testhelper.RunGit(t, "tag", "c-v1.0.0")
+
+	versionPath := filepath.Join("generated", "a", "lib", "src", "version.dart")
+	if err := os.MkdirAll(filepath.Dir(versionPath), 0755); err != nil {
+		t.Fatal(err)
+	}
+	initialVersionContent := `/// The version of the a client library.
+const packageVersion = "1.0.0";
+`
+	if err := os.WriteFile(versionPath, []byte(initialVersionContent), 0644); err != nil {
+		t.Fatal(err)
+	}
+	testhelper.RunGit(t, "add", ".")
+	testhelper.RunGit(t, "commit", "-m", "feat: add version.dart")
+
+	// Now make a commit with changes to package a.
+	appendToFile(t, "generated/a/lib.dart", []byte("const a = 5;\n"))
+	testhelper.RunGit(t, "add", ".")
+	testhelper.RunGit(t, "commit", "-m", "feat: added new value", ".")
+
+	publishedVersions := map[string]string{"a": "1.0.0", "b": "1.0.0", "c": "1.0.0"}
+	setupMockPubdevServer(t, publishedVersions)
+
+	apiToolResponses := map[string]packageVersion{
+		"a": {needed: "1.1.0", old: "1.0.0"},
+		"b": {needed: "1.0.0", old: "1.0.0"},
+		"c": {needed: "1.0.0", old: "1.0.0"},
+	}
+	setupFakeApitool(t, apiToolResponses)
+
+	cfg, err := yaml.Read[config.Config]("librarian.yaml")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	err = Bump(t.Context(), cfg, true, "", "")
+	if err != nil {
+		t.Fatalf("Bump failed: %v", err)
+	}
+
+	content, err := os.ReadFile(versionPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	wantVersionContent := `/// The version of the a client library.
+const packageVersion = "1.1.0";
+`
+	if got := string(content); got != wantVersionContent {
+		t.Errorf("version.dart content mismatch:\ngot:\n%s\nwant:\n%s", got, wantVersionContent)
+	}
+}
+
 func setupRepoFromDir(t *testing.T, sourceDir string) {
 	t.Helper()
 
