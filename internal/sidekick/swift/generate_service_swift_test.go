@@ -299,7 +299,7 @@ func TestGenerateService_WithImports(t *testing.T) {
 	contentStr := string(content)
 
 	expectedImports := `import GoogleCloudExternalV1
-import GoogleCloudWkt
+import GoogleCloudWKT
 import GoogleCloudGax`
 
 	if !strings.Contains(contentStr, expectedImports) {
@@ -585,7 +585,7 @@ func verifyGeneratedRequest(t *testing.T, outDir string) {
 	msgContentStr := string(msgContent)
 
 	gotRequestMessage := extractBlock(t, msgContentStr, "public struct ListSecretsRequest: ", "{")
-	for _, p := range []string{"Codable", "Equatable", "GoogleCloudWkt._AnyPackable", "Sendable"} {
+	for _, p := range []string{"Codable", "Equatable", "GoogleCloudWKT._AnyPackable", "Sendable"} {
 		if !strings.Contains(gotRequestMessage, p) {
 			t.Errorf("expected %q in ListSecretsRequest declaration, got: %s", p, gotRequestMessage)
 		}
@@ -603,7 +603,7 @@ func verifyGeneratedResponse(t *testing.T, outDir string, wantNextPageToken stri
 	respContentStr := string(respContent)
 
 	gotResponseMessage := extractBlock(t, respContentStr, "public struct ListSecretsResponse: ", "{")
-	for _, p := range []string{"Codable", "Equatable", "GoogleCloudWkt._AnyPackable", "GoogleCloudGax._PaginatedResponse", "Sendable"} {
+	for _, p := range []string{"Codable", "Equatable", "GoogleCloudWKT._AnyPackable", "GoogleCloudGax._PaginatedResponse", "Sendable"} {
 		if !strings.Contains(gotResponseMessage, p) {
 			t.Errorf("expected %q in ListSecretsResponse declaration, got: %s", p, gotResponseMessage)
 		}

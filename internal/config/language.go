@@ -898,6 +898,9 @@ type RubyCloudOpts struct {
 	// GemNamespace is the root Ruby namespace.
 	GemNamespace string `yaml:"ruby-cloud-gem-namespace,omitempty"`
 
+	// GenericEndpoint specifies whether the client is for a generic endpoint service without a fixed default host or default credentials.
+	GenericEndpoint bool `yaml:"ruby-cloud-generic-endpoint,omitempty"`
+
 	// MigrationVersion specifies the gem version milestone at which the library was migrated to GAPIC, generating a migration section in the README file.
 	MigrationVersion string `yaml:"ruby-cloud-migration-version,omitempty"`
 

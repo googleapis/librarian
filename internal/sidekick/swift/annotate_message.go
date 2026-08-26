@@ -87,8 +87,8 @@ func (ann *messageAnnotations) ConvertImports() []string {
 			continue
 		}
 		importMap["import "+dep.Name] = true
-		if dep.Name == "GoogleCloudWkt" {
-			importMap["internal import GoogleCloudWktConvert"] = true
+		if dep.Name == "GoogleCloudWKT" {
+			importMap["internal import GoogleCloudWKTConvert"] = true
 		}
 	}
 	var result []string
@@ -181,7 +181,7 @@ func (c *codec) annotateMessage(message *api.Message, model *modelAnnotations) e
 	if dep != nil {
 		annotations.DependsOn[dep.Name] = dep
 	}
-	// All messages require the well known types for GoogleCloudWkt._AnyPackable.
+	// All messages require the well known types for GoogleCloudWKT._AnyPackable.
 	wktDep, err := c.addApiPackageDependency(wellKnownProtobufPackage)
 	if err != nil {
 		return err

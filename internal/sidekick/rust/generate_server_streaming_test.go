@@ -283,3 +283,94 @@ prost.workspace      = true
 		}
 	})
 }
+
+func TestGenerateGrpcClientServerStreaming(t *testing.T) {
+	outDir := t.TempDir()
+
+	request := api.NewTestMessage("ExpandRequest").WithPackage("test.v1")
+	request.Fields = []*api.Field{
+		{
+			Name:     "content",
+			JSONName: "content",
+			ID:       ".test.v1.ExpandRequest.content",
+			Typez:    api.TypezString,
+		},
+	}
+	response := api.NewTestMessage("EchoResponse").WithPackage("test.v1")
+
+	serverMethod := api.NewTestMethod("Expand").WithInput(request).WithOutput(response).WithServerSideStreaming()
+	serverMethod.PathInfo = &api.PathInfo{
+		Bindings: []*api.PathBinding{{Verb: "POST", PathTemplate: &api.PathTemplate{}}},
+	}
+	service := api.NewTestService("Echo").WithPackage("test.v1").WithMethods(serverMethod)
+
+	model := api.NewTestAPI([]*api.Message{request, response}, []*api.Enum{}, []*api.Service{service})
+	model.PackageName = "test.v1"
+	if err := api.CrossReference(model); err != nil {
+		t.Fatal(err)
+	}
+
+	cfg := &parser.ModelConfig{
+		SpecificationFormat: libconfig.SpecProtobuf,
+		Codec: map[string]string{
+			"template-override":                "templates/grpc-client",
+			"package:wkt":                      "source=google.protobuf,package=google-cloud-wkt",
+			"include-server-streaming-methods": "true",
+		},
+	}
+	if err := Generate(t.Context(), model, outDir, cfg); err != nil {
+		t.Fatal(err)
+	}
+
+	files := make(map[string]string)
+	readFile := func(relPath string) string {
+		if content, ok := files[relPath]; ok {
+			return content
+		}
+		b, err := os.ReadFile(filepath.Join(outDir, relPath))
+		if err != nil {
+			t.Fatal(err)
+		}
+		files[relPath] = string(b)
+		return files[relPath]
+	}
+
+	for _, test := range []struct {
+		name     string
+		file     string
+		startStr string
+		endStr   string
+		want     string
+	}{
+		{
+			name:     "grpc-client transport: execute_server_streaming call",
+			file:     "transport.rs",
+			startStr: "        self.inner\n            .execute_server_streaming::<",
+			endStr:   "&x_goog_request_params,\n            )\n            .await\n    }",
+			want: `        self.inner
+            .execute_server_streaming::<
+                crate::model::ExpandRequest,
+                crate::model::EchoResponse,
+                crate::test::v1::ExpandRequest,
+                crate::test::v1::EchoResponse,
+            >(
+                extensions,
+                path,
+                req,
+                options,
+                &info::X_GOOG_API_CLIENT_HEADER,
+                &x_goog_request_params,
+            )
+            .await
+    }`,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			content := readFile(test.file)
+			got := extractBlock(t, content, test.startStr, test.endStr)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}

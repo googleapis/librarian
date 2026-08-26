@@ -510,6 +510,7 @@ This document describes the schema for the librarian.yaml.
 | `ruby-cloud-extra-dependencies` | string | Contains extra runtime dependencies to the .gemspec file. |
 | `ruby-cloud-factory-method-suffix` | string | Appends a suffix to client constructor helper methods. |
 | `ruby-cloud-gem-namespace` | string | Is the root Ruby namespace. |
+| `ruby-cloud-generic-endpoint` | bool | Specifies whether the client is for a generic endpoint service without a fixed default host or default credentials. |
 | `ruby-cloud-migration-version` | string | Specifies the gem version milestone at which the library was migrated to GAPIC, generating a migration section in the README file. |
 | `ruby-cloud-namespace-override` | string | Overrides token / segment replacements applied across all generated module & class paths. |
 | `ruby-cloud-path-override` | string | Overrides file/directory paths under lib/ and proto_docs/. |
@@ -641,7 +642,7 @@ This document describes the schema for the librarian.yaml.
 | `url` | string | Configures the `url:` parameter in the package definition.<br><br>For example, `https://github.com/apple/swift-protobuf` would generate the following snippet in the `Package.swift` files:<br><br>``` .package(url: "https://github.com/apple/swift-protobuf") ``` |
 | `version` | string | Configures the minimum version for external package definitions.<br><br>For example, if the `swift-protobuf` package used `1.36.1`, then the codec would generate the following snippet in the `Package.swift` files:<br><br>``` .package(url: "https://github.com/apple/swift-protobuf", from: "1.36.1") ``` |
 | `required_by_services` | bool | Is true if this dependency is required by packages with services.<br><br>This will be set for the `gax` library and the `auth` library. Maybe more if we split the HTTP and gRPC clients into separate libraries. |
-| `api_package` | string | Is the name of the API package provided by this library.<br><br>In Swift a package contains at most one channel for one API. For packages that implement an API, this field contains the name of the package in the specification language of that API. At the moment this is only used by Protobuf-based APIs, as OpenAPI and discovery doc APIs are self-contained.<br><br>Note that some packages, for example `auth` and `gax`, do not implement APIs. This field is empty for such libraries.<br><br>Examples:<br>- The `GoogleCloudWkt` package will set this to `google.cloud.protobuf`.<br>- The `GoogleCloudLocation` package will set this to `google.cloud.location`. |
+| `api_package` | string | Is the name of the API package provided by this library.<br><br>In Swift a package contains at most one channel for one API. For packages that implement an API, this field contains the name of the package in the specification language of that API. At the moment this is only used by Protobuf-based APIs, as OpenAPI and discovery doc APIs are self-contained.<br><br>Note that some packages, for example `auth` and `gax`, do not implement APIs. This field is empty for such libraries.<br><br>Examples:<br>- The `GoogleCloudWKT` package will set this to `google.cloud.protobuf`.<br>- The `GoogleCloudLocation` package will set this to `google.cloud.location`. |
 | `spi` | string | If set, the dependency requires an `@_spi(...)` attribute. |
 
 ## SwiftModule Configuration

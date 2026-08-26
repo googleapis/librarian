@@ -129,7 +129,7 @@ func TestGenerateWithService(t *testing.T) {
 		Swift: &config.SwiftPackage{
 			SwiftDefault: config.SwiftDefault{
 				Dependencies: []config.SwiftDependency{
-					{Name: "GoogleCloudWkt", ApiPackage: "google.protobuf"},
+					{Name: "GoogleCloudWKT", ApiPackage: "google.protobuf"},
 					{Name: "GoogleCloudGax", RequiredByServices: true},
 					{Name: "GoogleCloudAuth", RequiredByServices: true},
 					{Name: "GoogleCloudLocation", ApiPackage: "google.cloud.location"},

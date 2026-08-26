@@ -29,7 +29,7 @@ const (
 	wellKnownProtobufPackage = "google.protobuf"
 	// The name of the corresponding Swift package that contains the Swift implementations of these
 	// types.
-	wellKnownSwiftPackage = "GoogleCloudWkt"
+	wellKnownSwiftPackage = "GoogleCloudWKT"
 	// The name of the Swift package that contains the pagination helper types.
 	paginationSwiftPackage = "GoogleCloudGax"
 	// The name of the Swift package that contains the long-running operation helper types.
@@ -60,7 +60,7 @@ type codec struct {
 	LibraryName string
 
 	// TargetLibraryName is the PascalCase name of the Swift SPM target/library being built
-	// (e.g. "GoogleCloudSecretManagerV1", "GoogleCloudStorage", or "GoogleCloudWkt").
+	// (e.g. "GoogleCloudSecretManagerV1", "GoogleCloudStorage", or "GoogleCloudWKT").
 	//
 	// We need TargetLibraryName to correctly identify self-imports in skipDependency.
 	//

@@ -700,3 +700,64 @@ func TestGitConfigIgnoreGlobalSigning(t *testing.T) {
 
 	testhelper.SetupRepo(t)
 }
+
+func TestRemoteTagExists(t *testing.T) {
+	remoteDir := testhelper.SetupRepo(t)
+	testhelper.RunGit(t, "tag", "1.0.0")
+
+	got, err := RemoteTagExists(t.Context(), command.Git, remoteDir, "1.0.0")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !got {
+		t.Errorf("RemoteTagExists() = false; want true for existing tag")
+	}
+
+	gotNonExistent, err := RemoteTagExists(t.Context(), command.Git, remoteDir, "2.0.0")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if gotNonExistent {
+		t.Errorf("RemoteTagExists() = true; want false for nonexistent tag")
+	}
+}
+
+func TestSubtreeSplit(t *testing.T) {
+	testhelper.SetupForVersionBump(t, "dummy-tag")
+	sha, err := SubtreeSplit(t.Context(), command.Git, "src/storage", "HEAD")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(sha) != 40 {
+		t.Errorf("SubtreeSplit() = %q; want 40 character SHA", sha)
+	}
+}
+
+func TestPushBranchAndPushTag(t *testing.T) {
+	remoteDir := testhelper.SetupRepo(t)
+	cloneDir := t.TempDir()
+	t.Chdir(cloneDir)
+	testhelper.RunGit(t, "clone", remoteDir, ".")
+	testhelper.ConfigNewGitRepository(t)
+
+	head, err := GetCommitHash(t.Context(), command.Git, "HEAD")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if err := PushBranch(t.Context(), command.Git, remoteDir, head, "feature-branch", false); err != nil {
+		t.Fatalf("PushBranch() = %v", err)
+	}
+
+	if err := PushRefToTag(t.Context(), command.Git, remoteDir, head, "v2.0.0", false); err != nil {
+		t.Fatalf("PushRefToTag() = %v", err)
+	}
+
+	exists, err := RemoteTagExists(t.Context(), command.Git, remoteDir, "v2.0.0")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !exists {
+		t.Errorf("RemoteTagExists(v2.0.0) = false; want true after PushRefToTag")
+	}
+}
