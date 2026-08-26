@@ -397,6 +397,7 @@ func specialCases(api *config.API) {
 			api.PHP = &config.PHPAPI{}
 		}
 		api.PHP.GapicYAML = "google/bigtable/admin/v2/bigtableadmin_gapic.yaml"
+		api.PHP.StagingSubdir = "Admin/v2"
 	case "google/cloud/aiplatform/v1":
 		if api.PHP == nil {
 			api.PHP = &config.PHPAPI{}
