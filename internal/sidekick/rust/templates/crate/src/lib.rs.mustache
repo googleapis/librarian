@@ -126,7 +126,6 @@ pub(crate) mod tracing;
 pub(crate) mod transport;
 
 {{#Codec.HasStreaming}}
-#[cfg(google_cloud_unstable_gapic_streaming)]
 {{#Codec.PerServiceFeatures}}
 #[cfg(any(
 {{#Codec.StreamingServices}}

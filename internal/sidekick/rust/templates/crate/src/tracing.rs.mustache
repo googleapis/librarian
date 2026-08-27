@@ -65,7 +65,6 @@ where T: super::stub::{{Codec.Name}} + std::fmt::Debug + Send + Sync {
 
     {{#Codec.IsBidiStreaming}}
     {{! TODO(#6835) - add tracing for bidi streaming methods }}
-    #[cfg(google_cloud_unstable_gapic_streaming)]
     fn {{Codec.Name}}(
         &self,
         options: crate::RequestOptions,
@@ -78,7 +77,6 @@ where T: super::stub::{{Codec.Name}} + std::fmt::Debug + Send + Sync {
     {{/Codec.IsBidiStreaming}}
     {{#Codec.IsServerStreaming}}
     {{! TODO(#6835) - add tracing for server streaming methods }}
-    #[cfg(google_cloud_unstable_gapic_streaming)]
     async fn {{Codec.Name}}(
         &self,
         req: {{InputType.Codec.QualifiedName}},

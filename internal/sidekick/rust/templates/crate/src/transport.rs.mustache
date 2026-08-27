@@ -36,7 +36,6 @@ use crate::Error;
 pub struct {{Codec.Name}} {
     inner: gaxi::http::ReqwestClient,
     {{#Codec.HasStreaming}}
-    #[cfg(google_cloud_unstable_gapic_streaming)]
     grpc_inner: gaxi::grpc::Client,
     {{/Codec.HasStreaming}}
 }
@@ -54,7 +53,6 @@ impl std::fmt::Debug for {{Codec.Name}} {
         {{#Codec.HasStreaming}}
         let mut builder = f.debug_struct("{{Codec.Name}}");
         builder.field("inner", &self.inner);
-        #[cfg(google_cloud_unstable_gapic_streaming)]
         builder.field("grpc_inner", &self.grpc_inner);
         builder.finish()
         {{/Codec.HasStreaming}}
@@ -91,7 +89,6 @@ impl {{Codec.Name}} {
         } else {
             inner
         };
-        #[cfg(google_cloud_unstable_gapic_streaming)]
         let grpc_inner = if tracing_is_enabled {
             gaxi::grpc::Client::new_with_instrumentation(
                 config,
@@ -104,17 +101,14 @@ impl {{Codec.Name}} {
         };
         Ok(Self {
             inner,
-            #[cfg(google_cloud_unstable_gapic_streaming)]
             grpc_inner,
         })
         {{/Codec.DetailedTracingAttributes}}
         {{^Codec.DetailedTracingAttributes}}
         let inner = gaxi::http::ReqwestClient::new(config.clone(), crate::DEFAULT_HOST).await?;
-        #[cfg(google_cloud_unstable_gapic_streaming)]
         let grpc_inner = gaxi::grpc::Client::new(config, crate::DEFAULT_HOST).await?;
         Ok(Self {
             inner,
-            #[cfg(google_cloud_unstable_gapic_streaming)]
             grpc_inner,
         })
         {{/Codec.DetailedTracingAttributes}}
@@ -128,7 +122,6 @@ impl {{Codec.Name}} {
 impl super::stub::{{Codec.Name}} for {{Codec.Name}} {
     {{#Codec.Methods}}
     {{#Codec.IsBidiStreaming}}
-    #[cfg(google_cloud_unstable_gapic_streaming)]
     fn {{Codec.Name}}(
         &self,
         options: crate::RequestOptions,
@@ -168,7 +161,6 @@ impl super::stub::{{Codec.Name}} for {{Codec.Name}} {
 
     {{/Codec.IsBidiStreaming}}
     {{#Codec.IsServerStreaming}}
-    #[cfg(google_cloud_unstable_gapic_streaming)]
     async fn {{Codec.Name}}(
         &self,
         req: {{InputType.Codec.QualifiedName}},
