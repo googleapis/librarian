@@ -104,7 +104,7 @@ func updateCopyrightYearInFile(path, year string, re *regexp.Regexp) error {
 	if err != nil {
 		return fmt.Errorf("reading %s: %w", path, err)
 	}
-	replacement := []byte(fmt.Sprintf("Copyright %s Google", year))
+	replacement := fmt.Appendf(nil, "Copyright %s Google", year)
 	updated := re.ReplaceAll(content, replacement)
 	if bytes.Equal(content, updated) {
 		return nil

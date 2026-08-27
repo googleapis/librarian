@@ -32,9 +32,11 @@ type SwiftPackage struct {
 	// LibraryNameOverride overrides the default library name.
 	//
 	// In Swift, each GAPIC package consists of a single product (the library),
-	// which contains a single target and module name. For example, the package for
-	// the google/cloud/secretmanager/v1 API is called google-cloud-secretmanager-v1, and
-	// contains a single product: `GoogleCloudSecretManagerV1`, which in turn contains a single target and module of the same name.
+	// which contains a single target and module name. For example, the package
+	// for the google/cloud/secretmanager/v1 API is called
+	// google-cloud-secretmanager-v1, and contains a single product:
+	// `GoogleCloudSecretManagerV1`, which in turn contains a single target and
+	// module of the same name.
 	//
 	// To use the library applications use this import:
 	//
@@ -43,7 +45,8 @@ type SwiftPackage struct {
 	// ```
 	//
 	// Normally the name is derived from:
-	// - If the Protobuf namespace overrides for PHP, Ruby, and C# are consistent, sidekick uses this name.
+	// - If the Protobuf namespace overrides for PHP, Ruby, and C# are
+	//   consistent, sidekick uses this name.
 	// - Otherwise, the name implied by the Protobuf package
 	// - Or the package set in the service config yaml file
 	LibraryNameOverride string `yaml:"library_name_override,omitempty"`
@@ -71,7 +74,8 @@ type SwiftPackage struct {
 	// other packages.
 	PackageNameOverride string `yaml:"package_name_override,omitempty"`
 
-	// NameOverrides contains codec-level overrides for service names (e.g., {".google.storage.v2.Storage": "StorageControl"}).
+	// NameOverrides contains codec-level overrides for service names (e.g.,
+	// {".google.storage.v2.Storage": "StorageControl"}).
 	NameOverrides map[string]string `yaml:"name_overrides,omitempty"`
 
 	// PerServiceTraits enables per-service compile-time flags.
@@ -91,8 +95,8 @@ type SwiftDependency struct {
 	// Examples:
 	// - to import `Logging` from the `swift-log` package, create a dependency:
 	//     {name: "Logging", version: "1.14.0", url: "https://github.com/apple/swift-log"},
-	// - to import `GoogleIamV1` from the `google-iam-v1` package.
-	//     {name: "GoogleIamV1", path: "generated/google-iam-v1"}
+	// - to import `GoogleIamV1` from the `swift-google-iam-v1` package.
+	//     {name: "GoogleIamV1", path: "generated/swift-google-iam-v1"}
 	Name string `yaml:"name"`
 	// Path configures the path for local (to the monorepo) packages.
 	//

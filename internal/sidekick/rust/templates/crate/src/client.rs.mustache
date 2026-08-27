@@ -128,12 +128,6 @@ impl {{Codec.Name}} {
     }
     {{#Codec.Methods}}
 
-    {{#Codec.IsBidiStreaming}}
-    #[cfg(google_cloud_unstable_gapic_streaming)]
-    {{/Codec.IsBidiStreaming}}
-    {{#Codec.IsServerStreaming}}
-    #[cfg(google_cloud_unstable_gapic_streaming)]
-    {{/Codec.IsServerStreaming}}
     {{> /templates/common/client_method_preamble}}
     {{Codec.BuilderVisibility}} fn {{Codec.Name}}(&self) -> super::builder::{{Codec.ServiceNameToSnake}}::{{Codec.BuilderName}}
     {

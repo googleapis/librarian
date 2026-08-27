@@ -97,10 +97,9 @@ func TestGenerateServerStreaming(t *testing.T) {
 		{
 			name:     "client: method definition",
 			file:     "src/client.rs",
-			startStr: "    #[cfg(google_cloud_unstable_gapic_streaming)]\n    pub fn expand(&self) -> super::builder::echo::Expand",
+			startStr: "    pub fn expand(&self) -> super::builder::echo::Expand",
 			endStr:   "    }",
-			want: `    #[cfg(google_cloud_unstable_gapic_streaming)]
-    pub fn expand(&self) -> super::builder::echo::Expand
+			want: `    pub fn expand(&self) -> super::builder::echo::Expand
     {
         super::builder::echo::Expand::new(self.inner.clone())
     }`,
@@ -108,9 +107,9 @@ func TestGenerateServerStreaming(t *testing.T) {
 		{
 			name:     "builder: struct definition",
 			file:     "src/builder.rs",
-			startStr: "    #[cfg(google_cloud_unstable_gapic_streaming)]\n    #[derive(Clone, Debug)]\n    pub struct Expand(",
+			startStr: "    #[derive(Clone, Debug)]\n    pub struct Expand(",
 			endStr:   ");",
-			want:     "    #[cfg(google_cloud_unstable_gapic_streaming)]\n    #[derive(Clone, Debug)]\n    pub struct Expand(RequestBuilder<crate::model::ExpandRequest>);",
+			want:     "    #[derive(Clone, Debug)]\n    pub struct Expand(RequestBuilder<crate::model::ExpandRequest>);",
 		},
 		{
 			name:     "builder: send method",
@@ -127,10 +126,9 @@ func TestGenerateServerStreaming(t *testing.T) {
 		{
 			name:     "builder: RequestBuilder trait impl",
 			file:     "src/builder.rs",
-			startStr: "    #[cfg(google_cloud_unstable_gapic_streaming)]\n    #[doc(hidden)]\n    impl crate::RequestBuilder for Expand {",
+			startStr: "    #[doc(hidden)]\n    impl crate::RequestBuilder for Expand {",
 			endStr:   "        }\n    }",
-			want: `    #[cfg(google_cloud_unstable_gapic_streaming)]
-    #[doc(hidden)]
+			want: `    #[doc(hidden)]
     impl crate::RequestBuilder for Expand {
         fn request_options(&mut self) -> &mut crate::RequestOptions {
             &mut self.0.options
@@ -140,10 +138,9 @@ func TestGenerateServerStreaming(t *testing.T) {
 		{
 			name:     "stub: method signature",
 			file:     "src/stub.rs",
-			startStr: "    #[cfg(google_cloud_unstable_gapic_streaming)]\n    fn expand(",
+			startStr: "    fn expand(",
 			endStr:   "    }",
-			want: `    #[cfg(google_cloud_unstable_gapic_streaming)]
-    fn expand(
+			want: `    fn expand(
         &self,
         _req: crate::model::ExpandRequest,
         _options: crate::RequestOptions,
@@ -156,10 +153,9 @@ func TestGenerateServerStreaming(t *testing.T) {
 		{
 			name:     "stub/dynamic: trait method",
 			file:     "src/stub/dynamic.rs",
-			startStr: "    #[cfg(google_cloud_unstable_gapic_streaming)]\n    async fn expand(",
+			startStr: "    async fn expand(",
 			endStr:   ">;",
-			want: `    #[cfg(google_cloud_unstable_gapic_streaming)]
-    async fn expand(
+			want: `    async fn expand(
         &self,
         req: crate::model::ExpandRequest,
         options: crate::RequestOptions,
@@ -170,10 +166,9 @@ func TestGenerateServerStreaming(t *testing.T) {
 		{
 			name:     "stub dynamic: blanket forwarding impl",
 			file:     "src/stub/dynamic.rs",
-			startStr: "    /// Forwards the call to the implementation provided by `T`.\n    #[cfg(google_cloud_unstable_gapic_streaming)]\n    async fn expand(",
+			startStr: "    /// Forwards the call to the implementation provided by `T`.\n    async fn expand(",
 			endStr:   "    }",
 			want: `    /// Forwards the call to the implementation provided by ` + "`T`." + `
-    #[cfg(google_cloud_unstable_gapic_streaming)]
     async fn expand(
         &self,
         req: crate::model::ExpandRequest,
@@ -187,10 +182,9 @@ func TestGenerateServerStreaming(t *testing.T) {
 		{
 			name:     "tracing: forwarder method",
 			file:     "src/tracing.rs",
-			startStr: "    #[cfg(google_cloud_unstable_gapic_streaming)]\n    async fn expand(",
+			startStr: "    async fn expand(",
 			endStr:   "    }",
-			want: `    #[cfg(google_cloud_unstable_gapic_streaming)]
-    async fn expand(
+			want: `    async fn expand(
         &self,
         req: crate::model::ExpandRequest,
         options: crate::RequestOptions,
@@ -201,10 +195,9 @@ func TestGenerateServerStreaming(t *testing.T) {
 		{
 			name:     "transport: method implementation",
 			file:     "src/transport.rs",
-			startStr: "    #[cfg(google_cloud_unstable_gapic_streaming)]\n    async fn expand(",
+			startStr: "    async fn expand(",
 			endStr:   "            .await\n    }",
-			want: `    #[cfg(google_cloud_unstable_gapic_streaming)]
-    async fn expand(
+			want: `    async fn expand(
         &self,
         req: crate::model::ExpandRequest,
         options: crate::RequestOptions,

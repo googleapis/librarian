@@ -103,7 +103,6 @@ impl {{Codec.Name}} {
 impl super::stub::{{Codec.Name}} for {{Codec.Name}} {
     {{#Codec.Methods}}
     {{#Codec.IsServerStreaming}}
-    #[cfg(google_cloud_unstable_gapic_streaming)]
     async fn {{Codec.Name}}(
         &self,
         req: {{InputType.Codec.QualifiedName}},
