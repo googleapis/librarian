@@ -39,7 +39,6 @@ var (
 	errDuplicateLibraryName  = errors.New("duplicate library name")
 	errDuplicateAPIPath      = errors.New("duplicate api path")
 	errNoGoogleapiSourceInfo = errors.New("googleapis source not configured in librarian.yaml")
-
 )
 
 func tidyCommand() *cli.Command {
