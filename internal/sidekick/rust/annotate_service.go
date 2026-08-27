@@ -80,6 +80,24 @@ func (s *serviceAnnotations) HasLROs() bool {
 	return slices.IndexFunc(s.Methods, func(m *api.Method) bool { return m.DiscoveryLro != nil }) != -1
 }
 
+// NeedsRequestBuilder returns true if the service has at least one method that uses RequestBuilder
+// (i.e. methods that are not bidirectional streaming, such as unary or server-streaming methods).
+func (s *serviceAnnotations) NeedsRequestBuilder() bool {
+	return slices.ContainsFunc(s.Methods, func(m *api.Method) bool {
+		ann, ok := m.Codec.(*methodAnnotation)
+		return !ok || !ann.IsBidiStreaming()
+	})
+}
+
+// NeedsBidiStreamBuilder returns true if the service has at least one method that uses BidiStreamBuilder
+// (i.e. bidirectional streaming methods).
+func (s *serviceAnnotations) NeedsBidiStreamBuilder() bool {
+	return slices.ContainsFunc(s.Methods, func(m *api.Method) bool {
+		ann, ok := m.Codec.(*methodAnnotation)
+		return ok && ann.IsBidiStreaming()
+	})
+}
+
 // MaximumAPIVersion returns the highest (in alphanumeric order) APIVersion of
 // all the methods in the service.
 func (s *serviceAnnotations) MaximumAPIVersion() string {

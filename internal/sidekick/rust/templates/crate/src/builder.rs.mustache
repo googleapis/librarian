@@ -25,7 +25,9 @@ limitations under the License.
 #[cfg_attr(docsrs, doc(cfg(feature = "{{Codec.FeatureName}}")))]
 {{/Codec.PerServiceFeatures}}
 pub mod {{Codec.ModuleName}} {
+    {{#Codec.NeedsRequestBuilder}}
     use crate::Result;
+    {{/Codec.NeedsRequestBuilder}}
     {{^Codec.HasVeneer}}
 
     /// A builder for [{{Codec.Name}}][crate::client::{{Codec.Name}}].
@@ -58,6 +60,7 @@ pub mod {{Codec.ModuleName}} {
         }
     }
     {{/Codec.HasVeneer}}
+    {{#Codec.NeedsRequestBuilder}}
 
     /// Common implementation for [crate::client::{{Codec.Name}}] request builders.
     #[derive(Clone, Debug)]
@@ -77,7 +80,8 @@ pub mod {{Codec.ModuleName}} {
             }
         }
     }
-    {{#Codec.HasBidiStreaming}}
+    {{/Codec.NeedsRequestBuilder}}
+    {{#Codec.NeedsBidiStreamBuilder}}
 
     /// Common implementation for [crate::client::{{Codec.Name}}] bidi stream builders.
     #[derive(Clone, Debug)]
@@ -94,7 +98,7 @@ pub mod {{Codec.ModuleName}} {
             }
         }
     }
-    {{/Codec.HasBidiStreaming}}
+    {{/Codec.NeedsBidiStreamBuilder}}
 
     {{#Codec.Methods}}
     /// The request builder for [{{Codec.ServiceNameToPascal}}::{{Codec.NameNoMangling}}][crate::client::{{Codec.ServiceNameToPascal}}::{{Codec.NameNoMangling}}] calls.

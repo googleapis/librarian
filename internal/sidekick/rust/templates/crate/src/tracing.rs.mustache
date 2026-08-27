@@ -21,6 +21,7 @@ limitations under the License.
 {{#Codec.PerServiceFeatures}}
 #[cfg(any({{#Codec.Services}}feature = "{{Codec.FeatureName}}",{{/Codec.Services}}))]
 {{/Codec.PerServiceFeatures}}
+#[allow(unused_imports)]
 use crate::Result;
 
 {{/Codec.HasServices}}
@@ -35,6 +36,8 @@ where T: super::stub::{{Codec.Name}} + std::fmt::Debug + Send + Sync {
     inner: T,
     {{#Codec.DetailedTracingAttributes}}
     {{! Use a fully qualified name to avoid conflicts with any client called `DurationMetric` }}
+    {{! TODO(#6835) - remove `allow(dead_code)` when duration is used in streaming RPCs }}
+    #[allow(dead_code)]
     duration: gaxi::observability::DurationMetric,
     {{/Codec.DetailedTracingAttributes}}
 }

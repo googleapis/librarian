@@ -68,6 +68,7 @@ func TestGenerateServerStreaming(t *testing.T) {
 			"package:prost":                    "package=prost,used-if=streaming",
 			"package:prost-types":              "package=prost-types,used-if=streaming",
 			"include-server-streaming-methods": "true",
+			"detailed-tracing-attributes":      "true",
 		},
 	}
 	if err := Generate(t.Context(), model, outDir, cfg); err != nil {
@@ -273,6 +274,26 @@ prost.workspace      = true
 		builderContent := readFile("src/builder.rs")
 		if strings.Contains(builderContent, "auto_populate") {
 			t.Errorf("expected builder.rs not to contain auto_populate helper for server streaming method")
+		}
+	})
+
+	t.Run("builder: contains use crate::Result and RequestBuilder for server streaming", func(t *testing.T) {
+		builderContent := readFile("src/builder.rs")
+		if !strings.Contains(builderContent, "use crate::Result;") {
+			t.Errorf("expected builder.rs to contain 'use crate::Result;' for server-streaming method")
+		}
+		if !strings.Contains(builderContent, "pub(crate) struct RequestBuilder<") {
+			t.Errorf("expected builder.rs to contain 'pub(crate) struct RequestBuilder<' for server-streaming method")
+		}
+		if strings.Contains(builderContent, "BidiStreamBuilder") {
+			t.Errorf("expected builder.rs not to contain 'BidiStreamBuilder' for server-streaming only service")
+		}
+	})
+
+	t.Run("tracing: contains allow(dead_code) on duration for server-streaming only service", func(t *testing.T) {
+		tracingContent := readFile("src/tracing.rs")
+		if !strings.Contains(tracingContent, "#[allow(dead_code)]\n    duration: gaxi::observability::DurationMetric,") {
+			t.Errorf("expected tracing.rs to contain allow(dead_code) on duration metric")
 		}
 	})
 }
