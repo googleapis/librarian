@@ -225,8 +225,8 @@ func Validate(cfg *config.Config) error {
 		errs = append(errs, errBOMVersionMissing)
 	}
 	pathCount := make(map[string]int)
-	if verifyErrs := verifyRequiredLibraries(cfg); len(verifyErrs) > 0 {
-		errs = append(errs, verifyErrs...)
+	if err := verifyRequiredLibraries(cfg); err != nil {
+		errs = append(errs, err)
 	}
 	for _, library := range cfg.Libraries {
 		if library.Version != "" {
@@ -315,22 +315,21 @@ func tidyReleasedVersion(library *config.Library) {
 }
 
 // verifyRequiredLibraries checks that the java configuration includes all mandatory java libraries.
-func verifyRequiredLibraries(cfg *config.Config) []error {
-	var errs []error
+func verifyRequiredLibraries(cfg *config.Config) error {
 	seenLibraries := make(map[string]bool)
 	for _, library := range cfg.Libraries {
 		switch library.Name {
 		case rootLibrary, parentPOM:
 			seenLibraries[library.Name] = true
 			if library.Version == "" {
-				errs = append(errs, fmt.Errorf("%w: %s", errLibraryMissingVersion, library.Name))
+				return fmt.Errorf("%w: %s", errLibraryMissingVersion, library.Name)
 			}
 		}
 	}
 	for _, requiredLibrary := range []string{rootLibrary, parentPOM} {
 		if !seenLibraries[requiredLibrary] {
-			errs = append(errs, fmt.Errorf("%w: %s", errLibraryNotFound, requiredLibrary))
+			return fmt.Errorf("%w: %s", errLibraryNotFound, requiredLibrary)
 		}
 	}
-	return errs
+	return nil
 }

@@ -660,10 +660,9 @@ func TestValidate_Error(t *testing.T) {
 			wantErr: errLibraryMissingVersion,
 		},
 		{
-			name:          "missing both required libraries",
-			libraries:     []*config.Library{},
-			wantErr:       errLibraryNotFound,
-			wantErrString: "library not found in librarian.yaml: google-cloud-java\nlibrary not found in librarian.yaml: google-cloud-pom-parent",
+			name:      "missing both required libraries",
+			libraries: []*config.Library{},
+			wantErr:   errLibraryNotFound,
 		},
 		{
 			name: "missing google-cloud-pom-parent version",
