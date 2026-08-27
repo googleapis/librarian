@@ -21,7 +21,7 @@ import (
 )
 
 func TestDefaultOutput(t *testing.T) {
-	for _, tt := range []struct {
+	for _, test := range []struct {
 		name   string
 		api    string
 		defOut string
@@ -31,48 +31,48 @@ func TestDefaultOutput(t *testing.T) {
 			name:   "simple",
 			api:    "secretmanager",
 			defOut: "packages",
-			want:   "packages/secretmanager",
+			want:   "packages/swift-secretmanager",
 		},
 		{
 			name:   "empty default",
 			api:    "secretmanager",
 			defOut: "",
-			want:   "secretmanager",
+			want:   "swift-secretmanager",
 		},
 		{
 			name:   "nested default",
 			api:    "secretmanager",
 			defOut: "a/b/c",
-			want:   "a/b/c/secretmanager",
+			want:   "a/b/c/swift-secretmanager",
 		},
 		{
 			name:   "api path",
 			api:    "google/cloud/secretmanager/v1",
 			defOut: "generated",
-			want:   "generated/google-cloud-secretmanager-v1",
+			want:   "generated/swift-google-cloud-secretmanager-v1",
 		},
 		{
 			name:   "api path with trailing slash",
 			api:    "google/cloud/secretmanager/v1/",
 			defOut: "generated",
-			want:   "generated/google-cloud-secretmanager-v1",
+			want:   "generated/swift-google-cloud-secretmanager-v1",
 		},
 		{
 			name:   "api path with leading slash",
 			api:    "/google/cloud/secretmanager/v1",
 			defOut: "generated",
-			want:   "generated/google-cloud-secretmanager-v1",
+			want:   "generated/swift-google-cloud-secretmanager-v1",
 		},
 		{
 			name:   "api path with both leading and trailing slash (weird)",
 			api:    "/google/cloud/secretmanager/v1/",
 			defOut: "generated",
-			want:   "generated/google-cloud-secretmanager-v1",
+			want:   "generated/swift-google-cloud-secretmanager-v1",
 		},
 	} {
-		t.Run(tt.name, func(t *testing.T) {
-			got := DefaultOutput(tt.api, tt.defOut)
-			if diff := cmp.Diff(tt.want, got); diff != "" {
+		t.Run(test.name, func(t *testing.T) {
+			got := DefaultOutput(test.api, test.defOut)
+			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})

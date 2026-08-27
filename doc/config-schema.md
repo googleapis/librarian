@@ -637,7 +637,7 @@ This document describes the schema for the librarian.yaml.
 
 | Field | Type | Description |
 | :--- | :--- | :--- |
-| `name` | string | Is the module imported from the dependency.<br><br>Examples:<br>- to import `Logging` from the `swift-log` package, create a dependency: {name: "Logging", version: "1.14.0", url: "https://github.com/apple/swift-log"},<br>- to import `GoogleIamV1` from the `google-iam-v1` package. {name: "GoogleIamV1", path: "generated/google-iam-v1"} |
+| `name` | string | Is the module imported from the dependency.<br><br>Examples:<br>- to import `Logging` from the `swift-log` package, create a dependency: {name: "Logging", version: "1.14.0", url: "https://github.com/apple/swift-log"},<br>- to import `GoogleIamV1` from the `swift-google-iam-v1` package. {name: "GoogleIamV1", path: "generated/swift-google-iam-v1"} |
 | `path` | string | Configures the path for local (to the monorepo) packages.<br><br>For example, the authentication package definition will set this to `packages/auth`, which would generate the following snippet in the `Package.swift` files:<br><br>``` .package(path: "../../packages/auth") ``` |
 | `url` | string | Configures the `url:` parameter in the package definition.<br><br>For example, `https://github.com/apple/swift-protobuf` would generate the following snippet in the `Package.swift` files:<br><br>``` .package(url: "https://github.com/apple/swift-protobuf") ``` |
 | `version` | string | Configures the minimum version for external package definitions.<br><br>For example, if the `swift-protobuf` package used `1.36.1`, then the codec would generate the following snippet in the `Package.swift` files:<br><br>``` .package(url: "https://github.com/apple/swift-protobuf", from: "1.36.1") ``` |
