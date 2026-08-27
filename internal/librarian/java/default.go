@@ -248,13 +248,11 @@ func Validate(cfg *config.Config) error {
 
 		}
 	}
-
 	for path, count := range pathCount {
 		if count > 1 && !javaSkipDuplicatePaths[path] {
 			errs = append(errs, fmt.Errorf("%w: %s (appears %d times)", errDuplicateAPIPath, path, count))
 		}
 	}
-
 	if len(errs) > 0 {
 		return errors.Join(errs...)
 	}
