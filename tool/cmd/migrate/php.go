@@ -454,11 +454,21 @@ func specialCases(api *config.API) {
 			api.PHP = &config.PHPAPI{}
 		}
 		api.PHP.ExcludedProtos = append(api.PHP.ExcludedProtos, "google/rpc/http.proto")
+	case "google/cloud/dataform/v1", "google/cloud/dataform/v1beta1":
+		if api.PHP == nil {
+			api.PHP = &config.PHPAPI{}
+		}
+		api.PHP.AdditionalProtos = append(api.PHP.AdditionalProtos, "google/longrunning/operations.proto")
 	case "google/cloud/location":
 		if api.PHP == nil {
 			api.PHP = &config.PHPAPI{}
 		}
 		api.PHP.GenerateGAPIC = new(false)
+	case "google/firestore/admin/v1":
+		if api.PHP == nil {
+			api.PHP = &config.PHPAPI{}
+		}
+		api.PHP.StagingSubdir = "Admin/v1"
 	case "google/longrunning":
 		if api.PHP == nil {
 			api.PHP = &config.PHPAPI{}
