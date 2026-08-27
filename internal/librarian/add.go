@@ -137,13 +137,11 @@ func runAdd(ctx context.Context, cfg *config.Config, api, explicitLibraryName st
 }
 
 // validateAPIPathExistence verifies that the given API path exists as a directory
-// in the configured googleapis source repository.
+// in the configured googleapis source repository. It expects cfg.Sources.Googleapis
+// to be configured.
 func validateAPIPathExistence(ctx context.Context, cfg *config.Config, api string) error {
 	if api == "" {
 		return fmt.Errorf("%w: %s", errAPINotFound, api)
-	}
-	if cfg.Sources == nil || cfg.Sources.Googleapis == nil {
-		return ErrMissingGoogleapisSource
 	}
 	googleapisDir, err := fetchSource(ctx, cfg.Sources.Googleapis, googleapisRepo)
 	if err != nil {

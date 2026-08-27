@@ -161,16 +161,6 @@ func TestAddLibraryCommand_Error(t *testing.T) {
 			cfg:     defaultCfg(),
 			wantErr: errAPINotFound,
 		},
-		{
-			name:    "missing googleapis source",
-			apiPath: "google/cloud/secretmanager/v1",
-			cfg: func() *config.Config {
-				cfg := defaultCfg()
-				cfg.Sources = nil
-				return cfg
-			}(),
-			wantErr: ErrMissingGoogleapisSource,
-		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			tmpDir := t.TempDir()
