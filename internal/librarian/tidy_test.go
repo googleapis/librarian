@@ -646,8 +646,12 @@ func TestTidy_DerivableOutput(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			if len(got.Libraries) == 0 {
-				t.Fatalf("expected 1 library, got %d", len(got.Libraries))
+			expectedLen := 1
+			if test.language == config.LanguageJava {
+				expectedLen = 3
+			}
+			if len(got.Libraries) != expectedLen {
+				t.Fatalf("expected %d library, got %d", expectedLen, len(got.Libraries))
 			}
 			if got.Libraries[0].Output != "" {
 				t.Errorf("expected output to be empty, got %q", got.Libraries[0].Output)
@@ -688,7 +692,7 @@ func TestTidy_DerivableAPIPath(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(got.Libraries) == 0 {
+	if len(got.Libraries) != 1 {
 		t.Fatalf("expected 1 library, got %d", len(got.Libraries))
 	}
 	if len(got.Libraries[0].APIs) != 0 {
@@ -728,7 +732,7 @@ func TestTidy_DerivableRoots(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(got.Libraries) == 0 {
+	if len(got.Libraries) != 1 {
 		t.Fatalf("expected 1 library, got %d", len(got.Libraries))
 	}
 	if got.Libraries[0].Roots != nil {
