@@ -92,7 +92,7 @@ type SwiftDependency struct {
 	// - to import `Logging` from the `swift-log` package, create a dependency:
 	//     {name: "Logging", version: "1.14.0", url: "https://github.com/apple/swift-log"},
 	// - to import `GoogleIamV1` from the `google-iam-v1` package.
-	//     {name: "GoogleIamV1", path: "generated/google-iam-v1"}
+	//     {name: "GoogleIamV1", path: "generated/swift-google-iam-v1"}
 	Name string `yaml:"name"`
 	// Path configures the path for local (to the monorepo) packages.
 	//

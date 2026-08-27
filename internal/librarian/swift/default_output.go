@@ -23,5 +23,5 @@ import (
 // output directory.
 func DefaultOutput(api, defaultOutput string) string {
 	path := strings.ReplaceAll(strings.Trim(api, "/"), "/", "-")
-	return filepath.Join(defaultOutput, path)
+	return filepath.Join(defaultOutput, "swift-"+path)
 }
