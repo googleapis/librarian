@@ -21,10 +21,20 @@ impl gaxi::prost::ToProto<{{Codec.RelativeName}}> for {{Codec.QualifiedName}} {
         match self {
             {{#Fields}}
             {{^Codec.IsBoxed}}
+            {{^Codec.MapToBoxed}}
             Self::{{Codec.BranchName}}(v) => Ok(Self::Output::{{Codec.BranchName}}(v.to_proto()?)),
+            {{/Codec.MapToBoxed}}
+            {{#Codec.MapToBoxed}}
+            Self::{{Codec.BranchName}}(v) => Ok(Self::Output::{{Codec.BranchName}}(std::boxed::Box::new(v.to_proto()?))),
+            {{/Codec.MapToBoxed}}
             {{/Codec.IsBoxed}}
             {{#Codec.IsBoxed}}
+            {{^Codec.MapToBoxed}}
             Self::{{Codec.BranchName}}(v) => Ok(Self::Output::{{Codec.BranchName}}((*v).to_proto()?)),
+            {{/Codec.MapToBoxed}}
+            {{#Codec.MapToBoxed}}
+            Self::{{Codec.BranchName}}(v) => Ok(Self::Output::{{Codec.BranchName}}(std::boxed::Box::new((*v).to_proto()?))),
+            {{/Codec.MapToBoxed}}
             {{/Codec.IsBoxed}}
             {{/Fields}}
         }
