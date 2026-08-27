@@ -20,22 +20,7 @@ impl gaxi::prost::ToProto<{{Codec.RelativeName}}> for {{Codec.QualifiedName}} {
     fn to_proto(self) -> std::result::Result<Self::Output, gaxi::prost::ConvertError> {
         match self {
             {{#Fields}}
-            {{^Codec.IsBoxed}}
-            {{^Codec.MapToBoxed}}
-            Self::{{Codec.BranchName}}(v) => Ok(Self::Output::{{Codec.BranchName}}(v.to_proto()?)),
-            {{/Codec.MapToBoxed}}
-            {{#Codec.MapToBoxed}}
-            Self::{{Codec.BranchName}}(v) => Ok(Self::Output::{{Codec.BranchName}}(std::boxed::Box::new(v.to_proto()?))),
-            {{/Codec.MapToBoxed}}
-            {{/Codec.IsBoxed}}
-            {{#Codec.IsBoxed}}
-            {{^Codec.MapToBoxed}}
-            Self::{{Codec.BranchName}}(v) => Ok(Self::Output::{{Codec.BranchName}}((*v).to_proto()?)),
-            {{/Codec.MapToBoxed}}
-            {{#Codec.MapToBoxed}}
-            Self::{{Codec.BranchName}}(v) => Ok(Self::Output::{{Codec.BranchName}}(std::boxed::Box::new((*v).to_proto()?))),
-            {{/Codec.MapToBoxed}}
-            {{/Codec.IsBoxed}}
+            Self::{{Codec.BranchName}}(v) => Ok(Self::Output::{{Codec.BranchName}}({{#Codec.MapToBoxed}}std::boxed::Box::new({{/Codec.MapToBoxed}}{{#Codec.IsBoxed}}(*v){{/Codec.IsBoxed}}{{^Codec.IsBoxed}}v{{/Codec.IsBoxed}}.to_proto()?{{#Codec.MapToBoxed}}){{/Codec.MapToBoxed}})),
             {{/Fields}}
         }
     }
