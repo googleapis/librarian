@@ -314,21 +314,22 @@ func tidyReleasedVersion(library *config.Library) {
 	}
 }
 
+// verifyRequiredLibraries checks that the java configuration includes all mandatory java libraries.
 func verifyRequiredLibraries(cfg *config.Config) []error {
 	var errs []error
-	seenLibs := make(map[string]bool)
+	seenLibraries := make(map[string]bool)
 	for _, library := range cfg.Libraries {
 		switch library.Name {
 		case rootLibrary, parentPOM:
-			seenLibs[library.Name] = true
+			seenLibraries[library.Name] = true
 			if library.Version == "" {
 				errs = append(errs, fmt.Errorf("%w: %s", errLibraryMissingVersion, library.Name))
 			}
 		}
 	}
-	for _, req := range []string{rootLibrary, parentPOM} {
-		if !seenLibs[req] {
-			errs = append(errs, fmt.Errorf("%w: %s", errLibraryNotFound, req))
+	for _, requiredLibrary := range []string{rootLibrary, parentPOM} {
+		if !seenLibraries[requiredLibrary] {
+			errs = append(errs, fmt.Errorf("%w: %s", errLibraryNotFound, requiredLibrary))
 		}
 	}
 	return errs
