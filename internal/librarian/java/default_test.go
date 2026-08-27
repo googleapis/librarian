@@ -484,39 +484,68 @@ func TestTidy(t *testing.T) {
 func TestValidate(t *testing.T) {
 	for _, test := range []struct {
 		name string
-		lib  *config.Library
+		libs []*config.Library
 	}{
 		{
 			name: "valid java config",
-			lib: &config.Library{
-				Name: "secretmanager",
-				Java: &config.JavaModule{
-					ReleasedVersion: "1.2.3",
+			libs: []*config.Library{
+				{
+					Name: "secretmanager",
+					Java: &config.JavaModule{
+						ReleasedVersion: "1.2.3",
+					},
 				},
+				{Name: "google-cloud-java", Version: "1.2.3"},
+				{Name: "google-cloud-pom-parent", Version: "1.2.3"},
 			},
 		},
 		{
 			name: "skipped library does not require released_version",
-			lib: &config.Library{
-				Name:         "google-cloud-java",
-				SkipGenerate: true,
+			libs: []*config.Library{
+				{
+					Name:         "google-cloud-java",
+					Version:      "1.2.3",
+					SkipGenerate: true,
+				},
+				{Name: "google-cloud-pom-parent", Version: "1.2.3"},
 			},
 		},
 		{
 			name: "valid java config with derivable released version",
-			lib: &config.Library{
-				Name:    "secretmanager",
-				Version: "1.2.0-SNAPSHOT",
+			libs: []*config.Library{
+				{
+					Name:    "secretmanager",
+					Version: "1.2.0-SNAPSHOT",
+				},
+				{Name: "google-cloud-java", Version: "1.2.3"},
+				{Name: "google-cloud-pom-parent", Version: "1.2.3"},
 			},
 		},
 		{
-			name: "skipped duplicate api paths",
-			lib: &config.Library{
-				Name: "iam",
-				APIs: []*config.API{
-					{Path: "google/iam/v1"},
-					{Path: "google/iam/v1"},
+			name: "valid java skipped duplicate api paths",
+			libs: []*config.Library{
+				{
+					Name: "secretmanager",
+					APIs: []*config.API{
+						{Path: "google/iam/v1"},
+						{Path: "google/iam/v1"},
+					},
 				},
+				{Name: "google-cloud-java", Version: "1.2.3"},
+				{Name: "google-cloud-pom-parent", Version: "1.2.3"},
+			},
+		}, {
+			name: "skipped duplicate api paths",
+			libs: []*config.Library{
+				{
+					Name: "iam",
+					APIs: []*config.API{
+						{Path: "google/iam/v1"},
+						{Path: "google/iam/v1"},
+					},
+				},
+				{Name: "google-cloud-java", Version: "1.2.3"},
+				{Name: "google-cloud-pom-parent", Version: "1.2.3"},
 			},
 		},
 	} {
@@ -527,10 +556,10 @@ func TestValidate(t *testing.T) {
 						LibrariesBOMVersion: "1.2.3",
 					},
 				},
-				Libraries: []*config.Library{test.lib},
+				Libraries: test.libs,
 			}
 			if err := Validate(cfg); err != nil {
-				t.Errorf("Validate(%+v) error = %v, want nil", test.lib, err)
+				t.Errorf("Validate(%+v) error = %v, want nil", test.libs, err)
 			}
 		})
 	}
@@ -539,67 +568,103 @@ func TestValidate(t *testing.T) {
 func TestValidate_Error(t *testing.T) {
 	for _, test := range []struct {
 		name    string
-		lib     *config.Library
+		libs    []*config.Library
 		wantErr error
 	}{
 		{
 			name: "invalid version",
-			lib: &config.Library{
-				Name:    "secretmanager",
-				Version: "invalid-semver",
+			libs: []*config.Library{
+				{Name: "secretmanager", Version: "invalid-semver"},
+				{Name: "google-cloud-java", Version: "1.2.3"},
+				{Name: "google-cloud-pom-parent", Version: "1.2.3"},
 			},
 			wantErr: semver.ErrInvalidVersion,
 		},
 		{
 			name: "invalid version with skip generate",
-			lib: &config.Library{
-				Name:         "secretmanager",
-				Version:      "invalid-semver",
-				SkipGenerate: true,
+			libs: []*config.Library{
+				{Name: "secretmanager", Version: "invalid-semver", SkipGenerate: true},
+				{Name: "google-cloud-java", Version: "1.2.3"},
+				{Name: "google-cloud-pom-parent", Version: "1.2.3"},
 			},
 			wantErr: semver.ErrInvalidVersion,
 		},
 		{
 			name: "invalid released version",
-			lib: &config.Library{
-				Name: "secretmanager",
-				Java: &config.JavaModule{
-					ReleasedVersion: "invalid-semver",
-				},
+			libs: []*config.Library{
+				{Name: "secretmanager", Java: &config.JavaModule{ReleasedVersion: "invalid-semver"}},
+				{Name: "google-cloud-java", Version: "1.2.3"},
+				{Name: "google-cloud-pom-parent", Version: "1.2.3"},
 			},
 			wantErr: semver.ErrInvalidVersion,
 		},
 		{
 			name: "omit common resources conflict",
-			lib: &config.Library{
-				Name: "secretmanager",
-				Java: &config.JavaModule{
-					ReleasedVersion: "1.2.3",
-				},
-				APIs: []*config.API{
-					{
-						Path: "google/cloud/conflict/v1",
-						Java: &config.JavaAPI{
-							OmitCommonResources: true,
-							AdditionalProtos: []*config.AdditionalProto{
-								{Path: "google/cloud/common_resources.proto"},
+			libs: []*config.Library{
+				{
+					Name: "secretmanager",
+					Java: &config.JavaModule{ReleasedVersion: "1.2.3"},
+					APIs: []*config.API{
+						{
+							Path: "google/cloud/conflict/v1",
+							Java: &config.JavaAPI{
+								OmitCommonResources: true,
+								AdditionalProtos: []*config.AdditionalProto{
+									{Path: "google/cloud/common_resources.proto"},
+								},
 							},
 						},
 					},
 				},
+				{Name: "google-cloud-java", Version: "1.2.3"},
+				{Name: "google-cloud-pom-parent", Version: "1.2.3"},
 			},
 			wantErr: ErrOmitCommonResourcesConflict,
 		},
 		{
 			name: "duplicate api path",
-			lib: &config.Library{
-				Name: "secretmanager",
-				APIs: []*config.API{
-					{Path: "google/cloud/secretmanager/v1"},
-					{Path: "google/cloud/secretmanager/v1"},
+			libs: []*config.Library{
+				{
+					Name: "secretmanager",
+					APIs: []*config.API{
+						{Path: "google/cloud/secretmanager/v1"},
+						{Path: "google/cloud/secretmanager/v1"},
+					},
 				},
+				{Name: "google-cloud-java", Version: "1.2.3"},
+				{Name: "google-cloud-pom-parent", Version: "1.2.3"},
 			},
 			wantErr: errDuplicateAPIPath,
+		},
+		{
+			name: "missing google-cloud-java",
+			libs: []*config.Library{
+				{Name: "google-cloud-pom-parent", Version: "1.2.3"},
+			},
+			wantErr: errLibraryNotFound,
+		},
+		{
+			name: "missing google-cloud-pom-parent",
+			libs: []*config.Library{
+				{Name: "google-cloud-java", Version: "1.2.3"},
+			},
+			wantErr: errLibraryNotFound,
+		},
+		{
+			name: "missing google-cloud-java version",
+			libs: []*config.Library{
+				{Name: "google-cloud-java"},
+				{Name: "google-cloud-pom-parent", Version: "1.2.3"},
+			},
+			wantErr: errLibraryMissingVersion,
+		},
+		{
+			name: "missing google-cloud-pom-parent version",
+			libs: []*config.Library{
+				{Name: "google-cloud-java", Version: "1.2.3"},
+				{Name: "google-cloud-pom-parent"},
+			},
+			wantErr: errLibraryMissingVersion,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
@@ -609,7 +674,7 @@ func TestValidate_Error(t *testing.T) {
 						LibrariesBOMVersion: "1.2.3",
 					},
 				},
-				Libraries: []*config.Library{test.lib},
+				Libraries: test.libs,
 			}
 			err := Validate(cfg)
 			if !errors.Is(err, test.wantErr) {
@@ -720,25 +785,19 @@ func TestDeriveLastReleasedVersion_Error(t *testing.T) {
 }
 
 func TestValidate_GlobalConfig(t *testing.T) {
-	for _, test := range []struct {
-		name string
-		def  *config.Default
-	}{
-		{
-			name: "valid bom version",
-			def: &config.Default{
-				Java: &config.JavaDefault{
-					LibrariesBOMVersion: "1.2.3",
-				},
+	cfg := &config.Config{
+		Default: &config.Default{
+			Java: &config.JavaDefault{
+				LibrariesBOMVersion: "1.2.3",
 			},
 		},
-	} {
-		t.Run(test.name, func(t *testing.T) {
-			cfg := &config.Config{Default: test.def}
-			if err := Validate(cfg); err != nil {
-				t.Fatal(err)
-			}
-		})
+		Libraries: []*config.Library{
+			{Name: "google-cloud-java", Version: "1.2.3"},
+			{Name: "google-cloud-pom-parent", Version: "1.2.3"},
+		},
+	}
+	if err := Validate(cfg); err != nil {
+		t.Fatal(err)
 	}
 }
 
@@ -764,7 +823,13 @@ func TestValidate_GlobalConfigError(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			cfg := &config.Config{Default: test.def}
+			cfg := &config.Config{
+				Default: test.def,
+				Libraries: []*config.Library{
+					{Name: "google-cloud-java", Version: "1.2.3"},
+					{Name: "google-cloud-pom-parent", Version: "1.2.3"},
+				},
+			}
 			got := Validate(cfg)
 			if !errors.Is(got, test.wantErr) {
 				t.Errorf("Validate() error = %v, wantErr %v", got, test.wantErr)

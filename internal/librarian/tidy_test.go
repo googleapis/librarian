@@ -636,6 +636,9 @@ func TestTidy_DerivableOutput(t *testing.T) {
 				Sources:   googleapisSource,
 				Libraries: []*config.Library{lib},
 			}
+			if test.language == config.LanguageJava {
+				cfg.Libraries = append(cfg.Libraries, &config.Library{Name: "google-cloud-java", Version: "1.0.0"}, &config.Library{Name: "google-cloud-pom-parent", Version: "1.0.0"})
+			}
 			if err := RunTidyOnConfig(t.Context(), tempDir, cfg); err != nil {
 				t.Fatal(err)
 			}
@@ -643,7 +646,7 @@ func TestTidy_DerivableOutput(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			if len(got.Libraries) != 1 {
+			if len(got.Libraries) == 0 {
 				t.Fatalf("expected 1 library, got %d", len(got.Libraries))
 			}
 			if got.Libraries[0].Output != "" {
@@ -685,7 +688,7 @@ func TestTidy_DerivableAPIPath(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(got.Libraries) != 1 {
+	if len(got.Libraries) == 0 {
 		t.Fatalf("expected 1 library, got %d", len(got.Libraries))
 	}
 	if len(got.Libraries[0].APIs) != 0 {
@@ -725,7 +728,7 @@ func TestTidy_DerivableRoots(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(got.Libraries) != 1 {
+	if len(got.Libraries) == 0 {
 		t.Fatalf("expected 1 library, got %d", len(got.Libraries))
 	}
 	if got.Libraries[0].Roots != nil {
@@ -769,7 +772,8 @@ func TestTidy_UnusedSections(t *testing.T) {
 		{
 			name: "maven preserved",
 			cfg: &config.Config{
-				Language: config.LanguageJava,
+				Language:  config.LanguageJava,
+				Libraries: []*config.Library{{Name: "google-cloud-java", Version: "1.0.0"}, {Name: "google-cloud-pom-parent", Version: "1.0.0"}},
 				Sources: &config.Sources{
 					Googleapis: &config.Source{Commit: "commit"},
 				},

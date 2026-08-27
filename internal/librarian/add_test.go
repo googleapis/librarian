@@ -620,7 +620,7 @@ func TestAddLibraryCommand_Java(t *testing.T) {
 	cfg := sample.Config()
 	cfg.Language = config.LanguageJava
 	cfg.Default.Output = "output"
-	cfg.Libraries = []*config.Library{}
+	cfg.Libraries = []*config.Library{{Name: "google-cloud-java", Version: "1.0.0"}, {Name: "google-cloud-pom-parent", Version: "1.0.0"}}
 	cfg.Sources.Googleapis.Dir = googleapisDir
 	if err := yaml.Write(config.LibrarianYAML, cfg); err != nil {
 		t.Fatal(err)
@@ -652,6 +652,8 @@ func TestAddLibraryCommand_Java(t *testing.T) {
 				},
 			},
 		},
+		&config.Library{Name: "google-cloud-java", Version: "1.0.0"},
+		&config.Library{Name: "google-cloud-pom-parent", Version: "1.0.0"},
 	}
 	if diff := cmp.Diff(wantLibraries, gotCfg.Libraries); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)

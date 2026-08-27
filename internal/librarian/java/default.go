@@ -210,6 +210,10 @@ var (
 		"google/iam/v3":     true,
 		"google/iam/v3beta": true,
 	}
+	// errLibraryNotFound is returned when a required library is not found in librarian.yaml.
+	errLibraryNotFound = errors.New("library not found in librarian.yaml")
+	// errLibraryMissingVersion is returned when a required library is missing a version.
+	errLibraryMissingVersion = errors.New("library must have a version")
 )
 
 // Validate checks that the Java-specific configuration for a library and global config is
@@ -220,8 +224,10 @@ func Validate(cfg *config.Config) error {
 	if cfg.Default == nil || cfg.Default.Java == nil || cfg.Default.Java.LibrariesBOMVersion == "" {
 		errs = append(errs, errBOMVersionMissing)
 	}
-
 	pathCount := make(map[string]int)
+	if verifyErrs := verifyRequiredLibraries(cfg); len(verifyErrs) > 0 {
+		errs = append(errs, verifyErrs...)
+	}
 	for _, library := range cfg.Libraries {
 		if library.Version != "" {
 			if _, err := semver.Parse(library.Version); err != nil {
@@ -245,7 +251,6 @@ func Validate(cfg *config.Config) error {
 					errs = append(errs, fmt.Errorf("%s: %w", api.Path, ErrOmitCommonResourcesConflict))
 				}
 			}
-
 		}
 	}
 	for path, count := range pathCount {
@@ -307,4 +312,24 @@ func tidyReleasedVersion(library *config.Library) {
 	if err == nil && library.Java.ReleasedVersion == derived {
 		library.Java.ReleasedVersion = ""
 	}
+}
+
+func verifyRequiredLibraries(cfg *config.Config) []error {
+	var errs []error
+	seenLibs := make(map[string]bool)
+	for _, library := range cfg.Libraries {
+		switch library.Name {
+		case rootLibrary, parentPOM:
+			seenLibs[library.Name] = true
+			if library.Version == "" {
+				errs = append(errs, fmt.Errorf("%w: %s", errLibraryMissingVersion, library.Name))
+			}
+		}
+	}
+	for _, req := range []string{rootLibrary, parentPOM} {
+		if !seenLibs[req] {
+			errs = append(errs, fmt.Errorf("%w: %s", errLibraryNotFound, req))
+		}
+	}
+	return errs
 }
