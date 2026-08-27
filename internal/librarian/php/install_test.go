@@ -154,7 +154,6 @@ func TestInstall(t *testing.T) {
 }
 
 func TestInstall_Error(t *testing.T) {
-	testhelper.RequireCommand(t, "composer")
 	for _, test := range []struct {
 		name    string
 		tools   *config.Tools
