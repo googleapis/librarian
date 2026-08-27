@@ -1572,7 +1572,7 @@ func (c *codec) generateMethod(m *api.Method) bool {
 }
 
 func (c *codec) hasBidiStreaming(model *api.API) bool {
-	if c.templateOverride != "" || !c.includeBidiStreamingMethods {
+	if (c.templateOverride != "" && c.templateOverride != "templates/grpc-client") || !c.includeBidiStreamingMethods {
 		return false
 	}
 	return slices.ContainsFunc(model.Services, (*api.Service).HasBidiStreaming)

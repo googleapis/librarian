@@ -102,6 +102,45 @@ impl {{Codec.Name}} {
 {{/Codec.PerServiceFeatures}}
 impl super::stub::{{Codec.Name}} for {{Codec.Name}} {
     {{#Codec.Methods}}
+    {{#Codec.IsBidiStreaming}}
+    fn {{Codec.Name}}(
+        &self,
+        options: crate::RequestOptions,
+    ) -> (
+        google_cloud_gax::streaming::RequestSender<{{InputType.Codec.QualifiedName}}>,
+        google_cloud_gax::streaming::ResponseReceiver<{{OutputType.Codec.QualifiedName}}>,
+    ) {
+        {{! TODO(#6835) - support explicit routing parameters for bidirectional streaming RPCs }}
+        let x_goog_request_params = "";
+
+        let extensions = {
+            let mut e = gaxi::grpc::tonic::Extensions::new();
+            e.insert(gaxi::grpc::tonic::GrpcMethod::new(
+                "{{SourceService.Package}}.{{SourceService.Name}}",
+                "{{Name}}",
+            ));
+            e
+        };
+        let path = http::uri::PathAndQuery::from_static(
+            "/{{SourceService.Package}}.{{SourceService.Name}}/{{Name}}"
+        );
+
+        self.inner
+            .execute_bidi_streaming::<
+                {{InputType.Codec.QualifiedName}},
+                {{OutputType.Codec.QualifiedName}},
+                crate::{{InputType.Codec.PackageModuleName}}::{{InputType.Codec.Name}},
+                crate::{{OutputType.Codec.PackageModuleName}}::{{OutputType.Codec.Name}},
+            >(
+                extensions,
+                path,
+                options,
+                &info::X_GOOG_API_CLIENT_HEADER,
+                x_goog_request_params,
+            )
+    }
+
+    {{/Codec.IsBidiStreaming}}
     {{#Codec.IsServerStreaming}}
     async fn {{Codec.Name}}(
         &self,
@@ -165,6 +204,7 @@ impl super::stub::{{Codec.Name}} for {{Codec.Name}} {
     }
 
     {{/Codec.IsServerStreaming}}
+    {{^Codec.IsBidiStreaming}}
     {{^Codec.IsServerStreaming}}
     async fn {{Codec.Name}}(
         &self,
@@ -265,6 +305,7 @@ impl super::stub::{{Codec.Name}} for {{Codec.Name}} {
     }
 
     {{/Codec.IsServerStreaming}}
+    {{/Codec.IsBidiStreaming}}
     {{/Codec.Methods}}
     {{#Codec.HasLROs}}
     fn get_polling_error_policy(

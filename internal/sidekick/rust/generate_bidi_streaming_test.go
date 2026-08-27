@@ -304,3 +304,187 @@ prost.workspace      = true
 		})
 	}
 }
+
+func TestGenerateGrpcClientBidiStreaming(t *testing.T) {
+	outDir := t.TempDir()
+
+	request := api.NewTestMessage("Request").WithPackage("test.v1")
+	request.Fields = []*api.Field{
+		{
+			Name:     "query",
+			JSONName: "query",
+			ID:       ".test.v1.Request.query",
+			Typez:    api.TypezString,
+		},
+	}
+	response := api.NewTestMessage("Response").WithPackage("test.v1")
+
+	bidiMethod := api.NewTestMethod("Chat").WithInput(request).WithOutput(response).WithBidiStreaming()
+	bidiMethod.PathInfo = &api.PathInfo{
+		Bindings: []*api.PathBinding{{Verb: "GET", PathTemplate: &api.PathTemplate{}}},
+	}
+	service := api.NewTestService("Protocol").WithPackage("test.v1").WithMethods(bidiMethod)
+
+	model := api.NewTestAPI([]*api.Message{request, response}, []*api.Enum{}, []*api.Service{service})
+	model.PackageName = "test.v1"
+	if err := api.CrossReference(model); err != nil {
+		t.Fatal(err)
+	}
+
+	cfg := &parser.ModelConfig{
+		SpecificationFormat: libconfig.SpecProtobuf,
+		Codec: map[string]string{
+			"template-override":              "templates/grpc-client",
+			"package:wkt":                    "source=google.protobuf,package=google-cloud-wkt",
+			"include-bidi-streaming-methods": "true",
+		},
+	}
+	if err := Generate(t.Context(), model, outDir, cfg); err != nil {
+		t.Fatal(err)
+	}
+
+	files := make(map[string]string)
+	readFile := func(relPath string) string {
+		if content, ok := files[relPath]; ok {
+			return content
+		}
+		b, err := os.ReadFile(filepath.Join(outDir, relPath))
+		if err != nil {
+			t.Fatal(err)
+		}
+		files[relPath] = string(b)
+		return files[relPath]
+	}
+
+	for _, test := range []struct {
+		name     string
+		file     string
+		startStr string
+		endStr   string
+		want     string
+	}{
+		{
+			name:     "grpc-client builder: struct definition",
+			file:     "builder.rs",
+			startStr: "    pub(crate) struct BidiStreamBuilder {",
+			endStr:   "    }",
+			want: `    pub(crate) struct BidiStreamBuilder {
+        stub: std::sync::Arc<dyn super::super::stub::dynamic::Protocol>,
+        options: crate::RequestOptions,
+    }`,
+		},
+		{
+			name:     "grpc-client builder: request builder impl",
+			file:     "builder.rs",
+			startStr: "    pub struct Chat(BidiStreamBuilder);\n\n    impl Chat {",
+			endStr:   "        }\n    }",
+			want: `    pub struct Chat(BidiStreamBuilder);
+
+    impl Chat {
+        pub(crate) fn new(stub: std::sync::Arc<dyn super::super::stub::dynamic::Protocol>) -> Self {
+            Self(
+                BidiStreamBuilder::new(stub)
+            )
+        }
+
+
+        /// Sets all the options, replacing any prior values.
+        pub fn with_options<V: Into<crate::RequestOptions>>(mut self, v: V) -> Self {
+            self.0.options = v.into();
+            self
+        }
+
+        /// Initiates the bidirectional stream.
+        pub fn build(
+            self,
+        ) -> (
+            google_cloud_gax::streaming::RequestSender<crate::model::Request>,
+            google_cloud_gax::streaming::ResponseReceiver<crate::model::Response>,
+        ) {
+            (*self.0.stub).chat(self.0.options)
+        }
+    }`,
+		},
+		{
+			name:     "grpc-client client: method definition",
+			file:     "client.rs",
+			startStr: "    pub fn chat(&self) -> super::builder::protocol::Chat",
+			endStr:   "    }",
+			want: `    pub fn chat(&self) -> super::builder::protocol::Chat
+    {
+        super::builder::protocol::Chat::new(self.inner.clone())
+    }`,
+		},
+		{
+			name:     "grpc-client stub: method signature",
+			file:     "stub.rs",
+			startStr: "    fn chat(",
+			endStr:   "    }",
+			want: `    fn chat(
+        &self,
+        _options: crate::RequestOptions,
+    ) -> (
+        google_cloud_gax::streaming::RequestSender<crate::model::Request>,
+        google_cloud_gax::streaming::ResponseReceiver<crate::model::Response>,
+    ) {
+        gaxi::unimplemented::unimplemented_bidi_stub()
+    }`,
+		},
+		{
+			name:     "grpc-client stub dynamic: trait method",
+			file:     "stub/dynamic.rs",
+			startStr: "    fn chat(",
+			endStr:   ");",
+			want: `    fn chat(
+        &self,
+        options: crate::RequestOptions,
+    ) -> (
+        google_cloud_gax::streaming::RequestSender<crate::model::Request>,
+        google_cloud_gax::streaming::ResponseReceiver<crate::model::Response>,
+    );`,
+		},
+		{
+			name:     "grpc-client tracing: method wrapper",
+			file:     "tracing.rs",
+			startStr: "    fn chat(",
+			endStr:   "    }",
+			want: `    fn chat(
+        &self,
+        options: crate::RequestOptions,
+    ) -> (
+        google_cloud_gax::streaming::RequestSender<crate::model::Request>,
+        google_cloud_gax::streaming::ResponseReceiver<crate::model::Response>,
+    ) {
+        self.inner.chat(options)
+    }`,
+		},
+		{
+			name:     "grpc-client transport: execute_bidi_streaming call",
+			file:     "transport.rs",
+			startStr: "        self.inner\n            .execute_bidi_streaming::<",
+			endStr:   "x_goog_request_params,\n            )\n    }",
+			want: `        self.inner
+            .execute_bidi_streaming::<
+                crate::model::Request,
+                crate::model::Response,
+                crate::test::v1::Request,
+                crate::test::v1::Response,
+            >(
+                extensions,
+                path,
+                options,
+                &info::X_GOOG_API_CLIENT_HEADER,
+                x_goog_request_params,
+            )
+    }`,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			content := readFile(test.file)
+			got := extractBlock(t, content, test.startStr, test.endStr)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}

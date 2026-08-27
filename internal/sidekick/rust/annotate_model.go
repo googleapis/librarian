@@ -293,7 +293,7 @@ func annotateModel(model *api.API, codec *codec) (*modelAnnotations, error) {
 			streamingServices = append(streamingServices, s)
 		}
 	}
-	hasBidiStreaming := codec.templateOverride == "" && len(bidiStreamingServices) > 0
+	hasBidiStreaming := (codec.templateOverride == "" || codec.templateOverride == "templates/grpc-client") && len(bidiStreamingServices) > 0
 	hasServerStreaming := (codec.templateOverride == "" || codec.templateOverride == "templates/grpc-client") && len(serverStreamingServices) > 0
 	hasStreaming := hasBidiStreaming || hasServerStreaming
 	if hasStreaming {
