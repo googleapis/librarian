@@ -183,6 +183,12 @@ func TestInstall_Error(t *testing.T) {
 					},
 				},
 			},
+			setup: func(t *testing.T) {
+				bin := t.TempDir()
+				testhelper.WriteExecutable(t, filepath.Join(bin, "composer"), "#!/bin/sh\nexit 0\n")
+				testhelper.WriteExecutable(t, filepath.Join(bin, "php"), "#!/bin/sh\nexit 0\n")
+				t.Setenv("PATH", bin+string(os.PathListSeparator)+os.Getenv("PATH"))
+			},
 			wantErr: composer.ErrMissingRepo,
 		},
 		{
