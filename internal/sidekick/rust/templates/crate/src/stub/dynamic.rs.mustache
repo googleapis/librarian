@@ -27,7 +27,6 @@ limitations under the License.
 pub trait {{Codec.Name}}: std::fmt::Debug + Send + Sync {
     {{#Codec.Methods}}
     {{#Codec.IsBidiStreaming}}
-    #[cfg(google_cloud_unstable_gapic_streaming)]
     fn {{Codec.Name}}(
         &self,
         options: crate::RequestOptions,
@@ -38,7 +37,6 @@ pub trait {{Codec.Name}}: std::fmt::Debug + Send + Sync {
 
     {{/Codec.IsBidiStreaming}}
     {{#Codec.IsServerStreaming}}
-    #[cfg(google_cloud_unstable_gapic_streaming)]
     async fn {{Codec.Name}}(
         &self,
         req: {{InputType.Codec.QualifiedName}},
@@ -88,7 +86,6 @@ impl<T: super::{{Codec.Name}}> {{Codec.Name}} for T {
     {{#Codec.Methods}}
     /// Forwards the call to the implementation provided by `T`.
     {{#Codec.IsBidiStreaming}}
-    #[cfg(google_cloud_unstable_gapic_streaming)]
     fn {{Codec.Name}}(
         &self,
         options: crate::RequestOptions,
@@ -101,7 +98,6 @@ impl<T: super::{{Codec.Name}}> {{Codec.Name}} for T {
 
     {{/Codec.IsBidiStreaming}}
     {{#Codec.IsServerStreaming}}
-    #[cfg(google_cloud_unstable_gapic_streaming)]
     async fn {{Codec.Name}}(
         &self,
         req: {{InputType.Codec.QualifiedName}},

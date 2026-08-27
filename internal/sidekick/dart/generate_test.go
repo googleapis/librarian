@@ -76,6 +76,7 @@ func TestFromProtobuf(t *testing.T) {
 		"pubspec.yaml",
 		"lib/secretmanager.dart",
 		"lib/src/api.g.dart",
+		"lib/src/version.dart",
 		"lib/testing.dart",
 		"LICENSE",
 		"README.md",
@@ -103,6 +104,7 @@ README.md linguist-generated=true
 pubspec.yaml linguist-generated=true
 lib/secretmanager.dart linguist-generated=true
 lib/src/api.g.dart linguist-generated=true
+lib/src/version.dart linguist-generated=true
 lib/testing.dart linguist-generated=true
 skills/** linguist-generated=true
 `
@@ -147,6 +149,7 @@ func TestFromProtobuf_NoServices(t *testing.T) {
 		"pubspec.yaml",
 		"lib/type.dart",
 		"lib/src/api.g.dart",
+		"lib/src/version.dart",
 		"LICENSE",
 		"README.md",
 	} {
@@ -171,6 +174,7 @@ README.md linguist-generated=true
 pubspec.yaml linguist-generated=true
 lib/type.dart linguist-generated=true
 lib/src/api.g.dart linguist-generated=true
+lib/src/version.dart linguist-generated=true
 `
 	if diff := cmp.Diff(wantGitattributes, string(gitattributesContent)); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)

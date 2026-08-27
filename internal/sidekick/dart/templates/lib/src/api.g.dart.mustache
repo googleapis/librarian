@@ -43,6 +43,10 @@ library;
 {{{.}}}
 {{/Codec.Imports}}
 
+{{#Codec.HasServices}}
+import 'version.dart';
+{{/Codec.HasServices}}
+
 {{#Codec.Exports}}
 {{{.}}};
 {{/Codec.Exports}}

@@ -102,10 +102,9 @@ func TestGenerateBidiStreaming(t *testing.T) {
 		{
 			name:     "client: method docstring and example",
 			file:     "src/client.rs",
-			startStr: "    #[cfg(google_cloud_unstable_gapic_streaming)]\n    ///\n    /// # Example",
+			startStr: "    ///\n    /// # Example",
 			endStr:   "        super::builder::protocol::Chat::new(self.inner.clone())\n    }",
-			want: `    #[cfg(google_cloud_unstable_gapic_streaming)]
-    ///
+			want: `    ///
     /// # Example
     /// ` + "```" + `
     /// # use google_cloud_test_v1::client::Protocol;
@@ -135,7 +134,7 @@ func TestGenerateBidiStreaming(t *testing.T) {
 			name:     "builder: struct docstring and example",
 			file:     "src/builder.rs",
 			startStr: "    /// The request builder for [Protocol::chat][crate::client::Protocol::chat] calls.\n    ///\n    /// # Example",
-			endStr:   "    #[cfg(google_cloud_unstable_gapic_streaming)]",
+			endStr:   "    #[derive(Clone, Debug)]",
 			want: `    /// The request builder for [Protocol::chat][crate::client::Protocol::chat] calls.
     ///
     /// # Example
@@ -160,7 +159,7 @@ func TestGenerateBidiStreaming(t *testing.T) {
     ///   // ... details omitted ...
     /// }
     /// ` + "```" + `
-    #[cfg(google_cloud_unstable_gapic_streaming)]`,
+    #[derive(Clone, Debug)]`,
 		},
 		{
 			name:     "builder: struct definition",
@@ -187,10 +186,9 @@ func TestGenerateBidiStreaming(t *testing.T) {
 		{
 			name:     "builder: request builder impl",
 			file:     "src/builder.rs",
-			startStr: "    #[cfg(google_cloud_unstable_gapic_streaming)]\n    #[doc(hidden)]\n    impl crate::RequestBuilder for Chat",
+			startStr: "    #[doc(hidden)]\n    impl crate::RequestBuilder for Chat",
 			endStr:   "\n    }",
-			want: `    #[cfg(google_cloud_unstable_gapic_streaming)]
-    #[doc(hidden)]
+			want: `    #[doc(hidden)]
     impl crate::RequestBuilder for Chat {
         fn request_options(&mut self) -> &mut crate::RequestOptions {
             &mut self.0.options
@@ -200,10 +198,9 @@ func TestGenerateBidiStreaming(t *testing.T) {
 		{
 			name:     "stub: method signature and default body",
 			file:     "src/stub.rs",
-			startStr: "    #[cfg(google_cloud_unstable_gapic_streaming)]\n    fn chat(",
+			startStr: "    fn chat(",
 			endStr:   "    }",
-			want: `    #[cfg(google_cloud_unstable_gapic_streaming)]
-    fn chat(
+			want: `    fn chat(
         &self,
         _options: crate::RequestOptions,
     ) -> (
@@ -216,10 +213,9 @@ func TestGenerateBidiStreaming(t *testing.T) {
 		{
 			name:     "stub dynamic: trait method",
 			file:     "src/stub/dynamic.rs",
-			startStr: "    #[cfg(google_cloud_unstable_gapic_streaming)]\n    fn chat(",
+			startStr: "    fn chat(",
 			endStr:   ");",
-			want: `    #[cfg(google_cloud_unstable_gapic_streaming)]
-    fn chat(
+			want: `    fn chat(
         &self,
         options: crate::RequestOptions,
     ) -> (
@@ -230,10 +226,9 @@ func TestGenerateBidiStreaming(t *testing.T) {
 		{
 			name:     "stub dynamic: blanket forwarding impl",
 			file:     "src/stub/dynamic.rs",
-			startStr: "    /// Forwards the call to the implementation provided by `T`.\n    #[cfg(google_cloud_unstable_gapic_streaming)]\n    fn chat(",
+			startStr: "    /// Forwards the call to the implementation provided by `T`.\n    fn chat(",
 			endStr:   "    }",
 			want: `    /// Forwards the call to the implementation provided by ` + "`T`." + `
-    #[cfg(google_cloud_unstable_gapic_streaming)]
     fn chat(
         &self,
         options: crate::RequestOptions,
@@ -247,10 +242,9 @@ func TestGenerateBidiStreaming(t *testing.T) {
 		{
 			name:     "tracing: method wrapper",
 			file:     "src/tracing.rs",
-			startStr: "    #[cfg(google_cloud_unstable_gapic_streaming)]\n    fn chat(",
+			startStr: "    fn chat(",
 			endStr:   "    }",
-			want: `    #[cfg(google_cloud_unstable_gapic_streaming)]
-    fn chat(
+			want: `    fn chat(
         &self,
         options: crate::RequestOptions,
     ) -> (
@@ -263,10 +257,9 @@ func TestGenerateBidiStreaming(t *testing.T) {
 		{
 			name:     "transport: method signature",
 			file:     "src/transport.rs",
-			startStr: "    #[cfg(google_cloud_unstable_gapic_streaming)]\n    fn chat(",
+			startStr: "    fn chat(",
 			endStr:   ") -> (",
-			want: `    #[cfg(google_cloud_unstable_gapic_streaming)]
-    fn chat(
+			want: `    fn chat(
         &self,
         options: crate::RequestOptions,
     ) -> (`,

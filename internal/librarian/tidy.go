@@ -39,18 +39,6 @@ var (
 	errDuplicateLibraryName  = errors.New("duplicate library name")
 	errDuplicateAPIPath      = errors.New("duplicate api path")
 	errNoGoogleapiSourceInfo = errors.New("googleapis source not configured in librarian.yaml")
-
-	// javaSkipDuplicatePaths lists special API paths that are allowed to appear in multiple
-	// libraries in Java without triggering the duplicate API path error.
-	// These are paths are duplicated in java because their generated code splits
-	// between java-iam and java-iam-policy.
-	javaSkipDuplicatePaths = map[string]bool{
-		"google/iam/v1":     true,
-		"google/iam/v2":     true,
-		"google/iam/v2beta": true,
-		"google/iam/v3":     true,
-		"google/iam/v3beta": true,
-	}
 )
 
 func tidyCommand() *cli.Command {
@@ -156,9 +144,6 @@ func validateLibraries(cfg *config.Config) error {
 		}
 		for _, ch := range lib.APIs {
 			if ch.Path != "" {
-				if cfg.Language == config.LanguageJava && javaSkipDuplicatePaths[ch.Path] {
-					continue
-				}
 				pathCount[ch.Path]++
 			}
 		}
@@ -171,7 +156,9 @@ func validateLibraries(cfg *config.Config) error {
 	for path, count := range pathCount {
 		// Relax unique API path validation for Ruby because wrapper libraries share
 		// API paths with the versioned libraries they wrap.
-		if count > 1 && cfg.Language != config.LanguageRuby {
+		// Relax unique API path validation for Java here and validate in Java
+		// language validation because some specific paths are intentionally duplicated.
+		if count > 1 && cfg.Language != config.LanguageRuby && cfg.Language != config.LanguageJava {
 			errs = append(errs, fmt.Errorf("%w: %s (appears %d times)", errDuplicateAPIPath, path, count))
 		}
 	}

@@ -13,14 +13,13 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 }}
-.gitattributes linguist-generated=true
-LICENSE linguist-generated=true
-README.md linguist-generated=true
-pubspec.yaml linguist-generated=true
-lib/{{Codec.MainFileNameWithExtension}} linguist-generated=true
-lib/src/api.g.dart linguist-generated=true
-lib/src/version.dart linguist-generated=true
-{{#HasServices}}
-lib/testing.dart linguist-generated=true
-skills/** linguist-generated=true
-{{/HasServices}}
+
+// Copyright {{Codec.CopyrightYear}} Google LLC
+{{#Codec.BoilerPlate}}
+//{{{.}}}
+{{/Codec.BoilerPlate}}
+
+// ignore_for_file: lines_longer_than_80_chars
+
+/// The version of the {{Codec.PackageName}} client library.
+const packageVersion = '{{Codec.PackageVersion}}';
