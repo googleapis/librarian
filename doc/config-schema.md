@@ -545,8 +545,8 @@ This document describes the schema for the librarian.yaml.
 | `routing_required` | bool | Indicates whether routing is required. |
 | `include_grpc_only_methods` | bool | Indicates whether to include gRPC-only methods. |
 | `include_streaming_methods` | bool | Indicates whether to include gRPC streaming methods. |
-| `include_bidi_streaming_methods` | bool | Indicates whether to include gRPC bi-directional streaming methods. |
-| `include_server_streaming_methods` | bool | Indicates whether to include gRPC server-side streaming methods. |
+| `include_bidi_streaming_methods` | bool (optional) | Indicates whether to include gRPC bi-directional streaming methods. |
+| `include_server_streaming_methods` | bool (optional) | Indicates whether to include gRPC server-side streaming methods. |
 | `post_process_protos` | string | Indicates whether to post-process protos. |
 | `documentation_overrides` | list of [RustDocumentationOverride](#rustdocumentationoverride-configuration) | Contains overrides for element documentation. |
 | `pagination_overrides` | list of [RustPaginationOverride](#rustpaginationoverride-configuration) | Contains overrides for pagination configuration. |
@@ -565,6 +565,8 @@ This document describes the schema for the librarian.yaml.
 | `detailed_tracing_attributes` | bool (optional) | Indicates whether to include detailed tracing attributes. |
 | `lro_stub_options` | bool (optional) | Indicates whether to include LRO poller options in generated stub traits. |
 | `resource_name_heuristic` | bool (optional) | Indicates whether to apply heuristics to identify and generate resource names. |
+| `include_bidi_streaming_methods` | bool (optional) | Indicates whether to include gRPC bi-directional streaming methods. |
+| `include_server_streaming_methods` | bool (optional) | Indicates whether to include gRPC server-side streaming methods. |
 
 ## RustDocumentationOverride Configuration
 
@@ -590,8 +592,8 @@ This document describes the schema for the librarian.yaml.
 | `include_grpc_only_methods` | bool | Indicates whether to include gRPC-only methods. |
 | `include_list` | yaml.StringSlice | Is a list of proto files to include (e.g., "date.proto", "expr.proto"). |
 | `include_streaming_methods` | bool | Indicates whether to include gRPC streaming methods. |
-| `include_bidi_streaming_methods` | bool | Indicates whether to include gRPC bi-directional streaming methods. |
-| `include_server_streaming_methods` | bool | Indicates whether to include gRPC server-side streaming methods. |
+| `include_bidi_streaming_methods` | bool (optional) | Indicates whether to include gRPC bi-directional streaming methods. |
+| `include_server_streaming_methods` | bool (optional) | Indicates whether to include gRPC server-side streaming methods. |
 | `internal_builders` | bool | Indicates whether generated builders should be internal to the crate. |
 | `module_path` | string | Is the Rust module path for converters (e.g., "crate::generated::gapic::model"). |
 | `module_roots` | map[string]string |  |
