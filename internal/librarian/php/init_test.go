@@ -402,8 +402,6 @@ func TestInitComponentIfMissing_Error(t *testing.T) {
 	}
 }
 
-// TODO(https://github.com/googleapis/librarian/issues/6978): Revise this test
-// once the install steps for the dev tool are ready.
 func TestInitComponent(t *testing.T) {
 	ctx := t.Context()
 	repoRoot := t.TempDir()
@@ -442,8 +440,6 @@ echo "$@" > dev_output.txt
 	}
 }
 
-// TODO(https://github.com/googleapis/librarian/issues/6978): Revise this test
-// once the install steps for the dev tool are ready.
 func TestInitComponent_Error(t *testing.T) {
 	ctx := t.Context()
 	repoRoot := t.TempDir()
