@@ -509,6 +509,16 @@ func TestValidate(t *testing.T) {
 				Version: "1.2.0-SNAPSHOT",
 			},
 		},
+		{
+			name: "skipped duplicate api paths",
+			lib: &config.Library{
+				Name: "iam",
+				APIs: []*config.API{
+					{Path: "google/iam/v1"},
+					{Path: "google/iam/v1"},
+				},
+			},
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			cfg := &config.Config{
@@ -579,6 +589,17 @@ func TestValidate_Error(t *testing.T) {
 				},
 			},
 			wantErr: ErrOmitCommonResourcesConflict,
+		},
+		{
+			name: "duplicate api path",
+			lib: &config.Library{
+				Name: "secretmanager",
+				APIs: []*config.API{
+					{Path: "google/cloud/secretmanager/v1"},
+					{Path: "google/cloud/secretmanager/v1"},
+				},
+			},
+			wantErr: errDuplicateAPIPath,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {

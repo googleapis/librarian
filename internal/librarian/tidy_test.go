@@ -43,29 +43,6 @@ func TestValidateLibraries(t *testing.T) {
 			},
 		},
 		{
-			name: "skipped duplicate api paths",
-			cfg: &config.Config{
-				Language: config.LanguageJava,
-				Default: &config.Default{
-					Java: &config.JavaDefault{
-						LibrariesBOMVersion: "1.2.3",
-					},
-				},
-				Libraries: []*config.Library{
-					{
-						Name: "lib1",
-						APIs: []*config.API{{Path: "google/iam/v1"}},
-						Java: &config.JavaModule{ReleasedVersion: "1.0.0"},
-					},
-					{
-						Name: "lib2",
-						APIs: []*config.API{{Path: "google/iam/v1"}},
-						Java: &config.JavaModule{ReleasedVersion: "1.0.0"},
-					},
-				},
-			},
-		},
-		{
 			name: "allowed duplicate api paths for ruby",
 			cfg: &config.Config{
 				Language: config.LanguageRuby,

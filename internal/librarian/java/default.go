@@ -196,6 +196,20 @@ var (
 	ErrCannotDeriveReleasedVersion = errors.New("cannot derive released version")
 	// errBOMVersionMissing is returned when libraries_bom_version is not set.
 	errBOMVersionMissing = errors.New("libraries bom version not found in config")
+	// errDuplicateAPIPath is returned when there are duplicate API paths.
+	errDuplicateAPIPath = errors.New("duplicate api path")
+
+	// javaSkipDuplicatePaths lists special API paths that are allowed to appear in multiple
+	// libraries in Java without triggering the duplicate API path error.
+	// These are paths are duplicated in java because their generated code splits
+	// between java-iam and java-iam-policy.
+	javaSkipDuplicatePaths = map[string]bool{
+		"google/iam/v1":     true,
+		"google/iam/v2":     true,
+		"google/iam/v2beta": true,
+		"google/iam/v3":     true,
+		"google/iam/v3beta": true,
+	}
 )
 
 // Validate checks that the Java-specific configuration for a library and global config is
@@ -207,6 +221,7 @@ func Validate(cfg *config.Config) error {
 		errs = append(errs, errBOMVersionMissing)
 	}
 
+	pathCount := make(map[string]int)
 	for _, library := range cfg.Libraries {
 		if library.Version != "" {
 			if _, err := semver.Parse(library.Version); err != nil {
@@ -219,6 +234,9 @@ func Validate(cfg *config.Config) error {
 			}
 		}
 		for _, api := range library.APIs {
+			if api.Path != "" {
+				pathCount[api.Path]++
+			}
 			if api.Java == nil || !api.Java.OmitCommonResources {
 				continue
 			}
@@ -228,6 +246,11 @@ func Validate(cfg *config.Config) error {
 				}
 			}
 
+		}
+	}
+	for path, count := range pathCount {
+		if count > 1 && !javaSkipDuplicatePaths[path] {
+			errs = append(errs, fmt.Errorf("%w: %s (appears %d times)", errDuplicateAPIPath, path, count))
 		}
 	}
 	if len(errs) > 0 {
