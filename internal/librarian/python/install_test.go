@@ -142,7 +142,7 @@ func TestExtractTemplates(t *testing.T) {
 	if err := extractTemplates(); err != nil {
 		t.Fatal(err)
 	}
-	wantDir := filepath.Join(binDir, "python_tools", "templates")
+	wantDir := filepath.Join(binDir, "python_tools", "templates", "python_mono_repo_library")
 	for _, file := range []string{
 		"README.rst",
 		"docs/index.rst",
