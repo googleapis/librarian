@@ -391,12 +391,18 @@ func normalizeStagingSubdir(apiPath, stagingDir string) string {
 // Apply special case rules to the API config.
 func specialCases(api *config.API) {
 	switch api.Path {
+	case "google/bigtable/v2":
+		if api.PHP == nil {
+			api.PHP = &config.PHPAPI{}
+		}
+		api.PHP.SkipGRPCServiceConfig = true
 	case "google/bigtable/admin/v2":
 		if api.PHP == nil {
 			api.PHP = &config.PHPAPI{}
 		}
 		api.PHP.GapicYAML = "google/bigtable/admin/v2/bigtableadmin_gapic.yaml"
 		api.PHP.StagingSubdir = "Admin/v2"
+		api.PHP.SkipGRPCServiceConfig = true
 	case "google/cloud/aiplatform/v1":
 		if api.PHP == nil {
 			api.PHP = &config.PHPAPI{}
