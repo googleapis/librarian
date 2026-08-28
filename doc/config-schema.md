@@ -460,7 +460,7 @@ This document describes the schema for the librarian.yaml.
 | `generate_gapic` | bool (optional) | Indicates whether to generate the GAPIC client surface. Defaults to true. |
 | `proto_package` | string | Overrides the derived proto package for the API. |
 | `samples` | bool (optional) | Determines whether to generate samples for the API. Default to true when omitted. |
-| `skip_grpc_config` | bool | Indicates whether to skip the generation of gRPC configuration. Default to false. TODO(https://github.com/googleapis/librarian/issues/7436): Remove this config once Bigtable uses GRPC service config. |
+| `skip_grpc_service_config` | bool | Indicates whether to skip the generation of gRPC service config. Default to false. TODO(https://github.com/googleapis/librarian/issues/7436): Remove this config once Bigtable uses GRPC service config. |
 | `staging_subdir` | string | Is the subdirectory in staging where the generated files should be placed. |
 
 ## PHPDefault Configuration

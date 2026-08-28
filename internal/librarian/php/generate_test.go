@@ -805,11 +805,11 @@ func TestGRPCServiceConfigPath(t *testing.T) {
 			},
 		},
 		{
-			name: "skip grpc config",
+			name: "skip grpc service config",
 			api: &config.API{
 				Path: "google/cloud/secretmanager/v1",
 				PHP: &config.PHPAPI{
-					SkipGRPCConfig: true,
+					SkipGRPCServiceConfig: true,
 				},
 			},
 		},
