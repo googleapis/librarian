@@ -32,7 +32,7 @@ import (
 var templatesFS embed.FS
 
 const (
-	toolsDir     = "python_tools"
+	toolsDir  = "python_tools"
 	templates = "templates"
 )
 
