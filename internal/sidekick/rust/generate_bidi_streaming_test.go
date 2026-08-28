@@ -73,7 +73,7 @@ func TestGenerateBidiStreaming(t *testing.T) {
 			"package:prost-types":            "package=prost-types,used-if=streaming",
 			"include-bidi-streaming-methods": "true",
 			"generate-rpc-samples":           "true",
-			"detailed-tracing-attributes":     "true",
+			"detailed-tracing-attributes":    "true",
 		},
 	}
 	if err := Generate(t.Context(), model, outDir, cfg); err != nil {

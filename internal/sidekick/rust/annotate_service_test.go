@@ -581,7 +581,7 @@ func TestServiceAnnotationsMethodKinds(t *testing.T) {
 			options: map[string]string{
 				"include-server-streaming-methods": "true",
 			},
-			wantRequestBuilder:   true,
+			wantRequestBuilder:    true,
 			wantBidiStreamBuilder: false,
 		},
 		{
@@ -591,7 +591,7 @@ func TestServiceAnnotationsMethodKinds(t *testing.T) {
 				"include-bidi-streaming-methods":   "true",
 				"include-server-streaming-methods": "true",
 			},
-			wantRequestBuilder:   true,
+			wantRequestBuilder:    true,
 			wantBidiStreamBuilder: true,
 		},
 		{
