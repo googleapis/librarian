@@ -166,15 +166,11 @@ func generateGAPIC(ctx context.Context, params *generateAPIParams, pc *config.Pr
 	if !shouldGenerateGAPIC(params.api) {
 		return nil
 	}
-	grpcConfigPath, err := serviceconfig.FindGRPCServiceConfig(googleapisDir, params.api.Path)
-	if err != nil {
-		return err
-	}
 	apiMetadata, err := serviceconfig.Find(googleapisDir, params.api.Path, config.LanguagePhp)
 	if err != nil {
 		return err
 	}
-	grpcConfigAbsPath, err := absConfigPath(googleapisDir, grpcConfigPath)
+	grpcConfigAbsPath, err := grpcServiceConfigPath(params.api, googleapisDir)
 	if err != nil {
 		return err
 	}
@@ -210,6 +206,21 @@ func shouldGenerateGAPIC(api *config.API) bool {
 		return *api.PHP.GenerateGAPIC
 	}
 	return true
+}
+
+func grpcServiceConfigPath(api *config.API, googleapisDir string) (string, error) {
+	if api.PHP.SkipGRPCConfig {
+		return "", nil
+	}
+	grpcConfigPath, err := serviceconfig.FindGRPCServiceConfig(googleapisDir, api.Path)
+	if err != nil {
+		return "", err
+	}
+	grpcConfigAbsPath, err := absConfigPath(googleapisDir, grpcConfigPath)
+	if err != nil {
+		return "", err
+	}
+	return grpcConfigAbsPath, nil
 }
 
 func generateProto(ctx context.Context, params *generateAPIParams, pc *config.Protoc, googleapisDir, protoZipPath string) error {

@@ -873,6 +873,9 @@ type PHPAPI struct {
 	// Default to true when omitted.
 	Samples *bool `yaml:"samples,omitempty"`
 
+
+	SkipGRPCConfig bool `yaml:"skip_grpc_config,omitempty"`
+
 	// StagingSubdir is the subdirectory in staging where the generated files should be placed.
 	StagingSubdir string `yaml:"staging_subdir,omitempty"`
 }
