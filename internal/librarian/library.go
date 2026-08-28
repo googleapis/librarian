@@ -165,9 +165,6 @@ func fillRust(lib *config.Library, d *config.Default) *config.Library {
 		if mod.IncludeServerStreamingMethods == nil {
 			mod.IncludeServerStreamingMethods = lib.Rust.IncludeServerStreamingMethods
 		}
-		if len(mod.AllowStreamingAnyTypes) == 0 {
-			mod.AllowStreamingAnyTypes = lib.Rust.AllowStreamingAnyTypes
-		}
 	}
 	return lib
 }

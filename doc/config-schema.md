@@ -591,7 +591,6 @@ This document describes the schema for the librarian.yaml.
 | `included_ids` | list of string | Is a list of proto IDs to include in generation. |
 | `include_grpc_only_methods` | bool | Indicates whether to include gRPC-only methods. |
 | `include_list` | yaml.StringSlice | Is a list of proto files to include (e.g., "date.proto", "expr.proto"). |
-| `allow_streaming_any_types` | list of string | Is a list of protobuf field/message IDs with google.protobuf.Any permitted in streaming RPCs (their fields will be dropped in prost conversion). |
 | `include_streaming_methods` | bool | Indicates whether to include gRPC streaming methods. |
 | `include_bidi_streaming_methods` | bool (optional) | Indicates whether to include gRPC bi-directional streaming methods. |
 | `include_server_streaming_methods` | bool (optional) | Indicates whether to include gRPC server-side streaming methods. |
