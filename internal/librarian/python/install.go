@@ -17,10 +17,15 @@ package python
 import (
 	"context"
 	"errors"
+	"fmt"
+	"path/filepath"
 
+	"github.com/googleapis/librarian/internal/cache"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/tool/pip"
 )
+
+const toolsDir = "python_tools"
 
 var (
 	// ErrNoToolsSpecified indicates no pip tools were provided in the configuration.
@@ -33,4 +38,17 @@ func Install(ctx context.Context, tools *config.Tools) error {
 		return ErrNoToolsSpecified
 	}
 	return pip.Install(ctx, tools.Pip)
+}
+
+// InstallDir gets the directory where tools should be installed.
+func InstallDir() (string, error) {
+	dir, err := cache.BinDirectory()
+	if err != nil {
+		return "", err
+	}
+	absDir, err := filepath.Abs(filepath.Join(dir, toolsDir))
+	if err != nil {
+		return "", fmt.Errorf("failed to get install directory: %w", err)
+	}
+	return absDir, nil
 }
