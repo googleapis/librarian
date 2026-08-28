@@ -124,7 +124,7 @@ func TestInstallDir(t *testing.T) {
 	}
 }
 
-func TestTemplatesDir(t *testing.T) {
+func TestTemplateDirectory(t *testing.T) {
 	binDir := t.TempDir()
 	t.Setenv(cache.EnvLibrarianBin, binDir)
 	got, err := templateDirectory()
