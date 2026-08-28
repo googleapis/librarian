@@ -368,5 +368,8 @@ func buildModuleCodec(library *config.Library, module *config.RustModule) map[st
 	if module.InternalBuilders {
 		codec["internal-builders"] = "true"
 	}
+	if module.GrpcRust {
+		codec["grpc-rust"] = "true"
+	}
 	return codec
 }

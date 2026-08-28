@@ -363,6 +363,15 @@ func TestParseOptions(t *testing.T) {
 		{
 			Format: libconfig.SpecProtobuf,
 			Options: map[string]string{
+				"grpc-rust": "true",
+			},
+			Update: func(c *codec) {
+				c.grpcRust = true
+			},
+		},
+		{
+			Format: libconfig.SpecProtobuf,
+			Options: map[string]string{
 				"quickstart-service-override": "OverriddenService",
 			},
 			Update: func(c *codec) {
@@ -412,6 +421,7 @@ func TestParseOptionsErrors(t *testing.T) {
 		{Options: map[string]string{"generate-setter-samples": ""}},
 		{Options: map[string]string{"generate-rpc-samples": ""}},
 		{Options: map[string]string{"internal-builders": ""}},
+		{Options: map[string]string{"grpc-rust": ""}},
 		{Options: map[string]string{"--invalid--": ""}},
 	} {
 		t.Run(fmt.Sprintf("case_%d", i), func(t *testing.T) {

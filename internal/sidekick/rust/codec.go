@@ -212,6 +212,12 @@ func newCodec(specificationFormat string, options map[string]string) (*codec, er
 				return nil, fmt.Errorf("cannot convert `include-rpc-status-conversion` value %q to boolean: %w", definition, err)
 			}
 			codec.includeRpcStatusConversion = value
+		case key == "grpc-rust":
+			value, err := strconv.ParseBool(definition)
+			if err != nil {
+				return nil, fmt.Errorf("cannot convert `grpc-rust` value %q to boolean: %w", definition, err)
+			}
+			codec.grpcRust = value
 		default:
 			return nil, fmt.Errorf("unknown Rust codec option %q", key)
 		}
@@ -372,6 +378,8 @@ type codec struct {
 	internalBuilders bool
 	// Overrides the default heuristically selected service for the package-level quickstart.
 	quickstartServiceOverride string
+	// If true, use GrpcRustClient for gRPC transport when google_cloud_unstable_grpc_rust is enabled.
+	grpcRust bool
 }
 
 type systemParameter struct {

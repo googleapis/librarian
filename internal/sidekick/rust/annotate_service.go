@@ -62,6 +62,8 @@ type serviceAnnotations struct {
 	HasServerStreaming bool
 	// If true, the service has at least one streaming RPC (bidirectional or server-side) in the API definition.
 	HasStreaming bool
+	// If true, use GrpcRustClient for gRPC transport when google_cloud_unstable_grpc_rust is enabled.
+	UseGrpcRust bool
 }
 
 // BuilderVisibility returns the visibility for client and request builders.
@@ -158,6 +160,7 @@ func (c *codec) annotateService(s *api.Service) (*serviceAnnotations, error) {
 		HasBidiStreaming:          hasBidiStreaming,
 		HasServerStreaming:        hasServerStreaming,
 		HasStreaming:              hasStreaming,
+		UseGrpcRust:               c.grpcRust,
 	}
 	s.Codec = ann
 	return ann, nil

@@ -127,6 +127,8 @@ type RustDefault struct {
 // Each module specifies what proto source to use, which template to apply,
 // and where to output the generated code.
 type RustModule struct {
+	// GrpcRust indicates whether to use GrpcRustClient for gRPC transport when google_cloud_unstable_grpc_rust is enabled.
+	GrpcRust bool `yaml:"grpc_rust,omitempty"`
 	// DisabledRustdocWarnings specifies rustdoc lints to disable. An empty slice explicitly enables all warnings.
 	DisabledRustdocWarnings yaml.StringSlice `yaml:"disabled_rustdoc_warnings,omitempty"`
 

@@ -1301,6 +1301,16 @@ func TestBuildModuleCodec(t *testing.T) {
 			},
 		},
 		{
+			name:    "with GrpcRust",
+			library: &config.Library{},
+			module: &config.RustModule{
+				GrpcRust: true,
+			},
+			want: map[string]string{
+				"grpc-rust": "true",
+			},
+		},
+		{
 			name: "all fields set",
 			library: &config.Library{
 				Name:          "google-cloud-example",
@@ -1335,6 +1345,7 @@ func TestBuildModuleCodec(t *testing.T) {
 				DisabledRustdocWarnings:   []string{"w1", "w2"},
 				RootName:                  "my-root",
 				InternalBuilders:          true,
+				GrpcRust:                  true,
 			},
 			want: map[string]string{
 				"package-name-override":       "google-cloud-example",
@@ -1356,6 +1367,7 @@ func TestBuildModuleCodec(t *testing.T) {
 				"template-override":           "templates/grpc-client",
 				"root-name":                   "my-root",
 				"internal-builders":           "true",
+				"grpc-rust":                   "true",
 			},
 		},
 	} {

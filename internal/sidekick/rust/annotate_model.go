@@ -103,6 +103,8 @@ type modelAnnotations struct {
 	LroStubOptions bool
 	// If true, the generated builders's visibility should be restricted to the crate.
 	InternalBuilders bool
+	// If true, use GrpcRustClient for gRPC transport when google_cloud_unstable_grpc_rust is enabled.
+	UseGrpcRust bool
 	// The service to use for the package-level quickstart sample.
 	// Rust generation may decide not to generate some services,
 	// e.g. if the methods have no bindings. On occasion the service
@@ -354,6 +356,7 @@ func annotateModel(model *api.API, codec *codec) (*modelAnnotations, error) {
 		DetailedTracingAttributes: codec.detailedTracingAttributes,
 		LroStubOptions:            codec.lroStubOptions,
 		InternalBuilders:          codec.internalBuilders,
+		UseGrpcRust:               codec.grpcRust,
 		QuickstartService:         quickstartService,
 	}
 

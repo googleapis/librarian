@@ -577,6 +577,7 @@ This document describes the schema for the librarian.yaml.
 
 | Field | Type | Description |
 | :--- | :--- | :--- |
+| `grpc_rust` | bool | Indicates whether to use GrpcRustClient for gRPC transport when google_cloud_unstable_grpc_rust is enabled. |
 | `disabled_rustdoc_warnings` | yaml.StringSlice | Specifies rustdoc lints to disable. An empty slice explicitly enables all warnings. |
 | `detailed_tracing_attributes` | bool (optional) | Indicates whether to include detailed tracing attributes. This overrides the crate-level setting. |
 | `lro_stub_options` | bool (optional) | Indicates whether to include LRO poller options in generated stub traits. This overrides the crate-level setting. |

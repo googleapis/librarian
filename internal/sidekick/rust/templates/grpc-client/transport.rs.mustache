@@ -51,19 +51,42 @@ mod info {
         });
 }
 
+{{#Codec.UseGrpcRust}}
+{{#Codec.PerServiceFeatures}}
+#[cfg(any({{#Codec.Services}}feature = "{{Codec.FeatureName}}",{{/Codec.Services}}))]
+{{/Codec.PerServiceFeatures}}
+#[cfg(google_cloud_unstable_grpc_rust)]
+type GrpcClient = gaxi::grpc::GrpcRustClient;
+{{#Codec.PerServiceFeatures}}
+#[cfg(any({{#Codec.Services}}feature = "{{Codec.FeatureName}}",{{/Codec.Services}}))]
+{{/Codec.PerServiceFeatures}}
+#[cfg(not(google_cloud_unstable_grpc_rust))]
+type GrpcClient = gaxi::grpc::Client;
+{{/Codec.UseGrpcRust}}
+
 {{/Codec.HasServices}}
 {{#Codec.Services}}
-/// Implements [{{Codec.Name}}](super::stub::{{Codec.Name}}) using a Tonic-generated client.
+/// Implements [{{Codec.Name}}](super::stub::{{Codec.Name}}) using a {{^Codec.UseGrpcRust}}Tonic-generated{{/Codec.UseGrpcRust}}{{#Codec.UseGrpcRust}}gRPC{{/Codec.UseGrpcRust}} client.
 {{#Codec.PerServiceFeatures}}
 #[cfg(feature = "{{Codec.FeatureName}}")]
 {{/Codec.PerServiceFeatures}}
 #[derive(Clone)]
 pub struct {{Codec.Name}} {
     {{^Codec.ExtendGrpcTransport}}
+    {{#Codec.UseGrpcRust}}
+    inner: GrpcClient,
+    {{/Codec.UseGrpcRust}}
+    {{^Codec.UseGrpcRust}}
     inner: gaxi::grpc::Client,
+    {{/Codec.UseGrpcRust}}
     {{/Codec.ExtendGrpcTransport}}
     {{#Codec.ExtendGrpcTransport}}
+    {{#Codec.UseGrpcRust}}
+    pub(crate) inner: GrpcClient,
+    {{/Codec.UseGrpcRust}}
+    {{^Codec.UseGrpcRust}}
     pub(crate) inner: gaxi::grpc::Client,
+    {{/Codec.UseGrpcRust}}
     {{/Codec.ExtendGrpcTransport}}
 }
 
@@ -85,13 +108,28 @@ impl {{Codec.Name}} {
     pub async fn new(config: gaxi::options::ClientConfig) -> crate::ClientBuilderResult<Self> {
         {{#Codec.DetailedTracingAttributes}}
         let inner = if gaxi::options::tracing_enabled(&config) {
+            {{#Codec.UseGrpcRust}}
+            GrpcClient::new_with_instrumentation(config, DEFAULT_HOST, &super::tracing::info::INSTRUMENTATION_CLIENT_INFO).await?
+            {{/Codec.UseGrpcRust}}
+            {{^Codec.UseGrpcRust}}
             gaxi::grpc::Client::new_with_instrumentation(config, DEFAULT_HOST, &super::tracing::info::INSTRUMENTATION_CLIENT_INFO).await?
+            {{/Codec.UseGrpcRust}}
         } else {
+            {{#Codec.UseGrpcRust}}
+            GrpcClient::new(config, DEFAULT_HOST).await?
+            {{/Codec.UseGrpcRust}}
+            {{^Codec.UseGrpcRust}}
             gaxi::grpc::Client::new(config, DEFAULT_HOST).await?
+            {{/Codec.UseGrpcRust}}
         };
         {{/Codec.DetailedTracingAttributes}}
         {{^Codec.DetailedTracingAttributes}}
+        {{#Codec.UseGrpcRust}}
+        let inner = GrpcClient::new(config, DEFAULT_HOST).await?;
+        {{/Codec.UseGrpcRust}}
+        {{^Codec.UseGrpcRust}}
         let inner = gaxi::grpc::Client::new(config, DEFAULT_HOST).await?;
+        {{/Codec.UseGrpcRust}}
         {{/Codec.DetailedTracingAttributes}}
         Ok(Self { inner })
     }

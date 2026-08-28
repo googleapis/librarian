@@ -188,6 +188,44 @@ func TestInternalBuildersAnnotation(t *testing.T) {
 	}
 }
 
+func TestUseGrpcRustAnnotation(t *testing.T) {
+	for _, test := range []struct {
+		Options map[string]string
+		Want    bool
+	}{
+		{
+			Options: map[string]string{},
+			Want:    false,
+		},
+		{
+			Options: map[string]string{
+				"grpc-rust": "true",
+			},
+			Want: true,
+		},
+		{
+			Options: map[string]string{
+				"grpc-rust": "false",
+			},
+			Want: false,
+		},
+	} {
+		model := newTestAnnotateModelAPI()
+		codec := newTestCodec(t, libconfig.SpecProtobuf, "", test.Options)
+		got, err := annotateModel(model, codec)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if got.UseGrpcRust != test.Want {
+			t.Errorf("mismatch in UseGrpcRust, want=%v, got=%v", test.Want, got.UseGrpcRust)
+		}
+		svcAnn := model.Services[0].Codec.(*serviceAnnotations)
+		if svcAnn.UseGrpcRust != test.Want {
+			t.Errorf("mismatch in service UseGrpcRust, want=%v, got=%v", test.Want, svcAnn.UseGrpcRust)
+		}
+	}
+}
+
 func TestQuickstartServiceAnnotation(t *testing.T) {
 	t.Run("survives filtering", func(t *testing.T) {
 		model := newTestAnnotateModelAPI()
