@@ -460,6 +460,7 @@ This document describes the schema for the librarian.yaml.
 | `generate_gapic` | bool (optional) | Indicates whether to generate the GAPIC client surface. Defaults to true. |
 | `proto_package` | string | Overrides the derived proto package for the API. |
 | `samples` | bool (optional) | Determines whether to generate samples for the API. Default to true when omitted. |
+| `skip_grpc_config` | bool |  |
 | `staging_subdir` | string | Is the subdirectory in staging where the generated files should be placed. |
 
 ## PHPDefault Configuration
