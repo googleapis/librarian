@@ -20,6 +20,8 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
+	"github.com/googleapis/librarian/internal/cache"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/testhelper"
 	"github.com/googleapis/librarian/internal/tool/pip"
@@ -84,6 +86,39 @@ func TestInstall_Error(t *testing.T) {
 			err := Install(t.Context(), test.tools)
 			if !errors.Is(err, test.wantErr) {
 				t.Fatalf("Install() error = %v, wantErr = %v", err, test.wantErr)
+			}
+		})
+	}
+}
+
+func TestInstallDir(t *testing.T) {
+	tmpDir := t.TempDir()
+	for _, test := range []struct {
+		name           string
+		librarianBin   string
+		librarianCache string
+		want           string
+	}{
+		{
+			name:         "LIBRARIAN_BIN is set",
+			librarianBin: tmpDir,
+			want:         filepath.Join(tmpDir, "python_tools"),
+		},
+		{
+			name:           "LIBRARIAN_CACHE is set",
+			librarianCache: tmpDir,
+			want:           filepath.Join(tmpDir, "bin", "python_tools"),
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			t.Setenv(cache.EnvLibrarianBin, test.librarianBin)
+			t.Setenv(cache.EnvLibrarianCache, test.librarianCache)
+			got, err := InstallDir()
+			if err != nil {
+				t.Fatal(err)
+			}
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
