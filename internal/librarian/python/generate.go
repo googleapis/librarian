@@ -25,6 +25,7 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/googleapis/librarian/internal/cache"
 	"github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/filesystem"
@@ -288,9 +289,13 @@ func generateAPI(ctx context.Context, api *config.API, library *config.Library, 
 	if err != nil {
 		return fmt.Errorf("failed to find protoc: %w", err)
 	}
-
+	templatesDir, err := systhtoolTemplateDir()
+	if err != nil {
+		return fmt.Errorf("failed to get template directory: %w", err)
+	}
+	env := map[string]string{"SYNTHTOOL_TEMPLATES": templatesDir}
 	cmdArgs := append(protos, protocOptions...)
-	if err := command.RunInDir(ctx, googleapisDir, protocCmd, cmdArgs...); err != nil {
+	if err := command.RunInDirWithEnv(ctx, googleapisDir, env, protocCmd, cmdArgs...); err != nil {
 		return fmt.Errorf("failed to execute protoc: %w", err)
 	}
 
@@ -607,4 +612,12 @@ func createChangelog(libName, output string) error {
 		return err
 	}
 	return nil
+}
+
+func systhtoolTemplateDir() (string, error) {
+	dir, err := cache.Directory()
+	if err != nil {
+		return "", err
+	}
+	return filepath.Join(dir, "synthtool/synthtool/synthtool/gcp/templates"), nil
 }
