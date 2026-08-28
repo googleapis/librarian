@@ -36,6 +36,8 @@ type oneOfAnnotation struct {
 	// The fully qualified name, relative to `codec.modulePath`. Typically this
 	// is the `QualifiedName` with the `crate::model::` prefix removed.
 	RelativeName string
+	// The type name relative to the prost module (e.g. `message_module::OneofName`).
+	ProstRelativeName string
 	// The Rust `struct` that contains this oneof, fully qualified
 	StructQualifiedName string
 	// The fully qualified name for examples. For messages in external packages
@@ -88,6 +90,7 @@ func (c *codec) annotateOneOf(oneof *api.OneOf, message *api.Message, model *api
 		EnumName:            enumName,
 		QualifiedName:       qualifiedName,
 		RelativeName:        relativeEnumName,
+		ProstRelativeName:   prostMessageModulePath(message) + "::" + toProstPascal(enumName),
 		StructQualifiedName: structQualifiedName,
 		NameInExamples:      nameInExamples,
 		FieldType:           fmt.Sprintf("%s::%s", scope, enumName),

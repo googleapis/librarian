@@ -865,6 +865,49 @@ func toCamel(symbol string) string {
 	return escapeKeyword(strcase.ToLowerCamel(symbol))
 }
 
+// toProstPascal converts a symbol name to PascalCase / UpperCamelCase as generated
+// by prost-build (which normalizes consecutive uppercase acronym letters to camel case).
+func toProstPascal(symbol string) string {
+	if symbol == "" {
+		return ""
+	}
+	return escapeKeyword(strcase.ToCamel(strcase.ToSnake(symbol)))
+}
+
+// prostMessageModulePath returns the submodule path for nested types within a parent message hierarchy.
+// E.g., for nested message `Parent.Child`, prost generates submodule `parent::child`.
+func prostMessageModulePath(m *api.Message) string {
+	if m == nil {
+		return ""
+	}
+	var segments []string
+	for curr := m; curr != nil; curr = curr.Parent {
+		segments = append(segments, toSnake(curr.Name))
+	}
+	slices.Reverse(segments)
+	return strings.Join(segments, "::")
+}
+
+// prostMessageRelativePath returns the type name of the message relative to the package's prost module.
+// E.g., `VertexAiSearch` for top-level, or `parent::NestedType` for nested messages.
+func prostMessageRelativePath(m *api.Message) string {
+	name := toProstPascal(m.Name)
+	if m.Parent == nil {
+		return name
+	}
+	return prostMessageModulePath(m.Parent) + "::" + name
+}
+
+// prostEnumRelativePath returns the type name of the enum relative to the package's prost module.
+// E.g., `TopEnum` for top-level, or `parent::NestedEnum` for nested enums.
+func prostEnumRelativePath(e *api.Enum) string {
+	name := toProstPascal(e.Name)
+	if e.Parent == nil {
+		return name
+	}
+	return prostMessageModulePath(e.Parent) + "::" + name
+}
+
 // toScreamingSnake converts a name to `SCREAMING_SNAKE_CASE`. The Rust naming
 // conventions use this style for constants.
 func toScreamingSnake(symbol string) string {

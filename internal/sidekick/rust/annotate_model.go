@@ -164,9 +164,9 @@ func annotateModel(model *api.API, codec *codec) (*modelAnnotations, error) {
 			return nil, err
 		}
 		// ExternalEnums (e.g. google.type.Date) are populated for convert-prost generation in hybrid crates.
-		// Override RelativeName so ToProto and FromProto resolve to crate::prost::<pkg>::<TypeName>.
+		// Override ProstRelativeName so ToProto and FromProto resolve to crate::prost::<pkg>::<TypeName>.
 		ann := e.Codec.(*enumAnnotation)
-		ann.RelativeName = "crate::prost::" + packageToModuleName(e.Package) + "::" + enumName(e)
+		ann.ProstRelativeName = "crate::prost::" + packageToModuleName(e.Package) + "::" + prostEnumRelativePath(e)
 	}
 	for _, m := range model.Messages {
 		if err := codec.annotateMessage(m, model, true); err != nil {
@@ -178,9 +178,9 @@ func annotateModel(model *api.API, codec *codec) (*modelAnnotations, error) {
 			return nil, err
 		}
 		// ExternalMessages (e.g. google.type.LatLng) are populated for convert-prost generation in hybrid crates.
-		// Override RelativeName so ToProto and FromProto resolve to crate::prost::<pkg>::<TypeName>.
+		// Override ProstRelativeName so ToProto and FromProto resolve to crate::prost::<pkg>::<TypeName>.
 		ann := m.Codec.(*messageAnnotation)
-		ann.RelativeName = "crate::prost::" + packageToModuleName(m.Package) + "::" + toPascal(m.Name)
+		ann.ProstRelativeName = "crate::prost::" + packageToModuleName(m.Package) + "::" + prostMessageRelativePath(m)
 	}
 	// External enums and messages get only basic annotations
 	// used for sample generation.

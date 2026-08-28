@@ -893,15 +893,21 @@ func TestExternalTypesAnnotations(t *testing.T) {
 	if !ok {
 		t.Fatalf("expected messageAnnotation on extMsg")
 	}
-	if want := "crate::prost::google::r#type::LatLng"; msgAnn.RelativeName != want {
+	if want := "google_cloud_type::model::LatLng"; msgAnn.RelativeName != want {
 		t.Errorf("msgAnn.RelativeName = %q, want %q", msgAnn.RelativeName, want)
+	}
+	if want := "crate::prost::google::r#type::LatLng"; msgAnn.ProstRelativeName != want {
+		t.Errorf("msgAnn.ProstRelativeName = %q, want %q", msgAnn.ProstRelativeName, want)
 	}
 
 	enumAnn, ok := extEnum.Codec.(*enumAnnotation)
 	if !ok {
 		t.Fatalf("expected enumAnnotation on extEnum")
 	}
-	if want := "crate::prost::google::r#type::DayOfWeek"; enumAnn.RelativeName != want {
+	if want := "google_cloud_type::model::DayOfWeek"; enumAnn.RelativeName != want {
 		t.Errorf("enumAnn.RelativeName = %q, want %q", enumAnn.RelativeName, want)
+	}
+	if want := "crate::prost::google::r#type::DayOfWeek"; enumAnn.ProstRelativeName != want {
+		t.Errorf("enumAnn.ProstRelativeName = %q, want %q", enumAnn.ProstRelativeName, want)
 	}
 }
