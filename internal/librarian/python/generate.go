@@ -424,7 +424,12 @@ func runPostProcessor(ctx context.Context, repoRoot, outDir, generationRoot stri
 from synthtool.languages import python_mono_repo
 python_mono_repo.owlbot_main(%q)
 `, outDir)
-	if err := command.RunInDir(ctx, generationRoot, "python3", "-c", pythonCode); err != nil {
+	templateDir, err := templateDirectory()
+	if err != nil {
+		return err
+	}
+	env := map[string]string{"SYNTHTOOL_TEMPLATES": templateDir}
+	if err := command.RunInDirWithEnv(ctx, generationRoot, env, "python3", "-c", pythonCode); err != nil {
 		return fmt.Errorf("failed to run post-processor: %w", err)
 	}
 

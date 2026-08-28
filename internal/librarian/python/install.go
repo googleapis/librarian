@@ -16,8 +16,11 @@ package python
 
 import (
 	"context"
+	"embed"
 	"errors"
 	"fmt"
+	"io/fs"
+	"os"
 	"path/filepath"
 
 	"github.com/googleapis/librarian/internal/cache"
@@ -25,19 +28,28 @@ import (
 	"github.com/googleapis/librarian/internal/tool/pip"
 )
 
-const toolsDir = "python_tools"
+//go:embed all:templates
+var templatesFS embed.FS
+
+const (
+	toolsDir     = "python_tools"
+	templates = "templates"
+)
 
 var (
 	// ErrNoToolsSpecified indicates no pip tools were provided in the configuration.
 	ErrNoToolsSpecified = errors.New("no tools.pip field specified in configuration")
 )
 
-// Install installs Python pip tool dependencies.
+// Install installs Python pip tool dependencies and extracts templates.
 func Install(ctx context.Context, tools *config.Tools) error {
 	if tools == nil || len(tools.Pip) == 0 {
 		return ErrNoToolsSpecified
 	}
-	return pip.Install(ctx, tools.Pip)
+	if err := pip.Install(ctx, tools.Pip); err != nil {
+		return err
+	}
+	return extractTemplates()
 }
 
 // InstallDir gets the directory where tools should be installed.
@@ -51,4 +63,32 @@ func InstallDir() (string, error) {
 		return "", fmt.Errorf("failed to get install directory: %w", err)
 	}
 	return absDir, nil
+}
+
+// extractTemplates extracts embedded templates into the tools directory.
+func extractTemplates() error {
+	dest, err := templateDirectory()
+	if err != nil {
+		return err
+	}
+	sub, err := fs.Sub(templatesFS, templates)
+	if err != nil {
+		return fmt.Errorf("failed to get templates sub-filesystem: %w", err)
+	}
+	if err := os.RemoveAll(dest); err != nil {
+		return fmt.Errorf("failed to clean templates directory: %w", err)
+	}
+	if err := os.CopyFS(dest, sub); err != nil {
+		return fmt.Errorf("failed to extract templates: %w", err)
+	}
+	return nil
+}
+
+// templateDirectory gets the directory where templates are stored.
+func templateDirectory() (string, error) {
+	installDir, err := InstallDir()
+	if err != nil {
+		return "", err
+	}
+	return filepath.Join(installDir, templates), nil
 }

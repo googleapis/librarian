@@ -124,9 +124,23 @@ func TestInstallDir(t *testing.T) {
 	}
 }
 
+func TestTemplatesDir(t *testing.T) {
+	binDir := t.TempDir()
+	t.Setenv(cache.EnvLibrarianBin, binDir)
+	got, err := templateDirectory()
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := filepath.Join(binDir, "python_tools", "templates")
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+}
+
 func setupStubPip(t *testing.T, script string) {
 	t.Helper()
 	bin := t.TempDir()
 	testhelper.WriteExecutable(t, filepath.Join(bin, "pip"), script)
 	t.Setenv("PATH", bin+string(os.PathListSeparator)+os.Getenv("PATH"))
+	t.Setenv(cache.EnvLibrarianBin, t.TempDir())
 }
