@@ -374,3 +374,48 @@ func TestGenerateConvertAcronyms(t *testing.T) {
 		})
 	}
 }
+
+func TestGenerateConvertOneOfWithSkippedProtoConversion(t *testing.T) {
+	typeSchemaMsg := api.NewTestMessage("TypeSchema").WithOneOfs(
+		api.NewTestOneOf("schema").WithFields(
+			api.NewTestField("name").WithType(api.TypezString),
+			api.NewTestField("details").WithType(api.TypezString).WithSkipProtoConversion(),
+		),
+	)
+
+	outDir := t.TempDir()
+	model := api.NewTestAPI([]*api.Message{typeSchemaMsg}, nil, nil)
+	if err := api.CrossReference(model); err != nil {
+		t.Fatal(err)
+	}
+
+	cfg := &parser.ModelConfig{
+		SpecificationFormat: libconfig.SpecProtobuf,
+		Codec: map[string]string{
+			"package:wkt":       "source=google.protobuf,package=google-cloud-wkt",
+			"template-override": "templates/convert-prost",
+		},
+	}
+	if err := Generate(t.Context(), model, outDir, cfg); err != nil {
+		t.Fatal(err)
+	}
+
+	contents, err := os.ReadFile(filepath.Join(outDir, "convert.rs"))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	wantToProto := `impl gaxi::prost::ToProto<type_schema::Schema> for crate::model::type_schema::Schema {
+    type Output = type_schema::Schema;
+    fn to_proto(self) -> std::result::Result<Self::Output, gaxi::prost::ConvertError> {
+        match self {
+            Self::Name(v) => Ok(Self::Output::Name(v.to_proto()?)),
+            Self::Details(_) => Ok(Self::Output::Details(std::default::Default::default())),
+        }
+    }
+}`
+	gotToProto := extractBlock(t, string(contents), "impl gaxi::prost::ToProto<type_schema::Schema>", "\n        }\n    }\n}")
+	if diff := cmp.Diff(wantToProto, gotToProto); diff != "" {
+		t.Errorf("mismatch ToProto (-want +got):\n%s", diff)
+	}
+}

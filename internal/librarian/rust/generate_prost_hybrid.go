@@ -47,7 +47,7 @@ func generateProstHybrid(ctx context.Context, model *api.API, library *config.Li
 		return nil
 	}
 
-	hybridModel, unusedTypes, hasGoogleRpcStatus, err := filterModelToStreaming(model, includeBidi, includeServer)
+	hybridModel, unusedTypes, hasGoogleRpcStatus, err := filterModelToStreaming(model, includeBidi, includeServer, library.Rust.AllowStreamingAnyTypes)
 	if err != nil {
 		return err
 	}
@@ -83,8 +83,8 @@ func generateProstHybrid(ctx context.Context, model *api.API, library *config.Li
 // enabled bidirectional and server-side streaming RPC types for prost conversion generation. It also returns
 // a sorted slice of all non-WKT unused type IDs to exclude via prost_build extern_path,
 // and a boolean indicating whether google.rpc.Status is referenced in the streaming path.
-// Errors if Any is encountered in the streaming reachability path.
-func filterModelToStreaming(model *api.API, includeBidi bool, includeServer bool) (*api.API, []string, bool, error) {
+// Errors if Any is encountered in the streaming reachability path unless explicitly allowed via allowStreamingAnyTypes.
+func filterModelToStreaming(model *api.API, includeBidi bool, includeServer bool, allowStreamingAnyTypes []string) (*api.API, []string, bool, error) {
 	type streamingTypeItem struct {
 		id       string
 		rpc      string
@@ -177,14 +177,23 @@ func filterModelToStreaming(model *api.API, includeBidi bool, includeServer bool
 		}
 		visited[item.id] = true
 
-		anyError := func(path string) error {
+		anyError := func(path string, fieldID string) error {
+			if fieldID != "" && !isAnyType(fieldID) {
+				return fmt.Errorf("cannot generate prost conversion for streaming RPC %q: type google.protobuf.Any is unsupported (path: %s)\n"+
+					"To resolve this, allow dropping this Any field in prost conversion by adding it to allow_streaming_any_types in librarian.yaml:\n"+
+					"    rust:\n"+
+					"      allow_streaming_any_types:\n"+
+					"        - %s\n"+
+					"Or skip the RPC method by adding it to skipped_ids in librarian.yaml (e.g. skipped_ids: [%s])",
+					item.rpc, path, fieldID, item.methodID)
+			}
 			return fmt.Errorf("cannot generate prost conversion for streaming RPC %q: type google.protobuf.Any is unsupported (path: %s)\n"+
 				"To resolve this, add the RPC method ID to skipped_ids in librarian.yaml (e.g. skipped_ids: [%s])",
 				item.rpc, path, item.methodID)
 		}
 
 		if isAnyType(item.id) {
-			return nil, nil, false, anyError(item.path)
+			return nil, nil, false, anyError(item.path, item.id)
 		}
 
 		msg := model.Message(item.id)
@@ -201,7 +210,11 @@ func filterModelToStreaming(model *api.API, includeBidi bool, includeServer bool
 			for _, f := range msg.Fields {
 				fieldPath := item.path + "." + f.Name
 				if isAnyType(f.TypezID) {
-					return nil, nil, false, anyError(fieldPath)
+					if matchesAllowedAnyField(f.ID, allowStreamingAnyTypes) || matchesAllowedAnyField(fieldPath, allowStreamingAnyTypes) {
+						f.SkipProtoConversion = true
+						continue
+					}
+					return nil, nil, false, anyError(fieldPath, f.ID)
 				}
 				if f.Typez == api.TypezMessage && f.TypezID != "" {
 					queue = append(queue, streamingTypeItem{
@@ -219,7 +232,11 @@ func filterModelToStreaming(model *api.API, includeBidi bool, includeServer bool
 				for _, f := range o.Fields {
 					fieldPath := item.path + "." + o.Name + "." + f.Name
 					if isAnyType(f.TypezID) {
-						return nil, nil, false, anyError(fieldPath)
+						if matchesAllowedAnyField(f.ID, allowStreamingAnyTypes) || matchesAllowedAnyField(fieldPath, allowStreamingAnyTypes) {
+							f.SkipProtoConversion = true
+							continue
+						}
+						return nil, nil, false, anyError(fieldPath, f.ID)
 					}
 					if f.Typez == api.TypezMessage && f.TypezID != "" {
 						queue = append(queue, streamingTypeItem{
@@ -320,6 +337,16 @@ func filterModelToStreaming(model *api.API, includeBidi bool, includeServer bool
 	slices.Sort(unusedTypes)
 
 	return &hybridModel, slices.Compact(unusedTypes), hasGoogleRpcStatus, nil
+}
+
+func matchesAllowedAnyField(id string, allowStreamingAnyTypes []string) bool {
+	idTrimmed := strings.TrimPrefix(id, ".")
+	for _, allowed := range allowStreamingAnyTypes {
+		if strings.TrimPrefix(allowed, ".") == idTrimmed {
+			return true
+		}
+	}
+	return false
 }
 
 func isAnyType(id string) bool {

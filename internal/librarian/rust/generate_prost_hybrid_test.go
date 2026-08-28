@@ -17,6 +17,7 @@ package rust
 import (
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 
@@ -155,7 +156,7 @@ func TestFilterModelToStreaming(t *testing.T) {
 	bidiService := api.NewTestService("BidiService").WithPackage("google.test.v1").WithMethods(chatMethod)
 	model := api.NewTestAPI([]*api.Message{streamingMsg, unusedMsg}, []*api.Enum{}, []*api.Service{bidiService})
 
-	filtered, unused, _, err := filterModelToStreaming(model, true, true)
+	filtered, unused, _, err := filterModelToStreaming(model, true, true, nil)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -191,7 +192,7 @@ func TestFilterModelToStreamingNonStreamingFieldLookup(t *testing.T) {
 
 	model := api.NewTestAPI([]*api.Message{streamMsg, unaryReq, childData}, []*api.Enum{}, []*api.Service{bidiService, unaryService})
 
-	filtered, _, _, err := filterModelToStreaming(model, true, true)
+	filtered, _, _, err := filterModelToStreaming(model, true, true, nil)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -238,7 +239,7 @@ func TestFilterModelToStreamingExternalTypes(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	filtered, _, _, err := filterModelToStreaming(model, true, true)
+	filtered, _, _, err := filterModelToStreaming(model, true, true, nil)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -268,12 +269,48 @@ func TestFilterModelToStreamingAnyError(t *testing.T) {
 
 	anyModel := api.NewTestAPI([]*api.Message{anyMsg}, []*api.Enum{}, []*api.Service{anyService})
 
-	_, _, _, err := filterModelToStreaming(anyModel, true, true)
+	_, _, _, err := filterModelToStreaming(anyModel, true, true, nil)
 	if err == nil {
 		t.Fatal("expected error for google.protobuf.Any, got nil")
 	}
-	if !strings.Contains(err.Error(), "skipped_ids") {
-		t.Errorf("expected error to contain recommendation 'skipped_ids', got: %v", err)
+	if !strings.Contains(err.Error(), "allow_streaming_any_types") {
+		t.Errorf("expected error to contain recommendation 'allow_streaming_any_types', got: %v", err)
+	}
+}
+
+func TestFilterModelToStreamingAllowedAny(t *testing.T) {
+	// Verify allowing specific Any field path succeeds and drops the field from conversion
+	anyMsg := api.NewTestMessage("AnyReq").WithPackage("google.test.v1").WithFields(
+		api.NewTestField("details").WithType(api.TypezMessage).WithTypezID(".google.protobuf.Any"),
+		api.NewTestField("name").WithType(api.TypezString),
+	)
+	chatAnyMethod := api.NewTestMethod("ChatAny").WithInput(anyMsg).WithOutput(anyMsg).WithBidiStreaming()
+	anyService := api.NewTestService("AnyService").WithPackage("google.test.v1").WithMethods(chatAnyMethod)
+
+	anyModel := api.NewTestAPI([]*api.Message{anyMsg}, []*api.Enum{}, []*api.Service{anyService})
+
+	filtered, _, _, err := filterModelToStreaming(anyModel, true, true, []string{".google.test.v1.AnyReq.details"})
+	if err != nil {
+		t.Fatalf("expected success with allowStreamingAnyTypes, got error: %v", err)
+	}
+
+	msg := filtered.Message(anyMsg.ID)
+	if msg == nil {
+		t.Fatalf("expected message %s in filtered model", anyMsg.ID)
+	}
+	if !msg.HasSkippedProtoConversionFields() {
+		t.Errorf("expected msg.HasSkippedProtoConversionFields() to be true")
+	}
+	if len(msg.Fields) != 2 {
+		t.Errorf("expected msg.Fields to retain all 2 fields, got: %v", msg.Fields)
+	}
+	detailsField := slices.IndexFunc(msg.Fields, func(f *api.Field) bool { return f.Name == "details" })
+	if detailsField == -1 || !msg.Fields[detailsField].SkipProtoConversion {
+		t.Errorf("expected 'details' field to have SkipProtoConversion == true")
+	}
+	nameField := slices.IndexFunc(msg.Fields, func(f *api.Field) bool { return f.Name == "name" })
+	if nameField == -1 || msg.Fields[nameField].SkipProtoConversion {
+		t.Errorf("expected 'name' field to have SkipProtoConversion == false")
 	}
 }
 
@@ -310,7 +347,7 @@ func TestFilterModelToStreamingGoogleRpcStatus(t *testing.T) {
 	statusModel := api.NewTestAPI([]*api.Message{reqMsg}, []*api.Enum{}, []*api.Service{statusService})
 	statusModel.AddMessage(statusMsg)
 
-	filtered, unused, hasStatus, err := filterModelToStreaming(statusModel, true, true)
+	filtered, unused, hasStatus, err := filterModelToStreaming(statusModel, true, true, nil)
 	if err != nil {
 		t.Fatalf("unexpected error for google.rpc.Status: %v", err)
 	}
@@ -357,7 +394,7 @@ func TestFilterModelToStreamingNestedTypeParentPreservation(t *testing.T) {
 
 	model := api.NewTestAPI([]*api.Message{parent, child, sibling, streamReq}, []*api.Enum{}, []*api.Service{bidiService})
 
-	_, unusedTypes, _, err := filterModelToStreaming(model, true, false)
+	_, unusedTypes, _, err := filterModelToStreaming(model, true, false, nil)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -385,7 +422,7 @@ func TestFilterModelToStreamingServerStreaming(t *testing.T) {
 	serverService := api.NewTestService("EchoService").WithPackage("google.test.v1").WithMethods(expandMethod)
 	model := api.NewTestAPI([]*api.Message{reqMsg, respMsg, unusedMsg}, []*api.Enum{}, []*api.Service{serverService})
 
-	filtered, unused, _, err := filterModelToStreaming(model, false, true)
+	filtered, unused, _, err := filterModelToStreaming(model, false, true, nil)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -442,7 +479,7 @@ func TestFilterModelToStreamingIsolation(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			filtered, unused, _, err := filterModelToStreaming(model, test.includeBidi, test.includeServer)
+			filtered, unused, _, err := filterModelToStreaming(model, test.includeBidi, test.includeServer, nil)
 			if err != nil {
 				t.Fatalf("unexpected error: %v", err)
 			}

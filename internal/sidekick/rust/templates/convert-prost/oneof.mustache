@@ -20,7 +20,12 @@ impl gaxi::prost::ToProto<{{Codec.ProstRelativeName}}> for {{Codec.QualifiedName
     fn to_proto(self) -> std::result::Result<Self::Output, gaxi::prost::ConvertError> {
         match self {
             {{#Fields}}
+            {{^SkipProtoConversion}}
             Self::{{Codec.BranchName}}(v) => Ok(Self::Output::{{Codec.ProstBranchName}}({{#Codec.MapToBoxed}}std::boxed::Box::new({{/Codec.MapToBoxed}}{{#Codec.IsBoxed}}(*v){{/Codec.IsBoxed}}{{^Codec.IsBoxed}}v{{/Codec.IsBoxed}}.to_proto()?{{#Codec.MapToBoxed}}){{/Codec.MapToBoxed}})),
+            {{/SkipProtoConversion}}
+            {{#SkipProtoConversion}}
+            Self::{{Codec.BranchName}}(_) => Ok(Self::Output::{{Codec.ProstBranchName}}(std::default::Default::default())),
+            {{/SkipProtoConversion}}
             {{/Fields}}
         }
     }
@@ -32,6 +37,7 @@ impl gaxi::prost::FromProto<{{Codec.QualifiedName}}> for {{Codec.ProstRelativeNa
         use {{Codec.QualifiedName}} as T;
         match self {
             {{#Fields}}
+            {{^SkipProtoConversion}}
             {{^IsEnum}}
             {{^Codec.IsBoxed}}
             Self::{{Codec.ProstBranchName}}(v) => Ok(T::{{Codec.BranchName}}(v.cnv()?)),
@@ -43,6 +49,10 @@ impl gaxi::prost::FromProto<{{Codec.QualifiedName}}> for {{Codec.ProstRelativeNa
             {{#IsEnum}}
             Self::{{Codec.ProstBranchName}}(v) => Ok(T::{{Codec.BranchName}}(v.into())),
             {{/IsEnum}}
+            {{/SkipProtoConversion}}
+            {{#SkipProtoConversion}}
+            Self::{{Codec.BranchName}}(_) => Ok(T::{{Codec.BranchName}}(std::default::Default::default())),
+            {{/SkipProtoConversion}}
             {{/Fields}}
         }
     }

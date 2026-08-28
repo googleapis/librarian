@@ -407,6 +407,18 @@ func (f *Field) WithMessageType(msg *Message) *Field {
 	return f
 }
 
+// WithTypezID sets the field's TypezID.
+func (f *Field) WithTypezID(id string) *Field {
+	f.TypezID = id
+	return f
+}
+
+// WithSkipProtoConversion marks the field as skipping proto conversion.
+func (f *Field) WithSkipProtoConversion() *Field {
+	f.SkipProtoConversion = true
+	return f
+}
+
 // WithResourceReference sets the resource reference on a field.
 func (f *Field) WithResourceReference(refType string) *Field {
 	f.ResourceReference = &ResourceReference{Type: refType}

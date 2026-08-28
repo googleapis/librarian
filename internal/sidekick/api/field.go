@@ -55,6 +55,9 @@ type Field struct {
 	// containing message. That triggers slightly different code generation for
 	// some languages.
 	Recursive bool
+	// SkipProtoConversion is true if this field should be omitted from
+	// proto/prost conversion (e.g. allowed Any fields in streaming RPCs).
+	SkipProtoConversion bool
 	// AutoPopulated is true if the field is eligible to be auto-populated,
 	// per the requirements in AIP-4235.
 	//
