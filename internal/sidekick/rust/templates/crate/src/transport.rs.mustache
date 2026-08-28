@@ -127,7 +127,7 @@ impl super::stub::{{Codec.Name}} for {{Codec.Name}} {
         options: crate::RequestOptions,
     ) -> (
         google_cloud_gax::streaming::RequestSender<{{InputType.Codec.QualifiedName}}>,
-        google_cloud_gax::streaming::ResponseReceiver<{{OutputType.Codec.QualifiedName}}>,
+        google_cloud_gax::streaming::ResponseStream<{{OutputType.Codec.QualifiedName}}>,
     ) {
         {{! TODO(#6835) - support explicit routing parameters for bidirectional streaming RPCs }}
         let x_goog_request_params = "";
@@ -145,7 +145,7 @@ impl super::stub::{{Codec.Name}} for {{Codec.Name}} {
         );
 
         self.grpc_inner
-            .execute_bidi_streaming::<
+            .execute_bidi_streaming_tmp::<
                 {{InputType.Codec.QualifiedName}},
                 {{OutputType.Codec.QualifiedName}},
                 crate::prost::{{InputType.Codec.PackageModuleName}}::{{InputType.Codec.Name}},
@@ -165,7 +165,7 @@ impl super::stub::{{Codec.Name}} for {{Codec.Name}} {
         &self,
         req: {{InputType.Codec.QualifiedName}},
         options: crate::RequestOptions,
-    ) -> Result<google_cloud_gax::streaming::ResponseReceiver<{{OutputType.Codec.QualifiedName}}>> {
+    ) -> Result<google_cloud_gax::streaming::ResponseStream<{{OutputType.Codec.QualifiedName}}>> {
         {{!
         AIP-4222 says:
 
@@ -206,7 +206,7 @@ impl super::stub::{{Codec.Name}} for {{Codec.Name}} {
         );
 
         self.grpc_inner
-            .execute_server_streaming::<
+            .execute_server_streaming_tmp::<
                 {{InputType.Codec.QualifiedName}},
                 {{OutputType.Codec.QualifiedName}},
                 crate::prost::{{InputType.Codec.PackageModuleName}}::{{InputType.Codec.Name}},

@@ -178,7 +178,7 @@ func TestGenerateBidiStreaming(t *testing.T) {
             self,
         ) -> (
             google_cloud_gax::streaming::RequestSender<crate::model::Request>,
-            google_cloud_gax::streaming::ResponseReceiver<crate::model::Response>,
+            google_cloud_gax::streaming::ResponseStream<crate::model::Response>,
         ) {
             (*self.0.stub).chat(self.0.options)
         }`,
@@ -205,9 +205,9 @@ func TestGenerateBidiStreaming(t *testing.T) {
         _options: crate::RequestOptions,
     ) -> (
         google_cloud_gax::streaming::RequestSender<crate::model::Request>,
-        google_cloud_gax::streaming::ResponseReceiver<crate::model::Response>,
+        google_cloud_gax::streaming::ResponseStream<crate::model::Response>,
     ) {
-        gaxi::unimplemented::unimplemented_bidi_stub()
+        gaxi::unimplemented::unimplemented_bidi_stub_tmp()
     }`,
 		},
 		{
@@ -220,7 +220,7 @@ func TestGenerateBidiStreaming(t *testing.T) {
         options: crate::RequestOptions,
     ) -> (
         google_cloud_gax::streaming::RequestSender<crate::model::Request>,
-        google_cloud_gax::streaming::ResponseReceiver<crate::model::Response>,
+        google_cloud_gax::streaming::ResponseStream<crate::model::Response>,
     );`,
 		},
 		{
@@ -234,7 +234,7 @@ func TestGenerateBidiStreaming(t *testing.T) {
         options: crate::RequestOptions,
     ) -> (
         google_cloud_gax::streaming::RequestSender<crate::model::Request>,
-        google_cloud_gax::streaming::ResponseReceiver<crate::model::Response>,
+        google_cloud_gax::streaming::ResponseStream<crate::model::Response>,
     ) {
         T::chat(self, options)
     }`,
@@ -249,7 +249,7 @@ func TestGenerateBidiStreaming(t *testing.T) {
         options: crate::RequestOptions,
     ) -> (
         google_cloud_gax::streaming::RequestSender<crate::model::Request>,
-        google_cloud_gax::streaming::ResponseReceiver<crate::model::Response>,
+        google_cloud_gax::streaming::ResponseStream<crate::model::Response>,
     ) {
         self.inner.chat(options)
     }`,
@@ -267,10 +267,10 @@ func TestGenerateBidiStreaming(t *testing.T) {
 		{
 			name:     "transport: execute_bidi_streaming call",
 			file:     "src/transport.rs",
-			startStr: "        self.grpc_inner\n            .execute_bidi_streaming::<",
+			startStr: "        self.grpc_inner\n            .execute_bidi_streaming_tmp::<",
 			endStr:   "x_goog_request_params,\n            )\n    }",
 			want: `        self.grpc_inner
-            .execute_bidi_streaming::<
+            .execute_bidi_streaming_tmp::<
                 crate::model::Request,
                 crate::model::Response,
                 crate::prost::test::v1::Request,
@@ -399,7 +399,7 @@ func TestGenerateGrpcClientBidiStreaming(t *testing.T) {
             self,
         ) -> (
             google_cloud_gax::streaming::RequestSender<crate::model::Request>,
-            google_cloud_gax::streaming::ResponseReceiver<crate::model::Response>,
+            google_cloud_gax::streaming::ResponseStream<crate::model::Response>,
         ) {
             (*self.0.stub).chat(self.0.options)
         }
@@ -425,9 +425,9 @@ func TestGenerateGrpcClientBidiStreaming(t *testing.T) {
         _options: crate::RequestOptions,
     ) -> (
         google_cloud_gax::streaming::RequestSender<crate::model::Request>,
-        google_cloud_gax::streaming::ResponseReceiver<crate::model::Response>,
+        google_cloud_gax::streaming::ResponseStream<crate::model::Response>,
     ) {
-        gaxi::unimplemented::unimplemented_bidi_stub()
+        gaxi::unimplemented::unimplemented_bidi_stub_tmp()
     }`,
 		},
 		{
@@ -440,7 +440,7 @@ func TestGenerateGrpcClientBidiStreaming(t *testing.T) {
         options: crate::RequestOptions,
     ) -> (
         google_cloud_gax::streaming::RequestSender<crate::model::Request>,
-        google_cloud_gax::streaming::ResponseReceiver<crate::model::Response>,
+        google_cloud_gax::streaming::ResponseStream<crate::model::Response>,
     );`,
 		},
 		{
@@ -453,7 +453,7 @@ func TestGenerateGrpcClientBidiStreaming(t *testing.T) {
         options: crate::RequestOptions,
     ) -> (
         google_cloud_gax::streaming::RequestSender<crate::model::Request>,
-        google_cloud_gax::streaming::ResponseReceiver<crate::model::Response>,
+        google_cloud_gax::streaming::ResponseStream<crate::model::Response>,
     ) {
         self.inner.chat(options)
     }`,
@@ -461,10 +461,10 @@ func TestGenerateGrpcClientBidiStreaming(t *testing.T) {
 		{
 			name:     "grpc-client transport: execute_bidi_streaming call",
 			file:     "transport.rs",
-			startStr: "        self.inner\n            .execute_bidi_streaming::<",
+			startStr: "        self.inner\n            .execute_bidi_streaming_tmp::<",
 			endStr:   "x_goog_request_params,\n            )\n    }",
 			want: `        self.inner
-            .execute_bidi_streaming::<
+            .execute_bidi_streaming_tmp::<
                 crate::model::Request,
                 crate::model::Response,
                 crate::test::v1::Request,

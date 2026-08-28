@@ -32,7 +32,7 @@ pub trait {{Codec.Name}}: std::fmt::Debug + Send + Sync {
         options: crate::RequestOptions,
     ) -> (
         google_cloud_gax::streaming::RequestSender<{{InputType.Codec.QualifiedName}}>,
-        google_cloud_gax::streaming::ResponseReceiver<{{OutputType.Codec.QualifiedName}}>,
+        google_cloud_gax::streaming::ResponseStream<{{OutputType.Codec.QualifiedName}}>,
     );
 
     {{/Codec.IsBidiStreaming}}
@@ -42,7 +42,7 @@ pub trait {{Codec.Name}}: std::fmt::Debug + Send + Sync {
         req: {{InputType.Codec.QualifiedName}},
         options: crate::RequestOptions,
     ) -> crate::Result<
-        google_cloud_gax::streaming::ResponseReceiver<{{OutputType.Codec.QualifiedName}}>,
+        google_cloud_gax::streaming::ResponseStream<{{OutputType.Codec.QualifiedName}}>,
     >;
 
     {{/Codec.IsServerStreaming}}
@@ -91,7 +91,7 @@ impl<T: super::{{Codec.Name}}> {{Codec.Name}} for T {
         options: crate::RequestOptions,
     ) -> (
         google_cloud_gax::streaming::RequestSender<{{InputType.Codec.QualifiedName}}>,
-        google_cloud_gax::streaming::ResponseReceiver<{{OutputType.Codec.QualifiedName}}>,
+        google_cloud_gax::streaming::ResponseStream<{{OutputType.Codec.QualifiedName}}>,
     ) {
         T::{{Codec.Name}}(self, options)
     }
@@ -103,7 +103,7 @@ impl<T: super::{{Codec.Name}}> {{Codec.Name}} for T {
         req: {{InputType.Codec.QualifiedName}},
         options: crate::RequestOptions,
     ) -> crate::Result<
-        google_cloud_gax::streaming::ResponseReceiver<{{OutputType.Codec.QualifiedName}}>,
+        google_cloud_gax::streaming::ResponseStream<{{OutputType.Codec.QualifiedName}}>,
     > {
         T::{{Codec.Name}}(self, req, options).await
     }

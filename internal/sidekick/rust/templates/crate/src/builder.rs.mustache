@@ -197,7 +197,7 @@ pub mod {{Codec.ModuleName}} {
             self,
         ) -> (
             google_cloud_gax::streaming::RequestSender<{{InputType.Codec.QualifiedName}}>,
-            google_cloud_gax::streaming::ResponseReceiver<{{OutputType.Codec.QualifiedName}}>,
+            google_cloud_gax::streaming::ResponseStream<{{OutputType.Codec.QualifiedName}}>,
         ) {
             (*self.0.stub).{{Codec.Name}}(self.0.options)
         }
@@ -206,7 +206,7 @@ pub mod {{Codec.ModuleName}} {
         /// Initiates the server stream.
         pub async fn send(
             self,
-        ) -> Result<google_cloud_gax::streaming::ResponseReceiver<{{OutputType.Codec.QualifiedName}}>> {
+        ) -> Result<google_cloud_gax::streaming::ResponseStream<{{OutputType.Codec.QualifiedName}}>> {
             (*self.0.stub).{{Codec.Name}}(self.0.request, self.0.options).await
         }
         {{/Codec.IsServerStreaming}}

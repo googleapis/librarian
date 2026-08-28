@@ -119,7 +119,7 @@ func TestGenerateServerStreaming(t *testing.T) {
 			want: `        /// Initiates the server stream.
         pub async fn send(
             self,
-        ) -> Result<google_cloud_gax::streaming::ResponseReceiver<crate::model::EchoResponse>> {
+        ) -> Result<google_cloud_gax::streaming::ResponseStream<crate::model::EchoResponse>> {
             (*self.0.stub).expand(self.0.request, self.0.options).await
         }`,
 		},
@@ -145,9 +145,9 @@ func TestGenerateServerStreaming(t *testing.T) {
         _req: crate::model::ExpandRequest,
         _options: crate::RequestOptions,
     ) -> impl std::future::Future<Output = crate::Result<
-        google_cloud_gax::streaming::ResponseReceiver<crate::model::EchoResponse>,
+        google_cloud_gax::streaming::ResponseStream<crate::model::EchoResponse>,
     >> + Send {
-        gaxi::unimplemented::unimplemented_server_streaming_stub()
+        gaxi::unimplemented::unimplemented_server_streaming_stub_tmp()
     }`,
 		},
 		{
@@ -160,7 +160,7 @@ func TestGenerateServerStreaming(t *testing.T) {
         req: crate::model::ExpandRequest,
         options: crate::RequestOptions,
     ) -> crate::Result<
-        google_cloud_gax::streaming::ResponseReceiver<crate::model::EchoResponse>,
+        google_cloud_gax::streaming::ResponseStream<crate::model::EchoResponse>,
     >;`,
 		},
 		{
@@ -174,7 +174,7 @@ func TestGenerateServerStreaming(t *testing.T) {
         req: crate::model::ExpandRequest,
         options: crate::RequestOptions,
     ) -> crate::Result<
-        google_cloud_gax::streaming::ResponseReceiver<crate::model::EchoResponse>,
+        google_cloud_gax::streaming::ResponseStream<crate::model::EchoResponse>,
     > {
         T::expand(self, req, options).await
     }`,
@@ -188,7 +188,7 @@ func TestGenerateServerStreaming(t *testing.T) {
         &self,
         req: crate::model::ExpandRequest,
         options: crate::RequestOptions,
-    ) -> Result<google_cloud_gax::streaming::ResponseReceiver<crate::model::EchoResponse>> {
+    ) -> Result<google_cloud_gax::streaming::ResponseStream<crate::model::EchoResponse>> {
         self.inner.expand(req, options).await
     }`,
 		},
@@ -201,7 +201,7 @@ func TestGenerateServerStreaming(t *testing.T) {
         &self,
         req: crate::model::ExpandRequest,
         options: crate::RequestOptions,
-    ) -> Result<google_cloud_gax::streaming::ResponseReceiver<crate::model::EchoResponse>> {
+    ) -> Result<google_cloud_gax::streaming::ResponseStream<crate::model::EchoResponse>> {
         let x_goog_request_params = [
             None::<String>; 0
         ]
@@ -222,7 +222,7 @@ func TestGenerateServerStreaming(t *testing.T) {
         );
 
         self.grpc_inner
-            .execute_server_streaming::<
+            .execute_server_streaming_tmp::<
                 crate::model::ExpandRequest,
                 crate::model::EchoResponse,
                 crate::prost::test::v1::ExpandRequest,
@@ -338,10 +338,10 @@ func TestGenerateGrpcClientServerStreaming(t *testing.T) {
 		{
 			name:     "grpc-client transport: execute_server_streaming call",
 			file:     "transport.rs",
-			startStr: "        self.inner\n            .execute_server_streaming::<",
+			startStr: "        self.inner\n            .execute_server_streaming_tmp::<",
 			endStr:   "&x_goog_request_params,\n            )\n            .await\n    }",
 			want: `        self.inner
-            .execute_server_streaming::<
+            .execute_server_streaming_tmp::<
                 crate::model::ExpandRequest,
                 crate::model::EchoResponse,
                 crate::test::v1::ExpandRequest,

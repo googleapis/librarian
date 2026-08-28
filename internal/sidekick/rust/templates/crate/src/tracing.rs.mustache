@@ -70,7 +70,7 @@ where T: super::stub::{{Codec.Name}} + std::fmt::Debug + Send + Sync {
         options: crate::RequestOptions,
     ) -> (
         google_cloud_gax::streaming::RequestSender<{{InputType.Codec.QualifiedName}}>,
-        google_cloud_gax::streaming::ResponseReceiver<{{OutputType.Codec.QualifiedName}}>,
+        google_cloud_gax::streaming::ResponseStream<{{OutputType.Codec.QualifiedName}}>,
     ) {
         self.inner.{{Codec.Name}}(options)
     }
@@ -81,7 +81,7 @@ where T: super::stub::{{Codec.Name}} + std::fmt::Debug + Send + Sync {
         &self,
         req: {{InputType.Codec.QualifiedName}},
         options: crate::RequestOptions,
-    ) -> Result<google_cloud_gax::streaming::ResponseReceiver<{{OutputType.Codec.QualifiedName}}>> {
+    ) -> Result<google_cloud_gax::streaming::ResponseStream<{{OutputType.Codec.QualifiedName}}>> {
         self.inner.{{Codec.Name}}(req, options).await
     }
     {{/Codec.IsServerStreaming}}
