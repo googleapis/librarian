@@ -41,16 +41,16 @@ runs:
         go install ./cmd/librarian
       shell: bash
     - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
-      if: inputs.include_pnpm == 'true'
+      if: ${{ inputs.include_pnpm == 'true' }}
       with:
         node-version: "22"
     - name: "Set up pnpm via corepack"
-      if: inputs.include_pnpm == 'true'
+      if: ${{ inputs.include_pnpm == 'true' }}
       run: |
         corepack enable pnpm
         corepack prepare pnpm@7.32.2 --activate
       shell: bash
     - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
-      if: inputs.include_python == 'true'
+      if: ${{ inputs.include_python == 'true' }}
       with:
-        python-version: "3.14"
+        python-version: "3.12"
