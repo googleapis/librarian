@@ -66,6 +66,7 @@ func TestRunEnv_Error(t *testing.T) {
 		"golang: <error:",
 		"java: <error:",
 		"nodejs: <error:",
+		"python: <error:",
 		"ruby: <error:",
 		"swift: <error:",
 	}
