@@ -112,13 +112,13 @@ func TestGenerateBidiStreaming(t *testing.T) {
     /// async fn sample(
     ///    client: &Protocol
     /// ) -> anyhow::Result<()> {
-    ///     let (sender, mut receiver) = client.chat()
+    ///     let (sender, mut resp_stream) = client.chat()
     ///         .build();
     ///
     ///     sender.send(Request::default()).await?;
     ///     drop(sender); // Half-close the stream
     ///
-    ///     while let Some(response) = receiver.recv().await {
+    ///     while let Some(response) = resp_stream.next().await {
     ///         let response = response?;
     ///         println!("response {:?}", response);
     ///     }
@@ -143,12 +143,12 @@ func TestGenerateBidiStreaming(t *testing.T) {
     /// # use google_cloud_test_v1::model::Request;
     /// # async fn sample() -> anyhow::Result<()> {
     /// let builder = prepare_request_builder();
-    /// let (sender, mut receiver) = builder.build();
+    /// let (sender, mut resp_stream) = builder.build();
     ///
     /// sender.send(Request::default()).await?;
     /// drop(sender); // Half-close the stream
     ///
-    /// while let Some(response) = receiver.recv().await {
+    /// while let Some(response) = resp_stream.next().await {
     ///     let response = response?;
     ///     println!("response {:?}", response);
     /// }

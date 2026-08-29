@@ -14,13 +14,13 @@ See the License for the specific language governing permissions and
 limitations under the License.
 }}
 {{#Codec.IsBidiStreaming}}
-///     let (sender, mut receiver) = client.{{Codec.Name}}()
+///     let (sender, mut resp_stream) = client.{{Codec.Name}}()
 ///         .build();
 ///
 ///     sender.send({{InputType.Codec.Name}}::default()).await?;
 ///     drop(sender); // Half-close the stream
 ///
-///     while let Some(response) = receiver.recv().await {
+///     while let Some(response) = resp_stream.next().await {
 ///         let response = response?;
 ///         println!("response {:?}", response);
 ///     }
