@@ -361,14 +361,7 @@ func runPostProcessor(ctx context.Context, cfg *config.Config, library *config.L
 	if err := copyMissingProtos(googleapisDir, outDir); err != nil {
 		return fmt.Errorf("failed to copy missing protos: %w", err)
 	}
-	protoDir := "src"
-	compileArgs := []string{"--no-comments"}
-	if library.Nodejs != nil && library.Nodejs.ESM {
-		protoDir = "esm/src"
-		compileArgs = append(compileArgs, "--esm")
-	}
-	runArgs := append([]string{protoDir}, compileArgs...)
-
+	runArgs := compileProtosArgs(library)
 	toolsEnv, err := getToolsEnv()
 	if err != nil {
 		return err
@@ -413,6 +406,16 @@ func runPostProcessor(ctx context.Context, cfg *config.Config, library *config.L
 		return fmt.Errorf("failed to remove %s: %w", cloudCommonResourcesProto, err)
 	}
 	return nil
+}
+
+func compileProtosArgs(library *config.Library) []string {
+	protoDir := "src"
+	compileArgs := []string{"--no-comments"}
+	if library.Nodejs != nil && library.Nodejs.ESM {
+		protoDir = "esm/src"
+		compileArgs = append(compileArgs, "--esm")
+	}
+	return append([]string{protoDir}, compileArgs...)
 }
 
 // movePackageFromStaging moves the generated code for a single package from
