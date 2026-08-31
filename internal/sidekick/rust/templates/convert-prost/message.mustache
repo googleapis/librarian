@@ -25,9 +25,9 @@ limitations under the License.
 {{^Codec.SkipConversion}}
 
 {{> /templates/common/feature_gate}}
-impl gaxi::prost::ToProto<{{Codec.RelativeName}}> for {{Codec.QualifiedName}} {
-    type Output = {{Codec.RelativeName}};
-    fn to_proto(self) -> std::result::Result<{{Codec.RelativeName}}, gaxi::prost::ConvertError> {
+impl gaxi::prost::ToProto<{{Codec.ProstRelativeName}}> for {{Codec.QualifiedName}} {
+    type Output = {{Codec.ProstRelativeName}};
+    fn to_proto(self) -> std::result::Result<{{Codec.ProstRelativeName}}, gaxi::prost::ConvertError> {
         Ok(Self::Output {
             {{#Codec.BasicFields}}
             {{#Singular}}
@@ -69,7 +69,7 @@ impl gaxi::prost::ToProto<{{Codec.RelativeName}}> for {{Codec.QualifiedName}} {
 }
 
 {{> /templates/common/feature_gate}}
-impl gaxi::prost::FromProto<{{Codec.QualifiedName}}> for {{Codec.RelativeName}} {
+impl gaxi::prost::FromProto<{{Codec.QualifiedName}}> for {{Codec.ProstRelativeName}} {
     fn cnv(self) -> std::result::Result<{{Codec.QualifiedName}}, gaxi::prost::ConvertError> {
         Ok(
             {{Codec.QualifiedName}}::new()

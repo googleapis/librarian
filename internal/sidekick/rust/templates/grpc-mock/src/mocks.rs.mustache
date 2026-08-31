@@ -35,20 +35,20 @@ pub trait {{Codec.Name}} {
     async fn {{Codec.Name}}(
         &self,
         {{#ClientSideStreaming}}
-        request: tonic::Request<mpsc::Receiver<tonic::Result<{{InputType.Codec.PackageModuleName}}::{{InputType.Name}}>>>,
+        request: tonic::Request<mpsc::Receiver<tonic::Result<{{InputType.Codec.PackageModuleName}}::{{InputType.Codec.ProstRelativeName}}>>>,
         {{/ClientSideStreaming}}
         {{^ClientSideStreaming}}
-        request: tonic::Request<{{InputType.Codec.PackageModuleName}}::{{InputType.Name}}>,
+        request: tonic::Request<{{InputType.Codec.PackageModuleName}}::{{InputType.Codec.ProstRelativeName}}>,
         {{/ClientSideStreaming}}
         {{#ServerSideStreaming}}
-    ) -> tonic::Result<tonic::Response<mpsc::Receiver<tonic::Result<{{OutputType.Codec.PackageModuleName}}::{{OutputType.Name}}>>>>;
+    ) -> tonic::Result<tonic::Response<mpsc::Receiver<tonic::Result<{{OutputType.Codec.PackageModuleName}}::{{OutputType.Codec.ProstRelativeName}}>>>>;
         {{/ServerSideStreaming}}
         {{^ServerSideStreaming}}
         {{#ReturnsEmpty}}
     ) -> tonic::Result<tonic::Response<()>>;
         {{/ReturnsEmpty}}
         {{^ReturnsEmpty}}
-    ) -> tonic::Result<tonic::Response<{{OutputType.Codec.PackageModuleName}}::{{OutputType.Name}}>>;
+    ) -> tonic::Result<tonic::Response<{{OutputType.Codec.PackageModuleName}}::{{OutputType.Codec.ProstRelativeName}}>>;
         {{/ReturnsEmpty}}
         {{/ServerSideStreaming}}
     {{/Codec.Methods}}
@@ -58,15 +58,15 @@ pub trait {{Codec.Name}} {
 impl {{Codec.PackageModuleName}}::{{Codec.ModuleName}}_server::{{Codec.Name}} for Mock{{Codec.Name}} {
     {{#Codec.Methods}}
     {{#ServerSideStreaming}}
-    type {{Codec.BuilderName}}Stream = ReceiverStream<tonic::Result<{{OutputType.Codec.PackageModuleName}}::{{OutputType.Name}}>>;
+    type {{Codec.BuilderName}}Stream = ReceiverStream<tonic::Result<{{OutputType.Codec.PackageModuleName}}::{{OutputType.Codec.ProstRelativeName}}>>;
     {{/ServerSideStreaming}}
     async fn {{Codec.Name}}(
         &self,
         {{#ClientSideStreaming}}
-        request: tonic::Request<tonic::Streaming<{{InputType.Codec.PackageModuleName}}::{{InputType.Name}}>>,
+        request: tonic::Request<tonic::Streaming<{{InputType.Codec.PackageModuleName}}::{{InputType.Codec.ProstRelativeName}}>>,
         {{/ClientSideStreaming}}
         {{^ClientSideStreaming}}
-        request: tonic::Request<{{InputType.Codec.PackageModuleName}}::{{InputType.Name}}>,
+        request: tonic::Request<{{InputType.Codec.PackageModuleName}}::{{InputType.Codec.ProstRelativeName}}>,
         {{/ClientSideStreaming}}
         {{#ServerSideStreaming}}
     ) -> tonic::Result<tonic::Response<Self::{{Codec.BuilderName}}Stream>> {
@@ -76,7 +76,7 @@ impl {{Codec.PackageModuleName}}::{{Codec.ModuleName}}_server::{{Codec.Name}} fo
     ) -> tonic::Result<tonic::Response<()>> {
         {{/ReturnsEmpty}}
         {{^ReturnsEmpty}}
-    ) -> tonic::Result<tonic::Response<{{OutputType.Codec.PackageModuleName}}::{{OutputType.Name}}>> {
+    ) -> tonic::Result<tonic::Response<{{OutputType.Codec.PackageModuleName}}::{{OutputType.Codec.ProstRelativeName}}>> {
         {{/ReturnsEmpty}}
         {{/ServerSideStreaming}}
         {{#ClientSideStreaming}}

@@ -148,8 +148,8 @@ impl super::stub::{{Codec.Name}} for {{Codec.Name}} {
             .execute_bidi_streaming_tmp::<
                 {{InputType.Codec.QualifiedName}},
                 {{OutputType.Codec.QualifiedName}},
-                crate::prost::{{InputType.Codec.PackageModuleName}}::{{InputType.Codec.Name}},
-                crate::prost::{{OutputType.Codec.PackageModuleName}}::{{OutputType.Codec.Name}},
+                crate::prost::{{InputType.Codec.PackageModuleName}}::{{InputType.Codec.ProstRelativeName}},
+                crate::prost::{{OutputType.Codec.PackageModuleName}}::{{OutputType.Codec.ProstRelativeName}},
             >(
                 extensions,
                 path,
@@ -209,8 +209,8 @@ impl super::stub::{{Codec.Name}} for {{Codec.Name}} {
             .execute_server_streaming_tmp::<
                 {{InputType.Codec.QualifiedName}},
                 {{OutputType.Codec.QualifiedName}},
-                crate::prost::{{InputType.Codec.PackageModuleName}}::{{InputType.Codec.Name}},
-                crate::prost::{{OutputType.Codec.PackageModuleName}}::{{OutputType.Codec.Name}},
+                crate::prost::{{InputType.Codec.PackageModuleName}}::{{InputType.Codec.ProstRelativeName}},
+                crate::prost::{{OutputType.Codec.PackageModuleName}}::{{OutputType.Codec.ProstRelativeName}},
             >(
                 extensions,
                 path,

@@ -31,6 +31,8 @@ type messageAnnotation struct {
 	// The fully qualified name, relative to `codec.modulePath`. Typically this
 	// is the `QualifiedName` with the `crate::model::` prefix removed.
 	RelativeName string
+	// The type name relative to the prost module (e.g. `VertexAiSearch` or `parent::NestedType`).
+	ProstRelativeName string
 	// The fully qualified name for examples. For messages in external packages
 	// this is basically `QualifiedName`. For messages in the current package
 	// this includes `modelAnnotations.PackageName`.
@@ -77,6 +79,7 @@ func (c *codec) annotateMessage(m *api.Message, model *api.API, full bool) error
 		ModuleName:        toSnake(m.Name),
 		QualifiedName:     qualifiedName,
 		RelativeName:      relativeName,
+		ProstRelativeName: prostMessageRelativePath(m),
 		NameInExamples:    nameInExamples,
 		PackageModuleName: packageToModuleName(m.Package),
 		SourceFQN:         strings.TrimPrefix(m.ID, "."),
