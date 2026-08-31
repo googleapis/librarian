@@ -203,6 +203,45 @@ func TestDefaultOutput(t *testing.T) {
 	}
 }
 
+func TestCompileProtosArgs(t *testing.T) {
+	for _, test := range []struct {
+		name string
+		lib  *config.Library
+		want []string
+	}{
+		{
+			name: "nil nodejs config",
+			lib:  &config.Library{},
+			want: []string{"src", "--no-comments"},
+		},
+		{
+			name: "non-esm nodejs config",
+			lib: &config.Library{
+				Nodejs: &config.NodejsPackage{
+					ESM: false,
+				},
+			},
+			want: []string{"src", "--no-comments"},
+		},
+		{
+			name: "esm nodejs config",
+			lib: &config.Library{
+				Nodejs: &config.NodejsPackage{
+					ESM: true,
+				},
+			},
+			want: []string{"esm/src", "--no-comments", "--esm"},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := compileProtosArgs(test.lib)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
 func TestBuildGeneratorArgs(t *testing.T) {
 	absGoogleapisDir, err := filepath.Abs(googleapisDir)
 	if err != nil {
