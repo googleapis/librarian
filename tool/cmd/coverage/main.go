@@ -44,7 +44,7 @@ const defaultTarget = 80
 
 // targets lists components whose coverage target differs from defaultTarget.
 // The key is a package path suffix that identifies the component, and the value is the coverage target percentage.
-// For example, "internal/librarian/ruby": 70.
+// For example, "internal/librarian/foo": 70.
 var targets = map[string]float64{}
 
 func main() {
