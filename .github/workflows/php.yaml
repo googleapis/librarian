@@ -58,7 +58,7 @@ jobs:
             composer.json
             dev/
             # Note: If changing the target of the smoke test below, update this sparse checkout rule.
-            secretmanager/
+            SecretManager/
       - name: Checkout google-cloud-php (Full)
         if: matrix.sparse == false && (matrix.task != 'integration' || (github.event_name == 'push' && github.ref == 'refs/heads/main'))
         uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
