@@ -283,7 +283,7 @@ func TestValidateAPIPathExistence(t *testing.T) {
 		t.Fatal(err)
 	}
 	if err := validateAPIPathExistence(googleapisDir, "google/cloud/secretmanager/v1"); err != nil {
-		t.Fatalf("expected nil error, got %v", err)
+		t.Errorf("expected nil error, got %v", err)
 	}
 }
 
@@ -321,7 +321,7 @@ func TestValidateAPIPathExistence_Error(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			err := validateAPIPathExistence(googleapisDir, test.apiPath)
 			if !errors.Is(err, test.wantErr) {
-				t.Fatalf("expected error %v, got %v", test.wantErr, err)
+				t.Errorf("expected error %v, got %v", test.wantErr, err)
 			}
 		})
 	}
