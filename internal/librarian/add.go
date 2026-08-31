@@ -112,7 +112,11 @@ func runAdd(ctx context.Context, cfg *config.Config, api, explicitLibraryName st
 	if explicitLibraryName != "" && cfg.Language != config.LanguageRuby {
 		return errNameOnlyForRuby
 	}
-	if err := validateAPIPathExistence(ctx, cfg, api); err != nil {
+	googleapisDir, err := fetchSource(ctx, cfg.Sources.Googleapis, googleapisRepo)
+	if err != nil {
+		return err
+	}
+	if err := validateAPIPathExistence(googleapisDir, api); err != nil {
 		return err
 	}
 	name, cfg, err := addLibrary(cfg, api, explicitLibraryName)
@@ -137,15 +141,10 @@ func runAdd(ctx context.Context, cfg *config.Config, api, explicitLibraryName st
 }
 
 // validateAPIPathExistence verifies that the given API path exists as a directory
-// in the configured googleapis source repository. It expects cfg.Sources.Googleapis
-// to be configured.
-func validateAPIPathExistence(ctx context.Context, cfg *config.Config, api string) error {
+// in the googleapis source directory.
+func validateAPIPathExistence(googleapisDir, api string) error {
 	if api == "" {
 		return fmt.Errorf("%w: %s", errAPINotFound, api)
-	}
-	googleapisDir, err := fetchSource(ctx, cfg.Sources.Googleapis, googleapisRepo)
-	if err != nil {
-		return err
 	}
 	fullPath := filepath.Join(googleapisDir, api)
 	// Ensure the path does not escape the source root and is not the root itself.
