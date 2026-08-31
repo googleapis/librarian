@@ -98,6 +98,10 @@ func generateAPI(ctx context.Context, api *config.API, library *config.Library, 
 	if err != nil {
 		return err
 	}
+	serviceConfig, err := serviceconfig.Find(googleapisDir, api.Path, config.LanguageRuby)
+	if err != nil {
+		return err
+	}
 	installDir, err := InstallDir()
 	if err != nil {
 		return err
@@ -111,23 +115,7 @@ func generateAPI(ctx context.Context, api *config.API, library *config.Library, 
 	}
 	// A main client is a wrapper of a versioned client
 	isWrapper := library.Ruby != nil && len(library.Ruby.WrapperOf) > 0
-	args := []string{
-		"--experimental_allow_proto3_optional",
-		"-I=" + googleapisDir,
-		"--ruby_cloud_out=" + stagingDir,
-	}
-	if !isWrapper {
-		grpcPluginPath := filepath.Join(installDir, "bin", "grpc_tools_ruby_protoc_plugin")
-		args = append(args,
-			"--ruby_out="+libStagingDir,
-			"--grpc_out="+libStagingDir,
-			"--plugin=protoc-gen-grpc="+grpcPluginPath,
-		)
-	}
-	if len(gapicOpts) > 0 {
-		args = append(args, "--ruby_cloud_opt="+strings.Join(gapicOpts, ","))
-	}
-	args = append(args, protoFiles...)
+	args := buildProtocArgs(googleapisDir, stagingDir, libStagingDir, installDir, isWrapper, serviceConfig, gapicOpts, protoFiles)
 	env, err := toolsEnv()
 	if err != nil {
 		return err
@@ -225,9 +213,32 @@ func buildGAPICOpts(api *config.API, library *config.Library, googleapisDir stri
 	return opts, nil
 }
 
-func transport(sc *serviceconfig.API) serviceconfig.Transport {
-	if sc != nil {
-		return sc.Transport(config.LanguageRuby)
+func buildProtocArgs(googleapisDir, stagingDir, libStagingDir, installDir string, isWrapper bool, serviceConfig *serviceconfig.API, gapicOpts, protoFiles []string) []string {
+	args := []string{
+		"--experimental_allow_proto3_optional",
+		"-I=" + googleapisDir,
+		"--ruby_cloud_out=" + stagingDir,
+	}
+	if !isWrapper {
+		args = append(args, "--ruby_out="+libStagingDir)
+		if trans := transport(serviceConfig); trans != serviceconfig.Rest {
+			grpcPluginPath := filepath.Join(installDir, "bin", "grpc_tools_ruby_protoc_plugin")
+			args = append(args,
+				"--grpc_out="+libStagingDir,
+				"--plugin=protoc-gen-grpc="+grpcPluginPath,
+			)
+		}
+	}
+	if len(gapicOpts) > 0 {
+		args = append(args, "--ruby_cloud_opt="+strings.Join(gapicOpts, ","))
+	}
+	args = append(args, protoFiles...)
+	return args
+}
+
+func transport(serviceConfig *serviceconfig.API) serviceconfig.Transport {
+	if serviceConfig != nil {
+		return serviceConfig.Transport(config.LanguageRuby)
 	}
 	return serviceconfig.GRPCRest
 }
