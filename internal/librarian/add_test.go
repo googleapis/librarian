@@ -652,8 +652,8 @@ func TestAddLibraryCommand_Java(t *testing.T) {
 				},
 			},
 		},
-		&config.Library{Name: "google-cloud-java", Version: "1.0.0"},
-		&config.Library{Name: "google-cloud-pom-parent", Version: "1.0.0"},
+		{Name: "google-cloud-java", Version: "1.0.0"},
+		{Name: "google-cloud-pom-parent", Version: "1.0.0"},
 	}
 	if diff := cmp.Diff(wantLibraries, gotCfg.Libraries); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)

@@ -149,6 +149,16 @@ func TestClean(t *testing.T) {
 	}
 }
 
+func TestClean_NonExistentOutput(t *testing.T) {
+	t.Parallel()
+	lib := &config.Library{
+		Output: filepath.Join(t.TempDir(), "nonexistent"),
+	}
+	if err := Clean(lib); err != nil {
+		t.Fatal(err)
+	}
+}
+
 func TestClean_Error(t *testing.T) {
 	for _, test := range []struct {
 		name    string
