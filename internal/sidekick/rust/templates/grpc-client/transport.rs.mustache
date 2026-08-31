@@ -129,8 +129,8 @@ impl super::stub::{{Codec.Name}} for {{Codec.Name}} {
             .execute_bidi_streaming_tmp::<
                 {{InputType.Codec.QualifiedName}},
                 {{OutputType.Codec.QualifiedName}},
-                crate::{{InputType.Codec.PackageModuleName}}::{{InputType.Codec.Name}},
-                crate::{{OutputType.Codec.PackageModuleName}}::{{OutputType.Codec.Name}},
+                crate::{{InputType.Codec.PackageModuleName}}::{{InputType.Codec.ProstRelativeName}},
+                crate::{{OutputType.Codec.PackageModuleName}}::{{OutputType.Codec.ProstRelativeName}},
             >(
                 extensions,
                 path,
@@ -190,8 +190,8 @@ impl super::stub::{{Codec.Name}} for {{Codec.Name}} {
             .execute_server_streaming_tmp::<
                 {{InputType.Codec.QualifiedName}},
                 {{OutputType.Codec.QualifiedName}},
-                crate::{{InputType.Codec.PackageModuleName}}::{{InputType.Codec.Name}},
-                crate::{{OutputType.Codec.PackageModuleName}}::{{OutputType.Codec.Name}},
+                crate::{{InputType.Codec.PackageModuleName}}::{{InputType.Codec.ProstRelativeName}},
+                crate::{{OutputType.Codec.PackageModuleName}}::{{OutputType.Codec.ProstRelativeName}},
             >(
                 extensions,
                 path,
@@ -262,7 +262,7 @@ impl super::stub::{{Codec.Name}} for {{Codec.Name}} {
         type TR = ();
         {{/ReturnsEmpty}}
         {{^ReturnsEmpty}}
-        type TR = crate::{{OutputType.Codec.PackageModuleName}}::{{OutputType.Codec.Name}};
+        type TR = crate::{{OutputType.Codec.PackageModuleName}}::{{OutputType.Codec.ProstRelativeName}};
         {{/ReturnsEmpty}}
         {{#Codec.DetailedTracingAttributes}}
         if let Some(recorder) = gaxi::observability::RequestRecorder::current() {
@@ -363,7 +363,7 @@ pub(crate) fn lro_any_from_prost(
 {{#Codec.Services}}
 {{#Codec.LROTypes}}
         "type.googleapis.com/{{Codec.SourceFQN}}" => value
-            .to_msg::<crate::{{Codec.PackageModuleName}}::{{Codec.Name}}>()
+            .to_msg::<crate::{{Codec.PackageModuleName}}::{{Codec.ProstRelativeName}}>()
             .map_err(ConvertError::other)?
             .cnv()
             .and_then(|our_msg| wkt::Any::from_msg(&our_msg).map_err(ConvertError::other)),

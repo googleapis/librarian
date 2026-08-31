@@ -1250,6 +1250,28 @@ func TestToPascal(t *testing.T) {
 	}
 }
 
+func TestToProstPascal(t *testing.T) {
+	var tests = []rustCaseConvertTest{
+		{"foo_bar", "FooBar"},
+		{"FooBar", "FooBar"},
+		{"True", "True"},
+		{"Self", "r#Self"},
+		{"self", "r#Self"},
+		{"yield", "Yield"},
+		{"IAMPolicy", "IamPolicy"},
+		{"IAMPolicyRequest", "IamPolicyRequest"},
+		{"IAM", "Iam"},
+		{"VertexAISearch", "VertexAiSearch"},
+		{"IPVersion", "IpVersion"},
+		{"DNSConfig", "DnsConfig"},
+	}
+	for _, test := range tests {
+		if output := toProstPascal(test.Input); output != test.Expected {
+			t.Errorf("toProstPascal(%q) = %q, want %q", test.Input, output, test.Expected)
+		}
+	}
+}
+
 func TestFormatDocComments(t *testing.T) {
 	input := `Some comments describing the thing.
 

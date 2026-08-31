@@ -33,6 +33,8 @@ type fieldAnnotations struct {
 	// In Rust, fields that appear in a OneOf also appear as a enum branch.
 	// These must be in `PascalCase`.
 	BranchName string
+	// The enum branch name in prost generated enum.
+	ProstBranchName string
 	// The fully qualified name of the containing message.
 	FQMessageName      string
 	DocLines           []string
@@ -200,6 +202,7 @@ func (c *codec) annotateField(field *api.Field, message *api.Message, model *api
 		SetterName:         toSnakeNoMangling(field.Name),
 		FQMessageName:      fqMessageName,
 		BranchName:         toPascal(field.Name),
+		ProstBranchName:    toProstPascal(field.Name),
 		DocLines:           docLines,
 		FieldType:          fieldType,
 		PrimitiveFieldType: primitiveFieldType,

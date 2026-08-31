@@ -15,33 +15,33 @@ limitations under the License.
 }}
 
 {{> /templates/common/feature_gate}}
-impl gaxi::prost::ToProto<{{Codec.RelativeName}}> for {{Codec.QualifiedName}} {
-    type Output = {{Codec.RelativeName}};
+impl gaxi::prost::ToProto<{{Codec.ProstRelativeName}}> for {{Codec.QualifiedName}} {
+    type Output = {{Codec.ProstRelativeName}};
     fn to_proto(self) -> std::result::Result<Self::Output, gaxi::prost::ConvertError> {
         match self {
             {{#Fields}}
-            Self::{{Codec.BranchName}}(v) => Ok(Self::Output::{{Codec.BranchName}}({{#Codec.MapToBoxed}}std::boxed::Box::new({{/Codec.MapToBoxed}}{{#Codec.IsBoxed}}(*v){{/Codec.IsBoxed}}{{^Codec.IsBoxed}}v{{/Codec.IsBoxed}}.to_proto()?{{#Codec.MapToBoxed}}){{/Codec.MapToBoxed}})),
+            Self::{{Codec.BranchName}}(v) => Ok(Self::Output::{{Codec.ProstBranchName}}({{#Codec.MapToBoxed}}std::boxed::Box::new({{/Codec.MapToBoxed}}{{#Codec.IsBoxed}}(*v){{/Codec.IsBoxed}}{{^Codec.IsBoxed}}v{{/Codec.IsBoxed}}.to_proto()?{{#Codec.MapToBoxed}}){{/Codec.MapToBoxed}})),
             {{/Fields}}
         }
     }
 }
 
 {{> /templates/common/feature_gate}}
-impl gaxi::prost::FromProto<{{Codec.QualifiedName}}> for {{Codec.RelativeName}} {
+impl gaxi::prost::FromProto<{{Codec.QualifiedName}}> for {{Codec.ProstRelativeName}} {
     fn cnv(self) -> std::result::Result<{{Codec.QualifiedName}}, gaxi::prost::ConvertError> {
         use {{Codec.QualifiedName}} as T;
         match self {
             {{#Fields}}
             {{^IsEnum}}
             {{^Codec.IsBoxed}}
-            Self::{{Codec.BranchName}}(v) => Ok(T::{{Codec.BranchName}}(v.cnv()?)),
+            Self::{{Codec.ProstBranchName}}(v) => Ok(T::{{Codec.BranchName}}(v.cnv()?)),
             {{/Codec.IsBoxed}}
             {{#Codec.IsBoxed}}
-            Self::{{Codec.BranchName}}(v) => Ok(T::{{Codec.BranchName}}(std::boxed::Box::new(v.cnv()?))),
+            Self::{{Codec.ProstBranchName}}(v) => Ok(T::{{Codec.BranchName}}(std::boxed::Box::new(v.cnv()?))),
             {{/Codec.IsBoxed}}
             {{/IsEnum}}
             {{#IsEnum}}
-            Self::{{Codec.BranchName}}(v) => Ok(T::{{Codec.BranchName}}(v.into())),
+            Self::{{Codec.ProstBranchName}}(v) => Ok(T::{{Codec.BranchName}}(v.into())),
             {{/IsEnum}}
             {{/Fields}}
         }

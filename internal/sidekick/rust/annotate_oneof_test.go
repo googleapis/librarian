@@ -99,6 +99,7 @@ func TestOneOfAnnotations(t *testing.T) {
 		EnumNameInExamples:  "Type",
 		QualifiedName:       "crate::model::message::Type",
 		RelativeName:        "message::Type",
+		ProstRelativeName:   "message::Type",
 		StructQualifiedName: "crate::model::Message",
 		NameInExamples:      "google_cloud_test::model::message::Type",
 		FieldType:           "crate::model::message::Type",
@@ -114,6 +115,7 @@ func TestOneOfAnnotations(t *testing.T) {
 		FieldName:          "oneof_field",
 		SetterName:         "oneof_field",
 		BranchName:         "OneofField",
+		ProstBranchName:    "OneofField",
 		FQMessageName:      "crate::model::Message",
 		DocLines:           nil,
 		FieldType:          "std::string::String",
@@ -131,6 +133,7 @@ func TestOneOfAnnotations(t *testing.T) {
 		FieldName:          "oneof_field_repeated",
 		SetterName:         "oneof_field_repeated",
 		BranchName:         "OneofFieldRepeated",
+		ProstBranchName:    "OneofFieldRepeated",
 		FQMessageName:      "crate::model::Message",
 		DocLines:           nil,
 		FieldType:          "std::vec::Vec<std::string::String>",
@@ -148,6 +151,7 @@ func TestOneOfAnnotations(t *testing.T) {
 		FieldName:          "oneof_field_map",
 		SetterName:         "oneof_field_map",
 		BranchName:         "OneofFieldMap",
+		ProstBranchName:    "OneofFieldMap",
 		FQMessageName:      "crate::model::Message",
 		DocLines:           nil,
 		FieldType:          "std::collections::HashMap<i32,f32>",
@@ -170,6 +174,7 @@ func TestOneOfAnnotations(t *testing.T) {
 		FieldName:          "oneof_field_integer",
 		SetterName:         "oneof_field_integer",
 		BranchName:         "OneofFieldInteger",
+		ProstBranchName:    "OneofFieldInteger",
 		FQMessageName:      "crate::model::Message",
 		DocLines:           nil,
 		FieldType:          "i64",
@@ -187,6 +192,7 @@ func TestOneOfAnnotations(t *testing.T) {
 		FieldName:          "oneof_field_boxed",
 		SetterName:         "oneof_field_boxed",
 		BranchName:         "OneofFieldBoxed",
+		ProstBranchName:    "OneofFieldBoxed",
 		FQMessageName:      "crate::model::Message",
 		DocLines:           nil,
 		FieldType:          "std::boxed::Box<wkt::DoubleValue>",
@@ -204,32 +210,15 @@ func TestOneOfAnnotations(t *testing.T) {
 }
 
 func TestOneOfConflictAnnotations(t *testing.T) {
-	singular := &api.Field{
-		Name:     "oneof_field",
-		JSONName: "oneofField",
-		ID:       ".test.Message.oneof_field",
-		Typez:    api.TypezString,
-		IsOneOf:  true,
-	}
-	group := &api.OneOf{
-		Name:          "nested_thing",
-		ID:            ".test.Message.nested_thing",
-		Documentation: "Say something clever about this oneof.",
-		Fields:        []*api.Field{singular},
-	}
-	child := &api.Message{
-		Name:    "NestedThing",
-		ID:      ".test.Message.NestedThing",
-		Package: "test",
-	}
-	message := &api.Message{
-		Name:     "Message",
-		ID:       ".test.Message",
-		Package:  "test",
-		Fields:   []*api.Field{singular},
-		OneOfs:   []*api.OneOf{group},
-		Messages: []*api.Message{child},
-	}
+	singular := api.NewTestField("oneof_field").WithType(api.TypezString)
+	group := api.NewTestOneOf("nested_thing").WithFields(singular)
+	group.Documentation = "Say something clever about this oneof."
+	child := api.NewTestMessage("NestedThing")
+	message := api.NewTestMessage("Message").
+		WithOneOfs(group)
+	message.Messages = []*api.Message{child}
+	child.Parent = message
+
 	model := api.NewTestAPI([]*api.Message{message}, []*api.Enum{}, []*api.Service{})
 	api.CrossReference(model)
 	codec := newTestCodec(t, libconfig.SpecProtobuf, "", map[string]string{
@@ -247,6 +236,7 @@ func TestOneOfConflictAnnotations(t *testing.T) {
 		EnumNameInExamples:  "NestedThingOneOf",
 		QualifiedName:       "crate::model::message::NestedThingOneOf",
 		RelativeName:        "message::NestedThingOneOf",
+		ProstRelativeName:   "message::NestedThingOneOf",
 		StructQualifiedName: "crate::model::Message",
 		NameInExamples:      "google_cloud_test::model::message::NestedThingOneOf",
 		FieldType:           "crate::model::message::NestedThingOneOf",
@@ -258,26 +248,10 @@ func TestOneOfConflictAnnotations(t *testing.T) {
 }
 
 func TestOneOfUnqualifiedConflictAnnotations(t *testing.T) {
-	singular := &api.Field{
-		Name:     "oneof_field",
-		JSONName: "oneofField",
-		ID:       ".test.Message.oneof_field",
-		Typez:    api.TypezString,
-		IsOneOf:  true,
-	}
-	group := &api.OneOf{
-		Name:          "message",
-		ID:            ".test.Message.message.message",
-		Documentation: "Say something clever about this oneof.",
-		Fields:        []*api.Field{singular},
-	}
-	message := &api.Message{
-		Name:    "Message",
-		ID:      ".test.Message",
-		Package: "test",
-		Fields:  []*api.Field{singular},
-		OneOfs:  []*api.OneOf{group},
-	}
+	singular := api.NewTestField("oneof_field").WithType(api.TypezString)
+	group := api.NewTestOneOf("message").WithFields(singular)
+	group.Documentation = "Say something clever about this oneof."
+	message := api.NewTestMessage("Message").WithOneOfs(group)
 	model := api.NewTestAPI([]*api.Message{message}, []*api.Enum{}, []*api.Service{})
 	api.CrossReference(model)
 	codec := createRustCodec()
@@ -292,6 +266,7 @@ func TestOneOfUnqualifiedConflictAnnotations(t *testing.T) {
 		EnumName:            "Message",
 		QualifiedName:       "crate::model::message::Message",
 		RelativeName:        "message::Message",
+		ProstRelativeName:   "message::Message",
 		StructQualifiedName: "crate::model::Message",
 		NameInExamples:      "google_cloud_test::model::message::Message",
 		FieldType:           "crate::model::message::Message",
