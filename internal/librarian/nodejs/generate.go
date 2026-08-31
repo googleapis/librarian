@@ -409,13 +409,10 @@ func runPostProcessor(ctx context.Context, cfg *config.Config, library *config.L
 }
 
 func compileProtosArgs(library *config.Library) []string {
-	protoDir := "src"
-	compileArgs := []string{"--no-comments"}
 	if library.Nodejs != nil && library.Nodejs.ESM {
-		protoDir = "esm/src"
-		compileArgs = append(compileArgs, "--esm")
+		return []string{"esm/src", "--no-comments", "--esm"}
 	}
-	return append([]string{protoDir}, compileArgs...)
+	return []string{"src", "--no-comments"}
 }
 
 // movePackageFromStaging moves the generated code for a single package from
