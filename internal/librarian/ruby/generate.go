@@ -94,11 +94,11 @@ func generateAPI(ctx context.Context, api *config.API, library *config.Library, 
 	if err != nil {
 		return err
 	}
-	gapicOpts, err := buildGAPICOpts(api, library, googleapisDir)
+	serviceConfig, err := serviceconfig.Find(googleapisDir, api.Path, config.LanguageRuby)
 	if err != nil {
 		return err
 	}
-	serviceConfig, err := serviceconfig.Find(googleapisDir, api.Path, config.LanguageRuby)
+	gapicOpts, err := buildGAPICOpts(api, library, googleapisDir, serviceConfig)
 	if err != nil {
 		return err
 	}
@@ -138,11 +138,7 @@ func generateAPI(ctx context.Context, api *config.API, library *config.Library, 
 	return nil
 }
 
-func buildGAPICOpts(api *config.API, library *config.Library, googleapisDir string) ([]string, error) {
-	sc, err := serviceconfig.Find(googleapisDir, api.Path, config.LanguageRuby)
-	if err != nil {
-		return nil, err
-	}
+func buildGAPICOpts(api *config.API, library *config.Library, googleapisDir string, serviceConfig *serviceconfig.API) ([]string, error) {
 	gc, err := serviceconfig.FindGRPCServiceConfig(googleapisDir, api.Path)
 	if err != nil {
 		return nil, err
@@ -150,21 +146,21 @@ func buildGAPICOpts(api *config.API, library *config.Library, googleapisDir stri
 	opts := []string{
 		"ruby-cloud-gem-name=" + library.Name,
 	}
-	if sc != nil && sc.ServiceConfig != "" {
-		opts = append(opts, "service-yaml="+filepath.Join(googleapisDir, sc.ServiceConfig))
+	if serviceConfig != nil && serviceConfig.ServiceConfig != "" {
+		opts = append(opts, "service-yaml="+filepath.Join(googleapisDir, serviceConfig.ServiceConfig))
 	}
-	if sc != nil && sc.Description != "" {
-		desc := escapeRubyCloudOptValue(strings.Join(strings.Fields(sc.Description), " "))
+	if serviceConfig != nil && serviceConfig.Description != "" {
+		desc := escapeRubyCloudOptValue(strings.Join(strings.Fields(serviceConfig.Description), " "))
 		opts = append(opts, "ruby-cloud-description="+desc, "ruby-cloud-summary="+desc)
 	}
 	if gc != "" {
 		opts = append(opts, "grpc-service-config="+filepath.Join(googleapisDir, gc))
 	}
-	if trans := transport(sc); trans != "" {
+	if trans := transport(serviceConfig); trans != "" {
 		transports := strings.ReplaceAll(string(trans), "+", ";")
 		opts = append(opts, "ruby-cloud-generate-transports="+transports)
 	}
-	if sc != nil && sc.HasRESTNumericEnums(config.LanguageRuby) {
+	if serviceConfig != nil && serviceConfig.HasRESTNumericEnums(config.LanguageRuby) {
 		opts = append(opts, "ruby-cloud-rest-numeric-enums=true")
 	}
 	if api.Ruby != nil && api.Ruby.RubyCloudOpts != nil {

@@ -246,7 +246,11 @@ func TestBuildGAPICOpts(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got, err := buildGAPICOpts(test.api, test.library, googleapisDir)
+			serviceConfig, err := serviceconfig.Find(googleapisDir, test.api.Path, config.LanguageRuby)
+			if err != nil {
+				t.Fatal(err)
+			}
+			got, err := buildGAPICOpts(test.api, test.library, googleapisDir, serviceConfig)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -259,18 +263,18 @@ func TestBuildGAPICOpts(t *testing.T) {
 
 func TestTransport(t *testing.T) {
 	for _, test := range []struct {
-		name string
-		sc   *serviceconfig.API
-		want serviceconfig.Transport
+		name          string
+		serviceConfig *serviceconfig.API
+		want          serviceconfig.Transport
 	}{
 		{
-			name: "nil api",
-			sc:   nil,
-			want: serviceconfig.GRPCRest,
+			name:          "nil api",
+			serviceConfig: nil,
+			want:          serviceconfig.GRPCRest,
 		},
 		{
 			name: "rest only",
-			sc: &serviceconfig.API{
+			serviceConfig: &serviceconfig.API{
 				Transports: map[string]serviceconfig.Transport{
 					config.LanguageRuby: serviceconfig.Rest,
 				},
@@ -279,7 +283,7 @@ func TestTransport(t *testing.T) {
 		},
 		{
 			name: "rest and grpc",
-			sc: &serviceconfig.API{
+			serviceConfig: &serviceconfig.API{
 				Transports: map[string]serviceconfig.Transport{
 					config.LanguageRuby: serviceconfig.GRPCRest,
 				},
@@ -288,7 +292,7 @@ func TestTransport(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got := transport(test.sc)
+			got := transport(test.serviceConfig)
 			if got != test.want {
 				t.Errorf("transport() = %v, want %v", got, test.want)
 			}
