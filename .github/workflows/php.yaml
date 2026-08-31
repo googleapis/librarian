@@ -81,7 +81,6 @@ jobs:
             ~/.cache/librarian
           key: librarian-php-tools-v2-${{ runner.os }}-${{ hashFiles('internal/config/**/*.go') }}-${{ hashFiles('google-cloud-php/librarian.yaml') }}
       - name: Run librarian install
-        if: steps.cache-tools.outputs.cache-hit != 'true'
         working-directory: google-cloud-php
         run: |
           librarian install
