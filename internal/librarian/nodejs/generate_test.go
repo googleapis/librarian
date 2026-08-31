@@ -994,11 +994,12 @@ func TestGenerate(t *testing.T) {
 	if testing.Short() {
 		t.Skip("slow test: Node.js code generation")
 	}
-
+	if binDir, err := getBinDir(); err == nil {
+		t.Setenv("PATH", binDir+string(os.PathListSeparator)+os.Getenv("PATH"))
+	}
 	testhelper.RequireCommand(t, "gapic-generator-typescript")
 	testhelper.RequireCommand(t, "gapic-node-processing")
 	testhelper.RequireCommand(t, "compileProtos")
-
 	absGoogleapisDir, err := filepath.Abs(googleapisDir)
 	if err != nil {
 		t.Fatal(err)
