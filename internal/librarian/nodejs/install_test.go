@@ -255,6 +255,17 @@ func TestInstallDir(t *testing.T) {
 	}
 }
 
+func TestGetBinDir_Error(t *testing.T) {
+	t.Setenv(cache.EnvLibrarianBin, "")
+	t.Setenv(cache.EnvLibrarianCache, "")
+	t.Setenv("XDG_CACHE_HOME", "")
+	t.Setenv("HOME", "")
+	_, err := getBinDir()
+	if err == nil {
+		t.Fatalf("getBinDir() expected error")
+	}
+}
+
 func TestGetToolsEnv(t *testing.T) {
 	for _, test := range []struct {
 		name string
@@ -278,13 +289,13 @@ func TestGetToolsEnv(t *testing.T) {
 	}
 }
 
-func TestGetBinDir_Error(t *testing.T) {
+func TestGetToolsEnv_Error(t *testing.T) {
 	t.Setenv(cache.EnvLibrarianBin, "")
 	t.Setenv(cache.EnvLibrarianCache, "")
 	t.Setenv("XDG_CACHE_HOME", "")
 	t.Setenv("HOME", "")
-	_, err := getBinDir()
+	_, err := getToolsEnv()
 	if err == nil {
-		t.Fatalf("getBinDir() expected error")
+		t.Fatalf("getToolsEnv() expected error")
 	}
 }
