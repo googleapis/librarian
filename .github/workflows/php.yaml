@@ -55,6 +55,7 @@ jobs:
           sparse-checkout-cone-mode: false
           sparse-checkout: |
             librarian.yaml
+            composer.json
             dev/
             # Note: If changing the target of the smoke test below, update this sparse checkout rule.
             SecretManager/
