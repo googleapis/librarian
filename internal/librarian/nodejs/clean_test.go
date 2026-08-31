@@ -19,7 +19,6 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
-	"slices"
 	"testing"
 
 	"github.com/googleapis/librarian/internal/config"
@@ -33,6 +32,7 @@ func TestClean(t *testing.T) {
 		setupFiles  []string
 		contentMap  map[string]string
 		wantDeleted []string
+		wantKeep    []string
 	}{
 		{
 			name: "protos are deleted only from protos",
@@ -46,6 +46,10 @@ func TestClean(t *testing.T) {
 			wantDeleted: []string{
 				"protos/a.proto",
 				"protos/subdir/a.proto",
+			},
+			wantKeep: []string{
+				"protos/kept.proto",
+				"other/a.proto",
 			},
 		},
 		{
@@ -61,6 +65,11 @@ func TestClean(t *testing.T) {
 			wantDeleted: []string{
 				"src/x.json",
 				"src/subdir/x.json",
+			},
+			wantKeep: []string{
+				"src/subdir/kept.json",
+				"protos/x.json",
+				"root.json",
 			},
 		},
 		{
@@ -79,6 +88,9 @@ func TestClean(t *testing.T) {
 				"src/x.js",
 				"src/x.ts",
 			},
+			wantKeep: []string{
+				"src/handwritten.js",
+			},
 		},
 		{
 			name: "simple files obey keep",
@@ -92,7 +104,11 @@ func TestClean(t *testing.T) {
 			wantDeleted: []string{
 				"protos/protos.js",
 				"samples/package.json",
-			}},
+			},
+			wantKeep: []string{
+				"protos/protos.json",
+			},
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			repoRoot := t.TempDir()
@@ -117,16 +133,16 @@ func TestClean(t *testing.T) {
 			if err := Clean(lib); err != nil {
 				t.Fatal(err)
 			}
-			for _, file := range test.setupFiles {
+			for _, file := range test.wantDeleted {
 				fullPath := filepath.Join(lib.Output, file)
-				_, err := os.Stat(fullPath)
-				if err != nil && !errors.Is(err, fs.ErrNotExist) {
-					t.Fatal(err)
+				if _, err := os.Stat(fullPath); !errors.Is(err, fs.ErrNotExist) {
+					t.Errorf("file %s was not deleted: %v", file, err)
 				}
-				got := err != nil
-				want := slices.Contains(test.wantDeleted, file)
-				if got != want {
-					t.Errorf("file %s deleted: got %t, want %t", file, got, want)
+			}
+			for _, file := range test.wantKeep {
+				fullPath := filepath.Join(lib.Output, file)
+				if _, err := os.Stat(fullPath); err != nil {
+					t.Errorf("file %s was not kept: %v", file, err)
 				}
 			}
 		})
