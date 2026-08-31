@@ -1200,6 +1200,27 @@ func TestCopySamplesFromStaging_NonExistentDir(t *testing.T) {
 	}
 }
 
+func TestCopySamplesFromStaging_SkipsNonDirectory(t *testing.T) {
+	stagingDir := t.TempDir()
+	outDir := t.TempDir()
+	if err := os.WriteFile(filepath.Join(stagingDir, "file.txt"), []byte("content"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	sampleDir := filepath.Join(stagingDir, "v1", "samples")
+	if err := os.MkdirAll(sampleDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(sampleDir, "sample.js"), []byte("console.log()"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := copySamplesFromStaging(stagingDir, outDir); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := os.Stat(filepath.Join(outDir, "samples", "sample.js")); err != nil {
+		t.Errorf("expected sample.js to be copied: %v", err)
+	}
+}
+
 func TestGenerateAPI_NoProtos(t *testing.T) {
 	googleapisDir := t.TempDir()
 	repoRoot := t.TempDir()
