@@ -95,7 +95,7 @@ jobs:
       - name: Generate a single library (smoke test)
         if: matrix.task == 'smoke-test' && !(github.event_name == 'push' && github.ref == 'refs/heads/main')
         working-directory: google-cloud-php
-        run: librarian generate SecretManager
+        run: librarian generate secretmanager
       - name: Run librarian generate all (integration test)
         if: matrix.task == 'integration' && github.event_name == 'push' && github.ref == 'refs/heads/main'
         working-directory: google-cloud-php
