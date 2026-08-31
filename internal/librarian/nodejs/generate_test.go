@@ -994,6 +994,8 @@ func TestGenerate(t *testing.T) {
 	if testing.Short() {
 		t.Skip("slow test: Node.js code generation")
 	}
+	// Prepend the Librarian Node.js tools directory to PATH so testhelper.RequireCommand
+	// finds binaries installed by librarian install.
 	if binDir, err := getBinDir(); err == nil {
 		t.Setenv("PATH", binDir+string(os.PathListSeparator)+os.Getenv("PATH"))
 	}
