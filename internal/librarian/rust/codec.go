@@ -135,10 +135,10 @@ func buildCodec(library *config.Library, releaseLevel string) map[string]string 
 	if rust.IncludeStreamingMethods {
 		codec["include-streaming-methods"] = "true"
 	}
-	if rust.IncludeBidiStreamingMethods {
+	if rust.IncludeBidiStreamingMethods != nil && *rust.IncludeBidiStreamingMethods {
 		codec["include-bidi-streaming-methods"] = "true"
 	}
-	if rust.IncludeServerStreamingMethods {
+	if rust.IncludeServerStreamingMethods != nil && *rust.IncludeServerStreamingMethods {
 		codec["include-server-streaming-methods"] = "true"
 	}
 	if rust.PerServiceFeatures {
@@ -321,10 +321,10 @@ func buildModuleCodec(library *config.Library, module *config.RustModule) map[st
 	if module.IncludeStreamingMethods {
 		codec["include-streaming-methods"] = "true"
 	}
-	if module.IncludeBidiStreamingMethods {
+	if module.IncludeBidiStreamingMethods != nil && *module.IncludeBidiStreamingMethods {
 		codec["include-bidi-streaming-methods"] = "true"
 	}
-	if module.IncludeServerStreamingMethods {
+	if module.IncludeServerStreamingMethods != nil && *module.IncludeServerStreamingMethods {
 		codec["include-server-streaming-methods"] = "true"
 	}
 	detailedTracingAttributes := library.Rust != nil && library.Rust.DetailedTracingAttributes != nil && *library.Rust.DetailedTracingAttributes

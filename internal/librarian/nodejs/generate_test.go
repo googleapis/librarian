@@ -203,6 +203,45 @@ func TestDefaultOutput(t *testing.T) {
 	}
 }
 
+func TestCompileProtosArgs(t *testing.T) {
+	for _, test := range []struct {
+		name string
+		lib  *config.Library
+		want []string
+	}{
+		{
+			name: "nil nodejs config",
+			lib:  &config.Library{},
+			want: []string{"src", "--no-comments"},
+		},
+		{
+			name: "non-esm nodejs config",
+			lib: &config.Library{
+				Nodejs: &config.NodejsPackage{
+					ESM: false,
+				},
+			},
+			want: []string{"src", "--no-comments"},
+		},
+		{
+			name: "esm nodejs config",
+			lib: &config.Library{
+				Nodejs: &config.NodejsPackage{
+					ESM: true,
+				},
+			},
+			want: []string{"esm/src", "--no-comments", "--esm"},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := compileProtosArgs(test.lib)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
 func TestBuildGeneratorArgs(t *testing.T) {
 	absGoogleapisDir, err := filepath.Abs(googleapisDir)
 	if err != nil {
@@ -1627,68 +1666,6 @@ func TestInjectV1SmallExports(t *testing.T) {
 				t.Fatal(err)
 			}
 			if diff := cmp.Diff(test.want, string(got)); diff != "" {
-				t.Errorf("mismatch (-want +got):\n%s", diff)
-			}
-		})
-	}
-}
-
-func TestRemoveRedundantLinterFiles(t *testing.T) {
-	for _, test := range []struct {
-		name  string
-		keep  []string
-		files []string
-		want  []string
-	}{
-		{
-			name:  "removes all redundant linter files when keep is empty",
-			keep:  []string{},
-			files: []string{".eslintignore", ".eslintrc.json", ".prettierignore", ".prettierrc.js", ".prettierrc.cjs", "package.json", "README.md"},
-			want:  []string{"README.md", "package.json"},
-		},
-		{
-			name:  "preserves explicitly kept linter files",
-			keep:  []string{".eslintignore", ".eslintrc.json"},
-			files: []string{".eslintignore", ".eslintrc.json", ".prettierignore", ".prettierrc.js", "package.json", "README.md"},
-			want:  []string{".eslintignore", ".eslintrc.json", "README.md", "package.json"},
-		},
-		{
-			name:  "skips missing linter files without error",
-			keep:  []string{},
-			files: []string{"package.json", "README.md"},
-			want:  []string{"README.md", "package.json"},
-		},
-	} {
-		t.Run(test.name, func(t *testing.T) {
-			outDir := t.TempDir()
-			for _, f := range test.files {
-				path := filepath.Join(outDir, f)
-				if err := os.WriteFile(path, []byte("content"), 0o644); err != nil {
-					t.Fatal(err)
-				}
-			}
-
-			library := &config.Library{
-				Keep: test.keep,
-			}
-
-			if err := removeRedundantLinterFiles(library, outDir); err != nil {
-				t.Fatal(err)
-			}
-
-			var got []string
-			entries, err := os.ReadDir(outDir)
-			if err != nil {
-				t.Fatal(err)
-			}
-			for _, entry := range entries {
-				got = append(got, entry.Name())
-			}
-
-			slices.Sort(got)
-			slices.Sort(test.want)
-
-			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})

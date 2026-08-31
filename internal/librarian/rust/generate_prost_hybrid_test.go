@@ -103,9 +103,11 @@ func TestGenerateProstHybrid(t *testing.T) {
 			lib := &config.Library{
 				Name: "test-package",
 				Rust: &config.RustCrate{
-					IncludeBidiStreamingMethods:   test.includeBidiStreamingMethods,
-					IncludeServerStreamingMethods: test.includeServerStreamingMethods,
-					TemplateOverride:              test.templateOverride,
+					RustDefault: config.RustDefault{
+						IncludeBidiStreamingMethods:   &test.includeBidiStreamingMethods,
+						IncludeServerStreamingMethods: &test.includeServerStreamingMethods,
+					},
+					TemplateOverride: test.templateOverride,
 				},
 			}
 			absSpecSource, err := filepath.Abs("../../testdata/googleapis/google/type")

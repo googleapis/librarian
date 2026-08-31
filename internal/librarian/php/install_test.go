@@ -154,7 +154,6 @@ func TestInstall(t *testing.T) {
 }
 
 func TestInstall_Error(t *testing.T) {
-	testhelper.RequireCommand(t, "composer")
 	for _, test := range []struct {
 		name    string
 		tools   *config.Tools
@@ -183,6 +182,12 @@ func TestInstall_Error(t *testing.T) {
 						Version: "3.0.0",
 					},
 				},
+			},
+			setup: func(t *testing.T) {
+				bin := t.TempDir()
+				testhelper.WriteExecutable(t, filepath.Join(bin, "composer"), "#!/bin/sh\nexit 0\n")
+				testhelper.WriteExecutable(t, filepath.Join(bin, "php"), "#!/bin/sh\nexit 0\n")
+				t.Setenv("PATH", bin+string(os.PathListSeparator)+os.Getenv("PATH"))
 			},
 			wantErr: composer.ErrMissingRepo,
 		},

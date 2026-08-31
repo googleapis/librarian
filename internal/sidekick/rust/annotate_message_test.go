@@ -23,19 +23,13 @@ import (
 )
 
 func TestMessageAnnotations(t *testing.T) {
-	message := &api.Message{
-		Name:          "TestMessage",
-		Package:       "test.v1",
-		ID:            ".test.v1.TestMessage",
-		Documentation: "A test message.",
-	}
-	nested := &api.Message{
-		Name:          "NestedMessage",
-		Package:       "test.v1",
-		ID:            ".test.v1.TestMessage.NestedMessage",
-		Documentation: "A nested message.",
-		Parent:        message,
-	}
+	message := api.NewTestMessage("TestMessage").WithPackage("test.v1")
+	message.Documentation = "A test message."
+	nested := api.NewTestMessage("NestedMessage").
+		WithPackage("test.v1").
+		WithID(".test.v1.TestMessage.NestedMessage")
+	nested.Documentation = "A nested message."
+	nested.Parent = message
 	message.Messages = []*api.Message{nested}
 
 	model := api.NewTestAPI([]*api.Message{message}, []*api.Enum{}, []*api.Service{})
@@ -47,6 +41,7 @@ func TestMessageAnnotations(t *testing.T) {
 		ModuleName:        "test_message",
 		QualifiedName:     "crate::model::TestMessage",
 		RelativeName:      "TestMessage",
+		ProstRelativeName: "TestMessage",
 		NameInExamples:    "google_cloud_test_v1::model::TestMessage",
 		PackageModuleName: "test::v1",
 		SourceFQN:         "test.v1.TestMessage",
@@ -63,6 +58,7 @@ func TestMessageAnnotations(t *testing.T) {
 		ModuleName:        "nested_message",
 		QualifiedName:     "crate::model::test_message::NestedMessage",
 		RelativeName:      "test_message::NestedMessage",
+		ProstRelativeName: "test_message::NestedMessage",
 		NameInExamples:    "google_cloud_test_v1::model::test_message::NestedMessage",
 		PackageModuleName: "test::v1",
 		SourceFQN:         "test.v1.TestMessage.NestedMessage",
@@ -81,25 +77,12 @@ func TestSetterSampleAnnotations(t *testing.T) {
 		ID:      ".test.v1.TestEnum",
 		Package: "test.v1",
 	}
-	message := &api.Message{
-		Name:    "TestMessage",
-		ID:      ".test.v1.TestMessage",
-		Package: "test.v1",
-		Fields: []*api.Field{
-			{
-				Name:    "enum_field",
-				ID:      ".test.v1.TestMessage.enum_field",
-				Typez:   api.TypezEnum,
-				TypezID: ".test.v1.TestEnum",
-			},
-			{
-				Name:    "message_field",
-				ID:      ".test.v1.TestMessage.message_field",
-				Typez:   api.TypezMessage,
-				TypezID: ".test.v1.TestMessage",
-			},
-		},
-	}
+	message := api.NewTestMessage("TestMessage").WithPackage("test.v1").WithFields(
+		api.NewTestField("enum_field").WithType(api.TypezEnum),
+		api.NewTestField("message_field").WithType(api.TypezMessage),
+	)
+	message.Fields[0].TypezID = ".test.v1.TestEnum"
+	message.Fields[1].TypezID = ".test.v1.TestMessage"
 
 	model := api.NewTestAPI([]*api.Message{message}, []*api.Enum{enum}, []*api.Service{})
 	api.CrossReference(model)
@@ -133,18 +116,9 @@ func TestSetterSampleAnnotations(t *testing.T) {
 }
 
 func TestInternalMessageOverrides(t *testing.T) {
-	public := &api.Message{
-		Name: "Public",
-		ID:   ".test.Public",
-	}
-	private1 := &api.Message{
-		Name: "Private1",
-		ID:   ".test.Private1",
-	}
-	private2 := &api.Message{
-		Name: "Private2",
-		ID:   ".test.Private2",
-	}
+	public := api.NewTestMessage("Public")
+	private1 := api.NewTestMessage("Private1")
+	private2 := api.NewTestMessage("Private2")
 	model := api.NewTestAPI([]*api.Message{public, private1, private2},
 		[]*api.Enum{},
 		[]*api.Service{})

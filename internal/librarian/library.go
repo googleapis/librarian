@@ -143,12 +143,24 @@ func fillRust(lib *config.Library, d *config.Default) *config.Library {
 	if lib.Rust.GenerateRpcSamples == "" {
 		lib.Rust.GenerateRpcSamples = d.Rust.GenerateRpcSamples
 	}
+	if lib.Rust.IncludeBidiStreamingMethods == nil {
+		lib.Rust.IncludeBidiStreamingMethods = d.Rust.IncludeBidiStreamingMethods
+	}
+	if lib.Rust.IncludeServerStreamingMethods == nil {
+		lib.Rust.IncludeServerStreamingMethods = d.Rust.IncludeServerStreamingMethods
+	}
 	for _, mod := range lib.Rust.Modules {
 		if mod.GenerateSetterSamples == "" {
 			mod.GenerateSetterSamples = lib.Rust.GenerateSetterSamples
 		}
 		if mod.GenerateRpcSamples == "" {
 			mod.GenerateRpcSamples = lib.Rust.GenerateRpcSamples
+		}
+		if mod.IncludeBidiStreamingMethods == nil {
+			mod.IncludeBidiStreamingMethods = lib.Rust.IncludeBidiStreamingMethods
+		}
+		if mod.IncludeServerStreamingMethods == nil {
+			mod.IncludeServerStreamingMethods = lib.Rust.IncludeServerStreamingMethods
 		}
 	}
 	return lib
@@ -821,6 +833,12 @@ func mergeRust(dst, src *config.RustCrate) *config.RustCrate {
 	}
 	if src.IncludeStreamingMethods {
 		res.IncludeStreamingMethods = src.IncludeStreamingMethods
+	}
+	if src.IncludeBidiStreamingMethods != nil {
+		res.IncludeBidiStreamingMethods = src.IncludeBidiStreamingMethods
+	}
+	if src.IncludeServerStreamingMethods != nil {
+		res.IncludeServerStreamingMethods = src.IncludeServerStreamingMethods
 	}
 	if src.PostProcessProtos != "" {
 		res.PostProcessProtos = src.PostProcessProtos

@@ -25,9 +25,8 @@ jobs:
         with:
           persist-credentials: false
       - uses: ./.github/actions/setup-librarian
-      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
         with:
-          python-version: "3.14"
+          include_python: 'true'
       - name: Install pandoc
         run: |
           set -e

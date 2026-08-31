@@ -121,6 +121,14 @@ type RustDefault struct {
 
 	// ResourceNameHeuristic indicates whether to apply heuristics to identify and generate resource names.
 	ResourceNameHeuristic *bool `yaml:"resource_name_heuristic,omitempty"`
+
+	// IncludeBidiStreamingMethods indicates whether to include gRPC bi-directional streaming
+	// methods.
+	IncludeBidiStreamingMethods *bool `yaml:"include_bidi_streaming_methods,omitempty"`
+
+	// IncludeServerStreamingMethods indicates whether to include gRPC server-side streaming
+	// methods.
+	IncludeServerStreamingMethods *bool `yaml:"include_server_streaming_methods,omitempty"`
 }
 
 // RustModule defines a generation target within a veneer crate.
@@ -169,11 +177,11 @@ type RustModule struct {
 
 	// IncludeBidiStreamingMethods indicates whether to include gRPC bi-directional streaming
 	// methods.
-	IncludeBidiStreamingMethods bool `yaml:"include_bidi_streaming_methods,omitempty"`
+	IncludeBidiStreamingMethods *bool `yaml:"include_bidi_streaming_methods,omitempty"`
 
 	// IncludeServerStreamingMethods indicates whether to include gRPC server-side streaming
 	// methods.
-	IncludeServerStreamingMethods bool `yaml:"include_server_streaming_methods,omitempty"`
+	IncludeServerStreamingMethods *bool `yaml:"include_server_streaming_methods,omitempty"`
 
 	// InternalBuilders indicates whether generated builders should be internal to the crate.
 	InternalBuilders bool `yaml:"internal_builders,omitempty"`
@@ -273,14 +281,6 @@ type RustCrate struct {
 	// IncludeStreamingMethods indicates whether to include gRPC streaming
 	// methods.
 	IncludeStreamingMethods bool `yaml:"include_streaming_methods,omitempty"`
-
-	// IncludeBidiStreamingMethods indicates whether to include gRPC bi-directional streaming
-	// methods.
-	IncludeBidiStreamingMethods bool `yaml:"include_bidi_streaming_methods,omitempty"`
-
-	// IncludeServerStreamingMethods indicates whether to include gRPC server-side streaming
-	// methods.
-	IncludeServerStreamingMethods bool `yaml:"include_server_streaming_methods,omitempty"`
 
 	// PostProcessProtos indicates whether to post-process protos.
 	PostProcessProtos string `yaml:"post_process_protos,omitempty"`
@@ -872,6 +872,12 @@ type PHPAPI struct {
 	// Samples determines whether to generate samples for the API.
 	// Default to true when omitted.
 	Samples *bool `yaml:"samples,omitempty"`
+
+	// SkipGRPCServiceConfig indicates whether to skip the generation of gRPC service config.
+	// Default to false.
+	// TODO(https://github.com/googleapis/librarian/issues/7436): Remove this config once
+	// Bigtable uses GRPC service config.
+	SkipGRPCServiceConfig bool `yaml:"skip_grpc_service_config,omitempty"`
 
 	// StagingSubdir is the subdirectory in staging where the generated files should be placed.
 	StagingSubdir string `yaml:"staging_subdir,omitempty"`

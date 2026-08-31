@@ -777,3 +777,55 @@ func TestShouldGenerateSamples(t *testing.T) {
 		})
 	}
 }
+
+func TestGRPCServiceConfigPath(t *testing.T) {
+	googleapisDir := "../../testdata/googleapis"
+	absGoogleapis, err := filepath.Abs(googleapisDir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, test := range []struct {
+		name     string
+		api      *config.API
+		wantFile string
+	}{
+		{
+			name: "grpc config found",
+			api: &config.API{
+				Path: "google/cloud/secretmanager/v1",
+				PHP:  &config.PHPAPI{},
+			},
+			wantFile: "google/cloud/secretmanager/v1/secretmanager_grpc_service_config.json",
+		},
+		{
+			name: "grpc config not found",
+			api: &config.API{
+				Path: "google/apps/meet/v2",
+				PHP:  &config.PHPAPI{},
+			},
+		},
+		{
+			name: "skip grpc service config",
+			api: &config.API{
+				Path: "google/cloud/secretmanager/v1",
+				PHP: &config.PHPAPI{
+					SkipGRPCServiceConfig: true,
+				},
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got, err := grpcServiceConfigPath(test.api, absGoogleapis)
+			if err != nil {
+				t.Fatal(err)
+			}
+			var want string
+			if test.wantFile != "" {
+				want = filepath.Join(absGoogleapis, test.wantFile)
+			}
+			if diff := cmp.Diff(want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}

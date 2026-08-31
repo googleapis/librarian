@@ -166,15 +166,11 @@ func generateGAPIC(ctx context.Context, params *generateAPIParams, pc *config.Pr
 	if !shouldGenerateGAPIC(params.api) {
 		return nil
 	}
-	grpcConfigPath, err := serviceconfig.FindGRPCServiceConfig(googleapisDir, params.api.Path)
-	if err != nil {
-		return err
-	}
 	apiMetadata, err := serviceconfig.Find(googleapisDir, params.api.Path, config.LanguagePhp)
 	if err != nil {
 		return err
 	}
-	grpcConfigAbsPath, err := absConfigPath(googleapisDir, grpcConfigPath)
+	grpcSrvConfigAbsPath, err := grpcServiceConfigPath(params.api, googleapisDir)
 	if err != nil {
 		return err
 	}
@@ -190,7 +186,7 @@ func generateGAPIC(ctx context.Context, params *generateAPIParams, pc *config.Pr
 	if err != nil {
 		return err
 	}
-	opts := gapicOpts(params.api, apiMetadata, grpcConfigAbsPath, serviceYamlAbsPath, gapicYamlAbsPath)
+	opts := gapicOpts(params.api, apiMetadata, grpcSrvConfigAbsPath, serviceYamlAbsPath, gapicYamlAbsPath)
 	additionalProtos := params.api.PHP.AdditionalProtos
 	includeCommonResources := *params.api.PHP.CommonResources
 	gapicProtos, err := gatherGAPICProtos(googleapisDir, params.api.Path, additionalProtos, params.api.PHP.ExcludedProtos, includeCommonResources)
@@ -210,6 +206,21 @@ func shouldGenerateGAPIC(api *config.API) bool {
 		return *api.PHP.GenerateGAPIC
 	}
 	return true
+}
+
+func grpcServiceConfigPath(api *config.API, googleapisDir string) (string, error) {
+	if api.PHP.SkipGRPCServiceConfig {
+		return "", nil
+	}
+	grpcServiceConfigPath, err := serviceconfig.FindGRPCServiceConfig(googleapisDir, api.Path)
+	if err != nil {
+		return "", err
+	}
+	grpcServiceConfigAbsPath, err := absConfigPath(googleapisDir, grpcServiceConfigPath)
+	if err != nil {
+		return "", err
+	}
+	return grpcServiceConfigAbsPath, nil
 }
 
 func generateProto(ctx context.Context, params *generateAPIParams, pc *config.Protoc, googleapisDir, protoZipPath string) error {
@@ -313,7 +324,7 @@ func absConfigPath(baseDir, configPath string) (string, error) {
 	return filepath.Abs(filepath.Join(baseDir, configPath))
 }
 
-func gapicOpts(api *config.API, apiMetadata *serviceconfig.API, grpcConfigAbsPath, serviceYamlAbsPath, gapicYamlAbsPath string) []string {
+func gapicOpts(api *config.API, apiMetadata *serviceconfig.API, grpcSrvConfigAbsPath, serviceYamlAbsPath, gapicYamlAbsPath string) []string {
 	transport := serviceconfig.GRPCRest
 	if apiMetadata != nil {
 		transport = apiMetadata.Transport(config.LanguagePhp)
@@ -326,8 +337,8 @@ func gapicOpts(api *config.API, apiMetadata *serviceconfig.API, grpcConfigAbsPat
 		opts = append(opts, "generate-snippets")
 	}
 
-	if grpcConfigAbsPath != "" {
-		opts = append(opts, "grpc_service_config="+grpcConfigAbsPath)
+	if grpcSrvConfigAbsPath != "" {
+		opts = append(opts, "grpc_service_config="+grpcSrvConfigAbsPath)
 	}
 	if serviceYamlAbsPath != "" {
 		opts = append(opts, "service_yaml="+serviceYamlAbsPath)

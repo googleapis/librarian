@@ -38,6 +38,7 @@ func TestRunEnv(t *testing.T) {
 		fmt.Sprintf("golang: %s", filepath.Join(binDir, "go_tools")),
 		fmt.Sprintf("java: %s", filepath.Join(binDir, "java_tools")),
 		fmt.Sprintf("nodejs: %s", filepath.Join(binDir, "nodejs_tools")),
+		fmt.Sprintf("python: %s", filepath.Join(binDir, "python_tools")),
 		fmt.Sprintf("ruby: %s", filepath.Join(binDir, "ruby_tools")),
 		fmt.Sprintf("swift: %s", filepath.Join(binDir, "swift_tools")),
 	}
@@ -65,6 +66,7 @@ func TestRunEnv_Error(t *testing.T) {
 		"golang: <error:",
 		"java: <error:",
 		"nodejs: <error:",
+		"python: <error:",
 		"ruby: <error:",
 		"swift: <error:",
 	}

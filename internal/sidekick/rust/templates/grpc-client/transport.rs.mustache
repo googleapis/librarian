@@ -102,12 +102,51 @@ impl {{Codec.Name}} {
 {{/Codec.PerServiceFeatures}}
 impl super::stub::{{Codec.Name}} for {{Codec.Name}} {
     {{#Codec.Methods}}
+    {{#Codec.IsBidiStreaming}}
+    fn {{Codec.Name}}(
+        &self,
+        options: crate::RequestOptions,
+    ) -> (
+        google_cloud_gax::streaming::RequestSender<{{InputType.Codec.QualifiedName}}>,
+        google_cloud_gax::streaming::ResponseStream<{{OutputType.Codec.QualifiedName}}>,
+    ) {
+        {{! TODO(#6835) - support explicit routing parameters for bidirectional streaming RPCs }}
+        let x_goog_request_params = "";
+
+        let extensions = {
+            let mut e = gaxi::grpc::tonic::Extensions::new();
+            e.insert(gaxi::grpc::tonic::GrpcMethod::new(
+                "{{SourceService.Package}}.{{SourceService.Name}}",
+                "{{Name}}",
+            ));
+            e
+        };
+        let path = http::uri::PathAndQuery::from_static(
+            "/{{SourceService.Package}}.{{SourceService.Name}}/{{Name}}"
+        );
+
+        self.inner
+            .execute_bidi_streaming_tmp::<
+                {{InputType.Codec.QualifiedName}},
+                {{OutputType.Codec.QualifiedName}},
+                crate::{{InputType.Codec.PackageModuleName}}::{{InputType.Codec.ProstRelativeName}},
+                crate::{{OutputType.Codec.PackageModuleName}}::{{OutputType.Codec.ProstRelativeName}},
+            >(
+                extensions,
+                path,
+                options,
+                &info::X_GOOG_API_CLIENT_HEADER,
+                x_goog_request_params,
+            )
+    }
+
+    {{/Codec.IsBidiStreaming}}
     {{#Codec.IsServerStreaming}}
     async fn {{Codec.Name}}(
         &self,
         req: {{InputType.Codec.QualifiedName}},
         options: crate::RequestOptions,
-    ) -> Result<google_cloud_gax::streaming::ResponseReceiver<{{OutputType.Codec.QualifiedName}}>> {
+    ) -> Result<google_cloud_gax::streaming::ResponseStream<{{OutputType.Codec.QualifiedName}}>> {
         let extensions = {
             let mut e = gaxi::grpc::tonic::Extensions::new();
             e.insert(gaxi::grpc::tonic::GrpcMethod::new(
@@ -148,11 +187,11 @@ impl super::stub::{{Codec.Name}} for {{Codec.Name}} {
         {{/HasRouting}}
 
         self.inner
-            .execute_server_streaming::<
+            .execute_server_streaming_tmp::<
                 {{InputType.Codec.QualifiedName}},
                 {{OutputType.Codec.QualifiedName}},
-                crate::{{InputType.Codec.PackageModuleName}}::{{InputType.Codec.Name}},
-                crate::{{OutputType.Codec.PackageModuleName}}::{{OutputType.Codec.Name}},
+                crate::{{InputType.Codec.PackageModuleName}}::{{InputType.Codec.ProstRelativeName}},
+                crate::{{OutputType.Codec.PackageModuleName}}::{{OutputType.Codec.ProstRelativeName}},
             >(
                 extensions,
                 path,
@@ -165,6 +204,7 @@ impl super::stub::{{Codec.Name}} for {{Codec.Name}} {
     }
 
     {{/Codec.IsServerStreaming}}
+    {{^Codec.IsBidiStreaming}}
     {{^Codec.IsServerStreaming}}
     async fn {{Codec.Name}}(
         &self,
@@ -222,7 +262,7 @@ impl super::stub::{{Codec.Name}} for {{Codec.Name}} {
         type TR = ();
         {{/ReturnsEmpty}}
         {{^ReturnsEmpty}}
-        type TR = crate::{{OutputType.Codec.PackageModuleName}}::{{OutputType.Codec.Name}};
+        type TR = crate::{{OutputType.Codec.PackageModuleName}}::{{OutputType.Codec.ProstRelativeName}};
         {{/ReturnsEmpty}}
         {{#Codec.DetailedTracingAttributes}}
         if let Some(recorder) = gaxi::observability::RequestRecorder::current() {
@@ -265,6 +305,7 @@ impl super::stub::{{Codec.Name}} for {{Codec.Name}} {
     }
 
     {{/Codec.IsServerStreaming}}
+    {{/Codec.IsBidiStreaming}}
     {{/Codec.Methods}}
     {{#Codec.HasLROs}}
     fn get_polling_error_policy(
@@ -322,7 +363,7 @@ pub(crate) fn lro_any_from_prost(
 {{#Codec.Services}}
 {{#Codec.LROTypes}}
         "type.googleapis.com/{{Codec.SourceFQN}}" => value
-            .to_msg::<crate::{{Codec.PackageModuleName}}::{{Codec.Name}}>()
+            .to_msg::<crate::{{Codec.PackageModuleName}}::{{Codec.ProstRelativeName}}>()
             .map_err(ConvertError::other)?
             .cnv()
             .and_then(|our_msg| wkt::Any::from_msg(&our_msg).map_err(ConvertError::other)),

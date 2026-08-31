@@ -771,6 +771,21 @@ func TestModelAnnotationsHasStreaming(t *testing.T) {
 			wantGaxiFeatures:     []string{"_internal-grpc-client"},
 			wantRequiredPackages: []string{`gaxi                 = { workspace = true, features = ["_internal-grpc-client"] }`, "prost.workspace      = true"},
 		},
+		{
+			name:    "grpc-client template override with bidi streaming method",
+			service: bidiService,
+			options: map[string]string{
+				"include-bidi-streaming-methods": "true",
+				"template-override":              "templates/grpc-client",
+				"package:gaxi":                   "package=google-cloud-gax,used-if=services",
+				"package:prost":                  "package=prost,used-if=streaming",
+			},
+			wantBidi:             true,
+			wantServer:           false,
+			wantStreaming:        true,
+			wantGaxiFeatures:     []string{"_internal-grpc-client"},
+			wantRequiredPackages: []string{`gaxi                 = { workspace = true, features = ["_internal-grpc-client"] }`, "prost.workspace      = true"},
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			model := api.NewTestAPI([]*api.Message{msg}, []*api.Enum{}, []*api.Service{test.service})
@@ -878,15 +893,21 @@ func TestExternalTypesAnnotations(t *testing.T) {
 	if !ok {
 		t.Fatalf("expected messageAnnotation on extMsg")
 	}
-	if want := "crate::prost::google::r#type::LatLng"; msgAnn.RelativeName != want {
+	if want := "google_cloud_type::model::LatLng"; msgAnn.RelativeName != want {
 		t.Errorf("msgAnn.RelativeName = %q, want %q", msgAnn.RelativeName, want)
+	}
+	if want := "crate::prost::google::r#type::LatLng"; msgAnn.ProstRelativeName != want {
+		t.Errorf("msgAnn.ProstRelativeName = %q, want %q", msgAnn.ProstRelativeName, want)
 	}
 
 	enumAnn, ok := extEnum.Codec.(*enumAnnotation)
 	if !ok {
 		t.Fatalf("expected enumAnnotation on extEnum")
 	}
-	if want := "crate::prost::google::r#type::DayOfWeek"; enumAnn.RelativeName != want {
+	if want := "google_cloud_type::model::DayOfWeek"; enumAnn.RelativeName != want {
 		t.Errorf("enumAnn.RelativeName = %q, want %q", enumAnn.RelativeName, want)
+	}
+	if want := "crate::prost::google::r#type::DayOfWeek"; enumAnn.ProstRelativeName != want {
+		t.Errorf("enumAnn.ProstRelativeName = %q, want %q", enumAnn.ProstRelativeName, want)
 	}
 }

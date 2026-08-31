@@ -68,13 +68,14 @@ func TestEnumAnnotations(t *testing.T) {
 	annotateModel(model, codec)
 
 	wantEnumCodec := &enumAnnotation{
-		Name:           "TestEnum",
-		ModuleName:     "test_enum",
-		QualifiedName:  "crate::model::TestEnum",
-		RelativeName:   "TestEnum",
-		DocLines:       []string{"/// The enum is documented."},
-		UniqueNames:    []*api.EnumValue{v0, v1, v2, v3, v4},
-		NameInExamples: "google_cloud_test_v1::model::TestEnum",
+		Name:              "TestEnum",
+		ModuleName:        "test_enum",
+		QualifiedName:     "crate::model::TestEnum",
+		RelativeName:      "TestEnum",
+		ProstRelativeName: "TestEnum",
+		DocLines:          []string{"/// The enum is documented."},
+		UniqueNames:       []*api.EnumValue{v0, v1, v2, v3, v4},
+		NameInExamples:    "google_cloud_test_v1::model::TestEnum",
 	}
 	if diff := cmp.Diff(wantEnumCodec, enum.Codec, cmpopts.IgnoreFields(api.EnumValue{}, "Codec", "Parent")); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
@@ -167,12 +168,54 @@ func TestDuplicateEnumValueAnnotations(t *testing.T) {
 	annotateModel(model, codec)
 
 	want := &enumAnnotation{
-		Name:           "TestEnum",
-		ModuleName:     "test_enum",
-		QualifiedName:  "crate::model::TestEnum",
-		RelativeName:   "TestEnum",
-		UniqueNames:    []*api.EnumValue{v0, v2},
-		NameInExamples: "google_cloud_test_v1::model::TestEnum",
+		Name:              "TestEnum",
+		ModuleName:        "test_enum",
+		QualifiedName:     "crate::model::TestEnum",
+		RelativeName:      "TestEnum",
+		ProstRelativeName: "TestEnum",
+		UniqueNames:       []*api.EnumValue{v0, v2},
+		NameInExamples:    "google_cloud_test_v1::model::TestEnum",
+	}
+
+	if diff := cmp.Diff(want, enum.Codec, cmpopts.IgnoreFields(api.EnumValue{}, "Codec", "Parent")); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+}
+
+func TestNestedEnumAnnotations(t *testing.T) {
+	parent := api.NewTestMessage("VertexAISearch").WithPackage("test.v1")
+	v0 := &api.EnumValue{
+		Name:   "IP_MODE_UNSPECIFIED",
+		ID:     ".test.v1.VertexAISearch.IPMode.IP_MODE_UNSPECIFIED",
+		Number: 0,
+	}
+	v1 := &api.EnumValue{
+		Name:   "DYNAMIC_IP",
+		ID:     ".test.v1.VertexAISearch.IPMode.DYNAMIC_IP",
+		Number: 1,
+	}
+	enum := &api.Enum{
+		Name:    "IPMode",
+		ID:      ".test.v1.VertexAISearch.IPMode",
+		Package: "test.v1",
+		Values:  []*api.EnumValue{v0, v1},
+		Parent:  parent,
+	}
+	parent.Enums = []*api.Enum{enum}
+
+	model := api.NewTestAPI([]*api.Message{parent}, []*api.Enum{enum}, []*api.Service{})
+	api.CrossReference(model)
+	codec := newTestCodec(t, libconfig.SpecProtobuf, "test.v1", map[string]string{})
+	annotateModel(model, codec)
+
+	want := &enumAnnotation{
+		Name:              "IPMode",
+		ModuleName:        "ip_mode",
+		QualifiedName:     "crate::model::vertex_ai_search::IPMode",
+		RelativeName:      "vertex_ai_search::IPMode",
+		ProstRelativeName: "vertex_ai_search::IpMode",
+		UniqueNames:       []*api.EnumValue{v0, v1},
+		NameInExamples:    "google_cloud_test_v1::model::vertex_ai_search::IPMode",
 	}
 
 	if diff := cmp.Diff(want, enum.Codec, cmpopts.IgnoreFields(api.EnumValue{}, "Codec", "Parent")); diff != "" {

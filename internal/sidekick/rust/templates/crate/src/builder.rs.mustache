@@ -112,12 +112,12 @@ pub mod {{Codec.ModuleName}} {
     {{/Codec.IsBidiStreaming}}
     {{#Codec.IsBidiStreaming}}
     /// let builder = prepare_request_builder();
-    /// let (sender, mut receiver) = builder.build();
+    /// let (sender, mut resp_stream) = builder.build();
     ///
     /// sender.send({{InputType.Codec.Name}}::default()).await?;
     /// drop(sender); // Half-close the stream
     ///
-    /// while let Some(response) = receiver.recv().await {
+    /// while let Some(response) = resp_stream.next().await {
     ///     let response = response?;
     ///     println!("response {:?}", response);
     /// }
@@ -197,7 +197,7 @@ pub mod {{Codec.ModuleName}} {
             self,
         ) -> (
             google_cloud_gax::streaming::RequestSender<{{InputType.Codec.QualifiedName}}>,
-            google_cloud_gax::streaming::ResponseReceiver<{{OutputType.Codec.QualifiedName}}>,
+            google_cloud_gax::streaming::ResponseStream<{{OutputType.Codec.QualifiedName}}>,
         ) {
             (*self.0.stub).{{Codec.Name}}(self.0.options)
         }
@@ -206,7 +206,7 @@ pub mod {{Codec.ModuleName}} {
         /// Initiates the server stream.
         pub async fn send(
             self,
-        ) -> Result<google_cloud_gax::streaming::ResponseReceiver<{{OutputType.Codec.QualifiedName}}>> {
+        ) -> Result<google_cloud_gax::streaming::ResponseStream<{{OutputType.Codec.QualifiedName}}>> {
             (*self.0.stub).{{Codec.Name}}(self.0.request, self.0.options).await
         }
         {{/Codec.IsServerStreaming}}

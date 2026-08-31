@@ -35,8 +35,8 @@ func generateProstHybrid(ctx context.Context, model *api.API, library *config.Li
 	if library.Rust == nil || library.Rust.TemplateOverride != "" {
 		return nil
 	}
-	includeBidi := library.Rust.IncludeBidiStreamingMethods
-	includeServer := library.Rust.IncludeServerStreamingMethods
+	includeBidi := library.Rust.IncludeBidiStreamingMethods != nil && *library.Rust.IncludeBidiStreamingMethods
+	includeServer := library.Rust.IncludeServerStreamingMethods != nil && *library.Rust.IncludeServerStreamingMethods
 	if !includeBidi && !includeServer {
 		return nil
 	}
