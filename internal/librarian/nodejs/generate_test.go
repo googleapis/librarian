@@ -15,6 +15,7 @@
 package nodejs
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -996,9 +997,9 @@ func TestRestoreCopyrightYear_IgnoresNonSourceFiles(t *testing.T) {
 	if err := os.MkdirAll(srcDir, 0o755); err != nil {
 		t.Fatal(err)
 	}
-	content := "// Copyright 2020 Google LLC\n"
+	content := []byte("// Copyright 2020 Google LLC\n")
 	file := filepath.Join(srcDir, "resource.json")
-	if err := os.WriteFile(file, []byte(content), 0o644); err != nil {
+	if err := os.WriteFile(file, content, 0o644); err != nil {
 		t.Fatal(err)
 	}
 	if err := restoreCopyrightYear(outDir, "2025"); err != nil {
@@ -1008,8 +1009,8 @@ func TestRestoreCopyrightYear_IgnoresNonSourceFiles(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if diff := cmp.Diff(content, string(got)); diff != "" {
-		t.Errorf("mismatch (-want +got):\n%s", diff)
+	if !bytes.Equal(got, content) {
+		t.Errorf("mismatch: got %q, want %q", got, content)
 	}
 }
 
