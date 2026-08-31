@@ -102,38 +102,33 @@ func TestClean(t *testing.T) {
 				Keep:   test.keep,
 			}
 			for _, file := range test.setupFiles {
-				createFileAndDirectories(t, filepath.Join(lib.Output, file), test.contentMap[file])
+				path := filepath.Join(lib.Output, file)
+				if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+					t.Fatal(err)
+				}
+				content := ""
+				if c, ok := test.contentMap[file]; ok {
+					content = c
+				}
+				if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
+					t.Fatal(err)
+				}
 			}
 			if err := Clean(lib); err != nil {
 				t.Fatal(err)
 			}
-			verifyFileDeletions(t, lib.Output, test.setupFiles, test.wantDeleted)
+			for _, file := range test.setupFiles {
+				fullPath := filepath.Join(lib.Output, file)
+				_, err := os.Stat(fullPath)
+				if err != nil && !errors.Is(err, fs.ErrNotExist) {
+					t.Fatal(err)
+				}
+				got := err != nil
+				want := slices.Contains(test.wantDeleted, file)
+				if got != want {
+					t.Errorf("file %s deleted: got %t, want %t", file, got, want)
+				}
+			}
 		})
-	}
-}
-
-func verifyFileDeletions(t *testing.T, dir string, setupFiles, wantDeleted []string) {
-	t.Helper()
-	for _, file := range setupFiles {
-		fullPath := filepath.Join(dir, file)
-		_, err := os.Stat(fullPath)
-		if err != nil && !errors.Is(err, fs.ErrNotExist) {
-			t.Fatal(err)
-		}
-		got := err != nil
-		want := slices.Contains(wantDeleted, file)
-		if got != want {
-			t.Errorf("file %s deleted: got %t, want %t", file, got, want)
-		}
-	}
-}
-
-func createFileAndDirectories(t *testing.T, path, content string) {
-	t.Helper()
-	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
-		t.Fatal(err)
-	}
-	if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
-		t.Fatal(err)
 	}
 }
