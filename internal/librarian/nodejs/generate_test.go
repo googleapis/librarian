@@ -990,6 +990,29 @@ func TestRestoreCopyrightYear_SkipsMissingDirs(t *testing.T) {
 	}
 }
 
+func TestRestoreCopyrightYear_IgnoresNonSourceFiles(t *testing.T) {
+	outDir := t.TempDir()
+	srcDir := filepath.Join(outDir, "src")
+	if err := os.MkdirAll(srcDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	content := "// Copyright 2020 Google LLC\n"
+	file := filepath.Join(srcDir, "resource.json")
+	if err := os.WriteFile(file, []byte(content), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := restoreCopyrightYear(outDir, "2025"); err != nil {
+		t.Fatal(err)
+	}
+	got, err := os.ReadFile(file)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if diff := cmp.Diff(content, string(got)); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+}
+
 func TestGenerate(t *testing.T) {
 	if testing.Short() {
 		t.Skip("slow test: Node.js code generation")
