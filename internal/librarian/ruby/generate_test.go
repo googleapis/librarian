@@ -246,7 +246,11 @@ func TestBuildGAPICOpts(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got, err := buildGAPICOpts(test.api, test.library, googleapisDir)
+			serviceConfig, err := serviceconfig.Find(googleapisDir, test.api.Path, config.LanguageRuby)
+			if err != nil {
+				t.Fatal(err)
+			}
+			got, err := buildGAPICOpts(test.api, test.library, googleapisDir, serviceConfig)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -259,18 +263,18 @@ func TestBuildGAPICOpts(t *testing.T) {
 
 func TestTransport(t *testing.T) {
 	for _, test := range []struct {
-		name string
-		sc   *serviceconfig.API
-		want serviceconfig.Transport
+		name          string
+		serviceConfig *serviceconfig.API
+		want          serviceconfig.Transport
 	}{
 		{
-			name: "nil api",
-			sc:   nil,
-			want: serviceconfig.GRPCRest,
+			name:          "nil api",
+			serviceConfig: nil,
+			want:          serviceconfig.GRPCRest,
 		},
 		{
 			name: "rest only",
-			sc: &serviceconfig.API{
+			serviceConfig: &serviceconfig.API{
 				Transports: map[string]serviceconfig.Transport{
 					config.LanguageRuby: serviceconfig.Rest,
 				},
@@ -279,7 +283,7 @@ func TestTransport(t *testing.T) {
 		},
 		{
 			name: "rest and grpc",
-			sc: &serviceconfig.API{
+			serviceConfig: &serviceconfig.API{
 				Transports: map[string]serviceconfig.Transport{
 					config.LanguageRuby: serviceconfig.GRPCRest,
 				},
@@ -288,7 +292,7 @@ func TestTransport(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got := transport(test.sc)
+			got := transport(test.serviceConfig)
 			if got != test.want {
 				t.Errorf("transport() = %v, want %v", got, test.want)
 			}
@@ -477,10 +481,12 @@ func setupDummyProtoc(t *testing.T) {
 	script := `#!/bin/sh
 rubyOut=""
 rubyCloudOut=""
+grpcOut=""
 for arg in "$@"; do
   case "$arg" in
     --ruby_cloud_out=*) rubyCloudOut="${arg#--ruby_cloud_out=}" ;;
     --ruby_out=*) rubyOut="${arg#--ruby_out=}" ;;
+    --grpc_out=*) grpcOut="${arg#--grpc_out=}" ;;
   esac
 done
 if [ -n "$rubyCloudOut" ]; then
@@ -510,6 +516,10 @@ if [ -n "$rubyOut" ]; then
         ;;
     esac
   done
+fi
+if [ -n "$grpcOut" ]; then
+  mkdir -p "$grpcOut/google/cloud/secret_manager"
+  touch "$grpcOut/google/cloud/secret_manager/v1_services_pb.rb"
 fi
 exit 0
 `
@@ -597,6 +607,10 @@ end
 	if _, err := os.Stat(wantPbFile); err != nil {
 		t.Errorf("expected generated pb file %s to exist: %v", wantPbFile, err)
 	}
+	wantServicesPbFile := filepath.Join(outDir, "lib", "google", "cloud", "secret_manager", "v1_services_pb.rb")
+	if _, err := os.Stat(wantServicesPbFile); err != nil {
+		t.Errorf("expected generated services pb file %s to exist: %v", wantServicesPbFile, err)
+	}
 	gotChangelog, err := os.ReadFile(changelogPath)
 	if err != nil {
 		t.Fatal(err)
@@ -650,9 +664,140 @@ func TestGenerateAPI(t *testing.T) {
 	if _, err := os.Stat(wantPbFile); err != nil {
 		t.Errorf("expected generated pb file %s to exist: %v", wantPbFile, err)
 	}
+	wantServicesPbFile := filepath.Join(stagingDir, "lib", "google", "cloud", "secret_manager", "v1_services_pb.rb")
+	if _, err := os.Stat(wantServicesPbFile); err != nil {
+		t.Errorf("expected generated services pb file %s to exist: %v", wantServicesPbFile, err)
+	}
 	unexpectedCommonPbFile := filepath.Join(stagingDir, "lib", "google", "cloud", "common_resources_pb.rb")
 	if _, err := os.Stat(unexpectedCommonPbFile); !errors.Is(err, fs.ErrNotExist) {
 		t.Errorf("expected common_resources_pb.rb %s to be removed, but err = %v", unexpectedCommonPbFile, err)
+	}
+}
+
+func TestBuildProtocArgs(t *testing.T) {
+	for _, test := range []struct {
+		name          string
+		googleapisDir string
+		stagingDir    string
+		libStagingDir string
+		installDir    string
+		isWrapper     bool
+		serviceConfig *serviceconfig.API
+		gapicOpts     []string
+		protoFiles    []string
+		want          []string
+	}{
+		{
+			name:          "standard api defaults to grpc and rest",
+			googleapisDir: "/googleapis",
+			stagingDir:    "/staging",
+			libStagingDir: "/staging/lib",
+			installDir:    "/install",
+			isWrapper:     false,
+			serviceConfig: nil,
+			protoFiles:    []string{"/googleapis/google/cloud/secretmanager/v1/service.proto"},
+			want: []string{
+				"--experimental_allow_proto3_optional",
+				"-I=/googleapis",
+				"--ruby_cloud_out=/staging",
+				"--ruby_out=/staging/lib",
+				"--grpc_out=/staging/lib",
+				"--plugin=protoc-gen-grpc=/install/bin/grpc_tools_ruby_protoc_plugin",
+				"/googleapis/google/cloud/secretmanager/v1/service.proto",
+			},
+		},
+		{
+			name:          "rest-only transport with all",
+			googleapisDir: "/googleapis",
+			stagingDir:    "/staging",
+			libStagingDir: "/staging/lib",
+			installDir:    "/install",
+			isWrapper:     false,
+			serviceConfig: &serviceconfig.API{
+				Transports: map[string]serviceconfig.Transport{
+					config.LanguageAll: serviceconfig.Rest,
+				},
+			},
+			gapicOpts:  []string{"ruby-cloud-gem-name=google-cloud-compute-v1"},
+			protoFiles: []string{"/googleapis/google/cloud/compute/v1/compute.proto"},
+			want: []string{
+				"--experimental_allow_proto3_optional",
+				"-I=/googleapis",
+				"--ruby_cloud_out=/staging",
+				"--ruby_out=/staging/lib",
+				"--ruby_cloud_opt=ruby-cloud-gem-name=google-cloud-compute-v1",
+				"/googleapis/google/cloud/compute/v1/compute.proto",
+			},
+		},
+		{
+			name:          "rest-only transport with ruby",
+			googleapisDir: "/googleapis",
+			stagingDir:    "/staging",
+			libStagingDir: "/staging/lib",
+			installDir:    "/install",
+			isWrapper:     false,
+			serviceConfig: &serviceconfig.API{
+				Transports: map[string]serviceconfig.Transport{
+					config.LanguageRuby: serviceconfig.Rest,
+				},
+			},
+			protoFiles: []string{"/googleapis/google/cloud/compute/v1/compute.proto"},
+			want: []string{
+				"--experimental_allow_proto3_optional",
+				"-I=/googleapis",
+				"--ruby_cloud_out=/staging",
+				"--ruby_out=/staging/lib",
+				"/googleapis/google/cloud/compute/v1/compute.proto",
+			},
+		},
+		{
+			name:          "grpc-only transport with ruby",
+			googleapisDir: "/googleapis",
+			stagingDir:    "/staging",
+			libStagingDir: "/staging/lib",
+			installDir:    "/install",
+			isWrapper:     false,
+			serviceConfig: &serviceconfig.API{
+				Transports: map[string]serviceconfig.Transport{
+					config.LanguageRuby: serviceconfig.GRPC,
+				},
+			},
+			protoFiles: []string{"/googleapis/google/cloud/secretmanager/v1/service.proto"},
+			want: []string{
+				"--experimental_allow_proto3_optional",
+				"-I=/googleapis",
+				"--ruby_cloud_out=/staging",
+				"--ruby_out=/staging/lib",
+				"--grpc_out=/staging/lib",
+				"--plugin=protoc-gen-grpc=/install/bin/grpc_tools_ruby_protoc_plugin",
+				"/googleapis/google/cloud/secretmanager/v1/service.proto",
+			},
+		},
+		{
+			name:          "wrapper gem omits ruby_out and grpc_out",
+			googleapisDir: "/googleapis",
+			stagingDir:    "/staging",
+			libStagingDir: "/staging/lib",
+			installDir:    "/install",
+			isWrapper:     true,
+			serviceConfig: nil,
+			gapicOpts:     []string{"ruby-cloud-gem-name=google-cloud-secret_manager"},
+			protoFiles:    []string{"/googleapis/google/cloud/secretmanager/v1/service.proto"},
+			want: []string{
+				"--experimental_allow_proto3_optional",
+				"-I=/googleapis",
+				"--ruby_cloud_out=/staging",
+				"--ruby_cloud_opt=ruby-cloud-gem-name=google-cloud-secret_manager",
+				"/googleapis/google/cloud/secretmanager/v1/service.proto",
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := buildProtocArgs(test.googleapisDir, test.stagingDir, test.libStagingDir, test.installDir, test.isWrapper, test.serviceConfig, test.gapicOpts, test.protoFiles)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
 	}
 }
 

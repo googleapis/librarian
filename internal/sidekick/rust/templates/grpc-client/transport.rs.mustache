@@ -126,7 +126,7 @@ impl super::stub::{{Codec.Name}} for {{Codec.Name}} {
         );
 
         self.inner
-            .execute_bidi_streaming_tmp::<
+            .execute_bidi_streaming::<
                 {{InputType.Codec.QualifiedName}},
                 {{OutputType.Codec.QualifiedName}},
                 crate::{{InputType.Codec.PackageModuleName}}::{{InputType.Codec.ProstRelativeName}},
@@ -187,7 +187,7 @@ impl super::stub::{{Codec.Name}} for {{Codec.Name}} {
         {{/HasRouting}}
 
         self.inner
-            .execute_server_streaming_tmp::<
+            .execute_server_streaming::<
                 {{InputType.Codec.QualifiedName}},
                 {{OutputType.Codec.QualifiedName}},
                 crate::{{InputType.Codec.PackageModuleName}}::{{InputType.Codec.ProstRelativeName}},

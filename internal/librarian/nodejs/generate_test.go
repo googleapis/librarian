@@ -15,6 +15,7 @@
 package nodejs
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -990,15 +991,41 @@ func TestRestoreCopyrightYear_SkipsMissingDirs(t *testing.T) {
 	}
 }
 
+func TestRestoreCopyrightYear_IgnoresNonSourceFiles(t *testing.T) {
+	outDir := t.TempDir()
+	srcDir := filepath.Join(outDir, "src")
+	if err := os.MkdirAll(srcDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	content := []byte("// Copyright 2020 Google LLC\n")
+	file := filepath.Join(srcDir, "resource.json")
+	if err := os.WriteFile(file, content, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := restoreCopyrightYear(outDir, "2025"); err != nil {
+		t.Fatal(err)
+	}
+	got, err := os.ReadFile(file)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !bytes.Equal(got, content) {
+		t.Errorf("mismatch: got %q, want %q", got, content)
+	}
+}
+
 func TestGenerate(t *testing.T) {
 	if testing.Short() {
 		t.Skip("slow test: Node.js code generation")
 	}
-
+	// Prepend the Librarian Node.js tools directory to PATH so testhelper.RequireCommand
+	// finds binaries installed by librarian install.
+	if binDir, err := getBinDir(); err == nil {
+		t.Setenv("PATH", binDir+string(os.PathListSeparator)+os.Getenv("PATH"))
+	}
 	testhelper.RequireCommand(t, "gapic-generator-typescript")
 	testhelper.RequireCommand(t, "gapic-node-processing")
 	testhelper.RequireCommand(t, "compileProtos")
-
 	absGoogleapisDir, err := filepath.Abs(googleapisDir)
 	if err != nil {
 		t.Fatal(err)
@@ -1174,6 +1201,27 @@ func TestCopySamplesFromStaging(t *testing.T) {
 func TestCopySamplesFromStaging_NonExistentDir(t *testing.T) {
 	if err := copySamplesFromStaging(filepath.Join(t.TempDir(), "does-not-exist"), t.TempDir()); err != nil {
 		t.Fatal(err)
+	}
+}
+
+func TestCopySamplesFromStaging_SkipsNonDirectory(t *testing.T) {
+	stagingDir := t.TempDir()
+	outDir := t.TempDir()
+	if err := os.WriteFile(filepath.Join(stagingDir, "file.txt"), []byte("content"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	sampleDir := filepath.Join(stagingDir, "v1", "samples")
+	if err := os.MkdirAll(sampleDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(sampleDir, "sample.js"), []byte("console.log()"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := copySamplesFromStaging(stagingDir, outDir); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := os.Stat(filepath.Join(outDir, "samples", "sample.js")); err != nil {
+		t.Errorf("expected sample.js to be copied: %v", err)
 	}
 }
 

@@ -147,7 +147,7 @@ func TestGenerateServerStreaming(t *testing.T) {
     ) -> impl std::future::Future<Output = crate::Result<
         google_cloud_gax::streaming::ResponseStream<crate::model::EchoResponse>,
     >> + Send {
-        gaxi::unimplemented::unimplemented_server_streaming_stub_tmp()
+        gaxi::unimplemented::unimplemented_server_streaming_stub()
     }`,
 		},
 		{
@@ -222,7 +222,7 @@ func TestGenerateServerStreaming(t *testing.T) {
         );
 
         self.grpc_inner
-            .execute_server_streaming_tmp::<
+            .execute_server_streaming::<
                 crate::model::ExpandRequest,
                 crate::model::EchoResponse,
                 crate::prost::test::v1::ExpandRequest,
@@ -338,10 +338,10 @@ func TestGenerateGrpcClientServerStreaming(t *testing.T) {
 		{
 			name:     "grpc-client transport: execute_server_streaming call",
 			file:     "transport.rs",
-			startStr: "        self.inner\n            .execute_server_streaming_tmp::<",
+			startStr: "        self.inner\n            .execute_server_streaming::<",
 			endStr:   "&x_goog_request_params,\n            )\n            .await\n    }",
 			want: `        self.inner
-            .execute_server_streaming_tmp::<
+            .execute_server_streaming::<
                 crate::model::ExpandRequest,
                 crate::model::EchoResponse,
                 crate::test::v1::ExpandRequest,

@@ -16,10 +16,27 @@ on: [push, pull_request, merge_group]
 permissions:
   contents: read
 jobs:
-  test:
+  build-and-test:
+    name: ${{ matrix.job-name }}
     runs-on: ubuntu-24.04
-    # Presubmit jobs must complete within 5 minutes. See CONTRIBUTING.md.
-    timeout-minutes: 5
+    # Presubmit jobs must complete within 5 minutes. Integration might take longer.
+    timeout-minutes: ${{ matrix.timeout }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - job-name: 'Unit Tests'
+            task: 'unit-test'
+            timeout: 5
+            sparse: true
+          - job-name: 'Smoke Test'
+            task: 'smoke-test'
+            timeout: 5
+            sparse: true
+          - job-name: 'Integration Test'
+            task: 'integration'
+            timeout: 60
+            sparse: false
     steps:
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
@@ -36,6 +53,7 @@ jobs:
         env:
           VERSION: 3.8.2
       - name: "Checkout google-cloud-python (sparse)"
+        if: matrix.sparse
         uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
           repository: googleapis/google-cloud-python
@@ -43,10 +61,39 @@ jobs:
           depth: 1
           sparse-checkout: |
             librarian.yaml
+            .librarian
+            google-cloud-secret-manager
           sparse-checkout-cone-mode: false
           persist-credentials: false
+      - name: "Checkout google-cloud-python (full)"
+        if: matrix.sparse == false && github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          repository: googleapis/google-cloud-python
+          path: google-cloud-python
+          persist-credentials: false
       - name: Install Python dependencies
+        if: matrix.task == 'smoke-test' || (matrix.task == 'integration' && github.event_name == 'push' && github.ref == 'refs/heads/main')
         run: librarian -v install python
         working-directory: google-cloud-python
-      - name: Run tests
+      - name: Run Unit Tests
+        if: matrix.task == 'unit-test'
         run: go run ./tool/cmd/coverage ./internal/librarian/python
+      - name: Generate a single library (smoke test)
+        if: matrix.task == 'smoke-test' && !(github.event_name == 'push' && github.ref == 'refs/heads/main')
+        working-directory: google-cloud-python
+        run: librarian generate google-cloud-secret-manager
+      - name: Run librarian generate all (integration test)
+        if: matrix.task == 'integration' && github.event_name == 'push' && github.ref == 'refs/heads/main'
+        working-directory: google-cloud-python
+        run: librarian generate --all
+  create-issue-on-failure:
+    needs: [build-and-test]
+    permissions:
+      contents: read
+      issues: write
+    if: ${{ always() && contains(needs.*.result, 'failure') && github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+    uses: ./.github/workflows/create-issue-on-failure.yaml
+    with:
+      language: Python
+      repository: google-cloud-python
