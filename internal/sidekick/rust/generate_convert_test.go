@@ -247,9 +247,13 @@ func TestGenerateConvertAcronyms(t *testing.T) {
 
 	extDnsConfigMsg := api.NewTestMessage("DNSConfig").WithPackage("google.type")
 
+	dnsMethod := api.NewTestMethod("GetDNS").WithInput(extDnsConfigMsg).WithOutput(extDnsConfigMsg)
+	dnsService := api.NewTestService("DNSService").WithPackage("test.v1").WithMethods(dnsMethod)
+
 	outDir := t.TempDir()
-	model := api.NewTestAPI([]*api.Message{vertexAiSearchMsg, dataStoreSpecMsg, retrievalMsg}, []*api.Enum{ipVersionEnum, nestedEnum}, nil)
+	model := api.NewTestAPI([]*api.Message{vertexAiSearchMsg, dataStoreSpecMsg, retrievalMsg}, []*api.Enum{ipVersionEnum, nestedEnum}, []*api.Service{dnsService})
 	model.ExternalMessages = []*api.Message{extDnsConfigMsg}
+	model.AddMessage(extDnsConfigMsg)
 	if err := api.CrossReference(model); err != nil {
 		t.Fatal(err)
 	}

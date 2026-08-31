@@ -163,10 +163,6 @@ func annotateModel(model *api.API, codec *codec) (*modelAnnotations, error) {
 		if err := codec.annotateEnum(e, model, true); err != nil {
 			return nil, err
 		}
-		// ExternalEnums (e.g. google.type.Date) are populated for convert-prost generation in hybrid crates.
-		// Override ProstRelativeName so ToProto and FromProto resolve to crate::prost::<pkg>::<TypeName>.
-		ann := e.Codec.(*enumAnnotation)
-		ann.ProstRelativeName = "crate::prost::" + packageToModuleName(e.Package) + "::" + prostEnumRelativePath(e)
 	}
 	for _, m := range model.Messages {
 		if err := codec.annotateMessage(m, model, true); err != nil {
@@ -177,10 +173,6 @@ func annotateModel(model *api.API, codec *codec) (*modelAnnotations, error) {
 		if err := codec.annotateMessage(m, model, true); err != nil {
 			return nil, err
 		}
-		// ExternalMessages (e.g. google.type.LatLng) are populated for convert-prost generation in hybrid crates.
-		// Override ProstRelativeName so ToProto and FromProto resolve to crate::prost::<pkg>::<TypeName>.
-		ann := m.Codec.(*messageAnnotation)
-		ann.ProstRelativeName = "crate::prost::" + packageToModuleName(m.Package) + "::" + prostMessageRelativePath(m)
 	}
 	// External enums and messages get only basic annotations
 	// used for sample generation.
@@ -232,6 +224,21 @@ func annotateModel(model *api.API, codec *codec) (*modelAnnotations, error) {
 		}
 		if _, err := codec.annotateService(s); err != nil {
 			return nil, err
+		}
+	}
+
+	// ExternalEnums (e.g. google.type.Date) and ExternalMessages (e.g. google.api.HttpBody)
+	// are populated for convert-prost generation in hybrid crates.
+	// Override ProstRelativeName after all method annotations so ToProto and FromProto
+	// resolve to crate::prost::<pkg>::<TypeName>.
+	for _, e := range model.ExternalEnums {
+		if ann, ok := e.Codec.(*enumAnnotation); ok {
+			ann.ProstRelativeName = "crate::prost::" + packageToModuleName(e.Package) + "::" + prostEnumRelativePath(e)
+		}
+	}
+	for _, m := range model.ExternalMessages {
+		if ann, ok := m.Codec.(*messageAnnotation); ok {
+			ann.ProstRelativeName = "crate::prost::" + packageToModuleName(m.Package) + "::" + prostMessageRelativePath(m)
 		}
 	}
 
