@@ -13,6 +13,15 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 }}
+{{#Codec.IsServerStreaming}}
+///     let mut resp_stream = client.{{Codec.Name}}()
+{{> /templates/common/client_method_samples/builder_fields}}
+///         .send().await?;
+///     while let Some(response) = resp_stream.next().await {
+///         let response = response?;
+///         println!("response {:?}", response);
+///     }
+{{/Codec.IsServerStreaming}}
 {{#Codec.IsBidiStreaming}}
 ///     let (sender, mut resp_stream) = client.{{Codec.Name}}()
 ///         .build();

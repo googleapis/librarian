@@ -68,6 +68,7 @@ func TestGenerateServerStreaming(t *testing.T) {
 			"package:prost":                    "package=prost,used-if=streaming",
 			"package:prost-types":              "package=prost-types,used-if=streaming",
 			"include-server-streaming-methods": "true",
+			"generate-rpc-samples":             "true",
 			"detailed-tracing-attributes":      "true",
 		},
 	}
@@ -96,6 +97,34 @@ func TestGenerateServerStreaming(t *testing.T) {
 		want     string
 	}{
 		{
+			name:     "client: method doc example",
+			file:     "src/client.rs",
+			startStr: "    ///\n    /// # Example",
+			endStr:   "        super::builder::echo::Expand::new(self.inner.clone())\n    }",
+			want: `    ///
+    /// # Example
+    /// ` + "```" + `
+    /// # use google_cloud_test_v1::client::Echo;
+    /// use google_cloud_test_v1::Result;
+    /// async fn sample(
+    ///    client: &Echo
+    /// ) -> Result<()> {
+    ///     let mut resp_stream = client.expand()
+    ///         /* set fields */
+    ///         .send().await?;
+    ///     while let Some(response) = resp_stream.next().await {
+    ///         let response = response?;
+    ///         println!("response {:?}", response);
+    ///     }
+    ///     Ok(())
+    /// }
+    /// ` + "```" + `
+    pub fn expand(&self) -> super::builder::echo::Expand
+    {
+        super::builder::echo::Expand::new(self.inner.clone())
+    }`,
+		},
+		{
 			name:     "client: method definition",
 			file:     "src/client.rs",
 			startStr: "    pub fn expand(&self) -> super::builder::echo::Expand",
@@ -104,6 +133,32 @@ func TestGenerateServerStreaming(t *testing.T) {
     {
         super::builder::echo::Expand::new(self.inner.clone())
     }`,
+		},
+		{
+			name:     "builder: doc example",
+			file:     "src/builder.rs",
+			startStr: "    /// The request builder for [Echo::expand][crate::client::Echo::expand] calls.\n    ///\n    /// # Example",
+			endStr:   "    #[derive(Clone, Debug)]",
+			want: `    /// The request builder for [Echo::expand][crate::client::Echo::expand] calls.
+    ///
+    /// # Example
+    /// ` + "```" + `
+    /// # use google_cloud_test_v1::builder::echo::Expand;
+    /// # async fn sample() -> google_cloud_test_v1::Result<()> {
+    /// let builder = prepare_request_builder();
+    /// let mut resp_stream = builder.send().await?;
+    /// while let Some(response) = resp_stream.next().await {
+    ///     let response = response?;
+    ///     println!("response {:?}", response);
+    /// }
+    /// # Ok(()) }
+    ///
+    /// fn prepare_request_builder() -> Expand {
+    ///   # panic!();
+    ///   // ... details omitted ...
+    /// }
+    /// ` + "```" + `
+    #[derive(Clone, Debug)]`,
 		},
 		{
 			name:     "builder: struct definition",

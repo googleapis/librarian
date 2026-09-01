@@ -128,7 +128,11 @@ pub mod {{Codec.ModuleName}} {
     {{/Codec.IsBidiStreaming}}
     {{#Codec.IsServerStreaming}}
     /// let builder = prepare_request_builder();
-    /// let mut receiver = builder.send().await?;
+    /// let mut resp_stream = builder.send().await?;
+    /// while let Some(response) = resp_stream.next().await {
+    ///     let response = response?;
+    ///     println!("response {:?}", response);
+    /// }
     {{/Codec.IsServerStreaming}}
     {{^Codec.IsBidiStreaming}}
     {{^Codec.IsServerStreaming}}

@@ -140,6 +140,9 @@ func findQuickstartMethod(s *Service) *Method {
 		func(m *Method) bool { return m.IsAIPStandardUpdate },
 		// Fallback for when no standard AIP method is available: any method that is not streaming.
 		func(m *Method) bool { return !m.ClientSideStreaming && !m.ServerSideStreaming },
+		// Fallback for streaming methods when no unary methods exist.
+		func(m *Method) bool { return !m.ClientSideStreaming && m.ServerSideStreaming },
+		func(m *Method) bool { return m.ClientSideStreaming && m.ServerSideStreaming },
 	}
 
 	strippedServiceName := strings.TrimSuffix(s.Name, "Service")
