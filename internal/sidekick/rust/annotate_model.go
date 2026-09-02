@@ -166,6 +166,25 @@ func (m *modelAnnotations) GrpcServices() []*api.Service {
 	})
 }
 
+// GrpcRootTypeIDs returns the root message type IDs for all generated gRPC methods in the model.
+func GrpcRootTypeIDs(model *api.API) []string {
+	var rootTypeIDs []string
+	for _, s := range model.Services {
+		for _, m := range s.Methods {
+			if ann, ok := m.Codec.(*methodAnnotation); ok && ann.IsGrpc {
+				if m.InputTypeID != "" {
+					rootTypeIDs = append(rootTypeIDs, m.InputTypeID)
+				}
+				if m.OutputTypeID != "" {
+					rootTypeIDs = append(rootTypeIDs, m.OutputTypeID)
+				}
+			}
+		}
+	}
+	slices.Sort(rootTypeIDs)
+	return slices.Compact(rootTypeIDs)
+}
+
 // annotateModel creates a struct used as input for Mustache templates.
 // Fields and methods defined in this struct directly correspond to Mustache
 // tags. For example, the Mustache tag {{#Services}} uses the
@@ -173,7 +192,7 @@ func (m *modelAnnotations) GrpcServices() []*api.Service {
 func annotateModel(model *api.API, codec *codec) (*modelAnnotations, error) {
 	codec.hasServices = len(model.Services) > 0
 
-	resolveUsedPackages(model, codec.extraPackages, codec.hasStreaming(model))
+	resolveUsedPackages(model, codec.extraPackages, codec.hasGrpc(model))
 	// Annotate enums and messages that we intend to generate. In the
 	// process we discover the external dependencies and trim the list of
 	// packages used by this API.

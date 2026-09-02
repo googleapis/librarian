@@ -133,6 +133,10 @@ type RustDefault struct {
 	// AllowStreamingAnyTypes is a list of protobuf field/message IDs with google.protobuf.Any
 	// permitted in streaming RPCs (their fields will be dropped in prost conversion).
 	AllowStreamingAnyTypes []string `yaml:"allow_streaming_any_types,omitempty"`
+
+	// DefaultTransport specifies the default transport protocol for unary methods ("grpc" or "http").
+	// Defaults to "http".
+	DefaultTransport string `yaml:"default_transport,omitempty"`
 }
 
 // RustModule defines a generation target within a veneer crate.
@@ -141,6 +145,10 @@ type RustDefault struct {
 type RustModule struct {
 	// DisabledRustdocWarnings specifies rustdoc lints to disable. An empty slice explicitly enables all warnings.
 	DisabledRustdocWarnings yaml.StringSlice `yaml:"disabled_rustdoc_warnings,omitempty"`
+
+	// DefaultTransport specifies the default transport protocol for unary methods ("grpc" or "http").
+	// This overrides the crate-level setting.
+	DefaultTransport string `yaml:"default_transport,omitempty"`
 
 	// DetailedTracingAttributes indicates whether to include detailed tracing attributes.
 	// This overrides the crate-level setting.
