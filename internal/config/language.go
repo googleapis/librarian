@@ -796,9 +796,6 @@ type NodejsPackage struct {
 	// handwritten layer.
 	MainService string `yaml:"main_service,omitempty"`
 
-	// NodejsAPIs is a list of Node.js-specific API configurations.
-	NodejsAPIs []*NodejsAPI `yaml:"nodejs_apis,omitempty"`
-
 	// PackageName is the npm package name (e.g., "@google-cloud/access-approval").
 	PackageName string `yaml:"package_name,omitempty"`
 

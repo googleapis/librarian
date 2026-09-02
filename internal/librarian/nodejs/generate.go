@@ -196,27 +196,14 @@ func resolveNodejsAPI(library *config.Library, api *config.API) *config.NodejsAP
 	res := &config.NodejsAPI{
 		Path: api.Path,
 	}
-
-	var apiConfig *config.NodejsAPI
-	if api.Nodejs != nil {
-		apiConfig = api.Nodejs
-	} else if library.Nodejs != nil {
-		for _, nodejsAPI := range library.Nodejs.NodejsAPIs {
-			if nodejsAPI.Path == api.Path {
-				apiConfig = nodejsAPI
-				break
-			}
-		}
-	}
-
 	omitCommon := false
-	if apiConfig != nil {
-		omitCommon = apiConfig.OmitCommonResources
-		res.DIREGAPIC = apiConfig.DIREGAPIC
-		if apiConfig.Mixins != "" {
-			res.Mixins = apiConfig.Mixins
+	if api.Nodejs != nil {
+		omitCommon = api.Nodejs.OmitCommonResources
+		res.DIREGAPIC = api.Nodejs.DIREGAPIC
+		if api.Nodejs.Mixins != "" {
+			res.Mixins = api.Nodejs.Mixins
 		}
-		res.OmitCommonResources = apiConfig.OmitCommonResources
+		res.OmitCommonResources = api.Nodejs.OmitCommonResources
 	}
 
 	var protos []string
@@ -224,17 +211,14 @@ func resolveNodejsAPI(library *config.Library, api *config.API) *config.NodejsAP
 		protos = append(protos, cloudCommonResourcesProto)
 	}
 
-	if library.Nodejs == nil {
-		res.AdditionalProtos = protos
-		return res
+	// Add package-level additional protos.
+	if library.Nodejs != nil {
+		protos = append(protos, library.Nodejs.AdditionalProtos...)
 	}
 
-	// Add package-level additional protos.
-	protos = append(protos, library.Nodejs.AdditionalProtos...)
-
 	// Add API-level additional protos.
-	if apiConfig != nil {
-		protos = append(protos, apiConfig.AdditionalProtos...)
+	if api.Nodejs != nil {
+		protos = append(protos, api.Nodejs.AdditionalProtos...)
 	}
 
 	res.AdditionalProtos = unique(protos)
@@ -330,9 +314,9 @@ func buildGeneratorArgs(params buildGeneratorArgsParams) ([]string, error) {
 		if params.library.Nodejs.MainService != "" {
 			args = append(args, "--main-service", params.library.Nodejs.MainService)
 		}
-		if params.nodejsAPI.Mixins != "" {
-			args = append(args, "--mixins", params.nodejsAPI.Mixins)
-		}
+	}
+	if params.nodejsAPI.Mixins != "" {
+		args = append(args, "--mixins", params.nodejsAPI.Mixins)
 	}
 	return args, nil
 }
