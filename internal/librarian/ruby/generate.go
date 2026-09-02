@@ -138,13 +138,21 @@ func generateAPI(ctx context.Context, api *config.API, library *config.Library, 
 	return nil
 }
 
+func apiGemName(library *config.Library, api *config.API) string {
+	if api.Ruby != nil && api.Ruby.RubyCloudOpts != nil && api.Ruby.RubyCloudOpts.GemName != "" {
+		return api.Ruby.RubyCloudOpts.GemName
+	}
+	return library.Name
+}
+
 func buildGAPICOpts(api *config.API, library *config.Library, googleapisDir string, serviceConfig *serviceconfig.API) ([]string, error) {
 	gc, err := serviceconfig.FindGRPCServiceConfig(googleapisDir, api.Path)
 	if err != nil {
 		return nil, err
 	}
+	gemName := apiGemName(library, api)
 	opts := []string{
-		"ruby-cloud-gem-name=" + library.Name,
+		"ruby-cloud-gem-name=" + gemName,
 	}
 	if serviceConfig != nil && serviceConfig.ServiceConfig != "" {
 		opts = append(opts, "service-yaml="+filepath.Join(googleapisDir, serviceConfig.ServiceConfig))
@@ -202,7 +210,9 @@ func buildGAPICOpts(api *config.API, library *config.Library, googleapisDir stri
 			opts = append(opts, "ruby-cloud-yard-strict="+api.Ruby.RubyCloudOpts.YardStrict)
 		}
 	}
-	if library.Ruby != nil && len(library.Ruby.WrapperOf) > 0 {
+	if api.Ruby != nil && api.Ruby.RubyCloudOpts != nil && api.Ruby.RubyCloudOpts.WrapperOf != "" {
+		opts = append(opts, "ruby-cloud-wrapper-of="+api.Ruby.RubyCloudOpts.WrapperOf)
+	} else if library.Ruby != nil && len(library.Ruby.WrapperOf) > 0 {
 		// This controls the dependency range declaration in the gemspec file.
 		opts = append(opts, "ruby-cloud-wrapper-of="+strings.Join(library.Ruby.WrapperOf, ";"))
 	}
