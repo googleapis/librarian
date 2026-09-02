@@ -695,9 +695,6 @@ func mergeNodejs(dst, src *config.NodejsPackage) *config.NodejsPackage {
 	if src.AdditionalProtos != nil {
 		res.AdditionalProtos = src.AdditionalProtos
 	}
-	if src.NodejsAPIs != nil {
-		res.NodejsAPIs = src.NodejsAPIs
-	}
 	if src.ESM {
 		res.ESM = src.ESM
 	}

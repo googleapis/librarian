@@ -373,17 +373,15 @@ func TestBuildGeneratorArgs(t *testing.T) {
 		},
 		{
 			name: "DIREGAPIC support",
-			api:  &config.API{Path: "google/cloud/secretmanager/v1"},
-			library: &config.Library{
-				Name: "google-cloud-secretmanager",
-				Nodejs: &config.NodejsPackage{
-					NodejsAPIs: []*config.NodejsAPI{
-						{
-							Path:      "google/cloud/secretmanager/v1",
-							DIREGAPIC: true,
-						},
-					},
+			api: &config.API{
+				Path: "google/cloud/secretmanager/v1",
+				Nodejs: &config.NodejsAPI{
+					DIREGAPIC: true,
 				},
+			},
+			library: &config.Library{
+				Name:   "google-cloud-secretmanager",
+				Nodejs: &config.NodejsPackage{},
 			},
 			want: []string{
 				"gapic-generator-typescript",
@@ -420,34 +418,6 @@ func TestBuildGeneratorArgs(t *testing.T) {
 				"--metadata",
 				"--rest-numeric-enums",
 				"--format=esm",
-			},
-		},
-		{
-			name: "API-level mixin override",
-			api:  &config.API{Path: "google/cloud/secretmanager/v1"},
-			library: &config.Library{
-				Name: "google-cloud-secretmanager",
-				Nodejs: &config.NodejsPackage{
-					NodejsAPIs: []*config.NodejsAPI{
-						{
-							Path:   "google/cloud/secretmanager/v1",
-							Mixins: "none",
-						},
-					},
-				},
-			},
-			want: []string{
-				"gapic-generator-typescript",
-				"--protoc=" + customProtocPath,
-				"--common-proto-path=.",
-				"-I", ".",
-				"--output-dir", "staging",
-				"--grpc-service-config", "google/cloud/secretmanager/v1/secretmanager_grpc_service_config.json",
-				"--service-yaml", "google/cloud/secretmanager/v1/secretmanager_v1.yaml",
-				"--package-name", "@google-cloud/secretmanager",
-				"--metadata",
-				"--rest-numeric-enums",
-				"--mixins", "none",
 			},
 		},
 		{
@@ -1455,18 +1425,14 @@ func TestResolveNodejsAPI(t *testing.T) {
 			},
 		},
 		{
-			name: "found in config, appends to defaults",
-			library: &config.Library{
-				Nodejs: &config.NodejsPackage{
-					NodejsAPIs: []*config.NodejsAPI{
-						{
-							Path:             "google/cloud/secretmanager/v1",
-							AdditionalProtos: []string{"other.proto"},
-						},
-					},
+			name:    "found in config, appends to defaults",
+			library: &config.Library{},
+			api: &config.API{
+				Path: "google/cloud/secretmanager/v1",
+				Nodejs: &config.NodejsAPI{
+					AdditionalProtos: []string{"other.proto"},
 				},
 			},
-			api: &config.API{Path: "google/cloud/secretmanager/v1"},
 			want: &config.NodejsAPI{
 				Path:             "google/cloud/secretmanager/v1",
 				AdditionalProtos: []string{cloudCommonResourcesProto, "other.proto"},
@@ -1477,15 +1443,14 @@ func TestResolveNodejsAPI(t *testing.T) {
 			library: &config.Library{
 				Nodejs: &config.NodejsPackage{
 					AdditionalProtos: []string{"pkg.proto"},
-					NodejsAPIs: []*config.NodejsAPI{
-						{
-							Path:             "google/cloud/secretmanager/v1",
-							AdditionalProtos: []string{"api.proto"},
-						},
-					},
 				},
 			},
-			api: &config.API{Path: "google/cloud/secretmanager/v1"},
+			api: &config.API{
+				Path: "google/cloud/secretmanager/v1",
+				Nodejs: &config.NodejsAPI{
+					AdditionalProtos: []string{"api.proto"},
+				},
+			},
 			want: &config.NodejsAPI{
 				Path:             "google/cloud/secretmanager/v1",
 				AdditionalProtos: []string{cloudCommonResourcesProto, "pkg.proto", "api.proto"},
@@ -1496,33 +1461,28 @@ func TestResolveNodejsAPI(t *testing.T) {
 			library: &config.Library{
 				Nodejs: &config.NodejsPackage{
 					AdditionalProtos: []string{cloudCommonResourcesProto, "other.proto"},
-					NodejsAPIs: []*config.NodejsAPI{
-						{
-							Path:             "google/cloud/secretmanager/v1",
-							AdditionalProtos: []string{"other.proto", "more.proto"},
-						},
-					},
 				},
 			},
-			api: &config.API{Path: "google/cloud/secretmanager/v1"},
+			api: &config.API{
+				Path: "google/cloud/secretmanager/v1",
+				Nodejs: &config.NodejsAPI{
+					AdditionalProtos: []string{"other.proto", "more.proto"},
+				},
+			},
 			want: &config.NodejsAPI{
 				Path:             "google/cloud/secretmanager/v1",
 				AdditionalProtos: []string{cloudCommonResourcesProto, "other.proto", "more.proto"},
 			},
 		},
 		{
-			name: "DIREGAPIC support",
-			library: &config.Library{
-				Nodejs: &config.NodejsPackage{
-					NodejsAPIs: []*config.NodejsAPI{
-						{
-							Path:      "google/cloud/secretmanager/v1",
-							DIREGAPIC: true,
-						},
-					},
+			name:    "DIREGAPIC support",
+			library: &config.Library{},
+			api: &config.API{
+				Path: "google/cloud/secretmanager/v1",
+				Nodejs: &config.NodejsAPI{
+					DIREGAPIC: true,
 				},
 			},
-			api: &config.API{Path: "google/cloud/secretmanager/v1"},
 			want: &config.NodejsAPI{
 				Path:             "google/cloud/secretmanager/v1",
 				AdditionalProtos: []string{cloudCommonResourcesProto},
@@ -1530,18 +1490,14 @@ func TestResolveNodejsAPI(t *testing.T) {
 			},
 		},
 		{
-			name: "omit common resources is true",
-			library: &config.Library{
-				Nodejs: &config.NodejsPackage{
-					NodejsAPIs: []*config.NodejsAPI{
-						{
-							Path:                "google/api/cloudquotas/v1",
-							OmitCommonResources: true,
-						},
-					},
+			name:    "omit common resources is true",
+			library: &config.Library{},
+			api: &config.API{
+				Path: "google/api/cloudquotas/v1",
+				Nodejs: &config.NodejsAPI{
+					OmitCommonResources: true,
 				},
 			},
-			api: &config.API{Path: "google/api/cloudquotas/v1"},
 			want: &config.NodejsAPI{
 				Path:                "google/api/cloudquotas/v1",
 				OmitCommonResources: true,
@@ -1553,15 +1509,14 @@ func TestResolveNodejsAPI(t *testing.T) {
 			library: &config.Library{
 				Nodejs: &config.NodejsPackage{
 					AdditionalProtos: []string{"pkg.proto"},
-					NodejsAPIs: []*config.NodejsAPI{
-						{
-							Path:                "google/cloud/secretmanager/v1",
-							OmitCommonResources: true,
-						},
-					},
 				},
 			},
-			api: &config.API{Path: "google/cloud/secretmanager/v1"},
+			api: &config.API{
+				Path: "google/cloud/secretmanager/v1",
+				Nodejs: &config.NodejsAPI{
+					OmitCommonResources: true,
+				},
+			},
 			want: &config.NodejsAPI{
 				Path:                "google/cloud/secretmanager/v1",
 				OmitCommonResources: true,
@@ -1569,19 +1524,15 @@ func TestResolveNodejsAPI(t *testing.T) {
 			},
 		},
 		{
-			name: "omit common resources is true, api-level additional protos preserved",
-			library: &config.Library{
-				Nodejs: &config.NodejsPackage{
-					NodejsAPIs: []*config.NodejsAPI{
-						{
-							Path:                "google/cloud/secretmanager/v1",
-							OmitCommonResources: true,
-							AdditionalProtos:    []string{"api.proto"},
-						},
-					},
+			name:    "omit common resources is true, api-level additional protos preserved",
+			library: &config.Library{},
+			api: &config.API{
+				Path: "google/cloud/secretmanager/v1",
+				Nodejs: &config.NodejsAPI{
+					OmitCommonResources: true,
+					AdditionalProtos:    []string{"api.proto"},
 				},
 			},
-			api: &config.API{Path: "google/cloud/secretmanager/v1"},
 			want: &config.NodejsAPI{
 				Path:                "google/cloud/secretmanager/v1",
 				OmitCommonResources: true,
@@ -1593,16 +1544,15 @@ func TestResolveNodejsAPI(t *testing.T) {
 			library: &config.Library{
 				Nodejs: &config.NodejsPackage{
 					AdditionalProtos: []string{"pkg.proto"},
-					NodejsAPIs: []*config.NodejsAPI{
-						{
-							Path:                "google/cloud/secretmanager/v1",
-							OmitCommonResources: true,
-							AdditionalProtos:    []string{"api.proto"},
-						},
-					},
 				},
 			},
-			api: &config.API{Path: "google/cloud/secretmanager/v1"},
+			api: &config.API{
+				Path: "google/cloud/secretmanager/v1",
+				Nodejs: &config.NodejsAPI{
+					OmitCommonResources: true,
+					AdditionalProtos:    []string{"api.proto"},
+				},
+			},
 			want: &config.NodejsAPI{
 				Path:                "google/cloud/secretmanager/v1",
 				OmitCommonResources: true,
@@ -1614,16 +1564,15 @@ func TestResolveNodejsAPI(t *testing.T) {
 			library: &config.Library{
 				Nodejs: &config.NodejsPackage{
 					AdditionalProtos: []string{"pkg.proto"},
-					NodejsAPIs: []*config.NodejsAPI{
-						{
-							Path:                "google/cloud/secretmanager/v1",
-							OmitCommonResources: false,
-							AdditionalProtos:    []string{"api.proto"},
-						},
-					},
 				},
 			},
-			api: &config.API{Path: "google/cloud/secretmanager/v1"},
+			api: &config.API{
+				Path: "google/cloud/secretmanager/v1",
+				Nodejs: &config.NodejsAPI{
+					OmitCommonResources: false,
+					AdditionalProtos:    []string{"api.proto"},
+				},
+			},
 			want: &config.NodejsAPI{
 				Path:                "google/cloud/secretmanager/v1",
 				OmitCommonResources: false,
@@ -1635,16 +1584,15 @@ func TestResolveNodejsAPI(t *testing.T) {
 			library: &config.Library{
 				Nodejs: &config.NodejsPackage{
 					AdditionalProtos: []string{"pkg.proto", "dup.proto"},
-					NodejsAPIs: []*config.NodejsAPI{
-						{
-							Path:                "google/cloud/secretmanager/v1",
-							OmitCommonResources: true,
-							AdditionalProtos:    []string{"dup.proto", "api.proto"},
-						},
-					},
 				},
 			},
-			api: &config.API{Path: "google/cloud/secretmanager/v1"},
+			api: &config.API{
+				Path: "google/cloud/secretmanager/v1",
+				Nodejs: &config.NodejsAPI{
+					OmitCommonResources: true,
+					AdditionalProtos:    []string{"dup.proto", "api.proto"},
+				},
+			},
 			want: &config.NodejsAPI{
 				Path:                "google/cloud/secretmanager/v1",
 				OmitCommonResources: true,
