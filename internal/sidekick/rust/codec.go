@@ -1329,7 +1329,7 @@ func (c *codec) tryDocLinkWithId(id string, model *api.API, scope string) (strin
 		return c.methodRustdocLink(me, model), nil
 	}
 	if s := model.Service(id); s != nil {
-		return c.serviceRustdocLink(s), nil
+		return c.serviceRustdocLink(s, model), nil
 	}
 	rdLink, err := c.tryFieldRustdocLink(id, model, scope)
 	if err != nil {
@@ -1432,14 +1432,24 @@ func (c *codec) methodRustdocLink(m *api.Method, model *api.API) string {
 	if s == nil {
 		return ""
 	}
-	return fmt.Sprintf("%s::%s", c.serviceRustdocLink(s), toSnake(m.Name))
+	if !slices.Contains(s.Methods, m) {
+		return ""
+	}
+	serviceLink := c.serviceRustdocLink(s, model)
+	if serviceLink == "" {
+		return ""
+	}
+	return fmt.Sprintf("%s::%s", serviceLink, toSnake(m.Name))
 }
 
-func (c *codec) serviceRustdocLink(s *api.Service) string {
+func (c *codec) serviceRustdocLink(s *api.Service, model *api.API) string {
 	mapped, ok := c.packageMapping[s.Package]
 	name := c.ServiceName(s)
 	if ok {
 		return fmt.Sprintf("%s::client::%s", mapped.name, toPascal(name))
+	}
+	if !slices.Contains(model.Services, s) {
+		return ""
 	}
 	return fmt.Sprintf("crate::client::%s", toPascal(name))
 }
