@@ -314,9 +314,9 @@ func buildGeneratorArgs(params buildGeneratorArgsParams) ([]string, error) {
 		if params.library.Nodejs.MainService != "" {
 			args = append(args, "--main-service", params.library.Nodejs.MainService)
 		}
-		if params.nodejsAPI.Mixins != "" {
-			args = append(args, "--mixins", params.nodejsAPI.Mixins)
-		}
+	}
+	if params.nodejsAPI.Mixins != "" {
+		args = append(args, "--mixins", params.nodejsAPI.Mixins)
 	}
 	return args, nil
 }
