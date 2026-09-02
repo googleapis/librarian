@@ -53,13 +53,7 @@ type modelAnnotations struct {
 	RequiredPackages           []string
 	ExternPackages             []string
 	HasLROs                    bool
-	HasBidiStreaming           bool
-	HasServerStreaming         bool
-	HasStreaming               bool
 	IncludeRpcStatusConversion bool
-	BidiStreamingServices      []*api.Service
-	ServerStreamingServices    []*api.Service
-	StreamingServices          []*api.Service
 	CopyrightYear              string
 	BoilerPlate                []string
 	DefaultHost                string
@@ -130,6 +124,26 @@ func (m *modelAnnotations) HasServices() bool {
 	return len(m.Services) > 0
 }
 
+// HasGrpc returns true if any service in the model has at least one gRPC method.
+func (m *modelAnnotations) HasGrpc() bool {
+	return slices.ContainsFunc(m.Services, func(s *api.Service) bool {
+		if ann, ok := s.Codec.(*serviceAnnotations); ok {
+			return ann.HasGrpc()
+		}
+		return false
+	})
+}
+
+// HasHttp returns true if any service in the model has at least one HTTP method.
+func (m *modelAnnotations) HasHttp() bool {
+	return slices.ContainsFunc(m.Services, func(s *api.Service) bool {
+		if ann, ok := s.Codec.(*serviceAnnotations); ok {
+			return ann.HasHttp()
+		}
+		return false
+	})
+}
+
 // IsGaxiCrate returns true if we handle references to `gaxi` traits from within the `gaxi` crate, by
 // injecting some ad-hoc code.
 func (m *modelAnnotations) IsGaxiCrate() bool {
@@ -140,6 +154,16 @@ func (m *modelAnnotations) IsGaxiCrate() bool {
 // is a GA library.
 func (m *modelAnnotations) ReleaseLevelIsGA() bool {
 	return m.ReleaseLevel == "GA" || m.ReleaseLevel == "stable"
+}
+
+// GrpcServices returns the subset of services that have at least one gRPC method.
+func (m *modelAnnotations) GrpcServices() []*api.Service {
+	return language.FilterSlice(m.Services, func(s *api.Service) bool {
+		if ann, ok := s.Codec.(*serviceAnnotations); ok {
+			return ann.HasGrpc()
+		}
+		return false
+	})
 }
 
 // annotateModel creates a struct used as input for Mustache templates.
@@ -284,26 +308,13 @@ func annotateModel(model *api.API, codec *codec) (*modelAnnotations, error) {
 		}
 	}
 
-	var bidiStreamingServices []*api.Service
-	var serverStreamingServices []*api.Service
-	var streamingServices []*api.Service
-	for _, s := range servicesSubset {
-		isBidi := codec.includeBidiStreamingMethods && s.HasBidiStreaming()
-		isServer := codec.includeServerStreamingMethods && s.HasServerSideStreaming()
-		if isBidi {
-			bidiStreamingServices = append(bidiStreamingServices, s)
+	hasGrpc := slices.ContainsFunc(servicesSubset, func(s *api.Service) bool {
+		if sAnn, ok := s.Codec.(*serviceAnnotations); ok {
+			return sAnn.HasGrpc()
 		}
-		if isServer {
-			serverStreamingServices = append(serverStreamingServices, s)
-		}
-		if isBidi || isServer {
-			streamingServices = append(streamingServices, s)
-		}
-	}
-	hasBidiStreaming := (codec.templateOverride == "" || codec.templateOverride == "templates/grpc-client") && len(bidiStreamingServices) > 0
-	hasServerStreaming := (codec.templateOverride == "" || codec.templateOverride == "templates/grpc-client") && len(serverStreamingServices) > 0
-	hasStreaming := hasBidiStreaming || hasServerStreaming
-	if hasStreaming {
+		return false
+	})
+	if hasGrpc {
 		for _, pkg := range codec.extraPackages {
 			if pkg.name == gaxiPackageName {
 				if !slices.Contains(pkg.features, "_internal-grpc-client") {
@@ -332,13 +343,7 @@ func annotateModel(model *api.API, codec *codec) (*modelAnnotations, error) {
 		RequiredPackages:           requiredPackages(codec.extraPackages),
 		ExternPackages:             externPackages(codec.extraPackages),
 		HasLROs:                    hasLROs,
-		HasBidiStreaming:           hasBidiStreaming,
-		HasServerStreaming:         hasServerStreaming,
-		HasStreaming:               hasStreaming,
 		IncludeRpcStatusConversion: includeRpcStatusConversion,
-		BidiStreamingServices:      bidiStreamingServices,
-		ServerStreamingServices:    serverStreamingServices,
-		StreamingServices:          streamingServices,
 		CopyrightYear:              codec.generationYear,
 		BoilerPlate: append(license.HeaderBulk(),
 			"",

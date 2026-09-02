@@ -797,14 +797,12 @@ func TestModelAnnotationsHasStreaming(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			if got.HasBidiStreaming != test.wantBidi {
-				t.Errorf("HasBidiStreaming = %v, want %v", got.HasBidiStreaming, test.wantBidi)
+			sAnn := test.service.Codec.(*serviceAnnotations)
+			if sAnn.HasBidiStreaming() != test.wantBidi {
+				t.Errorf("HasBidiStreaming = %v, want %v", sAnn.HasBidiStreaming(), test.wantBidi)
 			}
-			if got.HasServerStreaming != test.wantServer {
-				t.Errorf("HasServerStreaming = %v, want %v", got.HasServerStreaming, test.wantServer)
-			}
-			if got.HasStreaming != test.wantStreaming {
-				t.Errorf("HasStreaming = %v, want %v", got.HasStreaming, test.wantStreaming)
+			if sAnn.HasStreaming() != test.wantStreaming {
+				t.Errorf("HasStreaming = %v, want %v", sAnn.HasStreaming(), test.wantStreaming)
 			}
 			if len(test.wantGaxiFeatures) > 0 {
 				idx := slices.IndexFunc(codec.extraPackages, func(pkg *packagez) bool {
@@ -825,19 +823,16 @@ func TestModelAnnotationsHasStreaming(t *testing.T) {
 	}
 }
 
-func TestModelAnnotationsStreamingServices(t *testing.T) {
+func TestModelAnnotationsGrpcServices(t *testing.T) {
 	msg := api.NewTestMessage("Request").WithPackage("test.v1")
 
-	bidiMethod := api.NewTestMethod("Chat").WithInput(msg).WithOutput(msg).WithBidiStreaming()
-	bidiMethod.PathInfo = &api.PathInfo{}
+	bidiMethod := api.NewTestMethod("Chat").WithInput(msg).WithOutput(msg).WithBidiStreaming().WithPathTemplate(&api.PathTemplate{})
 	bidiService := api.NewTestService("BidiService").WithPackage("test.v1").WithMethods(bidiMethod)
 
-	serverMethod := api.NewTestMethod("Expand").WithInput(msg).WithOutput(msg).WithServerSideStreaming()
-	serverMethod.PathInfo = &api.PathInfo{}
+	serverMethod := api.NewTestMethod("Expand").WithInput(msg).WithOutput(msg).WithServerSideStreaming().WithPathTemplate(&api.PathTemplate{})
 	serverService := api.NewTestService("ServerService").WithPackage("test.v1").WithMethods(serverMethod)
 
-	unaryMethod := api.NewTestMethod("Get").WithInput(msg).WithOutput(msg)
-	unaryMethod.PathInfo = &api.PathInfo{}
+	unaryMethod := api.NewTestMethod("Get").WithInput(msg).WithOutput(msg).WithVerb("GET").WithPathTemplate(&api.PathTemplate{})
 	unaryService := api.NewTestService("UnaryService").WithPackage("test.v1").WithMethods(unaryMethod)
 
 	model := api.NewTestAPI([]*api.Message{msg}, []*api.Enum{}, []*api.Service{bidiService, serverService, unaryService})
@@ -855,20 +850,21 @@ func TestModelAnnotationsStreamingServices(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if len(got.BidiStreamingServices) != 1 {
-		t.Fatalf("expected 1 BidiStreamingService, got %d", len(got.BidiStreamingServices))
+	grpcServices := got.GrpcServices()
+	if len(grpcServices) != 2 {
+		t.Fatalf("expected 2 GrpcServices, got %d", len(grpcServices))
 	}
-	if got.BidiStreamingServices[0].Name != "BidiService" {
-		t.Errorf("expected BidiStreamingServices[0].Name == %q, got %q", "BidiService", got.BidiStreamingServices[0].Name)
+	if grpcServices[0].Name != "BidiService" {
+		t.Errorf("expected GrpcServices[0].Name == %q, got %q", "BidiService", grpcServices[0].Name)
 	}
-	if len(got.ServerStreamingServices) != 1 {
-		t.Fatalf("expected 1 ServerStreamingService, got %d", len(got.ServerStreamingServices))
+	if grpcServices[1].Name != "ServerService" {
+		t.Errorf("expected GrpcServices[1].Name == %q, got %q", "ServerService", grpcServices[1].Name)
 	}
-	if got.ServerStreamingServices[0].Name != "ServerService" {
-		t.Errorf("expected ServerStreamingServices[0].Name == %q, got %q", "ServerService", got.ServerStreamingServices[0].Name)
+	if !got.HasGrpc() {
+		t.Errorf("expected HasGrpc() == true")
 	}
-	if len(got.StreamingServices) != 2 {
-		t.Fatalf("expected 2 StreamingServices, got %d", len(got.StreamingServices))
+	if !got.HasHttp() {
+		t.Errorf("expected HasHttp() == true")
 	}
 }
 

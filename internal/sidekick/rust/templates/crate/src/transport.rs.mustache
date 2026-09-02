@@ -31,16 +31,18 @@ use crate::Error;
 
 {{/Codec.HasServices}}
 {{#Codec.Services}}
-/// Implements [{{Codec.Name}}](super::stub::{{Codec.Name}}) using a [gaxi::http::ReqwestClient]{{#Codec.HasStreaming}} and a [gaxi::grpc::Client]{{/Codec.HasStreaming}}.
+/// Implements [{{Codec.Name}}](super::stub::{{Codec.Name}}) using {{#Codec.IsPureGrpc}}a [gaxi::grpc::Client]{{/Codec.IsPureGrpc}}{{#Codec.IsPureHttp}}a [gaxi::http::ReqwestClient]{{/Codec.IsPureHttp}}{{#Codec.IsHybrid}}a [gaxi::http::ReqwestClient] and a [gaxi::grpc::Client]{{/Codec.IsHybrid}}.
 {{#Codec.PerServiceFeatures}}
 #[cfg(feature = "{{Codec.FeatureName}}")]
 {{/Codec.PerServiceFeatures}}
 #[derive(Clone)]
 pub struct {{Codec.Name}} {
+    {{#Codec.HasHttp}}
     inner: gaxi::http::ReqwestClient,
-    {{#Codec.HasStreaming}}
+    {{/Codec.HasHttp}}
+    {{#Codec.HasGrpc}}
     grpc_inner: gaxi::grpc::Client,
-    {{/Codec.HasStreaming}}
+    {{/Codec.HasGrpc}}
 }
 
 {{#Codec.PerServiceFeatures}}
@@ -49,10 +51,12 @@ pub struct {{Codec.Name}} {
 impl std::fmt::Debug for {{Codec.Name}} {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::result::Result<(), std::fmt::Error> {
         f.debug_struct("{{Codec.Name}}")
+            {{#Codec.HasHttp}}
             .field("inner", &self.inner)
-            {{#Codec.HasStreaming}}
+            {{/Codec.HasHttp}}
+            {{#Codec.HasGrpc}}
             .field("grpc_inner", &self.grpc_inner)
-            {{/Codec.HasStreaming}}
+            {{/Codec.HasGrpc}}
             .finish()
     }
 }
@@ -64,17 +68,21 @@ impl {{Codec.Name}} {
     pub async fn new(config: gaxi::options::ClientConfig) -> crate::ClientBuilderResult<Self> {
         {{#Codec.DetailedTracingAttributes}}
         let tracing_is_enabled = gaxi::options::tracing_enabled(&config);
-        let inner = gaxi::http::ReqwestClient::new(config{{#Codec.HasStreaming}}.clone(){{/Codec.HasStreaming}}, crate::DEFAULT_HOST).await?;
+        {{#Codec.HasHttp}}
+        let inner = gaxi::http::ReqwestClient::new(config{{#Codec.HasGrpc}}.clone(){{/Codec.HasGrpc}}, crate::DEFAULT_HOST).await?;
         let inner = if tracing_is_enabled {
             inner.with_instrumentation(&super::tracing::info::INSTRUMENTATION_CLIENT_INFO)
         } else {
             inner
         };
+        {{/Codec.HasHttp}}
         {{/Codec.DetailedTracingAttributes}}
         {{^Codec.DetailedTracingAttributes}}
-        let inner = gaxi::http::ReqwestClient::new(config{{#Codec.HasStreaming}}.clone(){{/Codec.HasStreaming}}, crate::DEFAULT_HOST).await?;
+        {{#Codec.HasHttp}}
+        let inner = gaxi::http::ReqwestClient::new(config{{#Codec.HasGrpc}}.clone(){{/Codec.HasGrpc}}, crate::DEFAULT_HOST).await?;
+        {{/Codec.HasHttp}}
         {{/Codec.DetailedTracingAttributes}}
-        {{#Codec.HasStreaming}}
+        {{#Codec.HasGrpc}}
         {{#Codec.DetailedTracingAttributes}}
         let grpc_inner = if tracing_is_enabled {
             gaxi::grpc::Client::new_with_instrumentation(
@@ -90,16 +98,20 @@ impl {{Codec.Name}} {
         {{^Codec.DetailedTracingAttributes}}
         let grpc_inner = gaxi::grpc::Client::new(config, crate::DEFAULT_HOST).await?;
         {{/Codec.DetailedTracingAttributes}}
-        {{/Codec.HasStreaming}}
-        {{^Codec.HasStreaming}}
+        {{/Codec.HasGrpc}}
+        {{#Codec.IsPureHttp}}
         Ok(Self { inner })
-        {{/Codec.HasStreaming}}
-        {{#Codec.HasStreaming}}
+        {{/Codec.IsPureHttp}}
+        {{^Codec.IsPureHttp}}
         Ok(Self {
+            {{#Codec.HasHttp}}
             inner,
+            {{/Codec.HasHttp}}
+            {{#Codec.HasGrpc}}
             grpc_inner,
+            {{/Codec.HasGrpc}}
         })
-        {{/Codec.HasStreaming}}
+        {{/Codec.IsPureHttp}}
     }
 }
 

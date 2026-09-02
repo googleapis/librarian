@@ -1614,15 +1614,19 @@ func (c *codec) generateMethod(m *api.Method) bool {
 	return m.PathInfo.Bindings[0].PathTemplate != nil
 }
 
+func (c *codec) templateSupportsGrpc() bool {
+	return c.templateOverride == "" || c.templateOverride == "templates/grpc-client"
+}
+
 func (c *codec) hasBidiStreaming(model *api.API) bool {
-	if (c.templateOverride != "" && c.templateOverride != "templates/grpc-client") || !c.includeBidiStreamingMethods {
+	if !c.templateSupportsGrpc() || !c.includeBidiStreamingMethods {
 		return false
 	}
 	return slices.ContainsFunc(model.Services, (*api.Service).HasBidiStreaming)
 }
 
 func (c *codec) hasServerStreaming(model *api.API) bool {
-	if (c.templateOverride != "" && c.templateOverride != "templates/grpc-client") || !c.includeServerStreamingMethods {
+	if !c.templateSupportsGrpc() || !c.includeServerStreamingMethods {
 		return false
 	}
 	return slices.ContainsFunc(model.Services, (*api.Service).HasServerSideStreaming)

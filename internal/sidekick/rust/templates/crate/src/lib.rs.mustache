@@ -125,12 +125,12 @@ pub(crate) mod tracing;
 #[doc(hidden)]
 pub(crate) mod transport;
 
-{{#Codec.HasStreaming}}
+{{#Codec.HasGrpc}}
 {{#Codec.PerServiceFeatures}}
 #[cfg(any(
-{{#Codec.StreamingServices}}
+{{#Codec.GrpcServices}}
     feature = "{{Codec.FeatureName}}",
-{{/Codec.StreamingServices}}
+{{/Codec.GrpcServices}}
 ))]
 {{/Codec.PerServiceFeatures}}
 #[doc(hidden)]
@@ -141,7 +141,7 @@ pub(crate) mod transport;
 pub(crate) mod prost {
     include!("prost/includes.rs");
 }
-{{/Codec.HasStreaming}}
+{{/Codec.HasGrpc}}
 
 /// The default host used by the service.
 {{#Codec.PerServiceFeatures}}
@@ -155,6 +155,7 @@ const DEFAULT_HOST: &str = "https://{{Codec.DefaultHost}}/";
 pub(crate) mod info {
     const NAME: &str = env!("CARGO_PKG_NAME");
     const VERSION: &str = env!("CARGO_PKG_VERSION");
+    {{#Codec.HasHttp}}
     pub(crate) static X_GOOG_API_CLIENT_HEADER: std::sync::LazyLock<String> =
         std::sync::LazyLock::new(|| {
             let ac = gaxi::api_header::XGoogApiClient {
@@ -164,8 +165,8 @@ pub(crate) mod info {
             };
             ac.rest_header_value()
         });
-{{#Codec.HasStreaming}}
-    #[allow(dead_code)]
+    {{/Codec.HasHttp}}
+    {{#Codec.HasGrpc}}
     pub(crate) static X_GOOG_API_CLIENT_GRPC_HEADER: std::sync::LazyLock<String> =
         std::sync::LazyLock::new(|| {
             let ac = gaxi::api_header::XGoogApiClient {
@@ -175,7 +176,7 @@ pub(crate) mod info {
             };
             ac.grpc_header_value()
         });
-{{/Codec.HasStreaming}}
+    {{/Codec.HasGrpc}}
 }
 
 // Define some shortcuts for imported crates.

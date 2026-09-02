@@ -575,15 +575,21 @@ func TestIsBidiStreaming(t *testing.T) {
 		name   string
 		client bool
 		server bool
+		isGrpc bool
 		want   bool
 	}{
-		{"bidi streaming", true, true, true},
-		{"client-only streaming", true, false, false},
-		{"server-only streaming", false, true, false},
-		{"unary", false, false, false},
+		{"bidi streaming with gRPC", true, true, true, true},
+		{"bidi streaming without gRPC", true, true, false, false},
+		{"client-only streaming", true, false, true, false},
+		{"server-only streaming", false, true, true, false},
+		{"unary", false, false, true, false},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			ann := &methodAnnotation{ClientSideStreaming: test.client, ServerSideStreaming: test.server}
+			ann := &methodAnnotation{
+				ClientSideStreaming: test.client,
+				ServerSideStreaming: test.server,
+				IsGrpc:              test.isGrpc,
+			}
 			if got := ann.IsBidiStreaming(); got != test.want {
 				t.Errorf("methodAnnotation.IsBidiStreaming() = %v, want %v", got, test.want)
 			}
@@ -596,17 +602,96 @@ func TestIsServerStreaming(t *testing.T) {
 		name   string
 		client bool
 		server bool
+		isGrpc bool
 		want   bool
 	}{
-		{"bidi streaming", true, true, false},
-		{"client-only streaming", true, false, false},
-		{"server-only streaming", false, true, true},
-		{"unary", false, false, false},
+		{"bidi streaming", true, true, true, false},
+		{"client-only streaming", true, false, true, false},
+		{"server-only streaming with gRPC", false, true, true, true},
+		{"server-only streaming without gRPC", false, true, false, false},
+		{"unary", false, false, true, false},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			ann := &methodAnnotation{ClientSideStreaming: test.client, ServerSideStreaming: test.server}
+			ann := &methodAnnotation{
+				ClientSideStreaming: test.client,
+				ServerSideStreaming: test.server,
+				IsGrpc:              test.isGrpc,
+			}
 			if got := ann.IsServerStreaming(); got != test.want {
 				t.Errorf("methodAnnotation.IsServerStreaming() = %v, want %v", got, test.want)
+			}
+		})
+	}
+}
+
+func TestIsHttp(t *testing.T) {
+	for _, test := range []struct {
+		name   string
+		isGrpc bool
+		want   bool
+	}{
+		{"gRPC method", true, false},
+		{"HTTP method", false, true},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			ann := &methodAnnotation{IsGrpc: test.isGrpc}
+			if got := ann.IsHttp(); got != test.want {
+				t.Errorf("methodAnnotation.IsHttp() = %v, want %v", got, test.want)
+			}
+		})
+	}
+}
+
+func TestMethodUsesGrpc(t *testing.T) {
+	msg := api.NewTestMessage("Message").WithPackage("test.v1")
+	unaryMethod := api.NewTestMethod("Unary").WithInput(msg).WithOutput(msg).WithPathTemplate(&api.PathTemplate{})
+	bidiMethod := api.NewTestMethod("Bidi").WithInput(msg).WithOutput(msg).WithBidiStreaming()
+	serverMethod := api.NewTestMethod("Server").WithInput(msg).WithOutput(msg).WithServerSideStreaming()
+
+	for _, test := range []struct {
+		name             string
+		method           *api.Method
+		templateOverride string
+		options          map[string]string
+		want             bool
+	}{
+		{
+			name:    "unary method defaults to HTTP",
+			method:  unaryMethod,
+			options: map[string]string{},
+			want:    false,
+		},
+		{
+			name:   "bidi streaming enabled",
+			method: bidiMethod,
+			options: map[string]string{
+				"include-bidi-streaming-methods": "true",
+			},
+			want: true,
+		},
+		{
+			name:   "server streaming enabled",
+			method: serverMethod,
+			options: map[string]string{
+				"include-server-streaming-methods": "true",
+			},
+			want: true,
+		},
+		{
+			name:             "template without grpc ignores streaming",
+			method:           bidiMethod,
+			templateOverride: "templates/http-client",
+			options: map[string]string{
+				"include-bidi-streaming-methods": "true",
+			},
+			want: false,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			c := newTestCodec(t, libconfig.SpecProtobuf, "", test.options)
+			c.templateOverride = test.templateOverride
+			if got := c.methodUsesGrpc(test.method); got != test.want {
+				t.Errorf("methodUsesGrpc() = %v, want %v", got, test.want)
 			}
 		})
 	}
