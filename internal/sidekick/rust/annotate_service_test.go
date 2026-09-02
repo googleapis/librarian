@@ -280,7 +280,7 @@ func TestServiceAnnotationsNameOverrides(t *testing.T) {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 
-	methodFilter := cmpopts.IgnoreFields(methodAnnotation{}, "Name", "NameNoMangling", "BuilderName", "Body", "PathInfo", "SystemParameters", "ReturnType")
+	methodFilter := cmpopts.IgnoreFields(methodAnnotation{}, "Name", "NameNoMangling", "BuilderName", "Body", "PathInfo", "SystemParameters", "ReturnType", "IsGrpc")
 	wantMethod := &methodAnnotation{
 		ServiceNameToPascal: "Renamed",
 		ServiceNameToCamel:  "renamed",
@@ -531,14 +531,14 @@ func TestServiceAnnotationsStreaming(t *testing.T) {
 			codec := newTestCodec(t, libconfig.SpecProtobuf, "", test.options)
 			annotateModel(model, codec)
 			serviceAnn := test.service.Codec.(*serviceAnnotations)
-			if got := serviceAnn.HasBidiStreaming; got != test.wantBidi {
-				t.Errorf("serviceAnnotations.HasBidiStreaming = %v, want %v", got, test.wantBidi)
+			if got := serviceAnn.HasBidiStreaming(); got != test.wantBidi {
+				t.Errorf("serviceAnnotations.HasBidiStreaming() = %v, want %v", got, test.wantBidi)
 			}
-			if got := serviceAnn.HasServerStreaming; got != test.wantServer {
-				t.Errorf("serviceAnnotations.HasServerStreaming = %v, want %v", got, test.wantServer)
+			if got := serviceAnn.HasServerStreaming(); got != test.wantServer {
+				t.Errorf("serviceAnnotations.HasServerStreaming() = %v, want %v", got, test.wantServer)
 			}
-			if got := serviceAnn.HasStreaming; got != test.wantStreaming {
-				t.Errorf("serviceAnnotations.HasStreaming = %v, want %v", got, test.wantStreaming)
+			if got := serviceAnn.HasStreaming(); got != test.wantStreaming {
+				t.Errorf("serviceAnnotations.HasStreaming() = %v, want %v", got, test.wantStreaming)
 			}
 		})
 	}
@@ -618,6 +618,80 @@ func TestServiceAnnotationsMethodKinds(t *testing.T) {
 			}
 			if got := serviceAnn.NeedsBidiStreamBuilder(); got != test.wantBidiStreamBuilder {
 				t.Errorf("serviceAnnotations.NeedsBidiStreamBuilder() = %v, want %v", got, test.wantBidiStreamBuilder)
+			}
+		})
+	}
+}
+
+func TestServiceAnnotationsClassification(t *testing.T) {
+	msg := api.NewTestMessage("Request").WithPackage("test.v1")
+	bidiMethod := api.NewTestMethod("Chat").WithInput(msg).WithOutput(msg).WithBidiStreaming().WithPathTemplate(&api.PathTemplate{})
+	unaryMethod := api.NewTestMethod("Get").WithInput(msg).WithOutput(msg).WithVerb("GET").WithPathTemplate(&api.PathTemplate{})
+
+	for _, test := range []struct {
+		name       string
+		methods    []*api.Method
+		options    map[string]string
+		isPureGrpc bool
+		isPureHttp bool
+		isHybrid   bool
+	}{
+		{
+			name:    "pure gRPC service with only streaming methods",
+			methods: []*api.Method{bidiMethod},
+			options: map[string]string{
+				"include-bidi-streaming-methods": "true",
+			},
+			isPureGrpc: true,
+			isPureHttp: false,
+			isHybrid:   false,
+		},
+		{
+			name:       "pure HTTP service with only unary methods",
+			methods:    []*api.Method{unaryMethod},
+			options:    map[string]string{},
+			isPureGrpc: false,
+			isPureHttp: true,
+			isHybrid:   false,
+		},
+		{
+			name:    "hybrid service with unary and streaming methods",
+			methods: []*api.Method{unaryMethod, bidiMethod},
+			options: map[string]string{
+				"include-bidi-streaming-methods": "true",
+			},
+			isPureGrpc: false,
+			isPureHttp: false,
+			isHybrid:   true,
+		},
+		{
+			name:       "disabled streaming method does not mark service as gRPC",
+			methods:    []*api.Method{bidiMethod},
+			options:    map[string]string{},
+			isPureGrpc: false,
+			isPureHttp: false,
+			isHybrid:   false,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			service := api.NewTestService("TestService").WithPackage("test.v1").WithMethods(test.methods...)
+			model := api.NewTestAPI([]*api.Message{msg}, []*api.Enum{}, []*api.Service{service})
+			if err := api.CrossReference(model); err != nil {
+				t.Fatal(err)
+			}
+			codec := newTestCodec(t, libconfig.SpecProtobuf, "", test.options)
+			if _, err := annotateModel(model, codec); err != nil {
+				t.Fatal(err)
+			}
+			serviceAnn := service.Codec.(*serviceAnnotations)
+			if got := serviceAnn.IsPureGrpc(); got != test.isPureGrpc {
+				t.Errorf("serviceAnnotations.IsPureGrpc() = %v, want %v", got, test.isPureGrpc)
+			}
+			if got := serviceAnn.IsPureHttp(); got != test.isPureHttp {
+				t.Errorf("serviceAnnotations.IsPureHttp() = %v, want %v", got, test.isPureHttp)
+			}
+			if got := serviceAnn.IsHybrid(); got != test.isHybrid {
+				t.Errorf("serviceAnnotations.IsHybrid() = %v, want %v", got, test.isHybrid)
 			}
 		})
 	}

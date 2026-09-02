@@ -49,11 +49,17 @@ type methodAnnotation struct {
 	IsBigQueryInsertJob       bool
 	ClientSideStreaming       bool
 	ServerSideStreaming       bool
+	IsGrpc                    bool
+}
+
+// IsHttp returns true if the method is routed over HTTP transport.
+func (m *methodAnnotation) IsHttp() bool {
+	return !m.IsGrpc
 }
 
 // IsBidiStreaming returns true if the method is a bidirectional streaming RPC.
 func (m *methodAnnotation) IsBidiStreaming() bool {
-	return m.ClientSideStreaming && m.ServerSideStreaming
+	return m.IsGrpc && m.ClientSideStreaming && m.ServerSideStreaming
 }
 
 // FullBody returns true if the HTTP body is configured as "*".
@@ -64,7 +70,7 @@ func (m *methodAnnotation) FullBody() bool {
 // IsServerStreaming returns true if the method is a server-side streaming RPC
 // and is not bidirectional.
 func (m *methodAnnotation) IsServerStreaming() bool {
-	return !m.ClientSideStreaming && m.ServerSideStreaming
+	return m.IsGrpc && !m.ClientSideStreaming && m.ServerSideStreaming
 }
 
 // HasGrpcResourceNameArgs returns true if the method has gRPC resource name arguments.
@@ -347,6 +353,7 @@ func (c *codec) annotateMethod(m *api.Method) (*methodAnnotation, error) {
 		IsBigQueryInsertJob:       m.ID == ".google.cloud.bigquery.v2.JobService.InsertJob",
 		ClientSideStreaming:       m.ClientSideStreaming,
 		ServerSideStreaming:       m.ServerSideStreaming,
+		IsGrpc:                    c.methodUsesGrpc(m),
 	}
 
 	if err := c.annotateResourceNameGeneration(m, annotation); err != nil {
@@ -733,4 +740,16 @@ func isIdempotent(p *api.PathInfo) string {
 		}
 	}
 	return "true"
+}
+
+func (c *codec) methodUsesGrpc(m *api.Method) bool {
+	if !c.templateSupportsGrpc() {
+		return false
+	}
+	if m.ClientSideStreaming || m.ServerSideStreaming {
+		return (m.ClientSideStreaming && m.ServerSideStreaming && c.includeBidiStreamingMethods) ||
+			(!m.ClientSideStreaming && m.ServerSideStreaming && c.includeServerStreamingMethods) ||
+			c.includeStreamingMethods
+	}
+	return false
 }
