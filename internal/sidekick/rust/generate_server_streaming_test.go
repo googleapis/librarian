@@ -68,6 +68,8 @@ func TestGenerateServerStreaming(t *testing.T) {
 			"package:prost":                    "package=prost,used-if=streaming",
 			"package:prost-types":              "package=prost-types,used-if=streaming",
 			"include-server-streaming-methods": "true",
+			"generate-rpc-samples":             "true",
+			"detailed-tracing-attributes":      "true",
 		},
 	}
 	if err := Generate(t.Context(), model, outDir, cfg); err != nil {
@@ -95,6 +97,34 @@ func TestGenerateServerStreaming(t *testing.T) {
 		want     string
 	}{
 		{
+			name:     "client: method doc example",
+			file:     "src/client.rs",
+			startStr: "    ///\n    /// # Example",
+			endStr:   "        super::builder::echo::Expand::new(self.inner.clone())\n    }",
+			want: `    ///
+    /// # Example
+    /// ` + "```" + `
+    /// # use google_cloud_test_v1::client::Echo;
+    /// use google_cloud_test_v1::Result;
+    /// async fn sample(
+    ///    client: &Echo
+    /// ) -> Result<()> {
+    ///     let mut resp_stream = client.expand()
+    ///         /* set fields */
+    ///         .send().await?;
+    ///     while let Some(response) = resp_stream.next().await {
+    ///         let response = response?;
+    ///         println!("response {:?}", response);
+    ///     }
+    ///     Ok(())
+    /// }
+    /// ` + "```" + `
+    pub fn expand(&self) -> super::builder::echo::Expand
+    {
+        super::builder::echo::Expand::new(self.inner.clone())
+    }`,
+		},
+		{
 			name:     "client: method definition",
 			file:     "src/client.rs",
 			startStr: "    pub fn expand(&self) -> super::builder::echo::Expand",
@@ -103,6 +133,32 @@ func TestGenerateServerStreaming(t *testing.T) {
     {
         super::builder::echo::Expand::new(self.inner.clone())
     }`,
+		},
+		{
+			name:     "builder: doc example",
+			file:     "src/builder.rs",
+			startStr: "    /// The request builder for [Echo::expand][crate::client::Echo::expand] calls.\n    ///\n    /// # Example",
+			endStr:   "    #[derive(Clone, Debug)]",
+			want: `    /// The request builder for [Echo::expand][crate::client::Echo::expand] calls.
+    ///
+    /// # Example
+    /// ` + "```" + `
+    /// # use google_cloud_test_v1::builder::echo::Expand;
+    /// # async fn sample() -> google_cloud_test_v1::Result<()> {
+    /// let builder = prepare_request_builder();
+    /// let mut resp_stream = builder.send().await?;
+    /// while let Some(response) = resp_stream.next().await {
+    ///     let response = response?;
+    ///     println!("response {:?}", response);
+    /// }
+    /// # Ok(()) }
+    ///
+    /// fn prepare_request_builder() -> Expand {
+    ///   # panic!();
+    ///   // ... details omitted ...
+    /// }
+    /// ` + "```" + `
+    #[derive(Clone, Debug)]`,
 		},
 		{
 			name:     "builder: struct definition",
@@ -232,7 +288,7 @@ func TestGenerateServerStreaming(t *testing.T) {
                 path,
                 req,
                 options,
-                &crate::info::X_GOOG_API_CLIENT_HEADER,
+                &crate::info::X_GOOG_API_CLIENT_GRPC_HEADER,
                 &x_goog_request_params,
             )
             .await
@@ -273,6 +329,26 @@ prost.workspace      = true
 		builderContent := readFile("src/builder.rs")
 		if strings.Contains(builderContent, "auto_populate") {
 			t.Errorf("expected builder.rs not to contain auto_populate helper for server streaming method")
+		}
+	})
+
+	t.Run("builder: contains use crate::Result and RequestBuilder for server streaming", func(t *testing.T) {
+		builderContent := readFile("src/builder.rs")
+		if !strings.Contains(builderContent, "use crate::Result;") {
+			t.Errorf("expected builder.rs to contain 'use crate::Result;' for server-streaming method")
+		}
+		if !strings.Contains(builderContent, "pub(crate) struct RequestBuilder<") {
+			t.Errorf("expected builder.rs to contain 'pub(crate) struct RequestBuilder<' for server-streaming method")
+		}
+		if strings.Contains(builderContent, "BidiStreamBuilder") {
+			t.Errorf("expected builder.rs not to contain 'BidiStreamBuilder' for server-streaming only service")
+		}
+	})
+
+	t.Run("tracing: contains allow(dead_code) on duration for server-streaming only service", func(t *testing.T) {
+		tracingContent := readFile("src/tracing.rs")
+		if !strings.Contains(tracingContent, "#[allow(dead_code)]\n    duration: gaxi::observability::DurationMetric,") {
+			t.Errorf("expected tracing.rs to contain allow(dead_code) on duration metric")
 		}
 	})
 }

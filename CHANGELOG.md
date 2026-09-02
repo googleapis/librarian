@@ -1,5 +1,41 @@
 # Changelog
 
+## [0.40.0](https://github.com/googleapis/librarian/compare/v0.39.0...v0.40.0) (2026-09-01)
+
+
+### Features
+
+* **dart:** enable client api version tracking ([#7403](https://github.com/googleapis/librarian/issues/7403)) ([1cdc990](https://github.com/googleapis/librarian/commit/1cdc9901f973c987d426f768a710ab4fc631009b))
+* **internal/librarian/php:** allow skipping gRPC service config ([#7435](https://github.com/googleapis/librarian/issues/7435)) ([66e70b0](https://github.com/googleapis/librarian/commit/66e70b0248a7db82267b13aceb9846f709a04d8c)), refs [#7405](https://github.com/googleapis/librarian/issues/7405)
+* **internal/librarian/python:** add tool installation directory helper ([#7431](https://github.com/googleapis/librarian/issues/7431)) ([4a43666](https://github.com/googleapis/librarian/commit/4a436660c46086bed2fd218236640f5f963c116f)), refs [#7424](https://github.com/googleapis/librarian/issues/7424)
+* **internal/librarian/python:** embed local synthtool templates ([#7432](https://github.com/googleapis/librarian/issues/7432)) ([228e3ed](https://github.com/googleapis/librarian/commit/228e3edeff678d641f43b3cd648555164f8c649b))
+* **internal/librarian/ruby:** support ruby-cloud-generic-endpoint option ([#7404](https://github.com/googleapis/librarian/issues/7404)) ([ac994bb](https://github.com/googleapis/librarian/commit/ac994bb1d7f197e6ea070d991ef2b8879f16e6f3))
+* **internal/librarian/rust:** support allow_streaming_any_types config ([#7434](https://github.com/googleapis/librarian/issues/7434)) ([b23e203](https://github.com/googleapis/librarian/commit/b23e203825920b508c39202207f2edd528e57581))
+* **internal/sidekick/rust:** support server-side streaming in grpc-client ([#7408](https://github.com/googleapis/librarian/issues/7408)) ([9acd367](https://github.com/googleapis/librarian/commit/9acd367c5252fec8f81fb56ece31df1716e7fd70))
+* **rust:** support bidi streaming in grpc-client ([#7426](https://github.com/googleapis/librarian/issues/7426)) ([7ca440a](https://github.com/googleapis/librarian/commit/7ca440aa069328317e9f596baaf35c220a19be42)), refs [#6835](https://github.com/googleapis/librarian/issues/6835)
+* **rust:** support default streaming configuration and explicit overrides ([#7425](https://github.com/googleapis/librarian/issues/7425)) ([a4bf9cd](https://github.com/googleapis/librarian/commit/a4bf9cd6b7411caf40c0d871b366a69fa082bd99))
+* **sidekick/swift:** default output uses `swift-*` ([#7414](https://github.com/googleapis/librarian/issues/7414)) ([b88e4a2](https://github.com/googleapis/librarian/commit/b88e4a2f3de640df9517f79a7724be4c3908566e))
+* **sidekick/swift:** rename `GoogleCloudWkt` ([#7406](https://github.com/googleapis/librarian/issues/7406)) ([71dcf6e](https://github.com/googleapis/librarian/commit/71dcf6eaa7851baf28c296f49c92bce4309d003b))
+* **swift:** add librarian publish command ([#7387](https://github.com/googleapis/librarian/issues/7387)) ([dfa2676](https://github.com/googleapis/librarian/commit/dfa26766c5f1e489cb8bc01c48da141722c72138))
+* **tool/cmd/migrate/php:** set copyright_year to 2026 for PHP libraries ([#7371](https://github.com/googleapis/librarian/issues/7371)) ([cf60f11](https://github.com/googleapis/librarian/commit/cf60f113640c4bba543dc6749eb77bd70f2169cf))
+* **tool/cmd/migrate/php:** support longrunning operations in PHP ([#7397](https://github.com/googleapis/librarian/issues/7397)) ([df9c084](https://github.com/googleapis/librarian/commit/df9c084bc1893aca65f710ec1073911c6970d4f9)), refs [#7369](https://github.com/googleapis/librarian/issues/7369)
+
+
+### Bug Fixes
+
+* **internal/librarian/java:** validate required libraries google-cloud-java and google-cloud-pom-parent ([#7420](https://github.com/googleapis/librarian/issues/7420)) ([6193599](https://github.com/googleapis/librarian/commit/619359992cb2ae2b33275facda281c9e256f2a5f)), refs [#6615](https://github.com/googleapis/librarian/issues/6615)
+* **internal/librarian/ruby:** do not pass grpc options for rest-only transport ([#7455](https://github.com/googleapis/librarian/issues/7455)) ([509cd77](https://github.com/googleapis/librarian/commit/509cd77c24878da9cfeea7c5eddcb7813903e431))
+* **internal/sidekick/rust:** avoid clippy warnings in bidi-only services ([#7428](https://github.com/googleapis/librarian/issues/7428)) ([4770d3c](https://github.com/googleapis/librarian/commit/4770d3c581cbf25d6c71a5012e9126837694f154))
+* **internal/sidekick/rust:** emit grpc client header for streaming apis ([#7471](https://github.com/googleapis/librarian/issues/7471)) ([723a3ee](https://github.com/googleapis/librarian/commit/723a3eebe6c276ae588514b3197db0c21f1c42c6))
+* **internal/sidekick/rust:** support boxed oneof fields in to_proto ([#7427](https://github.com/googleapis/librarian/issues/7427)) ([5305545](https://github.com/googleapis/librarian/commit/5305545406e67d01b256317a291b5772c8524191))
+* **internal/sidekick/rust:** use prost-aware type naming in convert.rs ([#7441](https://github.com/googleapis/librarian/issues/7441)) ([af41346](https://github.com/googleapis/librarian/commit/af41346e8cfd57ab196ba9c49be8f4f6f2196f1b))
+* **librarian:** add validates path existence in sources ([#7413](https://github.com/googleapis/librarian/issues/7413)) ([ad247cc](https://github.com/googleapis/librarian/commit/ad247cccee483d2c257b849792f1ab5ca05de37c))
+* **migrate:** preserve ErrorReporting smoketest ([#7399](https://github.com/googleapis/librarian/issues/7399)) ([a5a9707](https://github.com/googleapis/librarian/commit/a5a97077683966017df8451779f7a9ccc8efcebd)), refs [#7400](https://github.com/googleapis/librarian/issues/7400)
+* **rust:** identfy new crates better ([#7395](https://github.com/googleapis/librarian/issues/7395)) ([ca96e1f](https://github.com/googleapis/librarian/commit/ca96e1f7e566d3f2d230a46e3dffeca11d3f13a4)), refs [#7124](https://github.com/googleapis/librarian/issues/7124)
+* **tool/cmd/migrate/php:** correctly map operations_proto for Dataform ([#7411](https://github.com/googleapis/librarian/issues/7411)) ([13f29c7](https://github.com/googleapis/librarian/commit/13f29c7f4e14d269b71992ea6cb557db362e3fd8))
+* **tool/cmd/migrate/php:** preserve Datastore ReadOnly.php alias ([#7396](https://github.com/googleapis/librarian/issues/7396)) ([740f228](https://github.com/googleapis/librarian/commit/740f22865141e1ce30f47afe2095b0315cc27acb))
+* **tool/cmd/migrate/php:** preserve Logging smoketest ([#7407](https://github.com/googleapis/librarian/issues/7407)) ([b12fdf1](https://github.com/googleapis/librarian/commit/b12fdf1325850d0e07c087db0aec843005859de9))
+
 ## [0.39.0](https://github.com/googleapis/librarian/compare/v0.38.0...v0.39.0) (2026-08-25)
 
 

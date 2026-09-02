@@ -149,6 +149,9 @@ func fillRust(lib *config.Library, d *config.Default) *config.Library {
 	if lib.Rust.IncludeServerStreamingMethods == nil {
 		lib.Rust.IncludeServerStreamingMethods = d.Rust.IncludeServerStreamingMethods
 	}
+	if len(lib.Rust.AllowStreamingAnyTypes) == 0 && d.Rust != nil {
+		lib.Rust.AllowStreamingAnyTypes = d.Rust.AllowStreamingAnyTypes
+	}
 	for _, mod := range lib.Rust.Modules {
 		if mod.GenerateSetterSamples == "" {
 			mod.GenerateSetterSamples = lib.Rust.GenerateSetterSamples
@@ -839,6 +842,9 @@ func mergeRust(dst, src *config.RustCrate) *config.RustCrate {
 	}
 	if src.IncludeServerStreamingMethods != nil {
 		res.IncludeServerStreamingMethods = src.IncludeServerStreamingMethods
+	}
+	if len(src.AllowStreamingAnyTypes) > 0 {
+		res.AllowStreamingAnyTypes = src.AllowStreamingAnyTypes
 	}
 	if src.PostProcessProtos != "" {
 		res.PostProcessProtos = src.PostProcessProtos

@@ -73,6 +73,7 @@ func TestGenerateBidiStreaming(t *testing.T) {
 			"package:prost-types":            "package=prost-types,used-if=streaming",
 			"include-bidi-streaming-methods": "true",
 			"generate-rpc-samples":           "true",
+			"detailed-tracing-attributes":    "true",
 		},
 	}
 	if err := Generate(t.Context(), model, outDir, cfg); err != nil {
@@ -279,7 +280,7 @@ func TestGenerateBidiStreaming(t *testing.T) {
                 extensions,
                 path,
                 options,
-                &crate::info::X_GOOG_API_CLIENT_HEADER,
+                &crate::info::X_GOOG_API_CLIENT_GRPC_HEADER,
                 x_goog_request_params,
             )
     }`,
@@ -302,6 +303,19 @@ prost.workspace      = true
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
+	}
+
+	builderContent := readFile("src/builder.rs")
+	if strings.Contains(builderContent, "use crate::Result;") {
+		t.Errorf("src/builder.rs should not contain 'use crate::Result;' for bidi-only service")
+	}
+	if strings.Contains(builderContent, "struct RequestBuilder<") {
+		t.Errorf("src/builder.rs should not contain 'struct RequestBuilder<' for bidi-only service")
+	}
+
+	tracingContent := readFile("src/tracing.rs")
+	if !strings.Contains(tracingContent, "#[allow(dead_code)]\n    duration: gaxi::observability::DurationMetric,") {
+		t.Errorf("src/tracing.rs should contain '#[allow(dead_code)]\\n    duration: gaxi::observability::DurationMetric,'")
 	}
 }
 

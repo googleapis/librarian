@@ -29,6 +29,21 @@ limitations under the License.
 /// }
 /// ```
 {{/IsStreaming}}
+{{#Codec.IsServerStreaming}}
+///
+/// # Example
+/// ```
+/// # use {{Service.Model.Codec.PackageNamespace}}::client::{{Service.Codec.Name}};
+{{> /templates/common/client_method_samples/use_statements}}
+/// use {{Service.Model.Codec.PackageNamespace}}::Result;
+/// async fn sample(
+{{> /templates/common/client_method_samples/parameters}}
+/// ) -> Result<()> {
+{{> /templates/common/client_method_samples/method_call}}
+///     Ok(())
+/// }
+/// ```
+{{/Codec.IsServerStreaming}}
 {{#Codec.IsBidiStreaming}}
 ///
 /// # Example

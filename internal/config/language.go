@@ -129,6 +129,10 @@ type RustDefault struct {
 	// IncludeServerStreamingMethods indicates whether to include gRPC server-side streaming
 	// methods.
 	IncludeServerStreamingMethods *bool `yaml:"include_server_streaming_methods,omitempty"`
+
+	// AllowStreamingAnyTypes is a list of protobuf field/message IDs with google.protobuf.Any
+	// permitted in streaming RPCs (their fields will be dropped in prost conversion).
+	AllowStreamingAnyTypes []string `yaml:"allow_streaming_any_types,omitempty"`
 }
 
 // RustModule defines a generation target within a veneer crate.

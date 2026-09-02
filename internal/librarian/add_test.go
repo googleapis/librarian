@@ -253,21 +253,6 @@ func TestAddCommand_Error(t *testing.T) {
 			args:    []string{"google/cloud/nonexistent/v1"},
 			wantErr: errAPINotFound,
 		},
-		{
-			name:    "non-existent preview API",
-			args:    []string{"preview/google/cloud/nonexistent/v1"},
-			wantErr: errAPINotFound,
-		},
-		{
-			name:    "directory traversal API",
-			args:    []string{"../../etc"},
-			wantErr: errAPINotFound,
-		},
-		{
-			name:    "file path instead of directory",
-			args:    []string{"google/cloud/secretmanager/v1/secretmanager.proto"},
-			wantErr: errAPINotFound,
-		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			tmpDir := t.TempDir()
@@ -287,6 +272,56 @@ func TestAddCommand_Error(t *testing.T) {
 			err := Run(t.Context(), args...)
 			if !errors.Is(err, test.wantErr) {
 				t.Fatalf("want error %v, got %v", test.wantErr, err)
+			}
+		})
+	}
+}
+
+func TestValidateAPIPathExistence(t *testing.T) {
+	googleapisDir, err := filepath.Abs("../testdata/googleapis")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := validateAPIPathExistence(googleapisDir, "google/cloud/secretmanager/v1"); err != nil {
+		t.Errorf("expected nil error, got %v", err)
+	}
+}
+
+func TestValidateAPIPathExistence_Error(t *testing.T) {
+	googleapisDir, err := filepath.Abs("../testdata/googleapis")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, test := range []struct {
+		name    string
+		apiPath string
+		wantErr error
+	}{
+		{
+			name:    "empty API path",
+			apiPath: "",
+			wantErr: errAPINotFound,
+		},
+		{
+			name:    "non-existent API",
+			apiPath: "google/cloud/nonexistent/v1",
+			wantErr: errAPINotFound,
+		},
+		{
+			name:    "directory traversal API",
+			apiPath: "../../etc",
+			wantErr: errAPINotFound,
+		},
+		{
+			name:    "file path instead of directory",
+			apiPath: "google/cloud/secretmanager/v1/secretmanager.proto",
+			wantErr: errAPINotFound,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			err := validateAPIPathExistence(googleapisDir, test.apiPath)
+			if !errors.Is(err, test.wantErr) {
+				t.Errorf("expected error %v, got %v", test.wantErr, err)
 			}
 		})
 	}

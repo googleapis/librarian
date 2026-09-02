@@ -30,6 +30,7 @@ impl gaxi::prost::ToProto<{{Codec.ProstRelativeName}}> for {{Codec.QualifiedName
     fn to_proto(self) -> std::result::Result<{{Codec.ProstRelativeName}}, gaxi::prost::ConvertError> {
         Ok(Self::Output {
             {{#Codec.BasicFields}}
+            {{^SkipProtoConversion}}
             {{#Singular}}
             {{^Optional}}
             {{Codec.FieldName}}: self.{{Codec.FieldName}}.to_proto()?,
@@ -57,13 +58,19 @@ impl gaxi::prost::ToProto<{{Codec.ProstRelativeName}}> for {{Codec.QualifiedName
                     gaxi::prost::pair_transpose(k.to_proto(), v.to_proto())
                 }).collect::<std::result::Result<std::collections::HashMap<_, _>, _>>()?,
             {{/Map}}
+            {{/SkipProtoConversion}}
             {{/Codec.BasicFields}}
             {{#OneOfs}}
             {{Codec.FieldName}}: self.{{Codec.FieldName}}.map(|v| v.to_proto()).transpose()?,
             {{/OneOfs}}
+            {{#HasSkippedProtoConversionFields}}
+            ..Self::Output::default()
+            {{/HasSkippedProtoConversionFields}}
+            {{^HasSkippedProtoConversionFields}}
             {{#HasSkippedFields}}
             ..Self::Output::default()
             {{/HasSkippedFields}}
+            {{/HasSkippedProtoConversionFields}}
         })
     }
 }
@@ -74,6 +81,7 @@ impl gaxi::prost::FromProto<{{Codec.QualifiedName}}> for {{Codec.ProstRelativeNa
         Ok(
             {{Codec.QualifiedName}}::new()
                 {{#Codec.BasicFields}}
+                {{^SkipProtoConversion}}
                 {{#Singular}}
                 {{^Optional}}
                 .set_{{Codec.SetterName}}(self.{{Codec.FieldName}})
@@ -113,6 +121,7 @@ impl gaxi::prost::FromProto<{{Codec.QualifiedName}}> for {{Codec.ProstRelativeNa
                     }).collect::<std::result::Result<std::collections::HashMap<_, _>, _>>()?)
                 {{/Codec.ValueType.IsEnum}}
                 {{/Map}}
+                {{/SkipProtoConversion}}
                 {{/Codec.BasicFields}}
                 {{#OneOfs}}
                 .set_{{Codec.SetterName}}(self.{{Codec.FieldName}}.map(|v| v.cnv()).transpose()?)

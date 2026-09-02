@@ -543,3 +543,82 @@ func TestServiceAnnotationsStreaming(t *testing.T) {
 		})
 	}
 }
+
+func TestServiceAnnotationsMethodKinds(t *testing.T) {
+	msg := api.NewTestMessage("Request").WithPackage("test.v1")
+	bidiMethod := api.NewTestMethod("Chat").WithInput(msg).WithOutput(msg).WithBidiStreaming().WithPathTemplate(&api.PathTemplate{})
+	serverMethod := api.NewTestMethod("Expand").WithInput(msg).WithOutput(msg).WithServerSideStreaming().WithPathTemplate(&api.PathTemplate{})
+	unaryMethod := api.NewTestMethod("Get").WithInput(msg).WithOutput(msg).WithVerb("GET").WithPathTemplate(&api.PathTemplate{})
+
+	for _, test := range []struct {
+		name                  string
+		methods               []*api.Method
+		options               map[string]string
+		wantRequestBuilder    bool
+		wantBidiStreamBuilder bool
+	}{
+		{
+			name:    "bidi only with bidi enabled",
+			methods: []*api.Method{bidiMethod},
+			options: map[string]string{
+				"include-bidi-streaming-methods": "true",
+			},
+			wantRequestBuilder:    false,
+			wantBidiStreamBuilder: true,
+		},
+		{
+			name:    "bidi and unary with bidi enabled",
+			methods: []*api.Method{bidiMethod, unaryMethod},
+			options: map[string]string{
+				"include-bidi-streaming-methods": "true",
+			},
+			wantRequestBuilder:    true,
+			wantBidiStreamBuilder: true,
+		},
+		{
+			name:    "server streaming only with server enabled",
+			methods: []*api.Method{serverMethod},
+			options: map[string]string{
+				"include-server-streaming-methods": "true",
+			},
+			wantRequestBuilder:    true,
+			wantBidiStreamBuilder: false,
+		},
+		{
+			name:    "server streaming and bidi with both enabled",
+			methods: []*api.Method{serverMethod, bidiMethod},
+			options: map[string]string{
+				"include-bidi-streaming-methods":   "true",
+				"include-server-streaming-methods": "true",
+			},
+			wantRequestBuilder:    true,
+			wantBidiStreamBuilder: true,
+		},
+		{
+			name:                  "unary only",
+			methods:               []*api.Method{unaryMethod},
+			options:               map[string]string{},
+			wantRequestBuilder:    true,
+			wantBidiStreamBuilder: false,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			service := api.NewTestService("TestService").WithPackage("test.v1").WithMethods(test.methods...)
+			model := api.NewTestAPI([]*api.Message{msg}, []*api.Enum{}, []*api.Service{service})
+			if err := api.CrossReference(model); err != nil {
+				t.Fatal(err)
+			}
+			codec := newTestCodec(t, libconfig.SpecProtobuf, "", test.options)
+			if _, err := annotateModel(model, codec); err != nil {
+				t.Fatal(err)
+			}
+			serviceAnn := service.Codec.(*serviceAnnotations)
+			if got := serviceAnn.NeedsRequestBuilder(); got != test.wantRequestBuilder {
+				t.Errorf("serviceAnnotations.NeedsRequestBuilder() = %v, want %v", got, test.wantRequestBuilder)
+			}
+			if got := serviceAnn.NeedsBidiStreamBuilder(); got != test.wantBidiStreamBuilder {
+				t.Errorf("serviceAnnotations.NeedsBidiStreamBuilder() = %v, want %v", got, test.wantBidiStreamBuilder)
+			}
+		})
+	}
+}

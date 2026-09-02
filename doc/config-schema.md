@@ -566,6 +566,7 @@ This document describes the schema for the librarian.yaml.
 | `resource_name_heuristic` | bool (optional) | Indicates whether to apply heuristics to identify and generate resource names. |
 | `include_bidi_streaming_methods` | bool (optional) | Indicates whether to include gRPC bi-directional streaming methods. |
 | `include_server_streaming_methods` | bool (optional) | Indicates whether to include gRPC server-side streaming methods. |
+| `allow_streaming_any_types` | list of string | Is a list of protobuf field/message IDs with google.protobuf.Any permitted in streaming RPCs (their fields will be dropped in prost conversion). |
 
 ## RustDocumentationOverride Configuration
 

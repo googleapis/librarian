@@ -2235,6 +2235,16 @@ func TestFindQuickstartMethod(t *testing.T) {
 			service: &Service{Name: "AccessPolicyService", Methods: []*Method{listOther, {Name: "ListPolicies", IsAIPStandardList: true, OutputType: &Message{Resource: &Resource{Singular: "accesspolicy"}}}}},
 			want:    &Method{Name: "ListPolicies", IsAIPStandardList: true, OutputType: &Message{Resource: &Resource{Singular: "accesspolicy"}}}, // matches singular 'accesspolicy'
 		},
+		{
+			name:    "fallback to server streaming method when no simple methods exist",
+			service: &Service{Name: "EchoService", Methods: []*Method{{Name: "Expand", ServerSideStreaming: true}}},
+			want:    &Method{Name: "Expand", ServerSideStreaming: true},
+		},
+		{
+			name:    "fallback to bidi streaming method when no unary or server streaming methods exist",
+			service: &Service{Name: "EchoService", Methods: []*Method{{Name: "Chat", ClientSideStreaming: true, ServerSideStreaming: true}}},
+			want:    &Method{Name: "Chat", ClientSideStreaming: true, ServerSideStreaming: true},
+		},
 	}
 
 	for _, tc := range testCases {
