@@ -60,7 +60,7 @@ jobs:
             # Note: If changing the target of the smoke test below, update this sparse checkout rule.
             SecretManager/
       - name: Checkout google-cloud-php (Full)
-        if: matrix.sparse == false # && (matrix.task != 'integration' || (github.event_name == 'push' && github.ref == 'refs/heads/main'))
+        if: matrix.sparse == false && (matrix.task != 'integration' || (github.event_name == 'push' && github.ref == 'refs/heads/main'))
         uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
           repository: googleapis/google-cloud-php
@@ -81,13 +81,12 @@ jobs:
             ~/.cache/librarian
           key: librarian-php-tools-v2-${{ runner.os }}-${{ hashFiles('internal/config/**/*.go') }}-${{ hashFiles('google-cloud-php/librarian.yaml') }}
       - name: Run librarian install
-        # if: matrix.task != 'integration' || (github.event_name == 'push' && github.ref == 'refs/heads/main')
+        if: matrix.task != 'integration' || (github.event_name == 'push' && github.ref == 'refs/heads/main')
         working-directory: google-cloud-php
         run: |
           librarian install
       - name: Verify tools
         run: |
-          protoc --version
           php --version
       - name: Run internal/librarian/php tests and check coverage
         if: matrix.task == 'unit-test'
