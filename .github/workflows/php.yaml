@@ -16,27 +16,11 @@ on: [push, pull_request, merge_group]
 permissions:
   contents: read
 jobs:
-  build-and-test:
-    name: ${{ matrix.job-name }}
+  unit-test:
+    name: Unit test
     runs-on: ubuntu-24.04
     # Presubmit jobs must complete within 5 minutes. Integration might take longer.
-    timeout-minutes: ${{ matrix.timeout }}
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - job-name: 'Unit Tests'
-            task: 'unit-test'
-            timeout: 5
-            sparse: true
-          - job-name: 'Smoke Test'
-            task: 'smoke-test'
-            timeout: 5
-            sparse: true
-          - job-name: 'Integration Test'
-            task: 'integration'
-            timeout: 120
-            sparse: false
+    timeout-minutes: 5
     steps:
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
@@ -46,7 +30,6 @@ jobs:
           include_pnpm: 'true'
           include_python: 'true'
       - name: Checkout google-cloud-php (Sparse)
-        if: matrix.sparse == true
         uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
           repository: googleapis/google-cloud-php
@@ -55,19 +38,6 @@ jobs:
           sparse-checkout-cone-mode: false
           sparse-checkout: |
             librarian.yaml
-            composer.json
-            dev/
-            # Note: If changing the target of the smoke test below, update this sparse checkout rule.
-            SecretManager/
-      - name: Checkout google-cloud-php (Full)
-        if: matrix.sparse == false && (matrix.task != 'integration' || (github.event_name == 'push' && github.ref == 'refs/heads/main'))
-        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
-        with:
-          repository: googleapis/google-cloud-php
-          path: google-cloud-php
-          persist-credentials: false
-      - name: Display Go version
-        run: go version
       - name: Setup PHP
         uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # 2.37.2
         with:
@@ -81,26 +51,96 @@ jobs:
             ~/.cache/librarian
           key: librarian-php-tools-v2-${{ runner.os }}-${{ hashFiles('internal/config/**/*.go') }}-${{ hashFiles('google-cloud-php/librarian.yaml') }}
       - name: Run librarian install
-        if: matrix.task != 'integration' || (github.event_name == 'push' && github.ref == 'refs/heads/main')
         working-directory: google-cloud-php
         run: |
           librarian install
-      - name: Verify tools
-        run: |
-          php --version
       - name: Run internal/librarian/php tests and check coverage
-        if: matrix.task == 'unit-test'
         run: go run ./tool/cmd/coverage ./internal/librarian/php
+  smoke-test:
+    name: Smoke test
+    runs-on: ubuntu-24.04
+    # Presubmit jobs must complete within 5 minutes. Integration might take longer.
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/setup-librarian
+        with:
+          include_pnpm: 'true'
+          include_python: 'true'
+      - name: Checkout google-cloud-php (Sparse)
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          repository: googleapis/google-cloud-php
+          path: google-cloud-php
+          persist-credentials: false
+          sparse-checkout-cone-mode: false
+          sparse-checkout: |
+            librarian.yaml
+            composer.json
+            dev/
+            # Note: If changing the target of the smoke test below, update this sparse checkout rule.
+            SecretManager/
+      - name: Setup PHP
+        uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # 2.37.2
+        with:
+          php-version: '8.2'
+          extensions: mbstring, xml, bcmath
+      - name: Cache Librarian Tools
+        id: cache-tools
+        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
+        with:
+          path: |
+            ~/.cache/librarian
+          key: librarian-php-tools-v2-${{ runner.os }}-${{ hashFiles('internal/config/**/*.go') }}-${{ hashFiles('google-cloud-php/librarian.yaml') }}
+      - name: Run librarian install
+        working-directory: google-cloud-php
+        run: |
+          librarian install
       - name: Generate a single library (smoke test)
-        if: matrix.task == 'smoke-test' && !(github.event_name == 'push' && github.ref == 'refs/heads/main')
         working-directory: google-cloud-php
         run: librarian generate secretmanager
-      - name: Run librarian generate all (integration test)
-        if: matrix.task == 'integration' && github.event_name == 'push' && github.ref == 'refs/heads/main'
+  integration-test:
+    name: Integration test
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/setup-librarian
+        with:
+          include_pnpm: 'true'
+          include_python: 'true'
+      - name: Checkout google-cloud-php (Full)
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          repository: googleapis/google-cloud-php
+          path: google-cloud-php
+          persist-credentials: false
+      - name: Setup PHP
+        uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # 2.37.2
+        with:
+          php-version: '8.2'
+          extensions: mbstring, xml, bcmath
+      - name: Cache Librarian Tools
+        id: cache-tools
+        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
+        with:
+          path: |
+            ~/.cache/librarian
+          key: librarian-php-tools-v2-${{ runner.os }}-${{ hashFiles('internal/config/**/*.go') }}-${{ hashFiles('google-cloud-php/librarian.yaml') }}
+      - name: Run librarian install
+        working-directory: google-cloud-php
+        run: |
+          librarian install
+      - name: Generate all libraries (integration test)
         working-directory: google-cloud-php
         run: librarian generate --all
   create-issue-on-failure:
-    needs: [build-and-test]
+    needs: [unit-test, smoke-test, integration-test]
     permissions:
       contents: read
       issues: write
