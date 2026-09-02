@@ -109,8 +109,8 @@ func filterModelToTypes(model *api.API, rootTypeIDs []string, allowStreamingAnyT
 		path string
 	}
 
-	streamingMsgs := make(map[string]bool)
-	streamingEnums := make(map[string]bool)
+	reachableMsgs := make(map[string]bool)
+	reachableEnums := make(map[string]bool)
 	var queue []typeItem
 
 	for _, id := range rootTypeIDs {
@@ -132,14 +132,14 @@ func filterModelToTypes(model *api.API, rootTypeIDs []string, allowStreamingAnyT
 	// 1. Parent messages are not placed in unusedTypes (which would cause prost_build's
 	//    prefix-matching extern_path to hijack nested types like Partition.TemporalPartition).
 	// 2. Parent messages are enqueued for field traversal so their sibling field types
-	//    (e.g., Partition.SpatialPartition) are also included in streamingMsgs rather than
+	//    (e.g., Partition.SpatialPartition) are also included in reachableMsgs rather than
 	//    placed in unusedTypes, preventing missing type errors in convert.rs.
 	enqueueMsg = func(m *api.Message, path string) {
 		if m == nil {
 			return
 		}
-		if !streamingMsgs[m.ID] {
-			streamingMsgs[m.ID] = true
+		if !reachableMsgs[m.ID] {
+			reachableMsgs[m.ID] = true
 			queue = append(queue, typeItem{
 				id:   m.ID,
 				path: path,
@@ -157,7 +157,7 @@ func filterModelToTypes(model *api.API, rootTypeIDs []string, allowStreamingAnyT
 		if e == nil {
 			return
 		}
-		streamingEnums[e.ID] = true
+		reachableEnums[e.ID] = true
 		if e.Parent != nil {
 			enqueueMsg(e.Parent, path)
 		}
@@ -192,7 +192,7 @@ func filterModelToTypes(model *api.API, rootTypeIDs []string, allowStreamingAnyT
 
 		msg := model.Message(item.id)
 		if msg != nil {
-			streamingMsgs[msg.ID] = true
+			reachableMsgs[msg.ID] = true
 
 			// Shortcircuit search for google.rpc.Status to avoid inspecting its fields,
 			// which would otherwise error on Status.details (google.protobuf.Any).
@@ -254,7 +254,7 @@ func filterModelToTypes(model *api.API, rootTypeIDs []string, allowStreamingAnyT
 	// iteration order is randomized by the Go runtime.
 	var externalMessages []*api.Message
 	for m := range model.AllMessages() {
-		if m.ID != "" && streamingMsgs[m.ID] && !isWKT(m.ID) && m.ID != ".google.rpc.Status" && !m.IsMap && m.Parent == nil {
+		if m.ID != "" && reachableMsgs[m.ID] && !isWKT(m.ID) && m.ID != ".google.rpc.Status" && !m.IsMap && m.Parent == nil {
 			if m.Package != model.PackageName && m.Package != api.ReservedPackageName {
 				externalMessages = append(externalMessages, m)
 			}
@@ -265,7 +265,7 @@ func filterModelToTypes(model *api.API, rootTypeIDs []string, allowStreamingAnyT
 	// Collect external top-level enums referenced by roots.
 	var externalEnums []*api.Enum
 	for e := range model.AllEnums() {
-		if e.ID != "" && streamingEnums[e.ID] && !isWKT(e.ID) && e.Parent == nil {
+		if e.ID != "" && reachableEnums[e.ID] && !isWKT(e.ID) && e.Parent == nil {
 			if e.Package != model.PackageName && e.Package != api.ReservedPackageName {
 				externalEnums = append(externalEnums, e)
 			}
@@ -281,9 +281,9 @@ func filterModelToTypes(model *api.API, rootTypeIDs []string, allowStreamingAnyT
 		Description:         model.Description,
 		Revision:            model.Revision,
 		Services:            model.Services,
-		Messages:            language.FilterSlice(model.Messages, func(m *api.Message) bool { return streamingMsgs[m.ID] }),
+		Messages:            language.FilterSlice(model.Messages, func(m *api.Message) bool { return reachableMsgs[m.ID] }),
 		ExternalMessages:    externalMessages,
-		Enums:               language.FilterSlice(model.Enums, func(e *api.Enum) bool { return streamingEnums[e.ID] }),
+		Enums:               language.FilterSlice(model.Enums, func(e *api.Enum) bool { return reachableEnums[e.ID] }),
 		ExternalEnums:       externalEnums,
 		ResourceDefinitions: model.ResourceDefinitions,
 		QuickstartService:   model.QuickstartService,
@@ -310,12 +310,12 @@ func filterModelToTypes(model *api.API, rootTypeIDs []string, allowStreamingAnyT
 
 	var unusedTypes []string
 	for m := range model.AllMessages() {
-		if m.ID != "" && !isWKT(m.ID) && !streamingMsgs[m.ID] {
+		if m.ID != "" && !isWKT(m.ID) && !reachableMsgs[m.ID] {
 			unusedTypes = append(unusedTypes, m.ID)
 		}
 	}
 	for e := range model.AllEnums() {
-		if e.ID != "" && !isWKT(e.ID) && !streamingEnums[e.ID] {
+		if e.ID != "" && !isWKT(e.ID) && !reachableEnums[e.ID] {
 			unusedTypes = append(unusedTypes, e.ID)
 		}
 	}
