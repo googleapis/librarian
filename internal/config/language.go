@@ -137,6 +137,10 @@ type RustDefault struct {
 	// GrpcClient is the Rust type used for the inner gRPC client in generated transports.
 	// Defaults to "gaxi::grpc::Client".
 	GrpcClient string `yaml:"grpc_client,omitempty"`
+
+	// DefaultTransport specifies the default transport protocol for unary methods ("grpc" or "http").
+	// Defaults to "http".
+	DefaultTransport string `yaml:"default_transport,omitempty"`
 }
 
 // RustModule defines a generation target within a veneer crate.
@@ -149,6 +153,10 @@ type RustModule struct {
 
 	// DisabledRustdocWarnings specifies rustdoc lints to disable. An empty slice explicitly enables all warnings.
 	DisabledRustdocWarnings yaml.StringSlice `yaml:"disabled_rustdoc_warnings,omitempty"`
+
+	// DefaultTransport specifies the default transport protocol for unary methods ("grpc" or "http").
+	// This overrides the crate-level setting.
+	DefaultTransport string `yaml:"default_transport,omitempty"`
 
 	// DetailedTracingAttributes indicates whether to include detailed tracing attributes.
 	// This overrides the crate-level setting.

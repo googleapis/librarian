@@ -32,36 +32,6 @@ import (
 	"github.com/googleapis/librarian/internal/sidekick/rust_prost"
 )
 
-// streamingRootTypeIDs returns the root message type IDs for all enabled bidirectional
-// and server-side streaming RPCs in the library.
-func streamingRootTypeIDs(model *api.API, library *config.Library) []string {
-	if library.Rust == nil || library.Rust.TemplateOverride != "" {
-		return nil
-	}
-	includeBidi := library.Rust.IncludeBidiStreamingMethods != nil && *library.Rust.IncludeBidiStreamingMethods
-	includeServer := library.Rust.IncludeServerStreamingMethods != nil && *library.Rust.IncludeServerStreamingMethods
-	if !includeBidi && !includeServer {
-		return nil
-	}
-	var rootTypeIDs []string
-	for _, s := range model.Services {
-		for _, m := range s.Methods {
-			isBidi := m.ClientSideStreaming && m.ServerSideStreaming && includeBidi
-			isServer := !m.ClientSideStreaming && m.ServerSideStreaming && includeServer
-			if isBidi || isServer {
-				if m.InputTypeID != "" {
-					rootTypeIDs = append(rootTypeIDs, m.InputTypeID)
-				}
-				if m.OutputTypeID != "" {
-					rootTypeIDs = append(rootTypeIDs, m.OutputTypeID)
-				}
-			}
-		}
-	}
-	slices.Sort(rootTypeIDs)
-	return slices.Compact(rootTypeIDs)
-}
-
 func generateProstHybrid(ctx context.Context, model *api.API, rootTypeIDs []string, library *config.Library, outdir string, modelConfig *parser.ModelConfig) error {
 	if library.Rust == nil || library.Rust.TemplateOverride != "" || len(rootTypeIDs) == 0 {
 		return nil
