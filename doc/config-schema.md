@@ -510,6 +510,7 @@ This document describes the schema for the librarian.yaml.
 | `ruby-cloud-env-prefix` | string | Is the environment variable prefix. |
 | `ruby-cloud-extra-dependencies` | string | Contains extra runtime dependencies to the .gemspec file. |
 | `ruby-cloud-factory-method-suffix` | string | Appends a suffix to client constructor helper methods. |
+| `ruby-cloud-gem-name` | string | Overrides the gem name for multi-wrapper sub-gem generation. |
 | `ruby-cloud-gem-namespace` | string | Is the root Ruby namespace. |
 | `ruby-cloud-generic-endpoint` | bool | Specifies whether the client is for a generic endpoint service without a fixed default host or default credentials. |
 | `ruby-cloud-migration-version` | string | Specifies the gem version milestone at which the library was migrated to GAPIC, generating a migration section in the README file. |
@@ -518,6 +519,7 @@ This document describes the schema for the librarian.yaml.
 | `ruby-cloud-service-override` | string | Overrides generated service class names when proto package service names don't match desired Ruby conventions. |
 | `ruby-cloud-title` | string | Overrides the gem title. |
 | `ruby-cloud-wrapper-gem-override` | string | Overrides a versioned client gem to a custom non-standard main wrapper gem name. |
+| `ruby-cloud-wrapper-of` | string | Overrides the wrapper-of option for multi-wrapper sub-gem generation. |
 | `ruby-cloud-yard-strict` | string | Enables or disables strict YARD syntax checks during generation. |
 
 ## RubyPackage Configuration

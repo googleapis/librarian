@@ -244,6 +244,34 @@ func TestBuildGAPICOpts(t *testing.T) {
 				"ruby-cloud-wrapper-of=v1:0.29",
 			},
 		},
+		{
+			name: "api with ruby-cloud-gem-name and ruby-cloud-wrapper-of overrides",
+			api: &config.API{
+				Path: "google/cloud/secretmanager/v1",
+				Ruby: &config.RubyAPI{
+					RubyCloudOpts: &config.RubyCloudOpts{
+						GemName:   "google-cloud-secret_manager-custom",
+						WrapperOf: "v1:1.0",
+					},
+				},
+			},
+			library: &config.Library{
+				Name: "google-cloud-secret_manager",
+				Ruby: &config.RubyPackage{
+					WrapperOf: []string{"v1:0.29"},
+				},
+			},
+			want: []string{
+				"ruby-cloud-gem-name=google-cloud-secret_manager-custom",
+				"service-yaml=" + filepath.Join(googleapisDir, "google/cloud/secretmanager/v1/secretmanager_v1.yaml"),
+				"ruby-cloud-description=Stores sensitive data such as API keys\\, passwords\\, and certificates. Provides convenience while improving security.",
+				"ruby-cloud-summary=Stores sensitive data such as API keys\\, passwords\\, and certificates. Provides convenience while improving security.",
+				"grpc-service-config=" + filepath.Join(googleapisDir, "google/cloud/secretmanager/v1/secretmanager_grpc_service_config.json"),
+				"ruby-cloud-generate-transports=grpc;rest",
+				"ruby-cloud-rest-numeric-enums=true",
+				"ruby-cloud-wrapper-of=v1:1.0",
+			},
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			serviceConfig, err := serviceconfig.Find(googleapisDir, test.api.Path, config.LanguageRuby)

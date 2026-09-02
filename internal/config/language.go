@@ -905,6 +905,9 @@ type RubyCloudOpts struct {
 	// FactoryMethodSuffix appends a suffix to client constructor helper methods.
 	FactoryMethodSuffix string `yaml:"ruby-cloud-factory-method-suffix,omitempty"`
 
+	// GemName overrides the gem name for multi-wrapper sub-gem generation.
+	GemName string `yaml:"ruby-cloud-gem-name,omitempty"`
+
 	// GemNamespace is the root Ruby namespace.
 	GemNamespace string `yaml:"ruby-cloud-gem-namespace,omitempty"`
 
@@ -930,6 +933,9 @@ type RubyCloudOpts struct {
 
 	// WrapperGemOverride overrides a versioned client gem to a custom non-standard main wrapper gem name.
 	WrapperGemOverride string `yaml:"ruby-cloud-wrapper-gem-override,omitempty"`
+
+	// WrapperOf overrides the wrapper-of option for multi-wrapper sub-gem generation.
+	WrapperOf string `yaml:"ruby-cloud-wrapper-of,omitempty"`
 
 	// YardStrict enables or disables strict YARD syntax checks during generation.
 	YardStrict string `yaml:"ruby-cloud-yard-strict,omitempty"`
