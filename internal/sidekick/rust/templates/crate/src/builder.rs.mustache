@@ -55,6 +55,19 @@ pub mod {{Codec.ModuleName}} {
             type Client = {{Codec.Name}};
             type Credentials = gaxi::options::Credentials;
             async fn build(self, config: gaxi::options::ClientConfig) -> crate::ClientBuilderResult<Self::Client> {
+                {{#Model.Codec.EmulatorEnvVar}}
+                let mut config = config;
+                if let Some(endpoint) = std::env::var_os("{{Model.Codec.EmulatorEnvVar}}") {
+                    let endpoint = endpoint
+                            .to_string_lossy()
+                            .into_owned();
+                    if !endpoint.is_empty() {
+                        let endpoint = if endpoint.starts_with("http") { endpoint } else { format!("http://{endpoint}") };
+                        config.endpoint = Some(endpoint);
+                        config.cred = Some(gaxi::auth::credentials::anonymous::Builder::new().build());
+                    }
+                }
+                {{/Model.Codec.EmulatorEnvVar}}
                 Self::Client::new(config).await
             }
         }

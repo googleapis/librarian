@@ -107,6 +107,9 @@ type RustDefault struct {
 	// DisabledRustdocWarnings is a list of rustdoc warnings to disable.
 	DisabledRustdocWarnings []string `yaml:"disabled_rustdoc_warnings,omitempty"`
 
+	// EmulatorEnvVar specifies the environment variable used for detecting an emulator.
+	EmulatorEnvVar string `yaml:"emulator_env_var,omitempty"`
+
 	// GenerateSetterSamples indicates whether to generate setter samples.
 	GenerateSetterSamples string `yaml:"generate_setter_samples,omitempty"`
 
@@ -152,6 +155,9 @@ type RustModule struct {
 
 	// DocumentationOverrides contains overrides for element documentation.
 	DocumentationOverrides []RustDocumentationOverride `yaml:"documentation_overrides,omitempty"`
+
+	// EmulatorEnvVar specifies the environment variable used for detecting an emulator.
+	EmulatorEnvVar string `yaml:"emulator_env_var,omitempty"`
 
 	// ExtendGrpcTransport indicates whether the transport stub can be
 	// extended (in order to support streams).
