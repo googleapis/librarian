@@ -31,7 +31,7 @@ use crate::Error;
 
 {{/Codec.HasServices}}
 {{#Codec.Services}}
-/// Implements [{{Codec.Name}}](super::stub::{{Codec.Name}}) using a [gaxi::http::ReqwestClient].
+/// Implements [{{Codec.Name}}](super::stub::{{Codec.Name}}) using a [gaxi::http::ReqwestClient]{{#Codec.HasStreaming}} and a [gaxi::grpc::Client]{{/Codec.HasStreaming}}.
 {{#Codec.PerServiceFeatures}}
 #[cfg(feature = "{{Codec.FeatureName}}")]
 {{/Codec.PerServiceFeatures}}
