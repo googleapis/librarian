@@ -130,8 +130,11 @@ type RustDefault struct {
 	// methods.
 	IncludeServerStreamingMethods *bool `yaml:"include_server_streaming_methods,omitempty"`
 
-	// AllowStreamingAnyTypes is a list of protobuf field/message IDs with google.protobuf.Any
-	// permitted in streaming RPCs (their fields will be dropped in prost conversion).
+	// AllowGrpcAnyFields is a list of protobuf field IDs with google.protobuf.Any
+	// permitted in gRPC/streaming RPCs (their fields will be dropped in prost conversion).
+	AllowGrpcAnyFields []string `yaml:"allow_grpc_any_fields,omitempty"`
+
+	// AllowStreamingAnyTypes is deprecated: use AllowGrpcAnyFields instead.
 	AllowStreamingAnyTypes []string `yaml:"allow_streaming_any_types,omitempty"`
 }
 

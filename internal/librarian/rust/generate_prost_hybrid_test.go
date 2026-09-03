@@ -258,9 +258,9 @@ func TestFilterModelToTypesAnyError(t *testing.T) {
 	}
 	wantErr := "cannot generate prost conversion: type google.protobuf.Any is unsupported:\n" +
 		"  - .google.test.v1.AnyReq.details\n\n" +
-		"To resolve this, allow dropping Any fields in prost conversion by adding them to allow_streaming_any_types in librarian.yaml:\n" +
+		"To resolve this, allow dropping Any fields in prost conversion by adding them to allow_grpc_any_fields in librarian.yaml:\n" +
 		"    rust:\n" +
-		"      allow_streaming_any_types:\n" +
+		"      allow_grpc_any_fields:\n" +
 		"        - .google.test.v1.AnyReq.details"
 	if diff := cmp.Diff(wantErr, err.Error()); diff != "" {
 		t.Errorf("error message mismatch (-want +got):\n%s", diff)
@@ -294,9 +294,9 @@ func TestFilterModelToStreamingMultipleAnyError(t *testing.T) {
 	wantErr := "cannot generate prost conversion: type google.protobuf.Any is unsupported:\n" +
 		"  - .google.test.v1.AnyReq.details\n" +
 		"  - .google.test.v1.AnyReq.metadata\n\n" +
-		"To resolve this, allow dropping Any fields in prost conversion by adding them to allow_streaming_any_types in librarian.yaml:\n" +
+		"To resolve this, allow dropping Any fields in prost conversion by adding them to allow_grpc_any_fields in librarian.yaml:\n" +
 		"    rust:\n" +
-		"      allow_streaming_any_types:\n" +
+		"      allow_grpc_any_fields:\n" +
 		"        - .google.test.v1.AnyReq.details\n" +
 		"        - .google.test.v1.AnyReq.metadata"
 
@@ -331,9 +331,9 @@ func TestFilterModelToStreamingPartialAllowedAny(t *testing.T) {
 
 	wantErr := "cannot generate prost conversion: type google.protobuf.Any is unsupported:\n" +
 		"  - .google.test.v1.AnyReq.metadata\n\n" +
-		"To resolve this, allow dropping Any fields in prost conversion by adding them to allow_streaming_any_types in librarian.yaml:\n" +
+		"To resolve this, allow dropping Any fields in prost conversion by adding them to allow_grpc_any_fields in librarian.yaml:\n" +
 		"    rust:\n" +
-		"      allow_streaming_any_types:\n" +
+		"      allow_grpc_any_fields:\n" +
 		"        - .google.test.v1.AnyReq.metadata"
 
 	if diff := cmp.Diff(wantErr, err.Error()); diff != "" {
@@ -377,9 +377,9 @@ func TestFilterModelToStreamingNestedAndOneofAnyError(t *testing.T) {
 	wantErr := "cannot generate prost conversion: type google.protobuf.Any is unsupported:\n" +
 		"  - .google.test.v1.ParentReq.child.extra\n" +
 		"  - .google.test.v1.ParentReq.payload\n\n" +
-		"To resolve this, allow dropping Any fields in prost conversion by adding them to allow_streaming_any_types in librarian.yaml:\n" +
+		"To resolve this, allow dropping Any fields in prost conversion by adding them to allow_grpc_any_fields in librarian.yaml:\n" +
 		"    rust:\n" +
-		"      allow_streaming_any_types:\n" +
+		"      allow_grpc_any_fields:\n" +
 		"        - .google.test.v1.ParentReq.child.extra\n" +
 		"        - .google.test.v1.ParentReq.payload"
 
