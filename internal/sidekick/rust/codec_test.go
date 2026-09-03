@@ -1698,6 +1698,98 @@ func TestFormatDocCommentsRelativeCrossLinks(t *testing.T) {
 	}
 }
 
+func TestFormatDocCommentsSkippedMethodsAndServices(t *testing.T) {
+	input := `
+[CreateFoo][test.v1.SomeService.CreateFoo]
+[SkippedMethod][test.v1.SomeService.SkippedMethod]
+[SkippedService][test.v1.SkippedService]
+[SkippedServiceMethod][test.v1.SkippedService.SomeMethod]
+`
+	want := []string{
+		"/// [CreateFoo][test.v1.SomeService.CreateFoo]",
+		"/// [SkippedMethod][test.v1.SomeService.SkippedMethod]",
+		"/// [SkippedService][test.v1.SkippedService]",
+		"/// [SkippedServiceMethod][test.v1.SkippedService.SomeMethod]",
+		"///",
+		"/// [test.v1.SomeService.CreateFoo]: crate::client::SomeService::create_foo",
+	}
+
+	createFoo := &api.Method{
+		Name: "CreateFoo",
+		ID:   ".test.v1.SomeService.CreateFoo",
+		PathInfo: &api.PathInfo{
+			Bindings: []*api.PathBinding{
+				{
+					Verb: "GET",
+					PathTemplate: (&api.PathTemplate{}).
+						WithLiteral("v1").
+						WithLiteral("foo"),
+				},
+			},
+		},
+	}
+	skippedMethod := &api.Method{
+		Name: "SkippedMethod",
+		ID:   ".test.v1.SomeService.SkippedMethod",
+		PathInfo: &api.PathInfo{
+			Bindings: []*api.PathBinding{
+				{
+					Verb: "GET",
+					PathTemplate: (&api.PathTemplate{}).
+						WithLiteral("v1").
+						WithLiteral("skipped"),
+				},
+			},
+		},
+	}
+	someService := &api.Service{
+		Name:    "SomeService",
+		ID:      ".test.v1.SomeService",
+		Package: "test.v1",
+		Methods: []*api.Method{createFoo}, // skippedMethod omitted from Methods
+	}
+	skippedServiceMethod := &api.Method{
+		Name: "SomeMethod",
+		ID:   ".test.v1.SkippedService.SomeMethod",
+		PathInfo: &api.PathInfo{
+			Bindings: []*api.PathBinding{
+				{
+					Verb: "GET",
+					PathTemplate: (&api.PathTemplate{}).
+						WithLiteral("v1").
+						WithLiteral("bar"),
+				},
+			},
+		},
+	}
+	skippedService := &api.Service{
+		Name:    "SkippedService",
+		ID:      ".test.v1.SkippedService",
+		Package: "test.v1",
+		Methods: []*api.Method{skippedServiceMethod},
+	}
+
+	// Model has someService in model.Services, but skippedService is omitted from model.Services
+	model := api.NewTestAPI([]*api.Message{}, []*api.Enum{}, []*api.Service{someService})
+	model.AddMethod(createFoo)
+	model.AddMethod(skippedMethod)
+	model.AddMethod(skippedServiceMethod)
+	model.AddService(someService)
+	model.AddService(skippedService)
+
+	c := &codec{
+		modulePath: "crate::model",
+	}
+
+	got, err := c.formatDocComments(input, "test-only-ID", model, []string{"test.v1"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+}
+
 func TestFormatDocCommentsSetextHeadings(t *testing.T) {
 	for _, test := range []struct {
 		name  string

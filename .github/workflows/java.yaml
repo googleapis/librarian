@@ -19,32 +19,22 @@ jobs:
   build-and-test:
     name: ${{ matrix.job-name }}
     runs-on: ubuntu-24.04
-    # Presubmit jobs must complete within 5 minutes. Integration might take longer.
-    timeout-minutes: ${{ matrix.timeout }}
-    # Skip integration test unless it's a push to main
+    # Presubmit jobs must complete within 5 minutes.
+    timeout-minutes: 5
     strategy:
       fail-fast: false
       matrix:
         include:
           - job-name: 'Unit Tests'
             task: 'unit-test'
-            timeout: 5
-            sparse: true
           - job-name: 'Smoke Test'
             task: 'smoke-test'
-            timeout: 5
-            sparse: true
-          - job-name: 'Integration Test'
-            task: 'integration'
-            timeout: 120
-            sparse: false
     steps:
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
           persist-credentials: false
       - uses: ./.github/actions/setup-librarian
       - name: Checkout google-cloud-java (Sparse)
-        if: matrix.sparse == true
         uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
           repository: googleapis/google-cloud-java
@@ -65,8 +55,66 @@ jobs:
             java-*/pom.xml
             # Note: If changing the target of the smoke test below, update this sparse checkout rule.
             java-secretmanager/
+      - name: Display Go version
+        run: go version
+      - uses: actions/setup-java@c1e323688fd81a25caa38c78aa6df2d33d3e20d9 # v4.8.0
+        with:
+          java-version: "17"
+          distribution: "temurin"
+          cache: "maven"
+      - name: Cache Librarian Tools
+        id: cache-tools
+        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
+        with:
+          path: |
+            ~/.cache/librarian
+          key: librarian-java-tools-v2-${{ runner.os }}-${{ hashFiles('internal/config/**/*.go') }}-${{ hashFiles('google-cloud-java/librarian.yaml', 'google-cloud-java/sdk-platform-java/gapic-generator-java/**') }}
+      - name: Verify Java and Maven installation
+        if: steps.cache-tools.outputs.cache-hit != 'true'
+        run: |
+          java -version
+          if ! command -v mvn &> /dev/null; then
+            sudo apt-get update && sudo apt-get install -y maven
+          fi
+          mvn -version
+      - name: Run librarian install
+        if: steps.cache-tools.outputs.cache-hit != 'true'
+        working-directory: google-cloud-java
+        run: |
+          librarian install
+      - name: Add Java tools to PATH
+        run: |
+          echo "$HOME/.cache/librarian/bin/java_tools/bin" >> $GITHUB_PATH
+          # Add Librarian's pinned versioned protoc dir to PATH.
+          PROTOC_DIR="$(find "$HOME/.cache/librarian/bin/protoc" -type d -name bin 2>/dev/null | head -n 1)"
+          if [ -n "$PROTOC_DIR" ]; then
+            echo "$PROTOC_DIR" >> $GITHUB_PATH
+          fi
+      - name: Verify tools
+        run: |
+          protoc --version
+          google-java-format --version
+          # Verify plugins are executable (they don't support --version)
+          test -x "$(which protoc-gen-java_grpc)"
+          test -x "$(which protoc-gen-java_gapic)"
+      - name: Run internal/librarian/java tests and check coverage
+        if: matrix.task == 'unit-test'
+        run: go run ./tool/cmd/coverage ./internal/librarian/java
+      - name: Generate a single library (smoke test)
+        if: matrix.task == 'smoke-test'
+        working-directory: google-cloud-java
+        run: librarian generate secretmanager
+  integration-test:
+    name: Integration test
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/setup-librarian
       - name: Checkout google-cloud-java (Full)
-        if: matrix.sparse == false && github.event_name == 'push' && github.ref == 'refs/heads/main'
         uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
           repository: googleapis/google-cloud-java
@@ -94,13 +142,19 @@ jobs:
             sudo apt-get update && sudo apt-get install -y maven
           fi
           mvn -version
-      - name: Add Java tools to PATH
-        run: echo "$HOME/.cache/librarian/bin/java_tools/bin" >> $GITHUB_PATH
       - name: Run librarian install
-        if: steps.cache-tools.outputs.cache-hit != 'true' && (matrix.task != 'integration' || (github.event_name == 'push' && github.ref == 'refs/heads/main'))
+        if: steps.cache-tools.outputs.cache-hit != 'true'
         working-directory: google-cloud-java
         run: |
           librarian install
+      - name: Add Java tools to PATH
+        run: |
+          echo "$HOME/.cache/librarian/bin/java_tools/bin" >> $GITHUB_PATH
+          # Add Librarian's pinned versioned protoc dir to PATH.
+          PROTOC_DIR="$(find "$HOME/.cache/librarian/bin/protoc" -type d -name bin 2>/dev/null | head -n 1)"
+          if [ -n "$PROTOC_DIR" ]; then
+            echo "$PROTOC_DIR" >> $GITHUB_PATH
+          fi
       - name: Verify tools
         run: |
           protoc --version
@@ -108,19 +162,11 @@ jobs:
           # Verify plugins are executable (they don't support --version)
           test -x "$(which protoc-gen-java_grpc)"
           test -x "$(which protoc-gen-java_gapic)"
-      - name: Run internal/librarian/java tests and check coverage
-        if: matrix.task == 'unit-test'
-        run: go run ./tool/cmd/coverage ./internal/librarian/java
-      - name: Generate a single library (smoke test)
-        if: matrix.task == 'smoke-test' && !(github.event_name == 'push' && github.ref == 'refs/heads/main')
-        working-directory: google-cloud-java
-        run: librarian generate secretmanager
-      - name: Run librarian generate all (integration test)
-        if: matrix.task == 'integration' && github.event_name == 'push' && github.ref == 'refs/heads/main'
+      - name: Generate all libraries (integration test)
         working-directory: google-cloud-java
         run: librarian generate --all
   create-issue-on-failure:
-    needs: [build-and-test]
+    needs: [build-and-test, integration-test]
     permissions:
       contents: read
       issues: write
