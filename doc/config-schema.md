@@ -515,6 +515,7 @@ This document describes the schema for the librarian.yaml.
 | `ruby-cloud-migration-version` | string | Specifies the gem version milestone at which the library was migrated to GAPIC, generating a migration section in the README file. |
 | `ruby-cloud-namespace-override` | string | Overrides token / segment replacements applied across all generated module & class paths. |
 | `ruby-cloud-path-override` | string | Overrides file/directory paths under lib/ and proto_docs/. |
+| `ruby-cloud-renamed-from` | string | Specifies the former gem name when a wrapper gem has been renamed (e.g. google-cloud-run for google-cloud-run-client). |
 | `ruby-cloud-service-override` | string | Overrides generated service class names when proto package service names don't match desired Ruby conventions. |
 | `ruby-cloud-title` | string | Overrides the gem title. |
 | `ruby-cloud-wrapper-gem-override` | string | Overrides a versioned client gem to a custom non-standard main wrapper gem name. |
