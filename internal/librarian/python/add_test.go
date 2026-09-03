@@ -434,7 +434,7 @@ func TestReleasePleaseExtraFiles(t *testing.T) {
 				},
 			},
 			want: []any{
-				"google/cloud/foo/type/gapic_version.py",
+				"google/cloud/foo_type/gapic_version.py",
 				map[string]any{
 					"jsonpath": "$.clientLibrary.version",
 					"path":     "samples/generated_samples/snippet_metadata_google.cloud.foo.type.json",
@@ -470,15 +470,15 @@ func TestReleasePleaseExtraFiles(t *testing.T) {
 			name: "nested API with version",
 			lib: &config.Library{
 				APIs: []*config.API{
-					{Path: "google/shopping/merchant/inventories/v1"},
+					{Path: "google/shopping/merchant/loyaltycustomers/v1"},
 				},
 			},
 			want: []any{
-				"google/shopping/merchant_inventories/gapic_version.py",
-				"google/shopping/merchant_inventories_v1/gapic_version.py",
+				"google/shopping/merchant_loyaltycustomers/gapic_version.py",
+				"google/shopping/merchant_loyaltycustomers_v1/gapic_version.py",
 				map[string]any{
 					"jsonpath": "$.clientLibrary.version",
-					"path":     "samples/generated_samples/snippet_metadata_google.shopping.merchant.inventories.v1.json",
+					"path":     "samples/generated_samples/snippet_metadata_google.shopping.merchant.loyaltycustomers.v1.json",
 					"type":     "json",
 				},
 			},
