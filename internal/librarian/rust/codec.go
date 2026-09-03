@@ -171,6 +171,9 @@ func buildCodec(library *config.Library, releaseLevel string) map[string]string 
 	if rust.QuickstartServiceOverride != "" {
 		codec["quickstart-service-override"] = rust.QuickstartServiceOverride
 	}
+	if rust.GrpcClient != "" {
+		codec["grpc-client"] = rust.GrpcClient
+	}
 	return codec
 }
 
@@ -367,6 +370,16 @@ func buildModuleCodec(library *config.Library, module *config.RustModule) map[st
 	}
 	if module.InternalBuilders {
 		codec["internal-builders"] = "true"
+	}
+	grpcClient := ""
+	if library.Rust != nil {
+		grpcClient = library.Rust.GrpcClient
+	}
+	if module.GrpcClient != "" {
+		grpcClient = module.GrpcClient
+	}
+	if grpcClient != "" {
+		codec["grpc-client"] = grpcClient
 	}
 	return codec
 }

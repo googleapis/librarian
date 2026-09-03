@@ -76,6 +76,7 @@ func newCodec(specificationFormat string, options map[string]string) (*codec, er
 		systemParameters:        sysParams,
 		serializeEnumsAsStrings: specificationFormat != libconfig.SpecProtobuf,
 		bytesUseUrlSafeAlphabet: specificationFormat == libconfig.SpecDiscovery,
+		grpcClient:              "gaxi::grpc::Client",
 	}
 
 	for key, definition := range options {
@@ -212,6 +213,8 @@ func newCodec(specificationFormat string, options map[string]string) (*codec, er
 				return nil, fmt.Errorf("cannot convert `include-rpc-status-conversion` value %q to boolean: %w", definition, err)
 			}
 			codec.includeRpcStatusConversion = value
+		case key == "grpc-client":
+			codec.grpcClient = definition
 		default:
 			return nil, fmt.Errorf("unknown Rust codec option %q", key)
 		}
@@ -372,6 +375,8 @@ type codec struct {
 	internalBuilders bool
 	// Overrides the default heuristically selected service for the package-level quickstart.
 	quickstartServiceOverride string
+	// The Rust type used for the inner gRPC client in generated transports.
+	grpcClient string
 }
 
 type systemParameter struct {

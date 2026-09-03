@@ -89,6 +89,7 @@ func TestServiceAnnotationsPerServiceFeatures(t *testing.T) {
 		ModuleName:         "resource_service",
 		PerServiceFeatures: true,
 		Incomplete:         true,
+		GrpcClient:         "gaxi::grpc::Client",
 	}
 	if diff := cmp.Diff(wantService, service.Codec, cmpopts.IgnoreFields(serviceAnnotations{}, "Methods")); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
@@ -245,6 +246,7 @@ func TestServiceAnnotationsLROTypes(t *testing.T) {
 			resource,
 			empty,
 		},
+		GrpcClient: "gaxi::grpc::Client",
 	}
 	if !wantService.HasLROs() {
 		t.Errorf("HasLRO should be true. The service has several LROs.")
@@ -275,6 +277,7 @@ func TestServiceAnnotationsNameOverrides(t *testing.T) {
 		Name:       "Renamed",
 		ModuleName: "renamed",
 		Incomplete: true,
+		GrpcClient: "gaxi::grpc::Client",
 	}
 	if diff := cmp.Diff(wantService, service.Codec, serviceFilter); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
@@ -312,6 +315,7 @@ func TestServiceAnnotations(t *testing.T) {
 		PackageModuleName: "test::v1",
 		ModuleName:        "resource_service",
 		Incomplete:        true,
+		GrpcClient:        "gaxi::grpc::Client",
 	}
 	if diff := cmp.Diff(wantService, service.Codec, cmpopts.IgnoreFields(serviceAnnotations{}, "Methods")); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)

@@ -188,6 +188,38 @@ func TestInternalBuildersAnnotation(t *testing.T) {
 	}
 }
 
+func TestGrpcClientAnnotation(t *testing.T) {
+	for _, test := range []struct {
+		Options map[string]string
+		Want    string
+	}{
+		{
+			Options: map[string]string{},
+			Want:    "gaxi::grpc::Client",
+		},
+		{
+			Options: map[string]string{
+				"grpc-client": "crate::storage::bidi::GrpcClient",
+			},
+			Want: "crate::storage::bidi::GrpcClient",
+		},
+	} {
+		model := newTestAnnotateModelAPI()
+		codec := newTestCodec(t, libconfig.SpecProtobuf, "", test.Options)
+		got, err := annotateModel(model, codec)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if got.GrpcClient != test.Want {
+			t.Errorf("mismatch in GrpcClient, want=%v, got=%v", test.Want, got.GrpcClient)
+		}
+		svcAnn := model.Services[0].Codec.(*serviceAnnotations)
+		if svcAnn.GrpcClient != test.Want {
+			t.Errorf("mismatch in service GrpcClient, want=%v, got=%v", test.Want, svcAnn.GrpcClient)
+		}
+	}
+}
+
 func TestQuickstartServiceAnnotation(t *testing.T) {
 	t.Run("survives filtering", func(t *testing.T) {
 		model := newTestAnnotateModelAPI()
@@ -375,6 +407,7 @@ func TestPackageNames(t *testing.T) {
 		GenerateSetterSamples:     true,
 		GenerateRpcSamples:        true,
 		DetailedTracingAttributes: true,
+		GrpcClient:                "gaxi::grpc::Client",
 	}
 	if diff := cmp.Diff(want, got, cmpopts.IgnoreFields(modelAnnotations{}, "BoilerPlate")); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)

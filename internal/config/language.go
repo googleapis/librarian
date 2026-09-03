@@ -133,12 +133,20 @@ type RustDefault struct {
 	// AllowStreamingAnyTypes is a list of protobuf field/message IDs with google.protobuf.Any
 	// permitted in streaming RPCs (their fields will be dropped in prost conversion).
 	AllowStreamingAnyTypes []string `yaml:"allow_streaming_any_types,omitempty"`
+
+	// GrpcClient is the Rust type used for the inner gRPC client in generated transports.
+	// Defaults to "gaxi::grpc::Client".
+	GrpcClient string `yaml:"grpc_client,omitempty"`
 }
 
 // RustModule defines a generation target within a veneer crate.
 // Each module specifies what proto source to use, which template to apply,
 // and where to output the generated code.
 type RustModule struct {
+	// GrpcClient is the Rust type used for the inner gRPC client in generated transports.
+	// This overrides the crate-level setting. Defaults to "gaxi::grpc::Client".
+	GrpcClient string `yaml:"grpc_client,omitempty"`
+
 	// DisabledRustdocWarnings specifies rustdoc lints to disable. An empty slice explicitly enables all warnings.
 	DisabledRustdocWarnings yaml.StringSlice `yaml:"disabled_rustdoc_warnings,omitempty"`
 
