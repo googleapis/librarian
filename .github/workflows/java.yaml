@@ -102,6 +102,7 @@ jobs:
         run: |
           librarian install
       - name: Verify tools
+        if: matrix.task != 'integration' || (github.event_name == 'push' && github.ref == 'refs/heads/main')
         run: |
           protoc --version
           google-java-format --version
