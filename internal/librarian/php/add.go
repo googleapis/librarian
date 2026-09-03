@@ -15,6 +15,7 @@
 package php
 
 import (
+	"fmt"
 	"path"
 	"strings"
 
@@ -38,7 +39,7 @@ func DefaultLibraryName(apiPath string) string {
 }
 
 // Add populates PHP-specific default configuration for all APIs in the library.
-func Add(lib *config.Library) *config.Library {
+func Add(lib *config.Library, googleapisDir string) (*config.Library, error) {
 	if lib.Version == "" {
 		lib.Version = defaultVersion
 	}
@@ -50,5 +51,12 @@ func Add(lib *config.Library) *config.Library {
 			api.PHP.StagingSubdir = serviceconfig.ExtractVersion(api.Path)
 		}
 	}
-	return lib
+	if lib.Output == "" {
+		compName, err := ComponentNameForLibrary(googleapisDir, lib)
+		if err != nil {
+			return nil, fmt.Errorf("failed to derive component name for library %q: %w", lib.Name, err)
+		}
+		lib.Output = compName
+	}
+	return lib, nil
 }

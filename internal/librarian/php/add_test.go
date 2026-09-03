@@ -15,6 +15,7 @@
 package php
 
 import (
+	"path/filepath"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -65,6 +66,7 @@ func TestDefaultLibraryName(t *testing.T) {
 }
 
 func TestAdd(t *testing.T) {
+	googleapisDir := filepath.Join("..", "..", "testdata", "googleapis")
 	for _, test := range []struct {
 		name string
 		lib  *config.Library
@@ -74,16 +76,17 @@ func TestAdd(t *testing.T) {
 			name: "empty php config",
 			lib: &config.Library{
 				APIs: []*config.API{
-					{Path: "google/cloud/speech/v2"},
+					{Path: "google/cloud/secretmanager/v1"},
 				},
 			},
 			want: &config.Library{
+				Output:  "SecretManager",
 				Version: "0.0.0",
 				APIs: []*config.API{
 					{
-						Path: "google/cloud/speech/v2",
+						Path: "google/cloud/secretmanager/v1",
 						PHP: &config.PHPAPI{
-							StagingSubdir: "v2",
+							StagingSubdir: "v1",
 						},
 					},
 				},
@@ -94,7 +97,7 @@ func TestAdd(t *testing.T) {
 			lib: &config.Library{
 				APIs: []*config.API{
 					{
-						Path: "google/cloud/speech/v2",
+						Path: "google/cloud/secretmanager/v1",
 						PHP: &config.PHPAPI{
 							StagingSubdir: "custom_subdir",
 						},
@@ -102,10 +105,11 @@ func TestAdd(t *testing.T) {
 				},
 			},
 			want: &config.Library{
+				Output:  "SecretManager",
 				Version: "0.0.0",
 				APIs: []*config.API{
 					{
-						Path: "google/cloud/speech/v2",
+						Path: "google/cloud/secretmanager/v1",
 						PHP: &config.PHPAPI{
 							StagingSubdir: "custom_subdir",
 						},
@@ -118,16 +122,17 @@ func TestAdd(t *testing.T) {
 			lib: &config.Library{
 				Version: "1.2.3",
 				APIs: []*config.API{
-					{Path: "google/cloud/speech/v2"},
+					{Path: "google/cloud/secretmanager/v1"},
 				},
 			},
 			want: &config.Library{
+				Output:  "SecretManager",
 				Version: "1.2.3",
 				APIs: []*config.API{
 					{
-						Path: "google/cloud/speech/v2",
+						Path: "google/cloud/secretmanager/v1",
 						PHP: &config.PHPAPI{
-							StagingSubdir: "v2",
+							StagingSubdir: "v1",
 						},
 					},
 				},
@@ -137,23 +142,71 @@ func TestAdd(t *testing.T) {
 			name: "multiple APIs",
 			lib: &config.Library{
 				APIs: []*config.API{
-					{Path: "google/cloud/speech/v2"},
-					{Path: "google/cloud/speech/v2beta1"},
+					{Path: "google/cloud/secretmanager/v1"},
+					{Path: "google/cloud/secretmanager/v1beta2"},
 				},
 			},
 			want: &config.Library{
+				Output:  "SecretManager",
 				Version: "0.0.0",
 				APIs: []*config.API{
 					{
-						Path: "google/cloud/speech/v2",
+						Path: "google/cloud/secretmanager/v1",
 						PHP: &config.PHPAPI{
-							StagingSubdir: "v2",
+							StagingSubdir: "v1",
 						},
 					},
 					{
-						Path: "google/cloud/speech/v2beta1",
+						Path: "google/cloud/secretmanager/v1beta2",
 						PHP: &config.PHPAPI{
-							StagingSubdir: "v2beta1",
+							StagingSubdir: "v1beta2",
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "existing output preserved",
+			lib: &config.Library{
+				Output: "CustomOutput",
+				APIs: []*config.API{
+					{Path: "google/cloud/secretmanager/v1"},
+				},
+			},
+			want: &config.Library{
+				Output:  "CustomOutput",
+				Version: "0.0.0",
+				APIs: []*config.API{
+					{
+						Path: "google/cloud/secretmanager/v1",
+						PHP: &config.PHPAPI{
+							StagingSubdir: "v1",
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "component name override",
+			lib: &config.Library{
+				PHP: &config.PHPPackage{
+					ComponentName: "CustomComponent",
+				},
+				APIs: []*config.API{
+					{Path: "google/cloud/secretmanager/v1"},
+				},
+			},
+			want: &config.Library{
+				Output:  "CustomComponent",
+				Version: "0.0.0",
+				PHP: &config.PHPPackage{
+					ComponentName: "CustomComponent",
+				},
+				APIs: []*config.API{
+					{
+						Path: "google/cloud/secretmanager/v1",
+						PHP: &config.PHPAPI{
+							StagingSubdir: "v1",
 						},
 					},
 				},
@@ -161,10 +214,26 @@ func TestAdd(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got := Add(test.lib)
+			got, err := Add(test.lib, googleapisDir)
+			if err != nil {
+				t.Fatal(err)
+			}
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("Add() mismatch (-want +got):\n%s", diff)
 			}
 		})
+	}
+}
+
+func TestAdd_Error(t *testing.T) {
+	googleapisDir := filepath.Join("..", "..", "testdata", "googleapis")
+	lib := &config.Library{
+		Name: "nonexistent",
+		APIs: []*config.API{
+			{Path: "google/cloud/nonexistent/v1"},
+		},
+	}
+	if _, err := Add(lib, googleapisDir); err == nil {
+		t.Errorf("Add() expected error, got nil")
 	}
 }

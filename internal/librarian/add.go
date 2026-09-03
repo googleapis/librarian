@@ -119,7 +119,7 @@ func runAdd(ctx context.Context, cfg *config.Config, api, explicitLibraryName st
 	if err := validateAPIPathExistence(googleapisDir, api); err != nil {
 		return err
 	}
-	name, cfg, err := addLibrary(cfg, api, explicitLibraryName)
+	name, cfg, err := addLibrary(cfg, api, explicitLibraryName, googleapisDir)
 	if err != nil {
 		return err
 	}
@@ -227,7 +227,7 @@ func deriveLibraryName(language string, api string) string {
 // It returns the name of the new or updated library, the updated config, and an
 // error if the API cannot be added (e.g. because it already exists, or the new
 // API is a preview and there is no corresponding stable library).
-func addLibrary(cfg *config.Config, apiPath, explicitLibraryName string) (string, *config.Config, error) {
+func addLibrary(cfg *config.Config, apiPath, explicitLibraryName, googleapisDir string) (string, *config.Config, error) {
 	stablePath, isPreview := strings.CutPrefix(apiPath, "preview/")
 	api := &config.API{Path: stablePath}
 	existingLib := findExistingLibraryForAPI(cfg, stablePath, explicitLibraryName)
@@ -238,9 +238,9 @@ func addLibrary(cfg *config.Config, apiPath, explicitLibraryName string) (string
 		return addPreviewLibrary(cfg, existingLib, api)
 	}
 	if existingLib != nil {
-		return updateExistingLibrary(cfg, existingLib, api)
+		return updateExistingLibrary(cfg, existingLib, api, googleapisDir)
 	}
-	return addNewLibrary(cfg, api, explicitLibraryName)
+	return addNewLibrary(cfg, api, explicitLibraryName, googleapisDir)
 }
 
 // findExistingLibraryForAPI determines if an existing library in cfg is
@@ -292,7 +292,7 @@ func addPreviewLibrary(cfg *config.Config, lib *config.Library, api *config.API)
 }
 
 // addNewLibrary adds a new library to the config.
-func addNewLibrary(cfg *config.Config, api *config.API, explicitLibraryName string) (string, *config.Config, error) {
+func addNewLibrary(cfg *config.Config, api *config.API, explicitLibraryName, googleapisDir string) (string, *config.Config, error) {
 	name := explicitLibraryName
 	if name == "" {
 		name = deriveLibraryName(cfg.Language, api.Path)
@@ -324,7 +324,11 @@ func addNewLibrary(cfg *config.Config, api *config.API, explicitLibraryName stri
 	case config.LanguageSwift:
 		lib = swift.Add(lib, cfg)
 	case config.LanguagePhp:
-		lib = php.Add(lib)
+		var err error
+		lib, err = php.Add(lib, googleapisDir)
+		if err != nil {
+			return "", nil, err
+		}
 	case config.LanguageRuby:
 		var err error
 		lib, err = ruby.Add(cfg, lib)
@@ -341,7 +345,7 @@ func addNewLibrary(cfg *config.Config, api *config.API, explicitLibraryName stri
 	return name, cfg, nil
 }
 
-func updateExistingLibrary(cfg *config.Config, existingLib *config.Library, api *config.API) (string, *config.Config, error) {
+func updateExistingLibrary(cfg *config.Config, existingLib *config.Library, api *config.API, googleapisDir string) (string, *config.Config, error) {
 	if slices.ContainsFunc(existingLib.APIs, func(a *config.API) bool { return api.Path == a.Path }) {
 		return "", nil, fmt.Errorf("%w: %s in library %s", errAPIAlreadyExists, api.Path, existingLib.Name)
 	}
@@ -365,7 +369,11 @@ func updateExistingLibrary(cfg *config.Config, existingLib *config.Library, api 
 		}
 	case config.LanguagePhp:
 		existingLib.APIs = append(existingLib.APIs, api)
-		existingLib = php.Add(existingLib)
+		var err error
+		existingLib, err = php.Add(existingLib, googleapisDir)
+		if err != nil {
+			return "", nil, err
+		}
 	default:
 		return "", nil, fmt.Errorf("%w: %s", errLibraryAlreadyExists, existingLib.Name)
 	}
