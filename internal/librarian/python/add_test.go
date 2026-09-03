@@ -466,9 +466,62 @@ func TestReleasePleaseExtraFiles(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "nested API with version",
+			lib: &config.Library{
+				APIs: []*config.API{
+					{Path: "google/shopping/merchant/inventories/v1"},
+				},
+			},
+			want: []any{
+				"google/shopping/merchant_inventories/gapic_version.py",
+				"google/shopping/merchant_inventories_v1/gapic_version.py",
+				map[string]any{
+					"jsonpath": "$.clientLibrary.version",
+					"path":     "samples/generated_samples/snippet_metadata_google.shopping.merchant.inventories.v1.json",
+					"type":     "json",
+				},
+			},
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			got := ReleasePleaseExtraFiles(test.lib)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestFlattenNestedPath(t *testing.T) {
+	for _, test := range []struct {
+		name string
+		path string
+		want string
+	}{
+		{
+			name: "single path segment after namespace",
+			path: "google/cloud/secretmanager",
+			want: "google/cloud/secretmanager",
+		},
+		{
+			name: "nested path segments under cloud namespace",
+			path: "google/cloud/datacatalog/lineage",
+			want: "google/cloud/datacatalog_lineage",
+		},
+		{
+			name: "deeply nested path segments under non-cloud namespace",
+			path: "google/shopping/merchant/loyaltycustomer",
+			want: "google/shopping/merchant_loyaltycustomer",
+		},
+		{
+			name: "single segment under non-cloud namespace",
+			path: "google/shopping/type",
+			want: "google/shopping/type",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := flattenNestedPath(test.path)
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}

@@ -17,7 +17,6 @@ package python
 import (
 	"errors"
 	"fmt"
-	"path"
 	"path/filepath"
 	"slices"
 	"strings"
@@ -44,7 +43,6 @@ var (
 	errNewLibraryBadNamespace            = errors.New("derived GAPIC namespace would not match any approved namespace; consult with the Python team to determine whether the namespace should be approved, or whether GAPIC options should be specified for this API in librarian.yaml. See go/clientlibs-python-registered-namespaces for more details")
 	errExistingLibraryNoDefaultVersion   = errors.New("new APIs cannot be automatically added to a library without a default version")
 	errExistingLibraryCustomGAPICOptions = errors.New("new APIs cannot be automatically added to a library with custom GAPIC options")
-	nonCloudAPIPrefix                    = []string{"google/shopping"}
 )
 
 // Add initializes a new Python library with default values.
@@ -148,20 +146,16 @@ func ReleasePleaseExtraFiles(lib *config.Library) []any {
 	var extraFiles []any
 	addedVersionless := make(map[string]bool)
 	for _, api := range lib.APIs {
-		protoPackage := strings.ReplaceAll(api.Path, "/", ".")
+		flattenedPath := flattenNestedPath(api.Path)
+		if !addedVersionless[flattenedPath] {
+			addedVersionless[flattenedPath] = true
+			extraFiles = append(extraFiles, flattenedPath+"/gapic_version.py")
+		}
 		version := serviceconfig.ExtractVersion(api.Path)
-		versionlessPath := api.Path
 		if version != "" {
-			versionlessPath = path.Dir(api.Path)
+			extraFiles = append(extraFiles, flattenedPath+"_"+version+"/gapic_version.py")
 		}
-		versionlessPath = flattenNestedPath(versionlessPath)
-		if !addedVersionless[versionlessPath] {
-			addedVersionless[versionlessPath] = true
-			extraFiles = append(extraFiles, versionlessPath+"/gapic_version.py")
-		}
-		if version != "" {
-			extraFiles = append(extraFiles, versionlessPath+"_"+version+"/gapic_version.py")
-		}
+		protoPackage := strings.ReplaceAll(api.Path, "/", ".")
 		// https://github.com/googleapis/release-please/blob/main/docs/customizing.md#updating-arbitrary-files
 		snippetMetadata := map[string]any{
 			"jsonpath": "$.clientLibrary.version",
