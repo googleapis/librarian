@@ -102,8 +102,8 @@ func generateProstHybrid(ctx context.Context, model *api.API, rootTypeIDs []stri
 // from rootTypeIDs for prost conversion generation. It also returns a sorted slice
 // of all non-WKT unused type IDs to exclude via prost_build extern_path, and a boolean
 // indicating whether google.rpc.Status is referenced in the reachability path.
-// Errors if Any is encountered in the reachability path unless explicitly allowed via allowStreamingAnyTypes.
-func filterModelToTypes(model *api.API, rootTypeIDs []string, allowStreamingAnyTypes []string) (*api.API, []string, bool, error) {
+// Errors if Any is encountered in the reachability path unless explicitly allowed via allowAnyTypes.
+func filterModelToTypes(model *api.API, rootTypeIDs []string, allowAnyTypes []string) (*api.API, []string, bool, error) {
 	type typeItem struct {
 		id   string
 		path string
@@ -204,7 +204,7 @@ func filterModelToTypes(model *api.API, rootTypeIDs []string, allowStreamingAnyT
 			for _, f := range msg.Fields {
 				fieldPath := item.path + "." + f.Name
 				if isAnyType(f.TypezID) {
-					if matchesAllowedAnyField(f.ID, allowStreamingAnyTypes) || matchesAllowedAnyField(fieldPath, allowStreamingAnyTypes) {
+					if matchesAllowedAnyField(f.ID, allowAnyTypes) || matchesAllowedAnyField(fieldPath, allowAnyTypes) {
 						f.SkipProtoConversion = true
 						continue
 					}
@@ -224,7 +224,7 @@ func filterModelToTypes(model *api.API, rootTypeIDs []string, allowStreamingAnyT
 				for _, f := range o.Fields {
 					fieldPath := item.path + "." + o.Name + "." + f.Name
 					if isAnyType(f.TypezID) {
-						if matchesAllowedAnyField(f.ID, allowStreamingAnyTypes) || matchesAllowedAnyField(fieldPath, allowStreamingAnyTypes) {
+						if matchesAllowedAnyField(f.ID, allowAnyTypes) || matchesAllowedAnyField(fieldPath, allowAnyTypes) {
 							f.SkipProtoConversion = true
 							continue
 						}
