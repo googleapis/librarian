@@ -18,6 +18,7 @@ import (
 	"errors"
 	"fmt"
 	"path"
+	"path/filepath"
 	"slices"
 	"strings"
 
@@ -43,6 +44,7 @@ var (
 	errNewLibraryBadNamespace            = errors.New("derived GAPIC namespace would not match any approved namespace; consult with the Python team to determine whether the namespace should be approved, or whether GAPIC options should be specified for this API in librarian.yaml. See go/clientlibs-python-registered-namespaces for more details")
 	errExistingLibraryNoDefaultVersion   = errors.New("new APIs cannot be automatically added to a library without a default version")
 	errExistingLibraryCustomGAPICOptions = errors.New("new APIs cannot be automatically added to a library with custom GAPIC options")
+	nonCloudAPIPrefix                    = []string{"google/shopping"}
 )
 
 // Add initializes a new Python library with default values.
@@ -145,25 +147,21 @@ func versionless(apiPath string) string {
 func ReleasePleaseExtraFiles(lib *config.Library) []any {
 	var extraFiles []any
 	addedVersionless := make(map[string]bool)
-
 	for _, api := range lib.APIs {
 		protoPackage := strings.ReplaceAll(api.Path, "/", ".")
 		version := serviceconfig.ExtractVersion(api.Path)
-
 		versionlessPath := api.Path
 		if version != "" {
 			versionlessPath = path.Dir(api.Path)
 		}
-
+		versionlessPath = flattenNestedPath(versionlessPath)
 		if !addedVersionless[versionlessPath] {
 			addedVersionless[versionlessPath] = true
 			extraFiles = append(extraFiles, versionlessPath+"/gapic_version.py")
 		}
-
 		if version != "" {
 			extraFiles = append(extraFiles, versionlessPath+"_"+version+"/gapic_version.py")
 		}
-
 		// https://github.com/googleapis/release-please/blob/main/docs/customizing.md#updating-arbitrary-files
 		snippetMetadata := map[string]any{
 			"jsonpath": "$.clientLibrary.version",
@@ -172,6 +170,19 @@ func ReleasePleaseExtraFiles(lib *config.Library) []any {
 		}
 		extraFiles = append(extraFiles, snippetMetadata)
 	}
-
 	return extraFiles
+}
+
+// flattenNestedPath flattens nested paths in apiPath, specifically for non-cloud API prefixes.
+// For example, google/shopping/merchant/inventories becomes google/shopping/merchant_inventories.
+func flattenNestedPath(apiPath string) string {
+	for _, prefix := range nonCloudAPIPrefix {
+		if !strings.HasPrefix(apiPath, prefix) {
+			continue
+		}
+		remaining := strings.TrimPrefix(apiPath, prefix)
+		remaining = strings.ReplaceAll(remaining, "/", "_")
+		return filepath.Join(prefix, remaining)
+	}
+	return apiPath
 }
