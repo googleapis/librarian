@@ -176,13 +176,7 @@ func ReleasePleaseExtraFiles(lib *config.Library) []any {
 // flattenNestedPath flattens nested paths in apiPath, specifically for non-cloud API prefixes.
 // For example, google/shopping/merchant/inventories becomes google/shopping/merchant_inventories.
 func flattenNestedPath(apiPath string) string {
-	for _, prefix := range nonCloudAPIPrefix {
-		if !strings.HasPrefix(apiPath, prefix) {
-			continue
-		}
-		remaining := strings.TrimPrefix(apiPath, prefix)
-		remaining = strings.ReplaceAll(remaining, "/", "_")
-		return filepath.Join(prefix, remaining)
-	}
-	return apiPath
+	namespace := strings.ReplaceAll(deriveGAPICNamespace(apiPath), ".", "/")
+	gapicName := deriveGAPICName(apiPath)
+	return filepath.Join(namespace, gapicName)
 }
