@@ -116,6 +116,8 @@ func newCodec(specificationFormat string, options map[string]string) (*codec, er
 			}
 		case key == "disabled-rustdoc-warnings":
 			codec.disabledRustdocWarnings = splitOption(definition)
+		case key == "emulator-env-var":
+			codec.emulatorEnvVar = definition
 		case key == "disabled-clippy-warnings":
 			codec.disabledClippyWarnings = splitOption(definition)
 		case key == "template-override":
@@ -317,6 +319,8 @@ type codec struct {
 	serializeEnumsAsStrings bool
 	// If true, bytes are serialized using the url-safe alphabet.
 	bytesUseUrlSafeAlphabet bool
+	// Emulator environment variable name, e.g. "BIGQUERY_EMULATOR_HOST"
+	emulatorEnvVar string
 	// Overrides the template subdirectory.
 	templateOverride string
 	// If true, this includes gRPC-only methods, such as methods without HTTP

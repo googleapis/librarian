@@ -560,6 +560,7 @@ This document describes the schema for the librarian.yaml.
 | :--- | :--- | :--- |
 | `package_dependencies` | list of [RustPackageDependency](#rustpackagedependency-configuration) (optional) | Is a list of default package dependencies. These are inherited by all libraries. If a library defines its own package_dependencies, the library-specific ones take precedence over these defaults for dependencies with the same name. |
 | `disabled_rustdoc_warnings` | list of string | Is a list of rustdoc warnings to disable. |
+| `emulator_env_var` | string | Specifies the environment variable used for detecting an emulator. |
 | `generate_setter_samples` | string | Indicates whether to generate setter samples. |
 | `generate_rpc_samples` | string | Indicates whether to generate RPC samples. |
 | `detailed_tracing_attributes` | bool (optional) | Indicates whether to include detailed tracing attributes. |
@@ -585,6 +586,7 @@ This document describes the schema for the librarian.yaml.
 | `detailed_tracing_attributes` | bool (optional) | Indicates whether to include detailed tracing attributes. This overrides the crate-level setting. |
 | `lro_stub_options` | bool (optional) | Indicates whether to include LRO poller options in generated stub traits. This overrides the crate-level setting. |
 | `documentation_overrides` | list of [RustDocumentationOverride](#rustdocumentationoverride-configuration) | Contains overrides for element documentation. |
+| `emulator_env_var` | string | Specifies the environment variable used for detecting an emulator. |
 | `extend_grpc_transport` | bool | Indicates whether the transport stub can be extended (in order to support streams). |
 | `generate_setter_samples` | string | Indicates whether to generate setter samples. |
 | `generate_rpc_samples` | string | Indicates whether to generate RPC samples. |

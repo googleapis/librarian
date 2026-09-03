@@ -192,6 +192,9 @@ func newLibraryCodec(library *config.Library) map[string]string {
 		if len(library.Rust.DisabledClippyWarnings) > 0 {
 			codec["disabled-clippy-warnings"] = strings.Join(library.Rust.DisabledClippyWarnings, ",")
 		}
+		if library.Rust.EmulatorEnvVar != "" {
+			codec["emulator-env-var"] = library.Rust.EmulatorEnvVar
+		}
 	}
 	return codec
 }
@@ -306,6 +309,9 @@ func moduleToModelConfig(library *config.Library, module *config.RustModule, src
 
 func buildModuleCodec(library *config.Library, module *config.RustModule) map[string]string {
 	codec := newLibraryCodec(library)
+	if module.EmulatorEnvVar != "" {
+		codec["emulator-env-var"] = module.EmulatorEnvVar
+	}
 	if module.GenerateSetterSamples != "" {
 		codec["generate-setter-samples"] = module.GenerateSetterSamples
 	}
