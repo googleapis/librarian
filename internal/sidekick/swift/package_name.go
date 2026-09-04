@@ -15,12 +15,37 @@
 package swift
 
 import (
+	"path/filepath"
 	"strings"
 
+	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/sidekick/api"
 )
 
 // PackageName returns the Swift package name for the API.
 func PackageName(api *api.API) string {
 	return strings.ReplaceAll(api.PackageName, ".", "-")
+}
+
+// PackageRepoName derives the split repository name for a library.
+//
+// When published, libraries are published to standalone repositories
+// named with a "swift-" prefix (e.g. "swift-google-cloud-secretmanager-v1").
+func PackageRepoName(outdir string, library *config.Library, packageName string) string {
+	if outdir != "" {
+		base := filepath.Base(outdir)
+		if strings.HasPrefix(base, "swift-") {
+			return base
+		}
+	}
+	if library != nil && library.Name != "" {
+		if strings.HasPrefix(library.Name, "swift-") {
+			return library.Name
+		}
+		return "swift-" + library.Name
+	}
+	if strings.HasPrefix(packageName, "swift-") {
+		return packageName
+	}
+	return "swift-" + packageName
 }
