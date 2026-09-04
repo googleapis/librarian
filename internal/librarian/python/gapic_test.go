@@ -18,7 +18,67 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/googleapis/librarian/internal/config"
 )
+
+func TestGAPICNamespace(t *testing.T) {
+	for _, test := range []struct {
+		name    string
+		apiPath string
+		lib     *config.Library
+		want    string
+	}{
+		{
+			name:    "no python config",
+			apiPath: "google/cloud/secretmanager/v1",
+			lib:     &config.Library{},
+			want:    "google.cloud",
+		},
+		{
+			name:    "no options for API",
+			apiPath: "google/cloud/secretmanager/v1",
+			lib:     &config.Library{Python: &config.PythonPackage{}},
+			want:    "google.cloud",
+		},
+		{
+			name:    "other options present",
+			apiPath: "google/cloud/secretmanager/v1",
+			lib: &config.Library{
+				Python: &config.PythonPackage{
+					OptArgsByAPI: map[string][]string{
+						"google/cloud/secretmanager/v1": {"python-gapic-name=secretmanager"},
+					},
+				},
+			},
+			want: "google.cloud",
+		},
+		{
+			name:    "explicit namespace option",
+			apiPath: "google/cloud/secretmanager/v1",
+			lib: &config.Library{
+				Python: &config.PythonPackage{
+					OptArgsByAPI: map[string][]string{
+						"google/cloud/secretmanager/v1": {"python-gapic-namespace=custom.namespace"},
+					},
+				},
+			},
+			want: "custom.namespace",
+		},
+		{
+			name:    "fallback single path element",
+			apiPath: "grafeas/v1",
+			lib:     &config.Library{},
+			want:    "grafeas",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := gapicNamespace(test.apiPath, test.lib)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
 
 func TestDeriveGAPICNamespace(t *testing.T) {
 	for _, test := range []struct {
