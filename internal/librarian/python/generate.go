@@ -38,8 +38,6 @@ const (
 	cloudGoogleComDocumentationTemplate = "https://cloud.google.com/python/docs/reference/%s/latest"
 	googleapisDevDocumentationTemplate  = "https://googleapis.dev/python/%s/latest"
 	transportOption                     = "transport"
-	gapicNamespaceOption                = "python-gapic-namespace"
-	gapicNameOption                     = "python-gapic-name"
 	warehousePackageNameOption          = "warehouse-package-name"
 
 	// changelog is the name of the changelog file to create. A regular file
@@ -536,50 +534,6 @@ func DefaultLibraryName(api string) string {
 // preview library.
 func isPreview(output string) bool {
 	return strings.Contains(output, "preview-packages")
-}
-
-// deriveGAPICNamespace derives the value to pass as python-gapic-namespace when
-// it's not specified explicitly. This is the first two components of the API
-// path (excluding any trailing version), dot-separated.
-func deriveGAPICNamespace(path string) string {
-	version := serviceconfig.ExtractVersion(path)
-	if version != "" {
-		path = strings.TrimSuffix(path, "/"+version)
-	}
-	parts := strings.Split(path, "/")
-	if len(parts) < 2 {
-		return path
-	}
-	return parts[0] + "." + parts[1]
-}
-
-// deriveGAPICName derives the value to pass as python-gapic-name when it's not
-// specified explicitly. This is the path, without the leading namespace (after
-// replacing dots with slashes), and without any version suffix, and then
-// replacing slashes with underscores. Example:
-// a path of google/cloud/foo/bar/v1 would have a GAPIC name of "foo_bar".
-func deriveGAPICName(path string) string {
-	version := serviceconfig.ExtractVersion(path)
-	if version != "" {
-		path = strings.TrimSuffix(path, version)
-	}
-	derivedNamespace := deriveGAPICNamespace(path)
-	path = strings.TrimPrefix(path, strings.ReplaceAll(derivedNamespace, ".", "/"))
-	path = strings.Trim(path, "/")
-	return strings.ReplaceAll(path, "/", "_")
-}
-
-// findOption finds the value of a named option within a list of name=value
-// strings. If the option isn't found, an empty string is returned. The second
-// value indicates whether the option was found or not.
-func findOption(options []string, name string) (string, bool) {
-	prefix := name + "="
-	for _, candidate := range options {
-		if after, ok := strings.CutPrefix(candidate, prefix); ok {
-			return after, true
-		}
-	}
-	return "", false
 }
 
 // createChangelog creates a regular changelog file for the library with the

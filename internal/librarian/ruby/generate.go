@@ -234,6 +234,9 @@ func buildGAPICOpts(api *config.API, library *config.Library, googleapisDir stri
 		if api.Ruby.RubyCloudOpts.PathOverride != "" {
 			opts = append(opts, "ruby-cloud-path-override="+api.Ruby.RubyCloudOpts.PathOverride)
 		}
+		if api.Ruby.RubyCloudOpts.RenamedFrom != "" {
+			opts = append(opts, "ruby-cloud-renamed-from="+api.Ruby.RubyCloudOpts.RenamedFrom)
+		}
 		if api.Ruby.RubyCloudOpts.ServiceOverride != "" {
 			opts = append(opts, "ruby-cloud-service-override="+api.Ruby.RubyCloudOpts.ServiceOverride)
 		}

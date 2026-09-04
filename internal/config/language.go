@@ -921,6 +921,9 @@ type RubyCloudOpts struct {
 	// PathOverride overrides file/directory paths under lib/ and proto_docs/.
 	PathOverride string `yaml:"ruby-cloud-path-override,omitempty"`
 
+	// RenamedFrom specifies the former gem name when a wrapper gem has been renamed (e.g. google-cloud-run for google-cloud-run-client).
+	RenamedFrom string `yaml:"ruby-cloud-renamed-from,omitempty"`
+
 	// ServiceOverride overrides generated service class names when proto package service
 	// names don't match desired Ruby conventions.
 	ServiceOverride string `yaml:"ruby-cloud-service-override,omitempty"`
