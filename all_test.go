@@ -44,9 +44,7 @@ func TestYAMLFormat(t *testing.T) {
 }
 
 func TestAddLicense(t *testing.T) {
-	// TODO(https://github.com/googleapis/librarian/issues/5576): remove
-	// -ignore after license headers have been added to pom.xml and
-	// *_pom.xml files.
+	// No license headers in pom.xml and *_pom.xml (templates) files.
 	rungo(t, "tool", "addlicense", "-check", "-c", "Google LLC", "-l", "apache", "-ignore", "**/*pom.xml", ".")
 }
 
