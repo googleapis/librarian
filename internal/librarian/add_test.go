@@ -1258,7 +1258,6 @@ func TestAddLibraryCommand_Python_ExistingLibraryReleasePlease(t *testing.T) {
 	}
 	tmpDir := t.TempDir()
 	t.Chdir(tmpDir)
-	initialBulkManifest := `{"packages/google-cloud-secretmanager": "1.2.3"}`
 	initialBulkConfig := `{
 		"packages": {
 			"packages/google-cloud-secretmanager": {
@@ -1275,18 +1274,12 @@ func TestAddLibraryCommand_Python_ExistingLibraryReleasePlease(t *testing.T) {
 			}
 		}
 	}`
-	if err := os.WriteFile(filepath.Join(tmpDir, ".release-please-bulk-manifest.json"), []byte(initialBulkManifest), 0o644); err != nil {
-		t.Fatal(err)
-	}
-	if err := os.WriteFile(filepath.Join(tmpDir, "release-please-bulk-config.json"), []byte(initialBulkConfig), 0o644); err != nil {
-		t.Fatal(err)
-	}
-	if err := os.WriteFile(filepath.Join(tmpDir, ".release-please-individual-manifest.json"), []byte(`{}`), 0o644); err != nil {
-		t.Fatal(err)
-	}
-	if err := os.WriteFile(filepath.Join(tmpDir, "release-please-individual-config.json"), []byte(`{"packages": {}}`), 0o644); err != nil {
-		t.Fatal(err)
-	}
+	writeTestFiles(t, tmpDir, map[string]string{
+		bulkManifestFile:       `{"packages/google-cloud-secretmanager": "1.2.3"}`,
+		bulkConfigFile:         initialBulkConfig,
+		individualManifestFile: `{}`,
+		individualConfigFile:   `{"packages": {}}`,
+	})
 	cfg := sample.Config()
 	cfg.Language = config.LanguagePython
 	cfg.Default.Output = "output"
@@ -1322,7 +1315,7 @@ func TestAddLibraryCommand_Python_ExistingLibraryReleasePlease(t *testing.T) {
 	if len(lib.APIs) != 2 {
 		t.Fatalf("expected 2 APIs in library, got %d", len(lib.APIs))
 	}
-	gotBulkConfig, err := readJSONFile[map[string]any](filepath.Join(tmpDir, "release-please-bulk-config.json"))
+	gotBulkConfig, err := readJSONFile[map[string]any](filepath.Join(tmpDir, bulkConfigFile))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1332,7 +1325,7 @@ func TestAddLibraryCommand_Python_ExistingLibraryReleasePlease(t *testing.T) {
 	if !slices.Contains(extraFiles, "google/cloud/secretmanager_v1beta2/gapic_version.py") {
 		t.Errorf("bulk config extra-files missing v1beta2 gapic_version.py, got: %v", extraFiles)
 	}
-	gotIndConfig, err := readJSONFile[map[string]any](filepath.Join(tmpDir, "release-please-individual-config.json"))
+	gotIndConfig, err := readJSONFile[map[string]any](filepath.Join(tmpDir, individualConfigFile))
 	if err != nil {
 		t.Fatal(err)
 	}
