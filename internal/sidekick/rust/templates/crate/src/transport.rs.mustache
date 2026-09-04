@@ -271,7 +271,7 @@ impl super::stub::{{Codec.Name}} for {{Codec.Name}} {
                 {{{FieldAccessor}}}.map(|v| format!("{{FieldName}}={v}")),
             {{/PathInfo.Codec.UniqueParameters}}
             {{^PathInfo.Codec.UniqueParameters}}
-            ""; 0
+            None::<String>; 0
             {{/PathInfo.Codec.UniqueParameters}}
         ]
         .into_iter()
