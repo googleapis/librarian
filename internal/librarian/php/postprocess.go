@@ -33,16 +33,15 @@ var (
 	errOwlBotNotFound = errors.New("owlbot.py not found")
 )
 
-func postProcessLibrary(ctx context.Context, library *config.Library, componentName string) (err error) {
-	stagingDir := filepath.Join(owlBotStagingDir, componentName)
+func postProcessLibrary(ctx context.Context, library *config.Library) (err error) {
+	stagingDir := filepath.Join(owlBotStagingDir, filepath.Base(library.Output))
 	defer func() {
 		if cleanupErr := os.RemoveAll(stagingDir); cleanupErr != nil {
 			err = errors.Join(err, cleanupErr)
 		}
 	}()
 
-	// TODO(https://github.com/googleapis/librarian/issues/7153): We need to use component name as library output to maintain backward compatibility. Change this to library.Output when ready.
-	owlbotPy := filepath.Join(componentName, "owlbot.py")
+	owlbotPy := filepath.Join(library.Output, "owlbot.py")
 	if _, err := os.Stat(owlbotPy); err != nil {
 		if errors.Is(err, fs.ErrNotExist) {
 			return fmt.Errorf("library %q: %w", library.Name, errOwlBotNotFound)
@@ -61,7 +60,7 @@ func postProcessLibrary(ctx context.Context, library *config.Library, componentN
 	if err := restoreCopyrightYear(stagingDir, library.CopyrightYear); err != nil {
 		return err
 	}
-	if err := command.RunInDir(ctx, componentName, "python3", "owlbot.py"); err != nil {
+	if err := command.RunInDir(ctx, library.Output, "python3", "owlbot.py"); err != nil {
 		return fmt.Errorf("failed to run owlbot.py: %w", err)
 	}
 
