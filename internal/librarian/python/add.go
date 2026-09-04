@@ -171,6 +171,6 @@ func ReleasePleaseExtraFiles(lib *config.Library) []any {
 // For example, google/shopping/merchant/inventories becomes google/shopping/merchant_inventories.
 func flattenNestedPath(apiPath string, lib *config.Library) string {
 	namespace := strings.ReplaceAll(gapicNamespace(apiPath, lib), ".", "/")
-	gapicName := gapicName(apiPath, lib)
-	return path.Join(namespace, gapicName)
+	name := gapicName(apiPath, lib)
+	return path.Join(namespace, name)
 }
