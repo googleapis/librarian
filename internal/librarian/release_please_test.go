@@ -638,7 +638,7 @@ func TestSyncToReleasePlease_Python(t *testing.T) {
 		files              map[string]string
 		wantModifiedConfig string
 		wantCleanConfig    string
-		wantExtraFile      any
+		wantExtraFile      string
 	}{
 		{
 			name: "updates bulk config when tracked in bulk",
@@ -719,7 +719,10 @@ func TestSyncToReleasePlease_Python(t *testing.T) {
 			pkgs := gotModified["packages"].(map[string]any)
 			pkg := pkgs[python.ReleasePleasePkgPrefix+test.library.Name].(map[string]any)
 			extraFiles := pkg["extra-files"].([]any)
-			if !slices.Contains(extraFiles, test.wantExtraFile) {
+			if !slices.ContainsFunc(extraFiles, func(elem any) bool {
+				s, ok := elem.(string)
+				return ok && s == test.wantExtraFile
+			}) {
 				t.Errorf("extra-files does not contain %s, got: %v", test.wantExtraFile, extraFiles)
 			}
 			gotClean, err := readJSONFile[map[string]any](filepath.Join(tmp, test.wantCleanConfig))
