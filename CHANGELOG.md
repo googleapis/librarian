@@ -1,5 +1,27 @@
 # Changelog
 
+## [0.41.0](https://github.com/googleapis/librarian/compare/v0.40.0...v0.41.0) (2026-09-04)
+
+
+### Features
+
+* **internal/librarian/php:** populate library output on add ([#7494](https://github.com/googleapis/librarian/issues/7494)) ([6db88be](https://github.com/googleapis/librarian/commit/6db88bee902c54faf1fc21c1454fe9517ec55cc8))
+* **internal/librarian/ruby:** add ruby-cloud-renamed-from option ([#7500](https://github.com/googleapis/librarian/issues/7500)) ([5cdfd77](https://github.com/googleapis/librarian/commit/5cdfd772da6931d4e70dbcb13a74866d242753d1))
+* **internal/librarian/ruby:** prepareMultiWrapper for multi-wrapper Gems ([#7483](https://github.com/googleapis/librarian/issues/7483)) ([a325c53](https://github.com/googleapis/librarian/commit/a325c538d9126766f1738a676098801a486c16b6))
+* **internal/librarian/ruby:** ruby-cloud-gem-name for multi-wrapper Gems ([#7486](https://github.com/googleapis/librarian/issues/7486)) ([37e5b25](https://github.com/googleapis/librarian/commit/37e5b250f5ca9ec787087222410c3ab5df51a8d9))
+* **internal/librarian/ruby:** support deleting output paths in library declaration ([#7506](https://github.com/googleapis/librarian/issues/7506)) ([39fbb3f](https://github.com/googleapis/librarian/commit/39fbb3f6fecb6032bd71c20745bfa37d2e14d1dc))
+* **internal/librarian/rust:** batch unsupported any field errors ([#7479](https://github.com/googleapis/librarian/issues/7479)) ([09b2729](https://github.com/googleapis/librarian/commit/09b272923808d92319800cf6d6e88d35da6862b7))
+* **sidekick/rust:** support grpc_client option  ([#7492](https://github.com/googleapis/librarian/issues/7492)) ([45d06df](https://github.com/googleapis/librarian/commit/45d06df00775fbc891138d2ecb9f8d6be04d8d79))
+* **sidekick/swift:** propagate `deprecated` tags ([#7472](https://github.com/googleapis/librarian/issues/7472)) ([2a98183](https://github.com/googleapis/librarian/commit/2a98183779356dcb971b3dbfaedc427f652bc06e))
+
+
+### Bug Fixes
+
+* **internal/librarian/python:** flatten nested gapic_version paths ([#7501](https://github.com/googleapis/librarian/issues/7501)) ([c57fa98](https://github.com/googleapis/librarian/commit/c57fa98e4908fbd7d51440e56bc16f3fa6530ba5))
+* **internal/librarian/rust:** batch unsupported any field errors ([#7479](https://github.com/googleapis/librarian/issues/7479)) ([#7512](https://github.com/googleapis/librarian/issues/7512)) ([bb4aa18](https://github.com/googleapis/librarian/commit/bb4aa18ca34a5c98d50d4b37cc34760fa920702b))
+* **internal/librarian:** update bulk release-please config for existing python libraries ([#7508](https://github.com/googleapis/librarian/issues/7508)) ([e7edd83](https://github.com/googleapis/librarian/commit/e7edd832e2bad44633adb7c1e822d109c751d7cc))
+* **internal/sidekick/rust:** skip doc links for omitted methods and services ([#7485](https://github.com/googleapis/librarian/issues/7485)) ([5eb5644](https://github.com/googleapis/librarian/commit/5eb5644014a7d5095d5acb580dd4aa465612f6cc))
+
 ## [0.40.0](https://github.com/googleapis/librarian/compare/v0.39.0...v0.40.0) (2026-09-01)
 
 
