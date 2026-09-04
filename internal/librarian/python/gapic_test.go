@@ -111,6 +111,65 @@ func TestDeriveGAPICNamespace(t *testing.T) {
 	}
 }
 
+func TestGAPICName(t *testing.T) {
+	for _, test := range []struct {
+		name    string
+		apiPath string
+		lib     *config.Library
+		want    string
+	}{
+		{
+			name:    "no python config",
+			apiPath: "google/cloud/datacatalog/lineage/v1",
+			lib:     &config.Library{},
+			want:    "datacatalog_lineage",
+		},
+		{
+			name:    "no options for API",
+			apiPath: "google/cloud/datacatalog/lineage/v1",
+			lib:     &config.Library{Python: &config.PythonPackage{}},
+			want:    "datacatalog_lineage",
+		},
+		{
+			name:    "other options present",
+			apiPath: "google/cloud/datacatalog/lineage/v1",
+			lib: &config.Library{
+				Python: &config.PythonPackage{
+					OptArgsByAPI: map[string][]string{
+						"google/cloud/datacatalog/lineage/v1": {"python-gapic-namespace=custom.namespace"},
+					},
+				},
+			},
+			want: "datacatalog_lineage",
+		},
+		{
+			name:    "explicit name option",
+			apiPath: "google/cloud/datacatalog/lineage/v1",
+			lib: &config.Library{
+				Python: &config.PythonPackage{
+					OptArgsByAPI: map[string][]string{
+						"google/cloud/datacatalog/lineage/v1": {"python-gapic-name=custom_name"},
+					},
+				},
+			},
+			want: "custom_name",
+		},
+		{
+			name:    "fallback single path element in name",
+			apiPath: "google/cloud/datacatalog/v1",
+			lib:     &config.Library{},
+			want:    "datacatalog",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := gapicName(test.apiPath, test.lib)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
 func TestDeriveGAPICName(t *testing.T) {
 	for _, test := range []struct {
 		name string
