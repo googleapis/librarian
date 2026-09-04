@@ -50,14 +50,14 @@ func Generate(ctx context.Context, cfg *config.Config, library *config.Library, 
 	}
 	outDir, err := filepath.Abs(library.Output)
 	if err != nil {
-		return fmt.Errorf("failed to get absolute path of output directory: %w", err)
+		return err
 	}
 	if err := os.MkdirAll(outDir, 0o755); err != nil {
-		return fmt.Errorf("failed to create output directory: %w", err)
+		return err
 	}
 	tempDir, err := os.MkdirTemp(outDir, "librarian-ruby-")
 	if err != nil {
-		return fmt.Errorf("failed to create temp directory: %w", err)
+		return err
 	}
 	defer func() {
 		if removeErr := os.RemoveAll(tempDir); removeErr != nil {
@@ -70,19 +70,57 @@ func Generate(ctx context.Context, cfg *config.Config, library *config.Library, 
 		pc = cfg.Tools.Protoc
 	}
 
-	for _, api := range library.APIs {
-		if err := generateAPI(ctx, api, library, pc, googleapisDir, tempDir); err != nil {
-			return fmt.Errorf("api %q: %w", api.Path, err)
+	if isMultiWrapper(library) {
+		if err := generateMultiWrapper(ctx, library, pc, googleapisDir, tempDir); err != nil {
+			return err
+		}
+	} else {
+		for _, api := range library.APIs {
+			if err := generateAPI(ctx, api, library, pc, googleapisDir, tempDir); err != nil {
+				return err
+			}
 		}
 	}
 	keepSet := buildKeepSet(library.Name, library.Keep)
 	keepFunc := func(rel string) bool {
 		return isKept(rel, keepSet)
 	}
-	if err := filesystem.MoveAndMergeWithKeep(tempDir, outDir, outDir, keepFunc); err != nil {
-		return fmt.Errorf("failed to move generated files: %w", err)
+	return filesystem.MoveAndMergeWithKeep(tempDir, outDir, outDir, keepFunc)
+}
+
+func isWrapperLibrary(library *config.Library) bool {
+	if library.Ruby != nil && len(library.Ruby.WrapperOf) > 0 {
+		return true
 	}
-	return nil
+	for _, api := range library.APIs {
+		if api.Ruby != nil && api.Ruby.RubyCloudOpts != nil && api.Ruby.RubyCloudOpts.WrapperOf != "" {
+			return true
+		}
+	}
+	return false
+}
+
+func isMultiWrapper(library *config.Library) bool {
+	if !isWrapperLibrary(library) {
+		return false
+	}
+	return len(library.APIs) > 1
+}
+
+func generateMultiWrapper(ctx context.Context, library *config.Library, pc *config.Protoc, googleapisDir, stagingDir string) error {
+	var sourceGems []string
+	for _, api := range library.APIs {
+		gemName := apiGemName(library, api)
+		sourceGems = append(sourceGems, gemName)
+		apiStagingDir := filepath.Join(stagingDir, gemName)
+		if err := os.MkdirAll(apiStagingDir, 0o755); err != nil {
+			return err
+		}
+		if err := generateAPI(ctx, api, library, pc, googleapisDir, apiStagingDir); err != nil {
+			return err
+		}
+	}
+	return prepareMultiWrapper(stagingDir, sourceGems, library.TitleOverride, library.Name)
 }
 
 func generateAPI(ctx context.Context, api *config.API, library *config.Library, pc *config.Protoc, googleapisDir, stagingDir string) error {
@@ -111,10 +149,10 @@ func generateAPI(ctx context.Context, api *config.API, library *config.Library, 
 	// https://github.com/googleapis/gapic-generator-ruby/blob/8fed6b7c1/rules_ruby_gapic/ruby_gapic_pkg.bzl#L39-L41
 	libStagingDir := filepath.Join(stagingDir, "lib")
 	if err := os.MkdirAll(libStagingDir, 0o755); err != nil {
-		return fmt.Errorf("failed to create lib staging directory: %w", err)
+		return err
 	}
 	// A main client is a wrapper of a versioned client
-	isWrapper := library.Ruby != nil && len(library.Ruby.WrapperOf) > 0
+	isWrapper := isWrapperLibrary(library)
 	args := buildProtocArgs(googleapisDir, stagingDir, libStagingDir, installDir, isWrapper, serviceConfig, gapicOpts, protoFiles)
 	env, err := toolsEnv()
 	if err != nil {
@@ -133,7 +171,7 @@ func generateAPI(ctx context.Context, api *config.API, library *config.Library, 
 	// protobuf definitions, which would cause class redefinition warnings and collisions.
 	commonResourcesPB := filepath.Join(stagingDir, "lib", "google", "cloud", "common_resources_pb.rb")
 	if err := os.Remove(commonResourcesPB); err != nil && !errors.Is(err, fs.ErrNotExist) {
-		return fmt.Errorf("failed to remove %s: %w", commonResourcesPB, err)
+		return err
 	}
 	return nil
 }
@@ -310,10 +348,10 @@ func deleteAfterGeneration(api *config.API, stagingDir string) error {
 		// Return an error for non-existent paths to keep the configurations
 		// up to date.
 		if _, err := os.Stat(target); err != nil {
-			return fmt.Errorf("failed to stat %s: %w", path, err)
+			return err
 		}
 		if err := os.RemoveAll(target); err != nil {
-			return fmt.Errorf("failed to remove %s: %w", path, err)
+			return err
 		}
 	}
 	return nil

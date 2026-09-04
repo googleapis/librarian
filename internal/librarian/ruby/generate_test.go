@@ -1064,3 +1064,145 @@ func TestDeleteAfterGeneration_Error(t *testing.T) {
 		})
 	}
 }
+
+func TestIsWrapperLibrary(t *testing.T) {
+	for _, test := range []struct {
+		name    string
+		library *config.Library
+		want    bool
+	}{
+		{
+			name: "versioned library without wrapper_of",
+			library: &config.Library{
+				Name: "google-cloud-secret_manager-v1",
+				APIs: []*config.API{{Path: "google/cloud/secretmanager/v1"}},
+			},
+			want: false,
+		},
+		{
+			name: "wrapper library with library wrapper_of",
+			library: &config.Library{
+				Name: "google-cloud-secret_manager",
+				APIs: []*config.API{{Path: "google/cloud/secretmanager/v1"}},
+				Ruby: &config.RubyPackage{
+					WrapperOf: []string{"v1:0.29"},
+				},
+			},
+			want: true,
+		},
+		{
+			name: "wrapper library with api wrapper_of",
+			library: &config.Library{
+				Name: "google-cloud-secret_manager",
+				APIs: []*config.API{
+					{
+						Path: "google/cloud/secretmanager/v1",
+						Ruby: &config.RubyAPI{
+							RubyCloudOpts: &config.RubyCloudOpts{
+								WrapperOf: "v1:0.29",
+							},
+						},
+					},
+				},
+			},
+			want: true,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := isWrapperLibrary(test.library)
+			if got != test.want {
+				t.Errorf("isWrapperLibrary() = %v, want %v", got, test.want)
+			}
+		})
+	}
+}
+
+func TestIsMultiWrapper(t *testing.T) {
+	for _, test := range []struct {
+		name    string
+		library *config.Library
+		want    bool
+	}{
+		{
+			name: "single wrapper with matching name",
+			library: &config.Library{
+				Name: "google-cloud-secret_manager",
+				APIs: []*config.API{{Path: "google/cloud/secretmanager/v1"}},
+				Ruby: &config.RubyPackage{
+					WrapperOf: []string{"v1:0.29"},
+				},
+			},
+			want: false,
+		},
+		{
+			name: "multi wrapper with multiple apis",
+			library: &config.Library{
+				Name: "google-cloud-workflows",
+				APIs: []*config.API{
+					{Path: "google/cloud/workflows/v1"},
+					{
+						Path: "google/cloud/workflows/executions/v1",
+						Ruby: &config.RubyAPI{
+							RubyCloudOpts: &config.RubyCloudOpts{
+								GemName:   "google-cloud-workflows-executions",
+								WrapperOf: "v1:1.2",
+							},
+						},
+					},
+				},
+				Ruby: &config.RubyPackage{
+					WrapperOf: []string{"v1:2.0"},
+				},
+			},
+			want: true,
+		},
+		{
+			name: "multi wrapper with different main gem",
+			library: &config.Library{
+				Name: "google-cloud-beyond_corp",
+				APIs: []*config.API{
+					{
+						Path: "google/cloud/beyondcorp/appconnections/v1",
+						Ruby: &config.RubyAPI{
+							RubyCloudOpts: &config.RubyCloudOpts{
+								GemName:   "google-cloud-beyond_corp-app_connections",
+								WrapperOf: "v1:0.4",
+							},
+						},
+					},
+					{
+						Path: "google/cloud/beyondcorp/appconnectors/v1",
+						Ruby: &config.RubyAPI{
+							RubyCloudOpts: &config.RubyCloudOpts{
+								GemName:   "google-cloud-beyond_corp-app_connectors",
+								WrapperOf: "v1:0.4",
+							},
+						},
+					},
+				},
+				Ruby: &config.RubyPackage{
+					WrapperOf: []string{"v1:0.4"},
+				},
+			},
+			want: true,
+		},
+		{
+			name: "non-wrapper with multiple apis",
+			library: &config.Library{
+				Name: "google-cloud-secret_manager-v1",
+				APIs: []*config.API{
+					{Path: "google/cloud/secretmanager/v1"},
+					{Path: "google/cloud/secretmanager/v1beta"},
+				},
+			},
+			want: false,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := isMultiWrapper(test.library)
+			if got != test.want {
+				t.Errorf("isMultiWrapper() = %v, want %v", got, test.want)
+			}
+		})
+	}
+}
