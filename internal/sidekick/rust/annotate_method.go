@@ -757,6 +757,10 @@ func (c *codec) methodUsesGrpc(m *api.Method) bool {
 	if !c.templateSupportsGrpc() {
 		return false
 	}
+	// TODO(googleapis/google-cloud-rust#6470): Support LROs on gRPC transport.
+	if m.OperationInfo != nil || m.IsLroPoller || isDiscoveryLro(m) {
+		return false
+	}
 	if c.defaultTransport == "grpc" {
 		return true
 	}
