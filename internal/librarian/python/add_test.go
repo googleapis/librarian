@@ -497,31 +497,51 @@ func TestFlattenNestedPath(t *testing.T) {
 	for _, test := range []struct {
 		name string
 		path string
+		lib  *config.Library
 		want string
 	}{
 		{
 			name: "single path segment after namespace",
 			path: "google/cloud/secretmanager",
+			lib:  &config.Library{},
 			want: "google/cloud/secretmanager",
 		},
 		{
 			name: "nested path segments under cloud namespace",
 			path: "google/cloud/datacatalog/lineage",
+			lib:  &config.Library{},
 			want: "google/cloud/datacatalog_lineage",
 		},
 		{
 			name: "deeply nested path segments under non-cloud namespace",
 			path: "google/shopping/merchant/loyaltycustomer",
+			lib:  &config.Library{},
 			want: "google/shopping/merchant_loyaltycustomer",
 		},
 		{
 			name: "single segment under non-cloud namespace",
 			path: "google/shopping/type",
+			lib:  &config.Library{},
 			want: "google/shopping/type",
+		},
+		{
+			name: "options override namespace and name",
+			path: "google/shopping/merchant/loyaltycustomer",
+			lib: &config.Library{
+				Python: &config.PythonPackage{
+					OptArgsByAPI: map[string][]string{
+						"google/shopping/merchant/loyaltycustomer": {
+							"python-gapic-namespace=custom.ns",
+							"python-gapic-name=custom_name",
+						},
+					},
+				},
+			},
+			want: "custom/ns/custom_name",
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got := flattenNestedPath(test.path)
+			got := flattenNestedPath(test.path, test.lib)
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
