@@ -146,7 +146,7 @@ func ReleasePleaseExtraFiles(lib *config.Library) []any {
 	var extraFiles []any
 	addedVersionless := make(map[string]bool)
 	for _, api := range lib.APIs {
-		flattenedPath := flattenNestedPath(api.Path)
+		flattenedPath := flattenNestedPath(api.Path, lib)
 		if !addedVersionless[flattenedPath] {
 			addedVersionless[flattenedPath] = true
 			extraFiles = append(extraFiles, flattenedPath+"/gapic_version.py")
@@ -169,8 +169,8 @@ func ReleasePleaseExtraFiles(lib *config.Library) []any {
 
 // flattenNestedPath flattens nested paths in apiPath, specifically for non-cloud API prefixes.
 // For example, google/shopping/merchant/inventories becomes google/shopping/merchant_inventories.
-func flattenNestedPath(apiPath string) string {
-	namespace := strings.ReplaceAll(deriveGAPICNamespace(apiPath), ".", "/")
-	gapicName := deriveGAPICName(apiPath)
+func flattenNestedPath(apiPath string, lib *config.Library) string {
+	namespace := strings.ReplaceAll(gapicNamespace(apiPath, lib), ".", "/")
+	gapicName := gapicName(apiPath, lib)
 	return path.Join(namespace, gapicName)
 }
