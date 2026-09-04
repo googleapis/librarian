@@ -17,7 +17,6 @@ package rust
 import (
 	"cmp"
 	"context"
-	"errors"
 	"fmt"
 	"maps"
 	"path/filepath"
@@ -165,7 +164,6 @@ func filterModelToTypes(model *api.API, rootTypeIDs []string, allowAnyTypes []st
 	}
 
 	hasGoogleRpcStatus := false
-	var unsupportedAnyFields []string
 
 	for len(queue) > 0 {
 		item := queue[0]
@@ -174,9 +172,22 @@ func filterModelToTypes(model *api.API, rootTypeIDs []string, allowAnyTypes []st
 		if visited[item.id] {
 			continue
 		}
+		visited[item.id] = true
+
+		anyError := func(path string, fieldID string) error {
+			if fieldID != "" && !isAnyType(fieldID) {
+				return fmt.Errorf("cannot generate prost conversion for streaming RPC: type google.protobuf.Any is unsupported (path: %s)\n"+
+					"To resolve this, allow dropping this Any field in prost conversion by adding it to allow_streaming_any_types in librarian.yaml:\n"+
+					"    rust:\n"+
+					"      allow_streaming_any_types:\n"+
+					"        - %s",
+					path, fieldID)
+			}
+			return fmt.Errorf("cannot generate prost conversion for streaming RPC: type google.protobuf.Any is unsupported (path: %s)", path)
+		}
+
 		if isAnyType(item.id) {
-			unsupportedAnyFields = append(unsupportedAnyFields, item.id)
-			continue
+			return nil, nil, false, anyError(item.path, item.id)
 		}
 
 		msg := model.Message(item.id)
@@ -197,8 +208,7 @@ func filterModelToTypes(model *api.API, rootTypeIDs []string, allowAnyTypes []st
 						f.SkipProtoConversion = true
 						continue
 					}
-					unsupportedAnyFields = append(unsupportedAnyFields, fieldPath)
-					continue
+					return nil, nil, false, anyError(fieldPath, f.ID)
 				}
 				if f.Typez == api.TypezMessage && f.TypezID != "" {
 					queue = append(queue, typeItem{
@@ -212,14 +222,13 @@ func filterModelToTypes(model *api.API, rootTypeIDs []string, allowAnyTypes []st
 			}
 			for _, o := range msg.OneOfs {
 				for _, f := range o.Fields {
-					fieldPath := item.path + "." + f.Name
+					fieldPath := item.path + "." + o.Name + "." + f.Name
 					if isAnyType(f.TypezID) {
 						if matchesAllowedAnyField(f.ID, allowAnyTypes) || matchesAllowedAnyField(fieldPath, allowAnyTypes) {
 							f.SkipProtoConversion = true
 							continue
 						}
-						unsupportedAnyFields = append(unsupportedAnyFields, fieldPath)
-						continue
+						return nil, nil, false, anyError(fieldPath, f.ID)
 					}
 					if f.Typez == api.TypezMessage && f.TypezID != "" {
 						queue = append(queue, typeItem{
@@ -238,23 +247,6 @@ func filterModelToTypes(model *api.API, rootTypeIDs []string, allowAnyTypes []st
 		if enum != nil {
 			enqueueEnum(enum, item.path)
 		}
-	}
-
-	if len(unsupportedAnyFields) > 0 {
-		slices.Sort(unsupportedAnyFields)
-		unsupportedAnyFields = slices.Compact(unsupportedAnyFields)
-		var sb strings.Builder
-		sb.WriteString("cannot generate prost conversion: type google.protobuf.Any is unsupported:\n")
-		for _, f := range unsupportedAnyFields {
-			fmt.Fprintf(&sb, "  - %s\n", f)
-		}
-		sb.WriteString("\nTo resolve this, allow dropping Any fields in prost conversion by adding them to allow_streaming_any_types in librarian.yaml:\n")
-		sb.WriteString("    rust:\n")
-		sb.WriteString("      allow_streaming_any_types:\n")
-		for _, f := range unsupportedAnyFields {
-			fmt.Fprintf(&sb, "        - %s\n", f)
-		}
-		return nil, nil, false, errors.New(strings.TrimSuffix(sb.String(), "\n"))
 	}
 
 	// Collect external top-level messages (e.g. google.type.LatLng) referenced by roots.
