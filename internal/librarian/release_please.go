@@ -72,6 +72,21 @@ func releasePleaseFiles(cfg *config.Config) (string, string) {
 	return manifestFile, configFile
 }
 
+// isTrackedInBulkConfig reports whether the package path is already tracked
+// in the bulk release-please configuration file.
+func isTrackedInBulkConfig(dir, pkgPath string) bool {
+	bulkConfig, err := readJSONFile[map[string]any](filepath.Join(dir, bulkConfigFile))
+	if err != nil {
+		return false
+	}
+	pkgs, ok := bulkConfig["packages"].(map[string]any)
+	if !ok {
+		return false
+	}
+	_, exists := pkgs[pkgPath]
+	return exists
+}
+
 // syncToReleasePlease updates the release-please configuration files with the
 // onboarded library's package name, initial version, and language-specific
 // extra files to track for release version bumps.
@@ -82,6 +97,14 @@ func syncToReleasePlease(dir string, cfg *config.Config, name string) error {
 	}
 
 	manifestFile, configFile := releasePleaseFiles(cfg)
+	pkgPath := lib.Name
+	if cfg.Language == config.LanguagePython {
+		pkgPath = python.ReleasePleasePkgPrefix + lib.Name
+		if isTrackedInBulkConfig(dir, pkgPath) {
+			manifestFile = bulkManifestFile
+			configFile = bulkConfigFile
+		}
+	}
 	manifestPath := filepath.Join(dir, manifestFile)
 	manifest, err := readJSONFile[map[string]string](manifestPath)
 	if err != nil {
@@ -111,10 +134,8 @@ func syncToReleasePlease(dir string, cfg *config.Config, name string) error {
 	}
 
 	var extraFiles []any
-	pkgPath := lib.Name
 	switch cfg.Language {
 	case config.LanguagePython:
-		pkgPath = python.ReleasePleasePkgPrefix + lib.Name
 		extraFiles = python.ReleasePleaseExtraFiles(lib)
 	case config.LanguageGo:
 		extraFiles = golang.ReleasePleaseExtraFiles(lib)

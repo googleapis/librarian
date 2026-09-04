@@ -18,6 +18,7 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"slices"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -578,6 +579,182 @@ func TestSyncToReleasePlease_Errors(t *testing.T) {
 			err := syncToReleasePlease(tmp, cfg, test.library.Name)
 			if err == nil {
 				t.Errorf("expected error, got nil")
+			}
+		})
+	}
+}
+
+func TestSyncToReleasePlease_Python_UpdatesBulkConfigWhenTrackedInBulk(t *testing.T) {
+	tmp := t.TempDir()
+	cfg := &config.Config{
+		Language: config.LanguagePython,
+		Libraries: []*config.Library{
+			{
+				Name:    "google-cloud-biglake-hive",
+				Version: "0.3.2",
+				APIs: []*config.API{
+					{Path: "google/cloud/biglake/hive/v1"},
+					{Path: "google/cloud/biglake/hive/v1beta"},
+				},
+			},
+		},
+	}
+	initialBulkManifest := `{"packages/google-cloud-biglake-hive": "0.3.2"}`
+	initialBulkConfig := `{
+		"packages": {
+			"packages/google-cloud-biglake-hive": {
+				"component": "google-cloud-biglake-hive",
+				"extra-files": [
+					"google/cloud/biglake/hive/gapic_version.py",
+					"google/cloud/biglake/hive_v1beta/gapic_version.py"
+				]
+			}
+		}
+	}`
+	if err := os.WriteFile(filepath.Join(tmp, bulkManifestFile), []byte(initialBulkManifest), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(tmp, bulkConfigFile), []byte(initialBulkConfig), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(tmp, individualManifestFile), []byte(`{}`), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(tmp, individualConfigFile), []byte(`{"packages": {}}`), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := syncToReleasePlease(tmp, cfg, "google-cloud-biglake-hive"); err != nil {
+		t.Fatal(err)
+	}
+
+	gotBulkConfig, err := readJSONFile[map[string]any](filepath.Join(tmp, bulkConfigFile))
+	if err != nil {
+		t.Fatal(err)
+	}
+	pkgs := gotBulkConfig["packages"].(map[string]any)
+	pkg := pkgs["packages/google-cloud-biglake-hive"].(map[string]any)
+	extraFiles := pkg["extra-files"].([]any)
+	if !slices.Contains(extraFiles, "google/cloud/biglake/hive_v1/gapic_version.py") {
+		t.Errorf("extra-files does not contain v1 gapic_version.py, got: %v", extraFiles)
+	}
+	gotIndConfig, err := readJSONFile[map[string]any](filepath.Join(tmp, individualConfigFile))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if diff := cmp.Diff(map[string]any{"packages": map[string]any{}}, gotIndConfig); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+}
+
+func TestSyncToReleasePlease_Python_UpdatesIndividualConfigWhenTrackedInIndividual(t *testing.T) {
+	tmp := t.TempDir()
+	cfg := &config.Config{
+		Language: config.LanguagePython,
+		Libraries: []*config.Library{
+			{
+				Name:    "google-cloud-newservice",
+				Version: "0.0.0",
+				APIs: []*config.API{
+					{Path: "google/cloud/newservice/v1"},
+					{Path: "google/cloud/newservice/v1beta"},
+				},
+			},
+		},
+	}
+	initialIndConfig := `{
+		"packages": {
+			"packages/google-cloud-newservice": {
+				"component": "google-cloud-newservice",
+				"extra-files": [
+					"google/cloud/newservice/gapic_version.py",
+					"google/cloud/newservice_v1/gapic_version.py"
+				]
+			}
+		}
+	}`
+	if err := os.WriteFile(filepath.Join(tmp, bulkManifestFile), []byte(`{}`), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(tmp, bulkConfigFile), []byte(`{"packages": {}}`), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(tmp, individualManifestFile), []byte(`{"packages/google-cloud-newservice": "0.0.0"}`), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(tmp, individualConfigFile), []byte(initialIndConfig), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := syncToReleasePlease(tmp, cfg, "google-cloud-newservice"); err != nil {
+		t.Fatal(err)
+	}
+
+	gotIndConfig, err := readJSONFile[map[string]any](filepath.Join(tmp, individualConfigFile))
+	if err != nil {
+		t.Fatal(err)
+	}
+	pkgs := gotIndConfig["packages"].(map[string]any)
+	pkg := pkgs["packages/google-cloud-newservice"].(map[string]any)
+	extraFiles := pkg["extra-files"].([]any)
+	if !slices.Contains(extraFiles, "google/cloud/newservice_v1beta/gapic_version.py") {
+		t.Errorf("extra-files does not contain v1beta gapic_version.py, got: %v", extraFiles)
+	}
+	gotBulkConfig, err := readJSONFile[map[string]any](filepath.Join(tmp, bulkConfigFile))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if diff := cmp.Diff(map[string]any{"packages": map[string]any{}}, gotBulkConfig); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+}
+
+func TestIsTrackedInBulkConfig(t *testing.T) {
+	for _, test := range []struct {
+		name       string
+		configJSON string
+		writeFile  bool
+		pkgPath    string
+		want       bool
+	}{
+		{
+			name:       "package exists in bulk config",
+			configJSON: `{"packages": {"packages/google-cloud-foo": {}}}`,
+			writeFile:  true,
+			pkgPath:    "packages/google-cloud-foo",
+			want:       true,
+		},
+		{
+			name:       "package does not exist in bulk config",
+			configJSON: `{"packages": {"packages/google-cloud-other": {}}}`,
+			writeFile:  true,
+			pkgPath:    "packages/google-cloud-foo",
+			want:       false,
+		},
+		{
+			name:      "bulk config file does not exist",
+			writeFile: false,
+			pkgPath:   "packages/google-cloud-foo",
+			want:      false,
+		},
+		{
+			name:       "invalid packages field",
+			configJSON: `{"packages": "not-a-map"}`,
+			writeFile:  true,
+			pkgPath:    "packages/google-cloud-foo",
+			want:       false,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			tmp := t.TempDir()
+			if test.writeFile {
+				if err := os.WriteFile(filepath.Join(tmp, bulkConfigFile), []byte(test.configJSON), 0o644); err != nil {
+					t.Fatal(err)
+				}
+			}
+			got := isTrackedInBulkConfig(tmp, test.pkgPath)
+			if got != test.want {
+				t.Errorf("isTrackedInBulkConfig(%s, %s) = %t, want %t", tmp, test.pkgPath, got, test.want)
 			}
 		})
 	}
