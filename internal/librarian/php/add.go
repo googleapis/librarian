@@ -52,7 +52,7 @@ func Add(lib *config.Library, googleapisDir string) (*config.Library, error) {
 		}
 	}
 	if lib.Output == "" {
-		compName, err := ComponentNameForLibrary(googleapisDir, lib)
+		compName, err := componentNameForLibrary(googleapisDir, lib)
 		if err != nil {
 			return nil, fmt.Errorf("failed to derive component name for library %q: %w", lib.Name, err)
 		}
