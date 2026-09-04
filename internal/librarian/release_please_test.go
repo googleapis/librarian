@@ -144,6 +144,52 @@ func TestHasReleasePleaseConfigs(t *testing.T) {
 	}
 }
 
+func TestHasReleasePleaseConfigs_PythonBulk(t *testing.T) {
+	for _, test := range []struct {
+		name           string
+		createConfig   bool
+		createManifest bool
+		want           bool
+	}{
+		{
+			name:           "both bulk exist",
+			createConfig:   true,
+			createManifest: true,
+			want:           true,
+		},
+		{
+			name:           "bulk config missing",
+			createConfig:   false,
+			createManifest: true,
+			want:           false,
+		},
+		{
+			name:           "bulk manifest missing",
+			createConfig:   true,
+			createManifest: false,
+			want:           false,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			tmp := t.TempDir()
+			if test.createConfig {
+				if err := os.WriteFile(filepath.Join(tmp, bulkConfigFile), []byte("{}"), 0o644); err != nil {
+					t.Fatal(err)
+				}
+			}
+			if test.createManifest {
+				if err := os.WriteFile(filepath.Join(tmp, bulkManifestFile), []byte("{}"), 0o644); err != nil {
+					t.Fatal(err)
+				}
+			}
+			got := hasReleasePleaseConfigs(tmp, &config.Config{Language: config.LanguagePython})
+			if got != test.want {
+				t.Errorf("hasReleasePleaseConfigs(%s, %s) = %t, want %t", tmp, config.LanguagePython, got, test.want)
+			}
+		})
+	}
+}
+
 func TestSyncToReleasePlease(t *testing.T) {
 	for _, test := range []struct {
 		name            string
@@ -611,8 +657,8 @@ func TestSyncToReleasePlease_Python(t *testing.T) {
 						"packages/google-cloud-biglake-hive": {
 							"component": "google-cloud-biglake-hive",
 							"extra-files": [
-								"google/cloud/biglake/hive/gapic_version.py",
-								"google/cloud/biglake/hive_v1beta/gapic_version.py"
+								"google/cloud/biglake_hive/gapic_version.py",
+								"google/cloud/biglake_hive_v1beta/gapic_version.py"
 							]
 						}
 					}
@@ -622,7 +668,7 @@ func TestSyncToReleasePlease_Python(t *testing.T) {
 			},
 			wantModifiedConfig: bulkConfigFile,
 			wantCleanConfig:    individualConfigFile,
-			wantExtraFile:      "google/cloud/biglake/hive_v1/gapic_version.py",
+			wantExtraFile:      "google/cloud/biglake_hive_v1/gapic_version.py",
 		},
 		{
 			name: "updates individual config when tracked in individual",

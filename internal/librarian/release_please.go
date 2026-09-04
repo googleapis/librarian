@@ -47,7 +47,15 @@ type extraFile struct {
 }
 
 func hasReleasePleaseConfigs(dir string, cfg *config.Config) bool {
+	if cfg.Language == config.LanguagePython {
+		return hasReleasePleasePair(dir, individualManifestFile, individualConfigFile) ||
+			hasReleasePleasePair(dir, bulkManifestFile, bulkConfigFile)
+	}
 	manifestFile, configFile := releasePleaseFiles(cfg)
+	return hasReleasePleasePair(dir, manifestFile, configFile)
+}
+
+func hasReleasePleasePair(dir, manifestFile, configFile string) bool {
 	_, errM := os.Stat(filepath.Join(dir, manifestFile))
 	_, errC := os.Stat(filepath.Join(dir, configFile))
 	return !errors.Is(errM, fs.ErrNotExist) && !errors.Is(errC, fs.ErrNotExist)
