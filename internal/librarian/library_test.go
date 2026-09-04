@@ -1019,18 +1019,21 @@ func TestResolvePreview(t *testing.T) {
 			lib: &config.Library{
 				Name: "base-name",
 				Ruby: &config.RubyPackage{
-					WrapperOf: []string{"a"},
+					DeleteGenerationOutputPaths: []string{"a"},
+					WrapperOf:                   []string{"a"},
 				},
 				Preview: &config.Library{
 					Ruby: &config.RubyPackage{
-						WrapperOf: []string{"b"},
+						DeleteGenerationOutputPaths: []string{"b"},
+						WrapperOf:                   []string{"b"},
 					},
 				},
 			},
 			want: &config.Library{
 				Name: "base-name",
 				Ruby: &config.RubyPackage{
-					WrapperOf: []string{"b"},
+					DeleteGenerationOutputPaths: []string{"b"},
+					WrapperOf:                   []string{"b"},
 				},
 				Preview: nil,
 			},
@@ -1760,6 +1763,27 @@ func TestMergeRuby(t *testing.T) {
 			dst:  &config.RubyPackage{WrapperOf: []string{"a"}},
 			src:  &config.RubyPackage{WrapperOf: []string{"b"}},
 			want: &config.RubyPackage{WrapperOf: []string{"b"}},
+		},
+		{
+			name: "merges delete generation output paths",
+			dst:  &config.RubyPackage{DeleteGenerationOutputPaths: []string{"a"}},
+			src:  &config.RubyPackage{DeleteGenerationOutputPaths: []string{"b"}},
+			want: &config.RubyPackage{DeleteGenerationOutputPaths: []string{"b"}},
+		},
+		{
+			name: "merges all fields",
+			dst: &config.RubyPackage{
+				DeleteGenerationOutputPaths: []string{"a"},
+				WrapperOf:                   []string{"a"},
+			},
+			src: &config.RubyPackage{
+				DeleteGenerationOutputPaths: []string{"b"},
+				WrapperOf:                   []string{"b"},
+			},
+			want: &config.RubyPackage{
+				DeleteGenerationOutputPaths: []string{"b"},
+				WrapperOf:                   []string{"b"},
+			},
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {

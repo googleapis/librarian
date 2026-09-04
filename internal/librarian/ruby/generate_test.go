@@ -671,6 +671,39 @@ end
 	}
 }
 
+func TestGenerate_DeleteGenerationOutputPaths(t *testing.T) {
+	setupDummyProtoc(t)
+	googleapisDir, err := filepath.Abs(testdataGoogleapis)
+	if err != nil {
+		t.Fatal(err)
+	}
+	outDir := t.TempDir()
+	library := &config.Library{
+		Name:    "google-cloud-secret_manager-v1",
+		Version: "1.2.3",
+		Output:  outDir,
+		Ruby: &config.RubyPackage{
+			DeleteGenerationOutputPaths: []string{"snippets"},
+		},
+		APIs: []*config.API{
+			{
+				Path: "google/cloud/secretmanager/v1",
+			},
+		},
+	}
+	if err := Generate(t.Context(), nil, library, &sources.Sources{Googleapis: googleapisDir}); err != nil {
+		t.Fatal(err)
+	}
+	wantFile := filepath.Join(outDir, "lib", "google", "cloud", "secret_manager", "v1.rb")
+	if _, err := os.Stat(wantFile); err != nil {
+		t.Errorf("expected generated file %s to exist: %v", wantFile, err)
+	}
+	snippetDir := filepath.Join(outDir, "snippets")
+	if _, err := os.Stat(snippetDir); !errors.Is(err, fs.ErrNotExist) {
+		t.Errorf("expected snippets directory to be deleted, got err: %v", err)
+	}
+}
+
 func TestGenerateAPI(t *testing.T) {
 	setupDummyProtoc(t)
 
@@ -1053,6 +1086,24 @@ func TestDeleteAfterGeneration_Error(t *testing.T) {
 			},
 			wantErr: fs.ErrPermission,
 		},
+		{
+			name: "path traversal",
+			api: &config.API{
+				Ruby: &config.RubyAPI{
+					DeleteGenerationOutputPaths: []string{"../escaped.rb"},
+				},
+			},
+			wantErr: errInvalidPath,
+		},
+		{
+			name: "absolute path",
+			api: &config.API{
+				Ruby: &config.RubyAPI{
+					DeleteGenerationOutputPaths: []string{"/escaped.rb"},
+				},
+			},
+			wantErr: errInvalidPath,
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			stagingDir := t.TempDir()
@@ -1062,6 +1113,244 @@ func TestDeleteAfterGeneration_Error(t *testing.T) {
 			gotErr := deleteAfterGeneration(test.api, stagingDir)
 			if !errors.Is(gotErr, test.wantErr) {
 				t.Errorf("deleteAfterGeneration() error = %v, wantErr %v", gotErr, test.wantErr)
+			}
+		})
+	}
+}
+
+func TestDeleteLibraryAfterGeneration(t *testing.T) {
+	for _, test := range []struct {
+		name      string
+		library   *config.Library
+		files     []string
+		outFiles  []string
+		wantFiles []string
+	}{
+		{
+			name:    "nil ruby configuration",
+			library: &config.Library{},
+			files: []string{
+				"AUTHENTICATION.md",
+				"lib/google/cloud/secret_manager/v1/version.rb",
+			},
+			wantFiles: []string{
+				"AUTHENTICATION.md",
+				"lib/google/cloud/secret_manager/v1/version.rb",
+			},
+		},
+		{
+			name: "nil delete generation output paths",
+			library: &config.Library{
+				Ruby: &config.RubyPackage{},
+			},
+			files: []string{
+				"AUTHENTICATION.md",
+				"lib/google/cloud/secret_manager/v1/version.rb",
+			},
+			wantFiles: []string{
+				"AUTHENTICATION.md",
+				"lib/google/cloud/secret_manager/v1/version.rb",
+			},
+		},
+		{
+			name: "empty delete generation output paths",
+			library: &config.Library{
+				Ruby: &config.RubyPackage{
+					DeleteGenerationOutputPaths: []string{},
+				},
+			},
+			files: []string{
+				"AUTHENTICATION.md",
+				"lib/google/cloud/secret_manager/v1/version.rb",
+			},
+			wantFiles: []string{
+				"AUTHENTICATION.md",
+				"lib/google/cloud/secret_manager/v1/version.rb",
+			},
+		},
+		{
+			name: "delete files and directories",
+			library: &config.Library{
+				Ruby: &config.RubyPackage{
+					DeleteGenerationOutputPaths: []string{
+						"AUTHENTICATION.md",
+						"snippets",
+					},
+				},
+			},
+			files: []string{
+				"AUTHENTICATION.md",
+				"snippets/nested/file.rb",
+				"lib/google/cloud/secret_manager/v1/version.rb",
+			},
+			outFiles: []string{
+				"AUTHENTICATION.md",
+				"snippets/old.rb",
+				"lib/google/cloud/secret_manager/v1/version.rb",
+			},
+			wantFiles: []string{
+				"lib/google/cloud/secret_manager/v1/version.rb",
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			stagingDir := t.TempDir()
+			outDir := t.TempDir()
+			for _, file := range test.files {
+				filePath := filepath.Join(stagingDir, file)
+				if err := os.MkdirAll(filepath.Dir(filePath), 0o755); err != nil {
+					t.Fatal(err)
+				}
+				if err := os.WriteFile(filePath, []byte("test"), 0o644); err != nil {
+					t.Fatal(err)
+				}
+			}
+			for _, file := range test.outFiles {
+				filePath := filepath.Join(outDir, file)
+				if err := os.MkdirAll(filepath.Dir(filePath), 0o755); err != nil {
+					t.Fatal(err)
+				}
+				if err := os.WriteFile(filePath, []byte("test"), 0o644); err != nil {
+					t.Fatal(err)
+				}
+			}
+			if err := deleteLibraryAfterGeneration(test.library, stagingDir, outDir); err != nil {
+				t.Fatal(err)
+			}
+			var gotStagingFiles []string
+			if err := filepath.WalkDir(stagingDir, func(path string, entry fs.DirEntry, err error) error {
+				if err != nil {
+					return err
+				}
+				if entry.IsDir() {
+					return nil
+				}
+				rel, err := filepath.Rel(stagingDir, path)
+				if err != nil {
+					return err
+				}
+				gotStagingFiles = append(gotStagingFiles, filepath.ToSlash(rel))
+				return nil
+			}); err != nil {
+				t.Fatal(err)
+			}
+			slices.Sort(gotStagingFiles)
+			slices.Sort(test.wantFiles)
+			if diff := cmp.Diff(test.wantFiles, gotStagingFiles); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+			if len(test.outFiles) > 0 {
+				var gotOutFiles []string
+				if err := filepath.WalkDir(outDir, func(path string, entry fs.DirEntry, err error) error {
+					if err != nil {
+						return err
+					}
+					if entry.IsDir() {
+						return nil
+					}
+					rel, err := filepath.Rel(outDir, path)
+					if err != nil {
+						return err
+					}
+					gotOutFiles = append(gotOutFiles, filepath.ToSlash(rel))
+					return nil
+				}); err != nil {
+					t.Fatal(err)
+				}
+				slices.Sort(gotOutFiles)
+				if diff := cmp.Diff(test.wantFiles, gotOutFiles); diff != "" {
+					t.Errorf("mismatch (-want +got):\n%s", diff)
+				}
+			}
+		})
+	}
+}
+
+func TestDeleteLibraryAfterGeneration_Error(t *testing.T) {
+	for _, test := range []struct {
+		name    string
+		library *config.Library
+		setup   func(t *testing.T, stagingDir string)
+		wantErr error
+	}{
+		{
+			name: "path does not exist",
+			library: &config.Library{
+				Ruby: &config.RubyPackage{
+					DeleteGenerationOutputPaths: []string{
+						"nonexistent.txt",
+					},
+				},
+			},
+			wantErr: fs.ErrNotExist,
+		},
+		{
+			name: "cannot delete file from read-only directory",
+			library: &config.Library{
+				Ruby: &config.RubyPackage{
+					DeleteGenerationOutputPaths: []string{"readonly/file.rb"},
+				},
+			},
+			setup: func(t *testing.T, stagingDir string) {
+				readOnlyDir := filepath.Join(stagingDir, "readonly")
+				if err := os.MkdirAll(readOnlyDir, 0o755); err != nil {
+					t.Fatal(err)
+				}
+				if err := os.WriteFile(filepath.Join(readOnlyDir, "file.rb"), []byte("test"), 0o644); err != nil {
+					t.Fatal(err)
+				}
+				if err := os.Chmod(readOnlyDir, 0o555); err != nil {
+					t.Fatal(err)
+				}
+				t.Cleanup(func() {
+					_ = os.Chmod(readOnlyDir, 0o755)
+				})
+			},
+			wantErr: fs.ErrPermission,
+		},
+		{
+			name: "path traversal",
+			library: &config.Library{
+				Ruby: &config.RubyPackage{
+					DeleteGenerationOutputPaths: []string{
+						"../escaped.txt",
+					},
+				},
+			},
+			wantErr: errInvalidPath,
+		},
+		{
+			name: "absolute path",
+			library: &config.Library{
+				Ruby: &config.RubyPackage{
+					DeleteGenerationOutputPaths: []string{
+						"/escaped.txt",
+					},
+				},
+			},
+			wantErr: errInvalidPath,
+		},
+		{
+			name: "current directory",
+			library: &config.Library{
+				Ruby: &config.RubyPackage{
+					DeleteGenerationOutputPaths: []string{
+						".",
+					},
+				},
+			},
+			wantErr: errInvalidPath,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			stagingDir := t.TempDir()
+			outDir := t.TempDir()
+			if test.setup != nil {
+				test.setup(t, stagingDir)
+			}
+			gotErr := deleteLibraryAfterGeneration(test.library, stagingDir, outDir)
+			if !errors.Is(gotErr, test.wantErr) {
+				t.Errorf("deleteLibraryAfterGeneration() error = %v, wantErr %v", gotErr, test.wantErr)
 			}
 		})
 	}

@@ -887,6 +887,9 @@ func mergeRuby(dst, src *config.RubyPackage) *config.RubyPackage {
 		return src
 	}
 	res := *dst
+	if src.DeleteGenerationOutputPaths != nil {
+		res.DeleteGenerationOutputPaths = src.DeleteGenerationOutputPaths
+	}
 	if src.WrapperOf != nil {
 		res.WrapperOf = src.WrapperOf
 	}

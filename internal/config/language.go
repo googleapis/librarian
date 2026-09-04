@@ -886,6 +886,9 @@ type PHPAPI struct {
 
 // RubyPackage contains Ruby-specific library configuration.
 type RubyPackage struct {
+	// DeleteGenerationOutputPaths is a list of paths relative to the output directory to delete after generation.
+	DeleteGenerationOutputPaths []string `yaml:"delete_generation_output_paths,omitempty"`
+
 	// WrapperOf contains the API versions (e.g. "v1:0.29") of versioned libraries that this library wraps.
 	WrapperOf []string `yaml:"wrapper_of,omitempty"`
 }

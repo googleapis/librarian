@@ -168,6 +168,31 @@ func TestTidy(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "retains delete generation output paths in library ruby config",
+			in: &config.Library{
+				Name: "google-cloud-compute-v1",
+				Ruby: &config.RubyPackage{
+					DeleteGenerationOutputPaths: []string{"snippets"},
+				},
+				APIs: []*config.API{
+					{
+						Path: "google/cloud/compute/v1",
+					},
+				},
+			},
+			want: &config.Library{
+				Name: "google-cloud-compute-v1",
+				Ruby: &config.RubyPackage{
+					DeleteGenerationOutputPaths: []string{"snippets"},
+				},
+				APIs: []*config.API{
+					{
+						Path: "google/cloud/compute/v1",
+					},
+				},
+			},
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			got, err := Tidy(test.in)

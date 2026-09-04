@@ -526,6 +526,7 @@ This document describes the schema for the librarian.yaml.
 
 | Field | Type | Description |
 | :--- | :--- | :--- |
+| `delete_generation_output_paths` | list of string | Is a list of paths relative to the output directory to delete after generation. |
 | `wrapper_of` | list of string | Contains the API versions (e.g. "v1:0.29") of versioned libraries that this library wraps. |
 
 ## RustCrate Configuration
