@@ -552,7 +552,7 @@ func TestSyncToReleasePlease_Python(t *testing.T) {
 			}`,
 		},
 		{
-			name: "updates individual config when tracked in individual (merge, deduplicate, sort)",
+			name: "updates individual config when tracked in individual (merge, deduplicate, sort extra-files)",
 			library: &config.Library{
 				Name:    "google-cloud-secretmanager",
 				Version: "1.0.0",
