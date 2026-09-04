@@ -46,38 +46,60 @@ type extraFile struct {
 	rawMap map[string]any
 }
 
-func hasReleasePleaseConfigs(dir string, cfg *config.Config) bool {
-	if cfg.Language == config.LanguagePython {
-		return hasReleasePleasePair(dir, individualManifestFile, individualConfigFile) ||
-			hasReleasePleasePair(dir, bulkManifestFile, bulkConfigFile)
-	}
-	manifestFile, configFile := releasePleaseFiles(cfg)
-	return hasReleasePleasePair(dir, manifestFile, configFile)
+type releasePleasePair struct {
+	manifestFile string
+	configFile   string
 }
 
-func hasReleasePleasePair(dir, manifestFile, configFile string) bool {
-	_, errM := os.Stat(filepath.Join(dir, manifestFile))
-	_, errC := os.Stat(filepath.Join(dir, configFile))
+func (p releasePleasePair) exists(dir string) bool {
+	if p.manifestFile == "" || p.configFile == "" {
+		return false
+	}
+	_, errM := os.Stat(filepath.Join(dir, p.manifestFile))
+	_, errC := os.Stat(filepath.Join(dir, p.configFile))
 	return !errors.Is(errM, fs.ErrNotExist) && !errors.Is(errC, fs.ErrNotExist)
 }
 
-// releasePleaseFiles returns the file names for the Release Please manifest file
-// and config file in this order, depending on the SDK language.
-func releasePleaseFiles(cfg *config.Config) (string, string) {
-	// google-cloud-node and google-cloud-ruby use the default Release Please files to add a new library.
-	// google-cloud-python uses the "-individual-" files initially for new libraries.
-	// google-cloud-go uses the "-bulk-" files.
-	manifestFile := bulkManifestFile
-	configFile := bulkConfigFile
+type releasePleaseConfigFiles struct {
+	bulk       releasePleasePair
+	individual releasePleasePair
+}
+
+func hasReleasePleaseConfigs(dir string, cfg *config.Config) bool {
+	files := releasePleaseFiles(cfg)
+	return files.bulk.exists(dir) || files.individual.exists(dir)
+}
+
+// releasePleaseFiles returns the Release Please manifest and config file pairs
+// for the given SDK language.
+func releasePleaseFiles(cfg *config.Config) releasePleaseConfigFiles {
 	switch cfg.Language {
 	case config.LanguagePython:
-		manifestFile = individualManifestFile
-		configFile = individualConfigFile
+		return releasePleaseConfigFiles{
+			bulk: releasePleasePair{
+				manifestFile: bulkManifestFile,
+				configFile:   bulkConfigFile,
+			},
+			individual: releasePleasePair{
+				manifestFile: individualManifestFile,
+				configFile:   individualConfigFile,
+			},
+		}
 	case config.LanguageNodejs, config.LanguageRuby:
-		manifestFile = defaultManifestFile
-		configFile = defaultConfigFile
+		return releasePleaseConfigFiles{
+			bulk: releasePleasePair{
+				manifestFile: defaultManifestFile,
+				configFile:   defaultConfigFile,
+			},
+		}
+	default:
+		return releasePleaseConfigFiles{
+			bulk: releasePleasePair{
+				manifestFile: bulkManifestFile,
+				configFile:   bulkConfigFile,
+			},
+		}
 	}
-	return manifestFile, configFile
 }
 
 // isTrackedInBulkConfig reports whether the package path is already tracked
@@ -104,15 +126,17 @@ func syncToReleasePlease(dir string, cfg *config.Config, name string) error {
 		return err
 	}
 
-	manifestFile, configFile := releasePleaseFiles(cfg)
+	files := releasePleaseFiles(cfg)
+	target := files.bulk
 	pkgPath := lib.Name
 	if cfg.Language == config.LanguagePython {
 		pkgPath = python.ReleasePleasePkgPrefix + lib.Name
-		if isTrackedInBulkConfig(dir, pkgPath) {
-			manifestFile = bulkManifestFile
-			configFile = bulkConfigFile
+		if !isTrackedInBulkConfig(dir, pkgPath) {
+			target = files.individual
 		}
 	}
+	manifestFile := target.manifestFile
+	configFile := target.configFile
 	manifestPath := filepath.Join(dir, manifestFile)
 	manifest, err := readJSONFile[map[string]string](manifestPath)
 	if err != nil {

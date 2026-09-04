@@ -121,18 +121,22 @@ func TestHasReleasePleaseConfigs(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			tmp := t.TempDir()
-			manifestFile, configFile := releasePleaseFiles(
+			files := releasePleaseFiles(
 				&config.Config{
 					Language: test.language,
 				},
 			)
+			target := files.bulk
+			if test.language == config.LanguagePython {
+				target = files.individual
+			}
 			if test.createConfig {
-				if err := os.WriteFile(filepath.Join(tmp, configFile), []byte("{}"), 0o644); err != nil {
+				if err := os.WriteFile(filepath.Join(tmp, target.configFile), []byte("{}"), 0o644); err != nil {
 					t.Fatal(err)
 				}
 			}
 			if test.createManifest {
-				if err := os.WriteFile(filepath.Join(tmp, manifestFile), []byte("{}"), 0o644); err != nil {
+				if err := os.WriteFile(filepath.Join(tmp, target.manifestFile), []byte("{}"), 0o644); err != nil {
 					t.Fatal(err)
 				}
 			}
@@ -472,13 +476,17 @@ func TestSyncToReleasePlease(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			tmp := t.TempDir()
-			manifestFile, configFile := releasePleaseFiles(
+			files := releasePleaseFiles(
 				&config.Config{
 					Language: test.language,
 				},
 			)
-			manifestPath := filepath.Join(tmp, manifestFile)
-			configPath := filepath.Join(tmp, configFile)
+			target := files.bulk
+			if test.language == config.LanguagePython {
+				target = files.individual
+			}
+			manifestPath := filepath.Join(tmp, target.manifestFile)
+			configPath := filepath.Join(tmp, target.configFile)
 			if err := os.WriteFile(manifestPath, []byte(test.initialManifest), 0o644); err != nil {
 				t.Fatal(err)
 			}
@@ -614,9 +622,9 @@ func TestSyncToReleasePlease_Errors(t *testing.T) {
 				Language:  config.LanguagePython,
 				Libraries: []*config.Library{test.library},
 			}
-			manifestFile, configFile := releasePleaseFiles(cfg)
-			manifestPath := filepath.Join(tmp, manifestFile)
-			configPath := filepath.Join(tmp, configFile)
+			files := releasePleaseFiles(cfg)
+			manifestPath := filepath.Join(tmp, files.individual.manifestFile)
+			configPath := filepath.Join(tmp, files.individual.configFile)
 			if err := os.WriteFile(manifestPath, []byte("{}"), 0o644); err != nil {
 				t.Fatal(err)
 			}
