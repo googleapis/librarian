@@ -17,7 +17,7 @@ package python
 import (
 	"errors"
 	"fmt"
-	"path/filepath"
+	"path"
 	"slices"
 	"strings"
 
@@ -172,5 +172,5 @@ func ReleasePleaseExtraFiles(lib *config.Library) []any {
 func flattenNestedPath(apiPath string) string {
 	namespace := strings.ReplaceAll(deriveGAPICNamespace(apiPath), ".", "/")
 	gapicName := deriveGAPICName(apiPath)
-	return filepath.Join(namespace, gapicName)
+	return path.Join(namespace, gapicName)
 }
