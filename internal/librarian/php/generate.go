@@ -44,6 +44,7 @@ var (
 	errMissingStagingSubdir        = errors.New("staging_subdir is required for PHP configurations")
 	errNoProtos                    = errors.New("no target protos found")
 	errNoAPIs                      = errors.New("no APIs configured")
+	errMissingOutput               = errors.New("output directory is required")
 )
 
 type generateAPIParams struct {
@@ -95,11 +96,10 @@ func Generate(ctx context.Context, cfg *config.Config, library *config.Library, 
 	}
 	srcCfg := sources.NewSourceConfig(src, library.Roots)
 	googleapisDir := srcCfg.Root("googleapis")
-	componentName, err := initComponentIfMissing(ctx, library, googleapisDir)
-	if err != nil {
+	if err := initComponentIfMissing(ctx, library, googleapisDir); err != nil {
 		return err
 	}
-	stagingDir := filepath.Join(owlBotStagingDir, componentName)
+	stagingDir := filepath.Join(owlBotStagingDir, filepath.Base(library.Output))
 	if err := os.RemoveAll(stagingDir); err != nil {
 		return err
 	}
@@ -124,7 +124,7 @@ func Generate(ctx context.Context, cfg *config.Config, library *config.Library, 
 			return err
 		}
 	}
-	if err := postProcessLibrary(ctx, library, componentName); err != nil {
+	if err := postProcessLibrary(ctx, library); err != nil {
 		return fmt.Errorf("failed to postprocess: %w", err)
 	}
 	return nil
