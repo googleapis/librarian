@@ -568,7 +568,7 @@ This document describes the schema for the librarian.yaml.
 | `include_bidi_streaming_methods` | bool (optional) | Indicates whether to include gRPC bi-directional streaming methods. |
 | `include_server_streaming_methods` | bool (optional) | Indicates whether to include gRPC server-side streaming methods. |
 | `allow_grpc_any_fields` | list of string | Is a list of protobuf field IDs with google.protobuf.Any permitted in gRPC/streaming RPCs (their fields will be dropped in prost conversion). |
-| `allow_streaming_any_types` | list of string | Is deprecated: use AllowGrpcAnyFields instead. |
+| `allow_streaming_any_types` | list of string | Is deprecated: use allow_grpc_any_fields instead. |
 
 ## RustDocumentationOverride Configuration
 
