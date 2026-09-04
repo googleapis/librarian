@@ -27,10 +27,7 @@ const (
 )
 
 func gapicNamespace(apiPath string, lib *config.Library) string {
-	var options []string
-	if lib.Python != nil {
-		options = lib.Python.OptArgsByAPI[apiPath]
-	}
+	options := apiOptions(apiPath, lib)
 	namespace, ok := findOption(options, gapicNamespaceOption)
 	if !ok {
 		namespace = deriveGAPICNamespace(apiPath)
@@ -54,10 +51,7 @@ func deriveGAPICNamespace(path string) string {
 }
 
 func gapicName(apiPath string, lib *config.Library) string {
-	var options []string
-	if lib.Python != nil {
-		options = lib.Python.OptArgsByAPI[apiPath]
-	}
+	options := apiOptions(apiPath, lib)
 	name, ok := findOption(options, gapicNameOption)
 	if !ok {
 		name = deriveGAPICName(apiPath)
@@ -92,4 +86,11 @@ func findOption(options []string, name string) (string, bool) {
 		}
 	}
 	return "", false
+}
+
+func apiOptions(apiPath string, lib *config.Library) []string {
+	if lib.Python != nil {
+		return lib.Python.OptArgsByAPI[apiPath]
+	}
+	return nil
 }
