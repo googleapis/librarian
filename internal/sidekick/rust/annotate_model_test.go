@@ -907,3 +907,70 @@ func TestExternalTypesAnnotations(t *testing.T) {
 		t.Errorf("enumAnn.ProstRelativeName = %q, want %q", enumAnn.ProstRelativeName, want)
 	}
 }
+
+func TestGrpcRootTypeIDs(t *testing.T) {
+	req := api.NewTestMessage("Req").WithPackage("google.cloud.test.v1")
+	resp := api.NewTestMessage("Resp").WithPackage("google.cloud.test.v1")
+
+	unaryMethod := api.NewTestMethod("Unary").WithInput(req).WithOutput(resp)
+	unaryMethod.PathInfo = &api.PathInfo{
+		Bindings: []*api.PathBinding{
+			{Verb: "GET", PathTemplate: &api.PathTemplate{}},
+		},
+	}
+	streamMethod := api.NewTestMethod("Stream").WithInput(req).WithOutput(resp).WithBidiStreaming()
+
+	for _, test := range []struct {
+		name    string
+		methods []*api.Method
+		options map[string]string
+		want    []string
+	}{
+		{
+			name:    "unary method with default http returns no grpc root types",
+			methods: []*api.Method{unaryMethod},
+			options: map[string]string{},
+			want:    nil,
+		},
+		{
+			name:    "unary method with default_transport grpc returns root types",
+			methods: []*api.Method{unaryMethod},
+			options: map[string]string{
+				"default-transport": "grpc",
+			},
+			want: []string{req.ID, resp.ID},
+		},
+		{
+			name:    "streaming method with include-bidi returns root types",
+			methods: []*api.Method{streamMethod},
+			options: map[string]string{
+				"include-bidi-streaming-methods": "true",
+			},
+			want: []string{req.ID, resp.ID},
+		},
+		{
+			name:    "mixed methods with default http returns only streaming root types",
+			methods: []*api.Method{unaryMethod, streamMethod},
+			options: map[string]string{
+				"include-bidi-streaming-methods": "true",
+			},
+			want: []string{req.ID, resp.ID},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			svc := api.NewTestService("Service").WithPackage("google.cloud.test.v1").WithMethods(test.methods...)
+			model := api.NewTestAPI([]*api.Message{req, resp}, []*api.Enum{}, []*api.Service{svc})
+			if err := api.CrossReference(model); err != nil {
+				t.Fatal(err)
+			}
+			codec := newTestCodec(t, libconfig.SpecProtobuf, "", test.options)
+			if _, err := annotateModel(model, codec); err != nil {
+				t.Fatal(err)
+			}
+			got := GrpcRootTypeIDs(model)
+			if diff := cmp.Diff(test.want, got, cmpopts.EquateEmpty()); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}

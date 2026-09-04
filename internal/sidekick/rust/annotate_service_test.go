@@ -672,6 +672,27 @@ func TestServiceAnnotationsClassification(t *testing.T) {
 			isPureHttp: false,
 			isHybrid:   false,
 		},
+		{
+			name:    "default transport grpc marks unary service as pure gRPC",
+			methods: []*api.Method{unaryMethod},
+			options: map[string]string{
+				"default-transport": "grpc",
+			},
+			isPureGrpc: true,
+			isPureHttp: false,
+			isHybrid:   false,
+		},
+		{
+			name:    "default transport grpc with streaming is pure gRPC",
+			methods: []*api.Method{unaryMethod, bidiMethod},
+			options: map[string]string{
+				"default-transport":              "grpc",
+				"include-bidi-streaming-methods": "true",
+			},
+			isPureGrpc: true,
+			isPureHttp: false,
+			isHybrid:   false,
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			service := api.NewTestService("TestService").WithPackage("test.v1").WithMethods(test.methods...)
