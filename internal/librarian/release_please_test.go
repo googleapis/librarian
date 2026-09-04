@@ -552,94 +552,7 @@ func TestSyncToReleasePlease_Python(t *testing.T) {
 			}`,
 		},
 		{
-			name: "updates individual config when tracked in individual",
-			library: &config.Library{
-				Name:    "google-cloud-newservice",
-				Version: "0.0.0",
-				APIs: []*config.API{
-					{Path: "google/cloud/newservice/v1"},
-					{Path: "google/cloud/newservice/v1beta"},
-				},
-			},
-			files: map[string]string{
-				bulkManifestFile:       `{}`,
-				bulkConfigFile:         `{"packages": {}}`,
-				individualManifestFile: `{"packages/google-cloud-newservice": "0.0.0"}`,
-				individualConfigFile: `{
-					"packages": {
-						"packages/google-cloud-newservice": {
-							"component": "google-cloud-newservice",
-							"extra-files": [
-								"google/cloud/newservice/gapic_version.py",
-								"google/cloud/newservice_v1/gapic_version.py"
-							]
-						}
-					}
-				}`,
-			},
-			wantModifiedConfig:   individualConfigFile,
-			wantUnmodifiedConfig: bulkConfigFile,
-			wantManifest:         `{"packages/google-cloud-newservice": "0.0.0"}`,
-			wantConfig: `{
-				"packages": {
-					"packages/google-cloud-newservice": {
-						"component": "google-cloud-newservice",
-						"extra-files": [
-							"google/cloud/newservice/gapic_version.py",
-							"google/cloud/newservice_v1/gapic_version.py",
-							"google/cloud/newservice_v1beta/gapic_version.py",
-							{
-								"jsonpath": "$.clientLibrary.version",
-								"path": "samples/generated_samples/snippet_metadata_google.cloud.newservice.v1.json",
-								"type": "json"
-							},
-							{
-								"jsonpath": "$.clientLibrary.version",
-								"path": "samples/generated_samples/snippet_metadata_google.cloud.newservice.v1beta.json",
-								"type": "json"
-							}
-						]
-					}
-				}
-			}`,
-		},
-		{
-			name: "new python library",
-			library: &config.Library{
-				Name:    "google-cloud-secretmanager",
-				Version: "0.0.0",
-				APIs: []*config.API{
-					{Path: "google/cloud/secretmanager/v1"},
-				},
-			},
-			files: map[string]string{
-				bulkManifestFile:       `{}`,
-				bulkConfigFile:         `{"packages": {}}`,
-				individualManifestFile: `{}`,
-				individualConfigFile:   `{"packages": {}}`,
-			},
-			wantModifiedConfig:   individualConfigFile,
-			wantUnmodifiedConfig: bulkConfigFile,
-			wantManifest:         `{"packages/google-cloud-secretmanager":"0.0.0"}`,
-			wantConfig: `{
-				"packages": {
-					"packages/google-cloud-secretmanager": {
-						"component": "google-cloud-secretmanager",
-						"extra-files": [
-							"google/cloud/secretmanager/gapic_version.py",
-							"google/cloud/secretmanager_v1/gapic_version.py",
-							{
-								"jsonpath": "$.clientLibrary.version",
-								"path": "samples/generated_samples/snippet_metadata_google.cloud.secretmanager.v1.json",
-								"type": "json"
-							}
-						]
-					}
-				}
-			}`,
-		},
-		{
-			name: "update existing python library (merge, deduplicate, sort)",
+			name: "updates individual config when tracked in individual (merge, deduplicate, sort)",
 			library: &config.Library{
 				Name:    "google-cloud-secretmanager",
 				Version: "1.0.0",
@@ -698,7 +611,7 @@ func TestSyncToReleasePlease_Python(t *testing.T) {
 			}`,
 		},
 		{
-			name: "replace existing string extra-files with map if same path",
+			name: "updates individual config when tracked in individual (replaces string extra-files with structured map)",
 			library: &config.Library{
 				Name:    "google-cloud-secretmanager",
 				Version: "1.0.0",
@@ -724,6 +637,41 @@ func TestSyncToReleasePlease_Python(t *testing.T) {
 			wantModifiedConfig:   individualConfigFile,
 			wantUnmodifiedConfig: bulkConfigFile,
 			wantManifest:         `{"packages/google-cloud-secretmanager":"1.0.0"}`,
+			wantConfig: `{
+				"packages": {
+					"packages/google-cloud-secretmanager": {
+						"component": "google-cloud-secretmanager",
+						"extra-files": [
+							"google/cloud/secretmanager/gapic_version.py",
+							"google/cloud/secretmanager_v1/gapic_version.py",
+							{
+								"jsonpath": "$.clientLibrary.version",
+								"path": "samples/generated_samples/snippet_metadata_google.cloud.secretmanager.v1.json",
+								"type": "json"
+							}
+						]
+					}
+				}
+			}`,
+		},
+		{
+			name: "new python library defaults to individual config",
+			library: &config.Library{
+				Name:    "google-cloud-secretmanager",
+				Version: "0.0.0",
+				APIs: []*config.API{
+					{Path: "google/cloud/secretmanager/v1"},
+				},
+			},
+			files: map[string]string{
+				bulkManifestFile:       `{}`,
+				bulkConfigFile:         `{"packages": {}}`,
+				individualManifestFile: `{}`,
+				individualConfigFile:   `{"packages": {}}`,
+			},
+			wantModifiedConfig:   individualConfigFile,
+			wantUnmodifiedConfig: bulkConfigFile,
+			wantManifest:         `{"packages/google-cloud-secretmanager":"0.0.0"}`,
 			wantConfig: `{
 				"packages": {
 					"packages/google-cloud-secretmanager": {
