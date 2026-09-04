@@ -149,10 +149,10 @@ func fillRust(lib *config.Library, d *config.Default) *config.Library {
 	if lib.Rust.IncludeServerStreamingMethods == nil {
 		lib.Rust.IncludeServerStreamingMethods = d.Rust.IncludeServerStreamingMethods
 	}
-	if len(lib.Rust.AllowGrpcAnyFields) == 0 && d.Rust != nil {
+	if len(lib.Rust.AllowGrpcAnyFields) == 0 {
 		lib.Rust.AllowGrpcAnyFields = d.Rust.AllowGrpcAnyFields
 	}
-	if len(lib.Rust.AllowStreamingAnyTypes) == 0 && d.Rust != nil {
+	if len(lib.Rust.AllowStreamingAnyTypes) == 0 {
 		lib.Rust.AllowStreamingAnyTypes = d.Rust.AllowStreamingAnyTypes
 	}
 	for _, mod := range lib.Rust.Modules {
