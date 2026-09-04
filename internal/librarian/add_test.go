@@ -1322,11 +1322,16 @@ func TestAddLibraryCommand_Python_ExistingLibraryReleasePlease(t *testing.T) {
 	pkgs := gotBulkConfig["packages"].(map[string]any)
 	pkg := pkgs["packages/google-cloud-secretmanager"].(map[string]any)
 	extraFiles := pkg["extra-files"].([]any)
-	if !slices.ContainsFunc(extraFiles, func(elem any) bool {
-		s, ok := elem.(string)
-		return ok && s == "google/cloud/secretmanager_v1beta2/gapic_version.py"
-	}) {
-		t.Errorf("bulk config extra-files missing v1beta2 gapic_version.py, got: %v", extraFiles)
+	for _, want := range []string{
+		"google/cloud/secretmanager_v1/gapic_version.py",
+		"google/cloud/secretmanager_v1beta2/gapic_version.py",
+	} {
+		if !slices.ContainsFunc(extraFiles, func(elem any) bool {
+			s, ok := elem.(string)
+			return ok && s == want
+		}) {
+			t.Errorf("bulk config extra-files missing %s, got: %v", want, extraFiles)
+		}
 	}
 	gotIndConfig, err := readJSONFile[map[string]any](filepath.Join(tmpDir, individualConfigFile))
 	if err != nil {

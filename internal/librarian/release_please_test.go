@@ -641,12 +641,12 @@ func TestSyncToReleasePlease_Errors(t *testing.T) {
 
 func TestSyncToReleasePlease_Python(t *testing.T) {
 	for _, test := range []struct {
-		name               string
-		library            *config.Library
-		files              map[string]string
-		wantModifiedConfig string
-		wantCleanConfig    string
-		wantExtraFile      string
+		name                 string
+		library              *config.Library
+		files                map[string]string
+		wantModifiedConfig   string
+		wantUnmodifiedConfig string
+		wantExtraFiles       []string
 	}{
 		{
 			name: "updates bulk config when tracked in bulk",
@@ -674,9 +674,12 @@ func TestSyncToReleasePlease_Python(t *testing.T) {
 				individualManifestFile: `{}`,
 				individualConfigFile:   `{"packages": {}}`,
 			},
-			wantModifiedConfig: bulkConfigFile,
-			wantCleanConfig:    individualConfigFile,
-			wantExtraFile:      "google/cloud/biglake_hive_v1/gapic_version.py",
+			wantModifiedConfig:   bulkConfigFile,
+			wantUnmodifiedConfig: individualConfigFile,
+			wantExtraFiles: []string{
+				"google/cloud/biglake_hive_v1beta/gapic_version.py",
+				"google/cloud/biglake_hive_v1/gapic_version.py",
+			},
 		},
 		{
 			name: "updates individual config when tracked in individual",
@@ -704,9 +707,12 @@ func TestSyncToReleasePlease_Python(t *testing.T) {
 					}
 				}`,
 			},
-			wantModifiedConfig: individualConfigFile,
-			wantCleanConfig:    bulkConfigFile,
-			wantExtraFile:      "google/cloud/newservice_v1beta/gapic_version.py",
+			wantModifiedConfig:   individualConfigFile,
+			wantUnmodifiedConfig: bulkConfigFile,
+			wantExtraFiles: []string{
+				"google/cloud/newservice_v1/gapic_version.py",
+				"google/cloud/newservice_v1beta/gapic_version.py",
+			},
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
@@ -719,7 +725,6 @@ func TestSyncToReleasePlease_Python(t *testing.T) {
 			if err := syncToReleasePlease(tmp, cfg, test.library.Name); err != nil {
 				t.Fatal(err)
 			}
-
 			gotModified, err := readJSONFile[map[string]any](filepath.Join(tmp, test.wantModifiedConfig))
 			if err != nil {
 				t.Fatal(err)
@@ -727,17 +732,19 @@ func TestSyncToReleasePlease_Python(t *testing.T) {
 			pkgs := gotModified["packages"].(map[string]any)
 			pkg := pkgs[python.ReleasePleasePkgPrefix+test.library.Name].(map[string]any)
 			extraFiles := pkg["extra-files"].([]any)
-			if !slices.ContainsFunc(extraFiles, func(elem any) bool {
-				s, ok := elem.(string)
-				return ok && s == test.wantExtraFile
-			}) {
-				t.Errorf("extra-files does not contain %s, got: %v", test.wantExtraFile, extraFiles)
+			for _, want := range test.wantExtraFiles {
+				if !slices.ContainsFunc(extraFiles, func(elem any) bool {
+					s, ok := elem.(string)
+					return ok && s == want
+				}) {
+					t.Errorf("extra-files does not contain %s, got: %v", want, extraFiles)
+				}
 			}
-			gotClean, err := readJSONFile[map[string]any](filepath.Join(tmp, test.wantCleanConfig))
+			gotUnmodified, err := readJSONFile[map[string]any](filepath.Join(tmp, test.wantUnmodifiedConfig))
 			if err != nil {
 				t.Fatal(err)
 			}
-			if diff := cmp.Diff(map[string]any{"packages": map[string]any{}}, gotClean); diff != "" {
+			if diff := cmp.Diff(map[string]any{"packages": map[string]any{}}, gotUnmodified); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
