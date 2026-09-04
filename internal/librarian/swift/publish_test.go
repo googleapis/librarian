@@ -365,6 +365,27 @@ func TestMatchLibrary(t *testing.T) {
 			pkgDir:  "packages/wkt",
 			want:    false,
 		},
+		{
+			name:    "match derived output by target name",
+			targets: []string{"google-rpc"},
+			lib:     &config.Library{Name: "google-rpc"},
+			pkgDir:  "generated/swift-google-rpc",
+			want:    true,
+		},
+		{
+			name:    "match derived output by relative path",
+			targets: []string{"generated/swift-google-rpc"},
+			lib:     &config.Library{Name: "google-rpc"},
+			pkgDir:  "generated/swift-google-rpc",
+			want:    true,
+		},
+		{
+			name:    "match derived output by repo name",
+			targets: []string{"swift-google-rpc"},
+			lib:     &config.Library{Name: "google-rpc"},
+			pkgDir:  "generated/swift-google-rpc",
+			want:    true,
+		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			got := matchLibrary(tc.targets, tc.lib, tc.pkgDir)
@@ -374,3 +395,63 @@ func TestMatchLibrary(t *testing.T) {
 		})
 	}
 }
+
+func TestLibraryOutput(t *testing.T) {
+	defaults := &config.Default{
+		Output: "generated/",
+	}
+	for _, tc := range []struct {
+		name     string
+		lib      *config.Library
+		defaults *config.Default
+		want     string
+	}{
+		{
+			name: "explicit output",
+			lib: &config.Library{
+				Name:   "google-cloud-storage",
+				Output: "packages/storage",
+			},
+			defaults: defaults,
+			want:     "packages/storage",
+		},
+		{
+			name: "from apis path",
+			lib: &config.Library{
+				Name: "google-cloud-vision",
+				APIs: []*config.API{
+					{Path: "google/cloud/vision/v1"},
+				},
+			},
+			defaults: defaults,
+			want:     "generated/swift-google-cloud-vision-v1",
+		},
+		{
+			name: "from library name fallback",
+			lib: &config.Library{
+				Name: "google-rpc",
+			},
+			defaults: defaults,
+			want:     "generated/swift-google-rpc",
+		},
+		{
+			name: "mixed library returns empty",
+			lib: &config.Library{
+				Name: "mixed-lib",
+				Swift: &config.SwiftPackage{
+					Modules: []*config.SwiftModule{{Output: "Tests/generated", APIPath: "google/storage/v2"}},
+				},
+			},
+			defaults: defaults,
+			want:     "",
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			got := libraryOutput(tc.lib, tc.defaults)
+			if got != tc.want {
+				t.Errorf("libraryOutput(%+v, %+v) = %q, want %q", tc.lib, tc.defaults, got, tc.want)
+			}
+		})
+	}
+}
+
