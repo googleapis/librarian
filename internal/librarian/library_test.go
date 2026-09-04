@@ -243,6 +243,7 @@ func TestFillDefaults_Rust(t *testing.T) {
 			DisabledRustdocWarnings: []string{"broken_intra_doc_links"},
 			GenerateSetterSamples:   "true",
 			GenerateRpcSamples:      "true",
+			AllowGrpcAnyFields:      []string{".google.test.Any.field"},
 		},
 	}
 	for _, test := range []struct {
@@ -267,6 +268,7 @@ func TestFillDefaults_Rust(t *testing.T) {
 						DisabledRustdocWarnings: []string{"broken_intra_doc_links"},
 						GenerateSetterSamples:   "true",
 						GenerateRpcSamples:      "true",
+						AllowGrpcAnyFields:      []string{".google.test.Any.field"},
 					},
 					Modules: []*config.RustModule{
 						{
@@ -301,6 +303,7 @@ func TestFillDefaults_Rust(t *testing.T) {
 						DisabledRustdocWarnings: []string{"broken_intra_doc_links"},
 						GenerateSetterSamples:   "true",
 						GenerateRpcSamples:      "true",
+						AllowGrpcAnyFields:      []string{".google.test.Any.field"},
 					},
 				},
 			},
@@ -328,6 +331,7 @@ func TestFillDefaults_Rust(t *testing.T) {
 						DisabledRustdocWarnings: []string{"broken_intra_doc_links"},
 						GenerateSetterSamples:   "false",
 						GenerateRpcSamples:      "false",
+						AllowGrpcAnyFields:      []string{".google.test.Any.field"},
 					},
 				},
 			},
@@ -351,6 +355,7 @@ func TestFillDefaults_Rust(t *testing.T) {
 						DisabledRustdocWarnings: []string{"custom_warning"},
 						GenerateSetterSamples:   "true",
 						GenerateRpcSamples:      "true",
+						AllowGrpcAnyFields:      []string{".google.test.Any.field"},
 					},
 				},
 			},
@@ -377,6 +382,7 @@ func TestFillDefaults_Rust(t *testing.T) {
 						DisabledRustdocWarnings: []string{"broken_intra_doc_links"},
 						GenerateSetterSamples:   "true",
 						GenerateRpcSamples:      "true",
+						AllowGrpcAnyFields:      []string{".google.test.Any.field"},
 					},
 					Modules: []*config.RustModule{
 						{
@@ -1598,6 +1604,7 @@ func TestMergeRust(t *testing.T) {
 					GenerateRpcSamples:        "true",
 					DetailedTracingAttributes: &detailedTracing,
 					ResourceNameHeuristic:     &resourceHeuristic,
+					AllowGrpcAnyFields:        []string{".any.field"},
 				},
 				Modules:                   []*config.RustModule{{Output: "out"}},
 				PerServiceFeatures:        true,
@@ -1629,6 +1636,7 @@ func TestMergeRust(t *testing.T) {
 					GenerateRpcSamples:        "true",
 					DetailedTracingAttributes: &detailedTracing,
 					ResourceNameHeuristic:     &resourceHeuristic,
+					AllowGrpcAnyFields:        []string{".any.field"},
 				},
 				Modules:                   []*config.RustModule{{Output: "out"}},
 				PerServiceFeatures:        true,

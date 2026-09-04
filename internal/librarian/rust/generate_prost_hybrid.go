@@ -67,7 +67,8 @@ func generateProstHybrid(ctx context.Context, model *api.API, rootTypeIDs []stri
 		return nil
 	}
 
-	hybridModel, unusedTypes, hasGoogleRpcStatus, err := filterModelToTypes(model, rootTypeIDs, library.Rust.AllowStreamingAnyTypes)
+	allowedAnyFields := append(slices.Clone(library.Rust.AllowGrpcAnyFields), library.Rust.AllowStreamingAnyTypes...)
+	hybridModel, unusedTypes, hasGoogleRpcStatus, err := filterModelToTypes(model, rootTypeIDs, allowedAnyFields)
 	if err != nil {
 		return err
 	}
@@ -103,8 +104,8 @@ func generateProstHybrid(ctx context.Context, model *api.API, rootTypeIDs []stri
 // from rootTypeIDs for prost conversion generation. It also returns a sorted slice
 // of all non-WKT unused type IDs to exclude via prost_build extern_path, and a boolean
 // indicating whether google.rpc.Status is referenced in the reachability path.
-// Errors if Any is encountered in the reachability path unless explicitly allowed via allowAnyTypes.
-func filterModelToTypes(model *api.API, rootTypeIDs []string, allowAnyTypes []string) (*api.API, []string, bool, error) {
+// Errors if Any is encountered in the reachability path unless explicitly allowed via allowGrpcAnyFields.
+func filterModelToTypes(model *api.API, rootTypeIDs []string, allowGrpcAnyFields []string) (*api.API, []string, bool, error) {
 	type typeItem struct {
 		id   string
 		path string
@@ -174,6 +175,7 @@ func filterModelToTypes(model *api.API, rootTypeIDs []string, allowAnyTypes []st
 		if visited[item.id] {
 			continue
 		}
+		visited[item.id] = true
 		if isAnyType(item.id) {
 			unsupportedAnyFields = append(unsupportedAnyFields, item.id)
 			continue
@@ -193,7 +195,7 @@ func filterModelToTypes(model *api.API, rootTypeIDs []string, allowAnyTypes []st
 			for _, f := range msg.Fields {
 				fieldPath := item.path + "." + f.Name
 				if isAnyType(f.TypezID) {
-					if matchesAllowedAnyField(f.ID, allowAnyTypes) || matchesAllowedAnyField(fieldPath, allowAnyTypes) {
+					if matchesAllowedAnyField(f.ID, allowGrpcAnyFields) || matchesAllowedAnyField(fieldPath, allowGrpcAnyFields) {
 						f.SkipProtoConversion = true
 						continue
 					}
@@ -214,7 +216,7 @@ func filterModelToTypes(model *api.API, rootTypeIDs []string, allowAnyTypes []st
 				for _, f := range o.Fields {
 					fieldPath := item.path + "." + f.Name
 					if isAnyType(f.TypezID) {
-						if matchesAllowedAnyField(f.ID, allowAnyTypes) || matchesAllowedAnyField(fieldPath, allowAnyTypes) {
+						if matchesAllowedAnyField(f.ID, allowGrpcAnyFields) || matchesAllowedAnyField(fieldPath, allowGrpcAnyFields) {
 							f.SkipProtoConversion = true
 							continue
 						}
@@ -248,9 +250,9 @@ func filterModelToTypes(model *api.API, rootTypeIDs []string, allowAnyTypes []st
 		for _, f := range unsupportedAnyFields {
 			fmt.Fprintf(&sb, "  - %s\n", f)
 		}
-		sb.WriteString("\nTo resolve this, allow dropping Any fields in prost conversion by adding them to allow_streaming_any_types in librarian.yaml:\n")
+		sb.WriteString("\nTo resolve this, allow dropping Any fields in prost conversion by adding them to allow_grpc_any_fields in librarian.yaml:\n")
 		sb.WriteString("    rust:\n")
-		sb.WriteString("      allow_streaming_any_types:\n")
+		sb.WriteString("      allow_grpc_any_fields:\n")
 		for _, f := range unsupportedAnyFields {
 			fmt.Fprintf(&sb, "        - %s\n", f)
 		}
@@ -332,9 +334,9 @@ func filterModelToTypes(model *api.API, rootTypeIDs []string, allowAnyTypes []st
 	return &hybridModel, slices.Compact(unusedTypes), hasGoogleRpcStatus, nil
 }
 
-func matchesAllowedAnyField(id string, allowStreamingAnyTypes []string) bool {
+func matchesAllowedAnyField(id string, allowGrpcAnyFields []string) bool {
 	idTrimmed := strings.TrimPrefix(id, ".")
-	for _, allowed := range allowStreamingAnyTypes {
+	for _, allowed := range allowGrpcAnyFields {
 		if strings.TrimPrefix(allowed, ".") == idTrimmed {
 			return true
 		}
