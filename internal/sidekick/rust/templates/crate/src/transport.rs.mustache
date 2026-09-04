@@ -236,7 +236,12 @@ impl super::stub::{{Codec.Name}} for {{Codec.Name}} {
             true,
             {{/HasAutoPopulatedFields}}
             {{^HasAutoPopulatedFields}}
+            {{#PathInfo}}
             {{PathInfo.Codec.IsIdempotent}},
+            {{/PathInfo}}
+            {{^PathInfo}}
+            false,
+            {{/PathInfo}}
             {{/HasAutoPopulatedFields}}
         );
         let extensions = {
