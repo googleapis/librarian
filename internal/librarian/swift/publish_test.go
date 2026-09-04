@@ -400,7 +400,7 @@ func TestLibraryOutput(t *testing.T) {
 	defaults := &config.Default{
 		Output: "generated/",
 	}
-	for _, tc := range []struct {
+	for _, test := range []struct {
 		name     string
 		lib      *config.Library
 		defaults *config.Default
@@ -446,10 +446,10 @@ func TestLibraryOutput(t *testing.T) {
 			want:     "",
 		},
 	} {
-		t.Run(tc.name, func(t *testing.T) {
-			got := libraryOutput(tc.lib, tc.defaults)
-			if got != tc.want {
-				t.Errorf("libraryOutput(%+v, %+v) = %q, want %q", tc.lib, tc.defaults, got, tc.want)
+		t.Run(test.name, func(t *testing.T) {
+			got := libraryOutput(test.lib, test.defaults)
+			if got != test.want {
+				t.Errorf("libraryOutput(%+v, %+v) = %q, want %q", test.lib, test.defaults, got, test.want)
 			}
 		})
 	}
