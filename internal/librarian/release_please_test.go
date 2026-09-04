@@ -500,7 +500,7 @@ func TestSyncToReleasePlease_Python(t *testing.T) {
 		wantConfig           string
 	}{
 		{
-			name: "updates bulk config when tracked in bulk",
+			name: "updates bulk config when tracked in bulk (merge, deduplicate, sort extra-files)",
 			library: &config.Library{
 				Name:    "google-cloud-biglake-hive",
 				Version: "0.3.2",
