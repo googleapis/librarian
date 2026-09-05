@@ -111,9 +111,22 @@ func TestFormat_LookPathError(t *testing.T) {
 		t.Fatal(err)
 	}
 	t.Setenv("PATH", "")
+	t.Setenv("LIBRARIAN_BIN", t.TempDir())
 	err := Format(t.Context(), &config.Library{Output: tmpDir})
 	if err == nil {
 		t.Fatal(err)
+	}
+}
+
+func TestFormat_InvalidSyntaxError(t *testing.T) {
+	testhelper.RequireCommand(t, "google-java-format")
+	tmpDir := t.TempDir()
+	if err := os.WriteFile(filepath.Join(tmpDir, "Invalid.java"), []byte("public class {"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	err := Format(t.Context(), &config.Library{Output: tmpDir})
+	if err == nil {
+		t.Fatal("expected error formatting invalid java syntax, got nil")
 	}
 }
 

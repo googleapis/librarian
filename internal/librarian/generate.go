@@ -139,50 +139,55 @@ func runGenerate(ctx context.Context, cfg *config.Config, all bool, libraryName 
 		return fmt.Errorf("%w: %q", ErrLibraryNotFound, libraryName)
 	}
 
-	if err := cleanLibraries(cfg.Language, libraries); err != nil {
+	if err := cleanLibraries(ctx, cfg.Language, libraries); err != nil {
 		return err
 	}
 	return generateLibraries(ctx, cfg, libraries, sources)
 }
 
-// cleanLibraries iterates over all the given libraries sequentially,
+// cleanLibraries iterates over all the given libraries in parallel,
 // delegating to language-specific code to clean each library.
-func cleanLibraries(language string, libraries []*config.Library) error {
-	var err error
+func cleanLibraries(ctx context.Context, language string, libraries []*config.Library) error {
+	g, _ := errgroup.WithContext(ctx)
+	g.SetLimit(runtime.NumCPU())
 	for _, library := range libraries {
-		switch language {
-		case config.LanguageDart:
-			err = checkAndClean(library.Output, library.Keep)
-		case config.LanguageFake:
-			err = fakeClean(library)
-		case config.LanguageGo:
-			err = golang.Clean(library)
-		case config.LanguageJava:
-			err = java.Clean(library)
-		case config.LanguageNodejs:
-			err = nodejs.Clean(library)
-		case config.LanguagePhp:
-			err = php.Clean(library)
-		case config.LanguagePython:
-			err = python.Clean(library)
-		case config.LanguageRuby:
-			err = ruby.Clean(library)
-		case config.LanguageRust:
-			keep, keepErr := rust.Keep(library)
-			if keepErr != nil {
-				return fmt.Errorf("generating keep list: %w", keepErr)
+		g.Go(func() error {
+			var err error
+			switch language {
+			case config.LanguageDart:
+				err = checkAndClean(library.Output, library.Keep)
+			case config.LanguageFake:
+				err = fakeClean(library)
+			case config.LanguageGo:
+				err = golang.Clean(library)
+			case config.LanguageJava:
+				err = java.Clean(library)
+			case config.LanguageNodejs:
+				err = nodejs.Clean(library)
+			case config.LanguagePhp:
+				err = php.Clean(library)
+			case config.LanguagePython:
+				err = python.Clean(library)
+			case config.LanguageRuby:
+				err = ruby.Clean(library)
+			case config.LanguageRust:
+				keep, keepErr := rust.Keep(library)
+				if keepErr != nil {
+					return fmt.Errorf("generating keep list: %w", keepErr)
+				}
+				err = checkAndClean(library.Output, keep)
+			case config.LanguageSwift:
+				err = checkAndClean(library.Output, library.Keep)
+			default:
+				return fmt.Errorf("language %q does not support cleaning", language)
 			}
-			err = checkAndClean(library.Output, keep)
-		case config.LanguageSwift:
-			err = checkAndClean(library.Output, library.Keep)
-		default:
-			err = fmt.Errorf("language %q does not support cleaning", language)
-		}
-		if err != nil {
-			return fmt.Errorf("clean library %q (%s): %w", library.Name, language, err)
-		}
+			if err != nil {
+				return fmt.Errorf("clean library %q (%s): %w", library.Name, language, err)
+			}
+			return nil
+		})
 	}
-	return nil
+	return g.Wait()
 }
 
 // generateLibraries generates and formats all the given libraries,
@@ -241,10 +246,18 @@ func generateLibraries(ctx context.Context, cfg *config.Config, libraries []*con
 		}
 		return g.Wait()
 	case config.LanguageJava:
+		g, gctx := errgroup.WithContext(ctx)
+		g.SetLimit(runtime.NumCPU())
 		for _, library := range libraries {
-			if err := java.Generate(ctx, cfg, library, src); err != nil {
-				return fmt.Errorf("generate library %q (%s): %w", library.Name, cfg.Language, err)
-			}
+			g.Go(func() error {
+				if err := java.Generate(gctx, cfg, library, src); err != nil {
+					return fmt.Errorf("generate library %q (%s): %w", library.Name, cfg.Language, err)
+				}
+				return nil
+			})
+		}
+		if err := g.Wait(); err != nil {
+			return err
 		}
 		if err := java.Format(ctx, libraries...); err != nil {
 			return fmt.Errorf("format java libraries (%s): %w", cfg.Language, err)
