@@ -25,6 +25,7 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/filesystem"
 	"github.com/googleapis/librarian/internal/proto"
@@ -36,8 +37,9 @@ import (
 const commonResourcesProto = "google/cloud/common_resources.proto"
 
 var (
-	errNoAPIs      = errors.New("no apis configured for library")
-	errInvalidPath = errors.New("invalid path: must be a relative path within the directory")
+	errNoAPIs        = errors.New("no apis configured for library")
+	errInvalidPath   = errors.New("invalid path: must be a relative path within the directory")
+	errEmptyToysTask = errors.New("toys task must not be empty")
 )
 
 // DefaultOutput derives an output path from a library name and a default
@@ -91,7 +93,10 @@ func Generate(ctx context.Context, cfg *config.Config, library *config.Library, 
 	keepFunc := func(rel string) bool {
 		return isKept(rel, keepSet)
 	}
-	return filesystem.MoveAndMergeWithKeep(tempDir, outDir, outDir, keepFunc)
+	if err := filesystem.MoveAndMergeWithKeep(tempDir, outDir, outDir, keepFunc); err != nil {
+		return err
+	}
+	return runToysTasks(ctx, library, outDir)
 }
 
 func isWrapperLibrary(library *config.Library) bool {
@@ -398,6 +403,27 @@ func deleteLibraryAfterGeneration(library *config.Library, stagingDir, outDir st
 		}
 		if err := os.RemoveAll(filepath.Join(outDir, cleanPath)); err != nil {
 			return err
+		}
+	}
+	return nil
+}
+
+func runToysTasks(ctx context.Context, library *config.Library, outDir string) error {
+	if library.Ruby == nil || len(library.Ruby.ToysTasks) == 0 {
+		return nil
+	}
+	env, err := toolsEnv()
+	if err != nil {
+		return err
+	}
+	for _, task := range library.Ruby.ToysTasks {
+		task = strings.TrimSpace(task)
+		if task == "" {
+			return errEmptyToysTask
+		}
+		args := strings.Fields(task)
+		if err := command.RunInDirWithEnv(ctx, outDir, env, "toys", args...); err != nil {
+			return fmt.Errorf("failed to run toys %s: %w", task, err)
 		}
 	}
 	return nil

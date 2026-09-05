@@ -890,6 +890,9 @@ func mergeRuby(dst, src *config.RubyPackage) *config.RubyPackage {
 	if src.DeleteGenerationOutputPaths != nil {
 		res.DeleteGenerationOutputPaths = src.DeleteGenerationOutputPaths
 	}
+	if src.ToysTasks != nil {
+		res.ToysTasks = src.ToysTasks
+	}
 	if src.WrapperOf != nil {
 		res.WrapperOf = src.WrapperOf
 	}

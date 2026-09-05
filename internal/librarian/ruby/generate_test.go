@@ -704,6 +704,41 @@ func TestGenerate_DeleteGenerationOutputPaths(t *testing.T) {
 	}
 }
 
+func TestGenerate_ToysTasks(t *testing.T) {
+	setupDummyProtoc(t)
+	binDir := os.Getenv("LIBRARIAN_BIN")
+	installDir := filepath.Join(binDir, "ruby_tools", "bin")
+	setupDummyToys(t, installDir, `#!/bin/sh
+mkdir -p lib/google/cloud/secret_manager/v1/helpers
+touch lib/google/cloud/secret_manager/v1/helpers/custom.rb
+`)
+	googleapisDir, err := filepath.Abs(testdataGoogleapis)
+	if err != nil {
+		t.Fatal(err)
+	}
+	outDir := t.TempDir()
+	library := &config.Library{
+		Name:    "google-cloud-secret_manager-v1",
+		Version: "1.2.3",
+		Output:  outDir,
+		Ruby: &config.RubyPackage{
+			ToysTasks: []string{"generate-helpers"},
+		},
+		APIs: []*config.API{
+			{
+				Path: "google/cloud/secretmanager/v1",
+			},
+		},
+	}
+	if err := Generate(t.Context(), nil, library, &sources.Sources{Googleapis: googleapisDir}); err != nil {
+		t.Fatal(err)
+	}
+	wantHelperFile := filepath.Join(outDir, "lib", "google", "cloud", "secret_manager", "v1", "helpers", "custom.rb")
+	if _, err := os.Stat(wantHelperFile); err != nil {
+		t.Errorf("expected helper file %s to exist: %v", wantHelperFile, err)
+	}
+}
+
 func TestGenerateAPI(t *testing.T) {
 	setupDummyProtoc(t)
 
@@ -1495,5 +1530,140 @@ func TestIsMultiWrapper(t *testing.T) {
 				t.Errorf("isMultiWrapper() = %v, want %v", got, test.want)
 			}
 		})
+	}
+}
+
+func TestRunToysTasks(t *testing.T) {
+	binDir := t.TempDir()
+	t.Setenv("LIBRARIAN_BIN", binDir)
+	installDir := filepath.Join(binDir, "ruby_tools", "bin")
+	if err := os.MkdirAll(installDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	setupDummyToys(t, installDir, `#!/bin/sh
+echo "$@" >> toys.log
+`)
+	for _, test := range []struct {
+		name     string
+		library  *config.Library
+		wantLogs []string
+	}{
+		{
+			name:    "nil ruby configuration",
+			library: &config.Library{},
+		},
+		{
+			name: "empty toys tasks",
+			library: &config.Library{
+				Ruby: &config.RubyPackage{
+					ToysTasks: []string{},
+				},
+			},
+		},
+		{
+			name: "single task",
+			library: &config.Library{
+				Ruby: &config.RubyPackage{
+					ToysTasks: []string{"generate-helpers"},
+				},
+			},
+			wantLogs: []string{"generate-helpers"},
+		},
+		{
+			name: "multiple tasks in order",
+			library: &config.Library{
+				Ruby: &config.RubyPackage{
+					ToysTasks: []string{"generate-helpers", "verify --all"},
+				},
+			},
+			wantLogs: []string{"generate-helpers", "verify --all"},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			outDir := t.TempDir()
+			if err := runToysTasks(t.Context(), test.library, outDir); err != nil {
+				t.Fatal(err)
+			}
+			logFile := filepath.Join(outDir, "toys.log")
+			if len(test.wantLogs) == 0 {
+				if _, err := os.Stat(logFile); !errors.Is(err, fs.ErrNotExist) {
+					t.Errorf("expected no toys.log, got err: %v", err)
+				}
+				return
+			}
+			content, err := os.ReadFile(logFile)
+			if err != nil {
+				t.Fatal(err)
+			}
+			lines := strings.Split(strings.TrimSpace(string(content)), "\n")
+			if diff := cmp.Diff(test.wantLogs, lines); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestRunToysTasks_Error(t *testing.T) {
+	binDir := t.TempDir()
+	t.Setenv("LIBRARIAN_BIN", binDir)
+	installDir := filepath.Join(binDir, "ruby_tools", "bin")
+	if err := os.MkdirAll(installDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	setupDummyToys(t, installDir, `#!/bin/sh
+exit 1
+`)
+	for _, test := range []struct {
+		name    string
+		library *config.Library
+		wantErr error
+	}{
+		{
+			name: "empty task string",
+			library: &config.Library{
+				Ruby: &config.RubyPackage{
+					ToysTasks: []string{""},
+				},
+			},
+			wantErr: errEmptyToysTask,
+		},
+		{
+			name: "whitespace task string",
+			library: &config.Library{
+				Ruby: &config.RubyPackage{
+					ToysTasks: []string{"   \t"},
+				},
+			},
+			wantErr: errEmptyToysTask,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			outDir := t.TempDir()
+			gotErr := runToysTasks(t.Context(), test.library, outDir)
+			if !errors.Is(gotErr, test.wantErr) {
+				t.Errorf("runToysTasks() error = %v, wantErr %v", gotErr, test.wantErr)
+			}
+		})
+	}
+
+	t.Run("toys execution failure", func(t *testing.T) {
+		outDir := t.TempDir()
+		library := &config.Library{
+			Ruby: &config.RubyPackage{
+				ToysTasks: []string{"failing-task"},
+			},
+		}
+		gotErr := runToysTasks(t.Context(), library, outDir)
+		if gotErr == nil {
+			t.Fatal("expected error, got nil")
+		}
+	})
+}
+
+func setupDummyToys(t *testing.T, binDir, script string) {
+	t.Helper()
+	toysPath := filepath.Join(binDir, "toys")
+	if err := os.WriteFile(toysPath, []byte(script), 0o755); err != nil {
+		t.Fatal(err)
 	}
 }
