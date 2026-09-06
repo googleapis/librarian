@@ -21,8 +21,11 @@ import (
 	"os"
 	"os/exec"
 	"path"
+	"path/filepath"
+	"runtime"
 	"testing"
 
+	"github.com/googleapis/librarian/internal/cache"
 	"github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/sample"
@@ -30,14 +33,33 @@ import (
 )
 
 // RequireCommand skips the test if the specified command is not found in PATH.
-// Use this to skip tests that depend on external tools like protoc, cargo, or
-// taplo, so that `go test ./...` will always pass on a fresh clone of the
-// repo.
+// For protoc, it also checks the librarian-managed install directory
+// (see [cache.BinDirectory]). Use this to skip tests that depend on external
+// tools like protoc, cargo, or taplo, so that `go test ./...` will always pass
+// on a fresh clone of the repo.
 func RequireCommand(t *testing.T, cmd string) {
 	t.Helper()
 	if _, err := exec.LookPath(cmd); err != nil {
+		if cmd == "protoc" && hasManagedProtoc() {
+			return
+		}
 		t.Skipf("skipping test because %s is not installed", cmd)
 	}
+}
+
+// hasManagedProtoc reports whether a librarian-managed protoc binary exists
+// under the cache bin directory.
+func hasManagedProtoc() bool {
+	binDir, err := cache.BinDirectory()
+	if err != nil {
+		return false
+	}
+	pattern := filepath.Join(binDir, "protoc", "v*", "bin", "protoc")
+	if runtime.GOOS == "windows" {
+		pattern += ".exe"
+	}
+	matches, err := filepath.Glob(pattern)
+	return err == nil && len(matches) > 0
 }
 
 const (
