@@ -34,32 +34,51 @@ import (
 
 // RequireCommand skips the test if the specified command is not found in PATH.
 // For protoc, it also checks the librarian-managed install directory
-// (see [cache.BinDirectory]). Use this to skip tests that depend on external
-// tools like protoc, cargo, or taplo, so that `go test ./...` will always pass
-// on a fresh clone of the repo.
+// (see [cache.BinDirectory]) and adds its directory to PATH for the test. Use
+// this to skip tests that depend on external tools like protoc, cargo, or
+// taplo, so that `go test ./...` will always pass on a fresh clone of the
+// repo.
 func RequireCommand(t *testing.T, cmd string) {
 	t.Helper()
 	if _, err := exec.LookPath(cmd); err != nil {
-		if cmd == "protoc" && hasManagedProtoc() {
-			return
+		if cmd == "protoc" {
+			if protocPath, ok := findManagedProtoc(); ok {
+				t.Setenv("PATH", filepath.Dir(protocPath)+string(filepath.ListSeparator)+os.Getenv("PATH"))
+				return
+			}
 		}
 		t.Skipf("skipping test because %s is not installed", cmd)
 	}
 }
 
-// hasManagedProtoc reports whether a librarian-managed protoc binary exists
-// under the cache bin directory.
-func hasManagedProtoc() bool {
+// findManagedProtoc finds an executable librarian-managed protoc binary under
+// the cache bin directory, returning its path and true if found.
+func findManagedProtoc() (string, bool) {
 	binDir, err := cache.BinDirectory()
 	if err != nil {
-		return false
+		return "", false
 	}
-	pattern := filepath.Join(binDir, "protoc", "v*", "bin", "protoc")
+	absBinDir, err := filepath.Abs(binDir)
+	if err != nil {
+		return "", false
+	}
+	pattern := filepath.Join(absBinDir, "protoc", "v*", "bin", "protoc")
 	if runtime.GOOS == "windows" {
 		pattern += ".exe"
 	}
 	matches, err := filepath.Glob(pattern)
-	return err == nil && len(matches) > 0
+	if err != nil || len(matches) == 0 {
+		return "", false
+	}
+	for _, match := range matches {
+		if fi, err := os.Stat(match); err == nil && !fi.IsDir() {
+			if runtime.GOOS != "windows" && fi.Mode()&0o111 == 0 {
+				continue
+			}
+			return match, true
+		}
+	}
+	return "", false
 }
 
 const (

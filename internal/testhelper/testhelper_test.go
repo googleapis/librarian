@@ -16,6 +16,7 @@ package testhelper
 
 import (
 	"os"
+	"os/exec"
 	"path/filepath"
 	"runtime"
 	"testing"
@@ -23,11 +24,11 @@ import (
 	"github.com/googleapis/librarian/internal/cache"
 )
 
-func TestHasManagedProtoc(t *testing.T) {
+func TestFindManagedProtoc(t *testing.T) {
 	binDir := t.TempDir()
 	t.Setenv(cache.EnvLibrarianBin, binDir)
 
-	if hasManagedProtoc() {
+	if _, ok := findManagedProtoc(); ok {
 		t.Fatal("expected false with empty bin directory")
 	}
 
@@ -43,8 +44,12 @@ func TestHasManagedProtoc(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if !hasManagedProtoc() {
+	got, ok := findManagedProtoc()
+	if !ok {
 		t.Fatal("expected true with managed protoc binary present")
+	}
+	if got != protocPath {
+		t.Fatalf("expected %q, got %q", protocPath, got)
 	}
 }
 
@@ -64,12 +69,17 @@ func TestRequireCommand_ManagedProtoc(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	// Clear PATH so exec.LookPath won't find protoc.
+	// Clear PATH so exec.LookPath won't find protoc initially.
 	t.Setenv("PATH", "")
 
-	// RequireCommand should not skip because managed protoc exists.
+	// RequireCommand should not skip because managed protoc exists,
+	// and it should prepend the managed binary's directory to PATH.
 	RequireCommand(t, "protoc")
 	if t.Skipped() {
 		t.Fatal("expected test not to be skipped when managed protoc exists")
+	}
+
+	if _, err := exec.LookPath("protoc"); err != nil {
+		t.Fatalf("expected managed protoc to be on PATH: %v", err)
 	}
 }
