@@ -259,6 +259,44 @@ func TestResolveDependencyVersions_MatchesByPath(t *testing.T) {
 	}
 }
 
+func TestResolveDependencyVersions_NoFalsePositivePathPrefix(t *testing.T) {
+	cfg := &config.Config{
+		Libraries: []*config.Library{
+			{
+				Name:    "kms-v11-lib",
+				Output:  "generated/swift-google-cloud-kms-v11",
+				Version: "0.2.0",
+			},
+			{
+				Name:    "kms-v1-lib",
+				Output:  "generated/swift-google-cloud-kms-v1",
+				Version: "0.1.0-preview",
+			},
+		},
+	}
+	library := &config.Library{
+		Name: "test-lib",
+		Swift: &config.SwiftPackage{
+			SwiftDefault: config.SwiftDefault{
+				Dependencies: []config.SwiftDependency{
+					{
+						Name: "KMSClient",
+						Path: "./generated/swift-google-cloud-kms-v1",
+					},
+				},
+			},
+		},
+	}
+
+	ResolveDependencyVersions(cfg, library)
+
+	got := library.Swift.Dependencies[0].Version
+	want := "0.1.0-preview"
+	if got != want {
+		t.Errorf("got version %q, want %q", got, want)
+	}
+}
+
 func TestResolveDependencyVersions_MatchesByApiPackage(t *testing.T) {
 	cfg := &config.Config{
 		Libraries: []*config.Library{

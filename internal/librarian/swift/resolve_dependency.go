@@ -53,11 +53,11 @@ func findLibraryForDependency(libraries []*config.Library, dep *config.SwiftDepe
 		}
 	}
 	for _, lib := range libraries {
-		if lib.Name == dep.Name || strings.EqualFold(lib.Name, dep.Name) {
+		if strings.EqualFold(lib.Name, dep.Name) {
 			return lib
 		}
 		camel := strcase.ToCamel(lib.Name)
-		if camel == dep.Name || strings.EqualFold(camel, dep.Name) {
+		if strings.EqualFold(camel, dep.Name) {
 			return lib
 		}
 	}
@@ -72,7 +72,7 @@ func findLibraryForDependency(libraries []*config.Library, dep *config.SwiftDepe
 				return lib
 			}
 			camelTrimmed := strcase.ToCamel(trimmedRepo)
-			if camelTrimmed == dep.Name || strings.EqualFold(camelTrimmed, dep.Name) {
+			if strings.EqualFold(camelTrimmed, dep.Name) {
 				return lib
 			}
 			if lib.Output != "" && (outputPathContains(lib.Output, repo) || outputPathContains(lib.Output, trimmedRepo)) {
@@ -87,8 +87,13 @@ func findLibraryForDependency(libraries []*config.Library, dep *config.SwiftDepe
 			if lib.Name == pathBase || lib.Name == trimmedPathBase {
 				return lib
 			}
-			if lib.Output != "" && (filepath.Clean(lib.Output) == filepath.Clean(dep.Path) || strings.HasPrefix(lib.Output, dep.Path) || strings.HasPrefix(dep.Path, lib.Output)) {
-				return lib
+			if lib.Output != "" {
+				cleanOut := filepath.Clean(lib.Output)
+				cleanDep := filepath.Clean(dep.Path)
+				sep := string(filepath.Separator)
+				if cleanOut == cleanDep || strings.HasPrefix(cleanOut, cleanDep+sep) || strings.HasPrefix(cleanDep, cleanOut+sep) {
+					return lib
+				}
 			}
 		}
 	}
