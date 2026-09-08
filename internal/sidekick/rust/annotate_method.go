@@ -50,6 +50,8 @@ type methodAnnotation struct {
 	ClientSideStreaming       bool
 	ServerSideStreaming       bool
 	IsGrpc                    bool
+	HasIdempotencyHook        bool
+	IdempotencyHook           string
 }
 
 // IsHttp returns true if the method is routed over HTTP transport.
@@ -354,6 +356,11 @@ func (c *codec) annotateMethod(m *api.Method) (*methodAnnotation, error) {
 		ClientSideStreaming:       m.ClientSideStreaming,
 		ServerSideStreaming:       m.ServerSideStreaming,
 		IsGrpc:                    c.methodUsesGrpc(m),
+	}
+
+	if c.idempotencyHook != "" {
+		annotation.HasIdempotencyHook = true
+		annotation.IdempotencyHook = c.idempotencyHook
 	}
 
 	if err := c.annotateResourceNameGeneration(m, annotation); err != nil {
