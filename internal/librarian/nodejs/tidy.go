@@ -24,6 +24,9 @@ func Tidy(lib *config.Library) (*config.Library, error) {
 	if lib.Nodejs == nil {
 		return lib, nil
 	}
+	if lib.Nodejs.PackageName == derivePackageNameFromLibraryName(lib.Name) {
+		lib.Nodejs.PackageName = ""
+	}
 	empty, err := yaml.Empty(lib.Nodejs)
 	if err != nil {
 		return nil, err

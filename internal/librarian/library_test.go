@@ -696,6 +696,73 @@ func TestFillDefaults_PHP(t *testing.T) {
 	}
 }
 
+func TestFillDefaults_Nodejs(t *testing.T) {
+	for _, test := range []struct {
+		name     string
+		lib      *config.Library
+		defaults *config.NodejsDefault
+		want     *config.Library
+	}{
+		{
+			name: "custom_scopes populates package_name",
+			lib: &config.Library{
+				APIs: []*config.API{
+					{
+						Path: "google/shopping/merchant/loyaltycustomers/v1",
+					},
+				},
+			},
+			defaults: &config.NodejsDefault{
+				CustomScopes: map[string]string{
+					"google/shopping/merchant": "@google-shopping",
+				},
+			},
+			want: &config.Library{
+				APIs: []*config.API{
+					{
+						Path: "google/shopping/merchant/loyaltycustomers/v1",
+					},
+				},
+				Nodejs: &config.NodejsPackage{
+					PackageName: "@google-shopping/loyaltycustomers",
+				},
+			},
+		},
+		{
+			name: "cloud API leaves package_name empty",
+			lib: &config.Library{
+				APIs: []*config.API{
+					{
+						Path: "google/cloud/secretmanager/v1",
+					},
+				},
+			},
+			defaults: &config.NodejsDefault{
+				CustomScopes: map[string]string{
+					"google/shopping/merchant": "@google-shopping",
+				},
+			},
+			want: &config.Library{
+				APIs: []*config.API{
+					{
+						Path: "google/cloud/secretmanager/v1",
+					},
+				},
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			defaults := &config.Default{
+				Nodejs: test.defaults,
+			}
+			got := fillDefaults(test.lib, defaults)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
 func TestApplyDefaults(t *testing.T) {
 	for _, test := range []struct {
 		name        string

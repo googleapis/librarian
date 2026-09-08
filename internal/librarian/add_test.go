@@ -887,6 +887,105 @@ func TestAddLibraryCommand_Php(t *testing.T) {
 	}
 }
 
+func TestAddLibraryCommand_Nodejs(t *testing.T) {
+	tmpDir := t.TempDir()
+	t.Chdir(tmpDir)
+
+	googleapisDir := filepath.Join(tmpDir, "googleapis")
+	apiPath := "google/shopping/merchant/loyaltycustomers/v1"
+	if err := os.MkdirAll(filepath.Join(googleapisDir, apiPath), 0o755); err != nil {
+		t.Fatal(err)
+	}
+
+	cfg := sample.Config()
+	cfg.Language = config.LanguageNodejs
+	cfg.Default.Nodejs = &config.NodejsDefault{
+		CustomScopes: map[string]string{
+			"google/shopping/merchant": "@google-shopping",
+		},
+	}
+	cfg.Default.Output = "packages"
+	cfg.Libraries = []*config.Library{}
+	cfg.Sources.Googleapis.Dir = googleapisDir
+	if err := yaml.Write(config.LibrarianYAML, cfg); err != nil {
+		t.Fatal(err)
+	}
+	err := runAdd(t.Context(), cfg, apiPath, "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	gotCfg, err := yaml.Read[config.Config](config.LibrarianYAML)
+	if err != nil {
+		t.Fatal(err)
+	}
+	wantLibraries := []*config.Library{
+		{
+			Name:          "google-shopping-merchant-loyaltycustomers",
+			Version:       "0.0.0",
+			CopyrightYear: strconv.Itoa(time.Now().Year()),
+			Nodejs: &config.NodejsPackage{
+				PackageName: "@google-shopping/loyaltycustomers",
+			},
+			APIs: []*config.API{
+				{
+					Path: "google/shopping/merchant/loyaltycustomers/v1",
+				},
+			},
+		},
+	}
+	if diff := cmp.Diff(wantLibraries, gotCfg.Libraries); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+}
+
+func TestAddLibraryCommand_Nodejs_TidyDefaultPackageName(t *testing.T) {
+	tmpDir := t.TempDir()
+	t.Chdir(tmpDir)
+
+	googleapisDir := filepath.Join(tmpDir, "googleapis")
+	apiPath := "google/apps/meet/v2"
+	if err := os.MkdirAll(filepath.Join(googleapisDir, apiPath), 0o755); err != nil {
+		t.Fatal(err)
+	}
+
+	cfg := sample.Config()
+	cfg.Language = config.LanguageNodejs
+	cfg.Default.Nodejs = &config.NodejsDefault{
+		CustomScopes: map[string]string{
+			"google/apps": "@google-apps",
+		},
+	}
+	cfg.Default.Output = "packages"
+	cfg.Libraries = []*config.Library{}
+	cfg.Sources.Googleapis.Dir = googleapisDir
+	if err := yaml.Write(config.LibrarianYAML, cfg); err != nil {
+		t.Fatal(err)
+	}
+	err := runAdd(t.Context(), cfg, apiPath, "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	gotCfg, err := yaml.Read[config.Config](config.LibrarianYAML)
+	if err != nil {
+		t.Fatal(err)
+	}
+	wantLibraries := []*config.Library{
+		{
+			Name:          "google-apps-meet",
+			Version:       "0.0.0",
+			CopyrightYear: strconv.Itoa(time.Now().Year()),
+			APIs: []*config.API{
+				{
+					Path: "google/apps/meet/v2",
+				},
+			},
+		},
+	}
+	if diff := cmp.Diff(wantLibraries, gotCfg.Libraries); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+}
+
 func TestAddLibrary_Swift(t *testing.T) {
 	copyrightYear := strconv.Itoa(time.Now().Year())
 	for _, test := range []struct {

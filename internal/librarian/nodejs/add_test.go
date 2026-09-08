@@ -35,9 +35,169 @@ func TestAdd(t *testing.T) {
 			{Path: "google/cloud/secretmanager/v1"},
 		},
 	}
-	got := Add(in)
+	got := Add(nil, in)
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+}
+
+func TestAdd_CustomScopes(t *testing.T) {
+	cfg := &config.Config{
+		Default: &config.Default{
+			Nodejs: &config.NodejsDefault{
+				CustomScopes: map[string]string{
+					"google/shopping/merchant": "@google-shopping",
+					"google/shopping":          "@google-shopping",
+					"google/maps":              "googlemaps",
+					"google/chat":              "@google-apps/chat",
+					"google/apps":              "@google-apps",
+				},
+			},
+		},
+	}
+
+	for _, test := range []struct {
+		name string
+		in   *config.Library
+		want *config.Library
+	}{
+		{
+			name: "cloud API leaves package name empty",
+			in: &config.Library{
+				Name: "google-cloud-secretmanager",
+				APIs: []*config.API{
+					{Path: "google/cloud/secretmanager/v1"},
+				},
+			},
+			want: &config.Library{
+				Name:    "google-cloud-secretmanager",
+				Version: "0.0.0",
+				APIs: []*config.API{
+					{Path: "google/cloud/secretmanager/v1"},
+				},
+			},
+		},
+		{
+			name: "nested custom organization strips prefix and derives package name",
+			in: &config.Library{
+				Name: "google-shopping-merchant-loyaltycustomers",
+				APIs: []*config.API{
+					{Path: "google/shopping/merchant/loyaltycustomers/v1"},
+				},
+			},
+			want: &config.Library{
+				Name:    "google-shopping-merchant-loyaltycustomers",
+				Version: "0.0.0",
+				APIs: []*config.API{
+					{Path: "google/shopping/merchant/loyaltycustomers/v1"},
+				},
+				Nodejs: &config.NodejsPackage{
+					PackageName: "@google-shopping/loyaltycustomers",
+				},
+			},
+		},
+		{
+			name: "prefix without leading @ is normalized",
+			in: &config.Library{
+				Name: "google-maps-routing",
+				APIs: []*config.API{
+					{Path: "google/maps/routing/v2"},
+				},
+			},
+			want: &config.Library{
+				Name:    "google-maps-routing",
+				Version: "0.0.0",
+				APIs: []*config.API{
+					{Path: "google/maps/routing/v2"},
+				},
+				Nodejs: &config.NodejsPackage{
+					PackageName: "@googlemaps/routing",
+				},
+			},
+		},
+		{
+			name: "org containing slash returns exact package name when remainder empty",
+			in: &config.Library{
+				Name: "google-chat",
+				APIs: []*config.API{
+					{Path: "google/chat/v1"},
+				},
+			},
+			want: &config.Library{
+				Name:    "google-chat",
+				Version: "0.0.0",
+				APIs: []*config.API{
+					{Path: "google/chat/v1"},
+				},
+				Nodejs: &config.NodejsPackage{
+					PackageName: "@google-apps/chat",
+				},
+			},
+		},
+		{
+			name: "general prefix derives package name from remainder",
+			in: &config.Library{
+				Name: "google-apps-meet",
+				APIs: []*config.API{
+					{Path: "google/apps/meet/v2"},
+				},
+			},
+			want: &config.Library{
+				Name:    "google-apps-meet",
+				Version: "0.0.0",
+				APIs: []*config.API{
+					{Path: "google/apps/meet/v2"},
+				},
+				Nodejs: &config.NodejsPackage{
+					PackageName: "@google-apps/meet",
+				},
+			},
+		},
+		{
+			name: "unrecognized non-cloud API leaves package name empty",
+			in: &config.Library{
+				Name: "google-unrecognized-api",
+				APIs: []*config.API{
+					{Path: "google/unrecognized/api/v1"},
+				},
+			},
+			want: &config.Library{
+				Name:    "google-unrecognized-api",
+				Version: "0.0.0",
+				APIs: []*config.API{
+					{Path: "google/unrecognized/api/v1"},
+				},
+			},
+		},
+		{
+			name: "preserves explicitly configured package name",
+			in: &config.Library{
+				Name: "google-shopping-merchant-loyaltycustomers",
+				APIs: []*config.API{
+					{Path: "google/shopping/merchant/loyaltycustomers/v1"},
+				},
+				Nodejs: &config.NodejsPackage{
+					PackageName: "@custom/override",
+				},
+			},
+			want: &config.Library{
+				Name:    "google-shopping-merchant-loyaltycustomers",
+				Version: "0.0.0",
+				APIs: []*config.API{
+					{Path: "google/shopping/merchant/loyaltycustomers/v1"},
+				},
+				Nodejs: &config.NodejsPackage{
+					PackageName: "@custom/override",
+				},
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := Add(cfg, test.in)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
 	}
 }
 

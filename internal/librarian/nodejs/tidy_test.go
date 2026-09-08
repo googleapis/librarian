@@ -61,6 +61,33 @@ func TestTidy(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "default derived package_name is tidied away",
+			lib: &config.Library{
+				Name: "google-cloud-secretmanager",
+				Nodejs: &config.NodejsPackage{
+					PackageName: "@google-cloud/secretmanager",
+				},
+			},
+			want: &config.Library{
+				Name: "google-cloud-secretmanager",
+			},
+		},
+		{
+			name: "custom package_name is kept",
+			lib: &config.Library{
+				Name: "google-shopping-merchant-loyaltycustomers",
+				Nodejs: &config.NodejsPackage{
+					PackageName: "@google-shopping/loyaltycustomers",
+				},
+			},
+			want: &config.Library{
+				Name: "google-shopping-merchant-loyaltycustomers",
+				Nodejs: &config.NodejsPackage{
+					PackageName: "@google-shopping/loyaltycustomers",
+				},
+			},
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			got, err := Tidy(test.lib)

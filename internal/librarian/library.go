@@ -60,6 +60,8 @@ func fillDefaults(lib *config.Library, d *config.Default) *config.Library {
 		return fillSwift(lib, d)
 	case d.PHP != nil:
 		return fillPHP(lib, d)
+	case d.Nodejs != nil:
+		return nodejs.FillDefaultNodejs(lib, d)
 	default:
 		return lib
 	}
