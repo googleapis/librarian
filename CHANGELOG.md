@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.42.0](https://github.com/googleapis/librarian/compare/v0.41.0...v0.42.0) (2026-09-08)
+
+
+### Features
+
+* **internal/librarian/ruby:** support toys tasks in library declaration ([#7513](https://github.com/googleapis/librarian/issues/7513)) ([c99d2c9](https://github.com/googleapis/librarian/commit/c99d2c95d753c09335770b1fed164ff3e14dd133))
+* **internal/librarian/swift:** resolve dependency version from library declaration ([#7522](https://github.com/googleapis/librarian/issues/7522)) ([5dfd571](https://github.com/googleapis/librarian/commit/5dfd57156174d2d1aec2221d8013048c85576b01))
+
+
+### Bug Fixes
+
+* **internal/librarian/php:** use library output in generate and postprocessing ([#7516](https://github.com/googleapis/librarian/issues/7516)) ([681d25f](https://github.com/googleapis/librarian/commit/681d25fd1f3badfbf64dbe299ac2a19fda9dbeed))
+* **swift/publish:** fix library detection for renamed folders ([#7518](https://github.com/googleapis/librarian/issues/7518)) ([e9285a4](https://github.com/googleapis/librarian/commit/e9285a422d089ab6856706df05aad8eceef8edda))
+
 ## [0.41.0](https://github.com/googleapis/librarian/compare/v0.40.0...v0.41.0) (2026-09-07)
 
 
