@@ -327,8 +327,7 @@ type codec struct {
 	// If true, this includes gRPC-only methods, such as methods without HTTP
 	// annotations.
 	includeGrpcOnlyMethods bool
-	// If set, configures an opt-in method on the request struct (e.g. "resolve_idempotency")
-	// to resolve idempotency and transform RequestOptions before dispatch.
+	// If set, configures an opt-in method on the request struct to resolve and transform idempotency request options before dispatch.
 	idempotencyHook string
 	// If true, this includes gRPC streaming methods.
 	includeStreamingMethods bool
