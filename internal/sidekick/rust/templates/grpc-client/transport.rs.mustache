@@ -56,17 +56,17 @@ mod info {
 
 {{/Codec.HasServices}}
 {{#Codec.Services}}
-/// Implements [{{Codec.Name}}](super::stub::{{Codec.Name}}) using a Tonic-generated client.
+/// Implements [{{Codec.Name}}](super::stub::{{Codec.Name}}) using a gRPC client.
 {{#Codec.PerServiceFeatures}}
 #[cfg(feature = "{{Codec.FeatureName}}")]
 {{/Codec.PerServiceFeatures}}
 #[derive(Clone)]
 pub struct {{Codec.Name}} {
     {{^Codec.ExtendGrpcTransport}}
-    inner: gaxi::grpc::Client,
+    inner: {{{Codec.GrpcClient}}},
     {{/Codec.ExtendGrpcTransport}}
     {{#Codec.ExtendGrpcTransport}}
-    pub(crate) inner: gaxi::grpc::Client,
+    pub(crate) inner: {{{Codec.GrpcClient}}},
     {{/Codec.ExtendGrpcTransport}}
 }
 
@@ -88,13 +88,13 @@ impl {{Codec.Name}} {
     pub async fn new(config: gaxi::options::ClientConfig) -> crate::ClientBuilderResult<Self> {
         {{#Codec.DetailedTracingAttributes}}
         let inner = if gaxi::options::tracing_enabled(&config) {
-            gaxi::grpc::Client::new_with_instrumentation(config, DEFAULT_HOST, &super::tracing::info::INSTRUMENTATION_CLIENT_INFO).await?
+            {{{Codec.GrpcClient}}}::new_with_instrumentation(config, DEFAULT_HOST, &super::tracing::info::INSTRUMENTATION_CLIENT_INFO).await?
         } else {
-            gaxi::grpc::Client::new(config, DEFAULT_HOST).await?
+            {{{Codec.GrpcClient}}}::new(config, DEFAULT_HOST).await?
         };
         {{/Codec.DetailedTracingAttributes}}
         {{^Codec.DetailedTracingAttributes}}
-        let inner = gaxi::grpc::Client::new(config, DEFAULT_HOST).await?;
+        let inner = {{{Codec.GrpcClient}}}::new(config, DEFAULT_HOST).await?;
         {{/Codec.DetailedTracingAttributes}}
         Ok(Self { inner })
     }

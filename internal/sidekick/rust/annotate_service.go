@@ -56,6 +56,8 @@ type serviceAnnotations struct {
 	DetailedTracingAttributes bool
 	// If true, the generated builders's visibility should be restricted to the crate.
 	InternalBuilders bool
+	// The Rust type used for the inner gRPC client in generated transports.
+	GrpcClient string
 }
 
 // HasGrpc returns true if the service has at least one generated gRPC method.
@@ -218,6 +220,7 @@ func (c *codec) annotateService(s *api.Service) (*serviceAnnotations, error) {
 		Incomplete:                slices.ContainsFunc(s.Methods, func(m *api.Method) bool { return !c.generateMethod(m) }),
 		DetailedTracingAttributes: c.detailedTracingAttributes,
 		InternalBuilders:          c.internalBuilders,
+		GrpcClient:                c.grpcClient,
 	}
 	s.Codec = ann
 	return ann, nil

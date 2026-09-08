@@ -570,6 +570,7 @@ This document describes the schema for the librarian.yaml.
 | `include_bidi_streaming_methods` | bool (optional) | Indicates whether to include gRPC bi-directional streaming methods. |
 | `include_server_streaming_methods` | bool (optional) | Indicates whether to include gRPC server-side streaming methods. |
 | `allow_streaming_any_types` | list of string | Is a list of protobuf field/message IDs with google.protobuf.Any permitted in streaming RPCs (their fields will be dropped in prost conversion). |
+| `grpc_client` | string | Is the Rust type used for the inner gRPC client in generated transports. Defaults to "gaxi::grpc::Client". |
 
 ## RustDocumentationOverride Configuration
 
@@ -583,6 +584,7 @@ This document describes the schema for the librarian.yaml.
 
 | Field | Type | Description |
 | :--- | :--- | :--- |
+| `grpc_client` | string | Is the Rust type used for the inner gRPC client in generated transports. This overrides the crate-level setting. Defaults to "gaxi::grpc::Client". |
 | `disabled_rustdoc_warnings` | yaml.StringSlice | Specifies rustdoc lints to disable. An empty slice explicitly enables all warnings. |
 | `detailed_tracing_attributes` | bool (optional) | Indicates whether to include detailed tracing attributes. This overrides the crate-level setting. |
 | `lro_stub_options` | bool (optional) | Indicates whether to include LRO poller options in generated stub traits. This overrides the crate-level setting. |

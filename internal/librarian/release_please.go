@@ -46,30 +46,75 @@ type extraFile struct {
 	rawMap map[string]any
 }
 
-func hasReleasePleaseConfigs(dir string, cfg *config.Config) bool {
-	manifestFile, configFile := releasePleaseFiles(cfg)
-	_, errM := os.Stat(filepath.Join(dir, manifestFile))
-	_, errC := os.Stat(filepath.Join(dir, configFile))
+type releasePleasePair struct {
+	manifestFile string
+	configFile   string
+}
+
+func (p releasePleasePair) exists(dir string) bool {
+	if p.manifestFile == "" || p.configFile == "" {
+		return false
+	}
+	_, errM := os.Stat(filepath.Join(dir, p.manifestFile))
+	_, errC := os.Stat(filepath.Join(dir, p.configFile))
 	return !errors.Is(errM, fs.ErrNotExist) && !errors.Is(errC, fs.ErrNotExist)
 }
 
-// releasePleaseFiles returns the file names for the Release Please manifest file
-// and config file in this order, depending on the SDK language.
-func releasePleaseFiles(cfg *config.Config) (string, string) {
-	// google-cloud-node and google-cloud-ruby use the default Release Please files to add a new library.
-	// google-cloud-python uses the "-individual-" files initially for new libraries.
-	// google-cloud-go uses the "-bulk-" files.
-	manifestFile := bulkManifestFile
-	configFile := bulkConfigFile
+type releasePleaseConfigFiles struct {
+	bulk       releasePleasePair
+	individual releasePleasePair
+}
+
+func hasReleasePleaseConfigs(dir string, cfg *config.Config) bool {
+	files := releasePleaseFiles(cfg)
+	return files.bulk.exists(dir) || files.individual.exists(dir)
+}
+
+// releasePleaseFiles returns the Release Please manifest and config file pairs
+// for the given SDK language.
+func releasePleaseFiles(cfg *config.Config) releasePleaseConfigFiles {
 	switch cfg.Language {
 	case config.LanguagePython:
-		manifestFile = individualManifestFile
-		configFile = individualConfigFile
+		return releasePleaseConfigFiles{
+			bulk: releasePleasePair{
+				manifestFile: bulkManifestFile,
+				configFile:   bulkConfigFile,
+			},
+			individual: releasePleasePair{
+				manifestFile: individualManifestFile,
+				configFile:   individualConfigFile,
+			},
+		}
 	case config.LanguageNodejs, config.LanguageRuby:
-		manifestFile = defaultManifestFile
-		configFile = defaultConfigFile
+		return releasePleaseConfigFiles{
+			bulk: releasePleasePair{
+				manifestFile: defaultManifestFile,
+				configFile:   defaultConfigFile,
+			},
+		}
+	default:
+		return releasePleaseConfigFiles{
+			bulk: releasePleasePair{
+				manifestFile: bulkManifestFile,
+				configFile:   bulkConfigFile,
+			},
+		}
 	}
-	return manifestFile, configFile
+}
+
+// isTrackedInBulkConfig reports whether the package path is already tracked
+// in the bulk release-please configuration file.
+func isTrackedInBulkConfig(dir, pkgPath string) bool {
+	bulkConfig, err := readJSONFile[map[string]any](filepath.Join(dir, bulkConfigFile))
+	if err != nil {
+		return false
+	}
+	pkgs, ok := bulkConfig["packages"].(map[string]any)
+	if !ok {
+		return false
+	}
+	_, exists := pkgs[pkgPath]
+	return exists
 }
 
 // syncToReleasePlease updates the release-please configuration files with the
@@ -81,7 +126,17 @@ func syncToReleasePlease(dir string, cfg *config.Config, name string) error {
 		return err
 	}
 
-	manifestFile, configFile := releasePleaseFiles(cfg)
+	files := releasePleaseFiles(cfg)
+	target := files.bulk
+	pkgPath := lib.Name
+	if cfg.Language == config.LanguagePython {
+		pkgPath = python.ReleasePleasePkgPrefix + lib.Name
+		if !isTrackedInBulkConfig(dir, pkgPath) {
+			target = files.individual
+		}
+	}
+	manifestFile := target.manifestFile
+	configFile := target.configFile
 	manifestPath := filepath.Join(dir, manifestFile)
 	manifest, err := readJSONFile[map[string]string](manifestPath)
 	if err != nil {
@@ -111,10 +166,8 @@ func syncToReleasePlease(dir string, cfg *config.Config, name string) error {
 	}
 
 	var extraFiles []any
-	pkgPath := lib.Name
 	switch cfg.Language {
 	case config.LanguagePython:
-		pkgPath = python.ReleasePleasePkgPrefix + lib.Name
 		extraFiles = python.ReleasePleaseExtraFiles(lib)
 	case config.LanguageGo:
 		extraFiles = golang.ReleasePleaseExtraFiles(lib)
