@@ -333,8 +333,15 @@ func buildModuleCodec(library *config.Library, module *config.RustModule) map[st
 	if module.IncludeServerStreamingMethods != nil && *module.IncludeServerStreamingMethods {
 		codec["include-server-streaming-methods"] = "true"
 	}
+	idempotencyHook := ""
+	if library.Rust != nil {
+		idempotencyHook = library.Rust.IdempotencyHook
+	}
 	if module.IdempotencyHook != "" {
-		codec["idempotency-hook"] = module.IdempotencyHook
+		idempotencyHook = module.IdempotencyHook
+	}
+	if idempotencyHook != "" {
+		codec["idempotency-hook"] = idempotencyHook
 	}
 	detailedTracingAttributes := library.Rust != nil && library.Rust.DetailedTracingAttributes != nil && *library.Rust.DetailedTracingAttributes
 	if module.DetailedTracingAttributes != nil {

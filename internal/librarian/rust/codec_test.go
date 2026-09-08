@@ -1586,3 +1586,48 @@ func TestBuildModuleCodec_GrpcClient(t *testing.T) {
 		}
 	})
 }
+
+func TestBuildModuleCodec_IdempotencyHook(t *testing.T) {
+	t.Run("module level idempotency_hook", func(t *testing.T) {
+		library := &config.Library{
+			Name: "google-cloud-storage",
+		}
+		module := &config.RustModule{
+			IdempotencyHook: "resolve_idempotency",
+		}
+		got := buildModuleCodec(library, module)
+		if got["idempotency-hook"] != "resolve_idempotency" {
+			t.Errorf("expected idempotency-hook to be %q, got %q", "resolve_idempotency", got["idempotency-hook"])
+		}
+	})
+
+	t.Run("crate level fallback idempotency_hook", func(t *testing.T) {
+		library := &config.Library{
+			Name: "google-cloud-storage",
+			Rust: &config.RustCrate{
+				IdempotencyHook: "resolve_idempotency",
+			},
+		}
+		module := &config.RustModule{}
+		got := buildModuleCodec(library, module)
+		if got["idempotency-hook"] != "resolve_idempotency" {
+			t.Errorf("expected idempotency-hook to be %q, got %q", "resolve_idempotency", got["idempotency-hook"])
+		}
+	})
+
+	t.Run("module overrides crate level idempotency_hook", func(t *testing.T) {
+		library := &config.Library{
+			Name: "google-cloud-storage",
+			Rust: &config.RustCrate{
+				IdempotencyHook: "crate_hook",
+			},
+		}
+		module := &config.RustModule{
+			IdempotencyHook: "module_hook",
+		}
+		got := buildModuleCodec(library, module)
+		if got["idempotency-hook"] != "module_hook" {
+			t.Errorf("expected idempotency-hook to be %q, got %q", "module_hook", got["idempotency-hook"])
+		}
+	})
+}
