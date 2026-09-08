@@ -81,12 +81,8 @@ func newInitParams(googleapisDir string, library *config.Library) (*initParams, 
 		return nil, err
 	}
 	apiVersion := serviceconfig.ExtractVersion(api.Path)
-	compName := library.Output
-	if compName == "" {
-		compName = componentName(library, ns)
-	}
 	return &initParams{
-		componentName:   filepath.Base(compName),
+		componentName:   filepath.Base(library.Output),
 		phpNamespace:    ns,
 		protoPackage:    protoPackage(api),
 		apiShortName:    svcAPI.ShortName,

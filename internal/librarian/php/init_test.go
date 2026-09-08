@@ -188,7 +188,8 @@ func TestNewInitParams(t *testing.T) {
 		{
 			name: "default derived protoPackage",
 			library: &config.Library{
-				APIs: []*config.API{{Path: "google/cloud/secretmanager/v1"}},
+				Output: "SecretManager",
+				APIs:   []*config.API{{Path: "google/cloud/secretmanager/v1"}},
 			},
 			want: &initParams{
 				componentName:   "SecretManager",
@@ -203,6 +204,7 @@ func TestNewInitParams(t *testing.T) {
 		{
 			name: "custom protoPackage override",
 			library: &config.Library{
+				Output: "SecretManager",
 				APIs: []*config.API{
 					{
 						Path: "google/cloud/secretmanager/v1",
