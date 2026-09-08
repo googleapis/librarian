@@ -648,6 +648,8 @@ func TestMethodUsesGrpc(t *testing.T) {
 	bidiMethod := api.NewTestMethod("Bidi").WithInput(msg).WithOutput(msg).WithBidiStreaming()
 	serverMethod := api.NewTestMethod("Server").WithInput(msg).WithOutput(msg).WithServerSideStreaming()
 
+	lroMethod := api.NewTestMethod("Lro").WithInput(msg).WithOutput(msg).WithOperationInfo(&api.OperationInfo{ResponseTypeID: "test.v1.Message", MetadataTypeID: "test.v1.Message"})
+
 	for _, test := range []struct {
 		name             string
 		method           *api.Method
@@ -685,6 +687,23 @@ func TestMethodUsesGrpc(t *testing.T) {
 				"include-bidi-streaming-methods": "true",
 			},
 			want: false,
+		},
+		{
+			name:   "LRO method defaults to HTTP on default template with default_transport grpc",
+			method: lroMethod,
+			options: map[string]string{
+				"default-transport": "grpc",
+			},
+			want: false,
+		},
+		{
+			name:             "LRO method uses gRPC on grpc-client template",
+			method:           lroMethod,
+			templateOverride: "templates/grpc-client",
+			options: map[string]string{
+				"default-transport": "grpc",
+			},
+			want: true,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
