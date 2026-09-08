@@ -208,6 +208,8 @@ func libraryOutput(lib *config.Library, defaults *config.Default) string {
 	apiPath := ""
 	if len(lib.APIs) > 0 && lib.APIs[0].Path != "" {
 		apiPath = lib.APIs[0].Path
+	} else if lib.Name != "" {
+		apiPath = strings.ReplaceAll(lib.Name, "-", "/")
 	}
 	defaultOut := ""
 	if defaults != nil {
