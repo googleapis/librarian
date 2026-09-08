@@ -285,7 +285,7 @@ type Default struct {
 	Java *JavaDefault `yaml:"java,omitempty"`
 
 	// Nodejs contains Node.js-specific default configuration.
-	Nodejs *NodejsPackage `yaml:"nodejs,omitempty"`
+	Nodejs *NodejsDefault `yaml:"nodejs,omitempty"`
 
 	// PHP contains PHP-specific default configuration.
 	PHP *PHPDefault `yaml:"php,omitempty"`
