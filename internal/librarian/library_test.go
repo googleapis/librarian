@@ -1771,17 +1771,26 @@ func TestMergeRuby(t *testing.T) {
 			want: &config.RubyPackage{DeleteGenerationOutputPaths: []string{"b"}},
 		},
 		{
+			name: "merges toys tasks",
+			dst:  &config.RubyPackage{ToysTasks: []string{"a"}},
+			src:  &config.RubyPackage{ToysTasks: []string{"b"}},
+			want: &config.RubyPackage{ToysTasks: []string{"b"}},
+		},
+		{
 			name: "merges all fields",
 			dst: &config.RubyPackage{
 				DeleteGenerationOutputPaths: []string{"a"},
+				ToysTasks:                   []string{"a"},
 				WrapperOf:                   []string{"a"},
 			},
 			src: &config.RubyPackage{
 				DeleteGenerationOutputPaths: []string{"b"},
+				ToysTasks:                   []string{"b"},
 				WrapperOf:                   []string{"b"},
 			},
 			want: &config.RubyPackage{
 				DeleteGenerationOutputPaths: []string{"b"},
+				ToysTasks:                   []string{"b"},
 				WrapperOf:                   []string{"b"},
 			},
 		},
