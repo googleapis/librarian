@@ -63,6 +63,9 @@ func Generate(ctx context.Context, cfg *config.Config, library *config.Library, 
 	if len(library.APIs) == 0 {
 		return fmt.Errorf("%w: %q", errNoAPIs, library.Name)
 	}
+	if library.Output == "" {
+		return fmt.Errorf("library %q: %w", library.Name, errMissingOutput)
+	}
 	if cfg.Tools == nil || cfg.Tools.Protoc == nil {
 		if _, err := exec.LookPath("protoc"); err != nil {
 			return fmt.Errorf("failed to find protoc: %w", err)
