@@ -51,24 +51,20 @@ type initParams struct {
 	productHomepage string
 }
 
-// initComponentIfMissing initializes a new PHP component if it doesn't already exist;
-// returns the component name on success.
-func initComponentIfMissing(ctx context.Context, library *config.Library, googleapisDir string) (string, error) {
+// initComponentIfMissing initializes a new PHP component if it doesn't already exist.
+func initComponentIfMissing(ctx context.Context, library *config.Library, googleapisDir string) error {
+	_, err := os.Stat(library.Output)
+	if err == nil {
+		// Component exists, nothing to initialize.
+		return nil
+	} else if !errors.Is(err, fs.ErrNotExist) {
+		return err
+	}
 	params, err := newInitParams(googleapisDir, library)
 	if err != nil {
-		return "", err
+		return err
 	}
-	_, err = os.Stat(params.componentName)
-	if err == nil {
-		// Component exists, return the component name.
-		return params.componentName, nil
-	} else if !errors.Is(err, fs.ErrNotExist) {
-		return "", err
-	}
-	if err := initComponent(ctx, params); err != nil {
-		return "", err
-	}
-	return params.componentName, nil
+	return initComponent(ctx, params)
 }
 
 func newInitParams(googleapisDir string, library *config.Library) (*initParams, error) {
@@ -86,7 +82,7 @@ func newInitParams(googleapisDir string, library *config.Library) (*initParams, 
 	}
 	apiVersion := serviceconfig.ExtractVersion(api.Path)
 	return &initParams{
-		componentName:   componentName(library, ns),
+		componentName:   filepath.Base(library.Output),
 		phpNamespace:    ns,
 		protoPackage:    protoPackage(api),
 		apiShortName:    svcAPI.ShortName,
@@ -104,7 +100,7 @@ func componentNameForLibrary(googleapisDir string, library *config.Library) (str
 		return library.PHP.ComponentName, nil
 	}
 	if len(library.APIs) == 0 {
-		return "", fmt.Errorf("no apis configured for library %q", library.Name)
+		return "", fmt.Errorf("%w: %q", errNoAPIs, library.Name)
 	}
 	ns, err := namespace(googleapisDir, library.APIs[0].Path)
 	if err != nil {

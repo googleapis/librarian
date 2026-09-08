@@ -272,7 +272,7 @@ func TestGenerate_StatError(t *testing.T) {
 	})
 	library := &config.Library{
 		Name:   "secretmanager",
-		Output: componentDir,
+		Output: nestedDir,
 		PHP: &config.PHPPackage{
 			ComponentName: "SecretManager/nested",
 		},
@@ -334,14 +334,31 @@ func TestGenerate_Error(t *testing.T) {
 		{
 			name: "no APIs configured",
 			lib: &config.Library{
-				Name: "empty",
+				Name:   "empty",
+				Output: "SecretManager",
 			},
 			wantErr: errNoAPIs,
 		},
 		{
-			name: "missing PHP config (requires staging_subdir)",
+			name: "missing output directory",
 			lib: &config.Library{
 				Name: "SecretManager",
+				APIs: []*config.API{
+					{
+						Path: "google/cloud/secretmanager/v1",
+						PHP: &config.PHPAPI{
+							StagingSubdir: "v1",
+						},
+					},
+				},
+			},
+			wantErr: ErrMissingOutput,
+		},
+		{
+			name: "missing PHP config (requires staging_subdir)",
+			lib: &config.Library{
+				Name:   "SecretManager",
+				Output: "SecretManager",
 				APIs: []*config.API{
 					{
 						Path: "google/cloud/secretmanager/v1",
@@ -353,7 +370,8 @@ func TestGenerate_Error(t *testing.T) {
 		{
 			name: "missing common_resources config",
 			lib: &config.Library{
-				Name: "SecretManager",
+				Name:   "SecretManager",
+				Output: "SecretManager",
 				PHP: &config.PHPPackage{
 					ComponentName: "SecretManager",
 				},

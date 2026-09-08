@@ -188,7 +188,8 @@ func TestNewInitParams(t *testing.T) {
 		{
 			name: "default derived protoPackage",
 			library: &config.Library{
-				APIs: []*config.API{{Path: "google/cloud/secretmanager/v1"}},
+				Output: "SecretManager",
+				APIs:   []*config.API{{Path: "google/cloud/secretmanager/v1"}},
 			},
 			want: &initParams{
 				componentName:   "SecretManager",
@@ -203,6 +204,7 @@ func TestNewInitParams(t *testing.T) {
 		{
 			name: "custom protoPackage override",
 			library: &config.Library{
+				Output: "SecretManager",
 				APIs: []*config.API{
 					{
 						Path: "google/cloud/secretmanager/v1",
@@ -251,7 +253,8 @@ func TestInitComponentIfMissing(t *testing.T) {
 		{
 			name: "component already exists",
 			library: &config.Library{
-				Name: "secretmanager",
+				Name:   "secretmanager",
+				Output: "SecretManager",
 				APIs: []*config.API{
 					{Path: "google/cloud/secretmanager/v1"},
 				},
@@ -267,7 +270,8 @@ func TestInitComponentIfMissing(t *testing.T) {
 		{
 			name: "new component initialized",
 			library: &config.Library{
-				Name: "secretmanager",
+				Name:   "secretmanager",
+				Output: "SecretManager",
 				APIs: []*config.API{
 					{Path: "google/cloud/secretmanager/v1"},
 				},
@@ -289,7 +293,8 @@ func TestInitComponentIfMissing(t *testing.T) {
 		{
 			name: "new component with component name override",
 			library: &config.Library{
-				Name: "secretmanager",
+				Name:   "secretmanager",
+				Output: "CustomSecretManager",
 				PHP: &config.PHPPackage{
 					ComponentName: "CustomSecretManager",
 				},
@@ -318,11 +323,11 @@ func TestInitComponentIfMissing(t *testing.T) {
 			if test.setup != nil {
 				test.setup(t, repoRoot)
 			}
-			got, err := initComponentIfMissing(t.Context(), test.library, googleapisDir)
+			err := initComponentIfMissing(t.Context(), test.library, googleapisDir)
 			if err != nil {
 				t.Fatal(err)
 			}
-			if diff := cmp.Diff(test.wantComponent, got); diff != "" {
+			if diff := cmp.Diff(test.wantComponent, test.library.Output); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 			_, statErr := os.Stat(filepath.Join(repoRoot, "initialized.txt"))
@@ -348,14 +353,16 @@ func TestInitComponentIfMissing_Error(t *testing.T) {
 		{
 			name: "no apis configured in library",
 			library: &config.Library{
-				Name: "empty",
+				Name:   "empty",
+				Output: "Empty",
 			},
 			wantErr: errNoAPIs,
 		},
 		{
 			name: "api service config not found",
 			library: &config.Library{
-				Name: "nonexistent",
+				Name:   "nonexistent",
+				Output: "NonExistent",
 				APIs: []*config.API{
 					{Path: "google/cloud/nonexistent/v1"},
 				},
@@ -365,7 +372,8 @@ func TestInitComponentIfMissing_Error(t *testing.T) {
 		{
 			name: "stat error other than not exist",
 			library: &config.Library{
-				Name: "secretmanager",
+				Name:   "secretmanager",
+				Output: "unreadable/SecretManager",
 				PHP: &config.PHPPackage{
 					ComponentName: "unreadable/SecretManager",
 				},
@@ -394,7 +402,7 @@ func TestInitComponentIfMissing_Error(t *testing.T) {
 			if test.setup != nil {
 				test.setup(t, repoRoot)
 			}
-			_, err := initComponentIfMissing(t.Context(), test.library, googleapisDir)
+			err := initComponentIfMissing(t.Context(), test.library, googleapisDir)
 			if !errors.Is(err, test.wantErr) {
 				t.Errorf("initComponentIfMissing() error = %v, wantErr = %v", err, test.wantErr)
 			}

@@ -40,7 +40,7 @@ func TestPostProcess_MissingOwlBot(t *testing.T) {
 			ComponentName: "SecretManager",
 		},
 	}
-	err := postProcessLibrary(ctx, lib, lib.PHP.ComponentName)
+	err := postProcessLibrary(ctx, lib)
 	if !errors.Is(err, errOwlBotNotFound) {
 		t.Errorf("postProcessLibrary() error = %v, want = %v", err, errOwlBotNotFound)
 	}
@@ -84,7 +84,7 @@ func TestPostProcess_OwlBot(t *testing.T) {
 			ComponentName: "SecretManager",
 		},
 	}
-	if err := postProcessLibrary(ctx, lib, lib.PHP.ComponentName); err != nil {
+	if err := postProcessLibrary(ctx, lib); err != nil {
 		t.Fatal(err)
 	}
 	// Verify owlbot.py ran
@@ -114,7 +114,7 @@ func TestPostProcess_OwlBotError(t *testing.T) {
 			ComponentName: "SecretManager",
 		},
 	}
-	err := postProcessLibrary(ctx, lib, lib.PHP.ComponentName)
+	err := postProcessLibrary(ctx, lib)
 	if _, ok := errors.AsType[*exec.ExitError](err); !ok {
 		t.Fatalf("expected exit error, got: %v", err)
 	}
@@ -146,7 +146,7 @@ func TestPostProcess_StatError(t *testing.T) {
 			ComponentName: "SecretManager_inaccessible",
 		},
 	}
-	err := postProcessLibrary(ctx, lib, lib.PHP.ComponentName)
+	err := postProcessLibrary(ctx, lib)
 	if !errors.Is(err, os.ErrPermission) {
 		t.Errorf("expected permission error, got: %v", err)
 	}
@@ -187,7 +187,7 @@ func TestPostProcess_CleanupError(t *testing.T) {
 			ComponentName: "SecretManager",
 		},
 	}
-	err := postProcessLibrary(ctx, lib, lib.PHP.ComponentName)
+	err := postProcessLibrary(ctx, lib)
 	if !errors.Is(err, os.ErrPermission) {
 		t.Errorf("expected permission error, got: %v", err)
 	}
@@ -227,7 +227,7 @@ func TestPostProcess_PHPPostProcessor(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if err := postProcessLibrary(ctx, lib, lib.PHP.ComponentName); err != nil {
+	if err := postProcessLibrary(ctx, lib); err != nil {
 		t.Fatal(err)
 	}
 	out, err := os.ReadFile(expectedFile)
@@ -273,7 +273,7 @@ func TestPostProcess_PHPPostProcessorError(t *testing.T) {
 	if err := os.MkdirAll(stagingSubdir, 0o755); err != nil {
 		t.Fatal(err)
 	}
-	err := postProcessLibrary(ctx, lib, lib.PHP.ComponentName)
+	err := postProcessLibrary(ctx, lib)
 	if _, ok := errors.AsType[*exec.ExitError](err); !ok {
 		t.Fatalf("expected exit error, got: %v", err)
 	}

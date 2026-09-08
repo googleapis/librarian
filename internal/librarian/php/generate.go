@@ -46,6 +46,9 @@ var (
 	errNoAPIs                      = errors.New("no APIs configured")
 )
 
+// ErrMissingOutput is returned when a library configuration is missing an output directory.
+var ErrMissingOutput = errors.New("output directory is required")
+
 type generateAPIParams struct {
 	cfg          *config.Config
 	api          *config.API
@@ -61,6 +64,9 @@ type generateAPIParams struct {
 func Generate(ctx context.Context, cfg *config.Config, library *config.Library, src *sources.Sources) (err error) {
 	if len(library.APIs) == 0 {
 		return fmt.Errorf("%w: %q", errNoAPIs, library.Name)
+	}
+	if library.Output == "" {
+		return fmt.Errorf("library %q: %w", library.Name, ErrMissingOutput)
 	}
 	if cfg.Tools == nil || cfg.Tools.Protoc == nil {
 		if _, err := exec.LookPath("protoc"); err != nil {
@@ -95,11 +101,10 @@ func Generate(ctx context.Context, cfg *config.Config, library *config.Library, 
 	}
 	srcCfg := sources.NewSourceConfig(src, library.Roots)
 	googleapisDir := srcCfg.Root("googleapis")
-	componentName, err := initComponentIfMissing(ctx, library, googleapisDir)
-	if err != nil {
+	if err := initComponentIfMissing(ctx, library, googleapisDir); err != nil {
 		return err
 	}
-	stagingDir := filepath.Join(owlBotStagingDir, componentName)
+	stagingDir := filepath.Join(owlBotStagingDir, filepath.Base(library.Output))
 	if err := os.RemoveAll(stagingDir); err != nil {
 		return err
 	}
@@ -124,7 +129,7 @@ func Generate(ctx context.Context, cfg *config.Config, library *config.Library, 
 			return err
 		}
 	}
-	if err := postProcessLibrary(ctx, library, componentName); err != nil {
+	if err := postProcessLibrary(ctx, library); err != nil {
 		return fmt.Errorf("failed to postprocess: %w", err)
 	}
 	return nil
