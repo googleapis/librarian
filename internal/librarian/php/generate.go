@@ -44,8 +44,10 @@ var (
 	errMissingStagingSubdir        = errors.New("staging_subdir is required for PHP configurations")
 	errNoProtos                    = errors.New("no target protos found")
 	errNoAPIs                      = errors.New("no APIs configured")
-	errMissingOutput               = errors.New("output directory is required")
 )
+
+// ErrMissingOutput is returned when a library configuration is missing an output directory.
+var ErrMissingOutput = errors.New("output directory is required")
 
 type generateAPIParams struct {
 	cfg          *config.Config
@@ -64,7 +66,7 @@ func Generate(ctx context.Context, cfg *config.Config, library *config.Library, 
 		return fmt.Errorf("%w: %q", errNoAPIs, library.Name)
 	}
 	if library.Output == "" {
-		return fmt.Errorf("library %q: %w", library.Name, errMissingOutput)
+		return fmt.Errorf("library %q: %w", library.Name, ErrMissingOutput)
 	}
 	if cfg.Tools == nil || cfg.Tools.Protoc == nil {
 		if _, err := exec.LookPath("protoc"); err != nil {

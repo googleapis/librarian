@@ -352,7 +352,7 @@ func TestGenerate_Error(t *testing.T) {
 					},
 				},
 			},
-			wantErr: errMissingOutput,
+			wantErr: ErrMissingOutput,
 		},
 		{
 			name: "missing PHP config (requires staging_subdir)",

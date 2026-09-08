@@ -53,9 +53,6 @@ type initParams struct {
 
 // initComponentIfMissing initializes a new PHP component if it doesn't already exist.
 func initComponentIfMissing(ctx context.Context, library *config.Library, googleapisDir string) error {
-	if library.Output == "" {
-		return fmt.Errorf("library %q: %w", library.Name, errMissingOutput)
-	}
 	_, err := os.Stat(library.Output)
 	if err == nil {
 		// Component exists, nothing to initialize.

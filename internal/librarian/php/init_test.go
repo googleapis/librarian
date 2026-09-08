@@ -349,16 +349,6 @@ func TestInitComponentIfMissing_Error(t *testing.T) {
 		wantErr error
 	}{
 		{
-			name: "missing output in library",
-			library: &config.Library{
-				Name: "secretmanager",
-				APIs: []*config.API{
-					{Path: "google/cloud/secretmanager/v1"},
-				},
-			},
-			wantErr: errMissingOutput,
-		},
-		{
 			name: "no apis configured in library",
 			library: &config.Library{
 				Name:   "empty",
