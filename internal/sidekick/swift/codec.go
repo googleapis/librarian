@@ -73,6 +73,9 @@ type codec struct {
 	// The name of the Swift package (e.g. "google-cloud-secretmanager-v1").
 	PackageName string
 
+	// PackageRepoName is the name of the repository when published (e.g. "swift-google-cloud-secretmanager-v1").
+	PackageRepoName string
+
 	// The package version (e.g. "1.2.3").
 	PackageVersion string
 
@@ -192,6 +195,7 @@ func newCodec(model *api.API, library *config.Library, module *config.SwiftModul
 	if packageName == "" {
 		packageName = PackageName(model)
 	}
+	packageRepoName := PackageRepoName(outdir, library, packageName)
 	responseEncoding := defaultResponseEncoding
 	if library.SpecificationFormat == config.SpecDiscovery {
 		responseEncoding = discoveryResponseEncoding
@@ -200,6 +204,7 @@ func newCodec(model *api.API, library *config.Library, module *config.SwiftModul
 		Model:              model,
 		GenerationYear:     generationYear,
 		PackageName:        packageName,
+		PackageRepoName:    packageRepoName,
 		PackageVersion:     packageVersion,
 		MonorepoRoot:       rel,
 		ApiPackages:        map[string]*Dependency{},
