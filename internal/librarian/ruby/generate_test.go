@@ -1533,6 +1533,46 @@ func TestIsMultiWrapper(t *testing.T) {
 	}
 }
 
+func TestRunToysTasks_Empty(t *testing.T) {
+	binDir := t.TempDir()
+	t.Setenv("LIBRARIAN_BIN", binDir)
+	installDir := filepath.Join(binDir, "ruby_tools", "bin")
+	if err := os.MkdirAll(installDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	setupDummyToys(t, installDir, `#!/bin/sh
+echo "$@" >> toys.log
+`)
+	for _, test := range []struct {
+		name    string
+		library *config.Library
+	}{
+		{
+			name:    "nil ruby configuration",
+			library: &config.Library{},
+		},
+		{
+			name: "empty toys tasks",
+			library: &config.Library{
+				Ruby: &config.RubyPackage{
+					ToysTasks: []string{},
+				},
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			outDir := t.TempDir()
+			if err := runToysTasks(t.Context(), test.library, outDir); err != nil {
+				t.Fatal(err)
+			}
+			logFile := filepath.Join(outDir, "toys.log")
+			if _, err := os.Stat(logFile); !errors.Is(err, fs.ErrNotExist) {
+				t.Errorf("expected no toys.log, got err: %v", err)
+			}
+		})
+	}
+}
+
 func TestRunToysTasks(t *testing.T) {
 	binDir := t.TempDir()
 	t.Setenv("LIBRARIAN_BIN", binDir)
@@ -1548,18 +1588,6 @@ echo "$@" >> toys.log
 		library  *config.Library
 		wantLogs []string
 	}{
-		{
-			name:    "nil ruby configuration",
-			library: &config.Library{},
-		},
-		{
-			name: "empty toys tasks",
-			library: &config.Library{
-				Ruby: &config.RubyPackage{
-					ToysTasks: []string{},
-				},
-			},
-		},
 		{
 			name: "single task",
 			library: &config.Library{
@@ -1585,12 +1613,6 @@ echo "$@" >> toys.log
 				t.Fatal(err)
 			}
 			logFile := filepath.Join(outDir, "toys.log")
-			if len(test.wantLogs) == 0 {
-				if _, err := os.Stat(logFile); !errors.Is(err, fs.ErrNotExist) {
-					t.Errorf("expected no toys.log, got err: %v", err)
-				}
-				return
-			}
 			content, err := os.ReadFile(logFile)
 			if err != nil {
 				t.Fatal(err)
@@ -1636,6 +1658,15 @@ exit 1
 			},
 			wantErr: errEmptyToysTask,
 		},
+		{
+			name: "toys execution failure",
+			library: &config.Library{
+				Ruby: &config.RubyPackage{
+					ToysTasks: []string{"failing-task"},
+				},
+			},
+			wantErr: errToysTaskFailed,
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			outDir := t.TempDir()
@@ -1645,19 +1676,6 @@ exit 1
 			}
 		})
 	}
-
-	t.Run("toys execution failure", func(t *testing.T) {
-		outDir := t.TempDir()
-		library := &config.Library{
-			Ruby: &config.RubyPackage{
-				ToysTasks: []string{"failing-task"},
-			},
-		}
-		gotErr := runToysTasks(t.Context(), library, outDir)
-		if gotErr == nil {
-			t.Fatal("expected error, got nil")
-		}
-	})
 }
 
 func setupDummyToys(t *testing.T, binDir, script string) {

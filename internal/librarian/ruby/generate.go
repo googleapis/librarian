@@ -37,9 +37,10 @@ import (
 const commonResourcesProto = "google/cloud/common_resources.proto"
 
 var (
-	errNoAPIs        = errors.New("no apis configured for library")
-	errInvalidPath   = errors.New("invalid path: must be a relative path within the directory")
-	errEmptyToysTask = errors.New("toys task must not be empty")
+	errNoAPIs         = errors.New("no apis configured for library")
+	errInvalidPath    = errors.New("invalid path: must be a relative path within the directory")
+	errEmptyToysTask  = errors.New("toys task must not be empty")
+	errToysTaskFailed = errors.New("failed to run toys")
 )
 
 // DefaultOutput derives an output path from a library name and a default
@@ -423,7 +424,7 @@ func runToysTasks(ctx context.Context, library *config.Library, outDir string) e
 		}
 		args := strings.Fields(task)
 		if err := command.RunInDirWithEnv(ctx, outDir, env, "toys", args...); err != nil {
-			return fmt.Errorf("failed to run toys %s: %w", task, err)
+			return fmt.Errorf("%w %s: %w", errToysTaskFailed, task, err)
 		}
 	}
 	return nil
