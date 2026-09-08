@@ -774,6 +774,14 @@ type DotnetCsprojSnippets struct {
 	EmbeddedResources []string `yaml:"embedded_resources,omitempty"`
 }
 
+// NodejsDefault contains Node.js-specific default configuration.
+type NodejsDefault struct {
+	// CustomScopes maps API path prefixes (e.g., "google/shopping/merchant")
+	// to their corresponding npm scope (e.g., "@google-shopping").
+	// Use this to override default package name derivation for specific non-cloud API paths.
+	CustomScopes map[string]string `yaml:"custom_scopes,omitempty"`
+}
+
 // NodejsPackage contains Node.js-specific library configuration.
 type NodejsPackage struct {
 	// AdditionalProtos is a list of additional proto files to include in generation.

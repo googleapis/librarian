@@ -132,7 +132,7 @@ This document describes the schema for the librarian.yaml.
 | `dotnet` | [DotnetPackage](#dotnetpackage-configuration) (optional) | Contains .NET-specific default configuration. |
 | `go` | [GoDefault](#godefault-configuration) (optional) | Contains Go-specific default configuration. |
 | `java` | [JavaDefault](#javadefault-configuration) (optional) | Contains Java-specific default configuration. |
-| `nodejs` | [NodejsPackage](#nodejspackage-configuration) (optional) | Contains Node.js-specific default configuration. |
+| `nodejs` | [NodejsDefault](#nodejsdefault-configuration) (optional) | Contains Node.js-specific default configuration. |
 | `php` | [PHPDefault](#phpdefault-configuration) (optional) | Contains PHP-specific default configuration. |
 | `rust` | [RustDefault](#rustdefault-configuration) (optional) | Contains Rust-specific default configuration. |
 | `python` | [PythonDefault](#pythondefault-configuration) (optional) | Contains Python-specific default configuration. |
@@ -430,6 +430,12 @@ This document describes the schema for the librarian.yaml.
 | `mixins` | string | Controls mixin behavior for this API (e.g., "none" to disable). When set, this overrides the package-level mixins setting. |
 | `omit_common_resources` | bool | Indicates whether to omit the default inclusion of google/cloud/common_resources.proto. |
 | `path` | string | Is the source path. |
+
+## NodejsDefault Configuration
+
+| Field | Type | Description |
+| :--- | :--- | :--- |
+| `custom_scopes` | map[string]string | Maps API path prefixes (e.g., "google/shopping/merchant") to their corresponding npm scope (e.g., "@google-shopping"). Use this to override default package name derivation for specific non-cloud API paths. |
 
 ## NodejsPackage Configuration
 
