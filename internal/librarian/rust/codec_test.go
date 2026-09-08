@@ -1439,6 +1439,7 @@ func TestBuildCodec(t *testing.T) {
 								Ignore:  true,
 							},
 						},
+						GrpcClient: "crate::storage::bidi::GrpcClient",
 					},
 					ModulePath:                "gcs",
 					TemplateOverride:          "custom-template",
@@ -1467,6 +1468,7 @@ func TestBuildCodec(t *testing.T) {
 				"generate-rpc-samples":        "true",
 				"name-overrides":              "foo=bar",
 				"quickstart-service-override": "OverriddenService",
+				"grpc-client":                 "crate::storage::bidi::GrpcClient",
 				"default-features":            "feature1,feature2",
 				"disabled-rustdoc-warnings":   "warning1,warning2",
 				"disabled-clippy-warnings":    "clippy1,clippy2",
@@ -1532,6 +1534,55 @@ func TestModuleToModelConfig_SkippedIds(t *testing.T) {
 		expected := []string{".google.cloud.secretmanager.v1.Secret.name"}
 		if diff := cmp.Diff(expected, modelCfg.Override.SkippedIDs); diff != "" {
 			t.Errorf("moduleToModelConfig() mismatch (-want +got):\n%s", diff)
+		}
+	})
+}
+
+func TestBuildModuleCodec_GrpcClient(t *testing.T) {
+	t.Run("module level grpc_client", func(t *testing.T) {
+		library := &config.Library{
+			Name: "google-cloud-storage",
+		}
+		module := &config.RustModule{
+			GrpcClient: "crate::storage::bidi::GrpcClient",
+		}
+		got := buildModuleCodec(library, module)
+		if got["grpc-client"] != "crate::storage::bidi::GrpcClient" {
+			t.Errorf("expected grpc-client to be %q, got %q", "crate::storage::bidi::GrpcClient", got["grpc-client"])
+		}
+	})
+
+	t.Run("crate level fallback grpc_client", func(t *testing.T) {
+		library := &config.Library{
+			Name: "google-cloud-storage",
+			Rust: &config.RustCrate{
+				RustDefault: config.RustDefault{
+					GrpcClient: "crate::storage::bidi::GrpcClient",
+				},
+			},
+		}
+		module := &config.RustModule{}
+		got := buildModuleCodec(library, module)
+		if got["grpc-client"] != "crate::storage::bidi::GrpcClient" {
+			t.Errorf("expected grpc-client to be %q, got %q", "crate::storage::bidi::GrpcClient", got["grpc-client"])
+		}
+	})
+
+	t.Run("module overrides crate level grpc_client", func(t *testing.T) {
+		library := &config.Library{
+			Name: "google-cloud-storage",
+			Rust: &config.RustCrate{
+				RustDefault: config.RustDefault{
+					GrpcClient: "crate::storage::default::GrpcClient",
+				},
+			},
+		}
+		module := &config.RustModule{
+			GrpcClient: "crate::storage::bidi::GrpcClient",
+		}
+		got := buildModuleCodec(library, module)
+		if got["grpc-client"] != "crate::storage::bidi::GrpcClient" {
+			t.Errorf("expected grpc-client to be %q, got %q", "crate::storage::bidi::GrpcClient", got["grpc-client"])
 		}
 	})
 }

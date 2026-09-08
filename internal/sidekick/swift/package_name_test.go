@@ -17,6 +17,7 @@ package swift
 import (
 	"testing"
 
+	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/sidekick/api"
 )
 
@@ -58,6 +59,66 @@ func TestPackageName(t *testing.T) {
 			got := PackageName(model)
 			if got != test.want {
 				t.Errorf("mismatch got = %q, want %q", got, test.want)
+			}
+		})
+	}
+}
+
+func TestPackageRepoName(t *testing.T) {
+	for _, test := range []struct {
+		name        string
+		outdir      string
+		library     *config.Library
+		packageName string
+		want        string
+	}{
+		{
+			name:        "from outdir with swift prefix",
+			outdir:      "generated/swift-google-cloud-secretmanager-v1",
+			library:     &config.Library{Name: "google-cloud-secretmanager-v1"},
+			packageName: "google-cloud-secretmanager-v1",
+			want:        "swift-google-cloud-secretmanager-v1",
+		},
+		{
+			name:        "from packages outdir with swift prefix",
+			outdir:      "packages/swift-google-gax",
+			library:     &config.Library{Name: "swift-google-gax"},
+			packageName: "swift-google-gax",
+			want:        "swift-google-gax",
+		},
+		{
+			name:        "from library name without prefix",
+			outdir:      "/tmp/random-dir",
+			library:     &config.Library{Name: "google-cloud-secretmanager-v1"},
+			packageName: "google-cloud-secretmanager-v1",
+			want:        "swift-google-cloud-secretmanager-v1",
+		},
+		{
+			name:        "from library name already with prefix",
+			outdir:      "/tmp/random-dir",
+			library:     &config.Library{Name: "swift-google-cloud-secretmanager-v1"},
+			packageName: "google-cloud-secretmanager-v1",
+			want:        "swift-google-cloud-secretmanager-v1",
+		},
+		{
+			name:        "from package name without prefix",
+			outdir:      "/tmp/random-dir",
+			library:     nil,
+			packageName: "google-type",
+			want:        "swift-google-type",
+		},
+		{
+			name:        "from package name already with prefix",
+			outdir:      "/tmp/random-dir",
+			library:     nil,
+			packageName: "swift-google-type",
+			want:        "swift-google-type",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := PackageRepoName(test.outdir, test.library, test.packageName)
+			if got != test.want {
+				t.Errorf("PackageRepoName() = %q, want %q", got, test.want)
 			}
 		})
 	}

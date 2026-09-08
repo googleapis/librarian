@@ -369,6 +369,15 @@ func TestParseOptions(t *testing.T) {
 				c.quickstartServiceOverride = "OverriddenService"
 			},
 		},
+		{
+			Format: libconfig.SpecProtobuf,
+			Options: map[string]string{
+				"grpc-client": "custom::GrpcClient",
+			},
+			Update: func(c *codec) {
+				c.grpcClient = "custom::GrpcClient"
+			},
+		},
 	} {
 		t.Run(fmt.Sprintf("case_%d", i), func(t *testing.T) {
 			want, err := newCodec(test.Format, map[string]string{})

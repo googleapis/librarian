@@ -88,55 +88,85 @@ func TestHasReleasePleaseConfigs(t *testing.T) {
 			createManifest: true,
 			want:           true,
 		},
-		{
-			name:           "both missing (Python)",
-			language:       config.LanguagePython,
-			createConfig:   false,
-			createManifest: false,
-			want:           false,
-		},
-		{
-			name:           "config missing (Python)",
-			language:       config.LanguagePython,
-			createConfig:   false,
-			createManifest: true,
-			want:           false,
-		},
-		{
-			name:           "manifest missing (Python)",
-			language:       config.LanguagePython,
-			createConfig:   true,
-			createManifest: false,
-			want:           false,
-		},
-		{
-			name:           "both exist (Python)",
-			language:       config.LanguagePython,
-			createConfig:   true,
-			createManifest: true,
-			want:           true,
-		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			tmp := t.TempDir()
-			manifestFile, configFile := releasePleaseFiles(
-				&config.Config{
-					Language: test.language,
-				},
-			)
+			files := releasePleaseFiles(&config.Config{Language: test.language})
 			if test.createConfig {
-				if err := os.WriteFile(filepath.Join(tmp, configFile), []byte("{}"), 0o644); err != nil {
+				if err := os.WriteFile(filepath.Join(tmp, files.bulk.configFile), []byte("{}"), 0o644); err != nil {
 					t.Fatal(err)
 				}
 			}
 			if test.createManifest {
-				if err := os.WriteFile(filepath.Join(tmp, manifestFile), []byte("{}"), 0o644); err != nil {
+				if err := os.WriteFile(filepath.Join(tmp, files.bulk.manifestFile), []byte("{}"), 0o644); err != nil {
 					t.Fatal(err)
 				}
 			}
 			got := hasReleasePleaseConfigs(tmp, &config.Config{Language: test.language})
 			if got != test.want {
 				t.Errorf("hasReleasePleaseConfigs(%s, %s) = %t, want %t", tmp, test.language, got, test.want)
+			}
+		})
+	}
+}
+
+func TestHasReleasePleaseConfigs_Python(t *testing.T) {
+	for _, test := range []struct {
+		name  string
+		files []string
+		want  bool
+	}{
+		{
+			name:  "both individual exist",
+			files: []string{individualConfigFile, individualManifestFile},
+			want:  true,
+		},
+		{
+			name:  "individual config missing",
+			files: []string{individualManifestFile},
+			want:  false,
+		},
+		{
+			name:  "individual manifest missing",
+			files: []string{individualConfigFile},
+			want:  false,
+		},
+		{
+			name:  "both bulk exist",
+			files: []string{bulkConfigFile, bulkManifestFile},
+			want:  true,
+		},
+		{
+			name:  "bulk config missing",
+			files: []string{bulkManifestFile},
+			want:  false,
+		},
+		{
+			name:  "bulk manifest missing",
+			files: []string{bulkConfigFile},
+			want:  false,
+		},
+		{
+			name:  "all exist",
+			files: []string{bulkConfigFile, bulkManifestFile, individualConfigFile, individualManifestFile},
+			want:  true,
+		},
+		{
+			name:  "all missing",
+			files: nil,
+			want:  false,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			tmp := t.TempDir()
+			for _, file := range test.files {
+				if err := os.WriteFile(filepath.Join(tmp, file), []byte("{}"), 0o644); err != nil {
+					t.Fatal(err)
+				}
+			}
+			got := hasReleasePleaseConfigs(tmp, &config.Config{Language: config.LanguagePython})
+			if got != test.want {
+				t.Errorf("hasReleasePleaseConfigs(%s, %s) = %t, want %t", tmp, config.LanguagePython, got, test.want)
 			}
 		})
 	}
@@ -195,91 +225,6 @@ func TestSyncToReleasePlease(t *testing.T) {
 			wantManifest: `{"packages/google-cloud-secretmanager":"1.0.0"}`,
 			wantConfig:   `{"packages":{"packages/google-cloud-secretmanager":{}}}`,
 		},
-
-		{
-			name:            "new python library",
-			language:        config.LanguagePython,
-			initialManifest: `{}`,
-			initialConfig:   `{"packages": {}}`,
-			library: &config.Library{
-				Name:    "google-cloud-secretmanager",
-				Version: "0.0.0",
-				APIs: []*config.API{
-					{Path: "google/cloud/secretmanager/v1"},
-				},
-			},
-			wantManifest: `{"packages/google-cloud-secretmanager":"0.0.0"}`,
-			wantConfig: `{
-				"packages": {
-					"packages/google-cloud-secretmanager": {
-						"component": "google-cloud-secretmanager",
-						"extra-files": [
-							"google/cloud/secretmanager/gapic_version.py",
-							"google/cloud/secretmanager_v1/gapic_version.py",
-							{
-								"jsonpath": "$.clientLibrary.version",
-								"path": "samples/generated_samples/snippet_metadata_google.cloud.secretmanager.v1.json",
-								"type": "json"
-							}
-						]
-					}
-				}
-			}`,
-		},
-		{
-			name:            "update existing python library (merge, deduplicate, sort)",
-			language:        config.LanguagePython,
-			initialManifest: `{"packages/google-cloud-secretmanager":"1.0.0"}`,
-			initialConfig: `{
-				"packages": {
-					"packages/google-cloud-secretmanager": {
-						"component": "google-cloud-secretmanager",
-						"release-type": "python",
-						"extra-files": [
-							"google/cloud/secretmanager/gapic_version.py",
-							"google/cloud/secretmanager_v1/gapic_version.py",
-							{
-								"jsonpath": "$.clientLibrary.version",
-								"path": "samples/generated_samples/snippet_metadata_google.cloud.secretmanager.v1.json",
-								"type": "json"
-							}
-						]
-					}
-				}
-			}`,
-			library: &config.Library{
-				Name:    "google-cloud-secretmanager",
-				Version: "1.0.0",
-				APIs: []*config.API{
-					{Path: "google/cloud/secretmanager/v1"},
-					{Path: "google/cloud/secretmanager/v1beta1"},
-				},
-			},
-			wantManifest: `{"packages/google-cloud-secretmanager":"1.0.0"}`,
-			wantConfig: `{
-				"packages": {
-					"packages/google-cloud-secretmanager": {
-						"component": "google-cloud-secretmanager",
-						"release-type": "python",
-						"extra-files": [
-							"google/cloud/secretmanager/gapic_version.py",
-							"google/cloud/secretmanager_v1/gapic_version.py",
-							"google/cloud/secretmanager_v1beta1/gapic_version.py",
-							{
-								"jsonpath": "$.clientLibrary.version",
-								"path": "samples/generated_samples/snippet_metadata_google.cloud.secretmanager.v1.json",
-								"type": "json"
-							},
-							{
-								"jsonpath": "$.clientLibrary.version",
-								"path": "samples/generated_samples/snippet_metadata_google.cloud.secretmanager.v1beta1.json",
-								"type": "json"
-							}
-						]
-					}
-				}
-			}`,
-		},
 		{
 			name:            "preserve existing extra-files for go library",
 			language:        config.LanguageGo,
@@ -309,45 +254,6 @@ func TestSyncToReleasePlease(t *testing.T) {
 							{
 								"jsonpath": "$.clientLibrary.version",
 								"path": "examples/apiv1/snippet_metadata.google.cloud.secretmanager.v1.json",
-								"type": "json"
-							}
-						]
-					}
-				}
-			}`,
-		},
-		{
-			name:            "replace existing string extra-files with map if same path",
-			language:        config.LanguagePython,
-			initialManifest: `{"packages/google-cloud-secretmanager":"1.0.0"}`,
-			initialConfig: `{
-				"packages": {
-					"packages/google-cloud-secretmanager": {
-						"component": "google-cloud-secretmanager",
-						"extra-files": [
-							"samples/generated_samples/snippet_metadata_google.cloud.secretmanager.v1.json"
-						]
-					}
-				}
-			}`,
-			library: &config.Library{
-				Name:    "google-cloud-secretmanager",
-				Version: "1.0.0",
-				APIs: []*config.API{
-					{Path: "google/cloud/secretmanager/v1"},
-				},
-			},
-			wantManifest: `{"packages/google-cloud-secretmanager":"1.0.0"}`,
-			wantConfig: `{
-				"packages": {
-					"packages/google-cloud-secretmanager": {
-						"component": "google-cloud-secretmanager",
-						"extra-files": [
-							"google/cloud/secretmanager/gapic_version.py",
-							"google/cloud/secretmanager_v1/gapic_version.py",
-							{
-								"jsonpath": "$.clientLibrary.version",
-								"path": "samples/generated_samples/snippet_metadata_google.cloud.secretmanager.v1.json",
 								"type": "json"
 							}
 						]
@@ -424,13 +330,13 @@ func TestSyncToReleasePlease(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			tmp := t.TempDir()
-			manifestFile, configFile := releasePleaseFiles(
+			files := releasePleaseFiles(
 				&config.Config{
 					Language: test.language,
 				},
 			)
-			manifestPath := filepath.Join(tmp, manifestFile)
-			configPath := filepath.Join(tmp, configFile)
+			manifestPath := filepath.Join(tmp, files.bulk.manifestFile)
+			configPath := filepath.Join(tmp, files.bulk.configFile)
 			if err := os.WriteFile(manifestPath, []byte(test.initialManifest), 0o644); err != nil {
 				t.Fatal(err)
 			}
@@ -566,9 +472,9 @@ func TestSyncToReleasePlease_Errors(t *testing.T) {
 				Language:  config.LanguagePython,
 				Libraries: []*config.Library{test.library},
 			}
-			manifestFile, configFile := releasePleaseFiles(cfg)
-			manifestPath := filepath.Join(tmp, manifestFile)
-			configPath := filepath.Join(tmp, configFile)
+			files := releasePleaseFiles(cfg)
+			manifestPath := filepath.Join(tmp, files.individual.manifestFile)
+			configPath := filepath.Join(tmp, files.individual.configFile)
 			if err := os.WriteFile(manifestPath, []byte("{}"), 0o644); err != nil {
 				t.Fatal(err)
 			}
@@ -580,5 +486,322 @@ func TestSyncToReleasePlease_Errors(t *testing.T) {
 				t.Errorf("expected error, got nil")
 			}
 		})
+	}
+}
+
+func TestSyncToReleasePlease_Python(t *testing.T) {
+	for _, test := range []struct {
+		name                 string
+		library              *config.Library
+		files                map[string]string
+		wantModifiedConfig   string
+		wantUnmodifiedConfig string
+		wantManifest         string
+		wantConfig           string
+	}{
+		{
+			name: "updates bulk config when tracked in bulk (merge, deduplicate, sort extra-files)",
+			library: &config.Library{
+				Name:    "google-cloud-biglake-hive",
+				Version: "0.3.2",
+				APIs: []*config.API{
+					{Path: "google/cloud/biglake/hive/v1"},
+					{Path: "google/cloud/biglake/hive/v1beta"},
+				},
+			},
+			files: map[string]string{
+				bulkManifestFile: `{"packages/google-cloud-biglake-hive": "0.3.2"}`,
+				bulkConfigFile: `{
+					"packages": {
+						"packages/google-cloud-biglake-hive": {
+							"component": "google-cloud-biglake-hive",
+							"extra-files": [
+								"google/cloud/biglake_hive/gapic_version.py",
+								"google/cloud/biglake_hive_v1beta/gapic_version.py"
+							]
+						}
+					}
+				}`,
+				individualManifestFile: `{}`,
+				individualConfigFile:   `{"packages": {}}`,
+			},
+			wantModifiedConfig:   bulkConfigFile,
+			wantUnmodifiedConfig: individualConfigFile,
+			wantManifest:         `{"packages/google-cloud-biglake-hive": "0.3.2"}`,
+			wantConfig: `{
+				"packages": {
+					"packages/google-cloud-biglake-hive": {
+						"component": "google-cloud-biglake-hive",
+						"extra-files": [
+							"google/cloud/biglake_hive/gapic_version.py",
+							"google/cloud/biglake_hive_v1/gapic_version.py",
+							"google/cloud/biglake_hive_v1beta/gapic_version.py",
+							{
+								"jsonpath": "$.clientLibrary.version",
+								"path": "samples/generated_samples/snippet_metadata_google.cloud.biglake.hive.v1.json",
+								"type": "json"
+							},
+							{
+								"jsonpath": "$.clientLibrary.version",
+								"path": "samples/generated_samples/snippet_metadata_google.cloud.biglake.hive.v1beta.json",
+								"type": "json"
+							}
+						]
+					}
+				}
+			}`,
+		},
+		{
+			name: "updates individual config when tracked in individual (merge, deduplicate, sort extra-files)",
+			library: &config.Library{
+				Name:    "google-cloud-secretmanager",
+				Version: "1.0.0",
+				APIs: []*config.API{
+					{Path: "google/cloud/secretmanager/v1"},
+					{Path: "google/cloud/secretmanager/v1beta1"},
+				},
+			},
+			files: map[string]string{
+				bulkManifestFile:       `{}`,
+				bulkConfigFile:         `{"packages": {}}`,
+				individualManifestFile: `{"packages/google-cloud-secretmanager":"1.0.0"}`,
+				individualConfigFile: `{
+					"packages": {
+						"packages/google-cloud-secretmanager": {
+							"component": "google-cloud-secretmanager",
+							"release-type": "python",
+							"extra-files": [
+								"google/cloud/secretmanager/gapic_version.py",
+								"google/cloud/secretmanager_v1/gapic_version.py",
+								{
+									"jsonpath": "$.clientLibrary.version",
+									"path": "samples/generated_samples/snippet_metadata_google.cloud.secretmanager.v1.json",
+									"type": "json"
+								}
+							]
+						}
+					}
+				}`,
+			},
+			wantModifiedConfig:   individualConfigFile,
+			wantUnmodifiedConfig: bulkConfigFile,
+			wantManifest:         `{"packages/google-cloud-secretmanager":"1.0.0"}`,
+			wantConfig: `{
+				"packages": {
+					"packages/google-cloud-secretmanager": {
+						"component": "google-cloud-secretmanager",
+						"release-type": "python",
+						"extra-files": [
+							"google/cloud/secretmanager/gapic_version.py",
+							"google/cloud/secretmanager_v1/gapic_version.py",
+							"google/cloud/secretmanager_v1beta1/gapic_version.py",
+							{
+								"jsonpath": "$.clientLibrary.version",
+								"path": "samples/generated_samples/snippet_metadata_google.cloud.secretmanager.v1.json",
+								"type": "json"
+							},
+							{
+								"jsonpath": "$.clientLibrary.version",
+								"path": "samples/generated_samples/snippet_metadata_google.cloud.secretmanager.v1beta1.json",
+								"type": "json"
+							}
+						]
+					}
+				}
+			}`,
+		},
+		{
+			name: "updates individual config when tracked in individual (replaces string extra-files with structured map)",
+			library: &config.Library{
+				Name:    "google-cloud-secretmanager",
+				Version: "1.0.0",
+				APIs: []*config.API{
+					{Path: "google/cloud/secretmanager/v1"},
+				},
+			},
+			files: map[string]string{
+				bulkManifestFile:       `{}`,
+				bulkConfigFile:         `{"packages": {}}`,
+				individualManifestFile: `{"packages/google-cloud-secretmanager":"1.0.0"}`,
+				individualConfigFile: `{
+					"packages": {
+						"packages/google-cloud-secretmanager": {
+							"component": "google-cloud-secretmanager",
+							"extra-files": [
+								"samples/generated_samples/snippet_metadata_google.cloud.secretmanager.v1.json"
+							]
+						}
+					}
+				}`,
+			},
+			wantModifiedConfig:   individualConfigFile,
+			wantUnmodifiedConfig: bulkConfigFile,
+			wantManifest:         `{"packages/google-cloud-secretmanager":"1.0.0"}`,
+			wantConfig: `{
+				"packages": {
+					"packages/google-cloud-secretmanager": {
+						"component": "google-cloud-secretmanager",
+						"extra-files": [
+							"google/cloud/secretmanager/gapic_version.py",
+							"google/cloud/secretmanager_v1/gapic_version.py",
+							{
+								"jsonpath": "$.clientLibrary.version",
+								"path": "samples/generated_samples/snippet_metadata_google.cloud.secretmanager.v1.json",
+								"type": "json"
+							}
+						]
+					}
+				}
+			}`,
+		},
+		{
+			name: "new python library defaults to individual config",
+			library: &config.Library{
+				Name:    "google-cloud-secretmanager",
+				Version: "0.0.0",
+				APIs: []*config.API{
+					{Path: "google/cloud/secretmanager/v1"},
+				},
+			},
+			files: map[string]string{
+				bulkManifestFile:       `{}`,
+				bulkConfigFile:         `{"packages": {}}`,
+				individualManifestFile: `{}`,
+				individualConfigFile:   `{"packages": {}}`,
+			},
+			wantModifiedConfig:   individualConfigFile,
+			wantUnmodifiedConfig: bulkConfigFile,
+			wantManifest:         `{"packages/google-cloud-secretmanager":"0.0.0"}`,
+			wantConfig: `{
+				"packages": {
+					"packages/google-cloud-secretmanager": {
+						"component": "google-cloud-secretmanager",
+						"extra-files": [
+							"google/cloud/secretmanager/gapic_version.py",
+							"google/cloud/secretmanager_v1/gapic_version.py",
+							{
+								"jsonpath": "$.clientLibrary.version",
+								"path": "samples/generated_samples/snippet_metadata_google.cloud.secretmanager.v1.json",
+								"type": "json"
+							}
+						]
+					}
+				}
+			}`,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			tmp := t.TempDir()
+			writeTestFiles(t, tmp, test.files)
+			cfg := &config.Config{
+				Language:  config.LanguagePython,
+				Libraries: []*config.Library{test.library},
+			}
+			if err := syncToReleasePlease(tmp, cfg, test.library.Name); err != nil {
+				t.Fatal(err)
+			}
+
+			manifestFile := individualManifestFile
+			if test.wantModifiedConfig == bulkConfigFile {
+				manifestFile = bulkManifestFile
+			}
+			gotManifestBytes, err := os.ReadFile(filepath.Join(tmp, manifestFile))
+			if err != nil {
+				t.Fatal(err)
+			}
+			var gotManifest, wantManifest map[string]string
+			if err := json.Unmarshal(gotManifestBytes, &gotManifest); err != nil {
+				t.Fatal(err)
+			}
+			if err := json.Unmarshal([]byte(test.wantManifest), &wantManifest); err != nil {
+				t.Fatal(err)
+			}
+			if diff := cmp.Diff(wantManifest, gotManifest); diff != "" {
+				t.Errorf("manifest mismatch (-want +got):\n%s", diff)
+			}
+
+			gotConfigBytes, err := os.ReadFile(filepath.Join(tmp, test.wantModifiedConfig))
+			if err != nil {
+				t.Fatal(err)
+			}
+			var gotConfig, wantConfig map[string]any
+			if err := json.Unmarshal(gotConfigBytes, &gotConfig); err != nil {
+				t.Fatal(err)
+			}
+			if err := json.Unmarshal([]byte(test.wantConfig), &wantConfig); err != nil {
+				t.Fatal(err)
+			}
+			if diff := cmp.Diff(wantConfig, gotConfig); diff != "" {
+				t.Errorf("config mismatch (-want +got):\n%s", diff)
+			}
+
+			gotUnmodified, err := readJSONFile[map[string]any](filepath.Join(tmp, test.wantUnmodifiedConfig))
+			if err != nil {
+				t.Fatal(err)
+			}
+			if diff := cmp.Diff(map[string]any{"packages": map[string]any{}}, gotUnmodified); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestIsTrackedInBulkConfig(t *testing.T) {
+	for _, test := range []struct {
+		name       string
+		configJSON string
+		writeFile  bool
+		pkgPath    string
+		want       bool
+	}{
+		{
+			name:       "package exists in bulk config",
+			configJSON: `{"packages": {"packages/google-cloud-foo": {}}}`,
+			writeFile:  true,
+			pkgPath:    "packages/google-cloud-foo",
+			want:       true,
+		},
+		{
+			name:       "package does not exist in bulk config",
+			configJSON: `{"packages": {"packages/google-cloud-other": {}}}`,
+			writeFile:  true,
+			pkgPath:    "packages/google-cloud-foo",
+			want:       false,
+		},
+		{
+			name:      "bulk config file does not exist",
+			writeFile: false,
+			pkgPath:   "packages/google-cloud-foo",
+			want:      false,
+		},
+		{
+			name:       "invalid packages field",
+			configJSON: `{"packages": "not-a-map"}`,
+			writeFile:  true,
+			pkgPath:    "packages/google-cloud-foo",
+			want:       false,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			tmp := t.TempDir()
+			if test.writeFile {
+				if err := os.WriteFile(filepath.Join(tmp, bulkConfigFile), []byte(test.configJSON), 0o644); err != nil {
+					t.Fatal(err)
+				}
+			}
+			got := isTrackedInBulkConfig(tmp, test.pkgPath)
+			if got != test.want {
+				t.Errorf("isTrackedInBulkConfig(%s, %s) = %t, want %t", tmp, test.pkgPath, got, test.want)
+			}
+		})
+	}
+}
+
+func writeTestFiles(t *testing.T, dir string, files map[string]string) {
+	t.Helper()
+	for name, content := range files {
+		if err := os.WriteFile(filepath.Join(dir, name), []byte(content), 0o644); err != nil {
+			t.Fatal(err)
+		}
 	}
 }

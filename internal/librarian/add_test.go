@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"slices"
 	"sort"
 	"strconv"
 	"testing"
@@ -1247,5 +1248,96 @@ func TestAddLibraryCommand_GoogleapisCache(t *testing.T) {
 	err = runAdd(t.Context(), cfg, "google/cloud/secretmanager/v1", "")
 	if err != nil {
 		t.Fatalf("expected runAdd to succeed with cached googleapis, got %v", err)
+	}
+}
+
+func TestAddLibraryCommand_Python_ExistingLibraryReleasePlease(t *testing.T) {
+	googleapisDir, err := filepath.Abs("../testdata/googleapis")
+	if err != nil {
+		t.Fatal(err)
+	}
+	tmpDir := t.TempDir()
+	t.Chdir(tmpDir)
+	initialBulkConfig := `{
+		"packages": {
+			"packages/google-cloud-secretmanager": {
+				"component": "google-cloud-secretmanager",
+				"extra-files": [
+					"google/cloud/secretmanager/gapic_version.py",
+					"google/cloud/secretmanager_v1/gapic_version.py",
+					{
+						"jsonpath": "$.clientLibrary.version",
+						"path": "samples/generated_samples/snippet_metadata_google.cloud.secretmanager.v1.json",
+						"type": "json"
+					}
+				]
+			}
+		}
+	}`
+	writeTestFiles(t, tmpDir, map[string]string{
+		bulkManifestFile:       `{"packages/google-cloud-secretmanager": "1.2.3"}`,
+		bulkConfigFile:         initialBulkConfig,
+		individualManifestFile: `{}`,
+		individualConfigFile:   `{"packages": {}}`,
+	})
+	cfg := sample.Config()
+	cfg.Language = config.LanguagePython
+	cfg.Default.Output = "output"
+	cfg.Sources.Googleapis.Dir = googleapisDir
+	cfg.Libraries = []*config.Library{
+		{
+			Name:    "google-cloud-secretmanager",
+			Version: "1.2.3",
+			APIs: []*config.API{
+				{Path: "google/cloud/secretmanager/v1"},
+			},
+			Python: &config.PythonPackage{
+				DefaultVersion: "v1",
+			},
+		},
+	}
+	if err := yaml.Write(config.LibrarianYAML, cfg); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := Run(t.Context(), "librarian", "add", "google/cloud/secretmanager/v1beta2"); err != nil {
+		t.Fatal(err)
+	}
+
+	gotCfg, err := yaml.Read[config.Config](config.LibrarianYAML)
+	if err != nil {
+		t.Fatal(err)
+	}
+	lib, err := FindLibrary(gotCfg, "google-cloud-secretmanager")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(lib.APIs) != 2 {
+		t.Fatalf("expected 2 APIs in library, got %d", len(lib.APIs))
+	}
+	gotBulkConfig, err := readJSONFile[map[string]any](filepath.Join(tmpDir, bulkConfigFile))
+	if err != nil {
+		t.Fatal(err)
+	}
+	pkgs := gotBulkConfig["packages"].(map[string]any)
+	pkg := pkgs["packages/google-cloud-secretmanager"].(map[string]any)
+	extraFiles := pkg["extra-files"].([]any)
+	for _, want := range []string{
+		"google/cloud/secretmanager_v1/gapic_version.py",
+		"google/cloud/secretmanager_v1beta2/gapic_version.py",
+	} {
+		if !slices.ContainsFunc(extraFiles, func(elem any) bool {
+			s, ok := elem.(string)
+			return ok && s == want
+		}) {
+			t.Errorf("bulk config extra-files missing %s, got: %v", want, extraFiles)
+		}
+	}
+	gotIndConfig, err := readJSONFile[map[string]any](filepath.Join(tmpDir, individualConfigFile))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if diff := cmp.Diff(map[string]any{"packages": map[string]any{}}, gotIndConfig); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
