@@ -75,7 +75,7 @@ echo "pip $@" >> %q
 				{Name: "synthtool", Package: "git+https://github.com/..."},
 			},
 			wantInvocations: []string{
-				"pip install --force-reinstall --no-deps git+https://github.com/...",
+				"pip install --force-reinstall git+https://github.com/...",
 			},
 		},
 		{
@@ -104,7 +104,7 @@ echo "pip $@" >> %q
 			},
 			wantInvocations: []string{
 				"pip install PyYAML==6.0.2",
-				"pip install --force-reinstall --no-deps git+https://github.com/...",
+				"pip install --force-reinstall git+https://github.com/...",
 			},
 		},
 	} {

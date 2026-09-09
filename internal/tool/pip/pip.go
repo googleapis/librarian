@@ -83,7 +83,7 @@ func reinstallPackages(ctx context.Context, targets []string) error {
 	if len(targets) == 0 {
 		return nil
 	}
-	args := []string{"install", "--force-reinstall", "--no-deps"}
+	args := []string{"install", "--force-reinstall"}
 	args = append(args, targets...)
 	return runPip(ctx, args...)
 }
