@@ -68,6 +68,9 @@ func libraryToModelConfig(library *config.Library, ch *config.API, srcs *sources
 	}
 
 	if library.Rust != nil {
+		if len(library.Rust.IncludedIds) > 0 {
+			modelCfg.Override.IncludedIDs = library.Rust.IncludedIds
+		}
 		if len(library.Rust.SkippedIds) > 0 {
 			modelCfg.Override.SkippedIDs = library.Rust.SkippedIds
 		}
@@ -155,6 +158,9 @@ func buildCodec(library *config.Library, releaseLevel string) map[string]string 
 	}
 	if rust.LroStubOptions != nil && *rust.LroStubOptions {
 		codec["lro-stub-options"] = "true"
+	}
+	if rust.DefaultTransport != "" {
+		codec["default-transport"] = rust.DefaultTransport
 	}
 	if rust.HasVeneer {
 		codec["has-veneer"] = "true"
@@ -393,6 +399,16 @@ func buildModuleCodec(library *config.Library, module *config.RustModule) map[st
 	}
 	if grpcClient != "" {
 		codec["grpc-client"] = grpcClient
+	}
+	defaultTransport := ""
+	if library.Rust != nil && library.Rust.DefaultTransport != "" {
+		defaultTransport = library.Rust.DefaultTransport
+	}
+	if module.DefaultTransport != "" {
+		defaultTransport = module.DefaultTransport
+	}
+	if defaultTransport != "" {
+		codec["default-transport"] = defaultTransport
 	}
 	return codec
 }

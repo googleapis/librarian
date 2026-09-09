@@ -557,3 +557,77 @@ func TestFindUsedPackages_MapFields(t *testing.T) {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
+
+func TestUsedByGrpcWithDefaultTransport(t *testing.T) {
+	method := &api.Method{
+		Name: "GetResource",
+	}
+	service := &api.Service{
+		Name:    "TestService",
+		ID:      ".test.Service",
+		Methods: []*api.Method{method},
+	}
+	model := api.NewTestAPI([]*api.Message{}, []*api.Enum{}, []*api.Service{service})
+	c, err := newCodec(libconfig.SpecProtobuf, map[string]string{
+		"default-transport": "grpc",
+		"package:location":  "package=gcp-sdk-location,source=google.cloud.location",
+		"package:prost":     "used-if=streaming,package=prost",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	resolveUsedPackages(model, c.extraPackages, c.hasGrpc(model))
+	want := []*packagez{
+		{
+			name:        "location",
+			packageName: "gcp-sdk-location",
+		},
+		{
+			name:        "prost",
+			packageName: "prost",
+			used:        true,
+			usedIf:      []string{"streaming"},
+		},
+	}
+	less := func(a, b *packagez) bool { return a.name < b.name }
+	if diff := cmp.Diff(want, c.extraPackages, cmp.AllowUnexported(packagez{}), cmpopts.SortSlices(less)); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+}
+
+func TestUsedByGrpcNamedFeature(t *testing.T) {
+	method := &api.Method{
+		Name: "GetResource",
+	}
+	service := &api.Service{
+		Name:    "TestService",
+		ID:      ".test.Service",
+		Methods: []*api.Method{method},
+	}
+	model := api.NewTestAPI([]*api.Message{}, []*api.Enum{}, []*api.Service{service})
+	c, err := newCodec(libconfig.SpecProtobuf, map[string]string{
+		"default-transport": "grpc",
+		"package:location":  "package=gcp-sdk-location,source=google.cloud.location",
+		"package:prost":     "used-if=grpc,package=prost",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	resolveUsedPackages(model, c.extraPackages, c.hasGrpc(model))
+	want := []*packagez{
+		{
+			name:        "location",
+			packageName: "gcp-sdk-location",
+		},
+		{
+			name:        "prost",
+			packageName: "prost",
+			used:        true,
+			usedIf:      []string{"grpc"},
+		},
+	}
+	less := func(a, b *packagez) bool { return a.name < b.name }
+	if diff := cmp.Diff(want, c.extraPackages, cmp.AllowUnexported(packagez{}), cmpopts.SortSlices(less)); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+}

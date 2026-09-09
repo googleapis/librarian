@@ -130,13 +130,20 @@ type RustDefault struct {
 	// methods.
 	IncludeServerStreamingMethods *bool `yaml:"include_server_streaming_methods,omitempty"`
 
-	// AllowStreamingAnyTypes is a list of protobuf field/message IDs with google.protobuf.Any
-	// permitted in streaming RPCs (their fields will be dropped in prost conversion).
+	// AllowGrpcAnyFields is a list of protobuf field IDs with google.protobuf.Any
+	// permitted in gRPC/streaming RPCs (their fields will be dropped in prost conversion).
+	AllowGrpcAnyFields []string `yaml:"allow_grpc_any_fields,omitempty"`
+
+	// AllowStreamingAnyTypes is deprecated: use allow_grpc_any_fields instead.
 	AllowStreamingAnyTypes []string `yaml:"allow_streaming_any_types,omitempty"`
 
 	// GrpcClient is the Rust type used for the inner gRPC client in generated transports.
 	// Defaults to "gaxi::grpc::Client".
 	GrpcClient string `yaml:"grpc_client,omitempty"`
+
+	// DefaultTransport specifies the default transport protocol for unary methods ("grpc" or "http").
+	// Defaults to "http".
+	DefaultTransport string `yaml:"default_transport,omitempty"`
 }
 
 // RustModule defines a generation target within a veneer crate.
@@ -149,6 +156,10 @@ type RustModule struct {
 
 	// DisabledRustdocWarnings specifies rustdoc lints to disable. An empty slice explicitly enables all warnings.
 	DisabledRustdocWarnings yaml.StringSlice `yaml:"disabled_rustdoc_warnings,omitempty"`
+
+	// DefaultTransport specifies the default transport protocol for unary methods ("grpc" or "http").
+	// This overrides the crate-level setting.
+	DefaultTransport string `yaml:"default_transport,omitempty"`
 
 	// DetailedTracingAttributes indicates whether to include detailed tracing attributes.
 	// This overrides the crate-level setting.
@@ -780,6 +791,14 @@ type DotnetCsprojSnippets struct {
 	EmbeddedResources []string `yaml:"embedded_resources,omitempty"`
 }
 
+// NodejsDefault contains Node.js-specific default configuration.
+type NodejsDefault struct {
+	// CustomScopes maps API path prefixes (e.g., "google/shopping/merchant")
+	// to their corresponding npm scope (e.g., "@google-shopping").
+	// Use this to override default package name derivation for specific non-cloud API paths.
+	CustomScopes map[string]string `yaml:"custom_scopes,omitempty"`
+}
+
 // NodejsPackage contains Node.js-specific library configuration.
 type NodejsPackage struct {
 	// AdditionalProtos is a list of additional proto files to include in generation.
@@ -902,6 +921,9 @@ type PHPAPI struct {
 type RubyPackage struct {
 	// DeleteGenerationOutputPaths is a list of paths relative to the output directory to delete after generation.
 	DeleteGenerationOutputPaths []string `yaml:"delete_generation_output_paths,omitempty"`
+
+	// ToysTasks is a list of toys tasks to execute after generation.
+	ToysTasks []string `yaml:"toys_tasks,omitempty"`
 
 	// WrapperOf contains the API versions (e.g. "v1:0.29") of versioned libraries that this library wraps.
 	WrapperOf []string `yaml:"wrapper_of,omitempty"`

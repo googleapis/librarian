@@ -132,7 +132,7 @@ This document describes the schema for the librarian.yaml.
 | `dotnet` | [DotnetPackage](#dotnetpackage-configuration) (optional) | Contains .NET-specific default configuration. |
 | `go` | [GoDefault](#godefault-configuration) (optional) | Contains Go-specific default configuration. |
 | `java` | [JavaDefault](#javadefault-configuration) (optional) | Contains Java-specific default configuration. |
-| `nodejs` | [NodejsPackage](#nodejspackage-configuration) (optional) | Contains Node.js-specific default configuration. |
+| `nodejs` | [NodejsDefault](#nodejsdefault-configuration) (optional) | Contains Node.js-specific default configuration. |
 | `php` | [PHPDefault](#phpdefault-configuration) (optional) | Contains PHP-specific default configuration. |
 | `rust` | [RustDefault](#rustdefault-configuration) (optional) | Contains Rust-specific default configuration. |
 | `python` | [PythonDefault](#pythondefault-configuration) (optional) | Contains Python-specific default configuration. |
@@ -431,6 +431,12 @@ This document describes the schema for the librarian.yaml.
 | `omit_common_resources` | bool | Indicates whether to omit the default inclusion of google/cloud/common_resources.proto. |
 | `path` | string | Is the source path. |
 
+## NodejsDefault Configuration
+
+| Field | Type | Description |
+| :--- | :--- | :--- |
+| `custom_scopes` | map[string]string | Maps API path prefixes (e.g., "google/shopping/merchant") to their corresponding npm scope (e.g., "@google-shopping"). Use this to override default package name derivation for specific non-cloud API paths. |
+
 ## NodejsPackage Configuration
 
 | Field | Type | Description |
@@ -527,6 +533,7 @@ This document describes the schema for the librarian.yaml.
 | Field | Type | Description |
 | :--- | :--- | :--- |
 | `delete_generation_output_paths` | list of string | Is a list of paths relative to the output directory to delete after generation. |
+| `toys_tasks` | list of string | Is a list of toys tasks to execute after generation. |
 | `wrapper_of` | list of string | Contains the API versions (e.g. "v1:0.29") of versioned libraries that this library wraps. |
 
 ## RustCrate Configuration
@@ -570,8 +577,10 @@ This document describes the schema for the librarian.yaml.
 | `resource_name_heuristic` | bool (optional) | Indicates whether to apply heuristics to identify and generate resource names. |
 | `include_bidi_streaming_methods` | bool (optional) | Indicates whether to include gRPC bi-directional streaming methods. |
 | `include_server_streaming_methods` | bool (optional) | Indicates whether to include gRPC server-side streaming methods. |
-| `allow_streaming_any_types` | list of string | Is a list of protobuf field/message IDs with google.protobuf.Any permitted in streaming RPCs (their fields will be dropped in prost conversion). |
+| `allow_grpc_any_fields` | list of string | Is a list of protobuf field IDs with google.protobuf.Any permitted in gRPC/streaming RPCs (their fields will be dropped in prost conversion). |
+| `allow_streaming_any_types` | list of string | Is deprecated: use allow_grpc_any_fields instead. |
 | `grpc_client` | string | Is the Rust type used for the inner gRPC client in generated transports. Defaults to "gaxi::grpc::Client". |
+| `default_transport` | string | Specifies the default transport protocol for unary methods ("grpc" or "http"). Defaults to "http". |
 
 ## RustDocumentationOverride Configuration
 
@@ -587,6 +596,7 @@ This document describes the schema for the librarian.yaml.
 | :--- | :--- | :--- |
 | `grpc_client` | string | Is the Rust type used for the inner gRPC client in generated transports. This overrides the crate-level setting. Defaults to "gaxi::grpc::Client". |
 | `disabled_rustdoc_warnings` | yaml.StringSlice | Specifies rustdoc lints to disable. An empty slice explicitly enables all warnings. |
+| `default_transport` | string | Specifies the default transport protocol for unary methods ("grpc" or "http"). This overrides the crate-level setting. |
 | `detailed_tracing_attributes` | bool (optional) | Indicates whether to include detailed tracing attributes. This overrides the crate-level setting. |
 | `lro_stub_options` | bool (optional) | Indicates whether to include LRO poller options in generated stub traits. This overrides the crate-level setting. |
 | `documentation_overrides` | list of [RustDocumentationOverride](#rustdocumentationoverride-configuration) | Contains overrides for element documentation. |
