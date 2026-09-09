@@ -843,6 +843,19 @@ func TestTidy_UnusedSections(t *testing.T) {
 			},
 			wantDefault: nil,
 		},
+		{
+			name: "tools with comment preserved",
+			cfg: &config.Config{
+				Language: config.LanguageRust,
+				Sources: &config.Sources{
+					Googleapis: &config.Source{Commit: "commit"},
+				},
+				Tools:   &config.Tools{Comment: "custom tools comment"},
+				Default: &config.Default{},
+			},
+			wantTools:   &config.Tools{Comment: "custom tools comment"},
+			wantDefault: nil,
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			tempDir := t.TempDir()
@@ -917,5 +930,53 @@ func TestTidy_SkipGenerate(t *testing.T) {
 	}
 	if !cfg.Libraries[0].SkipGenerate {
 		t.Errorf("expected skip_generate to be true for mixed library, got false")
+	}
+}
+
+func TestTidy_PreservesComments(t *testing.T) {
+	tempDir := t.TempDir()
+	cfg := &config.Config{
+		Language: config.LanguageRust,
+		Sources: &config.Sources{
+			Comment: "sources comment",
+			Googleapis: &config.Source{
+				Commit: "94ccedca05acb0bb60780789e93371c9e4100ddc",
+				SHA256: "fff40946e897d96bbdccd566cb993048a87029b7e08eacee3fe99eac792721ba",
+			},
+		},
+		Tools: &config.Tools{
+			Comment: "tools comment",
+			Cargo: []*config.CargoTool{
+				{
+					Name:    "taplo",
+					Version: "1.0",
+				},
+			},
+		},
+		Default: &config.Default{
+			Output: "src/generated",
+		},
+		Libraries: []*config.Library{
+			{
+				Name:    "google-cloud-storage",
+				Version: "1.0.0",
+				Comment: "special casing storage because of size",
+				APIs: []*config.API{
+					{
+						Path: "google/cloud/storage/v1",
+					},
+				},
+			},
+		},
+	}
+	if err := RunTidyOnConfig(t.Context(), tempDir, cfg); err != nil {
+		t.Fatal(err)
+	}
+	got, err := yaml.Read[config.Config](filepath.Join(tempDir, config.LibrarianYAML))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if diff := cmp.Diff(cfg, got); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
