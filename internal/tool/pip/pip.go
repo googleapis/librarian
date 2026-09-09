@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/config"
@@ -36,7 +37,8 @@ var (
 
 // Install installs a list of pip tools into the environment.
 func Install(ctx context.Context, tools []*config.PipTool) error {
-	var installTargets []string
+	var targets []string
+	var gitTargets []string
 	for _, tool := range tools {
 		switch {
 		case tool.LocalPath != "":
@@ -47,17 +49,44 @@ func Install(ctx context.Context, tools []*config.PipTool) error {
 			if _, err := os.Stat(absPath); err != nil {
 				return fmt.Errorf("%w: %w", ErrLocalPathNotFound, err)
 			}
-			installTargets = append(installTargets, absPath)
+			targets = append(targets, absPath)
 		case tool.Package != "":
-			installTargets = append(installTargets, tool.Package)
+			if strings.Contains(tool.Package, "git+https://github.com") {
+				gitTargets = append(gitTargets, tool.Package)
+			} else {
+				targets = append(targets, tool.Package)
+			}
 		case tool.Version != "":
-			installTargets = append(installTargets, fmt.Sprintf("%s==%s", tool.Name, tool.Version))
+			targets = append(targets, fmt.Sprintf("%s==%s", tool.Name, tool.Version))
 		default:
-			installTargets = append(installTargets, tool.Name)
+			targets = append(targets, tool.Name)
 		}
 	}
+	if err := installTargets(ctx, targets); err != nil {
+		return err
+	}
+	return installGitTargets(ctx, gitTargets)
+}
+
+func installTargets(ctx context.Context, targets []string) error {
+	if len(targets) == 0 {
+		return nil
+	}
 	args := []string{"install"}
-	args = append(args, installTargets...)
+	args = append(args, targets...)
+	return runPip(ctx, args...)
+}
+
+func installGitTargets(ctx context.Context, targets []string) error {
+	if len(targets) == 0 {
+		return nil
+	}
+	args := []string{"install", "--force-reinstall", "--no-deps"}
+	args = append(args, targets...)
+	return runPip(ctx, args...)
+}
+
+func runPip(ctx context.Context, args ...string) error {
 	if err := command.RunStreaming(ctx, "pip", args...); err != nil {
 		return fmt.Errorf("%w: %w", ErrInstall, err)
 	}
