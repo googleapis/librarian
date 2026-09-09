@@ -1704,41 +1704,6 @@ func TestMergeRust(t *testing.T) {
 	}
 }
 
-func TestMergePHP(t *testing.T) {
-	for _, test := range []struct {
-		name string
-		dst  *config.PHPPackage
-		src  *config.PHPPackage
-		want *config.PHPPackage
-	}{
-		{
-			name: "nil src returns dst",
-			dst:  &config.PHPPackage{},
-			src:  nil,
-			want: &config.PHPPackage{},
-		},
-		{
-			name: "nil dst returns src",
-			dst:  nil,
-			src:  &config.PHPPackage{},
-			want: &config.PHPPackage{},
-		},
-		{
-			name: "both non-nil",
-			dst:  &config.PHPPackage{},
-			src:  &config.PHPPackage{},
-			want: &config.PHPPackage{},
-		},
-	} {
-		t.Run(test.name, func(t *testing.T) {
-			got := mergePHP(test.dst, test.src)
-			if diff := cmp.Diff(test.want, got); diff != "" {
-				t.Errorf("mismatch (-want +got):\n%s", diff)
-			}
-		})
-	}
-}
-
 func TestMergeRuby(t *testing.T) {
 	for _, test := range []struct {
 		name string
