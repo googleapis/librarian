@@ -36,6 +36,10 @@ public final class StorageControlClient: StorageControlProtocol, Sendable {
 
   /// Creates a new `StorageControlClient` using the given client options.
   public init(_ options: GoogleCloudGax.ClientOptions = .init()) throws {
+    var options = options
+    if options.retryPolicy == nil {
+      options.retryPolicy = StorageBaseRetryPolicy.defaultPolicy
+    }
     let sharedGrpcClient = try GoogleCloudGaxGRPC._GRPCClient(
       from: options,
       withDefaultEndpoint: "https://{{Codec.DefaultHost}}"

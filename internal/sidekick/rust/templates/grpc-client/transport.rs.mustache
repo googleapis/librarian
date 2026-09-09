@@ -180,7 +180,7 @@ impl super::stub::{{Codec.Name}} for {{Codec.Name}} {
                 {{{FieldAccessor}}}.map(|v| format!("{{FieldName}}={v}")),
             {{/PathInfo.Codec.UniqueParameters}}
             {{^PathInfo.Codec.UniqueParameters}}
-            ""; 0
+            None::<String>; 0
             {{/PathInfo.Codec.UniqueParameters}}
         ]
         .into_iter()
@@ -215,6 +215,10 @@ impl super::stub::{{Codec.Name}} for {{Codec.Name}} {
         options: crate::RequestOptions,
     ) -> Result<crate::Response<{{Codec.ReturnType}}>> {
         use gaxi::{prost::ToProto, grpc::tonic::{GrpcMethod, Extensions}};
+        {{#Codec.HasIdempotencyHook}}
+        let options = req.{{{Codec.IdempotencyHook}}}(options);
+        {{/Codec.HasIdempotencyHook}}
+        {{^Codec.HasIdempotencyHook}}
         let options = google_cloud_gax::options::internal::set_default_idempotency(
             options,
             {{! TODO(#2588) - resolve this in the model }}
@@ -222,9 +226,15 @@ impl super::stub::{{Codec.Name}} for {{Codec.Name}} {
             true,
             {{/HasAutoPopulatedFields}}
             {{^HasAutoPopulatedFields}}
+            {{#PathInfo}}
             {{PathInfo.Codec.IsIdempotent}},
+            {{/PathInfo}}
+            {{^PathInfo}}
+            false,
+            {{/PathInfo}}
             {{/HasAutoPopulatedFields}}
         );
+        {{/Codec.HasIdempotencyHook}}
         let extensions = {
             let mut e = Extensions::new();
             e.insert(GrpcMethod::new("{{SourceService.Package}}.{{SourceService.Name}}", "{{Name}}"));

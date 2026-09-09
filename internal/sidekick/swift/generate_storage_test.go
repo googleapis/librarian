@@ -286,6 +286,9 @@ func TestGenerateStorage_MultiModel(t *testing.T) {
 		!strings.Contains(clientStr, `withDefaultEndpoint: "https://storage.googleapis.com"`) {
 		t.Errorf("StorageControlClient.swift missing shared _GRPCClient initialization:\n%s", clientStr)
 	}
+	if !strings.Contains(clientStr, "options.retryPolicy = StorageBaseRetryPolicy.defaultPolicy") {
+		t.Errorf("StorageControlClient.swift missing StorageBaseRetryPolicy default initialization:\n%s", clientStr)
+	}
 	if !strings.Contains(clientStr, "var storageStub: any Clients.StorageStub = Clients.StorageTransport(sharedGrpcClient)") ||
 		!strings.Contains(clientStr, "var controlStub: any Clients.StorageControlStub = Clients.StorageControlTransport(sharedGrpcClient)") {
 		t.Errorf("StorageControlClient.swift missing transport initialization with shared gRPC client:\n%s", clientStr)
