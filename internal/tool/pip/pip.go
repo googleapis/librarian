@@ -52,8 +52,9 @@ func Install(ctx context.Context, tools []*config.PipTool) error {
 			installTargets = append(installTargets, tool.Package)
 		case tool.Version != "":
 			installTargets = append(installTargets, fmt.Sprintf("%s==%s", tool.Name, tool.Version))
+		default:
+			installTargets = append(installTargets, tool.Name)
 		}
-		installTargets = append(installTargets, tool.Name)
 	}
 	args := []string{"install"}
 	args = append(args, installTargets...)
