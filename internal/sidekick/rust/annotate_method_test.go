@@ -715,3 +715,52 @@ func TestMethodUsesGrpc(t *testing.T) {
 		})
 	}
 }
+
+func TestAnnotateMethodIdempotencyHook(t *testing.T) {
+	// 1. When idempotency-hook is configured:
+	modelWithHook := annotateMethodModel(t)
+	if err := api.CrossReference(modelWithHook); err != nil {
+		t.Fatal(err)
+	}
+	codecWithHook := newTestCodec(t, libconfig.SpecProtobuf, "", map[string]string{
+		"include-grpc-only-methods": "true",
+		"idempotency-hook":          "resolve_idempotency",
+	})
+	if _, err := annotateModel(modelWithHook, codecWithHook); err != nil {
+		t.Fatal(err)
+	}
+	methodWithHook := modelWithHook.Method(".test.v1.ResourceService.Delete")
+	if methodWithHook == nil {
+		t.Fatalf("missing method .test.v1.ResourceService.Delete")
+	}
+	got := methodWithHook.Codec.(*methodAnnotation)
+	if !got.HasIdempotencyHook {
+		t.Errorf("got.HasIdempotencyHook = false, want true")
+	}
+	if got.IdempotencyHook != "resolve_idempotency" {
+		t.Errorf("got.IdempotencyHook = %q, want %q", got.IdempotencyHook, "resolve_idempotency")
+	}
+
+	// 2. When idempotency-hook is NOT configured:
+	modelWithoutHook := annotateMethodModel(t)
+	if err := api.CrossReference(modelWithoutHook); err != nil {
+		t.Fatal(err)
+	}
+	codecWithoutHook := newTestCodec(t, libconfig.SpecProtobuf, "", map[string]string{
+		"include-grpc-only-methods": "true",
+	})
+	if _, err := annotateModel(modelWithoutHook, codecWithoutHook); err != nil {
+		t.Fatal(err)
+	}
+	methodWithoutHook := modelWithoutHook.Method(".test.v1.ResourceService.Delete")
+	if methodWithoutHook == nil {
+		t.Fatalf("missing method .test.v1.ResourceService.Delete")
+	}
+	gotDefault := methodWithoutHook.Codec.(*methodAnnotation)
+	if gotDefault.HasIdempotencyHook {
+		t.Errorf("gotDefault.HasIdempotencyHook = true, want false")
+	}
+	if gotDefault.IdempotencyHook != "" {
+		t.Errorf("gotDefault.IdempotencyHook = %q, want empty", gotDefault.IdempotencyHook)
+	}
+}

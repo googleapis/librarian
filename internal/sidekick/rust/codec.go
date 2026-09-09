@@ -159,6 +159,8 @@ func newCodec(specificationFormat string, options map[string]string) (*codec, er
 				return nil, fmt.Errorf("cannot convert `detailed-tracing-attributes` value %q to boolean: %w", definition, err)
 			}
 			codec.detailedTracingAttributes = value
+		case key == "idempotency-hook":
+			codec.idempotencyHook = definition
 		case key == "lro-stub-options":
 			value, err := strconv.ParseBool(definition)
 			if err != nil {
@@ -330,6 +332,8 @@ type codec struct {
 	// If true, this includes gRPC-only methods, such as methods without HTTP
 	// annotations.
 	includeGrpcOnlyMethods bool
+	// If set, configures an opt-in method on the request struct to resolve and transform idempotency request options before dispatch.
+	idempotencyHook string
 	// If true, this includes gRPC streaming methods.
 	includeStreamingMethods bool
 	// If true, this includes gRPC bi-directional streaming methods.
