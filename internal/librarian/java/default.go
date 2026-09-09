@@ -24,6 +24,7 @@ import (
 
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/semver"
+	"github.com/googleapis/librarian/internal/serviceconfig"
 	"github.com/googleapis/librarian/internal/yaml"
 )
 
@@ -101,15 +102,13 @@ func FillDefaultJava(lib *config.Library, d *config.Default) *config.Library {
 // It matches the library's API paths against the custom group ID prefixes in default
 // and assigns the first matching group ID.
 func fillGroupIDIfEmpty(lib *config.Library, d *config.Default) {
-	if lib.Java.GroupID != "" || d == nil || d.Java == nil || d.Java.CustomGroupIDs == nil {
+	if lib.Java.GroupID != "" || d == nil || d.Java == nil || len(d.Java.CustomGroupIDs) == 0 {
 		return
 	}
 	for _, api := range lib.APIs {
-		for apiPrefix, groupID := range d.Java.CustomGroupIDs {
-			if api.Path == apiPrefix || strings.HasPrefix(api.Path, apiPrefix+"/") {
-				lib.Java.GroupID = groupID
-				return
-			}
+		if groupID, _, ok := serviceconfig.MatchPrefix(api.Path, d.Java.CustomGroupIDs); ok {
+			lib.Java.GroupID = groupID
+			return
 		}
 	}
 }
