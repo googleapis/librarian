@@ -160,7 +160,6 @@ This document describes the schema for the librarian.yaml.
 | `go` | [GoModule](#gomodule-configuration) (optional) | Contains Go-specific library configuration. |
 | `java` | [JavaModule](#javamodule-configuration) (optional) | Contains Java-specific library configuration. |
 | `nodejs` | [NodejsPackage](#nodejspackage-configuration) (optional) | Contains Node.js-specific library configuration. |
-| `php` | [PHPPackage](#phppackage-configuration) (optional) | Contains PHP-specific library configuration. |
 | `python` | [PythonPackage](#pythonpackage-configuration) (optional) | Contains Python-specific library configuration. |
 | `ruby` | [RubyPackage](#rubypackage-configuration) (optional) | Contains Ruby-specific library configuration. |
 | `rust` | [RustCrate](#rustcrate-configuration) (optional) | Contains Rust-specific library configuration. |
@@ -473,12 +472,6 @@ This document describes the schema for the librarian.yaml.
 | Field | Type | Description |
 | :--- | :--- | :--- |
 | `common_resources` | bool (optional) | Indicates whether to include common resources in generation. Must be configured either globally or per-API. |
-
-## PHPPackage Configuration
-
-| Field | Type | Description |
-| :--- | :--- | :--- |
-| `component_name` | string | Overrides the derived component name used for output/staging. |
 
 ## PythonDefault Configuration
 

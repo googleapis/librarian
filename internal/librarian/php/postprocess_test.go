@@ -36,9 +36,6 @@ func TestPostProcess_MissingOwlBot(t *testing.T) {
 	lib := &config.Library{
 		Name:   "SecretManager",
 		Output: destDir,
-		PHP: &config.PHPPackage{
-			ComponentName: "SecretManager",
-		},
 	}
 	err := postProcessLibrary(ctx, lib)
 	if !errors.Is(err, errOwlBotNotFound) {
@@ -80,9 +77,6 @@ func TestPostProcess_OwlBot(t *testing.T) {
 	lib := &config.Library{
 		Name:   "SecretManager",
 		Output: destDir,
-		PHP: &config.PHPPackage{
-			ComponentName: "SecretManager",
-		},
 	}
 	if err := postProcessLibrary(ctx, lib); err != nil {
 		t.Fatal(err)
@@ -110,9 +104,6 @@ func TestPostProcess_OwlBotError(t *testing.T) {
 	lib := &config.Library{
 		Name:   "SecretManager",
 		Output: destDir,
-		PHP: &config.PHPPackage{
-			ComponentName: "SecretManager",
-		},
 	}
 	err := postProcessLibrary(ctx, lib)
 	if _, ok := errors.AsType[*exec.ExitError](err); !ok {
@@ -142,9 +133,6 @@ func TestPostProcess_StatError(t *testing.T) {
 	lib := &config.Library{
 		Name:   "SecretManager",
 		Output: inaccessibleDir,
-		PHP: &config.PHPPackage{
-			ComponentName: "SecretManager_inaccessible",
-		},
 	}
 	err := postProcessLibrary(ctx, lib)
 	if !errors.Is(err, os.ErrPermission) {
@@ -183,9 +171,6 @@ func TestPostProcess_CleanupError(t *testing.T) {
 	lib := &config.Library{
 		Name:   "SecretManager",
 		Output: destDir,
-		PHP: &config.PHPPackage{
-			ComponentName: "SecretManager",
-		},
 	}
 	err := postProcessLibrary(ctx, lib)
 	if !errors.Is(err, os.ErrPermission) {
@@ -218,11 +203,8 @@ func TestPostProcess_PHPPostProcessor(t *testing.T) {
 				},
 			},
 		},
-		PHP: &config.PHPPackage{
-			ComponentName: "SecretManager",
-		},
 	}
-	stagingSubdir := filepath.Join(repoRoot, owlBotStagingDir, lib.PHP.ComponentName, "SecretManager/v1")
+	stagingSubdir := filepath.Join(repoRoot, owlBotStagingDir, filepath.Base(lib.Output), "SecretManager/v1")
 	if err := os.MkdirAll(stagingSubdir, 0o755); err != nil {
 		t.Fatal(err)
 	}
@@ -265,11 +247,8 @@ func TestPostProcess_PHPPostProcessorError(t *testing.T) {
 				},
 			},
 		},
-		PHP: &config.PHPPackage{
-			ComponentName: "SecretManager",
-		},
 	}
-	stagingSubdir := filepath.Join(repoRoot, owlBotStagingDir, lib.PHP.ComponentName, "SecretManager/v1")
+	stagingSubdir := filepath.Join(repoRoot, owlBotStagingDir, filepath.Base(lib.Output), "SecretManager/v1")
 	if err := os.MkdirAll(stagingSubdir, 0o755); err != nil {
 		t.Fatal(err)
 	}

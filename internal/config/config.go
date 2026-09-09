@@ -385,9 +385,6 @@ type Library struct {
 	// Nodejs contains Node.js-specific library configuration.
 	Nodejs *NodejsPackage `yaml:"nodejs,omitempty"`
 
-	// PHP contains PHP-specific library configuration.
-	PHP *PHPPackage `yaml:"php,omitempty"`
-
 	// Python contains Python-specific library configuration.
 	Python *PythonPackage `yaml:"python,omitempty"`
 

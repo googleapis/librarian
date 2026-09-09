@@ -186,32 +186,6 @@ func TestAdd(t *testing.T) {
 				},
 			},
 		},
-		{
-			name: "component name override",
-			lib: &config.Library{
-				PHP: &config.PHPPackage{
-					ComponentName: "CustomComponent",
-				},
-				APIs: []*config.API{
-					{Path: "google/cloud/secretmanager/v1"},
-				},
-			},
-			want: &config.Library{
-				Output:  "CustomComponent",
-				Version: "0.0.0",
-				PHP: &config.PHPPackage{
-					ComponentName: "CustomComponent",
-				},
-				APIs: []*config.API{
-					{
-						Path: "google/cloud/secretmanager/v1",
-						PHP: &config.PHPAPI{
-							StagingSubdir: "v1",
-						},
-					},
-				},
-			},
-		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			got, err := Add(test.lib, googleapisDir)

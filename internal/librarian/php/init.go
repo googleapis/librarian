@@ -93,12 +93,8 @@ func newInitParams(googleapisDir string, library *config.Library) (*initParams, 
 }
 
 // componentNameForLibrary resolves the component name for a PHP library.
-// If library.PHP.ComponentName is set, it is returned as an explicit override.
-// Otherwise, the component name is derived on the fly from the php_namespace of the library's primary API.
+// The component name is derived on the fly from the php_namespace of the library's primary API.
 func componentNameForLibrary(googleapisDir string, library *config.Library) (string, error) {
-	if library.PHP != nil && library.PHP.ComponentName != "" {
-		return library.PHP.ComponentName, nil
-	}
 	if len(library.APIs) == 0 {
 		return "", fmt.Errorf("%w: %q", errNoAPIs, library.Name)
 	}
@@ -106,7 +102,7 @@ func componentNameForLibrary(googleapisDir string, library *config.Library) (str
 	if err != nil {
 		return "", err
 	}
-	return componentName(library, ns), nil
+	return componentName(ns), nil
 }
 
 // namespace reads the php_namespace option from the first .proto file in the API directory.
@@ -143,10 +139,7 @@ func namespace(googleapisDir, apiPath string) (string, error) {
 }
 
 // componentName returns the component name from a namespace.
-func componentName(library *config.Library, namespace string) string {
-	if library.PHP != nil && library.PHP.ComponentName != "" {
-		return library.PHP.ComponentName
-	}
+func componentName(namespace string) string {
 	if comp, ok := strings.CutPrefix(namespace, `Google\Cloud\`); ok {
 		return comp
 	}
