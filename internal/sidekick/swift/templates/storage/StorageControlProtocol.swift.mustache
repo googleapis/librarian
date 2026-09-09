@@ -38,8 +38,24 @@ public protocol StorageControlProtocol {
   {{#Deprecated}}
   @available(*, deprecated)
   {{/Deprecated}}
+  func {{> /templates/common/method_signature/request}}
+
+  {{#Codec.DocLines}}
+  /// {{{.}}}
+  {{/Codec.DocLines}}
+  {{#Deprecated}}
+  @available(*, deprecated)
+  {{/Deprecated}}
   func {{> /templates/common/method_signature/request_options}}
   {{#Codec.Pagination}}
+
+  {{#Codec.DocLines}}
+  /// {{{.}}}
+  {{/Codec.DocLines}}
+  {{#Deprecated}}
+  @available(*, deprecated)
+  {{/Deprecated}}
+  func {{> /templates/common/method_signature/pagination}}
 
   {{#Codec.DocLines}}
   /// {{{.}}}
@@ -60,8 +76,24 @@ public protocol StorageControlProtocol {
   {{#Deprecated}}
   @available(*, deprecated)
   {{/Deprecated}}
+  func {{> /templates/common/method_signature/request}}
+
+  {{#Codec.DocLines}}
+  /// {{{.}}}
+  {{/Codec.DocLines}}
+  {{#Deprecated}}
+  @available(*, deprecated)
+  {{/Deprecated}}
   func {{> /templates/common/method_signature/request_options}}
   {{#Codec.Pagination}}
+
+  {{#Codec.DocLines}}
+  /// {{{.}}}
+  {{/Codec.DocLines}}
+  {{#Deprecated}}
+  @available(*, deprecated)
+  {{/Deprecated}}
+  func {{> /templates/common/method_signature/pagination}}
 
   {{#Codec.DocLines}}
   /// {{{.}}}
@@ -74,3 +106,82 @@ public protocol StorageControlProtocol {
   {{/Codec.Methods}}
   {{/Codec.Control.Services}}
 }
+
+// Default implementations
+extension StorageControlProtocol {
+  {{#Codec.Storage.Services}}
+  {{#Codec.Methods}}
+
+  {{#Deprecated}}
+  @available(*, deprecated)
+  {{/Deprecated}}
+  public func {{> /templates/common/method_signature/request}} {
+    try await self.{{Codec.Name}}(request: request, options: .init())
+  }
+
+  {{#Deprecated}}
+  @available(*, deprecated)
+  {{/Deprecated}}
+  public func {{> /templates/common/method_signature/request_options}} {
+    throw GoogleCloudGax.RequestError.unimplemented
+  }
+  {{#Codec.Pagination}}
+
+  {{#Deprecated}}
+  @available(*, deprecated)
+  {{/Deprecated}}
+  public func {{> /templates/common/method_signature/pagination}} {
+    try self.{{Codec.Name}}(byItem: byItem, options: .init())
+  }
+
+  {{#Deprecated}}
+  @available(*, deprecated)
+  {{/Deprecated}}
+  public func {{> /templates/common/method_signature/pagination_options}} {
+    let listRpc = { (token: Swift.String) async throws -> {{Codec.ReturnType}} in
+      throw GoogleCloudGax.RequestError.unimplemented
+    }
+    return GoogleCloudGax.PaginatedResponseSequence(listRpc: listRpc)
+  }
+  {{/Codec.Pagination}}
+  {{/Codec.Methods}}
+  {{/Codec.Storage.Services}}
+  {{#Codec.Control.Services}}
+  {{#Codec.Methods}}
+
+  {{#Deprecated}}
+  @available(*, deprecated)
+  {{/Deprecated}}
+  public func {{> /templates/common/method_signature/request}} {
+    try await self.{{Codec.Name}}(request: request, options: .init())
+  }
+
+  {{#Deprecated}}
+  @available(*, deprecated)
+  {{/Deprecated}}
+  public func {{> /templates/common/method_signature/request_options}} {
+    throw GoogleCloudGax.RequestError.unimplemented
+  }
+  {{#Codec.Pagination}}
+
+  {{#Deprecated}}
+  @available(*, deprecated)
+  {{/Deprecated}}
+  public func {{> /templates/common/method_signature/pagination}} {
+    try self.{{Codec.Name}}(byItem: byItem, options: .init())
+  }
+
+  {{#Deprecated}}
+  @available(*, deprecated)
+  {{/Deprecated}}
+  public func {{> /templates/common/method_signature/pagination_options}} {
+    let listRpc = { (token: Swift.String) async throws -> {{Codec.ReturnType}} in
+      throw GoogleCloudGax.RequestError.unimplemented
+    }
+    return GoogleCloudGax.PaginatedResponseSequence(listRpc: listRpc)
+  }
+  {{/Codec.Pagination}}
+  {{/Codec.Methods}}
+  {{/Codec.Control.Services}}
+}
+
