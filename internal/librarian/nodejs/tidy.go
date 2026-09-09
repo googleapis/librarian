@@ -21,15 +21,9 @@ import (
 
 // Tidy tidies configuration for a library.
 func Tidy(lib *config.Library) (*config.Library, error) {
-	if lib.Nodejs == nil {
-		return lib, nil
-	}
-	empty, err := yaml.Empty(lib.Nodejs)
-	if err != nil {
+	var err error
+	if lib.Nodejs, err = yaml.ClearIfEmpty(lib.Nodejs); err != nil {
 		return nil, err
-	}
-	if empty {
-		lib.Nodejs = nil
 	}
 	return lib, nil
 }
