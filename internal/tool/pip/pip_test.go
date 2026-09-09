@@ -46,9 +46,9 @@ echo "pip $@" >> %q
 		t.Fatal(err)
 	}
 	for _, test := range []struct {
-		name     string
-		tools    []*config.PipTool
-		wantArgs string
+		name            string
+		tools           []*config.PipTool
+		wantInvocations []string
 	}{
 		{
 			name: "install external packages",
@@ -56,28 +56,56 @@ echo "pip $@" >> %q
 				{Name: "PyYAML", Version: "6.0.2"},
 				{Name: "jinja2", Version: "3.1.6"},
 			},
-			wantArgs: "install PyYAML==6.0.2 jinja2==3.1.6",
+			wantInvocations: []string{
+				"pip install PyYAML==6.0.2 jinja2==3.1.6",
+			},
 		},
 		{
 			name: "install external packages with raw package spec",
 			tools: []*config.PipTool{
+				{Name: "somepkg", Package: "https://example.com/somepkg.whl"},
+			},
+			wantInvocations: []string{
+				"pip install https://example.com/somepkg.whl",
+			},
+		},
+		{
+			name: "install git packages with raw package spec",
+			tools: []*config.PipTool{
 				{Name: "synthtool", Package: "git+https://github.com/..."},
 			},
-			wantArgs: "install git+https://github.com/...",
+			wantInvocations: []string{
+				"pip install --force-reinstall --no-deps git+https://github.com/...",
+			},
 		},
 		{
 			name: "install package with name only (no version/package)",
 			tools: []*config.PipTool{
 				{Name: "requests"},
 			},
-			wantArgs: "install requests",
+			wantInvocations: []string{
+				"pip install requests",
+			},
 		},
 		{
 			name: "install local package path",
 			tools: []*config.PipTool{
 				{Name: "synthtool", LocalPath: localPkgPath},
 			},
-			wantArgs: "install " + localPkgPath,
+			wantInvocations: []string{
+				"pip install " + localPkgPath,
+			},
+		},
+		{
+			name: "install both regular and git packages",
+			tools: []*config.PipTool{
+				{Name: "PyYAML", Version: "6.0.2"},
+				{Name: "synthtool", Package: "git+https://github.com/..."},
+			},
+			wantInvocations: []string{
+				"pip install PyYAML==6.0.2",
+				"pip install --force-reinstall --no-deps git+https://github.com/...",
+			},
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
@@ -86,13 +114,13 @@ echo "pip $@" >> %q
 			if err != nil {
 				t.Fatal(err)
 			}
-			data, err := os.ReadFile(stubLogPath)
-			if err != nil {
-				t.Fatal(err)
+			var gotInvocations []string
+			if data, err := os.ReadFile(stubLogPath); err == nil {
+				if trimmed := strings.TrimSpace(string(data)); trimmed != "" {
+					gotInvocations = strings.Split(trimmed, "\n")
+				}
 			}
-			gotInvocations := strings.TrimSpace(string(data))
-			wantInvocation := "pip " + test.wantArgs
-			if diff := cmp.Diff(wantInvocation, gotInvocations); diff != "" {
+			if diff := cmp.Diff(test.wantInvocations, gotInvocations); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
@@ -119,6 +147,16 @@ func TestInstall_Error(t *testing.T) {
 			name: "pip command fails",
 			tools: []*config.PipTool{
 				{Name: "failpkg"},
+			},
+			setup: func(t *testing.T) {
+				t.Setenv("PATH", stubDir)
+			},
+			wantErr: ErrInstall,
+		},
+		{
+			name: "pip command fails on git targets",
+			tools: []*config.PipTool{
+				{Name: "failpkg", Package: "git+https://github.com/..."},
 			},
 			setup: func(t *testing.T) {
 				t.Setenv("PATH", stubDir)
