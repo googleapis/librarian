@@ -51,7 +51,7 @@ func Install(ctx context.Context, tools []*config.PipTool) error {
 			}
 			stdPackages = append(stdPackages, absPath)
 		case tool.Package != "":
-			if strings.Contains(tool.Package, "git+https://github.com") {
+			if strings.Contains(tool.Package, "git+") {
 				gitPackages = append(gitPackages, tool.Package)
 			} else {
 				stdPackages = append(stdPackages, tool.Package)
