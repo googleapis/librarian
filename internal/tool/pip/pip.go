@@ -38,7 +38,8 @@ var (
 func Install(ctx context.Context, tools []*config.PipTool) error {
 	var installTargets []string
 	for _, tool := range tools {
-		if tool.LocalPath != "" {
+		switch {
+		case tool.LocalPath != "":
 			absPath, err := filepath.Abs(tool.LocalPath)
 			if err != nil {
 				return fmt.Errorf("failed to resolve absolute path for %s: %w", tool.LocalPath, err)
@@ -47,15 +48,10 @@ func Install(ctx context.Context, tools []*config.PipTool) error {
 				return fmt.Errorf("%w: %w", ErrLocalPathNotFound, err)
 			}
 			installTargets = append(installTargets, absPath)
-			continue
-		}
-		if tool.Package != "" {
+		case tool.Package != "":
 			installTargets = append(installTargets, tool.Package)
-			continue
-		}
-		if tool.Version != "" {
+		case tool.Version != "":
 			installTargets = append(installTargets, fmt.Sprintf("%s==%s", tool.Name, tool.Version))
-			continue
 		}
 		installTargets = append(installTargets, tool.Name)
 	}
