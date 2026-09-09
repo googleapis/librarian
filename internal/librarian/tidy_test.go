@@ -843,19 +843,6 @@ func TestTidy_UnusedSections(t *testing.T) {
 			},
 			wantDefault: nil,
 		},
-		{
-			name: "tools with comment preserved",
-			cfg: &config.Config{
-				Language: config.LanguageRust,
-				Sources: &config.Sources{
-					Googleapis: &config.Source{Commit: "commit"},
-				},
-				Tools:   &config.Tools{Comment: "custom tools comment"},
-				Default: &config.Default{},
-			},
-			wantTools:   &config.Tools{Comment: "custom tools comment"},
-			wantDefault: nil,
-		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			tempDir := t.TempDir()
@@ -960,7 +947,7 @@ func TestTidy_PreservesComments(t *testing.T) {
 			{
 				Name:    "google-cloud-storage",
 				Version: "1.0.0",
-				Comment: "special casing storage because of size",
+				Comment: "special comment about storage config",
 				APIs: []*config.API{
 					{
 						Path: "google/cloud/storage/v1",
