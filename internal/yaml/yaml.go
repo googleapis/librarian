@@ -108,6 +108,22 @@ func Empty(v any) (bool, error) {
 	return string(data) == "{}\n", nil
 }
 
+// ClearIfEmpty returns nil if v is nil or serializes to an empty YAML object.
+// Otherwise it returns v.
+func ClearIfEmpty[T any](v *T) (*T, error) {
+	if v == nil {
+		return nil, nil
+	}
+	empty, err := Empty(v)
+	if err != nil {
+		return nil, err
+	}
+	if empty {
+		return nil, nil
+	}
+	return v, nil
+}
+
 // format runs yamlfmt on the given YAML content and returns the formatted output.
 func format(data []byte) ([]byte, error) {
 	factory := &basic.BasicFormatterFactory{}

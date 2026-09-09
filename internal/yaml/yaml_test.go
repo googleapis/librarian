@@ -173,3 +173,37 @@ func TestEmpty(t *testing.T) {
 		})
 	}
 }
+
+func TestClearIfEmpty(t *testing.T) {
+	for _, test := range []struct {
+		name  string
+		value *testConfig
+		want  *testConfig
+	}{
+		{
+			name:  "nil",
+			value: nil,
+			want:  nil,
+		},
+		{
+			name:  "empty",
+			value: &testConfig{},
+			want:  nil,
+		},
+		{
+			name:  "not empty",
+			value: &testConfig{Name: "librarian"},
+			want:  &testConfig{Name: "librarian"},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got, err := ClearIfEmpty(test.value)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
