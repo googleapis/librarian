@@ -37,8 +37,8 @@ var (
 
 // Install installs a list of pip tools into the environment.
 func Install(ctx context.Context, tools []*config.PipTool) error {
-	var targets []string
-	var gitTargets []string
+	var stdPackages []string
+	var gitPackages []string
 	for _, tool := range tools {
 		switch {
 		case tool.LocalPath != "":
@@ -49,26 +49,27 @@ func Install(ctx context.Context, tools []*config.PipTool) error {
 			if _, err := os.Stat(absPath); err != nil {
 				return fmt.Errorf("%w: %w", ErrLocalPathNotFound, err)
 			}
-			targets = append(targets, absPath)
+			stdPackages = append(stdPackages, absPath)
 		case tool.Package != "":
 			if strings.Contains(tool.Package, "git+https://github.com") {
-				gitTargets = append(gitTargets, tool.Package)
+				gitPackages = append(gitPackages, tool.Package)
 			} else {
-				targets = append(targets, tool.Package)
+				stdPackages = append(stdPackages, tool.Package)
 			}
 		case tool.Version != "":
-			targets = append(targets, fmt.Sprintf("%s==%s", tool.Name, tool.Version))
+			stdPackages = append(stdPackages, fmt.Sprintf("%s==%s", tool.Name, tool.Version))
 		default:
-			targets = append(targets, tool.Name)
+			stdPackages = append(stdPackages, tool.Name)
 		}
 	}
-	if err := installTargets(ctx, targets); err != nil {
+	if err := installPackages(ctx, stdPackages); err != nil {
 		return err
 	}
-	return installGitTargets(ctx, gitTargets)
+	return reinstallPackages(ctx, gitPackages)
 }
 
-func installTargets(ctx context.Context, targets []string) error {
+// installPackages installs non-git packages.
+func installPackages(ctx context.Context, targets []string) error {
 	if len(targets) == 0 {
 		return nil
 	}
@@ -77,7 +78,8 @@ func installTargets(ctx context.Context, targets []string) error {
 	return runPip(ctx, args...)
 }
 
-func installGitTargets(ctx context.Context, targets []string) error {
+// reinstallPackages reinstalls packages from git repositories.
+func reinstallPackages(ctx context.Context, targets []string) error {
 	if len(targets) == 0 {
 		return nil
 	}
