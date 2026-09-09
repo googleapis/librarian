@@ -78,7 +78,9 @@ func RunTidyOnConfig(ctx context.Context, repoDir string, cfg *config.Config) er
 	if cfg.Libraries, err = tidyLibraries(cfg); err != nil {
 		return err
 	}
-	cfg = tidyConfig(cfg)
+	if cfg, err = tidyConfig(cfg); err != nil {
+		return err
+	}
 	return yaml.Write(filepath.Join(repoDir, config.LibrarianYAML), formatConfig(cfg))
 }
 
@@ -213,45 +215,16 @@ func tidyLanguageConfig(lib *config.Library, cfg *config.Config) (*config.Librar
 	return lib, nil
 }
 
-// isToolsEmpty returns true if the tools configuration is empty.
-func isToolsEmpty(tools *config.Tools) bool {
-	return tools.Comment == "" &&
-		len(tools.Cargo) == 0 &&
-		len(tools.Composer) == 0 &&
-		len(tools.Go) == 0 &&
-		len(tools.Maven) == 0 &&
-		len(tools.Pip) == 0 &&
-		len(tools.PNPM) == 0 &&
-		len(tools.Gem) == 0 &&
-		tools.Protoc == nil
-}
-
-// isDefaultEmpty returns true if the default configuration is empty.
-// Note that this will not remove {default: language: {}} because we have
-// not yet encountered this edge case.
-func isDefaultEmpty(defaults *config.Default) bool {
-	return len(defaults.Keep) == 0 &&
-		defaults.Output == "" &&
-		defaults.TagFormat == "" &&
-		defaults.Dotnet == nil &&
-		defaults.Dart == nil &&
-		defaults.Java == nil &&
-		defaults.Nodejs == nil &&
-		defaults.Rust == nil &&
-		defaults.Python == nil &&
-		defaults.Swift == nil &&
-		defaults.PHP == nil
-}
-
 // tidyConfig removes unused sections from the configuration.
-func tidyConfig(cfg *config.Config) *config.Config {
-	if cfg.Tools != nil && isToolsEmpty(cfg.Tools) {
-		cfg.Tools = nil
+func tidyConfig(cfg *config.Config) (*config.Config, error) {
+	var err error
+	if cfg.Tools, err = yaml.ClearIfEmpty(cfg.Tools); err != nil {
+		return nil, err
 	}
-	if cfg.Default != nil && isDefaultEmpty(cfg.Default) {
-		cfg.Default = nil
+	if cfg.Default, err = yaml.ClearIfEmpty(cfg.Default); err != nil {
+		return nil, err
 	}
-	return cfg
+	return cfg, nil
 }
 
 func formatConfig(cfg *config.Config) *config.Config {
