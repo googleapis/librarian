@@ -434,7 +434,7 @@ This document describes the schema for the librarian.yaml.
 
 | Field | Type | Description |
 | :--- | :--- | :--- |
-| `custom_scopes` | map[string]string | Maps API path prefixes (e.g., "google/shopping/merchant") to their corresponding npm scope (e.g., "@google-shopping"). Use this to override default package name derivation for specific non-cloud API paths. |
+| `custom_package_prefixes` | map[string]string | Maps API path prefixes to their npm package prefixes. Values can be:<br>- An npm scope (e.g., "google/shopping/merchant": "@google-shopping"): the remainder path becomes the package name (e.g., "@google-shopping/accounts").<br>- An npm scope with a partial package name (e.g., "google/area120": "@google/area120"): the remainder path is appended with a hyphen (e.g., "@google/area120-tables").<br>- An npm scope with a full package name (e.g., "google/chat": "@google-apps/chat"): used as-is when there is no remainder path (e.g., "@google-apps/chat"). |
 
 ## NodejsPackage Configuration
 
