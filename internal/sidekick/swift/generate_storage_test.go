@@ -263,6 +263,19 @@ func TestGenerateStorage_MultiModel(t *testing.T) {
 	if !strings.Contains(protocolStr, "import GoogleIAMV1") {
 		t.Errorf("StorageControlProtocol.swift missing import GoogleIAMV1:\n%s", protocolStr)
 	}
+	if !strings.Contains(protocolStr, "func createBucket(request: CreateBucketRequest) async throws") {
+		t.Errorf("StorageControlProtocol.swift missing convenience overload without options:\n%s", protocolStr)
+	}
+	if !strings.Contains(protocolStr, "byItem: ListBucketsRequest") ||
+		!strings.Contains(protocolStr, "try self.listBuckets(byItem: byItem, options: .init())") {
+		t.Errorf("StorageControlProtocol.swift missing paginated convenience overload without options:\n%s", protocolStr)
+	}
+	if !strings.Contains(protocolStr, "extension StorageControlProtocol {") {
+		t.Errorf("StorageControlProtocol.swift missing StorageControlProtocol extension:\n%s", protocolStr)
+	}
+	if !strings.Contains(protocolStr, "try await self.createBucket(request: request, options: .init())") {
+		t.Errorf("StorageControlProtocol.swift missing default implementation forwarding to options:\n%s", protocolStr)
+	}
 
 	// 2. Verify StorageControlClient.swift in Control/
 	clientPath := filepath.Join(outDir, "Control", "StorageControlClient.swift")
