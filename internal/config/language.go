@@ -776,10 +776,15 @@ type DotnetCsprojSnippets struct {
 
 // NodejsDefault contains Node.js-specific default configuration.
 type NodejsDefault struct {
-	// CustomScopes maps API path prefixes (e.g., "google/shopping/merchant")
-	// to their corresponding npm scope (e.g., "@google-shopping").
-	// Use this to override default package name derivation for specific non-cloud API paths.
-	CustomScopes map[string]string `yaml:"custom_scopes,omitempty"`
+	// CustomPackagePrefixes maps API path prefixes to their npm package prefixes.
+	// Values can be:
+	//   - An npm scope (e.g., "google/shopping/merchant": "@google-shopping"):
+	//     the remainder path becomes the package name (e.g., "@google-shopping/accounts").
+	//   - An npm scope with a partial package name (e.g., "google/area120": "@google/area120"):
+	//     the remainder path is appended with a hyphen (e.g., "@google/area120-tables").
+	//   - An npm scope with a full package name (e.g., "google/chat": "@google-apps/chat"):
+	//     used as-is when there is no remainder path (e.g., "@google-apps/chat").
+	CustomPackagePrefixes map[string]string `yaml:"custom_package_prefixes,omitempty"`
 }
 
 // NodejsPackage contains Node.js-specific library configuration.
