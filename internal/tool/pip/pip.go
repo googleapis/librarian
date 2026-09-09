@@ -65,7 +65,7 @@ func Install(ctx context.Context, tools []*config.PipTool) error {
 	if err := installPackages(ctx, stdPackages); err != nil {
 		return err
 	}
-	return reinstallPackages(ctx, gitPackages)
+	return forceInstallPackages(ctx, gitPackages)
 }
 
 // installPackages installs non-git packages.
@@ -78,8 +78,8 @@ func installPackages(ctx context.Context, targets []string) error {
 	return runPip(ctx, args...)
 }
 
-// reinstallPackages reinstalls packages from git repositories.
-func reinstallPackages(ctx context.Context, targets []string) error {
+// forceInstallPackages forces the installation of packages from git repositories.
+func forceInstallPackages(ctx context.Context, targets []string) error {
 	if len(targets) == 0 {
 		return nil
 	}
