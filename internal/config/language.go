@@ -130,13 +130,20 @@ type RustDefault struct {
 	// methods.
 	IncludeServerStreamingMethods *bool `yaml:"include_server_streaming_methods,omitempty"`
 
-	// AllowStreamingAnyTypes is a list of protobuf field/message IDs with google.protobuf.Any
-	// permitted in streaming RPCs (their fields will be dropped in prost conversion).
+	// AllowGrpcAnyFields is a list of protobuf field IDs with google.protobuf.Any
+	// permitted in gRPC/streaming RPCs (their fields will be dropped in prost conversion).
+	AllowGrpcAnyFields []string `yaml:"allow_grpc_any_fields,omitempty"`
+
+	// AllowStreamingAnyTypes is deprecated: use allow_grpc_any_fields instead.
 	AllowStreamingAnyTypes []string `yaml:"allow_streaming_any_types,omitempty"`
 
 	// GrpcClient is the Rust type used for the inner gRPC client in generated transports.
 	// Defaults to "gaxi::grpc::Client".
 	GrpcClient string `yaml:"grpc_client,omitempty"`
+
+	// DefaultTransport specifies the default transport protocol for unary methods ("grpc" or "http").
+	// Defaults to "http".
+	DefaultTransport string `yaml:"default_transport,omitempty"`
 }
 
 // RustModule defines a generation target within a veneer crate.
@@ -149,6 +156,10 @@ type RustModule struct {
 
 	// DisabledRustdocWarnings specifies rustdoc lints to disable. An empty slice explicitly enables all warnings.
 	DisabledRustdocWarnings yaml.StringSlice `yaml:"disabled_rustdoc_warnings,omitempty"`
+
+	// DefaultTransport specifies the default transport protocol for unary methods ("grpc" or "http").
+	// This overrides the crate-level setting.
+	DefaultTransport string `yaml:"default_transport,omitempty"`
 
 	// DetailedTracingAttributes indicates whether to include detailed tracing attributes.
 	// This overrides the crate-level setting.
@@ -179,6 +190,9 @@ type RustModule struct {
 
 	// IncludeGrpcOnlyMethods indicates whether to include gRPC-only methods.
 	IncludeGrpcOnlyMethods bool `yaml:"include_grpc_only_methods,omitempty"`
+
+	// IdempotencyHook configures an opt-in method on the request struct to resolve and transform idempotency request options before dispatch.
+	IdempotencyHook string `yaml:"idempotency_hook,omitempty"`
 
 	// IncludeList is a list of proto files to include (e.g., "date.proto", "expr.proto").
 	IncludeList yaml.StringSlice `yaml:"include_list,omitempty"`
@@ -289,6 +303,9 @@ type RustCrate struct {
 
 	// IncludeGrpcOnlyMethods indicates whether to include gRPC-only methods.
 	IncludeGrpcOnlyMethods bool `yaml:"include_grpc_only_methods,omitempty"`
+
+	// IdempotencyHook configures an opt-in method on the request struct to resolve and transform idempotency request options before dispatch.
+	IdempotencyHook string `yaml:"idempotency_hook,omitempty"`
 
 	// IncludeStreamingMethods indicates whether to include gRPC streaming
 	// methods.

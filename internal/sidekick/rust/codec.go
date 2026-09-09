@@ -159,6 +159,8 @@ func newCodec(specificationFormat string, options map[string]string) (*codec, er
 				return nil, fmt.Errorf("cannot convert `detailed-tracing-attributes` value %q to boolean: %w", definition, err)
 			}
 			codec.detailedTracingAttributes = value
+		case key == "idempotency-hook":
+			codec.idempotencyHook = definition
 		case key == "lro-stub-options":
 			value, err := strconv.ParseBool(definition)
 			if err != nil {
@@ -215,6 +217,11 @@ func newCodec(specificationFormat string, options map[string]string) (*codec, er
 			codec.includeRpcStatusConversion = value
 		case key == "grpc-client":
 			codec.grpcClient = definition
+		case key == "default-transport":
+			if definition != "grpc" && definition != "http" {
+				return nil, fmt.Errorf("invalid `default-transport` value %q, expected \"grpc\" or \"http\"", definition)
+			}
+			codec.defaultTransport = definition
 		default:
 			return nil, fmt.Errorf("unknown Rust codec option %q", key)
 		}
@@ -325,6 +332,8 @@ type codec struct {
 	// If true, this includes gRPC-only methods, such as methods without HTTP
 	// annotations.
 	includeGrpcOnlyMethods bool
+	// If set, configures an opt-in method on the request struct to resolve and transform idempotency request options before dispatch.
+	idempotencyHook string
 	// If true, this includes gRPC streaming methods.
 	includeStreamingMethods bool
 	// If true, this includes gRPC bi-directional streaming methods.
@@ -377,6 +386,8 @@ type codec struct {
 	quickstartServiceOverride string
 	// The Rust type used for the inner gRPC client in generated transports.
 	grpcClient string
+	// The default transport protocol for unary methods ("grpc" or "http").
+	defaultTransport string
 }
 
 type systemParameter struct {
@@ -404,7 +415,7 @@ type packagez struct {
 	usedIf []string
 }
 
-func resolveUsedPackages(model *api.API, extraPackages []*packagez, hasStreaming bool) {
+func resolveUsedPackages(model *api.API, extraPackages []*packagez, hasGrpc bool) {
 	hasServices := len(model.Services) > 0
 	hasLROs := false
 	hasAutoPopulation := false
@@ -439,7 +450,7 @@ func resolveUsedPackages(model *api.API, extraPackages []*packagez, hasStreaming
 				pkg.used = true
 				break
 			}
-			if namedFeature == "streaming" && hasStreaming {
+			if (namedFeature == "streaming" || namedFeature == "grpc") && hasGrpc {
 				pkg.used = true
 				break
 			}
@@ -1620,7 +1631,7 @@ func (c *codec) generateMethod(m *api.Method) bool {
 		}
 		return c.includeStreamingMethods
 	}
-	if c.includeGrpcOnlyMethods {
+	if c.includeGrpcOnlyMethods || c.defaultTransport == "grpc" {
 		return true
 	}
 	if m.PathInfo == nil || len(m.PathInfo.Bindings) == 0 {
@@ -1649,6 +1660,16 @@ func (c *codec) hasServerStreaming(model *api.API) bool {
 
 func (c *codec) hasStreaming(model *api.API) bool {
 	return c.hasBidiStreaming(model) || c.hasServerStreaming(model)
+}
+
+func (c *codec) hasGrpc(model *api.API) bool {
+	if !c.templateSupportsGrpc() {
+		return false
+	}
+	if c.defaultTransport == "grpc" {
+		return len(model.Services) > 0
+	}
+	return c.hasStreaming(model)
 }
 
 // escapeKeyword is the list of Rust keywords and reserved words can be found

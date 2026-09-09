@@ -50,11 +50,18 @@ type methodAnnotation struct {
 	ClientSideStreaming       bool
 	ServerSideStreaming       bool
 	IsGrpc                    bool
+	HasIdempotencyHook        bool
+	IdempotencyHook           string
 }
 
 // IsHttp returns true if the method is routed over HTTP transport.
 func (m *methodAnnotation) IsHttp() bool {
 	return !m.IsGrpc
+}
+
+// IsUnaryGrpc returns true if the method is routed over unary gRPC.
+func (m *methodAnnotation) IsUnaryGrpc() bool {
+	return m.IsGrpc && !m.ClientSideStreaming && !m.ServerSideStreaming
 }
 
 // IsBidiStreaming returns true if the method is a bidirectional streaming RPC.
@@ -356,6 +363,11 @@ func (c *codec) annotateMethod(m *api.Method) (*methodAnnotation, error) {
 		IsGrpc:                    c.methodUsesGrpc(m),
 	}
 
+	if c.idempotencyHook != "" {
+		annotation.HasIdempotencyHook = true
+		annotation.IdempotencyHook = c.idempotencyHook
+	}
+
 	if err := c.annotateResourceNameGeneration(m, annotation); err != nil {
 		return nil, err
 	}
@@ -587,10 +599,16 @@ func (c *codec) annotatePathBinding(b *api.PathBinding, m *api.Method) (*pathBin
 }
 
 func (c *codec) annotatePathInfo(m *api.Method) error {
+	if m.PathInfo == nil {
+		return nil
+	}
 	seen := make(map[string]bool)
 	var uniqueParameters []*bindingSubstitution
 
 	for _, b := range m.PathInfo.Bindings {
+		if b.PathTemplate == nil {
+			continue
+		}
 		ann, err := c.annotatePathBinding(b, m)
 		if err != nil {
 			return err
@@ -745,6 +763,13 @@ func isIdempotent(p *api.PathInfo) string {
 func (c *codec) methodUsesGrpc(m *api.Method) bool {
 	if !c.templateSupportsGrpc() {
 		return false
+	}
+	// TODO(googleapis/google-cloud-rust#6470): Support LROs on gRPC transport in default template.
+	if c.templateOverride != "templates/grpc-client" && (m.OperationInfo != nil || m.IsLroPoller || isDiscoveryLro(m)) {
+		return false
+	}
+	if c.defaultTransport == "grpc" {
+		return true
 	}
 	if m.ClientSideStreaming || m.ServerSideStreaming {
 		return (m.ClientSideStreaming && m.ServerSideStreaming && c.includeBidiStreamingMethods) ||

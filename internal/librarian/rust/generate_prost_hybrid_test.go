@@ -33,69 +33,32 @@ func TestGenerateProstHybrid(t *testing.T) {
 	testhelper.RequireCommand(t, "protoc")
 	testhelper.RequireCommand(t, "cargo")
 	msg := api.NewTestMessage("Request").WithPackage("google.cloud.test.v1")
-
-	chatMethod := api.NewTestMethod("Chat").WithInput(msg).WithOutput(msg).WithBidiStreaming()
-
-	bidiService := api.NewTestService("BidiService").WithPackage("google.cloud.test.v1").WithMethods(chatMethod)
-
-	getMethod := api.NewTestMethod("Get").WithInput(msg).WithOutput(msg)
-	nonBidiService := api.NewTestService("UnaryService").WithPackage("google.cloud.test.v1").WithMethods(getMethod)
-
-	bidiModel := api.NewTestAPI([]*api.Message{msg}, []*api.Enum{}, []*api.Service{bidiService})
-	if err := api.CrossReference(bidiModel); err != nil {
-		t.Fatal(err)
-	}
-
-	nonBidiModel := api.NewTestAPI([]*api.Message{msg}, []*api.Enum{}, []*api.Service{nonBidiService})
-	if err := api.CrossReference(nonBidiModel); err != nil {
-		t.Fatal(err)
-	}
-
-	expandMethod := api.NewTestMethod("Expand").WithInput(msg).WithOutput(msg).WithServerSideStreaming()
-	serverService := api.NewTestService("ServerService").WithPackage("google.cloud.test.v1").WithMethods(expandMethod)
-	serverStreamingModel := api.NewTestAPI([]*api.Message{msg}, []*api.Enum{}, []*api.Service{serverService})
-	if err := api.CrossReference(serverStreamingModel); err != nil {
+	model := api.NewTestAPI([]*api.Message{msg}, []*api.Enum{}, []*api.Service{})
+	if err := api.CrossReference(model); err != nil {
 		t.Fatal(err)
 	}
 
 	for _, test := range []struct {
-		name                          string
-		model                         *api.API
-		includeBidiStreamingMethods   bool
-		includeServerStreamingMethods bool
-		templateOverride              string
-		wantProstDir                  bool
+		name             string
+		rootTypeIDs      []string
+		templateOverride string
+		wantProstDir     bool
 	}{
 		{
-			name:                        "feature disabled does not create prost dir",
-			model:                       bidiModel,
-			includeBidiStreamingMethods: false,
-			wantProstDir:                false,
+			name:         "empty rootTypeIDs does not create prost dir",
+			rootTypeIDs:  nil,
+			wantProstDir: false,
 		},
 		{
-			name:                        "model without bidi streaming does not create prost dir",
-			model:                       nonBidiModel,
-			includeBidiStreamingMethods: true,
-			wantProstDir:                false,
+			name:             "template override tonic does not create prost dir",
+			rootTypeIDs:      []string{msg.ID},
+			templateOverride: "tonic",
+			wantProstDir:     false,
 		},
 		{
-			name:                        "template override tonic does not create prost dir",
-			model:                       bidiModel,
-			includeBidiStreamingMethods: true,
-			templateOverride:            "tonic",
-			wantProstDir:                false,
-		},
-		{
-			name:                        "feature enabled creates prost dir",
-			model:                       bidiModel,
-			includeBidiStreamingMethods: true,
-			wantProstDir:                true,
-		},
-		{
-			name:                          "server streaming enabled creates prost dir",
-			model:                         serverStreamingModel,
-			includeServerStreamingMethods: true,
-			wantProstDir:                  true,
+			name:         "valid rootTypeIDs creates prost dir",
+			rootTypeIDs:  []string{msg.ID},
+			wantProstDir: true,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
@@ -103,10 +66,6 @@ func TestGenerateProstHybrid(t *testing.T) {
 			lib := &config.Library{
 				Name: "test-package",
 				Rust: &config.RustCrate{
-					RustDefault: config.RustDefault{
-						IncludeBidiStreamingMethods:   &test.includeBidiStreamingMethods,
-						IncludeServerStreamingMethods: &test.includeServerStreamingMethods,
-					},
 					TemplateOverride: test.templateOverride,
 				},
 			}
@@ -126,8 +85,7 @@ func TestGenerateProstHybrid(t *testing.T) {
 					"package:g3-wkt":        "package=google-cloud-wkt,source=google.protobuf",
 				},
 			}
-			rootTypeIDs := streamingRootTypeIDs(test.model, lib)
-			err = generateProstHybrid(t.Context(), test.model, rootTypeIDs, lib, outDir, modelConfig)
+			err = generateProstHybrid(t.Context(), model, test.rootTypeIDs, lib, outDir, modelConfig)
 			if err != nil {
 				t.Fatalf("unexpected error: %v", err)
 			}
@@ -258,9 +216,9 @@ func TestFilterModelToTypesAnyError(t *testing.T) {
 	}
 	wantErr := "cannot generate prost conversion: type google.protobuf.Any is unsupported:\n" +
 		"  - .google.test.v1.AnyReq.details\n\n" +
-		"To resolve this, allow dropping Any fields in prost conversion by adding them to allow_streaming_any_types in librarian.yaml:\n" +
+		"To resolve this, allow dropping Any fields in prost conversion by adding them to allow_grpc_any_fields in librarian.yaml:\n" +
 		"    rust:\n" +
-		"      allow_streaming_any_types:\n" +
+		"      allow_grpc_any_fields:\n" +
 		"        - .google.test.v1.AnyReq.details"
 	if diff := cmp.Diff(wantErr, err.Error()); diff != "" {
 		t.Errorf("error message mismatch (-want +got):\n%s", diff)
@@ -294,9 +252,9 @@ func TestFilterModelToStreamingMultipleAnyError(t *testing.T) {
 	wantErr := "cannot generate prost conversion: type google.protobuf.Any is unsupported:\n" +
 		"  - .google.test.v1.AnyReq.details\n" +
 		"  - .google.test.v1.AnyReq.metadata\n\n" +
-		"To resolve this, allow dropping Any fields in prost conversion by adding them to allow_streaming_any_types in librarian.yaml:\n" +
+		"To resolve this, allow dropping Any fields in prost conversion by adding them to allow_grpc_any_fields in librarian.yaml:\n" +
 		"    rust:\n" +
-		"      allow_streaming_any_types:\n" +
+		"      allow_grpc_any_fields:\n" +
 		"        - .google.test.v1.AnyReq.details\n" +
 		"        - .google.test.v1.AnyReq.metadata"
 
@@ -331,9 +289,9 @@ func TestFilterModelToStreamingPartialAllowedAny(t *testing.T) {
 
 	wantErr := "cannot generate prost conversion: type google.protobuf.Any is unsupported:\n" +
 		"  - .google.test.v1.AnyReq.metadata\n\n" +
-		"To resolve this, allow dropping Any fields in prost conversion by adding them to allow_streaming_any_types in librarian.yaml:\n" +
+		"To resolve this, allow dropping Any fields in prost conversion by adding them to allow_grpc_any_fields in librarian.yaml:\n" +
 		"    rust:\n" +
-		"      allow_streaming_any_types:\n" +
+		"      allow_grpc_any_fields:\n" +
 		"        - .google.test.v1.AnyReq.metadata"
 
 	if diff := cmp.Diff(wantErr, err.Error()); diff != "" {
@@ -377,9 +335,9 @@ func TestFilterModelToStreamingNestedAndOneofAnyError(t *testing.T) {
 	wantErr := "cannot generate prost conversion: type google.protobuf.Any is unsupported:\n" +
 		"  - .google.test.v1.ParentReq.child.extra\n" +
 		"  - .google.test.v1.ParentReq.payload\n\n" +
-		"To resolve this, allow dropping Any fields in prost conversion by adding them to allow_streaming_any_types in librarian.yaml:\n" +
+		"To resolve this, allow dropping Any fields in prost conversion by adding them to allow_grpc_any_fields in librarian.yaml:\n" +
 		"    rust:\n" +
-		"      allow_streaming_any_types:\n" +
+		"      allow_grpc_any_fields:\n" +
 		"        - .google.test.v1.ParentReq.child.extra\n" +
 		"        - .google.test.v1.ParentReq.payload"
 
