@@ -26,7 +26,6 @@ func TestMatchPrefix(t *testing.T) {
 		Remainder string
 		OK        bool
 	}
-
 	prefixes := map[string]string{
 		"google/shopping/merchant": "@google-shopping",
 		"google/shopping":          "@google-shopping",
@@ -35,7 +34,6 @@ func TestMatchPrefix(t *testing.T) {
 		"google/chat":              "@google-apps",
 		"google/area120":           "@google/area120",
 	}
-
 	for _, test := range []struct {
 		name     string
 		apiPath  string
