@@ -39,20 +39,11 @@ fn main() {
         {{#Codec.UnusedTypes}}
         config.extern_path("{{{.}}}", "crate::prost::unused::NonexistentType");
         {{/Codec.UnusedTypes}}
-        {{#Codec.ConvertIncludePackage}}
-        config.include_file("includes.rs");
-        {{/Codec.ConvertIncludePackage}}
+        {{#Codec.IncludeFile}}
+        config.include_file("{{{.}}}");
+        {{/Codec.IncludeFile}}
         config.out_dir(&destination);
         config.compile_protos(files, &includes).expect("error compiling protos");
-        {{#Codec.ConvertIncludePackage}}
-        let name = format!("{destination}/includes.rs");
-        let content = std::fs::read_to_string(&name).expect("error reading includes.rs");
-        let content = content.replace(
-            "include!(\"{{Codec.ConvertIncludePackage}}.rs\");",
-            "include!(\"{{Codec.ConvertIncludePackage}}.rs\");\n            include!(\"../convert.rs\");",
-        );
-        std::fs::write(&name, content).expect("error writing includes.rs");
-        {{/Codec.ConvertIncludePackage}}
         {{#Codec.PostProcessProtos}}
         {{{.}}}
         {{/Codec.PostProcessProtos}}

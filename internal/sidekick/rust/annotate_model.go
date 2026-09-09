@@ -47,12 +47,14 @@ const (
 
 type modelAnnotations struct {
 	PackageName                string
+	PackageModuleName          string
 	PackageVersion             string
 	ReleaseLevel               string
 	PackageNamespace           string
 	RequiredPackages           []string
 	ExternPackages             []string
 	HasLROs                    bool
+	ProstPath                  string
 	IncludeRpcStatusConversion bool
 	CopyrightYear              string
 	BoilerPlate                []string
@@ -276,14 +278,18 @@ func annotateModel(model *api.API, codec *codec) (*modelAnnotations, error) {
 	// are populated for convert-prost generation in hybrid crates.
 	// Override ProstRelativeName after all method annotations so ToProto and FromProto
 	// resolve to crate::prost::<pkg>::<TypeName>.
+	prostPrefix := "crate::prost::"
+	if codec.prostPath != "" {
+		prostPrefix = codec.prostPath + "::"
+	}
 	for _, e := range model.ExternalEnums {
 		if ann, ok := e.Codec.(*enumAnnotation); ok {
-			ann.ProstRelativeName = "crate::prost::" + packageToModuleName(e.Package) + "::" + prostEnumRelativePath(e)
+			ann.ProstRelativeName = prostPrefix + packageToModuleName(e.Package) + "::" + prostEnumRelativePath(e)
 		}
 	}
 	for _, m := range model.ExternalMessages {
 		if ann, ok := m.Codec.(*messageAnnotation); ok {
-			ann.ProstRelativeName = "crate::prost::" + packageToModuleName(m.Package) + "::" + prostMessageRelativePath(m)
+			ann.ProstRelativeName = prostPrefix + packageToModuleName(m.Package) + "::" + prostMessageRelativePath(m)
 		}
 	}
 
@@ -358,12 +364,14 @@ func annotateModel(model *api.API, codec *codec) (*modelAnnotations, error) {
 
 	ann := &modelAnnotations{
 		PackageName:                codec.packageName(model),
+		PackageModuleName:          packageToModuleName(model.PackageName),
 		PackageNamespace:           codec.rootModuleName(model),
 		PackageVersion:             codec.version,
 		ReleaseLevel:               codec.releaseLevel,
 		RequiredPackages:           requiredPackages(codec.extraPackages),
 		ExternPackages:             externPackages(codec.extraPackages),
 		HasLROs:                    hasLROs,
+		ProstPath:                  codec.prostPath,
 		IncludeRpcStatusConversion: includeRpcStatusConversion,
 		CopyrightYear:              codec.generationYear,
 		BoilerPlate: append(license.HeaderBulk(),
