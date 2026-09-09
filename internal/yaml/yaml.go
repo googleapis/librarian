@@ -98,9 +98,9 @@ func Write(path string, v any) error {
 	return os.WriteFile(path, data, 0o644)
 }
 
-// Empty returns whether the given value serializes to an empty YAML object
+// empty returns whether the given value serializes to an empty YAML object
 // (i.e. "{}" with a line break).
-func Empty(v any) (bool, error) {
+func empty(v any) (bool, error) {
 	data, err := Marshal(v)
 	if err != nil {
 		return false, err
@@ -114,7 +114,7 @@ func ClearIfEmpty[T any](v *T) (*T, error) {
 	if v == nil {
 		return nil, nil
 	}
-	empty, err := Empty(v)
+	empty, err := empty(v)
 	if err != nil {
 		return nil, err
 	}

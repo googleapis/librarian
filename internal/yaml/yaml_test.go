@@ -163,7 +163,7 @@ func TestEmpty(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got, err := Empty(test.value)
+			got, err := empty(test.value)
 			if err != nil {
 				t.Fatal(err)
 			}
