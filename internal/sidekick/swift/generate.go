@@ -100,7 +100,7 @@ func (c *codec) swiftFilename(basename string) string {
 }
 
 func (c *codec) generateDocc(outdir string, model *api.API, provider language.TemplateProvider) error {
-	output := filepath.Join("Sources", c.LibraryName, c.LibraryName+".docc", c.LibraryName+".md")
+	output := filepath.Join("Sources", c.LibraryName, c.LibraryName+".docc", "Index.md")
 	template := "templates/docc/landing_page.md.mustache"
 	generated := language.GeneratedFile{
 		TemplatePath: template,
