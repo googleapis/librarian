@@ -1121,7 +1121,7 @@ func TestAsQueryParameter(t *testing.T) {
 		{optionalFieldMaskField, `let builder = req.optional_field_mask.as_ref().map(|p| serde_json::to_value(p).map_err(Error::ser) ).transpose()?.into_iter().fold(builder, |builder, v| { use gaxi::query_parameter::QueryParameter; v.add(builder, "optionalFieldMask") });`},
 		{renamedField, `let builder = builder.query(&[("renamedField", &req.custom_field)]);`},
 	} {
-		got := addQueryParameter(c, test.field)
+		got := c.addQueryParameter(test.field)
 		if test.want != got {
 			t.Errorf("mismatched as query parameter for %s\nwant=%s\n got=%s", test.field.Name, test.want, got)
 		}
@@ -1233,7 +1233,7 @@ func TestOneOfAsQueryParameter(t *testing.T) {
 		{singularFieldMaskField, `let builder = req.singular_field_mask().map(|p| serde_json::to_value(p).map_err(Error::ser) ).transpose()?.into_iter().fold(builder, |builder, p| { use gaxi::query_parameter::QueryParameter; p.add(builder, "singularFieldMask") });`},
 		{renamedOneOfField, `let builder = req.custom_oneof().iter().fold(builder, |builder, p| builder.query(&[("renamedOneof", p)]));`},
 	} {
-		got := addQueryParameter(c, test.field)
+		got := c.addQueryParameter(test.field)
 		if test.want != got {
 			t.Errorf("mismatched as query parameter for %s\nwant=%s\n got=%s", test.field.Name, test.want, got)
 		}

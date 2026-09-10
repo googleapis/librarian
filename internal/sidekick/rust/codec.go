@@ -604,9 +604,9 @@ func (c *codec) baseFieldType(f *api.Field, model *api.API, sourceSpecificationP
 	}
 }
 
-func addQueryParameter(c *codec, f *api.Field) string {
+func (c *codec) addQueryParameter(f *api.Field) string {
 	if f.IsOneOf {
-		return addQueryParameterOneOf(c, f)
+		return c.addQueryParameterOneOf(f)
 	}
 	fieldName := toSnake(c.FieldName(f))
 	switch f.Typez {
@@ -633,7 +633,7 @@ func addQueryParameter(c *codec, f *api.Field) string {
 	}
 }
 
-func addQueryParameterOneOf(c *codec, f *api.Field) string {
+func (c *codec) addQueryParameterOneOf(f *api.Field) string {
 	fieldName := toSnake(c.FieldName(f))
 	switch f.Typez {
 	case api.TypezEnum:

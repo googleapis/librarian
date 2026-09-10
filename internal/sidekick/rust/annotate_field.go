@@ -207,7 +207,7 @@ func (c *codec) annotateField(field *api.Field, message *api.Message, model *api
 		DocLines:           docLines,
 		FieldType:          fieldType,
 		PrimitiveFieldType: primitiveFieldType,
-		AddQueryParameter:  addQueryParameter(c, field),
+		AddQueryParameter:  c.addQueryParameter(field),
 		SerdeAs:            c.primitiveSerdeAs(field),
 		SkipIfIsDefault:    field.Typez != api.TypezString && field.Typez != api.TypezBytes,
 		IsWktValue:         field.Typez == api.TypezMessage && field.TypezID == ".google.protobuf.Value",
