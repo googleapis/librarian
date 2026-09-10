@@ -268,7 +268,10 @@ func (c *codec) annotateField(field *api.Field, message *api.Message, model *api
 
 		if targetType != nil {
 			fieldFqName, err := c.fullyQualifiedMessageName(targetType, model.PackageName)
-			if err == nil && unqualifiedRustName(fieldFqName) == parentRustName {
+			if err != nil {
+				return nil, err
+			}
+			if unqualifiedRustName(fieldFqName) == parentRustName {
 				isNameConflict = true
 			}
 		}

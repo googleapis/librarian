@@ -1185,7 +1185,8 @@ func TestFieldNameConflictWithNestedMessage(t *testing.T) {
 		t.Fatalf("bodyField.Codec is not *fieldAnnotations")
 	}
 
-	if gotFA.AliasInExamples == "" {
-		t.Errorf("AliasInExamples is empty; it should be set to disambiguate from containing message of same unqualified name")
+	wantAlias := "Body"
+	if gotFA.AliasInExamples != wantAlias {
+		t.Errorf("mismatch in AliasInExamples, want %s, got %s", wantAlias, gotFA.AliasInExamples)
 	}
 }
