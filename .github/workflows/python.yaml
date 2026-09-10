@@ -19,24 +19,16 @@ jobs:
   build-and-test:
     name: ${{ matrix.job-name }}
     runs-on: ubuntu-24.04
-    # Presubmit jobs must complete within 5 minutes. Integration might take longer.
-    timeout-minutes: ${{ matrix.timeout }}
+    # Presubmit jobs must complete within 5 minutes.
+    timeout-minutes: 5
     strategy:
       fail-fast: false
       matrix:
         include:
           - job-name: 'Unit Tests'
             task: 'unit-test'
-            timeout: 5
-            sparse: true
           - job-name: 'Smoke Test'
             task: 'smoke-test'
-            timeout: 5
-            sparse: true
-          - job-name: 'Integration Test'
-            task: 'integration'
-            timeout: 60
-            sparse: false
     steps:
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
@@ -65,30 +57,49 @@ jobs:
             google-cloud-secret-manager
           sparse-checkout-cone-mode: false
           persist-credentials: false
-      - name: "Checkout google-cloud-python (full)"
-        if: matrix.sparse == false && github.event_name == 'push' && github.ref == 'refs/heads/main'
-        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
-        with:
-          repository: googleapis/google-cloud-python
-          path: google-cloud-python
-          persist-credentials: false
       - name: Install Python dependencies
-        if: matrix.task == 'smoke-test' || (matrix.task == 'integration' && github.event_name == 'push' && github.ref == 'refs/heads/main')
         run: librarian -v install python
         working-directory: google-cloud-python
       - name: Run Unit Tests
         if: matrix.task == 'unit-test'
         run: go run ./tool/cmd/coverage ./internal/librarian/python
       - name: Generate a single library (smoke test)
-        if: matrix.task == 'smoke-test' && !(github.event_name == 'push' && github.ref == 'refs/heads/main')
+        if: matrix.task == 'smoke-test'
         working-directory: google-cloud-python
         run: librarian generate google-cloud-secret-manager
-      - name: Run librarian generate all (integration test)
-        if: matrix.task == 'integration' && github.event_name == 'push' && github.ref == 'refs/heads/main'
+  integration-test:
+    name: Integration test
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/setup-librarian
+        with:
+          include_python: 'true'
+      - name: Install pandoc
+        run: |
+          set -e
+          curl -fsSL --retry 5 --retry-delay 15 -o /tmp/pandoc.tar.gz https://github.com/jgm/pandoc/releases/download/$VERSION/pandoc-$VERSION-linux-amd64.tar.gz
+          sudo tar -xvf /tmp/pandoc.tar.gz -C /usr/local --strip-components=1
+          pandoc --version
+        env:
+          VERSION: 3.8.2
+      - name: "Checkout google-cloud-python (full)"
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          repository: googleapis/google-cloud-python
+          path: google-cloud-python
+          persist-credentials: false
+      - name: Install Python dependencies
+        run: librarian -v install python
+        working-directory: google-cloud-python
+      - name: Generate all Python libraries
         working-directory: google-cloud-python
         run: librarian generate --all
   create-issue-on-failure:
-    needs: [build-and-test]
+    needs: [build-and-test, integration-test]
     permissions:
       contents: read
       issues: write
