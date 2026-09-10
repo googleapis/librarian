@@ -59,10 +59,11 @@ func newUnifiedMessage(c *codec, model *api.API, msgNames []string, skipFieldFn 
 			}
 			// Allow generated field vs GAPIC field to be renamed
 			gapicFieldName := c.FieldName(f)
-			f.ID = ".generated" + f.ID
-			generatedFieldName := c.FieldName(f)
+			fClone := *f
+			fClone.ID = ".generated" + f.ID
+			generatedFieldName := c.FieldName(&fClone)
 
-			msg.fields = append(msg.fields, f)
+			msg.fields = append(msg.fields, &fClone)
 			if _, ok := msg.fieldGroups[generatedFieldName]; !ok {
 				msg.fieldGroups[generatedFieldName] = &fieldGroup{
 					gapicFieldName:     gapicFieldName,
