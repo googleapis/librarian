@@ -28,9 +28,6 @@ const defaultVersion = "0.0.0"
 // Add initializes Node.js-specific configuration for a library.
 func Add(cfg *config.Config, lib *config.Library) *config.Library {
 	lib.Version = defaultVersion
-	if len(lib.APIs) == 0 {
-		return lib
-	}
 	if cfg != nil {
 		lib = fillDefault(lib, cfg.Default)
 	}
@@ -47,7 +44,7 @@ func fillDefault(lib *config.Library, d *config.Default) *config.Library {
 	if lib.Nodejs != nil && lib.Nodejs.PackageName != "" {
 		return lib
 	}
-	if d == nil || d.Nodejs == nil || len(d.Nodejs.CustomPackagePrefixes) == 0 || len(lib.APIs) == 0 {
+	if d == nil || d.Nodejs == nil || len(d.Nodejs.CustomPackagePrefixes) == 0 {
 		return lib
 	}
 	if pkgName := derivePackageNameFromCustomPackagePrefixes(lib.APIs[0].Path, d.Nodejs.CustomPackagePrefixes); pkgName != "" {
