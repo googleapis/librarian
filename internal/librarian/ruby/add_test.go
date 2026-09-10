@@ -31,14 +31,16 @@ func TestAdd(t *testing.T) {
 		{
 			name: "default library name",
 			in: &config.Library{
-				Name: "google-cloud-secretmanager-v1",
+				Name:          "google-cloud-secretmanager-v1",
+				CopyrightYear: "2026",
 				APIs: []*config.API{
 					{Path: "google/cloud/secretmanager/v1"},
 				},
 			},
 			want: &config.Library{
-				Name:    "google-cloud-secretmanager-v1",
-				Version: "0.0.1",
+				Name:          "google-cloud-secretmanager-v1",
+				CopyrightYear: "",
+				Version:       "0.0.1",
 				APIs: []*config.API{
 					{Path: "google/cloud/secretmanager/v1"},
 				},

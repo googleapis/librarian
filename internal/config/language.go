@@ -906,12 +906,6 @@ type PHPAPI struct {
 	// Default to true when omitted.
 	Samples *bool `yaml:"samples,omitempty"`
 
-	// SkipGRPCServiceConfig indicates whether to skip the generation of gRPC service config.
-	// Default to false.
-	// TODO(https://github.com/googleapis/librarian/issues/7436): Remove this config once
-	// Bigtable uses GRPC service config.
-	SkipGRPCServiceConfig bool `yaml:"skip_grpc_service_config,omitempty"`
-
 	// StagingSubdir is the subdirectory in staging where the generated files should be placed.
 	StagingSubdir string `yaml:"staging_subdir,omitempty"`
 }
