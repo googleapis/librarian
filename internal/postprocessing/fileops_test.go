@@ -793,6 +793,20 @@ func TestApplyMethodOperations(t *testing.T) {
 			},
 		},
 		{
+			name: "single file sequential operations with copy_and_rename",
+			files: map[string]string{
+				"Test.java": "package com.example;\n\npublic class Test {\n\tpublic void toDelete() {}\n\tpublic void newFunc() {}\n}",
+			},
+			ops: []config.MethodOperation{
+				{Path: "*.java", Action: "delete", FuncName: "public void toDelete()"},
+				{Path: "*.java", Action: "copy_and_rename", FuncName: "public void newFunc()", NewName: "newFuncCopy"},
+				{Path: "*.java", Action: "deprecate", FuncName: "public void newFuncCopy()", DeprecationMessage: "Use newFunc instead."},
+			},
+			wantFiles: map[string]string{
+				"Test.java": "package com.example;\n\npublic class Test {\n\tpublic void newFunc() {}\n\n\t/**\n\t * @deprecated Use newFunc instead.\n\t */\n\t@Deprecated\n\tpublic void newFuncCopy() {}\n}",
+			},
+		},
+		{
 			name: "batch execution across subdirectories ignoring non-matching files",
 			files: map[string]string{
 				"src/A.java":     "public class A {\n\tpublic void removeMe() {}\n}",
