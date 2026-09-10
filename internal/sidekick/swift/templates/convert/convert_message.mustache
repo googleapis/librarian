@@ -106,15 +106,11 @@ extension {{Codec.ParameterTypeName}} {
       }
     }
     {{/OneOfs}}
+    self._unknownFields.proto = proto.unknownFields.data
   }
 
   internal func toProto() throws -> ProtoType {
-    {{#HasFields}}
     var proto = ProtoType()
-    {{/HasFields}}
-    {{^HasFields}}
-    let proto = ProtoType()
-    {{/HasFields}}
     {{#Fields}}
     {{^IsOneOf}}
     {{#Singular}}
@@ -205,6 +201,9 @@ extension {{Codec.ParameterTypeName}} {
       }
     }
     {{/OneOfs}}
+    if !self._unknownFields.proto.isEmpty {
+      try proto.merge(serializedBytes: self._unknownFields.proto)
+    }
     return proto
   }
 }

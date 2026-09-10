@@ -14,14 +14,15 @@ See the License for the specific language governing permissions and
 limitations under the License.
 }}
 {{#Codec.IsDecodingSimple}}
-self.{{Codec.Name}} = try container.decode({{{Codec.FieldType}}}.self, forKey: .{{Codec.Name}})
+if let value = try container.decodeIfPresent({{{Codec.FieldType}}}.self, forKey: .{{Codec.Name}}) {
+  self.{{Codec.Name}} = value
+}
 {{/Codec.IsDecodingSimple}}
 {{#Codec.IsDecodingOptional}}
 self.{{Codec.Name}} = try container.decodeIfPresent({{{Codec.BaseFieldType}}}.self, forKey: .{{Codec.Name}})
 {{/Codec.IsDecodingOptional}}
 {{#Codec.IsDecodingMapCustomKey}}
-self.{{Codec.Name}} = try { () throws in
-  let stringKeyed = try container.decode([Swift.String : {{{Codec.ValueType}}}].self, forKey: .{{Codec.Name}})
+if let stringKeyed = try container.decodeIfPresent([Swift.String : {{{Codec.ValueType}}}].self, forKey: .{{Codec.Name}}) {
   let tuples = try stringKeyed.lazy.map { (key, value) throws -> ({{{Codec.KeyType}}}, {{{Codec.ValueType}}}) in
     guard let newKey = {{{Codec.KeyType}}}(key) else {
       throw DecodingError.typeMismatch(
@@ -29,6 +30,6 @@ self.{{Codec.Name}} = try { () throws in
     }
     return (newKey, value)
   }
-  return Dictionary(uniqueKeysWithValues: tuples)
-}()
+  self.{{Codec.Name}} = Dictionary(uniqueKeysWithValues: tuples)
+}
 {{/Codec.IsDecodingMapCustomKey}}
