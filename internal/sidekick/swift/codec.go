@@ -79,7 +79,7 @@ type codec struct {
 	// The package version (e.g. "1.2.3").
 	PackageVersion string
 
-	// The location of the monorepo, relative to the current directory. This
+	// The location of the monorepo, relative to the output directory. This
 	// always uses forward slashes, as it is interpolated into the generated
 	// Package.swift manifest.
 	//
