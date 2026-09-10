@@ -71,7 +71,7 @@ func newUnifiedMessage(c *codec, model *api.API, msgNames []string, skipFieldFn 
 					fields:             make(map[string]*api.Field),
 				}
 			}
-			msg.fieldGroups[generatedFieldName].fields[msgName] = f
+			msg.fieldGroups[generatedFieldName].fields[msgName] = &fClone
 		}
 	}
 
