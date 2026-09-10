@@ -1,0 +1,92 @@
+# Copyright 2026 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+name: Build Monitor
+on:
+  workflow_call:
+    inputs:
+      target_branch:
+        description: "The target branch to monitor for failures (default: main)."
+        required: false
+        type: string
+        default: "main"
+      team_mention:
+        description: "A team or user to mention in a follow-up comment when a new issue is created."
+        required: false
+        type: string
+        default: ""
+      issue_title:
+        description: "The title of the issue to create or search for."
+        required: false
+        type: string
+        default: ""
+      labels:
+        description: "Comma-separated list of labels to apply to the issue."
+        required: false
+        type: string
+        default: ":rotating_light: critical"
+      assignee:
+        description: "The GitHub user to assign the issue to."
+        required: false
+        type: string
+        default: ""
+      check_suite_app_name:
+        description: "The GitHub App name to filter on for check_suite events (default: Google Cloud Build)."
+        required: false
+        type: string
+        default: "Google Cloud Build"
+      workflow_run_event:
+        description: "The trigger event to filter on for workflow_run events (default: push)."
+        required: false
+        type: string
+        default: "push"
+      repo:
+        description: "The target repository in owner/repo format (default: caller repository)."
+        required: false
+        type: string
+        default: ""
+      librarian_ref:
+        description: "The ref of googleapis/librarian to checkout (default: main)."
+        required: false
+        type: string
+        default: "main"
+permissions:
+  contents: read
+  issues: write
+  checks: read
+  actions: read
+  pull-requests: read
+jobs:
+  build-monitor:
+    runs-on: ubuntu-24.04
+    # Strict event filtering to prevent unnecessary runner jobs or unwanted triggers.
+    # Note: In GitHub Actions expressions, '&&' and '||' return booleans, so comparisons
+    # must be evaluated explicitly against string values rather than using JavaScript-style
+    # value fallbacks like '(inputs.target_branch || "main")'.
+    if: (github.event_name == 'check_suite' && (github.event.action == 'completed' || github.event.action == '') && (github.event.check_suite.head_branch == inputs.target_branch || (inputs.target_branch == '' && github.event.check_suite.head_branch == 'main')) && (github.event.check_suite.app.name == inputs.check_suite_app_name || (inputs.check_suite_app_name == '' && github.event.check_suite.app.name == 'Google Cloud Build')) && (github.event.check_suite.conclusion == 'failure' || github.event.check_suite.conclusion == 'timed_out' || github.event.check_suite.conclusion == 'cancelled')) || (github.event_name == 'workflow_run' && (github.event.action == 'completed' || github.event.action == '') && github.event.workflow_run.head_repository.full_name == github.repository && (github.event.workflow_run.head_branch == inputs.target_branch || (inputs.target_branch == '' && github.event.workflow_run.head_branch == 'main')) && (github.event.workflow_run.event == inputs.workflow_run_event || (inputs.workflow_run_event == '' && github.event.workflow_run.event == 'push')) && (github.event.workflow_run.conclusion == 'failure' || github.event.workflow_run.conclusion == 'timed_out' || github.event.workflow_run.conclusion == 'cancelled' || github.event.workflow_run.conclusion == 'startup_failure'))
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          repository: googleapis/librarian
+          ref: ${{ inputs.librarian_ref }}
+          persist-credentials: false
+      - uses: ./.github/actions/build-monitor
+        with:
+          target_branch: ${{ inputs.target_branch }}
+          team_mention: ${{ inputs.team_mention }}
+          issue_title: ${{ inputs.issue_title }}
+          labels: ${{ inputs.labels }}
+          assignee: ${{ inputs.assignee }}
+          check_suite_app_name: ${{ inputs.check_suite_app_name }}
+          workflow_run_event: ${{ inputs.workflow_run_event }}
+          repo: ${{ inputs.repo }}
