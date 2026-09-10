@@ -68,6 +68,7 @@ jobs:
         run: librarian generate google-cloud-secret-manager
   integration-test:
     name: Integration test
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-24.04
     timeout-minutes: 60
     steps:
