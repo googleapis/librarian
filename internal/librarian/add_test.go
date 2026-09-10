@@ -980,7 +980,7 @@ func TestAddLibraryCommand_Ruby(t *testing.T) {
 			wantFinalLibraries: []*config.Library{
 				{
 					Name:          "google-cloud-secret_manager-v1",
-					CopyrightYear: strconv.Itoa(time.Now().Year()),
+					CopyrightYear: "",
 					Version:       "0.0.1",
 					APIs: []*config.API{
 						{Path: "google/cloud/secretmanager/v1"},
@@ -1024,7 +1024,7 @@ func TestAddLibraryCommand_Ruby(t *testing.T) {
 			wantFinalLibraries: []*config.Library{
 				{
 					Name:          "google-cloud-secret_manager",
-					CopyrightYear: strconv.Itoa(time.Now().Year()),
+					CopyrightYear: "",
 					Version:       "0.0.1",
 					APIs: []*config.API{
 						{Path: "google/cloud/secretmanager/v1"},
@@ -1065,7 +1065,7 @@ func TestAddLibraryCommand_Ruby(t *testing.T) {
 			wantFinalLibraries: []*config.Library{
 				{
 					Name:          "google-cloud-secretmanager-v1",
-					CopyrightYear: strconv.Itoa(time.Now().Year()),
+					CopyrightYear: "",
 					Version:       "0.0.1",
 					APIs: []*config.API{
 						{Path: "google/cloud/secretmanager/v1"},
