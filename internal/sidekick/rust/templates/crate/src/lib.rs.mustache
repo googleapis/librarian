@@ -141,6 +141,20 @@ pub(crate) mod transport;
 pub(crate) mod prost {
     include!("prost/includes.rs");
 }
+
+{{#Codec.PerServiceFeatures}}
+#[cfg(any(
+{{#Codec.GrpcServices}}
+    feature = "{{Codec.FeatureName}}",
+{{/Codec.GrpcServices}}
+))]
+{{/Codec.PerServiceFeatures}}
+#[doc(hidden)]
+#[allow(clippy::all)]
+#[allow(unused_imports)]
+#[allow(dead_code)]
+#[allow(missing_docs)]
+pub(crate) mod convert;
 {{/Codec.HasGrpc}}
 
 /// The default host used by the service.

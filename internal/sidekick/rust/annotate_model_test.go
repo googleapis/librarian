@@ -393,6 +393,7 @@ func TestPackageNames(t *testing.T) {
 	}
 	want := &modelAnnotations{
 		PackageName:               "google-cloud-workflows-v1",
+		PackageModuleName:         "google::cloud::workflows::v1",
 		PackageVersion:            "1.2.3",
 		ReleaseLevel:              "stable",
 		PackageNamespace:          "google_cloud_workflows_v1",
@@ -936,9 +937,33 @@ func TestExternalTypesAnnotations(t *testing.T) {
 	if want := "google_cloud_type::model::DayOfWeek"; enumAnn.RelativeName != want {
 		t.Errorf("enumAnn.RelativeName = %q, want %q", enumAnn.RelativeName, want)
 	}
-	if want := "crate::prost::google::r#type::DayOfWeek"; enumAnn.ProstRelativeName != want {
-		t.Errorf("enumAnn.ProstRelativeName = %q, want %q", enumAnn.ProstRelativeName, want)
-	}
+	t.Run("with prost-path option", func(t *testing.T) {
+		extMsg2 := api.NewTestMessage("LatLng").WithPackage("google.type")
+		extEnum2 := &api.Enum{Name: "DayOfWeek", ID: ".google.type.DayOfWeek", Package: "google.type"}
+		model2 := api.NewTestAPI([]*api.Message{}, []*api.Enum{}, []*api.Service{})
+		model2.ExternalMessages = []*api.Message{extMsg2}
+		model2.ExternalEnums = []*api.Enum{extEnum2}
+
+		codec2 := newTestCodec(t, libconfig.SpecProtobuf, "", map[string]string{
+			"template-override": "templates/convert-prost",
+			"prost-path":        "super::prost",
+		})
+		codec2.packageMapping["google.type"] = &packagez{name: "google_cloud_type", packageName: "google.type"}
+
+		if _, err := annotateModel(model2, codec2); err != nil {
+			t.Fatal(err)
+		}
+
+		msgAnn2 := extMsg2.Codec.(*messageAnnotation)
+		if want := "super::prost::google::r#type::LatLng"; msgAnn2.ProstRelativeName != want {
+			t.Errorf("msgAnn2.ProstRelativeName = %q, want %q", msgAnn2.ProstRelativeName, want)
+		}
+
+		enumAnn2 := extEnum2.Codec.(*enumAnnotation)
+		if want := "super::prost::google::r#type::DayOfWeek"; enumAnn2.ProstRelativeName != want {
+			t.Errorf("enumAnn2.ProstRelativeName = %q, want %q", enumAnn2.ProstRelativeName, want)
+		}
+	})
 }
 
 func TestGrpcRootTypeIDs(t *testing.T) {

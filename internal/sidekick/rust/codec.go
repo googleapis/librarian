@@ -217,6 +217,8 @@ func newCodec(specificationFormat string, options map[string]string) (*codec, er
 			codec.includeRpcStatusConversion = value
 		case key == "grpc-client":
 			codec.grpcClient = definition
+		case key == "prost-path":
+			codec.prostPath = definition
 		case key == "default-transport":
 			if definition != "grpc" && definition != "http" {
 				return nil, fmt.Errorf("invalid `default-transport` value %q, expected \"grpc\" or \"http\"", definition)
@@ -386,6 +388,8 @@ type codec struct {
 	quickstartServiceOverride string
 	// The Rust type used for the inner gRPC client in generated transports.
 	grpcClient string
+	// The path to the generated prost module, e.g. "super::prost".
+	prostPath string
 	// The default transport protocol for unary methods ("grpc" or "http").
 	defaultTransport string
 }

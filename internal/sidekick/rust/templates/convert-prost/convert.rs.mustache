@@ -25,6 +25,10 @@ limitations under the License.
 
 use crate as gaxi;
 {{/Codec.IsGaxiCrate}}
+{{#Codec.ProstPath}}
+
+use {{Codec.ProstPath}}::{{Codec.PackageModuleName}}::*;
+{{/Codec.ProstPath}}
 {{#Codec.IncludeRpcStatusConversion}}
 {{> /templates/convert-prost/status}}
 {{/Codec.IncludeRpcStatusConversion}}
