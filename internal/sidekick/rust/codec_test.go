@@ -1038,6 +1038,11 @@ func TestFieldMapTypeKey(t *testing.T) {
 }
 
 func TestAsQueryParameter(t *testing.T) {
+	c := createRustCodec()
+	c.nameOverrides = map[string]string{
+		"..Options.renamed_field": "custom_field",
+	}
+
 	optionsField := &api.Field{
 		Name:     "options_field",
 		JSONName: "optionsField",
@@ -1094,6 +1099,12 @@ func TestAsQueryParameter(t *testing.T) {
 		TypezID:  ".google.protobuf.FieldMask",
 		Optional: true,
 	}
+	renamedField := &api.Field{
+		Name:     "renamed_field",
+		ID:       "..Options.renamed_field",
+		JSONName: "renamedField",
+		Typez:    api.TypezString,
+	}
 
 	for _, test := range []struct {
 		field *api.Field
@@ -1108,8 +1119,9 @@ func TestAsQueryParameter(t *testing.T) {
 		{repeatedEnumField, `let builder = req.repeated_enum_field.iter().fold(builder, |builder, p| builder.query(&[("repeatedEnumField", p)]));`},
 		{requiredFieldMaskField, `let builder = { use gaxi::query_parameter::QueryParameter; serde_json::to_value(&req.required_field_mask).map_err(Error::ser)?.add(builder, "requiredFieldMask") };`},
 		{optionalFieldMaskField, `let builder = req.optional_field_mask.as_ref().map(|p| serde_json::to_value(p).map_err(Error::ser) ).transpose()?.into_iter().fold(builder, |builder, v| { use gaxi::query_parameter::QueryParameter; v.add(builder, "optionalFieldMask") });`},
+		{renamedField, `let builder = builder.query(&[("renamedField", &req.custom_field)]);`},
 	} {
-		got := addQueryParameter(test.field)
+		got := addQueryParameter(c, test.field)
 		if test.want != got {
 			t.Errorf("mismatched as query parameter for %s\nwant=%s\n got=%s", test.field.Name, test.want, got)
 		}
@@ -1117,6 +1129,11 @@ func TestAsQueryParameter(t *testing.T) {
 }
 
 func TestOneOfAsQueryParameter(t *testing.T) {
+	c := createRustCodec()
+	c.nameOverrides = map[string]string{
+		"..Request.renamed_oneof": "custom_oneof",
+	}
+
 	options := &api.Message{
 		Name:   "Options",
 		ID:     "..Options",
@@ -1170,6 +1187,13 @@ func TestOneOfAsQueryParameter(t *testing.T) {
 		TypezID:  ".google.protobuf.FieldMask",
 		IsOneOf:  true,
 	}
+	renamedOneOfField := &api.Field{
+		Name:     "renamed_oneof",
+		ID:       "..Request.renamed_oneof",
+		JSONName: "renamedOneof",
+		Typez:    api.TypezString,
+		IsOneOf:  true,
+	}
 
 	fields := []*api.Field{
 		typeField,
@@ -1177,6 +1201,7 @@ func TestOneOfAsQueryParameter(t *testing.T) {
 		singularField, repeatedField,
 		singularEnumField, repeatedEnumField,
 		singularFieldMaskField,
+		renamedOneOfField,
 	}
 	oneof := &api.OneOf{
 		Name:   "one_of",
@@ -1206,8 +1231,9 @@ func TestOneOfAsQueryParameter(t *testing.T) {
 		{singularEnumField, `let builder = req.singular_enum_field().iter().fold(builder, |builder, p| builder.query(&[("singularEnumField", p)]));`},
 		{repeatedEnumField, `let builder = req.repeated_enum_field().iter().fold(builder, |builder, p| builder.query(&[("repeatedEnumField", p)]));`},
 		{singularFieldMaskField, `let builder = req.singular_field_mask().map(|p| serde_json::to_value(p).map_err(Error::ser) ).transpose()?.into_iter().fold(builder, |builder, p| { use gaxi::query_parameter::QueryParameter; p.add(builder, "singularFieldMask") });`},
+		{renamedOneOfField, `let builder = req.custom_oneof().iter().fold(builder, |builder, p| builder.query(&[("renamedOneof", p)]));`},
 	} {
-		got := addQueryParameter(test.field)
+		got := addQueryParameter(c, test.field)
 		if test.want != got {
 			t.Errorf("mismatched as query parameter for %s\nwant=%s\n got=%s", test.field.Name, test.want, got)
 		}
@@ -1601,6 +1627,7 @@ func TestFormatDocCommentsCrossLinks(t *testing.T) {
 [the service name][test.v1.YELL]
 [renamed service][test.v1.RenamedService]
 [method of renamed service][test.v1.RenamedService.CreateFoo]
+[renamed field][test.v1.SomeMessage.renamed]
 `
 	want := []string{
 		"/// [Any][google.protobuf.Any]",
@@ -1621,6 +1648,7 @@ func TestFormatDocCommentsCrossLinks(t *testing.T) {
 		"/// [the service name][test.v1.YELL]",
 		"/// [renamed service][test.v1.RenamedService]",
 		"/// [method of renamed service][test.v1.RenamedService.CreateFoo]",
+		"/// [renamed field][test.v1.SomeMessage.renamed]",
 		"///",
 		"/// [google.iam.v1.IAMPolicy]: iam_v1::client::IAMPolicy",
 		"/// [google.iam.v1.SetIamPolicyRequest]: iam_v1::model::SetIamPolicyRequest",
@@ -1632,6 +1660,7 @@ func TestFormatDocCommentsCrossLinks(t *testing.T) {
 		"/// [test.v1.SomeMessage.SomeEnum.ENUM_VALUE]: crate::model::some_message::SomeEnum::EnumValue",
 		"/// [test.v1.SomeMessage.error]: crate::model::SomeMessage::result",
 		"/// [test.v1.SomeMessage.field]: crate::model::SomeMessage::field",
+		"/// [test.v1.SomeMessage.renamed]: crate::model::SomeMessage::custom_renamed",
 		"/// [test.v1.SomeMessage.result]: crate::model::SomeMessage::result",
 		"/// [test.v1.SomeMessage.type]: crate::model::SomeMessage::type",
 		"/// [test.v1.SomeService]: crate::client::SomeService",
@@ -1658,7 +1687,8 @@ func TestFormatDocCommentsCrossLinks(t *testing.T) {
 			"google.iam.v1":   iam,
 		},
 		nameOverrides: map[string]string{
-			".test.v1.RenamedService": "NewName",
+			".test.v1.RenamedService":      "NewName",
+			".test.v1.SomeMessage.renamed": "custom_renamed",
 		},
 	}
 
@@ -2025,6 +2055,7 @@ func makeApiForRustFormatDocCommentsCrossLinks() *api.API {
 		Enums:   []*api.Enum{someEnum},
 		Fields: []*api.Field{
 			{Name: "unused"}, {Name: "field"}, response, errorz, typez,
+			{Name: "renamed", ID: ".test.v1.SomeMessage.renamed"},
 		},
 		OneOfs: []*api.OneOf{
 			{
