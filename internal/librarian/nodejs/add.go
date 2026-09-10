@@ -29,7 +29,7 @@ const defaultVersion = "0.0.0"
 func Add(cfg *config.Config, lib *config.Library) *config.Library {
 	lib.Version = defaultVersion
 	if cfg != nil {
-		lib = fillDefault(lib, cfg.Default)
+		lib = populatePackageName(lib, cfg.Default)
 	}
 	apiPath := lib.APIs[0].Path
 	if !strings.HasPrefix(apiPath, "google/cloud/") && (lib.Nodejs == nil || lib.Nodejs.PackageName == "") {
@@ -38,9 +38,9 @@ func Add(cfg *config.Config, lib *config.Library) *config.Library {
 	return lib
 }
 
-// fillDefault populates empty Node.js-specific fields in lib from [config.Default],
-// specifically from [config.NodejsDefault].
-func fillDefault(lib *config.Library, d *config.Default) *config.Library {
+// populatePackageName sets the Node.js package name on lib if empty, deriving it
+// from custom_package_prefixes in [config.Default].
+func populatePackageName(lib *config.Library, d *config.Default) *config.Library {
 	if lib.Nodejs != nil && lib.Nodejs.PackageName != "" {
 		return lib
 	}
