@@ -159,6 +159,8 @@ func newCodec(specificationFormat string, options map[string]string) (*codec, er
 				return nil, fmt.Errorf("cannot convert `detailed-tracing-attributes` value %q to boolean: %w", definition, err)
 			}
 			codec.detailedTracingAttributes = value
+		case key == "idempotency-hook":
+			codec.idempotencyHook = definition
 		case key == "lro-stub-options":
 			value, err := strconv.ParseBool(definition)
 			if err != nil {
@@ -332,6 +334,8 @@ type codec struct {
 	// If true, this includes gRPC-only methods, such as methods without HTTP
 	// annotations.
 	includeGrpcOnlyMethods bool
+	// If set, configures an opt-in method on the request struct to resolve and transform idempotency request options before dispatch.
+	idempotencyHook string
 	// If true, this includes gRPC streaming methods.
 	includeStreamingMethods bool
 	// If true, this includes gRPC bi-directional streaming methods.
@@ -604,11 +608,11 @@ func (c *codec) baseFieldType(f *api.Field, model *api.API, sourceSpecificationP
 	}
 }
 
-func addQueryParameter(f *api.Field) string {
+func (c *codec) addQueryParameter(f *api.Field) string {
 	if f.IsOneOf {
-		return addQueryParameterOneOf(f)
+		return c.addQueryParameterOneOf(f)
 	}
-	fieldName := toSnake(f.Name)
+	fieldName := toSnake(c.FieldName(f))
 	switch f.Typez {
 	case api.TypezEnum:
 		if f.Optional || f.Repeated {
@@ -633,8 +637,8 @@ func addQueryParameter(f *api.Field) string {
 	}
 }
 
-func addQueryParameterOneOf(f *api.Field) string {
-	fieldName := toSnake(f.Name)
+func (c *codec) addQueryParameterOneOf(f *api.Field) string {
+	fieldName := toSnake(c.FieldName(f))
 	switch f.Typez {
 	case api.TypezEnum:
 		return fmt.Sprintf(`let builder = req.%s().iter().fold(builder, |builder, p| builder.query(&[("%s", p)]));`, fieldName, f.JSONName)
@@ -1376,13 +1380,13 @@ func (c *codec) tryFieldRustdocLink(id string, model *api.API, scope string) (st
 		return "", nil
 	}
 	for _, f := range m.Fields {
-		if f.Name == fieldName {
+		if f.Name == fieldName || c.FieldName(f) == fieldName {
 			if !f.IsOneOf {
 				p, err := c.fullyQualifiedMessageName(m, scope)
 				if err != nil {
 					return "", err
 				}
-				return fmt.Sprintf("%s::%s", p, toSnakeNoMangling(f.Name)), nil
+				return fmt.Sprintf("%s::%s", p, toSnakeNoMangling(c.FieldName(f))), nil
 			}
 			return c.tryOneOfRustdocLink(f, m, scope)
 		}
@@ -1615,6 +1619,14 @@ func (c *codec) OneOfEnumName(oneof *api.OneOf) string {
 		return override
 	}
 	return toPascal(oneof.Name)
+}
+
+// FieldName returns the field name.
+func (c *codec) FieldName(field *api.Field) string {
+	if override, ok := c.nameOverrides[field.ID]; ok {
+		return override
+	}
+	return field.Name
 }
 
 func (c *codec) generateMethod(m *api.Method) bool {

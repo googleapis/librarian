@@ -191,6 +191,9 @@ type RustModule struct {
 	// IncludeGrpcOnlyMethods indicates whether to include gRPC-only methods.
 	IncludeGrpcOnlyMethods bool `yaml:"include_grpc_only_methods,omitempty"`
 
+	// IdempotencyHook configures an opt-in method on the request struct to resolve and transform idempotency request options before dispatch.
+	IdempotencyHook string `yaml:"idempotency_hook,omitempty"`
+
 	// IncludeList is a list of proto files to include (e.g., "date.proto", "expr.proto").
 	IncludeList yaml.StringSlice `yaml:"include_list,omitempty"`
 
@@ -300,6 +303,9 @@ type RustCrate struct {
 
 	// IncludeGrpcOnlyMethods indicates whether to include gRPC-only methods.
 	IncludeGrpcOnlyMethods bool `yaml:"include_grpc_only_methods,omitempty"`
+
+	// IdempotencyHook configures an opt-in method on the request struct to resolve and transform idempotency request options before dispatch.
+	IdempotencyHook string `yaml:"idempotency_hook,omitempty"`
 
 	// IncludeStreamingMethods indicates whether to include gRPC streaming
 	// methods.
@@ -787,10 +793,15 @@ type DotnetCsprojSnippets struct {
 
 // NodejsDefault contains Node.js-specific default configuration.
 type NodejsDefault struct {
-	// CustomScopes maps API path prefixes (e.g., "google/shopping/merchant")
-	// to their corresponding npm scope (e.g., "@google-shopping").
-	// Use this to override default package name derivation for specific non-cloud API paths.
-	CustomScopes map[string]string `yaml:"custom_scopes,omitempty"`
+	// CustomPackagePrefixes maps API path prefixes to their npm package prefixes.
+	// Values can be:
+	//   - An npm scope (e.g., "google/shopping/merchant": "@google-shopping"):
+	//     the remainder path becomes the package name (e.g., "@google-shopping/accounts").
+	//   - An npm scope with a partial package name (e.g., "google/area120": "@google/area120"):
+	//     the remainder path is appended with a hyphen (e.g., "@google/area120-tables").
+	//   - An npm scope with a full package name (e.g., "google/chat": "@google-apps/chat"):
+	//     used as-is when there is no remainder path (e.g., "@google-apps/chat").
+	CustomPackagePrefixes map[string]string `yaml:"custom_package_prefixes,omitempty"`
 }
 
 // NodejsPackage contains Node.js-specific library configuration.
@@ -865,12 +876,6 @@ type PHPDefault struct {
 	CommonResources *bool `yaml:"common_resources,omitempty"`
 }
 
-// PHPPackage contains PHP-specific library configuration.
-type PHPPackage struct {
-	// ComponentName overrides the derived component name used for output/staging.
-	ComponentName string `yaml:"component_name,omitempty"`
-}
-
 // PHPAPI represents configuration for a single API within a PHP package.
 type PHPAPI struct {
 	// AdditionalProtos is a list of additional proto files to include in generation.
@@ -900,12 +905,6 @@ type PHPAPI struct {
 	// Samples determines whether to generate samples for the API.
 	// Default to true when omitted.
 	Samples *bool `yaml:"samples,omitempty"`
-
-	// SkipGRPCServiceConfig indicates whether to skip the generation of gRPC service config.
-	// Default to false.
-	// TODO(https://github.com/googleapis/librarian/issues/7436): Remove this config once
-	// Bigtable uses GRPC service config.
-	SkipGRPCServiceConfig bool `yaml:"skip_grpc_service_config,omitempty"`
 
 	// StagingSubdir is the subdirectory in staging where the generated files should be placed.
 	StagingSubdir string `yaml:"staging_subdir,omitempty"`

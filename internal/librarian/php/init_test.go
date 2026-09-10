@@ -135,41 +135,27 @@ func TestNamespace_Error(t *testing.T) {
 func TestComponentName(t *testing.T) {
 	for _, test := range []struct {
 		name      string
-		library   *config.Library
 		namespace string
 		want      string
 	}{
 		{
 			name:      "google cloud component",
-			library:   &config.Library{},
 			namespace: `Google\Cloud\SecretManager`,
 			want:      "SecretManager",
 		},
 		{
 			name:      "google ads",
-			library:   &config.Library{},
 			namespace: `Google\Ads\GoogleAds`,
 			want:      "AdsGoogleAds",
 		},
 		{
 			name:      "google shopping",
-			library:   &config.Library{},
 			namespace: `Google\Shopping\Merchant\Conversions`,
 			want:      "ShoppingMerchantConversions",
 		},
-		{
-			name: "component name override",
-			library: &config.Library{
-				PHP: &config.PHPPackage{
-					ComponentName: "CustomComponentName",
-				},
-			},
-			namespace: `Google\Cloud\SecretManager`,
-			want:      "CustomComponentName",
-		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got := componentName(test.library, test.namespace)
+			got := componentName(test.namespace)
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
@@ -291,13 +277,10 @@ func TestInitComponentIfMissing(t *testing.T) {
 			wantInit:      true,
 		},
 		{
-			name: "new component with component name override",
+			name: "new component with custom output",
 			library: &config.Library{
 				Name:   "secretmanager",
 				Output: "CustomSecretManager",
-				PHP: &config.PHPPackage{
-					ComponentName: "CustomSecretManager",
-				},
 				APIs: []*config.API{
 					{Path: "google/cloud/secretmanager/v1"},
 				},
@@ -374,9 +357,6 @@ func TestInitComponentIfMissing_Error(t *testing.T) {
 			library: &config.Library{
 				Name:   "secretmanager",
 				Output: "unreadable/SecretManager",
-				PHP: &config.PHPPackage{
-					ComponentName: "unreadable/SecretManager",
-				},
 				APIs: []*config.API{
 					{Path: "google/cloud/secretmanager/v1"},
 				},
@@ -527,43 +507,18 @@ func TestProtoPackage(t *testing.T) {
 
 func TestComponentNameForLibrary(t *testing.T) {
 	googleapisDir := filepath.Join("..", "..", "testdata", "googleapis")
-	for _, test := range []struct {
-		name    string
-		library *config.Library
-		want    string
-	}{
-		{
-			name: "derived from proto namespace",
-			library: &config.Library{
-				Name: "SecretManager",
-				APIs: []*config.API{
-					{Path: "google/cloud/secretmanager/v1"},
-				},
-			},
-			want: "SecretManager",
+	library := &config.Library{
+		Name: "SecretManager",
+		APIs: []*config.API{
+			{Path: "google/cloud/secretmanager/v1"},
 		},
-		{
-			name: "explicit config override",
-			library: &config.Library{
-				Name: "AccessContextManager",
-				PHP: &config.PHPPackage{
-					ComponentName: "AccessContextManager",
-				},
-				APIs: []*config.API{
-					{Path: "google/identity/accesscontextmanager/v1"},
-				},
-			},
-			want: "AccessContextManager",
-		},
-	} {
-		t.Run(test.name, func(t *testing.T) {
-			got, err := componentNameForLibrary(googleapisDir, test.library)
-			if err != nil {
-				t.Fatal(err)
-			}
-			if diff := cmp.Diff(test.want, got); diff != "" {
-				t.Errorf("mismatch (-want +got):\n%s", diff)
-			}
-		})
+	}
+	got, err := componentNameForLibrary(googleapisDir, library)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := "SecretManager"
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }

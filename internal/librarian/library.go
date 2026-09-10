@@ -451,8 +451,6 @@ func ResolvePreview(lib *config.Library, language string) *config.Library {
 		res.Python = mergePython(res.Python, p.Python)
 	case config.LanguageRust:
 		res.Rust = mergeRust(res.Rust, p.Rust)
-	case config.LanguagePhp:
-		res.PHP = mergePHP(res.PHP, p.PHP)
 	case config.LanguageRuby:
 		res.Ruby = mergeRuby(res.Ruby, p.Ruby)
 	case config.LanguageSwift:
@@ -932,16 +930,5 @@ func mergeSwift(dst, src *config.SwiftPackage) *config.SwiftPackage {
 		res.DefaultTraits = src.DefaultTraits
 	}
 	res.Discovery = mergeCommonDiscovery(res.Discovery, src.Discovery)
-	return &res
-}
-
-func mergePHP(dst, src *config.PHPPackage) *config.PHPPackage {
-	if src == nil {
-		return dst
-	}
-	if dst == nil {
-		return src
-	}
-	res := *dst
 	return &res
 }

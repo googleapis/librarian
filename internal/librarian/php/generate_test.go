@@ -273,9 +273,6 @@ func TestGenerate_StatError(t *testing.T) {
 	library := &config.Library{
 		Name:   "secretmanager",
 		Output: nestedDir,
-		PHP: &config.PHPPackage{
-			ComponentName: "SecretManager/nested",
-		},
 		APIs: []*config.API{
 			{
 				Path: "google/cloud/secretmanager/v1",
@@ -372,9 +369,6 @@ func TestGenerate_Error(t *testing.T) {
 			lib: &config.Library{
 				Name:   "SecretManager",
 				Output: "SecretManager",
-				PHP: &config.PHPPackage{
-					ComponentName: "SecretManager",
-				},
 				APIs: []*config.API{
 					{
 						Path: "google/cloud/secretmanager/v1",
@@ -820,15 +814,6 @@ func TestGRPCServiceConfigPath(t *testing.T) {
 			api: &config.API{
 				Path: "google/apps/meet/v2",
 				PHP:  &config.PHPAPI{},
-			},
-		},
-		{
-			name: "skip grpc service config",
-			api: &config.API{
-				Path: "google/cloud/secretmanager/v1",
-				PHP: &config.PHPAPI{
-					SkipGRPCServiceConfig: true,
-				},
 			},
 		},
 	} {

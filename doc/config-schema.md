@@ -18,6 +18,7 @@ This document describes the schema for the librarian.yaml.
 
 | Field | Type | Description |
 | :--- | :--- | :--- |
+| `comment` | string | Is an optional comment explaining configuration choices. It supports UTF-8 text. Multiline comments are supported, but may be reformatted when tidying. |
 | `conformance` | [Source](#source-configuration) (optional) | Is the path to the `conformance-tests` repository, used as include directory for `protoc`. |
 | `discovery` | [Source](#source-configuration) (optional) | Is the discovery-artifact-manager repository configuration. |
 | `googleapis` | [Source](#source-configuration) (optional) | Is the googleapis repository configuration. |
@@ -37,6 +38,7 @@ This document describes the schema for the librarian.yaml.
 
 | Field | Type | Description |
 | :--- | :--- | :--- |
+| `comment` | string | Is an optional comment explaining configuration choices. It supports UTF-8 text. Multiline comments are supported, but may be reformatted when tidying. |
 | `cargo` | list of [CargoTool](#cargotool-configuration) (optional) | Defines tools to install via cargo. |
 | `composer` | list of [ComposerTool](#composertool-configuration) (optional) | Defines tools to install via Composer. |
 | `go` | list of [GoTool](#gotool-configuration) (optional) | Defines tools to install via go. |
@@ -144,6 +146,7 @@ This document describes the schema for the librarian.yaml.
 | :--- | :--- | :--- |
 | `name` | string | Is the library name, such as "secretmanager" or "storage". |
 | `version` | string | Is the library version. |
+| `comment` | string | Is an optional comment explaining configuration choices. It supports UTF-8 text. Multiline comments are supported, but may be reformatted when tidying.<br><br>For example, it can be used in pair with [Library.SkipGenerate] to record a reason or link to a bug:<br><br>skip_generate: true comment: "Generation is skipped due to https://github.com/googleapis/librarian/issues/1234" |
 | `preview` | [Library](#library-configuration) (optional) | Signifies that this API has a preview variant, and it contains overrides specific to the preview API variant. This is merged with the containing [Library], preferring those [Library.Preview] values that are set over their counterpart in the containing configuration.<br><br>The most common overrides are [Library.Version] and [Library.APIs], with the former containing a pre-release version based on the containing version of the stable client, and the latter being a subset of APIs, typically omitting alpha and beta paths.<br><br>The [Library.Output] may be a different location and derived on a per-language basis, but will not be serialized in the configuration.<br><br>Important: The boolean fields [Library.SkipRelease] and [Library.SkipGenerate] set in the containing config will always be applied to the Preview library as well, because previews are related to the stable library and should be managed identically. |
 | `apis` | list of [API](#api-configuration) (optional) | API specifies which googleapis API to generate from (for generated libraries). |
 | `copyright_year` | string | Is the copyright year for the library. |
@@ -160,7 +163,6 @@ This document describes the schema for the librarian.yaml.
 | `go` | [GoModule](#gomodule-configuration) (optional) | Contains Go-specific library configuration. |
 | `java` | [JavaModule](#javamodule-configuration) (optional) | Contains Java-specific library configuration. |
 | `nodejs` | [NodejsPackage](#nodejspackage-configuration) (optional) | Contains Node.js-specific library configuration. |
-| `php` | [PHPPackage](#phppackage-configuration) (optional) | Contains PHP-specific library configuration. |
 | `python` | [PythonPackage](#pythonpackage-configuration) (optional) | Contains Python-specific library configuration. |
 | `ruby` | [RubyPackage](#rubypackage-configuration) (optional) | Contains Ruby-specific library configuration. |
 | `rust` | [RustCrate](#rustcrate-configuration) (optional) | Contains Rust-specific library configuration. |
@@ -174,16 +176,16 @@ This document describes the schema for the librarian.yaml.
 | `replace_regex` | list of [ReplaceRegexConfig](#replaceregexconfig-configuration) | Contains regular expression replacement rules. |
 | `copy_file` | list of [CopyConfig](#copyconfig-configuration) | Contains file copy rules. |
 | `remove_file` | list of string | Contains glob patterns of files to remove. |
-| `method_operations` | list of [MethodOperation](#methodoperation-configuration) | Contains method-level operations (`delete`, `duplicate`, `deprecate`). |
+| `method_operations` | list of [MethodOperation](#methodoperation-configuration) | Contains method-level operations (`delete`, `copy_and_rename`, `duplicate`, `deprecate`). |
 
 ## MethodOperation Configuration
 
 | Field | Type | Description |
 | :--- | :--- | :--- |
 | `path` | string | Specifies the relative file path to modify. |
-| `action` | string | Specifies the operation (`delete`, `duplicate`, or `deprecate`). |
+| `action` | string | Specifies the operation (`delete`, `copy_and_rename`, `duplicate`, or `deprecate`). |
 | `func_name` | string | Specifies the target method name. |
-| `new_name` | string | Specifies the new method name for duplicate operations. |
+| `new_name` | string | Specifies the new method name for copy_and_rename or duplicate operations. |
 | `deprecation_message` | string | Specifies the deprecation message for deprecate operations. |
 
 ## ReplaceConfig Configuration
@@ -435,7 +437,7 @@ This document describes the schema for the librarian.yaml.
 
 | Field | Type | Description |
 | :--- | :--- | :--- |
-| `custom_scopes` | map[string]string | Maps API path prefixes (e.g., "google/shopping/merchant") to their corresponding npm scope (e.g., "@google-shopping"). Use this to override default package name derivation for specific non-cloud API paths. |
+| `custom_package_prefixes` | map[string]string | Maps API path prefixes to their npm package prefixes. Values can be:<br>- An npm scope (e.g., "google/shopping/merchant": "@google-shopping"): the remainder path becomes the package name (e.g., "@google-shopping/accounts").<br>- An npm scope with a partial package name (e.g., "google/area120": "@google/area120"): the remainder path is appended with a hyphen (e.g., "@google/area120-tables").<br>- An npm scope with a full package name (e.g., "google/chat": "@google-apps/chat"): used as-is when there is no remainder path (e.g., "@google-apps/chat"). |
 
 ## NodejsPackage Configuration
 
@@ -465,7 +467,6 @@ This document describes the schema for the librarian.yaml.
 | `generate_gapic` | bool (optional) | Indicates whether to generate the GAPIC client surface. Defaults to true. |
 | `proto_package` | string | Overrides the derived proto package for the API. |
 | `samples` | bool (optional) | Determines whether to generate samples for the API. Default to true when omitted. |
-| `skip_grpc_service_config` | bool | Indicates whether to skip the generation of gRPC service config. Default to false. TODO(https://github.com/googleapis/librarian/issues/7436): Remove this config once Bigtable uses GRPC service config. |
 | `staging_subdir` | string | Is the subdirectory in staging where the generated files should be placed. |
 
 ## PHPDefault Configuration
@@ -473,12 +474,6 @@ This document describes the schema for the librarian.yaml.
 | Field | Type | Description |
 | :--- | :--- | :--- |
 | `common_resources` | bool (optional) | Indicates whether to include common resources in generation. Must be configured either globally or per-API. |
-
-## PHPPackage Configuration
-
-| Field | Type | Description |
-| :--- | :--- | :--- |
-| `component_name` | string | Overrides the derived component name used for output/staging. |
 
 ## PythonDefault Configuration
 
@@ -555,6 +550,7 @@ This document describes the schema for the librarian.yaml.
 | `has_veneer` | bool | Indicates whether the crate has a veneer. |
 | `routing_required` | bool | Indicates whether routing is required. |
 | `include_grpc_only_methods` | bool | Indicates whether to include gRPC-only methods. |
+| `idempotency_hook` | string | Configures an opt-in method on the request struct to resolve and transform idempotency request options before dispatch. |
 | `include_streaming_methods` | bool | Indicates whether to include gRPC streaming methods. |
 | `post_process_protos` | string | Indicates whether to post-process protos. |
 | `documentation_overrides` | list of [RustDocumentationOverride](#rustdocumentationoverride-configuration) | Contains overrides for element documentation. |
@@ -605,6 +601,7 @@ This document describes the schema for the librarian.yaml.
 | `has_veneer` | bool | Indicates whether this module has a handwritten wrapper. |
 | `included_ids` | list of string | Is a list of proto IDs to include in generation. |
 | `include_grpc_only_methods` | bool | Indicates whether to include gRPC-only methods. |
+| `idempotency_hook` | string | Configures an opt-in method on the request struct to resolve and transform idempotency request options before dispatch. |
 | `include_list` | yaml.StringSlice | Is a list of proto files to include (e.g., "date.proto", "expr.proto"). |
 | `include_streaming_methods` | bool | Indicates whether to include gRPC streaming methods. |
 | `include_bidi_streaming_methods` | bool (optional) | Indicates whether to include gRPC bi-directional streaming methods. |
