@@ -203,7 +203,7 @@ func (c *codec) annotateField(field *api.Field, message *api.Message, model *api
 		SetterName:         toSnakeNoMangling(fieldName),
 		FQMessageName:      fqMessageName,
 		BranchName:         toPascal(fieldName),
-		ProstBranchName:    toProstPascal(field.Name),
+		ProstBranchName:    toProstPascal(fieldName),
 		DocLines:           docLines,
 		FieldType:          fieldType,
 		PrimitiveFieldType: primitiveFieldType,

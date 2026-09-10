@@ -1077,7 +1077,7 @@ func TestJsonNameAnnotations(t *testing.T) {
 		FieldName:          "custom_key",
 		SetterName:         "custom_key",
 		BranchName:         "CustomKey",
-		ProstBranchName:    "PublicKey",
+		ProstBranchName:    "CustomKey",
 		FQMessageName:      "crate::model::Request",
 		DocLines:           nil,
 		FieldType:          "std::string::String",
