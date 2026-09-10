@@ -1051,7 +1051,9 @@ func TestJsonNameAnnotations(t *testing.T) {
 	}
 	model := api.NewTestAPI([]*api.Message{message}, []*api.Enum{}, []*api.Service{})
 	api.CrossReference(model)
-	codec := newTestCodec(t, libconfig.SpecProtobuf, "", map[string]string{})
+	codec := newTestCodec(t, libconfig.SpecProtobuf, "", map[string]string{
+		"name-overrides": ".test.Request.public_key=custom_key",
+	})
 	annotateModel(model, codec)
 
 	want := &fieldAnnotations{
@@ -1072,15 +1074,15 @@ func TestJsonNameAnnotations(t *testing.T) {
 	}
 
 	want = &fieldAnnotations{
-		FieldName:          "public_key",
-		SetterName:         "public_key",
-		BranchName:         "PublicKey",
+		FieldName:          "custom_key",
+		SetterName:         "custom_key",
+		BranchName:         "CustomKey",
 		ProstBranchName:    "PublicKey",
 		FQMessageName:      "crate::model::Request",
 		DocLines:           nil,
 		FieldType:          "std::string::String",
 		PrimitiveFieldType: "std::string::String",
-		AddQueryParameter:  `let builder = builder.query(&[("public_key", &req.public_key)]);`,
+		AddQueryParameter:  `let builder = builder.query(&[("public_key", &req.custom_key)]);`,
 		KeyType:            "",
 		ValueType:          "",
 	}
@@ -1171,12 +1173,20 @@ func TestFieldNameConflictWithNestedMessage(t *testing.T) {
 		Typez:    api.TypezMessage,
 		TypezID:  ".test.v1.CapacityHistoryRequest",
 	}
-	nestedMsg.Fields = []*api.Field{bodyField}
+	overrideField := &api.Field{
+		Name:     "override_body",
+		JSONName: "overrideBody",
+		ID:       ".test.v1.Advice.CapacityHistoryRequest.override_body",
+		Typez:    api.TypezMessage,
+		TypezID:  ".test.v1.CapacityHistoryRequest",
+	}
+	nestedMsg.Fields = []*api.Field{bodyField, overrideField}
 
 	model := api.NewTestAPI([]*api.Message{topLevelMsg, adviceMsg, nestedMsg}, []*api.Enum{}, []*api.Service{})
 	api.CrossReference(model)
 	codec := newTestCodec(t, libconfig.SpecProtobuf, "test", map[string]string{
 		"generate-setter-samples": "true",
+		"name-overrides":          ".test.v1.Advice.CapacityHistoryRequest.override_body=custom_body",
 	})
 	annotateModel(model, codec)
 
@@ -1184,9 +1194,15 @@ func TestFieldNameConflictWithNestedMessage(t *testing.T) {
 	if !ok {
 		t.Fatalf("bodyField.Codec is not *fieldAnnotations")
 	}
+	if gotFA.AliasInExamples != "Body" {
+		t.Errorf("mismatch in AliasInExamples, want Body, got %s", gotFA.AliasInExamples)
+	}
 
-	wantAlias := "Body"
-	if gotFA.AliasInExamples != wantAlias {
-		t.Errorf("mismatch in AliasInExamples, want %s, got %s", wantAlias, gotFA.AliasInExamples)
+	gotOverrideFA, ok := overrideField.Codec.(*fieldAnnotations)
+	if !ok {
+		t.Fatalf("overrideField.Codec is not *fieldAnnotations")
+	}
+	if gotOverrideFA.AliasInExamples != "CustomBody" {
+		t.Errorf("mismatch in AliasInExamples, want CustomBody, got %s", gotOverrideFA.AliasInExamples)
 	}
 }
