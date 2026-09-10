@@ -15,6 +15,7 @@
 package nodejs
 
 import (
+	"log/slog"
 	"path/filepath"
 	"strings"
 
@@ -25,9 +26,56 @@ import (
 const defaultVersion = "0.0.0"
 
 // Add initializes Node.js-specific configuration for a library.
-func Add(lib *config.Library) *config.Library {
+func Add(cfg *config.Config, lib *config.Library) *config.Library {
 	lib.Version = defaultVersion
+	if len(lib.APIs) == 0 {
+		return lib
+	}
+	if cfg != nil {
+		fillDefault(lib, cfg.Default)
+	}
+	apiPath := lib.APIs[0].Path
+	if !strings.HasPrefix(apiPath, "google/cloud/") && (lib.Nodejs == nil || lib.Nodejs.PackageName == "") {
+		slog.Warn("unrecognized non-cloud API path; please manually configure nodejs.package_name in librarian.yaml", "api", apiPath)
+	}
 	return lib
+}
+
+// fillDefault populates empty Node.js-specific fields in lib from [config.Default],
+// specifically from [config.NodejsDefault].
+func fillDefault(lib *config.Library, d *config.Default) *config.Library {
+	if lib.Nodejs != nil && lib.Nodejs.PackageName != "" {
+		return lib
+	}
+	if d == nil || d.Nodejs == nil || len(d.Nodejs.CustomPackagePrefixes) == 0 || len(lib.APIs) == 0 {
+		return lib
+	}
+	if pkgName := derivePackageNameFromCustomPackagePrefixes(lib.APIs[0].Path, d.Nodejs.CustomPackagePrefixes); pkgName != "" {
+		if lib.Nodejs == nil {
+			lib.Nodejs = &config.NodejsPackage{}
+		}
+		lib.Nodejs.PackageName = pkgName
+	}
+	return lib
+}
+
+func derivePackageNameFromCustomPackagePrefixes(apiPath string, customPackagePrefixes map[string]string) string {
+	scope, remainder, ok := serviceconfig.MatchPrefix(apiPath, customPackagePrefixes)
+	if !ok {
+		return ""
+	}
+	sub := strings.ReplaceAll(remainder, "/", "-")
+	switch {
+	case sub == "":
+		// Exact leaf API match (e.g. @google-apps/chat).
+		return scope
+	case strings.Contains(scope, "/"):
+		// Scope already has a slash; join with hyphen (e.g. @google/area120-tables).
+		return scope + "-" + sub
+	default:
+		// Standard scope; join with slash (e.g. @google-shopping/accounts).
+		return scope + "/" + sub
+	}
 }
 
 // DefaultLibraryName derives a library name from an API path by stripping
