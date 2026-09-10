@@ -62,6 +62,9 @@ public struct {{Codec.Name}}: Codable, Equatable, {{Codec.Model.WktPackage}}._An
   public var {{Codec.PropertyName}}: {{Codec.Name}}? = nil
   {{/OneOfs}}
 
+  @_spi(GoogleCloudInternal)
+  public var _unknownFields: {{Codec.Model.WktPackage}}._UnknownFields = .init()
+
   /// Initialize a new instance of `{{Codec.Name}}`.
   public init() {}
 
@@ -79,11 +82,27 @@ public struct {{Codec.Name}}: Codable, Equatable, {{Codec.Model.WktPackage}}._An
     return copy
   }
 
-  {{#Codec.CustomSerialization}}
-  private enum CodingKeys: Swift.String, CodingKey {
+  private struct CodingKeys: CodingKey {
+    var stringValue: Swift.String
+    var intValue: Swift.Int? { nil }
+    init(stringValue: Swift.String) { self.stringValue = stringValue }
+    init?(intValue: Swift.Int) { nil }
+    {{#HasFields}}
+
     {{#Fields}}
-    case {{Codec.Name}} = "{{JSONName}}"
+    static let {{Codec.Name}} = CodingKeys(stringValue: "{{JSONName}}")
     {{/Fields}}
+
+    static let knownKeys: Set<Swift.String> = [
+      {{#Fields}}
+      "{{JSONName}}",
+      {{/Fields}}
+    ]
+    {{/HasFields}}
+    {{^HasFields}}
+
+    static let knownKeys: Set<Swift.String> = []
+    {{/HasFields}}
   }
 
   public init(from decoder: Decoder) throws {
@@ -114,6 +133,10 @@ public struct {{Codec.Name}}: Codable, Equatable, {{Codec.Model.WktPackage}}._An
     {{/Fields}}
     self.{{Codec.PropertyName}} = {{Codec.PropertyName}}
     {{/OneOfs}}
+    for key in container.allKeys where !CodingKeys.knownKeys.contains(key.stringValue) {
+      self._unknownFields.json[key.stringValue] = try container.decode(
+        {{Codec.Model.WktPackage}}.Value.self, forKey: key)
+    }
   }
 
   public func encode(to encoder: Encoder) throws {
@@ -139,8 +162,10 @@ public struct {{Codec.Name}}: Codable, Equatable, {{Codec.Model.WktPackage}}._An
       }
     }
     {{/OneOfs}}
+    for (key, value) in self._unknownFields.json {
+      try container.encode(value, forKey: CodingKeys(stringValue: key))
+    }
   }
-  {{/Codec.CustomSerialization}}
 
   {{#Messages}}
 

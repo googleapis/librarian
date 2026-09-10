@@ -28,11 +28,10 @@ const (
 )
 
 type messageAnnotations struct {
-	Name                string
-	DocLines            []string
-	Model               *modelAnnotations
-	TypeURL             string
-	CustomSerialization bool
+	Name     string
+	DocLines []string
+	Model    *modelAnnotations
+	TypeURL  string
 
 	IsPaginatedResponse bool
 	PageableItemField   string
@@ -81,7 +80,11 @@ func (ann *messageAnnotations) ConvertImports() []string {
 		if dep.Name == "GoogleCloudGax" || dep.Name == ann.ModulePath {
 			continue
 		}
-		importMap["import "+dep.Name] = true
+		if dep.SpiAttribute != "" {
+			importMap[fmt.Sprintf("@_spi(%s) import %s", dep.SpiAttribute, dep.Name)] = true
+		} else {
+			importMap["@_spi(GoogleCloudInternal) import "+dep.Name] = true
+		}
 		if dep.Name == "GoogleCloudWKT" {
 			importMap["internal import GoogleCloudWKTConvert"] = true
 		}
@@ -151,16 +154,15 @@ func (c *codec) annotateMessage(message *api.Message, model *modelAnnotations) e
 		return err
 	}
 	annotations := &messageAnnotations{
-		Name:                pascalCase(message.Name),
-		DocLines:            docLines,
-		Model:               model,
-		TypeURL:             typeURLPrefix + strings.TrimPrefix(message.ID, "."),
-		CustomSerialization: len(message.OneOfs) > 0,
-		DependsOn:           map[string]*Dependency{},
-		SampleField:         sampleField,
-		ParameterTypeName:   parameterTypeName,
-		ProtoTypeName:       c.protoMessageTypeName(message),
-		ModulePath:          c.ModulePath,
+		Name:              pascalCase(message.Name),
+		DocLines:          docLines,
+		Model:             model,
+		TypeURL:           typeURLPrefix + strings.TrimPrefix(message.ID, "."),
+		DependsOn:         map[string]*Dependency{},
+		SampleField:       sampleField,
+		ParameterTypeName: parameterTypeName,
+		ProtoTypeName:     c.protoMessageTypeName(message),
+		ModulePath:        c.ModulePath,
 	}
 	if message.ServicePlaceholder {
 		annotations.PlaceholderName = pascalCase(message.Name + "Client")
@@ -195,16 +197,6 @@ func (c *codec) annotateMessage(message *api.Message, model *modelAnnotations) e
 		fieldCodec, err := c.annotateField(field, model)
 		if err != nil {
 			return err
-		}
-		if fieldCodec.Name != field.JSONName || fieldCodec.UrlSafeValue {
-			annotations.CustomSerialization = true
-		}
-		if field.Map && !fieldCodec.IsStringKeyed() {
-			// In ProtoJSON map fields with non-string keys need to be
-			// serialized as JSON objects with key fields. In the generated
-			// Swift code, that requires a custom implementation of the
-			// `Decodable` and `Encodable` protocol.
-			annotations.CustomSerialization = true
 		}
 		if fieldCodec.PackageName != "" && fieldCodec.PackageName != c.Model.PackageName {
 			dep, err := c.addApiPackageDependency(fieldCodec.PackageName)

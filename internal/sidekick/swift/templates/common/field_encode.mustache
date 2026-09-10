@@ -14,7 +14,12 @@ See the License for the specific language governing permissions and
 limitations under the License.
 }}
 {{#Codec.IsEncodingSimple}}
+{{#Optional}}
+try container.encodeIfPresent(self.{{Codec.Name}}, forKey: .{{Codec.Name}})
+{{/Optional}}
+{{^Optional}}
 try container.encode(self.{{Codec.Name}}, forKey: .{{Codec.Name}})
+{{/Optional}}
 {{/Codec.IsEncodingSimple}}
 {{#Codec.IsEncodingMapCustomKey}}
 do {

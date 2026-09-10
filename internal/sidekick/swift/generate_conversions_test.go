@@ -100,6 +100,7 @@ func TestGenerateConversions_Message(t *testing.T) {
     self.name = proto.name
     self.metageneration = proto.metageneration
     self.self_ = proto.hasSelf_p ? proto.self_p : nil
+    self._unknownFields.proto = proto.unknownFields.data
   }`
 	if diff := cmp.Diff(wantInit, got); diff != "" {
 		t.Errorf("init(proto:) mismatch (-want +got):\n%s", diff)
@@ -111,6 +112,9 @@ func TestGenerateConversions_Message(t *testing.T) {
     proto.name = self.name
     proto.metageneration = self.metageneration
     if let self_ = self.self_ { proto.self_p = self_ }
+    if !self._unknownFields.proto.isEmpty {
+      try proto.merge(serializedBytes: self._unknownFields.proto)
+    }
     return proto
   }`
 	if diff := cmp.Diff(wantToProto, got); diff != "" {
@@ -171,6 +175,7 @@ func TestGenerateConversions_RecursiveMessage(t *testing.T) {
     self.init()
     self.childNode = proto.hasChildNode ? GoogleCloudWKT.Recursive(value: try .init(proto: proto.childNode)) : nil
     self.nextNode = proto.hasNextNode ? GoogleCloudWKT.Recursive(value: try .init(proto: proto.nextNode)) : nil
+    self._unknownFields.proto = proto.unknownFields.data
   }`
 	if diff := cmp.Diff(wantInit, got); diff != "" {
 		t.Errorf("init(proto:) mismatch (-want +got):\n%s", diff)
@@ -181,6 +186,9 @@ func TestGenerateConversions_RecursiveMessage(t *testing.T) {
     var proto = ProtoType()
     if let childNode = self.childNode { proto.childNode = try childNode.value.toProto() }
     if let nextNode = self.nextNode { proto.nextNode = try nextNode.value.toProto() }
+    if !self._unknownFields.proto.isEmpty {
+      try proto.merge(serializedBytes: self._unknownFields.proto)
+    }
     return proto
   }`
 	if diff := cmp.Diff(wantToProto, got); diff != "" {
@@ -219,7 +227,10 @@ func TestGenerateConversions_NoConvertedFields(t *testing.T) {
 
 	got := extractBlock(t, gotContent, "  internal func toProto() throws -> ProtoType {", "\n  }")
 	wantToProto := `  internal func toProto() throws -> ProtoType {
-    let proto = ProtoType()
+    var proto = ProtoType()
+    if !self._unknownFields.proto.isEmpty {
+      try proto.merge(serializedBytes: self._unknownFields.proto)
+    }
     return proto
   }`
 	if diff := cmp.Diff(wantToProto, got); diff != "" {
@@ -300,6 +311,7 @@ func TestGenerateConversions_RepeatedFields(t *testing.T) {
     self.names = proto.names
     self.items = try proto.items.map { try .init(proto: $0) }
     self.categories = proto.categories.map { .init(proto: $0) }
+    self._unknownFields.proto = proto.unknownFields.data
   }`
 	if diff := cmp.Diff(wantInit, got); diff != "" {
 		t.Errorf("init(proto:) mismatch (-want +got):\n%s", diff)
@@ -311,6 +323,9 @@ func TestGenerateConversions_RepeatedFields(t *testing.T) {
     proto.names = self.names
     proto.items = try self.items.map { try $0.toProto() }
     proto.categories = try self.categories.map { try $0.toProto() }
+    if !self._unknownFields.proto.isEmpty {
+      try proto.merge(serializedBytes: self._unknownFields.proto)
+    }
     return proto
   }`
 	if diff := cmp.Diff(wantToProto, got); diff != "" {
@@ -387,6 +402,7 @@ func TestGenerateConversions_OneOf(t *testing.T) {
         self.choice = .messageField(try .init(proto: value))
       }
     }
+    self._unknownFields.proto = proto.unknownFields.data
   }`
 	if diff := cmp.Diff(wantInit, got); diff != "" {
 		t.Errorf("init(proto:) mismatch (-want +got):\n%s", diff)
@@ -404,6 +420,9 @@ func TestGenerateConversions_OneOf(t *testing.T) {
           proto.choice = .messageField(try value.toProto())
         }
       }
+    }
+    if !self._unknownFields.proto.isEmpty {
+      try proto.merge(serializedBytes: self._unknownFields.proto)
     }
     return proto
   }`
@@ -514,6 +533,7 @@ func TestGenerateConversions_MapFields(t *testing.T) {
     self.labels = proto.labels
     self.policies = try proto.policies.mapValues { try .init(proto: $0) }
     self.categories = proto.categories.mapValues { .init(proto: $0) }
+    self._unknownFields.proto = proto.unknownFields.data
   }`
 	if diff := cmp.Diff(wantInit, got); diff != "" {
 		t.Errorf("init(proto:) mismatch (-want +got):\n%s", diff)
@@ -525,6 +545,9 @@ func TestGenerateConversions_MapFields(t *testing.T) {
     proto.labels = self.labels
     proto.policies = try self.policies.mapValues { try $0.toProto() }
     proto.categories = try self.categories.mapValues { try $0.toProto() }
+    if !self._unknownFields.proto.isEmpty {
+      try proto.merge(serializedBytes: self._unknownFields.proto)
+    }
     return proto
   }`
 	if diff := cmp.Diff(wantToProto, got); diff != "" {
