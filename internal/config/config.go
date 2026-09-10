@@ -59,6 +59,11 @@ type Config struct {
 
 // Sources references external source repositories.
 type Sources struct {
+	// Comment is an optional comment explaining configuration choices.
+	// It supports UTF-8 text. Multiline comments are supported, but may
+	// be reformatted when tidying.
+	Comment string `yaml:"comment,omitempty"`
+
 	// Conformance is the path to the `conformance-tests` repository, used as include directory for `protoc`.
 	Conformance *Source `yaml:"conformance,omitempty"`
 
@@ -94,6 +99,11 @@ type Source struct {
 
 // Tools defines required tools.
 type Tools struct {
+	// Comment is an optional comment explaining configuration choices.
+	// It supports UTF-8 text. Multiline comments are supported, but may
+	// be reformatted when tidying.
+	Comment string `yaml:"comment,omitempty"`
+
 	// Cargo defines tools to install via cargo.
 	Cargo []*CargoTool `yaml:"cargo,omitempty"`
 
@@ -311,6 +321,17 @@ type Library struct {
 
 	// Version is the library version.
 	Version string `yaml:"version,omitempty"`
+
+	// Comment is an optional comment explaining configuration choices.
+	// It supports UTF-8 text. Multiline comments are supported, but may
+	// be reformatted when tidying.
+	//
+	// For example, it can be used in pair with [Library.SkipGenerate] to record
+	// a reason or link to a bug:
+	//
+	//	skip_generate: true
+	//	comment: "Generation is skipped due to https://github.com/googleapis/librarian/issues/1234"
+	Comment string `yaml:"comment,omitempty"`
 
 	// Preview signifies that this API has a preview variant, and it contains
 	// overrides specific to the preview API variant. This is merged with the

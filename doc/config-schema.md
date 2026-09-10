@@ -18,6 +18,7 @@ This document describes the schema for the librarian.yaml.
 
 | Field | Type | Description |
 | :--- | :--- | :--- |
+| `comment` | string | Is an optional comment explaining configuration choices. It supports UTF-8 text. Multiline comments are supported, but may be reformatted when tidying. |
 | `conformance` | [Source](#source-configuration) (optional) | Is the path to the `conformance-tests` repository, used as include directory for `protoc`. |
 | `discovery` | [Source](#source-configuration) (optional) | Is the discovery-artifact-manager repository configuration. |
 | `googleapis` | [Source](#source-configuration) (optional) | Is the googleapis repository configuration. |
@@ -37,6 +38,7 @@ This document describes the schema for the librarian.yaml.
 
 | Field | Type | Description |
 | :--- | :--- | :--- |
+| `comment` | string | Is an optional comment explaining configuration choices. It supports UTF-8 text. Multiline comments are supported, but may be reformatted when tidying. |
 | `cargo` | list of [CargoTool](#cargotool-configuration) (optional) | Defines tools to install via cargo. |
 | `composer` | list of [ComposerTool](#composertool-configuration) (optional) | Defines tools to install via Composer. |
 | `go` | list of [GoTool](#gotool-configuration) (optional) | Defines tools to install via go. |
@@ -144,6 +146,7 @@ This document describes the schema for the librarian.yaml.
 | :--- | :--- | :--- |
 | `name` | string | Is the library name, such as "secretmanager" or "storage". |
 | `version` | string | Is the library version. |
+| `comment` | string | Is an optional comment explaining configuration choices. It supports UTF-8 text. Multiline comments are supported, but may be reformatted when tidying.<br><br>For example, it can be used in pair with [Library.SkipGenerate] to record a reason or link to a bug:<br><br>skip_generate: true comment: "Generation is skipped due to https://github.com/googleapis/librarian/issues/1234" |
 | `preview` | [Library](#library-configuration) (optional) | Signifies that this API has a preview variant, and it contains overrides specific to the preview API variant. This is merged with the containing [Library], preferring those [Library.Preview] values that are set over their counterpart in the containing configuration.<br><br>The most common overrides are [Library.Version] and [Library.APIs], with the former containing a pre-release version based on the containing version of the stable client, and the latter being a subset of APIs, typically omitting alpha and beta paths.<br><br>The [Library.Output] may be a different location and derived on a per-language basis, but will not be serialized in the configuration.<br><br>Important: The boolean fields [Library.SkipRelease] and [Library.SkipGenerate] set in the containing config will always be applied to the Preview library as well, because previews are related to the stable library and should be managed identically. |
 | `apis` | list of [API](#api-configuration) (optional) | API specifies which googleapis API to generate from (for generated libraries). |
 | `copyright_year` | string | Is the copyright year for the library. |
