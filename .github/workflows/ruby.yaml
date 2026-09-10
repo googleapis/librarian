@@ -113,7 +113,7 @@ jobs:
         working-directory: google-cloud-ruby
         run: librarian generate --all
   create-issue-on-failure:
-    needs: [build-and-test]
+    needs: [build-and-test, integration-test]
     permissions:
       contents: read
       issues: write
