@@ -196,7 +196,7 @@ func ApplyMethodOperations(outDir string, methodOperations []config.MethodOperat
 				}
 			case "copy_and_rename", "duplicate":
 				if err := DuplicateMethod(file, mo.FuncName, mo.NewName, "java"); err != nil {
-					return fmt.Errorf("failed to duplicate method %q in %s: %w", mo.FuncName, file, err)
+					return fmt.Errorf("failed to copy and rename method %q in %s: %w", mo.FuncName, file, err)
 				}
 			case "deprecate":
 				if err := DeprecateMethod(file, mo.FuncName, mo.DeprecationMessage, "java"); err != nil {
