@@ -541,6 +541,36 @@ func testOneOfEnumNameImpl(t *testing.T, c *codec, name string, want string) {
 	}
 }
 
+func TestFieldName(t *testing.T) {
+	c, err := newCodec(libconfig.SpecProtobuf, map[string]string{
+		"name-overrides": ".google.testing.Message.bad_name=good_name,.google.testing.Message.old=new",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	testFieldNameImpl(t, c, "bad_name", "good_name")
+	testFieldNameImpl(t, c, "old", "new")
+	testFieldNameImpl(t, c, "regular_name", "regular_name")
+
+	c2, err := newCodec(libconfig.SpecProtobuf, map[string]string{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	testFieldNameImpl(t, c2, "regular_name", "regular_name")
+}
+
+func testFieldNameImpl(t *testing.T, c *codec, fieldName string, want string) {
+	t.Helper()
+	field := &api.Field{
+		Name: fieldName,
+		ID:   fmt.Sprintf(".google.testing.Message.%s", fieldName),
+	}
+	got := c.FieldName(field)
+	if want != got {
+		t.Errorf("mismatch in field name, want=%s, got=%s", want, got)
+	}
+}
+
 func TestWellKnownTypesExist(t *testing.T) {
 	model := api.NewTestAPI([]*api.Message{}, []*api.Enum{}, []*api.Service{})
 	for _, name := range []string{"Any", "Duration", "Empty", "FieldMask", "Timestamp"} {

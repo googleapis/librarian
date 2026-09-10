@@ -197,12 +197,13 @@ func (c *codec) annotateField(field *api.Field, message *api.Message, model *api
 	if err != nil {
 		return nil, err
 	}
+	fieldName := c.FieldName(field)
 	ann := &fieldAnnotations{
-		FieldName:          toSnake(field.Name),
-		SetterName:         toSnakeNoMangling(field.Name),
+		FieldName:          toSnake(fieldName),
+		SetterName:         toSnakeNoMangling(fieldName),
 		FQMessageName:      fqMessageName,
-		BranchName:         toPascal(field.Name),
-		ProstBranchName:    toProstPascal(field.Name),
+		BranchName:         toPascal(fieldName),
+		ProstBranchName:    toProstPascal(fieldName),
 		DocLines:           docLines,
 		FieldType:          fieldType,
 		PrimitiveFieldType: primitiveFieldType,
@@ -277,7 +278,7 @@ func (c *codec) annotateField(field *api.Field, message *api.Message, model *api
 		}
 
 		if isNameConflict {
-			ann.AliasInExamples = toPascal(field.Name)
+			ann.AliasInExamples = toPascal(fieldName)
 			if ann.AliasInExamples == parentRustName {
 				// The field name was the same as the type name so we still have to disambiguate.
 				ann.AliasInExamples = fmt.Sprintf("%sField", ann.AliasInExamples)

@@ -1617,6 +1617,14 @@ func (c *codec) OneOfEnumName(oneof *api.OneOf) string {
 	return toPascal(oneof.Name)
 }
 
+// FieldName returns the field name.
+func (c *codec) FieldName(field *api.Field) string {
+	if override, ok := c.nameOverrides[field.ID]; ok {
+		return override
+	}
+	return field.Name
+}
+
 func (c *codec) generateMethod(m *api.Method) bool {
 	// Ignore methods without HTTP annotations, we cannot generate working
 	// RPCs for them.
