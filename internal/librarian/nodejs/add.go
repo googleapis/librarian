@@ -32,7 +32,7 @@ func Add(cfg *config.Config, lib *config.Library) *config.Library {
 		return lib
 	}
 	if cfg != nil {
-		fillDefault(lib, cfg.Default)
+		lib = fillDefault(lib, cfg.Default)
 	}
 	apiPath := lib.APIs[0].Path
 	if !strings.HasPrefix(apiPath, "google/cloud/") && (lib.Nodejs == nil || lib.Nodejs.PackageName == "") {
