@@ -30,7 +30,8 @@ type unifiedMessage struct {
 }
 
 type fieldGroup struct {
-	name string
+	gapicFieldName     string
+	generatedFieldName string
 	// fields with the same name from the various messages
 	fields map[string]*api.Field
 }
@@ -56,14 +57,20 @@ func newUnifiedMessage(c *codec, model *api.API, msgNames []string, skipFieldFn 
 			if skipFieldFn(f) {
 				continue
 			}
+			// Allow generated field vs GAPIC field to be renamed
+			gapicFieldName := c.FieldName(f)
+			f.ID = ".generated" + f.ID
+			generatedFieldName := c.FieldName(f)
+
 			msg.fields = append(msg.fields, f)
-			if _, ok := msg.fieldGroups[f.Name]; !ok {
-				msg.fieldGroups[f.Name] = &fieldGroup{
-					name:   f.Name,
-					fields: make(map[string]*api.Field),
+			if _, ok := msg.fieldGroups[generatedFieldName]; !ok {
+				msg.fieldGroups[generatedFieldName] = &fieldGroup{
+					gapicFieldName:     gapicFieldName,
+					generatedFieldName: generatedFieldName,
+					fields:             make(map[string]*api.Field),
 				}
 			}
-			msg.fieldGroups[f.Name].fields[msgName] = f
+			msg.fieldGroups[generatedFieldName].fields[msgName] = f
 		}
 	}
 
@@ -108,7 +115,8 @@ func (m *unifiedMessage) createSyntheticMessage(name string) (*api.Message, erro
 func (m *unifiedMessage) fieldGroupList() []*fieldGroup {
 	list := make([]*fieldGroup, 0, len(m.fields))
 	for _, f := range m.fields {
-		list = append(list, m.fieldGroups[f.Name])
+		fieldName := m.c.FieldName(f)
+		list = append(list, m.fieldGroups[fieldName])
 	}
 	return list
 }
@@ -164,7 +172,11 @@ func createQueryBuilderMessage(m *unifiedMessage) (*api.Message, error) {
 
 // Accessors for template files.
 func (f *fieldGroup) FieldName() string {
-	return toSnake(f.name)
+	return toSnake(f.generatedFieldName)
+}
+
+func (f *fieldGroup) GapicFieldName() string {
+	return toSnake(f.gapicFieldName)
 }
 
 func (f *fieldGroup) JobOnly() bool {
