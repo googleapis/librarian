@@ -173,16 +173,16 @@ This document describes the schema for the librarian.yaml.
 | `replace_regex` | list of [ReplaceRegexConfig](#replaceregexconfig-configuration) | Contains regular expression replacement rules. |
 | `copy_file` | list of [CopyConfig](#copyconfig-configuration) | Contains file copy rules. |
 | `remove_file` | list of string | Contains glob patterns of files to remove. |
-| `method_operations` | list of [MethodOperation](#methodoperation-configuration) | Contains method-level operations (`delete`, `duplicate`, `deprecate`). |
+| `method_operations` | list of [MethodOperation](#methodoperation-configuration) | Contains method-level operations (`delete`, `copy_and_rename`, `deprecate`). |
 
 ## MethodOperation Configuration
 
 | Field | Type | Description |
 | :--- | :--- | :--- |
 | `path` | string | Specifies the relative file path to modify. |
-| `action` | string | Specifies the operation (`delete`, `duplicate`, or `deprecate`). |
+| `action` | string | Specifies the operation (`delete`, `copy_and_rename`, `duplicate` (deprecated), or `deprecate`). |
 | `func_name` | string | Specifies the target method name. |
-| `new_name` | string | Specifies the new method name for duplicate operations. |
+| `new_name` | string | Specifies the new method name for copy_and_rename and duplicate operations. |
 | `deprecation_message` | string | Specifies the deprecation message for deprecate operations. |
 
 ## ReplaceConfig Configuration

@@ -194,7 +194,7 @@ func ApplyMethodOperations(outDir string, methodOperations []config.MethodOperat
 				if err := DeleteMethod(file, mo.FuncName, "java"); err != nil {
 					return fmt.Errorf("failed to delete method %q in %s: %w", mo.FuncName, file, err)
 				}
-			case "duplicate":
+			case "copy_and_rename", "duplicate":
 				if err := DuplicateMethod(file, mo.FuncName, mo.NewName, "java"); err != nil {
 					return fmt.Errorf("failed to duplicate method %q in %s: %w", mo.FuncName, file, err)
 				}
