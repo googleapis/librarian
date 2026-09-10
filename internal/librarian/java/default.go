@@ -125,12 +125,9 @@ func Tidy(library *config.Library) (*config.Library, error) {
 			library.Java.GroupID = ""
 		}
 		tidyReleasedVersion(library)
-		empty, err := yaml.Empty(library.Java)
-		if err != nil {
+		var err error
+		if library.Java, err = yaml.ClearIfEmpty(library.Java); err != nil {
 			return nil, err
-		}
-		if empty {
-			library.Java = nil
 		}
 	}
 	for _, api := range library.APIs {
@@ -155,12 +152,9 @@ func Tidy(library *config.Library) (*config.Library, error) {
 		api.Java.AdditionalProtos = slices.DeleteFunc(api.Java.AdditionalProtos, func(p *config.AdditionalProto) bool {
 			return p == nil || p.Path == ""
 		})
-		empty, err := yaml.Empty(api.Java)
-		if err != nil {
+		var err error
+		if api.Java, err = yaml.ClearIfEmpty(api.Java); err != nil {
 			return nil, err
-		}
-		if empty {
-			api.Java = nil
 		}
 	}
 	return library, nil

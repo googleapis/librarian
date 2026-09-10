@@ -214,9 +214,6 @@ func shouldGenerateGAPIC(api *config.API) bool {
 }
 
 func grpcServiceConfigPath(api *config.API, googleapisDir string) (string, error) {
-	if api.PHP.SkipGRPCServiceConfig {
-		return "", nil
-	}
 	grpcServiceConfigPath, err := serviceconfig.FindGRPCServiceConfig(googleapisDir, api.Path)
 	if err != nil {
 		return "", err

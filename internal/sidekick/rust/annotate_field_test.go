@@ -1139,3 +1139,54 @@ func TestJsonNameAnnotations(t *testing.T) {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
+
+func TestFieldNameConflictWithNestedMessage(t *testing.T) {
+	// Top-level message: google.cloud.compute.v1.CapacityHistoryRequest
+	topLevelMsg := &api.Message{
+		Name:    "CapacityHistoryRequest",
+		Package: "test.v1",
+		ID:      ".test.v1.CapacityHistoryRequest",
+	}
+
+	// Message: google.cloud.compute.v1.Advice
+	adviceMsg := &api.Message{
+		Name:    "Advice",
+		Package: "test.v1",
+		ID:      ".test.v1.Advice",
+	}
+
+	// Nested message: google.cloud.compute.v1.Advice.CapacityHistoryRequest
+	nestedMsg := &api.Message{
+		Name:    "CapacityHistoryRequest",
+		Package: "test.v1",
+		ID:      ".test.v1.Advice.CapacityHistoryRequest",
+		Parent:  adviceMsg,
+	}
+
+	// The "body" field of nestedMsg whose type is topLevelMsg
+	bodyField := &api.Field{
+		Name:     "body",
+		JSONName: "body",
+		ID:       ".test.v1.Advice.CapacityHistoryRequest.body",
+		Typez:    api.TypezMessage,
+		TypezID:  ".test.v1.CapacityHistoryRequest",
+	}
+	nestedMsg.Fields = []*api.Field{bodyField}
+
+	model := api.NewTestAPI([]*api.Message{topLevelMsg, adviceMsg, nestedMsg}, []*api.Enum{}, []*api.Service{})
+	api.CrossReference(model)
+	codec := newTestCodec(t, libconfig.SpecProtobuf, "test", map[string]string{
+		"generate-setter-samples": "true",
+	})
+	annotateModel(model, codec)
+
+	gotFA, ok := bodyField.Codec.(*fieldAnnotations)
+	if !ok {
+		t.Fatalf("bodyField.Codec is not *fieldAnnotations")
+	}
+
+	wantAlias := "Body"
+	if gotFA.AliasInExamples != wantAlias {
+		t.Errorf("mismatch in AliasInExamples, want %s, got %s", wantAlias, gotFA.AliasInExamples)
+	}
+}
