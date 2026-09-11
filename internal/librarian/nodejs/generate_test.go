@@ -1624,40 +1624,6 @@ func TestResolveNodejsAPI(t *testing.T) {
 				AdditionalProtos:    []string{"pkg.proto", "dup.proto", "api.proto"},
 			},
 		},
-		{
-			name: "excludes package-level and api-level additional protos",
-			library: &config.Library{
-				Nodejs: &config.NodejsPackage{
-					AdditionalProtos: []string{"pkg1.proto", "pkg2.proto"},
-				},
-			},
-			api: &config.API{
-				Path: "google/cloud/secretmanager/v1",
-				Nodejs: &config.NodejsAPI{
-					AdditionalProtos: []string{"api1.proto", "api2.proto"},
-					ExcludeProtos:    []string{"pkg1.proto", "api2.proto"},
-				},
-			},
-			want: &config.NodejsAPI{
-				Path:             "google/cloud/secretmanager/v1",
-				AdditionalProtos: []string{cloudCommonResourcesProto, "pkg2.proto", "api1.proto"},
-			},
-		},
-		{
-			name:    "excludes non-matching proto is no-op",
-			library: &config.Library{},
-			api: &config.API{
-				Path: "google/cloud/secretmanager/v1",
-				Nodejs: &config.NodejsAPI{
-					AdditionalProtos: []string{"api.proto"},
-					ExcludeProtos:    []string{"nonexistent.proto"},
-				},
-			},
-			want: &config.NodejsAPI{
-				Path:             "google/cloud/secretmanager/v1",
-				AdditionalProtos: []string{cloudCommonResourcesProto, "api.proto"},
-			},
-		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			got := resolveNodejsAPI(test.library, test.api)

@@ -147,26 +147,10 @@ func generateAPI(ctx context.Context, params generateAPIParams) error {
 	if err != nil {
 		return fmt.Errorf("failed to resolve googleapis directory path: %w", err)
 	}
-	apiDir := filepath.Join(absGoogleapisDir, params.api.Path)
-	protos, err := filepath.Glob(apiDir + "/*.proto")
+	protos, err := collectProtos(absGoogleapisDir, nodejsAPI)
 	if err != nil {
-		return fmt.Errorf("failed to find protos: %w", err)
+		return err
 	}
-	if len(protos) == 0 {
-		return fmt.Errorf("no protos found in api %q", params.api.Path)
-	}
-	for index := range protos {
-		rel, err := filepath.Rel(absGoogleapisDir, protos[index])
-		if err != nil {
-			return fmt.Errorf("failed to make path %s relative: %w", protos[index], err)
-		}
-		protos[index] = rel
-	}
-	// Add additional protos from configuration.
-	protos = append(protos, nodejsAPI.AdditionalProtos...)
-	protos = slices.DeleteFunc(protos, func(p string) bool {
-		return slices.Contains(nodejsAPI.ExcludeProtos, p)
-	})
 	args, err := buildGeneratorArgs(buildGeneratorArgsParams{
 		generatorPath: generatorPath,
 		protoc:        params.protoc,
@@ -195,6 +179,7 @@ func resolveNodejsAPI(library *config.Library, api *config.API) *config.NodejsAP
 	}
 	omitCommon := false
 	if api.Nodejs != nil {
+		res.ExcludeProtos = append(res.ExcludeProtos, api.Nodejs.ExcludeProtos...)
 		omitCommon = api.Nodejs.OmitCommonResources
 		res.DIREGAPIC = api.Nodejs.DIREGAPIC
 		if api.Nodejs.Mixins != "" {
@@ -224,6 +209,29 @@ func unique(ss []string) []string {
 		}
 	}
 	return res
+}
+
+func collectProtos(absGoogleapisDir string, nodejsAPI *config.NodejsAPI) ([]string, error) {
+	apiDir := filepath.Join(absGoogleapisDir, nodejsAPI.Path)
+	protos, err := filepath.Glob(apiDir + "/*.proto")
+	if err != nil {
+		return nil, fmt.Errorf("failed to find protos: %w", err)
+	}
+	if len(protos) == 0 {
+		return nil, fmt.Errorf("no protos found in api %q", nodejsAPI.Path)
+	}
+	for index := range protos {
+		rel, err := filepath.Rel(absGoogleapisDir, protos[index])
+		if err != nil {
+			return nil, fmt.Errorf("failed to make path %s relative: %w", protos[index], err)
+		}
+		protos[index] = rel
+	}
+	protos = append(protos, nodejsAPI.AdditionalProtos...)
+	protos = slices.DeleteFunc(protos, func(p string) bool {
+		return slices.Contains(nodejsAPI.ExcludeProtos, p)
+	})
+	return protos, nil
 }
 
 type buildGeneratorArgsParams struct {
