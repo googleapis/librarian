@@ -77,70 +77,33 @@ func TestIsMixedLibrary(t *testing.T) {
 	}
 }
 
-func TestDerivePackageName(t *testing.T) {
+func TestGenerate_MissingPackageName(t *testing.T) {
+	cfg := &config.Config{
+		Language: config.LanguageNodejs,
+		Repo:     "googleapis/google-cloud-node",
+	}
 	for _, test := range []struct {
 		name string
 		lib  *config.Library
-		want string
 	}{
-		{
-			name: "explicit package name",
-			lib: &config.Library{
-				Name: "google-cloud-accessapproval",
-				Nodejs: &config.NodejsPackage{
-					PackageName: "@google-cloud/access-approval",
-				},
-			},
-			want: "@google-cloud/access-approval",
-		},
-		{
-			name: "derived from library name",
-			lib: &config.Library{
-				Name: "google-cloud-batch",
-			},
-			want: "@google-cloud/batch",
-		},
-		{
-			name: "derived with multi-segment suffix",
-			lib: &config.Library{
-				Name: "google-cloud-video-transcoder",
-			},
-			want: "@google-cloud/video-transcoder",
-		},
 		{
 			name: "nil nodejs config",
 			lib: &config.Library{
-				Name: "google-cloud-speech",
+				Name: "google-unrecognized-api",
 			},
-			want: "@google-cloud/speech",
 		},
 		{
-			name: "empty package name in config",
+			name: "empty package name in nodejs config",
 			lib: &config.Library{
-				Name:   "google-cloud-monitoring",
+				Name:   "google-unrecognized-api",
 				Nodejs: &config.NodejsPackage{},
 			},
-			want: "@google-cloud/monitoring",
-		},
-		{
-			name: "no second dash",
-			lib: &config.Library{
-				Name: "google",
-			},
-			want: "google",
-		},
-		{
-			name: "only one dash",
-			lib: &config.Library{
-				Name: "google-cloud",
-			},
-			want: "google-cloud",
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got := derivePackageName(test.lib)
-			if diff := cmp.Diff(test.want, got); diff != "" {
-				t.Errorf("mismatch (-want +got):\n%s", diff)
+			err := Generate(t.Context(), cfg, test.lib, nil)
+			if !errors.Is(err, errPackageNameRequired) {
+				t.Errorf("got error %v, want %v", err, errPackageNameRequired)
 			}
 		})
 	}
@@ -473,12 +436,13 @@ func TestBuildGeneratorArgs(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			nodejsAPI := resolveNodejsAPI(test.library, test.api)
+			lib := Fill(test.library)
+			nodejsAPI := resolveNodejsAPI(lib, test.api)
 			got, err := buildGeneratorArgs(buildGeneratorArgsParams{
 				generatorPath: "gapic-generator-typescript",
 				protoc:        defaultProtoc,
 				api:           test.api,
-				library:       test.library,
+				library:       lib,
 				googleapisDir: absGoogleapisDir,
 				stagingDir:    "staging",
 				nodejsAPI:     nodejsAPI,
@@ -500,7 +464,7 @@ func TestBuildGeneratorArgs_SystemProtocFallback(t *testing.T) {
 	}
 	fakeSystemProtoc := createFakeSystemExecutable(t, "protoc")
 	api := &config.API{Path: "google/cloud/secretmanager/v1"}
-	library := &config.Library{Name: "google-cloud-secretmanager"}
+	library := Fill(&config.Library{Name: "google-cloud-secretmanager"})
 	nodejsAPI := resolveNodejsAPI(library, api)
 
 	for _, test := range []struct {
@@ -544,7 +508,7 @@ func TestBuildGeneratorArgs_Error(t *testing.T) {
 		t.Fatal(err)
 	}
 	api := &config.API{Path: "google/cloud/secretmanager/v1"}
-	library := &config.Library{Name: "google-cloud-secretmanager"}
+	library := Fill(&config.Library{Name: "google-cloud-secretmanager"})
 	nodejsAPI := resolveNodejsAPI(library, api)
 
 	for _, test := range []struct {
@@ -598,7 +562,7 @@ func TestGenerateAPI(t *testing.T) {
 	err = generateAPI(t.Context(), generateAPIParams{
 		apiIndex:      0,
 		api:           &config.API{Path: "google/cloud/secretmanager/v1"},
-		library:       &config.Library{Name: "google-cloud-secretmanager", Output: outDir},
+		library:       Fill(&config.Library{Name: "google-cloud-secretmanager", Output: outDir}),
 		googleapisDir: absGoogleapisDir,
 		repoRoot:      repoRoot,
 		protoc:        &config.Protoc{Version: "33.2"},
@@ -625,13 +589,13 @@ func TestGenerateAPI_MultipleVersions(t *testing.T) {
 	}
 
 	repoRoot := t.TempDir()
-	library := &config.Library{
+	library := Fill(&config.Library{
 		Name: "google-cloud-secretmanager",
 		APIs: []*config.API{
 			{Path: "google/cloud/secretmanager/v1"},
 			{Path: "google/cloud/secretmanager/v1beta2"},
 		},
-	}
+	})
 	outDir := filepath.Join(repoRoot, "packages", library.Name)
 	if err := os.MkdirAll(outDir, 0o755); err != nil {
 		t.Fatal(err)
@@ -1053,7 +1017,7 @@ func TestGenerate(t *testing.T) {
 		},
 	}
 	for _, library := range libraries {
-		if err := Generate(t.Context(), cfg, library, &sources.Sources{Googleapis: absGoogleapisDir}); err != nil {
+		if err := Generate(t.Context(), cfg, Fill(library), &sources.Sources{Googleapis: absGoogleapisDir}); err != nil {
 			t.Fatal(err)
 		}
 	}
@@ -1235,10 +1199,10 @@ func TestGenerateAPI_NoProtos(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	library := &config.Library{
+	library := Fill(&config.Library{
 		Name:   "google-cloud-emptyapi",
 		Output: filepath.Join(repoRoot, "packages", "google-cloud-emptyapi"),
-	}
+	})
 	if err := generateAPI(t.Context(), generateAPIParams{
 		apiIndex:      0,
 		api:           &config.API{Path: apiPath},
@@ -1370,7 +1334,7 @@ func TestWriteRepoMetadata(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			outDir := t.TempDir()
-			if err := writeRepoMetadata(cfg, test.library, absGoogleapisDir, outDir); err != nil {
+			if err := writeRepoMetadata(cfg, Fill(test.library), absGoogleapisDir, outDir); err != nil {
 				t.Fatal(err)
 			}
 			got, err := repometadata.Read(outDir)
@@ -1387,7 +1351,7 @@ func TestWriteRepoMetadata(t *testing.T) {
 
 func TestWriteRepoMetadata_NoAPIs(t *testing.T) {
 	cfg := &config.Config{Language: config.LanguageNodejs}
-	library := &config.Library{Name: "google-cloud-test"}
+	library := Fill(&config.Library{Name: "google-cloud-test"})
 	if err := writeRepoMetadata(cfg, library, "", t.TempDir()); err != nil {
 		t.Errorf("expected nil error for library with no APIs, got: %v", err)
 	}
