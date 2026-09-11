@@ -146,3 +146,65 @@ func TestSplitEmptyTargetDir(t *testing.T) {
 		t.Fatal("expected error for empty target dir, got nil")
 	}
 }
+
+func TestSplitTracksHistoryAcrossDirectoryRename(t *testing.T) {
+	testhelper.RequireCommand(t, "git")
+	repoDir := t.TempDir()
+	testhelper.ContinueInNewGitRepository(t, repoDir)
+
+	for _, f := range DefaultRootFiles {
+		if err := os.WriteFile(f, []byte("contents of "+f), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	oldDir := filepath.Join("packages", "swift-google-gax")
+	testhelper.AddSwiftPackage(t, oldDir, "GoogleCloudGax")
+	testhelper.RunGit(t, "add", ".")
+	testhelper.RunGit(t, "commit", "-m", "feat: initial gax in packages/")
+
+	gaxFile := filepath.Join(oldDir, "Sources", "GoogleCloudGax", "Gax.swift")
+	if err := os.WriteFile(gaxFile, []byte("// updated in packages/"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	testhelper.RunGit(t, "add", ".")
+	testhelper.RunGit(t, "commit", "-m", "feat: update gax in packages/")
+
+	if err := os.MkdirAll("pkgs", 0o755); err != nil {
+		t.Fatal(err)
+	}
+	newDir := filepath.Join("pkgs", "swift-google-gax")
+	testhelper.RunGit(t, "mv", oldDir, newDir)
+	testhelper.RunGit(t, "commit", "-m", "refactor: rename packages/ to pkgs/")
+
+	newGaxFile := filepath.Join(newDir, "Sources", "GoogleCloudGax", "Gax.swift")
+	if err := os.WriteFile(newGaxFile, []byte("// updated in pkgs/"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	testhelper.RunGit(t, "add", ".")
+	testhelper.RunGit(t, "commit", "-m", "feat: update gax in pkgs/")
+
+	splitSHA, err := Split(t.Context(), SplitParams{
+		TargetDir: "pkgs/swift-google-gax",
+		Origin:    "HEAD",
+	})
+	if err != nil {
+		t.Fatalf("Split() failed: %v", err)
+	}
+
+	subjectsOut, err := command.Output(t.Context(), command.Git, "log", "--pretty=format:%s", splitSHA)
+	if err != nil {
+		t.Fatal(err)
+	}
+	subjects := strings.Split(strings.TrimSpace(subjectsOut), "\n")
+	wantSubjects := []string{
+		"feat: update gax in pkgs/",
+		"feat: update gax in packages/",
+		"feat: initial gax in packages/",
+	}
+	if !slices.Equal(subjects, wantSubjects) {
+		t.Errorf("got commit subjects %v, want %v", subjects, wantSubjects)
+	}
+
+	testhelper.RunGit(t, "fsck", "--full")
+}
