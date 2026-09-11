@@ -31,6 +31,7 @@ import (
 	"github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/filesystem"
+	"github.com/googleapis/librarian/internal/proto"
 	"github.com/googleapis/librarian/internal/serviceconfig"
 	"github.com/googleapis/librarian/internal/sources"
 	"github.com/googleapis/librarian/internal/tool/protoc"
@@ -45,6 +46,16 @@ var (
 	errToolNotInstalled    = errors.New("tool not installed in librarian cache")
 	errPackageNameRequired = errors.New("nodejs.package_name is required; non-cloud libraries must be configured in librarian.yaml or populated during librarian add")
 )
+
+type buildGeneratorArgsParams struct {
+	generatorPath string
+	protoc        *config.Protoc
+	api           *config.API
+	library       *config.Library
+	googleapisDir string
+	stagingDir    string
+	nodejsAPI     *config.NodejsAPI
+}
 
 // IsMixedLibrary reports whether the library has handwritten code wrapping
 // generated or librarian-managed code.
@@ -146,11 +157,11 @@ func generateAPI(ctx context.Context, params generateAPIParams) error {
 	if err := os.MkdirAll(stagingDir, 0o755); err != nil {
 		return err
 	}
-	nodejsAPI := resolveNodejsAPI(params.library, params.api)
 	absGoogleapisDir, err := filepath.Abs(params.googleapisDir)
 	if err != nil {
 		return fmt.Errorf("failed to resolve googleapis directory path: %w", err)
 	}
+	nodejsAPI := resolveNodejsAPI(params.library, params.api)
 	protos, err := collectProtos(absGoogleapisDir, nodejsAPI)
 	if err != nil {
 		return err
@@ -220,9 +231,9 @@ func unique(ss []string) []string {
 
 func collectProtos(absGoogleapisDir string, nodejsAPI *config.NodejsAPI) ([]string, error) {
 	apiDir := filepath.Join(absGoogleapisDir, nodejsAPI.Path)
-	protos, err := filepath.Glob(apiDir + "/*.proto")
+	protos, err := proto.Gather(apiDir, nodejsAPI.Path)
 	if err != nil {
-		return nil, fmt.Errorf("ailed to match proto pattern: %w", err)
+		return nil, fmt.Errorf("failed to find protos: %w", err)
 	}
 	if len(protos) == 0 {
 		return nil, fmt.Errorf("no protos found in api %q", nodejsAPI.Path)
@@ -239,16 +250,6 @@ func collectProtos(absGoogleapisDir string, nodejsAPI *config.NodejsAPI) ([]stri
 		return slices.Contains(nodejsAPI.ExcludeProtos, p)
 	})
 	return protos, nil
-}
-
-type buildGeneratorArgsParams struct {
-	generatorPath string
-	protoc        *config.Protoc
-	api           *config.API
-	library       *config.Library
-	googleapisDir string
-	stagingDir    string
-	nodejsAPI     *config.NodejsAPI
 }
 
 // buildGeneratorArgs constructs the gapic-generator-typescript arguments,
