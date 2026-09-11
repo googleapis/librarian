@@ -433,22 +433,22 @@ type Postprocess struct {
 	// RemoveFile contains glob patterns of files to remove.
 	RemoveFile []string `yaml:"remove_file,omitempty"`
 
-	// MethodOperations contains method-level operations (`delete`, `copy_and_rename`, `duplicate`, `deprecate`).
+	// MethodOperations contains method-level operations (`delete`, `copy_and_rename`, `deprecate`).
 	MethodOperations []MethodOperation `yaml:"method_operations,omitempty"`
 }
 
-// MethodOperation represents a method-level operation like delete, copy_and_rename, duplicate, or deprecate.
+// MethodOperation represents a method-level operation like delete, copy_and_rename, or deprecate.
 type MethodOperation struct {
 	// Path specifies the relative file path to modify.
 	Path string `yaml:"path"`
 
-	// Action specifies the operation (`delete`, `copy_and_rename`, `duplicate`, or `deprecate`).
+	// Action specifies the operation (`delete`, `copy_and_rename`, or `deprecate`).
 	Action string `yaml:"action"`
 
 	// FuncName specifies the target method name.
 	FuncName string `yaml:"func_name"`
 
-	// NewName specifies the new method name for copy_and_rename or duplicate operations.
+	// NewName specifies the new method name for copy_and_rename operations.
 	NewName string `yaml:"new_name,omitempty"`
 
 	// DeprecationMessage specifies the deprecation message for deprecate operations.

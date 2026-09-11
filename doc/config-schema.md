@@ -176,16 +176,16 @@ This document describes the schema for the librarian.yaml.
 | `replace_regex` | list of [ReplaceRegexConfig](#replaceregexconfig-configuration) | Contains regular expression replacement rules. |
 | `copy_file` | list of [CopyConfig](#copyconfig-configuration) | Contains file copy rules. |
 | `remove_file` | list of string | Contains glob patterns of files to remove. |
-| `method_operations` | list of [MethodOperation](#methodoperation-configuration) | Contains method-level operations (`delete`, `copy_and_rename`, `duplicate`, `deprecate`). |
+| `method_operations` | list of [MethodOperation](#methodoperation-configuration) | Contains method-level operations (`delete`, `copy_and_rename`, `deprecate`). |
 
 ## MethodOperation Configuration
 
 | Field | Type | Description |
 | :--- | :--- | :--- |
 | `path` | string | Specifies the relative file path to modify. |
-| `action` | string | Specifies the operation (`delete`, `copy_and_rename`, `duplicate`, or `deprecate`). |
+| `action` | string | Specifies the operation (`delete`, `copy_and_rename`, or `deprecate`). |
 | `func_name` | string | Specifies the target method name. |
-| `new_name` | string | Specifies the new method name for copy_and_rename or duplicate operations. |
+| `new_name` | string | Specifies the new method name for copy_and_rename operations. |
 | `deprecation_message` | string | Specifies the deprecation message for deprecate operations. |
 
 ## ReplaceConfig Configuration
@@ -369,7 +369,6 @@ This document describes the schema for the librarian.yaml.
 | `additional_protos` | list of [AdditionalProto](#additionalproto-configuration) (optional) | Is a list of additional proto files to include in generation. By default, these files are used purely as compilation dependencies for the GAPIC generator. Note: google/cloud/common_resources.proto is included by default unless OmitCommonResources is set to true. |
 | `omit_common_resources` | bool | Indicates whether to omit the default inclusion of google/cloud/common_resources.proto. |
 | `excluded_protos` | list of string | Is a list of proto files to exclude from generation. It expects the full path starting from the root of the googleapis directory (e.g., "google/cloud/aiplatform/v1/schema/io_format.proto"). |
-| `skip_proto_class_generation` | list of string | Is a list of proto files to exclude from generating proto module, but included in generating gRPC or GAPIC modules and packaged proto files. It expects the full path starting from the root of the googleapis directory (e.g., "google/cloud/aiplatform/v1beta1/schema/geometry.proto"). TODO(https://github.com/googleapis/librarian/issues/5661): remove after migration. |
 | `gapic_artifact_id_override` | string | Overrides the artifact ID for the GAPIC module. It determines the module's directory name and is used to derive proto and gRPC artifact IDs if they are not explicitly overridden. |
 | `grpc_artifact_id_override` | string | Overrides the artifact ID for the gRPC module. The artifact ID is also used as the name for the module's directory. |
 | `proto_artifact_id_override` | string | Overrides the artifact ID for the proto module. The artifact ID is also used as the name for the module's directory. |
@@ -429,6 +428,7 @@ This document describes the schema for the librarian.yaml.
 | :--- | :--- | :--- |
 | `additional_protos` | list of string | Is a list of additional proto files to include in generation. |
 | `diregapic` | bool | Indicates whether generation uses DIREGAPIC (Discovery REST GAPICs). This is typically false. Used for the GCE (compute) client. |
+| `exclude_protos` | list of string | Is a list of proto files to exclude from generation. It expects the full path starting from the root of the googleapis directory (e.g., "google/cloud/aiplatform/v1/schema/io_format.proto"). |
 | `mixins` | string | Controls mixin behavior for this API (e.g., "none" to disable). When set, this overrides the package-level mixins setting. |
 | `omit_common_resources` | bool | Indicates whether to omit the default inclusion of google/cloud/common_resources.proto. |
 | `path` | string | Is the source path. |

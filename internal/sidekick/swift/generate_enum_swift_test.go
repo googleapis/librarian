@@ -101,6 +101,20 @@ func TestGenerateEnum_UniqueNumbers(t *testing.T) {
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
+
+	gotEncode := extractBlock(t, string(contentsB), "public func encode(to encoder: Encoder) throws {", "\n  }")
+	wantEncode := `public func encode(to encoder: Encoder) throws {
+    var container = encoder.singleValueContainer()
+    switch self {
+    case .test: return try container.encode("KIND_TEST")
+    case .otherTest: return try container.encode("KIND_OTHER_TEST")
+    case .unknownIntValue(let v): return try container.encode(v)
+    case .unknownStringValue(let v): return try container.encode(v)
+    }
+  }`
+	if diff := cmp.Diff(wantEncode, gotEncode); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
 }
 
 func TestGenerateEnum_DocComments(t *testing.T) {

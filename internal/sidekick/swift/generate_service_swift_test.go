@@ -171,6 +171,16 @@ func TestGenerateService_Delegation(t *testing.T) {
 			t.Errorf("expected %q in IAM.swift, got:\n%s", want, contentStr)
 		}
 	}
+
+	transportFilename := filepath.Join(outDir, "Sources", "GoogleCloudTestV1", "IAM+Transport.swift")
+	transportContent, err := os.ReadFile(transportFilename)
+	if err != nil {
+		t.Fatal(err)
+	}
+	wantNewRequest := "var req = try await self.inner.newRequest(path: path, query: query, options: options)"
+	if !bytes.Contains(transportContent, []byte(wantNewRequest)) {
+		t.Errorf("expected %q in IAM+Transport.swift, got:\n%s", wantNewRequest, string(transportContent))
+	}
 }
 
 func TestGenerateService_SnippetFiles(t *testing.T) {

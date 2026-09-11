@@ -87,16 +87,16 @@ extension Clients {
       query.append(contentsOf: try encoder.encode(request.{{Codec.Name}}, prefix: "{{JSONName}}"))
       {{/IsOneOf}}
       {{/Codec.QueryParams}}
-      var req = try await self.inner.newRequest(path: path, query: query)
+      var req = try await self.inner.newRequest(path: path, query: query, options: options)
       req.setMethod(.{{Codec.HTTPMethod}})
       req.addHeader(name: GoogleCloudGax._HeaderNames.apiClient, value: Clients.clientHeader)
       {{#Codec.HasBody}}
       {{#Codec.IsBodyWildcard}}
-      req.setBody(data: try JSONEncoder().encode(request), ofContentType: "application/json")
+      try req.setBody(json: request)
       {{/Codec.IsBodyWildcard}}
       {{^Codec.IsBodyWildcard}}
       if let body = request.{{Codec.BodyField}} {
-        req.setBody(data: try JSONEncoder().encode(body), ofContentType: "application/json")
+        try req.setBody(json: body)
       }
       {{/Codec.IsBodyWildcard}}
       {{/Codec.HasBody}}

@@ -42,6 +42,21 @@ const (
 	protosPathPrefix          = "protos/"
 )
 
+var (
+	errToolNotInstalled    = errors.New("tool not installed in librarian cache")
+	errPackageNameRequired = errors.New("nodejs.package_name is required; non-cloud libraries must be configured in librarian.yaml or populated during librarian add")
+)
+
+type buildGeneratorArgsParams struct {
+	generatorPath string
+	protoc        *config.Protoc
+	api           *config.API
+	library       *config.Library
+	googleapisDir string
+	stagingDir    string
+	nodejsAPI     *config.NodejsAPI
+}
+
 // IsMixedLibrary reports whether the library has handwritten code wrapping
 // generated or librarian-managed code.
 func IsMixedLibrary(lib *config.Library) bool {
@@ -50,6 +65,9 @@ func IsMixedLibrary(lib *config.Library) bool {
 
 // Generate generates a Node.js client library.
 func Generate(ctx context.Context, cfg *config.Config, library *config.Library, srcs *sources.Sources) error {
+	if library.Nodejs == nil || library.Nodejs.PackageName == "" {
+		return fmt.Errorf("library %q: %w", library.Name, errPackageNameRequired)
+	}
 	googleapisDir := srcs.Googleapis
 	outdir, err := filepath.Abs(library.Output)
 	if err != nil {
@@ -94,10 +112,6 @@ func Generate(ctx context.Context, cfg *config.Config, library *config.Library, 
 	return nil
 }
 
-var (
-	errToolNotInstalled = errors.New("tool not installed in librarian cache")
-)
-
 func requireCachedTool(toolName string) (string, error) {
 	binDir, err := getBinDir()
 	if err != nil {
@@ -139,7 +153,6 @@ func generateAPI(ctx context.Context, params generateAPIParams) error {
 	if _, err := requireCachedTool("gapic-node-processing"); err != nil {
 		return err
 	}
-
 	stagingDir := filepath.Join(params.repoRoot, "owl-bot-staging", params.library.Name, buildStagingSubdirName(params.apiIndex, params.api.Path))
 	if err := os.MkdirAll(stagingDir, 0o755); err != nil {
 		return err
@@ -149,7 +162,7 @@ func generateAPI(ctx context.Context, params generateAPIParams) error {
 		return fmt.Errorf("failed to resolve googleapis directory path: %w", err)
 	}
 	nodejsAPI := resolveNodejsAPI(params.library, params.api)
-	protos, err := collectProtos(absGoogleapisDir, params.api.Path, nodejsAPI.AdditionalProtos)
+	protos, err := collectProtos(absGoogleapisDir, nodejsAPI)
 	if err != nil {
 		return err
 	}
@@ -181,6 +194,7 @@ func resolveNodejsAPI(library *config.Library, api *config.API) *config.NodejsAP
 	}
 	omitCommon := false
 	if api.Nodejs != nil {
+		res.ExcludeProtos = append(res.ExcludeProtos, api.Nodejs.ExcludeProtos...)
 		omitCommon = api.Nodejs.OmitCommonResources
 		res.DIREGAPIC = api.Nodejs.DIREGAPIC
 		if api.Nodejs.Mixins != "" {
@@ -188,22 +202,17 @@ func resolveNodejsAPI(library *config.Library, api *config.API) *config.NodejsAP
 		}
 		res.OmitCommonResources = api.Nodejs.OmitCommonResources
 	}
-
 	var protos []string
 	if !omitCommon {
 		protos = append(protos, cloudCommonResourcesProto)
 	}
-
 	// Add package-level additional protos.
 	if library.Nodejs != nil {
 		protos = append(protos, library.Nodejs.AdditionalProtos...)
 	}
-
-	// Add API-level additional protos.
 	if api.Nodejs != nil {
 		protos = append(protos, api.Nodejs.AdditionalProtos...)
 	}
-
 	res.AdditionalProtos = unique(protos)
 	return res
 }
@@ -220,35 +229,27 @@ func unique(ss []string) []string {
 	return res
 }
 
-type buildGeneratorArgsParams struct {
-	generatorPath string
-	protoc        *config.Protoc
-	api           *config.API
-	library       *config.Library
-	googleapisDir string
-	stagingDir    string
-	nodejsAPI     *config.NodejsAPI
-}
-
-func collectProtos(absGoogleapisDir, apiPath string, additionalProtos []string) ([]string, error) {
-	apiDir := filepath.Join(absGoogleapisDir, apiPath)
-	protos, err := proto.Gather(apiDir, apiPath)
+func collectProtos(absGoogleapisDir string, nodejsAPI *config.NodejsAPI) ([]string, error) {
+	apiDir := filepath.Join(absGoogleapisDir, nodejsAPI.Path)
+	protos, err := proto.Gather(apiDir, nodejsAPI.Path)
 	if err != nil {
 		return nil, fmt.Errorf("failed to find protos: %w", err)
 	}
 	if len(protos) == 0 {
-		return nil, fmt.Errorf("no protos found in api %q", apiPath)
+		return nil, fmt.Errorf("no protos found in api %q", nodejsAPI.Path)
 	}
-	for i, proto := range protos {
-		rel, err := filepath.Rel(absGoogleapisDir, proto)
+	for index := range protos {
+		rel, err := filepath.Rel(absGoogleapisDir, protos[index])
 		if err != nil {
-			return nil, fmt.Errorf("failed to make path %s relative: %w", proto, err)
+			return nil, fmt.Errorf("failed to make path %s relative: %w", protos[index], err)
 		}
-		protos[i] = rel
+		protos[index] = rel
 	}
-	protos = append(protos, additionalProtos...)
-	slices.Sort(protos)
-	return slices.Compact(protos), nil
+	protos = append(protos, nodejsAPI.AdditionalProtos...)
+	protos = slices.DeleteFunc(protos, func(p string) bool {
+		return slices.Contains(nodejsAPI.ExcludeProtos, p)
+	})
+	return protos, nil
 }
 
 // buildGeneratorArgs constructs the gapic-generator-typescript arguments,
@@ -283,7 +284,7 @@ func buildGeneratorArgs(params buildGeneratorArgsParams) ([]string, error) {
 		args = append(args, "--service-yaml", apiMetadata.ServiceConfig)
 	}
 
-	args = append(args, "--package-name", derivePackageName(params.library))
+	args = append(args, "--package-name", params.library.Nodejs.PackageName)
 	args = append(args, "--metadata")
 
 	// Only pass --transport for non-default values (default is grpc+rest).
@@ -620,31 +621,6 @@ func copySamplesFromStaging(stagingDir, outDir string) error {
 		}
 	}
 	return nil
-}
-
-// derivePackageName returns the npm package name for a library.
-// It uses nodejs.package_name if set, otherwise derives it by splitting the
-// library name on the second dash (e.g. "google-cloud-batch" → "@google-cloud/batch").
-func derivePackageName(library *config.Library) string {
-	if library.Nodejs != nil && library.Nodejs.PackageName != "" {
-		return library.Nodejs.PackageName
-	}
-	return derivePackageNameFromLibraryName(library.Name)
-}
-
-func derivePackageNameFromLibraryName(name string) string {
-	firstDash := strings.Index(name, "-")
-	if firstDash < 0 {
-		return name
-	}
-	secondDash := strings.Index(name[firstDash+1:], "-")
-	if secondDash < 0 {
-		return name
-	}
-	secondDash += firstDash + 1
-	scope := name[:secondDash]
-	pkg := name[secondDash+1:]
-	return fmt.Sprintf("@%s/%s", scope, pkg)
 }
 
 // DefaultOutput returns the output path for a library.

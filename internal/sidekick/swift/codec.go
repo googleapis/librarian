@@ -79,7 +79,9 @@ type codec struct {
 	// The package version (e.g. "1.2.3").
 	PackageVersion string
 
-	// The location of the monorepo, relative to the current directory.
+	// The location of the monorepo, relative to the output directory. This
+	// always uses forward slashes, as it is interpolated into the generated
+	// Package.swift manifest.
 	//
 	// Recall that sidekick only generates clients within a monorepo, so this
 	// always makes sense.
@@ -206,7 +208,7 @@ func newCodec(model *api.API, library *config.Library, module *config.SwiftModul
 		PackageName:        packageName,
 		PackageRepoName:    packageRepoName,
 		PackageVersion:     packageVersion,
-		MonorepoRoot:       rel,
+		MonorepoRoot:       filepath.ToSlash(rel),
 		ApiPackages:        map[string]*Dependency{},
 		DependenciesByName: map[string]*Dependency{},
 		UrlSafeForBytes:    library.SpecificationFormat == config.SpecDiscovery,

@@ -118,7 +118,7 @@ public enum {{Codec.Name}}: Codable, Equatable, Sendable {
     var container = encoder.singleValueContainer()
     switch self {
     {{#UniqueNumberValues}}
-    case .{{Codec.CaseName}}: return try container.encode({{Number}})
+    case .{{Codec.CaseName}}: return try container.encode("{{Name}}")
     {{/UniqueNumberValues}}
     case .{{Codec.UnknownIntName}}(let v): return try container.encode(v)
     case .{{Codec.UnknownStringName}}(let v): return try container.encode(v)
