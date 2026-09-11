@@ -195,6 +195,9 @@ func resolveNodejsAPI(library *config.Library, api *config.API) *config.NodejsAP
 	if library.Nodejs != nil {
 		protos = append(protos, library.Nodejs.AdditionalProtos...)
 	}
+	if api.Nodejs != nil {
+		protos = append(protos, api.Nodejs.AdditionalProtos...)
+	}
 	res.AdditionalProtos = unique(protos)
 	return res
 }

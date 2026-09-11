@@ -1624,6 +1624,62 @@ func TestResolveNodejsAPI(t *testing.T) {
 				AdditionalProtos:    []string{"pkg.proto", "dup.proto", "api.proto"},
 			},
 		},
+		{
+			name:    "exclude protos preserved",
+			library: &config.Library{},
+			api: &config.API{
+				Path: "google/cloud/secretmanager/v1",
+				Nodejs: &config.NodejsAPI{
+					ExcludeProtos: []string{"exclude1.proto", "exclude2.proto"},
+				},
+			},
+			want: &config.NodejsAPI{
+				Path:             "google/cloud/secretmanager/v1",
+				AdditionalProtos: []string{cloudCommonResourcesProto},
+				ExcludeProtos:    []string{"exclude1.proto", "exclude2.proto"},
+			},
+		},
+		{
+			name:    "mixins preserved",
+			library: &config.Library{},
+			api: &config.API{
+				Path: "google/cloud/secretmanager/v1",
+				Nodejs: &config.NodejsAPI{
+					Mixins: "none",
+				},
+			},
+			want: &config.NodejsAPI{
+				Path:             "google/cloud/secretmanager/v1",
+				AdditionalProtos: []string{cloudCommonResourcesProto},
+				Mixins:           "none",
+			},
+		},
+		{
+			name: "package-level and api-level with all fields",
+			library: &config.Library{
+				Nodejs: &config.NodejsPackage{
+					AdditionalProtos: []string{"pkg.proto"},
+				},
+			},
+			api: &config.API{
+				Path: "google/cloud/compute/v1",
+				Nodejs: &config.NodejsAPI{
+					DIREGAPIC:           true,
+					Mixins:              "none",
+					OmitCommonResources: true,
+					AdditionalProtos:    []string{"api.proto"},
+					ExcludeProtos:       []string{"exclude.proto"},
+				},
+			},
+			want: &config.NodejsAPI{
+				Path:                "google/cloud/compute/v1",
+				DIREGAPIC:           true,
+				Mixins:              "none",
+				OmitCommonResources: true,
+				AdditionalProtos:    []string{"pkg.proto", "api.proto"},
+				ExcludeProtos:       []string{"exclude.proto"},
+			},
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			got := resolveNodejsAPI(test.library, test.api)
