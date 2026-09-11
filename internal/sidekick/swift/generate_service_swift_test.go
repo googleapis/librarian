@@ -328,11 +328,31 @@ func TestGenerateService_PathParameters(t *testing.T) {
 			path: (&api.PathTemplate{}).
 				WithLiteral("v1").
 				WithVariableNamed("secret", "name"),
-			wantBlock: `let path = try { () throws -> Swift.String in
-        guard let pathVariable0 = request.secret.map({ $0.name }), !pathVariable0.isEmpty else {
-          throw GoogleCloudGax.RequestError.binding("'request.secret.name' is not set or is empty")
+			wantBlock: `let (path, query, configure) = try { () throws -> (Swift.String, [URLQueryItem], (inout GoogleCloudGax._HTTPClientRequest) -> Void) in
+        if let candidate = try { () throws -> (Swift.String, [URLQueryItem])? in
+          guard let pathVariable0 = GoogleCloudGax._RoutingMatcher.value(request.secret.map({ $0.name }), matching: [.singleWildcard]) else {
+            return nil
+          }
+          let path = "/v1/\(pathVariable0)"
+          let query = [
+            URLQueryItem(name: "$alt", value: "json;enum-encoding=int"),
+          ]
+          return (path, query)
+        }() {
+          return (candidate.0, candidate.1, { $0.setMethod(.POST) })
         }
-        return "/v1/\(pathVariable0)"
+        var paths: [GoogleCloudGax.PathMismatch] = []
+        do {
+          var builder = GoogleCloudGax._PathMismatchBuilder()
+          builder.maybeAdd(
+            request.secret.map({ $0.name }),
+            matching: [.singleWildcard],
+            fieldName: "secret.name",
+            expecting: "*"
+          )
+          paths.append(builder.build())
+        }
+        throw GoogleCloudGax.RequestError.binding(GoogleCloudGax.BindingError(paths: paths))
       }()`,
 		},
 		{
@@ -340,11 +360,31 @@ func TestGenerateService_PathParameters(t *testing.T) {
 			path: (&api.PathTemplate{}).
 				WithLiteral("v1").
 				WithVariableNamed("name"),
-			wantBlock: `let path = try { () throws -> Swift.String in
-        guard let pathVariable0 = request.name as Swift.String?, !pathVariable0.isEmpty else {
-          throw GoogleCloudGax.RequestError.binding("'request.name' is not set or is empty")
+			wantBlock: `let (path, query, configure) = try { () throws -> (Swift.String, [URLQueryItem], (inout GoogleCloudGax._HTTPClientRequest) -> Void) in
+        if let candidate = try { () throws -> (Swift.String, [URLQueryItem])? in
+          guard let pathVariable0 = GoogleCloudGax._RoutingMatcher.value(request.name as Swift.String?, matching: [.singleWildcard]) else {
+            return nil
+          }
+          let path = "/v1/\(pathVariable0)"
+          let query = [
+            URLQueryItem(name: "$alt", value: "json;enum-encoding=int"),
+          ]
+          return (path, query)
+        }() {
+          return (candidate.0, candidate.1, { $0.setMethod(.POST) })
         }
-        return "/v1/\(pathVariable0)"
+        var paths: [GoogleCloudGax.PathMismatch] = []
+        do {
+          var builder = GoogleCloudGax._PathMismatchBuilder()
+          builder.maybeAdd(
+            request.name as Swift.String?,
+            matching: [.singleWildcard],
+            fieldName: "name",
+            expecting: "*"
+          )
+          paths.append(builder.build())
+        }
+        throw GoogleCloudGax.RequestError.binding(GoogleCloudGax.BindingError(paths: paths))
       }()`,
 		},
 		{
@@ -355,14 +395,40 @@ func TestGenerateService_PathParameters(t *testing.T) {
 				WithVariableNamed("project").
 				WithLiteral("locations").
 				WithVariableNamed("location"),
-			wantBlock: `let path = try { () throws -> Swift.String in
-        guard let pathVariable0 = request.project as Swift.String?, !pathVariable0.isEmpty else {
-          throw GoogleCloudGax.RequestError.binding("'request.project' is not set or is empty")
+			wantBlock: `let (path, query, configure) = try { () throws -> (Swift.String, [URLQueryItem], (inout GoogleCloudGax._HTTPClientRequest) -> Void) in
+        if let candidate = try { () throws -> (Swift.String, [URLQueryItem])? in
+          guard let pathVariable0 = GoogleCloudGax._RoutingMatcher.value(request.project as Swift.String?, matching: [.singleWildcard]) else {
+            return nil
+          }
+          guard let pathVariable1 = GoogleCloudGax._RoutingMatcher.value(request.location, matching: [.singleWildcard]) else {
+            return nil
+          }
+          let path = "/v1/projects/\(pathVariable0)/locations/\(pathVariable1)"
+          let query = [
+            URLQueryItem(name: "$alt", value: "json;enum-encoding=int"),
+          ]
+          return (path, query)
+        }() {
+          return (candidate.0, candidate.1, { $0.setMethod(.POST) })
         }
-        guard let pathVariable1 = request.location, !pathVariable1.isEmpty else {
-          throw GoogleCloudGax.RequestError.binding("'request.location' is not set or is empty")
+        var paths: [GoogleCloudGax.PathMismatch] = []
+        do {
+          var builder = GoogleCloudGax._PathMismatchBuilder()
+          builder.maybeAdd(
+            request.project as Swift.String?,
+            matching: [.singleWildcard],
+            fieldName: "project",
+            expecting: "*"
+          )
+          builder.maybeAdd(
+            request.location,
+            matching: [.singleWildcard],
+            fieldName: "location",
+            expecting: "*"
+          )
+          paths.append(builder.build())
         }
-        return "/v1/projects/\(pathVariable0)/locations/\(pathVariable1)"
+        throw GoogleCloudGax.RequestError.binding(GoogleCloudGax.BindingError(paths: paths))
       }()`,
 		},
 	} {
@@ -442,7 +508,7 @@ func TestGenerateService_PathParameters(t *testing.T) {
 			}
 			contentStr := string(content)
 
-			gotBlock := extractBlock(t, contentStr, "let path = try { () throws -> Swift.String in", "    }()")
+			gotBlock := extractBlock(t, contentStr, "let (path, query, configure) = try { () throws -> (Swift.String, [URLQueryItem], (inout GoogleCloudGax._HTTPClientRequest) -> Void) in", "\n      }()")
 			if diff := cmp.Diff(test.wantBlock, gotBlock); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
