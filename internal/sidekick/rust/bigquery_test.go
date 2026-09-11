@@ -26,9 +26,9 @@ import (
 
 func TestBigQueryQueryFieldOverride(t *testing.T) {
 	c, err := newCodec(libconfig.SpecProtobuf, map[string]string{
-		"name-overrides": ".generated.google.cloud.bigquery.v2.QueryRequest.bad_query=good_query," +
-			".generated.google.cloud.bigquery.v2.JobConfigurationQuery.bad_query=good_query," +
-			".generated.google.cloud.bigquery.v2.JobConfiguration.bad_query=good_query," +
+		"name-overrides": ".synthetic.google.cloud.bigquery.v2.QueryRequest.bad_query=good_query," +
+			".synthetic.google.cloud.bigquery.v2.JobConfigurationQuery.bad_query=good_query," +
+			".synthetic.google.cloud.bigquery.v2.JobConfiguration.bad_query=good_query," +
 			".google.cloud.bigquery.v2.QueryRequest.query=gapic_query," +
 			".google.cloud.bigquery.v2.JobConfigurationQuery.query=gapic_query",
 	})
@@ -212,8 +212,8 @@ func TestBigQuerySyntheticMessages(t *testing.T) {
 
 	model := api.NewTestAPI([]*api.Message{qrMsg, jcqMsg, jcMsg}, []*api.Enum{}, []*api.Service{})
 	c, err := newCodec("protobuf", map[string]string{
-		"name-overrides": ".generated.google.cloud.bigquery.v2.QueryRequest.field_00=good_field_00," +
-			".generated.google.cloud.bigquery.v2.JobConfiguration.field_00=good_field_00",
+		"name-overrides": ".synthetic.google.cloud.bigquery.v2.QueryRequest.field_00=good_field_00," +
+			".synthetic.google.cloud.bigquery.v2.JobConfiguration.field_00=good_field_00",
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -238,7 +238,7 @@ func TestBigQuerySyntheticMessages(t *testing.T) {
 		t.Fatalf("expected 40 fields, got %d", len(syntheticMsg.Fields))
 	}
 	for _, f := range syntheticMsg.Fields {
-		wantID := fmt.Sprintf(".generated.google.cloud.bigquery.v2.QueryRequest.%s", f.Name)
+		wantID := fmt.Sprintf(".synthetic.google.cloud.bigquery.v2.QueryRequest.%s", f.Name)
 		if f.ID != wantID {
 			t.Errorf("expected field ID %q, got %q", wantID, f.ID)
 		}
@@ -289,7 +289,7 @@ func TestBigQuerySyntheticMessages(t *testing.T) {
 		t.Errorf("expected name 'QueryRequest', got %q", queryRequest.Name)
 	}
 	for _, f := range queryRequest.Fields {
-		wantID := fmt.Sprintf(".generated.google.cloud.bigquery.v2.QueryRequest.%s", f.Name)
+		wantID := fmt.Sprintf(".synthetic.google.cloud.bigquery.v2.QueryRequest.%s", f.Name)
 		if f.ID != wantID {
 			t.Errorf("expected field ID %q, got %q", wantID, f.ID)
 		}
@@ -312,8 +312,8 @@ func TestBigQuerySyntheticMessages(t *testing.T) {
 
 func TestBigQueryQueryMetadata(t *testing.T) {
 	c, err := newCodec("protobuf", map[string]string{
-		"name-overrides": ".generated.google.cloud.bigquery.v2.GetQueryResultsResponse.job_reference=job_ref_renamed," +
-			".generated.google.cloud.bigquery.v2.Job.job_ref=job_ref_renamed",
+		"name-overrides": ".synthetic.google.cloud.bigquery.v2.GetQueryResultsResponse.job_reference=job_ref_renamed," +
+			".synthetic.google.cloud.bigquery.v2.Job.job_ref=job_ref_renamed",
 	})
 	if err != nil {
 		t.Fatal(err)

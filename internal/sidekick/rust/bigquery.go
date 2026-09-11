@@ -31,7 +31,7 @@ type unifiedMessage struct {
 
 type fieldGroup struct {
 	gapicFieldName     string
-	generatedFieldName string
+	syntheticFieldName string
 	// fields with the same name from the various messages
 	fields map[string]*api.Field
 }
@@ -57,21 +57,22 @@ func newUnifiedMessage(c *codec, model *api.API, msgNames []string, skipFieldFn 
 			if skipFieldFn(f) {
 				continue
 			}
-			// Allow generated field vs GAPIC field to be renamed
+			// The synthetic field can be renamed independently of the GAPIC
+			// field, using a ".synthetic" prefix in the name overrides.
 			gapicFieldName := c.FieldName(f)
 			fClone := *f
-			fClone.ID = ".generated" + f.ID
-			generatedFieldName := c.FieldName(&fClone)
+			fClone.ID = ".synthetic" + f.ID
+			syntheticFieldName := c.FieldName(&fClone)
 
 			msg.fields = append(msg.fields, &fClone)
-			if _, ok := msg.fieldGroups[generatedFieldName]; !ok {
-				msg.fieldGroups[generatedFieldName] = &fieldGroup{
+			if _, ok := msg.fieldGroups[syntheticFieldName]; !ok {
+				msg.fieldGroups[syntheticFieldName] = &fieldGroup{
 					gapicFieldName:     gapicFieldName,
-					generatedFieldName: generatedFieldName,
+					syntheticFieldName: syntheticFieldName,
 					fields:             make(map[string]*api.Field),
 				}
 			}
-			msg.fieldGroups[generatedFieldName].fields[msgName] = &fClone
+			msg.fieldGroups[syntheticFieldName].fields[msgName] = &fClone
 		}
 	}
 
@@ -173,7 +174,7 @@ func createQueryBuilderMessage(m *unifiedMessage) (*api.Message, error) {
 
 // Accessors for template files.
 func (f *fieldGroup) FieldName() string {
-	return toSnake(f.generatedFieldName)
+	return toSnake(f.syntheticFieldName)
 }
 
 func (f *fieldGroup) GapicFieldName() string {
