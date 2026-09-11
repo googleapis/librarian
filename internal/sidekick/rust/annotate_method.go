@@ -772,8 +772,8 @@ func (c *codec) methodUsesGrpc(m *api.Method) bool {
 		return true
 	}
 	if m.ClientSideStreaming || m.ServerSideStreaming {
-		return (m.ClientSideStreaming && m.ServerSideStreaming && c.includeBidiStreamingMethods) ||
-			(!m.ClientSideStreaming && m.ServerSideStreaming && c.includeServerStreamingMethods) ||
+		return (m.ClientSideStreaming && m.ServerSideStreaming) ||
+			(!m.ClientSideStreaming && m.ServerSideStreaming) ||
 			c.includeStreamingMethods
 	}
 	return false

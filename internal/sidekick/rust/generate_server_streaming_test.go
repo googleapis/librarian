@@ -64,12 +64,11 @@ func TestGenerateServerStreaming(t *testing.T) {
 	cfg := &parser.ModelConfig{
 		SpecificationFormat: libconfig.SpecProtobuf,
 		Codec: map[string]string{
-			"package:wkt":                      "source=google.protobuf,package=google-cloud-wkt",
-			"package:prost":                    "package=prost,used-if=streaming",
-			"package:prost-types":              "package=prost-types,used-if=streaming",
-			"include-server-streaming-methods": "true",
-			"generate-rpc-samples":             "true",
-			"detailed-tracing-attributes":      "true",
+			"package:wkt":                 "source=google.protobuf,package=google-cloud-wkt",
+			"package:prost":               "package=prost,used-if=streaming",
+			"package:prost-types":         "package=prost-types,used-if=streaming",
+			"generate-rpc-samples":        "true",
+			"detailed-tracing-attributes": "true",
 		},
 	}
 	if err := Generate(t.Context(), model, outDir, cfg); err != nil {
@@ -382,9 +381,8 @@ func TestGenerateGrpcClientServerStreaming(t *testing.T) {
 	cfg := &parser.ModelConfig{
 		SpecificationFormat: libconfig.SpecProtobuf,
 		Codec: map[string]string{
-			"template-override":                "templates/grpc-client",
-			"package:wkt":                      "source=google.protobuf,package=google-cloud-wkt",
-			"include-server-streaming-methods": "true",
+			"template-override": "templates/grpc-client",
+			"package:wkt":       "source=google.protobuf,package=google-cloud-wkt",
 		},
 	}
 	if err := Generate(t.Context(), model, outDir, cfg); err != nil {
