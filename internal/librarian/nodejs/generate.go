@@ -138,19 +138,15 @@ func generateAPI(ctx context.Context, params generateAPIParams) error {
 	if _, err := requireCachedTool("gapic-node-processing"); err != nil {
 		return err
 	}
-
 	stagingDir := filepath.Join(params.repoRoot, "owl-bot-staging", params.library.Name, buildStagingSubdirName(params.apiIndex, params.api.Path))
 	if err := os.MkdirAll(stagingDir, 0o755); err != nil {
 		return err
 	}
-
 	nodejsAPI := resolveNodejsAPI(params.library, params.api)
-
 	absGoogleapisDir, err := filepath.Abs(params.googleapisDir)
 	if err != nil {
 		return fmt.Errorf("failed to resolve googleapis directory path: %w", err)
 	}
-
 	apiDir := filepath.Join(absGoogleapisDir, params.api.Path)
 	protos, err := filepath.Glob(apiDir + "/*.proto")
 	if err != nil {
@@ -166,10 +162,11 @@ func generateAPI(ctx context.Context, params generateAPIParams) error {
 		}
 		protos[index] = rel
 	}
-
 	// Add additional protos from configuration.
 	protos = append(protos, nodejsAPI.AdditionalProtos...)
-
+	protos = slices.DeleteFunc(protos, func(p string) bool {
+		return slices.Contains(nodejsAPI.ExcludeProtos, p)
+	})
 	args, err := buildGeneratorArgs(buildGeneratorArgsParams{
 		generatorPath: generatorPath,
 		protoc:        params.protoc,
@@ -212,14 +209,6 @@ func resolveNodejsAPI(library *config.Library, api *config.API) *config.NodejsAP
 	// Add package-level additional protos.
 	if library.Nodejs != nil {
 		protos = append(protos, library.Nodejs.AdditionalProtos...)
-	}
-	if api.Nodejs != nil {
-		protos = append(protos, api.Nodejs.AdditionalProtos...)
-		for _, excluded := range api.Nodejs.ExcludeProtos {
-			protos = slices.DeleteFunc(protos, func(p string) bool {
-				return p == excluded
-			})
-		}
 	}
 	res.AdditionalProtos = unique(protos)
 	return res
