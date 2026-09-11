@@ -379,6 +379,8 @@ func fillLibraryDefaults(language string, lib *config.Library) (*config.Library,
 		return php.Fill(lib), nil
 	case config.LanguagePython:
 		return python.Fill(lib)
+	case config.LanguageNodejs:
+		return nodejs.Fill(lib), nil
 	default:
 		return lib, nil
 	}
