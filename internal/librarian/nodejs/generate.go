@@ -205,22 +205,22 @@ func resolveNodejsAPI(library *config.Library, api *config.API) *config.NodejsAP
 		}
 		res.OmitCommonResources = api.Nodejs.OmitCommonResources
 	}
-
 	var protos []string
 	if !omitCommon {
 		protos = append(protos, cloudCommonResourcesProto)
 	}
-
 	// Add package-level additional protos.
 	if library.Nodejs != nil {
 		protos = append(protos, library.Nodejs.AdditionalProtos...)
 	}
-
-	// Add API-level additional protos.
 	if api.Nodejs != nil {
 		protos = append(protos, api.Nodejs.AdditionalProtos...)
+		for _, excluded := range api.Nodejs.ExcludeProtos {
+			protos = slices.DeleteFunc(protos, func(p string) bool {
+				return p == excluded
+			})
+		}
 	}
-
 	res.AdditionalProtos = unique(protos)
 	return res
 }
