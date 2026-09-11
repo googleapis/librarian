@@ -164,8 +164,7 @@ func generateAPI(ctx context.Context, params generateAPIParams) error {
 	}
 	// 1. Generate standard Protocol Buffer Java classes.
 	if shouldGenerateProto(javaAPI) {
-		protoProtos := filterProtos(apiProtos, javaAPI.SkipProtoClassGeneration, primaryDir)
-		protoProtos = append(protoProtos, additionalProtosToGenerateAbs...)
+		protoProtos := append(apiProtos, additionalProtosToGenerateAbs...)
 		args := protoProtocArgs(protoProtos, params.srcCfg, protoDir)
 		if err := runProtoc(ctx, pc, args); err != nil {
 			return fmt.Errorf("failed to generate proto: %w", err)
