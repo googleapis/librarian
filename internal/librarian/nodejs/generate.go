@@ -218,7 +218,7 @@ func collectProtos(absGoogleapisDir string, nodejsAPI *config.NodejsAPI) ([]stri
 	apiDir := filepath.Join(absGoogleapisDir, nodejsAPI.Path)
 	protos, err := filepath.Glob(apiDir + "/*.proto")
 	if err != nil {
-		return nil, fmt.Errorf("failed to find protos: %w", err)
+		return nil, fmt.Errorf("ailed to match proto pattern: %w", err)
 	}
 	if len(protos) == 0 {
 		return nil, fmt.Errorf("no protos found in api %q", nodejsAPI.Path)
