@@ -246,7 +246,9 @@ func collectProtos(absGoogleapisDir, apiPath string, additionalProtos []string) 
 		}
 		protos[i] = rel
 	}
-	return append(protos, additionalProtos...), nil
+	protos = append(protos, additionalProtos...)
+	slices.Sort(protos)
+	return slices.Compact(protos), nil
 }
 
 // buildGeneratorArgs constructs the gapic-generator-typescript arguments,
