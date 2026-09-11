@@ -771,10 +771,6 @@ func (c *codec) methodUsesGrpc(m *api.Method) bool {
 	if c.defaultTransport == "grpc" {
 		return true
 	}
-	if m.ClientSideStreaming || m.ServerSideStreaming {
-		return (m.ClientSideStreaming && m.ServerSideStreaming && c.includeBidiStreamingMethods) ||
-			(!m.ClientSideStreaming && m.ServerSideStreaming && c.includeServerStreamingMethods) ||
-			c.includeStreamingMethods
-	}
-	return false
+	// Client side only streaming is not yet supported, only include if specifically enabled.
+	return m.ServerSideStreaming || c.includeStreamingMethods
 }
