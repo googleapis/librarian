@@ -153,6 +153,32 @@ func TestGenerateStorage_MultiModel(t *testing.T) {
 			{Name: "resource", JSONName: "resource", Typez: api.TypezString},
 		},
 	}
+	renameFolderRequest := &api.Message{
+		Name:    "RenameFolderRequest",
+		ID:      ".google.storage.control.v2.RenameFolderRequest",
+		Package: "google.storage.control.v2",
+		Fields: []*api.Field{
+			{Name: "name", JSONName: "name", Typez: api.TypezString},
+		},
+	}
+	renameFolderMetadata := &api.Message{
+		Name:    "RenameFolderMetadata",
+		ID:      ".google.storage.control.v2.RenameFolderMetadata",
+		Package: "google.storage.control.v2",
+	}
+	operation := &api.Message{
+		Name:    "Operation",
+		ID:      ".google.longrunning.Operation",
+		Package: "google.longrunning",
+	}
+	getOperationRequest := &api.Message{
+		Name:    "GetOperationRequest",
+		ID:      ".google.longrunning.GetOperationRequest",
+		Package: "google.longrunning",
+		Fields: []*api.Field{
+			{Name: "name", JSONName: "name", Typez: api.TypezString},
+		},
+	}
 
 	controlService := &api.Service{
 		Name:        "StorageControl",
@@ -192,10 +218,47 @@ func TestGenerateStorage_MultiModel(t *testing.T) {
 					},
 				},
 			},
+			{
+				Name:         "RenameFolder",
+				ID:           ".google.storage.control.v2.StorageControl.RenameFolder",
+				InputTypeID:  ".google.storage.control.v2.RenameFolderRequest",
+				InputType:    renameFolderRequest,
+				OutputTypeID: ".google.longrunning.Operation",
+				OutputType:   operation,
+				IsLRO:        true,
+				OperationInfo: &api.OperationInfo{
+					ResponseTypeID: folder.ID,
+					MetadataTypeID: renameFolderMetadata.ID,
+				},
+				PathInfo: &api.PathInfo{
+					Bindings: []*api.PathBinding{
+						{
+							Verb:         "POST",
+							PathTemplate: (&api.PathTemplate{}).WithLiteral("v2").WithVariableNamed("name").WithLiteral(":rename"),
+						},
+					},
+				},
+			},
+			{
+				Name:         "GetOperation",
+				ID:           ".google.storage.control.v2.StorageControl.GetOperation",
+				InputTypeID:  ".google.longrunning.GetOperationRequest",
+				InputType:    getOperationRequest,
+				OutputTypeID: ".google.longrunning.Operation",
+				OutputType:   operation,
+				PathInfo: &api.PathInfo{
+					Bindings: []*api.PathBinding{
+						{
+							Verb:         "GET",
+							PathTemplate: (&api.PathTemplate{}).WithLiteral("v1").WithLiteral("operations"),
+						},
+					},
+				},
+			},
 		},
 	}
 
-	controlModel := api.NewTestAPI([]*api.Message{folder, createFolderRequest, policy, getIamPolicyRequest}, nil, []*api.Service{controlService})
+	controlModel := api.NewTestAPI([]*api.Message{folder, createFolderRequest, policy, getIamPolicyRequest, renameFolderRequest, renameFolderMetadata, operation, getOperationRequest}, nil, []*api.Service{controlService})
 	controlModel.PackageName = "google.storage.control.v2"
 	if err := api.CrossReference(controlModel); err != nil {
 		t.Fatal(err)
@@ -217,6 +280,7 @@ func TestGenerateStorage_MultiModel(t *testing.T) {
 		{Name: "GoogleCloudGax", RequiredByServices: true},
 		{Name: "GoogleCloudAuth", RequiredByServices: true},
 		{Name: "GoogleIAMV1", ApiPackage: "google.iam.v1"},
+		{Name: "GoogleLongRunning", ApiPackage: "google.longrunning"},
 	})
 	swiftPkg.PackageNameOverride = "GoogleCloudStorage"
 	swiftPkg.LibraryNameOverride = "GoogleCloudStorage"
@@ -270,11 +334,21 @@ func TestGenerateStorage_MultiModel(t *testing.T) {
 		!strings.Contains(protocolStr, "try self.listBuckets(byItem: byItem, options: .init())") {
 		t.Errorf("StorageControlProtocol.swift missing paginated convenience overload without options:\n%s", protocolStr)
 	}
+	if !strings.Contains(protocolStr, "func renameFolder(withPolling: RenameFolderRequest) async throws -> any GoogleCloudGax.PollableOperation<Folder>") {
+		t.Errorf("StorageControlProtocol.swift missing LRO method requirement:\n%s", protocolStr)
+	}
+	if !strings.Contains(protocolStr, "withPolling: RenameFolderRequest, options: GoogleCloudGax.RequestOptions") ||
+		!strings.Contains(protocolStr, ") async throws -> any GoogleCloudGax.PollableOperation<Folder>") {
+		t.Errorf("StorageControlProtocol.swift missing LRO method with options requirement:\n%s", protocolStr)
+	}
 	if !strings.Contains(protocolStr, "extension StorageControlProtocol {") {
 		t.Errorf("StorageControlProtocol.swift missing StorageControlProtocol extension:\n%s", protocolStr)
 	}
 	if !strings.Contains(protocolStr, "try await self.createBucket(request: request, options: .init())") {
 		t.Errorf("StorageControlProtocol.swift missing default implementation forwarding to options:\n%s", protocolStr)
+	}
+	if !strings.Contains(protocolStr, "try await self.renameFolder(withPolling: withPolling, options: .init())") {
+		t.Errorf("StorageControlProtocol.swift missing LRO default implementation forwarding to options:\n%s", protocolStr)
 	}
 
 	// 2. Verify StorageControlClient.swift in Control/
@@ -295,12 +369,20 @@ func TestGenerateStorage_MultiModel(t *testing.T) {
 		!strings.Contains(clientStr, "private let control: any Clients.StorageControlStub") {
 		t.Errorf("StorageControlClient.swift missing private stub fields:\n%s", clientStr)
 	}
+	if !strings.Contains(clientStr, "let pollingErrorPolicy: any GoogleCloudGax.PollingErrorPolicy") ||
+		!strings.Contains(clientStr, "let pollingBackoffPolicy: any GoogleCloudGax.BackoffPolicy") {
+		t.Errorf("StorageControlClient.swift missing polling policy fields:\n%s", clientStr)
+	}
 	if !strings.Contains(clientStr, "let sharedGrpcClient = try GoogleCloudGaxGRPC._GRPCClient(") ||
 		!strings.Contains(clientStr, `withDefaultEndpoint: "https://storage.googleapis.com"`) {
 		t.Errorf("StorageControlClient.swift missing shared _GRPCClient initialization:\n%s", clientStr)
 	}
 	if !strings.Contains(clientStr, "options.retryPolicy = StorageBaseRetryPolicy.defaultPolicy") {
 		t.Errorf("StorageControlClient.swift missing StorageBaseRetryPolicy default initialization:\n%s", clientStr)
+	}
+	if !strings.Contains(clientStr, "self.pollingErrorPolicy = options.pollingErrorPolicy") ||
+		!strings.Contains(clientStr, "self.pollingBackoffPolicy = options.pollingBackoffPolicy") {
+		t.Errorf("StorageControlClient.swift missing polling policy initialization:\n%s", clientStr)
 	}
 	if !strings.Contains(clientStr, "var storageStub: any Clients.StorageStub = Clients.StorageTransport(sharedGrpcClient)") ||
 		!strings.Contains(clientStr, "var controlStub: any Clients.StorageControlStub = Clients.StorageControlTransport(sharedGrpcClient)") {
@@ -318,6 +400,15 @@ func TestGenerateStorage_MultiModel(t *testing.T) {
 	if !strings.Contains(clientStr, "byItem: ListBucketsRequest, options: GoogleCloudGax.RequestOptions") ||
 		!strings.Contains(clientStr, "return GoogleCloudGax.PaginatedResponseSequence(listRpc: listRpc)") {
 		t.Errorf("StorageControlClient.swift missing paginated sequence helper:\n%s", clientStr)
+	}
+	if !strings.Contains(clientStr, "public func renameFolder(") ||
+		!strings.Contains(clientStr, "withPolling: RenameFolderRequest, options: GoogleCloudGax.RequestOptions") {
+		t.Errorf("StorageControlClient.swift missing LRO helper method:\n%s", clientStr)
+	}
+	if !strings.Contains(clientStr, "let rawOp = try await self.renameFolder(request: withPolling, options: options)") ||
+		!strings.Contains(clientStr, "let op = try await self.getOperation(request: .init().with { $0.name = rawOp.name }, options: options)") ||
+		!strings.Contains(clientStr, "return GoogleCloudGax._PollableOperationImpl(") {
+		t.Errorf("StorageControlClient.swift missing LRO helper implementation:\n%s", clientStr)
 	}
 
 	// 3. Verify Storage+Stub.swift and Storage+Transport.swift generated in Storage/
