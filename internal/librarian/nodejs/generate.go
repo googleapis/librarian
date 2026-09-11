@@ -41,6 +41,11 @@ const (
 	protosPathPrefix          = "protos/"
 )
 
+var (
+	errToolNotInstalled    = errors.New("tool not installed in librarian cache")
+	errPackageNameRequired = errors.New("nodejs.package_name is required; non-cloud libraries must be configured in librarian.yaml or populated during librarian add")
+)
+
 // IsMixedLibrary reports whether the library has handwritten code wrapping
 // generated or librarian-managed code.
 func IsMixedLibrary(lib *config.Library) bool {
@@ -95,11 +100,6 @@ func Generate(ctx context.Context, cfg *config.Config, library *config.Library, 
 
 	return nil
 }
-
-var (
-	errToolNotInstalled    = errors.New("tool not installed in librarian cache")
-	errPackageNameRequired = errors.New("nodejs.package_name is required; non-cloud libraries must be configured in librarian.yaml or populated during librarian add")
-)
 
 func requireCachedTool(toolName string) (string, error) {
 	binDir, err := getBinDir()
