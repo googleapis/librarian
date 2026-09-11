@@ -38,7 +38,7 @@ impl std::convert::From<google_cloud_bigquery_v2::model::Job> for {{Codec.QueryM
         Self{
             {{#Codec.QueryMetadataFields}}
             {{#Job}}
-            {{FieldName}}: resp.{{FieldName}},
+            {{FieldName}}: resp.{{GapicFieldName}},
             {{/Job}}
             {{/Codec.QueryMetadataFields}}
             ..Default::default()
@@ -51,7 +51,7 @@ impl std::convert::From<google_cloud_bigquery_v2::model::QueryResponse> for {{Co
         Self{
             {{#Codec.QueryMetadataFields}}
             {{#QueryResponse}}
-            {{FieldName}}: resp.{{FieldName}},
+            {{FieldName}}: resp.{{GapicFieldName}},
             {{/QueryResponse}}
             {{/Codec.QueryMetadataFields}}
             ..Default::default()
