@@ -239,6 +239,13 @@ func collectProtos(absGoogleapisDir, apiPath string, additionalProtos []string) 
 	if len(protos) == 0 {
 		return nil, fmt.Errorf("no protos found in api %q", apiPath)
 	}
+	for i, proto := range protos {
+		rel, err := filepath.Rel(absGoogleapisDir, proto)
+		if err != nil {
+			return nil, fmt.Errorf("failed to make path %s relative: %w", proto, err)
+		}
+		protos[i] = rel
+	}
 	return append(protos, additionalProtos...), nil
 }
 
