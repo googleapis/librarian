@@ -61,6 +61,9 @@ func Split(ctx context.Context, params SplitParams) (string, error) {
 	}
 
 	dirs := discoverPackageDirs(ctx, gitExe, origin, targetDir)
+	if len(dirs) == 0 {
+		return "", fmt.Errorf("invalid target directory: %s", targetDir)
+	}
 
 	rootFiles := params.RootFiles
 	if rootFiles == nil {
@@ -152,6 +155,9 @@ func splitDirs(ctx context.Context, gitExe, origin string, dirs, rootFiles, root
 			if err == nil && strings.TrimSpace(out) != "" {
 				treeOut = out
 				break
+			}
+			if ctx.Err() != nil {
+				return "", ctx.Err()
 			}
 		}
 		if treeOut == "" {

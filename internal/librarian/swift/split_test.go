@@ -139,11 +139,15 @@ func TestSplitEmptyTargetDir(t *testing.T) {
 	testhelper.RequireCommand(t, "git")
 	setupMonorepoWithRootFiles(t)
 
-	_, err := Split(t.Context(), SplitParams{
-		TargetDir: "",
-	})
-	if err == nil {
-		t.Fatal("expected error for empty target dir, got nil")
+	for _, dir := range []string{"", "."} {
+		t.Run(dir, func(t *testing.T) {
+			_, err := Split(t.Context(), SplitParams{
+				TargetDir: dir,
+			})
+			if err == nil {
+				t.Fatalf("expected error for target dir %q, got nil", dir)
+			}
+		})
 	}
 }
 
