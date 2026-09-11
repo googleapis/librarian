@@ -864,8 +864,12 @@ func TestApplyDefaults_Nodejs(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if got.Nodejs == nil || got.Nodejs.PackageName != "@google-cloud/secretmanager" {
-		t.Errorf("got package name %v, want %q", got.Nodejs, "@google-cloud/secretmanager")
+	if got.Nodejs == nil {
+		t.Error("got.Nodejs is nil")
+		return
+	}
+	if got.Nodejs.PackageName != "@google-cloud/secretmanager" {
+		t.Errorf("got package name %q, want %q", got.Nodejs.PackageName, "@google-cloud/secretmanager")
 	}
 }
 
