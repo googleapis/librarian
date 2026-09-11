@@ -124,9 +124,8 @@ func TestGenerateReadme_Error(t *testing.T) {
 		{
 			name: "output is not a directory",
 			library: &config.Library{
-				Name:   "google-cloud-secretmanager",
-				APIs:   []*config.API{{Path: "google/cloud/secretmanager/v1"}},
-				Nodejs: &config.NodejsPackage{PackageName: "@google-cloud/secretmanager"},
+				Name: "google-cloud-secretmanager",
+				APIs: []*config.API{{Path: "google/cloud/secretmanager/v1"}},
 			},
 			googleapisDir: absGoogleapisDir,
 			output: func(t *testing.T) string {
@@ -142,9 +141,8 @@ func TestGenerateReadme_Error(t *testing.T) {
 		{
 			name: "permission denied creating readme",
 			library: &config.Library{
-				Name:   "google-cloud-secretmanager",
-				APIs:   []*config.API{{Path: "google/cloud/secretmanager/v1"}},
-				Nodejs: &config.NodejsPackage{PackageName: "@google-cloud/secretmanager"},
+				Name: "google-cloud-secretmanager",
+				APIs: []*config.API{{Path: "google/cloud/secretmanager/v1"}},
 			},
 			googleapisDir: absGoogleapisDir,
 			output: func(t *testing.T) string {
