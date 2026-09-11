@@ -31,6 +31,7 @@ import (
 	"github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/filesystem"
+	"github.com/googleapis/librarian/internal/proto"
 	"github.com/googleapis/librarian/internal/serviceconfig"
 	"github.com/googleapis/librarian/internal/sources"
 	"github.com/googleapis/librarian/internal/tool/protoc"
@@ -143,33 +144,15 @@ func generateAPI(ctx context.Context, params generateAPIParams) error {
 	if err := os.MkdirAll(stagingDir, 0o755); err != nil {
 		return err
 	}
-
-	nodejsAPI := resolveNodejsAPI(params.library, params.api)
-
 	absGoogleapisDir, err := filepath.Abs(params.googleapisDir)
 	if err != nil {
 		return fmt.Errorf("failed to resolve googleapis directory path: %w", err)
 	}
-
-	apiDir := filepath.Join(absGoogleapisDir, params.api.Path)
-	protos, err := filepath.Glob(apiDir + "/*.proto")
+	nodejsAPI := resolveNodejsAPI(params.library, params.api)
+	protos, err := collectProtos(absGoogleapisDir, params.api.Path, nodejsAPI.AdditionalProtos)
 	if err != nil {
-		return fmt.Errorf("failed to find protos: %w", err)
+		return err
 	}
-	if len(protos) == 0 {
-		return fmt.Errorf("no protos found in api %q", params.api.Path)
-	}
-	for index := range protos {
-		rel, err := filepath.Rel(absGoogleapisDir, protos[index])
-		if err != nil {
-			return fmt.Errorf("failed to make path %s relative: %w", protos[index], err)
-		}
-		protos[index] = rel
-	}
-
-	// Add additional protos from configuration.
-	protos = append(protos, nodejsAPI.AdditionalProtos...)
-
 	args, err := buildGeneratorArgs(buildGeneratorArgsParams{
 		generatorPath: generatorPath,
 		protoc:        params.protoc,
@@ -245,6 +228,18 @@ type buildGeneratorArgsParams struct {
 	googleapisDir string
 	stagingDir    string
 	nodejsAPI     *config.NodejsAPI
+}
+
+func collectProtos(absGoogleapisDir, apiPath string, additionalProtos []string) ([]string, error) {
+	apiDir := filepath.Join(absGoogleapisDir, apiPath)
+	protos, err := proto.Gather(apiDir, apiPath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to find protos: %w", err)
+	}
+	if len(protos) == 0 {
+		return nil, fmt.Errorf("no protos found in api %q", apiPath)
+	}
+	return append(protos, additionalProtos...), nil
 }
 
 // buildGeneratorArgs constructs the gapic-generator-typescript arguments,
