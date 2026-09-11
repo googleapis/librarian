@@ -92,11 +92,11 @@ extension Clients {
       req.addHeader(name: GoogleCloudGax._HeaderNames.apiClient, value: Clients.clientHeader)
       {{#Codec.HasBody}}
       {{#Codec.IsBodyWildcard}}
-      req.setBody(data: try JSONEncoder().encode(request), ofContentType: "application/json")
+      try req.setBody(json: request)
       {{/Codec.IsBodyWildcard}}
       {{^Codec.IsBodyWildcard}}
       if let body = request.{{Codec.BodyField}} {
-        req.setBody(data: try JSONEncoder().encode(body), ofContentType: "application/json")
+        try req.setBody(json: body)
       }
       {{/Codec.IsBodyWildcard}}
       {{/Codec.HasBody}}
