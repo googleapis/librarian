@@ -848,6 +848,11 @@ type NodejsAPI struct {
 	// This is typically false. Used for the GCE (compute) client.
 	DIREGAPIC bool `yaml:"diregapic,omitempty"`
 
+	// ExcludeProtos is a list of proto files to exclude from generation.
+	// It expects the full path starting from the root of the googleapis
+	// directory (e.g., "google/cloud/aiplatform/v1/schema/io_format.proto").
+	ExcludeProtos []string `yaml:"exclude_protos,omitempty"`
+
 	// Mixins controls mixin behavior for this API (e.g., "none" to disable).
 	// When set, this overrides the package-level mixins setting.
 	Mixins string `yaml:"mixins,omitempty"`
