@@ -178,7 +178,7 @@ func TestGenerateService_Delegation(t *testing.T) {
 		t.Fatal(err)
 	}
 	wantNewRequest := "var req = try await self.inner.newRequest(path: path, query: query, options: options)"
-	if !strings.Contains(string(transportContent), wantNewRequest) {
+	if !bytes.Contains(transportContent, []byte(wantNewRequest)) {
 		t.Errorf("expected %q in IAM+Transport.swift, got:\n%s", wantNewRequest, string(transportContent))
 	}
 }
