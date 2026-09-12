@@ -104,7 +104,7 @@ func TestCleanLibraries(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if err := cleanLibraries(cfg.Language, []*config.Library{library}); err != nil {
+	if err := cleanLibraries(t.Context(), cfg.Language, []*config.Library{library}); err != nil {
 		t.Fatal(err)
 	}
 	_, err := os.Stat(filepath.Join(library.Output, "README.md"))
