@@ -44,6 +44,7 @@ const (
 
 var (
 	errToolNotInstalled = errors.New("tool not installed in librarian cache")
+	errProtoNotFound    = errors.New("no proto is found in api")
 )
 
 type buildGeneratorArgsParams struct {
@@ -232,7 +233,7 @@ func collectProtos(absGoogleapisDir string, nodejsAPI *config.NodejsAPI) ([]stri
 		return nil, fmt.Errorf("failed to find protos: %w", err)
 	}
 	if len(protos) == 0 {
-		return nil, fmt.Errorf("no protos found in api %q", nodejsAPI.Path)
+		return nil, fmt.Errorf("%w: %s", errProtoNotFound, nodejsAPI.Path)
 	}
 	for index := range protos {
 		rel, err := filepath.Rel(absGoogleapisDir, protos[index])
