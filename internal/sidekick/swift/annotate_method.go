@@ -16,26 +16,29 @@ package swift
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/googleapis/librarian/internal/sidekick/api"
 	"github.com/googleapis/librarian/internal/sidekick/language"
 )
 
 type methodAnnotations struct {
-	Name           string
-	DocLines       []string
-	PathVariables  []*pathVariable
-	RoutingParams  []*routingParam
-	PathExpression string
-	HTTPMethod     string
-	HasBody        bool
-	IsBodyWildcard bool
-	BodyField      string
-	QueryParams    []*api.Field
-	Pagination     *paginationAnnotations
-	LRO            *lroAnnotations
-	DiscoveryLRO   *discoveryLroAnnotations
-	ReturnType     string
+	Name                string
+	DocLines            []string
+	PathVariables       []*pathVariable
+	PathBindings        []*pathBindingAnnotations
+	HasMultipleBindings bool
+	RoutingParams       []*routingParam
+	PathExpression      string
+	HTTPMethod          string
+	HasBody             bool
+	IsBodyWildcard      bool
+	BodyField           string
+	QueryParams         []*api.Field
+	Pagination          *paginationAnnotations
+	LRO                 *lroAnnotations
+	DiscoveryLRO        *discoveryLroAnnotations
+	ReturnType          string
 
 	// ResponseEncoding sets the `$alt` query parameter value.
 	//
@@ -85,10 +88,30 @@ type discoveryLroAnnotations struct {
 // And of course all of these can be combined, such as nested fields that point to enums or nested
 // fields that point to nested fields.
 type pathVariable struct {
-	Name       string
-	Expression string
-	Test       string
-	FieldPath  string
+	Name             string
+	Expression       string
+	Test             string
+	FieldPath        string
+	MatchingSegments []string
+	TemplateString   string
+}
+
+func (p *pathVariable) HasMatchingSegments() bool {
+	return len(p.MatchingSegments) > 0
+}
+
+func (p *pathVariable) MatchingSegmentsExpression() string {
+	return "[" + strings.Join(p.MatchingSegments, ", ") + "]"
+}
+
+type pathBindingAnnotations struct {
+	HTTPMethod       string
+	PathExpression   string
+	PathVariables    []*pathVariable
+	QueryParams      []*api.Field
+	HasQueryParams   bool
+	HasPathVariables bool
+	ResponseEncoding string
 }
 
 // HasQueryParams returns true if the method's default binding has query parameters
@@ -159,21 +182,35 @@ func (c *codec) annotateMethod(method *api.Method, modelAnn *modelAnnotations) e
 	//   queryParams, and pathVariables as before.
 	// - Pure gRPC methods (without HTTP annotations): Safely bypass the HTTP
 	//   extraction without crashing, leaving those fields as their default zero values.
+	var pathBindings []*pathBindingAnnotations
 	if method.PathInfo != nil && len(method.PathInfo.Bindings) > 0 {
-		binding := method.PathInfo.Bindings[0]
 		hasBody = method.PathInfo.BodyFieldPath != ""
 		isBodyWildcard = method.PathInfo.BodyFieldPath == "*"
 		if hasBody && !isBodyWildcard {
 			bodyField = camelCase(method.PathInfo.BodyFieldPath)
 		}
-		var err error
-		pathVariables, err = c.pathVariables(method.InputType, binding.PathTemplate)
-		if err != nil {
-			return err
+		for _, binding := range method.PathInfo.Bindings {
+			pVars, err := c.pathVariables(method.InputType, binding.PathTemplate)
+			if err != nil {
+				return err
+			}
+			pExpr := pathExpression(binding.PathTemplate)
+			qParams := language.QueryParams(method, binding)
+			pathBindings = append(pathBindings, &pathBindingAnnotations{
+				HTTPMethod:       binding.Verb,
+				PathExpression:   pExpr,
+				PathVariables:    pVars,
+				QueryParams:      qParams,
+				HasQueryParams:   len(qParams) > 0,
+				HasPathVariables: len(pVars) > 0,
+				ResponseEncoding: c.ResponseEncoding,
+			})
 		}
-		pathExpressionStr = pathExpression(binding.PathTemplate)
-		httpMethod = binding.Verb
-		queryParams = language.QueryParams(method, binding)
+		primary := pathBindings[0]
+		pathVariables = primary.PathVariables
+		pathExpressionStr = primary.PathExpression
+		httpMethod = primary.HTTPMethod
+		queryParams = primary.QueryParams
 	}
 
 	var pagination *paginationAnnotations
@@ -232,21 +269,23 @@ func (c *codec) annotateMethod(method *api.Method, modelAnn *modelAnnotations) e
 		}
 	}
 	method.Codec = &methodAnnotations{
-		Name:             camelCase(method.Name),
-		DocLines:         docLines,
-		PathExpression:   pathExpressionStr,
-		PathVariables:    pathVariables,
-		RoutingParams:    routingParams,
-		HTTPMethod:       httpMethod,
-		HasBody:          hasBody,
-		IsBodyWildcard:   isBodyWildcard,
-		BodyField:        bodyField,
-		QueryParams:      queryParams,
-		Pagination:       pagination,
-		LRO:              lro,
-		ReturnType:       returnType,
-		DiscoveryLRO:     discoveryLRO,
-		ResponseEncoding: c.ResponseEncoding,
+		Name:                camelCase(method.Name),
+		DocLines:            docLines,
+		PathExpression:      pathExpressionStr,
+		PathVariables:       pathVariables,
+		PathBindings:        pathBindings,
+		HasMultipleBindings: len(pathBindings) > 1,
+		RoutingParams:       routingParams,
+		HTTPMethod:          httpMethod,
+		HasBody:             hasBody,
+		IsBodyWildcard:      isBodyWildcard,
+		BodyField:           bodyField,
+		QueryParams:         queryParams,
+		Pagination:          pagination,
+		LRO:                 lro,
+		ReturnType:          returnType,
+		DiscoveryLRO:        discoveryLRO,
+		ResponseEncoding:    c.ResponseEncoding,
 	}
 	if method.SampleInfo != nil {
 		c.annotateSampleInfo(method)

@@ -61,11 +61,13 @@ func (c *codec) newPathVariable(message *api.Message, variable *api.PathVariable
 	var expression strings.Builder
 	optional := false
 	current := message
+	var lastField *api.Field
 	for _, v := range variable.FieldPath {
 		field, err := lookupField(current, v)
 		if err != nil {
 			return nil, err
 		}
+		lastField = field
 		expr, err := c.fieldPathParameterExpression(optional, field)
 		if err != nil {
 			return nil, err
@@ -90,11 +92,21 @@ func (c *codec) newPathVariable(message *api.Message, variable *api.PathVariable
 			test = ""
 		}
 	}
+	var matchingSegments []string
+	var templateString string
+	if lastField != nil && lastField.Typez == api.TypezString {
+		matchingSegments = annotateSegments(variable.Segments, false, false)
+		if len(variable.Segments) > 0 {
+			templateString = strings.Join(variable.Segments, "/")
+		}
+	}
 	pathVar := &pathVariable{
-		Name:       name,
-		Expression: expression.String(),
-		Test:       test,
-		FieldPath:  strings.Join(variable.FieldPath, "."),
+		Name:             name,
+		Expression:       expression.String(),
+		Test:             test,
+		FieldPath:        strings.Join(variable.FieldPath, "."),
+		MatchingSegments: matchingSegments,
+		TemplateString:   templateString,
 	}
 	return pathVar, nil
 }

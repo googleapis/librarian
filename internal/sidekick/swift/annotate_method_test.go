@@ -166,7 +166,7 @@ func TestAnnotateMethod(t *testing.T) {
 				t.Fatal(err)
 			}
 			got := test.method.Codec.(*methodAnnotations)
-			if diff := cmp.Diff(test.want, got); diff != "" {
+			if diff := cmp.Diff(test.want, got, cmpopts.IgnoreFields(methodAnnotations{}, "PathBindings", "HasMultipleBindings")); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 			if !got.PlainRPC() {
@@ -216,7 +216,7 @@ func TestAnnotateMethod_EscapedName(t *testing.T) {
 				ResponseEncoding: "json;enum-encoding=int",
 			}
 
-			if diff := cmp.Diff(want, method.Codec); diff != "" {
+			if diff := cmp.Diff(want, method.Codec, cmpopts.IgnoreFields(methodAnnotations{}, "PathBindings", "HasMultipleBindings")); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
@@ -350,7 +350,7 @@ func TestAnnotateMethod_Pagination(t *testing.T) {
 		ReturnType:       "Test.ListResponse",
 		ResponseEncoding: "json;enum-encoding=int",
 	}
-	if diff := cmp.Diff(wantMethod, gotMethod); diff != "" {
+	if diff := cmp.Diff(wantMethod, gotMethod, cmpopts.IgnoreFields(methodAnnotations{}, "PathBindings", "HasMultipleBindings")); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 	if gotMethod.PlainRPC() {
@@ -463,7 +463,7 @@ func TestAnnotateMethod_LRO(t *testing.T) {
 		ReturnType:       "Test.Operation",
 		ResponseEncoding: "json;enum-encoding=int",
 	}
-	if diff := cmp.Diff(wantMethod, gotMethod); diff != "" {
+	if diff := cmp.Diff(wantMethod, gotMethod, cmpopts.IgnoreFields(methodAnnotations{}, "PathBindings", "HasMultipleBindings")); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 	if gotMethod.PlainRPC() {
@@ -535,10 +535,90 @@ func TestAnnotateMethod_LRO_Empty(t *testing.T) {
 		ReturnType:       "Test.Operation",
 		ResponseEncoding: "json;enum-encoding=int",
 	}
-	if diff := cmp.Diff(wantMethod, gotMethod); diff != "" {
+	if diff := cmp.Diff(wantMethod, gotMethod, cmpopts.IgnoreFields(methodAnnotations{}, "PathBindings", "HasMultipleBindings")); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 	if gotMethod.PlainRPC() {
 		t.Errorf("gotMethod.PlainRPC() == false, want true\ngotMethod=%+v", gotMethod)
+	}
+}
+
+func TestAnnotateMethod_MultipleBindings(t *testing.T) {
+	nameField := &api.Field{Name: "name", ID: ".test.Request.name", Typez: api.TypezString}
+	projectField := &api.Field{Name: "project", ID: ".test.Request.project", Typez: api.TypezString}
+	inputType := &api.Message{
+		Name:    "Request",
+		ID:      ".test.Request",
+		Package: "test",
+		Fields:  []*api.Field{nameField, projectField},
+	}
+	outputType := &api.Message{
+		Name:    "Response",
+		ID:      ".test.Response",
+		Package: "test",
+	}
+
+	method := &api.Method{
+		Name:         "GetResource",
+		ID:           ".test.TestService.GetResource",
+		InputType:    inputType,
+		InputTypeID:  inputType.ID,
+		OutputType:   outputType,
+		OutputTypeID: outputType.ID,
+		PathInfo: &api.PathInfo{
+			Bindings: []*api.PathBinding{
+				{
+					Verb: "GET",
+					PathTemplate: (&api.PathTemplate{}).
+						WithLiteral("v1").
+						WithVariableNamed("name"),
+				},
+				{
+					Verb: "POST",
+					PathTemplate: (&api.PathTemplate{}).
+						WithLiteral("v1").
+						WithVariableNamed("project").
+						WithLiteral("resources"),
+				},
+			},
+		},
+	}
+	service := &api.Service{
+		Name:    "TestService",
+		ID:      ".test.TestService",
+		Package: "test",
+		Methods: []*api.Method{method},
+	}
+	model := api.NewTestAPI([]*api.Message{inputType, outputType}, nil, []*api.Service{service})
+	if err := api.CrossReference(model); err != nil {
+		t.Fatal(err)
+	}
+	codec := newTestCodec(t, model, nil)
+	if err := codec.annotateModel(); err != nil {
+		t.Fatal(err)
+	}
+	got := method.Codec.(*methodAnnotations)
+	if !got.HasMultipleBindings {
+		t.Errorf("got.HasMultipleBindings = false, want true")
+	}
+	if len(got.PathBindings) != 2 {
+		t.Fatalf("len(got.PathBindings) = %d, want 2", len(got.PathBindings))
+	}
+	if got.HTTPMethod != "GET" || got.PathExpression != "/v1/\\(pathVariable0)" {
+		t.Errorf("primary binding mismatch: got method %s, path %s", got.HTTPMethod, got.PathExpression)
+	}
+	b0 := got.PathBindings[0]
+	if b0.HTTPMethod != "GET" || b0.PathExpression != "/v1/\\(pathVariable0)" {
+		t.Errorf("b0 mismatch: got method %s, path %s", b0.HTTPMethod, b0.PathExpression)
+	}
+	if len(b0.PathVariables) != 1 || b0.PathVariables[0].FieldPath != "name" {
+		t.Errorf("b0.PathVariables mismatch: %+v", b0.PathVariables)
+	}
+	b1 := got.PathBindings[1]
+	if b1.HTTPMethod != "POST" || b1.PathExpression != "/v1/\\(pathVariable0)/resources" {
+		t.Errorf("b1 mismatch: got method %s, path %s", b1.HTTPMethod, b1.PathExpression)
+	}
+	if len(b1.PathVariables) != 1 || b1.PathVariables[0].FieldPath != "project" {
+		t.Errorf("b1.PathVariables mismatch: %+v", b1.PathVariables)
 	}
 }
