@@ -1777,6 +1777,50 @@ func TestCollectProtos(t *testing.T) {
 	}
 }
 
+func TestCollectProtos_Error(t *testing.T) {
+	t.Parallel()
+	for _, test := range []struct {
+		name       string
+		setupFiles []string
+		nodejsAPI  *config.NodejsAPI
+		wantErr    error
+	}{
+		{
+			name: "directory not found",
+			nodejsAPI: &config.NodejsAPI{
+				Path: "google/cloud/nonexistent/v1",
+			},
+			wantErr: fs.ErrNotExist,
+		},
+		{
+			name:       "no proto files found",
+			setupFiles: []string{"google/cloud/secretmanager/v1/BUILD.bazel"},
+			nodejsAPI: &config.NodejsAPI{
+				Path: "google/cloud/secretmanager/v1",
+			},
+			wantErr: errProtoNotFound,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			googleapisDir := t.TempDir()
+			for _, file := range test.setupFiles {
+				path := filepath.Join(googleapisDir, file)
+				if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+					t.Fatal(err)
+				}
+				if err := os.WriteFile(path, []byte(""), 0o644); err != nil {
+					t.Fatal(err)
+				}
+			}
+			_, err := collectProtos(googleapisDir, test.nodejsAPI)
+			if !errors.Is(err, test.wantErr) {
+				t.Errorf("collectProtos() error = %v, wantErr = %v", err, test.wantErr)
+			}
+		})
+	}
+}
+
 func TestInjectV1SmallExports(t *testing.T) {
 	for _, test := range []struct {
 		name    string
