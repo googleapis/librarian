@@ -55,10 +55,13 @@ func TestGenerateLandingPage(t *testing.T) {
 		if err := Generate(t.Context(), model, outDir, library, nil); err != nil {
 			t.Fatal(err)
 		}
-		landing := filepath.Join(outDir, "Sources", "Test", "Test.docc", "Test.md")
+		landing := filepath.Join(outDir, "Sources", "Test", "Test.docc", "Index.md")
 		contentBytes, err := os.ReadFile(landing)
 		if err != nil {
 			t.Fatal(err)
+		}
+		if _, err := os.Stat(filepath.Join(outDir, "Sources", "Test", "Test.docc", "Test.md")); !os.IsNotExist(err) {
+			t.Errorf("expected Test.md to not exist, got %v", err)
 		}
 		content := string(contentBytes)
 

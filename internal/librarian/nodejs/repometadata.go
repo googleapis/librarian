@@ -27,7 +27,7 @@ func generateRepoMetadata(cfg *config.Config, library *config.Library, googleapi
 	if err != nil {
 		return nil, err
 	}
-	metadata.DistributionName = library.Nodejs.PackageName
+	metadata.DistributionName = derivePackageName(library)
 	metadata.LibraryType = repometadata.GAPICAutoLibraryType
 	metadata.DefaultVersion = resolveDefaultVersion(library)
 

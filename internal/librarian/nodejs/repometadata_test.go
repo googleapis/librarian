@@ -99,7 +99,7 @@ func TestGenerateRepoMetadata(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got, err := generateRepoMetadata(cfg, Fill(test.library), absGoogleapisDir)
+			got, err := generateRepoMetadata(cfg, test.library, absGoogleapisDir)
 			if err != nil {
 				t.Fatal(err)
 			}
