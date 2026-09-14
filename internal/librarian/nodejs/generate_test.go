@@ -1713,6 +1713,20 @@ func TestCollectProtos(t *testing.T) {
 			},
 		},
 		{
+			name: "collects nested protos from subdirectories",
+			setupFiles: []string{
+				"google/cloud/aiplatform/v1/schema/io_format.proto",
+				"google/cloud/aiplatform/v1/service.proto",
+			},
+			nodejsAPI: &config.NodejsAPI{
+				Path: "google/cloud/aiplatform/v1",
+			},
+			want: []string{
+				"google/cloud/aiplatform/v1/schema/io_format.proto",
+				"google/cloud/aiplatform/v1/service.proto",
+			},
+		},
+		{
 			name: "appends additional protos",
 			setupFiles: []string{
 				"google/cloud/secretmanager/v1/service.proto",
