@@ -155,7 +155,7 @@ func TestGenerateOneOf(t *testing.T) {
     static let regularInt32 = CodingKeys(stringValue: "regularInt32")
     static let regularString = CodingKeys(stringValue: "regularStringSpecial")
 
-    static let knownKeys: Set<Swift.String> = [
+    static let _knownKeys: Set<Swift.String> = [
       "stringField",
       "messageField",
       "regularInt32",
@@ -186,7 +186,7 @@ func TestGenerateOneOf(t *testing.T) {
       try choiceCheckAndSet(.messageField(messageField))
     }
     self.choice = choice
-    for key in container.allKeys where !CodingKeys.knownKeys.contains(key.stringValue) {
+    for key in container.allKeys where !CodingKeys._knownKeys.contains(key.stringValue) {
       self._unknownFields.json[key.stringValue] = try container.decode(
         GoogleCloudWKT.Value.self, forKey: key)
     }
@@ -335,7 +335,7 @@ func TestGenerateOneOfWithKeyword(t *testing.T) {
     static let query = CodingKeys(stringValue: "query")
     static let cookie = CodingKeys(stringValue: "cookie")
 
-    static let knownKeys: Set<Swift.String> = [
+    static let _knownKeys: Set<Swift.String> = [
       "header",
       "query",
       "cookie",
@@ -362,7 +362,7 @@ func TestGenerateOneOfWithKeyword(t *testing.T) {
       try inCheckAndSet(.cookie(cookie))
     }
     self.` + "`in` = `in`" + `
-    for key in container.allKeys where !CodingKeys.knownKeys.contains(key.stringValue) {
+    for key in container.allKeys where !CodingKeys._knownKeys.contains(key.stringValue) {
       self._unknownFields.json[key.stringValue] = try container.decode(
         GoogleCloudWKT.Value.self, forKey: key)
     }

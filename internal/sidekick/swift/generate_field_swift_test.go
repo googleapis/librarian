@@ -81,7 +81,7 @@ func TestGenerateField_InitFromDecoder(t *testing.T) {
       self.normalField = value
     }
     self.optionalField = try container.decodeIfPresent(Swift.String.self, forKey: .optionalField)
-    for key in container.allKeys where !CodingKeys.knownKeys.contains(key.stringValue) {
+    for key in container.allKeys where !CodingKeys._knownKeys.contains(key.stringValue) {
       self._unknownFields.json[key.stringValue] = try container.decode(
         GoogleCloudWKT.Value.self, forKey: key)
     }

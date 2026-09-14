@@ -92,7 +92,7 @@ public struct {{Codec.Name}}: Codable, Equatable, {{Codec.Model.WktPackage}}._An
     static let {{Codec.Name}} = CodingKeys(stringValue: "{{JSONName}}")
     {{/Fields}}
 
-    static let knownKeys: Set<Swift.String> = [
+    static let _knownKeys: Set<Swift.String> = [
       {{#Fields}}
       "{{JSONName}}",
       {{/Fields}}
@@ -100,7 +100,7 @@ public struct {{Codec.Name}}: Codable, Equatable, {{Codec.Model.WktPackage}}._An
     {{/HasFields}}
     {{^HasFields}}
 
-    static let knownKeys: Set<Swift.String> = []
+    static let _knownKeys: Set<Swift.String> = []
     {{/HasFields}}
   }
 
@@ -132,7 +132,7 @@ public struct {{Codec.Name}}: Codable, Equatable, {{Codec.Model.WktPackage}}._An
     {{/Fields}}
     self.{{Codec.PropertyName}} = {{Codec.PropertyName}}
     {{/OneOfs}}
-    for key in container.allKeys where !CodingKeys.knownKeys.contains(key.stringValue) {
+    for key in container.allKeys where !CodingKeys._knownKeys.contains(key.stringValue) {
       self._unknownFields.json[key.stringValue] = try container.decode(
         {{Codec.Model.WktPackage}}.Value.self, forKey: key)
     }
