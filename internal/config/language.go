@@ -122,14 +122,6 @@ type RustDefault struct {
 	// ResourceNameHeuristic indicates whether to apply heuristics to identify and generate resource names.
 	ResourceNameHeuristic *bool `yaml:"resource_name_heuristic,omitempty"`
 
-	// IncludeBidiStreamingMethods indicates whether to include gRPC bi-directional streaming
-	// methods.
-	IncludeBidiStreamingMethods *bool `yaml:"include_bidi_streaming_methods,omitempty"`
-
-	// IncludeServerStreamingMethods indicates whether to include gRPC server-side streaming
-	// methods.
-	IncludeServerStreamingMethods *bool `yaml:"include_server_streaming_methods,omitempty"`
-
 	// AllowGrpcAnyFields is a list of protobuf field IDs with google.protobuf.Any
 	// permitted in gRPC/streaming RPCs (their fields will be dropped in prost conversion).
 	AllowGrpcAnyFields []string `yaml:"allow_grpc_any_fields,omitempty"`
@@ -200,14 +192,6 @@ type RustModule struct {
 	// IncludeStreamingMethods indicates whether to include gRPC streaming
 	// methods.
 	IncludeStreamingMethods bool `yaml:"include_streaming_methods,omitempty"`
-
-	// IncludeBidiStreamingMethods indicates whether to include gRPC bi-directional streaming
-	// methods.
-	IncludeBidiStreamingMethods *bool `yaml:"include_bidi_streaming_methods,omitempty"`
-
-	// IncludeServerStreamingMethods indicates whether to include gRPC server-side streaming
-	// methods.
-	IncludeServerStreamingMethods *bool `yaml:"include_server_streaming_methods,omitempty"`
 
 	// InternalBuilders indicates whether generated builders should be internal to the crate.
 	InternalBuilders bool `yaml:"internal_builders,omitempty"`

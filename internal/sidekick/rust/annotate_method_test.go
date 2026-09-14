@@ -647,6 +647,7 @@ func TestMethodUsesGrpc(t *testing.T) {
 	unaryMethod := api.NewTestMethod("Unary").WithInput(msg).WithOutput(msg).WithPathTemplate(&api.PathTemplate{})
 	bidiMethod := api.NewTestMethod("Bidi").WithInput(msg).WithOutput(msg).WithBidiStreaming()
 	serverMethod := api.NewTestMethod("Server").WithInput(msg).WithOutput(msg).WithServerSideStreaming()
+	clientMethod := api.NewTestMethod("Client").WithInput(msg).WithOutput(msg).WithClientSideStreaming()
 
 	lroMethod := api.NewTestMethod("Lro").WithInput(msg).WithOutput(msg).WithOperationInfo(&api.OperationInfo{ResponseTypeID: "test.v1.Message", MetadataTypeID: "test.v1.Message"})
 
@@ -664,18 +665,28 @@ func TestMethodUsesGrpc(t *testing.T) {
 			want:    false,
 		},
 		{
-			name:   "bidi streaming enabled",
-			method: bidiMethod,
-			options: map[string]string{
-				"include-bidi-streaming-methods": "true",
-			},
-			want: true,
+			name:    "bidi streaming by default",
+			method:  bidiMethod,
+			options: map[string]string{},
+			want:    true,
 		},
 		{
-			name:   "server streaming enabled",
-			method: serverMethod,
+			name:    "server streaming by default",
+			method:  serverMethod,
+			options: map[string]string{},
+			want:    true,
+		},
+		{
+			name:    "client streaming not included by default",
+			method:  clientMethod,
+			options: map[string]string{},
+			want:    false,
+		},
+		{
+			name:   "client streaming with include-streaming-methods",
+			method: clientMethod,
 			options: map[string]string{
-				"include-server-streaming-methods": "true",
+				"include-streaming-methods": "true",
 			},
 			want: true,
 		},
@@ -683,10 +694,8 @@ func TestMethodUsesGrpc(t *testing.T) {
 			name:             "template without grpc ignores streaming",
 			method:           bidiMethod,
 			templateOverride: "templates/http-client",
-			options: map[string]string{
-				"include-bidi-streaming-methods": "true",
-			},
-			want: false,
+			options:          map[string]string{},
+			want:             false,
 		},
 		{
 			name:   "LRO method defaults to HTTP on default template with default_transport grpc",

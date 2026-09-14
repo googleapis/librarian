@@ -247,9 +247,8 @@ func TestUsedByStreamingWithStreaming(t *testing.T) {
 	}
 	model := api.NewTestAPI([]*api.Message{}, []*api.Enum{}, []*api.Service{service})
 	c, err := newCodec(libconfig.SpecProtobuf, map[string]string{
-		"include-bidi-streaming-methods": "true",
-		"package:location":               "package=gcp-sdk-location,source=google.cloud.location",
-		"package:prost":                  "used-if=streaming,package=prost",
+		"package:location": "package=gcp-sdk-location,source=google.cloud.location",
+		"package:prost":    "used-if=streaming,package=prost",
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -284,9 +283,8 @@ func TestUsedByStreamingWithoutStreaming(t *testing.T) {
 	}
 	model := api.NewTestAPI([]*api.Message{}, []*api.Enum{}, []*api.Service{service})
 	c, err := newCodec(libconfig.SpecProtobuf, map[string]string{
-		"include-bidi-streaming-methods": "true",
-		"package:location":               "package=gcp-sdk-location,source=google.cloud.location",
-		"package:prost":                  "used-if=streaming,package=prost",
+		"package:location": "package=gcp-sdk-location,source=google.cloud.location",
+		"package:prost":    "used-if=streaming,package=prost",
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -323,9 +321,8 @@ func TestUsedByStreamingServerStreamingOnly(t *testing.T) {
 	}
 	model := api.NewTestAPI([]*api.Message{}, []*api.Enum{}, []*api.Service{service})
 	c, err := newCodec(libconfig.SpecProtobuf, map[string]string{
-		"include-bidi-streaming-methods": "true",
-		"package:location":               "package=gcp-sdk-location,source=google.cloud.location",
-		"package:prost":                  "used-if=streaming,package=prost",
+		"package:location": "package=gcp-sdk-location,source=google.cloud.location",
+		"package:prost":    "used-if=streaming,package=prost",
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -362,9 +359,9 @@ func TestUsedByStreamingBidiDisabled(t *testing.T) {
 	}
 	model := api.NewTestAPI([]*api.Message{}, []*api.Enum{}, []*api.Service{service})
 	c, err := newCodec(libconfig.SpecProtobuf, map[string]string{
-		"include-bidi-streaming-methods": "false",
-		"package:location":               "package=gcp-sdk-location,source=google.cloud.location",
-		"package:prost":                  "used-if=streaming,package=prost",
+		"template-override": "templates/http-client",
+		"package:location":  "package=gcp-sdk-location,source=google.cloud.location",
+		"package:prost":     "used-if=streaming,package=prost",
 	})
 	if err != nil {
 		t.Fatal(err)

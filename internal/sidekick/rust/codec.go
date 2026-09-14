@@ -133,18 +133,6 @@ func newCodec(specificationFormat string, options map[string]string) (*codec, er
 				return nil, fmt.Errorf("cannot convert `include-streaming-methods` value %q to boolean: %w", definition, err)
 			}
 			codec.includeStreamingMethods = value
-		case key == "include-bidi-streaming-methods":
-			value, err := strconv.ParseBool(definition)
-			if err != nil {
-				return nil, fmt.Errorf("cannot convert `include-bidi-streaming-methods` value %q to boolean: %w", definition, err)
-			}
-			codec.includeBidiStreamingMethods = value
-		case key == "include-server-streaming-methods":
-			value, err := strconv.ParseBool(definition)
-			if err != nil {
-				return nil, fmt.Errorf("cannot convert `include-server-streaming-methods` value %q to boolean: %w", definition, err)
-			}
-			codec.includeServerStreamingMethods = value
 		case key == "per-service-features":
 			value, err := strconv.ParseBool(definition)
 			if err != nil {
@@ -338,10 +326,6 @@ type codec struct {
 	idempotencyHook string
 	// If true, this includes gRPC streaming methods.
 	includeStreamingMethods bool
-	// If true, this includes gRPC bi-directional streaming methods.
-	includeBidiStreamingMethods bool
-	// If true, this includes gRPC server-side streaming methods.
-	includeServerStreamingMethods bool
 	// If true, google.rpc.Status conversion is generated in convert.rs.
 	includeRpcStatusConversion bool
 	// If true, the generator will produce per-client features.
@@ -1635,13 +1619,15 @@ func (c *codec) generateMethod(m *api.Method) bool {
 	// TODO(#499) - switch to explicitly excluding such functions. Easier to
 	//     find them and fix them that way.
 	if m.ClientSideStreaming || m.ServerSideStreaming {
-		if m.ClientSideStreaming && m.ServerSideStreaming && c.includeBidiStreamingMethods {
+		if m.ClientSideStreaming && m.ServerSideStreaming {
 			return true
 		}
-		if !m.ClientSideStreaming && m.ServerSideStreaming && c.includeServerStreamingMethods {
+		if !m.ClientSideStreaming && m.ServerSideStreaming {
 			return true
 		}
-		return c.includeStreamingMethods
+		if m.ClientSideStreaming && !m.ServerSideStreaming {
+			return c.includeStreamingMethods || c.includeGrpcOnlyMethods
+		}
 	}
 	if c.includeGrpcOnlyMethods || c.defaultTransport == "grpc" {
 		return true
@@ -1657,17 +1643,11 @@ func (c *codec) templateSupportsGrpc() bool {
 }
 
 func (c *codec) hasBidiStreaming(model *api.API) bool {
-	if !c.templateSupportsGrpc() || !c.includeBidiStreamingMethods {
-		return false
-	}
-	return slices.ContainsFunc(model.Services, (*api.Service).HasBidiStreaming)
+	return c.templateSupportsGrpc() && slices.ContainsFunc(model.Services, (*api.Service).HasBidiStreaming)
 }
 
 func (c *codec) hasServerStreaming(model *api.API) bool {
-	if !c.templateSupportsGrpc() || !c.includeServerStreamingMethods {
-		return false
-	}
-	return slices.ContainsFunc(model.Services, (*api.Service).HasServerSideStreaming)
+	return c.templateSupportsGrpc() && slices.ContainsFunc(model.Services, (*api.Service).HasServerSideStreaming)
 }
 
 func (c *codec) hasStreaming(model *api.API) bool {

@@ -570,8 +570,6 @@ This document describes the schema for the librarian.yaml.
 | `detailed_tracing_attributes` | bool (optional) | Indicates whether to include detailed tracing attributes. |
 | `lro_stub_options` | bool (optional) | Indicates whether to include LRO poller options in generated stub traits. |
 | `resource_name_heuristic` | bool (optional) | Indicates whether to apply heuristics to identify and generate resource names. |
-| `include_bidi_streaming_methods` | bool (optional) | Indicates whether to include gRPC bi-directional streaming methods. |
-| `include_server_streaming_methods` | bool (optional) | Indicates whether to include gRPC server-side streaming methods. |
 | `allow_grpc_any_fields` | list of string | Is a list of protobuf field IDs with google.protobuf.Any permitted in gRPC/streaming RPCs (their fields will be dropped in prost conversion). |
 | `allow_streaming_any_types` | list of string | Is deprecated: use allow_grpc_any_fields instead. |
 | `grpc_client` | string | Is the Rust type used for the inner gRPC client in generated transports. Defaults to "gaxi::grpc::Client". |
@@ -604,8 +602,6 @@ This document describes the schema for the librarian.yaml.
 | `idempotency_hook` | string | Configures an opt-in method on the request struct to resolve and transform idempotency request options before dispatch. |
 | `include_list` | yaml.StringSlice | Is a list of proto files to include (e.g., "date.proto", "expr.proto"). |
 | `include_streaming_methods` | bool | Indicates whether to include gRPC streaming methods. |
-| `include_bidi_streaming_methods` | bool (optional) | Indicates whether to include gRPC bi-directional streaming methods. |
-| `include_server_streaming_methods` | bool (optional) | Indicates whether to include gRPC server-side streaming methods. |
 | `internal_builders` | bool | Indicates whether generated builders should be internal to the crate. |
 | `module_path` | string | Is the Rust module path for converters (e.g., "crate::generated::gapic::model"). |
 | `module_roots` | map[string]string |  |
