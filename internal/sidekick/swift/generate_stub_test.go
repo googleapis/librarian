@@ -571,8 +571,8 @@ func TestGenerateStub_MultipleBindings(t *testing.T) {
 	}
 	transportStr := string(transportContent)
 
-	if !strings.Contains(transportStr, "GoogleCloudGax._RoutingMatcher.value(") {
-		t.Errorf("transport missing _RoutingMatcher.value:\n%s", transportStr)
+	if !strings.Contains(transportStr, "GoogleCloudGax._RoutingMatcher.pathValue(") {
+		t.Errorf("transport missing _RoutingMatcher.pathValue:\n%s", transportStr)
 	}
 	if !strings.Contains(transportStr, "GoogleCloudGax._PathMismatchBuilder()") {
 		t.Errorf("transport missing _PathMismatchBuilder:\n%s", transportStr)
