@@ -18,6 +18,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"slices"
@@ -608,6 +609,10 @@ func TestAddLibrary_ExistingLibrary(t *testing.T) {
 }
 
 func TestAddLibrary_ExistingLibrary_Error(t *testing.T) {
+	googleapisDir, err := filepath.Abs("../testdata/googleapis")
+	if err != nil {
+		t.Fatal(err)
+	}
 	for _, test := range []struct {
 		name    string
 		apiPath string
@@ -632,6 +637,64 @@ func TestAddLibrary_ExistingLibrary_Error(t *testing.T) {
 			},
 			wantErr: errAPIAlreadyExists,
 		},
+		{
+			name:    "fail if preview requires stable library",
+			apiPath: "preview/google/cloud/secretmanager/v1",
+			cfg: &config.Config{
+				Language:  config.LanguageGo,
+				Libraries: []*config.Library{},
+			},
+			wantErr: errPreviewRequiresLibrary,
+		},
+		{
+			name:    "fail if preview already exists",
+			apiPath: "preview/google/cloud/secretmanager/v1beta2",
+			cfg: &config.Config{
+				Language: config.LanguageGo,
+				Libraries: []*config.Library{
+					{
+						Name:    "secretmanager",
+						Version: "1.2.3",
+						APIs: []*config.API{
+							{Path: "google/cloud/secretmanager/v1"},
+						},
+						Preview: &config.Library{
+							Version: "1.3.0-preview.1",
+							APIs: []*config.API{
+								{Path: "google/cloud/secretmanager/v1beta2"},
+							},
+						},
+					},
+				},
+			},
+			wantErr: errPreviewAlreadyExists,
+		},
+		{
+			name:    "fail if language does not support multiple APIs per library",
+			apiPath: "google/cloud/secretmanager/v1",
+			cfg: &config.Config{
+				Language: config.LanguageRust,
+				Libraries: []*config.Library{
+					{
+						Name:    "google-cloud-secretmanager-v1",
+						Version: "1.2.3",
+						APIs: []*config.API{
+							{Path: "google/cloud/secretmanager/v1beta2"},
+						},
+					},
+				},
+			},
+			wantErr: errLibraryAlreadyExists,
+		},
+		{
+			name:    "fail if proto directory does not exist",
+			apiPath: "google/cloud/nonexistent/v1",
+			cfg: &config.Config{
+				Language:  config.LanguageGo,
+				Libraries: []*config.Library{},
+			},
+			wantErr: fs.ErrNotExist,
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			tmpDir := t.TempDir()
@@ -642,7 +705,7 @@ func TestAddLibrary_ExistingLibrary_Error(t *testing.T) {
 			if err := yaml.Write(config.LibrarianYAML, test.cfg); err != nil {
 				t.Fatal(err)
 			}
-			_, _, err := addLibrary(test.cfg, test.apiPath, "", "")
+			_, _, err = addLibrary(test.cfg, test.apiPath, "", googleapisDir)
 			if !errors.Is(err, test.wantErr) {
 				t.Fatalf("expected error %v, got %v", test.wantErr, err)
 			}
