@@ -65,14 +65,14 @@ func Gather(root, relPath string) ([]string, error) {
 	return protos, nil
 }
 
-func Search(googleapisDir, apiPath string, regex *regexp.Regexp) (string, error) {
+func Search(googleapisDir, apiPath string, regex *regexp.Regexp) (string, bool, error) {
 	file, err := searchForProto(googleapisDir, apiPath)
 	if err != nil {
-		return "", err
+		return "", false, err
 	}
 	f, err := os.Open(file)
 	if err != nil {
-		return "", err
+		return "", false, err
 	}
 	defer f.Close()
 	scanner := bufio.NewScanner(f)
@@ -83,13 +83,13 @@ func Search(googleapisDir, apiPath string, regex *regexp.Regexp) (string, error)
 			continue
 		}
 		if matches := regex.FindStringSubmatch(line); len(matches) > 1 {
-			return matches[1], nil
+			return matches[1], true, nil
 		}
 	}
 	if scanner.Err() != nil {
-		return "", scanner.Err()
+		return "", false, scanner.Err()
 	}
-	return "", ErrNotFound
+	return "", false, nil
 }
 
 // searchForProto finds the first .proto file in the API directory.

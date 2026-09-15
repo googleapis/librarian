@@ -15,7 +15,6 @@
 package php
 
 import (
-	"bufio"
 	"context"
 	"errors"
 	"fmt"
@@ -28,6 +27,7 @@ import (
 
 	"github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/proto"
 	"github.com/googleapis/librarian/internal/repometadata"
 	"github.com/googleapis/librarian/internal/serviceconfig"
 )
@@ -108,32 +108,16 @@ func componentNameForLibrary(googleapisDir string, library *config.Library) (str
 // namespace reads the php_namespace option from the first .proto file in the API directory.
 // If the option is not found, it generates a fallback namespace from the API path.
 func namespace(googleapisDir, apiPath string) (string, error) {
-	file, err := searchForProto(googleapisDir, apiPath)
+	ns, found, err := proto.Search(googleapisDir, apiPath, namespaceRe)
 	if err != nil {
 		return "", err
 	}
-	f, err := os.Open(file)
-	if err != nil {
-		return "", err
-	}
-	defer f.Close()
-	scanner := bufio.NewScanner(f)
-	for scanner.Scan() {
-		line := strings.TrimSpace(scanner.Text())
-		// Ignore comments.
-		if strings.HasPrefix(line, "//") {
-			continue
-		}
-		if matches := namespaceRe.FindStringSubmatch(line); len(matches) > 1 {
-			// Backslashes are escapping chars in protobuf string literals, php namespace
-			// in proto need to use double slashes.
-			ns := strings.ReplaceAll(matches[1], `\\`, `\`)
-			// Stripe the version suffix.
-			return versionSuffixRe.ReplaceAllString(ns, ""), nil
-		}
-	}
-	if scanner.Err() != nil {
-		return "", scanner.Err()
+	if found {
+		// Backslashes are escapping chars in protobuf string literals, php namespace
+		// in proto need to use double slashes.
+		ns = strings.ReplaceAll(ns, `\\`, `\`)
+		// Stripe the version suffix.
+		return versionSuffixRe.ReplaceAllString(ns, ""), nil
 	}
 	return backupNamespace(apiPath), nil
 }
