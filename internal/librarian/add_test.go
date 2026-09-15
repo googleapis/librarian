@@ -364,7 +364,7 @@ func TestAddLibrary(t *testing.T) {
 			if err := yaml.Write(config.LibrarianYAML, cfg); err != nil {
 				t.Fatal(err)
 			}
-			gotName, cfg, err := addLibrary(cfg, test.apiPath, "", "")
+			gotName, cfg, err := addLibrary(cfg, "", test.apiPath, "")
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -594,7 +594,7 @@ func TestAddLibrary_ExistingLibrary(t *testing.T) {
 			if err := yaml.Write(config.LibrarianYAML, test.cfg); err != nil {
 				t.Fatal(err)
 			}
-			gotName, gotCfg, err := addLibrary(test.cfg, test.apiPath, "", googleapisDir)
+			gotName, gotCfg, err := addLibrary(test.cfg, googleapisDir, test.apiPath, "")
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -673,7 +673,7 @@ func TestAddLibrary_ExistingLibrary_Error(t *testing.T) {
 			if err := yaml.Write(config.LibrarianYAML, test.cfg); err != nil {
 				t.Fatal(err)
 			}
-			_, _, err = addLibrary(test.cfg, test.apiPath, "", googleapisDir)
+			_, _, err = addLibrary(test.cfg, googleapisDir, test.apiPath, "")
 			if !errors.Is(err, test.wantErr) {
 				t.Fatalf("expected error %v, got %v", test.wantErr, err)
 			}
@@ -713,7 +713,7 @@ func TestAddLibrary_Preview(t *testing.T) {
 				Language:  config.LanguageGo,
 				Libraries: test.initialLibraries,
 			}
-			gotName, gotCfg, err := addLibrary(cfg, test.apiPath, "", googleapisDir)
+			gotName, gotCfg, err := addLibrary(cfg, googleapisDir, test.apiPath, "")
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -771,7 +771,7 @@ func TestAddLibrary_Preview_Error(t *testing.T) {
 				Language:  config.LanguageGo,
 				Libraries: test.initialLibraries,
 			}
-			_, _, err := addLibrary(cfg, test.apiPath, "", googleapisDir)
+			_, _, err := addLibrary(cfg, googleapisDir, test.apiPath, "")
 			if !errors.Is(err, test.wantErr) {
 				t.Fatalf("expected error %v, got %v", test.wantErr, err)
 			}

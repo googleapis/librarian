@@ -119,7 +119,7 @@ func runAdd(ctx context.Context, cfg *config.Config, api, explicitLibraryName st
 	if err := validateAPIPathExistence(googleapisDir, api); err != nil {
 		return err
 	}
-	name, cfg, err := addLibrary(cfg, api, explicitLibraryName, googleapisDir)
+	name, cfg, err := addLibrary(cfg, googleapisDir, api, explicitLibraryName)
 	if err != nil {
 		return err
 	}
@@ -227,7 +227,7 @@ func deriveLibraryName(language, googleapisDir, api string) (string, error) {
 // It returns the name of the new or updated library, the updated config, and an
 // error if the API cannot be added (e.g. because it already exists, or the new
 // API is a preview and there is no corresponding stable library).
-func addLibrary(cfg *config.Config, apiPath, explicitLibraryName, googleapisDir string) (string, *config.Config, error) {
+func addLibrary(cfg *config.Config, googleapisDir, apiPath, explicitLibraryName string) (string, *config.Config, error) {
 	stablePath, isPreview := strings.CutPrefix(apiPath, "preview/")
 	api := &config.API{Path: stablePath}
 	existingLib, err := findExistingLibraryForAPI(cfg, stablePath, explicitLibraryName, googleapisDir)
