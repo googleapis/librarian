@@ -741,6 +741,10 @@ func TestAddLibrary_Preview_Error(t *testing.T) {
 }
 
 func TestDeriveLibraryName(t *testing.T) {
+	googleapisDir, err := filepath.Abs("../testdata/googleapis")
+	if err != nil {
+		t.Fatal(err)
+	}
 	for _, test := range []struct {
 		language string
 		apiPath  string
@@ -772,7 +776,10 @@ func TestDeriveLibraryName(t *testing.T) {
 		{config.LanguageRuby, "google/cloud/secretmanager/v1", "google-cloud-secretmanager-v1"},
 	} {
 		t.Run(test.language+"/"+test.apiPath, func(t *testing.T) {
-			got := deriveLibraryName(test.language, test.apiPath)
+			got, err := deriveLibraryName(test.language, googleapisDir, test.apiPath)
+			if err != nil {
+				t.Fatal(err)
+			}
 			if got != test.want {
 				t.Errorf("deriveLibraryName(%q, %q) = %q, want %q", test.language, test.apiPath, got, test.want)
 			}

@@ -67,7 +67,7 @@ libraries:
 				t.Fatal(err)
 			}
 			var buf bytes.Buffer
-			err = runConfigGet(&buf, test.path, test.value)
+			err = runConfigGet(t.Context(), &buf, test.path, test.value)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -121,7 +121,7 @@ func TestRunConfigGet_Error(t *testing.T) {
 				t.Fatal(err)
 			}
 			var buf bytes.Buffer
-			err := runConfigGet(&buf, test.path, test.value)
+			err := runConfigGet(t.Context(), &buf, test.path, test.value)
 			if err == nil {
 				t.Fatal("expected error; got nil")
 			}

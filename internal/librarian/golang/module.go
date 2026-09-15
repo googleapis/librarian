@@ -38,7 +38,7 @@ const (
 )
 
 var (
-	errGoPackageNotFound      = errors.New("go_package not found")
+	errGoPackageNotFound          = errors.New("go_package not found")
 	errGoAPINotFound              = errors.New("go API not found")
 	errImportPathNotFound         = errors.New("import path not found")
 	errClientPackageNotFound      = errors.New("client package not found")
