@@ -131,21 +131,6 @@ func componentName(namespace string) string {
 	return strings.ReplaceAll(comp, `\`, "")
 }
 
-// searchForProto finds the first .proto file in the API directory.
-func searchForProto(googleapisDir, apiPath string) (string, error) {
-	dir := filepath.Join(googleapisDir, apiPath)
-	entries, err := os.ReadDir(dir)
-	if err != nil {
-		return "", err
-	}
-	for _, entry := range entries {
-		if !entry.IsDir() && filepath.Ext(entry.Name()) == ".proto" {
-			return filepath.Join(dir, entry.Name()), nil
-		}
-	}
-	return "", fs.ErrNotExist
-}
-
 // backupNamespace generates a fallback namespace from the API path.
 func backupNamespace(apiPath string) string {
 	parts := strings.Split(apiPath, "/")

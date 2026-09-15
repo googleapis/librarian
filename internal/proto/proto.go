@@ -27,7 +27,8 @@ import (
 )
 
 var (
-	ErrNotFound = errors.New("not found")
+	// ErrProtoNotFound indicates that a proto file was not found.
+	ErrProtoNotFound = errors.New("proto file not found")
 	// nonRecursivePaths is a set of paths where proto gathering should not be recursive.
 	nonRecursivePaths = map[string]bool{
 		"google/api":   true,
