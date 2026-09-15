@@ -51,7 +51,12 @@ extension Clients {
         if let candidate = try { () throws -> (Swift.String, [URLQueryItem])? in
           {{#PathVariables}}
           {{#HasMatchingSegments}}
-          guard let {{Name}} = GoogleCloudGax._RoutingMatcher.value(request{{Expression}}, matching: {{{MatchingSegmentsExpression}}}) else {
+          guard
+            let {{Name}} = try GoogleCloudGax._RoutingMatcher.pathValue(
+              request{{Expression}},
+              matching: {{{MatchingSegmentsExpression}}},
+              fieldName: "{{FieldPath}}")
+          else {
             return nil
           }
           {{/HasMatchingSegments}}
@@ -126,7 +131,7 @@ extension Clients {
         {{/Codec.PathBindings}}
         throw GoogleCloudGax.RequestError.binding(GoogleCloudGax.BindingError(paths: paths))
       }()
-      var req = try await self.inner.newRequest(path: path, query: query, options: options)
+      var req = try await self.inner.newRequest(percentEncodedPath: path, query: query, options: options)
       configure(&req)
       req.addHeader(name: GoogleCloudGax._HeaderNames.apiClient, value: Clients.clientHeader)
       {{#Codec.HasBody}}
