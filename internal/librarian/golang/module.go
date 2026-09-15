@@ -143,7 +143,10 @@ func fillGoPreview(stable, preview *config.Library) (*config.Library, error) {
 // the package definition.
 func DefaultLibraryName(googleapisDir, api string) (string, error) {
 	pkg, found, err := proto.Search(googleapisDir, api, pkgRe)
-	if err != nil || !found {
+	if err != nil {
+		return "", err
+	}
+	if !found {
 		return "", fmt.Errorf("%w: %s", errGoPackageNotFound, api)
 	}
 	pkg = strings.TrimPrefix(pkg, modulePathPrefix)
