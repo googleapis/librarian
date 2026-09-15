@@ -193,6 +193,10 @@ type RustModule struct {
 	// methods.
 	IncludeStreamingMethods bool `yaml:"include_streaming_methods,omitempty"`
 
+	// HandwrittenSurface indicates whether the module or specific services have a handwritten surface.
+	// Accepts "true" for all services, or a comma-separated list of service IDs.
+	HandwrittenSurface string `yaml:"handwritten_surface,omitempty"`
+
 	// InternalBuilders indicates whether generated builders should be internal to the crate.
 	InternalBuilders bool `yaml:"internal_builders,omitempty"`
 
@@ -278,6 +282,10 @@ type RustCrate struct {
 
 	// DisabledClippyWarnings is a list of clippy warnings to disable.
 	DisabledClippyWarnings []string `yaml:"disabled_clippy_warnings,omitempty"`
+
+	// HandwrittenSurface indicates whether the crate or specific services have a handwritten surface.
+	// Accepts "true" for all services, or a comma-separated list of service IDs.
+	HandwrittenSurface string `yaml:"handwritten_surface,omitempty"`
 
 	// HasVeneer indicates whether the crate has a veneer.
 	HasVeneer bool `yaml:"has_veneer,omitempty"`
