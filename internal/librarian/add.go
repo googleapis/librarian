@@ -205,7 +205,7 @@ func deriveLibraryName(language, googleapisDir, api string) string {
 	case config.LanguageFake:
 		return fakeDefaultLibraryName(api)
 	case config.LanguageGo:
-		return golang.DefaultLibraryName(api)
+		return golang.DefaultLibraryName(googleapisDir, api)
 	case config.LanguageJava:
 		return java.DefaultLibraryName(api)
 	case config.LanguageNodejs:
