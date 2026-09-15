@@ -62,7 +62,7 @@ public struct {{Codec.Name}}: Codable, Equatable, {{Codec.Model.WktPackage}}._An
   public var {{Codec.PropertyName}}: {{Codec.Name}}? = nil
   {{/OneOfs}}
 
-  internal var _unknownFields: {{Codec.Model.WktPackage}}._UnknownFields = .init()
+  @_spi(GoogleCloudInternal) public var _unknownFields: {{Codec.Model.WktPackage}}._UnknownFields = .init()
 
   /// Initialize a new instance of `{{Codec.Name}}`.
   public init() {}

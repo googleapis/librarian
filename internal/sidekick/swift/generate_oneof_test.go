@@ -126,7 +126,7 @@ func TestGenerateOneOf(t *testing.T) {
   /// A group of fields where only one is set.
   public var choice: OneOf_Choice? = nil
 
-  internal var _unknownFields: GoogleCloudWKT._UnknownFields = .init()
+  @_spi(GoogleCloudInternal) public var _unknownFields: GoogleCloudWKT._UnknownFields = .init()
 
   /// Initialize a new instance of ` + "`Outer`" + `.
   public init() {}
@@ -307,7 +307,7 @@ func TestGenerateOneOfWithKeyword(t *testing.T) {
 
   public var ` + "`in`" + `: OneOf_In? = nil
 
-  internal var _unknownFields: GoogleCloudWKT._UnknownFields = .init()
+  @_spi(GoogleCloudInternal) public var _unknownFields: GoogleCloudWKT._UnknownFields = .init()
 
   /// Initialize a new instance of ` + "`JwtLocation`" + `.
   public init() {}
