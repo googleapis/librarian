@@ -17,8 +17,10 @@ package librarian
 import (
 	"bytes"
 	"errors"
+	"fmt"
 	"io/fs"
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -29,6 +31,10 @@ import (
 
 // TestRunConfigGet tests that the config get command successfully reads a value from librarian.yaml.
 func TestRunConfigGet(t *testing.T) {
+	googleapisDir, err := filepath.Abs("../testdata/googleapis")
+	if err != nil {
+		t.Fatal(err)
+	}
 	for _, test := range []struct {
 		name       string
 		path       string
@@ -47,12 +53,15 @@ func TestRunConfigGet(t *testing.T) {
 			name:  "get library (existing)",
 			path:  "libraries",
 			value: "google/cloud/secretmanager/v1",
-			configYAML: `language: python
+			configYAML: fmt.Sprintf(`language: python
+sources:
+  googleapis:
+    dir: %s
 libraries:
 - name: mysecretmanager
   apis:
   - path: google/cloud/secretmanager/v1
-`,
+`, googleapisDir),
 			want: "mysecretmanager\n",
 		},
 	} {
@@ -80,6 +89,10 @@ libraries:
 
 // TestRunConfigGet_Error tests that the config get command returns an error when the path is missing or the key is not found.
 func TestRunConfigGet_Error(t *testing.T) {
+	googleapisDir, err := filepath.Abs("../testdata/googleapis")
+	if err != nil {
+		t.Fatal(err)
+	}
 	for _, test := range []struct {
 		name       string
 		path       string
@@ -107,11 +120,15 @@ func TestRunConfigGet_Error(t *testing.T) {
 			wantErr:    errValueRequired,
 		},
 		{
-			name:       "library not found for API",
-			path:       "libraries",
-			value:      "google/cloud/secretmanager/v1",
-			configYAML: "language: go\n",
-			wantErr:    ErrLibraryNotFound,
+			name:  "library not found for API",
+			path:  "libraries",
+			value: "google/cloud/secretmanager/v1",
+			configYAML: fmt.Sprintf(`language: go
+sources:
+  googleapis:
+    dir: %s
+`, googleapisDir),
+			wantErr: ErrLibraryNotFound,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
