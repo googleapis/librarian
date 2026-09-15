@@ -16,12 +16,18 @@
 package proto
 
 import (
+	"bufio"
+	"errors"
+	"io/fs"
 	"os"
 	"path/filepath"
+	"regexp"
 	"slices"
+	"strings"
 )
 
 var (
+	ErrNotFound = errors.New("not found")
 	// nonRecursivePaths is a set of paths where proto gathering should not be recursive.
 	nonRecursivePaths = map[string]bool{
 		"google/api":   true,
@@ -57,4 +63,46 @@ func Gather(root, relPath string) ([]string, error) {
 	}
 	slices.Sort(protos)
 	return protos, nil
+}
+
+func Search(googleapisDir, apiPath string, regex *regexp.Regexp) (string, error) {
+	file, err := searchForProto(googleapisDir, apiPath)
+	if err != nil {
+		return "", err
+	}
+	f, err := os.Open(file)
+	if err != nil {
+		return "", err
+	}
+	defer f.Close()
+	scanner := bufio.NewScanner(f)
+	for scanner.Scan() {
+		line := strings.TrimSpace(scanner.Text())
+		// Ignore comments.
+		if strings.HasPrefix(line, "//") {
+			continue
+		}
+		if matches := regex.FindStringSubmatch(line); len(matches) > 1 {
+			return matches[1], nil
+		}
+	}
+	if scanner.Err() != nil {
+		return "", scanner.Err()
+	}
+	return "", ErrNotFound
+}
+
+// searchForProto finds the first .proto file in the API directory.
+func searchForProto(googleapisDir, apiPath string) (string, error) {
+	dir := filepath.Join(googleapisDir, apiPath)
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		return "", err
+	}
+	for _, entry := range entries {
+		if !entry.IsDir() && filepath.Ext(entry.Name()) == ".proto" {
+			return filepath.Join(dir, entry.Name()), nil
+		}
+	}
+	return "", fs.ErrNotExist
 }
