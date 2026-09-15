@@ -38,6 +38,7 @@ const (
 )
 
 var (
+	errGoPackageNotFound      = errors.New("go_package not found")
 	errGoAPINotFound              = errors.New("go API not found")
 	errImportPathNotFound         = errors.New("import path not found")
 	errClientPackageNotFound      = errors.New("client package not found")
@@ -142,11 +143,8 @@ func fillGoPreview(stable, preview *config.Library) (*config.Library, error) {
 // the package definition.
 func DefaultLibraryName(googleapisDir, api string) (string, error) {
 	pkg, found, err := proto.Search(googleapisDir, api, pkgRe)
-	if err != nil {
-		return "", err
-	}
-	if !found {
-		return defaultLibraryName(api), nil
+	if err != nil || !found {
+		return "", fmt.Errorf("%w: %s", errGoPackageNotFound, api)
 	}
 	pkg = strings.TrimPrefix(pkg, modulePathPrefix)
 	pkg, _, _ = strings.Cut(pkg, "/")
@@ -156,22 +154,6 @@ func DefaultLibraryName(googleapisDir, api string) (string, error) {
 // DefaultOutput returns the default output directory for a Go library.
 func DefaultOutput(name, defaultOutput string) string {
 	return filepath.Join(defaultOutput, name)
-}
-
-func defaultLibraryName(api string) string {
-	api = strings.TrimPrefix(api, cloudAPIPrefix)
-	// Some non-cloud APIs, e.g., google/api, google/devtools/, etc., create one library
-	// per API. The resulting library configurations need to set additional configurations,
-	// e.g., import_path, for the generation to work.
-	// We don't infer the configuration here and let the user set the configurations manually.
-	api = strings.TrimPrefix(api, apiPrefix)
-	api = strings.TrimPrefix(api, devtoolsAPIPrefix)
-	api = strings.TrimPrefix(api, "google/")
-	before, _, ok := strings.Cut(api, "/")
-	if !ok {
-		return api
-	}
-	return before
 }
 
 func findGoAPI(library *config.Library, apiPath string) *config.GoAPI {
