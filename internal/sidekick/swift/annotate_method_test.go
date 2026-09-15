@@ -176,6 +176,130 @@ func TestAnnotateMethod(t *testing.T) {
 	}
 }
 
+func TestAnnotateMethod_OmittedBodyFields(t *testing.T) {
+	secretMessage := &api.Message{
+		Name:    "Secret",
+		ID:      ".test.Secret",
+		Package: "test",
+		Fields: []*api.Field{
+			{Name: "name", JSONName: "name", Typez: api.TypezString},
+		},
+	}
+	inputType := &api.Message{
+		Name:    "Request",
+		ID:      ".test.Request",
+		Package: "test",
+		Fields: []*api.Field{
+			{Name: "parent", JSONName: "parent", Typez: api.TypezString},
+			{Name: "display_name", JSONName: "displayName", Typez: api.TypezString},
+			{Name: "secret", JSONName: "secret", Typez: api.TypezMessage, TypezID: ".test.Secret", Optional: true},
+		},
+	}
+	outputType := &api.Message{
+		Name:    "Response",
+		ID:      ".test.Response",
+		Package: "test",
+		Fields: []*api.Field{
+			{Name: "value", JSONName: "value", Typez: api.TypezString},
+		},
+	}
+
+	for _, test := range []struct {
+		name                  string
+		bodyFieldPath         string
+		bindings              []*api.PathBinding
+		want                  [][]string
+		wantHasOmitted        bool
+		wantOmittedExpression []string
+	}{
+		{
+			name:          "wildcard body with multiple bindings",
+			bodyFieldPath: "*",
+			bindings: []*api.PathBinding{
+				{Verb: "POST", PathTemplate: (&api.PathTemplate{}).WithLiteral("v1").WithVariableNamed("parent")},
+				{Verb: "POST", PathTemplate: (&api.PathTemplate{}).WithLiteral("v1").WithVariableNamed("secret", "name")},
+			},
+			want:                  [][]string{{"parent"}, {"secret.name"}},
+			wantHasOmitted:        true,
+			wantOmittedExpression: []string{`["parent"]`, `["secret.name"]`},
+		},
+		{
+			name:          "wildcard body without path variables",
+			bodyFieldPath: "*",
+			bindings: []*api.PathBinding{
+				{Verb: "POST", PathTemplate: (&api.PathTemplate{}).WithLiteral("v1").WithLiteral("secrets")},
+			},
+			want:                  [][]string{nil},
+			wantHasOmitted:        false,
+			wantOmittedExpression: []string{`[]`},
+		},
+		{
+			name:          "named body field",
+			bodyFieldPath: "secret",
+			bindings: []*api.PathBinding{
+				{Verb: "POST", PathTemplate: (&api.PathTemplate{}).WithLiteral("v1").WithVariableNamed("parent")},
+			},
+			want:                  [][]string{nil},
+			wantHasOmitted:        false,
+			wantOmittedExpression: []string{`[]`},
+		},
+		{
+			name:          "no body",
+			bodyFieldPath: "",
+			bindings: []*api.PathBinding{
+				{Verb: "GET", PathTemplate: (&api.PathTemplate{}).WithLiteral("v1").WithVariableNamed("parent")},
+			},
+			want:                  [][]string{nil},
+			wantHasOmitted:        false,
+			wantOmittedExpression: []string{`[]`},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			method := &api.Method{
+				Name:         "Mutate",
+				InputType:    inputType,
+				InputTypeID:  inputType.ID,
+				OutputType:   outputType,
+				OutputTypeID: outputType.ID,
+				PathInfo: &api.PathInfo{
+					Bindings:      test.bindings,
+					BodyFieldPath: test.bodyFieldPath,
+				},
+			}
+			service := &api.Service{
+				Name:    "TestService",
+				ID:      ".test.TestService",
+				Package: "test",
+				Methods: []*api.Method{method},
+			}
+			model := api.NewTestAPI([]*api.Message{inputType, outputType, secretMessage}, nil, []*api.Service{service})
+			if err := api.CrossReference(model); err != nil {
+				t.Fatal(err)
+			}
+			codec := newTestCodec(t, model, nil)
+			if err := codec.annotateModel(); err != nil {
+				t.Fatal(err)
+			}
+			got := method.Codec.(*methodAnnotations)
+			var gotOmitted [][]string
+			var gotExpressions []string
+			for _, binding := range got.PathBindings {
+				gotOmitted = append(gotOmitted, binding.OmittedBodyFields)
+				gotExpressions = append(gotExpressions, binding.OmittedBodyFieldsExpression())
+			}
+			if diff := cmp.Diff(test.want, gotOmitted); diff != "" {
+				t.Errorf("mismatch in OmittedBodyFields (-want +got):\n%s", diff)
+			}
+			if diff := cmp.Diff(test.wantOmittedExpression, gotExpressions); diff != "" {
+				t.Errorf("mismatch in OmittedBodyFieldsExpression (-want +got):\n%s", diff)
+			}
+			if got.HasOmittedBodyFields() != test.wantHasOmitted {
+				t.Errorf("got.HasOmittedBodyFields() == %v, want %v", got.HasOmittedBodyFields(), test.wantHasOmitted)
+			}
+		})
+	}
+}
+
 func TestAnnotateMethod_EscapedName(t *testing.T) {
 	for _, test := range []struct {
 		name       string
