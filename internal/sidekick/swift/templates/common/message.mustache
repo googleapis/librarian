@@ -91,17 +91,13 @@ public struct {{Codec.Name}}: Codable, Equatable, {{Codec.Model.WktPackage}}._An
     {{#Fields}}
     static let {{Codec.Name}} = CodingKeys(stringValue: "{{JSONName}}")
     {{/Fields}}
+    {{/HasFields}}
 
     static let _knownKeys: Set<Swift.String> = [
       {{#Fields}}
       "{{JSONName}}",
       {{/Fields}}
     ]
-    {{/HasFields}}
-    {{^HasFields}}
-
-    static let _knownKeys: Set<Swift.String> = []
-    {{/HasFields}}
   }
 
   public init(from decoder: Decoder) throws {
