@@ -17,12 +17,12 @@ package proto
 
 import (
 	"bufio"
+	"bytes"
 	"io/fs"
 	"os"
 	"path/filepath"
 	"regexp"
 	"slices"
-	"strings"
 )
 
 var (
@@ -77,13 +77,13 @@ func Search(googleapisDir, apiPath string, regex *regexp.Regexp) (string, bool, 
 	defer f.Close()
 	scanner := bufio.NewScanner(f)
 	for scanner.Scan() {
-		line := strings.TrimSpace(scanner.Text())
+		line := bytes.TrimSpace(scanner.Bytes())
 		// Ignore comments.
-		if strings.HasPrefix(line, "//") {
+		if bytes.HasPrefix(line, []byte("//")) {
 			continue
 		}
-		if matches := regex.FindStringSubmatch(line); len(matches) > 1 {
-			return matches[1], true, nil
+		if matches := regex.FindSubmatch(line); len(matches) > 1 {
+			return string(matches[1]), true, nil
 		}
 	}
 	if scanner.Err() != nil {
