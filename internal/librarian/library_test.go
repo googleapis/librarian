@@ -1068,7 +1068,7 @@ func TestResolvePreview(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got := ResolvePreview(test.lib, test.language)
+			got := resolvePreview(test.lib, test.language)
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
@@ -1095,10 +1095,10 @@ func TestResolvePreview_NoMutation(t *testing.T) {
 
 	want := *lib
 
-	_ = ResolvePreview(lib, config.LanguageGo)
+	_ = resolvePreview(lib, config.LanguageGo)
 
 	if diff := cmp.Diff(want, *lib); diff != "" {
-		t.Errorf("ResolvePreview mutated the input library (-want +got):\n%s", diff)
+		t.Errorf("resolvePreview mutated the input library (-want +got):\n%s", diff)
 	}
 }
 

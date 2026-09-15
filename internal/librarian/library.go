@@ -385,10 +385,10 @@ func FindLibrary(c *config.Config, name string) (*config.Library, error) {
 	return nil, fmt.Errorf("%w: %q", ErrLibraryNotFound, name)
 }
 
-// ResolvePreview returns a library where fields from lib.Preview override
+// resolvePreview returns a library where fields from lib.Preview override
 // those in the base lib, if set. If lib.Preview is not set or lib itself is nil
 // this returns nil.
-func ResolvePreview(lib *config.Library, language string) *config.Library {
+func resolvePreview(lib *config.Library, language string) *config.Library {
 	if lib == nil || lib.Preview == nil {
 		return nil
 	}
