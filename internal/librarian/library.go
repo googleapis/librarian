@@ -811,6 +811,9 @@ func mergeRust(dst, src *config.RustCrate) *config.RustCrate {
 	if src.DisabledClippyWarnings != nil {
 		res.DisabledClippyWarnings = src.DisabledClippyWarnings
 	}
+	if src.HandwrittenSurface != "" {
+		res.HandwrittenSurface = src.HandwrittenSurface
+	}
 	if src.HasVeneer {
 		res.HasVeneer = src.HasVeneer
 	}
