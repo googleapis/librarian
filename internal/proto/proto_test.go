@@ -248,3 +248,72 @@ func TestSearch(t *testing.T) {
 		})
 	}
 }
+
+func TestSearch_Error(t *testing.T) {
+	t.Parallel()
+	phpNamespaceRe := regexp.MustCompile(`option\s+php_namespace\s*=\s*"([^"]+)";`)
+	for _, test := range []struct {
+		name    string
+		setup   func(t *testing.T) (string, string)
+		wantErr error
+	}{
+		{
+			name: "nonexistent directory",
+			setup: func(t *testing.T) (string, string) {
+				return t.TempDir(), "google/cloud/nonexistent/v1"
+			},
+			wantErr: fs.ErrNotExist,
+		},
+		{
+			name: "no proto files in directory",
+			setup: func(t *testing.T) (string, string) {
+				tmpDir := t.TempDir()
+				apiPath := "google/cloud/test/v1"
+				dir := filepath.Join(tmpDir, apiPath)
+				if err := os.MkdirAll(dir, 0o755); err != nil {
+					t.Fatal(err)
+				}
+				if err := os.WriteFile(filepath.Join(dir, "README.md"), []byte("# docs"), 0o644); err != nil {
+					t.Fatal(err)
+				}
+				return tmpDir, apiPath
+			},
+			wantErr: fs.ErrNotExist,
+		},
+		{
+			name: "unreadable proto file",
+			setup: func(t *testing.T) (string, string) {
+				if os.Geteuid() == 0 {
+					t.Skip("skipping permission test when running as root")
+				}
+				tmpDir := t.TempDir()
+				apiPath := "google/cloud/test/v1"
+				dir := filepath.Join(tmpDir, apiPath)
+				if err := os.MkdirAll(dir, 0o755); err != nil {
+					t.Fatal(err)
+				}
+				file := filepath.Join(dir, "service.proto")
+				if err := os.WriteFile(file, []byte("syntax = \"proto3\";"), 0o000); err != nil {
+					t.Fatal(err)
+				}
+				return tmpDir, apiPath
+			},
+			wantErr: fs.ErrPermission,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			googleapisDir, apiPath := test.setup(t)
+			got, found, err := Search(googleapisDir, apiPath, phpNamespaceRe)
+			if !errors.Is(err, test.wantErr) {
+				t.Errorf("Search() error = %v, want %v", err, test.wantErr)
+			}
+			if found {
+				t.Errorf("Search() found = %v, want false", found)
+			}
+			if got != "" {
+				t.Errorf("Search() got = %q, want empty string", got)
+			}
+		})
+	}
+}
