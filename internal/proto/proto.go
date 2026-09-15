@@ -17,7 +17,6 @@ package proto
 
 import (
 	"bufio"
-	"errors"
 	"io/fs"
 	"os"
 	"path/filepath"
@@ -27,8 +26,6 @@ import (
 )
 
 var (
-	// ErrProtoNotFound indicates that a proto file was not found.
-	ErrProtoNotFound = errors.New("proto file not found")
 	// nonRecursivePaths is a set of paths where proto gathering should not be recursive.
 	nonRecursivePaths = map[string]bool{
 		"google/api":   true,
