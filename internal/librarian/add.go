@@ -230,7 +230,7 @@ func deriveLibraryName(language, googleapisDir, api string) (string, error) {
 func addLibrary(cfg *config.Config, googleapisDir, apiPath, explicitLibraryName string) (string, *config.Config, error) {
 	stablePath, isPreview := strings.CutPrefix(apiPath, "preview/")
 	api := &config.API{Path: stablePath}
-	existingLib, err := findExistingLibraryForAPI(cfg, stablePath, explicitLibraryName, googleapisDir)
+	existingLib, err := findExistingLibraryForAPI(cfg, googleapisDir, stablePath, explicitLibraryName)
 	if err != nil {
 		return "", nil, err
 	}
@@ -252,7 +252,7 @@ func addLibrary(cfg *config.Config, googleapisDir, apiPath, explicitLibraryName 
 // by deriving the library name from the API path and seeing if that library
 // already exists. In Python the mapping from API path to library name isn't
 // always as simple for historical reasons.
-func findExistingLibraryForAPI(cfg *config.Config, apiPath, explicitLibraryName, googleapisDir string) (*config.Library, error) {
+func findExistingLibraryForAPI(cfg *config.Config, googleapisDir, apiPath, explicitLibraryName string) (*config.Library, error) {
 	switch cfg.Language {
 	case config.LanguageNodejs:
 		return nodejs.FindExistingLibraryForNewAPI(cfg.Libraries, apiPath), nil

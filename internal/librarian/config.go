@@ -119,7 +119,7 @@ func runConfigSet(path, value string) error {
 }
 
 func libraryName(cfg *config.Config, googleapisDir, apiPath string) (string, error) {
-	library, err := findExistingLibraryForAPI(cfg, apiPath, "", googleapisDir)
+	library, err := findExistingLibraryForAPI(cfg, googleapisDir, apiPath, "")
 	if err != nil {
 		return "", err
 	}
