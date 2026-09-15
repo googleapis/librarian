@@ -57,19 +57,65 @@ func TestServiceAnnotationsDetailedTracing(t *testing.T) {
 }
 
 func TestServiceAnnotationsHasVeneer(t *testing.T) {
-	model := serviceAnnotationsModel()
-	service := model.Service(".test.v1.ResourceService")
-	if service == nil {
-		t.Fatal("cannot find .test.v1.ResourceService")
-	}
-	codec := newTestCodec(t, libconfig.SpecProtobuf, "", map[string]string{
-		"has-veneer": "true",
-	})
-	annotateModel(model, codec)
-	serviceAnn := service.Codec.(*serviceAnnotations)
+	for _, test := range []struct {
+		name         string
+		hasVeneer    string
+		wantService0 bool
+		wantService1 bool
+	}{
+		{
+			name:         "all services via true",
+			hasVeneer:    "true",
+			wantService0: true,
+			wantService1: true,
+		},
+		{
+			name:         "false",
+			hasVeneer:    "false",
+			wantService0: false,
+			wantService1: false,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			model := newTestAnnotateModelAPI()
+			service0 := model.Service("..Service0")
+			if service0 == nil {
+				t.Fatal("cannot find ..Service0")
+			}
+			service1 := model.Service("..Service1")
+			if service1 == nil {
+				t.Fatal("cannot find ..Service1")
+			}
 
-	if !serviceAnn.HasVeneer {
-		t.Errorf("expected `has-veneer` to be set on the service.")
+			options := map[string]string{}
+			if test.hasVeneer != "" {
+				options["has-veneer"] = test.hasVeneer
+			}
+			codec := newTestCodec(t, libconfig.SpecProtobuf, "", options)
+			if _, err := annotateModel(model, codec); err != nil {
+				t.Fatal(err)
+			}
+
+			ann0 := service0.Codec.(*serviceAnnotations)
+			if ann0.HasVeneer != test.wantService0 {
+				t.Errorf("Service0 HasVeneer = %v, want %v", ann0.HasVeneer, test.wantService0)
+			}
+			for _, m := range ann0.Methods {
+				if mAnn := m.Codec.(*methodAnnotation); mAnn.HasVeneer != test.wantService0 {
+					t.Errorf("method %s HasVeneer = %v, want %v", m.Name, mAnn.HasVeneer, test.wantService0)
+				}
+			}
+
+			ann1 := service1.Codec.(*serviceAnnotations)
+			if ann1.HasVeneer != test.wantService1 {
+				t.Errorf("Service1 HasVeneer = %v, want %v", ann1.HasVeneer, test.wantService1)
+			}
+			for _, m := range ann1.Methods {
+				if mAnn := m.Codec.(*methodAnnotation); mAnn.HasVeneer != test.wantService1 {
+					t.Errorf("method %s HasVeneer = %v, want %v", m.Name, mAnn.HasVeneer, test.wantService1)
+				}
+			}
+		})
 	}
 }
 

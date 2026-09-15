@@ -188,6 +188,76 @@ func TestInternalBuildersAnnotation(t *testing.T) {
 	}
 }
 
+func TestHandwrittenSurfaceAnnotation(t *testing.T) {
+	for _, test := range []struct {
+		name                 string
+		options              map[string]string
+		wantService0Veneer   bool
+		wantService0Internal bool
+		wantService0Samples  bool
+		wantService1Veneer   bool
+		wantService1Internal bool
+		wantService1Samples  bool
+	}{
+		{
+			name: "handwritten surface for service0 only",
+			options: map[string]string{
+				"handwritten-surface":  "..Service0",
+				"generate-rpc-samples": "true",
+			},
+			wantService0Veneer:   true,
+			wantService0Internal: true,
+			wantService0Samples:  false,
+			wantService1Veneer:   false,
+			wantService1Internal: false,
+			wantService1Samples:  true,
+		},
+		{
+			name: "handwritten surface true for all",
+			options: map[string]string{
+				"handwritten-surface":  "true",
+				"generate-rpc-samples": "true",
+			},
+			wantService0Veneer:   true,
+			wantService0Internal: true,
+			wantService0Samples:  false,
+			wantService1Veneer:   true,
+			wantService1Internal: true,
+			wantService1Samples:  false,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			model := newTestAnnotateModelAPI()
+			codec := newTestCodec(t, libconfig.SpecProtobuf, "", test.options)
+			_, err := annotateModel(model, codec)
+			if err != nil {
+				t.Fatal(err)
+			}
+			svc0Ann := model.Services[0].Codec.(*serviceAnnotations)
+			if svc0Ann.HasVeneer != test.wantService0Veneer {
+				t.Errorf("mismatch in Service0 HasVeneer, want=%v, got=%v", test.wantService0Veneer, svc0Ann.HasVeneer)
+			}
+			if svc0Ann.InternalBuilders != test.wantService0Internal {
+				t.Errorf("mismatch in Service0 InternalBuilders, want=%v, got=%v", test.wantService0Internal, svc0Ann.InternalBuilders)
+			}
+			if svc0Ann.GenerateRpcSamples != test.wantService0Samples {
+				t.Errorf("mismatch in Service0 GenerateRpcSamples, want=%v, got=%v", test.wantService0Samples, svc0Ann.GenerateRpcSamples)
+			}
+
+			svc1Ann := model.Services[1].Codec.(*serviceAnnotations)
+			if svc1Ann.HasVeneer != test.wantService1Veneer {
+				t.Errorf("mismatch in Service1 HasVeneer, want=%v, got=%v", test.wantService1Veneer, svc1Ann.HasVeneer)
+			}
+			if svc1Ann.InternalBuilders != test.wantService1Internal {
+				t.Errorf("mismatch in Service1 InternalBuilders, want=%v, got=%v", test.wantService1Internal, svc1Ann.InternalBuilders)
+			}
+			if svc1Ann.GenerateRpcSamples != test.wantService1Samples {
+				t.Errorf("mismatch in Service1 GenerateRpcSamples, want=%v, got=%v", test.wantService1Samples, svc1Ann.GenerateRpcSamples)
+			}
+		})
+	}
+}
+
 func TestGrpcClientAnnotation(t *testing.T) {
 	for _, test := range []struct {
 		Options map[string]string

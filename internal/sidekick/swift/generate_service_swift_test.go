@@ -177,7 +177,7 @@ func TestGenerateService_Delegation(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	wantNewRequest := "var req = try await self.inner.newRequest(path: path, query: query, options: options)"
+	wantNewRequest := "var req = try await self.inner.newRequest(percentEncodedPath: path, query: query, options: options)"
 	if !bytes.Contains(transportContent, []byte(wantNewRequest)) {
 		t.Errorf("expected %q in IAM+Transport.swift, got:\n%s", wantNewRequest, string(transportContent))
 	}
@@ -330,7 +330,12 @@ func TestGenerateService_PathParameters(t *testing.T) {
 				WithVariableNamed("secret", "name"),
 			wantBlock: `let (path, query, configure) = try { () throws -> (Swift.String, [URLQueryItem], (inout GoogleCloudGax._HTTPClientRequest) -> Void) in
         if let candidate = try { () throws -> (Swift.String, [URLQueryItem])? in
-          guard let pathVariable0 = GoogleCloudGax._RoutingMatcher.value(request.secret.map({ $0.name }), matching: [.singleWildcard]) else {
+          guard
+            let pathVariable0 = try GoogleCloudGax._RoutingMatcher.pathValue(
+              request.secret.map({ $0.name }),
+              matching: [.singleWildcard],
+              fieldName: "secret.name")
+          else {
             return nil
           }
           let path = "/v1/\(pathVariable0)"
@@ -362,7 +367,12 @@ func TestGenerateService_PathParameters(t *testing.T) {
 				WithVariableNamed("name"),
 			wantBlock: `let (path, query, configure) = try { () throws -> (Swift.String, [URLQueryItem], (inout GoogleCloudGax._HTTPClientRequest) -> Void) in
         if let candidate = try { () throws -> (Swift.String, [URLQueryItem])? in
-          guard let pathVariable0 = GoogleCloudGax._RoutingMatcher.value(request.name as Swift.String?, matching: [.singleWildcard]) else {
+          guard
+            let pathVariable0 = try GoogleCloudGax._RoutingMatcher.pathValue(
+              request.name as Swift.String?,
+              matching: [.singleWildcard],
+              fieldName: "name")
+          else {
             return nil
           }
           let path = "/v1/\(pathVariable0)"
@@ -397,10 +407,20 @@ func TestGenerateService_PathParameters(t *testing.T) {
 				WithVariableNamed("location"),
 			wantBlock: `let (path, query, configure) = try { () throws -> (Swift.String, [URLQueryItem], (inout GoogleCloudGax._HTTPClientRequest) -> Void) in
         if let candidate = try { () throws -> (Swift.String, [URLQueryItem])? in
-          guard let pathVariable0 = GoogleCloudGax._RoutingMatcher.value(request.project as Swift.String?, matching: [.singleWildcard]) else {
+          guard
+            let pathVariable0 = try GoogleCloudGax._RoutingMatcher.pathValue(
+              request.project as Swift.String?,
+              matching: [.singleWildcard],
+              fieldName: "project")
+          else {
             return nil
           }
-          guard let pathVariable1 = GoogleCloudGax._RoutingMatcher.value(request.location, matching: [.singleWildcard]) else {
+          guard
+            let pathVariable1 = try GoogleCloudGax._RoutingMatcher.pathValue(
+              request.location,
+              matching: [.singleWildcard],
+              fieldName: "location")
+          else {
             return nil
           }
           let path = "/v1/projects/\(pathVariable0)/locations/\(pathVariable1)"
