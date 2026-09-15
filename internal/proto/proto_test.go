@@ -240,10 +240,10 @@ func TestSearch(t *testing.T) {
 				t.Fatal(err)
 			}
 			if found != test.wantFound {
-				t.Errorf("Search() found = %v, want %v", found, test.wantFound)
+				t.Errorf("found = %v, want %v", found, test.wantFound)
 			}
 			if diff := cmp.Diff(test.want, got); diff != "" {
-				t.Errorf("Search() mismatch (-want +got):\n%s", diff)
+				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
