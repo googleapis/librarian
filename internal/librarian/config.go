@@ -54,7 +54,7 @@ Supported cases:
   - Source repository field (e.g., commit, sha256, dir, subpath):
     librarian config get sources.[source-name].[field-name]`,
 				Action: func(ctx context.Context, cmd *cli.Command) error {
-					return runConfigGet(cmd.Root().Writer, cmd.Args().Get(0), cmd.Args().Get(1))
+					return runConfigGet(ctx, cmd.Root().Writer, cmd.Args().Get(0), cmd.Args().Get(1))
 				},
 			},
 			{
@@ -69,7 +69,7 @@ Supported cases:
 	}
 }
 
-func runConfigGet(w io.Writer, path, value string) error {
+func runConfigGet(ctx context.Context, w io.Writer, path, value string) error {
 	if path == "" {
 		return errPathRequired
 	}
@@ -81,7 +81,11 @@ func runConfigGet(w io.Writer, path, value string) error {
 		if value == "" {
 			return errValueRequired
 		}
-		name, err := libraryName(cfg, value)
+		googleapisDir, err := fetchSource(ctx, cfg.Sources.Googleapis, googleapisRepo)
+		if err != nil {
+			return err
+		}
+		name, err := libraryName(cfg, googleapisDir, value)
 		if err != nil {
 			return err
 		}
@@ -114,8 +118,8 @@ func runConfigSet(path, value string) error {
 	return yaml.Write(config.LibrarianYAML, updated)
 }
 
-func libraryName(cfg *config.Config, apiPath string) (string, error) {
-	if library := findExistingLibraryForAPI(cfg, apiPath, ""); library != nil {
+func libraryName(cfg *config.Config, googleapisDir, apiPath string) (string, error) {
+	if library := findExistingLibraryForAPI(cfg, apiPath, "", googleapisDir); library != nil {
 		return library.Name, nil
 	}
 	return "", fmt.Errorf("%w for API: %s", ErrLibraryNotFound, apiPath)

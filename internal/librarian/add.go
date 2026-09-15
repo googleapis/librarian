@@ -198,7 +198,7 @@ func setupResolve(ctx context.Context, cfg *config.Config, name string) (*config
 
 // deriveLibraryName derives a library name from an API path.
 // The derivation is language-specific.
-func deriveLibraryName(language string, api string) string {
+func deriveLibraryName(language, googleapisDir, api string) string {
 	switch language {
 	case config.LanguageDart:
 		return dart.DefaultLibraryName(api)
@@ -230,7 +230,7 @@ func deriveLibraryName(language string, api string) string {
 func addLibrary(cfg *config.Config, apiPath, explicitLibraryName, googleapisDir string) (string, *config.Config, error) {
 	stablePath, isPreview := strings.CutPrefix(apiPath, "preview/")
 	api := &config.API{Path: stablePath}
-	existingLib := findExistingLibraryForAPI(cfg, stablePath, explicitLibraryName)
+	existingLib := findExistingLibraryForAPI(cfg, stablePath, explicitLibraryName, googleapisDir)
 	if isPreview {
 		if existingLib == nil {
 			return "", nil, fmt.Errorf("%w: API path %s", errPreviewRequiresLibrary, apiPath)
@@ -249,7 +249,7 @@ func addLibrary(cfg *config.Config, apiPath, explicitLibraryName, googleapisDir 
 // by deriving the library name from the API path and seeing if that library
 // already exists. In Python the mapping from API path to library name isn't
 // always as simple for historical reasons.
-func findExistingLibraryForAPI(cfg *config.Config, apiPath, explicitLibraryName string) *config.Library {
+func findExistingLibraryForAPI(cfg *config.Config, apiPath, explicitLibraryName, googleapisDir string) *config.Library {
 	switch cfg.Language {
 	case config.LanguageNodejs:
 		return nodejs.FindExistingLibraryForNewAPI(cfg.Libraries, apiPath)
@@ -258,7 +258,7 @@ func findExistingLibraryForAPI(cfg *config.Config, apiPath, explicitLibraryName 
 	default:
 		name := explicitLibraryName
 		if name == "" {
-			name = deriveLibraryName(cfg.Language, apiPath)
+			name = deriveLibraryName(cfg.Language, googleapisDir, apiPath)
 		}
 		// Not using FindLibrary as the error handling becomes awkward.
 		for _, library := range cfg.Libraries {
@@ -295,7 +295,7 @@ func addPreviewLibrary(cfg *config.Config, lib *config.Library, api *config.API)
 func addNewLibrary(cfg *config.Config, api *config.API, explicitLibraryName, googleapisDir string) (string, *config.Config, error) {
 	name := explicitLibraryName
 	if name == "" {
-		name = deriveLibraryName(cfg.Language, api.Path)
+		name = deriveLibraryName(cfg.Language, googleapisDir, api.Path)
 	}
 	lib := &config.Library{
 		Name:          name,
