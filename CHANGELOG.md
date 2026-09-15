@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.44.0](https://github.com/googleapis/librarian/compare/v0.43.0...v0.44.0) (2026-09-14)
+
+
+### Features
+
+* **librarian/swift:** track directory moves for publish command ([#7579](https://github.com/googleapis/librarian/issues/7579)) ([62b6966](https://github.com/googleapis/librarian/commit/62b69660d3663977842a3352d81fdfb05bfb9729))
+* **sidekick/swift:** multiple HTTP bindings ([#7584](https://github.com/googleapis/librarian/issues/7584)) ([c76ba2f](https://github.com/googleapis/librarian/commit/c76ba2f1909c4b71d5f94c8e162d39aa026e40be))
+
 ## [0.43.0](https://github.com/googleapis/librarian/compare/v0.42.0...v0.43.0) (2026-09-14)
 
 
