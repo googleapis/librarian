@@ -119,8 +119,12 @@ func runConfigSet(path, value string) error {
 }
 
 func libraryName(cfg *config.Config, googleapisDir, apiPath string) (string, error) {
-	if library := findExistingLibraryForAPI(cfg, apiPath, "", googleapisDir); library != nil {
-		return library.Name, nil
+	library, err := findExistingLibraryForAPI(cfg, apiPath, "", googleapisDir)
+	if err != nil {
+		return "", err
 	}
-	return "", fmt.Errorf("%w for API: %s", ErrLibraryNotFound, apiPath)
+	if library == nil {
+		return "", fmt.Errorf("%w for API: %s", ErrLibraryNotFound, apiPath)
+	}
+	return library.Name, nil
 }

@@ -230,7 +230,10 @@ func deriveLibraryName(language, googleapisDir, api string) (string, error) {
 func addLibrary(cfg *config.Config, apiPath, explicitLibraryName, googleapisDir string) (string, *config.Config, error) {
 	stablePath, isPreview := strings.CutPrefix(apiPath, "preview/")
 	api := &config.API{Path: stablePath}
-	existingLib := findExistingLibraryForAPI(cfg, stablePath, explicitLibraryName, googleapisDir)
+	existingLib, err := findExistingLibraryForAPI(cfg, stablePath, explicitLibraryName, googleapisDir)
+	if err != nil {
+		return "", nil, err
+	}
 	if isPreview {
 		if existingLib == nil {
 			return "", nil, fmt.Errorf("%w: API path %s", errPreviewRequiresLibrary, apiPath)
@@ -249,28 +252,28 @@ func addLibrary(cfg *config.Config, apiPath, explicitLibraryName, googleapisDir 
 // by deriving the library name from the API path and seeing if that library
 // already exists. In Python the mapping from API path to library name isn't
 // always as simple for historical reasons.
-func findExistingLibraryForAPI(cfg *config.Config, apiPath, explicitLibraryName, googleapisDir string) *config.Library {
+func findExistingLibraryForAPI(cfg *config.Config, apiPath, explicitLibraryName, googleapisDir string) (*config.Library, error) {
 	switch cfg.Language {
 	case config.LanguageNodejs:
-		return nodejs.FindExistingLibraryForNewAPI(cfg.Libraries, apiPath)
+		return nodejs.FindExistingLibraryForNewAPI(cfg.Libraries, apiPath), nil
 	case config.LanguagePython:
-		return python.FindExistingLibraryForNewAPI(cfg.Libraries, apiPath)
+		return python.FindExistingLibraryForNewAPI(cfg.Libraries, apiPath), nil
 	default:
 		name := explicitLibraryName
 		if name == "" {
 			var err error
 			name, err = deriveLibraryName(cfg.Language, googleapisDir, apiPath)
 			if err != nil {
-				return nil
+				return nil, err
 			}
 		}
 		// Not using FindLibrary as the error handling becomes awkward.
 		for _, library := range cfg.Libraries {
 			if library.Name == name {
-				return library
+				return library, nil
 			}
 		}
-		return nil
+		return nil, nil
 	}
 }
 
