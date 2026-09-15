@@ -65,6 +65,8 @@ func Gather(root, relPath string) ([]string, error) {
 	return protos, nil
 }
 
+// Search looks for a regex in the first .proto file in the API directory.
+// Returns the value of the first match found, and a boolean indicating if a match was found.
 func Search(googleapisDir, apiPath string, regex *regexp.Regexp) (string, bool, error) {
 	file, err := searchForProto(googleapisDir, apiPath)
 	if err != nil {
