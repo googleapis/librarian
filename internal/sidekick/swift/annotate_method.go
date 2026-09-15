@@ -241,7 +241,6 @@ func (c *codec) annotateMethod(method *api.Method, modelAnn *modelAnnotations) e
 				ResponseEncoding:  c.ResponseEncoding,
 				OmittedBodyFields: omittedBodyFields,
 			})
-
 		}
 		primary := pathBindings[0]
 		pathVariables = primary.PathVariables

@@ -1162,7 +1162,6 @@ func TestGenerateService_WildcardBodyOmitsPathFields(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	contentStr := string(content)
 
 	// The fields bound by the path template are not part of the request body.
 	want := []string{
@@ -1173,8 +1172,8 @@ func TestGenerateService_WildcardBodyOmitsPathFields(t *testing.T) {
 		`try req.setBody(json: request, omitting: omitted)`,
 	}
 	for _, w := range want {
-		if !strings.Contains(contentStr, w) {
-			t.Errorf("expected %q in %s, got:\n%s", w, filename, contentStr)
+		if !bytes.Contains(content, []byte(w)) {
+			t.Errorf("expected %q in %s, got:\n%s", w, filename, content)
 		}
 	}
 
@@ -1186,12 +1185,12 @@ func TestGenerateService_WildcardBodyOmitsPathFields(t *testing.T) {
 		`try req.setBody(json: body)`,
 	}
 	for _, w := range want {
-		if !strings.Contains(contentStr, w) {
-			t.Errorf("expected %q in %s, got:\n%s", w, filename, contentStr)
+		if !bytes.Contains(content, []byte(w)) {
+			t.Errorf("expected %q in %s, got:\n%s", w, filename, content)
 		}
 	}
 
-	if strings.Contains(contentStr, "try req.setBody(json: request)\n") {
-		t.Errorf("unexpected unfiltered request body in %s, got:\n%s", filename, contentStr)
+	if bytes.Contains(content, []byte("try req.setBody(json: request)\n")) {
+		t.Errorf("unexpected unfiltered request body in %s, got:\n%s", filename, content)
 	}
 }
