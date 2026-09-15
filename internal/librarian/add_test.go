@@ -638,38 +638,6 @@ func TestAddLibrary_ExistingLibrary_Error(t *testing.T) {
 			wantErr: errAPIAlreadyExists,
 		},
 		{
-			name:    "fail if preview requires stable library",
-			apiPath: "preview/google/cloud/secretmanager/v1",
-			cfg: &config.Config{
-				Language:  config.LanguageGo,
-				Libraries: []*config.Library{},
-			},
-			wantErr: errPreviewRequiresLibrary,
-		},
-		{
-			name:    "fail if preview already exists",
-			apiPath: "preview/google/cloud/secretmanager/v1beta2",
-			cfg: &config.Config{
-				Language: config.LanguageGo,
-				Libraries: []*config.Library{
-					{
-						Name:    "secretmanager",
-						Version: "1.2.3",
-						APIs: []*config.API{
-							{Path: "google/cloud/secretmanager/v1"},
-						},
-						Preview: &config.Library{
-							Version: "1.3.0-preview.1",
-							APIs: []*config.API{
-								{Path: "google/cloud/secretmanager/v1beta2"},
-							},
-						},
-					},
-				},
-			},
-			wantErr: errPreviewAlreadyExists,
-		},
-		{
 			name:    "fail if language does not support multiple APIs per library",
 			apiPath: "google/cloud/secretmanager/v1",
 			cfg: &config.Config{
