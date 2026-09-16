@@ -55,13 +55,21 @@ func Add(lib *config.Library, googleapisDir string) (*config.Library, error) {
 func addGoAPI(api *config.API, googleapisDir string) error {
 	version := serviceconfig.ExtractVersion(api.Path)
 	if version == "" {
-		importPath := deriveVersionlessImportPath(api.Path)
-		api.Go = &config.GoAPI{
-			ImportPath: importPath,
-			ProtoOnly:  true,
-		}
+		addVersionlessGoAPI(api)
 		return nil
 	}
+	return addVersionedGoAPI(api, googleapisDir, version)
+}
+
+func addVersionlessGoAPI(api *config.API) {
+	importPath := deriveVersionlessImportPath(api.Path)
+	api.Go = &config.GoAPI{
+		ImportPath: importPath,
+		ProtoOnly:  true,
+	}
+}
+
+func addVersionedGoAPI(api *config.API, googleapisDir, version string) error {
 	importPath, err := importPathFromProto(googleapisDir, api.Path, version)
 	if err != nil {
 		return err
