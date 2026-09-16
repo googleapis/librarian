@@ -28,21 +28,42 @@ func TestAdd(t *testing.T) {
 		want *config.Library
 	}{
 		{
-			name: "versioned api",
+			name: "versioned api matching default import path",
 			lib: &config.Library{
+				Name: "secretmanager",
 				APIs: []*config.API{{Path: "google/cloud/secretmanager/v1"}},
 			},
 			want: &config.Library{
+				Name:    "secretmanager",
 				Version: defaultVersion,
 				APIs:    []*config.API{{Path: "google/cloud/secretmanager/v1"}},
 			},
 		},
 		{
+			name: "versioned api differing from default import path",
+			lib: &config.Library{
+				Name: "developerknowledge",
+				APIs: []*config.API{{Path: "google/developers/knowledge/v1"}},
+			},
+			want: &config.Library{
+				Name:    "developerknowledge",
+				Version: defaultVersion,
+				APIs: []*config.API{{
+					Path: "google/developers/knowledge/v1",
+					Go: &config.GoAPI{
+						ImportPath: "developerknowledge/apiv1",
+					},
+				}},
+			},
+		},
+		{
 			name: "versionless api",
 			lib: &config.Library{
+				Name: "shopping",
 				APIs: []*config.API{{Path: "google/shopping/type"}},
 			},
 			want: &config.Library{
+				Name:    "shopping",
 				Version: defaultVersion,
 				APIs: []*config.API{{
 					Path: "google/shopping/type",
@@ -51,6 +72,37 @@ func TestAdd(t *testing.T) {
 						ProtoOnly:  true,
 					},
 				}},
+			},
+		},
+		{
+			name: "versionless single-segment api",
+			lib: &config.Library{
+				Name: "type",
+				APIs: []*config.API{{Path: "google/type"}},
+			},
+			want: &config.Library{
+				Name:    "type",
+				Version: defaultVersion,
+				APIs: []*config.API{{
+					Path: "google/type",
+					Go: &config.GoAPI{
+						ImportPath: "type/typepb",
+						ProtoOnly:  true,
+					},
+				}},
+			},
+		},
+		{
+			name: "preserves existing version",
+			lib: &config.Library{
+				Name:    "secretmanager",
+				Version: "1.2.0",
+				APIs:    []*config.API{{Path: "google/cloud/secretmanager/v1"}},
+			},
+			want: &config.Library{
+				Name:    "secretmanager",
+				Version: "1.2.0",
+				APIs:    []*config.API{{Path: "google/cloud/secretmanager/v1"}},
 			},
 		},
 	} {
