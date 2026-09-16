@@ -56,6 +56,16 @@ func addGoAPI(api *config.API) {
 	}
 }
 
+func importPathFromProto(googleapisDir, apiPath, version string) (string, error) {
+	pkg, err := goPackage(googleapisDir, apiPath)
+	if err != nil {
+		return "", err
+	}
+	suffix := fmt.Sprintf("/api%s", version)
+	pkg, _, _ = strings.Cut(pkg, suffix)
+	return fmt.Sprintf("%s/api%s", pkg, version), nil
+}
+
 func deriveVersionlessImportPath(apiPath string) string {
 	apiPath = strings.TrimPrefix(apiPath, "google/cloud/")
 	apiPath = strings.TrimPrefix(apiPath, "google/")
