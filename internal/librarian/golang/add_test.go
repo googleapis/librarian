@@ -15,7 +15,9 @@
 package golang
 
 import (
+	"errors"
 	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"testing"
@@ -184,8 +186,9 @@ func TestAdd_Error(t *testing.T) {
 		Name: "secretmanager",
 		APIs: []*config.API{{Path: "google/cloud/secretmanager/v1"}},
 	}
-	if _, err := Add(lib, t.TempDir()); err == nil {
-		t.Fatal("expected error when proto directory is missing, got nil")
+	_, err := Add(lib, t.TempDir())
+	if !errors.Is(err, fs.ErrNotExist) {
+		t.Errorf("got %v, want %v", err, fs.ErrNotExist)
 	}
 }
 
