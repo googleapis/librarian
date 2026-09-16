@@ -142,6 +142,22 @@ func fillGoPreview(stable, preview *config.Library) (*config.Library, error) {
 // DefaultLibraryName derives a default library name from an API path by using
 // the package definition.
 func DefaultLibraryName(googleapisDir, api string) (string, error) {
+	pkg, err := goPackage(googleapisDir, api)
+	if err != nil {
+		return "", err
+	}
+	pkg, _, _ = strings.Cut(pkg, "/")
+	return pkg, nil
+}
+
+// DefaultOutput returns the default output directory for a Go library.
+func DefaultOutput(name, defaultOutput string) string {
+	return filepath.Join(defaultOutput, name)
+}
+
+// goPackage searches for the Go package for the given API.
+// It trims the cloud.google.com/go prefix from the package, if found.
+func goPackage(googleapisDir, api string) (string, error) {
 	pkg, found, err := proto.Search(googleapisDir, api, pkgRe)
 	if err != nil {
 		return "", err
@@ -150,13 +166,7 @@ func DefaultLibraryName(googleapisDir, api string) (string, error) {
 		return "", fmt.Errorf("%w: %s", errGoPackageNotFound, api)
 	}
 	pkg = strings.TrimPrefix(pkg, modulePathPrefix)
-	pkg, _, _ = strings.Cut(pkg, "/")
 	return pkg, nil
-}
-
-// DefaultOutput returns the default output directory for a Go library.
-func DefaultOutput(name, defaultOutput string) string {
-	return filepath.Join(defaultOutput, name)
 }
 
 func findGoAPI(library *config.Library, apiPath string) *config.GoAPI {
