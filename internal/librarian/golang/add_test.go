@@ -57,6 +57,20 @@ func TestAdd(t *testing.T) {
 			},
 		},
 		{
+			name: "versioned nested api",
+			lib: &config.Library{
+				Name: "maps",
+				APIs: []*config.API{{Path: "google/maps/addressvalidation/v1"}},
+			},
+			want: &config.Library{
+				Name:    "maps",
+				Version: defaultVersion,
+				APIs: []*config.API{{
+					Path: "google/maps/addressvalidation/v1",
+				}},
+			},
+		},
+		{
 			name: "versionless api",
 			lib: &config.Library{
 				Name: "shopping",
