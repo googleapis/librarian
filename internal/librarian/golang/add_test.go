@@ -15,7 +15,9 @@
 package golang
 
 import (
+	"errors"
 	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"testing"
@@ -121,6 +123,71 @@ func TestImportPathFromProto(t *testing.T) {
 			}
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestImportPathFromProto_Error(t *testing.T) {
+	t.Parallel()
+	for _, test := range []struct {
+		name    string
+		setup   func(t *testing.T) (string, string)
+		version string
+		wantErr error
+	}{
+		{
+			name: "go_package option not found",
+			setup: func(t *testing.T) (string, string) {
+				tmpDir := t.TempDir()
+				apiPath := "google/cloud/secretmanager/v1"
+				dir := filepath.Join(tmpDir, apiPath)
+				if err := os.MkdirAll(dir, 0o755); err != nil {
+					t.Fatal(err)
+				}
+				if err := os.WriteFile(filepath.Join(dir, "service.proto"), []byte("syntax = \"proto3\";"), 0o644); err != nil {
+					t.Fatal(err)
+				}
+				return tmpDir, apiPath
+			},
+			version: "v1",
+			wantErr: errGoPackageNotFound,
+		},
+		{
+			name: "nonexistent directory",
+			setup: func(t *testing.T) (string, string) {
+				return t.TempDir(), "google/cloud/nonexistent/v1"
+			},
+			version: "v1",
+			wantErr: fs.ErrNotExist,
+		},
+		{
+			name: "unreadable proto file",
+			setup: func(t *testing.T) (string, string) {
+				if os.Geteuid() == 0 {
+					t.Skip("skipping permission test when running as root")
+				}
+				tmpDir := t.TempDir()
+				apiPath := "google/cloud/secretmanager/v1"
+				dir := filepath.Join(tmpDir, apiPath)
+				if err := os.MkdirAll(dir, 0o755); err != nil {
+					t.Fatal(err)
+				}
+				if err := os.WriteFile(filepath.Join(dir, "service.proto"), []byte("syntax = \"proto3\";"), 0o000); err != nil {
+					t.Fatal(err)
+				}
+				return tmpDir, apiPath
+			},
+			version: "v1",
+			wantErr: fs.ErrPermission,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			googleapisDir, apiPath := test.setup(t)
+			_, err := importPathFromProto(googleapisDir, apiPath, test.version)
+			if !errors.Is(err, test.wantErr) {
+				t.Errorf("importPathFromProto() error = %v, want %v", err, test.wantErr)
 			}
 		})
 	}
