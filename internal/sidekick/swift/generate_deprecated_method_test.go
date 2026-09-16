@@ -189,7 +189,7 @@ func TestGenerateService_DeprecatedMethods(t *testing.T) {
 
 			swiftCfg := swiftConfig(t, []config.SwiftDependency{
 				{Name: "GoogleCloudGax", RequiredByServices: true},
-				{Name: "GoogleCloudAuth", RequiredByServices: true},
+				{Name: "GoogleAuth", RequiredByServices: true},
 				{ApiPackage: "google.longrunning", Name: "GoogleCloudLongrunningV1"},
 				{ApiPackage: "google.rpc", Name: "GoogleRpc"},
 			})
