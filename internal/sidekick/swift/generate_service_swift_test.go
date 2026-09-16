@@ -284,7 +284,7 @@ func TestGenerateService_WithImports(t *testing.T) {
 			RequiredByServices: true,
 		},
 		{
-			Name:               "GoogleCloudAuth",
+			Name:               "GoogleAuth",
 			RequiredByServices: true,
 		},
 		{
@@ -622,7 +622,7 @@ func TestGenerateService_Pagination(t *testing.T) {
 					RequiredByServices: true,
 				},
 				{
-					Name:               "GoogleCloudAuth",
+					Name:               "GoogleAuth",
 					RequiredByServices: true,
 				},
 			})
@@ -816,7 +816,7 @@ func TestGenerateService_LRO(t *testing.T) {
 			RequiredByServices: true,
 		},
 		{
-			Name:               "GoogleCloudAuth",
+			Name:               "GoogleAuth",
 			RequiredByServices: true,
 		},
 		{
@@ -940,7 +940,7 @@ func TestGenerateService_LRO_Empty(t *testing.T) {
 			RequiredByServices: true,
 		},
 		{
-			Name:               "GoogleCloudAuth",
+			Name:               "GoogleAuth",
 			RequiredByServices: true,
 		},
 		{
@@ -1001,7 +1001,7 @@ func TestGenerateDiscoveryService_Files(t *testing.T) {
 			RequiredByServices: true,
 		},
 		{
-			Name:               "GoogleCloudAuth",
+			Name:               "GoogleAuth",
 			RequiredByServices: true,
 		},
 	})
@@ -1056,5 +1056,141 @@ func TestGenerateDiscoveryService_Files(t *testing.T) {
 				t.Errorf("expected struct %q in %s, got:\n%s", wantStruct, filename, content)
 			}
 		})
+	}
+}
+
+func TestGenerateService_WildcardBodyOmitsPathFields(t *testing.T) {
+	outDir := t.TempDir()
+
+	secretMessage := &api.Message{
+		Name:    "Secret",
+		Package: "google.cloud.secretmanager.v1",
+		ID:      ".google.cloud.secretmanager.v1.Secret",
+		Fields: []*api.Field{
+			{Name: "name", JSONName: "name", Typez: api.TypezString},
+		},
+	}
+	requestMessage := &api.Message{
+		Name:    "SecretRequest",
+		Package: "google.cloud.secretmanager.v1",
+		ID:      ".google.cloud.secretmanager.v1.SecretRequest",
+		Fields: []*api.Field{
+			{Name: "parent", JSONName: "parent", Typez: api.TypezString},
+			{Name: "alternative_parent", JSONName: "alternativeParent", Typez: api.TypezString},
+			{
+				Name:     "secret",
+				JSONName: "secret",
+				Typez:    api.TypezMessage,
+				TypezID:  ".google.cloud.secretmanager.v1.Secret",
+				Optional: true,
+			},
+		},
+	}
+
+	service := &api.Service{
+		Name: "SecretManagerService",
+		Methods: []*api.Method{
+			{
+				Name:        "CreateSecret",
+				InputTypeID: requestMessage.ID,
+				InputType:   requestMessage,
+				PathInfo: &api.PathInfo{
+					BodyFieldPath: "*",
+					Bindings: []*api.PathBinding{{
+						Verb:         "POST",
+						PathTemplate: (&api.PathTemplate{}).WithLiteral("v1").WithVariableNamed("parent"),
+					}},
+				},
+			},
+			{
+				Name:        "UpdateSecret",
+				InputTypeID: requestMessage.ID,
+				InputType:   requestMessage,
+				PathInfo: &api.PathInfo{
+					BodyFieldPath: "*",
+					Bindings: []*api.PathBinding{{
+						Verb:         "PATCH",
+						PathTemplate: (&api.PathTemplate{}).WithLiteral("v1").WithVariableNamed("secret", "name"),
+					}},
+				},
+			},
+			{
+				Name:        "AddSecretVersion",
+				InputTypeID: requestMessage.ID,
+				InputType:   requestMessage,
+				PathInfo: &api.PathInfo{
+					BodyFieldPath: "*",
+					Bindings: []*api.PathBinding{
+						{
+							Verb:         "POST",
+							PathTemplate: (&api.PathTemplate{}).WithLiteral("v1").WithVariableNamed("parent"),
+						},
+						{
+							Verb:         "POST",
+							PathTemplate: (&api.PathTemplate{}).WithLiteral("v1").WithVariableNamed("alternative_parent"),
+						},
+					},
+				},
+			},
+			{
+				Name:        "PatchSecret",
+				InputTypeID: requestMessage.ID,
+				InputType:   requestMessage,
+				PathInfo: &api.PathInfo{
+					BodyFieldPath: "secret",
+					Bindings: []*api.PathBinding{{
+						Verb:         "PATCH",
+						PathTemplate: (&api.PathTemplate{}).WithLiteral("v1").WithVariableNamed("parent"),
+					}},
+				},
+			},
+		},
+	}
+
+	model := api.NewTestAPI([]*api.Message{requestMessage, secretMessage}, nil, []*api.Service{service})
+	model.PackageName = "google.cloud.secretmanager.v1"
+
+	library := &config.Library{
+		Swift: swiftConfig(t, nil),
+	}
+	if err := Generate(t.Context(), model, outDir, library, nil); err != nil {
+		t.Fatal(err)
+	}
+
+	filename := filepath.Join(outDir, "Sources", "GoogleCloudSecretmanagerV1", "SecretManagerService+Transport.swift")
+	content, err := os.ReadFile(filename)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// The fields bound by the path template are not part of the request body.
+	want := []string{
+		`let (path, query, configure, omitted) = try { () throws -> (Swift.String, [URLQueryItem], (inout GoogleCloudGax._HTTPClientRequest) -> Void, [Swift.String]) in`,
+		`return (candidate.0, candidate.1, { $0.setMethod(.POST) }, ["parent"])`,
+		`return (candidate.0, candidate.1, { $0.setMethod(.PATCH) }, ["secret.name"])`,
+		`return (candidate.0, candidate.1, { $0.setMethod(.POST) }, ["alternativeParent"])`,
+		`try req.setBody(json: request, omitting: omitted)`,
+	}
+	for _, w := range want {
+		if !bytes.Contains(content, []byte(w)) {
+			t.Errorf("expected %q in %s, got:\n%s", w, filename, content)
+		}
+	}
+
+	// Methods with a named body field keep the previous shape: the body is a separate field, it
+	// cannot contain the path parameters.
+	want = []string{
+		`let (path, query, configure) = try { () throws -> (Swift.String, [URLQueryItem], (inout GoogleCloudGax._HTTPClientRequest) -> Void) in`,
+		`return (candidate.0, candidate.1, { $0.setMethod(.PATCH) })`,
+		`try req.setBody(json: body)`,
+	}
+	for _, w := range want {
+		if !bytes.Contains(content, []byte(w)) {
+			t.Errorf("expected %q in %s, got:\n%s", w, filename, content)
+		}
+	}
+
+	if bytes.Contains(content, []byte("try req.setBody(json: request)\n")) {
+		t.Errorf("unexpected unfiltered request body in %s, got:\n%s", filename, content)
 	}
 }

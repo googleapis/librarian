@@ -126,7 +126,7 @@ func TestResolveDependencyVersions(t *testing.T) {
 			libraries: []*config.Library{
 				{
 					Name:    "google-cloud-auth",
-					Output:  "packages/swift-google-auth/Sources/GoogleCloudAuth/generated",
+					Output:  "packages/swift-google-auth/Sources/GoogleAuth/generated",
 					Version: "0.0.0-preview",
 				},
 			},

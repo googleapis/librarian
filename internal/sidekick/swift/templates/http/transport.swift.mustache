@@ -46,7 +46,7 @@ extension Clients {
     {{#Codec.Methods}}
 
     public func {{> /templates/common/method_signature/request_options}} {
-      let (path, query, configure) = try { () throws -> (Swift.String, [URLQueryItem], (inout GoogleCloudGax._HTTPClientRequest) -> Void) in
+      let (path, query, configure{{#Codec.HasOmittedBodyFields}}, omitted{{/Codec.HasOmittedBodyFields}}) = try { () throws -> (Swift.String, [URLQueryItem], (inout GoogleCloudGax._HTTPClientRequest) -> Void{{#Codec.HasOmittedBodyFields}}, [Swift.String]{{/Codec.HasOmittedBodyFields}}) in
         {{#Codec.PathBindings}}
         if let candidate = try { () throws -> (Swift.String, [URLQueryItem])? in
           {{#PathVariables}}
@@ -98,7 +98,7 @@ extension Clients {
           {{/QueryParams}}
           return (path, query)
         }() {
-          return (candidate.0, candidate.1, { $0.setMethod(.{{HTTPMethod}}) })
+          return (candidate.0, candidate.1, { $0.setMethod(.{{HTTPMethod}}) }{{#Codec.HasOmittedBodyFields}}, {{{OmittedBodyFieldsExpression}}}{{/Codec.HasOmittedBodyFields}})
         }
         {{/Codec.PathBindings}}
         var paths: [GoogleCloudGax.PathMismatch] = []
@@ -136,7 +136,12 @@ extension Clients {
       req.addHeader(name: GoogleCloudGax._HeaderNames.apiClient, value: Clients.clientHeader)
       {{#Codec.HasBody}}
       {{#Codec.IsBodyWildcard}}
+      {{#Codec.HasOmittedBodyFields}}
+      try req.setBody(json: request, omitting: omitted)
+      {{/Codec.HasOmittedBodyFields}}
+      {{^Codec.HasOmittedBodyFields}}
       try req.setBody(json: request)
+      {{/Codec.HasOmittedBodyFields}}
       {{/Codec.IsBodyWildcard}}
       {{^Codec.IsBodyWildcard}}
       if let body = request.{{Codec.BodyField}} {

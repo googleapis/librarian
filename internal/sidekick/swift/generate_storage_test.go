@@ -278,7 +278,7 @@ func TestGenerateStorage_MultiModel(t *testing.T) {
 
 	swiftPkg := swiftConfig(t, []config.SwiftDependency{
 		{Name: "GoogleCloudGax", RequiredByServices: true},
-		{Name: "GoogleCloudAuth", RequiredByServices: true},
+		{Name: "GoogleAuth", RequiredByServices: true},
 		{Name: "GoogleIAMV1", ApiPackage: "google.iam.v1"},
 		{Name: "GoogleLongRunning", ApiPackage: "google.longrunning"},
 	})

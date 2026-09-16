@@ -192,6 +192,139 @@ func TestAdd_Error(t *testing.T) {
 	}
 }
 
+func TestImportPath(t *testing.T) {
+	t.Parallel()
+	for _, test := range []struct {
+		name      string
+		apiPath   string
+		version   string
+		goPackage string
+		want      string
+	}{
+		{
+			name:      "standard cloud api",
+			apiPath:   "google/cloud/secretmanager/v1",
+			version:   "v1",
+			goPackage: "cloud.google.com/go/secretmanager/apiv1/secretmanagerpb;secretmanagerpb",
+			want:      "secretmanager/apiv1",
+		},
+		{
+			name:      "nested api",
+			apiPath:   "google/maps/addressvalidation/v1",
+			version:   "v1",
+			goPackage: "cloud.google.com/go/maps/addressvalidation/apiv1/addressvalidationpb;addressvalidationpb",
+			want:      "maps/addressvalidation/apiv1",
+		},
+		{
+			name:      "custom package without semicolon suffix",
+			apiPath:   "google/developers/knowledge/v1",
+			version:   "v1",
+			goPackage: "cloud.google.com/go/developerknowledge/apiv1/developerknowledgepb",
+			want:      "developerknowledge/apiv1",
+		},
+		{
+			name:      "beta version",
+			apiPath:   "google/shopping/merchant/accounts/v1beta",
+			version:   "v1beta",
+			goPackage: "cloud.google.com/go/shopping/merchant/accounts/apiv1beta/accountspb;accountspb",
+			want:      "shopping/merchant/accounts/apiv1beta",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			googleapisDir := t.TempDir()
+			protoDir := filepath.Join(googleapisDir, test.apiPath)
+			if err := os.MkdirAll(protoDir, 0o755); err != nil {
+				t.Fatal(err)
+			}
+			content := fmt.Sprintf("option go_package = %q;", test.goPackage)
+			if err := os.WriteFile(filepath.Join(protoDir, "service.proto"), []byte(content), 0o644); err != nil {
+				t.Fatal(err)
+			}
+			got, err := importPath(googleapisDir, test.apiPath, test.version)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestImportPath_Error(t *testing.T) {
+	t.Parallel()
+	for _, test := range []struct {
+		name    string
+		setup   func(t *testing.T) (string, string)
+		version string
+		wantErr error
+	}{
+		{
+			name: "go_package option not found",
+			setup: func(t *testing.T) (string, string) {
+				tmpDir := t.TempDir()
+				apiPath := "google/cloud/secretmanager/v1"
+				dir := filepath.Join(tmpDir, apiPath)
+				if err := os.MkdirAll(dir, 0o755); err != nil {
+					t.Fatal(err)
+				}
+				if err := os.WriteFile(filepath.Join(dir, "service.proto"), []byte("syntax = \"proto3\";"), 0o644); err != nil {
+					t.Fatal(err)
+				}
+				return tmpDir, apiPath
+			},
+			version: "v1",
+			wantErr: errGoPackageNotFound,
+		},
+		{
+			name: "api version not found in go_package",
+			setup: func(t *testing.T) (string, string) {
+				tmpDir := t.TempDir()
+				apiPath := "google/cloud/secretmanager/v1"
+				dir := filepath.Join(tmpDir, apiPath)
+				if err := os.MkdirAll(dir, 0o755); err != nil {
+					t.Fatal(err)
+				}
+				content := `option go_package = "cloud.google.com/go/secretmanager/secretmanagerpb;secretmanagerpb";`
+				if err := os.WriteFile(filepath.Join(dir, "service.proto"), []byte(content), 0o644); err != nil {
+					t.Fatal(err)
+				}
+				return tmpDir, apiPath
+			},
+			version: "v1",
+			wantErr: errAPIVersionNotFound,
+		},
+		{
+			name: "mismatched api version in go_package",
+			setup: func(t *testing.T) (string, string) {
+				tmpDir := t.TempDir()
+				apiPath := "google/cloud/secretmanager/v2"
+				dir := filepath.Join(tmpDir, apiPath)
+				if err := os.MkdirAll(dir, 0o755); err != nil {
+					t.Fatal(err)
+				}
+				content := `option go_package = "cloud.google.com/go/secretmanager/apiv1/secretmanagerpb;secretmanagerpb";`
+				if err := os.WriteFile(filepath.Join(dir, "service.proto"), []byte(content), 0o644); err != nil {
+					t.Fatal(err)
+				}
+				return tmpDir, apiPath
+			},
+			version: "v2",
+			wantErr: errAPIVersionNotFound,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			googleapisDir, apiPath := test.setup(t)
+			_, err := importPath(googleapisDir, apiPath, test.version)
+			if !errors.Is(err, test.wantErr) {
+				t.Errorf("importPath() error = %v, want %v", err, test.wantErr)
+			}
+		})
+	}
+}
+
 func TestReleasePleaseExtraFiles(t *testing.T) {
 	for _, test := range []struct {
 		name string

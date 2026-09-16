@@ -123,7 +123,7 @@ func TestGenerateService_MapPagination(t *testing.T) {
 					RequiredByServices: true,
 				},
 				{
-					Name:               "GoogleCloudAuth",
+					Name:               "GoogleAuth",
 					RequiredByServices: true,
 				},
 			})
