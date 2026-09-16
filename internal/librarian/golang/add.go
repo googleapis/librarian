@@ -15,6 +15,7 @@
 package golang
 
 import (
+	"errors"
 	"fmt"
 	"path"
 	"strings"
@@ -26,6 +27,10 @@ import (
 // defaultVersion is the first version used for a new library.
 // This is set on the initial `librarian add` for a new API.
 const defaultVersion = "0.0.0"
+
+var (
+	errAPIVersionNotFound = errors.New("api version not found")
+)
 
 // Add initializes a Go library with default values.
 func Add(lib *config.Library) *config.Library {
@@ -62,7 +67,10 @@ func importPath(googleapisDir, apiPath, version string) (string, error) {
 		return "", err
 	}
 	suffix := fmt.Sprintf("/api%s", version)
-	pkg, _, _ = strings.Cut(pkg, suffix)
+	pkg, _, found := strings.Cut(pkg, suffix)
+	if !found {
+		return "", fmt.Errorf("%w: %s", errAPIVersionNotFound, apiPath)
+	}
 	return fmt.Sprintf("%s/api%s", pkg, version), nil
 }
 
