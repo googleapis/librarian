@@ -56,7 +56,7 @@ func addGoAPI(api *config.API) {
 	}
 }
 
-func importPathFromProto(googleapisDir, apiPath, version string) (string, error) {
+func importPath(googleapisDir, apiPath, version string) (string, error) {
 	pkg, err := goPackage(googleapisDir, apiPath)
 	if err != nil {
 		return "", err

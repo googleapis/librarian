@@ -68,7 +68,7 @@ func TestAdd(t *testing.T) {
 	}
 }
 
-func TestImportPathFromProto(t *testing.T) {
+func TestImportPath(t *testing.T) {
 	t.Parallel()
 	for _, test := range []struct {
 		name      string
@@ -117,7 +117,7 @@ func TestImportPathFromProto(t *testing.T) {
 			if err := os.WriteFile(filepath.Join(protoDir, "service.proto"), []byte(content), 0o644); err != nil {
 				t.Fatal(err)
 			}
-			got, err := importPathFromProto(googleapisDir, test.apiPath, test.version)
+			got, err := importPath(googleapisDir, test.apiPath, test.version)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -128,7 +128,7 @@ func TestImportPathFromProto(t *testing.T) {
 	}
 }
 
-func TestImportPathFromProto_Error(t *testing.T) {
+func TestImportPath_Error(t *testing.T) {
 	t.Parallel()
 	for _, test := range []struct {
 		name    string
@@ -185,9 +185,9 @@ func TestImportPathFromProto_Error(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
 			googleapisDir, apiPath := test.setup(t)
-			_, err := importPathFromProto(googleapisDir, apiPath, test.version)
+			_, err := importPath(googleapisDir, apiPath, test.version)
 			if !errors.Is(err, test.wantErr) {
-				t.Errorf("importPathFromProto() error = %v, want %v", err, test.wantErr)
+				t.Errorf("importPath() error = %v, want %v", err, test.wantErr)
 			}
 		})
 	}
