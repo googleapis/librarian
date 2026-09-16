@@ -130,6 +130,29 @@ func TestAdd(t *testing.T) {
 				APIs:    []*config.API{{Path: "google/cloud/secretmanager/v1"}},
 			},
 		},
+		{
+			name:      "preserves existing go api config",
+			goPackage: "cloud.google.com/go/secretmanager/apiv1/secretmanagerpb;secretmanagerpb",
+			lib: &config.Library{
+				Name: "secretmanager",
+				APIs: []*config.API{{
+					Path: "google/cloud/secretmanager/v1",
+					Go: &config.GoAPI{
+						ImportPath: "custom/import/path",
+					},
+				}},
+			},
+			want: &config.Library{
+				Name:    "secretmanager",
+				Version: defaultVersion,
+				APIs: []*config.API{{
+					Path: "google/cloud/secretmanager/v1",
+					Go: &config.GoAPI{
+						ImportPath: "custom/import/path",
+					},
+				}},
+			},
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
@@ -144,11 +167,25 @@ func TestAdd(t *testing.T) {
 					t.Fatal(err)
 				}
 			}
-			got := Add(test.lib, googleapisDir)
+			got, err := Add(test.lib, googleapisDir)
+			if err != nil {
+				t.Fatal(err)
+			}
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
+	}
+}
+
+func TestAdd_Error(t *testing.T) {
+	t.Parallel()
+	lib := &config.Library{
+		Name: "secretmanager",
+		APIs: []*config.API{{Path: "google/cloud/secretmanager/v1"}},
+	}
+	if _, err := Add(lib, t.TempDir()); err == nil {
+		t.Fatal("expected error when proto directory is missing, got nil")
 	}
 }
 
