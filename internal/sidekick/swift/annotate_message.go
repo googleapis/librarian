@@ -77,7 +77,7 @@ type messageAnnotations struct {
 func (ann *messageAnnotations) ConvertImports() []string {
 	importMap := map[string]bool{}
 	for _, dep := range ann.DependsOn {
-		if dep.Name == "GoogleCloudGax" || dep.Name == ann.ModulePath {
+		if dep.Name == "GoogleGax" || dep.Name == ann.ModulePath {
 			continue
 		}
 		if dep.SpiAttribute != "" {
@@ -85,8 +85,8 @@ func (ann *messageAnnotations) ConvertImports() []string {
 		} else {
 			importMap["@_spi(GoogleCloudInternal) import "+dep.Name] = true
 		}
-		if dep.Name == "GoogleCloudWKT" {
-			importMap["internal import GoogleCloudWKTConvert"] = true
+		if dep.Name == "GoogleWKT" {
+			importMap["internal import GoogleWKTConvert"] = true
 		}
 	}
 	var result []string
@@ -176,7 +176,7 @@ func (c *codec) annotateMessage(message *api.Message, model *modelAnnotations) e
 	if dep != nil {
 		annotations.DependsOn[dep.Name] = dep
 	}
-	// All messages require the well known types for GoogleCloudWKT._AnyPackable.
+	// All messages require the well known types for GoogleWKT._AnyPackable.
 	wktDep, err := c.addApiPackageDependency(wellKnownProtobufPackage)
 	if err != nil {
 		return err

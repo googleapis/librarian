@@ -31,25 +31,25 @@ import Foundation
 {{#Codec.ServiceImports}}
 import {{.}}
 {{/Codec.ServiceImports}}
-@_spi(GoogleCloudInternal) import GoogleCloudGax
+@_spi(GoogleCloudInternal) import GoogleGax
 
 extension Clients {
   final class {{Codec.StubPrefix}}Retry: {{Codec.StubPrefix}}Stub {
     let inner: any {{Codec.StubPrefix}}Stub
-    let options: GoogleCloudGax.ClientOptions
+    let options: GoogleGax.ClientOptions
 
-    public init(_ inner: any {{Codec.StubPrefix}}Stub, options: GoogleCloudGax.ClientOptions) {
+    public init(_ inner: any {{Codec.StubPrefix}}Stub, options: GoogleGax.ClientOptions) {
       self.inner = inner
       self.options = options
     }
 
     func _intercept<Input, Output>(
         request: Input,
-        options: GoogleCloudGax.RequestOptions,
+        options: GoogleGax.RequestOptions,
         idempotent: Swift.Bool,
-        action: (Input, GoogleCloudGax.RequestOptions) async throws -> Output,
+        action: (Input, GoogleGax.RequestOptions) async throws -> Output,
     ) async throws -> Output {
-      let loop = GoogleCloudGax._RetryLoop(
+      let loop = GoogleGax._RetryLoop(
         options: options, withDefault: self.options, idempotent: idempotent,
       )
       let attempt = { (attemptTimeout: Swift.Duration?) async throws -> Output in
@@ -66,7 +66,7 @@ extension Clients {
         request: request,
         options: options,
         idempotent: {{Codec.Idempotent}},
-        action: { (r: {{InputType.Codec.ParameterTypeName}}, o: GoogleCloudGax.RequestOptions) async throws ->
+        action: { (r: {{InputType.Codec.ParameterTypeName}}, o: GoogleGax.RequestOptions) async throws ->
             {{^ReturnsEmpty}}{{Codec.ReturnType}}{{/ReturnsEmpty}}
             {{#ReturnsEmpty}}Void{{/ReturnsEmpty}} in
               return try await self.inner.{{Codec.Name}}(request: r, options: o)

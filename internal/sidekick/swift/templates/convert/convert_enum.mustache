@@ -34,7 +34,7 @@ extension {{Codec.FullyQualifiedName}} {
       return {{Codec.ProtoTypeName}}(rawValue: val)
         ?? .UNRECOGNIZED(val)
     case .{{Codec.UnknownStringName}}(let str):
-      throw GoogleCloudGax.ProtobufConversionError.noIntegerValue(enumType: "{{Codec.FullyQualifiedName}}", stringValue: str)
+      throw GoogleGax.ProtobufConversionError.noIntegerValue(enumType: "{{Codec.FullyQualifiedName}}", stringValue: str)
     }
   }
 }

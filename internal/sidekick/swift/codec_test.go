@@ -79,7 +79,7 @@ func TestParseOptions(t *testing.T) {
 				Name:          "google-cloud-wkt",
 				CopyrightYear: "2038",
 				Swift: &config.SwiftPackage{
-					LibraryNameOverride: "GoogleCloudWKT",
+					LibraryNameOverride: "GoogleWKT",
 				},
 			},
 			module: &config.SwiftModule{
@@ -88,7 +88,7 @@ func TestParseOptions(t *testing.T) {
 			want: &codec{
 				Module:             true,
 				GenerationYear:     "2038",
-				TargetLibraryName:  "GoogleCloudWKT",
+				TargetLibraryName:  "GoogleWKT",
 				PackageName:        "test",
 				PackageRepoName:    "swift-google-cloud-wkt",
 				PackageVersion:     "0.0.0",
@@ -418,11 +418,11 @@ func TestSkipDependency(t *testing.T) {
 		wantSkip          bool
 	}{
 		{
-			name:              "multi-module self import skipped (e.g. wkt messages importing GoogleCloudWKT)",
-			targetLibraryName: "GoogleCloudWKT",
+			name:              "multi-module self import skipped (e.g. wkt messages importing GoogleWKT)",
+			targetLibraryName: "GoogleWKT",
 			packageName:       "google-protobuf",
 			module:            true,
-			depName:           "GoogleCloudWKT",
+			depName:           "GoogleWKT",
 			wantSkip:          true,
 		},
 		{
@@ -448,7 +448,7 @@ func TestSkipDependency(t *testing.T) {
 			libraryName:       "GoogleCloudSecretManagerV1",
 			packageName:       "google-cloud-secretmanager-v1",
 			module:            false,
-			depName:           "GoogleCloudGax",
+			depName:           "GoogleGax",
 			wantSkip:          false,
 		},
 	} {

@@ -22,7 +22,7 @@ limitations under the License.
 
 import Foundation
 import GoogleAuth
-import GoogleCloudGax
+import GoogleGax
 {{#Codec.ServiceImports}}
 import {{.}}
 {{/Codec.ServiceImports}}
@@ -158,7 +158,7 @@ extension StorageControlProtocol {
   @available(*, deprecated)
   {{/Deprecated}}
   public func {{> /templates/common/method_signature/request_options}} {
-    throw GoogleCloudGax.RequestError.unimplemented
+    throw GoogleGax.RequestError.unimplemented
   }
   {{#Codec.Pagination}}
 
@@ -174,9 +174,9 @@ extension StorageControlProtocol {
   {{/Deprecated}}
   public func {{> /templates/common/method_signature/pagination_options}} {
     let listRpc = { (token: Swift.String) async throws -> {{Codec.ReturnType}} in
-      throw GoogleCloudGax.RequestError.unimplemented
+      throw GoogleGax.RequestError.unimplemented
     }
-    return GoogleCloudGax.PaginatedResponseSequence(listRpc: listRpc)
+    return GoogleGax.PaginatedResponseSequence(listRpc: listRpc)
   }
   {{/Codec.Pagination}}
   {{#Codec.LRO}}
@@ -192,10 +192,10 @@ extension StorageControlProtocol {
   @available(*, deprecated)
   {{/Deprecated}}
   public func {{> /templates/common/method_signature/lro_options}} {
-    let poll = { () async throws -> GoogleCloudGax._PollableOperationImpl<{{Codec.LRO.ReturnType}}>.State in
-      throw GoogleCloudGax.RequestError.unimplemented
+    let poll = { () async throws -> GoogleGax._PollableOperationImpl<{{Codec.LRO.ReturnType}}>.State in
+      throw GoogleGax.RequestError.unimplemented
     }
-    return GoogleCloudGax._PollableOperationImpl(initialState: .init(done: false, result: nil), poll: poll)
+    return GoogleGax._PollableOperationImpl(initialState: .init(done: false, result: nil), poll: poll)
   }
   {{/Codec.LRO}}
   {{/Codec.Methods}}
@@ -214,7 +214,7 @@ extension StorageControlProtocol {
   @available(*, deprecated)
   {{/Deprecated}}
   public func {{> /templates/common/method_signature/request_options}} {
-    throw GoogleCloudGax.RequestError.unimplemented
+    throw GoogleGax.RequestError.unimplemented
   }
   {{#Codec.Pagination}}
 
@@ -230,9 +230,9 @@ extension StorageControlProtocol {
   {{/Deprecated}}
   public func {{> /templates/common/method_signature/pagination_options}} {
     let listRpc = { (token: Swift.String) async throws -> {{Codec.ReturnType}} in
-      throw GoogleCloudGax.RequestError.unimplemented
+      throw GoogleGax.RequestError.unimplemented
     }
-    return GoogleCloudGax.PaginatedResponseSequence(listRpc: listRpc)
+    return GoogleGax.PaginatedResponseSequence(listRpc: listRpc)
   }
   {{/Codec.Pagination}}
   {{#Codec.LRO}}
@@ -248,10 +248,10 @@ extension StorageControlProtocol {
   @available(*, deprecated)
   {{/Deprecated}}
   public func {{> /templates/common/method_signature/lro_options}} {
-    let poll = { () async throws -> GoogleCloudGax._PollableOperationImpl<{{Codec.LRO.ReturnType}}>.State in
-      throw GoogleCloudGax.RequestError.unimplemented
+    let poll = { () async throws -> GoogleGax._PollableOperationImpl<{{Codec.LRO.ReturnType}}>.State in
+      throw GoogleGax.RequestError.unimplemented
     }
-    return GoogleCloudGax._PollableOperationImpl(initialState: .init(done: false, result: nil), poll: poll)
+    return GoogleGax._PollableOperationImpl(initialState: .init(done: false, result: nil), poll: poll)
   }
   {{/Codec.LRO}}
   {{/Codec.Methods}}

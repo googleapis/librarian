@@ -277,7 +277,7 @@ func TestGenerateStorage_MultiModel(t *testing.T) {
 	}
 
 	swiftPkg := swiftConfig(t, []config.SwiftDependency{
-		{Name: "GoogleCloudGax", RequiredByServices: true},
+		{Name: "GoogleGax", RequiredByServices: true},
 		{Name: "GoogleAuth", RequiredByServices: true},
 		{Name: "GoogleIAMV1", ApiPackage: "google.iam.v1"},
 		{Name: "GoogleLongRunning", ApiPackage: "google.longrunning"},
@@ -320,7 +320,7 @@ func TestGenerateStorage_MultiModel(t *testing.T) {
 		!strings.Contains(protocolStr, "func getIamPolicy(") {
 		t.Errorf("StorageControlProtocol.swift missing unified methods:\n%s", protocolStr)
 	}
-	if !strings.Contains(protocolStr, "byItem: ListBucketsRequest, options: GoogleCloudGax.RequestOptions") ||
+	if !strings.Contains(protocolStr, "byItem: ListBucketsRequest, options: GoogleGax.RequestOptions") ||
 		!strings.Contains(protocolStr, "any AsyncSequence<Bucket, Swift.Error>") {
 		t.Errorf("StorageControlProtocol.swift missing paginated helper method:\n%s", protocolStr)
 	}
@@ -334,11 +334,11 @@ func TestGenerateStorage_MultiModel(t *testing.T) {
 		!strings.Contains(protocolStr, "try self.listBuckets(byItem: byItem, options: .init())") {
 		t.Errorf("StorageControlProtocol.swift missing paginated convenience overload without options:\n%s", protocolStr)
 	}
-	if !strings.Contains(protocolStr, "func renameFolder(withPolling: RenameFolderRequest) async throws -> any GoogleCloudGax.PollableOperation<Folder>") {
+	if !strings.Contains(protocolStr, "func renameFolder(withPolling: RenameFolderRequest) async throws -> any GoogleGax.PollableOperation<Folder>") {
 		t.Errorf("StorageControlProtocol.swift missing LRO method requirement:\n%s", protocolStr)
 	}
-	if !strings.Contains(protocolStr, "withPolling: RenameFolderRequest, options: GoogleCloudGax.RequestOptions") ||
-		!strings.Contains(protocolStr, ") async throws -> any GoogleCloudGax.PollableOperation<Folder>") {
+	if !strings.Contains(protocolStr, "withPolling: RenameFolderRequest, options: GoogleGax.RequestOptions") ||
+		!strings.Contains(protocolStr, ") async throws -> any GoogleGax.PollableOperation<Folder>") {
 		t.Errorf("StorageControlProtocol.swift missing LRO method with options requirement:\n%s", protocolStr)
 	}
 	if !strings.Contains(protocolStr, "extension StorageControlProtocol {") {
@@ -369,11 +369,11 @@ func TestGenerateStorage_MultiModel(t *testing.T) {
 		!strings.Contains(clientStr, "private let control: any Clients.StorageControlStub") {
 		t.Errorf("StorageControlClient.swift missing private stub fields:\n%s", clientStr)
 	}
-	if !strings.Contains(clientStr, "let pollingErrorPolicy: any GoogleCloudGax.PollingErrorPolicy") ||
-		!strings.Contains(clientStr, "let pollingBackoffPolicy: any GoogleCloudGax.BackoffPolicy") {
+	if !strings.Contains(clientStr, "let pollingErrorPolicy: any GoogleGax.PollingErrorPolicy") ||
+		!strings.Contains(clientStr, "let pollingBackoffPolicy: any GoogleGax.BackoffPolicy") {
 		t.Errorf("StorageControlClient.swift missing polling policy fields:\n%s", clientStr)
 	}
-	if !strings.Contains(clientStr, "let sharedGrpcClient = try GoogleCloudGaxGRPC._GRPCClient(") ||
+	if !strings.Contains(clientStr, "let sharedGrpcClient = try GoogleGaxGRPC._GRPCClient(") ||
 		!strings.Contains(clientStr, `withDefaultEndpoint: "https://storage.googleapis.com"`) {
 		t.Errorf("StorageControlClient.swift missing shared _GRPCClient initialization:\n%s", clientStr)
 	}
@@ -397,17 +397,17 @@ func TestGenerateStorage_MultiModel(t *testing.T) {
 		!strings.Contains(clientStr, "try await self.control.getIamPolicy(request: request, options: options)") {
 		t.Errorf("StorageControlClient.swift missing method delegation:\n%s", clientStr)
 	}
-	if !strings.Contains(clientStr, "byItem: ListBucketsRequest, options: GoogleCloudGax.RequestOptions") ||
-		!strings.Contains(clientStr, "return GoogleCloudGax.PaginatedResponseSequence(listRpc: listRpc)") {
+	if !strings.Contains(clientStr, "byItem: ListBucketsRequest, options: GoogleGax.RequestOptions") ||
+		!strings.Contains(clientStr, "return GoogleGax.PaginatedResponseSequence(listRpc: listRpc)") {
 		t.Errorf("StorageControlClient.swift missing paginated sequence helper:\n%s", clientStr)
 	}
 	if !strings.Contains(clientStr, "public func renameFolder(") ||
-		!strings.Contains(clientStr, "withPolling: RenameFolderRequest, options: GoogleCloudGax.RequestOptions") {
+		!strings.Contains(clientStr, "withPolling: RenameFolderRequest, options: GoogleGax.RequestOptions") {
 		t.Errorf("StorageControlClient.swift missing LRO helper method:\n%s", clientStr)
 	}
 	if !strings.Contains(clientStr, "let rawOp = try await self.renameFolder(request: withPolling, options: options)") ||
 		!strings.Contains(clientStr, "let op = try await self.getOperation(request: .init().with { $0.name = rawOp.name }, options: options)") ||
-		!strings.Contains(clientStr, "return GoogleCloudGax._PollableOperationImpl(") {
+		!strings.Contains(clientStr, "return GoogleGax._PollableOperationImpl(") {
 		t.Errorf("StorageControlClient.swift missing LRO helper implementation:\n%s", clientStr)
 	}
 
