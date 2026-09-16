@@ -37,14 +37,14 @@ func setupMonorepoWithRootFiles(t *testing.T) string {
 	}
 
 	authDir := filepath.Join("packages", "auth")
-	testhelper.AddSwiftPackage(t, authDir, "GoogleCloudAuth")
+	testhelper.AddSwiftPackage(t, authDir, "GoogleAuth")
 	storageDir := filepath.Join("packages", "storage")
 	testhelper.AddSwiftPackage(t, storageDir, "GoogleCloudStorage")
 	testhelper.RunGit(t, "add", ".")
 	testhelper.RunGit(t, "commit", "-m", "feat: initial commit with auth and storage")
 
 	// Add a second commit to the package
-	authFile := filepath.Join(authDir, "Sources", "GoogleCloudAuth", "Auth.swift")
+	authFile := filepath.Join(authDir, "Sources", "GoogleAuth", "Auth.swift")
 	if err := os.WriteFile(authFile, []byte("// new auth code"), 0o644); err != nil {
 		t.Fatal(err)
 	}
