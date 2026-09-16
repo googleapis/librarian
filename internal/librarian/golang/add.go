@@ -70,7 +70,7 @@ func addVersionlessGoAPI(api *config.API) {
 }
 
 func addVersionedGoAPI(api *config.API, googleapisDir, version string) error {
-	importPath, err := importPathFromProto(googleapisDir, api.Path, version)
+	importPath, err := importPath(googleapisDir, api.Path, version)
 	if err != nil {
 		return err
 	}
@@ -81,16 +81,6 @@ func addVersionedGoAPI(api *config.API, googleapisDir, version string) error {
 		}
 	}
 	return nil
-}
-
-func importPathFromProto(googleapisDir, apiPath, version string) (string, error) {
-	pkg, err := goPackage(googleapisDir, apiPath)
-	if err != nil {
-		return "", err
-	}
-	suffix := fmt.Sprintf("/api%s", version)
-	pkg, _, _ = strings.Cut(pkg, suffix)
-	return fmt.Sprintf("%s/api%s", pkg, version), nil
 }
 
 // importPath returns the versioned import path from the go_package option
