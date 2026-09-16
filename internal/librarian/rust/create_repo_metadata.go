@@ -23,6 +23,11 @@ import (
 	"github.com/googleapis/librarian/internal/sources"
 )
 
+// DocumentationURL returns the docs.rs documentation URL for a Rust library.
+func DocumentationURL(library *config.Library) string {
+	return fmt.Sprintf("https://docs.rs/%s/latest", library.Name)
+}
+
 func createRepoMetadata(cfg *config.Config, library *config.Library, sources *sources.Sources) (*repometadata.RepoMetadata, error) {
 	metadata, err := repometadata.FromLibrary(cfg, library, sources.Googleapis)
 	if err != nil {
@@ -30,7 +35,7 @@ func createRepoMetadata(cfg *config.Config, library *config.Library, sources *so
 	}
 
 	// Set fields not set by FromLibrary.
-	metadata.ClientDocumentation = fmt.Sprintf("https://docs.rs/%s/latest", library.Name)
+	metadata.ClientDocumentation = DocumentationURL(library)
 	metadata.LibraryType = repometadata.GAPICAutoLibraryType
 
 	return metadata, nil
