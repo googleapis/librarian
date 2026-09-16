@@ -61,6 +61,8 @@ func addGoAPI(api *config.API) {
 	}
 }
 
+// importPath returns the versioned import path from the go_package option
+// in the proto files in the given directory.
 func importPath(googleapisDir, apiPath, version string) (string, error) {
 	pkg, err := goPackage(googleapisDir, apiPath)
 	if err != nil {
