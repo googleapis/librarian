@@ -15,6 +15,9 @@
 package golang
 
 import (
+	"fmt"
+	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -23,12 +26,14 @@ import (
 
 func TestAdd(t *testing.T) {
 	for _, test := range []struct {
-		name string
-		lib  *config.Library
-		want *config.Library
+		name      string
+		goPackage string
+		lib       *config.Library
+		want      *config.Library
 	}{
 		{
-			name: "versioned api matching default import path",
+			name:      "versioned api matching default import path",
+			goPackage: "cloud.google.com/go/secretmanager/apiv1/secretmanagerpb;secretmanagerpb",
 			lib: &config.Library{
 				Name: "secretmanager",
 				APIs: []*config.API{{Path: "google/cloud/secretmanager/v1"}},
@@ -40,7 +45,8 @@ func TestAdd(t *testing.T) {
 			},
 		},
 		{
-			name: "versioned api differing from default import path",
+			name:      "versioned api differing from default import path",
+			goPackage: "cloud.google.com/go/developerknowledge/apiv1/developerknowledgepb",
 			lib: &config.Library{
 				Name: "developerknowledge",
 				APIs: []*config.API{{Path: "google/developers/knowledge/v1"}},
@@ -57,7 +63,8 @@ func TestAdd(t *testing.T) {
 			},
 		},
 		{
-			name: "versioned nested api",
+			name:      "versioned nested api",
+			goPackage: "cloud.google.com/go/maps/addressvalidation/apiv1/addressvalidationpb;addressvalidationpb",
 			lib: &config.Library{
 				Name: "maps",
 				APIs: []*config.API{{Path: "google/maps/addressvalidation/v1"}},
@@ -68,6 +75,18 @@ func TestAdd(t *testing.T) {
 				APIs: []*config.API{{
 					Path: "google/maps/addressvalidation/v1",
 				}},
+			},
+		},
+		{
+			name: "versioned api without proto",
+			lib: &config.Library{
+				Name: "secretmanager",
+				APIs: []*config.API{{Path: "google/cloud/secretmanager/v1"}},
+			},
+			want: &config.Library{
+				Name:    "secretmanager",
+				Version: defaultVersion,
+				APIs:    []*config.API{{Path: "google/cloud/secretmanager/v1"}},
 			},
 		},
 		{
@@ -107,7 +126,8 @@ func TestAdd(t *testing.T) {
 			},
 		},
 		{
-			name: "preserves existing version",
+			name:      "preserves existing version",
+			goPackage: "cloud.google.com/go/secretmanager/apiv1/secretmanagerpb;secretmanagerpb",
 			lib: &config.Library{
 				Name:    "secretmanager",
 				Version: "1.2.0",
@@ -121,7 +141,20 @@ func TestAdd(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got := Add(test.lib)
+			googleapisDir := t.TempDir()
+			if test.goPackage != "" {
+				for _, api := range test.lib.APIs {
+					protoDir := filepath.Join(googleapisDir, api.Path)
+					if err := os.MkdirAll(protoDir, 0o755); err != nil {
+						t.Fatal(err)
+					}
+					content := fmt.Sprintf("option go_package = %q;", test.goPackage)
+					if err := os.WriteFile(filepath.Join(protoDir, "service.proto"), []byte(content), 0o644); err != nil {
+						t.Fatal(err)
+					}
+				}
+			}
+			got := Add(test.lib, googleapisDir)
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
