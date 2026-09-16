@@ -28,21 +28,26 @@ import (
 const defaultVersion = "0.0.0"
 
 // Add initializes a Go library with default values.
-func Add(lib *config.Library, googleapisDir string) *config.Library {
+func Add(lib *config.Library, googleapisDir string) (*config.Library, error) {
 	if lib.Version == "" {
 		lib.Version = defaultVersion
 	}
 	for _, api := range lib.APIs {
-		addGoAPI(api, googleapisDir)
+		if api.Go != nil {
+			continue
+		}
+		if err := addGoAPI(api, googleapisDir); err != nil {
+			return nil, fmt.Errorf("adding go api for %s: %w", api.Path, err)
+		}
 	}
-	return lib
+	return lib, nil
 }
 
 // addGoAPI initializes Go-specific API configuration when adding a new API.
 // It populates the ImportPath and sets ProtoOnly to true if the API path
 // is versionless (does not contain a version segment like "v1"). It does
 // nothing for versioned API paths.
-func addGoAPI(api *config.API, googleapisDir string) {
+func addGoAPI(api *config.API, googleapisDir string) error {
 	version := serviceconfig.ExtractVersion(api.Path)
 	if version == "" {
 		importPath := deriveVersionlessImportPath(api.Path)
@@ -50,11 +55,11 @@ func addGoAPI(api *config.API, googleapisDir string) {
 			ImportPath: importPath,
 			ProtoOnly:  true,
 		}
-		return
+		return nil
 	}
 	importPath, err := importPathFromProto(googleapisDir, api.Path, version)
 	if err != nil {
-		return
+		return err
 	}
 	defaultImportPath, _ := defaultImportPathAndClientPkg(api.Path)
 	if defaultImportPath != importPath {
@@ -62,6 +67,7 @@ func addGoAPI(api *config.API, googleapisDir string) {
 			ImportPath: importPath,
 		}
 	}
+	return nil
 }
 
 func importPathFromProto(googleapisDir, apiPath, version string) (string, error) {
