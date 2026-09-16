@@ -25,6 +25,7 @@ import (
 )
 
 func TestAdd(t *testing.T) {
+	t.Parallel()
 	for _, test := range []struct {
 		name      string
 		goPackage string
@@ -78,19 +79,8 @@ func TestAdd(t *testing.T) {
 			},
 		},
 		{
-			name: "versioned api without proto",
-			lib: &config.Library{
-				Name: "secretmanager",
-				APIs: []*config.API{{Path: "google/cloud/secretmanager/v1"}},
-			},
-			want: &config.Library{
-				Name:    "secretmanager",
-				Version: defaultVersion,
-				APIs:    []*config.API{{Path: "google/cloud/secretmanager/v1"}},
-			},
-		},
-		{
-			name: "versionless api",
+			name:      "versionless api",
+			goPackage: "cloud.google.com/go/shopping/type/typepb;typepb",
 			lib: &config.Library{
 				Name: "shopping",
 				APIs: []*config.API{{Path: "google/shopping/type"}},
@@ -108,7 +98,8 @@ func TestAdd(t *testing.T) {
 			},
 		},
 		{
-			name: "versionless single-segment api",
+			name:      "versionless single-segment api",
+			goPackage: "cloud.google.com/go/type/typepb;typepb",
 			lib: &config.Library{
 				Name: "type",
 				APIs: []*config.API{{Path: "google/type"}},
@@ -141,17 +132,16 @@ func TestAdd(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
 			googleapisDir := t.TempDir()
-			if test.goPackage != "" {
-				for _, api := range test.lib.APIs {
-					protoDir := filepath.Join(googleapisDir, api.Path)
-					if err := os.MkdirAll(protoDir, 0o755); err != nil {
-						t.Fatal(err)
-					}
-					content := fmt.Sprintf("option go_package = %q;", test.goPackage)
-					if err := os.WriteFile(filepath.Join(protoDir, "service.proto"), []byte(content), 0o644); err != nil {
-						t.Fatal(err)
-					}
+			for _, api := range test.lib.APIs {
+				protoDir := filepath.Join(googleapisDir, api.Path)
+				if err := os.MkdirAll(protoDir, 0o755); err != nil {
+					t.Fatal(err)
+				}
+				content := fmt.Sprintf("option go_package = %q;", test.goPackage)
+				if err := os.WriteFile(filepath.Join(protoDir, "service.proto"), []byte(content), 0o644); err != nil {
+					t.Fatal(err)
 				}
 			}
 			got := Add(test.lib, googleapisDir)
