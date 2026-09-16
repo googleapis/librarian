@@ -1291,6 +1291,16 @@ func TestBuildModuleCodec(t *testing.T) {
 			},
 		},
 		{
+			name:    "with HandwrittenSurface",
+			library: &config.Library{},
+			module: &config.RustModule{
+				HandwrittenSurface: "true",
+			},
+			want: map[string]string{
+				"handwritten-surface": "true",
+			},
+		},
+		{
 			name:    "with InternalBuilders",
 			library: &config.Library{},
 			module: &config.RustModule{

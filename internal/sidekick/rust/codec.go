@@ -189,6 +189,8 @@ func newCodec(specificationFormat string, options map[string]string) (*codec, er
 				return nil, fmt.Errorf("cannot convert `generate-rpc-samples` value %q to boolean: %w", definition, err)
 			}
 			codec.generateRpcSamples = value
+		case key == "handwritten-surface":
+			codec.handwrittenSurface = splitOption(definition)
 		case key == "internal-builders":
 			value, err := strconv.ParseBool(definition)
 			if err != nil {
@@ -366,6 +368,8 @@ type codec struct {
 	generateSetterSamples bool
 	// If true, the generator will produce reference documentation samples for functions that correspond to RPCs.
 	generateRpcSamples bool
+	// List of service IDs that have a handwritten surface, or ["true"] if all services do.
+	handwrittenSurface []string
 	// If true, the generator will set the internal builder's visibility to public (crate).
 	internalBuilders bool
 	// Overrides the default heuristically selected service for the package-level quickstart.
@@ -1662,6 +1666,28 @@ func (c *codec) hasGrpc(model *api.API) bool {
 		return len(model.Services) > 0
 	}
 	return c.hasStreaming(model)
+}
+
+func (c *codec) serviceHandwrittenSurface(serviceID string) bool {
+	if len(c.handwrittenSurface) == 1 && c.handwrittenSurface[0] == "true" {
+		return true
+	}
+	return slices.Contains(c.handwrittenSurface, serviceID)
+}
+
+func (c *codec) serviceHasVeneer(serviceID string) bool {
+	return c.serviceHandwrittenSurface(serviceID) || c.hasVeneer
+}
+
+func (c *codec) serviceInternalBuilders(serviceID string) bool {
+	return c.serviceHandwrittenSurface(serviceID) || c.internalBuilders
+}
+
+func (c *codec) serviceGenerateRpcSamples(serviceID string) bool {
+	if c.serviceHandwrittenSurface(serviceID) {
+		return false
+	}
+	return c.generateRpcSamples
 }
 
 // escapeKeyword is the list of Rust keywords and reserved words can be found

@@ -56,6 +56,8 @@ type serviceAnnotations struct {
 	DetailedTracingAttributes bool
 	// If true, the generated builders's visibility should be restricted to the crate.
 	InternalBuilders bool
+	// If true, the generator will produce reference documentation samples for functions that correspond to RPCs.
+	GenerateRpcSamples bool
 	// The Rust type used for the inner gRPC client in generated transports.
 	GrpcClient string
 }
@@ -215,11 +217,12 @@ func (c *codec) annotateService(s *api.Service) (*serviceAnnotations, error) {
 		LROTypes:                  lroTypes,
 		APITitle:                  s.Model.Title,
 		PerServiceFeatures:        c.perServiceFeatures,
-		HasVeneer:                 c.hasVeneer,
+		HasVeneer:                 c.serviceHasVeneer(s.ID),
 		ExtendGrpcTransport:       c.extendGrpcTransport,
 		Incomplete:                slices.ContainsFunc(s.Methods, func(m *api.Method) bool { return !c.generateMethod(m) }),
 		DetailedTracingAttributes: c.detailedTracingAttributes,
-		InternalBuilders:          c.internalBuilders,
+		InternalBuilders:          c.serviceInternalBuilders(s.ID),
+		GenerateRpcSamples:        c.serviceGenerateRpcSamples(s.ID),
 		GrpcClient:                c.grpcClient,
 	}
 	s.Codec = ann

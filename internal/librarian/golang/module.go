@@ -19,10 +19,12 @@ import (
 	"errors"
 	"fmt"
 	"path/filepath"
+	"regexp"
 	"strings"
 
 	"github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/proto"
 	"github.com/googleapis/librarian/internal/serviceconfig"
 )
 
@@ -32,13 +34,16 @@ const (
 	apiPrefix         = "google/api/"
 	cloudAPIPrefix    = "google/cloud/"
 	devtoolsAPIPrefix = "google/devtools/"
+	modulePathPrefix  = "cloud.google.com/go/"
 )
 
 var (
+	errGoPackageNotFound          = errors.New("go_package not found")
 	errGoAPINotFound              = errors.New("go API not found")
 	errImportPathNotFound         = errors.New("import path not found")
 	errClientPackageNotFound      = errors.New("client package not found")
 	errPreviewMissingStableParent = errors.New("preview apis not found in stable apis")
+	pkgRe                         = regexp.MustCompile(`go_package\)?\s*=\s*"([^"]+)"`)
 )
 
 // Fill populates empty Go-specific fields from the api path.
@@ -134,23 +139,19 @@ func fillGoPreview(stable, preview *config.Library) (*config.Library, error) {
 	return preview, nil
 }
 
-// DefaultLibraryName derives a default library name from an API path by stripping
-// known prefixes (e.g., "google/cloud/", "google/api/") and returning the first
-// segment of the remaining path.
-func DefaultLibraryName(api string) string {
-	api = strings.TrimPrefix(api, cloudAPIPrefix)
-	// Some non-cloud APIs, e.g., google/api, google/devtools/, etc., create one library
-	// per API. The resulting library configurations need to set additional configurations,
-	// e.g., import_path, for the generation to work.
-	// We don't infer the configuration here and let the user set the configurations manually.
-	api = strings.TrimPrefix(api, apiPrefix)
-	api = strings.TrimPrefix(api, devtoolsAPIPrefix)
-	api = strings.TrimPrefix(api, "google/")
-	before, _, ok := strings.Cut(api, "/")
-	if !ok {
-		return api
+// DefaultLibraryName derives a default library name from an API path by using
+// the package definition.
+func DefaultLibraryName(googleapisDir, api string) (string, error) {
+	pkg, found, err := proto.Search(googleapisDir, api, pkgRe)
+	if err != nil {
+		return "", err
 	}
-	return before
+	if !found {
+		return "", fmt.Errorf("%w: %s", errGoPackageNotFound, api)
+	}
+	pkg = strings.TrimPrefix(pkg, modulePathPrefix)
+	pkg, _, _ = strings.Cut(pkg, "/")
+	return pkg, nil
 }
 
 // DefaultOutput returns the default output directory for a Go library.
@@ -186,7 +187,7 @@ func repoRootPath(output, name string) string {
 // modulePath returns the Go module path for the library. ModulePathVersion is
 // set for modules at v2+, e.g. "cloud.google.com/go/pubsub/v2".
 func modulePath(library *config.Library) string {
-	path := "cloud.google.com/go/" + library.Name
+	path := modulePathPrefix + library.Name
 	if library.Go != nil && library.Go.ModulePathVersion != "" {
 		path += "/" + library.Go.ModulePathVersion
 	}
