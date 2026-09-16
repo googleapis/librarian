@@ -362,3 +362,88 @@ func TestIsEmbeddedAPIPath(t *testing.T) {
 		}
 	}
 }
+
+func TestPrimaryAPIPath(t *testing.T) {
+	for _, test := range []struct {
+		name string
+		lib  *config.Library
+		want string
+	}{
+		{
+			name: "single explicit api",
+			lib: &config.Library{
+				APIs: []*config.API{
+					{Path: "google/cloud/secretmanager/v1"},
+				},
+			},
+			want: "google/cloud/secretmanager/v1",
+		},
+		{
+			name: "multiple explicit apis sorted by SortAPIs",
+			lib: &config.Library{
+				APIs: []*config.API{
+					{Path: "google/cloud/secretmanager/v1beta1"},
+					{Path: "google/cloud/secretmanager/v1"},
+				},
+			},
+			want: "google/cloud/secretmanager/v1",
+		},
+		{
+			name: "rust veneer with storage control and storage selects storage",
+			lib: &config.Library{
+				Rust: &config.RustCrate{
+					Modules: []*config.RustModule{
+						{APIPath: "google/storage/control/v2"},
+						{APIPath: "google/iam/v1"},
+						{APIPath: "google/longrunning"},
+						{APIPath: "google/storage/v2"},
+						{APIPath: "google/type"},
+					},
+				},
+			},
+			want: "google/storage/v2",
+		},
+		{
+			name: "swift veneer with storage control and storage selects storage",
+			lib: &config.Library{
+				Swift: &config.SwiftPackage{
+					Modules: []*config.SwiftModule{
+						{APIPath: "google/storage/control/v2"},
+						{APIPath: "google/type"},
+						{APIPath: "google/storage/v2"},
+						{APIPath: "google/rpc"},
+						{APIPath: "google/longrunning"},
+						{APIPath: "google/iam/v1"},
+					},
+				},
+			},
+			want: "google/storage/v2",
+		},
+		{
+			name: "veneer with embedded iam and unversioned location selects location",
+			lib: &config.Library{
+				Rust: &config.RustCrate{
+					Modules: []*config.RustModule{
+						{APIPath: "google/iam/v1"},
+						{APIPath: "google/cloud/location"},
+					},
+				},
+			},
+			want: "google/cloud/location",
+		},
+		{
+			name: "empty apis and modules returns empty",
+			lib: &config.Library{
+				Name: "google-cloud-auth",
+			},
+			want: "",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := primaryAPIPath(test.lib)
+			if got != test.want {
+				t.Errorf("primaryAPIPath() = %q, want %q", got, test.want)
+			}
+		})
+	}
+}

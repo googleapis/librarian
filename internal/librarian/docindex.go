@@ -128,12 +128,31 @@ func GenerateDocIndex(cfg *config.Config, googleapisDir string) ([]byte, error) 
 }
 
 // primaryAPIPath returns the primary API path for a library. For libraries with
-// explicitly configured APIs, this is lib.APIs[0].Path. For veneer libraries that
-// define modules instead of top-level APIs, it selects the first non-embedded,
-// non-control API path.
+// explicitly configured APIs, this is the primary sorted API path. For veneer libraries
+// that define modules instead of top-level APIs, it selects the primary non-embedded API path
+// using serviceconfig.SortAPIs.
 func primaryAPIPath(lib *config.Library) string {
-	if len(lib.APIs) > 0 && lib.APIs[0].Path != "" {
-		return lib.APIs[0].Path
+	apiPaths := candidateAPIPaths(lib)
+	if len(apiPaths) == 0 {
+		return ""
+	}
+	apis := make([]*config.API, len(apiPaths))
+	for i, p := range apiPaths {
+		apis[i] = &config.API{Path: p}
+	}
+	serviceconfig.SortAPIs(apis)
+	return apis[0].Path
+}
+
+func candidateAPIPaths(lib *config.Library) []string {
+	if len(lib.APIs) > 0 {
+		var apiPaths []string
+		for _, api := range lib.APIs {
+			if api.Path != "" {
+				apiPaths = append(apiPaths, api.Path)
+			}
+		}
+		return apiPaths
 	}
 	var apiPaths []string
 	if lib.Rust != nil {
@@ -150,15 +169,7 @@ func primaryAPIPath(lib *config.Library) string {
 			}
 		}
 	}
-	if len(apiPaths) == 0 {
-		return ""
-	}
-	for _, p := range apiPaths {
-		if !strings.Contains(p, "/control/") {
-			return p
-		}
-	}
-	return apiPaths[0]
+	return apiPaths
 }
 
 // isEmbeddedAPIPath reports whether the given API path represents an auxiliary or
