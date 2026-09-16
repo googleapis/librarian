@@ -177,6 +177,17 @@ func (c *codec) generateStubs(outdir string, model *api.API, provider language.T
 				return err
 			}
 		}
+		annotations, ok := s.Codec.(*serviceAnnotations)
+		if !ok || !annotations.HasLROAnyTypes() {
+			continue
+		}
+		generated := language.GeneratedFile{
+			TemplatePath: "templates/grpc/lro_any_converter.swift.mustache",
+			OutputPath:   c.swiftFilename(s.Name + "+LROAnyConverter"),
+		}
+		if err := language.GenerateService(outdir, s, provider, generated); err != nil {
+			return err
+		}
 	}
 	return nil
 }

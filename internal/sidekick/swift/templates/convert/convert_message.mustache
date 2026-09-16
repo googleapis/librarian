@@ -45,7 +45,12 @@ extension {{Codec.ParameterTypeName}} {
     self.{{Codec.Name}} = proto.has{{Codec.ProtoFieldNamePascal}} ? {{Codec.Model.WktPackage}}.Recursive(value: try .init(proto: proto.{{Codec.ProtoFieldName}})) : nil
     {{/Codec.Recursive}}
     {{^Codec.Recursive}}
+    {{#Codec.LROAnyConverter}}
+    self.{{Codec.Name}} = proto.has{{Codec.ProtoFieldNamePascal}} ? try {{.}}.fromProto(proto.{{Codec.ProtoFieldName}}) : nil
+    {{/Codec.LROAnyConverter}}
+    {{^Codec.LROAnyConverter}}
     self.{{Codec.Name}} = proto.has{{Codec.ProtoFieldNamePascal}} ? try .init(proto: proto.{{Codec.ProtoFieldName}}) : nil
+    {{/Codec.LROAnyConverter}}
     {{/Codec.Recursive}}
     {{/IsObject}}
     {{#IsEnum}}
@@ -92,7 +97,12 @@ extension {{Codec.ParameterTypeName}} {
       {{#Fields}}
       case .{{Codec.ProtoFieldName}}(let value):
         {{#IsObject}}
+        {{#Codec.LROAnyConverter}}
+        self.{{Group.Codec.PropertyName}} = .{{Codec.Name}}(try {{.}}.fromProto(value))
+        {{/Codec.LROAnyConverter}}
+        {{^Codec.LROAnyConverter}}
         self.{{Group.Codec.PropertyName}} = .{{Codec.Name}}(try .init(proto: value))
+        {{/Codec.LROAnyConverter}}
         {{/IsObject}}
         {{#IsEnum}}
         self.{{Group.Codec.PropertyName}} = .{{Codec.Name}}(.init(proto: value))
@@ -138,7 +148,12 @@ extension {{Codec.ParameterTypeName}} {
     if let {{Codec.Name}} = self.{{Codec.Name}} { proto.{{Codec.ProtoFieldName}} = try {{Codec.Name}}.value.toProto() }
     {{/Codec.Recursive}}
     {{^Codec.Recursive}}
+    {{#Codec.LROAnyConverter}}
+    if let {{Codec.Name}} = self.{{Codec.Name}} { proto.{{Codec.ProtoFieldName}} = try {{.}}.toProto({{Codec.Name}}) }
+    {{/Codec.LROAnyConverter}}
+    {{^Codec.LROAnyConverter}}
     if let {{Codec.Name}} = self.{{Codec.Name}} { proto.{{Codec.ProtoFieldName}} = try {{Codec.Name}}.toProto() }
+    {{/Codec.LROAnyConverter}}
     {{/Codec.Recursive}}
     {{/IsObject}}
     {{#IsEnum}}
@@ -185,9 +200,16 @@ extension {{Codec.ParameterTypeName}} {
       {{#Fields}}
       case .{{Codec.Name}}(let value):
         {{#IsObject}}
+        {{#Codec.LROAnyConverter}}
+        if let value = value {
+          proto.{{Group.Codec.PropertyName}} = .{{Codec.ProtoFieldName}}(try {{.}}.toProto(value))
+        }
+        {{/Codec.LROAnyConverter}}
+        {{^Codec.LROAnyConverter}}
         if let value = value {
           proto.{{Group.Codec.PropertyName}} = .{{Codec.ProtoFieldName}}(try value.toProto())
         }
+        {{/Codec.LROAnyConverter}}
         {{/IsObject}}
         {{#IsEnum}}
         proto.{{Group.Codec.PropertyName}} = .{{Codec.ProtoFieldName}}(try value.toProto())

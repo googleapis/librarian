@@ -103,6 +103,9 @@ func (c *codec) annotateModel() error {
 			return err
 		}
 	}
+	if err := c.annotateLROAnyFields(); err != nil {
+		return err
+	}
 	// The services are annotated last because the annotation assumes messages
 	// and enums are already annotated.
 	allTraits := make([]*traitDefinition, 0, len(c.Model.Services))

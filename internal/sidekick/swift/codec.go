@@ -143,6 +143,13 @@ type codec struct {
 	// Codec-level overrides for service names.
 	// TODO(https://github.com/googleapis/google-cloud-swift/issues/308): Support overriding other symbol types (e.g., messages, enums, oneofs) if needed.
 	NameOverrides map[string]string
+
+	// LROAnyConverter names the generated converter for the `Any` fields of
+	// `google.longrunning.Operation`, or is empty to convert them generically.
+	//
+	// See the `lro_any_converter` module setting for why this is configured
+	// rather than discovered.
+	LROAnyConverter string
 }
 
 const (
@@ -227,6 +234,7 @@ func newCodec(model *api.API, library *config.Library, module *config.SwiftModul
 		}
 		result.PerServiceTraits = swiftCfg.PerServiceTraits
 		result.DefaultTraits = swiftCfg.DefaultTraits
+		result.LROAnyConverter = swiftCfg.LROAnyConverter
 	}
 
 	if module != nil {

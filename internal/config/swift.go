@@ -86,6 +86,21 @@ type SwiftPackage struct {
 
 	// Discovery contains discovery-specific configuration for LRO polling.
 	Discovery *SwiftDiscovery `yaml:"discovery,omitempty"`
+
+	// LROAnyConverter names the converter used for the `Any` fields of
+	// `google.longrunning.Operation` (e.g. "StorageControlLROAnyConverter").
+	//
+	// Converting an `Any` that arrived from the wire requires knowing the
+	// concrete payload type. For long-running operations the set of payload
+	// types is closed: it is the metadata and response types declared by the
+	// service. Setting this makes the module that generates those services
+	// emit a converter that dispatches on the type URL, and makes the module
+	// that converts `google.longrunning.Operation` call it.
+	//
+	// The two are separate generation runs that cannot see each other, which
+	// is why the name is spelled out here rather than derived. A name that
+	// does not match the generated converter is a compile error.
+	LROAnyConverter string `yaml:"lro_any_converter,omitempty"`
 }
 
 // SwiftDependency represents a dependency in Swift Package Manager.

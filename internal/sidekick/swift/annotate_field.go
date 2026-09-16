@@ -86,6 +86,13 @@ type fieldAnnotations struct {
 
 	// ValueField holds the value field of a map, for inspecting whether the value is an object or enum.
 	ValueField *api.Field
+
+	// LROAnyConverter names the converter to use for this `Any` field, or is
+	// empty to convert it generically.
+	//
+	// Only the `Any` fields of `google.longrunning.Operation` set this. See
+	// `annotateLROAnyFields`.
+	LROAnyConverter string
 }
 
 // DecodingStyle defines an enumeration for decoding fields.
