@@ -284,7 +284,7 @@ func TestGenerateService_WithImports(t *testing.T) {
 			RequiredByServices: true,
 		},
 		{
-			Name:               "GoogleCloudAuth",
+			Name:               "GoogleAuth",
 			RequiredByServices: true,
 		},
 		{
@@ -622,7 +622,7 @@ func TestGenerateService_Pagination(t *testing.T) {
 					RequiredByServices: true,
 				},
 				{
-					Name:               "GoogleCloudAuth",
+					Name:               "GoogleAuth",
 					RequiredByServices: true,
 				},
 			})
@@ -816,7 +816,7 @@ func TestGenerateService_LRO(t *testing.T) {
 			RequiredByServices: true,
 		},
 		{
-			Name:               "GoogleCloudAuth",
+			Name:               "GoogleAuth",
 			RequiredByServices: true,
 		},
 		{
@@ -940,7 +940,7 @@ func TestGenerateService_LRO_Empty(t *testing.T) {
 			RequiredByServices: true,
 		},
 		{
-			Name:               "GoogleCloudAuth",
+			Name:               "GoogleAuth",
 			RequiredByServices: true,
 		},
 		{
@@ -1001,7 +1001,7 @@ func TestGenerateDiscoveryService_Files(t *testing.T) {
 			RequiredByServices: true,
 		},
 		{
-			Name:               "GoogleCloudAuth",
+			Name:               "GoogleAuth",
 			RequiredByServices: true,
 		},
 	})

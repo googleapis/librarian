@@ -254,7 +254,7 @@ func TestGenerateStub_Discovery(t *testing.T) {
 			RequiredByServices: true,
 		},
 		{
-			Name:               "GoogleCloudAuth",
+			Name:               "GoogleAuth",
 			RequiredByServices: true,
 		},
 	})
