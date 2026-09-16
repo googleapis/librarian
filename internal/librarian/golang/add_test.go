@@ -17,7 +17,6 @@ package golang
 import (
 	"errors"
 	"fmt"
-	"io/fs"
 	"os"
 	"path/filepath"
 	"testing"
