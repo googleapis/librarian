@@ -162,6 +162,74 @@ func TestImportPath_Error(t *testing.T) {
 			wantErr: fs.ErrNotExist,
 		},
 		{
+			name: "api version not found in go_package",
+			setup: func(t *testing.T) (string, string) {
+				tmpDir := t.TempDir()
+				apiPath := "google/cloud/secretmanager/v1"
+				dir := filepath.Join(tmpDir, apiPath)
+				if err := os.MkdirAll(dir, 0o755); err != nil {
+					t.Fatal(err)
+				}
+				content := `option go_package = "cloud.google.com/go/secretmanager/secretmanagerpb;secretmanagerpb";`
+				if err := os.WriteFile(filepath.Join(dir, "service.proto"), []byte(content), 0o644); err != nil {
+					t.Fatal(err)
+				}
+				return tmpDir, apiPath
+			},
+			version: "v1",
+			wantErr: errAPIVersionNotFound,
+		},
+		{
+			name: "mismatched api version in go_package",
+			setup: func(t *testing.T) (string, string) {
+				tmpDir := t.TempDir()
+				apiPath := "google/cloud/secretmanager/v2"
+				dir := filepath.Join(tmpDir, apiPath)
+				if err := os.MkdirAll(dir, 0o755); err != nil {
+					t.Fatal(err)
+				}
+				content := `option go_package = "cloud.google.com/go/secretmanager/apiv1/secretmanagerpb;secretmanagerpb";`
+				if err := os.WriteFile(filepath.Join(dir, "service.proto"), []byte(content), 0o644); err != nil {
+					t.Fatal(err)
+				}
+				return tmpDir, apiPath
+			},
+			version: "v2",
+			wantErr: errAPIVersionNotFound,
+		},
+		{
+			name: "empty directory without proto files",
+			setup: func(t *testing.T) (string, string) {
+				tmpDir := t.TempDir()
+				apiPath := "google/cloud/secretmanager/v1"
+				dir := filepath.Join(tmpDir, apiPath)
+				if err := os.MkdirAll(dir, 0o755); err != nil {
+					t.Fatal(err)
+				}
+				return tmpDir, apiPath
+			},
+			version: "v1",
+			wantErr: fs.ErrNotExist,
+		},
+		{
+			name: "commented out go_package option",
+			setup: func(t *testing.T) (string, string) {
+				tmpDir := t.TempDir()
+				apiPath := "google/cloud/secretmanager/v1"
+				dir := filepath.Join(tmpDir, apiPath)
+				if err := os.MkdirAll(dir, 0o755); err != nil {
+					t.Fatal(err)
+				}
+				content := "// option go_package = \"cloud.google.com/go/secretmanager/apiv1/secretmanagerpb\";\nsyntax = \"proto3\";"
+				if err := os.WriteFile(filepath.Join(dir, "service.proto"), []byte(content), 0o644); err != nil {
+					t.Fatal(err)
+				}
+				return tmpDir, apiPath
+			},
+			version: "v1",
+			wantErr: errGoPackageNotFound,
+		},
+		{
 			name: "unreadable proto file",
 			setup: func(t *testing.T) (string, string) {
 				if os.Geteuid() == 0 {

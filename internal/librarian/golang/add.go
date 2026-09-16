@@ -71,7 +71,7 @@ func importPath(googleapisDir, apiPath, version string) (string, error) {
 	if !found {
 		return "", fmt.Errorf("%w: %s", errAPIVersionNotFound, apiPath)
 	}
-	return fmt.Sprintf("%s/api%s", pkg, version), nil
+	return fmt.Sprintf("%s%s", pkg, suffix), nil
 }
 
 func deriveVersionlessImportPath(apiPath string) string {
