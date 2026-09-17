@@ -29,6 +29,7 @@ import (
 	"github.com/googleapis/librarian/internal/serviceconfig"
 )
 
+// docIndexFilename is the filename for the DevSite Cloud Reference Documentation index.
 const docIndexFilename = "_libraries.json"
 
 // DocIndexEntry represents an individual library entry in _libraries.json.
@@ -40,6 +41,7 @@ type DocIndexEntry struct {
 	Product      string `json:"Product"`
 }
 
+// generateDocIndex generates and writes _libraries.json to cfg.Default.Output.
 func generateDocIndex(cfg *config.Config, googleapisDir string) error {
 	if cfg.Default == nil || cfg.Default.Output == "" {
 		return nil

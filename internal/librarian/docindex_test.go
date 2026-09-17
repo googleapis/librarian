@@ -52,6 +52,7 @@ func TestGenerateDocIndex_Rust(t *testing.T) {
 					},
 				},
 			},
+			// Libraries without configured APIs or service configs are skipped.
 			{
 				Name:   "google-cloud-auth",
 				Output: "src/auth",
@@ -135,6 +136,7 @@ func TestGenerateDocIndex_Swift(t *testing.T) {
 					},
 				},
 			},
+			// Libraries without configured APIs or service configs are skipped.
 			{
 				Name:    "google-cloud-auth",
 				Version: "0.0.0-preview",
