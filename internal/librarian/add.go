@@ -315,7 +315,11 @@ func addNewLibrary(cfg *config.Config, api *config.API, explicitLibraryName, goo
 	}
 	switch cfg.Language {
 	case config.LanguageGo:
-		lib = golang.Add(lib)
+		var err error
+		lib, err = golang.Add(lib, googleapisDir)
+		if err != nil {
+			return "", nil, err
+		}
 	case config.LanguageJava:
 		var err error
 		lib, err = java.Add(cfg, lib, nil)
@@ -368,7 +372,11 @@ func updateExistingLibrary(cfg *config.Config, existingLib *config.Library, api 
 		existingLib.APIs = append(existingLib.APIs, api)
 	case config.LanguageGo:
 		existingLib.APIs = append(existingLib.APIs, api)
-		existingLib = golang.Add(existingLib)
+		var err error
+		existingLib, err = golang.Add(existingLib, googleapisDir)
+		if err != nil {
+			return "", nil, err
+		}
 	case config.LanguageNodejs:
 		existingLib.APIs = append(existingLib.APIs, api)
 	case config.LanguageJava:
