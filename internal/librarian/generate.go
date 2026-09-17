@@ -310,6 +310,9 @@ func generateLibraries(ctx context.Context, cfg *config.Config, libraries []*con
 		// Run the generation in parallel.
 		g, gctx := errgroup.WithContext(ctx)
 		g.SetLimit(runtime.NumCPU())
+		g.Go(func() error {
+			return writeDocIndex(cfg, src.Googleapis)
+		})
 		for _, library := range libraries {
 			g.Go(func() error {
 				if err := rust.Generate(gctx, cfg, library, src); err != nil {
@@ -341,6 +344,9 @@ func generateLibraries(ctx context.Context, cfg *config.Config, libraries []*con
 	case config.LanguageSwift:
 		g, gctx := errgroup.WithContext(ctx)
 		g.SetLimit(runtime.NumCPU())
+		g.Go(func() error {
+			return writeDocIndex(cfg, src.Googleapis)
+		})
 		for _, library := range libraries {
 			g.Go(func() error {
 				if err := swift.Generate(gctx, cfg, library, src); err != nil {
