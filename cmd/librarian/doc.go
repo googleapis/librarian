@@ -224,26 +224,5 @@ Usage:
 env prints the librarian interpretation of the environment it is run in.
 This includes the resolved LIBRARIAN_CACHE and LIBRARIAN_BIN paths,
 as well as the language-specific tool installation directories.
-
-# Generate reference documentation index metadata (_libraries.json)
-
-Usage:
-
-	librarian docindex [flags]
-
-docindex generates the _libraries.json metadata file used by DevSite
-for Cloud Reference Documentation index pages.
-
-It discovers all libraries configured in librarian.yaml, queries the service configuration
-for each API, and emits a stably ordered JSON object mapping package names to metadata entries.
-
-Examples:
-
-	librarian docindex                       # write _libraries.json to stdout
-	librarian docindex -o _libraries.json    # write to _libraries.json
-
-Flags:
-
-	--output string, -o string  output file path (default stdout)
 */
 package main

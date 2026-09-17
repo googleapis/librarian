@@ -15,11 +15,11 @@
 package librarian
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"log/slog"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/googleapis/librarian/internal/config"
@@ -27,9 +27,9 @@ import (
 	"github.com/googleapis/librarian/internal/librarian/swift"
 	"github.com/googleapis/librarian/internal/repometadata"
 	"github.com/googleapis/librarian/internal/serviceconfig"
-	"github.com/googleapis/librarian/internal/yaml"
-	"github.com/urfave/cli/v3"
 )
+
+const docIndexFilename = "_libraries.json"
 
 // DocIndexEntry represents an individual library entry in _libraries.json.
 type DocIndexEntry struct {
@@ -40,49 +40,25 @@ type DocIndexEntry struct {
 	Product      string `json:"Product"`
 }
 
-func docindexCommand() *cli.Command {
-	return &cli.Command{
-		Name:      "docindex",
-		Usage:     "generate reference documentation index metadata (_libraries.json)",
-		UsageText: "librarian docindex [flags]",
-		Description: `docindex generates the _libraries.json metadata file used by DevSite
-for Cloud Reference Documentation index pages.
-
-It discovers all libraries configured in librarian.yaml, queries the service configuration
-for each API, and emits a stably ordered JSON object mapping package names to metadata entries.
-
-Examples:
-
-  librarian docindex                       # write _libraries.json to stdout
-  librarian docindex -o _libraries.json    # write to _libraries.json`,
-		Flags: []cli.Flag{
-			&cli.StringFlag{
-				Name:    "output",
-				Aliases: []string{"o"},
-				Usage:   "output file path (default stdout)",
-			},
-		},
-		Action: func(ctx context.Context, cmd *cli.Command) error {
-			cfg, err := yaml.Read[config.Config](config.LibrarianYAML)
-			if err != nil {
-				return err
-			}
-			srcs, err := LoadSources(ctx, cfg.Sources)
-			if err != nil {
-				return err
-			}
-			data, err := GenerateDocIndex(cfg, srcs.Googleapis)
-			if err != nil {
-				return err
-			}
-			outPath := cmd.String("output")
-			if outPath != "" {
-				return os.WriteFile(outPath, data, 0o644)
-			}
-			_, err = cmd.Root().Writer.Write(data)
-			return err
-		},
+func generateDocIndex(cfg *config.Config, googleapisDir string) error {
+	if cfg.Default == nil || cfg.Default.Output == "" {
+		return nil
 	}
+	if cfg.Language != config.LanguageRust && cfg.Language != config.LanguageSwift {
+		return nil
+	}
+	data, err := GenerateDocIndex(cfg, googleapisDir)
+	if err != nil {
+		return fmt.Errorf("generating doc index: %w", err)
+	}
+	if err := os.MkdirAll(cfg.Default.Output, 0o755); err != nil {
+		return fmt.Errorf("creating doc index directory %s: %w", cfg.Default.Output, err)
+	}
+	targetPath := filepath.Join(cfg.Default.Output, docIndexFilename)
+	if err := os.WriteFile(targetPath, data, 0o644); err != nil {
+		return fmt.Errorf("writing doc index file %s: %w", targetPath, err)
+	}
+	return nil
 }
 
 // GenerateDocIndex produces the formatted JSON byte slice for _libraries.json
@@ -90,7 +66,10 @@ Examples:
 func GenerateDocIndex(cfg *config.Config, googleapisDir string) ([]byte, error) {
 	index := make(map[string][]DocIndexEntry)
 	for _, rawLib := range cfg.Libraries {
-		lib, err := applyDefaults(cfg.Language, rawLib, cfg.Default)
+		libCopy := *rawLib
+		libCopy.APIs = append([]*config.API(nil), rawLib.APIs...)
+		libCopy.Keep = append([]string(nil), rawLib.Keep...)
+		lib, err := applyDefaults(cfg.Language, &libCopy, cfg.Default)
 		if err != nil {
 			return nil, err
 		}

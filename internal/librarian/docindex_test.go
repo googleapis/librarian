@@ -22,7 +22,6 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/config"
-	"github.com/googleapis/librarian/internal/yaml"
 )
 
 const testGoogleapisDir = "../testdata/googleapis"
@@ -278,9 +277,9 @@ func TestGenerateDocIndex_ShowcaseAndNoAPIsSkipped(t *testing.T) {
 	}
 }
 
-func TestDocIndexCommand_Flags(t *testing.T) {
+func TestGenerateDocIndex_FileWriting(t *testing.T) {
 	tmpDir := t.TempDir()
-	librarianYAMLPath := filepath.Join(tmpDir, "librarian.yaml")
+	outDir := filepath.Join(tmpDir, "generated")
 	absGoogleapisDir, err := filepath.Abs(testGoogleapisDir)
 	if err != nil {
 		t.Fatal(err)
@@ -288,10 +287,8 @@ func TestDocIndexCommand_Flags(t *testing.T) {
 
 	cfg := &config.Config{
 		Language: config.LanguageRust,
-		Sources: &config.Sources{
-			Googleapis: &config.Source{
-				Dir: absGoogleapisDir,
-			},
+		Default: &config.Default{
+			Output: outDir,
 		},
 		Libraries: []*config.Library{
 			{
@@ -302,17 +299,12 @@ func TestDocIndexCommand_Flags(t *testing.T) {
 			},
 		},
 	}
-	if err := yaml.Write(librarianYAMLPath, cfg); err != nil {
-		t.Fatal(err)
+
+	if err := generateDocIndex(cfg, absGoogleapisDir); err != nil {
+		t.Fatalf("generateDocIndex failed: %v", err)
 	}
 
-	outFile := filepath.Join(tmpDir, "_libraries.json")
-	t.Chdir(tmpDir)
-
-	if err := Run(t.Context(), "librarian", "docindex", "-o", outFile); err != nil {
-		t.Fatalf("Run docindex failed: %v", err)
-	}
-
+	outFile := filepath.Join(outDir, "_libraries.json")
 	content, err := os.ReadFile(outFile)
 	if err != nil {
 		t.Fatalf("ReadFile(_libraries.json) error = %v", err)
@@ -332,6 +324,24 @@ func TestDocIndexCommand_Flags(t *testing.T) {
 `
 	if diff := cmp.Diff(want, string(content)); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+
+	// Test skip when Default is nil or Output is empty or unsupported language
+	noOutCfg := &config.Config{
+		Language: config.LanguageRust,
+	}
+	if err := generateDocIndex(noOutCfg, absGoogleapisDir); err != nil {
+		t.Fatalf("generateDocIndex with nil Default failed: %v", err)
+	}
+
+	unsupportedCfg := &config.Config{
+		Language: config.LanguageGo,
+		Default: &config.Default{
+			Output: outDir,
+		},
+	}
+	if err := generateDocIndex(unsupportedCfg, absGoogleapisDir); err != nil {
+		t.Fatalf("generateDocIndex with unsupported language failed: %v", err)
 	}
 }
 

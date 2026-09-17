@@ -59,7 +59,6 @@ func Run(ctx context.Context, args ...string) error {
 			tagCommand(),
 			versionCommand(),
 			debugCommand(),
-			docindexCommand(),
 		},
 	}
 	return cmd.Run(ctx, args)

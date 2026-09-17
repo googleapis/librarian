@@ -142,7 +142,16 @@ func runGenerate(ctx context.Context, cfg *config.Config, all bool, libraryName 
 	if err := cleanLibraries(cfg.Language, libraries); err != nil {
 		return err
 	}
-	return generateLibraries(ctx, cfg, libraries, sources)
+	g, gctx := errgroup.WithContext(ctx)
+	if cfg.Default != nil && cfg.Default.Output != "" && (cfg.Language == config.LanguageRust || cfg.Language == config.LanguageSwift) {
+		g.Go(func() error {
+			return generateDocIndex(cfg, sources.Googleapis)
+		})
+	}
+	g.Go(func() error {
+		return generateLibraries(gctx, cfg, libraries, sources)
+	})
+	return g.Wait()
 }
 
 // cleanLibraries iterates over all the given libraries sequentially,
