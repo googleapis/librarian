@@ -18,6 +18,7 @@ import (
 	"errors"
 	"io/fs"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"slices"
 	"strings"
@@ -137,7 +138,7 @@ func TestGenerateInternalCopies_ConfigError(t *testing.T) {
 			outDir := filepath.Join(root, "secretmanager")
 			goAPI := &config.GoAPI{ClientPackage: "secretmanager", ImportPath: "secretmanager/apiv1", InternalCopies: test.copies}
 			library := &config.Library{Name: "secretmanager", APIs: []*config.API{{Path: test.apiPath, Go: goAPI}}, Output: outDir}
-			gotErr := generateInternalCopies(t.Context(), test.apiPath, goAPI, library, nil, googleapisDir, t.TempDir(), outDir)
+			gotErr := generateInternalCopies(t.Context(), test.apiPath, goAPI, library, nil, googleapisDir, apiDescriptorSet(t, test.apiPath), t.TempDir(), outDir)
 			if !errors.Is(gotErr, test.wantErr) {
 				t.Errorf("generateInternalCopies error = %v, wantErr %v", gotErr, test.wantErr)
 			}
@@ -172,7 +173,7 @@ func TestGenerateInternalCopies(t *testing.T) {
 				APIs:   []*config.API{{Path: "google/cloud/secretmanager/v1", Go: goAPI}},
 				Output: outDir,
 			}
-			if err := generateInternalCopies(t.Context(), "google/cloud/secretmanager/v1", goAPI, library, nil, googleapisDir, t.TempDir(), outDir); err != nil {
+			if err := generateInternalCopies(t.Context(), "google/cloud/secretmanager/v1", goAPI, library, nil, googleapisDir, apiDescriptorSet(t, "google/cloud/secretmanager/v1"), t.TempDir(), outDir); err != nil {
 				t.Fatal(err)
 			}
 			got := getFilesInDir(t, outDir, outDir)
@@ -189,12 +190,11 @@ func TestGenerateInternalCopies_Error(t *testing.T) {
 	testhelper.RequireCommand(t, "protoc")
 	testhelper.RequireCommand(t, "protoc-gen-go")
 	for _, test := range []struct {
-		name          string
-		apiPath       string
-		importPath    string
-		protoAPILevel string
-		wantErr       error
-		wantMsg       []string
+		name       string
+		apiPath    string
+		importPath string
+		wantErr    error
+		wantMsg    []string
 	}{
 		{
 			name:       "extension of a message outside the copy",
@@ -202,29 +202,6 @@ func TestGenerateInternalCopies_Error(t *testing.T) {
 			importPath: "customoption/apiv1",
 			wantErr:    errInternalCopyExtension,
 			wantMsg:    []string{"google/cloud/customoption/v1/custom_option.proto", "extension google.cloud.customoption.v1.note", "of google.protobuf.MessageOptions"},
-		},
-		{
-			name:       "opaque file feature",
-			apiPath:    "google/cloud/opaqueapi/v1",
-			importPath: "opaqueapi/apiv1",
-			wantErr:    errInternalCopyAPILevel,
-			wantMsg:    []string{"google/cloud/opaqueapi/v1/opaque_api.proto", "API_OPAQUE", "the file's api_level feature"},
-		},
-		{
-			name:          "opaque proto_api_level",
-			apiPath:       "google/cloud/secretmanager/v1",
-			importPath:    "secretmanager/apiv1",
-			protoAPILevel: "API_OPAQUE",
-			wantErr:       errInternalCopyAPILevel,
-			wantMsg:       []string{"API_OPAQUE", "proto_api_level"},
-		},
-		{
-			name:          "hybrid proto_api_level",
-			apiPath:       "google/cloud/secretmanager/v1",
-			importPath:    "secretmanager/apiv1",
-			protoAPILevel: "API_HYBRID",
-			wantErr:       errInternalCopyAPILevel,
-			wantMsg:       []string{"API_HYBRID", "proto_api_level"},
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
@@ -234,7 +211,6 @@ func TestGenerateInternalCopies_Error(t *testing.T) {
 			goAPI := &config.GoAPI{
 				ClientPackage:  name,
 				ImportPath:     test.importPath,
-				ProtoAPILevel:  test.protoAPILevel,
 				InternalCopies: []*config.GoInternalCopy{{ImportPath: name + "/internal/fastpb", ProtoPackage: strings.ReplaceAll(test.apiPath, "/", ".") + ".fastinternal"}},
 			}
 			library := &config.Library{
@@ -242,7 +218,7 @@ func TestGenerateInternalCopies_Error(t *testing.T) {
 				APIs:   []*config.API{{Path: test.apiPath, Go: goAPI}},
 				Output: outDir,
 			}
-			gotErr := generateInternalCopies(t.Context(), test.apiPath, goAPI, library, nil, googleapisDir, t.TempDir(), outDir)
+			gotErr := generateInternalCopies(t.Context(), test.apiPath, goAPI, library, nil, googleapisDir, apiDescriptorSet(t, test.apiPath), t.TempDir(), outDir)
 			if !errors.Is(gotErr, test.wantErr) {
 				t.Fatalf("generateInternalCopies error = %v, wantErr %v", gotErr, test.wantErr)
 			}
@@ -282,10 +258,7 @@ func TestGenerateInternalCopies_LayoutOption(t *testing.T) {
 				Name: "secretmanager", Output: filepath.Join(root, "secretmanager"),
 				APIs: []*config.API{{Path: apiPath, Go: goAPI}},
 			}
-			if err := Validate(&config.Config{Libraries: []*config.Library{library}}); !errors.Is(err, errProtocPluginOption) {
-				t.Errorf("Validate error = %v, wantErr %v", err, errProtocPluginOption)
-			}
-			if err := generateInternalCopies(t.Context(), apiPath, goAPI, library, nil, googleapisDir, t.TempDir(), library.Output); !errors.Is(err, errProtocPluginOption) {
+			if err := generateInternalCopies(t.Context(), apiPath, goAPI, library, nil, googleapisDir, apiDescriptorSet(t, apiPath), t.TempDir(), library.Output); !errors.Is(err, errProtocPluginOption) {
 				t.Errorf("generateInternalCopies error = %v, wantErr %v", err, errProtocPluginOption)
 			}
 			if got := getFilesInDir(t, root, root); len(got) != 0 {
@@ -293,4 +266,30 @@ func TestGenerateInternalCopies_LayoutOption(t *testing.T) {
 			}
 		})
 	}
+}
+
+// apiDescriptorSet writes the descriptor set of the API's proto files the way
+// generateAPI does and returns its path. When the API directory is missing or
+// protoc is not installed, the returned path does not exist; tests that need
+// the set require protoc first.
+func apiDescriptorSet(t *testing.T, apiPath string) string {
+	t.Helper()
+	path := filepath.Join(t.TempDir(), "api.pb")
+	if _, err := exec.LookPath("protoc"); err != nil {
+		return path
+	}
+	entries, err := os.ReadDir(filepath.Join(googleapisDir, apiPath))
+	if err != nil {
+		return path
+	}
+	args := []string{"--experimental_allow_proto3_optional", "-I=" + googleapisDir, "--include_imports", "--include_source_info", "--descriptor_set_out=" + path}
+	for _, entry := range entries {
+		if !entry.IsDir() && filepath.Ext(entry.Name()) == ".proto" {
+			args = append(args, filepath.Join(googleapisDir, apiPath, entry.Name()))
+		}
+	}
+	if err := runProtoc(t.Context(), nil, args...); err != nil {
+		t.Fatal(err)
+	}
+	return path
 }

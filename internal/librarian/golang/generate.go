@@ -92,13 +92,19 @@ func Generate(ctx context.Context, cfg *config.Config, library *config.Library, 
 			return fmt.Errorf("error finding goAPI associated with API %s: %w", api.Path, errGoAPINotFound)
 		}
 
-		if err := generateAPI(ctx, api.Path, goAPI, pc, googleapisDir, library.Version, tempDir); err != nil {
+		// Internal copies are generated from the same protoc run as the
+		// public package, through a descriptor set it writes alongside.
+		var descriptorSet string
+		if len(goAPI.InternalCopies) > 0 {
+			descriptorSet = filepath.Join(tempDir, fmt.Sprintf("api-%d.pb", i))
+		}
+		if err := generateAPI(ctx, api.Path, goAPI, pc, googleapisDir, library.Version, tempDir, descriptorSet); err != nil {
 			return fmt.Errorf("api %q: %w", api.Path, err)
 		}
 		if err := moveGeneratedFiles(library, goAPI, tempDir, outDir); err != nil {
 			return err
 		}
-		if err := generateInternalCopies(ctx, api.Path, goAPI, library, pc, googleapisDir, tempDir, outDir); err != nil {
+		if err := generateInternalCopies(ctx, api.Path, goAPI, library, pc, googleapisDir, descriptorSet, tempDir, outDir); err != nil {
 			return fmt.Errorf("api %q: %w", api.Path, err)
 		}
 		if err := generateClientVersionFile(library, goAPI); err != nil {
@@ -151,7 +157,10 @@ func Generate(ctx context.Context, cfg *config.Config, library *config.Library, 
 	return runInDirWithEnv(ctx, outDir, env, command.Go, "mod", "tidy")
 }
 
-func generateAPI(ctx context.Context, apiPath string, goAPI *config.GoAPI, pc *config.Protoc, googleapisDir, version, outDir string) error {
+// generateAPI runs protoc for the API. When descriptorSet is not empty, the
+// full descriptor set of the API, with imports and source comments, is also
+// written there for the internal copies.
+func generateAPI(ctx context.Context, apiPath string, goAPI *config.GoAPI, pc *config.Protoc, googleapisDir, version, outDir, descriptorSet string) error {
 	nestedProtos := goAPI.NestedProtos
 	args := []string{
 		"--experimental_allow_proto3_optional",
@@ -159,6 +168,9 @@ func generateAPI(ctx context.Context, apiPath string, goAPI *config.GoAPI, pc *c
 		"-I=" + googleapisDir,
 		"--go-grpc_out=" + outDir,
 		"--go-grpc_opt=require_unimplemented_servers=false",
+	}
+	if descriptorSet != "" {
+		args = append(args, "--include_imports", "--include_source_info", "--descriptor_set_out="+descriptorSet)
 	}
 	if goAPI.ProtoAPILevel != "" {
 		args = append(args, "--go_opt=default_api_level="+goAPI.ProtoAPILevel)

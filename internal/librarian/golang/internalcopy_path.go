@@ -49,11 +49,10 @@ func validateInternalCopyPaths(library *config.Library, outDir string) error {
 		if api.Go == nil {
 			continue
 		}
-		importPath := clientImportPath(api.Path, api.Go)
-		if importPath == "" {
+		if api.Go.ImportPath == "" {
 			continue
 		}
-		dir := filepath.Join(repoRootPath(outDir, library.Name), pathFromRepoRoot(library, importPath))
+		dir := filepath.Join(repoRootPath(outDir, library.Name), pathFromRepoRoot(library, api.Go.ImportPath))
 		resolved, err := resolveExistingPath(dir)
 		if err != nil {
 			return err

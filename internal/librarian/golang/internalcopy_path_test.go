@@ -405,10 +405,6 @@ func TestInternalCopySymlink_Error(t *testing.T) {
 							},
 						}},
 					}
-					// Tidy validates configuration without consulting the filesystem.
-					if err := Validate(&config.Config{Libraries: []*config.Library{library}}); err != nil {
-						t.Fatal(err)
-					}
 					var err error
 					switch action {
 					case "Clean":
@@ -452,9 +448,6 @@ func TestInternalCopyResolvedOverlap_Error(t *testing.T) {
 	}
 	createFiles(t, library.Output, []string{"README.md", "internal/pb/valuable.pb.go"})
 	if err := os.Symlink("internal/pb", filepath.Join(library.Output, "apiv1")); err != nil {
-		t.Fatal(err)
-	}
-	if err := Validate(&config.Config{Libraries: []*config.Library{library}}); err != nil {
 		t.Fatal(err)
 	}
 	if err := Clean(library); !errors.Is(err, errInternalCopyOverlap) {

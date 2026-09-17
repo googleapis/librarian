@@ -31,7 +31,6 @@ import (
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/types/descriptorpb"
-	"google.golang.org/protobuf/types/gofeaturespb"
 )
 
 const (
@@ -52,16 +51,17 @@ var (
 	errInternalCopyNoPackage      = errors.New("internal copy requires the API proto files to declare a proto package")
 	errInternalCopyFileNotFound   = errors.New("internal copy proto file not found in descriptor set")
 	errInternalCopyExtension      = errors.New("internal copy cannot declare an extension of a message outside the copy")
-	errInternalCopyAPILevel       = errors.New("internal copy requires the open protobuf API level")
 	errProtocPluginNil            = errors.New("internal copy plugins entry must not be null")
 	errProtocPluginName           = errors.New("protoc plugin name must consist of letters, digits, \"-\" and \"_\"")
 	errProtocPluginOption         = errors.New("protoc plugin option changes the output layout")
 	errProtocPluginNotFound       = errors.New("protoc plugin not found")
 
 	protocPluginNameRe = regexp.MustCompile(`^[A-Za-z0-9_-]+$`)
-	// protocPluginLayoutOptions are the protoc-gen-go style options that move
-	// plugin output away from the Go import path the copy is collected from.
-	// M<file> import mappings override go_package and are also rejected.
+	// Plugin options that change where protoc-gen-go style plugins write
+	// their files are not allowed: the copy is picked up from the temporary
+	// output directory at its Go import path, so the output has to land
+	// there. "M<file>=" options are rejected for the same reason, since they
+	// change the Go package a file is generated into.
 	protocPluginLayoutOptions = []string{"paths", "module"}
 )
 
@@ -81,9 +81,9 @@ func validateInternalCopies(library *config.Library, outDir string) error {
 		if goAPI == nil {
 			continue
 		}
-		if importPath := clientImportPath(api.Path, goAPI); importPath != "" {
+		if goAPI.ImportPath != "" {
 			dirs = append(dirs, generatedDir{
-				path: filepath.Join(repoRootPath(outDir, library.Name), pathFromRepoRoot(library, importPath)),
+				path: filepath.Join(repoRootPath(outDir, library.Name), pathFromRepoRoot(library, goAPI.ImportPath)),
 				what: fmt.Sprintf("client directory of api %q", api.Path),
 			})
 		}
@@ -120,17 +120,6 @@ func validateInternalCopies(library *config.Library, outDir string) error {
 		}
 	}
 	return nil
-}
-
-// clientImportPath returns the import path of the API's generated client,
-// deriving the default from the API path when the configuration has not been
-// filled yet.
-func clientImportPath(apiPath string, goAPI *config.GoAPI) string {
-	if goAPI.ImportPath != "" {
-		return goAPI.ImportPath
-	}
-	importPath, _ := defaultImportPathAndClientPkg(apiPath)
-	return importPath
 }
 
 // validateInternalCopyConfig checks a single copy entry without looking at
@@ -223,7 +212,10 @@ func containsPath(dir, child string) bool {
 // protobuf-go registers every file by path and every message by full name in
 // a global registry and panics on conflicts, so a verbatim copy could never be
 // linked next to the public package.
-func generateInternalCopies(ctx context.Context, apiPath string, goAPI *config.GoAPI, library *config.Library, pc *config.Protoc, googleapisDir, tempDir, outDir string) error {
+// generateInternalCopies generates every internal copy configured for the
+// API from descriptorSet, the descriptor set written while generating the
+// public package.
+func generateInternalCopies(ctx context.Context, apiPath string, goAPI *config.GoAPI, library *config.Library, pc *config.Protoc, googleapisDir, descriptorSet, tempDir, outDir string) error {
 	if len(goAPI.InternalCopies) == 0 {
 		return nil
 	}
@@ -232,35 +224,44 @@ func generateInternalCopies(ctx context.Context, apiPath string, goAPI *config.G
 	if err := validateInternalCopies(library, outDir); err != nil {
 		return err
 	}
-	protoFiles, err := collectProtoFiles(googleapisDir, apiPath, goAPI.NestedProtos)
+	// Only the files in the API directory itself are copied. Nested protos
+	// are dependencies: their messages keep their public Go types.
+	apiFiles, err := collectAPIDirProtoFiles(googleapisDir, apiPath)
 	if err != nil {
 		return err
 	}
-	// Only the files directly in the API directory are copied. Nested protos
-	// are supplied to protoc as dependencies only, whatever proto package they
-	// declare, so their messages keep their public Go types and get no plugin
-	// output.
-	apiDir := filepath.Join(googleapisDir, apiPath)
-	var apiFiles []string
-	for _, f := range protoFiles {
-		if filepath.Dir(f) != apiDir {
-			continue
-		}
-		rel, err := filepath.Rel(googleapisDir, f)
-		if err != nil {
-			return err
-		}
-		apiFiles = append(apiFiles, filepath.ToSlash(rel))
+	fds, err := readDescriptorSet(descriptorSet)
+	if err != nil {
+		return err
 	}
 	for _, cp := range goAPI.InternalCopies {
-		if err := generateInternalCopy(ctx, cp, goAPI, library, pc, googleapisDir, protoFiles, apiFiles, tempDir, outDir); err != nil {
+		if err := generateInternalCopy(ctx, cp, goAPI, library, pc, fds, apiFiles, tempDir, outDir); err != nil {
 			return fmt.Errorf("internal copy %q: %w", cp.ImportPath, err)
 		}
 	}
 	return nil
 }
 
-func generateInternalCopy(ctx context.Context, cp *config.GoInternalCopy, goAPI *config.GoAPI, library *config.Library, pc *config.Protoc, googleapisDir string, protoFiles, apiFiles []string, tempDir, outDir string) error {
+// collectAPIDirProtoFiles returns the proto files directly in the API
+// directory, as slash-separated paths relative to googleapisDir.
+func collectAPIDirProtoFiles(googleapisDir, apiPath string) ([]string, error) {
+	entries, err := os.ReadDir(filepath.Join(googleapisDir, apiPath))
+	if err != nil {
+		return nil, fmt.Errorf("failed to read API directory %s: %w", filepath.Join(googleapisDir, apiPath), err)
+	}
+	var files []string
+	for _, entry := range entries {
+		if !entry.IsDir() && filepath.Ext(entry.Name()) == ".proto" {
+			files = append(files, apiPath+"/"+entry.Name())
+		}
+	}
+	if len(files) == 0 {
+		return nil, fmt.Errorf("no .proto files found in %s", filepath.Join(googleapisDir, apiPath))
+	}
+	return files, nil
+}
+
+func generateInternalCopy(ctx context.Context, cp *config.GoInternalCopy, goAPI *config.GoAPI, library *config.Library, pc *config.Protoc, apiSet *descriptorpb.FileDescriptorSet, apiFiles []string, tempDir, outDir string) error {
 	plugins, err := resolveProtocPlugins(cp.Plugins)
 	if err != nil {
 		return err
@@ -269,27 +270,9 @@ func generateInternalCopy(ctx context.Context, cp *config.GoInternalCopy, goAPI 
 	if err != nil {
 		return err
 	}
-	// Source info is kept so that the proto comments end up in the generated
-	// Go code, as they do for the public package.
-	apiSet := filepath.Join(copyDir, "api.pb")
-	args := []string{
-		"--experimental_allow_proto3_optional",
-		"-I=" + googleapisDir,
-		"--include_imports",
-		"--include_source_info",
-		"--descriptor_set_out=" + apiSet,
-	}
-	args = append(args, protoFiles...)
-	if err := runProtoc(ctx, pc, args...); err != nil {
-		return err
-	}
-	fds, err := readDescriptorSet(apiSet)
-	if err != nil {
-		return err
-	}
-	if err := checkInternalCopyAPILevel(fds, apiFiles, goAPI.ProtoAPILevel); err != nil {
-		return err
-	}
+	// The rewrite edits the set in place, so work on a copy: the same set
+	// serves every copy of the API.
+	fds := proto.Clone(apiSet).(*descriptorpb.FileDescriptorSet)
 	renamed, err := rewriteDescriptorSet(fds, apiFiles, cp)
 	if err != nil {
 		return err
@@ -298,7 +281,7 @@ func generateInternalCopy(ctx context.Context, cp *config.GoInternalCopy, goAPI 
 	if err := writeDescriptorSet(copySet, fds); err != nil {
 		return err
 	}
-	args = []string{
+	args := []string{
 		"--experimental_allow_proto3_optional",
 		"--descriptor_set_in=" + copySet,
 		"--go_out=" + copyDir,
@@ -377,85 +360,6 @@ func apiFileDescriptors(fds *descriptorpb.FileDescriptorSet, apiFiles []string) 
 		return nil, errInternalCopyFileNotFound
 	}
 	return apiFds, nil
-}
-
-// checkInternalCopyAPILevel verifies that protoc-gen-go would generate the
-// open struct API for every message of the API files. Internal copies are
-// only supported with the open API because plugins such as
-// protoc-gen-go-vtproto access message fields directly, which does not
-// compile against opaque structs or hybrid structs built with protoopaque.
-// The effective level is resolved the way protoc-gen-go resolves it: a file
-// or message api_level feature wins, then the edition default (opaque from
-// edition 2024 on), then
-// protoAPILevel, the configured default_api_level, and finally open.
-func checkInternalCopyAPILevel(fds *descriptorpb.FileDescriptorSet, apiFiles []string, protoAPILevel string) error {
-	defaultLevel := gofeaturespb.GoFeatures_API_OPEN
-	defaultSource := "the protoc-gen-go default"
-	if protoAPILevel != "" {
-		level, ok := gofeaturespb.GoFeatures_APILevel_value[protoAPILevel]
-		if !ok || level == int32(gofeaturespb.GoFeatures_API_LEVEL_UNSPECIFIED) {
-			return fmt.Errorf("%w: unknown proto_api_level %q", errInternalCopyAPILevel, protoAPILevel)
-		}
-		defaultLevel = gofeaturespb.GoFeatures_APILevel(level)
-		defaultSource = "proto_api_level"
-	}
-	apiFds, err := apiFileDescriptors(fds, apiFiles)
-	if err != nil {
-		return err
-	}
-	for _, fd := range apiFds {
-		level, source := defaultLevel, defaultSource
-		if explicit := featureAPILevel(fd.GetOptions().GetFeatures()); explicit != gofeaturespb.GoFeatures_API_LEVEL_UNSPECIFIED {
-			level, source = explicit, "the file's api_level feature"
-		} else if fd.GetEdition() >= descriptorpb.Edition_EDITION_2024 {
-			level, source = gofeaturespb.GoFeatures_API_OPAQUE, "the default of "+fd.GetEdition().String()
-		}
-		if level != gofeaturespb.GoFeatures_API_OPEN {
-			return apiLevelError(fd.GetName(), "", level, source)
-		}
-		if err := checkMessagesAPILevel(fd.GetName(), "."+fd.GetPackage(), fd.GetMessageType()); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-// checkMessagesAPILevel rejects messages, including nested ones, whose
-// api_level feature selects another API than the open one. A message without
-// the feature inherits its parent's level, which the caller has checked.
-func checkMessagesAPILevel(file, scope string, messages []*descriptorpb.DescriptorProto) error {
-	for _, message := range messages {
-		name := scope + "." + message.GetName()
-		level := featureAPILevel(message.GetOptions().GetFeatures())
-		if level != gofeaturespb.GoFeatures_API_LEVEL_UNSPECIFIED && level != gofeaturespb.GoFeatures_API_OPEN {
-			return apiLevelError(file, strings.TrimPrefix(name, "."), level, "the message's api_level feature")
-		}
-		if err := checkMessagesAPILevel(file, name, message.GetNestedType()); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func apiLevelError(file, message string, level gofeaturespb.GoFeatures_APILevel, source string) error {
-	what := "file " + file
-	if message != "" {
-		what = "message " + message + " in " + file
-	}
-	return fmt.Errorf("%w: %s would be generated with %s because of %s; plugins such as protoc-gen-go-vtproto access message fields directly, which requires API_OPEN to compile without and with the protoopaque build tag", errInternalCopyAPILevel, what, level, source)
-}
-
-// featureAPILevel returns the Go api_level feature set on the given feature
-// set, or unspecified when there is none.
-func featureAPILevel(features *descriptorpb.FeatureSet) gofeaturespb.GoFeatures_APILevel {
-	if features == nil || !proto.HasExtension(features, gofeaturespb.E_Go) {
-		return gofeaturespb.GoFeatures_API_LEVEL_UNSPECIFIED
-	}
-	goFeatures, ok := proto.GetExtension(features, gofeaturespb.E_Go).(*gofeaturespb.GoFeatures)
-	if !ok {
-		return gofeaturespb.GoFeatures_API_LEVEL_UNSPECIFIED
-	}
-	return goFeatures.GetApiLevel()
 }
 
 // rewriteDescriptorSet rewrites the given API files in place for the internal

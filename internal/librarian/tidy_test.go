@@ -19,7 +19,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"strings"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -106,25 +105,6 @@ func TestValidateLibraries_Error(t *testing.T) {
 				t.Errorf("expected %v, got %v", test.wantErr, err)
 			}
 		})
-	}
-}
-
-// TestValidateLibraries_GoInternalCopy checks that the Go validator is wired
-// into library validation.
-func TestValidateLibraries_GoInternalCopy(t *testing.T) {
-	cfg := &config.Config{
-		Language: config.LanguageGo,
-		Libraries: []*config.Library{{
-			Name: "foo",
-			APIs: []*config.API{{
-				Path: "google/cloud/foo/v1",
-				Go:   &config.GoAPI{InternalCopies: []*config.GoInternalCopy{nil}},
-			}},
-		}},
-	}
-	err := validateLibraries(cfg)
-	if err == nil || !strings.Contains(err.Error(), "internal_copies entry must not be null") {
-		t.Errorf("validateLibraries error = %v, want null internal copy error", err)
 	}
 }
 
