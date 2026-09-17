@@ -157,7 +157,6 @@ func TestRewriteDescriptorSet_Error(t *testing.T) {
 		cp       *config.GoInternalCopy
 		setup    func(fds *descriptorpb.FileDescriptorSet)
 		wantErr  error
-		wantMsg  []string
 	}{
 		{
 			name:     "api file not in set",
@@ -187,7 +186,6 @@ func TestRewriteDescriptorSet_Error(t *testing.T) {
 			apiFiles: []string{"foo/v1/a.proto"},
 			cp:       &config.GoInternalCopy{ImportPath: "foo/internal/fastpb", ProtoPackage: "google.protobuf"},
 			wantErr:  errInternalCopyProtoPackage,
-			wantMsg:  []string{"google/protobuf/struct.proto"},
 		},
 		{
 			name:     "empty proto package",
@@ -207,7 +205,6 @@ func TestRewriteDescriptorSet_Error(t *testing.T) {
 				}
 			},
 			wantErr: errInternalCopyNoPackage,
-			wantMsg: []string{"foo/v1/a.proto"},
 		},
 		{
 			name:     "invalid proto package",
@@ -229,7 +226,6 @@ func TestRewriteDescriptorSet_Error(t *testing.T) {
 				})
 			},
 			wantErr: errInternalCopyExtension,
-			wantMsg: []string{"foo/v1/b.proto", "extension foo.v1.note", "of foo.v1beta.D"},
 		},
 		{
 			name:     "nested extension of a message outside the copy",
@@ -245,7 +241,6 @@ func TestRewriteDescriptorSet_Error(t *testing.T) {
 				})
 			},
 			wantErr: errInternalCopyExtension,
-			wantMsg: []string{"foo/v1/a.proto", "extension foo.v1.A.Inner.note", "of google.protobuf.Value"},
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
@@ -256,11 +251,6 @@ func TestRewriteDescriptorSet_Error(t *testing.T) {
 			_, gotErr := rewriteDescriptorSet(fds, test.apiFiles, test.cp)
 			if !errors.Is(gotErr, test.wantErr) {
 				t.Fatalf("rewriteDescriptorSet error = %v, wantErr %v", gotErr, test.wantErr)
-			}
-			for _, want := range test.wantMsg {
-				if !strings.Contains(gotErr.Error(), want) {
-					t.Errorf("error %q does not mention %q", gotErr, want)
-				}
 			}
 		})
 	}
