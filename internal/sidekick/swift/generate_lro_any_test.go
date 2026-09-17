@@ -225,9 +225,51 @@ func TestGenerateConversions_LROAnyConverterUnset(t *testing.T) {
 	}
 }
 
-// The converter covers the metadata and response types the service declares,
-// and nothing else.
-func TestGenerateStubs_LROAnyConverter(t *testing.T) {
+// lroAnyTwoServiceTestModel adds a second service with long-running
+// operations, one of which carries a payload type the first service also
+// carries.
+func lroAnyTwoServiceTestModel(t *testing.T) *api.API {
+	t.Helper()
+	model := lroAnyTestModel(t)
+
+	managedFolder := &api.Message{
+		Name:    "ManagedFolder",
+		Package: "google.storage.control.v2",
+		ID:      ".google.storage.control.v2.ManagedFolder",
+	}
+	method := &api.Method{
+		Name:         "RenameManagedFolder",
+		ID:           ".google.storage.control.v2.StorageLayout.RenameManagedFolder",
+		InputTypeID:  ".google.storage.control.v2.Folder",
+		OutputTypeID: ".google.longrunning.Operation",
+		OperationInfo: &api.OperationInfo{
+			// The same metadata type as the other service, so the union has
+			// something to deduplicate.
+			MetadataTypeID: ".google.storage.control.v2.RenameFolderMetadata",
+			ResponseTypeID: ".google.storage.control.v2.ManagedFolder",
+		},
+	}
+	service := &api.Service{
+		Name:    "StorageLayout",
+		Package: "google.storage.control.v2",
+		ID:      ".google.storage.control.v2.StorageLayout",
+		Methods: []*api.Method{method},
+	}
+
+	model.Messages = append(model.Messages, managedFolder)
+	model.AddMessage(managedFolder)
+	model.Services = append(model.Services, service)
+	model.AddService(service)
+	if err := api.CrossReference(model); err != nil {
+		t.Fatal(err)
+	}
+	return model
+}
+
+// The converter covers the metadata and response types the services declare,
+// sorted by type URL, and nothing else. The model is a module, which is the
+// case that matters: modules stop generating early, after the stubs.
+func TestGenerateLROAnyConverter(t *testing.T) {
 	outDir := t.TempDir()
 	model := lroAnyTestModel(t)
 	module := &config.SwiftModule{
@@ -240,30 +282,123 @@ func TestGenerateStubs_LROAnyConverter(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	b, err := os.ReadFile(filepath.Join(outDir, "StorageControl+LROAnyConverter.swift"))
+	b, err := os.ReadFile(filepath.Join(outDir, "StorageControlLROAnyConverter.swift"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	gotContent := string(b)
+
+	got := extractBlock(t, gotContent, "  internal static func fromProto(", "\n  }")
+	wantFromProto := `  internal static func fromProto(
+    _ proto: SwiftProtobuf.Google_Protobuf_Any
+  ) throws -> GoogleCloudWKT.` + "`Any`" + ` {
+    switch proto.typeURL {
+    case "type.googleapis.com/google.protobuf.Empty":
+      return try .init(
+        fromMessage: GoogleCloudWKT.Empty(
+          proto: SwiftProtobuf.Google_Protobuf_Empty(serializedBytes: proto.value)))
+    case "type.googleapis.com/google.storage.control.v2.Folder":
+      return try .init(
+        fromMessage: Folder(
+          proto: StorageControlProtos.Google_Storage_Control_V2_Folder(serializedBytes: proto.value)))
+    case "type.googleapis.com/google.storage.control.v2.RenameFolderMetadata":
+      return try .init(
+        fromMessage: RenameFolderMetadata(
+          proto: StorageControlProtos.Google_Storage_Control_V2_RenameFolderMetadata(serializedBytes: proto.value)))
+    default:
+      do {
+        return try .init(proto: proto)
+      } catch {
+        throw ProtobufConversionError.unknownTypeUrl(typeUrl: proto.typeURL)
+      }
+    }
+  }`
+	if diff := cmp.Diff(wantFromProto, got); diff != "" {
+		t.Errorf("fromProto mismatch (-want +got):\n%s", diff)
+	}
+
+	got = extractBlock(t, gotContent, "  internal static func toProto(", "\n  }")
+	wantToProto := `  internal static func toProto(
+    _ any: GoogleCloudWKT.` + "`Any`" + `
+  ) throws -> SwiftProtobuf.Google_Protobuf_Any {
+    switch any.typeUrl {
+    case "type.googleapis.com/google.protobuf.Empty":
+      return try .init(message: GoogleCloudWKT.Empty(fromAny: any).toProto())
+    case "type.googleapis.com/google.storage.control.v2.Folder":
+      return try .init(message: Folder(fromAny: any).toProto())
+    case "type.googleapis.com/google.storage.control.v2.RenameFolderMetadata":
+      return try .init(message: RenameFolderMetadata(fromAny: any).toProto())
+    default:
+      do {
+        return try any.toProto()
+      } catch {
+        throw ProtobufConversionError.unknownTypeUrl(typeUrl: any.typeUrl)
+      }
+    }
+  }`
+	if diff := cmp.Diff(wantToProto, got); diff != "" {
+		t.Errorf("toProto mismatch (-want +got):\n%s", diff)
+	}
+}
+
+// A package gets one converter, covering the payload types of all its
+// services. The `Operation` fields name a single converter, so a payload type
+// that only the second service declares has to resolve through the same table.
+func TestGenerateLROAnyConverter_UnionsServices(t *testing.T) {
+	outDir := t.TempDir()
+	model := lroAnyTwoServiceTestModel(t)
+	module := &config.SwiftModule{
+		ModuleType: "grpc-client",
+		ModulePath: "StorageControlProtos",
+	}
+	library := lroAnyTestLibrary(t, "StorageControlLROAnyConverter")
+
+	if err := Generate(t.Context(), model, outDir, library, module); err != nil {
+		t.Fatal(err)
+	}
+
+	entries, err := os.ReadDir(outDir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var converters []string
+	for _, entry := range entries {
+		if strings.Contains(entry.Name(), "LROAnyConverter") {
+			converters = append(converters, entry.Name())
+		}
+	}
+	if diff := cmp.Diff([]string{"StorageControlLROAnyConverter.swift"}, converters); diff != "" {
+		t.Errorf("converter files mismatch (-want +got):\n%s", diff)
+	}
+
+	b, err := os.ReadFile(filepath.Join(outDir, "StorageControlLROAnyConverter.swift"))
 	if err != nil {
 		t.Fatal(err)
 	}
 	gotContent := string(b)
 
 	for _, want := range []string{
-		"internal enum StorageControlLROAnyConverter {",
-		`case "type.googleapis.com/google.storage.control.v2.Folder":`,
-		`case "type.googleapis.com/google.storage.control.v2.RenameFolderMetadata":`,
 		`case "type.googleapis.com/google.protobuf.Empty":`,
-		"proto: SwiftProtobuf.Google_Protobuf_Empty(serializedBytes: proto.value)",
-		"throw ProtobufConversionError.unknownTypeUrl(typeUrl: proto.typeURL)",
-		"throw ProtobufConversionError.unknownTypeUrl(typeUrl: any.typeUrl)",
+		`case "type.googleapis.com/google.storage.control.v2.Folder":`,
+		`case "type.googleapis.com/google.storage.control.v2.ManagedFolder":`,
+		`case "type.googleapis.com/google.storage.control.v2.RenameFolderMetadata":`,
 	} {
 		if !strings.Contains(gotContent, want) {
 			t.Errorf("expected generated converter to contain %q, got:\n%s", want, gotContent)
 		}
 	}
+
+	// Both services declare this metadata type. Each conversion direction
+	// names it once, and a repeated `case` would be unreachable code.
+	metadata := `case "type.googleapis.com/google.storage.control.v2.RenameFolderMetadata":`
+	if got, want := strings.Count(gotContent, metadata), 2; got != want {
+		t.Errorf("got %d occurrences of the shared metadata type, want %d:\n%s", got, want, gotContent)
+	}
 }
 
 // A library that does not convert long-running operations gets no converter,
 // even though its services declare the payload types one would cover.
-func TestGenerateStubs_LROAnyConverterUnset(t *testing.T) {
+func TestGenerateLROAnyConverter_Unset(t *testing.T) {
 	outDir := t.TempDir()
 	model := lroAnyTestModel(t)
 	module := &config.SwiftModule{
@@ -276,7 +411,7 @@ func TestGenerateStubs_LROAnyConverterUnset(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	path := filepath.Join(outDir, "StorageControl+LROAnyConverter.swift")
+	path := filepath.Join(outDir, "StorageControlLROAnyConverter.swift")
 	if _, err := os.Stat(path); !os.IsNotExist(err) {
 		t.Errorf("expected no converter file at %s", path)
 	}
@@ -284,7 +419,7 @@ func TestGenerateStubs_LROAnyConverterUnset(t *testing.T) {
 
 // Services without long-running operations get no converter, so the generated
 // package does not carry an unused type.
-func TestGenerateStubs_LROAnyConverterOmitted(t *testing.T) {
+func TestGenerateLROAnyConverter_NoLROs(t *testing.T) {
 	outDir := t.TempDir()
 	method := &api.Method{
 		Name:         "GetFolder",
@@ -318,8 +453,93 @@ func TestGenerateStubs_LROAnyConverterOmitted(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	path := filepath.Join(outDir, "StorageControl+LROAnyConverter.swift")
+	path := filepath.Join(outDir, "StorageControlLROAnyConverter.swift")
 	if _, err := os.Stat(path); !os.IsNotExist(err) {
 		t.Errorf("expected no converter file at %s", path)
+	}
+}
+
+// The converter decodes the Protobuf stubs directly, which only the gRPC
+// transport generates.
+func TestGenerateLROAnyConverter_NotGrpc(t *testing.T) {
+	outDir := t.TempDir()
+	model := lroAnyTestModel(t)
+	module := &config.SwiftModule{
+		ModuleType: "http-client",
+		ModulePath: "StorageControlProtos",
+	}
+	library := lroAnyTestLibrary(t, "StorageControlLROAnyConverter")
+
+	if err := Generate(t.Context(), model, outDir, library, module); err != nil {
+		t.Fatal(err)
+	}
+
+	path := filepath.Join(outDir, "StorageControlLROAnyConverter.swift")
+	if _, err := os.Stat(path); !os.IsNotExist(err) {
+		t.Errorf("expected no converter file at %s", path)
+	}
+}
+
+// A payload type that this module does not generate is left out of the table
+// rather than generating a call to a type that does not exist. At runtime it
+// takes the converter's generic path.
+//
+// The table is checked directly: the generator annotates every message a
+// method refers to, so within a single model there is no way to shape an
+// unannotated payload type.
+func TestLROAnyTypes_PayloadTypeNotGenerated(t *testing.T) {
+	model := lroAnyTestModel(t)
+	module := &config.SwiftModule{
+		ModuleType: "grpc-client",
+		ModulePath: "StorageControlProtos",
+	}
+	library := lroAnyTestLibrary(t, "StorageControlLROAnyConverter")
+
+	c, err := newCodec(model, library, module, t.TempDir())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := c.annotateModel(); err != nil {
+		t.Fatal(err)
+	}
+	// Stand in for a payload type another module owns.
+	model.Message(".google.storage.control.v2.Folder").Codec = nil
+
+	types, err := c.lroAnyTypes(model.Services[0].Methods)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var got []string
+	for _, payload := range types {
+		got = append(got, payload.TypeURL)
+	}
+	want := []string{
+		"type.googleapis.com/google.protobuf.Empty",
+		"type.googleapis.com/google.storage.control.v2.RenameFolderMetadata",
+	}
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Errorf("payload types mismatch (-want +got):\n%s", diff)
+	}
+}
+
+// One converter cannot be gated on the trait of any one service, so the two
+// settings are rejected together rather than generating code that is gated
+// wrongly.
+func TestGenerateLROAnyConverter_PerServiceTraits(t *testing.T) {
+	outDir := t.TempDir()
+	model := lroAnyTestModel(t)
+	module := &config.SwiftModule{
+		ModuleType: "grpc-client",
+		ModulePath: "StorageControlProtos",
+	}
+	library := lroAnyTestLibrary(t, "StorageControlLROAnyConverter")
+	library.Swift.PerServiceTraits = true
+
+	err := Generate(t.Context(), model, outDir, library, module)
+	if err == nil {
+		t.Fatal("expected an error when lro_any_converter is combined with per_service_traits")
+	}
+	if !strings.Contains(err.Error(), "per_service_traits") {
+		t.Errorf("expected the error to name the conflicting setting, got: %v", err)
 	}
 }

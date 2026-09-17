@@ -147,8 +147,14 @@ type codec struct {
 	// LROAnyConverter names the generated converter for the `Any` fields of
 	// `google.longrunning.Operation`, or is empty to convert them generically.
 	//
-	// See the `lro_any_converter` module setting for why this is configured
-	// rather than discovered.
+	// The name is configured rather than derived because the module that
+	// generates the converter and the module that converts `Operation` are
+	// separate generation runs that cannot see each other. The generated
+	// converter takes this name and covers the payload types of every service
+	// in its module, so the name a module declares and the name the
+	// `Operation` fields call always agree. A library whose long-running
+	// operations span two modules would declare the name twice, which does not
+	// compile; no library is in that shape today.
 	LROAnyConverter string
 }
 
@@ -235,6 +241,13 @@ func newCodec(model *api.API, library *config.Library, module *config.SwiftModul
 		result.PerServiceTraits = swiftCfg.PerServiceTraits
 		result.DefaultTraits = swiftCfg.DefaultTraits
 		result.LROAnyConverter = swiftCfg.LROAnyConverter
+		if result.LROAnyConverter != "" && result.PerServiceTraits {
+			// The converter covers every service in the package, so there is
+			// no single trait to gate it on. Supporting both would mean
+			// emitting one `#if` group per service inside the converter, which
+			// no library needs today.
+			return nil, fmt.Errorf("swift: library %q sets both lro_any_converter and per_service_traits, which cannot be combined", library.Name)
+		}
 	}
 
 	if module != nil {

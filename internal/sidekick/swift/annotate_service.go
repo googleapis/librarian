@@ -42,20 +42,6 @@ type serviceAnnotations struct {
 	// Typically this happens on discovery-based APIs where services with LROs
 	// depend on request messages provided by the service that can poll the LRO.
 	RequiredServices map[string]*api.Service
-
-	// LROAnyTypes are the payload types this service's long-running operations
-	// can carry in an `Any`, sorted by type URL.
-	LROAnyTypes []*lroAnyType
-
-	// LROAnyConverterName is the name of the generated converter for
-	// `LROAnyTypes` (e.g. "StorageControlLROAnyConverter").
-	LROAnyConverterName string
-}
-
-// HasLROAnyTypes returns true if this service has long-running operations whose
-// payload types are generated in this module.
-func (ann *serviceAnnotations) HasLROAnyTypes() bool {
-	return len(ann.LROAnyTypes) != 0
 }
 
 // ServiceImports returns the list of dependencies for this service.
@@ -143,19 +129,6 @@ func (c *codec) annotateService(service *api.Service, model *modelAnnotations) (
 	if c.PerServiceTraits {
 		annotations.IsGated = true
 		annotations.RequiredServices = requiredServices
-	}
-
-	// Only the libraries that route `Operation` through a converter need the
-	// dispatch table. Everywhere else it would be an unused type.
-	if c.LROAnyConverter != "" {
-		lroAnyTypes, err := c.lroAnyTypes(methods)
-		if err != nil {
-			return nil, err
-		}
-		if len(lroAnyTypes) != 0 {
-			annotations.LROAnyTypes = lroAnyTypes
-			annotations.LROAnyConverterName = name + lroAnyConverterSuffix
-		}
 	}
 
 	// Iterate through the list of all dependencies declared in librarian.yaml
