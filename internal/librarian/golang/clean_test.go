@@ -132,6 +132,81 @@ func TestClean(t *testing.T) {
 	}
 }
 
+func TestClean_InternalCopy(t *testing.T) {
+	root := t.TempDir()
+	outputPath := filepath.Join(root, "lib")
+	lib := &config.Library{
+		Name: "lib",
+		APIs: []*config.API{
+			{
+				Path: "google/lib/v1",
+				Go: &config.GoAPI{
+					ClientPackage: "lib",
+					ImportPath:    "lib/apiv1",
+					InternalCopies: []*config.GoInternalCopy{
+						{ImportPath: "lib/internal/fastpb", Plugin: "go-vtproto", ProtoPackage: "google.lib.v1.fastinternal"},
+					},
+				},
+			},
+		},
+		Output: outputPath,
+	}
+	createFiles(t, outputPath, []string{
+		"apiv1/libpb/content.pb.go",
+		"internal/fastpb/content.pb.go",
+		"internal/fastpb/content_vtproto.pb.go",
+		"internal/fastpb/sub/extra.go",
+		"internal/helpers/handwritten.go",
+	})
+	if err := Clean(lib); err != nil {
+		t.Fatal(err)
+	}
+	got := getFilesInDir(t, outputPath, outputPath)
+	slices.Sort(got)
+	want := []string{
+		filepath.FromSlash("internal/helpers/handwritten.go"),
+	}
+	if !slices.Equal(got, want) {
+		t.Errorf("output directory: got %v, want %v", got, want)
+	}
+	if _, err := os.Stat(filepath.Join(outputPath, "internal", "fastpb")); !errors.Is(err, fs.ErrNotExist) {
+		t.Errorf("internal copy directory: got err %v, want %v", err, fs.ErrNotExist)
+	}
+}
+
+func TestClean_InternalCopy_LibrarySymlink(t *testing.T) {
+	root := t.TempDir()
+	realDir := filepath.Join(root, "real")
+	createFiles(t, realDir, []string{"internal/pb/stale.pb.go", "internal/helpers/doc.go"})
+	outDir := filepath.Join(root, "foo")
+	if err := os.Symlink(realDir, outDir); err != nil {
+		t.Fatal(err)
+	}
+	library := &config.Library{
+		Name: "foo", Output: outDir,
+		APIs: []*config.API{{
+			Path: "foo/v1",
+			Go: &config.GoAPI{
+				ImportPath:     "foo/apiv1",
+				InternalCopies: []*config.GoInternalCopy{{ImportPath: "foo/internal/pb", Plugin: "go-vtproto", ProtoPackage: "foo.private"}},
+			},
+		}},
+	}
+	if err := Clean(library); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := os.Stat(filepath.Join(realDir, "internal/pb")); !errors.Is(err, fs.ErrNotExist) {
+		t.Errorf("copy directory: Stat error = %v, want not exist", err)
+	}
+	got, err := os.ReadFile(filepath.Join(realDir, "internal/helpers/doc.go"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(got) != "test" {
+		t.Errorf("handwritten file: got %q, want %q", got, "test")
+	}
+}
+
 func TestClean_Error(t *testing.T) {
 	libraryName := "testlib"
 	for _, test := range []struct {

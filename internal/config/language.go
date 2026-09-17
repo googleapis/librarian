@@ -109,8 +109,8 @@ type GoAPI struct {
 	// Each copy is generated from the proto files in the API directory,
 	// without services, under a renamed proto package so that it can be
 	// linked beside the public package. Copies require the open protobuf API
-	// level. Only generated .pb.go files in a copy directory are cleaned
-	// before regeneration.
+	// level. A copy directory holds generated code only and is removed
+	// entirely before regeneration, so handwritten code must live outside it.
 	InternalCopies []*GoInternalCopy `yaml:"internal_copies,omitempty"`
 	// NestedProtos is a list of nested proto files.
 	NestedProtos []string `yaml:"nested_protos,omitempty"`

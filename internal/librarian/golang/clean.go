@@ -142,6 +142,9 @@ func cleanClientDirectory(library *config.Library, libraryDir string, keepSet ma
 		if err := cleanGeneratedClientFiles(clientPath, libraryDir, keepSet); err != nil {
 			return err
 		}
+		if err := cleanInternalCopies(library, libraryDir, goAPI); err != nil {
+			return err
+		}
 		snippetDir := snippetDirectory(libraryDir, library, goAPI)
 		if err := os.RemoveAll(snippetDir); err != nil {
 			return err
@@ -182,4 +185,16 @@ func cleanGeneratedClientFiles(clientPath, libraryDir string, keepSet map[string
 		}
 		return nil
 	})
+}
+
+// cleanInternalCopies removes each internal copy directory of the API. A copy
+// holds generated code only, so removing the directory leaves no stale files
+// behind when the API's proto files change.
+func cleanInternalCopies(library *config.Library, libraryDir string, goAPI *config.GoAPI) error {
+	for _, cp := range goAPI.InternalCopies {
+		if err := os.RemoveAll(internalCopyDir(library, libraryDir, cp)); err != nil {
+			return err
+		}
+	}
+	return nil
 }

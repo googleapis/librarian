@@ -19,6 +19,8 @@ import (
 	"fmt"
 	"os"
 	"path"
+	"path/filepath"
+	"slices"
 	"strings"
 
 	"github.com/googleapis/librarian/internal/config"
@@ -27,13 +29,88 @@ import (
 	"google.golang.org/protobuf/types/descriptorpb"
 )
 
-var (
-	errInternalCopyProtoPackage = errors.New("internal copy proto_package must be a valid proto package that is not used by the API or another copy")
-	errInternalCopyPackages     = errors.New("internal copy requires the API proto files to share one proto package")
-	errInternalCopyNoPackage    = errors.New("internal copy requires the API proto files to declare a proto package")
-	errInternalCopyFileNotFound = errors.New("internal copy proto file not found in descriptor set")
-	errInternalCopyExtension    = errors.New("internal copy cannot declare an extension of a message outside the copy")
+const (
+	// internalPathElement is the path element that makes a Go package
+	// unimportable from outside its parent tree.
+	internalPathElement = "internal"
 )
+
+var (
+	errInternalCopyNil            = errors.New("internal_copies entry must not be null")
+	errInternalCopyImportPath     = errors.New("internal copy import_path must be a clean relative Go import path with an \"internal\" path element")
+	errInternalCopyOutsideLibrary = errors.New("internal copy import_path resolves outside the library")
+	errInternalCopyKeep           = errors.New("internal copy directory is removed on clean and cannot hold kept files")
+	errInternalCopyProtoPackage   = errors.New("internal copy proto_package must be a valid proto package that is not used by the API or another copy")
+	errInternalCopyPackages       = errors.New("internal copy requires the API proto files to share one proto package")
+	errInternalCopyNoPackage      = errors.New("internal copy requires the API proto files to declare a proto package")
+	errInternalCopyFileNotFound   = errors.New("internal copy proto file not found in descriptor set")
+	errInternalCopyExtension      = errors.New("internal copy cannot declare an extension of a message outside the copy")
+)
+
+// validateInternalCopyImportPath checks that the import path is relative, in
+// canonical form (path.Clean would leave it unchanged and it has no "." or
+// ".." elements) and contains an "internal" element. Canonical form matters
+// because the path is joined onto the output directory: "foo/internal/../bar"
+// would otherwise generate into a public package.
+func validateInternalCopyImportPath(importPath string) error {
+	elements := strings.Split(importPath, "/")
+	switch {
+	case importPath == "":
+		return fmt.Errorf("%w: import_path is empty", errInternalCopyImportPath)
+	case path.IsAbs(importPath), strings.Contains(importPath, `\`):
+		return fmt.Errorf("%w: %q is not relative", errInternalCopyImportPath, importPath)
+	case path.Clean(importPath) != importPath, slices.Contains(elements, "."), slices.Contains(elements, ".."):
+		return fmt.Errorf("%w: %q is not in canonical form", errInternalCopyImportPath, importPath)
+	case !slices.Contains(elements, internalPathElement):
+		return fmt.Errorf("%w: %q has no %q element", errInternalCopyImportPath, importPath, internalPathElement)
+	}
+	return nil
+}
+
+// validateInternalCopies checks the internal copies of every API in the
+// library at fill time, before Clean or Generate touch the repository: each
+// copy must name an internal package whose directory lies strictly inside the
+// library output directory, so that cleanup and generation cannot reach a
+// public package or another library, and no kept file may lie under a copy
+// directory, which Clean removes entirely.
+func validateInternalCopies(library *config.Library) error {
+	outDir := library.Output
+	for _, api := range library.APIs {
+		for _, cp := range api.Go.InternalCopies {
+			if cp == nil {
+				return fmt.Errorf("api %q: %w", api.Path, errInternalCopyNil)
+			}
+			if err := validateInternalCopyImportPath(cp.ImportPath); err != nil {
+				return fmt.Errorf("api %q: %w", api.Path, err)
+			}
+			dir := internalCopyDir(library, outDir, cp)
+			if rel, err := filepath.Rel(outDir, dir); err != nil || rel == "." || !containsPath(outDir, dir) {
+				return fmt.Errorf("api %q: %w: %q resolves to %s, outside %s", api.Path, errInternalCopyOutsideLibrary, cp.ImportPath, dir, outDir)
+			}
+			for _, kept := range library.Keep {
+				if containsPath(dir, filepath.Join(outDir, kept)) {
+					return fmt.Errorf("api %q: %w: %q is under internal copy %q", api.Path, errInternalCopyKeep, kept, cp.ImportPath)
+				}
+			}
+		}
+	}
+	return nil
+}
+
+// internalCopyDir returns the directory the copy is generated into, derived
+// from the copy's import path like the client directory.
+func internalCopyDir(library *config.Library, outDir string, cp *config.GoInternalCopy) string {
+	return filepath.Join(repoRootPath(outDir, library.Name), pathFromRepoRoot(library, cp.ImportPath))
+}
+
+// containsPath reports whether child is dir itself or lies below it.
+func containsPath(dir, child string) bool {
+	rel, err := filepath.Rel(dir, child)
+	if err != nil {
+		return false
+	}
+	return rel != ".." && !strings.HasPrefix(rel, ".."+string(filepath.Separator))
+}
 
 // apiFileDescriptors returns the descriptors of the API files in the order of
 // apiFiles and checks that they declare a single proto package.

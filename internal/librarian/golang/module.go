@@ -79,6 +79,9 @@ func Fill(library *config.Library) (*config.Library, error) {
 		}
 		api.Go = goAPI
 	}
+	if err := validateInternalCopies(library); err != nil {
+		return nil, err
+	}
 
 	if library.Preview != nil {
 		_, err := fillGoPreview(library, library.Preview)
@@ -237,9 +240,14 @@ func defaultImportPathAndClientPkg(apiPath string) (string, string) {
 }
 
 // clientPathFromRepoRoot returns the relative path from the repo root to the client directory.
-// It strips any module path version from the import path to get the correct filesystem path.
 func clientPathFromRepoRoot(library *config.Library, goAPI *config.GoAPI) string {
-	importPath := goAPI.ImportPath
+	return pathFromRepoRoot(library, goAPI.ImportPath)
+}
+
+// pathFromRepoRoot returns the relative path from the repo root to the directory of the
+// given import path (relative to cloud.google.com/go). It strips any module path version
+// from the import path to get the correct filesystem path.
+func pathFromRepoRoot(library *config.Library, importPath string) string {
 	if isPreview(library.Output) {
 		importPath = strings.TrimPrefix(importPath, library.Name+"/")
 	}

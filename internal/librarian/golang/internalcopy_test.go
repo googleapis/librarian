@@ -385,3 +385,140 @@ func testEnum(name string) *descriptorpb.EnumDescriptorProto {
 		},
 	}
 }
+
+func TestInternalCopyDir(t *testing.T) {
+	for _, test := range []struct {
+		name       string
+		library    *config.Library
+		outDir     string
+		importPath string
+		want       string
+	}{
+		{
+			name:       "library",
+			library:    &config.Library{Name: "foo"},
+			outDir:     "repo/foo",
+			importPath: "foo/internal/fastpb",
+			want:       "repo/foo/internal/fastpb",
+		},
+		{
+			name:       "nested library",
+			library:    &config.Library{Name: "foo/bar"},
+			outDir:     "repo/foo/bar",
+			importPath: "foo/bar/internal/fastpb",
+			want:       "repo/foo/bar/internal/fastpb",
+		},
+		{
+			name:       "preview library",
+			library:    &config.Library{Name: "foo", Output: "preview/internal/foo"},
+			outDir:     "preview/internal/foo",
+			importPath: "foo/internal/fastpb",
+			want:       "preview/internal/foo/internal/fastpb",
+		},
+		{
+			name:       "module path version",
+			library:    &config.Library{Name: "pubsub", Go: &config.GoModule{ModulePathVersion: "v2"}},
+			outDir:     "repo/pubsub",
+			importPath: "pubsub/v2/internal/fastpb",
+			want:       "repo/pubsub/internal/fastpb",
+		},
+		{
+			name:       "absolute output",
+			library:    &config.Library{Name: "foo"},
+			outDir:     "/repo/foo",
+			importPath: "foo/internal/fastpb",
+			want:       "/repo/foo/internal/fastpb",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := internalCopyDir(test.library, filepath.FromSlash(test.outDir), &config.GoInternalCopy{ImportPath: test.importPath})
+			if diff := cmp.Diff(filepath.FromSlash(test.want), got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestValidateInternalCopies_Error(t *testing.T) {
+	for _, test := range []struct {
+		name    string
+		library *config.Library
+		copy    *config.GoInternalCopy
+		keep    []string
+		wantErr error
+	}{
+		{
+			name:    "null copy",
+			library: &config.Library{Name: "foo", Output: "repo/foo"},
+			wantErr: errInternalCopyNil,
+		},
+		{
+			name:    "empty import path",
+			library: &config.Library{Name: "foo", Output: "repo/foo"},
+			copy:    &config.GoInternalCopy{},
+			wantErr: errInternalCopyImportPath,
+		},
+		{
+			name:    "absolute import path",
+			library: &config.Library{Name: "foo", Output: "repo/foo"},
+			copy:    &config.GoInternalCopy{ImportPath: "/foo/internal/fastpb"},
+			wantErr: errInternalCopyImportPath,
+		},
+		{
+			name:    "parent element",
+			library: &config.Library{Name: "foo", Output: "repo/foo"},
+			copy:    &config.GoInternalCopy{ImportPath: "foo/internal/../fastpb"},
+			wantErr: errInternalCopyImportPath,
+		},
+		{
+			name:    "trailing slash",
+			library: &config.Library{Name: "foo", Output: "repo/foo"},
+			copy:    &config.GoInternalCopy{ImportPath: "foo/internal/fastpb/"},
+			wantErr: errInternalCopyImportPath,
+		},
+		{
+			name:    "public package",
+			library: &config.Library{Name: "foo", Output: "repo/foo"},
+			copy:    &config.GoInternalCopy{ImportPath: "foo/apiv1/fastpb"},
+			wantErr: errInternalCopyImportPath,
+		},
+		{
+			name:    "sibling library",
+			library: &config.Library{Name: "foo", Output: "repo/foo"},
+			copy:    &config.GoInternalCopy{ImportPath: "other/internal/fastpb"},
+			wantErr: errInternalCopyOutsideLibrary,
+		},
+		{
+			name:    "parent of the library",
+			library: &config.Library{Name: "foo/bar", Output: "repo/foo/bar"},
+			copy:    &config.GoInternalCopy{ImportPath: "foo/internal/fastpb"},
+			wantErr: errInternalCopyOutsideLibrary,
+		},
+		{
+			name:    "library directory itself",
+			library: &config.Library{Name: "internal", Output: "repo/internal"},
+			copy:    &config.GoInternalCopy{ImportPath: "internal"},
+			wantErr: errInternalCopyOutsideLibrary,
+		},
+		{
+			name:    "kept file under the copy",
+			library: &config.Library{Name: "foo", Output: "repo/foo"},
+			copy:    &config.GoInternalCopy{ImportPath: "foo/internal/fastpb"},
+			keep:    []string{"internal/fastpb/handwritten.go"},
+			wantErr: errInternalCopyKeep,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			library := test.library
+			library.Output = filepath.FromSlash(library.Output)
+			library.Keep = test.keep
+			library.APIs = []*config.API{{
+				Path: "foo/v1",
+				Go:   &config.GoAPI{ImportPath: "foo/apiv1", InternalCopies: []*config.GoInternalCopy{test.copy}},
+			}}
+			if gotErr := validateInternalCopies(library); !errors.Is(gotErr, test.wantErr) {
+				t.Errorf("validateInternalCopies error = %v, wantErr %v", gotErr, test.wantErr)
+			}
+		})
+	}
+}
