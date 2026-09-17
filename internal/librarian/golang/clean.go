@@ -147,8 +147,8 @@ func cleanClientDirectory(library *config.Library, libraryDir string, keepSet ma
 		if err := cleanGeneratedClientFiles(clientPath, libraryDir, keepSet); err != nil {
 			return err
 		}
-		for _, copy := range goAPI.InternalCopies {
-			copyPath, err := internalCopyDir(library, libraryDir, copy)
+		for _, cp := range goAPI.InternalCopies {
+			copyPath, err := internalCopyDir(library, libraryDir, cp)
 			if err != nil {
 				return err
 			}
