@@ -58,6 +58,7 @@ func isEmptyAPI(goAPI *config.GoAPI) bool {
 		!goAPI.DIREGAPIC &&
 		len(goAPI.EnabledGeneratorFeatures) == 0 &&
 		goAPI.ImportPath == "" &&
+		len(goAPI.InternalCopies) == 0 &&
 		len(goAPI.NestedProtos) == 0 &&
 		!goAPI.NoMetadata &&
 		!goAPI.NoSnippets &&

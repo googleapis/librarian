@@ -132,6 +132,113 @@ func TestClean(t *testing.T) {
 	}
 }
 
+func TestClean_InternalCopy(t *testing.T) {
+	root := t.TempDir()
+	outputPath := filepath.Join(root, "lib")
+	lib := &config.Library{
+		Name: "lib",
+		APIs: []*config.API{
+			{
+				Path: "google/lib/v1",
+				Go: &config.GoAPI{
+					ClientPackage: "lib",
+					ImportPath:    "lib/apiv1",
+					InternalCopies: []*config.GoInternalCopy{
+						{ImportPath: "lib/internal/fastpb", ProtoPackage: "google.lib.v1.fastinternal"},
+					},
+				},
+			},
+		},
+		Output: outputPath,
+		Keep:   []string{"internal/fastpb/kept.pb.go"},
+	}
+	createFiles(t, outputPath, []string{
+		"apiv1/libpb/content.pb.go",
+		"internal/fastpb/content.pb.go",
+		"internal/fastpb/content_vtproto.pb.go",
+		"internal/fastpb/kept.pb.go",
+		"internal/fastpb/handwritten.go",
+	})
+	if err := Clean(lib); err != nil {
+		t.Fatal(err)
+	}
+	got := getFilesInDir(t, outputPath, outputPath)
+	slices.Sort(got)
+	want := []string{
+		"internal/fastpb/handwritten.go",
+		"internal/fastpb/kept.pb.go",
+	}
+	if !slices.Equal(got, want) {
+		t.Errorf("output directory: got %v, want %v", got, want)
+	}
+}
+
+// TestClean_InternalCopyRejected checks that a bad copy configuration is
+// rejected before Clean removes anything, inside or outside the library.
+func TestClean_InternalCopyRejected(t *testing.T) {
+	for _, test := range []struct {
+		name    string
+		copy    *config.GoInternalCopy
+		wantErr error
+	}{
+		{
+			name:    "parent element aiming at a sibling library",
+			copy:    &config.GoInternalCopy{ImportPath: "lib/internal/../../other", ProtoPackage: "google.lib.v1.fastinternal"},
+			wantErr: errInternalCopyImportPath,
+		},
+		{
+			name:    "sibling library",
+			copy:    &config.GoInternalCopy{ImportPath: "other/internal/fastpb", ProtoPackage: "google.lib.v1.fastinternal"},
+			wantErr: errInternalCopyOutsideLibrary,
+		},
+		{
+			name:    "null copy",
+			wantErr: errInternalCopyNil,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			root := t.TempDir()
+			outputPath := filepath.Join(root, "lib")
+			lib := &config.Library{
+				Name: "lib",
+				APIs: []*config.API{{
+					Path: "google/lib/v1",
+					Go: &config.GoAPI{
+						ClientPackage:  "lib",
+						ImportPath:     "lib/apiv1",
+						InternalCopies: []*config.GoInternalCopy{test.copy},
+					},
+				}},
+				Output: outputPath,
+			}
+			files := []string{
+				"lib/README.md",
+				"lib/internal/version.go",
+				"lib/apiv1/libpb/content.pb.go",
+				"lib/apiv1/lib_client.go",
+				"lib/internal/fastpb/content.pb.go",
+				"lib/examples/apiv1/main.go",
+				"other/valuable.pb.go",
+			}
+			createFiles(t, root, files)
+			gotErr := Clean(lib)
+			if !errors.Is(gotErr, test.wantErr) {
+				t.Fatalf("Clean error = %v, wantErr %v", gotErr, test.wantErr)
+			}
+			got := getFilesInDir(t, root, root)
+			slices.Sort(got)
+			want := make([]string, len(files))
+			for i, file := range files {
+				want[i] = filepath.FromSlash(file)
+			}
+			slices.Sort(want)
+			if !slices.Equal(got, want) {
+				t.Errorf("files after rejected clean: got %v, want %v", got, want)
+			}
+		})
+	}
+}
+
 func TestClean_Error(t *testing.T) {
 	libraryName := "testlib"
 	for _, test := range []struct {

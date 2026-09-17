@@ -45,8 +45,19 @@ jobs:
         if: matrix.task == 'smoke-test'
         working-directory: google-cloud-go
         run: librarian install
+      - name: Install Go generation tools
+        if: matrix.task == 'unit-test'
+        env:
+          LIBRARIAN_CACHE: ${{ runner.temp }}/librarian-cache
+        run: |
+          cp internal/librarian/golang/testdata/librarian.yaml .
+          go run ./cmd/librarian install go
+          echo "$LIBRARIAN_CACHE/bin/go_tools" >> "$GITHUB_PATH"
       - name: Run Unit Tests
         if: matrix.task == 'unit-test'
+        env:
+          # The generation tests must run, not skip, now that the tools are installed.
+          LIBRARIAN_TEST_REQUIRE_COMMANDS: "1"
         run: go run ./tool/cmd/coverage ./internal/librarian/golang
       - name: Generate a single library (smoke test)
         if: matrix.task == 'smoke-test'

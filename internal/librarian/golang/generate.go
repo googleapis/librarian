@@ -53,6 +53,11 @@ func Generate(ctx context.Context, cfg *config.Config, library *config.Library, 
 	if err != nil {
 		return fmt.Errorf("failed to get absolute path of output directory: %w", err)
 	}
+	// Reject a bad internal copy before any file, public or private, is
+	// generated so that a failed run leaves the repository untouched.
+	if err := validateInternalCopyPaths(library, outDir); err != nil {
+		return err
+	}
 	if err := os.MkdirAll(outDir, 0o755); err != nil {
 		return fmt.Errorf("failed to create output directory: %w", err)
 	}
@@ -91,6 +96,9 @@ func Generate(ctx context.Context, cfg *config.Config, library *config.Library, 
 		}
 		if err := moveGeneratedFiles(library, goAPI, tempDir, outDir); err != nil {
 			return err
+		}
+		if err := generateInternalCopies(ctx, api.Path, goAPI, library, pc, googleapisDir, tempDir, outDir); err != nil {
+			return fmt.Errorf("api %q: %w", api.Path, err)
 		}
 		if err := generateClientVersionFile(library, goAPI); err != nil {
 			return fmt.Errorf("failed to generate client version file: %w", err)

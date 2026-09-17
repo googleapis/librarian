@@ -29,13 +29,22 @@ import (
 	"github.com/googleapis/librarian/internal/yaml"
 )
 
+// EnvRequireCommands is the environment variable that turns the skip in
+// [RequireCommand] into a failure. CI jobs that install the external tools
+// set it so that a test depending on them cannot silently stop running.
+const EnvRequireCommands = "LIBRARIAN_TEST_REQUIRE_COMMANDS"
+
 // RequireCommand skips the test if the specified command is not found in PATH.
 // Use this to skip tests that depend on external tools like protoc, cargo, or
 // taplo, so that `go test ./...` will always pass on a fresh clone of the
-// repo.
+// repo. When [EnvRequireCommands] is set, a missing command fails the test
+// instead.
 func RequireCommand(t *testing.T, cmd string) {
 	t.Helper()
 	if _, err := exec.LookPath(cmd); err != nil {
+		if os.Getenv(EnvRequireCommands) != "" {
+			t.Fatalf("%s is not installed but %s is set", cmd, EnvRequireCommands)
+		}
 		t.Skipf("skipping test because %s is not installed", cmd)
 	}
 }

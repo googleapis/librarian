@@ -59,6 +59,11 @@ var (
 // Clean cleans up a Go library and its associated snippets.
 func Clean(library *config.Library) error {
 	libraryDir := library.Output
+	// A copy directory is derived from configuration and cleaned recursively,
+	// so validate every copy before removing anything.
+	if err := validateInternalCopyPaths(library, libraryDir); err != nil {
+		return err
+	}
 	keepSet, err := buildKeepSet(libraryDir, library.Keep)
 	if err != nil {
 		return err
@@ -142,6 +147,17 @@ func cleanClientDirectory(library *config.Library, libraryDir string, keepSet ma
 		if err := cleanGeneratedClientFiles(clientPath, libraryDir, keepSet); err != nil {
 			return err
 		}
+		for _, copy := range goAPI.InternalCopies {
+			copyPath, err := internalCopyDir(library, libraryDir, copy)
+			if err != nil {
+				return err
+			}
+			if err := cleanGeneratedFiles(copyPath, libraryDir, keepSet, func(name string) bool {
+				return strings.HasSuffix(name, ".pb.go")
+			}); err != nil {
+				return err
+			}
+		}
 		snippetDir := snippetDirectory(libraryDir, library, goAPI)
 		if err := os.RemoveAll(snippetDir); err != nil {
 			return err
@@ -151,6 +167,14 @@ func cleanClientDirectory(library *config.Library, libraryDir string, keepSet ma
 }
 
 func cleanGeneratedClientFiles(clientPath, libraryDir string, keepSet map[string]bool) error {
+	return cleanGeneratedFiles(clientPath, libraryDir, keepSet, func(name string) bool {
+		return slices.Contains(generatedClientFiles, name) || slices.ContainsFunc(generatedClientFileSuffixes, func(suffix string) bool {
+			return strings.HasSuffix(name, suffix)
+		})
+	})
+}
+
+func cleanGeneratedFiles(clientPath, libraryDir string, keepSet map[string]bool, generated func(string) bool) error {
 	// clientPath doesn't exist, which means this is a new library, skip cleaning.
 	if _, err := os.Stat(clientPath); errors.Is(err, fs.ErrNotExist) {
 		return nil
@@ -172,13 +196,8 @@ func cleanGeneratedClientFiles(clientPath, libraryDir string, keepSet map[string
 		if keepSet[relPath] {
 			return nil
 		}
-		if slices.Contains(generatedClientFiles, d.Name()) {
+		if generated(d.Name()) {
 			return os.Remove(path)
-		}
-		for _, file := range generatedClientFileSuffixes {
-			if strings.HasSuffix(filepath.Base(path), file) {
-				return os.Remove(path)
-			}
 		}
 		return nil
 	})
