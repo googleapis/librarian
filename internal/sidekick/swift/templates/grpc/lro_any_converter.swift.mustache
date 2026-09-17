@@ -21,14 +21,14 @@ limitations under the License.
 {{/Codec.BoilerPlate}}
 
 import Foundation
-import GoogleCloudGax
+import GoogleGax
 {{#Codec.PackageImports}}
 import {{.}}
 {{/Codec.PackageImports}}
 {{#Codec.ModulePath}}
 internal import {{.}}
 {{/Codec.ModulePath}}
-internal import GoogleCloudWKTConvert
+internal import GoogleWKTConvert
 internal import SwiftProtobuf
 
 /// Converts the `Any` values carried by the long-running operations of this

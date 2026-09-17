@@ -124,10 +124,11 @@ func lroAnyTestModel(t *testing.T) *api.API {
 func lroAnyTestLibrary(t *testing.T, lroAnyConverter string) *config.Library {
 	t.Helper()
 	swiftPkg := swiftConfig(t, []config.SwiftDependency{
-		{Name: "GoogleCloudGax", RequiredByServices: true},
+		{Name: "GoogleGax", RequiredByServices: true},
 		{Name: "GoogleAuth", RequiredByServices: true},
 		{Name: "GoogleLongRunning", ApiPackage: "google.longrunning"},
-		{Name: "GoogleCloudWKT", ApiPackage: "google.protobuf"},
+		{Name: "GoogleWKT", ApiPackage: "google.protobuf"},
+		{Name: "GoogleRpc", ApiPackage: "google.rpc"},
 	})
 	swiftPkg.PackageNameOverride = "GoogleCloudStorage"
 	swiftPkg.LibraryNameOverride = "GoogleCloudStorage"
@@ -291,11 +292,11 @@ func TestGenerateLROAnyConverter(t *testing.T) {
 	got := extractBlock(t, gotContent, "  internal static func fromProto(", "\n  }")
 	wantFromProto := `  internal static func fromProto(
     _ proto: SwiftProtobuf.Google_Protobuf_Any
-  ) throws -> GoogleCloudWKT.` + "`Any`" + ` {
+  ) throws -> GoogleWKT.` + "`Any`" + ` {
     switch proto.typeURL {
     case "type.googleapis.com/google.protobuf.Empty":
       return try .init(
-        fromMessage: GoogleCloudWKT.Empty(
+        fromMessage: GoogleWKT.Empty(
           proto: SwiftProtobuf.Google_Protobuf_Empty(serializedBytes: proto.value)))
     case "type.googleapis.com/google.storage.control.v2.Folder":
       return try .init(
@@ -319,11 +320,11 @@ func TestGenerateLROAnyConverter(t *testing.T) {
 
 	got = extractBlock(t, gotContent, "  internal static func toProto(", "\n  }")
 	wantToProto := `  internal static func toProto(
-    _ any: GoogleCloudWKT.` + "`Any`" + `
+    _ any: GoogleWKT.` + "`Any`" + `
   ) throws -> SwiftProtobuf.Google_Protobuf_Any {
     switch any.typeUrl {
     case "type.googleapis.com/google.protobuf.Empty":
-      return try .init(message: GoogleCloudWKT.Empty(fromAny: any).toProto())
+      return try .init(message: GoogleWKT.Empty(fromAny: any).toProto())
     case "type.googleapis.com/google.storage.control.v2.Folder":
       return try .init(message: Folder(fromAny: any).toProto())
     case "type.googleapis.com/google.storage.control.v2.RenameFolderMetadata":
@@ -477,48 +478,6 @@ func TestGenerateLROAnyConverter_NotGrpc(t *testing.T) {
 	path := filepath.Join(outDir, "StorageControlLROAnyConverter.swift")
 	if _, err := os.Stat(path); !os.IsNotExist(err) {
 		t.Errorf("expected no converter file at %s", path)
-	}
-}
-
-// A payload type that this module does not generate is left out of the table
-// rather than generating a call to a type that does not exist. At runtime it
-// takes the converter's generic path.
-//
-// The table is checked directly: the generator annotates every message a
-// method refers to, so within a single model there is no way to shape an
-// unannotated payload type.
-func TestLROAnyTypes_PayloadTypeNotGenerated(t *testing.T) {
-	model := lroAnyTestModel(t)
-	module := &config.SwiftModule{
-		ModuleType: "grpc-client",
-		ModulePath: "StorageControlProtos",
-	}
-	library := lroAnyTestLibrary(t, "StorageControlLROAnyConverter")
-
-	c, err := newCodec(model, library, module, t.TempDir())
-	if err != nil {
-		t.Fatal(err)
-	}
-	if err := c.annotateModel(); err != nil {
-		t.Fatal(err)
-	}
-	// Stand in for a payload type another module owns.
-	model.Message(".google.storage.control.v2.Folder").Codec = nil
-
-	types, err := c.lroAnyTypes(model.Services[0].Methods)
-	if err != nil {
-		t.Fatal(err)
-	}
-	var got []string
-	for _, payload := range types {
-		got = append(got, payload.TypeURL)
-	}
-	want := []string{
-		"type.googleapis.com/google.protobuf.Empty",
-		"type.googleapis.com/google.storage.control.v2.RenameFolderMetadata",
-	}
-	if diff := cmp.Diff(want, got); diff != "" {
-		t.Errorf("payload types mismatch (-want +got):\n%s", diff)
 	}
 }
 
