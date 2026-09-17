@@ -108,30 +108,13 @@ type GoAPI struct {
 	// ImportPath is the Go import path for the API.
 	ImportPath string `yaml:"import_path,omitempty"`
 	// InternalCopies lists private copies of the API's messages to generate
-	// into internal Go packages, typically to run additional protoc plugins
-	// whose output must not become part of the public API surface. A copy
-	// is generated with protoc-gen-go plus the listed plugins from the
-	// proto files in the API directory itself, without their services;
-	// nested_protos are supplied as dependencies only and keep their public
-	// Go types. The proto package and file paths are renamed to avoid
-	// protobuf registry conflicts with the public API. Of the options, only
-	// go_package is rewritten; all other options, annotation payloads, and
-	// comments keep their original values.
-	//
-	// Copies require the open protobuf API level (the default, or
-	// proto_api_level: API_OPEN). Files or messages with an effective hybrid
-	// or opaque level are rejected, as are extensions of messages outside
-	// the API directory.
-	//
-	// Before regeneration, only `*.pb.go` files in the copy directory,
-	// including `*_vtproto.pb.go`, are cleaned, honoring library-relative keep
-	// entries, which are literal paths rather than globs. Other files are not
-	// cleaned. Stale non-`*.pb.go` plugin output and directories of retired or
-	// renamed copies require manual removal.
-	//
-	// A copy directory must not be, contain, or lie inside another copy or
-	// client directory; that check ignores letter case, so paths that differ
-	// only by case are rejected as overlapping.
+	// into internal Go packages, so that additional protoc plugins can run
+	// on them without their output becoming part of the public API surface.
+	// Each copy is generated from the proto files in the API directory,
+	// without services, under a renamed proto package so that it can be
+	// linked beside the public package. Copies require the open protobuf API
+	// level. Only generated .pb.go files in a copy directory are cleaned
+	// before regeneration.
 	InternalCopies []*GoInternalCopy `yaml:"internal_copies,omitempty"`
 	// NestedProtos is a list of nested proto files.
 	NestedProtos []string `yaml:"nested_protos,omitempty"`

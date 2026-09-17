@@ -227,7 +227,9 @@ func generateInternalCopies(ctx context.Context, apiPath string, goAPI *config.G
 	if len(goAPI.InternalCopies) == 0 {
 		return nil
 	}
-	if err := validateInternalCopyPaths(library, outDir); err != nil {
+	// Generate has already checked the paths on disk; this only guards the
+	// configuration for callers that skip Generate.
+	if err := validateInternalCopies(library, outDir); err != nil {
 		return err
 	}
 	protoFiles, err := collectProtoFiles(googleapisDir, apiPath, goAPI.NestedProtos)

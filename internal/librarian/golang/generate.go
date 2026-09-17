@@ -53,8 +53,9 @@ func Generate(ctx context.Context, cfg *config.Config, library *config.Library, 
 	if err != nil {
 		return fmt.Errorf("failed to get absolute path of output directory: %w", err)
 	}
-	// Reject a bad internal copy before any file, public or private, is
-	// generated so that a failed run leaves the repository untouched.
+	// Clean checks the copy directories before deleting; this checks them
+	// before writing. Generate is also called on its own, and a bad copy
+	// should fail before protoc runs rather than after.
 	if err := validateInternalCopyPaths(library, outDir); err != nil {
 		return err
 	}

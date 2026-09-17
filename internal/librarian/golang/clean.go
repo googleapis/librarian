@@ -54,13 +54,18 @@ var (
 		// _client_example_test.go contains auto-generated code snippet templates and examples.
 		"_client_example_test.go",
 	}
+	// An internal copy directory holds protobuf output only, so cleaning it
+	// removes .pb.go files (protoc-gen-go and plugins such as vtproto) and
+	// leaves anything handwritten alone.
+	generatedCopyFileSuffixes = []string{".pb.go"}
 )
 
 // Clean cleans up a Go library and its associated snippets.
 func Clean(library *config.Library) error {
 	libraryDir := library.Output
-	// A copy directory is derived from configuration and cleaned recursively,
-	// so validate every copy before removing anything.
+	// Internal copy directories come from configuration and are cleaned
+	// recursively, so make sure they all point inside this library before
+	// deleting anything.
 	if err := validateInternalCopyPaths(library, libraryDir); err != nil {
 		return err
 	}
@@ -147,16 +152,8 @@ func cleanClientDirectory(library *config.Library, libraryDir string, keepSet ma
 		if err := cleanGeneratedClientFiles(clientPath, libraryDir, keepSet); err != nil {
 			return err
 		}
-		for _, cp := range goAPI.InternalCopies {
-			copyPath, err := internalCopyDir(library, libraryDir, cp)
-			if err != nil {
-				return err
-			}
-			if err := cleanGeneratedFiles(copyPath, libraryDir, keepSet, func(name string) bool {
-				return strings.HasSuffix(name, ".pb.go")
-			}); err != nil {
-				return err
-			}
+		if err := cleanInternalCopies(library, libraryDir, goAPI, keepSet); err != nil {
+			return err
 		}
 		snippetDir := snippetDirectory(libraryDir, library, goAPI)
 		if err := os.RemoveAll(snippetDir); err != nil {
@@ -167,19 +164,32 @@ func cleanClientDirectory(library *config.Library, libraryDir string, keepSet ma
 }
 
 func cleanGeneratedClientFiles(clientPath, libraryDir string, keepSet map[string]bool) error {
-	return cleanGeneratedFiles(clientPath, libraryDir, keepSet, func(name string) bool {
-		return slices.Contains(generatedClientFiles, name) || slices.ContainsFunc(generatedClientFileSuffixes, func(suffix string) bool {
-			return strings.HasSuffix(name, suffix)
-		})
-	})
+	return cleanGeneratedFiles(clientPath, libraryDir, keepSet, generatedClientFiles, generatedClientFileSuffixes)
 }
 
-func cleanGeneratedFiles(clientPath, libraryDir string, keepSet map[string]bool, generated func(string) bool) error {
-	// clientPath doesn't exist, which means this is a new library, skip cleaning.
-	if _, err := os.Stat(clientPath); errors.Is(err, fs.ErrNotExist) {
+// cleanInternalCopies removes the generated files of each internal copy of
+// the API.
+func cleanInternalCopies(library *config.Library, libraryDir string, goAPI *config.GoAPI, keepSet map[string]bool) error {
+	for _, cp := range goAPI.InternalCopies {
+		copyPath, err := internalCopyDir(library, libraryDir, cp)
+		if err != nil {
+			return err
+		}
+		if err := cleanGeneratedFiles(copyPath, libraryDir, keepSet, nil, generatedCopyFileSuffixes); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// cleanGeneratedFiles removes every file under dir whose name is in names or
+// ends with one of suffixes, except files listed in keepSet.
+func cleanGeneratedFiles(dir, libraryDir string, keepSet map[string]bool, names, suffixes []string) error {
+	// dir doesn't exist, which means this is a new library, skip cleaning.
+	if _, err := os.Stat(dir); errors.Is(err, fs.ErrNotExist) {
 		return nil
 	}
-	return filepath.WalkDir(clientPath, func(path string, d fs.DirEntry, err error) error {
+	return filepath.WalkDir(dir, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
@@ -196,8 +206,13 @@ func cleanGeneratedFiles(clientPath, libraryDir string, keepSet map[string]bool,
 		if keepSet[relPath] {
 			return nil
 		}
-		if generated(d.Name()) {
+		if slices.Contains(names, d.Name()) {
 			return os.Remove(path)
+		}
+		for _, suffix := range suffixes {
+			if strings.HasSuffix(d.Name(), suffix) {
+				return os.Remove(path)
+			}
 		}
 		return nil
 	})

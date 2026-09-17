@@ -43,7 +43,9 @@ func TestDirectory(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			t.Setenv(EnvLibrarianCache, test.env)
+			if test.env != "" {
+				t.Setenv(EnvLibrarianCache, test.env)
+			}
 			got, err := Directory()
 			if err != nil {
 				t.Fatal(err)
