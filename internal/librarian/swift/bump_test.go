@@ -133,7 +133,9 @@ func TestBumpWithNestedOutput(t *testing.T) {
 
 	pkgRoot := "pkgs/swift-google-auth"
 	genDir := path.Join(pkgRoot, "Sources", "GoogleAuth", "generated")
-	_ = os.MkdirAll(genDir, 0o755)
+	if err := os.MkdirAll(genDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
 	if err := os.WriteFile(path.Join(pkgRoot, "Package.swift"), []byte("// Package.swift\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
@@ -201,7 +203,9 @@ func TestVersionAlreadyBumpedPackageVersion(t *testing.T) {
 	testhelper.ContinueInNewGitRepository(t, remoteDir)
 
 	genDir := "Sources/GoogleAuth/generated"
-	_ = os.MkdirAll(genDir, 0o755)
+	if err := os.MkdirAll(genDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
 	versionFile := path.Join(genDir, "PackageVersion.swift")
 	if err := os.WriteFile(versionFile, []byte("enum PackageVersion {\n  static let version: Swift.String = \"0.0.0-preview\"\n}\n"), 0o644); err != nil {
 		t.Fatal(err)
