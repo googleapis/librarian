@@ -30,7 +30,7 @@ const (
 )
 
 func testManifest() string {
-	return path.Join(testPackageName, "Sources", testLibraryName, manifestFile)
+	return path.Join(testPackageName, "Sources", testLibraryName, clientsManifest)
 }
 
 func TestVersionAlreadyBumpedSuccess(t *testing.T) {
@@ -67,7 +67,7 @@ func TestVersionAlreadyBumpedNewPackage(t *testing.T) {
 	testhelper.RunGit(t, "add", ".")
 	testhelper.RunGit(t, "commit", "-m", "new package", ".")
 
-	name := path.Join(testPackageName, "Sources", "GoogleCloudNew", manifestFile)
+	name := path.Join("google-cloud-new", "Sources", "GoogleCloudNew", clientsManifest)
 	bumped, err := versionAlreadyBumped(t.Context(), "git", tag, name)
 	if err != nil {
 		t.Fatal(err)
@@ -105,7 +105,7 @@ func TestVersionBadDirectory(t *testing.T) {
 	const tag = "package-version-update-success"
 	testhelper.RequireCommand(t, "git")
 	setupForSwiftVersionBump(t, tag)
-	name := path.Join("not-the-right-package", "Sources", "NotTheRightLibrary", manifestFile)
+	name := path.Join("not-the-right-package", "Sources", "NotTheRightLibrary", clientsManifest)
 	if updated, err := versionAlreadyBumped(t.Context(), "git", "not-a-valid-tag", name); err == nil {
 		t.Errorf("expected an error with an invalid tag, got=%v", updated)
 	}
@@ -123,4 +123,121 @@ func setupForSwiftVersionBump(t *testing.T, wantTag string) {
 	testhelper.RunGit(t, "clone", remoteDir, ".")
 	testhelper.RunGit(t, "remote", "rename", "origin", config.RemoteUpstream)
 	testhelper.ConfigNewGitRepository(t)
+}
+
+func TestBumpWithNestedOutput(t *testing.T) {
+	const tag = "bump-nested-output"
+	testhelper.RequireCommand(t, "git")
+	remoteDir := t.TempDir()
+	testhelper.ContinueInNewGitRepository(t, remoteDir)
+
+	pkgRoot := "pkgs/swift-google-auth"
+	genDir := path.Join(pkgRoot, "Sources", "GoogleAuth", "generated")
+	if err := os.MkdirAll(genDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(path.Join(pkgRoot, "Package.swift"), []byte("// Package.swift\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	versionFile := path.Join(genDir, "PackageVersion.swift")
+	initialContent := "enum PackageVersion {\n  static let version: Swift.String = \"0.0.0-preview\"\n}\n"
+	if err := os.WriteFile(versionFile, []byte(initialContent), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	testhelper.RunGit(t, "add", ".")
+	testhelper.RunGit(t, "commit", "-m", "initial version")
+	testhelper.RunGit(t, "tag", tag)
+
+	cloneDir := t.TempDir()
+	t.Chdir(cloneDir)
+	testhelper.RunGit(t, "clone", remoteDir, ".")
+	testhelper.RunGit(t, "remote", "rename", "origin", config.RemoteUpstream)
+	testhelper.ConfigNewGitRepository(t)
+
+	lib := &config.Library{
+		Name:    "google-auth",
+		Version: "0.0.0-preview",
+		Output:  genDir,
+	}
+
+	if err := Bump(t.Context(), lib, genDir, "0.1.0-preview", "git", tag); err != nil {
+		t.Fatalf("Bump() error = %v", err)
+	}
+	if lib.Version != "0.1.0-preview" {
+		t.Errorf("got lib.Version = %q, want %q", lib.Version, "0.1.0-preview")
+	}
+
+	updatedContent := "enum PackageVersion {\n  static let version: Swift.String = \"0.1.0-preview\"\n}\n"
+	if err := os.WriteFile(path.Join(genDir, "PackageVersion.swift"), []byte(updatedContent), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	testhelper.RunGit(t, "commit", "-am", "bump version to 0.1.0-preview")
+
+	lib.Version = "0.1.0-preview"
+	if err := Bump(t.Context(), lib, genDir, "0.2.0-preview", "git", tag); err != nil {
+		t.Fatalf("Bump() error = %v", err)
+	}
+	if lib.Version != "0.1.0-preview" {
+		t.Errorf("expected version to remain unchanged, got %q", lib.Version)
+	}
+}
+
+func TestBumpMissingSourcesDir(t *testing.T) {
+	lib := &config.Library{
+		Name:    "nonexistent",
+		Version: "0.1.0-preview",
+		Output:  t.TempDir(),
+	}
+	if err := Bump(t.Context(), lib, lib.Output, "0.2.0-preview", "git", "v1.0.0"); err != nil {
+		t.Fatalf("Bump() unexpected error = %v", err)
+	}
+	if lib.Version != "0.1.0-preview" {
+		t.Errorf("expected version to remain unchanged when versionFile is empty, got %q", lib.Version)
+	}
+}
+
+func TestVersionAlreadyBumpedPackageVersion(t *testing.T) {
+	const tag = "package-version-test"
+	testhelper.RequireCommand(t, "git")
+	remoteDir := t.TempDir()
+	testhelper.ContinueInNewGitRepository(t, remoteDir)
+
+	genDir := "Sources/GoogleAuth/generated"
+	if err := os.MkdirAll(genDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	versionFile := path.Join(genDir, "PackageVersion.swift")
+	if err := os.WriteFile(versionFile, []byte("enum PackageVersion {\n  static let version: Swift.String = \"0.0.0-preview\"\n}\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	testhelper.RunGit(t, "add", ".")
+	testhelper.RunGit(t, "commit", "-m", "initial")
+	testhelper.RunGit(t, "tag", tag)
+
+	cloneDir := t.TempDir()
+	t.Chdir(cloneDir)
+	testhelper.RunGit(t, "clone", remoteDir, ".")
+	testhelper.RunGit(t, "remote", "rename", "origin", config.RemoteUpstream)
+	testhelper.ConfigNewGitRepository(t)
+
+	bumped, err := versionAlreadyBumped(t.Context(), "git", tag, versionFile)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if bumped {
+		t.Errorf("expected versionAlreadyBumped == false, got true")
+	}
+
+	if err := os.WriteFile(versionFile, []byte("enum PackageVersion {\n  static let version: Swift.String = \"0.1.0-preview\"\n}\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	testhelper.RunGit(t, "commit", "-am", "bump")
+
+	bumped, err = versionAlreadyBumped(t.Context(), "git", tag, versionFile)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !bumped {
+		t.Errorf("expected versionAlreadyBumped == true, got false")
+	}
 }
