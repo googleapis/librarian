@@ -346,12 +346,22 @@ This document describes the schema for the librarian.yaml.
 | `disabled_generator_features` | list of string | Provides a mechanism for disabling generator features at the API level. These features will be disabled if both specified in EnabledGeneratorFeatures and DisabledGeneratorFeatures. |
 | `enabled_generator_features` | list of string | Provides a mechanism for enabling generator features at the API level. |
 | `import_path` | string | Is the Go import path for the API. |
+| `internal_copies` | list of [GoInternalCopy](#gointernalcopy-configuration) (optional) | Lists private copies of the API's messages to generate into internal Go packages, so that an additional protoc plugin can run on each copy without its output becoming part of the public API surface. Each copy is generated from the proto files in the API directory, without services, under a renamed proto package so that it can be linked beside the public package. Copies require the open protobuf API level. Only generated .pb.go files in a copy directory are cleaned before regeneration. |
 | `nested_protos` | list of string | Is a list of nested proto files. |
 | `no_metadata` | bool | Indicates whether to skip generating gapic_metadata.json. This is typically false. |
 | `no_snippets` | bool | Indicates whether to skip generating snippets. This is typically false. |
 | `proto_api_level` | string | Allows direct control of protobuf plugin's code generation level. Values allowed are API_OPEN, API_HYBRID, and API_OPAQUE. The default is unset, which relies on proto file annotations. More info: https://protobuf.dev/reference/go/opaque-migration/ |
 | `proto_only` | bool | Determines whether to generate a Proto-only client. A proto-only client does not define a service in the proto files. |
 | `proto_package` | string | Is the proto package name. |
+
+## GoInternalCopy Configuration
+
+| Field | Type | Description |
+| :--- | :--- | :--- |
+| `import_path` | string | Is the Go import path of the copy, relative to cloud.google.com/go, in canonical form and inside the library's own module. It must contain an "internal" path element so that the copy cannot be imported by users of the library, and must not overlap the directory of another copy or of a generated client. Existing symlinks below the library output directory are rejected before generation. |
+| `plugin` | string | Is the required additional protoc plugin, without the "protoc-gen-" prefix, for example "go-vtproto". The binary is looked up in the Go tool bin directory, then on the PATH. Declare its Go module under tools.go. The name must contain only letters, digits, "-", or "_". |
+| `plugin_options` | list of string | Are passed as `--<plugin>_opt` values. The plugin must write its output next to protoc-gen-go's, under the Go import path. Layout options `paths=`, `module=`, and `M<file>=` import mappings are rejected, including in comma-separated parameter lists. |
+| `proto_package` | string | Is the proto package of the copy. It must be a valid proto package name that differs from the proto package of the API and of every other copy. |
 
 ## GoModule Configuration
 
