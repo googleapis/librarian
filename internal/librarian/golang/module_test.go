@@ -273,6 +273,20 @@ func TestFill_Error(t *testing.T) {
 			},
 			wantErr: errClientPackageNotFound,
 		},
+		{
+			name: "internal copy in a public package",
+			library: &config.Library{
+				Name:   "oslogin",
+				Output: "repo/oslogin",
+				APIs: []*config.API{{
+					Path: "google/cloud/oslogin/v1",
+					Go: &config.GoAPI{
+						InternalCopies: []*config.GoInternalCopy{{ImportPath: "oslogin/apiv1/fastpb", Plugin: "go-vtproto", ProtoPackage: "google.cloud.oslogin.v1.fastinternal"}},
+					},
+				}},
+			},
+			wantErr: errInternalCopyImportPath,
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			_, err := Fill(test.library)
