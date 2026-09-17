@@ -90,7 +90,7 @@ func TestGenerateService_APIVersion(t *testing.T) {
 			model := api.NewTestAPI([]*api.Message{requestType, responseType}, nil, []*api.Service{service})
 			model.PackageName = "test"
 			swiftCfg := swiftConfig(t, []config.SwiftDependency{
-				{Name: "GoogleCloudGax", RequiredByServices: true},
+				{Name: "GoogleGax", RequiredByServices: true},
 			})
 
 			library := &config.Library{

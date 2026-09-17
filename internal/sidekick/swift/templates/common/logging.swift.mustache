@@ -31,7 +31,7 @@ import Foundation
 {{#Codec.ServiceImports}}
 import {{.}}
 {{/Codec.ServiceImports}}
-import GoogleCloudGax
+import GoogleGax
 import struct Logging.Logger
 
 extension Clients {
@@ -50,9 +50,9 @@ extension Clients {
 
     func _intercept<Input, Output>(
         request: Input,
-        options: GoogleCloudGax.RequestOptions,
+        options: GoogleGax.RequestOptions,
         name: Swift.String,
-        action: (Input, GoogleCloudGax.RequestOptions) async throws -> Output,
+        action: (Input, GoogleGax.RequestOptions) async throws -> Output,
     ) async throws -> Output {
       var logger = logger
       logger[metadataKey: "gcp.experimental.swift.request.id"] = "\(UUID())"
@@ -74,7 +74,7 @@ extension Clients {
         request: request,
         options: options,
         name: "{{Codec.Name}}",
-        action: { (r: {{InputType.Codec.ParameterTypeName}}, o: GoogleCloudGax.RequestOptions) async throws ->
+        action: { (r: {{InputType.Codec.ParameterTypeName}}, o: GoogleGax.RequestOptions) async throws ->
             {{^ReturnsEmpty}}{{Codec.ReturnType}}{{/ReturnsEmpty}}
             {{#ReturnsEmpty}}Void{{/ReturnsEmpty}} in
               return try await self.inner.{{Codec.Name}}(request: r, options: o)

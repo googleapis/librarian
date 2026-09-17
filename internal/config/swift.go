@@ -141,7 +141,7 @@ type SwiftDependency struct {
 	// empty for such libraries.
 	//
 	// Examples:
-	// - The `GoogleCloudWKT` package will set this to `google.cloud.protobuf`.
+	// - The `GoogleWKT` package will set this to `google.cloud.protobuf`.
 	// - The `GoogleCloudLocation` package will set this to `google.cloud.location`.
 	ApiPackage string `yaml:"api_package,omitempty"`
 	// SpiAttribute if set, the dependency requires an `@_spi(...)` attribute.
