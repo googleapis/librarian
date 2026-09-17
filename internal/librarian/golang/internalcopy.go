@@ -49,6 +49,7 @@ var (
 	errInternalCopyOverlap        = errors.New("internal copy directory overlaps another generated directory")
 	errInternalCopyProtoPackage   = errors.New("internal copy proto_package must be a valid proto package that is not used by the API or another copy")
 	errInternalCopyPackages       = errors.New("internal copy requires the API proto files to share one proto package")
+	errInternalCopyNoPackage      = errors.New("internal copy requires the API proto files to declare a proto package")
 	errInternalCopyFileNotFound   = errors.New("internal copy proto file not found in descriptor set")
 	errInternalCopyExtension      = errors.New("internal copy cannot declare an extension of a message outside the copy")
 	errInternalCopyAPILevel       = errors.New("internal copy requires the open protobuf API level")
@@ -480,6 +481,11 @@ func rewriteDescriptorSet(fds *descriptorpb.FileDescriptorSet, apiFiles []string
 		}
 	}
 	oldPackage := apiFds[0].GetPackage()
+	// Full names are built from the package, so a file without one would
+	// yield names such as "..Foo" that match nothing in the descriptor set.
+	if oldPackage == "" {
+		return nil, fmt.Errorf("%w: %s", errInternalCopyNoPackage, apiFds[0].GetName())
+	}
 
 	// Type references are fully qualified names such as ".google.spanner.v1.Type".
 	// Collect the exact names defined by the API files rather than rewriting by

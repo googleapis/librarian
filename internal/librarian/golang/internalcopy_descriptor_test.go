@@ -187,6 +187,20 @@ func TestRewriteDescriptorSet_Error(t *testing.T) {
 			wantErr:  errInternalCopyProtoPackage,
 		},
 		{
+			name:     "api file without a proto package",
+			apiFiles: []string{"foo/v1/a.proto"},
+			cp:       &config.GoInternalCopy{ImportPath: "foo/internal/fastpb", ProtoPackage: "foo.v1.fastinternal"},
+			setup: func(fds *descriptorpb.FileDescriptorSet) {
+				for _, fd := range fds.File {
+					if fd.GetName() == "foo/v1/a.proto" {
+						fd.Package = nil
+					}
+				}
+			},
+			wantErr: errInternalCopyNoPackage,
+			wantMsg: []string{"foo/v1/a.proto"},
+		},
+		{
 			name:     "invalid proto package",
 			apiFiles: []string{"foo/v1/a.proto"},
 			cp:       &config.GoInternalCopy{ImportPath: "foo/internal/fastpb", ProtoPackage: "foo/v1"},
