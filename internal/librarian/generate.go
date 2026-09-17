@@ -142,16 +142,7 @@ func runGenerate(ctx context.Context, cfg *config.Config, all bool, libraryName 
 	if err := cleanLibraries(cfg.Language, libraries); err != nil {
 		return err
 	}
-	g, gctx := errgroup.WithContext(ctx)
-	if cfg.Default != nil && cfg.Default.Output != "" && (cfg.Language == config.LanguageRust || cfg.Language == config.LanguageSwift) {
-		g.Go(func() error {
-			return generateDocIndex(cfg, sources.Googleapis)
-		})
-	}
-	g.Go(func() error {
-		return generateLibraries(gctx, cfg, libraries, sources)
-	})
-	return g.Wait()
+	return generateLibraries(ctx, cfg, libraries, sources)
 }
 
 // cleanLibraries iterates over all the given libraries sequentially,
@@ -319,6 +310,9 @@ func generateLibraries(ctx context.Context, cfg *config.Config, libraries []*con
 		// Run the generation in parallel.
 		g, gctx := errgroup.WithContext(ctx)
 		g.SetLimit(runtime.NumCPU())
+		g.Go(func() error {
+			return generateDocIndex(cfg, src.Googleapis)
+		})
 		for _, library := range libraries {
 			g.Go(func() error {
 				if err := rust.Generate(gctx, cfg, library, src); err != nil {
@@ -350,6 +344,9 @@ func generateLibraries(ctx context.Context, cfg *config.Config, libraries []*con
 	case config.LanguageSwift:
 		g, gctx := errgroup.WithContext(ctx)
 		g.SetLimit(runtime.NumCPU())
+		g.Go(func() error {
+			return generateDocIndex(cfg, src.Googleapis)
+		})
 		for _, library := range libraries {
 			g.Go(func() error {
 				if err := swift.Generate(gctx, cfg, library, src); err != nil {
