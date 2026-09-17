@@ -42,7 +42,7 @@ func PackageName(library *config.Library) string {
 	return library.Name
 }
 
-// DocumentationURL returns the SwiftPackageIndex documentation URL for a Swift library.
+// DocumentationURL returns the Swift Package Index documentation URL for a Swift library.
 func DocumentationURL(library *config.Library) string {
 	pkgName := PackageName(library)
 	if library.Version == "" {

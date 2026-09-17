@@ -311,7 +311,7 @@ func generateLibraries(ctx context.Context, cfg *config.Config, libraries []*con
 		g, gctx := errgroup.WithContext(ctx)
 		g.SetLimit(runtime.NumCPU())
 		g.Go(func() error {
-			return generateDocIndex(cfg, src.Googleapis)
+			return writeDocIndex(cfg, src.Googleapis)
 		})
 		for _, library := range libraries {
 			g.Go(func() error {
@@ -345,7 +345,7 @@ func generateLibraries(ctx context.Context, cfg *config.Config, libraries []*con
 		g, gctx := errgroup.WithContext(ctx)
 		g.SetLimit(runtime.NumCPU())
 		g.Go(func() error {
-			return generateDocIndex(cfg, src.Googleapis)
+			return writeDocIndex(cfg, src.Googleapis)
 		})
 		for _, library := range libraries {
 			g.Go(func() error {

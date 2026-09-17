@@ -41,8 +41,9 @@ type DocIndexEntry struct {
 	Product      string `json:"Product"`
 }
 
-// generateDocIndex generates and writes _libraries.json to cfg.Default.Output.
-func generateDocIndex(cfg *config.Config, googleapisDir string) error {
+// writeDocIndex generates and writes _libraries.json to cfg.Default.Output for supported
+// languages (Rust, Swift). It is a no-op if Default.Output is empty or if the language is unsupported.
+func writeDocIndex(cfg *config.Config, googleapisDir string) error {
 	if cfg.Default == nil || cfg.Default.Output == "" {
 		return nil
 	}
@@ -87,7 +88,7 @@ func GenerateDocIndex(cfg *config.Config, googleapisDir string) ([]byte, error) 
 			return nil, fmt.Errorf("failed to find API for library %s (path %s): %w", lib.Name, apiPath, err)
 		}
 		if api == nil || api.Title == "" || api.ShortName == "" {
-			slog.Warn("Skipping library in docindex due to missing API service configuration or fields", "library", lib.Name, "apiPath", apiPath)
+			slog.Warn("skipping library in docindex due to missing API service configuration or fields", "library", lib.Name, "api", apiPath)
 			continue
 		}
 		pkgName := resolvePackageName(cfg.Language, lib)
@@ -125,9 +126,10 @@ func primaryAPIPath(lib *config.Library) string {
 	return apis[0].Path
 }
 
+// candidateAPIPaths returns all API paths configured for a library, excluding embedded mixins.
 func candidateAPIPaths(lib *config.Library) []string {
 	if len(lib.APIs) > 0 {
-		var apiPaths []string
+		apiPaths := make([]string, 0, len(lib.APIs))
 		for _, api := range lib.APIs {
 			if api.Path != "" {
 				apiPaths = append(apiPaths, api.Path)
@@ -194,27 +196,27 @@ func resolveDocsURL(lang string, lib *config.Library) string {
 // formatLanguage returns the canonical display name for a language (e.g. "Rust", "Swift", "Node.js").
 func formatLanguage(lang string) string {
 	switch strings.ToLower(lang) {
-	case "rust":
+	case config.LanguageRust:
 		return "Rust"
-	case "swift":
+	case config.LanguageSwift:
 		return "Swift"
-	case "go":
+	case config.LanguageGo:
 		return "Go"
 	case "cpp":
 		return "C++"
-	case "java":
+	case config.LanguageJava:
 		return "Java"
-	case "python":
+	case config.LanguagePython:
 		return "Python"
-	case "ruby":
+	case config.LanguageRuby:
 		return "Ruby"
-	case "php":
+	case config.LanguagePhp:
 		return "PHP"
-	case "nodejs":
+	case config.LanguageNodejs:
 		return "Node.js"
-	case "dart":
+	case config.LanguageDart:
 		return "Dart"
-	case "dotnet":
+	case config.LanguageDotnet, config.LanguageCsharp:
 		return ".NET"
 	default:
 		if len(lang) == 0 {

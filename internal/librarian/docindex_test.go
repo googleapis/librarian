@@ -279,7 +279,7 @@ func TestGenerateDocIndex_ShowcaseAndNoAPIsSkipped(t *testing.T) {
 	}
 }
 
-func TestGenerateDocIndex_FileWriting(t *testing.T) {
+func TestWriteDocIndex(t *testing.T) {
 	tmpDir := t.TempDir()
 	outDir := filepath.Join(tmpDir, "generated")
 	absGoogleapisDir, err := filepath.Abs(testGoogleapisDir)
@@ -302,8 +302,8 @@ func TestGenerateDocIndex_FileWriting(t *testing.T) {
 		},
 	}
 
-	if err := generateDocIndex(cfg, absGoogleapisDir); err != nil {
-		t.Fatalf("generateDocIndex failed: %v", err)
+	if err := writeDocIndex(cfg, absGoogleapisDir); err != nil {
+		t.Fatalf("writeDocIndex failed: %v", err)
 	}
 
 	outFile := filepath.Join(outDir, "_libraries.json")
@@ -325,15 +325,15 @@ func TestGenerateDocIndex_FileWriting(t *testing.T) {
 }
 `
 	if diff := cmp.Diff(want, string(content)); diff != "" {
-		t.Errorf("mismatch (-want +got):\n%s", diff)
+		t.Errorf("writeDocIndex() mismatch (-want +got):\n%s", diff)
 	}
 
 	// Test skip when Default is nil or Output is empty or unsupported language
 	noOutCfg := &config.Config{
 		Language: config.LanguageRust,
 	}
-	if err := generateDocIndex(noOutCfg, absGoogleapisDir); err != nil {
-		t.Fatalf("generateDocIndex with nil Default failed: %v", err)
+	if err := writeDocIndex(noOutCfg, absGoogleapisDir); err != nil {
+		t.Fatalf("writeDocIndex with nil Default failed: %v", err)
 	}
 
 	unsupportedCfg := &config.Config{
@@ -342,8 +342,8 @@ func TestGenerateDocIndex_FileWriting(t *testing.T) {
 			Output: outDir,
 		},
 	}
-	if err := generateDocIndex(unsupportedCfg, absGoogleapisDir); err != nil {
-		t.Fatalf("generateDocIndex with unsupported language failed: %v", err)
+	if err := writeDocIndex(unsupportedCfg, absGoogleapisDir); err != nil {
+		t.Fatalf("writeDocIndex with unsupported language failed: %v", err)
 	}
 }
 
