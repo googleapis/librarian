@@ -29,11 +29,11 @@ const (
 	wellKnownProtobufPackage = "google.protobuf"
 	// The name of the corresponding Swift package that contains the Swift implementations of these
 	// types.
-	wellKnownSwiftPackage = "GoogleCloudWKT"
+	wellKnownSwiftPackage = "GoogleWKT"
 	// The name of the Swift package that contains the pagination helper types.
-	paginationSwiftPackage = "GoogleCloudGax"
+	paginationSwiftPackage = "GoogleGax"
 	// The name of the Swift package that contains the long-running operation helper types.
-	lroSwiftPackage = "GoogleCloudGax"
+	lroSwiftPackage = "GoogleGax"
 )
 
 // codec represents the configuration for a Swift sidekick Codec.
@@ -60,7 +60,7 @@ type codec struct {
 	LibraryName string
 
 	// TargetLibraryName is the PascalCase name of the Swift SPM target/library being built
-	// (e.g. "GoogleCloudSecretManagerV1", "GoogleCloudStorage", or "GoogleCloudWKT").
+	// (e.g. "GoogleCloudSecretManagerV1", "GoogleCloudStorage", or "GoogleWKT").
 	//
 	// We need TargetLibraryName to correctly identify self-imports in skipDependency.
 	//
@@ -96,7 +96,7 @@ type codec struct {
 	// Map of proto package to dependency (e.g. "google.protobuf" -> <dependency>)
 	ApiPackages map[string]*Dependency
 
-	// Map of dependency name to dependency (e.g. GoogleCloudGax -> <dependency>)
+	// Map of dependency name to dependency (e.g. GoogleGax -> <dependency>)
 	DependenciesByName map[string]*Dependency
 
 	// If true, the generated code uses a trait (Swift #ifdef-analogs) for each

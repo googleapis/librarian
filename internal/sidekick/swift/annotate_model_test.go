@@ -38,7 +38,7 @@ func TestModelAnnotations(t *testing.T) {
 		PackageVersion:  "0.0.0",
 		CopyrightYear:   "2038",
 		MonorepoRoot:    ".",
-		WktPackage:      "GoogleCloudWKT",
+		WktPackage:      "GoogleWKT",
 	}
 	if diff := cmp.Diff(want, model.Codec, cmpopts.IgnoreFields(modelAnnotations{}, "BoilerPlate", "DependsOn")); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
@@ -60,7 +60,7 @@ func TestModelAnnotations_MessagesWithWkt(t *testing.T) {
 			name: "Messages with wkt",
 			model: api.NewTestAPI(
 				[]*api.Message{{Name: "Request", ID: ".test.Request", Package: "test"}}, nil, nil),
-			want: []string{"GoogleCloudWKT"},
+			want: []string{"GoogleWKT"},
 		},
 		{
 			name:  "Enum with wkt",
@@ -118,7 +118,7 @@ func TestModelAnnotations_WithExternalDependencies(t *testing.T) {
 	codec.withExtraDependencies(t, []config.SwiftDependency{
 		{ApiPackage: "google.cloud.external.v1", Name: "GoogleCloudExternalWithOverrideV1"},
 		{ApiPackage: "google.cloud.unused.v1", Name: "GoogleUnusedPackage"},
-		{Name: "GoogleCloudGax", RequiredByServices: true},
+		{Name: "GoogleGax", RequiredByServices: true},
 	})
 
 	if err := codec.annotateModel(); err != nil {
@@ -132,8 +132,8 @@ func TestModelAnnotations_WithExternalDependencies(t *testing.T) {
 
 	want := map[string]bool{
 		"GoogleCloudExternalWithOverrideV1": true,
-		"GoogleCloudGax":                    true, // required by the service
-		"GoogleCloudWKT":                    true,
+		"GoogleGax":                         true, // required by the service
+		"GoogleWKT":                         true,
 		"GoogleUnusedPackage":               false,
 	}
 	got := map[string]bool{}
@@ -183,10 +183,10 @@ func TestModelAnnotations_IgnoreSelfDependency(t *testing.T) {
 
 	// Self dependency should be ignored, other should be present.
 	want := map[string]bool{
-		"GoogleCloudGax":           true,  // always required by services
+		"GoogleGax":                true,  // always required by services
 		"GoogleCloudOtherV1":       true,  // required by the service
 		"GoogleCloudPlaceholderV1": false, // this is the current package and should not be included as a dependency
-		"GoogleCloudWKT":           true,  // always required by message types
+		"GoogleWKT":                true,  // always required by message types
 	}
 	got := map[string]bool{}
 	for _, dep := range codec.Dependencies {
@@ -258,7 +258,7 @@ func TestModelAnnotations_Pagination(t *testing.T) {
 
 	codec := newTestCodec(t, model, nil)
 	codec.withExtraDependencies(t, []config.SwiftDependency{
-		{Name: "GoogleCloudGax", RequiredByServices: true},
+		{Name: "GoogleGax", RequiredByServices: true},
 	})
 
 	if err := codec.annotateModel(); err != nil {
@@ -270,8 +270,8 @@ func TestModelAnnotations_Pagination(t *testing.T) {
 		t.Fatalf("expected model.Codec to be *modelAnnotations, got %T", model.Codec)
 	}
 
-	if _, ok := ann.DependsOn["GoogleCloudGax"]; !ok {
-		t.Errorf("expected GoogleCloudGax dependency to be present in DependsOn")
+	if _, ok := ann.DependsOn["GoogleGax"]; !ok {
+		t.Errorf("expected GoogleGax dependency to be present in DependsOn")
 	}
 }
 
