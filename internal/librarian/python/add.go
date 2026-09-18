@@ -39,9 +39,9 @@ const (
 const libraryTypeCore = "CORE"
 
 var (
-	errNewLibraryMustHaveOneAPI          = errors.New("a newly added library (in Python) must have exactly one API so that the default version can be populated")
-	errNewLibraryBadNamespace            = errors.New("derived GAPIC namespace would not match any approved namespace; consult with the Python team to determine whether the namespace should be approved, or whether GAPIC options should be specified for this API in librarian.yaml. See go/clientlibs-python-registered-namespaces for more details")
-	errExistingLibraryNoDefaultVersion   = errors.New("new APIs cannot be automatically added to a library without a default version")
+	errNewLibraryMustHaveOneAPI        = errors.New("a newly added library (in Python) must have exactly one API so that the default version can be populated")
+	errNewLibraryBadNamespace          = errors.New("derived GAPIC namespace would not match any approved namespace; consult with the Python team to determine whether the namespace should be approved, or whether GAPIC options should be specified for this API in librarian.yaml. See go/clientlibs-python-registered-namespaces for more details")
+	errExistingLibraryNoDefaultVersion = errors.New("new APIs cannot be automatically added to a library without a default version")
 )
 
 // Add initializes a new Python library with default values.
