@@ -24,23 +24,10 @@ import (
 )
 
 func TestAnnotateMethod(t *testing.T) {
-	keyField := &api.Field{Name: "key", ID: ".test.Request.key", Typez: api.TypezString}
-	inputType := &api.Message{
-		Name:    "Request",
-		ID:      ".test.Request",
-		Package: "test",
-		Fields:  []*api.Field{keyField},
-	}
-	keyField.Parent = inputType
-	outputType := &api.Message{
-		Name:    "Response",
-		ID:      ".test.Response",
-		Package: "test",
-		Fields: []*api.Field{
-			{Name: "value", ID: ".test.Request.value", Typez: api.TypezString},
-		},
-	}
-	outputType.Fields[0].Parent = outputType
+	keyField := api.NewTestField("key").WithType(api.TypezString)
+	inputType := api.NewTestMessage("Request").WithFields(keyField)
+	outputType := api.NewTestMessage("Response").
+		WithFields(api.NewTestField("value").WithType(api.TypezString))
 	for _, test := range []struct {
 		name   string
 		method *api.Method
@@ -48,18 +35,10 @@ func TestAnnotateMethod(t *testing.T) {
 	}{
 		{
 			name: "GET request",
-			method: &api.Method{
-				Name:          "GetOperation",
-				Documentation: "Gets a thing.\n\nTest multiple comment lines.\n",
-				PathInfo: &api.PathInfo{
-					Bindings: []*api.PathBinding{
-						{
-							Verb:         "GET",
-							PathTemplate: (&api.PathTemplate{}).WithLiteral("v1").WithLiteral("operations"),
-						},
-					},
-				},
-			},
+			method: api.NewTestMethod("GetOperation").
+				WithVerb("GET").
+				WithPathTemplate((&api.PathTemplate{}).WithLiteral("v1").WithLiteral("operations")).
+				WithDocumentation("Gets a thing.\n\nTest multiple comment lines.\n"),
 			want: &methodAnnotations{
 				Name:             "getOperation",
 				PathExpression:   "/v1/operations",
@@ -72,18 +51,10 @@ func TestAnnotateMethod(t *testing.T) {
 		},
 		{
 			name: "POST request with body field",
-			method: &api.Method{
-				Name: "CreateKey",
-				PathInfo: &api.PathInfo{
-					Bindings: []*api.PathBinding{
-						{
-							Verb:         "POST",
-							PathTemplate: (&api.PathTemplate{}).WithLiteral("v1").WithLiteral("keys"),
-						},
-					},
-					BodyFieldPath: "key",
-				},
-			},
+			method: api.NewTestMethod("CreateKey").
+				WithVerb("POST").
+				WithPathTemplate((&api.PathTemplate{}).WithLiteral("v1").WithLiteral("keys")).
+				WithBodyFieldPath("key"),
 			want: &methodAnnotations{
 				Name:             "createKey",
 				PathExpression:   "/v1/keys",
@@ -97,18 +68,10 @@ func TestAnnotateMethod(t *testing.T) {
 		},
 		{
 			name: "POST request with wildcard body",
-			method: &api.Method{
-				Name: "UploadData",
-				PathInfo: &api.PathInfo{
-					Bindings: []*api.PathBinding{
-						{
-							Verb:         "POST",
-							PathTemplate: (&api.PathTemplate{}).WithLiteral("v1").WithLiteral("data"),
-						},
-					},
-					BodyFieldPath: "*",
-				},
-			},
+			method: api.NewTestMethod("UploadData").
+				WithVerb("POST").
+				WithPathTemplate((&api.PathTemplate{}).WithLiteral("v1").WithLiteral("data")).
+				WithBodyFieldPath("*"),
 			want: &methodAnnotations{
 				Name:             "uploadData",
 				PathExpression:   "/v1/data",
@@ -121,19 +84,11 @@ func TestAnnotateMethod(t *testing.T) {
 		},
 		{
 			name: "List request",
-			method: &api.Method{
-				Name:          "ListThings",
-				Documentation: "Lists things.",
-				PathInfo: &api.PathInfo{
-					Bindings: []*api.PathBinding{
-						{
-							Verb:            "GET",
-							PathTemplate:    (&api.PathTemplate{}).WithLiteral("v1").WithLiteral("things"),
-							QueryParameters: map[string]bool{"key": true},
-						},
-					},
-				},
-			},
+			method: api.NewTestMethod("ListThings").
+				WithVerb("GET").
+				WithPathTemplate((&api.PathTemplate{}).WithLiteral("v1").WithLiteral("things")).
+				WithQueryParameters(map[string]bool{"key": true}).
+				WithDocumentation("Lists things."),
 			want: &methodAnnotations{
 				Name:             "listThings",
 				PathExpression:   "/v1/things",
@@ -147,16 +102,8 @@ func TestAnnotateMethod(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			test.method.InputType = inputType
-			test.method.InputTypeID = inputType.ID
-			test.method.OutputType = outputType
-			test.method.OutputTypeID = outputType.ID
-			service := &api.Service{
-				Name:    "TestService",
-				ID:      ".test.TestService",
-				Package: "test",
-				Methods: []*api.Method{test.method},
-			}
+			test.method.WithInput(inputType).WithOutput(outputType)
+			service := api.NewTestService("TestService").WithMethods(test.method)
 			model := api.NewTestAPI([]*api.Message{inputType, outputType}, nil, []*api.Service{service})
 			if err := api.CrossReference(model); err != nil {
 				t.Fatal(err)
@@ -177,32 +124,16 @@ func TestAnnotateMethod(t *testing.T) {
 }
 
 func TestAnnotateMethod_OmittedBodyFields(t *testing.T) {
-	secretMessage := &api.Message{
-		Name:    "Secret",
-		ID:      ".test.Secret",
-		Package: "test",
-		Fields: []*api.Field{
-			{Name: "name", JSONName: "name", Typez: api.TypezString},
-		},
-	}
-	inputType := &api.Message{
-		Name:    "Request",
-		ID:      ".test.Request",
-		Package: "test",
-		Fields: []*api.Field{
-			{Name: "parent", JSONName: "parent", Typez: api.TypezString},
-			{Name: "display_name", JSONName: "displayName", Typez: api.TypezString},
-			{Name: "secret", JSONName: "secret", Typez: api.TypezMessage, TypezID: ".test.Secret", Optional: true},
-		},
-	}
-	outputType := &api.Message{
-		Name:    "Response",
-		ID:      ".test.Response",
-		Package: "test",
-		Fields: []*api.Field{
-			{Name: "value", JSONName: "value", Typez: api.TypezString},
-		},
-	}
+	secretMessage := api.NewTestMessage("Secret").
+		WithFields(api.NewTestField("name").WithType(api.TypezString))
+	inputType := api.NewTestMessage("Request").
+		WithFields(
+			api.NewTestField("parent").WithType(api.TypezString),
+			api.NewTestField("display_name").WithType(api.TypezString),
+			api.NewTestField("secret").WithMessageType(secretMessage).WithOptional(),
+		)
+	outputType := api.NewTestMessage("Response").
+		WithFields(api.NewTestField("value").WithType(api.TypezString))
 
 	for _, test := range []struct {
 		name                  string
@@ -216,8 +147,8 @@ func TestAnnotateMethod_OmittedBodyFields(t *testing.T) {
 			name:          "wildcard body with multiple bindings",
 			bodyFieldPath: "*",
 			bindings: []*api.PathBinding{
-				{Verb: "POST", PathTemplate: (&api.PathTemplate{}).WithLiteral("v1").WithVariableNamed("parent")},
-				{Verb: "POST", PathTemplate: (&api.PathTemplate{}).WithLiteral("v1").WithVariableNamed("secret", "name")},
+				api.NewTestPathBinding("POST", (&api.PathTemplate{}).WithLiteral("v1").WithVariableNamed("parent")),
+				api.NewTestPathBinding("POST", (&api.PathTemplate{}).WithLiteral("v1").WithVariableNamed("secret", "name")),
 			},
 			want:                  [][]string{{"parent"}, {"secret.name"}},
 			wantHasOmitted:        true,
@@ -227,7 +158,7 @@ func TestAnnotateMethod_OmittedBodyFields(t *testing.T) {
 			name:          "wildcard body without path variables",
 			bodyFieldPath: "*",
 			bindings: []*api.PathBinding{
-				{Verb: "POST", PathTemplate: (&api.PathTemplate{}).WithLiteral("v1").WithLiteral("secrets")},
+				api.NewTestPathBinding("POST", (&api.PathTemplate{}).WithLiteral("v1").WithLiteral("secrets")),
 			},
 			want:                  [][]string{nil},
 			wantHasOmitted:        false,
@@ -237,7 +168,7 @@ func TestAnnotateMethod_OmittedBodyFields(t *testing.T) {
 			name:          "named body field",
 			bodyFieldPath: "secret",
 			bindings: []*api.PathBinding{
-				{Verb: "POST", PathTemplate: (&api.PathTemplate{}).WithLiteral("v1").WithVariableNamed("parent")},
+				api.NewTestPathBinding("POST", (&api.PathTemplate{}).WithLiteral("v1").WithVariableNamed("parent")),
 			},
 			want:                  [][]string{nil},
 			wantHasOmitted:        false,
@@ -247,7 +178,7 @@ func TestAnnotateMethod_OmittedBodyFields(t *testing.T) {
 			name:          "no body",
 			bodyFieldPath: "",
 			bindings: []*api.PathBinding{
-				{Verb: "GET", PathTemplate: (&api.PathTemplate{}).WithLiteral("v1").WithVariableNamed("parent")},
+				api.NewTestPathBinding("GET", (&api.PathTemplate{}).WithLiteral("v1").WithVariableNamed("parent")),
 			},
 			want:                  [][]string{nil},
 			wantHasOmitted:        false,
@@ -255,23 +186,12 @@ func TestAnnotateMethod_OmittedBodyFields(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			method := &api.Method{
-				Name:         "Mutate",
-				InputType:    inputType,
-				InputTypeID:  inputType.ID,
-				OutputType:   outputType,
-				OutputTypeID: outputType.ID,
-				PathInfo: &api.PathInfo{
-					Bindings:      test.bindings,
-					BodyFieldPath: test.bodyFieldPath,
-				},
-			}
-			service := &api.Service{
-				Name:    "TestService",
-				ID:      ".test.TestService",
-				Package: "test",
-				Methods: []*api.Method{method},
-			}
+			method := api.NewTestMethod("Mutate").
+				WithInput(inputType).
+				WithOutput(outputType).
+				WithBindings(test.bindings...).
+				WithBodyFieldPath(test.bodyFieldPath)
+			service := api.NewTestService("TestService").WithMethods(method)
 			model := api.NewTestAPI([]*api.Message{inputType, outputType, secretMessage}, nil, []*api.Service{service})
 			if err := api.CrossReference(model); err != nil {
 				t.Fatal(err)
@@ -318,8 +238,8 @@ func TestAnnotateMethod_EscapedName(t *testing.T) {
 			method := api.NewTestMethod(test.methodName).
 				WithInput(inputType).
 				WithOutput(outputType).
-				WithVerb("GET").WithPathTemplate(&api.PathTemplate{})
-			method.Documentation = "Test documentation."
+				WithVerb("GET").WithPathTemplate(&api.PathTemplate{}).
+				WithDocumentation("Test documentation.")
 			service := api.NewTestService("TestService").WithMethods(method)
 			model := api.NewTestAPI([]*api.Message{inputType, outputType}, nil, []*api.Service{service})
 			if err := api.CrossReference(model); err != nil {
@@ -348,30 +268,16 @@ func TestAnnotateMethod_EscapedName(t *testing.T) {
 }
 
 func TestAnnotateMethod_WithExternalMessages(t *testing.T) {
-	inputMessage := &api.Message{
-		Name:    "InputMessage",
-		Package: "google.cloud.external.v1",
-		ID:      ".google.cloud.external.v1.InputMessage",
-	}
-	outputMessage := &api.Message{
-		Name:    "OutputMessage",
-		Package: "google.cloud.external.v1",
-		ID:      ".google.cloud.external.v1.OutputMessage",
-	}
-	method := &api.Method{
-		Name:         "TestMethod",
-		InputType:    inputMessage,
-		InputTypeID:  inputMessage.ID,
-		OutputType:   outputMessage,
-		OutputTypeID: outputMessage.ID,
-		PathInfo: &api.PathInfo{
-			Bindings: []*api.PathBinding{{Verb: "POST", PathTemplate: &api.PathTemplate{}}},
-		},
-	}
-	service := &api.Service{
-		Name:    "TestService",
-		Methods: []*api.Method{method},
-	}
+	inputMessage := api.NewTestMessage("InputMessage").
+		WithPackage("google.cloud.external.v1")
+	outputMessage := api.NewTestMessage("OutputMessage").
+		WithPackage("google.cloud.external.v1")
+	method := api.NewTestMethod("TestMethod").
+		WithInput(inputMessage).
+		WithOutput(outputMessage).
+		WithVerb("POST").
+		WithPathTemplate(&api.PathTemplate{})
+	service := api.NewTestService("TestService").WithMethods(method)
 	model := api.NewTestAPI([]*api.Message{}, nil, []*api.Service{service})
 	model.PackageName = "google.cloud.test.v1"
 	model.AddMessage(inputMessage)
@@ -400,56 +306,28 @@ func TestAnnotateMethod_WithExternalMessages(t *testing.T) {
 }
 
 func TestAnnotateMethod_Pagination(t *testing.T) {
-	pageSizeField := &api.Field{Name: "page_size", JSONName: "pageSize", Typez: api.TypezInt32}
-	pageTokenField := &api.Field{Name: "page_token", JSONName: "pageToken", Typez: api.TypezString}
-	inputType := &api.Message{
-		Name:    "ListRequest",
-		Package: "test",
-		ID:      ".test.ListRequest",
-		Fields:  []*api.Field{pageSizeField, pageTokenField},
-	}
-	pageSizeField.Parent = inputType
-	pageTokenField.Parent = inputType
+	pageSizeField := api.NewTestField("page_size").WithType(api.TypezInt32)
+	pageTokenField := api.NewTestField("page_token").WithType(api.TypezString)
+	inputType := api.NewTestMessage("ListRequest").
+		WithFields(pageSizeField, pageTokenField)
 
-	itemField := &api.Field{Name: "items", JSONName: "items", Typez: api.TypezMessage, TypezID: ".test.Item", Repeated: true}
-	nextPageTokenField := &api.Field{Name: "next_page_token", JSONName: "nextPageToken", Typez: api.TypezString}
-	outputType := &api.Message{
-		Name:    "ListResponse",
-		Package: "test",
-		ID:      ".test.ListResponse",
-		Fields:  []*api.Field{itemField, nextPageTokenField},
-		Pagination: &api.PaginationInfo{
-			NextPageToken: nextPageTokenField,
-			PageableItem:  itemField,
-		},
-	}
-	itemField.Parent = outputType
-	nextPageTokenField.Parent = outputType
+	itemType := api.NewTestMessage("Item")
+	itemField := api.NewTestField("items").
+		WithMessageType(itemType).
+		WithRepeated()
+	nextPageTokenField := api.NewTestField("next_page_token").WithType(api.TypezString)
+	outputType := api.NewTestMessage("ListResponse").
+		WithFields(itemField, nextPageTokenField).
+		WithPagination(nextPageTokenField, itemField)
 
-	itemType := &api.Message{
-		Name:    "Item",
-		Package: "test",
-		ID:      ".test.Item",
-	}
+	method := api.NewTestMethod("ListItems").
+		WithInput(inputType).
+		WithOutput(outputType).
+		WithVerb("GET").
+		WithPathTemplate(&api.PathTemplate{}).
+		WithPagination(pageTokenField)
 
-	method := &api.Method{
-		Name:         "ListItems",
-		InputTypeID:  inputType.ID,
-		InputType:    inputType,
-		OutputTypeID: outputType.ID,
-		OutputType:   outputType,
-		PathInfo: &api.PathInfo{
-			Bindings: []*api.PathBinding{{Verb: "GET", PathTemplate: &api.PathTemplate{}}},
-		},
-		Pagination: pageTokenField,
-	}
-
-	service := &api.Service{
-		Name:    "TestService",
-		ID:      ".test.TestService",
-		Package: "test",
-		Methods: []*api.Method{method},
-	}
+	service := api.NewTestService("TestService").WithMethods(method)
 
 	model := api.NewTestAPI([]*api.Message{inputType, outputType, itemType}, nil, []*api.Service{service})
 	model.PackageName = "test"
@@ -519,49 +397,22 @@ func TestAnnotateMethod_Pagination(t *testing.T) {
 }
 
 func TestAnnotateMethod_LRO(t *testing.T) {
-	inputType := &api.Message{
-		Name:    "Request",
-		Package: "test",
-		ID:      ".test.Request",
-	}
-	outputType := &api.Message{
-		Name:    "Operation",
-		Package: "test",
-		ID:      ".test.Operation",
-	}
-	lroResponseType := &api.Message{
-		Name:    "LroResponse",
-		Package: "test",
-		ID:      ".test.LroResponse",
-	}
-	lroMetadataType := &api.Message{
-		Name:    "LroMetadata",
-		Package: "test",
-		ID:      ".test.LroMetadata",
-	}
+	inputType := api.NewTestMessage("Request")
+	outputType := api.NewTestMessage("Operation")
+	lroResponseType := api.NewTestMessage("LroResponse")
+	lroMetadataType := api.NewTestMessage("LroMetadata")
 
-	method := &api.Method{
-		Name:         "LroMethod",
-		InputTypeID:  inputType.ID,
-		InputType:    inputType,
-		OutputTypeID: outputType.ID,
-		OutputType:   outputType,
-		PathInfo: &api.PathInfo{
-			Bindings: []*api.PathBinding{{Verb: "POST", PathTemplate: &api.PathTemplate{}}},
-		},
-		IsLRO: true,
-		OperationInfo: &api.OperationInfo{
+	method := api.NewTestMethod("LroMethod").
+		WithInput(inputType).
+		WithOutput(outputType).
+		WithVerb("POST").
+		WithPathTemplate(&api.PathTemplate{}).
+		WithOperationInfo(&api.OperationInfo{
 			ResponseTypeID: lroResponseType.ID,
 			MetadataTypeID: lroMetadataType.ID,
-		},
-	}
+		})
 
-	service := &api.Service{
-		Name:    "TestService",
-		ID:      ".test.TestService",
-		Package: "test",
-		Methods: []*api.Method{method},
-	}
+	service := api.NewTestService("TestService").WithMethods(method)
 
 	model := api.NewTestAPI([]*api.Message{inputType, outputType, lroResponseType, lroMetadataType}, nil, []*api.Service{service})
 	model.PackageName = "test"
@@ -596,44 +447,21 @@ func TestAnnotateMethod_LRO(t *testing.T) {
 }
 
 func TestAnnotateMethod_LRO_Empty(t *testing.T) {
-	inputType := &api.Message{
-		Name:    "Request",
-		Package: "test",
-		ID:      ".test.Request",
-	}
-	outputType := &api.Message{
-		Name:    "Operation",
-		Package: "test",
-		ID:      ".test.Operation",
-	}
-	lroMetadataType := &api.Message{
-		Name:    "LroMetadata",
-		Package: "test",
-		ID:      ".test.LroMetadata",
-	}
+	inputType := api.NewTestMessage("Request")
+	outputType := api.NewTestMessage("Operation")
+	lroMetadataType := api.NewTestMessage("LroMetadata")
 
-	method := &api.Method{
-		Name:         "LroMethod",
-		InputTypeID:  inputType.ID,
-		InputType:    inputType,
-		OutputTypeID: outputType.ID,
-		OutputType:   outputType,
-		PathInfo: &api.PathInfo{
-			Bindings: []*api.PathBinding{{Verb: "POST", PathTemplate: &api.PathTemplate{}}},
-		},
-		IsLRO: true,
-		OperationInfo: &api.OperationInfo{
+	method := api.NewTestMethod("LroMethod").
+		WithInput(inputType).
+		WithOutput(outputType).
+		WithVerb("POST").
+		WithPathTemplate(&api.PathTemplate{}).
+		WithOperationInfo(&api.OperationInfo{
 			ResponseTypeID: ".google.protobuf.Empty",
 			MetadataTypeID: lroMetadataType.ID,
-		},
-	}
+		})
 
-	service := &api.Service{
-		Name:    "TestService",
-		ID:      ".test.TestService",
-		Package: "test",
-		Methods: []*api.Method{method},
-	}
+	service := api.NewTestService("TestService").WithMethods(method)
 
 	model := api.NewTestAPI([]*api.Message{inputType, outputType, lroMetadataType}, nil, []*api.Service{service})
 	model.PackageName = "test"
@@ -668,51 +496,26 @@ func TestAnnotateMethod_LRO_Empty(t *testing.T) {
 }
 
 func TestAnnotateMethod_MultipleBindings(t *testing.T) {
-	nameField := &api.Field{Name: "name", ID: ".test.Request.name", Typez: api.TypezString}
-	projectField := &api.Field{Name: "project", ID: ".test.Request.project", Typez: api.TypezString}
-	inputType := &api.Message{
-		Name:    "Request",
-		ID:      ".test.Request",
-		Package: "test",
-		Fields:  []*api.Field{nameField, projectField},
-	}
-	outputType := &api.Message{
-		Name:    "Response",
-		ID:      ".test.Response",
-		Package: "test",
-	}
+	inputType := api.NewTestMessage("Request").
+		WithFields(
+			api.NewTestField("name").WithType(api.TypezString),
+			api.NewTestField("project").WithType(api.TypezString),
+		)
+	outputType := api.NewTestMessage("Response")
 
-	method := &api.Method{
-		Name:         "GetResource",
-		ID:           ".test.TestService.GetResource",
-		InputType:    inputType,
-		InputTypeID:  inputType.ID,
-		OutputType:   outputType,
-		OutputTypeID: outputType.ID,
-		PathInfo: &api.PathInfo{
-			Bindings: []*api.PathBinding{
-				{
-					Verb: "GET",
-					PathTemplate: (&api.PathTemplate{}).
-						WithLiteral("v1").
-						WithVariableNamed("name"),
-				},
-				{
-					Verb: "POST",
-					PathTemplate: (&api.PathTemplate{}).
-						WithLiteral("v1").
-						WithVariableNamed("project").
-						WithLiteral("resources"),
-				},
-			},
-		},
-	}
-	service := &api.Service{
-		Name:    "TestService",
-		ID:      ".test.TestService",
-		Package: "test",
-		Methods: []*api.Method{method},
-	}
+	method := api.NewTestMethod("GetResource").
+		WithInput(inputType).
+		WithOutput(outputType).
+		WithBindings(
+			api.NewTestPathBinding("GET", (&api.PathTemplate{}).
+				WithLiteral("v1").
+				WithVariableNamed("name")),
+			api.NewTestPathBinding("POST", (&api.PathTemplate{}).
+				WithLiteral("v1").
+				WithVariableNamed("project").
+				WithLiteral("resources")),
+		)
+	service := api.NewTestService("TestService").WithMethods(method)
 	model := api.NewTestAPI([]*api.Message{inputType, outputType}, nil, []*api.Service{service})
 	if err := api.CrossReference(model); err != nil {
 		t.Fatal(err)
