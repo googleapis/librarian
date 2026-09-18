@@ -17,6 +17,7 @@ package python
 import (
 	"errors"
 	"fmt"
+	"log"
 	"path"
 	"slices"
 	"strings"
@@ -62,22 +63,12 @@ func Add(cfg *config.Config, lib *config.Library) (*config.Library, error) {
 	return lib, nil
 }
 
-func validateNamespace(cfg *config.Config, apiPath string) error {
-	if cfg == nil || cfg.Default == nil || cfg.Default.Python == nil || len(cfg.Default.Python.AllowedNamespaces) == 0 {
-		return nil
+func UpdateExistingLibrary(existingLib *config.Library, api *config.API) error {
+	if err := validateNewAPIs(existingLib); err != nil {
+		return err
 	}
-	namespace := deriveGAPICNamespace(apiPath)
-	if !slices.Contains(cfg.Default.Python.AllowedNamespaces, namespace) {
-		return fmt.Errorf("%w: unapproved namespace %s derived from API path %s", errNewLibraryBadNamespace, namespace, apiPath)
-	}
-	return nil
-}
-
-// ValidateNewAPIs validates that new APIs can be added to an existing library.
-func ValidateNewAPIs(lib *config.Library) error {
-	if lib.Python == nil || lib.Python.DefaultVersion == "" {
-		return errExistingLibraryNoDefaultVersion
-	}
+	existingLib.APIs = append(existingLib.APIs, api)
+	copyOptArgsByAPI(existingLib, api.Path)
 	return nil
 }
 
@@ -127,13 +118,6 @@ func FindExistingLibraryForNewAPI(libraries []*config.Library, apiPath string) *
 	return nil
 }
 
-// versionless trims the version (if any) from apiPath, leaving any trailing
-// slash.
-func versionless(apiPath string) string {
-	version := serviceconfig.ExtractVersion(apiPath)
-	return strings.TrimSuffix(apiPath, version)
-}
-
 // ReleasePleaseExtraFiles returns the extra-files tracked by release-please for Python libraries.
 func ReleasePleaseExtraFiles(lib *config.Library) []any {
 	var extraFiles []any
@@ -158,6 +142,47 @@ func ReleasePleaseExtraFiles(lib *config.Library) []any {
 		extraFiles = append(extraFiles, snippetMetadata)
 	}
 	return extraFiles
+}
+
+func validateNamespace(cfg *config.Config, apiPath string) error {
+	if cfg == nil || cfg.Default == nil || cfg.Default.Python == nil || len(cfg.Default.Python.AllowedNamespaces) == 0 {
+		return nil
+	}
+	namespace := deriveGAPICNamespace(apiPath)
+	if !slices.Contains(cfg.Default.Python.AllowedNamespaces, namespace) {
+		return fmt.Errorf("%w: unapproved namespace %s derived from API path %s", errNewLibraryBadNamespace, namespace, apiPath)
+	}
+	return nil
+}
+
+// validateNewAPIs validates that new APIs can be added to an existing library.
+func validateNewAPIs(lib *config.Library) error {
+	if lib.Python == nil || lib.Python.DefaultVersion == "" {
+		return errExistingLibraryNoDefaultVersion
+	}
+	return nil
+}
+
+// copyOptArgsByAPI copies the opt_args_by_api from the first API in the library to the
+// new API.
+func copyOptArgsByAPI(library *config.Library, apiPath string) {
+	if len(library.Python.OptArgsByAPI) == 0 {
+		return
+	}
+	firstAPIPath := library.APIs[0].Path
+	library.Python.OptArgsByAPI[apiPath] = library.Python.OptArgsByAPI[firstAPIPath]
+	log.Printf(
+		"WARNING: customized opt_args_by_api is copied from %q to %q, but this may not be correct for %q."+
+			"Please review and edit opt_args_by_api in librarian.yaml if needed.",
+		firstAPIPath, apiPath, apiPath,
+	)
+}
+
+// versionless trims the version (if any) from apiPath, leaving any trailing
+// slash.
+func versionless(apiPath string) string {
+	version := serviceconfig.ExtractVersion(apiPath)
+	return strings.TrimSuffix(apiPath, version)
 }
 
 // flattenNestedPath flattens nested paths in apiPath, specifically for non-cloud API prefixes.

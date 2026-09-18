@@ -216,7 +216,7 @@ func TestValidateNewAPIs(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			gotErr := ValidateNewAPIs(test.lib)
+			gotErr := validateNewAPIs(test.lib)
 			if !errors.Is(gotErr, test.wantErr) {
 				t.Errorf("error = %v, wantErr %v", gotErr, test.wantErr)
 			}
