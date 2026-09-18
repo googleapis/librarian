@@ -18,7 +18,6 @@ import (
 	"errors"
 	"fmt"
 	"log"
-	"path"
 	"slices"
 	"strings"
 
@@ -162,38 +161,4 @@ func copyOptArgsByAPI(library *config.Library, apiPath string) {
 func versionless(apiPath string) string {
 	version := serviceconfig.ExtractVersion(apiPath)
 	return strings.TrimSuffix(apiPath, version)
-}
-
-// ReleasePleaseExtraFiles returns the extra-files tracked by release-please for Python libraries.
-func ReleasePleaseExtraFiles(lib *config.Library) []any {
-	var extraFiles []any
-	addedVersionless := make(map[string]bool)
-	for _, api := range lib.APIs {
-		flattenedPath := flattenNestedPath(api.Path, lib)
-		if !addedVersionless[flattenedPath] {
-			addedVersionless[flattenedPath] = true
-			extraFiles = append(extraFiles, flattenedPath+"/gapic_version.py")
-		}
-		version := serviceconfig.ExtractVersion(api.Path)
-		if version != "" {
-			extraFiles = append(extraFiles, flattenedPath+"_"+version+"/gapic_version.py")
-		}
-		protoPackage := strings.ReplaceAll(api.Path, "/", ".")
-		// https://github.com/googleapis/release-please/blob/main/docs/customizing.md#updating-arbitrary-files
-		snippetMetadata := map[string]any{
-			"jsonpath": "$.clientLibrary.version",
-			"path":     "samples/generated_samples/snippet_metadata_" + protoPackage + ".json",
-			"type":     "json",
-		}
-		extraFiles = append(extraFiles, snippetMetadata)
-	}
-	return extraFiles
-}
-
-// flattenNestedPath flattens nested paths in apiPath, specifically for non-cloud API prefixes.
-// For example, google/shopping/merchant/inventories becomes google/shopping/merchant_inventories.
-func flattenNestedPath(apiPath string, lib *config.Library) string {
-	namespace := strings.ReplaceAll(gapicNamespace(apiPath, lib), ".", "/")
-	name := gapicName(apiPath, lib)
-	return path.Join(namespace, name)
 }
