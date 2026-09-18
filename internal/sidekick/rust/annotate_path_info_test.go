@@ -15,7 +15,6 @@
 package rust
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -25,82 +24,42 @@ import (
 )
 
 func serviceAnnotationsModel() *api.API {
-	request := &api.Message{
-		Name:    "Request",
-		Package: "test.v1",
-		ID:      ".test.v1.Request",
-	}
-	response := &api.Message{
-		Name:    "Response",
-		Package: "test.v1",
-		ID:      ".test.v1.Response",
-		Fields: []*api.Field{
-			{
-				Name:    "field",
-				ID:      ".test.v1.Response.field",
-				Typez:   api.TypezEnum,
-				TypezID: ".test.v1.UsedEnum",
-			},
-		},
-	}
-	method := &api.Method{
-		Name:         "GetResource",
-		ID:           ".test.v1.ResourceService.GetResource",
-		InputType:    request,
-		InputTypeID:  ".test.v1.Request",
-		OutputTypeID: ".test.v1.Response",
-		PathInfo: &api.PathInfo{
-			Bindings: []*api.PathBinding{
-				{
-					Verb: "GET",
-					PathTemplate: (&api.PathTemplate{}).
-						WithLiteral("v1").
-						WithLiteral("resource"),
-				},
-			},
-		},
-	}
-	emptyMethod := &api.Method{
-		Name:         "DeleteResource",
-		ID:           ".test.v1.ResourceService.DeleteResource",
-		InputType:    request,
-		InputTypeID:  ".test.v1.Request",
-		OutputTypeID: ".google.protobuf.Empty",
-		PathInfo: &api.PathInfo{
-			Bindings: []*api.PathBinding{
-				{
-					Verb: "DELETE",
-					PathTemplate: (&api.PathTemplate{}).
-						WithLiteral("v1").
-						WithLiteral("resource"),
-				},
-			},
-		},
-		ReturnsEmpty: true,
-	}
-	noHttpMethod := &api.Method{
-		Name:         "DoAThing",
-		ID:           ".test.v1.ResourceService.DoAThing",
-		InputTypeID:  ".test.v1.Request",
-		OutputTypeID: ".test.v1.Response",
-	}
-	service := &api.Service{
-		Name:    "ResourceService",
-		ID:      ".test.v1.ResourceService",
-		Package: "test.v1",
-		Methods: []*api.Method{method, emptyMethod, noHttpMethod},
-	}
+	usedEnum := api.NewTestEnum("UsedEnum").WithPackage("test.v1")
+	extraEnum := api.NewTestEnum("ExtraEnum").WithPackage("test.v1")
 
-	usedEnum := &api.Enum{
-		Name:    "UsedEnum",
-		ID:      ".test.v1.UsedEnum",
-		Package: "test.v1",
-	}
-	extraEnum := &api.Enum{
-		Name:    "ExtraEnum",
-		ID:      ".test.v1.ExtraEnum",
-		Package: "test.v1",
-	}
+	request := api.NewTestMessage("Request").WithPackage("test.v1")
+	response := api.NewTestMessage("Response").
+		WithPackage("test.v1").
+		WithFields(
+			api.NewTestField("field").
+				WithType(api.TypezEnum).
+				WithTypezID(usedEnum.ID),
+		)
+	method := api.NewTestMethod("GetResource").
+		WithInput(request).
+		WithOutput(response).
+		WithVerb("GET").
+		WithPathTemplate((&api.PathTemplate{}).
+			WithLiteral("v1").
+			WithLiteral("resource"))
+	emptyMsg := api.NewTestMessage("Empty").WithID(api.WktEmptyID)
+	emptyMethod := api.NewTestMethod("DeleteResource").
+		WithInput(request).
+		WithOutput(emptyMsg).
+		WithVerb("DELETE").
+		WithPathTemplate((&api.PathTemplate{}).
+			WithLiteral("v1").
+			WithLiteral("resource")).
+		ReturnEmpty()
+
+	noHttpMethod := api.NewTestMethod("DoAThing").
+		WithInput(request).
+		WithOutput(response)
+	noHttpMethod.PathInfo = nil
+
+	service := api.NewTestService("ResourceService").
+		WithPackage("test.v1").
+		WithMethods(method, emptyMethod, noHttpMethod)
 
 	model := api.NewTestAPI(
 		[]*api.Message{request, response},
@@ -112,12 +71,9 @@ func serviceAnnotationsModel() *api.API {
 
 func TestPathInfoAnnotations(t *testing.T) {
 	binding := func(verb string) *api.PathBinding {
-		return &api.PathBinding{
-			Verb: verb,
-			PathTemplate: (&api.PathTemplate{}).
-				WithLiteral("v1").
-				WithLiteral("resource"),
-		}
+		return api.NewTestPathBinding(verb, (&api.PathTemplate{}).
+			WithLiteral("v1").
+			WithLiteral("resource"))
 	}
 
 	for _, test := range []struct {
@@ -136,35 +92,19 @@ func TestPathInfoAnnotations(t *testing.T) {
 		{"POST_POST", []*api.PathBinding{binding("POST"), binding("POST")}, "false"},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			request := &api.Message{
-				Name:    "Request",
-				Package: "test.v1",
-				ID:      ".test.v1.Request",
-			}
-			response := &api.Message{
-				Name:    "Response",
-				Package: "test.v1",
-				ID:      ".test.v1.Response",
-			}
-			method := &api.Method{
-				Name:         "GetResource",
-				ID:           ".test.v1.Service.GetResource",
-				InputTypeID:  ".test.v1.Request",
-				OutputTypeID: ".test.v1.Response",
-				PathInfo: &api.PathInfo{
-					Bindings: test.Bindings,
-				},
-			}
-			service := &api.Service{
-				Name:    "ResourceService",
-				ID:      ".test.v1.ResourceService",
-				Package: "test.v1",
-				Methods: []*api.Method{method},
-			}
+			request := api.NewTestMessage("Request").WithPackage("test.v1")
+			response := api.NewTestMessage("Response").WithPackage("test.v1")
+			method := api.NewTestMethod("GetResource").
+				WithInput(request).
+				WithOutput(response).
+				WithBindings(test.Bindings...)
+			service := api.NewTestService("ResourceService").
+				WithPackage("test.v1").
+				WithMethods(method)
 
 			model := api.NewTestAPI(
 				[]*api.Message{request, response},
-				[]*api.Enum{},
+				nil,
 				[]*api.Service{service})
 			api.CrossReference(model)
 			codec := newTestCodec(t, libconfig.SpecProtobuf, "test.v1", map[string]string{
@@ -181,96 +121,48 @@ func TestPathInfoAnnotations(t *testing.T) {
 }
 
 func TestPathBindingAnnotations(t *testing.T) {
-	f_name := &api.Field{
-		Name:     "name",
-		JSONName: "name",
-		ID:       ".test.Request.name",
-		Typez:    api.TypezString,
-	}
+	request := api.NewTestMessage("Request")
 
-	f_project := &api.Field{
-		Name:     "project",
-		JSONName: "project",
-		ID:       ".test.Request.project",
-		Typez:    api.TypezString,
-	}
-	f_location := &api.Field{
-		Name:     "location",
-		JSONName: "location",
-		ID:       ".test.Request.location",
-		Typez:    api.TypezString,
-	}
-	f_id := &api.Field{
-		Name:     "id",
-		JSONName: "id",
-		ID:       ".test.Request.id",
-		Typez:    api.TypezUint64,
-	}
-	f_optional := &api.Field{
-		Name:     "optional",
-		JSONName: "optional",
-		ID:       ".test.Request.optional",
-		Typez:    api.TypezString,
-		Optional: true,
-	}
+	fName := api.NewTestField("name").WithType(api.TypezString)
+	fProject := api.NewTestField("project").WithType(api.TypezString)
+	fLocation := api.NewTestField("location").WithType(api.TypezString)
+	fID := api.NewTestField("id").WithType(api.TypezUint64)
+	fOptional := api.NewTestField("optional").WithType(api.TypezString).WithOptional()
 
 	// A field also of type `Request`. We want to test nested path
 	// parameters, and this saves us from having to define a new
 	// `api.Message`, with all of its fields.
-	f_child := &api.Field{
-		Name:     "child",
-		JSONName: "child",
-		ID:       ".test.Request.child",
-		Typez:    api.TypezMessage,
-		TypezID:  ".test.Request",
-		Optional: true,
-	}
+	fChild := api.NewTestField("child").
+		WithMessageType(request).
+		WithOptional()
 
-	f_oneof := &api.Field{
-		Name:     "oneofField",
-		JSONName: "oneofField",
-		ID:       ".test.Request.oneofField",
-		Typez:    api.TypezString,
-		IsOneOf:  true,
-	}
+	fOneof := api.NewTestField("oneofField").WithType(api.TypezString)
+	oneof := api.NewTestOneOf("oneofField").WithFields(fOneof)
 
-	request := &api.Message{
-		Name:    "Request",
-		Package: "test",
-		ID:      ".test.Request",
-		Fields: []*api.Field{
-			f_name,
-			f_project,
-			f_location,
-			f_id,
-			f_optional,
-			f_child,
-			f_oneof,
-		},
-	}
-	response := &api.Message{
-		Name:    "Response",
-		Package: "test",
-		ID:      ".test.Response",
-	}
+	request.WithFields(
+		fName,
+		fProject,
+		fLocation,
+		fID,
+		fOptional,
+		fChild,
+	).WithOneOfs(oneof)
+	response := api.NewTestMessage("Response")
 
-	b0 := &api.PathBinding{
-		Verb: "POST",
-		PathTemplate: (&api.PathTemplate{}).
-			WithLiteral("v2").
-			WithVariable(api.NewPathVariable("name").
-				WithLiteral("projects").
-				WithMatch().
-				WithLiteral("locations").
-				WithMatch()).
-			WithVerb("create"),
-		QueryParameters: map[string]bool{
+	b0 := api.NewTestPathBinding("POST", (&api.PathTemplate{}).
+		WithLiteral("v2").
+		WithVariable(api.NewPathVariable("name").
+			WithLiteral("projects").
+			WithMatch().
+			WithLiteral("locations").
+			WithMatch()).
+		WithVerb("create")).
+		WithQueryParameters(map[string]bool{
 			"id": true,
-		},
-	}
-	want_b0 := &pathBindingAnnotation{
+		})
+	wantB0 := &pathBindingAnnotation{
 		PathFmt:     "/v2/{}:create",
-		QueryParams: []*api.Field{f_id},
+		QueryParams: []*api.Field{fID},
 		Substitutions: []*bindingSubstitution{
 			{
 				FieldAccessor:  "Some(&req).map(|m| &m.name).map(|s| s.as_str())",
@@ -281,19 +173,16 @@ func TestPathBindingAnnotations(t *testing.T) {
 		},
 	}
 
-	b1 := &api.PathBinding{
-		Verb: "POST",
-		PathTemplate: (&api.PathTemplate{}).
-			WithLiteral("v1").
-			WithLiteral("projects").
-			WithVariableNamed("project").
-			WithLiteral("locations").
-			WithVariableNamed("location").
-			WithLiteral("ids").
-			WithVariableNamed("id").
-			WithVerb("action"),
-	}
-	want_b1 := &pathBindingAnnotation{
+	b1 := api.NewTestPathBinding("POST", (&api.PathTemplate{}).
+		WithLiteral("v1").
+		WithLiteral("projects").
+		WithVariableNamed("project").
+		WithLiteral("locations").
+		WithVariableNamed("location").
+		WithLiteral("ids").
+		WithVariableNamed("id").
+		WithVerb("action"))
+	wantB1 := &pathBindingAnnotation{
 		PathFmt: "/v1/projects/{}/locations/{}/ids/{}:action",
 		Substitutions: []*bindingSubstitution{
 			{
@@ -316,19 +205,16 @@ func TestPathBindingAnnotations(t *testing.T) {
 			},
 		},
 	}
-	b2 := &api.PathBinding{
-		Verb: "POST",
-		PathTemplate: (&api.PathTemplate{}).
-			WithLiteral("v1").
-			WithLiteral("projects").
-			WithVariableNamed("child", "project").
-			WithLiteral("locations").
-			WithVariableNamed("child", "location").
-			WithLiteral("ids").
-			WithVariableNamed("child", "id").
-			WithVerb("actionOnChild"),
-	}
-	want_b2 := &pathBindingAnnotation{
+	b2 := api.NewTestPathBinding("POST", (&api.PathTemplate{}).
+		WithLiteral("v1").
+		WithLiteral("projects").
+		WithVariableNamed("child", "project").
+		WithLiteral("locations").
+		WithVariableNamed("child", "location").
+		WithLiteral("ids").
+		WithVariableNamed("child", "id").
+		WithVerb("actionOnChild"))
+	wantB2 := &pathBindingAnnotation{
 		PathFmt: "/v1/projects/{}/locations/{}/ids/{}:actionOnChild",
 		Substitutions: []*bindingSubstitution{
 			{
@@ -351,30 +237,24 @@ func TestPathBindingAnnotations(t *testing.T) {
 			},
 		},
 	}
-	b3 := &api.PathBinding{
-		Verb: "GET",
-		PathTemplate: (&api.PathTemplate{}).
-			WithLiteral("v2").
-			WithLiteral("foos"),
-		QueryParameters: map[string]bool{
+	b3 := api.NewTestPathBinding("GET", (&api.PathTemplate{}).
+		WithLiteral("v2").
+		WithLiteral("foos")).
+		WithQueryParameters(map[string]bool{
 			"name":     true,
 			"optional": true,
 			"child":    true,
-		},
-	}
-	want_b3 := &pathBindingAnnotation{
+		})
+	wantB3 := &pathBindingAnnotation{
 		PathFmt:     "/v2/foos",
-		QueryParams: []*api.Field{f_name, f_optional, f_child},
+		QueryParams: []*api.Field{fName, fOptional, fChild},
 	}
-	b4 := &api.PathBinding{
-		Verb: "POST",
-		PathTemplate: (&api.PathTemplate{}).
-			WithLiteral("v1").
-			WithLiteral("projects").
-			WithVariableNamed("oneofField").
-			WithVerb("actionOnOneof"),
-	}
-	want_b4 := &pathBindingAnnotation{
+	b4 := api.NewTestPathBinding("POST", (&api.PathTemplate{}).
+		WithLiteral("v1").
+		WithLiteral("projects").
+		WithVariableNamed("oneofField").
+		WithVerb("actionOnOneof"))
+	wantB4 := &pathBindingAnnotation{
 		PathFmt: "/v1/projects/{}:actionOnOneof",
 		Substitutions: []*bindingSubstitution{
 			{
@@ -384,108 +264,64 @@ func TestPathBindingAnnotations(t *testing.T) {
 			},
 		},
 	}
-	method := &api.Method{
-		Name:         "DoFoo",
-		ID:           ".test.Service.DoFoo",
-		InputType:    request,
-		InputTypeID:  ".test.Request",
-		OutputTypeID: ".test.Response",
-		PathInfo: &api.PathInfo{
-			Bindings:      []*api.PathBinding{b0, b1, b2, b3},
-			BodyFieldPath: "*",
-		},
-	}
-	methodBar := &api.Method{
-		Name:         "DoBar",
-		ID:           ".test.Service.DoBar",
-		InputType:    request,
-		InputTypeID:  ".test.Request",
-		OutputTypeID: ".test.Response",
-		PathInfo: &api.PathInfo{
-			Bindings:      []*api.PathBinding{b4},
-			BodyFieldPath: "",
-		},
-	}
-	service := &api.Service{
-		Name:    "FooService",
-		ID:      ".test.FooService",
-		Package: "test",
-		Methods: []*api.Method{method, methodBar},
-	}
+	method := api.NewTestMethod("DoFoo").
+		WithInput(request).
+		WithOutput(response).
+		WithBindings(b0, b1, b2, b3).
+		WithBodyFieldPath("*")
+	methodBar := api.NewTestMethod("DoBar").
+		WithInput(request).
+		WithOutput(response).
+		WithBindings(b4).
+		WithBodyFieldPath("")
+	service := api.NewTestService("FooService").
+		WithMethods(method, methodBar)
 
 	model := api.NewTestAPI(
 		[]*api.Message{request, response},
-		[]*api.Enum{},
+		nil,
 		[]*api.Service{service})
 	api.CrossReference(model)
 	codec := newTestCodec(t, libconfig.SpecProtobuf, "", map[string]string{})
 	annotateModel(model, codec)
 
-	if diff := cmp.Diff(want_b0, b0.Codec, cmpopts.IgnoreUnexported(pathBindingAnnotation{}, bindingSubstitution{})); diff != "" {
+	if diff := cmp.Diff(wantB0, b0.Codec, cmpopts.IgnoreUnexported(pathBindingAnnotation{}, bindingSubstitution{})); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
-	if diff := cmp.Diff(want_b1, b1.Codec, cmpopts.IgnoreUnexported(pathBindingAnnotation{}, bindingSubstitution{})); diff != "" {
+	if diff := cmp.Diff(wantB1, b1.Codec, cmpopts.IgnoreUnexported(pathBindingAnnotation{}, bindingSubstitution{})); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
-	if diff := cmp.Diff(want_b2, b2.Codec, cmpopts.IgnoreUnexported(pathBindingAnnotation{}, bindingSubstitution{})); diff != "" {
-		t.Errorf("mismatch (-want +got):\n%s", diff)
-	}
-
-	if diff := cmp.Diff(want_b3, b3.Codec, cmpopts.IgnoreUnexported(pathBindingAnnotation{}, bindingSubstitution{})); diff != "" {
+	if diff := cmp.Diff(wantB2, b2.Codec, cmpopts.IgnoreUnexported(pathBindingAnnotation{}, bindingSubstitution{})); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 
-	if diff := cmp.Diff(want_b4, b4.Codec, cmpopts.IgnoreUnexported(pathBindingAnnotation{}, bindingSubstitution{})); diff != "" {
+	if diff := cmp.Diff(wantB3, b3.Codec, cmpopts.IgnoreUnexported(pathBindingAnnotation{}, bindingSubstitution{})); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+
+	if diff := cmp.Diff(wantB4, b4.Codec, cmpopts.IgnoreUnexported(pathBindingAnnotation{}, bindingSubstitution{})); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
 
 func TestPathBindingAnnotationsDetailedTracing(t *testing.T) {
-	f_name := &api.Field{
-		Name:     "name",
-		JSONName: "name",
-		ID:       ".test.Request.name",
-		Typez:    api.TypezString,
-	}
-	request := &api.Message{
-		Name:    "Request",
-		Package: "test",
-		ID:      ".test.Request",
-		Fields:  []*api.Field{f_name},
-	}
-	response := &api.Message{
-		Name:    "Response",
-		Package: "test",
-		ID:      ".test.Response",
-	}
-	binding := &api.PathBinding{
-		Verb: "POST",
-		PathTemplate: (&api.PathTemplate{}).
-			WithLiteral("v2").
-			WithVariable(api.NewPathVariable("name").
-				WithLiteral("projects").
-				WithMatch()).
-			WithVerb("create"),
-	}
-	method := &api.Method{
-		Name:         "DoFoo",
-		ID:           ".test.Service.DoFoo",
-		InputType:    request,
-		InputTypeID:  ".test.Request",
-		OutputTypeID: ".test.Response",
-		PathInfo: &api.PathInfo{
-			Bindings: []*api.PathBinding{binding},
-		},
-	}
-	service := &api.Service{
-		Name:    "FooService",
-		ID:      ".test.FooService",
-		Package: "test",
-		Methods: []*api.Method{method},
-	}
+	fName := api.NewTestField("name").WithType(api.TypezString)
+	request := api.NewTestMessage("Request").WithFields(fName)
+	response := api.NewTestMessage("Response")
+	binding := api.NewTestPathBinding("POST", (&api.PathTemplate{}).
+		WithLiteral("v2").
+		WithVariable(api.NewPathVariable("name").
+			WithLiteral("projects").
+			WithMatch()).
+		WithVerb("create"))
+	method := api.NewTestMethod("DoFoo").
+		WithInput(request).
+		WithOutput(response).
+		WithBindings(binding)
+	service := api.NewTestService("FooService").WithMethods(method)
 	model := api.NewTestAPI(
 		[]*api.Message{request, response},
-		[]*api.Enum{},
+		nil,
 		[]*api.Service{service})
 	api.CrossReference(model)
 	codec := newTestCodec(t, libconfig.SpecProtobuf, "", map[string]string{
@@ -511,33 +347,18 @@ func TestPathBindingAnnotationsStyle(t *testing.T) {
 		{"machine_type", "machine_type", "Some(&req).map(|m| &m.machine_type).map(|s| s.as_str())", "Some(&mut req).map(|m| std::mem::take(&mut m.machine_type))"},
 		{"type", "type", "Some(&req).map(|m| &m.r#type).map(|s| s.as_str())", "Some(&mut req).map(|m| std::mem::take(&mut m.r#type))"},
 	} {
-		field := &api.Field{
-			Name:     test.FieldName,
-			JSONName: test.FieldName,
-			ID:       fmt.Sprintf(".test.Request.%s", test.FieldName),
-			Typez:    api.TypezString,
-		}
-		request := &api.Message{
-			Name:    "Request",
-			Package: "test",
-			ID:      ".test.Request",
-			Fields:  []*api.Field{field},
-		}
-		response := &api.Message{
-			Name:    "Response",
-			Package: "test",
-			ID:      ".test.Response",
-		}
-		binding := &api.PathBinding{
-			Verb: "GET",
-			PathTemplate: (&api.PathTemplate{}).
-				WithLiteral("v1").
-				WithLiteral("machines").
-				WithVariable(api.NewPathVariable(test.FieldName).
-					WithMatch()).
-				WithVerb("create"),
-			QueryParameters: map[string]bool{},
-		}
+		field := api.NewTestField(test.FieldName).
+			WithType(api.TypezString).
+			WithJSONName(test.FieldName)
+		request := api.NewTestMessage("Request").WithFields(field)
+		response := api.NewTestMessage("Response")
+		binding := api.NewTestPathBinding("GET", (&api.PathTemplate{}).
+			WithLiteral("v1").
+			WithLiteral("machines").
+			WithVariable(api.NewPathVariable(test.FieldName).
+				WithMatch()).
+			WithVerb("create")).
+			WithQueryParameters(map[string]bool{})
 		wantBinding := &pathBindingAnnotation{
 			PathFmt: "/v1/machines/{}:create",
 			Substitutions: []*bindingSubstitution{
@@ -549,26 +370,15 @@ func TestPathBindingAnnotationsStyle(t *testing.T) {
 				},
 			},
 		}
-		method := &api.Method{
-			Name:         "Create",
-			ID:           ".test.Service.Create",
-			InputType:    request,
-			InputTypeID:  ".test.Request",
-			OutputTypeID: ".test.Response",
-			PathInfo: &api.PathInfo{
-				Bindings:      []*api.PathBinding{binding},
-				BodyFieldPath: "*",
-			},
-		}
-		service := &api.Service{
-			Name:    "Service",
-			ID:      ".test.Service",
-			Package: "test",
-			Methods: []*api.Method{method},
-		}
+		method := api.NewTestMethod("Create").
+			WithInput(request).
+			WithOutput(response).
+			WithBindings(binding).
+			WithBodyFieldPath("*")
+		service := api.NewTestService("Service").WithMethods(method)
 		model := api.NewTestAPI(
 			[]*api.Message{request, response},
-			[]*api.Enum{},
+			nil,
 			[]*api.Service{service})
 		api.CrossReference(model)
 		codec := newTestCodec(t, libconfig.SpecProtobuf, "", map[string]string{})
@@ -581,25 +391,9 @@ func TestPathBindingAnnotationsStyle(t *testing.T) {
 }
 
 func TestPathBindingAnnotationsErrors(t *testing.T) {
-	field := &api.Field{
-		Name:     "field",
-		JSONName: "field",
-		ID:       ".test.Request.field",
-		Typez:    api.TypezString,
-	}
-	request := &api.Message{
-		Name:    "Request",
-		Package: "test",
-		ID:      ".test.Request",
-		Fields:  []*api.Field{field},
-	}
-	method := &api.Method{
-		Name:         "Create",
-		ID:           ".test.Service.Create",
-		InputType:    request,
-		InputTypeID:  ".test.Request",
-		OutputTypeID: ".test.Response",
-	}
+	field := api.NewTestField("field").WithType(api.TypezString)
+	request := api.NewTestMessage("Request").WithFields(field)
+	method := api.NewTestMethod("Create").WithInput(request)
 	if got, err := makeAccessors([]string{"not-a-field-name"}, method); err == nil {
 		t.Errorf("expected an error in makeAccessors() for an invalid field name, got=%v", got)
 	}

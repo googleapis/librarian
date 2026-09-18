@@ -28,17 +28,19 @@ import (
 
 func TestGenerateConvert(t *testing.T) {
 	for _, test := range []struct {
-		name       string
-		message    *api.Message
-		skippedIDs []string
-		want       string
+		name        string
+		makeMessage func() (*api.Message, []string)
+		want        string
 	}{
 		{
 			name: "simple message with two string fields",
-			message: api.NewTestMessage("SimpleMessage").WithPackage("test.v1").WithFields(
-				api.NewTestField("field1").WithType(api.TypezString),
-				api.NewTestField("field2").WithType(api.TypezString),
-			),
+			makeMessage: func() (*api.Message, []string) {
+				msg := api.NewTestMessage("SimpleMessage").WithPackage("test.v1").WithFields(
+					api.NewTestField("field1").WithType(api.TypezString),
+					api.NewTestField("field2").WithType(api.TypezString),
+				)
+				return msg, nil
+			},
 			want: `impl gaxi::prost::ToProto<SimpleMessage> for crate::model::SimpleMessage {
     type Output = SimpleMessage;
     fn to_proto(self) -> std::result::Result<SimpleMessage, gaxi::prost::ConvertError> {
@@ -61,11 +63,14 @@ impl gaxi::prost::FromProto<crate::model::SimpleMessage> for SimpleMessage {
 		},
 		{
 			name: "message with two singular string fields and one skipped",
-			message: api.NewTestMessage("MessageWithSkippedString").WithPackage("test.v1").WithFields(
-				api.NewTestField("field1").WithType(api.TypezString),
-				api.NewTestField("field2").WithType(api.TypezString),
-			),
-			skippedIDs: []string{".test.v1.MessageWithSkippedString.field2"},
+			makeMessage: func() (*api.Message, []string) {
+				skippedField := api.NewTestField("field2").WithType(api.TypezString)
+				msg := api.NewTestMessage("MessageWithSkippedString").WithPackage("test.v1").WithFields(
+					api.NewTestField("field1").WithType(api.TypezString),
+					skippedField,
+				)
+				return msg, []string{skippedField.ID}
+			},
 			want: `impl gaxi::prost::ToProto<MessageWithSkippedString> for crate::model::MessageWithSkippedString {
     type Output = MessageWithSkippedString;
     fn to_proto(self) -> std::result::Result<MessageWithSkippedString, gaxi::prost::ConvertError> {
@@ -87,11 +92,15 @@ impl gaxi::prost::FromProto<crate::model::MessageWithSkippedString> for MessageW
 		},
 		{
 			name: "message with skipped any field",
-			message: api.NewTestMessage("MessageWithSkippedAny").WithPackage("test.v1").WithFields(
-				api.NewTestField("field1").WithType(api.TypezString),
-				api.NewTestField("field2").WithMessageType(&api.Message{ID: api.WktAnyID}),
-			),
-			skippedIDs: []string{".test.v1.MessageWithSkippedAny.field2"},
+			makeMessage: func() (*api.Message, []string) {
+				anyMsg := api.NewTestMessage("Any").WithID(api.WktAnyID)
+				skippedField := api.NewTestField("field2").WithMessageType(anyMsg)
+				msg := api.NewTestMessage("MessageWithSkippedAny").WithPackage("test.v1").WithFields(
+					api.NewTestField("field1").WithType(api.TypezString),
+					skippedField,
+				)
+				return msg, []string{skippedField.ID}
+			},
 			want: `impl gaxi::prost::ToProto<MessageWithSkippedAny> for crate::model::MessageWithSkippedAny {
     type Output = MessageWithSkippedAny;
     fn to_proto(self) -> std::result::Result<MessageWithSkippedAny, gaxi::prost::ConvertError> {
@@ -113,14 +122,14 @@ impl gaxi::prost::FromProto<crate::model::MessageWithSkippedAny> for MessageWith
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
+			message, skippedIDs := test.makeMessage()
 			outDir := t.TempDir()
-			model := api.NewTestAPI([]*api.Message{test.message}, []*api.Enum{}, []*api.Service{})
-			model.PackageName = "test.v1"
+			model := api.NewTestAPI([]*api.Message{message}, nil, nil)
 			if err := api.CrossReference(model); err != nil {
 				t.Fatal(err)
 			}
-			if len(test.skippedIDs) > 0 {
-				if err := api.SkipModelElements(model, api.ModelOverride{SkippedIDs: test.skippedIDs}); err != nil {
+			if len(skippedIDs) > 0 {
+				if err := api.SkipModelElements(model, api.ModelOverride{SkippedIDs: skippedIDs}); err != nil {
 					t.Fatal(err)
 				}
 			}
@@ -140,7 +149,7 @@ impl gaxi::prost::FromProto<crate::model::MessageWithSkippedAny> for MessageWith
 			if err != nil {
 				t.Fatal(err)
 			}
-			got := extractBlock(t, string(contents), "impl gaxi::prost::ToProto<"+test.message.Name+">", "\n        )\n    }\n}")
+			got := extractBlock(t, string(contents), "impl gaxi::prost::ToProto<"+message.Name+">", "\n        )\n    }\n}")
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
@@ -204,57 +213,50 @@ func TestGenerateConvertOneOf(t *testing.T) {
 
 func TestGenerateConvertAcronyms(t *testing.T) {
 	dataStoreSpecMsg := api.NewTestMessage("DataStoreSpec").
-		WithPackage("test.v1").
-		WithID(".test.v1.VertexAISearch.DataStoreSpec").
 		WithFields(
 			api.NewTestField("data_store").WithType(api.TypezString),
 		)
 
-	vertexAiSearchMsg := api.NewTestMessage("VertexAISearch").
+	nestedEnum := api.NewTestEnum("IPMode").
+		WithValues(
+			api.NewTestEnumValue("IP_MODE_UNSPECIFIED", 0),
+			api.NewTestEnumValue("DYNAMIC_IP", 1),
+		)
+
+	vertexAISearchMsg := api.NewTestMessage("VertexAISearch").
 		WithPackage("test.v1").
 		WithFields(
 			api.NewTestField("serving_config").WithType(api.TypezString),
+		).
+		WithMessages(dataStoreSpecMsg).
+		WithEnums(nestedEnum)
+
+	ipVersionEnum := api.NewTestEnum("IPVersion").
+		WithPackage("test.v1").
+		WithValues(
+			api.NewTestEnumValue("IP_VERSION_UNSPECIFIED", 0),
+			api.NewTestEnumValue("IPV4", 1),
+			api.NewTestEnumValue("IPV6", 2),
 		)
-
-	ipVersionEnum := &api.Enum{
-		Name:    "IPVersion",
-		ID:      ".test.v1.IPVersion",
-		Package: "test.v1",
-		Values: []*api.EnumValue{
-			{Name: "IP_VERSION_UNSPECIFIED", ID: ".test.v1.IPVersion.IP_VERSION_UNSPECIFIED", Number: 0},
-			{Name: "IPV4", ID: ".test.v1.IPVersion.IPV4", Number: 1},
-			{Name: "IPV6", ID: ".test.v1.IPVersion.IPV6", Number: 2},
-		},
-	}
-
-	nestedEnum := &api.Enum{
-		Name:    "IPMode",
-		ID:      ".test.v1.VertexAISearch.IPMode",
-		Package: "test.v1",
-		Values: []*api.EnumValue{
-			{Name: "IP_MODE_UNSPECIFIED", ID: ".test.v1.VertexAISearch.IPMode.IP_MODE_UNSPECIFIED", Number: 0},
-			{Name: "DYNAMIC_IP", ID: ".test.v1.VertexAISearch.IPMode.DYNAMIC_IP", Number: 1},
-		},
-	}
 
 	retrievalMsg := api.NewTestMessage("Retrieval").
 		WithPackage("test.v1").
 		WithOneOfs(
 			api.NewTestOneOf("source").WithFields(
-				api.NewTestField("vertex_ai_search").WithMessageType(vertexAiSearchMsg),
+				api.NewTestField("vertex_ai_search").WithMessageType(vertexAISearchMsg),
 				api.NewTestField("disable_attribution").WithType(api.TypezBool),
 			),
 		)
 
-	extDnsConfigMsg := api.NewTestMessage("DNSConfig").WithPackage("google.type")
+	extDNSConfigMsg := api.NewTestMessage("DNSConfig").WithPackage("google.type")
 
-	dnsMethod := api.NewTestMethod("GetDNS").WithInput(extDnsConfigMsg).WithOutput(extDnsConfigMsg)
+	dnsMethod := api.NewTestMethod("GetDNS").WithInput(extDNSConfigMsg).WithOutput(extDNSConfigMsg)
 	dnsService := api.NewTestService("DNSService").WithPackage("test.v1").WithMethods(dnsMethod)
 
 	outDir := t.TempDir()
-	model := api.NewTestAPI([]*api.Message{vertexAiSearchMsg, dataStoreSpecMsg, retrievalMsg}, []*api.Enum{ipVersionEnum, nestedEnum}, []*api.Service{dnsService})
-	model.ExternalMessages = []*api.Message{extDnsConfigMsg}
-	model.AddMessage(extDnsConfigMsg)
+	model := api.NewTestAPI([]*api.Message{vertexAISearchMsg, retrievalMsg}, []*api.Enum{ipVersionEnum}, []*api.Service{dnsService})
+	model.ExternalMessages = []*api.Message{extDNSConfigMsg}
+	model.AddMessage(extDNSConfigMsg)
 	if err := api.CrossReference(model); err != nil {
 		t.Fatal(err)
 	}
