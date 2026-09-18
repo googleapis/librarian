@@ -17,6 +17,7 @@ package python
 import (
 	"errors"
 	"fmt"
+	"log"
 	"path"
 	"slices"
 	"strings"
@@ -62,6 +63,16 @@ func Add(cfg *config.Config, lib *config.Library) (*config.Library, error) {
 	return lib, nil
 }
 
+// UpdateExistingLibrary adds a new API to an existing Python library configuration.
+func UpdateExistingLibrary(existingLib *config.Library, api *config.API) error {
+	if err := validateNewAPIs(existingLib); err != nil {
+		return err
+	}
+	existingLib.APIs = append(existingLib.APIs, api)
+	copyOptArgsByAPI(existingLib, api.Path)
+	return nil
+}
+
 func validateNamespace(cfg *config.Config, apiPath string) error {
 	if cfg == nil || cfg.Default == nil || cfg.Default.Python == nil || len(cfg.Default.Python.AllowedNamespaces) == 0 {
 		return nil
@@ -73,8 +84,8 @@ func validateNamespace(cfg *config.Config, apiPath string) error {
 	return nil
 }
 
-// ValidateNewAPIs validates that new APIs can be added to an existing library.
-func ValidateNewAPIs(lib *config.Library) error {
+// validateNewAPIs validates that new APIs can be added to an existing library.
+func validateNewAPIs(lib *config.Library) error {
 	if lib.Python == nil || lib.Python.DefaultVersion == "" {
 		return errExistingLibraryNoDefaultVersion
 	}
@@ -125,6 +136,25 @@ func FindExistingLibraryForNewAPI(libraries []*config.Library, apiPath string) *
 		}
 	}
 	return nil
+}
+
+// copyOptArgsByAPI copies the opt_args_by_api from the first API in the library to the
+// new API.
+func copyOptArgsByAPI(library *config.Library, apiPath string) {
+	if len(library.Python.OptArgsByAPI) == 0 {
+		return
+	}
+	firstAPIPath := library.APIs[0].Path
+	optArgs, ok := library.Python.OptArgsByAPI[firstAPIPath]
+	if !ok {
+		return
+	}
+	library.Python.OptArgsByAPI[apiPath] = slices.Clone(optArgs)
+	log.Printf(
+		"WARNING: customized opt_args_by_api is copied from %q to %q, but this may not be correct for %q. "+
+			"Please review and edit opt_args_by_api in librarian.yaml if needed.",
+		firstAPIPath, apiPath, apiPath,
+	)
 }
 
 // versionless trims the version (if any) from apiPath, leaving any trailing

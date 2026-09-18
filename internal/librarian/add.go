@@ -366,10 +366,9 @@ func updateExistingLibrary(cfg *config.Config, existingLib *config.Library, api 
 	}
 	switch cfg.Language {
 	case config.LanguagePython:
-		if err := python.ValidateNewAPIs(existingLib); err != nil {
+		if err := python.UpdateExistingLibrary(existingLib, api); err != nil {
 			return "", nil, err
 		}
-		existingLib.APIs = append(existingLib.APIs, api)
 	case config.LanguageGo:
 		existingLib.APIs = append(existingLib.APIs, api)
 		var err error
