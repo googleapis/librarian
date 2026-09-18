@@ -250,6 +250,16 @@ func (m *Message) WithIsMap() *Message {
 	return m
 }
 
+// NewTestMapMessage creates a synthetic map entry Message with "key" and "value" fields.
+func NewTestMapMessage(name string, keyType, valueType Typez) *Message {
+	return NewTestMessage(name).
+		WithIsMap().
+		WithFields(
+			NewTestField("key").WithType(keyType),
+			NewTestField("value").WithType(valueType),
+		)
+}
+
 // NewTestService creates a service with defaults for testing.
 // Default package is "test".
 func NewTestService(name string) *Service {
