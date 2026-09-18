@@ -450,20 +450,15 @@ func TestParsePackageOptionError(t *testing.T) {
 }
 
 func TestPackageName(t *testing.T) {
+	serviceAPI := api.NewTestAPI(nil, nil, nil).WithPackageName("google.cloud.service.v3")
+	serviceAPI.Name = "test-only-name"
 	rustPackageNameImpl(t, "test-only-overridden", map[string]string{
 		"package-name-override": "test-only-overridden",
-	}, &api.API{
-		Name:        "test-only-name",
-		PackageName: "google.cloud.service.v3",
-	})
-	rustPackageNameImpl(t, "google-cloud-service-v3", nil, &api.API{
-		Name:        "test-only-name",
-		PackageName: "google.cloud.service.v3",
-	})
-	rustPackageNameImpl(t, "google-cloud-type", nil, &api.API{
-		Name:        "type",
-		PackageName: "",
-	})
+	}, serviceAPI)
+	rustPackageNameImpl(t, "google-cloud-service-v3", nil, serviceAPI)
+	typeAPI := api.NewTestAPI(nil, nil, nil).WithPackageName("")
+	typeAPI.Name = "type"
+	rustPackageNameImpl(t, "google-cloud-type", nil, typeAPI)
 }
 
 func rustPackageNameImpl(t *testing.T, want string, opts map[string]string, api *api.API) {
@@ -498,11 +493,7 @@ func TestServiceName(t *testing.T) {
 
 func testServiceNameImpl(t *testing.T, c *codec, serviceName string, want string) {
 	t.Helper()
-	s := &api.Service{
-		Name:    serviceName,
-		ID:      fmt.Sprintf(".google.testing.%s", serviceName),
-		Package: "google.testing",
-	}
+	s := api.NewTestService(serviceName).WithPackage("google.testing")
 	got := c.ServiceName(s)
 	if want != got {
 		t.Errorf("mismatch in service name, want=%s, got=%s", want, got)
@@ -529,10 +520,8 @@ func TestOneOfEnumName(t *testing.T) {
 
 func testOneOfEnumNameImpl(t *testing.T, c *codec, name string, want string) {
 	t.Helper()
-	oneof := &api.OneOf{
-		Name: name,
-		ID:   fmt.Sprintf(".google.testing.Message.%s", name),
-	}
+	oneof := api.NewTestOneOf(name)
+	api.NewTestMessage("Message").WithPackage("google.testing").WithOneOfs(oneof)
 	got := c.OneOfEnumName(oneof)
 	if want != got {
 		t.Errorf("mismatch in service name, want=%s, got=%s", want, got)
@@ -559,10 +548,8 @@ func TestFieldName(t *testing.T) {
 
 func testFieldNameImpl(t *testing.T, c *codec, fieldName string, want string) {
 	t.Helper()
-	field := &api.Field{
-		Name: fieldName,
-		ID:   fmt.Sprintf(".google.testing.Message.%s", fieldName),
-	}
+	field := api.NewTestField(fieldName)
+	api.NewTestMessage("Message").WithPackage("google.testing").WithFields(field)
 	got := c.FieldName(field)
 	if want != got {
 		t.Errorf("mismatch in field name, want=%s, got=%s", want, got)
@@ -570,7 +557,7 @@ func testFieldNameImpl(t *testing.T, c *codec, fieldName string, want string) {
 }
 
 func TestWellKnownTypesExist(t *testing.T) {
-	model := api.NewTestAPI([]*api.Message{}, []*api.Enum{}, []*api.Service{})
+	model := api.NewTestAPI(nil, nil, nil)
 	for _, name := range []string{"Any", "Duration", "Empty", "FieldMask", "Timestamp"} {
 		if model.Message(fmt.Sprintf(".google.protobuf.%s", name)) == nil {
 			t.Errorf("cannot find well-known message %s in API", name)
@@ -579,7 +566,7 @@ func TestWellKnownTypesExist(t *testing.T) {
 }
 
 func TestWellKnownTypesAsMethod(t *testing.T) {
-	model := api.NewTestAPI([]*api.Message{}, []*api.Enum{}, []*api.Service{})
+	model := api.NewTestAPI(nil, nil, nil)
 	c := createRustCodec()
 
 	want := "wkt::Empty"
@@ -649,16 +636,10 @@ func unexpectedGeneratedFile(t *testing.T, name string, files []language.Generat
 }
 
 func TestMethodInOut(t *testing.T) {
-	message := &api.Message{
-		Name: "Target",
-		ID:   "..Target",
-	}
-	nested := &api.Message{
-		Name:   "Nested",
-		ID:     "..Target.Nested",
-		Parent: message,
-	}
-	model := api.NewTestAPI([]*api.Message{message, nested}, []*api.Enum{}, []*api.Service{})
+	message := api.NewTestMessage("Target").
+		WithPackage("").
+		WithMessages(api.NewTestMessage("Nested"))
+	model := api.NewTestAPI([]*api.Message{message}, nil, nil)
 	c := createRustCodec()
 
 	want := "crate::model::Target"
@@ -681,116 +662,40 @@ func TestMethodInOut(t *testing.T) {
 }
 
 func rustFieldTypesCases() *api.API {
-	target := &api.Message{
-		Name: "Target",
-		ID:   "..Target",
-	}
-	mapMessage := &api.Message{
-		Name:  "$MapMessage",
-		ID:    "..$MapMessage",
-		IsMap: true,
-		Fields: []*api.Field{
-			{Name: "key", ID: "..$Message.key", Typez: api.TypezInt32},
-			{Name: "value", ID: "..$Message.value", Typez: api.TypezInt32},
-		},
-	}
-	message := &api.Message{
-		Name: "Message",
-		ID:   "..Message",
-		Fields: []*api.Field{
-			{
-				Name:     "f_int32",
-				Typez:    api.TypezInt32,
-				Optional: false,
-				Repeated: false,
-			},
-			{
-				Name:     "f_int32_optional",
-				Typez:    api.TypezInt32,
-				Optional: true,
-				Repeated: false,
-			},
-			{
-				Name:     "f_int32_repeated",
-				Typez:    api.TypezInt32,
-				Optional: false,
-				Repeated: true,
-			},
-			{
-				Name:     "f_string",
-				Typez:    api.TypezString,
-				Optional: false,
-				Repeated: false,
-			},
-			{
-				Name:     "f_string_optional",
-				Typez:    api.TypezString,
-				Optional: true,
-				Repeated: false,
-			},
-			{
-				Name:     "f_string_repeated",
-				Typez:    api.TypezString,
-				Optional: false,
-				Repeated: true,
-			},
-			{
-				Name:     "f_msg",
-				Typez:    api.TypezMessage,
-				TypezID:  "..Target",
-				Optional: true,
-				Repeated: false,
-			},
-			{
-				Name:     "f_msg_repeated",
-				Typez:    api.TypezMessage,
-				TypezID:  "..Target",
-				Optional: false,
-				Repeated: true,
-			},
-			{
-				Name:      "f_msg_recursive",
-				Typez:     api.TypezMessage,
-				TypezID:   "..Message",
-				Optional:  true,
-				Repeated:  false,
-				Recursive: true,
-			},
-			{
-				Name:      "f_msg_recursive_repeated",
-				Typez:     api.TypezMessage,
-				TypezID:   "..Message",
-				Optional:  false,
-				Repeated:  true,
-				Recursive: true,
-			},
-			{
-				Name:     "f_timestamp",
-				Typez:    api.TypezMessage,
-				TypezID:  ".google.protobuf.Timestamp",
-				Optional: true,
-				Repeated: false,
-			},
-			{
-				Name:     "f_timestamp_repeated",
-				Typez:    api.TypezMessage,
-				TypezID:  ".google.protobuf.Timestamp",
-				Optional: false,
-				Repeated: true,
-			},
-			{
-				Name:     "f_map",
-				Typez:    api.TypezMessage,
-				TypezID:  "..$MapMessage",
-				Optional: false,
-				Repeated: false,
-			},
-		},
-	}
-	model := api.NewTestAPI([]*api.Message{target, message}, []*api.Enum{}, []*api.Service{})
-	model.AddMessage(mapMessage)
-	return model
+	target := api.NewTestMessage("Target").WithPackage("")
+	mapMessage := api.NewTestMessage("$MapMessage").
+		WithPackage("").
+		WithIsMap().
+		WithFields(
+			api.NewTestField("key").WithType(api.TypezInt32),
+			api.NewTestField("value").WithType(api.TypezInt32),
+		)
 
+	message := api.NewTestMessage("Message").WithPackage("")
+	timestamp := api.NewTestMessage("Timestamp").WithPackage("google.protobuf")
+
+	message.WithFields(
+		api.NewTestField("f_int32").WithType(api.TypezInt32),
+		api.NewTestField("f_int32_optional").WithType(api.TypezInt32).WithOptional(),
+		api.NewTestField("f_int32_repeated").WithType(api.TypezInt32).WithRepeated(),
+		api.NewTestField("f_string").WithType(api.TypezString),
+		api.NewTestField("f_string_optional").WithType(api.TypezString).WithOptional(),
+		api.NewTestField("f_string_repeated").WithType(api.TypezString).WithRepeated(),
+		api.NewTestField("f_msg").WithMessageType(target).WithOptional(),
+		api.NewTestField("f_msg_repeated").WithMessageType(target).WithRepeated(),
+		api.NewTestField("f_msg_recursive").
+			WithMessageType(message).
+			WithOptional().
+			WithRecursive(),
+		api.NewTestField("f_msg_recursive_repeated").
+			WithMessageType(message).
+			WithRepeated().
+			WithRecursive(),
+		api.NewTestField("f_timestamp").WithMessageType(timestamp).WithOptional(),
+		api.NewTestField("f_timestamp_repeated").WithMessageType(timestamp).WithRepeated(),
+		api.NewTestField("f_map").WithMessageType(mapMessage),
+	)
+	return api.NewTestAPI([]*api.Message{target, message, mapMessage}, nil, nil)
 }
 
 func TestFieldType(t *testing.T) {
@@ -897,67 +802,46 @@ func TestOneOfFieldType(t *testing.T) {
 
 // Verify rustBaseFieldType works for map types with different value fields.
 func TestFieldMapTypeValues(t *testing.T) {
+	anyMsg := api.NewTestMessage("Any").WithPackage("google.protobuf")
+	otherMessage := api.NewTestMessage("OtherMessage")
+	targetMessage := api.NewTestMessage("Message")
+
 	for _, test := range []struct {
 		want  string
 		value *api.Field
 	}{
 		{
 			"std::collections::HashMap<i32,std::string::String>",
-			&api.Field{Typez: api.TypezString},
+			api.NewTestField("value").WithType(api.TypezString),
 		},
 		{
 			"std::collections::HashMap<i32,i64>",
-			&api.Field{Typez: api.TypezInt64},
+			api.NewTestField("value").WithType(api.TypezInt64),
 		},
 		{
 			"std::collections::HashMap<i32,wkt::Any>",
-			&api.Field{Typez: api.TypezMessage, TypezID: ".google.protobuf.Any"},
+			api.NewTestField("value").WithMessageType(anyMsg),
 		},
 		{
 			"std::collections::HashMap<i32,crate::model::OtherMessage>",
-			&api.Field{Typez: api.TypezMessage, TypezID: ".test.OtherMessage"},
+			api.NewTestField("value").WithMessageType(otherMessage),
 		},
 		{
 			"std::collections::HashMap<i32,crate::model::Message>",
-			&api.Field{Typez: api.TypezMessage, TypezID: ".test.Message"},
+			api.NewTestField("value").WithMessageType(targetMessage),
 		},
 	} {
 		t.Run(test.want, func(t *testing.T) {
-			field := &api.Field{
-				Name:    "indexed",
-				ID:      ".test.Message.indexed",
-				Typez:   api.TypezMessage,
-				TypezID: ".test.$MapThing",
-			}
-			other_message := &api.Message{
-				Name:   "OtherMessage",
-				ID:     ".test.OtherMessage",
-				IsMap:  true,
-				Fields: []*api.Field{},
-			}
-			message := &api.Message{
-				Name:   "Message",
-				ID:     ".test.Message",
-				IsMap:  true,
-				Fields: []*api.Field{field},
-			}
-			// Complete the value field
-			value := test.value
-			value.Name = "value"
-			value.ID = ".test.$MapThing.value"
-			key := &api.Field{
-				Name:  "key",
-				ID:    ".test.$MapThing.key",
-				Typez: api.TypezInt32,
-			}
-			map_thing := &api.Message{
-				Name:   "$MapThing",
-				ID:     ".test.$MapThing",
-				IsMap:  true,
-				Fields: []*api.Field{key, value},
-			}
-			model := api.NewTestAPI([]*api.Message{message, other_message}, []*api.Enum{}, []*api.Service{})
-			model.AddMessage(map_thing)
+			mapThing := api.NewTestMessage("$MapThing").
+				WithIsMap().
+				WithFields(
+					api.NewTestField("key").WithType(api.TypezInt32),
+					test.value,
+				)
+
+			field := api.NewTestField("indexed").WithMessageType(mapThing)
+			message := api.NewTestMessage("Message").WithFields(field)
+			model := api.NewTestAPI([]*api.Message{message, otherMessage, mapThing}, nil, nil)
 			api.LabelRecursiveFields(model)
 			c := createRustCodec()
 			got, err := c.fieldType(field, model, false, model.PackageName)
@@ -973,56 +857,35 @@ func TestFieldMapTypeValues(t *testing.T) {
 
 // Verify rustBaseFieldType works for map types with different key fields.
 func TestFieldMapTypeKey(t *testing.T) {
+	enum := api.NewTestEnum("EnumType")
 	for _, test := range []struct {
 		want string
 		key  *api.Field
 	}{
 		{
 			"std::collections::HashMap<i32,i64>",
-			&api.Field{Typez: api.TypezInt32},
+			api.NewTestField("key").WithType(api.TypezInt32),
 		},
 		{
 			"std::collections::HashMap<std::string::String,i64>",
-			&api.Field{Typez: api.TypezString},
+			api.NewTestField("key").WithType(api.TypezString),
 		},
 		{
 			"std::collections::HashMap<crate::model::EnumType,i64>",
-			&api.Field{Typez: api.TypezEnum, TypezID: ".test.EnumType"},
+			api.NewTestField("key").WithType(api.TypezEnum).WithTypezID(enum.ID),
 		},
 	} {
-		field := &api.Field{
-			Name:    "indexed",
-			ID:      ".test.Message.indexed",
-			Typez:   api.TypezMessage,
-			TypezID: ".test.$MapThing",
-		}
-		message := &api.Message{
-			Name:   "Message",
-			ID:     ".test.Message",
-			IsMap:  true,
-			Fields: []*api.Field{field},
-		}
-		// Complete the value field
-		key := test.key
-		key.Name = "key"
-		key.ID = ".test.$MapThing.key"
-		value := &api.Field{
-			Name:  "value",
-			ID:    ".test.$MapThing.value",
-			Typez: api.TypezInt64,
-		}
-		map_thing := &api.Message{
-			Name:   "$MapThing",
-			ID:     ".test.$MapThing",
-			IsMap:  true,
-			Fields: []*api.Field{key, value},
-		}
-		enum := &api.Enum{
-			Name: "EnumType",
-			ID:   ".test.EnumType",
-		}
-		model := api.NewTestAPI([]*api.Message{message}, []*api.Enum{enum}, []*api.Service{})
-		model.AddMessage(map_thing)
+		mapThing := api.NewTestMessage("$MapThing").
+			WithIsMap().
+			WithFields(
+				test.key,
+				api.NewTestField("value").WithType(api.TypezInt64),
+			)
+
+		field := api.NewTestField("indexed").WithMessageType(mapThing)
+		message := api.NewTestMessage("Message").WithFields(field)
+
+		model := api.NewTestAPI([]*api.Message{message, mapThing}, []*api.Enum{enum}, nil)
 		api.LabelRecursiveFields(model)
 		c := createRustCodec()
 		got, err := c.fieldType(field, model, false, model.PackageName)
@@ -1037,72 +900,31 @@ func TestFieldMapTypeKey(t *testing.T) {
 
 func TestAsQueryParameter(t *testing.T) {
 	c := createRustCodec()
+	options := api.NewTestMessage("Options").WithPackage("")
+	fieldMask := api.NewTestMessage("FieldMask").WithPackage("google.protobuf")
+
+	renamedField := api.NewTestField("renamed_field").WithType(api.TypezString)
+	options.WithFields(renamedField)
 	c.nameOverrides = map[string]string{
-		"..Options.renamed_field": "custom_field",
+		renamedField.ID: "custom_field",
 	}
 
-	optionsField := &api.Field{
-		Name:     "options_field",
-		JSONName: "optionsField",
-		Typez:    api.TypezMessage,
-		TypezID:  "..Options",
-		Optional: true,
-	}
-	requiredField := &api.Field{
-		Name:     "required_field",
-		JSONName: "requiredField",
-		Typez:    api.TypezString,
-	}
-	optionalField := &api.Field{
-		Name:     "optional_field",
-		JSONName: "optionalField",
-		Typez:    api.TypezString,
-		Optional: true,
-	}
-	repeatedField := &api.Field{
-		Name:     "repeated_field",
-		JSONName: "repeatedField",
-		Typez:    api.TypezString,
-		Repeated: true,
-	}
+	optionsField := api.NewTestField("options_field").
+		WithMessageType(options).
+		WithOptional()
+	requiredField := api.NewTestField("required_field").WithType(api.TypezString)
+	optionalField := api.NewTestField("optional_field").WithType(api.TypezString).WithOptional()
+	repeatedField := api.NewTestField("repeated_field").WithType(api.TypezString).WithRepeated()
 
-	requiredEnumField := &api.Field{
-		Name:     "required_enum_field",
-		JSONName: "requiredEnumField",
-		Typez:    api.TypezEnum,
-	}
-	optionalEnumField := &api.Field{
-		Name:     "optional_enum_field",
-		JSONName: "optionalEnumField",
-		Typez:    api.TypezEnum,
-		Optional: true,
-	}
-	repeatedEnumField := &api.Field{
-		Name:     "repeated_enum_field",
-		JSONName: "repeatedEnumField",
-		Typez:    api.TypezEnum,
-		Repeated: true,
-	}
+	requiredEnumField := api.NewTestField("required_enum_field").WithType(api.TypezEnum)
+	optionalEnumField := api.NewTestField("optional_enum_field").WithType(api.TypezEnum).WithOptional()
+	repeatedEnumField := api.NewTestField("repeated_enum_field").WithType(api.TypezEnum).WithRepeated()
 
-	requiredFieldMaskField := &api.Field{
-		Name:     "required_field_mask",
-		JSONName: "requiredFieldMask",
-		Typez:    api.TypezMessage,
-		TypezID:  ".google.protobuf.FieldMask",
-	}
-	optionalFieldMaskField := &api.Field{
-		Name:     "optional_field_mask",
-		JSONName: "optionalFieldMask",
-		Typez:    api.TypezMessage,
-		TypezID:  ".google.protobuf.FieldMask",
-		Optional: true,
-	}
-	renamedField := &api.Field{
-		Name:     "renamed_field",
-		ID:       "..Options.renamed_field",
-		JSONName: "renamedField",
-		Typez:    api.TypezString,
-	}
+	requiredFieldMaskField := api.NewTestField("required_field_mask").
+		WithMessageType(fieldMask)
+	optionalFieldMaskField := api.NewTestField("optional_field_mask").
+		WithMessageType(fieldMask).
+		WithOptional()
 
 	for _, test := range []struct {
 		field *api.Field
@@ -1128,94 +950,41 @@ func TestAsQueryParameter(t *testing.T) {
 
 func TestOneOfAsQueryParameter(t *testing.T) {
 	c := createRustCodec()
-	c.nameOverrides = map[string]string{
-		"..Request.renamed_oneof": "custom_oneof",
-	}
+	options := api.NewTestMessage("Options").WithPackage("")
+	fieldMask := api.NewTestMessage("FieldMask").WithPackage("google.protobuf")
 
-	options := &api.Message{
-		Name:   "Options",
-		ID:     "..Options",
-		Fields: []*api.Field{},
-	}
-	optionsField := &api.Field{
-		Name:     "options_field",
-		JSONName: "optionsField",
-		Typez:    api.TypezMessage,
-		TypezID:  options.ID,
-		IsOneOf:  true,
-	}
-	typeField := &api.Field{
-		Name:     "type",
-		JSONName: "type",
-		Typez:    api.TypezInt32,
-		IsOneOf:  true,
-	}
-	singularField := &api.Field{
-		Name:     "singular_field",
-		JSONName: "singularField",
-		Typez:    api.TypezString,
-		IsOneOf:  true,
-	}
-	repeatedField := &api.Field{
-		Name:     "repeated_field",
-		JSONName: "repeatedField",
-		Typez:    api.TypezString,
-		Repeated: true,
-		IsOneOf:  true,
-	}
+	optionsField := api.NewTestField("options_field").
+		WithMessageType(options)
+	typeField := api.NewTestField("type").WithType(api.TypezInt32)
+	singularField := api.NewTestField("singular_field").WithType(api.TypezString)
+	repeatedField := api.NewTestField("repeated_field").WithType(api.TypezString).WithRepeated()
 
-	singularEnumField := &api.Field{
-		Name:     "singular_enum_field",
-		JSONName: "singularEnumField",
-		Typez:    api.TypezEnum,
-		IsOneOf:  true,
-	}
-	repeatedEnumField := &api.Field{
-		Name:     "repeated_enum_field",
-		JSONName: "repeatedEnumField",
-		Typez:    api.TypezEnum,
-		Repeated: true,
-		IsOneOf:  true,
-	}
+	singularEnumField := api.NewTestField("singular_enum_field").WithType(api.TypezEnum)
+	repeatedEnumField := api.NewTestField("repeated_enum_field").WithType(api.TypezEnum).WithRepeated()
 
-	singularFieldMaskField := &api.Field{
-		Name:     "singular_field_mask",
-		JSONName: "singularFieldMask",
-		Typez:    api.TypezMessage,
-		TypezID:  ".google.protobuf.FieldMask",
-		IsOneOf:  true,
-	}
-	renamedOneOfField := &api.Field{
-		Name:     "renamed_oneof",
-		ID:       "..Request.renamed_oneof",
-		JSONName: "renamedOneof",
-		Typez:    api.TypezString,
-		IsOneOf:  true,
-	}
+	singularFieldMaskField := api.NewTestField("singular_field_mask").
+		WithMessageType(fieldMask)
+	renamedOneOfField := api.NewTestField("renamed_oneof").WithType(api.TypezString)
 
-	fields := []*api.Field{
+	oneof := api.NewTestOneOf("one_of").WithFields(
 		typeField,
 		optionsField,
 		singularField, repeatedField,
 		singularEnumField, repeatedEnumField,
 		singularFieldMaskField,
 		renamedOneOfField,
+	)
+	request := api.NewTestMessage("Request").
+		WithPackage("").
+		WithOneOfs(oneof)
+	c.nameOverrides = map[string]string{
+		renamedOneOfField.ID: "custom_oneof",
 	}
-	oneof := &api.OneOf{
-		Name:   "one_of",
-		ID:     "..Request.one_of",
-		Fields: fields,
-	}
-	request := &api.Message{
-		Name:   "TestRequest",
-		ID:     "..TestRequest",
-		Fields: fields,
-		OneOfs: []*api.OneOf{oneof},
-	}
+
 	model := api.NewTestAPI(
 		[]*api.Message{options, request},
-		[]*api.Enum{},
-		[]*api.Service{})
+		nil,
+		nil)
 	api.CrossReference(model)
 
 	for _, test := range []struct {
@@ -1781,67 +1550,35 @@ func TestFormatDocCommentsSkippedMethodsAndServices(t *testing.T) {
 		"/// [test.v1.SomeService.CreateFoo]: crate::client::SomeService::create_foo",
 	}
 
-	createFoo := &api.Method{
-		Name: "CreateFoo",
-		ID:   ".test.v1.SomeService.CreateFoo",
-		PathInfo: &api.PathInfo{
-			Bindings: []*api.PathBinding{
-				{
-					Verb: "GET",
-					PathTemplate: (&api.PathTemplate{}).
-						WithLiteral("v1").
-						WithLiteral("foo"),
-				},
-			},
-		},
-	}
-	skippedMethod := &api.Method{
-		Name: "SkippedMethod",
-		ID:   ".test.v1.SomeService.SkippedMethod",
-		PathInfo: &api.PathInfo{
-			Bindings: []*api.PathBinding{
-				{
-					Verb: "GET",
-					PathTemplate: (&api.PathTemplate{}).
-						WithLiteral("v1").
-						WithLiteral("skipped"),
-				},
-			},
-		},
-	}
-	someService := &api.Service{
-		Name:    "SomeService",
-		ID:      ".test.v1.SomeService",
-		Package: "test.v1",
-		Methods: []*api.Method{createFoo}, // skippedMethod omitted from Methods
-	}
-	skippedServiceMethod := &api.Method{
-		Name: "SomeMethod",
-		ID:   ".test.v1.SkippedService.SomeMethod",
-		PathInfo: &api.PathInfo{
-			Bindings: []*api.PathBinding{
-				{
-					Verb: "GET",
-					PathTemplate: (&api.PathTemplate{}).
-						WithLiteral("v1").
-						WithLiteral("bar"),
-				},
-			},
-		},
-	}
-	skippedService := &api.Service{
-		Name:    "SkippedService",
-		ID:      ".test.v1.SkippedService",
-		Package: "test.v1",
-		Methods: []*api.Method{skippedServiceMethod},
-	}
+	createFoo := api.NewTestMethod("CreateFoo").
+		WithVerb("GET").
+		WithPathTemplate((&api.PathTemplate{}).
+			WithLiteral("v1").
+			WithLiteral("foo"))
+	someService := api.NewTestService("SomeService").
+		WithPackage("test.v1").
+		WithMethods(createFoo)
+	skippedMethod := api.NewTestMethod("SkippedMethod").
+		WithVerb("GET").
+		WithPathTemplate((&api.PathTemplate{}).
+			WithLiteral("v1").
+			WithLiteral("skipped"))
+	skippedMethod.Service = someService
+	skippedMethod.ID = fmt.Sprintf("%s.%s", someService.ID, skippedMethod.Name)
+
+	skippedServiceMethod := api.NewTestMethod("SomeMethod").
+		WithVerb("GET").
+		WithPathTemplate((&api.PathTemplate{}).
+			WithLiteral("v1").
+			WithLiteral("bar"))
+	skippedService := api.NewTestService("SkippedService").
+		WithPackage("test.v1").
+		WithMethods(skippedServiceMethod)
 
 	// Model has someService in model.Services, but skippedService is omitted from model.Services
-	model := api.NewTestAPI([]*api.Message{}, []*api.Enum{}, []*api.Service{someService})
-	model.AddMethod(createFoo)
+	model := api.NewTestAPI(nil, nil, []*api.Service{someService})
 	model.AddMethod(skippedMethod)
 	model.AddMethod(skippedServiceMethod)
-	model.AddService(someService)
 	model.AddService(skippedService)
 
 	c := &codec{
@@ -2021,130 +1758,62 @@ func TestFormatDocCommentsHTMLTags(t *testing.T) {
 }
 
 func makeApiForRustFormatDocCommentsCrossLinks() *api.API {
-	enumValue := &api.EnumValue{
-		Name: "ENUM_VALUE",
-		ID:   ".test.v1.SomeMessage.SomeEnum.ENUM_VALUE",
-	}
-	someEnum := &api.Enum{
-		Name:    "SomeEnum",
-		ID:      ".test.v1.SomeMessage.SomeEnum",
-		Values:  []*api.EnumValue{enumValue},
-		Package: "test.v1",
-	}
-	enumValue.Parent = someEnum
-	response := &api.Field{
-		Name:    "response",
-		ID:      ".test.v1.SomeMessage.response",
-		IsOneOf: true,
-	}
-	errorz := &api.Field{
-		Name:    "error",
-		ID:      ".test.v1.SomeMessage.error",
-		IsOneOf: true,
-	}
-	typez := &api.Field{
-		Name: "type",
-		ID:   ".test.v1.SomeMessage.type",
-	}
-	someMessage := &api.Message{
-		Name:    "SomeMessage",
-		ID:      ".test.v1.SomeMessage",
-		Package: "test.v1",
-		Enums:   []*api.Enum{someEnum},
-		Fields: []*api.Field{
-			{Name: "unused"}, {Name: "field"}, response, errorz, typez,
-			{Name: "renamed", ID: ".test.v1.SomeMessage.renamed"},
-		},
-		OneOfs: []*api.OneOf{
-			{
-				Name:   "result",
-				ID:     ".test.v1.SomeMessage.result",
-				Fields: []*api.Field{response, errorz},
-			},
-		},
-	}
-	someService := &api.Service{
-		Name:    "SomeService",
-		ID:      ".test.v1.SomeService",
-		Package: "test.v1",
-		Methods: []*api.Method{
-			{
-				Name: "CreateFoo",
-				ID:   ".test.v1.SomeService.CreateFoo",
-				PathInfo: &api.PathInfo{
-					Bindings: []*api.PathBinding{
-						{
-							Verb: "GET",
-							PathTemplate: (&api.PathTemplate{}).
-								WithLiteral("v1").
-								WithLiteral("foo"),
-						},
-					},
-				},
-			},
-			{
-				Name: "CreateBar",
-				ID:   ".test.v1.SomeService.CreateBar",
-			},
-		},
-	}
-	renamedService := &api.Service{
-		Name:    "RenamedService",
-		ID:      ".test.v1.RenamedService",
-		Package: "test.v1",
-		Methods: []*api.Method{
-			{
-				Name: "CreateFoo",
-				ID:   ".test.v1.RenamedService.CreateFoo",
-				PathInfo: &api.PathInfo{
-					Bindings: []*api.PathBinding{
-						{
-							Verb: "GET",
-							PathTemplate: (&api.PathTemplate{}).
-								WithLiteral("v1").
-								WithLiteral("foo"),
-						},
-					},
-				},
-			},
-		},
-	}
-	yellyService := &api.Service{
-		Name:    "YELL",
-		ID:      ".test.v1.YELL",
-		Package: "test.v1",
-		Methods: []*api.Method{
-			{
-				Name: "CreateThing",
-				ID:   ".test.v1.YELL.CreateThing",
-				PathInfo: &api.PathInfo{
-					Bindings: []*api.PathBinding{
-						{
-							Verb: "GET",
-							PathTemplate: (&api.PathTemplate{}).
-								WithLiteral("v1").
-								WithLiteral("thing"),
-						},
-					},
-				},
-			},
-		},
-	}
+	someEnum := api.NewTestEnum("SomeEnum").
+		WithValues(api.NewTestEnumValue("ENUM_VALUE", 0))
+
+	response := api.NewTestField("response").WithType(api.TypezString)
+	errorz := api.NewTestField("error").WithType(api.TypezString)
+	typez := api.NewTestField("type").WithType(api.TypezString)
+	renamed := api.NewTestField("renamed").WithType(api.TypezString)
+
+	resultOneOf := api.NewTestOneOf("result").WithFields(response, errorz)
+
+	someMessage := api.NewTestMessage("SomeMessage").
+		WithPackage("test.v1").
+		WithEnums(someEnum).
+		WithFields(
+			api.NewTestField("unused").WithType(api.TypezString),
+			api.NewTestField("field").WithType(api.TypezString),
+			typez,
+			renamed,
+		).
+		WithOneOfs(resultOneOf)
+
+	createFoo := api.NewTestMethod("CreateFoo").
+		WithVerb("GET").
+		WithPathTemplate((&api.PathTemplate{}).
+			WithLiteral("v1").
+			WithLiteral("foo"))
+	createBar := api.NewTestMethod("CreateBar")
+	createBar.PathInfo = nil
+	someService := api.NewTestService("SomeService").
+		WithPackage("test.v1").
+		WithMethods(createFoo, createBar)
+
+	renamedCreateFoo := api.NewTestMethod("CreateFoo").
+		WithVerb("GET").
+		WithPathTemplate((&api.PathTemplate{}).
+			WithLiteral("v1").
+			WithLiteral("foo"))
+	renamedService := api.NewTestService("RenamedService").
+		WithPackage("test.v1").
+		WithMethods(renamedCreateFoo)
+
+	yellCreateThing := api.NewTestMethod("CreateThing").
+		WithVerb("GET").
+		WithPathTemplate((&api.PathTemplate{}).
+			WithLiteral("v1").
+			WithLiteral("thing"))
+	yellyService := api.NewTestService("YELL").
+		WithPackage("test.v1").
+		WithMethods(yellCreateThing)
+
 	a := api.NewTestAPI(
 		[]*api.Message{someMessage},
-		[]*api.Enum{someEnum},
+		nil,
 		[]*api.Service{someService, renamedService, yellyService})
-	a.PackageName = "test.v1"
-	a.AddMessage(&api.Message{
-		Name:    "SetIamPolicyRequest",
-		Package: "google.iam.v1",
-		ID:      ".google.iam.v1.SetIamPolicyRequest",
-	})
-	a.AddService(&api.Service{
-		Name:    "IAMPolicy",
-		Package: "google.iam.v1",
-		ID:      ".google.iam.v1.IAMPolicy",
-	})
+	a.AddMessage(api.NewTestMessage("SetIamPolicyRequest").WithPackage("google.iam.v1"))
+	a.AddService(api.NewTestService("IAMPolicy").WithPackage("google.iam.v1"))
 	return a
 }
 
@@ -2263,8 +1932,7 @@ func TestRustPackageName(t *testing.T) {
 func TestMessageNames(t *testing.T) {
 	r := sample.Replication()
 	a := sample.Automatic()
-	model := api.NewTestAPI([]*api.Message{r, a}, []*api.Enum{}, []*api.Service{})
-	model.PackageName = "google.cloud.secretmanager.v1"
+	model := api.NewTestAPI([]*api.Message{r, a}, nil, nil)
 
 	c := createRustCodec()
 	for _, test := range []struct {
@@ -2293,41 +1961,24 @@ func TestMessageNames(t *testing.T) {
 }
 
 func TestEnumNames(t *testing.T) {
-	parent := &api.Message{
-		Name:    "SecretVersion",
-		ID:      ".test.SecretVersion",
-		Package: "test",
-		Fields: []*api.Field{
-			{
-				Name:     "automatic",
-				Typez:    api.TypezMessage,
-				TypezID:  ".test.Automatic",
-				Optional: true,
-				Repeated: false,
-			},
-		},
-	}
-	nested := &api.Enum{
-		Name:    "State",
-		ID:      ".test.SecretVersion.State",
-		Parent:  parent,
-		Package: "test",
-	}
-	non_nested := &api.Enum{
-		Name:    "Code",
-		ID:      ".test.Code",
-		Package: "test",
-	}
+	automatic := api.NewTestMessage("Automatic")
+	parent := api.NewTestMessage("SecretVersion").
+		WithFields(
+			api.NewTestField("automatic").
+				WithMessageType(automatic).
+				WithOptional(),
+		)
+	nested := api.NewTestEnum("State").WithParent(parent)
+	nonNested := api.NewTestEnum("Code")
 
-	model := api.NewTestAPI([]*api.Message{parent}, []*api.Enum{nested, non_nested}, []*api.Service{})
-	model.PackageName = "test"
+	model := api.NewTestAPI([]*api.Message{parent}, []*api.Enum{nested, nonNested}, nil)
 	c := createRustCodec()
 	for _, test := range []struct {
 		enum                 *api.Enum
 		wantEnum, wantFQEnum string
 	}{
 		{nested, "State", "crate::model::secret_version::State"},
-		{non_nested, "Code", "crate::model::Code"},
+		{nonNested, "Code", "crate::model::Code"},
 	} {
 		if got := enumName(test.enum); got != test.wantEnum {
 			t.Errorf("enumName(%q) = %q; want = %s", test.enum.Name, got, test.wantEnum)
@@ -2343,39 +1994,27 @@ func TestEnumNames(t *testing.T) {
 }
 
 func TestEnumValueVariantName(t *testing.T) {
-	testEnum := &api.Enum{
-		Name:    "EnumName",
-		ID:      ".test.EnumName",
-		Package: "test",
-		Values: []*api.EnumValue{
-			{Number: 0, Name: "ENUM_NAME_UNSPECIFIED"},
-			{Number: 2, Name: "ENUM_NAME_1"},
-			{Number: 3, Name: "ENUM_NAME_A"},
-			{Number: 4, Name: "ENUM_NAME_PARTIAL"},
-			{Number: 5, Name: "ENUM_NAME_GREEN"},
-		},
-	}
+	testEnum := api.NewTestEnum("EnumName").
+		WithValues(
+			api.NewTestEnumValue("ENUM_NAME_UNSPECIFIED", 0),
+			api.NewTestEnumValue("ENUM_NAME_1", 2),
+			api.NewTestEnumValue("ENUM_NAME_A", 3),
+			api.NewTestEnumValue("ENUM_NAME_PARTIAL", 4),
+			api.NewTestEnumValue("ENUM_NAME_GREEN", 5),
+		)
 
-	networkingEnum := &api.Enum{
-		Name: "InstancePrivateIpv6GoogleAccess",
-		ID:   ".test.InstancePrivateIpv6GoogleAccess",
-		Values: []*api.EnumValue{
-			{Number: 0, Name: "INSTANCE_PRIVATE_IPV6_GOOGLE_ACCESS_UNSPECIFIED"},
-			{Number: 1, Name: "INHERIT_FROM_SUBNETWORK"},
-		},
-	}
+	networkingEnum := api.NewTestEnum("InstancePrivateIpv6GoogleAccess").
+		WithValues(
+			api.NewTestEnumValue("INSTANCE_PRIVATE_IPV6_GOOGLE_ACCESS_UNSPECIFIED", 0),
+			api.NewTestEnumValue("INHERIT_FROM_SUBNETWORK", 1),
+		)
 
-	validationEnum := &api.Enum{
-		Name: "Utf8Validation",
-		ID:   ".test.Utf8Validation",
-		Values: []*api.EnumValue{
-			{Number: 0, Name: "UTF8_VALIDATION_UNKNOWN"},
-			{Number: 1, Name: "VERIFY"},
-		},
-	}
+	validationEnum := api.NewTestEnum("Utf8Validation").
+		WithValues(
+			api.NewTestEnumValue("UTF8_VALIDATION_UNKNOWN", 0),
+			api.NewTestEnumValue("VERIFY", 1),
+		)
 
-	model := api.NewTestAPI([]*api.Message{}, []*api.Enum{testEnum, networkingEnum, validationEnum}, []*api.Service{})
-	model.PackageName = "test"
 	var got []string
 	for _, value := range testEnum.Values {
 		got = append(got, enumValueVariantName(value))
@@ -2468,13 +2107,7 @@ func TestBodyAccessor(t *testing.T) {
 		{"field", "req.field"},
 		{"", "None::<gaxi::http::NoBody>"},
 	} {
-		method := &api.Method{
-			Name: "DoFoo",
-			ID:   ".test.Service.DoFoo",
-			PathInfo: &api.PathInfo{
-				BodyFieldPath: test.bodyFieldPath,
-			},
-		}
+		method := api.NewTestMethod("DoFoo").WithBodyFieldPath(test.bodyFieldPath)
 		got := bodyAccessor(method)
 		if test.want != got {
 			t.Errorf("incorrect body, for BodyFieldPath=%s\nwant=%s\n got=%s", test.bodyFieldPath, test.want, got)
@@ -2517,47 +2150,31 @@ func TestGenerateMethod_Streaming(t *testing.T) {
 		want                    bool
 	}{
 		{
-			name: "skips client-side streaming by default",
-			method: &api.Method{
-				Name:                "ClientStreaming",
-				ClientSideStreaming: true,
-			},
-			want: false,
+			name:   "skips client-side streaming by default",
+			method: api.NewTestMethod("ClientStreaming").WithClientSideStreaming(),
+			want:   false,
 		},
 		{
 			name:                    "includes client-side streaming when includeStreamingMethods is enabled",
 			includeStreamingMethods: true,
-			method: &api.Method{
-				Name:                "ClientStreaming",
-				ClientSideStreaming: true,
-			},
-			want: true,
+			method:                  api.NewTestMethod("ClientStreaming").WithClientSideStreaming(),
+			want:                    true,
 		},
 		{
 			name:                   "includes client-side streaming when includeGrpcOnlyMethods is enabled",
 			includeGrpcOnlyMethods: true,
-			method: &api.Method{
-				Name:                "ClientStreaming",
-				ClientSideStreaming: true,
-			},
-			want: true,
+			method:                 api.NewTestMethod("ClientStreaming").WithClientSideStreaming(),
+			want:                   true,
 		},
 		{
-			name: "includes server-side streaming by default",
-			method: &api.Method{
-				Name:                "ServerStreaming",
-				ServerSideStreaming: true,
-			},
-			want: true,
+			name:   "includes server-side streaming by default",
+			method: api.NewTestMethod("ServerStreaming").WithServerSideStreaming(),
+			want:   true,
 		},
 		{
-			name: "includes bidirectional streaming by default",
-			method: &api.Method{
-				Name:                "BidiStreaming",
-				ClientSideStreaming: true,
-				ServerSideStreaming: true,
-			},
-			want: true,
+			name:   "includes bidirectional streaming by default",
+			method: api.NewTestMethod("BidiStreaming").WithBidiStreaming(),
+			want:   true,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
