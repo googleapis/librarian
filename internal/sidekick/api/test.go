@@ -159,16 +159,7 @@ func (m *Message) WithOneOfs(oneofs ...*OneOf) *Message {
 // WithEnums adds enums to the message and updates their parent/ID.
 func (m *Message) WithEnums(enums ...*Enum) *Message {
 	for _, e := range enums {
-		e.Parent = m
-		if strings.HasPrefix(e.ID, ".test.") || e.ID == "" {
-			e.ID = fmt.Sprintf("%s.%s", m.ID, e.Name)
-		}
-		for _, v := range e.Values {
-			v.Parent = e
-			if strings.HasPrefix(v.ID, ".test.") || v.ID == "" {
-				v.ID = fmt.Sprintf("%s.%s", e.ID, v.Name)
-			}
-		}
+		e.WithParent(m)
 	}
 	m.Enums = append(m.Enums, enums...)
 	return m
