@@ -68,6 +68,9 @@ func Generate(ctx context.Context, model *api.API, outdir string, library *confi
 	if err := codec.generateClients(outdir, model, provider); err != nil {
 		return err
 	}
+	if err := codec.generatePackageVersion(outdir, model, provider); err != nil {
+		return err
+	}
 	if err := codec.generateSnippets(outdir, model, provider); err != nil {
 		return err
 	}
@@ -254,6 +257,17 @@ func (c *codec) generateClients(outdir string, model *api.API, provider language
 	generated := language.GeneratedFile{
 		TemplatePath: "templates/common/clients.swift.mustache",
 		OutputPath:   c.swiftFilename("Clients"),
+	}
+	return language.GenerateFromModel(outdir, model, provider, []language.GeneratedFile{generated})
+}
+
+func (c *codec) generatePackageVersion(outdir string, model *api.API, provider language.TemplateProvider) error {
+	if len(model.Services) > 0 {
+		return nil
+	}
+	generated := language.GeneratedFile{
+		TemplatePath: "templates/common/package_version.swift.mustache",
+		OutputPath:   c.swiftFilename("PackageVersion"),
 	}
 	return language.GenerateFromModel(outdir, model, provider, []language.GeneratedFile{generated})
 }

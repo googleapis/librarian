@@ -188,11 +188,64 @@ func TestBumpMissingSourcesDir(t *testing.T) {
 		Version: "0.1.0-preview",
 		Output:  t.TempDir(),
 	}
-	if err := Bump(t.Context(), lib, lib.Output, "0.2.0-preview", "git", "v1.0.0"); err != nil {
-		t.Fatalf("Bump() unexpected error = %v", err)
+	if err := Bump(t.Context(), lib, lib.Output, "0.2.0-preview", "git", "v1.0.0"); err == nil {
+		t.Errorf("Bump() expected error for missing version manifest, got nil")
 	}
-	if lib.Version != "0.1.0-preview" {
-		t.Errorf("expected version to remain unchanged when versionFile is empty, got %q", lib.Version)
+}
+
+func TestBumpTypeOnlyPackage(t *testing.T) {
+	const tag = "bump-type-only-package"
+	testhelper.RequireCommand(t, "git")
+	remoteDir := t.TempDir()
+	testhelper.ContinueInNewGitRepository(t, remoteDir)
+
+	pkgRoot := "generated/swift-google-type"
+	sourcesDir := path.Join(pkgRoot, "Sources", "GoogleType")
+	if err := os.MkdirAll(sourcesDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	versionFile := path.Join(sourcesDir, packageVersionManifest)
+	initialContent := "enum PackageVersion {\n  static let version: Swift.String = \"0.2.0\"\n}\n"
+	if err := os.WriteFile(versionFile, []byte(initialContent), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	testhelper.RunGit(t, "add", ".")
+	testhelper.RunGit(t, "commit", "-m", "initial type-only package")
+	testhelper.RunGit(t, "tag", tag)
+
+	cloneDir := t.TempDir()
+	t.Chdir(cloneDir)
+	testhelper.RunGit(t, "clone", remoteDir, ".")
+	testhelper.RunGit(t, "remote", "rename", "origin", config.RemoteUpstream)
+	testhelper.ConfigNewGitRepository(t)
+
+	lib := &config.Library{
+		Name:    "google-type",
+		Version: "0.2.0",
+		Output:  pkgRoot,
+	}
+
+	if err := Bump(t.Context(), lib, pkgRoot, "0.3.0", "git", tag); err != nil {
+		t.Fatalf("Bump() error = %v", err)
+	}
+	if lib.Version != "0.3.0" {
+		t.Errorf("got lib.Version = %q, want %q", lib.Version, "0.3.0")
+	}
+
+	// Simulate regeneration with the new version and committing it
+	updatedContent := "enum PackageVersion {\n  static let version: Swift.String = \"0.3.0\"\n}\n"
+	if err := os.WriteFile(path.Join(pkgRoot, "Sources", "GoogleType", packageVersionManifest), []byte(updatedContent), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	testhelper.RunGit(t, "commit", "-am", "bump version to 0.3.0")
+
+	// Running Bump again should be idempotent (no change to version)
+	lib.Version = "0.3.0"
+	if err := Bump(t.Context(), lib, pkgRoot, "0.4.0", "git", tag); err != nil {
+		t.Fatalf("Bump() error = %v", err)
+	}
+	if lib.Version != "0.3.0" {
+		t.Errorf("expected version to remain 0.3.0 (idempotent), got %q", lib.Version)
 	}
 }
 
