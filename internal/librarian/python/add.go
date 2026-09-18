@@ -145,7 +145,11 @@ func copyOptArgsByAPI(library *config.Library, apiPath string) {
 		return
 	}
 	firstAPIPath := library.APIs[0].Path
-	library.Python.OptArgsByAPI[apiPath] = library.Python.OptArgsByAPI[firstAPIPath]
+	optArgs, ok := library.Python.OptArgsByAPI[firstAPIPath]
+	if !ok {
+		return
+	}
+	library.Python.OptArgsByAPI[apiPath] = slices.Clone(optArgs)
 	log.Printf(
 		"WARNING: customized opt_args_by_api is copied from %q to %q, but this may not be correct for %q."+
 			"Please review and edit opt_args_by_api in librarian.yaml if needed.",
