@@ -233,15 +233,19 @@ func (m *Method) WithDocumentation(doc string) *Method {
 	return m
 }
 
-// WithVerb sets the HTTP verb for the first binding.
-func (m *Method) WithVerb(verb string) *Method {
+func (m *Method) ensureFirstBinding() *PathBinding {
 	if m.PathInfo == nil {
 		m.PathInfo = &PathInfo{}
 	}
 	if len(m.PathInfo.Bindings) == 0 {
 		m.PathInfo.Bindings = append(m.PathInfo.Bindings, &PathBinding{})
 	}
-	m.PathInfo.Bindings[0].Verb = verb
+	return m.PathInfo.Bindings[0]
+}
+
+// WithVerb sets the HTTP verb for the first binding.
+func (m *Method) WithVerb(verb string) *Method {
+	m.ensureFirstBinding().Verb = verb
 	return m
 }
 
@@ -267,13 +271,7 @@ func (m *Method) WithOutput(msg *Message) *Method {
 
 // WithPathTemplate sets the path template for the first binding.
 func (m *Method) WithPathTemplate(pt *PathTemplate) *Method {
-	if m.PathInfo == nil {
-		m.PathInfo = &PathInfo{}
-	}
-	if len(m.PathInfo.Bindings) == 0 {
-		m.PathInfo.Bindings = append(m.PathInfo.Bindings, &PathBinding{})
-	}
-	m.PathInfo.Bindings[0].PathTemplate = pt
+	m.ensureFirstBinding().PathTemplate = pt
 	return m
 }
 
@@ -300,13 +298,7 @@ func (m *Method) WithBodyFieldPath(path string) *Method {
 // WithQueryParameters sets the query parameters on the first binding of the method.
 // It initializes PathInfo if it is nil, and creates a binding if none exists.
 func (m *Method) WithQueryParameters(params map[string]bool) *Method {
-	if m.PathInfo == nil {
-		m.PathInfo = &PathInfo{}
-	}
-	if len(m.PathInfo.Bindings) == 0 {
-		m.PathInfo.Bindings = append(m.PathInfo.Bindings, &PathBinding{})
-	}
-	m.PathInfo.Bindings[0].QueryParameters = params
+	m.ensureFirstBinding().QueryParameters = params
 	return m
 }
 

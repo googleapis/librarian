@@ -24,86 +24,103 @@ import (
 )
 
 func TestAnnotateMethod(t *testing.T) {
-	keyField := api.NewTestField("key").WithType(api.TypezString)
-	inputType := api.NewTestMessage("Request").WithFields(keyField)
-	outputType := api.NewTestMessage("Response").
-		WithFields(api.NewTestField("value").WithType(api.TypezString))
 	for _, test := range []struct {
-		name   string
-		method *api.Method
-		want   *methodAnnotations
+		name       string
+		methodFunc func() *api.Method
+		wantFunc   func(keyField *api.Field) *methodAnnotations
 	}{
 		{
 			name: "GET request",
-			method: api.NewTestMethod("GetOperation").
-				WithVerb("GET").
-				WithPathTemplate((&api.PathTemplate{}).WithLiteral("v1").WithLiteral("operations")).
-				WithDocumentation("Gets a thing.\n\nTest multiple comment lines.\n"),
-			want: &methodAnnotations{
-				Name:             "getOperation",
-				PathExpression:   "/v1/operations",
-				DocLines:         []string{"Gets a thing.", "", "Test multiple comment lines.", ""},
-				HTTPMethod:       "GET",
-				HasBody:          false,
-				ReturnType:       "Test.Response",
-				ResponseEncoding: "json;enum-encoding=int",
+			methodFunc: func() *api.Method {
+				return api.NewTestMethod("GetOperation").
+					WithVerb("GET").
+					WithPathTemplate((&api.PathTemplate{}).WithLiteral("v1").WithLiteral("operations")).
+					WithDocumentation("Gets a thing.\n\nTest multiple comment lines.\n")
+			},
+			wantFunc: func(*api.Field) *methodAnnotations {
+				return &methodAnnotations{
+					Name:             "getOperation",
+					PathExpression:   "/v1/operations",
+					DocLines:         []string{"Gets a thing.", "", "Test multiple comment lines.", ""},
+					HTTPMethod:       "GET",
+					HasBody:          false,
+					ReturnType:       "Test.Response",
+					ResponseEncoding: "json;enum-encoding=int",
+				}
 			},
 		},
 		{
 			name: "POST request with body field",
-			method: api.NewTestMethod("CreateKey").
-				WithVerb("POST").
-				WithPathTemplate((&api.PathTemplate{}).WithLiteral("v1").WithLiteral("keys")).
-				WithBodyFieldPath("key"),
-			want: &methodAnnotations{
-				Name:             "createKey",
-				PathExpression:   "/v1/keys",
-				HTTPMethod:       "POST",
-				HasBody:          true,
-				IsBodyWildcard:   false,
-				BodyField:        "key",
-				ReturnType:       "Test.Response",
-				ResponseEncoding: "json;enum-encoding=int",
+			methodFunc: func() *api.Method {
+				return api.NewTestMethod("CreateKey").
+					WithVerb("POST").
+					WithPathTemplate((&api.PathTemplate{}).WithLiteral("v1").WithLiteral("keys")).
+					WithBodyFieldPath("key")
+			},
+			wantFunc: func(*api.Field) *methodAnnotations {
+				return &methodAnnotations{
+					Name:             "createKey",
+					PathExpression:   "/v1/keys",
+					HTTPMethod:       "POST",
+					HasBody:          true,
+					IsBodyWildcard:   false,
+					BodyField:        "key",
+					ReturnType:       "Test.Response",
+					ResponseEncoding: "json;enum-encoding=int",
+				}
 			},
 		},
 		{
 			name: "POST request with wildcard body",
-			method: api.NewTestMethod("UploadData").
-				WithVerb("POST").
-				WithPathTemplate((&api.PathTemplate{}).WithLiteral("v1").WithLiteral("data")).
-				WithBodyFieldPath("*"),
-			want: &methodAnnotations{
-				Name:             "uploadData",
-				PathExpression:   "/v1/data",
-				HTTPMethod:       "POST",
-				HasBody:          true,
-				IsBodyWildcard:   true,
-				ReturnType:       "Test.Response",
-				ResponseEncoding: "json;enum-encoding=int",
+			methodFunc: func() *api.Method {
+				return api.NewTestMethod("UploadData").
+					WithVerb("POST").
+					WithPathTemplate((&api.PathTemplate{}).WithLiteral("v1").WithLiteral("data")).
+					WithBodyFieldPath("*")
+			},
+			wantFunc: func(*api.Field) *methodAnnotations {
+				return &methodAnnotations{
+					Name:             "uploadData",
+					PathExpression:   "/v1/data",
+					HTTPMethod:       "POST",
+					HasBody:          true,
+					IsBodyWildcard:   true,
+					ReturnType:       "Test.Response",
+					ResponseEncoding: "json;enum-encoding=int",
+				}
 			},
 		},
 		{
 			name: "List request",
-			method: api.NewTestMethod("ListThings").
-				WithVerb("GET").
-				WithPathTemplate((&api.PathTemplate{}).WithLiteral("v1").WithLiteral("things")).
-				WithQueryParameters(map[string]bool{"key": true}).
-				WithDocumentation("Lists things."),
-			want: &methodAnnotations{
-				Name:             "listThings",
-				PathExpression:   "/v1/things",
-				DocLines:         []string{"Lists things."},
-				HTTPMethod:       "GET",
-				HasBody:          false,
-				QueryParams:      []*api.Field{keyField},
-				ReturnType:       "Test.Response",
-				ResponseEncoding: "json;enum-encoding=int",
+			methodFunc: func() *api.Method {
+				return api.NewTestMethod("ListThings").
+					WithVerb("GET").
+					WithPathTemplate((&api.PathTemplate{}).WithLiteral("v1").WithLiteral("things")).
+					WithQueryParameters(map[string]bool{"key": true}).
+					WithDocumentation("Lists things.")
+			},
+			wantFunc: func(keyField *api.Field) *methodAnnotations {
+				return &methodAnnotations{
+					Name:             "listThings",
+					PathExpression:   "/v1/things",
+					DocLines:         []string{"Lists things."},
+					HTTPMethod:       "GET",
+					HasBody:          false,
+					QueryParams:      []*api.Field{keyField},
+					ReturnType:       "Test.Response",
+					ResponseEncoding: "json;enum-encoding=int",
+				}
 			},
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			test.method.WithInput(inputType).WithOutput(outputType)
-			service := api.NewTestService("TestService").WithMethods(test.method)
+			keyField := api.NewTestField("key").WithType(api.TypezString)
+			inputType := api.NewTestMessage("Request").WithFields(keyField)
+			outputType := api.NewTestMessage("Response").
+				WithFields(api.NewTestField("value").WithType(api.TypezString))
+
+			method := test.methodFunc().WithInput(inputType).WithOutput(outputType)
+			service := api.NewTestService("TestService").WithMethods(method)
 			model := api.NewTestAPI([]*api.Message{inputType, outputType}, nil, []*api.Service{service})
 			if err := api.CrossReference(model); err != nil {
 				t.Fatal(err)
@@ -112,8 +129,9 @@ func TestAnnotateMethod(t *testing.T) {
 			if err := codec.annotateModel(); err != nil {
 				t.Fatal(err)
 			}
-			got := test.method.Codec.(*methodAnnotations)
-			if diff := cmp.Diff(test.want, got, cmpopts.IgnoreFields(methodAnnotations{}, "PathBindings", "HasMultipleBindings")); diff != "" {
+			got := method.Codec.(*methodAnnotations)
+			want := test.wantFunc(keyField)
+			if diff := cmp.Diff(want, got, cmpopts.IgnoreFields(methodAnnotations{}, "PathBindings", "HasMultipleBindings")); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 			if !got.PlainRPC() {
@@ -124,17 +142,6 @@ func TestAnnotateMethod(t *testing.T) {
 }
 
 func TestAnnotateMethod_OmittedBodyFields(t *testing.T) {
-	secretMessage := api.NewTestMessage("Secret").
-		WithFields(api.NewTestField("name").WithType(api.TypezString))
-	inputType := api.NewTestMessage("Request").
-		WithFields(
-			api.NewTestField("parent").WithType(api.TypezString),
-			api.NewTestField("display_name").WithType(api.TypezString),
-			api.NewTestField("secret").WithMessageType(secretMessage).WithOptional(),
-		)
-	outputType := api.NewTestMessage("Response").
-		WithFields(api.NewTestField("value").WithType(api.TypezString))
-
 	for _, test := range []struct {
 		name                  string
 		bodyFieldPath         string
@@ -186,6 +193,17 @@ func TestAnnotateMethod_OmittedBodyFields(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
+			secretMessage := api.NewTestMessage("Secret").
+				WithFields(api.NewTestField("name").WithType(api.TypezString))
+			inputType := api.NewTestMessage("Request").
+				WithFields(
+					api.NewTestField("parent").WithType(api.TypezString),
+					api.NewTestField("display_name").WithType(api.TypezString),
+					api.NewTestField("secret").WithMessageType(secretMessage).WithOptional(),
+				)
+			outputType := api.NewTestMessage("Response").
+				WithFields(api.NewTestField("value").WithType(api.TypezString))
+
 			method := api.NewTestMethod("Mutate").
 				WithInput(inputType).
 				WithOutput(outputType).
