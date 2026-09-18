@@ -696,6 +696,7 @@ This document describes the schema for the librarian.yaml.
 | `per_service_traits` | bool | Enables per-service compile-time flags. |
 | `default_traits` | list of string | Is a list of compile-time traits enabled by default. |
 | `discovery` | SwiftDiscovery (optional) | Contains discovery-specific configuration for LRO polling. |
+| `lro_any_converter` | string | Names the generated converter for the `Any` fields of `google.longrunning.Operation` (e.g. "StorageControlLROAnyConverter"), which converts long-running operation payloads by type URL. Cannot be combined with `per_service_traits`. |
 
 ## SwiftTool Configuration
 
