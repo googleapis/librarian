@@ -26,6 +26,10 @@ import (
 )
 
 const (
+	// libraryTypeCore is used in [config.PythonDefault.LibraryType] to signify that
+	// the entry is a core library, not an individual API client library.
+	libraryTypeCore = "CORE"
+
 	// defaultVersion is the first version used for a new library.
 	// This is set on the initial `librarian add` for a new API.
 	defaultVersion = "0.0.0"
@@ -33,10 +37,6 @@ const (
 	// ReleasePleasePkgPrefix is the release-please package prefix for Python libraries.
 	ReleasePleasePkgPrefix = "packages/"
 )
-
-// libraryTypeCore is used in [config.PythonDefault.LibraryType] to signify that
-// the entry is a core library, not an individual API client library.
-const libraryTypeCore = "CORE"
 
 var (
 	errNewLibraryMustHaveOneAPI        = errors.New("a newly added library (in Python) must have exactly one API so that the default version can be populated")
@@ -69,25 +69,6 @@ func UpdateExistingLibrary(existingLib *config.Library, api *config.API) error {
 	}
 	existingLib.APIs = append(existingLib.APIs, api)
 	copyOptArgsByAPI(existingLib, api.Path)
-	return nil
-}
-
-func validateNamespace(cfg *config.Config, apiPath string) error {
-	if cfg == nil || cfg.Default == nil || cfg.Default.Python == nil || len(cfg.Default.Python.AllowedNamespaces) == 0 {
-		return nil
-	}
-	namespace := deriveGAPICNamespace(apiPath)
-	if !slices.Contains(cfg.Default.Python.AllowedNamespaces, namespace) {
-		return fmt.Errorf("%w: unapproved namespace %s derived from API path %s", errNewLibraryBadNamespace, namespace, apiPath)
-	}
-	return nil
-}
-
-// validateNewAPIs validates that new APIs can be added to an existing library.
-func validateNewAPIs(lib *config.Library) error {
-	if lib.Python == nil || lib.Python.DefaultVersion == "" {
-		return errExistingLibraryNoDefaultVersion
-	}
 	return nil
 }
 
@@ -133,6 +114,25 @@ func FindExistingLibraryForNewAPI(libraries []*config.Library, apiPath string) *
 				return lib
 			}
 		}
+	}
+	return nil
+}
+
+func validateNamespace(cfg *config.Config, apiPath string) error {
+	if cfg == nil || cfg.Default == nil || cfg.Default.Python == nil || len(cfg.Default.Python.AllowedNamespaces) == 0 {
+		return nil
+	}
+	namespace := deriveGAPICNamespace(apiPath)
+	if !slices.Contains(cfg.Default.Python.AllowedNamespaces, namespace) {
+		return fmt.Errorf("%w: unapproved namespace %s derived from API path %s", errNewLibraryBadNamespace, namespace, apiPath)
+	}
+	return nil
+}
+
+// validateNewAPIs validates that new APIs can be added to an existing library.
+func validateNewAPIs(lib *config.Library) error {
+	if lib.Python == nil || lib.Python.DefaultVersion == "" {
+		return errExistingLibraryNoDefaultVersion
 	}
 	return nil
 }
