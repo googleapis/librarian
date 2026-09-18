@@ -227,11 +227,25 @@ func NewTestMethod(name string) *Method {
 	}
 }
 
+// WithDocumentation sets the documentation for the method.
+func (m *Method) WithDocumentation(doc string) *Method {
+	m.Documentation = doc
+	return m
+}
+
+func (m *Method) ensureFirstBinding() *PathBinding {
+	if m.PathInfo == nil {
+		m.PathInfo = &PathInfo{}
+	}
+	if len(m.PathInfo.Bindings) == 0 {
+		m.PathInfo.Bindings = append(m.PathInfo.Bindings, &PathBinding{})
+	}
+	return m.PathInfo.Bindings[0]
+}
+
 // WithVerb sets the HTTP verb for the first binding.
 func (m *Method) WithVerb(verb string) *Method {
-	if len(m.PathInfo.Bindings) > 0 {
-		m.PathInfo.Bindings[0].Verb = verb
-	}
+	m.ensureFirstBinding().Verb = verb
 	return m
 }
 
@@ -257,9 +271,34 @@ func (m *Method) WithOutput(msg *Message) *Method {
 
 // WithPathTemplate sets the path template for the first binding.
 func (m *Method) WithPathTemplate(pt *PathTemplate) *Method {
-	if len(m.PathInfo.Bindings) > 0 {
-		m.PathInfo.Bindings[0].PathTemplate = pt
+	m.ensureFirstBinding().PathTemplate = pt
+	return m
+}
+
+// WithBindings sets the HTTP bindings for the method.
+// It initializes PathInfo if it is nil.
+func (m *Method) WithBindings(bindings ...*PathBinding) *Method {
+	if m.PathInfo == nil {
+		m.PathInfo = &PathInfo{}
 	}
+	m.PathInfo.Bindings = bindings
+	return m
+}
+
+// WithBodyFieldPath sets the body field path for the method.
+// It initializes PathInfo if it is nil.
+func (m *Method) WithBodyFieldPath(path string) *Method {
+	if m.PathInfo == nil {
+		m.PathInfo = &PathInfo{}
+	}
+	m.PathInfo.BodyFieldPath = path
+	return m
+}
+
+// WithQueryParameters sets the query parameters on the first binding of the method.
+// It initializes PathInfo if it is nil, and creates a binding if none exists.
+func (m *Method) WithQueryParameters(params map[string]bool) *Method {
+	m.ensureFirstBinding().QueryParameters = params
 	return m
 }
 
@@ -339,6 +378,32 @@ func (m *Method) WithSignatures(signatures ...*MethodSignature) *Method {
 		m.Signatures = append(m.Signatures, s)
 	}
 	return m
+}
+
+// NewTestPathBinding creates a PathBinding with the given verb and path template.
+func NewTestPathBinding(verb string, pt *PathTemplate) *PathBinding {
+	return &PathBinding{
+		Verb:         verb,
+		PathTemplate: pt,
+	}
+}
+
+// WithVerb sets the HTTP verb for the binding.
+func (b *PathBinding) WithVerb(verb string) *PathBinding {
+	b.Verb = verb
+	return b
+}
+
+// WithPathTemplate sets the path template for the binding.
+func (b *PathBinding) WithPathTemplate(pt *PathTemplate) *PathBinding {
+	b.PathTemplate = pt
+	return b
+}
+
+// WithQueryParameters sets the query parameters for the binding.
+func (b *PathBinding) WithQueryParameters(params map[string]bool) *PathBinding {
+	b.QueryParameters = params
+	return b
 }
 
 // NewTestOneOf creates a OneOf with defaults for testing.
@@ -422,6 +487,12 @@ func (f *Field) WithMessageType(msg *Message) *Field {
 // WithTypezID sets the field's TypezID.
 func (f *Field) WithTypezID(id string) *Field {
 	f.TypezID = id
+	return f
+}
+
+// WithJSONName sets the JSON name of the field.
+func (f *Field) WithJSONName(name string) *Field {
+	f.JSONName = name
 	return f
 }
 
