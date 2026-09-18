@@ -113,6 +113,34 @@ msg := &api.Message{
 }
 ```
 
+### Specifying Field Types: `WithType()` and `WithMessageType()`
+
+When configuring field types on `*api.Field`, prefer the builder methods instead
+of setting `Typez`, `TypezID`, or `MessageType` manually:
+
+- **Primitive & Scalar Types:** Use `.WithType(api.Typez...)` (e.g.,
+  `.WithType(api.TypezString)`, `.WithType(api.TypezInt32)`,
+  `.WithType(api.TypezBytes)`).
+- **Referenced Message Types:** Define the referenced message first and use
+  `.WithMessageType(referencedMsg)`. This automatically sets `Typez =
+  api.TypezMessage`, `TypezID = referencedMsg.ID`, and links `MessageType =
+  referencedMsg`, avoiding hardcoded type ID strings and redundant assignments:
+
+```go
+// GOOD: Define referenced message first and use WithMessageType()
+secretType := api.NewTestMessage("Secret").WithPackage("google.cloud.secretmanager.v1")
+itemField := api.NewTestField("secrets").
+    WithMessageType(secretType).
+    WithRepeated()
+
+// BAD: Manually specifying Typez and hardcoding TypezID strings
+badItemField := api.NewTestField("secrets").
+    WithType(api.TypezMessage).
+    WithRepeated()
+badItemField.TypezID = ".google.cloud.secretmanager.v1.Secret"
+badItemField.MessageType = secretType
+```
+
 ### Standard Available Helpers
 
 The following builders are defined in `internal/sidekick/api/test.go`:
