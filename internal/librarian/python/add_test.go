@@ -180,6 +180,83 @@ func TestValidateNamespace(t *testing.T) {
 	}
 }
 
+func TestUpdateExistingLibrary(t *testing.T) {
+	t.Parallel()
+	for _, test := range []struct {
+		name string
+		lib  *config.Library
+		api  *config.API
+		want *config.Library
+	}{
+		{
+			name: "without opt_args_by_api",
+			lib: &config.Library{
+				Name: "google-cloud-test",
+				APIs: []*config.API{{Path: "google/cloud/test/v1"}},
+				Python: &config.PythonPackage{
+					DefaultVersion: "v1",
+				},
+			},
+			api: &config.API{Path: "google/cloud/test/v1beta1"},
+			want: &config.Library{
+				Name: "google-cloud-test",
+				APIs: []*config.API{
+					{Path: "google/cloud/test/v1"},
+					{Path: "google/cloud/test/v1beta1"},
+				},
+				Python: &config.PythonPackage{
+					DefaultVersion: "v1",
+				},
+			},
+		},
+		{
+			name: "with opt_args_by_api copied from first api",
+			lib: &config.Library{
+				Name: "google-cloud-test",
+				APIs: []*config.API{
+					{Path: "google/cloud/test/v1"},
+					{Path: "google/cloud/test/v1alpha"},
+				},
+				Python: &config.PythonPackage{
+					DefaultVersion: "v1",
+					OptArgsByAPI: map[string][]string{
+						"google/cloud/test/v1": {"python-gapic-name=custom_test", "lazy-import"},
+						// 2nd api customization is preserved and NOT copied.
+						"google/cloud/test/v1alpha": {"another-customization"},
+					},
+				},
+			},
+			api: &config.API{Path: "google/cloud/test/v1beta1"},
+			want: &config.Library{
+				Name: "google-cloud-test",
+				APIs: []*config.API{
+					{Path: "google/cloud/test/v1"},
+					{Path: "google/cloud/test/v1alpha"},
+					{Path: "google/cloud/test/v1beta1"},
+				},
+				Python: &config.PythonPackage{
+					DefaultVersion: "v1",
+					OptArgsByAPI: map[string][]string{
+						"google/cloud/test/v1":      {"python-gapic-name=custom_test", "lazy-import"},
+						"google/cloud/test/v1alpha": {"another-customization"},
+						"google/cloud/test/v1beta1": {"python-gapic-name=custom_test", "lazy-import"},
+					},
+				},
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			if err := UpdateExistingLibrary(test.lib, test.api); err != nil {
+				t.Fatal(err)
+			}
+			if diff := cmp.Diff(test.want, test.lib); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
 func TestValidateNewAPIs(t *testing.T) {
 	t.Parallel()
 	for _, test := range []struct {

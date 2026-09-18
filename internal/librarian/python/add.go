@@ -63,6 +63,7 @@ func Add(cfg *config.Config, lib *config.Library) (*config.Library, error) {
 	return lib, nil
 }
 
+// UpdateExistingLibrary adds a new API to an existing Python library configuration.
 func UpdateExistingLibrary(existingLib *config.Library, api *config.API) error {
 	if err := validateNewAPIs(existingLib); err != nil {
 		return err
