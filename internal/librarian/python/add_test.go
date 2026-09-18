@@ -214,20 +214,6 @@ func TestValidateNewAPIs(t *testing.T) {
 			},
 			wantErr: errExistingLibraryNoDefaultVersion,
 		},
-		{
-			name: "custom GAPIC options",
-			lib: &config.Library{
-				Name: "google-cloud-test",
-				APIs: []*config.API{{Path: "google/cloud/test/v1"}},
-				Python: &config.PythonPackage{
-					DefaultVersion: "v1",
-					OptArgsByAPI: map[string][]string{
-						"google/cloud/test/v1": {"x=y"},
-					},
-				},
-			},
-			wantErr: errExistingLibraryCustomGAPICOptions,
-		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			gotErr := ValidateNewAPIs(test.lib)

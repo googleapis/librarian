@@ -75,15 +75,9 @@ func validateNamespace(cfg *config.Config, apiPath string) error {
 }
 
 // ValidateNewAPIs validates that new APIs can be added to an existing library.
-// Currently this is just a check that there is a default version already, and
-// that no existing APIs in the library have custom GAPIC options. Future checks
-// may require details of the APIs being added.
 func ValidateNewAPIs(lib *config.Library) error {
 	if lib.Python == nil || lib.Python.DefaultVersion == "" {
 		return errExistingLibraryNoDefaultVersion
-	}
-	if len(lib.Python.OptArgsByAPI) != 0 {
-		return errExistingLibraryCustomGAPICOptions
 	}
 	return nil
 }
