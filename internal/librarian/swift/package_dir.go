@@ -17,17 +17,18 @@ package swift
 import (
 	"os"
 	"path/filepath"
+	"strings"
 )
 
 // PackageDirectory returns the root directory of the Swift package containing dir.
-// It searches upward from dir for a Package.swift file. If none is found, it returns dir.
-// If dir is empty, it returns an empty string.
+// It searches upward from dir for a Package.swift file. If none is found, it strips any
+// /Sources/... suffix or returns dir. If dir is empty, it returns an empty string.
 func PackageDirectory(dir string) string {
 	if dir == "" {
 		return ""
 	}
 	current := filepath.Clean(dir)
-	for {
+	for current != "." {
 		if _, err := os.Stat(filepath.Join(current, "Package.swift")); err == nil {
 			return current
 		}
@@ -37,5 +38,12 @@ func PackageDirectory(dir string) string {
 		}
 		current = parent
 	}
-	return dir
+	slashDir := filepath.ToSlash(filepath.Clean(dir))
+	if i := strings.LastIndex(slashDir, "/Sources/"); i != -1 {
+		return filepath.FromSlash(slashDir[:i])
+	}
+	if slashDir == "Sources" || strings.HasPrefix(slashDir, "Sources/") {
+		return "."
+	}
+	return filepath.FromSlash(slashDir)
 }

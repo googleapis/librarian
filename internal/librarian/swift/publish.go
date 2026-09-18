@@ -211,8 +211,8 @@ func libraryOutput(lib *config.Library, defaults *config.Default) string {
 	} else if lib.Name != "" {
 		apiPath = strings.ReplaceAll(lib.Name, "-", "/")
 	}
-	defaultOut := ""
-	if defaults != nil {
+	defaultOut := "generated"
+	if defaults != nil && defaults.Output != "" {
 		defaultOut = defaults.Output
 	}
 	return DefaultOutput(apiPath, defaultOut)
