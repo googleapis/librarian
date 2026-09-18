@@ -31,11 +31,16 @@ func ResolveDependencyVersions(cfg *config.Config, library *config.Library) {
 	}
 	for i := range library.Swift.Dependencies {
 		dep := &library.Swift.Dependencies[i]
-		if dep.Version != "" {
-			continue
-		}
 		target := findLibraryForDependency(cfg.Libraries, dep)
 		if target == nil {
+			continue
+		}
+		if dep.Path == "" && dep.URL != "" {
+			if pkgDir := libraryPackageDirectory(target, cfg.Default); pkgDir != "" {
+				dep.Path = filepath.ToSlash(pkgDir)
+			}
+		}
+		if dep.Version != "" {
 			continue
 		}
 		if target.Version != "" {

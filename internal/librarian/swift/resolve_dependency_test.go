@@ -251,6 +251,16 @@ func TestResolveDependencyVersions(t *testing.T) {
 			if diff := cmp.Diff(test.wantVersion, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
+			if test.name == "MatchesByURLRepoName" {
+				if diff := cmp.Diff("packages/swift-google-auth", library.Swift.Dependencies[0].Path); diff != "" {
+					t.Errorf("path mismatch (-want +got):\n%s", diff)
+				}
+			}
+			if test.name == "MatchesByNameOverride" {
+				if diff := cmp.Diff("generated/swift-google-iam-v1", library.Swift.Dependencies[0].Path); diff != "" {
+					t.Errorf("path mismatch (-want +got):\n%s", diff)
+				}
+			}
 		})
 	}
 }

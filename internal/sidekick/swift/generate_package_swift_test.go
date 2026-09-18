@@ -41,6 +41,7 @@ func TestGeneratePackageSwift_WithDependencies(t *testing.T) {
 	swiftCfg := &config.SwiftPackage{
 		SwiftDefault: config.SwiftDefault{
 			Dependencies: []config.SwiftDependency{
+				{Name: "auth", URL: "https://github.com/googleapis/swift-google-auth", Path: "pkgs/swift-google-auth", Version: "0.2.0", RequiredByServices: true},
 				{Name: "gax", Path: "packages/gax", RequiredByServices: true},
 				{Name: "wkt", ApiPackage: "google.protobuf", Path: "packages/wkt"},
 				{Name: "proto", URL: "https://github.com/apple/swift-protobuf", Version: "1.36.1", RequiredByServices: true},
@@ -71,6 +72,11 @@ func TestGeneratePackageSwift_WithDependencies(t *testing.T) {
 	}
 	gotPackageDeps := extractBlock(t, contentStr, "  dependencies: [", "\n  ],")
 	wantPackageDeps := `  dependencies: [
+    localOrRemotePackage(
+      url: "https://github.com/googleapis/swift-google-auth",
+      path: "pkgs/swift-google-auth",
+      from: "0.2.0"
+    ),
     .package(path: "../../packages/gax"),
     .package(url: "https://github.com/apple/swift-protobuf", from: "1.36.1"),
     .package(path: "../../packages/wkt"),
@@ -81,11 +87,25 @@ func TestGeneratePackageSwift_WithDependencies(t *testing.T) {
 
 	gotTargetDeps := extractBlock(t, contentStr, "      dependencies: [", "\n      ]")
 	wantTargetDeps := `      dependencies: [
+        .product(name: "auth", package: "swift-google-auth"),
         .product(name: "gax", package: "gax"),
         .product(name: "proto", package: "swift-protobuf"),
         .product(name: "wkt", package: "wkt"),
       ]`
 	if diff := cmp.Diff(wantTargetDeps, gotTargetDeps); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+
+	gotHelper := extractBlock(t, contentStr, "func localOrRemotePackage(", "  return .package(url: url, from: version)\n}\n")
+	wantHelper := `func localOrRemotePackage(url: String, path: String, from version: Version) -> Package.Dependency {
+  if let env = Context.environment["GOOGLE_CLOUD_SWIFT_LOCAL_DEPS"], !env.isEmpty {
+    let root = (env == "1" || env == "true") ? "\(Context.packageDirectory)/../.." : env
+    return .package(path: "\(root)/\(path)")
+  }
+  return .package(url: url, from: version)
+}
+`
+	if diff := cmp.Diff(wantHelper, gotHelper); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }

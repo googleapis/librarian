@@ -76,6 +76,16 @@ func (ann *modelAnnotations) HasDependencies() bool {
 	return len(ann.DependsOn) != 0
 }
 
+// HasLocalOrRemoteDependencies returns true if any dependency is configured with both URL and Path.
+func (ann *modelAnnotations) HasLocalOrRemoteDependencies() bool {
+	for _, dep := range ann.DependsOn {
+		if dep.IsLocalOrRemote() {
+			return true
+		}
+	}
+	return false
+}
+
 // EnablesOtherTraits returns true if this service's trait enables other traits too.
 func (ann *traitDefinition) EnablesOtherTraits() bool {
 	return len(ann.EnabledTraits) != 0
