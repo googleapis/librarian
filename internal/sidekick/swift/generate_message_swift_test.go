@@ -41,14 +41,13 @@ func swiftConfig(t *testing.T, extraDependencies []config.SwiftDependency) *conf
 func TestGenerateMessage_Files(t *testing.T) {
 	outDir := t.TempDir()
 
-	secret := &api.Message{Name: "Secret", Package: "google.cloud.test.v1", ID: ".google.cloud.test.v1.Secret"}
-	volume := &api.Message{Name: "Volume", Package: "google.cloud.test.v1", ID: ".google.cloud.test.v1.Volume"}
-	clash0 := &api.Message{Name: "HttpHealthCheck", Package: "google.cloud.test.v1", ID: ".google.cloud.test.v1.HttpHealthCheck"}
-	clash1 := &api.Message{Name: "HTTPHealthCheck", Package: "google.cloud.test.v1", ID: ".google.cloud.test.v1.HTTPHealthCheck"}
-	clash2 := &api.Message{Name: "httpHealthCheck", Package: "google.cloud.test.v1", ID: ".google.cloud.test.v1.httpHealthCheck"}
+	secret := api.NewTestMessage("Secret").WithPackage("google.cloud.test.v1")
+	volume := api.NewTestMessage("Volume").WithPackage("google.cloud.test.v1")
+	clash0 := api.NewTestMessage("HttpHealthCheck").WithPackage("google.cloud.test.v1")
+	clash1 := api.NewTestMessage("HTTPHealthCheck").WithPackage("google.cloud.test.v1")
+	clash2 := api.NewTestMessage("httpHealthCheck").WithPackage("google.cloud.test.v1")
 
-	model := api.NewTestAPI([]*api.Message{secret, volume, clash0, clash1, clash2}, []*api.Enum{}, []*api.Service{})
-	model.PackageName = "google.cloud.test.v1"
+	model := api.NewTestAPI([]*api.Message{secret, volume, clash0, clash1, clash2}, nil, nil)
 
 	library := &config.Library{
 		Swift: swiftConfig(t, nil),
@@ -76,17 +75,13 @@ func TestGenerateMessage_Files(t *testing.T) {
 func TestGenerateMessage_WithNestedMessages(t *testing.T) {
 	outDir := t.TempDir()
 
-	nested1 := &api.Message{Name: "Nested1", Package: "google.cloud.test.v1", ID: ".google.cloud.test.v1.WithNested.Nested1"}
-	nested2 := &api.Message{Name: "Nested2", Package: "google.cloud.test.v1", ID: ".google.cloud.test.v1.WithNested.Nested2"}
-	withNested := &api.Message{
-		Name:     "WithNested",
-		Package:  "google.cloud.test.v1",
-		ID:       ".google.cloud.test.v1.WithNested",
-		Messages: []*api.Message{nested1, nested2},
-	}
+	nested1 := api.NewTestMessage("Nested1")
+	nested2 := api.NewTestMessage("Nested2")
+	withNested := api.NewTestMessage("WithNested").
+		WithPackage("google.cloud.test.v1").
+		WithMessages(nested1, nested2)
 
-	model := api.NewTestAPI([]*api.Message{withNested}, []*api.Enum{}, []*api.Service{})
-	model.PackageName = "google.cloud.test.v1"
+	model := api.NewTestAPI([]*api.Message{withNested}, nil, nil)
 
 	library := &config.Library{
 		Swift: swiftConfig(t, nil),
@@ -144,19 +139,14 @@ func TestGenerateMessage_WithNestedMessages(t *testing.T) {
 func TestGenerateMessage_WithNestedEnum(t *testing.T) {
 	outDir := t.TempDir()
 
-	nestedEnum := &api.Enum{Name: "NestedEnum", Package: "google.cloud.test.v1", ID: ".google.cloud.test.v1.WithNestedEnum.NestedEnum"}
-	nestedEnum.Values = []*api.EnumValue{{Name: "NESTED_ENUM_UNSPECIFIED", Number: 0, Parent: nestedEnum}}
-	nestedEnum.UniqueNumberValues = nestedEnum.Values
+	nestedEnum := api.NewTestEnum("NestedEnum").
+		WithValues(api.NewTestEnumValue("NESTED_ENUM_UNSPECIFIED", 0))
 
-	withNested := &api.Message{
-		Name:    "WithNestedEnum",
-		Package: "google.cloud.test.v1",
-		ID:      ".google.cloud.test.v1.WithNestedEnum",
-		Enums:   []*api.Enum{nestedEnum},
-	}
+	withNested := api.NewTestMessage("WithNestedEnum").
+		WithPackage("google.cloud.test.v1").
+		WithEnums(nestedEnum)
 
-	model := api.NewTestAPI([]*api.Message{withNested}, []*api.Enum{}, []*api.Service{})
-	model.PackageName = "google.cloud.test.v1"
+	model := api.NewTestAPI([]*api.Message{withNested}, nil, nil)
 
 	library := &config.Library{
 		Swift: swiftConfig(t, nil),
@@ -188,27 +178,16 @@ func TestGenerateMessage_WithNestedEnum(t *testing.T) {
 func TestGenerateMessage_WithExternalImports(t *testing.T) {
 	outDir := t.TempDir()
 
-	externalMessage := &api.Message{
-		Name:    "ExternalMessage",
-		Package: "google.cloud.external.v1",
-		ID:      ".google.cloud.external.v1.ExternalMessage",
-	}
+	externalMessage := api.NewTestMessage("ExternalMessage").
+		WithPackage("google.cloud.external.v1")
 
-	message := &api.Message{
-		Name:    "LocalMessage",
-		Package: "google.cloud.test.v1",
-		ID:      ".google.cloud.test.v1.LocalMessage",
-		Fields: []*api.Field{
-			{
-				Name:    "ext_field",
-				Typez:   api.TypezMessage,
-				TypezID: ".google.cloud.external.v1.ExternalMessage",
-			},
-		},
-	}
+	message := api.NewTestMessage("LocalMessage").
+		WithPackage("google.cloud.test.v1").
+		WithFields(
+			api.NewTestField("ext_field").WithMessageType(externalMessage),
+		)
 
-	model := api.NewTestAPI([]*api.Message{message}, []*api.Enum{}, []*api.Service{})
-	model.PackageName = "google.cloud.test.v1"
+	model := api.NewTestAPI([]*api.Message{message}, nil, nil)
 	model.AddMessage(externalMessage)
 
 	swiftCfg := swiftConfig(t, []config.SwiftDependency{
@@ -248,41 +227,20 @@ func TestGenerateMessage_WithExternalImports(t *testing.T) {
 func TestGenerateMessage_WithRecursiveTypes(t *testing.T) {
 	outDir := t.TempDir()
 
-	nodeA := &api.Message{
-		Name:    "NodeA",
-		Package: "google.cloud.test.v1",
-		ID:      ".google.cloud.test.v1.NodeA",
-	}
-	nodeB := &api.Message{
-		Name:    "NodeB",
-		Package: "google.cloud.test.v1",
-		ID:      ".google.cloud.test.v1.NodeB",
-	}
+	nodeA := api.NewTestMessage("NodeA").WithPackage("google.cloud.test.v1")
+	nodeB := api.NewTestMessage("NodeB").WithPackage("google.cloud.test.v1")
 
-	fieldA := &api.Field{
-		Name:     "node_b",
-		Typez:    api.TypezMessage,
-		TypezID:  ".google.cloud.test.v1.NodeB",
-		Optional: true,
-		Parent:   nodeA,
-	}
-	nodeA.Fields = []*api.Field{fieldA}
+	fieldA := api.NewTestField("node_b").
+		WithMessageType(nodeB).
+		WithOptional()
+	nodeA.WithFields(fieldA)
 
-	fieldB := &api.Field{
-		Name:     "node_a",
-		Typez:    api.TypezMessage,
-		TypezID:  ".google.cloud.test.v1.NodeA",
-		Optional: true,
-		Parent:   nodeB,
-	}
-	nodeB.Fields = []*api.Field{fieldB}
+	fieldB := api.NewTestField("node_a").
+		WithMessageType(nodeA).
+		WithOptional()
+	nodeB.WithFields(fieldB)
 
-	// Set the MessageType fields correctly
-	fieldA.MessageType = nodeB
-	fieldB.MessageType = nodeA
-
-	model := api.NewTestAPI([]*api.Message{nodeA, nodeB}, []*api.Enum{}, []*api.Service{})
-	model.PackageName = "google.cloud.test.v1"
+	model := api.NewTestAPI([]*api.Message{nodeA, nodeB}, nil, nil)
 
 	// Run LabelRecursiveFields to mark recursive fields
 	api.LabelRecursiveFields(model)
@@ -318,24 +276,14 @@ func TestGenerateMessage_WithRecursiveTypes(t *testing.T) {
 func TestGenerateMessage_SelfRecursive(t *testing.T) {
 	outDir := t.TempDir()
 
-	node := &api.Message{
-		Name:    "Node",
-		Package: "google.cloud.test.v1",
-		ID:      ".google.cloud.test.v1.Node",
-	}
+	node := api.NewTestMessage("Node").WithPackage("google.cloud.test.v1")
 
-	field := &api.Field{
-		Name:     "child",
-		Typez:    api.TypezMessage,
-		TypezID:  ".google.cloud.test.v1.Node",
-		Optional: true,
-		Parent:   node,
-	}
-	node.Fields = []*api.Field{field}
-	field.MessageType = node
+	field := api.NewTestField("child").
+		WithMessageType(node).
+		WithOptional()
+	node.WithFields(field)
 
-	model := api.NewTestAPI([]*api.Message{node}, []*api.Enum{}, []*api.Service{})
-	model.PackageName = "google.cloud.test.v1"
+	model := api.NewTestAPI([]*api.Message{node}, nil, nil)
 
 	// Run LabelRecursiveFields to mark recursive fields
 	api.LabelRecursiveFields(model)
@@ -371,55 +319,26 @@ func TestGenerateMessage_SelfRecursive(t *testing.T) {
 func TestGenerateMessage_RecursiveChain(t *testing.T) {
 	outDir := t.TempDir()
 
-	nodeA := &api.Message{
-		Name:    "NodeA",
-		Package: "google.cloud.test.v1",
-		ID:      ".google.cloud.test.v1.NodeA",
-	}
-	nodeB := &api.Message{
-		Name:    "NodeB",
-		Package: "google.cloud.test.v1",
-		ID:      ".google.cloud.test.v1.NodeB",
-	}
-	nodeC := &api.Message{
-		Name:    "NodeC",
-		Package: "google.cloud.test.v1",
-		ID:      ".google.cloud.test.v1.NodeC",
-	}
+	nodeA := api.NewTestMessage("NodeA").WithPackage("google.cloud.test.v1")
+	nodeB := api.NewTestMessage("NodeB").WithPackage("google.cloud.test.v1")
+	nodeC := api.NewTestMessage("NodeC").WithPackage("google.cloud.test.v1")
 
-	fieldA := &api.Field{
-		Name:     "node_b",
-		Typez:    api.TypezMessage,
-		TypezID:  ".google.cloud.test.v1.NodeB",
-		Optional: true,
-		Parent:   nodeA,
-	}
-	nodeA.Fields = []*api.Field{fieldA}
+	fieldA := api.NewTestField("node_b").
+		WithMessageType(nodeB).
+		WithOptional()
+	nodeA.WithFields(fieldA)
 
-	fieldB := &api.Field{
-		Name:     "node_c",
-		Typez:    api.TypezMessage,
-		TypezID:  ".google.cloud.test.v1.NodeC",
-		Optional: true,
-		Parent:   nodeB,
-	}
-	nodeB.Fields = []*api.Field{fieldB}
+	fieldB := api.NewTestField("node_c").
+		WithMessageType(nodeC).
+		WithOptional()
+	nodeB.WithFields(fieldB)
 
-	fieldC := &api.Field{
-		Name:     "node_a",
-		Typez:    api.TypezMessage,
-		TypezID:  ".google.cloud.test.v1.NodeA",
-		Optional: true,
-		Parent:   nodeC,
-	}
-	nodeC.Fields = []*api.Field{fieldC}
+	fieldC := api.NewTestField("node_a").
+		WithMessageType(nodeA).
+		WithOptional()
+	nodeC.WithFields(fieldC)
 
-	fieldA.MessageType = nodeB
-	fieldB.MessageType = nodeC
-	fieldC.MessageType = nodeA
-
-	model := api.NewTestAPI([]*api.Message{nodeA, nodeB, nodeC}, []*api.Enum{}, []*api.Service{})
-	model.PackageName = "google.cloud.test.v1"
+	model := api.NewTestAPI([]*api.Message{nodeA, nodeB, nodeC}, nil, nil)
 
 	// Run LabelRecursiveFields to mark recursive fields
 	api.LabelRecursiveFields(model)
@@ -486,22 +405,15 @@ func TestGenerateMessage_RecursiveChain(t *testing.T) {
 func TestGenerateMessage_DocComments(t *testing.T) {
 	outDir := t.TempDir()
 
-	nested := &api.Message{
-		Name:          "NestedMessage",
-		Package:       "google.cloud.test.v1",
-		ID:            ".google.cloud.test.v1.TestMessage.NestedMessage",
-		Documentation: "Documentation for NestedMessage.",
-	}
-	msg := &api.Message{
-		Name:          "TestMessage",
-		Package:       "google.cloud.test.v1",
-		ID:            ".google.cloud.test.v1.TestMessage",
-		Documentation: "Documentation for TestMessage.",
-		Messages:      []*api.Message{nested},
-	}
+	nested := api.NewTestMessage("NestedMessage").
+		WithDocumentation("Documentation for NestedMessage.")
 
-	model := api.NewTestAPI([]*api.Message{msg}, []*api.Enum{}, []*api.Service{})
-	model.PackageName = "google.cloud.test.v1"
+	msg := api.NewTestMessage("TestMessage").
+		WithPackage("google.cloud.test.v1").
+		WithDocumentation("Documentation for TestMessage.").
+		WithMessages(nested)
+
+	model := api.NewTestAPI([]*api.Message{msg}, nil, nil)
 
 	library := &config.Library{
 		Swift: swiftConfig(t, nil),

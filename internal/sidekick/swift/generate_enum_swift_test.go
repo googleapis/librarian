@@ -28,23 +28,23 @@ import (
 func TestGenerateEnum_Files(t *testing.T) {
 	outDir := t.TempDir()
 
-	color := &api.Enum{Name: "Color", Package: "google.cloud.test.v1", ID: ".google.cloud.test.v1.Color"}
-	color.Values = []*api.EnumValue{{Name: "COLOR_UNSPECIFIED", Number: 0, Parent: color}}
-	color.UniqueNumberValues = color.Values
+	color := api.NewTestEnum("Color").
+		WithPackage("google.cloud.test.v1").
+		WithValues(api.NewTestEnumValue("COLOR_UNSPECIFIED", 0))
 
-	kind := &api.Enum{Name: "Kind", Package: "google.cloud.test.v1", ID: ".google.cloud.test.v1.Kind"}
-	kind.Values = []*api.EnumValue{{Name: "KIND_UNSPECIFIED", Number: 0, Parent: kind}}
-	kind.UniqueNumberValues = kind.Values
+	kind := api.NewTestEnum("Kind").
+		WithPackage("google.cloud.test.v1").
+		WithValues(api.NewTestEnumValue("KIND_UNSPECIFIED", 0))
 
-	clash0 := &api.Enum{Name: "ClashName", Package: "google.cloud.test.v1", ID: ".google.cloud.test.v1.ClashName"}
-	clash0.Values = []*api.EnumValue{{Name: "CLASH_UNSPECIFIED", Number: 0, Parent: clash0}}
-	clash0.UniqueNumberValues = clash0.Values
-	clash1 := &api.Enum{Name: "clashName", Package: "google.cloud.test.v1", ID: ".google.cloud.test.v1.clashName"}
-	clash1.Values = []*api.EnumValue{{Name: "CLASH_UNSPECIFIED", Number: 0, Parent: clash1}}
-	clash1.UniqueNumberValues = clash1.Values
+	clash0 := api.NewTestEnum("ClashName").
+		WithPackage("google.cloud.test.v1").
+		WithValues(api.NewTestEnumValue("CLASH_UNSPECIFIED", 0))
 
-	model := api.NewTestAPI([]*api.Message{}, []*api.Enum{color, kind, clash0, clash1}, []*api.Service{})
-	model.PackageName = "google.cloud.test.v1"
+	clash1 := api.NewTestEnum("clashName").
+		WithPackage("google.cloud.test.v1").
+		WithValues(api.NewTestEnumValue("CLASH_UNSPECIFIED", 0))
+
+	model := api.NewTestAPI(nil, []*api.Enum{color, kind, clash0, clash1}, nil)
 	library := &config.Library{}
 	if err := Generate(t.Context(), model, outDir, library, nil); err != nil {
 		t.Fatal(err)
@@ -68,16 +68,16 @@ func TestGenerateEnum_Files(t *testing.T) {
 func TestGenerateEnum_UniqueNumbers(t *testing.T) {
 	outDir := t.TempDir()
 
-	kind := &api.Enum{Name: "Kind", Package: "google.cloud.test.v1", ID: ".google.cloud.test.v1.Kind"}
-	kind.Values = []*api.EnumValue{
-		{Name: "KIND_UNSPECIFIED", Number: 0, Parent: kind},
-		{Name: "KIND_TEST", Number: 0, Parent: kind},
-		{Name: "KIND_OTHER_TEST", Number: 1, Parent: kind},
-	}
-	kind.UniqueNumberValues = []*api.EnumValue{kind.Values[1], kind.Values[2]}
+	val0 := api.NewTestEnumValue("KIND_UNSPECIFIED", 0)
+	val1 := api.NewTestEnumValue("KIND_TEST", 0)
+	val2 := api.NewTestEnumValue("KIND_OTHER_TEST", 1)
+
+	kind := api.NewTestEnum("Kind").
+		WithPackage("google.cloud.test.v1").
+		WithValues(val0, val1, val2).
+		WithUniqueNumberValues(val1, val2)
 
 	model := api.NewTestAPI(nil, []*api.Enum{kind}, nil)
-	model.PackageName = "google.cloud.test.v1"
 	library := &config.Library{}
 	if err := Generate(t.Context(), model, outDir, library, nil); err != nil {
 		t.Fatal(err)
@@ -120,24 +120,14 @@ func TestGenerateEnum_UniqueNumbers(t *testing.T) {
 func TestGenerateEnum_DocComments(t *testing.T) {
 	outDir := t.TempDir()
 
-	color := &api.Enum{
-		Name:          "Color",
-		Package:       "google.cloud.test.v1",
-		ID:            ".google.cloud.test.v1.Color",
-		Documentation: "Documentation for the Color enum.",
-	}
-	color.Values = []*api.EnumValue{
-		{
-			Name:          "COLOR_UNSPECIFIED",
-			Number:        0,
-			Parent:        color,
-			Documentation: "Documentation for the COLOR_UNSPECIFIED value.",
-		},
-	}
-	color.UniqueNumberValues = color.Values
+	val := api.NewTestEnumValue("COLOR_UNSPECIFIED", 0).
+		WithDocumentation("Documentation for the COLOR_UNSPECIFIED value.")
+	color := api.NewTestEnum("Color").
+		WithPackage("google.cloud.test.v1").
+		WithDocumentation("Documentation for the Color enum.").
+		WithValues(val)
 
-	model := api.NewTestAPI([]*api.Message{}, []*api.Enum{color}, []*api.Service{})
-	model.PackageName = "google.cloud.test.v1"
+	model := api.NewTestAPI(nil, []*api.Enum{color}, nil)
 	library := &config.Library{}
 	if err := Generate(t.Context(), model, outDir, library, nil); err != nil {
 		t.Fatal(err)

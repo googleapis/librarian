@@ -156,3 +156,13 @@ func TestField_WithRecursive(t *testing.T) {
 		t.Errorf("expected Recursive to be true")
 	}
 }
+
+func TestNewTestAPI_IndexesNestedMessages(t *testing.T) {
+	child := api.NewTestMessage("Child")
+	parent := api.NewTestMessage("Parent").WithMessages(child)
+	model := api.NewTestAPI([]*api.Message{parent}, nil, nil)
+
+	if got := model.Message(child.ID); got != child {
+		t.Errorf("model.Message(%q) = %v, want %v", child.ID, got, child)
+	}
+}

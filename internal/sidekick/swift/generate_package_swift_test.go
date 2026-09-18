@@ -34,9 +34,9 @@ func TestGeneratePackageSwift_WithDependencies(t *testing.T) {
 	}
 	defer os.RemoveAll("generated")
 
-	service := &api.Service{Name: "Workflows", Package: "google.cloud.workflows.v1"}
+	service := api.NewTestService("Workflows").
+		WithPackage("google.cloud.workflows.v1")
 	model := api.NewTestAPI(nil, nil, []*api.Service{service})
-	model.PackageName = "google.cloud.workflows.v1"
 
 	swiftCfg := &config.SwiftPackage{
 		SwiftDefault: config.SwiftDefault{

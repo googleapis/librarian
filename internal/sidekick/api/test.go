@@ -16,6 +16,7 @@ package api
 
 import (
 	"fmt"
+	"slices"
 	"strings"
 
 	"github.com/iancoleman/strcase"
@@ -35,8 +36,8 @@ func NewTestAPI(messages []*Message, enums []*Enum, services []*Service) *API {
 		resourceByType: make(map[string]*Resource),
 	}
 
-	for _, m := range messages {
-		model.PackageName = m.Package
+	var indexMessage func(m *Message)
+	indexMessage = func(m *Message) {
 		model.messageByID[m.ID] = m
 		if m.Resource != nil {
 			model.resourceByType[m.Resource.Type] = m.Resource
@@ -44,6 +45,13 @@ func NewTestAPI(messages []*Message, enums []*Enum, services []*Service) *API {
 		for _, e := range m.Enums {
 			model.enumByID[e.ID] = e
 		}
+		for _, child := range m.Messages {
+			indexMessage(child)
+		}
+	}
+	for _, m := range messages {
+		model.PackageName = m.Package
+		indexMessage(m)
 	}
 	for _, e := range enums {
 		model.PackageName = e.Package
@@ -61,7 +69,9 @@ func NewTestAPI(messages []*Message, enums []*Enum, services []*Service) *API {
 		parent := model.messageByID[parentID]
 		if parent != nil {
 			m.Parent = parent
-			parent.Messages = append(parent.Messages, m)
+			if !slices.Contains(parent.Messages, m) {
+				parent.Messages = append(parent.Messages, m)
+			}
 		}
 	}
 	for _, e := range enums {
