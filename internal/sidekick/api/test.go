@@ -41,6 +41,9 @@ func NewTestAPI(messages []*Message, enums []*Enum, services []*Service) *API {
 		if m.Resource != nil {
 			model.resourceByType[m.Resource.Type] = m.Resource
 		}
+		for _, e := range m.Enums {
+			model.enumByID[e.ID] = e
+		}
 	}
 	for _, e := range enums {
 		model.PackageName = e.Package
@@ -150,6 +153,24 @@ func (m *Message) WithOneOfs(oneofs ...*OneOf) *Message {
 		m.OneOfs = append(m.OneOfs, o)
 		m.WithFields(o.Fields...)
 	}
+	return m
+}
+
+// WithEnums adds enums to the message and updates their parent/ID.
+func (m *Message) WithEnums(enums ...*Enum) *Message {
+	for _, e := range enums {
+		e.Parent = m
+		if strings.HasPrefix(e.ID, ".test.") || e.ID == "" {
+			e.ID = fmt.Sprintf("%s.%s", m.ID, e.Name)
+		}
+		for _, v := range e.Values {
+			v.Parent = e
+			if strings.HasPrefix(v.ID, ".test.") || v.ID == "" {
+				v.ID = fmt.Sprintf("%s.%s", e.ID, v.Name)
+			}
+		}
+	}
+	m.Enums = append(m.Enums, enums...)
 	return m
 }
 
@@ -454,6 +475,105 @@ func (r *Resource) WithSingular(name string) *Resource {
 func (r *Resource) WithPlural(name string) *Resource {
 	r.Plural = name
 	return r
+}
+
+// NewTestEnum creates an Enum with defaults for testing.
+// Default package is "test".
+func NewTestEnum(name string) *Enum {
+	return (&Enum{Name: name}).WithPackage("test")
+}
+
+// WithPackage sets the package for the enum and updates its ID.
+func (e *Enum) WithPackage(pkg string) *Enum {
+	e.Package = pkg
+	e.ID = fmt.Sprintf(".%s.%s", pkg, e.Name)
+	return e
+}
+
+// WithID overrides the enum's ID.
+func (e *Enum) WithID(id string) *Enum {
+	e.ID = id
+	return e
+}
+
+// WithDocumentation sets the documentation for the enum.
+func (e *Enum) WithDocumentation(doc string) *Enum {
+	e.Documentation = doc
+	return e
+}
+
+// WithDeprecated sets whether the enum is deprecated.
+func (e *Enum) WithDeprecated(deprecated bool) *Enum {
+	e.Deprecated = deprecated
+	return e
+}
+
+// WithParent sets the parent message for the enum and updates its ID.
+func (e *Enum) WithParent(parent *Message) *Enum {
+	e.Parent = parent
+	if parent != nil {
+		e.Package = parent.Package
+		e.ID = fmt.Sprintf("%s.%s", parent.ID, e.Name)
+		for _, v := range e.Values {
+			v.ID = fmt.Sprintf("%s.%s", e.ID, v.Name)
+		}
+	}
+	return e
+}
+
+// WithValues adds values to the enum, setting their Parent, ID, and populating UniqueNumberValues.
+func (e *Enum) WithValues(values ...*EnumValue) *Enum {
+	for _, v := range values {
+		v.Parent = e
+		if strings.HasPrefix(v.ID, ".test.") || v.ID == "" {
+			v.ID = fmt.Sprintf("%s.%s", e.ID, v.Name)
+		}
+	}
+	e.Values = append(e.Values, values...)
+	seen := make(map[int32]bool)
+	for _, v := range e.UniqueNumberValues {
+		seen[v.Number] = true
+	}
+	for _, v := range values {
+		if !seen[v.Number] {
+			e.UniqueNumberValues = append(e.UniqueNumberValues, v)
+			seen[v.Number] = true
+		}
+	}
+	return e
+}
+
+// WithUniqueNumberValues overrides UniqueNumberValues on the enum.
+func (e *Enum) WithUniqueNumberValues(values ...*EnumValue) *Enum {
+	e.UniqueNumberValues = values
+	return e
+}
+
+// NewTestEnumValue creates an EnumValue with defaults for testing.
+func NewTestEnumValue(name string, number int32) *EnumValue {
+	return &EnumValue{
+		Name:   name,
+		Number: number,
+		ID:     fmt.Sprintf(".test.%s", name),
+	}
+}
+
+// WithID overrides the enum value's ID.
+func (ev *EnumValue) WithID(id string) *EnumValue {
+	ev.ID = id
+	return ev
+}
+
+// WithDocumentation sets the documentation for the enum value.
+func (ev *EnumValue) WithDocumentation(doc string) *EnumValue {
+	ev.Documentation = doc
+	return ev
+}
+
+// WithDeprecated sets whether the enum value is deprecated.
+func (ev *EnumValue) WithDeprecated(deprecated bool) *EnumValue {
+	ev.Deprecated = deprecated
+	return ev
 }
 
 // ParseTemplateForTest converts a string literal into a []PathSegment slice for testing purposes.
