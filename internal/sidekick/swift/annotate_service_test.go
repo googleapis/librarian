@@ -72,13 +72,9 @@ func TestAnnotateService(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			s := &api.Service{
-				Name:          test.serviceName,
-				Documentation: test.doc,
-				Package:       "test",
-			}
+			s := api.NewTestService(test.serviceName)
+			s.Documentation = test.doc
 			model := api.NewTestAPI(nil, nil, []*api.Service{s})
-			model.PackageName = "test"
 			codec := newTestCodec(t, model, nil)
 
 			if err := codec.annotateModel(); err != nil {
@@ -98,50 +94,24 @@ func TestAnnotateService(t *testing.T) {
 }
 
 func TestAnnotateService_SkipNoBindings(t *testing.T) {
-	inputType := &api.Message{
-		Name:    "Request",
-		ID:      ".test.Request",
-		Package: "test",
-	}
-	outputType := &api.Message{
-		Name:    "Response",
-		ID:      ".test.Response",
-		Package: "test",
-	}
-	service := &api.Service{
-		Name:    "TestService",
-		ID:      ".test.TestService",
-		Package: "test",
-		Methods: []*api.Method{
-			{
-				Name:         "ValidMethod",
-				InputTypeID:  inputType.ID,
-				InputType:    inputType,
-				OutputTypeID: outputType.ID,
-				OutputType:   outputType,
-				PathInfo: &api.PathInfo{
-					Bindings: []*api.PathBinding{{Verb: "GET", PathTemplate: &api.PathTemplate{}}},
-				},
-			},
-			{
-				Name:         "NoBindingMethod",
-				InputTypeID:  inputType.ID,
-				InputType:    inputType,
-				OutputTypeID: outputType.ID,
-				OutputType:   outputType,
-				PathInfo: &api.PathInfo{
-					Bindings: []*api.PathBinding{},
-				},
-			},
-			{
-				Name:         "NilPathInfoMethod",
-				InputTypeID:  inputType.ID,
-				InputType:    inputType,
-				OutputTypeID: outputType.ID,
-				OutputType:   outputType,
-			},
-		},
-	}
+	inputType := api.NewTestMessage("Request")
+	outputType := api.NewTestMessage("Response")
+	validMethod := api.NewTestMethod("ValidMethod").
+		WithInput(inputType).
+		WithOutput(outputType).
+		WithVerb("GET").
+		WithPathTemplate(&api.PathTemplate{})
+	noBindingMethod := api.NewTestMethod("NoBindingMethod").
+		WithInput(inputType).
+		WithOutput(outputType).
+		WithBindings()
+	nilPathInfoMethod := api.NewTestMethod("NilPathInfoMethod").
+		WithInput(inputType).
+		WithOutput(outputType)
+	nilPathInfoMethod.PathInfo = nil
+
+	service := api.NewTestService("TestService").
+		WithMethods(validMethod, noBindingMethod, nilPathInfoMethod)
 
 	model := api.NewTestAPI(nil, nil, []*api.Service{service})
 	codec := newTestCodec(t, model, nil)
@@ -179,40 +149,29 @@ func TestAnnotateService_Quickstart(t *testing.T) {
 		},
 		{
 			name: "non-generated quickstart (nil PathInfo)",
-			quickstartMethod: &api.Method{
-				Name:     "Quickstart",
-				PathInfo: nil,
-			},
+			quickstartMethod: func() *api.Method {
+				m := api.NewTestMethod("Quickstart")
+				m.PathInfo = nil
+				return m
+			}(),
 			wantQuickstart: false,
 		},
 		{
-			name: "non-generated quickstart (empty bindings)",
-			quickstartMethod: &api.Method{
-				Name: "Quickstart",
-				PathInfo: &api.PathInfo{
-					Bindings: []*api.PathBinding{},
-				},
-			},
-			wantQuickstart: false,
+			name:             "non-generated quickstart (empty bindings)",
+			quickstartMethod: api.NewTestMethod("Quickstart").WithBindings(),
+			wantQuickstart:   false,
 		},
 		{
 			name: "generated quickstart",
-			quickstartMethod: &api.Method{
-				Name: "Quickstart",
-				PathInfo: &api.PathInfo{
-					Bindings: []*api.PathBinding{{Verb: "GET", PathTemplate: &api.PathTemplate{}}},
-				},
-			},
+			quickstartMethod: api.NewTestMethod("Quickstart").
+				WithVerb("GET").
+				WithPathTemplate(&api.PathTemplate{}),
 			wantQuickstart: true,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			service := &api.Service{
-				Name:             "TestService",
-				Package:          "test",
-				ID:               ".test.TestService",
-				QuickstartMethod: test.quickstartMethod,
-			}
+			service := api.NewTestService("TestService")
+			service.QuickstartMethod = test.quickstartMethod
 
 			model := api.NewTestAPI(nil, nil, []*api.Service{service})
 			codec := newTestCodec(t, model, nil)
@@ -294,49 +253,22 @@ func TestAnnotateService_RequiredServices(t *testing.T) {
 }
 
 func TestAnnotateService_LRO(t *testing.T) {
-	inputType := &api.Message{
-		Name:    "Request",
-		Package: "test",
-		ID:      ".test.Request",
-	}
-	outputType := &api.Message{
-		Name:    "Operation",
-		Package: "google.longrunning",
-		ID:      ".google.longrunning.Operation",
-	}
-	lroResponseType := &api.Message{
-		Name:    "LroResponse",
-		Package: "external",
-		ID:      ".external.LroResponse",
-	}
-	lroMetadataType := &api.Message{
-		Name:    "LroMetadata",
-		Package: "external",
-		ID:      ".external.LroMetadata",
-	}
+	inputType := api.NewTestMessage("Request")
+	outputType := api.NewTestMessage("Operation").WithPackage("google.longrunning")
+	lroResponseType := api.NewTestMessage("LroResponse").WithPackage("external")
+	lroMetadataType := api.NewTestMessage("LroMetadata").WithPackage("external")
 
-	method := &api.Method{
-		Name:         "LroMethod",
-		InputTypeID:  inputType.ID,
-		InputType:    inputType,
-		OutputTypeID: outputType.ID,
-		OutputType:   outputType,
-		PathInfo: &api.PathInfo{
-			Bindings: []*api.PathBinding{{Verb: "POST", PathTemplate: &api.PathTemplate{}}},
-		},
-		IsLRO: true,
-		OperationInfo: &api.OperationInfo{
+	method := api.NewTestMethod("LroMethod").
+		WithInput(inputType).
+		WithOutput(outputType).
+		WithVerb("POST").
+		WithPathTemplate(&api.PathTemplate{}).
+		WithOperationInfo(&api.OperationInfo{
 			ResponseTypeID: lroResponseType.ID,
 			MetadataTypeID: lroMetadataType.ID,
-		},
-	}
+		})
 
-	service := &api.Service{
-		Name:    "TestService",
-		ID:      ".test.TestService",
-		Package: "test",
-		Methods: []*api.Method{method},
-	}
+	service := api.NewTestService("TestService").WithMethods(method)
 
 	model := api.NewTestAPI([]*api.Message{inputType, outputType, lroResponseType, lroMetadataType}, nil, []*api.Service{service})
 	model.PackageName = "test"

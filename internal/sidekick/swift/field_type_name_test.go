@@ -49,7 +49,7 @@ func TestScalarFieldTypeName(t *testing.T) {
 		{"default enum", api.TypezEnum, "", true},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			field := &api.Field{Typez: test.typez, ID: ".test.field"}
+			field := api.NewTestField("field").WithType(test.typez)
 			got, err := scalarFieldTypeName(field)
 			if test.wantErr {
 				if err == nil {
@@ -68,26 +68,13 @@ func TestScalarFieldTypeName(t *testing.T) {
 }
 
 func TestFieldTypeName_BaseMessage(t *testing.T) {
-	outer := &api.Message{
-		Name:    "OuterMessage",
-		Package: "google.cloud.test.v1",
-		ID:      ".google.cloud.test.v1.OuterMessage",
-	}
-	nested := &api.Message{
-		Name:    "NestedMessage",
-		Package: "google.cloud.test.v1",
-		ID:      ".google.cloud.test.v1.OuterMessage.NestedMessage",
-		Parent:  outer,
-	}
-	outer.Messages = append(outer.Messages, nested)
-	simple := &api.Message{
-		Name:    "SimpleMessage",
-		Package: "google.cloud.test.v1",
-		ID:      ".google.cloud.test.v1.SimpleMessage",
-	}
+	outer := api.NewTestMessage("OuterMessage").WithPackage("google.cloud.test.v1")
+	nested := api.NewTestMessage("NestedMessage").
+		WithPackage("google.cloud.test.v1").
+		WithID(".google.cloud.test.v1.OuterMessage.NestedMessage")
+	simple := api.NewTestMessage("SimpleMessage").WithPackage("google.cloud.test.v1")
 
-	model := api.NewTestAPI([]*api.Message{outer, simple}, nil, nil)
-	model.AddMessage(nested)
+	model := api.NewTestAPI([]*api.Message{outer, simple, nested}, nil, nil)
 	c := newTestCodec(t, model, nil)
 
 	for _, test := range []struct {
@@ -97,20 +84,14 @@ func TestFieldTypeName_BaseMessage(t *testing.T) {
 	}{
 		{
 			name: "simple message",
-			field: &api.Field{
-				Typez:   api.TypezMessage,
-				TypezID: ".google.cloud.test.v1.SimpleMessage",
-				ID:      ".test.field1",
-			},
+			field: api.NewTestField("field1").
+				WithMessageType(simple),
 			want: "SimpleMessage",
 		},
 		{
 			name: "nested message",
-			field: &api.Field{
-				Typez:   api.TypezMessage,
-				TypezID: ".google.cloud.test.v1.OuterMessage.NestedMessage",
-				ID:      ".test.field2",
-			},
+			field: api.NewTestField("field2").
+				WithMessageType(nested),
 			want: "OuterMessage.NestedMessage",
 		},
 	} {
@@ -128,26 +109,13 @@ func TestFieldTypeName_BaseMessage(t *testing.T) {
 }
 
 func TestFieldTypeName_BaseEnum(t *testing.T) {
-	outer := &api.Message{
-		Name:    "OuterMessage",
-		Package: "google.cloud.test.v1",
-		ID:      ".google.cloud.test.v1.OuterMessage",
-	}
-	nested := &api.Enum{
-		Name:    "NestedEnum",
-		Package: "google.cloud.test.v1",
-		ID:      ".google.cloud.test.v1.OuterMessage.NestedEnum",
-		Parent:  outer,
-	}
-	outer.Enums = append(outer.Enums, nested)
-	simple := &api.Enum{
-		Name:    "SimpleEnum",
-		Package: "google.cloud.test.v1",
-		ID:      ".google.cloud.test.v1.SimpleEnum",
-	}
+	nested := api.NewTestEnum("NestedEnum")
+	outer := api.NewTestMessage("OuterMessage").
+		WithPackage("google.cloud.test.v1").
+		WithEnums(nested)
+	simple := api.NewTestEnum("SimpleEnum").WithPackage("google.cloud.test.v1")
 
 	model := api.NewTestAPI([]*api.Message{outer}, []*api.Enum{simple}, nil)
-	model.AddEnum(nested)
 	c := newTestCodec(t, model, nil)
 
 	for _, test := range []struct {
@@ -157,20 +125,16 @@ func TestFieldTypeName_BaseEnum(t *testing.T) {
 	}{
 		{
 			name: "simple enum",
-			field: &api.Field{
-				Typez:   api.TypezEnum,
-				TypezID: ".google.cloud.test.v1.SimpleEnum",
-				ID:      ".test.field1",
-			},
+			field: api.NewTestField("field1").
+				WithType(api.TypezEnum).
+				WithTypezID(simple.ID),
 			want: "SimpleEnum",
 		},
 		{
 			name: "nested enum",
-			field: &api.Field{
-				Typez:   api.TypezEnum,
-				TypezID: ".google.cloud.test.v1.OuterMessage.NestedEnum",
-				ID:      ".test.field2",
-			},
+			field: api.NewTestField("field2").
+				WithType(api.TypezEnum).
+				WithTypezID(nested.ID),
 			want: "OuterMessage.NestedEnum",
 		},
 	} {
@@ -188,11 +152,7 @@ func TestFieldTypeName_BaseEnum(t *testing.T) {
 }
 
 func TestFieldTypeName_Optional(t *testing.T) {
-	secret := &api.Message{
-		Name:    "Secret",
-		Package: "google.cloud.test.v1",
-		ID:      ".google.cloud.test.v1.Secret",
-	}
+	secret := api.NewTestMessage("Secret").WithPackage("google.cloud.test.v1")
 
 	model := api.NewTestAPI([]*api.Message{secret}, nil, nil)
 	c := newTestCodec(t, model, nil)
@@ -204,13 +164,9 @@ func TestFieldTypeName_Optional(t *testing.T) {
 	}{
 		{
 			name: "optional message Secret",
-			field: &api.Field{
-				Typez:       api.TypezMessage,
-				TypezID:     ".google.cloud.test.v1.Secret",
-				ID:          ".test.field1",
-				Optional:    true,
-				MessageType: secret,
-			},
+			field: api.NewTestField("field1").
+				WithMessageType(secret).
+				WithOptional(),
 			want: &fieldTypeNames{
 				Base: "Secret",
 				Full: "Secret?",
@@ -218,11 +174,9 @@ func TestFieldTypeName_Optional(t *testing.T) {
 		},
 		{
 			name: "optional string",
-			field: &api.Field{
-				Typez:    api.TypezString,
-				ID:       ".test.field5",
-				Optional: true,
-			},
+			field: api.NewTestField("field5").
+				WithType(api.TypezString).
+				WithOptional(),
 			want: &fieldTypeNames{
 				Base: "Swift.String",
 				Full: "Swift.String?",
@@ -230,11 +184,9 @@ func TestFieldTypeName_Optional(t *testing.T) {
 		},
 		{
 			name: "optional bytes",
-			field: &api.Field{
-				Typez:    api.TypezBytes,
-				ID:       ".test.field7",
-				Optional: true,
-			},
+			field: api.NewTestField("field7").
+				WithType(api.TypezBytes).
+				WithOptional(),
 			want: &fieldTypeNames{
 				Base: "Foundation.Data",
 				Full: "Foundation.Data?",
@@ -242,11 +194,9 @@ func TestFieldTypeName_Optional(t *testing.T) {
 		},
 		{
 			name: "optional int32",
-			field: &api.Field{
-				Typez:    api.TypezInt32,
-				ID:       ".test.field9",
-				Optional: true,
-			},
+			field: api.NewTestField("field9").
+				WithType(api.TypezInt32).
+				WithOptional(),
 			want: &fieldTypeNames{
 				Base: "Swift.Int32",
 				Full: "Swift.Int32?",
@@ -266,11 +216,7 @@ func TestFieldTypeName_Optional(t *testing.T) {
 }
 
 func TestFieldTypeName_Repeated(t *testing.T) {
-	secret := &api.Message{
-		Name:    "Secret",
-		Package: "google.cloud.test.v1",
-		ID:      ".google.cloud.test.v1.Secret",
-	}
+	secret := api.NewTestMessage("Secret").WithPackage("google.cloud.test.v1")
 
 	model := api.NewTestAPI([]*api.Message{secret}, nil, nil)
 	c := newTestCodec(t, model, nil)
@@ -282,13 +228,9 @@ func TestFieldTypeName_Repeated(t *testing.T) {
 	}{
 		{
 			name: "repeated message Secret",
-			field: &api.Field{
-				Typez:       api.TypezMessage,
-				TypezID:     ".google.cloud.test.v1.Secret",
-				ID:          ".test.field2",
-				Repeated:    true,
-				MessageType: secret,
-			},
+			field: api.NewTestField("field2").
+				WithMessageType(secret).
+				WithRepeated(),
 			want: &fieldTypeNames{
 				Base: "Secret",
 				Full: "[Secret]",
@@ -296,11 +238,9 @@ func TestFieldTypeName_Repeated(t *testing.T) {
 		},
 		{
 			name: "repeated string",
-			field: &api.Field{
-				Typez:    api.TypezString,
-				ID:       ".test.field6",
-				Repeated: true,
-			},
+			field: api.NewTestField("field6").
+				WithType(api.TypezString).
+				WithRepeated(),
 			want: &fieldTypeNames{
 				Base: "Swift.String",
 				Full: "[Swift.String]",
@@ -308,11 +248,9 @@ func TestFieldTypeName_Repeated(t *testing.T) {
 		},
 		{
 			name: "repeated bytes",
-			field: &api.Field{
-				Typez:    api.TypezBytes,
-				ID:       ".test.field8",
-				Repeated: true,
-			},
+			field: api.NewTestField("field8").
+				WithType(api.TypezBytes).
+				WithRepeated(),
 			want: &fieldTypeNames{
 				Base: "Foundation.Data",
 				Full: "[Foundation.Data]",
@@ -320,11 +258,9 @@ func TestFieldTypeName_Repeated(t *testing.T) {
 		},
 		{
 			name: "repeated int32",
-			field: &api.Field{
-				Typez:    api.TypezInt32,
-				ID:       ".test.field10",
-				Repeated: true,
-			},
+			field: api.NewTestField("field10").
+				WithType(api.TypezInt32).
+				WithRepeated(),
 			want: &fieldTypeNames{
 				Base: "Swift.Int32",
 				Full: "[Swift.Int32]",
@@ -344,27 +280,20 @@ func TestFieldTypeName_Repeated(t *testing.T) {
 }
 
 func TestFieldTypeName_Map(t *testing.T) {
-	mapEntry := &api.Message{
-		Name:    "SingularMapEntry",
-		Package: "google.cloud.test.v1",
-		ID:      ".google.cloud.test.v1.WithMap.SingularMapEntry",
-		IsMap:   true,
-		Fields: []*api.Field{
-			{Name: "key", Typez: api.TypezString, ID: ".google.cloud.test.v1.WithMap.SingularMapEntry.key"},
-			{Name: "value", Typez: api.TypezInt32, ID: ".google.cloud.test.v1.WithMap.SingularMapEntry.value"},
-		},
-	}
+	mapEntry := api.NewTestMessage("SingularMapEntry").
+		WithPackage("google.cloud.test.v1").
+		WithID(".google.cloud.test.v1.WithMap.SingularMapEntry").
+		WithFields(
+			api.NewTestField("key").WithType(api.TypezString),
+			api.NewTestField("value").WithType(api.TypezInt32),
+		)
+	mapEntry.IsMap = true
 
-	model := api.NewTestAPI(nil, nil, nil)
-	model.PackageName = mapEntry.Package
-	model.AddMessage(mapEntry)
+	model := api.NewTestAPI([]*api.Message{mapEntry}, nil, nil)
 	c := newTestCodec(t, model, nil)
 
-	field := &api.Field{
-		Typez:   api.TypezMessage,
-		TypezID: ".google.cloud.test.v1.WithMap.SingularMapEntry",
-		ID:      ".test.field1",
-	}
+	field := api.NewTestField("field1").
+		WithMessageType(mapEntry)
 
 	got, err := c.fieldTypeName(field)
 	if err != nil {
@@ -382,15 +311,11 @@ func TestFieldTypeName_Map(t *testing.T) {
 }
 
 func TestFieldTypeName_ExternalMessage(t *testing.T) {
-	externalMessage := &api.Message{
-		Name:    "ExternalMessage",
-		Package: "google.cloud.external.v1",
-		ID:      ".google.cloud.external.v1.ExternalMessage",
-	}
+	externalMessage := api.NewTestMessage("ExternalMessage").
+		WithPackage("google.cloud.external.v1")
 
-	model := api.NewTestAPI(nil, nil, nil)
-	model.PackageName = "google.cloud.test.v1"
-	model.AddMessage(externalMessage)
+	model := api.NewTestAPI([]*api.Message{externalMessage}, nil, nil).
+		WithPackageName("google.cloud.test.v1")
 	c := newTestCodec(t, model, nil)
 	ann := &modelAnnotations{DependsOn: map[string]*Dependency{}}
 	c.Model.Codec = ann
@@ -416,15 +341,11 @@ func TestFieldTypeName_ExternalMessage(t *testing.T) {
 }
 
 func TestFieldTypeName_ExternalEnum(t *testing.T) {
-	externalEnum := &api.Enum{
-		Name:    "ExternalEnum",
-		Package: "google.cloud.external.v1",
-		ID:      ".google.cloud.external.v1.ExternalEnum",
-	}
+	externalEnum := api.NewTestEnum("ExternalEnum").
+		WithPackage("google.cloud.external.v1")
 
-	model := api.NewTestAPI(nil, nil, nil)
-	model.PackageName = "google.cloud.test.v1"
-	model.AddEnum(externalEnum)
+	model := api.NewTestAPI(nil, []*api.Enum{externalEnum}, nil).
+		WithPackageName("google.cloud.test.v1")
 	c := newTestCodec(t, model, nil)
 	ann := &modelAnnotations{DependsOn: map[string]*Dependency{}}
 	c.Model.Codec = ann
@@ -450,23 +371,14 @@ func TestFieldTypeName_ExternalEnum(t *testing.T) {
 }
 
 func TestFieldTypeName_ExternalNestedMessage(t *testing.T) {
-	externalOuter := &api.Message{
-		Name:    "OuterMessage",
-		Package: "google.cloud.external.v1",
-		ID:      ".google.cloud.external.v1.OuterMessage",
-	}
-	externalNested := &api.Message{
-		Name:    "NestedMessage",
-		Package: "google.cloud.external.v1",
-		ID:      ".google.cloud.external.v1.OuterMessage.NestedMessage",
-		Parent:  externalOuter,
-	}
-	externalOuter.Messages = append(externalOuter.Messages, externalNested)
+	externalOuter := api.NewTestMessage("OuterMessage").
+		WithPackage("google.cloud.external.v1")
+	externalNested := api.NewTestMessage("NestedMessage").
+		WithPackage("google.cloud.external.v1").
+		WithID(".google.cloud.external.v1.OuterMessage.NestedMessage")
 
-	model := api.NewTestAPI(nil, nil, nil)
-	model.PackageName = "google.cloud.test.v1"
-	model.AddMessage(externalNested)
-	model.AddMessage(externalOuter)
+	model := api.NewTestAPI([]*api.Message{externalOuter, externalNested}, nil, nil).
+		WithPackageName("google.cloud.test.v1")
 	c := newTestCodec(t, model, nil)
 	c.withExtraDependencies(t, []config.SwiftDependency{
 		{
@@ -486,13 +398,9 @@ func TestFieldTypeName_ExternalNestedMessage(t *testing.T) {
 }
 
 func TestFullyQualifiedMessageTypeName(t *testing.T) {
-	msg := &api.Message{
-		Name:    "TestMessage",
-		Package: "google.cloud.test.v1",
-		ID:      ".google.cloud.test.v1.TestMessage",
-	}
+	msg := api.NewTestMessage("TestMessage").
+		WithPackage("google.cloud.test.v1")
 	model := api.NewTestAPI([]*api.Message{msg}, nil, nil)
-	model.PackageName = "google.cloud.test.v1"
 
 	t.Run("standalone library with LibraryName", func(t *testing.T) {
 		c := newTestCodec(t, model, nil)
