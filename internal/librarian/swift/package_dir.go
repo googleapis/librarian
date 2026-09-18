@@ -28,7 +28,7 @@ func PackageDirectory(dir string) string {
 		return ""
 	}
 	current := filepath.Clean(dir)
-	for {
+	for current != "." {
 		if _, err := os.Stat(filepath.Join(current, "Package.swift")); err == nil {
 			return current
 		}

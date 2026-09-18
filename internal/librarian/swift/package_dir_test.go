@@ -62,4 +62,16 @@ func TestPackageDirectory(t *testing.T) {
 			t.Errorf("PackageDirectory(%q) = %q, want %q", nestedDir, got, pkgRoot)
 		}
 	})
+
+	t.Run("relative path ignores monorepo root Package.swift", func(t *testing.T) {
+		tempDir := t.TempDir()
+		t.Chdir(tempDir)
+		if err := os.WriteFile("Package.swift", []byte("// root package\n"), 0o644); err != nil {
+			t.Fatal(err)
+		}
+		relDir := filepath.Join("generated", "swift-google-rpc")
+		if got := PackageDirectory(relDir); got != relDir {
+			t.Errorf("PackageDirectory(%q) = %q, want %q", relDir, got, relDir)
+		}
+	})
 }
