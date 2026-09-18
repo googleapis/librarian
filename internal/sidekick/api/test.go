@@ -504,9 +504,14 @@ func (e *Enum) WithParent(parent *Message) *Enum {
 	e.Parent = parent
 	if parent != nil {
 		e.Package = parent.Package
-		e.ID = fmt.Sprintf("%s.%s", parent.ID, e.Name)
+		if strings.HasPrefix(e.ID, ".test.") || e.ID == "" {
+			e.ID = fmt.Sprintf("%s.%s", parent.ID, e.Name)
+		}
 		for _, v := range e.Values {
-			v.ID = fmt.Sprintf("%s.%s", e.ID, v.Name)
+			v.Parent = e
+			if strings.HasPrefix(v.ID, ".test.") || v.ID == "" {
+				v.ID = fmt.Sprintf("%s.%s", e.ID, v.Name)
+			}
 		}
 	}
 	return e
