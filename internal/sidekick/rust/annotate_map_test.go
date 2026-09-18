@@ -40,41 +40,25 @@ func TestMapKeyAnnotations(t *testing.T) {
 		{"serde_with::DisplayFromStr", api.TypezBool},
 	} {
 		t.Run(test.wantSerdeAs, func(t *testing.T) {
-			mapMessage := &api.Message{
-				Name:    "$map<unused, unused>",
-				ID:      "$map<unused, unused>",
-				Package: "$",
-				IsMap:   true,
-				Fields: []*api.Field{
-					{
-						Name:    "key",
-						ID:      "$map<unused, unused>.key",
-						Typez:   test.typez,
-						TypezID: "unused",
-					},
-					{
-						Name:    "value",
-						ID:      "$map<unused, unused>.value",
-						Typez:   api.TypezString,
-						TypezID: "unused",
-					},
-				},
-			}
-			field := &api.Field{
-				Name:     "field",
-				JSONName: "field",
-				ID:       ".test.Message.field",
-				Typez:    api.TypezMessage,
-				TypezID:  "$map<unused, unused>",
-			}
-			message := &api.Message{
-				Name:          "TestMessage",
-				Package:       "test",
-				ID:            ".test.TestMessage",
-				Documentation: "A test message.",
-				Fields:        []*api.Field{field},
-			}
-			model := api.NewTestAPI([]*api.Message{message, mapMessage}, []*api.Enum{}, []*api.Service{})
+			mapMessage := api.NewTestMessage("$map<unused, unused>").
+				WithPackage("$").
+				WithID("$map<unused, unused>").
+				WithFields(
+					api.NewTestField("key").
+						WithType(test.typez),
+					api.NewTestField("value").
+						WithType(api.TypezString),
+				).
+				WithIsMap()
+
+			field := api.NewTestField("field").
+				WithMessageType(mapMessage)
+
+			message := api.NewTestMessage("TestMessage").
+				WithDocumentation("A test message.").
+				WithFields(field)
+
+			model := api.NewTestAPI([]*api.Message{message, mapMessage}, nil, nil)
 			api.CrossReference(model)
 			api.LabelRecursiveFields(model)
 			codec, err := newCodec(libconfig.SpecProtobuf, map[string]string{})
@@ -98,70 +82,65 @@ func TestMapKeyAnnotations(t *testing.T) {
 }
 
 func TestMapValueAnnotations(t *testing.T) {
+	bytesValue := api.NewTestMessage("BytesValue").WithPackage("google.protobuf")
+	uint64Value := api.NewTestMessage("UInt64Value").WithPackage("google.protobuf")
+	testMessage := api.NewTestMessage("Message").WithPackage("test")
 	for _, test := range []struct {
 		spec        string
 		typez       api.Typez
-		typezID     string
+		valueMsg    *api.Message
 		wantSerdeAs string
 	}{
-		{libconfig.SpecProtobuf, api.TypezString, "unused", "serde_with::Same"},
-		{libconfig.SpecDiscovery, api.TypezString, "unused", "serde_with::Same"},
-		{libconfig.SpecProtobuf, api.TypezBytes, "unused", "serde_with::base64::Base64"},
-		{libconfig.SpecDiscovery, api.TypezBytes, "unused", "serde_with::base64::Base64<serde_with::base64::UrlSafe>"},
-		{libconfig.SpecProtobuf, api.TypezMessage, ".google.protobuf.BytesValue", "serde_with::base64::Base64"},
-		{libconfig.SpecDiscovery, api.TypezMessage, ".google.protobuf.BytesValue", "serde_with::base64::Base64<serde_with::base64::UrlSafe>"},
+		{spec: libconfig.SpecProtobuf, typez: api.TypezString, wantSerdeAs: "serde_with::Same"},
+		{spec: libconfig.SpecDiscovery, typez: api.TypezString, wantSerdeAs: "serde_with::Same"},
+		{spec: libconfig.SpecProtobuf, typez: api.TypezBytes, wantSerdeAs: "serde_with::base64::Base64"},
+		{spec: libconfig.SpecDiscovery, typez: api.TypezBytes, wantSerdeAs: "serde_with::base64::Base64<serde_with::base64::UrlSafe>"},
+		{spec: libconfig.SpecProtobuf, valueMsg: bytesValue, wantSerdeAs: "serde_with::base64::Base64"},
+		{spec: libconfig.SpecDiscovery, valueMsg: bytesValue, wantSerdeAs: "serde_with::base64::Base64<serde_with::base64::UrlSafe>"},
 
-		{libconfig.SpecProtobuf, api.TypezBool, "unused", "serde_with::Same"},
-		{libconfig.SpecProtobuf, api.TypezInt32, "unused", "wkt::internal::I32"},
-		{libconfig.SpecProtobuf, api.TypezSfixed32, "unused", "wkt::internal::I32"},
-		{libconfig.SpecProtobuf, api.TypezSint32, "unused", "wkt::internal::I32"},
-		{libconfig.SpecProtobuf, api.TypezInt64, "unused", "wkt::internal::I64"},
-		{libconfig.SpecProtobuf, api.TypezSfixed64, "unused", "wkt::internal::I64"},
-		{libconfig.SpecProtobuf, api.TypezSint64, "unused", "wkt::internal::I64"},
-		{libconfig.SpecProtobuf, api.TypezUint32, "unused", "wkt::internal::U32"},
-		{libconfig.SpecProtobuf, api.TypezFixed32, "unused", "wkt::internal::U32"},
-		{libconfig.SpecProtobuf, api.TypezUint64, "unused", "wkt::internal::U64"},
-		{libconfig.SpecProtobuf, api.TypezFixed64, "unused", "wkt::internal::U64"},
+		{spec: libconfig.SpecProtobuf, typez: api.TypezBool, wantSerdeAs: "serde_with::Same"},
+		{spec: libconfig.SpecProtobuf, typez: api.TypezInt32, wantSerdeAs: "wkt::internal::I32"},
+		{spec: libconfig.SpecProtobuf, typez: api.TypezSfixed32, wantSerdeAs: "wkt::internal::I32"},
+		{spec: libconfig.SpecProtobuf, typez: api.TypezSint32, wantSerdeAs: "wkt::internal::I32"},
+		{spec: libconfig.SpecProtobuf, typez: api.TypezInt64, wantSerdeAs: "wkt::internal::I64"},
+		{spec: libconfig.SpecProtobuf, typez: api.TypezSfixed64, wantSerdeAs: "wkt::internal::I64"},
+		{spec: libconfig.SpecProtobuf, typez: api.TypezSint64, wantSerdeAs: "wkt::internal::I64"},
+		{spec: libconfig.SpecProtobuf, typez: api.TypezUint32, wantSerdeAs: "wkt::internal::U32"},
+		{spec: libconfig.SpecProtobuf, typez: api.TypezFixed32, wantSerdeAs: "wkt::internal::U32"},
+		{spec: libconfig.SpecProtobuf, typez: api.TypezUint64, wantSerdeAs: "wkt::internal::U64"},
+		{spec: libconfig.SpecProtobuf, typez: api.TypezFixed64, wantSerdeAs: "wkt::internal::U64"},
 
-		{libconfig.SpecProtobuf, api.TypezMessage, ".google.protobuf.UInt64Value", "wkt::internal::U64"},
-		{libconfig.SpecProtobuf, api.TypezMessage, ".test.Message", "serde_with::Same"},
+		{spec: libconfig.SpecProtobuf, valueMsg: uint64Value, wantSerdeAs: "wkt::internal::U64"},
+		{spec: libconfig.SpecProtobuf, valueMsg: testMessage, wantSerdeAs: "serde_with::Same"},
 	} {
-		t.Run(fmt.Sprintf("%s_%v_%s", test.spec, test.typez, test.typezID), func(t *testing.T) {
-			mapMessage := &api.Message{
-				Name:    "$map<unused, unused>",
-				ID:      "$map<unused, unused>",
-				Package: "$",
-				IsMap:   true,
-				Fields: []*api.Field{
-					{
-						Name:    "key",
-						ID:      "$map<unused, unused>.key",
-						Typez:   api.TypezInt32,
-						TypezID: "unused",
-					},
-					{
-						Name:    "value",
-						ID:      "$map<unused, unused>.value",
-						Typez:   test.typez,
-						TypezID: test.typezID,
-					},
-				},
+		testName := fmt.Sprintf("%s_%v", test.spec, test.typez)
+		if test.valueMsg != nil {
+			testName = fmt.Sprintf("%s_message_%s", test.spec, test.valueMsg.ID)
+		}
+		t.Run(testName, func(t *testing.T) {
+			valueField := api.NewTestField("value")
+			if test.valueMsg != nil {
+				valueField.WithMessageType(test.valueMsg)
+			} else {
+				valueField.WithType(test.typez)
 			}
-			field := &api.Field{
-				Name:     "field",
-				JSONName: "field",
-				ID:       ".test.Message.field",
-				Typez:    api.TypezMessage,
-				TypezID:  "$map<unused, unused>",
-			}
-			message := &api.Message{
-				Name:          "Message",
-				Package:       "test",
-				ID:            ".test.Message",
-				Documentation: "A test message.",
-				Fields:        []*api.Field{field},
-			}
-			model := api.NewTestAPI([]*api.Message{message, mapMessage}, []*api.Enum{}, []*api.Service{})
+			mapMessage := api.NewTestMessage("$map<unused, unused>").
+				WithPackage("$").
+				WithID("$map<unused, unused>").
+				WithFields(
+					api.NewTestField("key").WithType(api.TypezInt32),
+					valueField,
+				).
+				WithIsMap()
+
+			field := api.NewTestField("field").WithMessageType(mapMessage)
+
+			message := api.NewTestMessage("Message").
+				WithPackage("test").
+				WithDocumentation("A test message.").
+				WithFields(field)
+
+			model := api.NewTestAPI([]*api.Message{message, mapMessage}, nil, nil)
 			api.CrossReference(model)
 			api.LabelRecursiveFields(model)
 			codec := newTestCodec(t, test.spec, "test", map[string]string{})
@@ -178,40 +157,25 @@ func TestMapValueAnnotations(t *testing.T) {
 
 // A map without any SerdeAs mapping receives a special annotation.
 func TestMapAnnotationsSameSame(t *testing.T) {
-	mapMessage := &api.Message{
-		Name:    "$map<string, string>",
-		ID:      "$map<string, string>",
-		Package: "$",
-		IsMap:   true,
-		Fields: []*api.Field{
-			{
-				Name:    "key",
-				ID:      "$map<string, string>.key",
-				Typez:   api.TypezString,
-				TypezID: "unused",
-			},
-			{
-				Name:  "value",
-				ID:    "$map<string, string>.value",
-				Typez: api.TypezString,
-			},
-		},
-	}
-	field := &api.Field{
-		Name:     "field",
-		JSONName: "field",
-		ID:       ".test.Message.field",
-		Typez:    api.TypezMessage,
-		TypezID:  "$map<string, string>",
-	}
-	message := &api.Message{
-		Name:          "Message",
-		Package:       "test",
-		ID:            ".test.Message",
-		Documentation: "A test message.",
-		Fields:        []*api.Field{field},
-	}
-	model := api.NewTestAPI([]*api.Message{message, mapMessage}, []*api.Enum{}, []*api.Service{})
+	mapMessage := api.NewTestMessage("$map<string, string>").
+		WithPackage("$").
+		WithID("$map<string, string>").
+		WithFields(
+			api.NewTestField("key").
+				WithType(api.TypezString),
+			api.NewTestField("value").
+				WithType(api.TypezString),
+		).
+		WithIsMap()
+
+	field := api.NewTestField("field").
+		WithMessageType(mapMessage)
+
+	message := api.NewTestMessage("Message").
+		WithDocumentation("A test message.").
+		WithFields(field)
+
+	model := api.NewTestAPI([]*api.Message{message, mapMessage}, nil, nil)
 	api.CrossReference(model)
 	api.LabelRecursiveFields(model)
 	codec := newTestCodec(t, libconfig.SpecProtobuf, "test", map[string]string{})

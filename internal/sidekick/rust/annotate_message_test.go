@@ -23,16 +23,14 @@ import (
 )
 
 func TestMessageAnnotations(t *testing.T) {
-	message := api.NewTestMessage("TestMessage").WithPackage("test.v1")
-	message.Documentation = "A test message."
 	nested := api.NewTestMessage("NestedMessage").
+		WithDocumentation("A nested message.")
+	message := api.NewTestMessage("TestMessage").
 		WithPackage("test.v1").
-		WithID(".test.v1.TestMessage.NestedMessage")
-	nested.Documentation = "A nested message."
-	nested.Parent = message
-	message.Messages = []*api.Message{nested}
+		WithDocumentation("A test message.").
+		WithMessages(nested)
 
-	model := api.NewTestAPI([]*api.Message{message}, []*api.Enum{}, []*api.Service{})
+	model := api.NewTestAPI([]*api.Message{message}, nil, nil)
 	api.CrossReference(model)
 	codec := newTestCodec(t, libconfig.SpecProtobuf, "test.v1", map[string]string{})
 	annotateModel(model, codec)
@@ -72,19 +70,14 @@ func TestMessageAnnotations(t *testing.T) {
 }
 
 func TestSetterSampleAnnotations(t *testing.T) {
-	enum := &api.Enum{
-		Name:    "TestEnum",
-		ID:      ".test.v1.TestEnum",
-		Package: "test.v1",
-	}
-	message := api.NewTestMessage("TestMessage").WithPackage("test.v1").WithFields(
-		api.NewTestField("enum_field").WithType(api.TypezEnum),
-		api.NewTestField("message_field").WithType(api.TypezMessage),
+	enum := api.NewTestEnum("TestEnum").WithPackage("test.v1")
+	message := api.NewTestMessage("TestMessage").WithPackage("test.v1")
+	message.WithFields(
+		api.NewTestField("enum_field").WithType(api.TypezEnum).WithTypezID(enum.ID),
+		api.NewTestField("message_field").WithMessageType(message),
 	)
-	message.Fields[0].TypezID = ".test.v1.TestEnum"
-	message.Fields[1].TypezID = ".test.v1.TestMessage"
 
-	model := api.NewTestAPI([]*api.Message{message}, []*api.Enum{enum}, []*api.Service{})
+	model := api.NewTestAPI([]*api.Message{message}, []*api.Enum{enum}, nil)
 	api.CrossReference(model)
 	codec := newTestCodec(t, libconfig.SpecProtobuf, "", map[string]string{
 		"generate-setter-samples": "true",
@@ -119,9 +112,7 @@ func TestInternalMessageOverrides(t *testing.T) {
 	public := api.NewTestMessage("Public")
 	private1 := api.NewTestMessage("Private1")
 	private2 := api.NewTestMessage("Private2")
-	model := api.NewTestAPI([]*api.Message{public, private1, private2},
-		[]*api.Enum{},
-		[]*api.Service{})
+	model := api.NewTestAPI([]*api.Message{public, private1, private2}, nil, nil)
 	codec := newTestCodec(t, libconfig.SpecProtobuf, "", map[string]string{
 		"internal-types": ".test.Private1,.test.Private2",
 	})
