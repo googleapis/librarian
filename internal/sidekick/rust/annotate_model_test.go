@@ -57,7 +57,7 @@ func TestDefaultFeatures(t *testing.T) {
 			Want: []string{},
 		},
 	} {
-		model := newTestAnnotateModelAPI()
+		model := newTestAnnotateModelAPI(t)
 		codec := newTestCodec(t, libconfig.SpecProtobuf, "", test.Options)
 		got, err := annotateModel(model, codec)
 		if err != nil {
@@ -92,7 +92,7 @@ func TestRustdocWarnings(t *testing.T) {
 			Want: []string{"a", "b", "c"},
 		},
 	} {
-		model := newTestAnnotateModelAPI()
+		model := newTestAnnotateModelAPI(t)
 		codec := newTestCodec(t, libconfig.SpecProtobuf, "", test.Options)
 		got, err := annotateModel(model, codec)
 		if err != nil {
@@ -127,7 +127,7 @@ func TestClippyWarnings(t *testing.T) {
 			Want: []string{"a", "b", "c"},
 		},
 	} {
-		model := newTestAnnotateModelAPI()
+		model := newTestAnnotateModelAPI(t)
 		codec := newTestCodec(t, libconfig.SpecProtobuf, "", test.Options)
 		got, err := annotateModel(model, codec)
 		if err != nil {
@@ -166,7 +166,7 @@ func TestInternalBuildersAnnotation(t *testing.T) {
 			WantVisibility: "pub",
 		},
 	} {
-		model := newTestAnnotateModelAPI()
+		model := newTestAnnotateModelAPI(t)
 		codec := newTestCodec(t, libconfig.SpecProtobuf, "", test.Options)
 		got, err := annotateModel(model, codec)
 		if err != nil {
@@ -227,7 +227,7 @@ func TestHandwrittenSurfaceAnnotation(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			model := newTestAnnotateModelAPI()
+			model := newTestAnnotateModelAPI(t)
 			codec := newTestCodec(t, libconfig.SpecProtobuf, "", test.options)
 			_, err := annotateModel(model, codec)
 			if err != nil {
@@ -274,7 +274,7 @@ func TestGrpcClientAnnotation(t *testing.T) {
 			Want: "crate::storage::bidi::GrpcClient",
 		},
 	} {
-		model := newTestAnnotateModelAPI()
+		model := newTestAnnotateModelAPI(t)
 		codec := newTestCodec(t, libconfig.SpecProtobuf, "", test.Options)
 		got, err := annotateModel(model, codec)
 		if err != nil {
@@ -292,7 +292,7 @@ func TestGrpcClientAnnotation(t *testing.T) {
 
 func TestQuickstartServiceAnnotation(t *testing.T) {
 	t.Run("survives filtering", func(t *testing.T) {
-		model := newTestAnnotateModelAPI()
+		model := newTestAnnotateModelAPI(t)
 		// model.Services[0] is Service0, model.Services[1] is Service1
 		model.QuickstartService = model.Services[1]
 
@@ -311,25 +311,22 @@ func TestQuickstartServiceAnnotation(t *testing.T) {
 	})
 
 	t.Run("filtered out fallback", func(t *testing.T) {
-		model := newTestAnnotateModelAPI()
+		model := newTestAnnotateModelAPI(t)
 
 		// Create a service that has no methods with bindings, so it will be filtered out.
-		filteredService := &api.Service{
-			Name:    "FilteredService",
-			ID:      "..FilteredService",
-			Package: "test.v1",
-			Methods: []*api.Method{
-				{
-					Name: "noBindings",
-					ID:   "..FilteredService.noBindings",
-				},
-			},
-		}
+		empty := model.Message(api.WktEmptyID)
+		noBindingsMethod := api.NewTestMethod("noBindings").
+			WithInput(empty).
+			WithOutput(empty).
+			WithBindings()
+		filteredService := api.NewTestService("FilteredService").
+			WithPackage("").
+			WithMethods(noBindingsMethod)
+		model.AddService(filteredService)
 		model.Services = append(model.Services, filteredService)
-		for _, s := range model.Services {
-			s.Model = model
+		if err := api.CrossReference(model); err != nil {
+			t.Fatal(err)
 		}
-		api.CrossReference(model)
 
 		// Set the filtered service as the global quickstart.
 		model.QuickstartService = filteredService
@@ -346,7 +343,7 @@ func TestQuickstartServiceAnnotation(t *testing.T) {
 	})
 
 	t.Run("with override", func(t *testing.T) {
-		model := newTestAnnotateModelAPI()
+		model := newTestAnnotateModelAPI(t)
 		model.QuickstartService = model.Services[0] // Set default to 0
 
 		codec := newTestCodec(t, libconfig.SpecProtobuf, "", nil)
@@ -367,7 +364,7 @@ func TestQuickstartServiceAnnotation(t *testing.T) {
 	})
 
 	t.Run("with missing override", func(t *testing.T) {
-		model := newTestAnnotateModelAPI()
+		model := newTestAnnotateModelAPI(t)
 
 		codec := newTestCodec(t, libconfig.SpecProtobuf, "", nil)
 		codec.quickstartServiceOverride = "NonExistentService"
@@ -382,61 +379,44 @@ func TestQuickstartServiceAnnotation(t *testing.T) {
 	})
 }
 
-func newTestAnnotateModelAPI() *api.API {
-	service0 := &api.Service{
-		Name: "Service0",
-		ID:   "..Service0",
-		Methods: []*api.Method{
-			{
-				Name:         "get",
-				ID:           "..Service0.get",
-				InputTypeID:  ".google.protobuf.Empty",
-				OutputTypeID: ".google.protobuf.Empty",
-				PathInfo: &api.PathInfo{
-					Bindings: []*api.PathBinding{
-						{
-							Verb:         "GET",
-							PathTemplate: (&api.PathTemplate{}).WithLiteral("resource"),
-						},
-					},
-				},
-			},
-		},
-	}
-	service1 := &api.Service{
-		Name: "Service1",
-		ID:   "..Service1",
-		Methods: []*api.Method{
-			{
-				Name:         "get",
-				ID:           "..Service1.get",
-				InputTypeID:  ".google.protobuf.Empty",
-				OutputTypeID: ".google.protobuf.Empty",
-				PathInfo: &api.PathInfo{
-					Bindings: []*api.PathBinding{
-						{
-							Verb:         "GET",
-							PathTemplate: (&api.PathTemplate{}).WithLiteral("resource"),
-						},
-					},
-				},
-			},
-		},
-	}
+func newTestAnnotateModelAPI(t *testing.T) *api.API {
+	t.Helper()
+	empty := api.NewTestMessage("Empty").WithPackage("google.protobuf")
+	method0 := api.NewTestMethod("get").
+		WithInput(empty).
+		WithOutput(empty).
+		WithVerb("GET").
+		WithPathTemplate((&api.PathTemplate{}).WithLiteral("resource"))
+
+	service0 := api.NewTestService("Service0").
+		WithPackage("").
+		WithMethods(method0)
+
+	method1 := api.NewTestMethod("get").
+		WithInput(empty).
+		WithOutput(empty).
+		WithVerb("GET").
+		WithPathTemplate((&api.PathTemplate{}).WithLiteral("resource"))
+
+	service1 := api.NewTestService("Service1").
+		WithPackage("").
+		WithMethods(method1)
+
 	model := api.NewTestAPI(
-		[]*api.Message{},
-		[]*api.Enum{},
+		nil,
+		nil,
 		[]*api.Service{service0, service1})
-	api.CrossReference(model)
+	if err := api.CrossReference(model); err != nil {
+		t.Fatal(err)
+	}
 	return model
 }
 
 func TestPackageNames(t *testing.T) {
 	model := api.NewTestAPI(
-		[]*api.Message{}, []*api.Enum{},
-		[]*api.Service{{Name: "Workflows", Package: "google.cloud.workflows.v1"}})
-	err := api.CrossReference(model)
-	if err != nil {
+		nil, nil,
+		[]*api.Service{api.NewTestService("Workflows").WithPackage("google.cloud.workflows.v1")})
+	if err := api.CrossReference(model); err != nil {
 		t.Fatal(err)
 	}
 	// Override the default name for test APIs ("Test").
@@ -558,26 +538,15 @@ func TestAnnotateModelWithLroStubOptions(t *testing.T) {
 }
 
 func TestRoutingRequired(t *testing.T) {
-	message := &api.Message{
-		Name:    "Message",
-		ID:      ".test.Message",
-		Package: "test",
-	}
-	method := &api.Method{
-		Name:         "DoFoo",
-		ID:           ".test.Service.DoFoo",
-		InputTypeID:  ".test.Message",
-		OutputTypeID: ".test.Message",
-		PathInfo:     &api.PathInfo{},
-	}
-	service := &api.Service{
-		Name:    "FooService",
-		ID:      ".test.FooService",
-		Package: "test",
-		Methods: []*api.Method{method},
-	}
+	message := api.NewTestMessage("Message")
+	method := api.NewTestMethod("DoFoo").
+		WithInput(message).
+		WithOutput(message).
+		WithBindings()
+	service := api.NewTestService("FooService").
+		WithMethods(method)
 	model := api.NewTestAPI([]*api.Message{message},
-		[]*api.Enum{},
+		nil,
 		[]*api.Service{service})
 	if err := api.CrossReference(model); err != nil {
 		t.Fatal(err)
@@ -586,7 +555,9 @@ func TestRoutingRequired(t *testing.T) {
 		"include-grpc-only-methods": "true",
 		"routing-required":          "true",
 	})
-	annotateModel(model, codec)
+	if _, err := annotateModel(model, codec); err != nil {
+		t.Fatal(err)
+	}
 
 	if !method.Codec.(*methodAnnotation).RoutingRequired {
 		t.Errorf("codec setting `routing-required` not respected")
@@ -616,90 +587,47 @@ func TestGenerateSetterSamples(t *testing.T) {
 }
 
 func TestModelAnnotationsHasStreaming(t *testing.T) {
-	msg := &api.Message{
-		Name:    "Request",
-		ID:      ".test.v1.Request",
-		Package: "test.v1",
-	}
-	bidiService := &api.Service{
-		Name:    "BidiService",
-		ID:      ".test.v1.BidiService",
-		Package: "test.v1",
-		Methods: []*api.Method{
-			{
-				Name:                "Chat",
-				ID:                  ".test.v1.BidiService.Chat",
-				InputTypeID:         msg.ID,
-				OutputTypeID:        msg.ID,
-				InputType:           msg,
-				OutputType:          msg,
-				ClientSideStreaming: true,
-				ServerSideStreaming: true,
-				PathInfo:            &api.PathInfo{},
-			},
-		},
-	}
-	unaryService := &api.Service{
-		Name:    "UnaryService",
-		ID:      ".test.v1.UnaryService",
-		Package: "test.v1",
-		Methods: []*api.Method{
-			{
-				Name:         "Get",
-				ID:           ".test.v1.UnaryService.Get",
-				InputTypeID:  msg.ID,
-				OutputTypeID: msg.ID,
-				InputType:    msg,
-				OutputType:   msg,
-				PathInfo:     &api.PathInfo{},
-			},
-		},
-	}
-	serverStreamingService := &api.Service{
-		Name:    "ServerStreamingService",
-		ID:      ".test.v1.ServerStreamingService",
-		Package: "test.v1",
-		Methods: []*api.Method{
-			{
-				Name:                "Expand",
-				ID:                  ".test.v1.ServerStreamingService.Expand",
-				InputTypeID:         msg.ID,
-				OutputTypeID:        msg.ID,
-				InputType:           msg,
-				OutputType:          msg,
-				ServerSideStreaming: true,
-				PathInfo:            &api.PathInfo{},
-			},
-		},
-	}
-	mixedService := &api.Service{
-		Name:    "MixedService",
-		ID:      ".test.v1.MixedService",
-		Package: "test.v1",
-		Methods: []*api.Method{
-			{
-				Name:                "Chat",
-				ID:                  ".test.v1.MixedService.Chat",
-				InputTypeID:         msg.ID,
-				OutputTypeID:        msg.ID,
-				InputType:           msg,
-				OutputType:          msg,
-				ClientSideStreaming: true,
-				ServerSideStreaming: true,
-				PathInfo:            &api.PathInfo{},
-			},
-			{
-				Name:                "Expand",
-				ID:                  ".test.v1.MixedService.Expand",
-				InputTypeID:         msg.ID,
-				OutputTypeID:        msg.ID,
-				InputType:           msg,
-				OutputType:          msg,
-				ServerSideStreaming: true,
-				PathInfo:            &api.PathInfo{},
-			},
-		},
-	}
+	msg := api.NewTestMessage("Request").WithPackage("test.v1")
+
+	bidiChat := api.NewTestMethod("Chat").
+		WithInput(msg).
+		WithOutput(msg).
+		WithBidiStreaming().
+		WithBindings()
+	bidiService := api.NewTestService("BidiService").
+		WithPackage("test.v1").
+		WithMethods(bidiChat)
+
+	unaryGet := api.NewTestMethod("Get").
+		WithInput(msg).
+		WithOutput(msg).
+		WithBindings()
+	unaryService := api.NewTestService("UnaryService").
+		WithPackage("test.v1").
+		WithMethods(unaryGet)
+
+	serverExpand := api.NewTestMethod("Expand").
+		WithInput(msg).
+		WithOutput(msg).
+		WithServerSideStreaming().
+		WithBindings()
+	serverStreamingService := api.NewTestService("ServerStreamingService").
+		WithPackage("test.v1").
+		WithMethods(serverExpand)
+
+	mixedChat := api.NewTestMethod("Chat").
+		WithInput(msg).
+		WithOutput(msg).
+		WithBidiStreaming().
+		WithBindings()
+	mixedExpand := api.NewTestMethod("Expand").
+		WithInput(msg).
+		WithOutput(msg).
+		WithServerSideStreaming().
+		WithBindings()
+	mixedService := api.NewTestService("MixedService").
+		WithPackage("test.v1").
+		WithMethods(mixedChat, mixedExpand)
 
 	for _, test := range []struct {
 		name                 string
@@ -818,7 +746,7 @@ func TestModelAnnotationsHasStreaming(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			model := api.NewTestAPI([]*api.Message{msg}, []*api.Enum{}, []*api.Service{test.service})
+			model := api.NewTestAPI([]*api.Message{msg}, nil, []*api.Service{test.service})
 			if err := api.CrossReference(model); err != nil {
 				t.Fatal(err)
 			}
@@ -898,9 +826,9 @@ func TestModelAnnotationsGrpcServices(t *testing.T) {
 
 func TestExternalTypesAnnotations(t *testing.T) {
 	extMsg := api.NewTestMessage("LatLng").WithPackage("google.type")
-	extEnum := &api.Enum{Name: "DayOfWeek", ID: ".google.type.DayOfWeek", Package: "google.type"}
+	extEnum := api.NewTestEnum("DayOfWeek").WithPackage("google.type")
 
-	model := api.NewTestAPI([]*api.Message{}, []*api.Enum{}, []*api.Service{})
+	model := api.NewTestAPI(nil, nil, nil)
 	model.ExternalMessages = []*api.Message{extMsg}
 	model.ExternalEnums = []*api.Enum{extEnum}
 
@@ -933,8 +861,8 @@ func TestExternalTypesAnnotations(t *testing.T) {
 	}
 	t.Run("with prost-path option", func(t *testing.T) {
 		extMsg2 := api.NewTestMessage("LatLng").WithPackage("google.type")
-		extEnum2 := &api.Enum{Name: "DayOfWeek", ID: ".google.type.DayOfWeek", Package: "google.type"}
-		model2 := api.NewTestAPI([]*api.Message{}, []*api.Enum{}, []*api.Service{})
+		extEnum2 := api.NewTestEnum("DayOfWeek").WithPackage("google.type")
+		model2 := api.NewTestAPI(nil, nil, nil)
 		model2.ExternalMessages = []*api.Message{extMsg2}
 		model2.ExternalEnums = []*api.Enum{extEnum2}
 
@@ -964,12 +892,11 @@ func TestGrpcRootTypeIDs(t *testing.T) {
 	req := api.NewTestMessage("Req").WithPackage("google.cloud.test.v1")
 	resp := api.NewTestMessage("Resp").WithPackage("google.cloud.test.v1")
 
-	unaryMethod := api.NewTestMethod("Unary").WithInput(req).WithOutput(resp)
-	unaryMethod.PathInfo = &api.PathInfo{
-		Bindings: []*api.PathBinding{
-			{Verb: "GET", PathTemplate: &api.PathTemplate{}},
-		},
-	}
+	unaryMethod := api.NewTestMethod("Unary").
+		WithInput(req).
+		WithOutput(resp).
+		WithVerb("GET").
+		WithPathTemplate(&api.PathTemplate{})
 	streamMethod := api.NewTestMethod("Stream").WithInput(req).WithOutput(resp).WithBidiStreaming()
 
 	for _, test := range []struct {
