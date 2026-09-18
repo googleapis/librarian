@@ -29,37 +29,21 @@ import (
 func TestGenerateStub_Structure(t *testing.T) {
 	outDir := t.TempDir()
 
-	request := &api.Message{
-		Name:    "Request",
-		ID:      ".test.Request",
-		Package: "test",
-	}
-	response := &api.Message{
-		Name:    "Response",
-		ID:      ".test.Response",
-		Package: "test",
-	}
-	service := &api.Service{
-		Name:    "Protocol",
-		ID:      ".test.Prototocol",
-		Package: "test",
-		Methods: []*api.Method{
-			{
-				Name:         "GetThing",
-				ID:           ".test.IAM.CreateRole",
-				InputTypeID:  ".test.Request",
-				InputType:    request,
-				OutputTypeID: ".test.Response",
-				OutputType:   response,
-				PathInfo: &api.PathInfo{
-					Bindings: []*api.PathBinding{{Verb: "GET", PathTemplate: &api.PathTemplate{}}},
-				},
-			},
-		},
-	}
+	request := api.NewTestMessage("Request").WithPackage("test")
+	response := api.NewTestMessage("Response").WithPackage("test")
+	service := api.NewTestService("Protocol").
+		WithPackage("google.cloud.test.v1").
+		WithMethods(
+			api.NewTestMethod("GetThing").
+				WithInput(request).
+				WithOutput(response).
+				WithVerb("GET").
+				WithPathTemplate(&api.PathTemplate{}),
+		)
 
-	model := api.NewTestAPI([]*api.Message{request, response}, nil, []*api.Service{service})
-	model.PackageName = "google.cloud.test.v1"
+	model := api.NewTestAPI(nil, nil, []*api.Service{service})
+	model.AddMessage(request)
+	model.AddMessage(response)
 
 	swiftCfg := swiftConfig(t, []config.SwiftDependency{
 		{
@@ -125,71 +109,35 @@ func TestGenerateStub_Structure(t *testing.T) {
 func TestGenerateStub_QueryParameters(t *testing.T) {
 	outDir := t.TempDir()
 
-	oneof := &api.OneOf{Name: "expiration"}
-	oneofField := &api.Field{
-		Name:     "ttl_days",
-		JSONName: "ttlDays",
-		ID:       ".google.test.Request.ttl_days",
-		Typez:    api.TypezString,
-		IsOneOf:  true,
-		Group:    oneof,
-	}
-	oneof.Fields = []*api.Field{oneofField}
+	oneof := api.NewTestOneOf("expiration").
+		WithFields(
+			api.NewTestField("ttl_days").WithType(api.TypezString),
+		)
 
-	request := &api.Message{
-		Name:    "Request",
-		ID:      ".test.Request",
-		Package: "test",
-		Fields: []*api.Field{
-			oneofField,
-			{
-				Name:     "project",
-				JSONName: "project",
-				ID:       ".google.test.Request.project",
-				Typez:    api.TypezString,
-			},
-			{
-				Name:     "enable",
-				JSONName: "enable",
-				ID:       ".google.test.Request.enable",
-				Typez:    api.TypezBool,
-			},
-		},
-		OneOfs: []*api.OneOf{oneof},
-	}
-	response := &api.Message{
-		Name:    "Response",
-		ID:      ".test.Response",
-		Package: "test",
-	}
-	service := &api.Service{
-		Name:    "Service",
-		ID:      ".test.Service",
-		Package: "test",
-		Methods: []*api.Method{
-			{
-				Name:         "GetThing",
-				ID:           ".test.Service.GetThing",
-				InputTypeID:  ".test.Request",
-				InputType:    request,
-				OutputTypeID: ".test.Response",
-				OutputType:   response,
-				PathInfo: &api.PathInfo{
-					Bindings: []*api.PathBinding{{
-						Verb:         "GET",
-						PathTemplate: (&api.PathTemplate{}).WithLiteral("v1").WithLiteral("projects").WithVariableNamed("project"),
-						QueryParameters: map[string]bool{
-							"ttl_days": true,
-							"enable":   true,
-						},
-					}},
-				},
-			},
-		},
-	}
+	request := api.NewTestMessage("Request").
+		WithPackage("test").
+		WithOneOfs(oneof).
+		WithFields(
+			api.NewTestField("project").WithType(api.TypezString),
+			api.NewTestField("enable").WithType(api.TypezBool),
+		)
+	response := api.NewTestMessage("Response").WithPackage("test")
+
+	getThing := api.NewTestMethod("GetThing").
+		WithInput(request).
+		WithOutput(response).
+		WithVerb("GET").
+		WithPathTemplate((&api.PathTemplate{}).WithLiteral("v1").WithLiteral("projects").WithVariableNamed("project")).
+		WithQueryParameters(map[string]bool{
+			"ttl_days": true,
+			"enable":   true,
+		})
+
+	service := api.NewTestService("Service").
+		WithPackage("test").
+		WithMethods(getThing)
 
 	model := api.NewTestAPI([]*api.Message{request, response}, nil, []*api.Service{service})
-	model.PackageName = "test"
 
 	swiftCfg := swiftConfig(t, []config.SwiftDependency{})
 	library := &config.Library{
@@ -280,123 +228,76 @@ func TestGenerateStub_Discovery(t *testing.T) {
 func TestGenerateStub_Grpc(t *testing.T) {
 	outDir := t.TempDir()
 
-	parentField := &api.Field{
-		Name:     "parent",
-		JSONName: "parent",
-		ID:       ".google.storage.control.v2.CreateFolderRequest.parent",
-		Typez:    api.TypezString,
-	}
-	folderField := &api.Field{
-		Name:     "folder",
-		JSONName: "folder",
-		ID:       ".google.storage.control.v2.CreateFolderRequest.folder",
-		Typez:    api.TypezMessage,
-		TypezID:  ".google.storage.control.v2.Folder",
-		Optional: true,
-	}
-	nameField := &api.Field{
-		Name:     "name",
-		JSONName: "name",
-		ID:       ".google.storage.control.v2.DeleteFolderRequest.name",
-		Typez:    api.TypezString,
-	}
+	folder := api.NewTestMessage("Folder").
+		WithPackage("google.storage.control.v2")
+	createFolderRequest := api.NewTestMessage("CreateFolderRequest").
+		WithPackage("google.storage.control.v2").
+		WithFields(
+			api.NewTestField("parent").WithType(api.TypezString),
+			api.NewTestField("folder").
+				WithMessageType(folder).
+				WithOptional(),
+		)
+	deleteFolderRequest := api.NewTestMessage("DeleteFolderRequest").
+		WithPackage("google.storage.control.v2").
+		WithFields(
+			api.NewTestField("name").WithType(api.TypezString),
+		)
+	empty := api.NewTestMessage("Empty").
+		WithPackage("google.protobuf")
+	operation := api.NewTestMessage("Operation").
+		WithPackage("google.longrunning")
+	getOperationRequest := api.NewTestMessage("GetOperationRequest").
+		WithPackage("google.longrunning").
+		WithFields(
+			api.NewTestField("name").WithType(api.TypezString),
+		)
 
-	createFolderRequest := &api.Message{
-		Name:    "CreateFolderRequest",
-		ID:      ".google.storage.control.v2.CreateFolderRequest",
-		Package: "google.storage.control.v2",
-		Fields:  []*api.Field{parentField, folderField},
-	}
-	deleteFolderRequest := &api.Message{
-		Name:    "DeleteFolderRequest",
-		ID:      ".google.storage.control.v2.DeleteFolderRequest",
-		Package: "google.storage.control.v2",
-		Fields:  []*api.Field{nameField},
-	}
-	folder := &api.Message{
-		Name:    "Folder",
-		ID:      ".google.storage.control.v2.Folder",
-		Package: "google.storage.control.v2",
-	}
-	empty := &api.Message{
-		Name:    "Empty",
-		ID:      ".google.protobuf.Empty",
-		Package: "google.protobuf",
-	}
-	operation := &api.Message{
-		Name:    "Operation",
-		ID:      ".google.longrunning.Operation",
-		Package: "google.longrunning",
-	}
-	getOperationRequest := &api.Message{
-		Name:    "GetOperationRequest",
-		ID:      ".google.longrunning.GetOperationRequest",
-		Package: "google.longrunning",
-	}
-
-	service := &api.Service{
-		Name:        "StorageControl",
-		ID:          ".google.storage.control.v2.StorageControl",
-		Package:     "google.storage.control.v2",
-		DefaultHost: "storage.googleapis.com",
-		Methods: []*api.Method{
-			{
-				Name:         "CreateFolder",
-				ID:           ".google.storage.control.v2.StorageControl.CreateFolder",
-				InputTypeID:  createFolderRequest.ID,
-				InputType:    createFolderRequest,
-				OutputTypeID: folder.ID,
-				OutputType:   folder,
-				PathInfo: &api.PathInfo{
-					Bindings: []*api.PathBinding{{
-						Verb:         "POST",
-						PathTemplate: (&api.PathTemplate{}).WithLiteral("v2").WithLiteral("projects").WithVariableNamed("parent").WithLiteral("folders"),
-					}},
+	deleteFolder := api.NewTestMethod("DeleteFolder").
+		WithInput(deleteFolderRequest).
+		WithOutput(empty)
+	deleteFolder.PathInfo = nil
+	deleteFolder.ReturnsEmpty = true
+	deleteFolder.Routing = []*api.RoutingInfo{
+		{
+			Name: "bucket",
+			Variants: []*api.RoutingInfoVariant{
+				{
+					FieldPath: []string{"name"},
 				},
-			},
-			{
-				Name:         "DeleteFolder",
-				ID:           ".google.storage.control.v2.StorageControl.DeleteFolder",
-				InputTypeID:  deleteFolderRequest.ID,
-				InputType:    deleteFolderRequest,
-				OutputTypeID: empty.ID,
-				OutputType:   empty,
-				ReturnsEmpty: true,
-				Routing: []*api.RoutingInfo{
-					{
-						Name: "bucket",
-						Variants: []*api.RoutingInfoVariant{
-							{
-								FieldPath: []string{"name"},
-							},
-						},
-					},
-				},
-			},
-			{
-				Name:            "GetOperation",
-				ID:              ".google.longrunning.Operations.GetOperation",
-				SourceServiceID: ".google.longrunning.Operations",
-				SourceService: &api.Service{
-					Name:    "Operations",
-					Package: "google.longrunning",
-					ID:      ".google.longrunning.Operations",
-				},
-				InputTypeID:  getOperationRequest.ID,
-				InputType:    getOperationRequest,
-				OutputTypeID: operation.ID,
-				OutputType:   operation,
 			},
 		},
 	}
 
-	operationsService := &api.Service{
-		Name:    "Operations",
-		ID:      ".google.longrunning.Operations",
-		Package: "google.longrunning",
-	}
-	model := api.NewTestAPI([]*api.Message{createFolderRequest, deleteFolderRequest, folder, empty, operation, getOperationRequest}, nil, []*api.Service{service, operationsService})
-	model.PackageName = "google.storage.control.v2"
+	operationsService := api.NewTestService("Operations").
+		WithPackage("google.longrunning")
+
+	getOperation := api.NewTestMethod("GetOperation").
+		WithInput(getOperationRequest).
+		WithOutput(operation)
+	getOperation.PathInfo = nil
+	getOperation.SourceService = operationsService
+	getOperation.SourceServiceID = operationsService.ID
+	getOperation.ID = ".google.longrunning.Operations.GetOperation"
+
+	service := api.NewTestService("StorageControl").
+		WithPackage("google.storage.control.v2").
+		WithMethods(
+			api.NewTestMethod("CreateFolder").
+				WithInput(createFolderRequest).
+				WithOutput(folder).
+				WithVerb("POST").
+				WithPathTemplate((&api.PathTemplate{}).WithLiteral("v2").WithLiteral("projects").WithVariableNamed("parent").WithLiteral("folders")),
+			deleteFolder,
+			getOperation,
+		)
+	service.DefaultHost = "storage.googleapis.com"
+
+	model := api.NewTestAPI([]*api.Message{folder, createFolderRequest, deleteFolderRequest}, nil, []*api.Service{service})
+	model.AddService(operationsService)
+	model.AddMessage(empty)
+	model.AddMessage(operation)
+	model.AddMessage(getOperationRequest)
 	if err := api.CrossReference(model); err != nil {
 		t.Fatal(err)
 	}
@@ -491,65 +392,35 @@ func TestGenerateStub_Grpc(t *testing.T) {
 func TestGenerateStub_MultipleBindings(t *testing.T) {
 	outDir := t.TempDir()
 
-	request := &api.Message{
-		Name:    "Request",
-		ID:      ".test.Request",
-		Package: "test",
-		Fields: []*api.Field{
-			{
-				Name:     "name",
-				JSONName: "name",
-				ID:       ".test.Request.name",
-				Typez:    api.TypezString,
-			},
-			{
-				Name:     "parent",
-				JSONName: "parent",
-				ID:       ".test.Request.parent",
-				Typez:    api.TypezString,
-			},
-		},
-	}
-	response := &api.Message{
-		Name:    "Response",
-		ID:      ".test.Response",
-		Package: "test",
-	}
-	service := &api.Service{
-		Name:    "Service",
-		ID:      ".test.Service",
-		Package: "test",
-		Methods: []*api.Method{
-			{
-				Name:         "GetResource",
-				ID:           ".test.Service.GetResource",
-				InputTypeID:  ".test.Request",
-				InputType:    request,
-				OutputTypeID: ".test.Response",
-				OutputType:   response,
-				PathInfo: &api.PathInfo{
-					Bindings: []*api.PathBinding{
-						{
-							Verb: "GET",
-							PathTemplate: (&api.PathTemplate{}).
-								WithLiteral("v1").
-								WithVariableNamed("name"),
-						},
-						{
-							Verb: "POST",
-							PathTemplate: (&api.PathTemplate{}).
-								WithLiteral("v1").
-								WithVariableNamed("parent").
-								WithLiteral("resources"),
-						},
-					},
-				},
-			},
-		},
-	}
+	request := api.NewTestMessage("Request").
+		WithPackage("test").
+		WithFields(
+			api.NewTestField("name").WithType(api.TypezString),
+			api.NewTestField("parent").WithType(api.TypezString),
+		)
+	response := api.NewTestMessage("Response").
+		WithPackage("test")
 
-	model := api.NewTestAPI([]*api.Message{request, response}, nil, []*api.Service{service})
-	model.PackageName = "google.cloud.test.v1"
+	getResource := api.NewTestMethod("GetResource").
+		WithInput(request).
+		WithOutput(response).
+		WithBindings(
+			api.NewTestPathBinding("GET", (&api.PathTemplate{}).
+				WithLiteral("v1").
+				WithVariableNamed("name")),
+			api.NewTestPathBinding("POST", (&api.PathTemplate{}).
+				WithLiteral("v1").
+				WithVariableNamed("parent").
+				WithLiteral("resources")),
+		)
+
+	service := api.NewTestService("Service").
+		WithPackage("google.cloud.test.v1").
+		WithMethods(getResource)
+
+	model := api.NewTestAPI(nil, nil, []*api.Service{service})
+	model.AddMessage(request)
+	model.AddMessage(response)
 
 	swiftCfg := swiftConfig(t, []config.SwiftDependency{
 		{
