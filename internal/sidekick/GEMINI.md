@@ -144,8 +144,8 @@ the existing `api.NewTest*()` functions:
 
 ## Code & Testing Conventions
 
-Follow Librarian's overall Go guidelines ([`AGENTS.md`](/AGENTS.md) and
-[`doc/howwewritego.md`](/doc/howwewritego.md)):
+Follow Librarian's overall Go guidelines ([`AGENTS.md`](../../AGENTS.md) and
+[`doc/howwewritego.md`](../../doc/howwewritego.md)):
 
 - **Table-Driven Tests:** Write `for _, test := range []struct { ... }{ ... }`
   directly without naming the slice. Always name the iteration variable `test`.
