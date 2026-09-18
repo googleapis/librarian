@@ -128,3 +128,31 @@ func TestField_WithJSONName(t *testing.T) {
 		t.Errorf("expected JSONName 'customName', got %q", f.JSONName)
 	}
 }
+
+func TestMessage_WithDocumentation(t *testing.T) {
+	m := api.NewTestMessage("Test").WithDocumentation("A test message.")
+	if m.Documentation != "A test message." {
+		t.Errorf("expected Documentation 'A test message.', got %q", m.Documentation)
+	}
+}
+
+func TestMessage_WithIsMap(t *testing.T) {
+	m := api.NewTestMessage("TestEntry").WithIsMap()
+	if !m.IsMap {
+		t.Errorf("expected IsMap to be true")
+	}
+}
+
+func TestOneOf_WithDocumentation(t *testing.T) {
+	o := api.NewTestOneOf("choice").WithDocumentation("A test oneof.")
+	if o.Documentation != "A test oneof." {
+		t.Errorf("expected Documentation 'A test oneof.', got %q", o.Documentation)
+	}
+}
+
+func TestField_WithRecursive(t *testing.T) {
+	f := api.NewTestField("child").WithRecursive()
+	if !f.Recursive {
+		t.Errorf("expected Recursive to be true")
+	}
+}

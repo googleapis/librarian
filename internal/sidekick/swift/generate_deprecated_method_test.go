@@ -30,47 +30,61 @@ type expectedBlock struct {
 	want  string
 }
 
-func TestGenerateService_DeprecatedMethods(t *testing.T) {
-	// Common messages
+type testMethodFixtures struct {
+	requestType            *api.Message
+	responseType           *api.Message
+	itemType               *api.Message
+	paginationResponseType *api.Message
+	operationType          *api.Message
+	lroResultType          *api.Message
+	lroMetadataType        *api.Message
+	getOperationInputType  *api.Message
+}
+
+func newTestMethodFixtures() *testMethodFixtures {
 	requestType := api.NewTestMessage("Request").
+		WithPackage("test").
 		WithFields(api.NewTestField("name").WithType(api.TypezString))
-
-	responseType := api.NewTestMessage("Response")
-
-	itemType := api.NewTestMessage("Item")
-
+	responseType := api.NewTestMessage("Response").WithPackage("test")
+	itemType := api.NewTestMessage("Item").WithPackage("test")
+	itemsField := api.NewTestField("items").WithMessageType(itemType).WithRepeated()
+	nextPageTokenField := api.NewTestField("next_page_token").WithType(api.TypezString)
 	paginationResponseType := api.NewTestMessage("PaginationResponse").
-		WithFields(
-			api.NewTestField("items").WithMessageType(itemType).WithRepeated(),
-			api.NewTestField("next_page_token").WithType(api.TypezString),
-		)
-	paginationResponseType.Pagination = &api.PaginationInfo{
-		PageableItem:  paginationResponseType.Fields[0],
-		NextPageToken: paginationResponseType.Fields[1],
-	}
-
+		WithPackage("test").
+		WithPagination(nextPageTokenField, itemsField)
 	operationType := api.NewTestMessage("Operation").WithPackage("google.longrunning")
-
-	lroResultType := api.NewTestMessage("LROResult")
-	lroMetadataType := api.NewTestMessage("LROMetadata")
+	lroResultType := api.NewTestMessage("LROResult").WithPackage("test")
+	lroMetadataType := api.NewTestMessage("LROMetadata").WithPackage("test")
 	getOperationInputType := api.NewTestMessage("GetOperationRequest").WithPackage("google.longrunning")
 
+	return &testMethodFixtures{
+		requestType:            requestType,
+		responseType:           responseType,
+		itemType:               itemType,
+		paginationResponseType: paginationResponseType,
+		operationType:          operationType,
+		lroResultType:          lroResultType,
+		lroMetadataType:        lroMetadataType,
+		getOperationInputType:  getOperationInputType,
+	}
+}
+
+func TestGenerateService_DeprecatedMethods(t *testing.T) {
 	for _, test := range []struct {
 		name  string
-		setup func() *api.Method
+		setup func(f *testMethodFixtures) *api.Method
 		want  []expectedBlock
 	}{
 		{
 			name: "Simple_Deprecated",
-			setup: func() *api.Method {
-				m := api.NewTestMethod("SimpleMethod").
-					WithInput(requestType).
-					WithOutput(responseType).
+			setup: func(f *testMethodFixtures) *api.Method {
+				return api.NewTestMethod("SimpleMethod").
+					WithInput(f.requestType).
+					WithOutput(f.responseType).
 					WithVerb("POST").
-					WithPathTemplate((&api.PathTemplate{}).WithLiteral("v1").WithLiteral("simple"))
-				m.Deprecated = true
-				m.Documentation = "-- simple marker --"
-				return m
+					WithPathTemplate((&api.PathTemplate{}).WithLiteral("v1").WithLiteral("simple")).
+					WithDeprecated(true).
+					WithDocumentation("-- simple marker --")
 			},
 			want: []expectedBlock{
 				{
@@ -87,16 +101,15 @@ func TestGenerateService_DeprecatedMethods(t *testing.T) {
 		},
 		{
 			name: "Pagination_Deprecated",
-			setup: func() *api.Method {
-				m := api.NewTestMethod("PaginationMethod").
-					WithInput(requestType).
-					WithOutput(paginationResponseType).
+			setup: func(f *testMethodFixtures) *api.Method {
+				return api.NewTestMethod("PaginationMethod").
+					WithInput(f.requestType).
+					WithOutput(f.paginationResponseType).
 					WithVerb("GET").
-					WithPathTemplate((&api.PathTemplate{}).WithLiteral("v1").WithLiteral("pagination"))
-				m.Deprecated = true
-				m.Pagination = requestType.Fields[0]
-				m.Documentation = "-- pagination marker --"
-				return m
+					WithPathTemplate((&api.PathTemplate{}).WithLiteral("v1").WithLiteral("pagination")).
+					WithPagination(f.requestType.Fields[0]).
+					WithDeprecated(true).
+					WithDocumentation("-- pagination marker --")
 			},
 			want: []expectedBlock{
 				{
@@ -113,20 +126,18 @@ func TestGenerateService_DeprecatedMethods(t *testing.T) {
 		},
 		{
 			name: "LRO_Deprecated",
-			setup: func() *api.Method {
-				m := api.NewTestMethod("LROMethod").
-					WithInput(requestType).
-					WithOutput(operationType).
+			setup: func(f *testMethodFixtures) *api.Method {
+				return api.NewTestMethod("LROMethod").
+					WithInput(f.requestType).
+					WithOutput(f.operationType).
 					WithVerb("POST").
-					WithPathTemplate((&api.PathTemplate{}).WithLiteral("v1").WithLiteral("lro"))
-				m.Deprecated = true
-				m.IsLRO = true
-				m.OperationInfo = &api.OperationInfo{
-					ResponseTypeID: lroResultType.ID,
-					MetadataTypeID: lroMetadataType.ID,
-				}
-				m.Documentation = "-- lro marker --"
-				return m
+					WithPathTemplate((&api.PathTemplate{}).WithLiteral("v1").WithLiteral("lro")).
+					WithOperationInfo(&api.OperationInfo{
+						ResponseTypeID: f.lroResultType.ID,
+						MetadataTypeID: f.lroMetadataType.ID,
+					}).
+					WithDeprecated(true).
+					WithDocumentation("-- lro marker --")
 			},
 			want: []expectedBlock{
 				{
@@ -143,14 +154,13 @@ func TestGenerateService_DeprecatedMethods(t *testing.T) {
 		},
 		{
 			name: "Simple_NotDeprecated",
-			setup: func() *api.Method {
-				m := api.NewTestMethod("NotDeprecatedMethod").
-					WithInput(requestType).
-					WithOutput(responseType).
+			setup: func(f *testMethodFixtures) *api.Method {
+				return api.NewTestMethod("NotDeprecatedMethod").
+					WithInput(f.requestType).
+					WithOutput(f.responseType).
 					WithVerb("POST").
-					WithPathTemplate((&api.PathTemplate{}).WithLiteral("v1").WithLiteral("notDeprecated"))
-				m.Documentation = "-- not deprecated marker --"
-				return m
+					WithPathTemplate((&api.PathTemplate{}).WithLiteral("v1").WithLiteral("notDeprecated")).
+					WithDocumentation("-- not deprecated marker --")
 			},
 			want: []expectedBlock{
 				{
@@ -169,23 +179,25 @@ func TestGenerateService_DeprecatedMethods(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			outDir := t.TempDir()
 
-			method := test.setup()
+			fixtures := newTestMethodFixtures()
+			method := test.setup(fixtures)
 
 			// We need a fresh service for each test case
-			service := api.NewTestService("TestService").WithMethods(
-				method,
-				api.NewTestMethod("GetOperation").
-					WithInput(getOperationInputType).
-					WithOutput(operationType).
-					WithVerb("GET").
-					WithPathTemplate((&api.PathTemplate{}).WithLiteral("v1").WithLiteral("operations")),
-			)
+			service := api.NewTestService("TestService").
+				WithPackage("test").
+				WithMethods(
+					method,
+					api.NewTestMethod("GetOperation").
+						WithInput(fixtures.getOperationInputType).
+						WithOutput(fixtures.operationType).
+						WithVerb("GET").
+						WithPathTemplate((&api.PathTemplate{}).WithLiteral("v1").WithLiteral("operations")),
+				)
 
 			model := api.NewTestAPI([]*api.Message{
-				requestType, responseType, itemType, paginationResponseType,
-				operationType, lroResultType, lroMetadataType, getOperationInputType,
+				fixtures.requestType, fixtures.responseType, fixtures.itemType, fixtures.paginationResponseType,
+				fixtures.operationType, fixtures.lroResultType, fixtures.lroMetadataType, fixtures.getOperationInputType,
 			}, nil, []*api.Service{service})
-			model.PackageName = "test"
 
 			swiftCfg := swiftConfig(t, []config.SwiftDependency{
 				{Name: "GoogleGax", RequiredByServices: true},

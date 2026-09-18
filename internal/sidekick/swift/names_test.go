@@ -207,9 +207,8 @@ func TestEnumValueCaseName(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			enum := &api.Enum{Name: tt.enumName}
-			ev := &api.EnumValue{Name: tt.valName, Parent: enum}
-			got := enumValueCaseName(ev)
+			enum := api.NewTestEnum(tt.enumName).WithValues(api.NewTestEnumValue(tt.valName, 0))
+			got := enumValueCaseName(enum.Values[0])
 			if got != tt.want {
 				t.Errorf("enumValueCaseName() = %q, want %q", got, tt.want)
 			}
