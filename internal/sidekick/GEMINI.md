@@ -134,11 +134,11 @@ itemField := api.NewTestField("secrets").
     WithRepeated()
 
 // BAD: Manually specifying Typez and hardcoding TypezID strings
-itemField := api.NewTestField("secrets").
+badItemField := api.NewTestField("secrets").
     WithType(api.TypezMessage).
     WithRepeated()
-itemField.TypezID = ".google.cloud.secretmanager.v1.Secret"
-itemField.MessageType = secretType
+badItemField.TypezID = ".google.cloud.secretmanager.v1.Secret"
+badItemField.MessageType = secretType
 ```
 
 ### Standard Available Helpers
