@@ -407,17 +407,15 @@ func TestAnnotateMessage_Pagination(t *testing.T) {
 		WithPackage("google.cloud.secretmanager.v1").
 		WithFields(pageSizeField, pageTokenField)
 
+	secretType := api.NewTestMessage("Secret").WithPackage("google.cloud.secretmanager.v1")
 	itemField := api.NewTestField("secrets").
-		WithType(api.TypezMessage).
+		WithMessageType(secretType).
 		WithRepeated()
-	itemField.TypezID = ".google.cloud.secretmanager.v1.Secret"
 	nextPageTokenField := api.NewTestField("next_page_token").WithType(api.TypezString)
 	outputType := api.NewTestMessage("ListSecretsResponse").
 		WithPackage("google.cloud.secretmanager.v1").
 		WithFields(itemField, nextPageTokenField).
 		WithPagination(nextPageTokenField, itemField)
-
-	secretType := api.NewTestMessage("Secret").WithPackage("google.cloud.secretmanager.v1")
 
 	method := api.NewTestMethod("ListSecrets").
 		WithInput(inputType).
@@ -479,10 +477,10 @@ func TestAnnotateMessage_Pagination(t *testing.T) {
 }
 
 func TestAnnotateMessage_RecursiveNested(t *testing.T) {
+	secretType := api.NewTestMessage("Secret").WithPackage("google.cloud.secretmanager.v1")
 	itemField := api.NewTestField("secrets").
-		WithType(api.TypezMessage).
+		WithMessageType(secretType).
 		WithRepeated()
-	itemField.TypezID = ".google.cloud.secretmanager.v1.Secret"
 	nextPageTokenField := api.NewTestField("next_page_token").WithType(api.TypezString)
 	nestedOutputType := api.NewTestMessage("ListSecretsResponse").
 		WithPackage("google.cloud.secretmanager.v1").
@@ -494,8 +492,6 @@ func TestAnnotateMessage_RecursiveNested(t *testing.T) {
 		WithPackage("google.cloud.secretmanager.v1")
 	outerMessage.Messages = []*api.Message{nestedOutputType}
 	nestedOutputType.Parent = outerMessage
-
-	secretType := api.NewTestMessage("Secret").WithPackage("google.cloud.secretmanager.v1")
 
 	model := api.NewTestAPI([]*api.Message{outerMessage, secretType}, nil, nil)
 	model.PackageName = "google.cloud.secretmanager.v1"

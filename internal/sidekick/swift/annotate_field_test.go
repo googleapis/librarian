@@ -335,9 +335,9 @@ func TestAnnotateField_Recursive(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
+			msg := api.NewTestMessage("Node")
 			field := api.NewTestField("child_node").
-				WithType(api.TypezMessage).
-				WithTypezID(".test.Node")
+				WithMessageType(msg)
 			field.Documentation = "Recursive link."
 			field.Recursive = true
 			if test.optional {
@@ -346,8 +346,6 @@ func TestAnnotateField_Recursive(t *testing.T) {
 			if test.repeated {
 				field.WithRepeated()
 			}
-			msg := api.NewTestMessage("Node")
-			field.MessageType = msg
 
 			if test.isOneOf {
 				oneof := api.NewTestOneOf(test.oneofProperty).WithFields(field)
