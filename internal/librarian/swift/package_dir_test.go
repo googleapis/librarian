@@ -74,4 +74,15 @@ func TestPackageDirectory(t *testing.T) {
 			t.Errorf("PackageDirectory(%q) = %q, want %q", relDir, got, relDir)
 		}
 	})
+
+	t.Run("fallback strips /Sources/ when Package.swift is absent", func(t *testing.T) {
+		in := filepath.Join("pkgs", "swift-google-auth", "Sources", "GoogleAuth", "generated")
+		want := filepath.Join("pkgs", "swift-google-auth")
+		if got := PackageDirectory(in); got != want {
+			t.Errorf("PackageDirectory(%q) = %q, want %q", in, got, want)
+		}
+		if got := PackageDirectory("Sources/MyTarget"); got != "." {
+			t.Errorf("PackageDirectory(\"Sources/MyTarget\") = %q, want \".\"", got)
+		}
+	})
 }

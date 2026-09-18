@@ -39,8 +39,11 @@ func PackageDirectory(dir string) string {
 		current = parent
 	}
 	slashDir := filepath.ToSlash(filepath.Clean(dir))
-	if before, _, ok := strings.Cut(slashDir, "/Sources/"); ok {
-		return filepath.FromSlash(before)
+	if i := strings.LastIndex(slashDir, "/Sources/"); i != -1 {
+		return filepath.FromSlash(slashDir[:i])
 	}
-	return dir
+	if slashDir == "Sources" || strings.HasPrefix(slashDir, "Sources/") {
+		return "."
+	}
+	return filepath.FromSlash(slashDir)
 }
