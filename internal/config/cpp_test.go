@@ -18,7 +18,7 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
-	"gopkg.in/yaml.v3"
+	"github.com/googleapis/librarian/internal/yaml"
 )
 
 func TestCppConfig_Unmarshal(t *testing.T) {
@@ -129,11 +129,11 @@ libraries:
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			var got Config
-			if err := yaml.Unmarshal([]byte(test.yaml), &got); err != nil {
+			got, err := yaml.Unmarshal[Config]([]byte(test.yaml))
+			if err != nil {
 				t.Fatalf("failed to unmarshal yaml: %v", err)
 			}
-			if diff := cmp.Diff(test.want, &got); diff != "" {
+			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
