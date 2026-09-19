@@ -156,6 +156,19 @@ func (m *Message) WithOneOfs(oneofs ...*OneOf) *Message {
 	return m
 }
 
+// WithMessages adds nested messages to the message and updates their parent/ID.
+func (m *Message) WithMessages(messages ...*Message) *Message {
+	for _, child := range messages {
+		child.Parent = m
+		child.Package = m.Package
+		if strings.HasPrefix(child.ID, ".test.") || child.ID == "" {
+			child.ID = fmt.Sprintf("%s.%s", m.ID, child.Name)
+		}
+	}
+	m.Messages = append(m.Messages, messages...)
+	return m
+}
+
 // WithEnums adds enums to the message and updates their parent/ID.
 func (m *Message) WithEnums(enums ...*Enum) *Message {
 	for _, e := range enums {
