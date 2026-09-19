@@ -125,6 +125,14 @@ func TestValidateOutputContainment(t *testing.T) {
 			},
 			wantErr: true,
 		},
+		{
+			name: "duplicate output paths",
+			files: []language.GeneratedFile{
+				{OutputPath: "file.txt"},
+				{OutputPath: "/file.txt"},
+			},
+			wantErr: true,
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			err := validateOutputContainment(outdir, test.files)

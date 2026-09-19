@@ -44,6 +44,9 @@ func (c *codec) annotateModel(model *api.API) error {
 		}
 	}
 	for _, s := range model.Services {
+		if s.Model == nil {
+			s.Model = model
+		}
 		if err := c.annotateService(s); err != nil {
 			return err
 		}

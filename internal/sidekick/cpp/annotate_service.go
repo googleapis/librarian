@@ -14,15 +14,45 @@
 
 package cpp
 
-import "github.com/googleapis/librarian/internal/sidekick/api"
+import (
+	"github.com/googleapis/librarian/internal/license"
+	"github.com/googleapis/librarian/internal/sidekick/api"
+)
 
 type serviceAnnotations struct {
-	Name string
+	Name          string
+	CopyrightYear string
+	BoilerPlate   []string
+	Model         *modelAnnotations
+	SourceFile    string
 }
 
 func (c *codec) annotateService(s *api.Service) error {
+	var modelAnn *modelAnnotations
+	year := "2026"
+	if c.config != nil && c.config.InitialCopyrightYear != "" {
+		year = c.config.InitialCopyrightYear
+	}
+	boilerPlate := license.HeaderBulk()
+	if s.Model != nil {
+		if ann, ok := s.Model.Codec.(*modelAnnotations); ok {
+			modelAnn = ann
+			year = ann.CopyrightYear
+			boilerPlate = ann.BoilerPlate
+		}
+	}
+	var sourceFile string
+	if s.Model != nil {
+		if loc, ok := s.Model.DefinitionLocation(s.ID); ok {
+			sourceFile = loc.Filename
+		}
+	}
 	sAnn := &serviceAnnotations{
-		Name: s.Name,
+		Name:          s.Name,
+		CopyrightYear: year,
+		BoilerPlate:   boilerPlate,
+		Model:         modelAnn,
+		SourceFile:    sourceFile,
 	}
 	s.Codec = sAnn
 	for _, m := range s.Methods {
