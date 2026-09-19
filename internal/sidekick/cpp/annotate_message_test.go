@@ -37,6 +37,8 @@ func TestAnnotateMessage(t *testing.T) {
 		{
 			name: "nested types",
 			message: api.NewTestMessage("Item").
+				WithFields(api.NewTestField("field1").WithType(api.TypezString)).
+				WithOneOfs(api.NewTestOneOf("oneof1")).
 				WithMessages(api.NewTestMessage("NestedItem")).
 				WithEnums(api.NewTestEnum("NestedEnum")),
 			want: &messageAnnotations{
@@ -56,6 +58,16 @@ func TestAnnotateMessage(t *testing.T) {
 			}
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+			for _, f := range test.message.Fields {
+				if _, ok := f.Codec.(*fieldAnnotations); !ok {
+					t.Errorf("expected field codec *fieldAnnotations, got %T", f.Codec)
+				}
+			}
+			for _, o := range test.message.OneOfs {
+				if _, ok := o.Codec.(*oneOfAnnotations); !ok {
+					t.Errorf("expected oneof codec *oneOfAnnotations, got %T", o.Codec)
+				}
 			}
 			for _, child := range test.message.Messages {
 				if _, ok := child.Codec.(*messageAnnotations); !ok {
