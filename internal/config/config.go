@@ -130,6 +130,18 @@ type Tools struct {
 
 	// Swift defines tools to install via Swift.
 	Swift []*SwiftTool `yaml:"swift,omitempty"`
+
+	// ClangFormat defines clang-format tool configuration.
+	ClangFormat *ClangFormat `yaml:"clang_format,omitempty"`
+}
+
+// ClangFormat defines clang-format tool configuration.
+type ClangFormat struct {
+	// Path is the path to the clang-format executable. If omitted, "clang-format" on $PATH is used.
+	Path string `yaml:"path,omitempty"`
+
+	// Version is the optional expected version string.
+	Version string `yaml:"version,omitempty"`
 }
 
 // CargoTool defines a tool to install via cargo.
@@ -282,6 +294,9 @@ type Default struct {
 
 	// Language-specific fields are below.
 
+	// Cpp contains C++-specific default configuration.
+	Cpp *CppDefault `yaml:"cpp,omitempty"`
+
 	// Dart contains Dart-specific default configuration.
 	Dart *DartPackage `yaml:"dart,omitempty"`
 
@@ -390,6 +405,9 @@ type Library struct {
 	SpecificationFormat string `yaml:"specification_format,omitempty"`
 
 	// Language-specific fields are below.
+
+	// Cpp contains C++-specific library configuration.
+	Cpp *CppLibrary `yaml:"cpp,omitempty"`
 
 	// Dart contains Dart-specific library configuration.
 	Dart *DartPackage `yaml:"dart,omitempty"`

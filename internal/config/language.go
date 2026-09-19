@@ -23,6 +23,8 @@ const (
 	LanguageUnknown = "unknown"
 	// LanguageAll is the identifier for all languages.
 	LanguageAll = "all"
+	// LanguageCpp is the language identifier for C++.
+	LanguageCpp = "cpp"
 	// LanguageCsharp is the language identifier for C#.
 	LanguageCsharp = "csharp"
 	// LanguageDart is the language identifier for Dart.

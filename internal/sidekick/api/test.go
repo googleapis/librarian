@@ -24,15 +24,16 @@ import (
 // NewTestAPI creates a new test API.
 func NewTestAPI(messages []*Message, enums []*Enum, services []*Service) *API {
 	model := &API{
-		Name:           "Test",
-		Messages:       messages,
-		Enums:          enums,
-		Services:       services,
-		messageByID:    make(map[string]*Message),
-		methodByID:     make(map[string]*Method),
-		enumByID:       make(map[string]*Enum),
-		serviceByID:    make(map[string]*Service),
-		resourceByType: make(map[string]*Resource),
+		Name:                "Test",
+		Messages:            messages,
+		Enums:               enums,
+		Services:            services,
+		DefinitionLocations: make(map[string]SourceLocation),
+		messageByID:         make(map[string]*Message),
+		methodByID:          make(map[string]*Method),
+		enumByID:            make(map[string]*Enum),
+		serviceByID:         make(map[string]*Service),
+		resourceByType:      make(map[string]*Resource),
 	}
 
 	for _, m := range messages {
@@ -103,6 +104,12 @@ func (a *API) WithRubyPackage(name string) *API {
 	return a
 }
 
+// WithDefinitionLocation adds a source location to an API instance.
+func (a *API) WithDefinitionLocation(name, filename string, line int) *API {
+	a.AddDefinitionLocation(name, SourceLocation{Filename: filename, Line: line})
+	return a
+}
+
 // parentName returns the parent's name from a fully qualified identifier.
 func parentName(id string) string {
 	if lastIndex := strings.LastIndex(id, "."); lastIndex != -1 {
@@ -153,6 +160,19 @@ func (m *Message) WithOneOfs(oneofs ...*OneOf) *Message {
 		m.OneOfs = append(m.OneOfs, o)
 		m.WithFields(o.Fields...)
 	}
+	return m
+}
+
+// WithMessages adds nested messages to the message and updates their parent/ID.
+func (m *Message) WithMessages(messages ...*Message) *Message {
+	for _, child := range messages {
+		child.Parent = m
+		child.Package = m.Package
+		if strings.HasPrefix(child.ID, ".test.") || child.ID == "" {
+			child.ID = fmt.Sprintf("%s.%s", m.ID, child.Name)
+		}
+	}
+	m.Messages = append(m.Messages, messages...)
 	return m
 }
 

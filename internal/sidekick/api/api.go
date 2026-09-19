@@ -19,6 +19,12 @@ import (
 	"maps"
 )
 
+// SourceLocation captures the file and line number where an API element is defined.
+type SourceLocation struct {
+	Filename string
+	Line     int
+}
+
 // API represents an API surface.
 type API struct {
 	// Name of the API (e.g. secretmanager).
@@ -51,6 +57,9 @@ type API struct {
 	QuickstartService *Service
 	// Language specific annotations.
 	Codec any
+
+	// DefinitionLocations maps an element's fully-qualified ID or symbol name to its source location.
+	DefinitionLocations map[string]SourceLocation
 
 	// serviceByID returns a service that is associated with the API.
 	serviceByID map[string]*Service
@@ -230,4 +239,21 @@ func (a *API) AddResource(r *Resource) {
 		a.resourceByType = make(map[string]*Resource)
 	}
 	a.resourceByType[r.Type] = r
+}
+
+// DefinitionLocation returns the source location for the element with the given name, if found.
+func (a *API) DefinitionLocation(name string) (SourceLocation, bool) {
+	if a == nil || a.DefinitionLocations == nil {
+		return SourceLocation{}, false
+	}
+	loc, ok := a.DefinitionLocations[name]
+	return loc, ok
+}
+
+// AddDefinitionLocation associates a source location with the given element name.
+func (a *API) AddDefinitionLocation(name string, loc SourceLocation) {
+	if a.DefinitionLocations == nil {
+		a.DefinitionLocations = make(map[string]SourceLocation)
+	}
+	a.DefinitionLocations[name] = loc
 }

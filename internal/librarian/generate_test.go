@@ -385,6 +385,22 @@ func TestDefaultOutput(t *testing.T) {
 		want       string
 	}{
 		{
+			name:       "cpp",
+			language:   config.LanguageCpp,
+			libName:    "google-cloud-secretmanager-v1",
+			api:        "google/cloud/secretmanager/v1",
+			defaultOut: "generated",
+			want:       "generated/google/cloud/secretmanager/v1",
+		},
+		{
+			name:       "cpp empty defaultOut",
+			language:   config.LanguageCpp,
+			libName:    "google-cloud-secretmanager-v1",
+			api:        "google/cloud/secretmanager/v1",
+			defaultOut: "",
+			want:       "google/cloud/secretmanager/v1",
+		},
+		{
 			name:       "dart",
 			language:   config.LanguageDart,
 			libName:    "google-cloud-secretmanager-v1",

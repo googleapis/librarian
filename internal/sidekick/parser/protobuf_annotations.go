@@ -38,11 +38,17 @@ var (
 // We need to add them so they are useful when searching in
 // `state.MessageByID[]`.
 func normalizeTypeID(packagez, id string) string {
+	if id == "" {
+		return ""
+	}
 	if strings.HasPrefix(id, ".") {
 		return id
 	}
 	if strings.Contains(id, ".") {
 		// Already has a package, return the string.
+		return "." + id
+	}
+	if packagez == "" {
 		return "." + id
 	}
 	return fmt.Sprintf(".%s.%s", packagez, id)
@@ -54,11 +60,21 @@ func parseOperationInfo(packagez string, m *descriptorpb.MethodDescriptorProto) 
 		return nil
 	}
 	protobufInfo := proto.GetExtension(m.GetOptions(), extensionId).(*longrunningpb.OperationInfo)
-	operationInfo := &api.OperationInfo{
-		MetadataTypeID: normalizeTypeID(packagez, protobufInfo.GetMetadataType()),
-		ResponseTypeID: normalizeTypeID(packagez, protobufInfo.GetResponseType()),
+	respType := normalizeTypeID(packagez, protobufInfo.GetResponseType())
+	metaType := normalizeTypeID(packagez, protobufInfo.GetMetadataType())
+	if respType == "" && metaType == "" {
+		return nil
 	}
-	return operationInfo
+	if metaType == "" {
+		metaType = ".google.protobuf.Empty"
+	}
+	if respType == "" {
+		respType = ".google.protobuf.Empty"
+	}
+	return &api.OperationInfo{
+		MetadataTypeID: metaType,
+		ResponseTypeID: respType,
+	}
 }
 
 func parsePathInfo(m *descriptorpb.MethodDescriptorProto, model *api.API) (*api.PathInfo, error) {

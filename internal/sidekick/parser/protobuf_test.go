@@ -69,7 +69,7 @@ func TestProtobuf_PartialInfo(t *testing.T) {
 		Title:       "Secret Manager API",
 		Description: "",
 	}
-	if diff := cmp.Diff(want, got, cmpopts.IgnoreFields(api.API{}, "Services", "Messages", "Enums"), cmpopts.IgnoreUnexported(api.API{})); diff != "" {
+	if diff := cmp.Diff(want, got, cmpopts.IgnoreFields(api.API{}, "Services", "Messages", "Enums", "DefinitionLocations"), cmpopts.IgnoreUnexported(api.API{})); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }

@@ -22,6 +22,7 @@ import (
 	"strings"
 
 	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/librarian/cpp"
 	"github.com/googleapis/librarian/internal/librarian/dart"
 	"github.com/googleapis/librarian/internal/librarian/golang"
 	"github.com/googleapis/librarian/internal/librarian/java"
@@ -151,6 +152,8 @@ func cleanLibraries(language string, libraries []*config.Library) error {
 	var err error
 	for _, library := range libraries {
 		switch language {
+		case config.LanguageCpp:
+			err = checkAndClean(library.Output, library.Keep)
 		case config.LanguageDart:
 			err = checkAndClean(library.Output, library.Keep)
 		case config.LanguageFake:
@@ -190,6 +193,21 @@ func cleanLibraries(language string, libraries []*config.Library) error {
 // concurrency strategy for these two steps.
 func generateLibraries(ctx context.Context, cfg *config.Config, libraries []*config.Library, src *sources.Sources) error {
 	switch cfg.Language {
+	case config.LanguageCpp:
+		g, gctx := errgroup.WithContext(ctx)
+		g.SetLimit(runtime.NumCPU())
+		for _, library := range libraries {
+			g.Go(func() error {
+				if err := cpp.Generate(gctx, cfg, library, src); err != nil {
+					return fmt.Errorf("generate library %q (%s): %w", library.Name, cfg.Language, err)
+				}
+				if err := cpp.Format(gctx, cfg, library); err != nil {
+					return fmt.Errorf("format library %q (%s): %w", library.Name, cfg.Language, err)
+				}
+				return nil
+			})
+		}
+		return g.Wait()
 	case config.LanguageDart:
 		g, gctx := errgroup.WithContext(ctx)
 		g.SetLimit(runtime.NumCPU())
@@ -366,6 +384,8 @@ func generateLibraries(ctx context.Context, cfg *config.Config, libraries []*con
 
 func defaultOutput(language string, name, api, defaultOut string) string {
 	switch language {
+	case config.LanguageCpp:
+		return cpp.DefaultOutput(api, defaultOut)
 	case config.LanguageDart:
 		return dart.DefaultOutput(name, defaultOut)
 	case config.LanguageGo:

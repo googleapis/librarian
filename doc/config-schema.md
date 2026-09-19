@@ -48,6 +48,14 @@ This document describes the schema for the librarian.yaml.
 | `pnpm` | list of [PNPMTool](#pnpmtool-configuration) (optional) | Defines tools to install via pnpm. |
 | `protoc` | [Protoc](#protoc-configuration) (optional) | Defines the protoc installation. |
 | `swift` | list of [SwiftTool](#swifttool-configuration) (optional) | Defines tools to install via Swift. |
+| `clang_format` | [ClangFormat](#clangformat-configuration) (optional) | Defines clang-format tool configuration. |
+
+## ClangFormat Configuration
+
+| Field | Type | Description |
+| :--- | :--- | :--- |
+| `path` | string | Is the path to the clang-format executable. If omitted, "clang-format" on $PATH is used. |
+| `version` | string | Is the optional expected version string. |
 
 ## CargoTool Configuration
 
@@ -130,6 +138,7 @@ This document describes the schema for the librarian.yaml.
 | `keep` | list of string | Lists files and directories to preserve during regeneration. These represent critical custom handwritten files (e.g., package.json, custom configs, and handwritten tests) and semi-handmade documentation files (README.md, CHANGELOG.md, .readme-partials.yaml) that are not natively generated from proto schemas but are strictly required by the post-processor's markdown generation and release tracking passes. |
 | `output` | string | Is the directory where code is written. For example, for Rust this is src/generated. |
 | `tag_format` | string | Is the template for git tags, such as "{name}/v{version}". |
+| `cpp` | [CppDefault](#cppdefault-configuration) (optional) | Contains C++-specific default configuration. |
 | `dart` | [DartPackage](#dartpackage-configuration) (optional) | Contains Dart-specific default configuration. |
 | `dotnet` | [DotnetPackage](#dotnetpackage-configuration) (optional) | Contains .NET-specific default configuration. |
 | `go` | [GoDefault](#godefault-configuration) (optional) | Contains Go-specific default configuration. |
@@ -158,6 +167,7 @@ This document describes the schema for the librarian.yaml.
 | `skip_generate` | bool | Disables code generation for this library. |
 | `skip_release` | bool | Disables release for this library. |
 | `specification_format` | string | Specifies the API specification format. Valid values are "protobuf" (default) or "discovery". |
+| `cpp` | [CppLibrary](#cpplibrary-configuration) (optional) | Contains C++-specific library configuration. |
 | `dart` | [DartPackage](#dartpackage-configuration) (optional) | Contains Dart-specific library configuration. |
 | `dotnet` | [DotnetPackage](#dotnetpackage-configuration) (optional) | Contains .NET-specific library configuration. |
 | `go` | [GoModule](#gomodule-configuration) (optional) | Contains Go-specific library configuration. |
@@ -250,6 +260,39 @@ This document describes the schema for the librarian.yaml.
 | :--- | :--- | :--- |
 | `prefix` | string | Is an acceptable prefix for the URL path (e.g., "compute/v1/projects/{project}/zones/{zone}"). |
 | `method_id` | string | Is the corresponding method ID (e.g., ".google.cloud.compute.v1.zoneOperations.get"). |
+
+## CppDefault Configuration
+
+| Field | Type | Description |
+| :--- | :--- | :--- |
+| `default_version` | string | Is the default library version. |
+
+## CppLibrary Configuration
+
+| Field | Type | Description |
+| :--- | :--- | :--- |
+| `source_root` | string | Is the optional root directory of the proto sources. |
+| `product_path` | string | Is the relative path of the generated versioned library. Defaults to library.Output if omitted. |
+| `forwarding_product_path` | string | Is the relative directory for top-level forwarding headers. |
+| `service_endpoint_env_var` | string | Is the environment variable used to override the service endpoint. |
+| `emulator_endpoint_env_var` | string | Is the environment variable used to override the emulator endpoint. |
+| `generate_rest_transport` | bool | Specifies whether to generate REST transport code. |
+| `generate_grpc_transport` | bool (optional) | Specifies whether to generate gRPC transport code. |
+| `endpoint_location_style` | string | Controls endpoint location derivation style. |
+| `backwards_compatibility_namespace_alias` | bool | Controls generation of backward compatibility namespace alias. |
+| `omitted_rpcs` | list of string | Lists RPC method names to omit from code generation. |
+| `gen_async_rpcs` | list of string | Lists RPC method names for which asynchronous client methods are generated. |
+| `omitted_services` | list of string | Lists service names to omit from code generation. |
+| `retryable_status_codes` | list of string | Lists gRPC status codes that are treated as retryable by default. |
+| `idempotency_overrides` | list of [IdempotencyRule](#idempotencyrule-configuration) | Lists custom idempotency settings for specific RPCs. |
+| `generate_round_robin_decorator` | bool | Indicates whether to generate round-robin stubs. |
+| `omit_client` | bool | Indicates whether to omit generating client class. |
+| `omit_connection` | bool | Indicates whether to omit generating connection class. |
+| `omit_stub_factory` | bool | Indicates whether to omit generating stub factory functions. |
+| `additional_proto_files` | list of string | Lists extra proto files to include during parsing. |
+| `override_service_config_yaml_name` | string | Specifies a path to a service config yaml override. |
+| `initial_copyright_year` | string | Specifies the initial copyright year to preserve in headers. |
+| `omit_repo_metadata` | bool | Indicates whether to skip emitting .repo-metadata.json. |
 
 ## DartPackage Configuration
 
@@ -370,6 +413,13 @@ This document describes the schema for the librarian.yaml.
 | `delete_generation_output_paths` | list of string | Is a list of paths to delete before generation. |
 | `module_path_version` | string | Is the version of the Go module path. |
 | `nested_module` | string | Is the name of a nested module directory. |
+
+## IdempotencyRule Configuration
+
+| Field | Type | Description |
+| :--- | :--- | :--- |
+| `rpc_name` | string | Is the name of the RPC, optionally qualified by service name. |
+| `idempotency` | string | Is the idempotency classification (e.g., IDEMPOTENT, NON_IDEMPOTENT). |
 
 ## JavaAPI Configuration
 

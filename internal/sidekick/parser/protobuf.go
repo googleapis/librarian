@@ -313,6 +313,21 @@ func makeAPIForProtobuf(serviceConfig *serviceconfig.Service, req *pluginpb.Code
 		result.ResourceDefinitions = append(result.ResourceDefinitions, resources...)
 	}
 
+	seenFiles := map[string]bool{}
+	for _, list := range [][]*descriptorpb.FileDescriptorProto{
+		req.GetSourceFileDescriptors(),
+		req.GetProtoFile(),
+		mixinFileDesc,
+	} {
+		for _, f := range list {
+			if f == nil || f.GetSourceCodeInfo() == nil || seenFiles[f.GetName()] {
+				continue
+			}
+			seenFiles[f.GetName()] = true
+			extractDefinitionLocations(result, f)
+		}
+	}
+
 	// Consolidate resources.
 	// Message-level resources (in result.AllResources take precedence over
 	// file-level resources (already in result.ResourceDefinitions).
@@ -915,4 +930,141 @@ func trimLeadingSpacesInDocumentation(doc string) string {
 		lines[i] = strings.TrimPrefix(line, " ")
 	}
 	return strings.TrimSuffix(strings.Join(lines, "\n"), "\n")
+}
+
+func extractDefinitionLocations(model *api.API, f *descriptorpb.FileDescriptorProto) {
+	if model == nil || f == nil || f.GetSourceCodeInfo() == nil {
+		return
+	}
+	fFQN := ""
+	if f.GetPackage() != "" {
+		fFQN = "." + f.GetPackage()
+	}
+	for _, loc := range f.GetSourceCodeInfo().GetLocation() {
+		p := loc.GetPath()
+		span := loc.GetSpan()
+		if len(p) < 2 || len(span) == 0 {
+			continue
+		}
+		line := int(span[0]) + 1
+		sourceLoc := api.SourceLocation{
+			Filename: f.GetName(),
+			Line:     line,
+		}
+		switch p[0] {
+		case fileDescriptorMessageType:
+			idx := int(p[1])
+			if idx < 0 || idx >= len(f.GetMessageType()) {
+				continue
+			}
+			m := f.GetMessageType()[idx]
+			mFQN := fFQN + "." + m.GetName()
+			if len(p) == 2 {
+				model.AddDefinitionLocation(mFQN, sourceLoc)
+				continue
+			}
+			extractMessageDefinitionLocations(model, m, mFQN, p[2:], sourceLoc)
+
+		case fileDescriptorEnumType:
+			idx := int(p[1])
+			if idx < 0 || idx >= len(f.GetEnumType()) {
+				continue
+			}
+			e := f.GetEnumType()[idx]
+			eFQN := fFQN + "." + e.GetName()
+			if len(p) == 2 {
+				model.AddDefinitionLocation(eFQN, sourceLoc)
+				continue
+			}
+			extractEnumDefinitionLocations(model, e, eFQN, p[2:], sourceLoc)
+
+		case fileDescriptorService:
+			idx := int(p[1])
+			if idx < 0 || idx >= len(f.GetService()) {
+				continue
+			}
+			s := f.GetService()[idx]
+			sFQN := fFQN + "." + s.GetName()
+			if len(p) == 2 {
+				model.AddDefinitionLocation(sFQN, sourceLoc)
+				continue
+			}
+			if len(p) == 4 && p[2] == serviceDescriptorProtoMethod {
+				mIdx := int(p[3])
+				if mIdx >= 0 && mIdx < len(s.GetMethod()) {
+					method := s.GetMethod()[mIdx]
+					mFQN := sFQN + "." + method.GetName()
+					model.AddDefinitionLocation(mFQN, sourceLoc)
+				}
+			}
+
+		case fileDescriptorExtension:
+			idx := int(p[1])
+			if idx < 0 || idx >= len(f.GetExtension()) {
+				continue
+			}
+			ext := f.GetExtension()[idx]
+			extFQN := fFQN + "." + ext.GetName()
+			if len(p) == 2 {
+				model.AddDefinitionLocation(extFQN, sourceLoc)
+			}
+		}
+	}
+}
+
+func extractMessageDefinitionLocations(model *api.API, m *descriptorpb.DescriptorProto, mFQN string, p []int32, sourceLoc api.SourceLocation) {
+	if len(p) < 2 {
+		return
+	}
+	switch p[0] {
+	case messageDescriptorField:
+		idx := int(p[1])
+		if len(p) == 2 && idx >= 0 && idx < len(m.GetField()) {
+			field := m.GetField()[idx]
+			model.AddDefinitionLocation(mFQN+"."+field.GetName(), sourceLoc)
+		}
+
+	case messageDescriptorNestedType:
+		idx := int(p[1])
+		if idx < 0 || idx >= len(m.GetNestedType()) {
+			return
+		}
+		nested := m.GetNestedType()[idx]
+		nestedFQN := mFQN + "." + nested.GetName()
+		if len(p) == 2 {
+			model.AddDefinitionLocation(nestedFQN, sourceLoc)
+			return
+		}
+		extractMessageDefinitionLocations(model, nested, nestedFQN, p[2:], sourceLoc)
+
+	case messageDescriptorEnum:
+		idx := int(p[1])
+		if idx < 0 || idx >= len(m.GetEnumType()) {
+			return
+		}
+		enum := m.GetEnumType()[idx]
+		enumFQN := mFQN + "." + enum.GetName()
+		if len(p) == 2 {
+			model.AddDefinitionLocation(enumFQN, sourceLoc)
+			return
+		}
+		extractEnumDefinitionLocations(model, enum, enumFQN, p[2:], sourceLoc)
+
+	case messageDescriptorExtension:
+		idx := int(p[1])
+		if len(p) == 2 && idx >= 0 && idx < len(m.GetExtension()) {
+			ext := m.GetExtension()[idx]
+			model.AddDefinitionLocation(mFQN+"."+ext.GetName(), sourceLoc)
+		}
+	}
+}
+
+func extractEnumDefinitionLocations(model *api.API, e *descriptorpb.EnumDescriptorProto, eFQN string, p []int32, sourceLoc api.SourceLocation) {
+	if len(p) == 2 && p[0] == enumDescriptorValue {
+		idx := int(p[1])
+		if idx >= 0 && idx < len(e.GetValue()) {
+			val := e.GetValue()[idx]
+			model.AddDefinitionLocation(eFQN+"."+val.GetName(), sourceLoc)
+		}
+	}
 }
