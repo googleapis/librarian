@@ -150,22 +150,31 @@ func TestExtractDefinitionLocations_ExtensionsAndEdgeCases(t *testing.T) {
 		model := api.NewTestAPI(nil, nil, nil)
 		extractDefinitionLocations(model, fileDesc)
 
-		wantFileExt := api.SourceLocation{Filename: "ext_test.proto", Line: 10}
-		gotFileExt, ok := model.DefinitionLocation(".test.ext.file_level_ext")
-		if !ok {
-			t.Fatalf("missing definition location for file-level extension")
-		}
-		if diff := cmp.Diff(wantFileExt, gotFileExt); diff != "" {
-			t.Errorf("mismatch for file-level extension (-want +got):\n%s", diff)
-		}
-
-		wantMsgExt := api.SourceLocation{Filename: "ext_test.proto", Line: 20}
-		gotMsgExt, ok := model.DefinitionLocation(".test.ext.Container.msg_level_ext")
-		if !ok {
-			t.Fatalf("missing definition location for message-level extension")
-		}
-		if diff := cmp.Diff(wantMsgExt, gotMsgExt); diff != "" {
-			t.Errorf("mismatch for message-level extension (-want +got):\n%s", diff)
+		for _, test := range []struct {
+			name   string
+			symbol string
+			want   api.SourceLocation
+		}{
+			{
+				name:   "file-level extension",
+				symbol: ".test.ext.file_level_ext",
+				want:   api.SourceLocation{Filename: "ext_test.proto", Line: 10},
+			},
+			{
+				name:   "message-level extension",
+				symbol: ".test.ext.Container.msg_level_ext",
+				want:   api.SourceLocation{Filename: "ext_test.proto", Line: 20},
+			},
+		} {
+			t.Run(test.name, func(t *testing.T) {
+				got, ok := model.DefinitionLocation(test.symbol)
+				if !ok {
+					t.Fatalf("missing definition location for %s", test.symbol)
+				}
+				if diff := cmp.Diff(test.want, got); diff != "" {
+					t.Errorf("mismatch (-want +got):\n%s", diff)
+				}
+			})
 		}
 	})
 
@@ -223,7 +232,7 @@ func TestExtractDefinitionLocations_ExtensionsAndEdgeCases(t *testing.T) {
 		}
 		gotLoc, ok := model.DefinitionLocation(".test.stripped.StrippedMessage")
 		if !ok {
-			t.Fatalf("expected to find .test.stripped.StrippedMessage location from SourceFileDescriptors")
+			t.Fatal("expected to find .test.stripped.StrippedMessage location from SourceFileDescriptors")
 		}
 		wantLoc := api.SourceLocation{Filename: "stripped.proto", Line: 42}
 		if diff := cmp.Diff(wantLoc, gotLoc); diff != "" {
@@ -330,7 +339,7 @@ func TestExtractDefinitionLocations_ExtensionsAndEdgeCases(t *testing.T) {
 		wantLoc := api.SourceLocation{Filename: "deep_ext.proto", Line: 100}
 		gotLoc, ok := model.DefinitionLocation(".test.deep.Outer.Middle.Inner.deep_ext")
 		if !ok {
-			t.Fatalf("missing definition location for deeply nested extension")
+			t.Fatal("missing definition location for deeply nested extension")
 		}
 		if diff := cmp.Diff(wantLoc, gotLoc); diff != "" {
 			t.Errorf("mismatch (-want +got):\n%s", diff)
