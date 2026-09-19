@@ -90,31 +90,55 @@ func TestParseTestModels(t *testing.T) {
 		name          string
 		includeList   []string
 		serviceConfig string
-		wantServices  []string
+		wantServices  []struct {
+			name     string
+			filename string
+		}
 	}{
 		{
 			name:          "test_admin_database",
 			includeList:   []string{"test.proto", "backup.proto"},
 			serviceConfig: "generator/integration_tests/test.yaml",
-			wantServices:  []string{"GoldenThingAdmin", "GoldenKitchenSink"},
+			wantServices: []struct {
+				name     string
+				filename string
+			}{
+				{"GoldenThingAdmin", "generator/integration_tests/test.proto"},
+				{"GoldenKitchenSink", "generator/integration_tests/test.proto"},
+			},
 		},
 		{
 			name:          "test2_rest_only",
 			includeList:   []string{"test2.proto"},
 			serviceConfig: "",
-			wantServices:  []string{"GoldenRestOnly"},
+			wantServices: []struct {
+				name     string
+				filename string
+			}{
+				{"GoldenRestOnly", "generator/integration_tests/test2.proto"},
+			},
 		},
 		{
 			name:          "test_request_id",
 			includeList:   []string{"test_request_id.proto"},
 			serviceConfig: "generator/integration_tests/test_request_id.yaml",
-			wantServices:  []string{"RequestIdService"},
+			wantServices: []struct {
+				name     string
+				filename string
+			}{
+				{"RequestIdService", "generator/integration_tests/test_request_id.proto"},
+			},
 		},
 		{
 			name:          "test_deprecated",
 			includeList:   []string{"test_deprecated.proto"},
 			serviceConfig: "",
-			wantServices:  []string{"DeprecatedService"},
+			wantServices: []struct {
+				name     string
+				filename string
+			}{
+				{"DeprecatedService", "generator/integration_tests/test_deprecated.proto"},
+			},
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
@@ -148,31 +172,24 @@ func TestParseTestModels(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			for _, wantService := range test.wantServices {
-				if !slices.ContainsFunc(model.Services, func(s *api.Service) bool { return s.Name == wantService }) {
-					t.Fatalf("service %q not found in model %s", wantService, test.name)
-				}
-			}
-
-			if test.name == "test_admin_database" {
+			for _, want := range test.wantServices {
 				idx := slices.IndexFunc(model.Services, func(s *api.Service) bool {
-					return s.Name == "GoldenKitchenSink"
+					return s.Name == want.name
 				})
 				if idx == -1 {
-					t.Fatal("service GoldenKitchenSink not found in test_admin_database model")
+					t.Fatalf("service %q not found in model %s", want.name, test.name)
 				}
-				goldenKitchenSink := model.Services[idx]
+				svc := model.Services[idx]
 
-				loc, ok := model.DefinitionLocation(goldenKitchenSink.ID)
+				loc, ok := model.DefinitionLocation(svc.ID)
 				if !ok {
-					t.Fatalf("missing definition location for %q (%s)", goldenKitchenSink.Name, goldenKitchenSink.ID)
+					t.Fatalf("missing definition location for %q (%s)", svc.Name, svc.ID)
 				}
 				if loc.Line <= 0 {
-					t.Fatalf("expected line > 0 for %q, got %d", goldenKitchenSink.Name, loc.Line)
+					t.Fatalf("expected line > 0 for %q, got %d", svc.Name, loc.Line)
 				}
-				const wantFilename = "generator/integration_tests/test.proto"
-				if loc.Filename != wantFilename {
-					t.Fatalf("expected filename %q for %q, got %q", wantFilename, goldenKitchenSink.Name, loc.Filename)
+				if loc.Filename != want.filename {
+					t.Fatalf("expected filename %q for %q, got %q", want.filename, svc.Name, loc.Filename)
 				}
 			}
 		})
@@ -275,36 +292,6 @@ func TestGoldenLibrarianConfig(t *testing.T) {
 
 	if diff := cmp.Diff(want, cfg); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
-	}
-
-	// Verify service_proto_path is present for all libraries in the YAML.
-	type rawLibrary struct {
-		Name string `yaml:"name"`
-		Cpp  struct {
-			ServiceProtoPath string `yaml:"service_proto_path"`
-		} `yaml:"cpp"`
-	}
-	type rawConfig struct {
-		Libraries []rawLibrary `yaml:"libraries"`
-	}
-	rawCfg, err := yaml.Read[rawConfig](cfgPath)
-	if err != nil {
-		t.Fatal(err)
-	}
-	wantProtoPaths := map[string]string{
-		"test_admin_database": "generator/integration_tests/test.proto",
-		"test2_rest_only":     "generator/integration_tests/test2.proto",
-		"test_request_id":     "generator/integration_tests/test_request_id.proto",
-		"test_deprecated":     "generator/integration_tests/test_deprecated.proto",
-	}
-	for _, lib := range rawCfg.Libraries {
-		wantPath, ok := wantProtoPaths[lib.Name]
-		if !ok {
-			t.Fatalf("unexpected library %q in raw config", lib.Name)
-		}
-		if lib.Cpp.ServiceProtoPath != wantPath {
-			t.Errorf("library %s service_proto_path mismatch: want %q, got %q", lib.Name, wantPath, lib.Cpp.ServiceProtoPath)
-		}
 	}
 }
 

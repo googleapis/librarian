@@ -11,14 +11,12 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 language: cpp
 libraries:
   - name: test_admin_database
     apis:
       - path: generator/integration_tests
     cpp:
-      service_proto_path: generator/integration_tests/test.proto
       additional_proto_files:
         - generator/integration_tests/backup.proto
       override_service_config_yaml_name: generator/integration_tests/test.yaml
@@ -49,12 +47,10 @@ libraries:
           idempotency: IDEMPOTENT
         - rpc_name: GoldenKitchenSink.ListLogs
           idempotency: NON_IDEMPOTENT
-
   - name: test2_rest_only
     apis:
       - path: generator/integration_tests
     cpp:
-      service_proto_path: generator/integration_tests/test2.proto
       product_path: generator/integration_tests/golden/v1
       initial_copyright_year: "2023"
       generate_rest_transport: true
@@ -62,12 +58,10 @@ libraries:
       retryable_status_codes:
         - kUnavailable
       endpoint_location_style: LOCATION_OPTIONALLY_DEPENDENT
-
   - name: test_request_id
     apis:
       - path: generator/integration_tests
     cpp:
-      service_proto_path: generator/integration_tests/test_request_id.proto
       product_path: generator/integration_tests/golden/v1
       initial_copyright_year: "2024"
       retryable_status_codes:
@@ -75,12 +69,10 @@ libraries:
       gen_async_rpcs:
         - CreateFoo
       override_service_config_yaml_name: generator/integration_tests/test_request_id.yaml
-
   - name: test_deprecated
     apis:
       - path: generator/integration_tests
     cpp:
-      service_proto_path: generator/integration_tests/test_deprecated.proto
       product_path: generator/integration_tests/golden/v1
       initial_copyright_year: "2024"
       generate_rest_transport: true
