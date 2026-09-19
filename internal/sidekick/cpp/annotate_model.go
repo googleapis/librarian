@@ -29,10 +29,11 @@ func (c *codec) annotateModel(model *api.API) error {
 	if c.config != nil && c.config.InitialCopyrightYear != "" {
 		year = c.config.InitialCopyrightYear
 	}
-	model.Codec = &modelAnnotations{
+	modelAnn := &modelAnnotations{
 		CopyrightYear: year,
 		BoilerPlate:   license.HeaderBulk(),
 	}
+	model.Codec = modelAnn
 	for _, m := range model.Messages {
 		if err := c.annotateMessage(m); err != nil {
 			return err
@@ -44,10 +45,7 @@ func (c *codec) annotateModel(model *api.API) error {
 		}
 	}
 	for _, s := range model.Services {
-		if s.Model == nil {
-			s.Model = model
-		}
-		if err := c.annotateService(s); err != nil {
+		if err := c.annotateService(s, modelAnn, model); err != nil {
 			return err
 		}
 	}

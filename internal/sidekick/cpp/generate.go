@@ -18,6 +18,7 @@ package cpp
 import (
 	"context"
 	"embed"
+	"errors"
 	"fmt"
 	"path/filepath"
 	"slices"
@@ -26,6 +27,14 @@ import (
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/sidekick/api"
 	"github.com/googleapis/librarian/internal/sidekick/language"
+)
+
+var (
+	// ErrEscapesOutputDirectory indicates that a generated file output path escapes the output directory.
+	ErrEscapesOutputDirectory = errors.New("output path escapes output directory")
+
+	// ErrDuplicateOutputPath indicates that multiple files would be written to the same output path.
+	ErrDuplicateOutputPath = errors.New("duplicate output path")
 )
 
 //go:embed all:templates
@@ -39,14 +48,10 @@ func Generate(_ context.Context, model *api.API, outdir string, libCfg *config.C
 	}
 	provider := func(name string) (string, error) {
 		contents, err := templates.ReadFile(name)
-		if err == nil {
-			return string(contents), nil
+		if err != nil {
+			return "", err
 		}
-		base := filepath.Base(name)
-		if partial, err2 := templates.ReadFile(filepath.Join("templates", "partials", base)); err2 == nil {
-			return string(partial), nil
-		}
-		return "", err
+		return string(contents), nil
 	}
 
 	var allGeneratedFiles []language.GeneratedFile
@@ -54,13 +59,12 @@ func Generate(_ context.Context, model *api.API, outdir string, libCfg *config.C
 	allGeneratedFiles = append(allGeneratedFiles, cmakeFiles...)
 
 	generateGrpc := true
-	if libCfg != nil && libCfg.GenerateGrpcTransport != nil {
-		generateGrpc = *libCfg.GenerateGrpcTransport
-	}
-
 	var productPath string
 	var forwardingProductPath string
 	if libCfg != nil {
+		if libCfg.GenerateGrpcTransport != nil {
+			generateGrpc = *libCfg.GenerateGrpcTransport
+		}
 		productPath = libCfg.ProductPath
 		forwardingProductPath = libCfg.ForwardingProductPath
 	}
@@ -122,15 +126,15 @@ func validateOutputContainment(outdir string, files []language.GeneratedFile) er
 	for _, gen := range files {
 		cleanPath := filepath.Clean(gen.OutputPath)
 		if cleanPath == ".." || strings.HasPrefix(cleanPath, ".."+string(filepath.Separator)) {
-			return fmt.Errorf("output path %q escapes output directory %q", gen.OutputPath, outdir)
+			return fmt.Errorf("%w: %q", ErrEscapesOutputDirectory, gen.OutputPath)
 		}
 		targetPath := filepath.Join(absOut, gen.OutputPath)
 		rel, err := filepath.Rel(absOut, targetPath)
 		if err != nil || rel == ".." || strings.HasPrefix(rel, ".."+string(filepath.Separator)) {
-			return fmt.Errorf("output path %q escapes output directory %q", gen.OutputPath, outdir)
+			return fmt.Errorf("%w: %q", ErrEscapesOutputDirectory, gen.OutputPath)
 		}
 		if seen[rel] {
-			return fmt.Errorf("duplicate output path %q", gen.OutputPath)
+			return fmt.Errorf("%w: %q", ErrDuplicateOutputPath, gen.OutputPath)
 		}
 		seen[rel] = true
 	}

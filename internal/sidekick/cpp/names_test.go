@@ -180,8 +180,8 @@ func TestCamelCaseToSnakeCase(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			got := CamelCaseToSnakeCase(test.input)
-			if got != test.want {
-				t.Errorf("CamelCaseToSnakeCase(%q) = %q, want %q", test.input, got, test.want)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
@@ -261,8 +261,8 @@ func TestServiceNameToFilePath(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			got := ServiceNameToFilePath(test.serviceName)
-			if got != test.want {
-				t.Errorf("ServiceNameToFilePath(%q) = %q, want %q", test.serviceName, got, test.want)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
@@ -277,188 +277,189 @@ func TestPathHelpers(t *testing.T) {
 
 	for _, test := range []struct {
 		name string
-		got  string
+		fn   func() string
 		want string
 	}{
 		{
 			name: "client header",
-			got:  ClientHeaderPath(productPath, serviceName),
+			fn:   func() string { return ClientHeaderPath(productPath, serviceName) },
 			want: "generator/integration_tests/golden/v1/request_id_client.h",
 		},
 		{
 			name: "client source",
-			got:  ClientSourcePath(productPath, serviceName),
+			fn:   func() string { return ClientSourcePath(productPath, serviceName) },
 			want: "generator/integration_tests/golden/v1/request_id_client.cc",
 		},
 		{
 			name: "connection header",
-			got:  ConnectionHeaderPath(productPath, serviceName),
+			fn:   func() string { return ConnectionHeaderPath(productPath, serviceName) },
 			want: "generator/integration_tests/golden/v1/request_id_connection.h",
 		},
 		{
 			name: "connection source",
-			got:  ConnectionSourcePath(productPath, serviceName),
+			fn:   func() string { return ConnectionSourcePath(productPath, serviceName) },
 			want: "generator/integration_tests/golden/v1/request_id_connection.cc",
 		},
 		{
 			name: "idempotency policy header",
-			got:  IdempotencyPolicyHeaderPath(productPath, serviceName),
+			fn:   func() string { return IdempotencyPolicyHeaderPath(productPath, serviceName) },
 			want: "generator/integration_tests/golden/v1/request_id_connection_idempotency_policy.h",
 		},
 		{
 			name: "idempotency policy source",
-			got:  IdempotencyPolicySourcePath(productPath, serviceName),
+			fn:   func() string { return IdempotencyPolicySourcePath(productPath, serviceName) },
 			want: "generator/integration_tests/golden/v1/request_id_connection_idempotency_policy.cc",
 		},
 		{
 			name: "options header",
-			got:  OptionsHeaderPath(productPath, serviceName),
+			fn:   func() string { return OptionsHeaderPath(productPath, serviceName) },
 			want: "generator/integration_tests/golden/v1/request_id_options.h",
 		},
 		{
 			name: "mock connection header",
-			got:  MockConnectionHeaderPath(productPath, serviceName),
+			fn:   func() string { return MockConnectionHeaderPath(productPath, serviceName) },
 			want: "generator/integration_tests/golden/v1/mocks/mock_request_id_connection.h",
 		},
 		{
 			name: "option defaults header",
-			got:  OptionDefaultsHeaderPath(productPath, serviceName),
+			fn:   func() string { return OptionDefaultsHeaderPath(productPath, serviceName) },
 			want: "generator/integration_tests/golden/v1/internal/request_id_option_defaults.h",
 		},
 		{
 			name: "option defaults source",
-			got:  OptionDefaultsSourcePath(productPath, serviceName),
+			fn:   func() string { return OptionDefaultsSourcePath(productPath, serviceName) },
 			want: "generator/integration_tests/golden/v1/internal/request_id_option_defaults.cc",
 		},
 		{
 			name: "retry traits header",
-			got:  RetryTraitsHeaderPath(productPath, serviceName),
+			fn:   func() string { return RetryTraitsHeaderPath(productPath, serviceName) },
 			want: "generator/integration_tests/golden/v1/internal/request_id_retry_traits.h",
 		},
 		{
 			name: "tracing connection header",
-			got:  TracingConnectionHeaderPath(productPath, serviceName),
+			fn:   func() string { return TracingConnectionHeaderPath(productPath, serviceName) },
 			want: "generator/integration_tests/golden/v1/internal/request_id_tracing_connection.h",
 		},
 		{
 			name: "tracing connection source",
-			got:  TracingConnectionSourcePath(productPath, serviceName),
+			fn:   func() string { return TracingConnectionSourcePath(productPath, serviceName) },
 			want: "generator/integration_tests/golden/v1/internal/request_id_tracing_connection.cc",
 		},
 		{
 			name: "connection impl header",
-			got:  ConnectionImplHeaderPath(productPath, serviceName),
+			fn:   func() string { return ConnectionImplHeaderPath(productPath, serviceName) },
 			want: "generator/integration_tests/golden/v1/internal/request_id_connection_impl.h",
 		},
 		{
 			name: "connection impl source",
-			got:  ConnectionImplSourcePath(productPath, serviceName),
+			fn:   func() string { return ConnectionImplSourcePath(productPath, serviceName) },
 			want: "generator/integration_tests/golden/v1/internal/request_id_connection_impl.cc",
 		},
 		{
 			name: "stub factory header",
-			got:  StubFactoryHeaderPath(productPath, serviceName),
+			fn:   func() string { return StubFactoryHeaderPath(productPath, serviceName) },
 			want: "generator/integration_tests/golden/v1/internal/request_id_stub_factory.h",
 		},
 		{
 			name: "stub factory source",
-			got:  StubFactorySourcePath(productPath, serviceName),
+			fn:   func() string { return StubFactorySourcePath(productPath, serviceName) },
 			want: "generator/integration_tests/golden/v1/internal/request_id_stub_factory.cc",
 		},
 		{
 			name: "auth decorator header",
-			got:  AuthDecoratorHeaderPath(productPath, serviceName),
+			fn:   func() string { return AuthDecoratorHeaderPath(productPath, serviceName) },
 			want: "generator/integration_tests/golden/v1/internal/request_id_auth_decorator.h",
 		},
 		{
 			name: "auth decorator source",
-			got:  AuthDecoratorSourcePath(productPath, serviceName),
+			fn:   func() string { return AuthDecoratorSourcePath(productPath, serviceName) },
 			want: "generator/integration_tests/golden/v1/internal/request_id_auth_decorator.cc",
 		},
 		{
 			name: "logging decorator header",
-			got:  LoggingDecoratorHeaderPath(productPath, serviceName),
+			fn:   func() string { return LoggingDecoratorHeaderPath(productPath, serviceName) },
 			want: "generator/integration_tests/golden/v1/internal/request_id_logging_decorator.h",
 		},
 		{
 			name: "logging decorator source",
-			got:  LoggingDecoratorSourcePath(productPath, serviceName),
+			fn:   func() string { return LoggingDecoratorSourcePath(productPath, serviceName) },
 			want: "generator/integration_tests/golden/v1/internal/request_id_logging_decorator.cc",
 		},
 		{
 			name: "metadata decorator header",
-			got:  MetadataDecoratorHeaderPath(productPath, serviceName),
+			fn:   func() string { return MetadataDecoratorHeaderPath(productPath, serviceName) },
 			want: "generator/integration_tests/golden/v1/internal/request_id_metadata_decorator.h",
 		},
 		{
 			name: "metadata decorator source",
-			got:  MetadataDecoratorSourcePath(productPath, serviceName),
+			fn:   func() string { return MetadataDecoratorSourcePath(productPath, serviceName) },
 			want: "generator/integration_tests/golden/v1/internal/request_id_metadata_decorator.cc",
 		},
 		{
 			name: "stub header",
-			got:  StubHeaderPath(productPath, serviceName),
+			fn:   func() string { return StubHeaderPath(productPath, serviceName) },
 			want: "generator/integration_tests/golden/v1/internal/request_id_stub.h",
 		},
 		{
 			name: "stub source",
-			got:  StubSourcePath(productPath, serviceName),
+			fn:   func() string { return StubSourcePath(productPath, serviceName) },
 			want: "generator/integration_tests/golden/v1/internal/request_id_stub.cc",
 		},
 		{
 			name: "tracing stub header",
-			got:  TracingStubHeaderPath(productPath, serviceName),
+			fn:   func() string { return TracingStubHeaderPath(productPath, serviceName) },
 			want: "generator/integration_tests/golden/v1/internal/request_id_tracing_stub.h",
 		},
 		{
 			name: "tracing stub source",
-			got:  TracingStubSourcePath(productPath, serviceName),
+			fn:   func() string { return TracingStubSourcePath(productPath, serviceName) },
 			want: "generator/integration_tests/golden/v1/internal/request_id_tracing_stub.cc",
 		},
 		{
 			name: "sources source",
-			got:  SourcesSourcePath(productPath, serviceName),
+			fn:   func() string { return SourcesSourcePath(productPath, serviceName) },
 			want: "generator/integration_tests/golden/v1/internal/request_id_sources.cc",
 		},
 		{
 			name: "forwarding client header",
-			got:  ForwardingClientHeaderPath(forwardingPath, serviceName),
+			fn:   func() string { return ForwardingClientHeaderPath(forwardingPath, serviceName) },
 			want: "generator/integration_tests/golden/request_id_client.h",
 		},
 		{
 			name: "forwarding connection header",
-			got:  ForwardingConnectionHeaderPath(forwardingPath, serviceName),
+			fn:   func() string { return ForwardingConnectionHeaderPath(forwardingPath, serviceName) },
 			want: "generator/integration_tests/golden/request_id_connection.h",
 		},
 		{
 			name: "forwarding idempotency policy header",
-			got:  ForwardingIdempotencyPolicyHeaderPath(forwardingPath, serviceName),
+			fn:   func() string { return ForwardingIdempotencyPolicyHeaderPath(forwardingPath, serviceName) },
 			want: "generator/integration_tests/golden/request_id_connection_idempotency_policy.h",
 		},
 		{
 			name: "forwarding options header",
-			got:  ForwardingOptionsHeaderPath(forwardingPath, serviceName),
+			fn:   func() string { return ForwardingOptionsHeaderPath(forwardingPath, serviceName) },
 			want: "generator/integration_tests/golden/request_id_options.h",
 		},
 		{
 			name: "forwarding mock connection header",
-			got:  ForwardingMockConnectionHeaderPath(forwardingPath, serviceName),
+			fn:   func() string { return ForwardingMockConnectionHeaderPath(forwardingPath, serviceName) },
 			want: "generator/integration_tests/golden/mocks/mock_request_id_connection.h",
 		},
 		{
 			name: "empty product path",
-			got:  ClientHeaderPath("", serviceName),
+			fn:   func() string { return ClientHeaderPath("", serviceName) },
 			want: "request_id_client.h",
 		},
 		{
 			name: "leading slash product path trimmed",
-			got:  ClientHeaderPath("/foo/bar", serviceName),
+			fn:   func() string { return ClientHeaderPath("/foo/bar", serviceName) },
 			want: "foo/bar/request_id_client.h",
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			if test.got != test.want {
-				t.Errorf("%s: got %q, want %q", test.name, test.got, test.want)
+			got := test.fn()
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}

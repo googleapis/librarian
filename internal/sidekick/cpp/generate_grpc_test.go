@@ -15,9 +15,10 @@
 package cpp
 
 import (
+	"errors"
+	"io/fs"
 	"os"
 	"path/filepath"
-	"strings"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -173,7 +174,8 @@ func TestGenerate_GRPCServiceFiles(t *testing.T) {
 				}
 				s := string(content)
 				if diff := cmp.Diff(test.wantContent, s); diff != "" {
-					t.Errorf("file %q mismatch (-want +got):\n%s", gen.OutputPath, diff)
+					t.Logf("file: %s", gen.OutputPath)
+					t.Errorf("mismatch (-want +got):\n%s", diff)
 				}
 			}
 		})
@@ -251,7 +253,8 @@ func TestGenerate_HermeticProtoRequestId(t *testing.T) {
 // source: generator/integration_tests/test_request_id.proto
 `
 		if diff := cmp.Diff(wantContent, string(content)); diff != "" {
-			t.Errorf("file %q mismatch (-want +got):\n%s", gen.OutputPath, diff)
+			t.Logf("file: %s", gen.OutputPath)
+			t.Errorf("mismatch (-want +got):\n%s", diff)
 		}
 	}
 }
@@ -304,37 +307,38 @@ func TestGenerate_ForwardingHeaders(t *testing.T) {
 // source: generator/integration_tests/test.proto
 `
 		if diff := cmp.Diff(wantContent, string(content)); diff != "" {
-			t.Errorf("file %q mismatch (-want +got):\n%s", gen.OutputPath, diff)
+			t.Logf("file: %s", gen.OutputPath)
+			t.Errorf("mismatch (-want +got):\n%s", diff)
 		}
 	}
 }
 
-func TestGenerate_OutputContainmentErrors(t *testing.T) {
+func TestGenerate_OutputContainment_Error(t *testing.T) {
 	for _, test := range []struct {
-		name        string
-		libCfg      *config.CppLibrary
-		wantErrText string
+		name    string
+		libCfg  *config.CppLibrary
+		wantErr error
 	}{
 		{
 			name: "escaping product path parent traversal",
 			libCfg: &config.CppLibrary{
 				ProductPath: "../escaped",
 			},
-			wantErrText: "escapes output directory",
+			wantErr: ErrEscapesOutputDirectory,
 		},
 		{
 			name: "escaping product path root traversal",
 			libCfg: &config.CppLibrary{
 				ProductPath: "..",
 			},
-			wantErrText: "escapes output directory",
+			wantErr: ErrEscapesOutputDirectory,
 		},
 		{
 			name: "deep escaping product path",
 			libCfg: &config.CppLibrary{
 				ProductPath: "sub/../../escaped",
 			},
-			wantErrText: "escapes output directory",
+			wantErr: ErrEscapesOutputDirectory,
 		},
 		{
 			name: "escaping forwarding product path",
@@ -342,7 +346,7 @@ func TestGenerate_OutputContainmentErrors(t *testing.T) {
 				ProductPath:           "v1",
 				ForwardingProductPath: "../forwarding_escaped",
 			},
-			wantErrText: "escapes output directory",
+			wantErr: ErrEscapesOutputDirectory,
 		},
 		{
 			name: "duplicate output path between service and forwarding",
@@ -350,7 +354,7 @@ func TestGenerate_OutputContainmentErrors(t *testing.T) {
 				ProductPath:           "v1",
 				ForwardingProductPath: "v1",
 			},
-			wantErrText: "duplicate output path",
+			wantErr: ErrDuplicateOutputPath,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
@@ -362,8 +366,8 @@ func TestGenerate_OutputContainmentErrors(t *testing.T) {
 			if err == nil {
 				t.Fatal("expected error, got nil")
 			}
-			if !strings.Contains(err.Error(), test.wantErrText) {
-				t.Errorf("expected error containing %q, got %v", test.wantErrText, err)
+			if !errors.Is(err, test.wantErr) {
+				t.Errorf("expected error wrapping %v, got %v", test.wantErr, err)
 			}
 		})
 	}
@@ -393,7 +397,7 @@ func TestGenerate_OmittedServices(t *testing.T) {
 
 	omittedFiles := ServiceGeneratedFiles("v1", "OmittedService")
 	for _, f := range omittedFiles {
-		if _, err := os.Stat(filepath.Join(outdir, f.OutputPath)); !os.IsNotExist(err) {
+		if _, err := os.Stat(filepath.Join(outdir, f.OutputPath)); !errors.Is(err, fs.ErrNotExist) {
 			t.Errorf("expected omitted service file %q not to exist", f.OutputPath)
 		}
 	}
@@ -422,7 +426,7 @@ func TestGenerate_GrpcDisabled(t *testing.T) {
 	// No service files should exist.
 	svcFiles := ServiceGeneratedFiles("v1", "RestOnlyService")
 	for _, f := range svcFiles {
-		if _, err := os.Stat(filepath.Join(outdir, f.OutputPath)); !os.IsNotExist(err) {
+		if _, err := os.Stat(filepath.Join(outdir, f.OutputPath)); !errors.Is(err, fs.ErrNotExist) {
 			t.Errorf("expected gRPC file %q not to exist when gRPC is disabled", f.OutputPath)
 		}
 	}
@@ -430,14 +434,27 @@ func TestGenerate_GrpcDisabled(t *testing.T) {
 
 func TestServiceGeneratedFilesMatchGolden(t *testing.T) {
 	for _, test := range []struct {
+		name        string
 		serviceName string
 	}{
-		{"RequestIdService"},
-		{"DeprecatedService"},
-		{"GoldenKitchenSink"},
-		{"GoldenThingAdmin"},
+		{
+			name:        "RequestIdService",
+			serviceName: "RequestIdService",
+		},
+		{
+			name:        "DeprecatedService",
+			serviceName: "DeprecatedService",
+		},
+		{
+			name:        "GoldenKitchenSink",
+			serviceName: "GoldenKitchenSink",
+		},
+		{
+			name:        "GoldenThingAdmin",
+			serviceName: "GoldenThingAdmin",
+		},
 	} {
-		t.Run(test.serviceName, func(t *testing.T) {
+		t.Run(test.name, func(t *testing.T) {
 			files := ServiceGeneratedFiles("", test.serviceName)
 			goldenV1 := filepath.Join("testdata", "golden", "v1")
 
@@ -453,12 +470,19 @@ func TestServiceGeneratedFilesMatchGolden(t *testing.T) {
 
 func TestForwardingGeneratedFilesMatchGolden(t *testing.T) {
 	for _, test := range []struct {
+		name        string
 		serviceName string
 	}{
-		{"GoldenKitchenSink"},
-		{"GoldenThingAdmin"},
+		{
+			name:        "GoldenKitchenSink",
+			serviceName: "GoldenKitchenSink",
+		},
+		{
+			name:        "GoldenThingAdmin",
+			serviceName: "GoldenThingAdmin",
+		},
 	} {
-		t.Run(test.serviceName, func(t *testing.T) {
+		t.Run(test.name, func(t *testing.T) {
 			files := ForwardingGeneratedFiles("", test.serviceName)
 			goldenRoot := filepath.Join("testdata", "golden")
 
