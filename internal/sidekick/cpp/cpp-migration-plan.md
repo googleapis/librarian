@@ -31,39 +31,47 @@ flowchart LR
 | **Hermetic Testing & Oracles** | Dynamic SHA, non-vacuous tests | Use dynamic googleapis SHA resolution; zero hardcoded `$HOME` paths. Unit tests must use `extractBlock` to test annotation accessors granularly. Assert file contents, not just file existence or sizes. Dedicated unit tests required for `OperationService`. |
 | **No Fixture Branching** | Clean production code | Never branch on test fixture names (such as `GoldenKitchenSink`) in production code. Production logic must be completely decoupled from fixture data. |
 | **No Test Helpers in Production** | Strict separation | Never call test builders like `api.NewTestAPI` on production paths. Misconfigured libraries must fail loudly with errors. |
-| **Review each commit** | Coding | After each commit, spawn a subagent to review the code using the review-pr from this repository. Ignore guidelines about the commit message |
-| **Align after each step** | Architecture | After each phase, spawn a subagent to review the changes against the architectural guidelines in the GEMINI.md files and in this plan. If the subagent reports any deviations ask the user how to proceed. |
+| **Review each commit** | Coding | After each commit, spawn a subagent to review the code using the `review-pr` skill from `.agents/skills/review-pr/SKILL.md` (ignoring commit message guidelines). Address findings before proceeding. |
+| **Align after each step** | Architecture | After each phase, spawn a subagent to review the changes against the architectural guidelines in the `GEMINI.md` files and in this plan. If the subagent reports any deviations, ask the user how to proceed. |
+| **Worktree Topology** | Isolated Worktrees | All development occurs in dedicated worktrees: `librarian/cpp-migration` (branch `cpp-migration`) for generator development, and `google-cloud-cpp/cpp-migration` (branch `cpp-migration`) for golden references and production parity checks. |
 
 ---
 
 ## 3. Phased Implementation Roadmap
 
-### Phase 1: Scaffold, Complete Configuration & Minimal Codec
+### Phase 1: Scaffold, Complete Configuration & Minimal Codec [COMPLETED]
 - **Goal**: Establish the C++ target in Librarian with complete configuration handling and emit a minimal `CMakeLists.txt`.
-- **Tasks**:
-  1. Add `LanguageCpp = "cpp"` to `internal/config/language.go`.
-  2. Define complete `CppLibrary` (all 22 configuration fields) and `CppDefault` in `internal/config/cpp.go`.
-  3. Implement complete 22-field merge in `mergeCpp` and defaults in `fillCpp` in `internal/librarian/library.go`.
-  4. Add `ClangFormat *ClangFormat` to `config.Tools` in `internal/config/config.go`.
-  5. Register C++ generation dispatch in `internal/librarian/generate.go`.
-  6. Implement `internal/librarian/cpp/generate.go` (without `api.NewTestAPI` on prod paths) and `format.go` (failing loudly if `clang-format` is missing or fails).
-  7. Scaffold `internal/sidekick/cpp/` using decomposed files: `codec.go`, `generate.go`, `annotate_model.go`, `annotate_service.go`, `annotate_method.go`, `annotate_field.go`, `annotate_enum.go`, emitting `CMakeLists.txt` via templates.
-  8. Validate that output paths stay strictly within `outdir`.
-  9. Add unit tests for configuration merging, defaults, and minimal generation.
-- **Verification**: `go test -short ./...`, `golangci-lint run`.
+- **Status**: Completed and verified.
+- **Delivered Commits**:
+  - `35c7ce97` `feat(internal/config)`: Added `LanguageCpp = "cpp"`, complete 22-field `CppLibrary`, `CppDefault`, and `ClangFormat` tool schema.
+  - `6c804b3b` `feat(internal/librarian)`: Implemented complete 22-field merge in `mergeCpp`, defaults in `fillCpp`, and unit tests in `library_test.go`.
+  - `889007c8` `feat(internal/sidekick/cpp)`: Scaffolded C++ sidekick codec, full 8-node decomposed annotators (`model`, `service`, `method`, `message`, `field`, `oneof`, `enum`, `enum_value`), `CMakeLists.txt` template, and tests.
+  - `d0f10f82` `feat(internal/librarian/cpp)`: Implemented generation orchestration, `format.go` (wrapping `clang-format`), and dispatch in `internal/librarian/generate.go`.
+  - `b0eb3ba1` `fix(internal/sidekick/cpp)`: Handled leading slashes in output containment and updated prologue partial to use dynamic `Codec.BoilerPlate`.
+  - `d9c557c7` `fix(internal/librarian/cpp)`: Wired `OverrideServiceConfigYAMLName` into `libraryToModelConfig`.
+  - `18ba88f8` `docs(internal/sidekick/cpp)`: Moved `cpp-migration-plan.md` into `internal/sidekick/cpp/`.
+  - `0f13de11` `docs(config)`: Updated `doc/config-schema.md` with C++ configuration schemas.
+- **Verification**: `gofmt -s`, `goimports`, `golangci-lint` (0 issues), and unit tests pass across all touched packages.
 
 ### Phase 2: Parser `SourceCodeInfo` Integration & Hermetic Fixtures
 - **Goal**: Augment the shared parser with `SourceCodeInfo` locations and import test fixtures without regex parsing or fixture branching.
-- **Tasks**:
-  1. Augment `internal/sidekick/parser` to extract symbol line locations (`File`, `Line`) from protobuf `SourceCodeInfo` and attach them to `api.API` elements.
-  2. Ensure `internal/sidekick/parser` preserves routing parameter order.
-  3. Parse `OperationService` safely without synthesizing incomplete `OperationInfo` with empty `MetadataTypeID`.
-  4. Copy test protos (`test.proto`, `test2.proto`, `test_request_id.proto`, `test_deprecated.proto`, `backup.proto`, `common.proto`) into `internal/sidekick/cpp/testdata/protos/`.
-  5. Copy golden reference files (188 files) into `internal/sidekick/cpp/testdata/golden/`.
-  6. Create `internal/sidekick/cpp/testdata/golden_librarian.yaml` mapping test services to Librarian configuration.
-  7. Implement hermetic test harness parsing test protos into `api.API`.
-  8. Strictly forbid `proto_index.go`, regex parsing, `defaultProtoLocations`, and fixture branching (`GoldenKitchenSink`).
-- **Verification**: `go test ./internal/sidekick/parser/...`, `go test ./internal/sidekick/cpp/...`.
+- **Staging & Commits**:
+  - **Stage 2A: Shared Parser Enhancements (`internal/sidekick/parser`, `internal/sidekick/api`)**:
+    1. Augment `internal/sidekick/parser` to extract symbol line locations (`File`, `Line`) from protobuf `SourceCodeInfo` and attach them to `api.API` elements.
+    2. Ensure `internal/sidekick/parser` preserves routing parameter order.
+    3. Parse `OperationService` safely without synthesizing incomplete `OperationInfo` with empty `MetadataTypeID`.
+    4. Run cross-language regression checks (`go test ./internal/sidekick/parser/...`, `go test ./internal/sidekick/swift/...`, `go test ./internal/sidekick/rust/...`) to ensure zero blast radius.
+    5. Run commit review subagent with `review-pr`.
+  - **Stage 2B: Hermetic Fixtures & Test Harness (`internal/sidekick/cpp`)**:
+    1. Copy test protos (`test.proto`, `test2.proto`, `test_request_id.proto`, `test_deprecated.proto`, `backup.proto`, `common.proto`) from `google-cloud-cpp/generator/integration_tests/golden/` into `internal/sidekick/cpp/testdata/protos/`.
+    2. Copy golden reference files (188 files) from `google-cloud-cpp/generator/integration_tests/golden/` into `internal/sidekick/cpp/testdata/golden/`.
+    3. Create `internal/sidekick/cpp/testdata/golden_librarian.yaml` mapping test services to Librarian configuration.
+    4. Implement hermetic test harness parsing test protos into `api.API`.
+    5. Strictly forbid `proto_index.go`, regex parsing, `defaultProtoLocations`, and fixture branching (`GoldenKitchenSink`).
+    6. Run commit review subagent with `review-pr`.
+  - **Phase 2 Alignment Review**:
+    - Spawn architectural alignment subagent to review changes against `internal/sidekick/GEMINI.md` and this plan.
+- **Verification**: `go test ./internal/sidekick/parser/...`, `go test ./internal/sidekick/cpp/...`, and cross-language tests.
 
 ### Phase 3: Layered Emission — gRPC End-to-End & Decomposed Architecture
 - **Goal**: Complete gRPC generation using Mustache templates and partials, achieving byte-for-byte parity on pure gRPC services (`GoldenRequestId`, pure gRPC subset of `GoldenKitchenSink`, `GoldenDeprecated`).
