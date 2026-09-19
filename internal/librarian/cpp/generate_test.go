@@ -79,6 +79,27 @@ func TestGenerate_ValidationErrors(t *testing.T) {
 			t.Fatal("expected error for nonexistent service config, got nil")
 		}
 	})
+
+	t.Run("uses override service config yaml name", func(t *testing.T) {
+		tempDir := t.TempDir()
+		overrideYAML := "custom_service.yaml"
+		lib := &config.Library{
+			Name: "test-lib",
+			Cpp: &config.CppLibrary{
+				OverrideServiceConfigYAMLName: overrideYAML,
+			},
+			APIs: []*config.API{{Path: "nonexistent/api/v1"}},
+		}
+		src := &sources.Sources{Googleapis: tempDir}
+		pc := &config.Protoc{}
+		modelCfg, err := libraryToModelConfig(lib, lib.APIs[0], src, pc)
+		if err != nil {
+			t.Fatalf("expected nil error when OverrideServiceConfigYAMLName is provided, got: %v", err)
+		}
+		if modelCfg.ServiceConfig != overrideYAML {
+			t.Errorf("ServiceConfig mismatch: got %q, want %q", modelCfg.ServiceConfig, overrideYAML)
+		}
+	})
 }
 
 func TestDefaultOutput(t *testing.T) {

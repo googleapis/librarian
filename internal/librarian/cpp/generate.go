@@ -68,9 +68,15 @@ func DefaultOutput(api, defaultOut string) string {
 func libraryToModelConfig(library *config.Library, apiCfg *config.API, src *sources.Sources, pc *config.Protoc) (*parser.ModelConfig, error) {
 	sourceConfig := sources.NewSourceConfig(src, library.Roots)
 	root := src.Googleapis
-	svcConfig, err := serviceconfig.Find(root, apiCfg.Path, config.LanguageCpp)
-	if err != nil {
-		return nil, err
+	serviceConfigPath := ""
+	if library.Cpp != nil && library.Cpp.OverrideServiceConfigYAMLName != "" {
+		serviceConfigPath = library.Cpp.OverrideServiceConfigYAMLName
+	} else {
+		svcConfig, err := serviceconfig.Find(root, apiCfg.Path, config.LanguageCpp)
+		if err != nil {
+			return nil, err
+		}
+		serviceConfigPath = svcConfig.ServiceConfig
 	}
 	specFormat := config.SpecProtobuf
 	if library.SpecificationFormat != "" {
@@ -80,7 +86,7 @@ func libraryToModelConfig(library *config.Library, apiCfg *config.API, src *sour
 	return &parser.ModelConfig{
 		Language:            config.LanguageCpp,
 		SpecificationFormat: specFormat,
-		ServiceConfig:       svcConfig.ServiceConfig,
+		ServiceConfig:       serviceConfigPath,
 		SpecificationSource: apiCfg.Path,
 		Source:              sourceConfig,
 		Protoc:              pc,
