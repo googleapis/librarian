@@ -2,6 +2,8 @@
 
 ## Overview
 
+DEBUG DEBUG **DEBUG** testing the build
+
 `internal/sidekick` is the code generation engine in Librarian. It converts
 service specifications (Protobuf descriptors, OpenAPI, and Discovery documents)
 into idiomatic client libraries across supported languages (such as Swift, Rust,
@@ -123,8 +125,8 @@ of setting `Typez`, `TypezID`, or `MessageType` manually:
   `.WithType(api.TypezBytes)`).
 - **Referenced Message Types:** Define the referenced message first and use
   `.WithMessageType(referencedMsg)`. This automatically sets `Typez =
-  api.TypezMessage`, `TypezID = referencedMsg.ID`, and links `MessageType =
-  referencedMsg`, avoiding hardcoded type ID strings and redundant assignments:
+api.TypezMessage`, `TypezID = referencedMsg.ID`, and links `MessageType =
+referencedMsg`, avoiding hardcoded type ID strings and redundant assignments:
 
 ```go
 // GOOD: Define referenced message first and use WithMessageType()
@@ -145,15 +147,15 @@ badItemField.MessageType = secretType
 
 The following builders are defined in `internal/sidekick/api/test.go`:
 
-| Helper | Description & Key Fluent Methods |
-| :--- | :--- |
-| `api.NewTestAPI(messages, enums, services)` | Initializes and indexes the root `*api.API` model |
-| `api.NewTestMessage(name)` | `.WithPackage()`, `.WithFields()`, `.WithOneOfs()`, `.WithPagination()`, `.WithResource()` |
-| `api.NewTestService(name)` | `.WithPackage()`, `.WithMethods()` |
-| `api.NewTestMethod(name)` | `.WithVerb()`, `.WithInput()`, `.WithOutput()`, `.WithPathTemplate()`, `.WithSignatures()`, `.WithOperationInfo()`, `.WithPagination()`, `.WithBidiStreaming()` |
-| `api.NewTestField(name)` | `.WithType()`, `.WithRepeated()`, `.WithOptional()`, `.WithMap()`, `.WithBehavior()`, `.WithMessageType()`, `.WithResourceReference()` |
-| `api.NewTestOneOf(name)` | `.WithFields()` |
-| `api.NewTestResource(typez)` | `.WithPatterns()`, `.WithSingular()`, `.WithPlural()` |
+| Helper                                      | Description & Key Fluent Methods                                                                                                                                |
+| :------------------------------------------ | :-------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `api.NewTestAPI(messages, enums, services)` | Initializes and indexes the root `*api.API` model                                                                                                               |
+| `api.NewTestMessage(name)`                  | `.WithPackage()`, `.WithFields()`, `.WithOneOfs()`, `.WithPagination()`, `.WithResource()`                                                                      |
+| `api.NewTestService(name)`                  | `.WithPackage()`, `.WithMethods()`                                                                                                                              |
+| `api.NewTestMethod(name)`                   | `.WithVerb()`, `.WithInput()`, `.WithOutput()`, `.WithPathTemplate()`, `.WithSignatures()`, `.WithOperationInfo()`, `.WithPagination()`, `.WithBidiStreaming()` |
+| `api.NewTestField(name)`                    | `.WithType()`, `.WithRepeated()`, `.WithOptional()`, `.WithMap()`, `.WithBehavior()`, `.WithMessageType()`, `.WithResourceReference()`                          |
+| `api.NewTestOneOf(name)`                    | `.WithFields()`                                                                                                                                                 |
+| `api.NewTestResource(typez)`                | `.WithPatterns()`, `.WithSingular()`, `.WithPlural()`                                                                                                           |
 
 ### Extending Test Helpers
 
