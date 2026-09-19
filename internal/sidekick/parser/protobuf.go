@@ -314,12 +314,18 @@ func makeAPIForProtobuf(serviceConfig *serviceconfig.Service, req *pluginpb.Code
 	}
 
 	seenFiles := map[string]bool{}
-	for _, f := range append(append(req.GetSourceFileDescriptors(), req.GetProtoFile()...), mixinFileDesc...) {
-		if f == nil || f.GetSourceCodeInfo() == nil || seenFiles[f.GetName()] {
-			continue
+	for _, list := range [][]*descriptorpb.FileDescriptorProto{
+		req.GetSourceFileDescriptors(),
+		req.GetProtoFile(),
+		mixinFileDesc,
+	} {
+		for _, f := range list {
+			if f == nil || f.GetSourceCodeInfo() == nil || seenFiles[f.GetName()] {
+				continue
+			}
+			seenFiles[f.GetName()] = true
+			extractDefinitionLocations(result, f)
 		}
-		seenFiles[f.GetName()] = true
-		extractDefinitionLocations(result, f)
 	}
 
 	// Consolidate resources.
@@ -927,7 +933,7 @@ func trimLeadingSpacesInDocumentation(doc string) string {
 }
 
 func extractDefinitionLocations(model *api.API, f *descriptorpb.FileDescriptorProto) {
-	if f == nil || f.GetSourceCodeInfo() == nil {
+	if model == nil || f == nil || f.GetSourceCodeInfo() == nil {
 		return
 	}
 	fFQN := ""

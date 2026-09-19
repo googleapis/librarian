@@ -246,7 +246,7 @@ func TestExamples(t *testing.T) {
 	} {
 		api, err := makeAPIForProtobuf(nil, newTestCodeGeneratorRequest(t, "routing_info.proto"))
 		if err != nil {
-			t.Fatalf("Failed to make API for Protobuf %v", err)
+			t.Fatal(err)
 		}
 		t.Run(test.methodID, func(t *testing.T) {
 			got := api.Method(test.methodID)
@@ -443,7 +443,7 @@ func TestParsePathTemplateSuccess(t *testing.T) {
 }
 
 func TestParsePathTemplateFailures(t *testing.T) {
-	tests := []string{
+	for _, test := range []string{
 		"projects/*",
 		"projects/*/{routing_id=**}/**",
 		"projects/*}",
@@ -461,13 +461,11 @@ func TestParsePathTemplateFailures(t *testing.T) {
 		"projects/*/{a/**/b/*}",
 		"projects/*/{a}/**/b",
 		"projects/*/{a}/*/b/**/c",
-	}
-
-	for _, path := range tests {
-		t.Run(path, func(t *testing.T) {
-			got, err := parseRoutingPathTemplate("default", path)
+	} {
+		t.Run(test, func(t *testing.T) {
+			got, err := parseRoutingPathTemplate("default", test)
 			if err == nil {
-				t.Errorf("expected error for %q, got=%v", path, got)
+				t.Errorf("expected error for %q, got=%v", test, got)
 			}
 		})
 	}
@@ -505,13 +503,11 @@ func TestParseVariableSuccess(t *testing.T) {
 }
 
 func TestParseRoutingVariableError(t *testing.T) {
-	tests := []string{"=**", "a/b=**"}
-
-	for _, path := range tests {
-		t.Run(path, func(t *testing.T) {
-			gotName, gotSpec, _, err := parseRoutingVariable("default", path)
+	for _, test := range []string{"=**", "a/b=**"} {
+		t.Run(test, func(t *testing.T) {
+			gotName, gotSpec, _, err := parseRoutingVariable("default", test)
 			if err == nil {
-				t.Errorf("expected error for %q, gotName=%s, gotSpec=%v", path, gotName, gotSpec)
+				t.Errorf("expected error for %q, gotName=%s, gotSpec=%v", test, gotName, gotSpec)
 			}
 		})
 	}
@@ -556,25 +552,49 @@ func TestRoutingDeclarationOrderPreservation(t *testing.T) {
 		},
 	})
 
-	got, err := parseRoutingAnnotations(".test.Service.SampleMethod", m)
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
+	want := []*api.RoutingInfo{
+		{
+			Name: "z_param",
+			Variants: []*api.RoutingInfoVariant{
+				{
+					FieldPath: []string{"table_name"},
+					Matching:  api.RoutingPathSpec{Segments: []string{"projects", "*"}},
+					Suffix:    api.RoutingPathSpec{Segments: []string{"**"}},
+				},
+				{
+					FieldPath: []string{"table_name"},
+					Matching:  api.RoutingPathSpec{Segments: []string{"organizations", "*"}},
+					Suffix:    api.RoutingPathSpec{Segments: []string{"**"}},
+				},
+			},
+		},
+		{
+			Name: "a_param",
+			Variants: []*api.RoutingInfoVariant{
+				{
+					FieldPath: []string{"table_name"},
+					Matching:  api.RoutingPathSpec{Segments: []string{"regions", "*"}},
+					Suffix:    api.RoutingPathSpec{Segments: []string{"**"}},
+				},
+			},
+		},
+		{
+			Name: "m_param",
+			Variants: []*api.RoutingInfoVariant{
+				{
+					FieldPath: []string{"table_name"},
+					Matching:  api.RoutingPathSpec{Segments: []string{"zones", "*"}},
+					Suffix:    api.RoutingPathSpec{Segments: []string{"**"}},
+				},
+			},
+		},
 	}
 
-	if len(got) != 3 {
-		t.Fatalf("expected 3 routing parameters, got %d", len(got))
+	got, err := parseRoutingAnnotations(".test.Service.SampleMethod", m)
+	if err != nil {
+		t.Fatal(err)
 	}
-	if got[0].Name != "z_param" || got[1].Name != "a_param" || got[2].Name != "m_param" {
-		t.Errorf("parameter order not preserved: got [%s, %s, %s], want [z_param, a_param, m_param]",
-			got[0].Name, got[1].Name, got[2].Name)
-	}
-	if len(got[0].Variants) != 2 {
-		t.Fatalf("expected 2 variants for z_param, got %d", len(got[0].Variants))
-	}
-	if diff := cmp.Diff([]string{"projects", "*"}, got[0].Variants[0].Matching.Segments); diff != "" {
-		t.Errorf("first variant mismatch (-want +got):\n%s", diff)
-	}
-	if diff := cmp.Diff([]string{"organizations", "*"}, got[0].Variants[1].Matching.Segments); diff != "" {
-		t.Errorf("second variant mismatch (-want +got):\n%s", diff)
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }

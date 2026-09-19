@@ -25,55 +25,53 @@ import (
 )
 
 func TestNormalizeTypeID(t *testing.T) {
-	tests := []struct {
-		name     string
-		pkg      string
-		id       string
-		expected string
+	for _, test := range []struct {
+		name string
+		pkg  string
+		id   string
+		want string
 	}{
 		{
-			name:     "empty id returns empty",
-			pkg:      "google.cloud.example.v1",
-			id:       "",
-			expected: "",
+			name: "empty id returns empty",
+			pkg:  "google.cloud.example.v1",
+			id:   "",
+			want: "",
 		},
 		{
-			name:     "already fully qualified with leading dot",
-			pkg:      "google.cloud.example.v1",
-			id:       ".google.protobuf.Empty",
-			expected: ".google.protobuf.Empty",
+			name: "already fully qualified with leading dot",
+			pkg:  "google.cloud.example.v1",
+			id:   ".google.protobuf.Empty",
+			want: ".google.protobuf.Empty",
 		},
 		{
-			name:     "has package without leading dot",
-			pkg:      "google.cloud.example.v1",
-			id:       "google.protobuf.Empty",
-			expected: ".google.protobuf.Empty",
+			name: "has package without leading dot",
+			pkg:  "google.cloud.example.v1",
+			id:   "google.protobuf.Empty",
+			want: ".google.protobuf.Empty",
 		},
 		{
-			name:     "bare symbol name with package",
-			pkg:      "google.cloud.example.v1",
-			id:       "MyResponse",
-			expected: ".google.cloud.example.v1.MyResponse",
+			name: "bare symbol name with package",
+			pkg:  "google.cloud.example.v1",
+			id:   "MyResponse",
+			want: ".google.cloud.example.v1.MyResponse",
 		},
 		{
-			name:     "bare symbol name with empty package",
-			pkg:      "",
-			id:       "MyResponse",
-			expected: ".MyResponse",
+			name: "bare symbol name with empty package",
+			pkg:  "",
+			id:   "MyResponse",
+			want: ".MyResponse",
 		},
 		{
-			name:     "empty package and empty id",
-			pkg:      "",
-			id:       "",
-			expected: "",
+			name: "empty package and empty id",
+			pkg:  "",
+			id:   "",
+			want: "",
 		},
-	}
-
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			got := normalizeTypeID(tc.pkg, tc.id)
-			if got != tc.expected {
-				t.Errorf("normalizeTypeID(%q, %q) = %q, want %q", tc.pkg, tc.id, got, tc.expected)
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := normalizeTypeID(test.pkg, test.id)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
@@ -90,79 +88,59 @@ func TestParseOperationInfo_SafeParsing(t *testing.T) {
 		}
 	})
 
-	t.Run("method with valid response and metadata types", func(t *testing.T) {
-		m := &descriptorpb.MethodDescriptorProto{
-			Name:    new("CreateItem"),
-			Options: &descriptorpb.MethodOptions{},
-		}
-		proto.SetExtension(m.Options, longrunningpb.E_OperationInfo, &longrunningpb.OperationInfo{
-			ResponseType: "Item",
-			MetadataType: "CreateItemMetadata",
+	for _, test := range []struct {
+		name         string
+		responseType string
+		metadataType string
+		want         *api.OperationInfo
+	}{
+		{
+			name:         "method with valid response and metadata types",
+			responseType: "Item",
+			metadataType: "CreateItemMetadata",
+			want: &api.OperationInfo{
+				ResponseTypeID: ".test.pkg.Item",
+				MetadataTypeID: ".test.pkg.CreateItemMetadata",
+			},
+		},
+		{
+			name:         "empty metadata type defaults to google.protobuf.Empty and avoids synthesizing invalid package dot",
+			responseType: "google.protobuf.Empty",
+			metadataType: "",
+			want: &api.OperationInfo{
+				ResponseTypeID: ".google.protobuf.Empty",
+				MetadataTypeID: ".google.protobuf.Empty",
+			},
+		},
+		{
+			name:         "empty response type defaults to google.protobuf.Empty",
+			responseType: "",
+			metadataType: "PollMetadata",
+			want: &api.OperationInfo{
+				ResponseTypeID: ".google.protobuf.Empty",
+				MetadataTypeID: ".test.pkg.PollMetadata",
+			},
+		},
+		{
+			name:         "both response and metadata empty returns nil to prevent incomplete OperationInfo",
+			responseType: "",
+			metadataType: "",
+			want:         nil,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			m := &descriptorpb.MethodDescriptorProto{
+				Name:    new("TestMethod"),
+				Options: &descriptorpb.MethodOptions{},
+			}
+			proto.SetExtension(m.Options, longrunningpb.E_OperationInfo, &longrunningpb.OperationInfo{
+				ResponseType: test.responseType,
+				MetadataType: test.metadataType,
+			})
+			got := parseOperationInfo("test.pkg", m)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
 		})
-
-		got := parseOperationInfo("test.pkg", m)
-		want := &api.OperationInfo{
-			ResponseTypeID: ".test.pkg.Item",
-			MetadataTypeID: ".test.pkg.CreateItemMetadata",
-		}
-		if diff := cmp.Diff(want, got); diff != "" {
-			t.Errorf("mismatch (-want +got):\n%s", diff)
-		}
-	})
-
-	t.Run("empty metadata type defaults to google.protobuf.Empty and avoids synthesizing invalid package dot", func(t *testing.T) {
-		m := &descriptorpb.MethodDescriptorProto{
-			Name:    new("DeleteItem"),
-			Options: &descriptorpb.MethodOptions{},
-		}
-		proto.SetExtension(m.Options, longrunningpb.E_OperationInfo, &longrunningpb.OperationInfo{
-			ResponseType: "google.protobuf.Empty",
-			MetadataType: "",
-		})
-
-		got := parseOperationInfo("test.pkg", m)
-		want := &api.OperationInfo{
-			ResponseTypeID: ".google.protobuf.Empty",
-			MetadataTypeID: ".google.protobuf.Empty",
-		}
-		if diff := cmp.Diff(want, got); diff != "" {
-			t.Errorf("mismatch (-want +got):\n%s", diff)
-		}
-	})
-
-	t.Run("empty response type defaults to google.protobuf.Empty", func(t *testing.T) {
-		m := &descriptorpb.MethodDescriptorProto{
-			Name:    new("PollItem"),
-			Options: &descriptorpb.MethodOptions{},
-		}
-		proto.SetExtension(m.Options, longrunningpb.E_OperationInfo, &longrunningpb.OperationInfo{
-			ResponseType: "",
-			MetadataType: "PollMetadata",
-		})
-
-		got := parseOperationInfo("test.pkg", m)
-		want := &api.OperationInfo{
-			ResponseTypeID: ".google.protobuf.Empty",
-			MetadataTypeID: ".test.pkg.PollMetadata",
-		}
-		if diff := cmp.Diff(want, got); diff != "" {
-			t.Errorf("mismatch (-want +got):\n%s", diff)
-		}
-	})
-
-	t.Run("both response and metadata empty returns nil to prevent incomplete OperationInfo", func(t *testing.T) {
-		m := &descriptorpb.MethodDescriptorProto{
-			Name:    new("InvalidLroMethod"),
-			Options: &descriptorpb.MethodOptions{},
-		}
-		proto.SetExtension(m.Options, longrunningpb.E_OperationInfo, &longrunningpb.OperationInfo{
-			ResponseType: "",
-			MetadataType: "",
-		})
-
-		got := parseOperationInfo("test.pkg", m)
-		if got != nil {
-			t.Errorf("expected nil for empty OperationInfo, got %+v", got)
-		}
-	})
+	}
 }

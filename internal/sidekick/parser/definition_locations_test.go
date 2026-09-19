@@ -30,31 +30,32 @@ func TestExtractDefinitionLocations_FromProto(t *testing.T) {
 		req := newTestCodeGeneratorRequest(t, "comments.proto")
 		model, err := makeAPIForProtobuf(nil, req)
 		if err != nil {
-			t.Fatalf("makeAPIForProtobuf failed: %v", err)
+			t.Fatal(err)
 		}
 
-		expected := map[string]api.SourceLocation{
-			".test.Request":                   {Filename: "comments.proto", Line: 31},
-			".test.Request.parent":            {Filename: "comments.proto", Line: 35},
-			".test.Response":                  {Filename: "comments.proto", Line: 39},
-			".test.Response.name":             {Filename: "comments.proto", Line: 41},
-			".test.Response.Status":           {Filename: "comments.proto", Line: 47},
-			".test.Response.Status.NOT_READY": {Filename: "comments.proto", Line: 52},
-			".test.Response.Status.READY":     {Filename: "comments.proto", Line: 54},
-			".test.Response.Nested":           {Filename: "comments.proto", Line: 61},
-			".test.Response.Nested.path":      {Filename: "comments.proto", Line: 68},
-			".test.Service":                   {Filename: "comments.proto", Line: 75},
-			".test.Service.Create":            {Filename: "comments.proto", Line: 83},
-		}
-
-		for symbol, wantLoc := range expected {
-			gotLoc, ok := model.DefinitionLocation(symbol)
+		for _, test := range []struct {
+			symbol string
+			want   api.SourceLocation
+		}{
+			{symbol: ".test.Request", want: api.SourceLocation{Filename: "comments.proto", Line: 31}},
+			{symbol: ".test.Request.parent", want: api.SourceLocation{Filename: "comments.proto", Line: 35}},
+			{symbol: ".test.Response", want: api.SourceLocation{Filename: "comments.proto", Line: 39}},
+			{symbol: ".test.Response.name", want: api.SourceLocation{Filename: "comments.proto", Line: 41}},
+			{symbol: ".test.Response.Status", want: api.SourceLocation{Filename: "comments.proto", Line: 47}},
+			{symbol: ".test.Response.Status.NOT_READY", want: api.SourceLocation{Filename: "comments.proto", Line: 52}},
+			{symbol: ".test.Response.Status.READY", want: api.SourceLocation{Filename: "comments.proto", Line: 54}},
+			{symbol: ".test.Response.Nested", want: api.SourceLocation{Filename: "comments.proto", Line: 61}},
+			{symbol: ".test.Response.Nested.path", want: api.SourceLocation{Filename: "comments.proto", Line: 68}},
+			{symbol: ".test.Service", want: api.SourceLocation{Filename: "comments.proto", Line: 75}},
+			{symbol: ".test.Service.Create", want: api.SourceLocation{Filename: "comments.proto", Line: 83}},
+		} {
+			got, ok := model.DefinitionLocation(test.symbol)
 			if !ok {
-				t.Errorf("missing definition location for %q", symbol)
+				t.Errorf("missing definition location for %q", test.symbol)
 				continue
 			}
-			if diff := cmp.Diff(wantLoc, gotLoc); diff != "" {
-				t.Errorf("location mismatch for %q (-want +got):\n%s", symbol, diff)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("location mismatch for %q (-want +got):\n%s", test.symbol, diff)
 			}
 		}
 	})
@@ -63,23 +64,24 @@ func TestExtractDefinitionLocations_FromProto(t *testing.T) {
 		req := newTestCodeGeneratorRequest(t, "enum.proto")
 		model, err := makeAPIForProtobuf(nil, req)
 		if err != nil {
-			t.Fatalf("makeAPIForProtobuf failed: %v", err)
+			t.Fatal(err)
 		}
 
-		expected := map[string]api.SourceLocation{
-			".test.Code":         {Filename: "enum.proto", Line: 19},
-			".test.Code.OK":      {Filename: "enum.proto", Line: 21},
-			".test.Code.UNKNOWN": {Filename: "enum.proto", Line: 24},
-		}
-
-		for symbol, wantLoc := range expected {
-			gotLoc, ok := model.DefinitionLocation(symbol)
+		for _, test := range []struct {
+			symbol string
+			want   api.SourceLocation
+		}{
+			{symbol: ".test.Code", want: api.SourceLocation{Filename: "enum.proto", Line: 19}},
+			{symbol: ".test.Code.OK", want: api.SourceLocation{Filename: "enum.proto", Line: 21}},
+			{symbol: ".test.Code.UNKNOWN", want: api.SourceLocation{Filename: "enum.proto", Line: 24}},
+		} {
+			got, ok := model.DefinitionLocation(test.symbol)
 			if !ok {
-				t.Errorf("missing definition location for %q", symbol)
+				t.Errorf("missing definition location for %q", test.symbol)
 				continue
 			}
-			if diff := cmp.Diff(wantLoc, gotLoc); diff != "" {
-				t.Errorf("location mismatch for %q (-want +got):\n%s", symbol, diff)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("location mismatch for %q (-want +got):\n%s", test.symbol, diff)
 			}
 		}
 	})
@@ -88,27 +90,28 @@ func TestExtractDefinitionLocations_FromProto(t *testing.T) {
 		req := newTestCodeGeneratorRequest(t, "test_service.proto")
 		model, err := makeAPIForProtobuf(nil, req)
 		if err != nil {
-			t.Fatalf("makeAPIForProtobuf failed: %v", err)
+			t.Fatal(err)
 		}
 
-		expected := map[string]api.SourceLocation{
-			".test.TestService":           {Filename: "test_service.proto", Line: 25},
-			".test.TestService.GetFoo":    {Filename: "test_service.proto", Line: 31},
-			".test.TestService.CreateFoo": {Filename: "test_service.proto", Line: 39},
-			".test.TestService.DeleteFoo": {Filename: "test_service.proto", Line: 48},
-			".test.Foo":                   {Filename: "test_service.proto", Line: 69},
-			".test.Foo.name":              {Filename: "test_service.proto", Line: 77},
-			".test.Foo.content":           {Filename: "test_service.proto", Line: 80},
-		}
-
-		for symbol, wantLoc := range expected {
-			gotLoc, ok := model.DefinitionLocation(symbol)
+		for _, test := range []struct {
+			symbol string
+			want   api.SourceLocation
+		}{
+			{symbol: ".test.TestService", want: api.SourceLocation{Filename: "test_service.proto", Line: 25}},
+			{symbol: ".test.TestService.GetFoo", want: api.SourceLocation{Filename: "test_service.proto", Line: 31}},
+			{symbol: ".test.TestService.CreateFoo", want: api.SourceLocation{Filename: "test_service.proto", Line: 39}},
+			{symbol: ".test.TestService.DeleteFoo", want: api.SourceLocation{Filename: "test_service.proto", Line: 48}},
+			{symbol: ".test.Foo", want: api.SourceLocation{Filename: "test_service.proto", Line: 69}},
+			{symbol: ".test.Foo.name", want: api.SourceLocation{Filename: "test_service.proto", Line: 77}},
+			{symbol: ".test.Foo.content", want: api.SourceLocation{Filename: "test_service.proto", Line: 80}},
+		} {
+			got, ok := model.DefinitionLocation(test.symbol)
 			if !ok {
-				t.Errorf("missing definition location for %q", symbol)
+				t.Errorf("missing definition location for %q", test.symbol)
 				continue
 			}
-			if diff := cmp.Diff(wantLoc, gotLoc); diff != "" {
-				t.Errorf("location mismatch for %q (-want +got):\n%s", symbol, diff)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("location mismatch for %q (-want +got):\n%s", test.symbol, diff)
 			}
 		}
 	})
@@ -144,7 +147,7 @@ func TestExtractDefinitionLocations_ExtensionsAndEdgeCases(t *testing.T) {
 			},
 		}
 
-		model := &api.API{}
+		model := api.NewTestAPI(nil, nil, nil)
 		extractDefinitionLocations(model, fileDesc)
 
 		wantFileExt := api.SourceLocation{Filename: "ext_test.proto", Line: 10}
@@ -167,7 +170,7 @@ func TestExtractDefinitionLocations_ExtensionsAndEdgeCases(t *testing.T) {
 	})
 
 	t.Run("nil and empty edge cases", func(t *testing.T) {
-		model := &api.API{}
+		model := api.NewTestAPI(nil, nil, nil)
 		extractDefinitionLocations(model, nil)
 		extractDefinitionLocations(model, &descriptorpb.FileDescriptorProto{})
 		extractDefinitionLocations(model, &descriptorpb.FileDescriptorProto{
@@ -216,7 +219,7 @@ func TestExtractDefinitionLocations_ExtensionsAndEdgeCases(t *testing.T) {
 		}
 		model, err := makeAPIForProtobuf(nil, req)
 		if err != nil {
-			t.Fatalf("unexpected error: %v", err)
+			t.Fatal(err)
 		}
 		gotLoc, ok := model.DefinitionLocation(".test.stripped.StrippedMessage")
 		if !ok {
@@ -229,7 +232,7 @@ func TestExtractDefinitionLocations_ExtensionsAndEdgeCases(t *testing.T) {
 	})
 
 	t.Run("negative indices do not panic", func(t *testing.T) {
-		model := &api.API{}
+		model := api.NewTestAPI(nil, nil, nil)
 		fileDesc := &descriptorpb.FileDescriptorProto{
 			Name:    new("negative.proto"),
 			Package: new("test.negative"),
@@ -322,7 +325,7 @@ func TestExtractDefinitionLocations_ExtensionsAndEdgeCases(t *testing.T) {
 				},
 			},
 		}
-		model := &api.API{}
+		model := api.NewTestAPI(nil, nil, nil)
 		extractDefinitionLocations(model, fileDesc)
 		wantLoc := api.SourceLocation{Filename: "deep_ext.proto", Line: 100}
 		gotLoc, ok := model.DefinitionLocation(".test.deep.Outer.Middle.Inner.deep_ext")
