@@ -28,33 +28,31 @@ func TestAnnotateSampleInfo(t *testing.T) {
 		want   *sampleInfoAnnotation
 	}{
 		{
-			name: "nil SampleInfo",
-			method: &api.Method{
-				Name: "TestMethod",
-			},
-			want: nil,
+			name:   "nil SampleInfo",
+			method: api.NewTestMethod("TestMethod"),
+			want:   nil,
 		},
 		{
 			name: "ResourceNameField with pattern",
-			method: &api.Method{
-				Name: "TestMethod",
-				SampleInfo: &api.SampleInfo{
-					ResourceNameField: &api.Field{
-						Name: "secret",
-						Codec: &fieldAnnotations{
-							Name: "secretField",
-						},
-						ResourceNamePattern: &api.ResourceNamePattern{
-							Segments: []api.ResourceNameSegment{
-								{Literal: "projects"},
-								{Variable: "project"},
-								{Literal: "secrets"},
-								{Variable: "secret"},
-							},
-						},
+			method: func() *api.Method {
+				field := api.NewTestField("secret").WithType(api.TypezString)
+				field.Codec = &fieldAnnotations{
+					Name: "secretField",
+				}
+				field.ResourceNamePattern = &api.ResourceNamePattern{
+					Segments: []api.ResourceNameSegment{
+						{Literal: "projects"},
+						{Variable: "project"},
+						{Literal: "secrets"},
+						{Variable: "secret"},
 					},
-				},
-			},
+				}
+				m := api.NewTestMethod("TestMethod")
+				m.SampleInfo = &api.SampleInfo{
+					ResourceNameField: field,
+				}
+				return m
+			}(),
 			want: &sampleInfoAnnotation{
 				Parameters:   []string{"projectId", "secretId"},
 				FormatString: "projects/\\(projectId)/secrets/\\(secretId)",
@@ -63,17 +61,17 @@ func TestAnnotateSampleInfo(t *testing.T) {
 		},
 		{
 			name: "ResourceNameField without pattern",
-			method: &api.Method{
-				Name: "TestMethod",
-				SampleInfo: &api.SampleInfo{
-					ResourceNameField: &api.Field{
-						Name: "secret",
-						Codec: &fieldAnnotations{
-							Name: "secretField",
-						},
-					},
-				},
-			},
+			method: func() *api.Method {
+				field := api.NewTestField("secret").WithType(api.TypezString)
+				field.Codec = &fieldAnnotations{
+					Name: "secretField",
+				}
+				m := api.NewTestMethod("TestMethod")
+				m.SampleInfo = &api.SampleInfo{
+					ResourceNameField: field,
+				}
+				return m
+			}(),
 			want: &sampleInfoAnnotation{
 				Parameters:   []string{"secretField"},
 				Name:         "secretField",
@@ -82,11 +80,12 @@ func TestAnnotateSampleInfo(t *testing.T) {
 		},
 		{
 			name: "AIP standard update",
-			method: &api.Method{
-				Name:                "TestMethod",
-				IsAIPStandardUpdate: true,
-				SampleInfo:          &api.SampleInfo{},
-			},
+			method: func() *api.Method {
+				m := api.NewTestMethod("TestMethod")
+				m.IsAIPStandardUpdate = true
+				m.SampleInfo = &api.SampleInfo{}
+				return m
+			}(),
 			want: &sampleInfoAnnotation{
 				Parameters:   []string{"name"},
 				Name:         "name",
