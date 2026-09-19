@@ -223,6 +223,38 @@ func TestFillDefaults(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "cpp defaults",
+			defaults: &config.Default{
+				Cpp: &config.CppDefault{
+					DefaultVersion: "1.2.3",
+				},
+			},
+			lib: &config.Library{Output: "foo/"},
+			want: &config.Library{
+				Output:  "foo/",
+				Version: "1.2.3",
+				Cpp:     &config.CppLibrary{},
+			},
+		},
+		{
+			name: "cpp defaults preserves existing values",
+			defaults: &config.Default{
+				Cpp: &config.CppDefault{
+					DefaultVersion: "1.2.3",
+				},
+			},
+			lib: &config.Library{
+				Output:  "foo/",
+				Version: "2.0.0",
+				Cpp:     &config.CppLibrary{ProductPath: "custom/path"},
+			},
+			want: &config.Library{
+				Output:  "foo/",
+				Version: "2.0.0",
+				Cpp:     &config.CppLibrary{ProductPath: "custom/path"},
+			},
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			got := fillDefaults(test.lib, test.defaults)
@@ -1066,6 +1098,28 @@ func TestResolvePreview(t *testing.T) {
 				Preview: nil,
 			},
 		},
+		{
+			name:     "overrides Cpp fields",
+			language: config.LanguageCpp,
+			lib: &config.Library{
+				Name: "base-name",
+				Cpp: &config.CppLibrary{
+					ProductPath: "google/cloud/test/v1",
+				},
+				Preview: &config.Library{
+					Cpp: &config.CppLibrary{
+						ProductPath: "google/cloud/test/v1preview",
+					},
+				},
+			},
+			want: &config.Library{
+				Name: "base-name",
+				Cpp: &config.CppLibrary{
+					ProductPath: "google/cloud/test/v1preview",
+				},
+				Preview: nil,
+			},
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			got := resolvePreview(test.lib, test.language)
@@ -1841,6 +1895,174 @@ func TestMergeSwift(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			got := mergeSwift(test.dst, test.src)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestMergeCpp(t *testing.T) {
+	grpcFalse := false
+	grpcTrue := true
+	for _, test := range []struct {
+		name string
+		dst  *config.CppLibrary
+		src  *config.CppLibrary
+		want *config.CppLibrary
+	}{
+		{
+			name: "nil src returns dst",
+			dst:  &config.CppLibrary{ProductPath: "google/cloud/test/v1"},
+			src:  nil,
+			want: &config.CppLibrary{ProductPath: "google/cloud/test/v1"},
+		},
+		{
+			name: "nil dst returns src",
+			dst:  nil,
+			src:  &config.CppLibrary{ProductPath: "google/cloud/test/v2"},
+			want: &config.CppLibrary{ProductPath: "google/cloud/test/v2"},
+		},
+		{
+			name: "merges all 22 fields",
+			dst: &config.CppLibrary{
+				SourceRoot:                      "src_root_1",
+				ProductPath:                     "prod_path_1",
+				ForwardingProductPath:           "fwd_path_1",
+				ServiceEndpointEnvVar:           "ENV_VAR_1",
+				EmulatorEndpointEnvVar:          "EMU_VAR_1",
+				GenerateRestTransport:           false,
+				GenerateGrpcTransport:           &grpcFalse,
+				EndpointLocationStyle:           "LOCATION_INDEPENDENT",
+				BackwardsCompatibilityNamespace: false,
+				OmittedRPCs:                     []string{"Rpc1"},
+				GenAsyncRPCs:                    []string{"Async1"},
+				OmittedServices:                 []string{"Svc1"},
+				RetryableStatusCodes:            []string{"UNAVAILABLE"},
+				IdempotencyOverrides: []config.IdempotencyRule{
+					{RPCName: "Svc1.Rpc1", Idempotency: "IDEMPOTENT"},
+				},
+				GenerateRoundRobinDecorator:   false,
+				OmitClient:                    false,
+				OmitConnection:                false,
+				OmitStubFactory:               false,
+				AdditionalProtoFiles:          []string{"proto1.proto"},
+				OverrideServiceConfigYAMLName: "svc1.yaml",
+				InitialCopyrightYear:          "2020",
+				OmitRepoMetadata:              false,
+			},
+			src: &config.CppLibrary{
+				SourceRoot:                      "src_root_2",
+				ProductPath:                     "prod_path_2",
+				ForwardingProductPath:           "fwd_path_2",
+				ServiceEndpointEnvVar:           "ENV_VAR_2",
+				EmulatorEndpointEnvVar:          "EMU_VAR_2",
+				GenerateRestTransport:           true,
+				GenerateGrpcTransport:           &grpcTrue,
+				EndpointLocationStyle:           "LOCATION_DEPENDENT",
+				BackwardsCompatibilityNamespace: true,
+				OmittedRPCs:                     []string{"Rpc2"},
+				GenAsyncRPCs:                    []string{"Async2"},
+				OmittedServices:                 []string{"Svc2"},
+				RetryableStatusCodes:            []string{"RESOURCE_EXHAUSTED"},
+				IdempotencyOverrides: []config.IdempotencyRule{
+					{RPCName: "Svc2.Rpc2", Idempotency: "NON_IDEMPOTENT"},
+				},
+				GenerateRoundRobinDecorator:   true,
+				OmitClient:                    true,
+				OmitConnection:                true,
+				OmitStubFactory:               true,
+				AdditionalProtoFiles:          []string{"proto2.proto"},
+				OverrideServiceConfigYAMLName: "svc2.yaml",
+				InitialCopyrightYear:          "2024",
+				OmitRepoMetadata:              true,
+			},
+			want: &config.CppLibrary{
+				SourceRoot:                      "src_root_2",
+				ProductPath:                     "prod_path_2",
+				ForwardingProductPath:           "fwd_path_2",
+				ServiceEndpointEnvVar:           "ENV_VAR_2",
+				EmulatorEndpointEnvVar:          "EMU_VAR_2",
+				GenerateRestTransport:           true,
+				GenerateGrpcTransport:           &grpcTrue,
+				EndpointLocationStyle:           "LOCATION_DEPENDENT",
+				BackwardsCompatibilityNamespace: true,
+				OmittedRPCs:                     []string{"Rpc2"},
+				GenAsyncRPCs:                    []string{"Async2"},
+				OmittedServices:                 []string{"Svc2"},
+				RetryableStatusCodes:            []string{"RESOURCE_EXHAUSTED"},
+				IdempotencyOverrides: []config.IdempotencyRule{
+					{RPCName: "Svc2.Rpc2", Idempotency: "NON_IDEMPOTENT"},
+				},
+				GenerateRoundRobinDecorator:   true,
+				OmitClient:                    true,
+				OmitConnection:                true,
+				OmitStubFactory:               true,
+				AdditionalProtoFiles:          []string{"proto2.proto"},
+				OverrideServiceConfigYAMLName: "svc2.yaml",
+				InitialCopyrightYear:          "2024",
+				OmitRepoMetadata:              true,
+			},
+		},
+		{
+			name: "preserves base values when override fields are empty or unassigned",
+			dst: &config.CppLibrary{
+				SourceRoot:                      "src_root_1",
+				ProductPath:                     "prod_path_1",
+				ForwardingProductPath:           "fwd_path_1",
+				ServiceEndpointEnvVar:           "ENV_VAR_1",
+				EmulatorEndpointEnvVar:          "EMU_VAR_1",
+				GenerateRestTransport:           true,
+				GenerateGrpcTransport:           &grpcTrue,
+				EndpointLocationStyle:           "LOCATION_DEPENDENT",
+				BackwardsCompatibilityNamespace: true,
+				OmittedRPCs:                     []string{"Rpc1"},
+				GenAsyncRPCs:                    []string{"Async1"},
+				OmittedServices:                 []string{"Svc1"},
+				RetryableStatusCodes:            []string{"UNAVAILABLE"},
+				IdempotencyOverrides: []config.IdempotencyRule{
+					{RPCName: "Svc1.Rpc1", Idempotency: "IDEMPOTENT"},
+				},
+				GenerateRoundRobinDecorator:   true,
+				OmitClient:                    true,
+				OmitConnection:                true,
+				OmitStubFactory:               true,
+				AdditionalProtoFiles:          []string{"proto1.proto"},
+				OverrideServiceConfigYAMLName: "svc1.yaml",
+				InitialCopyrightYear:          "2020",
+				OmitRepoMetadata:              true,
+			},
+			src: &config.CppLibrary{},
+			want: &config.CppLibrary{
+				SourceRoot:                      "src_root_1",
+				ProductPath:                     "prod_path_1",
+				ForwardingProductPath:           "fwd_path_1",
+				ServiceEndpointEnvVar:           "ENV_VAR_1",
+				EmulatorEndpointEnvVar:          "EMU_VAR_1",
+				GenerateRestTransport:           true,
+				GenerateGrpcTransport:           &grpcTrue,
+				EndpointLocationStyle:           "LOCATION_DEPENDENT",
+				BackwardsCompatibilityNamespace: true,
+				OmittedRPCs:                     []string{"Rpc1"},
+				GenAsyncRPCs:                    []string{"Async1"},
+				OmittedServices:                 []string{"Svc1"},
+				RetryableStatusCodes:            []string{"UNAVAILABLE"},
+				IdempotencyOverrides: []config.IdempotencyRule{
+					{RPCName: "Svc1.Rpc1", Idempotency: "IDEMPOTENT"},
+				},
+				GenerateRoundRobinDecorator:   true,
+				OmitClient:                    true,
+				OmitConnection:                true,
+				OmitStubFactory:               true,
+				AdditionalProtoFiles:          []string{"proto1.proto"},
+				OverrideServiceConfigYAMLName: "svc1.yaml",
+				InitialCopyrightYear:          "2020",
+				OmitRepoMetadata:              true,
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := mergeCpp(test.dst, test.src)
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}

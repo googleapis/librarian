@@ -46,6 +46,8 @@ func fillDefaults(lib *config.Library, d *config.Default) *config.Library {
 		lib.Output = d.Output
 	}
 	switch {
+	case d.Cpp != nil:
+		return fillCpp(lib, d)
 	case d.Go != nil:
 		return fillGo(lib, d)
 	case d.Java != nil:
@@ -63,6 +65,20 @@ func fillDefaults(lib *config.Library, d *config.Default) *config.Library {
 	default:
 		return lib
 	}
+}
+
+// fillCpp populates empty C++-specific fields in lib from the provided default.
+func fillCpp(lib *config.Library, d *config.Default) *config.Library {
+	if d == nil || d.Cpp == nil {
+		return lib
+	}
+	if lib.Version == "" && d.Cpp.DefaultVersion != "" {
+		lib.Version = d.Cpp.DefaultVersion
+	}
+	if lib.Cpp == nil {
+		lib.Cpp = &config.CppLibrary{}
+	}
+	return lib
 }
 
 // fillPHP populates empty PHP-specific fields in lib from the provided default.
@@ -425,6 +441,8 @@ func resolvePreview(lib *config.Library, language string) *config.Library {
 		res.SpecificationFormat = p.SpecificationFormat
 	}
 	switch language {
+	case config.LanguageCpp:
+		res.Cpp = mergeCpp(res.Cpp, p.Cpp)
 	case config.LanguageDotnet:
 		res.Dotnet = mergeDotnet(res.Dotnet, p.Dotnet)
 	case config.LanguageDart:
@@ -445,6 +463,83 @@ func resolvePreview(lib *config.Library, language string) *config.Library {
 		res.Swift = mergeSwift(res.Swift, p.Swift)
 	}
 	res.Preview = nil
+	return &res
+}
+
+func mergeCpp(dst, src *config.CppLibrary) *config.CppLibrary {
+	if src == nil {
+		return dst
+	}
+	if dst == nil {
+		return src
+	}
+	res := *dst
+	if src.SourceRoot != "" {
+		res.SourceRoot = src.SourceRoot
+	}
+	if src.ProductPath != "" {
+		res.ProductPath = src.ProductPath
+	}
+	if src.ForwardingProductPath != "" {
+		res.ForwardingProductPath = src.ForwardingProductPath
+	}
+	if src.ServiceEndpointEnvVar != "" {
+		res.ServiceEndpointEnvVar = src.ServiceEndpointEnvVar
+	}
+	if src.EmulatorEndpointEnvVar != "" {
+		res.EmulatorEndpointEnvVar = src.EmulatorEndpointEnvVar
+	}
+	if src.GenerateRestTransport {
+		res.GenerateRestTransport = src.GenerateRestTransport
+	}
+	if src.GenerateGrpcTransport != nil {
+		res.GenerateGrpcTransport = src.GenerateGrpcTransport
+	}
+	if src.EndpointLocationStyle != "" {
+		res.EndpointLocationStyle = src.EndpointLocationStyle
+	}
+	if src.BackwardsCompatibilityNamespace {
+		res.BackwardsCompatibilityNamespace = src.BackwardsCompatibilityNamespace
+	}
+	if src.OmittedRPCs != nil {
+		res.OmittedRPCs = src.OmittedRPCs
+	}
+	if src.GenAsyncRPCs != nil {
+		res.GenAsyncRPCs = src.GenAsyncRPCs
+	}
+	if src.OmittedServices != nil {
+		res.OmittedServices = src.OmittedServices
+	}
+	if src.RetryableStatusCodes != nil {
+		res.RetryableStatusCodes = src.RetryableStatusCodes
+	}
+	if src.IdempotencyOverrides != nil {
+		res.IdempotencyOverrides = src.IdempotencyOverrides
+	}
+	if src.GenerateRoundRobinDecorator {
+		res.GenerateRoundRobinDecorator = src.GenerateRoundRobinDecorator
+	}
+	if src.OmitClient {
+		res.OmitClient = src.OmitClient
+	}
+	if src.OmitConnection {
+		res.OmitConnection = src.OmitConnection
+	}
+	if src.OmitStubFactory {
+		res.OmitStubFactory = src.OmitStubFactory
+	}
+	if src.AdditionalProtoFiles != nil {
+		res.AdditionalProtoFiles = src.AdditionalProtoFiles
+	}
+	if src.OverrideServiceConfigYAMLName != "" {
+		res.OverrideServiceConfigYAMLName = src.OverrideServiceConfigYAMLName
+	}
+	if src.InitialCopyrightYear != "" {
+		res.InitialCopyrightYear = src.InitialCopyrightYear
+	}
+	if src.OmitRepoMetadata {
+		res.OmitRepoMetadata = src.OmitRepoMetadata
+	}
 	return &res
 }
 
