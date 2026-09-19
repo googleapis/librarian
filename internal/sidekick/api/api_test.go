@@ -61,7 +61,7 @@ func TestAPIDefinitionLocation(t *testing.T) {
 
 		gotLoc1, ok1 := a.DefinitionLocation(".test.MyService")
 		if !ok1 {
-			t.Fatalf("expected to find .test.MyService")
+			t.Fatal("expected to find .test.MyService")
 		}
 		if diff := cmp.Diff(wantLoc1, gotLoc1); diff != "" {
 			t.Errorf("mismatch (-want +got):\n%s", diff)
@@ -69,7 +69,7 @@ func TestAPIDefinitionLocation(t *testing.T) {
 
 		gotLoc2, ok2 := a.DefinitionLocation(".test.MyMessage")
 		if !ok2 {
-			t.Fatalf("expected to find .test.MyMessage")
+			t.Fatal("expected to find .test.MyMessage")
 		}
 		if diff := cmp.Diff(wantLoc2, gotLoc2); diff != "" {
 			t.Errorf("mismatch (-want +got):\n%s", diff)
@@ -89,7 +89,7 @@ func TestAPIDefinitionLocation(t *testing.T) {
 		wantFoo := SourceLocation{Filename: "foo.proto", Line: 15}
 		gotFoo, ok := a.DefinitionLocation(".test.Foo")
 		if !ok {
-			t.Fatalf("expected to find .test.Foo")
+			t.Fatal("expected to find .test.Foo")
 		}
 		if diff := cmp.Diff(wantFoo, gotFoo); diff != "" {
 			t.Errorf("mismatch (-want +got):\n%s", diff)
@@ -98,7 +98,7 @@ func TestAPIDefinitionLocation(t *testing.T) {
 		wantBar := SourceLocation{Filename: "bar.proto", Line: 30}
 		gotBar, ok := a.DefinitionLocation(".test.Bar")
 		if !ok {
-			t.Fatalf("expected to find .test.Bar")
+			t.Fatal("expected to find .test.Bar")
 		}
 		if diff := cmp.Diff(wantBar, gotBar); diff != "" {
 			t.Errorf("mismatch (-want +got):\n%s", diff)
