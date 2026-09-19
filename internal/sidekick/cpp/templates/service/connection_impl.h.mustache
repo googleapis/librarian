@@ -45,4 +45,14 @@ limitations under the License.
 {{/Codec.HasLongrunningMethod}}
 #include <memory>
 
+namespace google {
+namespace cloud {
+namespace {{Codec.InternalNamespace}} {
+GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
+
+GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
+}  // namespace {{Codec.InternalNamespace}}
+}  // namespace cloud
+}  // namespace google
+
 #endif  // {{Codec.ConnectionImplHeaderIncludeGuard}}

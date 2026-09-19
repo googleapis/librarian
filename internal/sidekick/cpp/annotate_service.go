@@ -29,9 +29,11 @@ type serviceAnnotations struct {
 	SourceFile    string
 
 	// Namespaces
-	Namespace         string
-	InternalNamespace string
-	MocksNamespace    string
+	Namespace                string
+	InternalNamespace        string
+	MocksNamespace           string
+	ForwardingNamespace      string
+	ForwardingMocksNamespace string
 
 	// Header include guards
 	ClientHeaderIncludeGuard                      string
@@ -134,6 +136,9 @@ func (c *codec) annotateService(s *api.Service, modelAnn *modelAnnotations, mode
 	tracingStubHeaderPath := TracingStubHeaderPath(productPath, s.Name)
 
 	var (
+		forwardingNamespace      string
+		forwardingMocksNamespace string
+
 		forwardingClientHeaderPath            string
 		forwardingConnectionHeaderPath        string
 		forwardingIdempotencyPolicyHeaderPath string
@@ -147,6 +152,9 @@ func (c *codec) annotateService(s *api.Service, modelAnn *modelAnnotations, mode
 		forwardingMockConnectionHeaderGuard    string
 	)
 	if forwardingProductPath != "" {
+		forwardingNamespace = Namespace(forwardingProductPath)
+		forwardingMocksNamespace = MocksNamespace(forwardingProductPath)
+
 		forwardingClientHeaderPath = ForwardingClientHeaderPath(forwardingProductPath, s.Name)
 		forwardingConnectionHeaderPath = ForwardingConnectionHeaderPath(forwardingProductPath, s.Name)
 		forwardingIdempotencyPolicyHeaderPath = ForwardingIdempotencyPolicyHeaderPath(forwardingProductPath, s.Name)
@@ -262,9 +270,11 @@ func (c *codec) annotateService(s *api.Service, modelAnn *modelAnnotations, mode
 		Model:         modelAnn,
 		SourceFile:    sourceFile,
 
-		Namespace:         Namespace(productPath),
-		InternalNamespace: InternalNamespace(productPath),
-		MocksNamespace:    MocksNamespace(productPath),
+		Namespace:                Namespace(productPath),
+		InternalNamespace:        InternalNamespace(productPath),
+		MocksNamespace:           MocksNamespace(productPath),
+		ForwardingNamespace:      forwardingNamespace,
+		ForwardingMocksNamespace: forwardingMocksNamespace,
 
 		ClientHeaderIncludeGuard:            FormatHeaderIncludeGuard(clientHeaderPath),
 		ConnectionHeaderIncludeGuard:        FormatHeaderIncludeGuard(connectionHeaderPath),

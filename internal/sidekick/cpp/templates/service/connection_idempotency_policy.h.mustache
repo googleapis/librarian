@@ -24,4 +24,14 @@ limitations under the License.
 {{/Codec.ProtoGrpcHeaderPath}}
 #include <memory>
 
+namespace google {
+namespace cloud {
+namespace {{Codec.Namespace}} {
+GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
+
+GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
+}  // namespace {{Codec.Namespace}}
+}  // namespace cloud
+}  // namespace google
+
 #endif  // {{Codec.IdempotencyPolicyHeaderIncludeGuard}}

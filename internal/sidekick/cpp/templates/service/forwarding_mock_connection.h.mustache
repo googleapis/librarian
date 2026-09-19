@@ -20,4 +20,17 @@ limitations under the License.
 #include "{{Codec.ForwardingConnectionHeaderPath}}"
 #include "{{Codec.MockConnectionHeaderPath}}"
 
+namespace google {
+namespace cloud {
+/// @deprecated This namespace exists for backwards compatibility. Use the
+///     types defined in {{Codec.MocksNamespace}} instead of the aliases
+///     defined in this namespace.
+namespace {{Codec.ForwardingMocksNamespace}} {
+GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
+
+GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
+}  // namespace {{Codec.ForwardingMocksNamespace}}
+}  // namespace cloud
+}  // namespace google
+
 #endif  // {{Codec.ForwardingMockConnectionHeaderIncludeGuard}}

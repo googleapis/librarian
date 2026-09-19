@@ -480,6 +480,31 @@ func TestAnnotateService_Forwarding(t *testing.T) {
 			got:  got.ForwardingMockConnectionHeaderIncludeGuard,
 			want: "GOOGLE_CLOUD_CPP_GENERATOR_INTEGRATION_TESTS_GOLDEN_MOCKS_MOCK_GOLDEN_KITCHEN_SINK_CONNECTION_H",
 		},
+		{
+			name: "Namespace",
+			got:  got.Namespace,
+			want: "golden_v1",
+		},
+		{
+			name: "InternalNamespace",
+			got:  got.InternalNamespace,
+			want: "golden_v1_internal",
+		},
+		{
+			name: "MocksNamespace",
+			got:  got.MocksNamespace,
+			want: "golden_v1_mocks",
+		},
+		{
+			name: "ForwardingNamespace",
+			got:  got.ForwardingNamespace,
+			want: "golden",
+		},
+		{
+			name: "ForwardingMocksNamespace",
+			got:  got.ForwardingMocksNamespace,
+			want: "golden_mocks",
+		},
 	} {
 		if diff := cmp.Diff(tc.want, tc.got); diff != "" {
 			t.Logf("%s", tc.name)

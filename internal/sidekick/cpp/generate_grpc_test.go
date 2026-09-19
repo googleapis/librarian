@@ -192,6 +192,10 @@ func TestGenerate_GRPCServiceFiles(t *testing.T) {
 	}
 }
 
+func TestGenerate_GRPCServiceFiles_HeadersAndIncludes(t *testing.T) {
+	TestGenerate_HermeticProtoRequestId(t)
+}
+
 func TestGenerate_HermeticProtoRequestId(t *testing.T) {
 	requireProtoc(t)
 
@@ -322,6 +326,22 @@ func TestGenerate_HermeticProtoRequestId(t *testing.T) {
 					t.Errorf("mismatch (-want +got):\n%s", diff)
 				}
 			}
+
+			if !strings.HasSuffix(gen.OutputPath, "sources.cc") {
+				gotNsOpen := extractBlock(t, got, "namespace google {", "GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN\n")
+				wantNsOpen := extractBlock(t, golden, "namespace google {", "GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN\n")
+				if diff := cmp.Diff(wantNsOpen, gotNsOpen); diff != "" {
+					t.Logf("file %s namespace open", gen.OutputPath)
+					t.Errorf("mismatch (-want +got):\n%s", diff)
+				}
+
+				gotNsClose := extractBlock(t, got, "GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END\n", "}  // namespace google\n")
+				wantNsClose := extractBlock(t, golden, "GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END\n", "}  // namespace google\n")
+				if diff := cmp.Diff(wantNsClose, gotNsClose); diff != "" {
+					t.Logf("file %s namespace close", gen.OutputPath)
+					t.Errorf("mismatch (-want +got):\n%s", diff)
+				}
+			}
 		})
 	}
 }
@@ -415,6 +435,22 @@ func TestGenerate_ForwardingHeaders(t *testing.T) {
 			wantIncludes := extractBlock(t, golden, "#include ", "\n\n")
 			if diff := cmp.Diff(wantIncludes, gotIncludes); diff != "" {
 				t.Logf("file %s includes", gen.OutputPath)
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+
+			// Compare namespace opening block.
+			gotNsOpen := extractBlock(t, got, "namespace google {", "GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN\n")
+			wantNsOpen := extractBlock(t, golden, "namespace google {", "GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN\n")
+			if diff := cmp.Diff(wantNsOpen, gotNsOpen); diff != "" {
+				t.Logf("file %s namespace open", gen.OutputPath)
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+
+			// Compare namespace closing block.
+			gotNsClose := extractBlock(t, got, "GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END\n", "}  // namespace google\n")
+			wantNsClose := extractBlock(t, golden, "GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END\n", "}  // namespace google\n")
+			if diff := cmp.Diff(wantNsClose, gotNsClose); diff != "" {
+				t.Logf("file %s namespace close", gen.OutputPath)
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
