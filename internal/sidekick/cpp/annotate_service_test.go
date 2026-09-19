@@ -48,11 +48,42 @@ func TestAnnotateService(t *testing.T) {
 					CopyrightYear: "2026",
 					BoilerPlate:   license.HeaderBulk(),
 				},
-				SourceFile:               "",
-				InternalNamespace:        "internal",
-				MocksNamespace:           "mocks",
-				ClientHeaderPath:         "simple_client.h",
-				ClientHeaderIncludeGuard: "GOOGLE_CLOUD_CPP_SIMPLE_CLIENT_H",
+				SourceFile:        "",
+				InternalNamespace: "internal",
+				MocksNamespace:    "mocks",
+
+				ClientHeaderPath:            "simple_client.h",
+				ConnectionHeaderPath:        "simple_connection.h",
+				IdempotencyPolicyHeaderPath: "simple_connection_idempotency_policy.h",
+				OptionsHeaderPath:           "simple_options.h",
+				MockConnectionHeaderPath:    "mocks/mock_simple_connection.h",
+				OptionDefaultsHeaderPath:    "internal/simple_option_defaults.h",
+				RetryTraitsHeaderPath:       "internal/simple_retry_traits.h",
+				TracingConnectionHeaderPath: "internal/simple_tracing_connection.h",
+				ConnectionImplHeaderPath:    "internal/simple_connection_impl.h",
+				StubFactoryHeaderPath:       "internal/simple_stub_factory.h",
+				AuthDecoratorHeaderPath:     "internal/simple_auth_decorator.h",
+				LoggingDecoratorHeaderPath:  "internal/simple_logging_decorator.h",
+				MetadataDecoratorHeaderPath: "internal/simple_metadata_decorator.h",
+				StubHeaderPath:              "internal/simple_stub.h",
+				TracingStubHeaderPath:       "internal/simple_tracing_stub.h",
+
+				ClientHeaderIncludeGuard:            "GOOGLE_CLOUD_CPP_SIMPLE_CLIENT_H",
+				ConnectionHeaderIncludeGuard:        "GOOGLE_CLOUD_CPP_SIMPLE_CONNECTION_H",
+				IdempotencyPolicyHeaderIncludeGuard: "GOOGLE_CLOUD_CPP_SIMPLE_CONNECTION_IDEMPOTENCY_POLICY_H",
+				OptionsHeaderIncludeGuard:           "GOOGLE_CLOUD_CPP_SIMPLE_OPTIONS_H",
+				MockConnectionHeaderIncludeGuard:    "GOOGLE_CLOUD_CPP_MOCKS_MOCK_SIMPLE_CONNECTION_H",
+				OptionDefaultsHeaderIncludeGuard:    "GOOGLE_CLOUD_CPP_INTERNAL_SIMPLE_OPTION_DEFAULTS_H",
+				RetryTraitsHeaderIncludeGuard:       "GOOGLE_CLOUD_CPP_INTERNAL_SIMPLE_RETRY_TRAITS_H",
+				TracingConnectionHeaderIncludeGuard: "GOOGLE_CLOUD_CPP_INTERNAL_SIMPLE_TRACING_CONNECTION_H",
+				ConnectionImplHeaderIncludeGuard:    "GOOGLE_CLOUD_CPP_INTERNAL_SIMPLE_CONNECTION_IMPL_H",
+				StubFactoryHeaderIncludeGuard:       "GOOGLE_CLOUD_CPP_INTERNAL_SIMPLE_STUB_FACTORY_H",
+				AuthDecoratorHeaderIncludeGuard:     "GOOGLE_CLOUD_CPP_INTERNAL_SIMPLE_AUTH_DECORATOR_H",
+				LoggingDecoratorHeaderIncludeGuard:  "GOOGLE_CLOUD_CPP_INTERNAL_SIMPLE_LOGGING_DECORATOR_H",
+				MetadataDecoratorHeaderIncludeGuard: "GOOGLE_CLOUD_CPP_INTERNAL_SIMPLE_METADATA_DECORATOR_H",
+				StubHeaderIncludeGuard:              "GOOGLE_CLOUD_CPP_INTERNAL_SIMPLE_STUB_H",
+				TracingStubHeaderIncludeGuard:       "GOOGLE_CLOUD_CPP_INTERNAL_SIMPLE_TRACING_STUB_H",
+
 				SourcesCcIncludes: []string{
 					"internal/simple_auth_decorator.cc",
 					"internal/simple_connection_impl.cc",
@@ -86,14 +117,44 @@ func TestAnnotateService(t *testing.T) {
 					CopyrightYear: "2026",
 					BoilerPlate:   license.HeaderBulk(),
 				},
-				SourceFile:               "google/example/echo.proto",
-				Namespace:                "echo_v1",
-				InternalNamespace:        "echo_v1_internal",
-				MocksNamespace:           "echo_v1_mocks",
-				ProtoHeaderPath:          "google/example/echo.pb.h",
-				ProtoGrpcHeaderPath:      "google/example/echo.grpc.pb.h",
-				ClientHeaderPath:         "google/cloud/echo/v1/echo_client.h",
-				ClientHeaderIncludeGuard: "GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_ECHO_V1_ECHO_CLIENT_H",
+				SourceFile:          "google/example/echo.proto",
+				Namespace:           "echo_v1",
+				InternalNamespace:   "echo_v1_internal",
+				MocksNamespace:      "echo_v1_mocks",
+				ProtoHeaderPath:     "google/example/echo.pb.h",
+				ProtoGrpcHeaderPath: "google/example/echo.grpc.pb.h",
+
+				ClientHeaderPath:            "google/cloud/echo/v1/echo_client.h",
+				ConnectionHeaderPath:        "google/cloud/echo/v1/echo_connection.h",
+				IdempotencyPolicyHeaderPath: "google/cloud/echo/v1/echo_connection_idempotency_policy.h",
+				OptionsHeaderPath:           "google/cloud/echo/v1/echo_options.h",
+				MockConnectionHeaderPath:    "google/cloud/echo/v1/mocks/mock_echo_connection.h",
+				OptionDefaultsHeaderPath:    "google/cloud/echo/v1/internal/echo_option_defaults.h",
+				RetryTraitsHeaderPath:       "google/cloud/echo/v1/internal/echo_retry_traits.h",
+				TracingConnectionHeaderPath: "google/cloud/echo/v1/internal/echo_tracing_connection.h",
+				ConnectionImplHeaderPath:    "google/cloud/echo/v1/internal/echo_connection_impl.h",
+				StubFactoryHeaderPath:       "google/cloud/echo/v1/internal/echo_stub_factory.h",
+				AuthDecoratorHeaderPath:     "google/cloud/echo/v1/internal/echo_auth_decorator.h",
+				LoggingDecoratorHeaderPath:  "google/cloud/echo/v1/internal/echo_logging_decorator.h",
+				MetadataDecoratorHeaderPath: "google/cloud/echo/v1/internal/echo_metadata_decorator.h",
+				StubHeaderPath:              "google/cloud/echo/v1/internal/echo_stub.h",
+				TracingStubHeaderPath:       "google/cloud/echo/v1/internal/echo_tracing_stub.h",
+
+				ClientHeaderIncludeGuard:            "GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_ECHO_V1_ECHO_CLIENT_H",
+				ConnectionHeaderIncludeGuard:        "GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_ECHO_V1_ECHO_CONNECTION_H",
+				IdempotencyPolicyHeaderIncludeGuard: "GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_ECHO_V1_ECHO_CONNECTION_IDEMPOTENCY_POLICY_H",
+				OptionsHeaderIncludeGuard:           "GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_ECHO_V1_ECHO_OPTIONS_H",
+				MockConnectionHeaderIncludeGuard:    "GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_ECHO_V1_MOCKS_MOCK_ECHO_CONNECTION_H",
+				OptionDefaultsHeaderIncludeGuard:    "GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_ECHO_V1_INTERNAL_ECHO_OPTION_DEFAULTS_H",
+				RetryTraitsHeaderIncludeGuard:       "GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_ECHO_V1_INTERNAL_ECHO_RETRY_TRAITS_H",
+				TracingConnectionHeaderIncludeGuard: "GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_ECHO_V1_INTERNAL_ECHO_TRACING_CONNECTION_H",
+				ConnectionImplHeaderIncludeGuard:    "GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_ECHO_V1_INTERNAL_ECHO_CONNECTION_IMPL_H",
+				StubFactoryHeaderIncludeGuard:       "GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_ECHO_V1_INTERNAL_ECHO_STUB_FACTORY_H",
+				AuthDecoratorHeaderIncludeGuard:     "GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_ECHO_V1_INTERNAL_ECHO_AUTH_DECORATOR_H",
+				LoggingDecoratorHeaderIncludeGuard:  "GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_ECHO_V1_INTERNAL_ECHO_LOGGING_DECORATOR_H",
+				MetadataDecoratorHeaderIncludeGuard: "GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_ECHO_V1_INTERNAL_ECHO_METADATA_DECORATOR_H",
+				StubHeaderIncludeGuard:              "GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_ECHO_V1_INTERNAL_ECHO_STUB_H",
+				TracingStubHeaderIncludeGuard:       "GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_ECHO_V1_INTERNAL_ECHO_TRACING_STUB_H",
 			},
 		},
 		{
@@ -113,14 +174,44 @@ func TestAnnotateService(t *testing.T) {
 					CopyrightYear: "2024",
 					BoilerPlate:   license.HeaderBulk(),
 				},
-				SourceFile:               "generator/integration_tests/test.proto",
-				Namespace:                "golden_v1",
-				InternalNamespace:        "golden_v1_internal",
-				MocksNamespace:           "golden_v1_mocks",
-				ProtoHeaderPath:          "generator/integration_tests/test.pb.h",
-				ProtoGrpcHeaderPath:      "generator/integration_tests/test.grpc.pb.h",
-				ClientHeaderPath:         "generator/integration_tests/golden/v1/custom_year_client.h",
-				ClientHeaderIncludeGuard: "GOOGLE_CLOUD_CPP_GENERATOR_INTEGRATION_TESTS_GOLDEN_V1_CUSTOM_YEAR_CLIENT_H",
+				SourceFile:          "generator/integration_tests/test.proto",
+				Namespace:           "golden_v1",
+				InternalNamespace:   "golden_v1_internal",
+				MocksNamespace:      "golden_v1_mocks",
+				ProtoHeaderPath:     "generator/integration_tests/test.pb.h",
+				ProtoGrpcHeaderPath: "generator/integration_tests/test.grpc.pb.h",
+
+				ClientHeaderPath:            "generator/integration_tests/golden/v1/custom_year_client.h",
+				ConnectionHeaderPath:        "generator/integration_tests/golden/v1/custom_year_connection.h",
+				IdempotencyPolicyHeaderPath: "generator/integration_tests/golden/v1/custom_year_connection_idempotency_policy.h",
+				OptionsHeaderPath:           "generator/integration_tests/golden/v1/custom_year_options.h",
+				MockConnectionHeaderPath:    "generator/integration_tests/golden/v1/mocks/mock_custom_year_connection.h",
+				OptionDefaultsHeaderPath:    "generator/integration_tests/golden/v1/internal/custom_year_option_defaults.h",
+				RetryTraitsHeaderPath:       "generator/integration_tests/golden/v1/internal/custom_year_retry_traits.h",
+				TracingConnectionHeaderPath: "generator/integration_tests/golden/v1/internal/custom_year_tracing_connection.h",
+				ConnectionImplHeaderPath:    "generator/integration_tests/golden/v1/internal/custom_year_connection_impl.h",
+				StubFactoryHeaderPath:       "generator/integration_tests/golden/v1/internal/custom_year_stub_factory.h",
+				AuthDecoratorHeaderPath:     "generator/integration_tests/golden/v1/internal/custom_year_auth_decorator.h",
+				LoggingDecoratorHeaderPath:  "generator/integration_tests/golden/v1/internal/custom_year_logging_decorator.h",
+				MetadataDecoratorHeaderPath: "generator/integration_tests/golden/v1/internal/custom_year_metadata_decorator.h",
+				StubHeaderPath:              "generator/integration_tests/golden/v1/internal/custom_year_stub.h",
+				TracingStubHeaderPath:       "generator/integration_tests/golden/v1/internal/custom_year_tracing_stub.h",
+
+				ClientHeaderIncludeGuard:            "GOOGLE_CLOUD_CPP_GENERATOR_INTEGRATION_TESTS_GOLDEN_V1_CUSTOM_YEAR_CLIENT_H",
+				ConnectionHeaderIncludeGuard:        "GOOGLE_CLOUD_CPP_GENERATOR_INTEGRATION_TESTS_GOLDEN_V1_CUSTOM_YEAR_CONNECTION_H",
+				IdempotencyPolicyHeaderIncludeGuard: "GOOGLE_CLOUD_CPP_GENERATOR_INTEGRATION_TESTS_GOLDEN_V1_CUSTOM_YEAR_CONNECTION_IDEMPOTENCY_POLICY_H",
+				OptionsHeaderIncludeGuard:           "GOOGLE_CLOUD_CPP_GENERATOR_INTEGRATION_TESTS_GOLDEN_V1_CUSTOM_YEAR_OPTIONS_H",
+				MockConnectionHeaderIncludeGuard:    "GOOGLE_CLOUD_CPP_GENERATOR_INTEGRATION_TESTS_GOLDEN_V1_MOCKS_MOCK_CUSTOM_YEAR_CONNECTION_H",
+				OptionDefaultsHeaderIncludeGuard:    "GOOGLE_CLOUD_CPP_GENERATOR_INTEGRATION_TESTS_GOLDEN_V1_INTERNAL_CUSTOM_YEAR_OPTION_DEFAULTS_H",
+				RetryTraitsHeaderIncludeGuard:       "GOOGLE_CLOUD_CPP_GENERATOR_INTEGRATION_TESTS_GOLDEN_V1_INTERNAL_CUSTOM_YEAR_RETRY_TRAITS_H",
+				TracingConnectionHeaderIncludeGuard: "GOOGLE_CLOUD_CPP_GENERATOR_INTEGRATION_TESTS_GOLDEN_V1_INTERNAL_CUSTOM_YEAR_TRACING_CONNECTION_H",
+				ConnectionImplHeaderIncludeGuard:    "GOOGLE_CLOUD_CPP_GENERATOR_INTEGRATION_TESTS_GOLDEN_V1_INTERNAL_CUSTOM_YEAR_CONNECTION_IMPL_H",
+				StubFactoryHeaderIncludeGuard:       "GOOGLE_CLOUD_CPP_GENERATOR_INTEGRATION_TESTS_GOLDEN_V1_INTERNAL_CUSTOM_YEAR_STUB_FACTORY_H",
+				AuthDecoratorHeaderIncludeGuard:     "GOOGLE_CLOUD_CPP_GENERATOR_INTEGRATION_TESTS_GOLDEN_V1_INTERNAL_CUSTOM_YEAR_AUTH_DECORATOR_H",
+				LoggingDecoratorHeaderIncludeGuard:  "GOOGLE_CLOUD_CPP_GENERATOR_INTEGRATION_TESTS_GOLDEN_V1_INTERNAL_CUSTOM_YEAR_LOGGING_DECORATOR_H",
+				MetadataDecoratorHeaderIncludeGuard: "GOOGLE_CLOUD_CPP_GENERATOR_INTEGRATION_TESTS_GOLDEN_V1_INTERNAL_CUSTOM_YEAR_METADATA_DECORATOR_H",
+				StubHeaderIncludeGuard:              "GOOGLE_CLOUD_CPP_GENERATOR_INTEGRATION_TESTS_GOLDEN_V1_INTERNAL_CUSTOM_YEAR_STUB_H",
+				TracingStubHeaderIncludeGuard:       "GOOGLE_CLOUD_CPP_GENERATOR_INTEGRATION_TESTS_GOLDEN_V1_INTERNAL_CUSTOM_YEAR_TRACING_STUB_H",
 				ConnectionHeaderIncludes: []string{
 					"generator/integration_tests/golden/v1/custom_year_connection_idempotency_policy.h",
 					"generator/integration_tests/golden/v1/internal/custom_year_retry_traits.h",
@@ -161,44 +252,6 @@ func TestAnnotateService(t *testing.T) {
 				t.Fatalf("expected *serviceAnnotations, got %T", test.service.Codec)
 			}
 			ignoreFields := cmpopts.IgnoreFields(serviceAnnotations{},
-				"ConnectionHeaderIncludeGuard",
-				"IdempotencyPolicyHeaderIncludeGuard",
-				"OptionsHeaderIncludeGuard",
-				"MockConnectionHeaderIncludeGuard",
-				"OptionDefaultsHeaderIncludeGuard",
-				"RetryTraitsHeaderIncludeGuard",
-				"TracingConnectionHeaderIncludeGuard",
-				"ConnectionImplHeaderIncludeGuard",
-				"StubFactoryHeaderIncludeGuard",
-				"AuthDecoratorHeaderIncludeGuard",
-				"LoggingDecoratorHeaderIncludeGuard",
-				"MetadataDecoratorHeaderIncludeGuard",
-				"StubHeaderIncludeGuard",
-				"TracingStubHeaderIncludeGuard",
-				"ForwardingClientHeaderIncludeGuard",
-				"ForwardingConnectionHeaderIncludeGuard",
-				"ForwardingIdempotencyPolicyHeaderIncludeGuard",
-				"ForwardingOptionsHeaderIncludeGuard",
-				"ForwardingMockConnectionHeaderIncludeGuard",
-				"ConnectionHeaderPath",
-				"IdempotencyPolicyHeaderPath",
-				"OptionsHeaderPath",
-				"MockConnectionHeaderPath",
-				"OptionDefaultsHeaderPath",
-				"RetryTraitsHeaderPath",
-				"TracingConnectionHeaderPath",
-				"ConnectionImplHeaderPath",
-				"StubFactoryHeaderPath",
-				"AuthDecoratorHeaderPath",
-				"LoggingDecoratorHeaderPath",
-				"MetadataDecoratorHeaderPath",
-				"StubHeaderPath",
-				"TracingStubHeaderPath",
-				"ForwardingClientHeaderPath",
-				"ForwardingConnectionHeaderPath",
-				"ForwardingIdempotencyPolicyHeaderPath",
-				"ForwardingOptionsHeaderPath",
-				"ForwardingMockConnectionHeaderPath",
 				"SourcesCcIncludes",
 				"ConnectionHeaderIncludes",
 				"ConnectionSourceIncludes",
@@ -206,22 +259,26 @@ func TestAnnotateService(t *testing.T) {
 			)
 			if test.want.SourcesCcIncludes != nil {
 				if diff := cmp.Diff(test.want.SourcesCcIncludes, got.SourcesCcIncludes); diff != "" {
-					t.Errorf("SourcesCcIncludes mismatch (-want +got):\n%s", diff)
+					t.Logf("SourcesCcIncludes")
+					t.Errorf("mismatch (-want +got):\n%s", diff)
 				}
 			}
 			if test.want.ConnectionHeaderIncludes != nil {
 				if diff := cmp.Diff(test.want.ConnectionHeaderIncludes, got.ConnectionHeaderIncludes); diff != "" {
-					t.Errorf("ConnectionHeaderIncludes mismatch (-want +got):\n%s", diff)
+					t.Logf("ConnectionHeaderIncludes")
+					t.Errorf("mismatch (-want +got):\n%s", diff)
 				}
 			}
 			if test.want.ConnectionSourceIncludes != nil {
 				if diff := cmp.Diff(test.want.ConnectionSourceIncludes, got.ConnectionSourceIncludes); diff != "" {
-					t.Errorf("ConnectionSourceIncludes mismatch (-want +got):\n%s", diff)
+					t.Logf("ConnectionSourceIncludes")
+					t.Errorf("mismatch (-want +got):\n%s", diff)
 				}
 			}
 			if test.want.ConnectionImplHeaderIncludes != nil {
 				if diff := cmp.Diff(test.want.ConnectionImplHeaderIncludes, got.ConnectionImplHeaderIncludes); diff != "" {
-					t.Errorf("ConnectionImplHeaderIncludes mismatch (-want +got):\n%s", diff)
+					t.Logf("ConnectionImplHeaderIncludes")
+					t.Errorf("mismatch (-want +got):\n%s", diff)
 				}
 			}
 			if diff := cmp.Diff(test.want, got, ignoreFields); diff != "" {
@@ -235,35 +292,20 @@ func TestAnnotateService(t *testing.T) {
 }
 
 func TestAnnotateService_Gating(t *testing.T) {
-	svc := api.NewTestService("GatedService")
-	svc.Methods = []*api.Method{
-		{
-			Name:                "LroMethod",
-			IsLRO:               true,
-			OperationInfo:       &api.OperationInfo{},
-			ClientSideStreaming: true,
-			ServerSideStreaming: true,
-			Pagination:          &api.Field{Name: "page_token"},
-			AutoPopulated:       []*api.Field{{Name: "request_id"}},
-			Routing:             []*api.RoutingInfo{{}},
-		},
-		{
-			Name:                "ServerStreamingAsync",
-			ServerSideStreaming: true,
-		},
-		{
-			Name:                "ClientStreamingAsync",
-			ClientSideStreaming: true,
-		},
-		{
-			Name:                "ServerStreamingSync",
-			ServerSideStreaming: true,
-		},
-		{
-			Name:                "ClientStreamingSync",
-			ClientSideStreaming: true,
-		},
-	}
+	lroMethod := api.NewTestMethod("LroMethod").
+		WithOperationInfo(&api.OperationInfo{}).
+		WithBidiStreaming().
+		WithPagination(api.NewTestField("page_token"))
+	lroMethod.AutoPopulated = []*api.Field{api.NewTestField("request_id")}
+	lroMethod.Routing = []*api.RoutingInfo{{}}
+
+	svc := api.NewTestService("GatedService").WithMethods(
+		lroMethod,
+		api.NewTestMethod("ServerStreamingAsync").WithServerSideStreaming(),
+		api.NewTestMethod("ClientStreamingAsync").WithClientSideStreaming(),
+		api.NewTestMethod("ServerStreamingSync").WithServerSideStreaming(),
+		api.NewTestMethod("ClientStreamingSync").WithClientSideStreaming(),
+	)
 	model := api.NewTestAPI(nil, nil, []*api.Service{svc})
 	modelAnn := &modelAnnotations{
 		CopyrightYear: "2026",
@@ -337,7 +379,8 @@ func TestAnnotateService_ConnectionIncludesSorting(t *testing.T) {
 		"generator/integration_tests/golden/v1/request_id_connection_idempotency_policy.h",
 	}
 	if diff := cmp.Diff(wantConnH, got.ConnectionHeaderIncludes); diff != "" {
-		t.Errorf("ConnectionHeaderIncludes mismatch (-want +got):\n%s", diff)
+		t.Logf("ConnectionHeaderIncludes")
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 
 	wantConnCC := []string{
@@ -348,7 +391,8 @@ func TestAnnotateService_ConnectionIncludesSorting(t *testing.T) {
 		"generator/integration_tests/golden/v1/request_id_options.h",
 	}
 	if diff := cmp.Diff(wantConnCC, got.ConnectionSourceIncludes); diff != "" {
-		t.Errorf("ConnectionSourceIncludes mismatch (-want +got):\n%s", diff)
+		t.Logf("ConnectionSourceIncludes")
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 
 	wantConnImplH := []string{
@@ -359,7 +403,8 @@ func TestAnnotateService_ConnectionIncludesSorting(t *testing.T) {
 		"generator/integration_tests/golden/v1/request_id_options.h",
 	}
 	if diff := cmp.Diff(wantConnImplH, got.ConnectionImplHeaderIncludes); diff != "" {
-		t.Errorf("ConnectionImplHeaderIncludes mismatch (-want +got):\n%s", diff)
+		t.Logf("ConnectionImplHeaderIncludes")
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
 
@@ -380,12 +425,65 @@ func TestAnnotateService_Forwarding(t *testing.T) {
 	}
 	got := svc.Codec.(*serviceAnnotations)
 
-	wantClientFwdPath := "generator/integration_tests/golden/golden_kitchen_sink_client.h"
-	if got.ForwardingClientHeaderPath != wantClientFwdPath {
-		t.Errorf("ForwardingClientHeaderPath = %q, want %q", got.ForwardingClientHeaderPath, wantClientFwdPath)
-	}
-	wantFwdGuard := "GOOGLE_CLOUD_CPP_GENERATOR_INTEGRATION_TESTS_GOLDEN_GOLDEN_KITCHEN_SINK_CLIENT_H"
-	if got.ForwardingClientHeaderIncludeGuard != wantFwdGuard {
-		t.Errorf("ForwardingClientHeaderIncludeGuard = %q, want %q", got.ForwardingClientHeaderIncludeGuard, wantFwdGuard)
+	for _, tc := range []struct {
+		name string
+		got  string
+		want string
+	}{
+		{
+			name: "ForwardingClientHeaderPath",
+			got:  got.ForwardingClientHeaderPath,
+			want: "generator/integration_tests/golden/golden_kitchen_sink_client.h",
+		},
+		{
+			name: "ForwardingClientHeaderIncludeGuard",
+			got:  got.ForwardingClientHeaderIncludeGuard,
+			want: "GOOGLE_CLOUD_CPP_GENERATOR_INTEGRATION_TESTS_GOLDEN_GOLDEN_KITCHEN_SINK_CLIENT_H",
+		},
+		{
+			name: "ForwardingConnectionHeaderPath",
+			got:  got.ForwardingConnectionHeaderPath,
+			want: "generator/integration_tests/golden/golden_kitchen_sink_connection.h",
+		},
+		{
+			name: "ForwardingConnectionHeaderIncludeGuard",
+			got:  got.ForwardingConnectionHeaderIncludeGuard,
+			want: "GOOGLE_CLOUD_CPP_GENERATOR_INTEGRATION_TESTS_GOLDEN_GOLDEN_KITCHEN_SINK_CONNECTION_H",
+		},
+		{
+			name: "ForwardingIdempotencyPolicyHeaderPath",
+			got:  got.ForwardingIdempotencyPolicyHeaderPath,
+			want: "generator/integration_tests/golden/golden_kitchen_sink_connection_idempotency_policy.h",
+		},
+		{
+			name: "ForwardingIdempotencyPolicyHeaderIncludeGuard",
+			got:  got.ForwardingIdempotencyPolicyHeaderIncludeGuard,
+			want: "GOOGLE_CLOUD_CPP_GENERATOR_INTEGRATION_TESTS_GOLDEN_GOLDEN_KITCHEN_SINK_CONNECTION_IDEMPOTENCY_POLICY_H",
+		},
+		{
+			name: "ForwardingOptionsHeaderPath",
+			got:  got.ForwardingOptionsHeaderPath,
+			want: "generator/integration_tests/golden/golden_kitchen_sink_options.h",
+		},
+		{
+			name: "ForwardingOptionsHeaderIncludeGuard",
+			got:  got.ForwardingOptionsHeaderIncludeGuard,
+			want: "GOOGLE_CLOUD_CPP_GENERATOR_INTEGRATION_TESTS_GOLDEN_GOLDEN_KITCHEN_SINK_OPTIONS_H",
+		},
+		{
+			name: "ForwardingMockConnectionHeaderPath",
+			got:  got.ForwardingMockConnectionHeaderPath,
+			want: "generator/integration_tests/golden/mocks/mock_golden_kitchen_sink_connection.h",
+		},
+		{
+			name: "ForwardingMockConnectionHeaderIncludeGuard",
+			got:  got.ForwardingMockConnectionHeaderIncludeGuard,
+			want: "GOOGLE_CLOUD_CPP_GENERATOR_INTEGRATION_TESTS_GOLDEN_MOCKS_MOCK_GOLDEN_KITCHEN_SINK_CONNECTION_H",
+		},
+	} {
+		if diff := cmp.Diff(tc.want, tc.got); diff != "" {
+			t.Logf("%s", tc.name)
+			t.Errorf("mismatch (-want +got):\n%s", diff)
+		}
 	}
 }

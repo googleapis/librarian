@@ -551,7 +551,27 @@ func TestFormatHeaderIncludeGuard(t *testing.T) {
 		{
 			name:       "empty path",
 			headerPath: "",
-			want:       "GOOGLE_CLOUD_CPP_",
+			want:       "",
+		},
+		{
+			name:       "dot path",
+			headerPath: ".",
+			want:       "",
+		},
+		{
+			name:       "slash path",
+			headerPath: "/",
+			want:       "",
+		},
+		{
+			name:       "multiple slashes only",
+			headerPath: "///",
+			want:       "",
+		},
+		{
+			name:       "dot slash only",
+			headerPath: "./",
+			want:       "",
 		},
 		{
 			name:       "single file",
@@ -591,8 +611,8 @@ func TestFormatHeaderIncludeGuard(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			got := FormatHeaderIncludeGuard(test.headerPath)
-			if got != test.want {
-				t.Errorf("FormatHeaderIncludeGuard(%q) = %q, want %q", test.headerPath, got, test.want)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
@@ -669,11 +689,36 @@ func TestNamespace(t *testing.T) {
 			productPath: "///",
 			want:        "",
 		},
+		{
+			name:        "leading dot slash",
+			productPath: "./google/cloud/test",
+			want:        "test",
+		},
+		{
+			name:        "dot slash only",
+			productPath: "./",
+			want:        "",
+		},
+		{
+			name:        "dot only",
+			productPath: ".",
+			want:        "",
+		},
+		{
+			name:        "dot slash with version",
+			productPath: "./google/cloud/test/v1",
+			want:        "test_v1",
+		},
+		{
+			name:        "double slash with leading dot",
+			productPath: ".//google/cloud/test",
+			want:        "test",
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			got := Namespace(test.productPath)
-			if got != test.want {
-				t.Errorf("Namespace(%q) = %q, want %q", test.productPath, got, test.want)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
@@ -703,8 +748,8 @@ func TestInternalNamespace(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			got := InternalNamespace(test.productPath)
-			if got != test.want {
-				t.Errorf("InternalNamespace(%q) = %q, want %q", test.productPath, got, test.want)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
@@ -734,8 +779,8 @@ func TestMocksNamespace(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			got := MocksNamespace(test.productPath)
-			if got != test.want {
-				t.Errorf("MocksNamespace(%q) = %q, want %q", test.productPath, got, test.want)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}

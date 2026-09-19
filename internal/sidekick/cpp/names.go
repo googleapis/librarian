@@ -16,11 +16,14 @@ package cpp
 
 import (
 	"path"
+	"path/filepath"
 	"strings"
 	"unicode"
 
 	"github.com/googleapis/librarian/internal/sidekick/language"
 )
+
+var includeGuardReplacer = strings.NewReplacer("/", "_", ".", "_")
 
 // CamelCaseToSnakeCase converts a CamelCase string to snake_case, matching
 // google-cloud-cpp's CamelCaseToSnakeCase in generator/internal/codegen_utils.cc.
@@ -285,18 +288,24 @@ func ForwardingGeneratedFiles(forwardingPath, serviceName string) []language.Gen
 // FormatHeaderIncludeGuard generates the C++ include guard macro for a header path.
 // It matches google-cloud-cpp's FormatHeaderIncludeGuard in generator/internal/codegen_utils.cc.
 func FormatHeaderIncludeGuard(headerPath string) string {
-	clean := strings.TrimPrefix(path.Clean(headerPath), "/")
-	if clean == "." {
-		clean = ""
+	if headerPath == "" {
+		return ""
 	}
-	r := strings.NewReplacer("/", "_", ".", "_")
-	return "GOOGLE_CLOUD_CPP_" + strings.ToUpper(r.Replace(clean))
+	clean := strings.TrimPrefix(path.Clean(headerPath), "/")
+	if clean == "." || clean == "" {
+		return ""
+	}
+	return "GOOGLE_CLOUD_CPP_" + strings.ToUpper(includeGuardReplacer.Replace(clean))
 }
 
 // parseProductPath splits a product path into prefix, library name, and service subdirectory,
 // matching google-cloud-cpp's ParseProductPath in generator/internal/scaffold_generator.cc.
 func parseProductPath(productPath string) (prefix, libraryName, serviceSubdir string) {
-	raw := strings.Split(productPath, "/")
+	cleaned := strings.TrimPrefix(filepath.ToSlash(filepath.Clean(filepath.ToSlash(productPath))), "./")
+	if cleaned == "." || cleaned == "" {
+		return "", "", ""
+	}
+	raw := strings.Split(cleaned, "/")
 	var v []string
 	for _, part := range raw {
 		if part != "" {
@@ -310,6 +319,9 @@ func parseProductPath(productPath string) (prefix, libraryName, serviceSubdir st
 	if len(v) > 2 && v[0] == "google" && v[1] == "cloud" {
 		it = 2
 	} else {
+		// Parity with google-cloud-cpp's ParseProductPath in
+		// generator/internal/scaffold_generator.cc:53, which checks for "golden"
+		// to support integration test golden directory structures.
 		for i, part := range v {
 			if part == "golden" {
 				it = i

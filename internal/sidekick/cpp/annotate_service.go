@@ -139,6 +139,12 @@ func (c *codec) annotateService(s *api.Service, modelAnn *modelAnnotations, mode
 		forwardingIdempotencyPolicyHeaderPath string
 		forwardingOptionsHeaderPath           string
 		forwardingMockConnectionHeaderPath    string
+
+		forwardingClientHeaderGuard            string
+		forwardingConnectionHeaderGuard        string
+		forwardingIdempotencyPolicyHeaderGuard string
+		forwardingOptionsHeaderGuard           string
+		forwardingMockConnectionHeaderGuard    string
 	)
 	if forwardingProductPath != "" {
 		forwardingClientHeaderPath = ForwardingClientHeaderPath(forwardingProductPath, s.Name)
@@ -146,6 +152,12 @@ func (c *codec) annotateService(s *api.Service, modelAnn *modelAnnotations, mode
 		forwardingIdempotencyPolicyHeaderPath = ForwardingIdempotencyPolicyHeaderPath(forwardingProductPath, s.Name)
 		forwardingOptionsHeaderPath = ForwardingOptionsHeaderPath(forwardingProductPath, s.Name)
 		forwardingMockConnectionHeaderPath = ForwardingMockConnectionHeaderPath(forwardingProductPath, s.Name)
+
+		forwardingClientHeaderGuard = FormatHeaderIncludeGuard(forwardingClientHeaderPath)
+		forwardingConnectionHeaderGuard = FormatHeaderIncludeGuard(forwardingConnectionHeaderPath)
+		forwardingIdempotencyPolicyHeaderGuard = FormatHeaderIncludeGuard(forwardingIdempotencyPolicyHeaderPath)
+		forwardingOptionsHeaderGuard = FormatHeaderIncludeGuard(forwardingOptionsHeaderPath)
+		forwardingMockConnectionHeaderGuard = FormatHeaderIncludeGuard(forwardingMockConnectionHeaderPath)
 	}
 
 	var protoHeaderPath, protoGrpcHeaderPath string
@@ -270,11 +282,11 @@ func (c *codec) annotateService(s *api.Service, modelAnn *modelAnnotations, mode
 		StubHeaderIncludeGuard:              FormatHeaderIncludeGuard(stubHeaderPath),
 		TracingStubHeaderIncludeGuard:       FormatHeaderIncludeGuard(tracingStubHeaderPath),
 
-		ForwardingClientHeaderIncludeGuard:            FormatHeaderIncludeGuard(forwardingClientHeaderPath),
-		ForwardingConnectionHeaderIncludeGuard:        FormatHeaderIncludeGuard(forwardingConnectionHeaderPath),
-		ForwardingIdempotencyPolicyHeaderIncludeGuard: FormatHeaderIncludeGuard(forwardingIdempotencyPolicyHeaderPath),
-		ForwardingOptionsHeaderIncludeGuard:           FormatHeaderIncludeGuard(forwardingOptionsHeaderPath),
-		ForwardingMockConnectionHeaderIncludeGuard:    FormatHeaderIncludeGuard(forwardingMockConnectionHeaderPath),
+		ForwardingClientHeaderIncludeGuard:            forwardingClientHeaderGuard,
+		ForwardingConnectionHeaderIncludeGuard:        forwardingConnectionHeaderGuard,
+		ForwardingIdempotencyPolicyHeaderIncludeGuard: forwardingIdempotencyPolicyHeaderGuard,
+		ForwardingOptionsHeaderIncludeGuard:           forwardingOptionsHeaderGuard,
+		ForwardingMockConnectionHeaderIncludeGuard:    forwardingMockConnectionHeaderGuard,
 
 		ClientHeaderPath:            clientHeaderPath,
 		ConnectionHeaderPath:        connectionHeaderPath,
