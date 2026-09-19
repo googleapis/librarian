@@ -187,16 +187,17 @@ func TestGenerate_GRPCServiceFiles(t *testing.T) {
 						t.Errorf("file %s: missing #include directives", gen.OutputPath)
 					}
 				}
+
+				if !strings.HasSuffix(gen.OutputPath, "sources.cc") {
+					extractBlock(t, s, "namespace google {", "GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN\n")
+					extractBlock(t, s, "GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END\n", "}  // namespace google\n")
+				}
 			}
 		})
 	}
 }
 
 func TestGenerate_GRPCServiceFiles_HeadersAndIncludes(t *testing.T) {
-	TestGenerate_HermeticProtoRequestId(t)
-}
-
-func TestGenerate_HermeticProtoRequestId(t *testing.T) {
 	requireProtoc(t)
 
 	srcs := &sources.Sources{
@@ -347,32 +348,34 @@ func TestGenerate_HermeticProtoRequestId(t *testing.T) {
 }
 
 func TestGenerate_ForwardingHeaders(t *testing.T) {
-	outdir := t.TempDir()
-	svc := api.NewTestService("GoldenKitchenSink")
-	model := api.NewTestAPI(nil, nil, []*api.Service{svc})
-	model.DefinitionLocations = map[string]api.SourceLocation{
-		svc.ID: {Filename: "generator/integration_tests/test.proto", Line: 1},
-	}
+	for _, serviceName := range []string{"GoldenKitchenSink", "GoldenThingAdmin"} {
+		t.Run(serviceName, func(t *testing.T) {
+			outdir := t.TempDir()
+			svc := api.NewTestService(serviceName)
+			model := api.NewTestAPI(nil, nil, []*api.Service{svc})
+			model.DefinitionLocations = map[string]api.SourceLocation{
+				svc.ID: {Filename: "generator/integration_tests/test.proto", Line: 1},
+			}
 
-	libCfg := &config.CppLibrary{
-		ProductPath:           "generator/integration_tests/golden/v1",
-		ForwardingProductPath: "generator/integration_tests/golden",
-		InitialCopyrightYear:  "2022",
-	}
+			libCfg := &config.CppLibrary{
+				ProductPath:           "generator/integration_tests/golden/v1",
+				ForwardingProductPath: "generator/integration_tests/golden",
+				InitialCopyrightYear:  "2022",
+			}
 
-	if err := Generate(t.Context(), model, outdir, libCfg); err != nil {
-		t.Fatal(err)
-	}
+			if err := Generate(t.Context(), model, outdir, libCfg); err != nil {
+				t.Fatal(err)
+			}
 
-	fwdFiles := ForwardingGeneratedFiles(libCfg.ForwardingProductPath, svc.Name)
-	if len(fwdFiles) != 5 {
-		t.Fatalf("expected 5 forwarding files, got %d", len(fwdFiles))
-	}
+			fwdFiles := ForwardingGeneratedFiles(libCfg.ForwardingProductPath, svc.Name)
+			if len(fwdFiles) != 5 {
+				t.Fatalf("expected 5 forwarding files, got %d", len(fwdFiles))
+			}
 
-	goldenDir := filepath.Join("testdata", "golden")
-	prefix := libCfg.ForwardingProductPath + "/"
+			goldenDir := filepath.Join("testdata", "golden")
+			prefix := libCfg.ForwardingProductPath + "/"
 
-	wantContent := `// Copyright 2022 Google LLC
+			wantContent := `// Copyright 2022 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -391,67 +394,69 @@ func TestGenerate_ForwardingHeaders(t *testing.T) {
 // source: generator/integration_tests/test.proto
 `
 
-	for _, gen := range fwdFiles {
-		t.Run(gen.OutputPath, func(t *testing.T) {
-			fullPath := filepath.Join(outdir, gen.OutputPath)
-			content, err := os.ReadFile(fullPath)
-			if err != nil {
-				t.Fatalf("missing expected forwarding file %q: %v", gen.OutputPath, err)
-			}
-			got := string(content)
+			for _, gen := range fwdFiles {
+				t.Run(gen.OutputPath, func(t *testing.T) {
+					fullPath := filepath.Join(outdir, gen.OutputPath)
+					content, err := os.ReadFile(fullPath)
+					if err != nil {
+						t.Fatalf("missing expected forwarding file %q: %v", gen.OutputPath, err)
+					}
+					got := string(content)
 
-			if !strings.HasPrefix(got, wantContent) {
-				t.Errorf("file %s: prologue mismatch", gen.OutputPath)
-			}
+					if !strings.HasPrefix(got, wantContent) {
+						t.Errorf("file %s: prologue mismatch", gen.OutputPath)
+					}
 
-			relPath := strings.TrimPrefix(gen.OutputPath, prefix)
-			goldenPath := filepath.Join(goldenDir, relPath)
-			goldenContentBytes, err := os.ReadFile(goldenPath)
-			if err != nil {
-				t.Fatalf("missing golden file %q: %v", goldenPath, err)
-			}
-			golden := string(goldenContentBytes)
+					relPath := strings.TrimPrefix(gen.OutputPath, prefix)
+					goldenPath := filepath.Join(goldenDir, relPath)
+					goldenContentBytes, err := os.ReadFile(goldenPath)
+					if err != nil {
+						t.Fatalf("missing golden file %q: %v", goldenPath, err)
+					}
+					golden := string(goldenContentBytes)
 
-			guard := FormatHeaderIncludeGuard(gen.OutputPath)
+					guard := FormatHeaderIncludeGuard(gen.OutputPath)
 
-			// Compare opening guard.
-			gotGuard := extractBlock(t, got, "#ifndef "+guard, "\n\n")
-			wantGuard := extractBlock(t, golden, "#ifndef "+guard, "\n\n")
-			if diff := cmp.Diff(wantGuard, gotGuard); diff != "" {
-				t.Logf("file %s opening guard", gen.OutputPath)
-				t.Errorf("mismatch (-want +got):\n%s", diff)
-			}
+					// Compare opening guard.
+					gotGuard := extractBlock(t, got, "#ifndef "+guard, "\n\n")
+					wantGuard := extractBlock(t, golden, "#ifndef "+guard, "\n\n")
+					if diff := cmp.Diff(wantGuard, gotGuard); diff != "" {
+						t.Logf("file %s opening guard", gen.OutputPath)
+						t.Errorf("mismatch (-want +got):\n%s", diff)
+					}
 
-			// Compare closing guard.
-			gotClosing := extractBlock(t, got, "#endif  // "+guard, "\n")
-			wantClosing := extractBlock(t, golden, "#endif  // "+guard, "\n")
-			if diff := cmp.Diff(wantClosing, gotClosing); diff != "" {
-				t.Logf("file %s closing guard", gen.OutputPath)
-				t.Errorf("mismatch (-want +got):\n%s", diff)
-			}
+					// Compare closing guard.
+					gotClosing := extractBlock(t, got, "#endif  // "+guard, "\n")
+					wantClosing := extractBlock(t, golden, "#endif  // "+guard, "\n")
+					if diff := cmp.Diff(wantClosing, gotClosing); diff != "" {
+						t.Logf("file %s closing guard", gen.OutputPath)
+						t.Errorf("mismatch (-want +got):\n%s", diff)
+					}
 
-			// Compare includes block.
-			gotIncludes := extractBlock(t, got, "#include ", "\n\n")
-			wantIncludes := extractBlock(t, golden, "#include ", "\n\n")
-			if diff := cmp.Diff(wantIncludes, gotIncludes); diff != "" {
-				t.Logf("file %s includes", gen.OutputPath)
-				t.Errorf("mismatch (-want +got):\n%s", diff)
-			}
+					// Compare includes block.
+					gotIncludes := extractBlock(t, got, "#include ", "\n\n")
+					wantIncludes := extractBlock(t, golden, "#include ", "\n\n")
+					if diff := cmp.Diff(wantIncludes, gotIncludes); diff != "" {
+						t.Logf("file %s includes", gen.OutputPath)
+						t.Errorf("mismatch (-want +got):\n%s", diff)
+					}
 
-			// Compare namespace opening block.
-			gotNsOpen := extractBlock(t, got, "namespace google {", "GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN\n")
-			wantNsOpen := extractBlock(t, golden, "namespace google {", "GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN\n")
-			if diff := cmp.Diff(wantNsOpen, gotNsOpen); diff != "" {
-				t.Logf("file %s namespace open", gen.OutputPath)
-				t.Errorf("mismatch (-want +got):\n%s", diff)
-			}
+					// Compare namespace opening block.
+					gotNsOpen := extractBlock(t, got, "namespace google {", "GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN\n")
+					wantNsOpen := extractBlock(t, golden, "namespace google {", "GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN\n")
+					if diff := cmp.Diff(wantNsOpen, gotNsOpen); diff != "" {
+						t.Logf("file %s namespace open", gen.OutputPath)
+						t.Errorf("mismatch (-want +got):\n%s", diff)
+					}
 
-			// Compare namespace closing block.
-			gotNsClose := extractBlock(t, got, "GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END\n", "}  // namespace google\n")
-			wantNsClose := extractBlock(t, golden, "GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END\n", "}  // namespace google\n")
-			if diff := cmp.Diff(wantNsClose, gotNsClose); diff != "" {
-				t.Logf("file %s namespace close", gen.OutputPath)
-				t.Errorf("mismatch (-want +got):\n%s", diff)
+					// Compare namespace closing block.
+					gotNsClose := extractBlock(t, got, "GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END\n", "}  // namespace google\n")
+					wantNsClose := extractBlock(t, golden, "GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END\n", "}  // namespace google\n")
+					if diff := cmp.Diff(wantNsClose, gotNsClose); diff != "" {
+						t.Logf("file %s namespace close", gen.OutputPath)
+						t.Errorf("mismatch (-want +got):\n%s", diff)
+					}
+				})
 			}
 		})
 	}

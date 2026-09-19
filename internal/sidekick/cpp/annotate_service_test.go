@@ -117,12 +117,14 @@ func TestAnnotateService(t *testing.T) {
 					CopyrightYear: "2026",
 					BoilerPlate:   license.HeaderBulk(),
 				},
-				SourceFile:          "google/example/echo.proto",
-				Namespace:           "echo_v1",
-				InternalNamespace:   "echo_v1_internal",
-				MocksNamespace:      "echo_v1_mocks",
-				ProtoHeaderPath:     "google/example/echo.pb.h",
-				ProtoGrpcHeaderPath: "google/example/echo.grpc.pb.h",
+				SourceFile:               "google/example/echo.proto",
+				Namespace:                "echo_v1",
+				InternalNamespace:        "echo_v1_internal",
+				MocksNamespace:           "echo_v1_mocks",
+				ForwardingNamespace:      "",
+				ForwardingMocksNamespace: "",
+				ProtoHeaderPath:          "google/example/echo.pb.h",
+				ProtoGrpcHeaderPath:      "google/example/echo.grpc.pb.h",
 
 				ClientHeaderPath:            "google/cloud/echo/v1/echo_client.h",
 				ConnectionHeaderPath:        "google/cloud/echo/v1/echo_connection.h",
@@ -174,12 +176,14 @@ func TestAnnotateService(t *testing.T) {
 					CopyrightYear: "2024",
 					BoilerPlate:   license.HeaderBulk(),
 				},
-				SourceFile:          "generator/integration_tests/test.proto",
-				Namespace:           "golden_v1",
-				InternalNamespace:   "golden_v1_internal",
-				MocksNamespace:      "golden_v1_mocks",
-				ProtoHeaderPath:     "generator/integration_tests/test.pb.h",
-				ProtoGrpcHeaderPath: "generator/integration_tests/test.grpc.pb.h",
+				SourceFile:               "generator/integration_tests/test.proto",
+				Namespace:                "golden_v1",
+				InternalNamespace:        "golden_v1_internal",
+				MocksNamespace:           "golden_v1_mocks",
+				ForwardingNamespace:      "",
+				ForwardingMocksNamespace: "",
+				ProtoHeaderPath:          "generator/integration_tests/test.pb.h",
+				ProtoGrpcHeaderPath:      "generator/integration_tests/test.grpc.pb.h",
 
 				ClientHeaderPath:            "generator/integration_tests/golden/v1/custom_year_client.h",
 				ConnectionHeaderPath:        "generator/integration_tests/golden/v1/custom_year_connection.h",
@@ -409,106 +413,162 @@ func TestAnnotateService_ConnectionIncludesSorting(t *testing.T) {
 }
 
 func TestAnnotateService_Forwarding(t *testing.T) {
-	svc := api.NewTestService("GoldenKitchenSink")
+	t.Run("configured forwarding", func(t *testing.T) {
+		svc := api.NewTestService("GoldenKitchenSink")
+		model := api.NewTestAPI(nil, nil, []*api.Service{svc})
+		modelAnn := &modelAnnotations{
+			CopyrightYear: "2026",
+			BoilerPlate:   license.HeaderBulk(),
+		}
+		libCfg := &config.CppLibrary{
+			ProductPath:           "generator/integration_tests/golden/v1",
+			ForwardingProductPath: "generator/integration_tests/golden",
+		}
+		c := newCodec(libCfg)
+		if err := c.annotateService(svc, modelAnn, model); err != nil {
+			t.Fatal(err)
+		}
+		got := svc.Codec.(*serviceAnnotations)
+
+		for _, tc := range []struct {
+			name string
+			got  string
+			want string
+		}{
+			{
+				name: "ForwardingClientHeaderPath",
+				got:  got.ForwardingClientHeaderPath,
+				want: "generator/integration_tests/golden/golden_kitchen_sink_client.h",
+			},
+			{
+				name: "ForwardingClientHeaderIncludeGuard",
+				got:  got.ForwardingClientHeaderIncludeGuard,
+				want: "GOOGLE_CLOUD_CPP_GENERATOR_INTEGRATION_TESTS_GOLDEN_GOLDEN_KITCHEN_SINK_CLIENT_H",
+			},
+			{
+				name: "ForwardingConnectionHeaderPath",
+				got:  got.ForwardingConnectionHeaderPath,
+				want: "generator/integration_tests/golden/golden_kitchen_sink_connection.h",
+			},
+			{
+				name: "ForwardingConnectionHeaderIncludeGuard",
+				got:  got.ForwardingConnectionHeaderIncludeGuard,
+				want: "GOOGLE_CLOUD_CPP_GENERATOR_INTEGRATION_TESTS_GOLDEN_GOLDEN_KITCHEN_SINK_CONNECTION_H",
+			},
+			{
+				name: "ForwardingIdempotencyPolicyHeaderPath",
+				got:  got.ForwardingIdempotencyPolicyHeaderPath,
+				want: "generator/integration_tests/golden/golden_kitchen_sink_connection_idempotency_policy.h",
+			},
+			{
+				name: "ForwardingIdempotencyPolicyHeaderIncludeGuard",
+				got:  got.ForwardingIdempotencyPolicyHeaderIncludeGuard,
+				want: "GOOGLE_CLOUD_CPP_GENERATOR_INTEGRATION_TESTS_GOLDEN_GOLDEN_KITCHEN_SINK_CONNECTION_IDEMPOTENCY_POLICY_H",
+			},
+			{
+				name: "ForwardingOptionsHeaderPath",
+				got:  got.ForwardingOptionsHeaderPath,
+				want: "generator/integration_tests/golden/golden_kitchen_sink_options.h",
+			},
+			{
+				name: "ForwardingOptionsHeaderIncludeGuard",
+				got:  got.ForwardingOptionsHeaderIncludeGuard,
+				want: "GOOGLE_CLOUD_CPP_GENERATOR_INTEGRATION_TESTS_GOLDEN_GOLDEN_KITCHEN_SINK_OPTIONS_H",
+			},
+			{
+				name: "ForwardingMockConnectionHeaderPath",
+				got:  got.ForwardingMockConnectionHeaderPath,
+				want: "generator/integration_tests/golden/mocks/mock_golden_kitchen_sink_connection.h",
+			},
+			{
+				name: "ForwardingMockConnectionHeaderIncludeGuard",
+				got:  got.ForwardingMockConnectionHeaderIncludeGuard,
+				want: "GOOGLE_CLOUD_CPP_GENERATOR_INTEGRATION_TESTS_GOLDEN_MOCKS_MOCK_GOLDEN_KITCHEN_SINK_CONNECTION_H",
+			},
+			{
+				name: "Namespace",
+				got:  got.Namespace,
+				want: "golden_v1",
+			},
+			{
+				name: "InternalNamespace",
+				got:  got.InternalNamespace,
+				want: "golden_v1_internal",
+			},
+			{
+				name: "MocksNamespace",
+				got:  got.MocksNamespace,
+				want: "golden_v1_mocks",
+			},
+			{
+				name: "ForwardingNamespace",
+				got:  got.ForwardingNamespace,
+				want: "golden",
+			},
+			{
+				name: "ForwardingMocksNamespace",
+				got:  got.ForwardingMocksNamespace,
+				want: "golden_mocks",
+			},
+		} {
+			if diff := cmp.Diff(tc.want, tc.got); diff != "" {
+				t.Logf("%s", tc.name)
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		}
+	})
+
+	t.Run("empty forwarding product path", func(t *testing.T) {
+		svc := api.NewTestService("GoldenKitchenSink")
+		model := api.NewTestAPI(nil, nil, []*api.Service{svc})
+		modelAnn := &modelAnnotations{
+			CopyrightYear: "2026",
+			BoilerPlate:   license.HeaderBulk(),
+		}
+		libCfg := &config.CppLibrary{
+			ProductPath: "generator/integration_tests/golden/v1",
+		}
+		c := newCodec(libCfg)
+		if err := c.annotateService(svc, modelAnn, model); err != nil {
+			t.Fatal(err)
+		}
+		got := svc.Codec.(*serviceAnnotations)
+
+		if got.ForwardingNamespace != "" {
+			t.Errorf("expected empty ForwardingNamespace, got %q", got.ForwardingNamespace)
+		}
+		if got.ForwardingMocksNamespace != "" {
+			t.Errorf("expected empty ForwardingMocksNamespace, got %q", got.ForwardingMocksNamespace)
+		}
+	})
+}
+
+func TestAnnotateService_NilConfig(t *testing.T) {
+	svc := api.NewTestService("SimpleService")
 	model := api.NewTestAPI(nil, nil, []*api.Service{svc})
 	modelAnn := &modelAnnotations{
 		CopyrightYear: "2026",
 		BoilerPlate:   license.HeaderBulk(),
 	}
-	libCfg := &config.CppLibrary{
-		ProductPath:           "generator/integration_tests/golden/v1",
-		ForwardingProductPath: "generator/integration_tests/golden",
-	}
-	c := newCodec(libCfg)
+	c := newCodec(nil)
 	if err := c.annotateService(svc, modelAnn, model); err != nil {
 		t.Fatal(err)
 	}
 	got := svc.Codec.(*serviceAnnotations)
 
-	for _, tc := range []struct {
-		name string
-		got  string
-		want string
-	}{
-		{
-			name: "ForwardingClientHeaderPath",
-			got:  got.ForwardingClientHeaderPath,
-			want: "generator/integration_tests/golden/golden_kitchen_sink_client.h",
-		},
-		{
-			name: "ForwardingClientHeaderIncludeGuard",
-			got:  got.ForwardingClientHeaderIncludeGuard,
-			want: "GOOGLE_CLOUD_CPP_GENERATOR_INTEGRATION_TESTS_GOLDEN_GOLDEN_KITCHEN_SINK_CLIENT_H",
-		},
-		{
-			name: "ForwardingConnectionHeaderPath",
-			got:  got.ForwardingConnectionHeaderPath,
-			want: "generator/integration_tests/golden/golden_kitchen_sink_connection.h",
-		},
-		{
-			name: "ForwardingConnectionHeaderIncludeGuard",
-			got:  got.ForwardingConnectionHeaderIncludeGuard,
-			want: "GOOGLE_CLOUD_CPP_GENERATOR_INTEGRATION_TESTS_GOLDEN_GOLDEN_KITCHEN_SINK_CONNECTION_H",
-		},
-		{
-			name: "ForwardingIdempotencyPolicyHeaderPath",
-			got:  got.ForwardingIdempotencyPolicyHeaderPath,
-			want: "generator/integration_tests/golden/golden_kitchen_sink_connection_idempotency_policy.h",
-		},
-		{
-			name: "ForwardingIdempotencyPolicyHeaderIncludeGuard",
-			got:  got.ForwardingIdempotencyPolicyHeaderIncludeGuard,
-			want: "GOOGLE_CLOUD_CPP_GENERATOR_INTEGRATION_TESTS_GOLDEN_GOLDEN_KITCHEN_SINK_CONNECTION_IDEMPOTENCY_POLICY_H",
-		},
-		{
-			name: "ForwardingOptionsHeaderPath",
-			got:  got.ForwardingOptionsHeaderPath,
-			want: "generator/integration_tests/golden/golden_kitchen_sink_options.h",
-		},
-		{
-			name: "ForwardingOptionsHeaderIncludeGuard",
-			got:  got.ForwardingOptionsHeaderIncludeGuard,
-			want: "GOOGLE_CLOUD_CPP_GENERATOR_INTEGRATION_TESTS_GOLDEN_GOLDEN_KITCHEN_SINK_OPTIONS_H",
-		},
-		{
-			name: "ForwardingMockConnectionHeaderPath",
-			got:  got.ForwardingMockConnectionHeaderPath,
-			want: "generator/integration_tests/golden/mocks/mock_golden_kitchen_sink_connection.h",
-		},
-		{
-			name: "ForwardingMockConnectionHeaderIncludeGuard",
-			got:  got.ForwardingMockConnectionHeaderIncludeGuard,
-			want: "GOOGLE_CLOUD_CPP_GENERATOR_INTEGRATION_TESTS_GOLDEN_MOCKS_MOCK_GOLDEN_KITCHEN_SINK_CONNECTION_H",
-		},
-		{
-			name: "Namespace",
-			got:  got.Namespace,
-			want: "golden_v1",
-		},
-		{
-			name: "InternalNamespace",
-			got:  got.InternalNamespace,
-			want: "golden_v1_internal",
-		},
-		{
-			name: "MocksNamespace",
-			got:  got.MocksNamespace,
-			want: "golden_v1_mocks",
-		},
-		{
-			name: "ForwardingNamespace",
-			got:  got.ForwardingNamespace,
-			want: "golden",
-		},
-		{
-			name: "ForwardingMocksNamespace",
-			got:  got.ForwardingMocksNamespace,
-			want: "golden_mocks",
-		},
-	} {
-		if diff := cmp.Diff(tc.want, tc.got); diff != "" {
-			t.Logf("%s", tc.name)
-			t.Errorf("mismatch (-want +got):\n%s", diff)
-		}
+	if got.Namespace != "" {
+		t.Errorf("expected empty Namespace for nil config, got %q", got.Namespace)
+	}
+	if got.InternalNamespace != "internal" {
+		t.Errorf("expected 'internal' for nil config InternalNamespace, got %q", got.InternalNamespace)
+	}
+	if got.MocksNamespace != "mocks" {
+		t.Errorf("expected 'mocks' for nil config MocksNamespace, got %q", got.MocksNamespace)
+	}
+	if got.ForwardingNamespace != "" {
+		t.Errorf("expected empty ForwardingNamespace for nil config, got %q", got.ForwardingNamespace)
+	}
+	if got.ForwardingMocksNamespace != "" {
+		t.Errorf("expected empty ForwardingMocksNamespace for nil config, got %q", got.ForwardingMocksNamespace)
 	}
 }
