@@ -2,7 +2,7 @@
 
 ## 1. Executive Summary & Objective
 
-This document defines the implementation roadmap for replacing `google-cloud-cpp/generator` with a native Go-based generator in `librarian` and `sidekick` (`internal/sidekick/cpp`). The goal is 100% byte-for-byte parity with existing generated C++ code, adhering to the architectural principles of `internal/sidekick/swift` and avoiding the architectural defects documented in `review.md`.
+This document defines the implementation roadmap for replacing `google-cloud-cpp/generator` with a native Go-based generator in `librarian` and `sidekick` (`internal/sidekick/cpp`). The goal is 100% byte-for-byte parity with existing generated C++ code, adhering to the architectural principles of `internal/sidekick/swift`.
 
 ```mermaid
 flowchart LR
@@ -31,6 +31,8 @@ flowchart LR
 | **Hermetic Testing & Oracles** | Dynamic SHA, non-vacuous tests | Use dynamic googleapis SHA resolution; zero hardcoded `$HOME` paths. Unit tests must use `extractBlock` to test annotation accessors granularly. Assert file contents, not just file existence or sizes. Dedicated unit tests required for `OperationService`. |
 | **No Fixture Branching** | Clean production code | Never branch on test fixture names (such as `GoldenKitchenSink`) in production code. Production logic must be completely decoupled from fixture data. |
 | **No Test Helpers in Production** | Strict separation | Never call test builders like `api.NewTestAPI` on production paths. Misconfigured libraries must fail loudly with errors. |
+| **Review each commit** | Coding | After each commit, spawn a subagent to review the code using the review-pr from this repository. Ignore guidelines about the commit message |
+| **Align after each step** | Architecture | After each phase, spawn a subagent to review the changes against the architectural guidelines in the GEMINI.md files and in this plan. If the subagent reports any deviations ask the user how to proceed. |
 
 ---
 
@@ -132,4 +134,3 @@ flowchart LR
   4. Run integration test generating `google/cloud/compute/addresses/v1`.
   5. Run active `clang-format` and assert 100% byte-for-byte parity against production `google-cloud-cpp`.
 - **Verification**: `go test -tags integration ./internal/librarian/cpp/...`.
-
