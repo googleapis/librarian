@@ -1,0 +1,1388 @@
+// Copyright 2020 Google LLC
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     https://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto3";
+
+package google.test.admin.database.v1;
+
+import "google/api/annotations.proto";
+import "google/api/client.proto";
+import "google/api/field_behavior.proto";
+import "google/api/resource.proto";
+import "google/api/routing.proto";
+import "google/iam/v1/iam_policy.proto";
+import "google/iam/v1/policy.proto";
+import "google/longrunning/operations.proto";
+import "google/protobuf/any.proto";
+import "google/protobuf/duration.proto";
+import "google/protobuf/empty.proto";
+import "google/protobuf/struct.proto";
+import "google/protobuf/timestamp.proto";
+import "generator/integration_tests/backup.proto";
+import "generator/integration_tests/common.proto";
+
+option csharp_namespace = "Google.Cloud.Test.Admin.Database.V1";
+option go_package = "google.golang.org/genproto/googleapis/test/admin/database/v1;database";
+option java_multiple_files = true;
+option java_outer_classname = "TestDatabaseAdminProto";
+option java_package = "com.google.test.admin.database.v1";
+option php_namespace = "Google\\Cloud\\Test\\Admin\\Database\\V1";
+option ruby_package = "Google::Cloud::Test::Admin::Database::V1";
+option (google.api.resource_definition) = {
+  type: "test.googleapis.com/Instance"
+  pattern: "projects/{project}/instances/{instance}"
+};
+
+// Cloud Test Database Admin API
+//
+// The Cloud Test Database Admin API can be used to create, drop, and
+// list databases. It also enables updating the schema of pre-existing
+// databases. It can be also used to create, delete and list backups for a
+// database and to restore from an existing backup.
+service GoldenThingAdmin {
+  option (google.api.default_host) = "test.googleapis.com";
+  option (google.api.oauth_scopes) =
+      "https://www.googleapis.com/auth/cloud-platform,"
+      "https://www.googleapis.com/auth/test.admin";
+
+  // Lists Cloud Test databases.
+  rpc ListDatabases(ListDatabasesRequest) returns (ListDatabasesResponse) {
+    option (google.api.http) = {
+      get: "/v1/{parent=projects/*/instances/*}/databases"
+    };
+    option (google.api.method_signature) = "parent";
+  }
+
+  // Creates a new Cloud Test database and starts to prepare it for serving.
+  // The returned [long-running operation][google.longrunning.Operation] will
+  // have a name of the format `<database_name>/operations/<operation_id>` and
+  // can be used to track preparation of the database. The
+  // [metadata][google.longrunning.Operation.metadata] field type is
+  // [CreateDatabaseMetadata][google.test.admin.database.v1.CreateDatabaseMetadata].
+  // The [response][google.longrunning.Operation.response] field type is
+  // [Database][google.test.admin.database.v1.Database], if successful.
+  rpc CreateDatabase(CreateDatabaseRequest)
+      returns (google.longrunning.Operation) {
+    option (google.api.http) = {
+      post: "/v1/{parent=projects/*/instances/*}/databases"
+      body: "*"
+    };
+    option (google.api.method_signature) = "parent,create_statement";
+    option (google.longrunning.operation_info) = {
+      response_type: "google.test.admin.database.v1.Database"
+      metadata_type: "google.test.admin.database.v1.CreateDatabaseMetadata"
+    };
+  }
+
+  // Gets the state of a Cloud Test database.
+  rpc GetDatabase(GetDatabaseRequest) returns (Database) {
+    option (google.api.http) = {
+      get: "/v1/{name=projects/*/instances/*/databases/*}"
+    };
+    option (google.api.method_signature) = "name";
+  }
+
+  // Updates the schema of a Cloud Test database by
+  // creating/altering/dropping tables, columns, indexes, etc. The returned
+  // [long-running operation][google.longrunning.Operation] will have a name of
+  // the format `<database_name>/operations/<operation_id>` and can be used to
+  // track execution of the schema change(s). The
+  // [metadata][google.longrunning.Operation.metadata] field type is
+  // [UpdateDatabaseDdlMetadata][google.test.admin.database.v1.UpdateDatabaseDdlMetadata].
+  // The operation has no response.
+  rpc UpdateDatabaseDdl(UpdateDatabaseDdlRequest)
+      returns (google.longrunning.Operation) {
+    option (google.api.http) = {
+      patch: "/v1/{database=projects/*/instances/*/databases/*}/ddl"
+      body: "*"
+    };
+    option (google.api.method_signature) = "database,statements";
+    option (google.longrunning.operation_info) = {
+      response_type: "google.protobuf.Empty"
+      metadata_type: "google.test.admin.database.v1.UpdateDatabaseDdlMetadata"
+    };
+  }
+
+  // Drops (aka deletes) a Cloud Test database.
+  // Completed backups for the database will be retained according to their
+  // `expire_time`.
+  rpc DropDatabase(DropDatabaseRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      delete: "/v1/{database=projects/*/instances/*/databases/*}"
+    };
+    option (google.api.routing) = {
+      routing_parameters {
+        field: "database"
+        path_template: "{project=projects/*}/instances/*/databases/*"
+      }
+      routing_parameters {
+        field: "database"
+        path_template: "projects/*/{instance=instances/*}/databases/*"
+      }
+      routing_parameters {
+        field: "database"
+        path_template: "projects/*/instances/*/{database=databases/*}"
+      }
+    };
+    option (google.api.method_signature) = "database";
+  }
+
+  // Returns the schema of a Cloud Test database as a list of formatted
+  // DDL statements. This method does not show pending schema updates, those may
+  // be queried using the [Operations][google.longrunning.Operations] API.
+  rpc GetDatabaseDdl(GetDatabaseDdlRequest) returns (GetDatabaseDdlResponse) {
+    option (google.api.http) = {
+      get: "/v1/{database=projects/*/instances/*/databases/*}/ddl"
+    };
+    option (google.api.method_signature) = "database";
+  }
+
+  // Sets the access control policy on a database or backup resource.
+  // Replaces any existing policy.
+  //
+  // Authorization requires `test.databases.setIamPolicy`
+  // permission on [resource][google.iam.v1.SetIamPolicyRequest.resource].
+  // For backups, authorization requires `test.backups.setIamPolicy`
+  // permission on [resource][google.iam.v1.SetIamPolicyRequest.resource].
+  rpc SetIamPolicy(google.iam.v1.SetIamPolicyRequest)
+      returns (google.iam.v1.Policy) {
+    option (google.api.http) = {
+      post: "/v1/{resource=projects/*/instances/*/databases/*}:setIamPolicy"
+      body: "*"
+      additional_bindings {
+        post: "/v1/{resource=projects/*/instances/*/backups/*}:setIamPolicy"
+        body: "*"
+      }
+    };
+    option (google.api.method_signature) = "resource,policy";
+  }
+
+  // Gets the access control policy for a database or backup resource.
+  // Returns an empty policy if a database or backup exists but does not have a
+  // policy set.
+  //
+  // Authorization requires `test.databases.getIamPolicy` permission on
+  // [resource][google.iam.v1.GetIamPolicyRequest.resource].
+  // For backups, authorization requires `test.backups.getIamPolicy`
+  // permission on [resource][google.iam.v1.GetIamPolicyRequest.resource].
+  rpc GetIamPolicy(google.iam.v1.GetIamPolicyRequest)
+      returns (google.iam.v1.Policy) {
+    option (google.api.http) = {
+      post: "/v1/{resource=projects/*/instances/*/databases/*}:getIamPolicy"
+      body: "*"
+      additional_bindings {
+        post: "/v1/{resource=projects/*/instances/*/backups/*}:getIamPolicy"
+        body: "*"
+      }
+    };
+    option (google.api.method_signature) = "resource";
+  }
+
+  // Returns permissions that the caller has on the specified database or backup
+  // resource.
+  //
+  // Attempting this RPC on a non-existent Cloud Test database will
+  // result in a NOT_FOUND error if the user has
+  // `test.databases.list` permission on the containing Cloud
+  // Test instance. Otherwise returns an empty set of permissions.
+  // Calling this method on a backup that does not exist will
+  // result in a NOT_FOUND error if the user has
+  // `test.backups.list` permission on the containing instance.
+  rpc TestIamPermissions(google.iam.v1.TestIamPermissionsRequest)
+      returns (google.iam.v1.TestIamPermissionsResponse) {
+    option (google.api.http) = {
+      post: "/v1/{resource=projects/*/instances/*/databases/*}:testIamPermissions"
+      body: "*"
+      additional_bindings {
+        post: "/v1/{resource=projects/*/instances/*/backups/*}:testIamPermissions"
+        body: "*"
+      }
+    };
+    option (google.api.method_signature) = "resource,permissions";
+  }
+
+  // Starts creating a new Cloud Test Backup.
+  // The returned backup [long-running operation][google.longrunning.Operation]
+  // will have a name of the format
+  // `projects/<project>/instances/<instance>/backups/<backup>/operations/<operation_id>`
+  // and can be used to track creation of the backup. The
+  // [metadata][google.longrunning.Operation.metadata] field type is
+  // [CreateBackupMetadata][google.test.admin.database.v1.CreateBackupMetadata].
+  // The [response][google.longrunning.Operation.response] field type is
+  // [Backup][google.test.admin.database.v1.Backup], if successful. Cancelling
+  // the returned operation will stop the creation and delete the backup. There
+  // can be only one pending backup creation per database. Backup creation of
+  // different databases can run concurrently.
+  rpc CreateBackup(CreateBackupRequest) returns (google.longrunning.Operation) {
+    option (google.api.http) = {
+      post: "/v1/{parent=projects/*/instances/*}/backups"
+      body: "backup"
+    };
+    option (google.api.method_signature) = "parent,backup,backup_id";
+    option (google.longrunning.operation_info) = {
+      response_type: "google.test.admin.database.v1.Backup"
+      metadata_type: "google.test.admin.database.v1.CreateBackupMetadata"
+    };
+  }
+
+  // Gets metadata on a pending or completed
+  // [Backup][google.test.admin.database.v1.Backup].
+  rpc GetBackup(GetBackupRequest) returns (Backup) {
+    option (google.api.http) = {
+      get: "/v1/{name=projects/*/instances/*/backups/*}"
+    };
+    option (google.api.method_signature) = "name";
+  }
+
+  // Updates a pending or completed
+  // [Backup][google.test.admin.database.v1.Backup].
+  rpc UpdateBackup(UpdateBackupRequest) returns (Backup) {
+    option (google.api.http) = {
+      patch: "/v1/{backup.name=projects/*/instances/*/backups/*}"
+      body: "backup"
+    };
+    option (google.api.method_signature) = "backup,update_mask";
+  }
+
+  // Deletes a pending or completed
+  // [Backup][google.test.admin.database.v1.Backup].
+  rpc DeleteBackup(DeleteBackupRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      delete: "/v1/{name=projects/*/instances/*/backups/*}"
+    };
+    option (google.api.method_signature) = "name";
+  }
+
+  // Lists completed and pending backups.
+  // Backups returned are ordered by `create_time` in descending order,
+  // starting from the most recent `create_time`.
+  rpc ListBackups(ListBackupsRequest) returns (ListBackupsResponse) {
+    option (google.api.http) = {
+      get: "/v1/{parent=projects/*/instances/*}/backups"
+    };
+    option (google.api.method_signature) = "parent";
+  }
+
+  // Create a new database by restoring from a completed backup. The new
+  // database must be in the same project and in an instance with the same
+  // instance configuration as the instance containing
+  // the backup. The returned database [long-running
+  // operation][google.longrunning.Operation] has a name of the format
+  // `projects/<project>/instances/<instance>/databases/<database>/operations/<operation_id>`,
+  // and can be used to track the progress of the operation, and to cancel it.
+  // The [metadata][google.longrunning.Operation.metadata] field type is
+  // [RestoreDatabaseMetadata][google.test.admin.database.v1.RestoreDatabaseMetadata].
+  // The [response][google.longrunning.Operation.response] type
+  // is [Database][google.test.admin.database.v1.Database], if
+  // successful. Cancelling the returned operation will stop the restore and
+  // delete the database.
+  // There can be only one database being restored into an instance at a time.
+  // Once the restore operation completes, a new restore operation can be
+  // initiated, without waiting for the optimize operation associated with the
+  // first restore to complete.
+  rpc RestoreDatabase(RestoreDatabaseRequest)
+      returns (google.longrunning.Operation) {
+    option (google.api.http) = {
+      post: "/v1/{parent=projects/*/instances/*}/databases:restore"
+      body: "*"
+    };
+    option (google.api.method_signature) = "parent,database_id,backup";
+    option (google.longrunning.operation_info) = {
+      response_type: "google.test.admin.database.v1.Database"
+      metadata_type: "google.test.admin.database.v1.RestoreDatabaseMetadata"
+    };
+  }
+
+  // Lists database [longrunning-operations][google.longrunning.Operation].
+  // A database operation has a name of the form
+  // `projects/<project>/instances/<instance>/databases/<database>/operations/<operation>`.
+  // The long-running operation
+  // [metadata][google.longrunning.Operation.metadata] field type
+  // `metadata.type_url` describes the type of the metadata. Operations returned
+  // include those that have completed/failed/canceled within the last 7 days,
+  // and pending operations.
+  rpc ListDatabaseOperations(ListDatabaseOperationsRequest)
+      returns (ListDatabaseOperationsResponse) {
+    option (google.api.http) = {
+      get: "/v1/{parent=projects/*/instances/*}/databaseOperations"
+    };
+    option (google.api.method_signature) = "parent";
+  }
+
+  // Lists the backup [long-running operations][google.longrunning.Operation] in
+  // the given instance. A backup operation has a name of the form
+  // `projects/<project>/instances/<instance>/backups/<backup>/operations/<operation>`.
+  // The long-running operation
+  // [metadata][google.longrunning.Operation.metadata] field type
+  // `metadata.type_url` describes the type of the metadata. Operations returned
+  // include those that have completed/failed/canceled within the last 7 days,
+  // and pending operations. Operations returned are ordered by
+  // `operation.metadata.value.progress.start_time` in descending order starting
+  // from the most recently started operation.
+  rpc ListBackupOperations(ListBackupOperationsRequest)
+      returns (ListBackupOperationsResponse) {
+    option (google.api.http) = {
+      get: "/v1/{parent=projects/*/instances/*}/backupOperations"
+    };
+    option (google.api.method_signature) = "parent";
+  }
+
+  // Tests longrunning operations without routing headers
+  rpc LongRunningWithoutRouting(RestoreDatabaseRequest)
+      returns (google.longrunning.Operation) {
+    option (google.longrunning.operation_info) = {
+      response_type: "google.test.admin.database.v1.Database"
+      metadata_type: "google.test.admin.database.v1.RestoreDatabaseMetadata"
+    };
+  }
+}
+
+// Information about the database restore.
+message RestoreInfo {
+  // The type of the restore source.
+  RestoreSourceType source_type = 1;
+
+  // Information about the source used to restore the database.
+  oneof source_info {
+    // Information about the backup used to restore the database. The backup
+    // may no longer exist.
+    BackupInfo backup_info = 2;
+  }
+}
+
+// A Cloud Test database.
+message Database {
+  option (google.api.resource) = {
+    type: "test.googleapis.com/Database"
+    pattern: "projects/{project}/instances/{instance}/databases/{database}"
+  };
+
+  // Indicates the current state of the database.
+  enum State {
+    // Not specified.
+    STATE_UNSPECIFIED = 0;
+
+    // The database is still being created. Operations on the database may fail
+    // with `FAILED_PRECONDITION` in this state.
+    CREATING = 1;
+
+    // The database is fully created and ready for use.
+    READY = 2;
+
+    // The database is fully created and ready for use, but is still
+    // being optimized for performance and cannot handle full load.
+    //
+    // In this state, the database still references the backup
+    // it was restore from, preventing the backup
+    // from being deleted. When optimizations are complete, the full performance
+    // of the database will be restored, and the database will transition to
+    // `READY` state.
+    READY_OPTIMIZING = 3;
+  }
+
+  // Required. The name of the database. Values are of the form
+  // `projects/<project>/instances/<instance>/databases/<database>`,
+  // where `<database>` is as specified in the `CREATE DATABASE`
+  // statement. This name can be passed to other API methods to
+  // identify the database.
+  string name = 1 [(google.api.field_behavior) = REQUIRED];
+
+  // Output only. The current database state.
+  State state = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Output only. If exists, the time at which the database creation started.
+  google.protobuf.Timestamp create_time = 3
+      [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Output only. Applicable only for restored databases. Contains information
+  // about the restore source.
+  RestoreInfo restore_info = 4 [(google.api.field_behavior) = OUTPUT_ONLY];
+}
+
+// The request for
+// [ListDatabases][google.test.admin.database.v1.DatabaseAdmin.ListDatabases].
+message ListDatabasesRequest {
+  // Required. The instance whose databases should be listed.
+  // Values are of the form `projects/<project>/instances/<instance>`.
+  string parent = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = { type: "test.googleapis.com/Instance" }
+  ];
+
+  // Number of databases to be returned in the response. If 0 or less,
+  // defaults to the server's maximum allowed page size.
+  int32 page_size = 3;
+
+  // If non-empty, `page_token` should contain a
+  // [next_page_token][google.test.admin.database.v1.ListDatabasesResponse.next_page_token]
+  // from a previous
+  // [ListDatabasesResponse][google.test.admin.database.v1.ListDatabasesResponse].
+  string page_token = 4;
+}
+
+// The response for
+// [ListDatabases][google.test.admin.database.v1.DatabaseAdmin.ListDatabases].
+message ListDatabasesResponse {
+  // Databases that matched the request.
+  repeated Database databases = 1;
+
+  // `next_page_token` can be sent in a subsequent
+  // [ListDatabases][google.test.admin.database.v1.DatabaseAdmin.ListDatabases]
+  // call to fetch more of the matching databases.
+  string next_page_token = 2;
+}
+
+// The request for
+// [CreateDatabase][google.test.admin.database.v1.DatabaseAdmin.CreateDatabase].
+message CreateDatabaseRequest {
+  // Required. The name of the instance that will serve the new database.
+  // Values are of the form `projects/<project>/instances/<instance>`.
+  string parent = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = { type: "test.googleapis.com/Instance" }
+  ];
+
+  // Required. A `CREATE DATABASE` statement, which specifies the ID of the
+  // new database.  The database ID must conform to the regular expression
+  // `[a-z][a-z0-9_\-]*[a-z0-9]` and be between 2 and 30 characters in length.
+  // If the database ID is a reserved word or if it contains a hyphen, the
+  // database ID must be enclosed in backticks (`` ` ``).
+  string create_statement = 2 [(google.api.field_behavior) = REQUIRED];
+
+  // Optional. A list of DDL statements to run inside the newly created
+  // database. Statements can create tables, indexes, etc. These
+  // statements execute atomically with the creation of the database:
+  // if there is an error in any statement, the database is not created.
+  repeated string extra_statements = 3 [(google.api.field_behavior) = OPTIONAL];
+}
+
+// Metadata type for the operation returned by
+// [CreateDatabase][google.test.admin.database.v1.DatabaseAdmin.CreateDatabase].
+message CreateDatabaseMetadata {
+  // The database being created.
+  string database = 1 [
+    (google.api.resource_reference) = { type: "test.googleapis.com/Database" }
+  ];
+}
+
+// The request for
+// [GetDatabase][google.test.admin.database.v1.DatabaseAdmin.GetDatabase].
+message GetDatabaseRequest {
+  // Required. The name of the requested database. Values are of the form
+  // `projects/<project>/instances/<instance>/databases/<database>`.
+  string name = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = { type: "test.googleapis.com/Database" }
+  ];
+}
+
+// Enqueues the given DDL statements to be applied, in order but not
+// necessarily all at once, to the database schema at some point (or
+// points) in the future. The server checks that the statements
+// are executable (syntactically valid, name tables that exist, etc.)
+// before enqueueing them, but they may still fail upon
+// later execution (e.g., if a statement from another batch of
+// statements is applied first and it conflicts in some way, or if
+// there is some data-related problem like a `NULL` value in a column to
+// which `NOT NULL` would be added). If a statement fails, all
+// subsequent statements in the batch are automatically cancelled.
+//
+// Each batch of statements is assigned a name which can be used with
+// the [Operations][google.longrunning.Operations] API to monitor
+// progress. See the
+// [operation_id][google.test.admin.database.v1.UpdateDatabaseDdlRequest.operation_id]
+// field for more details.
+message UpdateDatabaseDdlRequest {
+  // Required. The database to update.
+  string database = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = { type: "test.googleapis.com/Database" }
+  ];
+
+  // Required. DDL statements to be applied to the database.
+  repeated string statements = 2 [(google.api.field_behavior) = REQUIRED];
+
+  // If empty, the new update request is assigned an
+  // automatically-generated operation ID. Otherwise, `operation_id`
+  // is used to construct the name of the resulting
+  // [Operation][google.longrunning.Operation].
+  //
+  // Specifying an explicit operation ID simplifies determining
+  // whether the statements were executed in the event that the
+  // [UpdateDatabaseDdl][google.test.admin.database.v1.DatabaseAdmin.UpdateDatabaseDdl]
+  // call is replayed, or the return value is otherwise lost: the
+  // [database][google.test.admin.database.v1.UpdateDatabaseDdlRequest.database]
+  // and `operation_id` fields can be combined to form the
+  // [name][google.longrunning.Operation.name] of the resulting
+  // [longrunning.Operation][google.longrunning.Operation]:
+  // `<database>/operations/<operation_id>`.
+  //
+  // `operation_id` should be unique within the database, and must be
+  // a valid identifier: `[a-z][a-z0-9_]*`. Note that
+  // automatically-generated operation IDs always begin with an
+  // underscore. If the named operation already exists,
+  // [UpdateDatabaseDdl][google.test.admin.database.v1.DatabaseAdmin.UpdateDatabaseDdl]
+  // returns `ALREADY_EXISTS`.
+  string operation_id = 3;
+}
+
+// Metadata type for the operation returned by
+// [UpdateDatabaseDdl][google.test.admin.database.v1.DatabaseAdmin.UpdateDatabaseDdl].
+message UpdateDatabaseDdlMetadata {
+  // The database being modified.
+  string database = 1 [
+    (google.api.resource_reference) = { type: "test.googleapis.com/Database" }
+  ];
+
+  // For an update this list contains all the statements. For an
+  // individual statement, this list contains only that statement.
+  repeated string statements = 2;
+
+  // Reports the commit timestamps of all statements that have
+  // succeeded so far, where `commit_timestamps[i]` is the commit
+  // timestamp for the statement `statements[i]`.
+  repeated google.protobuf.Timestamp commit_timestamps = 3;
+}
+
+// The request for
+// [DropDatabase][google.test.admin.database.v1.DatabaseAdmin.DropDatabase].
+message DropDatabaseRequest {
+  // Required. The database to be dropped.
+  string database = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = { type: "test.googleapis.com/Database" }
+  ];
+}
+
+// The request for
+// [GetDatabaseDdl][google.test.admin.database.v1.DatabaseAdmin.GetDatabaseDdl].
+message GetDatabaseDdlRequest {
+  // Required. The database whose schema we wish to get.
+  string database = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = { type: "test.googleapis.com/Database" }
+  ];
+}
+
+// The response for
+// [GetDatabaseDdl][google.test.admin.database.v1.DatabaseAdmin.GetDatabaseDdl].
+message GetDatabaseDdlResponse {
+  // A list of formatted DDL statements defining the schema of the database
+  // specified in the request.
+  repeated string statements = 1;
+}
+
+// The request for
+// [ListDatabaseOperations][google.test.admin.database.v1.DatabaseAdmin.ListDatabaseOperations].
+message ListDatabaseOperationsRequest {
+  // Required. The instance of the database operations.
+  // Values are of the form `projects/<project>/instances/<instance>`.
+  string parent = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = { type: "test.googleapis.com/Instance" }
+  ];
+
+  // An expression that filters the list of returned operations.
+  //
+  // A filter expression consists of a field name, a
+  // comparison operator, and a value for filtering.
+  // The value must be a string, a number, or a boolean. The comparison operator
+  // must be one of: `<`, `>`, `<=`, `>=`, `!=`, `=`, or `:`.
+  // Colon `:` is the contains operator. Filter rules are not case sensitive.
+  //
+  // The following fields in the [Operation][google.longrunning.Operation]
+  // are eligible for filtering:
+  //
+  //   * `name` - The name of the long-running operation
+  //   * `done` - False if the operation is in progress, else true.
+  //   * `metadata.@type` - the type of metadata. For example, the type string
+  //      for
+  //      [RestoreDatabaseMetadata][google.test.admin.database.v1.RestoreDatabaseMetadata]
+  //      is
+  //      `type.googleapis.com/google.test.admin.database.v1.RestoreDatabaseMetadata`.
+  //   * `metadata.<field_name>` - any field in metadata.value.
+  //   * `error` - Error associated with the long-running operation.
+  //   * `response.@type` - the type of response.
+  //   * `response.<field_name>` - any field in response.value.
+  //
+  // You can combine multiple expressions by enclosing each expression in
+  // parentheses. By default, expressions are combined with AND logic. However,
+  // you can specify AND, OR, and NOT logic explicitly.
+  //
+  // Here are a few examples:
+  //
+  //   * `done:true` - The operation is complete.
+  //   * `(metadata.@type=type.googleapis.com/google.test.admin.database.v1.RestoreDatabaseMetadata) AND` <br/>
+  //     `(metadata.source_type:BACKUP) AND` <br/>
+  //     `(metadata.backup_info.backup:backup_howl) AND` <br/>
+  //     `(metadata.name:restored_howl) AND` <br/>
+  //     `(metadata.progress.start_time < \"2018-03-28T14:50:00Z\") AND` <br/>
+  //     `(error:*)` - Return operations where:
+  //     * The operation's metadata type is
+  //     [RestoreDatabaseMetadata][google.test.admin.database.v1.RestoreDatabaseMetadata].
+  //     * The database is restored from a backup.
+  //     * The backup name contains "backup_howl".
+  //     * The restored database's name contains "restored_howl".
+  //     * The operation started before 2018-03-28T14:50:00Z.
+  //     * The operation resulted in an error.
+  string filter = 2;
+
+  // Number of operations to be returned in the response. If 0 or
+  // less, defaults to the server's maximum allowed page size.
+  int32 page_size = 3;
+
+  // If non-empty, `page_token` should contain a
+  // [next_page_token][google.test.admin.database.v1.ListDatabaseOperationsResponse.next_page_token]
+  // from a previous
+  // [ListDatabaseOperationsResponse][google.test.admin.database.v1.ListDatabaseOperationsResponse]
+  // to the same `parent` and with the same `filter`.
+  string page_token = 4;
+}
+
+// The response for
+// [ListDatabaseOperations][google.test.admin.database.v1.DatabaseAdmin.ListDatabaseOperations].
+message ListDatabaseOperationsResponse {
+  // The list of matching database [long-running
+  // operations][google.longrunning.Operation]. Each operation's name will be
+  // prefixed by the database's name. The operation's
+  // [metadata][google.longrunning.Operation.metadata] field type
+  // `metadata.type_url` describes the type of the metadata.
+  repeated google.longrunning.Operation operations = 1;
+
+  // `next_page_token` can be sent in a subsequent
+  // [ListDatabaseOperations][google.test.admin.database.v1.DatabaseAdmin.ListDatabaseOperations]
+  // call to fetch more of the matching metadata.
+  string next_page_token = 2;
+}
+
+// The request for
+// [RestoreDatabase][google.test.admin.database.v1.DatabaseAdmin.RestoreDatabase].
+message RestoreDatabaseRequest {
+  // Required. The name of the instance in which to create the
+  // restored database. This instance must be in the same project and
+  // have the same instance configuration as the instance containing
+  // the source backup. Values are of the form
+  // `projects/<project>/instances/<instance>`.
+  string parent = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = { type: "test.googleapis.com/Instance" }
+  ];
+
+  // Required. The id of the database to create and restore to. This
+  // database must not already exist. The `database_id` appended to
+  // `parent` forms the full database name of the form
+  // `projects/<project>/instances/<instance>/databases/<database_id>`.
+  string database_id = 2 [(google.api.field_behavior) = REQUIRED];
+
+  // Required. The source from which to restore.
+  oneof source {
+    // Name of the backup from which to restore.  Values are of the form
+    // `projects/<project>/instances/<instance>/backups/<backup>`.
+    string backup = 3 [
+      (google.api.resource_reference) = { type: "test.googleapis.com/Backup" }
+    ];
+  }
+}
+
+// Metadata type for the long-running operation returned by
+// [RestoreDatabase][google.test.admin.database.v1.DatabaseAdmin.RestoreDatabase].
+message RestoreDatabaseMetadata {
+  // Name of the database being created and restored to.
+  string name = 1;
+
+  // The type of the restore source.
+  RestoreSourceType source_type = 2;
+
+  // Information about the source used to restore the database, as specified by
+  // `source` in
+  // [RestoreDatabaseRequest][google.test.admin.database.v1.RestoreDatabaseRequest].
+  oneof source_info {
+    // Information about the backup used to restore the database.
+    BackupInfo backup_info = 3;
+  }
+
+  // The progress of the
+  // [RestoreDatabase][google.test.admin.database.v1.DatabaseAdmin.RestoreDatabase]
+  // operation.
+  OperationProgress progress = 4;
+
+  // The time at which cancellation of this operation was received.
+  // [Operations.CancelOperation][google.longrunning.Operations.CancelOperation]
+  // starts asynchronous cancellation on a long-running operation. The server
+  // makes a best effort to cancel the operation, but success is not guaranteed.
+  // Clients can use
+  // [Operations.GetOperation][google.longrunning.Operations.GetOperation] or
+  // other methods to check whether the cancellation succeeded or whether the
+  // operation completed despite cancellation. On successful cancellation,
+  // the operation is not deleted; instead, it becomes an operation with
+  // an [Operation.error][google.longrunning.Operation.error] value with a
+  // [google.rpc.Status.code][google.rpc.Status.code] of 1, corresponding to
+  // `Code.CANCELLED`.
+  google.protobuf.Timestamp cancel_time = 5;
+
+  // If exists, the name of the long-running operation that will be used to
+  // track the post-restore optimization process to optimize the performance of
+  // the restored database, and remove the dependency on the restore source.
+  // The name is of the form
+  // `projects/<project>/instances/<instance>/databases/<database>/operations/<operation>`
+  // where the <database> is the name of database being created and restored to.
+  // The metadata type of the  long-running operation is
+  // [OptimizeRestoredDatabaseMetadata][google.test.admin.database.v1.OptimizeRestoredDatabaseMetadata].
+  // This long-running operation will be automatically created by the system
+  // after the RestoreDatabase long-running operation completes successfully.
+  // This operation will not be created if the restore was not successful.
+  string optimize_database_operation_name = 6;
+}
+
+// Metadata type for the long-running operation used to track the progress
+// of optimizations performed on a newly restored database. This long-running
+// operation is automatically created by the system after the successful
+// completion of a database restore, and cannot be cancelled.
+message OptimizeRestoredDatabaseMetadata {
+  // Name of the restored database being optimized.
+  string name = 1;
+
+  // The progress of the post-restore optimizations.
+  OperationProgress progress = 2;
+}
+
+// Indicates the type of the restore source.
+enum RestoreSourceType {
+  // No restore associated.
+  TYPE_UNSPECIFIED = 0;
+
+  // A backup was used as the source of the restore.
+  BACKUP = 1;
+}
+
+service GoldenKitchenSink {
+  option (google.api.default_host) = "goldenkitchensink.googleapis.com";
+  option (google.api.oauth_scopes) =
+      "https://www.googleapis.com/auth/cloud-platform";
+  option (google.api.api_version) = "test-api-version";
+
+  // Generates an OAuth 2.0 access token for a service account.
+  rpc GenerateAccessToken(GenerateAccessTokenRequest)
+      returns (GenerateAccessTokenResponse) {
+    option (google.api.http) = {
+      post: "/v1/{name=projects/*/serviceAccounts/*}:generateAccessToken"
+      body: "*"
+    };
+    option (google.api.method_signature) = "name,not_used_anymore";
+    option (google.api.method_signature) = "name,delegates,scope,lifetime";
+  }
+
+  // Generates an OpenID Connect ID token for a service account.
+  rpc GenerateIdToken(GenerateIdTokenRequest)
+      returns (GenerateIdTokenResponse) {
+    option (google.api.http) = {
+      post: "/v1/token:generate"
+      body: "*"
+    };
+    option (google.api.method_signature) =
+        "name,delegates,audience,include_email";
+  }
+
+  // Writes log entries to Logging. This API method is the
+  // only way to send log entries to Logging. This method
+  // is used, directly or indirectly, by the Logging agent
+  // (fluentd) and all logging libraries configured to use Logging.
+  // A single request may contain log entries for a maximum of 1000
+  // different resources (projects, organizations, billing accounts or
+  // folders)
+  rpc WriteLogEntries(WriteLogEntriesRequest)
+      returns (WriteLogEntriesResponse) {
+    option (google.api.http) = {
+      post: "/v1/entries:write"
+      body: "*"
+    };
+    option (google.api.method_signature) = "log_name,labels";
+  }
+
+  // Lists the logs in projects, organizations, folders, or billing accounts.
+  // Only logs that have entries are listed.
+  rpc ListLogs(ListLogsRequest) returns (ListLogsResponse) {
+    option (google.api.http) = {
+      get: "/v1/{parent=*/*}/logs"
+      additional_bindings { get: "/v1/{parent=projects/*}/logs" }
+      additional_bindings { get: "/v1/{parent=organizations/*}/logs" }
+      additional_bindings { get: "/v1/{parent=folders/*}/logs" }
+      additional_bindings { get: "/v1/{parent=billingAccounts/*}/logs" }
+    };
+    option (google.api.method_signature) = "parent";
+  }
+
+  // Does nothing and should be omitted by command line arg.
+  rpc Omitted1(google.protobuf.Empty) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      post: "/v1/omit:omit"
+      body: "*"
+    };
+  }
+
+  // Does nothing and should be omitted by command line arg.
+  rpc Omitted2(google.protobuf.Empty) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      post: "/v1/omit:omit"
+      body: "*"
+    };
+  }
+
+  // Lists every [ServiceAccountKey][google.iam.admin.v1.ServiceAccountKey] for
+  // a service account.
+  rpc ListServiceAccountKeys(ListServiceAccountKeysRequest)
+      returns (ListServiceAccountKeysResponse) {
+    option (google.api.http) = {
+      get: "/v1/{name=projects/*/serviceAccounts/*}/keys"
+    };
+    option (google.api.method_signature) = "name,key_types";
+  }
+
+  // Does Nothing.
+  rpc DoNothing(google.protobuf.Empty) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      post: "/v1/doNothing"
+    };
+    option (google.api.method_signature) = "";
+  }
+
+  // A deprecated RPC that will omitted.
+  rpc Deprecated1(GenerateAccessTokenRequest) returns (google.protobuf.Empty) {
+    option deprecated = true;
+    option (google.api.method_signature) = "";
+    option (google.api.method_signature) = "not_used_anymore";
+  }
+
+  // A deprecated RPC for which we force API generation.
+  rpc Deprecated2(GenerateAccessTokenRequest) returns (google.protobuf.Empty) {
+    option deprecated = true;
+    option (google.api.method_signature) = "";
+    option (google.api.method_signature) = "not_used_anymore";
+  }
+
+  // Tests the generator for streaming read RPCs (aka server-side streaming)
+  rpc StreamingRead(Request) returns (stream Response) {
+    option (google.api.method_signature) = "stream";
+  }
+
+  // Tests the generator for streaming write RPCs (aka client-side streaming)
+  rpc StreamingWrite(stream Request) returns (Response) {}
+
+  // Tests the generator for streaming read-write RPCs (aka bidir streaming)
+  rpc StreamingReadWrite(stream Request) returns (stream Response) {}
+
+  // An RPC to test that explicit routing headers are supported.
+  //
+  // We copy the most testing example given in the `google.api.routing` proto:
+  // https://github.com/googleapis/googleapis/blob/70147caca58ebf4c8cd7b96f5d569a72723e11c1/google/api/routing.proto#L353-L385
+  //
+  // Our integration test should verify that, given the message:
+  //
+  //    {
+  //      table_name: projects/proj_foo/instances/instance_bar/table/table_baz
+  //      app_profile_id: profiles/prof_qux
+  //    }
+  //
+  // ... our metadata decorator sets:
+  //
+  //    x-goog-request-params:
+  //    table_location=instances/instance_bar&routing_id=prof_qux
+  rpc ExplicitRouting1(ExplicitRoutingRequest) returns (google.protobuf.Empty) {
+    // This is ignored, in favor of the google.api.routing rule.
+    option (google.api.http) = {
+      post: "/v1/{table_name=projects/**}:explicitRouting1"
+      body: "*"
+    };
+    option (google.api.routing) = {
+      routing_parameters {
+        field: "table_name"
+        path_template: "projects/*/{table_location=instances/*}/tables/*"
+      }
+      routing_parameters {
+        field: "table_name"
+        path_template: "{table_location=regions/*/zones/*}/tables/*"
+      }
+      routing_parameters {
+        field: "table_name"
+        path_template: "{routing_id=projects/*}/**"
+      }
+      routing_parameters {
+        field: "app_profile_id"
+        path_template: "{routing_id=**}"
+      }
+      routing_parameters {
+        field: "app_profile_id"
+        path_template: "profiles/{routing_id=*}"
+      }
+    };
+  }
+
+  // We use this RPC to verify the special case where a routing parameter key
+  // does not require a regex in order to match the correct value.
+  rpc ExplicitRouting2(ExplicitRoutingRequest) returns (google.protobuf.Empty) {
+    // This is ignored, in favor of the google.api.routing rule.
+    option (google.api.http) = {
+      post: "/v1/{table_name=projects/**}:explicitRouting2"
+      body: "*"
+    };
+    option (google.api.routing) = {
+      routing_parameters { field: "no_regex_needed" }
+      routing_parameters {
+        field: "table_name"
+        path_template: "{no_regex_needed=**}"
+      }
+      routing_parameters {
+        field: "app_profile_id"
+        path_template: "{no_regex_needed=**}"
+      }
+      routing_parameters {
+        field: "nested1.nested2.value"
+        path_template: "{routing_id=**}"
+      }
+    };
+  }
+}
+
+// A simple message for the streaming test RPCs
+message Request {
+  // A placeholder to test method signatures
+  string stream = 1;
+}
+
+// A simple message for the streaming test RPCs
+message Response {
+  // A placeholder to test return values
+  string response = 1;
+}
+
+message GenerateAccessTokenRequest {
+  // Required. The resource name of the service account for which the
+  // credentials are requested, in the following format:
+  // `projects/-/serviceAccounts/{ACCOUNT_EMAIL_OR_UNIQUEID}`. The `-` wildcard
+  // character is required; replacing it with a project ID is invalid.
+  string name = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {
+      type: "iam.googleapis.com/ServiceAccount"
+    }
+  ];
+
+  // The sequence of service accounts in a delegation chain. Each service
+  // account must be granted the `roles/iam.serviceAccountTokenCreator` role
+  // on its next service account in the chain. The last service account in the
+  // chain must be granted the `roles/iam.serviceAccountTokenCreator` role
+  // on the service account that is specified in the `name` field of the
+  // request.
+  //
+  // The delegates must have the following format:
+  // `projects/-/serviceAccounts/{ACCOUNT_EMAIL_OR_UNIQUEID}`. The `-` wildcard
+  // character is required; replacing it with a project ID is invalid.
+  repeated string delegates = 2;
+
+  // Deprecated field for testing method signatures.
+  string not_used_anymore = 3 [deprecated = true];
+
+  // Required. Code to identify the scopes to be included in the OAuth 2.0
+  // access token. See
+  // https://developers.google.com/identity/protocols/googlescopes for more
+  // information.
+  // At least one value required.
+  repeated string scope = 4 [(google.api.field_behavior) = REQUIRED];
+
+  // The desired lifetime duration of the access token in seconds.
+  // Must be set to a value less than or equal to 3600 (1 hour). If a value is
+  // not specified, the token's lifetime will be set to a default value of one
+  // hour.
+  google.protobuf.Duration lifetime = 7;
+}
+
+message GenerateAccessTokenResponse {
+  // The OAuth 2.0 access token.
+  string access_token = 1;
+
+  // Token expiration time.
+  // The expiration time is always set.
+  google.protobuf.Timestamp expire_time = 3;
+}
+
+message GenerateIdTokenRequest {
+  // Required. The resource name of the service account for which the
+  // credentials are requested, in the following format:
+  // `projects/-/serviceAccounts/{ACCOUNT_EMAIL_OR_UNIQUEID}`. The `-` wildcard
+  // character is required; replacing it with a project ID is invalid.
+  string name = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {
+      type: "iam.googleapis.com/ServiceAccount"
+    }
+  ];
+
+  // The sequence of service accounts in a delegation chain. Each service
+  // account must be granted the `roles/iam.serviceAccountTokenCreator` role
+  // on its next service account in the chain. The last service account in the
+  // chain must be granted the `roles/iam.serviceAccountTokenCreator` role
+  // on the service account that is specified in the `name` field of the
+  // request.
+  //
+  // The delegates must have the following format:
+  // `projects/-/serviceAccounts/{ACCOUNT_EMAIL_OR_UNIQUEID}`. The `-` wildcard
+  // character is required; replacing it with a project ID is invalid.
+  repeated string delegates = 2;
+
+  // Required. The audience for the token, such as the API or account that this
+  // token grants access to.
+  string audience = 3 [(google.api.field_behavior) = REQUIRED];
+
+  // Include the service account email in the token. If set to `true`, the
+  // token will contain `email` and `email_verified` claims.
+  bool include_email = 4;
+}
+
+message GenerateIdTokenResponse {
+  // The OpenId Connect ID token.
+  string token = 1;
+}
+
+// The parameters to WriteLogEntries.
+message WriteLogEntriesRequest {
+  // Optional. A default log resource name that is assigned to all log entries
+  // in `entries` that do not specify a value for `log_name`:
+  //
+  //     "projects/[PROJECT_ID]/logs/[LOG_ID]"
+  //     "organizations/[ORGANIZATION_ID]/logs/[LOG_ID]"
+  //     "billingAccounts/[BILLING_ACCOUNT_ID]/logs/[LOG_ID]"
+  //     "folders/[FOLDER_ID]/logs/[LOG_ID]"
+  //
+  // `[LOG_ID]` must be URL-encoded. For example:
+  //
+  //     "projects/my-project-id/logs/syslog"
+  //     "organizations/1234567890/logs/cloudresourcemanager.googleapis.com%2Factivity"
+  //
+  // The permission `logging.logEntries.create` is needed on each project,
+  // organization, billing account, or folder that is receiving new log
+  // entries, whether the resource is specified in `logName` or in an
+  // individual log entry. $Test delimiter.
+  string log_name = 1 [
+    (google.api.field_behavior) = OPTIONAL,
+    (google.api.resource_reference) = { type: "logging.googleapis.com/Log" }
+  ];
+
+  // Optional. Default labels that are added to the `labels` field of all log
+  // entries in `entries`. If a log entry already has a label with the same key
+  // as a label in this parameter, then the log entry's label is not changed.
+  // See [LogEntry][google.test.admin.database.v1.LogEntry]. Test delimiter$
+  map<string, string> labels = 3 [(google.api.field_behavior) = OPTIONAL];
+}
+
+// Result returned from WriteLogEntries.
+message WriteLogEntriesResponse {}
+
+// The parameters to ListLogs.
+message ListLogsRequest {
+  // Required. The resource name that owns the logs:
+  //
+  //     "projects/[PROJECT_ID]"
+  //     "organizations/[ORGANIZATION_ID]"
+  //     "billingAccounts/[BILLING_ACCOUNT_ID]"
+  //     "folders/[FOLDER_ID]"
+  string parent = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {
+      child_type: "logging.googleapis.com/Log"
+    }
+  ];
+
+  // Optional. The maximum number of results to return from this request.
+  // Non-positive values are ignored.  The presence of `nextPageToken` in the
+  // response indicates that more results might be available.
+  int32 page_size = 2 [(google.api.field_behavior) = OPTIONAL];
+
+  // Optional. If present, then retrieve the next batch of results from the
+  // preceding call to this method.  `pageToken` must be the value of
+  // `nextPageToken` from the previous response.  The values of other method
+  // parameters should be identical to those in the previous call.
+  string page_token = 3 [(google.api.field_behavior) = OPTIONAL];
+
+  // Optional. The resource name that owns the logs:
+  //   projects/[PROJECT_ID]/locations/[LOCATION_ID]/buckets/[BUCKET_ID]/views/[VIEW_ID]
+  //   organization/[ORGANIZATION_ID]/locations/[LOCATION_ID]/buckets/[BUCKET_ID]/views/[VIEW_ID]
+  //   billingAccounts/[BILLING_ACCOUNT_ID]/locations/[LOCATION_ID]/buckets/[BUCKET_ID]/views/[VIEW_ID]
+  //   folders/[FOLDER_ID]/locations/[LOCATION_ID]/buckets/[BUCKET_ID]/views/[VIEW_ID]
+  //
+  // To support legacy queries, it could also be:
+  //     "projects/[PROJECT_ID]"
+  //     "organizations/[ORGANIZATION_ID]"
+  //     "billingAccounts/[BILLING_ACCOUNT_ID]"
+  //     "folders/[FOLDER_ID]"
+  repeated string resource_names = 8 [(google.api.field_behavior) = OPTIONAL];
+}
+
+// Result returned from ListLogs.
+message ListLogsResponse {
+  // A list of log names. For example,
+  // `"projects/my-project/logs/syslog"` or
+  // `"organizations/123/logs/cloudresourcemanager.googleapis.com%2Factivity"`.
+  repeated string log_names = 3;
+
+  // If there might be more results than those appearing in this response, then
+  // `nextPageToken` is included.  To get the next set of results, call this
+  // method again using the value of `nextPageToken` as `pageToken`.
+  string next_page_token = 2;
+}
+
+// An individual entry in a log.
+//
+//
+message LogEntry {
+  option (google.api.resource) = {
+    type: "logging.googleapis.com/Log"
+    pattern: "projects/{project}/logs/{log}"
+    pattern: "organizations/{organization}/logs/{log}"
+    pattern: "folders/{folder}/logs/{log}"
+    pattern: "billingAccounts/{billing_account}/logs/{log}"
+    name_field: "log_name"
+  };
+
+  // Required. The resource name of the log to which this log entry belongs:
+  //
+  //     "projects/[PROJECT_ID]/logs/[LOG_ID]"
+  //     "organizations/[ORGANIZATION_ID]/logs/[LOG_ID]"
+  //     "billingAccounts/[BILLING_ACCOUNT_ID]/logs/[LOG_ID]"
+  //     "folders/[FOLDER_ID]/logs/[LOG_ID]"
+  //
+  // A project number may be used in place of PROJECT_ID. The project number is
+  // translated to its corresponding PROJECT_ID internally and the `log_name`
+  // field will contain PROJECT_ID in queries and exports.
+  //
+  // `[LOG_ID]` must be URL-encoded within `log_name`. Example:
+  // `"organizations/1234567890/logs/cloudresourcemanager.googleapis.com%2Factivity"`.
+  // `[LOG_ID]` must be less than 512 characters long and can only include the
+  // following characters: upper and lower case alphanumeric characters,
+  // forward-slash, underscore, hyphen, and period.
+  //
+  // For backward compatibility, if `log_name` begins with a forward-slash, such
+  // as `/projects/...`, then the log entry is ingested as usual but the
+  // forward-slash is removed. Listing the log entry will not show the leading
+  // slash and filtering for a log name with a leading slash will never return
+  // any results.
+  string log_name = 12 [(google.api.field_behavior) = REQUIRED];
+
+  // Required. The monitored resource that produced this log entry.
+  //
+  // Example: a log entry that reports a database error would be associated with
+  // the monitored resource designating the particular database that reported
+  // the error.
+  string resource = 8 [(google.api.field_behavior) = REQUIRED];
+
+  // The log entry payload, which can be one of multiple types.
+  oneof payload {
+    // The log entry payload, represented as a protocol buffer. Some Google
+    // Cloud Platform services use this field for their log entry payloads.
+    //
+    // The following protocol buffer types are supported; user-defined types
+    // are not supported:
+    //
+    //   "type.googleapis.com/google.cloud.audit.AuditLog"
+    //   "type.googleapis.com/google.appengine.logging.v1.RequestLog"
+    google.protobuf.Any proto_payload = 2;
+
+    // The log entry payload, represented as a Unicode string (UTF-8).
+    string text_payload = 3;
+
+    // The log entry payload, represented as a structure that is
+    // expressed as a JSON object.
+    google.protobuf.Struct json_payload = 6;
+  }
+
+  // Optional. The time the event described by the log entry occurred. This time
+  // is used to compute the log entry's age and to enforce the logs retention
+  // period. If this field is omitted in a new log entry, then Logging assigns
+  // it the current time. Timestamps have nanosecond accuracy, but trailing
+  // zeros in the fractional seconds might be omitted when the timestamp is
+  // displayed.
+  //
+  // Incoming log entries must have timestamps that don't exceed the
+  // [logs retention
+  // period](https://cloud.google.com/logging/quotas#logs_retention_periods) in
+  // the past, and that don't exceed 24 hours in the future. Log entries outside
+  // those time boundaries aren't ingested by Logging.
+  google.protobuf.Timestamp timestamp = 9
+      [(google.api.field_behavior) = OPTIONAL];
+
+  // Output only. The time the log entry was received by Logging.
+  google.protobuf.Timestamp receive_timestamp = 24
+      [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Optional. The severity of the log entry. The default value is
+  // `LogSeverity.DEFAULT`.
+  string severity = 10 [(google.api.field_behavior) = OPTIONAL];
+
+  // Optional. A unique identifier for the log entry. If you provide a value,
+  // then Logging considers other log entries in the same project, with the same
+  // `timestamp`, and with the same `insert_id` to be duplicates which are
+  // removed in a single query result. However, there are no guarantees of
+  // de-duplication in the export of logs.
+  //
+  // If the `insert_id` is omitted when writing a log entry, the Logging API
+  //  assigns its own unique identifier in this field.
+  //
+  // In queries, the `insert_id` is also used to order log entries that have
+  // the same `log_name` and `timestamp` values.
+  string insert_id = 4 [(google.api.field_behavior) = OPTIONAL];
+
+  // Optional. Information about the HTTP request associated with this log
+  // entry, if applicable.
+  string http_request = 7 [(google.api.field_behavior) = OPTIONAL];
+
+  // Optional. A set of user-defined (key, value) data that provides additional
+  // information about the log entry.
+  map<string, string> labels = 11 [(google.api.field_behavior) = OPTIONAL];
+
+  // Optional. Information about an operation associated with the log entry, if
+  // applicable.
+  LogEntryOperation operation = 15 [(google.api.field_behavior) = OPTIONAL];
+
+  // Optional. Resource name of the trace associated with the log entry, if any.
+  // If it contains a relative resource name, the name is assumed to be relative
+  // to
+  // `//tracing.googleapis.com`. Example:
+  // `projects/my-projectid/traces/06796866738c859f2f19b7cfb3214824`
+  string trace = 22 [(google.api.field_behavior) = OPTIONAL];
+
+  // Optional. The span ID within the trace associated with the log entry.
+  //
+  // For Trace spans, this is the same format that the Trace API v2 uses: a
+  // 16-character hexadecimal encoding of an 8-byte array, such as
+  // `000000000000004a`.
+  string span_id = 27 [(google.api.field_behavior) = OPTIONAL];
+
+  // Optional. The sampling decision of the trace associated with the log entry.
+  //
+  // True means that the trace resource name in the `trace` field was sampled
+  // for storage in a trace backend. False means that the trace was not sampled
+  // for storage when this log entry was written, or the sampling decision was
+  // unknown at the time. A non-sampled `trace` value is still useful as a
+  // request correlation identifier. The default is False.
+  bool trace_sampled = 30 [(google.api.field_behavior) = OPTIONAL];
+
+  // Optional. Source code location information associated with the log entry,
+  // if any.
+  LogEntrySourceLocation source_location = 23
+      [(google.api.field_behavior) = OPTIONAL];
+}
+
+// Additional information about a potentially long-running operation with which
+// a log entry is associated.
+message LogEntryOperation {
+  // Optional. An arbitrary operation identifier. Log entries with the same
+  // identifier are assumed to be part of the same operation.
+  string id = 1 [(google.api.field_behavior) = OPTIONAL];
+
+  // Optional. An arbitrary producer identifier. The combination of `id` and
+  // `producer` must be globally unique. Examples for `producer`:
+  // `"MyDivision.MyBigCompany.com"`, `"github.com/MyProject/MyApplication"`.
+  string producer = 2 [(google.api.field_behavior) = OPTIONAL];
+
+  // Optional. Set this to True if this is the first log entry in the operation.
+  bool first = 3 [(google.api.field_behavior) = OPTIONAL];
+
+  // Optional. Set this to True if this is the last log entry in the operation.
+  bool last = 4 [(google.api.field_behavior) = OPTIONAL];
+}
+
+// Additional information about the source code location that produced the log
+// entry.
+message LogEntrySourceLocation {
+  // Optional. Source file name. Depending on the runtime environment, this
+  // might be a simple name or a fully-qualified name.
+  string file = 1 [(google.api.field_behavior) = OPTIONAL];
+
+  // Optional. Line within the source file. 1-based; 0 indicates no line number
+  // available.
+  int64 line = 2 [(google.api.field_behavior) = OPTIONAL];
+
+  // Optional. Human-readable name of the function or method being invoked, with
+  // optional context such as the class or package name. This information may be
+  // used in contexts such as the logs viewer, where a file and line number are
+  // less meaningful. The format can vary by language. For example:
+  // `qual.if.ied.Class.method` (Java), `dir/package.func` (Go), `function`
+  // (Python).
+  string function = 3 [(google.api.field_behavior) = OPTIONAL];
+}
+
+// The service account keys list request.
+message ListServiceAccountKeysRequest {
+  // `KeyType` filters to selectively retrieve certain varieties
+  // of keys.
+  enum KeyType {
+    // Unspecified key type. The presence of this in the
+    // message will immediately result in an error.
+    KEY_TYPE_UNSPECIFIED = 0;
+
+    // User-managed keys (managed and rotated by the user).
+    USER_MANAGED = 1;
+
+    // System-managed keys (managed and rotated by Google).
+    SYSTEM_MANAGED = 2;
+  }
+
+  // Required. The resource name of the service account in the following format:
+  // `projects/{PROJECT_ID}/serviceAccounts/{ACCOUNT}`.
+  //
+  // Using `-` as a wildcard for the `PROJECT_ID`, will infer the project from
+  // the account. The `ACCOUNT` value can be the `email` address or the
+  // `unique_id` of the service account.
+  string name = 1 [(google.api.field_behavior) = REQUIRED];
+
+  // Filters the types of keys the user wants to include in the list
+  // response. Duplicate key types are not allowed. If no key type
+  // is provided, all keys are returned.
+  repeated KeyType key_types = 2;
+}
+
+// The service account keys list response.
+message ListServiceAccountKeysResponse {
+  // The public keys for the service account.
+  repeated string keys = 1;
+}
+
+// We use the following message for our integration test, as defined here:
+// https://github.com/googleapis/googleapis/blob/70147caca58ebf4c8cd7b96f5d569a72723e11c1/google/api/routing.proto#L40-L53
+message ExplicitRoutingRequest {
+  // The name of the Table
+  // Values can be of the following formats:
+  // - `projects/<project>/tables/<table>`
+  // - `projects/<project>/instances/<instance>/tables/<table>`
+  // - `region/<region>/zones/<zone>/tables/<table>`
+  string table_name = 1;
+
+  // This value specifies routing for replication.
+  // It can be in the following formats:
+  // - `profiles/<profile_id>`
+  // - a legacy `profile_id` that can be any string
+  string app_profile_id = 2;
+
+  // We use this field to demonstrate the special case for routing parameter
+  // keys which do not require a regex in order to match the correct value.
+  string no_regex_needed = 3;
+
+  // We use this field to test routing keys for nested types.
+  message Nested1 {
+    message Nested2 {
+      string value = 1;
+    }
+    optional Nested2 nested2 = 1;
+  }
+  Nested1 nested1 = 4;
+}
