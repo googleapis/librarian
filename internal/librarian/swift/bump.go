@@ -38,8 +38,7 @@ const (
 )
 
 // Bump checks if a version bump is required and performs it.
-// It returns without error if no bump is needed (version already updated since lastTag)
-// or if no version manifest exists for the library (e.g., data-only packages).
+// It returns without error if no bump is needed (version already updated since lastTag).
 func Bump(ctx context.Context, library *config.Library, output, version, gitExe, lastTag string) error {
 	if version == "" {
 		return errMissingVersion
@@ -72,8 +71,7 @@ func Bump(ctx context.Context, library *config.Library, output, version, gitExe,
 		return err
 	}
 	if versionFile == "" {
-		// Some packages (e.g. data-only or protobuf packages) have no Clients.swift or PackageVersion.swift.
-		return nil
+		return fmt.Errorf("no version manifest (%s or %s) found in %s for library %s", clientsManifest, packageVersionManifest, sourcesDir, library.Name)
 	}
 	skip, err := versionAlreadyBumped(ctx, gitExe, lastTag, versionFile)
 	if err != nil {
@@ -93,7 +91,7 @@ func Bump(ctx context.Context, library *config.Library, output, version, gitExe,
 // manual tweaks of the version if needed.
 func versionAlreadyBumped(ctx context.Context, gitExe, lastTag, versionFile string) (bool, error) {
 	delta := fmt.Sprintf("%s..HEAD", lastTag)
-	contents, err := command.Output(ctx, gitExe, "diff", delta, "--", versionFile)
+	contents, err := command.Output(ctx, gitExe, "log", "-p", delta, "--", versionFile)
 	if err != nil {
 		return false, err
 	}

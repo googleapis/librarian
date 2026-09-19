@@ -15,6 +15,7 @@
 package swift
 
 import (
+	"bytes"
 	"errors"
 	"io/fs"
 	"os"
@@ -73,5 +74,20 @@ func TestFromProtobuf(t *testing.T) {
 	}
 	if stat.Mode().Perm()|0o666 != 0o666 {
 		t.Errorf("generated files should just be read-write %s: %o", filename, stat.Mode())
+	}
+	packageVersionFile := filepath.Join(outDir, "Sources", "GoogleType", "PackageVersion.swift")
+	content, err := os.ReadFile(packageVersionFile)
+	if err != nil {
+		t.Fatalf("missing PackageVersion.swift: %v", err)
+	}
+	if !bytes.Contains(content, []byte("enum PackageVersion {")) {
+		t.Errorf("PackageVersion.swift missing enum PackageVersion, got:\n%s", string(content))
+	}
+	if !bytes.Contains(content, []byte(`static let version: Swift.String = "0.1.0"`)) {
+		t.Errorf("PackageVersion.swift missing version 0.1.0, got:\n%s", string(content))
+	}
+	clientsFile := filepath.Join(outDir, "Sources", "GoogleType", "Clients.swift")
+	if _, err := os.Stat(clientsFile); !errors.Is(err, fs.ErrNotExist) {
+		t.Errorf("expected Clients.swift to not exist for type-only library, got err = %v", err)
 	}
 }
