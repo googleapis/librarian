@@ -17,7 +17,6 @@ package parser
 import (
 	"errors"
 	"fmt"
-	"maps"
 	"slices"
 	"strings"
 
@@ -34,26 +33,24 @@ func parseRoutingAnnotations(methodID string, m *descriptorpb.MethodDescriptorPr
 
 	rule := proto.GetExtension(m.GetOptions(), extensionId).(*routingRule)
 	var errs []error
+	var info []*api.RoutingInfo
 	collect := map[string]*api.RoutingInfo{}
 	for _, routing := range rule.GetRoutingParameters() {
-		new, err := parseRoutingInfo(methodID, routing)
+		parsed, err := parseRoutingInfo(methodID, routing)
 		if err != nil {
 			errs = append(errs, err)
 			continue
 		}
-		current, ok := collect[new.Name]
+		current, ok := collect[parsed.Name]
 		if !ok {
-			collect[new.Name] = new
+			collect[parsed.Name] = parsed
+			info = append(info, parsed)
 			continue
 		}
-		current.Variants = append(new.Variants, current.Variants...)
+		current.Variants = append(current.Variants, parsed.Variants...)
 	}
 	if len(errs) != 0 {
 		return nil, errors.Join(errs...)
-	}
-	var info []*api.RoutingInfo
-	for _, k := range slices.Sorted(maps.Keys(collect)) {
-		info = append(info, collect[k])
 	}
 	return info, nil
 }
