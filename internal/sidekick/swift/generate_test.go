@@ -15,12 +15,12 @@
 package swift
 
 import (
+	"bytes"
 	"errors"
 	"io/fs"
 	"os"
 	"os/exec"
 	"path/filepath"
-	"strings"
 	"testing"
 
 	"github.com/googleapis/librarian/internal/config"
@@ -80,10 +80,10 @@ func TestFromProtobuf(t *testing.T) {
 	if err != nil {
 		t.Fatalf("missing PackageVersion.swift: %v", err)
 	}
-	if !strings.Contains(string(content), "enum PackageVersion {") {
+	if !bytes.Contains(content, []byte("enum PackageVersion {")) {
 		t.Errorf("PackageVersion.swift missing enum PackageVersion, got:\n%s", string(content))
 	}
-	if !strings.Contains(string(content), `static let version: Swift.String = "0.1.0"`) {
+	if !bytes.Contains(content, []byte(`static let version: Swift.String = "0.1.0"`)) {
 		t.Errorf("PackageVersion.swift missing version 0.1.0, got:\n%s", string(content))
 	}
 	clientsFile := filepath.Join(outDir, "Sources", "GoogleType", "Clients.swift")
