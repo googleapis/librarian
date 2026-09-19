@@ -14,3 +14,21 @@ See the License for the specific language governing permissions and
 limitations under the License.
 }}
 {{> /templates/partials/prologue}}
+#include "{{Codec.StubFactoryHeaderPath}}"
+#include "{{Codec.AuthDecoratorHeaderPath}}"
+#include "{{Codec.LoggingDecoratorHeaderPath}}"
+#include "{{Codec.MetadataDecoratorHeaderPath}}"
+#include "{{Codec.StubHeaderPath}}"
+#include "{{Codec.TracingStubHeaderPath}}"
+#include "google/cloud/common_options.h"
+#include "google/cloud/grpc_options.h"
+#include "google/cloud/internal/algorithm.h"
+#include "google/cloud/internal/opentelemetry.h"
+#include "google/cloud/log.h"
+#include "google/cloud/options.h"
+{{#Codec.ProtoGrpcHeaderPath}}
+#include <{{Codec.ProtoGrpcHeaderPath}}>
+{{/Codec.ProtoGrpcHeaderPath}}
+#include <memory>
+#include <utility>
+

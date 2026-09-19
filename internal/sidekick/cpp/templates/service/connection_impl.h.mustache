@@ -14,3 +14,35 @@ See the License for the specific language governing permissions and
 limitations under the License.
 }}
 {{> /templates/partials/prologue}}
+#ifndef {{Codec.ConnectionImplHeaderIncludeGuard}}
+#define {{Codec.ConnectionImplHeaderIncludeGuard}}
+
+{{#Codec.ConnectionImplHeaderIncludes}}
+#include "{{.}}"
+{{/Codec.ConnectionImplHeaderIncludes}}
+{{#Codec.HasBidirStreamingMethod}}
+#include "google/cloud/async_streaming_read_write_rpc.h"
+{{/Codec.HasBidirStreamingMethod}}
+#include "google/cloud/background_threads.h"
+#include "google/cloud/backoff_policy.h"
+{{#Codec.HasLongrunningMethod}}
+#include "google/cloud/future.h"
+{{/Codec.HasLongrunningMethod}}
+{{#Codec.HasRequestId}}
+#include "google/cloud/internal/invocation_id_generator.h"
+{{/Codec.HasRequestId}}
+#include "google/cloud/options.h"
+{{#Codec.HasLongrunningMethod}}
+#include "google/cloud/polling_policy.h"
+{{/Codec.HasLongrunningMethod}}
+#include "google/cloud/status_or.h"
+{{#Codec.HasStreamRange}}
+#include "google/cloud/stream_range.h"
+{{/Codec.HasStreamRange}}
+#include "google/cloud/version.h"
+{{#Codec.HasLongrunningMethod}}
+#include <google/longrunning/operations.grpc.pb.h>
+{{/Codec.HasLongrunningMethod}}
+#include <memory>
+
+#endif  // {{Codec.ConnectionImplHeaderIncludeGuard}}

@@ -14,3 +14,22 @@ See the License for the specific language governing permissions and
 limitations under the License.
 }}
 {{> /templates/partials/prologue}}
+#include "{{Codec.AuthDecoratorHeaderPath}}"
+{{#Codec.HasBidirStreamingMethod}}
+#include "google/cloud/internal/async_read_write_stream_auth.h"
+{{/Codec.HasBidirStreamingMethod}}
+{{#Codec.HasAsyncStreamingReadMethod}}
+#include "google/cloud/internal/async_streaming_read_rpc_auth.h"
+{{/Codec.HasAsyncStreamingReadMethod}}
+{{#Codec.HasAsyncStreamingWriteMethod}}
+#include "google/cloud/internal/async_streaming_write_rpc_auth.h"
+{{/Codec.HasAsyncStreamingWriteMethod}}
+{{#Codec.HasStreamingWriteMethod}}
+#include "google/cloud/internal/streaming_write_rpc_impl.h"
+{{/Codec.HasStreamingWriteMethod}}
+{{#Codec.ProtoGrpcHeaderPath}}
+#include <{{Codec.ProtoGrpcHeaderPath}}>
+{{/Codec.ProtoGrpcHeaderPath}}
+#include <memory>
+#include <utility>
+

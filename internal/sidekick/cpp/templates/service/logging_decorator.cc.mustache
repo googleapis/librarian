@@ -14,3 +14,29 @@ See the License for the specific language governing permissions and
 limitations under the License.
 }}
 {{> /templates/partials/prologue}}
+#include "{{Codec.LoggingDecoratorHeaderPath}}"
+{{#Codec.HasBidirStreamingMethod}}
+#include "google/cloud/internal/async_read_write_stream_logging.h"
+{{/Codec.HasBidirStreamingMethod}}
+{{#Codec.HasAsyncStreamingReadMethod}}
+#include "google/cloud/internal/async_streaming_read_rpc_logging.h"
+{{/Codec.HasAsyncStreamingReadMethod}}
+{{#Codec.HasAsyncStreamingWriteMethod}}
+#include "google/cloud/internal/async_streaming_write_rpc_logging.h"
+{{/Codec.HasAsyncStreamingWriteMethod}}
+#include "google/cloud/internal/log_wrapper.h"
+{{#Codec.HasStreamingReadMethod}}
+#include "google/cloud/internal/streaming_read_rpc_logging.h"
+{{/Codec.HasStreamingReadMethod}}
+{{#Codec.HasStreamingWriteMethod}}
+#include "google/cloud/internal/streaming_write_rpc_logging.h"
+{{/Codec.HasStreamingWriteMethod}}
+#include "google/cloud/status_or.h"
+{{#Codec.ProtoGrpcHeaderPath}}
+#include <{{Codec.ProtoGrpcHeaderPath}}>
+{{/Codec.ProtoGrpcHeaderPath}}
+#include <memory>
+#include <set>
+#include <string>
+#include <utility>
+

@@ -14,3 +14,11 @@ See the License for the specific language governing permissions and
 limitations under the License.
 }}
 {{> /templates/partials/prologue}}
+#ifndef {{Codec.TracingConnectionHeaderIncludeGuard}}
+#define {{Codec.TracingConnectionHeaderIncludeGuard}}
+
+#include "{{Codec.ConnectionHeaderPath}}"
+#include "google/cloud/version.h"
+#include <memory>
+
+#endif  // {{Codec.TracingConnectionHeaderIncludeGuard}}

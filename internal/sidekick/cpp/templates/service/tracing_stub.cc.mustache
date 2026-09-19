@@ -14,3 +14,23 @@ See the License for the specific language governing permissions and
 limitations under the License.
 }}
 {{> /templates/partials/prologue}}
+#include "{{Codec.TracingStubHeaderPath}}"
+{{#Codec.HasBidirStreamingMethod}}
+#include "google/cloud/internal/async_read_write_stream_tracing.h"
+{{/Codec.HasBidirStreamingMethod}}
+{{#Codec.HasAsyncStreamingReadMethod}}
+#include "google/cloud/internal/async_streaming_read_rpc_tracing.h"
+{{/Codec.HasAsyncStreamingReadMethod}}
+{{#Codec.HasAsyncStreamingWriteMethod}}
+#include "google/cloud/internal/async_streaming_write_rpc_tracing.h"
+{{/Codec.HasAsyncStreamingWriteMethod}}
+#include "google/cloud/internal/grpc_opentelemetry.h"
+{{#Codec.HasStreamingReadMethod}}
+#include "google/cloud/internal/streaming_read_rpc_tracing.h"
+{{/Codec.HasStreamingReadMethod}}
+{{#Codec.HasStreamingWriteMethod}}
+#include "google/cloud/internal/streaming_write_rpc_tracing.h"
+{{/Codec.HasStreamingWriteMethod}}
+#include <memory>
+#include <utility>
+

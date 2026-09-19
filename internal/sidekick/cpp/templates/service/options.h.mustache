@@ -14,3 +14,14 @@ See the License for the specific language governing permissions and
 limitations under the License.
 }}
 {{> /templates/partials/prologue}}
+#ifndef {{Codec.OptionsHeaderIncludeGuard}}
+#define {{Codec.OptionsHeaderIncludeGuard}}
+
+#include "{{Codec.ConnectionHeaderPath}}"
+#include "{{Codec.IdempotencyPolicyHeaderPath}}"
+#include "google/cloud/backoff_policy.h"
+#include "google/cloud/options.h"
+#include "google/cloud/version.h"
+#include <memory>
+
+#endif  // {{Codec.OptionsHeaderIncludeGuard}}

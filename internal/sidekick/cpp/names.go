@@ -281,3 +281,77 @@ func ForwardingGeneratedFiles(forwardingPath, serviceName string) []language.Gen
 		{TemplatePath: "templates/service/forwarding_mock_connection.h.mustache", OutputPath: ForwardingMockConnectionHeaderPath(forwardingPath, serviceName)},
 	}
 }
+
+// FormatHeaderIncludeGuard generates the C++ include guard macro for a header path.
+// It matches google-cloud-cpp's FormatHeaderIncludeGuard in generator/internal/codegen_utils.cc.
+func FormatHeaderIncludeGuard(headerPath string) string {
+	clean := strings.TrimPrefix(path.Clean(headerPath), "/")
+	if clean == "." {
+		clean = ""
+	}
+	r := strings.NewReplacer("/", "_", ".", "_")
+	return "GOOGLE_CLOUD_CPP_" + strings.ToUpper(r.Replace(clean))
+}
+
+// parseProductPath splits a product path into prefix, library name, and service subdirectory,
+// matching google-cloud-cpp's ParseProductPath in generator/internal/scaffold_generator.cc.
+func parseProductPath(productPath string) (prefix, libraryName, serviceSubdir string) {
+	raw := strings.Split(productPath, "/")
+	var v []string
+	for _, part := range raw {
+		if part != "" {
+			v = append(v, part)
+		}
+	}
+	if len(v) == 0 {
+		return "", "", ""
+	}
+	it := len(v) - 1
+	if len(v) > 2 && v[0] == "google" && v[1] == "cloud" {
+		it = 2
+	} else {
+		for i, part := range v {
+			if part == "golden" {
+				it = i
+				break
+			}
+		}
+	}
+	prefix = strings.Join(v[:it], "/")
+	libraryName = v[it]
+	serviceSubdir = strings.Join(v[it+1:], "/")
+	return prefix, libraryName, serviceSubdir
+}
+
+// Namespace returns the C++ namespace for the given product path, matching
+// google-cloud-cpp's Namespace(product_path, NamespaceType::kNormal).
+func Namespace(productPath string) string {
+	_, lib, subdir := parseProductPath(productPath)
+	if lib == "" {
+		return ""
+	}
+	if subdir == "" {
+		return lib
+	}
+	return lib + "_" + strings.ReplaceAll(subdir, "/", "_")
+}
+
+// InternalNamespace returns the C++ internal namespace for the given product path, matching
+// google-cloud-cpp's Namespace(product_path, NamespaceType::kInternal).
+func InternalNamespace(productPath string) string {
+	ns := Namespace(productPath)
+	if ns == "" {
+		return "internal"
+	}
+	return ns + "_internal"
+}
+
+// MocksNamespace returns the C++ mocks namespace for the given product path, matching
+// google-cloud-cpp's Namespace(product_path, NamespaceType::kMocks).
+func MocksNamespace(productPath string) string {
+	ns := Namespace(productPath)
+	if ns == "" {
+		return "mocks"
+	}
+	return ns + "_mocks"
+}

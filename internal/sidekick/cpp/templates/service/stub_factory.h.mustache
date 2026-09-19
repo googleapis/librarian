@@ -14,3 +14,13 @@ See the License for the specific language governing permissions and
 limitations under the License.
 }}
 {{> /templates/partials/prologue}}
+#ifndef {{Codec.StubFactoryHeaderIncludeGuard}}
+#define {{Codec.StubFactoryHeaderIncludeGuard}}
+
+#include "{{Codec.StubHeaderPath}}"
+#include "google/cloud/internal/unified_grpc_credentials.h"
+#include "google/cloud/options.h"
+#include "google/cloud/version.h"
+#include <memory>
+
+#endif  // {{Codec.StubFactoryHeaderIncludeGuard}}

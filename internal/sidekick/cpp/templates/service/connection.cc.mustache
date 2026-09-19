@@ -14,3 +14,18 @@ See the License for the specific language governing permissions and
 limitations under the License.
 }}
 {{> /templates/partials/prologue}}
+#include "{{Codec.ConnectionHeaderPath}}"
+{{#Codec.ConnectionSourceIncludes}}
+#include "{{.}}"
+{{/Codec.ConnectionSourceIncludes}}
+#include "google/cloud/background_threads.h"
+#include "google/cloud/common_options.h"
+#include "google/cloud/credentials.h"
+#include "google/cloud/grpc_options.h"
+{{#Codec.HasPaginatedMethod}}
+#include "google/cloud/internal/pagination_range.h"
+{{/Codec.HasPaginatedMethod}}
+#include "google/cloud/internal/unified_grpc_credentials.h"
+#include <memory>
+#include <utility>
+

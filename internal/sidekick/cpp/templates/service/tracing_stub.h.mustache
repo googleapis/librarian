@@ -14,3 +14,13 @@ See the License for the specific language governing permissions and
 limitations under the License.
 }}
 {{> /templates/partials/prologue}}
+#ifndef {{Codec.TracingStubHeaderIncludeGuard}}
+#define {{Codec.TracingStubHeaderIncludeGuard}}
+
+#include "{{Codec.StubHeaderPath}}"
+#include "google/cloud/internal/trace_propagator.h"
+#include "google/cloud/options.h"
+#include "google/cloud/version.h"
+#include <memory>
+
+#endif  // {{Codec.TracingStubHeaderIncludeGuard}}

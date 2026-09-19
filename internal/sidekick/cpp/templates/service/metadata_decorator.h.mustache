@@ -14,3 +14,17 @@ See the License for the specific language governing permissions and
 limitations under the License.
 }}
 {{> /templates/partials/prologue}}
+#ifndef {{Codec.MetadataDecoratorHeaderIncludeGuard}}
+#define {{Codec.MetadataDecoratorHeaderIncludeGuard}}
+
+#include "{{Codec.StubHeaderPath}}"
+#include "google/cloud/options.h"
+#include "google/cloud/version.h"
+{{#Codec.HasLongrunningMethod}}
+#include <google/longrunning/operations.grpc.pb.h>
+{{/Codec.HasLongrunningMethod}}
+#include <map>
+#include <memory>
+#include <string>
+
+#endif  // {{Codec.MetadataDecoratorHeaderIncludeGuard}}

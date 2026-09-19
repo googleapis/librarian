@@ -14,3 +14,11 @@ See the License for the specific language governing permissions and
 limitations under the License.
 }}
 {{> /templates/partials/prologue}}
+#include "{{Codec.OptionDefaultsHeaderPath}}"
+#include "{{Codec.ConnectionHeaderPath}}"
+#include "{{Codec.OptionsHeaderPath}}"
+#include "google/cloud/internal/populate_common_options.h"
+#include "google/cloud/internal/populate_grpc_options.h"
+#include <memory>
+#include <utility>
+

@@ -14,3 +14,11 @@ See the License for the specific language governing permissions and
 limitations under the License.
 }}
 {{> /templates/partials/prologue}}
+#ifndef {{Codec.ForwardingOptionsHeaderIncludeGuard}}
+#define {{Codec.ForwardingOptionsHeaderIncludeGuard}}
+
+#include "{{Codec.ForwardingConnectionHeaderPath}}"
+#include "{{Codec.ForwardingIdempotencyPolicyHeaderPath}}"
+#include "{{Codec.OptionsHeaderPath}}"
+
+#endif  // {{Codec.ForwardingOptionsHeaderIncludeGuard}}

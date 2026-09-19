@@ -14,3 +14,10 @@ See the License for the specific language governing permissions and
 limitations under the License.
 }}
 {{> /templates/partials/prologue}}
+#ifndef {{Codec.MockConnectionHeaderIncludeGuard}}
+#define {{Codec.MockConnectionHeaderIncludeGuard}}
+
+#include "{{Codec.ConnectionHeaderPath}}"
+#include <gmock/gmock.h>
+
+#endif  // {{Codec.MockConnectionHeaderIncludeGuard}}

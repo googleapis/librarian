@@ -14,3 +14,9 @@ See the License for the specific language governing permissions and
 limitations under the License.
 }}
 {{> /templates/partials/prologue}}
+#ifndef {{Codec.ForwardingIdempotencyPolicyHeaderIncludeGuard}}
+#define {{Codec.ForwardingIdempotencyPolicyHeaderIncludeGuard}}
+
+#include "{{Codec.IdempotencyPolicyHeaderPath}}"
+
+#endif  // {{Codec.ForwardingIdempotencyPolicyHeaderIncludeGuard}}

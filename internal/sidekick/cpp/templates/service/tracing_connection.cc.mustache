@@ -14,3 +14,11 @@ See the License for the specific language governing permissions and
 limitations under the License.
 }}
 {{> /templates/partials/prologue}}
+#include "{{Codec.TracingConnectionHeaderPath}}"
+#include "google/cloud/internal/opentelemetry.h"
+{{#Codec.HasStreamRange}}
+#include "google/cloud/internal/traced_stream_range.h"
+{{/Codec.HasStreamRange}}
+#include <memory>
+#include <utility>
+

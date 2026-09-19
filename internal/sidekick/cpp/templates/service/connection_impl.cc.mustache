@@ -14,3 +14,27 @@ See the License for the specific language governing permissions and
 limitations under the License.
 }}
 {{> /templates/partials/prologue}}
+#include "{{Codec.ConnectionImplHeaderPath}}"
+#include "{{Codec.OptionDefaultsHeaderPath}}"
+#include "google/cloud/background_threads.h"
+#include "google/cloud/common_options.h"
+#include "google/cloud/grpc_options.h"
+{{#Codec.HasLongrunningMethod}}
+#include "google/cloud/internal/async_long_running_operation.h"
+{{/Codec.HasLongrunningMethod}}
+{{#Codec.HasAsyncMethod}}
+#include "google/cloud/internal/async_retry_loop.h"
+{{/Codec.HasAsyncMethod}}
+{{#Codec.HasPaginatedMethod}}
+#include "google/cloud/internal/pagination_range.h"
+{{/Codec.HasPaginatedMethod}}
+{{#Codec.HasStreamingReadMethod}}
+#include "google/cloud/internal/resumable_streaming_read_rpc.h"
+{{/Codec.HasStreamingReadMethod}}
+#include "google/cloud/internal/retry_loop.h"
+{{#Codec.HasStreamingReadMethod}}
+#include "google/cloud/internal/streaming_read_rpc_logging.h"
+{{/Codec.HasStreamingReadMethod}}
+#include <memory>
+#include <utility>
+

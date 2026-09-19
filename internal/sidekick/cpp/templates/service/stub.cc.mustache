@@ -14,3 +14,27 @@ See the License for the specific language governing permissions and
 limitations under the License.
 }}
 {{> /templates/partials/prologue}}
+#include "{{Codec.StubHeaderPath}}"
+#include "google/cloud/grpc_error_delegate.h"
+{{#Codec.HasBidirStreamingMethod}}
+#include "google/cloud/internal/async_read_write_stream_impl.h"
+{{/Codec.HasBidirStreamingMethod}}
+{{#Codec.HasAsyncStreamingReadMethod}}
+#include "google/cloud/internal/async_streaming_read_rpc_impl.h"
+{{/Codec.HasAsyncStreamingReadMethod}}
+{{#Codec.HasAsyncStreamingWriteMethod}}
+#include "google/cloud/internal/async_streaming_write_rpc_impl.h"
+{{/Codec.HasAsyncStreamingWriteMethod}}
+{{#Codec.HasStreamingWriteMethod}}
+#include "google/cloud/internal/streaming_write_rpc_impl.h"
+{{/Codec.HasStreamingWriteMethod}}
+#include "google/cloud/status_or.h"
+{{#Codec.ProtoGrpcHeaderPath}}
+#include <{{Codec.ProtoGrpcHeaderPath}}>
+{{/Codec.ProtoGrpcHeaderPath}}
+{{#Codec.HasLongrunningMethod}}
+#include <google/longrunning/operations.grpc.pb.h>
+{{/Codec.HasLongrunningMethod}}
+#include <memory>
+#include <utility>
+

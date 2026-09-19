@@ -14,3 +14,14 @@ See the License for the specific language governing permissions and
 limitations under the License.
 }}
 {{> /templates/partials/prologue}}
+#ifndef {{Codec.IdempotencyPolicyHeaderIncludeGuard}}
+#define {{Codec.IdempotencyPolicyHeaderIncludeGuard}}
+
+#include "google/cloud/idempotency.h"
+#include "google/cloud/version.h"
+{{#Codec.ProtoGrpcHeaderPath}}
+#include <{{Codec.ProtoGrpcHeaderPath}}>
+{{/Codec.ProtoGrpcHeaderPath}}
+#include <memory>
+
+#endif  // {{Codec.IdempotencyPolicyHeaderIncludeGuard}}

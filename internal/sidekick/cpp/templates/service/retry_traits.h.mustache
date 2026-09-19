@@ -14,3 +14,10 @@ See the License for the specific language governing permissions and
 limitations under the License.
 }}
 {{> /templates/partials/prologue}}
+#ifndef {{Codec.RetryTraitsHeaderIncludeGuard}}
+#define {{Codec.RetryTraitsHeaderIncludeGuard}}
+
+#include "google/cloud/status.h"
+#include "google/cloud/version.h"
+
+#endif  // {{Codec.RetryTraitsHeaderIncludeGuard}}

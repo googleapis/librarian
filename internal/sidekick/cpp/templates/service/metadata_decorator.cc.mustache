@@ -14,3 +14,23 @@ See the License for the specific language governing permissions and
 limitations under the License.
 }}
 {{> /templates/partials/prologue}}
+#include "{{Codec.MetadataDecoratorHeaderPath}}"
+#include "google/cloud/grpc_options.h"
+#include "google/cloud/internal/absl_str_cat_quiet.h"
+{{#Codec.HasExplicitRoutingMethod}}
+#include "google/cloud/internal/absl_str_join_quiet.h"
+{{/Codec.HasExplicitRoutingMethod}}
+#include "google/cloud/internal/api_client_header.h"
+{{#Codec.HasExplicitRoutingMethod}}
+#include "google/cloud/internal/routing_matcher.h"
+{{/Codec.HasExplicitRoutingMethod}}
+#include "google/cloud/internal/url_encode.h"
+#include "google/cloud/status_or.h"
+{{#Codec.ProtoGrpcHeaderPath}}
+#include <{{Codec.ProtoGrpcHeaderPath}}>
+{{/Codec.ProtoGrpcHeaderPath}}
+#include <memory>
+#include <string>
+#include <utility>
+#include <vector>
+

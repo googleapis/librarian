@@ -19,6 +19,7 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -27,6 +28,22 @@ import (
 	"github.com/googleapis/librarian/internal/sidekick/parser"
 	"github.com/googleapis/librarian/internal/sources"
 )
+
+// extractBlock extracts the text between startStr and endStr (inclusive).
+// If either marker is not found, it fails the test with t.Fatalf,
+// matching internal/sidekick/swift/generate_package_swift_test.go.
+func extractBlock(t *testing.T, content, startStr, endStr string) string {
+	t.Helper()
+	startIdx := strings.Index(content, startStr)
+	if startIdx == -1 {
+		t.Fatalf("missing expected block start %q\n\n%s", startStr, content)
+	}
+	endIdx := strings.Index(content[startIdx:], endStr)
+	if endIdx == -1 {
+		t.Fatalf("missing expected block end %q\n\n%s", endStr, content)
+	}
+	return content[startIdx : startIdx+endIdx+len(endStr)]
+}
 
 func TestGenerate_GRPCServiceFiles(t *testing.T) {
 	for _, test := range []struct {
@@ -173,9 +190,24 @@ func TestGenerate_GRPCServiceFiles(t *testing.T) {
 					t.Fatalf("expected file not generated %q: %v", gen.OutputPath, err)
 				}
 				s := string(content)
-				if diff := cmp.Diff(test.wantContent, s); diff != "" {
+				if !strings.HasPrefix(s, test.wantContent) {
 					t.Logf("file: %s", gen.OutputPath)
-					t.Errorf("mismatch (-want +got):\n%s", diff)
+					t.Errorf("missing expected prologue prefix:\nwant prefix:\n%s\ngot:\n%s", test.wantContent, s)
+				}
+				if strings.HasSuffix(gen.OutputPath, ".h") {
+					guard := FormatHeaderIncludeGuard(gen.OutputPath)
+					gotGuard := extractBlock(t, s, "#ifndef "+guard, "\n\n")
+					if gotGuard == "" {
+						t.Errorf("file %s: missing opening include guard", gen.OutputPath)
+					}
+					gotClosing := extractBlock(t, s, "#endif  // "+guard, "\n")
+					if gotClosing == "" {
+						t.Errorf("file %s: missing closing include guard", gen.OutputPath)
+					}
+				} else if strings.HasSuffix(gen.OutputPath, ".cc") {
+					if !strings.Contains(s, "#include ") {
+						t.Errorf("file %s: missing #include directives", gen.OutputPath)
+					}
 				}
 			}
 		})
@@ -228,13 +260,10 @@ func TestGenerate_HermeticProtoRequestId(t *testing.T) {
 		t.Fatalf("expected 28 files, got %d", len(expectedFiles))
 	}
 
-	for _, gen := range expectedFiles {
-		fullPath := filepath.Join(outdir, gen.OutputPath)
-		content, err := os.ReadFile(fullPath)
-		if err != nil {
-			t.Fatalf("missing expected generated file %q: %v", gen.OutputPath, err)
-		}
-		wantContent := `// Copyright 2024 Google LLC
+	goldenDir := filepath.Join("testdata", "golden", "v1")
+	prefix := libCfg.ProductPath + "/"
+
+	wantContent := `// Copyright 2024 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -252,9 +281,62 @@ func TestGenerate_HermeticProtoRequestId(t *testing.T) {
 // If you make any local changes, they will be lost.
 // source: generator/integration_tests/test_request_id.proto
 `
-		if diff := cmp.Diff(wantContent, string(content)); diff != "" {
-			t.Logf("file: %s", gen.OutputPath)
-			t.Errorf("mismatch (-want +got):\n%s", diff)
+
+	for _, gen := range expectedFiles {
+		fullPath := filepath.Join(outdir, gen.OutputPath)
+		content, err := os.ReadFile(fullPath)
+		if err != nil {
+			t.Fatalf("missing expected generated file %q: %v", gen.OutputPath, err)
+		}
+		got := string(content)
+
+		if !strings.HasPrefix(got, wantContent) {
+			t.Errorf("file %s: prologue mismatch", gen.OutputPath)
+		}
+
+		relPath := strings.TrimPrefix(gen.OutputPath, prefix)
+		goldenPath := filepath.Join(goldenDir, relPath)
+		goldenContentBytes, err := os.ReadFile(goldenPath)
+		if err != nil {
+			t.Fatalf("missing golden file %q: %v", goldenPath, err)
+		}
+		golden := string(goldenContentBytes)
+
+		if strings.HasSuffix(gen.OutputPath, ".h") {
+			guard := FormatHeaderIncludeGuard(gen.OutputPath)
+
+			// Compare opening guard.
+			gotGuard := extractBlock(t, got, "#ifndef "+guard, "\n\n")
+			wantGuard := extractBlock(t, golden, "#ifndef "+guard, "\n\n")
+			if diff := cmp.Diff(wantGuard, gotGuard); diff != "" {
+				t.Errorf("file %s opening guard mismatch (-want +got):\n%s", gen.OutputPath, diff)
+			}
+
+			// Compare closing guard.
+			gotClosing := extractBlock(t, got, "#endif  // "+guard, "\n")
+			wantClosing := extractBlock(t, golden, "#endif  // "+guard, "\n")
+			if diff := cmp.Diff(wantClosing, gotClosing); diff != "" {
+				t.Errorf("file %s closing guard mismatch (-want +got):\n%s", gen.OutputPath, diff)
+			}
+
+			// Compare includes block.
+			gotIncludes := extractBlock(t, got, "#include ", "\n\n")
+			wantIncludes := extractBlock(t, golden, "#include ", "\n\n")
+			if diff := cmp.Diff(wantIncludes, gotIncludes); diff != "" {
+				t.Errorf("file %s includes mismatch (-want +got):\n%s", gen.OutputPath, diff)
+			}
+		} else if strings.HasSuffix(gen.OutputPath, "sources.cc") {
+			gotBlock := extractBlock(t, got, "// NOLINTBEGIN", "// NOLINTEND(bugprone-suspicious-include)\n")
+			wantBlock := extractBlock(t, golden, "// NOLINTBEGIN", "// NOLINTEND(bugprone-suspicious-include)\n")
+			if diff := cmp.Diff(wantBlock, gotBlock); diff != "" {
+				t.Errorf("file %s sources block mismatch (-want +got):\n%s", gen.OutputPath, diff)
+			}
+		} else if strings.HasSuffix(gen.OutputPath, ".cc") {
+			gotIncludes := extractBlock(t, got, "#include ", "\n\n")
+			wantIncludes := extractBlock(t, golden, "#include ", "\n\n")
+			if diff := cmp.Diff(wantIncludes, gotIncludes); diff != "" {
+				t.Errorf("file %s includes mismatch (-want +got):\n%s", gen.OutputPath, diff)
+			}
 		}
 	}
 }
@@ -282,13 +364,10 @@ func TestGenerate_ForwardingHeaders(t *testing.T) {
 		t.Fatalf("expected 5 forwarding files, got %d", len(fwdFiles))
 	}
 
-	for _, gen := range fwdFiles {
-		fullPath := filepath.Join(outdir, gen.OutputPath)
-		content, err := os.ReadFile(fullPath)
-		if err != nil {
-			t.Fatalf("missing expected forwarding file %q: %v", gen.OutputPath, err)
-		}
-		wantContent := `// Copyright 2022 Google LLC
+	goldenDir := filepath.Join("testdata", "golden")
+	prefix := libCfg.ForwardingProductPath + "/"
+
+	wantContent := `// Copyright 2022 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -306,9 +385,48 @@ func TestGenerate_ForwardingHeaders(t *testing.T) {
 // If you make any local changes, they will be lost.
 // source: generator/integration_tests/test.proto
 `
-		if diff := cmp.Diff(wantContent, string(content)); diff != "" {
-			t.Logf("file: %s", gen.OutputPath)
-			t.Errorf("mismatch (-want +got):\n%s", diff)
+
+	for _, gen := range fwdFiles {
+		fullPath := filepath.Join(outdir, gen.OutputPath)
+		content, err := os.ReadFile(fullPath)
+		if err != nil {
+			t.Fatalf("missing expected forwarding file %q: %v", gen.OutputPath, err)
+		}
+		got := string(content)
+
+		if !strings.HasPrefix(got, wantContent) {
+			t.Errorf("file %s: prologue mismatch", gen.OutputPath)
+		}
+
+		relPath := strings.TrimPrefix(gen.OutputPath, prefix)
+		goldenPath := filepath.Join(goldenDir, relPath)
+		goldenContentBytes, err := os.ReadFile(goldenPath)
+		if err != nil {
+			t.Fatalf("missing golden file %q: %v", goldenPath, err)
+		}
+		golden := string(goldenContentBytes)
+
+		guard := FormatHeaderIncludeGuard(gen.OutputPath)
+
+		// Compare opening guard.
+		gotGuard := extractBlock(t, got, "#ifndef "+guard, "\n\n")
+		wantGuard := extractBlock(t, golden, "#ifndef "+guard, "\n\n")
+		if diff := cmp.Diff(wantGuard, gotGuard); diff != "" {
+			t.Errorf("file %s opening guard mismatch (-want +got):\n%s", gen.OutputPath, diff)
+		}
+
+		// Compare closing guard.
+		gotClosing := extractBlock(t, got, "#endif  // "+guard, "\n")
+		wantClosing := extractBlock(t, golden, "#endif  // "+guard, "\n")
+		if diff := cmp.Diff(wantClosing, gotClosing); diff != "" {
+			t.Errorf("file %s closing guard mismatch (-want +got):\n%s", gen.OutputPath, diff)
+		}
+
+		// Compare includes block.
+		gotIncludes := extractBlock(t, got, "#include ", "\n\n")
+		wantIncludes := extractBlock(t, golden, "#include ", "\n\n")
+		if diff := cmp.Diff(wantIncludes, gotIncludes); diff != "" {
+			t.Errorf("file %s includes mismatch (-want +got):\n%s", gen.OutputPath, diff)
 		}
 	}
 }
@@ -491,6 +609,38 @@ func TestForwardingGeneratedFilesMatchGolden(t *testing.T) {
 				if _, err := os.Stat(goldenPath); err != nil {
 					t.Errorf("forwarding file %q not found in golden files: %v", f.OutputPath, err)
 				}
+			}
+		})
+	}
+}
+
+func TestExtractBlock(t *testing.T) {
+	for _, test := range []struct {
+		name        string
+		content     string
+		startMarker string
+		endMarker   string
+		want        string
+	}{
+		{
+			name:        "basic block extraction",
+			content:     "before\nSTART\nmiddle\nEND\nafter",
+			startMarker: "START",
+			endMarker:   "END",
+			want:        "START\nmiddle\nEND",
+		},
+		{
+			name:        "end marker before start marker is ignored",
+			content:     "END\nbefore\nSTART\nmiddle\nEND\nafter",
+			startMarker: "START",
+			endMarker:   "END",
+			want:        "START\nmiddle\nEND",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := extractBlock(t, test.content, test.startMarker, test.endMarker)
+			if got != test.want {
+				t.Errorf("extractBlock() = %q, want %q", got, test.want)
 			}
 		})
 	}

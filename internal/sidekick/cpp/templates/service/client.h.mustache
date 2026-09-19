@@ -14,3 +14,22 @@ See the License for the specific language governing permissions and
 limitations under the License.
 }}
 {{> /templates/partials/prologue}}
+#ifndef {{Codec.ClientHeaderIncludeGuard}}
+#define {{Codec.ClientHeaderIncludeGuard}}
+
+#include "{{Codec.ConnectionHeaderPath}}"
+#include "google/cloud/future.h"
+{{#Codec.HasLongrunningMethod}}
+#include "google/cloud/no_await_tag.h"
+{{/Codec.HasLongrunningMethod}}
+#include "google/cloud/options.h"
+#include "google/cloud/polling_policy.h"
+#include "google/cloud/status_or.h"
+#include "google/cloud/version.h"
+{{#Codec.HasLongrunningMethod}}
+#include <google/longrunning/operations.grpc.pb.h>
+{{/Codec.HasLongrunningMethod}}
+#include <memory>
+#include <string>
+
+#endif  // {{Codec.ClientHeaderIncludeGuard}}

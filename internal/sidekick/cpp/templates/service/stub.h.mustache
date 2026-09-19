@@ -14,3 +14,40 @@ See the License for the specific language governing permissions and
 limitations under the License.
 }}
 {{> /templates/partials/prologue}}
+#ifndef {{Codec.StubHeaderIncludeGuard}}
+#define {{Codec.StubHeaderIncludeGuard}}
+
+{{#Codec.HasBidirStreamingMethod}}
+#include "google/cloud/async_streaming_read_write_rpc.h"
+{{/Codec.HasBidirStreamingMethod}}
+{{#Codec.HasCompletionQueue}}
+#include "google/cloud/completion_queue.h"
+{{/Codec.HasCompletionQueue}}
+{{#Codec.HasAsyncMethod}}
+#include "google/cloud/future.h"
+{{/Codec.HasAsyncMethod}}
+{{#Codec.HasAsyncStreamingReadMethod}}
+#include "google/cloud/internal/async_streaming_read_rpc.h"
+{{/Codec.HasAsyncStreamingReadMethod}}
+{{#Codec.HasAsyncStreamingWriteMethod}}
+#include "google/cloud/internal/async_streaming_write_rpc.h"
+{{/Codec.HasAsyncStreamingWriteMethod}}
+{{#Codec.HasStreamingReadMethod}}
+#include "google/cloud/internal/streaming_read_rpc.h"
+{{/Codec.HasStreamingReadMethod}}
+{{#Codec.HasStreamingWriteMethod}}
+#include "google/cloud/internal/streaming_write_rpc.h"
+{{/Codec.HasStreamingWriteMethod}}
+#include "google/cloud/options.h"
+#include "google/cloud/status_or.h"
+#include "google/cloud/version.h"
+{{#Codec.ProtoGrpcHeaderPath}}
+#include <{{Codec.ProtoGrpcHeaderPath}}>
+{{/Codec.ProtoGrpcHeaderPath}}
+{{#Codec.HasLongrunningMethod}}
+#include <google/longrunning/operations.grpc.pb.h>
+{{/Codec.HasLongrunningMethod}}
+#include <memory>
+#include <utility>
+
+#endif  // {{Codec.StubHeaderIncludeGuard}}
