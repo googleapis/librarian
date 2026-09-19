@@ -34,6 +34,15 @@ func TestAnnotateMessage(t *testing.T) {
 				Name: "SimpleMessage",
 			},
 		},
+		{
+			name: "nested types",
+			message: api.NewTestMessage("Item").
+				WithMessages(api.NewTestMessage("NestedItem")).
+				WithEnums(api.NewTestEnum("NestedEnum")),
+			want: &messageAnnotations{
+				Name: "Item",
+			},
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			model := api.NewTestAPI([]*api.Message{test.message}, nil, nil)
@@ -47,6 +56,16 @@ func TestAnnotateMessage(t *testing.T) {
 			}
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+			for _, child := range test.message.Messages {
+				if _, ok := child.Codec.(*messageAnnotations); !ok {
+					t.Errorf("expected nested message codec *messageAnnotations, got %T", child.Codec)
+				}
+			}
+			for _, e := range test.message.Enums {
+				if _, ok := e.Codec.(*enumAnnotations); !ok {
+					t.Errorf("expected nested enum codec *enumAnnotations, got %T", e.Codec)
+				}
 			}
 		})
 	}

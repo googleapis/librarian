@@ -90,6 +90,14 @@ func TestValidateOutputContainment(t *testing.T) {
 			wantErr: false,
 		},
 		{
+			name: "valid relative output path with leading slash",
+			files: []language.GeneratedFile{
+				{OutputPath: "/CMakeLists.txt"},
+				{OutputPath: "/include/google/cloud/service.h"},
+			},
+			wantErr: false,
+		},
+		{
 			name: "escaping path with parent traversal",
 			files: []language.GeneratedFile{
 				{OutputPath: "../escaped.txt"},
@@ -97,9 +105,23 @@ func TestValidateOutputContainment(t *testing.T) {
 			wantErr: true,
 		},
 		{
+			name: "escaping root parent traversal",
+			files: []language.GeneratedFile{
+				{OutputPath: ".."},
+			},
+			wantErr: true,
+		},
+		{
 			name: "deep escaping path",
 			files: []language.GeneratedFile{
 				{OutputPath: "sub/../../escaped.txt"},
+			},
+			wantErr: true,
+		},
+		{
+			name: "escaping path with leading slash parent traversal",
+			files: []language.GeneratedFile{
+				{OutputPath: "/../escaped.txt"},
 			},
 			wantErr: true,
 		},

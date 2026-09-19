@@ -51,10 +51,18 @@ func Generate(_ context.Context, model *api.API, outdir string, libCfg *config.C
 }
 
 func validateOutputContainment(outdir string, files []language.GeneratedFile) error {
+	absOut, err := filepath.Abs(outdir)
+	if err != nil {
+		return fmt.Errorf("resolving outdir %q: %w", outdir, err)
+	}
 	for _, gen := range files {
-		targetPath := filepath.Join(outdir, gen.OutputPath)
-		rel, err := filepath.Rel(outdir, targetPath)
-		if err != nil || strings.HasPrefix(rel, "..") || strings.HasPrefix(filepath.Clean(gen.OutputPath), "..") {
+		cleanPath := filepath.Clean(gen.OutputPath)
+		if cleanPath == ".." || strings.HasPrefix(cleanPath, ".."+string(filepath.Separator)) {
+			return fmt.Errorf("output path %q escapes output directory %q", gen.OutputPath, outdir)
+		}
+		targetPath := filepath.Join(absOut, gen.OutputPath)
+		rel, err := filepath.Rel(absOut, targetPath)
+		if err != nil || rel == ".." || strings.HasPrefix(rel, ".."+string(filepath.Separator)) {
 			return fmt.Errorf("output path %q escapes output directory %q", gen.OutputPath, outdir)
 		}
 	}
