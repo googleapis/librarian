@@ -348,10 +348,15 @@ func TestGenerate_GRPCServiceFiles_HeadersAndIncludes(t *testing.T) {
 }
 
 func TestGenerate_ForwardingHeaders(t *testing.T) {
-	for _, serviceName := range []string{"GoldenKitchenSink", "GoldenThingAdmin"} {
-		t.Run(serviceName, func(t *testing.T) {
+	for _, test := range []struct {
+		serviceName string
+	}{
+		{serviceName: "GoldenKitchenSink"},
+		{serviceName: "GoldenThingAdmin"},
+	} {
+		t.Run(test.serviceName, func(t *testing.T) {
 			outdir := t.TempDir()
-			svc := api.NewTestService(serviceName)
+			svc := api.NewTestService(test.serviceName)
 			model := api.NewTestAPI(nil, nil, []*api.Service{svc})
 			model.DefinitionLocations = map[string]api.SourceLocation{
 				svc.ID: {Filename: "generator/integration_tests/test.proto", Line: 1},

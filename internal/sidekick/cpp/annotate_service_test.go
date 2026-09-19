@@ -430,91 +430,92 @@ func TestAnnotateService_Forwarding(t *testing.T) {
 		}
 		got := svc.Codec.(*serviceAnnotations)
 
-		for _, tc := range []struct {
+		for _, test := range []struct {
 			name string
-			got  string
 			want string
+			got  string
 		}{
 			{
 				name: "ForwardingClientHeaderPath",
-				got:  got.ForwardingClientHeaderPath,
 				want: "generator/integration_tests/golden/golden_kitchen_sink_client.h",
+				got:  got.ForwardingClientHeaderPath,
 			},
 			{
 				name: "ForwardingClientHeaderIncludeGuard",
-				got:  got.ForwardingClientHeaderIncludeGuard,
 				want: "GOOGLE_CLOUD_CPP_GENERATOR_INTEGRATION_TESTS_GOLDEN_GOLDEN_KITCHEN_SINK_CLIENT_H",
+				got:  got.ForwardingClientHeaderIncludeGuard,
 			},
 			{
 				name: "ForwardingConnectionHeaderPath",
-				got:  got.ForwardingConnectionHeaderPath,
 				want: "generator/integration_tests/golden/golden_kitchen_sink_connection.h",
+				got:  got.ForwardingConnectionHeaderPath,
 			},
 			{
 				name: "ForwardingConnectionHeaderIncludeGuard",
-				got:  got.ForwardingConnectionHeaderIncludeGuard,
 				want: "GOOGLE_CLOUD_CPP_GENERATOR_INTEGRATION_TESTS_GOLDEN_GOLDEN_KITCHEN_SINK_CONNECTION_H",
+				got:  got.ForwardingConnectionHeaderIncludeGuard,
 			},
 			{
 				name: "ForwardingIdempotencyPolicyHeaderPath",
-				got:  got.ForwardingIdempotencyPolicyHeaderPath,
 				want: "generator/integration_tests/golden/golden_kitchen_sink_connection_idempotency_policy.h",
+				got:  got.ForwardingIdempotencyPolicyHeaderPath,
 			},
 			{
 				name: "ForwardingIdempotencyPolicyHeaderIncludeGuard",
-				got:  got.ForwardingIdempotencyPolicyHeaderIncludeGuard,
 				want: "GOOGLE_CLOUD_CPP_GENERATOR_INTEGRATION_TESTS_GOLDEN_GOLDEN_KITCHEN_SINK_CONNECTION_IDEMPOTENCY_POLICY_H",
+				got:  got.ForwardingIdempotencyPolicyHeaderIncludeGuard,
 			},
 			{
 				name: "ForwardingOptionsHeaderPath",
-				got:  got.ForwardingOptionsHeaderPath,
 				want: "generator/integration_tests/golden/golden_kitchen_sink_options.h",
+				got:  got.ForwardingOptionsHeaderPath,
 			},
 			{
 				name: "ForwardingOptionsHeaderIncludeGuard",
-				got:  got.ForwardingOptionsHeaderIncludeGuard,
 				want: "GOOGLE_CLOUD_CPP_GENERATOR_INTEGRATION_TESTS_GOLDEN_GOLDEN_KITCHEN_SINK_OPTIONS_H",
+				got:  got.ForwardingOptionsHeaderIncludeGuard,
 			},
 			{
 				name: "ForwardingMockConnectionHeaderPath",
-				got:  got.ForwardingMockConnectionHeaderPath,
 				want: "generator/integration_tests/golden/mocks/mock_golden_kitchen_sink_connection.h",
+				got:  got.ForwardingMockConnectionHeaderPath,
 			},
 			{
 				name: "ForwardingMockConnectionHeaderIncludeGuard",
-				got:  got.ForwardingMockConnectionHeaderIncludeGuard,
 				want: "GOOGLE_CLOUD_CPP_GENERATOR_INTEGRATION_TESTS_GOLDEN_MOCKS_MOCK_GOLDEN_KITCHEN_SINK_CONNECTION_H",
+				got:  got.ForwardingMockConnectionHeaderIncludeGuard,
 			},
 			{
 				name: "Namespace",
-				got:  got.Namespace,
 				want: "golden_v1",
+				got:  got.Namespace,
 			},
 			{
 				name: "InternalNamespace",
-				got:  got.InternalNamespace,
 				want: "golden_v1_internal",
+				got:  got.InternalNamespace,
 			},
 			{
 				name: "MocksNamespace",
-				got:  got.MocksNamespace,
 				want: "golden_v1_mocks",
+				got:  got.MocksNamespace,
 			},
 			{
 				name: "ForwardingNamespace",
-				got:  got.ForwardingNamespace,
 				want: "golden",
+				got:  got.ForwardingNamespace,
 			},
 			{
 				name: "ForwardingMocksNamespace",
-				got:  got.ForwardingMocksNamespace,
 				want: "golden_mocks",
+				got:  got.ForwardingMocksNamespace,
 			},
 		} {
-			if diff := cmp.Diff(tc.want, tc.got); diff != "" {
-				t.Logf("%s", tc.name)
-				t.Errorf("mismatch (-want +got):\n%s", diff)
-			}
+			t.Run(test.name, func(t *testing.T) {
+				if diff := cmp.Diff(test.want, test.got); diff != "" {
+					t.Errorf("mismatch (-want +got):\n%s", diff)
+				}
+			})
 		}
 	})
 
@@ -534,11 +535,19 @@ func TestAnnotateService_Forwarding(t *testing.T) {
 		}
 		got := svc.Codec.(*serviceAnnotations)
 
-		if got.ForwardingNamespace != "" {
-			t.Errorf("expected empty ForwardingNamespace, got %q", got.ForwardingNamespace)
-		}
-		if got.ForwardingMocksNamespace != "" {
-			t.Errorf("expected empty ForwardingMocksNamespace, got %q", got.ForwardingMocksNamespace)
+		for _, test := range []struct {
+			name string
+			want string
+			got  string
+		}{
+			{name: "ForwardingNamespace", want: "", got: got.ForwardingNamespace},
+			{name: "ForwardingMocksNamespace", want: "", got: got.ForwardingMocksNamespace},
+		} {
+			t.Run(test.name, func(t *testing.T) {
+				if diff := cmp.Diff(test.want, test.got); diff != "" {
+					t.Errorf("mismatch (-want +got):\n%s", diff)
+				}
+			})
 		}
 	})
 }
@@ -556,19 +565,21 @@ func TestAnnotateService_NilConfig(t *testing.T) {
 	}
 	got := svc.Codec.(*serviceAnnotations)
 
-	if got.Namespace != "" {
-		t.Errorf("expected empty Namespace for nil config, got %q", got.Namespace)
-	}
-	if got.InternalNamespace != "internal" {
-		t.Errorf("expected 'internal' for nil config InternalNamespace, got %q", got.InternalNamespace)
-	}
-	if got.MocksNamespace != "mocks" {
-		t.Errorf("expected 'mocks' for nil config MocksNamespace, got %q", got.MocksNamespace)
-	}
-	if got.ForwardingNamespace != "" {
-		t.Errorf("expected empty ForwardingNamespace for nil config, got %q", got.ForwardingNamespace)
-	}
-	if got.ForwardingMocksNamespace != "" {
-		t.Errorf("expected empty ForwardingMocksNamespace for nil config, got %q", got.ForwardingMocksNamespace)
+	for _, test := range []struct {
+		name string
+		want string
+		got  string
+	}{
+		{name: "Namespace", want: "", got: got.Namespace},
+		{name: "InternalNamespace", want: "internal", got: got.InternalNamespace},
+		{name: "MocksNamespace", want: "mocks", got: got.MocksNamespace},
+		{name: "ForwardingNamespace", want: "", got: got.ForwardingNamespace},
+		{name: "ForwardingMocksNamespace", want: "", got: got.ForwardingMocksNamespace},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			if diff := cmp.Diff(test.want, test.got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
 	}
 }
