@@ -356,7 +356,7 @@ func TestFilterModelToTypesAllowedAny(t *testing.T) {
 
 	filtered, _, _, err := filterModelToTypes(anyModel, []string{anyMsg.ID}, []string{".google.test.v1.AnyReq.details"})
 	if err != nil {
-		t.Fatalf("expected success with allowStreamingAnyTypes, got error: %v", err)
+		t.Fatalf("expected success with allowGrpcAnyFields, got error: %v", err)
 	}
 
 	msg := filtered.Message(anyMsg.ID)

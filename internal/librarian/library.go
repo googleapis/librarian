@@ -146,9 +146,6 @@ func fillRust(lib *config.Library, d *config.Default) *config.Library {
 	if len(lib.Rust.AllowGrpcAnyFields) == 0 {
 		lib.Rust.AllowGrpcAnyFields = d.Rust.AllowGrpcAnyFields
 	}
-	if len(lib.Rust.AllowStreamingAnyTypes) == 0 {
-		lib.Rust.AllowStreamingAnyTypes = d.Rust.AllowStreamingAnyTypes
-	}
 	for _, mod := range lib.Rust.Modules {
 		if mod.GenerateSetterSamples == "" {
 			mod.GenerateSetterSamples = lib.Rust.GenerateSetterSamples
@@ -828,9 +825,6 @@ func mergeRust(dst, src *config.RustCrate) *config.RustCrate {
 	}
 	if len(src.AllowGrpcAnyFields) > 0 {
 		res.AllowGrpcAnyFields = src.AllowGrpcAnyFields
-	}
-	if len(src.AllowStreamingAnyTypes) > 0 {
-		res.AllowStreamingAnyTypes = src.AllowStreamingAnyTypes
 	}
 	if src.PostProcessProtos != "" {
 		res.PostProcessProtos = src.PostProcessProtos

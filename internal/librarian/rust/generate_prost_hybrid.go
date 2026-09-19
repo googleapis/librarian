@@ -37,8 +37,7 @@ func generateProstHybrid(ctx context.Context, model *api.API, rootTypeIDs []stri
 		return nil
 	}
 
-	allowedAnyFields := append(slices.Clone(library.Rust.AllowGrpcAnyFields), library.Rust.AllowStreamingAnyTypes...)
-	hybridModel, unusedTypes, hasGoogleRpcStatus, err := filterModelToTypes(model, rootTypeIDs, allowedAnyFields)
+	hybridModel, unusedTypes, hasGoogleRpcStatus, err := filterModelToTypes(model, rootTypeIDs, library.Rust.AllowGrpcAnyFields)
 	if err != nil {
 		return err
 	}
