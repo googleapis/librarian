@@ -103,7 +103,7 @@ func TestGenerate_ValidationErrors(t *testing.T) {
 }
 
 func TestDefaultOutput(t *testing.T) {
-	tests := []struct {
+	for _, test := range []struct {
 		name       string
 		api        string
 		defaultOut string
@@ -127,12 +127,10 @@ func TestDefaultOutput(t *testing.T) {
 			defaultOut: "/var/tmp/output",
 			want:       "/var/tmp/output/test/v1",
 		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got := DefaultOutput(tt.api, tt.defaultOut)
-			if diff := cmp.Diff(tt.want, got); diff != "" {
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := DefaultOutput(test.api, test.defaultOut)
+			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("DefaultOutput mismatch (-want +got):\n%s", diff)
 			}
 		})
