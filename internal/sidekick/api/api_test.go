@@ -21,12 +21,16 @@ import (
 )
 
 func TestSourceLocation(t *testing.T) {
-	loc := SourceLocation{
+	got := SourceLocation{
 		Filename: "google/cloud/test/v1/test.proto",
 		Line:     42,
 	}
-	if loc.Filename != "google/cloud/test/v1/test.proto" || loc.Line != 42 {
-		t.Errorf("unexpected SourceLocation values: got Filename=%q, Line=%d", loc.Filename, loc.Line)
+	want := SourceLocation{
+		Filename: "google/cloud/test/v1/test.proto",
+		Line:     42,
+	}
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
 
