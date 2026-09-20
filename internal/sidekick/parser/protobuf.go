@@ -245,11 +245,13 @@ const (
 
 	// From https://pkg.go.dev/google.golang.org/protobuf/types/descriptorpb#ServiceDescriptorProto
 
+	serviceDescriptorProtoName   = 1
 	serviceDescriptorProtoMethod = 2
 	serviceDescriptorProtoOption = 3
 
 	// From https://pkg.go.dev/google.golang.org/protobuf/types/descriptorpb#DescriptorProto
 
+	messageDescriptorName           = 1
 	messageDescriptorField          = 2
 	messageDescriptorNestedType     = 3
 	messageDescriptorEnum           = 4
@@ -394,22 +396,34 @@ func makeAPIForProtobuf(serviceConfig *serviceconfig.Service, req *pluginpb.Code
 		// Add docs
 		for _, loc := range f.GetSourceCodeInfo().GetLocation() {
 			p := loc.GetPath()
-			if loc.GetLeadingComments() == "" || len(p) == 0 {
+			if len(p) == 0 {
 				continue
 			}
 
+			srcLoc := newSourceLocation(f.GetName(), loc)
+			doc := extractDocumentation(loc)
+
 			switch p[0] {
 			case fileDescriptorMessageType:
+				if len(p) < 2 || p[1] < 0 || int(p[1]) >= len(f.MessageType) {
+					continue
+				}
 				// Because of message nesting we need to call recursively and
 				// strip out parts of the path.
 				m := f.MessageType[p[1]]
-				addMessageDocumentation(result, m, p[2:], loc.GetLeadingComments(), fFQN+"."+m.GetName())
+				addMessageDocumentation(result, m, p[2:], doc, srcLoc, fFQN+"."+m.GetName())
 			case fileDescriptorEnumType:
+				if len(p) < 2 || p[1] < 0 || int(p[1]) >= len(f.EnumType) {
+					continue
+				}
 				e := f.EnumType[p[1]]
-				addEnumDocumentation(result, p[2:], loc.GetLeadingComments(), fFQN+"."+e.GetName())
+				addEnumDocumentation(result, p[2:], doc, srcLoc, fFQN+"."+e.GetName())
 			case fileDescriptorService:
+				if len(p) < 2 || p[1] < 0 || int(p[1]) >= len(f.GetService()) {
+					continue
+				}
 				sFQN := fFQN + "." + f.GetService()[p[1]].GetName()
-				addServiceDocumentation(result, p[2:], loc.GetLeadingComments(), sFQN)
+				addServiceDocumentation(result, p[2:], doc, srcLoc, sFQN)
 			case fileDescriptorName, fileDescriptorPackage, fileDescriptorDependency,
 				fileDescriptorExtension, fileDescriptorOptions, fileDescriptorSourceCodeInfo,
 				fileDescriptorPublicDependency, fileDescriptorWeakDependency,
@@ -665,6 +679,7 @@ func processMessage(model *api.API, m *descriptorpb.DescriptorProto, mFQN, packa
 		field := &api.Field{
 			Name:          mf.GetName(),
 			ID:            mFQN + "." + mf.GetName(),
+			Number:        mf.GetNumber(),
 			JSONName:      mf.GetJsonName(),
 			Deprecated:    mf.GetOptions().GetDeprecated(),
 			Optional:      isProtoOptional,
@@ -826,49 +841,111 @@ func processEnum(model *api.API, e *descriptorpb.EnumDescriptorProto, eFQN, pack
 	return enum
 }
 
-func addServiceDocumentation(model *api.API, p []int32, doc string, sFQN string) {
+func addServiceDocumentation(model *api.API, p []int32, doc string, srcLoc *api.SourceLocation, sFQN string) {
+	service := model.Service(sFQN)
+	if service == nil {
+		return
+	}
 	switch {
 	case len(p) == 0:
 		// This is a comment for a service
-		model.Service(sFQN).Documentation = trimLeadingSpacesInDocumentation(doc)
+		if doc != "" && service.Documentation == "" {
+			service.Documentation = doc
+		}
+		if srcLoc != nil && service.SourceLocation == nil {
+			service.SourceLocation = srcLoc
+		}
 	case p[0] == serviceDescriptorProtoMethod && len(p) == 2:
 		// This is a comment for a method
-		model.Service(sFQN).Methods[p[1]].Documentation = trimLeadingSpacesInDocumentation(doc)
+		if p[1] >= 0 && int(p[1]) < len(service.Methods) {
+			method := service.Methods[p[1]]
+			if doc != "" && method.Documentation == "" {
+				method.Documentation = doc
+			}
+			if srcLoc != nil && method.SourceLocation == nil {
+				method.SourceLocation = srcLoc
+			}
+		}
 	case p[0] == serviceDescriptorProtoMethod:
 		// A comment for something within a method (options, arguments, etc).
 		// Ignored, as these comments do not refer to any artifact in the
 		// generated code.
-	case p[0] == serviceDescriptorProtoOption:
-		// This is a comment for a service option. Ignored, as these comments do
-		// not refer to any artifact in the generated code.
+	case p[0] == serviceDescriptorProtoName, p[0] == serviceDescriptorProtoOption:
+		// These comments/tokens are ignored.
 	default:
 		slog.Warn("service dropped unknown documentation", "loc", p, "docs", doc)
 	}
 }
 
-func addMessageDocumentation(model *api.API, m *descriptorpb.DescriptorProto, p []int32, doc string, mFQN string) {
-	// Beware of refactoring the calls to `trimLeadingSpacesInDocumentation`.
-	// We should modify `doc` only once, upon assignment to `.Documentation`
+func addMessageDocumentation(model *api.API, m *descriptorpb.DescriptorProto, p []int32, doc string, srcLoc *api.SourceLocation, mFQN string) {
 	switch {
 	case len(p) == 0:
 		// This is a comment for a top level message
-		model.Message(mFQN).Documentation = trimLeadingSpacesInDocumentation(doc)
+		msg := model.Message(mFQN)
+		if msg == nil {
+			return
+		}
+		if doc != "" && msg.Documentation == "" {
+			msg.Documentation = doc
+		}
+		if srcLoc != nil && msg.SourceLocation == nil {
+			msg.SourceLocation = srcLoc
+		}
 	case p[0] == messageDescriptorNestedType:
+		if len(p) < 2 || p[1] < 0 || int(p[1]) >= len(m.GetNestedType()) {
+			return
+		}
 		nmsg := m.GetNestedType()[p[1]]
 		nmFQN := mFQN + "." + nmsg.GetName()
-		addMessageDocumentation(model, nmsg, p[2:], doc, nmFQN)
+		addMessageDocumentation(model, nmsg, p[2:], doc, srcLoc, nmFQN)
 	case p[0] == messageDescriptorField && len(p) == 2:
-		model.Message(mFQN).Fields[p[1]].Documentation = trimLeadingSpacesInDocumentation(doc)
+		msg := model.Message(mFQN)
+		if msg == nil || p[1] < 0 || int(p[1]) >= len(msg.Fields) {
+			return
+		}
+		field := msg.Fields[p[1]]
+		if doc != "" && field.Documentation == "" {
+			field.Documentation = doc
+		}
+		if srcLoc != nil && field.SourceLocation == nil {
+			field.SourceLocation = srcLoc
+		}
 	case p[0] == messageDescriptorEnum:
+		if len(p) < 2 || p[1] < 0 || int(p[1]) >= len(m.GetEnumType()) {
+			return
+		}
 		eFQN := mFQN + "." + m.GetEnumType()[p[1]].GetName()
-		addEnumDocumentation(model, p[2:], doc, eFQN)
+		addEnumDocumentation(model, p[2:], doc, srcLoc, eFQN)
 	case p[0] == messageDescriptorOneOf && len(p) == 2:
-		model.Message(mFQN).OneOfs[p[1]].Documentation = trimLeadingSpacesInDocumentation(doc)
-	case p[0] == messageDescriptorExtensionRange:
-	case p[0] == messageDescriptorOptions:
-	case p[0] == messageDescriptorExtension:
-	case p[0] == messageDescriptorReservedRange:
-	case p[0] == messageDescriptorReservedName:
+		msg := model.Message(mFQN)
+		if msg == nil {
+			return
+		}
+		var target *api.OneOf
+		if p[1] >= 0 && int(p[1]) < len(m.GetOneofDecl()) {
+			name := m.GetOneofDecl()[p[1]].GetName()
+			if idx := slices.IndexFunc(msg.OneOfs, func(o *api.OneOf) bool { return o.Name == name }); idx >= 0 {
+				target = msg.OneOfs[idx]
+			}
+		} else if p[1] >= 0 && int(p[1]) < len(msg.OneOfs) {
+			target = msg.OneOfs[p[1]]
+		}
+		if target != nil {
+			if doc != "" && target.Documentation == "" {
+				target.Documentation = doc
+			}
+			if srcLoc != nil && target.SourceLocation == nil {
+				target.SourceLocation = srcLoc
+			}
+		}
+	case p[0] == messageDescriptorField,
+		p[0] == messageDescriptorOneOf,
+		p[0] == messageDescriptorName,
+		p[0] == messageDescriptorExtensionRange,
+		p[0] == messageDescriptorOptions,
+		p[0] == messageDescriptorExtension,
+		p[0] == messageDescriptorReservedRange,
+		p[0] == messageDescriptorReservedName:
 		// These comments are ignored, as they refer to Protobuf elements
 		// without corresponding public APIs in the generated code.
 	default:
@@ -877,15 +954,34 @@ func addMessageDocumentation(model *api.API, m *descriptorpb.DescriptorProto, p 
 }
 
 // addEnumDocumentation adds documentation to an enum.
-func addEnumDocumentation(model *api.API, p []int32, doc string, eFQN string) {
+func addEnumDocumentation(model *api.API, p []int32, doc string, srcLoc *api.SourceLocation, eFQN string) {
+	enum := model.Enum(eFQN)
+	if enum == nil {
+		return
+	}
 	switch {
 	case len(p) == 0:
 		// This is a comment for an enum
-		model.Enum(eFQN).Documentation = trimLeadingSpacesInDocumentation(doc)
+		if doc != "" && enum.Documentation == "" {
+			enum.Documentation = doc
+		}
+		if srcLoc != nil && enum.SourceLocation == nil {
+			enum.SourceLocation = srcLoc
+		}
+	case p[0] == enumDescriptorName, p[0] == enumDescriptorOptions, p[0] == enumDescriptorReservedName, p[0] == enumDescriptorVisibility:
+		// Ignored tokens.
 	case p[0] == enumDescriptorValue && len(p) == 2:
-		model.Enum(eFQN).Values[p[1]].Documentation = trimLeadingSpacesInDocumentation(doc)
+		if p[1] >= 0 && int(p[1]) < len(enum.Values) {
+			val := enum.Values[p[1]]
+			if doc != "" && val.Documentation == "" {
+				val.Documentation = doc
+			}
+			if srcLoc != nil && val.SourceLocation == nil {
+				val.SourceLocation = srcLoc
+			}
+		}
 	case p[0] == enumDescriptorValue:
-		slog.Warn("enumValue comments with missing index", "loc", p, "docs", doc)
+		// Sub-element of enum value (name, number, options, etc), ignored.
 	case p[0] == enumDescriptorReservedRange:
 		// A comment for a reserved range, ignore, it does not emit any generated code.
 	default:
@@ -915,4 +1011,37 @@ func trimLeadingSpacesInDocumentation(doc string) string {
 		lines[i] = strings.TrimPrefix(line, " ")
 	}
 	return strings.TrimSuffix(strings.Join(lines, "\n"), "\n")
+}
+
+func newSourceLocation(file string, loc *descriptorpb.SourceCodeInfo_Location) *api.SourceLocation {
+	if loc == nil {
+		return nil
+	}
+	line := 0
+	if len(loc.Span) > 0 {
+		line = int(loc.Span[0]) + 1
+	}
+	return &api.SourceLocation{
+		File:                    file,
+		Line:                    line,
+		LeadingComments:         loc.GetLeadingComments(),
+		TrailingComments:        loc.GetTrailingComments(),
+		LeadingDetachedComments: loc.GetLeadingDetachedComments(),
+	}
+}
+
+func extractDocumentation(loc *descriptorpb.SourceCodeInfo_Location) string {
+	if loc == nil {
+		return ""
+	}
+	if loc.GetLeadingComments() != "" {
+		return trimLeadingSpacesInDocumentation(loc.GetLeadingComments())
+	}
+	if loc.GetTrailingComments() != "" {
+		return trimLeadingSpacesInDocumentation(loc.GetTrailingComments())
+	}
+	if len(loc.GetLeadingDetachedComments()) > 0 {
+		return trimLeadingSpacesInDocumentation(strings.Join(loc.GetLeadingDetachedComments(), "\n\n"))
+	}
+	return ""
 }

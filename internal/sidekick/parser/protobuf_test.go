@@ -30,6 +30,7 @@ import (
 	"github.com/googleapis/librarian/internal/sidekick/api/apitest"
 	"github.com/googleapis/librarian/internal/sources"
 	"google.golang.org/genproto/googleapis/api/annotations"
+	"google.golang.org/protobuf/types/descriptorpb"
 	"google.golang.org/protobuf/types/known/apipb"
 	"google.golang.org/protobuf/types/pluginpb"
 )
@@ -548,10 +549,10 @@ func TestProtobuf_UniqueEnumValues(t *testing.T) {
 	}
 
 	less := func(a, b *api.EnumValue) bool { return a.Name < b.Name }
-	if diff := cmp.Diff(fullList, withAlias.Values, cmpopts.SortSlices(less), cmpopts.IgnoreFields(api.EnumValue{}, "Parent")); diff != "" {
+	if diff := cmp.Diff(fullList, withAlias.Values, cmpopts.SortSlices(less), cmpopts.IgnoreFields(api.EnumValue{}, "Parent", "SourceLocation")); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
-	if diff := cmp.Diff(uniqueList, withAlias.UniqueNumberValues, cmpopts.SortSlices(less), cmpopts.IgnoreFields(api.EnumValue{}, "Parent")); diff != "" {
+	if diff := cmp.Diff(uniqueList, withAlias.UniqueNumberValues, cmpopts.SortSlices(less), cmpopts.IgnoreFields(api.EnumValue{}, "Parent", "SourceLocation")); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
@@ -1755,7 +1756,7 @@ func TestProtobuf_AutoPopulated(t *testing.T) {
 		t.Fatalf("Cannot find method %s in API State", ".test.TestService.CreateFoo")
 	}
 	want := []*api.Field{request_id, request_id_optional, request_id_with_field_behavior}
-	if diff := cmp.Diff(want, method.AutoPopulated); diff != "" {
+	if diff := cmp.Diff(want, method.AutoPopulated, cmpopts.IgnoreFields(api.Field{}, "Number", "SourceLocation")); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
@@ -2252,6 +2253,236 @@ func TestParseProtobuf_ProtocConfig(t *testing.T) {
 	}
 	if _, err := ParseProtobuf(cfg); err == nil {
 		t.Fatal("ParseProtobuf with nonexistent protoc binary expected error, got nil")
+	}
+}
+
+func TestProtobuf_FieldNumber(t *testing.T) {
+	requireProtoc(t)
+	model, err := makeAPIForProtobuf(nil, newTestCodeGeneratorRequest(t, "scalar.proto"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	message := model.Message(".test.Fake")
+	if message == nil {
+		t.Fatalf("Cannot find message .test.Fake")
+	}
+	wantNumbers := map[string]int32{
+		"f_double":   1,
+		"f_float":    2,
+		"f_int64":    3,
+		"f_uint64":   4,
+		"f_int32":    5,
+		"f_fixed64":  6,
+		"f_fixed32":  7,
+		"f_bool":     8,
+		"f_string":   9,
+		"f_bytes":    12,
+		"f_uint32":   13,
+		"f_sfixed32": 15,
+		"f_sfixed64": 16,
+		"f_sint32":   17,
+		"f_sint64":   18,
+	}
+	gotNumbers := make(map[string]int32)
+	for _, field := range message.Fields {
+		gotNumbers[field.Name] = field.Number
+	}
+	if diff := cmp.Diff(wantNumbers, gotNumbers); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+}
+
+func TestProtobuf_SourceLocation(t *testing.T) {
+	requireProtoc(t)
+	model, err := makeAPIForProtobuf(nil, newTestCodeGeneratorRequest(t, "comments.proto"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	oneofModel, err := makeAPIForProtobuf(nil, newTestCodeGeneratorRequest(t, "oneofs.proto"))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	for _, test := range []struct {
+		name string
+		got  *api.SourceLocation
+		want *api.SourceLocation
+	}{
+		{
+			name: "Message",
+			got:  model.Message(".test.Request").SourceLocation,
+			want: &api.SourceLocation{
+				File:            "comments.proto",
+				Line:            31,
+				LeadingComments: " A test message.\n\n With even more of a description.\n Maybe in more than one line.\n And some markdown:\n - An item\n   - A nested item\n - Another item\n",
+			},
+		},
+		{
+			name: "Field",
+			got:  model.Message(".test.Request").Fields[0].SourceLocation,
+			want: &api.SourceLocation{
+				File:            "comments.proto",
+				Line:            35,
+				LeadingComments: " A field.\n\n With a longer description.\n",
+			},
+		},
+		{
+			name: "Enum",
+			got:  model.Enum(".test.Response.Status").SourceLocation,
+			want: &api.SourceLocation{
+				File:            "comments.proto",
+				Line:            47,
+				LeadingComments: " Some enum.\n\n Line 1.\n Line 2.\n",
+			},
+		},
+		{
+			name: "EnumValue",
+			got:  model.Enum(".test.Response.Status").Values[0].SourceLocation,
+			want: &api.SourceLocation{
+				File:            "comments.proto",
+				Line:            52,
+				LeadingComments: " The first enum value description.\n\n Value Line 1.\n Value Line 2.\n",
+			},
+		},
+		{
+			name: "OneOf",
+			got:  oneofModel.Message(".test.Fake").OneOfs[0].SourceLocation,
+			want: &api.SourceLocation{
+				File: "oneofs.proto",
+				Line: 20,
+			},
+		},
+		{
+			name: "Service",
+			got:  model.Service(".test.Service").SourceLocation,
+			want: &api.SourceLocation{
+				File:            "comments.proto",
+				Line:            75,
+				LeadingComments: " A service.\n\n With a longer service description.\n",
+			},
+		},
+		{
+			name: "Method",
+			got:  model.Service(".test.Service").Methods[0].SourceLocation,
+			want: &api.SourceLocation{
+				File:            "comments.proto",
+				Line:            83,
+				LeadingComments: " Some RPC.\n\n It does not do much.\n",
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			if diff := cmp.Diff(test.want, test.got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestProtobuf_ExtractDocumentation(t *testing.T) {
+	strPtr := func(s string) *string { return &s }
+	for _, test := range []struct {
+		name string
+		loc  *descriptorpb.SourceCodeInfo_Location
+		want string
+	}{
+		{
+			name: "nil location",
+			loc:  nil,
+			want: "",
+		},
+		{
+			name: "empty location",
+			loc:  &descriptorpb.SourceCodeInfo_Location{},
+			want: "",
+		},
+		{
+			name: "leading comments preferred",
+			loc: &descriptorpb.SourceCodeInfo_Location{
+				LeadingComments:  strPtr(" Leading comment\n"),
+				TrailingComments: strPtr(" Trailing comment\n"),
+			},
+			want: "Leading comment",
+		},
+		{
+			name: "trailing comments fallback",
+			loc: &descriptorpb.SourceCodeInfo_Location{
+				TrailingComments: strPtr(" Trailing comment fallback\n"),
+			},
+			want: "Trailing comment fallback",
+		},
+		{
+			name: "detached comments fallback",
+			loc: &descriptorpb.SourceCodeInfo_Location{
+				LeadingDetachedComments: []string{" Detached 1", " Detached 2"},
+			},
+			want: "Detached 1\n\nDetached 2",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := extractDocumentation(test.loc)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestProtobuf_NewSourceLocation(t *testing.T) {
+	strPtr := func(s string) *string { return &s }
+	for _, test := range []struct {
+		name string
+		file string
+		loc  *descriptorpb.SourceCodeInfo_Location
+		want *api.SourceLocation
+	}{
+		{
+			name: "nil location",
+			file: "file.proto",
+			loc:  nil,
+			want: nil,
+		},
+		{
+			name: "empty span",
+			file: "empty_span.proto",
+			loc: &descriptorpb.SourceCodeInfo_Location{
+				Span: []int32{},
+			},
+			want: &api.SourceLocation{
+				File: "empty_span.proto",
+				Line: 0,
+			},
+		},
+		{
+			name: "valid location with comments",
+			file: "test.proto",
+			loc: &descriptorpb.SourceCodeInfo_Location{
+				Span:                    []int32{41, 0, 42, 10},
+				LeadingComments:         strPtr("lead"),
+				TrailingComments:        strPtr("trail"),
+				LeadingDetachedComments: []string{"detached"},
+			},
+			want: &api.SourceLocation{
+				File:                    "test.proto",
+				Line:                    42,
+				LeadingComments:         "lead",
+				TrailingComments:        "trail",
+				LeadingDetachedComments: []string{"detached"},
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := newSourceLocation(test.file, test.loc)
+			if test.want == nil {
+				if got != nil {
+					t.Errorf("newSourceLocation(%q, nil) = %+v, want nil", test.file, got)
+				}
+				return
+			}
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
 	}
 }
 
