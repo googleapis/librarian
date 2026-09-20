@@ -32,6 +32,7 @@ type serviceAnnotations struct {
 	CopyrightYear   string
 	DocLines        []string
 	Methods         []*methodAnnotations
+	Transport       *transportAnnotations
 }
 
 func (c *codec) annotateService(service *api.Service, model *modelAnnotations) error {
@@ -42,6 +43,10 @@ func (c *codec) annotateService(service *api.Service, model *modelAnnotations) e
 		clientName = name + "Client"
 	}
 	asyncClientName := strings.TrimSuffix(clientName, "Client") + "AsyncClient"
+	copyrightYear := ""
+	if model != nil {
+		copyrightYear = model.CopyrightYear
+	}
 	ann := &serviceAnnotations{
 		Model:           model,
 		Service:         service,
@@ -50,7 +55,7 @@ func (c *codec) annotateService(service *api.Service, model *modelAnnotations) e
 		ClientName:      clientName,
 		AsyncClientName: asyncClientName,
 		DirectoryName:   snakeCase(name),
-		CopyrightYear:   model.CopyrightYear,
+		CopyrightYear:   copyrightYear,
 		DocLines:        docLines,
 	}
 
@@ -62,6 +67,12 @@ func (c *codec) annotateService(service *api.Service, model *modelAnnotations) e
 			ann.Methods = append(ann.Methods, mAnn)
 		}
 	}
+
+	tAnn, err := c.annotateTransport(service)
+	if err != nil {
+		return err
+	}
+	ann.Transport = tAnn
 
 	service.Codec = ann
 	return nil

@@ -78,8 +78,8 @@ func TestAnnotateService(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			model := api.NewTestAPI([]*api.Message{req, resp}, nil, []*api.Service{test.svc})
-			codec := newTestCodec(t, model, nil)
-			if err := codec.annotateModel(); err != nil {
+			c := newTestCodec(t, model, nil)
+			if err := c.annotateModel(); err != nil {
 				t.Fatal(err)
 			}
 			ann, ok := test.svc.Codec.(*serviceAnnotations)
@@ -87,7 +87,7 @@ func TestAnnotateService(t *testing.T) {
 				t.Fatalf("got %T, want *serviceAnnotations", test.svc.Codec)
 			}
 			if diff := cmp.Diff(test.want, ann,
-				cmpopts.IgnoreFields(serviceAnnotations{}, "Model", "Service"),
+				cmpopts.IgnoreFields(serviceAnnotations{}, "Model", "Service", "Transport"),
 				cmpopts.IgnoreFields(methodAnnotations{}, "Service", "Method"),
 			); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)

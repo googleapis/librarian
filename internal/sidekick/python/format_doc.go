@@ -523,3 +523,102 @@ func getSubsequentLineIndentLevel(s string) int {
 	}
 	return 0
 }
+
+// methodDocSummary contains the lead and optional rest of a method docstring summary.
+// For short method names, Lead contains the entire humanized name and Wrap is false.
+// For longer method names that exceed the first line budget (30 chars = 70 total - 40 prefix),
+// Lead contains the first line and Rest contains the subsequent wrapped line(s).
+type methodDocSummary struct {
+	Lead string
+	Rest string
+	Wrap bool
+}
+
+func formatMethodDocSummary(methodName string) methodDocSummary {
+	humanized := strings.ReplaceAll(snakeCase(methodName), "_", " ")
+	const (
+		totalWidth         = 70
+		summaryIndent      = 8
+		firstLinePrefixLen = 40 // 8 spaces indent + len(`r"""Return a callable for the `)
+		suffixLen          = 18 // len(" method over gRPC.")
+	)
+	firstLineAvail := totalWidth - firstLinePrefixLen // 30 chars
+	if len(humanized) <= firstLineAvail {
+		return methodDocSummary{
+			Lead: humanized,
+			Wrap: false,
+		}
+	}
+
+	words := strings.Fields(humanized)
+	var line1Words []string
+	currLen := 0
+	splitIdx := 0
+	for i, w := range words {
+		addedLen := len(w)
+		if len(line1Words) > 0 {
+			addedLen++ // space separator
+		}
+		if len(line1Words) > 0 && currLen+addedLen > firstLineAvail {
+			splitIdx = i
+			break
+		}
+		line1Words = append(line1Words, w)
+		currLen += addedLen
+	}
+	if splitIdx == 0 && len(words) > 0 {
+		line1Words = []string{words[0]}
+		splitIdx = 1
+	}
+
+	lead := strings.Join(line1Words, " ")
+	restWords := words[splitIdx:]
+	if len(restWords) == 0 {
+		return methodDocSummary{
+			Lead: lead,
+			Wrap: false,
+		}
+	}
+
+	restLines := wrapWords(strings.Join(restWords, " "), totalWidth-summaryIndent-suffixLen)
+	rest := strings.Join(restLines, "\n"+strings.Repeat(" ", summaryIndent))
+
+	return methodDocSummary{
+		Lead: lead,
+		Rest: rest,
+		Wrap: true,
+	}
+}
+
+func wrapWords(text string, width int) []string {
+	words := strings.Fields(text)
+	if len(words) == 0 {
+		return nil
+	}
+	var lines []string
+	var current strings.Builder
+	for _, w := range words {
+		wLen := len(w)
+		if current.Len() == 0 {
+			current.WriteString(w)
+		} else if current.Len()+1+wLen <= width {
+			current.WriteByte(' ')
+			current.WriteString(w)
+		} else {
+			lines = append(lines, current.String())
+			current.Reset()
+			current.WriteString(w)
+		}
+	}
+	if current.Len() > 0 {
+		lines = append(lines, current.String())
+	}
+	return lines
+}
+
+func formatRstDocLines(doc string, width, indent int) []string {
+	if strings.TrimSpace(doc) == "" {
+		return nil
+	}
+	return formatRstDoc(doc, width, indent)
+}

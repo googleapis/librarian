@@ -189,3 +189,84 @@ func TestFormatDocLines(t *testing.T) {
 		})
 	}
 }
+
+func TestFormatMethodDocSummary(t *testing.T) {
+	for _, test := range []struct {
+		name       string
+		methodName string
+		want       methodDocSummary
+	}{
+		{
+			name:       "short method name",
+			methodName: "CreateFoo",
+			want: methodDocSummary{
+				Lead: "create foo",
+				Wrap: false,
+			},
+		},
+		{
+			name:       "long method name wrapping to second line",
+			methodName: "AnalyzeOrgPolicyGovernedAssets",
+			want: methodDocSummary{
+				Lead: "analyze org policy governed",
+				Rest: "assets",
+				Wrap: true,
+			},
+		},
+		{
+			name:       "long method name with multiple words on rest",
+			methodName: "AnalyzeOrgPolicyGovernedAssetsResponse",
+			want: methodDocSummary{
+				Lead: "analyze org policy governed",
+				Rest: "assets response",
+				Wrap: true,
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := formatMethodDocSummary(test.methodName)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestFormatRstDocLines(t *testing.T) {
+	for _, test := range []struct {
+		name   string
+		doc    string
+		width  int
+		indent int
+		want   []string
+	}{
+		{
+			name:   "empty",
+			doc:    "",
+			width:  72,
+			indent: 4,
+			want:   nil,
+		},
+		{
+			name:   "whitespace only",
+			doc:    "   \n  \t ",
+			width:  72,
+			indent: 4,
+			want:   nil,
+		},
+		{
+			name:   "single line",
+			doc:    "Foo service documentation.",
+			width:  72,
+			indent: 4,
+			want:   []string{"Foo service documentation."},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := formatRstDocLines(test.doc, test.width, test.indent)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}

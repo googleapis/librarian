@@ -1,0 +1,39 @@
+{{> partials/prologue}}
+from collections import OrderedDict
+from typing import Dict, Type{{#Codec.Transport.RestAsyncIOEnabled}}, Tuple{{/Codec.Transport.RestAsyncIOEnabled}}
+
+from .base import {{Name}}Transport
+from .grpc import {{Name}}GrpcTransport
+from .grpc_asyncio import {{Name}}GrpcAsyncIOTransport
+from .rest import {{Name}}RestTransport
+from .rest import {{Name}}RestInterceptor
+{{#Codec.Transport.RestAsyncIOEnabled}}
+ASYNC_REST_CLASSES: Tuple[str, ...]
+try:
+    from .rest_asyncio import Async{{Name}}RestTransport
+    from .rest_asyncio import Async{{Name}}RestInterceptor
+    ASYNC_REST_CLASSES = ('Async{{Name}}RestTransport', 'Async{{Name}}RestInterceptor')
+    HAS_REST_ASYNC = True
+except ImportError:  # pragma: NO COVER
+    ASYNC_REST_CLASSES = ()
+    HAS_REST_ASYNC = False
+{{/Codec.Transport.RestAsyncIOEnabled}}
+
+
+# Compile a registry of transports.
+_transport_registry = OrderedDict()  # type: Dict[str, Type[{{Name}}Transport]]
+_transport_registry['grpc'] = {{Name}}GrpcTransport
+_transport_registry['grpc_asyncio'] = {{Name}}GrpcAsyncIOTransport
+_transport_registry['rest'] = {{Name}}RestTransport
+{{#Codec.Transport.RestAsyncIOEnabled}}
+if HAS_REST_ASYNC:  # pragma: NO COVER
+    _transport_registry['rest_asyncio'] = Async{{Name}}RestTransport
+{{/Codec.Transport.RestAsyncIOEnabled}}
+
+__all__ = (
+    '{{Name}}Transport',
+    '{{Name}}GrpcTransport',
+    '{{Name}}GrpcAsyncIOTransport',
+    '{{Name}}RestTransport',
+    '{{Name}}RestInterceptor',
+){{#Codec.Transport.RestAsyncIOEnabled}} + ASYNC_REST_CLASSES{{/Codec.Transport.RestAsyncIOEnabled}}
