@@ -124,14 +124,13 @@ flowchart LR
   - `407eceec` `test(internal/librarian/cpp)`: Add Assured Workloads v1 integration oracle test.
 - **Verification**: `go test -tags integration -v ./internal/librarian/cpp -run TestAssuredWorkloads` passes with 100% byte-for-byte parity across all 33 generated files; unit tests and linters pass cleanly.
 
-### Phase 8: Production Oracle 4 — KMS
+### Phase 8: Production Oracle 4 — KMS [COMPLETED]
 - **Goal**: Support IAM policy methods, location-dependent routing, and resource name helpers on KMS with active formatting.
-- **Tasks**:
-  1. Enrich annotations for IAM policy RPCs (`GetIamPolicy`, `SetIamPolicy`, `TestIamPermissions`).
-  2. Validate explicit routing headers and location-dependent endpoints via routing partials.
-  3. Run integration test generating `google/cloud/kms/v1`.
-  4. Run active `clang-format` and assert 100% byte-for-byte parity against production `google-cloud-cpp`.
-- **Verification**: `go test -tags integration ./internal/librarian/cpp/...`.
+- **Status**: Completed and verified.
+- **Delivered Commits**:
+  - `8e1b9844` `fix(internal/sidekick/cpp)`: Align KMS stub mixin order, IAM comments, and reference link scoping.
+  - `35142551` `test(internal/librarian/cpp)`: Add KMS v1 integration oracle test.
+- **Verification**: `go test -tags integration -v ./internal/librarian/cpp -run TestKms` passes with 100% byte-for-byte parity across all 122 generated files (4 services: Autokey, AutokeyAdmin, KeyManagementService, EkmService); unit tests and linters pass cleanly.
 
 ### Phase 9: Production Oracle 5 — Compute Engine
 - **Goal**: Support Discovery documents, Compute LROs, and map pagination for Compute Engine with active formatting.
