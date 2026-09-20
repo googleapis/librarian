@@ -37,6 +37,44 @@ namespace cloud {
 namespace {{Codec.InternalNamespace}} {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
+std::shared_ptr<{{Codec.StubClassName}}>
+{{Codec.CreateDefaultStubFunctionName}}(
+    std::shared_ptr<internal::GrpcAuthenticationStrategy> auth,
+    Options const& options) {
+  auto channel = auth->CreateChannel(
+    options.get<EndpointOption>(), internal::MakeChannelArguments(options));
+  auto service_grpc_stub = {{Codec.ServiceGrpcName}}::NewStub(channel);
+{{#Codec.HasLongrunningMethod}}
+  std::shared_ptr<{{Codec.StubClassName}}> stub =
+    std::make_shared<{{Codec.DefaultStubClassName}}>(
+      std::move(service_grpc_stub),
+      google::longrunning::Operations::NewStub(channel));
+{{/Codec.HasLongrunningMethod}}
+{{^Codec.HasLongrunningMethod}}
+  std::shared_ptr<{{Codec.StubClassName}}> stub =
+    std::make_shared<{{Codec.DefaultStubClassName}}>(std::move(service_grpc_stub));
+{{/Codec.HasLongrunningMethod}}
+
+  if (auth->RequiresConfigureContext()) {
+    stub = std::make_shared<{{Codec.AuthDecoratorClassName}}>(
+        std::move(auth), std::move(stub));
+  }
+  stub = std::make_shared<{{Codec.MetadataDecoratorClassName}}>(
+      std::move(stub), std::multimap<std::string, std::string>{});
+  if (internal::Contains(
+      options.get<LoggingComponentsOption>(), "rpc")) {
+    GCP_LOG(INFO) << "Enabled logging for gRPC calls";
+    stub = std::make_shared<{{Codec.LoggingDecoratorClassName}}>(
+        std::move(stub),
+        options.get<GrpcTracingOptionsOption>(),
+        options.get<LoggingComponentsOption>());
+  }
+  if (internal::TracingEnabled(options)) {
+    stub = Make{{Codec.TracingStubClassName}}(std::move(stub));
+  }
+  return stub;
+}
+
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace {{Codec.InternalNamespace}}
 }  // namespace cloud

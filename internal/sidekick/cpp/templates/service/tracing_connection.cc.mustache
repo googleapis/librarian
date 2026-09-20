@@ -27,6 +27,107 @@ namespace cloud {
 namespace {{Codec.InternalNamespace}} {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
+#ifdef GOOGLE_CLOUD_CPP_HAVE_OPENTELEMETRY
+
+{{Codec.TracingConnectionClassName}}::{{Codec.TracingConnectionClassName}}(
+    std::shared_ptr<{{Codec.Namespace}}::{{Codec.ConnectionClassName}}> child)
+    : child_(std::move(child)) {}
+
+{{#Codec.Methods}}
+{{#IsLongrunning}}
+future<{{{CppReturnType}}}>
+{{ServiceName}}TracingConnection::{{Name}}({{{CppRequestType}}} const& request) {
+  auto span = internal::MakeSpan(
+      "{{Codec.Namespace}}::{{ServiceName}}Connection::{{Name}}");
+  internal::OTelScope scope(span);
+  return internal::EndSpan(std::move(span), child_->{{Name}}(request));
+}
+
+StatusOr<{{{LongrunningOperationType}}}>
+{{ServiceName}}TracingConnection::{{Name}}(
+    NoAwaitTag, {{{CppRequestType}}} const& request) {
+  auto span = internal::MakeSpan(
+      "{{Codec.Namespace}}::{{ServiceName}}Connection::{{Name}}");
+  opentelemetry::trace::Scope scope(span);
+  return internal::EndSpan(*span, child_->{{Name}}(
+      NoAwaitTag{}, request));
+}
+
+future<{{{CppReturnType}}}>
+{{ServiceName}}TracingConnection::{{Name}}(
+    {{{LongrunningOperationType}}} const& operation) {
+  auto span = internal::MakeSpan(
+      "{{Codec.Namespace}}::{{ServiceName}}Connection::{{Name}}");
+  internal::OTelScope scope(span);
+  return internal::EndSpan(std::move(span),
+      child_->{{Name}}(operation));
+}
+
+{{/IsLongrunning}}
+{{#IsBidirStreaming}}
+std::unique_ptr<::google::cloud::AsyncStreamingReadWriteRpc<
+    {{{CppRequestType}}},
+    {{{CppResponseType}}}>>
+{{ServiceName}}TracingConnection::AsyncStreamingReadWrite() {
+  return child_->AsyncStreamingReadWrite();
+}
+
+{{/IsBidirStreaming}}
+{{#IsPaginated}}
+StreamRange<{{{RangeOutputType}}}>
+{{ServiceName}}TracingConnection::{{Name}}({{{CppRequestType}}} request) {
+  auto span = internal::MakeSpan("{{Codec.Namespace}}::{{ServiceName}}Connection::{{Name}}");
+  internal::OTelScope scope(span);
+  auto sr = child_->{{Name}}(std::move(request));
+  return internal::MakeTracedStreamRange<{{{RangeOutputType}}}>(
+        std::move(span), std::move(sr));
+}
+
+{{/IsPaginated}}
+{{#IsStreamingRead}}
+StreamRange<{{{CppResponseType}}}>
+{{ServiceName}}TracingConnection::{{Name}}({{{CppRequestType}}} const& request) {
+  auto span = internal::MakeSpan("{{Codec.Namespace}}::{{ServiceName}}Connection::{{Name}}");
+  internal::OTelScope scope(span);
+  auto sr = child_->{{Name}}(request);
+  return internal::MakeTracedStreamRange<{{{CppResponseType}}}>(
+      std::move(span), std::move(sr));
+}
+
+{{/IsStreamingRead}}
+{{#IsUnary}}
+{{{CppReturnType}}}
+{{ServiceName}}TracingConnection::{{Name}}({{{CppRequestType}}} const& request) {
+  auto span = internal::MakeSpan("{{Codec.Namespace}}::{{ServiceName}}Connection::{{Name}}");
+  auto scope = opentelemetry::trace::Scope(span);
+  return internal::EndSpan(*span, child_->{{Name}}(request));
+}
+
+{{/IsUnary}}
+{{/Codec.Methods}}
+{{#Codec.AsyncMethods}}
+future<{{{CppReturnType}}}>
+{{ServiceName}}TracingConnection::Async{{Name}}({{{CppRequestType}}} const& request) {
+  auto span = internal::MakeSpan(
+      "{{Codec.Namespace}}::{{ServiceName}}Connection::Async{{Name}}");
+  internal::OTelScope scope(span);
+  return internal::EndSpan(std::move(span), child_->Async{{Name}}(request));
+}
+
+{{/Codec.AsyncMethods}}
+#endif  // GOOGLE_CLOUD_CPP_HAVE_OPENTELEMETRY
+
+std::shared_ptr<{{Codec.Namespace}}::{{Codec.ConnectionClassName}}>
+Make{{Codec.TracingConnectionClassName}}(
+    std::shared_ptr<{{Codec.Namespace}}::{{Codec.ConnectionClassName}}> conn) {
+#ifdef GOOGLE_CLOUD_CPP_HAVE_OPENTELEMETRY
+  if (internal::TracingEnabled(conn->options())) {
+    conn = std::make_shared<{{Codec.TracingConnectionClassName}}>(std::move(conn));
+  }
+#endif  // GOOGLE_CLOUD_CPP_HAVE_OPENTELEMETRY
+  return conn;
+}
+
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace {{Codec.InternalNamespace}}
 }  // namespace cloud

@@ -49,6 +49,8 @@ func TestAnnotateMethod_Unary(t *testing.T) {
 		CppReturnType:            "StatusOr<test::Item>",
 		IsUnary:                  true,
 		LongrunningOperationType: "google::longrunning::Operation",
+		Idempotency:              "kNonIdempotent",
+		GrpcStub:                 "grpc_stub_->",
 	}
 
 	diff := cmp.Diff(want, got,
@@ -226,8 +228,8 @@ func TestAnnotateMethod_Signatures(t *testing.T) {
 
 	sig := got.Signatures[0]
 	wantParams := []*parameterAnnotation{
-		{Type: "std::string const&", Name: "name"},
-		{Type: "bool", Name: "export_"},
+		{Type: "std::string const&", Name: "name", FieldName: "name", IsScalar: true},
+		{Type: "bool", Name: "export_", FieldName: "export_", IsScalar: true},
 	}
 	if diff := cmp.Diff(wantParams, sig.Parameters); diff != "" {
 		t.Errorf("parameters mismatch (-want +got):\n%s", diff)
@@ -287,4 +289,231 @@ func TestAnnotateMethod_Async(t *testing.T) {
 			t.Errorf("expected IsAsync true for LRO method, got false")
 		}
 	})
+}
+
+func TestAnnotateMethod_Idempotency(t *testing.T) {
+	req := api.NewTestMessage("Request")
+	resp := api.NewTestMessage("Response")
+
+	getMethod := api.NewTestMethod("GetThing").WithInput(req).WithOutput(resp)
+	getMethod.PathInfo = &api.PathInfo{Bindings: []*api.PathBinding{{Verb: "GET"}}}
+
+	putMethod := api.NewTestMethod("PutThing").WithInput(req).WithOutput(resp)
+	putMethod.PathInfo = &api.PathInfo{Bindings: []*api.PathBinding{{Verb: "PUT"}}}
+
+	postMethod := api.NewTestMethod("PostThing").WithInput(req).WithOutput(resp)
+	postMethod.PathInfo = &api.PathInfo{Bindings: []*api.PathBinding{{Verb: "POST"}}}
+
+	postOverride := api.NewTestMethod("PostThing").WithInput(req).WithOutput(resp)
+	postOverride.PathInfo = &api.PathInfo{Bindings: []*api.PathBinding{{Verb: "POST"}}}
+
+	for _, test := range []struct {
+		name        string
+		method      *api.Method
+		cfg         *config.CppLibrary
+		wantIdempot string
+	}{
+		{
+			name:        "default fallback is kNonIdempotent",
+			method:      api.NewTestMethod("DoThing").WithInput(req).WithOutput(resp),
+			wantIdempot: "kNonIdempotent",
+		},
+		{
+			name:        "GET verb is kIdempotent",
+			method:      getMethod,
+			wantIdempot: "kIdempotent",
+		},
+		{
+			name:        "PUT verb is kIdempotent",
+			method:      putMethod,
+			wantIdempot: "kIdempotent",
+		},
+		{
+			name:        "POST verb is kNonIdempotent",
+			method:      postMethod,
+			wantIdempot: "kNonIdempotent",
+		},
+		{
+			name:   "config override takes precedence",
+			method: postOverride,
+			cfg: &config.CppLibrary{
+				IdempotencyOverrides: []config.IdempotencyRule{
+					{RPCName: "PostThing", Idempotency: "kIdempotent"},
+				},
+			},
+			wantIdempot: "kIdempotent",
+		},
+		{
+			name: "GetIamPolicy is kIdempotent",
+			method: api.NewTestMethod("GetIamPolicy").
+				WithInput(api.NewTestMessage("GetIamPolicyRequest").WithPackage("google.iam.v1")).
+				WithOutput(api.NewTestMessage("Policy").WithPackage("google.iam.v1")),
+			wantIdempot: "kIdempotent",
+		},
+		{
+			name: "TestIamPermissions is kIdempotent",
+			method: api.NewTestMethod("TestIamPermissions").
+				WithInput(api.NewTestMessage("TestIamPermissionsRequest").WithPackage("google.iam.v1")).
+				WithOutput(api.NewTestMessage("TestIamPermissionsResponse").WithPackage("google.iam.v1")),
+			wantIdempot: "kIdempotent",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			svc := api.NewTestService("TestService").WithMethods(test.method)
+			model := api.NewTestAPI([]*api.Message{req, resp}, nil, []*api.Service{svc})
+			c := newCodec(test.cfg)
+			if err := c.annotateModel(model); err != nil {
+				t.Fatal(err)
+			}
+			got := test.method.Codec.(*methodAnnotations)
+			if got.Idempotency != test.wantIdempot {
+				t.Errorf("got idempotency %q, want %q", got.Idempotency, test.wantIdempot)
+			}
+		})
+	}
+}
+
+func TestAnnotateMethod_Routing(t *testing.T) {
+	req := api.NewTestMessage("Request")
+	resp := api.NewTestMessage("Response")
+
+	t.Run("simple routing", func(t *testing.T) {
+		method := api.NewTestMethod("RouteMethod").WithInput(req).WithOutput(resp)
+		method.Routing = []*api.RoutingInfo{
+			{
+				Name: "table_name",
+				Variants: []*api.RoutingInfoVariant{
+					{
+						FieldPath: []string{"table_name"},
+						Matching:  api.RoutingPathSpec{Segments: []string{"*"}},
+					},
+				},
+			},
+		}
+		svc := api.NewTestService("RouteService").WithMethods(method)
+		model := api.NewTestAPI([]*api.Message{req, resp}, nil, []*api.Service{svc})
+		c := newCodec(nil)
+		if err := c.annotateModel(model); err != nil {
+			t.Fatal(err)
+		}
+		got := method.Codec.(*methodAnnotations)
+		if !got.HasRouting {
+			t.Fatalf("expected HasRouting to be true")
+		}
+		if got.RoutingParamsCount != 1 {
+			t.Errorf("expected 1 routing param, got %d", got.RoutingParamsCount)
+		}
+		if len(got.RoutingParamMatchers) != 1 {
+			t.Fatalf("expected 1 matcher, got %d", len(got.RoutingParamMatchers))
+		}
+		matcher := got.RoutingParamMatchers[0]
+		if !matcher.IsSimple {
+			t.Errorf("expected matcher to be simple")
+		}
+		if matcher.ParamKey != "table_name" {
+			t.Errorf("expected ParamKey 'table_name', got %q", matcher.ParamKey)
+		}
+	})
+
+	t.Run("complex pattern routing", func(t *testing.T) {
+		method := api.NewTestMethod("RouteMethod").WithInput(req).WithOutput(resp)
+		method.Routing = []*api.RoutingInfo{
+			{
+				Name: "parent",
+				Variants: []*api.RoutingInfoVariant{
+					{
+						FieldPath: []string{"parent"},
+						Prefix:    api.RoutingPathSpec{Segments: []string{"projects", "*"}},
+						Matching:  api.RoutingPathSpec{Segments: []string{"instances", "*"}},
+					},
+				},
+			},
+		}
+		svc := api.NewTestService("RouteService").WithMethods(method)
+		model := api.NewTestAPI([]*api.Message{req, resp}, nil, []*api.Service{svc})
+		c := newCodec(nil)
+		if err := c.annotateModel(model); err != nil {
+			t.Fatal(err)
+		}
+		got := method.Codec.(*methodAnnotations)
+		if !got.HasRouting {
+			t.Fatalf("expected HasRouting to be true")
+		}
+		matcher := got.RoutingParamMatchers[0]
+		if matcher.IsSimple {
+			t.Errorf("expected complex matcher to have IsSimple=false")
+		}
+		if len(matcher.Patterns) != 1 {
+			t.Fatalf("expected 1 pattern, got %d", len(matcher.Patterns))
+		}
+		if !matcher.Patterns[0].HasRegex {
+			t.Errorf("expected HasRegex=true for complex pattern")
+		}
+	})
+}
+
+func TestAnnotateMethod_AutoPopulatedRequestId(t *testing.T) {
+	req := api.NewTestMessage("Request")
+	resp := api.NewTestMessage("Response")
+	method := api.NewTestMethod("DoOp").WithInput(req).WithOutput(resp)
+	method.AutoPopulated = []*api.Field{api.NewTestField("request_id")}
+	svc := api.NewTestService("OpService").WithMethods(method)
+	model := api.NewTestAPI([]*api.Message{req, resp}, nil, []*api.Service{svc})
+	c := newCodec(nil)
+	if err := c.annotateModel(model); err != nil {
+		t.Fatal(err)
+	}
+	got := method.Codec.(*methodAnnotations)
+	if !got.HasRequestId {
+		t.Errorf("expected HasRequestId=true")
+	}
+	if got.RequestIdFieldName != "request_id" {
+		t.Errorf("expected RequestIdFieldName='request_id', got %q", got.RequestIdFieldName)
+	}
+}
+
+func TestAnnotateMethod_ParameterAnnotationTypes(t *testing.T) {
+	subMsg := api.NewTestMessage("SubMsg")
+	mapField := api.NewTestField("labels").WithMap()
+	repField := api.NewTestField("tags").WithRepeated()
+	msgField := api.NewTestField("sub").WithType(api.TypezMessage)
+	msgField.TypezID = subMsg.ID
+	scalarField := api.NewTestField("count").WithType(api.TypezInt32)
+
+	req := api.NewTestMessage("Request").WithFields(mapField, repField, msgField, scalarField)
+	resp := api.NewTestMessage("Response")
+	method := api.NewTestMethod("DoOp").WithInput(req).WithOutput(resp).
+		WithSignatures(&api.MethodSignature{
+			Names: []string{"labels", "tags", "sub", "count"},
+		})
+	svc := api.NewTestService("OpService").WithMethods(method)
+	model := api.NewTestAPI([]*api.Message{subMsg, req, resp}, nil, []*api.Service{svc})
+	c := newCodec(nil)
+	if err := c.annotateModel(model); err != nil {
+		t.Fatal(err)
+	}
+	got := method.Codec.(*methodAnnotations)
+	if len(got.Signatures) != 1 {
+		t.Fatalf("expected 1 signature, got %d", len(got.Signatures))
+	}
+	params := got.Signatures[0].Parameters
+	if len(params) != 4 {
+		t.Fatalf("expected 4 parameters, got %d", len(params))
+	}
+	// labels: map
+	if !params[0].IsMap || !params[0].IsMapOrRepeated || params[0].IsRepeated || params[0].IsMessage || params[0].IsScalar {
+		t.Errorf("unexpected flags for map param: %+v", params[0])
+	}
+	// tags: repeated
+	if params[1].IsMap || !params[1].IsMapOrRepeated || !params[1].IsRepeated || params[1].IsMessage || params[1].IsScalar {
+		t.Errorf("unexpected flags for repeated param: %+v", params[1])
+	}
+	// sub: message
+	if params[2].IsMap || params[2].IsMapOrRepeated || params[2].IsRepeated || !params[2].IsMessage || params[2].IsScalar {
+		t.Errorf("unexpected flags for message param: %+v", params[2])
+	}
+	// count: scalar
+	if params[3].IsMap || params[3].IsMapOrRepeated || params[3].IsRepeated || params[3].IsMessage || !params[3].IsScalar {
+		t.Errorf("unexpected flags for scalar param: %+v", params[3])
+	}
 }

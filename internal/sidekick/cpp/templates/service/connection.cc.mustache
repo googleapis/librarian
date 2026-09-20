@@ -36,6 +36,101 @@ GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
 {{Codec.ConnectionClassName}}::~{{Codec.ConnectionClassName}}() = default;
 
+{{#Codec.Methods}}
+{{#IsUnary}}
+{{{CppReturnType}}}
+{{ServiceName}}Connection::{{Name}}(
+    {{{CppRequestType}}} const&) {
+  return Status(StatusCode::kUnimplemented, "not implemented");
+}
+
+{{/IsUnary}}
+{{#IsPaginated}}
+StreamRange<{{{RangeOutputType}}}> {{ServiceName}}Connection::{{Name}}(
+    {{{CppRequestType}}}) {  // NOLINT(performance-unnecessary-value-param)
+  return google::cloud::internal::MakeUnimplementedPaginationRange<
+      StreamRange<{{{RangeOutputType}}}>>();
+}
+
+{{/IsPaginated}}
+{{#IsLongrunning}}
+future<{{{CppReturnType}}}>
+{{ServiceName}}Connection::{{Name}}(
+    {{{CppRequestType}}} const&) {
+  return google::cloud::make_ready_future<
+    {{{CppReturnType}}}>(
+    Status(StatusCode::kUnimplemented, "not implemented"));
+}
+
+StatusOr<{{{LongrunningOperationType}}}>
+{{ServiceName}}Connection::{{Name}}(
+    NoAwaitTag,
+    {{{CppRequestType}}} const&) {
+  return StatusOr<{{{LongrunningOperationType}}}>(
+    Status(StatusCode::kUnimplemented, "not implemented"));
+}
+
+future<{{{CppReturnType}}}>
+{{ServiceName}}Connection::{{Name}}(
+    {{{LongrunningOperationType}}} const&) {
+  return google::cloud::make_ready_future<
+    {{{CppReturnType}}}>(
+    Status(StatusCode::kUnimplemented, "not implemented"));
+}
+
+{{/IsLongrunning}}
+{{#IsStreamingRead}}
+StreamRange<{{{CppResponseType}}}> {{ServiceName}}Connection::{{Name}}(
+    {{{CppRequestType}}} const&) {
+  return google::cloud::internal::MakeStreamRange<
+      {{{CppResponseType}}}>(
+      []() -> absl::variant<Status,
+      {{{CppResponseType}}}>{
+        return Status(StatusCode::kUnimplemented, "not implemented");}
+      );
+}
+
+{{/IsStreamingRead}}
+{{#IsBidirStreaming}}
+std::unique_ptr<::google::cloud::AsyncStreamingReadWriteRpc<
+    {{{CppRequestType}}},
+    {{{CppResponseType}}}>>
+{{ServiceName}}Connection::Async{{Name}}() {
+  return std::make_unique<
+      ::google::cloud::internal::AsyncStreamingReadWriteRpcError<
+          {{{CppRequestType}}},
+          {{{CppResponseType}}}>>(
+      Status(StatusCode::kUnimplemented, "not implemented"));
+}
+
+{{/IsBidirStreaming}}
+{{/Codec.Methods}}
+{{#Codec.AsyncMethods}}
+future<{{{CppReturnType}}}>
+{{ServiceName}}Connection::Async{{Name}}(
+    {{{CppRequestType}}} const&) {
+  return google::cloud::make_ready_future<
+    {{{CppReturnType}}}>(
+    Status(StatusCode::kUnimplemented, "not implemented"));
+}
+
+{{/Codec.AsyncMethods}}
+std::shared_ptr<{{Codec.ConnectionClassName}}> Make{{Codec.ConnectionClassName}}(
+    Options options) {
+  internal::CheckExpectedOptions<CommonOptionList, GrpcOptionList,
+      UnifiedCredentialsOptionList,
+      {{Codec.ServicePolicyOptionListName}}>(options, __func__);
+  options = {{Codec.InternalNamespace}}::{{Codec.ServiceDefaultOptionsFunctionName}}(
+      std::move(options));
+  auto background = internal::MakeBackgroundThreadsFactory(options)();
+  auto auth = internal::CreateAuthenticationStrategy(background->cq(), options);
+  auto stub = {{Codec.InternalNamespace}}::{{Codec.CreateDefaultStubFunctionName}}(
+    std::move(auth), options);
+  return {{Codec.InternalNamespace}}::Make{{Codec.TracingConnectionClassName}}(
+      std::make_shared<{{Codec.InternalNamespace}}::{{Codec.ConnectionImplClassName}}>(
+      std::move(background), std::move(stub), std::move(options)));
+}
+
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace {{Codec.Namespace}}
 }  // namespace cloud

@@ -51,6 +51,26 @@ type methodAnnotations struct {
 	IsResponseTypeEmpty            bool
 	IsAsync                        bool
 
+	// Routing
+	HasRouting           bool
+	RoutingParamsCount   int
+	RoutingParamMatchers []*routingMatcherAnnotation
+
+	// Request ID
+	HasRequestId       bool
+	RequestIdFieldName string
+
+	// Idempotency
+	Idempotency string
+
+	// IAM Policy
+	IsSetIamPolicy bool
+
+	// LRO & Pagination
+	LongrunningMetadataType     string
+	PaginationElementsFieldName string
+	GrpcStub                    string
+
 	// Comments
 	Comments          string
 	RequestComments   string
@@ -62,9 +82,34 @@ type methodAnnotations struct {
 	Signatures []*methodSignatureAnnotations
 }
 
+type routingPatternAnnotation struct {
+	FieldAccessor string
+	Pattern       string
+	HasRegex      bool
+}
+
+type routingSimpleFieldAnnotation struct {
+	FieldName string
+	IsFirst   bool
+}
+
+type routingMatcherAnnotation struct {
+	ParamKey     string
+	MatcherName  string
+	IsSimple     bool
+	SimpleFields []*routingSimpleFieldAnnotation
+	Patterns     []*routingPatternAnnotation
+}
+
 type parameterAnnotation struct {
-	Type string
-	Name string
+	Type            string
+	Name            string
+	FieldName       string
+	IsMap           bool
+	IsRepeated      bool
+	IsMapOrRepeated bool
+	IsMessage       bool
+	IsScalar        bool
 }
 
 type methodSignatureAnnotations struct {
@@ -150,6 +195,28 @@ func (c *codec) annotateMethod(m *api.Method, sAnn *serviceAnnotations, model *a
 	}
 	isAsync := isGenAsync || isLongrunning
 
+	var lroMetadataType string
+	if m.OperationInfo != nil && m.OperationInfo.MetadataTypeID != "" {
+		lroMetadataType = ProtoNameToCppName(m.OperationInfo.MetadataTypeID)
+	}
+	var paginationElementsFieldName string
+	if rangeOutputField != nil {
+		paginationElementsFieldName = CppParamName(rangeOutputField.Name)
+	}
+
+	hasRequestId := len(m.AutoPopulated) > 0
+	var requestIdFieldName string
+	if hasRequestId {
+		requestIdFieldName = CppParamName(m.AutoPopulated[0].Name)
+	}
+
+	idempotency := c.determineIdempotency(m, sAnn.Name)
+	isSetIamPolicy := (m.OutputTypeID == "google.iam.v1.Policy" || m.OutputTypeID == ".google.iam.v1.Policy") &&
+		(m.InputTypeID == "google.iam.v1.SetIamPolicyRequest" || m.InputTypeID == ".google.iam.v1.SetIamPolicyRequest")
+
+	routingMatchers := annotateRoutingInfo(m)
+	hasRouting := len(routingMatchers) > 0
+
 	mAnn := &methodAnnotations{
 		Service:                        sAnn,
 		ServiceName:                    sAnn.Name,
@@ -165,12 +232,22 @@ func (c *codec) annotateMethod(m *api.Method, sAnn *serviceAnnotations, model *a
 		LongrunningDeducedResponseType: lroDeducedType,
 		LongrunningReturnsEmpty:        lroReturnsEmpty,
 		LongrunningOperationType:       lroOpType,
+		LongrunningMetadataType:        lroMetadataType,
+		PaginationElementsFieldName:    paginationElementsFieldName,
 		IsStreamingRead:                isStreamingRead,
 		IsStreamingWrite:               isStreamingWrite,
 		IsBidirStreaming:               isBidirStreaming,
 		IsStreaming:                    isStreaming,
 		IsResponseTypeEmpty:            isRespEmpty,
 		IsAsync:                        isAsync,
+		HasRouting:                     hasRouting,
+		RoutingParamsCount:             len(routingMatchers),
+		RoutingParamMatchers:           routingMatchers,
+		HasRequestId:                   hasRequestId,
+		RequestIdFieldName:             requestIdFieldName,
+		Idempotency:                    idempotency,
+		IsSetIamPolicy:                 isSetIamPolicy,
+		GrpcStub:                       "grpc_stub_->",
 	}
 
 	if isLongrunning {
@@ -217,9 +294,20 @@ func (c *codec) annotateMethod(m *api.Method, sAnn *serviceAnnotations, model *a
 		for _, f := range sig.Fields {
 			paramType := CppParamTypeToString(f)
 			paramName := CppParamName(f.Name)
+			isMap := f.Map
+			isRepeated := f.Repeated && !f.Map
+			isMapOrRepeated := f.Map || f.Repeated
+			isMessage := !f.Map && !f.Repeated && f.Typez == api.TypezMessage
+			isScalar := !f.Map && !f.Repeated && f.Typez != api.TypezMessage
 			params = append(params, &parameterAnnotation{
-				Type: paramType,
-				Name: paramName,
+				Type:            paramType,
+				Name:            paramName,
+				FieldName:       paramName,
+				IsMap:           isMap,
+				IsRepeated:      isRepeated,
+				IsMapOrRepeated: isMapOrRepeated,
+				IsMessage:       isMessage,
+				IsScalar:        isScalar,
 			})
 			sigUIDBuilder.WriteString(paramType + ", ")
 			paramCommentsBuilder.WriteString(formatParameterComment(reqMsg, f))
@@ -630,4 +718,105 @@ func hasEmptyMethodSignature(m *api.Method) bool {
 		}
 	}
 	return false
+}
+
+func (c *codec) determineIdempotency(m *api.Method, serviceName string) string {
+	if c.config != nil && len(c.config.IdempotencyOverrides) > 0 {
+		for _, rule := range c.config.IdempotencyOverrides {
+			if rule.RPCName == m.Name || rule.RPCName == serviceName+"."+m.Name {
+				if strings.EqualFold(rule.Idempotency, "IDEMPOTENT") || rule.Idempotency == "kIdempotent" {
+					return "kIdempotent"
+				}
+				if strings.EqualFold(rule.Idempotency, "NON_IDEMPOTENT") || rule.Idempotency == "kNonIdempotent" {
+					return "kNonIdempotent"
+				}
+			}
+		}
+	}
+	if isKnownIdempotentMethod(m) {
+		return "kIdempotent"
+	}
+	if m.PathInfo != nil && len(m.PathInfo.Bindings) > 0 {
+		switch m.PathInfo.Bindings[0].Verb {
+		case "GET", "PUT":
+			return "kIdempotent"
+		case "POST", "DELETE", "PATCH":
+			return "kNonIdempotent"
+		}
+	}
+	return "kNonIdempotent"
+}
+
+func isKnownIdempotentMethod(m *api.Method) bool {
+	return (m.Name == "GetIamPolicy" &&
+		(m.OutputTypeID == "google.iam.v1.Policy" || m.OutputTypeID == ".google.iam.v1.Policy") &&
+		(m.InputTypeID == "google.iam.v1.GetIamPolicyRequest" || m.InputTypeID == ".google.iam.v1.GetIamPolicyRequest")) ||
+		(m.Name == "TestIamPermissions" &&
+			(m.OutputTypeID == "google.iam.v1.TestIamPermissionsResponse" || m.OutputTypeID == ".google.iam.v1.TestIamPermissionsResponse") &&
+			(m.InputTypeID == "google.iam.v1.TestIamPermissionsRequest" || m.InputTypeID == ".google.iam.v1.TestIamPermissionsRequest"))
+}
+
+func annotateRoutingInfo(m *api.Method) []*routingMatcherAnnotation {
+	if len(m.Routing) == 0 {
+		return nil
+	}
+	var matchers []*routingMatcherAnnotation
+	for _, r := range m.Routing {
+		if r.Name == "" {
+			continue
+		}
+		allSimple := true
+		var simpleFields []*routingSimpleFieldAnnotation
+		var patterns []*routingPatternAnnotation
+		for i, v := range r.Variants {
+			fieldAccessor := strings.Join(v.FieldPath, "().")
+			isFirst := i == 0
+			isSimplePattern := len(v.Prefix.Segments) == 0 && len(v.Suffix.Segments) == 0 &&
+				(len(v.Matching.Segments) == 0 || (len(v.Matching.Segments) == 1 && (v.Matching.Segments[0] == api.MultiSegmentWildcard || v.Matching.Segments[0] == "*")))
+			if isSimplePattern {
+				simpleFields = append(simpleFields, &routingSimpleFieldAnnotation{
+					FieldName: fieldAccessor,
+					IsFirst:   isFirst,
+				})
+			} else {
+				allSimple = false
+			}
+
+			var pBuilder strings.Builder
+			if len(v.Prefix.Segments) > 0 {
+				pBuilder.WriteString(strings.Join(v.Prefix.Segments, "/"))
+				pBuilder.WriteString("/")
+			}
+			pBuilder.WriteString("(")
+			pBuilder.WriteString(strings.Join(v.Matching.Segments, "/"))
+			pBuilder.WriteString(")")
+			if len(v.Suffix.Segments) > 0 {
+				pBuilder.WriteString("/")
+				pBuilder.WriteString(strings.Join(v.Suffix.Segments, "/"))
+			}
+			rawPattern := pBuilder.String()
+			const doubleStarPlaceholder = "\x00"
+			regexPattern := strings.ReplaceAll(rawPattern, "**", doubleStarPlaceholder)
+			regexPattern = strings.ReplaceAll(regexPattern, "*):", "[^:]+):")
+			regexPattern = strings.ReplaceAll(regexPattern, "*:", "[^:]+:")
+			regexPattern = strings.ReplaceAll(regexPattern, "*", "[^/]+")
+			regexPattern = strings.ReplaceAll(regexPattern, doubleStarPlaceholder, ".*")
+
+			hasRegex := regexPattern != "(.*)"
+			patterns = append(patterns, &routingPatternAnnotation{
+				FieldAccessor: fieldAccessor,
+				Pattern:       regexPattern,
+				HasRegex:      hasRegex,
+			})
+		}
+
+		matchers = append(matchers, &routingMatcherAnnotation{
+			ParamKey:     r.Name,
+			MatcherName:  r.Name,
+			IsSimple:     allSimple,
+			SimpleFields: simpleFields,
+			Patterns:     patterns,
+		})
+	}
+	return matchers
 }

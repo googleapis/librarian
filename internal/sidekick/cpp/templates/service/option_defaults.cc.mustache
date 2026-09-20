@@ -27,6 +27,45 @@ namespace cloud {
 namespace {{Codec.InternalNamespace}} {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
+namespace {
+auto constexpr kBackoffScaling = 2.0;
+}  // namespace
+
+Options {{Codec.ServiceDefaultOptionsFunctionName}}(Options options) {
+  options = internal::PopulateCommonOptions(
+      std::move(options), "{{Codec.ServiceEndpointEnvVar}}",
+      "{{Codec.EmulatorEndpointEnvVar}}", "{{Codec.ServiceAuthorityEnvVar}}",
+      "{{Codec.DefaultHost}}");
+  options = internal::PopulateGrpcOptions(std::move(options));
+  if (!options.has<{{Codec.Namespace}}::{{Codec.RetryPolicyOptionName}}>()) {
+    options.set<{{Codec.Namespace}}::{{Codec.RetryPolicyOptionName}}>(
+        {{Codec.Namespace}}::{{Codec.LimitedTimeRetryPolicyName}}(
+            std::chrono::minutes(30)).clone());
+  }
+  if (!options.has<{{Codec.Namespace}}::{{Codec.BackoffPolicyOptionName}}>()) {
+    options.set<{{Codec.Namespace}}::{{Codec.BackoffPolicyOptionName}}>(
+        ExponentialBackoffPolicy(std::chrono::seconds(0), std::chrono::seconds(1),
+            std::chrono::minutes(5), kBackoffScaling, kBackoffScaling).clone());
+  }
+{{#Codec.HasLongrunningMethod}}
+  if (!options.has<{{Codec.Namespace}}::{{Codec.PollingPolicyOptionName}}>()) {
+    options.set<{{Codec.Namespace}}::{{Codec.PollingPolicyOptionName}}>(
+        GenericPollingPolicy<
+            {{Codec.Namespace}}::{{Codec.RetryPolicyOptionName}}::Type,
+            {{Codec.Namespace}}::{{Codec.BackoffPolicyOptionName}}::Type>(
+            options.get<{{Codec.Namespace}}::{{Codec.RetryPolicyOptionName}}>()->clone(),
+            ExponentialBackoffPolicy(std::chrono::seconds(1),
+            std::chrono::minutes(5), kBackoffScaling).clone()).clone());
+  }
+{{/Codec.HasLongrunningMethod}}
+  if (!options.has<{{Codec.Namespace}}::{{Codec.ConnectionIdempotencyPolicyOptionName}}>()) {
+    options.set<{{Codec.Namespace}}::{{Codec.ConnectionIdempotencyPolicyOptionName}}>(
+        {{Codec.Namespace}}::{{Codec.MakeDefaultConnectionIdempotencyPolicyFunctionName}}());
+  }
+
+  return options;
+}
+
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace {{Codec.InternalNamespace}}
 }  // namespace cloud

@@ -38,6 +38,184 @@ namespace cloud {
 namespace {{Codec.InternalNamespace}} {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
+{{Codec.AuthDecoratorClassName}}::{{Codec.AuthDecoratorClassName}}(
+    std::shared_ptr<google::cloud::internal::GrpcAuthenticationStrategy> auth,
+    std::shared_ptr<{{Codec.StubClassName}}> child)
+    : auth_(std::move(auth)), child_(std::move(child)) {}
+
+{{#Codec.Methods}}
+{{#IsLongrunning}}
+future<StatusOr<google::longrunning::Operation>>
+{{Codec.AuthDecoratorClassName}}::Async{{Name}}(
+      google::cloud::CompletionQueue& cq,
+      std::shared_ptr<grpc::ClientContext> context,
+      google::cloud::internal::ImmutableOptions options,
+      {{{CppRequestType}}} const& request) {
+  using ReturnType = StatusOr<google::longrunning::Operation>;
+  return auth_->AsyncConfigureContext(std::move(context)).then(
+      [cq, child = child_, options = std::move(options), request](
+          future<StatusOr<std::shared_ptr<grpc::ClientContext>>> f) mutable {
+        auto context = f.get();
+        if (!context) {
+          return make_ready_future(ReturnType(std::move(context).status()));
+        }
+        return child->Async{{Name}}(
+            cq, *std::move(context), std::move(options), request);
+      });
+}
+
+StatusOr<google::longrunning::Operation>
+{{Codec.AuthDecoratorClassName}}::{{Name}}(
+      grpc::ClientContext& context,
+      Options options,
+      {{{CppRequestType}}} const& request) {
+  auto status = auth_->ConfigureContext(context);
+  if (!status.ok()) return status;
+  return child_->{{Name}}(context, options, request);
+}
+
+{{/IsLongrunning}}
+{{#IsBidirStreaming}}
+std::unique_ptr<::google::cloud::AsyncStreamingReadWriteRpc<
+    {{{CppRequestType}}},
+    {{{CppResponseType}}}>>
+{{Codec.AuthDecoratorClassName}}::AsyncStreamingReadWrite(
+    google::cloud::CompletionQueue const& cq,
+    std::shared_ptr<grpc::ClientContext> context,
+    google::cloud::internal::ImmutableOptions options) {
+  using ReturnType =
+      ::google::cloud::AsyncStreamingReadWriteRpc<
+          {{{CppRequestType}}},
+          {{{CppResponseType}}}>;
+
+  auto& auth = auth_;
+  return auth->AsyncConfigureContext(std::move(context))
+      .then([cq, child = child_, options = std::move(options)](
+                future<StatusOr<std::shared_ptr<grpc::ClientContext>>>
+                    f) mutable -> std::unique_ptr<ReturnType> {
+        auto context = f.get();
+        if (!context) {
+          return make_unique<
+              ::google::cloud::internal::AsyncStreamingReadWriteRpcError<
+                  {{{CppRequestType}}},
+                  {{{CppResponseType}}}>>(
+              std::move(context).status());
+        }
+        return child->AsyncStreamingReadWrite(cq, *std::move(context),
+                                              std::move(options));
+      })
+      .get();
+}
+
+{{/IsBidirStreaming}}
+{{#IsStreamingRead}}
+std::unique_ptr<google::cloud::internal::StreamingReadRpc<{{{CppResponseType}}}>>
+{{Codec.AuthDecoratorClassName}}::{{Name}}(
+    std::shared_ptr<grpc::ClientContext> context,
+    Options const& options,
+    {{{CppRequestType}}} const& request) {
+  auto status = auth_->ConfigureContext(*context);
+  if (!status.ok()) return make_unique<google::cloud::internal::StreamingReadRpcError<{{{CppResponseType}}}>>(status);
+  return child_->{{Name}}(std::move(context), options, request);
+}
+
+{{/IsStreamingRead}}
+{{#IsStreamingWrite}}
+std::unique_ptr<::google::cloud::internal::StreamingWriteRpc<
+    {{{CppRequestType}}},
+    {{{CppResponseType}}}>>
+{{Codec.AuthDecoratorClassName}}::{{Name}}(
+    std::shared_ptr<grpc::ClientContext> context,
+    Options const& options) {
+  auto status = auth_->ConfigureContext(*context);
+  if (!status.ok()) {
+    return make_unique<::google::cloud::internal::StreamingWriteRpcError<
+        {{{CppRequestType}}}, {{{CppResponseType}}}>>(status);
+  }
+  return child_->{{Name}}(std::move(context), options);
+}
+
+{{/IsStreamingWrite}}
+{{#IsUnary}}
+{{{CppReturnType}}} {{Codec.AuthDecoratorClassName}}::{{Name}}(
+    grpc::ClientContext& context,
+    Options const& options,
+    {{{CppRequestType}}} const& request) {
+  auto status = auth_->ConfigureContext(context);
+  if (!status.ok()) return status;
+  return child_->{{Name}}(context, options, request);
+}
+
+{{/IsUnary}}
+{{#IsPaginated}}
+{{{CppReturnType}}} {{Codec.AuthDecoratorClassName}}::{{Name}}(
+    grpc::ClientContext& context,
+    Options const& options,
+    {{{CppRequestType}}} const& request) {
+  auto status = auth_->ConfigureContext(context);
+  if (!status.ok()) return status;
+  return child_->{{Name}}(context, options, request);
+}
+
+{{/IsPaginated}}
+{{/Codec.Methods}}
+{{#Codec.AsyncMethods}}
+future<{{{CppReturnType}}}>
+{{Codec.AuthDecoratorClassName}}::Async{{Name}}(
+      google::cloud::CompletionQueue& cq,
+      std::shared_ptr<grpc::ClientContext> context,
+      google::cloud::internal::ImmutableOptions options,
+      {{{CppRequestType}}} const& request) {
+  return auth_->AsyncConfigureContext(std::move(context)).then(
+      [cq, child = child_, options = std::move(options), request](
+          future<StatusOr<std::shared_ptr<grpc::ClientContext>>> f) mutable {
+        auto context = f.get();
+        if (!context) {
+          return make_ready_future({{{CppReturnType}}}(
+              std::move(context).status()));
+        }
+        return child->Async{{Name}}(
+            cq, *std::move(context), std::move(options), request);
+      });
+}
+
+{{/Codec.AsyncMethods}}
+{{#Codec.HasLongrunningMethod}}
+future<StatusOr<google::longrunning::Operation>>
+{{Codec.AuthDecoratorClassName}}::AsyncGetOperation(
+    google::cloud::CompletionQueue& cq,
+    std::shared_ptr<grpc::ClientContext> context,
+    google::cloud::internal::ImmutableOptions options,
+    google::longrunning::GetOperationRequest const& request) {
+  using ReturnType = StatusOr<google::longrunning::Operation>;
+  return auth_->AsyncConfigureContext(std::move(context)).then(
+      [cq, child = child_, options = std::move(options), request](
+          future<StatusOr<std::shared_ptr<grpc::ClientContext>>> f) mutable {
+        auto context = f.get();
+        if (!context) {
+          return make_ready_future(ReturnType(std::move(context).status()));
+        }
+        return child->AsyncGetOperation(
+            cq, *std::move(context), std::move(options), request);
+      });
+}
+
+future<Status> {{Codec.AuthDecoratorClassName}}::AsyncCancelOperation(
+    google::cloud::CompletionQueue& cq,
+    std::shared_ptr<grpc::ClientContext> context,
+    google::cloud::internal::ImmutableOptions options,
+    google::longrunning::CancelOperationRequest const& request) {
+  return auth_->AsyncConfigureContext(std::move(context)).then(
+      [cq, child = child_, options = std::move(options), request](
+          future<StatusOr<std::shared_ptr<grpc::ClientContext>>> f) mutable {
+        auto context = f.get();
+        if (!context) return make_ready_future(std::move(context).status());
+        return child->AsyncCancelOperation(
+            cq, *std::move(context), std::move(options), request);
+      });
+}
+{{/Codec.HasLongrunningMethod}}
+
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace {{Codec.InternalNamespace}}
 }  // namespace cloud

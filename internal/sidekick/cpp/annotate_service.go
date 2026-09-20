@@ -101,6 +101,16 @@ type serviceAnnotations struct {
 	LimitedTimeRetryPolicyName           string
 	RetryTraitsName                      string
 
+	// Options and helpers
+	RetryPolicyOptionName                              string
+	BackoffPolicyOptionName                            string
+	ConnectionIdempotencyPolicyOptionName              string
+	PollingPolicyOptionName                            string
+	ServicePolicyOptionListName                        string
+	ServiceDefaultOptionsFunctionName                  string
+	CreateDefaultStubFunctionName                      string
+	MakeDefaultConnectionIdempotencyPolicyFunctionName string
+
 	// Deprecation
 	IsDeprecated bool
 
@@ -128,6 +138,17 @@ type serviceAnnotations struct {
 	ConnectionSourceIncludes     []string
 	ConnectionImplHeaderIncludes []string
 	SourcesCcIncludes            []string
+
+	// Options & Endpoints
+	ServiceEndpointEnvVar  string
+	ServiceAuthorityEnvVar string
+	EmulatorEndpointEnvVar string
+	DefaultHost            string
+
+	// Grpc Stub Names
+	ServiceGrpcName      string
+	ServiceGrpcProtoName string
+	GrpcStub             string
 
 	// Methods
 	Methods       []*methodAnnotations
@@ -324,12 +345,35 @@ func (c *codec) annotateService(s *api.Service, modelAnn *modelAnnotations, mode
 		retryStatusCodes = []string{"kDeadlineExceeded", "kUnavailable"}
 	}
 
+	serviceEndpointEnvVar := "GOOGLE_CLOUD_CPP_" + strings.ToUpper(CamelCaseToSnakeCase(s.Name)) + "_ENDPOINT"
+	if c.config != nil && c.config.ServiceEndpointEnvVar != "" {
+		serviceEndpointEnvVar = c.config.ServiceEndpointEnvVar
+	}
+	serviceAuthorityEnvVar := "GOOGLE_CLOUD_CPP_" + strings.ToUpper(CamelCaseToSnakeCase(s.Name)) + "_AUTHORITY"
+	var emulatorEndpointEnvVar string
+	if c.config != nil {
+		emulatorEndpointEnvVar = c.config.EmulatorEndpointEnvVar
+	}
+	defaultHost := s.DefaultHost
+	serviceGrpcName := ProtoNameToCppName("." + s.Package + "." + s.Name)
+	serviceGrpcProtoName := s.Package + "." + s.Name
+	grpcStub := "grpc_stub_->"
+
 	sAnn := &serviceAnnotations{
 		Name:          s.Name,
 		CopyrightYear: year,
 		BoilerPlate:   boilerPlate,
 		Model:         modelAnn,
 		SourceFile:    sourceFile,
+
+		ServiceEndpointEnvVar:  serviceEndpointEnvVar,
+		ServiceAuthorityEnvVar: serviceAuthorityEnvVar,
+		EmulatorEndpointEnvVar: emulatorEndpointEnvVar,
+		DefaultHost:            defaultHost,
+
+		ServiceGrpcName:      serviceGrpcName,
+		ServiceGrpcProtoName: serviceGrpcProtoName,
+		GrpcStub:             grpcStub,
 
 		Namespace:                Namespace(productPath),
 		InternalNamespace:        InternalNamespace(productPath),
@@ -400,6 +444,15 @@ func (c *codec) annotateService(s *api.Service, modelAnn *modelAnnotations, mode
 		LimitedErrorCountRetryPolicyName:     LimitedErrorCountRetryPolicyName(s.Name),
 		LimitedTimeRetryPolicyName:           LimitedTimeRetryPolicyName(s.Name),
 		RetryTraitsName:                      RetryTraitsName(s.Name),
+
+		RetryPolicyOptionName:                              s.Name + "RetryPolicyOption",
+		BackoffPolicyOptionName:                            s.Name + "BackoffPolicyOption",
+		ConnectionIdempotencyPolicyOptionName:              s.Name + "ConnectionIdempotencyPolicyOption",
+		PollingPolicyOptionName:                            s.Name + "PollingPolicyOption",
+		ServicePolicyOptionListName:                        s.Name + "PolicyOptionList",
+		ServiceDefaultOptionsFunctionName:                  s.Name + "DefaultOptions",
+		CreateDefaultStubFunctionName:                      "CreateDefault" + s.Name + "Stub",
+		MakeDefaultConnectionIdempotencyPolicyFunctionName: "MakeDefault" + s.Name + "ConnectionIdempotencyPolicy",
 
 		IsDeprecated:     s.Deprecated,
 		RetryStatusCodes: retryStatusCodes,

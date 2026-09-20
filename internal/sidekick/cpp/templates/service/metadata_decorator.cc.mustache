@@ -39,6 +39,330 @@ namespace cloud {
 namespace {{Codec.InternalNamespace}} {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
+{{Codec.MetadataDecoratorClassName}}::{{Codec.MetadataDecoratorClassName}}(
+    std::shared_ptr<{{Codec.StubClassName}}> child,
+    std::multimap<std::string, std::string> fixed_metadata,
+    std::string api_client_header)
+    : child_(std::move(child)),
+      fixed_metadata_(std::move(fixed_metadata)),
+      api_client_header_(
+          api_client_header.empty()
+              ? google::cloud::internal::GeneratedLibClientHeader()
+              : std::move(api_client_header)) {}
+
+{{#Codec.Methods}}
+{{#IsLongrunning}}
+future<StatusOr<google::longrunning::Operation>>
+{{Codec.MetadataDecoratorClassName}}::Async{{Name}}(
+    google::cloud::CompletionQueue& cq,
+    std::shared_ptr<grpc::ClientContext> context,
+    google::cloud::internal::ImmutableOptions options,
+    {{{CppRequestType}}} const& request) {
+{{#HasRouting}}
+  std::vector<std::string> params;
+  params.reserve({{RoutingParamsCount}});
+
+{{#RoutingParamMatchers}}
+{{#IsSimple}}
+{{#SimpleFields}}
+  if (!request.{{FieldName}}().empty()) {
+    params.push_back(absl::StrCat("{{ParamKey}}=", internal::UrlEncode(request.{{FieldName}}())));
+  }
+{{/SimpleFields}}
+{{/IsSimple}}
+{{^IsSimple}}
+  static auto* {{MatcherName}}_matcher = []{
+    return new google::cloud::internal::RoutingMatcher<{{{CppRequestType}}}>{
+      "{{ParamKey}}=", {
+      {{#Patterns}}
+      {[]({{{CppRequestType}}} const& request) -> std::string const& {
+        return request.{{FieldAccessor}}();
+      },
+      std::regex{"{{Pattern}}", std::regex::optimize}},
+      {{/Patterns}}
+      }};
+  }();
+  {{MatcherName}}_matcher->AppendParam(request, params);
+{{/IsSimple}}
+{{/RoutingParamMatchers}}
+
+  if (params.empty()) {
+    SetMetadata(*context, *options);
+  } else {
+    SetMetadata(*context, *options, absl::StrJoin(params, "&"));
+  }
+{{/HasRouting}}
+{{^HasRouting}}
+  SetMetadata(*context, *options);
+{{/HasRouting}}
+  return child_->Async{{Name}}(
+      cq, std::move(context), std::move(options), request);
+}
+
+StatusOr<google::longrunning::Operation>
+{{Codec.MetadataDecoratorClassName}}::{{Name}}(
+    grpc::ClientContext& context,
+    Options options,
+    {{{CppRequestType}}} const& request) {
+{{#HasRouting}}
+  std::vector<std::string> params;
+  params.reserve({{RoutingParamsCount}});
+
+{{#RoutingParamMatchers}}
+{{#IsSimple}}
+{{#SimpleFields}}
+  if (!request.{{FieldName}}().empty()) {
+    params.push_back(absl::StrCat("{{ParamKey}}=", internal::UrlEncode(request.{{FieldName}}())));
+  }
+{{/SimpleFields}}
+{{/IsSimple}}
+{{^IsSimple}}
+  static auto* {{MatcherName}}_matcher = []{
+    return new google::cloud::internal::RoutingMatcher<{{{CppRequestType}}}>{
+      "{{ParamKey}}=", {
+      {{#Patterns}}
+      {[]({{{CppRequestType}}} const& request) -> std::string const& {
+        return request.{{FieldAccessor}}();
+      },
+      std::regex{"{{Pattern}}", std::regex::optimize}},
+      {{/Patterns}}
+      }};
+  }();
+  {{MatcherName}}_matcher->AppendParam(request, params);
+{{/IsSimple}}
+{{/RoutingParamMatchers}}
+
+  if (params.empty()) {
+    SetMetadata(context, options);
+  } else {
+    SetMetadata(context, options, absl::StrJoin(params, "&"));
+  }
+{{/HasRouting}}
+{{^HasRouting}}
+  SetMetadata(context, options);
+{{/HasRouting}}
+  return child_->{{Name}}(context, options, request);
+}
+
+{{/IsLongrunning}}
+{{#IsBidirStreaming}}
+std::unique_ptr<::google::cloud::AsyncStreamingReadWriteRpc<
+    {{{CppRequestType}}},
+    {{{CppResponseType}}}>>
+{{Codec.MetadataDecoratorClassName}}::AsyncStreamingReadWrite(
+    google::cloud::CompletionQueue const& cq,
+    std::shared_ptr<grpc::ClientContext> context,
+    google::cloud::internal::ImmutableOptions options) {
+  SetMetadata(*context, *options);
+  return child_->AsyncStreamingReadWrite(cq, std::move(context), std::move(options));
+}
+
+{{/IsBidirStreaming}}
+{{#IsStreamingRead}}
+std::unique_ptr<google::cloud::internal::StreamingReadRpc<{{{CppResponseType}}}>>
+{{Codec.MetadataDecoratorClassName}}::{{Name}}(
+    std::shared_ptr<grpc::ClientContext> context,
+    Options const& options,
+    {{{CppRequestType}}} const& request) {
+  SetMetadata(*context, options);
+  return child_->{{Name}}(std::move(context), options, request);
+}
+
+{{/IsStreamingRead}}
+{{#IsStreamingWrite}}
+std::unique_ptr<::google::cloud::internal::StreamingWriteRpc<
+    {{{CppRequestType}}},
+    {{{CppResponseType}}}>>
+{{Codec.MetadataDecoratorClassName}}::{{Name}}(
+    std::shared_ptr<grpc::ClientContext> context,
+    Options const& options) {
+  SetMetadata(*context, options);
+  return child_->{{Name}}(std::move(context), options);
+}
+
+{{/IsStreamingWrite}}
+{{#IsUnary}}
+{{{CppReturnType}}}
+{{Codec.MetadataDecoratorClassName}}::{{Name}}(
+    grpc::ClientContext& context,
+    Options const& options,
+    {{{CppRequestType}}} const& request) {
+{{#HasRouting}}
+  std::vector<std::string> params;
+  params.reserve({{RoutingParamsCount}});
+
+{{#RoutingParamMatchers}}
+{{#IsSimple}}
+{{#SimpleFields}}
+  if (!request.{{FieldName}}().empty()) {
+    params.push_back(absl::StrCat("{{ParamKey}}=", internal::UrlEncode(request.{{FieldName}}())));
+  }
+{{/SimpleFields}}
+{{/IsSimple}}
+{{^IsSimple}}
+  static auto* {{MatcherName}}_matcher = []{
+    return new google::cloud::internal::RoutingMatcher<{{{CppRequestType}}}>{
+      "{{ParamKey}}=", {
+      {{#Patterns}}
+      {[]({{{CppRequestType}}} const& request) -> std::string const& {
+        return request.{{FieldAccessor}}();
+      },
+      std::regex{"{{Pattern}}", std::regex::optimize}},
+      {{/Patterns}}
+      }};
+  }();
+  {{MatcherName}}_matcher->AppendParam(request, params);
+{{/IsSimple}}
+{{/RoutingParamMatchers}}
+
+  if (params.empty()) {
+    SetMetadata(context, options);
+  } else {
+    SetMetadata(context, options, absl::StrJoin(params, "&"));
+  }
+{{/HasRouting}}
+{{^HasRouting}}
+  SetMetadata(context, options);
+{{/HasRouting}}
+  return child_->{{Name}}(context, options, request);
+}
+
+{{/IsUnary}}
+{{#IsPaginated}}
+{{{CppReturnType}}}
+{{Codec.MetadataDecoratorClassName}}::{{Name}}(
+    grpc::ClientContext& context,
+    Options const& options,
+    {{{CppRequestType}}} const& request) {
+{{#HasRouting}}
+  std::vector<std::string> params;
+  params.reserve({{RoutingParamsCount}});
+
+{{#RoutingParamMatchers}}
+{{#IsSimple}}
+{{#SimpleFields}}
+  if (!request.{{FieldName}}().empty()) {
+    params.push_back(absl::StrCat("{{ParamKey}}=", internal::UrlEncode(request.{{FieldName}}())));
+  }
+{{/SimpleFields}}
+{{/IsSimple}}
+{{^IsSimple}}
+  static auto* {{MatcherName}}_matcher = []{
+    return new google::cloud::internal::RoutingMatcher<{{{CppRequestType}}}>{
+      "{{ParamKey}}=", {
+      {{#Patterns}}
+      {[]({{{CppRequestType}}} const& request) -> std::string const& {
+        return request.{{FieldAccessor}}();
+      },
+      std::regex{"{{Pattern}}", std::regex::optimize}},
+      {{/Patterns}}
+      }};
+  }();
+  {{MatcherName}}_matcher->AppendParam(request, params);
+{{/IsSimple}}
+{{/RoutingParamMatchers}}
+
+  if (params.empty()) {
+    SetMetadata(context, options);
+  } else {
+    SetMetadata(context, options, absl::StrJoin(params, "&"));
+  }
+{{/HasRouting}}
+{{^HasRouting}}
+  SetMetadata(context, options);
+{{/HasRouting}}
+  return child_->{{Name}}(context, options, request);
+}
+
+{{/IsPaginated}}
+{{/Codec.Methods}}
+{{#Codec.AsyncMethods}}
+future<{{{CppReturnType}}}>
+{{Codec.MetadataDecoratorClassName}}::Async{{Name}}(
+      google::cloud::CompletionQueue& cq,
+      std::shared_ptr<grpc::ClientContext> context,
+      google::cloud::internal::ImmutableOptions options,
+      {{{CppRequestType}}} const& request) {
+{{#HasRouting}}
+  std::vector<std::string> params;
+  params.reserve({{RoutingParamsCount}});
+
+{{#RoutingParamMatchers}}
+{{#IsSimple}}
+{{#SimpleFields}}
+  if (!request.{{FieldName}}().empty()) {
+    params.push_back(absl::StrCat("{{ParamKey}}=", internal::UrlEncode(request.{{FieldName}}())));
+  }
+{{/SimpleFields}}
+{{/IsSimple}}
+{{^IsSimple}}
+  static auto* {{MatcherName}}_matcher = []{
+    return new google::cloud::internal::RoutingMatcher<{{{CppRequestType}}}>{
+      "{{ParamKey}}=", {
+      {{#Patterns}}
+      {[]({{{CppRequestType}}} const& request) -> std::string const& {
+        return request.{{FieldAccessor}}();
+      },
+      std::regex{"{{Pattern}}", std::regex::optimize}},
+      {{/Patterns}}
+      }};
+  }();
+  {{MatcherName}}_matcher->AppendParam(request, params);
+{{/IsSimple}}
+{{/RoutingParamMatchers}}
+
+  if (params.empty()) {
+    SetMetadata(*context, *options);
+  } else {
+    SetMetadata(*context, *options, absl::StrJoin(params, "&"));
+  }
+{{/HasRouting}}
+{{^HasRouting}}
+  SetMetadata(*context, *options);
+{{/HasRouting}}
+  return child_->Async{{Name}}(
+      cq, std::move(context), std::move(options), request);
+}
+
+{{/Codec.AsyncMethods}}
+{{#Codec.HasLongrunningMethod}}
+future<StatusOr<google::longrunning::Operation>>
+{{Codec.MetadataDecoratorClassName}}::AsyncGetOperation(
+    google::cloud::CompletionQueue& cq,
+    std::shared_ptr<grpc::ClientContext> context,
+    google::cloud::internal::ImmutableOptions options,
+    google::longrunning::GetOperationRequest const& request) {
+  SetMetadata(*context, *options,
+              absl::StrCat("name=", internal::UrlEncode(request.name())));
+  return child_->AsyncGetOperation(
+      cq, std::move(context), std::move(options), request);
+}
+
+future<Status> {{Codec.MetadataDecoratorClassName}}::AsyncCancelOperation(
+    google::cloud::CompletionQueue& cq,
+    std::shared_ptr<grpc::ClientContext> context,
+    google::cloud::internal::ImmutableOptions options,
+    google::longrunning::CancelOperationRequest const& request) {
+  SetMetadata(*context, *options,
+              absl::StrCat("name=", internal::UrlEncode(request.name())));
+  return child_->AsyncCancelOperation(
+      cq, std::move(context), std::move(options), request);
+}
+
+{{/Codec.HasLongrunningMethod}}
+void {{Codec.MetadataDecoratorClassName}}::SetMetadata(grpc::ClientContext& context,
+                                        Options const& options,
+                                        std::string const& request_params) {
+  context.AddMetadata("x-goog-request-params", request_params);
+  SetMetadata(context, options);
+}
+
+void {{Codec.MetadataDecoratorClassName}}::SetMetadata(grpc::ClientContext& context,
+                                        Options const& options) {
+  google::cloud::internal::SetMetadata(
+      context, options, fixed_metadata_, api_client_header_);
+}
+
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace {{Codec.InternalNamespace}}
 }  // namespace cloud

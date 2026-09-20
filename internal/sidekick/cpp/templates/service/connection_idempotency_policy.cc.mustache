@@ -31,6 +31,37 @@ std::unique_ptr<{{Codec.ConnectionIdempotencyPolicyClassName}}>
   return std::make_unique<{{Codec.ConnectionIdempotencyPolicyClassName}}>(*this);
 }
 
+{{#Codec.Methods}}
+{{#IsPaginated}}
+Idempotency {{ServiceName}}ConnectionIdempotencyPolicy::{{Name}}({{{CppRequestType}}}) {  // NOLINT
+  return Idempotency::{{Idempotency}};
+}
+
+{{/IsPaginated}}
+{{^IsPaginated}}
+{{#HasRequestId}}
+Idempotency {{ServiceName}}ConnectionIdempotencyPolicy::{{Name}}({{{CppRequestType}}} const& request) {
+  if (!request.{{RequestIdFieldName}}().empty()) return Idempotency::kIdempotent;
+  return Idempotency::kNonIdempotent;
+}
+
+{{/HasRequestId}}
+{{^HasRequestId}}
+{{#IsSetIamPolicy}}
+Idempotency {{ServiceName}}ConnectionIdempotencyPolicy::{{Name}}({{{CppRequestType}}} const& request) {
+  return request.policy().etag().empty() ? Idempotency::kNonIdempotent : Idempotency::kIdempotent;
+}
+
+{{/IsSetIamPolicy}}
+{{^IsSetIamPolicy}}
+Idempotency {{ServiceName}}ConnectionIdempotencyPolicy::{{Name}}({{{CppRequestType}}} const&) {
+  return Idempotency::{{Idempotency}};
+}
+
+{{/IsSetIamPolicy}}
+{{/HasRequestId}}
+{{/IsPaginated}}
+{{/Codec.Methods}}
 std::unique_ptr<{{Codec.ConnectionIdempotencyPolicyClassName}}>
     MakeDefault{{Codec.ConnectionIdempotencyPolicyClassName}}() {
   return std::make_unique<{{Codec.ConnectionIdempotencyPolicyClassName}}>();

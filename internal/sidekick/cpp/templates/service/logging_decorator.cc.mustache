@@ -45,6 +45,200 @@ namespace cloud {
 namespace {{Codec.InternalNamespace}} {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
+{{Codec.LoggingDecoratorClassName}}::{{Codec.LoggingDecoratorClassName}}(
+    std::shared_ptr<{{Codec.StubClassName}}> child,
+    TracingOptions tracing_options,
+    std::set<std::string> const&)
+    : child_(std::move(child)),
+      tracing_options_(std::move(tracing_options)) {}
+
+{{#Codec.Methods}}
+{{#IsLongrunning}}
+future<StatusOr<google::longrunning::Operation>>
+{{Codec.LoggingDecoratorClassName}}::Async{{Name}}(
+      google::cloud::CompletionQueue& cq,
+      std::shared_ptr<grpc::ClientContext> context,
+      google::cloud::internal::ImmutableOptions options,
+      {{{CppRequestType}}} const& request) {
+  return google::cloud::internal::LogWrapper(
+      [this](google::cloud::CompletionQueue& cq,
+             std::shared_ptr<grpc::ClientContext> context,
+             google::cloud::internal::ImmutableOptions options,
+             {{{CppRequestType}}} const& request) {
+        return child_->Async{{Name}}(
+            cq, std::move(context), std::move(options), request);
+      },
+      cq, std::move(context), std::move(options), request, __func__,
+      tracing_options_);
+}
+
+StatusOr<google::longrunning::Operation>
+{{Codec.LoggingDecoratorClassName}}::{{Name}}(
+      grpc::ClientContext& context,
+      Options options,
+      {{{CppRequestType}}} const& request) {
+  return google::cloud::internal::LogWrapper(
+      [this](grpc::ClientContext& context,
+             Options const& options,
+             {{{CppRequestType}}} const& request) {
+        return child_->{{Name}}(context, options, request);
+      },
+      context, options, request, __func__, tracing_options_);
+}
+
+{{/IsLongrunning}}
+{{#IsBidirStreaming}}
+std::unique_ptr<::google::cloud::AsyncStreamingReadWriteRpc<
+    {{{CppRequestType}}},
+    {{{CppResponseType}}}>>
+{{Codec.LoggingDecoratorClassName}}::AsyncStreamingReadWrite(
+    google::cloud::CompletionQueue const& cq,
+    std::shared_ptr<grpc::ClientContext> context,
+    google::cloud::internal::ImmutableOptions options) {
+  using ReturnType =
+      ::google::cloud::AsyncStreamingReadWriteRpc<
+          {{{CppRequestType}}},
+          {{{CppResponseType}}}>;
+
+  auto rpc = child_->AsyncStreamingReadWrite(cq, std::move(context), std::move(options));
+  return std::make_unique<internal::AsyncStreamingReadWriteRpcLogging<
+      {{{CppRequestType}}},
+      {{{CppResponseType}}}>>(
+      std::move(rpc), tracing_options_, internal::RequestIdForLogging());
+}
+
+{{/IsBidirStreaming}}
+{{#IsStreamingRead}}
+std::unique_ptr<google::cloud::internal::StreamingReadRpc<{{{CppResponseType}}}>>
+{{Codec.LoggingDecoratorClassName}}::{{Name}}(
+    std::shared_ptr<grpc::ClientContext> context,
+    Options const& options,
+    {{{CppRequestType}}} const& request) {
+  return google::cloud::internal::LogWrapper(
+      [this](std::shared_ptr<grpc::ClientContext> context,
+             Options const& options,
+             {{{CppRequestType}}} const& request) ->
+      std::unique_ptr<google::cloud::internal::StreamingReadRpc<
+          {{{CppResponseType}}}>> {
+        auto stream = child_->{{Name}}(std::move(context), options, request);
+        return std::make_unique<google::cloud::internal::StreamingReadRpcLogging<
+            {{{CppResponseType}}}>>(
+            std::move(stream), tracing_options_,
+            google::cloud::internal::RequestIdForLogging());
+      },
+      std::move(context), options, request, __func__, tracing_options_);
+}
+
+{{/IsStreamingRead}}
+{{#IsStreamingWrite}}
+std::unique_ptr<::google::cloud::internal::StreamingWriteRpc<
+    {{{CppRequestType}}},
+    {{{CppResponseType}}}>>
+{{Codec.LoggingDecoratorClassName}}::{{Name}}(
+    std::shared_ptr<grpc::ClientContext> context,
+    Options const& options) {
+  using ReturnType =
+      ::google::cloud::internal::StreamingWriteRpc<
+          {{{CppRequestType}}},
+          {{{CppResponseType}}}>;
+
+  auto rpc = child_->{{Name}}(std::move(context), options);
+  return std::make_unique<internal::StreamingWriteRpcLogging<
+      {{{CppRequestType}}},
+      {{{CppResponseType}}}>>(
+      std::move(rpc), tracing_options_, internal::RequestIdForLogging());
+}
+
+{{/IsStreamingWrite}}
+{{#IsUnary}}
+{{{CppReturnType}}}
+{{Codec.LoggingDecoratorClassName}}::{{Name}}(
+    grpc::ClientContext& context,
+    Options const& options,
+    {{{CppRequestType}}} const& request) {
+  return google::cloud::internal::LogWrapper(
+      [this](grpc::ClientContext& context,
+             Options const& options,
+             {{{CppRequestType}}} const& request) {
+        return child_->{{Name}}(context, options, request);
+      },
+      context, options, request, __func__, tracing_options_);
+}
+
+{{/IsUnary}}
+{{#IsPaginated}}
+{{{CppReturnType}}}
+{{Codec.LoggingDecoratorClassName}}::{{Name}}(
+    grpc::ClientContext& context,
+    Options const& options,
+    {{{CppRequestType}}} const& request) {
+  return google::cloud::internal::LogWrapper(
+      [this](grpc::ClientContext& context,
+             Options const& options,
+             {{{CppRequestType}}} const& request) {
+        return child_->{{Name}}(context, options, request);
+      },
+      context, options, request, __func__, tracing_options_);
+}
+
+{{/IsPaginated}}
+{{/Codec.Methods}}
+{{#Codec.AsyncMethods}}
+future<{{{CppReturnType}}}>
+{{Codec.LoggingDecoratorClassName}}::Async{{Name}}(
+      google::cloud::CompletionQueue& cq,
+      std::shared_ptr<grpc::ClientContext> context,
+      google::cloud::internal::ImmutableOptions options,
+      {{{CppRequestType}}} const& request) {
+  return google::cloud::internal::LogWrapper(
+      [this](google::cloud::CompletionQueue& cq,
+             std::shared_ptr<grpc::ClientContext> context,
+             google::cloud::internal::ImmutableOptions options,
+             {{{CppRequestType}}} const& request) {
+        return child_->Async{{Name}}(
+            cq, std::move(context), std::move(options), request);
+      },
+      cq, std::move(context), std::move(options), request, __func__, tracing_options_);
+}
+
+{{/Codec.AsyncMethods}}
+{{#Codec.HasLongrunningMethod}}
+future<StatusOr<google::longrunning::Operation>>
+{{Codec.LoggingDecoratorClassName}}::AsyncGetOperation(
+    google::cloud::CompletionQueue& cq,
+    std::shared_ptr<grpc::ClientContext> context,
+    google::cloud::internal::ImmutableOptions options,
+    google::longrunning::GetOperationRequest const& request) {
+  return google::cloud::internal::LogWrapper(
+      [this](google::cloud::CompletionQueue& cq,
+             std::shared_ptr<grpc::ClientContext> context,
+             google::cloud::internal::ImmutableOptions options,
+             google::longrunning::GetOperationRequest const& request) {
+        return child_->AsyncGetOperation(
+            cq, std::move(context), std::move(options), request);
+      },
+      cq, std::move(context), std::move(options), request, __func__,
+      tracing_options_);
+}
+
+future<Status> {{Codec.LoggingDecoratorClassName}}::AsyncCancelOperation(
+    google::cloud::CompletionQueue& cq,
+    std::shared_ptr<grpc::ClientContext> context,
+    google::cloud::internal::ImmutableOptions options,
+    google::longrunning::CancelOperationRequest const& request) {
+  return google::cloud::internal::LogWrapper(
+      [this](google::cloud::CompletionQueue& cq,
+             std::shared_ptr<grpc::ClientContext> context,
+             google::cloud::internal::ImmutableOptions options,
+             google::longrunning::CancelOperationRequest const& request) {
+        return child_->AsyncCancelOperation(
+            cq, std::move(context), std::move(options), request);
+      },
+      cq, std::move(context), std::move(options), request, __func__,
+      tracing_options_);
+}
+{{/Codec.HasLongrunningMethod}}
+
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace {{Codec.InternalNamespace}}
 }  // namespace cloud

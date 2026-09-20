@@ -42,7 +42,242 @@ namespace google {
 namespace cloud {
 namespace {{Codec.InternalNamespace}} {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
+namespace {
 
+std::unique_ptr<{{Codec.Namespace}}::{{Codec.RetryPolicyName}}>
+retry_policy(Options const& options) {
+  return options.get<{{Codec.Namespace}}::{{Codec.RetryPolicyOptionName}}>()->clone();
+}
+
+std::unique_ptr<BackoffPolicy>
+backoff_policy(Options const& options) {
+  return options.get<{{Codec.Namespace}}::{{Codec.BackoffPolicyOptionName}}>()->clone();
+}
+
+std::unique_ptr<{{Codec.Namespace}}::{{Codec.ConnectionIdempotencyPolicyClassName}}>
+idempotency_policy(Options const& options) {
+  return options.get<{{Codec.Namespace}}::{{Codec.ConnectionIdempotencyPolicyOptionName}}>()->clone();
+}
+
+{{#Codec.HasLongrunningMethod}}
+std::unique_ptr<PollingPolicy> polling_policy(Options const& options) {
+  return options.get<{{Codec.Namespace}}::{{Codec.PollingPolicyOptionName}}>()->clone();
+}
+
+{{/Codec.HasLongrunningMethod}}
+} // namespace
+
+{{Codec.ConnectionImplClassName}}::{{Codec.ConnectionImplClassName}}(
+    std::unique_ptr<google::cloud::BackgroundThreads> background,
+    std::shared_ptr<{{Codec.InternalNamespace}}::{{Codec.StubClassName}}> stub,
+    Options options)
+  : background_(std::move(background)), stub_(std::move(stub)),
+    options_(internal::MergeOptions(
+        std::move(options),
+        {{Codec.ConnectionClassName}}::options())) {}
+
+{{#Codec.Methods}}
+{{#IsLongrunning}}
+future<{{{CppReturnType}}}>
+{{ServiceName}}ConnectionImpl::{{Name}}({{{CppRequestType}}} const& request) {
+  auto current = google::cloud::internal::SaveCurrentOptions();
+{{#HasRequestId}}
+  auto request_copy = request;
+  if (request_copy.{{RequestIdFieldName}}().empty()) {
+    request_copy.set_{{RequestIdFieldName}}(invocation_id_generator_->MakeInvocationId());
+  }
+{{/HasRequestId}}
+  auto const idempotent =
+      idempotency_policy(*current)->{{Name}}({{#HasRequestId}}request_copy{{/HasRequestId}}{{^HasRequestId}}request{{/HasRequestId}});
+  return google::cloud::internal::AsyncLongRunningOperation<{{{LongrunningDeducedResponseType}}}>(
+    background_->cq(), current, std::move({{#HasRequestId}}request_copy{{/HasRequestId}}{{^HasRequestId}}request{{/HasRequestId}}),
+    [stub = stub_](google::cloud::CompletionQueue& cq,
+                   std::shared_ptr<grpc::ClientContext> context,
+                   google::cloud::internal::ImmutableOptions options,
+                   {{{CppRequestType}}} const& request) {
+     return stub->Async{{Name}}(
+         cq, std::move(context), std::move(options), request);
+    },
+    [stub = stub_](google::cloud::CompletionQueue& cq,
+                   std::shared_ptr<grpc::ClientContext> context,
+                   google::cloud::internal::ImmutableOptions options,
+                   google::longrunning::GetOperationRequest const& request) {
+     return stub->AsyncGetOperation(
+         cq, std::move(context), std::move(options), request);
+    },
+    [stub = stub_](google::cloud::CompletionQueue& cq,
+                   std::shared_ptr<grpc::ClientContext> context,
+                   google::cloud::internal::ImmutableOptions options,
+                   google::longrunning::CancelOperationRequest const& request) {
+     return stub->AsyncCancelOperation(
+         cq, std::move(context), std::move(options), request);
+    },
+    &google::cloud::internal::ExtractLongRunningResultResponse<{{{LongrunningDeducedResponseType}}}>,
+    retry_policy(*current), backoff_policy(*current), idempotent,
+    polling_policy(*current), __func__);
+}
+
+StatusOr<{{{LongrunningOperationType}}}>
+{{ServiceName}}ConnectionImpl::{{Name}}(
+      NoAwaitTag, {{{CppRequestType}}} const& request) {
+  auto current = google::cloud::internal::SaveCurrentOptions();
+  return google::cloud::internal::RetryLoop(
+      retry_policy(*current), backoff_policy(*current),
+      idempotency_policy(*current)->{{Name}}(request),
+      [this](
+          grpc::ClientContext& context, Options const& options,
+          {{{CppRequestType}}} const& request) {
+        return stub_->{{Name}}(context, options, request);
+      },
+      *current, request, __func__);
+}
+
+future<{{{CppReturnType}}}>
+{{ServiceName}}ConnectionImpl::{{Name}}(
+      {{{LongrunningOperationType}}} const& operation) {
+  auto current = google::cloud::internal::SaveCurrentOptions();
+  if (!operation.metadata().Is<typename {{{LongrunningMetadataType}}}>()) {
+    return make_ready_future<{{{CppReturnType}}}>(
+        internal::InvalidArgumentError("operation does not correspond to {{Name}}",
+                                       GCP_ERROR_INFO().WithMetadata("operation", operation.metadata().DebugString())));
+  }
+
+  return google::cloud::internal::AsyncAwaitLongRunningOperation<{{{LongrunningDeducedResponseType}}}>(
+    background_->cq(), current, operation,
+    [stub = stub_](google::cloud::CompletionQueue& cq,
+                   std::shared_ptr<grpc::ClientContext> context,
+                   google::cloud::internal::ImmutableOptions options,
+                   google::longrunning::GetOperationRequest const& request) {
+     return stub->AsyncGetOperation(
+         cq, std::move(context), std::move(options), request);
+    },
+    [stub = stub_](google::cloud::CompletionQueue& cq,
+                   std::shared_ptr<grpc::ClientContext> context,
+                   google::cloud::internal::ImmutableOptions options,
+                   google::longrunning::CancelOperationRequest const& request) {
+     return stub->AsyncCancelOperation(
+         cq, std::move(context), std::move(options), request);
+    },
+    &google::cloud::internal::ExtractLongRunningResultResponse<{{{LongrunningDeducedResponseType}}}>,
+    polling_policy(*current), __func__);
+}
+
+{{/IsLongrunning}}
+{{#IsBidirStreaming}}
+std::unique_ptr<::google::cloud::AsyncStreamingReadWriteRpc<
+    {{{CppRequestType}}},
+    {{{CppResponseType}}}>>
+{{ServiceName}}ConnectionImpl::AsyncStreamingReadWrite() {
+  return stub_->AsyncStreamingReadWrite(background_->cq(),
+                                std::make_shared<grpc::ClientContext>(),
+                                internal::SaveCurrentOptions());
+}
+
+{{/IsBidirStreaming}}
+{{#IsPaginated}}
+StreamRange<{{{RangeOutputType}}}>
+{{ServiceName}}ConnectionImpl::{{Name}}({{{CppRequestType}}} request) {
+  request.clear_page_token();
+  auto current = google::cloud::internal::SaveCurrentOptions();
+  auto idempotency = idempotency_policy(*current)->{{Name}}(request);
+  char const* function_name = __func__;
+  return google::cloud::internal::MakePaginationRange<StreamRange<{{{RangeOutputType}}}>>(
+      current, std::move(request),
+      [idempotency, function_name, stub = stub_,
+       retry = std::shared_ptr<{{Codec.Namespace}}::{{Codec.RetryPolicyName}}>(retry_policy(*current)),
+       backoff = std::shared_ptr<BackoffPolicy>(backoff_policy(*current))](
+          Options const& options, {{{CppRequestType}}} const& r) {
+        return google::cloud::internal::RetryLoop(
+            retry->clone(), backoff->clone(), idempotency,
+            [stub](grpc::ClientContext& context, Options const& options,
+                   {{{CppRequestType}}} const& request) {
+              return stub->{{Name}}(context, options, request);
+            },
+            options, r, function_name);
+      },
+      []({{{CppResponseType}}} r) {
+        std::vector<{{{RangeOutputType}}}> result(r.{{PaginationElementsFieldName}}().size());
+        auto& messages = *r.mutable_{{PaginationElementsFieldName}}();
+        std::move(messages.begin(), messages.end(), result.begin());
+        return result;
+      });
+}
+
+{{/IsPaginated}}
+{{#IsStreamingRead}}
+StreamRange<{{{CppResponseType}}}>
+{{ServiceName}}ConnectionImpl::StreamingRead({{{CppRequestType}}} const& request) {
+  auto current = google::cloud::internal::SaveCurrentOptions();
+  auto factory = [stub = stub_, current]({{{CppRequestType}}} const& request) {
+    return stub->StreamingRead(
+        std::make_shared<grpc::ClientContext>(), *current, request);
+  };
+  auto resumable =
+      internal::MakeResumableStreamingReadRpc<{{{CppResponseType}}}, {{{CppRequestType}}}>(
+          retry_policy(*current), backoff_policy(*current), factory,
+          {{ServiceName}}{{Name}}StreamingUpdater, request);
+  return internal::MakeStreamRange<{{{CppResponseType}}}>(
+      [resumable = std::move(resumable)]()
+          -> absl::variant<
+              Status,
+              {{{CppResponseType}}}> {
+        {{{CppResponseType}}} response;
+        auto status = resumable->Read(&response);
+        if (status.has_value()) return *status;
+        return response;
+      });
+}
+
+{{/IsStreamingRead}}
+{{#IsUnary}}
+{{{CppReturnType}}}
+{{ServiceName}}ConnectionImpl::{{Name}}({{{CppRequestType}}} const& request) {
+  auto current = google::cloud::internal::SaveCurrentOptions();
+{{#HasRequestId}}
+  auto request_copy = request;
+  if (request_copy.{{RequestIdFieldName}}().empty()) {
+    request_copy.set_{{RequestIdFieldName}}(invocation_id_generator_->MakeInvocationId());
+  }
+{{/HasRequestId}}
+  return google::cloud::internal::RetryLoop(
+      retry_policy(*current), backoff_policy(*current),
+      idempotency_policy(*current)->{{Name}}({{#HasRequestId}}request_copy{{/HasRequestId}}{{^HasRequestId}}request{{/HasRequestId}}),
+      [this](grpc::ClientContext& context, Options const& options,
+             {{{CppRequestType}}} const& request) {
+        return stub_->{{Name}}(context, options, request);
+      },
+      *current, {{#HasRequestId}}request_copy{{/HasRequestId}}{{^HasRequestId}}request{{/HasRequestId}}, __func__);
+}
+
+{{/IsUnary}}
+{{/Codec.Methods}}
+{{#Codec.AsyncMethods}}
+future<{{{CppReturnType}}}>
+{{ServiceName}}ConnectionImpl::Async{{Name}}({{{CppRequestType}}} const& request) {
+  auto current = google::cloud::internal::SaveCurrentOptions();
+{{#HasRequestId}}
+  auto request_copy = request;
+  if (request_copy.{{RequestIdFieldName}}().empty()) {
+    request_copy.set_{{RequestIdFieldName}}(invocation_id_generator_->MakeInvocationId());
+  }
+{{/HasRequestId}}
+  auto const idempotent =
+      idempotency_policy(*current)->{{Name}}({{#HasRequestId}}request_copy{{/HasRequestId}}{{^HasRequestId}}request{{/HasRequestId}});
+  auto retry = retry_policy(*current);
+  auto backoff = backoff_policy(*current);
+  return google::cloud::internal::AsyncRetryLoop(
+      std::move(retry), std::move(backoff), idempotent, background_->cq(),
+      [stub = stub_](CompletionQueue& cq,
+                     std::shared_ptr<grpc::ClientContext> context,
+                     google::cloud::internal::ImmutableOptions options,
+                     {{{CppRequestType}}} const& request) {
+        return stub->Async{{Name}}(
+            cq, std::move(context), std::move(options), request);
+      },
+      std::move(current), std::move({{#HasRequestId}}request_copy{{/HasRequestId}}{{^HasRequestId}}request{{/HasRequestId}}), __func__);
+}
+
+{{/Codec.AsyncMethods}}
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace {{Codec.InternalNamespace}}
 }  // namespace cloud

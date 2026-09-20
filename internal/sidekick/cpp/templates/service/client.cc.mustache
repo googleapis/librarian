@@ -30,6 +30,203 @@ GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
       connection_->options())) {}
 {{Codec.ClientClassName}}::~{{Codec.ClientClassName}}() = default;
 
+{{#Codec.Methods}}
+{{#Signatures}}
+{{#IsUnary}}
+{{{CppReturnType}}}
+{{ServiceName}}Client::{{Name}}({{#Parameters}}{{{Type}}} {{Name}}, {{/Parameters}}Options opts) {
+  internal::OptionsSpan span(internal::MergeOptions(std::move(opts), options_));
+  {{{CppRequestType}}} request;
+{{#Parameters}}
+{{#IsScalar}}
+  request.set_{{FieldName}}({{Name}});
+{{/IsScalar}}
+{{#IsMessage}}
+  *request.mutable_{{FieldName}}() = {{Name}};
+{{/IsMessage}}
+{{#IsMapOrRepeated}}
+{{=<< >>=}}
+  *request.mutable_<<FieldName>>() = {<<Name>>.begin(), <<Name>>.end()};
+<<={{ }}=>>
+{{/IsMapOrRepeated}}
+{{/Parameters}}
+  return connection_->{{Name}}(request);
+}
+
+{{/IsUnary}}
+{{#IsPaginated}}
+StreamRange<{{{RangeOutputType}}}>
+{{ServiceName}}Client::{{Name}}({{#Parameters}}{{{Type}}} {{Name}}, {{/Parameters}}Options opts) {
+  internal::OptionsSpan span(internal::MergeOptions(std::move(opts), options_));
+  {{{CppRequestType}}} request;
+{{#Parameters}}
+{{#IsScalar}}
+  request.set_{{FieldName}}({{Name}});
+{{/IsScalar}}
+{{#IsMessage}}
+  *request.mutable_{{FieldName}}() = {{Name}};
+{{/IsMessage}}
+{{#IsMapOrRepeated}}
+{{=<< >>=}}
+  *request.mutable_<<FieldName>>() = {<<Name>>.begin(), <<Name>>.end()};
+<<={{ }}=>>
+{{/IsMapOrRepeated}}
+{{/Parameters}}
+  return connection_->{{Name}}(request);
+}
+
+{{/IsPaginated}}
+{{#IsLongrunning}}
+future<{{{CppReturnType}}}>
+{{ServiceName}}Client::{{Name}}({{#Parameters}}{{{Type}}} {{Name}}, {{/Parameters}}Options opts) {
+  internal::OptionsSpan span(internal::MergeOptions(std::move(opts), options_));
+  {{{CppRequestType}}} request;
+{{#Parameters}}
+{{#IsScalar}}
+  request.set_{{FieldName}}({{Name}});
+{{/IsScalar}}
+{{#IsMessage}}
+  *request.mutable_{{FieldName}}() = {{Name}};
+{{/IsMessage}}
+{{#IsMapOrRepeated}}
+{{=<< >>=}}
+  *request.mutable_<<FieldName>>() = {<<Name>>.begin(), <<Name>>.end()};
+<<={{ }}=>>
+{{/IsMapOrRepeated}}
+{{/Parameters}}
+  return connection_->{{Name}}(request);
+}
+
+StatusOr<{{{LongrunningOperationType}}}>
+{{ServiceName}}Client::{{Name}}(NoAwaitTag, {{#Parameters}}{{{Type}}} {{Name}}, {{/Parameters}}Options opts) {
+  internal::OptionsSpan span(internal::MergeOptions(std::move(opts), options_));
+  {{{CppRequestType}}} request;
+{{#Parameters}}
+{{#IsScalar}}
+  request.set_{{FieldName}}({{Name}});
+{{/IsScalar}}
+{{#IsMessage}}
+  *request.mutable_{{FieldName}}() = {{Name}};
+{{/IsMessage}}
+{{#IsMapOrRepeated}}
+{{=<< >>=}}
+  *request.mutable_<<FieldName>>() = {<<Name>>.begin(), <<Name>>.end()};
+<<={{ }}=>>
+{{/IsMapOrRepeated}}
+{{/Parameters}}
+  return connection_->{{Name}}(NoAwaitTag{}, request);
+}
+
+{{/IsLongrunning}}
+{{#IsStreamingRead}}
+StreamRange<{{{CppResponseType}}}>
+{{ServiceName}}Client::{{Name}}({{#Parameters}}{{{Type}}} {{Name}}, {{/Parameters}}Options opts) {
+  internal::OptionsSpan span(internal::MergeOptions(std::move(opts), options_));
+  {{{CppRequestType}}} request;
+{{#Parameters}}
+{{#IsScalar}}
+  request.set_{{FieldName}}({{Name}});
+{{/IsScalar}}
+{{#IsMessage}}
+  *request.mutable_{{FieldName}}() = {{Name}};
+{{/IsMessage}}
+{{#IsMapOrRepeated}}
+{{=<< >>=}}
+  *request.mutable_<<FieldName>>() = {<<Name>>.begin(), <<Name>>.end()};
+<<={{ }}=>>
+{{/IsMapOrRepeated}}
+{{/Parameters}}
+  return connection_->{{Name}}(request);
+}
+
+{{/IsStreamingRead}}
+{{/Signatures}}
+{{#IsUnary}}
+{{{CppReturnType}}}
+{{ServiceName}}Client::{{Name}}({{{CppRequestType}}} const& request, Options opts) {
+  internal::OptionsSpan span(internal::MergeOptions(std::move(opts), options_));
+  return connection_->{{Name}}(request);
+}
+
+{{/IsUnary}}
+{{#IsPaginated}}
+StreamRange<{{{RangeOutputType}}}>
+{{ServiceName}}Client::{{Name}}({{{CppRequestType}}} request, Options opts) {
+  internal::OptionsSpan span(internal::MergeOptions(std::move(opts), options_));
+  return connection_->{{Name}}(std::move(request));
+}
+
+{{/IsPaginated}}
+{{#IsLongrunning}}
+future<{{{CppReturnType}}}>
+{{ServiceName}}Client::{{Name}}({{{CppRequestType}}} const& request, Options opts) {
+  internal::OptionsSpan span(internal::MergeOptions(std::move(opts), options_));
+  return connection_->{{Name}}(request);
+}
+
+StatusOr<{{{LongrunningOperationType}}}>
+{{ServiceName}}Client::{{Name}}(NoAwaitTag, {{{CppRequestType}}} const& request, Options opts) {
+  internal::OptionsSpan span(internal::MergeOptions(std::move(opts), options_));
+  return connection_->{{Name}}(NoAwaitTag{}, request);
+}
+
+future<{{{CppReturnType}}}>
+{{ServiceName}}Client::{{Name}}({{{LongrunningOperationType}}} const& operation, Options opts) {
+  internal::OptionsSpan span(internal::MergeOptions(std::move(opts), options_));
+  return connection_->{{Name}}(operation);
+}
+
+{{/IsLongrunning}}
+{{#IsStreamingRead}}
+StreamRange<{{{CppResponseType}}}>
+{{ServiceName}}Client::{{Name}}({{{CppRequestType}}} const& request, Options opts) {
+  internal::OptionsSpan span(internal::MergeOptions(std::move(opts), options_));
+  return connection_->{{Name}}(request);
+}
+
+{{/IsStreamingRead}}
+{{#IsBidirStreaming}}
+std::unique_ptr<::google::cloud::AsyncStreamingReadWriteRpc<
+    {{{CppRequestType}}},
+    {{{CppResponseType}}}>>
+{{ServiceName}}Client::Async{{Name}}(Options opts) {
+  internal::OptionsSpan span(
+      internal::MergeOptions(std::move(opts), options_));
+  return connection_->Async{{Name}}();
+}
+
+{{/IsBidirStreaming}}
+{{/Codec.Methods}}
+{{#Codec.AsyncMethods}}
+{{#Signatures}}
+future<{{{CppReturnType}}}>
+{{ServiceName}}Client::Async{{Name}}({{#Parameters}}{{{Type}}} {{Name}}, {{/Parameters}}Options opts) {
+  internal::OptionsSpan span(internal::MergeOptions(std::move(opts), options_));
+  {{{CppRequestType}}} request;
+{{#Parameters}}
+{{#IsScalar}}
+  request.set_{{FieldName}}({{Name}});
+{{/IsScalar}}
+{{#IsMessage}}
+  *request.mutable_{{FieldName}}() = {{Name}};
+{{/IsMessage}}
+{{#IsMapOrRepeated}}
+{{=<< >>=}}
+  *request.mutable_<<FieldName>>() = {<<Name>>.begin(), <<Name>>.end()};
+<<={{ }}=>>
+{{/IsMapOrRepeated}}
+{{/Parameters}}
+  return connection_->Async{{Name}}(request);
+}
+
+{{/Signatures}}
+future<{{{CppReturnType}}}>
+{{ServiceName}}Client::Async{{Name}}({{{CppRequestType}}} const& request, Options opts) {
+  internal::OptionsSpan span(internal::MergeOptions(std::move(opts), options_));
+  return connection_->Async{{Name}}(request);
+}
+
+{{/Codec.AsyncMethods}}
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace {{Codec.Namespace}}
 }  // namespace cloud
