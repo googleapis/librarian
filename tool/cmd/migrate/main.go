@@ -62,6 +62,8 @@ func run(ctx context.Context, args []string) error {
 	switch base {
 	case "google-cloud-dotnet":
 		return runDotnetMigration(ctx, abs)
+	case "google-cloud-cpp":
+		return runCppMigration(ctx, abs)
 	default:
 		return fmt.Errorf("invalid path: %q", repoPath)
 	}
