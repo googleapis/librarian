@@ -164,13 +164,22 @@ type serviceAnnotations struct {
 	HasExplicitRoutingMethod     bool
 
 	// REST & Transport configuration
-	GenerateRestTransport         bool
-	GenerateGrpcTransport         bool
-	GenerateRoundRobinDecorator   bool
-	HasGrpcLRO                    bool
-	IsLocationOptionallyDependent bool
-	ApiVersion                    string
-	HasApiVersion                 bool
+	GenerateRestTransport                 bool
+	GenerateGrpcTransport                 bool
+	GenerateRoundRobinDecorator           bool
+	HasGrpcLRO                            bool
+	HasComputeLRO                         bool
+	HasRegionOperations                   bool
+	HasGlobalOperations                   bool
+	HasGlobalOrganizationOperations       bool
+	HasZoneOperations                     bool
+	LongrunningOperationType              string
+	LongrunningGetOperationRequestType    string
+	LongrunningCancelOperationRequestType string
+	LongrunningOperationIncludeHeader     string
+	IsLocationOptionallyDependent         bool
+	ApiVersion                            string
+	HasApiVersion                         bool
 
 	// Header and source local includes
 	ConnectionHeaderIncludes     []string
@@ -325,13 +334,17 @@ func (c *codec) annotateService(s *api.Service, modelAnn *modelAnnotations, mode
 		hasExplicitRoutingMethod     bool
 	)
 
+	var operationService string
 	for _, m := range s.Methods {
 		if isLongrunningPoller(m) {
 			continue
 		}
 		isAsync := c.config != nil && (slices.Contains(c.config.GenAsyncRPCs, m.Name) || slices.Contains(c.config.GenAsyncRPCs, s.Name+"."+m.Name))
-		if m.OperationInfo != nil || m.IsLRO {
+		if m.OperationInfo != nil || m.IsLRO || m.OperationService != "" {
 			hasLongrunningMethod = true
+		}
+		if m.OperationService != "" && operationService == "" {
+			operationService = m.OperationService
 		}
 		if m.ClientSideStreaming && m.ServerSideStreaming {
 			hasBidirStreamingMethod = true
@@ -346,7 +359,8 @@ func (c *codec) annotateService(s *api.Service, modelAnn *modelAnnotations, mode
 				hasAsyncStreamingWriteMethod = true
 			}
 		}
-		if m.Pagination != nil {
+		_, isPag := isMethodPaginated(m, model)
+		if m.Pagination != nil || isPag {
 			hasPaginatedMethod = true
 		}
 		if len(m.AutoPopulated) > 0 {
@@ -379,7 +393,47 @@ func (c *codec) annotateService(s *api.Service, modelAnn *modelAnnotations, mode
 		}
 		additionalProtoFiles = c.config.AdditionalProtoFiles
 	}
-	hasGrpcLRO := hasLongrunningMethod && generateGrpcTransport
+	hasComputeLRO := operationService != ""
+	hasGrpcLRO := hasLongrunningMethod && generateGrpcTransport && !hasComputeLRO
+	hasRegionOperations := operationService == "RegionOperations"
+	hasGlobalOperations := operationService == "GlobalOperations"
+	hasGlobalOrganizationOperations := operationService == "GlobalOrganizationOperations"
+	hasZoneOperations := operationService == "ZoneOperations"
+
+	var lroOpType string
+	var lroGetOpReqType string
+	var lroCancelOpReqType string
+	var lroOpHeader string
+
+	if hasLongrunningMethod {
+		lroOpType = "google::longrunning::Operation"
+		lroGetOpReqType = "google::longrunning::GetOperationRequest"
+		lroCancelOpReqType = "google::longrunning::CancelOperationRequest"
+		lroOpHeader = "google/longrunning/operations.pb.h"
+
+		switch operationService {
+		case "RegionOperations":
+			lroOpType = "google::cloud::cpp::compute::v1::Operation"
+			lroGetOpReqType = "google::cloud::cpp::compute::region_operations::v1::GetOperationRequest"
+			lroCancelOpReqType = "google::cloud::cpp::compute::region_operations::v1::DeleteOperationRequest"
+			lroOpHeader = "google/cloud/compute/region_operations/v1/region_operations.pb.h"
+		case "GlobalOperations":
+			lroOpType = "google::cloud::cpp::compute::v1::Operation"
+			lroGetOpReqType = "google::cloud::cpp::compute::global_operations::v1::GetOperationRequest"
+			lroCancelOpReqType = "google::cloud::cpp::compute::global_operations::v1::DeleteOperationRequest"
+			lroOpHeader = "google/cloud/compute/global_operations/v1/global_operations.pb.h"
+		case "GlobalOrganizationOperations":
+			lroOpType = "google::cloud::cpp::compute::v1::Operation"
+			lroGetOpReqType = "google::cloud::cpp::compute::global_organization_operations::v1::GetOperationRequest"
+			lroCancelOpReqType = "google::cloud::cpp::compute::global_organization_operations::v1::DeleteOperationRequest"
+			lroOpHeader = "google/cloud/compute/global_organization_operations/v1/global_organization_operations.pb.h"
+		case "ZoneOperations":
+			lroOpType = "google::cloud::cpp::compute::v1::Operation"
+			lroGetOpReqType = "google::cloud::cpp::compute::zone_operations::v1::GetOperationRequest"
+			lroCancelOpReqType = "google::cloud::cpp::compute::zone_operations::v1::DeleteOperationRequest"
+			lroOpHeader = "google/cloud/compute/zone_operations/v1/zone_operations.pb.h"
+		}
+	}
 
 	var apiVersion string
 	for _, m := range s.Methods {
@@ -569,13 +623,22 @@ func (c *codec) annotateService(s *api.Service, modelAnn *modelAnnotations, mode
 		HasCompletionQueue:           hasAsyncMethod || hasBidirStreamingMethod,
 		HasExplicitRoutingMethod:     hasExplicitRoutingMethod,
 
-		GenerateRestTransport:         generateRestTransport,
-		GenerateGrpcTransport:         generateGrpcTransport,
-		GenerateRoundRobinDecorator:   generateRoundRobinDecorator,
-		HasGrpcLRO:                    hasGrpcLRO,
-		IsLocationOptionallyDependent: isLocationOptionallyDependent,
-		ApiVersion:                    apiVersion,
-		HasApiVersion:                 hasApiVersion,
+		GenerateRestTransport:                 generateRestTransport,
+		GenerateGrpcTransport:                 generateGrpcTransport,
+		GenerateRoundRobinDecorator:           generateRoundRobinDecorator,
+		HasGrpcLRO:                            hasGrpcLRO,
+		HasComputeLRO:                         hasComputeLRO,
+		HasRegionOperations:                   hasRegionOperations,
+		HasGlobalOperations:                   hasGlobalOperations,
+		HasGlobalOrganizationOperations:       hasGlobalOrganizationOperations,
+		HasZoneOperations:                     hasZoneOperations,
+		LongrunningOperationType:              lroOpType,
+		LongrunningGetOperationRequestType:    lroGetOpReqType,
+		LongrunningCancelOperationRequestType: lroCancelOpReqType,
+		LongrunningOperationIncludeHeader:     lroOpHeader,
+		IsLocationOptionallyDependent:         isLocationOptionallyDependent,
+		ApiVersion:                            apiVersion,
+		HasApiVersion:                         hasApiVersion,
 	}
 	sAnn = populateServiceIncludes(sAnn, s, productPath, additionalProtoFiles, year)
 	var getIamPolicyMethod, setIamPolicyMethod *api.Method

@@ -31,7 +31,12 @@ limitations under the License.
 {{/Codec.HasStreamRange}}
 #include "google/cloud/version.h"
 {{#Codec.HasLongrunningMethod}}
+{{#Codec.HasComputeLRO}}
+#include <{{{Codec.LongrunningOperationIncludeHeader}}}>
+{{/Codec.HasComputeLRO}}
+{{^Codec.HasComputeLRO}}
 #include <google/longrunning/operations.pb.h>
+{{/Codec.HasComputeLRO}}
 {{/Codec.HasLongrunningMethod}}
 #include <memory>
 

@@ -39,7 +39,7 @@ func TestAnnotateMethod_GetOperationComments(t *testing.T) {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 
-	docComment := formatMethodDoxygenComments(method, "", nil, "", false, nil, false, false)
+	docComment := formatMethodDoxygenComments(method, "", nil, "", false, nil, false, false, false)
 	wantSubstr := "Gets the latest state of a long-running operation."
 	if !strings.Contains(docComment, wantSubstr) {
 		t.Errorf("formatMethodDoxygenComments expected to contain %q, got %s", wantSubstr, docComment)
@@ -182,7 +182,7 @@ func TestFormatMethodDoxygenComments_IAMAndCustom(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got := formatMethodDoxygenComments(test.method, "", nil, "", false, nil, false, false)
+			got := formatMethodDoxygenComments(test.method, "", nil, "", false, nil, false, false, false)
 			if !strings.Contains(got, test.wantSubstr) {
 				t.Errorf("expected comments to contain %q, got:\n%s", test.wantSubstr, got)
 			}
@@ -210,7 +210,6 @@ func TestFormatMethodDoxygenComments_ReferenceScoping(t *testing.T) {
 				svc := api.NewTestService("SecretManagerService").
 					WithPackage("google.cloud.secretmanager.v1").
 					WithMethods(method)
-				method.Service = svc
 
 				model := api.NewTestAPI([]*api.Message{req, resp}, nil, []*api.Service{svc})
 				model.AddDefinitionLocation(svc.ID, api.SourceLocation{
@@ -248,7 +247,6 @@ func TestFormatMethodDoxygenComments_ReferenceScoping(t *testing.T) {
 				svc := api.NewTestService("SecretManagerService").
 					WithPackage("google.cloud.secretmanager.v1").
 					WithMethods(method)
-				method.Service = svc
 
 				model := api.NewTestAPI([]*api.Message{req, resp}, nil, []*api.Service{svc})
 				model.AddDefinitionLocation(svc.ID, api.SourceLocation{
@@ -310,7 +308,6 @@ func TestFormatMethodDoxygenComments_ReferenceScoping(t *testing.T) {
 				svc := api.NewTestService("SecretManagerService").
 					WithPackage("google.cloud.secretmanager.v1").
 					WithMethods(method)
-				method.Service = svc
 
 				model := api.NewTestAPI([]*api.Message{req, resp}, nil, []*api.Service{svc})
 				// svc.ID is intentionally omitted from DefinitionLocations
@@ -368,7 +365,6 @@ func TestFormatMethodDoxygenComments_ReferenceScoping(t *testing.T) {
 				svc := api.NewTestService("SecretManagerService").
 					WithPackage("google.cloud.secretmanager.v1").
 					WithMethods(method)
-				method.Service = svc
 
 				model := api.NewTestAPI([]*api.Message{req, resp}, nil, []*api.Service{svc})
 				model.AddDefinitionLocation(svc.ID, api.SourceLocation{
@@ -400,7 +396,7 @@ func TestFormatMethodDoxygenComments_ReferenceScoping(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			method, model := test.setup()
 			method.Documentation = test.doc
-			got := formatMethodDoxygenComments(method, test.paramDoc, model, test.sourceFile, false, nil, false, false)
+			got := formatMethodDoxygenComments(method, test.paramDoc, model, test.sourceFile, false, nil, false, false, false)
 			for _, want := range test.wantContains {
 				if !strings.Contains(got, want) {
 					t.Errorf("expected comments to contain %q, got:\n%s", want, got)
@@ -412,5 +408,104 @@ func TestFormatMethodDoxygenComments_ReferenceScoping(t *testing.T) {
 				}
 			}
 		})
+	}
+}
+
+func TestFormatMethodDoxygenComments_MapPagination(t *testing.T) {
+	itemMsg := api.NewTestMessage("Item").WithPackage("google.cloud.compute.v1")
+	mapEntry := api.NewTestMessage("ItemsScopedList").WithPackage("google.cloud.compute.v1").WithFields(
+		api.NewTestField("key").WithType(api.TypezString),
+		api.NewTestField("value").WithMessageType(itemMsg),
+	)
+	mapField := api.NewTestField("items").WithMessageType(mapEntry).WithMap()
+
+	req := api.NewTestMessage("AggregatedListRequest").WithPackage("google.cloud.compute.v1")
+	resp := api.NewTestMessage("AggregatedListResponse").WithPackage("google.cloud.compute.v1").WithFields(mapField)
+	method := api.NewTestMethod("AggregatedList").
+		WithInput(req).
+		WithOutput(resp)
+	svc := api.NewTestService("Instances").
+		WithPackage("google.cloud.compute.v1").
+		WithMethods(method)
+
+	model := api.NewTestAPI([]*api.Message{req, resp, mapEntry, itemMsg}, nil, []*api.Service{svc})
+	model.AddDefinitionLocation("google.cloud.compute.v1.Item", api.SourceLocation{
+		Filename: "google/cloud/compute/v1/compute.proto",
+		Line:     100,
+	})
+
+	got := formatMethodDoxygenComments(method, "", model, "google/cloud/compute/v1/instances.proto", true, mapField, false, false, false)
+
+	wantContains := []string{
+		"contains elements of type\n  ///     [google.cloud.compute.v1.Item]",
+		"[google.cloud.compute.v1.Item]: @googleapis_reference_link{google/cloud/compute/v1/compute.proto#L100}",
+	}
+	for _, want := range wantContains {
+		if !strings.Contains(got, want) {
+			t.Errorf("expected comments to contain %q, got:\n%s", want, got)
+		}
+	}
+}
+
+func TestFormatMethodDoxygenComments_ComputeLRO(t *testing.T) {
+	op := api.NewTestMessage("Operation").WithPackage("google.cloud.cpp.compute.v1")
+	req := api.NewTestMessage("InsertRequest").WithPackage("google.cloud.compute.v1")
+	method := api.NewTestMethod("Insert").
+		WithInput(req).
+		WithOutput(op).
+		WithOperationService("RegionOperations")
+	svc := api.NewTestService("RegionOperationsService").WithMethods(method)
+
+	model := api.NewTestAPI([]*api.Message{req, op}, nil, []*api.Service{svc})
+	model.AddDefinitionLocation("google.cloud.cpp.compute.v1.Operation", api.SourceLocation{
+		Filename: "google/cloud/compute/v1/operations.proto",
+		Line:     42,
+	})
+
+	got := formatMethodDoxygenComments(method, "", model, "google/cloud/compute/v1/operations.proto", false, nil, true, false, true)
+
+	wantContains := []string{
+		"[Long Running Operation]: http://cloud/compute/docs/api/how-tos/api-requests-responses#handling_api_responses",
+		"For this RPC the result is a\n  ///     [google.cloud.cpp.compute.v1.Operation] proto message.",
+	}
+	for _, want := range wantContains {
+		if !strings.Contains(got, want) {
+			t.Errorf("expected comments to contain %q, got:\n%s", want, got)
+		}
+	}
+	if strings.Contains(got, "https://google.aip.dev/151") {
+		t.Errorf("expected comments to NOT contain https://google.aip.dev/151 for Compute LRO, got:\n%s", got)
+	}
+}
+
+func TestFormatMethodDoxygenComments_ComputeLRO_WithoutOperationService(t *testing.T) {
+	op := api.NewTestMessage("Operation").WithPackage("google.cloud.cpp.compute.v1")
+	req := api.NewTestMessage("InsertRequest").WithPackage("google.cloud.compute.v1")
+	// Method without OperationService set on api.Method, but isComputeLRO is true (e.g. from !GenerateGrpcTransport)
+	method := api.NewTestMethod("Insert").
+		WithInput(req).
+		WithOutput(op)
+	svc := api.NewTestService("ComputeService").WithMethods(method)
+
+	model := api.NewTestAPI([]*api.Message{req, op}, nil, []*api.Service{svc})
+	model.AddDefinitionLocation("google.cloud.cpp.compute.v1.Operation", api.SourceLocation{
+		Filename: "google/cloud/compute/v1/operations.proto",
+		Line:     42,
+	})
+
+	got := formatMethodDoxygenComments(method, "", model, "google/cloud/compute/v1/operations.proto", false, nil, true, false, true)
+
+	wantContains := []string{
+		"[Long Running Operation]: http://cloud/compute/docs/api/how-tos/api-requests-responses#handling_api_responses",
+		"For this RPC the result is a\n  ///     [google.cloud.cpp.compute.v1.Operation] proto message.",
+		"[google.cloud.cpp.compute.v1.Operation]: @googleapis_reference_link{google/cloud/compute/v1/operations.proto#L42}",
+	}
+	for _, want := range wantContains {
+		if !strings.Contains(got, want) {
+			t.Errorf("expected comments to contain %q, got:\n%s", want, got)
+		}
+	}
+	if strings.Contains(got, "https://google.aip.dev/151") {
+		t.Errorf("expected comments to NOT contain https://google.aip.dev/151 for Compute LRO, got:\n%s", got)
 	}
 }

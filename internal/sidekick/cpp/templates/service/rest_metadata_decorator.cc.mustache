@@ -42,7 +42,7 @@ GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
 {{#Codec.RestMethods}}
 {{#IsLongrunning}}
-future<StatusOr<google::longrunning::Operation>>
+future<StatusOr<{{{LongrunningOperationType}}}>>
 {{Codec.RestMetadataDecoratorClassName}}::Async{{Name}}(
       CompletionQueue& cq,
       std::unique_ptr<rest_internal::RestContext> rest_context,
@@ -97,7 +97,7 @@ future<StatusOr<google::longrunning::Operation>>
       cq, std::move(rest_context), std::move(options), request);
 }
 
-StatusOr<google::longrunning::Operation>
+StatusOr<{{{LongrunningOperationType}}}>
 {{Codec.RestMetadataDecoratorClassName}}::{{Name}}(
     rest_internal::RestContext& rest_context,
     Options const& options, {{{CppRequestType}}} const& request) {
@@ -263,12 +263,12 @@ future<{{{CppReturnType}}}>
 
 {{/Codec.RestAsyncMethods}}
 {{#Codec.HasLongrunningMethod}}
-future<StatusOr<google::longrunning::Operation>>
+future<StatusOr<{{{Codec.LongrunningOperationType}}}>>
 {{Codec.RestMetadataDecoratorClassName}}::AsyncGetOperation(
     google::cloud::CompletionQueue& cq,
     std::unique_ptr<rest_internal::RestContext> rest_context,
     google::cloud::internal::ImmutableOptions options,
-    google::longrunning::GetOperationRequest const& request) {
+    {{{Codec.LongrunningGetOperationRequestType}}} const& request) {
   SetMetadata(*rest_context, *options);
   return child_->AsyncGetOperation(
       cq, std::move(rest_context), std::move(options), request);
@@ -279,7 +279,7 @@ future<Status>
     google::cloud::CompletionQueue& cq,
     std::unique_ptr<rest_internal::RestContext> rest_context,
     google::cloud::internal::ImmutableOptions options,
-    google::longrunning::CancelOperationRequest const& request) {
+    {{{Codec.LongrunningCancelOperationRequestType}}} const& request) {
   SetMetadata(*rest_context, *options);
   return child_->AsyncCancelOperation(
       cq, std::move(rest_context), std::move(options), request);

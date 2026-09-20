@@ -23,7 +23,7 @@ limitations under the License.
 #include <{{Codec.ProtoHeaderPath}}>
 {{/Codec.ProtoHeaderPath}}
 {{#Codec.HasLongrunningMethod}}
-#include <google/longrunning/operations.pb.h>
+#include <{{{Codec.LongrunningOperationIncludeHeader}}}>
 {{/Codec.HasLongrunningMethod}}
 #include <memory>
 #include <utility>
@@ -38,7 +38,7 @@ GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
           options.get<EndpointOption>(), options)),
 {{#Codec.HasLongrunningMethod}}
       operations_(rest_internal::MakePooledRestClient(
-          options.get<rest_internal::LongrunningEndpointOption>(), options)),
+          options.get<{{#Codec.HasComputeLRO}}EndpointOption{{/Codec.HasComputeLRO}}{{^Codec.HasComputeLRO}}rest_internal::LongrunningEndpointOption{{/Codec.HasComputeLRO}}>(), options)),
 {{/Codec.HasLongrunningMethod}}
       options_(std::move(options)) {}
 
@@ -56,14 +56,14 @@ GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
 {{#Codec.RestMethods}}
 {{#IsLongrunning}}
-future<StatusOr<google::longrunning::Operation>>
+future<StatusOr<{{{LongrunningOperationType}}}>>
 {{Codec.DefaultRestStubClassName}}::Async{{Name}}(
       CompletionQueue& cq,
       std::unique_ptr<rest_internal::RestContext> rest_context,
       google::cloud::internal::ImmutableOptions options,
       {{{CppRequestType}}} const& request) {
-  promise<StatusOr<google::longrunning::Operation>> p;
-  future<StatusOr<google::longrunning::Operation>> f = p.get_future();
+  promise<StatusOr<{{{LongrunningOperationType}}}>> p;
+  future<StatusOr<{{{LongrunningOperationType}}}>> f = p.get_future();
   std::thread t{[](
           auto p, auto service, auto request, auto rest_context, auto options) {
       std::vector<std::pair<std::string, std::string>> query_params;
@@ -81,7 +81,7 @@ future<StatusOr<google::longrunning::Operation>>
 {{/RestQueryParams}}
   query_params = rest_internal::TrimEmptyQueryParameters(std::move(query_params));
 {{/RestHasQueryParams}}
-      p.set_value(rest_internal::{{RestVerb}}<google::longrunning::Operation>(
+      p.set_value(rest_internal::{{RestVerb}}<{{{LongrunningOperationType}}}>(
           *service, *rest_context, {{{RestRequestBodyAccessor}}},
           false,
           absl::StrCat("/", {{#RestPathSegments}}{{#IsApiVersion}}rest_internal::DetermineApiVersion("{{ApiVersion}}", *options){{/IsApiVersion}}{{#IsLiteral}}"{{Literal}}"{{/IsLiteral}}{{#IsField}}request.{{{FieldAccessor}}}{{/IsField}}{{#HasNext}}, "/", {{/HasNext}}{{/RestPathSegments}}{{#HasRestPathVerb}}, ":{{RestPathVerb}}"{{/HasRestPathVerb}}), std::move(query_params)));
@@ -96,7 +96,7 @@ future<StatusOr<google::longrunning::Operation>>
   });
 }
 
-StatusOr<google::longrunning::Operation>
+StatusOr<{{{LongrunningOperationType}}}>
 {{Codec.DefaultRestStubClassName}}::{{Name}}(
       google::cloud::rest_internal::RestContext& rest_context,
       Options const& options,
@@ -116,7 +116,7 @@ StatusOr<google::longrunning::Operation>
 {{/RestQueryParams}}
   query_params = rest_internal::TrimEmptyQueryParameters(std::move(query_params));
 {{/RestHasQueryParams}}
-  return rest_internal::{{RestVerb}}<google::longrunning::Operation>(
+  return rest_internal::{{RestVerb}}<{{{LongrunningOperationType}}}>(
       *service_, rest_context, {{{RestRequestBodyAccessor}}}, false,
       absl::StrCat("/", {{#RestPathSegments}}{{#IsApiVersion}}rest_internal::DetermineApiVersion("{{ApiVersion}}", options){{/IsApiVersion}}{{#IsLiteral}}"{{Literal}}"{{/IsLiteral}}{{#IsField}}request.{{{FieldAccessor}}}{{/IsField}}{{#HasNext}}, "/", {{/HasNext}}{{/RestPathSegments}}{{#HasRestPathVerb}}, ":{{RestPathVerb}}"{{/HasRestPathVerb}}), std::move(query_params));
 }
@@ -215,18 +215,32 @@ future<{{{CppReturnType}}}>
 
 {{/Codec.RestAsyncMethods}}
 {{#Codec.HasLongrunningMethod}}
-future<StatusOr<google::longrunning::Operation>>
+future<StatusOr<{{{Codec.LongrunningOperationType}}}>>
 {{Codec.DefaultRestStubClassName}}::AsyncGetOperation(
     google::cloud::CompletionQueue& cq,
     std::unique_ptr<rest_internal::RestContext> rest_context,
     google::cloud::internal::ImmutableOptions options,
-    google::longrunning::GetOperationRequest const& request) {
-  promise<StatusOr<google::longrunning::Operation>> p;
-  future<StatusOr<google::longrunning::Operation>> f = p.get_future();
+    {{{Codec.LongrunningGetOperationRequestType}}} const& request) {
+  promise<StatusOr<{{{Codec.LongrunningOperationType}}}>> p;
+  future<StatusOr<{{{Codec.LongrunningOperationType}}}>> f = p.get_future();
   std::thread t{[](auto p, auto operations, auto request, auto rest_context, auto options) {
-      p.set_value(rest_internal::Get<google::longrunning::Operation>(
+      p.set_value(rest_internal::Get<{{{Codec.LongrunningOperationType}}}>(
           *operations, *rest_context, request, false,
+{{#Codec.HasRegionOperations}}
+          absl::StrCat("/compute/", rest_internal::DetermineApiVersion("v1", *options), "/projects/", request.project(), "/regions/", request.region(), "/operations/", request.operation())));
+{{/Codec.HasRegionOperations}}
+{{#Codec.HasGlobalOperations}}
+          absl::StrCat("/compute/", rest_internal::DetermineApiVersion("v1", *options), "/projects/", request.project(), "/global/operations/", request.operation())));
+{{/Codec.HasGlobalOperations}}
+{{#Codec.HasGlobalOrganizationOperations}}
+          absl::StrCat("/compute/", rest_internal::DetermineApiVersion("v1", *options), "/locations/global/operations/", request.operation())));
+{{/Codec.HasGlobalOrganizationOperations}}
+{{#Codec.HasZoneOperations}}
+          absl::StrCat("/compute/", rest_internal::DetermineApiVersion("v1", *options), "/projects/", request.project(), "/zones/", request.zone(), "/operations/", request.operation())));
+{{/Codec.HasZoneOperations}}
+{{^Codec.HasComputeLRO}}
           absl::StrCat("/", rest_internal::DetermineApiVersion("v1", *options) ,"/", request.name())));
+{{/Codec.HasComputeLRO}}
     },
     std::move(p), operations_, request, std::move(rest_context),
     std::move(options)};
@@ -243,13 +257,27 @@ future<Status>
     google::cloud::CompletionQueue& cq,
     std::unique_ptr<rest_internal::RestContext> rest_context,
     google::cloud::internal::ImmutableOptions options,
-    google::longrunning::CancelOperationRequest const& request) {
+    {{{Codec.LongrunningCancelOperationRequestType}}} const& request) {
   promise<StatusOr<google::protobuf::Empty>> p;
   future<StatusOr<google::protobuf::Empty>> f = p.get_future();
   std::thread t{[](auto p, auto operations, auto request, auto rest_context, auto options) {
       p.set_value(rest_internal::Post<google::protobuf::Empty>(
           *operations, *rest_context, request, false,
+{{#Codec.HasRegionOperations}}
+          absl::StrCat("/compute/", rest_internal::DetermineApiVersion("v1", *options), "/projects/", request.project(), "/regions/", request.region(), "/operations/", request.operation())));
+{{/Codec.HasRegionOperations}}
+{{#Codec.HasGlobalOperations}}
+          absl::StrCat("/compute/", rest_internal::DetermineApiVersion("v1", *options), "/projects/", request.project(), "/global/operations/", request.operation())));
+{{/Codec.HasGlobalOperations}}
+{{#Codec.HasGlobalOrganizationOperations}}
+          absl::StrCat("/compute/", rest_internal::DetermineApiVersion("v1", *options), "/locations/global/operations/", request.operation())));
+{{/Codec.HasGlobalOrganizationOperations}}
+{{#Codec.HasZoneOperations}}
+          absl::StrCat("/compute/", rest_internal::DetermineApiVersion("v1", *options), "/projects/", request.project(), "/zones/", request.zone(), "/operations/", request.operation())));
+{{/Codec.HasZoneOperations}}
+{{^Codec.HasComputeLRO}}
           absl::StrCat("/", rest_internal::DetermineApiVersion("v1", *options) ,"/", request.name(), ":cancel")));
+{{/Codec.HasComputeLRO}}
     },
     std::move(p), operations_, request, std::move(rest_context),
     std::move(options)};

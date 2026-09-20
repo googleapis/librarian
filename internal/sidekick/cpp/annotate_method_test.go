@@ -81,24 +81,29 @@ func TestAnnotateMethod_EmptyResponse(t *testing.T) {
 	}
 
 	got := method.Codec.(*methodAnnotations)
-	if got.CppReturnType != "Status" {
-		t.Errorf("expected CppReturnType Status, got: %s", got.CppReturnType)
+	type emptyResult struct {
+		CppReturnType       string
+		IsResponseTypeEmpty bool
 	}
-	if !got.IsResponseTypeEmpty {
-		t.Errorf("expected IsResponseTypeEmpty true, got false")
+	want := emptyResult{
+		CppReturnType:       "Status",
+		IsResponseTypeEmpty: true,
+	}
+	gotResult := emptyResult{
+		CppReturnType:       got.CppReturnType,
+		IsResponseTypeEmpty: got.IsResponseTypeEmpty,
+	}
+	if diff := cmp.Diff(want, gotResult); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
 
 func TestAnnotateMethod_Paginated(t *testing.T) {
 	itemMsg := api.NewTestMessage("Item").WithPackage("test")
 	itemField := api.NewTestField("items").WithMessageType(itemMsg).WithRepeated()
-	respMsg := api.NewTestMessage("ListItemsResponse").WithFields(
-		itemField,
-		api.NewTestField("next_page_token").WithType(api.TypezString),
-	)
-	respMsg.Pagination = &api.PaginationInfo{
-		PageableItem: itemField,
-	}
+	nextPageToken := api.NewTestField("next_page_token").WithType(api.TypezString)
+	respMsg := api.NewTestMessage("ListItemsResponse").
+		WithPagination(nextPageToken, itemField)
 
 	reqMsg := api.NewTestMessage("ListItemsRequest").WithFields(
 		api.NewTestField("page_size").WithType(api.TypezInt32),
@@ -118,14 +123,23 @@ func TestAnnotateMethod_Paginated(t *testing.T) {
 	}
 
 	got := method.Codec.(*methodAnnotations)
-	if !got.IsPaginated {
-		t.Errorf("expected IsPaginated true, got false")
+	type paginationResult struct {
+		IsPaginated     bool
+		RangeOutputType string
+		IsUnary         bool
 	}
-	if got.RangeOutputType != "test::Item" {
-		t.Errorf("expected RangeOutputType test::Item, got %s", got.RangeOutputType)
+	want := paginationResult{
+		IsPaginated:     true,
+		RangeOutputType: "test::Item",
+		IsUnary:         false,
 	}
-	if got.IsUnary {
-		t.Errorf("expected IsUnary false for paginated method, got true")
+	gotResult := paginationResult{
+		IsPaginated:     got.IsPaginated,
+		RangeOutputType: got.RangeOutputType,
+		IsUnary:         got.IsUnary,
+	}
+	if diff := cmp.Diff(want, gotResult); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
 
@@ -152,14 +166,23 @@ func TestAnnotateMethod_LRO(t *testing.T) {
 	}
 
 	got := method.Codec.(*methodAnnotations)
-	if !got.IsLongrunning {
-		t.Errorf("expected IsLongrunning true, got false")
+	type lroResult struct {
+		IsLongrunning                  bool
+		LongrunningDeducedResponseType string
+		CppReturnType                  string
 	}
-	if got.LongrunningDeducedResponseType != "test::Item" {
-		t.Errorf("expected deduced response test::Item, got %s", got.LongrunningDeducedResponseType)
+	want := lroResult{
+		IsLongrunning:                  true,
+		LongrunningDeducedResponseType: "test::Item",
+		CppReturnType:                  "StatusOr<test::Item>",
 	}
-	if got.CppReturnType != "StatusOr<test::Item>" {
-		t.Errorf("expected CppReturnType StatusOr<test::Item>, got %s", got.CppReturnType)
+	gotResult := lroResult{
+		IsLongrunning:                  got.IsLongrunning,
+		LongrunningDeducedResponseType: got.LongrunningDeducedResponseType,
+		CppReturnType:                  got.CppReturnType,
+	}
+	if diff := cmp.Diff(want, gotResult); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 	if got.NoAwaitComments == "" {
 		t.Errorf("expected non-empty NoAwaitComments")
@@ -185,19 +208,36 @@ func TestAnnotateMethod_Streaming(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	type streamingFlags struct {
+		IsStreamingRead  bool
+		IsStreamingWrite bool
+		IsBidirStreaming bool
+	}
 	gotRead := readMethod.Codec.(*methodAnnotations)
-	if !gotRead.IsStreamingRead || gotRead.IsStreamingWrite || gotRead.IsBidirStreaming {
-		t.Errorf("unexpected streaming flags for read: %+v", gotRead)
+	if diff := cmp.Diff(streamingFlags{IsStreamingRead: true}, streamingFlags{
+		IsStreamingRead:  gotRead.IsStreamingRead,
+		IsStreamingWrite: gotRead.IsStreamingWrite,
+		IsBidirStreaming: gotRead.IsBidirStreaming,
+	}); diff != "" {
+		t.Errorf("read mismatch (-want +got):\n%s", diff)
 	}
 
 	gotWrite := writeMethod.Codec.(*methodAnnotations)
-	if !gotWrite.IsStreamingWrite || gotWrite.IsStreamingRead || gotWrite.IsBidirStreaming {
-		t.Errorf("unexpected streaming flags for write: %+v", gotWrite)
+	if diff := cmp.Diff(streamingFlags{IsStreamingWrite: true}, streamingFlags{
+		IsStreamingRead:  gotWrite.IsStreamingRead,
+		IsStreamingWrite: gotWrite.IsStreamingWrite,
+		IsBidirStreaming: gotWrite.IsBidirStreaming,
+	}); diff != "" {
+		t.Errorf("write mismatch (-want +got):\n%s", diff)
 	}
 
 	gotBidi := bidiMethod.Codec.(*methodAnnotations)
-	if !gotBidi.IsBidirStreaming || gotBidi.IsStreamingRead || gotBidi.IsStreamingWrite {
-		t.Errorf("unexpected streaming flags for bidi: %+v", gotBidi)
+	if diff := cmp.Diff(streamingFlags{IsBidirStreaming: true}, streamingFlags{
+		IsStreamingRead:  gotBidi.IsStreamingRead,
+		IsStreamingWrite: gotBidi.IsStreamingWrite,
+		IsBidirStreaming: gotBidi.IsBidirStreaming,
+	}); diff != "" {
+		t.Errorf("bidi mismatch (-want +got):\n%s", diff)
 	}
 }
 
@@ -302,30 +342,30 @@ func TestAnnotateMethod_Idempotency(t *testing.T) {
 	postOverride := api.NewTestMethod("PostThing").WithInput(req).WithOutput(resp).WithVerb("POST")
 
 	for _, test := range []struct {
-		name        string
-		method      *api.Method
-		cfg         *config.CppLibrary
-		wantIdempot string
+		name   string
+		method *api.Method
+		cfg    *config.CppLibrary
+		want   string
 	}{
 		{
-			name:        "default fallback is kNonIdempotent",
-			method:      api.NewTestMethod("DoThing").WithInput(req).WithOutput(resp),
-			wantIdempot: "kNonIdempotent",
+			name:   "default fallback is kNonIdempotent",
+			method: api.NewTestMethod("DoThing").WithInput(req).WithOutput(resp),
+			want:   "kNonIdempotent",
 		},
 		{
-			name:        "GET verb is kIdempotent",
-			method:      getMethod,
-			wantIdempot: "kIdempotent",
+			name:   "GET verb is kIdempotent",
+			method: getMethod,
+			want:   "kIdempotent",
 		},
 		{
-			name:        "PUT verb is kIdempotent",
-			method:      putMethod,
-			wantIdempot: "kIdempotent",
+			name:   "PUT verb is kIdempotent",
+			method: putMethod,
+			want:   "kIdempotent",
 		},
 		{
-			name:        "POST verb is kNonIdempotent",
-			method:      postMethod,
-			wantIdempot: "kNonIdempotent",
+			name:   "POST verb is kNonIdempotent",
+			method: postMethod,
+			want:   "kNonIdempotent",
 		},
 		{
 			name:   "config override takes precedence",
@@ -335,21 +375,21 @@ func TestAnnotateMethod_Idempotency(t *testing.T) {
 					{RPCName: "PostThing", Idempotency: "kIdempotent"},
 				},
 			},
-			wantIdempot: "kIdempotent",
+			want: "kIdempotent",
 		},
 		{
 			name: "GetIamPolicy is kIdempotent",
 			method: api.NewTestMethod("GetIamPolicy").
 				WithInput(api.NewTestMessage("GetIamPolicyRequest").WithPackage("google.iam.v1")).
 				WithOutput(api.NewTestMessage("Policy").WithPackage("google.iam.v1")),
-			wantIdempot: "kIdempotent",
+			want: "kIdempotent",
 		},
 		{
 			name: "TestIamPermissions is kIdempotent",
 			method: api.NewTestMethod("TestIamPermissions").
 				WithInput(api.NewTestMessage("TestIamPermissionsRequest").WithPackage("google.iam.v1")).
 				WithOutput(api.NewTestMessage("TestIamPermissionsResponse").WithPackage("google.iam.v1")),
-			wantIdempot: "kIdempotent",
+			want: "kIdempotent",
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
@@ -360,8 +400,8 @@ func TestAnnotateMethod_Idempotency(t *testing.T) {
 				t.Fatal(err)
 			}
 			got := test.method.Codec.(*methodAnnotations)
-			if got.Idempotency != test.wantIdempot {
-				t.Errorf("got idempotency %q, want %q", got.Idempotency, test.wantIdempot)
+			if diff := cmp.Diff(test.want, got.Idempotency); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
@@ -458,11 +498,20 @@ func TestAnnotateMethod_AutoPopulatedRequestId(t *testing.T) {
 		t.Fatal(err)
 	}
 	got := method.Codec.(*methodAnnotations)
-	if !got.HasRequestId {
-		t.Errorf("expected HasRequestId=true")
+	type requestIdResult struct {
+		HasRequestId       bool
+		RequestIdFieldName string
 	}
-	if got.RequestIdFieldName != "request_id" {
-		t.Errorf("expected RequestIdFieldName='request_id', got %q", got.RequestIdFieldName)
+	want := requestIdResult{
+		HasRequestId:       true,
+		RequestIdFieldName: "request_id",
+	}
+	gotResult := requestIdResult{
+		HasRequestId:       got.HasRequestId,
+		RequestIdFieldName: got.RequestIdFieldName,
+	}
+	if diff := cmp.Diff(want, gotResult); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
 
@@ -493,21 +542,31 @@ func TestAnnotateMethod_ParameterAnnotationTypes(t *testing.T) {
 	if len(params) != 4 {
 		t.Fatalf("expected 4 parameters, got %d", len(params))
 	}
-	// labels: map
-	if !params[0].IsMap || !params[0].IsMapOrRepeated || params[0].IsRepeated || params[0].IsMessage || params[0].IsScalar {
-		t.Errorf("unexpected flags for map param: %+v", params[0])
+	type paramFlags struct {
+		IsMap           bool
+		IsRepeated      bool
+		IsMapOrRepeated bool
+		IsMessage       bool
+		IsScalar        bool
 	}
-	// tags: repeated
-	if params[1].IsMap || !params[1].IsMapOrRepeated || !params[1].IsRepeated || params[1].IsMessage || params[1].IsScalar {
-		t.Errorf("unexpected flags for repeated param: %+v", params[1])
+	wantParams := []paramFlags{
+		{IsMap: true, IsMapOrRepeated: true},
+		{IsRepeated: true, IsMapOrRepeated: true},
+		{IsMessage: true},
+		{IsScalar: true},
 	}
-	// sub: message
-	if params[2].IsMap || params[2].IsMapOrRepeated || params[2].IsRepeated || !params[2].IsMessage || params[2].IsScalar {
-		t.Errorf("unexpected flags for message param: %+v", params[2])
+	var gotParams []paramFlags
+	for _, p := range params {
+		gotParams = append(gotParams, paramFlags{
+			IsMap:           p.IsMap,
+			IsRepeated:      p.IsRepeated,
+			IsMapOrRepeated: p.IsMapOrRepeated,
+			IsMessage:       p.IsMessage,
+			IsScalar:        p.IsScalar,
+		})
 	}
-	// count: scalar
-	if params[3].IsMap || params[3].IsMapOrRepeated || params[3].IsRepeated || params[3].IsMessage || !params[3].IsScalar {
-		t.Errorf("unexpected flags for scalar param: %+v", params[3])
+	if diff := cmp.Diff(wantParams, gotParams); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
 
@@ -550,12 +609,43 @@ func TestAnnotateMethod_Rest(t *testing.T) {
 		t.Fatalf("expected *methodAnnotations, got %T", method.Codec)
 	}
 
-	if !got.HasRestPath {
-		t.Errorf("expected HasRestPath to be true")
+	type restMethodSummary struct {
+		HasRestPath             bool
+		RestVerb                string
+		HasRestPathVerb         bool
+		RestPathVerb            string
+		RestHasQueryParams      bool
+		RestRequestBodyAccessor string
+		RestReturnTypeName      string
+		RestPayloadType         string
+		IsRestRpc               bool
 	}
-	if got.RestVerb != "Get" {
-		t.Errorf("expected RestVerb 'Get', got %q", got.RestVerb)
+	wantSummary := restMethodSummary{
+		HasRestPath:             true,
+		RestVerb:                "Get",
+		HasRestPathVerb:         true,
+		RestPathVerb:            "cancel",
+		RestHasQueryParams:      true,
+		RestRequestBodyAccessor: "request",
+		RestReturnTypeName:      "StatusOr<test::Item>",
+		RestPayloadType:         "test::Item",
+		IsRestRpc:               true,
 	}
+	gotSummary := restMethodSummary{
+		HasRestPath:             got.HasRestPath,
+		RestVerb:                got.RestVerb,
+		HasRestPathVerb:         got.HasRestPathVerb,
+		RestPathVerb:            got.RestPathVerb,
+		RestHasQueryParams:      got.RestHasQueryParams,
+		RestRequestBodyAccessor: got.RestRequestBodyAccessor,
+		RestReturnTypeName:      got.RestReturnTypeName,
+		RestPayloadType:         got.RestPayloadType,
+		IsRestRpc:               got.IsRestRpc,
+	}
+	if diff := cmp.Diff(wantSummary, gotSummary); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+
 	wantSegments := []*restPathSegmentAnnotation{
 		{IsApiVersion: true, ApiVersion: "v1", HasNext: true},
 		{IsLiteral: true, Literal: "items", HasNext: true},
@@ -564,56 +654,16 @@ func TestAnnotateMethod_Rest(t *testing.T) {
 	if diff := cmp.Diff(wantSegments, got.RestPathSegments); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
-	if !got.HasRestPathVerb {
-		t.Errorf("expected HasRestPathVerb to be true")
+
+	wantQueryParams := []*queryParamAnnotation{
+		{ParamKey: "filter", FieldAccessor: "filter()", IsString: true},
+		{ParamKey: "page_size", FieldAccessor: "page_size()", IsNumber: true},
+		{ParamKey: "show_deleted", FieldAccessor: "show_deleted()", IsBool: true},
 	}
-	if got.RestPathVerb != "cancel" {
-		t.Errorf("expected RestPathVerb 'cancel', got %q", got.RestPathVerb)
-	}
-	if !got.RestHasQueryParams {
-		t.Errorf("expected RestHasQueryParams to be true")
-	}
-	if len(got.RestQueryParams) != 3 {
-		t.Fatalf("expected 3 RestQueryParams, got %d", len(got.RestQueryParams))
-	}
-	for _, qp := range got.RestQueryParams {
-		switch qp.ParamKey {
-		case "page_size":
-			if !qp.IsNumber || qp.IsString || qp.IsBool {
-				t.Errorf("expected page_size to be number: %+v", qp)
-			}
-			if qp.FieldAccessor != "page_size()" {
-				t.Errorf("expected page_size() accessor, got %q", qp.FieldAccessor)
-			}
-		case "filter":
-			if !qp.IsString || qp.IsNumber || qp.IsBool {
-				t.Errorf("expected filter to be string: %+v", qp)
-			}
-			if qp.FieldAccessor != "filter()" {
-				t.Errorf("expected filter() accessor, got %q", qp.FieldAccessor)
-			}
-		case "show_deleted":
-			if !qp.IsBool || qp.IsString || qp.IsNumber {
-				t.Errorf("expected show_deleted to be bool: %+v", qp)
-			}
-			if qp.FieldAccessor != "show_deleted()" {
-				t.Errorf("expected show_deleted() accessor, got %q", qp.FieldAccessor)
-			}
-		default:
-			t.Errorf("unexpected query parameter: %q", qp.ParamKey)
-		}
-	}
-	if got.RestRequestBodyAccessor != "request" {
-		t.Errorf("expected RestRequestBodyAccessor 'request', got %q", got.RestRequestBodyAccessor)
-	}
-	if got.RestReturnTypeName != "StatusOr<test::Item>" {
-		t.Errorf("expected RestReturnTypeName 'StatusOr<test::Item>', got %q", got.RestReturnTypeName)
-	}
-	if got.RestPayloadType != "test::Item" {
-		t.Errorf("expected RestPayloadType 'test::Item', got %q", got.RestPayloadType)
-	}
-	if !got.IsRestRpc {
-		t.Errorf("expected IsRestRpc to be true")
+	if diff := cmp.Diff(wantQueryParams, got.RestQueryParams, cmpopts.SortSlices(func(a, b *queryParamAnnotation) bool {
+		return a.ParamKey < b.ParamKey
+	})); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
 
@@ -658,12 +708,12 @@ func TestAnnotateMethod_StubMemberNames(t *testing.T) {
 	for _, test := range []struct {
 		name            string
 		sourceServiceID string
-		wantStubMember  string
+		want            string
 	}{
-		{name: "locations service", sourceServiceID: "google.cloud.location.Locations", wantStubMember: "locations_stub_"},
-		{name: "iam service", sourceServiceID: "google.iam.v1.IAMPolicy", wantStubMember: "iampolicy_stub_"},
-		{name: "operations service", sourceServiceID: "google.longrunning.Operations", wantStubMember: "operations_stub_"},
-		{name: "custom service", sourceServiceID: "google.example.v1.EchoService", wantStubMember: "grpc_stub_"},
+		{name: "locations service", sourceServiceID: "google.cloud.location.Locations", want: "locations_stub_"},
+		{name: "iam service", sourceServiceID: "google.iam.v1.IAMPolicy", want: "iampolicy_stub_"},
+		{name: "operations service", sourceServiceID: "google.longrunning.Operations", want: "operations_stub_"},
+		{name: "custom service", sourceServiceID: "google.example.v1.EchoService", want: "grpc_stub_"},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			req := api.NewTestMessage("Req")
@@ -678,7 +728,7 @@ func TestAnnotateMethod_StubMemberNames(t *testing.T) {
 				t.Fatal(err)
 			}
 			got := method.Codec.(*methodAnnotations)
-			if diff := cmp.Diff(test.wantStubMember, got.StubMemberName); diff != "" {
+			if diff := cmp.Diff(test.want, got.StubMemberName); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
@@ -773,5 +823,141 @@ func TestAnnotateMethod_ListOperations_QueryParamFilter(t *testing.T) {
 		return qp.ParamKey == "return_partial_success"
 	}) {
 		t.Errorf("expected return_partial_success to be filtered out of RestQueryParams")
+	}
+}
+
+func TestAnnotateMethod_MapPagination(t *testing.T) {
+	itemMsg := api.NewTestMessage("Item").WithPackage("test")
+	mapEntry := api.NewTestMessage("ItemsEntry").WithFields(
+		api.NewTestField("key").WithType(api.TypezString),
+		api.NewTestField("value").WithMessageType(itemMsg),
+	)
+	mapField := api.NewTestField("items").WithMessageType(mapEntry).WithMap()
+	nextPageToken := api.NewTestField("next_page_token").WithType(api.TypezString)
+	respMsg := api.NewTestMessage("AggregatedListItemsResponse").
+		WithPagination(nextPageToken, mapField)
+
+	reqMsg := api.NewTestMessage("AggregatedListItemsRequest").WithFields(
+		api.NewTestField("page_size").WithType(api.TypezInt32),
+		api.NewTestField("page_token").WithType(api.TypezString),
+	)
+
+	method := api.NewTestMethod("AggregatedListItems").
+		WithInput(reqMsg).
+		WithOutput(respMsg).
+		WithPagination(api.NewTestField("page_token").WithType(api.TypezString))
+	svc := api.NewTestService("ItemService").WithMethods(method)
+	model := api.NewTestAPI([]*api.Message{reqMsg, respMsg, mapEntry, itemMsg}, nil, []*api.Service{svc})
+
+	c := newCodec(nil)
+	if err := c.annotateModel(model); err != nil {
+		t.Fatal(err)
+	}
+
+	got := method.Codec.(*methodAnnotations)
+	type paginationResult struct {
+		IsPaginated     bool
+		RangeOutputType string
+		IsUnary         bool
+	}
+	want := paginationResult{
+		IsPaginated:     true,
+		RangeOutputType: "std::pair<std::string, test::Item>",
+		IsUnary:         false,
+	}
+	gotResult := paginationResult{
+		IsPaginated:     got.IsPaginated,
+		RangeOutputType: got.RangeOutputType,
+		IsUnary:         got.IsUnary,
+	}
+	if diff := cmp.Diff(want, gotResult); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+}
+
+func TestAnnotateMethod_MapPagination_PrimitiveKey(t *testing.T) {
+	itemMsg := api.NewTestMessage("Item").WithPackage("test")
+	mapEntry := api.NewTestMessage("ItemsEntry").WithFields(
+		api.NewTestField("key").WithType(api.TypezInt32),
+		api.NewTestField("value").WithMessageType(itemMsg),
+	)
+	mapField := api.NewTestField("items").WithMessageType(mapEntry).WithMap()
+	nextPageToken := api.NewTestField("next_page_token").WithType(api.TypezString)
+	respMsg := api.NewTestMessage("AggregatedListItemsResponse").
+		WithPagination(nextPageToken, mapField)
+
+	reqMsg := api.NewTestMessage("AggregatedListItemsRequest").WithFields(
+		api.NewTestField("page_size").WithType(api.TypezInt32),
+		api.NewTestField("page_token").WithType(api.TypezString),
+	)
+
+	method := api.NewTestMethod("AggregatedListItems").
+		WithInput(reqMsg).
+		WithOutput(respMsg).
+		WithPagination(api.NewTestField("page_token").WithType(api.TypezString))
+	svc := api.NewTestService("ItemService").WithMethods(method)
+	model := api.NewTestAPI([]*api.Message{reqMsg, respMsg, mapEntry, itemMsg}, nil, []*api.Service{svc})
+
+	c := newCodec(nil)
+	if err := c.annotateModel(model); err != nil {
+		t.Fatal(err)
+	}
+
+	got := method.Codec.(*methodAnnotations)
+	type paginationResult struct {
+		IsPaginated     bool
+		RangeOutputType string
+	}
+	want := paginationResult{
+		IsPaginated:     true,
+		RangeOutputType: "std::pair<std::int32_t, test::Item>",
+	}
+	gotResult := paginationResult{
+		IsPaginated:     got.IsPaginated,
+		RangeOutputType: got.RangeOutputType,
+	}
+	if diff := cmp.Diff(want, gotResult); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+}
+
+func TestAnnotateMethod_ComputeLRO(t *testing.T) {
+	req := api.NewTestMessage("InsertRequest")
+	op := api.NewTestMessage("Operation").WithPackage("google.cloud.cpp.compute.v1")
+
+	method := api.NewTestMethod("Insert").
+		WithInput(req).
+		WithOutput(op).
+		WithOperationService("RegionOperations")
+
+	svc := api.NewTestService("RegionOperationsService").WithMethods(method)
+	model := api.NewTestAPI([]*api.Message{req, op}, nil, []*api.Service{svc})
+
+	c := newCodec(nil)
+	if err := c.annotateModel(model); err != nil {
+		t.Fatal(err)
+	}
+
+	got := method.Codec.(*methodAnnotations)
+	type computeLroResult struct {
+		IsLongrunning                  bool
+		IsComputeLRO                   bool
+		LongrunningOperationType       string
+		LongrunningDeducedResponseType string
+	}
+	want := computeLroResult{
+		IsLongrunning:                  true,
+		IsComputeLRO:                   true,
+		LongrunningOperationType:       "google::cloud::cpp::compute::v1::Operation",
+		LongrunningDeducedResponseType: "google::cloud::cpp::compute::v1::Operation",
+	}
+	gotResult := computeLroResult{
+		IsLongrunning:                  got.IsLongrunning,
+		IsComputeLRO:                   got.IsComputeLRO,
+		LongrunningOperationType:       got.LongrunningOperationType,
+		LongrunningDeducedResponseType: got.LongrunningDeducedResponseType,
+	}
+	if diff := cmp.Diff(want, gotResult); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }

@@ -15,6 +15,7 @@
 package cpp
 
 import (
+	"slices"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -783,4 +784,36 @@ func TestHelper_PopulateServiceIncludes(t *testing.T) {
 			t.Errorf("mismatch (-want +got):\n%s", diff)
 		}
 	})
+}
+
+func TestAnnotateService_ComputeLRO_RestStubProtoIncludes(t *testing.T) {
+	op := api.NewTestMessage("Operation").WithPackage("google.cloud.cpp.compute.v1")
+	req := api.NewTestMessage("InsertRequest").WithPackage("google.cloud.compute.v1")
+	method := api.NewTestMethod("Insert").
+		WithInput(req).
+		WithOutput(op).
+		WithOperationService("RegionOperations")
+	svc := api.NewTestService("RegionOperationsService").
+		WithPackage("google.cloud.compute.v1").
+		WithMethods(method)
+	model := api.NewTestAPI([]*api.Message{req, op}, nil, []*api.Service{svc})
+	model.DefinitionLocations = map[string]api.SourceLocation{
+		svc.ID: {Filename: "google/cloud/compute/v1/region_operations.proto", Line: 1},
+	}
+	modelAnn := &modelAnnotations{
+		CopyrightYear: "2026",
+		BoilerPlate:   []string{"// Sample Boilerplate"},
+	}
+	libCfg := &config.CppLibrary{GenerateRestTransport: true}
+	c := newCodec(libCfg)
+	if err := c.annotateService(svc, modelAnn, model); err != nil {
+		t.Fatal(err)
+	}
+	got := svc.Codec.(*serviceAnnotations)
+	if !slices.Contains(got.RestStubProtoIncludes, "google/cloud/compute/region_operations/v1/region_operations.pb.h") {
+		t.Errorf("expected RestStubProtoIncludes to contain region_operations.pb.h, got %v", got.RestStubProtoIncludes)
+	}
+	if slices.Contains(got.RestStubProtoIncludes, "google/longrunning/operations.pb.h") {
+		t.Errorf("expected RestStubProtoIncludes to NOT contain google/longrunning/operations.pb.h, got %v", got.RestStubProtoIncludes)
+	}
 }

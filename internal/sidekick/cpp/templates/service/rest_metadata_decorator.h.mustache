@@ -25,7 +25,7 @@ limitations under the License.
 #include <{{Codec.ProtoHeaderPath}}>
 {{/Codec.ProtoHeaderPath}}
 {{#Codec.HasLongrunningMethod}}
-#include <google/longrunning/operations.pb.h>
+#include <{{{Codec.LongrunningOperationIncludeHeader}}}>
 {{/Codec.HasLongrunningMethod}}
 #include <memory>
 #include <string>
@@ -44,13 +44,13 @@ class {{Codec.RestMetadataDecoratorClassName}} : public {{Codec.RestStubClassNam
 
 {{#Codec.RestMethods}}
 {{#IsLongrunning}}
-  google::cloud::future<StatusOr<google::longrunning::Operation>> Async{{Name}}(
+  google::cloud::future<StatusOr<{{{LongrunningOperationType}}}>> Async{{Name}}(
       google::cloud::CompletionQueue& cq,
       std::unique_ptr<google::cloud::rest_internal::RestContext> rest_context,
       google::cloud::internal::ImmutableOptions options,
       {{{CppRequestType}}} const& request) override;
 
-  StatusOr<google::longrunning::Operation> {{Name}}(
+  StatusOr<{{{LongrunningOperationType}}}> {{Name}}(
       google::cloud::rest_internal::RestContext& rest_context,
       Options const& options, {{{CppRequestType}}} const& request) override;
 
@@ -71,17 +71,17 @@ class {{Codec.RestMetadataDecoratorClassName}} : public {{Codec.RestStubClassNam
 
 {{/Codec.RestAsyncMethods}}
 {{#Codec.HasLongrunningMethod}}
-  google::cloud::future<StatusOr<google::longrunning::Operation>> AsyncGetOperation(
+  google::cloud::future<StatusOr<{{{Codec.LongrunningOperationType}}}>> AsyncGetOperation(
       google::cloud::CompletionQueue& cq,
       std::unique_ptr<google::cloud::rest_internal::RestContext> rest_context,
       google::cloud::internal::ImmutableOptions options,
-      google::longrunning::GetOperationRequest const& request) override;
+      {{{Codec.LongrunningGetOperationRequestType}}} const& request) override;
 
   google::cloud::future<Status> AsyncCancelOperation(
       google::cloud::CompletionQueue& cq,
       std::unique_ptr<google::cloud::rest_internal::RestContext> rest_context,
       google::cloud::internal::ImmutableOptions options,
-      google::longrunning::CancelOperationRequest const& request) override;
+      {{{Codec.LongrunningCancelOperationRequestType}}} const& request) override;
 
 {{/Codec.HasLongrunningMethod}}
  private:

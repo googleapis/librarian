@@ -148,7 +148,7 @@ func formatAwaitMethodComments(methodName, operationType string, isDeprecated bo
 	return b.String()
 }
 
-func formatMethodDoxygenComments(m *api.Method, paramComments string, model *api.API, sourceFile string, isPaginated bool, rangeOutputField *api.Field, isLongrunning bool, isRespEmpty bool) string {
+func formatMethodDoxygenComments(m *api.Method, paramComments string, model *api.API, sourceFile string, isPaginated bool, rangeOutputField *api.Field, isLongrunning bool, isRespEmpty bool, isComputeLRO bool) string {
 	var b strings.Builder
 	b.WriteString("  // clang-format off\n  ///\n")
 	if m.Deprecated {
@@ -196,9 +196,14 @@ func formatMethodDoxygenComments(m *api.Method, paramComments string, model *api
 
 	var returnComment string
 	if isLongrunning {
-		respID := m.OperationInfo.ResponseTypeID
-		if respID == "" || respID == ".google.protobuf.Empty" || respID == "google.protobuf.Empty" {
-			respID = m.OperationInfo.MetadataTypeID
+		var respID string
+		if m.OperationInfo != nil {
+			respID = m.OperationInfo.ResponseTypeID
+			if respID == "" || respID == ".google.protobuf.Empty" || respID == "google.protobuf.Empty" {
+				respID = m.OperationInfo.MetadataTypeID
+			}
+		} else if isComputeLRO {
+			respID = m.OutputTypeID
 		}
 		respTypeFQN := strings.TrimPrefix(respID, ".")
 		returnComment = fmt.Sprintf("  /// @return A [`future`] that becomes satisfied when the LRO\n"+
@@ -238,7 +243,14 @@ func formatMethodDoxygenComments(m *api.Method, paramComments string, model *api
 		} else {
 			itemFQN := ""
 			if rangeOutputField != nil {
-				itemFQN = strings.TrimPrefix(rangeOutputField.TypezID, ".")
+				if rangeOutputField.Map {
+					valField := mapEntryValueField(rangeOutputField, model)
+					if valField != nil {
+						itemFQN = strings.TrimPrefix(valField.TypezID, ".")
+					}
+				} else {
+					itemFQN = strings.TrimPrefix(rangeOutputField.TypezID, ".")
+				}
 			}
 			returnComment = fmt.Sprintf("  /// @return a [StreamRange](@ref google::cloud::StreamRange)\n"+
 				"  ///     to iterate of the results. See the documentation of this type for\n"+
@@ -268,7 +280,13 @@ func formatMethodDoxygenComments(m *api.Method, paramComments string, model *api
 	trailerBeginning := "  ///\n  /// [Protobuf mapping rules]: https://protobuf.dev/reference/cpp/cpp-generated/\n  /// [input iterator requirements]: https://en.cppreference.com/w/cpp/named_req/InputIterator\n"
 	var lroLink string
 	if isLongrunning {
-		lroLink = "  /// [Long Running Operation]: https://google.aip.dev/151\n"
+		if isComputeLRO {
+			// Upstream google-cloud-cpp uses http://cloud/compute/docs/api/how-tos/api-requests-responses#handling_api_responses
+			// across all compute clients. Preserved intentionally for 100% byte-for-byte parity with google-cloud-cpp.
+			lroLink = "  /// [Long Running Operation]: http://cloud/compute/docs/api/how-tos/api-requests-responses#handling_api_responses\n"
+		} else {
+			lroLink = "  /// [Long Running Operation]: https://google.aip.dev/151\n"
+		}
 	}
 	trailerEnding := "  /// [`std::string`]: https://en.cppreference.com/w/cpp/string/basic_string\n  /// [`future`]: @ref google::cloud::future\n  /// [`StatusOr`]: @ref google::cloud::StatusOr\n  /// [`Status`]: @ref google::cloud::Status\n"
 
@@ -282,9 +300,19 @@ func formatMethodDoxygenComments(m *api.Method, paramComments string, model *api
 	if !isRespEmpty {
 		if isPaginated {
 			if rangeOutputField != nil && rangeOutputField.Typez != api.TypezString {
-				itemFQN := strings.TrimPrefix(rangeOutputField.TypezID, ".")
-				if loc, ok := findSymbolLocation(model, itemFQN); ok {
-					references[itemFQN] = loc
+				if rangeOutputField.Map {
+					valField := mapEntryValueField(rangeOutputField, model)
+					if valField != nil && valField.TypezID != "" {
+						itemFQN := strings.TrimPrefix(valField.TypezID, ".")
+						if loc, ok := findSymbolLocation(model, itemFQN); ok {
+							references[itemFQN] = loc
+						}
+					}
+				} else {
+					itemFQN := strings.TrimPrefix(rangeOutputField.TypezID, ".")
+					if loc, ok := findSymbolLocation(model, itemFQN); ok {
+						references[itemFQN] = loc
+					}
 				}
 			}
 		} else if isLongrunning {
@@ -298,6 +326,11 @@ func formatMethodDoxygenComments(m *api.Method, paramComments string, model *api
 					if loc, ok := findSymbolLocation(model, respFQN); ok {
 						references[respFQN] = loc
 					}
+				}
+			} else if isComputeLRO {
+				respFQN := strings.TrimPrefix(m.OutputTypeID, ".")
+				if loc, ok := findSymbolLocation(model, respFQN); ok {
+					references[respFQN] = loc
 				}
 			}
 		} else {

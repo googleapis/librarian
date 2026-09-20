@@ -331,14 +331,21 @@ func populateServiceIncludes(
 		sAnn.GenerateGrpcTransport,
 		sAnn.GenerateRoundRobinDecorator,
 	)
+	includeLroInRestStub := sAnn.HasLongrunningMethod && !sAnn.HasComputeLRO
 	sAnn.RestStubProtoIncludes = restStubProtoIncludes(
 		additionalProtoFiles,
 		sAnn.HasLocationMixin,
 		sAnn.HasIamMixin,
 		sAnn.HasOperationsMixin,
-		sAnn.HasLongrunningMethod,
+		includeLroInRestStub,
 		sAnn.ProtoHeaderPath,
 	)
+	if sAnn.HasLongrunningMethod && sAnn.HasComputeLRO && sAnn.LongrunningOperationIncludeHeader != "" {
+		if !slices.Contains(sAnn.RestStubProtoIncludes, sAnn.LongrunningOperationIncludeHeader) {
+			sAnn.RestStubProtoIncludes = append(sAnn.RestStubProtoIncludes, sAnn.LongrunningOperationIncludeHeader)
+			slices.Sort(sAnn.RestStubProtoIncludes)
+		}
+	}
 	sAnn.ConnectionProtoIncludes = connectionProtoIncludes(
 		sAnn.ProtoHeaderPath,
 		additionalProtoFiles,

@@ -41,6 +41,7 @@ type methodAnnotations struct {
 	LongrunningDeducedResponseType string
 	LongrunningReturnsEmpty        bool
 	LongrunningOperationType       string
+	IsComputeLRO                   bool
 	IsStreamingRead                bool
 	IsStreamingWrite               bool
 	IsBidirStreaming               bool
@@ -153,23 +154,25 @@ type parameterAnnotation struct {
 }
 
 type methodSignatureAnnotations struct {
-	Method                   *methodAnnotations
-	Name                     string
-	Parameters               []*parameterAnnotation
-	Comments                 string
-	NoAwaitComments          string
-	IsDeprecated             bool
-	IsUnary                  bool
-	IsPaginated              bool
-	RangeOutputType          string
-	IsLongrunning            bool
-	LongrunningOperationType string
-	IsStreamingRead          bool
-	IsResponseTypeEmpty      bool
-	IsAsync                  bool
-	CppReturnType            string
-	CppResponseType          string
-	HasIamUpdater            bool
+	Method                         *methodAnnotations
+	Name                           string
+	Parameters                     []*parameterAnnotation
+	Comments                       string
+	NoAwaitComments                string
+	IsDeprecated                   bool
+	IsUnary                        bool
+	IsPaginated                    bool
+	RangeOutputType                string
+	IsLongrunning                  bool
+	IsComputeLRO                   bool
+	LongrunningOperationType       string
+	LongrunningDeducedResponseType string
+	IsStreamingRead                bool
+	IsResponseTypeEmpty            bool
+	IsAsync                        bool
+	CppReturnType                  string
+	CppResponseType                string
+	HasIamUpdater                  bool
 }
 
 func (c *codec) annotateMethod(m *api.Method, sAnn *serviceAnnotations, model *api.API, setIamPolicyWithUpdater bool) *methodAnnotations {
@@ -181,11 +184,19 @@ func (c *codec) annotateMethod(m *api.Method, sAnn *serviceAnnotations, model *a
 		cppReturnType = "Status"
 	}
 
-	isLongrunning := m.OperationInfo != nil || m.IsLRO
+	isLongrunning := m.OperationInfo != nil || m.IsLRO || m.OperationService != ""
+	isComputeLRO := m.OperationService != ""
 	var lroDeducedType string
 	var lroReturnsEmpty bool
 	lroOpType := "google::longrunning::Operation"
-	if isLongrunning {
+	if isComputeLRO {
+		lroOpType = ProtoNameToCppName(m.OutputTypeID)
+		if lroOpType == "" && sAnn.LongrunningOperationType != "" {
+			lroOpType = sAnn.LongrunningOperationType
+		}
+		lroDeducedType = lroOpType
+		lroReturnsEmpty = false
+	} else if isLongrunning {
 		if m.OperationInfo != nil {
 			respID := m.OperationInfo.ResponseTypeID
 			if respID == "" || respID == ".google.protobuf.Empty" || respID == "google.protobuf.Empty" {
@@ -203,7 +214,34 @@ func (c *codec) annotateMethod(m *api.Method, sAnn *serviceAnnotations, model *a
 	rangeOutputField, isPaginated := isMethodPaginated(m, model)
 	var rangeOutputType string
 	if isPaginated {
-		if rangeOutputField != nil && rangeOutputField.Typez == api.TypezString {
+		if rangeOutputField != nil && rangeOutputField.Map {
+			mapEntry := model.Message(rangeOutputField.TypezID)
+			var keyField *api.Field
+			if mapEntry != nil {
+				for _, f := range mapEntry.Fields {
+					if f.Name == "key" {
+						keyField = f
+						break
+					}
+				}
+				if keyField == nil && len(mapEntry.Fields) > 0 {
+					keyField = mapEntry.Fields[0]
+				}
+			}
+			valField := mapEntryValueField(rangeOutputField, model)
+			keyType := "std::string"
+			if keyField != nil && keyField.Typez != api.TypezString {
+				keyType = cppBaseTypeToString(keyField)
+			}
+			var valType string
+			if valField != nil {
+				valType = ProtoNameToCppName(valField.TypezID)
+				if valType == "" {
+					valType = cppBaseTypeToString(valField)
+				}
+			}
+			rangeOutputType = fmt.Sprintf("std::pair<%s, %s>", keyType, valType)
+		} else if rangeOutputField != nil && rangeOutputField.Typez == api.TypezString {
 			rangeOutputType = "std::string"
 		} else if rangeOutputField != nil {
 			rangeOutputType = ProtoNameToCppName(rangeOutputField.TypezID)
@@ -327,6 +365,7 @@ func (c *codec) annotateMethod(m *api.Method, sAnn *serviceAnnotations, model *a
 		IsPaginated:                    isPaginated,
 		RangeOutputType:                rangeOutputType,
 		IsLongrunning:                  isLongrunning,
+		IsComputeLRO:                   isComputeLRO,
 		LongrunningDeducedResponseType: lroDeducedType,
 		LongrunningReturnsEmpty:        lroReturnsEmpty,
 		LongrunningResponseIsEmpty:     lroResponseIsEmpty,
@@ -368,11 +407,11 @@ func (c *codec) annotateMethod(m *api.Method, sAnn *serviceAnnotations, model *a
 	}
 
 	reqParamComment := formatProtobufRequestParamComment(m)
-	mAnn.RequestComments = formatMethodDoxygenComments(m, reqParamComment, model, sAnn.SourceFile, isPaginated, rangeOutputField, isLongrunning, isRespEmpty)
+	mAnn.RequestComments = formatMethodDoxygenComments(m, reqParamComment, model, sAnn.SourceFile, isPaginated, rangeOutputField, isLongrunning, isRespEmpty, isComputeLRO)
 	mAnn.DocLines = strings.Split(mAnn.RequestComments, "\n")
 
 	if isBidirStreaming {
-		mAnn.Comments = formatMethodDoxygenComments(m, "", model, sAnn.SourceFile, false, nil, false, false)
+		mAnn.Comments = formatMethodDoxygenComments(m, "", model, sAnn.SourceFile, false, nil, false, false, false)
 	}
 
 	reqMsg := model.Message(m.InputTypeID)
@@ -444,28 +483,30 @@ func (c *codec) annotateMethod(m *api.Method, sAnn *serviceAnnotations, model *a
 			continue
 		}
 
-		sigComments := formatMethodDoxygenComments(m, paramCommentsBuilder.String(), model, sAnn.SourceFile, isPaginated, rangeOutputField, isLongrunning, isRespEmpty)
+		sigComments := formatMethodDoxygenComments(m, paramCommentsBuilder.String(), model, sAnn.SourceFile, isPaginated, rangeOutputField, isLongrunning, isRespEmpty, isComputeLRO)
 
 		hasIamUpdater := setIamPolicyWithUpdater && m.Name == "SetIamPolicy" && sigStr == "resource,policy"
 
 		sigAnn := &methodSignatureAnnotations{
-			Method:                   mAnn,
-			Name:                     m.Name,
-			Parameters:               params,
-			Comments:                 sigComments,
-			NoAwaitComments:          mAnn.NoAwaitComments,
-			IsDeprecated:             m.Deprecated,
-			IsUnary:                  isUnary,
-			IsPaginated:              isPaginated,
-			RangeOutputType:          rangeOutputType,
-			IsLongrunning:            isLongrunning,
-			LongrunningOperationType: lroOpType,
-			IsStreamingRead:          isStreamingRead,
-			IsResponseTypeEmpty:      isRespEmpty,
-			IsAsync:                  isAsync,
-			CppReturnType:            cppReturnType,
-			CppResponseType:          cppRespType,
-			HasIamUpdater:            hasIamUpdater,
+			Method:                         mAnn,
+			Name:                           m.Name,
+			Parameters:                     params,
+			Comments:                       sigComments,
+			NoAwaitComments:                mAnn.NoAwaitComments,
+			IsDeprecated:                   m.Deprecated,
+			IsUnary:                        isUnary,
+			IsPaginated:                    isPaginated,
+			RangeOutputType:                rangeOutputType,
+			IsLongrunning:                  isLongrunning,
+			IsComputeLRO:                   isComputeLRO,
+			LongrunningOperationType:       lroOpType,
+			LongrunningDeducedResponseType: lroDeducedType,
+			IsStreamingRead:                isStreamingRead,
+			IsResponseTypeEmpty:            isRespEmpty,
+			IsAsync:                        isAsync,
+			CppReturnType:                  cppReturnType,
+			CppResponseType:                cppRespType,
+			HasIamUpdater:                  hasIamUpdater,
 		}
 		mAnn.Signatures = append(mAnn.Signatures, sigAnn)
 	}
@@ -505,7 +546,7 @@ func isMethodPaginated(m *api.Method, model *api.API) (*api.Field, bool) {
 		if f.Name == "next_page_token" && f.Typez == api.TypezString {
 			hasNextPageToken = true
 		}
-		if f.Repeated && firstRepeated == nil {
+		if (f.Repeated || f.Map) && firstRepeated == nil {
 			firstRepeated = f
 		}
 	}
@@ -513,6 +554,25 @@ func isMethodPaginated(m *api.Method, model *api.API) (*api.Field, bool) {
 		return firstRepeated, true
 	}
 	return nil, false
+}
+
+func mapEntryValueField(field *api.Field, model *api.API) *api.Field {
+	if field == nil || !field.Map || model == nil {
+		return nil
+	}
+	mapEntry := model.Message(field.TypezID)
+	if mapEntry == nil {
+		return nil
+	}
+	for _, f := range mapEntry.Fields {
+		if f.Name == "value" {
+			return f
+		}
+	}
+	if len(mapEntry.Fields) > 1 {
+		return mapEntry.Fields[1]
+	}
+	return nil
 }
 
 func hasEmptyMethodSignature(m *api.Method) bool {

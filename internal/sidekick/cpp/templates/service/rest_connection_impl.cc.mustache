@@ -25,7 +25,12 @@ limitations under the License.
 #include "google/cloud/internal/async_rest_retry_loop.h"
 {{/Codec.HasAsyncRpcs}}
 {{#Codec.HasLongrunningMethod}}
+{{#Codec.HasComputeLRO}}
+#include "google/cloud/internal/rest_lro_helpers.h"
+{{/Codec.HasComputeLRO}}
+{{^Codec.HasComputeLRO}}
 #include "google/cloud/internal/extract_long_running_result.h"
+{{/Codec.HasComputeLRO}}
 {{/Codec.HasLongrunningMethod}}
 {{#Codec.HasPaginatedMethod}}
 #include "google/cloud/internal/pagination_range.h"
@@ -100,6 +105,83 @@ StreamRange<{{{RangeOutputType}}}>
 future<{{{CppReturnType}}}>
 {{ServiceName}}RestConnectionImpl::{{Name}}({{{CppRequestType}}} const& request) {
   auto current = google::cloud::internal::SaveCurrentOptions();
+{{#IsComputeLRO}}
+  return rest_internal::AsyncRestLongRunningOperation<
+      {{{LongrunningDeducedResponseType}}},
+      {{{LongrunningOperationType}}},
+      {{{Codec.LongrunningGetOperationRequestType}}},
+      {{{Codec.LongrunningCancelOperationRequestType}}}>(
+    background_->cq(), current, request,
+    [stub = stub_](CompletionQueue& cq,
+                   std::unique_ptr<rest_internal::RestContext> context,
+                   google::cloud::internal::ImmutableOptions options, {{{CppRequestType}}} const& request) {
+      return stub->Async{{Name}}(
+          cq, std::move(context), std::move(options), request);
+    },
+    [stub = stub_](CompletionQueue& cq,
+                   std::unique_ptr<rest_internal::RestContext> context,
+                   google::cloud::internal::ImmutableOptions options,
+                   {{{Codec.LongrunningGetOperationRequestType}}} const& request) {
+      return stub->AsyncGetOperation(
+          cq, std::move(context), std::move(options), request);
+    },
+    [stub = stub_](CompletionQueue& cq,
+                   std::unique_ptr<rest_internal::RestContext> context,
+                   google::cloud::internal::ImmutableOptions options,
+                   {{{Codec.LongrunningCancelOperationRequestType}}} const& request) {
+      return stub->AsyncCancelOperation(
+          cq, std::move(context), std::move(options), request);
+    },
+    [](StatusOr<{{{LongrunningOperationType}}}> op,
+       std::string const&) { return op; },
+    retry_policy(*current), backoff_policy(*current),
+    idempotency_policy(*current)->{{Name}}(request),
+    polling_policy(*current), __func__,
+    []({{{LongrunningOperationType}}} const& op) {
+      return op.status() == "DONE";
+    },
+    [request](std::string const& op,
+              {{{Codec.LongrunningGetOperationRequestType}}}& r) {
+      {{#Codec.HasRegionOperations}}
+      r.set_project(request.project());
+      r.set_region(request.region());
+      r.set_operation(op);
+      {{/Codec.HasRegionOperations}}
+      {{#Codec.HasGlobalOperations}}
+      r.set_project(request.project());
+      r.set_operation(op);
+      {{/Codec.HasGlobalOperations}}
+      {{#Codec.HasGlobalOrganizationOperations}}
+      r.set_operation(op);
+      {{/Codec.HasGlobalOrganizationOperations}}
+      {{#Codec.HasZoneOperations}}
+      r.set_project(request.project());
+      r.set_zone(request.zone());
+      r.set_operation(op);
+      {{/Codec.HasZoneOperations}}
+    },
+    [request](std::string const& op,
+              {{{Codec.LongrunningCancelOperationRequestType}}}& r) {
+      {{#Codec.HasRegionOperations}}
+      r.set_project(request.project());
+      r.set_region(request.region());
+      r.set_operation(op);
+      {{/Codec.HasRegionOperations}}
+      {{#Codec.HasGlobalOperations}}
+      r.set_project(request.project());
+      r.set_operation(op);
+      {{/Codec.HasGlobalOperations}}
+      {{#Codec.HasGlobalOrganizationOperations}}
+      r.set_operation(op);
+      {{/Codec.HasGlobalOrganizationOperations}}
+      {{#Codec.HasZoneOperations}}
+      r.set_project(request.project());
+      r.set_zone(request.zone());
+      r.set_operation(op);
+      {{/Codec.HasZoneOperations}}
+    });
+{{/IsComputeLRO}}
+{{^IsComputeLRO}}
   return rest_internal::AsyncRestLongRunningOperation<{{{LongrunningDeducedResponseType}}}>(
     background_->cq(), current, request,
     [stub = stub_](CompletionQueue& cq,
@@ -126,6 +208,7 @@ future<{{{CppReturnType}}}>
     retry_policy(*current), backoff_policy(*current),
     idempotency_policy(*current)->{{Name}}(request),
     polling_policy(*current), __func__);
+{{/IsComputeLRO}}
 
 }
 
@@ -146,6 +229,79 @@ future<{{{CppReturnType}}}>
 {{ServiceName}}RestConnectionImpl::{{Name}}(
     {{{LongrunningOperationType}}} const& operation) {
   auto current = google::cloud::internal::SaveCurrentOptions();
+{{#IsComputeLRO}}
+  return rest_internal::AsyncRestAwaitLongRunningOperation<
+      {{{LongrunningDeducedResponseType}}},
+      {{{LongrunningOperationType}}},
+      {{{Codec.LongrunningGetOperationRequestType}}},
+      {{{Codec.LongrunningCancelOperationRequestType}}}>(
+    background_->cq(), current, operation,
+    [stub = stub_](CompletionQueue& cq,
+                   std::unique_ptr<rest_internal::RestContext> context,
+                   google::cloud::internal::ImmutableOptions options,
+                   {{{Codec.LongrunningGetOperationRequestType}}} const& request) {
+      return stub->AsyncGetOperation(
+          cq, std::move(context), std::move(options), request);
+    },
+    [stub = stub_](CompletionQueue& cq,
+                   std::unique_ptr<rest_internal::RestContext> context,
+                   google::cloud::internal::ImmutableOptions options,
+                   {{{Codec.LongrunningCancelOperationRequestType}}} const& request) {
+      return stub->AsyncCancelOperation(
+          cq, std::move(context), std::move(options), request);
+    },
+    [](StatusOr<{{{LongrunningOperationType}}}> op,
+       std::string const&) { return op; },
+    polling_policy(*current), __func__,
+    []({{{LongrunningOperationType}}} const& op) {
+      return op.status() == "DONE";
+    },
+    [operation](std::string const&,
+                {{{Codec.LongrunningGetOperationRequestType}}}& r) {
+      auto info = google::cloud::rest_internal::ParseComputeOperationInfo(
+          operation.self_link());
+      {{#Codec.HasRegionOperations}}
+      r.set_project(info.project);
+      r.set_region(info.region);
+      r.set_operation(info.operation);
+      {{/Codec.HasRegionOperations}}
+      {{#Codec.HasGlobalOperations}}
+      r.set_project(info.project);
+      r.set_operation(info.operation);
+      {{/Codec.HasGlobalOperations}}
+      {{#Codec.HasGlobalOrganizationOperations}}
+      r.set_operation(info.operation);
+      {{/Codec.HasGlobalOrganizationOperations}}
+      {{#Codec.HasZoneOperations}}
+      r.set_project(info.project);
+      r.set_zone(info.zone);
+      r.set_operation(info.operation);
+      {{/Codec.HasZoneOperations}}
+    },
+    [operation](std::string const&,
+                {{{Codec.LongrunningCancelOperationRequestType}}}& r) {
+      auto info = google::cloud::rest_internal::ParseComputeOperationInfo(
+          operation.self_link());
+      {{#Codec.HasRegionOperations}}
+      r.set_project(info.project);
+      r.set_region(info.region);
+      r.set_operation(info.operation);
+      {{/Codec.HasRegionOperations}}
+      {{#Codec.HasGlobalOperations}}
+      r.set_project(info.project);
+      r.set_operation(info.operation);
+      {{/Codec.HasGlobalOperations}}
+      {{#Codec.HasGlobalOrganizationOperations}}
+      r.set_operation(info.operation);
+      {{/Codec.HasGlobalOrganizationOperations}}
+      {{#Codec.HasZoneOperations}}
+      r.set_project(info.project);
+      r.set_zone(info.zone);
+      r.set_operation(info.operation);
+      {{/Codec.HasZoneOperations}}
+    });
+{{/IsComputeLRO}}
+{{^IsComputeLRO}}
   if (!operation.metadata().Is<typename {{{LongrunningMetadataType}}}>()) {
     return make_ready_future<{{{CppReturnType}}}>(
         internal::InvalidArgumentError("operation does not correspond to {{Name}}",
@@ -169,6 +325,7 @@ future<{{{CppReturnType}}}>
     },
     &google::cloud::internal::ExtractLongRunningResult{{#LongrunningResponseIsEmpty}}Metadata{{/LongrunningResponseIsEmpty}}{{^LongrunningResponseIsEmpty}}Response{{/LongrunningResponseIsEmpty}}<{{{LongrunningDeducedResponseType}}}>,
     polling_policy(*current), __func__);
+{{/IsComputeLRO}}
 
 }
 

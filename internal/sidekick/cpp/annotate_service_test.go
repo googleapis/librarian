@@ -935,3 +935,205 @@ func TestAnnotateService_DescriptionLinesAndProductOptionsPage(t *testing.T) {
 		})
 	}
 }
+
+func TestAnnotateService_ComputeLRO(t *testing.T) {
+	type computeLroSummary struct {
+		HasLongrunningMethod                  bool
+		HasGrpcLRO                            bool
+		HasComputeLRO                         bool
+		HasRegionOperations                   bool
+		HasGlobalOperations                   bool
+		HasGlobalOrganizationOperations       bool
+		HasZoneOperations                     bool
+		LongrunningOperationType              string
+		LongrunningGetOperationRequestType    string
+		LongrunningCancelOperationRequestType string
+		LongrunningOperationIncludeHeader     string
+	}
+	for _, test := range []struct {
+		name      string
+		opService string
+		want      computeLroSummary
+	}{
+		{
+			name:      "RegionOperations",
+			opService: "RegionOperations",
+			want: computeLroSummary{
+				HasLongrunningMethod:                  true,
+				HasGrpcLRO:                            false,
+				HasComputeLRO:                         true,
+				HasRegionOperations:                   true,
+				LongrunningOperationType:              "google::cloud::cpp::compute::v1::Operation",
+				LongrunningGetOperationRequestType:    "google::cloud::cpp::compute::region_operations::v1::GetOperationRequest",
+				LongrunningCancelOperationRequestType: "google::cloud::cpp::compute::region_operations::v1::DeleteOperationRequest",
+				LongrunningOperationIncludeHeader:     "google/cloud/compute/region_operations/v1/region_operations.pb.h",
+			},
+		},
+		{
+			name:      "GlobalOperations",
+			opService: "GlobalOperations",
+			want: computeLroSummary{
+				HasLongrunningMethod:                  true,
+				HasGrpcLRO:                            false,
+				HasComputeLRO:                         true,
+				HasGlobalOperations:                   true,
+				LongrunningOperationType:              "google::cloud::cpp::compute::v1::Operation",
+				LongrunningGetOperationRequestType:    "google::cloud::cpp::compute::global_operations::v1::GetOperationRequest",
+				LongrunningCancelOperationRequestType: "google::cloud::cpp::compute::global_operations::v1::DeleteOperationRequest",
+				LongrunningOperationIncludeHeader:     "google/cloud/compute/global_operations/v1/global_operations.pb.h",
+			},
+		},
+		{
+			name:      "GlobalOrganizationOperations",
+			opService: "GlobalOrganizationOperations",
+			want: computeLroSummary{
+				HasLongrunningMethod:                  true,
+				HasGrpcLRO:                            false,
+				HasComputeLRO:                         true,
+				HasGlobalOrganizationOperations:       true,
+				LongrunningOperationType:              "google::cloud::cpp::compute::v1::Operation",
+				LongrunningGetOperationRequestType:    "google::cloud::cpp::compute::global_organization_operations::v1::GetOperationRequest",
+				LongrunningCancelOperationRequestType: "google::cloud::cpp::compute::global_organization_operations::v1::DeleteOperationRequest",
+				LongrunningOperationIncludeHeader:     "google/cloud/compute/global_organization_operations/v1/global_organization_operations.pb.h",
+			},
+		},
+		{
+			name:      "ZoneOperations",
+			opService: "ZoneOperations",
+			want: computeLroSummary{
+				HasLongrunningMethod:                  true,
+				HasGrpcLRO:                            false,
+				HasComputeLRO:                         true,
+				HasZoneOperations:                     true,
+				LongrunningOperationType:              "google::cloud::cpp::compute::v1::Operation",
+				LongrunningGetOperationRequestType:    "google::cloud::cpp::compute::zone_operations::v1::GetOperationRequest",
+				LongrunningCancelOperationRequestType: "google::cloud::cpp::compute::zone_operations::v1::DeleteOperationRequest",
+				LongrunningOperationIncludeHeader:     "google/cloud/compute/zone_operations/v1/zone_operations.pb.h",
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			op := api.NewTestMessage("Operation").WithPackage("google.cloud.cpp.compute.v1")
+			req := api.NewTestMessage("InsertRequest")
+			method := api.NewTestMethod("Insert").
+				WithInput(req).
+				WithOutput(op).
+				WithOperationService(test.opService)
+			svc := api.NewTestService("ComputeService").WithMethods(method)
+			model := api.NewTestAPI([]*api.Message{req, op}, nil, []*api.Service{svc})
+			modelAnn := &modelAnnotations{
+				CopyrightYear: "2026",
+				BoilerPlate:   license.HeaderBulk(),
+			}
+			libCfg := &config.CppLibrary{GenerateRestTransport: true}
+			c := newCodec(libCfg)
+			if err := c.annotateService(svc, modelAnn, model); err != nil {
+				t.Fatal(err)
+			}
+			got := svc.Codec.(*serviceAnnotations)
+			gotSummary := computeLroSummary{
+				HasLongrunningMethod:                  got.HasLongrunningMethod,
+				HasGrpcLRO:                            got.HasGrpcLRO,
+				HasComputeLRO:                         got.HasComputeLRO,
+				HasRegionOperations:                   got.HasRegionOperations,
+				HasGlobalOperations:                   got.HasGlobalOperations,
+				HasGlobalOrganizationOperations:       got.HasGlobalOrganizationOperations,
+				HasZoneOperations:                     got.HasZoneOperations,
+				LongrunningOperationType:              got.LongrunningOperationType,
+				LongrunningGetOperationRequestType:    got.LongrunningGetOperationRequestType,
+				LongrunningCancelOperationRequestType: got.LongrunningCancelOperationRequestType,
+				LongrunningOperationIncludeHeader:     got.LongrunningOperationIncludeHeader,
+			}
+			if diff := cmp.Diff(test.want, gotSummary); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestAnnotateService_PaginationFallback_HasPaginatedMethodAndStreamRange(t *testing.T) {
+	// Method where Pagination is not pre-populated on api.Method, but conforms to pagination schema
+	req := api.NewTestMessage("ListFoosRequest").WithFields(
+		api.NewTestField("page_size").WithType(api.TypezInt32),
+		api.NewTestField("page_token").WithType(api.TypezString),
+	)
+	resp := api.NewTestMessage("ListFoosResponse").WithFields(
+		api.NewTestField("foos").WithType(api.TypezString).WithRepeated(),
+		api.NewTestField("next_page_token").WithType(api.TypezString),
+	)
+	method := api.NewTestMethod("ListFoos").
+		WithInput(req).
+		WithOutput(resp)
+	svc := api.NewTestService("FooService").WithMethods(method)
+	model := api.NewTestAPI([]*api.Message{req, resp}, nil, []*api.Service{svc})
+	modelAnn := &modelAnnotations{
+		CopyrightYear: "2026",
+		BoilerPlate:   license.HeaderBulk(),
+	}
+	c := newCodec(nil)
+	if err := c.annotateService(svc, modelAnn, model); err != nil {
+		t.Fatal(err)
+	}
+	got := svc.Codec.(*serviceAnnotations)
+	type paginationServiceSummary struct {
+		HasPaginatedMethod bool
+		HasStreamRange     bool
+	}
+	want := paginationServiceSummary{
+		HasPaginatedMethod: true,
+		HasStreamRange:     true,
+	}
+	gotSummary := paginationServiceSummary{
+		HasPaginatedMethod: got.HasPaginatedMethod,
+		HasStreamRange:     got.HasStreamRange,
+	}
+	if diff := cmp.Diff(want, gotSummary); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+}
+
+func TestAnnotateService_StandardAIP151_RESTTransportOnly_UsesStandardOperation(t *testing.T) {
+	op := api.NewTestMessage("Operation").WithPackage("google.longrunning")
+	req := api.NewTestMessage("InsertRequest")
+	method := api.NewTestMethod("Insert").
+		WithInput(req).
+		WithOutput(op)
+	method.IsLRO = true
+	svc := api.NewTestService("StandardLroService").WithMethods(method)
+	model := api.NewTestAPI([]*api.Message{req, op}, nil, []*api.Service{svc})
+	modelAnn := &modelAnnotations{
+		CopyrightYear: "2026",
+		BoilerPlate:   license.HeaderBulk(),
+	}
+	generateGrpcTransport := false
+	libCfg := &config.CppLibrary{
+		GenerateRestTransport: true,
+		GenerateGrpcTransport: &generateGrpcTransport,
+	}
+	c := newCodec(libCfg)
+	if err := c.annotateService(svc, modelAnn, model); err != nil {
+		t.Fatal(err)
+	}
+	got := svc.Codec.(*serviceAnnotations)
+	type lroServiceSummary struct {
+		HasLongrunningMethod     bool
+		HasGrpcLRO               bool
+		HasComputeLRO            bool
+		LongrunningOperationType string
+	}
+	want := lroServiceSummary{
+		HasLongrunningMethod:     true,
+		HasGrpcLRO:               false,
+		HasComputeLRO:            false,
+		LongrunningOperationType: "google::longrunning::Operation",
+	}
+	gotSummary := lroServiceSummary{
+		HasLongrunningMethod:     got.HasLongrunningMethod,
+		HasGrpcLRO:               got.HasGrpcLRO,
+		HasComputeLRO:            got.HasComputeLRO,
+		LongrunningOperationType: got.LongrunningOperationType,
+	}
+	if diff := cmp.Diff(want, gotSummary); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+}
