@@ -132,12 +132,15 @@ flowchart LR
   - `35142551` `test(internal/librarian/cpp)`: Add KMS v1 integration oracle test.
 - **Verification**: `go test -tags integration -v ./internal/librarian/cpp -run TestKms` passes with 100% byte-for-byte parity across all 122 generated files (4 services: Autokey, AutokeyAdmin, KeyManagementService, EkmService); unit tests and linters pass cleanly.
 
-### Phase 9: Production Oracle 5 — Compute Engine
+### Phase 9: Production Oracle 5 — Compute Engine [COMPLETED]
 - **Goal**: Support Discovery documents, Compute LROs, and map pagination for Compute Engine with active formatting.
-- **Tasks**:
-  1. Support Discovery document processing and REST-only GAPIC conventions.
-  2. Implement flattened product path namespaces (e.g. `compute/addresses/v1` -> `google::cloud::compute_addresses_v1`).
-  3. Support map-based pagination (`StreamRange<std::pair<std::string, T>>`) and Compute LROs (`(google.cloud.operation_service)`).
-  4. Run integration test generating `google/cloud/compute/addresses/v1`.
-  5. Run active `clang-format` and assert 100% byte-for-byte parity against production `google-cloud-cpp`.
-- **Verification**: `go test -tags integration ./internal/librarian/cpp/...`.
+- **Status**: Completed and verified.
+- **Delivered Commits**:
+  - `21e9ec4f` `refactor(internal/sidekick/cpp)`: Extract service include generation into `annotate_service_includes.go`.
+  - `aec59908` `feat(internal/sidekick/api)`: Add `OperationService` to `Method` and recognise in `xref`.
+  - `8ca6f98a` `feat(internal/sidekick/parser)`: Parse extended `operation_service` method annotation.
+  - `c44379b8` `feat(internal/sidekick/cpp)`: Support map pagination and Compute LRO generation.
+  - `d96166ba` `fix(internal/sidekick/cpp)`: Fix Compute Engine REST generator templates and reference links.
+  - `355b2f18` `test(internal/librarian/cpp)`: Add Compute Engine addresses v1 integration oracle test.
+- **Verification**: `go test -tags integration -v ./internal/librarian/cpp -run TestComputeAddresses` passes with 100% byte-for-byte parity across all 26 generated files (with active `clang-format`); all existing integration oracles (`TestSecretManagerPilot`, `TestAssuredWorkloads`, `TestKms`) and unit tests pass cleanly.
+
