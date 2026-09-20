@@ -107,15 +107,14 @@ flowchart LR
   - `100aefb3` `docs(doc)`: Update `config-schema.md` with `CppLibrary` fields.
 - **Verification**: Converter unit tests pass; `tool/cmd/migrate` tests pass with `-race`; `golangci-lint` passes with 0 issues; all 10 architectural invariants verified.
 
-### Phase 6: Production Oracle 2 — Secret Manager Pilot
+### Phase 6: Production Oracle 2 — Secret Manager Pilot [COMPLETED]
 - **Goal**: Generate `google/cloud/secretmanager/v1` from production `googleapis` protos with 100% parity and active formatting.
-- **Tasks**:
-  1. Implement `//go:build integration` pilot test in `internal/librarian/cpp/pilot_test.go`.
-  2. Use dynamic googleapis SHA resolution; zero hardcoded `$HOME` paths.
-  3. Emit all 28 client, connection, stub, decorator, mock, and forwarding files for Secret Manager v1 under `outdir`.
-  4. Run active `clang-format` and assert 100% byte-for-byte parity against production `google-cloud-cpp`.
-  5. Assert non-vacuous content checks (inspect file contents, not just file sizes).
-- **Verification**: `go test -tags integration ./internal/librarian/cpp/...`.
+- **Status**: Completed and verified.
+- **Delivered Commits**:
+  - `db830b00` `feat(internal/sidekick/parser)`: Add definition locations for common mixin request and response types.
+  - `b48d9910` `fix(internal/sidekick/cpp)`: Resolve stub mixin constructor and class comment reference links.
+  - `9ac82f93` `test(internal/librarian/cpp)`: Add Secret Manager v1 integration pilot test.
+- **Verification**: `go test -tags integration -v ./internal/librarian/cpp -run TestSecretManagerPilot` passes with 100% byte-for-byte parity across all 33 generated files; unit tests and linters pass cleanly.
 
 ### Phase 7: Production Oracle 3 — Workloads (`assuredworkloads`)
 - **Goal**: Support LRO operations and specialized method signatures, achieving parity on Workloads with active formatting.
