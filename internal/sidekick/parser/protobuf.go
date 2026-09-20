@@ -327,6 +327,9 @@ func makeAPIForProtobuf(serviceConfig *serviceconfig.Service, req *pluginpb.Code
 			extractDefinitionLocations(result, f)
 		}
 	}
+	if len(mixinFileDesc) > 0 {
+		populateMixinDefinitionLocations(result)
+	}
 
 	// Consolidate resources.
 	// Message-level resources (in result.AllResources take precedence over

@@ -17,6 +17,7 @@ package parser
 import (
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/serviceconfig"
 	"github.com/googleapis/librarian/internal/sidekick/api"
 	"github.com/googleapis/librarian/internal/sidekick/api/apitest"
@@ -92,6 +93,18 @@ func TestProtobuf_LocationMixin(t *testing.T) {
 			},
 		},
 	})
+
+	wantLoc := api.SourceLocation{
+		Filename: "google/cloud/location/locations.proto",
+		Line:     88,
+	}
+	gotLoc, ok := test.DefinitionLocation(".google.cloud.location.Location")
+	if !ok {
+		t.Fatal("expected location for .google.cloud.location.Location")
+	}
+	if diff := cmp.Diff(wantLoc, gotLoc); diff != "" {
+		t.Errorf("location mismatch (-want +got):\n%s", diff)
+	}
 }
 
 func TestProtobuf_IAMMixin(t *testing.T) {

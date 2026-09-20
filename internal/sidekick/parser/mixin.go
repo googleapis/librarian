@@ -157,3 +157,21 @@ func applyServiceConfigMethodOverrides(
 	}
 	return nil
 }
+
+func populateMixinDefinitionLocations(model *api.API) {
+	if model == nil {
+		return
+	}
+	mixinLocations := map[string]api.SourceLocation{
+		".google.cloud.location.GetLocationRequest": {Filename: "google/cloud/location/locations.proto", Line: 82},
+		".google.cloud.location.Location":           {Filename: "google/cloud/location/locations.proto", Line: 88},
+		".google.iam.v1.GetIamPolicyRequest":        {Filename: "google/iam/v1/iam_policy.proto", Line: 123},
+		".google.iam.v1.Policy":                     {Filename: "google/iam/v1/policy.proto", Line: 102},
+		".google.longrunning.ListOperationsRequest": {Filename: "google/longrunning/operations.proto", Line: 167},
+		".google.longrunning.Operation":             {Filename: "google/longrunning/operations.proto", Line: 121},
+	}
+	for sym, loc := range mixinLocations {
+		model.AddDefinitionLocation(sym, loc)
+		model.AddDefinitionLocation(strings.TrimPrefix(sym, "."), loc)
+	}
+}
