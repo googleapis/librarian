@@ -96,15 +96,16 @@ flowchart LR
   6. Assert 100% byte-for-byte zero diff across all 188 files in golden fixtures (with `DisableFormat: true` matching upstream goldens).
 - **Verification**: `go test ./internal/sidekick/cpp/...`.
 
-### Phase 5: Automated Configuration Migration Tool
+### Phase 5: Automated Configuration Migration Tool [COMPLETED]
 - **Goal**: Provide automated translation from `generator_config.textproto` to native `librarian.yaml` with strict validation.
-- **Tasks**:
-  1. Implement textproto-to-`librarian.yaml` converter in `internal/librarian/cpp/convert_config.go`.
-  2. Fail loudly with descriptive errors on unknown textproto fields (no silent skipping).
-  3. Handle `service_name_mapping` (Pub/Sub renames: `Publisher` -> `TopicAdmin`, `Subscriber` -> `SubscriptionAdmin`) and `service_name_to_comment`.
-  4. Wire converter into `tool/cmd/migrate/main.go` under `google-cloud-cpp`.
-  5. Add unit tests in `internal/librarian/cpp/convert_config_test.go` verifying conversion.
-- **Verification**: Converter unit tests pass; `go test ./internal/librarian/cpp/...`.
+- **Status**: Completed and verified.
+- **Delivered Commits**:
+  - `2c52bbe8` `feat(internal/config)`: Add `ServiceNameMapping` and `ServiceNameToComment` to `CppLibrary`.
+  - `3426ec28` `feat(internal/librarian)`: Merge `ServiceNameMapping` and `ServiceNameToComment` in `CppLibrary`.
+  - `fa791223` `feat(internal/librarian/cpp)`: Implement textproto to `librarian.yaml` configuration converter.
+  - `735a3c19` `feat(tool/cmd/migrate)`: Add C++ `generator_config.textproto` migration command.
+  - `100aefb3` `docs(doc)`: Update `config-schema.md` with `CppLibrary` fields.
+- **Verification**: Converter unit tests pass; `tool/cmd/migrate` tests pass with `-race`; `golangci-lint` passes with 0 issues; all 10 architectural invariants verified.
 
 ### Phase 6: Production Oracle 2 — Secret Manager Pilot
 - **Goal**: Generate `google/cloud/secretmanager/v1` from production `googleapis` protos with 100% parity and active formatting.
