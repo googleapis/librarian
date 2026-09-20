@@ -37,6 +37,7 @@ func protobufMethodSignatures(m *descriptorpb.MethodDescriptorProto) ([]*api.Met
 	}
 	for _, signature := range ext {
 		if signature == "" {
+			signatures = append(signatures, &api.MethodSignature{})
 			continue
 		}
 		// TODO(https://github.com/googleapis/librarian/issues/6460) - support sub-message fields.
