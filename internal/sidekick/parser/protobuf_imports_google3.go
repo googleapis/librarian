@@ -23,6 +23,7 @@ import (
 	fipb "google3/google/api/field_info_go_proto"
 	resourcepb "google3/google/api/resource_go_proto"
 	routingpb "google3/google/api/routing_go_proto"
+	extendedopspb "google3/google/cloud/extended_operations_go_proto"
 	iampb "google3/google/iam/v1/iam_policy_go_proto"
 	optionspb "google3/google/iam/v1/options_go_proto"
 	policypb "google3/google/iam/v1/policy_go_proto"
@@ -59,6 +60,7 @@ var (
 	eApiVersion         = clientpb.E_ApiVersion
 	eFieldInfo          = fipb.E_FieldInfo
 	eFieldBehavior      = fbpb.E_FieldBehavior
+	eOperationService   = extendedopspb.E_OperationService
 
 	fileGoogleIamV1IamPolicyProto = iampb.File_google_iam_v1_iam_policy_proto
 	fileGoogleIamV1PolicyProto    = policypb.File_google_iam_v1_policy_proto

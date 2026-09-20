@@ -19,6 +19,7 @@ package parser
 import (
 	"cloud.google.com/go/iam/apiv1/iampb"
 	"google.golang.org/genproto/googleapis/api/annotations"
+	"google.golang.org/genproto/googleapis/cloud/extendedops"
 )
 
 // This file provides type aliases and variable mappings for the Open Source (OSS)
@@ -52,6 +53,7 @@ var (
 	eApiVersion         = annotations.E_ApiVersion
 	eFieldInfo          = annotations.E_FieldInfo
 	eFieldBehavior      = annotations.E_FieldBehavior
+	eOperationService   = extendedops.E_OperationService
 
 	fileGoogleIamV1IamPolicyProto = iampb.File_google_iam_v1_iam_policy_proto
 	fileGoogleIamV1PolicyProto    = iampb.File_google_iam_v1_policy_proto
