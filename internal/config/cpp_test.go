@@ -28,7 +28,7 @@ func TestCppConfig_Unmarshal(t *testing.T) {
 		want *Config
 	}{
 		{
-			name: "parses cpp library with all 22 fields and tools",
+			name: "parses cpp library with all 24 fields and tools",
 			yaml: `
 language: cpp
 version: 1.0.0
@@ -72,6 +72,10 @@ libraries:
       override_service_config_yaml_name: custom_service.yaml
       initial_copyright_year: "2020"
       omit_repo_metadata: true
+      service_name_mapping:
+        Publisher: TopicAdmin
+      service_name_to_comment:
+        TopicAdmin: "Topic admin service comment"
 `,
 			want: func() *Config {
 				grpcTransport := true
@@ -121,6 +125,12 @@ libraries:
 								OverrideServiceConfigYAMLName: "custom_service.yaml",
 								InitialCopyrightYear:          "2020",
 								OmitRepoMetadata:              true,
+								ServiceNameMapping: map[string]string{
+									"Publisher": "TopicAdmin",
+								},
+								ServiceNameToComment: map[string]string{
+									"TopicAdmin": "Topic admin service comment",
+								},
 							},
 						},
 					},

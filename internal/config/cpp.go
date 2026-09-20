@@ -88,6 +88,12 @@ type CppLibrary struct {
 
 	// OmitRepoMetadata indicates whether to skip emitting .repo-metadata.json.
 	OmitRepoMetadata bool `yaml:"omit_repo_metadata,omitempty"`
+
+	// ServiceNameMapping maps original service names to target C++ class names.
+	ServiceNameMapping map[string]string `yaml:"service_name_mapping,omitempty"`
+
+	// ServiceNameToComment maps service names to comment overrides.
+	ServiceNameToComment map[string]string `yaml:"service_name_to_comment,omitempty"`
 }
 
 // IdempotencyRule defines an idempotency override for an RPC.
