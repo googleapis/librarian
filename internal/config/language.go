@@ -453,6 +453,9 @@ type PythonPackage struct {
 
 // PythonDefault contains Python-specific default configuration.
 type PythonDefault struct {
+	// Generator specifies or overrides the code generator (e.g., "legacy" or "sidekick").
+	Generator string `yaml:"generator,omitempty"`
+
 	// AllowedNamespaces contains the list of allowed GAPIC namespaces.
 	// If empty, all namespaces are allowed.
 	AllowedNamespaces []string `yaml:"allowed_namespaces,omitempty"`
