@@ -206,10 +206,10 @@ StreamRange<{{{RangeOutputType}}}>
 {{/IsPaginated}}
 {{#IsStreamingRead}}
 StreamRange<{{{CppResponseType}}}>
-{{ServiceName}}ConnectionImpl::StreamingRead({{{CppRequestType}}} const& request) {
+{{ServiceName}}ConnectionImpl::{{Name}}({{{CppRequestType}}} const& request) {
   auto current = google::cloud::internal::SaveCurrentOptions();
   auto factory = [stub = stub_, current]({{{CppRequestType}}} const& request) {
-    return stub->StreamingRead(
+    return stub->{{Name}}(
         std::make_shared<grpc::ClientContext>(), *current, request);
   };
   auto resumable =

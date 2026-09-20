@@ -69,7 +69,6 @@ type methodAnnotations struct {
 	// LRO & Pagination
 	LongrunningMetadataType     string
 	PaginationElementsFieldName string
-	GrpcStub                    string
 
 	// Comments
 	Comments          string
@@ -247,7 +246,6 @@ func (c *codec) annotateMethod(m *api.Method, sAnn *serviceAnnotations, model *a
 		RequestIdFieldName:             requestIdFieldName,
 		Idempotency:                    idempotency,
 		IsSetIamPolicy:                 isSetIamPolicy,
-		GrpcStub:                       "grpc_stub_->",
 	}
 
 	if isLongrunning {

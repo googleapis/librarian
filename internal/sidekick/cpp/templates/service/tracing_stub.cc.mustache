@@ -87,7 +87,7 @@ std::unique_ptr<::google::cloud::AsyncStreamingReadWriteRpc<
     google::cloud::CompletionQueue const& cq,
     std::shared_ptr<grpc::ClientContext> context,
     google::cloud::internal::ImmutableOptions options) {
-  auto span = internal::MakeSpanGrpc("{{Codec.ServiceGrpcProtoName}}", "AsyncStreamingReadWrite");
+  auto span = internal::MakeSpanGrpc("{{Codec.ServiceGrpcProtoName}}", "{{Name}}");
   internal::OTelScope scope(span);
   internal::InjectTraceContext(*context, *propagator_);
   auto stream = child_->AsyncStreamingReadWrite(cq, context, std::move(options));

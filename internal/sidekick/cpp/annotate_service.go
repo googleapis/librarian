@@ -148,7 +148,6 @@ type serviceAnnotations struct {
 	// Grpc Stub Names
 	ServiceGrpcName      string
 	ServiceGrpcProtoName string
-	GrpcStub             string
 
 	// Methods
 	Methods       []*methodAnnotations
@@ -357,7 +356,6 @@ func (c *codec) annotateService(s *api.Service, modelAnn *modelAnnotations, mode
 	defaultHost := s.DefaultHost
 	serviceGrpcName := ProtoNameToCppName("." + s.Package + "." + s.Name)
 	serviceGrpcProtoName := s.Package + "." + s.Name
-	grpcStub := "grpc_stub_->"
 
 	sAnn := &serviceAnnotations{
 		Name:          s.Name,
@@ -373,7 +371,6 @@ func (c *codec) annotateService(s *api.Service, modelAnn *modelAnnotations, mode
 
 		ServiceGrpcName:      serviceGrpcName,
 		ServiceGrpcProtoName: serviceGrpcProtoName,
-		GrpcStub:             grpcStub,
 
 		Namespace:                Namespace(productPath),
 		InternalNamespace:        InternalNamespace(productPath),

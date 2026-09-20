@@ -59,7 +59,7 @@ future<StatusOr<google::longrunning::Operation>>
       [this](grpc::ClientContext* context,
              {{{CppRequestType}}} const& request,
              grpc::CompletionQueue* cq) {
-        return {{{GrpcStub}}}Async{{Name}}(context, request, cq);
+        return grpc_stub_->Async{{Name}}(context, request, cq);
       },
       request, std::move(context));
 }
@@ -71,7 +71,7 @@ StatusOr<google::longrunning::Operation>
       {{{CppRequestType}}} const& request) {
     google::longrunning::Operation response;
     auto status =
-        {{{GrpcStub}}}{{Name}}(&context, request, &response);
+        grpc_stub_->{{Name}}(&context, request, &response);
     if (!status.ok()) {
       return google::cloud::MakeStatusFromRpcError(status);
     }
@@ -90,7 +90,7 @@ std::unique_ptr<::google::cloud::AsyncStreamingReadWriteRpc<
   return google::cloud::internal::MakeStreamingReadWriteRpc<{{{CppRequestType}}}, {{{CppResponseType}}}>(
       cq, std::move(context), std::move(options),
       [this](grpc::ClientContext* context, grpc::CompletionQueue* cq) {
-        return {{{GrpcStub}}}PrepareAsyncStreamingReadWrite(context, cq);
+        return grpc_stub_->PrepareAsyncStreamingReadWrite(context, cq);
       });
 }
 
@@ -101,7 +101,7 @@ std::unique_ptr<google::cloud::internal::StreamingReadRpc<{{{CppResponseType}}}>
     std::shared_ptr<grpc::ClientContext> context,
     Options const&,
     {{{CppRequestType}}} const& request) {
-  auto stream = {{{GrpcStub}}}{{Name}}(context.get(), request);
+  auto stream = grpc_stub_->{{Name}}(context.get(), request);
   return std::make_unique<google::cloud::internal::StreamingReadRpcImpl<
       {{{CppResponseType}}}>>(
       std::move(context), std::move(stream));
@@ -116,7 +116,7 @@ std::unique_ptr<::google::cloud::internal::StreamingWriteRpc<
     std::shared_ptr<grpc::ClientContext> context,
     Options const&) {
   auto response = std::make_unique<{{{CppResponseType}}}>();
-  auto stream = {{{GrpcStub}}}{{Name}}(context.get(), response.get());
+  auto stream = grpc_stub_->{{Name}}(context.get(), response.get());
   return std::make_unique<::google::cloud::internal::StreamingWriteRpcImpl<
       {{{CppRequestType}}}, {{{CppResponseType}}}>>(
     std::move(context), std::move(response), std::move(stream));
@@ -130,7 +130,7 @@ std::unique_ptr<::google::cloud::internal::StreamingWriteRpc<
   {{{CppRequestType}}} const& request) {
     {{{CppResponseType}}} response;
     auto status =
-        {{{GrpcStub}}}{{Name}}(&context, request, &response);
+        grpc_stub_->{{Name}}(&context, request, &response);
     if (!status.ok()) {
       return google::cloud::MakeStatusFromRpcError(status);
     }
@@ -150,7 +150,7 @@ std::unique_ptr<::google::cloud::internal::StreamingWriteRpc<
   {{{CppRequestType}}} const& request) {
     {{{CppResponseType}}} response;
     auto status =
-        {{{GrpcStub}}}{{Name}}(&context, request, &response);
+        grpc_stub_->{{Name}}(&context, request, &response);
     if (!status.ok()) {
       return google::cloud::MakeStatusFromRpcError(status);
     }
@@ -173,7 +173,7 @@ future<{{{CppReturnType}}}>
       [this](grpc::ClientContext* context,
              {{{CppRequestType}}} const& request,
              grpc::CompletionQueue* cq) {
-        return {{{GrpcStub}}}Async{{Name}}(context, request, cq);
+        return grpc_stub_->Async{{Name}}(context, request, cq);
       },
       request, std::move(context));
 }

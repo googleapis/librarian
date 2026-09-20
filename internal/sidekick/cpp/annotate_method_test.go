@@ -50,7 +50,6 @@ func TestAnnotateMethod_Unary(t *testing.T) {
 		IsUnary:                  true,
 		LongrunningOperationType: "google::longrunning::Operation",
 		Idempotency:              "kNonIdempotent",
-		GrpcStub:                 "grpc_stub_->",
 	}
 
 	diff := cmp.Diff(want, got,
@@ -295,17 +294,10 @@ func TestAnnotateMethod_Idempotency(t *testing.T) {
 	req := api.NewTestMessage("Request")
 	resp := api.NewTestMessage("Response")
 
-	getMethod := api.NewTestMethod("GetThing").WithInput(req).WithOutput(resp)
-	getMethod.PathInfo = &api.PathInfo{Bindings: []*api.PathBinding{{Verb: "GET"}}}
-
-	putMethod := api.NewTestMethod("PutThing").WithInput(req).WithOutput(resp)
-	putMethod.PathInfo = &api.PathInfo{Bindings: []*api.PathBinding{{Verb: "PUT"}}}
-
-	postMethod := api.NewTestMethod("PostThing").WithInput(req).WithOutput(resp)
-	postMethod.PathInfo = &api.PathInfo{Bindings: []*api.PathBinding{{Verb: "POST"}}}
-
-	postOverride := api.NewTestMethod("PostThing").WithInput(req).WithOutput(resp)
-	postOverride.PathInfo = &api.PathInfo{Bindings: []*api.PathBinding{{Verb: "POST"}}}
+	getMethod := api.NewTestMethod("GetThing").WithInput(req).WithOutput(resp).WithVerb("GET")
+	putMethod := api.NewTestMethod("PutThing").WithInput(req).WithOutput(resp).WithVerb("PUT")
+	postMethod := api.NewTestMethod("PostThing").WithInput(req).WithOutput(resp).WithVerb("POST")
+	postOverride := api.NewTestMethod("PostThing").WithInput(req).WithOutput(resp).WithVerb("POST")
 
 	for _, test := range []struct {
 		name        string
@@ -476,8 +468,7 @@ func TestAnnotateMethod_ParameterAnnotationTypes(t *testing.T) {
 	subMsg := api.NewTestMessage("SubMsg")
 	mapField := api.NewTestField("labels").WithMap()
 	repField := api.NewTestField("tags").WithRepeated()
-	msgField := api.NewTestField("sub").WithType(api.TypezMessage)
-	msgField.TypezID = subMsg.ID
+	msgField := api.NewTestField("sub").WithMessageType(subMsg)
 	scalarField := api.NewTestField("count").WithType(api.TypezInt32)
 
 	req := api.NewTestMessage("Request").WithFields(mapField, repField, msgField, scalarField)

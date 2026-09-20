@@ -56,7 +56,6 @@ func TestAnnotateService(t *testing.T) {
 				ServiceAuthorityEnvVar: "GOOGLE_CLOUD_CPP_SIMPLE_SERVICE_AUTHORITY",
 				ServiceGrpcName:        "test::SimpleService",
 				ServiceGrpcProtoName:   "test.SimpleService",
-				GrpcStub:               "grpc_stub_->",
 
 				ClientHeaderPath:            "simple_client.h",
 				ConnectionHeaderPath:        "simple_connection.h",
@@ -162,7 +161,6 @@ func TestAnnotateService(t *testing.T) {
 				ServiceAuthorityEnvVar: "GOOGLE_CLOUD_CPP_ECHO_SERVICE_AUTHORITY",
 				ServiceGrpcName:        "test::EchoService",
 				ServiceGrpcProtoName:   "test.EchoService",
-				GrpcStub:               "grpc_stub_->",
 
 				ClientHeaderPath:            "google/cloud/echo/v1/echo_client.h",
 				ConnectionHeaderPath:        "google/cloud/echo/v1/echo_connection.h",
@@ -253,7 +251,6 @@ func TestAnnotateService(t *testing.T) {
 				ServiceAuthorityEnvVar: "GOOGLE_CLOUD_CPP_CUSTOM_YEAR_SERVICE_AUTHORITY",
 				ServiceGrpcName:        "test::CustomYearService",
 				ServiceGrpcProtoName:   "test.CustomYearService",
-				GrpcStub:               "grpc_stub_->",
 
 				ClientHeaderPath:            "generator/integration_tests/golden/v1/custom_year_client.h",
 				ConnectionHeaderPath:        "generator/integration_tests/golden/v1/custom_year_connection.h",
@@ -363,7 +360,6 @@ func TestAnnotateService(t *testing.T) {
 				ServiceAuthorityEnvVar:                             "GOOGLE_CLOUD_CPP_DEPRECATED_SERVICE_AUTHORITY",
 				ServiceGrpcName:                                    "test::DeprecatedService",
 				ServiceGrpcProtoName:                               "test.DeprecatedService",
-				GrpcStub:                                           "grpc_stub_->",
 				ClientHeaderPath:                                   "generator/integration_tests/golden/v1/deprecated_client.h",
 				ConnectionHeaderPath:                               "generator/integration_tests/golden/v1/deprecated_connection.h",
 				IdempotencyPolicyHeaderPath:                        "generator/integration_tests/golden/v1/deprecated_connection_idempotency_policy.h",
