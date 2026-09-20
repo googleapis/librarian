@@ -30,11 +30,15 @@ import (
 	"github.com/googleapis/librarian/internal/filesystem"
 	"github.com/googleapis/librarian/internal/repometadata"
 	"github.com/googleapis/librarian/internal/serviceconfig"
+	"github.com/googleapis/librarian/internal/sidekick/api"
+	"github.com/googleapis/librarian/internal/sidekick/parser"
+	sidekickpython "github.com/googleapis/librarian/internal/sidekick/python"
 	"github.com/googleapis/librarian/internal/sources"
 	"github.com/googleapis/librarian/internal/tool/protoc"
 )
 
 const (
+	generatorSidekick                   = "sidekick"
 	cloudGoogleComDocumentationTemplate = "https://cloud.google.com/python/docs/reference/%s/latest"
 	googleapisDevDocumentationTemplate  = "https://googleapis.dev/python/%s/latest"
 	transportOption                     = "transport"
@@ -53,12 +57,107 @@ const (
 )
 
 var (
+	// ErrNilLibrary indicates that the library configuration is nil.
+	ErrNilLibrary = errors.New("library cannot be nil")
+	// ErrEmptyOutput indicates that the library output path is empty.
+	ErrEmptyOutput = errors.New("library output cannot be empty")
+	// ErrNilAPIConfig indicates that the API configuration is nil.
+	ErrNilAPIConfig = errors.New("api configuration cannot be nil")
+	// ErrNilSources indicates that the sources configuration is nil.
+	ErrNilSources = errors.New("sources cannot be nil")
+
 	errNoDefaultVersion        = errors.New("default version must be specified for every library with generated APIs")
 	errExplicitTransportOption = errors.New("transport option is derived from sdk.yaml and must not be specified explicitly")
 )
 
+func isSidekickGenerator(library *config.Library) bool {
+	return library != nil && library.Python != nil && strings.EqualFold(library.Python.Generator, generatorSidekick)
+}
+
 // Generate generates a Python client library.
 func Generate(ctx context.Context, cfg *config.Config, library *config.Library, srcs *sources.Sources) error {
+	if library == nil {
+		return ErrNilLibrary
+	}
+	if isSidekickGenerator(library) {
+		return generateSidekick(ctx, cfg, library, srcs)
+	}
+	return generateLegacy(ctx, cfg, library, srcs)
+}
+
+func generateSidekick(ctx context.Context, cfg *config.Config, library *config.Library, srcs *sources.Sources) error {
+	if library.Output == "" {
+		return ErrEmptyOutput
+	}
+	outdir, err := filepath.Abs(library.Output)
+	if err != nil {
+		return fmt.Errorf("failed to resolve output directory path: %w", err)
+	}
+
+	var model *api.API
+	if len(library.APIs) > 0 {
+		var pc *config.Protoc
+		if cfg != nil && cfg.Tools != nil {
+			pc = cfg.Tools.Protoc
+		}
+		modelConfig, err := toModelConfig(library, library.APIs[0], srcs, pc)
+		if err != nil {
+			return err
+		}
+		model, err = parser.CreateModel(modelConfig)
+		if err != nil {
+			return err
+		}
+	} else {
+		model = &api.API{Name: library.Name}
+	}
+
+	if err := os.MkdirAll(outdir, 0o755); err != nil {
+		return fmt.Errorf("failed to create output directory: %w", err)
+	}
+
+	if err := sidekickpython.Generate(ctx, model, outdir, library); err != nil {
+		return err
+	}
+	return Format(ctx, library)
+}
+
+func toModelConfig(library *config.Library, apiCfg *config.API, srcs *sources.Sources, pc *config.Protoc) (*parser.ModelConfig, error) {
+	if library == nil {
+		return nil, ErrNilLibrary
+	}
+	if apiCfg == nil {
+		return nil, ErrNilAPIConfig
+	}
+	if srcs == nil {
+		return nil, ErrNilSources
+	}
+	sourceConfig := sources.NewSourceConfig(srcs, library.Roots)
+	root := srcs.Googleapis
+	if isPreview(library.Output) {
+		root = filepath.Join(root, "preview")
+	} else if apiCfg.Path == repometadata.ShowcasePath {
+		root = srcs.Showcase
+	}
+	svcConfig, err := serviceconfig.Find(root, apiCfg.Path, config.LanguagePython)
+	if err != nil {
+		return nil, err
+	}
+	specFormat := config.SpecProtobuf
+	if library.SpecificationFormat != "" {
+		specFormat = library.SpecificationFormat
+	}
+	return &parser.ModelConfig{
+		Language:            config.LanguagePython,
+		SpecificationFormat: specFormat,
+		SpecificationSource: apiCfg.Path,
+		Source:              sourceConfig,
+		Protoc:              pc,
+		ServiceConfig:       svcConfig.ServiceConfig,
+	}, nil
+}
+
+func generateLegacy(ctx context.Context, cfg *config.Config, library *config.Library, srcs *sources.Sources) error {
 	googleapisDir := srcs.Googleapis
 	// Convert library.Output to absolute path since protoc runs from a
 	// different directory.

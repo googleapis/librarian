@@ -26,13 +26,19 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/repometadata"
+	"github.com/googleapis/librarian/internal/serviceconfig"
+	"github.com/googleapis/librarian/internal/sidekick/parser"
 	"github.com/googleapis/librarian/internal/sources"
 	"github.com/googleapis/librarian/internal/testhelper"
 )
 
-const googleapisDir = "../../testdata/googleapis"
+const (
+	googleapisDir = "../../testdata/googleapis"
+	showcaseDir   = "../../testdata/gapic-showcase"
+)
 
 func TestIsPreview(t *testing.T) {
 	t.Parallel()
@@ -1577,6 +1583,366 @@ func TestPrepareGenerationRoot_Error(t *testing.T) {
 				t.Errorf("error = %v, wantErr %v", gotErr, test.wantErr)
 			}
 		})
+	}
+}
+
+func TestGenerate_SidekickDispatch(t *testing.T) {
+	for _, test := range []struct {
+		name          string
+		requireProtoc bool
+		library       func(outDir string) *config.Library
+		srcs          *sources.Sources
+	}{
+		{
+			name: "fallback model without apis",
+			library: func(outDir string) *config.Library {
+				return &config.Library{
+					Name:   "google-cloud-test",
+					Output: outDir,
+					Python: &config.PythonPackage{
+						PythonDefault: config.PythonDefault{
+							Generator: "sidekick",
+						},
+					},
+				}
+			},
+		},
+		{
+			name:          "parsed model with api and sources",
+			requireProtoc: true,
+			srcs:          &sources.Sources{Googleapis: googleapisDir},
+			library: func(outDir string) *config.Library {
+				return &config.Library{
+					Name:   "google-cloud-secretmanager",
+					Output: outDir,
+					Roots:  []string{"googleapis"},
+					APIs: []*config.API{
+						{Path: "google/cloud/secretmanager/v1"},
+					},
+					Python: &config.PythonPackage{
+						PythonDefault: config.PythonDefault{
+							Generator: "sidekick",
+						},
+					},
+				}
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			if test.requireProtoc {
+				testhelper.RequireCommand(t, "protoc")
+			}
+			mockDir := t.TempDir()
+			testhelper.WriteExecutable(t, filepath.Join(mockDir, "ruff"), "#!/bin/sh\nexit 0\n")
+			t.Setenv("PATH", mockDir+string(os.PathListSeparator)+os.Getenv("PATH"))
+
+			outDir := t.TempDir()
+			lib := test.library(outDir)
+
+			if err := Generate(t.Context(), nil, lib, test.srcs); err != nil {
+				t.Fatal(err)
+			}
+
+			gapicVersionPath := filepath.Join(outDir, "gapic_version.py")
+			if _, err := os.Stat(gapicVersionPath); err != nil {
+				t.Errorf("os.Stat(%q) error = %v, want nil", gapicVersionPath, err)
+			}
+			pyTypedPath := filepath.Join(outDir, "py.typed")
+			if _, err := os.Stat(pyTypedPath); err != nil {
+				t.Errorf("os.Stat(%q) error = %v, want nil", pyTypedPath, err)
+			}
+		})
+	}
+}
+
+func TestGenerate_SidekickError(t *testing.T) {
+	for _, test := range []struct {
+		name    string
+		library func(t *testing.T) *config.Library
+		wantErr error
+	}{
+		{
+			name:    "nil library",
+			library: func(t *testing.T) *config.Library { return nil },
+			wantErr: ErrNilLibrary,
+		},
+		{
+			name: "empty output",
+			library: func(t *testing.T) *config.Library {
+				return &config.Library{
+					Name:   "test",
+					Output: "",
+					Python: &config.PythonPackage{
+						PythonDefault: config.PythonDefault{
+							Generator: "sidekick",
+						},
+					},
+				}
+			},
+			wantErr: ErrEmptyOutput,
+		},
+		{
+			name: "nil sources with apis",
+			library: func(t *testing.T) *config.Library {
+				return &config.Library{
+					Name:   "google-cloud-secretmanager",
+					Output: t.TempDir(),
+					APIs: []*config.API{
+						{Path: "google/cloud/secretmanager/v1"},
+					},
+					Python: &config.PythonPackage{
+						PythonDefault: config.PythonDefault{
+							Generator: "sidekick",
+						},
+					},
+				}
+			},
+			wantErr: ErrNilSources,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			lib := test.library(t)
+			err := Generate(t.Context(), nil, lib, nil)
+			if !errors.Is(err, test.wantErr) {
+				t.Errorf("Generate(ctx, nil, %v, nil) error = %v, wantErr %v", lib, err, test.wantErr)
+			}
+		})
+	}
+}
+
+func TestIsSidekickGenerator(t *testing.T) {
+	for _, test := range []struct {
+		name string
+		lib  *config.Library
+		want bool
+	}{
+		{
+			name: "nil library",
+			lib:  nil,
+			want: false,
+		},
+		{
+			name: "nil python config",
+			lib:  &config.Library{},
+			want: false,
+		},
+		{
+			name: "empty generator",
+			lib: &config.Library{
+				Python: &config.PythonPackage{},
+			},
+			want: false,
+		},
+		{
+			name: "legacy generator",
+			lib: &config.Library{
+				Python: &config.PythonPackage{
+					PythonDefault: config.PythonDefault{
+						Generator: "legacy",
+					},
+				},
+			},
+			want: false,
+		},
+		{
+			name: "sidekick generator lowercase",
+			lib: &config.Library{
+				Python: &config.PythonPackage{
+					PythonDefault: config.PythonDefault{
+						Generator: "sidekick",
+					},
+				},
+			},
+			want: true,
+		},
+		{
+			name: "sidekick generator uppercase",
+			lib: &config.Library{
+				Python: &config.PythonPackage{
+					PythonDefault: config.PythonDefault{
+						Generator: "SIDEKICK",
+					},
+				},
+			},
+			want: true,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := isSidekickGenerator(test.lib)
+			if got != test.want {
+				t.Errorf("isSidekickGenerator(%v) = %v, want %v", test.lib, got, test.want)
+			}
+		})
+	}
+}
+
+func TestToModelConfig(t *testing.T) {
+	for _, test := range []struct {
+		name   string
+		lib    *config.Library
+		apiCfg *config.API
+		srcs   *sources.Sources
+		want   *parser.ModelConfig
+	}{
+		{
+			name: "basic protobuf api",
+			lib: &config.Library{
+				Name:   "google-cloud-secretmanager",
+				Output: "packages/google-cloud-secretmanager",
+				Roots:  []string{"googleapis"},
+			},
+			apiCfg: &config.API{
+				Path: "google/cloud/secretmanager/v1",
+			},
+			srcs: &sources.Sources{Googleapis: googleapisDir},
+			want: &parser.ModelConfig{
+				Language:            config.LanguagePython,
+				SpecificationFormat: config.SpecProtobuf,
+				SpecificationSource: "google/cloud/secretmanager/v1",
+			},
+		},
+		{
+			name: "preview output directory",
+			lib: &config.Library{
+				Name:   "google-cloud-secretmanager",
+				Output: "preview-packages/google-cloud-secretmanager",
+				Roots:  []string{"googleapis"},
+			},
+			apiCfg: &config.API{
+				Path: "google/cloud/secretmanager/v1",
+			},
+			srcs: &sources.Sources{Googleapis: googleapisDir},
+			want: &parser.ModelConfig{
+				Language:            config.LanguagePython,
+				SpecificationFormat: config.SpecProtobuf,
+				SpecificationSource: "google/cloud/secretmanager/v1",
+			},
+		},
+		{
+			name: "custom specification format",
+			lib: &config.Library{
+				Name:                "google-cloud-secretmanager",
+				Output:              "packages/google-cloud-secretmanager",
+				Roots:               []string{"googleapis"},
+				SpecificationFormat: "custom_spec",
+			},
+			apiCfg: &config.API{
+				Path: "google/cloud/secretmanager/v1",
+			},
+			srcs: &sources.Sources{Googleapis: googleapisDir},
+			want: &parser.ModelConfig{
+				Language:            config.LanguagePython,
+				SpecificationFormat: "custom_spec",
+				SpecificationSource: "google/cloud/secretmanager/v1",
+			},
+		},
+		{
+			name: "showcase api path",
+			lib: &config.Library{
+				Name:   "google-cloud-showcase",
+				Output: "packages/google-cloud-showcase",
+				Roots:  []string{"showcase"},
+			},
+			apiCfg: &config.API{
+				Path: repometadata.ShowcasePath,
+			},
+			srcs: &sources.Sources{
+				Googleapis: googleapisDir,
+				Showcase:   showcaseDir,
+			},
+			want: &parser.ModelConfig{
+				Language:            config.LanguagePython,
+				SpecificationFormat: config.SpecProtobuf,
+				SpecificationSource: repometadata.ShowcasePath,
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got, err := toModelConfig(test.lib, test.apiCfg, test.srcs, nil)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if diff := cmp.Diff(test.want, got,
+				cmpopts.IgnoreFields(parser.ModelConfig{}, "Source", "ServiceConfig"),
+			); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+			if got.ServiceConfig == "" {
+				t.Errorf("toModelConfig().ServiceConfig = %q, want non-empty", got.ServiceConfig)
+			}
+		})
+	}
+}
+
+func TestToModelConfig_Error(t *testing.T) {
+	srcs := &sources.Sources{Googleapis: googleapisDir}
+	lib := &config.Library{
+		Name:   "google-cloud-secretmanager",
+		Output: "packages/google-cloud-secretmanager",
+		Roots:  []string{"googleapis"},
+	}
+	apiCfg := &config.API{
+		Path: "google/cloud/secretmanager/v1",
+	}
+
+	for _, test := range []struct {
+		name    string
+		lib     *config.Library
+		apiCfg  *config.API
+		srcs    *sources.Sources
+		wantErr error
+	}{
+		{
+			name:    "nil library",
+			lib:     nil,
+			apiCfg:  apiCfg,
+			srcs:    srcs,
+			wantErr: ErrNilLibrary,
+		},
+		{
+			name:    "nil api config",
+			lib:     lib,
+			apiCfg:  nil,
+			srcs:    srcs,
+			wantErr: ErrNilAPIConfig,
+		},
+		{
+			name:    "nil sources",
+			lib:     lib,
+			apiCfg:  apiCfg,
+			srcs:    nil,
+			wantErr: ErrNilSources,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			_, err := toModelConfig(test.lib, test.apiCfg, test.srcs, nil)
+			if !errors.Is(err, test.wantErr) {
+				t.Errorf("toModelConfig(%v, %v, %v, nil) error = %v, wantErr %v", test.lib, test.apiCfg, test.srcs, err, test.wantErr)
+			}
+		})
+	}
+}
+
+func TestToModelConfig_InvalidServiceConfig(t *testing.T) {
+	tmp := t.TempDir()
+	dir := filepath.Join(tmp, "invalid", "api")
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "service.yaml"), []byte("type: google.api.Service\nINVALID: [}\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	lib := &config.Library{
+		Name:   "google-cloud-secretmanager",
+		Output: "packages/google-cloud-secretmanager",
+		Roots:  []string{"googleapis"},
+	}
+	apiCfg := &config.API{Path: "invalid/api"}
+	srcs := &sources.Sources{Googleapis: tmp}
+
+	_, err := toModelConfig(lib, apiCfg, srcs, nil)
+	if !errors.Is(err, serviceconfig.ErrReadServiceConfig) {
+		t.Errorf("toModelConfig(%v, %v, %v, nil) error = %v, wantErr %v", lib, apiCfg, srcs, err, serviceconfig.ErrReadServiceConfig)
 	}
 }
 
