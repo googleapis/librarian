@@ -299,14 +299,14 @@ func makeAPIForProtobuf(serviceConfig *serviceconfig.Service, req *pluginpb.Code
 		fFQN := "." + f.GetPackage()
 		for _, m := range f.MessageType {
 			mFQN := fFQN + "." + m.GetName()
-			if _, err := processMessage(result, m, mFQN, f.GetPackage(), nil); err != nil {
+			if _, err := processMessage(result, m, mFQN, f.GetPackage(), f.GetName(), nil); err != nil {
 				return nil, err
 			}
 		}
 
 		for _, e := range f.EnumType {
 			eFQN := fFQN + "." + e.GetName()
-			_ = processEnum(result, e, eFQN, f.GetPackage(), nil)
+			_ = processEnum(result, e, eFQN, f.GetPackage(), f.GetName(), nil)
 		}
 		resources, err := processFileResourceDefinitions(f)
 		if err != nil {
@@ -632,13 +632,16 @@ func processMethod(model *api.API, m *descriptorpb.MethodDescriptorProto, mFQN, 
 	return method, nil
 }
 
-func processMessage(model *api.API, m *descriptorpb.DescriptorProto, mFQN, packagez string, parent *api.Message) (*api.Message, error) {
+func processMessage(model *api.API, m *descriptorpb.DescriptorProto, mFQN, packagez, sourceFile string, parent *api.Message) (*api.Message, error) {
 	message := &api.Message{
 		Name:       m.GetName(),
 		ID:         mFQN,
 		Parent:     parent,
 		Package:    packagez,
 		Deprecated: m.GetOptions().GetDeprecated(),
+	}
+	if sourceFile != "" {
+		message.SourceLocation = &api.SourceLocation{File: sourceFile}
 	}
 	model.AddMessage(message)
 
@@ -653,7 +656,7 @@ func processMessage(model *api.API, m *descriptorpb.DescriptorProto, mFQN, packa
 	if len(m.GetNestedType()) > 0 {
 		for _, nm := range m.GetNestedType() {
 			nmFQN := mFQN + "." + nm.GetName()
-			nmsg, err := processMessage(model, nm, nmFQN, packagez, message)
+			nmsg, err := processMessage(model, nm, nmFQN, packagez, sourceFile, message)
 			if err != nil {
 				return nil, err
 			}
@@ -664,13 +667,16 @@ func processMessage(model *api.API, m *descriptorpb.DescriptorProto, mFQN, packa
 	}
 	for _, e := range m.GetEnumType() {
 		eFQN := mFQN + "." + e.GetName()
-		e := processEnum(model, e, eFQN, packagez, message)
+		e := processEnum(model, e, eFQN, packagez, sourceFile, message)
 		message.Enums = append(message.Enums, e)
 	}
 	for _, oneof := range m.OneofDecl {
 		oneOfs := &api.OneOf{
 			Name: oneof.GetName(),
 			ID:   mFQN + "." + oneof.GetName(),
+		}
+		if sourceFile != "" {
+			oneOfs.SourceLocation = &api.SourceLocation{File: sourceFile}
 		}
 		message.OneOfs = append(message.OneOfs, oneOfs)
 	}
@@ -686,6 +692,9 @@ func processMessage(model *api.API, m *descriptorpb.DescriptorProto, mFQN, packa
 			IsOneOf:       mf.OneofIndex != nil && !isProtoOptional,
 			AutoPopulated: protobufIsAutoPopulated(mf),
 			Behavior:      protobufFieldBehavior(mf),
+		}
+		if sourceFile != "" {
+			field.SourceLocation = &api.SourceLocation{File: sourceFile}
 		}
 		if err := processResourceReference(mf, field); err != nil {
 			return nil, err
@@ -804,13 +813,16 @@ func processResourceReference(f *descriptorpb.FieldDescriptorProto, field *api.F
 	return nil
 }
 
-func processEnum(model *api.API, e *descriptorpb.EnumDescriptorProto, eFQN, packagez string, parent *api.Message) *api.Enum {
+func processEnum(model *api.API, e *descriptorpb.EnumDescriptorProto, eFQN, packagez, sourceFile string, parent *api.Message) *api.Enum {
 	enum := &api.Enum{
 		Name:       e.GetName(),
 		ID:         eFQN,
 		Parent:     parent,
 		Package:    packagez,
 		Deprecated: e.GetOptions().GetDeprecated(),
+	}
+	if sourceFile != "" {
+		enum.SourceLocation = &api.SourceLocation{File: sourceFile}
 	}
 	model.AddEnum(enum)
 	for _, ev := range e.Value {
@@ -819,6 +831,9 @@ func processEnum(model *api.API, e *descriptorpb.EnumDescriptorProto, eFQN, pack
 			Number:     ev.GetNumber(),
 			Parent:     enum,
 			Deprecated: ev.GetOptions().GetDeprecated(),
+		}
+		if sourceFile != "" {
+			enumValue.SourceLocation = &api.SourceLocation{File: sourceFile}
 		}
 		enum.Values = append(enum.Values, enumValue)
 	}
@@ -852,7 +867,7 @@ func addServiceDocumentation(model *api.API, p []int32, doc string, srcLoc *api.
 		if doc != "" && service.Documentation == "" {
 			service.Documentation = doc
 		}
-		if srcLoc != nil && service.SourceLocation == nil {
+		if srcLoc != nil {
 			service.SourceLocation = srcLoc
 		}
 	case p[0] == serviceDescriptorProtoMethod && len(p) == 2:
@@ -862,7 +877,7 @@ func addServiceDocumentation(model *api.API, p []int32, doc string, srcLoc *api.
 			if doc != "" && method.Documentation == "" {
 				method.Documentation = doc
 			}
-			if srcLoc != nil && method.SourceLocation == nil {
+			if srcLoc != nil {
 				method.SourceLocation = srcLoc
 			}
 		}
@@ -888,7 +903,7 @@ func addMessageDocumentation(model *api.API, m *descriptorpb.DescriptorProto, p 
 		if doc != "" && msg.Documentation == "" {
 			msg.Documentation = doc
 		}
-		if srcLoc != nil && msg.SourceLocation == nil {
+		if srcLoc != nil {
 			msg.SourceLocation = srcLoc
 		}
 	case p[0] == messageDescriptorNestedType:
@@ -907,7 +922,7 @@ func addMessageDocumentation(model *api.API, m *descriptorpb.DescriptorProto, p 
 		if doc != "" && field.Documentation == "" {
 			field.Documentation = doc
 		}
-		if srcLoc != nil && field.SourceLocation == nil {
+		if srcLoc != nil {
 			field.SourceLocation = srcLoc
 		}
 	case p[0] == messageDescriptorEnum:
@@ -934,7 +949,7 @@ func addMessageDocumentation(model *api.API, m *descriptorpb.DescriptorProto, p 
 			if doc != "" && target.Documentation == "" {
 				target.Documentation = doc
 			}
-			if srcLoc != nil && target.SourceLocation == nil {
+			if srcLoc != nil {
 				target.SourceLocation = srcLoc
 			}
 		}
@@ -965,7 +980,7 @@ func addEnumDocumentation(model *api.API, p []int32, doc string, srcLoc *api.Sou
 		if doc != "" && enum.Documentation == "" {
 			enum.Documentation = doc
 		}
-		if srcLoc != nil && enum.SourceLocation == nil {
+		if srcLoc != nil {
 			enum.SourceLocation = srcLoc
 		}
 	case p[0] == enumDescriptorName, p[0] == enumDescriptorOptions, p[0] == enumDescriptorReservedName, p[0] == enumDescriptorVisibility:
@@ -976,7 +991,7 @@ func addEnumDocumentation(model *api.API, p []int32, doc string, srcLoc *api.Sou
 			if doc != "" && val.Documentation == "" {
 				val.Documentation = doc
 			}
-			if srcLoc != nil && val.SourceLocation == nil {
+			if srcLoc != nil {
 				val.SourceLocation = srcLoc
 			}
 		}
