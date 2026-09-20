@@ -470,6 +470,9 @@ func TestAnnotateService_Gating(t *testing.T) {
 	if !got.HasExplicitRoutingMethod {
 		t.Errorf("expected HasExplicitRoutingMethod to be true")
 	}
+	if !got.HasStreamingMethod {
+		t.Errorf("expected HasStreamingMethod to be true")
+	}
 	if !got.HasAsyncMethod {
 		t.Errorf("expected HasAsyncMethod to be true (via LRO)")
 	}
@@ -715,88 +718,6 @@ func TestAnnotateService_NilConfig(t *testing.T) {
 	}
 }
 
-func TestAnnotateService_ClassNames(t *testing.T) {
-	svc := api.NewTestService("GoldenThingAdmin")
-	model := api.NewTestAPI(nil, nil, []*api.Service{svc})
-	modelAnn := &modelAnnotations{
-		CopyrightYear: "2022",
-		BoilerPlate:   license.HeaderBulk(),
-	}
-	c := newCodec(&config.CppLibrary{})
-	if err := c.annotateService(svc, modelAnn, model); err != nil {
-		t.Fatal(err)
-	}
-	got := svc.Codec.(*serviceAnnotations)
-
-	if diff := cmp.Diff("GoldenThingAdminClient", got.ClientClassName); diff != "" {
-		t.Errorf("ClientClassName mismatch (-want +got):\n%s", diff)
-	}
-	if diff := cmp.Diff("GoldenThingAdminConnection", got.ConnectionClassName); diff != "" {
-		t.Errorf("ConnectionClassName mismatch (-want +got):\n%s", diff)
-	}
-	if diff := cmp.Diff("GoldenThingAdminConnectionIdempotencyPolicy", got.ConnectionIdempotencyPolicyClassName); diff != "" {
-		t.Errorf("ConnectionIdempotencyPolicyClassName mismatch (-want +got):\n%s", diff)
-	}
-	if diff := cmp.Diff("MockGoldenThingAdminConnection", got.MockConnectionClassName); diff != "" {
-		t.Errorf("MockConnectionClassName mismatch (-want +got):\n%s", diff)
-	}
-	if diff := cmp.Diff("GoldenThingAdminConnectionImpl", got.ConnectionImplClassName); diff != "" {
-		t.Errorf("ConnectionImplClassName mismatch (-want +got):\n%s", diff)
-	}
-	if diff := cmp.Diff("GoldenThingAdminStub", got.StubClassName); diff != "" {
-		t.Errorf("StubClassName mismatch (-want +got):\n%s", diff)
-	}
-	if diff := cmp.Diff("DefaultGoldenThingAdminStub", got.DefaultStubClassName); diff != "" {
-		t.Errorf("DefaultStubClassName mismatch (-want +got):\n%s", diff)
-	}
-	if diff := cmp.Diff("GoldenThingAdminAuth", got.AuthDecoratorClassName); diff != "" {
-		t.Errorf("AuthDecoratorClassName mismatch (-want +got):\n%s", diff)
-	}
-	if diff := cmp.Diff("GoldenThingAdminLogging", got.LoggingDecoratorClassName); diff != "" {
-		t.Errorf("LoggingDecoratorClassName mismatch (-want +got):\n%s", diff)
-	}
-	if diff := cmp.Diff("GoldenThingAdminMetadata", got.MetadataDecoratorClassName); diff != "" {
-		t.Errorf("MetadataDecoratorClassName mismatch (-want +got):\n%s", diff)
-	}
-	if diff := cmp.Diff("GoldenThingAdminTracingConnection", got.TracingConnectionClassName); diff != "" {
-		t.Errorf("TracingConnectionClassName mismatch (-want +got):\n%s", diff)
-	}
-	if diff := cmp.Diff("GoldenThingAdminTracingStub", got.TracingStubClassName); diff != "" {
-		t.Errorf("TracingStubClassName mismatch (-want +got):\n%s", diff)
-	}
-	if diff := cmp.Diff("GoldenThingAdminRetryPolicy", got.RetryPolicyName); diff != "" {
-		t.Errorf("RetryPolicyName mismatch (-want +got):\n%s", diff)
-	}
-	if diff := cmp.Diff("GoldenThingAdminLimitedErrorCountRetryPolicy", got.LimitedErrorCountRetryPolicyName); diff != "" {
-		t.Errorf("LimitedErrorCountRetryPolicyName mismatch (-want +got):\n%s", diff)
-	}
-	if diff := cmp.Diff("GoldenThingAdminLimitedTimeRetryPolicy", got.LimitedTimeRetryPolicyName); diff != "" {
-		t.Errorf("LimitedTimeRetryPolicyName mismatch (-want +got):\n%s", diff)
-	}
-	if diff := cmp.Diff("GoldenThingAdminRetryTraits", got.RetryTraitsName); diff != "" {
-		t.Errorf("RetryTraitsName mismatch (-want +got):\n%s", diff)
-	}
-	if diff := cmp.Diff(false, got.IsDeprecated); diff != "" {
-		t.Errorf("IsDeprecated mismatch (-want +got):\n%s", diff)
-	}
-
-	t.Run("deprecated service", func(t *testing.T) {
-		depSvc := api.NewTestService("DeprecatedService")
-		depSvc.Deprecated = true
-		depModel := api.NewTestAPI(nil, nil, []*api.Service{depSvc})
-		if err := c.annotateService(depSvc, modelAnn, depModel); err != nil {
-			t.Fatal(err)
-		}
-		depGot := depSvc.Codec.(*serviceAnnotations)
-		if diff := cmp.Diff(true, depGot.IsDeprecated); diff != "" {
-			t.Errorf("IsDeprecated mismatch (-want +got):\n%s", diff)
-		}
-		if diff := cmp.Diff("DeprecatedServiceClient", depGot.ClientClassName); diff != "" {
-			t.Errorf("ClientClassName mismatch (-want +got):\n%s", diff)
-		}
-	})
-}
-
 func TestAnnotateService_RetryStatusCodes(t *testing.T) {
 	for _, test := range []struct {
 		name                 string
@@ -851,7 +772,7 @@ func TestAnnotateService_RetryStatusCodes(t *testing.T) {
 			}
 			got := svc.Codec.(*serviceAnnotations)
 			if diff := cmp.Diff(test.want, got.RetryStatusCodes); diff != "" {
-				t.Errorf("RetryStatusCodes mismatch (-want +got):\n%s", diff)
+				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}

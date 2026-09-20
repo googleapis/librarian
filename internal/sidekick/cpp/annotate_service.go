@@ -295,7 +295,9 @@ func (c *codec) annotateService(s *api.Service, modelAnn *modelAnnotations, mode
 			parts := strings.Split(rawCode, ".")
 			if len(parts) == 1 {
 				codeSet[parts[0]] = true
-			} else if len(parts) == 2 && parts[0] == s.Name {
+				continue
+			}
+			if len(parts) == 2 && parts[0] == s.Name {
 				codeSet[parts[1]] = true
 			}
 		}

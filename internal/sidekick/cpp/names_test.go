@@ -885,52 +885,68 @@ func TestClassNames(t *testing.T) {
 	} {
 		t.Run(test.serviceName, func(t *testing.T) {
 			if diff := cmp.Diff(test.wantClient, ClientClassName(test.serviceName)); diff != "" {
-				t.Errorf("ClientClassName mismatch (-want +got):\n%s", diff)
+				t.Logf("ClientClassName")
+				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 			if diff := cmp.Diff(test.wantConnection, ConnectionClassName(test.serviceName)); diff != "" {
-				t.Errorf("ConnectionClassName mismatch (-want +got):\n%s", diff)
+				t.Logf("ConnectionClassName")
+				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 			if diff := cmp.Diff(test.wantConnectionIdempotencyPolicy, ConnectionIdempotencyPolicyClassName(test.serviceName)); diff != "" {
-				t.Errorf("ConnectionIdempotencyPolicyClassName mismatch (-want +got):\n%s", diff)
+				t.Logf("ConnectionIdempotencyPolicyClassName")
+				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 			if diff := cmp.Diff(test.wantMockConnection, MockConnectionClassName(test.serviceName)); diff != "" {
-				t.Errorf("MockConnectionClassName mismatch (-want +got):\n%s", diff)
+				t.Logf("MockConnectionClassName")
+				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 			if diff := cmp.Diff(test.wantConnectionImpl, ConnectionImplClassName(test.serviceName)); diff != "" {
-				t.Errorf("ConnectionImplClassName mismatch (-want +got):\n%s", diff)
+				t.Logf("ConnectionImplClassName")
+				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 			if diff := cmp.Diff(test.wantStub, StubClassName(test.serviceName)); diff != "" {
-				t.Errorf("StubClassName mismatch (-want +got):\n%s", diff)
+				t.Logf("StubClassName")
+				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 			if diff := cmp.Diff(test.wantDefaultStub, DefaultStubClassName(test.serviceName)); diff != "" {
-				t.Errorf("DefaultStubClassName mismatch (-want +got):\n%s", diff)
+				t.Logf("DefaultStubClassName")
+				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 			if diff := cmp.Diff(test.wantAuthDecorator, AuthDecoratorClassName(test.serviceName)); diff != "" {
-				t.Errorf("AuthDecoratorClassName mismatch (-want +got):\n%s", diff)
+				t.Logf("AuthDecoratorClassName")
+				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 			if diff := cmp.Diff(test.wantLoggingDecorator, LoggingDecoratorClassName(test.serviceName)); diff != "" {
-				t.Errorf("LoggingDecoratorClassName mismatch (-want +got):\n%s", diff)
+				t.Logf("LoggingDecoratorClassName")
+				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 			if diff := cmp.Diff(test.wantMetadataDecorator, MetadataDecoratorClassName(test.serviceName)); diff != "" {
-				t.Errorf("MetadataDecoratorClassName mismatch (-want +got):\n%s", diff)
+				t.Logf("MetadataDecoratorClassName")
+				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 			if diff := cmp.Diff(test.wantTracingConnection, TracingConnectionClassName(test.serviceName)); diff != "" {
-				t.Errorf("TracingConnectionClassName mismatch (-want +got):\n%s", diff)
+				t.Logf("TracingConnectionClassName")
+				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 			if diff := cmp.Diff(test.wantTracingStub, TracingStubClassName(test.serviceName)); diff != "" {
-				t.Errorf("TracingStubClassName mismatch (-want +got):\n%s", diff)
+				t.Logf("TracingStubClassName")
+				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 			if diff := cmp.Diff(test.wantRetryPolicy, RetryPolicyName(test.serviceName)); diff != "" {
-				t.Errorf("RetryPolicyName mismatch (-want +got):\n%s", diff)
+				t.Logf("RetryPolicyName")
+				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 			if diff := cmp.Diff(test.wantLimitedErrorCountRetryPolicy, LimitedErrorCountRetryPolicyName(test.serviceName)); diff != "" {
-				t.Errorf("LimitedErrorCountRetryPolicyName mismatch (-want +got):\n%s", diff)
+				t.Logf("LimitedErrorCountRetryPolicyName")
+				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 			if diff := cmp.Diff(test.wantLimitedTimeRetryPolicy, LimitedTimeRetryPolicyName(test.serviceName)); diff != "" {
-				t.Errorf("LimitedTimeRetryPolicyName mismatch (-want +got):\n%s", diff)
+				t.Logf("LimitedTimeRetryPolicyName")
+				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 			if diff := cmp.Diff(test.wantRetryTraits, RetryTraitsName(test.serviceName)); diff != "" {
-				t.Errorf("RetryTraitsName mismatch (-want +got):\n%s", diff)
+				t.Logf("RetryTraitsName")
+				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
