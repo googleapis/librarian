@@ -67,6 +67,8 @@ type Message struct {
 	Pagination *PaginationInfo
 	// Resource contains the data from the `google.api.resource` annotation.
 	Resource *Resource
+	// SourceLocation is the location of the message in the source specification.
+	SourceLocation *SourceLocation
 	// Language specific annotations.
 	Codec any
 }

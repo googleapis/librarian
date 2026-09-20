@@ -189,6 +189,15 @@ func (m *Message) WithResource(resource *Resource) *Message {
 	return m
 }
 
+// WithSourceLocation sets the message's source location.
+func (m *Message) WithSourceLocation(file string, line int) *Message {
+	m.SourceLocation = &SourceLocation{
+		File: file,
+		Line: line,
+	}
+	return m
+}
+
 // NewTestService creates a service with defaults for testing.
 // Default package is "test".
 func NewTestService(name string) *Service {
@@ -212,6 +221,15 @@ func (s *Service) WithMethods(methods ...*Method) *Service {
 		}
 	}
 	s.Methods = append(s.Methods, methods...)
+	return s
+}
+
+// WithSourceLocation sets the service's source location.
+func (s *Service) WithSourceLocation(file string, line int) *Service {
+	s.SourceLocation = &SourceLocation{
+		File: file,
+		Line: line,
+	}
 	return s
 }
 
@@ -341,6 +359,15 @@ func (m *Method) WithSignatures(signatures ...*MethodSignature) *Method {
 	return m
 }
 
+// WithSourceLocation sets the method's source location.
+func (m *Method) WithSourceLocation(file string, line int) *Method {
+	m.SourceLocation = &SourceLocation{
+		File: file,
+		Line: line,
+	}
+	return m
+}
+
 // NewTestOneOf creates a OneOf with defaults for testing.
 func NewTestOneOf(name string) *OneOf {
 	return &OneOf{
@@ -358,6 +385,15 @@ func (o *OneOf) WithFields(fields ...*Field) *OneOf {
 		f.IsOneOf = true
 		f.Group = o
 		o.Fields = append(o.Fields, f)
+	}
+	return o
+}
+
+// WithSourceLocation sets the oneof's source location.
+func (o *OneOf) WithSourceLocation(file string, line int) *OneOf {
+	o.SourceLocation = &SourceLocation{
+		File: file,
+		Line: line,
 	}
 	return o
 }
@@ -440,6 +476,21 @@ func (f *Field) WithResourceReference(refType string) *Field {
 // WithChildTypeReference sets the child type resource reference on a field.
 func (f *Field) WithChildTypeReference(childType string) *Field {
 	f.ResourceReference = &ResourceReference{ChildType: childType}
+	return f
+}
+
+// WithNumber sets the field's protobuf tag number.
+func (f *Field) WithNumber(n int32) *Field {
+	f.Number = n
+	return f
+}
+
+// WithSourceLocation sets the field's source location.
+func (f *Field) WithSourceLocation(file string, line int) *Field {
+	f.SourceLocation = &SourceLocation{
+		File: file,
+		Line: line,
+	}
 	return f
 }
 
@@ -545,6 +596,15 @@ func (e *Enum) WithUniqueNumberValues(values ...*EnumValue) *Enum {
 	return e
 }
 
+// WithSourceLocation sets the enum's source location.
+func (e *Enum) WithSourceLocation(file string, line int) *Enum {
+	e.SourceLocation = &SourceLocation{
+		File: file,
+		Line: line,
+	}
+	return e
+}
+
 // NewTestEnumValue creates an EnumValue with defaults for testing.
 func NewTestEnumValue(name string, number int32) *EnumValue {
 	return &EnumValue{
@@ -569,6 +629,15 @@ func (ev *EnumValue) WithDocumentation(doc string) *EnumValue {
 // WithDeprecated sets whether the enum value is deprecated.
 func (ev *EnumValue) WithDeprecated(deprecated bool) *EnumValue {
 	ev.Deprecated = deprecated
+	return ev
+}
+
+// WithSourceLocation sets the enum value's source location.
+func (ev *EnumValue) WithSourceLocation(file string, line int) *EnumValue {
+	ev.SourceLocation = &SourceLocation{
+		File: file,
+		Line: line,
+	}
 	return ev
 }
 

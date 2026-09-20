@@ -111,6 +111,8 @@ type Method struct {
 	SampleInfo *SampleInfo
 	// Signatures defines alternative signatures (overloads) for the method.
 	Signatures []*MethodSignature
+	// SourceLocation is the location of the method in the source specification.
+	SourceLocation *SourceLocation
 	// Codec contains language specific annotations.
 	Codec any
 }

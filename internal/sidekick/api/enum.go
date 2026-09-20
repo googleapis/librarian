@@ -36,6 +36,8 @@ type Enum struct {
 	Parent *Message
 	// The Protobuf package this enum belongs to.
 	Package string
+	// SourceLocation is the location of the enum in the source specification.
+	SourceLocation *SourceLocation
 	// Language specific annotations.
 	Codec any
 }
@@ -54,6 +56,8 @@ type EnumValue struct {
 	Number int32
 	// Parent returns the ancestor of this node, if any.
 	Parent *Enum
+	// SourceLocation is the location of the enum value in the source specification.
+	SourceLocation *SourceLocation
 	// Language specific annotations.
 	Codec any
 }

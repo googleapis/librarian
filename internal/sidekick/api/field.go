@@ -26,6 +26,8 @@ type Field struct {
 	Name string
 	// ID is a unique identifier.
 	ID string
+	// Number is the field tag number in the protobuf definition.
+	Number int32
 	// Typez is the datatype of the field.
 	Typez Typez
 	// TypezID is the ID of the type the field refers to. This value is populated
@@ -88,6 +90,8 @@ type Field struct {
 	// ResourceNamePattern is a parsed representation of the resource pattern associated
 	// with this field.
 	ResourceNamePattern *ResourceNamePattern
+	// SourceLocation is the location of the field in the source specification.
+	SourceLocation *SourceLocation
 	// Codec is a placeholder to put language specific annotations.
 	Codec any
 }

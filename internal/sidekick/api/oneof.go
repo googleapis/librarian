@@ -29,6 +29,8 @@ type OneOf struct {
 	// Non deprecated fields are preferred, then scalar, repeated, map fields
 	// in that order.
 	ExampleField *Field
+	// SourceLocation is the location of the oneof in the source specification.
+	SourceLocation *SourceLocation
 	// Codec is a placeholder to put language specific annotations.
 	Codec any
 }

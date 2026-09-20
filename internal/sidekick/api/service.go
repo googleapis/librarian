@@ -41,6 +41,8 @@ type Service struct {
 	// QuickstartMethod is the method that will be used to generate the quickstart sample
 	// for this service.
 	QuickstartMethod *Method
+	// SourceLocation is the location of the service in the source specification.
+	SourceLocation *SourceLocation
 	// Language specific annotations.
 	Codec any
 }
