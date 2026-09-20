@@ -1,3 +1,18 @@
+{{!
+Copyright 2026 Google LLC
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    https://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+}}
 {{#Codec.Methods}}
 {{#Signatures}}
 
@@ -7,26 +22,26 @@
 {{/IsDeprecated}}
 {{#IsUnary}}
   {{{CppReturnType}}}
-  {{Name}}({{{SigParams}}}Options opts = {});
+  {{Name}}({{#Parameters}}{{{Type}}} {{Name}}, {{/Parameters}}Options opts = {});
 {{/IsUnary}}
 {{#IsPaginated}}
   StreamRange<{{{RangeOutputType}}}>
-  {{Name}}({{{SigParams}}}Options opts = {});
+  {{Name}}({{#Parameters}}{{{Type}}} {{Name}}, {{/Parameters}}Options opts = {});
 {{/IsPaginated}}
 {{#IsLongrunning}}
   future<{{{CppReturnType}}}>
-  {{Name}}({{{SigParams}}}Options opts = {});
+  {{Name}}({{#Parameters}}{{{Type}}} {{Name}}, {{/Parameters}}Options opts = {});
 
 {{{NoAwaitComments}}}
 {{#IsDeprecated}}
   GOOGLE_CLOUD_CPP_DEPRECATED("This RPC is deprecated.")
 {{/IsDeprecated}}
   StatusOr<{{{LongrunningOperationType}}}>
-  {{Name}}(NoAwaitTag, {{{SigParams}}}Options opts = {});
+  {{Name}}(NoAwaitTag, {{#Parameters}}{{{Type}}} {{Name}}, {{/Parameters}}Options opts = {});
 {{/IsLongrunning}}
 {{#IsStreamingRead}}
   StreamRange<{{{CppResponseType}}}>
-  {{Name}}({{{SigParams}}}Options opts = {});
+  {{Name}}({{#Parameters}}{{{Type}}} {{Name}}, {{/Parameters}}Options opts = {});
 {{/IsStreamingRead}}
 {{#HasIamUpdater}}
 
@@ -125,7 +140,7 @@
   GOOGLE_CLOUD_CPP_DEPRECATED("This RPC is deprecated.")
 {{/IsDeprecated}}
   future<{{{CppReturnType}}}>
-  Async{{Name}}({{{SigParams}}}Options opts = {});
+  Async{{Name}}({{#Parameters}}{{{Type}}} {{Name}}, {{/Parameters}}Options opts = {});
 {{/Signatures}}
 
 {{{RequestComments}}}

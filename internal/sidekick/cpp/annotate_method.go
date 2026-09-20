@@ -62,10 +62,15 @@ type methodAnnotations struct {
 	Signatures []*methodSignatureAnnotations
 }
 
+type parameterAnnotation struct {
+	Type string
+	Name string
+}
+
 type methodSignatureAnnotations struct {
 	Method                   *methodAnnotations
 	Name                     string
-	SigParams                string
+	Parameters               []*parameterAnnotation
 	Comments                 string
 	NoAwaitComments          string
 	IsDeprecated             bool
@@ -205,14 +210,17 @@ func (c *codec) annotateMethod(m *api.Method, sAnn *serviceAnnotations, model *a
 
 	seenSigUIDs := make(map[string]bool)
 	for _, sig := range sigs {
-		var sigParamsBuilder strings.Builder
+		var params []*parameterAnnotation
 		var sigUIDBuilder strings.Builder
 		var paramCommentsBuilder strings.Builder
 		sigDeprecated := m.Deprecated
 		for _, f := range sig.Fields {
 			paramType := CppParamTypeToString(f)
 			paramName := CppParamName(f.Name)
-			sigParamsBuilder.WriteString(paramType + " " + paramName + ", ")
+			params = append(params, &parameterAnnotation{
+				Type: paramType,
+				Name: paramName,
+			})
 			sigUIDBuilder.WriteString(paramType + ", ")
 			paramCommentsBuilder.WriteString(formatParameterComment(reqMsg, f))
 		}
@@ -240,7 +248,7 @@ func (c *codec) annotateMethod(m *api.Method, sAnn *serviceAnnotations, model *a
 		sigAnn := &methodSignatureAnnotations{
 			Method:                   mAnn,
 			Name:                     m.Name,
-			SigParams:                sigParamsBuilder.String(),
+			Parameters:               params,
 			Comments:                 sigComments,
 			NoAwaitComments:          mAnn.NoAwaitComments,
 			IsDeprecated:             sigDeprecated,

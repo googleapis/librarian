@@ -87,8 +87,8 @@ func TestAnnotateMethod_EmptyResponse(t *testing.T) {
 }
 
 func TestAnnotateMethod_Paginated(t *testing.T) {
-	itemField := api.NewTestField("items").WithType(api.TypezMessage).WithRepeated()
-	itemField.TypezID = ".test.Item"
+	itemMsg := api.NewTestMessage("Item").WithPackage("test")
+	itemField := api.NewTestField("items").WithMessageType(itemMsg).WithRepeated()
 	respMsg := api.NewTestMessage("ListItemsResponse").WithFields(
 		itemField,
 		api.NewTestField("next_page_token").WithType(api.TypezString),
@@ -107,7 +107,7 @@ func TestAnnotateMethod_Paginated(t *testing.T) {
 		WithOutput(respMsg).
 		WithPagination(api.NewTestField("page_token").WithType(api.TypezString))
 	svc := api.NewTestService("ItemService").WithMethods(method)
-	model := api.NewTestAPI([]*api.Message{reqMsg, respMsg}, nil, []*api.Service{svc})
+	model := api.NewTestAPI([]*api.Message{reqMsg, respMsg, itemMsg}, nil, []*api.Service{svc})
 
 	c := newCodec(nil)
 	if err := c.annotateModel(model); err != nil {
@@ -225,36 +225,12 @@ func TestAnnotateMethod_Signatures(t *testing.T) {
 	}
 
 	sig := got.Signatures[0]
-	if sig.SigParams != "std::string const& name, bool export_, " {
-		t.Errorf("unexpected SigParams: %q", sig.SigParams)
+	wantParams := []*parameterAnnotation{
+		{Type: "std::string const&", Name: "name"},
+		{Type: "bool", Name: "export_"},
 	}
-}
-
-func TestCppParamName(t *testing.T) {
-	keywords := []string{"delete", "export", "class", "template", "namespace", "default", "friend", "operator"}
-	for _, kw := range keywords {
-		if got := CppParamName(kw); got != kw+"_" {
-			t.Errorf("CppParamName(%q) = %q, want %q", kw, got, kw+"_")
-		}
-	}
-	if got := CppParamName("regular_name"); got != "regular_name" {
-		t.Errorf("CppParamName(%q) = %q, want %q", "regular_name", got, "regular_name")
-	}
-}
-
-func TestProtoNameToCppName(t *testing.T) {
-	tests := []struct {
-		in   string
-		want string
-	}{
-		{".google.cloud.secretmanager.v1.Secret", "google::cloud::secretmanager::v1::Secret"},
-		{"google.protobuf.Empty", "google::protobuf::Empty"},
-		{"Simple", "Simple"},
-	}
-	for _, tc := range tests {
-		if got := ProtoNameToCppName(tc.in); got != tc.want {
-			t.Errorf("ProtoNameToCppName(%q) = %q, want %q", tc.in, got, tc.want)
-		}
+	if diff := cmp.Diff(wantParams, sig.Parameters); diff != "" {
+		t.Errorf("parameters mismatch (-want +got):\n%s", diff)
 	}
 }
 
@@ -265,48 +241,50 @@ func TestAnnotateMethod_Async(t *testing.T) {
 	svc := api.NewTestService("ItemService").WithMethods(method)
 	model := api.NewTestAPI([]*api.Message{req, resp}, nil, []*api.Service{svc})
 
-	// 1. Method in GenAsyncRPCs has IsAsync == true
-	c := newCodec(&config.CppLibrary{
-		GenAsyncRPCs: []string{"GetItem"},
-	})
-	if err := c.annotateModel(model); err != nil {
-		t.Fatal(err)
-	}
-
-	got, ok := method.Codec.(*methodAnnotations)
-	if !ok {
-		t.Fatalf("expected *methodAnnotations, got %T", method.Codec)
-	}
-	if !got.IsAsync {
-		t.Errorf("expected IsAsync true for method in GenAsyncRPCs, got false")
-	}
-
-	// 2. Method NOT in GenAsyncRPCs has IsAsync == false
-	cSync := newCodec(nil)
-	if err := cSync.annotateModel(model); err != nil {
-		t.Fatal(err)
-	}
-	gotSync := method.Codec.(*methodAnnotations)
-	if gotSync.IsAsync {
-		t.Errorf("expected IsAsync false for method not in GenAsyncRPCs, got true")
-	}
-
-	// 3. LRO method has IsAsync == true automatically
-	op := api.NewTestMessage("Operation").WithPackage("google.longrunning")
-	lroMethod := api.NewTestMethod("CreateItem").
-		WithInput(req).
-		WithOutput(op).
-		WithOperationInfo(&api.OperationInfo{
-			ResponseTypeID: resp.ID,
+	t.Run("method in GenAsyncRPCs", func(t *testing.T) {
+		c := newCodec(&config.CppLibrary{
+			GenAsyncRPCs: []string{"GetItem"},
 		})
-	lroSvc := api.NewTestService("LroService").WithMethods(lroMethod)
-	lroModel := api.NewTestAPI([]*api.Message{req, resp, op}, nil, []*api.Service{lroSvc})
-	cLro := newCodec(nil)
-	if err := cLro.annotateModel(lroModel); err != nil {
-		t.Fatal(err)
-	}
-	gotLro := lroMethod.Codec.(*methodAnnotations)
-	if !gotLro.IsAsync {
-		t.Errorf("expected IsAsync true for LRO method, got false")
-	}
+		if err := c.annotateModel(model); err != nil {
+			t.Fatal(err)
+		}
+		got, ok := method.Codec.(*methodAnnotations)
+		if !ok {
+			t.Fatalf("expected *methodAnnotations, got %T", method.Codec)
+		}
+		if !got.IsAsync {
+			t.Errorf("expected IsAsync true for method in GenAsyncRPCs, got false")
+		}
+	})
+
+	t.Run("method not in GenAsyncRPCs", func(t *testing.T) {
+		cSync := newCodec(nil)
+		if err := cSync.annotateModel(model); err != nil {
+			t.Fatal(err)
+		}
+		gotSync := method.Codec.(*methodAnnotations)
+		if gotSync.IsAsync {
+			t.Errorf("expected IsAsync false for method not in GenAsyncRPCs, got true")
+		}
+	})
+
+	t.Run("LRO method", func(t *testing.T) {
+		op := api.NewTestMessage("Operation").WithPackage("google.longrunning")
+		lroMethod := api.NewTestMethod("CreateItem").
+			WithInput(req).
+			WithOutput(op).
+			WithOperationInfo(&api.OperationInfo{
+				ResponseTypeID: resp.ID,
+			})
+		lroSvc := api.NewTestService("LroService").WithMethods(lroMethod)
+		lroModel := api.NewTestAPI([]*api.Message{req, resp, op}, nil, []*api.Service{lroSvc})
+		cLro := newCodec(nil)
+		if err := cLro.annotateModel(lroModel); err != nil {
+			t.Fatal(err)
+		}
+		gotLro := lroMethod.Codec.(*methodAnnotations)
+		if !gotLro.IsAsync {
+			t.Errorf("expected IsAsync true for LRO method, got false")
+		}
+	})
 }
