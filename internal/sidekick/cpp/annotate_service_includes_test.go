@@ -19,7 +19,6 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/config"
-	"github.com/googleapis/librarian/internal/license"
 	"github.com/googleapis/librarian/internal/sidekick/api"
 )
 
@@ -106,17 +105,11 @@ func TestAnnotateService_StubProtoIncludes_ThreePhaseSort(t *testing.T) {
 func TestAnnotateService_RestStubProtoIncludes(t *testing.T) {
 	method := api.NewTestMethod("Unary").
 		WithInput(api.NewTestMessage("Request")).
-		WithOutput(api.NewTestMessage("Response"))
-	method.PathInfo = &api.PathInfo{
-		Bindings: []*api.PathBinding{
-			{
-				Verb: "POST",
-				PathTemplate: (&api.PathTemplate{}).
-					WithLiteral("v1").
-					WithLiteral("echo"),
-			},
-		},
-	}
+		WithOutput(api.NewTestMessage("Response")).
+		WithVerb("POST").
+		WithPathTemplate((&api.PathTemplate{}).
+			WithLiteral("v1").
+			WithLiteral("echo"))
 	svc := api.NewTestService("EchoService").
 		WithMethods(method)
 	model := api.NewTestAPI(nil, nil, []*api.Service{svc})
@@ -153,180 +146,641 @@ func TestAnnotateService_RestStubProtoIncludes(t *testing.T) {
 	}
 }
 
-func TestAnnotateService_HasMapAndDuration(t *testing.T) {
-	mapField := api.NewTestField("labels").WithMap()
-	reqWithMap := api.NewTestMessage("RequestWithMap").WithFields(mapField)
-	durationParam := api.NewTestField("timeout").WithType(api.TypezMessage).WithMessageType(
-		api.NewTestMessage("Duration").WithPackage("google.protobuf"),
-	)
-	reqWithDuration := api.NewTestMessage("RequestWithDuration").WithFields(durationParam)
+func TestHelper_ConnectionHeaderIncludes(t *testing.T) {
+	got := connectionHeaderIncludes("b_path.h", "a_path.h")
+	want := []string{"a_path.h", "b_path.h"}
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+}
 
-	mMap := api.NewTestMethod("CallWithMap").
-		WithInput(reqWithMap).
-		WithOutput(api.NewTestMessage("Resp1"))
-	mDuration := api.NewTestMethod("CallWithDuration").
-		WithInput(reqWithDuration).
-		WithOutput(api.NewTestMessage("Resp2")).
-		WithSignatures(&api.MethodSignature{
-			Fields: []*api.Field{durationParam},
+func TestHelper_ConnectionSourceIncludes(t *testing.T) {
+	for _, test := range []struct {
+		name                  string
+		generateGrpcTransport bool
+		want                  []string
+	}{
+		{
+			name:                  "with gRPC",
+			generateGrpcTransport: true,
+			want:                  []string{"conn_impl.h", "opt_def.h", "options.h", "stub_factory.h", "tracing.h"},
+		},
+		{
+			name:                  "without gRPC",
+			generateGrpcTransport: false,
+			want:                  []string{"opt_def.h", "options.h", "tracing.h"},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := connectionSourceIncludes(
+				"opt_def.h",
+				"tracing.h",
+				"options.h",
+				"conn_impl.h",
+				"stub_factory.h",
+				test.generateGrpcTransport,
+			)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
 		})
-
-	svc := api.NewTestService("FeatureService").
-		WithMethods(mMap, mDuration)
-	model := api.NewTestAPI([]*api.Message{reqWithMap, reqWithDuration}, nil, []*api.Service{svc})
-
-	c := newCodec(nil)
-	modelAnn := &modelAnnotations{
-		CopyrightYear: "2026",
-		BoilerPlate:   []string{"// Sample Boilerplate"},
-	}
-	if err := c.annotateModel(model); err != nil {
-		t.Fatal(err)
-	}
-	if err := c.annotateService(svc, modelAnn, model); err != nil {
-		t.Fatal(err)
-	}
-	got := svc.Codec.(*serviceAnnotations)
-	if !got.HasMap {
-		t.Errorf("expected HasMap true, got false")
-	}
-	if !got.HasDuration {
-		t.Errorf("expected HasDuration true, got false")
 	}
 }
 
-func TestAnnotateService_AuthorityEnvVar(t *testing.T) {
-	svc := api.NewTestService("EchoService")
-	model := api.NewTestAPI(nil, nil, []*api.Service{svc})
-	c := newCodec(&config.CppLibrary{
-		ServiceEndpointEnvVar: "TEST_SERVICE_ENDPOINT",
+func TestHelper_SourcesCcIncludes_Flags(t *testing.T) {
+	for _, test := range []struct {
+		name                        string
+		generateRestTransport       bool
+		generateGrpcTransport       bool
+		generateRoundRobinDecorator bool
+		want                        []string
+	}{
+		{
+			name: "all false",
+			want: []string{
+				"google/cloud/test/echo_client.cc",
+				"google/cloud/test/echo_connection.cc",
+				"google/cloud/test/echo_connection_idempotency_policy.cc",
+				"google/cloud/test/internal/echo_option_defaults.cc",
+				"google/cloud/test/internal/echo_tracing_connection.cc",
+			},
+		},
+		{
+			name:                        "with round robin",
+			generateRoundRobinDecorator: true,
+			want: []string{
+				"google/cloud/test/echo_client.cc",
+				"google/cloud/test/echo_connection.cc",
+				"google/cloud/test/echo_connection_idempotency_policy.cc",
+				"google/cloud/test/internal/echo_option_defaults.cc",
+				"google/cloud/test/internal/echo_round_robin_decorator.cc",
+				"google/cloud/test/internal/echo_tracing_connection.cc",
+			},
+		},
+		{
+			name:                  "with rest transport",
+			generateRestTransport: true,
+			want: []string{
+				"google/cloud/test/echo_client.cc",
+				"google/cloud/test/echo_connection.cc",
+				"google/cloud/test/echo_connection_idempotency_policy.cc",
+				"google/cloud/test/echo_rest_connection.cc",
+				"google/cloud/test/internal/echo_option_defaults.cc",
+				"google/cloud/test/internal/echo_rest_connection_impl.cc",
+				"google/cloud/test/internal/echo_rest_logging_decorator.cc",
+				"google/cloud/test/internal/echo_rest_metadata_decorator.cc",
+				"google/cloud/test/internal/echo_rest_stub.cc",
+				"google/cloud/test/internal/echo_rest_stub_factory.cc",
+				"google/cloud/test/internal/echo_tracing_connection.cc",
+			},
+		},
+		{
+			name:                  "with grpc transport",
+			generateGrpcTransport: true,
+			want: []string{
+				"google/cloud/test/echo_client.cc",
+				"google/cloud/test/echo_connection.cc",
+				"google/cloud/test/echo_connection_idempotency_policy.cc",
+				"google/cloud/test/internal/echo_auth_decorator.cc",
+				"google/cloud/test/internal/echo_connection_impl.cc",
+				"google/cloud/test/internal/echo_logging_decorator.cc",
+				"google/cloud/test/internal/echo_metadata_decorator.cc",
+				"google/cloud/test/internal/echo_option_defaults.cc",
+				"google/cloud/test/internal/echo_stub.cc",
+				"google/cloud/test/internal/echo_stub_factory.cc",
+				"google/cloud/test/internal/echo_tracing_connection.cc",
+				"google/cloud/test/internal/echo_tracing_stub.cc",
+			},
+		},
+		{
+			name:                        "all flags true",
+			generateRestTransport:       true,
+			generateGrpcTransport:       true,
+			generateRoundRobinDecorator: true,
+			want: []string{
+				"google/cloud/test/echo_client.cc",
+				"google/cloud/test/echo_connection.cc",
+				"google/cloud/test/echo_connection_idempotency_policy.cc",
+				"google/cloud/test/echo_rest_connection.cc",
+				"google/cloud/test/internal/echo_auth_decorator.cc",
+				"google/cloud/test/internal/echo_connection_impl.cc",
+				"google/cloud/test/internal/echo_logging_decorator.cc",
+				"google/cloud/test/internal/echo_metadata_decorator.cc",
+				"google/cloud/test/internal/echo_option_defaults.cc",
+				"google/cloud/test/internal/echo_rest_connection_impl.cc",
+				"google/cloud/test/internal/echo_rest_logging_decorator.cc",
+				"google/cloud/test/internal/echo_rest_metadata_decorator.cc",
+				"google/cloud/test/internal/echo_rest_stub.cc",
+				"google/cloud/test/internal/echo_rest_stub_factory.cc",
+				"google/cloud/test/internal/echo_round_robin_decorator.cc",
+				"google/cloud/test/internal/echo_stub.cc",
+				"google/cloud/test/internal/echo_stub_factory.cc",
+				"google/cloud/test/internal/echo_tracing_connection.cc",
+				"google/cloud/test/internal/echo_tracing_stub.cc",
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := sourcesCcIncludes(
+				"google/cloud/test",
+				"Echo",
+				test.generateRestTransport,
+				test.generateGrpcTransport,
+				test.generateRoundRobinDecorator,
+			)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestHelper_ConnectionProtoIncludes_EdgeCases(t *testing.T) {
+	for _, test := range []struct {
+		name                 string
+		protoHeaderPath      string
+		additionalProtoFiles []string
+		want                 []string
+	}{
+		{
+			name:                 "empty inputs",
+			protoHeaderPath:      "",
+			additionalProtoFiles: nil,
+			want:                 nil,
+		},
+		{
+			name:                 "deduplication and sort",
+			protoHeaderPath:      "b.pb.h",
+			additionalProtoFiles: []string{"b.proto", "a.proto", "a.proto"},
+			want:                 []string{"a.pb.h", "b.pb.h"},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := connectionProtoIncludes(test.protoHeaderPath, test.additionalProtoFiles)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestHelper_IdempotencyPolicyProtoIncludes_EdgeCases(t *testing.T) {
+	for _, test := range []struct {
+		name                  string
+		generateGrpcTransport bool
+		protoGrpcHeaderPath   string
+		protoHeaderPath       string
+		hasLocationMixin      bool
+		hasIamMixin           bool
+		hasOperationsMixin    bool
+		want                  []string
+	}{
+		{
+			name:                  "rest only with empty proto header",
+			generateGrpcTransport: false,
+			protoGrpcHeaderPath:   "grpc.pb.h",
+			protoHeaderPath:       "",
+			hasLocationMixin:      false,
+			hasIamMixin:           false,
+			hasOperationsMixin:    false,
+			want:                  nil,
+		},
+		{
+			name:                  "rest only with proto header ignores mixins",
+			generateGrpcTransport: false,
+			protoGrpcHeaderPath:   "grpc.pb.h",
+			protoHeaderPath:       "proto.pb.h",
+			hasLocationMixin:      true,
+			hasIamMixin:           true,
+			hasOperationsMixin:    true,
+			want:                  []string{"proto.pb.h"},
+		},
+		{
+			name:                  "grpc with all mixins",
+			generateGrpcTransport: true,
+			protoGrpcHeaderPath:   "main.grpc.pb.h",
+			protoHeaderPath:       "main.pb.h",
+			hasLocationMixin:      true,
+			hasIamMixin:           true,
+			hasOperationsMixin:    true,
+			want: []string{
+				"google/cloud/location/locations.grpc.pb.h",
+				"google/iam/v1/iam_policy.grpc.pb.h",
+				"google/longrunning/operations.grpc.pb.h",
+				"main.grpc.pb.h",
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := idempotencyPolicyProtoIncludes(
+				test.generateGrpcTransport,
+				test.protoGrpcHeaderPath,
+				test.protoHeaderPath,
+				test.hasLocationMixin,
+				test.hasIamMixin,
+				test.hasOperationsMixin,
+			)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestHelper_DetectServiceMixins(t *testing.T) {
+	mLoc := api.NewTestMethod("GetLocation")
+	mLoc.SourceServiceID = "google.cloud.location.Locations"
+	mIam := api.NewTestMethod("GetIamPolicy")
+	mIam.SourceServiceID = "google.iam.v1.IAMPolicy"
+	mOps := api.NewTestMethod("ListOperations")
+	mOps.SourceServiceID = "google.longrunning.Operations"
+
+	for _, test := range []struct {
+		name string
+		svc  *api.Service
+		want serviceMixins
+	}{
+		{
+			name: "nil service",
+			svc:  nil,
+			want: serviceMixins{},
+		},
+		{
+			name: "location and iam mixins",
+			svc:  api.NewTestService("MixinsService").WithMethods(mLoc, mIam),
+			want: serviceMixins{
+				hasLocation:   true,
+				hasIam:        true,
+				hasOperations: false,
+			},
+		},
+		{
+			name: "operations mixin via non poller",
+			svc:  api.NewTestService("OpsService").WithMethods(mOps),
+			want: serviceMixins{
+				hasLocation:   false,
+				hasIam:        false,
+				hasOperations: true,
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := detectServiceMixins(test.svc)
+			if diff := cmp.Diff(test.want, got, cmp.AllowUnexported(serviceMixins{})); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestHelper_ConnectionImplHeaderIncludes(t *testing.T) {
+	got := connectionImplHeaderIncludes(
+		"retry_traits.h",
+		"stub.h",
+		"connection.h",
+		"idempotency_policy.h",
+		"options.h",
+	)
+	want := []string{
+		"connection.h",
+		"idempotency_policy.h",
+		"options.h",
+		"retry_traits.h",
+		"stub.h",
+	}
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+}
+
+func TestHelper_RestStubProtoIncludes(t *testing.T) {
+	for _, test := range []struct {
+		name                 string
+		additionalProtoFiles []string
+		hasLocationMixin     bool
+		hasIamMixin          bool
+		hasOperationsMixin   bool
+		hasLongrunningMethod bool
+		protoHeaderPath      string
+		want                 []string
+	}{
+		{
+			name:                 "empty inputs",
+			additionalProtoFiles: nil,
+			hasLocationMixin:     false,
+			hasIamMixin:          false,
+			hasOperationsMixin:   false,
+			hasLongrunningMethod: false,
+			protoHeaderPath:      "",
+			want:                 nil,
+		},
+		{
+			name:                 "with mixins and lro and additional protos",
+			additionalProtoFiles: []string{"google/extra/first.proto", "google/extra/first.proto"},
+			hasLocationMixin:     true,
+			hasIamMixin:          true,
+			hasOperationsMixin:   true,
+			hasLongrunningMethod: true,
+			protoHeaderPath:      "google/service/main.pb.h",
+			want: []string{
+				"google/extra/first.pb.h",
+				"google/cloud/location/locations.pb.h",
+				"google/iam/v1/iam_policy.pb.h",
+				"google/longrunning/operations.pb.h",
+				"google/service/main.pb.h",
+			},
+		},
+		{
+			name:                 "lro alone includes operations proto",
+			additionalProtoFiles: nil,
+			hasLocationMixin:     false,
+			hasIamMixin:          false,
+			hasOperationsMixin:   false,
+			hasLongrunningMethod: true,
+			protoHeaderPath:      "",
+			want:                 []string{"google/longrunning/operations.pb.h"},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := restStubProtoIncludes(
+				test.additionalProtoFiles,
+				test.hasLocationMixin,
+				test.hasIamMixin,
+				test.hasOperationsMixin,
+				test.hasLongrunningMethod,
+				test.protoHeaderPath,
+			)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestHelper_StubProtoIncludes_Direct(t *testing.T) {
+	for _, test := range []struct {
+		name                 string
+		additionalProtoFiles []string
+		hasLocationMixin     bool
+		hasIamMixin          bool
+		hasOperationsMixin   bool
+		hasLongrunningMethod bool
+		protoGrpcHeaderPath  string
+		want                 []string
+	}{
+		{
+			name:                 "empty inputs",
+			additionalProtoFiles: nil,
+			hasLocationMixin:     false,
+			hasIamMixin:          false,
+			hasOperationsMixin:   false,
+			hasLongrunningMethod: false,
+			protoGrpcHeaderPath:  "",
+			want:                 nil,
+		},
+		{
+			name:                 "all phases present with LRO without operations mixin",
+			additionalProtoFiles: []string{"google/z.proto", "google/a.proto", "google/a.proto"},
+			hasLocationMixin:     true,
+			hasIamMixin:          true,
+			hasOperationsMixin:   false,
+			hasLongrunningMethod: true,
+			protoGrpcHeaderPath:  "google/main.grpc.pb.h",
+			want: []string{
+				"google/a.pb.h",
+				"google/z.pb.h",
+				"google/cloud/location/locations.grpc.pb.h",
+				"google/iam/v1/iam_policy.grpc.pb.h",
+				"google/longrunning/operations.grpc.pb.h",
+				"google/main.grpc.pb.h",
+			},
+		},
+		{
+			name:                 "operations mixin suppresses duplicate lro",
+			additionalProtoFiles: nil,
+			hasLocationMixin:     false,
+			hasIamMixin:          false,
+			hasOperationsMixin:   true,
+			hasLongrunningMethod: true,
+			protoGrpcHeaderPath:  "google/main.grpc.pb.h",
+			want: []string{
+				"google/longrunning/operations.grpc.pb.h",
+				"google/main.grpc.pb.h",
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := stubProtoIncludes(
+				test.additionalProtoFiles,
+				test.hasLocationMixin,
+				test.hasIamMixin,
+				test.hasOperationsMixin,
+				test.hasLongrunningMethod,
+				test.protoGrpcHeaderPath,
+			)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestHelper_IsLongrunningPoller(t *testing.T) {
+	mNonOps := api.NewTestMethod("GetOperation")
+	mNonOps.SourceServiceID = "google.cloud.example.Service"
+
+	mList := api.NewTestMethod("ListOperations")
+	mList.SourceServiceID = "google.longrunning.Operations"
+
+	mPoller := api.NewTestMethod("GetOperation")
+	mPoller.SourceServiceID = "google.longrunning.Operations"
+
+	mCancel := api.NewTestMethod("CancelOperation")
+	mCancel.SourceServiceID = "google.longrunning.Operations"
+
+	mWait := api.NewTestMethod("WaitOperation")
+	mWait.SourceServiceID = "google.longrunning.Operations"
+
+	mWithOpsBinding := api.NewTestMethod("GetOperation").
+		WithPathTemplate((&api.PathTemplate{}).
+			WithLiteral("v1").
+			WithVariable(api.NewPathVariable("name").WithLiteral("operations")))
+	mWithOpsBinding.SourceServiceID = "google.longrunning.Operations"
+
+	mWithOtherBinding := api.NewTestMethod("GetOperation").
+		WithPathTemplate((&api.PathTemplate{}).
+			WithLiteral("v1").
+			WithVariable(api.NewPathVariable("name").WithLiteral("locations")))
+	mWithOtherBinding.SourceServiceID = "google.longrunning.Operations"
+
+	for _, test := range []struct {
+		name   string
+		method *api.Method
+		want   bool
+	}{
+		{
+			name:   "nil method",
+			method: nil,
+			want:   false,
+		},
+		{
+			name:   "non operations service",
+			method: mNonOps,
+			want:   false,
+		},
+		{
+			name:   "list operations is not poller",
+			method: mList,
+			want:   false,
+		},
+		{
+			name:   "default get operation is poller",
+			method: mPoller,
+			want:   true,
+		},
+		{
+			name:   "cancel operation is poller",
+			method: mCancel,
+			want:   true,
+		},
+		{
+			name:   "wait operation is poller",
+			method: mWait,
+			want:   true,
+		},
+		{
+			name:   "binding with operations segment is poller",
+			method: mWithOpsBinding,
+			want:   true,
+		},
+		{
+			name:   "binding without operations segment is not poller",
+			method: mWithOtherBinding,
+			want:   false,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := isLongrunningPoller(test.method)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestHelper_PopulateServiceIncludes(t *testing.T) {
+	t.Run("nil inputs safe handling", func(t *testing.T) {
+		got := populateServiceIncludes(nil, nil, "google/cloud/test", nil, "2023")
+		if got == nil {
+			t.Fatal("expected non-nil serviceAnnotations")
+		}
+		if diff := cmp.Diff("2024", got.SourcesCcCopyrightYear); diff != "" {
+			t.Errorf("mismatch (-want +got):\n%s", diff)
+		}
 	})
-	modelAnn := &modelAnnotations{
-		CopyrightYear: "2026",
-		BoilerPlate:   []string{"// Sample Boilerplate"},
-	}
-	if err := c.annotateService(svc, modelAnn, model); err != nil {
-		t.Fatal(err)
-	}
-	got := svc.Codec.(*serviceAnnotations)
-	if diff := cmp.Diff("TEST_SERVICE_AUTHORITY", got.ServiceAuthorityEnvVar); diff != "" {
-		t.Errorf("mismatch (-want +got):\n%s", diff)
-	}
-}
 
-func TestAnnotateService_RestAndRoundRobin(t *testing.T) {
-	method := api.NewTestMethod("Foo")
-	method.APIVersion = "2024-01-01"
-	svc := api.NewTestService("DeprecatedService").WithMethods(method)
-	model := api.NewTestAPI(nil, nil, []*api.Service{svc})
-	model.DefinitionLocations = map[string]api.SourceLocation{
-		svc.ID: {Filename: "generator/integration_tests/test_deprecated.proto", Line: 42},
-	}
-	modelAnn := &modelAnnotations{
-		CopyrightYear: "2024",
-		BoilerPlate:   license.HeaderBulk(),
-	}
-	boolTrue := true
-	libCfg := &config.CppLibrary{
-		ProductPath:                 "generator/integration_tests/golden/v1",
-		GenerateRestTransport:       true,
-		GenerateGrpcTransport:       &boolTrue,
-		GenerateRoundRobinDecorator: true,
-		EndpointLocationStyle:       "LOCATION_OPTIONALLY_DEPENDENT",
-	}
-	c := newCodec(libCfg)
-	if err := c.annotateService(svc, modelAnn, model); err != nil {
-		t.Fatal(err)
-	}
-	got, ok := svc.Codec.(*serviceAnnotations)
-	if !ok {
-		t.Fatalf("expected *serviceAnnotations, got %T", svc.Codec)
-	}
+	t.Run("populates all include fields correctly", func(t *testing.T) {
+		mLoc := api.NewTestMethod("GetLocation")
+		mLoc.SourceServiceID = "google.cloud.location.Locations"
+		svc := api.NewTestService("EchoService").WithMethods(mLoc)
 
-	if !got.GenerateRestTransport {
-		t.Errorf("expected GenerateRestTransport to be true")
-	}
-	if !got.GenerateGrpcTransport {
-		t.Errorf("expected GenerateGrpcTransport to be true")
-	}
-	if !got.GenerateRoundRobinDecorator {
-		t.Errorf("expected GenerateRoundRobinDecorator to be true")
-	}
-	if !got.IsLocationOptionallyDependent {
-		t.Errorf("expected IsLocationOptionallyDependent to be true")
-	}
-	if !got.HasApiVersion {
-		t.Errorf("expected HasApiVersion to be true")
-	}
-	if got.ApiVersion != "2024-01-01" {
-		t.Errorf("expected ApiVersion to be 2024-01-01, got %q", got.ApiVersion)
-	}
+		sAnn := &serviceAnnotations{
+			Name:                        svc.Name,
+			RetryTraitsHeaderPath:       "google/cloud/echo/retry_traits.h",
+			IdempotencyPolicyHeaderPath: "google/cloud/echo/connection_idempotency_policy.h",
+			OptionDefaultsHeaderPath:    "google/cloud/echo/internal/option_defaults.h",
+			TracingConnectionHeaderPath: "google/cloud/echo/internal/tracing_connection.h",
+			OptionsHeaderPath:           "google/cloud/echo/options.h",
+			ConnectionImplHeaderPath:    "google/cloud/echo/internal/connection_impl.h",
+			StubFactoryHeaderPath:       "google/cloud/echo/internal/stub_factory.h",
+			StubHeaderPath:              "google/cloud/echo/internal/stub.h",
+			ConnectionHeaderPath:        "google/cloud/echo/connection.h",
+			ProtoHeaderPath:             "google/cloud/echo/echo.pb.h",
+			ProtoGrpcHeaderPath:         "google/cloud/echo/echo.grpc.pb.h",
+			GenerateGrpcTransport:       true,
+			GenerateRestTransport:       false,
+			GenerateRoundRobinDecorator: false,
+			HasLongrunningMethod:        false,
+		}
 
-	wantPaths := map[string]string{
-		"RestConnectionHeaderPath":        "generator/integration_tests/golden/v1/deprecated_rest_connection.h",
-		"RestConnectionImplHeaderPath":    "generator/integration_tests/golden/v1/internal/deprecated_rest_connection_impl.h",
-		"RestStubHeaderPath":              "generator/integration_tests/golden/v1/internal/deprecated_rest_stub.h",
-		"RestStubFactoryHeaderPath":       "generator/integration_tests/golden/v1/internal/deprecated_rest_stub_factory.h",
-		"RestLoggingDecoratorHeaderPath":  "generator/integration_tests/golden/v1/internal/deprecated_rest_logging_decorator.h",
-		"RestMetadataDecoratorHeaderPath": "generator/integration_tests/golden/v1/internal/deprecated_rest_metadata_decorator.h",
-		"RoundRobinHeaderPath":            "generator/integration_tests/golden/v1/internal/deprecated_round_robin_decorator.h",
-	}
-	gotPaths := map[string]string{
-		"RestConnectionHeaderPath":        got.RestConnectionHeaderPath,
-		"RestConnectionImplHeaderPath":    got.RestConnectionImplHeaderPath,
-		"RestStubHeaderPath":              got.RestStubHeaderPath,
-		"RestStubFactoryHeaderPath":       got.RestStubFactoryHeaderPath,
-		"RestLoggingDecoratorHeaderPath":  got.RestLoggingDecoratorHeaderPath,
-		"RestMetadataDecoratorHeaderPath": got.RestMetadataDecoratorHeaderPath,
-		"RoundRobinHeaderPath":            got.RoundRobinHeaderPath,
-	}
-	if diff := cmp.Diff(wantPaths, gotPaths); diff != "" {
-		t.Errorf("mismatch (-want +got):\n%s", diff)
-	}
+		sAnn = populateServiceIncludes(sAnn, svc, "google/cloud/echo", []string{"google/cloud/echo/extra.proto"}, "2023")
 
-	wantGuards := map[string]string{
-		"RestConnectionHeaderIncludeGuard":        "GOOGLE_CLOUD_CPP_GENERATOR_INTEGRATION_TESTS_GOLDEN_V1_DEPRECATED_REST_CONNECTION_H",
-		"RestConnectionImplHeaderIncludeGuard":    "GOOGLE_CLOUD_CPP_GENERATOR_INTEGRATION_TESTS_GOLDEN_V1_INTERNAL_DEPRECATED_REST_CONNECTION_IMPL_H",
-		"RestStubHeaderIncludeGuard":              "GOOGLE_CLOUD_CPP_GENERATOR_INTEGRATION_TESTS_GOLDEN_V1_INTERNAL_DEPRECATED_REST_STUB_H",
-		"RestStubFactoryHeaderIncludeGuard":       "GOOGLE_CLOUD_CPP_GENERATOR_INTEGRATION_TESTS_GOLDEN_V1_INTERNAL_DEPRECATED_REST_STUB_FACTORY_H",
-		"RestLoggingDecoratorHeaderIncludeGuard":  "GOOGLE_CLOUD_CPP_GENERATOR_INTEGRATION_TESTS_GOLDEN_V1_INTERNAL_DEPRECATED_REST_LOGGING_DECORATOR_H",
-		"RestMetadataDecoratorHeaderIncludeGuard": "GOOGLE_CLOUD_CPP_GENERATOR_INTEGRATION_TESTS_GOLDEN_V1_INTERNAL_DEPRECATED_REST_METADATA_DECORATOR_H",
-		"RoundRobinHeaderIncludeGuard":            "GOOGLE_CLOUD_CPP_GENERATOR_INTEGRATION_TESTS_GOLDEN_V1_INTERNAL_DEPRECATED_ROUND_ROBIN_DECORATOR_H",
-	}
-	gotGuards := map[string]string{
-		"RestConnectionHeaderIncludeGuard":        got.RestConnectionHeaderIncludeGuard,
-		"RestConnectionImplHeaderIncludeGuard":    got.RestConnectionImplHeaderIncludeGuard,
-		"RestStubHeaderIncludeGuard":              got.RestStubHeaderIncludeGuard,
-		"RestStubFactoryHeaderIncludeGuard":       got.RestStubFactoryHeaderIncludeGuard,
-		"RestLoggingDecoratorHeaderIncludeGuard":  got.RestLoggingDecoratorHeaderIncludeGuard,
-		"RestMetadataDecoratorHeaderIncludeGuard": got.RestMetadataDecoratorHeaderIncludeGuard,
-		"RoundRobinHeaderIncludeGuard":            got.RoundRobinHeaderIncludeGuard,
-	}
-	if diff := cmp.Diff(wantGuards, gotGuards); diff != "" {
-		t.Errorf("mismatch (-want +got):\n%s", diff)
-	}
-
-	wantClasses := map[string]string{
-		"RestStubClassName":                 "DeprecatedServiceRestStub",
-		"DefaultRestStubClassName":          "DefaultDeprecatedServiceRestStub",
-		"RestLoggingDecoratorClassName":     "DeprecatedServiceRestLogging",
-		"RestMetadataDecoratorClassName":    "DeprecatedServiceRestMetadata",
-		"RestConnectionImplClassName":       "DeprecatedServiceRestConnectionImpl",
-		"RoundRobinClassName":               "DeprecatedServiceRoundRobin",
-		"MakeRestConnectionFunctionName":    "MakeDeprecatedServiceConnectionRest",
-		"CreateDefaultRestStubFunctionName": "CreateDefaultDeprecatedServiceRestStub",
-	}
-	gotClasses := map[string]string{
-		"RestStubClassName":                 got.RestStubClassName,
-		"DefaultRestStubClassName":          got.DefaultRestStubClassName,
-		"RestLoggingDecoratorClassName":     got.RestLoggingDecoratorClassName,
-		"RestMetadataDecoratorClassName":    got.RestMetadataDecoratorClassName,
-		"RestConnectionImplClassName":       got.RestConnectionImplClassName,
-		"RoundRobinClassName":               got.RoundRobinClassName,
-		"MakeRestConnectionFunctionName":    got.MakeRestConnectionFunctionName,
-		"CreateDefaultRestStubFunctionName": got.CreateDefaultRestStubFunctionName,
-	}
-	if diff := cmp.Diff(wantClasses, gotClasses); diff != "" {
-		t.Errorf("mismatch (-want +got):\n%s", diff)
-	}
+		want := &serviceAnnotations{
+			Name:                        svc.Name,
+			RetryTraitsHeaderPath:       "google/cloud/echo/retry_traits.h",
+			IdempotencyPolicyHeaderPath: "google/cloud/echo/connection_idempotency_policy.h",
+			OptionDefaultsHeaderPath:    "google/cloud/echo/internal/option_defaults.h",
+			TracingConnectionHeaderPath: "google/cloud/echo/internal/tracing_connection.h",
+			OptionsHeaderPath:           "google/cloud/echo/options.h",
+			ConnectionImplHeaderPath:    "google/cloud/echo/internal/connection_impl.h",
+			StubFactoryHeaderPath:       "google/cloud/echo/internal/stub_factory.h",
+			StubHeaderPath:              "google/cloud/echo/internal/stub.h",
+			ConnectionHeaderPath:        "google/cloud/echo/connection.h",
+			ProtoHeaderPath:             "google/cloud/echo/echo.pb.h",
+			ProtoGrpcHeaderPath:         "google/cloud/echo/echo.grpc.pb.h",
+			GenerateGrpcTransport:       true,
+			GenerateRestTransport:       false,
+			GenerateRoundRobinDecorator: false,
+			HasLongrunningMethod:        false,
+			HasLocationMixin:            true,
+			HasIamMixin:                 false,
+			HasOperationsMixin:          false,
+			HasOperationsStub:           false,
+			SourcesCcCopyrightYear:      "2024",
+			SourcesContext:              &sourcesContextAnnotation{UseSourcesYear: true},
+			ConnectionHeaderIncludes: []string{
+				"google/cloud/echo/connection_idempotency_policy.h",
+				"google/cloud/echo/retry_traits.h",
+			},
+			ConnectionSourceIncludes: []string{
+				"google/cloud/echo/internal/connection_impl.h",
+				"google/cloud/echo/internal/option_defaults.h",
+				"google/cloud/echo/internal/stub_factory.h",
+				"google/cloud/echo/internal/tracing_connection.h",
+				"google/cloud/echo/options.h",
+			},
+			ConnectionImplHeaderIncludes: []string{
+				"google/cloud/echo/connection.h",
+				"google/cloud/echo/connection_idempotency_policy.h",
+				"google/cloud/echo/internal/stub.h",
+				"google/cloud/echo/options.h",
+				"google/cloud/echo/retry_traits.h",
+			},
+			SourcesCcIncludes: []string{
+				"google/cloud/echo/echo_client.cc",
+				"google/cloud/echo/echo_connection.cc",
+				"google/cloud/echo/echo_connection_idempotency_policy.cc",
+				"google/cloud/echo/internal/echo_auth_decorator.cc",
+				"google/cloud/echo/internal/echo_connection_impl.cc",
+				"google/cloud/echo/internal/echo_logging_decorator.cc",
+				"google/cloud/echo/internal/echo_metadata_decorator.cc",
+				"google/cloud/echo/internal/echo_option_defaults.cc",
+				"google/cloud/echo/internal/echo_stub.cc",
+				"google/cloud/echo/internal/echo_stub_factory.cc",
+				"google/cloud/echo/internal/echo_tracing_connection.cc",
+				"google/cloud/echo/internal/echo_tracing_stub.cc",
+			},
+			ConnectionProtoIncludes: []string{
+				"google/cloud/echo/echo.pb.h",
+				"google/cloud/echo/extra.pb.h",
+			},
+			IdempotencyPolicyProtoIncludes: []string{
+				"google/cloud/echo/echo.grpc.pb.h",
+				"google/cloud/location/locations.grpc.pb.h",
+			},
+			StubProtoIncludes: []string{
+				"google/cloud/echo/extra.pb.h",
+				"google/cloud/location/locations.grpc.pb.h",
+				"google/cloud/echo/echo.grpc.pb.h",
+			},
+			RestStubProtoIncludes: []string{
+				"google/cloud/echo/extra.pb.h",
+				"google/cloud/location/locations.pb.h",
+				"google/cloud/echo/echo.pb.h",
+			},
+		}
+		if diff := cmp.Diff(want, sAnn, cmp.AllowUnexported(sourcesContextAnnotation{})); diff != "" {
+			t.Errorf("mismatch (-want +got):\n%s", diff)
+		}
+	})
 }

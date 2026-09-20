@@ -225,10 +225,6 @@ type docLine struct {
 	HasContent bool
 }
 
-type sourcesContextAnnotation struct {
-	UseSourcesYear bool
-}
-
 func (c *codec) annotateService(s *api.Service, modelAnn *modelAnnotations, model *api.API) error {
 	year := modelAnn.CopyrightYear
 	boilerPlate := modelAnn.BoilerPlate
@@ -329,24 +325,6 @@ func (c *codec) annotateService(s *api.Service, modelAnn *modelAnnotations, mode
 		hasExplicitRoutingMethod     bool
 	)
 
-	isLongrunningPoller := func(m *api.Method) bool {
-		if !strings.HasSuffix(m.SourceServiceID, "google.longrunning.Operations") {
-			return false
-		}
-		if m.Name != "GetOperation" && m.Name != "CancelOperation" && m.Name != "WaitOperation" {
-			return false
-		}
-		if m.PathInfo == nil || len(m.PathInfo.Bindings) == 0 || m.PathInfo.Bindings[0].PathTemplate == nil {
-			return true
-		}
-		for _, seg := range m.PathInfo.Bindings[0].PathTemplate.Segments {
-			if seg.Variable != nil && len(seg.Variable.Segments) > 0 && seg.Variable.Segments[0] == "operations" {
-				return true
-			}
-		}
-		return false
-	}
-
 	for _, m := range s.Methods {
 		if isLongrunningPoller(m) {
 			continue
@@ -389,6 +367,7 @@ func (c *codec) annotateService(s *api.Service, modelAnn *modelAnnotations, mode
 	generateGrpcTransport := true
 	generateRoundRobinDecorator := false
 	isLocationOptionallyDependent := false
+	var additionalProtoFiles []string
 	if c.config != nil {
 		generateRestTransport = c.config.GenerateRestTransport
 		if c.config.GenerateGrpcTransport != nil {
@@ -398,6 +377,7 @@ func (c *codec) annotateService(s *api.Service, modelAnn *modelAnnotations, mode
 		if c.config.EndpointLocationStyle == "LOCATION_OPTIONALLY_DEPENDENT" {
 			isLocationOptionallyDependent = true
 		}
+		additionalProtoFiles = c.config.AdditionalProtoFiles
 	}
 	hasGrpcLRO := hasLongrunningMethod && generateGrpcTransport
 
@@ -409,70 +389,6 @@ func (c *codec) annotateService(s *api.Service, modelAnn *modelAnnotations, mode
 		}
 	}
 	hasApiVersion := apiVersion != ""
-
-	connectionHeaderIncludes := []string{
-		retryTraitsHeaderPath,
-		idempotencyPolicyHeaderPath,
-	}
-	slices.Sort(connectionHeaderIncludes)
-
-	var connectionSourceIncludes []string
-	connectionSourceIncludes = append(connectionSourceIncludes,
-		optionDefaultsHeaderPath,
-		tracingConnectionHeaderPath,
-		optionsHeaderPath,
-	)
-	if generateGrpcTransport {
-		connectionSourceIncludes = append(connectionSourceIncludes,
-			connectionImplHeaderPath,
-			stubFactoryHeaderPath,
-		)
-	}
-	slices.Sort(connectionSourceIncludes)
-
-	connectionImplHeaderIncludes := []string{
-		retryTraitsHeaderPath,
-		stubHeaderPath,
-		connectionHeaderPath,
-		idempotencyPolicyHeaderPath,
-		optionsHeaderPath,
-	}
-	slices.Sort(connectionImplHeaderIncludes)
-
-	sourcesCcIncludes := []string{
-		ClientSourcePath(productPath, s.Name),
-		ConnectionSourcePath(productPath, s.Name),
-		IdempotencyPolicySourcePath(productPath, s.Name),
-		OptionDefaultsSourcePath(productPath, s.Name),
-		TracingConnectionSourcePath(productPath, s.Name),
-	}
-	if generateRestTransport {
-		sourcesCcIncludes = append(sourcesCcIncludes,
-			RestConnectionSourcePath(productPath, s.Name),
-			RestConnectionImplSourcePath(productPath, s.Name),
-			RestLoggingDecoratorSourcePath(productPath, s.Name),
-			RestMetadataDecoratorSourcePath(productPath, s.Name),
-			RestStubSourcePath(productPath, s.Name),
-			RestStubFactorySourcePath(productPath, s.Name),
-		)
-	}
-	if generateGrpcTransport {
-		sourcesCcIncludes = append(sourcesCcIncludes,
-			AuthDecoratorSourcePath(productPath, s.Name),
-			ConnectionImplSourcePath(productPath, s.Name),
-			LoggingDecoratorSourcePath(productPath, s.Name),
-			MetadataDecoratorSourcePath(productPath, s.Name),
-			StubSourcePath(productPath, s.Name),
-			StubFactorySourcePath(productPath, s.Name),
-			TracingStubSourcePath(productPath, s.Name),
-		)
-	}
-	if generateRoundRobinDecorator {
-		sourcesCcIncludes = append(sourcesCcIncludes,
-			RoundRobinSourcePath(productPath, s.Name),
-		)
-	}
-	slices.Sort(sourcesCcIncludes)
 
 	var retryStatusCodes []string
 	if c.config != nil && len(c.config.RetryableStatusCodes) > 0 {
@@ -508,121 +424,6 @@ func (c *codec) annotateService(s *api.Service, modelAnn *modelAnnotations, mode
 	defaultHost := s.DefaultHost
 	serviceGrpcName := ProtoNameToCppName("." + s.Package + "." + s.Name)
 	serviceGrpcProtoName := s.Package + "." + s.Name
-
-	var restStubProtoIncludes []string
-	if c.config != nil {
-		for _, proto := range c.config.AdditionalProtoFiles {
-			h := strings.TrimSuffix(proto, ".proto") + ".pb.h"
-			if !slices.Contains(restStubProtoIncludes, h) {
-				restStubProtoIncludes = append(restStubProtoIncludes, h)
-			}
-		}
-	}
-	var hasLocationMixin, hasIamMixin, hasOperationsMixin bool
-	for _, m := range s.Methods {
-		if isLongrunningPoller(m) {
-			continue
-		}
-		if strings.Contains(m.SourceServiceID, "google.cloud.location.Locations") {
-			hasLocationMixin = true
-		}
-		if strings.Contains(m.SourceServiceID, "google.iam.v1.IAMPolicy") {
-			hasIamMixin = true
-		}
-		if strings.Contains(m.SourceServiceID, "google.longrunning.Operations") {
-			hasOperationsMixin = true
-		}
-	}
-	if hasLocationMixin && !slices.Contains(restStubProtoIncludes, "google/cloud/location/locations.pb.h") {
-		restStubProtoIncludes = append(restStubProtoIncludes, "google/cloud/location/locations.pb.h")
-	}
-	if hasIamMixin && !slices.Contains(restStubProtoIncludes, "google/iam/v1/iam_policy.pb.h") {
-		restStubProtoIncludes = append(restStubProtoIncludes, "google/iam/v1/iam_policy.pb.h")
-	}
-	if hasOperationsMixin || hasLongrunningMethod {
-		if !slices.Contains(restStubProtoIncludes, "google/longrunning/operations.pb.h") {
-			restStubProtoIncludes = append(restStubProtoIncludes, "google/longrunning/operations.pb.h")
-		}
-	}
-	if protoHeaderPath != "" && !slices.Contains(restStubProtoIncludes, protoHeaderPath) {
-		restStubProtoIncludes = append(restStubProtoIncludes, protoHeaderPath)
-	}
-
-	hasOperationsStub := hasOperationsMixin || hasLongrunningMethod
-
-	sourcesCcCopyrightYear := max("2024", year)
-
-	var connectionProtoIncludes []string
-	if protoHeaderPath != "" {
-		connectionProtoIncludes = append(connectionProtoIncludes, protoHeaderPath)
-	}
-	if c.config != nil {
-		for _, proto := range c.config.AdditionalProtoFiles {
-			h := strings.TrimSuffix(proto, ".proto") + ".pb.h"
-			if !slices.Contains(connectionProtoIncludes, h) {
-				connectionProtoIncludes = append(connectionProtoIncludes, h)
-			}
-		}
-	}
-	slices.Sort(connectionProtoIncludes)
-
-	var idempotencyPolicyProtoIncludes []string
-	if generateGrpcTransport {
-		if protoGrpcHeaderPath != "" {
-			idempotencyPolicyProtoIncludes = append(idempotencyPolicyProtoIncludes, protoGrpcHeaderPath)
-		}
-		if hasLocationMixin {
-			idempotencyPolicyProtoIncludes = append(idempotencyPolicyProtoIncludes, "google/cloud/location/locations.grpc.pb.h")
-		}
-		if hasIamMixin {
-			idempotencyPolicyProtoIncludes = append(idempotencyPolicyProtoIncludes, "google/iam/v1/iam_policy.grpc.pb.h")
-		}
-		if hasOperationsMixin {
-			idempotencyPolicyProtoIncludes = append(idempotencyPolicyProtoIncludes, "google/longrunning/operations.grpc.pb.h")
-		}
-	} else {
-		if protoHeaderPath != "" {
-			idempotencyPolicyProtoIncludes = append(idempotencyPolicyProtoIncludes, protoHeaderPath)
-		}
-	}
-	slices.Sort(idempotencyPolicyProtoIncludes)
-	idempotencyPolicyProtoIncludes = slices.Compact(idempotencyPolicyProtoIncludes)
-
-	var stubProtoIncludes []string
-	var additionalPbHeaders []string
-	if c.config != nil {
-		for _, proto := range c.config.AdditionalProtoFiles {
-			h := strings.TrimSuffix(proto, ".proto") + ".pb.h"
-			if !slices.Contains(additionalPbHeaders, h) {
-				additionalPbHeaders = append(additionalPbHeaders, h)
-			}
-		}
-		slices.Sort(additionalPbHeaders)
-		stubProtoIncludes = append(stubProtoIncludes, additionalPbHeaders...)
-	}
-	var mixinHeaders []string
-	if hasLocationMixin {
-		mixinHeaders = append(mixinHeaders, "google/cloud/location/locations.grpc.pb.h")
-	}
-	if hasIamMixin {
-		mixinHeaders = append(mixinHeaders, "google/iam/v1/iam_policy.grpc.pb.h")
-	}
-	if hasOperationsMixin {
-		mixinHeaders = append(mixinHeaders, "google/longrunning/operations.grpc.pb.h")
-	}
-	slices.Sort(mixinHeaders)
-	stubProtoIncludes = append(stubProtoIncludes, mixinHeaders...)
-
-	includeLroHeader := hasLongrunningMethod && !hasOperationsMixin
-	var mainProtoGrpcHeaders []string
-	if protoGrpcHeaderPath != "" {
-		mainProtoGrpcHeaders = append(mainProtoGrpcHeaders, protoGrpcHeaderPath)
-	}
-	if includeLroHeader {
-		mainProtoGrpcHeaders = append(mainProtoGrpcHeaders, "google/longrunning/operations.grpc.pb.h")
-	}
-	slices.Sort(mainProtoGrpcHeaders)
-	stubProtoIncludes = append(stubProtoIncludes, mainProtoGrpcHeaders...)
 
 	doc := s.Documentation
 	refLines := formatClientCommentReferenceLines(doc, model, s)
@@ -775,23 +576,8 @@ func (c *codec) annotateService(s *api.Service, modelAnn *modelAnnotations, mode
 		IsLocationOptionallyDependent: isLocationOptionallyDependent,
 		ApiVersion:                    apiVersion,
 		HasApiVersion:                 hasApiVersion,
-
-		ConnectionHeaderIncludes:     connectionHeaderIncludes,
-		ConnectionSourceIncludes:     connectionSourceIncludes,
-		ConnectionImplHeaderIncludes: connectionImplHeaderIncludes,
-		SourcesCcIncludes:            sourcesCcIncludes,
-		RestStubProtoIncludes:        restStubProtoIncludes,
-
-		ConnectionProtoIncludes:        connectionProtoIncludes,
-		IdempotencyPolicyProtoIncludes: idempotencyPolicyProtoIncludes,
-		StubProtoIncludes:              stubProtoIncludes,
-		SourcesCcCopyrightYear:         sourcesCcCopyrightYear,
-		SourcesContext:                 &sourcesContextAnnotation{UseSourcesYear: true},
-		HasLocationMixin:               hasLocationMixin,
-		HasIamMixin:                    hasIamMixin,
-		HasOperationsMixin:             hasOperationsMixin,
-		HasOperationsStub:              hasOperationsStub,
 	}
+	sAnn = populateServiceIncludes(sAnn, s, productPath, additionalProtoFiles, year)
 	var getIamPolicyMethod, setIamPolicyMethod *api.Method
 	for _, m := range s.Methods {
 		respType := strings.TrimPrefix(m.OutputTypeID, ".")
