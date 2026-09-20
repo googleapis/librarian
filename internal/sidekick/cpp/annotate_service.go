@@ -15,6 +15,7 @@
 package cpp
 
 import (
+	"fmt"
 	"slices"
 	"strings"
 
@@ -205,15 +206,17 @@ type serviceAnnotations struct {
 	HasDeprecatedFieldInSignature bool
 
 	// Methods
-	Methods               []*methodAnnotations
-	AsyncMethods          []*methodAnnotations
-	StubAsyncMethods      []*methodAnnotations
-	RestMethods           []*methodAnnotations
-	RestAsyncMethods      []*methodAnnotations
-	RestStubProtoIncludes []string
-	HasIamUpdater         bool
-	DescriptionLines      []docLine
-	ProductOptionsPage    string
+	Methods                     []*methodAnnotations
+	AsyncMethods                []*methodAnnotations
+	StubAsyncMethods            []*methodAnnotations
+	RestMethods                 []*methodAnnotations
+	RestAsyncMethods            []*methodAnnotations
+	RestStubProtoIncludes       []string
+	HasIamUpdater               bool
+	DescriptionLines            []docLine
+	ProductOptionsPage          string
+	ClientCommentReferenceLines []string
+	HasClientCommentReferences  bool
 }
 
 type docLine struct {
@@ -607,6 +610,9 @@ func (c *codec) annotateService(s *api.Service, modelAnn *modelAnnotations, mode
 	slices.Sort(mainProtoGrpcHeaders)
 	stubProtoIncludes = append(stubProtoIncludes, mainProtoGrpcHeaders...)
 
+	doc := s.Documentation
+	refLines := formatClientCommentReferenceLines(doc, model)
+
 	sAnn := &serviceAnnotations{
 		Name:          s.Name,
 		CopyrightYear: year,
@@ -727,6 +733,8 @@ func (c *codec) annotateService(s *api.Service, modelAnn *modelAnnotations, mode
 		MakeDefaultConnectionIdempotencyPolicyFunctionName: "MakeDefault" + s.Name + "ConnectionIdempotencyPolicy",
 		DescriptionLines:                                   formatServiceDescriptionLines(s),
 		ProductOptionsPage:                                 OptionsGroup(productPath),
+		ClientCommentReferenceLines:                        refLines,
+		HasClientCommentReferences:                         len(refLines) > 0,
 
 		IsDeprecated:     s.Deprecated,
 		RetryStatusCodes: retryStatusCodes,
@@ -899,4 +907,33 @@ func formatServiceDescriptionLines(s *api.Service) []docLine {
 		})
 	}
 	return lines
+}
+
+func formatClientCommentReferenceLines(doc string, model *api.API) []string {
+	refMap := make(map[string]api.SourceLocation)
+	matches := commentRefRegex.FindAllStringSubmatch(doc, -1)
+	for _, match := range matches {
+		if len(match) < 2 {
+			continue
+		}
+		sym := match[1]
+		if loc, ok := findSymbolLocation(model, sym); ok {
+			refMap[sym] = loc
+		}
+	}
+	refKeys := make([]string, 0, len(refMap))
+	for k := range refMap {
+		refKeys = append(refKeys, k)
+	}
+	slices.Sort(refKeys)
+
+	refLines := make([]string, 0, len(refKeys))
+	for _, k := range refKeys {
+		loc := refMap[k]
+		refLines = append(refLines, fmt.Sprintf("[%s]: @googleapis_reference_link{%s#L%d}", k, loc.Filename, loc.Line))
+	}
+	if len(refLines) == 0 {
+		return nil
+	}
+	return refLines
 }

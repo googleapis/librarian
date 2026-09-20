@@ -147,16 +147,13 @@ class DefaultGoldenKitchenSinkStub : public GoldenKitchenSinkStub {
  public:
   explicit DefaultGoldenKitchenSinkStub(
       std::unique_ptr<google::test::admin::database::v1::GoldenKitchenSink::StubInterface> grpc_stub,
-      std::unique_ptr<google::longrunning::Operations::StubInterface> operations_stub
-,
-      std::unique_ptr<google::iam::v1::IAMPolicy::StubInterface> iampolicy_stub
-,
-      std::unique_ptr<google::cloud::location::Locations::StubInterface> locations_stub
-)
+      std::unique_ptr<google::cloud::location::Locations::StubInterface> locations_stub,
+      std::unique_ptr<google::iam::v1::IAMPolicy::StubInterface> iampolicy_stub,
+      std::unique_ptr<google::longrunning::Operations::StubInterface> operations_stub)
       : grpc_stub_(std::move(grpc_stub)),
-        operations_stub_(std::move(operations_stub)),
+        locations_stub_(std::move(locations_stub)),
         iampolicy_stub_(std::move(iampolicy_stub)),
-        locations_stub_(std::move(locations_stub)) {}
+        operations_stub_(std::move(operations_stub)) {}
 
   StatusOr<google::test::admin::database::v1::GenerateAccessTokenResponse> GenerateAccessToken(
       grpc::ClientContext& context,
@@ -256,9 +253,9 @@ class DefaultGoldenKitchenSinkStub : public GoldenKitchenSinkStub {
 
  private:
   std::unique_ptr<google::test::admin::database::v1::GoldenKitchenSink::StubInterface> grpc_stub_;
-  std::unique_ptr<google::longrunning::Operations::StubInterface> operations_stub_;
-  std::unique_ptr<google::iam::v1::IAMPolicy::StubInterface> iampolicy_stub_;
   std::unique_ptr<google::cloud::location::Locations::StubInterface> locations_stub_;
+  std::unique_ptr<google::iam::v1::IAMPolicy::StubInterface> iampolicy_stub_;
+  std::unique_ptr<google::longrunning::Operations::StubInterface> operations_stub_;
 };
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
