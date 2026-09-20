@@ -73,7 +73,7 @@ future<StatusOr<{{{LongrunningOperationType}}}>>
   query_params.push_back({"{{ParamKey}}", std::to_string(request.{{{FieldAccessor}}})});
 {{/IsNumber}}
 {{#IsBool}}
-  query_params.push_back({"{{ParamKey}}", request.{{{FieldAccessor}}} ? "true" : "false"});
+  query_params.push_back({"{{ParamKey}}", (request.{{{FieldAccessor}}} ? "1" : "0")});
 {{/IsBool}}
 {{#IsString}}
   query_params.push_back({"{{ParamKey}}", request.{{{FieldAccessor}}}});
@@ -108,7 +108,7 @@ StatusOr<{{{LongrunningOperationType}}}>
   query_params.push_back({"{{ParamKey}}", std::to_string(request.{{{FieldAccessor}}})});
 {{/IsNumber}}
 {{#IsBool}}
-  query_params.push_back({"{{ParamKey}}", request.{{{FieldAccessor}}} ? "true" : "false"});
+  query_params.push_back({"{{ParamKey}}", (request.{{{FieldAccessor}}} ? "1" : "0")});
 {{/IsBool}}
 {{#IsString}}
   query_params.push_back({"{{ParamKey}}", request.{{{FieldAccessor}}}});
@@ -140,7 +140,7 @@ Status {{Codec.DefaultRestStubClassName}}::{{Name}}(
   query_params.push_back({"{{ParamKey}}", std::to_string(request.{{{FieldAccessor}}})});
 {{/IsNumber}}
 {{#IsBool}}
-  query_params.push_back({"{{ParamKey}}", request.{{{FieldAccessor}}} ? "true" : "false"});
+  query_params.push_back({"{{ParamKey}}", (request.{{{FieldAccessor}}} ? "1" : "0")});
 {{/IsBool}}
 {{#IsString}}
   query_params.push_back({"{{ParamKey}}", request.{{{FieldAccessor}}}});
@@ -179,7 +179,7 @@ future<{{{CppReturnType}}}>
   query_params.push_back({"{{ParamKey}}", std::to_string(request.{{{FieldAccessor}}})});
 {{/IsNumber}}
 {{#IsBool}}
-  query_params.push_back({"{{ParamKey}}", request.{{{FieldAccessor}}} ? "true" : "false"});
+  query_params.push_back({"{{ParamKey}}", (request.{{{FieldAccessor}}} ? "1" : "0")});
 {{/IsBool}}
 {{#IsString}}
   query_params.push_back({"{{ParamKey}}", request.{{{FieldAccessor}}}});

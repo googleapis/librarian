@@ -211,23 +211,11 @@ func TestFormatMethodDoxygenComments_ReferenceScoping(t *testing.T) {
 					WithPackage("google.cloud.secretmanager.v1").
 					WithMethods(method)
 
-				model := api.NewTestAPI([]*api.Message{req, resp}, nil, []*api.Service{svc})
-				model.AddDefinitionLocation(svc.ID, api.SourceLocation{
-					Filename: "google/cloud/secretmanager/v1/service.proto",
-					Line:     20,
-				})
-				model.AddDefinitionLocation("google.cloud.secretmanager.v1.Secret", api.SourceLocation{
-					Filename: "google/cloud/secretmanager/v1/resources.proto",
-					Line:     39,
-				})
-				model.AddDefinitionLocation("google.cloud.secretmanager.v1.SecretPayload", api.SourceLocation{
-					Filename: "google/cloud/secretmanager/v1/resources.proto",
-					Line:     45,
-				})
-				model.AddDefinitionLocation("google.cloud.kms.v1.CryptoKey", api.SourceLocation{
-					Filename: "google/cloud/kms/v1/resources.proto",
-					Line:     50,
-				})
+				model := api.NewTestAPI([]*api.Message{req, resp}, nil, []*api.Service{svc}).
+					WithDefinitionLocation(svc.ID, "google/cloud/secretmanager/v1/service.proto", 20).
+					WithDefinitionLocation("google.cloud.secretmanager.v1.Secret", "google/cloud/secretmanager/v1/resources.proto", 39).
+					WithDefinitionLocation("google.cloud.secretmanager.v1.SecretPayload", "google/cloud/secretmanager/v1/resources.proto", 45).
+					WithDefinitionLocation("google.cloud.kms.v1.CryptoKey", "google/cloud/kms/v1/resources.proto", 50)
 				return method, model
 			},
 			wantContains: []string{
@@ -248,19 +236,10 @@ func TestFormatMethodDoxygenComments_ReferenceScoping(t *testing.T) {
 					WithPackage("google.cloud.secretmanager.v1").
 					WithMethods(method)
 
-				model := api.NewTestAPI([]*api.Message{req, resp}, nil, []*api.Service{svc})
-				model.AddDefinitionLocation(svc.ID, api.SourceLocation{
-					Filename: "google/cloud/secretmanager/v1/service.proto",
-					Line:     20,
-				})
-				model.AddDefinitionLocation("google.cloud.secretmanager.v1.SameFileHelper", api.SourceLocation{
-					Filename: "google/cloud/secretmanager/v1/service.proto",
-					Line:     100,
-				})
-				model.AddDefinitionLocation("google.cloud.kms.v1.CryptoKey", api.SourceLocation{
-					Filename: "google/cloud/kms/v1/resources.proto",
-					Line:     50,
-				})
+				model := api.NewTestAPI([]*api.Message{req, resp}, nil, []*api.Service{svc}).
+					WithDefinitionLocation(svc.ID, "google/cloud/secretmanager/v1/service.proto", 20).
+					WithDefinitionLocation("google.cloud.secretmanager.v1.SameFileHelper", "google/cloud/secretmanager/v1/service.proto", 100).
+					WithDefinitionLocation("google.cloud.kms.v1.CryptoKey", "google/cloud/kms/v1/resources.proto", 50)
 				return method, model
 			},
 			wantContains: []string{
@@ -279,15 +258,9 @@ func TestFormatMethodDoxygenComments_ReferenceScoping(t *testing.T) {
 				resp := api.NewTestMessage("Secret").WithPackage("google.cloud.secretmanager.v1")
 				method := api.NewTestMethod("CreateSecret").WithInput(req).WithOutput(resp)
 
-				model := api.NewTestAPI([]*api.Message{req, resp}, nil, nil)
-				model.AddDefinitionLocation("google.cloud.secretmanager.v1.SameFileHelper", api.SourceLocation{
-					Filename: "google/cloud/secretmanager/v1/service.proto",
-					Line:     100,
-				})
-				model.AddDefinitionLocation("google.cloud.kms.v1.CryptoKey", api.SourceLocation{
-					Filename: "google/cloud/kms/v1/resources.proto",
-					Line:     50,
-				})
+				model := api.NewTestAPI([]*api.Message{req, resp}, nil, nil).
+					WithDefinitionLocation("google.cloud.secretmanager.v1.SameFileHelper", "google/cloud/secretmanager/v1/service.proto", 100).
+					WithDefinitionLocation("google.cloud.kms.v1.CryptoKey", "google/cloud/kms/v1/resources.proto", 50)
 				return method, model
 			},
 			wantContains: []string{
@@ -309,16 +282,10 @@ func TestFormatMethodDoxygenComments_ReferenceScoping(t *testing.T) {
 					WithPackage("google.cloud.secretmanager.v1").
 					WithMethods(method)
 
-				model := api.NewTestAPI([]*api.Message{req, resp}, nil, []*api.Service{svc})
 				// svc.ID is intentionally omitted from DefinitionLocations
-				model.AddDefinitionLocation("google.cloud.secretmanager.v1.SameFileHelper", api.SourceLocation{
-					Filename: "google/cloud/secretmanager/v1/service.proto",
-					Line:     100,
-				})
-				model.AddDefinitionLocation("google.cloud.kms.v1.CryptoKey", api.SourceLocation{
-					Filename: "google/cloud/kms/v1/resources.proto",
-					Line:     50,
-				})
+				model := api.NewTestAPI([]*api.Message{req, resp}, nil, []*api.Service{svc}).
+					WithDefinitionLocation("google.cloud.secretmanager.v1.SameFileHelper", "google/cloud/secretmanager/v1/service.proto", 100).
+					WithDefinitionLocation("google.cloud.kms.v1.CryptoKey", "google/cloud/kms/v1/resources.proto", 50)
 				return method, model
 			},
 			wantContains: []string{
@@ -337,15 +304,9 @@ func TestFormatMethodDoxygenComments_ReferenceScoping(t *testing.T) {
 				resp := api.NewTestMessage("Secret").WithPackage("google.cloud.secretmanager.v1")
 				method := api.NewTestMethod("CreateSecret").WithInput(req).WithOutput(resp)
 
-				model := api.NewTestAPI([]*api.Message{req, resp}, nil, nil)
-				model.AddDefinitionLocation("google.cloud.secretmanager.v1.SameFileHelper", api.SourceLocation{
-					Filename: "google/cloud/secretmanager/v1/service.proto",
-					Line:     100,
-				})
-				model.AddDefinitionLocation("google.cloud.kms.v1.CryptoKey", api.SourceLocation{
-					Filename: "google/cloud/kms/v1/resources.proto",
-					Line:     50,
-				})
+				model := api.NewTestAPI([]*api.Message{req, resp}, nil, nil).
+					WithDefinitionLocation("google.cloud.secretmanager.v1.SameFileHelper", "google/cloud/secretmanager/v1/service.proto", 100).
+					WithDefinitionLocation("google.cloud.kms.v1.CryptoKey", "google/cloud/kms/v1/resources.proto", 50)
 				return method, model
 			},
 			wantContains: []string{
@@ -366,23 +327,11 @@ func TestFormatMethodDoxygenComments_ReferenceScoping(t *testing.T) {
 					WithPackage("google.cloud.secretmanager.v1").
 					WithMethods(method)
 
-				model := api.NewTestAPI([]*api.Message{req, resp}, nil, []*api.Service{svc})
-				model.AddDefinitionLocation(svc.ID, api.SourceLocation{
-					Filename: "google/cloud/secretmanager/v1/service.proto",
-					Line:     20,
-				})
-				model.AddDefinitionLocation("google.cloud.secretmanager.v1.Secret", api.SourceLocation{
-					Filename: "google/cloud/secretmanager/v1/resources.proto",
-					Line:     39,
-				})
-				model.AddDefinitionLocation("google.cloud.secretmanager.v1.SecretPayload", api.SourceLocation{
-					Filename: "google/cloud/secretmanager/v1/resources.proto",
-					Line:     45,
-				})
-				model.AddDefinitionLocation("google.cloud.kms.v1.CryptoKey", api.SourceLocation{
-					Filename: "google/cloud/kms/v1/resources.proto",
-					Line:     50,
-				})
+				model := api.NewTestAPI([]*api.Message{req, resp}, nil, []*api.Service{svc}).
+					WithDefinitionLocation(svc.ID, "google/cloud/secretmanager/v1/service.proto", 20).
+					WithDefinitionLocation("google.cloud.secretmanager.v1.Secret", "google/cloud/secretmanager/v1/resources.proto", 39).
+					WithDefinitionLocation("google.cloud.secretmanager.v1.SecretPayload", "google/cloud/secretmanager/v1/resources.proto", 45).
+					WithDefinitionLocation("google.cloud.kms.v1.CryptoKey", "google/cloud/kms/v1/resources.proto", 50)
 				return method, model
 			},
 			wantContains: []string{
@@ -428,17 +377,14 @@ func TestFormatMethodDoxygenComments_MapPagination(t *testing.T) {
 		WithPackage("google.cloud.compute.v1").
 		WithMethods(method)
 
-	model := api.NewTestAPI([]*api.Message{req, resp, mapEntry, itemMsg}, nil, []*api.Service{svc})
-	model.AddDefinitionLocation("google.cloud.compute.v1.Item", api.SourceLocation{
-		Filename: "google/cloud/compute/v1/compute.proto",
-		Line:     100,
-	})
+	model := api.NewTestAPI([]*api.Message{req, resp, mapEntry, itemMsg}, nil, []*api.Service{svc}).
+		WithDefinitionLocation("google.cloud.compute.v1.Item", "google/cloud/compute/v1/compute.proto", 100)
 
 	got := formatMethodDoxygenComments(method, "", model, "google/cloud/compute/v1/instances.proto", true, mapField, false, false, false)
 
 	wantContains := []string{
 		"contains elements of type\n  ///     [google.cloud.compute.v1.Item]",
-		"[google.cloud.compute.v1.Item]: @googleapis_reference_link{google/cloud/compute/v1/compute.proto#L100}",
+		"[google.cloud.compute.v1.Item]: @cloud_cpp_reference_link{google/cloud/compute/v1/compute.proto#L100}",
 	}
 	for _, want := range wantContains {
 		if !strings.Contains(got, want) {
@@ -456,17 +402,16 @@ func TestFormatMethodDoxygenComments_ComputeLRO(t *testing.T) {
 		WithOperationService("RegionOperations")
 	svc := api.NewTestService("RegionOperationsService").WithMethods(method)
 
-	model := api.NewTestAPI([]*api.Message{req, op}, nil, []*api.Service{svc})
-	model.AddDefinitionLocation("google.cloud.cpp.compute.v1.Operation", api.SourceLocation{
-		Filename: "google/cloud/compute/v1/operations.proto",
-		Line:     42,
-	})
+	model := api.NewTestAPI([]*api.Message{req, op}, nil, []*api.Service{svc}).
+		WithDefinitionLocation("google.cloud.compute.v1.InsertRequest", "google/cloud/compute/v1/operations.proto", 10).
+		WithDefinitionLocation("google.cloud.cpp.compute.v1.Operation", "google/cloud/compute/v1/operations.proto", 42)
 
 	got := formatMethodDoxygenComments(method, "", model, "google/cloud/compute/v1/operations.proto", false, nil, true, false, true)
 
 	wantContains := []string{
 		"[Long Running Operation]: http://cloud/compute/docs/api/how-tos/api-requests-responses#handling_api_responses",
 		"For this RPC the result is a\n  ///     [google.cloud.cpp.compute.v1.Operation] proto message.",
+		"[google.cloud.compute.v1.InsertRequest]: @cloud_cpp_reference_link{google/cloud/compute/v1/operations.proto#L10}",
 	}
 	for _, want := range wantContains {
 		if !strings.Contains(got, want) {
@@ -475,6 +420,9 @@ func TestFormatMethodDoxygenComments_ComputeLRO(t *testing.T) {
 	}
 	if strings.Contains(got, "https://google.aip.dev/151") {
 		t.Errorf("expected comments to NOT contain https://google.aip.dev/151 for Compute LRO, got:\n%s", got)
+	}
+	if strings.Contains(got, "google.cloud.cpp.compute.v1.Operation]:") {
+		t.Errorf("expected comments to NOT contain Operation reference link for Compute LRO, got:\n%s", got)
 	}
 }
 
@@ -487,18 +435,16 @@ func TestFormatMethodDoxygenComments_ComputeLRO_WithoutOperationService(t *testi
 		WithOutput(op)
 	svc := api.NewTestService("ComputeService").WithMethods(method)
 
-	model := api.NewTestAPI([]*api.Message{req, op}, nil, []*api.Service{svc})
-	model.AddDefinitionLocation("google.cloud.cpp.compute.v1.Operation", api.SourceLocation{
-		Filename: "google/cloud/compute/v1/operations.proto",
-		Line:     42,
-	})
+	model := api.NewTestAPI([]*api.Message{req, op}, nil, []*api.Service{svc}).
+		WithDefinitionLocation("google.cloud.compute.v1.InsertRequest", "google/cloud/compute/v1/operations.proto", 10).
+		WithDefinitionLocation("google.cloud.cpp.compute.v1.Operation", "google/cloud/compute/v1/operations.proto", 42)
 
 	got := formatMethodDoxygenComments(method, "", model, "google/cloud/compute/v1/operations.proto", false, nil, true, false, true)
 
 	wantContains := []string{
 		"[Long Running Operation]: http://cloud/compute/docs/api/how-tos/api-requests-responses#handling_api_responses",
 		"For this RPC the result is a\n  ///     [google.cloud.cpp.compute.v1.Operation] proto message.",
-		"[google.cloud.cpp.compute.v1.Operation]: @googleapis_reference_link{google/cloud/compute/v1/operations.proto#L42}",
+		"[google.cloud.compute.v1.InsertRequest]: @cloud_cpp_reference_link{google/cloud/compute/v1/operations.proto#L10}",
 	}
 	for _, want := range wantContains {
 		if !strings.Contains(got, want) {
@@ -507,5 +453,8 @@ func TestFormatMethodDoxygenComments_ComputeLRO_WithoutOperationService(t *testi
 	}
 	if strings.Contains(got, "https://google.aip.dev/151") {
 		t.Errorf("expected comments to NOT contain https://google.aip.dev/151 for Compute LRO, got:\n%s", got)
+	}
+	if strings.Contains(got, "google.cloud.cpp.compute.v1.Operation]:") {
+		t.Errorf("expected comments to NOT contain Operation reference link for Compute LRO, got:\n%s", got)
 	}
 }

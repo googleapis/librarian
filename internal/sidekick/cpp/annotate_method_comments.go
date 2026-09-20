@@ -327,11 +327,6 @@ func formatMethodDoxygenComments(m *api.Method, paramComments string, model *api
 						references[respFQN] = loc
 					}
 				}
-			} else if isComputeLRO {
-				respFQN := strings.TrimPrefix(m.OutputTypeID, ".")
-				if loc, ok := findSymbolLocation(model, respFQN); ok {
-					references[respFQN] = loc
-				}
 			}
 		} else {
 			outputFQN := strings.TrimPrefix(m.OutputTypeID, ".")
@@ -378,7 +373,11 @@ func formatMethodDoxygenComments(m *api.Method, paramComments string, model *api
 	var refTrailer strings.Builder
 	for _, k := range refKeys {
 		loc := references[k]
-		fmt.Fprintf(&refTrailer, "  /// [%s]: @googleapis_reference_link{%s#L%d}\n", k, loc.Filename, loc.Line)
+		refLinkTag := "googleapis_reference_link"
+		if strings.Contains(sourceFile, "google/cloud/compute/") || isComputeLRO || strings.Contains(loc.Filename, "google/cloud/compute/") {
+			refLinkTag = "cloud_cpp_reference_link"
+		}
+		fmt.Fprintf(&refTrailer, "  /// [%s]: @%s{%s#L%d}\n", k, refLinkTag, loc.Filename, loc.Line)
 	}
 
 	suffix := "  ///\n  // clang-format on"

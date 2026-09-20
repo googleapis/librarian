@@ -19,22 +19,27 @@ limitations under the License.
 #include "google/cloud/common_options.h"
 #include "google/cloud/credentials.h"
 {{#Codec.HasLongrunningMethod}}
+{{#Codec.HasComputeLRO}}
+#include "google/cloud/internal/async_rest_long_running_operation_custom.h"
+{{/Codec.HasComputeLRO}}
+{{^Codec.HasComputeLRO}}
 #include "google/cloud/internal/async_rest_long_running_operation.h"
+{{/Codec.HasComputeLRO}}
 {{/Codec.HasLongrunningMethod}}
 {{#Codec.HasAsyncRpcs}}
 #include "google/cloud/internal/async_rest_retry_loop.h"
 {{/Codec.HasAsyncRpcs}}
 {{#Codec.HasLongrunningMethod}}
-{{#Codec.HasComputeLRO}}
-#include "google/cloud/internal/rest_lro_helpers.h"
-{{/Codec.HasComputeLRO}}
-{{^Codec.HasComputeLRO}}
 #include "google/cloud/internal/extract_long_running_result.h"
-{{/Codec.HasComputeLRO}}
 {{/Codec.HasLongrunningMethod}}
 {{#Codec.HasPaginatedMethod}}
 #include "google/cloud/internal/pagination_range.h"
 {{/Codec.HasPaginatedMethod}}
+{{#Codec.HasLongrunningMethod}}
+{{#Codec.HasComputeLRO}}
+#include "google/cloud/internal/rest_lro_helpers.h"
+{{/Codec.HasComputeLRO}}
+{{/Codec.HasLongrunningMethod}}
 #include "google/cloud/internal/rest_retry_loop.h"
 #include "google/cloud/rest_options.h"
 #include <memory>
@@ -260,6 +265,7 @@ future<{{{CppReturnType}}}>
                 {{{Codec.LongrunningGetOperationRequestType}}}& r) {
       auto info = google::cloud::rest_internal::ParseComputeOperationInfo(
           operation.self_link());
+
       {{#Codec.HasRegionOperations}}
       r.set_project(info.project);
       r.set_region(info.region);
@@ -282,6 +288,7 @@ future<{{{CppReturnType}}}>
                 {{{Codec.LongrunningCancelOperationRequestType}}}& r) {
       auto info = google::cloud::rest_internal::ParseComputeOperationInfo(
           operation.self_link());
+
       {{#Codec.HasRegionOperations}}
       r.set_project(info.project);
       r.set_region(info.region);
