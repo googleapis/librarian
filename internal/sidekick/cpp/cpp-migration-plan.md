@@ -116,13 +116,13 @@ flowchart LR
   - `9ac82f93` `test(internal/librarian/cpp)`: Add Secret Manager v1 integration pilot test.
 - **Verification**: `go test -tags integration -v ./internal/librarian/cpp -run TestSecretManagerPilot` passes with 100% byte-for-byte parity across all 33 generated files; unit tests and linters pass cleanly.
 
-### Phase 7: Production Oracle 3 — Workloads (`assuredworkloads`)
+### Phase 7: Production Oracle 3 — Workloads (`assuredworkloads`) [COMPLETED]
 - **Goal**: Support LRO operations and specialized method signatures, achieving parity on Workloads with active formatting.
-- **Tasks**:
-  1. Validate and refine LRO polling templates and asynchronous method overloads using partials.
-  2. Run integration test generating `google/cloud/workloads/v1` (or `assuredworkloads`).
-  3. Run active `clang-format` and assert 100% byte-for-byte parity against production `google-cloud-cpp`.
-- **Verification**: `go test -tags integration ./internal/librarian/cpp/...`.
+- **Status**: Completed and verified.
+- **Delivered Commits**:
+  - `d4d1d6e7` `fix(internal/sidekick/cpp)`: Retain HTTP-routed Operations mixin methods and scope async retry loop include.
+  - `407eceec` `test(internal/librarian/cpp)`: Add Assured Workloads v1 integration oracle test.
+- **Verification**: `go test -tags integration -v ./internal/librarian/cpp -run TestAssuredWorkloads` passes with 100% byte-for-byte parity across all 33 generated files; unit tests and linters pass cleanly.
 
 ### Phase 8: Production Oracle 4 — KMS
 - **Goal**: Support IAM policy methods, location-dependent routing, and resource name helpers on KMS with active formatting.
