@@ -1924,7 +1924,7 @@ func TestMergeCpp(t *testing.T) {
 			want: &config.CppLibrary{ProductPath: "google/cloud/test/v2"},
 		},
 		{
-			name: "merges all 22 fields",
+			name: "merges all 24 fields",
 			dst: &config.CppLibrary{
 				SourceRoot:                      "src_root_1",
 				ProductPath:                     "prod_path_1",
@@ -1950,6 +1950,12 @@ func TestMergeCpp(t *testing.T) {
 				OverrideServiceConfigYAMLName: "svc1.yaml",
 				InitialCopyrightYear:          "2020",
 				OmitRepoMetadata:              false,
+				ServiceNameMapping: map[string]string{
+					"Publisher": "TopicAdminOld",
+				},
+				ServiceNameToComment: map[string]string{
+					"TopicAdminOld": "Old comment",
+				},
 			},
 			src: &config.CppLibrary{
 				SourceRoot:                      "src_root_2",
@@ -1976,6 +1982,12 @@ func TestMergeCpp(t *testing.T) {
 				OverrideServiceConfigYAMLName: "svc2.yaml",
 				InitialCopyrightYear:          "2024",
 				OmitRepoMetadata:              true,
+				ServiceNameMapping: map[string]string{
+					"Publisher": "TopicAdmin",
+				},
+				ServiceNameToComment: map[string]string{
+					"TopicAdmin": "New comment",
+				},
 			},
 			want: &config.CppLibrary{
 				SourceRoot:                      "src_root_2",
@@ -2002,6 +2014,12 @@ func TestMergeCpp(t *testing.T) {
 				OverrideServiceConfigYAMLName: "svc2.yaml",
 				InitialCopyrightYear:          "2024",
 				OmitRepoMetadata:              true,
+				ServiceNameMapping: map[string]string{
+					"Publisher": "TopicAdmin",
+				},
+				ServiceNameToComment: map[string]string{
+					"TopicAdmin": "New comment",
+				},
 			},
 		},
 		{
@@ -2031,6 +2049,12 @@ func TestMergeCpp(t *testing.T) {
 				OverrideServiceConfigYAMLName: "svc1.yaml",
 				InitialCopyrightYear:          "2020",
 				OmitRepoMetadata:              true,
+				ServiceNameMapping: map[string]string{
+					"Publisher": "TopicAdmin",
+				},
+				ServiceNameToComment: map[string]string{
+					"TopicAdmin": "Base comment",
+				},
 			},
 			src: &config.CppLibrary{},
 			want: &config.CppLibrary{
@@ -2058,6 +2082,12 @@ func TestMergeCpp(t *testing.T) {
 				OverrideServiceConfigYAMLName: "svc1.yaml",
 				InitialCopyrightYear:          "2020",
 				OmitRepoMetadata:              true,
+				ServiceNameMapping: map[string]string{
+					"Publisher": "TopicAdmin",
+				},
+				ServiceNameToComment: map[string]string{
+					"TopicAdmin": "Base comment",
+				},
 			},
 		},
 	} {

@@ -540,6 +540,12 @@ func mergeCpp(dst, src *config.CppLibrary) *config.CppLibrary {
 	if src.OmitRepoMetadata {
 		res.OmitRepoMetadata = src.OmitRepoMetadata
 	}
+	if src.ServiceNameMapping != nil {
+		res.ServiceNameMapping = src.ServiceNameMapping
+	}
+	if src.ServiceNameToComment != nil {
+		res.ServiceNameToComment = src.ServiceNameToComment
+	}
 	return &res
 }
 
