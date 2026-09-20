@@ -367,3 +367,83 @@ func MocksNamespace(productPath string) string {
 	}
 	return ns + "_mocks"
 }
+
+// ClientClassName returns the C++ client class name for a service.
+func ClientClassName(serviceName string) string {
+	return serviceName + "Client"
+}
+
+// ConnectionClassName returns the C++ connection class name for a service.
+func ConnectionClassName(serviceName string) string {
+	return serviceName + "Connection"
+}
+
+// ConnectionIdempotencyPolicyClassName returns the C++ idempotency policy class name for a service.
+func ConnectionIdempotencyPolicyClassName(serviceName string) string {
+	return serviceName + "ConnectionIdempotencyPolicy"
+}
+
+// MockConnectionClassName returns the C++ mock connection class name for a service.
+func MockConnectionClassName(serviceName string) string {
+	return "Mock" + serviceName + "Connection"
+}
+
+// ConnectionImplClassName returns the C++ connection implementation class name for a service.
+func ConnectionImplClassName(serviceName string) string {
+	return serviceName + "ConnectionImpl"
+}
+
+// StubClassName returns the C++ stub class name for a service.
+func StubClassName(serviceName string) string {
+	return serviceName + "Stub"
+}
+
+// DefaultStubClassName returns the C++ default stub class name for a service.
+func DefaultStubClassName(serviceName string) string {
+	return "Default" + serviceName + "Stub"
+}
+
+// AuthDecoratorClassName returns the C++ auth decorator class name for a service.
+func AuthDecoratorClassName(serviceName string) string {
+	return serviceName + "Auth"
+}
+
+// LoggingDecoratorClassName returns the C++ logging decorator class name for a service.
+func LoggingDecoratorClassName(serviceName string) string {
+	return serviceName + "Logging"
+}
+
+// MetadataDecoratorClassName returns the C++ metadata decorator class name for a service.
+func MetadataDecoratorClassName(serviceName string) string {
+	return serviceName + "Metadata"
+}
+
+// TracingConnectionClassName returns the C++ tracing connection class name for a service.
+func TracingConnectionClassName(serviceName string) string {
+	return serviceName + "TracingConnection"
+}
+
+// TracingStubClassName returns the C++ tracing stub class name for a service.
+func TracingStubClassName(serviceName string) string {
+	return serviceName + "TracingStub"
+}
+
+// RetryPolicyName returns the C++ retry policy class name for a service.
+func RetryPolicyName(serviceName string) string {
+	return serviceName + "RetryPolicy"
+}
+
+// LimitedErrorCountRetryPolicyName returns the C++ limited error count retry policy class name for a service.
+func LimitedErrorCountRetryPolicyName(serviceName string) string {
+	return serviceName + "LimitedErrorCountRetryPolicy"
+}
+
+// LimitedTimeRetryPolicyName returns the C++ limited time retry policy class name for a service.
+func LimitedTimeRetryPolicyName(serviceName string) string {
+	return serviceName + "LimitedTimeRetryPolicy"
+}
+
+// RetryTraitsName returns the C++ retry traits struct name for a service.
+func RetryTraitsName(serviceName string) string {
+	return serviceName + "RetryTraits"
+}

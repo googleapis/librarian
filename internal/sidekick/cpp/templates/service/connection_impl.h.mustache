@@ -50,6 +50,29 @@ namespace cloud {
 namespace {{Codec.InternalNamespace}} {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
+class {{Codec.ConnectionImplClassName}}
+    : public {{Codec.Namespace}}::{{Codec.ConnectionClassName}} {
+ public:
+  ~{{Codec.ConnectionImplClassName}}() override = default;
+
+  {{Codec.ConnectionImplClassName}}(
+    std::unique_ptr<google::cloud::BackgroundThreads> background,
+    std::shared_ptr<{{Codec.InternalNamespace}}::{{Codec.StubClassName}}> stub,
+    Options options);
+
+  Options options() override { return options_; }
+
+ private:
+  std::unique_ptr<google::cloud::BackgroundThreads> background_;
+  std::shared_ptr<{{Codec.InternalNamespace}}::{{Codec.StubClassName}}> stub_;
+  Options options_;
+{{#Codec.HasRequestId}}
+  std::shared_ptr<google::cloud::internal::InvocationIdGenerator>
+      invocation_id_generator_ =
+          std::make_shared<google::cloud::internal::InvocationIdGenerator>();
+{{/Codec.HasRequestId}}
+};
+
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace {{Codec.InternalNamespace}}
 }  // namespace cloud

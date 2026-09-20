@@ -22,6 +22,20 @@ namespace cloud {
 namespace {{Codec.Namespace}} {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
+using ::google::cloud::Idempotency;
+
+{{Codec.ConnectionIdempotencyPolicyClassName}}::~{{Codec.ConnectionIdempotencyPolicyClassName}}() = default;
+
+std::unique_ptr<{{Codec.ConnectionIdempotencyPolicyClassName}}>
+{{Codec.ConnectionIdempotencyPolicyClassName}}::clone() const {
+  return std::make_unique<{{Codec.ConnectionIdempotencyPolicyClassName}}>(*this);
+}
+
+std::unique_ptr<{{Codec.ConnectionIdempotencyPolicyClassName}}>
+    MakeDefault{{Codec.ConnectionIdempotencyPolicyClassName}}() {
+  return std::make_unique<{{Codec.ConnectionIdempotencyPolicyClassName}}>();
+}
+
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace {{Codec.Namespace}}
 }  // namespace cloud

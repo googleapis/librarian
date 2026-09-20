@@ -25,6 +25,21 @@ namespace cloud {
 namespace {{Codec.ForwardingNamespace}} {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
+/// @deprecated Use {{Codec.Namespace}}::Make{{Codec.ConnectionClassName}} directly.
+using ::google::cloud::{{Codec.Namespace}}::Make{{Codec.ConnectionClassName}};
+
+/// @deprecated Use {{Codec.Namespace}}::{{Codec.ConnectionClassName}} directly.
+using ::google::cloud::{{Codec.Namespace}}::{{Codec.ConnectionClassName}};
+
+/// @deprecated Use {{Codec.Namespace}}::{{Codec.LimitedErrorCountRetryPolicyName}} directly.
+using ::google::cloud::{{Codec.Namespace}}::{{Codec.LimitedErrorCountRetryPolicyName}};
+
+/// @deprecated Use {{Codec.Namespace}}::{{Codec.LimitedTimeRetryPolicyName}} directly.
+using ::google::cloud::{{Codec.Namespace}}::{{Codec.LimitedTimeRetryPolicyName}};
+
+/// @deprecated Use {{Codec.Namespace}}::{{Codec.RetryPolicyName}} directly.
+using ::google::cloud::{{Codec.Namespace}}::{{Codec.RetryPolicyName}};
+
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace {{Codec.ForwardingNamespace}}
 }  // namespace cloud

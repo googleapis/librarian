@@ -32,6 +32,18 @@ namespace cloud {
 namespace {{Codec.InternalNamespace}} {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
+class {{Codec.AuthDecoratorClassName}} : public {{Codec.StubClassName}} {
+ public:
+  ~{{Codec.AuthDecoratorClassName}}() override = default;
+  {{Codec.AuthDecoratorClassName}}(
+      std::shared_ptr<google::cloud::internal::GrpcAuthenticationStrategy> auth,
+      std::shared_ptr<{{Codec.StubClassName}}> child);
+
+ private:
+  std::shared_ptr<google::cloud::internal::GrpcAuthenticationStrategy> auth_;
+  std::shared_ptr<{{Codec.StubClassName}}> child_;
+};
+
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace {{Codec.InternalNamespace}}
 }  // namespace cloud

@@ -785,3 +785,153 @@ func TestMocksNamespace(t *testing.T) {
 		})
 	}
 }
+
+func TestClassNames(t *testing.T) {
+	for _, test := range []struct {
+		serviceName                      string
+		wantClient                       string
+		wantConnection                   string
+		wantConnectionIdempotencyPolicy  string
+		wantMockConnection               string
+		wantConnectionImpl               string
+		wantStub                         string
+		wantDefaultStub                  string
+		wantAuthDecorator                string
+		wantLoggingDecorator             string
+		wantMetadataDecorator            string
+		wantTracingConnection            string
+		wantTracingStub                  string
+		wantRetryPolicy                  string
+		wantLimitedErrorCountRetryPolicy string
+		wantLimitedTimeRetryPolicy       string
+		wantRetryTraits                  string
+	}{
+		{
+			serviceName:                      "GoldenThingAdmin",
+			wantClient:                       "GoldenThingAdminClient",
+			wantConnection:                   "GoldenThingAdminConnection",
+			wantConnectionIdempotencyPolicy:  "GoldenThingAdminConnectionIdempotencyPolicy",
+			wantMockConnection:               "MockGoldenThingAdminConnection",
+			wantConnectionImpl:               "GoldenThingAdminConnectionImpl",
+			wantStub:                         "GoldenThingAdminStub",
+			wantDefaultStub:                  "DefaultGoldenThingAdminStub",
+			wantAuthDecorator:                "GoldenThingAdminAuth",
+			wantLoggingDecorator:             "GoldenThingAdminLogging",
+			wantMetadataDecorator:            "GoldenThingAdminMetadata",
+			wantTracingConnection:            "GoldenThingAdminTracingConnection",
+			wantTracingStub:                  "GoldenThingAdminTracingStub",
+			wantRetryPolicy:                  "GoldenThingAdminRetryPolicy",
+			wantLimitedErrorCountRetryPolicy: "GoldenThingAdminLimitedErrorCountRetryPolicy",
+			wantLimitedTimeRetryPolicy:       "GoldenThingAdminLimitedTimeRetryPolicy",
+			wantRetryTraits:                  "GoldenThingAdminRetryTraits",
+		},
+		{
+			serviceName:                      "EchoService",
+			wantClient:                       "EchoServiceClient",
+			wantConnection:                   "EchoServiceConnection",
+			wantConnectionIdempotencyPolicy:  "EchoServiceConnectionIdempotencyPolicy",
+			wantMockConnection:               "MockEchoServiceConnection",
+			wantConnectionImpl:               "EchoServiceConnectionImpl",
+			wantStub:                         "EchoServiceStub",
+			wantDefaultStub:                  "DefaultEchoServiceStub",
+			wantAuthDecorator:                "EchoServiceAuth",
+			wantLoggingDecorator:             "EchoServiceLogging",
+			wantMetadataDecorator:            "EchoServiceMetadata",
+			wantTracingConnection:            "EchoServiceTracingConnection",
+			wantTracingStub:                  "EchoServiceTracingStub",
+			wantRetryPolicy:                  "EchoServiceRetryPolicy",
+			wantLimitedErrorCountRetryPolicy: "EchoServiceLimitedErrorCountRetryPolicy",
+			wantLimitedTimeRetryPolicy:       "EchoServiceLimitedTimeRetryPolicy",
+			wantRetryTraits:                  "EchoServiceRetryTraits",
+		},
+		{
+			serviceName:                      "DeprecatedService",
+			wantClient:                       "DeprecatedServiceClient",
+			wantConnection:                   "DeprecatedServiceConnection",
+			wantConnectionIdempotencyPolicy:  "DeprecatedServiceConnectionIdempotencyPolicy",
+			wantMockConnection:               "MockDeprecatedServiceConnection",
+			wantConnectionImpl:               "DeprecatedServiceConnectionImpl",
+			wantStub:                         "DeprecatedServiceStub",
+			wantDefaultStub:                  "DefaultDeprecatedServiceStub",
+			wantAuthDecorator:                "DeprecatedServiceAuth",
+			wantLoggingDecorator:             "DeprecatedServiceLogging",
+			wantMetadataDecorator:            "DeprecatedServiceMetadata",
+			wantTracingConnection:            "DeprecatedServiceTracingConnection",
+			wantTracingStub:                  "DeprecatedServiceTracingStub",
+			wantRetryPolicy:                  "DeprecatedServiceRetryPolicy",
+			wantLimitedErrorCountRetryPolicy: "DeprecatedServiceLimitedErrorCountRetryPolicy",
+			wantLimitedTimeRetryPolicy:       "DeprecatedServiceLimitedTimeRetryPolicy",
+			wantRetryTraits:                  "DeprecatedServiceRetryTraits",
+		},
+		{
+			serviceName:                      "",
+			wantClient:                       "Client",
+			wantConnection:                   "Connection",
+			wantConnectionIdempotencyPolicy:  "ConnectionIdempotencyPolicy",
+			wantMockConnection:               "MockConnection",
+			wantConnectionImpl:               "ConnectionImpl",
+			wantStub:                         "Stub",
+			wantDefaultStub:                  "DefaultStub",
+			wantAuthDecorator:                "Auth",
+			wantLoggingDecorator:             "Logging",
+			wantMetadataDecorator:            "Metadata",
+			wantTracingConnection:            "TracingConnection",
+			wantTracingStub:                  "TracingStub",
+			wantRetryPolicy:                  "RetryPolicy",
+			wantLimitedErrorCountRetryPolicy: "LimitedErrorCountRetryPolicy",
+			wantLimitedTimeRetryPolicy:       "LimitedTimeRetryPolicy",
+			wantRetryTraits:                  "RetryTraits",
+		},
+	} {
+		t.Run(test.serviceName, func(t *testing.T) {
+			if diff := cmp.Diff(test.wantClient, ClientClassName(test.serviceName)); diff != "" {
+				t.Errorf("ClientClassName mismatch (-want +got):\n%s", diff)
+			}
+			if diff := cmp.Diff(test.wantConnection, ConnectionClassName(test.serviceName)); diff != "" {
+				t.Errorf("ConnectionClassName mismatch (-want +got):\n%s", diff)
+			}
+			if diff := cmp.Diff(test.wantConnectionIdempotencyPolicy, ConnectionIdempotencyPolicyClassName(test.serviceName)); diff != "" {
+				t.Errorf("ConnectionIdempotencyPolicyClassName mismatch (-want +got):\n%s", diff)
+			}
+			if diff := cmp.Diff(test.wantMockConnection, MockConnectionClassName(test.serviceName)); diff != "" {
+				t.Errorf("MockConnectionClassName mismatch (-want +got):\n%s", diff)
+			}
+			if diff := cmp.Diff(test.wantConnectionImpl, ConnectionImplClassName(test.serviceName)); diff != "" {
+				t.Errorf("ConnectionImplClassName mismatch (-want +got):\n%s", diff)
+			}
+			if diff := cmp.Diff(test.wantStub, StubClassName(test.serviceName)); diff != "" {
+				t.Errorf("StubClassName mismatch (-want +got):\n%s", diff)
+			}
+			if diff := cmp.Diff(test.wantDefaultStub, DefaultStubClassName(test.serviceName)); diff != "" {
+				t.Errorf("DefaultStubClassName mismatch (-want +got):\n%s", diff)
+			}
+			if diff := cmp.Diff(test.wantAuthDecorator, AuthDecoratorClassName(test.serviceName)); diff != "" {
+				t.Errorf("AuthDecoratorClassName mismatch (-want +got):\n%s", diff)
+			}
+			if diff := cmp.Diff(test.wantLoggingDecorator, LoggingDecoratorClassName(test.serviceName)); diff != "" {
+				t.Errorf("LoggingDecoratorClassName mismatch (-want +got):\n%s", diff)
+			}
+			if diff := cmp.Diff(test.wantMetadataDecorator, MetadataDecoratorClassName(test.serviceName)); diff != "" {
+				t.Errorf("MetadataDecoratorClassName mismatch (-want +got):\n%s", diff)
+			}
+			if diff := cmp.Diff(test.wantTracingConnection, TracingConnectionClassName(test.serviceName)); diff != "" {
+				t.Errorf("TracingConnectionClassName mismatch (-want +got):\n%s", diff)
+			}
+			if diff := cmp.Diff(test.wantTracingStub, TracingStubClassName(test.serviceName)); diff != "" {
+				t.Errorf("TracingStubClassName mismatch (-want +got):\n%s", diff)
+			}
+			if diff := cmp.Diff(test.wantRetryPolicy, RetryPolicyName(test.serviceName)); diff != "" {
+				t.Errorf("RetryPolicyName mismatch (-want +got):\n%s", diff)
+			}
+			if diff := cmp.Diff(test.wantLimitedErrorCountRetryPolicy, LimitedErrorCountRetryPolicyName(test.serviceName)); diff != "" {
+				t.Errorf("LimitedErrorCountRetryPolicyName mismatch (-want +got):\n%s", diff)
+			}
+			if diff := cmp.Diff(test.wantLimitedTimeRetryPolicy, LimitedTimeRetryPolicyName(test.serviceName)); diff != "" {
+				t.Errorf("LimitedTimeRetryPolicyName mismatch (-want +got):\n%s", diff)
+			}
+			if diff := cmp.Diff(test.wantRetryTraits, RetryTraitsName(test.serviceName)); diff != "" {
+				t.Errorf("RetryTraitsName mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}

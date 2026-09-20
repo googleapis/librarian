@@ -24,6 +24,12 @@ namespace cloud {
 namespace {{Codec.ForwardingNamespace}} {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
+/// @deprecated Use {{Codec.Namespace}}::MakeDefault{{Codec.ConnectionIdempotencyPolicyClassName}} directly.
+using ::google::cloud::{{Codec.Namespace}}::MakeDefault{{Codec.ConnectionIdempotencyPolicyClassName}};
+
+/// @deprecated Use {{Codec.Namespace}}::{{Codec.ConnectionIdempotencyPolicyClassName}} directly.
+using ::google::cloud::{{Codec.Namespace}}::{{Codec.ConnectionIdempotencyPolicyClassName}};
+
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace {{Codec.ForwardingNamespace}}
 }  // namespace cloud

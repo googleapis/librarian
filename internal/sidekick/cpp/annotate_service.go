@@ -83,6 +83,30 @@ type serviceAnnotations struct {
 	ProtoHeaderPath     string
 	ProtoGrpcHeaderPath string
 
+	// Class names
+	ClientClassName                      string
+	ConnectionClassName                  string
+	ConnectionIdempotencyPolicyClassName string
+	MockConnectionClassName              string
+	ConnectionImplClassName              string
+	StubClassName                        string
+	DefaultStubClassName                 string
+	AuthDecoratorClassName               string
+	LoggingDecoratorClassName            string
+	MetadataDecoratorClassName           string
+	TracingConnectionClassName           string
+	TracingStubClassName                 string
+	RetryPolicyName                      string
+	LimitedErrorCountRetryPolicyName     string
+	LimitedTimeRetryPolicyName           string
+	RetryTraitsName                      string
+
+	// Deprecation
+	IsDeprecated bool
+
+	// Retry status codes
+	RetryStatusCodes []string
+
 	// Feature flags
 	HasLongrunningMethod         bool
 	HasBidirStreamingMethod      bool
@@ -90,6 +114,7 @@ type serviceAnnotations struct {
 	HasStreamingWriteMethod      bool
 	HasAsyncStreamingReadMethod  bool
 	HasAsyncStreamingWriteMethod bool
+	HasStreamingMethod           bool
 	HasPaginatedMethod           bool
 	HasAsyncMethod               bool
 	HasRequestId                 bool
@@ -263,6 +288,26 @@ func (c *codec) annotateService(s *api.Service, modelAnn *modelAnnotations, mode
 	}
 	slices.Sort(sourcesCcIncludes)
 
+	var retryStatusCodes []string
+	if c.config != nil && len(c.config.RetryableStatusCodes) > 0 {
+		codeSet := make(map[string]bool)
+		for _, rawCode := range c.config.RetryableStatusCodes {
+			parts := strings.Split(rawCode, ".")
+			if len(parts) == 1 {
+				codeSet[parts[0]] = true
+			} else if len(parts) == 2 && parts[0] == s.Name {
+				codeSet[parts[1]] = true
+			}
+		}
+		for code := range codeSet {
+			retryStatusCodes = append(retryStatusCodes, code)
+		}
+		slices.Sort(retryStatusCodes)
+	}
+	if len(retryStatusCodes) == 0 {
+		retryStatusCodes = []string{"kDeadlineExceeded", "kUnavailable"}
+	}
+
 	sAnn := &serviceAnnotations{
 		Name:          s.Name,
 		CopyrightYear: year,
@@ -323,12 +368,33 @@ func (c *codec) annotateService(s *api.Service, modelAnn *modelAnnotations, mode
 		ProtoHeaderPath:     protoHeaderPath,
 		ProtoGrpcHeaderPath: protoGrpcHeaderPath,
 
+		ClientClassName:                      ClientClassName(s.Name),
+		ConnectionClassName:                  ConnectionClassName(s.Name),
+		ConnectionIdempotencyPolicyClassName: ConnectionIdempotencyPolicyClassName(s.Name),
+		MockConnectionClassName:              MockConnectionClassName(s.Name),
+		ConnectionImplClassName:              ConnectionImplClassName(s.Name),
+		StubClassName:                        StubClassName(s.Name),
+		DefaultStubClassName:                 DefaultStubClassName(s.Name),
+		AuthDecoratorClassName:               AuthDecoratorClassName(s.Name),
+		LoggingDecoratorClassName:            LoggingDecoratorClassName(s.Name),
+		MetadataDecoratorClassName:           MetadataDecoratorClassName(s.Name),
+		TracingConnectionClassName:           TracingConnectionClassName(s.Name),
+		TracingStubClassName:                 TracingStubClassName(s.Name),
+		RetryPolicyName:                      RetryPolicyName(s.Name),
+		LimitedErrorCountRetryPolicyName:     LimitedErrorCountRetryPolicyName(s.Name),
+		LimitedTimeRetryPolicyName:           LimitedTimeRetryPolicyName(s.Name),
+		RetryTraitsName:                      RetryTraitsName(s.Name),
+
+		IsDeprecated:     s.Deprecated,
+		RetryStatusCodes: retryStatusCodes,
+
 		HasLongrunningMethod:         hasLongrunningMethod,
 		HasBidirStreamingMethod:      hasBidirStreamingMethod,
 		HasStreamingReadMethod:       hasStreamingReadMethod,
 		HasStreamingWriteMethod:      hasStreamingWriteMethod,
 		HasAsyncStreamingReadMethod:  hasAsyncStreamingReadMethod,
 		HasAsyncStreamingWriteMethod: hasAsyncStreamingWriteMethod,
+		HasStreamingMethod:           hasStreamingReadMethod || hasStreamingWriteMethod || hasBidirStreamingMethod,
 		HasPaginatedMethod:           hasPaginatedMethod,
 		HasAsyncMethod:               hasAsyncMethod,
 		HasRequestId:                 hasRequestId,

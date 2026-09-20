@@ -84,6 +84,24 @@ func TestAnnotateService(t *testing.T) {
 				StubHeaderIncludeGuard:              "GOOGLE_CLOUD_CPP_INTERNAL_SIMPLE_STUB_H",
 				TracingStubHeaderIncludeGuard:       "GOOGLE_CLOUD_CPP_INTERNAL_SIMPLE_TRACING_STUB_H",
 
+				ClientClassName:                      "SimpleServiceClient",
+				ConnectionClassName:                  "SimpleServiceConnection",
+				ConnectionIdempotencyPolicyClassName: "SimpleServiceConnectionIdempotencyPolicy",
+				MockConnectionClassName:              "MockSimpleServiceConnection",
+				ConnectionImplClassName:              "SimpleServiceConnectionImpl",
+				StubClassName:                        "SimpleServiceStub",
+				DefaultStubClassName:                 "DefaultSimpleServiceStub",
+				AuthDecoratorClassName:               "SimpleServiceAuth",
+				LoggingDecoratorClassName:            "SimpleServiceLogging",
+				MetadataDecoratorClassName:           "SimpleServiceMetadata",
+				TracingConnectionClassName:           "SimpleServiceTracingConnection",
+				TracingStubClassName:                 "SimpleServiceTracingStub",
+				RetryPolicyName:                      "SimpleServiceRetryPolicy",
+				LimitedErrorCountRetryPolicyName:     "SimpleServiceLimitedErrorCountRetryPolicy",
+				LimitedTimeRetryPolicyName:           "SimpleServiceLimitedTimeRetryPolicy",
+				RetryTraitsName:                      "SimpleServiceRetryTraits",
+				RetryStatusCodes:                     []string{"kDeadlineExceeded", "kUnavailable"},
+
 				SourcesCcIncludes: []string{
 					"internal/simple_auth_decorator.cc",
 					"internal/simple_connection_impl.cc",
@@ -157,6 +175,24 @@ func TestAnnotateService(t *testing.T) {
 				MetadataDecoratorHeaderIncludeGuard: "GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_ECHO_V1_INTERNAL_ECHO_METADATA_DECORATOR_H",
 				StubHeaderIncludeGuard:              "GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_ECHO_V1_INTERNAL_ECHO_STUB_H",
 				TracingStubHeaderIncludeGuard:       "GOOGLE_CLOUD_CPP_GOOGLE_CLOUD_ECHO_V1_INTERNAL_ECHO_TRACING_STUB_H",
+
+				ClientClassName:                      "EchoServiceClient",
+				ConnectionClassName:                  "EchoServiceConnection",
+				ConnectionIdempotencyPolicyClassName: "EchoServiceConnectionIdempotencyPolicy",
+				MockConnectionClassName:              "MockEchoServiceConnection",
+				ConnectionImplClassName:              "EchoServiceConnectionImpl",
+				StubClassName:                        "EchoServiceStub",
+				DefaultStubClassName:                 "DefaultEchoServiceStub",
+				AuthDecoratorClassName:               "EchoServiceAuth",
+				LoggingDecoratorClassName:            "EchoServiceLogging",
+				MetadataDecoratorClassName:           "EchoServiceMetadata",
+				TracingConnectionClassName:           "EchoServiceTracingConnection",
+				TracingStubClassName:                 "EchoServiceTracingStub",
+				RetryPolicyName:                      "EchoServiceRetryPolicy",
+				LimitedErrorCountRetryPolicyName:     "EchoServiceLimitedErrorCountRetryPolicy",
+				LimitedTimeRetryPolicyName:           "EchoServiceLimitedTimeRetryPolicy",
+				RetryTraitsName:                      "EchoServiceRetryTraits",
+				RetryStatusCodes:                     []string{"kDeadlineExceeded", "kUnavailable"},
 			},
 		},
 		{
@@ -216,6 +252,24 @@ func TestAnnotateService(t *testing.T) {
 				MetadataDecoratorHeaderIncludeGuard: "GOOGLE_CLOUD_CPP_GENERATOR_INTEGRATION_TESTS_GOLDEN_V1_INTERNAL_CUSTOM_YEAR_METADATA_DECORATOR_H",
 				StubHeaderIncludeGuard:              "GOOGLE_CLOUD_CPP_GENERATOR_INTEGRATION_TESTS_GOLDEN_V1_INTERNAL_CUSTOM_YEAR_STUB_H",
 				TracingStubHeaderIncludeGuard:       "GOOGLE_CLOUD_CPP_GENERATOR_INTEGRATION_TESTS_GOLDEN_V1_INTERNAL_CUSTOM_YEAR_TRACING_STUB_H",
+
+				ClientClassName:                      "CustomYearServiceClient",
+				ConnectionClassName:                  "CustomYearServiceConnection",
+				ConnectionIdempotencyPolicyClassName: "CustomYearServiceConnectionIdempotencyPolicy",
+				MockConnectionClassName:              "MockCustomYearServiceConnection",
+				ConnectionImplClassName:              "CustomYearServiceConnectionImpl",
+				StubClassName:                        "CustomYearServiceStub",
+				DefaultStubClassName:                 "DefaultCustomYearServiceStub",
+				AuthDecoratorClassName:               "CustomYearServiceAuth",
+				LoggingDecoratorClassName:            "CustomYearServiceLogging",
+				MetadataDecoratorClassName:           "CustomYearServiceMetadata",
+				TracingConnectionClassName:           "CustomYearServiceTracingConnection",
+				TracingStubClassName:                 "CustomYearServiceTracingStub",
+				RetryPolicyName:                      "CustomYearServiceRetryPolicy",
+				LimitedErrorCountRetryPolicyName:     "CustomYearServiceLimitedErrorCountRetryPolicy",
+				LimitedTimeRetryPolicyName:           "CustomYearServiceLimitedTimeRetryPolicy",
+				RetryTraitsName:                      "CustomYearServiceRetryTraits",
+				RetryStatusCodes:                     []string{"kDeadlineExceeded", "kUnavailable"},
 				ConnectionHeaderIncludes: []string{
 					"generator/integration_tests/golden/v1/custom_year_connection_idempotency_policy.h",
 					"generator/integration_tests/golden/v1/internal/custom_year_retry_traits.h",
@@ -234,6 +288,83 @@ func TestAnnotateService(t *testing.T) {
 					"generator/integration_tests/golden/v1/internal/custom_year_retry_traits.h",
 					"generator/integration_tests/golden/v1/internal/custom_year_stub.h",
 				},
+			},
+		},
+		{
+			name: "deprecated service with IsDeprecated true",
+			service: func() *api.Service {
+				s := api.NewTestService("DeprecatedService")
+				s.Deprecated = true
+				return s
+			}(),
+			sourceFile:  "generator/integration_tests/test_deprecated.proto",
+			productPath: "generator/integration_tests/golden/v1",
+			modelAnn: &modelAnnotations{
+				CopyrightYear: "2024",
+				BoilerPlate:   license.HeaderBulk(),
+			},
+			want: &serviceAnnotations{
+				Name:          "DeprecatedService",
+				CopyrightYear: "2024",
+				BoilerPlate:   license.HeaderBulk(),
+				Model: &modelAnnotations{
+					CopyrightYear: "2024",
+					BoilerPlate:   license.HeaderBulk(),
+				},
+				SourceFile:                           "generator/integration_tests/test_deprecated.proto",
+				Namespace:                            "golden_v1",
+				InternalNamespace:                    "golden_v1_internal",
+				MocksNamespace:                       "golden_v1_mocks",
+				ProtoHeaderPath:                      "generator/integration_tests/test_deprecated.pb.h",
+				ProtoGrpcHeaderPath:                  "generator/integration_tests/test_deprecated.grpc.pb.h",
+				ClientHeaderPath:                     "generator/integration_tests/golden/v1/deprecated_client.h",
+				ConnectionHeaderPath:                 "generator/integration_tests/golden/v1/deprecated_connection.h",
+				IdempotencyPolicyHeaderPath:          "generator/integration_tests/golden/v1/deprecated_connection_idempotency_policy.h",
+				OptionsHeaderPath:                    "generator/integration_tests/golden/v1/deprecated_options.h",
+				MockConnectionHeaderPath:             "generator/integration_tests/golden/v1/mocks/mock_deprecated_connection.h",
+				OptionDefaultsHeaderPath:             "generator/integration_tests/golden/v1/internal/deprecated_option_defaults.h",
+				RetryTraitsHeaderPath:                "generator/integration_tests/golden/v1/internal/deprecated_retry_traits.h",
+				TracingConnectionHeaderPath:          "generator/integration_tests/golden/v1/internal/deprecated_tracing_connection.h",
+				ConnectionImplHeaderPath:             "generator/integration_tests/golden/v1/internal/deprecated_connection_impl.h",
+				StubFactoryHeaderPath:                "generator/integration_tests/golden/v1/internal/deprecated_stub_factory.h",
+				AuthDecoratorHeaderPath:              "generator/integration_tests/golden/v1/internal/deprecated_auth_decorator.h",
+				LoggingDecoratorHeaderPath:           "generator/integration_tests/golden/v1/internal/deprecated_logging_decorator.h",
+				MetadataDecoratorHeaderPath:          "generator/integration_tests/golden/v1/internal/deprecated_metadata_decorator.h",
+				StubHeaderPath:                       "generator/integration_tests/golden/v1/internal/deprecated_stub.h",
+				TracingStubHeaderPath:                "generator/integration_tests/golden/v1/internal/deprecated_tracing_stub.h",
+				ClientHeaderIncludeGuard:             "GOOGLE_CLOUD_CPP_GENERATOR_INTEGRATION_TESTS_GOLDEN_V1_DEPRECATED_CLIENT_H",
+				ConnectionHeaderIncludeGuard:         "GOOGLE_CLOUD_CPP_GENERATOR_INTEGRATION_TESTS_GOLDEN_V1_DEPRECATED_CONNECTION_H",
+				IdempotencyPolicyHeaderIncludeGuard:  "GOOGLE_CLOUD_CPP_GENERATOR_INTEGRATION_TESTS_GOLDEN_V1_DEPRECATED_CONNECTION_IDEMPOTENCY_POLICY_H",
+				OptionsHeaderIncludeGuard:            "GOOGLE_CLOUD_CPP_GENERATOR_INTEGRATION_TESTS_GOLDEN_V1_DEPRECATED_OPTIONS_H",
+				MockConnectionHeaderIncludeGuard:     "GOOGLE_CLOUD_CPP_GENERATOR_INTEGRATION_TESTS_GOLDEN_V1_MOCKS_MOCK_DEPRECATED_CONNECTION_H",
+				OptionDefaultsHeaderIncludeGuard:     "GOOGLE_CLOUD_CPP_GENERATOR_INTEGRATION_TESTS_GOLDEN_V1_INTERNAL_DEPRECATED_OPTION_DEFAULTS_H",
+				RetryTraitsHeaderIncludeGuard:        "GOOGLE_CLOUD_CPP_GENERATOR_INTEGRATION_TESTS_GOLDEN_V1_INTERNAL_DEPRECATED_RETRY_TRAITS_H",
+				TracingConnectionHeaderIncludeGuard:  "GOOGLE_CLOUD_CPP_GENERATOR_INTEGRATION_TESTS_GOLDEN_V1_INTERNAL_DEPRECATED_TRACING_CONNECTION_H",
+				ConnectionImplHeaderIncludeGuard:     "GOOGLE_CLOUD_CPP_GENERATOR_INTEGRATION_TESTS_GOLDEN_V1_INTERNAL_DEPRECATED_CONNECTION_IMPL_H",
+				StubFactoryHeaderIncludeGuard:        "GOOGLE_CLOUD_CPP_GENERATOR_INTEGRATION_TESTS_GOLDEN_V1_INTERNAL_DEPRECATED_STUB_FACTORY_H",
+				AuthDecoratorHeaderIncludeGuard:      "GOOGLE_CLOUD_CPP_GENERATOR_INTEGRATION_TESTS_GOLDEN_V1_INTERNAL_DEPRECATED_AUTH_DECORATOR_H",
+				LoggingDecoratorHeaderIncludeGuard:   "GOOGLE_CLOUD_CPP_GENERATOR_INTEGRATION_TESTS_GOLDEN_V1_INTERNAL_DEPRECATED_LOGGING_DECORATOR_H",
+				MetadataDecoratorHeaderIncludeGuard:  "GOOGLE_CLOUD_CPP_GENERATOR_INTEGRATION_TESTS_GOLDEN_V1_INTERNAL_DEPRECATED_METADATA_DECORATOR_H",
+				StubHeaderIncludeGuard:               "GOOGLE_CLOUD_CPP_GENERATOR_INTEGRATION_TESTS_GOLDEN_V1_INTERNAL_DEPRECATED_STUB_H",
+				TracingStubHeaderIncludeGuard:        "GOOGLE_CLOUD_CPP_GENERATOR_INTEGRATION_TESTS_GOLDEN_V1_INTERNAL_DEPRECATED_TRACING_STUB_H",
+				ClientClassName:                      "DeprecatedServiceClient",
+				ConnectionClassName:                  "DeprecatedServiceConnection",
+				ConnectionIdempotencyPolicyClassName: "DeprecatedServiceConnectionIdempotencyPolicy",
+				MockConnectionClassName:              "MockDeprecatedServiceConnection",
+				ConnectionImplClassName:              "DeprecatedServiceConnectionImpl",
+				StubClassName:                        "DeprecatedServiceStub",
+				DefaultStubClassName:                 "DefaultDeprecatedServiceStub",
+				AuthDecoratorClassName:               "DeprecatedServiceAuth",
+				LoggingDecoratorClassName:            "DeprecatedServiceLogging",
+				MetadataDecoratorClassName:           "DeprecatedServiceMetadata",
+				TracingConnectionClassName:           "DeprecatedServiceTracingConnection",
+				TracingStubClassName:                 "DeprecatedServiceTracingStub",
+				RetryPolicyName:                      "DeprecatedServiceRetryPolicy",
+				LimitedErrorCountRetryPolicyName:     "DeprecatedServiceLimitedErrorCountRetryPolicy",
+				LimitedTimeRetryPolicyName:           "DeprecatedServiceLimitedTimeRetryPolicy",
+				RetryTraitsName:                      "DeprecatedServiceRetryTraits",
+				RetryStatusCodes:                     []string{"kDeadlineExceeded", "kUnavailable"},
+				IsDeprecated:                         true,
 			},
 		},
 	} {
@@ -579,6 +710,148 @@ func TestAnnotateService_NilConfig(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			if diff := cmp.Diff(test.want, test.got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestAnnotateService_ClassNames(t *testing.T) {
+	svc := api.NewTestService("GoldenThingAdmin")
+	model := api.NewTestAPI(nil, nil, []*api.Service{svc})
+	modelAnn := &modelAnnotations{
+		CopyrightYear: "2022",
+		BoilerPlate:   license.HeaderBulk(),
+	}
+	c := newCodec(&config.CppLibrary{})
+	if err := c.annotateService(svc, modelAnn, model); err != nil {
+		t.Fatal(err)
+	}
+	got := svc.Codec.(*serviceAnnotations)
+
+	if diff := cmp.Diff("GoldenThingAdminClient", got.ClientClassName); diff != "" {
+		t.Errorf("ClientClassName mismatch (-want +got):\n%s", diff)
+	}
+	if diff := cmp.Diff("GoldenThingAdminConnection", got.ConnectionClassName); diff != "" {
+		t.Errorf("ConnectionClassName mismatch (-want +got):\n%s", diff)
+	}
+	if diff := cmp.Diff("GoldenThingAdminConnectionIdempotencyPolicy", got.ConnectionIdempotencyPolicyClassName); diff != "" {
+		t.Errorf("ConnectionIdempotencyPolicyClassName mismatch (-want +got):\n%s", diff)
+	}
+	if diff := cmp.Diff("MockGoldenThingAdminConnection", got.MockConnectionClassName); diff != "" {
+		t.Errorf("MockConnectionClassName mismatch (-want +got):\n%s", diff)
+	}
+	if diff := cmp.Diff("GoldenThingAdminConnectionImpl", got.ConnectionImplClassName); diff != "" {
+		t.Errorf("ConnectionImplClassName mismatch (-want +got):\n%s", diff)
+	}
+	if diff := cmp.Diff("GoldenThingAdminStub", got.StubClassName); diff != "" {
+		t.Errorf("StubClassName mismatch (-want +got):\n%s", diff)
+	}
+	if diff := cmp.Diff("DefaultGoldenThingAdminStub", got.DefaultStubClassName); diff != "" {
+		t.Errorf("DefaultStubClassName mismatch (-want +got):\n%s", diff)
+	}
+	if diff := cmp.Diff("GoldenThingAdminAuth", got.AuthDecoratorClassName); diff != "" {
+		t.Errorf("AuthDecoratorClassName mismatch (-want +got):\n%s", diff)
+	}
+	if diff := cmp.Diff("GoldenThingAdminLogging", got.LoggingDecoratorClassName); diff != "" {
+		t.Errorf("LoggingDecoratorClassName mismatch (-want +got):\n%s", diff)
+	}
+	if diff := cmp.Diff("GoldenThingAdminMetadata", got.MetadataDecoratorClassName); diff != "" {
+		t.Errorf("MetadataDecoratorClassName mismatch (-want +got):\n%s", diff)
+	}
+	if diff := cmp.Diff("GoldenThingAdminTracingConnection", got.TracingConnectionClassName); diff != "" {
+		t.Errorf("TracingConnectionClassName mismatch (-want +got):\n%s", diff)
+	}
+	if diff := cmp.Diff("GoldenThingAdminTracingStub", got.TracingStubClassName); diff != "" {
+		t.Errorf("TracingStubClassName mismatch (-want +got):\n%s", diff)
+	}
+	if diff := cmp.Diff("GoldenThingAdminRetryPolicy", got.RetryPolicyName); diff != "" {
+		t.Errorf("RetryPolicyName mismatch (-want +got):\n%s", diff)
+	}
+	if diff := cmp.Diff("GoldenThingAdminLimitedErrorCountRetryPolicy", got.LimitedErrorCountRetryPolicyName); diff != "" {
+		t.Errorf("LimitedErrorCountRetryPolicyName mismatch (-want +got):\n%s", diff)
+	}
+	if diff := cmp.Diff("GoldenThingAdminLimitedTimeRetryPolicy", got.LimitedTimeRetryPolicyName); diff != "" {
+		t.Errorf("LimitedTimeRetryPolicyName mismatch (-want +got):\n%s", diff)
+	}
+	if diff := cmp.Diff("GoldenThingAdminRetryTraits", got.RetryTraitsName); diff != "" {
+		t.Errorf("RetryTraitsName mismatch (-want +got):\n%s", diff)
+	}
+	if diff := cmp.Diff(false, got.IsDeprecated); diff != "" {
+		t.Errorf("IsDeprecated mismatch (-want +got):\n%s", diff)
+	}
+
+	t.Run("deprecated service", func(t *testing.T) {
+		depSvc := api.NewTestService("DeprecatedService")
+		depSvc.Deprecated = true
+		depModel := api.NewTestAPI(nil, nil, []*api.Service{depSvc})
+		if err := c.annotateService(depSvc, modelAnn, depModel); err != nil {
+			t.Fatal(err)
+		}
+		depGot := depSvc.Codec.(*serviceAnnotations)
+		if diff := cmp.Diff(true, depGot.IsDeprecated); diff != "" {
+			t.Errorf("IsDeprecated mismatch (-want +got):\n%s", diff)
+		}
+		if diff := cmp.Diff("DeprecatedServiceClient", depGot.ClientClassName); diff != "" {
+			t.Errorf("ClientClassName mismatch (-want +got):\n%s", diff)
+		}
+	})
+}
+
+func TestAnnotateService_RetryStatusCodes(t *testing.T) {
+	for _, test := range []struct {
+		name                 string
+		serviceName          string
+		retryableStatusCodes []string
+		want                 []string
+	}{
+		{
+			name:                 "default codes when unset",
+			serviceName:          "TestService",
+			retryableStatusCodes: nil,
+			want:                 []string{"kDeadlineExceeded", "kUnavailable"},
+		},
+		{
+			name:                 "global codes only",
+			serviceName:          "TestService",
+			retryableStatusCodes: []string{"kUnavailable"},
+			want:                 []string{"kUnavailable"},
+		},
+		{
+			name:                 "service-scoped codes matching service",
+			serviceName:          "TestService",
+			retryableStatusCodes: []string{"TestService.kAborted", "kUnavailable", "OtherService.kNotFound"},
+			want:                 []string{"kAborted", "kUnavailable"},
+		},
+		{
+			name:                 "service-scoped codes not matching falls back to global",
+			serviceName:          "TestService",
+			retryableStatusCodes: []string{"OtherService.kNotFound", "kUnavailable"},
+			want:                 []string{"kUnavailable"},
+		},
+		{
+			name:                 "deduplicated and sorted",
+			serviceName:          "TestService",
+			retryableStatusCodes: []string{"TestService.kUnavailable", "kUnavailable", "kAborted"},
+			want:                 []string{"kAborted", "kUnavailable"},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			svc := api.NewTestService(test.serviceName)
+			model := api.NewTestAPI(nil, nil, []*api.Service{svc})
+			modelAnn := &modelAnnotations{
+				CopyrightYear: "2026",
+				BoilerPlate:   license.HeaderBulk(),
+			}
+			libCfg := &config.CppLibrary{
+				RetryableStatusCodes: test.retryableStatusCodes,
+			}
+			c := newCodec(libCfg)
+			if err := c.annotateService(svc, modelAnn, model); err != nil {
+				t.Fatal(err)
+			}
+			got := svc.Codec.(*serviceAnnotations)
+			if diff := cmp.Diff(test.want, got.RetryStatusCodes); diff != "" {
+				t.Errorf("RetryStatusCodes mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}

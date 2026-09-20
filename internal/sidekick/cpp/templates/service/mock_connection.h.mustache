@@ -25,6 +25,11 @@ namespace cloud {
 namespace {{Codec.MocksNamespace}} {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
+class {{Codec.MockConnectionClassName}} : public {{Codec.Namespace}}::{{Codec.ConnectionClassName}} {
+ public:
+  MOCK_METHOD(Options, options, (), (override));
+};
+
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace {{Codec.MocksNamespace}}
 }  // namespace cloud

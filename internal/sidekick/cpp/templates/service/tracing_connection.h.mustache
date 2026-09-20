@@ -26,6 +26,34 @@ namespace cloud {
 namespace {{Codec.InternalNamespace}} {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
+#ifdef GOOGLE_CLOUD_CPP_HAVE_OPENTELEMETRY
+
+class {{Codec.TracingConnectionClassName}}
+    : public {{Codec.Namespace}}::{{Codec.ConnectionClassName}} {
+ public:
+  ~{{Codec.TracingConnectionClassName}}() override = default;
+
+  explicit {{Codec.TracingConnectionClassName}}(
+    std::shared_ptr<{{Codec.Namespace}}::{{Codec.ConnectionClassName}}> child);
+
+  Options options() override { return child_->options(); }
+
+ private:
+  std::shared_ptr<{{Codec.Namespace}}::{{Codec.ConnectionClassName}}> child_;
+};
+
+#endif  // GOOGLE_CLOUD_CPP_HAVE_OPENTELEMETRY
+
+/**
+ * Conditionally applies the tracing decorator to the given connection.
+ *
+ * The connection is only decorated if tracing is enabled (as determined by the
+ * connection's options).
+ */
+std::shared_ptr<{{Codec.Namespace}}::{{Codec.ConnectionClassName}}>
+Make{{Codec.TracingConnectionClassName}}(
+    std::shared_ptr<{{Codec.Namespace}}::{{Codec.ConnectionClassName}}> conn);
+
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace {{Codec.InternalNamespace}}
 }  // namespace cloud

@@ -23,6 +23,13 @@ namespace cloud {
 namespace {{Codec.Namespace}} {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
+{{Codec.ClientClassName}}::{{Codec.ClientClassName}}(
+    std::shared_ptr<{{Codec.ConnectionClassName}}> connection, Options opts)
+    : connection_(std::move(connection)),
+      options_(internal::MergeOptions(std::move(opts),
+      connection_->options())) {}
+{{Codec.ClientClassName}}::~{{Codec.ClientClassName}}() = default;
+
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace {{Codec.Namespace}}
 }  // namespace cloud

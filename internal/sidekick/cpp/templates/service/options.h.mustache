@@ -29,6 +29,38 @@ namespace cloud {
 namespace {{Codec.Namespace}} {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
+struct {{Codec.RetryPolicyName}}Option {
+  using Type = std::shared_ptr<{{Codec.RetryPolicyName}}>;
+};
+
+struct {{Codec.Name}}BackoffPolicyOption {
+  using Type = std::shared_ptr<BackoffPolicy>;
+};
+
+struct {{Codec.ConnectionIdempotencyPolicyClassName}}Option {
+  using Type = std::shared_ptr<{{Codec.ConnectionIdempotencyPolicyClassName}}>;
+};
+{{#Codec.HasLongrunningMethod}}
+
+struct {{Codec.Name}}PollingPolicyOption {
+  using Type = std::shared_ptr<PollingPolicy>;
+};
+{{/Codec.HasLongrunningMethod}}
+
+{{#Codec.HasLongrunningMethod}}
+using {{Codec.Name}}PolicyOptionList =
+    OptionList<{{Codec.RetryPolicyName}}Option,
+               {{Codec.Name}}BackoffPolicyOption,
+               {{Codec.Name}}PollingPolicyOption,
+               {{Codec.ConnectionIdempotencyPolicyClassName}}Option>;
+{{/Codec.HasLongrunningMethod}}
+{{^Codec.HasLongrunningMethod}}
+using {{Codec.Name}}PolicyOptionList =
+    OptionList<{{Codec.RetryPolicyName}}Option,
+               {{Codec.Name}}BackoffPolicyOption,
+               {{Codec.ConnectionIdempotencyPolicyClassName}}Option>;
+{{/Codec.HasLongrunningMethod}}
+
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace {{Codec.Namespace}}
 }  // namespace cloud

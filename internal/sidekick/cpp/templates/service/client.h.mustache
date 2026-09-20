@@ -37,6 +37,43 @@ namespace cloud {
 namespace {{Codec.Namespace}} {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
+{{#Codec.IsDeprecated}}
+class
+ GOOGLE_CLOUD_CPP_DEPRECATED(
+      "{{Codec.Name}} has been deprecated and will be turned down in the future."
+)
+{{Codec.ClientClassName}} {
+{{/Codec.IsDeprecated}}
+{{^Codec.IsDeprecated}}
+class {{Codec.ClientClassName}} {
+{{/Codec.IsDeprecated}}
+ public:
+  explicit {{Codec.ClientClassName}}(std::shared_ptr<{{Codec.ConnectionClassName}}> connection, Options opts = {});
+  ~{{Codec.ClientClassName}}();
+
+  ///@{
+  /// @name Copy and move support
+  {{Codec.ClientClassName}}({{Codec.ClientClassName}} const&) = default;
+  {{Codec.ClientClassName}}& operator=({{Codec.ClientClassName}} const&) = default;
+  {{Codec.ClientClassName}}({{Codec.ClientClassName}}&&) = default;
+  {{Codec.ClientClassName}}& operator=({{Codec.ClientClassName}}&&) = default;
+  ///@}
+
+  ///@{
+  /// @name Equality
+  friend bool operator==({{Codec.ClientClassName}} const& a, {{Codec.ClientClassName}} const& b) {
+    return a.connection_ == b.connection_;
+  }
+  friend bool operator!=({{Codec.ClientClassName}} const& a, {{Codec.ClientClassName}} const& b) {
+    return !(a == b);
+  }
+  ///@}
+
+ private:
+  std::shared_ptr<{{Codec.ConnectionClassName}}> connection_;
+  Options options_;
+};
+
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace {{Codec.Namespace}}
 }  // namespace cloud

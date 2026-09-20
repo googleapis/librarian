@@ -28,6 +28,30 @@ namespace cloud {
 namespace {{Codec.InternalNamespace}} {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
+#ifdef GOOGLE_CLOUD_CPP_HAVE_OPENTELEMETRY
+
+class {{Codec.TracingStubClassName}} : public {{Codec.StubClassName}} {
+ public:
+  ~{{Codec.TracingStubClassName}}() override = default;
+
+  explicit {{Codec.TracingStubClassName}}(std::shared_ptr<{{Codec.StubClassName}}> child);
+
+ private:
+  std::shared_ptr<{{Codec.StubClassName}}> child_;
+  std::shared_ptr<opentelemetry::context::propagation::TextMapPropagator> propagator_;
+};
+
+#endif  // GOOGLE_CLOUD_CPP_HAVE_OPENTELEMETRY
+
+/**
+ * Applies the tracing decorator to the given stub.
+ *
+ * The stub is only decorated if the library has been compiled with
+ * OpenTelemetry.
+ */
+std::shared_ptr<{{Codec.StubClassName}}> Make{{Codec.TracingStubClassName}}(
+    std::shared_ptr<{{Codec.StubClassName}}> stub);
+
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace {{Codec.InternalNamespace}}
 }  // namespace cloud

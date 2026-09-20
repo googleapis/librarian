@@ -55,6 +55,16 @@ namespace cloud {
 namespace {{Codec.InternalNamespace}} {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
+class {{Codec.StubClassName}} {
+ public:
+  virtual ~{{Codec.StubClassName}}() = 0;
+};
+
+class {{Codec.DefaultStubClassName}} : public {{Codec.StubClassName}} {
+ public:
+  ~{{Codec.DefaultStubClassName}}() override = default;
+};
+
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace {{Codec.InternalNamespace}}
 }  // namespace cloud

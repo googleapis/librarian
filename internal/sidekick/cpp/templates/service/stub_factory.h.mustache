@@ -28,6 +28,10 @@ namespace cloud {
 namespace {{Codec.InternalNamespace}} {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
+std::shared_ptr<{{Codec.StubClassName}}> CreateDefault{{Codec.StubClassName}}(
+    std::shared_ptr<internal::GrpcAuthenticationStrategy> auth,
+    Options const& options);
+
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace {{Codec.InternalNamespace}}
 }  // namespace cloud
