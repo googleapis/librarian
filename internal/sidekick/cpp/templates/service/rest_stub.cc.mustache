@@ -84,7 +84,7 @@ future<StatusOr<google::longrunning::Operation>>
       p.set_value(rest_internal::{{RestVerb}}<google::longrunning::Operation>(
           *service, *rest_context, {{{RestRequestBodyAccessor}}},
           false,
-          {{{RestAsyncPathExpression}}}, std::move(query_params)));
+          absl::StrCat("/", {{#RestPathSegments}}{{#IsApiVersion}}rest_internal::DetermineApiVersion("{{ApiVersion}}", *options){{/IsApiVersion}}{{#IsLiteral}}"{{Literal}}"{{/IsLiteral}}{{#IsField}}request.{{{FieldAccessor}}}{{/IsField}}{{#HasNext}}, "/", {{/HasNext}}{{/RestPathSegments}}{{#HasRestPathVerb}}, ":{{RestPathVerb}}"{{/HasRestPathVerb}}), std::move(query_params)));
     },
     std::move(p), service_, request, std::move(rest_context),
     std::move(options)};
@@ -118,7 +118,7 @@ StatusOr<google::longrunning::Operation>
 {{/RestHasQueryParams}}
   return rest_internal::{{RestVerb}}<google::longrunning::Operation>(
       *service_, rest_context, {{{RestRequestBodyAccessor}}}, false,
-      {{{RestPathExpression}}}, std::move(query_params));
+      absl::StrCat("/", {{#RestPathSegments}}{{#IsApiVersion}}rest_internal::DetermineApiVersion("{{ApiVersion}}", options){{/IsApiVersion}}{{#IsLiteral}}"{{Literal}}"{{/IsLiteral}}{{#IsField}}request.{{{FieldAccessor}}}{{/IsField}}{{#HasNext}}, "/", {{/HasNext}}{{/RestPathSegments}}{{#HasRestPathVerb}}, ":{{RestPathVerb}}"{{/HasRestPathVerb}}), std::move(query_params));
 }
 
 {{/IsLongrunning}}
@@ -150,7 +150,7 @@ Status {{Codec.DefaultRestStubClassName}}::{{Name}}(
 {{/RestHasQueryParams}}
   return rest_internal::{{RestVerb}}<{{{RestPayloadType}}}>(
       *service_, rest_context, {{{RestRequestBodyAccessor}}}, false,
-      {{{RestPathExpression}}}, std::move(query_params));
+      absl::StrCat("/", {{#RestPathSegments}}{{#IsApiVersion}}rest_internal::DetermineApiVersion("{{ApiVersion}}", options){{/IsApiVersion}}{{#IsLiteral}}"{{Literal}}"{{/IsLiteral}}{{#IsField}}request.{{{FieldAccessor}}}{{/IsField}}{{#HasNext}}, "/", {{/HasNext}}{{/RestPathSegments}}{{#HasRestPathVerb}}, ":{{RestPathVerb}}"{{/HasRestPathVerb}}), std::move(query_params));
 }
 
 {{/IsLongrunning}}
@@ -190,12 +190,12 @@ future<{{{CppReturnType}}}>
 {{#IsResponseTypeEmpty}}
       p.set_value(rest_internal::{{RestVerb}}<google::protobuf::Empty>(
           *service, *rest_context, {{{RestRequestBodyAccessor}}}, false,
-          {{{RestAsyncPathExpression}}}, std::move(query_params)));
+          absl::StrCat("/", {{#RestPathSegments}}{{#IsApiVersion}}rest_internal::DetermineApiVersion("{{ApiVersion}}", *options){{/IsApiVersion}}{{#IsLiteral}}"{{Literal}}"{{/IsLiteral}}{{#IsField}}request.{{{FieldAccessor}}}{{/IsField}}{{#HasNext}}, "/", {{/HasNext}}{{/RestPathSegments}}{{#HasRestPathVerb}}, ":{{RestPathVerb}}"{{/HasRestPathVerb}}), std::move(query_params)));
 {{/IsResponseTypeEmpty}}
 {{^IsResponseTypeEmpty}}
       p.set_value(rest_internal::{{RestVerb}}<{{{CppResponseType}}}>(
           *service, *rest_context, {{{RestRequestBodyAccessor}}}, false,
-          {{{RestAsyncPathExpression}}}, std::move(query_params)));
+          absl::StrCat("/", {{#RestPathSegments}}{{#IsApiVersion}}rest_internal::DetermineApiVersion("{{ApiVersion}}", *options){{/IsApiVersion}}{{#IsLiteral}}"{{Literal}}"{{/IsLiteral}}{{#IsField}}request.{{{FieldAccessor}}}{{/IsField}}{{#HasNext}}, "/", {{/HasNext}}{{/RestPathSegments}}{{#HasRestPathVerb}}, ":{{RestPathVerb}}"{{/HasRestPathVerb}}), std::move(query_params)));
 {{/IsResponseTypeEmpty}}
     },
     std::move(p), service_, request, std::move(rest_context),

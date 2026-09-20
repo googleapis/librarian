@@ -519,7 +519,7 @@ func TestAnnotateMethod_Rest(t *testing.T) {
 	req := api.NewTestMessage("GetItemRequest").WithFields(nameField, pageSizeField, filterField, boolField)
 	resp := api.NewTestMessage("Item")
 
-	pt := (&api.PathTemplate{}).WithLiteral("v1").WithVariableNamed("name")
+	pt := (&api.PathTemplate{}).WithLiteral("v1").WithLiteral("items").WithVariableNamed("name").WithVerb("cancel")
 	binding := &api.PathBinding{
 		Verb:         "GET",
 		PathTemplate: pt,
@@ -556,13 +556,19 @@ func TestAnnotateMethod_Rest(t *testing.T) {
 	if got.RestVerb != "Get" {
 		t.Errorf("expected RestVerb 'Get', got %q", got.RestVerb)
 	}
-	wantSyncPath := `absl::StrCat("/", rest_internal::DetermineApiVersion("v1", options), "/", request.name())`
-	if diff := cmp.Diff(wantSyncPath, got.RestPathExpression); diff != "" {
+	wantSegments := []*restPathSegmentAnnotation{
+		{IsApiVersion: true, ApiVersion: "v1", HasNext: true},
+		{IsLiteral: true, Literal: "items", HasNext: true},
+		{IsField: true, FieldAccessor: "name()", HasNext: false},
+	}
+	if diff := cmp.Diff(wantSegments, got.RestPathSegments); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
-	wantAsyncPath := `absl::StrCat("/", rest_internal::DetermineApiVersion("v1", *options), "/", request.name())`
-	if diff := cmp.Diff(wantAsyncPath, got.RestAsyncPathExpression); diff != "" {
-		t.Errorf("mismatch (-want +got):\n%s", diff)
+	if !got.HasRestPathVerb {
+		t.Errorf("expected HasRestPathVerb to be true")
+	}
+	if got.RestPathVerb != "cancel" {
+		t.Errorf("expected RestPathVerb 'cancel', got %q", got.RestPathVerb)
 	}
 	if !got.RestHasQueryParams {
 		t.Errorf("expected RestHasQueryParams to be true")

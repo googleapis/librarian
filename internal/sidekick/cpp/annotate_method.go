@@ -64,8 +64,9 @@ type methodAnnotations struct {
 	// REST
 	HasRestPath             bool
 	RestVerb                string
-	RestPathExpression      string
-	RestAsyncPathExpression string
+	RestPathSegments        []*restPathSegmentAnnotation
+	RestPathVerb            string
+	HasRestPathVerb         bool
 	RestQueryParams         []*queryParamAnnotation
 	RestHasQueryParams      bool
 	RestRequestBodyAccessor string
@@ -102,6 +103,16 @@ type methodAnnotations struct {
 
 type httpRoutingParamAnnotation struct {
 	Key           string
+	FieldAccessor string
+	HasNext       bool
+}
+
+type restPathSegmentAnnotation struct {
+	IsApiVersion  bool
+	ApiVersion    string
+	IsLiteral     bool
+	Literal       string
+	IsField       bool
 	FieldAccessor string
 	HasNext       bool
 }
@@ -291,7 +302,7 @@ func (c *codec) annotateMethod(m *api.Method, sAnn *serviceAnnotations, model *a
 	if m.PathInfo != nil && len(m.PathInfo.Bindings) > 0 {
 		b = m.PathInfo.Bindings[0]
 	}
-	hasRestPath, restVerb, restPathExpr, restAsyncPathExpr := buildRestPathExpressions(m)
+	hasRestPath, restVerb, restPathSegments, restPathVerb := buildRestPath(m)
 	restQueryParams := buildRestQueryParams(m, b, model)
 	var restRequestBodyAccessor string
 	var restReturnTypeName string
@@ -339,8 +350,9 @@ func (c *codec) annotateMethod(m *api.Method, sAnn *serviceAnnotations, model *a
 		StubMemberName:                 stubMemberName,
 		HasRestPath:                    hasRestPath,
 		RestVerb:                       restVerb,
-		RestPathExpression:             restPathExpr,
-		RestAsyncPathExpression:        restAsyncPathExpr,
+		RestPathSegments:               restPathSegments,
+		RestPathVerb:                   restPathVerb,
+		HasRestPathVerb:                restPathVerb != "",
 		RestQueryParams:                restQueryParams,
 		RestHasQueryParams:             len(restQueryParams) > 0,
 		RestRequestBodyAccessor:        restRequestBodyAccessor,
@@ -930,13 +942,14 @@ func annotateRoutingInfo(m *api.Method) []*routingMatcherAnnotation {
 	return matchers
 }
 
-func buildRestPathExpressions(m *api.Method) (hasPath bool, verb string, syncExpr string, asyncExpr string) {
+func buildRestPath(m *api.Method) (bool, string, []*restPathSegmentAnnotation, string) {
 	if m.PathInfo == nil || len(m.PathInfo.Bindings) == 0 || m.PathInfo.Bindings[0].PathTemplate == nil {
-		return false, "", "", ""
+		return false, "", nil, ""
 	}
 	b := m.PathInfo.Bindings[0]
 	tmpl := b.PathTemplate
 
+	var verb string
 	switch strings.ToUpper(b.Verb) {
 	case "GET":
 		verb = "Get"
@@ -969,41 +982,38 @@ func buildRestPathExpressions(m *api.Method) (hasPath bool, verb string, syncExp
 		}
 	}
 
-	var syncParts []string
-	var asyncParts []string
-
+	var segments []*restPathSegmentAnnotation
 	for _, seg := range tmpl.Segments {
 		if seg.Literal != "" {
 			if apiVersion != "" && seg.Literal == apiVersion {
-				syncParts = append(syncParts, fmt.Sprintf(`rest_internal::DetermineApiVersion(%q, options)`, apiVersion))
-				asyncParts = append(asyncParts, fmt.Sprintf(`rest_internal::DetermineApiVersion(%q, *options)`, apiVersion))
+				segments = append(segments, &restPathSegmentAnnotation{
+					IsApiVersion: true,
+					ApiVersion:   apiVersion,
+				})
 			} else {
-				syncParts = append(syncParts, fmt.Sprintf("%q", seg.Literal))
-				asyncParts = append(asyncParts, fmt.Sprintf("%q", seg.Literal))
+				segments = append(segments, &restPathSegmentAnnotation{
+					IsLiteral: true,
+					Literal:   seg.Literal,
+				})
 			}
 		} else if seg.Variable != nil {
 			var fieldCalls []string
 			for _, fp := range seg.Variable.FieldPath {
 				fieldCalls = append(fieldCalls, CppParamName(CamelCaseToSnakeCase(fp))+"()")
 			}
-			accessor := "request." + strings.Join(fieldCalls, ".")
-			syncParts = append(syncParts, accessor)
-			asyncParts = append(asyncParts, accessor)
+			segments = append(segments, &restPathSegmentAnnotation{
+				IsField:       true,
+				FieldAccessor: strings.Join(fieldCalls, "."),
+			})
+		}
+	}
+	if len(segments) > 0 {
+		for i := range len(segments) - 1 {
+			segments[i].HasNext = true
 		}
 	}
 
-	trailer := ")"
-	if tmpl.Verb != "" {
-		trailer = fmt.Sprintf(`, ":%s")`, tmpl.Verb)
-	}
-
-	syncPath := strings.Join(syncParts, `, "/", `)
-	asyncPath := strings.Join(asyncParts, `, "/", `)
-
-	syncExpr = `absl::StrCat("/", ` + syncPath + trailer
-	asyncExpr = `absl::StrCat("/", ` + asyncPath + trailer
-
-	return true, verb, syncExpr, asyncExpr
+	return true, verb, segments, tmpl.Verb
 }
 
 func buildRestQueryParams(m *api.Method, b *api.PathBinding, model *api.API) []*queryParamAnnotation {
