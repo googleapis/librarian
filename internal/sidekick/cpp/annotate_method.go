@@ -56,6 +56,17 @@ type methodAnnotations struct {
 	RoutingParamsCount   int
 	RoutingParamMatchers []*routingMatcherAnnotation
 
+	// REST
+	HasRestPath             bool
+	RestVerb                string
+	RestPathExpression      string
+	RestAsyncPathExpression string
+	RestQueryParams         []*queryParamAnnotation
+	RestHasQueryParams      bool
+	RestRequestBodyAccessor string
+	RestReturnTypeName      string
+	IsRestRpc               bool
+
 	// Request ID
 	HasRequestId       bool
 	RequestIdFieldName string
@@ -79,6 +90,14 @@ type methodAnnotations struct {
 
 	// Signatures (overloads)
 	Signatures []*methodSignatureAnnotations
+}
+
+type queryParamAnnotation struct {
+	ParamKey      string
+	FieldAccessor string
+	IsString      bool
+	IsNumber      bool
+	IsBool        bool
 }
 
 type routingPatternAnnotation struct {
@@ -216,6 +235,24 @@ func (c *codec) annotateMethod(m *api.Method, sAnn *serviceAnnotations, model *a
 	routingMatchers := annotateRoutingInfo(m)
 	hasRouting := len(routingMatchers) > 0
 
+	var b *api.PathBinding
+	if m.PathInfo != nil && len(m.PathInfo.Bindings) > 0 {
+		b = m.PathInfo.Bindings[0]
+	}
+	hasRestPath, restVerb, restPathExpr, restAsyncPathExpr := buildRestPathExpressions(m)
+	restQueryParams := buildRestQueryParams(m, b, model)
+	var restRequestBodyAccessor string
+	var restReturnTypeName string
+	if hasRestPath {
+		var bodyField string
+		if m.PathInfo != nil {
+			bodyField = m.PathInfo.BodyFieldPath
+		}
+		restRequestBodyAccessor = buildRestRequestBodyAccessor(bodyField)
+		restReturnTypeName = buildRestReturnTypeName(m, cppReturnType)
+	}
+	isRestRpc := !isStreamingRead && !isStreamingWrite && !isBidirStreaming && hasRestPath
+
 	mAnn := &methodAnnotations{
 		Service:                        sAnn,
 		ServiceName:                    sAnn.Name,
@@ -242,6 +279,15 @@ func (c *codec) annotateMethod(m *api.Method, sAnn *serviceAnnotations, model *a
 		HasRouting:                     hasRouting,
 		RoutingParamsCount:             len(routingMatchers),
 		RoutingParamMatchers:           routingMatchers,
+		HasRestPath:                    hasRestPath,
+		RestVerb:                       restVerb,
+		RestPathExpression:             restPathExpr,
+		RestAsyncPathExpression:        restAsyncPathExpr,
+		RestQueryParams:                restQueryParams,
+		RestHasQueryParams:             len(restQueryParams) > 0,
+		RestRequestBodyAccessor:        restRequestBodyAccessor,
+		RestReturnTypeName:             restReturnTypeName,
+		IsRestRpc:                      isRestRpc,
 		HasRequestId:                   hasRequestId,
 		RequestIdFieldName:             requestIdFieldName,
 		Idempotency:                    idempotency,
@@ -817,4 +863,135 @@ func annotateRoutingInfo(m *api.Method) []*routingMatcherAnnotation {
 		})
 	}
 	return matchers
+}
+
+func buildRestPathExpressions(m *api.Method) (hasPath bool, verb string, syncExpr string, asyncExpr string) {
+	if m.PathInfo == nil || len(m.PathInfo.Bindings) == 0 || m.PathInfo.Bindings[0].PathTemplate == nil {
+		return false, "", "", ""
+	}
+	b := m.PathInfo.Bindings[0]
+	tmpl := b.PathTemplate
+
+	switch strings.ToUpper(b.Verb) {
+	case "GET":
+		verb = "Get"
+	case "POST":
+		verb = "Post"
+	case "PUT":
+		verb = "Put"
+	case "DELETE":
+		verb = "Delete"
+	case "PATCH":
+		verb = "Patch"
+	default:
+		verb = "Post"
+	}
+
+	var apiVersion string
+	for _, seg := range tmpl.Segments {
+		if strings.HasPrefix(seg.Literal, "v") && len(seg.Literal) > 1 {
+			allDigits := true
+			for _, r := range seg.Literal[1:] {
+				if r < '0' || r > '9' {
+					allDigits = false
+					break
+				}
+			}
+			if allDigits {
+				apiVersion = seg.Literal
+				break
+			}
+		}
+	}
+
+	var syncParts []string
+	var asyncParts []string
+
+	for _, seg := range tmpl.Segments {
+		if seg.Literal != "" {
+			if apiVersion != "" && seg.Literal == apiVersion {
+				syncParts = append(syncParts, fmt.Sprintf(`rest_internal::DetermineApiVersion(%q, options)`, apiVersion))
+				asyncParts = append(asyncParts, fmt.Sprintf(`rest_internal::DetermineApiVersion(%q, *options)`, apiVersion))
+			} else {
+				syncParts = append(syncParts, fmt.Sprintf("%q", seg.Literal))
+				asyncParts = append(asyncParts, fmt.Sprintf("%q", seg.Literal))
+			}
+		} else if seg.Variable != nil {
+			var fieldCalls []string
+			for _, fp := range seg.Variable.FieldPath {
+				fieldCalls = append(fieldCalls, CppParamName(CamelCaseToSnakeCase(fp))+"()")
+			}
+			accessor := "request." + strings.Join(fieldCalls, ".")
+			syncParts = append(syncParts, accessor)
+			asyncParts = append(asyncParts, accessor)
+		}
+	}
+
+	trailer := ")"
+	if tmpl.Verb != "" {
+		trailer = fmt.Sprintf(`, ":%s")`, tmpl.Verb)
+	}
+
+	syncPath := strings.Join(syncParts, `, "/", `)
+	asyncPath := strings.Join(asyncParts, `, "/", `)
+
+	syncExpr = `absl::StrCat("/", ` + syncPath + trailer
+	asyncExpr = `absl::StrCat("/", ` + asyncPath + trailer
+
+	return true, verb, syncExpr, asyncExpr
+}
+
+func buildRestQueryParams(m *api.Method, b *api.PathBinding, model *api.API) []*queryParamAnnotation {
+	if b == nil || len(b.QueryParameters) == 0 || m.InputTypeID == "" {
+		return nil
+	}
+	msg := model.Message(m.InputTypeID)
+	if msg == nil {
+		return nil
+	}
+	var params []*queryParamAnnotation
+	for _, f := range msg.Fields {
+		if !b.QueryParameters[f.Name] {
+			continue
+		}
+		if f.Deprecated || f.Repeated {
+			continue
+		}
+		snakeName := CppParamName(CamelCaseToSnakeCase(f.Name)) + "()"
+		switch f.Typez {
+		case api.TypezString:
+			params = append(params, &queryParamAnnotation{
+				ParamKey:      f.Name,
+				FieldAccessor: snakeName,
+				IsString:      true,
+			})
+		case api.TypezBool:
+			params = append(params, &queryParamAnnotation{
+				ParamKey:      f.Name,
+				FieldAccessor: snakeName,
+				IsBool:        true,
+			})
+		case api.TypezInt32, api.TypezInt64, api.TypezUint32, api.TypezUint64, api.TypezFloat, api.TypezDouble, api.TypezEnum:
+			params = append(params, &queryParamAnnotation{
+				ParamKey:      f.Name,
+				FieldAccessor: snakeName,
+				IsNumber:      true,
+			})
+		}
+	}
+	return params
+}
+
+func buildRestRequestBodyAccessor(bodyField string) string {
+	if bodyField == "" || bodyField == "*" {
+		return "request"
+	}
+	return "request." + CppParamName(CamelCaseToSnakeCase(bodyField)) + "()"
+}
+
+func buildRestReturnTypeName(m *api.Method, cppReturnType string) string {
+	if m.OutputTypeID == "" || m.OutputTypeID == ".google.protobuf.Empty" || m.OutputTypeID == "google.protobuf.Empty" {
+		return "google::cloud::rest_internal::EmptyResponseType"
+	}
+	return cppReturnType
 }

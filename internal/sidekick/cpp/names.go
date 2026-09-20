@@ -207,6 +207,76 @@ func SourcesSourcePath(productPath, serviceName string) string {
 	return joinProductPath(productPath, path.Join("internal", ServiceNameToFilePath(serviceName)+"_sources.cc"))
 }
 
+// RestConnectionHeaderPath returns the relative output path for a REST service connection header.
+func RestConnectionHeaderPath(productPath, serviceName string) string {
+	return joinProductPath(productPath, ServiceNameToFilePath(serviceName)+"_rest_connection.h")
+}
+
+// RestConnectionSourcePath returns the relative output path for a REST service connection source file.
+func RestConnectionSourcePath(productPath, serviceName string) string {
+	return joinProductPath(productPath, ServiceNameToFilePath(serviceName)+"_rest_connection.cc")
+}
+
+// RestConnectionImplHeaderPath returns the relative output path for an internal REST connection impl header.
+func RestConnectionImplHeaderPath(productPath, serviceName string) string {
+	return joinProductPath(productPath, path.Join("internal", ServiceNameToFilePath(serviceName)+"_rest_connection_impl.h"))
+}
+
+// RestConnectionImplSourcePath returns the relative output path for an internal REST connection impl source file.
+func RestConnectionImplSourcePath(productPath, serviceName string) string {
+	return joinProductPath(productPath, path.Join("internal", ServiceNameToFilePath(serviceName)+"_rest_connection_impl.cc"))
+}
+
+// RestStubFactoryHeaderPath returns the relative output path for an internal REST stub factory header.
+func RestStubFactoryHeaderPath(productPath, serviceName string) string {
+	return joinProductPath(productPath, path.Join("internal", ServiceNameToFilePath(serviceName)+"_rest_stub_factory.h"))
+}
+
+// RestStubFactorySourcePath returns the relative output path for an internal REST stub factory source file.
+func RestStubFactorySourcePath(productPath, serviceName string) string {
+	return joinProductPath(productPath, path.Join("internal", ServiceNameToFilePath(serviceName)+"_rest_stub_factory.cc"))
+}
+
+// RestLoggingDecoratorHeaderPath returns the relative output path for an internal REST logging decorator header.
+func RestLoggingDecoratorHeaderPath(productPath, serviceName string) string {
+	return joinProductPath(productPath, path.Join("internal", ServiceNameToFilePath(serviceName)+"_rest_logging_decorator.h"))
+}
+
+// RestLoggingDecoratorSourcePath returns the relative output path for an internal REST logging decorator source file.
+func RestLoggingDecoratorSourcePath(productPath, serviceName string) string {
+	return joinProductPath(productPath, path.Join("internal", ServiceNameToFilePath(serviceName)+"_rest_logging_decorator.cc"))
+}
+
+// RestMetadataDecoratorHeaderPath returns the relative output path for an internal REST metadata decorator header.
+func RestMetadataDecoratorHeaderPath(productPath, serviceName string) string {
+	return joinProductPath(productPath, path.Join("internal", ServiceNameToFilePath(serviceName)+"_rest_metadata_decorator.h"))
+}
+
+// RestMetadataDecoratorSourcePath returns the relative output path for an internal REST metadata decorator source file.
+func RestMetadataDecoratorSourcePath(productPath, serviceName string) string {
+	return joinProductPath(productPath, path.Join("internal", ServiceNameToFilePath(serviceName)+"_rest_metadata_decorator.cc"))
+}
+
+// RestStubHeaderPath returns the relative output path for an internal REST stub header.
+func RestStubHeaderPath(productPath, serviceName string) string {
+	return joinProductPath(productPath, path.Join("internal", ServiceNameToFilePath(serviceName)+"_rest_stub.h"))
+}
+
+// RestStubSourcePath returns the relative output path for an internal REST stub source file.
+func RestStubSourcePath(productPath, serviceName string) string {
+	return joinProductPath(productPath, path.Join("internal", ServiceNameToFilePath(serviceName)+"_rest_stub.cc"))
+}
+
+// RoundRobinHeaderPath returns the relative output path for an internal round-robin decorator header.
+func RoundRobinHeaderPath(productPath, serviceName string) string {
+	return joinProductPath(productPath, path.Join("internal", ServiceNameToFilePath(serviceName)+"_round_robin_decorator.h"))
+}
+
+// RoundRobinSourcePath returns the relative output path for an internal round-robin decorator source file.
+func RoundRobinSourcePath(productPath, serviceName string) string {
+	return joinProductPath(productPath, path.Join("internal", ServiceNameToFilePath(serviceName)+"_round_robin_decorator.cc"))
+}
+
 // ForwardingClientHeaderPath returns the relative output path for a forwarding client header.
 func ForwardingClientHeaderPath(forwardingPath, serviceName string) string {
 	return joinProductPath(forwardingPath, ServiceNameToFilePath(serviceName)+"_client.h")
@@ -240,8 +310,8 @@ func joinProductPath(productPath, relPath string) string {
 	return path.Join(cleanProduct, relPath)
 }
 
-// ServiceGeneratedFiles returns the 28 generated files for a gRPC service.
-func ServiceGeneratedFiles(productPath, serviceName string) []language.GeneratedFile {
+// CommonGeneratedFiles returns the 14 common generated files for a service.
+func CommonGeneratedFiles(productPath, serviceName string) []language.GeneratedFile {
 	return []language.GeneratedFile{
 		{TemplatePath: "templates/service/client.h.mustache", OutputPath: ClientHeaderPath(productPath, serviceName)},
 		{TemplatePath: "templates/service/client.cc.mustache", OutputPath: ClientSourcePath(productPath, serviceName)},
@@ -256,6 +326,13 @@ func ServiceGeneratedFiles(productPath, serviceName string) []language.Generated
 		{TemplatePath: "templates/service/retry_traits.h.mustache", OutputPath: RetryTraitsHeaderPath(productPath, serviceName)},
 		{TemplatePath: "templates/service/tracing_connection.h.mustache", OutputPath: TracingConnectionHeaderPath(productPath, serviceName)},
 		{TemplatePath: "templates/service/tracing_connection.cc.mustache", OutputPath: TracingConnectionSourcePath(productPath, serviceName)},
+		{TemplatePath: "templates/service/sources.cc.mustache", OutputPath: SourcesSourcePath(productPath, serviceName)},
+	}
+}
+
+// GrpcGeneratedFiles returns the 14 gRPC-specific generated files for a service.
+func GrpcGeneratedFiles(productPath, serviceName string) []language.GeneratedFile {
+	return []language.GeneratedFile{
 		{TemplatePath: "templates/service/connection_impl.h.mustache", OutputPath: ConnectionImplHeaderPath(productPath, serviceName)},
 		{TemplatePath: "templates/service/connection_impl.cc.mustache", OutputPath: ConnectionImplSourcePath(productPath, serviceName)},
 		{TemplatePath: "templates/service/stub_factory.h.mustache", OutputPath: StubFactoryHeaderPath(productPath, serviceName)},
@@ -270,8 +347,41 @@ func ServiceGeneratedFiles(productPath, serviceName string) []language.Generated
 		{TemplatePath: "templates/service/stub.cc.mustache", OutputPath: StubSourcePath(productPath, serviceName)},
 		{TemplatePath: "templates/service/tracing_stub.h.mustache", OutputPath: TracingStubHeaderPath(productPath, serviceName)},
 		{TemplatePath: "templates/service/tracing_stub.cc.mustache", OutputPath: TracingStubSourcePath(productPath, serviceName)},
-		{TemplatePath: "templates/service/sources.cc.mustache", OutputPath: SourcesSourcePath(productPath, serviceName)},
 	}
+}
+
+// RestGeneratedFiles returns the 12 REST-specific generated files for a service.
+func RestGeneratedFiles(productPath, serviceName string) []language.GeneratedFile {
+	return []language.GeneratedFile{
+		{TemplatePath: "templates/service/rest_connection.h.mustache", OutputPath: RestConnectionHeaderPath(productPath, serviceName)},
+		{TemplatePath: "templates/service/rest_connection.cc.mustache", OutputPath: RestConnectionSourcePath(productPath, serviceName)},
+		{TemplatePath: "templates/service/rest_connection_impl.h.mustache", OutputPath: RestConnectionImplHeaderPath(productPath, serviceName)},
+		{TemplatePath: "templates/service/rest_connection_impl.cc.mustache", OutputPath: RestConnectionImplSourcePath(productPath, serviceName)},
+		{TemplatePath: "templates/service/rest_stub_factory.h.mustache", OutputPath: RestStubFactoryHeaderPath(productPath, serviceName)},
+		{TemplatePath: "templates/service/rest_stub_factory.cc.mustache", OutputPath: RestStubFactorySourcePath(productPath, serviceName)},
+		{TemplatePath: "templates/service/rest_logging_decorator.h.mustache", OutputPath: RestLoggingDecoratorHeaderPath(productPath, serviceName)},
+		{TemplatePath: "templates/service/rest_logging_decorator.cc.mustache", OutputPath: RestLoggingDecoratorSourcePath(productPath, serviceName)},
+		{TemplatePath: "templates/service/rest_metadata_decorator.h.mustache", OutputPath: RestMetadataDecoratorHeaderPath(productPath, serviceName)},
+		{TemplatePath: "templates/service/rest_metadata_decorator.cc.mustache", OutputPath: RestMetadataDecoratorSourcePath(productPath, serviceName)},
+		{TemplatePath: "templates/service/rest_stub.h.mustache", OutputPath: RestStubHeaderPath(productPath, serviceName)},
+		{TemplatePath: "templates/service/rest_stub.cc.mustache", OutputPath: RestStubSourcePath(productPath, serviceName)},
+	}
+}
+
+// RoundRobinGeneratedFiles returns the 2 round-robin generated files for a service.
+func RoundRobinGeneratedFiles(productPath, serviceName string) []language.GeneratedFile {
+	return []language.GeneratedFile{
+		{TemplatePath: "templates/service/round_robin_decorator.h.mustache", OutputPath: RoundRobinHeaderPath(productPath, serviceName)},
+		{TemplatePath: "templates/service/round_robin_decorator.cc.mustache", OutputPath: RoundRobinSourcePath(productPath, serviceName)},
+	}
+}
+
+// ServiceGeneratedFiles returns the 28 generated files for a gRPC service.
+func ServiceGeneratedFiles(productPath, serviceName string) []language.GeneratedFile {
+	var files []language.GeneratedFile
+	files = append(files, CommonGeneratedFiles(productPath, serviceName)...)
+	files = append(files, GrpcGeneratedFiles(productPath, serviceName)...)
+	return files
 }
 
 // ForwardingGeneratedFiles returns the 5 forwarding header files for a service.
@@ -460,6 +570,46 @@ func LimitedTimeRetryPolicyName(serviceName string) string {
 // RetryTraitsName returns the C++ retry traits struct name for a service.
 func RetryTraitsName(serviceName string) string {
 	return serviceName + "RetryTraits"
+}
+
+// RestStubClassName returns the C++ REST stub class name for a service.
+func RestStubClassName(serviceName string) string {
+	return serviceName + "RestStub"
+}
+
+// DefaultRestStubClassName returns the C++ default REST stub class name for a service.
+func DefaultRestStubClassName(serviceName string) string {
+	return "Default" + serviceName + "RestStub"
+}
+
+// RestLoggingDecoratorClassName returns the C++ REST logging decorator class name for a service.
+func RestLoggingDecoratorClassName(serviceName string) string {
+	return serviceName + "RestLogging"
+}
+
+// RestMetadataDecoratorClassName returns the C++ REST metadata decorator class name for a service.
+func RestMetadataDecoratorClassName(serviceName string) string {
+	return serviceName + "RestMetadata"
+}
+
+// RestConnectionImplClassName returns the C++ REST connection implementation class name for a service.
+func RestConnectionImplClassName(serviceName string) string {
+	return serviceName + "RestConnectionImpl"
+}
+
+// RoundRobinClassName returns the C++ round-robin decorator class name for a service.
+func RoundRobinClassName(serviceName string) string {
+	return serviceName + "RoundRobin"
+}
+
+// MakeRestConnectionFunctionName returns the factory function name for a REST connection.
+func MakeRestConnectionFunctionName(serviceName string) string {
+	return "Make" + serviceName + "ConnectionRest"
+}
+
+// CreateDefaultRestStubFunctionName returns the factory function name for a default REST stub.
+func CreateDefaultRestStubFunctionName(serviceName string) string {
+	return "CreateDefault" + serviceName + "RestStub"
 }
 
 // ProtoNameToCppName converts a fully qualified protobuf name to its C++ equivalent,

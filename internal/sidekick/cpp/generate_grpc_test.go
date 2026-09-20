@@ -553,9 +553,9 @@ func TestGenerate_GrpcDisabled(t *testing.T) {
 		t.Errorf("CMakeLists.txt should exist: %v", err)
 	}
 
-	// No service files should exist.
-	svcFiles := ServiceGeneratedFiles("v1", "RestOnlyService")
-	for _, f := range svcFiles {
+	// No gRPC-specific service files should exist.
+	grpcFiles := GrpcGeneratedFiles("v1", "RestOnlyService")
+	for _, f := range grpcFiles {
 		if _, err := os.Stat(filepath.Join(outdir, f.OutputPath)); !errors.Is(err, fs.ErrNotExist) {
 			t.Errorf("expected gRPC file %q not to exist when gRPC is disabled", f.OutputPath)
 		}

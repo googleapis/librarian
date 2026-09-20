@@ -57,6 +57,15 @@ type serviceAnnotations struct {
 	ForwardingOptionsHeaderIncludeGuard           string
 	ForwardingMockConnectionHeaderIncludeGuard    string
 
+	// REST Header include guards
+	RestConnectionHeaderIncludeGuard        string
+	RestConnectionImplHeaderIncludeGuard    string
+	RestStubHeaderIncludeGuard              string
+	RestStubFactoryHeaderIncludeGuard       string
+	RestLoggingDecoratorHeaderIncludeGuard  string
+	RestMetadataDecoratorHeaderIncludeGuard string
+	RoundRobinHeaderIncludeGuard            string
+
 	// Header paths
 	ClientHeaderPath                      string
 	ConnectionHeaderPath                  string
@@ -79,6 +88,15 @@ type serviceAnnotations struct {
 	ForwardingOptionsHeaderPath           string
 	ForwardingMockConnectionHeaderPath    string
 
+	// REST Header paths
+	RestConnectionHeaderPath        string
+	RestConnectionImplHeaderPath    string
+	RestStubHeaderPath              string
+	RestStubFactoryHeaderPath       string
+	RestLoggingDecoratorHeaderPath  string
+	RestMetadataDecoratorHeaderPath string
+	RoundRobinHeaderPath            string
+
 	// Proto header paths
 	ProtoHeaderPath     string
 	ProtoGrpcHeaderPath string
@@ -100,6 +118,16 @@ type serviceAnnotations struct {
 	LimitedErrorCountRetryPolicyName     string
 	LimitedTimeRetryPolicyName           string
 	RetryTraitsName                      string
+
+	// REST Class names
+	RestStubClassName                 string
+	DefaultRestStubClassName          string
+	RestLoggingDecoratorClassName     string
+	RestMetadataDecoratorClassName    string
+	RestConnectionImplClassName       string
+	RoundRobinClassName               string
+	MakeRestConnectionFunctionName    string
+	CreateDefaultRestStubFunctionName string
 
 	// Options and helpers
 	RetryPolicyOptionName                              string
@@ -132,6 +160,15 @@ type serviceAnnotations struct {
 	HasStreamRange               bool
 	HasCompletionQueue           bool
 	HasExplicitRoutingMethod     bool
+
+	// REST & Transport configuration
+	GenerateRestTransport         bool
+	GenerateGrpcTransport         bool
+	GenerateRoundRobinDecorator   bool
+	HasGrpcLRO                    bool
+	IsLocationOptionallyDependent bool
+	ApiVersion                    string
+	HasApiVersion                 bool
 
 	// Header and source local includes
 	ConnectionHeaderIncludes     []string
@@ -192,6 +229,22 @@ func (c *codec) annotateService(s *api.Service, modelAnn *modelAnnotations, mode
 	metadataDecoratorHeaderPath := MetadataDecoratorHeaderPath(productPath, s.Name)
 	stubHeaderPath := StubHeaderPath(productPath, s.Name)
 	tracingStubHeaderPath := TracingStubHeaderPath(productPath, s.Name)
+
+	restConnectionHeaderPath := RestConnectionHeaderPath(productPath, s.Name)
+	restConnectionImplHeaderPath := RestConnectionImplHeaderPath(productPath, s.Name)
+	restStubHeaderPath := RestStubHeaderPath(productPath, s.Name)
+	restStubFactoryHeaderPath := RestStubFactoryHeaderPath(productPath, s.Name)
+	restLoggingDecoratorHeaderPath := RestLoggingDecoratorHeaderPath(productPath, s.Name)
+	restMetadataDecoratorHeaderPath := RestMetadataDecoratorHeaderPath(productPath, s.Name)
+	roundRobinHeaderPath := RoundRobinHeaderPath(productPath, s.Name)
+
+	restConnectionHeaderGuard := FormatHeaderIncludeGuard(restConnectionHeaderPath)
+	restConnectionImplHeaderGuard := FormatHeaderIncludeGuard(restConnectionImplHeaderPath)
+	restStubHeaderGuard := FormatHeaderIncludeGuard(restStubHeaderPath)
+	restStubFactoryHeaderGuard := FormatHeaderIncludeGuard(restStubFactoryHeaderPath)
+	restLoggingDecoratorHeaderGuard := FormatHeaderIncludeGuard(restLoggingDecoratorHeaderPath)
+	restMetadataDecoratorHeaderGuard := FormatHeaderIncludeGuard(restMetadataDecoratorHeaderPath)
+	roundRobinHeaderGuard := FormatHeaderIncludeGuard(roundRobinHeaderPath)
 
 	var (
 		forwardingNamespace      string
@@ -289,18 +342,48 @@ func (c *codec) annotateService(s *api.Service, modelAnn *modelAnnotations, mode
 		hasAsyncMethod = true
 	}
 
+	generateRestTransport := false
+	generateGrpcTransport := true
+	generateRoundRobinDecorator := false
+	isLocationOptionallyDependent := false
+	if c.config != nil {
+		generateRestTransport = c.config.GenerateRestTransport
+		if c.config.GenerateGrpcTransport != nil {
+			generateGrpcTransport = *c.config.GenerateGrpcTransport
+		}
+		generateRoundRobinDecorator = c.config.GenerateRoundRobinDecorator
+		if c.config.EndpointLocationStyle == "LOCATION_OPTIONALLY_DEPENDENT" {
+			isLocationOptionallyDependent = true
+		}
+	}
+	hasGrpcLRO := hasLongrunningMethod && generateGrpcTransport
+
+	var apiVersion string
+	for _, m := range s.Methods {
+		if m.APIVersion != "" {
+			apiVersion = m.APIVersion
+			break
+		}
+	}
+	hasApiVersion := apiVersion != ""
+
 	connectionHeaderIncludes := []string{
 		retryTraitsHeaderPath,
 		idempotencyPolicyHeaderPath,
 	}
 	slices.Sort(connectionHeaderIncludes)
 
-	connectionSourceIncludes := []string{
-		connectionImplHeaderPath,
+	var connectionSourceIncludes []string
+	connectionSourceIncludes = append(connectionSourceIncludes,
 		optionDefaultsHeaderPath,
-		stubFactoryHeaderPath,
 		tracingConnectionHeaderPath,
 		optionsHeaderPath,
+	)
+	if generateGrpcTransport {
+		connectionSourceIncludes = append(connectionSourceIncludes,
+			connectionImplHeaderPath,
+			stubFactoryHeaderPath,
+		)
 	}
 	slices.Sort(connectionSourceIncludes)
 
@@ -319,13 +402,32 @@ func (c *codec) annotateService(s *api.Service, modelAnn *modelAnnotations, mode
 		IdempotencyPolicySourcePath(productPath, s.Name),
 		OptionDefaultsSourcePath(productPath, s.Name),
 		TracingConnectionSourcePath(productPath, s.Name),
-		ConnectionImplSourcePath(productPath, s.Name),
-		StubFactorySourcePath(productPath, s.Name),
-		AuthDecoratorSourcePath(productPath, s.Name),
-		LoggingDecoratorSourcePath(productPath, s.Name),
-		MetadataDecoratorSourcePath(productPath, s.Name),
-		StubSourcePath(productPath, s.Name),
-		TracingStubSourcePath(productPath, s.Name),
+	}
+	if generateRestTransport {
+		sourcesCcIncludes = append(sourcesCcIncludes,
+			RestConnectionSourcePath(productPath, s.Name),
+			RestConnectionImplSourcePath(productPath, s.Name),
+			RestLoggingDecoratorSourcePath(productPath, s.Name),
+			RestMetadataDecoratorSourcePath(productPath, s.Name),
+			RestStubSourcePath(productPath, s.Name),
+			RestStubFactorySourcePath(productPath, s.Name),
+		)
+	}
+	if generateGrpcTransport {
+		sourcesCcIncludes = append(sourcesCcIncludes,
+			AuthDecoratorSourcePath(productPath, s.Name),
+			ConnectionImplSourcePath(productPath, s.Name),
+			LoggingDecoratorSourcePath(productPath, s.Name),
+			MetadataDecoratorSourcePath(productPath, s.Name),
+			StubSourcePath(productPath, s.Name),
+			StubFactorySourcePath(productPath, s.Name),
+			TracingStubSourcePath(productPath, s.Name),
+		)
+	}
+	if generateRoundRobinDecorator {
+		sourcesCcIncludes = append(sourcesCcIncludes,
+			RoundRobinSourcePath(productPath, s.Name),
+		)
 	}
 	slices.Sort(sourcesCcIncludes)
 
@@ -407,6 +509,14 @@ func (c *codec) annotateService(s *api.Service, modelAnn *modelAnnotations, mode
 		ForwardingOptionsHeaderIncludeGuard:           forwardingOptionsHeaderGuard,
 		ForwardingMockConnectionHeaderIncludeGuard:    forwardingMockConnectionHeaderGuard,
 
+		RestConnectionHeaderIncludeGuard:        restConnectionHeaderGuard,
+		RestConnectionImplHeaderIncludeGuard:    restConnectionImplHeaderGuard,
+		RestStubHeaderIncludeGuard:              restStubHeaderGuard,
+		RestStubFactoryHeaderIncludeGuard:       restStubFactoryHeaderGuard,
+		RestLoggingDecoratorHeaderIncludeGuard:  restLoggingDecoratorHeaderGuard,
+		RestMetadataDecoratorHeaderIncludeGuard: restMetadataDecoratorHeaderGuard,
+		RoundRobinHeaderIncludeGuard:            roundRobinHeaderGuard,
+
 		ClientHeaderPath:            clientHeaderPath,
 		ConnectionHeaderPath:        connectionHeaderPath,
 		IdempotencyPolicyHeaderPath: idempotencyPolicyHeaderPath,
@@ -422,6 +532,14 @@ func (c *codec) annotateService(s *api.Service, modelAnn *modelAnnotations, mode
 		MetadataDecoratorHeaderPath: metadataDecoratorHeaderPath,
 		StubHeaderPath:              stubHeaderPath,
 		TracingStubHeaderPath:       tracingStubHeaderPath,
+
+		RestConnectionHeaderPath:        restConnectionHeaderPath,
+		RestConnectionImplHeaderPath:    restConnectionImplHeaderPath,
+		RestStubHeaderPath:              restStubHeaderPath,
+		RestStubFactoryHeaderPath:       restStubFactoryHeaderPath,
+		RestLoggingDecoratorHeaderPath:  restLoggingDecoratorHeaderPath,
+		RestMetadataDecoratorHeaderPath: restMetadataDecoratorHeaderPath,
+		RoundRobinHeaderPath:            roundRobinHeaderPath,
 
 		ForwardingClientHeaderPath:            forwardingClientHeaderPath,
 		ForwardingConnectionHeaderPath:        forwardingConnectionHeaderPath,
@@ -448,6 +566,15 @@ func (c *codec) annotateService(s *api.Service, modelAnn *modelAnnotations, mode
 		LimitedErrorCountRetryPolicyName:     LimitedErrorCountRetryPolicyName(s.Name),
 		LimitedTimeRetryPolicyName:           LimitedTimeRetryPolicyName(s.Name),
 		RetryTraitsName:                      RetryTraitsName(s.Name),
+
+		RestStubClassName:                 RestStubClassName(s.Name),
+		DefaultRestStubClassName:          DefaultRestStubClassName(s.Name),
+		RestLoggingDecoratorClassName:     RestLoggingDecoratorClassName(s.Name),
+		RestMetadataDecoratorClassName:    RestMetadataDecoratorClassName(s.Name),
+		RestConnectionImplClassName:       RestConnectionImplClassName(s.Name),
+		RoundRobinClassName:               RoundRobinClassName(s.Name),
+		MakeRestConnectionFunctionName:    MakeRestConnectionFunctionName(s.Name),
+		CreateDefaultRestStubFunctionName: CreateDefaultRestStubFunctionName(s.Name),
 
 		RetryPolicyOptionName:                              s.Name + "RetryPolicyOption",
 		BackoffPolicyOptionName:                            s.Name + "BackoffPolicyOption",
@@ -477,6 +604,14 @@ func (c *codec) annotateService(s *api.Service, modelAnn *modelAnnotations, mode
 		HasStreamRange:               hasStreamingReadMethod || hasPaginatedMethod,
 		HasCompletionQueue:           hasAsyncMethod || hasBidirStreamingMethod,
 		HasExplicitRoutingMethod:     hasExplicitRoutingMethod,
+
+		GenerateRestTransport:         generateRestTransport,
+		GenerateGrpcTransport:         generateGrpcTransport,
+		GenerateRoundRobinDecorator:   generateRoundRobinDecorator,
+		HasGrpcLRO:                    hasGrpcLRO,
+		IsLocationOptionallyDependent: isLocationOptionallyDependent,
+		ApiVersion:                    apiVersion,
+		HasApiVersion:                 hasApiVersion,
 
 		ConnectionHeaderIncludes:     connectionHeaderIncludes,
 		ConnectionSourceIncludes:     connectionSourceIncludes,

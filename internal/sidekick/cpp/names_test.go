@@ -446,6 +446,76 @@ func TestPathHelpers(t *testing.T) {
 			want: "generator/integration_tests/golden/mocks/mock_request_id_connection.h",
 		},
 		{
+			name: "rest connection header",
+			fn:   func() string { return RestConnectionHeaderPath(productPath, serviceName) },
+			want: "generator/integration_tests/golden/v1/request_id_rest_connection.h",
+		},
+		{
+			name: "rest connection source",
+			fn:   func() string { return RestConnectionSourcePath(productPath, serviceName) },
+			want: "generator/integration_tests/golden/v1/request_id_rest_connection.cc",
+		},
+		{
+			name: "rest connection impl header",
+			fn:   func() string { return RestConnectionImplHeaderPath(productPath, serviceName) },
+			want: "generator/integration_tests/golden/v1/internal/request_id_rest_connection_impl.h",
+		},
+		{
+			name: "rest connection impl source",
+			fn:   func() string { return RestConnectionImplSourcePath(productPath, serviceName) },
+			want: "generator/integration_tests/golden/v1/internal/request_id_rest_connection_impl.cc",
+		},
+		{
+			name: "rest stub factory header",
+			fn:   func() string { return RestStubFactoryHeaderPath(productPath, serviceName) },
+			want: "generator/integration_tests/golden/v1/internal/request_id_rest_stub_factory.h",
+		},
+		{
+			name: "rest stub factory source",
+			fn:   func() string { return RestStubFactorySourcePath(productPath, serviceName) },
+			want: "generator/integration_tests/golden/v1/internal/request_id_rest_stub_factory.cc",
+		},
+		{
+			name: "rest logging decorator header",
+			fn:   func() string { return RestLoggingDecoratorHeaderPath(productPath, serviceName) },
+			want: "generator/integration_tests/golden/v1/internal/request_id_rest_logging_decorator.h",
+		},
+		{
+			name: "rest logging decorator source",
+			fn:   func() string { return RestLoggingDecoratorSourcePath(productPath, serviceName) },
+			want: "generator/integration_tests/golden/v1/internal/request_id_rest_logging_decorator.cc",
+		},
+		{
+			name: "rest metadata decorator header",
+			fn:   func() string { return RestMetadataDecoratorHeaderPath(productPath, serviceName) },
+			want: "generator/integration_tests/golden/v1/internal/request_id_rest_metadata_decorator.h",
+		},
+		{
+			name: "rest metadata decorator source",
+			fn:   func() string { return RestMetadataDecoratorSourcePath(productPath, serviceName) },
+			want: "generator/integration_tests/golden/v1/internal/request_id_rest_metadata_decorator.cc",
+		},
+		{
+			name: "rest stub header",
+			fn:   func() string { return RestStubHeaderPath(productPath, serviceName) },
+			want: "generator/integration_tests/golden/v1/internal/request_id_rest_stub.h",
+		},
+		{
+			name: "rest stub source",
+			fn:   func() string { return RestStubSourcePath(productPath, serviceName) },
+			want: "generator/integration_tests/golden/v1/internal/request_id_rest_stub.cc",
+		},
+		{
+			name: "round robin header",
+			fn:   func() string { return RoundRobinHeaderPath(productPath, serviceName) },
+			want: "generator/integration_tests/golden/v1/internal/request_id_round_robin_decorator.h",
+		},
+		{
+			name: "round robin source",
+			fn:   func() string { return RoundRobinSourcePath(productPath, serviceName) },
+			want: "generator/integration_tests/golden/v1/internal/request_id_round_robin_decorator.cc",
+		},
+		{
 			name: "empty product path",
 			fn:   func() string { return ClientHeaderPath("", serviceName) },
 			want: "request_id_client.h",
@@ -462,6 +532,100 @@ func TestPathHelpers(t *testing.T) {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
+	}
+}
+
+func TestCommonGeneratedFiles(t *testing.T) {
+	files := CommonGeneratedFiles("v1", "RequestIdService")
+	const wantCount = 14
+	if len(files) != wantCount {
+		t.Fatalf("unexpected number of common files: want %d, got %d", wantCount, len(files))
+	}
+	wantFiles := []language.GeneratedFile{
+		{TemplatePath: "templates/service/client.h.mustache", OutputPath: "v1/request_id_client.h"},
+		{TemplatePath: "templates/service/client.cc.mustache", OutputPath: "v1/request_id_client.cc"},
+		{TemplatePath: "templates/service/connection.h.mustache", OutputPath: "v1/request_id_connection.h"},
+		{TemplatePath: "templates/service/connection.cc.mustache", OutputPath: "v1/request_id_connection.cc"},
+		{TemplatePath: "templates/service/connection_idempotency_policy.h.mustache", OutputPath: "v1/request_id_connection_idempotency_policy.h"},
+		{TemplatePath: "templates/service/connection_idempotency_policy.cc.mustache", OutputPath: "v1/request_id_connection_idempotency_policy.cc"},
+		{TemplatePath: "templates/service/options.h.mustache", OutputPath: "v1/request_id_options.h"},
+		{TemplatePath: "templates/service/mock_connection.h.mustache", OutputPath: "v1/mocks/mock_request_id_connection.h"},
+		{TemplatePath: "templates/service/option_defaults.h.mustache", OutputPath: "v1/internal/request_id_option_defaults.h"},
+		{TemplatePath: "templates/service/option_defaults.cc.mustache", OutputPath: "v1/internal/request_id_option_defaults.cc"},
+		{TemplatePath: "templates/service/retry_traits.h.mustache", OutputPath: "v1/internal/request_id_retry_traits.h"},
+		{TemplatePath: "templates/service/tracing_connection.h.mustache", OutputPath: "v1/internal/request_id_tracing_connection.h"},
+		{TemplatePath: "templates/service/tracing_connection.cc.mustache", OutputPath: "v1/internal/request_id_tracing_connection.cc"},
+		{TemplatePath: "templates/service/sources.cc.mustache", OutputPath: "v1/internal/request_id_sources.cc"},
+	}
+	if diff := cmp.Diff(wantFiles, files); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+}
+
+func TestGrpcGeneratedFiles(t *testing.T) {
+	files := GrpcGeneratedFiles("v1", "RequestIdService")
+	const wantCount = 14
+	if len(files) != wantCount {
+		t.Fatalf("unexpected number of grpc files: want %d, got %d", wantCount, len(files))
+	}
+	wantFiles := []language.GeneratedFile{
+		{TemplatePath: "templates/service/connection_impl.h.mustache", OutputPath: "v1/internal/request_id_connection_impl.h"},
+		{TemplatePath: "templates/service/connection_impl.cc.mustache", OutputPath: "v1/internal/request_id_connection_impl.cc"},
+		{TemplatePath: "templates/service/stub_factory.h.mustache", OutputPath: "v1/internal/request_id_stub_factory.h"},
+		{TemplatePath: "templates/service/stub_factory.cc.mustache", OutputPath: "v1/internal/request_id_stub_factory.cc"},
+		{TemplatePath: "templates/service/auth_decorator.h.mustache", OutputPath: "v1/internal/request_id_auth_decorator.h"},
+		{TemplatePath: "templates/service/auth_decorator.cc.mustache", OutputPath: "v1/internal/request_id_auth_decorator.cc"},
+		{TemplatePath: "templates/service/logging_decorator.h.mustache", OutputPath: "v1/internal/request_id_logging_decorator.h"},
+		{TemplatePath: "templates/service/logging_decorator.cc.mustache", OutputPath: "v1/internal/request_id_logging_decorator.cc"},
+		{TemplatePath: "templates/service/metadata_decorator.h.mustache", OutputPath: "v1/internal/request_id_metadata_decorator.h"},
+		{TemplatePath: "templates/service/metadata_decorator.cc.mustache", OutputPath: "v1/internal/request_id_metadata_decorator.cc"},
+		{TemplatePath: "templates/service/stub.h.mustache", OutputPath: "v1/internal/request_id_stub.h"},
+		{TemplatePath: "templates/service/stub.cc.mustache", OutputPath: "v1/internal/request_id_stub.cc"},
+		{TemplatePath: "templates/service/tracing_stub.h.mustache", OutputPath: "v1/internal/request_id_tracing_stub.h"},
+		{TemplatePath: "templates/service/tracing_stub.cc.mustache", OutputPath: "v1/internal/request_id_tracing_stub.cc"},
+	}
+	if diff := cmp.Diff(wantFiles, files); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+}
+
+func TestRestGeneratedFiles(t *testing.T) {
+	files := RestGeneratedFiles("v1", "RequestIdService")
+	const wantCount = 12
+	if len(files) != wantCount {
+		t.Fatalf("unexpected number of rest files: want %d, got %d", wantCount, len(files))
+	}
+	wantFiles := []language.GeneratedFile{
+		{TemplatePath: "templates/service/rest_connection.h.mustache", OutputPath: "v1/request_id_rest_connection.h"},
+		{TemplatePath: "templates/service/rest_connection.cc.mustache", OutputPath: "v1/request_id_rest_connection.cc"},
+		{TemplatePath: "templates/service/rest_connection_impl.h.mustache", OutputPath: "v1/internal/request_id_rest_connection_impl.h"},
+		{TemplatePath: "templates/service/rest_connection_impl.cc.mustache", OutputPath: "v1/internal/request_id_rest_connection_impl.cc"},
+		{TemplatePath: "templates/service/rest_stub_factory.h.mustache", OutputPath: "v1/internal/request_id_rest_stub_factory.h"},
+		{TemplatePath: "templates/service/rest_stub_factory.cc.mustache", OutputPath: "v1/internal/request_id_rest_stub_factory.cc"},
+		{TemplatePath: "templates/service/rest_logging_decorator.h.mustache", OutputPath: "v1/internal/request_id_rest_logging_decorator.h"},
+		{TemplatePath: "templates/service/rest_logging_decorator.cc.mustache", OutputPath: "v1/internal/request_id_rest_logging_decorator.cc"},
+		{TemplatePath: "templates/service/rest_metadata_decorator.h.mustache", OutputPath: "v1/internal/request_id_rest_metadata_decorator.h"},
+		{TemplatePath: "templates/service/rest_metadata_decorator.cc.mustache", OutputPath: "v1/internal/request_id_rest_metadata_decorator.cc"},
+		{TemplatePath: "templates/service/rest_stub.h.mustache", OutputPath: "v1/internal/request_id_rest_stub.h"},
+		{TemplatePath: "templates/service/rest_stub.cc.mustache", OutputPath: "v1/internal/request_id_rest_stub.cc"},
+	}
+	if diff := cmp.Diff(wantFiles, files); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+}
+
+func TestRoundRobinGeneratedFiles(t *testing.T) {
+	files := RoundRobinGeneratedFiles("v1", "RequestIdService")
+	const wantCount = 2
+	if len(files) != wantCount {
+		t.Fatalf("unexpected number of round robin files: want %d, got %d", wantCount, len(files))
+	}
+	wantFiles := []language.GeneratedFile{
+		{TemplatePath: "templates/service/round_robin_decorator.h.mustache", OutputPath: "v1/internal/request_id_round_robin_decorator.h"},
+		{TemplatePath: "templates/service/round_robin_decorator.cc.mustache", OutputPath: "v1/internal/request_id_round_robin_decorator.cc"},
+	}
+	if diff := cmp.Diff(wantFiles, files); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
 
@@ -500,6 +664,7 @@ func TestServiceGeneratedFiles(t *testing.T) {
 		{TemplatePath: "templates/service/retry_traits.h.mustache", OutputPath: "v1/internal/request_id_retry_traits.h"},
 		{TemplatePath: "templates/service/tracing_connection.h.mustache", OutputPath: "v1/internal/request_id_tracing_connection.h"},
 		{TemplatePath: "templates/service/tracing_connection.cc.mustache", OutputPath: "v1/internal/request_id_tracing_connection.cc"},
+		{TemplatePath: "templates/service/sources.cc.mustache", OutputPath: "v1/internal/request_id_sources.cc"},
 		{TemplatePath: "templates/service/connection_impl.h.mustache", OutputPath: "v1/internal/request_id_connection_impl.h"},
 		{TemplatePath: "templates/service/connection_impl.cc.mustache", OutputPath: "v1/internal/request_id_connection_impl.cc"},
 		{TemplatePath: "templates/service/stub_factory.h.mustache", OutputPath: "v1/internal/request_id_stub_factory.h"},
@@ -514,7 +679,6 @@ func TestServiceGeneratedFiles(t *testing.T) {
 		{TemplatePath: "templates/service/stub.cc.mustache", OutputPath: "v1/internal/request_id_stub.cc"},
 		{TemplatePath: "templates/service/tracing_stub.h.mustache", OutputPath: "v1/internal/request_id_tracing_stub.h"},
 		{TemplatePath: "templates/service/tracing_stub.cc.mustache", OutputPath: "v1/internal/request_id_tracing_stub.cc"},
-		{TemplatePath: "templates/service/sources.cc.mustache", OutputPath: "v1/internal/request_id_sources.cc"},
 	}
 
 	if diff := cmp.Diff(wantFiles, files); diff != "" {
@@ -805,6 +969,14 @@ func TestClassNames(t *testing.T) {
 		wantLimitedErrorCountRetryPolicy string
 		wantLimitedTimeRetryPolicy       string
 		wantRetryTraits                  string
+		wantRestStub                     string
+		wantDefaultRestStub              string
+		wantRestLogging                  string
+		wantRestMetadata                 string
+		wantRestConnectionImpl           string
+		wantRoundRobin                   string
+		wantMakeRestConnection           string
+		wantCreateDefaultRestStub        string
 	}{
 		{
 			serviceName:                      "GoldenThingAdmin",
@@ -824,6 +996,14 @@ func TestClassNames(t *testing.T) {
 			wantLimitedErrorCountRetryPolicy: "GoldenThingAdminLimitedErrorCountRetryPolicy",
 			wantLimitedTimeRetryPolicy:       "GoldenThingAdminLimitedTimeRetryPolicy",
 			wantRetryTraits:                  "GoldenThingAdminRetryTraits",
+			wantRestStub:                     "GoldenThingAdminRestStub",
+			wantDefaultRestStub:              "DefaultGoldenThingAdminRestStub",
+			wantRestLogging:                  "GoldenThingAdminRestLogging",
+			wantRestMetadata:                 "GoldenThingAdminRestMetadata",
+			wantRestConnectionImpl:           "GoldenThingAdminRestConnectionImpl",
+			wantRoundRobin:                   "GoldenThingAdminRoundRobin",
+			wantMakeRestConnection:           "MakeGoldenThingAdminConnectionRest",
+			wantCreateDefaultRestStub:        "CreateDefaultGoldenThingAdminRestStub",
 		},
 		{
 			serviceName:                      "EchoService",
@@ -843,6 +1023,14 @@ func TestClassNames(t *testing.T) {
 			wantLimitedErrorCountRetryPolicy: "EchoServiceLimitedErrorCountRetryPolicy",
 			wantLimitedTimeRetryPolicy:       "EchoServiceLimitedTimeRetryPolicy",
 			wantRetryTraits:                  "EchoServiceRetryTraits",
+			wantRestStub:                     "EchoServiceRestStub",
+			wantDefaultRestStub:              "DefaultEchoServiceRestStub",
+			wantRestLogging:                  "EchoServiceRestLogging",
+			wantRestMetadata:                 "EchoServiceRestMetadata",
+			wantRestConnectionImpl:           "EchoServiceRestConnectionImpl",
+			wantRoundRobin:                   "EchoServiceRoundRobin",
+			wantMakeRestConnection:           "MakeEchoServiceConnectionRest",
+			wantCreateDefaultRestStub:        "CreateDefaultEchoServiceRestStub",
 		},
 		{
 			serviceName:                      "DeprecatedService",
@@ -862,6 +1050,14 @@ func TestClassNames(t *testing.T) {
 			wantLimitedErrorCountRetryPolicy: "DeprecatedServiceLimitedErrorCountRetryPolicy",
 			wantLimitedTimeRetryPolicy:       "DeprecatedServiceLimitedTimeRetryPolicy",
 			wantRetryTraits:                  "DeprecatedServiceRetryTraits",
+			wantRestStub:                     "DeprecatedServiceRestStub",
+			wantDefaultRestStub:              "DefaultDeprecatedServiceRestStub",
+			wantRestLogging:                  "DeprecatedServiceRestLogging",
+			wantRestMetadata:                 "DeprecatedServiceRestMetadata",
+			wantRestConnectionImpl:           "DeprecatedServiceRestConnectionImpl",
+			wantRoundRobin:                   "DeprecatedServiceRoundRobin",
+			wantMakeRestConnection:           "MakeDeprecatedServiceConnectionRest",
+			wantCreateDefaultRestStub:        "CreateDefaultDeprecatedServiceRestStub",
 		},
 		{
 			serviceName:                      "",
@@ -881,6 +1077,14 @@ func TestClassNames(t *testing.T) {
 			wantLimitedErrorCountRetryPolicy: "LimitedErrorCountRetryPolicy",
 			wantLimitedTimeRetryPolicy:       "LimitedTimeRetryPolicy",
 			wantRetryTraits:                  "RetryTraits",
+			wantRestStub:                     "RestStub",
+			wantDefaultRestStub:              "DefaultRestStub",
+			wantRestLogging:                  "RestLogging",
+			wantRestMetadata:                 "RestMetadata",
+			wantRestConnectionImpl:           "RestConnectionImpl",
+			wantRoundRobin:                   "RoundRobin",
+			wantMakeRestConnection:           "MakeConnectionRest",
+			wantCreateDefaultRestStub:        "CreateDefaultRestStub",
 		},
 	} {
 		t.Run(test.serviceName, func(t *testing.T) {
@@ -946,6 +1150,38 @@ func TestClassNames(t *testing.T) {
 			}
 			if diff := cmp.Diff(test.wantRetryTraits, RetryTraitsName(test.serviceName)); diff != "" {
 				t.Logf("RetryTraitsName")
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+			if diff := cmp.Diff(test.wantRestStub, RestStubClassName(test.serviceName)); diff != "" {
+				t.Logf("RestStubClassName")
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+			if diff := cmp.Diff(test.wantDefaultRestStub, DefaultRestStubClassName(test.serviceName)); diff != "" {
+				t.Logf("DefaultRestStubClassName")
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+			if diff := cmp.Diff(test.wantRestLogging, RestLoggingDecoratorClassName(test.serviceName)); diff != "" {
+				t.Logf("RestLoggingDecoratorClassName")
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+			if diff := cmp.Diff(test.wantRestMetadata, RestMetadataDecoratorClassName(test.serviceName)); diff != "" {
+				t.Logf("RestMetadataDecoratorClassName")
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+			if diff := cmp.Diff(test.wantRestConnectionImpl, RestConnectionImplClassName(test.serviceName)); diff != "" {
+				t.Logf("RestConnectionImplClassName")
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+			if diff := cmp.Diff(test.wantRoundRobin, RoundRobinClassName(test.serviceName)); diff != "" {
+				t.Logf("RoundRobinClassName")
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+			if diff := cmp.Diff(test.wantMakeRestConnection, MakeRestConnectionFunctionName(test.serviceName)); diff != "" {
+				t.Logf("MakeRestConnectionFunctionName")
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+			if diff := cmp.Diff(test.wantCreateDefaultRestStub, CreateDefaultRestStubFunctionName(test.serviceName)); diff != "" {
+				t.Logf("CreateDefaultRestStubFunctionName")
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})

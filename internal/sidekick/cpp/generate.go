@@ -59,12 +59,16 @@ func Generate(_ context.Context, model *api.API, outdir string, libCfg *config.C
 	allGeneratedFiles = append(allGeneratedFiles, cmakeFiles...)
 
 	generateGrpc := true
+	generateRest := false
+	generateRoundRobin := false
 	var productPath string
 	var forwardingProductPath string
 	if libCfg != nil {
 		if libCfg.GenerateGrpcTransport != nil {
 			generateGrpc = *libCfg.GenerateGrpcTransport
 		}
+		generateRest = libCfg.GenerateRestTransport
+		generateRoundRobin = libCfg.GenerateRoundRobinDecorator
 		productPath = libCfg.ProductPath
 		forwardingProductPath = libCfg.ForwardingProductPath
 	}
@@ -75,26 +79,34 @@ func Generate(_ context.Context, model *api.API, outdir string, libCfg *config.C
 	}
 	var serviceBatches []serviceFileBatch
 
-	if generateGrpc {
-		for _, svc := range model.Services {
-			if libCfg != nil && slices.Contains(libCfg.OmittedServices, svc.Name) {
-				continue
-			}
-			svcFiles := ServiceGeneratedFiles(productPath, svc.Name)
-			allGeneratedFiles = append(allGeneratedFiles, svcFiles...)
+	for _, svc := range model.Services {
+		if libCfg != nil && slices.Contains(libCfg.OmittedServices, svc.Name) {
+			continue
+		}
+		var svcFiles []language.GeneratedFile
+		svcFiles = append(svcFiles, CommonGeneratedFiles(productPath, svc.Name)...)
+		if generateGrpc {
+			svcFiles = append(svcFiles, GrpcGeneratedFiles(productPath, svc.Name)...)
+		}
+		if generateRest {
+			svcFiles = append(svcFiles, RestGeneratedFiles(productPath, svc.Name)...)
+		}
+		if generateRoundRobin {
+			svcFiles = append(svcFiles, RoundRobinGeneratedFiles(productPath, svc.Name)...)
+		}
+		allGeneratedFiles = append(allGeneratedFiles, svcFiles...)
+		serviceBatches = append(serviceBatches, serviceFileBatch{
+			service: svc,
+			files:   svcFiles,
+		})
+
+		if forwardingProductPath != "" {
+			fwdFiles := ForwardingGeneratedFiles(forwardingProductPath, svc.Name)
+			allGeneratedFiles = append(allGeneratedFiles, fwdFiles...)
 			serviceBatches = append(serviceBatches, serviceFileBatch{
 				service: svc,
-				files:   svcFiles,
+				files:   fwdFiles,
 			})
-
-			if forwardingProductPath != "" {
-				fwdFiles := ForwardingGeneratedFiles(forwardingProductPath, svc.Name)
-				allGeneratedFiles = append(allGeneratedFiles, fwdFiles...)
-				serviceBatches = append(serviceBatches, serviceFileBatch{
-					service: svc,
-					files:   fwdFiles,
-				})
-			}
 		}
 	}
 

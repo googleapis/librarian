@@ -508,3 +508,100 @@ func TestAnnotateMethod_ParameterAnnotationTypes(t *testing.T) {
 		t.Errorf("unexpected flags for scalar param: %+v", params[3])
 	}
 }
+
+func TestAnnotateMethod_Rest(t *testing.T) {
+	pageSizeField := api.NewTestField("page_size").WithType(api.TypezInt32)
+	filterField := api.NewTestField("filter").WithType(api.TypezString)
+	boolField := api.NewTestField("show_deleted").WithType(api.TypezBool)
+	nameField := api.NewTestField("name").WithType(api.TypezString)
+	req := api.NewTestMessage("GetItemRequest").WithFields(nameField, pageSizeField, filterField, boolField)
+	resp := api.NewTestMessage("Item")
+
+	pt := (&api.PathTemplate{}).WithLiteral("v1").WithVariableNamed("name")
+	binding := &api.PathBinding{
+		Verb:         "GET",
+		PathTemplate: pt,
+		QueryParameters: map[string]bool{
+			"page_size":    true,
+			"filter":       true,
+			"show_deleted": true,
+		},
+	}
+	method := api.NewTestMethod("GetItem").
+		WithInput(req).
+		WithOutput(resp)
+	method.PathInfo = &api.PathInfo{
+		Bindings:      []*api.PathBinding{binding},
+		BodyFieldPath: "*",
+	}
+
+	svc := api.NewTestService("ItemService").WithMethods(method)
+	model := api.NewTestAPI([]*api.Message{req, resp}, nil, []*api.Service{svc})
+
+	c := newCodec(nil)
+	if err := c.annotateModel(model); err != nil {
+		t.Fatal(err)
+	}
+
+	got, ok := method.Codec.(*methodAnnotations)
+	if !ok {
+		t.Fatalf("expected *methodAnnotations, got %T", method.Codec)
+	}
+
+	if !got.HasRestPath {
+		t.Errorf("expected HasRestPath to be true")
+	}
+	if got.RestVerb != "Get" {
+		t.Errorf("expected RestVerb 'Get', got %q", got.RestVerb)
+	}
+	wantSyncPath := `absl::StrCat("/", rest_internal::DetermineApiVersion("v1", options), "/", request.name())`
+	if diff := cmp.Diff(wantSyncPath, got.RestPathExpression); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+	wantAsyncPath := `absl::StrCat("/", rest_internal::DetermineApiVersion("v1", *options), "/", request.name())`
+	if diff := cmp.Diff(wantAsyncPath, got.RestAsyncPathExpression); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+	if !got.RestHasQueryParams {
+		t.Errorf("expected RestHasQueryParams to be true")
+	}
+	if len(got.RestQueryParams) != 3 {
+		t.Fatalf("expected 3 RestQueryParams, got %d", len(got.RestQueryParams))
+	}
+	for _, qp := range got.RestQueryParams {
+		switch qp.ParamKey {
+		case "page_size":
+			if !qp.IsNumber || qp.IsString || qp.IsBool {
+				t.Errorf("expected page_size to be number: %+v", qp)
+			}
+			if qp.FieldAccessor != "page_size()" {
+				t.Errorf("expected page_size() accessor, got %q", qp.FieldAccessor)
+			}
+		case "filter":
+			if !qp.IsString || qp.IsNumber || qp.IsBool {
+				t.Errorf("expected filter to be string: %+v", qp)
+			}
+			if qp.FieldAccessor != "filter()" {
+				t.Errorf("expected filter() accessor, got %q", qp.FieldAccessor)
+			}
+		case "show_deleted":
+			if !qp.IsBool || qp.IsString || qp.IsNumber {
+				t.Errorf("expected show_deleted to be bool: %+v", qp)
+			}
+			if qp.FieldAccessor != "show_deleted()" {
+				t.Errorf("expected show_deleted() accessor, got %q", qp.FieldAccessor)
+			}
+		default:
+			t.Errorf("unexpected query parameter: %q", qp.ParamKey)
+		}
+	}
+	if got.RestRequestBodyAccessor != "request" {
+		t.Errorf("expected RestRequestBodyAccessor 'request', got %q", got.RestRequestBodyAccessor)
+	}
+	if got.RestReturnTypeName != "StatusOr<test::Item>" {
+		t.Errorf("expected RestReturnTypeName 'StatusOr<test::Item>', got %q", got.RestReturnTypeName)
+	}
+	if !got.IsRestRpc {
+		t.Errorf("expected IsRestRpc to be true")
+	}
+}
