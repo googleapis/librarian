@@ -163,12 +163,29 @@ func populateMixinDefinitionLocations(model *api.API) {
 		return
 	}
 	mixinLocations := map[string]api.SourceLocation{
-		".google.cloud.location.GetLocationRequest": {Filename: "google/cloud/location/locations.proto", Line: 82},
-		".google.cloud.location.Location":           {Filename: "google/cloud/location/locations.proto", Line: 88},
+		// Locations
+		".google.cloud.location.ListLocationsRequest":  {Filename: "google/cloud/location/locations.proto", Line: 58},
+		".google.cloud.location.ListLocationsResponse": {Filename: "google/cloud/location/locations.proto", Line: 73},
+		".google.cloud.location.GetLocationRequest":    {Filename: "google/cloud/location/locations.proto", Line: 82},
+		".google.cloud.location.Location":              {Filename: "google/cloud/location/locations.proto", Line: 88},
+
+		// IAM Policy
+		".google.iam.v1.SetIamPolicyRequest":        {Filename: "google/iam/v1/iam_policy.proto", Line: 100},
 		".google.iam.v1.GetIamPolicyRequest":        {Filename: "google/iam/v1/iam_policy.proto", Line: 123},
-		".google.iam.v1.Policy":                     {Filename: "google/iam/v1/policy.proto", Line: 102},
-		".google.longrunning.ListOperationsRequest": {Filename: "google/longrunning/operations.proto", Line: 167},
-		".google.longrunning.Operation":             {Filename: "google/longrunning/operations.proto", Line: 121},
+		".google.iam.v1.TestIamPermissionsRequest":  {Filename: "google/iam/v1/iam_policy.proto", Line: 137},
+		".google.iam.v1.TestIamPermissionsResponse": {Filename: "google/iam/v1/iam_policy.proto", Line: 153},
+
+		// Policy
+		".google.iam.v1.Policy": {Filename: "google/iam/v1/policy.proto", Line: 102},
+
+		// Longrunning Operations
+		".google.longrunning.Operation":              {Filename: "google/longrunning/operations.proto", Line: 121},
+		".google.longrunning.GetOperationRequest":    {Filename: "google/longrunning/operations.proto", Line: 160},
+		".google.longrunning.ListOperationsRequest":  {Filename: "google/longrunning/operations.proto", Line: 167},
+		".google.longrunning.ListOperationsResponse": {Filename: "google/longrunning/operations.proto", Line: 196},
+		".google.longrunning.CancelOperationRequest": {Filename: "google/longrunning/operations.proto", Line: 212},
+		".google.longrunning.DeleteOperationRequest": {Filename: "google/longrunning/operations.proto", Line: 219},
+		".google.longrunning.WaitOperationRequest":   {Filename: "google/longrunning/operations.proto", Line: 226},
 	}
 	for sym, loc := range mixinLocations {
 		model.AddDefinitionLocation(sym, loc)

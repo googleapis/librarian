@@ -19,8 +19,77 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/sample"
+	"github.com/googleapis/librarian/internal/sidekick/api"
 	"google.golang.org/genproto/googleapis/api/annotations"
 )
+
+func TestPopulateMixinDefinitionLocations(t *testing.T) {
+	// Verify nil model does not crash
+	populateMixinDefinitionLocations(nil)
+
+	model := api.NewTestAPI(nil, nil, nil)
+	populateMixinDefinitionLocations(model)
+
+	for _, test := range []struct {
+		symbol string
+		want   api.SourceLocation
+	}{
+		// Locations
+		{symbol: ".google.cloud.location.ListLocationsRequest", want: api.SourceLocation{Filename: "google/cloud/location/locations.proto", Line: 58}},
+		{symbol: "google.cloud.location.ListLocationsRequest", want: api.SourceLocation{Filename: "google/cloud/location/locations.proto", Line: 58}},
+		{symbol: ".google.cloud.location.ListLocationsResponse", want: api.SourceLocation{Filename: "google/cloud/location/locations.proto", Line: 73}},
+		{symbol: "google.cloud.location.ListLocationsResponse", want: api.SourceLocation{Filename: "google/cloud/location/locations.proto", Line: 73}},
+		{symbol: ".google.cloud.location.GetLocationRequest", want: api.SourceLocation{Filename: "google/cloud/location/locations.proto", Line: 82}},
+		{symbol: "google.cloud.location.GetLocationRequest", want: api.SourceLocation{Filename: "google/cloud/location/locations.proto", Line: 82}},
+		{symbol: ".google.cloud.location.Location", want: api.SourceLocation{Filename: "google/cloud/location/locations.proto", Line: 88}},
+		{symbol: "google.cloud.location.Location", want: api.SourceLocation{Filename: "google/cloud/location/locations.proto", Line: 88}},
+
+		// IAM Policy
+		{symbol: ".google.iam.v1.SetIamPolicyRequest", want: api.SourceLocation{Filename: "google/iam/v1/iam_policy.proto", Line: 100}},
+		{symbol: "google.iam.v1.SetIamPolicyRequest", want: api.SourceLocation{Filename: "google/iam/v1/iam_policy.proto", Line: 100}},
+		{symbol: ".google.iam.v1.GetIamPolicyRequest", want: api.SourceLocation{Filename: "google/iam/v1/iam_policy.proto", Line: 123}},
+		{symbol: "google.iam.v1.GetIamPolicyRequest", want: api.SourceLocation{Filename: "google/iam/v1/iam_policy.proto", Line: 123}},
+		{symbol: ".google.iam.v1.TestIamPermissionsRequest", want: api.SourceLocation{Filename: "google/iam/v1/iam_policy.proto", Line: 137}},
+		{symbol: "google.iam.v1.TestIamPermissionsRequest", want: api.SourceLocation{Filename: "google/iam/v1/iam_policy.proto", Line: 137}},
+		{symbol: ".google.iam.v1.TestIamPermissionsResponse", want: api.SourceLocation{Filename: "google/iam/v1/iam_policy.proto", Line: 153}},
+		{symbol: "google.iam.v1.TestIamPermissionsResponse", want: api.SourceLocation{Filename: "google/iam/v1/iam_policy.proto", Line: 153}},
+
+		// Policy
+		{symbol: ".google.iam.v1.Policy", want: api.SourceLocation{Filename: "google/iam/v1/policy.proto", Line: 102}},
+		{symbol: "google.iam.v1.Policy", want: api.SourceLocation{Filename: "google/iam/v1/policy.proto", Line: 102}},
+
+		// Longrunning Operations
+		{symbol: ".google.longrunning.Operation", want: api.SourceLocation{Filename: "google/longrunning/operations.proto", Line: 121}},
+		{symbol: "google.longrunning.Operation", want: api.SourceLocation{Filename: "google/longrunning/operations.proto", Line: 121}},
+		{symbol: ".google.longrunning.GetOperationRequest", want: api.SourceLocation{Filename: "google/longrunning/operations.proto", Line: 160}},
+		{symbol: "google.longrunning.GetOperationRequest", want: api.SourceLocation{Filename: "google/longrunning/operations.proto", Line: 160}},
+		{symbol: ".google.longrunning.ListOperationsRequest", want: api.SourceLocation{Filename: "google/longrunning/operations.proto", Line: 167}},
+		{symbol: "google.longrunning.ListOperationsRequest", want: api.SourceLocation{Filename: "google/longrunning/operations.proto", Line: 167}},
+		{symbol: ".google.longrunning.ListOperationsResponse", want: api.SourceLocation{Filename: "google/longrunning/operations.proto", Line: 196}},
+		{symbol: "google.longrunning.ListOperationsResponse", want: api.SourceLocation{Filename: "google/longrunning/operations.proto", Line: 196}},
+		{symbol: ".google.longrunning.CancelOperationRequest", want: api.SourceLocation{Filename: "google/longrunning/operations.proto", Line: 212}},
+		{symbol: "google.longrunning.CancelOperationRequest", want: api.SourceLocation{Filename: "google/longrunning/operations.proto", Line: 212}},
+		{symbol: ".google.longrunning.DeleteOperationRequest", want: api.SourceLocation{Filename: "google/longrunning/operations.proto", Line: 219}},
+		{symbol: "google.longrunning.DeleteOperationRequest", want: api.SourceLocation{Filename: "google/longrunning/operations.proto", Line: 219}},
+		{symbol: ".google.longrunning.WaitOperationRequest", want: api.SourceLocation{Filename: "google/longrunning/operations.proto", Line: 226}},
+		{symbol: "google.longrunning.WaitOperationRequest", want: api.SourceLocation{Filename: "google/longrunning/operations.proto", Line: 226}},
+	} {
+		t.Run(test.symbol, func(t *testing.T) {
+			got, ok := model.DefinitionLocation(test.symbol)
+			if !ok {
+				t.Errorf("missing definition location for %s", test.symbol)
+				return
+			}
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+
+	if got, want := len(model.DefinitionLocations), 32; got != want {
+		t.Errorf("len(model.DefinitionLocations) = %d, want %d", got, want)
+	}
+}
 
 func TestProtobuf_ForceLongrunning(t *testing.T) {
 	sc := sample.ServiceConfig()
