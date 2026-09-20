@@ -55,6 +55,9 @@ type Method struct {
 	OperationInfo *OperationInfo
 	// DiscoveryLro has a value if this is a discovery-style long-running operation.
 	DiscoveryLro *DiscoveryLro
+	// OperationService contains the name of the operation service for non-standard LROs
+	// (e.g. from google.cloud.operation_service).
+	OperationService string
 	// Routing contains the routing annotations, if any.
 	Routing []*RoutingInfo
 	// AutoPopulated contains the auto-populated (request_id) field, if any, as defined in

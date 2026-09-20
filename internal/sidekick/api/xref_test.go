@@ -624,48 +624,56 @@ func TestIsSimpleMethod(t *testing.T) {
 	somePagination := &Field{}
 	someOperationInfo := &OperationInfo{}
 	someDiscoverLro := &DiscoveryLro{}
-	testCases := []struct {
-		name     string
-		method   *Method
-		isSimple bool
+	for _, test := range []struct {
+		name   string
+		method *Method
+		want   bool
 	}{
 		{
-			name:     "simple method",
-			method:   &Method{},
-			isSimple: true,
+			name:   "simple method",
+			method: &Method{},
+			want:   true,
 		},
 		{
-			name:     "pagination method",
-			method:   &Method{Pagination: somePagination},
-			isSimple: false,
+			name:   "pagination method",
+			method: &Method{Pagination: somePagination},
+			want:   false,
 		},
 		{
-			name:     "client streaming method",
-			method:   &Method{ClientSideStreaming: true},
-			isSimple: false,
+			name:   "client streaming method",
+			method: &Method{ClientSideStreaming: true},
+			want:   false,
 		},
 		{
-			name:     "server streaming method",
-			method:   &Method{ServerSideStreaming: true},
-			isSimple: false,
+			name:   "server streaming method",
+			method: &Method{ServerSideStreaming: true},
+			want:   false,
 		},
 		{
-			name:     "LRO method",
-			method:   &Method{OperationInfo: someOperationInfo},
-			isSimple: false,
+			name:   "LRO method",
+			method: &Method{OperationInfo: someOperationInfo},
+			want:   false,
 		},
 		{
-			name:     "Discovery LRO method",
-			method:   &Method{DiscoveryLro: someDiscoverLro},
-			isSimple: false,
+			name:   "Discovery LRO method",
+			method: &Method{DiscoveryLro: someDiscoverLro},
+			want:   false,
 		},
-	}
-
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			enrichMethodSamples(tc.method)
-			if got := tc.method.IsSimple; got != tc.isSimple {
-				t.Errorf("IsSimple() = %v, want %v", got, tc.isSimple)
+		{
+			name:   "OperationService method",
+			method: NewTestMethod("test").WithOperationService("google.cloud.compute.v1.ZoneOperations"),
+			want:   false,
+		},
+		{
+			name:   "empty OperationService method is simple",
+			method: NewTestMethod("test").WithOperationService(""),
+			want:   true,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			enrichMethodSamples(test.method)
+			if diff := cmp.Diff(test.want, test.method.IsSimple); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
@@ -692,13 +700,99 @@ func TestIsLRO(t *testing.T) {
 			method: &Method{DiscoveryLro: &DiscoveryLro{}},
 			want:   true,
 		},
+		{
+			name:   "LRO method is OperationService",
+			method: NewTestMethod("test").WithOperationService("google.cloud.compute.v1.ZoneOperations"),
+			want:   true,
+		},
+		{
+			name:   "method with empty OperationService is not LRO",
+			method: NewTestMethod("test").WithOperationService(""),
+			want:   false,
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			enrichMethodSamples(test.method)
-			if got := test.method.IsLRO; got != test.want {
-				t.Errorf("IsLRO() = %v, want %v", got, test.want)
+			if diff := cmp.Diff(test.want, test.method.IsLRO); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
+	}
+}
+
+func TestOperationService(t *testing.T) {
+	for _, test := range []struct {
+		name       string
+		method     *Method
+		wantLRO    bool
+		wantSimple bool
+	}{
+		{
+			name:       "OperationService set sets IsLRO and clears IsSimple",
+			method:     NewTestMethod("testMethod").WithOperationService("google.cloud.compute.v1.ZoneOperations"),
+			wantLRO:    true,
+			wantSimple: false,
+		},
+		{
+			name:       "OperationService empty without other LRO annotations leaves IsLRO false and IsSimple true",
+			method:     NewTestMethod("testMethod").WithOperationService(""),
+			wantLRO:    false,
+			wantSimple: true,
+		},
+		{
+			name:       "OperationService unset without other LRO annotations leaves IsLRO false and IsSimple true",
+			method:     NewTestMethod("testMethod"),
+			wantLRO:    false,
+			wantSimple: true,
+		},
+		{
+			name: "OperationService set with pagination sets IsLRO and clears IsSimple",
+			method: NewTestMethod("testMethod").
+				WithOperationService("google.cloud.compute.v1.ZoneOperations").
+				WithPagination(NewTestField("page_token")),
+			wantLRO:    true,
+			wantSimple: false,
+		},
+		{
+			name: "OperationService set with server streaming sets IsLRO and clears IsSimple",
+			method: NewTestMethod("testMethod").
+				WithOperationService("google.cloud.compute.v1.ZoneOperations").
+				WithServerSideStreaming(),
+			wantLRO:    true,
+			wantSimple: false,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			enrichMethodSamples(test.method)
+			if diff := cmp.Diff(test.wantLRO, test.method.IsLRO); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+			if diff := cmp.Diff(test.wantSimple, test.method.IsSimple); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestCrossReferenceOperationService(t *testing.T) {
+	req := NewTestMessage("Req")
+	resp := NewTestMessage("Resp")
+	m := NewTestMethod("CustomOp").
+		WithInput(req).
+		WithOutput(resp).
+		WithOperationService("google.cloud.compute.v1.ZoneOperations")
+	svc := NewTestService("Compute").WithMethods(m)
+	model := NewTestAPI([]*Message{req, resp}, []*Enum{}, []*Service{svc})
+
+	if err := CrossReference(model); err != nil {
+		t.Fatal(err)
+	}
+
+	if diff := cmp.Diff(true, m.IsLRO); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+	if diff := cmp.Diff(false, m.IsSimple); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
 

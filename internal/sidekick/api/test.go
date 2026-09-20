@@ -337,6 +337,12 @@ func (m *Method) WithDiscoveryLro(info *DiscoveryLro) *Method {
 	return m
 }
 
+// WithOperationService sets the operation service name.
+func (m *Method) WithOperationService(opService string) *Method {
+	m.OperationService = opService
+	return m
+}
+
 // WithSignatures adds method signatures.
 //
 // A method signature typically maps to an overloads with a subset of
