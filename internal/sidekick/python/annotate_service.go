@@ -28,6 +28,8 @@ type serviceAnnotations struct {
 	ProtoName       string
 	ClientName      string
 	AsyncClientName string
+	DirectoryName   string
+	CopyrightYear   string
 	DocLines        []string
 	Methods         []*methodAnnotations
 }
@@ -47,6 +49,8 @@ func (c *codec) annotateService(service *api.Service, model *modelAnnotations) e
 		ProtoName:       service.Name,
 		ClientName:      clientName,
 		AsyncClientName: asyncClientName,
+		DirectoryName:   snakeCase(name),
+		CopyrightYear:   model.CopyrightYear,
 		DocLines:        docLines,
 	}
 

@@ -15,7 +15,9 @@
 package python
 
 import (
+	"fmt"
 	"testing"
+	"time"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
@@ -25,6 +27,8 @@ import (
 func TestAnnotateService(t *testing.T) {
 	req := api.NewTestMessage("GetSecretRequest")
 	resp := api.NewTestMessage("Secret")
+
+	currentYear := fmt.Sprintf("%04d", time.Now().Year())
 
 	for _, test := range []struct {
 		name string
@@ -46,6 +50,8 @@ func TestAnnotateService(t *testing.T) {
 				ProtoName:       "SecretManagerService",
 				ClientName:      "SecretManagerServiceClient",
 				AsyncClientName: "SecretManagerServiceAsyncClient",
+				DirectoryName:   "secret_manager_service",
+				CopyrightYear:   currentYear,
 				DocLines:        []string{"Secret Manager Service API."},
 				Methods: []*methodAnnotations{
 					{
@@ -65,6 +71,8 @@ func TestAnnotateService(t *testing.T) {
 				ProtoName:       "EchoClient",
 				ClientName:      "EchoClient",
 				AsyncClientName: "EchoAsyncClient",
+				DirectoryName:   "echo_client",
+				CopyrightYear:   currentYear,
 			},
 		},
 	} {

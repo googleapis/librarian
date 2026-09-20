@@ -17,9 +17,12 @@ package python
 import (
 	"errors"
 	"fmt"
+	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/serviceconfig"
 	"github.com/googleapis/librarian/internal/sidekick/api"
 )
 
@@ -34,6 +37,10 @@ type codec struct {
 	GenerationYear string
 	PackageName    string
 	PackageVersion string
+	DefaultVersion string
+	CurrentVersion string
+	GAPICNamespace string
+	GAPICName      string
 }
 
 // newCodec constructs a new Python codec instance from model, library config, and outdir.
@@ -60,6 +67,37 @@ func newCodec(model *api.API, library *config.Library, outdir string) (*codec, e
 		packageName = library.Name
 	}
 
+	defaultVersion := ""
+	if library != nil && library.Python != nil {
+		defaultVersion = library.Python.DefaultVersion
+	}
+
+	var apiPath string
+	if library != nil {
+		for _, apiCfg := range library.APIs {
+			if strings.ReplaceAll(apiCfg.Path, "/", ".") == model.PackageName || apiCfg.Path == model.PackageName {
+				apiPath = apiCfg.Path
+				break
+			}
+		}
+		if apiPath == "" && len(library.APIs) == 1 {
+			apiPath = library.APIs[0].Path
+		}
+	}
+	if apiPath == "" {
+		apiPath = strings.ReplaceAll(model.PackageName, ".", "/")
+	}
+
+	var namespace, name, currentVersion string
+	if apiPath != "" {
+		namespace = deriveGAPICNamespace(apiPath)
+		name = deriveGAPICName(apiPath)
+		currentVersion = serviceconfig.ExtractVersion(apiPath)
+		if defaultVersion == "" {
+			defaultVersion = currentVersion
+		}
+	}
+
 	return &codec{
 		Model:          model,
 		Library:        library,
@@ -67,5 +105,37 @@ func newCodec(model *api.API, library *config.Library, outdir string) (*codec, e
 		GenerationYear: year,
 		PackageName:    packageName,
 		PackageVersion: version,
+		DefaultVersion: defaultVersion,
+		CurrentVersion: currentVersion,
+		GAPICNamespace: namespace,
+		GAPICName:      name,
 	}, nil
+}
+
+func (c *codec) packageDir() string {
+	if c.GAPICNamespace == "" && c.GAPICName == "" {
+		return ""
+	}
+	nsPath := strings.ReplaceAll(c.GAPICNamespace, ".", "/")
+	version := c.CurrentVersion
+	if version == "" {
+		version = c.DefaultVersion
+	}
+	pkgName := c.GAPICName
+	if version != "" {
+		pkgName = fmt.Sprintf("%s_%s", c.GAPICName, version)
+	}
+	return filepath.Join(nsPath, pkgName)
+}
+
+func (c *codec) rootPackageDir() string {
+	if c.GAPICNamespace == "" && c.GAPICName == "" {
+		return ""
+	}
+	nsPath := strings.ReplaceAll(c.GAPICNamespace, ".", "/")
+	return filepath.Join(nsPath, c.GAPICName)
+}
+
+func (c *codec) isDefaultVersion() bool {
+	return c.DefaultVersion == "" || c.CurrentVersion == "" || c.CurrentVersion == c.DefaultVersion
 }

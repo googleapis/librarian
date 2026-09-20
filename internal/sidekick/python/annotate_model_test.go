@@ -100,7 +100,7 @@ func TestAnnotateModel(t *testing.T) {
 				cmpopts.IgnoreFields(modelAnnotations{}, "BoilerPlate"),
 				cmpopts.IgnoreFields(messageAnnotations{}, "Model", "Message", "Fields", "OneOfs", "DocLines"),
 				cmpopts.IgnoreFields(enumAnnotations{}, "Model", "Enum", "Values", "DocLines"),
-				cmpopts.IgnoreFields(serviceAnnotations{}, "Model", "Service", "Methods", "ProtoName", "ClientName", "AsyncClientName", "DocLines"),
+				cmpopts.IgnoreFields(serviceAnnotations{}, "Model", "Service", "Methods", "ProtoName", "ClientName", "AsyncClientName", "DocLines", "DirectoryName", "CopyrightYear"),
 			); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}

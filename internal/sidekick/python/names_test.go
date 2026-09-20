@@ -109,3 +109,42 @@ func TestFormatDocLines(t *testing.T) {
 		})
 	}
 }
+
+func TestDeriveGAPICNamespace(t *testing.T) {
+	for _, test := range []struct {
+		apiPath string
+		want    string
+	}{
+		{"google/cloud/redis/v1", "google.cloud"},
+		{"google/iam/credentials/v1", "google.iam"},
+		{"google/cloud/aiplatform/v1", "google.cloud"},
+		{"google/cloud/foo/bar/v1", "google.cloud"},
+		{"single", "single"},
+	} {
+		t.Run(test.apiPath, func(t *testing.T) {
+			got := deriveGAPICNamespace(test.apiPath)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestDeriveGAPICName(t *testing.T) {
+	for _, test := range []struct {
+		apiPath string
+		want    string
+	}{
+		{"google/cloud/redis/v1", "redis"},
+		{"google/iam/credentials/v1", "credentials"},
+		{"google/cloud/foo/bar/v1", "foo_bar"},
+		{"google/cloud/asset/v1", "asset"},
+	} {
+		t.Run(test.apiPath, func(t *testing.T) {
+			got := deriveGAPICName(test.apiPath)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}

@@ -17,6 +17,7 @@ package python
 import (
 	"strings"
 
+	"github.com/googleapis/librarian/internal/serviceconfig"
 	"github.com/iancoleman/strcase"
 )
 
@@ -91,4 +92,34 @@ func formatDocLines(doc string) []string {
 		result = append(result, strings.TrimRight(line, " \t\r"))
 	}
 	return result
+}
+
+// deriveGAPICNamespace derives the value to pass as python-gapic-namespace when
+// it's not specified explicitly. This is the first two components of the API
+// path (excluding any trailing version), dot-separated.
+func deriveGAPICNamespace(apiPath string) string {
+	version := serviceconfig.ExtractVersion(apiPath)
+	if version != "" {
+		apiPath = strings.TrimSuffix(apiPath, "/"+version)
+	}
+	parts := strings.Split(apiPath, "/")
+	if len(parts) >= 2 {
+		return parts[0] + "." + parts[1]
+	}
+	return apiPath
+}
+
+// deriveGAPICName derives the value to pass as python-gapic-name when it's not
+// specified explicitly. This is the path, without the leading namespace (after
+// replacing dots with slashes), and without any version suffix, and then
+// replacing slashes with underscores.
+func deriveGAPICName(apiPath string) string {
+	version := serviceconfig.ExtractVersion(apiPath)
+	if version != "" {
+		apiPath = strings.TrimSuffix(apiPath, "/"+version)
+	}
+	namespace := deriveGAPICNamespace(apiPath)
+	apiPath = strings.TrimPrefix(apiPath, strings.ReplaceAll(namespace, ".", "/"))
+	apiPath = strings.Trim(apiPath, "/")
+	return strings.ReplaceAll(apiPath, "/", "_")
 }

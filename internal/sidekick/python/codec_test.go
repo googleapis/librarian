@@ -38,17 +38,28 @@ func TestNewCodec(t *testing.T) {
 			model: func() *api.API {
 				m := api.NewTestAPI(nil, nil, nil)
 				m.Name = "google-cloud-secretmanager"
+				m.PackageName = "google.cloud.secretmanager.v1"
 				return m
 			}(),
 			library: &config.Library{
 				Name:          "google-cloud-secretmanager",
 				Version:       "2.1.0",
 				CopyrightYear: "2026",
+				APIs: []*config.API{
+					{Path: "google/cloud/secretmanager/v1"},
+				},
+				Python: &config.PythonPackage{
+					DefaultVersion: "v1",
+				},
 			},
 			want: &codec{
 				GenerationYear: "2026",
 				PackageName:    "google-cloud-secretmanager",
 				PackageVersion: "2.1.0",
+				DefaultVersion: "v1",
+				CurrentVersion: "v1",
+				GAPICNamespace: "google.cloud",
+				GAPICName:      "secretmanager",
 			},
 		},
 		{
@@ -80,6 +91,32 @@ func TestNewCodec(t *testing.T) {
 				GenerationYear: fmt.Sprintf("%04d", time.Now().Year()),
 				PackageName:    "google.cloud.speech.v1",
 				PackageVersion: "0.0.0",
+				DefaultVersion: "v1",
+				CurrentVersion: "v1",
+				GAPICNamespace: "google.cloud",
+				GAPICName:      "speech",
+			},
+		},
+		{
+			name: "single library API fallback",
+			model: func() *api.API {
+				m := api.NewTestAPI(nil, nil, nil)
+				m.Name = "google-cloud-redis"
+				return m
+			}(),
+			library: &config.Library{
+				APIs: []*config.API{
+					{Path: "google/cloud/redis/v1"},
+				},
+			},
+			want: &codec{
+				GenerationYear: fmt.Sprintf("%04d", time.Now().Year()),
+				PackageName:    "google-cloud-redis",
+				PackageVersion: "0.0.0",
+				DefaultVersion: "v1",
+				CurrentVersion: "v1",
+				GAPICNamespace: "google.cloud",
+				GAPICName:      "redis",
 			},
 		},
 	} {
@@ -99,6 +136,118 @@ func TestNewCodec_Error(t *testing.T) {
 	_, err := newCodec(nil, nil, "")
 	if !errors.Is(err, ErrNilModel) {
 		t.Errorf("newCodec(nil, nil, \"\") error = %v, want %v", err, ErrNilModel)
+	}
+}
+
+func TestCodec_PackageDir(t *testing.T) {
+	for _, test := range []struct {
+		name string
+		c    *codec
+		want string
+	}{
+		{
+			name: "with namespace, name and version",
+			c: &codec{
+				GAPICNamespace: "google.cloud",
+				GAPICName:      "redis",
+				CurrentVersion: "v1",
+			},
+			want: "google/cloud/redis_v1",
+		},
+		{
+			name: "fallback to default version",
+			c: &codec{
+				GAPICNamespace: "google.cloud",
+				GAPICName:      "redis",
+				DefaultVersion: "v1",
+			},
+			want: "google/cloud/redis_v1",
+		},
+		{
+			name: "without version",
+			c: &codec{
+				GAPICNamespace: "google.cloud",
+				GAPICName:      "redis",
+			},
+			want: "google/cloud/redis",
+		},
+		{
+			name: "empty namespace and name",
+			c:    &codec{},
+			want: "",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := test.c.packageDir()
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestCodec_RootPackageDir(t *testing.T) {
+	for _, test := range []struct {
+		name string
+		c    *codec
+		want string
+	}{
+		{
+			name: "standard package",
+			c: &codec{
+				GAPICNamespace: "google.cloud",
+				GAPICName:      "redis",
+			},
+			want: "google/cloud/redis",
+		},
+		{
+			name: "empty namespace and name",
+			c:    &codec{},
+			want: "",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := test.c.rootPackageDir()
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestCodec_IsDefaultVersion(t *testing.T) {
+	for _, test := range []struct {
+		name string
+		c    *codec
+		want bool
+	}{
+		{
+			name: "matching versions",
+			c:    &codec{CurrentVersion: "v1", DefaultVersion: "v1"},
+			want: true,
+		},
+		{
+			name: "empty default version",
+			c:    &codec{CurrentVersion: "v1", DefaultVersion: ""},
+			want: true,
+		},
+		{
+			name: "empty current version",
+			c:    &codec{CurrentVersion: "", DefaultVersion: "v1"},
+			want: true,
+		},
+		{
+			name: "differing versions",
+			c:    &codec{CurrentVersion: "v1beta1", DefaultVersion: "v1"},
+			want: false,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := test.c.isDefaultVersion()
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
 	}
 }
 
