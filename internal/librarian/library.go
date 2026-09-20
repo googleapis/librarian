@@ -183,12 +183,18 @@ func fillDart(lib *config.Library, d *config.Default) *config.Library {
 // fillPython populates empty Python-specific fields in lib from the provided
 // default.
 func fillPython(lib *config.Library, d *config.Default) *config.Library {
+	if d == nil || d.Python == nil {
+		return lib
+	}
 	if lib.Python == nil {
 		lib.Python = &config.PythonPackage{}
 	}
 	lib.Python.CommonGAPICPaths = append(d.Python.CommonGAPICPaths, lib.Python.CommonGAPICPaths...)
 	if lib.Python.LibraryType == "" {
 		lib.Python.LibraryType = d.Python.LibraryType
+	}
+	if lib.Python.Generator == "" {
+		lib.Python.Generator = d.Python.Generator
 	}
 	return lib
 }
@@ -719,6 +725,9 @@ func mergePython(dst, src *config.PythonPackage) *config.PythonPackage {
 		return src
 	}
 	res := *dst
+	if src.Generator != "" {
+		res.Generator = src.Generator
+	}
 	if src.CommonGAPICPaths != nil {
 		res.CommonGAPICPaths = src.CommonGAPICPaths
 	}

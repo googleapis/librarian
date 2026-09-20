@@ -496,6 +496,40 @@ func TestFillDefaults_Python(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "generator defaults",
+			lib:  &config.Library{},
+			defaults: &config.PythonDefault{
+				Generator: "sidekick",
+			},
+			want: &config.Library{
+				Python: &config.PythonPackage{
+					PythonDefault: config.PythonDefault{
+						Generator: "sidekick",
+					},
+				},
+			},
+		},
+		{
+			name: "generator overridden",
+			lib: &config.Library{
+				Python: &config.PythonPackage{
+					PythonDefault: config.PythonDefault{
+						Generator: "legacy",
+					},
+				},
+			},
+			defaults: &config.PythonDefault{
+				Generator: "sidekick",
+			},
+			want: &config.Library{
+				Python: &config.PythonPackage{
+					PythonDefault: config.PythonDefault{
+						Generator: "legacy",
+					},
+				},
+			},
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			defaults := &config.Default{
@@ -503,6 +537,26 @@ func TestFillDefaults_Python(t *testing.T) {
 			}
 			got := fillDefaults(test.lib, defaults)
 			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestFillPython_NilDefaults(t *testing.T) {
+	for _, test := range []struct {
+		name     string
+		defaults *config.Default
+	}{
+		{name: "nil defaults", defaults: nil},
+		{name: "empty defaults", defaults: &config.Default{}},
+		{name: "nil python defaults", defaults: &config.Default{Python: nil}},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			lib := &config.Library{Name: "test"}
+			want := &config.Library{Name: "test"}
+			got := fillPython(lib, test.defaults)
+			if diff := cmp.Diff(want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
@@ -1066,6 +1120,94 @@ func TestResolvePreview(t *testing.T) {
 				Preview: nil,
 			},
 		},
+		{
+			name:     "overrides all supported fields Python",
+			language: config.LanguagePython,
+			lib: &config.Library{
+				Name:                "base-name",
+				Version:             "1.0.0",
+				CopyrightYear:       "2024",
+				Keep:                []string{"base-keep"},
+				Output:              "base-out",
+				Roots:               []string{"base-root"},
+				SkipGenerate:        false,
+				SkipRelease:         false,
+				SpecificationFormat: "protobuf",
+				Python: &config.PythonPackage{
+					PythonDefault: config.PythonDefault{
+						Generator:         "legacy",
+						LibraryType:       "GAPIC",
+						CommonGAPICPaths:  []string{"base-gapic"},
+						AllowedNamespaces: []string{"base-ns"},
+					},
+					OptArgsByAPI: map[string][]string{
+						"base-api": {"base-arg"},
+					},
+					ProtoOnlyAPIs:               []string{"base-proto"},
+					ClientDocumentationOverride: "base-doc",
+					IssueTrackerOverride:        "base-issue",
+					MetadataNameOverride:        "base-meta",
+					DefaultVersion:              "v1",
+				},
+				Preview: &config.Library{
+					Name:                "preview-name",
+					Version:             "1.1.0-alpha",
+					APIs:                []*config.API{{Path: "preview/api"}},
+					CopyrightYear:       "2025",
+					Keep:                []string{"preview-keep"},
+					Output:              "preview-out",
+					Roots:               []string{"preview-root"},
+					SkipGenerate:        true,
+					SkipRelease:         true,
+					SpecificationFormat: "discovery",
+					Python: &config.PythonPackage{
+						PythonDefault: config.PythonDefault{
+							Generator:         "sidekick",
+							LibraryType:       "NEW",
+							CommonGAPICPaths:  []string{"preview-gapic"},
+							AllowedNamespaces: []string{"preview-ns"},
+						},
+						OptArgsByAPI: map[string][]string{
+							"preview-api": {"preview-arg"},
+						},
+						ProtoOnlyAPIs:               []string{"preview-proto"},
+						ClientDocumentationOverride: "preview-doc",
+						IssueTrackerOverride:        "preview-issue",
+						MetadataNameOverride:        "preview-meta",
+						DefaultVersion:              "v2",
+					},
+				},
+			},
+			want: &config.Library{
+				Name:                "preview-name",
+				Version:             "1.1.0-alpha",
+				APIs:                []*config.API{{Path: "preview/api"}},
+				CopyrightYear:       "2025",
+				Keep:                []string{"preview-keep"},
+				Output:              "preview-out",
+				Roots:               []string{"preview-root"},
+				SkipGenerate:        true,
+				SkipRelease:         true,
+				SpecificationFormat: "discovery",
+				Python: &config.PythonPackage{
+					PythonDefault: config.PythonDefault{
+						Generator:         "sidekick",
+						LibraryType:       "NEW",
+						CommonGAPICPaths:  []string{"preview-gapic"},
+						AllowedNamespaces: []string{"preview-ns"},
+					},
+					OptArgsByAPI: map[string][]string{
+						"preview-api": {"preview-arg"},
+					},
+					ProtoOnlyAPIs:               []string{"preview-proto"},
+					ClientDocumentationOverride: "preview-doc",
+					IssueTrackerOverride:        "preview-issue",
+					MetadataNameOverride:        "preview-meta",
+					DefaultVersion:              "v2",
+				},
+				Preview: nil,
+			},
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			got := resolvePreview(test.lib, test.language)
@@ -1532,9 +1674,15 @@ func TestMergePython(t *testing.T) {
 		},
 		{
 			name: "merges all fields",
-			dst:  &config.PythonPackage{PythonDefault: config.PythonDefault{LibraryType: "GAPIC"}},
+			dst: &config.PythonPackage{
+				PythonDefault: config.PythonDefault{
+					Generator:   "legacy",
+					LibraryType: "GAPIC",
+				},
+			},
 			src: &config.PythonPackage{
 				PythonDefault: config.PythonDefault{
+					Generator:         "sidekick",
 					CommonGAPICPaths:  []string{"p"},
 					AllowedNamespaces: []string{"ns"},
 					LibraryType:       "NEW",
@@ -1548,6 +1696,7 @@ func TestMergePython(t *testing.T) {
 			},
 			want: &config.PythonPackage{
 				PythonDefault: config.PythonDefault{
+					Generator:         "sidekick",
 					CommonGAPICPaths:  []string{"p"},
 					AllowedNamespaces: []string{"ns"},
 					LibraryType:       "NEW",
@@ -1558,6 +1707,38 @@ func TestMergePython(t *testing.T) {
 				IssueTrackerOverride:        "issue",
 				MetadataNameOverride:        "meta",
 				DefaultVersion:              "v1",
+			},
+		},
+		{
+			name: "generator override",
+			dst: &config.PythonPackage{
+				PythonDefault: config.PythonDefault{
+					Generator: "legacy",
+				},
+			},
+			src: &config.PythonPackage{
+				PythonDefault: config.PythonDefault{
+					Generator: "sidekick",
+				},
+			},
+			want: &config.PythonPackage{
+				PythonDefault: config.PythonDefault{
+					Generator: "sidekick",
+				},
+			},
+		},
+		{
+			name: "empty generator preserves dst",
+			dst: &config.PythonPackage{
+				PythonDefault: config.PythonDefault{
+					Generator: "legacy",
+				},
+			},
+			src: &config.PythonPackage{},
+			want: &config.PythonPackage{
+				PythonDefault: config.PythonDefault{
+					Generator: "legacy",
+				},
 			},
 		},
 	} {
