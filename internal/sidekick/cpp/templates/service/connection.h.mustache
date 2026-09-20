@@ -43,9 +43,9 @@ limitations under the License.
 {{#Codec.ProtoHeaderPath}}
 #include <{{Codec.ProtoHeaderPath}}>
 {{/Codec.ProtoHeaderPath}}
-{{#Codec.HasLongrunningMethod}}
+{{#Codec.HasGrpcLRO}}
 #include <google/longrunning/operations.grpc.pb.h>
-{{/Codec.HasLongrunningMethod}}
+{{/Codec.HasGrpcLRO}}
 #include <memory>
 
 namespace google {
@@ -199,6 +199,7 @@ class {{Codec.ConnectionClassName}} {
 {{> /templates/partials/connection_methods}}
 };
 
+{{#Codec.GenerateGrpcTransport}}
 /**
  * A factory function to construct an object of type `{{Codec.ConnectionClassName}}`.
  *
@@ -222,6 +223,7 @@ class {{Codec.ConnectionClassName}} {
  */
 std::shared_ptr<{{Codec.ConnectionClassName}}> Make{{Codec.ConnectionClassName}}(
     Options options = {});
+{{/Codec.GenerateGrpcTransport}}
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace {{Codec.Namespace}}

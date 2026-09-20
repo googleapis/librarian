@@ -64,6 +64,7 @@ type methodAnnotations struct {
 	RestQueryParams         []*queryParamAnnotation
 	RestHasQueryParams      bool
 	RestRequestBodyAccessor string
+	RestPayloadType         string
 	RestReturnTypeName      string
 	IsRestRpc               bool
 
@@ -243,13 +244,15 @@ func (c *codec) annotateMethod(m *api.Method, sAnn *serviceAnnotations, model *a
 	restQueryParams := buildRestQueryParams(m, b, model)
 	var restRequestBodyAccessor string
 	var restReturnTypeName string
+	var restPayloadType string
 	if hasRestPath {
 		var bodyField string
 		if m.PathInfo != nil {
 			bodyField = m.PathInfo.BodyFieldPath
 		}
 		restRequestBodyAccessor = buildRestRequestBodyAccessor(bodyField)
-		restReturnTypeName = buildRestReturnTypeName(m, cppReturnType)
+		restReturnTypeName = buildRestReturnTypeName(m)
+		restPayloadType = buildRestPayloadType(m)
 	}
 	isRestRpc := !isStreamingRead && !isStreamingWrite && !isBidirStreaming && hasRestPath
 
@@ -286,6 +289,7 @@ func (c *codec) annotateMethod(m *api.Method, sAnn *serviceAnnotations, model *a
 		RestQueryParams:                restQueryParams,
 		RestHasQueryParams:             len(restQueryParams) > 0,
 		RestRequestBodyAccessor:        restRequestBodyAccessor,
+		RestPayloadType:                restPayloadType,
 		RestReturnTypeName:             restReturnTypeName,
 		IsRestRpc:                      isRestRpc,
 		HasRequestId:                   hasRequestId,
@@ -989,9 +993,16 @@ func buildRestRequestBodyAccessor(bodyField string) string {
 	return "request." + CppParamName(CamelCaseToSnakeCase(bodyField)) + "()"
 }
 
-func buildRestReturnTypeName(m *api.Method, cppReturnType string) string {
+func buildRestReturnTypeName(m *api.Method) string {
+	if m.OutputTypeID == "" || m.OutputTypeID == ".google.protobuf.Empty" || m.OutputTypeID == "google.protobuf.Empty" {
+		return "Status"
+	}
+	return "StatusOr<" + ProtoNameToCppName(m.OutputTypeID) + ">"
+}
+
+func buildRestPayloadType(m *api.Method) string {
 	if m.OutputTypeID == "" || m.OutputTypeID == ".google.protobuf.Empty" || m.OutputTypeID == "google.protobuf.Empty" {
 		return "google::cloud::rest_internal::EmptyResponseType"
 	}
-	return cppReturnType
+	return ProtoNameToCppName(m.OutputTypeID)
 }

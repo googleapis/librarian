@@ -115,6 +115,7 @@ future<{{{CppReturnType}}}>
 }
 
 {{/Codec.AsyncMethods}}
+{{#Codec.GenerateGrpcTransport}}
 std::shared_ptr<{{Codec.ConnectionClassName}}> Make{{Codec.ConnectionClassName}}(
     Options options) {
   internal::CheckExpectedOptions<CommonOptionList, GrpcOptionList,
@@ -130,6 +131,7 @@ std::shared_ptr<{{Codec.ConnectionClassName}}> Make{{Codec.ConnectionClassName}}
       std::make_shared<{{Codec.InternalNamespace}}::{{Codec.ConnectionImplClassName}}>(
       std::move(background), std::move(stub), std::move(options)));
 }
+{{/Codec.GenerateGrpcTransport}}
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace {{Codec.Namespace}}

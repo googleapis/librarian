@@ -187,11 +187,14 @@ type serviceAnnotations struct {
 	ServiceGrpcProtoName string
 
 	// Methods
-	Methods            []*methodAnnotations
-	AsyncMethods       []*methodAnnotations
-	HasIamUpdater      bool
-	DescriptionLines   []docLine
-	ProductOptionsPage string
+	Methods               []*methodAnnotations
+	AsyncMethods          []*methodAnnotations
+	RestMethods           []*methodAnnotations
+	RestAsyncMethods      []*methodAnnotations
+	RestStubProtoIncludes []string
+	HasIamUpdater         bool
+	DescriptionLines      []docLine
+	ProductOptionsPage    string
 }
 
 type docLine struct {
@@ -466,6 +469,42 @@ func (c *codec) annotateService(s *api.Service, modelAnn *modelAnnotations, mode
 	serviceGrpcName := ProtoNameToCppName("." + s.Package + "." + s.Name)
 	serviceGrpcProtoName := s.Package + "." + s.Name
 
+	var restStubProtoIncludes []string
+	if c.config != nil {
+		for _, proto := range c.config.AdditionalProtoFiles {
+			h := strings.TrimSuffix(proto, ".proto") + ".pb.h"
+			if !slices.Contains(restStubProtoIncludes, h) {
+				restStubProtoIncludes = append(restStubProtoIncludes, h)
+			}
+		}
+	}
+	var hasLocationMixin, hasIamMixin, hasOperationsMixin bool
+	for _, m := range s.Methods {
+		if strings.Contains(m.SourceServiceID, "google.cloud.location.Locations") {
+			hasLocationMixin = true
+		}
+		if strings.Contains(m.SourceServiceID, "google.iam.v1.IAMPolicy") {
+			hasIamMixin = true
+		}
+		if strings.Contains(m.SourceServiceID, "google.longrunning.Operations") {
+			hasOperationsMixin = true
+		}
+	}
+	if hasLocationMixin && !slices.Contains(restStubProtoIncludes, "google/cloud/location/locations.pb.h") {
+		restStubProtoIncludes = append(restStubProtoIncludes, "google/cloud/location/locations.pb.h")
+	}
+	if hasIamMixin && !slices.Contains(restStubProtoIncludes, "google/iam/v1/iam_policy.pb.h") {
+		restStubProtoIncludes = append(restStubProtoIncludes, "google/iam/v1/iam_policy.pb.h")
+	}
+	if hasOperationsMixin || hasLongrunningMethod {
+		if !slices.Contains(restStubProtoIncludes, "google/longrunning/operations.pb.h") {
+			restStubProtoIncludes = append(restStubProtoIncludes, "google/longrunning/operations.pb.h")
+		}
+	}
+	if protoHeaderPath != "" && !slices.Contains(restStubProtoIncludes, protoHeaderPath) {
+		restStubProtoIncludes = append(restStubProtoIncludes, protoHeaderPath)
+	}
+
 	sAnn := &serviceAnnotations{
 		Name:          s.Name,
 		CopyrightYear: year,
@@ -617,6 +656,7 @@ func (c *codec) annotateService(s *api.Service, modelAnn *modelAnnotations, mode
 		ConnectionSourceIncludes:     connectionSourceIncludes,
 		ConnectionImplHeaderIncludes: connectionImplHeaderIncludes,
 		SourcesCcIncludes:            sourcesCcIncludes,
+		RestStubProtoIncludes:        restStubProtoIncludes,
 	}
 	var getIamPolicyMethod, setIamPolicyMethod *api.Method
 	for _, m := range s.Methods {
@@ -678,8 +718,23 @@ func (c *codec) annotateService(s *api.Service, modelAnn *modelAnnotations, mode
 		}
 	}
 
+	var restMethods []*methodAnnotations
+	for _, m := range methods {
+		if m.IsRestRpc {
+			restMethods = append(restMethods, m)
+		}
+	}
+	var restAsyncMethods []*methodAnnotations
+	for _, m := range asyncMethods {
+		if m.IsRestRpc {
+			restAsyncMethods = append(restAsyncMethods, m)
+		}
+	}
+
 	sAnn.Methods = methods
 	sAnn.AsyncMethods = asyncMethods
+	sAnn.RestMethods = restMethods
+	sAnn.RestAsyncMethods = restAsyncMethods
 	sAnn.HasIamUpdater = hasIamUpdater
 	s.Codec = sAnn
 	return nil

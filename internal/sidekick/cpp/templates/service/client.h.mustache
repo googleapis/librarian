@@ -17,7 +17,12 @@ limitations under the License.
 #ifndef {{Codec.ClientHeaderIncludeGuard}}
 #define {{Codec.ClientHeaderIncludeGuard}}
 
+{{#Codec.GenerateGrpcTransport}}
 #include "{{Codec.ConnectionHeaderPath}}"
+{{/Codec.GenerateGrpcTransport}}
+{{^Codec.GenerateGrpcTransport}}
+#include "{{Codec.RestConnectionHeaderPath}}"
+{{/Codec.GenerateGrpcTransport}}
 #include "google/cloud/future.h"
 {{#Codec.HasIamUpdater}}
 #include "google/cloud/internal/make_status.h"
@@ -32,9 +37,9 @@ limitations under the License.
 {{#Codec.HasIamUpdater}}
 #include "google/cloud/iam_updater.h"
 {{/Codec.HasIamUpdater}}
-{{#Codec.HasLongrunningMethod}}
+{{#Codec.HasGrpcLRO}}
 #include <google/longrunning/operations.grpc.pb.h>
-{{/Codec.HasLongrunningMethod}}
+{{/Codec.HasGrpcLRO}}
 #include <memory>
 #include <string>
 

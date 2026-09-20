@@ -473,6 +473,7 @@ func TestAnnotateService(t *testing.T) {
 				"IsLocationOptionallyDependent",
 				"ApiVersion",
 				"HasApiVersion",
+				"RestStubProtoIncludes",
 			)
 			if test.want.SourcesCcIncludes != nil {
 				if diff := cmp.Diff(test.want.SourcesCcIncludes, got.SourcesCcIncludes); diff != "" {
@@ -1043,6 +1044,60 @@ func TestAnnotateService_RestAndRoundRobin(t *testing.T) {
 		"CreateDefaultRestStubFunctionName": got.CreateDefaultRestStubFunctionName,
 	}
 	if diff := cmp.Diff(wantClasses, gotClasses); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+}
+
+func TestAnnotateService_RestMethodsAndProtoIncludes(t *testing.T) {
+	req := api.NewTestMessage("EchoRequest")
+	resp := api.NewTestMessage("EchoResponse")
+	pt := (&api.PathTemplate{}).WithLiteral("v1").WithLiteral("echos")
+	binding := &api.PathBinding{
+		Verb:         "GET",
+		PathTemplate: pt,
+	}
+	unaryMethod := api.NewTestMethod("Unary").
+		WithInput(req).
+		WithOutput(resp)
+	unaryMethod.PathInfo = &api.PathInfo{
+		Bindings: []*api.PathBinding{binding},
+	}
+	streamingMethod := api.NewTestMethod("Streaming").
+		WithInput(req).
+		WithOutput(resp)
+	streamingMethod.ServerSideStreaming = true
+
+	svc := api.NewTestService("EchoService").WithMethods(unaryMethod, streamingMethod)
+	model := api.NewTestAPI([]*api.Message{req, resp}, nil, []*api.Service{svc})
+	model.DefinitionLocations = map[string]api.SourceLocation{
+		svc.ID: {Filename: "google/example/echo.proto", Line: 42},
+	}
+	libCfg := &config.CppLibrary{
+		ProductPath:           "google/example/v1",
+		AdditionalProtoFiles:  []string{"google/example/extra.proto"},
+		GenerateRestTransport: true,
+		GenAsyncRPCs:          []string{"Unary"},
+	}
+	c := newCodec(libCfg)
+	modelAnn := &modelAnnotations{
+		CopyrightYear: "2026",
+		BoilerPlate:   []string{"// Sample Boilerplate"},
+	}
+	if err := c.annotateService(svc, modelAnn, model); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	got := svc.Codec.(*serviceAnnotations)
+	if len(got.RestMethods) != 1 || got.RestMethods[0].Name != "Unary" {
+		t.Errorf("expected 1 RestMethod 'Unary', got %v", got.RestMethods)
+	}
+	if len(got.RestAsyncMethods) != 1 || got.RestAsyncMethods[0].Name != "Unary" {
+		t.Errorf("expected 1 RestAsyncMethod 'Unary', got %v", got.RestAsyncMethods)
+	}
+	wantIncludes := []string{
+		"google/example/extra.pb.h",
+		"google/example/echo.pb.h",
+	}
+	if diff := cmp.Diff(wantIncludes, got.RestStubProtoIncludes); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }

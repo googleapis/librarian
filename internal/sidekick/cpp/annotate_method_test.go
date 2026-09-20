@@ -601,6 +601,9 @@ func TestAnnotateMethod_Rest(t *testing.T) {
 	if got.RestReturnTypeName != "StatusOr<test::Item>" {
 		t.Errorf("expected RestReturnTypeName 'StatusOr<test::Item>', got %q", got.RestReturnTypeName)
 	}
+	if got.RestPayloadType != "test::Item" {
+		t.Errorf("expected RestPayloadType 'test::Item', got %q", got.RestPayloadType)
+	}
 	if !got.IsRestRpc {
 		t.Errorf("expected IsRestRpc to be true")
 	}

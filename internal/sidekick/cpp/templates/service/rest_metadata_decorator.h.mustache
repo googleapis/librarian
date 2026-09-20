@@ -1,0 +1,101 @@
+{{!
+Copyright 2026 Google LLC
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    https://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+}}
+{{> /templates/partials/prologue}}
+#ifndef {{Codec.RestMetadataDecoratorHeaderIncludeGuard}}
+#define {{Codec.RestMetadataDecoratorHeaderIncludeGuard}}
+
+#include "{{Codec.RestStubHeaderPath}}"
+#include "google/cloud/future.h"
+#include "google/cloud/rest_options.h"
+#include "google/cloud/version.h"
+{{#Codec.ProtoHeaderPath}}
+#include <{{Codec.ProtoHeaderPath}}>
+{{/Codec.ProtoHeaderPath}}
+{{#Codec.HasLongrunningMethod}}
+#include <google/longrunning/operations.pb.h>
+{{/Codec.HasLongrunningMethod}}
+#include <memory>
+#include <string>
+
+namespace google {
+namespace cloud {
+namespace {{Codec.InternalNamespace}} {
+GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
+
+class {{Codec.RestMetadataDecoratorClassName}} : public {{Codec.RestStubClassName}} {
+ public:
+  ~{{Codec.RestMetadataDecoratorClassName}}() override = default;
+  explicit {{Codec.RestMetadataDecoratorClassName}}(
+      std::shared_ptr<{{Codec.RestStubClassName}}> child,
+      std::string api_client_header = "");
+
+{{#Codec.RestMethods}}
+{{#IsLongrunning}}
+  future<StatusOr<google::longrunning::Operation>> Async{{Name}}(
+      google::cloud::CompletionQueue& cq,
+      std::unique_ptr<google::cloud::rest_internal::RestContext> rest_context,
+      google::cloud::internal::ImmutableOptions options,
+      {{{CppRequestType}}} const& request) override;
+
+  StatusOr<google::longrunning::Operation> {{Name}}(
+      google::cloud::rest_internal::RestContext& rest_context,
+      Options const& options, {{{CppRequestType}}} const& request) override;
+
+{{/IsLongrunning}}
+{{^IsLongrunning}}
+  {{{CppReturnType}}} {{Name}}(
+      google::cloud::rest_internal::RestContext& rest_context,
+      Options const& options, {{{CppRequestType}}} const& request) override;
+
+{{/IsLongrunning}}
+{{/Codec.RestMethods}}
+{{#Codec.RestAsyncMethods}}
+  future<{{{CppReturnType}}}> Async{{Name}}(
+      google::cloud::CompletionQueue& cq,
+      std::unique_ptr<google::cloud::rest_internal::RestContext> rest_context,
+      google::cloud::internal::ImmutableOptions options,
+      {{{CppRequestType}}} const& request) override;
+
+{{/Codec.RestAsyncMethods}}
+{{#Codec.HasLongrunningMethod}}
+  future<StatusOr<google::longrunning::Operation>> AsyncGetOperation(
+      google::cloud::CompletionQueue& cq,
+      std::unique_ptr<google::cloud::rest_internal::RestContext> rest_context,
+      google::cloud::internal::ImmutableOptions options,
+      google::longrunning::GetOperationRequest const& request) override;
+
+  future<Status> AsyncCancelOperation(
+      google::cloud::CompletionQueue& cq,
+      std::unique_ptr<google::cloud::rest_internal::RestContext> rest_context,
+      google::cloud::internal::ImmutableOptions options,
+      google::longrunning::CancelOperationRequest const& request) override;
+
+{{/Codec.HasLongrunningMethod}}
+ private:
+  void SetMetadata(rest_internal::RestContext& rest_context,
+                   Options const& options,
+                   std::vector<std::string> const& params = {});
+
+  std::shared_ptr<{{Codec.RestStubClassName}}> child_;
+  std::string api_client_header_;
+};
+
+GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
+}  // namespace {{Codec.InternalNamespace}}
+}  // namespace cloud
+}  // namespace google
+
+#endif  // {{Codec.RestMetadataDecoratorHeaderIncludeGuard}}

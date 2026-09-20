@@ -359,6 +359,9 @@ void {{Codec.MetadataDecoratorClassName}}::SetMetadata(grpc::ClientContext& cont
 
 void {{Codec.MetadataDecoratorClassName}}::SetMetadata(grpc::ClientContext& context,
                                         Options const& options) {
+  {{#Codec.HasApiVersion}}
+  context.AddMetadata("x-goog-api-version", "{{Codec.ApiVersion}}");
+  {{/Codec.HasApiVersion}}
   google::cloud::internal::SetMetadata(
       context, options, fixed_metadata_, api_client_header_);
 }

@@ -1,0 +1,190 @@
+{{!
+Copyright 2026 Google LLC
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    https://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+}}
+{{> /templates/partials/prologue}}
+#include "{{Codec.RoundRobinHeaderPath}}"
+#include <memory>
+#include <mutex>
+#include <vector>
+
+namespace google {
+namespace cloud {
+namespace {{Codec.InternalNamespace}} {
+GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
+
+{{Codec.RoundRobinClassName}}::{{Codec.RoundRobinClassName}}(
+    std::vector<std::shared_ptr<{{Codec.StubClassName}}>> children)
+    : children_(std::move(children)) {}
+
+{{#Codec.Methods}}
+{{#IsLongrunning}}
+future<StatusOr<google::longrunning::Operation>>
+{{Codec.RoundRobinClassName}}::Async{{Name}}(
+    google::cloud::CompletionQueue& cq,
+    std::shared_ptr<grpc::ClientContext> context,
+    google::cloud::internal::ImmutableOptions options,
+    {{{CppRequestType}}} const& request) {
+  return Child()->Async{{Name}}(
+      cq, std::move(context), std::move(options), request);
+}
+
+StatusOr<google::longrunning::Operation>
+{{Codec.RoundRobinClassName}}::{{Name}}(
+      grpc::ClientContext& context,
+      Options options,
+      {{{CppRequestType}}} const& request) {
+  return Child()->{{Name}}(context, options, request);
+}
+
+{{/IsLongrunning}}
+{{#IsBidirStreaming}}
+std::unique_ptr<google::cloud::AsyncStreamingReadWriteRpc<
+    {{{CppRequestType}}},
+    {{{CppResponseType}}}>>
+{{Codec.RoundRobinClassName}}::Async{{Name}}(
+    google::cloud::CompletionQueue const& cq,
+    std::shared_ptr<grpc::ClientContext> context,
+    google::cloud::internal::ImmutableOptions options) {
+  return Child()->Async{{Name}}(
+      cq, std::move(context), std::move(options));
+}
+
+{{/IsBidirStreaming}}
+{{#IsStreamingRead}}
+std::unique_ptr<google::cloud::internal::StreamingReadRpc<{{{CppResponseType}}}>>
+{{Codec.RoundRobinClassName}}::{{Name}}(
+    std::shared_ptr<grpc::ClientContext> context,
+    Options const& options,
+    {{{CppRequestType}}} const& request) {
+  return Child()->{{Name}}(std::move(context), options, request);
+}
+
+{{/IsStreamingRead}}
+{{#IsStreamingWrite}}
+std::unique_ptr<google::cloud::internal::StreamingWriteRpc<
+    {{{CppRequestType}}}, {{{CppResponseType}}}>>
+{{Codec.RoundRobinClassName}}::{{Name}}(
+    std::shared_ptr<grpc::ClientContext> context,
+    Options const& options) {
+  return Child()->{{Name}}(std::move(context), options);
+}
+
+{{/IsStreamingWrite}}
+{{#IsUnary}}
+{{{CppReturnType}}} {{Codec.RoundRobinClassName}}::{{Name}}(
+    grpc::ClientContext& context,
+    Options const& options,
+    {{{CppRequestType}}} const& request) {
+  return Child()->{{Name}}(context, options, request);
+}
+
+{{/IsUnary}}
+{{#IsPaginated}}
+{{{CppReturnType}}} {{Codec.RoundRobinClassName}}::{{Name}}(
+    grpc::ClientContext& context,
+    Options const& options,
+    {{{CppRequestType}}} const& request) {
+  return Child()->{{Name}}(context, options, request);
+}
+
+{{/IsPaginated}}
+{{/Codec.Methods}}
+{{#Codec.AsyncMethods}}
+{{#IsStreamingRead}}
+std::unique_ptr<google::cloud::internal::AsyncStreamingReadRpc<
+    {{{CppResponseType}}}>>
+{{Codec.RoundRobinClassName}}::Async{{Name}}(
+    google::cloud::CompletionQueue const& cq,
+    std::shared_ptr<grpc::ClientContext> context,
+    google::cloud::internal::ImmutableOptions options,
+    {{{CppRequestType}}} const& request) {
+  return Child()->Async{{Name}}(
+      cq, std::move(context), std::move(options), request);
+}
+
+{{/IsStreamingRead}}
+{{#IsStreamingWrite}}
+std::unique_ptr<google::cloud::internal::AsyncStreamingWriteRpc<
+    {{{CppRequestType}}},
+    {{{CppResponseType}}}>>
+{{Codec.RoundRobinClassName}}::Async{{Name}}(
+    google::cloud::CompletionQueue const& cq,
+    std::shared_ptr<grpc::ClientContext> context,
+    google::cloud::internal::ImmutableOptions options) {
+  return Child()->Async{{Name}}(
+      cq, std::move(context), std::move(options));
+}
+
+{{/IsStreamingWrite}}
+{{#IsUnary}}
+future<{{{CppReturnType}}}>
+{{Codec.RoundRobinClassName}}::Async{{Name}}(
+    google::cloud::CompletionQueue& cq,
+    std::shared_ptr<grpc::ClientContext> context,
+    google::cloud::internal::ImmutableOptions options,
+    {{{CppRequestType}}} const& request) {
+  return Child()->Async{{Name}}(
+      cq, std::move(context), std::move(options), request);
+}
+
+{{/IsUnary}}
+{{#IsPaginated}}
+future<{{{CppReturnType}}}>
+{{Codec.RoundRobinClassName}}::Async{{Name}}(
+    google::cloud::CompletionQueue& cq,
+    std::shared_ptr<grpc::ClientContext> context,
+    google::cloud::internal::ImmutableOptions options,
+    {{{CppRequestType}}} const& request) {
+  return Child()->Async{{Name}}(
+      cq, std::move(context), std::move(options), request);
+}
+
+{{/IsPaginated}}
+{{/Codec.AsyncMethods}}
+{{#Codec.HasLongrunningMethod}}
+future<StatusOr<google::longrunning::Operation>>
+{{Codec.RoundRobinClassName}}::AsyncGetOperation(
+    google::cloud::CompletionQueue& cq,
+    std::shared_ptr<grpc::ClientContext> context,
+    google::cloud::internal::ImmutableOptions options,
+    google::longrunning::GetOperationRequest const& request) {
+  return Child()->AsyncGetOperation(
+      cq, std::move(context), std::move(options), request);
+}
+
+future<Status>
+{{Codec.RoundRobinClassName}}::AsyncCancelOperation(
+    google::cloud::CompletionQueue& cq,
+    std::shared_ptr<grpc::ClientContext> context,
+    google::cloud::internal::ImmutableOptions options,
+    google::longrunning::CancelOperationRequest const& request) {
+  return Child()->AsyncCancelOperation(
+      cq, std::move(context), std::move(options), request);
+}
+
+{{/Codec.HasLongrunningMethod}}
+std::shared_ptr<{{Codec.StubClassName}}>
+{{Codec.RoundRobinClassName}}::Child() {
+  std::unique_lock<std::mutex> lk(mu_);
+  auto const current = current_;
+  if (++current_ == children_.size()) current_ = 0;
+  lk.unlock();
+  return children_[current];
+}
+
+GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
+}  // namespace {{Codec.InternalNamespace}}
+}  // namespace cloud
+}  // namespace google

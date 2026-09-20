@@ -1,0 +1,148 @@
+{{!
+Copyright 2026 Google LLC
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    https://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+}}
+{{> /templates/partials/prologue}}
+#ifndef {{Codec.RestStubHeaderIncludeGuard}}
+#define {{Codec.RestStubHeaderIncludeGuard}}
+
+#include "google/cloud/completion_queue.h"
+#include "google/cloud/internal/rest_client.h"
+#include "google/cloud/internal/rest_context.h"
+#include "google/cloud/status_or.h"
+#include "google/cloud/version.h"
+{{#Codec.RestStubProtoIncludes}}
+#include <{{{.}}}>
+{{/Codec.RestStubProtoIncludes}}
+#include <memory>
+
+namespace google {
+namespace cloud {
+namespace {{Codec.InternalNamespace}} {
+GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
+
+class {{Codec.RestStubClassName}} {
+ public:
+  virtual ~{{Codec.RestStubClassName}}() = default;
+
+{{#Codec.RestMethods}}
+{{#IsLongrunning}}
+  virtual future<StatusOr<google::longrunning::Operation>> Async{{Name}}(
+      google::cloud::CompletionQueue& cq,
+      std::unique_ptr<google::cloud::rest_internal::RestContext> rest_context,
+      google::cloud::internal::ImmutableOptions options,
+      {{{CppRequestType}}} const& request) = 0;
+
+  virtual StatusOr<google::longrunning::Operation> {{Name}}(
+      google::cloud::rest_internal::RestContext& rest_context,
+      Options const& options, {{{CppRequestType}}} const& request) = 0;
+
+{{/IsLongrunning}}
+{{^IsLongrunning}}
+  virtual {{{CppReturnType}}} {{Name}}(
+      google::cloud::rest_internal::RestContext& rest_context,
+      Options const& options, {{{CppRequestType}}} const& request) = 0;
+
+{{/IsLongrunning}}
+{{/Codec.RestMethods}}
+{{#Codec.RestAsyncMethods}}
+  virtual future<{{{CppReturnType}}}> Async{{Name}}(
+      google::cloud::CompletionQueue& cq,
+      std::unique_ptr<google::cloud::rest_internal::RestContext> rest_context,
+      google::cloud::internal::ImmutableOptions options,
+      {{{CppRequestType}}} const& request) = 0;
+
+{{/Codec.RestAsyncMethods}}
+{{#Codec.HasLongrunningMethod}}
+  virtual future<StatusOr<google::longrunning::Operation>> AsyncGetOperation(
+      google::cloud::CompletionQueue& cq,
+      std::unique_ptr<google::cloud::rest_internal::RestContext> rest_context,
+      google::cloud::internal::ImmutableOptions options,
+      google::longrunning::GetOperationRequest const& request) = 0;
+
+  virtual future<Status> AsyncCancelOperation(
+      google::cloud::CompletionQueue& cq,
+      std::unique_ptr<google::cloud::rest_internal::RestContext> rest_context,
+      google::cloud::internal::ImmutableOptions options,
+      google::longrunning::CancelOperationRequest const& request) = 0;
+{{/Codec.HasLongrunningMethod}}
+};
+
+class {{Codec.DefaultRestStubClassName}} : public {{Codec.RestStubClassName}} {
+ public:
+  ~{{Codec.DefaultRestStubClassName}}() override = default;
+
+  explicit {{Codec.DefaultRestStubClassName}}(Options options);
+  {{Codec.DefaultRestStubClassName}}(
+      std::shared_ptr<rest_internal::RestClient> service,
+{{#Codec.HasLongrunningMethod}}
+      std::shared_ptr<rest_internal::RestClient> operations,
+{{/Codec.HasLongrunningMethod}}
+      Options options);
+
+{{#Codec.RestMethods}}
+{{#IsLongrunning}}
+  future<StatusOr<google::longrunning::Operation>> Async{{Name}}(
+      google::cloud::CompletionQueue& cq,
+      std::unique_ptr<google::cloud::rest_internal::RestContext> rest_context,
+      google::cloud::internal::ImmutableOptions options,
+      {{{CppRequestType}}} const& request) override;
+
+  StatusOr<google::longrunning::Operation> {{Name}}(
+      google::cloud::rest_internal::RestContext& rest_context,
+      Options const& options, {{{CppRequestType}}} const& request) override;
+
+{{/IsLongrunning}}
+{{^IsLongrunning}}
+  {{{CppReturnType}}} {{Name}}(
+      google::cloud::rest_internal::RestContext& rest_context,
+      Options const& options, {{{CppRequestType}}} const& request) override;
+
+{{/IsLongrunning}}
+{{/Codec.RestMethods}}
+{{#Codec.RestAsyncMethods}}
+  future<{{{CppReturnType}}}> Async{{Name}}(
+      google::cloud::CompletionQueue& cq,
+      std::unique_ptr<google::cloud::rest_internal::RestContext> rest_context,
+      google::cloud::internal::ImmutableOptions options,
+      {{{CppRequestType}}} const& request) override;
+
+{{/Codec.RestAsyncMethods}}
+{{#Codec.HasLongrunningMethod}}
+  future<StatusOr<google::longrunning::Operation>> AsyncGetOperation(
+      google::cloud::CompletionQueue& cq,
+      std::unique_ptr<google::cloud::rest_internal::RestContext> rest_context,
+      google::cloud::internal::ImmutableOptions options,
+      google::longrunning::GetOperationRequest const& request) override;
+
+  future<Status> AsyncCancelOperation(
+      google::cloud::CompletionQueue& cq,
+      std::unique_ptr<google::cloud::rest_internal::RestContext> rest_context,
+      google::cloud::internal::ImmutableOptions options,
+      google::longrunning::CancelOperationRequest const& request) override;
+{{/Codec.HasLongrunningMethod}}
+ private:
+  std::shared_ptr<rest_internal::RestClient> service_;
+{{#Codec.HasLongrunningMethod}}
+  std::shared_ptr<rest_internal::RestClient> operations_;
+{{/Codec.HasLongrunningMethod}}
+  Options options_;
+};
+
+GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
+}  // namespace {{Codec.InternalNamespace}}
+}  // namespace cloud
+}  // namespace google
+
+#endif  // {{Codec.RestStubHeaderIncludeGuard}}

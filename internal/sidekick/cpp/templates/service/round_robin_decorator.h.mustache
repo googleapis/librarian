@@ -14,30 +14,37 @@ See the License for the specific language governing permissions and
 limitations under the License.
 }}
 {{> /templates/partials/prologue}}
-#ifndef {{Codec.OptionDefaultsHeaderIncludeGuard}}
-#define {{Codec.OptionDefaultsHeaderIncludeGuard}}
+#ifndef {{Codec.RoundRobinHeaderIncludeGuard}}
+#define {{Codec.RoundRobinHeaderIncludeGuard}}
 
-#include "google/cloud/options.h"
+#include "{{Codec.StubHeaderPath}}"
 #include "google/cloud/version.h"
-{{#Codec.IsLocationOptionallyDependent}}
-#include <string>
-{{/Codec.IsLocationOptionallyDependent}}
+#include <memory>
+#include <mutex>
+#include <vector>
 
 namespace google {
 namespace cloud {
 namespace {{Codec.InternalNamespace}} {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
-{{#Codec.IsLocationOptionallyDependent}}
-Options {{Codec.Name}}DefaultOptions(std::string const& location, Options options);
-{{/Codec.IsLocationOptionallyDependent}}
-{{^Codec.IsLocationOptionallyDependent}}
-Options {{Codec.Name}}DefaultOptions(Options options);
-{{/Codec.IsLocationOptionallyDependent}}
+class {{Codec.RoundRobinClassName}} : public {{Codec.StubClassName}} {
+ public:
+  explicit {{Codec.RoundRobinClassName}}(
+      std::vector<std::shared_ptr<{{Codec.StubClassName}}>> children);
+  ~{{Codec.RoundRobinClassName}}() override = default;
+{{> /templates/partials/stub_methods}}
+ private:
+  std::shared_ptr<{{Codec.StubClassName}}> Child();
+
+  std::vector<std::shared_ptr<{{Codec.StubClassName}}>> const children_;
+  std::mutex mu_;
+  std::size_t current_ = 0;
+};
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace {{Codec.InternalNamespace}}
 }  // namespace cloud
 }  // namespace google
 
-#endif  // {{Codec.OptionDefaultsHeaderIncludeGuard}}
+#endif  // {{Codec.RoundRobinHeaderIncludeGuard}}

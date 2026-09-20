@@ -1,0 +1,80 @@
+{{!
+Copyright 2026 Google LLC
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    https://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+}}
+{{> /templates/partials/prologue}}
+#include "{{Codec.RestConnectionHeaderPath}}"
+#include "{{Codec.OptionsHeaderPath}}"
+#include "{{Codec.OptionDefaultsHeaderPath}}"
+#include "{{Codec.RestConnectionImplHeaderPath}}"
+#include "{{Codec.RestStubFactoryHeaderPath}}"
+#include "{{Codec.TracingConnectionHeaderPath}}"
+#include "google/cloud/common_options.h"
+#include "google/cloud/credentials.h"
+#include "google/cloud/internal/rest_background_threads_impl.h"
+#include "google/cloud/internal/rest_options.h"
+#include <memory>
+#include <utility>
+
+namespace google {
+namespace cloud {
+namespace {{Codec.Namespace}} {
+GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
+
+{{#Codec.IsLocationOptionallyDependent}}
+std::shared_ptr<{{Codec.ConnectionClassName}}> {{Codec.MakeRestConnectionFunctionName}}(
+    std::string const& location, Options options) {
+  internal::CheckExpectedOptions<CommonOptionList, RestOptionList,
+      UnifiedCredentialsOptionList, rest_internal::TargetApiVersionOption,
+      {{Codec.ServicePolicyOptionListName}}>(options, __func__);
+  options = {{Codec.InternalNamespace}}::{{Codec.ServiceDefaultOptionsFunctionName}}(
+      location, std::move(options));
+  auto background = std::make_unique<
+      rest_internal::AutomaticallyCreatedRestBackgroundThreads>();
+  auto stub = {{Codec.InternalNamespace}}::{{Codec.CreateDefaultRestStubFunctionName}}(
+      options);
+  return {{Codec.InternalNamespace}}::Make{{Codec.TracingConnectionClassName}}(
+      std::make_shared<
+          {{Codec.InternalNamespace}}::{{Codec.RestConnectionImplClassName}}>(
+          std::move(background), std::move(stub), std::move(options)));
+}
+
+std::shared_ptr<{{Codec.ConnectionClassName}}> {{Codec.MakeRestConnectionFunctionName}}(
+    Options options) {
+  return {{Codec.MakeRestConnectionFunctionName}}(std::string{}, std::move(options));
+}
+{{/Codec.IsLocationOptionallyDependent}}
+{{^Codec.IsLocationOptionallyDependent}}
+std::shared_ptr<{{Codec.ConnectionClassName}}> {{Codec.MakeRestConnectionFunctionName}}(
+    Options options) {
+  internal::CheckExpectedOptions<CommonOptionList, RestOptionList,
+      UnifiedCredentialsOptionList, rest_internal::TargetApiVersionOption,
+      {{Codec.ServicePolicyOptionListName}}>(options, __func__);
+  options = {{Codec.InternalNamespace}}::{{Codec.ServiceDefaultOptionsFunctionName}}(
+      std::move(options));
+  auto background = std::make_unique<
+      rest_internal::AutomaticallyCreatedRestBackgroundThreads>();
+  auto stub = {{Codec.InternalNamespace}}::{{Codec.CreateDefaultRestStubFunctionName}}(
+      options);
+  return {{Codec.InternalNamespace}}::Make{{Codec.TracingConnectionClassName}}(
+      std::make_shared<
+          {{Codec.InternalNamespace}}::{{Codec.RestConnectionImplClassName}}>(
+          std::move(background), std::move(stub), std::move(options)));
+}
+{{/Codec.IsLocationOptionallyDependent}}
+
+GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
+}  // namespace {{Codec.Namespace}}
+}  // namespace cloud
+}  // namespace google

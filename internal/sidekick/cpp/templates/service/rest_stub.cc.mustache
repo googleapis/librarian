@@ -1,0 +1,265 @@
+{{!
+Copyright 2026 Google LLC
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    https://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+}}
+{{> /templates/partials/prologue}}
+#include "{{Codec.RestStubHeaderPath}}"
+#include "google/cloud/common_options.h"
+#include "google/cloud/internal/absl_str_cat_quiet.h"
+#include "google/cloud/internal/rest_stub_helpers.h"
+#include "google/cloud/status_or.h"
+{{#Codec.ProtoHeaderPath}}
+#include <{{Codec.ProtoHeaderPath}}>
+{{/Codec.ProtoHeaderPath}}
+{{#Codec.HasLongrunningMethod}}
+#include <google/longrunning/operations.pb.h>
+{{/Codec.HasLongrunningMethod}}
+#include <memory>
+#include <utility>
+
+namespace google {
+namespace cloud {
+namespace {{Codec.InternalNamespace}} {
+GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
+
+{{Codec.DefaultRestStubClassName}}::{{Codec.DefaultRestStubClassName}}(Options options)
+    : service_(rest_internal::MakePooledRestClient(
+          options.get<EndpointOption>(), options)),
+{{#Codec.HasLongrunningMethod}}
+      operations_(rest_internal::MakePooledRestClient(
+          options.get<rest_internal::LongrunningEndpointOption>(), options)),
+{{/Codec.HasLongrunningMethod}}
+      options_(std::move(options)) {}
+
+{{Codec.DefaultRestStubClassName}}::{{Codec.DefaultRestStubClassName}}(
+    std::shared_ptr<rest_internal::RestClient> service,
+{{#Codec.HasLongrunningMethod}}
+    std::shared_ptr<rest_internal::RestClient> operations,
+{{/Codec.HasLongrunningMethod}}
+    Options options)
+    : service_(std::move(service)),
+{{#Codec.HasLongrunningMethod}}
+      operations_(std::move(operations)),
+{{/Codec.HasLongrunningMethod}}
+      options_(std::move(options)) {}
+
+{{#Codec.RestMethods}}
+{{#IsLongrunning}}
+future<StatusOr<google::longrunning::Operation>>
+{{Codec.DefaultRestStubClassName}}::Async{{Name}}(
+      CompletionQueue& cq,
+      std::unique_ptr<rest_internal::RestContext> rest_context,
+      google::cloud::internal::ImmutableOptions options,
+      {{{CppRequestType}}} const& request) {
+  promise<StatusOr<google::longrunning::Operation>> p;
+  future<StatusOr<google::longrunning::Operation>> f = p.get_future();
+  std::thread t{[](
+          auto p, auto service, auto request, auto rest_context, auto options) {
+      std::vector<std::pair<std::string, std::string>> query_params;
+{{#RestHasQueryParams}}
+{{#RestQueryParams}}
+{{#IsNumber}}
+      query_params.push_back({"{{ParamKey}}", std::to_string({{{FieldAccessor}}})});
+{{/IsNumber}}
+{{#IsBool}}
+      query_params.push_back({"{{ParamKey}}", {{{FieldAccessor}}} ? "true" : "false"});
+{{/IsBool}}
+{{#IsString}}
+      query_params.push_back({"{{ParamKey}}", {{{FieldAccessor}}}});
+{{/IsString}}
+{{/RestQueryParams}}
+      query_params = rest_internal::TrimEmptyQueryParameters(std::move(query_params));
+{{/RestHasQueryParams}}
+      p.set_value(rest_internal::{{RestVerb}}<google::longrunning::Operation>(
+          *service, *rest_context, {{{RestRequestBodyAccessor}}},
+          false,
+          {{{RestAsyncPathExpression}}}, std::move(query_params)));
+    },
+    std::move(p), service_, request, std::move(rest_context),
+    std::move(options)};
+  return f.then([t = std::move(t), cq](auto f) mutable {
+    cq.RunAsync([t = std::move(t)]() mutable {
+      t.join();
+    });
+    return f.get();
+  });
+}
+
+StatusOr<google::longrunning::Operation>
+{{Codec.DefaultRestStubClassName}}::{{Name}}(
+      google::cloud::rest_internal::RestContext& rest_context,
+      Options const& options,
+      {{{CppRequestType}}} const& request) {
+  std::vector<std::pair<std::string, std::string>> query_params;
+{{#RestHasQueryParams}}
+{{#RestQueryParams}}
+{{#IsNumber}}
+  query_params.push_back({"{{ParamKey}}", std::to_string({{{FieldAccessor}}})});
+{{/IsNumber}}
+{{#IsBool}}
+  query_params.push_back({"{{ParamKey}}", {{{FieldAccessor}}} ? "true" : "false"});
+{{/IsBool}}
+{{#IsString}}
+  query_params.push_back({"{{ParamKey}}", {{{FieldAccessor}}}});
+{{/IsString}}
+{{/RestQueryParams}}
+  query_params = rest_internal::TrimEmptyQueryParameters(std::move(query_params));
+{{/RestHasQueryParams}}
+  return rest_internal::{{RestVerb}}<google::longrunning::Operation>(
+      *service_, rest_context, {{{RestRequestBodyAccessor}}}, false,
+      {{{RestPathExpression}}}, std::move(query_params));
+}
+
+{{/IsLongrunning}}
+{{^IsLongrunning}}
+{{{CppReturnType}}}
+{{Codec.DefaultRestStubClassName}}::{{Name}}(
+      google::cloud::rest_internal::RestContext& rest_context,
+      Options const& options,
+      {{{CppRequestType}}} const& request) {
+  std::vector<std::pair<std::string, std::string>> query_params;
+{{#RestHasQueryParams}}
+{{#RestQueryParams}}
+{{#IsNumber}}
+  query_params.push_back({"{{ParamKey}}", std::to_string({{{FieldAccessor}}})});
+{{/IsNumber}}
+{{#IsBool}}
+  query_params.push_back({"{{ParamKey}}", {{{FieldAccessor}}} ? "true" : "false"});
+{{/IsBool}}
+{{#IsString}}
+  query_params.push_back({"{{ParamKey}}", {{{FieldAccessor}}}});
+{{/IsString}}
+{{/RestQueryParams}}
+  query_params = rest_internal::TrimEmptyQueryParameters(std::move(query_params));
+{{/RestHasQueryParams}}
+  return rest_internal::{{RestVerb}}<{{{RestPayloadType}}}>(
+      *service_, rest_context, {{{RestRequestBodyAccessor}}}, false,
+      {{{RestPathExpression}}}, std::move(query_params));
+}
+
+{{/IsLongrunning}}
+{{/Codec.RestMethods}}
+{{#Codec.RestAsyncMethods}}
+future<{{{CppReturnType}}}>
+{{Codec.DefaultRestStubClassName}}::Async{{Name}}(
+    google::cloud::CompletionQueue& cq,
+    std::unique_ptr<rest_internal::RestContext> rest_context,
+    google::cloud::internal::ImmutableOptions options,
+    {{{CppRequestType}}} const& request) {
+{{#IsResponseTypeEmpty}}
+  promise<StatusOr<google::protobuf::Empty>> p;
+  future<StatusOr<google::protobuf::Empty>> f = p.get_future();
+{{/IsResponseTypeEmpty}}
+{{^IsResponseTypeEmpty}}
+  promise<StatusOr<{{{CppResponseType}}}>> p;
+  future<StatusOr<{{{CppResponseType}}}>> f = p.get_future();
+{{/IsResponseTypeEmpty}}
+  std::thread t{[](
+          auto p, auto service, auto request, auto rest_context, auto options) {
+      std::vector<std::pair<std::string, std::string>> query_params;
+{{#RestHasQueryParams}}
+{{#RestQueryParams}}
+{{#IsNumber}}
+      query_params.push_back({"{{ParamKey}}", std::to_string({{{FieldAccessor}}})});
+{{/IsNumber}}
+{{#IsBool}}
+      query_params.push_back({"{{ParamKey}}", {{{FieldAccessor}}} ? "true" : "false"});
+{{/IsBool}}
+{{#IsString}}
+      query_params.push_back({"{{ParamKey}}", {{{FieldAccessor}}}});
+{{/IsString}}
+{{/RestQueryParams}}
+      query_params = rest_internal::TrimEmptyQueryParameters(std::move(query_params));
+{{/RestHasQueryParams}}
+{{#IsResponseTypeEmpty}}
+      p.set_value(rest_internal::{{RestVerb}}<google::protobuf::Empty>(
+          *service, *rest_context, {{{RestRequestBodyAccessor}}},
+          false,
+          {{{RestAsyncPathExpression}}}, std::move(query_params)));
+{{/IsResponseTypeEmpty}}
+{{^IsResponseTypeEmpty}}
+      p.set_value(rest_internal::{{RestVerb}}<{{{CppResponseType}}}>(
+          *service, *rest_context, {{{RestRequestBodyAccessor}}},
+          false,
+          {{{RestAsyncPathExpression}}}, std::move(query_params)));
+{{/IsResponseTypeEmpty}}
+    },
+    std::move(p), service_, request, std::move(rest_context),
+    std::move(options)};
+  return f.then([t = std::move(t), cq](auto f) mutable {
+    cq.RunAsync([t = std::move(t)]() mutable {
+      t.join();
+    });
+{{#IsResponseTypeEmpty}}
+    return f.get().status();
+{{/IsResponseTypeEmpty}}
+{{^IsResponseTypeEmpty}}
+    return f.get();
+{{/IsResponseTypeEmpty}}
+  });
+}
+
+{{/Codec.RestAsyncMethods}}
+{{#Codec.HasLongrunningMethod}}
+future<StatusOr<google::longrunning::Operation>>
+{{Codec.DefaultRestStubClassName}}::AsyncGetOperation(
+    google::cloud::CompletionQueue& cq,
+    std::unique_ptr<rest_internal::RestContext> rest_context,
+    google::cloud::internal::ImmutableOptions options,
+    google::longrunning::GetOperationRequest const& request) {
+  promise<StatusOr<google::longrunning::Operation>> p;
+  future<StatusOr<google::longrunning::Operation>> f = p.get_future();
+  std::thread t{[](auto p, auto operations, auto request, auto rest_context, auto options) {
+      p.set_value(rest_internal::Get<google::longrunning::Operation>(
+          *operations, *rest_context, request, false,
+          absl::StrCat("/", rest_internal::DetermineApiVersion("v1", *options) ,"/", request.name())));
+    },
+    std::move(p), operations_, request, std::move(rest_context),
+    std::move(options)};
+  return f.then([t = std::move(t), cq](auto f) mutable {
+    cq.RunAsync([t = std::move(t)]() mutable {
+      t.join();
+    });
+    return f.get();
+  });
+}
+
+future<Status>
+{{Codec.DefaultRestStubClassName}}::AsyncCancelOperation(
+    google::cloud::CompletionQueue& cq,
+    std::unique_ptr<rest_internal::RestContext> rest_context,
+    google::cloud::internal::ImmutableOptions options,
+    google::longrunning::CancelOperationRequest const& request) {
+  promise<StatusOr<google::protobuf::Empty>> p;
+  future<StatusOr<google::protobuf::Empty>> f = p.get_future();
+  std::thread t{[](auto p, auto operations, auto request, auto rest_context, auto options) {
+      p.set_value(rest_internal::Post<google::protobuf::Empty>(
+          *operations, *rest_context, request, false,
+          absl::StrCat("/", rest_internal::DetermineApiVersion("v1", *options) ,"/", request.name(), ":cancel")));
+    },
+    std::move(p), operations_, request, std::move(rest_context),
+    std::move(options)};
+  return f.then([t = std::move(t), cq](auto f) mutable {
+    cq.RunAsync([t = std::move(t)]() mutable {
+      t.join();
+    });
+    return f.get().status();
+  });
+}
+
+{{/Codec.HasLongrunningMethod}}
+GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
+}  // namespace {{Codec.InternalNamespace}}
+}  // namespace cloud
+}  // namespace google

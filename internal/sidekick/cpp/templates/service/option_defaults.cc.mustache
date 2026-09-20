@@ -19,6 +19,9 @@ limitations under the License.
 #include "{{Codec.OptionsHeaderPath}}"
 #include "google/cloud/internal/populate_common_options.h"
 #include "google/cloud/internal/populate_grpc_options.h"
+{{#Codec.IsLocationOptionallyDependent}}
+#include "google/cloud/internal/absl_str_cat_quiet.h"
+{{/Codec.IsLocationOptionallyDependent}}
 #include <memory>
 #include <utility>
 
@@ -31,11 +34,17 @@ namespace {
 auto constexpr kBackoffScaling = 2.0;
 }  // namespace
 
-Options {{Codec.ServiceDefaultOptionsFunctionName}}(Options options) {
+Options {{Codec.ServiceDefaultOptionsFunctionName}}({{#Codec.IsLocationOptionallyDependent}}std::string const& location, {{/Codec.IsLocationOptionallyDependent}}Options options) {
   options = internal::PopulateCommonOptions(
       std::move(options), "{{Codec.ServiceEndpointEnvVar}}",
       "{{Codec.EmulatorEndpointEnvVar}}", "{{Codec.ServiceAuthorityEnvVar}}",
+{{#Codec.IsLocationOptionallyDependent}}
+      // optional location tag for generating docs
+      absl::StrCat(location, location.empty() ? "" : "-", "{{Codec.DefaultHost}}"));
+{{/Codec.IsLocationOptionallyDependent}}
+{{^Codec.IsLocationOptionallyDependent}}
       "{{Codec.DefaultHost}}");
+{{/Codec.IsLocationOptionallyDependent}}
   options = internal::PopulateGrpcOptions(std::move(options));
   if (!options.has<{{Codec.Namespace}}::{{Codec.RetryPolicyOptionName}}>()) {
     options.set<{{Codec.Namespace}}::{{Codec.RetryPolicyOptionName}}>(

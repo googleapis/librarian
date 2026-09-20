@@ -1,0 +1,148 @@
+{{!
+Copyright 2026 Google LLC
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    https://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+}}
+{{> /templates/partials/prologue}}
+#include "{{Codec.RestLoggingDecoratorHeaderPath}}"
+#include "google/cloud/internal/log_wrapper.h"
+#include "google/cloud/status_or.h"
+#include <memory>
+#include <utility>
+
+namespace google {
+namespace cloud {
+namespace {{Codec.InternalNamespace}} {
+GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
+
+{{Codec.RestLoggingDecoratorClassName}}::{{Codec.RestLoggingDecoratorClassName}}(
+    std::shared_ptr<{{Codec.RestStubClassName}}> child,
+    TracingOptions tracing_options,
+    std::set<std::string> components)
+    : child_(std::move(child)), tracing_options_(std::move(tracing_options)),
+      components_(std::move(components)) {}
+
+{{#Codec.RestMethods}}
+{{#IsLongrunning}}
+future<StatusOr<google::longrunning::Operation>>
+{{Codec.RestLoggingDecoratorClassName}}::Async{{Name}}(
+      CompletionQueue& cq,
+      std::unique_ptr<rest_internal::RestContext> rest_context,
+      google::cloud::internal::ImmutableOptions options,
+      {{{CppRequestType}}} const& request) {
+  return google::cloud::internal::LogWrapper(
+      [this](CompletionQueue& cq,
+             std::unique_ptr<rest_internal::RestContext> rest_context,
+             google::cloud::internal::ImmutableOptions options,
+             {{{CppRequestType}}} const& request) {
+        return child_->Async{{Name}}(
+            cq, std::move(rest_context), std::move(options), request);
+      },
+      cq, std::move(rest_context), std::move(options), request, __func__,
+      tracing_options_);
+}
+
+StatusOr<google::longrunning::Operation>
+{{Codec.RestLoggingDecoratorClassName}}::{{Name}}(
+    rest_internal::RestContext& rest_context,
+    Options const& options,
+    {{{CppRequestType}}} const& request) {
+  return google::cloud::internal::LogWrapper(
+      [this](rest_internal::RestContext& rest_context,
+             Options const& options,
+             {{{CppRequestType}}} const& request) {
+        return child_->{{Name}}(rest_context, options, request);
+      },
+      rest_context, options, request, __func__, tracing_options_);
+}
+
+{{/IsLongrunning}}
+{{^IsLongrunning}}
+{{{CppReturnType}}}
+{{Codec.RestLoggingDecoratorClassName}}::{{Name}}(
+    rest_internal::RestContext& rest_context,
+    Options const& options,
+    {{{CppRequestType}}} const& request) {
+  return google::cloud::internal::LogWrapper(
+      [this](rest_internal::RestContext& rest_context,
+             Options const& options,
+             {{{CppRequestType}}} const& request) {
+        return child_->{{Name}}(rest_context, options, request);
+      },
+      rest_context, options, request, __func__, tracing_options_);
+}
+
+{{/IsLongrunning}}
+{{/Codec.RestMethods}}
+{{#Codec.RestAsyncMethods}}
+future<{{{CppReturnType}}}>
+{{Codec.RestLoggingDecoratorClassName}}::Async{{Name}}(
+      CompletionQueue& cq,
+      std::unique_ptr<rest_internal::RestContext> rest_context,
+      google::cloud::internal::ImmutableOptions options,
+      {{{CppRequestType}}} const& request) {
+  return google::cloud::internal::LogWrapper(
+      [this](CompletionQueue& cq,
+             std::unique_ptr<rest_internal::RestContext> rest_context,
+             google::cloud::internal::ImmutableOptions options,
+             {{{CppRequestType}}} const& request) {
+        return child_->Async{{Name}}(
+            cq, std::move(rest_context), std::move(options), request);
+      },
+      cq, std::move(rest_context), std::move(options), request, __func__,
+      tracing_options_);
+}
+
+{{/Codec.RestAsyncMethods}}
+{{#Codec.HasLongrunningMethod}}
+future<StatusOr<google::longrunning::Operation>>
+{{Codec.RestLoggingDecoratorClassName}}::AsyncGetOperation(
+    google::cloud::CompletionQueue& cq,
+    std::unique_ptr<rest_internal::RestContext> rest_context,
+    google::cloud::internal::ImmutableOptions options,
+    google::longrunning::GetOperationRequest const& request) {
+  return google::cloud::internal::LogWrapper(
+      [this](CompletionQueue& cq,
+             std::unique_ptr<rest_internal::RestContext> rest_context,
+             google::cloud::internal::ImmutableOptions options,
+             google::longrunning::GetOperationRequest const& request) {
+        return child_->AsyncGetOperation(
+            cq, std::move(rest_context), std::move(options), request);
+      },
+      cq, std::move(rest_context), std::move(options), request, __func__,
+      tracing_options_);
+}
+
+future<Status>
+{{Codec.RestLoggingDecoratorClassName}}::AsyncCancelOperation(
+    google::cloud::CompletionQueue& cq,
+    std::unique_ptr<rest_internal::RestContext> rest_context,
+    google::cloud::internal::ImmutableOptions options,
+    google::longrunning::CancelOperationRequest const& request) {
+  return google::cloud::internal::LogWrapper(
+      [this](CompletionQueue& cq,
+             std::unique_ptr<rest_internal::RestContext> rest_context,
+             google::cloud::internal::ImmutableOptions options,
+             google::longrunning::CancelOperationRequest const& request) {
+        return child_->AsyncCancelOperation(
+            cq, std::move(rest_context), std::move(options), request);
+      },
+      cq, std::move(rest_context), std::move(options), request, __func__,
+      tracing_options_);
+}
+
+{{/Codec.HasLongrunningMethod}}
+GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
+}  // namespace {{Codec.InternalNamespace}}
+}  // namespace cloud
+}  // namespace google
