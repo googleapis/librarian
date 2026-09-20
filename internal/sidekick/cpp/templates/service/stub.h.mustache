@@ -63,8 +63,25 @@ class {{Codec.StubClassName}} {
 
 class {{Codec.DefaultStubClassName}} : public {{Codec.StubClassName}} {
  public:
-  ~{{Codec.DefaultStubClassName}}() override = default;
+{{^Codec.HasLongrunningMethod}}
+  explicit {{Codec.DefaultStubClassName}}(
+      std::unique_ptr<{{Codec.ServiceGrpcName}}::StubInterface> grpc_stub)
+      : grpc_stub_(std::move(grpc_stub)) {}
+{{/Codec.HasLongrunningMethod}}
+{{#Codec.HasLongrunningMethod}}
+  {{Codec.DefaultStubClassName}}(
+      std::unique_ptr<{{Codec.ServiceGrpcName}}::StubInterface> grpc_stub,
+      std::unique_ptr<google::longrunning::Operations::StubInterface> operations_stub)
+      : grpc_stub_(std::move(grpc_stub)),
+        operations_stub_(std::move(operations_stub)) {}
+{{/Codec.HasLongrunningMethod}}
 {{> /templates/partials/stub_methods}}
+
+ private:
+  std::unique_ptr<{{Codec.ServiceGrpcName}}::StubInterface> grpc_stub_;
+{{#Codec.HasLongrunningMethod}}
+  std::unique_ptr<google::longrunning::Operations::StubInterface> operations_stub_;
+{{/Codec.HasLongrunningMethod}}
 };
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END

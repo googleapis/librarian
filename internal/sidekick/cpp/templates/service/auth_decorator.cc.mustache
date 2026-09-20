@@ -214,8 +214,8 @@ future<Status> {{Codec.AuthDecoratorClassName}}::AsyncCancelOperation(
             cq, *std::move(context), std::move(options), request);
       });
 }
-{{/Codec.HasLongrunningMethod}}
 
+{{/Codec.HasLongrunningMethod}}
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace {{Codec.InternalNamespace}}
 }  // namespace cloud

@@ -25,6 +25,21 @@ namespace cloud {
 namespace {{Codec.MocksNamespace}} {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
+/**
+ * A class to mock `{{Codec.ConnectionClassName}}`.
+ *
+ * Application developers may want to test their code with simulated responses,
+ * including errors, from an object of type `{{Codec.ClientClassName}}`. To do so,
+ * construct an object of type `{{Codec.ClientClassName}}` with an instance of this
+ * class. Then use the Google Test framework functions to program the behavior
+ * of this mock.
+ *
+ * @see [This example][bq-mock] for how to test your application with GoogleTest.
+ * While the example showcases types from the BigQuery library, the underlying
+ * principles apply for any pair of `*Client` and `*Connection`.
+ *
+ * [bq-mock]: @cloud_cpp_docs_link{bigquery,bigquery-read-mock}
+ */
 class {{Codec.MockConnectionClassName}} : public {{Codec.Namespace}}::{{Codec.ConnectionClassName}} {
  public:
   MOCK_METHOD(Options, options, (), (override));

@@ -237,8 +237,8 @@ future<Status> {{Codec.LoggingDecoratorClassName}}::AsyncCancelOperation(
       cq, std::move(context), std::move(options), request, __func__,
       tracing_options_);
 }
-{{/Codec.HasLongrunningMethod}}
 
+{{/Codec.HasLongrunningMethod}}
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace {{Codec.InternalNamespace}}
 }  // namespace cloud

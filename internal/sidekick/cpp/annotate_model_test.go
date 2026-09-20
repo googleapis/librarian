@@ -19,7 +19,6 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/config"
-	"github.com/googleapis/librarian/internal/license"
 	"github.com/googleapis/librarian/internal/sidekick/api"
 )
 
@@ -36,7 +35,7 @@ func TestAnnotateModel(t *testing.T) {
 			model: api.NewTestAPI(nil, nil, nil),
 			want: &modelAnnotations{
 				CopyrightYear: "2026",
-				BoilerPlate:   license.HeaderBulk(),
+				BoilerPlate:   cppHeaderBulk(),
 			},
 		},
 		{
@@ -51,7 +50,7 @@ func TestAnnotateModel(t *testing.T) {
 			),
 			want: &modelAnnotations{
 				CopyrightYear: "2022",
-				BoilerPlate:   license.HeaderBulk(),
+				BoilerPlate:   cppHeaderBulk(),
 			},
 		},
 	} {

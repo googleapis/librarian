@@ -368,6 +368,22 @@ func MocksNamespace(productPath string) string {
 	return ns + "_mocks"
 }
 
+// OptionsGroup returns the Doxygen options group name for a product path,
+// matching google-cloud-cpp's OptionsGroup(product_path).
+func OptionsGroup(productPath string) string {
+	prefix, lib, _ := parseProductPath(productPath)
+	if lib == "" {
+		return "options"
+	}
+	var libPath string
+	if prefix == "" {
+		libPath = lib + "/"
+	} else {
+		libPath = prefix + "/" + lib + "/"
+	}
+	return strings.ReplaceAll(libPath, "/", "-") + "options"
+}
+
 // ClientClassName returns the C++ client class name for a service.
 func ClientClassName(serviceName string) string {
 	return serviceName + "Client"

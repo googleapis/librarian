@@ -15,6 +15,7 @@
 package cpp
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -442,6 +443,8 @@ func TestAnnotateService(t *testing.T) {
 				"ConnectionHeaderIncludes",
 				"ConnectionSourceIncludes",
 				"ConnectionImplHeaderIncludes",
+				"ClientClassComments",
+				"ProductOptionsPage",
 			)
 			if test.want.SourcesCcIncludes != nil {
 				if diff := cmp.Diff(test.want.SourcesCcIncludes, got.SourcesCcIncludes); diff != "" {
@@ -827,6 +830,76 @@ func TestAnnotateService_RetryStatusCodes(t *testing.T) {
 			got := svc.Codec.(*serviceAnnotations)
 			if diff := cmp.Diff(test.want, got.RetryStatusCodes); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestAnnotateService_ClientClassCommentsAndProductOptionsPage(t *testing.T) {
+	for _, test := range []struct {
+		name                   string
+		serviceName            string
+		documentation          string
+		productPath            string
+		wantClientCommentsSub  []string
+		wantProductOptionsPage string
+	}{
+		{
+			name:          "default documentation with golden product path",
+			serviceName:   "RequestIdService",
+			documentation: "",
+			productPath:   "generator/integration_tests/golden/v1",
+			wantClientCommentsSub: []string{
+				"/// RequestIdServiceClient",
+				"@par Equality",
+				"@par Performance",
+				"@par Thread Safety",
+			},
+			wantProductOptionsPage: "generator-integration_tests-golden-options",
+		},
+		{
+			name:          "custom documentation with replacements",
+			serviceName:   "EchoService",
+			documentation: "Service for echo.\nSee [groups](#google.monitoring.v3.Group) for details.",
+			productPath:   "google/cloud/echo/v1",
+			wantClientCommentsSub: []string{
+				"/// Service for echo.",
+				"/// See [groups][google.monitoring.v3.Group] for details.",
+				"@par Equality",
+			},
+			wantProductOptionsPage: "google-cloud-echo-options",
+		},
+		{
+			name:                   "empty product path",
+			serviceName:            "SimpleService",
+			documentation:          "",
+			productPath:            "",
+			wantProductOptionsPage: "options",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			svc := api.NewTestService(test.serviceName)
+			svc.Documentation = test.documentation
+			model := api.NewTestAPI(nil, nil, []*api.Service{svc})
+			modelAnn := &modelAnnotations{
+				CopyrightYear: "2026",
+				BoilerPlate:   license.HeaderBulk(),
+			}
+			libCfg := &config.CppLibrary{
+				ProductPath: test.productPath,
+			}
+			c := newCodec(libCfg)
+			if err := c.annotateService(svc, modelAnn, model); err != nil {
+				t.Fatal(err)
+			}
+			got := svc.Codec.(*serviceAnnotations)
+			for _, sub := range test.wantClientCommentsSub {
+				if !strings.Contains(got.ClientClassComments, sub) {
+					t.Errorf("ClientClassComments does not contain %q, got:\n%s", sub, got.ClientClassComments)
+				}
+			}
+			if diff := cmp.Diff(test.wantProductOptionsPage, got.ProductOptionsPage); diff != "" {
+				t.Errorf("mismatch ProductOptionsPage (-want +got):\n%s", diff)
 			}
 		})
 	}

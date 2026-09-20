@@ -951,3 +951,39 @@ func TestClassNames(t *testing.T) {
 		})
 	}
 }
+
+func TestOptionsGroup(t *testing.T) {
+	for _, test := range []struct {
+		name        string
+		productPath string
+		want        string
+	}{
+		{
+			name:        "empty product path",
+			productPath: "",
+			want:        "options",
+		},
+		{
+			name:        "google cloud product path",
+			productPath: "google/cloud/echo/v1",
+			want:        "google-cloud-echo-options",
+		},
+		{
+			name:        "golden integration test product path",
+			productPath: "generator/integration_tests/golden/v1",
+			want:        "generator-integration_tests-golden-options",
+		},
+		{
+			name:        "simple single segment path",
+			productPath: "echo",
+			want:        "echo-options",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := OptionsGroup(test.productPath)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}

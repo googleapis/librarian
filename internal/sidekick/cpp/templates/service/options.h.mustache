@@ -29,24 +29,50 @@ namespace cloud {
 namespace {{Codec.Namespace}} {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
+/**
+ * Use with `google::cloud::Options` to configure the retry policy.
+ *
+ * @ingroup {{Codec.ProductOptionsPage}}
+ */
 struct {{Codec.RetryPolicyName}}Option {
   using Type = std::shared_ptr<{{Codec.RetryPolicyName}}>;
 };
 
+/**
+ * Use with `google::cloud::Options` to configure the backoff policy.
+ *
+ * @ingroup {{Codec.ProductOptionsPage}}
+ */
 struct {{Codec.Name}}BackoffPolicyOption {
   using Type = std::shared_ptr<BackoffPolicy>;
 };
 
+/**
+ * Use with `google::cloud::Options` to configure which operations are retried.
+ *
+ * @ingroup {{Codec.ProductOptionsPage}}
+ */
 struct {{Codec.ConnectionIdempotencyPolicyClassName}}Option {
   using Type = std::shared_ptr<{{Codec.ConnectionIdempotencyPolicyClassName}}>;
 };
 {{#Codec.HasLongrunningMethod}}
 
+/**
+ * Use with `google::cloud::Options` to configure the long-running operations
+ * polling policy.
+ *
+ * @ingroup {{Codec.ProductOptionsPage}}
+ */
 struct {{Codec.Name}}PollingPolicyOption {
   using Type = std::shared_ptr<PollingPolicy>;
 };
 {{/Codec.HasLongrunningMethod}}
 
+/**
+ * The options applicable to {{Codec.Name}}.
+ *
+ * @ingroup {{Codec.ProductOptionsPage}}
+ */
 {{#Codec.HasLongrunningMethod}}
 using {{Codec.Name}}PolicyOptionList =
     OptionList<{{Codec.RetryPolicyName}}Option,
