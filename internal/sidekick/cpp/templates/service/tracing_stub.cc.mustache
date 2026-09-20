@@ -46,6 +46,39 @@ GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
     : child_(std::move(child)), propagator_(internal::MakePropagator()) {}
 
 {{#Codec.Methods}}
+{{#IsStreamingWrite}}
+std::unique_ptr<internal::StreamingWriteRpc<{{{CppRequestType}}}, {{{CppResponseType}}}>>
+{{Codec.TracingStubClassName}}::{{Name}}(
+    std::shared_ptr<grpc::ClientContext> context,
+    Options const& options) {
+  auto span = internal::MakeSpanGrpc("{{Codec.ServiceGrpcProtoName}}", "{{Name}}");
+  auto scope = opentelemetry::trace::Scope(span);
+  internal::InjectTraceContext(*context, *propagator_);
+  auto stream = child_->{{Name}}(context, options);
+  return std::make_unique<
+      internal::StreamingWriteRpcTracing<{{{CppRequestType}}}, {{{CppResponseType}}}>>(
+      std::move(context), std::move(stream), std::move(span));
+}
+
+{{/IsStreamingWrite}}
+{{#IsBidirStreaming}}
+std::unique_ptr<AsyncStreamingReadWriteRpc<
+    {{{CppRequestType}}},
+    {{{CppResponseType}}}>>
+{{Codec.TracingStubClassName}}::Async{{Name}}(
+    CompletionQueue const& cq, std::shared_ptr<grpc::ClientContext> context,
+    google::cloud::internal::ImmutableOptions options) {
+  auto span = internal::MakeSpanGrpc("{{Codec.ServiceGrpcProtoName}}", "{{Name}}");
+  internal::OTelScope scope(span);
+  internal::InjectTraceContext(*context, *propagator_);
+  auto stream = child_->Async{{Name}}(cq, context, std::move(options));
+  return std::make_unique<internal::AsyncStreamingReadWriteRpcTracing<
+      {{{CppRequestType}}},
+      {{{CppResponseType}}}>>(
+      std::move(context), std::move(stream), std::move(span));
+}
+
+{{/IsBidirStreaming}}
 {{#IsLongrunning}}
 future<StatusOr<google::longrunning::Operation>>
 {{Codec.TracingStubClassName}}::Async{{Name}}(
@@ -79,25 +112,6 @@ StatusOr<google::longrunning::Operation>
 }
 
 {{/IsLongrunning}}
-{{#IsBidirStreaming}}
-std::unique_ptr<::google::cloud::AsyncStreamingReadWriteRpc<
-    {{{CppRequestType}}},
-    {{{CppResponseType}}}>>
-{{Codec.TracingStubClassName}}::AsyncStreamingReadWrite(
-    google::cloud::CompletionQueue const& cq,
-    std::shared_ptr<grpc::ClientContext> context,
-    google::cloud::internal::ImmutableOptions options) {
-  auto span = internal::MakeSpanGrpc("{{Codec.ServiceGrpcProtoName}}", "{{Name}}");
-  internal::OTelScope scope(span);
-  internal::InjectTraceContext(*context, *propagator_);
-  auto stream = child_->AsyncStreamingReadWrite(cq, context, std::move(options));
-  return std::make_unique<internal::AsyncStreamingReadWriteRpcTracing<
-      {{{CppRequestType}}},
-      {{{CppResponseType}}}>>(
-      std::move(context), std::move(stream), std::move(span));
-}
-
-{{/IsBidirStreaming}}
 {{#IsStreamingRead}}
 std::unique_ptr<google::cloud::internal::StreamingReadRpc<{{{CppResponseType}}}>>
 {{Codec.TracingStubClassName}}::{{Name}}(
@@ -113,24 +127,6 @@ std::unique_ptr<google::cloud::internal::StreamingReadRpc<{{{CppResponseType}}}>
 }
 
 {{/IsStreamingRead}}
-{{#IsStreamingWrite}}
-std::unique_ptr<::google::cloud::internal::StreamingWriteRpc<
-    {{{CppRequestType}}},
-    {{{CppResponseType}}}>>
-{{Codec.TracingStubClassName}}::{{Name}}(
-    std::shared_ptr<grpc::ClientContext> context,
-    Options const& options) {
-  auto span = internal::MakeSpanGrpc("{{Codec.ServiceGrpcProtoName}}", "{{Name}}");
-  auto scope = opentelemetry::trace::Scope(span);
-  internal::InjectTraceContext(*context, *propagator_);
-  auto stream = child_->{{Name}}(context, options);
-  return std::make_unique<internal::StreamingWriteRpcTracing<
-      {{{CppRequestType}}},
-      {{{CppResponseType}}}>>(
-      std::move(context), std::move(stream), std::move(span));
-}
-
-{{/IsStreamingWrite}}
 {{#IsUnary}}
 {{{CppReturnType}}} {{Codec.TracingStubClassName}}::{{Name}}(
     grpc::ClientContext& context,
@@ -164,7 +160,43 @@ std::unique_ptr<::google::cloud::internal::StreamingWriteRpc<
 
 {{/IsPaginated}}
 {{/Codec.Methods}}
-{{#Codec.AsyncMethods}}
+{{#Codec.StubAsyncMethods}}
+{{#IsStreamingRead}}
+std::unique_ptr<internal::AsyncStreamingReadRpc<{{{CppResponseType}}}>>
+{{Codec.TracingStubClassName}}::Async{{Name}}(
+    google::cloud::CompletionQueue const& cq,
+    std::shared_ptr<grpc::ClientContext> context,
+    google::cloud::internal::ImmutableOptions options,
+    {{{CppRequestType}}} const& request) {
+  auto span = internal::MakeSpanGrpc("{{Codec.ServiceGrpcProtoName}}", "{{Name}}");
+  internal::OTelScope scope(span);
+  internal::InjectTraceContext(*context, *propagator_);
+  auto stream = child_->Async{{Name}}(
+      cq, context, std::move(options), request);
+  return std::make_unique<
+      internal::AsyncStreamingReadRpcTracing<{{{CppResponseType}}}>>(
+      std::move(context), std::move(stream), std::move(span));
+}
+
+{{/IsStreamingRead}}
+{{#IsStreamingWrite}}
+std::unique_ptr<
+    internal::AsyncStreamingWriteRpc<{{{CppRequestType}}}, {{{CppResponseType}}}>>
+{{Codec.TracingStubClassName}}::Async{{Name}}(
+    google::cloud::CompletionQueue const& cq,
+    std::shared_ptr<grpc::ClientContext> context,
+    google::cloud::internal::ImmutableOptions options) {
+  auto span = internal::MakeSpanGrpc("{{Codec.ServiceGrpcProtoName}}", "{{Name}}");
+  internal::OTelScope scope(span);
+  internal::InjectTraceContext(*context, *propagator_);
+  auto stream = child_->Async{{Name}}(cq, context, std::move(options));
+  return std::make_unique<
+      internal::AsyncStreamingWriteRpcTracing<{{{CppRequestType}}}, {{{CppResponseType}}}>>(
+      std::move(context), std::move(stream), std::move(span));
+}
+
+{{/IsStreamingWrite}}
+{{#IsUnary}}
 future<{{{CppReturnType}}}>
 {{Codec.TracingStubClassName}}::Async{{Name}}(
       google::cloud::CompletionQueue& cq,
@@ -181,7 +213,8 @@ future<{{{CppReturnType}}}>
   return internal::EndSpan(std::move(context), std::move(span), std::move(f));
 }
 
-{{/Codec.AsyncMethods}}
+{{/IsUnary}}
+{{/Codec.StubAsyncMethods}}
 {{#Codec.HasLongrunningMethod}}
 future<StatusOr<google::longrunning::Operation>>
 {{Codec.TracingStubClassName}}::AsyncGetOperation(

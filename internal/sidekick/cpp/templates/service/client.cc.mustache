@@ -14,8 +14,15 @@ See the License for the specific language governing permissions and
 limitations under the License.
 }}
 {{> /templates/partials/prologue}}
+{{#Codec.HasDeprecatedFieldInSignature}}
+#include "google/cloud/internal/disable_deprecation_warnings.inc"
+{{/Codec.HasDeprecatedFieldInSignature}}
 #include "{{Codec.ClientHeaderPath}}"
 #include <memory>
+{{#Codec.HasIamUpdater}}
+#include "{{Codec.OptionsHeaderPath}}"
+#include <thread>
+{{/Codec.HasIamUpdater}}
 #include <utility>
 
 namespace google {
@@ -53,6 +60,42 @@ GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
   return connection_->{{Name}}(request);
 }
 
+{{#HasIamUpdater}}
+StatusOr<google::iam::v1::Policy>
+{{ServiceName}}Client::SetIamPolicy(std::string const& resource, IamUpdater const& updater, Options opts) {
+  internal::CheckExpectedOptions<{{ServiceName}}BackoffPolicyOption>(opts, __func__);
+  internal::OptionsSpan span(internal::MergeOptions(std::move(opts), options_));
+  google::iam::v1::GetIamPolicyRequest get_request;
+  get_request.set_resource(resource);
+  google::iam::v1::SetIamPolicyRequest set_request;
+  set_request.set_resource(resource);
+  auto backoff_policy = internal::CurrentOptions().get<{{ServiceName}}BackoffPolicyOption>();
+  if (backoff_policy != nullptr) {
+    backoff_policy = backoff_policy->clone();
+  }
+  for (;;) {
+    auto recent = connection_->GetIamPolicy(get_request);
+    if (!recent) {
+      return recent.status();
+    }
+    auto policy = updater(*std::move(recent));
+    if (!policy) {
+      return internal::CancelledError(
+          "updater did not yield a policy",
+          GCP_ERROR_INFO().WithMetadata("gl-cpp.error.origin", "client"));
+    }
+    *set_request.mutable_policy() = *std::move(policy);
+    auto result = connection_->SetIamPolicy(set_request);
+    if (result ||
+        result.status().code() != StatusCode::kAborted ||
+        backoff_policy == nullptr) {
+      return result;
+    }
+    std::this_thread::sleep_for(backoff_policy->OnCompletion());
+  }
+}
+
+{{/HasIamUpdater}}
 {{/IsUnary}}
 {{#IsPaginated}}
 StreamRange<{{{RangeOutputType}}}>

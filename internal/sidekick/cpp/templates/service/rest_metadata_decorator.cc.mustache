@@ -44,10 +44,10 @@ GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 {{#IsLongrunning}}
 future<StatusOr<google::longrunning::Operation>>
 {{Codec.RestMetadataDecoratorClassName}}::Async{{Name}}(
-    CompletionQueue& cq,
-    std::unique_ptr<rest_internal::RestContext> rest_context,
-    google::cloud::internal::ImmutableOptions options,
-    {{{CppRequestType}}} const& request) {
+      CompletionQueue& cq,
+      std::unique_ptr<rest_internal::RestContext> rest_context,
+      google::cloud::internal::ImmutableOptions options,
+      {{{CppRequestType}}} const& request) {
 {{#HasRouting}}
   std::vector<std::string> params;
   params.reserve({{RoutingParamsCount}});
@@ -57,12 +57,11 @@ future<StatusOr<google::longrunning::Operation>>
 {{#SimpleFields}}
 {{#IsFirst}}
   if (!request.{{FieldName}}().empty()) {
-    params.push_back(absl::StrCat("{{ParamKey}}=", internal::UrlEncode(request.{{FieldName}}())));
 {{/IsFirst}}
 {{^IsFirst}}
   } else if (!request.{{FieldName}}().empty()) {
-    params.push_back(absl::StrCat("{{ParamKey}}=", internal::UrlEncode(request.{{FieldName}}())));
 {{/IsFirst}}
+    params.push_back(absl::StrCat("{{ParamKey}}=", internal::UrlEncode(request.{{FieldName}}())));
 {{/SimpleFields}}
   }
 
@@ -75,7 +74,12 @@ future<StatusOr<google::longrunning::Operation>>
       {[]({{{CppRequestType}}} const& request) -> std::string const& {
         return request.{{FieldAccessor}}();
       },
+      {{#HasRegex}}
       std::regex{"{{Pattern}}", std::regex::optimize}},
+      {{/HasRegex}}
+      {{^HasRegex}}
+      absl::nullopt},
+      {{/HasRegex}}
       {{/Patterns}}
       }};
   }();
@@ -84,6 +88,7 @@ future<StatusOr<google::longrunning::Operation>>
 {{/IsSimple}}
 {{/RoutingParamMatchers}}
   SetMetadata(*rest_context, *options, params);
+
 {{/HasRouting}}
 {{^HasRouting}}
   SetMetadata(*rest_context, *options);
@@ -95,8 +100,7 @@ future<StatusOr<google::longrunning::Operation>>
 StatusOr<google::longrunning::Operation>
 {{Codec.RestMetadataDecoratorClassName}}::{{Name}}(
     rest_internal::RestContext& rest_context,
-    Options const& options,
-    {{{CppRequestType}}} const& request) {
+    Options const& options, {{{CppRequestType}}} const& request) {
 {{#HasRouting}}
   std::vector<std::string> params;
   params.reserve({{RoutingParamsCount}});
@@ -106,12 +110,11 @@ StatusOr<google::longrunning::Operation>
 {{#SimpleFields}}
 {{#IsFirst}}
   if (!request.{{FieldName}}().empty()) {
-    params.push_back(absl::StrCat("{{ParamKey}}=", internal::UrlEncode(request.{{FieldName}}())));
 {{/IsFirst}}
 {{^IsFirst}}
   } else if (!request.{{FieldName}}().empty()) {
-    params.push_back(absl::StrCat("{{ParamKey}}=", internal::UrlEncode(request.{{FieldName}}())));
 {{/IsFirst}}
+    params.push_back(absl::StrCat("{{ParamKey}}=", internal::UrlEncode(request.{{FieldName}}())));
 {{/SimpleFields}}
   }
 
@@ -124,7 +127,12 @@ StatusOr<google::longrunning::Operation>
       {[]({{{CppRequestType}}} const& request) -> std::string const& {
         return request.{{FieldAccessor}}();
       },
+      {{#HasRegex}}
       std::regex{"{{Pattern}}", std::regex::optimize}},
+      {{/HasRegex}}
+      {{^HasRegex}}
+      absl::nullopt},
+      {{/HasRegex}}
       {{/Patterns}}
       }};
   }();
@@ -133,6 +141,7 @@ StatusOr<google::longrunning::Operation>
 {{/IsSimple}}
 {{/RoutingParamMatchers}}
   SetMetadata(rest_context, options, params);
+
 {{/HasRouting}}
 {{^HasRouting}}
   SetMetadata(rest_context, options);
@@ -145,8 +154,7 @@ StatusOr<google::longrunning::Operation>
 {{{CppReturnType}}}
 {{Codec.RestMetadataDecoratorClassName}}::{{Name}}(
     rest_internal::RestContext& rest_context,
-    Options const& options,
-    {{{CppRequestType}}} const& request) {
+    Options const& options, {{{CppRequestType}}} const& request) {
 {{#HasRouting}}
   std::vector<std::string> params;
   params.reserve({{RoutingParamsCount}});
@@ -156,12 +164,11 @@ StatusOr<google::longrunning::Operation>
 {{#SimpleFields}}
 {{#IsFirst}}
   if (!request.{{FieldName}}().empty()) {
-    params.push_back(absl::StrCat("{{ParamKey}}=", internal::UrlEncode(request.{{FieldName}}())));
 {{/IsFirst}}
 {{^IsFirst}}
   } else if (!request.{{FieldName}}().empty()) {
-    params.push_back(absl::StrCat("{{ParamKey}}=", internal::UrlEncode(request.{{FieldName}}())));
 {{/IsFirst}}
+    params.push_back(absl::StrCat("{{ParamKey}}=", internal::UrlEncode(request.{{FieldName}}())));
 {{/SimpleFields}}
   }
 
@@ -174,7 +181,12 @@ StatusOr<google::longrunning::Operation>
       {[]({{{CppRequestType}}} const& request) -> std::string const& {
         return request.{{FieldAccessor}}();
       },
+      {{#HasRegex}}
       std::regex{"{{Pattern}}", std::regex::optimize}},
+      {{/HasRegex}}
+      {{^HasRegex}}
+      absl::nullopt},
+      {{/HasRegex}}
       {{/Patterns}}
       }};
   }();
@@ -183,6 +195,7 @@ StatusOr<google::longrunning::Operation>
 {{/IsSimple}}
 {{/RoutingParamMatchers}}
   SetMetadata(rest_context, options, params);
+
 {{/HasRouting}}
 {{^HasRouting}}
   SetMetadata(rest_context, options);
@@ -195,7 +208,7 @@ StatusOr<google::longrunning::Operation>
 {{#Codec.RestAsyncMethods}}
 future<{{{CppReturnType}}}>
 {{Codec.RestMetadataDecoratorClassName}}::Async{{Name}}(
-    CompletionQueue& cq,
+    google::cloud::CompletionQueue& cq,
     std::unique_ptr<rest_internal::RestContext> rest_context,
     google::cloud::internal::ImmutableOptions options,
     {{{CppRequestType}}} const& request) {
@@ -208,12 +221,11 @@ future<{{{CppReturnType}}}>
 {{#SimpleFields}}
 {{#IsFirst}}
   if (!request.{{FieldName}}().empty()) {
-    params.push_back(absl::StrCat("{{ParamKey}}=", internal::UrlEncode(request.{{FieldName}}())));
 {{/IsFirst}}
 {{^IsFirst}}
   } else if (!request.{{FieldName}}().empty()) {
-    params.push_back(absl::StrCat("{{ParamKey}}=", internal::UrlEncode(request.{{FieldName}}())));
 {{/IsFirst}}
+    params.push_back(absl::StrCat("{{ParamKey}}=", internal::UrlEncode(request.{{FieldName}}())));
 {{/SimpleFields}}
   }
 
@@ -226,7 +238,12 @@ future<{{{CppReturnType}}}>
       {[]({{{CppRequestType}}} const& request) -> std::string const& {
         return request.{{FieldAccessor}}();
       },
+      {{#HasRegex}}
       std::regex{"{{Pattern}}", std::regex::optimize}},
+      {{/HasRegex}}
+      {{^HasRegex}}
+      absl::nullopt},
+      {{/HasRegex}}
       {{/Patterns}}
       }};
   }();
@@ -235,6 +252,7 @@ future<{{{CppReturnType}}}>
 {{/IsSimple}}
 {{/RoutingParamMatchers}}
   SetMetadata(*rest_context, *options, params);
+
 {{/HasRouting}}
 {{^HasRouting}}
   SetMetadata(*rest_context, *options);

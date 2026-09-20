@@ -19,9 +19,9 @@ limitations under the License.
 
 #include "google/cloud/idempotency.h"
 #include "google/cloud/version.h"
-{{#Codec.ProtoGrpcHeaderPath}}
-#include <{{Codec.ProtoGrpcHeaderPath}}>
-{{/Codec.ProtoGrpcHeaderPath}}
+{{#Codec.IdempotencyPolicyProtoIncludes}}
+#include <{{.}}>
+{{/Codec.IdempotencyPolicyProtoIncludes}}
 #include <memory>
 
 namespace google {

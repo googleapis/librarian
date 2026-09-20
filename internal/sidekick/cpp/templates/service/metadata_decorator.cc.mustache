@@ -65,10 +65,16 @@ future<StatusOr<google::longrunning::Operation>>
 {{#RoutingParamMatchers}}
 {{#IsSimple}}
 {{#SimpleFields}}
+{{#IsFirst}}
   if (!request.{{FieldName}}().empty()) {
+{{/IsFirst}}
+{{^IsFirst}}
+  } else if (!request.{{FieldName}}().empty()) {
+{{/IsFirst}}
     params.push_back(absl::StrCat("{{ParamKey}}=", internal::UrlEncode(request.{{FieldName}}())));
-  }
 {{/SimpleFields}}
+  }
+
 {{/IsSimple}}
 {{^IsSimple}}
   static auto* {{MatcherName}}_matcher = []{
@@ -78,14 +84,19 @@ future<StatusOr<google::longrunning::Operation>>
       {[]({{{CppRequestType}}} const& request) -> std::string const& {
         return request.{{FieldAccessor}}();
       },
+      {{#HasRegex}}
       std::regex{"{{Pattern}}", std::regex::optimize}},
+      {{/HasRegex}}
+      {{^HasRegex}}
+      absl::nullopt},
+      {{/HasRegex}}
       {{/Patterns}}
       }};
   }();
   {{MatcherName}}_matcher->AppendParam(request, params);
+
 {{/IsSimple}}
 {{/RoutingParamMatchers}}
-
   if (params.empty()) {
     SetMetadata(*context, *options);
   } else {
@@ -93,7 +104,12 @@ future<StatusOr<google::longrunning::Operation>>
   }
 {{/HasRouting}}
 {{^HasRouting}}
+{{#HasHttpRouting}}
+  SetMetadata(*context, *options, absl::StrCat({{{HttpRoutingParams}}}));
+{{/HasHttpRouting}}
+{{^HasHttpRouting}}
   SetMetadata(*context, *options);
+{{/HasHttpRouting}}
 {{/HasRouting}}
   return child_->Async{{Name}}(
       cq, std::move(context), std::move(options), request);
@@ -111,10 +127,16 @@ StatusOr<google::longrunning::Operation>
 {{#RoutingParamMatchers}}
 {{#IsSimple}}
 {{#SimpleFields}}
+{{#IsFirst}}
   if (!request.{{FieldName}}().empty()) {
+{{/IsFirst}}
+{{^IsFirst}}
+  } else if (!request.{{FieldName}}().empty()) {
+{{/IsFirst}}
     params.push_back(absl::StrCat("{{ParamKey}}=", internal::UrlEncode(request.{{FieldName}}())));
-  }
 {{/SimpleFields}}
+  }
+
 {{/IsSimple}}
 {{^IsSimple}}
   static auto* {{MatcherName}}_matcher = []{
@@ -124,14 +146,19 @@ StatusOr<google::longrunning::Operation>
       {[]({{{CppRequestType}}} const& request) -> std::string const& {
         return request.{{FieldAccessor}}();
       },
+      {{#HasRegex}}
       std::regex{"{{Pattern}}", std::regex::optimize}},
+      {{/HasRegex}}
+      {{^HasRegex}}
+      absl::nullopt},
+      {{/HasRegex}}
       {{/Patterns}}
       }};
   }();
   {{MatcherName}}_matcher->AppendParam(request, params);
+
 {{/IsSimple}}
 {{/RoutingParamMatchers}}
-
   if (params.empty()) {
     SetMetadata(context, options);
   } else {
@@ -139,7 +166,12 @@ StatusOr<google::longrunning::Operation>
   }
 {{/HasRouting}}
 {{^HasRouting}}
+{{#HasHttpRouting}}
+  SetMetadata(context, options, absl::StrCat({{{HttpRoutingParams}}}));
+{{/HasHttpRouting}}
+{{^HasHttpRouting}}
   SetMetadata(context, options);
+{{/HasHttpRouting}}
 {{/HasRouting}}
   return child_->{{Name}}(context, options, request);
 }
@@ -147,8 +179,8 @@ StatusOr<google::longrunning::Operation>
 {{/IsLongrunning}}
 {{#IsBidirStreaming}}
 std::unique_ptr<::google::cloud::AsyncStreamingReadWriteRpc<
-    {{{CppRequestType}}},
-    {{{CppResponseType}}}>>
+      {{{CppRequestType}}},
+      {{{CppResponseType}}}>>
 {{Codec.MetadataDecoratorClassName}}::AsyncStreamingReadWrite(
     google::cloud::CompletionQueue const& cq,
     std::shared_ptr<grpc::ClientContext> context,
@@ -194,10 +226,16 @@ std::unique_ptr<::google::cloud::internal::StreamingWriteRpc<
 {{#RoutingParamMatchers}}
 {{#IsSimple}}
 {{#SimpleFields}}
+{{#IsFirst}}
   if (!request.{{FieldName}}().empty()) {
+{{/IsFirst}}
+{{^IsFirst}}
+  } else if (!request.{{FieldName}}().empty()) {
+{{/IsFirst}}
     params.push_back(absl::StrCat("{{ParamKey}}=", internal::UrlEncode(request.{{FieldName}}())));
-  }
 {{/SimpleFields}}
+  }
+
 {{/IsSimple}}
 {{^IsSimple}}
   static auto* {{MatcherName}}_matcher = []{
@@ -207,14 +245,19 @@ std::unique_ptr<::google::cloud::internal::StreamingWriteRpc<
       {[]({{{CppRequestType}}} const& request) -> std::string const& {
         return request.{{FieldAccessor}}();
       },
+      {{#HasRegex}}
       std::regex{"{{Pattern}}", std::regex::optimize}},
+      {{/HasRegex}}
+      {{^HasRegex}}
+      absl::nullopt},
+      {{/HasRegex}}
       {{/Patterns}}
       }};
   }();
   {{MatcherName}}_matcher->AppendParam(request, params);
+
 {{/IsSimple}}
 {{/RoutingParamMatchers}}
-
   if (params.empty()) {
     SetMetadata(context, options);
   } else {
@@ -222,7 +265,12 @@ std::unique_ptr<::google::cloud::internal::StreamingWriteRpc<
   }
 {{/HasRouting}}
 {{^HasRouting}}
+{{#HasHttpRouting}}
+  SetMetadata(context, options, absl::StrCat({{{HttpRoutingParams}}}));
+{{/HasHttpRouting}}
+{{^HasHttpRouting}}
   SetMetadata(context, options);
+{{/HasHttpRouting}}
 {{/HasRouting}}
   return child_->{{Name}}(context, options, request);
 }
@@ -241,10 +289,16 @@ std::unique_ptr<::google::cloud::internal::StreamingWriteRpc<
 {{#RoutingParamMatchers}}
 {{#IsSimple}}
 {{#SimpleFields}}
+{{#IsFirst}}
   if (!request.{{FieldName}}().empty()) {
+{{/IsFirst}}
+{{^IsFirst}}
+  } else if (!request.{{FieldName}}().empty()) {
+{{/IsFirst}}
     params.push_back(absl::StrCat("{{ParamKey}}=", internal::UrlEncode(request.{{FieldName}}())));
-  }
 {{/SimpleFields}}
+  }
+
 {{/IsSimple}}
 {{^IsSimple}}
   static auto* {{MatcherName}}_matcher = []{
@@ -254,14 +308,19 @@ std::unique_ptr<::google::cloud::internal::StreamingWriteRpc<
       {[]({{{CppRequestType}}} const& request) -> std::string const& {
         return request.{{FieldAccessor}}();
       },
+      {{#HasRegex}}
       std::regex{"{{Pattern}}", std::regex::optimize}},
+      {{/HasRegex}}
+      {{^HasRegex}}
+      absl::nullopt},
+      {{/HasRegex}}
       {{/Patterns}}
       }};
   }();
   {{MatcherName}}_matcher->AppendParam(request, params);
+
 {{/IsSimple}}
 {{/RoutingParamMatchers}}
-
   if (params.empty()) {
     SetMetadata(context, options);
   } else {
@@ -269,14 +328,46 @@ std::unique_ptr<::google::cloud::internal::StreamingWriteRpc<
   }
 {{/HasRouting}}
 {{^HasRouting}}
+{{#HasHttpRouting}}
+  SetMetadata(context, options, absl::StrCat({{{HttpRoutingParams}}}));
+{{/HasHttpRouting}}
+{{^HasHttpRouting}}
   SetMetadata(context, options);
+{{/HasHttpRouting}}
 {{/HasRouting}}
   return child_->{{Name}}(context, options, request);
 }
 
 {{/IsPaginated}}
 {{/Codec.Methods}}
-{{#Codec.AsyncMethods}}
+{{#Codec.StubAsyncMethods}}
+{{#IsStreamingRead}}
+std::unique_ptr<::google::cloud::internal::AsyncStreamingReadRpc<
+      {{{CppResponseType}}}>>
+{{Codec.MetadataDecoratorClassName}}::Async{{Name}}(
+    google::cloud::CompletionQueue const& cq,
+    std::shared_ptr<grpc::ClientContext> context,
+    google::cloud::internal::ImmutableOptions options,
+    {{{CppRequestType}}} const& request) {
+  SetMetadata(*context, *options);
+  return child_->Async{{Name}}(
+      cq, std::move(context), std::move(options), request);
+}
+
+{{/IsStreamingRead}}
+{{#IsStreamingWrite}}
+std::unique_ptr<::google::cloud::internal::AsyncStreamingWriteRpc<
+    {{{CppRequestType}}}, {{{CppResponseType}}}>>
+{{Codec.MetadataDecoratorClassName}}::Async{{Name}}(
+    google::cloud::CompletionQueue const& cq,
+    std::shared_ptr<grpc::ClientContext> context,
+    google::cloud::internal::ImmutableOptions options) {
+  SetMetadata(*context, *options);
+  return child_->Async{{Name}}(cq, std::move(context), std::move(options));
+}
+
+{{/IsStreamingWrite}}
+{{#IsUnary}}
 future<{{{CppReturnType}}}>
 {{Codec.MetadataDecoratorClassName}}::Async{{Name}}(
       google::cloud::CompletionQueue& cq,
@@ -290,10 +381,16 @@ future<{{{CppReturnType}}}>
 {{#RoutingParamMatchers}}
 {{#IsSimple}}
 {{#SimpleFields}}
+{{#IsFirst}}
   if (!request.{{FieldName}}().empty()) {
+{{/IsFirst}}
+{{^IsFirst}}
+  } else if (!request.{{FieldName}}().empty()) {
+{{/IsFirst}}
     params.push_back(absl::StrCat("{{ParamKey}}=", internal::UrlEncode(request.{{FieldName}}())));
-  }
 {{/SimpleFields}}
+  }
+
 {{/IsSimple}}
 {{^IsSimple}}
   static auto* {{MatcherName}}_matcher = []{
@@ -303,14 +400,19 @@ future<{{{CppReturnType}}}>
       {[]({{{CppRequestType}}} const& request) -> std::string const& {
         return request.{{FieldAccessor}}();
       },
+      {{#HasRegex}}
       std::regex{"{{Pattern}}", std::regex::optimize}},
+      {{/HasRegex}}
+      {{^HasRegex}}
+      absl::nullopt},
+      {{/HasRegex}}
       {{/Patterns}}
       }};
   }();
   {{MatcherName}}_matcher->AppendParam(request, params);
+
 {{/IsSimple}}
 {{/RoutingParamMatchers}}
-
   if (params.empty()) {
     SetMetadata(*context, *options);
   } else {
@@ -318,13 +420,19 @@ future<{{{CppReturnType}}}>
   }
 {{/HasRouting}}
 {{^HasRouting}}
+{{#HasHttpRouting}}
+  SetMetadata(*context, *options, absl::StrCat({{{HttpRoutingParams}}}));
+{{/HasHttpRouting}}
+{{^HasHttpRouting}}
   SetMetadata(*context, *options);
+{{/HasHttpRouting}}
 {{/HasRouting}}
   return child_->Async{{Name}}(
       cq, std::move(context), std::move(options), request);
 }
 
-{{/Codec.AsyncMethods}}
+{{/IsUnary}}
+{{/Codec.StubAsyncMethods}}
 {{#Codec.HasLongrunningMethod}}
 future<StatusOr<google::longrunning::Operation>>
 {{Codec.MetadataDecoratorClassName}}::AsyncGetOperation(

@@ -44,7 +44,7 @@ class {{Codec.RestMetadataDecoratorClassName}} : public {{Codec.RestStubClassNam
 
 {{#Codec.RestMethods}}
 {{#IsLongrunning}}
-  future<StatusOr<google::longrunning::Operation>> Async{{Name}}(
+  google::cloud::future<StatusOr<google::longrunning::Operation>> Async{{Name}}(
       google::cloud::CompletionQueue& cq,
       std::unique_ptr<google::cloud::rest_internal::RestContext> rest_context,
       google::cloud::internal::ImmutableOptions options,
@@ -63,7 +63,7 @@ class {{Codec.RestMetadataDecoratorClassName}} : public {{Codec.RestStubClassNam
 {{/IsLongrunning}}
 {{/Codec.RestMethods}}
 {{#Codec.RestAsyncMethods}}
-  future<{{{CppReturnType}}}> Async{{Name}}(
+  google::cloud::future<{{{CppReturnType}}}> Async{{Name}}(
       google::cloud::CompletionQueue& cq,
       std::unique_ptr<google::cloud::rest_internal::RestContext> rest_context,
       google::cloud::internal::ImmutableOptions options,
@@ -71,13 +71,13 @@ class {{Codec.RestMetadataDecoratorClassName}} : public {{Codec.RestStubClassNam
 
 {{/Codec.RestAsyncMethods}}
 {{#Codec.HasLongrunningMethod}}
-  future<StatusOr<google::longrunning::Operation>> AsyncGetOperation(
+  google::cloud::future<StatusOr<google::longrunning::Operation>> AsyncGetOperation(
       google::cloud::CompletionQueue& cq,
       std::unique_ptr<google::cloud::rest_internal::RestContext> rest_context,
       google::cloud::internal::ImmutableOptions options,
       google::longrunning::GetOperationRequest const& request) override;
 
-  future<Status> AsyncCancelOperation(
+  google::cloud::future<Status> AsyncCancelOperation(
       google::cloud::CompletionQueue& cq,
       std::unique_ptr<google::cloud::rest_internal::RestContext> rest_context,
       google::cloud::internal::ImmutableOptions options,

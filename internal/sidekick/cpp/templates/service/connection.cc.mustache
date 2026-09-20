@@ -109,9 +109,15 @@ std::unique_ptr<::google::cloud::AsyncStreamingReadWriteRpc<
 future<{{{CppReturnType}}}>
 {{ServiceName}}Connection::Async{{Name}}(
     {{{CppRequestType}}} const&) {
+{{#IsResponseTypeEmpty}}
+  return google::cloud::make_ready_future(
+      Status(StatusCode::kUnimplemented, "not implemented"));
+{{/IsResponseTypeEmpty}}
+{{^IsResponseTypeEmpty}}
   return google::cloud::make_ready_future<
     {{{CppReturnType}}}>(
     Status(StatusCode::kUnimplemented, "not implemented"));
+{{/IsResponseTypeEmpty}}
 }
 
 {{/Codec.AsyncMethods}}
@@ -131,8 +137,8 @@ std::shared_ptr<{{Codec.ConnectionClassName}}> Make{{Codec.ConnectionClassName}}
       std::make_shared<{{Codec.InternalNamespace}}::{{Codec.ConnectionImplClassName}}>(
       std::move(background), std::move(stub), std::move(options)));
 }
-{{/Codec.GenerateGrpcTransport}}
 
+{{/Codec.GenerateGrpcTransport}}
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace {{Codec.Namespace}}
 }  // namespace cloud

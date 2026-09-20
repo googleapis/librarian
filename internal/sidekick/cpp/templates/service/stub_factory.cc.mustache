@@ -26,9 +26,9 @@ limitations under the License.
 #include "google/cloud/internal/opentelemetry.h"
 #include "google/cloud/log.h"
 #include "google/cloud/options.h"
-{{#Codec.ProtoGrpcHeaderPath}}
-#include <{{Codec.ProtoGrpcHeaderPath}}>
-{{/Codec.ProtoGrpcHeaderPath}}
+{{#Codec.IdempotencyPolicyProtoIncludes}}
+#include <{{.}}>
+{{/Codec.IdempotencyPolicyProtoIncludes}}
 #include <memory>
 #include <utility>
 
@@ -44,15 +44,26 @@ std::shared_ptr<{{Codec.StubClassName}}>
   auto channel = auth->CreateChannel(
     options.get<EndpointOption>(), internal::MakeChannelArguments(options));
   auto service_grpc_stub = {{Codec.ServiceGrpcName}}::NewStub(channel);
+{{^Codec.HasLongrunningMethod}}
+{{#Codec.HasOperationsMixin}}
+  auto service_operations_stub = google::longrunning::Operations::NewStub(channel);
+{{/Codec.HasOperationsMixin}}
+{{/Codec.HasLongrunningMethod}}
+{{#Codec.HasIamMixin}}
+  auto service_iampolicy_stub = google::iam::v1::IAMPolicy::NewStub(channel);
+{{/Codec.HasIamMixin}}
+{{#Codec.HasLocationMixin}}
+  auto service_locations_stub = google::cloud::location::Locations::NewStub(channel);
+{{/Codec.HasLocationMixin}}
 {{#Codec.HasLongrunningMethod}}
   std::shared_ptr<{{Codec.StubClassName}}> stub =
     std::make_shared<{{Codec.DefaultStubClassName}}>(
-      std::move(service_grpc_stub),
+      std::move(service_grpc_stub){{#Codec.HasLocationMixin}}, std::move(service_locations_stub){{/Codec.HasLocationMixin}}{{#Codec.HasIamMixin}}, std::move(service_iampolicy_stub){{/Codec.HasIamMixin}},
       google::longrunning::Operations::NewStub(channel));
 {{/Codec.HasLongrunningMethod}}
 {{^Codec.HasLongrunningMethod}}
   std::shared_ptr<{{Codec.StubClassName}}> stub =
-    std::make_shared<{{Codec.DefaultStubClassName}}>(std::move(service_grpc_stub));
+    std::make_shared<{{Codec.DefaultStubClassName}}>(std::move(service_grpc_stub){{#Codec.HasOperationsMixin}}, std::move(service_operations_stub){{/Codec.HasOperationsMixin}}{{#Codec.HasIamMixin}}, std::move(service_iampolicy_stub){{/Codec.HasIamMixin}}{{#Codec.HasLocationMixin}}, std::move(service_locations_stub){{/Codec.HasLocationMixin}});
 {{/Codec.HasLongrunningMethod}}
 
   if (auth->RequiresConfigureContext()) {

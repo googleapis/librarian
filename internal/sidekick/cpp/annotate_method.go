@@ -53,8 +53,13 @@ type methodAnnotations struct {
 
 	// Routing
 	HasRouting           bool
+	HasHttpRouting       bool
+	HttpRoutingParams    string
 	RoutingParamsCount   int
 	RoutingParamMatchers []*routingMatcherAnnotation
+
+	// Stub
+	StubMemberName string
 
 	// REST
 	HasRestPath             bool
@@ -79,8 +84,10 @@ type methodAnnotations struct {
 	IsSetIamPolicy bool
 
 	// LRO & Pagination
-	LongrunningMetadataType     string
-	PaginationElementsFieldName string
+	LongrunningMetadataType       string
+	LongrunningResponseIsEmpty    bool
+	PaginationElementsFieldName   string
+	HasDeprecatedFieldInSignature bool
 
 	// Comments
 	Comments          string
@@ -236,6 +243,40 @@ func (c *codec) annotateMethod(m *api.Method, sAnn *serviceAnnotations, model *a
 	routingMatchers := annotateRoutingInfo(m)
 	hasRouting := len(routingMatchers) > 0
 
+	var hasHttpRouting bool
+	var httpRoutingParams string
+	if !hasRouting && m.PathInfo != nil && len(m.PathInfo.Bindings) > 0 && m.PathInfo.Bindings[0].PathTemplate != nil {
+		var routingVars []string
+		for _, seg := range m.PathInfo.Bindings[0].PathTemplate.Segments {
+			if seg.Variable != nil && len(seg.Variable.FieldPath) > 0 {
+				var fieldCalls []string
+				for _, fp := range seg.Variable.FieldPath {
+					fieldCalls = append(fieldCalls, CppParamName(CamelCaseToSnakeCase(fp))+"()")
+				}
+				vName := strings.Join(seg.Variable.FieldPath, ".")
+				vAccessor := "request." + strings.Join(fieldCalls, ".")
+				routingVars = append(routingVars, fmt.Sprintf("%q, internal::UrlEncode(%s)", vName+"=", vAccessor))
+			}
+		}
+		if len(routingVars) > 0 {
+			hasHttpRouting = true
+			httpRoutingParams = strings.Join(routingVars, ", ")
+		}
+	}
+
+	var stubMemberName string
+	if strings.Contains(m.SourceServiceID, "google.cloud.location.Locations") {
+		stubMemberName = "locations_stub_"
+	} else if strings.Contains(m.SourceServiceID, "google.iam.v1.IAMPolicy") {
+		stubMemberName = "iampolicy_stub_"
+	} else if strings.Contains(m.SourceServiceID, "google.longrunning.Operations") {
+		stubMemberName = "operations_stub_"
+	} else {
+		stubMemberName = "grpc_stub_"
+	}
+
+	lroResponseIsEmpty := isLongrunning && m.OperationInfo != nil && (m.OperationInfo.ResponseTypeID == "" || m.OperationInfo.ResponseTypeID == ".google.protobuf.Empty" || m.OperationInfo.ResponseTypeID == "google.protobuf.Empty")
+
 	var b *api.PathBinding
 	if m.PathInfo != nil && len(m.PathInfo.Bindings) > 0 {
 		b = m.PathInfo.Bindings[0]
@@ -270,6 +311,7 @@ func (c *codec) annotateMethod(m *api.Method, sAnn *serviceAnnotations, model *a
 		IsLongrunning:                  isLongrunning,
 		LongrunningDeducedResponseType: lroDeducedType,
 		LongrunningReturnsEmpty:        lroReturnsEmpty,
+		LongrunningResponseIsEmpty:     lroResponseIsEmpty,
 		LongrunningOperationType:       lroOpType,
 		LongrunningMetadataType:        lroMetadataType,
 		PaginationElementsFieldName:    paginationElementsFieldName,
@@ -280,8 +322,11 @@ func (c *codec) annotateMethod(m *api.Method, sAnn *serviceAnnotations, model *a
 		IsResponseTypeEmpty:            isRespEmpty,
 		IsAsync:                        isAsync,
 		HasRouting:                     hasRouting,
+		HasHttpRouting:                 hasHttpRouting,
+		HttpRoutingParams:              httpRoutingParams,
 		RoutingParamsCount:             len(routingMatchers),
 		RoutingParamMatchers:           routingMatchers,
+		StubMemberName:                 stubMemberName,
 		HasRestPath:                    hasRestPath,
 		RestVerb:                       restVerb,
 		RestPathExpression:             restPathExpr,
@@ -333,13 +378,16 @@ func (c *codec) annotateMethod(m *api.Method, sAnn *serviceAnnotations, model *a
 		}
 	}
 
+	var hasDeprecatedFieldInSignature bool
 	seenSigUIDs := make(map[string]bool)
 	for _, sig := range sigs {
 		var params []*parameterAnnotation
 		var sigUIDBuilder strings.Builder
 		var paramCommentsBuilder strings.Builder
-		sigDeprecated := m.Deprecated
 		for _, f := range sig.Fields {
+			if f.Deprecated {
+				hasDeprecatedFieldInSignature = true
+			}
 			paramType := CppParamTypeToString(f)
 			paramName := CppParamName(f.Name)
 			isMap := f.Map
@@ -387,7 +435,7 @@ func (c *codec) annotateMethod(m *api.Method, sAnn *serviceAnnotations, model *a
 			Parameters:               params,
 			Comments:                 sigComments,
 			NoAwaitComments:          mAnn.NoAwaitComments,
-			IsDeprecated:             sigDeprecated,
+			IsDeprecated:             m.Deprecated,
 			IsUnary:                  isUnary,
 			IsPaginated:              isPaginated,
 			RangeOutputType:          rangeOutputType,
@@ -402,6 +450,7 @@ func (c *codec) annotateMethod(m *api.Method, sAnn *serviceAnnotations, model *a
 		}
 		mAnn.Signatures = append(mAnn.Signatures, sigAnn)
 	}
+	mAnn.HasDeprecatedFieldInSignature = hasDeprecatedFieldInSignature
 
 	m.Codec = mAnn
 	return mAnn
@@ -816,7 +865,9 @@ func annotateRoutingInfo(m *api.Method) []*routingMatcherAnnotation {
 		allSimple := true
 		var simpleFields []*routingSimpleFieldAnnotation
 		var patterns []*routingPatternAnnotation
-		for i, v := range r.Variants {
+		variants := slices.Clone(r.Variants)
+		slices.Reverse(variants)
+		for i, v := range variants {
 			fieldAccessor := strings.Join(v.FieldPath, "().")
 			isFirst := i == 0
 			isSimplePattern := len(v.Prefix.Segments) == 0 && len(v.Suffix.Segments) == 0 &&
@@ -959,6 +1010,9 @@ func buildRestQueryParams(m *api.Method, b *api.PathBinding, model *api.API) []*
 			continue
 		}
 		if f.Deprecated || f.Repeated {
+			continue
+		}
+		if m.Name == "ListOperations" && f.Name == "return_partial_success" {
 			continue
 		}
 		snakeName := CppParamName(CamelCaseToSnakeCase(f.Name)) + "()"

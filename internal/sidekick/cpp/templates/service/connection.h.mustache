@@ -40,9 +40,9 @@ limitations under the License.
 #include "google/cloud/stream_range.h"
 {{/Codec.HasStreamRange}}
 #include "google/cloud/version.h"
-{{#Codec.ProtoHeaderPath}}
-#include <{{Codec.ProtoHeaderPath}}>
-{{/Codec.ProtoHeaderPath}}
+{{#Codec.ConnectionProtoIncludes}}
+#include <{{.}}>
+{{/Codec.ConnectionProtoIncludes}}
 {{#Codec.HasGrpcLRO}}
 #include <google/longrunning/operations.grpc.pb.h>
 {{/Codec.HasGrpcLRO}}
@@ -198,8 +198,8 @@ class {{Codec.ConnectionClassName}} {
   virtual Options options() { return Options{}; }
 {{> /templates/partials/connection_methods}}
 };
-
 {{#Codec.GenerateGrpcTransport}}
+
 /**
  * A factory function to construct an object of type `{{Codec.ConnectionClassName}}`.
  *

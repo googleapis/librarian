@@ -32,6 +32,7 @@ std::unique_ptr<{{Codec.ConnectionIdempotencyPolicyClassName}}>
 }
 
 {{#Codec.Methods}}
+{{^IsStreaming}}
 {{#IsPaginated}}
 Idempotency {{ServiceName}}ConnectionIdempotencyPolicy::{{Name}}({{{CppRequestType}}}) {  // NOLINT
   return Idempotency::{{Idempotency}};
@@ -48,8 +49,10 @@ Idempotency {{ServiceName}}ConnectionIdempotencyPolicy::{{Name}}({{{CppRequestTy
 {{/HasRequestId}}
 {{^HasRequestId}}
 {{#IsSetIamPolicy}}
-Idempotency {{ServiceName}}ConnectionIdempotencyPolicy::{{Name}}({{{CppRequestType}}} const& request) {
-  return request.policy().etag().empty() ? Idempotency::kNonIdempotent : Idempotency::kIdempotent;
+Idempotency {{ServiceName}}ConnectionIdempotencyPolicy::{{Name}}(
+    {{{CppRequestType}}} const& request) {
+  return request.policy().etag().empty() ? Idempotency::kNonIdempotent
+                                         : Idempotency::kIdempotent;
 }
 
 {{/IsSetIamPolicy}}
@@ -61,6 +64,7 @@ Idempotency {{ServiceName}}ConnectionIdempotencyPolicy::{{Name}}({{{CppRequestTy
 {{/IsSetIamPolicy}}
 {{/HasRequestId}}
 {{/IsPaginated}}
+{{/IsStreaming}}
 {{/Codec.Methods}}
 std::unique_ptr<{{Codec.ConnectionIdempotencyPolicyClassName}}>
     MakeDefault{{Codec.ConnectionIdempotencyPolicyClassName}}() {

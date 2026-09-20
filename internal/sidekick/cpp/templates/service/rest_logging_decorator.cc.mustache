@@ -87,10 +87,10 @@ StatusOr<google::longrunning::Operation>
 {{#Codec.RestAsyncMethods}}
 future<{{{CppReturnType}}}>
 {{Codec.RestLoggingDecoratorClassName}}::Async{{Name}}(
-      CompletionQueue& cq,
-      std::unique_ptr<rest_internal::RestContext> rest_context,
-      google::cloud::internal::ImmutableOptions options,
-      {{{CppRequestType}}} const& request) {
+    google::cloud::CompletionQueue& cq,
+    std::unique_ptr<rest_internal::RestContext> rest_context,
+    google::cloud::internal::ImmutableOptions options,
+    {{{CppRequestType}}} const& request) {
   return google::cloud::internal::LogWrapper(
       [this](CompletionQueue& cq,
              std::unique_ptr<rest_internal::RestContext> rest_context,

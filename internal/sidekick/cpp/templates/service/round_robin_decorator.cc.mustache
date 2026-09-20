@@ -101,7 +101,7 @@ std::unique_ptr<google::cloud::internal::StreamingWriteRpc<
 
 {{/IsPaginated}}
 {{/Codec.Methods}}
-{{#Codec.AsyncMethods}}
+{{#Codec.StubAsyncMethods}}
 {{#IsStreamingRead}}
 std::unique_ptr<google::cloud::internal::AsyncStreamingReadRpc<
     {{{CppResponseType}}}>>
@@ -152,7 +152,7 @@ future<{{{CppReturnType}}}>
 }
 
 {{/IsPaginated}}
-{{/Codec.AsyncMethods}}
+{{/Codec.StubAsyncMethods}}
 {{#Codec.HasLongrunningMethod}}
 future<StatusOr<google::longrunning::Operation>>
 {{Codec.RoundRobinClassName}}::AsyncGetOperation(

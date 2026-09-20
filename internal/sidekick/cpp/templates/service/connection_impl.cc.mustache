@@ -67,6 +67,14 @@ std::unique_ptr<PollingPolicy> polling_policy(Options const& options) {
 {{/Codec.HasLongrunningMethod}}
 } // namespace
 
+{{#Codec.Methods}}
+{{#IsStreamingRead}}
+void {{ServiceName}}{{Name}}StreamingUpdater(
+    {{{CppResponseType}}} const&,
+    {{{CppRequestType}}}&) {}
+
+{{/IsStreamingRead}}
+{{/Codec.Methods}}
 {{Codec.ConnectionImplClassName}}::{{Codec.ConnectionImplClassName}}(
     std::unique_ptr<google::cloud::BackgroundThreads> background,
     std::shared_ptr<{{Codec.InternalNamespace}}::{{Codec.StubClassName}}> stub,
@@ -81,16 +89,16 @@ std::unique_ptr<PollingPolicy> polling_policy(Options const& options) {
 future<{{{CppReturnType}}}>
 {{ServiceName}}ConnectionImpl::{{Name}}({{{CppRequestType}}} const& request) {
   auto current = google::cloud::internal::SaveCurrentOptions();
-{{#HasRequestId}}
   auto request_copy = request;
+{{#HasRequestId}}
   if (request_copy.{{RequestIdFieldName}}().empty()) {
     request_copy.set_{{RequestIdFieldName}}(invocation_id_generator_->MakeInvocationId());
   }
 {{/HasRequestId}}
   auto const idempotent =
-      idempotency_policy(*current)->{{Name}}({{#HasRequestId}}request_copy{{/HasRequestId}}{{^HasRequestId}}request{{/HasRequestId}});
+      idempotency_policy(*current)->{{Name}}(request_copy);
   return google::cloud::internal::AsyncLongRunningOperation<{{{LongrunningDeducedResponseType}}}>(
-    background_->cq(), current, std::move({{#HasRequestId}}request_copy{{/HasRequestId}}{{^HasRequestId}}request{{/HasRequestId}}),
+    background_->cq(), current, std::move(request_copy),
     [stub = stub_](google::cloud::CompletionQueue& cq,
                    std::shared_ptr<grpc::ClientContext> context,
                    google::cloud::internal::ImmutableOptions options,
@@ -112,7 +120,7 @@ future<{{{CppReturnType}}}>
      return stub->AsyncCancelOperation(
          cq, std::move(context), std::move(options), request);
     },
-    &google::cloud::internal::ExtractLongRunningResultResponse<{{{LongrunningDeducedResponseType}}}>,
+    &google::cloud::internal::ExtractLongRunningResult{{#LongrunningResponseIsEmpty}}Metadata{{/LongrunningResponseIsEmpty}}{{^LongrunningResponseIsEmpty}}Response{{/LongrunningResponseIsEmpty}}<{{{LongrunningDeducedResponseType}}}>,
     retry_policy(*current), backoff_policy(*current), idempotent,
     polling_policy(*current), __func__);
 }
@@ -158,7 +166,7 @@ future<{{{CppReturnType}}}>
      return stub->AsyncCancelOperation(
          cq, std::move(context), std::move(options), request);
     },
-    &google::cloud::internal::ExtractLongRunningResultResponse<{{{LongrunningDeducedResponseType}}}>,
+    &google::cloud::internal::ExtractLongRunningResult{{#LongrunningResponseIsEmpty}}Metadata{{/LongrunningResponseIsEmpty}}{{^LongrunningResponseIsEmpty}}Response{{/LongrunningResponseIsEmpty}}<{{{LongrunningDeducedResponseType}}}>,
     polling_policy(*current), __func__);
 }
 
@@ -255,14 +263,14 @@ StreamRange<{{{CppResponseType}}}>
 future<{{{CppReturnType}}}>
 {{ServiceName}}ConnectionImpl::Async{{Name}}({{{CppRequestType}}} const& request) {
   auto current = google::cloud::internal::SaveCurrentOptions();
-{{#HasRequestId}}
   auto request_copy = request;
+{{#HasRequestId}}
   if (request_copy.{{RequestIdFieldName}}().empty()) {
     request_copy.set_{{RequestIdFieldName}}(invocation_id_generator_->MakeInvocationId());
   }
 {{/HasRequestId}}
   auto const idempotent =
-      idempotency_policy(*current)->{{Name}}({{#HasRequestId}}request_copy{{/HasRequestId}}{{^HasRequestId}}request{{/HasRequestId}});
+      idempotency_policy(*current)->{{Name}}(request_copy);
   auto retry = retry_policy(*current);
   auto backoff = backoff_policy(*current);
   return google::cloud::internal::AsyncRetryLoop(
@@ -274,7 +282,7 @@ future<{{{CppReturnType}}}>
         return stub->Async{{Name}}(
             cq, std::move(context), std::move(options), request);
       },
-      std::move(current), std::move({{#HasRequestId}}request_copy{{/HasRequestId}}{{^HasRequestId}}request{{/HasRequestId}}), __func__);
+      std::move(current), std::move(request_copy), __func__);
 }
 
 {{/Codec.AsyncMethods}}

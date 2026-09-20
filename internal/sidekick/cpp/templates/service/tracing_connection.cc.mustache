@@ -91,9 +91,8 @@ StreamRange<{{{CppResponseType}}}>
   internal::OTelScope scope(span);
   auto sr = child_->{{Name}}(request);
   return internal::MakeTracedStreamRange<{{{CppResponseType}}}>(
-      std::move(span), std::move(sr));
+        std::move(span), std::move(sr));
 }
-
 {{/IsStreamingRead}}
 {{#IsUnary}}
 {{{CppReturnType}}}

@@ -48,6 +48,7 @@ func TestAnnotateMethod_Unary(t *testing.T) {
 		CppResponseType:          "test::Item",
 		CppReturnType:            "StatusOr<test::Item>",
 		IsUnary:                  true,
+		StubMemberName:           "grpc_stub_",
 		LongrunningOperationType: "google::longrunning::Operation",
 		Idempotency:              "kNonIdempotent",
 	}

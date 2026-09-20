@@ -41,12 +41,9 @@ limitations under the License.
 #include "google/cloud/options.h"
 #include "google/cloud/status_or.h"
 #include "google/cloud/version.h"
-{{#Codec.ProtoGrpcHeaderPath}}
-#include <{{Codec.ProtoGrpcHeaderPath}}>
-{{/Codec.ProtoGrpcHeaderPath}}
-{{#Codec.HasLongrunningMethod}}
-#include <google/longrunning/operations.grpc.pb.h>
-{{/Codec.HasLongrunningMethod}}
+{{#Codec.StubProtoIncludes}}
+#include <{{.}}>
+{{/Codec.StubProtoIncludes}}
 #include <memory>
 #include <utility>
 
@@ -64,15 +61,47 @@ class {{Codec.StubClassName}} {
 class {{Codec.DefaultStubClassName}} : public {{Codec.StubClassName}} {
  public:
 {{^Codec.HasLongrunningMethod}}
+{{#Codec.HasOperationsMixin}}
+  explicit {{Codec.DefaultStubClassName}}(
+      std::unique_ptr<{{Codec.ServiceGrpcName}}::StubInterface> grpc_stub,
+      std::unique_ptr<google::longrunning::Operations::StubInterface> operations_stub
+{{#Codec.HasIamMixin}}
+,
+      std::unique_ptr<google::iam::v1::IAMPolicy::StubInterface> iampolicy_stub
+{{/Codec.HasIamMixin}}
+{{#Codec.HasLocationMixin}}
+,
+      std::unique_ptr<google::cloud::location::Locations::StubInterface> locations_stub
+{{/Codec.HasLocationMixin}}
+)
+      : grpc_stub_(std::move(grpc_stub)),
+        operations_stub_(std::move(operations_stub)){{#Codec.HasIamMixin}},
+        iampolicy_stub_(std::move(iampolicy_stub)){{/Codec.HasIamMixin}}{{#Codec.HasLocationMixin}},
+        locations_stub_(std::move(locations_stub)){{/Codec.HasLocationMixin}} {}
+{{/Codec.HasOperationsMixin}}
+{{^Codec.HasOperationsMixin}}
   explicit {{Codec.DefaultStubClassName}}(
       std::unique_ptr<{{Codec.ServiceGrpcName}}::StubInterface> grpc_stub)
       : grpc_stub_(std::move(grpc_stub)) {}
+{{/Codec.HasOperationsMixin}}
 {{/Codec.HasLongrunningMethod}}
 {{#Codec.HasLongrunningMethod}}
   {{Codec.DefaultStubClassName}}(
       std::unique_ptr<{{Codec.ServiceGrpcName}}::StubInterface> grpc_stub,
+{{#Codec.HasLocationMixin}}
+      std::unique_ptr<google::cloud::location::Locations::StubInterface> locations_stub,
+{{/Codec.HasLocationMixin}}
+{{#Codec.HasIamMixin}}
+      std::unique_ptr<google::iam::v1::IAMPolicy::StubInterface> iampolicy_stub,
+{{/Codec.HasIamMixin}}
       std::unique_ptr<google::longrunning::Operations::StubInterface> operations_stub)
       : grpc_stub_(std::move(grpc_stub)),
+{{#Codec.HasLocationMixin}}
+        locations_stub_(std::move(locations_stub)),
+{{/Codec.HasLocationMixin}}
+{{#Codec.HasIamMixin}}
+        iampolicy_stub_(std::move(iampolicy_stub)),
+{{/Codec.HasIamMixin}}
         operations_stub_(std::move(operations_stub)) {}
 {{/Codec.HasLongrunningMethod}}
 {{> /templates/partials/stub_methods}}
@@ -80,7 +109,26 @@ class {{Codec.DefaultStubClassName}} : public {{Codec.StubClassName}} {
  private:
   std::unique_ptr<{{Codec.ServiceGrpcName}}::StubInterface> grpc_stub_;
 {{#Codec.HasLongrunningMethod}}
+{{#Codec.HasLocationMixin}}
+  std::unique_ptr<google::cloud::location::Locations::StubInterface> locations_stub_;
+{{/Codec.HasLocationMixin}}
+{{#Codec.HasIamMixin}}
+  std::unique_ptr<google::iam::v1::IAMPolicy::StubInterface> iampolicy_stub_;
+{{/Codec.HasIamMixin}}
+{{#Codec.HasOperationsStub}}
   std::unique_ptr<google::longrunning::Operations::StubInterface> operations_stub_;
+{{/Codec.HasOperationsStub}}
+{{/Codec.HasLongrunningMethod}}
+{{^Codec.HasLongrunningMethod}}
+{{#Codec.HasOperationsStub}}
+  std::unique_ptr<google::longrunning::Operations::StubInterface> operations_stub_;
+{{/Codec.HasOperationsStub}}
+{{#Codec.HasIamMixin}}
+  std::unique_ptr<google::iam::v1::IAMPolicy::StubInterface> iampolicy_stub_;
+{{/Codec.HasIamMixin}}
+{{#Codec.HasLocationMixin}}
+  std::unique_ptr<google::cloud::location::Locations::StubInterface> locations_stub_;
+{{/Codec.HasLocationMixin}}
 {{/Codec.HasLongrunningMethod}}
 };
 

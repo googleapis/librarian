@@ -186,9 +186,27 @@ type serviceAnnotations struct {
 	ServiceGrpcName      string
 	ServiceGrpcProtoName string
 
+	// Proto includes
+	ConnectionProtoIncludes        []string
+	IdempotencyPolicyProtoIncludes []string
+	StubProtoIncludes              []string
+	SourcesCcCopyrightYear         string
+
+	// Mixins
+	HasLocationMixin   bool
+	HasIamMixin        bool
+	HasOperationsMixin bool
+	HasOperationsStub  bool
+
+	// Signature and type checks
+	HasMap                        bool
+	HasDuration                   bool
+	HasDeprecatedFieldInSignature bool
+
 	// Methods
 	Methods               []*methodAnnotations
 	AsyncMethods          []*methodAnnotations
+	StubAsyncMethods      []*methodAnnotations
 	RestMethods           []*methodAnnotations
 	RestAsyncMethods      []*methodAnnotations
 	RestStubProtoIncludes []string
@@ -460,7 +478,7 @@ func (c *codec) annotateService(s *api.Service, modelAnn *modelAnnotations, mode
 	if c.config != nil && c.config.ServiceEndpointEnvVar != "" {
 		serviceEndpointEnvVar = c.config.ServiceEndpointEnvVar
 	}
-	serviceAuthorityEnvVar := "GOOGLE_CLOUD_CPP_" + strings.ToUpper(CamelCaseToSnakeCase(s.Name)) + "_AUTHORITY"
+	serviceAuthorityEnvVar := strings.TrimSuffix(serviceEndpointEnvVar, "_ENDPOINT") + "_AUTHORITY"
 	var emulatorEndpointEnvVar string
 	if c.config != nil {
 		emulatorEndpointEnvVar = c.config.EmulatorEndpointEnvVar
@@ -480,6 +498,9 @@ func (c *codec) annotateService(s *api.Service, modelAnn *modelAnnotations, mode
 	}
 	var hasLocationMixin, hasIamMixin, hasOperationsMixin bool
 	for _, m := range s.Methods {
+		if isLongrunningPoller(m) {
+			continue
+		}
 		if strings.Contains(m.SourceServiceID, "google.cloud.location.Locations") {
 			hasLocationMixin = true
 		}
@@ -504,6 +525,82 @@ func (c *codec) annotateService(s *api.Service, modelAnn *modelAnnotations, mode
 	if protoHeaderPath != "" && !slices.Contains(restStubProtoIncludes, protoHeaderPath) {
 		restStubProtoIncludes = append(restStubProtoIncludes, protoHeaderPath)
 	}
+
+	hasOperationsStub := hasOperationsMixin || hasLongrunningMethod
+
+	sourcesCcCopyrightYear := max("2024", year)
+
+	var connectionProtoIncludes []string
+	if protoHeaderPath != "" {
+		connectionProtoIncludes = append(connectionProtoIncludes, protoHeaderPath)
+	}
+	if c.config != nil {
+		for _, proto := range c.config.AdditionalProtoFiles {
+			h := strings.TrimSuffix(proto, ".proto") + ".pb.h"
+			if !slices.Contains(connectionProtoIncludes, h) {
+				connectionProtoIncludes = append(connectionProtoIncludes, h)
+			}
+		}
+	}
+	slices.Sort(connectionProtoIncludes)
+
+	var idempotencyPolicyProtoIncludes []string
+	if generateGrpcTransport {
+		if protoGrpcHeaderPath != "" {
+			idempotencyPolicyProtoIncludes = append(idempotencyPolicyProtoIncludes, protoGrpcHeaderPath)
+		}
+		if hasLocationMixin {
+			idempotencyPolicyProtoIncludes = append(idempotencyPolicyProtoIncludes, "google/cloud/location/locations.grpc.pb.h")
+		}
+		if hasIamMixin {
+			idempotencyPolicyProtoIncludes = append(idempotencyPolicyProtoIncludes, "google/iam/v1/iam_policy.grpc.pb.h")
+		}
+		if hasOperationsMixin {
+			idempotencyPolicyProtoIncludes = append(idempotencyPolicyProtoIncludes, "google/longrunning/operations.grpc.pb.h")
+		}
+	} else {
+		if protoHeaderPath != "" {
+			idempotencyPolicyProtoIncludes = append(idempotencyPolicyProtoIncludes, protoHeaderPath)
+		}
+	}
+	slices.Sort(idempotencyPolicyProtoIncludes)
+	idempotencyPolicyProtoIncludes = slices.Compact(idempotencyPolicyProtoIncludes)
+
+	var stubProtoIncludes []string
+	var additionalPbHeaders []string
+	if c.config != nil {
+		for _, proto := range c.config.AdditionalProtoFiles {
+			h := strings.TrimSuffix(proto, ".proto") + ".pb.h"
+			if !slices.Contains(additionalPbHeaders, h) {
+				additionalPbHeaders = append(additionalPbHeaders, h)
+			}
+		}
+		slices.Sort(additionalPbHeaders)
+		stubProtoIncludes = append(stubProtoIncludes, additionalPbHeaders...)
+	}
+	var mixinHeaders []string
+	if hasLocationMixin {
+		mixinHeaders = append(mixinHeaders, "google/cloud/location/locations.grpc.pb.h")
+	}
+	if hasIamMixin {
+		mixinHeaders = append(mixinHeaders, "google/iam/v1/iam_policy.grpc.pb.h")
+	}
+	if hasOperationsMixin {
+		mixinHeaders = append(mixinHeaders, "google/longrunning/operations.grpc.pb.h")
+	}
+	slices.Sort(mixinHeaders)
+	stubProtoIncludes = append(stubProtoIncludes, mixinHeaders...)
+
+	includeLroHeader := hasLongrunningMethod && !hasOperationsMixin
+	var mainProtoGrpcHeaders []string
+	if protoGrpcHeaderPath != "" {
+		mainProtoGrpcHeaders = append(mainProtoGrpcHeaders, protoGrpcHeaderPath)
+	}
+	if includeLroHeader {
+		mainProtoGrpcHeaders = append(mainProtoGrpcHeaders, "google/longrunning/operations.grpc.pb.h")
+	}
+	slices.Sort(mainProtoGrpcHeaders)
+	stubProtoIncludes = append(stubProtoIncludes, mainProtoGrpcHeaders...)
 
 	sAnn := &serviceAnnotations{
 		Name:          s.Name,
@@ -657,6 +754,15 @@ func (c *codec) annotateService(s *api.Service, modelAnn *modelAnnotations, mode
 		ConnectionImplHeaderIncludes: connectionImplHeaderIncludes,
 		SourcesCcIncludes:            sourcesCcIncludes,
 		RestStubProtoIncludes:        restStubProtoIncludes,
+
+		ConnectionProtoIncludes:        connectionProtoIncludes,
+		IdempotencyPolicyProtoIncludes: idempotencyPolicyProtoIncludes,
+		StubProtoIncludes:              stubProtoIncludes,
+		SourcesCcCopyrightYear:         sourcesCcCopyrightYear,
+		HasLocationMixin:               hasLocationMixin,
+		HasIamMixin:                    hasIamMixin,
+		HasOperationsMixin:             hasOperationsMixin,
+		HasOperationsStub:              hasOperationsStub,
 	}
 	var getIamPolicyMethod, setIamPolicyMethod *api.Method
 	for _, m := range s.Methods {
@@ -703,6 +809,7 @@ func (c *codec) annotateService(s *api.Service, modelAnn *modelAnnotations, mode
 
 	var methods []*methodAnnotations
 	var asyncMethods []*methodAnnotations
+	var stubAsyncMethods []*methodAnnotations
 
 	for _, m := range s.Methods {
 		if isLongrunningPoller(m) {
@@ -714,7 +821,42 @@ func (c *codec) annotateService(s *api.Service, modelAnn *modelAnnotations, mode
 		mAnn := c.annotateMethod(m, sAnn, model, hasIamUpdater && m == setIamPolicyMethod)
 		methods = append(methods, mAnn)
 		if isGenAsync(m) && !mAnn.IsLongrunning && !mAnn.IsBidirStreaming {
-			asyncMethods = append(asyncMethods, mAnn)
+			stubAsyncMethods = append(stubAsyncMethods, mAnn)
+			if mAnn.IsUnary {
+				asyncMethods = append(asyncMethods, mAnn)
+			}
+		}
+	}
+
+	var hasMap, hasDuration, hasDeprecatedFieldInSignature bool
+	for _, mAnn := range methods {
+		if mAnn.HasDeprecatedFieldInSignature {
+			hasDeprecatedFieldInSignature = true
+		}
+		for _, sig := range mAnn.Signatures {
+			for _, p := range sig.Parameters {
+				if strings.Contains(p.Type, "google::protobuf::Duration") {
+					hasDuration = true
+				}
+			}
+		}
+	}
+	for _, m := range s.Methods {
+		if reqMsg := model.Message(m.InputTypeID); reqMsg != nil {
+			for _, f := range reqMsg.Fields {
+				if f.Map {
+					hasMap = true
+					break
+				}
+			}
+		}
+		if respMsg := model.Message(m.OutputTypeID); respMsg != nil {
+			for _, f := range respMsg.Fields {
+				if f.Map {
+					hasMap = true
+					break
+				}
+			}
 		}
 	}
 
@@ -731,8 +873,12 @@ func (c *codec) annotateService(s *api.Service, modelAnn *modelAnnotations, mode
 		}
 	}
 
+	sAnn.HasMap = hasMap
+	sAnn.HasDuration = hasDuration
+	sAnn.HasDeprecatedFieldInSignature = hasDeprecatedFieldInSignature
 	sAnn.Methods = methods
 	sAnn.AsyncMethods = asyncMethods
+	sAnn.StubAsyncMethods = stubAsyncMethods
 	sAnn.RestMethods = restMethods
 	sAnn.RestAsyncMethods = restAsyncMethods
 	sAnn.HasIamUpdater = hasIamUpdater

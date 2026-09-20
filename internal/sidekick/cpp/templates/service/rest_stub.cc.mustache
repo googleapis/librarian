@@ -70,16 +70,16 @@ future<StatusOr<google::longrunning::Operation>>
 {{#RestHasQueryParams}}
 {{#RestQueryParams}}
 {{#IsNumber}}
-      query_params.push_back({"{{ParamKey}}", std::to_string({{{FieldAccessor}}})});
+  query_params.push_back({"{{ParamKey}}", std::to_string(request.{{{FieldAccessor}}})});
 {{/IsNumber}}
 {{#IsBool}}
-      query_params.push_back({"{{ParamKey}}", {{{FieldAccessor}}} ? "true" : "false"});
+  query_params.push_back({"{{ParamKey}}", request.{{{FieldAccessor}}} ? "true" : "false"});
 {{/IsBool}}
 {{#IsString}}
-      query_params.push_back({"{{ParamKey}}", {{{FieldAccessor}}}});
+  query_params.push_back({"{{ParamKey}}", request.{{{FieldAccessor}}}});
 {{/IsString}}
 {{/RestQueryParams}}
-      query_params = rest_internal::TrimEmptyQueryParameters(std::move(query_params));
+  query_params = rest_internal::TrimEmptyQueryParameters(std::move(query_params));
 {{/RestHasQueryParams}}
       p.set_value(rest_internal::{{RestVerb}}<google::longrunning::Operation>(
           *service, *rest_context, {{{RestRequestBodyAccessor}}},
@@ -105,13 +105,13 @@ StatusOr<google::longrunning::Operation>
 {{#RestHasQueryParams}}
 {{#RestQueryParams}}
 {{#IsNumber}}
-  query_params.push_back({"{{ParamKey}}", std::to_string({{{FieldAccessor}}})});
+  query_params.push_back({"{{ParamKey}}", std::to_string(request.{{{FieldAccessor}}})});
 {{/IsNumber}}
 {{#IsBool}}
-  query_params.push_back({"{{ParamKey}}", {{{FieldAccessor}}} ? "true" : "false"});
+  query_params.push_back({"{{ParamKey}}", request.{{{FieldAccessor}}} ? "true" : "false"});
 {{/IsBool}}
 {{#IsString}}
-  query_params.push_back({"{{ParamKey}}", {{{FieldAccessor}}}});
+  query_params.push_back({"{{ParamKey}}", request.{{{FieldAccessor}}}});
 {{/IsString}}
 {{/RestQueryParams}}
   query_params = rest_internal::TrimEmptyQueryParameters(std::move(query_params));
@@ -123,8 +123,13 @@ StatusOr<google::longrunning::Operation>
 
 {{/IsLongrunning}}
 {{^IsLongrunning}}
+{{#IsResponseTypeEmpty}}
+Status {{Codec.DefaultRestStubClassName}}::{{Name}}(
+{{/IsResponseTypeEmpty}}
+{{^IsResponseTypeEmpty}}
 {{{CppReturnType}}}
 {{Codec.DefaultRestStubClassName}}::{{Name}}(
+{{/IsResponseTypeEmpty}}
       google::cloud::rest_internal::RestContext& rest_context,
       Options const& options,
       {{{CppRequestType}}} const& request) {
@@ -132,13 +137,13 @@ StatusOr<google::longrunning::Operation>
 {{#RestHasQueryParams}}
 {{#RestQueryParams}}
 {{#IsNumber}}
-  query_params.push_back({"{{ParamKey}}", std::to_string({{{FieldAccessor}}})});
+  query_params.push_back({"{{ParamKey}}", std::to_string(request.{{{FieldAccessor}}})});
 {{/IsNumber}}
 {{#IsBool}}
-  query_params.push_back({"{{ParamKey}}", {{{FieldAccessor}}} ? "true" : "false"});
+  query_params.push_back({"{{ParamKey}}", request.{{{FieldAccessor}}} ? "true" : "false"});
 {{/IsBool}}
 {{#IsString}}
-  query_params.push_back({"{{ParamKey}}", {{{FieldAccessor}}}});
+  query_params.push_back({"{{ParamKey}}", request.{{{FieldAccessor}}}});
 {{/IsString}}
 {{/RestQueryParams}}
   query_params = rest_internal::TrimEmptyQueryParameters(std::move(query_params));
@@ -171,27 +176,25 @@ future<{{{CppReturnType}}}>
 {{#RestHasQueryParams}}
 {{#RestQueryParams}}
 {{#IsNumber}}
-      query_params.push_back({"{{ParamKey}}", std::to_string({{{FieldAccessor}}})});
+  query_params.push_back({"{{ParamKey}}", std::to_string(request.{{{FieldAccessor}}})});
 {{/IsNumber}}
 {{#IsBool}}
-      query_params.push_back({"{{ParamKey}}", {{{FieldAccessor}}} ? "true" : "false"});
+  query_params.push_back({"{{ParamKey}}", request.{{{FieldAccessor}}} ? "true" : "false"});
 {{/IsBool}}
 {{#IsString}}
-      query_params.push_back({"{{ParamKey}}", {{{FieldAccessor}}}});
+  query_params.push_back({"{{ParamKey}}", request.{{{FieldAccessor}}}});
 {{/IsString}}
 {{/RestQueryParams}}
-      query_params = rest_internal::TrimEmptyQueryParameters(std::move(query_params));
+  query_params = rest_internal::TrimEmptyQueryParameters(std::move(query_params));
 {{/RestHasQueryParams}}
 {{#IsResponseTypeEmpty}}
       p.set_value(rest_internal::{{RestVerb}}<google::protobuf::Empty>(
-          *service, *rest_context, {{{RestRequestBodyAccessor}}},
-          false,
+          *service, *rest_context, {{{RestRequestBodyAccessor}}}, false,
           {{{RestAsyncPathExpression}}}, std::move(query_params)));
 {{/IsResponseTypeEmpty}}
 {{^IsResponseTypeEmpty}}
       p.set_value(rest_internal::{{RestVerb}}<{{{CppResponseType}}}>(
-          *service, *rest_context, {{{RestRequestBodyAccessor}}},
-          false,
+          *service, *rest_context, {{{RestRequestBodyAccessor}}}, false,
           {{{RestAsyncPathExpression}}}, std::move(query_params)));
 {{/IsResponseTypeEmpty}}
     },

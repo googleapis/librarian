@@ -40,6 +40,12 @@ limitations under the License.
 {{#Codec.HasGrpcLRO}}
 #include <google/longrunning/operations.grpc.pb.h>
 {{/Codec.HasGrpcLRO}}
+{{#Codec.HasDuration}}
+#include <google/protobuf/duration.pb.h>
+{{/Codec.HasDuration}}
+{{#Codec.HasMap}}
+#include <map>
+{{/Codec.HasMap}}
 #include <memory>
 #include <string>
 

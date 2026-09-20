@@ -174,9 +174,13 @@ func TestGenerate_GRPCServiceFiles(t *testing.T) {
 					t.Fatalf("expected file not generated %q: %v", gen.OutputPath, err)
 				}
 				s := string(content)
-				if !strings.HasPrefix(s, test.wantContent) {
+				wantPrefix := test.wantContent
+				if strings.HasSuffix(gen.OutputPath, "sources.cc") && test.year < "2024" {
+					wantPrefix = strings.Replace(wantPrefix, "// Copyright "+test.year, "// Copyright 2024", 1)
+				}
+				if !strings.HasPrefix(s, wantPrefix) {
 					t.Logf("file: %s", gen.OutputPath)
-					t.Errorf("missing expected prologue prefix:\nwant prefix:\n%s\ngot:\n%s", test.wantContent, s)
+					t.Errorf("missing expected prologue prefix:\nwant prefix:\n%s\ngot:\n%s", wantPrefix, s)
 				}
 				if strings.HasSuffix(gen.OutputPath, ".h") {
 					guard := FormatHeaderIncludeGuard(gen.OutputPath)

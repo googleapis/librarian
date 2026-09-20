@@ -69,7 +69,7 @@ limitations under the License.
       google::cloud::internal::ImmutableOptions options) = 0;
 {{/IsBidirStreaming}}
 {{/Codec.Methods}}
-{{#Codec.AsyncMethods}}
+{{#Codec.StubAsyncMethods}}
 {{#IsStreamingRead}}
 
   virtual std::unique_ptr<::google::cloud::internal::AsyncStreamingReadRpc<
@@ -107,7 +107,7 @@ limitations under the License.
     google::cloud::internal::ImmutableOptions options,
     {{{CppRequestType}}} const& request) = 0;
 {{/IsPaginated}}
-{{/Codec.AsyncMethods}}
+{{/Codec.StubAsyncMethods}}
 {{#Codec.HasLongrunningMethod}}
 
   virtual future<StatusOr<google::longrunning::Operation>> AsyncGetOperation(

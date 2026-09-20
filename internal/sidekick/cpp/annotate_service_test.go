@@ -474,6 +474,10 @@ func TestAnnotateService(t *testing.T) {
 				"ApiVersion",
 				"HasApiVersion",
 				"RestStubProtoIncludes",
+				"SourcesCcCopyrightYear",
+				"ConnectionProtoIncludes",
+				"IdempotencyPolicyProtoIncludes",
+				"StubProtoIncludes",
 			)
 			if test.want.SourcesCcIncludes != nil {
 				if diff := cmp.Diff(test.want.SourcesCcIncludes, got.SourcesCcIncludes); diff != "" {
@@ -1099,5 +1103,90 @@ func TestAnnotateService_RestMethodsAndProtoIncludes(t *testing.T) {
 	}
 	if diff := cmp.Diff(wantIncludes, got.RestStubProtoIncludes); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+}
+
+func TestAnnotateService_SourcesCcCopyrightYear(t *testing.T) {
+	for _, test := range []struct {
+		name      string
+		inputYear string
+		wantYear  string
+	}{
+		{name: "year prior to 2024 clamped to 2024", inputYear: "2022", wantYear: "2024"},
+		{name: "year 2024 preserved", inputYear: "2024", wantYear: "2024"},
+		{name: "year 2026 preserved", inputYear: "2026", wantYear: "2026"},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			svc := api.NewTestService("EchoService")
+			model := api.NewTestAPI(nil, nil, []*api.Service{svc})
+			c := newCodec(&config.CppLibrary{InitialCopyrightYear: test.inputYear})
+			modelAnn := &modelAnnotations{
+				CopyrightYear: test.inputYear,
+				BoilerPlate:   []string{"// Sample Boilerplate"},
+			}
+			if err := c.annotateService(svc, modelAnn, model); err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+			got := svc.Codec.(*serviceAnnotations)
+			if got.SourcesCcCopyrightYear != test.wantYear {
+				t.Errorf("SourcesCcCopyrightYear: want %q, got %q", test.wantYear, got.SourcesCcCopyrightYear)
+			}
+		})
+	}
+}
+
+func TestAnnotateService_StubProtoIncludes_ThreePhaseSort(t *testing.T) {
+	lroMethod := api.NewTestMethod("LongRunning").
+		WithOperationInfo(&api.OperationInfo{})
+	svc := api.NewTestService("EchoService").
+		WithMethods(lroMethod)
+	model := api.NewTestAPI(nil, nil, []*api.Service{svc})
+	model.DefinitionLocations = map[string]api.SourceLocation{
+		svc.ID: {Filename: "google/example/echo.proto", Line: 1},
+	}
+
+	libCfg := &config.CppLibrary{
+		ProductPath:          "google/example/v1",
+		AdditionalProtoFiles: []string{"google/example/z_extra.proto", "google/example/a_extra.proto"},
+	}
+	c := newCodec(libCfg)
+	modelAnn := &modelAnnotations{
+		CopyrightYear: "2026",
+		BoilerPlate:   []string{"// Sample Boilerplate"},
+	}
+	if err := c.annotateService(svc, modelAnn, model); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	got := svc.Codec.(*serviceAnnotations)
+
+	// Step 1: additionalPbHeaders sorted: a_extra, z_extra
+	// Step 2: mixin headers (none here)
+	// Step 3: echo.grpc.pb.h and operations.grpc.pb.h sorted:
+	//   "google/example/echo.grpc.pb.h"
+	//   "google/longrunning/operations.grpc.pb.h"
+	wantStubIncludes := []string{
+		"google/example/a_extra.pb.h",
+		"google/example/z_extra.pb.h",
+		"google/example/echo.grpc.pb.h",
+		"google/longrunning/operations.grpc.pb.h",
+	}
+	if diff := cmp.Diff(wantStubIncludes, got.StubProtoIncludes); diff != "" {
+		t.Errorf("StubProtoIncludes mismatch (-want +got):\n%s", diff)
+	}
+
+	wantConnIncludes := []string{
+		"google/example/a_extra.pb.h",
+		"google/example/echo.pb.h",
+		"google/example/z_extra.pb.h",
+	}
+	if diff := cmp.Diff(wantConnIncludes, got.ConnectionProtoIncludes); diff != "" {
+		t.Errorf("ConnectionProtoIncludes mismatch (-want +got):\n%s", diff)
+	}
+
+	wantIdempotencyIncludes := []string{
+		"google/example/echo.grpc.pb.h",
+	}
+	if diff := cmp.Diff(wantIdempotencyIncludes, got.IdempotencyPolicyProtoIncludes); diff != "" {
+		t.Errorf("IdempotencyPolicyProtoIncludes mismatch (-want +got):\n%s", diff)
 	}
 }
