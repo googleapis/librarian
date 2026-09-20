@@ -23,6 +23,10 @@ type modelAnnotations struct {
 	BoilerPlate   []string
 }
 
+// cppHeaderBulk returns the Apache 2.0 license body lines with 6 leading spaces
+// before the URL line ("      https://www.apache.org/licenses/LICENSE-2.0") instead
+// of 5, matching the legacy google-cloud-cpp generator license format for exact
+// byte-for-byte parity.
 func cppHeaderBulk() []string {
 	return []string{
 		"",

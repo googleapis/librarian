@@ -88,7 +88,7 @@ func TestGenerate_GRPCParity_RequestIdService(t *testing.T) {
 			}
 
 			if diff := cmp.Diff(string(goldenContent), string(gotContent)); diff != "" {
-				t.Errorf("mismatch (-want golden +got generated):\n%s", diff)
+				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
@@ -157,7 +157,7 @@ func TestGenerate_GRPCParity_DeprecatedService(t *testing.T) {
 			}
 
 			if diff := cmp.Diff(string(goldenContent), string(gotContent)); diff != "" {
-				t.Errorf("mismatch (-want golden +got generated):\n%s", diff)
+				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}

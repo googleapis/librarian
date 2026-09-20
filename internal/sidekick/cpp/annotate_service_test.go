@@ -15,7 +15,6 @@
 package cpp
 
 import (
-	"strings"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -443,7 +442,7 @@ func TestAnnotateService(t *testing.T) {
 				"ConnectionHeaderIncludes",
 				"ConnectionSourceIncludes",
 				"ConnectionImplHeaderIncludes",
-				"ClientClassComments",
+				"DescriptionLines",
 				"ProductOptionsPage",
 			)
 			if test.want.SourcesCcIncludes != nil {
@@ -835,13 +834,13 @@ func TestAnnotateService_RetryStatusCodes(t *testing.T) {
 	}
 }
 
-func TestAnnotateService_ClientClassCommentsAndProductOptionsPage(t *testing.T) {
+func TestAnnotateService_DescriptionLinesAndProductOptionsPage(t *testing.T) {
 	for _, test := range []struct {
 		name                   string
 		serviceName            string
 		documentation          string
 		productPath            string
-		wantClientCommentsSub  []string
+		wantDescriptionLines   []docLine
 		wantProductOptionsPage string
 	}{
 		{
@@ -849,23 +848,20 @@ func TestAnnotateService_ClientClassCommentsAndProductOptionsPage(t *testing.T) 
 			serviceName:   "RequestIdService",
 			documentation: "",
 			productPath:   "generator/integration_tests/golden/v1",
-			wantClientCommentsSub: []string{
-				"/// RequestIdServiceClient",
-				"@par Equality",
-				"@par Performance",
-				"@par Thread Safety",
+			wantDescriptionLines: []docLine{
+				{Text: "RequestIdServiceClient", HasContent: true},
 			},
 			wantProductOptionsPage: "generator-integration_tests-golden-options",
 		},
 		{
-			name:          "custom documentation with replacements",
+			name:          "custom documentation with multiple lines",
 			serviceName:   "EchoService",
-			documentation: "Service for echo.\nSee [groups](#google.monitoring.v3.Group) for details.",
+			documentation: "Service for echo.\n\nAdditional details.",
 			productPath:   "google/cloud/echo/v1",
-			wantClientCommentsSub: []string{
-				"/// Service for echo.",
-				"/// See [groups][google.monitoring.v3.Group] for details.",
-				"@par Equality",
+			wantDescriptionLines: []docLine{
+				{Text: "Service for echo.", HasContent: true},
+				{Text: "", HasContent: false},
+				{Text: "Additional details.", HasContent: true},
 			},
 			wantProductOptionsPage: "google-cloud-echo-options",
 		},
@@ -893,13 +889,13 @@ func TestAnnotateService_ClientClassCommentsAndProductOptionsPage(t *testing.T) 
 				t.Fatal(err)
 			}
 			got := svc.Codec.(*serviceAnnotations)
-			for _, sub := range test.wantClientCommentsSub {
-				if !strings.Contains(got.ClientClassComments, sub) {
-					t.Errorf("ClientClassComments does not contain %q, got:\n%s", sub, got.ClientClassComments)
+			if test.wantDescriptionLines != nil {
+				if diff := cmp.Diff(test.wantDescriptionLines, got.DescriptionLines); diff != "" {
+					t.Errorf("mismatch (-want +got):\n%s", diff)
 				}
 			}
 			if diff := cmp.Diff(test.wantProductOptionsPage, got.ProductOptionsPage); diff != "" {
-				t.Errorf("mismatch ProductOptionsPage (-want +got):\n%s", diff)
+				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}

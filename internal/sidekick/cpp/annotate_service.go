@@ -150,11 +150,16 @@ type serviceAnnotations struct {
 	ServiceGrpcProtoName string
 
 	// Methods
-	Methods             []*methodAnnotations
-	AsyncMethods        []*methodAnnotations
-	HasIamUpdater       bool
-	ClientClassComments string
-	ProductOptionsPage  string
+	Methods            []*methodAnnotations
+	AsyncMethods       []*methodAnnotations
+	HasIamUpdater      bool
+	DescriptionLines   []docLine
+	ProductOptionsPage string
+}
+
+type docLine struct {
+	Text       string
+	HasContent bool
 }
 
 func (c *codec) annotateService(s *api.Service, modelAnn *modelAnnotations, model *api.API) error {
@@ -452,7 +457,7 @@ func (c *codec) annotateService(s *api.Service, modelAnn *modelAnnotations, mode
 		ServiceDefaultOptionsFunctionName:                  s.Name + "DefaultOptions",
 		CreateDefaultStubFunctionName:                      "CreateDefault" + s.Name + "Stub",
 		MakeDefaultConnectionIdempotencyPolicyFunctionName: "MakeDefault" + s.Name + "ConnectionIdempotencyPolicy",
-		ClientClassComments:                                formatClassCommentsFromServiceComments(s),
+		DescriptionLines:                                   formatServiceDescriptionLines(s),
 		ProductOptionsPage:                                 OptionsGroup(productPath),
 
 		IsDeprecated:     s.Deprecated,
@@ -545,44 +550,22 @@ func (c *codec) annotateService(s *api.Service, modelAnn *modelAnnotations, mode
 	return nil
 }
 
-const fixedClientComment = `///
-/// @par Equality
-///
-/// Instances of this class created via copy-construction or copy-assignment
-/// always compare equal. Instances created with equal
-/// ` + "`std::shared_ptr<*Connection>`" + ` objects compare equal. Objects that compare
-/// equal share the same underlying resources.
-///
-/// @par Performance
-///
-/// Creating a new instance of this class is a relatively expensive operation,
-/// new objects establish new connections to the service. In contrast,
-/// copy-construction, move-construction, and the corresponding assignment
-/// operations are relatively efficient as the copies share all underlying
-/// resources.
-///
-/// @par Thread Safety
-///
-/// Concurrent access to different instances of this class, even if they compare
-/// equal, is guaranteed to work. Two or more threads operating on the same
-/// instance of this class is not guaranteed to work. Since copy-construction
-/// and move-construction is a relatively efficient operation, consider using
-/// such a copy when using this class from multiple threads.
-///`
-
-func formatClassCommentsFromServiceComments(s *api.Service) string {
+func formatServiceDescriptionLines(s *api.Service) []docLine {
 	doc := strings.TrimSpace(s.Documentation)
-	var formattedComments string
 	if doc == "" {
-		formattedComments = " " + s.Name + "Client"
-	} else {
-		r := strings.NewReplacer(
-			"\n\n", "\n///\n/// ",
-			"\n", "\n/// ",
-			"[groups](#google.monitoring.v3.Group)", "[groups][google.monitoring.v3.Group]",
-		)
-		formattedComments = " " + r.Replace(doc)
+		return []docLine{{
+			Text:       s.Name + "Client",
+			HasContent: true,
+		}}
 	}
-	res := "///\n///" + formattedComments + "\n" + fixedClientComment
-	return strings.ReplaceAll(res, "///  ", "/// ")
+	rawLines := strings.Split(doc, "\n")
+	lines := make([]docLine, 0, len(rawLines))
+	for _, line := range rawLines {
+		trimmed := strings.TrimSpace(line)
+		lines = append(lines, docLine{
+			Text:       trimmed,
+			HasContent: trimmed != "",
+		})
+	}
+	return lines
 }

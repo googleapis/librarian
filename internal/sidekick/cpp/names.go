@@ -375,10 +375,8 @@ func OptionsGroup(productPath string) string {
 	if lib == "" {
 		return "options"
 	}
-	var libPath string
-	if prefix == "" {
-		libPath = lib + "/"
-	} else {
+	libPath := lib + "/"
+	if prefix != "" {
 		libPath = prefix + "/" + lib + "/"
 	}
 	return strings.ReplaceAll(libPath, "/", "-") + "options"
