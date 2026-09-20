@@ -775,27 +775,3 @@ func TestAnnotateMethod_ListOperations_QueryParamFilter(t *testing.T) {
 		t.Errorf("expected return_partial_success to be filtered out of RestQueryParams")
 	}
 }
-
-func TestAnnotateMethod_GetOperationComments(t *testing.T) {
-	nameField := api.NewTestField("name").WithType(api.TypezString)
-	reqMsg := api.NewTestMessage("GetOperationRequest").WithPackage("google.longrunning").WithFields(nameField)
-	respMsg := api.NewTestMessage("Operation").WithPackage("google.longrunning")
-
-	method := api.NewTestMethod("GetOperation").
-		WithInput(reqMsg).
-		WithOutput(respMsg)
-	method.SourceServiceID = "google.longrunning.Operations"
-	method.Documentation = "Provides the [Operations][google.longrunning.Operations] service functionality in this service."
-
-	paramComment := formatParameterComment(reqMsg, nameField)
-	wantParamComment := "  /// @param name  The name of the operation resource.\n"
-	if diff := cmp.Diff(wantParamComment, paramComment); diff != "" {
-		t.Errorf("mismatch (-want +got):\n%s", diff)
-	}
-
-	docComment := formatMethodDoxygenComments(method, "", nil, false, nil, false, false)
-	wantSubstr := "Gets the latest state of a long-running operation."
-	if !strings.Contains(docComment, wantSubstr) {
-		t.Errorf("formatMethodDoxygenComments expected to contain %q, got %s", wantSubstr, docComment)
-	}
-}

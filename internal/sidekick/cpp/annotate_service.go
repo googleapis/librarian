@@ -625,7 +625,7 @@ func (c *codec) annotateService(s *api.Service, modelAnn *modelAnnotations, mode
 	stubProtoIncludes = append(stubProtoIncludes, mainProtoGrpcHeaders...)
 
 	doc := s.Documentation
-	refLines := formatClientCommentReferenceLines(doc, model)
+	refLines := formatClientCommentReferenceLines(doc, model, s)
 
 	sAnn := &serviceAnnotations{
 		Name:          s.Name,
@@ -924,7 +924,30 @@ func formatServiceDescriptionLines(s *api.Service) []docLine {
 	return lines
 }
 
-func formatClientCommentReferenceLines(doc string, model *api.API) []string {
+func serviceDependencyFiles(svc *api.Service, model *api.API) (map[string]bool, bool) {
+	if svc == nil || model == nil {
+		return nil, false
+	}
+	svcLoc, hasSvcLoc := model.DefinitionLocation(svc.ID)
+	if !hasSvcLoc {
+		return nil, false
+	}
+	depFiles := map[string]bool{
+		svcLoc.Filename: true,
+	}
+	if deps, err := api.FindDependencies(model, []string{svc.ID}); err == nil {
+		for d := range deps {
+			if dLoc, ok := findSymbolLocation(model, d); ok {
+				depFiles[dLoc.Filename] = true
+			}
+		}
+	}
+	return depFiles, true
+}
+
+func formatClientCommentReferenceLines(doc string, model *api.API, svc *api.Service) []string {
+	depFiles, hasSvcLoc := serviceDependencyFiles(svc, model)
+
 	refMap := make(map[string]api.SourceLocation)
 	matches := commentRefRegex.FindAllStringSubmatch(doc, -1)
 	for _, match := range matches {
@@ -932,9 +955,14 @@ func formatClientCommentReferenceLines(doc string, model *api.API) []string {
 			continue
 		}
 		sym := match[1]
-		if loc, ok := findSymbolLocation(model, sym); ok {
-			refMap[sym] = loc
+		loc, ok := findSymbolLocation(model, sym)
+		if !ok {
+			continue
 		}
+		if hasSvcLoc && !depFiles[loc.Filename] {
+			continue
+		}
+		refMap[sym] = loc
 	}
 	refKeys := make([]string, 0, len(refMap))
 	for k := range refMap {

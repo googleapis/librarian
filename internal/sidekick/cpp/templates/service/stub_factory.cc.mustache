@@ -58,7 +58,7 @@ std::shared_ptr<{{Codec.StubClassName}}>
 {{#Codec.HasLongrunningMethod}}
   std::shared_ptr<{{Codec.StubClassName}}> stub =
     std::make_shared<{{Codec.DefaultStubClassName}}>(
-      std::move(service_grpc_stub){{#Codec.HasLocationMixin}}, std::move(service_locations_stub){{/Codec.HasLocationMixin}}{{#Codec.HasIamMixin}}, std::move(service_iampolicy_stub){{/Codec.HasIamMixin}},
+      std::move(service_grpc_stub){{#Codec.HasIamMixin}}, std::move(service_iampolicy_stub){{/Codec.HasIamMixin}}{{#Codec.HasLocationMixin}}, std::move(service_locations_stub){{/Codec.HasLocationMixin}},
       google::longrunning::Operations::NewStub(channel));
 {{/Codec.HasLongrunningMethod}}
 {{^Codec.HasLongrunningMethod}}
