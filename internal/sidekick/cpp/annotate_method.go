@@ -606,19 +606,7 @@ func formatMethodDoxygenComments(m *api.Method, paramComments string, model *api
 	return prefix + returnComment + trailerBeginning + lroLink + trailerEnding + refTrailer.String() + suffix
 }
 
-var knownMixinLocations = map[string]api.SourceLocation{
-	"google.cloud.location.GetLocationRequest": {Filename: "google/cloud/location/locations.proto", Line: 82},
-	"google.cloud.location.Location":           {Filename: "google/cloud/location/locations.proto", Line: 88},
-	"google.iam.v1.GetIamPolicyRequest":        {Filename: "google/iam/v1/iam_policy.proto", Line: 123},
-	"google.iam.v1.Policy":                     {Filename: "google/iam/v1/policy.proto", Line: 102},
-	"google.longrunning.ListOperationsRequest": {Filename: "google/longrunning/operations.proto", Line: 167},
-	"google.longrunning.Operation":             {Filename: "google/longrunning/operations.proto", Line: 121},
-}
-
 func findSymbolLocation(model *api.API, name string) (api.SourceLocation, bool) {
-	if loc, ok := knownMixinLocations[strings.TrimPrefix(name, ".")]; ok {
-		return loc, true
-	}
 	if model == nil {
 		return api.SourceLocation{}, false
 	}
@@ -626,14 +614,6 @@ func findSymbolLocation(model *api.API, name string) (api.SourceLocation, bool) 
 		name,
 		strings.TrimPrefix(name, "."),
 		"." + strings.TrimPrefix(name, "."),
-	}
-	parts := strings.Split(name, ".")
-	if len(parts) >= 3 {
-		altParts := make([]string, 0, len(parts)-1)
-		altParts = append(altParts, parts[:len(parts)-2]...)
-		altParts = append(altParts, parts[len(parts)-1])
-		altName := strings.Join(altParts, ".")
-		candidates = append(candidates, altName, strings.TrimPrefix(altName, "."), "."+strings.TrimPrefix(altName, "."))
 	}
 	for _, c := range candidates {
 		if loc, ok := model.DefinitionLocation(c); ok {
