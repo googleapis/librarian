@@ -126,6 +126,6 @@ func TestGenerate_Error(t *testing.T) {
 	outdir := t.TempDir()
 	err := Generate(t.Context(), nil, outdir, nil)
 	if !errors.Is(err, ErrNilModel) {
-		t.Errorf("got %v, want %v", err, ErrNilModel)
+		t.Errorf("Generate(ctx, nil, %q, nil) error = %v, want %v", outdir, err, ErrNilModel)
 	}
 }

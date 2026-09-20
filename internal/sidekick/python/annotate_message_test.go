@@ -100,12 +100,12 @@ func TestAnnotateMessage(t *testing.T) {
 			}
 			for _, nested := range test.msg.Messages {
 				if _, ok := nested.Codec.(*messageAnnotations); !ok {
-					t.Errorf("got %T, want *messageAnnotations for nested message", nested.Codec)
+					t.Errorf("nested message %q Codec = %T, want *messageAnnotations", nested.Name, nested.Codec)
 				}
 			}
 			for _, enum := range test.msg.Enums {
 				if _, ok := enum.Codec.(*enumAnnotations); !ok {
-					t.Errorf("got %T, want *enumAnnotations for nested enum", enum.Codec)
+					t.Errorf("nested enum %q Codec = %T, want *enumAnnotations", enum.Name, enum.Codec)
 				}
 			}
 		})

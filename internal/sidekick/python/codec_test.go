@@ -98,7 +98,7 @@ func TestNewCodec(t *testing.T) {
 func TestNewCodec_Error(t *testing.T) {
 	_, err := newCodec(nil, nil, "")
 	if !errors.Is(err, ErrNilModel) {
-		t.Errorf("got %v, want %v", err, ErrNilModel)
+		t.Errorf("newCodec(nil, nil, \"\") error = %v, want %v", err, ErrNilModel)
 	}
 }
 
