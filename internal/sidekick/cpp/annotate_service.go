@@ -191,6 +191,7 @@ type serviceAnnotations struct {
 	IdempotencyPolicyProtoIncludes []string
 	StubProtoIncludes              []string
 	SourcesCcCopyrightYear         string
+	SourcesContext                 *sourcesContextAnnotation
 
 	// Mixins
 	HasLocationMixin   bool
@@ -218,6 +219,10 @@ type serviceAnnotations struct {
 type docLine struct {
 	Text       string
 	HasContent bool
+}
+
+type sourcesContextAnnotation struct {
+	UseSourcesYear bool
 }
 
 func (c *codec) annotateService(s *api.Service, modelAnn *modelAnnotations, model *api.API) error {
@@ -759,6 +764,7 @@ func (c *codec) annotateService(s *api.Service, modelAnn *modelAnnotations, mode
 		IdempotencyPolicyProtoIncludes: idempotencyPolicyProtoIncludes,
 		StubProtoIncludes:              stubProtoIncludes,
 		SourcesCcCopyrightYear:         sourcesCcCopyrightYear,
+		SourcesContext:                 &sourcesContextAnnotation{UseSourcesYear: true},
 		HasLocationMixin:               hasLocationMixin,
 		HasIamMixin:                    hasIamMixin,
 		HasOperationsMixin:             hasOperationsMixin,
@@ -828,37 +834,26 @@ func (c *codec) annotateService(s *api.Service, modelAnn *modelAnnotations, mode
 		}
 	}
 
-	var hasMap, hasDuration, hasDeprecatedFieldInSignature bool
+	var hasDuration, hasDeprecatedFieldInSignature bool
 	for _, mAnn := range methods {
 		if mAnn.HasDeprecatedFieldInSignature {
 			hasDeprecatedFieldInSignature = true
 		}
 		for _, sig := range mAnn.Signatures {
-			for _, p := range sig.Parameters {
-				if strings.Contains(p.Type, "google::protobuf::Duration") {
-					hasDuration = true
-				}
+			if slices.ContainsFunc(sig.Parameters, func(p *parameterAnnotation) bool {
+				return strings.Contains(p.Type, "google::protobuf::Duration")
+			}) {
+				hasDuration = true
 			}
 		}
 	}
-	for _, m := range s.Methods {
-		if reqMsg := model.Message(m.InputTypeID); reqMsg != nil {
-			for _, f := range reqMsg.Fields {
-				if f.Map {
-					hasMap = true
-					break
-				}
-			}
-		}
-		if respMsg := model.Message(m.OutputTypeID); respMsg != nil {
-			for _, f := range respMsg.Fields {
-				if f.Map {
-					hasMap = true
-					break
-				}
-			}
-		}
+	hasMapField := func(msgID string) bool {
+		msg := model.Message(msgID)
+		return msg != nil && slices.ContainsFunc(msg.Fields, func(f *api.Field) bool { return f.Map })
 	}
+	hasMap := slices.ContainsFunc(s.Methods, func(m *api.Method) bool {
+		return hasMapField(m.InputTypeID) || hasMapField(m.OutputTypeID)
+	})
 
 	var restMethods []*methodAnnotations
 	for _, m := range methods {

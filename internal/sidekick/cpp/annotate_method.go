@@ -54,7 +54,7 @@ type methodAnnotations struct {
 	// Routing
 	HasRouting           bool
 	HasHttpRouting       bool
-	HttpRoutingParams    string
+	HttpRoutingParams    []*httpRoutingParamAnnotation
 	RoutingParamsCount   int
 	RoutingParamMatchers []*routingMatcherAnnotation
 
@@ -98,6 +98,12 @@ type methodAnnotations struct {
 
 	// Signatures (overloads)
 	Signatures []*methodSignatureAnnotations
+}
+
+type httpRoutingParamAnnotation struct {
+	Key           string
+	FieldAccessor string
+	HasNext       bool
 }
 
 type queryParamAnnotation struct {
@@ -244,9 +250,8 @@ func (c *codec) annotateMethod(m *api.Method, sAnn *serviceAnnotations, model *a
 	hasRouting := len(routingMatchers) > 0
 
 	var hasHttpRouting bool
-	var httpRoutingParams string
+	var httpRoutingParams []*httpRoutingParamAnnotation
 	if !hasRouting && m.PathInfo != nil && len(m.PathInfo.Bindings) > 0 && m.PathInfo.Bindings[0].PathTemplate != nil {
-		var routingVars []string
 		for _, seg := range m.PathInfo.Bindings[0].PathTemplate.Segments {
 			if seg.Variable != nil && len(seg.Variable.FieldPath) > 0 {
 				var fieldCalls []string
@@ -254,13 +259,18 @@ func (c *codec) annotateMethod(m *api.Method, sAnn *serviceAnnotations, model *a
 					fieldCalls = append(fieldCalls, CppParamName(CamelCaseToSnakeCase(fp))+"()")
 				}
 				vName := strings.Join(seg.Variable.FieldPath, ".")
-				vAccessor := "request." + strings.Join(fieldCalls, ".")
-				routingVars = append(routingVars, fmt.Sprintf("%q, internal::UrlEncode(%s)", vName+"=", vAccessor))
+				vAccessor := strings.Join(fieldCalls, ".")
+				httpRoutingParams = append(httpRoutingParams, &httpRoutingParamAnnotation{
+					Key:           vName,
+					FieldAccessor: vAccessor,
+				})
 			}
 		}
-		if len(routingVars) > 0 {
+		if len(httpRoutingParams) > 0 {
 			hasHttpRouting = true
-			httpRoutingParams = strings.Join(routingVars, ", ")
+			for i := range len(httpRoutingParams) - 1 {
+				httpRoutingParams[i].HasNext = true
+			}
 		}
 	}
 
@@ -1012,6 +1022,9 @@ func buildRestQueryParams(m *api.Method, b *api.PathBinding, model *api.API) []*
 		if f.Deprecated || f.Repeated {
 			continue
 		}
+		// In newer googleapis specifications (AIP-158 / AIP-127), google.longrunning.ListOperationsRequest
+		// added field 5 bool return_partial_success. Upstream google-cloud-cpp's generator baseline
+		// predates this field and omits it from REST query parameters to maintain compatibility.
 		if m.Name == "ListOperations" && f.Name == "return_partial_success" {
 			continue
 		}

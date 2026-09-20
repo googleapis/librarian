@@ -15,6 +15,7 @@
 package cpp
 
 import (
+	"slices"
 	"strings"
 	"testing"
 
@@ -607,5 +608,164 @@ func TestAnnotateMethod_Rest(t *testing.T) {
 	}
 	if !got.IsRestRpc {
 		t.Errorf("expected IsRestRpc to be true")
+	}
+}
+
+func TestAnnotateMethod_HttpRoutingParams(t *testing.T) {
+	req := api.NewTestMessage("GetDatabaseRequest").WithFields(
+		api.NewTestField("name").WithType(api.TypezString),
+	)
+	pt := (&api.PathTemplate{}).
+		WithLiteral("v1").
+		WithVariable(api.NewPathVariable("name"))
+	binding := &api.PathBinding{
+		Verb:         "GET",
+		PathTemplate: pt,
+	}
+	method := api.NewTestMethod("GetDatabase").
+		WithInput(req).
+		WithOutput(api.NewTestMessage("Database"))
+	method.PathInfo = &api.PathInfo{
+		Bindings: []*api.PathBinding{binding},
+	}
+	svc := api.NewTestService("DatabaseAdmin").WithMethods(method)
+	model := api.NewTestAPI([]*api.Message{req}, nil, []*api.Service{svc})
+
+	c := newCodec(nil)
+	if err := c.annotateModel(model); err != nil {
+		t.Fatal(err)
+	}
+
+	got := method.Codec.(*methodAnnotations)
+	if !got.HasHttpRouting {
+		t.Errorf("expected HasHttpRouting to be true")
+	}
+	wantParams := []*httpRoutingParamAnnotation{
+		{Key: "name", FieldAccessor: "name()", HasNext: false},
+	}
+	if diff := cmp.Diff(wantParams, got.HttpRoutingParams); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+}
+
+func TestAnnotateMethod_StubMemberNames(t *testing.T) {
+	for _, test := range []struct {
+		name            string
+		sourceServiceID string
+		wantStubMember  string
+	}{
+		{name: "locations service", sourceServiceID: "google.cloud.location.Locations", wantStubMember: "locations_stub_"},
+		{name: "iam service", sourceServiceID: "google.iam.v1.IAMPolicy", wantStubMember: "iampolicy_stub_"},
+		{name: "operations service", sourceServiceID: "google.longrunning.Operations", wantStubMember: "operations_stub_"},
+		{name: "custom service", sourceServiceID: "google.example.v1.EchoService", wantStubMember: "grpc_stub_"},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			req := api.NewTestMessage("Req")
+			resp := api.NewTestMessage("Resp")
+			method := api.NewTestMethod("Method").WithInput(req).WithOutput(resp)
+			method.SourceServiceID = test.sourceServiceID
+			svc := api.NewTestService("TestService").WithMethods(method)
+			model := api.NewTestAPI([]*api.Message{req, resp}, nil, []*api.Service{svc})
+
+			c := newCodec(nil)
+			if err := c.annotateModel(model); err != nil {
+				t.Fatal(err)
+			}
+			got := method.Codec.(*methodAnnotations)
+			if diff := cmp.Diff(test.wantStubMember, got.StubMemberName); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestAnnotateMethod_DeprecatedSignatureFields(t *testing.T) {
+	depField := api.NewTestField("deprecated_param").WithType(api.TypezString)
+	depField.Deprecated = true
+	normalField := api.NewTestField("normal_param").WithType(api.TypezString)
+	req := api.NewTestMessage("Req").WithFields(depField, normalField)
+	resp := api.NewTestMessage("Resp")
+
+	method := api.NewTestMethod("MethodWithDep").
+		WithInput(req).
+		WithOutput(resp).
+		WithSignatures(&api.MethodSignature{
+			Fields: []*api.Field{normalField, depField},
+		})
+	svc := api.NewTestService("DepService").WithMethods(method)
+	model := api.NewTestAPI([]*api.Message{req, resp}, nil, []*api.Service{svc})
+
+	c := newCodec(nil)
+	if err := c.annotateModel(model); err != nil {
+		t.Fatal(err)
+	}
+	got := method.Codec.(*methodAnnotations)
+	if !got.HasDeprecatedFieldInSignature {
+		t.Errorf("expected HasDeprecatedFieldInSignature to be true")
+	}
+}
+
+func TestAnnotateMethod_LongrunningResponseIsEmpty(t *testing.T) {
+	emptyMsg := api.NewTestMessage("Empty").WithPackage("google.protobuf")
+	metaMsg := api.NewTestMessage("Meta").WithPackage("test")
+	req := api.NewTestMessage("Req").WithPackage("test")
+	opMsg := api.NewTestMessage("Operation").WithPackage("google.longrunning")
+
+	method := api.NewTestMethod("DropDatabase").
+		WithInput(req).
+		WithOutput(opMsg).
+		WithOperationInfo(&api.OperationInfo{
+			ResponseTypeID: emptyMsg.ID,
+			MetadataTypeID: metaMsg.ID,
+		})
+	svc := api.NewTestService("Admin").WithMethods(method)
+	model := api.NewTestAPI([]*api.Message{emptyMsg, metaMsg, req, opMsg}, nil, []*api.Service{svc})
+
+	c := newCodec(nil)
+	if err := c.annotateModel(model); err != nil {
+		t.Fatal(err)
+	}
+	got := method.Codec.(*methodAnnotations)
+	if !got.LongrunningResponseIsEmpty {
+		t.Errorf("expected LongrunningResponseIsEmpty to be true")
+	}
+}
+
+func TestAnnotateMethod_ListOperations_QueryParamFilter(t *testing.T) {
+	reqMsg := api.NewTestMessage("ListOperationsRequest").WithFields(
+		api.NewTestField("name").WithType(api.TypezString),
+		api.NewTestField("page_size").WithType(api.TypezInt32),
+		api.NewTestField("return_partial_success").WithType(api.TypezBool),
+	)
+	respMsg := api.NewTestMessage("ListOperationsResponse")
+	pt := (&api.PathTemplate{}).WithLiteral("v1").WithLiteral("operations")
+	binding := &api.PathBinding{
+		Verb:         "GET",
+		PathTemplate: pt,
+		QueryParameters: map[string]bool{
+			"name":                   true,
+			"page_size":              true,
+			"return_partial_success": true,
+		},
+	}
+	method := api.NewTestMethod("ListOperations").
+		WithInput(reqMsg).
+		WithOutput(respMsg)
+	method.PathInfo = &api.PathInfo{
+		Bindings: []*api.PathBinding{binding},
+	}
+	svc := api.NewTestService("Operations").WithMethods(method)
+	model := api.NewTestAPI([]*api.Message{reqMsg, respMsg}, nil, []*api.Service{svc})
+
+	libCfg := &config.CppLibrary{GenerateRestTransport: true}
+	c := newCodec(libCfg)
+	if err := c.annotateModel(model); err != nil {
+		t.Fatal(err)
+	}
+	got := method.Codec.(*methodAnnotations)
+	if slices.ContainsFunc(got.RestQueryParams, func(qp *queryParamAnnotation) bool {
+		return qp.ParamKey == "return_partial_success"
+	}) {
+		t.Errorf("expected return_partial_success to be filtered out of RestQueryParams")
 	}
 }
