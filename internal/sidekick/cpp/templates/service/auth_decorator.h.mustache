@@ -38,6 +38,7 @@ class {{Codec.AuthDecoratorClassName}} : public {{Codec.StubClassName}} {
   {{Codec.AuthDecoratorClassName}}(
       std::shared_ptr<google::cloud::internal::GrpcAuthenticationStrategy> auth,
       std::shared_ptr<{{Codec.StubClassName}}> child);
+{{> /templates/partials/stub_methods}}
 
  private:
   std::shared_ptr<google::cloud::internal::GrpcAuthenticationStrategy> auth_;

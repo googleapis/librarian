@@ -458,6 +458,9 @@ func TestAnnotateService_Gating(t *testing.T) {
 	if !got.HasLongrunningMethod {
 		t.Errorf("expected HasLongrunningMethod to be true")
 	}
+	if !got.HasLRO {
+		t.Errorf("expected HasLRO to be true")
+	}
 	if !got.HasBidirStreamingMethod {
 		t.Errorf("expected HasBidirStreamingMethod to be true")
 	}

@@ -1,0 +1,17 @@
+{{#Codec.Methods}}
+{{#IsUnary}}
+
+  virtual google::cloud::Idempotency
+  {{Name}}({{{CppRequestType}}} const& request);
+{{/IsUnary}}
+{{#IsPaginated}}
+
+  virtual google::cloud::Idempotency
+  {{Name}}({{{CppRequestType}}} request);
+{{/IsPaginated}}
+{{#IsLongrunning}}
+
+  virtual google::cloud::Idempotency
+  {{Name}}({{{CppRequestType}}} const& request);
+{{/IsLongrunning}}
+{{/Codec.Methods}}

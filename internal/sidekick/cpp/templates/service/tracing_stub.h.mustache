@@ -35,6 +35,7 @@ class {{Codec.TracingStubClassName}} : public {{Codec.StubClassName}} {
   ~{{Codec.TracingStubClassName}}() override = default;
 
   explicit {{Codec.TracingStubClassName}}(std::shared_ptr<{{Codec.StubClassName}}> child);
+{{> /templates/partials/stub_methods}}
 
  private:
   std::shared_ptr<{{Codec.StubClassName}}> child_;

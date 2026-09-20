@@ -37,6 +37,7 @@ class {{Codec.TracingConnectionClassName}}
     std::shared_ptr<{{Codec.Namespace}}::{{Codec.ConnectionClassName}}> child);
 
   Options options() override { return child_->options(); }
+{{> /templates/partials/connection_impl_methods}}
 
  private:
   std::shared_ptr<{{Codec.Namespace}}::{{Codec.ConnectionClassName}}> child_;

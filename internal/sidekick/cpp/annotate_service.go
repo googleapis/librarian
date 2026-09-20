@@ -109,6 +109,7 @@ type serviceAnnotations struct {
 
 	// Feature flags
 	HasLongrunningMethod         bool
+	HasLRO                       bool
 	HasBidirStreamingMethod      bool
 	HasStreamingReadMethod       bool
 	HasStreamingWriteMethod      bool
@@ -127,6 +128,11 @@ type serviceAnnotations struct {
 	ConnectionSourceIncludes     []string
 	ConnectionImplHeaderIncludes []string
 	SourcesCcIncludes            []string
+
+	// Methods
+	Methods       []*methodAnnotations
+	AsyncMethods  []*methodAnnotations
+	HasIamUpdater bool
 }
 
 func (c *codec) annotateService(s *api.Service, modelAnn *modelAnnotations, model *api.API) error {
@@ -213,7 +219,15 @@ func (c *codec) annotateService(s *api.Service, modelAnn *modelAnnotations, mode
 		hasExplicitRoutingMethod     bool
 	)
 
+	isLongrunningPoller := func(m *api.Method) bool {
+		return strings.HasSuffix(m.SourceServiceID, "google.longrunning.Operations") &&
+			(m.Name == "GetOperation" || m.Name == "CancelOperation" || m.Name == "WaitOperation")
+	}
+
 	for _, m := range s.Methods {
+		if isLongrunningPoller(m) {
+			continue
+		}
 		isAsync := c.config != nil && (slices.Contains(c.config.GenAsyncRPCs, m.Name) || slices.Contains(c.config.GenAsyncRPCs, s.Name+"."+m.Name))
 		if m.OperationInfo != nil || m.IsLRO {
 			hasLongrunningMethod = true
@@ -391,6 +405,7 @@ func (c *codec) annotateService(s *api.Service, modelAnn *modelAnnotations, mode
 		RetryStatusCodes: retryStatusCodes,
 
 		HasLongrunningMethod:         hasLongrunningMethod,
+		HasLRO:                       hasLongrunningMethod,
 		HasBidirStreamingMethod:      hasBidirStreamingMethod,
 		HasStreamingReadMethod:       hasStreamingReadMethod,
 		HasStreamingWriteMethod:      hasStreamingWriteMethod,
@@ -409,11 +424,69 @@ func (c *codec) annotateService(s *api.Service, modelAnn *modelAnnotations, mode
 		ConnectionImplHeaderIncludes: connectionImplHeaderIncludes,
 		SourcesCcIncludes:            sourcesCcIncludes,
 	}
-	s.Codec = sAnn
+	var getIamPolicyMethod, setIamPolicyMethod *api.Method
 	for _, m := range s.Methods {
-		if err := c.annotateMethod(m, sAnn); err != nil {
-			return err
+		respType := strings.TrimPrefix(m.OutputTypeID, ".")
+		inputType := strings.TrimPrefix(m.InputTypeID, ".")
+		if respType == "google.iam.v1.Policy" {
+			for _, sig := range m.Signatures {
+				sigStr := strings.Join(sig.Names, ",")
+				if inputType == "google.iam.v1.GetIamPolicyRequest" && sigStr == "resource" {
+					getIamPolicyMethod = m
+				}
+				if inputType == "google.iam.v1.SetIamPolicyRequest" && sigStr == "resource,policy" {
+					setIamPolicyMethod = m
+				}
+			}
 		}
 	}
+	hasIamUpdater := getIamPolicyMethod != nil && setIamPolicyMethod != nil
+
+	var omittedRPCs []string
+	var genAsyncRPCs []string
+	if c.config != nil {
+		omittedRPCs = c.config.OmittedRPCs
+		genAsyncRPCs = c.config.GenAsyncRPCs
+	}
+
+	isOmitted := func(m *api.Method) bool {
+		for _, rpc := range omittedRPCs {
+			if rpc == m.Name || rpc == s.Name+"."+m.Name {
+				return true
+			}
+		}
+		return false
+	}
+
+	isGenAsync := func(m *api.Method) bool {
+		for _, rpc := range genAsyncRPCs {
+			if rpc == m.Name || rpc == s.Name+"."+m.Name {
+				return true
+			}
+		}
+		return false
+	}
+
+	var methods []*methodAnnotations
+	var asyncMethods []*methodAnnotations
+
+	for _, m := range s.Methods {
+		if isLongrunningPoller(m) {
+			continue
+		}
+		if isOmitted(m) {
+			continue
+		}
+		mAnn := c.annotateMethod(m, sAnn, model, hasIamUpdater && m == setIamPolicyMethod)
+		methods = append(methods, mAnn)
+		if isGenAsync(m) && !mAnn.IsLongrunning && !mAnn.IsBidirStreaming {
+			asyncMethods = append(asyncMethods, mAnn)
+		}
+	}
+
+	sAnn.Methods = methods
+	sAnn.AsyncMethods = asyncMethods
+	sAnn.HasIamUpdater = hasIamUpdater
+	s.Codec = sAnn
 	return nil
 }

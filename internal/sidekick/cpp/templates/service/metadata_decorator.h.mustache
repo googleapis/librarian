@@ -39,6 +39,7 @@ class {{Codec.MetadataDecoratorClassName}} : public {{Codec.StubClassName}} {
       std::shared_ptr<{{Codec.StubClassName}}> child,
       std::multimap<std::string, std::string> fixed_metadata,
       std::string api_client_header = "");
+{{> /templates/partials/stub_methods}}
 
  private:
   void SetMetadata(grpc::ClientContext& context,

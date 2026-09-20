@@ -58,11 +58,13 @@ GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 class {{Codec.StubClassName}} {
  public:
   virtual ~{{Codec.StubClassName}}() = 0;
+{{> /templates/partials/stub_virtual_methods}}
 };
 
 class {{Codec.DefaultStubClassName}} : public {{Codec.StubClassName}} {
  public:
   ~{{Codec.DefaultStubClassName}}() override = default;
+{{> /templates/partials/stub_methods}}
 };
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END

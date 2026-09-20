@@ -1,0 +1,107 @@
+{{#Codec.Methods}}
+{{#IsStreamingWrite}}
+
+  std::unique_ptr<::google::cloud::internal::StreamingWriteRpc<
+      {{{CppRequestType}}},
+      {{{CppResponseType}}}>>
+  {{Name}}(
+      std::shared_ptr<grpc::ClientContext> context,
+      Options const& options) override;
+{{/IsStreamingWrite}}
+{{#IsBidirStreaming}}
+
+  std::unique_ptr<::google::cloud::AsyncStreamingReadWriteRpc<
+      {{{CppRequestType}}},
+      {{{CppResponseType}}}>>
+  Async{{Name}}(
+      google::cloud::CompletionQueue const& cq,
+      std::shared_ptr<grpc::ClientContext> context,
+      google::cloud::internal::ImmutableOptions options) override;
+{{/IsBidirStreaming}}
+{{#IsLongrunning}}
+
+  future<StatusOr<google::longrunning::Operation>> Async{{Name}}(
+      google::cloud::CompletionQueue& cq,
+      std::shared_ptr<grpc::ClientContext> context,
+      google::cloud::internal::ImmutableOptions options,
+      {{{CppRequestType}}} const& request) override;
+
+  StatusOr<google::longrunning::Operation> {{Name}}(
+      grpc::ClientContext& context,
+      Options options,
+      {{{CppRequestType}}} const& request) override;
+{{/IsLongrunning}}
+{{#IsStreamingRead}}
+
+  std::unique_ptr<google::cloud::internal::StreamingReadRpc<{{{CppResponseType}}}>>
+  {{Name}}(
+      std::shared_ptr<grpc::ClientContext> context,
+      Options const& options,
+      {{{CppRequestType}}} const& request) override;
+{{/IsStreamingRead}}
+{{#IsUnary}}
+
+  {{{CppReturnType}}} {{Name}}(
+      grpc::ClientContext& context,
+      Options const& options,
+      {{{CppRequestType}}} const& request) override;
+{{/IsUnary}}
+{{#IsPaginated}}
+
+  {{{CppReturnType}}} {{Name}}(
+      grpc::ClientContext& context,
+      Options const& options,
+      {{{CppRequestType}}} const& request) override;
+{{/IsPaginated}}
+{{/Codec.Methods}}
+{{#Codec.AsyncMethods}}
+{{#IsStreamingRead}}
+
+  std::unique_ptr<::google::cloud::internal::AsyncStreamingReadRpc<
+      {{{CppResponseType}}}>>
+  Async{{Name}}(
+      google::cloud::CompletionQueue const& cq,
+      std::shared_ptr<grpc::ClientContext> context,
+      google::cloud::internal::ImmutableOptions options,
+      {{{CppRequestType}}} const& request) override;
+{{/IsStreamingRead}}
+{{#IsStreamingWrite}}
+
+  std::unique_ptr<::google::cloud::internal::AsyncStreamingWriteRpc<
+      {{{CppRequestType}}}, {{{CppResponseType}}}>>
+  Async{{Name}}(
+      google::cloud::CompletionQueue const& cq,
+      std::shared_ptr<grpc::ClientContext> context,
+      google::cloud::internal::ImmutableOptions options) override;
+{{/IsStreamingWrite}}
+{{#IsUnary}}
+
+  future<{{{CppReturnType}}}> Async{{Name}}(
+      google::cloud::CompletionQueue& cq,
+      std::shared_ptr<grpc::ClientContext> context,
+      google::cloud::internal::ImmutableOptions options,
+      {{{CppRequestType}}} const& request) override;
+{{/IsUnary}}
+{{#IsPaginated}}
+
+  future<{{{CppReturnType}}}> Async{{Name}}(
+      google::cloud::CompletionQueue& cq,
+      std::shared_ptr<grpc::ClientContext> context,
+      google::cloud::internal::ImmutableOptions options,
+      {{{CppRequestType}}} const& request) override;
+{{/IsPaginated}}
+{{/Codec.AsyncMethods}}
+{{#Codec.HasLongrunningMethod}}
+
+  future<StatusOr<google::longrunning::Operation>> AsyncGetOperation(
+      google::cloud::CompletionQueue& cq,
+      std::shared_ptr<grpc::ClientContext> context,
+      google::cloud::internal::ImmutableOptions options,
+      google::longrunning::GetOperationRequest const& request) override;
+
+  future<Status> AsyncCancelOperation(
+      google::cloud::CompletionQueue& cq,
+      std::shared_ptr<grpc::ClientContext> context,
+      google::cloud::internal::ImmutableOptions options,
+      google::longrunning::CancelOperationRequest const& request) override;
+{{/Codec.HasLongrunningMethod}}

@@ -35,6 +35,7 @@ class {{Codec.ConnectionIdempotencyPolicyClassName}} {
 
   /// Create a new copy of this object.
   virtual std::unique_ptr<{{Codec.ConnectionIdempotencyPolicyClassName}}> clone() const;
+{{> /templates/partials/idempotency_methods}}
 };
 
 std::unique_ptr<{{Codec.ConnectionIdempotencyPolicyClassName}}>

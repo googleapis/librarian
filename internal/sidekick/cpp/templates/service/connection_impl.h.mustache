@@ -50,6 +50,14 @@ namespace cloud {
 namespace {{Codec.InternalNamespace}} {
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
+{{#Codec.Methods}}
+{{#IsStreamingRead}}
+void {{ServiceName}}{{Name}}StreamingUpdater(
+    {{{CppResponseType}}} const& response,
+    {{{CppRequestType}}}& request);
+
+{{/IsStreamingRead}}
+{{/Codec.Methods}}
 class {{Codec.ConnectionImplClassName}}
     : public {{Codec.Namespace}}::{{Codec.ConnectionClassName}} {
  public:
@@ -61,6 +69,7 @@ class {{Codec.ConnectionImplClassName}}
     Options options);
 
   Options options() override { return options_; }
+{{> /templates/partials/connection_impl_methods}}
 
  private:
   std::unique_ptr<google::cloud::BackgroundThreads> background_;

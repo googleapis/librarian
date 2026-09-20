@@ -1,0 +1,71 @@
+{{#Codec.Methods}}
+{{#IsUnary}}
+
+  MOCK_METHOD({{{CppReturnType}}},
+  {{Name}},
+  ({{{CppRequestType}}} const& request), (override));
+{{/IsUnary}}
+{{#IsPaginated}}
+
+  MOCK_METHOD((StreamRange<{{{RangeOutputType}}}>),
+  {{Name}},
+  ({{{CppRequestType}}} request), (override));
+{{/IsPaginated}}
+{{#IsLongrunning}}
+
+  /// To disambiguate calls, use:
+  ///
+  /// @code
+  /// using ::testing::_;
+  /// using ::testing::Matcher;
+  /// EXPECT_CALL(*mock, {{Name}}(Matcher<{{{CppRequestType}}} const&>(_)))
+  /// @endcode
+  MOCK_METHOD(future<{{{CppReturnType}}}>,
+  {{Name}},
+  ({{{CppRequestType}}} const& request), (override));
+
+
+  /// To disambiguate calls, use:
+  ///
+  /// @code
+  /// using ::testing::_;
+  /// EXPECT_CALL(*mock, {{Name}}(_, _))
+  /// @endcode
+  MOCK_METHOD(StatusOr<{{{LongrunningOperationType}}}>,
+  {{Name}}, (NoAwaitTag,
+    {{{CppRequestType}}} const& request), (override));
+
+
+  /// To disambiguate calls, use:
+  ///
+  /// @code
+  /// using ::testing::_;
+  /// using ::testing::Matcher;
+  /// EXPECT_CALL(*mock, {{Name}}(Matcher<{{{LongrunningOperationType}}} const&>(_)))
+  /// @endcode
+  MOCK_METHOD(future<{{{CppReturnType}}}>,
+  {{Name}}, (
+    {{{LongrunningOperationType}}} const& operation), (override));
+{{/IsLongrunning}}
+{{#IsStreamingRead}}
+
+  MOCK_METHOD(StreamRange<{{{CppResponseType}}}>,
+  {{Name}},
+  ({{{CppRequestType}}} const& request), (override));
+{{/IsStreamingRead}}
+{{#IsBidirStreaming}}
+
+  MOCK_METHOD((std::unique_ptr<
+      ::google::cloud::AsyncStreamingReadWriteRpc<
+          {{{CppRequestType}}}, {{{CppResponseType}}}>>),
+      Async{{Name}}, (), (override));
+{{/IsBidirStreaming}}
+{{/Codec.Methods}}
+{{#Codec.AsyncMethods}}
+{{#IsUnary}}
+
+  MOCK_METHOD(future<{{{CppReturnType}}}>,
+  Async{{Name}},
+  ({{{CppRequestType}}} const& request), (override));
+{{/IsUnary}}
+{{/Codec.AsyncMethods}}

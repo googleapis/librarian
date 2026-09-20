@@ -28,6 +28,7 @@ GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 class {{Codec.MockConnectionClassName}} : public {{Codec.Namespace}}::{{Codec.ConnectionClassName}} {
  public:
   MOCK_METHOD(Options, options, (), (override));
+{{> /templates/partials/mock_connection_methods}}
 };
 
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END

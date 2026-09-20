@@ -38,6 +38,7 @@ class {{Codec.LoggingDecoratorClassName}} : public {{Codec.StubClassName}} {
   {{Codec.LoggingDecoratorClassName}}(std::shared_ptr<{{Codec.StubClassName}}> child,
                        TracingOptions tracing_options,
                        std::set<std::string> const& components);
+{{> /templates/partials/stub_methods}}
 
  private:
   std::shared_ptr<{{Codec.StubClassName}}> child_;

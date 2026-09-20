@@ -1,0 +1,42 @@
+{{#Codec.Methods}}
+{{#IsUnary}}
+
+  virtual {{{CppReturnType}}}
+  {{Name}}({{{CppRequestType}}} const& request);
+{{/IsUnary}}
+{{#IsPaginated}}
+
+  virtual StreamRange<{{{RangeOutputType}}}>
+  {{Name}}({{{CppRequestType}}} request);
+{{/IsPaginated}}
+{{#IsLongrunning}}
+
+  virtual future<{{{CppReturnType}}}>
+  {{Name}}({{{CppRequestType}}} const& request);
+
+  virtual StatusOr<{{{LongrunningOperationType}}}>
+  {{Name}}(NoAwaitTag, {{{CppRequestType}}} const& request);
+
+  virtual future<{{{CppReturnType}}}>
+  {{Name}}( {{{LongrunningOperationType}}} const& operation);
+{{/IsLongrunning}}
+{{#IsStreamingRead}}
+
+  virtual StreamRange<{{{CppResponseType}}}>
+  {{Name}}({{{CppRequestType}}} const& request);
+{{/IsStreamingRead}}
+{{#IsBidirStreaming}}
+
+  virtual std::unique_ptr<::google::cloud::AsyncStreamingReadWriteRpc<
+      {{{CppRequestType}}},
+      {{{CppResponseType}}}>>
+  Async{{Name}}();
+{{/IsBidirStreaming}}
+{{/Codec.Methods}}
+{{#Codec.AsyncMethods}}
+{{#IsUnary}}
+
+  virtual future<{{{CppReturnType}}}>
+  Async{{Name}}({{{CppRequestType}}} const& request);
+{{/IsUnary}}
+{{/Codec.AsyncMethods}}

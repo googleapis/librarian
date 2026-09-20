@@ -184,6 +184,7 @@ class {{Codec.ConnectionClassName}} {
   virtual ~{{Codec.ConnectionClassName}}() = 0;
 
   virtual Options options() { return Options{}; }
+{{> /templates/partials/connection_methods}}
 };
 
 std::shared_ptr<{{Codec.ConnectionClassName}}> Make{{Codec.ConnectionClassName}}(

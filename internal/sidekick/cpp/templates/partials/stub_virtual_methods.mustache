@@ -1,0 +1,109 @@
+{{#Codec.Methods}}
+{{#IsUnary}}
+
+  virtual {{{CppReturnType}}} {{Name}}(
+      grpc::ClientContext& context,
+      Options const& options,
+      {{{CppRequestType}}} const& request) = 0;
+{{/IsUnary}}
+{{#IsPaginated}}
+
+  virtual {{{CppReturnType}}} {{Name}}(
+      grpc::ClientContext& context,
+      Options const& options,
+      {{{CppRequestType}}} const& request) = 0;
+{{/IsPaginated}}
+{{#IsLongrunning}}
+
+  virtual future<StatusOr<google::longrunning::Operation>> Async{{Name}}(
+      google::cloud::CompletionQueue& cq,
+      std::shared_ptr<grpc::ClientContext> context,
+      google::cloud::internal::ImmutableOptions options,
+      {{{CppRequestType}}} const& request) = 0;
+
+  virtual StatusOr<google::longrunning::Operation> {{Name}}(
+      grpc::ClientContext& context,
+      Options options,
+      {{{CppRequestType}}} const& request) = 0;
+{{/IsLongrunning}}
+{{#IsStreamingRead}}
+
+  virtual std::unique_ptr<google::cloud::internal::StreamingReadRpc<{{{CppResponseType}}}>>
+  {{Name}}(
+    std::shared_ptr<grpc::ClientContext> context,
+    Options const& options,
+    {{{CppRequestType}}} const& request) = 0;
+{{/IsStreamingRead}}
+{{#IsStreamingWrite}}
+
+  virtual std::unique_ptr<::google::cloud::internal::StreamingWriteRpc<
+      {{{CppRequestType}}},
+      {{{CppResponseType}}}>>
+  {{Name}}(
+      std::shared_ptr<grpc::ClientContext> context,
+      Options const& options) = 0;
+{{/IsStreamingWrite}}
+{{#IsBidirStreaming}}
+
+  virtual std::unique_ptr<::google::cloud::AsyncStreamingReadWriteRpc<
+      {{{CppRequestType}}},
+      {{{CppResponseType}}}>>
+  Async{{Name}}(
+      google::cloud::CompletionQueue const& cq,
+      std::shared_ptr<grpc::ClientContext> context,
+      google::cloud::internal::ImmutableOptions options) = 0;
+{{/IsBidirStreaming}}
+{{/Codec.Methods}}
+{{#Codec.AsyncMethods}}
+{{#IsStreamingRead}}
+
+  virtual std::unique_ptr<::google::cloud::internal::AsyncStreamingReadRpc<
+      {{{CppResponseType}}}>>
+  Async{{Name}}(
+      google::cloud::CompletionQueue const& cq,
+      std::shared_ptr<grpc::ClientContext> context,
+      google::cloud::internal::ImmutableOptions options,
+      {{{CppRequestType}}} const& request) = 0;
+{{/IsStreamingRead}}
+{{#IsStreamingWrite}}
+
+  virtual std::unique_ptr<::google::cloud::internal::AsyncStreamingWriteRpc<
+      {{{CppRequestType}}}, {{{CppResponseType}}}>>
+  Async{{Name}}(
+      google::cloud::CompletionQueue const& cq,
+      std::shared_ptr<grpc::ClientContext> context,
+    google::cloud::internal::ImmutableOptions options) = 0;
+{{/IsStreamingWrite}}
+{{#IsUnary}}
+
+  virtual future<{{{CppReturnType}}}>
+  Async{{Name}}(
+    google::cloud::CompletionQueue& cq,
+    std::shared_ptr<grpc::ClientContext> context,
+    google::cloud::internal::ImmutableOptions options,
+    {{{CppRequestType}}} const& request) = 0;
+{{/IsUnary}}
+{{#IsPaginated}}
+
+  virtual future<{{{CppReturnType}}}>
+  Async{{Name}}(
+    google::cloud::CompletionQueue& cq,
+    std::shared_ptr<grpc::ClientContext> context,
+    google::cloud::internal::ImmutableOptions options,
+    {{{CppRequestType}}} const& request) = 0;
+{{/IsPaginated}}
+{{/Codec.AsyncMethods}}
+{{#Codec.HasLongrunningMethod}}
+
+  virtual future<StatusOr<google::longrunning::Operation>> AsyncGetOperation(
+      google::cloud::CompletionQueue& cq,
+      std::shared_ptr<grpc::ClientContext> context,
+    google::cloud::internal::ImmutableOptions options,
+      google::longrunning::GetOperationRequest const& request) = 0;
+
+  virtual future<Status> AsyncCancelOperation(
+      google::cloud::CompletionQueue& cq,
+      std::shared_ptr<grpc::ClientContext> context,
+      google::cloud::internal::ImmutableOptions options,
+      google::longrunning::CancelOperationRequest const& request) = 0;
+{{/Codec.HasLongrunningMethod}}

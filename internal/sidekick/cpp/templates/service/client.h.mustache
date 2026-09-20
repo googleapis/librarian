@@ -19,6 +19,9 @@ limitations under the License.
 
 #include "{{Codec.ConnectionHeaderPath}}"
 #include "google/cloud/future.h"
+{{#Codec.HasIamUpdater}}
+#include "google/cloud/internal/make_status.h"
+{{/Codec.HasIamUpdater}}
 {{#Codec.HasLongrunningMethod}}
 #include "google/cloud/no_await_tag.h"
 {{/Codec.HasLongrunningMethod}}
@@ -26,6 +29,9 @@ limitations under the License.
 #include "google/cloud/polling_policy.h"
 #include "google/cloud/status_or.h"
 #include "google/cloud/version.h"
+{{#Codec.HasIamUpdater}}
+#include "google/cloud/iam_updater.h"
+{{/Codec.HasIamUpdater}}
 {{#Codec.HasLongrunningMethod}}
 #include <google/longrunning/operations.grpc.pb.h>
 {{/Codec.HasLongrunningMethod}}
@@ -68,6 +74,7 @@ class {{Codec.ClientClassName}} {
     return !(a == b);
   }
   ///@}
+{{> /templates/partials/client_methods}}
 
  private:
   std::shared_ptr<{{Codec.ConnectionClassName}}> connection_;
