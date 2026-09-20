@@ -293,6 +293,8 @@ This document describes the schema for the librarian.yaml.
 | `override_service_config_yaml_name` | string | Specifies a path to a service config yaml override. |
 | `initial_copyright_year` | string | Specifies the initial copyright year to preserve in headers. |
 | `omit_repo_metadata` | bool | Indicates whether to skip emitting .repo-metadata.json. |
+| `service_name_mapping` | map[string]string | Maps original service names to target C++ class names. |
+| `service_name_to_comment` | map[string]string | Maps service names to comment overrides. |
 
 ## DartPackage Configuration
 
