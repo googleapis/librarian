@@ -22,9 +22,9 @@ limitations under the License.
 {{#Codec.HasLongrunningMethod}}
 #include "google/cloud/internal/async_long_running_operation.h"
 {{/Codec.HasLongrunningMethod}}
-{{#Codec.HasAsyncMethod}}
+{{#Codec.HasAsyncRpcs}}
 #include "google/cloud/internal/async_retry_loop.h"
-{{/Codec.HasAsyncMethod}}
+{{/Codec.HasAsyncRpcs}}
 {{#Codec.HasPaginatedMethod}}
 #include "google/cloud/internal/pagination_range.h"
 {{/Codec.HasPaginatedMethod}}

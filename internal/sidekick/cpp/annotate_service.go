@@ -157,6 +157,7 @@ type serviceAnnotations struct {
 	HasStreamingMethod           bool
 	HasPaginatedMethod           bool
 	HasAsyncMethod               bool
+	HasAsyncRpcs                 bool
 	HasRequestId                 bool
 	HasStreamRange               bool
 	HasCompletionQueue           bool
@@ -329,8 +330,21 @@ func (c *codec) annotateService(s *api.Service, modelAnn *modelAnnotations, mode
 	)
 
 	isLongrunningPoller := func(m *api.Method) bool {
-		return strings.HasSuffix(m.SourceServiceID, "google.longrunning.Operations") &&
-			(m.Name == "GetOperation" || m.Name == "CancelOperation" || m.Name == "WaitOperation")
+		if !strings.HasSuffix(m.SourceServiceID, "google.longrunning.Operations") {
+			return false
+		}
+		if m.Name != "GetOperation" && m.Name != "CancelOperation" && m.Name != "WaitOperation" {
+			return false
+		}
+		if m.PathInfo == nil || len(m.PathInfo.Bindings) == 0 || m.PathInfo.Bindings[0].PathTemplate == nil {
+			return true
+		}
+		for _, seg := range m.PathInfo.Bindings[0].PathTemplate.Segments {
+			if seg.Variable != nil && len(seg.Variable.Segments) > 0 && seg.Variable.Segments[0] == "operations" {
+				return true
+			}
+		}
+		return false
 	}
 
 	for _, m := range s.Methods {
@@ -881,6 +895,7 @@ func (c *codec) annotateService(s *api.Service, modelAnn *modelAnnotations, mode
 	sAnn.HasDeprecatedFieldInSignature = hasDeprecatedFieldInSignature
 	sAnn.Methods = methods
 	sAnn.AsyncMethods = asyncMethods
+	sAnn.HasAsyncRpcs = len(stubAsyncMethods) > 0
 	sAnn.StubAsyncMethods = stubAsyncMethods
 	sAnn.RestMethods = restMethods
 	sAnn.RestAsyncMethods = restAsyncMethods
