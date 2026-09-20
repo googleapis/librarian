@@ -20,20 +20,39 @@ import (
 
 // enumAnnotations decorates api.Enum with Python-specific metadata.
 type enumAnnotations struct {
-	Model    *modelAnnotations
-	Enum     *api.Enum
-	Name     string
-	DocLines []string
-	Values   []*enumValueAnnotations
+	Model             *modelAnnotations
+	Enum              *api.Enum
+	Name              string
+	DocLines          []string
+	FirstDocLine      string
+	RemainingDocLines []string
+	HasDocLines       bool
+	HasMultiLineDoc   bool
+	Values            []*enumValueAnnotations
+	HasValues         bool
 }
 
 func (c *codec) annotateEnum(enum *api.Enum, model *modelAnnotations) error {
-	docLines := formatDocLines(enum.Documentation)
+	docLines := formatMessageDocLines(enum.Documentation)
+	var (
+		firstLine      string
+		remainingLines []string
+	)
+	if len(docLines) > 0 {
+		firstLine = docLines[0]
+		if len(docLines) > 1 {
+			remainingLines = docLines[1:]
+		}
+	}
 	ann := &enumAnnotations{
-		Model:    model,
-		Enum:     enum,
-		Name:     pascalCase(enum.Name),
-		DocLines: docLines,
+		Model:             model,
+		Enum:              enum,
+		Name:              pascalCase(enum.Name),
+		DocLines:          docLines,
+		FirstDocLine:      firstLine,
+		RemainingDocLines: remainingLines,
+		HasDocLines:       len(docLines) > 0,
+		HasMultiLineDoc:   len(docLines) > 1,
 	}
 
 	for _, ev := range enum.Values {
@@ -44,6 +63,7 @@ func (c *codec) annotateEnum(enum *api.Enum, model *modelAnnotations) error {
 			ann.Values = append(ann.Values, evAnn)
 		}
 	}
+	ann.HasValues = len(ann.Values) > 0
 
 	enum.Codec = ann
 	return nil

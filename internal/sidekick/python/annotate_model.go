@@ -15,18 +15,27 @@
 package python
 
 import (
+	"maps"
+	"slices"
+	"strings"
+
 	"github.com/googleapis/librarian/internal/license"
+	"github.com/googleapis/librarian/internal/sidekick/api"
 )
 
 // modelAnnotations decorates api.API with Python-specific metadata.
 type modelAnnotations struct {
-	CopyrightYear  string
-	BoilerPlate    []string
-	PackageName    string
-	PackageVersion string
-	Messages       []*messageAnnotations
-	Enums          []*enumAnnotations
-	Services       []*serviceAnnotations
+	CopyrightYear   string
+	BoilerPlate     []string
+	PackageName     string
+	PackageVersion  string
+	Messages        []*messageAnnotations
+	Enums           []*enumAnnotations
+	Services        []*serviceAnnotations
+	TypeFiles       map[string]*fileAnnotations
+	AllTypeFiles    []*fileAnnotations
+	SortedTypeFiles []*fileAnnotations
+	AllTypeSymbols  []string
 }
 
 func (c *codec) annotateModel() error {
@@ -35,6 +44,7 @@ func (c *codec) annotateModel() error {
 		BoilerPlate:    license.HeaderBulk(),
 		PackageName:    c.PackageName,
 		PackageVersion: c.PackageVersion,
+		TypeFiles:      make(map[string]*fileAnnotations),
 	}
 	c.Model.Codec = ann
 
@@ -68,5 +78,63 @@ func (c *codec) annotateModel() error {
 		}
 	}
 
+	// Group messages, enums, and services into type files.
+	fileMessages := make(map[string][]*api.Message)
+	fileEnums := make(map[string][]*api.Enum)
+	allFiles := make(map[string]bool)
+
+	for _, msg := range c.Model.Messages {
+		src := c.sourceFileForLocation(msg.SourceLocation)
+		fileMessages[src] = append(fileMessages[src], msg)
+		allFiles[src] = true
+	}
+
+	for _, enum := range c.Model.Enums {
+		src := c.sourceFileForLocation(enum.SourceLocation)
+		fileEnums[src] = append(fileEnums[src], enum)
+		allFiles[src] = true
+	}
+
+	for _, svc := range c.Model.Services {
+		src := c.sourceFileForLocation(svc.SourceLocation)
+		allFiles[src] = true
+	}
+
+	for _, src := range slices.Sorted(maps.Keys(allFiles)) {
+		fAnn := c.annotateFile(src, fileMessages[src], fileEnums[src])
+		ann.TypeFiles[src] = fAnn
+		ann.AllTypeFiles = append(ann.AllTypeFiles, fAnn)
+		if fAnn.HasMessagesOrEnums {
+			ann.SortedTypeFiles = append(ann.SortedTypeFiles, fAnn)
+		}
+	}
+
+	slices.SortFunc(ann.AllTypeFiles, func(a, b *fileAnnotations) int {
+		return strings.Compare(a.Stem, b.Stem)
+	})
+	slices.SortFunc(ann.SortedTypeFiles, func(a, b *fileAnnotations) int {
+		return strings.Compare(a.Stem, b.Stem)
+	})
+
+	for _, fAnn := range ann.SortedTypeFiles {
+		ann.AllTypeSymbols = append(ann.AllTypeSymbols, fAnn.SortedSymbols...)
+	}
+
 	return nil
+}
+
+func (c *codec) sourceFileForLocation(loc *api.SourceLocation) string {
+	if loc != nil && loc.File != "" {
+		return loc.File
+	}
+	if c.Library != nil && c.Library.Name != "" {
+		return c.Library.Name + ".proto"
+	}
+	if c.GAPICName != "" {
+		return c.GAPICName + ".proto"
+	}
+	if c.PackageName != "" {
+		return c.PackageName + ".proto"
+	}
+	return "model.proto"
 }

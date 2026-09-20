@@ -37,8 +37,12 @@ func TestAnnotateEnum(t *testing.T) {
 					api.NewTestEnumValue("ENABLED", 1),
 				),
 			want: &enumAnnotations{
-				Name:     "SecretStatus",
-				DocLines: []string{"Status of secret."},
+				Name:            "SecretStatus",
+				DocLines:        []string{"Status of secret."},
+				FirstDocLine:    "Status of secret.",
+				HasDocLines:     true,
+				HasMultiLineDoc: false,
+				HasValues:       true,
 				Values: []*enumValueAnnotations{
 					{Name: "STATUS_UNSPECIFIED", Number: 0},
 					{Name: "ENABLED", Number: 1},
@@ -50,7 +54,8 @@ func TestAnnotateEnum(t *testing.T) {
 			enum: api.NewTestEnum("crypto_key_version_state").
 				WithValues(api.NewTestEnumValue("STATE_UNSPECIFIED", 0)),
 			want: &enumAnnotations{
-				Name: "CryptoKeyVersionState",
+				Name:      "CryptoKeyVersionState",
+				HasValues: true,
 				Values: []*enumValueAnnotations{
 					{Name: "STATE_UNSPECIFIED", Number: 0},
 				},
@@ -64,15 +69,19 @@ func TestAnnotateEnum(t *testing.T) {
 				return e
 			}(),
 			want: &enumAnnotations{
-				Name:     "Color",
-				DocLines: []string{"Color of the item.", "", "Represents RGB colors."},
+				Name:              "Color",
+				DocLines:          []string{"Color of the item.", "", "Represents RGB colors."},
+				FirstDocLine:      "Color of the item.",
+				RemainingDocLines: []string{"", "Represents RGB colors."},
+				HasDocLines:       true,
+				HasMultiLineDoc:   true,
 			},
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			model := api.NewTestAPI(nil, []*api.Enum{test.enum}, nil)
-			codec := newTestCodec(t, model, nil)
-			if err := codec.annotateModel(); err != nil {
+			c := newTestCodec(t, model, nil)
+			if err := c.annotateModel(); err != nil {
 				t.Fatal(err)
 			}
 			ann, ok := test.enum.Codec.(*enumAnnotations)

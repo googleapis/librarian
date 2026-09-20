@@ -1,0 +1,51 @@
+{{> prologue}}
+{{#HasMessagesOrEnums}}
+from __future__ import annotations
+
+from typing import MutableMapping, MutableSequence
+
+{{/HasMessagesOrEnums}}
+import proto  # type: ignore
+{{#HasImports}}
+
+{{#InternalImports}}
+{{#Alias}}
+from {{Package}} import {{Module}} as {{Alias}}
+{{/Alias}}
+{{^Alias}}
+from {{Package}} import {{Module}}
+{{/Alias}}
+{{/InternalImports}}
+{{#ExternalImports}}
+import {{Package}} as {{Module}}  # type: ignore
+{{/ExternalImports}}
+{{/HasImports}}
+
+
+__protobuf__ = proto.module(
+    package='{{{Package}}}',
+{{#HasMessagesOrEnums}}
+    manifest={
+{{#Manifest}}
+        '{{{.}}}',
+{{/Manifest}}
+    },
+{{/HasMessagesOrEnums}}
+{{^HasMessagesOrEnums}}
+    manifest={
+    },
+{{/HasMessagesOrEnums}}
+)
+{{#Enums}}
+
+
+{{> enum}}
+{{/Enums}}
+{{#Messages}}
+
+
+{{> message}}
+{{/Messages}}
+
+
+__all__ = tuple(sorted(__protobuf__.manifest))

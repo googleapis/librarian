@@ -20,10 +20,12 @@ import (
 	"embed"
 	"errors"
 	"fmt"
+	"os"
 	"path"
 	"path/filepath"
 	"strings"
 
+	"github.com/cbroglie/mustache"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/sidekick/api"
 	"github.com/googleapis/librarian/internal/sidekick/language"
@@ -51,17 +53,21 @@ func Generate(ctx context.Context, model *api.API, outdir string, library *confi
 		return err
 	}
 	provider := func(name string) (string, error) {
-		contents, err := templates.ReadFile(name)
-		if err != nil {
-			contents, err = templates.ReadFile(path.Join(path.Dir(name), "partials", path.Base(name)))
+		cleanName := path.Clean(filepath.ToSlash(name))
+		baseName := strings.TrimSuffix(path.Base(cleanName), ".mustache")
+		candidates := []string{
+			cleanName,
+			cleanName + ".mustache",
+			path.Join("templates", "partials", path.Base(cleanName)+".mustache"),
+			path.Join("templates", "partials", baseName+".mustache"),
+			path.Join("templates", "partials", path.Base(cleanName)),
 		}
-		if err != nil {
-			contents, err = templates.ReadFile(path.Join("templates", "partials", path.Base(name)))
+		for _, candidate := range candidates {
+			if contents, err := templates.ReadFile(candidate); err == nil {
+				return string(contents), nil
+			}
 		}
-		if err != nil {
-			return "", err
-		}
-		return string(contents), nil
+		return "", fmt.Errorf("template %q not found", name)
 	}
 
 	pkgDir := c.packageDir()
@@ -100,6 +106,32 @@ func Generate(ctx context.Context, model *api.API, outdir string, library *confi
 		})
 	}
 
+	modelAnn, _ := model.Codec.(*modelAnnotations)
+	if modelAnn != nil && len(modelAnn.TypeFiles) > 0 {
+		modelFiles = append(modelFiles, language.GeneratedFile{
+			TemplatePath: "templates/types/__init__.py.mustache",
+			OutputPath:   filepath.Join(pkgDir, "types", "__init__.py"),
+		})
+	}
+
+	type typeFilePair struct {
+		fileAnn *fileAnnotations
+		file    language.GeneratedFile
+	}
+	var typeFiles []typeFilePair
+
+	if modelAnn != nil {
+		for _, fAnn := range modelAnn.AllTypeFiles {
+			typeFiles = append(typeFiles, typeFilePair{
+				fileAnn: fAnn,
+				file: language.GeneratedFile{
+					TemplatePath: "templates/types/proto.py.mustache",
+					OutputPath:   filepath.Join(pkgDir, "types", fAnn.Stem+".py"),
+				},
+			})
+		}
+	}
+
 	type serviceFilePair struct {
 		service *api.Service
 		file    language.GeneratedFile
@@ -130,10 +162,13 @@ func Generate(ctx context.Context, model *api.API, outdir string, library *confi
 		)
 	}
 
-	allFiles := make([]language.GeneratedFile, 0, len(modelFiles)+len(serviceFiles))
+	allFiles := make([]language.GeneratedFile, 0, len(modelFiles)+len(serviceFiles)+len(typeFiles))
 	allFiles = append(allFiles, modelFiles...)
 	for _, sf := range serviceFiles {
 		allFiles = append(allFiles, sf.file)
+	}
+	for _, tf := range typeFiles {
+		allFiles = append(allFiles, tf.file)
 	}
 
 	if err := validateOutputContainment(outdir, allFiles); err != nil {
@@ -150,7 +185,52 @@ func Generate(ctx context.Context, model *api.API, outdir string, library *confi
 		}
 	}
 
+	for _, tf := range typeFiles {
+		if err := generateTypeFile(outdir, tf.fileAnn, provider, tf.file); err != nil {
+			return err
+		}
+	}
+
 	return nil
+}
+
+type mustacheProvider struct {
+	impl    language.TemplateProvider
+	dirname string
+}
+
+func (p *mustacheProvider) Get(name string) (string, error) {
+	if suffix, ok := strings.CutPrefix(name, "/"); ok {
+		return p.impl(suffix + ".mustache")
+	}
+	return p.impl(path.Join(p.dirname, name) + ".mustache")
+}
+
+func generateTypeFile(outDir string, fileAnn *fileAnnotations, provider language.TemplateProvider, gen language.GeneratedFile) error {
+	templateContents, err := provider(gen.TemplatePath)
+	if err != nil {
+		return err
+	}
+	destination := filepath.Join(outDir, gen.OutputPath)
+	if err := os.MkdirAll(filepath.Dir(destination), 0o755); err != nil {
+		return err
+	}
+	nestedProvider := &mustacheProvider{
+		impl:    provider,
+		dirname: path.Dir(filepath.ToSlash(gen.TemplatePath)),
+	}
+	s, err := mustache.RenderPartials(templateContents, nestedProvider, fileAnn)
+	if err != nil {
+		return err
+	}
+	lines := strings.Split(s, "\n")
+	for i, line := range lines {
+		if strings.TrimSpace(line) == "" {
+			lines[i] = ""
+		}
+	}
+	s = strings.Join(lines, "\n")
+	return os.WriteFile(destination, []byte(s), 0o666)
 }
 
 func validateOutputContainment(outdir string, files []language.GeneratedFile) error {

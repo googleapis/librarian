@@ -2,15 +2,12 @@ type: google.api.Service
 config_version: 3
 name: cloudasset.googleapis.com
 title: Cloud Asset API
-
 apis:
-- name: google.cloud.asset.v1.AssetService
-- name: google.longrunning.Operations
-
+  - name: google.cloud.asset.v1.AssetService
+  - name: google.longrunning.Operations
 types:
-- name: google.cloud.asset.v1.AnalyzeIamPolicyLongrunningMetadata
-- name: google.cloud.asset.v1.AnalyzeIamPolicyLongrunningResponse
-
+  - name: google.cloud.asset.v1.AnalyzeIamPolicyLongrunningMetadata
+  - name: google.cloud.asset.v1.AnalyzeIamPolicyLongrunningResponse
 documentation:
   summary: |-
     The Cloud Asset API manages the history and inventory of Google Cloud
@@ -25,19 +22,17 @@ documentation:
 
     Read more documents here:
     https://cloud.google.com/asset-inventory/docs
-
 http:
   rules:
-  - selector: google.longrunning.Operations.GetOperation
-    get: '/v1/{name=*/*/operations/*/**}'
-
+    - selector: google.longrunning.Operations.GetOperation
+      get: '/v1/{name=*/*/operations/*/**}'
 authentication:
   rules:
-  - selector: 'google.cloud.asset.v1.AssetService.*'
-    oauth:
-      canonical_scopes: |-
-        https://www.googleapis.com/auth/cloud-platform
-  - selector: google.longrunning.Operations.GetOperation
-    oauth:
-      canonical_scopes: |-
-        https://www.googleapis.com/auth/cloud-platform
+    - selector: 'google.cloud.asset.v1.AssetService.*'
+      oauth:
+        canonical_scopes: |-
+          https://www.googleapis.com/auth/cloud-platform
+    - selector: google.longrunning.Operations.GetOperation
+      oauth:
+        canonical_scopes: |-
+          https://www.googleapis.com/auth/cloud-platform

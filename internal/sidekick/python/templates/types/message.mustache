@@ -1,0 +1,136 @@
+class {{{Name}}}(proto.Message):
+{{#HasDocLines}}
+    r"""{{{FirstDocLine}}}
+{{#RemainingDocLines}}
+    {{{.}}}
+{{/RemainingDocLines}}
+{{/HasDocLines}}
+{{^HasDocLines}}
+    r"""
+{{/HasDocLines}}
+{{#HasOneOfNote}}
+
+    This message has `oneof`_ fields (mutually exclusive fields).
+    For each oneof, at most one member field can be set at the same time.
+    Setting any member of the oneof automatically clears all other
+    members.
+{{/HasOneOfNote}}
+{{#HasOneOfLink}}
+{{^HasOneOfNote}}
+{{#HasMultiLineDoc}}
+
+{{/HasMultiLineDoc}}
+{{/HasOneOfNote}}
+
+    .. _oneof: https://proto-plus-python.readthedocs.io/en/stable/fields.html#oneofs-mutually-exclusive-fields
+{{/HasOneOfLink}}
+{{#HasFields}}
+
+    Attributes:
+{{#Fields}}
+        {{{Name}}} ({{{SphinxType}}}):
+{{#DocLines}}
+            {{{.}}}
+{{/DocLines}}
+{{#DocIsOneOf}}
+{{#HasDocLines}}
+
+{{/HasDocLines}}
+            This field is a member of `oneof`_ ``{{{DocOneOfName}}}``.
+{{/DocIsOneOf}}
+{{/Fields}}
+{{/HasFields}}
+{{^HasFields}}
+{{#HasDocLines}}
+{{#HasMultiLineDoc}}
+
+{{/HasMultiLineDoc}}
+{{/HasDocLines}}
+{{/HasFields}}
+    """
+{{#NestedEnums}}
+    {{> enum}}
+
+{{/NestedEnums}}
+{{#HasNestedMessages}}
+{{^HasNestedEnums}}
+
+{{/HasNestedEnums}}
+{{#NestedMessages}}
+    {{> message}}
+
+{{/NestedMessages}}
+{{/HasNestedMessages}}
+{{#HasRawPage}}
+{{^HasNestedEnums}}
+{{^HasNestedMessages}}
+
+{{/HasNestedMessages}}
+{{/HasNestedEnums}}
+    @property
+    def raw_page(self):
+        return self
+
+{{/HasRawPage}}
+{{#HasFields}}
+{{^HasNestedEnums}}
+{{^HasNestedMessages}}
+{{^HasRawPage}}
+
+{{/HasRawPage}}
+{{/HasNestedMessages}}
+{{/HasNestedEnums}}
+{{#Fields}}
+{{#IsRepeated}}
+    {{{Name}}}: {{{TypeHint}}} = proto.RepeatedField(
+        proto.{{{ProtoType}}},
+        number={{{Number}}},
+{{#TypeRef}}
+{{#IsMessage}}
+        message={{{TypeRef}}},
+{{/IsMessage}}
+{{#IsEnum}}
+        enum={{{TypeRef}}},
+{{/IsEnum}}
+{{/TypeRef}}
+    )
+{{/IsRepeated}}
+{{#IsMap}}
+    {{{Name}}}: {{{TypeHint}}} = proto.MapField(
+        proto.{{{KeyProtoType}}},
+        proto.{{{ValueProtoType}}},
+        number={{{Number}}},
+{{#ValueTypeRef}}
+{{#IsMessage}}
+        message={{{ValueTypeRef}}},
+{{/IsMessage}}
+{{#IsEnum}}
+        enum={{{ValueTypeRef}}},
+{{/IsEnum}}
+{{/ValueTypeRef}}
+    )
+{{/IsMap}}
+{{^IsRepeated}}
+{{^IsMap}}
+    {{{Name}}}: {{{TypeHint}}} = proto.Field(
+        proto.{{{ProtoType}}},
+        number={{{Number}}},
+{{#IsOneOf}}
+        oneof='{{{OneOfName}}}',
+{{/IsOneOf}}
+{{#TypeRef}}
+{{#IsMessage}}
+        message={{{TypeRef}}},
+{{/IsMessage}}
+{{#IsEnum}}
+        enum={{{TypeRef}}},
+{{/IsEnum}}
+{{/TypeRef}}
+{{#IsOptional}}
+        optional=True,
+{{/IsOptional}}
+    )
+{{/IsMap}}
+{{/IsRepeated}}
+{{/Fields}}
+{{/HasFields}}

@@ -28,7 +28,7 @@ type enumValueAnnotations struct {
 }
 
 func (c *codec) annotateEnumValue(ev *api.EnumValue, enum *enumAnnotations) error {
-	docLines := formatDocLines(ev.Documentation)
+	docLines := formatFieldDocLines(ev.Documentation)
 	ann := &enumValueAnnotations{
 		Enum:     enum,
 		Value:    ev,

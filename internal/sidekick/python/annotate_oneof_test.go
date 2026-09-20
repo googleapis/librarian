@@ -38,8 +38,8 @@ func TestAnnotateOneOf(t *testing.T) {
 			want: &oneofAnnotations{
 				Name: "payload",
 				Fields: []*fieldAnnotations{
-					{Name: "data"},
-					{Name: "data_crc32c"},
+					{Name: "data", IsOneOf: true, OneOfName: "payload", DocIsOneOf: true, DocOneOfName: "payload", IsPrimitive: true},
+					{Name: "data_crc32c", IsOneOf: true, OneOfName: "payload", DocIsOneOf: true, DocOneOfName: "payload", IsPrimitive: true},
 				},
 			},
 		},
@@ -55,7 +55,7 @@ func TestAnnotateOneOf(t *testing.T) {
 				Name:     "target",
 				DocLines: []string{"The target destination."},
 				Fields: []*fieldAnnotations{
-					{Name: "destination"},
+					{Name: "destination", IsOneOf: true, OneOfName: "target", DocIsOneOf: true, DocOneOfName: "target", IsPrimitive: true},
 				},
 			},
 		},
@@ -66,7 +66,7 @@ func TestAnnotateOneOf(t *testing.T) {
 			want: &oneofAnnotations{
 				Name: "import_",
 				Fields: []*fieldAnnotations{
-					{Name: "item"},
+					{Name: "item", IsOneOf: true, OneOfName: "import_", DocIsOneOf: true, DocOneOfName: "import_", IsPrimitive: true},
 				},
 			},
 		},
@@ -76,8 +76,8 @@ func TestAnnotateOneOf(t *testing.T) {
 				WithOneOfs(test.oneOf).
 				WithFields(test.oneOf.Fields...)
 			model := api.NewTestAPI([]*api.Message{msg}, nil, nil)
-			codec := newTestCodec(t, model, nil)
-			if err := codec.annotateModel(); err != nil {
+			c := newTestCodec(t, model, nil)
+			if err := c.annotateModel(); err != nil {
 				t.Fatal(err)
 			}
 			ann, ok := test.oneOf.Codec.(*oneofAnnotations)
@@ -86,7 +86,7 @@ func TestAnnotateOneOf(t *testing.T) {
 			}
 			if diff := cmp.Diff(test.want, ann,
 				cmpopts.IgnoreFields(oneofAnnotations{}, "Message", "OneOf"),
-				cmpopts.IgnoreFields(fieldAnnotations{}, "Message", "Field", "TypeName"),
+				cmpopts.IgnoreFields(fieldAnnotations{}, "Message", "Field", "TypeName", "ProtoType", "TypeHint", "SphinxType", "TypeRef", "IsMessage", "IsEnum", "IsOptional", "DocLines"),
 			); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}

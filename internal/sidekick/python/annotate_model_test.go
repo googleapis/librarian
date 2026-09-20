@@ -64,6 +64,7 @@ func TestAnnotateModel(t *testing.T) {
 				Services: []*serviceAnnotations{
 					{Name: "SecretManagerService"},
 				},
+				AllTypeSymbols: []string{"Secret", "SecretStatus"},
 			},
 		},
 		{
@@ -82,12 +83,13 @@ func TestAnnotateModel(t *testing.T) {
 				Messages: []*messageAnnotations{
 					{Name: "Secret"},
 				},
+				AllTypeSymbols: []string{"Secret"},
 			},
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			codec := newTestCodec(t, test.model, test.library)
-			if err := codec.annotateModel(); err != nil {
+			c := newTestCodec(t, test.model, test.library)
+			if err := c.annotateModel(); err != nil {
 				t.Fatal(err)
 			}
 
@@ -97,12 +99,18 @@ func TestAnnotateModel(t *testing.T) {
 			}
 
 			if diff := cmp.Diff(test.want, ann,
-				cmpopts.IgnoreFields(modelAnnotations{}, "BoilerPlate"),
-				cmpopts.IgnoreFields(messageAnnotations{}, "Model", "Message", "Fields", "OneOfs", "DocLines"),
-				cmpopts.IgnoreFields(enumAnnotations{}, "Model", "Enum", "Values", "DocLines"),
+				cmpopts.IgnoreFields(modelAnnotations{}, "BoilerPlate", "TypeFiles", "AllTypeFiles", "SortedTypeFiles"),
+				cmpopts.IgnoreFields(messageAnnotations{}, "Model", "Message", "Fields", "OneOfs", "DocLines", "FirstDocLine", "RemainingDocLines", "HasMultiLineDoc", "HasDocLines", "HasFields", "HasNestedMessages", "HasNestedEnums", "HasOneOfNote", "HasOneOfLink", "HasOneOfs", "NestedMessages", "NestedEnums"),
+				cmpopts.IgnoreFields(enumAnnotations{}, "Model", "Enum", "Values", "DocLines", "HasValues", "FirstDocLine", "RemainingDocLines", "HasMultiLineDoc", "HasDocLines"),
 				cmpopts.IgnoreFields(serviceAnnotations{}, "Model", "Service", "Methods", "ProtoName", "ClientName", "AsyncClientName", "DocLines", "DirectoryName", "CopyrightYear"),
 			); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+			if got := len(ann.TypeFiles); got == 0 {
+				t.Errorf("annotateModel() TypeFiles len = %d, want > 0", got)
+			}
+			if got := len(ann.SortedTypeFiles); got == 0 {
+				t.Errorf("annotateModel() SortedTypeFiles len = %d, want > 0", got)
 			}
 		})
 	}

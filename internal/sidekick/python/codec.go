@@ -139,3 +139,7 @@ func (c *codec) rootPackageDir() string {
 func (c *codec) isDefaultVersion() bool {
 	return c.DefaultVersion == "" || c.CurrentVersion == "" || c.CurrentVersion == c.DefaultVersion
 }
+
+func (c *codec) pythonPackage() string {
+	return strings.ReplaceAll(filepath.ToSlash(c.packageDir()), "/", ".")
+}

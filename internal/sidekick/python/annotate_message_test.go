@@ -40,8 +40,11 @@ func TestAnnotateMessage(t *testing.T) {
 				return m
 			}(),
 			want: &messageAnnotations{
-				Name:     "Secret",
-				DocLines: []string{"A secret object."},
+				Name:         "Secret",
+				DocLines:     []string{"A secret object."},
+				FirstDocLine: "A secret object.",
+				HasDocLines:  true,
+				HasFields:    true,
 				Fields: []*fieldAnnotations{
 					{Name: "name"},
 					{Name: "labels", IsMap: true},
@@ -70,7 +73,24 @@ func TestAnnotateMessage(t *testing.T) {
 				return m
 			}(),
 			want: &messageAnnotations{
-				Name: "Secret",
+				Name:              "Secret",
+				HasFields:         true,
+				HasOneOfs:         true,
+				HasOneOfLink:      true,
+				HasNestedMessages: true,
+				HasNestedEnums:    true,
+				NestedMessages: []*messageAnnotations{
+					{
+						Name:      "Rotation",
+						HasFields: true,
+						Fields: []*fieldAnnotations{
+							{Name: "next_rotation_time"},
+						},
+					},
+				},
+				NestedEnums: []*enumAnnotations{
+					{Name: "State", HasValues: true},
+				},
 				Fields: []*fieldAnnotations{
 					{Name: "name"},
 					{Name: "data"},
@@ -83,8 +103,8 @@ func TestAnnotateMessage(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			model := api.NewTestAPI([]*api.Message{test.msg}, nil, nil)
-			codec := newTestCodec(t, model, nil)
-			if err := codec.annotateModel(); err != nil {
+			c := newTestCodec(t, model, nil)
+			if err := c.annotateModel(); err != nil {
 				t.Fatal(err)
 			}
 			ann, ok := test.msg.Codec.(*messageAnnotations)
@@ -93,8 +113,9 @@ func TestAnnotateMessage(t *testing.T) {
 			}
 			if diff := cmp.Diff(test.want, ann,
 				cmpopts.IgnoreFields(messageAnnotations{}, "Model", "Message"),
-				cmpopts.IgnoreFields(fieldAnnotations{}, "Message", "Field", "TypeName"),
+				cmpopts.IgnoreFields(fieldAnnotations{}, "Message", "Field", "TypeName", "ProtoType", "TypeHint", "SphinxType", "TypeRef", "IsPrimitive", "IsMessage", "IsEnum", "IsOptional", "IsOneOf", "OneOfName", "DocIsOneOf", "DocOneOfName", "KeyProtoType", "KeyTypeHint", "ValueProtoType", "ValueTypeHint", "ValueTypeRef"),
 				cmpopts.IgnoreFields(oneofAnnotations{}, "Message", "OneOf", "Fields"),
+				cmpopts.IgnoreFields(enumAnnotations{}, "Model", "Enum", "Values", "DocLines", "FirstDocLine", "RemainingDocLines"),
 			); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}

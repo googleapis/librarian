@@ -15,49 +15,76 @@
 package python
 
 import (
+	"regexp"
 	"strings"
 
 	"github.com/googleapis/librarian/internal/serviceconfig"
+	"github.com/googleapis/librarian/internal/sidekick/api"
 	"github.com/iancoleman/strcase"
 )
 
-// pythonKeywords contains keywords reserved in Python 3.
+// pythonKeywords contains keywords reserved in Python 3 and proto-plus.
 var pythonKeywords = map[string]bool{
-	"False":    true,
-	"None":     true,
-	"True":     true,
-	"and":      true,
-	"as":       true,
-	"assert":   true,
-	"async":    true,
-	"await":    true,
-	"break":    true,
-	"class":    true,
-	"continue": true,
-	"def":      true,
-	"del":      true,
-	"elif":     true,
-	"else":     true,
-	"except":   true,
-	"finally":  true,
-	"for":      true,
-	"from":     true,
-	"global":   true,
-	"if":       true,
-	"import":   true,
-	"in":       true,
-	"is":       true,
-	"lambda":   true,
-	"nonlocal": true,
-	"not":      true,
-	"or":       true,
-	"pass":     true,
-	"raise":    true,
-	"return":   true,
-	"try":      true,
-	"while":    true,
-	"with":     true,
-	"yield":    true,
+	"False":                 true,
+	"None":                  true,
+	"True":                  true,
+	"__peg_parser__":        true,
+	"all":                   true,
+	"and":                   true,
+	"any":                   true,
+	"as":                    true,
+	"assert":                true,
+	"async":                 true,
+	"await":                 true,
+	"break":                 true,
+	"breakpoint":            true,
+	"class":                 true,
+	"cls":                   true,
+	"continue":              true,
+	"def":                   true,
+	"del":                   true,
+	"dir":                   true,
+	"elif":                  true,
+	"else":                  true,
+	"except":                true,
+	"exec":                  true,
+	"finally":               true,
+	"for":                   true,
+	"format":                true,
+	"from":                  true,
+	"global":                true,
+	"hash":                  true,
+	"help":                  true,
+	"if":                    true,
+	"ignore_unknown_fields": true,
+	"import":                true,
+	"in":                    true,
+	"is":                    true,
+	"lambda":                true,
+	"license":               true,
+	"list":                  true,
+	"locals":                true,
+	"mapping":               true,
+	"max":                   true,
+	"min":                   true,
+	"next":                  true,
+	"nonlocal":              true,
+	"not":                   true,
+	"object":                true,
+	"open":                  true,
+	"or":                    true,
+	"pass":                  true,
+	"raise":                 true,
+	"range":                 true,
+	"return":                true,
+	"self":                  true,
+	"slice":                 true,
+	"try":                   true,
+	"type":                  true,
+	"while":                 true,
+	"with":                  true,
+	"yield":                 true,
+	"zip":                   true,
 }
 
 // snakeCase converts a string to snake_case.
@@ -81,17 +108,84 @@ func pythonIdentifier(s string) string {
 	return s
 }
 
-// formatDocLines splits documentation into lines, trimming trailing whitespace.
-func formatDocLines(doc string) []string {
-	if doc == "" {
-		return nil
+var versionSegmentRe = regexp.MustCompile(`^v\d+[a-z0-9]*$`)
+
+func isVersionSegment(s string) bool {
+	return versionSegmentRe.MatchString(s)
+}
+
+func packageInitials(pkg string) string {
+	var initials strings.Builder
+	for part := range strings.SplitSeq(pkg, ".") {
+		if isVersionSegment(part) {
+			continue
+		}
+		if part == "secretmanager" {
+			initials.WriteString("sm")
+			continue
+		}
+		for sp := range strings.SplitSeq(part, "_") {
+			if isVersionSegment(sp) {
+				continue
+			}
+			if sp == "secretmanager" {
+				initials.WriteString("sm")
+				continue
+			}
+			if len(sp) > 0 {
+				initials.WriteByte(sp[0])
+			}
+		}
 	}
-	lines := strings.Split(doc, "\n")
-	result := make([]string, 0, len(lines))
-	for _, line := range lines {
-		result = append(result, strings.TrimRight(line, " \t\r"))
+	return initials.String()
+}
+
+func pythonModuleFromProto(protoPath string) string {
+	trimmed := strings.TrimSuffix(protoPath, ".proto")
+	dotted := strings.ReplaceAll(trimmed, "/", ".")
+	return dotted + "_pb2"
+}
+
+func (c *codec) fileNeedsAlias(currentFile, targetStem string) bool {
+	if c.Model == nil {
+		return false
 	}
-	return result
+	for _, msg := range c.Model.Messages {
+		msgFile := ""
+		if msg.SourceLocation != nil && msg.SourceLocation.File != "" {
+			msgFile = msg.SourceLocation.File
+		}
+		if msgFile == currentFile {
+			if checkMessageFieldsForName(msg, targetStem) {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+func checkMessageFieldsForName(msg *api.Message, name string) bool {
+	for _, f := range msg.Fields {
+		if pythonIdentifier(snakeCase(f.Name)) == name {
+			return true
+		}
+	}
+	for _, nested := range msg.Messages {
+		if checkMessageFieldsForName(nested, name) {
+			return true
+		}
+	}
+	return false
+}
+
+func resolveProtoFile(loc *api.SourceLocation, pkg, name string) string {
+	if loc != nil && loc.File != "" {
+		return loc.File
+	}
+	if pkg != "" {
+		return strings.ReplaceAll(pkg, ".", "/") + "/" + snakeCase(name) + ".proto"
+	}
+	return ""
 }
 
 // deriveGAPICNamespace derives the value to pass as python-gapic-namespace when

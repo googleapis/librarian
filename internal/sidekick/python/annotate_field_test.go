@@ -36,8 +36,13 @@ func TestAnnotateField(t *testing.T) {
 				return f
 			}(),
 			want: &fieldAnnotations{
-				Name:     "secret_name",
-				DocLines: []string{"The name of the secret."},
+				Name:        "secret_name",
+				DocLines:    []string{"The name of the secret."},
+				HasDocLines: true,
+				ProtoType:   "STRING",
+				TypeHint:    "str",
+				SphinxType:  "str",
+				IsPrimitive: true,
 			},
 		},
 		{
@@ -45,7 +50,11 @@ func TestAnnotateField(t *testing.T) {
 			field: api.NewTestField("from").
 				WithType(api.TypezString),
 			want: &fieldAnnotations{
-				Name: "from_",
+				Name:        "from_",
+				ProtoType:   "STRING",
+				TypeHint:    "str",
+				SphinxType:  "str",
+				IsPrimitive: true,
 			},
 		},
 		{
@@ -54,8 +63,12 @@ func TestAnnotateField(t *testing.T) {
 				WithType(api.TypezString).
 				WithRepeated(),
 			want: &fieldAnnotations{
-				Name:       "aliases",
-				IsRepeated: true,
+				Name:        "aliases",
+				IsRepeated:  true,
+				ProtoType:   "STRING",
+				TypeHint:    "MutableSequence[str]",
+				SphinxType:  "MutableSequence[str]",
+				IsPrimitive: true,
 			},
 		},
 		{
@@ -63,8 +76,16 @@ func TestAnnotateField(t *testing.T) {
 			field: api.NewTestField("labels").
 				WithMap(),
 			want: &fieldAnnotations{
-				Name:  "labels",
-				IsMap: true,
+				Name:           "labels",
+				IsMap:          true,
+				ProtoType:      "UNDEFINED",
+				KeyProtoType:   "STRING",
+				KeyTypeHint:    "str",
+				ValueProtoType: "STRING",
+				ValueTypeHint:  "str",
+				ValueTypeRef:   "str",
+				TypeHint:       "MutableMapping[str, str]",
+				SphinxType:     "MutableMapping[str, str]",
 			},
 		},
 		{
@@ -72,16 +93,21 @@ func TestAnnotateField(t *testing.T) {
 			field: api.NewTestField("secret_payload").
 				WithMessageType(api.NewTestMessage("SecretPayload").WithPackage("google.cloud.secretmanager.v1")),
 			want: &fieldAnnotations{
-				Name:     "secret_payload",
-				TypeName: ".google.cloud.secretmanager.v1.SecretPayload",
+				Name:       "secret_payload",
+				TypeName:   ".google.cloud.secretmanager.v1.SecretPayload",
+				ProtoType:  "MESSAGE",
+				TypeHint:   "secret_payload_pb2.SecretPayload",
+				SphinxType: "google.cloud.secretmanager.v1.secret_payload_pb2.SecretPayload",
+				TypeRef:    "secret_payload_pb2.SecretPayload",
+				IsMessage:  true,
 			},
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			msg := api.NewTestMessage("Secret").WithFields(test.field)
 			model := api.NewTestAPI([]*api.Message{msg}, nil, nil)
-			codec := newTestCodec(t, model, nil)
-			if err := codec.annotateModel(); err != nil {
+			c := newTestCodec(t, model, nil)
+			if err := c.annotateModel(); err != nil {
 				t.Fatal(err)
 			}
 			ann, ok := test.field.Codec.(*fieldAnnotations)
