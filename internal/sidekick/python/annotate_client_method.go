@@ -48,6 +48,7 @@ type flattenedParam struct {
 	TypeHint   string
 	SphinxType string
 	DocLines   []string
+	IsRepeated bool
 }
 
 // clientMethodAnnotations contains metadata needed to render an RPC method on the client.
@@ -87,6 +88,9 @@ type clientMethodAnnotations struct {
 	PackageImport         string
 	VersionSegment        string
 	ClientName            string
+	AsyncReturnType       string
+	AsyncReturnSphinxType string
+	AsyncPagerClassName   string
 }
 
 func (c *codec) annotateClientMethod(m *api.Method, service *api.Service, ann *clientAnnotations) *clientMethodAnnotations {
@@ -236,6 +240,20 @@ func (c *codec) annotateClientMethod(m *api.Method, service *api.Service, ann *c
 		returnSphinxType = ann.VersionPackage + ".types." + outName
 	}
 
+	asyncPagerClassName := ""
+	if isPaged {
+		asyncPagerClassName = pascalCase(m.Name) + "AsyncPager"
+	}
+	asyncReturnType := returnType
+	asyncReturnSphinxType := returnSphinxType
+	if isLRO {
+		asyncReturnType = "operation_async.AsyncOperation"
+		asyncReturnSphinxType = "google.api_core.operation_async.AsyncOperation"
+	} else if isPaged {
+		asyncReturnType = "pagers." + asyncPagerClassName
+		asyncReturnSphinxType = ann.VersionPackage + ".services." + ann.DirectoryName + ".pagers." + asyncPagerClassName
+	}
+
 	// Flattened parameters from signatures
 	var flattenedParams []*flattenedParam
 	seenFields := make(map[string]bool)
@@ -278,6 +296,7 @@ func (c *codec) annotateClientMethod(m *api.Method, service *api.Service, ann *c
 				TypeHint:   tHint,
 				SphinxType: sType,
 				DocLines:   pDocLines,
+				IsRepeated: f.Repeated,
 			})
 		}
 	}
@@ -346,6 +365,9 @@ func (c *codec) annotateClientMethod(m *api.Method, service *api.Service, ann *c
 		PackageImport:         ann.PackageImport,
 		VersionSegment:        ann.VersionSegment,
 		ClientName:            ann.ClientName,
+		AsyncReturnType:       asyncReturnType,
+		AsyncReturnSphinxType: asyncReturnSphinxType,
+		AsyncPagerClassName:   asyncPagerClassName,
 	}
 }
 

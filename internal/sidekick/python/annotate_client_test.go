@@ -367,7 +367,7 @@ func TestAnnotateClient(t *testing.T) {
 			got := sAnn.Client
 			if diff := cmp.Diff(test.want, got,
 				cmpopts.IgnoreFields(clientAnnotations{}, "Service", "TypeImports", "ExternalImports", "CustomResourcePaths", "DefaultHost", "DocBody", "RestAsyncIOEnabled", "VersionSegment", "HasMultiLineDoc"),
-				cmpopts.IgnoreFields(clientMethodAnnotations{}, "Method", "DocLines", "DocBody", "HasDocHead", "HasDocBody", "RequestDocLines", "ReturnDocLines", "HasReturnDoc", "HasReturnDocTrailer", "SamplePreInitLines", "HasSamplePreInit", "SampleRequestArgs", "PackageImport", "VersionSegment", "ClientName"),
+				cmpopts.IgnoreFields(clientMethodAnnotations{}, "Method", "DocLines", "DocBody", "HasDocHead", "HasDocBody", "RequestDocLines", "ReturnDocLines", "HasReturnDoc", "HasReturnDocTrailer", "SamplePreInitLines", "HasSamplePreInit", "SampleRequestArgs", "PackageImport", "VersionSegment", "ClientName", "AsyncReturnType", "AsyncReturnSphinxType", "AsyncPagerClassName"),
 			); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
