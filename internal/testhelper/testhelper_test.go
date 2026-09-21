@@ -19,6 +19,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
+	"strings"
 	"testing"
 
 	"github.com/googleapis/librarian/internal/cache"
@@ -100,10 +101,13 @@ func TestCompareProtocVersions(t *testing.T) {
 		older string
 	}{
 		{"numeric minor", "v33.10", "v33.2"},
+		{"patch comparison", "v3.20.3", "v3.20.2"},
+		{"patch vs no patch", "v3.20.3", "v3.20"},
 		{"stable beats prerelease", "v26.0", "v26.0-rc1"},
 		{"prerelease ordering", "v26.0-rc2", "v26.0-rc1"},
 		{"higher minor", "v26.0", "v25.99"},
 		{"higher major", "v34.0", "v33.10"},
+		{"three-part prerelease", "v3.20.3", "v3.20.3-rc1"},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
@@ -127,7 +131,7 @@ func TestCompareProtocVersions(t *testing.T) {
 
 func TestParseProtocVersion_Error(t *testing.T) {
 	t.Parallel()
-	for _, name := range []string{"latest", "foo", "v", "vabc", "v33", "33.2"} {
+	for _, name := range []string{"latest", "foo", "v", "vabc", "v33", "33.2", "v1.2.3.4"} {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 			if _, ok := parseProtocVersion(name); ok {
@@ -165,5 +169,8 @@ func TestRequireCommand_ManagedProtoc(t *testing.T) {
 
 	if _, err := exec.LookPath("protoc"); err != nil {
 		t.Fatalf("expected managed protoc to be on PATH: %v", err)
+	}
+	if got := os.Getenv("PATH"); strings.HasSuffix(got, string(filepath.ListSeparator)) {
+		t.Errorf("PATH has trailing separator: %q", got)
 	}
 }

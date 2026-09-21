@@ -50,7 +50,11 @@ func RequireCommand(t *testing.T, cmd string) {
 	if _, err := exec.LookPath(cmd); err != nil {
 		if cmd == "protoc" {
 			if protocPath, ok := findManagedProtoc(); ok {
-				t.Setenv("PATH", filepath.Dir(protocPath)+string(filepath.ListSeparator)+os.Getenv("PATH"))
+				newPath := filepath.Dir(protocPath)
+				if existing := os.Getenv("PATH"); existing != "" {
+					newPath += string(filepath.ListSeparator) + existing
+				}
+				t.Setenv("PATH", newPath)
 				return
 			}
 		}
@@ -109,33 +113,43 @@ type protocVersion struct {
 	name  string // original directory name, e.g. "v33.2"
 	major int
 	minor int
+	patch int
 	pre   string // prerelease suffix, e.g. "-rc1"; empty for stable
 }
 
-// parseProtocVersion parses a version directory name like "v33.2" or
-// "v26.0-rc1", returning the parsed version and true on success.
+// parseProtocVersion parses a version directory name like "v33.2",
+// "v3.20.3", or "v26.0-rc1", returning the parsed version and true on
+// success.
 func parseProtocVersion(name string) (protocVersion, bool) {
 	s, ok := strings.CutPrefix(name, "v")
 	if !ok {
 		return protocVersion{}, false
 	}
-	majStr, rest, ok := strings.Cut(s, ".")
-	if !ok {
+	// Split off any prerelease suffix (e.g. "26.0-rc1" → "26.0", "rc1").
+	numeric, pre, _ := strings.Cut(s, "-")
+	parts := strings.Split(numeric, ".")
+	if len(parts) < 2 || len(parts) > 3 {
 		return protocVersion{}, false
 	}
-	maj, err := strconv.Atoi(majStr)
+	maj, err := strconv.Atoi(parts[0])
 	if err != nil {
 		return protocVersion{}, false
 	}
-	minStr, pre, _ := strings.Cut(rest, "-")
-	min, err := strconv.Atoi(minStr)
+	min, err := strconv.Atoi(parts[1])
 	if err != nil {
 		return protocVersion{}, false
+	}
+	var pat int
+	if len(parts) == 3 {
+		pat, err = strconv.Atoi(parts[2])
+		if err != nil {
+			return protocVersion{}, false
+		}
 	}
 	if pre != "" {
 		pre = "-" + pre
 	}
-	return protocVersion{name: name, major: maj, minor: min, pre: pre}, true
+	return protocVersion{name: name, major: maj, minor: min, patch: pat, pre: pre}, true
 }
 
 func compareProtocVersions(a, b protocVersion) int {
@@ -143,6 +157,9 @@ func compareProtocVersions(a, b protocVersion) int {
 		return c
 	}
 	if c := cmp.Compare(a.minor, b.minor); c != 0 {
+		return c
+	}
+	if c := cmp.Compare(a.patch, b.patch); c != 0 {
 		return c
 	}
 	// Stable (empty pre) is newer than any prerelease.
