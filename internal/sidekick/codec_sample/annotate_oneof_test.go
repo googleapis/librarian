@@ -39,10 +39,7 @@ func TestAnnotateOneOf(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			msg := api.NewTestMessage("Notification").WithOneOfs(test.oneof)
 			model := api.NewTestAPI([]*api.Message{msg}, nil, nil)
-			c, err := newTestCodec()
-			if err != nil {
-				t.Fatal(err)
-			}
+			c := newTestCodec()
 			if err := c.annotateModel(model); err != nil {
 				t.Fatal(err)
 			}

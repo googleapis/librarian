@@ -21,10 +21,10 @@ import (
 	"github.com/googleapis/librarian/internal/config"
 )
 
-func newTestCodec() (*codec, error) {
+func newTestCodec() *codec {
 	return &codec{
 		CopyrightYear: "2038",
-	}, nil
+	}
 }
 
 func TestNewCodec(t *testing.T) {
