@@ -28,6 +28,7 @@ import (
 	"github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/filesystem"
+	"github.com/googleapis/librarian/internal/proto"
 	"github.com/googleapis/librarian/internal/repometadata"
 	"github.com/googleapis/librarian/internal/serviceconfig"
 	"github.com/googleapis/librarian/internal/sources"
@@ -39,7 +40,6 @@ const (
 	googleapisDevDocumentationTemplate  = "https://googleapis.dev/python/%s/latest"
 	transportOption                     = "transport"
 	warehousePackageNameOption          = "warehouse-package-name"
-
 	// changelog is the name of the changelog file to create. A regular file
 	// is created in the package root, and a symlink is created in the docs
 	// directory.
@@ -55,6 +55,7 @@ const (
 var (
 	errNoDefaultVersion        = errors.New("default version must be specified for every library with generated APIs")
 	errExplicitTransportOption = errors.New("transport option is derived from sdk.yaml and must not be specified explicitly")
+	errProtoNotFound           = errors.New("no proto is found in api")
 )
 
 // Generate generates a Python client library.
@@ -263,43 +264,44 @@ func generateAPI(ctx context.Context, api *config.API, library *config.Library, 
 	if err != nil {
 		return err
 	}
-
-	apiDir := filepath.Join(googleapisDir, api.Path)
-	protos, err := filepath.Glob(apiDir + "/*.proto")
+	protos, err := collectProtos(googleapisDir, api.Path)
 	if err != nil {
-		return fmt.Errorf("failed to find protos: %w", err)
+		return err
 	}
-	if len(protos) == 0 {
-		return fmt.Errorf("no protos found in api %q", api.Path)
-	}
-
-	// We want the proto filenames to be relative to googleapisDir
-	for index, protoFile := range protos {
-		rel, err := filepath.Rel(googleapisDir, protoFile)
-		if err != nil {
-			return fmt.Errorf("failed to compute relative path for %q: %w", protoFile, err)
-		}
-		protos[index] = rel
-	}
-
 	protocCmd, err := protoc.BinaryPathOrSystem(pc)
 	if err != nil {
 		return fmt.Errorf("failed to find protoc: %w", err)
 	}
-
 	cmdArgs := append(protos, protocOptions...)
 	if err := command.RunInDir(ctx, googleapisDir, protocCmd, cmdArgs...); err != nil {
 		return fmt.Errorf("failed to execute protoc: %w", err)
 	}
-
 	// Copy the proto files as well as the generated code for proto-only libraries.
 	if protoOnly {
 		if err := stageProtoFiles(googleapisDir, stagingDir, protos); err != nil {
 			return err
 		}
 	}
-
 	return nil
+}
+
+func collectProtos(googleapisDir, apiPath string) ([]string, error) {
+	apiDir := filepath.Join(googleapisDir, apiPath)
+	protos, err := proto.Gather(apiDir, apiPath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to find protos: %w", err)
+	}
+	if len(protos) == 0 {
+		return nil, fmt.Errorf("%w: %s", errProtoNotFound, apiPath)
+	}
+	for index := range protos {
+		rel, err := filepath.Rel(googleapisDir, protos[index])
+		if err != nil {
+			return nil, fmt.Errorf("failed to make path %s relative: %w", protos[index], err)
+		}
+		protos[index] = rel
+	}
+	return protos, nil
 }
 
 func stageProtoFiles(googleapisDir, targetDir string, relativeProtoPaths []string) error {
