@@ -98,12 +98,12 @@ func env(binDir string) ([]string, error) {
 	storeDir := filepath.Join(cacheDir, "pnpm-store")
 
 	env := os.Environ()
+	// Prevent Corepack from downloading or strictly overriding package manager versions.
+	env = append(env, "COREPACK_ENABLE_PROJECT_SPEC=0")
 	env = append(env, "PNPM_HOME="+binDir)
 	env = append(env, "PNPM_CONFIG_GLOBAL_BIN_DIR="+binDir)
 	env = append(env, "PNPM_CONFIG_GLOBAL_DIR="+globalDir)
 	env = append(env, "PNPM_CONFIG_STORE_DIR="+storeDir)
-	// Prevent Corepack from downloading or strictly overriding package manager versions.
-	env = append(env, "COREPACK_ENABLE_PROJECT_SPEC=0")
 	// TODO(https://github.com/googleapis/librarian/issues/6889): Remove legacy NPM_CONFIG_*
 	// environment variables once pnpm is upgraded to version 8+.
 	env = append(env, "NPM_CONFIG_GLOBAL_BIN_DIR="+binDir)
