@@ -25,7 +25,7 @@ type CppLibrary struct {
 	// SourceRoot is the optional root directory of the proto sources.
 	SourceRoot string `yaml:"source_root,omitempty"`
 
-	// ProductPath is the relative path of the generated versioned library.
+	// ProductPath is the relative path of the generated versioned library where C++ header and source files are emitted.
 	// Defaults to library.Output if omitted.
 	ProductPath string `yaml:"product_path,omitempty"`
 
@@ -77,7 +77,7 @@ type CppLibrary struct {
 	// OmitStubFactory indicates whether to omit generating stub factory functions.
 	OmitStubFactory bool `yaml:"omit_stub_factory,omitempty"`
 
-	// AdditionalProtoFiles lists extra proto files to include during parsing.
+	// AdditionalProtoFiles lists extra proto files (relative to the proto root, such as googleapis) whose generated protobuf headers (.pb.h) should be included in generated C++ classes.
 	AdditionalProtoFiles []string `yaml:"additional_proto_files,omitempty"`
 
 	// OverrideServiceConfigYAMLName specifies a path to a service config yaml override.
