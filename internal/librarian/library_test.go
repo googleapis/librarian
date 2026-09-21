@@ -867,8 +867,9 @@ func TestApplyDefaults_Nodejs(t *testing.T) {
 	if got.Nodejs == nil {
 		t.Fatal("got.Nodejs is nil")
 	}
-	if got.Nodejs.PackageName != "@google-cloud/secretmanager" {
-		t.Errorf("got package name %q, want %q", got.Nodejs.PackageName, "@google-cloud/secretmanager")
+	wantPackageName := "@google-cloud/secretmanager"
+	if diff := cmp.Diff(wantPackageName, got.Nodejs.PackageName); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
 
