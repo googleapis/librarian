@@ -1635,3 +1635,73 @@ func setupStubProtoc(t *testing.T, version string, exitCode int) {
 	stubProtoc := filepath.Join(protocDir, "protoc")
 	testhelper.WriteExecutable(t, stubProtoc, fmt.Sprintf("#!/bin/sh\nexit %d\n", exitCode))
 }
+
+func TestCollectProtos(t *testing.T) {
+	t.Parallel()
+	for _, test := range []struct {
+		name      string
+		apiPath   string
+		files     []string
+		wantFiles []string
+	}{
+		{
+			name:    "versioned API with multiple protos and subdirectories",
+			apiPath: "google/cloud/secretmanager/v1",
+			files: []string{
+				"google/cloud/secretmanager/v1/service.proto",
+				"google/cloud/secretmanager/v1/resources.proto",
+				"google/cloud/secretmanager/v1/sub/nested.proto",
+				"google/cloud/secretmanager/v1/README.md",
+			},
+			wantFiles: []string{
+				"google/cloud/secretmanager/v1/resources.proto",
+				"google/cloud/secretmanager/v1/service.proto",
+				"google/cloud/secretmanager/v1/sub/nested.proto",
+			},
+		},
+		{
+			name:    "non-recursive for google/api",
+			apiPath: "google/api",
+			files: []string{
+				"google/api/annotations.proto",
+				"google/api/http.proto",
+				"google/api/sub/nested.proto",
+			},
+			wantFiles: []string{
+				"google/api/annotations.proto",
+				"google/api/http.proto",
+			},
+		},
+		{
+			name:    "single proto file",
+			apiPath: "google/cloud/foo/v1",
+			files: []string{
+				"google/cloud/foo/v1/foo.proto",
+			},
+			wantFiles: []string{
+				"google/cloud/foo/v1/foo.proto",
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			tmpDir := t.TempDir()
+			for _, f := range test.files {
+				full := filepath.Join(tmpDir, f)
+				if err := os.MkdirAll(filepath.Dir(full), 0o755); err != nil {
+					t.Fatal(err)
+				}
+				if err := os.WriteFile(full, []byte("// proto"), 0o644); err != nil {
+					t.Fatal(err)
+				}
+			}
+			got, err := collectProtos(tmpDir, test.apiPath)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if diff := cmp.Diff(test.wantFiles, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
