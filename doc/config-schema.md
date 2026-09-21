@@ -272,7 +272,7 @@ This document describes the schema for the librarian.yaml.
 | Field | Type | Description |
 | :--- | :--- | :--- |
 | `source_root` | string | Is the optional root directory of the proto sources. |
-| `product_path` | string | Is the relative path of the generated versioned library. Defaults to library.Output if omitted. |
+| `product_path` | string | Is the relative path of the generated versioned library where C++ header and source files are emitted. Defaults to library.Output if omitted. |
 | `forwarding_product_path` | string | Is the relative directory for top-level forwarding headers. |
 | `service_endpoint_env_var` | string | Is the environment variable used to override the service endpoint. |
 | `emulator_endpoint_env_var` | string | Is the environment variable used to override the emulator endpoint. |
@@ -289,7 +289,7 @@ This document describes the schema for the librarian.yaml.
 | `omit_client` | bool | Indicates whether to omit generating client class. |
 | `omit_connection` | bool | Indicates whether to omit generating connection class. |
 | `omit_stub_factory` | bool | Indicates whether to omit generating stub factory functions. |
-| `additional_proto_files` | list of string | Lists extra proto files to include during parsing. |
+| `additional_proto_files` | list of string | Lists extra proto files (relative to the proto root, such as googleapis) whose generated protobuf headers (.pb.h) should be included in generated C++ classes. |
 | `override_service_config_yaml_name` | string | Specifies a path to a service config yaml override. |
 | `initial_copyright_year` | string | Specifies the initial copyright year to preserve in headers. |
 | `omit_repo_metadata` | bool | Indicates whether to skip emitting .repo-metadata.json. |
