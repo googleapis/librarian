@@ -1592,6 +1592,7 @@ func TestGenerate_SidekickDispatch(t *testing.T) {
 		requireProtoc bool
 		library       func(outDir string) *config.Library
 		srcs          *sources.Sources
+		relDir        string
 	}{
 		{
 			name: "fallback model without apis",
@@ -1611,6 +1612,7 @@ func TestGenerate_SidekickDispatch(t *testing.T) {
 			name:          "parsed model with api and sources",
 			requireProtoc: true,
 			srcs:          &sources.Sources{Googleapis: googleapisDir},
+			relDir:        filepath.Join("google", "cloud", "secretmanager_v1"),
 			library: func(outDir string) *config.Library {
 				return &config.Library{
 					Name:   "google-cloud-secretmanager",
@@ -1643,11 +1645,11 @@ func TestGenerate_SidekickDispatch(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			gapicVersionPath := filepath.Join(outDir, "gapic_version.py")
+			gapicVersionPath := filepath.Join(outDir, test.relDir, "gapic_version.py")
 			if _, err := os.Stat(gapicVersionPath); err != nil {
 				t.Errorf("os.Stat(%q) error = %v, want nil", gapicVersionPath, err)
 			}
-			pyTypedPath := filepath.Join(outDir, "py.typed")
+			pyTypedPath := filepath.Join(outDir, test.relDir, "py.typed")
 			if _, err := os.Stat(pyTypedPath); err != nil {
 				t.Errorf("os.Stat(%q) error = %v, want nil", pyTypedPath, err)
 			}
