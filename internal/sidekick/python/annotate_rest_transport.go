@@ -22,20 +22,23 @@ import (
 	"github.com/googleapis/librarian/internal/sidekick/api"
 )
 
-// restTransportAnnotation contains all metadata needed to render rest_base.py and rest.py.
+// restTransportAnnotation contains all metadata needed to render rest_base.py, rest.py, and rest_asyncio.py.
 type restTransportAnnotation struct {
 	Name, BaseTransportClassName, TransportClassName                    string
 	ClientName, AsyncClientName                                         string
 	ServiceFQN, ServiceFQNClient, ServiceFQNAsyncClient                 string
 	ServiceProtoName, DefaultHost, VersionPackage, ClientPackageVersion string
+	PackageName                                                         string
 	Scopes                                                              []string
 	HasLRO, HasLocationMixin, HasOperationsMixin, HasDocLines           bool
+	RestAsyncIOEnabled                                                  bool
 	DocLines                                                            []string
 	TypeImports                                                         []*restTypeImport
 	BaseMethods                                                         []*restBaseMethodAnnotation
 	PrimaryMethods                                                      []*restMethodDetailAnnotation
 	MixinMethods                                                        []*restMixinMethodAnnotation
 	LROOperations                                                       []*restLROOperationAnnotation
+	WrappedMethods                                                      []*wrappedMethodAnnotations
 }
 
 // restTypeImport represents an imported module or symbol used in REST transport type hints.
@@ -172,6 +175,18 @@ func (c *codec) annotateRestTransport(service *api.Service, svcAnn *serviceAnnot
 		}
 	}
 
+	packageName := c.pypiPackageName()
+	restAsyncIOEnabled := c.isRestAsyncIOEnabled(svcConfig, service)
+
+	var wrappedMethods []*wrappedMethodAnnotations
+	if svcAnn != nil && svcAnn.Transport != nil {
+		wrappedMethods = svcAnn.Transport.WrappedMethods
+	} else if tAnn, err := c.annotateTransport(service); err != nil {
+		return nil, err
+	} else if tAnn != nil {
+		wrappedMethods = tAnn.WrappedMethods
+	}
+
 	return &restTransportAnnotation{
 		Name:                   name,
 		BaseTransportClassName: baseTransportClassName,
@@ -185,10 +200,12 @@ func (c *codec) annotateRestTransport(service *api.Service, svcAnn *serviceAnnot
 		DefaultHost:            defaultHost,
 		VersionPackage:         versionPackage,
 		ClientPackageVersion:   clientPkgVer,
+		PackageName:            packageName,
 		Scopes:                 scopes,
 		HasLRO:                 hasLRO,
 		HasLocationMixin:       hasLocationMixin,
 		HasOperationsMixin:     hasOperationsMixin,
+		RestAsyncIOEnabled:     restAsyncIOEnabled,
 		DocLines:               docLines,
 		HasDocLines:            len(docLines) > 0,
 		TypeImports:            typeImports,
@@ -196,6 +213,7 @@ func (c *codec) annotateRestTransport(service *api.Service, svcAnn *serviceAnnot
 		PrimaryMethods:         primaryMethods,
 		MixinMethods:           orderedMixinMethods,
 		LROOperations:          lroOps,
+		WrappedMethods:         wrappedMethods,
 	}, nil
 }
 

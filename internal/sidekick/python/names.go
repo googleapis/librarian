@@ -226,3 +226,20 @@ func typeNameFromID(id string) string {
 	parts := strings.Split(id, ".")
 	return parts[len(parts)-1]
 }
+
+// pypiPackageName returns the PyPI distribution package name from the codec's
+// PackageName or derives it from GAPICNamespace and GAPICName.
+func (c *codec) pypiPackageName() string {
+	if c.PackageName != "" {
+		return c.PackageName
+	}
+	ns := strings.NewReplacer("/", "-", ".", "-").Replace(c.GAPICNamespace)
+	switch {
+	case ns != "" && c.GAPICName != "":
+		return ns + "-" + c.GAPICName
+	case ns != "":
+		return ns
+	default:
+		return c.GAPICName
+	}
+}

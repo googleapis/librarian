@@ -32,7 +32,7 @@ import (
 
 const (
 	minCredentialsEmittedFiles = 17
-	minRedisEmittedFiles       = 17
+	minRedisEmittedFiles       = 18
 	minAssetEmittedFiles       = 18
 )
 
@@ -102,6 +102,7 @@ func TestGoldenParity(t *testing.T) {
 				"google/cloud/redis_v1/services/cloud_redis/transports/grpc_asyncio.py",
 				"google/cloud/redis_v1/services/cloud_redis/transports/rest_base.py",
 				"google/cloud/redis_v1/services/cloud_redis/transports/rest.py",
+				"google/cloud/redis_v1/services/cloud_redis/transports/rest_asyncio.py",
 				"google/cloud/redis_v1/services/cloud_redis/transports/__init__.py",
 				"google/cloud/redis_v1/types/cloud_redis.py",
 			},

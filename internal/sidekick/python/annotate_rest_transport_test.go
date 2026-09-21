@@ -89,6 +89,12 @@ func TestAnnotateRestTransport_Basic(t *testing.T) {
 	if !pm.HasBody {
 		t.Errorf("PrimaryMethod.HasBody = false, want true")
 	}
+	if diff := cmp.Diff("Test", restAnn.PackageName); diff != "" {
+		t.Errorf("PackageName mismatch (-want +got):\n%s", diff)
+	}
+	if diff := cmp.Diff(false, restAnn.RestAsyncIOEnabled); diff != "" {
+		t.Errorf("RestAsyncIOEnabled mismatch (-want +got):\n%s", diff)
+	}
 }
 
 func TestAnnotateRestTransport_MixinsAndLRO(t *testing.T) {
@@ -293,4 +299,88 @@ func TestAnnotateRestTransport_Error(t *testing.T) {
 	if !errors.Is(err, errLoadServiceConfig) {
 		t.Errorf("annotateRestTransport(%s) error = %v, want %v", svc.Name, err, errLoadServiceConfig)
 	}
+}
+
+func TestAnnotateRestTransport_RestAsyncIOAndPackageName(t *testing.T) {
+	tempDir := t.TempDir()
+	pkgDir := filepath.Join(tempDir, "google", "cloud", "redis", "v1")
+	if err := os.MkdirAll(pkgDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	serviceConfig := `
+publishing:
+  library_settings:
+    - version: google.cloud.redis.v1
+      python_settings:
+        experimental_features:
+          rest_async_io_enabled: true
+`
+	if err := os.WriteFile(filepath.Join(pkgDir, "redis_v1.yaml"), []byte(serviceConfig), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	method := api.NewTestMethod("GetInstance")
+	svc := api.NewTestService("CloudRedis").
+		WithPackage("google.cloud.redis.v1").
+		WithMethods(method)
+	model := api.NewTestAPI(nil, nil, []*api.Service{svc}).
+		WithPackageName("google.cloud.redis.v1")
+	lib := &config.Library{
+		Name:  "google-cloud-redis",
+		Roots: []string{tempDir},
+		APIs: []*config.API{
+			{Path: "google/cloud/redis/v1"},
+		},
+	}
+
+	c := newTestCodec(t, model, lib)
+	if err := c.annotateModel(); err != nil {
+		t.Fatal(err)
+	}
+
+	svcAnn, ok := svc.Codec.(*serviceAnnotations)
+	if !ok {
+		t.Fatalf("svc.Codec is %T, want *serviceAnnotations", svc.Codec)
+	}
+	restAnn := svcAnn.RestTransport
+	if restAnn == nil {
+		t.Fatal("svcAnn.RestTransport is nil, want non-nil")
+	}
+
+	if diff := cmp.Diff("google-cloud-redis", restAnn.PackageName); diff != "" {
+		t.Errorf("PackageName mismatch (-want +got):\n%s", diff)
+	}
+	if diff := cmp.Diff(true, restAnn.RestAsyncIOEnabled); diff != "" {
+		t.Errorf("RestAsyncIOEnabled mismatch (-want +got):\n%s", diff)
+	}
+	if len(restAnn.WrappedMethods) != 1 {
+		t.Fatalf("len(restAnn.WrappedMethods) = %d, want 1", len(restAnn.WrappedMethods))
+	}
+	if diff := cmp.Diff("get_instance", restAnn.WrappedMethods[0].Name); diff != "" {
+		t.Errorf("WrappedMethods[0].Name mismatch (-want +got):\n%s", diff)
+	}
+
+	t.Run("fallback package name when c.PackageName is empty", func(t *testing.T) {
+		libEmptyName := &config.Library{
+			Roots: []string{tempDir},
+			APIs: []*config.API{
+				{Path: "google/cloud/redis/v1"},
+			},
+		}
+		cEmpty := newTestCodec(t, model, libEmptyName)
+		cEmpty.PackageName = ""
+		if err := cEmpty.annotateModel(); err != nil {
+			t.Fatal(err)
+		}
+		sAnn, ok := svc.Codec.(*serviceAnnotations)
+		if !ok {
+			t.Fatalf("svc.Codec is %T, want *serviceAnnotations", svc.Codec)
+		}
+		if sAnn.RestTransport == nil {
+			t.Fatal("sAnn.RestTransport is nil, want non-nil")
+		}
+		if diff := cmp.Diff("google-cloud-redis", sAnn.RestTransport.PackageName); diff != "" {
+			t.Errorf("PackageName fallback mismatch (-want +got):\n%s", diff)
+		}
+	})
 }

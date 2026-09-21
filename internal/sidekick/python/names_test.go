@@ -259,3 +259,49 @@ func TestTypeNameFromID(t *testing.T) {
 		})
 	}
 }
+
+func TestPypiPackageName(t *testing.T) {
+	for _, test := range []struct {
+		name string
+		c    *codec
+		want string
+	}{
+		{
+			name: "explicit PackageName takes precedence",
+			c:    &codec{PackageName: "my-custom-package", GAPICNamespace: "google.cloud", GAPICName: "redis"},
+			want: "my-custom-package",
+		},
+		{
+			name: "slash separated namespace",
+			c:    &codec{GAPICNamespace: "google/cloud", GAPICName: "redis"},
+			want: "google-cloud-redis",
+		},
+		{
+			name: "dot separated namespace",
+			c:    &codec{GAPICNamespace: "google.cloud", GAPICName: "redis"},
+			want: "google-cloud-redis",
+		},
+		{
+			name: "namespace only",
+			c:    &codec{GAPICNamespace: "google.cloud"},
+			want: "google-cloud",
+		},
+		{
+			name: "name only",
+			c:    &codec{GAPICName: "redis"},
+			want: "redis",
+		},
+		{
+			name: "empty",
+			c:    &codec{},
+			want: "",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := test.c.pypiPackageName()
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}

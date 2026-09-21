@@ -222,6 +222,17 @@ func Generate(ctx context.Context, model *api.API, outdir string, library *confi
 				},
 			},
 		)
+		if ann.RestTransport != nil && ann.RestTransport.RestAsyncIOEnabled {
+			serviceFiles = append(serviceFiles,
+				serviceFilePair{
+					service: service,
+					file: language.GeneratedFile{
+						TemplatePath: "templates/services/service/transports/rest_asyncio.py.mustache",
+						OutputPath:   filepath.Join(serviceDir, "transports", "rest_asyncio.py"),
+					},
+				},
+			)
+		}
 		if ann.HasPagers {
 			serviceFiles = append(serviceFiles,
 				serviceFilePair{
