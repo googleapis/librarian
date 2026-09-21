@@ -98,18 +98,10 @@ func env(binDir string) ([]string, error) {
 	storeDir := filepath.Join(cacheDir, "pnpm-store")
 
 	env := os.Environ()
-	// Prevent Corepack from downloading or strictly overriding package manager versions.
-	// TODO(https://github.com/googleapis/librarian/issues/6889): Remove this once pnpm is
-	// upgraded to version 8+.
-	env = append(env, "COREPACK_ENABLE_PROJECT_SPEC=0")
 	env = append(env, "PNPM_HOME="+binDir)
 	env = append(env, "PNPM_CONFIG_GLOBAL_BIN_DIR="+binDir)
 	env = append(env, "PNPM_CONFIG_GLOBAL_DIR="+globalDir)
 	env = append(env, "PNPM_CONFIG_STORE_DIR="+storeDir)
-	// TODO(https://github.com/googleapis/librarian/issues/6889): Remove legacy NPM_CONFIG_*
-	// environment variables once pnpm is upgraded to version 8+.
-	env = append(env, "NPM_CONFIG_GLOBAL_BIN_DIR="+binDir)
-	env = append(env, "npm_config_global_bin_dir="+binDir)
 	env = append(env, "PATH="+binDir+string(os.PathListSeparator)+os.Getenv("PATH"))
 	return env, nil
 }
