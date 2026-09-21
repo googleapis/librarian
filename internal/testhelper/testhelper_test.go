@@ -105,6 +105,7 @@ func TestCompareProtocVersions(t *testing.T) {
 		{"patch vs no patch", "v3.20.3", "v3.20"},
 		{"stable beats prerelease", "v26.0", "v26.0-rc1"},
 		{"prerelease ordering", "v26.0-rc2", "v26.0-rc1"},
+		{"double-digit rc", "v26.0-rc10", "v26.0-rc2"},
 		{"higher minor", "v26.0", "v25.99"},
 		{"higher major", "v34.0", "v33.10"},
 		{"three-part prerelease", "v3.20.3", "v3.20.3-rc1"},

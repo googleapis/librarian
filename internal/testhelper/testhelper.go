@@ -169,7 +169,34 @@ func compareProtocVersions(a, b protocVersion) int {
 	if a.pre != "" && b.pre == "" {
 		return -1
 	}
-	return cmp.Compare(a.pre, b.pre)
+	return comparePrereleases(a.pre, b.pre)
+}
+
+func comparePrereleases(a, b string) int {
+	if a == b {
+		return 0
+	}
+	aPrefix, aNum := splitNumericSuffix(a)
+	bPrefix, bNum := splitNumericSuffix(b)
+	if aPrefix == bPrefix {
+		return cmp.Compare(aNum, bNum)
+	}
+	return cmp.Compare(a, b)
+}
+
+func splitNumericSuffix(s string) (string, int) {
+	i := len(s)
+	for i > 0 && s[i-1] >= '0' && s[i-1] <= '9' {
+		i--
+	}
+	if i == len(s) {
+		return s, 0
+	}
+	n, err := strconv.Atoi(s[i:])
+	if err != nil {
+		return s, 0
+	}
+	return s[:i], n
 }
 
 const (
