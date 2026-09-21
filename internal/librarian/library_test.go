@@ -234,7 +234,9 @@ func TestFillDefaults(t *testing.T) {
 			want: &config.Library{
 				Output:  "foo/",
 				Version: "1.2.3",
-				Cpp:     &config.CppLibrary{},
+				Cpp: &config.CppLibrary{
+					ProductPath: "foo/",
+				},
 			},
 		},
 		{
@@ -258,6 +260,103 @@ func TestFillDefaults(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			got := fillDefaults(test.lib, test.defaults)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestFillDefaults_Cpp(t *testing.T) {
+	for _, test := range []struct {
+		name     string
+		defaults *config.Default
+		lib      *config.Library
+		want     *config.Library
+	}{
+		{
+			name: "filling version and ProductPath from default and output",
+			defaults: &config.Default{
+				Cpp: &config.CppDefault{
+					DefaultVersion: "1.2.3",
+				},
+			},
+			lib: &config.Library{Output: "foo/"},
+			want: &config.Library{
+				Output:  "foo/",
+				Version: "1.2.3",
+				Cpp: &config.CppLibrary{
+					ProductPath: "foo/",
+				},
+			},
+		},
+		{
+			name: "preserving existing C++ configuration",
+			defaults: &config.Default{
+				Cpp: &config.CppDefault{
+					DefaultVersion: "1.2.3",
+				},
+			},
+			lib: &config.Library{
+				Output:  "foo/",
+				Version: "2.0.0",
+				Cpp:     &config.CppLibrary{ProductPath: "custom/path"},
+			},
+			want: &config.Library{
+				Output:  "foo/",
+				Version: "2.0.0",
+				Cpp:     &config.CppLibrary{ProductPath: "custom/path"},
+			},
+		},
+		{
+			name:     "handling nil d.Cpp while still initializing lib.Cpp and setting ProductPath from Output",
+			defaults: &config.Default{},
+			lib:      &config.Library{Output: "foo/"},
+			want: &config.Library{
+				Output: "foo/",
+				Cpp: &config.CppLibrary{
+					ProductPath: "foo/",
+				},
+			},
+		},
+		{
+			name:     "handling nil default while still initializing lib.Cpp and setting ProductPath from Output",
+			defaults: nil,
+			lib:      &config.Library{Output: "foo/"},
+			want: &config.Library{
+				Output: "foo/",
+				Cpp: &config.CppLibrary{
+					ProductPath: "foo/",
+				},
+			},
+		},
+		{
+			name:     "empty output does not set ProductPath",
+			defaults: nil,
+			lib:      &config.Library{},
+			want: &config.Library{
+				Cpp: &config.CppLibrary{},
+			},
+		},
+		{
+			name: "preserving existing C++ fields while setting ProductPath",
+			lib: &config.Library{
+				Output: "foo/",
+				Cpp: &config.CppLibrary{
+					ForwardingProductPath: "custom/forwarding",
+				},
+			},
+			want: &config.Library{
+				Output: "foo/",
+				Cpp: &config.CppLibrary{
+					ProductPath:           "foo/",
+					ForwardingProductPath: "custom/forwarding",
+				},
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := fillCpp(test.lib, test.defaults)
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
@@ -740,9 +839,11 @@ func TestApplyDefaults(t *testing.T) {
 		language    string
 		output      string
 		rust        *config.RustCrate
+		cpp         *config.CppLibrary
 		apis        []*config.API
 		wantOutput  string
 		wantAPIPath string
+		wantCpp     *config.CppLibrary
 		nilDefaults bool
 	}{
 		{
@@ -825,6 +926,55 @@ func TestApplyDefaults(t *testing.T) {
 			},
 			wantOutput: "src/generated/google-cloud-secretmanager-v1",
 		},
+		{
+			name:       "cpp initializes Cpp and defaults ProductPath to Output",
+			language:   config.LanguageCpp,
+			output:     "custom/cpp/output",
+			wantOutput: "custom/cpp/output",
+			wantCpp: &config.CppLibrary{
+				ProductPath: "custom/cpp/output",
+			},
+		},
+		{
+			name:        "cpp nil defaults initializes Cpp and defaults ProductPath to derived Output",
+			language:    config.LanguageCpp,
+			nilDefaults: true,
+			wantOutput:  "google/cloud/secretmanager/v1",
+			wantAPIPath: "google/cloud/secretmanager/v1",
+			wantCpp: &config.CppLibrary{
+				ProductPath: "google/cloud/secretmanager/v1",
+			},
+		},
+		{
+			name:       "cpp preserves existing ProductPath",
+			language:   config.LanguageCpp,
+			output:     "custom/cpp/output",
+			cpp:        &config.CppLibrary{ProductPath: "custom/product/path"},
+			wantOutput: "custom/cpp/output",
+			wantCpp: &config.CppLibrary{
+				ProductPath: "custom/product/path",
+			},
+		},
+		{
+			name:        "cpp default output initializes Cpp and defaults ProductPath",
+			language:    config.LanguageCpp,
+			wantOutput:  "src/generated/google/cloud/secretmanager/v1",
+			wantAPIPath: "google/cloud/secretmanager/v1",
+			wantCpp: &config.CppLibrary{
+				ProductPath: "src/generated/google/cloud/secretmanager/v1",
+			},
+		},
+		{
+			name:       "cpp preserves other Cpp fields while defaulting ProductPath",
+			language:   config.LanguageCpp,
+			output:     "custom/cpp/output",
+			cpp:        &config.CppLibrary{ForwardingProductPath: "custom/forwarding"},
+			wantOutput: "custom/cpp/output",
+			wantCpp: &config.CppLibrary{
+				ProductPath:           "custom/cpp/output",
+				ForwardingProductPath: "custom/forwarding",
+			},
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			lib := &config.Library{
@@ -832,6 +982,7 @@ func TestApplyDefaults(t *testing.T) {
 				Output: test.output,
 				APIs:   test.apis,
 				Rust:   test.rust,
+				Cpp:    test.cpp,
 			}
 			var defaults *config.Default
 			if !test.nilDefaults {
@@ -850,6 +1001,11 @@ func TestApplyDefaults(t *testing.T) {
 				ch := got.APIs[0]
 				if test.wantAPIPath != "" && ch.Path != test.wantAPIPath {
 					t.Errorf("got %q, want %q", ch.Path, test.wantAPIPath)
+				}
+			}
+			if test.wantCpp != nil {
+				if diff := cmp.Diff(test.wantCpp, got.Cpp); diff != "" {
+					t.Errorf("mismatch (-want +got):\n%s", diff)
 				}
 			}
 		})

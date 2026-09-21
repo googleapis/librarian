@@ -69,14 +69,17 @@ func fillDefaults(lib *config.Library, d *config.Default) *config.Library {
 
 // fillCpp populates empty C++-specific fields in lib from the provided default.
 func fillCpp(lib *config.Library, d *config.Default) *config.Library {
+	if lib.Cpp == nil {
+		lib.Cpp = &config.CppLibrary{}
+	}
+	if lib.Cpp.ProductPath == "" && lib.Output != "" {
+		lib.Cpp.ProductPath = lib.Output
+	}
 	if d == nil || d.Cpp == nil {
 		return lib
 	}
 	if lib.Version == "" && d.Cpp.DefaultVersion != "" {
 		lib.Version = d.Cpp.DefaultVersion
-	}
-	if lib.Cpp == nil {
-		lib.Cpp = &config.CppLibrary{}
 	}
 	return lib
 }
@@ -375,6 +378,8 @@ func mergeMaps(dst, src map[string]string) map[string]string {
 // fillLibraryDefaults populates language-specific default values for the library.
 func fillLibraryDefaults(language string, lib *config.Library) (*config.Library, error) {
 	switch language {
+	case config.LanguageCpp:
+		return fillCpp(lib, nil), nil
 	case config.LanguageGo:
 		return golang.Fill(lib)
 	case config.LanguageJava:
