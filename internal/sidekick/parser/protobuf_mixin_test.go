@@ -103,7 +103,7 @@ func TestProtobuf_LocationMixin(t *testing.T) {
 		t.Fatal("expected location for .google.cloud.location.Location")
 	}
 	if diff := cmp.Diff(wantLoc, gotLoc); diff != "" {
-		t.Errorf("location mismatch (-want +got):\n%s", diff)
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
 
