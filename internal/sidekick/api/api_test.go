@@ -104,4 +104,40 @@ func TestAPIDefinitionLocation(t *testing.T) {
 			t.Errorf("mismatch (-want +got):\n%s", diff)
 		}
 	})
+
+	t.Run("leading dot normalization", func(t *testing.T) {
+		a := &API{}
+		locWithDot := SourceLocation{Filename: "with_dot.proto", Line: 10}
+		locWithoutDot := SourceLocation{Filename: "without_dot.proto", Line: 20}
+
+		// Register one with a leading dot and one without.
+		a.AddDefinitionLocation(".test.WithDot", locWithDot)
+		a.AddDefinitionLocation("test.WithoutDot", locWithoutDot)
+
+		for _, tc := range []struct {
+			query string
+			want  SourceLocation
+		}{
+			{query: ".test.WithDot", want: locWithDot},
+			{query: "test.WithDot", want: locWithDot},
+			{query: "test.WithoutDot", want: locWithoutDot},
+			{query: ".test.WithoutDot", want: locWithoutDot},
+		} {
+			t.Run(tc.query, func(t *testing.T) {
+				got, ok := a.DefinitionLocation(tc.query)
+				if !ok {
+					t.Fatalf("expected to find %q", tc.query)
+				}
+				if diff := cmp.Diff(tc.want, got); diff != "" {
+					t.Errorf("mismatch for %q (-want +got):\n%s", tc.query, diff)
+				}
+			})
+		}
+
+		for _, nonExistent := range []string{".test.Missing", "test.Missing"} {
+			if got, ok := a.DefinitionLocation(nonExistent); ok || got != (SourceLocation{}) {
+				t.Errorf("expected zero SourceLocation and false for %q, got %v, %v", nonExistent, got, ok)
+			}
+		}
+	})
 }

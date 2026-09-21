@@ -17,6 +17,7 @@ package api
 import (
 	"iter"
 	"maps"
+	"strings"
 )
 
 // SourceLocation captures the file and line number where an API element is defined.
@@ -246,7 +247,14 @@ func (a *API) DefinitionLocation(name string) (SourceLocation, bool) {
 	if a == nil || a.DefinitionLocations == nil {
 		return SourceLocation{}, false
 	}
-	loc, ok := a.DefinitionLocations[name]
+	if loc, ok := a.DefinitionLocations[name]; ok {
+		return loc, true
+	}
+	if trimmed, ok := strings.CutPrefix(name, "."); ok {
+		loc, ok := a.DefinitionLocations[trimmed]
+		return loc, ok
+	}
+	loc, ok := a.DefinitionLocations["."+name]
 	return loc, ok
 }
 

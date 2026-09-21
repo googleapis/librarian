@@ -343,6 +343,19 @@ func (m *Method) WithOperationService(opService string) *Method {
 	return m
 }
 
+// NewTestOperationInfo creates an OperationInfo with defaults for testing.
+func NewTestOperationInfo(responseTypeID, metadataTypeID string) *OperationInfo {
+	return &OperationInfo{
+		ResponseTypeID: responseTypeID,
+		MetadataTypeID: metadataTypeID,
+	}
+}
+
+// NewTestDiscoveryLro creates a DiscoveryLro with defaults for testing.
+func NewTestDiscoveryLro() *DiscoveryLro {
+	return &DiscoveryLro{}
+}
+
 // WithSignatures adds method signatures.
 //
 // A method signature typically maps to an overloads with a subset of

@@ -621,9 +621,9 @@ func TestToResourceNamePattern(t *testing.T) {
 }
 
 func TestIsSimpleMethod(t *testing.T) {
-	somePagination := &Field{}
-	someOperationInfo := &OperationInfo{}
-	someDiscoverLro := &DiscoveryLro{}
+	somePagination := NewTestField("page_token")
+	someOperationInfo := NewTestOperationInfo("", "")
+	someDiscoverLro := NewTestDiscoveryLro()
 	for _, test := range []struct {
 		name   string
 		method *Method
@@ -631,32 +631,32 @@ func TestIsSimpleMethod(t *testing.T) {
 	}{
 		{
 			name:   "simple method",
-			method: &Method{},
+			method: NewTestMethod("test"),
 			want:   true,
 		},
 		{
 			name:   "pagination method",
-			method: &Method{Pagination: somePagination},
+			method: NewTestMethod("test").WithPagination(somePagination),
 			want:   false,
 		},
 		{
 			name:   "client streaming method",
-			method: &Method{ClientSideStreaming: true},
+			method: NewTestMethod("test").WithClientSideStreaming(),
 			want:   false,
 		},
 		{
 			name:   "server streaming method",
-			method: &Method{ServerSideStreaming: true},
+			method: NewTestMethod("test").WithServerSideStreaming(),
 			want:   false,
 		},
 		{
 			name:   "LRO method",
-			method: &Method{OperationInfo: someOperationInfo},
+			method: NewTestMethod("test").WithOperationInfo(someOperationInfo),
 			want:   false,
 		},
 		{
 			name:   "Discovery LRO method",
-			method: &Method{DiscoveryLro: someDiscoverLro},
+			method: NewTestMethod("test").WithDiscoveryLro(someDiscoverLro),
 			want:   false,
 		},
 		{
@@ -687,17 +687,17 @@ func TestIsLRO(t *testing.T) {
 	}{
 		{
 			name:   "simple method is not LRO",
-			method: &Method{},
+			method: NewTestMethod("test"),
 			want:   false,
 		},
 		{
 			name:   "LRO method is LRO",
-			method: &Method{OperationInfo: &OperationInfo{}},
+			method: NewTestMethod("test").WithOperationInfo(NewTestOperationInfo("", "")),
 			want:   true,
 		},
 		{
 			name:   "LRO method is discovery LRO",
-			method: &Method{DiscoveryLro: &DiscoveryLro{}},
+			method: NewTestMethod("test").WithDiscoveryLro(NewTestDiscoveryLro()),
 			want:   true,
 		},
 		{
