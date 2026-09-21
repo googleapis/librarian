@@ -28,18 +28,27 @@ Before creating any files, review the core invariants:
 4. **Mustache Boilerplate & Partials:** Every `.mustache` file must have an
    Apache 2.0 license comment (`{{! ... }}`) using the current year (see
    [`internal/sidekick/swift/templates/common/service.swift.mustache`](/internal/sidekick/swift/templates/common/service.swift.mustache)
-   for reference). Output boilerplate must be rendered using a reusable partial
-   (`{{> /templates/partials/prologue}}`).
-5. **Config Immutability & Completeness:** Configuration structs in
+   for reference).
+5. **Emit Boilerplate from file-level templates:** The file-level templates
+   should emit the copyright boilerplate, using the correct formatting for the
+   file type.
+   1. Use `license.HeaderBulk()` to populate the boilerplate.
+   2. Use a partial for each file type, e.g. one for `.cc` files and one for
+      `.md` files.
+   3. Any tests should use the `license.HeaderBulk()` too.
+   4. New languages should use a `CopyrightYear` configuration to preserve the
+      original year when the code was generated. Look at Swift and Rust for
+      examples.
+6. **Config Immutability & Completeness:** Configuration structs in
    `internal/config/<lang>.go` must be pure data types. Implement complete field
    merging (`merge<Lang>`) and defaulting (`fill<Lang>`) in
    `internal/librarian/library.go`. Treat configuration as read-only.
-6. **Hermetic Output:** Emitted file paths must remain strictly under `outdir`
+7. **Hermetic Output:** Emitted file paths must remain strictly under `outdir`
    (no `..` relative path escapes).
-7. **Idiomatic Tests:** Use `api.NewTest*` fluent builders for test models. Use
+8. **Idiomatic Tests:** Use `api.NewTest*` fluent builders for test models. Use
    unnamed table-driven slices `for _, test := range []struct { ... }{ ... }`
    and `cmp.Diff`. Never call test builders on production paths.
-8. **Commit Scope:** Keep commits strictly scoped to a single directory. If a
+9. **Commit Scope:** Keep commits strictly scoped to a single directory. If a
    commit must cross directory boundaries during bootstrapping, ask the user
    for confirmation first.
 
@@ -120,17 +129,24 @@ Create the librarian orchestration package under `internal/librarian/<lang>/`:
   	"github.com/googleapis/librarian/internal/config"
   	sidekick "github.com/googleapis/librarian/internal/sidekick/<lang>"
   	"github.com/googleapis/librarian/internal/sidekick/api"
+    "github.com/googleapis/librarian/internal/sidekick/parser"
+    "github.com/googleapis/librarian/internal/sources"
   )
 
   // Generate runs the <Lang> generator pipeline.
-  func Generate(ctx context.Context, lib *config.Library, model *api.API) error {
-  	if lib.<Lang> == nil {
-  		return fmt.Errorf("library %s is missing <lang> configuration", lib.Name)
-  	}
-  	if err := sidekick.Generate(ctx, model, lib.Output, lib.<Lang>); err != nil {
-  		return err
-  	}
-  	return Format(lib.Output)
+  func Generate(ctx context.Context, cfg *config.Config, lib *config.Library, srcs *sources.Sources) error {
+    if lib.<Lang> == nil {
+      return fmt.Errorf("library %s is missing <lang> configuration", lib.Name)
+    }
+    modelConfig, err := libraryToModelConfig(library, library.APIs[0], sources, pc)
+    if err != nil {
+      return err
+    }
+    model, err := parser.CreateModel(modelConfig)
+    if err != nil {
+      return err
+    }
+  	return sidekick.Generate(ctx, model, lib.Output, lib.<Lang>)
   }
   ```
 - `generate_test.go`: Unit tests for Librarian `<lang>.Generate`.
@@ -139,6 +155,11 @@ Create the librarian orchestration package under `internal/librarian/<lang>/`:
 - `format.go`: Runs the target language formatter (e.g. `clang-format`,
   `rustfmt`, `swift-format`) or performs no-op/validation. Must fail loudly if
   formatting fails on validly generated code.
+  ```go
+  func Format(ctx context.Context, library *config.Library) error {
+    return nil
+  }
+  ```
 - `format_test.go`: Unit tests for `Format`.
 
 ### Step 4: Hook into Librarian Core
@@ -174,6 +195,7 @@ gofmt -s -w .
 go tool goimports -w .
 go tool golangci-lint run ./internal/sidekick/<lang>/... ./internal/librarian/<lang>/... ./internal/config/...
 go test -short ./internal/sidekick/<lang>/... ./internal/librarian/<lang>/... ./internal/config/...
+go test ./...
 ```
 
 ### Invariants Checklist:
