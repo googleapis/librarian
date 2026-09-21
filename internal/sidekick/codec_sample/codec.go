@@ -14,8 +14,23 @@
 
 package codec_sample
 
-type codec struct{}
+import (
+	"fmt"
+	"time"
+)
+
+type codec struct {
+	// New generators initialize a field like this one from the library
+	// configuration. That makes the generation output stable when no input has
+	// changed.
+	//
+	// Older generators update the copyright year on each generation. That is
+	// also valid, just a little more churn.
+	CopyrightYear string
+}
 
 func newCodec() (*codec, error) {
-	return &codec{}, nil
+	return &codec{
+		CopyrightYear: fmt.Sprintf("%04d", time.Now().Year()),
+	}, nil
 }

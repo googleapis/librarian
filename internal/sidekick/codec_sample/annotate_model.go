@@ -26,7 +26,7 @@ type modelAnnotations struct {
 
 func (c *codec) annotateModel(model *api.API) error {
 	model.Codec = &modelAnnotations{
-		CopyrightYear: "2026",
+		CopyrightYear: c.CopyrightYear,
 		BoilerPlate:   license.HeaderBulk(),
 	}
 	for _, m := range model.Messages {
