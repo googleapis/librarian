@@ -102,8 +102,10 @@ func env(binDir string) ([]string, error) {
 	env = append(env, "PNPM_CONFIG_GLOBAL_BIN_DIR="+binDir)
 	env = append(env, "PNPM_CONFIG_GLOBAL_DIR="+globalDir)
 	env = append(env, "PNPM_CONFIG_STORE_DIR="+storeDir)
-	// Prevent Corepack from downloading package managers to ensure hermetic execution.
+	// Prevent Corepack from downloading or strictly overriding package manager versions.
 	env = append(env, "COREPACK_ENABLE_DOWNLOAD=0")
+	env = append(env, "COREPACK_ENABLE_STRICT=0")
+	env = append(env, "COREPACK_ENABLE_AUTO_PIN=0")
 	// TODO(https://github.com/googleapis/librarian/issues/6889): Remove legacy NPM_CONFIG_*
 	// environment variables once pnpm is upgraded to version 8+.
 	env = append(env, "NPM_CONFIG_GLOBAL_BIN_DIR="+binDir)
