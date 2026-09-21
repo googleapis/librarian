@@ -217,3 +217,12 @@ func deriveGAPICName(apiPath string) string {
 	apiPath = strings.Trim(apiPath, "/")
 	return strings.ReplaceAll(apiPath, "/", "_")
 }
+
+// typeNameFromID returns the unqualified type name from a fully-qualified proto ID.
+func typeNameFromID(id string) string {
+	if id == "" {
+		return ""
+	}
+	parts := strings.Split(id, ".")
+	return parts[len(parts)-1]
+}

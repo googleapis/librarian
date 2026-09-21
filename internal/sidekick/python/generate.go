@@ -188,6 +188,17 @@ func Generate(ctx context.Context, model *api.API, outdir string, library *confi
 				},
 			},
 		)
+		if ann.HasPagers {
+			serviceFiles = append(serviceFiles,
+				serviceFilePair{
+					service: service,
+					file: language.GeneratedFile{
+						TemplatePath: "templates/services/service/pagers.py.mustache",
+						OutputPath:   filepath.Join(serviceDir, "pagers.py"),
+					},
+				},
+			)
+		}
 	}
 
 	allFiles := make([]language.GeneratedFile, 0, len(modelFiles)+len(serviceFiles)+len(typeFiles))

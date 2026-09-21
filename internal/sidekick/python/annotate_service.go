@@ -33,6 +33,12 @@ type serviceAnnotations struct {
 	DocLines        []string
 	Methods         []*methodAnnotations
 	Transport       *transportAnnotations
+	// Pagers holds pager metadata for services with paged methods.
+	Pagers []*pagerAnnotations
+	// PagerTypeImports holds module imports needed by pagers.py.
+	PagerTypeImports []*pagerTypeImport
+	// HasPagers is true if the service defines at least one paged method.
+	HasPagers bool
 }
 
 func (c *codec) annotateService(service *api.Service, model *modelAnnotations) error {
@@ -73,6 +79,11 @@ func (c *codec) annotateService(service *api.Service, model *modelAnnotations) e
 		return err
 	}
 	ann.Transport = tAnn
+
+	pAnn := c.annotatePagers(service)
+	ann.Pagers = pAnn.Pagers
+	ann.PagerTypeImports = pAnn.TypeImports
+	ann.HasPagers = pAnn.HasPagers
 
 	service.Codec = ann
 	return nil

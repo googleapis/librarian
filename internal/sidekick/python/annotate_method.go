@@ -31,6 +31,7 @@ type methodAnnotations struct {
 	IsPaged        bool
 	IsLRO          bool
 	IsMixin        bool
+	Pager          *pagerAnnotations
 }
 
 func (c *codec) annotateMethod(method *api.Method, service *serviceAnnotations) error {
@@ -43,7 +44,11 @@ func (c *codec) annotateMethod(method *api.Method, service *serviceAnnotations) 
 	if method.OutputType != nil {
 		outputTypeName = method.OutputType.Name
 	}
-	isMixin := service != nil && service.Service != nil && method.SourceServiceID != "" && method.SourceServiceID != service.Service.ID
+	var svc *api.Service
+	if service != nil {
+		svc = service.Service
+	}
+	isMixin := isMixin(method, svc)
 	ann := &methodAnnotations{
 		Service:        service,
 		Method:         method,
@@ -53,10 +58,15 @@ func (c *codec) annotateMethod(method *api.Method, service *serviceAnnotations) 
 		InputTypeName:  inputTypeName,
 		OutputTypeName: outputTypeName,
 		IsStreaming:    method.ServerSideStreaming || method.ClientSideStreaming || method.IsStreaming,
-		IsPaged:        method.Pagination != nil,
+		IsPaged:        method.Pagination != nil && !isMixin,
 		IsLRO:          method.OperationInfo != nil || method.IsLRO,
 		IsMixin:        isMixin,
 	}
 	method.Codec = ann
 	return nil
+}
+
+// isMixin returns true if m originates from a different service than the host service.
+func isMixin(m *api.Method, service *api.Service) bool {
+	return m != nil && m.SourceServiceID != "" && service != nil && m.SourceServiceID != service.ID
 }

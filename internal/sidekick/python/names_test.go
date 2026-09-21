@@ -240,3 +240,22 @@ func TestDeriveGAPICName(t *testing.T) {
 		})
 	}
 }
+
+func TestTypeNameFromID(t *testing.T) {
+	for _, test := range []struct {
+		name  string
+		input string
+		want  string
+	}{
+		{name: "empty string", input: "", want: ""},
+		{name: "single token", input: "Secret", want: "Secret"},
+		{name: "dotted ID", input: ".google.cloud.secretmanager.v1.Secret", want: "Secret"},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := typeNameFromID(test.input)
+			if got != test.want {
+				t.Errorf("typeNameFromID(%q) = %q, want %q", test.input, got, test.want)
+			}
+		})
+	}
+}

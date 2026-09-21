@@ -141,3 +141,60 @@ func TestAnnotateMethod(t *testing.T) {
 		})
 	}
 }
+
+func TestIsMixin(t *testing.T) {
+	sameMethod := api.NewTestMethod("SameMethod")
+	svc := api.NewTestService("TestService").WithPackage("test").WithMethods(sameMethod)
+
+	otherMethod := api.NewTestMethod("OtherMethod")
+	_ = api.NewTestService("OtherService").WithPackage("other").WithMethods(otherMethod)
+
+	matchingMethod := api.NewTestMethod("MethodMatching").WithSourceMethod(sameMethod)
+	differentMethod := api.NewTestMethod("MethodDifferent").WithSourceMethod(otherMethod)
+	noSourceMethod := api.NewTestMethod("MethodNoSource")
+
+	for _, test := range []struct {
+		name    string
+		method  *api.Method
+		service *api.Service
+		want    bool
+	}{
+		{
+			name:    "nil method",
+			method:  nil,
+			service: svc,
+			want:    false,
+		},
+		{
+			name:    "nil service",
+			method:  differentMethod,
+			service: nil,
+			want:    false,
+		},
+		{
+			name:    "matching service",
+			method:  matchingMethod,
+			service: svc,
+			want:    false,
+		},
+		{
+			name:    "different service",
+			method:  differentMethod,
+			service: svc,
+			want:    true,
+		},
+		{
+			name:    "empty source service id",
+			method:  noSourceMethod,
+			service: svc,
+			want:    false,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := isMixin(test.method, test.service)
+			if got != test.want {
+				t.Errorf("isMixin() = %v, want %v", got, test.want)
+			}
+		})
+	}
+}

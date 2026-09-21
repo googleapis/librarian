@@ -222,7 +222,7 @@ func (c *codec) annotateTransport(service *api.Service) (*transportAnnotations, 
 		if m.OperationInfo != nil || m.OutputTypeID == ".google.longrunning.Operation" {
 			hasLRO = true
 		}
-		if isMixinMethod(m, service) {
+		if isMixin(m, service) {
 			mixinMethods = append(mixinMethods, m)
 			if strings.HasPrefix(m.SourceServiceID, operationsServiceIDPrefix) {
 				hasOperationsMixin = true
@@ -476,32 +476,6 @@ func (c *codec) buildWrappedMethod(m *api.Method, service *api.Service, cfg *grp
 	return wAnn
 }
 
-func isMixinMethod(m *api.Method, service *api.Service) bool {
-	return m.SourceServiceID != "" && m.SourceServiceID != service.ID
-}
-
-func (c *codec) resolveTypeModule(typeID string, service *api.Service) string {
-	if c.Model != nil {
-		for curID := typeID; curID != ""; {
-			if msg := c.Model.Message(curID); msg != nil && msg.SourceLocation != nil && msg.SourceLocation.File != "" {
-				return strings.TrimSuffix(filepath.Base(msg.SourceLocation.File), ".proto")
-			}
-			if enum := c.Model.Enum(curID); enum != nil && enum.SourceLocation != nil && enum.SourceLocation.File != "" {
-				return strings.TrimSuffix(filepath.Base(enum.SourceLocation.File), ".proto")
-			}
-			idx := strings.LastIndex(curID, ".")
-			if idx <= 0 {
-				break
-			}
-			curID = curID[:idx]
-		}
-	}
-	if service != nil {
-		return snakeCase(service.Name)
-	}
-	return "common"
-}
-
 func (c *codec) loadGRPCServiceConfig(service *api.Service) (*grpcServiceConfig, error) {
 	configPath := c.findConfigFileForService(service, "*_grpc_service_config.json")
 	if configPath == "" {
@@ -616,11 +590,6 @@ func formatFloat(val float64) string {
 		return fmt.Sprintf("%.1f", val)
 	}
 	return strconv.FormatFloat(val, 'f', -1, 64)
-}
-
-func typeNameFromID(id string) string {
-	parts := strings.Split(id, ".")
-	return parts[len(parts)-1]
 }
 
 func getGRPCStubType(m *api.Method) string {

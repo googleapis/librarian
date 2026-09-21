@@ -143,3 +143,28 @@ func (c *codec) isDefaultVersion() bool {
 func (c *codec) pythonPackage() string {
 	return strings.ReplaceAll(filepath.ToSlash(c.packageDir()), "/", ".")
 }
+
+// resolveTypeModule returns the Python module name for the given protobuf type ID.
+// If the type ID is associated with a message or enum in the model, its source file's base name is used.
+// Otherwise, it falls back to the snake_case name of the service or "common".
+func (c *codec) resolveTypeModule(typeID string, service *api.Service) string {
+	if c.Model != nil {
+		for curID := typeID; curID != ""; {
+			if msg := c.Model.Message(curID); msg != nil && msg.SourceLocation != nil && msg.SourceLocation.File != "" {
+				return strings.TrimSuffix(filepath.Base(msg.SourceLocation.File), ".proto")
+			}
+			if enum := c.Model.Enum(curID); enum != nil && enum.SourceLocation != nil && enum.SourceLocation.File != "" {
+				return strings.TrimSuffix(filepath.Base(enum.SourceLocation.File), ".proto")
+			}
+			idx := strings.LastIndex(curID, ".")
+			if idx <= 0 {
+				break
+			}
+			curID = curID[:idx]
+		}
+	}
+	if service != nil {
+		return snakeCase(service.Name)
+	}
+	return "common"
+}

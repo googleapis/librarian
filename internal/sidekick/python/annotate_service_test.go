@@ -95,3 +95,86 @@ func TestAnnotateService(t *testing.T) {
 		})
 	}
 }
+
+func TestAnnotateService_PagedMethodAttachment(t *testing.T) {
+	secretMsg := api.NewTestMessage("Secret").
+		WithPackage("google.cloud.secretmanager.v1").
+		WithSourceLocation("google/cloud/secretmanager/v1/secretmanager.proto", 10)
+	secretsField := api.NewTestField("secrets").
+		WithMessageType(secretMsg).
+		WithRepeated()
+	nextPageTokenField := api.NewTestField("next_page_token").
+		WithType(api.TypezString)
+	respMsg := api.NewTestMessage("ListSecretsResponse").
+		WithPackage("google.cloud.secretmanager.v1").
+		WithSourceLocation("google/cloud/secretmanager/v1/secretmanager.proto", 20).
+		WithFields(secretsField, nextPageTokenField).
+		WithPagination(nextPageTokenField, secretsField)
+	pageTokenField := api.NewTestField("page_token").
+		WithType(api.TypezString)
+	reqMsg := api.NewTestMessage("ListSecretsRequest").
+		WithPackage("google.cloud.secretmanager.v1").
+		WithSourceLocation("google/cloud/secretmanager/v1/secretmanager.proto", 30).
+		WithFields(pageTokenField)
+	pagedMethod := api.NewTestMethod("ListSecrets").
+		WithInput(reqMsg).
+		WithOutput(respMsg).
+		WithPagination(pageTokenField)
+
+	getSecretReq := api.NewTestMessage("GetSecretRequest").
+		WithPackage("google.cloud.secretmanager.v1").
+		WithSourceLocation("google/cloud/secretmanager/v1/secretmanager.proto", 40)
+	unaryMethod := api.NewTestMethod("GetSecret").
+		WithInput(getSecretReq).
+		WithOutput(secretMsg)
+
+	svc := api.NewTestService("SecretManagerService").
+		WithPackage("google.cloud.secretmanager.v1").
+		WithSourceLocation("google/cloud/secretmanager/v1/secretmanager.proto", 50).
+		WithMethods(pagedMethod, unaryMethod)
+
+	model := api.NewTestAPI([]*api.Message{secretMsg, reqMsg, respMsg, getSecretReq}, nil, []*api.Service{svc}).
+		WithPackageName("google.cloud.secretmanager.v1")
+	c := newTestCodec(t, model, nil)
+
+	modelAnn := &modelAnnotations{CopyrightYear: "2026"}
+	if err := c.annotateService(svc, modelAnn); err != nil {
+		t.Fatal(err)
+	}
+
+	sAnn, ok := svc.Codec.(*serviceAnnotations)
+	if !ok {
+		t.Fatalf("svc.Codec is %T, want *serviceAnnotations", svc.Codec)
+	}
+	if !sAnn.HasPagers {
+		t.Errorf("sAnn.HasPagers = false, want true")
+	}
+	if len(sAnn.Pagers) != 1 {
+		t.Errorf("len(sAnn.Pagers) = %d, want 1", len(sAnn.Pagers))
+	}
+	if len(sAnn.PagerTypeImports) == 0 {
+		t.Errorf("len(sAnn.PagerTypeImports) = 0, want > 0")
+	}
+
+	pagedAnn, ok := pagedMethod.Codec.(*methodAnnotations)
+	if !ok {
+		t.Fatalf("pagedMethod.Codec is %T, want *methodAnnotations", pagedMethod.Codec)
+	}
+	if !pagedAnn.IsPaged {
+		t.Errorf("pagedMethod.Codec.IsPaged = false, want true")
+	}
+	if pagedAnn.Pager == nil {
+		t.Errorf("pagedMethod.Codec.Pager = nil, want non-nil")
+	}
+
+	unaryAnn, ok := unaryMethod.Codec.(*methodAnnotations)
+	if !ok {
+		t.Fatalf("unaryMethod.Codec is %T, want *methodAnnotations", unaryMethod.Codec)
+	}
+	if unaryAnn.IsPaged {
+		t.Errorf("unaryMethod.Codec.IsPaged = true, want false")
+	}
+	if unaryAnn.Pager != nil {
+		t.Errorf("unaryMethod.Codec.Pager = %v, want nil", unaryAnn.Pager)
+	}
+}

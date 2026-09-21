@@ -251,6 +251,85 @@ func TestCodec_IsDefaultVersion(t *testing.T) {
 	}
 }
 
+func TestCodec_ResolveTypeModule(t *testing.T) {
+	msg := api.NewTestMessage("Secret").
+		WithPackage("google.cloud.secretmanager.v1").
+		WithSourceLocation("google/cloud/secretmanager/v1/resources.proto", 10)
+	enum := api.NewTestEnum("SecretVersionState").
+		WithPackage("google.cloud.secretmanager.v1").
+		WithSourceLocation("google/cloud/secretmanager/v1/enums.proto", 20)
+	svc := api.NewTestService("SecretManagerService")
+	model := api.NewTestAPI([]*api.Message{msg}, []*api.Enum{enum}, []*api.Service{svc})
+
+	cWithModel := &codec{Model: model}
+	cWithoutModel := &codec{}
+
+	for _, test := range []struct {
+		name    string
+		c       *codec
+		typeID  string
+		service *api.Service
+		want    string
+	}{
+		{
+			name:    "empty ID with service falls back to service snake_case",
+			c:       cWithModel,
+			typeID:  "",
+			service: svc,
+			want:    "secret_manager_service",
+		},
+		{
+			name:    "empty ID without service falls back to common",
+			c:       cWithModel,
+			typeID:  "",
+			service: nil,
+			want:    "common",
+		},
+		{
+			name:    "with Model message returns proto file stem",
+			c:       cWithModel,
+			typeID:  msg.ID,
+			service: svc,
+			want:    "resources",
+		},
+		{
+			name:    "with Model enum returns proto file stem",
+			c:       cWithModel,
+			typeID:  enum.ID,
+			service: svc,
+			want:    "enums",
+		},
+		{
+			name:    "with Model nested type walks up to parent message",
+			c:       cWithModel,
+			typeID:  msg.ID + ".SubField",
+			service: svc,
+			want:    "resources",
+		},
+		{
+			name:    "without Model falls back to service snake_case",
+			c:       cWithoutModel,
+			typeID:  ".test.SomeMessage",
+			service: svc,
+			want:    "secret_manager_service",
+		},
+		{
+			name:    "without Model and nil service falls back to common",
+			c:       cWithoutModel,
+			typeID:  ".test.SomeMessage",
+			service: nil,
+			want:    "common",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := test.c.resolveTypeModule(test.typeID, test.service)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
 func newTestCodec(t *testing.T, model *api.API, library *config.Library) *codec {
 	t.Helper()
 	c, err := newCodec(model, library, "")
