@@ -41,6 +41,9 @@ func NewTestAPI(messages []*Message, enums []*Enum, services []*Service) *API {
 		if m.Resource != nil {
 			model.resourceByType[m.Resource.Type] = m.Resource
 		}
+		for _, e := range m.Enums {
+			model.enumByID[e.ID] = e
+		}
 	}
 	for _, e := range enums {
 		model.PackageName = e.Package
@@ -153,6 +156,15 @@ func (m *Message) WithOneOfs(oneofs ...*OneOf) *Message {
 	return m
 }
 
+// WithEnums adds enums to the message and updates their parent/ID.
+func (m *Message) WithEnums(enums ...*Enum) *Message {
+	for _, e := range enums {
+		e.WithParent(m)
+	}
+	m.Enums = append(m.Enums, enums...)
+	return m
+}
+
 // WithPagination items and page token fields for a pagination response.
 func (m *Message) WithPagination(nextPageToken *Field, items *Field) *Message {
 	if nextPageToken.Parent != m {
@@ -215,11 +227,25 @@ func NewTestMethod(name string) *Method {
 	}
 }
 
+// WithDocumentation sets the documentation for the method.
+func (m *Method) WithDocumentation(doc string) *Method {
+	m.Documentation = doc
+	return m
+}
+
+func (m *Method) ensureFirstBinding() *PathBinding {
+	if m.PathInfo == nil {
+		m.PathInfo = &PathInfo{}
+	}
+	if len(m.PathInfo.Bindings) == 0 {
+		m.PathInfo.Bindings = append(m.PathInfo.Bindings, &PathBinding{})
+	}
+	return m.PathInfo.Bindings[0]
+}
+
 // WithVerb sets the HTTP verb for the first binding.
 func (m *Method) WithVerb(verb string) *Method {
-	if len(m.PathInfo.Bindings) > 0 {
-		m.PathInfo.Bindings[0].Verb = verb
-	}
+	m.ensureFirstBinding().Verb = verb
 	return m
 }
 
@@ -245,9 +271,34 @@ func (m *Method) WithOutput(msg *Message) *Method {
 
 // WithPathTemplate sets the path template for the first binding.
 func (m *Method) WithPathTemplate(pt *PathTemplate) *Method {
-	if len(m.PathInfo.Bindings) > 0 {
-		m.PathInfo.Bindings[0].PathTemplate = pt
+	m.ensureFirstBinding().PathTemplate = pt
+	return m
+}
+
+// WithBindings sets the HTTP bindings for the method.
+// It initializes PathInfo if it is nil.
+func (m *Method) WithBindings(bindings ...*PathBinding) *Method {
+	if m.PathInfo == nil {
+		m.PathInfo = &PathInfo{}
 	}
+	m.PathInfo.Bindings = bindings
+	return m
+}
+
+// WithBodyFieldPath sets the body field path for the method.
+// It initializes PathInfo if it is nil.
+func (m *Method) WithBodyFieldPath(path string) *Method {
+	if m.PathInfo == nil {
+		m.PathInfo = &PathInfo{}
+	}
+	m.PathInfo.BodyFieldPath = path
+	return m
+}
+
+// WithQueryParameters sets the query parameters on the first binding of the method.
+// It initializes PathInfo if it is nil, and creates a binding if none exists.
+func (m *Method) WithQueryParameters(params map[string]bool) *Method {
+	m.ensureFirstBinding().QueryParameters = params
 	return m
 }
 
@@ -327,6 +378,32 @@ func (m *Method) WithSignatures(signatures ...*MethodSignature) *Method {
 		m.Signatures = append(m.Signatures, s)
 	}
 	return m
+}
+
+// NewTestPathBinding creates a PathBinding with the given verb and path template.
+func NewTestPathBinding(verb string, pt *PathTemplate) *PathBinding {
+	return &PathBinding{
+		Verb:         verb,
+		PathTemplate: pt,
+	}
+}
+
+// WithVerb sets the HTTP verb for the binding.
+func (b *PathBinding) WithVerb(verb string) *PathBinding {
+	b.Verb = verb
+	return b
+}
+
+// WithPathTemplate sets the path template for the binding.
+func (b *PathBinding) WithPathTemplate(pt *PathTemplate) *PathBinding {
+	b.PathTemplate = pt
+	return b
+}
+
+// WithQueryParameters sets the query parameters for the binding.
+func (b *PathBinding) WithQueryParameters(params map[string]bool) *PathBinding {
+	b.QueryParameters = params
+	return b
 }
 
 // NewTestOneOf creates a OneOf with defaults for testing.
@@ -413,6 +490,12 @@ func (f *Field) WithTypezID(id string) *Field {
 	return f
 }
 
+// WithJSONName sets the JSON name of the field.
+func (f *Field) WithJSONName(name string) *Field {
+	f.JSONName = name
+	return f
+}
+
 // WithSkipProtoConversion marks the field as skipping proto conversion.
 func (f *Field) WithSkipProtoConversion() *Field {
 	f.SkipProtoConversion = true
@@ -454,6 +537,110 @@ func (r *Resource) WithSingular(name string) *Resource {
 func (r *Resource) WithPlural(name string) *Resource {
 	r.Plural = name
 	return r
+}
+
+// NewTestEnum creates an Enum with defaults for testing.
+// Default package is "test".
+func NewTestEnum(name string) *Enum {
+	return (&Enum{Name: name}).WithPackage("test")
+}
+
+// WithPackage sets the package for the enum and updates its ID.
+func (e *Enum) WithPackage(pkg string) *Enum {
+	e.Package = pkg
+	e.ID = fmt.Sprintf(".%s.%s", pkg, e.Name)
+	return e
+}
+
+// WithID overrides the enum's ID.
+func (e *Enum) WithID(id string) *Enum {
+	e.ID = id
+	return e
+}
+
+// WithDocumentation sets the documentation for the enum.
+func (e *Enum) WithDocumentation(doc string) *Enum {
+	e.Documentation = doc
+	return e
+}
+
+// WithDeprecated sets whether the enum is deprecated.
+func (e *Enum) WithDeprecated(deprecated bool) *Enum {
+	e.Deprecated = deprecated
+	return e
+}
+
+// WithParent sets the parent message for the enum and updates its ID.
+func (e *Enum) WithParent(parent *Message) *Enum {
+	e.Parent = parent
+	if parent != nil {
+		e.Package = parent.Package
+		if strings.HasPrefix(e.ID, ".test.") || e.ID == "" {
+			e.ID = fmt.Sprintf("%s.%s", parent.ID, e.Name)
+		}
+		for _, v := range e.Values {
+			v.Parent = e
+			if strings.HasPrefix(v.ID, ".test.") || v.ID == "" {
+				v.ID = fmt.Sprintf("%s.%s", e.ID, v.Name)
+			}
+		}
+	}
+	return e
+}
+
+// WithValues adds values to the enum, setting their Parent, ID, and populating UniqueNumberValues.
+func (e *Enum) WithValues(values ...*EnumValue) *Enum {
+	for _, v := range values {
+		v.Parent = e
+		if strings.HasPrefix(v.ID, ".test.") || v.ID == "" {
+			v.ID = fmt.Sprintf("%s.%s", e.ID, v.Name)
+		}
+	}
+	e.Values = append(e.Values, values...)
+	seen := make(map[int32]bool)
+	for _, v := range e.UniqueNumberValues {
+		seen[v.Number] = true
+	}
+	for _, v := range values {
+		if !seen[v.Number] {
+			e.UniqueNumberValues = append(e.UniqueNumberValues, v)
+			seen[v.Number] = true
+		}
+	}
+	return e
+}
+
+// WithUniqueNumberValues overrides UniqueNumberValues on the enum.
+func (e *Enum) WithUniqueNumberValues(values ...*EnumValue) *Enum {
+	e.UniqueNumberValues = values
+	return e
+}
+
+// NewTestEnumValue creates an EnumValue with defaults for testing.
+func NewTestEnumValue(name string, number int32) *EnumValue {
+	return &EnumValue{
+		Name:   name,
+		Number: number,
+		ID:     fmt.Sprintf(".test.%s", name),
+	}
+}
+
+// WithID overrides the enum value's ID.
+func (ev *EnumValue) WithID(id string) *EnumValue {
+	ev.ID = id
+	return ev
+}
+
+// WithDocumentation sets the documentation for the enum value.
+func (ev *EnumValue) WithDocumentation(doc string) *EnumValue {
+	ev.Documentation = doc
+	return ev
+}
+
+// WithDeprecated sets whether the enum value is deprecated.
+func (ev *EnumValue) WithDeprecated(deprecated bool) *EnumValue {
+	ev.Deprecated = deprecated
+	return ev
 }
 
 // ParseTemplateForTest converts a string literal into a []PathSegment slice for testing purposes.

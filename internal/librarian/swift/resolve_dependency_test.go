@@ -126,7 +126,7 @@ func TestResolveDependencyVersions(t *testing.T) {
 			libraries: []*config.Library{
 				{
 					Name:    "google-cloud-auth",
-					Output:  "packages/swift-google-auth/Sources/GoogleCloudAuth/generated",
+					Output:  "packages/swift-google-auth/Sources/GoogleAuth/generated",
 					Version: "0.0.0-preview",
 				},
 			},
@@ -250,6 +250,16 @@ func TestResolveDependencyVersions(t *testing.T) {
 			got := library.Swift.Dependencies[0].Version
 			if diff := cmp.Diff(test.wantVersion, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+			if test.name == "MatchesByURLRepoName" {
+				if diff := cmp.Diff("packages/swift-google-auth", library.Swift.Dependencies[0].Path); diff != "" {
+					t.Errorf("path mismatch (-want +got):\n%s", diff)
+				}
+			}
+			if test.name == "MatchesByNameOverride" {
+				if diff := cmp.Diff("generated/swift-google-iam-v1", library.Swift.Dependencies[0].Path); diff != "" {
+					t.Errorf("path mismatch (-want +got):\n%s", diff)
+				}
 			}
 		})
 	}

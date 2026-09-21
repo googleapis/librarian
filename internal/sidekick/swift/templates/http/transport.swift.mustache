@@ -31,14 +31,14 @@ import Foundation
 {{#Codec.ServiceImports}}
 import {{.}}
 {{/Codec.ServiceImports}}
-@_spi(GoogleCloudInternal) import GoogleCloudGax
+@_spi(GoogleCloudInternal) import GoogleGax
 
 extension Clients {
   final class {{Codec.StubPrefix}}Transport: {{Codec.StubPrefix}}Stub {
-    let inner: GoogleCloudGax._HTTPClient
+    let inner: GoogleGax._HTTPClient
 
-    public init(_ options: GoogleCloudGax.ClientOptions = .init()) throws {
-      self.inner = try GoogleCloudGax._HTTPClient(
+    public init(_ options: GoogleGax.ClientOptions = .init()) throws {
+      self.inner = try GoogleGax._HTTPClient(
         from: options,
         withDefaultEndpoint: "https://{{DefaultHost}}",
       )
@@ -46,12 +46,17 @@ extension Clients {
     {{#Codec.Methods}}
 
     public func {{> /templates/common/method_signature/request_options}} {
-      let (path, query, configure) = try { () throws -> (Swift.String, [URLQueryItem], (inout GoogleCloudGax._HTTPClientRequest) -> Void) in
+      let (path, query, configure{{#Codec.HasOmittedBodyFields}}, omitted{{/Codec.HasOmittedBodyFields}}) = try { () throws -> (Swift.String, [URLQueryItem], (inout GoogleGax._HTTPClientRequest) -> Void{{#Codec.HasOmittedBodyFields}}, [Swift.String]{{/Codec.HasOmittedBodyFields}}) in
         {{#Codec.PathBindings}}
         if let candidate = try { () throws -> (Swift.String, [URLQueryItem])? in
           {{#PathVariables}}
           {{#HasMatchingSegments}}
-          guard let {{Name}} = GoogleCloudGax._RoutingMatcher.value(request{{Expression}}, matching: {{{MatchingSegmentsExpression}}}) else {
+          guard
+            let {{Name}} = try GoogleGax._RoutingMatcher.pathValue(
+              request{{Expression}},
+              matching: {{{MatchingSegmentsExpression}}},
+              fieldName: "{{FieldPath}}")
+          else {
             return nil
           }
           {{/HasMatchingSegments}}
@@ -69,7 +74,7 @@ extension Clients {
             URLQueryItem(name: "$apiVersion", value: "{{.}}"),
             {{/APIVersion}}
           ]
-          let encoder = GoogleCloudGax._QueryParameterEncoder()
+          let encoder = GoogleGax._QueryParameterEncoder()
           {{/HasQueryParams}}
           {{^HasQueryParams}}
           let query = [
@@ -93,14 +98,14 @@ extension Clients {
           {{/QueryParams}}
           return (path, query)
         }() {
-          return (candidate.0, candidate.1, { $0.setMethod(.{{HTTPMethod}}) })
+          return (candidate.0, candidate.1, { $0.setMethod(.{{HTTPMethod}}) }{{#Codec.HasOmittedBodyFields}}, {{{OmittedBodyFieldsExpression}}}{{/Codec.HasOmittedBodyFields}})
         }
         {{/Codec.PathBindings}}
-        var paths: [GoogleCloudGax.PathMismatch] = []
+        var paths: [GoogleGax.PathMismatch] = []
         {{#Codec.PathBindings}}
         do {
           {{#HasPathVariables}}
-          var builder = GoogleCloudGax._PathMismatchBuilder()
+          var builder = GoogleGax._PathMismatchBuilder()
           {{#PathVariables}}
           {{#HasMatchingSegments}}
           builder.maybeAdd(
@@ -120,18 +125,23 @@ extension Clients {
           paths.append(builder.build())
           {{/HasPathVariables}}
           {{^HasPathVariables}}
-          paths.append(GoogleCloudGax.PathMismatch())
+          paths.append(GoogleGax.PathMismatch())
           {{/HasPathVariables}}
         }
         {{/Codec.PathBindings}}
-        throw GoogleCloudGax.RequestError.binding(GoogleCloudGax.BindingError(paths: paths))
+        throw GoogleGax.RequestError.binding(GoogleGax.BindingError(paths: paths))
       }()
-      var req = try await self.inner.newRequest(path: path, query: query, options: options)
+      var req = try await self.inner.newRequest(percentEncodedPath: path, query: query, options: options)
       configure(&req)
-      req.addHeader(name: GoogleCloudGax._HeaderNames.apiClient, value: Clients.clientHeader)
+      req.addHeader(name: GoogleGax._HeaderNames.apiClient, value: Clients.clientHeader)
       {{#Codec.HasBody}}
       {{#Codec.IsBodyWildcard}}
+      {{#Codec.HasOmittedBodyFields}}
+      try req.setBody(json: request, omitting: omitted)
+      {{/Codec.HasOmittedBodyFields}}
+      {{^Codec.HasOmittedBodyFields}}
       try req.setBody(json: request)
+      {{/Codec.HasOmittedBodyFields}}
       {{/Codec.IsBodyWildcard}}
       {{^Codec.IsBodyWildcard}}
       if let body = request.{{Codec.BodyField}} {

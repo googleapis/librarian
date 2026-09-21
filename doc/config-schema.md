@@ -346,12 +346,22 @@ This document describes the schema for the librarian.yaml.
 | `disabled_generator_features` | list of string | Provides a mechanism for disabling generator features at the API level. These features will be disabled if both specified in EnabledGeneratorFeatures and DisabledGeneratorFeatures. |
 | `enabled_generator_features` | list of string | Provides a mechanism for enabling generator features at the API level. |
 | `import_path` | string | Is the Go import path for the API. |
+| `internal_copies` | list of [GoInternalCopy](#gointernalcopy-configuration) (optional) | Lists private copies of the API's messages to generate into internal Go packages, so that an additional protoc plugin can run on each copy without its output becoming part of the public API surface. Each copy is generated from the proto files in the API directory, without services, under a renamed proto package so that it can be linked beside the public package. Copies require the open protobuf API level. A copy directory holds generated code only and is removed entirely before regeneration, so handwritten code must live outside it. |
 | `nested_protos` | list of string | Is a list of nested proto files. |
 | `no_metadata` | bool | Indicates whether to skip generating gapic_metadata.json. This is typically false. |
 | `no_snippets` | bool | Indicates whether to skip generating snippets. This is typically false. |
 | `proto_api_level` | string | Allows direct control of protobuf plugin's code generation level. Values allowed are API_OPEN, API_HYBRID, and API_OPAQUE. The default is unset, which relies on proto file annotations. More info: https://protobuf.dev/reference/go/opaque-migration/ |
 | `proto_only` | bool | Determines whether to generate a Proto-only client. A proto-only client does not define a service in the proto files. |
 | `proto_package` | string | Is the proto package name. |
+
+## GoInternalCopy Configuration
+
+| Field | Type | Description |
+| :--- | :--- | :--- |
+| `import_path` | string | Is the Go import path of the copy, relative to cloud.google.com/go, in canonical form and inside the library's own module. It must contain an "internal" path element so that the copy cannot be imported by users of the library, and must not overlap the directory of another copy or of a generated client. Existing symlinks below the library output directory are rejected before generation. |
+| `plugin` | string | Is the required additional protoc plugin, without the "protoc-gen-" prefix, for example "go-vtproto". The binary is looked up in the Go tool bin directory, then on the PATH. Declare its Go module under tools.go. The name must contain only letters, digits, "-", or "_". |
+| `plugin_options` | list of string | Are passed as `--<plugin>_opt` values. The plugin must write its output next to protoc-gen-go's, under the Go import path. Layout options `paths=`, `module=`, and `M<file>=` import mappings are rejected, including in comma-separated parameter lists. |
+| `proto_package` | string | Is the proto package of the copy. It must be a valid proto package name that differs from the proto package of the API and of every other copy. |
 
 ## GoModule Configuration
 
@@ -547,6 +557,7 @@ This document describes the schema for the librarian.yaml.
 | `included_ids` | list of string | Is a list of IDs to include. |
 | `skipped_ids` | list of string | Is a list of IDs to skip. |
 | `disabled_clippy_warnings` | list of string | Is a list of clippy warnings to disable. |
+| `handwritten_surface` | string | Indicates whether the crate or specific services have a handwritten surface. Accepts "true" for all services, or a comma-separated list of service IDs. |
 | `has_veneer` | bool | Indicates whether the crate has a veneer. |
 | `routing_required` | bool | Indicates whether routing is required. |
 | `include_grpc_only_methods` | bool | Indicates whether to include gRPC-only methods. |
@@ -601,6 +612,7 @@ This document describes the schema for the librarian.yaml.
 | `idempotency_hook` | string | Configures an opt-in method on the request struct to resolve and transform idempotency request options before dispatch. |
 | `include_list` | yaml.StringSlice | Is a list of proto files to include (e.g., "date.proto", "expr.proto"). |
 | `include_streaming_methods` | bool | Indicates whether to include gRPC streaming methods. |
+| `handwritten_surface` | string | Indicates whether the module or specific services have a handwritten surface. Accepts "true" for all services, or a comma-separated list of service IDs. |
 | `internal_builders` | bool | Indicates whether generated builders should be internal to the crate. |
 | `module_path` | string | Is the Rust module path for converters (e.g., "crate::generated::gapic::model"). |
 | `module_roots` | map[string]string |  |
@@ -651,7 +663,7 @@ This document describes the schema for the librarian.yaml.
 | `url` | string | Configures the `url:` parameter in the package definition.<br><br>For example, `https://github.com/apple/swift-protobuf` would generate the following snippet in the `Package.swift` files:<br><br>``` .package(url: "https://github.com/apple/swift-protobuf") ``` |
 | `version` | string | Configures the minimum version for external package definitions.<br><br>For example, if the `swift-protobuf` package used `1.36.1`, then the codec would generate the following snippet in the `Package.swift` files:<br><br>``` .package(url: "https://github.com/apple/swift-protobuf", from: "1.36.1") ``` |
 | `required_by_services` | bool | Is true if this dependency is required by packages with services.<br><br>This will be set for the `gax` library and the `auth` library. Maybe more if we split the HTTP and gRPC clients into separate libraries. |
-| `api_package` | string | Is the name of the API package provided by this library.<br><br>In Swift a package contains at most one channel for one API. For packages that implement an API, this field contains the name of the package in the specification language of that API. At the moment this is only used by Protobuf-based APIs, as OpenAPI and discovery doc APIs are self-contained.<br><br>Note that some packages, for example `auth` and `gax`, do not implement APIs. This field is empty for such libraries.<br><br>Examples:<br>- The `GoogleCloudWKT` package will set this to `google.cloud.protobuf`.<br>- The `GoogleCloudLocation` package will set this to `google.cloud.location`. |
+| `api_package` | string | Is the name of the API package provided by this library.<br><br>In Swift a package contains at most one channel for one API. For packages that implement an API, this field contains the name of the package in the specification language of that API. At the moment this is only used by Protobuf-based APIs, as OpenAPI and discovery doc APIs are self-contained.<br><br>Note that some packages, for example `auth` and `gax`, do not implement APIs. This field is empty for such libraries.<br><br>Examples:<br>- The `GoogleWKT` package will set this to `google.cloud.protobuf`.<br>- The `GoogleCloudLocation` package will set this to `google.cloud.location`. |
 | `spi` | string | If set, the dependency requires an `@_spi(...)` attribute. |
 
 ## SwiftModule Configuration
@@ -683,6 +695,7 @@ This document describes the schema for the librarian.yaml.
 | `per_service_traits` | bool | Enables per-service compile-time flags. |
 | `default_traits` | list of string | Is a list of compile-time traits enabled by default. |
 | `discovery` | SwiftDiscovery (optional) | Contains discovery-specific configuration for LRO polling. |
+| `lro_any_converter` | string | Names the generated converter for the `Any` fields of `google.longrunning.Operation` (e.g. "StorageControlLROAnyConverter"), which converts long-running operation payloads by type URL. Cannot be combined with `per_service_traits`. |
 
 ## SwiftTool Configuration
 

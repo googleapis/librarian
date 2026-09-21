@@ -304,6 +304,12 @@ func TestIsEmptyAPI(t *testing.T) {
 			},
 		},
 		{
+			name: "not empty with InternalCopies",
+			goAPI: &config.GoAPI{
+				InternalCopies: []*config.GoInternalCopy{{ImportPath: "foo/internal/fastpb", Plugin: "go-vtproto"}},
+			},
+		},
+		{
 			name: "not empty with NestedProtos",
 			goAPI: &config.GoAPI{
 				NestedProtos: []string{"foo"},

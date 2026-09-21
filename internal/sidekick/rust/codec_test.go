@@ -336,6 +336,24 @@ func TestParseOptions(t *testing.T) {
 		{
 			Format: libconfig.SpecProtobuf,
 			Options: map[string]string{
+				"handwritten-surface": "true",
+			},
+			Update: func(c *codec) {
+				c.handwrittenSurface = []string{"true"}
+			},
+		},
+		{
+			Format: libconfig.SpecProtobuf,
+			Options: map[string]string{
+				"handwritten-surface": ".test.v1.ServiceA,.test.v1.ServiceB",
+			},
+			Update: func(c *codec) {
+				c.handwrittenSurface = []string{".test.v1.ServiceA", ".test.v1.ServiceB"}
+			},
+		},
+		{
+			Format: libconfig.SpecProtobuf,
+			Options: map[string]string{
 				"internal-builders": "true",
 			},
 			Update: func(c *codec) {
@@ -396,10 +414,10 @@ func TestParseOptionsErrors(t *testing.T) {
 		{Options: map[string]string{"per-service-features": ""}},
 		{Options: map[string]string{"detailed-tracing-attributes": ""}},
 		{Options: map[string]string{"lro-stub-options": ""}},
-		{Options: map[string]string{"has-veneer": ""}},
 		{Options: map[string]string{"routing-required": ""}},
 		{Options: map[string]string{"generate-setter-samples": ""}},
 		{Options: map[string]string{"generate-rpc-samples": ""}},
+		{Options: map[string]string{"has-veneer": ""}},
 		{Options: map[string]string{"internal-builders": ""}},
 		{Options: map[string]string{"--invalid--": ""}},
 	} {

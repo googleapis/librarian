@@ -17,7 +17,7 @@ package python
 import (
 	"errors"
 	"fmt"
-	"path"
+	"log"
 	"slices"
 	"strings"
 
@@ -26,6 +26,10 @@ import (
 )
 
 const (
+	// libraryTypeCore is used in [config.PythonDefault.LibraryType] to signify that
+	// the entry is a core library, not an individual API client library.
+	libraryTypeCore = "CORE"
+
 	// defaultVersion is the first version used for a new library.
 	// This is set on the initial `librarian add` for a new API.
 	defaultVersion = "0.0.0"
@@ -34,15 +38,10 @@ const (
 	ReleasePleasePkgPrefix = "packages/"
 )
 
-// libraryTypeCore is used in [config.PythonDefault.LibraryType] to signify that
-// the entry is a core library, not an individual API client library.
-const libraryTypeCore = "CORE"
-
 var (
-	errNewLibraryMustHaveOneAPI          = errors.New("a newly added library (in Python) must have exactly one API so that the default version can be populated")
-	errNewLibraryBadNamespace            = errors.New("derived GAPIC namespace would not match any approved namespace; consult with the Python team to determine whether the namespace should be approved, or whether GAPIC options should be specified for this API in librarian.yaml. See go/clientlibs-python-registered-namespaces for more details")
-	errExistingLibraryNoDefaultVersion   = errors.New("new APIs cannot be automatically added to a library without a default version")
-	errExistingLibraryCustomGAPICOptions = errors.New("new APIs cannot be automatically added to a library with custom GAPIC options")
+	errNewLibraryMustHaveOneAPI        = errors.New("a newly added library (in Python) must have exactly one API so that the default version can be populated")
+	errNewLibraryBadNamespace          = errors.New("derived GAPIC namespace would not match any approved namespace; consult with the Python team to determine whether the namespace should be approved, or whether GAPIC options should be specified for this API in librarian.yaml. See go/clientlibs-python-registered-namespaces for more details")
+	errExistingLibraryNoDefaultVersion = errors.New("new APIs cannot be automatically added to a library without a default version")
 )
 
 // Add initializes a new Python library with default values.
@@ -63,28 +62,13 @@ func Add(cfg *config.Config, lib *config.Library) (*config.Library, error) {
 	return lib, nil
 }
 
-func validateNamespace(cfg *config.Config, apiPath string) error {
-	if cfg == nil || cfg.Default == nil || cfg.Default.Python == nil || len(cfg.Default.Python.AllowedNamespaces) == 0 {
-		return nil
+// UpdateExistingLibrary adds a new API to an existing Python library configuration.
+func UpdateExistingLibrary(existingLib *config.Library, api *config.API) error {
+	if err := validateNewAPIs(existingLib); err != nil {
+		return err
 	}
-	namespace := deriveGAPICNamespace(apiPath)
-	if !slices.Contains(cfg.Default.Python.AllowedNamespaces, namespace) {
-		return fmt.Errorf("%w: unapproved namespace %s derived from API path %s", errNewLibraryBadNamespace, namespace, apiPath)
-	}
-	return nil
-}
-
-// ValidateNewAPIs validates that new APIs can be added to an existing library.
-// Currently this is just a check that there is a default version already, and
-// that no existing APIs in the library have custom GAPIC options. Future checks
-// may require details of the APIs being added.
-func ValidateNewAPIs(lib *config.Library) error {
-	if lib.Python == nil || lib.Python.DefaultVersion == "" {
-		return errExistingLibraryNoDefaultVersion
-	}
-	if len(lib.Python.OptArgsByAPI) != 0 {
-		return errExistingLibraryCustomGAPICOptions
-	}
+	existingLib.APIs = append(existingLib.APIs, api)
+	copyOptArgsByAPI(existingLib, api.Path)
 	return nil
 }
 
@@ -134,43 +118,47 @@ func FindExistingLibraryForNewAPI(libraries []*config.Library, apiPath string) *
 	return nil
 }
 
+func validateNamespace(cfg *config.Config, apiPath string) error {
+	if cfg == nil || cfg.Default == nil || cfg.Default.Python == nil || len(cfg.Default.Python.AllowedNamespaces) == 0 {
+		return nil
+	}
+	namespace := deriveGAPICNamespace(apiPath)
+	if !slices.Contains(cfg.Default.Python.AllowedNamespaces, namespace) {
+		return fmt.Errorf("%w: unapproved namespace %s derived from API path %s", errNewLibraryBadNamespace, namespace, apiPath)
+	}
+	return nil
+}
+
+// validateNewAPIs validates that new APIs can be added to an existing library.
+func validateNewAPIs(lib *config.Library) error {
+	if lib.Python == nil || lib.Python.DefaultVersion == "" {
+		return errExistingLibraryNoDefaultVersion
+	}
+	return nil
+}
+
+// copyOptArgsByAPI copies the opt_args_by_api from the first API in the library to the
+// new API.
+func copyOptArgsByAPI(library *config.Library, apiPath string) {
+	if len(library.Python.OptArgsByAPI) == 0 {
+		return
+	}
+	firstAPIPath := library.APIs[0].Path
+	optArgs, ok := library.Python.OptArgsByAPI[firstAPIPath]
+	if !ok {
+		return
+	}
+	library.Python.OptArgsByAPI[apiPath] = slices.Clone(optArgs)
+	log.Printf(
+		"WARNING: customized opt_args_by_api is copied from %q to %q, but this may not be correct for %q. "+
+			"Please review and edit opt_args_by_api in librarian.yaml if needed.",
+		firstAPIPath, apiPath, apiPath,
+	)
+}
+
 // versionless trims the version (if any) from apiPath, leaving any trailing
 // slash.
 func versionless(apiPath string) string {
 	version := serviceconfig.ExtractVersion(apiPath)
 	return strings.TrimSuffix(apiPath, version)
-}
-
-// ReleasePleaseExtraFiles returns the extra-files tracked by release-please for Python libraries.
-func ReleasePleaseExtraFiles(lib *config.Library) []any {
-	var extraFiles []any
-	addedVersionless := make(map[string]bool)
-	for _, api := range lib.APIs {
-		flattenedPath := flattenNestedPath(api.Path, lib)
-		if !addedVersionless[flattenedPath] {
-			addedVersionless[flattenedPath] = true
-			extraFiles = append(extraFiles, flattenedPath+"/gapic_version.py")
-		}
-		version := serviceconfig.ExtractVersion(api.Path)
-		if version != "" {
-			extraFiles = append(extraFiles, flattenedPath+"_"+version+"/gapic_version.py")
-		}
-		protoPackage := strings.ReplaceAll(api.Path, "/", ".")
-		// https://github.com/googleapis/release-please/blob/main/docs/customizing.md#updating-arbitrary-files
-		snippetMetadata := map[string]any{
-			"jsonpath": "$.clientLibrary.version",
-			"path":     "samples/generated_samples/snippet_metadata_" + protoPackage + ".json",
-			"type":     "json",
-		}
-		extraFiles = append(extraFiles, snippetMetadata)
-	}
-	return extraFiles
-}
-
-// flattenNestedPath flattens nested paths in apiPath, specifically for non-cloud API prefixes.
-// For example, google/shopping/merchant/inventories becomes google/shopping/merchant_inventories.
-func flattenNestedPath(apiPath string, lib *config.Library) string {
-	namespace := strings.ReplaceAll(gapicNamespace(apiPath, lib), ".", "/")
-	name := gapicName(apiPath, lib)
-	return path.Join(namespace, name)
 }

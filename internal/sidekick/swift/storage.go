@@ -89,7 +89,7 @@ func GenerateStorage(
 		for _, s := range model.Services {
 			if sa, ok := s.Codec.(*serviceAnnotations); ok {
 				for _, imp := range sa.ServiceImports() {
-					if !importSet[imp] && imp != "GoogleCloudGax" && imp != "GoogleCloudAuth" && imp != "Foundation" {
+					if !importSet[imp] && imp != "GoogleGax" && imp != "GoogleAuth" && imp != "Foundation" {
 						importSet[imp] = true
 						serviceImports = append(serviceImports, imp)
 					}

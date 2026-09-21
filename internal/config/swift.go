@@ -86,6 +86,12 @@ type SwiftPackage struct {
 
 	// Discovery contains discovery-specific configuration for LRO polling.
 	Discovery *SwiftDiscovery `yaml:"discovery,omitempty"`
+
+	// LROAnyConverter names the generated converter for the `Any` fields of
+	// `google.longrunning.Operation` (e.g. "StorageControlLROAnyConverter"),
+	// which converts long-running operation payloads by type URL. Cannot be
+	// combined with `per_service_traits`.
+	LROAnyConverter string `yaml:"lro_any_converter,omitempty"`
 }
 
 // SwiftDependency represents a dependency in Swift Package Manager.
@@ -141,7 +147,7 @@ type SwiftDependency struct {
 	// empty for such libraries.
 	//
 	// Examples:
-	// - The `GoogleCloudWKT` package will set this to `google.cloud.protobuf`.
+	// - The `GoogleWKT` package will set this to `google.cloud.protobuf`.
 	// - The `GoogleCloudLocation` package will set this to `google.cloud.location`.
 	ApiPackage string `yaml:"api_package,omitempty"`
 	// SpiAttribute if set, the dependency requires an `@_spi(...)` attribute.

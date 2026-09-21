@@ -50,7 +50,7 @@ func TestPublishCommand_Swift(t *testing.T) {
 		t.Fatal(err)
 	}
 	authDir := filepath.Join("packages", "auth")
-	testhelper.AddSwiftPackage(t, authDir, "GoogleCloudAuth")
+	testhelper.AddSwiftPackage(t, authDir, "GoogleAuth")
 	cfg := &config.Config{
 		Language: config.LanguageSwift,
 		Repo:     "googleapis/google-cloud-swift",

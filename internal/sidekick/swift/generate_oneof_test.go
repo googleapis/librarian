@@ -114,7 +114,7 @@ func TestGenerateOneOf(t *testing.T) {
 	// test.
 	//
 	// To verify the code compile, use something like: https://godbolt.org/z/EE9G7KTr8
-	want := `public struct Outer: Codable, Equatable, GoogleCloudWKT._AnyPackable,
+	want := `public struct Outer: Codable, Equatable, GoogleWKT._AnyPackable,
   Sendable {
 
   /// A regular field.
@@ -125,6 +125,8 @@ func TestGenerateOneOf(t *testing.T) {
 
   /// A group of fields where only one is set.
   public var choice: OneOf_Choice? = nil
+
+  @_spi(GoogleCloudInternal) public var _unknownFields: GoogleWKT._UnknownFields = .init()
 
   /// Initialize a new instance of ` + "`Outer`" + `.
   public init() {}
@@ -142,17 +144,33 @@ func TestGenerateOneOf(t *testing.T) {
     return copy
   }
 
-  private enum CodingKeys: Swift.String, CodingKey {
-    case stringField = "stringField"
-    case messageField = "messageField"
-    case regularInt32 = "regularInt32"
-    case regularString = "regularStringSpecial"
+  private struct CodingKeys: CodingKey {
+    var stringValue: Swift.String
+    var intValue: Swift.Int? { nil }
+    init(stringValue: Swift.String) { self.stringValue = stringValue }
+    init?(intValue: Swift.Int) { nil }
+
+    static let stringField = CodingKeys(stringValue: "stringField")
+    static let messageField = CodingKeys(stringValue: "messageField")
+    static let regularInt32 = CodingKeys(stringValue: "regularInt32")
+    static let regularString = CodingKeys(stringValue: "regularStringSpecial")
+
+    static let _knownKeys: Set<Swift.String> = [
+      "stringField",
+      "messageField",
+      "regularInt32",
+      "regularStringSpecial",
+    ]
   }
 
   public init(from decoder: Decoder) throws {
     let container = try decoder.container(keyedBy: CodingKeys.self)
-    self.regularInt32 = try container.decode(Swift.Int32.self, forKey: .regularInt32)
-    self.regularString = try container.decode(Swift.String.self, forKey: .regularString)
+    if let value = try container.decodeIfPresent(Swift.Int32.self, forKey: .regularInt32) {
+      self.regularInt32 = value
+    }
+    if let value = try container.decodeIfPresent(Swift.String.self, forKey: .regularString) {
+      self.regularString = value
+    }
 
     var choice: OneOf_Choice? = nil
     let choiceCheckAndSet = {
@@ -168,6 +186,10 @@ func TestGenerateOneOf(t *testing.T) {
       try choiceCheckAndSet(.messageField(messageField))
     }
     self.choice = choice
+    for key in container.allKeys where !CodingKeys._knownKeys.contains(key.stringValue) {
+      self._unknownFields.json[key.stringValue] = try container.decode(
+        GoogleWKT.Value.self, forKey: key)
+    }
   }
 
   public func encode(to encoder: Encoder) throws {
@@ -183,6 +205,9 @@ func TestGenerateOneOf(t *testing.T) {
         try container.encode(value, forKey: .messageField)
       }
     }
+    for (key, value) in self._unknownFields.json {
+      try container.encode(value, forKey: CodingKeys(stringValue: key))
+    }
   }
 
 
@@ -197,11 +222,11 @@ func TestGenerateOneOf(t *testing.T) {
   public static var _anyTypeUrl: Swift.String {
     return "type.googleapis.com/google.cloud.test.v1.Outer"
   }
-  public init(fromAny any: GoogleCloudWKT.` + "`Any`" + `) throws {
-    self = try GoogleCloudWKT._slowAnyDeserialize(Self.self, from: any)
+  public init(fromAny any: GoogleWKT.` + "`Any`" + `) throws {
+    self = try GoogleWKT._slowAnyDeserialize(Self.self, from: any)
   }
-  public func _pack() throws -> GoogleCloudWKT.Struct {
-    return try GoogleCloudWKT._slowAnySerialize(message: self)
+  public func _pack() throws -> GoogleWKT.Struct {
+    return try GoogleWKT._slowAnySerialize(message: self)
   }
 }
 `
@@ -277,10 +302,12 @@ func TestGenerateOneOfWithKeyword(t *testing.T) {
 	// test.
 	//
 	// To verify the code compile, use something like: https://godbolt.org/z/EE9G7KTr8
-	want := `public struct JwtLocation: Codable, Equatable, GoogleCloudWKT._AnyPackable,
+	want := `public struct JwtLocation: Codable, Equatable, GoogleWKT._AnyPackable,
   Sendable {
 
   public var ` + "`in`" + `: OneOf_In? = nil
+
+  @_spi(GoogleCloudInternal) public var _unknownFields: GoogleWKT._UnknownFields = .init()
 
   /// Initialize a new instance of ` + "`JwtLocation`" + `.
   public init() {}
@@ -298,10 +325,21 @@ func TestGenerateOneOfWithKeyword(t *testing.T) {
     return copy
   }
 
-  private enum CodingKeys: Swift.String, CodingKey {
-    case header = "header"
-    case query = "query"
-    case cookie = "cookie"
+  private struct CodingKeys: CodingKey {
+    var stringValue: Swift.String
+    var intValue: Swift.Int? { nil }
+    init(stringValue: Swift.String) { self.stringValue = stringValue }
+    init?(intValue: Swift.Int) { nil }
+
+    static let header = CodingKeys(stringValue: "header")
+    static let query = CodingKeys(stringValue: "query")
+    static let cookie = CodingKeys(stringValue: "cookie")
+
+    static let _knownKeys: Set<Swift.String> = [
+      "header",
+      "query",
+      "cookie",
+    ]
   }
 
   public init(from decoder: Decoder) throws {
@@ -324,6 +362,10 @@ func TestGenerateOneOfWithKeyword(t *testing.T) {
       try inCheckAndSet(.cookie(cookie))
     }
     self.` + "`in` = `in`" + `
+    for key in container.allKeys where !CodingKeys._knownKeys.contains(key.stringValue) {
+      self._unknownFields.json[key.stringValue] = try container.decode(
+        GoogleWKT.Value.self, forKey: key)
+    }
   }
 
   public func encode(to encoder: Encoder) throws {
@@ -338,6 +380,9 @@ func TestGenerateOneOfWithKeyword(t *testing.T) {
       case .cookie(let value):
         try container.encode(value, forKey: .cookie)
       }
+    }
+    for (key, value) in self._unknownFields.json {
+      try container.encode(value, forKey: CodingKeys(stringValue: key))
     }
   }
 

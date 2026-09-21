@@ -66,7 +66,7 @@ func (ann *serviceAnnotations) ServiceImports() []string {
 // Service snippets are generated examples that show how to initialize the
 // service and call its key methods. They need imports beyond the package for
 // mixins and other external packages. But they do not need the implementation
-// dependencies, such as `GoogleCloudAuth` or `GoogleCloudGax`.
+// dependencies, such as `GoogleAuth` or `GoogleGax`.
 func (ann *serviceAnnotations) SnippetImports() []string {
 	var result []string
 	for _, dep := range ann.DependsOn {

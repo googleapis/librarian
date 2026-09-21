@@ -36,8 +36,8 @@ func TestAnnotateEnum(t *testing.T) {
 			enumName:      "Color",
 			documentation: "A color enum.\nWith two lines.",
 			values: []*api.EnumValue{
-				{Name: "COLOR_UNSPECIFIED", Number: 0},
-				{Name: "COLOR_RED", Number: 1},
+				api.NewTestEnumValue("COLOR_UNSPECIFIED", 0),
+				api.NewTestEnumValue("COLOR_RED", 1),
 			},
 			want: &enumAnnotations{
 				Name:               "Color",
@@ -55,7 +55,7 @@ func TestAnnotateEnum(t *testing.T) {
 			enumName:      "Protocol",
 			documentation: "An enum named Protocol.",
 			values: []*api.EnumValue{
-				{Name: "PROTOCOL_UNSPECIFIED", Number: 0},
+				api.NewTestEnumValue("PROTOCOL_UNSPECIFIED", 0),
 			},
 			want: &enumAnnotations{
 				Name:               "Protocol_",
@@ -73,9 +73,9 @@ func TestAnnotateEnum(t *testing.T) {
 			enumName:      "Weird",
 			documentation: "An enum named Weird.",
 			values: []*api.EnumValue{
-				{Name: "WEIRD_UNSPECIFIED", Number: 0},
-				{Name: "UNKNOWN_INT_VALUE", Number: 1},
-				{Name: "UNKNOWN_STRING_VALUE", Number: 2},
+				api.NewTestEnumValue("WEIRD_UNSPECIFIED", 0),
+				api.NewTestEnumValue("UNKNOWN_INT_VALUE", 1),
+				api.NewTestEnumValue("UNKNOWN_STRING_VALUE", 2),
 			},
 			want: &enumAnnotations{
 				Name:               "Weird",
@@ -90,18 +90,10 @@ func TestAnnotateEnum(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			enum := &api.Enum{
-				Name:               test.enumName,
-				Documentation:      test.documentation,
-				ID:                 ".test." + test.enumName,
-				Package:            "test",
-				Values:             test.values,
-				UniqueNumberValues: test.values,
-			}
-			for _, ev := range enum.Values {
-				ev.Parent = enum
-			}
-			model := api.NewTestAPI([]*api.Message{}, []*api.Enum{enum}, []*api.Service{})
+			enum := api.NewTestEnum(test.enumName).
+				WithDocumentation(test.documentation).
+				WithValues(test.values...)
+			model := api.NewTestAPI(nil, []*api.Enum{enum}, nil)
 			codec := newTestCodec(t, model, nil)
 			if err := codec.annotateModel(); err != nil {
 				t.Fatal(err)
@@ -115,12 +107,8 @@ func TestAnnotateEnum(t *testing.T) {
 }
 
 func TestAnnotateEnum_Error(t *testing.T) {
-	enum := &api.Enum{
-		Name:    "Empty",
-		ID:      ".test.Empty",
-		Package: "test",
-	}
-	model := api.NewTestAPI([]*api.Message{}, []*api.Enum{enum}, []*api.Service{})
+	enum := api.NewTestEnum("Empty")
+	model := api.NewTestAPI(nil, []*api.Enum{enum}, nil)
 	codec := newTestCodec(t, model, nil)
 
 	err := codec.annotateModel()
@@ -178,20 +166,12 @@ func TestAnnotateEnum_Gating(t *testing.T) {
 }
 
 func TestAnnotateEnum_ModulePath(t *testing.T) {
-	enum := &api.Enum{
-		Name:    "Color",
-		ID:      ".test.Color",
-		Package: "test",
-		Values: []*api.EnumValue{
-			{Name: "COLOR_UNSPECIFIED", Number: 0},
-			{Name: "COLOR_RED", Number: 1},
-		},
-	}
-	enum.UniqueNumberValues = enum.Values
-	for _, ev := range enum.Values {
-		ev.Parent = enum
-	}
-	model := api.NewTestAPI([]*api.Message{}, []*api.Enum{enum}, []*api.Service{})
+	enum := api.NewTestEnum("Color").
+		WithValues(
+			api.NewTestEnumValue("COLOR_UNSPECIFIED", 0),
+			api.NewTestEnumValue("COLOR_RED", 1),
+		)
+	model := api.NewTestAPI(nil, []*api.Enum{enum}, nil)
 	codec, err := newCodec(model, &config.Library{}, &config.SwiftModule{ModulePath: "TestProtos"}, ".")
 	if err != nil {
 		t.Fatal(err)
@@ -215,26 +195,14 @@ func TestAnnotateEnum_ModulePath(t *testing.T) {
 }
 
 func TestAnnotateEnum_NestedModulePath(t *testing.T) {
-	parent := &api.Message{
-		Name:    "OuterMessage",
-		ID:      ".test.OuterMessage",
-		Package: "test",
-	}
-	enum := &api.Enum{
-		Name:    "InnerEnum",
-		ID:      ".test.OuterMessage.InnerEnum",
-		Package: "test",
-		Values: []*api.EnumValue{
-			{Name: "INNER_ENUM_UNSPECIFIED", Number: 0},
-			{Name: "INNER_ENUM_VALUE_A", Number: 1},
-		},
-		Parent: parent,
-	}
-	enum.UniqueNumberValues = enum.Values
-	for _, ev := range enum.Values {
-		ev.Parent = enum
-	}
-	model := api.NewTestAPI([]*api.Message{parent}, []*api.Enum{enum}, []*api.Service{})
+	parent := api.NewTestMessage("OuterMessage")
+	enum := api.NewTestEnum("InnerEnum").
+		WithParent(parent).
+		WithValues(
+			api.NewTestEnumValue("INNER_ENUM_UNSPECIFIED", 0),
+			api.NewTestEnumValue("INNER_ENUM_VALUE_A", 1),
+		)
+	model := api.NewTestAPI([]*api.Message{parent}, []*api.Enum{enum}, nil)
 	codec, err := newCodec(model, &config.Library{}, &config.SwiftModule{ModulePath: "TestProtos"}, ".")
 	if err != nil {
 		t.Fatal(err)

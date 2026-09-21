@@ -177,7 +177,7 @@ func TestGenerateService_Delegation(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	wantNewRequest := "var req = try await self.inner.newRequest(path: path, query: query, options: options)"
+	wantNewRequest := "var req = try await self.inner.newRequest(percentEncodedPath: path, query: query, options: options)"
 	if !bytes.Contains(transportContent, []byte(wantNewRequest)) {
 		t.Errorf("expected %q in IAM+Transport.swift, got:\n%s", wantNewRequest, string(transportContent))
 	}
@@ -280,11 +280,11 @@ func TestGenerateService_WithImports(t *testing.T) {
 
 	swiftCfg := swiftConfig(t, []config.SwiftDependency{
 		{
-			Name:               "GoogleCloudGax",
+			Name:               "GoogleGax",
 			RequiredByServices: true,
 		},
 		{
-			Name:               "GoogleCloudAuth",
+			Name:               "GoogleAuth",
 			RequiredByServices: true,
 		},
 		{
@@ -309,8 +309,8 @@ func TestGenerateService_WithImports(t *testing.T) {
 	contentStr := string(content)
 
 	expectedImports := `import GoogleCloudExternalV1
-import GoogleCloudWKT
-import GoogleCloudGax`
+import GoogleWKT
+import GoogleGax`
 
 	if !strings.Contains(contentStr, expectedImports) {
 		t.Errorf("expected imports block not found in %s. Got content:\n%s", filename, contentStr)
@@ -328,9 +328,14 @@ func TestGenerateService_PathParameters(t *testing.T) {
 			path: (&api.PathTemplate{}).
 				WithLiteral("v1").
 				WithVariableNamed("secret", "name"),
-			wantBlock: `let (path, query, configure) = try { () throws -> (Swift.String, [URLQueryItem], (inout GoogleCloudGax._HTTPClientRequest) -> Void) in
+			wantBlock: `let (path, query, configure) = try { () throws -> (Swift.String, [URLQueryItem], (inout GoogleGax._HTTPClientRequest) -> Void) in
         if let candidate = try { () throws -> (Swift.String, [URLQueryItem])? in
-          guard let pathVariable0 = GoogleCloudGax._RoutingMatcher.value(request.secret.map({ $0.name }), matching: [.singleWildcard]) else {
+          guard
+            let pathVariable0 = try GoogleGax._RoutingMatcher.pathValue(
+              request.secret.map({ $0.name }),
+              matching: [.singleWildcard],
+              fieldName: "secret.name")
+          else {
             return nil
           }
           let path = "/v1/\(pathVariable0)"
@@ -341,9 +346,9 @@ func TestGenerateService_PathParameters(t *testing.T) {
         }() {
           return (candidate.0, candidate.1, { $0.setMethod(.POST) })
         }
-        var paths: [GoogleCloudGax.PathMismatch] = []
+        var paths: [GoogleGax.PathMismatch] = []
         do {
-          var builder = GoogleCloudGax._PathMismatchBuilder()
+          var builder = GoogleGax._PathMismatchBuilder()
           builder.maybeAdd(
             request.secret.map({ $0.name }),
             matching: [.singleWildcard],
@@ -352,7 +357,7 @@ func TestGenerateService_PathParameters(t *testing.T) {
           )
           paths.append(builder.build())
         }
-        throw GoogleCloudGax.RequestError.binding(GoogleCloudGax.BindingError(paths: paths))
+        throw GoogleGax.RequestError.binding(GoogleGax.BindingError(paths: paths))
       }()`,
 		},
 		{
@@ -360,9 +365,14 @@ func TestGenerateService_PathParameters(t *testing.T) {
 			path: (&api.PathTemplate{}).
 				WithLiteral("v1").
 				WithVariableNamed("name"),
-			wantBlock: `let (path, query, configure) = try { () throws -> (Swift.String, [URLQueryItem], (inout GoogleCloudGax._HTTPClientRequest) -> Void) in
+			wantBlock: `let (path, query, configure) = try { () throws -> (Swift.String, [URLQueryItem], (inout GoogleGax._HTTPClientRequest) -> Void) in
         if let candidate = try { () throws -> (Swift.String, [URLQueryItem])? in
-          guard let pathVariable0 = GoogleCloudGax._RoutingMatcher.value(request.name as Swift.String?, matching: [.singleWildcard]) else {
+          guard
+            let pathVariable0 = try GoogleGax._RoutingMatcher.pathValue(
+              request.name as Swift.String?,
+              matching: [.singleWildcard],
+              fieldName: "name")
+          else {
             return nil
           }
           let path = "/v1/\(pathVariable0)"
@@ -373,9 +383,9 @@ func TestGenerateService_PathParameters(t *testing.T) {
         }() {
           return (candidate.0, candidate.1, { $0.setMethod(.POST) })
         }
-        var paths: [GoogleCloudGax.PathMismatch] = []
+        var paths: [GoogleGax.PathMismatch] = []
         do {
-          var builder = GoogleCloudGax._PathMismatchBuilder()
+          var builder = GoogleGax._PathMismatchBuilder()
           builder.maybeAdd(
             request.name as Swift.String?,
             matching: [.singleWildcard],
@@ -384,7 +394,7 @@ func TestGenerateService_PathParameters(t *testing.T) {
           )
           paths.append(builder.build())
         }
-        throw GoogleCloudGax.RequestError.binding(GoogleCloudGax.BindingError(paths: paths))
+        throw GoogleGax.RequestError.binding(GoogleGax.BindingError(paths: paths))
       }()`,
 		},
 		{
@@ -395,12 +405,22 @@ func TestGenerateService_PathParameters(t *testing.T) {
 				WithVariableNamed("project").
 				WithLiteral("locations").
 				WithVariableNamed("location"),
-			wantBlock: `let (path, query, configure) = try { () throws -> (Swift.String, [URLQueryItem], (inout GoogleCloudGax._HTTPClientRequest) -> Void) in
+			wantBlock: `let (path, query, configure) = try { () throws -> (Swift.String, [URLQueryItem], (inout GoogleGax._HTTPClientRequest) -> Void) in
         if let candidate = try { () throws -> (Swift.String, [URLQueryItem])? in
-          guard let pathVariable0 = GoogleCloudGax._RoutingMatcher.value(request.project as Swift.String?, matching: [.singleWildcard]) else {
+          guard
+            let pathVariable0 = try GoogleGax._RoutingMatcher.pathValue(
+              request.project as Swift.String?,
+              matching: [.singleWildcard],
+              fieldName: "project")
+          else {
             return nil
           }
-          guard let pathVariable1 = GoogleCloudGax._RoutingMatcher.value(request.location, matching: [.singleWildcard]) else {
+          guard
+            let pathVariable1 = try GoogleGax._RoutingMatcher.pathValue(
+              request.location,
+              matching: [.singleWildcard],
+              fieldName: "location")
+          else {
             return nil
           }
           let path = "/v1/projects/\(pathVariable0)/locations/\(pathVariable1)"
@@ -411,9 +431,9 @@ func TestGenerateService_PathParameters(t *testing.T) {
         }() {
           return (candidate.0, candidate.1, { $0.setMethod(.POST) })
         }
-        var paths: [GoogleCloudGax.PathMismatch] = []
+        var paths: [GoogleGax.PathMismatch] = []
         do {
-          var builder = GoogleCloudGax._PathMismatchBuilder()
+          var builder = GoogleGax._PathMismatchBuilder()
           builder.maybeAdd(
             request.project as Swift.String?,
             matching: [.singleWildcard],
@@ -428,7 +448,7 @@ func TestGenerateService_PathParameters(t *testing.T) {
           )
           paths.append(builder.build())
         }
-        throw GoogleCloudGax.RequestError.binding(GoogleCloudGax.BindingError(paths: paths))
+        throw GoogleGax.RequestError.binding(GoogleGax.BindingError(paths: paths))
       }()`,
 		},
 	} {
@@ -508,7 +528,7 @@ func TestGenerateService_PathParameters(t *testing.T) {
 			}
 			contentStr := string(content)
 
-			gotBlock := extractBlock(t, contentStr, "let (path, query, configure) = try { () throws -> (Swift.String, [URLQueryItem], (inout GoogleCloudGax._HTTPClientRequest) -> Void) in", "\n      }()")
+			gotBlock := extractBlock(t, contentStr, "let (path, query, configure) = try { () throws -> (Swift.String, [URLQueryItem], (inout GoogleGax._HTTPClientRequest) -> Void) in", "\n      }()")
 			if diff := cmp.Diff(test.wantBlock, gotBlock); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
@@ -598,11 +618,11 @@ func TestGenerateService_Pagination(t *testing.T) {
 
 			swiftCfg := swiftConfig(t, []config.SwiftDependency{
 				{
-					Name:               "GoogleCloudGax",
+					Name:               "GoogleGax",
 					RequiredByServices: true,
 				},
 				{
-					Name:               "GoogleCloudAuth",
+					Name:               "GoogleAuth",
 					RequiredByServices: true,
 				},
 			})
@@ -635,7 +655,7 @@ func verifyGeneratedService(t *testing.T, outDir string) {
 	gotMethodOverload := extractBlock(t, contentStr, `  public func listSecrets(
     byItem: ListSecretsRequest, options: `, "\n  }")
 	wantMethodOverload := `  public func listSecrets(
-    byItem: ListSecretsRequest, options: GoogleCloudGax.RequestOptions
+    byItem: ListSecretsRequest, options: GoogleGax.RequestOptions
 ) throws -> any AsyncSequence<Secret, Swift.Error>
  {
     let listRpc = { (token: Swift.String) async throws -> GoogleCloudSecretmanagerV1.ListSecretsResponse in
@@ -643,7 +663,7 @@ func verifyGeneratedService(t *testing.T, outDir string) {
       request.pageToken = token
       return try await self.listSecrets(request: request, options: options)
     }
-    return GoogleCloudGax.PaginatedResponseSequence(listRpc: listRpc)
+    return GoogleGax.PaginatedResponseSequence(listRpc: listRpc)
   }`
 	if diff := cmp.Diff(wantMethodOverload, gotMethodOverload); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
@@ -661,7 +681,7 @@ func verifyGeneratedRequest(t *testing.T, outDir string) {
 	msgContentStr := string(msgContent)
 
 	gotRequestMessage := extractBlock(t, msgContentStr, "public struct ListSecretsRequest: ", "{")
-	for _, p := range []string{"Codable", "Equatable", "GoogleCloudWKT._AnyPackable", "Sendable"} {
+	for _, p := range []string{"Codable", "Equatable", "GoogleWKT._AnyPackable", "Sendable"} {
 		if !strings.Contains(gotRequestMessage, p) {
 			t.Errorf("expected %q in ListSecretsRequest declaration, got: %s", p, gotRequestMessage)
 		}
@@ -679,7 +699,7 @@ func verifyGeneratedResponse(t *testing.T, outDir string, wantNextPageToken stri
 	respContentStr := string(respContent)
 
 	gotResponseMessage := extractBlock(t, respContentStr, "public struct ListSecretsResponse: ", "{")
-	for _, p := range []string{"Codable", "Equatable", "GoogleCloudWKT._AnyPackable", "GoogleCloudGax._PaginatedResponse", "Sendable"} {
+	for _, p := range []string{"Codable", "Equatable", "GoogleWKT._AnyPackable", "GoogleGax._PaginatedResponse", "Sendable"} {
 		if !strings.Contains(gotResponseMessage, p) {
 			t.Errorf("expected %q in ListSecretsResponse declaration, got: %s", p, gotResponseMessage)
 		}
@@ -698,8 +718,8 @@ func verifyGeneratedResponse(t *testing.T, outDir string, wantNextPageToken stri
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 
-	if !strings.Contains(respContentStr, "import GoogleCloudGax") {
-		t.Errorf("expected ListSecretsResponse.swift to import GoogleCloudGax, got:\n%s", respContentStr)
+	if !strings.Contains(respContentStr, "import GoogleGax") {
+		t.Errorf("expected ListSecretsResponse.swift to import GoogleGax, got:\n%s", respContentStr)
 	}
 }
 
@@ -711,8 +731,8 @@ func verifyGeneratedMessage(t *testing.T, outDir string) {
 		t.Fatal(err)
 	}
 	secretContentStr := string(secretContent)
-	if strings.Contains(secretContentStr, "import GoogleCloudGax") {
-		t.Errorf("expected Secret.swift to NOT import GoogleCloudGax, got:\n%s", secretContentStr)
+	if strings.Contains(secretContentStr, "import GoogleGax") {
+		t.Errorf("expected Secret.swift to NOT import GoogleGax, got:\n%s", secretContentStr)
 	}
 }
 
@@ -792,11 +812,11 @@ func TestGenerateService_LRO(t *testing.T) {
 
 	swiftCfg := swiftConfig(t, []config.SwiftDependency{
 		{
-			Name:               "GoogleCloudGax",
+			Name:               "GoogleGax",
 			RequiredByServices: true,
 		},
 		{
-			Name:               "GoogleCloudAuth",
+			Name:               "GoogleAuth",
 			RequiredByServices: true,
 		},
 		{
@@ -825,7 +845,7 @@ func TestGenerateService_LRO(t *testing.T) {
 
 	wantContains := []string{
 		"import GoogleRpc",
-		"public func createWorkflow(withPolling: CreateWorkflowRequest) async throws -> any GoogleCloudGax.PollableOperation<Workflow>",
+		"public func createWorkflow(withPolling: CreateWorkflowRequest) async throws -> any GoogleGax.PollableOperation<Workflow>",
 		"self.getOperation(request: .init().with { $0.name = rawOp.name }, options: options)",
 	}
 	for _, want := range wantContains {
@@ -834,8 +854,8 @@ func TestGenerateService_LRO(t *testing.T) {
 		}
 	}
 
-	got := extractBlock(t, content, "GoogleCloudGax._PollableOperationImpl(", "\n    )")
-	want := `GoogleCloudGax._PollableOperationImpl(
+	got := extractBlock(t, content, "GoogleGax._PollableOperationImpl(", "\n    )")
+	want := `GoogleGax._PollableOperationImpl(
       initialState: initialState,
       polling: options.pollingErrorPolicy ?? self.pollingErrorPolicy,
       backoff: options.pollingBackoffPolicy ?? self.pollingBackoffPolicy,
@@ -916,11 +936,11 @@ func TestGenerateService_LRO_Empty(t *testing.T) {
 
 	swiftCfg := swiftConfig(t, []config.SwiftDependency{
 		{
-			Name:               "GoogleCloudGax",
+			Name:               "GoogleGax",
 			RequiredByServices: true,
 		},
 		{
-			Name:               "GoogleCloudAuth",
+			Name:               "GoogleAuth",
 			RequiredByServices: true,
 		},
 		{
@@ -948,8 +968,8 @@ func TestGenerateService_LRO_Empty(t *testing.T) {
 	contentStr := string(content)
 
 	wantContains := []string{
-		"public func deleteWorkflow(withPolling: DeleteWorkflowRequest) async throws -> any GoogleCloudGax.PollableOperation<Swift.Void>",
-		"GoogleCloudGax._PollableOperationImpl<Swift.Void>",
+		"public func deleteWorkflow(withPolling: DeleteWorkflowRequest) async throws -> any GoogleGax.PollableOperation<Swift.Void>",
+		"GoogleGax._PollableOperationImpl<Swift.Void>",
 	}
 	for _, want := range wantContains {
 		if !strings.Contains(contentStr, want) {
@@ -977,11 +997,11 @@ func TestGenerateDiscoveryService_Files(t *testing.T) {
 
 	swiftCfg := swiftConfig(t, []config.SwiftDependency{
 		{
-			Name:               "GoogleCloudGax",
+			Name:               "GoogleGax",
 			RequiredByServices: true,
 		},
 		{
-			Name:               "GoogleCloudAuth",
+			Name:               "GoogleAuth",
 			RequiredByServices: true,
 		},
 	})
@@ -1036,5 +1056,141 @@ func TestGenerateDiscoveryService_Files(t *testing.T) {
 				t.Errorf("expected struct %q in %s, got:\n%s", wantStruct, filename, content)
 			}
 		})
+	}
+}
+
+func TestGenerateService_WildcardBodyOmitsPathFields(t *testing.T) {
+	outDir := t.TempDir()
+
+	secretMessage := &api.Message{
+		Name:    "Secret",
+		Package: "google.cloud.secretmanager.v1",
+		ID:      ".google.cloud.secretmanager.v1.Secret",
+		Fields: []*api.Field{
+			{Name: "name", JSONName: "name", Typez: api.TypezString},
+		},
+	}
+	requestMessage := &api.Message{
+		Name:    "SecretRequest",
+		Package: "google.cloud.secretmanager.v1",
+		ID:      ".google.cloud.secretmanager.v1.SecretRequest",
+		Fields: []*api.Field{
+			{Name: "parent", JSONName: "parent", Typez: api.TypezString},
+			{Name: "alternative_parent", JSONName: "alternativeParent", Typez: api.TypezString},
+			{
+				Name:     "secret",
+				JSONName: "secret",
+				Typez:    api.TypezMessage,
+				TypezID:  ".google.cloud.secretmanager.v1.Secret",
+				Optional: true,
+			},
+		},
+	}
+
+	service := &api.Service{
+		Name: "SecretManagerService",
+		Methods: []*api.Method{
+			{
+				Name:        "CreateSecret",
+				InputTypeID: requestMessage.ID,
+				InputType:   requestMessage,
+				PathInfo: &api.PathInfo{
+					BodyFieldPath: "*",
+					Bindings: []*api.PathBinding{{
+						Verb:         "POST",
+						PathTemplate: (&api.PathTemplate{}).WithLiteral("v1").WithVariableNamed("parent"),
+					}},
+				},
+			},
+			{
+				Name:        "UpdateSecret",
+				InputTypeID: requestMessage.ID,
+				InputType:   requestMessage,
+				PathInfo: &api.PathInfo{
+					BodyFieldPath: "*",
+					Bindings: []*api.PathBinding{{
+						Verb:         "PATCH",
+						PathTemplate: (&api.PathTemplate{}).WithLiteral("v1").WithVariableNamed("secret", "name"),
+					}},
+				},
+			},
+			{
+				Name:        "AddSecretVersion",
+				InputTypeID: requestMessage.ID,
+				InputType:   requestMessage,
+				PathInfo: &api.PathInfo{
+					BodyFieldPath: "*",
+					Bindings: []*api.PathBinding{
+						{
+							Verb:         "POST",
+							PathTemplate: (&api.PathTemplate{}).WithLiteral("v1").WithVariableNamed("parent"),
+						},
+						{
+							Verb:         "POST",
+							PathTemplate: (&api.PathTemplate{}).WithLiteral("v1").WithVariableNamed("alternative_parent"),
+						},
+					},
+				},
+			},
+			{
+				Name:        "PatchSecret",
+				InputTypeID: requestMessage.ID,
+				InputType:   requestMessage,
+				PathInfo: &api.PathInfo{
+					BodyFieldPath: "secret",
+					Bindings: []*api.PathBinding{{
+						Verb:         "PATCH",
+						PathTemplate: (&api.PathTemplate{}).WithLiteral("v1").WithVariableNamed("parent"),
+					}},
+				},
+			},
+		},
+	}
+
+	model := api.NewTestAPI([]*api.Message{requestMessage, secretMessage}, nil, []*api.Service{service})
+	model.PackageName = "google.cloud.secretmanager.v1"
+
+	library := &config.Library{
+		Swift: swiftConfig(t, nil),
+	}
+	if err := Generate(t.Context(), model, outDir, library, nil); err != nil {
+		t.Fatal(err)
+	}
+
+	filename := filepath.Join(outDir, "Sources", "GoogleCloudSecretmanagerV1", "SecretManagerService+Transport.swift")
+	content, err := os.ReadFile(filename)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// The fields bound by the path template are not part of the request body.
+	want := []string{
+		`let (path, query, configure, omitted) = try { () throws -> (Swift.String, [URLQueryItem], (inout GoogleGax._HTTPClientRequest) -> Void, [Swift.String]) in`,
+		`return (candidate.0, candidate.1, { $0.setMethod(.POST) }, ["parent"])`,
+		`return (candidate.0, candidate.1, { $0.setMethod(.PATCH) }, ["secret.name"])`,
+		`return (candidate.0, candidate.1, { $0.setMethod(.POST) }, ["alternativeParent"])`,
+		`try req.setBody(json: request, omitting: omitted)`,
+	}
+	for _, w := range want {
+		if !bytes.Contains(content, []byte(w)) {
+			t.Errorf("expected %q in %s, got:\n%s", w, filename, content)
+		}
+	}
+
+	// Methods with a named body field keep the previous shape: the body is a separate field, it
+	// cannot contain the path parameters.
+	want = []string{
+		`let (path, query, configure) = try { () throws -> (Swift.String, [URLQueryItem], (inout GoogleGax._HTTPClientRequest) -> Void) in`,
+		`return (candidate.0, candidate.1, { $0.setMethod(.PATCH) })`,
+		`try req.setBody(json: body)`,
+	}
+	for _, w := range want {
+		if !bytes.Contains(content, []byte(w)) {
+			t.Errorf("expected %q in %s, got:\n%s", w, filename, content)
+		}
+	}
+
+	if bytes.Contains(content, []byte("try req.setBody(json: request)\n")) {
+		t.Errorf("unexpected unfiltered request body in %s, got:\n%s", filename, content)
 	}
 }

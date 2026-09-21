@@ -16,6 +16,7 @@ package swift
 
 import (
 	"fmt"
+	"slices"
 	"strings"
 
 	"github.com/googleapis/librarian/internal/sidekick/api"
@@ -88,10 +89,14 @@ type discoveryLroAnnotations struct {
 // And of course all of these can be combined, such as nested fields that point to enums or nested
 // fields that point to nested fields.
 type pathVariable struct {
-	Name             string
-	Expression       string
-	Test             string
-	FieldPath        string
+	Name       string
+	Expression string
+	Test       string
+	FieldPath  string
+	// JSONFieldPath is FieldPath using the ProtoJSON field names, e.g. `secret.name`.
+	//
+	// The generated code uses this to skip the path parameters when serializing the request body.
+	JSONFieldPath    string
 	MatchingSegments []string
 	TemplateString   string
 }
@@ -112,6 +117,28 @@ type pathBindingAnnotations struct {
 	HasQueryParams   bool
 	HasPathVariables bool
 	ResponseEncoding string
+	// OmittedBodyFields are the ProtoJSON paths bound by this binding's path template.
+	//
+	// Only set for methods using `body: "*"`. Per the `google.api.http` rules the request body
+	// contains the fields *not* bound by the path template.
+	OmittedBodyFields []string
+}
+
+// OmittedBodyFieldsExpression returns OmittedBodyFields as a Swift array literal.
+func (b *pathBindingAnnotations) OmittedBodyFieldsExpression() string {
+	quoted := make([]string, 0, len(b.OmittedBodyFields))
+	for _, field := range b.OmittedBodyFields {
+		quoted = append(quoted, fmt.Sprintf("%q", field))
+	}
+	return "[" + strings.Join(quoted, ", ") + "]"
+}
+
+// HasOmittedBodyFields returns true if the request body must skip some path parameters.
+func (ann *methodAnnotations) HasOmittedBodyFields() bool {
+	idx := slices.IndexFunc(ann.PathBindings, func(b *pathBindingAnnotations) bool {
+		return len(b.OmittedBodyFields) > 0
+	})
+	return idx != -1
 }
 
 // HasQueryParams returns true if the method's default binding has query parameters
@@ -196,14 +223,23 @@ func (c *codec) annotateMethod(method *api.Method, modelAnn *modelAnnotations) e
 			}
 			pExpr := pathExpression(binding.PathTemplate)
 			qParams := language.QueryParams(method, binding)
+			// With `body: "*"` the request body only contains the fields not bound by the path
+			// template.
+			var omittedBodyFields []string
+			if isBodyWildcard {
+				for _, pVar := range pVars {
+					omittedBodyFields = append(omittedBodyFields, pVar.JSONFieldPath)
+				}
+			}
 			pathBindings = append(pathBindings, &pathBindingAnnotations{
-				HTTPMethod:       binding.Verb,
-				PathExpression:   pExpr,
-				PathVariables:    pVars,
-				QueryParams:      qParams,
-				HasQueryParams:   len(qParams) > 0,
-				HasPathVariables: len(pVars) > 0,
-				ResponseEncoding: c.ResponseEncoding,
+				HTTPMethod:        binding.Verb,
+				PathExpression:    pExpr,
+				PathVariables:     pVars,
+				QueryParams:       qParams,
+				HasQueryParams:    len(qParams) > 0,
+				HasPathVariables:  len(pVars) > 0,
+				ResponseEncoding:  c.ResponseEncoding,
+				OmittedBodyFields: omittedBodyFields,
 			})
 		}
 		primary := pathBindings[0]

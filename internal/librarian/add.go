@@ -119,7 +119,7 @@ func runAdd(ctx context.Context, cfg *config.Config, api, explicitLibraryName st
 	if err := validateAPIPathExistence(googleapisDir, api); err != nil {
 		return err
 	}
-	name, cfg, err := addLibrary(cfg, api, explicitLibraryName, googleapisDir)
+	name, cfg, err := addLibrary(cfg, googleapisDir, api, explicitLibraryName)
 	if err != nil {
 		return err
 	}
@@ -198,28 +198,28 @@ func setupResolve(ctx context.Context, cfg *config.Config, name string) (*config
 
 // deriveLibraryName derives a library name from an API path.
 // The derivation is language-specific.
-func deriveLibraryName(language string, api string) string {
+func deriveLibraryName(language, googleapisDir, api string) (string, error) {
 	switch language {
 	case config.LanguageDart:
-		return dart.DefaultLibraryName(api)
+		return dart.DefaultLibraryName(api), nil
 	case config.LanguageFake:
-		return fakeDefaultLibraryName(api)
+		return fakeDefaultLibraryName(api), nil
 	case config.LanguageGo:
-		return golang.DefaultLibraryName(api)
+		return golang.DefaultLibraryName(googleapisDir, api)
 	case config.LanguageJava:
-		return java.DefaultLibraryName(api)
+		return java.DefaultLibraryName(api), nil
 	case config.LanguageNodejs:
-		return nodejs.DefaultLibraryName(api)
+		return nodejs.DefaultLibraryName(api), nil
 	case config.LanguagePython:
-		return python.DefaultLibraryName(api)
+		return python.DefaultLibraryName(api), nil
 	case config.LanguageRust:
-		return rust.DefaultLibraryName(api)
+		return rust.DefaultLibraryName(api), nil
 	case config.LanguageSwift:
-		return swift.DefaultLibraryName(api)
+		return swift.DefaultLibraryName(api), nil
 	case config.LanguagePhp:
-		return php.DefaultLibraryName(api)
+		return php.DefaultLibraryName(api), nil
 	default:
-		return strings.ReplaceAll(api, "/", "-")
+		return strings.ReplaceAll(api, "/", "-"), nil
 	}
 }
 
@@ -227,10 +227,13 @@ func deriveLibraryName(language string, api string) string {
 // It returns the name of the new or updated library, the updated config, and an
 // error if the API cannot be added (e.g. because it already exists, or the new
 // API is a preview and there is no corresponding stable library).
-func addLibrary(cfg *config.Config, apiPath, explicitLibraryName, googleapisDir string) (string, *config.Config, error) {
+func addLibrary(cfg *config.Config, googleapisDir, apiPath, explicitLibraryName string) (string, *config.Config, error) {
 	stablePath, isPreview := strings.CutPrefix(apiPath, "preview/")
 	api := &config.API{Path: stablePath}
-	existingLib := findExistingLibraryForAPI(cfg, stablePath, explicitLibraryName)
+	existingLib, err := findExistingLibraryForAPI(cfg, googleapisDir, stablePath, explicitLibraryName)
+	if err != nil {
+		return "", nil, err
+	}
 	if isPreview {
 		if existingLib == nil {
 			return "", nil, fmt.Errorf("%w: API path %s", errPreviewRequiresLibrary, apiPath)
@@ -249,24 +252,28 @@ func addLibrary(cfg *config.Config, apiPath, explicitLibraryName, googleapisDir 
 // by deriving the library name from the API path and seeing if that library
 // already exists. In Python the mapping from API path to library name isn't
 // always as simple for historical reasons.
-func findExistingLibraryForAPI(cfg *config.Config, apiPath, explicitLibraryName string) *config.Library {
+func findExistingLibraryForAPI(cfg *config.Config, googleapisDir, apiPath, explicitLibraryName string) (*config.Library, error) {
 	switch cfg.Language {
 	case config.LanguageNodejs:
-		return nodejs.FindExistingLibraryForNewAPI(cfg.Libraries, apiPath)
+		return nodejs.FindExistingLibraryForNewAPI(cfg.Libraries, apiPath), nil
 	case config.LanguagePython:
-		return python.FindExistingLibraryForNewAPI(cfg.Libraries, apiPath)
+		return python.FindExistingLibraryForNewAPI(cfg.Libraries, apiPath), nil
 	default:
 		name := explicitLibraryName
 		if name == "" {
-			name = deriveLibraryName(cfg.Language, apiPath)
+			var err error
+			name, err = deriveLibraryName(cfg.Language, googleapisDir, apiPath)
+			if err != nil {
+				return nil, err
+			}
 		}
 		// Not using FindLibrary as the error handling becomes awkward.
 		for _, library := range cfg.Libraries {
 			if library.Name == name {
-				return library
+				return library, nil
 			}
 		}
-		return nil
+		return nil, nil
 	}
 }
 
@@ -295,7 +302,11 @@ func addPreviewLibrary(cfg *config.Config, lib *config.Library, api *config.API)
 func addNewLibrary(cfg *config.Config, api *config.API, explicitLibraryName, googleapisDir string) (string, *config.Config, error) {
 	name := explicitLibraryName
 	if name == "" {
-		name = deriveLibraryName(cfg.Language, api.Path)
+		var err error
+		name, err = deriveLibraryName(cfg.Language, googleapisDir, api.Path)
+		if err != nil {
+			return "", nil, err
+		}
 	}
 	lib := &config.Library{
 		Name:          name,
@@ -304,7 +315,11 @@ func addNewLibrary(cfg *config.Config, api *config.API, explicitLibraryName, goo
 	}
 	switch cfg.Language {
 	case config.LanguageGo:
-		lib = golang.Add(lib)
+		var err error
+		lib, err = golang.Add(lib, googleapisDir)
+		if err != nil {
+			return "", nil, err
+		}
 	case config.LanguageJava:
 		var err error
 		lib, err = java.Add(cfg, lib, nil)
@@ -351,13 +366,16 @@ func updateExistingLibrary(cfg *config.Config, existingLib *config.Library, api 
 	}
 	switch cfg.Language {
 	case config.LanguagePython:
-		if err := python.ValidateNewAPIs(existingLib); err != nil {
+		if err := python.UpdateExistingLibrary(existingLib, api); err != nil {
 			return "", nil, err
 		}
-		existingLib.APIs = append(existingLib.APIs, api)
 	case config.LanguageGo:
 		existingLib.APIs = append(existingLib.APIs, api)
-		existingLib = golang.Add(existingLib)
+		var err error
+		existingLib, err = golang.Add(existingLib, googleapisDir)
+		if err != nil {
+			return "", nil, err
+		}
 	case config.LanguageNodejs:
 		existingLib.APIs = append(existingLib.APIs, api)
 	case config.LanguageJava:

@@ -81,7 +81,7 @@ func TestGenerateService_DeprecatedMethods(t *testing.T) {
 				{
 					start: "  /// -- simple marker --",
 					end:   "async throws -> Test.Response",
-					want:  "  /// -- simple marker --\n  ///\n  /// @Snippet(path: \"TestService_SimpleMethod\")\n  @available(*, deprecated)\n  public func simpleMethod(\n    request: Request, options: GoogleCloudGax.RequestOptions\n) async throws -> Test.Response",
+					want:  "  /// -- simple marker --\n  ///\n  /// @Snippet(path: \"TestService_SimpleMethod\")\n  @available(*, deprecated)\n  public func simpleMethod(\n    request: Request, options: GoogleGax.RequestOptions\n) async throws -> Test.Response",
 				},
 			},
 		},
@@ -107,7 +107,7 @@ func TestGenerateService_DeprecatedMethods(t *testing.T) {
 				{
 					start: "  /// -- pagination marker --",
 					end:   "-> any AsyncSequence<Item, Swift.Error>",
-					want:  "  /// -- pagination marker --\n  ///\n  /// @Snippet(path: \"TestService_PaginationMethod\")\n  @available(*, deprecated)\n  public func paginationMethod(\n    request: Request, options: GoogleCloudGax.RequestOptions\n) async throws -> Test.PaginationResponse\n {\n      try await self.inner.paginationMethod(request: request, options: options)\n  }\n\n  /// -- pagination marker --\n  ///\n  /// @Snippet(path: \"TestService_PaginationMethod\")\n  @available(*, deprecated)\n  public func paginationMethod(\n    byItem: Request, options: GoogleCloudGax.RequestOptions\n) throws -> any AsyncSequence<Item, Swift.Error>",
+					want:  "  /// -- pagination marker --\n  ///\n  /// @Snippet(path: \"TestService_PaginationMethod\")\n  @available(*, deprecated)\n  public func paginationMethod(\n    request: Request, options: GoogleGax.RequestOptions\n) async throws -> Test.PaginationResponse\n {\n      try await self.inner.paginationMethod(request: request, options: options)\n  }\n\n  /// -- pagination marker --\n  ///\n  /// @Snippet(path: \"TestService_PaginationMethod\")\n  @available(*, deprecated)\n  public func paginationMethod(\n    byItem: Request, options: GoogleGax.RequestOptions\n) throws -> any AsyncSequence<Item, Swift.Error>",
 				},
 			},
 		},
@@ -131,13 +131,13 @@ func TestGenerateService_DeprecatedMethods(t *testing.T) {
 			want: []expectedBlock{
 				{
 					start: "    /// See `TestServiceClient.lromethod`.",
-					end:   "-> any GoogleCloudGax.PollableOperation<LROResult>",
-					want:  "    /// See `TestServiceClient.lromethod`.\n    @available(*, deprecated)\n    func lromethod(request: Request) async throws -> GoogleCloudLongrunningV1.Operation\n\n    /// See `TestServiceClient.lromethod`.\n    @available(*, deprecated)\n    func lromethod(withPolling: Request) async throws -> any GoogleCloudGax.PollableOperation<LROResult>",
+					end:   "-> any GoogleGax.PollableOperation<LROResult>",
+					want:  "    /// See `TestServiceClient.lromethod`.\n    @available(*, deprecated)\n    func lromethod(request: Request) async throws -> GoogleCloudLongrunningV1.Operation\n\n    /// See `TestServiceClient.lromethod`.\n    @available(*, deprecated)\n    func lromethod(withPolling: Request) async throws -> any GoogleGax.PollableOperation<LROResult>",
 				},
 				{
 					start: "  /// -- lro marker --",
-					end:   "-> any GoogleCloudGax.PollableOperation<LROResult>",
-					want:  "  /// -- lro marker --\n  ///\n  /// @Snippet(path: \"TestService_LROMethod\")\n  @available(*, deprecated)\n  public func lromethod(\n    request: Request, options: GoogleCloudGax.RequestOptions\n) async throws -> GoogleCloudLongrunningV1.Operation\n {\n      try await self.inner.lromethod(request: request, options: options)\n  }\n\n  /// -- lro marker --\n  ///\n  /// @Snippet(path: \"TestService_LROMethod\")\n  @available(*, deprecated)\n  public func lromethod(\n    withPolling: Request, options: GoogleCloudGax.RequestOptions\n) async throws -> any GoogleCloudGax.PollableOperation<LROResult>",
+					end:   "-> any GoogleGax.PollableOperation<LROResult>",
+					want:  "  /// -- lro marker --\n  ///\n  /// @Snippet(path: \"TestService_LROMethod\")\n  @available(*, deprecated)\n  public func lromethod(\n    request: Request, options: GoogleGax.RequestOptions\n) async throws -> GoogleCloudLongrunningV1.Operation\n {\n      try await self.inner.lromethod(request: request, options: options)\n  }\n\n  /// -- lro marker --\n  ///\n  /// @Snippet(path: \"TestService_LROMethod\")\n  @available(*, deprecated)\n  public func lromethod(\n    withPolling: Request, options: GoogleGax.RequestOptions\n) async throws -> any GoogleGax.PollableOperation<LROResult>",
 				},
 			},
 		},
@@ -161,7 +161,7 @@ func TestGenerateService_DeprecatedMethods(t *testing.T) {
 				{
 					start: "  /// -- not deprecated marker --",
 					end:   "async throws -> Test.Response",
-					want:  "  /// -- not deprecated marker --\n  ///\n  /// @Snippet(path: \"TestService_NotDeprecatedMethod\")\n  public func notDeprecatedMethod(\n    request: Request, options: GoogleCloudGax.RequestOptions\n) async throws -> Test.Response",
+					want:  "  /// -- not deprecated marker --\n  ///\n  /// @Snippet(path: \"TestService_NotDeprecatedMethod\")\n  public func notDeprecatedMethod(\n    request: Request, options: GoogleGax.RequestOptions\n) async throws -> Test.Response",
 				},
 			},
 		},
@@ -188,8 +188,8 @@ func TestGenerateService_DeprecatedMethods(t *testing.T) {
 			model.PackageName = "test"
 
 			swiftCfg := swiftConfig(t, []config.SwiftDependency{
-				{Name: "GoogleCloudGax", RequiredByServices: true},
-				{Name: "GoogleCloudAuth", RequiredByServices: true},
+				{Name: "GoogleGax", RequiredByServices: true},
+				{Name: "GoogleAuth", RequiredByServices: true},
 				{ApiPackage: "google.longrunning", Name: "GoogleCloudLongrunningV1"},
 				{ApiPackage: "google.rpc", Name: "GoogleRpc"},
 			})

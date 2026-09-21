@@ -24,9 +24,8 @@ import (
 )
 
 func TestModelAnnotations(t *testing.T) {
-	model := api.NewTestAPI(
-		[]*api.Message{}, []*api.Enum{},
-		[]*api.Service{{Name: "Workflows", Package: "google.cloud.workflows.v1"}})
+	service := api.NewTestService("Workflows").WithPackage("google.cloud.workflows.v1")
+	model := api.NewTestAPI(nil, nil, []*api.Service{service})
 	codec := newTestCodec(t, model, &config.Library{CopyrightYear: "2038"})
 	if err := codec.annotateModel(); err != nil {
 		t.Fatal(err)
@@ -38,7 +37,7 @@ func TestModelAnnotations(t *testing.T) {
 		PackageVersion:  "0.0.0",
 		CopyrightYear:   "2038",
 		MonorepoRoot:    ".",
-		WktPackage:      "GoogleCloudWKT",
+		WktPackage:      "GoogleWKT",
 	}
 	if diff := cmp.Diff(want, model.Codec, cmpopts.IgnoreFields(modelAnnotations{}, "BoilerPlate", "DependsOn")); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
@@ -46,11 +45,9 @@ func TestModelAnnotations(t *testing.T) {
 }
 
 func TestModelAnnotations_MessagesWithWkt(t *testing.T) {
-	enum := &api.Enum{
-		Name: "SomeEnum", ID: ".test.SomeSnum", Package: "test",
-		Values: []*api.EnumValue{{Name: "UNSPECIFIED", Number: 0}},
-	}
-	enum.UniqueNumberValues = enum.Values
+	enum := api.NewTestEnum("SomeEnum").
+		WithID(".test.SomeSnum").
+		WithValues(api.NewTestEnumValue("UNSPECIFIED", 0))
 	for _, test := range []struct {
 		name  string
 		model *api.API
@@ -59,8 +56,8 @@ func TestModelAnnotations_MessagesWithWkt(t *testing.T) {
 		{
 			name: "Messages with wkt",
 			model: api.NewTestAPI(
-				[]*api.Message{{Name: "Request", ID: ".test.Request", Package: "test"}}, nil, nil),
-			want: []string{"GoogleCloudWKT"},
+				[]*api.Message{api.NewTestMessage("Request")}, nil, nil),
+			want: []string{"GoogleWKT"},
 		},
 		{
 			name:  "Enum with wkt",
@@ -86,39 +83,26 @@ func TestModelAnnotations_MessagesWithWkt(t *testing.T) {
 }
 
 func TestModelAnnotations_WithExternalDependencies(t *testing.T) {
-	externalMessage := &api.Message{
-		Name:    "ExternalMessage",
-		Package: "google.cloud.external.v1",
-		ID:      ".google.cloud.external.v1.ExternalMessage",
-	}
+	externalMessage := api.NewTestMessage("ExternalMessage").
+		WithPackage("google.cloud.external.v1")
 
-	message := &api.Message{
-		Name:    "LocalMessage",
-		Package: "google.cloud.test.v1",
-		ID:      ".google.cloud.test.v1.LocalMessage",
-		Fields: []*api.Field{
-			{
-				Name:    "ext_field",
-				Typez:   api.TypezMessage,
-				TypezID: ".google.cloud.external.v1.ExternalMessage",
-			},
-		},
-	}
+	message := api.NewTestMessage("LocalMessage").
+		WithPackage("google.cloud.test.v1").
+		WithFields(
+			api.NewTestField("ext_field").WithMessageType(externalMessage),
+		)
 
-	service := &api.Service{
-		Name:    "TestService",
-		ID:      ".google.cloud.test.v1.TestService",
-		Package: "google.cloud.test.v1",
-	}
+	service := api.NewTestService("TestService").
+		WithPackage("google.cloud.test.v1")
 
 	model := api.NewTestAPI(
-		[]*api.Message{message}, []*api.Enum{}, []*api.Service{service})
+		[]*api.Message{message}, nil, []*api.Service{service})
 	model.AddMessage(externalMessage)
 	codec := newTestCodec(t, model, nil)
 	codec.withExtraDependencies(t, []config.SwiftDependency{
 		{ApiPackage: "google.cloud.external.v1", Name: "GoogleCloudExternalWithOverrideV1"},
 		{ApiPackage: "google.cloud.unused.v1", Name: "GoogleUnusedPackage"},
-		{Name: "GoogleCloudGax", RequiredByServices: true},
+		{Name: "GoogleGax", RequiredByServices: true},
 	})
 
 	if err := codec.annotateModel(); err != nil {
@@ -132,8 +116,8 @@ func TestModelAnnotations_WithExternalDependencies(t *testing.T) {
 
 	want := map[string]bool{
 		"GoogleCloudExternalWithOverrideV1": true,
-		"GoogleCloudGax":                    true, // required by the service
-		"GoogleCloudWKT":                    true,
+		"GoogleGax":                         true, // required by the service
+		"GoogleWKT":                         true,
 		"GoogleUnusedPackage":               false,
 	}
 	got := map[string]bool{}
@@ -156,8 +140,8 @@ func TestModelAnnotations_WithExternalDependencies(t *testing.T) {
 }
 
 func TestModelAnnotations_IgnoreSelfDependency(t *testing.T) {
-	model := api.NewTestAPI(
-		[]*api.Message{}, []*api.Enum{}, []*api.Service{{Name: "DummyService", Package: "google.cloud.placeholder.v1"}})
+	service := api.NewTestService("DummyService").WithPackage("google.cloud.placeholder.v1")
+	model := api.NewTestAPI(nil, nil, []*api.Service{service})
 	model.PackageName = "google.cloud.placeholder.v1"
 	codec := newTestCodec(t, model, nil)
 	codec.withExtraDependencies(t, []config.SwiftDependency{
@@ -183,10 +167,10 @@ func TestModelAnnotations_IgnoreSelfDependency(t *testing.T) {
 
 	// Self dependency should be ignored, other should be present.
 	want := map[string]bool{
-		"GoogleCloudGax":           true,  // always required by services
+		"GoogleGax":                true,  // always required by services
 		"GoogleCloudOtherV1":       true,  // required by the service
 		"GoogleCloudPlaceholderV1": false, // this is the current package and should not be included as a dependency
-		"GoogleCloudWKT":           true,  // always required by message types
+		"GoogleWKT":                true,  // always required by message types
 	}
 	got := map[string]bool{}
 	for _, dep := range codec.Dependencies {
@@ -199,66 +183,41 @@ func TestModelAnnotations_IgnoreSelfDependency(t *testing.T) {
 }
 
 func TestModelAnnotations_Pagination(t *testing.T) {
-	pageSizeField := &api.Field{Name: "page_size", JSONName: "pageSize", Typez: api.TypezInt32}
-	pageTokenField := &api.Field{Name: "page_token", JSONName: "pageToken", Typez: api.TypezString}
-	inputType := &api.Message{
-		Name:    "ListSecretsRequest",
-		Package: "google.cloud.secretmanager.v1",
-		ID:      ".google.cloud.secretmanager.v1.ListSecretsRequest",
-		Fields:  []*api.Field{pageSizeField, pageTokenField},
-	}
-	pageSizeField.Parent = inputType
-	pageTokenField.Parent = inputType
+	pageSizeField := api.NewTestField("page_size").WithType(api.TypezInt32)
+	pageTokenField := api.NewTestField("page_token").WithType(api.TypezString)
+	inputType := api.NewTestMessage("ListSecretsRequest").
+		WithPackage("google.cloud.secretmanager.v1").
+		WithFields(pageSizeField, pageTokenField)
 
-	itemField := &api.Field{Name: "secrets", JSONName: "secrets", Typez: api.TypezMessage, TypezID: ".google.cloud.secretmanager.v1.Secret", Repeated: true}
-	nextPageTokenField := &api.Field{Name: "next_page_token", JSONName: "nextPageToken", Typez: api.TypezString}
-	outputType := &api.Message{
-		Name:    "ListSecretsResponse",
-		Package: "google.cloud.secretmanager.v1",
-		ID:      ".google.cloud.secretmanager.v1.ListSecretsResponse",
-		Fields:  []*api.Field{itemField, nextPageTokenField},
-		Pagination: &api.PaginationInfo{
-			NextPageToken: nextPageTokenField,
-			PageableItem:  itemField,
-		},
-	}
-	itemField.Parent = outputType
-	nextPageTokenField.Parent = outputType
+	secretType := api.NewTestMessage("Secret").
+		WithPackage("google.cloud.secretmanager.v1")
 
-	secretType := &api.Message{
-		Name:    "Secret",
-		Package: "google.cloud.secretmanager.v1",
-		ID:      ".google.cloud.secretmanager.v1.Secret",
-	}
+	itemField := api.NewTestField("secrets").
+		WithMessageType(secretType).
+		WithRepeated()
+	nextPageTokenField := api.NewTestField("next_page_token").WithType(api.TypezString)
+	outputType := api.NewTestMessage("ListSecretsResponse").
+		WithPackage("google.cloud.secretmanager.v1").
+		WithFields(itemField, nextPageTokenField).
+		WithPagination(nextPageTokenField, itemField)
 
-	iam := &api.Service{
-		Name:    "SecretManagerService",
-		ID:      ".google.cloud.secretmanager.v1.SecretManagerService",
-		Package: "google.cloud.secretmanager.v1",
-		Methods: []*api.Method{
-			{
-				Name:         "ListSecrets",
-				InputTypeID:  inputType.ID,
-				InputType:    inputType,
-				OutputTypeID: outputType.ID,
-				OutputType:   outputType,
-				PathInfo: &api.PathInfo{
-					Bindings: []*api.PathBinding{{
-						Verb:         "GET",
-						PathTemplate: (&api.PathTemplate{}).WithLiteral("v1").WithLiteral("secrets"),
-					}},
-				},
-				Pagination: pageTokenField,
-			},
-		},
-	}
+	method := api.NewTestMethod("ListSecrets").
+		WithInput(inputType).
+		WithOutput(outputType).
+		WithVerb("GET").
+		WithPathTemplate((&api.PathTemplate{}).WithLiteral("v1").WithLiteral("secrets")).
+		WithPagination(pageTokenField)
+
+	iam := api.NewTestService("SecretManagerService").
+		WithPackage("google.cloud.secretmanager.v1").
+		WithMethods(method)
 
 	model := api.NewTestAPI([]*api.Message{inputType, outputType, secretType}, nil, []*api.Service{iam})
 	model.PackageName = "google.cloud.secretmanager.v1"
 
 	codec := newTestCodec(t, model, nil)
 	codec.withExtraDependencies(t, []config.SwiftDependency{
-		{Name: "GoogleCloudGax", RequiredByServices: true},
+		{Name: "GoogleGax", RequiredByServices: true},
 	})
 
 	if err := codec.annotateModel(); err != nil {
@@ -270,8 +229,8 @@ func TestModelAnnotations_Pagination(t *testing.T) {
 		t.Fatalf("expected model.Codec to be *modelAnnotations, got %T", model.Codec)
 	}
 
-	if _, ok := ann.DependsOn["GoogleCloudGax"]; !ok {
-		t.Errorf("expected GoogleCloudGax dependency to be present in DependsOn")
+	if _, ok := ann.DependsOn["GoogleGax"]; !ok {
+		t.Errorf("expected GoogleGax dependency to be present in DependsOn")
 	}
 }
 

@@ -49,6 +49,33 @@ const (
 	LanguageSwift = "swift"
 )
 
+// GoInternalCopy describes a private copy of an API's messages generated
+// into an internal Go package.
+type GoInternalCopy struct {
+	// ImportPath is the Go import path of the copy, relative to
+	// cloud.google.com/go, in canonical form and inside the library's own
+	// module. It must contain an "internal" path element so that the copy
+	// cannot be imported by users of the library, and must not overlap the
+	// directory of another copy or of a generated client. Existing symlinks
+	// below the library output directory are rejected before generation.
+	ImportPath string `yaml:"import_path"`
+	// Plugin is the required additional protoc plugin, without the
+	// "protoc-gen-" prefix, for example "go-vtproto". The binary is looked
+	// up in the Go tool bin directory, then on the PATH. Declare its Go
+	// module under tools.go. The name must contain only letters, digits,
+	// "-", or "_".
+	Plugin string `yaml:"plugin"`
+	// PluginOptions are passed as `--<plugin>_opt` values. The plugin must
+	// write its output next to protoc-gen-go's, under the Go import path.
+	// Layout options `paths=`, `module=`, and `M<file>=` import mappings are
+	// rejected, including in comma-separated parameter lists.
+	PluginOptions []string `yaml:"plugin_options,omitempty"`
+	// ProtoPackage is the proto package of the copy. It must be a valid
+	// proto package name that differs from the proto package of the API and
+	// of every other copy.
+	ProtoPackage string `yaml:"proto_package"`
+}
+
 // GoModule represents the Go-specific configuration for a library.
 type GoModule struct {
 	// DeleteGenerationOutputPaths is a list of paths to delete before generation.
@@ -76,6 +103,15 @@ type GoAPI struct {
 	EnabledGeneratorFeatures []string `yaml:"enabled_generator_features,omitempty"`
 	// ImportPath is the Go import path for the API.
 	ImportPath string `yaml:"import_path,omitempty"`
+	// InternalCopies lists private copies of the API's messages to generate
+	// into internal Go packages, so that an additional protoc plugin can run
+	// on each copy without its output becoming part of the public API surface.
+	// Each copy is generated from the proto files in the API directory,
+	// without services, under a renamed proto package so that it can be
+	// linked beside the public package. Copies require the open protobuf API
+	// level. A copy directory holds generated code only and is removed
+	// entirely before regeneration, so handwritten code must live outside it.
+	InternalCopies []*GoInternalCopy `yaml:"internal_copies,omitempty"`
 	// NestedProtos is a list of nested proto files.
 	NestedProtos []string `yaml:"nested_protos,omitempty"`
 	// NoMetadata indicates whether to skip generating gapic_metadata.json.
@@ -190,6 +226,10 @@ type RustModule struct {
 	// methods.
 	IncludeStreamingMethods bool `yaml:"include_streaming_methods,omitempty"`
 
+	// HandwrittenSurface indicates whether the module or specific services have a handwritten surface.
+	// Accepts "true" for all services, or a comma-separated list of service IDs.
+	HandwrittenSurface string `yaml:"handwritten_surface,omitempty"`
+
 	// InternalBuilders indicates whether generated builders should be internal to the crate.
 	InternalBuilders bool `yaml:"internal_builders,omitempty"`
 
@@ -275,6 +315,10 @@ type RustCrate struct {
 
 	// DisabledClippyWarnings is a list of clippy warnings to disable.
 	DisabledClippyWarnings []string `yaml:"disabled_clippy_warnings,omitempty"`
+
+	// HandwrittenSurface indicates whether the crate or specific services have a handwritten surface.
+	// Accepts "true" for all services, or a comma-separated list of service IDs.
+	HandwrittenSurface string `yaml:"handwritten_surface,omitempty"`
 
 	// HasVeneer indicates whether the crate has a veneer.
 	HasVeneer bool `yaml:"has_veneer,omitempty"`

@@ -1,0 +1,130 @@
+// Copyright 2026 Google LLC
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     https://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+package api_test
+
+import (
+	"testing"
+
+	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
+	"github.com/googleapis/librarian/internal/sidekick/api"
+)
+
+func TestMethod_WithBindings_NilPathInfo(t *testing.T) {
+	method := &api.Method{Name: "Test"}
+	b1 := api.NewTestPathBinding("GET", (&api.PathTemplate{}).WithLiteral("v1"))
+	b2 := api.NewTestPathBinding("POST", (&api.PathTemplate{}).WithLiteral("v2"))
+
+	method.WithBindings(b1, b2)
+
+	if method.PathInfo == nil {
+		t.Fatal("expected PathInfo to be initialized, got nil")
+	}
+	if diff := cmp.Diff([]*api.PathBinding{b1, b2}, method.PathInfo.Bindings, cmpopts.IgnoreUnexported(api.PathTemplate{})); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+}
+
+func TestMethod_WithBindings_NonNilPathInfo(t *testing.T) {
+	method := api.NewTestMethod("Test")
+	b1 := api.NewTestPathBinding("DELETE", (&api.PathTemplate{}).WithLiteral("v1"))
+
+	method.WithBindings(b1)
+
+	if diff := cmp.Diff([]*api.PathBinding{b1}, method.PathInfo.Bindings, cmpopts.IgnoreUnexported(api.PathTemplate{})); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+}
+
+func TestMethod_WithBodyFieldPath_NilPathInfo(t *testing.T) {
+	method := &api.Method{Name: "Test"}
+	method.WithBodyFieldPath("data")
+
+	if method.PathInfo == nil {
+		t.Fatal("expected PathInfo to be initialized, got nil")
+	}
+	if method.PathInfo.BodyFieldPath != "data" {
+		t.Errorf("expected BodyFieldPath to be 'data', got %q", method.PathInfo.BodyFieldPath)
+	}
+}
+
+func TestMethod_WithVerb_NilPathInfo(t *testing.T) {
+	method := &api.Method{Name: "Test"}
+	method.WithVerb("PUT")
+
+	if method.PathInfo == nil || len(method.PathInfo.Bindings) == 0 {
+		t.Fatal("expected PathInfo and at least one binding to be initialized")
+	}
+	if method.PathInfo.Bindings[0].Verb != "PUT" {
+		t.Errorf("expected Verb to be 'PUT', got %q", method.PathInfo.Bindings[0].Verb)
+	}
+}
+
+func TestMethod_WithPathTemplate_NilPathInfo(t *testing.T) {
+	method := &api.Method{Name: "Test"}
+	pt := (&api.PathTemplate{}).WithLiteral("v1")
+	method.WithPathTemplate(pt)
+
+	if method.PathInfo == nil || len(method.PathInfo.Bindings) == 0 {
+		t.Fatal("expected PathInfo and at least one binding to be initialized")
+	}
+	if method.PathInfo.Bindings[0].PathTemplate != pt {
+		t.Errorf("expected PathTemplate to match")
+	}
+}
+
+func TestMethod_WithQueryParameters_NilPathInfo(t *testing.T) {
+	method := &api.Method{Name: "Test"}
+	params := map[string]bool{"page_size": true}
+	method.WithQueryParameters(params)
+
+	if method.PathInfo == nil || len(method.PathInfo.Bindings) == 0 {
+		t.Fatal("expected PathInfo and at least one binding to be initialized")
+	}
+	if diff := cmp.Diff(params, method.PathInfo.Bindings[0].QueryParameters); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+}
+
+func TestMethod_WithDocumentation(t *testing.T) {
+	method := api.NewTestMethod("Test").WithDocumentation("A test method.")
+	if method.Documentation != "A test method." {
+		t.Errorf("expected Documentation 'A test method.', got %q", method.Documentation)
+	}
+}
+
+func TestPathBinding_Fluent(t *testing.T) {
+	pt := (&api.PathTemplate{}).WithLiteral("v1")
+	b := api.NewTestPathBinding("GET", pt).
+		WithVerb("POST").
+		WithQueryParameters(map[string]bool{"filter": true})
+
+	if b.Verb != "POST" {
+		t.Errorf("expected Verb 'POST', got %q", b.Verb)
+	}
+	if b.PathTemplate != pt {
+		t.Errorf("expected PathTemplate to match")
+	}
+	if !b.QueryParameters["filter"] {
+		t.Errorf("expected filter query parameter to be true")
+	}
+}
+
+func TestField_WithJSONName(t *testing.T) {
+	f := api.NewTestField("foo_bar").WithJSONName("customName")
+	if f.JSONName != "customName" {
+		t.Errorf("expected JSONName 'customName', got %q", f.JSONName)
+	}
+}

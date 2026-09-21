@@ -156,6 +156,9 @@ func buildCodec(library *config.Library, releaseLevel string) map[string]string 
 	if rust.DefaultTransport != "" {
 		codec["default-transport"] = rust.DefaultTransport
 	}
+	if rust.HandwrittenSurface != "" {
+		codec["handwritten-surface"] = rust.HandwrittenSurface
+	}
 	if rust.HasVeneer {
 		codec["has-veneer"] = "true"
 	}
@@ -374,6 +377,9 @@ func buildModuleCodec(library *config.Library, module *config.RustModule) map[st
 	}
 	if module.RootName != "" {
 		codec["root-name"] = module.RootName
+	}
+	if module.HandwrittenSurface != "" {
+		codec["handwritten-surface"] = module.HandwrittenSurface
 	}
 	if module.InternalBuilders {
 		codec["internal-builders"] = "true"

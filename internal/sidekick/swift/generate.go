@@ -55,6 +55,9 @@ func Generate(ctx context.Context, model *api.API, outdir string, library *confi
 	if err := codec.generateStubs(outdir, model, provider); err != nil {
 		return err
 	}
+	if err := codec.generateLROAnyConverter(outdir, model, provider); err != nil {
+		return err
+	}
 	if codec.Module {
 		// Modules only get the top-level messages, enums, and stubs generated.
 		return nil
@@ -63,6 +66,9 @@ func Generate(ctx context.Context, model *api.API, outdir string, library *confi
 		return err
 	}
 	if err := codec.generateClients(outdir, model, provider); err != nil {
+		return err
+	}
+	if err := codec.generatePackageVersion(outdir, model, provider); err != nil {
 		return err
 	}
 	if err := codec.generateSnippets(outdir, model, provider); err != nil {
@@ -181,6 +187,29 @@ func (c *codec) generateStubs(outdir string, model *api.API, provider language.T
 	return nil
 }
 
+// generateLROAnyConverter generates the converter for the `Any` payloads of
+// this package's long-running operations.
+//
+// The converter is generated once per package, from the model, rather than
+// once per service: the `Operation` fields that use it name a single
+// converter, so every service's payload types resolve through one table.
+func (c *codec) generateLROAnyConverter(outdir string, model *api.API, provider language.TemplateProvider) error {
+	if !c.isGrpc() {
+		// The converter decodes the Protobuf stubs directly, which only the
+		// gRPC transport generates.
+		return nil
+	}
+	annotations, ok := model.Codec.(*modelAnnotations)
+	if ok && annotations.HasLROAnyTypes() {
+		generated := language.GeneratedFile{
+			TemplatePath: "templates/grpc/lro_any_converter.swift.mustache",
+			OutputPath:   c.swiftFilename(annotations.LROAnyConverterName),
+		}
+		return language.GenerateFromModel(outdir, model, provider, []language.GeneratedFile{generated})
+	}
+	return nil
+}
+
 func (c *codec) generateSnippets(outdir string, model *api.API, provider language.TemplateProvider) error {
 	for _, s := range model.Services {
 		// If two services differ only in case (such as `fooService` and
@@ -228,6 +257,17 @@ func (c *codec) generateClients(outdir string, model *api.API, provider language
 	generated := language.GeneratedFile{
 		TemplatePath: "templates/common/clients.swift.mustache",
 		OutputPath:   c.swiftFilename("Clients"),
+	}
+	return language.GenerateFromModel(outdir, model, provider, []language.GeneratedFile{generated})
+}
+
+func (c *codec) generatePackageVersion(outdir string, model *api.API, provider language.TemplateProvider) error {
+	if len(model.Services) > 0 {
+		return nil
+	}
+	generated := language.GeneratedFile{
+		TemplatePath: "templates/common/package_version.swift.mustache",
+		OutputPath:   c.swiftFilename("PackageVersion"),
 	}
 	return language.GenerateFromModel(outdir, model, provider, []language.GeneratedFile{generated})
 }

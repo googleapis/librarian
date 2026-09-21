@@ -37,14 +37,14 @@ func setupMonorepoWithRootFiles(t *testing.T) string {
 	}
 
 	authDir := filepath.Join("packages", "auth")
-	testhelper.AddSwiftPackage(t, authDir, "GoogleCloudAuth")
+	testhelper.AddSwiftPackage(t, authDir, "GoogleAuth")
 	storageDir := filepath.Join("packages", "storage")
 	testhelper.AddSwiftPackage(t, storageDir, "GoogleCloudStorage")
 	testhelper.RunGit(t, "add", ".")
 	testhelper.RunGit(t, "commit", "-m", "feat: initial commit with auth and storage")
 
 	// Add a second commit to the package
-	authFile := filepath.Join(authDir, "Sources", "GoogleCloudAuth", "Auth.swift")
+	authFile := filepath.Join(authDir, "Sources", "GoogleAuth", "Auth.swift")
 	if err := os.WriteFile(authFile, []byte("// new auth code"), 0o644); err != nil {
 		t.Fatal(err)
 	}
@@ -163,11 +163,11 @@ func TestSplitTracksHistoryAcrossDirectoryRename(t *testing.T) {
 	}
 
 	oldDir := filepath.Join("packages", "swift-google-gax")
-	testhelper.AddSwiftPackage(t, oldDir, "GoogleCloudGax")
+	testhelper.AddSwiftPackage(t, oldDir, "GoogleGax")
 	testhelper.RunGit(t, "add", ".")
 	testhelper.RunGit(t, "commit", "-m", "feat: initial gax in packages/")
 
-	gaxFile := filepath.Join(oldDir, "Sources", "GoogleCloudGax", "Gax.swift")
+	gaxFile := filepath.Join(oldDir, "Sources", "GoogleGax", "Gax.swift")
 	if err := os.WriteFile(gaxFile, []byte("// updated in packages/"), 0o644); err != nil {
 		t.Fatal(err)
 	}
@@ -181,7 +181,7 @@ func TestSplitTracksHistoryAcrossDirectoryRename(t *testing.T) {
 	testhelper.RunGit(t, "mv", oldDir, newDir)
 	testhelper.RunGit(t, "commit", "-m", "refactor: rename packages/ to pkgs/")
 
-	newGaxFile := filepath.Join(newDir, "Sources", "GoogleCloudGax", "Gax.swift")
+	newGaxFile := filepath.Join(newDir, "Sources", "GoogleGax", "Gax.swift")
 	if err := os.WriteFile(newGaxFile, []byte("// updated in pkgs/"), 0o644); err != nil {
 		t.Fatal(err)
 	}

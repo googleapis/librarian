@@ -19,6 +19,7 @@ import (
 	"errors"
 	"fmt"
 	"io/fs"
+	"os"
 	"path/filepath"
 	"slices"
 	"strings"
@@ -29,7 +30,11 @@ import (
 
 var (
 	errMissingVersion = errors.New("must provide version")
-	manifestFile      = "Clients.swift"
+)
+
+const (
+	clientsManifest        = "Clients.swift"
+	packageVersionManifest = "PackageVersion.swift"
 )
 
 // Bump checks if a version bump is required and performs it.
@@ -38,24 +43,37 @@ func Bump(ctx context.Context, library *config.Library, output, version, gitExe,
 	if version == "" {
 		return errMissingVersion
 	}
-	// The location of the version file requires parsing the protos (or discovery doc), as the convention in Swift is to put the files for FooLibrary in the FooLibrary directory.
-	var actualFile string
-	err := filepath.WalkDir(filepath.Join(output, "Sources"), func(path string, d fs.DirEntry, err error) error {
+	packageDir := PackageDirectory(output)
+	sourcesDir := filepath.Join(packageDir, "Sources")
+	var versionFile string
+	if _, err := os.Stat(sourcesDir); err == nil {
+		err := filepath.WalkDir(sourcesDir, func(path string, d fs.DirEntry, err error) error {
+			if err != nil {
+				return err
+			}
+			if d.IsDir() {
+				return nil
+			}
+			switch filepath.Base(path) {
+			case clientsManifest:
+				versionFile = path
+			case packageVersionManifest:
+				if versionFile == "" {
+					versionFile = path
+				}
+			}
+			return nil
+		})
 		if err != nil {
 			return err
 		}
-		if !d.IsDir() && filepath.Base(path) == manifestFile {
-			actualFile = path
-		}
-		return nil
-	})
-	if err != nil {
+	} else if !errors.Is(err, fs.ErrNotExist) {
 		return err
 	}
-	if actualFile == "" {
-		return nil
+	if versionFile == "" {
+		return fmt.Errorf("no version manifest (%s or %s) found in %s for library %s", clientsManifest, packageVersionManifest, sourcesDir, library.Name)
 	}
-	skip, err := versionAlreadyBumped(ctx, gitExe, lastTag, actualFile)
+	skip, err := versionAlreadyBumped(ctx, gitExe, lastTag, versionFile)
 	if err != nil {
 		return err
 	}
@@ -73,13 +91,15 @@ func Bump(ctx context.Context, library *config.Library, output, version, gitExe,
 // manual tweaks of the version if needed.
 func versionAlreadyBumped(ctx context.Context, gitExe, lastTag, versionFile string) (bool, error) {
 	delta := fmt.Sprintf("%s..HEAD", lastTag)
-	contents, err := command.Output(ctx, gitExe, "diff", delta, "--", versionFile)
+	contents, err := command.Output(ctx, gitExe, "log", "-p", delta, "--", versionFile)
 	if err != nil {
 		return false, err
 	}
 	lines := strings.Split(contents, "\n")
-	found := slices.ContainsFunc(lines, func(line string) bool {
-		return strings.HasPrefix(line, "+") && strings.Contains(line, "packageVersion:")
-	})
-	return found, nil
+	has := func(prefix string) bool {
+		return slices.ContainsFunc(lines, func(line string) bool {
+			return strings.HasPrefix(line, prefix) && (strings.Contains(line, "packageVersion:") || strings.Contains(line, "static let version:"))
+		})
+	}
+	return has("-") && has("+"), nil
 }

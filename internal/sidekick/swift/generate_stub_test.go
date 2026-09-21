@@ -84,7 +84,7 @@ func TestGenerateStub_Structure(t *testing.T) {
 	got := extractBlock(t, stubContentStr, `  protocol ProtocolStub: Sendable {`, "\n"+`  }`)
 	want := `  protocol ProtocolStub: Sendable {
     func getThing(
-    request: SomeTestPackage.Request, options: GoogleCloudGax.RequestOptions
+    request: SomeTestPackage.Request, options: GoogleGax.RequestOptions
 ) async throws -> SomeTestPackage.Response
 
   }`
@@ -101,7 +101,7 @@ func TestGenerateStub_Structure(t *testing.T) {
 
 	got = extractBlock(t, transportContentStr, `  final class ProtocolTransport: `, `HTTPClient`)
 	want = `  final class ProtocolTransport: ProtocolStub {
-    let inner: GoogleCloudGax._HTTPClient`
+    let inner: GoogleGax._HTTPClient`
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
@@ -224,7 +224,7 @@ func TestGenerateStub_QueryParameters(t *testing.T) {
 	want = `var query = [
             URLQueryItem(name: "$alt", value: "json;enum-encoding=int"),
           ]
-          let encoder = GoogleCloudGax._QueryParameterEncoder()
+          let encoder = GoogleGax._QueryParameterEncoder()
           query.append(`
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
@@ -250,11 +250,11 @@ func TestGenerateStub_Discovery(t *testing.T) {
 
 	swiftCfg := swiftConfig(t, []config.SwiftDependency{
 		{
-			Name:               "GoogleCloudGax",
+			Name:               "GoogleGax",
 			RequiredByServices: true,
 		},
 		{
-			Name:               "GoogleCloudAuth",
+			Name:               "GoogleAuth",
 			RequiredByServices: true,
 		},
 	})
@@ -441,8 +441,8 @@ func TestGenerateStub_Grpc(t *testing.T) {
 	transportStr := string(transportContent)
 
 	// Check imports
-	if !strings.Contains(transportStr, "@_spi(GoogleCloudInternal) import GoogleCloudGax") {
-		t.Errorf("transport missing @_spi(GoogleCloudInternal) import GoogleCloudGax:\n%s", transportStr)
+	if !strings.Contains(transportStr, "@_spi(GoogleCloudInternal) import GoogleGax") {
+		t.Errorf("transport missing @_spi(GoogleCloudInternal) import GoogleGax:\n%s", transportStr)
 	}
 	if !strings.Contains(transportStr, "internal import StorageControlProtos") {
 		t.Errorf("transport missing internal import StorageControlProtos:\n%s", transportStr)
@@ -452,10 +452,10 @@ func TestGenerateStub_Grpc(t *testing.T) {
 	if !strings.Contains(transportStr, "final class StorageControlTransport: StorageControlStub {") {
 		t.Errorf("transport missing StorageControlTransport class declaration:\n%s", transportStr)
 	}
-	if !strings.Contains(transportStr, "let inner: GoogleCloudGaxGRPC._GRPCClient") {
-		t.Errorf("transport missing inner: GoogleCloudGaxGRPC._GRPCClient field:\n%s", transportStr)
+	if !strings.Contains(transportStr, "let inner: GoogleGaxGRPC._GRPCClient") {
+		t.Errorf("transport missing inner: GoogleGaxGRPC._GRPCClient field:\n%s", transportStr)
 	}
-	if !strings.Contains(transportStr, `self.inner = try GoogleCloudGaxGRPC._GRPCClient(`) ||
+	if !strings.Contains(transportStr, `self.inner = try GoogleGaxGRPC._GRPCClient(`) ||
 		!strings.Contains(transportStr, `withDefaultEndpoint: "https://storage.googleapis.com"`) {
 		t.Errorf("transport missing _GRPCClient initialization with default endpoint:\n%s", transportStr)
 	}
@@ -464,8 +464,8 @@ func TestGenerateStub_Grpc(t *testing.T) {
 	if !strings.Contains(transportStr, "let protoRequest = try request.toProto()") {
 		t.Errorf("transport missing request.toProto() call:\n%s", transportStr)
 	}
-	if !strings.Contains(transportStr, "GoogleCloudGaxGRPC._RoutingMatcher.value(") {
-		t.Errorf("transport missing GoogleCloudGaxGRPC._RoutingMatcher.value for routing params:\n%s", transportStr)
+	if !strings.Contains(transportStr, "GoogleGaxGRPC._RoutingMatcher.value(") {
+		t.Errorf("transport missing GoogleGaxGRPC._RoutingMatcher.value for routing params:\n%s", transportStr)
 	}
 	if !strings.Contains(transportStr, `path: "/google.storage.control.v2.StorageControl/CreateFolder"`) {
 		t.Errorf("transport missing CreateFolder gRPC path in execute:\n%s", transportStr)
@@ -571,16 +571,16 @@ func TestGenerateStub_MultipleBindings(t *testing.T) {
 	}
 	transportStr := string(transportContent)
 
-	if !strings.Contains(transportStr, "GoogleCloudGax._RoutingMatcher.value(") {
-		t.Errorf("transport missing _RoutingMatcher.value:\n%s", transportStr)
+	if !strings.Contains(transportStr, "GoogleGax._RoutingMatcher.pathValue(") {
+		t.Errorf("transport missing _RoutingMatcher.pathValue:\n%s", transportStr)
 	}
-	if !strings.Contains(transportStr, "GoogleCloudGax._PathMismatchBuilder()") {
+	if !strings.Contains(transportStr, "GoogleGax._PathMismatchBuilder()") {
 		t.Errorf("transport missing _PathMismatchBuilder:\n%s", transportStr)
 	}
 	if !strings.Contains(transportStr, "builder.maybeAdd(") {
 		t.Errorf("transport missing builder.maybeAdd:\n%s", transportStr)
 	}
-	if !strings.Contains(transportStr, "throw GoogleCloudGax.RequestError.binding(GoogleCloudGax.BindingError(paths: paths))") {
+	if !strings.Contains(transportStr, "throw GoogleGax.RequestError.binding(GoogleGax.BindingError(paths: paths))") {
 		t.Errorf("transport missing throw RequestError.binding:\n%s", transportStr)
 	}
 	if !strings.Contains(transportStr, "$0.setMethod(.GET)") {
