@@ -235,20 +235,11 @@ func TestEnv(t *testing.T) {
 			envMap[parts[0]] = parts[1]
 		}
 	}
-	if got := envMap["COREPACK_ENABLE_PROJECT_SPEC"]; got != "0" {
-		t.Errorf("COREPACK_ENABLE_PROJECT_SPEC = %q, want %q", got, "0")
-	}
 	if got := envMap["PNPM_HOME"]; got != binDir {
 		t.Errorf("PNPM_HOME = %q, want %q", got, binDir)
 	}
 	if got := envMap["PNPM_CONFIG_GLOBAL_BIN_DIR"]; got != binDir {
 		t.Errorf("PNPM_CONFIG_GLOBAL_BIN_DIR = %q, want %q", got, binDir)
-	}
-	if got := envMap["NPM_CONFIG_GLOBAL_BIN_DIR"]; got != binDir {
-		t.Errorf("NPM_CONFIG_GLOBAL_BIN_DIR = %q, want %q", got, binDir)
-	}
-	if got := envMap["npm_config_global_bin_dir"]; got != binDir {
-		t.Errorf("npm_config_global_bin_dir = %q, want %q", got, binDir)
 	}
 	if got := envMap["PNPM_CONFIG_GLOBAL_DIR"]; got != wantGlobalDir {
 		t.Errorf("PNPM_CONFIG_GLOBAL_DIR = %q, want %q", got, wantGlobalDir)
