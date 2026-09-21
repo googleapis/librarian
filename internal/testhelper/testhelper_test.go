@@ -53,6 +53,90 @@ func TestFindManagedProtoc(t *testing.T) {
 	}
 }
 
+func TestFindManagedProtoc_MultipleVersions(t *testing.T) {
+	binDir := t.TempDir()
+	t.Setenv(cache.EnvLibrarianBin, binDir)
+
+	protocBin := "protoc"
+	if runtime.GOOS == "windows" {
+		protocBin = "protoc.exe"
+	}
+	// Install multiple versions including one that lexicographically
+	// sorts lower but is numerically higher (v33.10 vs v33.2), and a
+	// prerelease (v26.0-rc1) that must rank below its stable release.
+	for _, ver := range []string{"v25.1", "v33.2", "v26.0-rc1", "v26.0", "v33.10"} {
+		p := filepath.Join(binDir, "protoc", ver, "bin", protocBin)
+		if err := os.MkdirAll(filepath.Dir(p), 0o755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(p, []byte("fake"), 0o755); err != nil {
+			t.Fatal(err)
+		}
+	}
+	// Also create a non-directory file and a directory without the "v"
+	// prefix; both must be ignored.
+	if err := os.WriteFile(filepath.Join(binDir, "protoc", "README"), []byte("ignore"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.MkdirAll(filepath.Join(binDir, "protoc", "latest", "bin"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+
+	got, ok := findManagedProtoc()
+	if !ok {
+		t.Fatal("expected true with managed protoc binaries present")
+	}
+	want := filepath.Join(binDir, "protoc", "v33.10", "bin", protocBin)
+	if got != want {
+		t.Fatalf("expected newest version %q, got %q", want, got)
+	}
+}
+
+func TestCompareProtocVersions(t *testing.T) {
+	t.Parallel()
+	for _, test := range []struct {
+		name  string
+		newer string
+		older string
+	}{
+		{"numeric minor", "v33.10", "v33.2"},
+		{"stable beats prerelease", "v26.0", "v26.0-rc1"},
+		{"prerelease ordering", "v26.0-rc2", "v26.0-rc1"},
+		{"higher minor", "v26.0", "v25.99"},
+		{"higher major", "v34.0", "v33.10"},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			a, ok := parseProtocVersion(test.newer)
+			if !ok {
+				t.Fatalf("failed to parse %q", test.newer)
+			}
+			b, ok := parseProtocVersion(test.older)
+			if !ok {
+				t.Fatalf("failed to parse %q", test.older)
+			}
+			if c := compareProtocVersions(a, b); c <= 0 {
+				t.Errorf("expected %s > %s, got compare = %d", test.newer, test.older, c)
+			}
+			if c := compareProtocVersions(b, a); c >= 0 {
+				t.Errorf("expected %s < %s, got compare = %d", test.older, test.newer, c)
+			}
+		})
+	}
+}
+
+func TestParseProtocVersion_Error(t *testing.T) {
+	t.Parallel()
+	for _, name := range []string{"latest", "foo", "v", "vabc", "v33", "33.2"} {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+			if _, ok := parseProtocVersion(name); ok {
+				t.Errorf("expected parseProtocVersion(%q) to fail", name)
+			}
+		})
+	}
+}
+
 func TestRequireCommand_ManagedProtoc(t *testing.T) {
 	binDir := t.TempDir()
 	t.Setenv(cache.EnvLibrarianBin, binDir)

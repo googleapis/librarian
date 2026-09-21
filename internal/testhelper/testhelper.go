@@ -17,12 +17,16 @@
 package testhelper
 
 import (
+	"cmp"
 	"fmt"
 	"os"
 	"os/exec"
 	"path"
 	"path/filepath"
 	"runtime"
+	"slices"
+	"strconv"
+	"strings"
 	"testing"
 
 	"github.com/googleapis/librarian/internal/cache"
@@ -34,8 +38,11 @@ import (
 
 // RequireCommand skips the test if the specified command is not found in PATH.
 // For protoc, it also checks the librarian-managed install directory
-// (see [cache.BinDirectory]) and adds its directory to PATH for the test. Use
-// this to skip tests that depend on external tools like protoc, cargo, or
+// (see [cache.BinDirectory]) and adds its directory to PATH for the test.
+// Because this may call t.Setenv, tests that call RequireCommand(t, "protoc")
+// must not call t.Parallel.
+//
+// Use this to skip tests that depend on external tools like protoc, cargo, or
 // taplo, so that `go test ./...` will always pass on a fresh clone of the
 // repo.
 func RequireCommand(t *testing.T, cmd string) {
@@ -52,7 +59,8 @@ func RequireCommand(t *testing.T, cmd string) {
 }
 
 // findManagedProtoc finds an executable librarian-managed protoc binary under
-// the cache bin directory, returning its path and true if found.
+// the cache bin directory, returning its path and true if found. When multiple
+// versions are installed it returns the newest one.
 func findManagedProtoc() (string, bool) {
 	binDir, err := cache.BinDirectory()
 	if err != nil {
@@ -62,23 +70,89 @@ func findManagedProtoc() (string, bool) {
 	if err != nil {
 		return "", false
 	}
-	pattern := filepath.Join(absBinDir, "protoc", "v*", "bin", "protoc")
-	if runtime.GOOS == "windows" {
-		pattern += ".exe"
-	}
-	matches, err := filepath.Glob(pattern)
-	if err != nil || len(matches) == 0 {
+	protocDir := filepath.Join(absBinDir, "protoc")
+	entries, err := os.ReadDir(protocDir)
+	if err != nil {
 		return "", false
 	}
-	for _, match := range matches {
-		if fi, err := os.Stat(match); err == nil && !fi.IsDir() {
-			if runtime.GOOS != "windows" && fi.Mode()&0o111 == 0 {
-				continue
-			}
-			return match, true
+	protocBin := "protoc"
+	if runtime.GOOS == "windows" {
+		protocBin = "protoc.exe"
+	}
+	// Collect valid version directories in descending order so the first
+	// match is the newest installed version.
+	var versions []protocVersion
+	for _, e := range entries {
+		if !e.IsDir() {
+			continue
+		}
+		if v, ok := parseProtocVersion(e.Name()); ok {
+			versions = append(versions, v)
 		}
 	}
+	slices.SortFunc(versions, func(a, b protocVersion) int { return compareProtocVersions(b, a) })
+	for _, v := range versions {
+		p := filepath.Join(protocDir, v.name, "bin", protocBin)
+		fi, err := os.Stat(p)
+		if err != nil || fi.IsDir() {
+			continue
+		}
+		if runtime.GOOS != "windows" && fi.Mode()&0o111 == 0 {
+			continue
+		}
+		return p, true
+	}
 	return "", false
+}
+
+type protocVersion struct {
+	name  string // original directory name, e.g. "v33.2"
+	major int
+	minor int
+	pre   string // prerelease suffix, e.g. "-rc1"; empty for stable
+}
+
+// parseProtocVersion parses a version directory name like "v33.2" or
+// "v26.0-rc1", returning the parsed version and true on success.
+func parseProtocVersion(name string) (protocVersion, bool) {
+	s, ok := strings.CutPrefix(name, "v")
+	if !ok {
+		return protocVersion{}, false
+	}
+	majStr, rest, ok := strings.Cut(s, ".")
+	if !ok {
+		return protocVersion{}, false
+	}
+	maj, err := strconv.Atoi(majStr)
+	if err != nil {
+		return protocVersion{}, false
+	}
+	minStr, pre, _ := strings.Cut(rest, "-")
+	min, err := strconv.Atoi(minStr)
+	if err != nil {
+		return protocVersion{}, false
+	}
+	if pre != "" {
+		pre = "-" + pre
+	}
+	return protocVersion{name: name, major: maj, minor: min, pre: pre}, true
+}
+
+func compareProtocVersions(a, b protocVersion) int {
+	if c := cmp.Compare(a.major, b.major); c != 0 {
+		return c
+	}
+	if c := cmp.Compare(a.minor, b.minor); c != 0 {
+		return c
+	}
+	// Stable (empty pre) is newer than any prerelease.
+	if a.pre == "" && b.pre != "" {
+		return 1
+	}
+	if a.pre != "" && b.pre == "" {
+		return -1
+	}
+	return cmp.Compare(a.pre, b.pre)
 }
 
 const (
