@@ -21,12 +21,39 @@ import (
 	"github.com/googleapis/librarian/internal/yaml"
 )
 
+// TestCppConfig_Unmarshal tests unmarshaling C++ configuration from YAML.
 func TestCppConfig_Unmarshal(t *testing.T) {
 	for _, test := range []struct {
 		name string
 		yaml string
 		want *Config
 	}{
+		{
+			name: "parses minimal cpp config",
+			yaml: `
+language: cpp
+default:
+  cpp:
+    default_version: "2.3.0"
+libraries:
+  - name: testlib
+    cpp: {}
+`,
+			want: &Config{
+				Language: LanguageCpp,
+				Default: &Default{
+					Cpp: &CppDefault{
+						DefaultVersion: "2.3.0",
+					},
+				},
+				Libraries: []*Library{
+					{
+						Name: "testlib",
+						Cpp:  &CppLibrary{},
+					},
+				},
+			},
+		},
 		{
 			name: "parses cpp library with all 24 fields and tools",
 			yaml: `
@@ -77,71 +104,68 @@ libraries:
       service_name_to_comment:
         TopicAdmin: "Topic admin service comment"
 `,
-			want: func() *Config {
-				grpcTransport := true
-				return &Config{
-					Language: LanguageCpp,
-					Version:  "1.0.0",
-					Tools: &Tools{
-						ClangFormat: &ClangFormat{
-							Path:    "/custom/bin/clang-format",
-							Version: "18.0.0",
-						},
+			want: &Config{
+				Language: LanguageCpp,
+				Version:  "1.0.0",
+				Tools: &Tools{
+					ClangFormat: &ClangFormat{
+						Path:    "/custom/bin/clang-format",
+						Version: "18.0.0",
 					},
-					Default: &Default{
-						Cpp: &CppDefault{
-							DefaultVersion: "2.3.0",
-						},
+				},
+				Default: &Default{
+					Cpp: &CppDefault{
+						DefaultVersion: "2.3.0",
 					},
-					Libraries: []*Library{
-						{
-							Name:    "testlib",
-							Version: "2.3.0",
-							Cpp: &CppLibrary{
-								SourceRoot:                      "google/cloud/test",
-								ProductPath:                     "google/cloud/test/v1",
-								ForwardingProductPath:           "google/cloud/test",
-								ServiceEndpointEnvVar:           "TEST_ENDPOINT",
-								EmulatorEndpointEnvVar:          "TEST_EMULATOR",
-								GenerateRestTransport:           true,
-								GenerateGrpcTransport:           &grpcTransport,
-								EndpointLocationStyle:           "LOCATION_DEPENDENT",
-								BackwardsCompatibilityNamespace: true,
-								OmittedRPCs:                     []string{"DeprecatedRpc"},
-								GenAsyncRPCs:                    []string{"LongRunningRpc"},
-								OmittedServices:                 []string{"InternalService"},
-								RetryableStatusCodes:            []string{"UNAVAILABLE"},
-								IdempotencyOverrides: []IdempotencyRule{
-									{
-										RPCName:     "TestService.CustomRpc",
-										Idempotency: "IDEMPOTENT",
-									},
+				},
+				Libraries: []*Library{
+					{
+						Name:    "testlib",
+						Version: "2.3.0",
+						Cpp: &CppLibrary{
+							SourceRoot:                      "google/cloud/test",
+							ProductPath:                     "google/cloud/test/v1",
+							ForwardingProductPath:           "google/cloud/test",
+							ServiceEndpointEnvVar:           "TEST_ENDPOINT",
+							EmulatorEndpointEnvVar:          "TEST_EMULATOR",
+							GenerateRestTransport:           true,
+							GenerateGrpcTransport:           new(true),
+							EndpointLocationStyle:           "LOCATION_DEPENDENT",
+							BackwardsCompatibilityNamespace: true,
+							OmittedRPCs:                     []string{"DeprecatedRpc"},
+							GenAsyncRPCs:                    []string{"LongRunningRpc"},
+							OmittedServices:                 []string{"InternalService"},
+							RetryableStatusCodes:            []string{"UNAVAILABLE"},
+							IdempotencyOverrides: []IdempotencyRule{
+								{
+									RPCName:     "TestService.CustomRpc",
+									Idempotency: "IDEMPOTENT",
 								},
-								GenerateRoundRobinDecorator:   true,
-								OmitClient:                    false,
-								OmitConnection:                false,
-								OmitStubFactory:               false,
-								AdditionalProtoFiles:          []string{"google/cloud/common.proto"},
-								OverrideServiceConfigYAMLName: "custom_service.yaml",
-								InitialCopyrightYear:          "2020",
-								OmitRepoMetadata:              true,
-								ServiceNameMapping: map[string]string{
-									"Publisher": "TopicAdmin",
-								},
-								ServiceNameToComment: map[string]string{
-									"TopicAdmin": "Topic admin service comment",
-								},
+							},
+							GenerateRoundRobinDecorator:   true,
+							OmitClient:                    false,
+							OmitConnection:                false,
+							OmitStubFactory:               false,
+							AdditionalProtoFiles:          []string{"google/cloud/common.proto"},
+							OverrideServiceConfigYAMLName: "custom_service.yaml",
+							InitialCopyrightYear:          "2020",
+							OmitRepoMetadata:              true,
+							ServiceNameMapping: map[string]string{
+								"Publisher": "TopicAdmin",
+							},
+							ServiceNameToComment: map[string]string{
+								"TopicAdmin": "Topic admin service comment",
 							},
 						},
 					},
-				}
-			}(),
+				},
+			},
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			got, err := yaml.Unmarshal[Config]([]byte(test.yaml))
 			if err != nil {
-				t.Fatalf("failed to unmarshal yaml: %v", err)
+				t.Fatal(err)
 			}
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
