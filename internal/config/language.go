@@ -162,9 +162,6 @@ type RustDefault struct {
 	// permitted in gRPC/streaming RPCs (their fields will be dropped in prost conversion).
 	AllowGrpcAnyFields []string `yaml:"allow_grpc_any_fields,omitempty"`
 
-	// AllowStreamingAnyTypes is deprecated: use allow_grpc_any_fields instead.
-	AllowStreamingAnyTypes []string `yaml:"allow_streaming_any_types,omitempty"`
-
 	// GrpcClient is the Rust type used for the inner gRPC client in generated transports.
 	// Defaults to "gaxi::grpc::Client".
 	GrpcClient string `yaml:"grpc_client,omitempty"`
