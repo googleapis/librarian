@@ -57,6 +57,7 @@ type buildGeneratorArgsParams struct {
 	stagingDir    string
 	nodejsAPI     *config.NodejsAPI
 }
+
 // IsMixedLibrary reports whether the library has handwritten code wrapping
 // generated or librarian-managed code.
 func IsMixedLibrary(lib *config.Library) bool {
