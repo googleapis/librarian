@@ -91,6 +91,66 @@ func TestPopulateMixinDefinitionLocations(t *testing.T) {
 	}
 }
 
+func TestPopulateMixinDefinitionLocations_DoesNotOverwriteExisting(t *testing.T) {
+	model := api.NewTestAPI(nil, nil, nil)
+
+	// Pre-populate dynamic SourceCodeInfo locations for mixin symbols.
+	existingOpLoc := api.SourceLocation{Filename: "custom/dynamic/operations.proto", Line: 42}
+	existingLocLoc := api.SourceLocation{Filename: "custom/dynamic/locations.proto", Line: 77}
+
+	model.AddDefinitionLocation(".google.longrunning.Operation", existingOpLoc)
+	model.AddDefinitionLocation("google.cloud.location.Location", existingLocLoc)
+
+	populateMixinDefinitionLocations(model)
+
+	for _, test := range []struct {
+		name   string
+		symbol string
+		want   api.SourceLocation
+	}{
+		{
+			name:   "pre-existing operation with leading dot is preserved",
+			symbol: ".google.longrunning.Operation",
+			want:   existingOpLoc,
+		},
+		{
+			name:   "pre-existing operation queried without leading dot is preserved",
+			symbol: "google.longrunning.Operation",
+			want:   existingOpLoc,
+		},
+		{
+			name:   "pre-existing location without leading dot is preserved",
+			symbol: "google.cloud.location.Location",
+			want:   existingLocLoc,
+		},
+		{
+			name:   "pre-existing location queried with leading dot is preserved",
+			symbol: ".google.cloud.location.Location",
+			want:   existingLocLoc,
+		},
+		{
+			name:   "un-populated mixin symbol receives static fallback",
+			symbol: ".google.longrunning.GetOperationRequest",
+			want:   api.SourceLocation{Filename: "google/longrunning/operations.proto", Line: 160},
+		},
+		{
+			name:   "un-populated mixin symbol without leading dot receives static fallback",
+			symbol: "google.longrunning.GetOperationRequest",
+			want:   api.SourceLocation{Filename: "google/longrunning/operations.proto", Line: 160},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got, ok := model.DefinitionLocation(test.symbol)
+			if !ok {
+				t.Fatalf("missing location for %q", test.symbol)
+			}
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
 func TestProtobuf_ForceLongrunning(t *testing.T) {
 	sc := sample.ServiceConfig()
 	sc.Http = &annotations.Http{

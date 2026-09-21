@@ -188,6 +188,9 @@ func populateMixinDefinitionLocations(model *api.API) {
 		".google.longrunning.WaitOperationRequest":   {Filename: "google/longrunning/operations.proto", Line: 226},
 	}
 	for sym, loc := range mixinLocations {
+		if _, ok := model.DefinitionLocation(sym); ok {
+			continue
+		}
 		model.AddDefinitionLocation(sym, loc)
 		model.AddDefinitionLocation(strings.TrimPrefix(sym, "."), loc)
 	}

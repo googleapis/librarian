@@ -55,7 +55,44 @@ func TestExtractDefinitionLocations_FromProto(t *testing.T) {
 				continue
 			}
 			if diff := cmp.Diff(test.want, got); diff != "" {
-				t.Errorf("location mismatch for %q (-want +got):\n%s", test.symbol, diff)
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		}
+
+		respMsg := model.Message(".test.Response")
+		if respMsg == nil {
+			t.Fatal("expected to find Response message in model")
+		}
+		var statusEnum *api.Enum
+		for _, e := range respMsg.Enums {
+			if e.Name == "Status" {
+				statusEnum = e
+				break
+			}
+		}
+		if statusEnum == nil {
+			t.Fatal("expected to find Status enum in Response message")
+		}
+		wantStatusLocations := map[string]api.SourceLocation{
+			".test.Response.Status.NOT_READY": {Filename: "comments.proto", Line: 52},
+			".test.Response.Status.READY":     {Filename: "comments.proto", Line: 54},
+		}
+		if got, want := len(statusEnum.Values), len(wantStatusLocations); got != want {
+			t.Fatalf("unexpected number of status enum values: got %d, want %d", got, want)
+		}
+		for _, ev := range statusEnum.Values {
+			wantLoc, expected := wantStatusLocations[ev.ID]
+			if !expected {
+				t.Errorf("unexpected enum value ID: %q", ev.ID)
+				continue
+			}
+			gotLoc, ok := model.DefinitionLocation(ev.ID)
+			if !ok {
+				t.Errorf("missing definition location for enum value ID %q", ev.ID)
+				continue
+			}
+			if diff := cmp.Diff(wantLoc, gotLoc); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		}
 	})
@@ -81,7 +118,40 @@ func TestExtractDefinitionLocations_FromProto(t *testing.T) {
 				continue
 			}
 			if diff := cmp.Diff(test.want, got); diff != "" {
-				t.Errorf("location mismatch for %q (-want +got):\n%s", test.symbol, diff)
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		}
+
+		var codeEnum *api.Enum
+		for _, e := range model.Enums {
+			if e.Name == "Code" {
+				codeEnum = e
+				break
+			}
+		}
+		if codeEnum == nil {
+			t.Fatal("expected to find Code enum in model")
+		}
+		wantCodeLocations := map[string]api.SourceLocation{
+			".test.Code.OK":      {Filename: "enum.proto", Line: 21},
+			".test.Code.UNKNOWN": {Filename: "enum.proto", Line: 24},
+		}
+		if got, want := len(codeEnum.Values), len(wantCodeLocations); got != want {
+			t.Fatalf("unexpected number of code enum values: got %d, want %d", got, want)
+		}
+		for _, ev := range codeEnum.Values {
+			wantLoc, expected := wantCodeLocations[ev.ID]
+			if !expected {
+				t.Errorf("unexpected enum value ID: %q", ev.ID)
+				continue
+			}
+			gotLoc, ok := model.DefinitionLocation(ev.ID)
+			if !ok {
+				t.Errorf("missing definition location for enum value ID %q", ev.ID)
+				continue
+			}
+			if diff := cmp.Diff(wantLoc, gotLoc); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		}
 	})
@@ -111,7 +181,7 @@ func TestExtractDefinitionLocations_FromProto(t *testing.T) {
 				continue
 			}
 			if diff := cmp.Diff(test.want, got); diff != "" {
-				t.Errorf("location mismatch for %q (-want +got):\n%s", test.symbol, diff)
+				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		}
 	})
@@ -343,6 +413,98 @@ func TestExtractDefinitionLocations_ExtensionsAndEdgeCases(t *testing.T) {
 		}
 		if diff := cmp.Diff(wantLoc, gotLoc); diff != "" {
 			t.Errorf("mismatch (-want +got):\n%s", diff)
+		}
+	})
+
+	t.Run("deeply nested message enums", func(t *testing.T) {
+		fileDesc := &descriptorpb.FileDescriptorProto{
+			Name:    new("deep_enum.proto"),
+			Package: new("test.deep"),
+			MessageType: []*descriptorpb.DescriptorProto{
+				{
+					Name: new("Outer"),
+					NestedType: []*descriptorpb.DescriptorProto{
+						{
+							Name: new("Middle"),
+							EnumType: []*descriptorpb.EnumDescriptorProto{
+								{
+									Name: new("Kind"),
+									Value: []*descriptorpb.EnumValueDescriptorProto{
+										{Name: new("KIND_UNSPECIFIED")},
+										{Name: new("KIND_SPECIAL")},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			SourceCodeInfo: &descriptorpb.SourceCodeInfo{
+				Location: []*descriptorpb.SourceCodeInfo_Location{
+					{
+						// Outer (0) -> Middle (0) -> Kind (0)
+						Path: []int32{fileDescriptorMessageType, 0, messageDescriptorNestedType, 0, messageDescriptorEnum, 0},
+						Span: []int32{49, 2, 50},
+					},
+					{
+						// Outer (0) -> Middle (0) -> Kind (0) -> KIND_UNSPECIFIED (0)
+						Path: []int32{fileDescriptorMessageType, 0, messageDescriptorNestedType, 0, messageDescriptorEnum, 0, enumDescriptorValue, 0},
+						Span: []int32{50, 4, 51},
+					},
+					{
+						// Outer (0) -> Middle (0) -> Kind (0) -> KIND_SPECIAL (1)
+						Path: []int32{fileDescriptorMessageType, 0, messageDescriptorNestedType, 0, messageDescriptorEnum, 0, enumDescriptorValue, 1},
+						Span: []int32{52, 4, 53},
+					},
+				},
+			},
+		}
+
+		req := &pluginpb.CodeGeneratorRequest{
+			ProtoFile:             []*descriptorpb.FileDescriptorProto{fileDesc},
+			SourceFileDescriptors: []*descriptorpb.FileDescriptorProto{fileDesc},
+		}
+		model, err := makeAPIForProtobuf(nil, req)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		outer := model.Message(".test.deep.Outer")
+		if outer == nil {
+			t.Fatal("expected Outer message")
+		}
+		if len(outer.Messages) == 0 {
+			t.Fatal("expected Middle nested message in Outer")
+		}
+		middle := outer.Messages[0]
+		if len(middle.Enums) == 0 {
+			t.Fatal("expected Kind enum in Middle")
+		}
+		kindEnum := middle.Enums[0]
+
+		wantLocations := map[string]api.SourceLocation{
+			".test.deep.Outer.Middle.Kind.KIND_UNSPECIFIED": {Filename: "deep_enum.proto", Line: 51},
+			".test.deep.Outer.Middle.Kind.KIND_SPECIAL":     {Filename: "deep_enum.proto", Line: 53},
+		}
+
+		if got, want := len(kindEnum.Values), len(wantLocations); got != want {
+			t.Fatalf("unexpected number of enum values: got %d, want %d", got, want)
+		}
+
+		for _, ev := range kindEnum.Values {
+			wantLoc, expected := wantLocations[ev.ID]
+			if !expected {
+				t.Errorf("unexpected enum value ID: %q", ev.ID)
+				continue
+			}
+			gotLoc, ok := model.DefinitionLocation(ev.ID)
+			if !ok {
+				t.Errorf("missing definition location for enum value ID %q", ev.ID)
+				continue
+			}
+			if diff := cmp.Diff(wantLoc, gotLoc); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
 		}
 	})
 }

@@ -30,6 +30,8 @@ import (
 	"github.com/googleapis/librarian/internal/sidekick/api/apitest"
 	"github.com/googleapis/librarian/internal/sources"
 	"google.golang.org/genproto/googleapis/api/annotations"
+	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/types/descriptorpb"
 	"google.golang.org/protobuf/types/known/apipb"
 	"google.golang.org/protobuf/types/pluginpb"
 )
@@ -373,14 +375,17 @@ func TestProtobuf_SkipExternaEnums(t *testing.T) {
 		Values: []*api.EnumValue{
 			{
 				Name:   "RED",
+				ID:     ".test.LocalEnum.RED",
 				Number: 0,
 			},
 			{
 				Name:   "WHITE",
+				ID:     ".test.LocalEnum.WHITE",
 				Number: 1,
 			},
 			{
 				Name:   "BLUE",
+				ID:     ".test.LocalEnum.BLUE",
 				Number: 2,
 			},
 		},
@@ -451,11 +456,13 @@ func TestProtobuf_Comments(t *testing.T) {
 		Values: []*api.EnumValue{
 			{
 				Name:          "NOT_READY",
+				ID:            ".test.Response.Status.NOT_READY",
 				Documentation: "The first enum value description.\n\nValue Line 1.\nValue Line 2.",
 				Number:        0,
 			},
 			{
 				Name:          "READY",
+				ID:            ".test.Response.Status.READY",
 				Documentation: "The second enum value description.",
 				Number:        1,
 			},
@@ -512,22 +519,27 @@ func TestProtobuf_UniqueEnumValues(t *testing.T) {
 	fullList := []*api.EnumValue{
 		{
 			Name:   "X_UNSPECIFIED",
+			ID:     ".test.WithAlias.X_UNSPECIFIED",
 			Number: 0,
 		},
 		{
 			Name:   "LONG_NAME_VALUE",
+			ID:     ".test.WithAlias.LONG_NAME_VALUE",
 			Number: 2,
 		},
 		{
 			Name:   "V2",
+			ID:     ".test.WithAlias.V2",
 			Number: 2,
 		},
 		{
 			Name:   "bad_style",
+			ID:     ".test.WithAlias.bad_style",
 			Number: 3,
 		},
 		{
 			Name:   "FOLLOWS_STYLE",
+			ID:     ".test.WithAlias.FOLLOWS_STYLE",
 			Number: 3,
 		},
 	}
@@ -535,14 +547,17 @@ func TestProtobuf_UniqueEnumValues(t *testing.T) {
 	uniqueList := []*api.EnumValue{
 		{
 			Name:   "X_UNSPECIFIED",
+			ID:     ".test.WithAlias.X_UNSPECIFIED",
 			Number: 0,
 		},
 		{
 			Name:   "V2",
+			ID:     ".test.WithAlias.V2",
 			Number: 2,
 		},
 		{
 			Name:   "FOLLOWS_STYLE",
+			ID:     ".test.WithAlias.FOLLOWS_STYLE",
 			Number: 3,
 		},
 	}
@@ -1102,16 +1117,46 @@ func TestProtobuf_Enum(t *testing.T) {
 		Values: []*api.EnumValue{
 			{
 				Name:          "OK",
+				ID:            ".test.Code.OK",
 				Documentation: "Not an error; returned on success.",
 				Number:        0,
 			},
 			{
 				Name:          "UNKNOWN",
+				ID:            ".test.Code.UNKNOWN",
 				Documentation: "Unknown error.",
 				Number:        1,
 			},
 		},
 	})
+}
+
+func TestEnumValueID_Populated(t *testing.T) {
+	model := api.NewTestAPI(nil, nil, nil)
+	enumDesc := &descriptorpb.EnumDescriptorProto{
+		Name: new("Color"),
+		Value: []*descriptorpb.EnumValueDescriptorProto{
+			{Name: new("RED"), Number: proto.Int32(0)},
+			{Name: new("GREEN"), Number: proto.Int32(1)},
+			{Name: new("BLUE"), Number: proto.Int32(2)},
+		},
+	}
+	eFQN := ".test.pkg.Color"
+	enum := processEnum(model, enumDesc, eFQN, "test.pkg", nil)
+
+	got := make(map[string]string, len(enum.Values))
+	for _, ev := range enum.Values {
+		got[ev.Name] = ev.ID
+	}
+	want := map[string]string{
+		"RED":   ".test.pkg.Color.RED",
+		"GREEN": ".test.pkg.Color.GREEN",
+		"BLUE":  ".test.pkg.Color.BLUE",
+	}
+
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
 }
 
 func TestProtobuf_TrimLeadingSpacesInDocumentation(t *testing.T) {
@@ -1848,6 +1893,7 @@ func TestProtobuf_Deprecated(t *testing.T) {
 		Values: []*api.EnumValue{
 			{
 				Name:   "ENUM_A_UNSPECIFIED",
+				ID:     ".test.EnumA.ENUM_A_UNSPECIFIED",
 				Number: 0,
 			},
 		},
@@ -1864,19 +1910,23 @@ func TestProtobuf_Deprecated(t *testing.T) {
 		Values: []*api.EnumValue{
 			{
 				Name:   "ENUM_B_UNSPECIFIED",
+				ID:     ".test.EnumB.ENUM_B_UNSPECIFIED",
 				Number: 0,
 			},
 			{
 				Name:       "RED",
+				ID:         ".test.EnumB.RED",
 				Number:     1,
 				Deprecated: true,
 			},
 			{
 				Name:   "GREEN",
+				ID:     ".test.EnumB.GREEN",
 				Number: 2,
 			},
 			{
 				Name:   "BLUE",
+				ID:     ".test.EnumB.BLUE",
 				Number: 3,
 			},
 		},

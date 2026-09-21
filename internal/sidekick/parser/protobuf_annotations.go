@@ -114,15 +114,15 @@ func processRule(httpRule *httpRule, model *api.API, mID string) (*api.PathInfo,
 		if pathInfo.BodyFieldPath != "" && body != "" && body != pathInfo.BodyFieldPath {
 			if _, ok := suppressedAip127Warnings[mID]; !ok {
 				// Deviations from AIP-127 can result in bad generated code, but we know it is safe for some specific messages.
-				// Generate a warning if this happens when unexpecfted.
+				// Generate a warning if this happens when unexpected.
 				slog.Warn("mismatched body in additional binding (see AIP-127)", "message", mID, "topLevelBody", pathInfo.BodyFieldPath, "additionalBindingBody", body)
 			}
 		}
-		if binding != nil {
-			pathInfo.Bindings = append(pathInfo.Bindings, binding)
-		} else {
+		if binding == nil {
 			slog.Warn("additional binding without a pattern", "message", mID)
+			continue
 		}
+		pathInfo.Bindings = append(pathInfo.Bindings, binding)
 	}
 	return pathInfo, nil
 }
@@ -213,7 +213,6 @@ func parseAPIVersion(serviceID string, m proto.Message) string {
 
 func protobufIsAutoPopulated(field *descriptorpb.FieldDescriptorProto) bool {
 	if field.GetType() != descriptorpb.FieldDescriptorProto_TYPE_STRING {
-
 		return false
 	}
 	extensionId := eFieldInfo

@@ -820,6 +820,7 @@ func processEnum(model *api.API, e *descriptorpb.EnumDescriptorProto, eFQN, pack
 	for _, ev := range e.Value {
 		enumValue := &api.EnumValue{
 			Name:       ev.GetName(),
+			ID:         eFQN + "." + ev.GetName(),
 			Number:     ev.GetNumber(),
 			Parent:     enum,
 			Deprecated: ev.GetOptions().GetDeprecated(),
@@ -936,6 +937,7 @@ func trimLeadingSpacesInDocumentation(doc string) string {
 	return strings.TrimSuffix(strings.Join(lines, "\n"), "\n")
 }
 
+// extractDefinitionLocations extracts source code definition locations for declarations in f into model.
 func extractDefinitionLocations(model *api.API, f *descriptorpb.FileDescriptorProto) {
 	if model == nil || f == nil || f.GetSourceCodeInfo() == nil {
 		return
@@ -1016,6 +1018,7 @@ func extractDefinitionLocations(model *api.API, f *descriptorpb.FileDescriptorPr
 	}
 }
 
+// extractMessageDefinitionLocations extracts source code definition locations for m into model.
 func extractMessageDefinitionLocations(model *api.API, m *descriptorpb.DescriptorProto, mFQN string, p []int32, sourceLoc api.SourceLocation) {
 	if len(p) < 2 {
 		return
@@ -1063,6 +1066,7 @@ func extractMessageDefinitionLocations(model *api.API, m *descriptorpb.Descripto
 	}
 }
 
+// extractEnumDefinitionLocations extracts source code definition locations for e into model.
 func extractEnumDefinitionLocations(model *api.API, e *descriptorpb.EnumDescriptorProto, eFQN string, p []int32, sourceLoc api.SourceLocation) {
 	if len(p) == 2 && p[0] == enumDescriptorValue {
 		idx := int(p[1])
