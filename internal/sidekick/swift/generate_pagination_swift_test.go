@@ -34,14 +34,14 @@ func TestGenerateService_MapPagination(t *testing.T) {
 		{
 			name:     "Required",
 			optional: false,
-			wantNextPageToken: `public func _nextPageToken() -> Swift.String {
+			wantNextPageToken: `  public func _nextPageToken() -> Swift.String {
     return self.nextPageToken
   }`,
 		},
 		{
 			name:     "Optional",
 			optional: true,
-			wantNextPageToken: `public func _nextPageToken() -> Swift.String {
+			wantNextPageToken: `  public func _nextPageToken() -> Swift.String {
     return self.nextPageToken ?? ""
   }`,
 		},
@@ -178,22 +178,20 @@ func verifyGeneratedMapResponse(t *testing.T, outDir string, wantNextPageToken s
 	respContentStr := string(respContent)
 
 	gotResponseMessage := extractBlock(t, respContentStr, "public struct ListSecretsResponse: ", "{")
-	for _, p := range []string{"Codable", "Equatable", "GoogleWKT._AnyPackable", "GoogleGax._PaginatedResponse", "Sendable"} {
+	for _, p := range []string{"Codable", "Equatable", "GoogleWKT._AnyPackable", "Sendable"} {
 		if !strings.Contains(gotResponseMessage, p) {
 			t.Errorf("expected %q in ListSecretsResponse declaration, got: %s", p, gotResponseMessage)
 		}
 	}
 
-	gotGetItems := extractBlock(t, respContentStr, "public func _getPaginatedItems()", "  }")
-	wantGetItems := `public func _getPaginatedItems() -> [(Swift.String, Secret)] {
+	gotExtension := extractBlock(t, respContentStr, "@_spi(GoogleCloudInternal)\nextension ListSecretsResponse: GoogleGax._PaginatedResponse {", "\n}")
+	wantGetItems := `  public func _getPaginatedItems() -> [(Swift.String, Secret)] {
     return self.secrets.map { ($0, $1) }
   }`
-	if diff := cmp.Diff(wantGetItems, gotGetItems); diff != "" {
-		t.Errorf("mismatch (-want +got):\n%s", diff)
+	if !strings.Contains(gotExtension, wantGetItems) {
+		t.Errorf("expected %q in ListSecretsResponse extension, got:\n%s", wantGetItems, gotExtension)
 	}
-
-	gotNextPageToken := extractBlock(t, respContentStr, "public func _nextPageToken()", "  }")
-	if diff := cmp.Diff(wantNextPageToken, gotNextPageToken); diff != "" {
-		t.Errorf("mismatch (-want +got):\n%s", diff)
+	if !strings.Contains(gotExtension, wantNextPageToken) {
+		t.Errorf("expected %q in ListSecretsResponse extension, got:\n%s", wantNextPageToken, gotExtension)
 	}
 }

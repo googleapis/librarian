@@ -29,9 +29,9 @@ import Foundation
   import FoundationNetworking
 #endif
 {{#Codec.ServiceImports}}
-import {{.}}
+@_spi(GoogleCloudInternal) import {{.}}
 {{/Codec.ServiceImports}}
-import GoogleGax
+@_spi(GoogleCloudInternal) import GoogleGax
 
 {{#Codec.DocLines}}
 /// {{{.}}}

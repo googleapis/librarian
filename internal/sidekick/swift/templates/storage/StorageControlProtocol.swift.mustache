@@ -22,7 +22,7 @@ limitations under the License.
 
 import Foundation
 import GoogleAuth
-import GoogleGax
+@_spi(GoogleCloudInternal) import GoogleGax
 {{#Codec.ServiceImports}}
 import {{.}}
 {{/Codec.ServiceImports}}
