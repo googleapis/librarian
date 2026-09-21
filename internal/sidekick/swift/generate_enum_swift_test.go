@@ -170,6 +170,38 @@ public enum Color`
 	}
 }
 
+func TestGenerateEnum_DefaultDocComments(t *testing.T) {
+	outDir := t.TempDir()
+
+	kind := api.NewTestEnum("Kind").
+		WithPackage("google.cloud.test.v1").
+		WithValues(api.NewTestEnumValue("KIND_UNSPECIFIED", 0))
+
+	model := api.NewTestAPI(nil, []*api.Enum{kind}, nil)
+	if err := Generate(t.Context(), model, outDir, &config.Library{}, nil); err != nil {
+		t.Fatal(err)
+	}
+
+	content, err := os.ReadFile(filepath.Join(outDir, "Sources", "GoogleCloudTestV1", "Kind.swift"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	contentStr := string(content)
+
+	want := `import Foundation
+
+/// - Note: Adding cases to this enumeration is not considered a breaking change.
+///   Always include an ` + "`@unknown default:`" + ` case when switching over this type.
+///   Do not pattern-match against ` + "`unknownStringValue`" + ` or ` + "`unknownIntValue`" + `
+///   expecting specific values to remain unparsed; future releases may promote
+///   them to named cases.
+public enum Kind`
+	got := extractBlock(t, contentStr, "import Foundation", "public enum Kind")
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+}
+
 func TestGenerateEnum_UnknownCaseDocComments(t *testing.T) {
 	outDir := t.TempDir()
 
@@ -188,20 +220,6 @@ func TestGenerateEnum_UnknownCaseDocComments(t *testing.T) {
 	}
 	contentStr := string(content)
 
-	wantEnum := `import Foundation
-
-/// - Note: Adding cases to this enumeration is not considered a breaking change.
-///   Always include an ` + "`@unknown default:`" + ` case when switching over this type.
-///   Do not pattern-match against ` + "`unknownStringValue`" + ` or ` + "`unknownIntValue`" + `
-///   expecting specific values to remain unparsed; future releases may promote
-///   them to named cases.
-public enum Kind`
-	gotEnum := extractBlock(t, contentStr, "import Foundation", "public enum Kind")
-	if diff := cmp.Diff(wantEnum, gotEnum); diff != "" {
-		t.Errorf("mismatch (-want +got):\n%s", diff)
-	}
-
-	got := extractBlock(t, contentStr, "/// Encodes an unknown integer value.", "case unknownStringValue(String)")
 	want := `/// Encodes an unknown integer value.
   ///
   /// The most common cause for an unknown value is for the service to send
@@ -220,6 +238,7 @@ public enum Kind`
   /// - Warning: Do not pattern-match specific string literals in this case;
   ///   future releases may promote them to named enum cases.
   case unknownStringValue(String)`
+	got := extractBlock(t, contentStr, "/// Encodes an unknown integer value.", "case unknownStringValue(String)")
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
