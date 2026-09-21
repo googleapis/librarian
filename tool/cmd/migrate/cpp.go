@@ -18,7 +18,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"log"
+	"log/slog"
 	"os"
 	"path/filepath"
 
@@ -52,7 +52,7 @@ func runCppMigration(ctx context.Context, repoPath string) error {
 	if err := librarian.RunTidyOnConfig(ctx, repoPath, cfg); err != nil {
 		return fmt.Errorf("%w: %w", errTidyFailed, err)
 	}
-	log.Printf("Successfully migrated %d C++ libraries", len(cfg.Libraries))
+	slog.InfoContext(ctx, "successfully migrated C++ libraries", "count", len(cfg.Libraries))
 	return nil
 }
 
