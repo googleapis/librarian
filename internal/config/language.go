@@ -547,6 +547,9 @@ type JavaDefault struct {
 	// LibrariesBOMVersion is the version of the libraries-bom to use for Java.
 	// This must be set in the default configuration.
 	LibrariesBOMVersion string `yaml:"libraries_bom_version,omitempty"`
+	// MinJavaVersion is the minimum Java version required, used only in README generation.
+	// Defaults to 8 if unspecified.
+	MinJavaVersion int `yaml:"min_java_version,omitempty"`
 }
 
 // JavaModule contains Java-specific library configuration.
@@ -606,9 +609,6 @@ type JavaModule struct {
 	// LibraryTypeOverride allows the "library_type" field in .repo-metadata.json
 	// to be overridden.
 	LibraryTypeOverride string `yaml:"library_type_override,omitempty"`
-
-	// MinJavaVersion is the minimum Java version required.
-	MinJavaVersion int `yaml:"min_java_version,omitempty"`
 
 	// NamePrettyOverride allows the "name_pretty" field in .repo-metadata.json
 	// to be overridden.

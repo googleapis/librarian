@@ -35,8 +35,9 @@ import (
 )
 
 const (
-	readmePartialsFile = ".readme-partials.yaml"
-	readmeFile         = "README.md"
+	readmePartialsFile    = ".readme-partials.yaml"
+	readmeFile            = "README.md"
+	defaultMinJavaVersion = 8
 )
 
 var (
@@ -122,7 +123,7 @@ func renderREADME(params libraryPostProcessParams, keepSet map[string]bool) erro
 	}
 	groupID, artifactID := getGroupIDArtifactID(params)
 	repoShort := parseRepoShortName(params.metadata.Repo)
-	minJavaVersion := getMinJavaVersion(params.metadata)
+	minJavaVersion := getMinJavaVersion(params.cfg.Default.Java)
 	samples, err := extractSamples(params.outDir)
 	if err != nil {
 		return fmt.Errorf("failed to extract samples: %w", err)
@@ -198,11 +199,11 @@ func getGroupIDArtifactID(params libraryPostProcessParams) (string, string) {
 	return parseGroupIDArtifactID(params.metadata.DistributionName)
 }
 
-func getMinJavaVersion(meta *repoMetadata) int {
-	if meta == nil || meta.MinJavaVersion == 0 {
-		return 8
+func getMinJavaVersion(d *config.JavaDefault) int {
+	if d == nil || d.MinJavaVersion == 0 {
+		return defaultMinJavaVersion
 	}
-	return meta.MinJavaVersion
+	return d.MinJavaVersion
 }
 
 // extractSamples locates production Java sample files and returns parsed codeSample structs

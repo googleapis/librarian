@@ -634,9 +634,6 @@ func mergeJava(dst, src *config.JavaModule) *config.JavaModule {
 	if src.LibraryTypeOverride != "" {
 		res.LibraryTypeOverride = src.LibraryTypeOverride
 	}
-	if src.MinJavaVersion != 0 {
-		res.MinJavaVersion = src.MinJavaVersion
-	}
 	if src.NamePrettyOverride != "" {
 		res.NamePrettyOverride = src.NamePrettyOverride
 	}
