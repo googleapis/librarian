@@ -14,23 +14,14 @@
 
 package codec_sample
 
-import (
-	"fmt"
-	"time"
-)
+import "github.com/googleapis/librarian/internal/config"
 
 type codec struct {
-	// New generators initialize a field like this one from the library
-	// configuration. That makes the generation output stable when no input has
-	// changed.
-	//
-	// Older generators update the copyright year on each generation. That is
-	// also valid, just a little more churn.
 	CopyrightYear string
 }
 
-func newCodec() (*codec, error) {
+func newCodec(cfg *config.Library) *codec {
 	return &codec{
-		CopyrightYear: fmt.Sprintf("%04d", time.Now().Year()),
-	}, nil
+		CopyrightYear: cfg.CopyrightYear,
+	}
 }

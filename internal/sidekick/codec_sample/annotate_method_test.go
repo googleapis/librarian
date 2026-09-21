@@ -39,7 +39,7 @@ func TestAnnotateMethod(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			svc := api.NewTestService("ItemService").WithMethods(test.method)
 			model := api.NewTestAPI(nil, nil, []*api.Service{svc})
-			c, err := newCodec()
+			c, err := newTestCodec()
 			if err != nil {
 				t.Fatal(err)
 			}

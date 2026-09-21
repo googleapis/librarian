@@ -46,7 +46,7 @@ func TestAnnotateMessage(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			model := api.NewTestAPI([]*api.Message{test.message}, nil, nil)
-			c, err := newCodec()
+			c, err := newTestCodec()
 			if err != nil {
 				t.Fatal(err)
 			}

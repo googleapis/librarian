@@ -18,23 +18,29 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/googleapis/librarian/internal/config"
 )
+
+func newTestCodec() (*codec, error) {
+	return &codec{
+		CopyrightYear: "2038",
+	}, nil
+}
 
 func TestNewCodec(t *testing.T) {
 	for _, test := range []struct {
-		name string
-		want *codec
+		name  string
+		input *config.Library
+		want  *codec
 	}{
 		{
-			name: "success",
-			want: &codec{},
+			name:  "success",
+			input: &config.Library{CopyrightYear: "2012"},
+			want:  &codec{CopyrightYear: "2012"},
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got, err := newCodec()
-			if err != nil {
-				t.Fatal(err)
-			}
+			got := newCodec(test.input)
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}

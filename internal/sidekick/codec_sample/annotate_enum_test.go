@@ -37,7 +37,7 @@ func TestAnnotateEnum(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			model := api.NewTestAPI(nil, []*api.Enum{test.enum}, nil)
-			c, err := newCodec()
+			c, err := newTestCodec()
 			if err != nil {
 				t.Fatal(err)
 			}

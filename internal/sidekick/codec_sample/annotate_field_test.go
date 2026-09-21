@@ -39,7 +39,7 @@ func TestAnnotateField(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			msg := api.NewTestMessage("Item").WithFields(test.field)
 			model := api.NewTestAPI([]*api.Message{msg}, nil, nil)
-			c, err := newCodec()
+			c, err := newTestCodec()
 			if err != nil {
 				t.Fatal(err)
 			}

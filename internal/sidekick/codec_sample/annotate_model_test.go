@@ -15,9 +15,7 @@
 package codec_sample
 
 import (
-	"fmt"
 	"testing"
-	"time"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/license"
@@ -25,7 +23,6 @@ import (
 )
 
 func TestAnnotateModel(t *testing.T) {
-	wantYear := fmt.Sprintf("%04d", time.Now().Year())
 	for _, test := range []struct {
 		name  string
 		model *api.API
@@ -35,7 +32,7 @@ func TestAnnotateModel(t *testing.T) {
 			name:  "annotates empty model",
 			model: api.NewTestAPI(nil, nil, nil),
 			want: &modelAnnotations{
-				CopyrightYear: wantYear,
+				CopyrightYear: "2038",
 				BoilerPlate:   license.HeaderBulk(),
 			},
 		},
@@ -47,13 +44,13 @@ func TestAnnotateModel(t *testing.T) {
 				[]*api.Service{api.NewTestService("ItemsService")},
 			),
 			want: &modelAnnotations{
-				CopyrightYear: wantYear,
+				CopyrightYear: "2038",
 				BoilerPlate:   license.HeaderBulk(),
 			},
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			c, err := newCodec()
+			c, err := newTestCodec()
 			if err != nil {
 				t.Fatal(err)
 			}

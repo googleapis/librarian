@@ -19,6 +19,7 @@ import (
 	"context"
 	"embed"
 
+	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/sidekick/api"
 	"github.com/googleapis/librarian/internal/sidekick/language"
 )
@@ -27,11 +28,8 @@ import (
 var templates embed.FS
 
 // Generate generates code from the model into outdir.
-func Generate(_ context.Context, model *api.API, outdir string) error {
-	c, err := newCodec()
-	if err != nil {
-		return err
-	}
+func Generate(_ context.Context, model *api.API, outdir string, cfg *config.Library) error {
+	c := newCodec(cfg)
 	if err := c.annotateModel(model); err != nil {
 		return err
 	}

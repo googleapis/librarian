@@ -39,7 +39,7 @@ func TestAnnotateEnumValue(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			enum := api.NewTestEnum("Status").WithValues(test.enumValue)
 			model := api.NewTestAPI(nil, []*api.Enum{enum}, nil)
-			c, err := newCodec()
+			c, err := newTestCodec()
 			if err != nil {
 				t.Fatal(err)
 			}
