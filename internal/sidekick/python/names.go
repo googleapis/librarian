@@ -17,6 +17,8 @@ package python
 import (
 	"regexp"
 	"strings"
+	"unicode"
+	"unicode/utf8"
 
 	"github.com/googleapis/librarian/internal/serviceconfig"
 	"github.com/googleapis/librarian/internal/sidekick/api"
@@ -97,7 +99,23 @@ func snakeCase(s string) string {
 
 // pascalCase converts a string to PascalCase.
 func pascalCase(s string) string {
-	return strcase.ToCamel(s)
+	if s == "" {
+		return ""
+	}
+	if !strings.ContainsAny(s, "_-") {
+		r, size := utf8.DecodeRuneInString(s)
+		return string(unicode.ToUpper(r)) + s[size:]
+	}
+	var sb strings.Builder
+	for _, part := range strings.FieldsFunc(s, func(r rune) bool { return r == '_' || r == '-' }) {
+		if part == "" {
+			continue
+		}
+		r, size := utf8.DecodeRuneInString(part)
+		sb.WriteString(string(unicode.ToUpper(r)))
+		sb.WriteString(part[size:])
+	}
+	return sb.String()
 }
 
 // pythonIdentifier escapes keywords with a trailing underscore.
@@ -242,4 +260,25 @@ func (c *codec) pypiPackageName() string {
 	default:
 		return c.GAPICName
 	}
+}
+
+// caseInsensitiveCompare compares two strings case-insensitively, using case-sensitive comparison as a tie-breaker.
+func caseInsensitiveCompare(a, b string) int {
+	if c := strings.Compare(strings.ToLower(a), strings.ToLower(b)); c != 0 {
+		return c
+	}
+	return strings.Compare(a, b)
+}
+
+// isIAMType checks if a protobuf type ID belongs to google.iam.v1 and returns the external
+// pb2 module name, type name, and true if so.
+func isIAMType(typeID string) (moduleName, typeName string, ok bool) {
+	if strings.HasPrefix(typeID, ".google.iam.v1.") {
+		tName := typeNameFromID(typeID)
+		if tName == "Policy" {
+			return "policy_pb2", "Policy", true
+		}
+		return "iam_policy_pb2", tName, true
+	}
+	return "", "", false
 }

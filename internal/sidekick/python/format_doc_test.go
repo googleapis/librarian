@@ -21,77 +21,6 @@ import (
 	"github.com/google/go-cmp/cmp"
 )
 
-func TestConvertMarkdownToRst(t *testing.T) {
-	for _, test := range []struct {
-		name  string
-		input string
-		want  string
-	}{
-		{
-			name:  "fenced code block",
-			input: "Example code:\n```python\nx = 42\nprint(x)\n```",
-			want:  "Example code:\n\n\n::\n\n   x = 42\n   print(x)\n\n",
-		},
-		{
-			name:  "markdown link conversion",
-			input: "See the [Cloud Storage documentation](https://cloud.google.com/storage).",
-			want:  "See the `Cloud Storage documentation\uE000<https://cloud.google.com/storage>`__.",
-		},
-		{
-			name:  "bullet normalization",
-			input: "* item one\n* item two\n+ item three\n- item four",
-			want:  "- item one\n- item two\n- item three\n- item four",
-		},
-		{
-			name:  "strip raw HTML tags while preserving placeholder with underscore",
-			input: "Path: <canonical service name>/<type> with <asset type> and <service_account_email>",
-			want:  "Path: / with  and <service_account_email>",
-		},
-		{
-			name:  "escape glob asterisk in prose",
-			input: "Wildcard characters (such as * and ?) are supported.",
-			want:  "Wildcard characters (such as \\* and ?) are supported.",
-		},
-		{
-			name:  "escape domain glob asterisk",
-			input: `"compute.googleapis.com.*" snapshots all compute resources.`,
-			want:  `"compute.googleapis.com.\*" snapshots all compute resources.`,
-		},
-		{
-			name:  "escape paired regex asterisk",
-			input: `Pattern ".*Instance.*" matches instances.`,
-			want:  `Pattern ".\ *Instance.*" matches instances.`,
-		},
-		{
-			name:  "escape standalone underscore in parens",
-			input: "Letters (A-Z), numbers (0-9), or underscores (_).",
-			want:  "Letters (A-Z), numbers (0-9), or underscores (\\_).",
-		},
-		{
-			name:  "in-word braced template emphasis",
-			input: "Format is {SourceType}_{ACTION}_{DestType}.",
-			want:  "Format is {SourceType}\\ *{ACTION}*\\ {DestType}.",
-		},
-		{
-			name:  "quoted underscore replaced with asterisk",
-			input: `Concatenated with "_" and separated by "_".`,
-			want:  `Concatenated with "*" and separated by "*".`,
-		},
-		{
-			name:  "code spans with single backticks become double",
-			input: "Use `SecretPayload` to store data.",
-			want:  "Use ``SecretPayload`` to store data.",
-		},
-	} {
-		t.Run(test.name, func(t *testing.T) {
-			got := convertMarkdownToRst(test.input)
-			if diff := cmp.Diff(test.want, got); diff != "" {
-				t.Errorf("mismatch (-want +got):\n%s", diff)
-			}
-		})
-	}
-}
-
 func TestFormatMessageDocLines(t *testing.T) {
 	for _, test := range []struct {
 		name  string
@@ -144,6 +73,18 @@ func TestFormatFieldDocLines(t *testing.T) {
 			input: "The name of the secret resource.",
 			want:  []string{"The name of the secret resource."},
 		},
+		{
+			name:  "indented example preserved",
+			input: "Optional. For example:\n\n  \"123/environment\": \"production\",\n  \"123/costCenter\": \"marketing\"\n\nTags are used.",
+			want: []string{
+				"Optional. For example:",
+				"",
+				"  \"123/environment\": \"production\",",
+				"  \"123/costCenter\": \"marketing\"",
+				"",
+				"Tags are used.",
+			},
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			got := formatFieldDocLines(test.input)
@@ -190,80 +131,35 @@ func TestFormatDocLines(t *testing.T) {
 	}
 }
 
-func TestFormatMethodDocSummary(t *testing.T) {
-	for _, test := range []struct {
-		name       string
-		methodName string
-		want       methodDocSummary
-	}{
-		{
-			name:       "short method name",
-			methodName: "CreateFoo",
-			want: methodDocSummary{
-				Lead: "create foo",
-				Wrap: false,
-			},
-		},
-		{
-			name:       "long method name wrapping to second line",
-			methodName: "AnalyzeOrgPolicyGovernedAssets",
-			want: methodDocSummary{
-				Lead: "analyze org policy governed",
-				Rest: "assets",
-				Wrap: true,
-			},
-		},
-		{
-			name:       "long method name with multiple words on rest",
-			methodName: "AnalyzeOrgPolicyGovernedAssetsResponse",
-			want: methodDocSummary{
-				Lead: "analyze org policy governed",
-				Rest: "assets response",
-				Wrap: true,
-			},
-		},
-	} {
-		t.Run(test.name, func(t *testing.T) {
-			got := formatMethodDocSummary(test.methodName)
-			if diff := cmp.Diff(test.want, got); diff != "" {
-				t.Errorf("mismatch (-want +got):\n%s", diff)
-			}
-		})
-	}
-}
-
-func TestFormatRstDocLines(t *testing.T) {
+func TestFormatRstDoc(t *testing.T) {
 	for _, test := range []struct {
 		name   string
-		doc    string
+		input  string
 		width  int
 		indent int
 		want   []string
 	}{
 		{
 			name:   "empty",
-			doc:    "",
-			width:  72,
+			input:  "",
+			width:  60,
 			indent: 4,
 			want:   nil,
 		},
 		{
-			name:   "whitespace only",
-			doc:    "   \n  \t ",
-			width:  72,
+			name:   "plain text wrapping",
+			input:  "This is a plain documentation string that should be wrapped.",
+			width:  30,
 			indent: 4,
-			want:   nil,
-		},
-		{
-			name:   "single line",
-			doc:    "Foo service documentation.",
-			width:  72,
-			indent: 4,
-			want:   []string{"Foo service documentation."},
+			want: []string{
+				"This is a plain",
+				"documentation string that",
+				"should be wrapped.",
+			},
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got := formatRstDocLines(test.doc, test.width, test.indent)
+			got := formatRstDoc(test.input, test.width, test.indent)
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}

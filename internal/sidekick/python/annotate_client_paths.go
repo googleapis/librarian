@@ -44,7 +44,7 @@ func (c *codec) annotateCustomResourcePaths() []*clientResourcePath {
 		if r == nil || isCommonResource(r.Type) {
 			return
 		}
-		name := r.Singular
+		name := snakeCase(r.Singular)
 		if name == "" {
 			if lastSlash := strings.LastIndex(r.Type, "/"); lastSlash >= 0 {
 				name = snakeCase(r.Type[lastSlash+1:])

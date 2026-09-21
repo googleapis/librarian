@@ -16,6 +16,7 @@ package python
 
 import (
 	"fmt"
+	"slices"
 	"strings"
 
 	"github.com/googleapis/librarian/internal/sidekick/api"
@@ -44,19 +45,20 @@ type clientAnnotations struct {
 	ExternalImports     []*clientExternalImport
 	Methods             []*clientMethodAnnotations
 
-	HasLocationMixin   bool
-	HasOperations      bool
-	HasOperationsMixin bool
-	HasListOperations  bool
-	HasGetOperation    bool
-	HasDeleteOperation bool
-	HasCancelOperation bool
-	HasWaitOperation   bool
-	HasGetLocation     bool
-	HasListLocations   bool
-	RestAsyncIOEnabled bool
-	HasPagers          bool
-	CopyrightYear      string
+	HasLocationMixin    bool
+	HasOperations       bool
+	HasOperationsMixin  bool
+	HasListOperations   bool
+	HasGetOperation     bool
+	HasDeleteOperation  bool
+	HasCancelOperation  bool
+	HasWaitOperation    bool
+	HasGetLocation      bool
+	HasListLocations    bool
+	RestAsyncIOEnabled  bool
+	ShowRestBetaPreview bool
+	HasPagers           bool
+	CopyrightYear       string
 }
 
 func (c *codec) annotateClient(service *api.Service) (*clientAnnotations, error) {
@@ -103,7 +105,7 @@ func (c *codec) annotateClient(service *api.Service) (*clientAnnotations, error)
 
 	svcConfig, err := c.loadServiceConfig(service)
 	if err != nil {
-		return nil, fmt.Errorf("%w for %s: %w", errLoadServiceConfig, service.Name, err)
+		return nil, fmt.Errorf("%w for %s: %w", ErrLoadServiceConfig, service.Name, err)
 	}
 	restAsyncIOEnabled := c.isRestAsyncIOEnabled(svcConfig, service)
 
@@ -128,6 +130,7 @@ func (c *codec) annotateClient(service *api.Service) (*clientAnnotations, error)
 		TypeImports:         typeImports,
 		ExternalImports:     externalImports,
 		RestAsyncIOEnabled:  restAsyncIOEnabled,
+		ShowRestBetaPreview: !c.hasRestNumericEnums(),
 		CopyrightYear:       c.GenerationYear,
 	}
 
@@ -173,4 +176,17 @@ func (c *codec) annotateClient(service *api.Service) (*clientAnnotations, error)
 
 	ann.HasOperations = ann.HasOperationsMixin || hasLRO
 	return ann, nil
+}
+
+// hasRestNumericEnums reports whether the rest-numeric-enums generator option is enabled
+// for the library, checking package-level and library-level generator flags in OptArgsByAPI.
+func (c *codec) hasRestNumericEnums() bool {
+	if c.Library != nil && c.Library.Python != nil {
+		for _, optList := range c.Library.Python.OptArgsByAPI {
+			if slices.Contains(optList, "rest-numeric-enums") || slices.Contains(optList, "rest_numeric_enums") {
+				return true
+			}
+		}
+	}
+	return false
 }

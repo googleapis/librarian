@@ -120,7 +120,7 @@ func (c *codec) annotateRestTransport(service *api.Service, svcAnn *serviceAnnot
 	docLines := formatRstDocLines(service.Documentation, serviceDocWidth, serviceDocIndent)
 	svcConfig, err := c.loadServiceConfig(service)
 	if err != nil {
-		return nil, fmt.Errorf("%w for %s: %w", errLoadServiceConfig, service.Name, err)
+		return nil, fmt.Errorf("%w for %s: %w", ErrLoadServiceConfig, service.Name, err)
 	}
 	scopes := c.findAuthScopes(svcConfig)
 
@@ -146,7 +146,7 @@ func (c *codec) annotateRestTransport(service *api.Service, svcAnn *serviceAnnot
 	}
 
 	slices.SortFunc(nativeMethods, func(a, b *api.Method) int {
-		return strings.Compare(a.Name, b.Name)
+		return caseInsensitiveCompare(a.Name, b.Name)
 	})
 
 	clientPkgVer := ""
@@ -263,12 +263,17 @@ func buildRestBaseMethods(nativeMethods, mixinMethods []*api.Method) []*restBase
 func (c *codec) buildRestPrimaryMethods(nativeMethods []*api.Method, service *api.Service) []*restMethodDetailAnnotation {
 	var result []*restMethodDetailAnnotation
 	for _, m := range nativeMethods {
-		inModule := c.resolveTypeModule(m.InputTypeID, service)
-		inTypeName := typeNameFromID(m.InputTypeID)
-		if m.InputType != nil && m.InputType.Name != "" {
-			inTypeName = m.InputType.Name
+		var inputIdent string
+		if iamMod, iamType, ok := isIAMType(m.InputTypeID); ok {
+			inputIdent = iamMod + "." + iamType
+		} else {
+			inModule := c.resolveTypeModule(m.InputTypeID, service)
+			inTypeName := typeNameFromID(m.InputTypeID)
+			if m.InputType != nil && m.InputType.Name != "" {
+				inTypeName = m.InputType.Name
+			}
+			inputIdent = inModule + "." + inTypeName
 		}
-		inputIdent := inModule + "." + inTypeName
 
 		isVoid := m.ReturnsEmpty || m.OutputTypeID == api.WktEmptyID
 		isLRO := m.OperationInfo != nil || m.OutputTypeID == ".google.longrunning.Operation"
@@ -278,6 +283,8 @@ func (c *codec) buildRestPrimaryMethods(nativeMethods []*api.Method, service *ap
 			outIdent = "empty_pb2.Empty"
 		} else if isLRO {
 			outIdent = "operations_pb2.Operation"
+		} else if iamMod, iamType, ok := isIAMType(m.OutputTypeID); ok {
+			outIdent = iamMod + "." + iamType
 		} else {
 			outModule := c.resolveTypeModule(m.OutputTypeID, service)
 			outTypeName := typeNameFromID(m.OutputTypeID)
@@ -386,16 +393,33 @@ func (c *codec) buildRestTypeImports(nativeMethods []*api.Method, service *api.S
 	typeModules := make(map[string]bool)
 	usesEmpty := false
 	usesOperations := hasOperationsMixin || hasLRO
+	usesIAMPolicy := false
+	usesPolicy := false
 
 	for _, m := range nativeMethods {
 		if m.ReturnsEmpty || m.OutputTypeID == api.WktEmptyID {
 			usesEmpty = true
 		} else if m.OperationInfo != nil || m.OutputTypeID == ".google.longrunning.Operation" {
 			usesOperations = true
+		} else if iamMod, _, ok := isIAMType(m.OutputTypeID); ok {
+			switch iamMod {
+			case "iam_policy_pb2":
+				usesIAMPolicy = true
+			case "policy_pb2":
+				usesPolicy = true
+			}
 		} else if outMod := c.resolveTypeModule(m.OutputTypeID, service); outMod != "" {
 			typeModules[outMod] = true
 		}
-		if inMod := c.resolveTypeModule(m.InputTypeID, service); inMod != "" {
+
+		if iamMod, _, ok := isIAMType(m.InputTypeID); ok {
+			switch iamMod {
+			case "iam_policy_pb2":
+				usesIAMPolicy = true
+			case "policy_pb2":
+				usesPolicy = true
+			}
+		} else if inMod := c.resolveTypeModule(m.InputTypeID, service); inMod != "" {
 			typeModules[inMod] = true
 		}
 	}
@@ -411,6 +435,20 @@ func (c *codec) buildRestTypeImports(nativeMethods []*api.Method, service *api.S
 		methodImports = append(methodImports, &restTypeImport{
 			From:   "google.protobuf.empty_pb2",
 			As:     "empty_pb2",
+			Ignore: true,
+		})
+	}
+	if usesIAMPolicy {
+		methodImports = append(methodImports, &restTypeImport{
+			From:   "google.iam.v1.iam_policy_pb2",
+			As:     "iam_policy_pb2",
+			Ignore: true,
+		})
+	}
+	if usesPolicy {
+		methodImports = append(methodImports, &restTypeImport{
+			From:   "google.iam.v1.policy_pb2",
+			As:     "policy_pb2",
 			Ignore: true,
 		})
 	}
@@ -435,55 +473,4 @@ func restImportKey(imp *restTypeImport) string {
 		return fmt.Sprintf("import %s as %s", imp.From, imp.As)
 	}
 	return fmt.Sprintf("from %s import %s", imp.From, imp.Import)
-}
-
-// docSummaryForRest splits a method docstring summary line into leading and wrapped segments.
-func docSummaryForRest(methodName string) (lead, rest string, wrap bool) {
-	humanized := strings.ReplaceAll(snakeCase(methodName), "_", " ")
-	const (
-		totalWidth, firstLineOffset = 70, 45
-		firstLineAvail              = totalWidth - firstLineOffset // 25
-	)
-	if len(humanized) <= firstLineAvail {
-		return humanized, "", false
-	}
-	words := strings.Fields(humanized)
-	var (
-		line1Words        []string
-		currLen, splitIdx int
-	)
-	for i, w := range words {
-		addedLen := len(w)
-		if len(line1Words) > 0 {
-			addedLen++
-		}
-		if len(line1Words) > 0 && currLen+addedLen > firstLineAvail {
-			splitIdx = i
-			break
-		}
-		line1Words = append(line1Words, w)
-		currLen += addedLen
-	}
-	if splitIdx == 0 && len(words) > 0 {
-		line1Words = []string{words[0]}
-		splitIdx = 1
-	}
-	lead = strings.Join(line1Words, " ")
-	restWords := words[splitIdx:]
-	if len(restWords) == 0 {
-		return lead, "", false
-	}
-	return lead, strings.Join(restWords, " "), true
-}
-
-// methodArgsDoc formats method input or output documentation into first-line and subsequent lines.
-func methodArgsDoc(doc string) (string, []string, bool) {
-	lines := formatRstDoc(doc, 56, 16)
-	if len(lines) == 0 {
-		return "", nil, false
-	}
-	if len(lines) > 1 {
-		return lines[0], lines[1:], true
-	}
-	return lines[0], nil, true
 }

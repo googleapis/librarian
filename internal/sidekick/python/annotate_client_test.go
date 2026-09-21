@@ -366,7 +366,7 @@ func TestAnnotateClient(t *testing.T) {
 			}
 			got := sAnn.Client
 			if diff := cmp.Diff(test.want, got,
-				cmpopts.IgnoreFields(clientAnnotations{}, "Service", "TypeImports", "ExternalImports", "CustomResourcePaths", "DefaultHost", "DocBody", "RestAsyncIOEnabled", "VersionSegment", "HasMultiLineDoc"),
+				cmpopts.IgnoreFields(clientAnnotations{}, "Service", "TypeImports", "ExternalImports", "CustomResourcePaths", "DefaultHost", "DocBody", "RestAsyncIOEnabled", "VersionSegment", "HasMultiLineDoc", "ShowRestBetaPreview"),
 				cmpopts.IgnoreFields(clientMethodAnnotations{}, "Method", "DocLines", "DocBody", "HasDocHead", "HasDocBody", "RequestDocLines", "ReturnDocLines", "HasReturnDoc", "HasReturnDocTrailer", "SamplePreInitLines", "HasSamplePreInit", "SampleRequestArgs", "PackageImport", "VersionSegment", "ClientName", "AsyncReturnType", "AsyncReturnSphinxType", "AsyncPagerClassName"),
 			); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
@@ -397,7 +397,51 @@ func TestAnnotateClient_Error(t *testing.T) {
 	c := newTestCodec(t, model, lib)
 
 	err := c.annotateModel()
-	if !errors.Is(err, errLoadServiceConfig) {
-		t.Errorf("annotateModel() error = %v, want errors.Is %v", err, errLoadServiceConfig)
+	if !errors.Is(err, ErrLoadServiceConfig) {
+		t.Errorf("annotateModel() error = %v, want errors.Is %v", err, ErrLoadServiceConfig)
+	}
+}
+
+func TestAnnotateClient_ShowRestBetaPreview(t *testing.T) {
+	for _, test := range []struct {
+		name        string
+		optArgs     map[string][]string
+		wantPreview bool
+	}{
+		{
+			name:        "default_without_opt_args",
+			optArgs:     nil,
+			wantPreview: true,
+		},
+		{
+			name: "with_rest_numeric_enums",
+			optArgs: map[string][]string{
+				"google/example/v1": {"rest-numeric-enums"},
+			},
+			wantPreview: false,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			svc := api.NewTestService("ExampleService").
+				WithPackage("google.example.v1")
+			model := api.NewTestAPI(nil, nil, []*api.Service{svc}).
+				WithPackageName("google.example.v1")
+			lib := &config.Library{
+				Python: &config.PythonPackage{
+					OptArgsByAPI: test.optArgs,
+				},
+			}
+			c := newTestCodec(t, model, lib)
+			if err := c.annotateModel(); err != nil {
+				t.Fatal(err)
+			}
+			sAnn, ok := svc.Codec.(*serviceAnnotations)
+			if !ok {
+				t.Fatalf("svc.Codec got %T, want *serviceAnnotations", svc.Codec)
+			}
+			if sAnn.Client.ShowRestBetaPreview != test.wantPreview {
+				t.Errorf("ShowRestBetaPreview = %v, want %v", sAnn.Client.ShowRestBetaPreview, test.wantPreview)
+			}
+		})
 	}
 }

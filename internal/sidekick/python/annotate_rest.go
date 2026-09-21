@@ -163,3 +163,54 @@ func annotateRestMethod(m *api.Method) *restMethodAnnotation {
 		RequiredFieldsDefaultValues: requiredFieldsDefaultValues,
 	}
 }
+
+// docSummaryForRest splits a method docstring summary line into leading and wrapped segments.
+func docSummaryForRest(methodName string) (lead, rest string, wrap bool) {
+	humanized := strings.ReplaceAll(snakeCase(methodName), "_", " ")
+	const (
+		totalWidth, firstLineOffset = 70, 45
+		firstLineAvail              = totalWidth - firstLineOffset // 25
+	)
+	if len(humanized) <= firstLineAvail {
+		return humanized, "", false
+	}
+	words := strings.Fields(humanized)
+	var (
+		line1Words        []string
+		currLen, splitIdx int
+	)
+	for i, w := range words {
+		addedLen := len(w)
+		if len(line1Words) > 0 {
+			addedLen++
+		}
+		if len(line1Words) > 0 && currLen+addedLen > firstLineAvail {
+			splitIdx = i
+			break
+		}
+		line1Words = append(line1Words, w)
+		currLen += addedLen
+	}
+	if splitIdx == 0 && len(words) > 0 {
+		line1Words = []string{words[0]}
+		splitIdx = 1
+	}
+	lead = strings.Join(line1Words, " ")
+	restWords := words[splitIdx:]
+	if len(restWords) == 0 {
+		return lead, "", false
+	}
+	return lead, strings.Join(restWords, " "), true
+}
+
+// methodArgsDoc formats method input or output documentation into first-line and subsequent lines.
+func methodArgsDoc(doc string) (string, []string, bool) {
+	lines := formatRstDoc(doc, 56, 16)
+	if len(lines) == 0 {
+		return "", nil, false
+	}
+	if len(lines) > 1 {
+		return lines[0], lines[1:], true
+	}
+	return lines[0], nil, true
+}

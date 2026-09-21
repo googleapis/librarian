@@ -215,26 +215,14 @@ func (c *codec) annotateClientMethod(m *api.Method, service *api.Service, ann *c
 		if m.OutputType != nil && strings.TrimSpace(m.OutputType.Documentation) != "" {
 			pagerDoc = m.OutputType.Documentation + "\n\n" + pagerDoc
 		}
-		returnDocLines = formatRstDoc(pagerDoc, 56, 16)
-		if m.OutputType != nil && strings.Contains(m.OutputType.Documentation, "\n[") {
-			for i := 1; i < len(returnDocLines); i++ {
-				if returnDocLines[i] != "" && strings.HasPrefix(returnDocLines[i], "[") {
-					returnDocLines[i] = "   " + returnDocLines[i]
-				}
-			}
-		}
+		returnDocLines = formatMethodReturnDoc(pagerDoc)
 	} else if !returnsEmpty {
 		outStem := "common"
 		outName := ""
 		if m.OutputType != nil {
 			outStem = c.resolveMessageStem(m.OutputType)
 			outName = m.OutputType.Name
-			returnDocLines = formatRstDoc(m.OutputType.Documentation, 56, 16)
-			for i := 1; i < len(returnDocLines); i++ {
-				if returnDocLines[i] != "" && strings.HasPrefix(returnDocLines[i], "[") {
-					returnDocLines[i] = "   " + returnDocLines[i]
-				}
-			}
+			returnDocLines = formatMethodReturnDoc(m.OutputType.Documentation)
 		}
 		returnType = outStem + "." + outName
 		returnSphinxType = ann.VersionPackage + ".types." + outName

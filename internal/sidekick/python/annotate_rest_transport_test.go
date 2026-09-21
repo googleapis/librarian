@@ -294,10 +294,10 @@ func TestAnnotateRestTransport_Error(t *testing.T) {
 	c := newTestCodec(t, model, lib)
 	_, err := c.annotateRestTransport(svc, nil)
 	if err == nil {
-		t.Fatalf("annotateRestTransport(%s) error = nil, want %v", svc.Name, errLoadServiceConfig)
+		t.Fatalf("annotateRestTransport(%s) error = nil, want %v", svc.Name, ErrLoadServiceConfig)
 	}
-	if !errors.Is(err, errLoadServiceConfig) {
-		t.Errorf("annotateRestTransport(%s) error = %v, want %v", svc.Name, err, errLoadServiceConfig)
+	if !errors.Is(err, ErrLoadServiceConfig) {
+		t.Errorf("annotateRestTransport(%s) error = %v, want %v", svc.Name, err, ErrLoadServiceConfig)
 	}
 }
 

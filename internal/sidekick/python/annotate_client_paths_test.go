@@ -114,6 +114,39 @@ func TestAnnotateCustomResourcePaths(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "camelCase singular converts to snake_case function name",
+			setup: func() *codec {
+				res := api.NewTestResource("secretmanager.googleapis.com/SecretVersion").
+					WithSingular("secretVersion").
+					WithPatterns(api.ResourcePattern{
+						{Literal: "projects"},
+						{Variable: &api.PathVariable{FieldPath: []string{"project"}}},
+						{Literal: "secrets"},
+						{Variable: &api.PathVariable{FieldPath: []string{"secret"}}},
+						{Literal: "versions"},
+						{Variable: &api.PathVariable{FieldPath: []string{"secret_version"}}},
+					})
+				model := api.NewTestAPI(nil, nil, nil).
+					WithPackageName("google.cloud.secretmanager.v1")
+				model.ResourceDefinitions = []*api.Resource{res}
+				return newTestCodec(t, model, nil)
+			},
+			want: []*clientResourcePath{
+				{
+					Name:              "secret_version",
+					FunctionName:      "secret_version_path",
+					ParseFunctionName: "parse_secret_version_path",
+					Docstring:         "Returns a fully-qualified secret_version string.",
+					ParseDocstring:    "Parses a secret_version path into its component segments.",
+					Signature:         "project: str,secret: str,secret_version: str,",
+					HasSignature:      true,
+					FormatPattern:     "projects/{project}/secrets/{secret}/versions/{secret_version}",
+					FormatArgs:        "project=project, secret=secret, secret_version=secret_version, ",
+					RegexPattern:      "^projects/(?P<project>.+?)/secrets/(?P<secret>.+?)/versions/(?P<secret_version>.+?)$",
+				},
+			},
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			c := test.setup()

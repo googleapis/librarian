@@ -51,6 +51,9 @@ func TestPascalCase(t *testing.T) {
 	}{
 		{name: "snake_case", input: "secret_manager", want: "SecretManager"},
 		{name: "pascal", input: "SecretManager", want: "SecretManager"},
+		{name: "acronym", input: "CloudSQLSingleUserCredentials", want: "CloudSQLSingleUserCredentials"},
+		{name: "camelCase", input: "camelCase", want: "CamelCase"},
+		{name: "multi-byte UTF-8", input: "école_primaire", want: "ÉcolePrimaire"},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			got := pascalCase(test.input)
@@ -301,6 +304,80 @@ func TestPypiPackageName(t *testing.T) {
 			got := test.c.pypiPackageName()
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestCaseInsensitiveCompare(t *testing.T) {
+	for _, test := range []struct {
+		name string
+		a, b string
+		want int
+	}{
+		{name: "equal", a: "Secret", b: "Secret", want: 0},
+		{name: "equal case-insensitive, tie break", a: "secret", b: "Secret", want: 1},
+		{name: "natural order secrets vs secret versions", a: "ListSecretsRequest", b: "ListSecretVersionsRequest", want: -1},
+		{name: "natural order secret versions vs secrets", a: "ListSecretVersionsRequest", b: "ListSecretsRequest", want: 1},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := caseInsensitiveCompare(test.a, test.b)
+			if (got < 0 && test.want >= 0) || (got > 0 && test.want <= 0) || (got == 0 && test.want != 0) {
+				t.Errorf("caseInsensitiveCompare(%q, %q) = %d, want sign of %d", test.a, test.b, got, test.want)
+			}
+		})
+	}
+}
+
+func TestIsIAMType(t *testing.T) {
+	for _, test := range []struct {
+		name     string
+		typeID   string
+		wantMod  string
+		wantType string
+		wantOK   bool
+	}{
+		{
+			name:     "iam policy request",
+			typeID:   ".google.iam.v1.GetIamPolicyRequest",
+			wantMod:  "iam_policy_pb2",
+			wantType: "GetIamPolicyRequest",
+			wantOK:   true,
+		},
+		{
+			name:     "iam policy",
+			typeID:   ".google.iam.v1.Policy",
+			wantMod:  "policy_pb2",
+			wantType: "Policy",
+			wantOK:   true,
+		},
+		{
+			name:     "set iam policy request",
+			typeID:   ".google.iam.v1.SetIamPolicyRequest",
+			wantMod:  "iam_policy_pb2",
+			wantType: "SetIamPolicyRequest",
+			wantOK:   true,
+		},
+		{
+			name:     "other google cloud type",
+			typeID:   ".google.cloud.secretmanager.v1.Secret",
+			wantMod:  "",
+			wantType: "",
+			wantOK:   false,
+		},
+		{
+			name:     "empty string",
+			typeID:   "",
+			wantMod:  "",
+			wantType: "",
+			wantOK:   false,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			gotMod, gotType, gotOK := isIAMType(test.typeID)
+			if gotMod != test.wantMod || gotType != test.wantType || gotOK != test.wantOK {
+				t.Errorf("isIAMType(%q) = (%q, %q, %v), want (%q, %q, %v)",
+					test.typeID, gotMod, gotType, gotOK, test.wantMod, test.wantType, test.wantOK)
 			}
 		})
 	}

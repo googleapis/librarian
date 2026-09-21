@@ -83,12 +83,12 @@ func (c *codec) annotateFile(sourceFile string, messages []*api.Message, enums [
 
 	ann.SortedMessages = slices.Clone(ann.Messages)
 	slices.SortFunc(ann.SortedMessages, func(a, b *messageAnnotations) int {
-		return strings.Compare(a.Name, b.Name)
+		return caseInsensitiveCompare(a.Name, b.Name)
 	})
 
 	ann.SortedEnums = slices.Clone(ann.Enums)
 	slices.SortFunc(ann.SortedEnums, func(a, b *enumAnnotations) int {
-		return strings.Compare(a.Name, b.Name)
+		return caseInsensitiveCompare(a.Name, b.Name)
 	})
 
 	// SortedSymbols: top-level messages (alphabetically), then top-level enums (alphabetically).
