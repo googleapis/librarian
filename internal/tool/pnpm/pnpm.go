@@ -99,6 +99,8 @@ func env(binDir string) ([]string, error) {
 
 	env := os.Environ()
 	// Prevent Corepack from downloading or strictly overriding package manager versions.
+	// TODO(https://github.com/googleapis/librarian/issues/6889): Remove this once pnpm is
+	// upgraded to version 8+.
 	env = append(env, "COREPACK_ENABLE_PROJECT_SPEC=0")
 	env = append(env, "PNPM_HOME="+binDir)
 	env = append(env, "PNPM_CONFIG_GLOBAL_BIN_DIR="+binDir)
