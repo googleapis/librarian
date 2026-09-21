@@ -39,6 +39,8 @@ type serviceAnnotations struct {
 	PagerTypeImports []*pagerTypeImport
 	// HasPagers is true if the service defines at least one paged method.
 	HasPagers bool
+	// Client holds annotations for generating client.py.
+	Client *clientAnnotations
 }
 
 func (c *codec) annotateService(service *api.Service, model *modelAnnotations) error {
@@ -84,6 +86,12 @@ func (c *codec) annotateService(service *api.Service, model *modelAnnotations) e
 	ann.Pagers = pAnn.Pagers
 	ann.PagerTypeImports = pAnn.TypeImports
 	ann.HasPagers = pAnn.HasPagers
+
+	clAnn, err := c.annotateClient(service)
+	if err != nil {
+		return err
+	}
+	ann.Client = clAnn
 
 	service.Codec = ann
 	return nil

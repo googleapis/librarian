@@ -68,16 +68,6 @@ func (c *codec) annotateModel() error {
 		}
 	}
 
-	// Annotate services after messages and enums.
-	for _, service := range c.Model.Services {
-		if err := c.annotateService(service, ann); err != nil {
-			return err
-		}
-		if sAnn, ok := service.Codec.(*serviceAnnotations); ok {
-			ann.Services = append(ann.Services, sAnn)
-		}
-	}
-
 	// Group messages, enums, and services into type files.
 	fileMessages := make(map[string][]*api.Message)
 	fileEnums := make(map[string][]*api.Enum)
@@ -118,6 +108,16 @@ func (c *codec) annotateModel() error {
 
 	for _, fAnn := range ann.SortedTypeFiles {
 		ann.AllTypeSymbols = append(ann.AllTypeSymbols, fAnn.SortedSymbols...)
+	}
+
+	// Annotate services after messages, enums, and type files.
+	for _, service := range c.Model.Services {
+		if err := c.annotateService(service, ann); err != nil {
+			return err
+		}
+		if sAnn, ok := service.Codec.(*serviceAnnotations); ok {
+			ann.Services = append(ann.Services, sAnn)
+		}
 	}
 
 	return nil
