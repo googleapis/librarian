@@ -308,6 +308,10 @@ func tidyReleasedVersion(library *config.Library) {
 	}
 }
 
+// TODO(https://github.com/googleapis/librarian/issues/6692): Remove this temporary method
+// once google-cloud-java/librarian.yaml has been tidied and rest_documentation / rpc_documentation
+// fields are removed from config.JavaModule.
+//
 // tidyDocumentation clears the Java module's rest_documentation and rpc_documentation
 // if they match the primary API's service config / sdk.yaml.
 func tidyDocumentation(library *config.Library) {
