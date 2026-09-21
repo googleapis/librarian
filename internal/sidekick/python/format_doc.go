@@ -278,16 +278,28 @@ func wrapUnformatted(text string, width, indent int) []string {
 			}
 			wIdx++
 		}
-		firstLine = cur.String()
-		restOfFirst := strings.Join(words[wIdx:], " ")
-		restOfText := strings.Join(rawLines[1:], "\n")
-		if restOfFirst != "" {
-			if restOfText != "" {
-				remainder = restOfFirst + " " + restOfText
-			} else {
-				remainder = restOfFirst
+		var restOfFirst string
+		if wIdx > 0 {
+			searchPos := 0
+			for i := 0; i < wIdx; i++ {
+				pos := strings.Index(firstRaw[searchPos:], words[i])
+				if pos != -1 {
+					searchPos += pos + len(words[i])
+				}
 			}
+			firstLine = strings.TrimSpace(firstRaw[:searchPos])
+			restOfFirst = strings.TrimSpace(firstRaw[searchPos:])
 		} else {
+			firstLine = cur.String()
+			restOfFirst = strings.Join(words[wIdx:], " ")
+		}
+		restOfText := strings.Join(rawLines[1:], "\n")
+		switch {
+		case restOfFirst != "" && restOfText != "":
+			remainder = restOfFirst + " " + restOfText
+		case restOfFirst != "":
+			remainder = restOfFirst
+		default:
 			remainder = restOfText
 		}
 	} else {
@@ -616,9 +628,12 @@ func wrapWords(text string, width int) []string {
 	return lines
 }
 
+// formatRstDocLines converts documentation into a sequence of wrapped lines for Python docstrings.
+// The returned lines are not indented with leading spaces, allowing Mustache templates to control
+// horizontal indentation.
 func formatRstDocLines(doc string, width, indent int) []string {
 	if strings.TrimSpace(doc) == "" {
 		return nil
 	}
-	return formatRstDoc(doc, width, indent)
+	return formatRstDoc(doc, width-indent, indent)
 }
