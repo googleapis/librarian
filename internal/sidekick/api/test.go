@@ -156,14 +156,27 @@ func (m *Message) WithOneOfs(oneofs ...*OneOf) *Message {
 	return m
 }
 
+func (m *Message) withParentRecursive(parent *Message) {
+	m.Parent = parent
+	if m.Parent == nil {
+		return
+	}
+	m.Package = parent.Package
+	if strings.HasPrefix(m.ID, ".test.") || m.ID == "" {
+		m.ID = fmt.Sprintf("%s.%s", parent.ID, m.Name)
+	}
+	for _, c := range m.Messages {
+		c.withParentRecursive(m)
+	}
+	for _, e := range m.Enums {
+		_ = e.WithParent(m)
+	}
+}
+
 // WithMessages adds nested messages to the message and updates their parent/ID.
 func (m *Message) WithMessages(messages ...*Message) *Message {
 	for _, child := range messages {
-		child.Parent = m
-		child.Package = m.Package
-		if strings.HasPrefix(child.ID, ".test.") || child.ID == "" {
-			child.ID = fmt.Sprintf("%s.%s", m.ID, child.Name)
-		}
+		child.withParentRecursive(m)
 	}
 	m.Messages = append(m.Messages, messages...)
 	return m
