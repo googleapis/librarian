@@ -19,6 +19,7 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 
@@ -27,6 +28,12 @@ import (
 	"github.com/googleapis/librarian/internal/sidekick/parser"
 	"github.com/googleapis/librarian/internal/sources"
 	"github.com/googleapis/librarian/internal/testhelper"
+)
+
+const (
+	minCredentialsEmittedFiles = 14
+	minRedisEmittedFiles       = 14
+	minAssetEmittedFiles       = 15
 )
 
 func TestGoldenParity(t *testing.T) {
@@ -48,6 +55,8 @@ func TestGoldenParity(t *testing.T) {
 		defaultVersion  string
 		goldenRelDir    string
 		expectedService string
+		minEmittedFiles int
+		requiredFiles   []string
 	}{
 		{
 			name:            "credentials",
@@ -58,6 +67,17 @@ func TestGoldenParity(t *testing.T) {
 			defaultVersion:  "v1",
 			goldenRelDir:    "credentials",
 			expectedService: ".google.iam.credentials.v1.IAMCredentials",
+			minEmittedFiles: minCredentialsEmittedFiles,
+			requiredFiles: []string{
+				"google/iam/credentials_v1/services/iam_credentials/client.py",
+				"google/iam/credentials_v1/services/iam_credentials/async_client.py",
+				"google/iam/credentials_v1/services/iam_credentials/transports/base.py",
+				"google/iam/credentials_v1/services/iam_credentials/transports/grpc.py",
+				"google/iam/credentials_v1/services/iam_credentials/transports/grpc_asyncio.py",
+				"google/iam/credentials_v1/services/iam_credentials/transports/__init__.py",
+				"google/iam/credentials_v1/types/common.py",
+				"google/iam/credentials_v1/types/iamcredentials.py",
+			},
 		},
 		{
 			name:            "redis",
@@ -68,6 +88,17 @@ func TestGoldenParity(t *testing.T) {
 			defaultVersion:  "v1",
 			goldenRelDir:    "redis",
 			expectedService: ".google.cloud.redis.v1.CloudRedis",
+			minEmittedFiles: minRedisEmittedFiles,
+			requiredFiles: []string{
+				"google/cloud/redis_v1/services/cloud_redis/client.py",
+				"google/cloud/redis_v1/services/cloud_redis/async_client.py",
+				"google/cloud/redis_v1/services/cloud_redis/pagers.py",
+				"google/cloud/redis_v1/services/cloud_redis/transports/base.py",
+				"google/cloud/redis_v1/services/cloud_redis/transports/grpc.py",
+				"google/cloud/redis_v1/services/cloud_redis/transports/grpc_asyncio.py",
+				"google/cloud/redis_v1/services/cloud_redis/transports/__init__.py",
+				"google/cloud/redis_v1/types/cloud_redis.py",
+			},
 		},
 		{
 			name:            "asset",
@@ -78,6 +109,18 @@ func TestGoldenParity(t *testing.T) {
 			defaultVersion:  "v1",
 			goldenRelDir:    "asset",
 			expectedService: ".google.cloud.asset.v1.AssetService",
+			minEmittedFiles: minAssetEmittedFiles,
+			requiredFiles: []string{
+				"google/cloud/asset_v1/services/asset_service/client.py",
+				"google/cloud/asset_v1/services/asset_service/async_client.py",
+				"google/cloud/asset_v1/services/asset_service/pagers.py",
+				"google/cloud/asset_v1/services/asset_service/transports/base.py",
+				"google/cloud/asset_v1/services/asset_service/transports/grpc.py",
+				"google/cloud/asset_v1/services/asset_service/transports/grpc_asyncio.py",
+				"google/cloud/asset_v1/services/asset_service/transports/__init__.py",
+				"google/cloud/asset_v1/types/asset_service.py",
+				"google/cloud/asset_v1/types/assets.py",
+			},
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
@@ -128,6 +171,7 @@ func TestGoldenParity(t *testing.T) {
 				t.Fatal(err)
 			}
 
+			var emittedFiles []string
 			err = filepath.WalkDir(outDir, func(path string, d fs.DirEntry, err error) error {
 				if err != nil {
 					return err
@@ -149,10 +193,11 @@ func TestGoldenParity(t *testing.T) {
 				if !strings.HasPrefix(relSlash, "google/") {
 					return nil
 				}
+				emittedFiles = append(emittedFiles, relSlash)
 
 				gotBytes, err := os.ReadFile(path)
 				if err != nil {
-					t.Errorf("os.ReadFile(%q) failed: %v", path, err)
+					t.Error(err)
 					return nil
 				}
 				goldenPath := filepath.Join(goldenBaseDir, test.goldenRelDir, relPath)
@@ -162,17 +207,26 @@ func TestGoldenParity(t *testing.T) {
 				}
 				wantBytes, err := os.ReadFile(goldenPath)
 				if err != nil {
-					t.Errorf("os.ReadFile(%q) failed: %v", goldenPath, err)
+					t.Error(err)
 					return nil
 				}
 				if diff := cmp.Diff(string(wantBytes), string(gotBytes)); diff != "" {
-					t.Errorf("file %s mismatch (-want +got):\n%s", relPath, diff)
+					t.Logf("[%s] file: %s", test.name, relPath)
+					t.Errorf("mismatch (-want +got):\n%s", diff)
 				}
 
 				return nil
 			})
 			if err != nil {
 				t.Fatal(err)
+			}
+			if len(emittedFiles) < test.minEmittedFiles {
+				t.Errorf("emitted files count for %s = %d, want at least %d", test.name, len(emittedFiles), test.minEmittedFiles)
+			}
+			for _, req := range test.requiredFiles {
+				if !slices.Contains(emittedFiles, req) {
+					t.Errorf("missing required golden file %s for %s", req, test.name)
+				}
 			}
 		})
 	}
