@@ -35,38 +35,38 @@ func TestGenerateService_APIVersion(t *testing.T) {
 		{
 			name:       "WithAPIVersion_NoQueryParams",
 			apiVersion: "v1_20260713",
-			wantStart:  "      let query = [",
-			want: `      let query = [
-        URLQueryItem(name: "$alt", value: "json;enum-encoding=int"),
-        URLQueryItem(name: "$apiVersion", value: "v1_20260713"),
-      ]`,
+			wantStart:  "          let query = [",
+			want: `          let query = [
+            URLQueryItem(name: "$alt", value: "json;enum-encoding=int"),
+            URLQueryItem(name: "$apiVersion", value: "v1_20260713"),
+          ]`,
 		},
 		{
 			name:       "WithoutAPIVersion_NoQueryParams",
 			apiVersion: "",
-			wantStart:  "      let query = [",
-			want: `      let query = [
-        URLQueryItem(name: "$alt", value: "json;enum-encoding=int"),
-      ]`,
+			wantStart:  "          let query = [",
+			want: `          let query = [
+            URLQueryItem(name: "$alt", value: "json;enum-encoding=int"),
+          ]`,
 		},
 		{
 			name:           "WithAPIVersion_WithQueryParams",
 			apiVersion:     "v1_20260713",
 			hasQueryParams: true,
-			wantStart:      "      var query = [",
-			want: `      var query = [
-        URLQueryItem(name: "$alt", value: "json;enum-encoding=int"),
-        URLQueryItem(name: "$apiVersion", value: "v1_20260713"),
-      ]`,
+			wantStart:      "          var query = [",
+			want: `          var query = [
+            URLQueryItem(name: "$alt", value: "json;enum-encoding=int"),
+            URLQueryItem(name: "$apiVersion", value: "v1_20260713"),
+          ]`,
 		},
 		{
 			name:           "WithoutAPIVersion_WithQueryParams",
 			apiVersion:     "",
 			hasQueryParams: true,
-			wantStart:      "      var query = [",
-			want: `      var query = [
-        URLQueryItem(name: "$alt", value: "json;enum-encoding=int"),
-      ]`,
+			wantStart:      "          var query = [",
+			want: `          var query = [
+            URLQueryItem(name: "$alt", value: "json;enum-encoding=int"),
+          ]`,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
@@ -90,7 +90,7 @@ func TestGenerateService_APIVersion(t *testing.T) {
 			model := api.NewTestAPI([]*api.Message{requestType, responseType}, nil, []*api.Service{service})
 			model.PackageName = "test"
 			swiftCfg := swiftConfig(t, []config.SwiftDependency{
-				{Name: "GoogleCloudGax", RequiredByServices: true},
+				{Name: "GoogleGax", RequiredByServices: true},
 			})
 
 			library := &config.Library{
@@ -107,7 +107,7 @@ func TestGenerateService_APIVersion(t *testing.T) {
 			}
 			contentStr := string(content)
 
-			got := extractBlock(t, contentStr, test.wantStart, "\n      ]")
+			got := extractBlock(t, contentStr, test.wantStart, "\n          ]")
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}

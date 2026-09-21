@@ -15,7 +15,6 @@
 package php
 
 import (
-	"bufio"
 	"context"
 	"errors"
 	"fmt"
@@ -28,6 +27,7 @@ import (
 
 	"github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/proto"
 	"github.com/googleapis/librarian/internal/repometadata"
 	"github.com/googleapis/librarian/internal/serviceconfig"
 )
@@ -51,24 +51,20 @@ type initParams struct {
 	productHomepage string
 }
 
-// initComponentIfMissing initializes a new PHP component if it doesn't already exist;
-// returns the component name on success.
-func initComponentIfMissing(ctx context.Context, library *config.Library, googleapisDir string) (string, error) {
+// initComponentIfMissing initializes a new PHP component if it doesn't already exist.
+func initComponentIfMissing(ctx context.Context, library *config.Library, googleapisDir string) error {
+	_, err := os.Stat(library.Output)
+	if err == nil {
+		// Component exists, nothing to initialize.
+		return nil
+	} else if !errors.Is(err, fs.ErrNotExist) {
+		return err
+	}
 	params, err := newInitParams(googleapisDir, library)
 	if err != nil {
-		return "", err
+		return err
 	}
-	_, err = os.Stat(params.componentName)
-	if err == nil {
-		// Component exists, return the component name.
-		return params.componentName, nil
-	} else if !errors.Is(err, fs.ErrNotExist) {
-		return "", err
-	}
-	if err := initComponent(ctx, params); err != nil {
-		return "", err
-	}
-	return params.componentName, nil
+	return initComponent(ctx, params)
 }
 
 func newInitParams(googleapisDir string, library *config.Library) (*initParams, error) {
@@ -86,7 +82,7 @@ func newInitParams(googleapisDir string, library *config.Library) (*initParams, 
 	}
 	apiVersion := serviceconfig.ExtractVersion(api.Path)
 	return &initParams{
-		componentName:   componentName(library, ns),
+		componentName:   filepath.Base(library.Output),
 		phpNamespace:    ns,
 		protoPackage:    protoPackage(api),
 		apiShortName:    svcAPI.ShortName,
@@ -97,80 +93,42 @@ func newInitParams(googleapisDir string, library *config.Library) (*initParams, 
 }
 
 // componentNameForLibrary resolves the component name for a PHP library.
-// If library.PHP.ComponentName is set, it is returned as an explicit override.
-// Otherwise, the component name is derived on the fly from the php_namespace of the library's primary API.
+// The component name is derived on the fly from the php_namespace of the library's primary API.
 func componentNameForLibrary(googleapisDir string, library *config.Library) (string, error) {
-	if library.PHP != nil && library.PHP.ComponentName != "" {
-		return library.PHP.ComponentName, nil
-	}
 	if len(library.APIs) == 0 {
-		return "", fmt.Errorf("no apis configured for library %q", library.Name)
+		return "", fmt.Errorf("%w: %q", errNoAPIs, library.Name)
 	}
 	ns, err := namespace(googleapisDir, library.APIs[0].Path)
 	if err != nil {
 		return "", err
 	}
-	return componentName(library, ns), nil
+	return componentName(ns), nil
 }
 
 // namespace reads the php_namespace option from the first .proto file in the API directory.
 // If the option is not found, it generates a fallback namespace from the API path.
 func namespace(googleapisDir, apiPath string) (string, error) {
-	file, err := searchForProto(googleapisDir, apiPath)
+	ns, found, err := proto.Search(googleapisDir, apiPath, namespaceRe)
 	if err != nil {
 		return "", err
 	}
-	f, err := os.Open(file)
-	if err != nil {
-		return "", err
-	}
-	defer f.Close()
-	scanner := bufio.NewScanner(f)
-	for scanner.Scan() {
-		line := strings.TrimSpace(scanner.Text())
-		// Ignore comments.
-		if strings.HasPrefix(line, "//") {
-			continue
-		}
-		if matches := namespaceRe.FindStringSubmatch(line); len(matches) > 1 {
-			// Backslashes are escapping chars in protobuf string literals, php namespace
-			// in proto need to use double slashes.
-			ns := strings.ReplaceAll(matches[1], `\\`, `\`)
-			// Stripe the version suffix.
-			return versionSuffixRe.ReplaceAllString(ns, ""), nil
-		}
-	}
-	if scanner.Err() != nil {
-		return "", scanner.Err()
+	if found {
+		// Backslashes are escapping chars in protobuf string literals, php namespace
+		// in proto need to use double slashes.
+		ns = strings.ReplaceAll(ns, `\\`, `\`)
+		// Stripe the version suffix.
+		return versionSuffixRe.ReplaceAllString(ns, ""), nil
 	}
 	return backupNamespace(apiPath), nil
 }
 
 // componentName returns the component name from a namespace.
-func componentName(library *config.Library, namespace string) string {
-	if library.PHP != nil && library.PHP.ComponentName != "" {
-		return library.PHP.ComponentName
-	}
+func componentName(namespace string) string {
 	if comp, ok := strings.CutPrefix(namespace, `Google\Cloud\`); ok {
 		return comp
 	}
 	comp := strings.TrimPrefix(namespace, `Google\`)
 	return strings.ReplaceAll(comp, `\`, "")
-}
-
-// searchForProto finds the first .proto file in the API directory.
-func searchForProto(googleapisDir, apiPath string) (string, error) {
-	dir := filepath.Join(googleapisDir, apiPath)
-	entries, err := os.ReadDir(dir)
-	if err != nil {
-		return "", err
-	}
-	for _, entry := range entries {
-		if !entry.IsDir() && filepath.Ext(entry.Name()) == ".proto" {
-			return filepath.Join(dir, entry.Name()), nil
-		}
-	}
-	return "", fs.ErrNotExist
 }
 
 // backupNamespace generates a fallback namespace from the API path.

@@ -49,6 +49,33 @@ const (
 	LanguageSwift = "swift"
 )
 
+// GoInternalCopy describes a private copy of an API's messages generated
+// into an internal Go package.
+type GoInternalCopy struct {
+	// ImportPath is the Go import path of the copy, relative to
+	// cloud.google.com/go, in canonical form and inside the library's own
+	// module. It must contain an "internal" path element so that the copy
+	// cannot be imported by users of the library, and must not overlap the
+	// directory of another copy or of a generated client. Existing symlinks
+	// below the library output directory are rejected before generation.
+	ImportPath string `yaml:"import_path"`
+	// Plugin is the required additional protoc plugin, without the
+	// "protoc-gen-" prefix, for example "go-vtproto". The binary is looked
+	// up in the Go tool bin directory, then on the PATH. Declare its Go
+	// module under tools.go. The name must contain only letters, digits,
+	// "-", or "_".
+	Plugin string `yaml:"plugin"`
+	// PluginOptions are passed as `--<plugin>_opt` values. The plugin must
+	// write its output next to protoc-gen-go's, under the Go import path.
+	// Layout options `paths=`, `module=`, and `M<file>=` import mappings are
+	// rejected, including in comma-separated parameter lists.
+	PluginOptions []string `yaml:"plugin_options,omitempty"`
+	// ProtoPackage is the proto package of the copy. It must be a valid
+	// proto package name that differs from the proto package of the API and
+	// of every other copy.
+	ProtoPackage string `yaml:"proto_package"`
+}
+
 // GoModule represents the Go-specific configuration for a library.
 type GoModule struct {
 	// DeleteGenerationOutputPaths is a list of paths to delete before generation.
@@ -76,6 +103,15 @@ type GoAPI struct {
 	EnabledGeneratorFeatures []string `yaml:"enabled_generator_features,omitempty"`
 	// ImportPath is the Go import path for the API.
 	ImportPath string `yaml:"import_path,omitempty"`
+	// InternalCopies lists private copies of the API's messages to generate
+	// into internal Go packages, so that an additional protoc plugin can run
+	// on each copy without its output becoming part of the public API surface.
+	// Each copy is generated from the proto files in the API directory,
+	// without services, under a renamed proto package so that it can be
+	// linked beside the public package. Copies require the open protobuf API
+	// level. A copy directory holds generated code only and is removed
+	// entirely before regeneration, so handwritten code must live outside it.
+	InternalCopies []*GoInternalCopy `yaml:"internal_copies,omitempty"`
 	// NestedProtos is a list of nested proto files.
 	NestedProtos []string `yaml:"nested_protos,omitempty"`
 	// NoMetadata indicates whether to skip generating gapic_metadata.json.
@@ -122,21 +158,17 @@ type RustDefault struct {
 	// ResourceNameHeuristic indicates whether to apply heuristics to identify and generate resource names.
 	ResourceNameHeuristic *bool `yaml:"resource_name_heuristic,omitempty"`
 
-	// IncludeBidiStreamingMethods indicates whether to include gRPC bi-directional streaming
-	// methods.
-	IncludeBidiStreamingMethods *bool `yaml:"include_bidi_streaming_methods,omitempty"`
-
-	// IncludeServerStreamingMethods indicates whether to include gRPC server-side streaming
-	// methods.
-	IncludeServerStreamingMethods *bool `yaml:"include_server_streaming_methods,omitempty"`
-
-	// AllowStreamingAnyTypes is a list of protobuf field/message IDs with google.protobuf.Any
-	// permitted in streaming RPCs (their fields will be dropped in prost conversion).
-	AllowStreamingAnyTypes []string `yaml:"allow_streaming_any_types,omitempty"`
+	// AllowGrpcAnyFields is a list of protobuf field IDs with google.protobuf.Any
+	// permitted in gRPC/streaming RPCs (their fields will be dropped in prost conversion).
+	AllowGrpcAnyFields []string `yaml:"allow_grpc_any_fields,omitempty"`
 
 	// GrpcClient is the Rust type used for the inner gRPC client in generated transports.
 	// Defaults to "gaxi::grpc::Client".
 	GrpcClient string `yaml:"grpc_client,omitempty"`
+
+	// DefaultTransport specifies the default transport protocol for unary methods ("grpc" or "http").
+	// Defaults to "http".
+	DefaultTransport string `yaml:"default_transport,omitempty"`
 }
 
 // RustModule defines a generation target within a veneer crate.
@@ -149,6 +181,10 @@ type RustModule struct {
 
 	// DisabledRustdocWarnings specifies rustdoc lints to disable. An empty slice explicitly enables all warnings.
 	DisabledRustdocWarnings yaml.StringSlice `yaml:"disabled_rustdoc_warnings,omitempty"`
+
+	// DefaultTransport specifies the default transport protocol for unary methods ("grpc" or "http").
+	// This overrides the crate-level setting.
+	DefaultTransport string `yaml:"default_transport,omitempty"`
 
 	// DetailedTracingAttributes indicates whether to include detailed tracing attributes.
 	// This overrides the crate-level setting.
@@ -180,6 +216,9 @@ type RustModule struct {
 	// IncludeGrpcOnlyMethods indicates whether to include gRPC-only methods.
 	IncludeGrpcOnlyMethods bool `yaml:"include_grpc_only_methods,omitempty"`
 
+	// IdempotencyHook configures an opt-in method on the request struct to resolve and transform idempotency request options before dispatch.
+	IdempotencyHook string `yaml:"idempotency_hook,omitempty"`
+
 	// IncludeList is a list of proto files to include (e.g., "date.proto", "expr.proto").
 	IncludeList yaml.StringSlice `yaml:"include_list,omitempty"`
 
@@ -187,13 +226,9 @@ type RustModule struct {
 	// methods.
 	IncludeStreamingMethods bool `yaml:"include_streaming_methods,omitempty"`
 
-	// IncludeBidiStreamingMethods indicates whether to include gRPC bi-directional streaming
-	// methods.
-	IncludeBidiStreamingMethods *bool `yaml:"include_bidi_streaming_methods,omitempty"`
-
-	// IncludeServerStreamingMethods indicates whether to include gRPC server-side streaming
-	// methods.
-	IncludeServerStreamingMethods *bool `yaml:"include_server_streaming_methods,omitempty"`
+	// HandwrittenSurface indicates whether the module or specific services have a handwritten surface.
+	// Accepts "true" for all services, or a comma-separated list of service IDs.
+	HandwrittenSurface string `yaml:"handwritten_surface,omitempty"`
 
 	// InternalBuilders indicates whether generated builders should be internal to the crate.
 	InternalBuilders bool `yaml:"internal_builders,omitempty"`
@@ -281,6 +316,10 @@ type RustCrate struct {
 	// DisabledClippyWarnings is a list of clippy warnings to disable.
 	DisabledClippyWarnings []string `yaml:"disabled_clippy_warnings,omitempty"`
 
+	// HandwrittenSurface indicates whether the crate or specific services have a handwritten surface.
+	// Accepts "true" for all services, or a comma-separated list of service IDs.
+	HandwrittenSurface string `yaml:"handwritten_surface,omitempty"`
+
 	// HasVeneer indicates whether the crate has a veneer.
 	HasVeneer bool `yaml:"has_veneer,omitempty"`
 
@@ -289,6 +328,9 @@ type RustCrate struct {
 
 	// IncludeGrpcOnlyMethods indicates whether to include gRPC-only methods.
 	IncludeGrpcOnlyMethods bool `yaml:"include_grpc_only_methods,omitempty"`
+
+	// IdempotencyHook configures an opt-in method on the request struct to resolve and transform idempotency request options before dispatch.
+	IdempotencyHook string `yaml:"idempotency_hook,omitempty"`
 
 	// IncludeStreamingMethods indicates whether to include gRPC streaming
 	// methods.
@@ -502,6 +544,9 @@ type JavaDefault struct {
 	// LibrariesBOMVersion is the version of the libraries-bom to use for Java.
 	// This must be set in the default configuration.
 	LibrariesBOMVersion string `yaml:"libraries_bom_version,omitempty"`
+	// MinJavaVersion is the minimum Java version required, used only in README generation.
+	// Defaults to 8 if unspecified.
+	MinJavaVersion int `yaml:"min_java_version,omitempty"`
 }
 
 // JavaModule contains Java-specific library configuration.
@@ -561,9 +606,6 @@ type JavaModule struct {
 	// LibraryTypeOverride allows the "library_type" field in .repo-metadata.json
 	// to be overridden.
 	LibraryTypeOverride string `yaml:"library_type_override,omitempty"`
-
-	// MinJavaVersion is the minimum Java version required.
-	MinJavaVersion int `yaml:"min_java_version,omitempty"`
 
 	// NamePrettyOverride allows the "name_pretty" field in .repo-metadata.json
 	// to be overridden.
@@ -634,15 +676,6 @@ type JavaAPI struct {
 	// It expects the full path starting from the root of the googleapis
 	// directory (e.g., "google/cloud/aiplatform/v1/schema/io_format.proto").
 	ExcludedProtos []string `yaml:"excluded_protos,omitempty"`
-
-	// SkipProtoClassGeneration is a list of proto files to exclude from
-	// generating proto module, but included in generating gRPC or GAPIC
-	// modules and packaged proto files.
-	// It expects the full path starting from the root of the googleapis
-	// directory (e.g., "google/cloud/aiplatform/v1beta1/schema/geometry.proto").
-	// TODO(https://github.com/googleapis/librarian/issues/5661):
-	// remove after migration.
-	SkipProtoClassGeneration []string `yaml:"skip_proto_class_generation,omitempty"`
 
 	// GAPICArtifactIDOverride overrides the artifact ID for the GAPIC module.
 	// It determines the module's directory name and is used to derive proto
@@ -774,6 +807,19 @@ type DotnetCsprojSnippets struct {
 	EmbeddedResources []string `yaml:"embedded_resources,omitempty"`
 }
 
+// NodejsDefault contains Node.js-specific default configuration.
+type NodejsDefault struct {
+	// CustomPackagePrefixes maps API path prefixes to their npm package prefixes.
+	// Values can be:
+	//   - An npm scope (e.g., "google/shopping/merchant": "@google-shopping"):
+	//     the remainder path becomes the package name (e.g., "@google-shopping/accounts").
+	//   - An npm scope with a partial package name (e.g., "google/area120": "@google/area120"):
+	//     the remainder path is appended with a hyphen (e.g., "@google/area120-tables").
+	//   - An npm scope with a full package name (e.g., "google/chat": "@google-apps/chat"):
+	//     used as-is when there is no remainder path (e.g., "@google-apps/chat").
+	CustomPackagePrefixes map[string]string `yaml:"custom_package_prefixes,omitempty"`
+}
+
 // NodejsPackage contains Node.js-specific library configuration.
 type NodejsPackage struct {
 	// AdditionalProtos is a list of additional proto files to include in generation.
@@ -827,6 +873,11 @@ type NodejsAPI struct {
 	// This is typically false. Used for the GCE (compute) client.
 	DIREGAPIC bool `yaml:"diregapic,omitempty"`
 
+	// ExcludeProtos is a list of proto files to exclude from generation.
+	// It expects the full path starting from the root of the googleapis
+	// directory (e.g., "google/cloud/aiplatform/v1/schema/io_format.proto").
+	ExcludeProtos []string `yaml:"exclude_protos,omitempty"`
+
 	// Mixins controls mixin behavior for this API (e.g., "none" to disable).
 	// When set, this overrides the package-level mixins setting.
 	Mixins string `yaml:"mixins,omitempty"`
@@ -844,12 +895,6 @@ type PHPDefault struct {
 	// CommonResources indicates whether to include common resources in generation.
 	// Must be configured either globally or per-API.
 	CommonResources *bool `yaml:"common_resources,omitempty"`
-}
-
-// PHPPackage contains PHP-specific library configuration.
-type PHPPackage struct {
-	// ComponentName overrides the derived component name used for output/staging.
-	ComponentName string `yaml:"component_name,omitempty"`
 }
 
 // PHPAPI represents configuration for a single API within a PHP package.
@@ -882,12 +927,6 @@ type PHPAPI struct {
 	// Default to true when omitted.
 	Samples *bool `yaml:"samples,omitempty"`
 
-	// SkipGRPCServiceConfig indicates whether to skip the generation of gRPC service config.
-	// Default to false.
-	// TODO(https://github.com/googleapis/librarian/issues/7436): Remove this config once
-	// Bigtable uses GRPC service config.
-	SkipGRPCServiceConfig bool `yaml:"skip_grpc_service_config,omitempty"`
-
 	// StagingSubdir is the subdirectory in staging where the generated files should be placed.
 	StagingSubdir string `yaml:"staging_subdir,omitempty"`
 }
@@ -896,6 +935,9 @@ type PHPAPI struct {
 type RubyPackage struct {
 	// DeleteGenerationOutputPaths is a list of paths relative to the output directory to delete after generation.
 	DeleteGenerationOutputPaths []string `yaml:"delete_generation_output_paths,omitempty"`
+
+	// ToysTasks is a list of toys tasks to execute after generation.
+	ToysTasks []string `yaml:"toys_tasks,omitempty"`
 
 	// WrapperOf contains the API versions (e.g. "v1:0.29") of versioned libraries that this library wraps.
 	WrapperOf []string `yaml:"wrapper_of,omitempty"`

@@ -16,6 +16,7 @@ package swift
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/repometadata"
@@ -23,14 +24,42 @@ import (
 	"github.com/googleapis/librarian/internal/sources"
 )
 
+// PackageName derives the package distribution name for a Swift library.
+func PackageName(library *config.Library) string {
+	if library.Swift != nil && library.Swift.PackageNameOverride != "" {
+		return library.Swift.PackageNameOverride
+	}
+	if library.Output != "" {
+		for part := range strings.SplitSeq(library.Output, "/") {
+			if strings.HasPrefix(part, "swift-") {
+				return part
+			}
+		}
+	}
+	if !strings.HasPrefix(library.Name, "swift-") {
+		return "swift-" + library.Name
+	}
+	return library.Name
+}
+
+// DocumentationURL returns the Swift Package Index documentation URL for a Swift library.
+func DocumentationURL(library *config.Library) string {
+	pkgName := PackageName(library)
+	if library.Version == "" {
+		return fmt.Sprintf("https://swiftpackageindex.com/googleapis/%s/documentation", pkgName)
+	}
+	return fmt.Sprintf("https://swiftpackageindex.com/googleapis/%s/%s/documentation", pkgName, library.Version)
+}
+
 func createRepoMetadata(cfg *config.Config, library *config.Library, src *sources.Sources) (*repometadata.RepoMetadata, error) {
 	metadata, err := repometadata.FromLibrary(cfg, library, src.Googleapis)
 	if err != nil {
 		return nil, err
 	}
-	// Language specific data.
-	metadata.ClientDocumentation = fmt.Sprintf(
-		"https://swiftpackageindex.com/googleapis/%s/documentation", library.Name)
+	pkgName := PackageName(library)
+	metadata.DistributionName = pkgName
+	metadata.Repo = fmt.Sprintf("googleapis/%s", pkgName)
+	metadata.ClientDocumentation = DocumentationURL(library)
 	metadata.LibraryType = repometadata.GAPICAutoLibraryType
 
 	return metadata, nil

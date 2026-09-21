@@ -18,6 +18,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"slices"
@@ -363,7 +364,7 @@ func TestAddLibrary(t *testing.T) {
 			if err := yaml.Write(config.LibrarianYAML, cfg); err != nil {
 				t.Fatal(err)
 			}
-			gotName, cfg, err := addLibrary(cfg, test.apiPath, "", "")
+			gotName, cfg, err := addLibrary(cfg, "", test.apiPath, "")
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -593,7 +594,7 @@ func TestAddLibrary_ExistingLibrary(t *testing.T) {
 			if err := yaml.Write(config.LibrarianYAML, test.cfg); err != nil {
 				t.Fatal(err)
 			}
-			gotName, gotCfg, err := addLibrary(test.cfg, test.apiPath, "", googleapisDir)
+			gotName, gotCfg, err := addLibrary(test.cfg, googleapisDir, test.apiPath, "")
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -608,6 +609,10 @@ func TestAddLibrary_ExistingLibrary(t *testing.T) {
 }
 
 func TestAddLibrary_ExistingLibrary_Error(t *testing.T) {
+	googleapisDir, err := filepath.Abs("../testdata/googleapis")
+	if err != nil {
+		t.Fatal(err)
+	}
 	for _, test := range []struct {
 		name    string
 		apiPath string
@@ -632,6 +637,32 @@ func TestAddLibrary_ExistingLibrary_Error(t *testing.T) {
 			},
 			wantErr: errAPIAlreadyExists,
 		},
+		{
+			name:    "fail if language does not support multiple APIs per library",
+			apiPath: "google/cloud/secretmanager/v1",
+			cfg: &config.Config{
+				Language: config.LanguageRust,
+				Libraries: []*config.Library{
+					{
+						Name:    "google-cloud-secretmanager-v1",
+						Version: "1.2.3",
+						APIs: []*config.API{
+							{Path: "google/cloud/secretmanager/v1beta2"},
+						},
+					},
+				},
+			},
+			wantErr: errLibraryAlreadyExists,
+		},
+		{
+			name:    "fail if proto directory does not exist",
+			apiPath: "google/cloud/nonexistent/v1",
+			cfg: &config.Config{
+				Language:  config.LanguageGo,
+				Libraries: []*config.Library{},
+			},
+			wantErr: fs.ErrNotExist,
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			tmpDir := t.TempDir()
@@ -642,7 +673,7 @@ func TestAddLibrary_ExistingLibrary_Error(t *testing.T) {
 			if err := yaml.Write(config.LibrarianYAML, test.cfg); err != nil {
 				t.Fatal(err)
 			}
-			_, _, err := addLibrary(test.cfg, test.apiPath, "", "")
+			_, _, err = addLibrary(test.cfg, googleapisDir, test.apiPath, "")
 			if !errors.Is(err, test.wantErr) {
 				t.Fatalf("expected error %v, got %v", test.wantErr, err)
 			}
@@ -651,6 +682,10 @@ func TestAddLibrary_ExistingLibrary_Error(t *testing.T) {
 }
 
 func TestAddLibrary_Preview(t *testing.T) {
+	googleapisDir, err := filepath.Abs("../testdata/googleapis")
+	if err != nil {
+		t.Fatal(err)
+	}
 	for _, test := range []struct {
 		name             string
 		apiPath          string
@@ -678,7 +713,7 @@ func TestAddLibrary_Preview(t *testing.T) {
 				Language:  config.LanguageGo,
 				Libraries: test.initialLibraries,
 			}
-			gotName, gotCfg, err := addLibrary(cfg, test.apiPath, "", "")
+			gotName, gotCfg, err := addLibrary(cfg, googleapisDir, test.apiPath, "")
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -695,6 +730,10 @@ func TestAddLibrary_Preview(t *testing.T) {
 }
 
 func TestAddLibrary_Preview_Error(t *testing.T) {
+	googleapisDir, err := filepath.Abs("../testdata/googleapis")
+	if err != nil {
+		t.Fatal(err)
+	}
 	for _, test := range []struct {
 		name             string
 		apiPath          string
@@ -732,7 +771,7 @@ func TestAddLibrary_Preview_Error(t *testing.T) {
 				Language:  config.LanguageGo,
 				Libraries: test.initialLibraries,
 			}
-			_, _, err := addLibrary(cfg, test.apiPath, "", "")
+			_, _, err := addLibrary(cfg, googleapisDir, test.apiPath, "")
 			if !errors.Is(err, test.wantErr) {
 				t.Fatalf("expected error %v, got %v", test.wantErr, err)
 			}
@@ -741,6 +780,10 @@ func TestAddLibrary_Preview_Error(t *testing.T) {
 }
 
 func TestDeriveLibraryName(t *testing.T) {
+	googleapisDir, err := filepath.Abs("../testdata/googleapis")
+	if err != nil {
+		t.Fatal(err)
+	}
 	for _, test := range []struct {
 		language string
 		apiPath  string
@@ -772,7 +815,10 @@ func TestDeriveLibraryName(t *testing.T) {
 		{config.LanguageRuby, "google/cloud/secretmanager/v1", "google-cloud-secretmanager-v1"},
 	} {
 		t.Run(test.language+"/"+test.apiPath, func(t *testing.T) {
-			got := deriveLibraryName(test.language, test.apiPath)
+			got, err := deriveLibraryName(test.language, googleapisDir, test.apiPath)
+			if err != nil {
+				t.Fatal(err)
+			}
 			if got != test.want {
 				t.Errorf("deriveLibraryName(%q, %q) = %q, want %q", test.language, test.apiPath, got, test.want)
 			}
@@ -980,7 +1026,7 @@ func TestAddLibraryCommand_Ruby(t *testing.T) {
 			wantFinalLibraries: []*config.Library{
 				{
 					Name:          "google-cloud-secret_manager-v1",
-					CopyrightYear: strconv.Itoa(time.Now().Year()),
+					CopyrightYear: "",
 					Version:       "0.0.1",
 					APIs: []*config.API{
 						{Path: "google/cloud/secretmanager/v1"},
@@ -1024,7 +1070,7 @@ func TestAddLibraryCommand_Ruby(t *testing.T) {
 			wantFinalLibraries: []*config.Library{
 				{
 					Name:          "google-cloud-secret_manager",
-					CopyrightYear: strconv.Itoa(time.Now().Year()),
+					CopyrightYear: "",
 					Version:       "0.0.1",
 					APIs: []*config.API{
 						{Path: "google/cloud/secretmanager/v1"},
@@ -1065,7 +1111,7 @@ func TestAddLibraryCommand_Ruby(t *testing.T) {
 			wantFinalLibraries: []*config.Library{
 				{
 					Name:          "google-cloud-secretmanager-v1",
-					CopyrightYear: strconv.Itoa(time.Now().Year()),
+					CopyrightYear: "",
 					Version:       "0.0.1",
 					APIs: []*config.API{
 						{Path: "google/cloud/secretmanager/v1"},

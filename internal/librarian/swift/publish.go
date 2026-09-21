@@ -101,7 +101,7 @@ func Publish(ctx context.Context, params PublishParams) error {
 			continue
 		}
 
-		libDir := packageDirectory(lib, params.Config.Default)
+		libDir := libraryPackageDirectory(lib, params.Config.Default)
 		if len(params.Libraries) > 0 && !matchLibrary(params.Libraries, lib, libDir) {
 			continue
 		}
@@ -208,31 +208,18 @@ func libraryOutput(lib *config.Library, defaults *config.Default) string {
 	apiPath := ""
 	if len(lib.APIs) > 0 && lib.APIs[0].Path != "" {
 		apiPath = lib.APIs[0].Path
+	} else if lib.Name != "" {
+		apiPath = strings.ReplaceAll(lib.Name, "-", "/")
 	}
-	defaultOut := ""
-	if defaults != nil {
+	defaultOut := "generated"
+	if defaults != nil && defaults.Output != "" {
 		defaultOut = defaults.Output
 	}
 	return DefaultOutput(apiPath, defaultOut)
 }
 
-func packageDirectory(lib *config.Library, defaults *config.Default) string {
-	dir := libraryOutput(lib, defaults)
-	if dir == "" {
-		return ""
-	}
-	current := dir
-	for current != "." && current != "/" && current != "" {
-		if _, err := os.Stat(filepath.Join(current, "Package.swift")); err == nil {
-			return current
-		}
-		parent := filepath.Dir(current)
-		if parent == current {
-			break
-		}
-		current = parent
-	}
-	return dir
+func libraryPackageDirectory(lib *config.Library, defaults *config.Default) string {
+	return PackageDirectory(libraryOutput(lib, defaults))
 }
 
 // SplitRepoName derives the split repository name for a library directory.

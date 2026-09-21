@@ -21,6 +21,7 @@ import (
 	"slices"
 
 	"github.com/googleapis/librarian/internal/license"
+	"github.com/googleapis/librarian/internal/sidekick/api"
 )
 
 type modelAnnotations struct {
@@ -28,6 +29,7 @@ type modelAnnotations struct {
 	BoilerPlate      []string
 	LibraryName      string
 	PackageName      string
+	PackageRepoName  string
 	PackageVersion   string
 	MonorepoRoot     string
 	DependsOn        map[string]*Dependency
@@ -35,6 +37,21 @@ type modelAnnotations struct {
 	PerServiceTraits bool
 	DefaultTraits    []string
 	AllTraits        []*traitDefinition
+
+	// ModulePath is the generated Protobuf module for this package, if the
+	// package has one (e.g. "StorageControlProtos").
+	ModulePath string
+
+	// LROAnyTypes are the payload types that this package's long-running
+	// operations can carry in an `Any`, sorted by type URL.
+	//
+	// The set is unioned across the services of the package, because the
+	// package has a single converter for all of them.
+	LROAnyTypes []*lroAnyType
+
+	// LROAnyConverterName is the name of the generated converter for
+	// `LROAnyTypes` (e.g. "StorageControlLROAnyConverter").
+	LROAnyConverterName string
 }
 
 // traitDefinition provides information about each package trait.
@@ -59,6 +76,16 @@ func (ann *modelAnnotations) HasDependencies() bool {
 	return len(ann.DependsOn) != 0
 }
 
+// HasLocalOrRemoteDependencies returns true if any dependency is configured with both URL and Path.
+func (ann *modelAnnotations) HasLocalOrRemoteDependencies() bool {
+	for _, dep := range ann.DependsOn {
+		if dep.IsLocalOrRemote() {
+			return true
+		}
+	}
+	return false
+}
+
 // EnablesOtherTraits returns true if this service's trait enables other traits too.
 func (ann *traitDefinition) EnablesOtherTraits() bool {
 	return len(ann.EnabledTraits) != 0
@@ -75,17 +102,44 @@ func (ann *modelAnnotations) HasTraits() bool {
 	return len(ann.AllTraits) != 0
 }
 
+// HasLROAnyTypes returns true if the package has long-running operations whose
+// payload types are generated in it.
+func (ann *modelAnnotations) HasLROAnyTypes() bool {
+	return len(ann.LROAnyTypes) != 0
+}
+
+// PackageImports returns the list of dependencies for the package as a whole.
+//
+// This is the model-level counterpart of `serviceAnnotations.ServiceImports`,
+// for files that are generated once per package rather than once per service.
+// It applies the same filter, and for the same reason: dependencies configured
+// in the librarian.yaml file are needed in some files but not others, and
+// sometimes only a specific type is imported to minimize clashes.
+func (ann *modelAnnotations) PackageImports() []string {
+	result := make([]string, 0, len(ann.DependsOn))
+	for _, dep := range ann.DependsOn {
+		if dep.RequiredByServices {
+			continue
+		}
+		result = append(result, dep.Name)
+	}
+	slices.Sort(result)
+	return result
+}
+
 func (c *codec) annotateModel() error {
 	annotations := &modelAnnotations{
-		CopyrightYear:  c.GenerationYear,
-		BoilerPlate:    license.HeaderBulk(),
-		LibraryName:    c.LibraryName,
-		PackageName:    c.PackageName,
-		PackageVersion: c.PackageVersion,
-		MonorepoRoot:   c.MonorepoRoot,
-		DependsOn:      map[string]*Dependency{},
-		WktPackage:     wellKnownSwiftPackage,
-		DefaultTraits:  c.DefaultTraits,
+		CopyrightYear:   c.GenerationYear,
+		BoilerPlate:     license.HeaderBulk(),
+		LibraryName:     c.LibraryName,
+		PackageName:     c.PackageName,
+		PackageRepoName: c.PackageRepoName,
+		PackageVersion:  c.PackageVersion,
+		MonorepoRoot:    c.MonorepoRoot,
+		DependsOn:       map[string]*Dependency{},
+		WktPackage:      wellKnownSwiftPackage,
+		DefaultTraits:   c.DefaultTraits,
+		ModulePath:      c.ModulePath,
 	}
 	if dep, ok := c.ApiPackages[wellKnownProtobufPackage]; ok {
 		annotations.WktPackage = dep.Name
@@ -101,14 +155,19 @@ func (c *codec) annotateModel() error {
 			return err
 		}
 	}
+	c.annotateLROAnyFields()
 	// The services are annotated last because the annotation assumes messages
 	// and enums are already annotated.
 	allTraits := make([]*traitDefinition, 0, len(c.Model.Services))
+	var generatedMethods []*api.Method
 	for _, service := range c.Model.Services {
 		ann, err := c.annotateService(service, annotations)
 		if err != nil {
 			return err
 		}
+		// Take the methods from the annotations: that list is already filtered
+		// down to the methods this module generates.
+		generatedMethods = append(generatedMethods, ann.Methods...)
 		var enabledTraits []string
 		for _, svc := range ann.RequiredServices {
 			enabledTraits = append(enabledTraits, c.traitName(svc))
@@ -119,6 +178,9 @@ func (c *codec) annotateModel() error {
 			EnabledTraits: enabledTraits,
 		}
 		allTraits = append(allTraits, trait)
+	}
+	if err := c.annotateLROAnyConverter(annotations, generatedMethods); err != nil {
+		return err
 	}
 	if !c.PerServiceTraits {
 		// The maximum (15) was chosen more or less arbitrarily circa 2026-05. At

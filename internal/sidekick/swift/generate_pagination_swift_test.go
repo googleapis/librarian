@@ -119,11 +119,11 @@ func TestGenerateService_MapPagination(t *testing.T) {
 
 			swiftCfg := swiftConfig(t, []config.SwiftDependency{
 				{
-					Name:               "GoogleCloudGax",
+					Name:               "GoogleGax",
 					RequiredByServices: true,
 				},
 				{
-					Name:               "GoogleCloudAuth",
+					Name:               "GoogleAuth",
 					RequiredByServices: true,
 				},
 			})
@@ -153,7 +153,7 @@ func verifyGeneratedMapService(t *testing.T, outDir string) {
 	gotMethodOverload := extractBlock(t, contentStr, `  public func listSecrets(
     byItem: `, "\n  }")
 	wantMethodOverload := `  public func listSecrets(
-    byItem: ListSecretsRequest, options: GoogleCloudGax.RequestOptions
+    byItem: ListSecretsRequest, options: GoogleGax.RequestOptions
 ) throws -> any AsyncSequence<(Swift.String, Secret), Swift.Error>
  {
     let listRpc = { (token: Swift.String) async throws -> GoogleCloudSecretmanagerV1.ListSecretsResponse in
@@ -161,7 +161,7 @@ func verifyGeneratedMapService(t *testing.T, outDir string) {
       request.pageToken = token
       return try await self.listSecrets(request: request, options: options)
     }
-    return GoogleCloudGax.PaginatedResponseSequence(listRpc: listRpc)
+    return GoogleGax.PaginatedResponseSequence(listRpc: listRpc)
   }`
 	if diff := cmp.Diff(wantMethodOverload, gotMethodOverload); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
@@ -178,7 +178,7 @@ func verifyGeneratedMapResponse(t *testing.T, outDir string, wantNextPageToken s
 	respContentStr := string(respContent)
 
 	gotResponseMessage := extractBlock(t, respContentStr, "public struct ListSecretsResponse: ", "{")
-	for _, p := range []string{"Codable", "Equatable", "GoogleCloudWKT._AnyPackable", "GoogleCloudGax._PaginatedResponse", "Sendable"} {
+	for _, p := range []string{"Codable", "Equatable", "GoogleWKT._AnyPackable", "GoogleGax._PaginatedResponse", "Sendable"} {
 		if !strings.Contains(gotResponseMessage, p) {
 			t.Errorf("expected %q in ListSecretsResponse declaration, got: %s", p, gotResponseMessage)
 		}

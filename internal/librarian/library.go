@@ -143,14 +143,8 @@ func fillRust(lib *config.Library, d *config.Default) *config.Library {
 	if lib.Rust.GenerateRpcSamples == "" {
 		lib.Rust.GenerateRpcSamples = d.Rust.GenerateRpcSamples
 	}
-	if lib.Rust.IncludeBidiStreamingMethods == nil {
-		lib.Rust.IncludeBidiStreamingMethods = d.Rust.IncludeBidiStreamingMethods
-	}
-	if lib.Rust.IncludeServerStreamingMethods == nil {
-		lib.Rust.IncludeServerStreamingMethods = d.Rust.IncludeServerStreamingMethods
-	}
-	if len(lib.Rust.AllowStreamingAnyTypes) == 0 && d.Rust != nil {
-		lib.Rust.AllowStreamingAnyTypes = d.Rust.AllowStreamingAnyTypes
+	if len(lib.Rust.AllowGrpcAnyFields) == 0 {
+		lib.Rust.AllowGrpcAnyFields = d.Rust.AllowGrpcAnyFields
 	}
 	for _, mod := range lib.Rust.Modules {
 		if mod.GenerateSetterSamples == "" {
@@ -158,12 +152,6 @@ func fillRust(lib *config.Library, d *config.Default) *config.Library {
 		}
 		if mod.GenerateRpcSamples == "" {
 			mod.GenerateRpcSamples = lib.Rust.GenerateRpcSamples
-		}
-		if mod.IncludeBidiStreamingMethods == nil {
-			mod.IncludeBidiStreamingMethods = lib.Rust.IncludeBidiStreamingMethods
-		}
-		if mod.IncludeServerStreamingMethods == nil {
-			mod.IncludeServerStreamingMethods = lib.Rust.IncludeServerStreamingMethods
 		}
 	}
 	return lib
@@ -394,10 +382,10 @@ func FindLibrary(c *config.Config, name string) (*config.Library, error) {
 	return nil, fmt.Errorf("%w: %q", ErrLibraryNotFound, name)
 }
 
-// ResolvePreview returns a library where fields from lib.Preview override
+// resolvePreview returns a library where fields from lib.Preview override
 // those in the base lib, if set. If lib.Preview is not set or lib itself is nil
 // this returns nil.
-func ResolvePreview(lib *config.Library, language string) *config.Library {
+func resolvePreview(lib *config.Library, language string) *config.Library {
 	if lib == nil || lib.Preview == nil {
 		return nil
 	}
@@ -448,8 +436,6 @@ func ResolvePreview(lib *config.Library, language string) *config.Library {
 		res.Python = mergePython(res.Python, p.Python)
 	case config.LanguageRust:
 		res.Rust = mergeRust(res.Rust, p.Rust)
-	case config.LanguagePhp:
-		res.PHP = mergePHP(res.PHP, p.PHP)
 	case config.LanguageRuby:
 		res.Ruby = mergeRuby(res.Ruby, p.Ruby)
 	case config.LanguageSwift:
@@ -645,9 +631,6 @@ func mergeJava(dst, src *config.JavaModule) *config.JavaModule {
 	if src.LibraryTypeOverride != "" {
 		res.LibraryTypeOverride = src.LibraryTypeOverride
 	}
-	if src.MinJavaVersion != 0 {
-		res.MinJavaVersion = src.MinJavaVersion
-	}
 	if src.NamePrettyOverride != "" {
 		res.NamePrettyOverride = src.NamePrettyOverride
 	}
@@ -822,6 +805,9 @@ func mergeRust(dst, src *config.RustCrate) *config.RustCrate {
 	if src.DisabledClippyWarnings != nil {
 		res.DisabledClippyWarnings = src.DisabledClippyWarnings
 	}
+	if src.HandwrittenSurface != "" {
+		res.HandwrittenSurface = src.HandwrittenSurface
+	}
 	if src.HasVeneer {
 		res.HasVeneer = src.HasVeneer
 	}
@@ -834,14 +820,8 @@ func mergeRust(dst, src *config.RustCrate) *config.RustCrate {
 	if src.IncludeStreamingMethods {
 		res.IncludeStreamingMethods = src.IncludeStreamingMethods
 	}
-	if src.IncludeBidiStreamingMethods != nil {
-		res.IncludeBidiStreamingMethods = src.IncludeBidiStreamingMethods
-	}
-	if src.IncludeServerStreamingMethods != nil {
-		res.IncludeServerStreamingMethods = src.IncludeServerStreamingMethods
-	}
-	if len(src.AllowStreamingAnyTypes) > 0 {
-		res.AllowStreamingAnyTypes = src.AllowStreamingAnyTypes
+	if len(src.AllowGrpcAnyFields) > 0 {
+		res.AllowGrpcAnyFields = src.AllowGrpcAnyFields
 	}
 	if src.PostProcessProtos != "" {
 		res.PostProcessProtos = src.PostProcessProtos
@@ -890,6 +870,9 @@ func mergeRuby(dst, src *config.RubyPackage) *config.RubyPackage {
 	if src.DeleteGenerationOutputPaths != nil {
 		res.DeleteGenerationOutputPaths = src.DeleteGenerationOutputPaths
 	}
+	if src.ToysTasks != nil {
+		res.ToysTasks = src.ToysTasks
+	}
 	if src.WrapperOf != nil {
 		res.WrapperOf = src.WrapperOf
 	}
@@ -923,16 +906,5 @@ func mergeSwift(dst, src *config.SwiftPackage) *config.SwiftPackage {
 		res.DefaultTraits = src.DefaultTraits
 	}
 	res.Discovery = mergeCommonDiscovery(res.Discovery, src.Discovery)
-	return &res
-}
-
-func mergePHP(dst, src *config.PHPPackage) *config.PHPPackage {
-	if src == nil {
-		return dst
-	}
-	if dst == nil {
-		return src
-	}
-	res := *dst
 	return &res
 }

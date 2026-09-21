@@ -31,14 +31,14 @@ import Foundation
 {{#Codec.ServiceImports}}
 import {{.}}
 {{/Codec.ServiceImports}}
-@_spi(GoogleCloudInternal) import GoogleCloudGax
+@_spi(GoogleCloudInternal) import GoogleGax
 
 extension Clients {
   final class {{Codec.StubPrefix}}Transport: {{Codec.StubPrefix}}Stub {
-    let inner: GoogleCloudGax._HTTPClient
+    let inner: GoogleGax._HTTPClient
 
-    public init(_ options: GoogleCloudGax.ClientOptions = .init()) throws {
-      self.inner = try GoogleCloudGax._HTTPClient(
+    public init(_ options: GoogleGax.ClientOptions = .init()) throws {
+      self.inner = try GoogleGax._HTTPClient(
         from: options,
         withDefaultEndpoint: "https://{{DefaultHost}}",
       )
@@ -46,57 +46,106 @@ extension Clients {
     {{#Codec.Methods}}
 
     public func {{> /templates/common/method_signature/request_options}} {
-      let path = try { () throws -> Swift.String in
-        {{#Codec.PathVariables}}
-        guard let {{Name}} = request{{Expression}}{{#Test}}, {{{.}}}{{/Test}} else {
-          throw GoogleCloudGax.RequestError.binding("'request.{{FieldPath}}' is not set or is empty")
+      let (path, query, configure{{#Codec.HasOmittedBodyFields}}, omitted{{/Codec.HasOmittedBodyFields}}) = try { () throws -> (Swift.String, [URLQueryItem], (inout GoogleGax._HTTPClientRequest) -> Void{{#Codec.HasOmittedBodyFields}}, [Swift.String]{{/Codec.HasOmittedBodyFields}}) in
+        {{#Codec.PathBindings}}
+        if let candidate = try { () throws -> (Swift.String, [URLQueryItem])? in
+          {{#PathVariables}}
+          {{#HasMatchingSegments}}
+          guard
+            let {{Name}} = try GoogleGax._RoutingMatcher.pathValue(
+              request{{Expression}},
+              matching: {{{MatchingSegmentsExpression}}},
+              fieldName: "{{FieldPath}}")
+          else {
+            return nil
+          }
+          {{/HasMatchingSegments}}
+          {{^HasMatchingSegments}}
+          guard let {{Name}} = request{{Expression}}{{#Test}}, {{{.}}}{{/Test}} else {
+            return nil
+          }
+          {{/HasMatchingSegments}}
+          {{/PathVariables}}
+          let path = "{{PathExpression}}"
+          {{#HasQueryParams}}
+          var query = [
+            URLQueryItem(name: "$alt", value: "{{{ResponseEncoding}}}"),
+            {{#APIVersion}}
+            URLQueryItem(name: "$apiVersion", value: "{{.}}"),
+            {{/APIVersion}}
+          ]
+          let encoder = GoogleGax._QueryParameterEncoder()
+          {{/HasQueryParams}}
+          {{^HasQueryParams}}
+          let query = [
+            URLQueryItem(name: "$alt", value: "{{{ResponseEncoding}}}"),
+            {{#APIVersion}}
+            URLQueryItem(name: "$apiVersion", value: "{{.}}"),
+            {{/APIVersion}}
+          ]
+          {{/HasQueryParams}}
+          {{#QueryParams}}
+          {{#IsOneOf}}
+          query.append(
+            contentsOf: try encoder.encode(
+              request.{{Group.Codec.PropertyName}}.flatMap { (oneof) -> {{Codec.BaseFieldType}}? in
+                if case let .{{Codec.Name}}(v) = oneof { v } else { nil }
+              }, prefix: "{{JSONName}}"))
+          {{/IsOneOf}}
+          {{^IsOneOf}}
+          query.append(contentsOf: try encoder.encode(request.{{Codec.Name}}, prefix: "{{JSONName}}"))
+          {{/IsOneOf}}
+          {{/QueryParams}}
+          return (path, query)
+        }() {
+          return (candidate.0, candidate.1, { $0.setMethod(.{{HTTPMethod}}) }{{#Codec.HasOmittedBodyFields}}, {{{OmittedBodyFieldsExpression}}}{{/Codec.HasOmittedBodyFields}})
         }
-        {{/Codec.PathVariables}}
-        return "{{Codec.PathExpression}}"
+        {{/Codec.PathBindings}}
+        var paths: [GoogleGax.PathMismatch] = []
+        {{#Codec.PathBindings}}
+        do {
+          {{#HasPathVariables}}
+          var builder = GoogleGax._PathMismatchBuilder()
+          {{#PathVariables}}
+          {{#HasMatchingSegments}}
+          builder.maybeAdd(
+            request{{Expression}},
+            matching: {{{MatchingSegmentsExpression}}},
+            fieldName: "{{FieldPath}}",
+            expecting: "{{TemplateString}}"
+          )
+          {{/HasMatchingSegments}}
+          {{^HasMatchingSegments}}
+          builder.maybeAdd(
+            request{{Expression}},
+            fieldName: "{{FieldPath}}"
+          )
+          {{/HasMatchingSegments}}
+          {{/PathVariables}}
+          paths.append(builder.build())
+          {{/HasPathVariables}}
+          {{^HasPathVariables}}
+          paths.append(GoogleGax.PathMismatch())
+          {{/HasPathVariables}}
+        }
+        {{/Codec.PathBindings}}
+        throw GoogleGax.RequestError.binding(GoogleGax.BindingError(paths: paths))
       }()
-      {{#Codec.HasQueryParams}}
-      var query = [
-        URLQueryItem(name: "$alt", value: "{{{Codec.ResponseEncoding}}}"),
-        {{#APIVersion}}
-        URLQueryItem(name: "$apiVersion", value: "{{.}}"),
-        {{/APIVersion}}
-      ]
-      let encoder = GoogleCloudGax._QueryParameterEncoder()
-      {{/Codec.HasQueryParams}}
-      {{^Codec.HasQueryParams}}
-      let query = [
-        URLQueryItem(name: "$alt", value: "{{{Codec.ResponseEncoding}}}"),
-        {{#APIVersion}}
-        URLQueryItem(name: "$apiVersion", value: "{{.}}"),
-        {{/APIVersion}}
-      ]
-      {{/Codec.HasQueryParams}}
-      {{#Codec.QueryParams}}
-      {{!
-        Note that `Codec.Name` includes mangling and escaping, while `JSONName` does not. We want the latter
-        for the query parameter name, and the former to access the field in the Swift struct.
-      }}
-      {{#IsOneOf}}
-      query.append(
-        contentsOf: try encoder.encode(
-          request.{{Group.Codec.PropertyName}}.flatMap { (oneof) -> {{Codec.BaseFieldType}}? in
-            if case let .{{Codec.Name}}(v) = oneof { v } else { nil }
-          }, prefix: "{{JSONName}}"))
-      {{/IsOneOf}}
-      {{^IsOneOf}}
-      query.append(contentsOf: try encoder.encode(request.{{Codec.Name}}, prefix: "{{JSONName}}"))
-      {{/IsOneOf}}
-      {{/Codec.QueryParams}}
-      var req = try await self.inner.newRequest(path: path, query: query)
-      req.setMethod(.{{Codec.HTTPMethod}})
-      req.addHeader(name: GoogleCloudGax._HeaderNames.apiClient, value: Clients.clientHeader)
+      var req = try await self.inner.newRequest(percentEncodedPath: path, query: query, options: options)
+      configure(&req)
+      req.addHeader(name: GoogleGax._HeaderNames.apiClient, value: Clients.clientHeader)
       {{#Codec.HasBody}}
       {{#Codec.IsBodyWildcard}}
-      req.setBody(data: try JSONEncoder().encode(request), ofContentType: "application/json")
+      {{#Codec.HasOmittedBodyFields}}
+      try req.setBody(json: request, omitting: omitted)
+      {{/Codec.HasOmittedBodyFields}}
+      {{^Codec.HasOmittedBodyFields}}
+      try req.setBody(json: request)
+      {{/Codec.HasOmittedBodyFields}}
       {{/Codec.IsBodyWildcard}}
       {{^Codec.IsBodyWildcard}}
       if let body = request.{{Codec.BodyField}} {
-        req.setBody(data: try JSONEncoder().encode(body), ofContentType: "application/json")
+        try req.setBody(json: body)
       }
       {{/Codec.IsBodyWildcard}}
       {{/Codec.HasBody}}

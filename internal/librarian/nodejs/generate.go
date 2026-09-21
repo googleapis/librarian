@@ -31,6 +31,7 @@ import (
 	"github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/filesystem"
+	"github.com/googleapis/librarian/internal/proto"
 	"github.com/googleapis/librarian/internal/serviceconfig"
 	"github.com/googleapis/librarian/internal/sources"
 	"github.com/googleapis/librarian/internal/tool/protoc"
@@ -40,6 +41,21 @@ const (
 	cloudCommonResourcesProto = "google/cloud/common_resources.proto"
 	protosPathPrefix          = "protos/"
 )
+
+var (
+	errToolNotInstalled = errors.New("tool not installed in librarian cache")
+	errProtoNotFound    = errors.New("no proto is found in api")
+)
+
+type buildGeneratorArgsParams struct {
+	generatorPath string
+	protoc        *config.Protoc
+	api           *config.API
+	library       *config.Library
+	googleapisDir string
+	stagingDir    string
+	nodejsAPI     *config.NodejsAPI
+}
 
 // IsMixedLibrary reports whether the library has handwritten code wrapping
 // generated or librarian-managed code.
@@ -93,10 +109,6 @@ func Generate(ctx context.Context, cfg *config.Config, library *config.Library, 
 	return nil
 }
 
-var (
-	errToolNotInstalled = errors.New("tool not installed in librarian cache")
-)
-
 func requireCachedTool(toolName string) (string, error) {
 	binDir, err := getBinDir()
 	if err != nil {
@@ -138,38 +150,19 @@ func generateAPI(ctx context.Context, params generateAPIParams) error {
 	if _, err := requireCachedTool("gapic-node-processing"); err != nil {
 		return err
 	}
-
 	stagingDir := filepath.Join(params.repoRoot, "owl-bot-staging", params.library.Name, buildStagingSubdirName(params.apiIndex, params.api.Path))
 	if err := os.MkdirAll(stagingDir, 0o755); err != nil {
 		return err
 	}
-
-	nodejsAPI := resolveNodejsAPI(params.library, params.api)
-
 	absGoogleapisDir, err := filepath.Abs(params.googleapisDir)
 	if err != nil {
 		return fmt.Errorf("failed to resolve googleapis directory path: %w", err)
 	}
-
-	apiDir := filepath.Join(absGoogleapisDir, params.api.Path)
-	protos, err := filepath.Glob(apiDir + "/*.proto")
+	nodejsAPI := resolveNodejsAPI(params.library, params.api)
+	protos, err := collectProtos(absGoogleapisDir, nodejsAPI)
 	if err != nil {
-		return fmt.Errorf("failed to find protos: %w", err)
+		return err
 	}
-	if len(protos) == 0 {
-		return fmt.Errorf("no protos found in api %q", params.api.Path)
-	}
-	for index := range protos {
-		rel, err := filepath.Rel(absGoogleapisDir, protos[index])
-		if err != nil {
-			return fmt.Errorf("failed to make path %s relative: %w", protos[index], err)
-		}
-		protos[index] = rel
-	}
-
-	// Add additional protos from configuration.
-	protos = append(protos, nodejsAPI.AdditionalProtos...)
-
 	args, err := buildGeneratorArgs(buildGeneratorArgsParams{
 		generatorPath: generatorPath,
 		protoc:        params.protoc,
@@ -198,6 +191,7 @@ func resolveNodejsAPI(library *config.Library, api *config.API) *config.NodejsAP
 	}
 	omitCommon := false
 	if api.Nodejs != nil {
+		res.ExcludeProtos = append(res.ExcludeProtos, api.Nodejs.ExcludeProtos...)
 		omitCommon = api.Nodejs.OmitCommonResources
 		res.DIREGAPIC = api.Nodejs.DIREGAPIC
 		if api.Nodejs.Mixins != "" {
@@ -205,22 +199,17 @@ func resolveNodejsAPI(library *config.Library, api *config.API) *config.NodejsAP
 		}
 		res.OmitCommonResources = api.Nodejs.OmitCommonResources
 	}
-
 	var protos []string
 	if !omitCommon {
 		protos = append(protos, cloudCommonResourcesProto)
 	}
-
 	// Add package-level additional protos.
 	if library.Nodejs != nil {
 		protos = append(protos, library.Nodejs.AdditionalProtos...)
 	}
-
-	// Add API-level additional protos.
 	if api.Nodejs != nil {
 		protos = append(protos, api.Nodejs.AdditionalProtos...)
 	}
-
 	res.AdditionalProtos = unique(protos)
 	return res
 }
@@ -237,14 +226,27 @@ func unique(ss []string) []string {
 	return res
 }
 
-type buildGeneratorArgsParams struct {
-	generatorPath string
-	protoc        *config.Protoc
-	api           *config.API
-	library       *config.Library
-	googleapisDir string
-	stagingDir    string
-	nodejsAPI     *config.NodejsAPI
+func collectProtos(absGoogleapisDir string, nodejsAPI *config.NodejsAPI) ([]string, error) {
+	apiDir := filepath.Join(absGoogleapisDir, nodejsAPI.Path)
+	protos, err := proto.Gather(apiDir, nodejsAPI.Path)
+	if err != nil {
+		return nil, fmt.Errorf("failed to find protos: %w", err)
+	}
+	if len(protos) == 0 {
+		return nil, fmt.Errorf("%w: %s", errProtoNotFound, nodejsAPI.Path)
+	}
+	for index := range protos {
+		rel, err := filepath.Rel(absGoogleapisDir, protos[index])
+		if err != nil {
+			return nil, fmt.Errorf("failed to make path %s relative: %w", protos[index], err)
+		}
+		protos[index] = rel
+	}
+	protos = append(protos, nodejsAPI.AdditionalProtos...)
+	protos = slices.DeleteFunc(protos, func(p string) bool {
+		return slices.Contains(nodejsAPI.ExcludeProtos, p)
+	})
+	return protos, nil
 }
 
 // buildGeneratorArgs constructs the gapic-generator-typescript arguments,

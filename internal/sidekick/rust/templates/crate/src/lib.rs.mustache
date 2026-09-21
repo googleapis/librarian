@@ -110,10 +110,10 @@ pub use google_cloud_gax::error::Error;
 #[allow(rustdoc::redundant_explicit_links)]
 pub mod stub;
 
+/// Concrete implementations of client library traits.
 {{#Codec.QuickstartService}}
 {{> /templates/common/quickstart}}
 {{/Codec.QuickstartService}}
-/// Concrete implementations of this client library traits.
 pub mod client;
 
 /// Request builders.
@@ -141,6 +141,20 @@ pub(crate) mod transport;
 pub(crate) mod prost {
     include!("prost/includes.rs");
 }
+
+{{#Codec.PerServiceFeatures}}
+#[cfg(any(
+{{#Codec.GrpcServices}}
+    feature = "{{Codec.FeatureName}}",
+{{/Codec.GrpcServices}}
+))]
+{{/Codec.PerServiceFeatures}}
+#[doc(hidden)]
+#[allow(clippy::all)]
+#[allow(unused_imports)]
+#[allow(dead_code)]
+#[allow(missing_docs)]
+pub(crate) mod convert;
 {{/Codec.HasGrpc}}
 
 /// The default host used by the service.
@@ -190,6 +204,5 @@ pub(crate) use google_cloud_gax::response::Response;
 {{/Codec.HasServices}}
 {{#Codec.ExtraModules}}
 
-#[allow(missing_docs)]
 pub mod {{{.}}};
 {{/Codec.ExtraModules}}

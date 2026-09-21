@@ -54,12 +54,19 @@ let package = Package(
   {{#Codec.HasDependencies}}
   dependencies: [
     {{#Codec.Dependencies}}
-    {{#Path}}
+    {{#IsLocalOrRemote}}
+    localOrRemotePackage(
+      url: "{{URL}}",
+      path: "{{Path}}",
+      from: "{{Version}}"
+    ),
+    {{/IsLocalOrRemote}}
+    {{#IsLocalOnly}}
     .package(path: "{{Codec.MonorepoRoot}}/{{Path}}"),
-    {{/Path}}
-    {{^Path}}
+    {{/IsLocalOnly}}
+    {{#IsRemoteOnly}}
     .package(url: "{{URL}}", from: "{{Version}}"),
-    {{/Path}}
+    {{/IsRemoteOnly}}
     {{/Codec.Dependencies}}
   ],
   {{/Codec.HasDependencies}}
@@ -76,3 +83,13 @@ let package = Package(
     )
   ]
 )
+{{#Codec.HasLocalOrRemoteDependencies}}
+
+func localOrRemotePackage(url: String, path: String, from version: Version) -> Package.Dependency {
+  if let env = Context.environment["GOOGLE_CLOUD_SWIFT_LOCAL_DEPS"], !env.isEmpty {
+    let root = (env == "1" || env == "true") ? "\(Context.packageDirectory)/{{Codec.MonorepoRoot}}" : env
+    return .package(path: "\(root)/\(path)")
+  }
+  return .package(url: url, from: version)
+}
+{{/Codec.HasLocalOrRemoteDependencies}}

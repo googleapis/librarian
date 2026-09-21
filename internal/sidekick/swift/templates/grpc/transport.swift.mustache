@@ -24,30 +24,30 @@ limitations under the License.
 #if {{Codec.Name}}
 {{/Codec.IsGated}}
 import Foundation
-import GoogleCloudAuth
-@_spi(GoogleCloudInternal) import GoogleCloudGax
-@_spi(GoogleCloudInternal) import GoogleCloudGaxGRPC
+import GoogleAuth
+@_spi(GoogleCloudInternal) import GoogleGax
+@_spi(GoogleCloudInternal) import GoogleGaxGRPC
 {{#Codec.ServiceImports}}
 import {{.}}
 {{/Codec.ServiceImports}}
 {{#Codec.ModulePath}}
 internal import {{.}}
 {{/Codec.ModulePath}}
-internal import GoogleCloudWKTConvert
+internal import GoogleWKTConvert
 internal import SwiftProtobuf
 
 extension Clients {
   final class {{Codec.StubPrefix}}Transport: {{Codec.StubPrefix}}Stub {
-    let inner: GoogleCloudGaxGRPC._GRPCClient
+    let inner: GoogleGaxGRPC._GRPCClient
 
-    public init(_ options: GoogleCloudGax.ClientOptions = .init()) throws {
-      self.inner = try GoogleCloudGaxGRPC._GRPCClient(
+    public init(_ options: GoogleGax.ClientOptions = .init()) throws {
+      self.inner = try GoogleGaxGRPC._GRPCClient(
         from: options,
         withDefaultEndpoint: "https://{{DefaultHost}}"
       )
     }
 
-    public init(_ inner: GoogleCloudGaxGRPC._GRPCClient) {
+    public init(_ inner: GoogleGaxGRPC._GRPCClient) {
       self.inner = inner
     }
 
@@ -55,11 +55,11 @@ extension Clients {
 
     public func {{> /templates/common/method_signature/request_options}} {
       {{#Codec.HasRoutingParams}}
-      let routingParams = GoogleCloudGaxGRPC._RoutingMatcher.format([
+      let routingParams = GoogleGaxGRPC._RoutingMatcher.format([
         {{#Codec.RoutingParams}}
         ("{{RoutingKey}}",
           {{#Variants}}
-          GoogleCloudGaxGRPC._RoutingMatcher.value(
+          GoogleGaxGRPC._RoutingMatcher.value(
             {{{FieldAccessor}}},
             prefix: [{{#PrefixSegments}}{{{.}}}, {{/PrefixSegments}}],
             matching: [{{#MatchingSegments}}{{{.}}}, {{/MatchingSegments}}],

@@ -133,18 +133,6 @@ func newCodec(specificationFormat string, options map[string]string) (*codec, er
 				return nil, fmt.Errorf("cannot convert `include-streaming-methods` value %q to boolean: %w", definition, err)
 			}
 			codec.includeStreamingMethods = value
-		case key == "include-bidi-streaming-methods":
-			value, err := strconv.ParseBool(definition)
-			if err != nil {
-				return nil, fmt.Errorf("cannot convert `include-bidi-streaming-methods` value %q to boolean: %w", definition, err)
-			}
-			codec.includeBidiStreamingMethods = value
-		case key == "include-server-streaming-methods":
-			value, err := strconv.ParseBool(definition)
-			if err != nil {
-				return nil, fmt.Errorf("cannot convert `include-server-streaming-methods` value %q to boolean: %w", definition, err)
-			}
-			codec.includeServerStreamingMethods = value
 		case key == "per-service-features":
 			value, err := strconv.ParseBool(definition)
 			if err != nil {
@@ -159,6 +147,8 @@ func newCodec(specificationFormat string, options map[string]string) (*codec, er
 				return nil, fmt.Errorf("cannot convert `detailed-tracing-attributes` value %q to boolean: %w", definition, err)
 			}
 			codec.detailedTracingAttributes = value
+		case key == "idempotency-hook":
+			codec.idempotencyHook = definition
 		case key == "lro-stub-options":
 			value, err := strconv.ParseBool(definition)
 			if err != nil {
@@ -199,6 +189,8 @@ func newCodec(specificationFormat string, options map[string]string) (*codec, er
 				return nil, fmt.Errorf("cannot convert `generate-rpc-samples` value %q to boolean: %w", definition, err)
 			}
 			codec.generateRpcSamples = value
+		case key == "handwritten-surface":
+			codec.handwrittenSurface = splitOption(definition)
 		case key == "internal-builders":
 			value, err := strconv.ParseBool(definition)
 			if err != nil {
@@ -215,6 +207,13 @@ func newCodec(specificationFormat string, options map[string]string) (*codec, er
 			codec.includeRpcStatusConversion = value
 		case key == "grpc-client":
 			codec.grpcClient = definition
+		case key == "prost-path":
+			codec.prostPath = definition
+		case key == "default-transport":
+			if definition != "grpc" && definition != "http" {
+				return nil, fmt.Errorf("invalid `default-transport` value %q, expected \"grpc\" or \"http\"", definition)
+			}
+			codec.defaultTransport = definition
 		default:
 			return nil, fmt.Errorf("unknown Rust codec option %q", key)
 		}
@@ -325,12 +324,10 @@ type codec struct {
 	// If true, this includes gRPC-only methods, such as methods without HTTP
 	// annotations.
 	includeGrpcOnlyMethods bool
+	// If set, configures an opt-in method on the request struct to resolve and transform idempotency request options before dispatch.
+	idempotencyHook string
 	// If true, this includes gRPC streaming methods.
 	includeStreamingMethods bool
-	// If true, this includes gRPC bi-directional streaming methods.
-	includeBidiStreamingMethods bool
-	// If true, this includes gRPC server-side streaming methods.
-	includeServerStreamingMethods bool
 	// If true, google.rpc.Status conversion is generated in convert.rs.
 	includeRpcStatusConversion bool
 	// If true, the generator will produce per-client features.
@@ -371,12 +368,18 @@ type codec struct {
 	generateSetterSamples bool
 	// If true, the generator will produce reference documentation samples for functions that correspond to RPCs.
 	generateRpcSamples bool
+	// List of service IDs that have a handwritten surface, or ["true"] if all services do.
+	handwrittenSurface []string
 	// If true, the generator will set the internal builder's visibility to public (crate).
 	internalBuilders bool
 	// Overrides the default heuristically selected service for the package-level quickstart.
 	quickstartServiceOverride string
 	// The Rust type used for the inner gRPC client in generated transports.
 	grpcClient string
+	// The path to the generated prost module, e.g. "super::prost".
+	prostPath string
+	// The default transport protocol for unary methods ("grpc" or "http").
+	defaultTransport string
 }
 
 type systemParameter struct {
@@ -404,7 +407,7 @@ type packagez struct {
 	usedIf []string
 }
 
-func resolveUsedPackages(model *api.API, extraPackages []*packagez, hasStreaming bool) {
+func resolveUsedPackages(model *api.API, extraPackages []*packagez, hasGrpc bool) {
 	hasServices := len(model.Services) > 0
 	hasLROs := false
 	hasAutoPopulation := false
@@ -439,7 +442,7 @@ func resolveUsedPackages(model *api.API, extraPackages []*packagez, hasStreaming
 				pkg.used = true
 				break
 			}
-			if namedFeature == "streaming" && hasStreaming {
+			if (namedFeature == "streaming" || namedFeature == "grpc") && hasGrpc {
 				pkg.used = true
 				break
 			}
@@ -593,11 +596,11 @@ func (c *codec) baseFieldType(f *api.Field, model *api.API, sourceSpecificationP
 	}
 }
 
-func addQueryParameter(f *api.Field) string {
+func (c *codec) addQueryParameter(f *api.Field) string {
 	if f.IsOneOf {
-		return addQueryParameterOneOf(f)
+		return c.addQueryParameterOneOf(f)
 	}
-	fieldName := toSnake(f.Name)
+	fieldName := toSnake(c.FieldName(f))
 	switch f.Typez {
 	case api.TypezEnum:
 		if f.Optional || f.Repeated {
@@ -622,8 +625,8 @@ func addQueryParameter(f *api.Field) string {
 	}
 }
 
-func addQueryParameterOneOf(f *api.Field) string {
-	fieldName := toSnake(f.Name)
+func (c *codec) addQueryParameterOneOf(f *api.Field) string {
+	fieldName := toSnake(c.FieldName(f))
 	switch f.Typez {
 	case api.TypezEnum:
 		return fmt.Sprintf(`let builder = req.%s().iter().fold(builder, |builder, p| builder.query(&[("%s", p)]));`, fieldName, f.JSONName)
@@ -1365,13 +1368,13 @@ func (c *codec) tryFieldRustdocLink(id string, model *api.API, scope string) (st
 		return "", nil
 	}
 	for _, f := range m.Fields {
-		if f.Name == fieldName {
+		if f.Name == fieldName || c.FieldName(f) == fieldName {
 			if !f.IsOneOf {
 				p, err := c.fullyQualifiedMessageName(m, scope)
 				if err != nil {
 					return "", err
 				}
-				return fmt.Sprintf("%s::%s", p, toSnakeNoMangling(f.Name)), nil
+				return fmt.Sprintf("%s::%s", p, toSnakeNoMangling(c.FieldName(f))), nil
 			}
 			return c.tryOneOfRustdocLink(f, m, scope)
 		}
@@ -1606,21 +1609,31 @@ func (c *codec) OneOfEnumName(oneof *api.OneOf) string {
 	return toPascal(oneof.Name)
 }
 
+// FieldName returns the field name.
+func (c *codec) FieldName(field *api.Field) string {
+	if override, ok := c.nameOverrides[field.ID]; ok {
+		return override
+	}
+	return field.Name
+}
+
 func (c *codec) generateMethod(m *api.Method) bool {
 	// Ignore methods without HTTP annotations, we cannot generate working
 	// RPCs for them.
 	// TODO(#499) - switch to explicitly excluding such functions. Easier to
 	//     find them and fix them that way.
 	if m.ClientSideStreaming || m.ServerSideStreaming {
-		if m.ClientSideStreaming && m.ServerSideStreaming && c.includeBidiStreamingMethods {
+		if m.ClientSideStreaming && m.ServerSideStreaming {
 			return true
 		}
-		if !m.ClientSideStreaming && m.ServerSideStreaming && c.includeServerStreamingMethods {
+		if !m.ClientSideStreaming && m.ServerSideStreaming {
 			return true
 		}
-		return c.includeStreamingMethods
+		if m.ClientSideStreaming && !m.ServerSideStreaming {
+			return c.includeStreamingMethods || c.includeGrpcOnlyMethods
+		}
 	}
-	if c.includeGrpcOnlyMethods {
+	if c.includeGrpcOnlyMethods || c.defaultTransport == "grpc" {
 		return true
 	}
 	if m.PathInfo == nil || len(m.PathInfo.Bindings) == 0 {
@@ -1634,21 +1647,47 @@ func (c *codec) templateSupportsGrpc() bool {
 }
 
 func (c *codec) hasBidiStreaming(model *api.API) bool {
-	if !c.templateSupportsGrpc() || !c.includeBidiStreamingMethods {
-		return false
-	}
-	return slices.ContainsFunc(model.Services, (*api.Service).HasBidiStreaming)
+	return c.templateSupportsGrpc() && slices.ContainsFunc(model.Services, (*api.Service).HasBidiStreaming)
 }
 
 func (c *codec) hasServerStreaming(model *api.API) bool {
-	if !c.templateSupportsGrpc() || !c.includeServerStreamingMethods {
-		return false
-	}
-	return slices.ContainsFunc(model.Services, (*api.Service).HasServerSideStreaming)
+	return c.templateSupportsGrpc() && slices.ContainsFunc(model.Services, (*api.Service).HasServerSideStreaming)
 }
 
 func (c *codec) hasStreaming(model *api.API) bool {
 	return c.hasBidiStreaming(model) || c.hasServerStreaming(model)
+}
+
+func (c *codec) hasGrpc(model *api.API) bool {
+	if !c.templateSupportsGrpc() {
+		return false
+	}
+	if c.defaultTransport == "grpc" {
+		return len(model.Services) > 0
+	}
+	return c.hasStreaming(model)
+}
+
+func (c *codec) serviceHandwrittenSurface(serviceID string) bool {
+	if len(c.handwrittenSurface) == 1 && c.handwrittenSurface[0] == "true" {
+		return true
+	}
+	return slices.Contains(c.handwrittenSurface, serviceID)
+}
+
+func (c *codec) serviceHasVeneer(serviceID string) bool {
+	return c.serviceHandwrittenSurface(serviceID) || c.hasVeneer
+}
+
+func (c *codec) serviceInternalBuilders(serviceID string) bool {
+	return c.serviceHandwrittenSurface(serviceID) || c.internalBuilders
+}
+
+func (c *codec) serviceGenerateRpcSamples(serviceID string) bool {
+	if c.serviceHandwrittenSurface(serviceID) {
+		return false
+	}
+	return c.generateRpcSamples
 }
 
 // escapeKeyword is the list of Rust keywords and reserved words can be found

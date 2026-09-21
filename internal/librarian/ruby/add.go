@@ -34,6 +34,9 @@ var (
 // Add initializes a new Ruby library configuration.
 func Add(cfg *config.Config, lib *config.Library) (*config.Library, error) {
 	lib.Version = defaultVersion
+	// Ruby generation does not require copyright_year in librarian.yaml,
+	// so we reset it here to avoid redundancy in librarian.yaml.
+	lib.CopyrightYear = ""
 	newLib, err := addWrapper(cfg, lib)
 	if err != nil {
 		return nil, err
@@ -55,7 +58,7 @@ func addWrapper(cfg *config.Config, lib *config.Library) (*config.Library, error
 	if err != nil {
 		return nil, err
 	}
-	configureWrapper(lib, versionedAPI)
+	lib = configureWrapper(lib, versionedAPI)
 	return lib, nil
 }
 
@@ -73,9 +76,11 @@ func searchVersionedAPI(cfg *config.Config, apiPath string) (string, error) {
 }
 
 // configureWrapper configures the library to be a main client.
-func configureWrapper(lib *config.Library, versionedAPI string) {
+func configureWrapper(lib *config.Library, versionedAPI string) *config.Library {
 	lib.APIs = []*config.API{{Path: versionedAPI}}
-	lib.Ruby = &config.RubyPackage{
-		WrapperOf: []string{fmt.Sprintf("%s:0.0", filepath.Base(versionedAPI))},
+	if lib.Ruby == nil {
+		lib.Ruby = &config.RubyPackage{}
 	}
+	lib.Ruby.WrapperOf = []string{fmt.Sprintf("%s:0.0", filepath.Base(versionedAPI))}
+	return lib
 }

@@ -28,7 +28,8 @@ func Tidy(lib *config.Library) (*config.Library, error) {
 			return nil, err
 		}
 	}
-	if err := clearIfEmpty(&lib.Ruby); err != nil {
+	var err error
+	if lib.Ruby, err = yaml.ClearIfEmpty(lib.Ruby); err != nil {
 		return nil, err
 	}
 	return lib, nil
@@ -39,10 +40,11 @@ func tidyAPI(api *config.API) error {
 		return nil
 	}
 	api.Ruby.AdditionalProtos = tidyAdditionalProtos(api.Ruby.AdditionalProtos)
-	if err := clearIfEmpty(&api.Ruby.RubyCloudOpts); err != nil {
+	var err error
+	if api.Ruby.RubyCloudOpts, err = yaml.ClearIfEmpty(api.Ruby.RubyCloudOpts); err != nil {
 		return err
 	}
-	if err := clearIfEmpty(&api.Ruby); err != nil {
+	if api.Ruby, err = yaml.ClearIfEmpty(api.Ruby); err != nil {
 		return err
 	}
 	return nil
@@ -54,21 +56,4 @@ func tidyAdditionalProtos(protos []string) []string {
 	}
 	slices.Sort(protos)
 	return slices.Compact(protos)
-}
-
-// clearIfEmpty sets the value pointed to by v to its zero value if it serializes
-// to an empty YAML document. This is useful for removing empty optional fields
-// from the configuration.
-func clearIfEmpty[T any](v *T) error {
-	if v == nil {
-		return nil
-	}
-	empty, err := yaml.Empty(*v)
-	if err != nil {
-		return err
-	}
-	if empty {
-		*v = *new(T)
-	}
-	return nil
 }

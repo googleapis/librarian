@@ -21,8 +21,8 @@ limitations under the License.
 {{/Codec.BoilerPlate}}
 
 import Foundation
-import GoogleCloudAuth
-import GoogleCloudGax
+import GoogleAuth
+import GoogleGax
 {{#Codec.ServiceImports}}
 import {{.}}
 {{/Codec.ServiceImports}}
@@ -38,6 +38,14 @@ public protocol StorageControlProtocol {
   {{#Deprecated}}
   @available(*, deprecated)
   {{/Deprecated}}
+  func {{> /templates/common/method_signature/request}}
+
+  {{#Codec.DocLines}}
+  /// {{{.}}}
+  {{/Codec.DocLines}}
+  {{#Deprecated}}
+  @available(*, deprecated)
+  {{/Deprecated}}
   func {{> /templates/common/method_signature/request_options}}
   {{#Codec.Pagination}}
 
@@ -47,8 +55,34 @@ public protocol StorageControlProtocol {
   {{#Deprecated}}
   @available(*, deprecated)
   {{/Deprecated}}
+  func {{> /templates/common/method_signature/pagination}}
+
+  {{#Codec.DocLines}}
+  /// {{{.}}}
+  {{/Codec.DocLines}}
+  {{#Deprecated}}
+  @available(*, deprecated)
+  {{/Deprecated}}
   func {{> /templates/common/method_signature/pagination_options}}
   {{/Codec.Pagination}}
+  {{#Codec.LRO}}
+
+  {{#Codec.DocLines}}
+  /// {{{.}}}
+  {{/Codec.DocLines}}
+  {{#Deprecated}}
+  @available(*, deprecated)
+  {{/Deprecated}}
+  func {{> /templates/common/method_signature/lro}}
+
+  {{#Codec.DocLines}}
+  /// {{{.}}}
+  {{/Codec.DocLines}}
+  {{#Deprecated}}
+  @available(*, deprecated)
+  {{/Deprecated}}
+  func {{> /templates/common/method_signature/lro_options}}
+  {{/Codec.LRO}}
   {{/Codec.Methods}}
   {{/Codec.Storage.Services}}
   {{#Codec.Control.Services}}
@@ -60,6 +94,14 @@ public protocol StorageControlProtocol {
   {{#Deprecated}}
   @available(*, deprecated)
   {{/Deprecated}}
+  func {{> /templates/common/method_signature/request}}
+
+  {{#Codec.DocLines}}
+  /// {{{.}}}
+  {{/Codec.DocLines}}
+  {{#Deprecated}}
+  @available(*, deprecated)
+  {{/Deprecated}}
   func {{> /templates/common/method_signature/request_options}}
   {{#Codec.Pagination}}
 
@@ -69,8 +111,150 @@ public protocol StorageControlProtocol {
   {{#Deprecated}}
   @available(*, deprecated)
   {{/Deprecated}}
+  func {{> /templates/common/method_signature/pagination}}
+
+  {{#Codec.DocLines}}
+  /// {{{.}}}
+  {{/Codec.DocLines}}
+  {{#Deprecated}}
+  @available(*, deprecated)
+  {{/Deprecated}}
   func {{> /templates/common/method_signature/pagination_options}}
   {{/Codec.Pagination}}
+  {{#Codec.LRO}}
+
+  {{#Codec.DocLines}}
+  /// {{{.}}}
+  {{/Codec.DocLines}}
+  {{#Deprecated}}
+  @available(*, deprecated)
+  {{/Deprecated}}
+  func {{> /templates/common/method_signature/lro}}
+
+  {{#Codec.DocLines}}
+  /// {{{.}}}
+  {{/Codec.DocLines}}
+  {{#Deprecated}}
+  @available(*, deprecated)
+  {{/Deprecated}}
+  func {{> /templates/common/method_signature/lro_options}}
+  {{/Codec.LRO}}
   {{/Codec.Methods}}
   {{/Codec.Control.Services}}
 }
+
+extension StorageControlProtocol {
+  {{#Codec.Storage.Services}}
+  {{#Codec.Methods}}
+
+  {{#Deprecated}}
+  @available(*, deprecated)
+  {{/Deprecated}}
+  public func {{> /templates/common/method_signature/request}} {
+    try await self.{{Codec.Name}}(request: request, options: .init())
+  }
+
+  {{#Deprecated}}
+  @available(*, deprecated)
+  {{/Deprecated}}
+  public func {{> /templates/common/method_signature/request_options}} {
+    throw GoogleGax.RequestError.unimplemented
+  }
+  {{#Codec.Pagination}}
+
+  {{#Deprecated}}
+  @available(*, deprecated)
+  {{/Deprecated}}
+  public func {{> /templates/common/method_signature/pagination}} {
+    try self.{{Codec.Name}}(byItem: byItem, options: .init())
+  }
+
+  {{#Deprecated}}
+  @available(*, deprecated)
+  {{/Deprecated}}
+  public func {{> /templates/common/method_signature/pagination_options}} {
+    let listRpc = { (token: Swift.String) async throws -> {{Codec.ReturnType}} in
+      throw GoogleGax.RequestError.unimplemented
+    }
+    return GoogleGax.PaginatedResponseSequence(listRpc: listRpc)
+  }
+  {{/Codec.Pagination}}
+  {{#Codec.LRO}}
+
+  {{#Deprecated}}
+  @available(*, deprecated)
+  {{/Deprecated}}
+  public func {{> /templates/common/method_signature/lro}} {
+    try await self.{{Codec.Name}}(withPolling: withPolling, options: .init())
+  }
+
+  {{#Deprecated}}
+  @available(*, deprecated)
+  {{/Deprecated}}
+  public func {{> /templates/common/method_signature/lro_options}} {
+    let poll = { () async throws -> GoogleGax._PollableOperationImpl<{{Codec.LRO.ReturnType}}>.State in
+      throw GoogleGax.RequestError.unimplemented
+    }
+    return GoogleGax._PollableOperationImpl(initialState: .init(done: false, result: nil), poll: poll)
+  }
+  {{/Codec.LRO}}
+  {{/Codec.Methods}}
+  {{/Codec.Storage.Services}}
+  {{#Codec.Control.Services}}
+  {{#Codec.Methods}}
+
+  {{#Deprecated}}
+  @available(*, deprecated)
+  {{/Deprecated}}
+  public func {{> /templates/common/method_signature/request}} {
+    try await self.{{Codec.Name}}(request: request, options: .init())
+  }
+
+  {{#Deprecated}}
+  @available(*, deprecated)
+  {{/Deprecated}}
+  public func {{> /templates/common/method_signature/request_options}} {
+    throw GoogleGax.RequestError.unimplemented
+  }
+  {{#Codec.Pagination}}
+
+  {{#Deprecated}}
+  @available(*, deprecated)
+  {{/Deprecated}}
+  public func {{> /templates/common/method_signature/pagination}} {
+    try self.{{Codec.Name}}(byItem: byItem, options: .init())
+  }
+
+  {{#Deprecated}}
+  @available(*, deprecated)
+  {{/Deprecated}}
+  public func {{> /templates/common/method_signature/pagination_options}} {
+    let listRpc = { (token: Swift.String) async throws -> {{Codec.ReturnType}} in
+      throw GoogleGax.RequestError.unimplemented
+    }
+    return GoogleGax.PaginatedResponseSequence(listRpc: listRpc)
+  }
+  {{/Codec.Pagination}}
+  {{#Codec.LRO}}
+
+  {{#Deprecated}}
+  @available(*, deprecated)
+  {{/Deprecated}}
+  public func {{> /templates/common/method_signature/lro}} {
+    try await self.{{Codec.Name}}(withPolling: withPolling, options: .init())
+  }
+
+  {{#Deprecated}}
+  @available(*, deprecated)
+  {{/Deprecated}}
+  public func {{> /templates/common/method_signature/lro_options}} {
+    let poll = { () async throws -> GoogleGax._PollableOperationImpl<{{Codec.LRO.ReturnType}}>.State in
+      throw GoogleGax.RequestError.unimplemented
+    }
+    return GoogleGax._PollableOperationImpl(initialState: .init(done: false, result: nil), poll: poll)
+  }
+  {{/Codec.LRO}}
+  {{/Codec.Methods}}
+  {{/Codec.Control.Services}}
+}
+

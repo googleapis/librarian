@@ -38,7 +38,7 @@ impl std::convert::From<google_cloud_bigquery_v2::model::GetQueryResultsResponse
         Self{
             {{#Codec.CompleteQueryMetadataFields}}
             {{#GetQueryResultsResponse}}
-            {{FieldName}}: resp.{{FieldName}},
+            {{FieldName}}: resp.{{GapicFieldName}},
             {{/GetQueryResultsResponse}}
             {{/Codec.CompleteQueryMetadataFields}}
             ..Default::default()
@@ -51,7 +51,7 @@ impl std::convert::From<google_cloud_bigquery_v2::model::QueryResponse> for {{Co
         Self{
             {{#Codec.CompleteQueryMetadataFields}}
             {{#QueryResponse}}
-            {{FieldName}}: resp.{{FieldName}},
+            {{FieldName}}: resp.{{GapicFieldName}},
             {{/QueryResponse}}
             {{/Codec.CompleteQueryMetadataFields}}
             ..Default::default()

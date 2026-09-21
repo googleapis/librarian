@@ -47,7 +47,6 @@ func TestRepoMetadata_write(t *testing.T) {
 		RestDocumentation:    "https://example.com/rest",
 		RpcDocumentation:     "https://example.com/rpc",
 		RecommendedPackage:   "com.google.cloud.secretmanager.v1",
-		MinJavaVersion:       8,
 	}
 	tmpDir := t.TempDir()
 	err := want.write(tmpDir)

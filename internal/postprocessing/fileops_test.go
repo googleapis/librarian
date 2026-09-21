@@ -785,7 +785,7 @@ func TestApplyMethodOperations(t *testing.T) {
 			},
 			ops: []config.MethodOperation{
 				{Path: "*.java", Action: "delete", FuncName: "public void toDelete()"},
-				{Path: "*.java", Action: "duplicate", FuncName: "public void newFunc()", NewName: "newFuncCopy"},
+				{Path: "*.java", Action: "copy_and_rename", FuncName: "public void newFunc()", NewName: "newFuncCopy"},
 				{Path: "*.java", Action: "deprecate", FuncName: "public void newFuncCopy()", DeprecationMessage: "Use newFunc instead."},
 			},
 			wantFiles: map[string]string{
@@ -845,6 +845,12 @@ func TestApplyMethodOperations_Error(t *testing.T) {
 			name:    "unsupported action",
 			files:   map[string]string{"Test.java": "public class Test {}"},
 			ops:     []config.MethodOperation{{Path: "*.java", Action: "invalid_action", FuncName: "public void foo()"}},
+			wantErr: errUnsupportedMethodAction,
+		},
+		{
+			name:    "removed duplicate action",
+			files:   map[string]string{"Test.java": "public class Test {}"},
+			ops:     []config.MethodOperation{{Path: "*.java", Action: "duplicate", FuncName: "public void foo()", NewName: "bar"}},
 			wantErr: errUnsupportedMethodAction,
 		},
 	} {

@@ -28,16 +28,10 @@ const (
 )
 
 type messageAnnotations struct {
-	Name                string
-	DocLines            []string
-	Model               *modelAnnotations
-	TypeURL             string
-	CustomSerialization bool
-
-	// HasConvertedFields is true if any field or oneof in the message emits code in
-	// toProto(). This prevents the Swift compiler warning "variable 'proto' was never mutated"
-	// for empty messages by emitting "let" instead of "var" in convert_message.mustache.
-	HasConvertedFields bool
+	Name     string
+	DocLines []string
+	Model    *modelAnnotations
+	TypeURL  string
 
 	IsPaginatedResponse bool
 	PageableItemField   string
@@ -83,12 +77,16 @@ type messageAnnotations struct {
 func (ann *messageAnnotations) ConvertImports() []string {
 	importMap := map[string]bool{}
 	for _, dep := range ann.DependsOn {
-		if dep.Name == "GoogleCloudGax" || dep.Name == ann.ModulePath {
+		if dep.Name == "GoogleGax" || dep.Name == ann.ModulePath {
 			continue
 		}
-		importMap["import "+dep.Name] = true
-		if dep.Name == "GoogleCloudWKT" {
-			importMap["internal import GoogleCloudWKTConvert"] = true
+		if dep.SpiAttribute != "" {
+			importMap[fmt.Sprintf("@_spi(%s) import %s", dep.SpiAttribute, dep.Name)] = true
+		} else {
+			importMap["@_spi(GoogleCloudInternal) import "+dep.Name] = true
+		}
+		if dep.Name == "GoogleWKT" {
+			importMap["internal import GoogleWKTConvert"] = true
 		}
 	}
 	var result []string
@@ -151,23 +149,20 @@ func (c *codec) annotateMessage(message *api.Message, model *modelAnnotations) e
 	if len(message.Fields) != 0 {
 		sampleField = camelCase(message.Fields[0].Name)
 	}
-	hasConvertedFields := len(message.Fields) > 0
 	parameterTypeName, err := c.messageTypeName(message)
 	if err != nil {
 		return err
 	}
 	annotations := &messageAnnotations{
-		Name:                pascalCase(message.Name),
-		DocLines:            docLines,
-		Model:               model,
-		TypeURL:             typeURLPrefix + strings.TrimPrefix(message.ID, "."),
-		CustomSerialization: len(message.OneOfs) > 0,
-		HasConvertedFields:  hasConvertedFields,
-		DependsOn:           map[string]*Dependency{},
-		SampleField:         sampleField,
-		ParameterTypeName:   parameterTypeName,
-		ProtoTypeName:       c.protoMessageTypeName(message),
-		ModulePath:          c.ModulePath,
+		Name:              pascalCase(message.Name),
+		DocLines:          docLines,
+		Model:             model,
+		TypeURL:           typeURLPrefix + strings.TrimPrefix(message.ID, "."),
+		DependsOn:         map[string]*Dependency{},
+		SampleField:       sampleField,
+		ParameterTypeName: parameterTypeName,
+		ProtoTypeName:     c.protoMessageTypeName(message),
+		ModulePath:        c.ModulePath,
 	}
 	if message.ServicePlaceholder {
 		annotations.PlaceholderName = pascalCase(message.Name + "Client")
@@ -181,7 +176,7 @@ func (c *codec) annotateMessage(message *api.Message, model *modelAnnotations) e
 	if dep != nil {
 		annotations.DependsOn[dep.Name] = dep
 	}
-	// All messages require the well known types for GoogleCloudWKT._AnyPackable.
+	// All messages require the well known types for GoogleWKT._AnyPackable.
 	wktDep, err := c.addApiPackageDependency(wellKnownProtobufPackage)
 	if err != nil {
 		return err
@@ -202,16 +197,6 @@ func (c *codec) annotateMessage(message *api.Message, model *modelAnnotations) e
 		fieldCodec, err := c.annotateField(field, model)
 		if err != nil {
 			return err
-		}
-		if fieldCodec.Name != field.JSONName || fieldCodec.UrlSafeValue {
-			annotations.CustomSerialization = true
-		}
-		if field.Map && !fieldCodec.IsStringKeyed() {
-			// In ProtoJSON map fields with non-string keys need to be
-			// serialized as JSON objects with key fields. In the generated
-			// Swift code, that requires a custom implementation of the
-			// `Decodable` and `Encodable` protocol.
-			annotations.CustomSerialization = true
 		}
 		if fieldCodec.PackageName != "" && fieldCodec.PackageName != c.Model.PackageName {
 			dep, err := c.addApiPackageDependency(fieldCodec.PackageName)

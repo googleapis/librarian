@@ -86,7 +86,7 @@ func Generate(ctx context.Context, cfg *config.Config, library *config.Library, 
 	if err := sidekickrust.Generate(ctx, model, library.Output, modelConfig); err != nil {
 		return err
 	}
-	if rootTypeIDs := streamingRootTypeIDs(model, library); len(rootTypeIDs) > 0 {
+	if rootTypeIDs := sidekickrust.GrpcRootTypeIDs(model); len(rootTypeIDs) > 0 {
 		if err := generateProstHybrid(ctx, model, rootTypeIDs, library, library.Output, modelConfig); err != nil {
 			return err
 		}

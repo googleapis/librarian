@@ -79,13 +79,20 @@ type fieldAnnotations struct {
 	// PrimitiveFieldType is the raw Swift type name without any decorators or boxing wrappers (e.g. `Node`).
 	//
 	// This differs from `BaseFieldType` for recursive message fields: for recursive fields,
-	// `BaseFieldType` is boxed as `GoogleCloudWKT.Recursive<Node>` for struct property declarations,
+	// `BaseFieldType` is boxed as `GoogleWKT.Recursive<Node>` for struct property declarations,
 	// whereas `PrimitiveFieldType` remains the raw unwrapped type `Node` so that conversions can call
 	// `WktPackage.Recursive(value: try Node(proto: proto.childNode))`.
 	PrimitiveFieldType string
 
 	// ValueField holds the value field of a map, for inspecting whether the value is an object or enum.
 	ValueField *api.Field
+
+	// LROAnyConverter names the converter to use for this `Any` field, or is
+	// empty to convert it generically.
+	//
+	// Only the `Any` fields of `google.longrunning.Operation` set this. See
+	// `annotateLROAnyFields`.
+	LROAnyConverter string
 }
 
 // DecodingStyle defines an enumeration for decoding fields.

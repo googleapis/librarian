@@ -308,31 +308,31 @@ func TestMatchLibrary(t *testing.T) {
 		{
 			name:    "match by name",
 			targets: []string{"google-cloud-wkt"},
-			lib:     &config.Library{Name: "google-cloud-wkt", Output: "packages/wkt/Sources/GoogleCloudWkt/generated"},
+			lib:     &config.Library{Name: "google-cloud-wkt", Output: "packages/wkt/Sources/GoogleWKT/generated"},
 			pkgDir:  "packages/wkt",
 			want:    true,
 		},
 		{
 			name:    "match by relative path",
 			targets: []string{"packages/wkt"},
-			lib:     &config.Library{Name: "google-cloud-wkt", Output: "packages/wkt/Sources/GoogleCloudWkt/generated"},
+			lib:     &config.Library{Name: "google-cloud-wkt", Output: "packages/wkt/Sources/GoogleWKT/generated"},
 			pkgDir:  "packages/wkt",
 			want:    true,
 		},
 		{
 			name:    "match by raw output",
-			targets: []string{"packages/wkt/Sources/GoogleCloudWkt/generated"},
-			lib:     &config.Library{Name: "google-cloud-wkt", Output: "packages/wkt/Sources/GoogleCloudWkt/generated"},
+			targets: []string{"packages/wkt/Sources/GoogleWKT/generated"},
+			lib:     &config.Library{Name: "google-cloud-wkt", Output: "packages/wkt/Sources/GoogleWKT/generated"},
 			pkgDir:  "packages/wkt",
 			want:    true,
 		},
 		{
 			name:    "match by swift override name",
-			targets: []string{"GoogleCloudWkt"},
+			targets: []string{"GoogleWKT"},
 			lib: &config.Library{
 				Name:   "google-cloud-wkt",
-				Output: "packages/wkt/Sources/GoogleCloudWkt/generated",
-				Swift:  &config.SwiftPackage{LibraryNameOverride: "GoogleCloudWkt"},
+				Output: "packages/wkt/Sources/GoogleWKT/generated",
+				Swift:  &config.SwiftPackage{LibraryNameOverride: "GoogleWKT"},
 			},
 			pkgDir: "packages/wkt",
 			want:   true,
@@ -340,36 +340,116 @@ func TestMatchLibrary(t *testing.T) {
 		{
 			name:    "match by path with trailing slash",
 			targets: []string{"packages/wkt/"},
-			lib:     &config.Library{Name: "google-cloud-wkt", Output: "packages/wkt/Sources/GoogleCloudWkt/generated"},
+			lib:     &config.Library{Name: "google-cloud-wkt", Output: "packages/wkt/Sources/GoogleWKT/generated"},
 			pkgDir:  "packages/wkt",
 			want:    true,
 		},
 		{
 			name:    "match by path with leading dot-slash",
 			targets: []string{"./packages/wkt"},
-			lib:     &config.Library{Name: "google-cloud-wkt", Output: "packages/wkt/Sources/GoogleCloudWkt/generated"},
+			lib:     &config.Library{Name: "google-cloud-wkt", Output: "packages/wkt/Sources/GoogleWKT/generated"},
 			pkgDir:  "packages/wkt",
 			want:    true,
 		},
 		{
 			name:    "match by base directory name",
 			targets: []string{"wkt"},
-			lib:     &config.Library{Name: "google-cloud-wkt", Output: "packages/wkt/Sources/GoogleCloudWkt/generated"},
+			lib:     &config.Library{Name: "google-cloud-wkt", Output: "packages/wkt/Sources/GoogleWKT/generated"},
 			pkgDir:  "packages/wkt",
 			want:    true,
 		},
 		{
 			name:    "no match",
 			targets: []string{"packages/auth"},
-			lib:     &config.Library{Name: "google-cloud-wkt", Output: "packages/wkt/Sources/GoogleCloudWkt/generated"},
+			lib:     &config.Library{Name: "google-cloud-wkt", Output: "packages/wkt/Sources/GoogleWKT/generated"},
 			pkgDir:  "packages/wkt",
 			want:    false,
+		},
+		{
+			name:    "match derived output by target name",
+			targets: []string{"google-rpc"},
+			lib:     &config.Library{Name: "google-rpc"},
+			pkgDir:  "generated/swift-google-rpc",
+			want:    true,
+		},
+		{
+			name:    "match derived output by relative path",
+			targets: []string{"generated/swift-google-rpc"},
+			lib:     &config.Library{Name: "google-rpc"},
+			pkgDir:  "generated/swift-google-rpc",
+			want:    true,
+		},
+		{
+			name:    "match derived output by repo name",
+			targets: []string{"swift-google-rpc"},
+			lib:     &config.Library{Name: "google-rpc"},
+			pkgDir:  "generated/swift-google-rpc",
+			want:    true,
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			got := matchLibrary(tc.targets, tc.lib, tc.pkgDir)
 			if got != tc.want {
 				t.Errorf("matchLibrary(%v, %v, %q) = %v, want %v", tc.targets, tc.lib.Name, tc.pkgDir, got, tc.want)
+			}
+		})
+	}
+}
+
+func TestLibraryOutput(t *testing.T) {
+	defaults := &config.Default{
+		Output: "generated/",
+	}
+	for _, test := range []struct {
+		name     string
+		lib      *config.Library
+		defaults *config.Default
+		want     string
+	}{
+		{
+			name: "explicit output",
+			lib: &config.Library{
+				Name:   "google-cloud-storage",
+				Output: "packages/storage",
+			},
+			defaults: defaults,
+			want:     "packages/storage",
+		},
+		{
+			name: "from apis path",
+			lib: &config.Library{
+				Name: "google-cloud-vision",
+				APIs: []*config.API{
+					{Path: "google/cloud/vision/v1"},
+				},
+			},
+			defaults: defaults,
+			want:     "generated/swift-google-cloud-vision-v1",
+		},
+		{
+			name: "from library name fallback",
+			lib: &config.Library{
+				Name: "google-rpc",
+			},
+			defaults: defaults,
+			want:     "generated/swift-google-rpc",
+		},
+		{
+			name: "mixed library returns empty",
+			lib: &config.Library{
+				Name: "mixed-lib",
+				Swift: &config.SwiftPackage{
+					Modules: []*config.SwiftModule{{Output: "Tests/generated", APIPath: "google/storage/v2"}},
+				},
+			},
+			defaults: defaults,
+			want:     "",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := libraryOutput(test.lib, test.defaults)
+			if got != test.want {
+				t.Errorf("libraryOutput(%+v, %+v) = %q, want %q", test.lib, test.defaults, got, test.want)
 			}
 		})
 	}

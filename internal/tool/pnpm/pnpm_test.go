@@ -235,7 +235,9 @@ func TestEnv(t *testing.T) {
 			envMap[parts[0]] = parts[1]
 		}
 	}
-
+	if got := envMap["COREPACK_ENABLE_PROJECT_SPEC"]; got != "0" {
+		t.Errorf("COREPACK_ENABLE_PROJECT_SPEC = %q, want %q", got, "0")
+	}
 	if got := envMap["PNPM_HOME"]; got != binDir {
 		t.Errorf("PNPM_HOME = %q, want %q", got, binDir)
 	}

@@ -21,9 +21,9 @@ limitations under the License.
 {{/Codec.BoilerPlate}}
 
 import Foundation
-import GoogleCloudAuth
-@_spi(GoogleCloudInternal) import GoogleCloudGax
-@_spi(GoogleCloudInternal) import GoogleCloudGaxGRPC
+import GoogleAuth
+@_spi(GoogleCloudInternal) import GoogleGax
+@_spi(GoogleCloudInternal) import GoogleGaxGRPC
 {{#Codec.ServiceImports}}
 import {{.}}
 {{/Codec.ServiceImports}}
@@ -33,10 +33,16 @@ import {{.}}
 public final class StorageControlClient: StorageControlProtocol, Sendable {
   private let storage: any Clients.StorageStub
   private let control: any Clients.StorageControlStub
+  let pollingErrorPolicy: any GoogleGax.PollingErrorPolicy
+  let pollingBackoffPolicy: any GoogleGax.BackoffPolicy
 
   /// Creates a new `StorageControlClient` using the given client options.
-  public init(_ options: GoogleCloudGax.ClientOptions = .init()) throws {
-    let sharedGrpcClient = try GoogleCloudGaxGRPC._GRPCClient(
+  public init(_ options: GoogleGax.ClientOptions = .init()) throws {
+    var options = options
+    if options.retryPolicy == nil {
+      options.retryPolicy = StorageBaseRetryPolicy.defaultPolicy
+    }
+    let sharedGrpcClient = try GoogleGaxGRPC._GRPCClient(
       from: options,
       withDefaultEndpoint: "https://{{Codec.DefaultHost}}"
     )
@@ -55,12 +61,20 @@ public final class StorageControlClient: StorageControlProtocol, Sendable {
 
     self.storage = storageStub
     self.control = controlStub
+    self.pollingErrorPolicy = options.pollingErrorPolicy
+    self.pollingBackoffPolicy = options.pollingBackoffPolicy
   }
 
   /// Creates a `StorageControlClient` with custom stubs (useful for testing and mocking).
-  init(storage: any Clients.StorageStub, control: any Clients.StorageControlStub) {
+  init(
+    storage: any Clients.StorageStub,
+    control: any Clients.StorageControlStub,
+    options: GoogleGax.ClientOptions = .init()
+  ) {
     self.storage = storage
     self.control = control
+    self.pollingErrorPolicy = options.pollingErrorPolicy
+    self.pollingBackoffPolicy = options.pollingBackoffPolicy
   }
   {{#Codec.Storage.Services}}
   {{#Codec.Methods}}
@@ -88,9 +102,40 @@ public final class StorageControlClient: StorageControlProtocol, Sendable {
       request.pageToken = token
       return try await self.{{Codec.Name}}(request: request, options: options)
     }
-    return GoogleCloudGax.PaginatedResponseSequence(listRpc: listRpc)
+    return GoogleGax.PaginatedResponseSequence(listRpc: listRpc)
   }
   {{/Codec.Pagination}}
+  {{#Codec.LRO}}
+
+  {{#Codec.DocLines}}
+  /// {{{.}}}
+  {{/Codec.DocLines}}
+  {{#Deprecated}}
+  @available(*, deprecated)
+  {{/Deprecated}}
+  public func {{> /templates/common/method_signature/lro_options}} {
+    let extractStatus = { (op: {{Codec.ReturnType}}) throws -> GoogleGax._PollableOperationImpl<{{Codec.LRO.ReturnType}}>.State in
+      {{#Codec.LRO.ResponseIsEmpty}}
+      return try op._extractStatusEmpty()
+      {{/Codec.LRO.ResponseIsEmpty}}
+      {{^Codec.LRO.ResponseIsEmpty}}
+      return try op._extractStatus({{Codec.LRO.ReturnType}}.self)
+      {{/Codec.LRO.ResponseIsEmpty}}
+    }
+    let rawOp = try await self.{{Codec.Name}}(request: withPolling, options: options)
+    let initialState = try extractStatus(rawOp)
+    let poll = { () async throws -> GoogleGax._PollableOperationImpl<{{Codec.LRO.ReturnType}}>.State in
+      let op = try await self.getOperation(request: .init().with { $0.name = rawOp.name }, options: options)
+      return try extractStatus(op)
+    }
+    return GoogleGax._PollableOperationImpl(
+      initialState: initialState,
+      polling: options.pollingErrorPolicy ?? self.pollingErrorPolicy,
+      backoff: options.pollingBackoffPolicy ?? self.pollingBackoffPolicy,
+      poll: poll
+    )
+  }
+  {{/Codec.LRO}}
   {{/Codec.Methods}}
   {{/Codec.Storage.Services}}
   {{#Codec.Control.Services}}
@@ -119,9 +164,40 @@ public final class StorageControlClient: StorageControlProtocol, Sendable {
       request.pageToken = token
       return try await self.{{Codec.Name}}(request: request, options: options)
     }
-    return GoogleCloudGax.PaginatedResponseSequence(listRpc: listRpc)
+    return GoogleGax.PaginatedResponseSequence(listRpc: listRpc)
   }
   {{/Codec.Pagination}}
+  {{#Codec.LRO}}
+
+  {{#Codec.DocLines}}
+  /// {{{.}}}
+  {{/Codec.DocLines}}
+  {{#Deprecated}}
+  @available(*, deprecated)
+  {{/Deprecated}}
+  public func {{> /templates/common/method_signature/lro_options}} {
+    let extractStatus = { (op: {{Codec.ReturnType}}) throws -> GoogleGax._PollableOperationImpl<{{Codec.LRO.ReturnType}}>.State in
+      {{#Codec.LRO.ResponseIsEmpty}}
+      return try op._extractStatusEmpty()
+      {{/Codec.LRO.ResponseIsEmpty}}
+      {{^Codec.LRO.ResponseIsEmpty}}
+      return try op._extractStatus({{Codec.LRO.ReturnType}}.self)
+      {{/Codec.LRO.ResponseIsEmpty}}
+    }
+    let rawOp = try await self.{{Codec.Name}}(request: withPolling, options: options)
+    let initialState = try extractStatus(rawOp)
+    let poll = { () async throws -> GoogleGax._PollableOperationImpl<{{Codec.LRO.ReturnType}}>.State in
+      let op = try await self.getOperation(request: .init().with { $0.name = rawOp.name }, options: options)
+      return try extractStatus(op)
+    }
+    return GoogleGax._PollableOperationImpl(
+      initialState: initialState,
+      polling: options.pollingErrorPolicy ?? self.pollingErrorPolicy,
+      backoff: options.pollingBackoffPolicy ?? self.pollingBackoffPolicy,
+      poll: poll
+    )
+  }
+  {{/Codec.LRO}}
   {{/Codec.Methods}}
   {{/Codec.Control.Services}}
 }

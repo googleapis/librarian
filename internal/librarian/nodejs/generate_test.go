@@ -1624,11 +1624,212 @@ func TestResolveNodejsAPI(t *testing.T) {
 				AdditionalProtos:    []string{"pkg.proto", "dup.proto", "api.proto"},
 			},
 		},
+		{
+			name:    "exclude protos preserved",
+			library: &config.Library{},
+			api: &config.API{
+				Path: "google/cloud/secretmanager/v1",
+				Nodejs: &config.NodejsAPI{
+					ExcludeProtos: []string{"exclude1.proto", "exclude2.proto"},
+				},
+			},
+			want: &config.NodejsAPI{
+				Path:             "google/cloud/secretmanager/v1",
+				AdditionalProtos: []string{cloudCommonResourcesProto},
+				ExcludeProtos:    []string{"exclude1.proto", "exclude2.proto"},
+			},
+		},
+		{
+			name:    "mixins preserved",
+			library: &config.Library{},
+			api: &config.API{
+				Path: "google/cloud/secretmanager/v1",
+				Nodejs: &config.NodejsAPI{
+					Mixins: "none",
+				},
+			},
+			want: &config.NodejsAPI{
+				Path:             "google/cloud/secretmanager/v1",
+				AdditionalProtos: []string{cloudCommonResourcesProto},
+				Mixins:           "none",
+			},
+		},
+		{
+			name: "package-level and api-level with all fields",
+			library: &config.Library{
+				Nodejs: &config.NodejsPackage{
+					AdditionalProtos: []string{"pkg.proto"},
+				},
+			},
+			api: &config.API{
+				Path: "google/cloud/compute/v1",
+				Nodejs: &config.NodejsAPI{
+					DIREGAPIC:           true,
+					Mixins:              "none",
+					OmitCommonResources: true,
+					AdditionalProtos:    []string{"api.proto"},
+					ExcludeProtos:       []string{"exclude.proto"},
+				},
+			},
+			want: &config.NodejsAPI{
+				Path:                "google/cloud/compute/v1",
+				DIREGAPIC:           true,
+				Mixins:              "none",
+				OmitCommonResources: true,
+				AdditionalProtos:    []string{"pkg.proto", "api.proto"},
+				ExcludeProtos:       []string{"exclude.proto"},
+			},
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			got := resolveNodejsAPI(test.library, test.api)
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestCollectProtos(t *testing.T) {
+	t.Parallel()
+	for _, test := range []struct {
+		name       string
+		setupFiles []string
+		nodejsAPI  *config.NodejsAPI
+		want       []string
+	}{
+		{
+			name: "collects protos from api directory",
+			setupFiles: []string{
+				"google/cloud/secretmanager/v1/resources.proto",
+				"google/cloud/secretmanager/v1/service.proto",
+			},
+			nodejsAPI: &config.NodejsAPI{
+				Path: "google/cloud/secretmanager/v1",
+			},
+			want: []string{
+				"google/cloud/secretmanager/v1/resources.proto",
+				"google/cloud/secretmanager/v1/service.proto",
+			},
+		},
+		{
+			name: "collects nested protos from subdirectories",
+			setupFiles: []string{
+				"google/cloud/aiplatform/v1/schema/io_format.proto",
+				"google/cloud/aiplatform/v1/service.proto",
+			},
+			nodejsAPI: &config.NodejsAPI{
+				Path: "google/cloud/aiplatform/v1",
+			},
+			want: []string{
+				"google/cloud/aiplatform/v1/schema/io_format.proto",
+				"google/cloud/aiplatform/v1/service.proto",
+			},
+		},
+		{
+			name: "appends additional protos",
+			setupFiles: []string{
+				"google/cloud/secretmanager/v1/service.proto",
+			},
+			nodejsAPI: &config.NodejsAPI{
+				Path:             "google/cloud/secretmanager/v1",
+				AdditionalProtos: []string{"google/cloud/common_resources.proto"},
+			},
+			want: []string{
+				"google/cloud/secretmanager/v1/service.proto",
+				"google/cloud/common_resources.proto",
+			},
+		},
+		{
+			name: "excludes protos from api directory",
+			setupFiles: []string{
+				"google/cloud/secretmanager/v1/resources.proto",
+				"google/cloud/secretmanager/v1/service.proto",
+			},
+			nodejsAPI: &config.NodejsAPI{
+				Path:          "google/cloud/secretmanager/v1",
+				ExcludeProtos: []string{"google/cloud/secretmanager/v1/resources.proto"},
+			},
+			want: []string{
+				"google/cloud/secretmanager/v1/service.proto",
+			},
+		},
+		{
+			name: "excludes non-matching proto is no-op",
+			setupFiles: []string{
+				"google/cloud/secretmanager/v1/service.proto",
+			},
+			nodejsAPI: &config.NodejsAPI{
+				Path:          "google/cloud/secretmanager/v1",
+				ExcludeProtos: []string{"nonexistent.proto"},
+			},
+			want: []string{
+				"google/cloud/secretmanager/v1/service.proto",
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			googleapisDir := t.TempDir()
+			for _, file := range test.setupFiles {
+				path := filepath.Join(googleapisDir, file)
+				if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+					t.Fatal(err)
+				}
+				if err := os.WriteFile(path, []byte("syntax = \"proto3\";"), 0o644); err != nil {
+					t.Fatal(err)
+				}
+			}
+			got, err := collectProtos(googleapisDir, test.nodejsAPI)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestCollectProtos_Error(t *testing.T) {
+	t.Parallel()
+	for _, test := range []struct {
+		name       string
+		setupFiles []string
+		nodejsAPI  *config.NodejsAPI
+		wantErr    error
+	}{
+		{
+			name: "directory not found",
+			nodejsAPI: &config.NodejsAPI{
+				Path: "google/cloud/nonexistent/v1",
+			},
+			wantErr: fs.ErrNotExist,
+		},
+		{
+			name:       "no proto files found",
+			setupFiles: []string{"google/cloud/secretmanager/v1/BUILD.bazel"},
+			nodejsAPI: &config.NodejsAPI{
+				Path: "google/cloud/secretmanager/v1",
+			},
+			wantErr: errProtoNotFound,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			googleapisDir := t.TempDir()
+			for _, file := range test.setupFiles {
+				path := filepath.Join(googleapisDir, file)
+				if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+					t.Fatal(err)
+				}
+				if err := os.WriteFile(path, []byte(""), 0o644); err != nil {
+					t.Fatal(err)
+				}
+			}
+			_, err := collectProtos(googleapisDir, test.nodejsAPI)
+			if !errors.Is(err, test.wantErr) {
+				t.Errorf("collectProtos() error = %v, wantErr = %v", err, test.wantErr)
 			}
 		})
 	}

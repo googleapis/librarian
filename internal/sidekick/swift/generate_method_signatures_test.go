@@ -105,7 +105,7 @@ func TestGenerateService_MethodSignatures(t *testing.T) {
 					want: `public func lroMethod(
   name: Swift.String,
   optionalField: Swift.String?,
-) async throws -> any GoogleCloudGax.PollableOperation<LROResult>
+) async throws -> any GoogleGax.PollableOperation<LROResult>
  {
     let request = Request().with {
       $0.name = name
@@ -119,7 +119,7 @@ func TestGenerateService_MethodSignatures(t *testing.T) {
 					want: `public func lroMethod(
   name: Swift.String,
   normalField: Swift.String,
-) async throws -> any GoogleCloudGax.PollableOperation<LROResult>
+) async throws -> any GoogleGax.PollableOperation<LROResult>
  {
     let request = Request().with {
       $0.name = name
@@ -138,7 +138,7 @@ func TestGenerateService_MethodSignatures(t *testing.T) {
 					want: `public func lroDiscoveryMethod(
   name: Swift.String,
   optionalField: Swift.String?,
-) async throws -> any GoogleCloudGax.PollableOperation<GoogleCloudLongrunningV1.GetOperationRequest>
+) async throws -> any GoogleGax.PollableOperation<GoogleCloudLongrunningV1.GetOperationRequest>
  {
     let request = Request().with {
       $0.name = name
@@ -152,7 +152,7 @@ func TestGenerateService_MethodSignatures(t *testing.T) {
 					want: `public func lroDiscoveryMethod(
   name: Swift.String,
   normalField: Swift.String,
-) async throws -> any GoogleCloudGax.PollableOperation<GoogleCloudLongrunningV1.GetOperationRequest>
+) async throws -> any GoogleGax.PollableOperation<GoogleCloudLongrunningV1.GetOperationRequest>
  {
     let request = Request().with {
       $0.name = name
@@ -167,8 +167,8 @@ func TestGenerateService_MethodSignatures(t *testing.T) {
 			outDir := t.TempDir()
 			model := newModelWithSignatures(t)
 			swiftCfg := swiftConfig(t, []config.SwiftDependency{
-				{Name: "GoogleCloudGax", RequiredByServices: true},
-				{Name: "GoogleCloudAuth", RequiredByServices: true},
+				{Name: "GoogleGax", RequiredByServices: true},
+				{Name: "GoogleAuth", RequiredByServices: true},
 				{ApiPackage: "google.longrunning", Name: "GoogleCloudLongrunningV1"},
 				{ApiPackage: "google.rpc", Name: "GoogleRpc"},
 			})

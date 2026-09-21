@@ -57,19 +57,65 @@ func TestServiceAnnotationsDetailedTracing(t *testing.T) {
 }
 
 func TestServiceAnnotationsHasVeneer(t *testing.T) {
-	model := serviceAnnotationsModel()
-	service := model.Service(".test.v1.ResourceService")
-	if service == nil {
-		t.Fatal("cannot find .test.v1.ResourceService")
-	}
-	codec := newTestCodec(t, libconfig.SpecProtobuf, "", map[string]string{
-		"has-veneer": "true",
-	})
-	annotateModel(model, codec)
-	serviceAnn := service.Codec.(*serviceAnnotations)
+	for _, test := range []struct {
+		name         string
+		hasVeneer    string
+		wantService0 bool
+		wantService1 bool
+	}{
+		{
+			name:         "all services via true",
+			hasVeneer:    "true",
+			wantService0: true,
+			wantService1: true,
+		},
+		{
+			name:         "false",
+			hasVeneer:    "false",
+			wantService0: false,
+			wantService1: false,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			model := newTestAnnotateModelAPI()
+			service0 := model.Service("..Service0")
+			if service0 == nil {
+				t.Fatal("cannot find ..Service0")
+			}
+			service1 := model.Service("..Service1")
+			if service1 == nil {
+				t.Fatal("cannot find ..Service1")
+			}
 
-	if !serviceAnn.HasVeneer {
-		t.Errorf("expected `has-veneer` to be set on the service.")
+			options := map[string]string{}
+			if test.hasVeneer != "" {
+				options["has-veneer"] = test.hasVeneer
+			}
+			codec := newTestCodec(t, libconfig.SpecProtobuf, "", options)
+			if _, err := annotateModel(model, codec); err != nil {
+				t.Fatal(err)
+			}
+
+			ann0 := service0.Codec.(*serviceAnnotations)
+			if ann0.HasVeneer != test.wantService0 {
+				t.Errorf("Service0 HasVeneer = %v, want %v", ann0.HasVeneer, test.wantService0)
+			}
+			for _, m := range ann0.Methods {
+				if mAnn := m.Codec.(*methodAnnotation); mAnn.HasVeneer != test.wantService0 {
+					t.Errorf("method %s HasVeneer = %v, want %v", m.Name, mAnn.HasVeneer, test.wantService0)
+				}
+			}
+
+			ann1 := service1.Codec.(*serviceAnnotations)
+			if ann1.HasVeneer != test.wantService1 {
+				t.Errorf("Service1 HasVeneer = %v, want %v", ann1.HasVeneer, test.wantService1)
+			}
+			for _, m := range ann1.Methods {
+				if mAnn := m.Codec.(*methodAnnotation); mAnn.HasVeneer != test.wantService1 {
+					t.Errorf("method %s HasVeneer = %v, want %v", m.Name, mAnn.HasVeneer, test.wantService1)
+				}
+			}
+		})
 	}
 }
 
@@ -458,73 +504,28 @@ func TestServiceAnnotationsStreaming(t *testing.T) {
 		wantStreaming bool
 	}{
 		{
-			name:    "bidi service with option enabled",
-			service: bidiService,
-			options: map[string]string{
-				"include-bidi-streaming-methods": "true",
-			},
+			name:          "bidi service",
+			service:       bidiService,
+			options:       map[string]string{},
 			wantBidi:      true,
 			wantServer:    false,
 			wantStreaming: true,
 		},
 		{
-			name:          "bidi service with option omitted",
-			service:       bidiService,
-			options:       map[string]string{},
-			wantBidi:      false,
-			wantServer:    false,
-			wantStreaming: false,
-		},
-		{
-			name:    "server streaming service with option enabled",
-			service: serverService,
-			options: map[string]string{
-				"include-server-streaming-methods": "true",
-			},
-			wantBidi:      false,
-			wantServer:    true,
-			wantStreaming: true,
-		},
-		{
-			name:          "server streaming service with option omitted",
+			name:          "server streaming service",
 			service:       serverService,
 			options:       map[string]string{},
 			wantBidi:      false,
-			wantServer:    false,
-			wantStreaming: false,
-		},
-		{
-			name:    "non-streaming service with options enabled",
-			service: unaryService,
-			options: map[string]string{
-				"include-bidi-streaming-methods":   "true",
-				"include-server-streaming-methods": "true",
-			},
-			wantBidi:      false,
-			wantServer:    false,
-			wantStreaming: false,
-		},
-		{
-			name:    "both options enabled with bidi service",
-			service: bidiService,
-			options: map[string]string{
-				"include-bidi-streaming-methods":   "true",
-				"include-server-streaming-methods": "true",
-			},
-			wantBidi:      true,
-			wantServer:    false,
-			wantStreaming: true,
-		},
-		{
-			name:    "both options enabled with server streaming service",
-			service: serverService,
-			options: map[string]string{
-				"include-bidi-streaming-methods":   "true",
-				"include-server-streaming-methods": "true",
-			},
-			wantBidi:      false,
 			wantServer:    true,
 			wantStreaming: true,
+		},
+		{
+			name:          "non-streaming service",
+			service:       unaryService,
+			options:       map[string]string{},
+			wantBidi:      false,
+			wantServer:    false,
+			wantStreaming: false,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
@@ -562,39 +563,30 @@ func TestServiceAnnotationsMethodKinds(t *testing.T) {
 		wantBidiStreamBuilder bool
 	}{
 		{
-			name:    "bidi only with bidi enabled",
-			methods: []*api.Method{bidiMethod},
-			options: map[string]string{
-				"include-bidi-streaming-methods": "true",
-			},
+			name:                  "bidi only",
+			methods:               []*api.Method{bidiMethod},
+			options:               map[string]string{},
 			wantRequestBuilder:    false,
 			wantBidiStreamBuilder: true,
 		},
 		{
-			name:    "bidi and unary with bidi enabled",
-			methods: []*api.Method{bidiMethod, unaryMethod},
-			options: map[string]string{
-				"include-bidi-streaming-methods": "true",
-			},
+			name:                  "bidi and unary",
+			methods:               []*api.Method{bidiMethod, unaryMethod},
+			options:               map[string]string{},
 			wantRequestBuilder:    true,
 			wantBidiStreamBuilder: true,
 		},
 		{
-			name:    "server streaming only with server enabled",
-			methods: []*api.Method{serverMethod},
-			options: map[string]string{
-				"include-server-streaming-methods": "true",
-			},
+			name:                  "server streaming only",
+			methods:               []*api.Method{serverMethod},
+			options:               map[string]string{},
 			wantRequestBuilder:    true,
 			wantBidiStreamBuilder: false,
 		},
 		{
-			name:    "server streaming and bidi with both enabled",
-			methods: []*api.Method{serverMethod, bidiMethod},
-			options: map[string]string{
-				"include-bidi-streaming-methods":   "true",
-				"include-server-streaming-methods": "true",
-			},
+			name:                  "server streaming and bidi",
+			methods:               []*api.Method{serverMethod, bidiMethod},
+			options:               map[string]string{},
 			wantRequestBuilder:    true,
 			wantBidiStreamBuilder: true,
 		},
@@ -641,11 +633,9 @@ func TestServiceAnnotationsClassification(t *testing.T) {
 		isHybrid   bool
 	}{
 		{
-			name:    "pure gRPC service with only streaming methods",
-			methods: []*api.Method{bidiMethod},
-			options: map[string]string{
-				"include-bidi-streaming-methods": "true",
-			},
+			name:       "pure gRPC service with only streaming methods",
+			methods:    []*api.Method{bidiMethod},
+			options:    map[string]string{},
 			isPureGrpc: true,
 			isPureHttp: false,
 			isHybrid:   false,
@@ -659,20 +649,30 @@ func TestServiceAnnotationsClassification(t *testing.T) {
 			isHybrid:   false,
 		},
 		{
-			name:    "hybrid service with unary and streaming methods",
-			methods: []*api.Method{unaryMethod, bidiMethod},
-			options: map[string]string{
-				"include-bidi-streaming-methods": "true",
-			},
+			name:       "hybrid service with unary and streaming methods",
+			methods:    []*api.Method{unaryMethod, bidiMethod},
+			options:    map[string]string{},
 			isPureGrpc: false,
 			isPureHttp: false,
 			isHybrid:   true,
 		},
 		{
-			name:       "disabled streaming method does not mark service as gRPC",
-			methods:    []*api.Method{bidiMethod},
-			options:    map[string]string{},
-			isPureGrpc: false,
+			name:    "default transport grpc marks unary service as pure gRPC",
+			methods: []*api.Method{unaryMethod},
+			options: map[string]string{
+				"default-transport": "grpc",
+			},
+			isPureGrpc: true,
+			isPureHttp: false,
+			isHybrid:   false,
+		},
+		{
+			name:    "default transport grpc with streaming is pure gRPC",
+			methods: []*api.Method{unaryMethod, bidiMethod},
+			options: map[string]string{
+				"default-transport": "grpc",
+			},
+			isPureGrpc: true,
 			isPureHttp: false,
 			isHybrid:   false,
 		},

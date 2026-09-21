@@ -919,3 +919,102 @@ func TestTidy_SkipGenerate(t *testing.T) {
 		t.Errorf("expected skip_generate to be true for mixed library, got false")
 	}
 }
+
+func TestTidy_PreservesComments(t *testing.T) {
+	for _, test := range []struct {
+		name string
+		cfg  *config.Config
+	}{
+		{
+			name: "single-line comments",
+			cfg: &config.Config{
+				Language: config.LanguageRust,
+				Sources: &config.Sources{
+					Comment: "sources comment",
+					Googleapis: &config.Source{
+						Commit: "94ccedca05acb0bb60780789e93371c9e4100ddc",
+						SHA256: "fff40946e897d96bbdccd566cb993048a87029b7e08eacee3fe99eac792721ba",
+					},
+				},
+				Tools: &config.Tools{
+					Comment: "tools comment",
+					Cargo: []*config.CargoTool{
+						{
+							Name:    "taplo",
+							Version: "1.0",
+						},
+					},
+				},
+				Default: &config.Default{
+					Output: "src/generated",
+				},
+				Libraries: []*config.Library{
+					{
+						Name:    "google-cloud-storage",
+						Version: "1.0.0",
+						Comment: "special comment about storage config",
+						APIs: []*config.API{
+							{
+								Path: "google/cloud/storage/v1",
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "multiline long comments",
+			cfg: &config.Config{
+				Language: config.LanguageRust,
+				Sources: &config.Sources{
+					Comment: "Line 1: sources comment explaining repository choices in detail.\nLine 2: additional context on why this specific commit is pinned and how updates are managed.\n",
+					Googleapis: &config.Source{
+						Commit: "94ccedca05acb0bb60780789e93371c9e4100ddc",
+						SHA256: "fff40946e897d96bbdccd566cb993048a87029b7e08eacee3fe99eac792721ba",
+					},
+				},
+				Tools: &config.Tools{
+					Comment: `Line 1: tools comment explaining required toolchain versions and rationale.
+Line 2: more details regarding tool versions and installation procedures.`,
+					Cargo: []*config.CargoTool{
+						{
+							Name:    "taplo",
+							Version: "1.0",
+						},
+					},
+				},
+				Default: &config.Default{
+					Output: "src/generated",
+				},
+				Libraries: []*config.Library{
+					{
+						Name:    "google-cloud-storage",
+						Version: "1.0.0",
+						Comment: `Line 1: this library requires a long multiline comment to describe its complex configuration requirements in full detail.
+Line 2: additional instructions and context for this client library across multiple lines of documentation.
+Line 3: third line with UTF-8 characters: café, résumé, åäö, 中文.`,
+						APIs: []*config.API{
+							{
+								Path: "google/cloud/storage/v1",
+							},
+						},
+					},
+				},
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			tempDir := t.TempDir()
+			if err := RunTidyOnConfig(t.Context(), tempDir, test.cfg); err != nil {
+				t.Fatal(err)
+			}
+			got, err := yaml.Read[config.Config](filepath.Join(tempDir, config.LibrarianYAML))
+			if err != nil {
+				t.Fatal(err)
+			}
+			if diff := cmp.Diff(test.cfg, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}

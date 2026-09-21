@@ -243,6 +243,7 @@ func TestFillDefaults_Rust(t *testing.T) {
 			DisabledRustdocWarnings: []string{"broken_intra_doc_links"},
 			GenerateSetterSamples:   "true",
 			GenerateRpcSamples:      "true",
+			AllowGrpcAnyFields:      []string{".google.test.Any.field"},
 		},
 	}
 	for _, test := range []struct {
@@ -267,6 +268,7 @@ func TestFillDefaults_Rust(t *testing.T) {
 						DisabledRustdocWarnings: []string{"broken_intra_doc_links"},
 						GenerateSetterSamples:   "true",
 						GenerateRpcSamples:      "true",
+						AllowGrpcAnyFields:      []string{".google.test.Any.field"},
 					},
 					Modules: []*config.RustModule{
 						{
@@ -301,6 +303,7 @@ func TestFillDefaults_Rust(t *testing.T) {
 						DisabledRustdocWarnings: []string{"broken_intra_doc_links"},
 						GenerateSetterSamples:   "true",
 						GenerateRpcSamples:      "true",
+						AllowGrpcAnyFields:      []string{".google.test.Any.field"},
 					},
 				},
 			},
@@ -328,6 +331,7 @@ func TestFillDefaults_Rust(t *testing.T) {
 						DisabledRustdocWarnings: []string{"broken_intra_doc_links"},
 						GenerateSetterSamples:   "false",
 						GenerateRpcSamples:      "false",
+						AllowGrpcAnyFields:      []string{".google.test.Any.field"},
 					},
 				},
 			},
@@ -351,6 +355,7 @@ func TestFillDefaults_Rust(t *testing.T) {
 						DisabledRustdocWarnings: []string{"custom_warning"},
 						GenerateSetterSamples:   "true",
 						GenerateRpcSamples:      "true",
+						AllowGrpcAnyFields:      []string{".google.test.Any.field"},
 					},
 				},
 			},
@@ -377,6 +382,7 @@ func TestFillDefaults_Rust(t *testing.T) {
 						DisabledRustdocWarnings: []string{"broken_intra_doc_links"},
 						GenerateSetterSamples:   "true",
 						GenerateRpcSamples:      "true",
+						AllowGrpcAnyFields:      []string{".google.test.Any.field"},
 					},
 					Modules: []*config.RustModule{
 						{
@@ -1062,7 +1068,7 @@ func TestResolvePreview(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got := ResolvePreview(test.lib, test.language)
+			got := resolvePreview(test.lib, test.language)
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
@@ -1089,10 +1095,10 @@ func TestResolvePreview_NoMutation(t *testing.T) {
 
 	want := *lib
 
-	_ = ResolvePreview(lib, config.LanguageGo)
+	_ = resolvePreview(lib, config.LanguageGo)
 
 	if diff := cmp.Diff(want, *lib); diff != "" {
-		t.Errorf("ResolvePreview mutated the input library (-want +got):\n%s", diff)
+		t.Errorf("resolvePreview mutated the input library (-want +got):\n%s", diff)
 	}
 }
 
@@ -1406,7 +1412,6 @@ func TestMergeJava(t *testing.T) {
 				GroupID:                      "com.new",
 				IssueTrackerOverride:         "issue",
 				LibraryTypeOverride:          "type",
-				MinJavaVersion:               11,
 				NamePrettyOverride:           "pretty",
 				ProductDocumentationOverride: "prod-doc",
 				RecommendedPackage:           "rec",
@@ -1430,7 +1435,6 @@ func TestMergeJava(t *testing.T) {
 				GroupID:                      "com.new",
 				IssueTrackerOverride:         "issue",
 				LibraryTypeOverride:          "type",
-				MinJavaVersion:               11,
 				NamePrettyOverride:           "pretty",
 				ProductDocumentationOverride: "prod-doc",
 				RecommendedPackage:           "rec",
@@ -1601,6 +1605,7 @@ func TestMergeRust(t *testing.T) {
 					GenerateRpcSamples:        "true",
 					DetailedTracingAttributes: &detailedTracing,
 					ResourceNameHeuristic:     &resourceHeuristic,
+					AllowGrpcAnyFields:        []string{".any.field"},
 				},
 				Modules:                   []*config.RustModule{{Output: "out"}},
 				PerServiceFeatures:        true,
@@ -1632,6 +1637,7 @@ func TestMergeRust(t *testing.T) {
 					GenerateRpcSamples:        "true",
 					DetailedTracingAttributes: &detailedTracing,
 					ResourceNameHeuristic:     &resourceHeuristic,
+					AllowGrpcAnyFields:        []string{".any.field"},
 				},
 				Modules:                   []*config.RustModule{{Output: "out"}},
 				PerServiceFeatures:        true,
@@ -1704,41 +1710,6 @@ func TestMergeRust(t *testing.T) {
 	}
 }
 
-func TestMergePHP(t *testing.T) {
-	for _, test := range []struct {
-		name string
-		dst  *config.PHPPackage
-		src  *config.PHPPackage
-		want *config.PHPPackage
-	}{
-		{
-			name: "nil src returns dst",
-			dst:  &config.PHPPackage{},
-			src:  nil,
-			want: &config.PHPPackage{},
-		},
-		{
-			name: "nil dst returns src",
-			dst:  nil,
-			src:  &config.PHPPackage{},
-			want: &config.PHPPackage{},
-		},
-		{
-			name: "both non-nil",
-			dst:  &config.PHPPackage{},
-			src:  &config.PHPPackage{},
-			want: &config.PHPPackage{},
-		},
-	} {
-		t.Run(test.name, func(t *testing.T) {
-			got := mergePHP(test.dst, test.src)
-			if diff := cmp.Diff(test.want, got); diff != "" {
-				t.Errorf("mismatch (-want +got):\n%s", diff)
-			}
-		})
-	}
-}
-
 func TestMergeRuby(t *testing.T) {
 	for _, test := range []struct {
 		name string
@@ -1771,17 +1742,26 @@ func TestMergeRuby(t *testing.T) {
 			want: &config.RubyPackage{DeleteGenerationOutputPaths: []string{"b"}},
 		},
 		{
+			name: "merges toys tasks",
+			dst:  &config.RubyPackage{ToysTasks: []string{"a"}},
+			src:  &config.RubyPackage{ToysTasks: []string{"b"}},
+			want: &config.RubyPackage{ToysTasks: []string{"b"}},
+		},
+		{
 			name: "merges all fields",
 			dst: &config.RubyPackage{
 				DeleteGenerationOutputPaths: []string{"a"},
+				ToysTasks:                   []string{"a"},
 				WrapperOf:                   []string{"a"},
 			},
 			src: &config.RubyPackage{
 				DeleteGenerationOutputPaths: []string{"b"},
+				ToysTasks:                   []string{"b"},
 				WrapperOf:                   []string{"b"},
 			},
 			want: &config.RubyPackage{
 				DeleteGenerationOutputPaths: []string{"b"},
+				ToysTasks:                   []string{"b"},
 				WrapperOf:                   []string{"b"},
 			},
 		},

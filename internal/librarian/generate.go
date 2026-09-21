@@ -119,11 +119,11 @@ func runGenerate(ctx context.Context, cfg *config.Config, all bool, libraryName 
 			return err
 		}
 		if !all && isPreview {
-			prepared = ResolvePreview(prepared, cfg.Language)
+			prepared = resolvePreview(prepared, cfg.Language)
 		} else if all && lib.Preview != nil {
 			// Generate both stable and preview libraries by first appending the
 			// resolved library config for the preview variant.
-			libraries = append(libraries, ResolvePreview(prepared, cfg.Language))
+			libraries = append(libraries, resolvePreview(prepared, cfg.Language))
 		}
 		libraries = append(libraries, prepared)
 	}
@@ -310,6 +310,9 @@ func generateLibraries(ctx context.Context, cfg *config.Config, libraries []*con
 		// Run the generation in parallel.
 		g, gctx := errgroup.WithContext(ctx)
 		g.SetLimit(runtime.NumCPU())
+		g.Go(func() error {
+			return writeDocIndex(cfg, src.Googleapis)
+		})
 		for _, library := range libraries {
 			g.Go(func() error {
 				if err := rust.Generate(gctx, cfg, library, src); err != nil {
@@ -341,6 +344,9 @@ func generateLibraries(ctx context.Context, cfg *config.Config, libraries []*con
 	case config.LanguageSwift:
 		g, gctx := errgroup.WithContext(ctx)
 		g.SetLimit(runtime.NumCPU())
+		g.Go(func() error {
+			return writeDocIndex(cfg, src.Googleapis)
+		})
 		for _, library := range libraries {
 			g.Go(func() error {
 				if err := swift.Generate(gctx, cfg, library, src); err != nil {

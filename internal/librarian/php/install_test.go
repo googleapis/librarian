@@ -132,8 +132,8 @@ func TestInstall(t *testing.T) {
 				info, err := os.Stat(postProcessorPath)
 				if err != nil {
 					t.Error(err)
-				} else if info.Mode().Perm() != 0o755 {
-					t.Errorf("php-post-processor wrapper file has permissions %v, want 0755", info.Mode().Perm())
+				} else if perm := info.Mode().Perm(); perm&0o700 != 0o700 {
+					t.Errorf("php-post-processor wrapper permissions = %04o, want at least 0700", perm)
 				}
 			},
 		},

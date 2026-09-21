@@ -47,12 +47,14 @@ const (
 
 type modelAnnotations struct {
 	PackageName                string
+	PackageModuleName          string
 	PackageVersion             string
 	ReleaseLevel               string
 	PackageNamespace           string
 	RequiredPackages           []string
 	ExternPackages             []string
 	HasLROs                    bool
+	ProstPath                  string
 	IncludeRpcStatusConversion bool
 	CopyrightYear              string
 	BoilerPlate                []string
@@ -168,6 +170,25 @@ func (m *modelAnnotations) GrpcServices() []*api.Service {
 	})
 }
 
+// GrpcRootTypeIDs returns the root message type IDs for all generated gRPC methods in the model.
+func GrpcRootTypeIDs(model *api.API) []string {
+	var rootTypeIDs []string
+	for _, s := range model.Services {
+		for _, m := range s.Methods {
+			if ann, ok := m.Codec.(*methodAnnotation); ok && ann.IsGrpc {
+				if m.InputTypeID != "" {
+					rootTypeIDs = append(rootTypeIDs, m.InputTypeID)
+				}
+				if m.OutputTypeID != "" {
+					rootTypeIDs = append(rootTypeIDs, m.OutputTypeID)
+				}
+			}
+		}
+	}
+	slices.Sort(rootTypeIDs)
+	return slices.Compact(rootTypeIDs)
+}
+
 // annotateModel creates a struct used as input for Mustache templates.
 // Fields and methods defined in this struct directly correspond to Mustache
 // tags. For example, the Mustache tag {{#Services}} uses the
@@ -175,7 +196,7 @@ func (m *modelAnnotations) GrpcServices() []*api.Service {
 func annotateModel(model *api.API, codec *codec) (*modelAnnotations, error) {
 	codec.hasServices = len(model.Services) > 0
 
-	resolveUsedPackages(model, codec.extraPackages, codec.hasStreaming(model))
+	resolveUsedPackages(model, codec.extraPackages, codec.hasGrpc(model))
 	// Annotate enums and messages that we intend to generate. In the
 	// process we discover the external dependencies and trim the list of
 	// packages used by this API.
@@ -257,14 +278,18 @@ func annotateModel(model *api.API, codec *codec) (*modelAnnotations, error) {
 	// are populated for convert-prost generation in hybrid crates.
 	// Override ProstRelativeName after all method annotations so ToProto and FromProto
 	// resolve to crate::prost::<pkg>::<TypeName>.
+	prostPrefix := "crate::prost::"
+	if codec.prostPath != "" {
+		prostPrefix = codec.prostPath + "::"
+	}
 	for _, e := range model.ExternalEnums {
 		if ann, ok := e.Codec.(*enumAnnotation); ok {
-			ann.ProstRelativeName = "crate::prost::" + packageToModuleName(e.Package) + "::" + prostEnumRelativePath(e)
+			ann.ProstRelativeName = prostPrefix + packageToModuleName(e.Package) + "::" + prostEnumRelativePath(e)
 		}
 	}
 	for _, m := range model.ExternalMessages {
 		if ann, ok := m.Codec.(*messageAnnotation); ok {
-			ann.ProstRelativeName = "crate::prost::" + packageToModuleName(m.Package) + "::" + prostMessageRelativePath(m)
+			ann.ProstRelativeName = prostPrefix + packageToModuleName(m.Package) + "::" + prostMessageRelativePath(m)
 		}
 	}
 
@@ -339,12 +364,14 @@ func annotateModel(model *api.API, codec *codec) (*modelAnnotations, error) {
 
 	ann := &modelAnnotations{
 		PackageName:                codec.packageName(model),
+		PackageModuleName:          packageToModuleName(model.PackageName),
 		PackageNamespace:           codec.rootModuleName(model),
 		PackageVersion:             codec.version,
 		ReleaseLevel:               codec.releaseLevel,
 		RequiredPackages:           requiredPackages(codec.extraPackages),
 		ExternPackages:             externPackages(codec.extraPackages),
 		HasLROs:                    hasLROs,
+		ProstPath:                  codec.prostPath,
 		IncludeRpcStatusConversion: includeRpcStatusConversion,
 		CopyrightYear:              codec.generationYear,
 		BoilerPlate: append(license.HeaderBulk(),

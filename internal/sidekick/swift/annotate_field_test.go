@@ -69,22 +69,19 @@ func TestAnnotateField(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			field := &api.Field{
-				Name:          "secret_payload",
-				Documentation: "The secret version payload.",
-				ID:            ".test.SecretVersion.secret_payload",
-				Typez:         api.TypezString,
-				Optional:      test.optional,
-				Repeated:      test.repeated,
+			field := api.NewTestField("secret_payload").
+				WithType(api.TypezString)
+			field.Documentation = "The secret version payload."
+			if test.optional {
+				field.WithOptional()
 			}
-			msg := &api.Message{
-				Name:    "Secret",
-				ID:      ".test.SecretVersion",
-				Package: "test",
-				Fields:  []*api.Field{field},
+			if test.repeated {
+				field.WithRepeated()
 			}
-			field.Parent = msg
-			model := api.NewTestAPI([]*api.Message{msg}, []*api.Enum{}, []*api.Service{})
+			msg := api.NewTestMessage("Secret").
+				WithID(".test.SecretVersion").
+				WithFields(field)
+			model := api.NewTestAPI([]*api.Message{msg}, nil, nil)
 			codec := newTestCodec(t, model, nil)
 			if err := codec.annotateModel(); err != nil {
 				t.Fatal(err)
@@ -98,15 +95,13 @@ func TestAnnotateField(t *testing.T) {
 }
 
 func TestAnnotateField_Discovery(t *testing.T) {
-	mapMessage := &api.Message{
-		Name:  "map<string, bytes>",
-		ID:    "$map<string, bytes>",
-		IsMap: true,
-		Fields: []*api.Field{
-			{Name: "key", JSONName: "key", Typez: api.TypezString},
-			{Name: "value", JSONName: "value", Typez: api.TypezBytes},
-		},
-	}
+	mapMessage := api.NewTestMessage("map<string, bytes>").
+		WithID("$map<string, bytes>").
+		WithFields(
+			api.NewTestField("key").WithType(api.TypezString),
+			api.NewTestField("value").WithType(api.TypezBytes),
+		)
+	mapMessage.IsMap = true
 
 	for _, test := range []struct {
 		name  string
@@ -114,12 +109,8 @@ func TestAnnotateField_Discovery(t *testing.T) {
 		want  *fieldAnnotations
 	}{
 		{
-			name: "regular",
-			input: &api.Field{
-				Name:  "name",
-				ID:    ".test.Message.name",
-				Typez: api.TypezBytes,
-			},
+			name:  "regular",
+			input: api.NewTestField("name").WithType(api.TypezBytes),
 			want: &fieldAnnotations{
 				FieldType:            "Foundation.Data",
 				BaseFieldType:        "Foundation.Data",
@@ -130,12 +121,8 @@ func TestAnnotateField_Discovery(t *testing.T) {
 			},
 		},
 		{
-			name: "regular string",
-			input: &api.Field{
-				Name:  "name",
-				ID:    ".test.Message.name",
-				Typez: api.TypezString,
-			},
+			name:  "regular string",
+			input: api.NewTestField("name").WithType(api.TypezString),
 			want: &fieldAnnotations{
 				FieldType:            "Swift.String",
 				BaseFieldType:        "Swift.String",
@@ -145,13 +132,8 @@ func TestAnnotateField_Discovery(t *testing.T) {
 			},
 		},
 		{
-			name: "optional",
-			input: &api.Field{
-				Name:     "name",
-				ID:       ".test.Message.name",
-				Optional: true,
-				Typez:    api.TypezBytes,
-			},
+			name:  "optional",
+			input: api.NewTestField("name").WithType(api.TypezBytes).WithOptional(),
 			want: &fieldAnnotations{
 				FieldType:            "Foundation.Data?",
 				BaseFieldType:        "Foundation.Data",
@@ -163,13 +145,8 @@ func TestAnnotateField_Discovery(t *testing.T) {
 			},
 		},
 		{
-			name: "repeated",
-			input: &api.Field{
-				Name:     "name",
-				ID:       ".test.Message.name",
-				Repeated: true,
-				Typez:    api.TypezBytes,
-			},
+			name:  "repeated",
+			input: api.NewTestField("name").WithType(api.TypezBytes).WithRepeated(),
 			want: &fieldAnnotations{
 				FieldType:            "[Foundation.Data]",
 				BaseFieldType:        "Foundation.Data",
@@ -180,14 +157,8 @@ func TestAnnotateField_Discovery(t *testing.T) {
 			},
 		},
 		{
-			name: "map",
-			input: &api.Field{
-				Name:    "name",
-				ID:      ".test.Message.name",
-				Typez:   api.TypezMessage,
-				TypezID: mapMessage.ID,
-				Map:     true,
-			},
+			name:  "map",
+			input: api.NewTestField("name").WithMessageType(mapMessage).WithMap(),
 			want: &fieldAnnotations{
 				FieldType:            "[Swift.String: Foundation.Data]",
 				BaseFieldType:        "[Swift.String: Foundation.Data]",
@@ -201,14 +172,8 @@ func TestAnnotateField_Discovery(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			msg := &api.Message{
-				Name:    "Message",
-				ID:      ".test.Message",
-				Package: "test",
-				Fields:  []*api.Field{test.input},
-			}
-			test.input.Parent = msg
-			model := api.NewTestAPI([]*api.Message{msg}, []*api.Enum{}, []*api.Service{})
+			msg := api.NewTestMessage("Message").WithFields(test.input)
+			model := api.NewTestAPI([]*api.Message{msg}, nil, nil)
 			model.AddMessage(mapMessage)
 			codec := newTestCodec(t, model, nil)
 			codec.UrlSafeForBytes = true
@@ -234,20 +199,12 @@ func TestAnnotateField_TypeNames(t *testing.T) {
 		{"bytes", api.TypezBytes, "Foundation.Data"},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			field := &api.Field{
-				Name:          "test_field",
-				ID:            ".test.TestMessage.test_field",
-				Typez:         test.typez,
-				Documentation: "Test documentation.",
-			}
-			msg := &api.Message{
-				Name:    "TestMessage",
-				ID:      ".test.TestMessage",
-				Package: "test",
-				Fields:  []*api.Field{field},
-			}
-			field.Parent = msg
-			model := api.NewTestAPI([]*api.Message{msg}, []*api.Enum{}, []*api.Service{})
+			field := api.NewTestField("test_field").
+				WithType(test.typez)
+			field.Documentation = "Test documentation."
+			msg := api.NewTestMessage("TestMessage").
+				WithFields(field)
+			model := api.NewTestAPI([]*api.Message{msg}, nil, nil)
 			codec := newTestCodec(t, model, nil)
 			if err := codec.annotateModel(); err != nil {
 				t.Fatal(err)
@@ -270,27 +227,16 @@ func TestAnnotateField_TypeNames(t *testing.T) {
 }
 
 func TestAnnotateField_PackageName(t *testing.T) {
-	referencedMsg := &api.Message{
-		Name:    "SomeMessage",
-		Package: "google.cloud.external.v1",
-		ID:      ".google.cloud.external.v1.SomeMessage",
-	}
-	field := &api.Field{
-		Name:          "external_message",
-		Documentation: "The external message.",
-		ID:            ".test.SecretVersion.external_message",
-		Typez:         api.TypezMessage,
-		TypezID:       referencedMsg.ID,
-	}
-	msg := &api.Message{
-		Name:    "Secret",
-		ID:      ".test.SecretVersion",
-		Package: "test",
-		Fields:  []*api.Field{field},
-	}
-	field.Parent = msg
-	model := api.NewTestAPI([]*api.Message{msg, referencedMsg}, nil, nil)
-	model.PackageName = "test"
+	referencedMsg := api.NewTestMessage("SomeMessage").
+		WithPackage("google.cloud.external.v1")
+	field := api.NewTestField("external_message").
+		WithMessageType(referencedMsg)
+	field.Documentation = "The external message."
+	msg := api.NewTestMessage("Secret").
+		WithID(".test.SecretVersion").
+		WithFields(field)
+	model := api.NewTestAPI([]*api.Message{msg, referencedMsg}, nil, nil).
+		WithPackageName("test")
 	codec := newTestCodec(t, model, nil)
 	codec.withExtraDependencies(t, []config.SwiftDependency{
 		{
@@ -333,8 +279,8 @@ func TestAnnotateField_Recursive(t *testing.T) {
 			repeated: false,
 			isOneOf:  false,
 			want: &fieldAnnotations{
-				FieldType:            "GoogleCloudWKT.Recursive<Node>?",
-				BaseFieldType:        "GoogleCloudWKT.Recursive<Node>",
+				FieldType:            "GoogleWKT.Recursive<Node>?",
+				BaseFieldType:        "GoogleWKT.Recursive<Node>",
 				Recursive:            true,
 				Decoding:             DecodingOptional,
 				ProtoFieldName:       "childNode",
@@ -348,8 +294,8 @@ func TestAnnotateField_Recursive(t *testing.T) {
 			repeated: false,
 			isOneOf:  false,
 			want: &fieldAnnotations{
-				FieldType:            "GoogleCloudWKT.Recursive<Node>?",
-				BaseFieldType:        "GoogleCloudWKT.Recursive<Node>",
+				FieldType:            "GoogleWKT.Recursive<Node>?",
+				BaseFieldType:        "GoogleWKT.Recursive<Node>",
 				Recursive:            true,
 				Decoding:             DecodingOptional,
 				ProtoFieldName:       "childNode",
@@ -389,36 +335,26 @@ func TestAnnotateField_Recursive(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			field := &api.Field{
-				Name:          "child_node",
-				ID:            ".test.Node.child_node",
-				Typez:         api.TypezMessage,
-				TypezID:       ".test.Node",
-				Documentation: "Recursive link.",
-				Optional:      test.optional,
-				Repeated:      test.repeated,
-				IsOneOf:       test.isOneOf,
-				Recursive:     true,
+			msg := api.NewTestMessage("Node")
+			field := api.NewTestField("child_node").
+				WithMessageType(msg)
+			field.Documentation = "Recursive link."
+			field.Recursive = true
+			if test.optional {
+				field.WithOptional()
 			}
-			msg := &api.Message{
-				Name:    "Node",
-				ID:      ".test.Node",
-				Package: "test",
-				Fields:  []*api.Field{field},
+			if test.repeated {
+				field.WithRepeated()
 			}
-			field.Parent = msg
-			field.MessageType = msg
 
 			if test.isOneOf {
-				oneof := &api.OneOf{
-					Name:   test.oneofProperty,
-					Fields: []*api.Field{field},
-				}
-				field.Group = oneof
-				msg.OneOfs = []*api.OneOf{oneof}
+				oneof := api.NewTestOneOf(test.oneofProperty).WithFields(field)
+				msg.WithOneOfs(oneof)
+			} else {
+				msg.WithFields(field)
 			}
 
-			model := api.NewTestAPI([]*api.Message{msg}, []*api.Enum{}, []*api.Service{})
+			model := api.NewTestAPI([]*api.Message{msg}, nil, nil)
 			codec := newTestCodec(t, model, nil)
 			if err := codec.annotateModel(); err != nil {
 				t.Fatal(err)

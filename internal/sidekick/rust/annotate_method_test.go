@@ -647,6 +647,9 @@ func TestMethodUsesGrpc(t *testing.T) {
 	unaryMethod := api.NewTestMethod("Unary").WithInput(msg).WithOutput(msg).WithPathTemplate(&api.PathTemplate{})
 	bidiMethod := api.NewTestMethod("Bidi").WithInput(msg).WithOutput(msg).WithBidiStreaming()
 	serverMethod := api.NewTestMethod("Server").WithInput(msg).WithOutput(msg).WithServerSideStreaming()
+	clientMethod := api.NewTestMethod("Client").WithInput(msg).WithOutput(msg).WithClientSideStreaming()
+
+	lroMethod := api.NewTestMethod("Lro").WithInput(msg).WithOutput(msg).WithOperationInfo(&api.OperationInfo{ResponseTypeID: "test.v1.Message", MetadataTypeID: "test.v1.Message"})
 
 	for _, test := range []struct {
 		name             string
@@ -662,18 +665,28 @@ func TestMethodUsesGrpc(t *testing.T) {
 			want:    false,
 		},
 		{
-			name:   "bidi streaming enabled",
-			method: bidiMethod,
-			options: map[string]string{
-				"include-bidi-streaming-methods": "true",
-			},
-			want: true,
+			name:    "bidi streaming by default",
+			method:  bidiMethod,
+			options: map[string]string{},
+			want:    true,
 		},
 		{
-			name:   "server streaming enabled",
-			method: serverMethod,
+			name:    "server streaming by default",
+			method:  serverMethod,
+			options: map[string]string{},
+			want:    true,
+		},
+		{
+			name:    "client streaming not included by default",
+			method:  clientMethod,
+			options: map[string]string{},
+			want:    false,
+		},
+		{
+			name:   "client streaming with include-streaming-methods",
+			method: clientMethod,
 			options: map[string]string{
-				"include-server-streaming-methods": "true",
+				"include-streaming-methods": "true",
 			},
 			want: true,
 		},
@@ -681,10 +694,25 @@ func TestMethodUsesGrpc(t *testing.T) {
 			name:             "template without grpc ignores streaming",
 			method:           bidiMethod,
 			templateOverride: "templates/http-client",
+			options:          map[string]string{},
+			want:             false,
+		},
+		{
+			name:   "LRO method defaults to HTTP on default template with default_transport grpc",
+			method: lroMethod,
 			options: map[string]string{
-				"include-bidi-streaming-methods": "true",
+				"default-transport": "grpc",
 			},
 			want: false,
+		},
+		{
+			name:             "LRO method uses gRPC on grpc-client template",
+			method:           lroMethod,
+			templateOverride: "templates/grpc-client",
+			options: map[string]string{
+				"default-transport": "grpc",
+			},
+			want: true,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
@@ -694,5 +722,54 @@ func TestMethodUsesGrpc(t *testing.T) {
 				t.Errorf("methodUsesGrpc() = %v, want %v", got, test.want)
 			}
 		})
+	}
+}
+
+func TestAnnotateMethodIdempotencyHook(t *testing.T) {
+	// 1. When idempotency-hook is configured:
+	modelWithHook := annotateMethodModel(t)
+	if err := api.CrossReference(modelWithHook); err != nil {
+		t.Fatal(err)
+	}
+	codecWithHook := newTestCodec(t, libconfig.SpecProtobuf, "", map[string]string{
+		"include-grpc-only-methods": "true",
+		"idempotency-hook":          "resolve_idempotency",
+	})
+	if _, err := annotateModel(modelWithHook, codecWithHook); err != nil {
+		t.Fatal(err)
+	}
+	methodWithHook := modelWithHook.Method(".test.v1.ResourceService.Delete")
+	if methodWithHook == nil {
+		t.Fatalf("missing method .test.v1.ResourceService.Delete")
+	}
+	got := methodWithHook.Codec.(*methodAnnotation)
+	if !got.HasIdempotencyHook {
+		t.Errorf("got.HasIdempotencyHook = false, want true")
+	}
+	if got.IdempotencyHook != "resolve_idempotency" {
+		t.Errorf("got.IdempotencyHook = %q, want %q", got.IdempotencyHook, "resolve_idempotency")
+	}
+
+	// 2. When idempotency-hook is NOT configured:
+	modelWithoutHook := annotateMethodModel(t)
+	if err := api.CrossReference(modelWithoutHook); err != nil {
+		t.Fatal(err)
+	}
+	codecWithoutHook := newTestCodec(t, libconfig.SpecProtobuf, "", map[string]string{
+		"include-grpc-only-methods": "true",
+	})
+	if _, err := annotateModel(modelWithoutHook, codecWithoutHook); err != nil {
+		t.Fatal(err)
+	}
+	methodWithoutHook := modelWithoutHook.Method(".test.v1.ResourceService.Delete")
+	if methodWithoutHook == nil {
+		t.Fatalf("missing method .test.v1.ResourceService.Delete")
+	}
+	gotDefault := methodWithoutHook.Codec.(*methodAnnotation)
+	if gotDefault.HasIdempotencyHook {
+		t.Errorf("gotDefault.HasIdempotencyHook = true, want false")
+	}
+	if gotDefault.IdempotencyHook != "" {
+		t.Errorf("gotDefault.IdempotencyHook = %q, want empty", gotDefault.IdempotencyHook)
 	}
 }

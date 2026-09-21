@@ -16,26 +16,30 @@ package swift
 
 import (
 	"fmt"
+	"slices"
+	"strings"
 
 	"github.com/googleapis/librarian/internal/sidekick/api"
 	"github.com/googleapis/librarian/internal/sidekick/language"
 )
 
 type methodAnnotations struct {
-	Name           string
-	DocLines       []string
-	PathVariables  []*pathVariable
-	RoutingParams  []*routingParam
-	PathExpression string
-	HTTPMethod     string
-	HasBody        bool
-	IsBodyWildcard bool
-	BodyField      string
-	QueryParams    []*api.Field
-	Pagination     *paginationAnnotations
-	LRO            *lroAnnotations
-	DiscoveryLRO   *discoveryLroAnnotations
-	ReturnType     string
+	Name                string
+	DocLines            []string
+	PathVariables       []*pathVariable
+	PathBindings        []*pathBindingAnnotations
+	HasMultipleBindings bool
+	RoutingParams       []*routingParam
+	PathExpression      string
+	HTTPMethod          string
+	HasBody             bool
+	IsBodyWildcard      bool
+	BodyField           string
+	QueryParams         []*api.Field
+	Pagination          *paginationAnnotations
+	LRO                 *lroAnnotations
+	DiscoveryLRO        *discoveryLroAnnotations
+	ReturnType          string
 
 	// ResponseEncoding sets the `$alt` query parameter value.
 	//
@@ -89,6 +93,52 @@ type pathVariable struct {
 	Expression string
 	Test       string
 	FieldPath  string
+	// JSONFieldPath is FieldPath using the ProtoJSON field names, e.g. `secret.name`.
+	//
+	// The generated code uses this to skip the path parameters when serializing the request body.
+	JSONFieldPath    string
+	MatchingSegments []string
+	TemplateString   string
+}
+
+func (p *pathVariable) HasMatchingSegments() bool {
+	return len(p.MatchingSegments) > 0
+}
+
+func (p *pathVariable) MatchingSegmentsExpression() string {
+	return "[" + strings.Join(p.MatchingSegments, ", ") + "]"
+}
+
+type pathBindingAnnotations struct {
+	HTTPMethod       string
+	PathExpression   string
+	PathVariables    []*pathVariable
+	QueryParams      []*api.Field
+	HasQueryParams   bool
+	HasPathVariables bool
+	ResponseEncoding string
+	// OmittedBodyFields are the ProtoJSON paths bound by this binding's path template.
+	//
+	// Only set for methods using `body: "*"`. Per the `google.api.http` rules the request body
+	// contains the fields *not* bound by the path template.
+	OmittedBodyFields []string
+}
+
+// OmittedBodyFieldsExpression returns OmittedBodyFields as a Swift array literal.
+func (b *pathBindingAnnotations) OmittedBodyFieldsExpression() string {
+	quoted := make([]string, 0, len(b.OmittedBodyFields))
+	for _, field := range b.OmittedBodyFields {
+		quoted = append(quoted, fmt.Sprintf("%q", field))
+	}
+	return "[" + strings.Join(quoted, ", ") + "]"
+}
+
+// HasOmittedBodyFields returns true if the request body must skip some path parameters.
+func (ann *methodAnnotations) HasOmittedBodyFields() bool {
+	idx := slices.IndexFunc(ann.PathBindings, func(b *pathBindingAnnotations) bool {
+		return len(b.OmittedBodyFields) > 0
+	})
+	return idx != -1
 }
 
 // HasQueryParams returns true if the method's default binding has query parameters
@@ -159,21 +209,44 @@ func (c *codec) annotateMethod(method *api.Method, modelAnn *modelAnnotations) e
 	//   queryParams, and pathVariables as before.
 	// - Pure gRPC methods (without HTTP annotations): Safely bypass the HTTP
 	//   extraction without crashing, leaving those fields as their default zero values.
+	var pathBindings []*pathBindingAnnotations
 	if method.PathInfo != nil && len(method.PathInfo.Bindings) > 0 {
-		binding := method.PathInfo.Bindings[0]
 		hasBody = method.PathInfo.BodyFieldPath != ""
 		isBodyWildcard = method.PathInfo.BodyFieldPath == "*"
 		if hasBody && !isBodyWildcard {
 			bodyField = camelCase(method.PathInfo.BodyFieldPath)
 		}
-		var err error
-		pathVariables, err = c.pathVariables(method.InputType, binding.PathTemplate)
-		if err != nil {
-			return err
+		for _, binding := range method.PathInfo.Bindings {
+			pVars, err := c.pathVariables(method.InputType, binding.PathTemplate)
+			if err != nil {
+				return err
+			}
+			pExpr := pathExpression(binding.PathTemplate)
+			qParams := language.QueryParams(method, binding)
+			// With `body: "*"` the request body only contains the fields not bound by the path
+			// template.
+			var omittedBodyFields []string
+			if isBodyWildcard {
+				for _, pVar := range pVars {
+					omittedBodyFields = append(omittedBodyFields, pVar.JSONFieldPath)
+				}
+			}
+			pathBindings = append(pathBindings, &pathBindingAnnotations{
+				HTTPMethod:        binding.Verb,
+				PathExpression:    pExpr,
+				PathVariables:     pVars,
+				QueryParams:       qParams,
+				HasQueryParams:    len(qParams) > 0,
+				HasPathVariables:  len(pVars) > 0,
+				ResponseEncoding:  c.ResponseEncoding,
+				OmittedBodyFields: omittedBodyFields,
+			})
 		}
-		pathExpressionStr = pathExpression(binding.PathTemplate)
-		httpMethod = binding.Verb
-		queryParams = language.QueryParams(method, binding)
+		primary := pathBindings[0]
+		pathVariables = primary.PathVariables
+		pathExpressionStr = primary.PathExpression
+		httpMethod = primary.HTTPMethod
+		queryParams = primary.QueryParams
 	}
 
 	var pagination *paginationAnnotations
@@ -232,21 +305,23 @@ func (c *codec) annotateMethod(method *api.Method, modelAnn *modelAnnotations) e
 		}
 	}
 	method.Codec = &methodAnnotations{
-		Name:             camelCase(method.Name),
-		DocLines:         docLines,
-		PathExpression:   pathExpressionStr,
-		PathVariables:    pathVariables,
-		RoutingParams:    routingParams,
-		HTTPMethod:       httpMethod,
-		HasBody:          hasBody,
-		IsBodyWildcard:   isBodyWildcard,
-		BodyField:        bodyField,
-		QueryParams:      queryParams,
-		Pagination:       pagination,
-		LRO:              lro,
-		ReturnType:       returnType,
-		DiscoveryLRO:     discoveryLRO,
-		ResponseEncoding: c.ResponseEncoding,
+		Name:                camelCase(method.Name),
+		DocLines:            docLines,
+		PathExpression:      pathExpressionStr,
+		PathVariables:       pathVariables,
+		PathBindings:        pathBindings,
+		HasMultipleBindings: len(pathBindings) > 1,
+		RoutingParams:       routingParams,
+		HTTPMethod:          httpMethod,
+		HasBody:             hasBody,
+		IsBodyWildcard:      isBodyWildcard,
+		BodyField:           bodyField,
+		QueryParams:         queryParams,
+		Pagination:          pagination,
+		LRO:                 lro,
+		ReturnType:          returnType,
+		DiscoveryLRO:        discoveryLRO,
+		ResponseEncoding:    c.ResponseEncoding,
 	}
 	if method.SampleInfo != nil {
 		c.annotateSampleInfo(method)

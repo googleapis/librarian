@@ -58,8 +58,6 @@ type repoMetadata struct {
 	ExtraVersionedModules string `json:"extra_versioned_modules,omitempty"`
 	// Java-specific field.
 	RecommendedPackage string `json:"recommended_package,omitempty"`
-	// Java-specific field.
-	MinJavaVersion int `json:"min_java_version,omitempty"`
 }
 
 // write writes the given repoMetadata into libraryOutputDir/.repo-metadata.json.
@@ -140,7 +138,6 @@ func deriveRepoMetadata(cfg *config.Config, library *config.Library, sourceDir s
 		metadata.APIReference = library.Java.APIReference
 		metadata.CodeownerTeam = library.Java.CodeownerTeam
 		metadata.ExtraVersionedModules = library.Java.ExtraVersionedModules
-		metadata.MinJavaVersion = library.Java.MinJavaVersion
 		metadata.RestDocumentation = library.Java.RestDocumentation
 		metadata.RpcDocumentation = library.Java.RpcDocumentation
 	}

@@ -188,6 +188,76 @@ func TestInternalBuildersAnnotation(t *testing.T) {
 	}
 }
 
+func TestHandwrittenSurfaceAnnotation(t *testing.T) {
+	for _, test := range []struct {
+		name                 string
+		options              map[string]string
+		wantService0Veneer   bool
+		wantService0Internal bool
+		wantService0Samples  bool
+		wantService1Veneer   bool
+		wantService1Internal bool
+		wantService1Samples  bool
+	}{
+		{
+			name: "handwritten surface for service0 only",
+			options: map[string]string{
+				"handwritten-surface":  "..Service0",
+				"generate-rpc-samples": "true",
+			},
+			wantService0Veneer:   true,
+			wantService0Internal: true,
+			wantService0Samples:  false,
+			wantService1Veneer:   false,
+			wantService1Internal: false,
+			wantService1Samples:  true,
+		},
+		{
+			name: "handwritten surface true for all",
+			options: map[string]string{
+				"handwritten-surface":  "true",
+				"generate-rpc-samples": "true",
+			},
+			wantService0Veneer:   true,
+			wantService0Internal: true,
+			wantService0Samples:  false,
+			wantService1Veneer:   true,
+			wantService1Internal: true,
+			wantService1Samples:  false,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			model := newTestAnnotateModelAPI()
+			codec := newTestCodec(t, libconfig.SpecProtobuf, "", test.options)
+			_, err := annotateModel(model, codec)
+			if err != nil {
+				t.Fatal(err)
+			}
+			svc0Ann := model.Services[0].Codec.(*serviceAnnotations)
+			if svc0Ann.HasVeneer != test.wantService0Veneer {
+				t.Errorf("mismatch in Service0 HasVeneer, want=%v, got=%v", test.wantService0Veneer, svc0Ann.HasVeneer)
+			}
+			if svc0Ann.InternalBuilders != test.wantService0Internal {
+				t.Errorf("mismatch in Service0 InternalBuilders, want=%v, got=%v", test.wantService0Internal, svc0Ann.InternalBuilders)
+			}
+			if svc0Ann.GenerateRpcSamples != test.wantService0Samples {
+				t.Errorf("mismatch in Service0 GenerateRpcSamples, want=%v, got=%v", test.wantService0Samples, svc0Ann.GenerateRpcSamples)
+			}
+
+			svc1Ann := model.Services[1].Codec.(*serviceAnnotations)
+			if svc1Ann.HasVeneer != test.wantService1Veneer {
+				t.Errorf("mismatch in Service1 HasVeneer, want=%v, got=%v", test.wantService1Veneer, svc1Ann.HasVeneer)
+			}
+			if svc1Ann.InternalBuilders != test.wantService1Internal {
+				t.Errorf("mismatch in Service1 InternalBuilders, want=%v, got=%v", test.wantService1Internal, svc1Ann.InternalBuilders)
+			}
+			if svc1Ann.GenerateRpcSamples != test.wantService1Samples {
+				t.Errorf("mismatch in Service1 GenerateRpcSamples, want=%v, got=%v", test.wantService1Samples, svc1Ann.GenerateRpcSamples)
+			}
+		})
+	}
+}
+
 func TestGrpcClientAnnotation(t *testing.T) {
 	for _, test := range []struct {
 		Options map[string]string
@@ -393,6 +463,7 @@ func TestPackageNames(t *testing.T) {
 	}
 	want := &modelAnnotations{
 		PackageName:               "google-cloud-workflows-v1",
+		PackageModuleName:         "google::cloud::workflows::v1",
 		PackageVersion:            "1.2.3",
 		ReleaseLevel:              "stable",
 		PackageNamespace:          "google_cloud_workflows_v1",
@@ -644,9 +715,8 @@ func TestModelAnnotationsHasStreaming(t *testing.T) {
 			name:    "bidi streaming enabled with bidi method",
 			service: bidiService,
 			options: map[string]string{
-				"include-bidi-streaming-methods": "true",
-				"package:gaxi":                   "package=google-cloud-gax,used-if=services",
-				"package:prost":                  "package=prost,used-if=streaming",
+				"package:gaxi":  "package=google-cloud-gax,used-if=services",
+				"package:prost": "package=prost,used-if=streaming",
 			},
 			wantBidi:             true,
 			wantServer:           false,
@@ -658,9 +728,8 @@ func TestModelAnnotationsHasStreaming(t *testing.T) {
 			name:    "server streaming enabled with server streaming method",
 			service: serverStreamingService,
 			options: map[string]string{
-				"include-server-streaming-methods": "true",
-				"package:gaxi":                     "package=google-cloud-gax,used-if=services",
-				"package:prost":                    "package=prost,used-if=streaming",
+				"package:gaxi":  "package=google-cloud-gax,used-if=services",
+				"package:prost": "package=prost,used-if=streaming",
 			},
 			wantBidi:             false,
 			wantServer:           true,
@@ -672,10 +741,8 @@ func TestModelAnnotationsHasStreaming(t *testing.T) {
 			name:    "both streaming enabled with mixed service",
 			service: mixedService,
 			options: map[string]string{
-				"include-bidi-streaming-methods":   "true",
-				"include-server-streaming-methods": "true",
-				"package:gaxi":                     "package=google-cloud-gax,used-if=services",
-				"package:prost":                    "package=prost,used-if=streaming",
+				"package:gaxi":  "package=google-cloud-gax,used-if=services",
+				"package:prost": "package=prost,used-if=streaming",
 			},
 			wantBidi:             true,
 			wantServer:           true,
@@ -684,77 +751,11 @@ func TestModelAnnotationsHasStreaming(t *testing.T) {
 			wantRequiredPackages: []string{`gaxi                 = { workspace = true, features = ["_internal-grpc-client"] }`, "prost.workspace      = true"},
 		},
 		{
-			name:    "bidi streaming disabled with bidi method",
-			service: bidiService,
-			options: map[string]string{
-				"include-bidi-streaming-methods": "false",
-				"package:gaxi":                   "package=google-cloud-gax,used-if=services",
-				"package:prost":                  "package=prost,used-if=streaming",
-			},
-			wantBidi:             false,
-			wantServer:           false,
-			wantStreaming:        false,
-			wantRequiredPackages: []string{"gaxi.workspace       = true"},
-		},
-		{
-			name:    "server streaming disabled with server streaming method",
-			service: serverStreamingService,
-			options: map[string]string{
-				"include-server-streaming-methods": "false",
-				"package:gaxi":                     "package=google-cloud-gax,used-if=services",
-				"package:prost":                    "package=prost,used-if=streaming",
-			},
-			wantBidi:             false,
-			wantServer:           false,
-			wantStreaming:        false,
-			wantRequiredPackages: []string{"gaxi.workspace       = true"},
-		},
-		{
-			name:    "bidi streaming enabled with unary method",
+			name:    "unary method",
 			service: unaryService,
 			options: map[string]string{
-				"include-bidi-streaming-methods": "true",
-				"package:gaxi":                   "package=google-cloud-gax,used-if=services",
-				"package:prost":                  "package=prost,used-if=streaming",
-			},
-			wantBidi:             false,
-			wantServer:           false,
-			wantStreaming:        false,
-			wantRequiredPackages: []string{"gaxi.workspace       = true"},
-		},
-		{
-			name:    "server streaming enabled with unary method",
-			service: unaryService,
-			options: map[string]string{
-				"include-server-streaming-methods": "true",
-				"package:gaxi":                     "package=google-cloud-gax,used-if=services",
-				"package:prost":                    "package=prost,used-if=streaming",
-			},
-			wantBidi:             false,
-			wantServer:           false,
-			wantStreaming:        false,
-			wantRequiredPackages: []string{"gaxi.workspace       = true"},
-		},
-		{
-			name:    "bidi streaming enabled with server streaming method",
-			service: serverStreamingService,
-			options: map[string]string{
-				"include-bidi-streaming-methods": "true",
-				"package:gaxi":                   "package=google-cloud-gax,used-if=services",
-				"package:prost":                  "package=prost,used-if=streaming",
-			},
-			wantBidi:             false,
-			wantServer:           false,
-			wantStreaming:        false,
-			wantRequiredPackages: []string{"gaxi.workspace       = true"},
-		},
-		{
-			name:    "server streaming enabled with bidi streaming method",
-			service: bidiService,
-			options: map[string]string{
-				"include-server-streaming-methods": "true",
-				"package:gaxi":                     "package=google-cloud-gax,used-if=services",
-				"package:prost":                    "package=prost,used-if=streaming",
+				"package:gaxi":  "package=google-cloud-gax,used-if=services",
+				"package:prost": "package=prost,used-if=streaming",
 			},
 			wantBidi:             false,
 			wantServer:           false,
@@ -765,10 +766,9 @@ func TestModelAnnotationsHasStreaming(t *testing.T) {
 			name:    "template override with bidi method",
 			service: bidiService,
 			options: map[string]string{
-				"include-bidi-streaming-methods": "true",
-				"template-override":              "templates/tonic",
-				"package:gaxi":                   "package=google-cloud-gax,used-if=services",
-				"package:prost":                  "package=prost,used-if=streaming",
+				"template-override": "templates/tonic",
+				"package:gaxi":      "package=google-cloud-gax,used-if=services",
+				"package:prost":     "package=prost,used-if=streaming",
 			},
 			wantBidi:             false,
 			wantServer:           false,
@@ -779,10 +779,9 @@ func TestModelAnnotationsHasStreaming(t *testing.T) {
 			name:    "template override with server streaming method",
 			service: serverStreamingService,
 			options: map[string]string{
-				"include-server-streaming-methods": "true",
-				"template-override":                "templates/tonic",
-				"package:gaxi":                     "package=google-cloud-gax,used-if=services",
-				"package:prost":                    "package=prost,used-if=streaming",
+				"template-override": "templates/tonic",
+				"package:gaxi":      "package=google-cloud-gax,used-if=services",
+				"package:prost":     "package=prost,used-if=streaming",
 			},
 			wantBidi:             false,
 			wantServer:           false,
@@ -793,10 +792,9 @@ func TestModelAnnotationsHasStreaming(t *testing.T) {
 			name:    "grpc-client template override with server streaming method",
 			service: serverStreamingService,
 			options: map[string]string{
-				"include-server-streaming-methods": "true",
-				"template-override":                "templates/grpc-client",
-				"package:gaxi":                     "package=google-cloud-gax,used-if=services",
-				"package:prost":                    "package=prost,used-if=streaming",
+				"template-override": "templates/grpc-client",
+				"package:gaxi":      "package=google-cloud-gax,used-if=services",
+				"package:prost":     "package=prost,used-if=streaming",
 			},
 			wantBidi:             false,
 			wantServer:           true,
@@ -808,10 +806,9 @@ func TestModelAnnotationsHasStreaming(t *testing.T) {
 			name:    "grpc-client template override with bidi streaming method",
 			service: bidiService,
 			options: map[string]string{
-				"include-bidi-streaming-methods": "true",
-				"template-override":              "templates/grpc-client",
-				"package:gaxi":                   "package=google-cloud-gax,used-if=services",
-				"package:prost":                  "package=prost,used-if=streaming",
+				"template-override": "templates/grpc-client",
+				"package:gaxi":      "package=google-cloud-gax,used-if=services",
+				"package:prost":     "package=prost,used-if=streaming",
 			},
 			wantBidi:             true,
 			wantServer:           false,
@@ -874,9 +871,7 @@ func TestModelAnnotationsGrpcServices(t *testing.T) {
 	}
 
 	codec := newTestCodec(t, libconfig.SpecProtobuf, "", map[string]string{
-		"include-bidi-streaming-methods":   "true",
-		"include-server-streaming-methods": "true",
-		"per-service-features":             "true",
+		"per-service-features": "true",
 	})
 	got, err := annotateModel(model, codec)
 	if err != nil {
@@ -936,7 +931,94 @@ func TestExternalTypesAnnotations(t *testing.T) {
 	if want := "google_cloud_type::model::DayOfWeek"; enumAnn.RelativeName != want {
 		t.Errorf("enumAnn.RelativeName = %q, want %q", enumAnn.RelativeName, want)
 	}
-	if want := "crate::prost::google::r#type::DayOfWeek"; enumAnn.ProstRelativeName != want {
-		t.Errorf("enumAnn.ProstRelativeName = %q, want %q", enumAnn.ProstRelativeName, want)
+	t.Run("with prost-path option", func(t *testing.T) {
+		extMsg2 := api.NewTestMessage("LatLng").WithPackage("google.type")
+		extEnum2 := &api.Enum{Name: "DayOfWeek", ID: ".google.type.DayOfWeek", Package: "google.type"}
+		model2 := api.NewTestAPI([]*api.Message{}, []*api.Enum{}, []*api.Service{})
+		model2.ExternalMessages = []*api.Message{extMsg2}
+		model2.ExternalEnums = []*api.Enum{extEnum2}
+
+		codec2 := newTestCodec(t, libconfig.SpecProtobuf, "", map[string]string{
+			"template-override": "templates/convert-prost",
+			"prost-path":        "super::prost",
+		})
+		codec2.packageMapping["google.type"] = &packagez{name: "google_cloud_type", packageName: "google.type"}
+
+		if _, err := annotateModel(model2, codec2); err != nil {
+			t.Fatal(err)
+		}
+
+		msgAnn2 := extMsg2.Codec.(*messageAnnotation)
+		if want := "super::prost::google::r#type::LatLng"; msgAnn2.ProstRelativeName != want {
+			t.Errorf("msgAnn2.ProstRelativeName = %q, want %q", msgAnn2.ProstRelativeName, want)
+		}
+
+		enumAnn2 := extEnum2.Codec.(*enumAnnotation)
+		if want := "super::prost::google::r#type::DayOfWeek"; enumAnn2.ProstRelativeName != want {
+			t.Errorf("enumAnn2.ProstRelativeName = %q, want %q", enumAnn2.ProstRelativeName, want)
+		}
+	})
+}
+
+func TestGrpcRootTypeIDs(t *testing.T) {
+	req := api.NewTestMessage("Req").WithPackage("google.cloud.test.v1")
+	resp := api.NewTestMessage("Resp").WithPackage("google.cloud.test.v1")
+
+	unaryMethod := api.NewTestMethod("Unary").WithInput(req).WithOutput(resp)
+	unaryMethod.PathInfo = &api.PathInfo{
+		Bindings: []*api.PathBinding{
+			{Verb: "GET", PathTemplate: &api.PathTemplate{}},
+		},
+	}
+	streamMethod := api.NewTestMethod("Stream").WithInput(req).WithOutput(resp).WithBidiStreaming()
+
+	for _, test := range []struct {
+		name    string
+		methods []*api.Method
+		options map[string]string
+		want    []string
+	}{
+		{
+			name:    "unary method with default http returns no grpc root types",
+			methods: []*api.Method{unaryMethod},
+			options: map[string]string{},
+			want:    nil,
+		},
+		{
+			name:    "unary method with default_transport grpc returns root types",
+			methods: []*api.Method{unaryMethod},
+			options: map[string]string{
+				"default-transport": "grpc",
+			},
+			want: []string{req.ID, resp.ID},
+		},
+		{
+			name:    "streaming method returns root types",
+			methods: []*api.Method{streamMethod},
+			options: map[string]string{},
+			want:    []string{req.ID, resp.ID},
+		},
+		{
+			name:    "mixed methods with default http returns only streaming root types",
+			methods: []*api.Method{unaryMethod, streamMethod},
+			options: map[string]string{},
+			want:    []string{req.ID, resp.ID},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			svc := api.NewTestService("Service").WithPackage("google.cloud.test.v1").WithMethods(test.methods...)
+			model := api.NewTestAPI([]*api.Message{req, resp}, []*api.Enum{}, []*api.Service{svc})
+			if err := api.CrossReference(model); err != nil {
+				t.Fatal(err)
+			}
+			codec := newTestCodec(t, libconfig.SpecProtobuf, "", test.options)
+			if _, err := annotateModel(model, codec); err != nil {
+				t.Fatal(err)
+			}
+			got := GrpcRootTypeIDs(model)
+			if diff := cmp.Diff(test.want, got, cmpopts.EquateEmpty()); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
 	}
 }

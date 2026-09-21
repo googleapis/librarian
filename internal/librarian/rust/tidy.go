@@ -27,12 +27,9 @@ func Tidy(lib *config.Library) (*config.Library, error) {
 		lib.Rust.Modules = slices.DeleteFunc(lib.Rust.Modules, isEmptyModule)
 	}
 
-	empty, err := yaml.Empty(lib.Rust)
-	if err != nil {
+	var err error
+	if lib.Rust, err = yaml.ClearIfEmpty(lib.Rust); err != nil {
 		return nil, err
-	}
-	if empty {
-		lib.Rust = nil
 	}
 
 	return lib, nil

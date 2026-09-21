@@ -1,5 +1,82 @@
 # Changelog
 
+## [0.44.0](https://github.com/googleapis/librarian/compare/v0.43.0...v0.44.0) (2026-09-14)
+
+
+### Features
+
+* **librarian/swift:** track directory moves for publish command ([#7579](https://github.com/googleapis/librarian/issues/7579)) ([62b6966](https://github.com/googleapis/librarian/commit/62b69660d3663977842a3352d81fdfb05bfb9729))
+* **sidekick/swift:** multiple HTTP bindings ([#7584](https://github.com/googleapis/librarian/issues/7584)) ([c76ba2f](https://github.com/googleapis/librarian/commit/c76ba2f1909c4b71d5f94c8e162d39aa026e40be))
+
+## [0.43.0](https://github.com/googleapis/librarian/compare/v0.42.0...v0.43.0) (2026-09-14)
+
+
+### Features
+
+* **internal/config:** add comment field to configuration schema ([#7539](https://github.com/googleapis/librarian/issues/7539)) ([b1deabc](https://github.com/googleapis/librarian/commit/b1deabc796318a7e7717531f0222581715984a2d))
+* **internal/config:** add NodejsDefault with custom_scopes ([#7525](https://github.com/googleapis/librarian/issues/7525)) ([f0fd2d4](https://github.com/googleapis/librarian/commit/f0fd2d40031f45ed70e25629dbc6bee61255c180))
+* **internal/config:** rename custom_scopes to custom_package_prefixes ([#7536](https://github.com/googleapis/librarian/issues/7536)) ([8b73142](https://github.com/googleapis/librarian/commit/8b7314210503f312aee7c81bc1df4abb2385d903))
+* **internal/librarian/nodejs:** derive package name from custom prefixes ([#7553](https://github.com/googleapis/librarian/issues/7553)) ([f877089](https://github.com/googleapis/librarian/commit/f877089af2bc9ccf3622e62fe87d6c02be60f78b))
+* **internal/librarian/nodejs:** support excluding protos from generation ([#7574](https://github.com/googleapis/librarian/issues/7574)) ([fd91f7a](https://github.com/googleapis/librarian/commit/fd91f7adf3161acefc1800a15a74c45735bade71)), refs [#7217](https://github.com/googleapis/librarian/issues/7217)
+* **internal/sidekick/rust:** support default_transport configuration ([#7503](https://github.com/googleapis/librarian/issues/7503)) ([5480d3f](https://github.com/googleapis/librarian/commit/5480d3f7c314fc3f6def9de9066a5345cef344e1))
+* **internal/tool/pip:** force reinstall git packages ([#7538](https://github.com/googleapis/librarian/issues/7538)) ([2bf3435](https://github.com/googleapis/librarian/commit/2bf3435004bea4dd66274b093b562c4d7bf591f5))
+* **sidekick/rust:** allow fields to be renamed on BigQuery template ([#7563](https://github.com/googleapis/librarian/issues/7563)) ([6fc6200](https://github.com/googleapis/librarian/commit/6fc6200a40bb4d5642876ae1b8d7347058638f82))
+* **sidekick/rust:** allow fields to be renamed with name_overrides ([#7562](https://github.com/googleapis/librarian/issues/7562)) ([1ee6462](https://github.com/googleapis/librarian/commit/1ee6462082cdc301930d9f3b8d0cf7fd9f516cff))
+* **sidekick/rust:** support unified idempotency_hook configuration ([#7523](https://github.com/googleapis/librarian/issues/7523)) ([4a95ea9](https://github.com/googleapis/librarian/commit/4a95ea9201b45a0d90401b7a07ebe583c4ff1f98))
+* **sidekick/swift:** pass request options to newRequest ([#7573](https://github.com/googleapis/librarian/issues/7573)) ([92b5ee5](https://github.com/googleapis/librarian/commit/92b5ee559d33713d7d35101eb1cf6b021571220e))
+* **sidekick/swift:** rename DocC landing page ([#7557](https://github.com/googleapis/librarian/issues/7557)) ([9f72f4f](https://github.com/googleapis/librarian/commit/9f72f4f37f908b0bfa12d825a81e0d3f4bbbf5af))
+* **sidekick/swift:** Storage Control retry policy ([#7529](https://github.com/googleapis/librarian/issues/7529)) ([efaf46c](https://github.com/googleapis/librarian/commit/efaf46ca275d875d56ecf8eba49451721a2de74a))
+* **sidekick/swift:** use `setBody()` helper ([#7561](https://github.com/googleapis/librarian/issues/7561)) ([d8392c2](https://github.com/googleapis/librarian/commit/d8392c22ca48af842303828274c5046d57b31505))
+* **swift:** add convenience methods without options to StorageControlProtocol ([#7537](https://github.com/googleapis/librarian/issues/7537)) ([a7e2bb7](https://github.com/googleapis/librarian/commit/a7e2bb7558490180b5aed978a35db1f0bafef979))
+* **swift:** generate LRO polling helpers for StorageControl ([#7560](https://github.com/googleapis/librarian/issues/7560)) ([fedb08b](https://github.com/googleapis/librarian/commit/fedb08b3d46a73fbc1b55c610ce6a656ec1ac386))
+
+
+### Bug Fixes
+
+* **.github/workflows:** trigger issue creation on go integration failure ([#7554](https://github.com/googleapis/librarian/issues/7554)) ([ced1712](https://github.com/googleapis/librarian/commit/ced171297f7153a78c2b9742f4bc49767513cae5)), refs [#7484](https://github.com/googleapis/librarian/issues/7484)
+* **internal/librarian/ruby:** omit copyright_year from librarian.yaml ([#7542](https://github.com/googleapis/librarian/issues/7542)) ([65f3767](https://github.com/googleapis/librarian/commit/65f3767c5615913162811461fede7bdcfcf4ad3c))
+* **internal/postprocessing:** add support of copy_and_rename as method_operations ([#7555](https://github.com/googleapis/librarian/issues/7555)) ([b10b439](https://github.com/googleapis/librarian/commit/b10b43925705fc4f9e9f1c8a5546e788b958bd13))
+* **rust:** avoid use conflicts in setter samples ([#7548](https://github.com/googleapis/librarian/issues/7548)) ([4c72bcc](https://github.com/googleapis/librarian/commit/4c72bccefff1442f572f7e795fa3288cbb429e30))
+* **sidekick/swift:** normalize monorepo root to forward slashes ([#7566](https://github.com/googleapis/librarian/issues/7566)) ([d6d0250](https://github.com/googleapis/librarian/commit/d6d02509e1804a5fb37702a14ba3503d2c416f91))
+* **sidekick/swift:** serialize enums as strings in ProtoJSON ([#7569](https://github.com/googleapis/librarian/issues/7569)) ([fafac18](https://github.com/googleapis/librarian/commit/fafac18890d5edaed4bda9fd4d67a76a6f57c6ba))
+
+## [0.42.0](https://github.com/googleapis/librarian/compare/v0.41.0...v0.42.0) (2026-09-08)
+
+
+### Features
+
+* **internal/librarian/ruby:** support toys tasks in library declaration ([#7513](https://github.com/googleapis/librarian/issues/7513)) ([c99d2c9](https://github.com/googleapis/librarian/commit/c99d2c95d753c09335770b1fed164ff3e14dd133))
+* **internal/librarian/swift:** resolve dependency version from library declaration ([#7522](https://github.com/googleapis/librarian/issues/7522)) ([5dfd571](https://github.com/googleapis/librarian/commit/5dfd57156174d2d1aec2221d8013048c85576b01))
+
+
+### Bug Fixes
+
+* **internal/librarian/php:** use library output in generate and postprocessing ([#7516](https://github.com/googleapis/librarian/issues/7516)) ([681d25f](https://github.com/googleapis/librarian/commit/681d25fd1f3badfbf64dbe299ac2a19fda9dbeed))
+* **swift/publish:** fix library detection for renamed folders ([#7518](https://github.com/googleapis/librarian/issues/7518)) ([e9285a4](https://github.com/googleapis/librarian/commit/e9285a422d089ab6856706df05aad8eceef8edda))
+
+## [0.41.0](https://github.com/googleapis/librarian/compare/v0.40.0...v0.41.0) (2026-09-07)
+
+
+### Features
+
+* **internal/librarian/php:** populate library output on add ([#7494](https://github.com/googleapis/librarian/issues/7494)) ([6db88be](https://github.com/googleapis/librarian/commit/6db88bee902c54faf1fc21c1454fe9517ec55cc8))
+* **internal/librarian/ruby:** add ruby-cloud-renamed-from option ([#7500](https://github.com/googleapis/librarian/issues/7500)) ([5cdfd77](https://github.com/googleapis/librarian/commit/5cdfd772da6931d4e70dbcb13a74866d242753d1))
+* **internal/librarian/ruby:** prepareMultiWrapper for multi-wrapper Gems ([#7483](https://github.com/googleapis/librarian/issues/7483)) ([a325c53](https://github.com/googleapis/librarian/commit/a325c538d9126766f1738a676098801a486c16b6))
+* **internal/librarian/ruby:** ruby-cloud-gem-name for multi-wrapper Gems ([#7486](https://github.com/googleapis/librarian/issues/7486)) ([37e5b25](https://github.com/googleapis/librarian/commit/37e5b250f5ca9ec787087222410c3ab5df51a8d9))
+* **internal/librarian/ruby:** support deleting output paths in library declaration ([#7506](https://github.com/googleapis/librarian/issues/7506)) ([39fbb3f](https://github.com/googleapis/librarian/commit/39fbb3f6fecb6032bd71c20745bfa37d2e14d1dc))
+* **internal/librarian/rust:** batch unsupported any field errors ([#7479](https://github.com/googleapis/librarian/issues/7479)) ([09b2729](https://github.com/googleapis/librarian/commit/09b272923808d92319800cf6d6e88d35da6862b7))
+* **sidekick/rust:** support grpc_client option  ([#7492](https://github.com/googleapis/librarian/issues/7492)) ([45d06df](https://github.com/googleapis/librarian/commit/45d06df00775fbc891138d2ecb9f8d6be04d8d79))
+* **sidekick/swift:** generate better README with links to monorepo ([#7520](https://github.com/googleapis/librarian/issues/7520)) ([99a427e](https://github.com/googleapis/librarian/commit/99a427e969ffe31c7dee64cc09ad50c890c30100))
+* **sidekick/swift:** propagate `deprecated` tags ([#7472](https://github.com/googleapis/librarian/issues/7472)) ([2a98183](https://github.com/googleapis/librarian/commit/2a98183779356dcb971b3dbfaedc427f652bc06e))
+
+
+### Bug Fixes
+
+* **internal/librarian/python:** flatten nested gapic_version paths ([#7501](https://github.com/googleapis/librarian/issues/7501)) ([c57fa98](https://github.com/googleapis/librarian/commit/c57fa98e4908fbd7d51440e56bc16f3fa6530ba5))
+* **internal/librarian/rust:** batch unsupported any field errors ([#7479](https://github.com/googleapis/librarian/issues/7479)) ([#7512](https://github.com/googleapis/librarian/issues/7512)) ([bb4aa18](https://github.com/googleapis/librarian/commit/bb4aa18ca34a5c98d50d4b37cc34760fa920702b))
+* **internal/librarian:** update bulk release-please config for existing python libraries ([#7508](https://github.com/googleapis/librarian/issues/7508)) ([e7edd83](https://github.com/googleapis/librarian/commit/e7edd832e2bad44633adb7c1e822d109c751d7cc))
+* **internal/sidekick/rust:** skip doc links for omitted methods and services ([#7485](https://github.com/googleapis/librarian/issues/7485)) ([5eb5644](https://github.com/googleapis/librarian/commit/5eb5644014a7d5095d5acb580dd4aa465612f6cc))
+
 ## [0.40.0](https://github.com/googleapis/librarian/compare/v0.39.0...v0.40.0) (2026-09-01)
 
 

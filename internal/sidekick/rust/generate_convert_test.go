@@ -17,6 +17,7 @@ package rust
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -421,5 +422,38 @@ func TestGenerateConvertOneOfWithSkippedProtoConversion(t *testing.T) {
 	gotToProto := extractBlock(t, string(contents), "impl gaxi::prost::ToProto<type_schema::Schema>", "\n        }\n    }\n}")
 	if diff := cmp.Diff(wantToProto, gotToProto); diff != "" {
 		t.Errorf("mismatch ToProto (-want +got):\n%s", diff)
+	}
+}
+
+func TestGenerateConvertImports(t *testing.T) {
+	msg := api.NewTestMessage("SimpleMessage").WithPackage("google.cloud.speech.v2")
+	outDir := t.TempDir()
+	model := api.NewTestAPI([]*api.Message{msg}, nil, nil)
+	model.PackageName = "google.cloud.speech.v2"
+	if err := api.CrossReference(model); err != nil {
+		t.Fatal(err)
+	}
+
+	cfg := &parser.ModelConfig{
+		SpecificationFormat: libconfig.SpecProtobuf,
+		Codec: map[string]string{
+			"package:wkt":       "source=google.protobuf,package=google-cloud-wkt",
+			"template-override": "templates/convert-prost",
+			"prost-path":        "super::prost",
+		},
+	}
+	if err := Generate(t.Context(), model, outDir, cfg); err != nil {
+		t.Fatal(err)
+	}
+
+	contents, err := os.ReadFile(filepath.Join(outDir, "convert.rs"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	contentStr := string(contents)
+
+	wantImports := "use super::prost::google::cloud::speech::v2::*;"
+	if !strings.Contains(contentStr, wantImports) {
+		t.Errorf("convert.rs missing expected imports %q, got:\n%s", wantImports, contentStr)
 	}
 }

@@ -51,7 +51,7 @@ impl std::convert::From<{{Codec.QueryBuilderRequestMsg.Codec.Name}}> for google_
         let mut out = Self::default();
         {{#Codec.QueryBuilderFields}}
         {{#QueryRequest}}
-        out.{{FieldName}} = req.{{FieldName}};
+        out.{{GapicFieldName}} = req.{{FieldName}};
         {{/QueryRequest}}
         {{/Codec.QueryBuilderFields}}
         out
@@ -63,7 +63,7 @@ impl std::convert::From<{{Codec.QueryBuilderRequestMsg.Codec.Name}}> for google_
         let mut out = Self::default();
         {{#Codec.QueryBuilderFields}}
         {{#JobConfigurationQuery}}
-        out.{{FieldName}} = req.{{FieldName}};
+        out.{{GapicFieldName}} = req.{{FieldName}};
         {{/JobConfigurationQuery}}
         {{/Codec.QueryBuilderFields}}
         out
@@ -78,14 +78,14 @@ impl std::convert::From<{{Codec.QueryBuilderRequestMsg.Codec.Name}}> for google_
         let mut query = google_cloud_bigquery_v2::model::JobConfigurationQuery::default();
         {{#Codec.QueryBuilderFields}}
         {{#JobConfigurationQuery}}
-        query.{{FieldName}} = req.{{FieldName}};
+        query.{{GapicFieldName}} = req.{{FieldName}};
         {{/JobConfigurationQuery}}
         {{/Codec.QueryBuilderFields}}
         let mut out = Self::default();
         out.query = Some(query);
         {{#Codec.QueryBuilderFields}}
         {{#JobConfiguration}}
-        out.{{FieldName}} = req.{{FieldName}}.into();
+        out.{{GapicFieldName}} = req.{{FieldName}}.into();
         {{/JobConfiguration}}
         {{/Codec.QueryBuilderFields}}
         out

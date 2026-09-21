@@ -28,3 +28,59 @@ limitations under the License.
 
 This client library was generated from the "{{Revision}}" revision of the API.
 {{/Revision}}
+
+## Overview
+{{#HasServices}}
+
+Most applications use the `*Client` types in this library. A default initialized
+client will let you interact with the API. The methods in the client type
+correspond to RPCs in the API. Many APIs have more than one client, exposing
+different aspects of the API, consult the reference documentation for details.
+
+{{#Services}}
+- `{{Codec.ClientName}}`{{#Codec.IsGated}}: enabled by the `{{Codec.Name}}` trait.{{/Codec.IsGated}}
+{{/Services}}
+{{/HasServices}}
+{{^HasServices}}
+
+This is a type-only library. You will not find functions to make RPCs in this
+library. Its types are used in other libraries that access Google Cloud.
+{{/HasServices}}
+
+## Requirements
+
+For the minimum supported Swift version and platform requirements, see the
+[Requirements](https://github.com/googleapis/google-cloud-swift#minimum-supported-swift-version)
+section in the `google-cloud-swift` repository.
+
+## Installation
+
+Add `{{Codec.PackageRepoName}}` as a package dependency:
+
+```bash
+swift package add-dependency https://github.com/googleapis/{{Codec.PackageRepoName}}.git --from {{Codec.PackageVersion}}
+```
+
+Then add `{{Codec.LibraryName}}` to your target's dependencies:
+
+```bash
+swift package add-target-dependency {{Codec.LibraryName}} <target-name> --package {{Codec.PackageRepoName}}
+```
+
+## Troubleshooting
+
+For questions, bug reports, or feature requests, please open an issue in the
+[google-cloud-swift](https://github.com/googleapis/google-cloud-swift/issues) repository.
+
+## Contributing
+
+Contributions to this library are always welcome and highly encouraged.
+
+All development, issues, and pull requests are managed in the
+[google-cloud-swift](https://github.com/googleapis/google-cloud-swift) monorepo.
+See [CONTRIBUTING.md](https://github.com/googleapis/google-cloud-swift/blob/main/CONTRIBUTING.md)
+for details on getting started.
+
+## License
+
+Apache 2.0 - See [LICENSE](LICENSE) for more information.
