@@ -130,6 +130,9 @@ func TestGenerate_ParityAll188Files(t *testing.T) {
 					if err != nil {
 						t.Fatalf("missing generated file %q: %v", outPath, err)
 					}
+					if len(gotContent) == 0 {
+						t.Errorf("generated file %s is empty", outPath)
+					}
 
 					relGoldenPath, ok := strings.CutPrefix(outPath, "generator/integration_tests/golden/")
 					if !ok {
@@ -139,6 +142,9 @@ func TestGenerate_ParityAll188Files(t *testing.T) {
 					goldenContent, err := os.ReadFile(goldenPath)
 					if err != nil {
 						t.Fatalf("missing golden file %q: %v", goldenPath, err)
+					}
+					if len(goldenContent) == 0 {
+						t.Errorf("golden file %s is empty", goldenPath)
 					}
 
 					if diff := cmp.Diff(string(goldenContent), string(gotContent)); diff != "" {

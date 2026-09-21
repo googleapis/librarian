@@ -175,8 +175,8 @@ future<{{{CppReturnType}}}>
 std::unique_ptr<::google::cloud::AsyncStreamingReadWriteRpc<
     {{{CppRequestType}}},
     {{{CppResponseType}}}>>
-{{ServiceName}}ConnectionImpl::AsyncStreamingReadWrite() {
-  return stub_->AsyncStreamingReadWrite(background_->cq(),
+{{ServiceName}}ConnectionImpl::Async{{Name}}() {
+  return stub_->Async{{Name}}(background_->cq(),
                                 std::make_shared<grpc::ClientContext>(),
                                 internal::SaveCurrentOptions());
 }

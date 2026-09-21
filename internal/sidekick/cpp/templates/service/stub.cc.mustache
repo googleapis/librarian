@@ -83,14 +83,14 @@ StatusOr<google::longrunning::Operation>
 std::unique_ptr<::google::cloud::AsyncStreamingReadWriteRpc<
     {{{CppRequestType}}},
     {{{CppResponseType}}}>>
-{{Codec.DefaultStubClassName}}::AsyncStreamingReadWrite(
+{{Codec.DefaultStubClassName}}::Async{{Name}}(
     google::cloud::CompletionQueue const& cq,
     std::shared_ptr<grpc::ClientContext> context,
     google::cloud::internal::ImmutableOptions options) {
   return google::cloud::internal::MakeStreamingReadWriteRpc<{{{CppRequestType}}}, {{{CppResponseType}}}>(
       cq, std::move(context), std::move(options),
       [this](grpc::ClientContext* context, grpc::CompletionQueue* cq) {
-        return {{StubMemberName}}->PrepareAsyncStreamingReadWrite(context, cq);
+        return {{StubMemberName}}->PrepareAsync{{Name}}(context, cq);
       });
 }
 

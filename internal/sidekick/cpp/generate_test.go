@@ -142,3 +142,142 @@ func TestValidateOutputContainment(t *testing.T) {
 		})
 	}
 }
+
+func TestGenerate_BidirStreamingMethods(t *testing.T) {
+	req := api.NewTestMessage("ChatRequest")
+	resp := api.NewTestMessage("ChatResponse")
+	bidiMethod := api.NewTestMethod("Chat").WithInput(req).WithOutput(resp).WithBidiStreaming()
+	svc := api.NewTestService("ChatService").WithMethods(bidiMethod)
+	model := api.NewTestAPI([]*api.Message{req, resp}, nil, []*api.Service{svc})
+
+	outdir := t.TempDir()
+	libCfg := &config.CppLibrary{
+		ProductPath: "google/cloud/chat/v1",
+	}
+	if err := Generate(t.Context(), model, outdir, libCfg); err != nil {
+		t.Fatalf("Generate failed: %v", err)
+	}
+
+	readFile := func(relPath string) string {
+		t.Helper()
+		b, err := os.ReadFile(filepath.Join(outdir, relPath))
+		if err != nil {
+			t.Fatalf("failed to read %s: %v", relPath, err)
+		}
+		return string(b)
+	}
+
+	// 1. connection_impl.cc must reference AsyncChat() and stub_->AsyncChat(...)
+	connImpl := readFile(ConnectionImplSourcePath(libCfg.ProductPath, svc.Name))
+	if !strings.Contains(connImpl, "ChatServiceConnectionImpl::AsyncChat()") {
+		t.Errorf("connection_impl.cc missing AsyncChat method definition, got:\n%s", connImpl)
+	}
+	if !strings.Contains(connImpl, "return stub_->AsyncChat(background_->cq(),") {
+		t.Errorf("connection_impl.cc missing stub_->AsyncChat call, got:\n%s", connImpl)
+	}
+
+	// 2. tracing_connection.cc must reference AsyncChat() and child_->AsyncChat()
+	tracingConn := readFile(TracingConnectionSourcePath(libCfg.ProductPath, svc.Name))
+	if !strings.Contains(tracingConn, "ChatServiceTracingConnection::AsyncChat()") {
+		t.Errorf("tracing_connection.cc missing AsyncChat method definition, got:\n%s", tracingConn)
+	}
+	if !strings.Contains(tracingConn, "return child_->AsyncChat();") {
+		t.Errorf("tracing_connection.cc missing child_->AsyncChat() call, got:\n%s", tracingConn)
+	}
+
+	// 3. metadata_decorator.cc must reference AsyncChat and child_->AsyncChat(...)
+	metaDec := readFile(MetadataDecoratorSourcePath(libCfg.ProductPath, svc.Name))
+	wantMetaDecMethod := MetadataDecoratorClassName(svc.Name) + "::AsyncChat("
+	if !strings.Contains(metaDec, wantMetaDecMethod) {
+		t.Errorf("metadata_decorator.cc missing %s definition, got:\n%s", wantMetaDecMethod, metaDec)
+	}
+	if !strings.Contains(metaDec, "return child_->AsyncChat(cq, std::move(context), std::move(options));") {
+		t.Errorf("metadata_decorator.cc missing child_->AsyncChat call, got:\n%s", metaDec)
+	}
+
+	// 4. stub.cc must reference AsyncChat and PrepareAsyncChat
+	stub := readFile(StubSourcePath(libCfg.ProductPath, svc.Name))
+	if !strings.Contains(stub, "DefaultChatServiceStub::AsyncChat(") {
+		t.Errorf("stub.cc missing DefaultChatServiceStub::AsyncChat definition, got:\n%s", stub)
+	}
+	if !strings.Contains(stub, "return grpc_stub_->PrepareAsyncChat(context, cq);") {
+		t.Errorf("stub.cc missing PrepareAsyncChat call, got:\n%s", stub)
+	}
+}
+
+func TestGenerate_LocationOptionallyDependent(t *testing.T) {
+	req := api.NewTestMessage("Item")
+	svc := api.NewTestService("ItemsService")
+	model := api.NewTestAPI([]*api.Message{req}, nil, []*api.Service{svc})
+
+	t.Run("with gRPC transport enabled", func(t *testing.T) {
+		outdir := t.TempDir()
+		libCfg := &config.CppLibrary{
+			ProductPath:           "google/cloud/items/v1",
+			EndpointLocationStyle: "LOCATION_OPTIONALLY_DEPENDENT",
+		}
+		if err := Generate(t.Context(), model, outdir, libCfg); err != nil {
+			t.Fatalf("Generate failed: %v", err)
+		}
+
+		hBytes, err := os.ReadFile(filepath.Join(outdir, OptionDefaultsHeaderPath(libCfg.ProductPath, svc.Name)))
+		if err != nil {
+			t.Fatal(err)
+		}
+		hStr := string(hBytes)
+		if !strings.Contains(hStr, "Options ItemsServiceDefaultOptions(std::string const& location, Options options);") {
+			t.Errorf("option_defaults.h missing 2-arg overload, got:\n%s", hStr)
+		}
+		if !strings.Contains(hStr, "Options ItemsServiceDefaultOptions(Options options);") {
+			t.Errorf("option_defaults.h missing 1-arg overload, got:\n%s", hStr)
+		}
+
+		ccBytes, err := os.ReadFile(filepath.Join(outdir, OptionDefaultsSourcePath(libCfg.ProductPath, svc.Name)))
+		if err != nil {
+			t.Fatal(err)
+		}
+		ccStr := string(ccBytes)
+		if !strings.Contains(ccStr, "Options ItemsServiceDefaultOptions(std::string const& location, Options options) {") {
+			t.Errorf("option_defaults.cc missing 2-arg definition, got:\n%s", ccStr)
+		}
+		wantOverload := "Options ItemsServiceDefaultOptions(Options options) {\n  return ItemsServiceDefaultOptions(std::string{}, std::move(options));\n}"
+		if !strings.Contains(ccStr, wantOverload) {
+			t.Errorf("option_defaults.cc missing 1-arg forwarding overload, got:\n%s", ccStr)
+		}
+	})
+
+	t.Run("with gRPC transport disabled", func(t *testing.T) {
+		outdir := t.TempDir()
+		grpcFalse := false
+		libCfg := &config.CppLibrary{
+			ProductPath:           "google/cloud/items/v1",
+			EndpointLocationStyle: "LOCATION_OPTIONALLY_DEPENDENT",
+			GenerateGrpcTransport: &grpcFalse,
+			GenerateRestTransport: true,
+		}
+		if err := Generate(t.Context(), model, outdir, libCfg); err != nil {
+			t.Fatalf("Generate failed: %v", err)
+		}
+
+		hBytes, err := os.ReadFile(filepath.Join(outdir, OptionDefaultsHeaderPath(libCfg.ProductPath, svc.Name)))
+		if err != nil {
+			t.Fatal(err)
+		}
+		hStr := string(hBytes)
+		if !strings.Contains(hStr, "Options ItemsServiceDefaultOptions(std::string const& location, Options options);") {
+			t.Errorf("option_defaults.h missing 2-arg overload, got:\n%s", hStr)
+		}
+		if strings.Contains(hStr, "Options ItemsServiceDefaultOptions(Options options);") {
+			t.Errorf("option_defaults.h should not have 1-arg overload when gRPC is disabled, got:\n%s", hStr)
+		}
+
+		ccBytes, err := os.ReadFile(filepath.Join(outdir, OptionDefaultsSourcePath(libCfg.ProductPath, svc.Name)))
+		if err != nil {
+			t.Fatal(err)
+		}
+		ccStr := string(ccBytes)
+		if strings.Contains(ccStr, "Options ItemsServiceDefaultOptions(Options options) {") {
+			t.Errorf("option_defaults.cc should not have 1-arg overload when gRPC is disabled, got:\n%s", ccStr)
+		}
+	})
+}

@@ -262,15 +262,7 @@ func (c *codec) annotateMethod(m *api.Method, sAnn *serviceAnnotations, model *a
 		}
 	}
 
-	isGenAsync := false
-	if c.config != nil {
-		for _, rpc := range c.config.GenAsyncRPCs {
-			if rpc == m.Name || rpc == sAnn.Name+"."+m.Name {
-				isGenAsync = true
-				break
-			}
-		}
-	}
+	isGenAsync := c.config != nil && (slices.Contains(c.config.GenAsyncRPCs, m.Name) || slices.Contains(c.config.GenAsyncRPCs, sAnn.Name+"."+m.Name))
 	isAsync := isGenAsync || isLongrunning
 
 	var lroMetadataType string
@@ -415,11 +407,8 @@ func (c *codec) annotateMethod(m *api.Method, sAnn *serviceAnnotations, model *a
 	}
 
 	reqMsg := model.Message(m.InputTypeID)
-	omittedRPCs := make(map[string]bool)
-	if c.config != nil {
-		for _, rpc := range c.config.OmittedRPCs {
-			omittedRPCs[rpc] = true
-		}
+	isOmitted := func(name string) bool {
+		return c.config != nil && slices.Contains(c.config.OmittedRPCs, name)
 	}
 
 	sigs := append([]*api.MethodSignature(nil), m.Signatures...)
@@ -479,7 +468,7 @@ func (c *codec) annotateMethod(m *api.Method, sAnn *serviceAnnotations, model *a
 		qualifiedSignature := fmt.Sprintf("%s.%s", sAnn.Name, signature)
 		sigStr := strings.Join(sig.Names, ",")
 
-		if (sigStr != "" && omittedRPCs[sigStr]) || omittedRPCs[signature] || omittedRPCs[qualifiedSignature] || omittedRPCs[m.Name] || omittedRPCs[sAnn.Name+"."+m.Name] {
+		if (sigStr != "" && isOmitted(sigStr)) || isOmitted(signature) || isOmitted(qualifiedSignature) || isOmitted(m.Name) || isOmitted(sAnn.Name+"."+m.Name) {
 			continue
 		}
 

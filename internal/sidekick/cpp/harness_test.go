@@ -17,7 +17,6 @@ package cpp
 import (
 	"io/fs"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"slices"
 	"testing"
@@ -27,6 +26,7 @@ import (
 	"github.com/googleapis/librarian/internal/sidekick/api"
 	"github.com/googleapis/librarian/internal/sidekick/parser"
 	"github.com/googleapis/librarian/internal/sources"
+	"github.com/googleapis/librarian/internal/testhelper"
 	"github.com/googleapis/librarian/internal/yaml"
 )
 
@@ -297,7 +297,5 @@ func TestGoldenLibrarianConfig(t *testing.T) {
 
 func requireProtoc(t *testing.T) {
 	t.Helper()
-	if _, err := exec.LookPath("protoc"); err != nil {
-		t.Skip("skipping test because protoc is not installed")
-	}
+	testhelper.RequireCommand(t, "protoc")
 }

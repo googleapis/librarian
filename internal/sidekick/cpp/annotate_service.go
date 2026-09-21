@@ -667,21 +667,11 @@ func (c *codec) annotateService(s *api.Service, modelAnn *modelAnnotations, mode
 	}
 
 	isOmitted := func(m *api.Method) bool {
-		for _, rpc := range omittedRPCs {
-			if rpc == m.Name || rpc == s.Name+"."+m.Name {
-				return true
-			}
-		}
-		return false
+		return slices.Contains(omittedRPCs, m.Name) || slices.Contains(omittedRPCs, s.Name+"."+m.Name)
 	}
 
 	isGenAsync := func(m *api.Method) bool {
-		for _, rpc := range genAsyncRPCs {
-			if rpc == m.Name || rpc == s.Name+"."+m.Name {
-				return true
-			}
-		}
-		return false
+		return slices.Contains(genAsyncRPCs, m.Name) || slices.Contains(genAsyncRPCs, s.Name+"."+m.Name)
 	}
 
 	var methods []*methodAnnotations

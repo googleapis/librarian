@@ -30,6 +30,10 @@ GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_BEGIN
 
 {{#Codec.IsLocationOptionallyDependent}}
 Options {{Codec.Name}}DefaultOptions(std::string const& location, Options options);
+{{#Codec.GenerateGrpcTransport}}
+
+Options {{Codec.Name}}DefaultOptions(Options options);
+{{/Codec.GenerateGrpcTransport}}
 {{/Codec.IsLocationOptionallyDependent}}
 {{^Codec.IsLocationOptionallyDependent}}
 Options {{Codec.Name}}DefaultOptions(Options options);

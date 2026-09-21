@@ -141,8 +141,8 @@ func validateOutputContainment(outdir string, files []language.GeneratedFile) er
 			return fmt.Errorf("%w: %q", ErrEscapesOutputDirectory, gen.OutputPath)
 		}
 		targetPath := filepath.Join(absOut, gen.OutputPath)
-		rel, err := filepath.Rel(absOut, targetPath)
-		if err != nil || rel == ".." || strings.HasPrefix(rel, ".."+string(filepath.Separator)) {
+		rel, relErr := filepath.Rel(absOut, targetPath)
+		if relErr != nil || rel == ".." || strings.HasPrefix(rel, ".."+string(filepath.Separator)) {
 			return fmt.Errorf("%w: %q", ErrEscapesOutputDirectory, gen.OutputPath)
 		}
 		if seen[rel] {

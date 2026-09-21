@@ -75,6 +75,14 @@ Options {{Codec.ServiceDefaultOptionsFunctionName}}({{#Codec.IsLocationOptionall
   return options;
 }
 
+{{#Codec.IsLocationOptionallyDependent}}
+{{#Codec.GenerateGrpcTransport}}
+Options {{Codec.ServiceDefaultOptionsFunctionName}}(Options options) {
+  return {{Codec.ServiceDefaultOptionsFunctionName}}(std::string{}, std::move(options));
+}
+
+{{/Codec.GenerateGrpcTransport}}
+{{/Codec.IsLocationOptionallyDependent}}
 GOOGLE_CLOUD_CPP_INLINE_NAMESPACE_END
 }  // namespace {{Codec.InternalNamespace}}
 }  // namespace cloud

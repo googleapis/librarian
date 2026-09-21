@@ -181,12 +181,12 @@ StatusOr<google::longrunning::Operation>
 std::unique_ptr<::google::cloud::AsyncStreamingReadWriteRpc<
       {{{CppRequestType}}},
       {{{CppResponseType}}}>>
-{{Codec.MetadataDecoratorClassName}}::AsyncStreamingReadWrite(
+{{Codec.MetadataDecoratorClassName}}::Async{{Name}}(
     google::cloud::CompletionQueue const& cq,
     std::shared_ptr<grpc::ClientContext> context,
     google::cloud::internal::ImmutableOptions options) {
   SetMetadata(*context, *options);
-  return child_->AsyncStreamingReadWrite(cq, std::move(context), std::move(options));
+  return child_->Async{{Name}}(cq, std::move(context), std::move(options));
 }
 
 {{/IsBidirStreaming}}
