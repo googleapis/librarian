@@ -61,6 +61,43 @@ func TestHasAPIPath(t *testing.T) {
 	}
 }
 
+func TestFindAPI(t *testing.T) {
+	for _, test := range []struct {
+		name string
+		path string
+		want *API
+	}{
+		{
+			name: "configured documentation in sdk.yaml",
+			path: "google/cloud/aiplatform/v1",
+			want: &API{
+				Path:              "google/cloud/aiplatform/v1",
+				RestDocumentation: "https://cloud.google.com/vertex-ai/docs/reference/rest",
+				RpcDocumentation:  "https://cloud.google.com/vertex-ai/docs/reference/rpc",
+			},
+		},
+		{
+			name: "non-existent path returns empty documentation",
+			path: "non/existent/path",
+			want: &API{
+				Path: "non/existent/path",
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := FindAPI(test.path)
+			gotDoc := &API{
+				Path:              got.Path,
+				RestDocumentation: got.RestDocumentation,
+				RpcDocumentation:  got.RpcDocumentation,
+			}
+			if diff := cmp.Diff(test.want, gotDoc); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
 func TestReleaseLevel(t *testing.T) {
 	for _, test := range []struct {
 		name     string

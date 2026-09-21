@@ -101,6 +101,8 @@ func deriveRepoMetadata(cfg *config.Config, library *config.Library, sourceDir s
 		APIID:                sharedMetadata.APIID,
 		LibraryType:          repometadata.GAPICAutoLibraryType,
 		RecommendedPackage:   sharedMetadata.RecommendedPackage,
+		RestDocumentation:    sharedMetadata.RestDocumentation,
+		RpcDocumentation:     sharedMetadata.RpcDocumentation,
 	}
 
 	// Java-specific overrides and optional fields
@@ -138,8 +140,6 @@ func deriveRepoMetadata(cfg *config.Config, library *config.Library, sourceDir s
 		metadata.APIReference = library.Java.APIReference
 		metadata.CodeownerTeam = library.Java.CodeownerTeam
 		metadata.ExtraVersionedModules = library.Java.ExtraVersionedModules
-		metadata.RestDocumentation = library.Java.RestDocumentation
-		metadata.RpcDocumentation = library.Java.RpcDocumentation
 	}
 
 	// Default ClientDocumentation uses artifact ID
