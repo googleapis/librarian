@@ -97,7 +97,7 @@ func TestAnnotateRestMethod_HTTPOptions(t *testing.T) {
 				Name:          "get_instance",
 				BaseClassName: "_BaseGetInstance",
 				HTTPOptions: []*httpOptionAnnotation{
-					{Method: "get", URI: "/v1/{name=*}", Body: "", HasBody: false},
+					{Method: "get", URI: "/v1/{name=*}", Body: "", HasBody: false, First: true},
 				},
 			},
 		},
@@ -112,7 +112,7 @@ func TestAnnotateRestMethod_HTTPOptions(t *testing.T) {
 				Name:          "generate_access_token",
 				BaseClassName: "_BaseGenerateAccessToken",
 				HTTPOptions: []*httpOptionAnnotation{
-					{Method: "post", URI: "/v1/{name=*}:generateAccessToken", Body: "*", HasBody: true},
+					{Method: "post", URI: "/v1/{name=*}:generateAccessToken", Body: "*", HasBody: true, First: true},
 				},
 			},
 		},
@@ -123,7 +123,7 @@ func TestAnnotateRestMethod_HTTPOptions(t *testing.T) {
 				Name:          "create_instance",
 				BaseClassName: "_BaseCreateInstance",
 				HTTPOptions: []*httpOptionAnnotation{
-					{Method: "post", URI: "/v1/{parent=*}/instances", Body: "instance", HasBody: true},
+					{Method: "post", URI: "/v1/{parent=*}/instances", Body: "instance", HasBody: true, First: true},
 				},
 			},
 		},
@@ -134,7 +134,7 @@ func TestAnnotateRestMethod_HTTPOptions(t *testing.T) {
 				Name:          "delete_instance",
 				BaseClassName: "_BaseDeleteInstance",
 				HTTPOptions: []*httpOptionAnnotation{
-					{Method: "delete", URI: "/v1/{name=*}", Body: "", HasBody: false},
+					{Method: "delete", URI: "/v1/{name=*}", Body: "", HasBody: false, First: true},
 				},
 			},
 		},
@@ -145,7 +145,7 @@ func TestAnnotateRestMethod_HTTPOptions(t *testing.T) {
 				Name:          "update_instance",
 				BaseClassName: "_BaseUpdateInstance",
 				HTTPOptions: []*httpOptionAnnotation{
-					{Method: "patch", URI: "/v1/{instance.name=*}", Body: "instance", HasBody: true},
+					{Method: "patch", URI: "/v1/{instance.name=*}", Body: "instance", HasBody: true, First: true},
 				},
 			},
 		},
@@ -156,7 +156,7 @@ func TestAnnotateRestMethod_HTTPOptions(t *testing.T) {
 				Name:          "replace_instance",
 				BaseClassName: "_BaseReplaceInstance",
 				HTTPOptions: []*httpOptionAnnotation{
-					{Method: "put", URI: "/v1/{name=*}", Body: "*", HasBody: true},
+					{Method: "put", URI: "/v1/{name=*}", Body: "*", HasBody: true, First: true},
 				},
 			},
 		},
@@ -175,8 +175,8 @@ func TestAnnotateRestMethod_HTTPOptions(t *testing.T) {
 				Name:          "custom_method",
 				BaseClassName: "_BaseCustomMethod",
 				HTTPOptions: []*httpOptionAnnotation{
-					{Method: "post", URI: "/v1/{name=*}:custom", Body: "*", HasBody: true},
-					{Method: "get", URI: "/v1/{name=*}", Body: "", HasBody: false},
+					{Method: "post", URI: "/v1/{name=*}:custom", Body: "*", HasBody: true, First: true},
+					{Method: "get", URI: "/v1/{name=*}", Body: "", HasBody: false, First: false},
 				},
 			},
 		},
@@ -209,7 +209,7 @@ func TestAnnotateRestMethod_RequiredFields(t *testing.T) {
 			want: &restMethodAnnotation{
 				Name:                        "create_instance",
 				BaseClassName:               "_BaseCreateInstance",
-				HTTPOptions:                 []*httpOptionAnnotation{{Method: "post", URI: "/v1", Body: "", HasBody: false}},
+				HTTPOptions:                 []*httpOptionAnnotation{{Method: "post", URI: "/v1", Body: "", HasBody: false, First: true}},
 				HasRequiredFields:           true,
 				RequiredFieldsDefaultValues: []*requiredFieldDefaultAnnotation{{Key: "instanceId", Value: `""`, Last: true}},
 			},
@@ -226,7 +226,7 @@ func TestAnnotateRestMethod_RequiredFields(t *testing.T) {
 			want: &restMethodAnnotation{
 				Name:                        "analyze",
 				BaseClassName:               "_BaseAnalyze",
-				HTTPOptions:                 []*httpOptionAnnotation{{Method: "get", URI: "/v1", Body: "", HasBody: false}},
+				HTTPOptions:                 []*httpOptionAnnotation{{Method: "get", URI: "/v1", Body: "", HasBody: false, First: true}},
 				HasRequiredFields:           true,
 				RequiredFieldsDefaultValues: []*requiredFieldDefaultAnnotation{{Key: "analysisQuery", Value: "{}", Last: true}},
 			},
@@ -241,7 +241,7 @@ func TestAnnotateRestMethod_RequiredFields(t *testing.T) {
 			want: &restMethodAnnotation{
 				Name:                        "get_item",
 				BaseClassName:               "_BaseGetItem",
-				HTTPOptions:                 []*httpOptionAnnotation{{Method: "get", URI: "/v1", Body: "", HasBody: false}},
+				HTTPOptions:                 []*httpOptionAnnotation{{Method: "get", URI: "/v1", Body: "", HasBody: false, First: true}},
 				HasRequiredFields:           true,
 				RequiredFieldsDefaultValues: []*requiredFieldDefaultAnnotation{{Key: "view", Value: "{}", Last: true}},
 			},
@@ -255,11 +255,9 @@ func TestAnnotateRestMethod_RequiredFields(t *testing.T) {
 				return makeTestRestMethod("ListInstances", "GET", "", pt, req)
 			}(),
 			want: &restMethodAnnotation{
-				Name:          "list_instances",
-				BaseClassName: "_BaseListInstances",
-				HTTPOptions: []*httpOptionAnnotation{
-					{Method: "get", URI: "/v1/{parent=*}", Body: "", HasBody: false},
-				},
+				Name:              "list_instances",
+				BaseClassName:     "_BaseListInstances",
+				HTTPOptions:       []*httpOptionAnnotation{{Method: "get", URI: "/v1/{parent=*}", Body: "", HasBody: false, First: true}},
 				HasRequiredFields: false,
 			},
 		},
@@ -271,11 +269,9 @@ func TestAnnotateRestMethod_RequiredFields(t *testing.T) {
 				return makeTestRestMethod("DoSomething", "POST", "*", v1Pt, req)
 			}(),
 			want: &restMethodAnnotation{
-				Name:          "do_something",
-				BaseClassName: "_BaseDoSomething",
-				HTTPOptions: []*httpOptionAnnotation{
-					{Method: "post", URI: "/v1", Body: "*", HasBody: true},
-				},
+				Name:              "do_something",
+				BaseClassName:     "_BaseDoSomething",
+				HTTPOptions:       []*httpOptionAnnotation{{Method: "post", URI: "/v1", Body: "*", HasBody: true, First: true}},
 				HasRequiredFields: false,
 			},
 		},
@@ -292,7 +288,7 @@ func TestAnnotateRestMethod_RequiredFields(t *testing.T) {
 			want: &restMethodAnnotation{
 				Name:                        "create_instance",
 				BaseClassName:               "_BaseCreateInstance",
-				HTTPOptions:                 []*httpOptionAnnotation{{Method: "post", URI: "/v1", Body: "instance", HasBody: true}},
+				HTTPOptions:                 []*httpOptionAnnotation{{Method: "post", URI: "/v1", Body: "instance", HasBody: true, First: true}},
 				HasRequiredFields:           true,
 				RequiredFieldsDefaultValues: []*requiredFieldDefaultAnnotation{{Key: "instanceId", Value: `""`, Last: true}},
 			},
@@ -312,7 +308,7 @@ func TestAnnotateRestMethod_RequiredFields(t *testing.T) {
 			want: &restMethodAnnotation{
 				Name:                        "analyze_iam_policy",
 				BaseClassName:               "_BaseAnalyzeIamPolicy",
-				HTTPOptions:                 []*httpOptionAnnotation{{Method: "get", URI: "/v1/{analysis_query.scope=*}:analyzeIamPolicy", Body: "", HasBody: false}},
+				HTTPOptions:                 []*httpOptionAnnotation{{Method: "get", URI: "/v1/{analysis_query.scope=*}:analyzeIamPolicy", Body: "", HasBody: false, First: true}},
 				HasRequiredFields:           true,
 				RequiredFieldsDefaultValues: []*requiredFieldDefaultAnnotation{{Key: "analysisQuery", Value: "{}", Last: true}},
 			},
@@ -331,7 +327,7 @@ func TestAnnotateRestMethod_RequiredFields(t *testing.T) {
 			want: &restMethodAnnotation{
 				Name:              "multi",
 				BaseClassName:     "_BaseMulti",
-				HTTPOptions:       []*httpOptionAnnotation{{Method: "get", URI: "/v1", Body: "", HasBody: false}},
+				HTTPOptions:       []*httpOptionAnnotation{{Method: "get", URI: "/v1", Body: "", HasBody: false, First: true}},
 				HasRequiredFields: true,
 				RequiredFieldsDefaultValues: []*requiredFieldDefaultAnnotation{
 					{Key: "firstField", Value: `""`, Last: false},
@@ -371,6 +367,7 @@ func TestRestMethodBase_TemplateRendering(t *testing.T) {
 						URI:     "/v1/{parent=projects/*/locations/*}/instances",
 						Body:    "instance",
 						HasBody: true,
+						First:   true,
 					},
 				},
 				HasRequiredFields: true,
@@ -387,14 +384,14 @@ func TestRestMethodBase_TemplateRendering(t *testing.T) {
 
         @staticmethod
         def _get_http_options():
-            http_options: List[Dict[str, str]] = [
-                {
-                    'method': 'post',
-                    'uri': '/v1/{parent=projects/*/locations/*}/instances',
-                    'body': 'instance',
-                },
+            http_options: List[Dict[str, str]] = [{
+                'method': 'post',
+                'uri': '/v1/{parent=projects/*/locations/*}/instances',
+                'body': 'instance',
+            },
             ]
             return http_options
+
 `,
 		},
 		{
@@ -405,6 +402,7 @@ func TestRestMethodBase_TemplateRendering(t *testing.T) {
 					{
 						Method: "get",
 						URI:    "/v1/items",
+						First:  true,
 					},
 				},
 				HasRequiredFields: true,
@@ -423,13 +421,13 @@ func TestRestMethodBase_TemplateRendering(t *testing.T) {
 
         @staticmethod
         def _get_http_options():
-            http_options: List[Dict[str, str]] = [
-                {
-                    'method': 'get',
-                    'uri': '/v1/items',
-                },
+            http_options: List[Dict[str, str]] = [{
+                'method': 'get',
+                'uri': '/v1/items',
+            },
             ]
             return http_options
+
 `,
 		},
 		{
@@ -442,6 +440,7 @@ func TestRestMethodBase_TemplateRendering(t *testing.T) {
 						URI:     "/v1/{name=projects/*/locations/*/instances/*}",
 						Body:    "",
 						HasBody: false,
+						First:   true,
 					},
 				},
 				HasRequiredFields: false,
@@ -455,13 +454,13 @@ func TestRestMethodBase_TemplateRendering(t *testing.T) {
 
         @staticmethod
         def _get_http_options():
-            http_options: List[Dict[str, str]] = [
-                {
-                    'method': 'delete',
-                    'uri': '/v1/{name=projects/*/locations/*/instances/*}',
-                },
+            http_options: List[Dict[str, str]] = [{
+                'method': 'delete',
+                'uri': '/v1/{name=projects/*/locations/*/instances/*}',
+            },
             ]
             return http_options
+
 `,
 		},
 	} {

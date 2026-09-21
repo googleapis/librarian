@@ -41,6 +41,8 @@ type serviceAnnotations struct {
 	HasPagers bool
 	// Client holds annotations for generating client.py.
 	Client *clientAnnotations
+	// RestTransport holds metadata for transports/rest_base.py and transports/rest.py.
+	RestTransport *restTransportAnnotation
 }
 
 func (c *codec) annotateService(service *api.Service, model *modelAnnotations) error {
@@ -92,6 +94,12 @@ func (c *codec) annotateService(service *api.Service, model *modelAnnotations) e
 		return err
 	}
 	ann.Client = clAnn
+
+	restAnn, err := c.annotateRestTransport(service, ann)
+	if err != nil {
+		return err
+	}
+	ann.RestTransport = restAnn
 
 	service.Codec = ann
 	return nil

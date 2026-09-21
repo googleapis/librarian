@@ -100,10 +100,16 @@ func Generate(ctx context.Context, model *api.API, outdir string, library *confi
 	}
 
 	if model.HasServices() {
-		modelFiles = append(modelFiles, language.GeneratedFile{
-			TemplatePath: "templates/services/__init__.py.mustache",
-			OutputPath:   filepath.Join(pkgDir, "services", "__init__.py"),
-		})
+		modelFiles = append(modelFiles,
+			language.GeneratedFile{
+				TemplatePath: "templates/_compat.py.mustache",
+				OutputPath:   filepath.Join(pkgDir, "_compat.py"),
+			},
+			language.GeneratedFile{
+				TemplatePath: "templates/services/__init__.py.mustache",
+				OutputPath:   filepath.Join(pkgDir, "services", "__init__.py"),
+			},
+		)
 	}
 
 	modelAnn, _ := model.Codec.(*modelAnnotations)
@@ -192,6 +198,20 @@ func Generate(ctx context.Context, model *api.API, outdir string, library *confi
 				file: language.GeneratedFile{
 					TemplatePath: "templates/services/service/transports/grpc_asyncio.py.mustache",
 					OutputPath:   filepath.Join(serviceDir, "transports", "grpc_asyncio.py"),
+				},
+			},
+			serviceFilePair{
+				service: service,
+				file: language.GeneratedFile{
+					TemplatePath: "templates/services/service/transports/rest_base.py.mustache",
+					OutputPath:   filepath.Join(serviceDir, "transports", "rest_base.py"),
+				},
+			},
+			serviceFilePair{
+				service: service,
+				file: language.GeneratedFile{
+					TemplatePath: "templates/services/service/transports/rest.py.mustache",
+					OutputPath:   filepath.Join(serviceDir, "transports", "rest.py"),
 				},
 			},
 			serviceFilePair{

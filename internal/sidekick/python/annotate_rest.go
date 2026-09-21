@@ -27,6 +27,7 @@ type httpOptionAnnotation struct {
 	URI     string
 	Body    string
 	HasBody bool
+	First   bool
 }
 
 // requiredFieldDefaultAnnotation represents a default value mapping for a required request field.
@@ -115,6 +116,10 @@ func annotateRestMethod(m *api.Method) *restMethodAnnotation {
 				}
 			}
 		}
+	}
+
+	for i, opt := range httpOptions {
+		opt.First = (i == 0)
 	}
 
 	var requiredFieldsDefaultValues []*requiredFieldDefaultAnnotation

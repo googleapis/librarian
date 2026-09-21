@@ -31,9 +31,9 @@ import (
 )
 
 const (
-	minCredentialsEmittedFiles = 14
-	minRedisEmittedFiles       = 14
-	minAssetEmittedFiles       = 15
+	minCredentialsEmittedFiles = 17
+	minRedisEmittedFiles       = 17
+	minAssetEmittedFiles       = 18
 )
 
 func TestGoldenParity(t *testing.T) {
@@ -69,11 +69,14 @@ func TestGoldenParity(t *testing.T) {
 			expectedService: ".google.iam.credentials.v1.IAMCredentials",
 			minEmittedFiles: minCredentialsEmittedFiles,
 			requiredFiles: []string{
+				"google/iam/credentials_v1/_compat.py",
 				"google/iam/credentials_v1/services/iam_credentials/client.py",
 				"google/iam/credentials_v1/services/iam_credentials/async_client.py",
 				"google/iam/credentials_v1/services/iam_credentials/transports/base.py",
 				"google/iam/credentials_v1/services/iam_credentials/transports/grpc.py",
 				"google/iam/credentials_v1/services/iam_credentials/transports/grpc_asyncio.py",
+				"google/iam/credentials_v1/services/iam_credentials/transports/rest_base.py",
+				"google/iam/credentials_v1/services/iam_credentials/transports/rest.py",
 				"google/iam/credentials_v1/services/iam_credentials/transports/__init__.py",
 				"google/iam/credentials_v1/types/common.py",
 				"google/iam/credentials_v1/types/iamcredentials.py",
@@ -90,12 +93,15 @@ func TestGoldenParity(t *testing.T) {
 			expectedService: ".google.cloud.redis.v1.CloudRedis",
 			minEmittedFiles: minRedisEmittedFiles,
 			requiredFiles: []string{
+				"google/cloud/redis_v1/_compat.py",
 				"google/cloud/redis_v1/services/cloud_redis/client.py",
 				"google/cloud/redis_v1/services/cloud_redis/async_client.py",
 				"google/cloud/redis_v1/services/cloud_redis/pagers.py",
 				"google/cloud/redis_v1/services/cloud_redis/transports/base.py",
 				"google/cloud/redis_v1/services/cloud_redis/transports/grpc.py",
 				"google/cloud/redis_v1/services/cloud_redis/transports/grpc_asyncio.py",
+				"google/cloud/redis_v1/services/cloud_redis/transports/rest_base.py",
+				"google/cloud/redis_v1/services/cloud_redis/transports/rest.py",
 				"google/cloud/redis_v1/services/cloud_redis/transports/__init__.py",
 				"google/cloud/redis_v1/types/cloud_redis.py",
 			},
@@ -111,12 +117,15 @@ func TestGoldenParity(t *testing.T) {
 			expectedService: ".google.cloud.asset.v1.AssetService",
 			minEmittedFiles: minAssetEmittedFiles,
 			requiredFiles: []string{
+				"google/cloud/asset_v1/_compat.py",
 				"google/cloud/asset_v1/services/asset_service/client.py",
 				"google/cloud/asset_v1/services/asset_service/async_client.py",
 				"google/cloud/asset_v1/services/asset_service/pagers.py",
 				"google/cloud/asset_v1/services/asset_service/transports/base.py",
 				"google/cloud/asset_v1/services/asset_service/transports/grpc.py",
 				"google/cloud/asset_v1/services/asset_service/transports/grpc_asyncio.py",
+				"google/cloud/asset_v1/services/asset_service/transports/rest_base.py",
+				"google/cloud/asset_v1/services/asset_service/transports/rest.py",
 				"google/cloud/asset_v1/services/asset_service/transports/__init__.py",
 				"google/cloud/asset_v1/types/asset_service.py",
 				"google/cloud/asset_v1/types/assets.py",

@@ -2,6 +2,7 @@
         def __hash__(self):  # pragma: NO COVER
             return NotImplementedError("__hash__ must be implemented.")
 
+{{^IsMixin}}
         __REQUIRED_FIELDS_DEFAULT_VALUES: Dict[str, Any] =  {
 {{#RequiredFieldsDefaultValues}}
 {{#Last}}
@@ -15,17 +16,18 @@
         }
 {{/HasRequiredFields}}
 
+{{/IsMixin}}
         @staticmethod
         def _get_http_options():
-            http_options: List[Dict[str, str]] = [
-{{#HTTPOptions}}
-                {
-                    'method': '{{Method}}',
-                    'uri': '{{URI}}',
+            http_options: List[Dict[str, str]] = [{{#HTTPOptions}}{{=<% %>=}}<%#First%>{<%/First%><%^First%>
+                {<%/First%><%={{ }}=%>
+                'method': '{{Method}}',
+                'uri': '{{URI}}',
 {{#HasBody}}
-                    'body': '{{Body}}',
+                'body': '{{Body}}',
 {{/HasBody}}
-                },
+            },
 {{/HTTPOptions}}
             ]
             return http_options
+
