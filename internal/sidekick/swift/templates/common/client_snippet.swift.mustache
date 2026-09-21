@@ -31,6 +31,9 @@ import {{Codec.LibraryName}}
 import {{.}}
 {{/Codec.SnippetImports}}
 
+{{#Codec.DiagnoseClientSnippet}}
+{{> /templates/common/diagnose}}
+{{/Codec.DiagnoseClientSnippet}}
 func sample({{#Codec.QuickstartMethod.SampleInfo}}{{#Codec.Parameters}}{{.}}: String, {{/Codec.Parameters}}{{/Codec.QuickstartMethod.SampleInfo}}) async throws {
   let client = try {{Codec.LibraryName}}.{{Codec.ClientName}}()
   {{#Codec.QuickstartMethod}}

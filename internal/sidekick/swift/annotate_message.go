@@ -71,6 +71,24 @@ type messageAnnotations struct {
 	ParameterTypeName string
 	ProtoTypeName     string
 	ModulePath        string
+
+	// DiagnoseCodable is true when the `Codable` members need `@diagnose` to
+	// suppress a deprecation warning.
+	//
+	// `init(from:)` and `encode(to:)` must name every field, including the
+	// deprecated ones, and the proto conversions do the same. The name avoids
+	// colliding with `methodAnnotations.DiagnoseFields`, which means something
+	// different: mustache resolves `{{#Codec.X}}` by walking the context
+	// stack, so two same-named fields on different annotation types can be
+	// confused.
+	DiagnoseCodable bool
+
+	// DiagnosePagination is true when the `GoogleGax._PaginatedResponse`
+	// members need `@diagnose` to suppress a deprecation warning.
+	//
+	// `_getPaginatedItems()` names the item type in its return type, so it
+	// warns even when the property that holds the items is guarded.
+	DiagnosePagination bool
 }
 
 // ConvertImports returns the sorted list of dynamic import statements for message conversions.
@@ -198,6 +216,17 @@ func (c *codec) annotateMessage(message *api.Message, model *modelAnnotations) e
 		if err != nil {
 			return err
 		}
+		// `message.Fields` includes the oneof variants, so this covers them too.
+		if !message.Deprecated && (field.Deprecated || fieldCodec.DiagnoseType) {
+			annotations.DiagnoseCodable = true
+		}
+		// A deprecated message suppresses deprecation diagnostics in its whole
+		// scope, so its property declarations need nothing. `annotateField`
+		// cannot see the enclosing message, so clear the flag here, after it
+		// has been consumed above.
+		if message.Deprecated {
+			fieldCodec.DiagnoseType = false
+		}
 		if fieldCodec.PackageName != "" && fieldCodec.PackageName != c.Model.PackageName {
 			dep, err := c.addApiPackageDependency(fieldCodec.PackageName)
 			if err != nil {
@@ -236,6 +265,18 @@ func (c *codec) annotateMessage(message *api.Message, model *modelAnnotations) e
 		default:
 			return fmt.Errorf("pageable item field should be a map or a repeated field: %s", message.ID)
 		}
+
+		// `_getPaginatedItems()` returns the item type and reads the item
+		// field, `_nextPageToken()` reads the page token field. A deprecated
+		// message suppresses the warning for its whole scope.
+		itemTypeDeprecated, err := c.fieldTypeDeprecated(itemField)
+		if err != nil {
+			return err
+		}
+		tokenDeprecated := message.Pagination.NextPageToken != nil &&
+			message.Pagination.NextPageToken.Deprecated
+		annotations.DiagnosePagination = !message.Deprecated &&
+			(itemField.Deprecated || itemTypeDeprecated || tokenDeprecated)
 	}
 
 	for _, nested := range message.Messages {

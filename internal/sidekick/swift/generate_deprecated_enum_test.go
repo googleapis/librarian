@@ -106,3 +106,78 @@ func TestGenerateEnum_Deprecated(t *testing.T) {
 		})
 	}
 }
+
+// TestGenerateEnum_Diagnose covers the initializers that assign enum cases.
+//
+// Only assignment warns. `intValue`, `stringValue` and `encode(to:)` pattern
+// match instead, which Swift does not diagnose, so they need no guard.
+func TestGenerateEnum_Diagnose(t *testing.T) {
+	for _, test := range []struct {
+		name              string
+		enumDeprecated    bool
+		defaultDeprecated bool
+		valueDeprecated   bool
+		wantDefault       bool
+		wantValues        bool
+	}{
+		{
+			name:              "deprecated-default-value",
+			defaultDeprecated: true,
+			wantDefault:       true,
+			wantValues:        true,
+		},
+		{
+			// `init()` only names the default value, so it stays clean.
+			name:            "deprecated-other-value",
+			valueDeprecated: true,
+			wantDefault:     false,
+			wantValues:      true,
+		},
+		{
+			// Swift does not diagnose deprecated references inside a
+			// deprecated declaration.
+			name:              "deprecated-enum",
+			enumDeprecated:    true,
+			defaultDeprecated: true,
+			valueDeprecated:   true,
+			wantDefault:       false,
+			wantValues:        false,
+		},
+		{
+			name:        "not-deprecated",
+			wantDefault: false,
+			wantValues:  false,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			outDir := t.TempDir()
+
+			enum := api.NewTestEnum("Status").
+				WithPackage("google.cloud.test.v1").
+				WithDeprecated(test.enumDeprecated).
+				WithValues(
+					api.NewTestEnumValue("STATUS_UNSPECIFIED", 0).
+						WithDeprecated(test.defaultDeprecated),
+					api.NewTestEnumValue("STATUS_OK", 1).
+						WithDeprecated(test.valueDeprecated),
+				)
+
+			model := api.NewTestAPI(nil, []*api.Enum{enum}, nil)
+			model.PackageName = "google.cloud.test.v1"
+			if err := Generate(t.Context(), model, outDir, &config.Library{}, nil); err != nil {
+				t.Fatal(err)
+			}
+
+			filename := filepath.Join(outDir, "Sources", "GoogleCloudTestV1", "Status.swift")
+			content, err := os.ReadFile(filename)
+			if err != nil {
+				t.Fatal(err)
+			}
+			contentStr := string(content)
+
+			checkDiagnose(t, contentStr, "  ", "public init() {", test.wantDefault)
+			checkDiagnose(t, contentStr, "  ", "public init(stringValue: Swift.String) {", test.wantValues)
+			checkDiagnose(t, contentStr, "  ", "public init(intValue: Int) {", test.wantValues)
+		})
+	}
+}

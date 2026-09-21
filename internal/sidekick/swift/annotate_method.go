@@ -46,6 +46,54 @@ type methodAnnotations struct {
 	// To understand the motivation, see the field by the same in the the
 	// `codec` data structure.
 	ResponseEncoding string
+
+	// --- Diagnose flags ---
+	//
+	// These mark the generated declarations that need `@diagnose` to suppress
+	// a deprecation warning. They vary along two axes.
+	//
+	// The first is what the declaration names. Every declaration names the
+	// request and response types, and the pagination and LRO signatures also
+	// name the item type and the operation response type; all of those form
+	// the *types* axis. Some declarations additionally name individual request
+	// fields, either as parameters or by reading and writing them; those form
+	// the *fields* axis.
+	//
+	// The second is whether the declaration is itself deprecated when the
+	// method or its service is. The public client and protocol declarations
+	// carry `@available(*, deprecated)`, and Swift does not report deprecated
+	// references inside a deprecated declaration. The internal stub, retry,
+	// logging and transport declarations never carry it, so they always need
+	// the attribute.
+
+	// DiagnoseTypes guards the public declarations that name only types.
+	DiagnoseTypes bool
+
+	// DiagnoseFields guards the public declarations that also name individual
+	// request fields, such as the generated overloads.
+	//
+	// This is deliberately an over-approximation for the per-signature
+	// overloads. It is computed over every request field, while each overload
+	// names only the subset its `api.MethodSignature` selects, and the
+	// pagination overload names only the page token. An overload whose own
+	// fields are all live can therefore carry the attribute. Suppressing a
+	// warning that is not raised is inert, and the alternative is a separate
+	// annotation computed per signature.
+	DiagnoseFields bool
+
+	// DiagnoseStubTypes guards the internal declarations that name only types.
+	DiagnoseStubTypes bool
+
+	// DiagnoseStubFields guards the internal declarations that also name
+	// individual request fields, such as the transports.
+	DiagnoseStubFields bool
+
+	// DiagnoseSnippet guards the sample function in the generated snippet.
+	//
+	// A snippet is a standalone executable. Nothing in it is deprecated, so
+	// unlike the public client it needs the attribute even when the method or
+	// its service is.
+	DiagnoseSnippet bool
 }
 
 type paginationAnnotations struct {
@@ -249,6 +297,10 @@ func (c *codec) annotateMethod(method *api.Method, modelAnn *modelAnnotations) e
 		queryParams = primary.QueryParams
 	}
 
+	// The pagination and LRO signatures name a type that is neither the input
+	// nor the output type, so `diagnoseMethodTypes` cannot see it.
+	diagnoseSignatureTypes := false
+
 	var pagination *paginationAnnotations
 	if method.Pagination != nil && method.OutputType != nil && method.OutputType.Pagination != nil {
 		itemField := method.OutputType.Pagination.PageableItem
@@ -259,6 +311,12 @@ func (c *codec) annotateMethod(method *api.Method, modelAnn *modelAnnotations) e
 		pagination = &paginationAnnotations{
 			ItemType: itemFieldCodec.BaseFieldType,
 		}
+		// The pagination signatures return `any AsyncSequence<ItemType, ...>`.
+		itemTypeDeprecated, err := c.fieldTypeDeprecated(itemField)
+		if err != nil {
+			return err
+		}
+		diagnoseSignatureTypes = diagnoseSignatureTypes || itemTypeDeprecated
 	}
 	var lro *lroAnnotations
 	if method.IsLRO && method.OperationInfo != nil {
@@ -293,6 +351,9 @@ func (c *codec) annotateMethod(method *api.Method, modelAnn *modelAnnotations) e
 			MetadataType:    metaTypeName,
 			ResponseIsEmpty: responseIsEmpty,
 		}
+		// The LRO signatures return `any GoogleGax.PollableOperation<ReturnType>`.
+		// `MetadataType` needs nothing: no template names it.
+		diagnoseSignatureTypes = diagnoseSignatureTypes || respMsg.Deprecated
 	}
 
 	var discoveryLRO *discoveryLroAnnotations
@@ -304,6 +365,13 @@ func (c *codec) annotateMethod(method *api.Method, modelAnn *modelAnnotations) e
 			discoveryLRO.PollingPathParameters = append(discoveryLRO.PollingPathParameters, camelCase(p))
 		}
 	}
+	diagnoseTypes := diagnoseMethodTypes(method) || diagnoseSignatureTypes
+	diagnoseFields, err := c.diagnoseRequestFields(method)
+	if err != nil {
+		return err
+	}
+	diagnoseFields = diagnoseFields || diagnoseTypes
+	deprecatedScope := inDeprecatedScope(method)
 	method.Codec = &methodAnnotations{
 		Name:                camelCase(method.Name),
 		DocLines:            docLines,
@@ -322,11 +390,73 @@ func (c *codec) annotateMethod(method *api.Method, modelAnn *modelAnnotations) e
 		ReturnType:          returnType,
 		DiscoveryLRO:        discoveryLRO,
 		ResponseEncoding:    c.ResponseEncoding,
+		DiagnoseTypes:       diagnoseTypes && !deprecatedScope,
+		DiagnoseFields:      diagnoseFields && !deprecatedScope,
+		DiagnoseStubTypes:   diagnoseTypes,
+		DiagnoseStubFields:  diagnoseFields,
+		DiagnoseSnippet:     diagnoseFields || deprecatedScope,
 	}
 	if method.SampleInfo != nil {
 		c.annotateSampleInfo(method)
 	}
 	return nil
+}
+
+// diagnoseMethodTypes reports whether the request or the response type is
+// deprecated.
+//
+// Every generated signature names both. The pagination item type and the LRO
+// response type also appear in generated signatures, but they are neither the
+// input nor the output type; `annotateMethod` folds them in separately, where
+// they have already been resolved.
+func diagnoseMethodTypes(method *api.Method) bool {
+	return (method.InputType != nil && method.InputType.Deprecated) ||
+		(method.OutputType != nil && method.OutputType.Deprecated)
+}
+
+// diagnoseRequestFields reports whether any field of the request message is
+// deprecated, or names a deprecated type.
+//
+// The generated overloads assign the selected request fields by name, and the
+// transports read them to build the path and the query string.
+//
+// This is the same predicate as `messageAnnotations.DiagnoseCodable` for the
+// request message. It is recomputed rather than read from the annotation to
+// keep `annotateMethod` independent of whether the request message has been
+// annotated yet, which is not guaranteed for mixin methods whose request types
+// live outside this model.
+//
+// Returning early for a deprecated request message is an optimisation, not a
+// correctness requirement: `diagnoseMethodTypes` already covers that case, and
+// the caller ORs the two together.
+func (c *codec) diagnoseRequestFields(method *api.Method) (bool, error) {
+	if method.InputType == nil || method.InputType.Deprecated {
+		return false, nil
+	}
+	for _, field := range method.InputType.Fields {
+		if field.Deprecated {
+			return true, nil
+		}
+		deprecatedType, err := c.fieldTypeDeprecated(field)
+		if err != nil {
+			return false, err
+		}
+		if deprecatedType {
+			return true, nil
+		}
+	}
+	return false, nil
+}
+
+// inDeprecatedScope reports whether the public declarations generated for this
+// method are themselves deprecated.
+//
+// Swift does not report deprecated references inside a deprecated declaration,
+// so those declarations need no attribute. Every public declaration that this
+// governs is preceded by `{{#Deprecated}} @available(*, deprecated) {{/Deprecated}}`
+// in the templates.
+func inDeprecatedScope(method *api.Method) bool {
+	return method.Deprecated || (method.Service != nil && method.Service.Deprecated)
 }
 
 func (a *methodAnnotations) Idempotent() bool {

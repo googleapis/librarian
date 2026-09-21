@@ -554,3 +554,55 @@ func TestGenerateConversions_MapFields(t *testing.T) {
 		t.Errorf("toProto() mismatch (-want +got):\n%s", diff)
 	}
 }
+
+// TestGenerateConversions_Diagnose covers the conversion members, which name
+// every field and every enum value.
+func TestGenerateConversions_Diagnose(t *testing.T) {
+	for _, test := range []struct {
+		name       string
+		deprecated bool
+	}{
+		{name: "deprecated", deprecated: true},
+		{name: "not-deprecated", deprecated: false},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			outDir := t.TempDir()
+
+			status := api.NewTestEnum("Status").
+				WithPackage("test").
+				WithValues(
+					api.NewTestEnumValue("STATUS_UNSPECIFIED", 0),
+					api.NewTestEnumValue("STATUS_OK", 1).WithDeprecated(test.deprecated),
+				)
+			folder := api.NewTestMessage("Folder").
+				WithPackage("test").
+				WithFields(api.NewTestField("name").
+					WithType(api.TypezString).
+					WithDeprecated(test.deprecated))
+
+			model := api.NewTestAPI([]*api.Message{folder}, []*api.Enum{status}, nil)
+			model.PackageName = "test"
+			module := &config.SwiftModule{ModulePath: "TestProtos"}
+			if err := GenerateConversions(t.Context(), model, outDir, &config.Library{}, module); err != nil {
+				t.Fatal(err)
+			}
+
+			read := func(basename string) string {
+				t.Helper()
+				content, err := os.ReadFile(filepath.Join(outDir, basename))
+				if err != nil {
+					t.Fatal(err)
+				}
+				return string(content)
+			}
+
+			message := read("Folder+Convert.swift")
+			checkDiagnose(t, message, "  ", "internal init(proto: ProtoType) throws {", test.deprecated)
+			checkDiagnose(t, message, "  ", "internal func toProto() throws -> ProtoType {", test.deprecated)
+
+			// `toProto()` only pattern matches, which does not warn.
+			checkDiagnose(t, read("Status+Convert.swift"), "  ",
+				"internal init(proto: TestProtos.Test_Status) {", test.deprecated)
+		})
+	}
+}

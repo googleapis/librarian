@@ -567,3 +567,280 @@ func TestAnnotateMethod_MultipleBindings(t *testing.T) {
 		t.Errorf("b1.PathVariables mismatch: %+v", b1.PathVariables)
 	}
 }
+
+// methodDiagnoseFlags is the `Diagnose*` subset of methodAnnotations.
+//
+// The flags form a matrix that is far easier to read on its own than inside a
+// full methodAnnotations literal.
+type methodDiagnoseFlags struct {
+	Types      bool
+	Fields     bool
+	StubTypes  bool
+	StubFields bool
+	Snippet    bool
+}
+
+func getMethodDiagnoseFlags(t *testing.T, method *api.Method) methodDiagnoseFlags {
+	t.Helper()
+	ann, ok := method.Codec.(*methodAnnotations)
+	if !ok {
+		t.Fatalf("method %q is not annotated", method.Name)
+	}
+	return methodDiagnoseFlags{
+		Types:      ann.DiagnoseTypes,
+		Fields:     ann.DiagnoseFields,
+		StubTypes:  ann.DiagnoseStubTypes,
+		StubFields: ann.DiagnoseStubFields,
+		Snippet:    ann.DiagnoseSnippet,
+	}
+}
+
+func TestAnnotateMethod_Diagnose(t *testing.T) {
+	for _, test := range []struct {
+		name               string
+		requestDeprecated  bool
+		responseDeprecated bool
+		fieldDeprecated    bool
+		methodDeprecated   bool
+		serviceDeprecated  bool
+		want               methodDiagnoseFlags
+	}{
+		{
+			name: "nothing-deprecated",
+			want: methodDiagnoseFlags{},
+		},
+		{
+			name:              "deprecated-request-type",
+			requestDeprecated: true,
+			want: methodDiagnoseFlags{
+				Types: true, Fields: true,
+				StubTypes: true, StubFields: true,
+				Snippet: true,
+			},
+		},
+		{
+			name:               "deprecated-response-type",
+			responseDeprecated: true,
+			want: methodDiagnoseFlags{
+				Types: true, Fields: true,
+				StubTypes: true, StubFields: true,
+				Snippet: true,
+			},
+		},
+		{
+			// The types are live, so only the declarations that name the
+			// field itself need the attribute.
+			name:            "deprecated-request-field",
+			fieldDeprecated: true,
+			want: methodDiagnoseFlags{
+				Fields: true, StubFields: true, Snippet: true,
+			},
+		},
+		{
+			// The public declarations carry `@available(*, deprecated)`, the
+			// internal ones do not, and nothing else here is deprecated.
+			name:             "deprecated-method-only",
+			methodDeprecated: true,
+			want: methodDiagnoseFlags{
+				Snippet: true,
+			},
+		},
+		{
+			name:              "deprecated-method-and-request-type",
+			methodDeprecated:  true,
+			requestDeprecated: true,
+			want: methodDiagnoseFlags{
+				StubTypes: true, StubFields: true, Snippet: true,
+			},
+		},
+		{
+			name:              "deprecated-service-and-request-type",
+			serviceDeprecated: true,
+			requestDeprecated: true,
+			want: methodDiagnoseFlags{
+				StubTypes: true, StubFields: true, Snippet: true,
+			},
+		},
+		{
+			// The transport names the field, the public overloads do not,
+			// because they are already deprecated.
+			name:             "deprecated-method-and-request-field",
+			methodDeprecated: true,
+			fieldDeprecated:  true,
+			want: methodDiagnoseFlags{
+				StubFields: true, Snippet: true,
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			inputType := api.NewTestMessage("Request").
+				WithDeprecated(test.requestDeprecated).
+				WithFields(api.NewTestField("name").
+					WithType(api.TypezString).
+					WithDeprecated(test.fieldDeprecated))
+			outputType := api.NewTestMessage("Response").
+				WithDeprecated(test.responseDeprecated)
+
+			method := api.NewTestMethod("SimpleMethod").
+				WithInput(inputType).
+				WithOutput(outputType).
+				WithVerb("POST").
+				WithPathTemplate(&api.PathTemplate{}).
+				WithDeprecated(test.methodDeprecated)
+			service := api.NewTestService("TestService").
+				WithDeprecated(test.serviceDeprecated).
+				WithMethods(method)
+
+			model := api.NewTestAPI([]*api.Message{inputType, outputType}, nil, []*api.Service{service})
+			model.PackageName = "test"
+			if err := api.CrossReference(model); err != nil {
+				t.Fatal(err)
+			}
+			codec := newTestCodec(t, model, nil)
+			if err := codec.annotateModel(); err != nil {
+				t.Fatal(err)
+			}
+
+			got := getMethodDiagnoseFlags(t, method)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+// TestAnnotateMethod_DiagnosePaginationItemType covers the pagination item
+// type.
+//
+// The pagination signatures return `any AsyncSequence<ItemType, ...>`. The item
+// type is a field type of the response message, so it is neither the input nor
+// the output type and `diagnoseMethodTypes` alone cannot see it.
+func TestAnnotateMethod_DiagnosePaginationItemType(t *testing.T) {
+	for _, test := range []struct {
+		name               string
+		itemTypeDeprecated bool
+		want               methodDiagnoseFlags
+	}{
+		{
+			name:               "deprecated-item-type",
+			itemTypeDeprecated: true,
+			want: methodDiagnoseFlags{
+				Types: true, Fields: true,
+				StubTypes: true, StubFields: true,
+				Snippet: true,
+			},
+		},
+		{
+			name: "not-deprecated",
+			want: methodDiagnoseFlags{},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			pageTokenField := api.NewTestField("page_token").WithType(api.TypezString)
+			inputType := api.NewTestMessage("ListRequest").WithFields(pageTokenField)
+
+			itemType := api.NewTestMessage("Item").WithDeprecated(test.itemTypeDeprecated)
+			itemField := api.NewTestField("items").WithMessageType(itemType).WithRepeated()
+			nextPageTokenField := api.NewTestField("next_page_token").WithType(api.TypezString)
+			outputType := api.NewTestMessage("ListResponse").
+				WithFields(itemField, nextPageTokenField).
+				WithPagination(nextPageTokenField, itemField)
+
+			method := api.NewTestMethod("ListItems").
+				WithInput(inputType).
+				WithOutput(outputType).
+				WithVerb("GET").
+				WithPathTemplate(&api.PathTemplate{}).
+				WithPagination(pageTokenField)
+			service := api.NewTestService("TestService").WithMethods(method)
+
+			model := api.NewTestAPI(
+				[]*api.Message{inputType, outputType, itemType}, nil, []*api.Service{service})
+			model.PackageName = "test"
+			if err := api.CrossReference(model); err != nil {
+				t.Fatal(err)
+			}
+			codec := newTestCodec(t, model, nil)
+			if err := codec.annotateModel(); err != nil {
+				t.Fatal(err)
+			}
+
+			got := getMethodDiagnoseFlags(t, method)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+// TestAnnotateMethod_DiagnoseLROResponseType covers the LRO response type.
+//
+// The LRO signatures return `any GoogleGax.PollableOperation<ReturnType>`. For
+// a real LRO the output type is `google.longrunning.Operation`; the type the
+// caller sees is resolved from `OperationInfo.ResponseTypeID`, so
+// `diagnoseMethodTypes` alone cannot see it.
+func TestAnnotateMethod_DiagnoseLROResponseType(t *testing.T) {
+	for _, test := range []struct {
+		name                  string
+		lroResponseDeprecated bool
+		lroMetadataDeprecated bool
+		want                  methodDiagnoseFlags
+	}{
+		{
+			name:                  "deprecated-lro-response",
+			lroResponseDeprecated: true,
+			want: methodDiagnoseFlags{
+				Types: true, Fields: true,
+				StubTypes: true, StubFields: true,
+				Snippet: true,
+			},
+		},
+		{
+			// No template names the metadata type.
+			name:                  "deprecated-lro-metadata",
+			lroMetadataDeprecated: true,
+			want:                  methodDiagnoseFlags{},
+		},
+		{
+			name: "not-deprecated",
+			want: methodDiagnoseFlags{},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			inputType := api.NewTestMessage("Request")
+			outputType := api.NewTestMessage("Operation")
+			lroResponseType := api.NewTestMessage("LroResponse").
+				WithDeprecated(test.lroResponseDeprecated)
+			lroMetadataType := api.NewTestMessage("LroMetadata").
+				WithDeprecated(test.lroMetadataDeprecated)
+
+			method := api.NewTestMethod("LroMethod").
+				WithInput(inputType).
+				WithOutput(outputType).
+				WithVerb("POST").
+				WithPathTemplate(&api.PathTemplate{}).
+				WithOperationInfo(&api.OperationInfo{
+					ResponseTypeID: lroResponseType.ID,
+					MetadataTypeID: lroMetadataType.ID,
+				})
+			service := api.NewTestService("TestService").WithMethods(method)
+
+			model := api.NewTestAPI(
+				[]*api.Message{inputType, outputType, lroResponseType, lroMetadataType},
+				nil, []*api.Service{service})
+			model.PackageName = "test"
+			if err := api.CrossReference(model); err != nil {
+				t.Fatal(err)
+			}
+			codec := newTestCodec(t, model, nil)
+			if err := codec.annotateModel(); err != nil {
+				t.Fatal(err)
+			}
+
+			got := getMethodDiagnoseFlags(t, method)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
