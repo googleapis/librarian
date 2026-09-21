@@ -401,6 +401,13 @@ func TestDeriveLibraryName(t *testing.T) {
 			want:                  "secretmanager",
 		},
 		{
+			name:                  "forwarding product path disambiguation",
+			serviceProtoPath:      "google/cloud/kms/v1/ekm_service.proto",
+			productPath:           "google/cloud/kms/v1",
+			forwardingProductPath: "google/cloud/kms",
+			want:                  "kms_ekm_service",
+		},
+		{
 			name:             "aiplatform dataset service without forwarding path",
 			serviceProtoPath: "google/cloud/aiplatform/v1/dataset_service.proto",
 			productPath:      "google/cloud/aiplatform/v1",

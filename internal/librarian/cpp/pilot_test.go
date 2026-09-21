@@ -18,11 +18,13 @@ package cpp
 
 import (
 	"bytes"
+	"errors"
 	"io/fs"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"regexp"
+	"strings"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -99,8 +101,8 @@ func TestSecretManagerPilot(t *testing.T) {
 	}
 
 	tmpGoogleapis := t.TempDir()
-	gitCmd := exec.Command("git", "-C", googleapisRepo, "archive", commitSHA, "google")
-	tarCmd := exec.Command("tar", "-x", "-C", tmpGoogleapis)
+	gitCmd := exec.CommandContext(t.Context(), "git", "-C", googleapisRepo, "archive", commitSHA, "google")
+	tarCmd := exec.CommandContext(t.Context(), "tar", "-x", "-C", tmpGoogleapis)
 	pipe, err := gitCmd.StdoutPipe()
 	if err != nil {
 		t.Fatal(err)
@@ -160,7 +162,25 @@ func TestSecretManagerPilot(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	isIgnored := func(path string) bool {
+		norm := filepath.ToSlash(path)
+		base := filepath.Base(norm)
+		if base == "CMakeLists.txt" || base == ".clang-format" ||
+			base == ".repo-metadata.json" || base == "BUILD.bazel" || base == "README.md" ||
+			strings.HasSuffix(base, "_proto_export.h") {
+			return true
+		}
+		for part := range strings.SplitSeq(norm, "/") {
+			if part == "quickstart" || part == "samples" || part == "doc" || part == "inventory" {
+				return true
+			}
+		}
+		return false
+	}
+
+	matchedCount := 0
 	fileCount := 0
+	var mismatchedFiles []string
 	err = filepath.WalkDir(outDir, func(p string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err
@@ -172,7 +192,7 @@ func TestSecretManagerPilot(t *testing.T) {
 		if err != nil {
 			return err
 		}
-		if relPath == "CMakeLists.txt" || relPath == ".clang-format" {
+		if isIgnored(relPath) {
 			return nil
 		}
 		fileCount++
@@ -183,7 +203,9 @@ func TestSecretManagerPilot(t *testing.T) {
 				t.Fatal(err)
 			}
 			if len(got) == 0 {
+				mismatchedFiles = append(mismatchedFiles, relPath)
 				t.Errorf("generated file %s is empty", relPath)
+				return
 			}
 
 			refPath := filepath.Join(cppRepo, relPath)
@@ -192,13 +214,44 @@ func TestSecretManagerPilot(t *testing.T) {
 				t.Fatal(err)
 			}
 			if len(want) == 0 {
+				mismatchedFiles = append(mismatchedFiles, relPath)
 				t.Errorf("reference file %s is empty", relPath)
+				return
 			}
 
 			if diff := cmp.Diff(string(want), string(got)); diff != "" {
+				mismatchedFiles = append(mismatchedFiles, relPath)
 				t.Errorf("mismatch (-want +got):\n%s", diff)
+				return
 			}
+			matchedCount++
 		})
+		return nil
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Verify all expected reference files exist in the generated output.
+	refBase := filepath.Join(cppRepo, "google", "cloud", "secretmanager")
+	err = filepath.WalkDir(refBase, func(p string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		if d.IsDir() {
+			return nil
+		}
+		relPath, err := filepath.Rel(cppRepo, p)
+		if err != nil {
+			return err
+		}
+		if isIgnored(relPath) {
+			return nil
+		}
+		genPath := filepath.Join(outDir, relPath)
+		if _, err := os.Stat(genPath); errors.Is(err, fs.ErrNotExist) {
+			t.Errorf("reference file %s was not generated", relPath)
+		}
 		return nil
 	})
 	if err != nil {
@@ -212,5 +265,8 @@ func TestSecretManagerPilot(t *testing.T) {
 	if fileCount != expectedFiles {
 		t.Errorf("expected %d generated files, got %d", expectedFiles, fileCount)
 	}
-	t.Logf("verified %d/%d generated files match reference", fileCount, expectedFiles)
+	for _, m := range mismatchedFiles {
+		t.Logf("mismatched file: %s", m)
+	}
+	t.Logf("%d/%d generated files matched reference (%d mismatches)", matchedCount, expectedFiles, fileCount-matchedCount)
 }

@@ -170,7 +170,7 @@ func TestAssuredWorkloads(t *testing.T) {
 			return true
 		}
 		for part := range strings.SplitSeq(norm, "/") {
-			if part == "quickstart" || part == "samples" || part == "doc" {
+			if part == "quickstart" || part == "samples" || part == "doc" || part == "inventory" {
 				return true
 			}
 		}

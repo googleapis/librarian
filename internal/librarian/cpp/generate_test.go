@@ -15,6 +15,8 @@
 package cpp
 
 import (
+	"errors"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"strings"
@@ -27,79 +29,85 @@ import (
 )
 
 func TestGenerate_ValidationErrors(t *testing.T) {
-	ctx := t.Context()
-
-	t.Run("nil library", func(t *testing.T) {
-		err := Generate(ctx, nil, nil, nil)
-		if err == nil || !strings.Contains(err.Error(), "missing cpp configuration") {
-			t.Fatalf("expected missing cpp configuration error, got: %v", err)
-		}
-	})
-
-	t.Run("nil cpp config", func(t *testing.T) {
-		lib := &config.Library{Name: "test-lib"}
-		err := Generate(ctx, nil, lib, nil)
-		if err == nil || !strings.Contains(err.Error(), "library test-lib is missing cpp configuration") {
-			t.Fatalf("expected missing cpp configuration error, got: %v", err)
-		}
-	})
-
-	t.Run("no apis", func(t *testing.T) {
-		lib := &config.Library{
-			Name: "test-lib",
-			Cpp:  &config.CppLibrary{},
-		}
-		err := Generate(ctx, nil, lib, nil)
-		if err == nil || !strings.Contains(err.Error(), "library test-lib has no configured APIs") {
-			t.Fatalf("expected no configured APIs error, got: %v", err)
-		}
-	})
-
-	t.Run("missing googleapis source", func(t *testing.T) {
-		lib := &config.Library{
-			Name: "test-lib",
-			Cpp:  &config.CppLibrary{},
-			APIs: []*config.API{{Path: "google/cloud/secretmanager/v1"}},
-		}
-		err := Generate(ctx, nil, lib, nil)
-		if err == nil || !strings.Contains(err.Error(), "missing googleapis source for library test-lib") {
-			t.Fatalf("expected missing googleapis source error, got: %v", err)
-		}
-	})
-
-	t.Run("missing service config", func(t *testing.T) {
-		lib := &config.Library{
-			Name: "test-lib",
-			Cpp:  &config.CppLibrary{},
-			APIs: []*config.API{{Path: "nonexistent/api/v1"}},
-		}
-		src := &sources.Sources{Googleapis: t.TempDir()}
-		err := Generate(ctx, nil, lib, src)
-		if err == nil {
-			t.Fatal("expected error for nonexistent service config, got nil")
-		}
-	})
-
-	t.Run("uses override service config yaml name", func(t *testing.T) {
-		tempDir := t.TempDir()
-		overrideYAML := "custom_service.yaml"
-		lib := &config.Library{
-			Name: "test-lib",
-			Cpp: &config.CppLibrary{
-				OverrideServiceConfigYAMLName: overrideYAML,
+	for _, test := range []struct {
+		name    string
+		library *config.Library
+		src     *sources.Sources
+		wantErr error
+	}{
+		{
+			name:    "nil library",
+			library: nil,
+			src:     nil,
+			wantErr: ErrMissingCppConfig,
+		},
+		{
+			name:    "nil cpp config",
+			library: &config.Library{Name: "test-lib"},
+			src:     nil,
+			wantErr: ErrMissingCppConfig,
+		},
+		{
+			name: "no apis",
+			library: &config.Library{
+				Name: "test-lib",
+				Cpp:  &config.CppLibrary{},
 			},
-			APIs: []*config.API{{Path: "nonexistent/api/v1"}},
-		}
-		src := &sources.Sources{Googleapis: tempDir}
-		pc := &config.Protoc{}
-		modelCfg, err := libraryToModelConfig(lib, lib.APIs[0], src, pc)
-		if err != nil {
-			t.Fatalf("expected nil error when OverrideServiceConfigYAMLName is provided, got: %v", err)
-		}
-		if modelCfg.ServiceConfig != overrideYAML {
-			t.Errorf("ServiceConfig mismatch: got %q, want %q", modelCfg.ServiceConfig, overrideYAML)
-		}
-	})
+			src:     nil,
+			wantErr: ErrNoAPIs,
+		},
+		{
+			name: "missing googleapis source",
+			library: &config.Library{
+				Name: "test-lib",
+				Cpp:  &config.CppLibrary{},
+				APIs: []*config.API{{Path: "google/cloud/secretmanager/v1"}},
+			},
+			src:     nil,
+			wantErr: ErrMissingGoogleapisSource,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			err := Generate(t.Context(), nil, test.library, test.src)
+			if !errors.Is(err, test.wantErr) {
+				t.Fatalf("expected error %v, got: %v", test.wantErr, err)
+			}
+		})
+	}
+}
+
+func TestGenerate_MissingServiceConfig(t *testing.T) {
+	lib := &config.Library{
+		Name: "test-lib",
+		Cpp:  &config.CppLibrary{},
+		APIs: []*config.API{{Path: "nonexistent/api/v1"}},
+	}
+	src := &sources.Sources{Googleapis: t.TempDir()}
+	err := Generate(t.Context(), nil, lib, src)
+	if err == nil {
+		t.Fatal("expected error for nonexistent service config, got nil")
+	}
+}
+
+func TestLibraryToModelConfig_UsesOverrideServiceConfigYAMLName(t *testing.T) {
+	tempDir := t.TempDir()
+	overrideYAML := "custom_service.yaml"
+	lib := &config.Library{
+		Name: "test-lib",
+		Cpp: &config.CppLibrary{
+			OverrideServiceConfigYAMLName: overrideYAML,
+		},
+		APIs: []*config.API{{Path: "nonexistent/api/v1"}},
+	}
+	src := &sources.Sources{Googleapis: tempDir}
+	pc := &config.Protoc{}
+	modelCfg, err := libraryToModelConfig(lib, lib.APIs[0], src, pc)
+	if err != nil {
+		t.Fatalf("expected nil error when OverrideServiceConfigYAMLName is provided, got: %v", err)
+	}
+	if modelCfg.ServiceConfig != overrideYAML {
+		t.Errorf("ServiceConfig mismatch: got %q, want %q", modelCfg.ServiceConfig, overrideYAML)
+	}
 }
 
 func TestDefaultOutput(t *testing.T) {
@@ -131,7 +139,7 @@ func TestDefaultOutput(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			got := DefaultOutput(test.api, test.defaultOut)
 			if diff := cmp.Diff(test.want, got); diff != "" {
-				t.Errorf("DefaultOutput mismatch (-want +got):\n%s", diff)
+				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
@@ -166,5 +174,41 @@ func TestGenerate_Success(t *testing.T) {
 	}
 	if !strings.Contains(string(content), "Generated by the Codegen C++ plugin.") {
 		t.Errorf("expected generated CMakeLists.txt to contain prologue banner, got:\n%s", string(content))
+	}
+
+	var headerFiles, sourceFiles []string
+	err = filepath.WalkDir(outDir, func(p string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		if d.IsDir() {
+			return nil
+		}
+		relPath, err := filepath.Rel(outDir, p)
+		if err != nil {
+			return err
+		}
+		info, err := d.Info()
+		if err != nil {
+			return err
+		}
+		if info.Size() == 0 {
+			t.Errorf("generated file %s is empty", relPath)
+		}
+		if strings.HasSuffix(relPath, ".h") {
+			headerFiles = append(headerFiles, relPath)
+		} else if strings.HasSuffix(relPath, ".cc") {
+			sourceFiles = append(sourceFiles, relPath)
+		}
+		return nil
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(headerFiles) == 0 {
+		t.Errorf("expected generated .h files, got none")
+	}
+	if len(sourceFiles) == 0 {
+		t.Errorf("expected generated .cc files, got none")
 	}
 }

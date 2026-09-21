@@ -17,6 +17,7 @@ package cpp
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"path/filepath"
 
@@ -27,6 +28,15 @@ import (
 	"github.com/googleapis/librarian/internal/sources"
 )
 
+var (
+	// ErrMissingCppConfig indicates that a library is missing C++ configuration.
+	ErrMissingCppConfig = errors.New("missing C++ configuration")
+	// ErrNoAPIs indicates that a library has no configured APIs.
+	ErrNoAPIs = errors.New("no configured APIs")
+	// ErrMissingGoogleapisSource indicates that the googleapis source is missing.
+	ErrMissingGoogleapisSource = errors.New("missing googleapis source")
+)
+
 // Generate generates a C++ client library.
 func Generate(ctx context.Context, cfg *config.Config, library *config.Library, src *sources.Sources) error {
 	if library == nil || library.Cpp == nil {
@@ -34,13 +44,13 @@ func Generate(ctx context.Context, cfg *config.Config, library *config.Library, 
 		if library != nil {
 			libName = library.Name
 		}
-		return fmt.Errorf("library %s is missing cpp configuration", libName)
+		return fmt.Errorf("%w for library %s", ErrMissingCppConfig, libName)
 	}
 	if len(library.APIs) == 0 {
-		return fmt.Errorf("library %s has no configured APIs", library.Name)
+		return fmt.Errorf("%w for library %s", ErrNoAPIs, library.Name)
 	}
 	if src == nil || src.Googleapis == "" {
-		return fmt.Errorf("missing googleapis source for library %s", library.Name)
+		return fmt.Errorf("%w for library %s", ErrMissingGoogleapisSource, library.Name)
 	}
 	var pc *config.Protoc
 	if cfg != nil && cfg.Tools != nil {
@@ -67,12 +77,12 @@ func DefaultOutput(api, defaultOut string) string {
 
 func libraryToModelConfig(library *config.Library, apiCfg *config.API, src *sources.Sources, pc *config.Protoc) (*parser.ModelConfig, error) {
 	sourceConfig := sources.NewSourceConfig(src, library.Roots)
-	root := src.Googleapis
 	serviceConfigPath := ""
-	if library.Cpp != nil && library.Cpp.OverrideServiceConfigYAMLName != "" {
+	if library.Cpp != nil {
 		serviceConfigPath = library.Cpp.OverrideServiceConfigYAMLName
-	} else {
-		svcConfig, err := serviceconfig.Find(root, apiCfg.Path, config.LanguageCpp)
+	}
+	if serviceConfigPath == "" {
+		svcConfig, err := serviceconfig.Find(src.Googleapis, apiCfg.Path, config.LanguageCpp)
 		if err != nil {
 			return nil, err
 		}

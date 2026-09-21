@@ -101,7 +101,13 @@ func DeriveLibraryName(serviceProtoPath, productPath, forwardingProductPath stri
 	if forwardingProductPath != "" {
 		cleaned := strings.TrimPrefix(forwardingProductPath, "google/cloud/")
 		cleaned = strings.TrimPrefix(cleaned, "google/")
-		return strings.ReplaceAll(cleaned, "/", "_")
+		parts := strings.Split(cleaned, "/")
+		fwdName := strings.Join(parts, "_")
+		protoBase := strings.TrimSuffix(path.Base(serviceProtoPath), ".proto")
+		if protoBase == "service" || slices.Contains(parts, protoBase) {
+			return fwdName
+		}
+		return fwdName + "_" + protoBase
 	}
 	if productPath != "" {
 		cleaned := strings.TrimPrefix(productPath, "google/cloud/")

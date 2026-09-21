@@ -16,12 +16,12 @@ package cpp
 
 import (
 	"os"
-	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
 
 	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/testhelper"
 )
 
 func TestFormat_EmptyOutput(t *testing.T) {
@@ -65,9 +65,7 @@ func TestFormat_MissingClangFormatFailsLoudly(t *testing.T) {
 }
 
 func TestFormat_FormatsCppFiles(t *testing.T) {
-	if _, err := exec.LookPath("clang-format"); err != nil {
-		t.Skip("clang-format not installed on host, skipping active format test")
-	}
+	testhelper.RequireCommand(t, "clang-format")
 	dir := t.TempDir()
 	unformatted := "int   foo(  int  x ) { return   x ; }\n"
 	headerPath := filepath.Join(dir, "foo.h")
