@@ -88,7 +88,7 @@ func TestAnnotateService(t *testing.T) {
 			}
 			if diff := cmp.Diff(test.want, ann,
 				cmpopts.IgnoreFields(serviceAnnotations{}, "Model", "Service", "Transport", "Client"),
-				cmpopts.IgnoreFields(methodAnnotations{}, "Service", "Method"),
+				cmpopts.IgnoreFields(methodAnnotations{}, "Service", "Method", "RestMethod"),
 			); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}

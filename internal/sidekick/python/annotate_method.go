@@ -32,6 +32,7 @@ type methodAnnotations struct {
 	IsLRO          bool
 	IsMixin        bool
 	Pager          *pagerAnnotations
+	RestMethod     *restMethodAnnotation
 }
 
 func (c *codec) annotateMethod(method *api.Method, service *serviceAnnotations) error {
@@ -61,6 +62,7 @@ func (c *codec) annotateMethod(method *api.Method, service *serviceAnnotations) 
 		IsPaged:        method.Pagination != nil && !isMixin,
 		IsLRO:          method.OperationInfo != nil || method.IsLRO,
 		IsMixin:        isMixin,
+		RestMethod:     annotateRestMethod(method),
 	}
 	method.Codec = ann
 	return nil

@@ -135,7 +135,7 @@ func TestAnnotateMethod(t *testing.T) {
 			if !ok {
 				t.Fatalf("got %T, want *methodAnnotations", test.method.Codec)
 			}
-			if diff := cmp.Diff(test.want, ann, cmpopts.IgnoreFields(methodAnnotations{}, "Service", "Method")); diff != "" {
+			if diff := cmp.Diff(test.want, ann, cmpopts.IgnoreFields(methodAnnotations{}, "Service", "Method", "RestMethod")); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
@@ -196,5 +196,25 @@ func TestIsMixin(t *testing.T) {
 				t.Errorf("isMixin() = %v, want %v", got, test.want)
 			}
 		})
+	}
+}
+
+func TestAnnotateMethod_RestMethod(t *testing.T) {
+	m := api.NewTestMethod("GetSecret")
+	svc := api.NewTestService("SecretManagerService").WithMethods(m)
+	model := api.NewTestAPI(nil, nil, []*api.Service{svc})
+	codec := newTestCodec(t, model, nil)
+	if err := codec.annotateModel(); err != nil {
+		t.Fatal(err)
+	}
+	ann, ok := m.Codec.(*methodAnnotations)
+	if !ok {
+		t.Fatalf("got %T, want *methodAnnotations", m.Codec)
+	}
+	if ann.RestMethod == nil {
+		t.Fatal("expected RestMethod to be populated, got nil")
+	}
+	if diff := cmp.Diff("_BaseGetSecret", ann.RestMethod.BaseClassName); diff != "" {
+		t.Errorf("BaseClassName mismatch (-want +got):\n%s", diff)
 	}
 }
