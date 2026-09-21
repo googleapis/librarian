@@ -24,7 +24,7 @@ import Foundation
 import GoogleAuth
 @_spi(GoogleCloudInternal) import GoogleGax
 {{#Codec.ServiceImports}}
-import {{.}}
+@_spi(GoogleCloudInternal) import {{.}}
 {{/Codec.ServiceImports}}
 
 /// A Swift protocol representing the control-plane and administrative surface for Google Cloud Storage.
