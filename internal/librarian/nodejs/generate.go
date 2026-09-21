@@ -43,8 +43,9 @@ const (
 )
 
 var (
-	errToolNotInstalled = errors.New("tool not installed in librarian cache")
-	errProtoNotFound    = errors.New("no proto is found in api")
+	errToolNotInstalled    = errors.New("tool not installed in librarian cache")
+	errProtoNotFound       = errors.New("no proto is found in api")
+	errPackageNameRequired = errors.New("nodejs.package_name is required; non-cloud libraries must be configured in librarian.yaml or populated during librarian add")
 )
 
 type buildGeneratorArgsParams struct {
@@ -56,7 +57,6 @@ type buildGeneratorArgsParams struct {
 	stagingDir    string
 	nodejsAPI     *config.NodejsAPI
 }
-
 // IsMixedLibrary reports whether the library has handwritten code wrapping
 // generated or librarian-managed code.
 func IsMixedLibrary(lib *config.Library) bool {
@@ -65,6 +65,9 @@ func IsMixedLibrary(lib *config.Library) bool {
 
 // Generate generates a Node.js client library.
 func Generate(ctx context.Context, cfg *config.Config, library *config.Library, srcs *sources.Sources) error {
+	if library.Nodejs == nil || library.Nodejs.PackageName == "" {
+		return fmt.Errorf("library %q: %w", library.Name, errPackageNameRequired)
+	}
 	googleapisDir := srcs.Googleapis
 	outdir, err := filepath.Abs(library.Output)
 	if err != nil {
@@ -281,7 +284,7 @@ func buildGeneratorArgs(params buildGeneratorArgsParams) ([]string, error) {
 		args = append(args, "--service-yaml", apiMetadata.ServiceConfig)
 	}
 
-	args = append(args, "--package-name", derivePackageName(params.library))
+	args = append(args, "--package-name", params.library.Nodejs.PackageName)
 	args = append(args, "--metadata")
 
 	// Only pass --transport for non-default values (default is grpc+rest).
@@ -618,31 +621,6 @@ func copySamplesFromStaging(stagingDir, outDir string) error {
 		}
 	}
 	return nil
-}
-
-// derivePackageName returns the npm package name for a library.
-// It uses nodejs.package_name if set, otherwise derives it by splitting the
-// library name on the second dash (e.g. "google-cloud-batch" → "@google-cloud/batch").
-func derivePackageName(library *config.Library) string {
-	if library.Nodejs != nil && library.Nodejs.PackageName != "" {
-		return library.Nodejs.PackageName
-	}
-	return derivePackageNameFromLibraryName(library.Name)
-}
-
-func derivePackageNameFromLibraryName(name string) string {
-	firstDash := strings.Index(name, "-")
-	if firstDash < 0 {
-		return name
-	}
-	secondDash := strings.Index(name[firstDash+1:], "-")
-	if secondDash < 0 {
-		return name
-	}
-	secondDash += firstDash + 1
-	scope := name[:secondDash]
-	pkg := name[secondDash+1:]
-	return fmt.Sprintf("@%s/%s", scope, pkg)
 }
 
 // DefaultOutput returns the output path for a library.
