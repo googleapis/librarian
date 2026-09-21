@@ -1705,3 +1705,58 @@ func TestCollectProtos(t *testing.T) {
 		})
 	}
 }
+
+func TestCollectProtos_Error(t *testing.T) {
+	t.Parallel()
+	for _, test := range []struct {
+		name    string
+		setup   func(t *testing.T) (string, string)
+		wantErr error
+	}{
+		{
+			name: "nonexistent directory",
+			setup: func(t *testing.T) (string, string) {
+				return t.TempDir(), "google/cloud/nonexistent/v1"
+			},
+			wantErr: fs.ErrNotExist,
+		},
+		{
+			name: "no proto files in directory",
+			setup: func(t *testing.T) (string, string) {
+				tmpDir := t.TempDir()
+				apiPath := "google/cloud/empty/v1"
+				dir := filepath.Join(tmpDir, apiPath)
+				if err := os.MkdirAll(dir, 0o755); err != nil {
+					t.Fatal(err)
+				}
+				if err := os.WriteFile(filepath.Join(dir, "README.md"), []byte("# docs"), 0o644); err != nil {
+					t.Fatal(err)
+				}
+				return tmpDir, apiPath
+			},
+			wantErr: errProtoNotFound,
+		},
+		{
+			name: "empty directory",
+			setup: func(t *testing.T) (string, string) {
+				tmpDir := t.TempDir()
+				apiPath := "google/cloud/empty/v1"
+				dir := filepath.Join(tmpDir, apiPath)
+				if err := os.MkdirAll(dir, 0o755); err != nil {
+					t.Fatal(err)
+				}
+				return tmpDir, apiPath
+			},
+			wantErr: errProtoNotFound,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			googleapisDir, apiPath := test.setup(t)
+			_, err := collectProtos(googleapisDir, apiPath)
+			if !errors.Is(err, test.wantErr) {
+				t.Fatalf("collectProtos() error = %v, want %v", err, test.wantErr)
+			}
+		})
+	}
+}
