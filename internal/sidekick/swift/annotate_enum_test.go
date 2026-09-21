@@ -224,3 +224,33 @@ func TestAnnotateEnum_NestedModulePath(t *testing.T) {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
+
+func TestAnnotateEnum_HasDocLines(t *testing.T) {
+	for _, test := range []struct {
+		name string
+		ann  *enumAnnotations
+		want bool
+	}{
+		{
+			name: "with doc lines",
+			ann:  &enumAnnotations{DocLines: []string{"A doc line."}},
+			want: true,
+		},
+		{
+			name: "empty doc lines",
+			ann:  &enumAnnotations{DocLines: []string{}},
+			want: false,
+		},
+		{
+			name: "nil doc lines",
+			ann:  &enumAnnotations{DocLines: nil},
+			want: false,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			if diff := cmp.Diff(test.want, test.ann.HasDocLines()); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}

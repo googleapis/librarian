@@ -54,6 +54,11 @@ type enumAnnotations struct {
 	FullyQualifiedName string
 }
 
+// HasDocLines returns true if this enum has proto documentation lines.
+func (ann *enumAnnotations) HasDocLines() bool {
+	return len(ann.DocLines) > 0
+}
+
 // IsGated returns true if this message is gated by some package traits.
 func (ann *enumAnnotations) IsGated() bool {
 	return len(ann.GatedBy) != 0

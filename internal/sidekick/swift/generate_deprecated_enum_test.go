@@ -25,6 +25,13 @@ import (
 )
 
 func TestGenerateEnum_Deprecated(t *testing.T) {
+	const noteDoc = `///
+/// - Note: Adding cases to this enumeration is not considered a breaking change.
+///   Always include an ` + "`@unknown default:`" + ` case when switching over this type.
+///   Do not pattern-match against ` + "`unknownStringValue`" + ` or ` + "`unknownIntValue`" + `
+///   expecting specific values to remain unparsed; future releases may promote
+///   them to named cases.
+`
 	for _, test := range []struct {
 		name           string
 		enumDeprecated bool
@@ -36,28 +43,28 @@ func TestGenerateEnum_Deprecated(t *testing.T) {
 			name:           "deprecated-enum",
 			enumDeprecated: true,
 			valDeprecated:  false,
-			wantEnum:       "/// -- enum marker --\n@available(*, deprecated)\npublic enum Status",
+			wantEnum:       "/// -- enum marker --\n" + noteDoc + "@available(*, deprecated)\npublic enum Status",
 			wantCase:       "/// -- case marker --\n  case unspecified",
 		},
 		{
 			name:           "deprecated-value",
 			enumDeprecated: false,
 			valDeprecated:  true,
-			wantEnum:       "/// -- enum marker --\npublic enum Status",
+			wantEnum:       "/// -- enum marker --\n" + noteDoc + "public enum Status",
 			wantCase:       "/// -- case marker --\n  @available(*, deprecated)\n  case unspecified",
 		},
 		{
 			name:           "both-deprecated",
 			enumDeprecated: true,
 			valDeprecated:  true,
-			wantEnum:       "/// -- enum marker --\n@available(*, deprecated)\npublic enum Status",
+			wantEnum:       "/// -- enum marker --\n" + noteDoc + "@available(*, deprecated)\npublic enum Status",
 			wantCase:       "/// -- case marker --\n  @available(*, deprecated)\n  case unspecified",
 		},
 		{
 			name:           "not-deprecated",
 			enumDeprecated: false,
 			valDeprecated:  false,
-			wantEnum:       "/// -- enum marker --\npublic enum Status",
+			wantEnum:       "/// -- enum marker --\n" + noteDoc + "public enum Status",
 			wantCase:       "/// -- case marker --\n  case unspecified",
 		},
 	} {
