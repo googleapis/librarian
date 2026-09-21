@@ -61,6 +61,9 @@ extension Clients {
     }
     {{#Codec.Methods}}
 
+    {{#Codec.DiagnoseStubTypes}}
+    {{> /templates/common/diagnose}}
+    {{/Codec.DiagnoseStubTypes}}
     public func {{> /templates/common/method_signature/request_options}} {
       try await self._intercept(
         request: request,

@@ -53,6 +53,9 @@ extension Clients {
 
     {{#Codec.Methods}}
 
+    {{#Codec.DiagnoseStubFields}}
+    {{> /templates/common/diagnose}}
+    {{/Codec.DiagnoseStubFields}}
     public func {{> /templates/common/method_signature/request_options}} {
       {{#Codec.HasRoutingParams}}
       let routingParams = GoogleGaxGRPC._RoutingMatcher.format([

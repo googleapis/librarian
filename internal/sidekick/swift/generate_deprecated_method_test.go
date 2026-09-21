@@ -218,3 +218,216 @@ func TestGenerateService_DeprecatedMethods(t *testing.T) {
 		})
 	}
 }
+
+// TestGenerateService_DiagnoseMethodTypes covers the declarations that name a
+// deprecated request or response type.
+//
+// The public client and protocol declarations carry `@available(*, deprecated)`
+// when the method or its service is deprecated, which already suppresses the
+// warning. The internal stub, retry, logging and transport declarations never
+// do, so they always need the attribute.
+func TestGenerateService_DiagnoseMethodTypes(t *testing.T) {
+	for _, test := range []struct {
+		name              string
+		methodDeprecated  bool
+		serviceDeprecated bool
+		requestDeprecated bool
+		wantPublic        bool
+		wantStub          bool
+	}{
+		{
+			name:              "deprecated-request-type",
+			requestDeprecated: true,
+			wantPublic:        true,
+			wantStub:          true,
+		},
+		{
+			name:              "deprecated-method",
+			methodDeprecated:  true,
+			requestDeprecated: true,
+			wantPublic:        false,
+			wantStub:          true,
+		},
+		{
+			name:              "deprecated-service",
+			serviceDeprecated: true,
+			requestDeprecated: true,
+			wantPublic:        false,
+			wantStub:          true,
+		},
+		{
+			name:       "not-deprecated",
+			wantPublic: false,
+			wantStub:   false,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			outDir := t.TempDir()
+
+			requestType := api.NewTestMessage("Request").
+				WithDeprecated(test.requestDeprecated).
+				WithFields(api.NewTestField("name").WithType(api.TypezString))
+			responseType := api.NewTestMessage("Response")
+			operationType := api.NewTestMessage("Operation").WithPackage("google.longrunning")
+			getOperationInputType := api.NewTestMessage("GetOperationRequest").
+				WithPackage("google.longrunning")
+
+			service := api.NewTestService("TestService").
+				WithDeprecated(test.serviceDeprecated).
+				WithMethods(
+					api.NewTestMethod("SimpleMethod").
+						WithInput(requestType).
+						WithOutput(responseType).
+						WithVerb("POST").
+						WithPathTemplate((&api.PathTemplate{}).WithLiteral("v1").WithLiteral("simple")).
+						WithSignatures(&api.MethodSignature{Fields: []*api.Field{requestType.Fields[0]}}).
+						WithDeprecated(test.methodDeprecated),
+					api.NewTestMethod("GetOperation").
+						WithInput(getOperationInputType).
+						WithOutput(operationType).
+						WithVerb("GET").
+						WithPathTemplate((&api.PathTemplate{}).WithLiteral("v1").WithLiteral("operations")),
+				)
+
+			model := api.NewTestAPI([]*api.Message{
+				requestType, responseType, operationType, getOperationInputType,
+			}, nil, []*api.Service{service})
+			model.PackageName = "test"
+
+			library := &config.Library{
+				Swift: swiftConfig(t, []config.SwiftDependency{
+					{Name: "GoogleGax", RequiredByServices: true},
+					{Name: "GoogleAuth", RequiredByServices: true},
+					{ApiPackage: "google.longrunning", Name: "GoogleCloudLongrunningV1"},
+					{ApiPackage: "google.rpc", Name: "GoogleRpc"},
+				}),
+			}
+			if err := Generate(t.Context(), model, outDir, library, nil); err != nil {
+				t.Fatal(err)
+			}
+
+			read := func(basename string) string {
+				t.Helper()
+				content, err := os.ReadFile(filepath.Join(outDir, "Sources", "Test", basename))
+				if err != nil {
+					t.Fatal(err)
+				}
+				return string(content)
+			}
+
+			// The client class and the protocol default implementations.
+			serviceFile := read("TestService.swift")
+			checkDiagnose(t, serviceFile, "  ", "public func simpleMethod(", test.wantPublic)
+			// The protocol requirements.
+			checkDiagnose(t, serviceFile, "    ", "func simpleMethod(", test.wantPublic)
+
+			checkDiagnose(t, read("TestService+Stub.swift"), "    ",
+				"func simpleMethod(", test.wantStub)
+			for _, basename := range []string{
+				"TestService+Retry.swift",
+				"TestService+Logging.swift",
+				"TestService+Transport.swift",
+			} {
+				checkDiagnose(t, read(basename), "    ", "public func simpleMethod(", test.wantStub)
+			}
+		})
+	}
+}
+
+// TestGenerateService_DiagnoseRequestFields covers the declarations that name
+// individual request fields.
+//
+// An overload assigns each selected request field by name, and a transport
+// reads them to build the path and the query string, so both warn when a field
+// is deprecated even though every type in their signatures is live. The
+// declarations that only pass the request through must stay clean.
+func TestGenerateService_DiagnoseRequestFields(t *testing.T) {
+	for _, test := range []struct {
+		name            string
+		fieldDeprecated bool
+	}{
+		{name: "deprecated-request-field", fieldDeprecated: true},
+		{name: "not-deprecated", fieldDeprecated: false},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			outDir := t.TempDir()
+
+			requestType := api.NewTestMessage("Request").
+				WithFields(api.NewTestField("name").
+					WithType(api.TypezString).
+					WithDeprecated(test.fieldDeprecated))
+			responseType := api.NewTestMessage("Response")
+			operationType := api.NewTestMessage("Operation").WithPackage("google.longrunning")
+			getOperationInputType := api.NewTestMessage("GetOperationRequest").
+				WithPackage("google.longrunning")
+
+			service := api.NewTestService("TestService").WithMethods(
+				api.NewTestMethod("SimpleMethod").
+					WithInput(requestType).
+					WithOutput(responseType).
+					WithVerb("POST").
+					WithPathTemplate((&api.PathTemplate{}).WithLiteral("v1").WithLiteral("simple")).
+					WithSignatures(&api.MethodSignature{Fields: []*api.Field{requestType.Fields[0]}}),
+				api.NewTestMethod("GetOperation").
+					WithInput(getOperationInputType).
+					WithOutput(operationType).
+					WithVerb("GET").
+					WithPathTemplate((&api.PathTemplate{}).WithLiteral("v1").WithLiteral("operations")),
+			)
+
+			model := api.NewTestAPI([]*api.Message{
+				requestType, responseType, operationType, getOperationInputType,
+			}, nil, []*api.Service{service})
+			model.PackageName = "test"
+
+			library := &config.Library{
+				Swift: swiftConfig(t, []config.SwiftDependency{
+					{Name: "GoogleGax", RequiredByServices: true},
+					{Name: "GoogleAuth", RequiredByServices: true},
+					{ApiPackage: "google.longrunning", Name: "GoogleCloudLongrunningV1"},
+					{ApiPackage: "google.rpc", Name: "GoogleRpc"},
+				}),
+			}
+			if err := Generate(t.Context(), model, outDir, library, nil); err != nil {
+				t.Fatal(err)
+			}
+
+			read := func(basename string) string {
+				t.Helper()
+				content, err := os.ReadFile(filepath.Join(outDir, "Sources", "Test", basename))
+				if err != nil {
+					t.Fatal(err)
+				}
+				return string(content)
+			}
+			contentStr := read("TestService.swift")
+
+			// The overload requirement and its default implementation.
+			checkDiagnose(t, contentStr, "    ",
+				"func simpleMethod(\n  name: Swift.String,", test.fieldDeprecated)
+			checkDiagnose(t, contentStr, "  ",
+				"public func simpleMethod(\n  name: Swift.String,", test.fieldDeprecated)
+
+			// The declarations that only pass the request through.
+			checkDiagnose(t, contentStr, "    ",
+				"func simpleMethod(request: Request)", false)
+			checkDiagnose(t, contentStr, "  ",
+				"public func simpleMethod(\n    request: Request, options:", false)
+
+			// The transport reads the request fields to build the path and the
+			// query string.
+			checkDiagnose(t, read("TestService+Transport.swift"), "    ",
+				"public func simpleMethod(", test.fieldDeprecated)
+
+			// The rest of the internal layer only names the request and
+			// response types.
+			for _, basename := range []string{
+				"TestService+Retry.swift",
+				"TestService+Logging.swift",
+			} {
+				checkDiagnose(t, read(basename), "    ", "public func simpleMethod(", false)
+			}
+			checkDiagnose(t, read("TestService+Stub.swift"), "    ", "func simpleMethod(", false)
+		})
+	}
+}

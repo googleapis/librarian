@@ -13,25 +13,16 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 }}
-{{#Codec.DocLines}}
-/// {{{.}}}
-{{/Codec.DocLines}}
-public enum {{Codec.Name}}: Codable, Equatable, Sendable {
-  {{#Fields}}
-  {{#Codec.DocLines}}
-  /// {{{.}}}
-  {{/Codec.DocLines}}
-  {{#Deprecated}}
-  @available(*, deprecated)
-  {{/Deprecated}}
-  {{#Codec.DiagnoseType}}
-  {{> /templates/common/diagnose}}
-  {{/Codec.DiagnoseType}}
-  {{^IsObject}}
-  case {{Codec.Name}}({{Codec.FieldType}})
-  {{/IsObject}}
-  {{#IsObject}}
-  indirect case {{Codec.Name}}({{Codec.FieldType}})
-  {{/IsObject}}
-  {{/Fields}}
-}
+{{!
+Suppresses the deprecation warnings the generated code cannot avoid.
+
+We carry the deprecations from the source specification into the generated API,
+so customers are warned when they use them. The generated code must still read,
+write and convert those declarations, which warns in turn.
+
+`@diagnose` arrived in Swift 6.4 (SE-0522). Older toolchains skip this block and
+keep reporting the warning; the build scripts demote it there.
+}}
+#if hasAttribute(diagnose)
+@diagnose(DeprecatedDeclaration, as: ignored)
+#endif

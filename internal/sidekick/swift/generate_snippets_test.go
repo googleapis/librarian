@@ -139,3 +139,96 @@ func TestGenerateSnippets(t *testing.T) {
 		})
 	}
 }
+
+// TestGenerateSnippets_Diagnose covers the generated snippets.
+//
+// A snippet is a standalone executable, so nothing in it is ever marked
+// deprecated. Unlike the public client, it needs the attribute even when the
+// method or the service it exercises is deprecated.
+func TestGenerateSnippets_Diagnose(t *testing.T) {
+	for _, test := range []struct {
+		name              string
+		serviceDeprecated bool
+		methodDeprecated  bool
+		fieldDeprecated   bool
+		wantSample        bool
+		wantRunner        bool
+	}{
+		{
+			name:              "deprecated-service",
+			serviceDeprecated: true,
+			wantSample:        true,
+			wantRunner:        true,
+		},
+		{
+			name:             "deprecated-method",
+			methodDeprecated: true,
+			wantSample:       true,
+		},
+		{
+			name:            "deprecated-request-field",
+			fieldDeprecated: true,
+			wantSample:      true,
+		},
+		{
+			name: "not-deprecated",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			outDir := t.TempDir()
+			thingResource := api.NewTestResource("test.googleapis.com/Thing").
+				WithSingular("thing").
+				WithPlural("things")
+			thing := api.NewTestMessage("Thing").WithResource(thingResource).WithFields(
+				api.NewTestField("name").WithType(api.TypezString).WithResourceReference(
+					thingResource.Type,
+				),
+			)
+			getThingRequest := api.NewTestMessage("GetThingRequest").WithFields(
+				api.NewTestField("name").
+					WithType(api.TypezString).
+					WithResourceReference(thingResource.Type).
+					WithDeprecated(test.fieldDeprecated),
+			)
+			getThing := api.NewTestMethod("GetThing").
+				WithInput(getThingRequest).
+				WithOutput(thing).
+				WithPathTemplate((&api.PathTemplate{}).WithLiteral("v1").WithLiteral("one")).
+				WithDeprecated(test.methodDeprecated)
+			testService := api.NewTestService("TestService").
+				WithDeprecated(test.serviceDeprecated).
+				WithMethods(getThing)
+			model := api.NewTestAPI([]*api.Message{thing, getThingRequest}, nil, []*api.Service{testService})
+			model.PackageName = "test"
+			model.AddResource(thingResource)
+			if err := api.CrossReference(model); err != nil {
+				t.Fatal(err)
+			}
+			library := &config.Library{
+				Swift: swiftConfig(t, nil),
+			}
+			if err := Generate(t.Context(), model, outDir, library, nil); err != nil {
+				t.Fatal(err)
+			}
+
+			read := func(basename string) string {
+				t.Helper()
+				contents, err := os.ReadFile(filepath.Join(outDir, "Snippets", basename))
+				if err != nil {
+					t.Fatal(err)
+				}
+				return string(contents)
+			}
+
+			// The method snippet names the client type, the method and the
+			// request fields; the runner's `main()` only names the client type.
+			methodSnippet := read("TestService_GetThing.swift")
+			checkDiagnose(t, methodSnippet, "", "func sample(", test.wantSample)
+			checkDiagnose(t, methodSnippet, "    ", "static func main()", test.wantRunner)
+
+			// The client snippet inlines the quickstart method's body, so it
+			// names everything the method snippet does.
+			checkDiagnose(t, read("TestServiceQuickstart.swift"), "", "func sample(", test.wantSample)
+		})
+	}
+}

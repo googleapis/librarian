@@ -45,6 +45,9 @@ extension Clients {
     }
     {{#Codec.Methods}}
 
+    {{#Codec.DiagnoseStubFields}}
+    {{> /templates/common/diagnose}}
+    {{/Codec.DiagnoseStubFields}}
     public func {{> /templates/common/method_signature/request_options}} {
       let (path, query, configure{{#Codec.HasOmittedBodyFields}}, omitted{{/Codec.HasOmittedBodyFields}}) = try { () throws -> (Swift.String, [URLQueryItem], (inout GoogleGax._HTTPClientRequest) -> Void{{#Codec.HasOmittedBodyFields}}, [Swift.String]{{/Codec.HasOmittedBodyFields}}) in
         {{#Codec.PathBindings}}

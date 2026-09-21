@@ -189,6 +189,12 @@ func (m *Message) WithResource(resource *Resource) *Message {
 	return m
 }
 
+// WithDeprecated sets whether the message is deprecated.
+func (m *Message) WithDeprecated(deprecated bool) *Message {
+	m.Deprecated = deprecated
+	return m
+}
+
 // NewTestService creates a service with defaults for testing.
 // Default package is "test".
 func NewTestService(name string) *Service {
@@ -212,6 +218,12 @@ func (s *Service) WithMethods(methods ...*Method) *Service {
 		}
 	}
 	s.Methods = append(s.Methods, methods...)
+	return s
+}
+
+// WithDeprecated sets whether the service is deprecated.
+func (s *Service) WithDeprecated(deprecated bool) *Service {
+	s.Deprecated = deprecated
 	return s
 }
 
@@ -380,6 +392,12 @@ func (m *Method) WithSignatures(signatures ...*MethodSignature) *Method {
 	return m
 }
 
+// WithDeprecated sets whether the method is deprecated.
+func (m *Method) WithDeprecated(deprecated bool) *Method {
+	m.Deprecated = deprecated
+	return m
+}
+
 // NewTestPathBinding creates a PathBinding with the given verb and path template.
 func NewTestPathBinding(verb string, pt *PathTemplate) *PathBinding {
 	return &PathBinding{
@@ -511,6 +529,18 @@ func (f *Field) WithResourceReference(refType string) *Field {
 // WithChildTypeReference sets the child type resource reference on a field.
 func (f *Field) WithChildTypeReference(childType string) *Field {
 	f.ResourceReference = &ResourceReference{ChildType: childType}
+	return f
+}
+
+// WithDeprecated sets whether the field is deprecated.
+func (f *Field) WithDeprecated(deprecated bool) *Field {
+	f.Deprecated = deprecated
+	return f
+}
+
+// WithDocumentation sets the documentation of the field.
+func (f *Field) WithDocumentation(documentation string) *Field {
+	f.Documentation = documentation
 	return f
 }
 

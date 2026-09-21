@@ -14,6 +14,9 @@ See the License for the specific language governing permissions and
 limitations under the License.
 }}
 extension {{Codec.FullyQualifiedName}} {
+  {{#Codec.DiagnoseValues}}
+  {{> /templates/common/diagnose}}
+  {{/Codec.DiagnoseValues}}
   internal init(proto: {{Codec.ProtoTypeName}}) {
     switch proto {
     {{#UniqueNumberValues}}

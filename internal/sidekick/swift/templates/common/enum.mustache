@@ -42,6 +42,9 @@ public enum {{Codec.Name}}: Codable, Equatable, Sendable {
   /// the latest version.
   case {{Codec.UnknownStringName}}(String)
 
+  {{#Codec.DiagnoseDefault}}
+  {{> /templates/common/diagnose}}
+  {{/Codec.DiagnoseDefault}}
   public init() {
     self = .{{Codec.DefaultCaseName}}
   }
@@ -75,6 +78,9 @@ public enum {{Codec.Name}}: Codable, Equatable, Sendable {
   /// Initialize from a string value.
   ///
   /// If the value is unknown, this initializes to [`{{Codec.UnknownStringName}}`](doc:{{Codec.Name}}/{{Codec.UnknownStringName}}(_:)).
+  {{#Codec.DiagnoseValues}}
+  {{> /templates/common/diagnose}}
+  {{/Codec.DiagnoseValues}}
   public init(stringValue: Swift.String) {
     switch stringValue {
     {{#Values}}
@@ -87,6 +93,9 @@ public enum {{Codec.Name}}: Codable, Equatable, Sendable {
   /// Initialize from an integer value.
   ///
   /// If the value is unknown, this initializes to [`{{Codec.UnknownIntName}}`](doc:{{Codec.Name}}/{{Codec.UnknownIntName}}(_:)).
+  {{#Codec.DiagnoseValues}}
+  {{> /templates/common/diagnose}}
+  {{/Codec.DiagnoseValues}}
   public init(intValue: Int) {
     switch intValue {
     {{#UniqueNumberValues}}

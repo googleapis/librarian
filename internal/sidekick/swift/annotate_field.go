@@ -93,6 +93,14 @@ type fieldAnnotations struct {
 	// Only the `Any` fields of `google.longrunning.Operation` set this. See
 	// `annotateLROAnyFields`.
 	LROAnyConverter string
+
+	// DiagnoseType is true when declarations naming this field's type need
+	// `@diagnose` to suppress a deprecation warning.
+	//
+	// Naming a deprecated message or enum warns even when the field itself is
+	// not deprecated. A deprecated field needs nothing: Swift does not report
+	// deprecated references inside a deprecated declaration.
+	DiagnoseType bool
 }
 
 // DecodingStyle defines an enumeration for decoding fields.
@@ -240,8 +248,40 @@ func (c *codec) annotateField(field *api.Field, model *modelAnnotations) (*field
 	if !field.Map {
 		annotations.PrimitiveFieldType = parts.Base
 	}
+	deprecatedType, err := c.fieldTypeDeprecated(field)
+	if err != nil {
+		return nil, err
+	}
+	annotations.DiagnoseType = deprecatedType && !field.Deprecated
 	field.Codec = annotations
 	return annotations, nil
+}
+
+// fieldTypeDeprecated reports whether the message or enum naming this field's
+// type is deprecated. For maps it inspects the value type.
+func (c *codec) fieldTypeDeprecated(field *api.Field) (bool, error) {
+	switch field.Typez {
+	case api.TypezMessage:
+		m, err := lookupMessage(c.Model, field.TypezID)
+		if err != nil {
+			return false, err
+		}
+		if !m.IsMap {
+			return m.Deprecated, nil
+		}
+		fields, err := decomposeMap(m)
+		if err != nil {
+			return false, err
+		}
+		return c.fieldTypeDeprecated(fields.Value)
+	case api.TypezEnum:
+		e, err := lookupEnum(c.Model, field.TypezID)
+		if err != nil {
+			return false, err
+		}
+		return e.Deprecated, nil
+	}
+	return false, nil
 }
 
 func (c *codec) fieldPackage(field *api.Field) (string, error) {

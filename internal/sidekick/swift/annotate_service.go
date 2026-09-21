@@ -42,6 +42,25 @@ type serviceAnnotations struct {
 	// Typically this happens on discovery-based APIs where services with LROs
 	// depend on request messages provided by the service that can poll the LRO.
 	RequiredServices map[string]*api.Service
+
+	// DiagnoseClientSnippet guards the sample function in the generated client
+	// snippet, which creates the client and inlines the quickstart method's
+	// body.
+	//
+	// A snippet is a standalone executable. Nothing in it is deprecated, so it
+	// needs the attribute even when the service itself is. The name avoids
+	// colliding with `methodAnnotations.DiagnoseSnippet`, which means
+	// something different: mustache resolves `{{#Codec.X}}` by walking the
+	// context stack, so two same-named fields on different annotation types
+	// can be confused.
+	DiagnoseClientSnippet bool
+
+	// DiagnoseSnippetRunner guards `SnippetRunner.main()` in the generated
+	// method snippet.
+	//
+	// The runner names the client type and nothing else deprecated: it calls
+	// the snippet's own `sample`, which is never deprecated.
+	DiagnoseSnippetRunner bool
 }
 
 // ServiceImports returns the list of dependencies for this service.
@@ -110,21 +129,37 @@ func (c *codec) annotateService(service *api.Service, model *modelAnnotations) (
 	if service.QuickstartMethod != nil && c.isGeneratedMethod(service.QuickstartMethod) {
 		quickstartMethod = service.QuickstartMethod
 	}
+	// The client snippet creates the client and then runs the body of the
+	// quickstart method's snippet, so it names whatever either of them names.
+	//
+	// The quickstart method is normally one of `methods` and therefore already
+	// annotated above. It need not be: `api.Service.QuickstartMethod` is a
+	// separate field, and a service can name a method that is not in
+	// `service.Methods`. In that case the client snippet falls back to the
+	// service's own deprecation, which is all it can name anyway.
+	diagnoseClientSnippet := service.Deprecated
+	if quickstartMethod != nil {
+		if ann, ok := quickstartMethod.Codec.(*methodAnnotations); ok {
+			diagnoseClientSnippet = diagnoseClientSnippet || ann.DiagnoseSnippet
+		}
+	}
 
 	name := c.traitName(service)
 	annotations := &serviceAnnotations{
-		Name:             name,
-		ClientName:       pascalCase(service.Name + "Client"),
-		StubPrefix:       pascalCaseNoMangling(service.Name),
-		HostnameShort:    strings.TrimSuffix(service.DefaultHost, ".googleapis.com"),
-		DocLines:         docLines,
-		Methods:          methods,
-		LibraryName:      c.LibraryName,
-		QuickstartMethod: quickstartMethod,
-		Model:            model,
-		DependsOn:        map[string]*Dependency{},
-		ModulePath:       c.ModulePath,
-		IsGrpc:           c.isGrpc(),
+		Name:                  name,
+		ClientName:            pascalCase(service.Name + "Client"),
+		StubPrefix:            pascalCaseNoMangling(service.Name),
+		HostnameShort:         strings.TrimSuffix(service.DefaultHost, ".googleapis.com"),
+		DocLines:              docLines,
+		Methods:               methods,
+		LibraryName:           c.LibraryName,
+		QuickstartMethod:      quickstartMethod,
+		Model:                 model,
+		DependsOn:             map[string]*Dependency{},
+		ModulePath:            c.ModulePath,
+		IsGrpc:                c.isGrpc(),
+		DiagnoseClientSnippet: diagnoseClientSnippet,
+		DiagnoseSnippetRunner: service.Deprecated,
 	}
 	if c.PerServiceTraits {
 		annotations.IsGated = true
