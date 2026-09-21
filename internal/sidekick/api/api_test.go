@@ -114,7 +114,7 @@ func TestAPIDefinitionLocation(t *testing.T) {
 		a.AddDefinitionLocation(".test.WithDot", locWithDot)
 		a.AddDefinitionLocation("test.WithoutDot", locWithoutDot)
 
-		for _, tc := range []struct {
+		for _, test := range []struct {
 			query string
 			want  SourceLocation
 		}{
@@ -123,13 +123,13 @@ func TestAPIDefinitionLocation(t *testing.T) {
 			{query: "test.WithoutDot", want: locWithoutDot},
 			{query: ".test.WithoutDot", want: locWithoutDot},
 		} {
-			t.Run(tc.query, func(t *testing.T) {
-				got, ok := a.DefinitionLocation(tc.query)
+			t.Run(test.query, func(t *testing.T) {
+				got, ok := a.DefinitionLocation(test.query)
 				if !ok {
-					t.Fatalf("expected to find %q", tc.query)
+					t.Fatalf("expected to find %q", test.query)
 				}
-				if diff := cmp.Diff(tc.want, got); diff != "" {
-					t.Errorf("mismatch for %q (-want +got):\n%s", tc.query, diff)
+				if diff := cmp.Diff(test.want, got); diff != "" {
+					t.Errorf("mismatch (-want +got):\n%s", diff)
 				}
 			})
 		}
