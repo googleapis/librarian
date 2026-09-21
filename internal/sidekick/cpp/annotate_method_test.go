@@ -152,10 +152,7 @@ func TestAnnotateMethod_LRO(t *testing.T) {
 	method := api.NewTestMethod("CreateItem").
 		WithInput(req).
 		WithOutput(op).
-		WithOperationInfo(&api.OperationInfo{
-			ResponseTypeID: item.ID,
-			MetadataTypeID: meta.ID,
-		})
+		WithOperationInfo(api.NewTestOperationInfo(item.ID, meta.ID))
 
 	svc := api.NewTestService("ItemService").WithMethods(method)
 	model := api.NewTestAPI([]*api.Message{req, op, item, meta}, nil, []*api.Service{svc})
@@ -273,7 +270,7 @@ func TestAnnotateMethod_Signatures(t *testing.T) {
 		{Type: "bool", Name: "export_", FieldName: "export_", IsScalar: true},
 	}
 	if diff := cmp.Diff(wantParams, sig.Parameters); diff != "" {
-		t.Errorf("parameters mismatch (-want +got):\n%s", diff)
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
 
@@ -316,9 +313,7 @@ func TestAnnotateMethod_Async(t *testing.T) {
 		lroMethod := api.NewTestMethod("CreateItem").
 			WithInput(req).
 			WithOutput(op).
-			WithOperationInfo(&api.OperationInfo{
-				ResponseTypeID: resp.ID,
-			})
+			WithOperationInfo(api.NewTestOperationInfo("Item", "ItemMetadata"))
 		lroSvc := api.NewTestService("LroService").WithMethods(lroMethod)
 		lroModel := api.NewTestAPI([]*api.Message{req, resp, op}, nil, []*api.Service{lroSvc})
 		cLro := newCodec(nil)
@@ -770,10 +765,7 @@ func TestAnnotateMethod_LongrunningResponseIsEmpty(t *testing.T) {
 	method := api.NewTestMethod("DropDatabase").
 		WithInput(req).
 		WithOutput(opMsg).
-		WithOperationInfo(&api.OperationInfo{
-			ResponseTypeID: emptyMsg.ID,
-			MetadataTypeID: metaMsg.ID,
-		})
+		WithOperationInfo(api.NewTestOperationInfo(emptyMsg.ID, metaMsg.ID))
 	svc := api.NewTestService("Admin").WithMethods(method)
 	model := api.NewTestAPI([]*api.Message{emptyMsg, metaMsg, req, opMsg}, nil, []*api.Service{svc})
 

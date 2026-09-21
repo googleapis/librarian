@@ -49,7 +49,7 @@ func TestAnnotateService_OperationsMixinAndStub(t *testing.T) {
 					api.NewTestMethod("LongRunning").
 						WithInput(api.NewTestMessage("Req")).
 						WithOutput(api.NewTestMessage("Operation")).
-						WithOperationInfo(&api.OperationInfo{ResponseTypeID: "Resp", MetadataTypeID: "Meta"}),
+						WithOperationInfo(api.NewTestOperationInfo("Resp", "Meta")),
 				}
 			},
 			wantOperationsMixin: false,
@@ -193,7 +193,7 @@ func TestAnnotateService_HasAsyncRpcs(t *testing.T) {
 					api.NewTestMethod("LongRunning").
 						WithInput(api.NewTestMessage("LroReq")).
 						WithOutput(api.NewTestMessage("Operation")).
-						WithOperationInfo(&api.OperationInfo{ResponseTypeID: "Resp", MetadataTypeID: "Meta"}))
+						WithOperationInfo(api.NewTestOperationInfo("Resp", "Meta")))
 			}
 			svc := api.NewTestService("TestService").WithMethods(methods...)
 			model := api.NewTestAPI(nil, nil, []*api.Service{svc})

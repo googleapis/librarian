@@ -52,7 +52,7 @@ func TestGenerate_CMakeLists(t *testing.T) {
 				[]*api.Service{api.NewTestService("ItemsService")},
 			)
 			if err := Generate(t.Context(), model, outdir, test.lib); err != nil {
-				t.Fatalf("Generate failed: %v", err)
+				t.Fatal(err)
 			}
 			cmakePath := filepath.Join(outdir, "CMakeLists.txt")
 			content, err := os.ReadFile(cmakePath)
@@ -155,7 +155,7 @@ func TestGenerate_BidirStreamingMethods(t *testing.T) {
 		ProductPath: "google/cloud/chat/v1",
 	}
 	if err := Generate(t.Context(), model, outdir, libCfg); err != nil {
-		t.Fatalf("Generate failed: %v", err)
+		t.Fatal(err)
 	}
 
 	readFile := func(relPath string) string {
@@ -217,7 +217,7 @@ func TestGenerate_LocationOptionallyDependent(t *testing.T) {
 			EndpointLocationStyle: "LOCATION_OPTIONALLY_DEPENDENT",
 		}
 		if err := Generate(t.Context(), model, outdir, libCfg); err != nil {
-			t.Fatalf("Generate failed: %v", err)
+			t.Fatal(err)
 		}
 
 		hBytes, err := os.ReadFile(filepath.Join(outdir, OptionDefaultsHeaderPath(libCfg.ProductPath, svc.Name)))
@@ -256,7 +256,7 @@ func TestGenerate_LocationOptionallyDependent(t *testing.T) {
 			GenerateRestTransport: true,
 		}
 		if err := Generate(t.Context(), model, outdir, libCfg); err != nil {
-			t.Fatalf("Generate failed: %v", err)
+			t.Fatal(err)
 		}
 
 		hBytes, err := os.ReadFile(filepath.Join(outdir, OptionDefaultsHeaderPath(libCfg.ProductPath, svc.Name)))

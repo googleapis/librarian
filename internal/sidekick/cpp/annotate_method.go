@@ -724,13 +724,15 @@ func buildRestPath(m *api.Method) (bool, string, []*restPathSegmentAnnotation, s
 					IsApiVersion: true,
 					ApiVersion:   apiVersion,
 				})
-			} else {
-				segments = append(segments, &restPathSegmentAnnotation{
-					IsLiteral: true,
-					Literal:   seg.Literal,
-				})
+				continue
 			}
-		} else if seg.Variable != nil {
+			segments = append(segments, &restPathSegmentAnnotation{
+				IsLiteral: true,
+				Literal:   seg.Literal,
+			})
+			continue
+		}
+		if seg.Variable != nil {
 			var fieldCalls []string
 			for _, fp := range seg.Variable.FieldPath {
 				fieldCalls = append(fieldCalls, CppParamName(CamelCaseToSnakeCase(fp))+"()")

@@ -54,7 +54,7 @@ func TestAnnotateService_SourcesCcCopyrightYear(t *testing.T) {
 
 func TestAnnotateService_StubProtoIncludes_ThreePhaseSort(t *testing.T) {
 	lroMethod := api.NewTestMethod("LongRunning").
-		WithOperationInfo(&api.OperationInfo{})
+		WithOperationInfo(api.NewTestOperationInfo("", ""))
 	svc := api.NewTestService("EchoService").
 		WithMethods(lroMethod)
 	model := api.NewTestAPI(nil, nil, []*api.Service{svc})

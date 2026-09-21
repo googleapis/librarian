@@ -516,7 +516,7 @@ func TestAnnotateService(t *testing.T) {
 
 func TestAnnotateService_Gating(t *testing.T) {
 	lroMethod := api.NewTestMethod("LroMethod").
-		WithOperationInfo(&api.OperationInfo{}).
+		WithOperationInfo(api.NewTestOperationInfo("", "")).
 		WithBidiStreaming().
 		WithPagination(api.NewTestField("page_token"))
 	lroMethod.AutoPopulated = []*api.Field{api.NewTestField("request_id")}
