@@ -25,7 +25,7 @@ import GoogleAuth
 @_spi(GoogleCloudInternal) import GoogleGax
 @_spi(GoogleCloudInternal) import GoogleGaxGRPC
 {{#Codec.ServiceImports}}
-import {{.}}
+@_spi(GoogleCloudInternal) import {{.}}
 {{/Codec.ServiceImports}}
 
 /// A client for Google Cloud Storage control-plane and administrative operations that unifies bucket lifecycle,

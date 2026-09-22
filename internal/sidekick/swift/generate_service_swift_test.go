@@ -308,9 +308,9 @@ func TestGenerateService_WithImports(t *testing.T) {
 	}
 	contentStr := string(content)
 
-	expectedImports := `import GoogleCloudExternalV1
-import GoogleWKT
-import GoogleGax`
+	expectedImports := `@_spi(GoogleCloudInternal) import GoogleCloudExternalV1
+@_spi(GoogleCloudInternal) import GoogleWKT
+@_spi(GoogleCloudInternal) import GoogleGax`
 
 	if !strings.Contains(contentStr, expectedImports) {
 		t.Errorf("expected imports block not found in %s. Got content:\n%s", filename, contentStr)
@@ -545,14 +545,14 @@ func TestGenerateService_Pagination(t *testing.T) {
 		{
 			name:     "Required",
 			optional: false,
-			wantNextPageToken: `public func _nextPageToken() -> Swift.String {
+			wantNextPageToken: `  public func _nextPageToken() -> Swift.String {
     return self.nextPageToken
   }`,
 		},
 		{
 			name:     "Optional",
 			optional: true,
-			wantNextPageToken: `public func _nextPageToken() -> Swift.String {
+			wantNextPageToken: `  public func _nextPageToken() -> Swift.String {
     return self.nextPageToken ?? ""
   }`,
 		},
@@ -699,23 +699,21 @@ func verifyGeneratedResponse(t *testing.T, outDir string, wantNextPageToken stri
 	respContentStr := string(respContent)
 
 	gotResponseMessage := extractBlock(t, respContentStr, "public struct ListSecretsResponse: ", "{")
-	for _, p := range []string{"Codable", "Equatable", "GoogleWKT._AnyPackable", "GoogleGax._PaginatedResponse", "Sendable"} {
+	for _, p := range []string{"Codable", "Equatable", "GoogleWKT._AnyPackable", "Sendable"} {
 		if !strings.Contains(gotResponseMessage, p) {
 			t.Errorf("expected %q in ListSecretsResponse declaration, got: %s", p, gotResponseMessage)
 		}
 	}
 
-	gotGetItems := extractBlock(t, respContentStr, "public func _getPaginatedItems()", "  }")
-	wantGetItems := `public func _getPaginatedItems() -> [Secret] {
+	gotExtension := extractBlock(t, respContentStr, "@_spi(GoogleCloudInternal)\nextension ListSecretsResponse: GoogleGax._PaginatedResponse {", "\n}")
+	wantGetItems := `  public func _getPaginatedItems() -> [Secret] {
     return self.secrets
   }`
-	if diff := cmp.Diff(wantGetItems, gotGetItems); diff != "" {
-		t.Errorf("mismatch (-want +got):\n%s", diff)
+	if !strings.Contains(gotExtension, wantGetItems) {
+		t.Errorf("expected %q in ListSecretsResponse extension, got:\n%s", wantGetItems, gotExtension)
 	}
-
-	gotNextPageToken := extractBlock(t, respContentStr, "public func _nextPageToken()", "  }")
-	if diff := cmp.Diff(wantNextPageToken, gotNextPageToken); diff != "" {
-		t.Errorf("mismatch (-want +got):\n%s", diff)
+	if !strings.Contains(gotExtension, wantNextPageToken) {
+		t.Errorf("expected %q in ListSecretsResponse extension, got:\n%s", wantNextPageToken, gotExtension)
 	}
 
 	if !strings.Contains(respContentStr, "import GoogleGax") {
