@@ -81,7 +81,7 @@ func TestFormat_Success(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	want := fmt.Sprintf("format %s\ncheck --fix %s\n", absOutDir, absOutDir)
+	want := fmt.Sprintf("check --select I --fix %s\nformat %s\n", absOutDir, absOutDir)
 	if diff := cmp.Diff(want, string(got)); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}

@@ -35,8 +35,8 @@ func Format(ctx context.Context, library *config.Library) error {
 	if err != nil {
 		return fmt.Errorf("failed to resolve output directory: %w", err)
 	}
-	if err := command.Run(ctx, "ruff", "format", outdir); err != nil {
+	if err := command.Run(ctx, "ruff", "check", "--select", "I", "--fix", outdir); err != nil {
 		return err
 	}
-	return command.Run(ctx, "ruff", "check", "--fix", outdir)
+	return command.Run(ctx, "ruff", "format", outdir)
 }
