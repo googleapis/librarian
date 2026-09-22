@@ -282,6 +282,12 @@ func (s *Service) WithDeprecated(deprecated bool) *Service {
 	return s
 }
 
+// WithDocumentation sets the documentation for the service.
+func (s *Service) WithDocumentation(doc string) *Service {
+	s.Documentation = doc
+	return s
+}
+
 // NewTestMethod creates a method with defaults for testing.
 // Default package is "test" (implies ID .test.Name).
 func NewTestMethod(name string) *Method {

@@ -218,3 +218,11 @@ func TestNewTestAPI_DeduplicatesNestedMessages(t *testing.T) {
 		t.Errorf("model.Message(%q) = %v, want %v", child.ID, got, child)
 	}
 }
+
+func TestService_WithDocumentation(t *testing.T) {
+	const doc = "Test service documentation."
+	s := api.NewTestService("TestService").WithDocumentation(doc)
+	if s.Documentation != doc {
+		t.Errorf("s.Documentation = %q, want %q", s.Documentation, doc)
+	}
+}

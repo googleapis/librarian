@@ -28,58 +28,28 @@ import (
 func TestGenerateService_DocComments(t *testing.T) {
 	outDir := t.TempDir()
 
-	req := &api.Message{
-		Name:    "GetSecretRequest",
-		Package: "google.cloud.test.v1",
-		ID:      ".google.cloud.test.v1.GetSecretRequest",
-		Fields: []*api.Field{
-			{
-				Name:  "project",
-				ID:    ".google.cloud.test.v1.GetSecretRequest.project",
-				Typez: api.TypezString,
-			},
-			{
-				Name:  "secret",
-				ID:    ".google.cloud.test.v1.GetSecretRequest.secret",
-				Typez: api.TypezString,
-			},
-		},
-	}
-	req.Fields[0].Parent = req
-	req.Fields[1].Parent = req
-	res := &api.Message{
-		Name:    "Secret",
-		Package: "google.cloud.test.v1",
-		ID:      ".google.cloud.test.v1.Secret",
-	}
+	req := api.NewTestMessage("GetSecretRequest").
+		WithPackage("google.cloud.test.v1").
+		WithFields(
+			api.NewTestField("project").WithType(api.TypezString),
+			api.NewTestField("secret").WithType(api.TypezString),
+		)
+	res := api.NewTestMessage("Secret").
+		WithPackage("google.cloud.test.v1")
 
-	method := &api.Method{
-		Name:          "GetSecret",
-		Documentation: "Documentation for GetSecret method.",
-		InputTypeID:   req.ID,
-		OutputTypeID:  res.ID,
-		InputType:     req,
-		OutputType:    res,
-		PathInfo: &api.PathInfo{
-			Bindings: []*api.PathBinding{
-				{
-					Verb:         "GET",
-					PathTemplate: (&api.PathTemplate{}).WithLiteral("v1").WithLiteral("projects").WithVariableNamed("project").WithLiteral("secrets").WithVariableNamed("secret"),
-				},
-			},
-		},
-	}
+	method := api.NewTestMethod("GetSecret").
+		WithDocumentation("Documentation for GetSecret method.").
+		WithInput(req).
+		WithOutput(res).
+		WithVerb("GET").
+		WithPathTemplate((&api.PathTemplate{}).WithLiteral("v1").WithLiteral("projects").WithVariableNamed("project").WithLiteral("secrets").WithVariableNamed("secret"))
 
-	service := &api.Service{
-		Name:          "SecretManager",
-		Package:       "google.cloud.test.v1",
-		Documentation: "Documentation for SecretManager service.",
-		Methods:       []*api.Method{method},
-	}
-	method.Service = service
+	service := api.NewTestService("SecretManager").
+		WithDocumentation("Documentation for SecretManager service.").
+		WithPackage("google.cloud.test.v1").
+		WithMethods(method)
 
-	model := api.NewTestAPI([]*api.Message{req, res}, []*api.Enum{}, []*api.Service{service})
-	model.PackageName = "google.cloud.test.v1"
+	model := api.NewTestAPI([]*api.Message{req, res}, nil, []*api.Service{service})
 
 	library := &config.Library{
 		Swift: swiftConfig(t, nil),
