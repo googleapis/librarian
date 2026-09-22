@@ -68,6 +68,7 @@ func writeDocIndex(cfg *config.Config, googleapisDir string) error {
 // from the workspace configuration and googleapis directory.
 func GenerateDocIndex(cfg *config.Config, googleapisDir string) ([]byte, error) {
 	index := make(map[string][]DocIndexEntry)
+	var missingApi []string
 	for _, rawLib := range cfg.Libraries {
 		libCopy := *rawLib
 		libCopy.APIs = append([]*config.API(nil), rawLib.APIs...)
@@ -87,9 +88,17 @@ func GenerateDocIndex(cfg *config.Config, googleapisDir string) ([]byte, error) 
 		if err != nil {
 			return nil, fmt.Errorf("failed to find API for library %s (path %s): %w", lib.Name, apiPath, err)
 		}
-		if api == nil || api.Title == "" || api.ShortName == "" {
-			slog.Warn("skipping library in docindex due to missing API service configuration or fields", "library", lib.Name, "api", apiPath)
+		if api == nil {
+			return nil, fmt.Errorf("returned a nil api for %s (path %s)", lib.Name, apiPath)
+		}
+		if api.ShortName == "" {
+			// Do not warn about these, they are typically type-only libraries
+			// and are not shown in the DevSite index.
 			continue
+		}
+		title := api.Title
+		if api.Title == "" {
+			title = fmt.Sprintf("The %s API", lib.Name)
 		}
 		pkgName := resolvePackageName(cfg.Language, lib)
 		entry := DocIndexEntry{
@@ -97,9 +106,12 @@ func GenerateDocIndex(cfg *config.Config, googleapisDir string) ([]byte, error) 
 			Language:     formatLanguage(cfg.Language),
 			DocsURL:      resolveDocsURL(cfg.Language, lib),
 			APIShortname: api.ShortName,
-			Product:      api.Title,
+			Product:      title,
 		}
 		index[pkgName] = append(index[pkgName], entry)
+	}
+	if len(missingApi) != 0 {
+		slog.Warn("some libraries are missing a title", "libraryList", missingApi)
 	}
 	content, err := json.MarshalIndent(index, "", "  ")
 	if err != nil {
