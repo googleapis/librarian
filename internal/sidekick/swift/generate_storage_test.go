@@ -28,238 +28,116 @@ func TestGenerateStorage_MultiModel(t *testing.T) {
 	outDir := t.TempDir()
 
 	// Storage v2 Messages & Service (Data/Metadata subset)
-	bucket := &api.Message{
-		Name:    "Bucket",
-		ID:      ".google.storage.v2.Bucket",
-		Package: "google.storage.v2",
-	}
-	createBucketRequest := &api.Message{
-		Name:    "CreateBucketRequest",
-		ID:      ".google.storage.v2.CreateBucketRequest",
-		Package: "google.storage.v2",
-		Fields: []*api.Field{
-			{Name: "parent", JSONName: "parent", Typez: api.TypezString},
-			{Name: "bucket_id", JSONName: "bucketId", Typez: api.TypezString},
-		},
-	}
-	pageSizeField := &api.Field{Name: "page_size", JSONName: "pageSize", Typez: api.TypezInt32}
-	pageTokenField := &api.Field{Name: "page_token", JSONName: "pageToken", Typez: api.TypezString}
-	parentField := &api.Field{Name: "parent", JSONName: "parent", Typez: api.TypezString}
-	listBucketsRequest := &api.Message{
-		Name:    "ListBucketsRequest",
-		ID:      ".google.storage.v2.ListBucketsRequest",
-		Package: "google.storage.v2",
-		Fields:  []*api.Field{parentField, pageSizeField, pageTokenField},
-	}
-	parentField.Parent = listBucketsRequest
-	pageSizeField.Parent = listBucketsRequest
-	pageTokenField.Parent = listBucketsRequest
+	bucket := api.NewTestMessage("Bucket").WithPackage("google.storage.v2")
+	createBucketRequest := api.NewTestMessage("CreateBucketRequest").
+		WithPackage("google.storage.v2").
+		WithFields(
+			api.NewTestField("parent").WithType(api.TypezString),
+			api.NewTestField("bucket_id").WithType(api.TypezString),
+		)
+	listBucketsRequest := api.NewTestMessage("ListBucketsRequest").
+		WithPackage("google.storage.v2").
+		WithFields(
+			api.NewTestField("parent").WithType(api.TypezString),
+			api.NewTestField("page_size").WithType(api.TypezInt32),
+			api.NewTestField("page_token").WithType(api.TypezString),
+		)
 
-	bucketsField := &api.Field{
-		Name:        "buckets",
-		JSONName:    "buckets",
-		Typez:       api.TypezMessage,
-		TypezID:     bucket.ID,
-		MessageType: bucket,
-		Repeated:    true,
-	}
-	nextPageTokenField := &api.Field{
-		Name:     "next_page_token",
-		JSONName: "nextPageToken",
-		Typez:    api.TypezString,
-	}
-	listBucketsResponse := &api.Message{
-		Name:    "ListBucketsResponse",
-		ID:      ".google.storage.v2.ListBucketsResponse",
-		Package: "google.storage.v2",
-		Fields:  []*api.Field{bucketsField, nextPageTokenField},
-	}
-	bucketsField.Parent = listBucketsResponse
-	nextPageTokenField.Parent = listBucketsResponse
+	listBucketsResponse := api.NewTestMessage("ListBucketsResponse").
+		WithPackage("google.storage.v2").
+		WithFields(
+			api.NewTestField("buckets").
+				WithMessageType(bucket).
+				WithRepeated(),
+			api.NewTestField("next_page_token").WithType(api.TypezString),
+		)
 
-	storageService := &api.Service{
-		Name:        "Storage",
-		ID:          ".google.storage.v2.Storage",
-		Package:     "google.storage.v2",
-		DefaultHost: "storage.googleapis.com",
-		Methods: []*api.Method{
-			{
-				Name:         "CreateBucket",
-				ID:           ".google.storage.v2.Storage.CreateBucket",
-				InputTypeID:  ".google.storage.v2.CreateBucketRequest",
-				InputType:    createBucketRequest,
-				OutputTypeID: ".google.storage.v2.Bucket",
-				OutputType:   bucket,
-				PathInfo: &api.PathInfo{
-					Bindings: []*api.PathBinding{
-						{
-							Verb:         "POST",
-							PathTemplate: (&api.PathTemplate{}).WithLiteral("v2").WithVariableNamed("parent").WithLiteral("buckets"),
-						},
-					},
-				},
-			},
-			{
-				Name:         "ListBuckets",
-				ID:           ".google.storage.v2.Storage.ListBuckets",
-				InputTypeID:  ".google.storage.v2.ListBucketsRequest",
-				InputType:    listBucketsRequest,
-				OutputTypeID: ".google.storage.v2.ListBucketsResponse",
-				OutputType:   listBucketsResponse,
-				PathInfo: &api.PathInfo{
-					Bindings: []*api.PathBinding{
-						{
-							Verb:         "GET",
-							PathTemplate: (&api.PathTemplate{}).WithLiteral("v2").WithVariableNamed("parent").WithLiteral("buckets"),
-						},
-					},
-				},
-			},
-		},
-	}
+	storageService := api.NewTestService("Storage").
+		WithPackage("google.storage.v2").
+		WithMethods(
+			api.NewTestMethod("CreateBucket").
+				WithInput(createBucketRequest).
+				WithOutput(bucket).
+				WithVerb("POST").
+				WithPathTemplate((&api.PathTemplate{}).WithLiteral("v2").WithVariableNamed("parent").WithLiteral("buckets")),
+			api.NewTestMethod("ListBuckets").
+				WithInput(listBucketsRequest).
+				WithOutput(listBucketsResponse).
+				WithVerb("GET").
+				WithPathTemplate((&api.PathTemplate{}).WithLiteral("v2").WithVariableNamed("parent").WithLiteral("buckets")),
+		)
+	storageService.DefaultHost = "storage.googleapis.com"
 
 	storageModel := api.NewTestAPI([]*api.Message{bucket, createBucketRequest, listBucketsRequest, listBucketsResponse}, nil, []*api.Service{storageService})
-	storageModel.PackageName = "google.storage.v2"
 	if err := api.CrossReference(storageModel); err != nil {
 		t.Fatal(err)
 	}
 	api.UpdateMethodPagination(nil, storageModel)
 
 	// StorageControl Messages & Service
-	folder := &api.Message{
-		Name:    "Folder",
-		ID:      ".google.storage.control.v2.Folder",
-		Package: "google.storage.control.v2",
-	}
-	createFolderRequest := &api.Message{
-		Name:    "CreateFolderRequest",
-		ID:      ".google.storage.control.v2.CreateFolderRequest",
-		Package: "google.storage.control.v2",
-		Fields: []*api.Field{
-			{Name: "parent", JSONName: "parent", Typez: api.TypezString},
-			{Name: "folder_id", JSONName: "folderId", Typez: api.TypezString},
-		},
-	}
-	policy := &api.Message{
-		Name:    "Policy",
-		ID:      ".google.iam.v1.Policy",
-		Package: "google.iam.v1",
-	}
-	getIamPolicyRequest := &api.Message{
-		Name:    "GetIamPolicyRequest",
-		ID:      ".google.iam.v1.GetIamPolicyRequest",
-		Package: "google.iam.v1",
-		Fields: []*api.Field{
-			{Name: "resource", JSONName: "resource", Typez: api.TypezString},
-		},
-	}
-	renameFolderRequest := &api.Message{
-		Name:    "RenameFolderRequest",
-		ID:      ".google.storage.control.v2.RenameFolderRequest",
-		Package: "google.storage.control.v2",
-		Fields: []*api.Field{
-			{Name: "name", JSONName: "name", Typez: api.TypezString},
-		},
-	}
-	renameFolderMetadata := &api.Message{
-		Name:    "RenameFolderMetadata",
-		ID:      ".google.storage.control.v2.RenameFolderMetadata",
-		Package: "google.storage.control.v2",
-	}
-	operation := &api.Message{
-		Name:    "Operation",
-		ID:      ".google.longrunning.Operation",
-		Package: "google.longrunning",
-	}
-	getOperationRequest := &api.Message{
-		Name:    "GetOperationRequest",
-		ID:      ".google.longrunning.GetOperationRequest",
-		Package: "google.longrunning",
-		Fields: []*api.Field{
-			{Name: "name", JSONName: "name", Typez: api.TypezString},
-		},
-	}
+	folder := api.NewTestMessage("Folder").WithPackage("google.storage.control.v2")
+	createFolderRequest := api.NewTestMessage("CreateFolderRequest").
+		WithPackage("google.storage.control.v2").
+		WithFields(
+			api.NewTestField("parent").WithType(api.TypezString),
+			api.NewTestField("folder_id").WithType(api.TypezString),
+		)
+	policy := api.NewTestMessage("Policy").WithPackage("google.iam.v1")
+	getIamPolicyRequest := api.NewTestMessage("GetIamPolicyRequest").
+		WithPackage("google.iam.v1").
+		WithFields(
+			api.NewTestField("resource").WithType(api.TypezString),
+		)
+	renameFolderRequest := api.NewTestMessage("RenameFolderRequest").
+		WithPackage("google.storage.control.v2").
+		WithFields(
+			api.NewTestField("name").WithType(api.TypezString),
+		)
+	renameFolderMetadata := api.NewTestMessage("RenameFolderMetadata").
+		WithPackage("google.storage.control.v2")
+	operation := api.NewTestMessage("Operation").
+		WithPackage("google.longrunning")
+	getOperationRequest := api.NewTestMessage("GetOperationRequest").
+		WithPackage("google.longrunning").
+		WithFields(
+			api.NewTestField("name").WithType(api.TypezString),
+		)
 
-	controlService := &api.Service{
-		Name:        "StorageControl",
-		ID:          ".google.storage.control.v2.StorageControl",
-		Package:     "google.storage.control.v2",
-		DefaultHost: "storage.googleapis.com",
-		Methods: []*api.Method{
-			{
-				Name:         "CreateFolder",
-				ID:           ".google.storage.control.v2.StorageControl.CreateFolder",
-				InputTypeID:  ".google.storage.control.v2.CreateFolderRequest",
-				InputType:    createFolderRequest,
-				OutputTypeID: ".google.storage.control.v2.Folder",
-				OutputType:   folder,
-				PathInfo: &api.PathInfo{
-					Bindings: []*api.PathBinding{
-						{
-							Verb:         "POST",
-							PathTemplate: (&api.PathTemplate{}).WithLiteral("v2").WithVariableNamed("parent").WithLiteral("folders"),
-						},
-					},
-				},
-			},
-			{
-				Name:         "GetIamPolicy",
-				ID:           ".google.storage.control.v2.StorageControl.GetIamPolicy",
-				InputTypeID:  ".google.iam.v1.GetIamPolicyRequest",
-				InputType:    getIamPolicyRequest,
-				OutputTypeID: ".google.iam.v1.Policy",
-				OutputType:   policy,
-				PathInfo: &api.PathInfo{
-					Bindings: []*api.PathBinding{
-						{
-							Verb:         "POST",
-							PathTemplate: (&api.PathTemplate{}).WithLiteral("v2").WithVariableNamed("resource").WithLiteral(":getIamPolicy"),
-						},
-					},
-				},
-			},
-			{
-				Name:         "RenameFolder",
-				ID:           ".google.storage.control.v2.StorageControl.RenameFolder",
-				InputTypeID:  ".google.storage.control.v2.RenameFolderRequest",
-				InputType:    renameFolderRequest,
-				OutputTypeID: ".google.longrunning.Operation",
-				OutputType:   operation,
-				IsLRO:        true,
-				OperationInfo: &api.OperationInfo{
+	controlService := api.NewTestService("StorageControl").
+		WithPackage("google.storage.control.v2").
+		WithMethods(
+			api.NewTestMethod("CreateFolder").
+				WithInput(createFolderRequest).
+				WithOutput(folder).
+				WithVerb("POST").
+				WithPathTemplate((&api.PathTemplate{}).WithLiteral("v2").WithVariableNamed("parent").WithLiteral("folders")),
+			api.NewTestMethod("GetIamPolicy").
+				WithInput(getIamPolicyRequest).
+				WithOutput(policy).
+				WithVerb("POST").
+				WithPathTemplate((&api.PathTemplate{}).WithLiteral("v2").WithVariableNamed("resource").WithLiteral(":getIamPolicy")),
+			api.NewTestMethod("RenameFolder").
+				WithInput(renameFolderRequest).
+				WithOutput(operation).
+				WithVerb("POST").
+				WithPathTemplate((&api.PathTemplate{}).WithLiteral("v2").WithVariableNamed("name").WithLiteral(":rename")).
+				WithOperationInfo(&api.OperationInfo{
 					ResponseTypeID: folder.ID,
 					MetadataTypeID: renameFolderMetadata.ID,
-				},
-				PathInfo: &api.PathInfo{
-					Bindings: []*api.PathBinding{
-						{
-							Verb:         "POST",
-							PathTemplate: (&api.PathTemplate{}).WithLiteral("v2").WithVariableNamed("name").WithLiteral(":rename"),
-						},
-					},
-				},
-			},
-			{
-				Name:         "GetOperation",
-				ID:           ".google.storage.control.v2.StorageControl.GetOperation",
-				InputTypeID:  ".google.longrunning.GetOperationRequest",
-				InputType:    getOperationRequest,
-				OutputTypeID: ".google.longrunning.Operation",
-				OutputType:   operation,
-				PathInfo: &api.PathInfo{
-					Bindings: []*api.PathBinding{
-						{
-							Verb:         "GET",
-							PathTemplate: (&api.PathTemplate{}).WithLiteral("v1").WithLiteral("operations"),
-						},
-					},
-				},
-			},
-		},
-	}
+				}),
+			api.NewTestMethod("GetOperation").
+				WithInput(getOperationRequest).
+				WithOutput(operation).
+				WithVerb("GET").
+				WithPathTemplate((&api.PathTemplate{}).WithLiteral("v1").WithLiteral("operations")),
+		)
+	controlService.DefaultHost = "storage.googleapis.com"
 
-	controlModel := api.NewTestAPI([]*api.Message{folder, createFolderRequest, policy, getIamPolicyRequest, renameFolderRequest, renameFolderMetadata, operation, getOperationRequest}, nil, []*api.Service{controlService})
-	controlModel.PackageName = "google.storage.control.v2"
+	controlModel := api.NewTestAPI([]*api.Message{folder, createFolderRequest, renameFolderRequest, renameFolderMetadata}, nil, []*api.Service{controlService})
+	controlModel.AddMessage(policy)
+	controlModel.AddMessage(getIamPolicyRequest)
+	controlModel.AddMessage(operation)
+	controlModel.AddMessage(getOperationRequest)
 	if err := api.CrossReference(controlModel); err != nil {
 		t.Fatal(err)
 	}
