@@ -95,6 +95,53 @@ func TestAnnotateRestTransport_Basic(t *testing.T) {
 	if diff := cmp.Diff(false, restAnn.RestAsyncIOEnabled); diff != "" {
 		t.Errorf("RestAsyncIOEnabled mismatch (-want +got):\n%s", diff)
 	}
+	if diff := cmp.Diff("False", restAnn.RestNumericEnumsBool); diff != "" {
+		t.Errorf("RestNumericEnumsBool mismatch (-want +got):\n%s", diff)
+	}
+}
+
+func TestAnnotateRestTransport_RestNumericEnums(t *testing.T) {
+	reqMsg := api.NewTestMessage("CreateBookRequest").
+		WithPackage("google.example.library.v1").
+		WithSourceLocation("google/example/library/v1/library.proto", 10)
+	respMsg := api.NewTestMessage("Book").
+		WithPackage("google.example.library.v1").
+		WithSourceLocation("google/example/library/v1/library.proto", 20)
+
+	pt := (&api.PathTemplate{}).WithLiteral("v1").WithVariable(api.NewPathVariable("parent").WithMatch()).WithLiteral("books")
+	method := makeTestRestMethod("CreateBook", "POST", "*", pt, reqMsg).WithOutput(respMsg)
+
+	svc := api.NewTestService("LibraryService").
+		WithPackage("google.example.library.v1").
+		WithSourceLocation("google/example/library/v1/library.proto", 30).
+		WithMethods(method)
+	svc.DefaultHost = "library.googleapis.com"
+
+	model := api.NewTestAPI([]*api.Message{reqMsg, respMsg}, nil, []*api.Service{svc}).
+		WithPackageName("google.example.library.v1")
+
+	lib := &config.Library{
+		Python: &config.PythonPackage{
+			OptArgsByAPI: map[string][]string{
+				"default": {"rest-numeric-enums"},
+			},
+		},
+	}
+	c := newTestCodec(t, model, lib)
+	if err := c.annotateModel(); err != nil {
+		t.Fatal(err)
+	}
+
+	svcAnn, ok := svc.Codec.(*serviceAnnotations)
+	if !ok || svcAnn.RestTransport == nil {
+		t.Fatalf("svc.Codec is %T or RestTransport is nil", svc.Codec)
+	}
+	if diff := cmp.Diff("True", svcAnn.RestTransport.RestNumericEnumsBool); diff != "" {
+		t.Errorf("RestNumericEnumsBool mismatch (-want +got):\n%s", diff)
+	}
+	if svcAnn.RestTransport.ShowRestBetaPreview {
+		t.Errorf("ShowRestBetaPreview = true, want false when rest-numeric-enums is enabled")
+	}
 }
 
 func TestAnnotateRestTransport_MixinsAndLRO(t *testing.T) {

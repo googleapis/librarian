@@ -16,9 +16,7 @@ package python
 
 import (
 	"fmt"
-	"path/filepath"
 	"regexp"
-	"slices"
 	"strings"
 
 	"github.com/googleapis/librarian/internal/sidekick/api"
@@ -85,6 +83,9 @@ type clientMethodAnnotations struct {
 	SamplePreInitLines    []string
 	HasSamplePreInit      bool
 	SampleRequestArgs     []*sampleRequestArg
+	IsExternalRequest     bool
+	ExternalRequestModule string
+	ExternalRequestAlias  string
 	PackageImport         string
 	VersionSegment        string
 	ClientName            string
@@ -118,9 +119,33 @@ func (c *codec) annotateClientMethod(m *api.Method, service *api.Service, ann *c
 			converted := convertMarkdownToRst("The request object. " + docText)
 			reqDocLines = wrapCommonMark(converted, 56)
 		}
+	} else if m.InputTypeID != "" && c.Model != nil {
+		if inMsg := c.resolveMessageType(m.InputTypeID); inMsg != nil {
+			reqTypeName = inMsg.Name
+			reqStem = c.resolveMessageStem(inMsg)
+			docText := strings.TrimSpace(inMsg.Documentation)
+			if docText == "" {
+				reqDocLines = []string{"The request object."}
+			} else {
+				converted := convertMarkdownToRst("The request object. " + docText)
+				reqDocLines = wrapCommonMark(converted, 56)
+			}
+		}
 	}
 	reqTypeHint := reqStem + "." + reqTypeName
 	reqSphinxType := ann.VersionPackage + ".types." + reqTypeName
+
+	isExternalRequest := false
+	var extReqMod, extReqAlias string
+	if iamMod, iamType, ok := isIAMType(m.InputTypeID); ok {
+		isExternalRequest = true
+		extReqMod = "google.iam.v1." + iamMod
+		extReqAlias = iamMod
+		reqTypeHint = iamMod + "." + iamType
+		reqSphinxType = "google.iam.v1." + iamMod + "." + iamType
+		reqTypeName = iamType
+		reqDocLines = []string{fmt.Sprintf("The request object. Request message for ``%s`` method.", pascalCase(m.Name))}
+	}
 
 	isLRO := m.OperationInfo != nil || m.IsLRO
 	isPaged := m.Pagination != nil && !isMixin(m, service)
@@ -216,13 +241,26 @@ func (c *codec) annotateClientMethod(m *api.Method, service *api.Service, ann *c
 			pagerDoc = m.OutputType.Documentation + "\n\n" + pagerDoc
 		}
 		returnDocLines = formatMethodReturnDoc(pagerDoc)
+	} else if iamMod, iamType, ok := isIAMType(m.OutputTypeID); ok {
+		returnType = iamMod + "." + iamType
+		returnSphinxType = "google.iam.v1." + iamMod + "." + iamType
+		hasReturnDoc = true
+		if iamType == "Policy" {
+			returnDocLines = iamClientPolicyReturnDocLines
+		} else {
+			returnDocLines = []string{fmt.Sprintf("Response message for %s method.", pascalCase(m.Name))}
+		}
 	} else if !returnsEmpty {
 		outStem := "common"
 		outName := ""
-		if m.OutputType != nil {
-			outStem = c.resolveMessageStem(m.OutputType)
-			outName = m.OutputType.Name
-			returnDocLines = formatMethodReturnDoc(m.OutputType.Documentation)
+		outMsg := m.OutputType
+		if outMsg == nil && m.OutputTypeID != "" && c.Model != nil {
+			outMsg = c.resolveMessageType(m.OutputTypeID)
+		}
+		if outMsg != nil {
+			outStem = c.resolveMessageStem(outMsg)
+			outName = outMsg.Name
+			returnDocLines = formatMethodReturnDoc(outMsg.Documentation)
 		}
 		returnType = outStem + "." + outName
 		returnSphinxType = ann.VersionPackage + ".types." + outName
@@ -249,9 +287,13 @@ func (c *codec) annotateClientMethod(m *api.Method, service *api.Service, ann *c
 
 	for _, sig := range m.Signatures {
 		fields := sig.Fields
-		if len(fields) == 0 && len(sig.Names) > 0 && m.InputType != nil {
+		inputMsg := m.InputType
+		if inputMsg == nil && m.InputTypeID != "" {
+			inputMsg = c.resolveMessageType(m.InputTypeID)
+		}
+		if len(fields) == 0 && len(sig.Names) > 0 && inputMsg != nil {
 			for _, fn := range sig.Names {
-				if f := findFieldInMessage(m.InputType, fn); f != nil {
+				if f := findFieldInMessage(inputMsg, fn); f != nil {
 					fields = append(fields, f)
 				}
 			}
@@ -350,6 +392,9 @@ func (c *codec) annotateClientMethod(m *api.Method, service *api.Service, ann *c
 		SamplePreInitLines:    samplePreInitLines,
 		HasSamplePreInit:      len(samplePreInitLines) > 0,
 		SampleRequestArgs:     sampleArgs,
+		IsExternalRequest:     isExternalRequest,
+		ExternalRequestModule: extReqMod,
+		ExternalRequestAlias:  extReqAlias,
 		PackageImport:         ann.PackageImport,
 		VersionSegment:        ann.VersionSegment,
 		ClientName:            ann.ClientName,
@@ -357,101 +402,4 @@ func (c *codec) annotateClientMethod(m *api.Method, service *api.Service, ann *c
 		AsyncReturnSphinxType: asyncReturnSphinxType,
 		AsyncPagerClassName:   asyncPagerClassName,
 	}
-}
-
-func findFieldInMessage(msg *api.Message, name string) *api.Field {
-	if msg == nil {
-		return nil
-	}
-	idx := slices.IndexFunc(msg.Fields, func(f *api.Field) bool {
-		return f.Name == name
-	})
-	if idx < 0 {
-		return nil
-	}
-	return msg.Fields[idx]
-}
-
-func (c *codec) resolveFieldTypeHintAndSphinx(f *api.Field, versionPackage string) (string, string) {
-	if f == nil {
-		return "str", "str"
-	}
-
-	var baseHint, baseSphinx string
-	switch f.Typez {
-	case api.TypezMessage:
-		target := f.MessageType
-		if target == nil && f.TypezID != "" && c.Model != nil {
-			target = c.Model.Message(f.TypezID)
-		}
-		if target != nil {
-			modelPkg := ""
-			if c.Model != nil {
-				modelPkg = c.Model.PackageName
-			}
-			targetPkg := target.Package
-			if targetPkg == "" {
-				targetPkg = modelPkg
-			}
-			targetFile := resolveProtoFile(target.SourceLocation, targetPkg, target.Name)
-			if modelPkg != "" && targetPkg != modelPkg {
-				stem := strings.TrimSuffix(filepath.Base(targetFile), ".proto")
-				importAlias := stem + "_pb2"
-				baseHint = importAlias + "." + relativeTypeName(target)
-				module := pythonModuleFromProto(targetFile)
-				baseSphinx = module + "." + relativeTypeName(target)
-			} else {
-				stem := strings.TrimSuffix(filepath.Base(targetFile), ".proto")
-				baseHint = stem + "." + relativeTypeName(target)
-				baseSphinx = versionPackage + ".types." + relativeTypeName(target)
-			}
-		} else {
-			baseHint = "object"
-			baseSphinx = "object"
-		}
-	case api.TypezEnum:
-		target := f.EnumType
-		if target == nil && f.TypezID != "" && c.Model != nil {
-			target = c.Model.Enum(f.TypezID)
-		}
-		if target != nil {
-			targetFile := resolveProtoFile(target.SourceLocation, target.Package, target.Name)
-			stem := strings.TrimSuffix(filepath.Base(targetFile), ".proto")
-			baseHint = stem + "." + relativeTypeName(target)
-			baseSphinx = versionPackage + ".types." + relativeTypeName(target)
-		} else {
-			baseHint = "int"
-			baseSphinx = "int"
-		}
-	default:
-		prim := primitiveTypeHint(f.Typez)
-		baseHint = prim
-		baseSphinx = prim
-	}
-
-	if f.Repeated {
-		return fmt.Sprintf("MutableSequence[%s]", baseHint), fmt.Sprintf("MutableSequence[%s]", baseSphinx)
-	}
-	return baseHint, baseSphinx
-}
-
-func (c *codec) resolveMessageStem(msg *api.Message) string {
-	if msg == nil {
-		return "common"
-	}
-	src := c.sourceFileForLocation(msg.SourceLocation)
-	return strings.TrimSuffix(filepath.Base(src), ".proto")
-}
-
-func (c *codec) resolveMessageType(id string) *api.Message {
-	if id == "" || c.Model == nil {
-		return nil
-	}
-	if msg := c.Model.Message(id); msg != nil {
-		return msg
-	}
-	if cut, ok := strings.CutPrefix(id, "."); ok {
-		return c.Model.Message(cut)
-	}
-	return c.Model.Message("." + id)
 }

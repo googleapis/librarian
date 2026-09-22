@@ -124,8 +124,19 @@ func (c *codec) collectClientImports(service *api.Service) ([]*clientTypeImport,
 		}
 
 		// 1. Input message
-		if m.InputType != nil {
-			recordMessageOrEnum(m.InputType, nil)
+		if iamMod, _, ok := isIAMType(m.InputTypeID); ok {
+			extSet[clientExternalImport{
+				Module: "google.iam.v1." + iamMod,
+				Alias:  iamMod,
+			}] = true
+		} else {
+			inMsg := m.InputType
+			if inMsg == nil && m.InputTypeID != "" {
+				inMsg = c.resolveMessageType(m.InputTypeID)
+			}
+			if inMsg != nil {
+				recordMessageOrEnum(inMsg, nil)
+			}
 		}
 
 		// 2. Flattened fields from signatures
@@ -159,11 +170,22 @@ func (c *codec) collectClientImports(service *api.Service) ([]*clientTypeImport,
 			}
 		} else {
 			returnsEmpty := m.ReturnsEmpty || strings.TrimPrefix(m.OutputTypeID, ".") == "google.protobuf.Empty" || (m.OutputType != nil && strings.TrimPrefix(m.OutputType.ID, ".") == "google.protobuf.Empty")
-			if m.OutputType != nil && !returnsEmpty {
-				recordMessageOrEnum(m.OutputType, nil)
-				// Direct fields of output message
-				for _, f := range m.OutputType.Fields {
-					recordFieldType(f)
+			if iamMod, _, ok := isIAMType(m.OutputTypeID); ok {
+				extSet[clientExternalImport{
+					Module: "google.iam.v1." + iamMod,
+					Alias:  iamMod,
+				}] = true
+			} else if !returnsEmpty {
+				outMsg := m.OutputType
+				if outMsg == nil && m.OutputTypeID != "" {
+					outMsg = c.resolveMessageType(m.OutputTypeID)
+				}
+				if outMsg != nil {
+					recordMessageOrEnum(outMsg, nil)
+					// Direct fields of output message
+					for _, f := range outMsg.Fields {
+						recordFieldType(f)
+					}
 				}
 			}
 		}

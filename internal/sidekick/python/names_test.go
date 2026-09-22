@@ -345,8 +345,22 @@ func TestIsIAMType(t *testing.T) {
 			wantOK:   true,
 		},
 		{
+			name:     "iam policy request without leading dot",
+			typeID:   "google.iam.v1.GetIamPolicyRequest",
+			wantMod:  "iam_policy_pb2",
+			wantType: "GetIamPolicyRequest",
+			wantOK:   true,
+		},
+		{
 			name:     "iam policy",
 			typeID:   ".google.iam.v1.Policy",
+			wantMod:  "policy_pb2",
+			wantType: "Policy",
+			wantOK:   true,
+		},
+		{
+			name:     "iam policy without leading dot",
+			typeID:   "google.iam.v1.Policy",
 			wantMod:  "policy_pb2",
 			wantType: "Policy",
 			wantOK:   true,

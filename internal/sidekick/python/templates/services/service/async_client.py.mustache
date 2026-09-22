@@ -312,6 +312,9 @@ class {{AsyncClientName}}:
             #   client as shown in:
             #   https://googleapis.dev/python/google-api-core/latest/client_options.html
             from {{PackageImport}} import {{VersionSegment}}
+{{#IsExternalRequest}}
+            import {{{ExternalRequestModule}}} as {{{ExternalRequestAlias}}}  # type: ignore
+{{/IsExternalRequest}}
 
             async def sample_{{Name}}():
                 # Create a client
@@ -329,7 +332,12 @@ class {{AsyncClientName}}:
 {{/SamplePreInitLines}}
 
 {{/HasSamplePreInit}}
+{{#IsExternalRequest}}
+                request = {{{RequestTypeHint}}}(
+{{/IsExternalRequest}}
+{{^IsExternalRequest}}
                 request = {{VersionSegment}}.{{RequestTypeName}}(
+{{/IsExternalRequest}}
 {{#SampleRequestArgs}}
                     {{Name}}={{{Value}}},
 {{/SampleRequestArgs}}
@@ -445,10 +453,20 @@ class {{AsyncClientName}}:
 {{/HasFlattenedParams}}
 {{^HasFlattenedParams}}
         # Create or coerce a protobuf request object.
+{{#IsExternalRequest}}
+        # - The request isn't a proto-plus wrapped type,
+        #   so it must be constructed via keyword expansion.
+        if isinstance(request, dict):
+            request = {{{RequestTypeHint}}}(**request)
+        elif not request:
+            request = {{{RequestTypeHint}}}()
+{{/IsExternalRequest}}
+{{^IsExternalRequest}}
         # - Use the request object if provided (there's no risk of modifying the input as
         #   there are no flattened fields), or create one.
         if not isinstance(request, {{{RequestTypeHint}}}):
             request = {{{RequestTypeHint}}}(request)
+{{/IsExternalRequest}}
 {{/HasFlattenedParams}}
 
         # Wrap the RPC method; this adds retry and timeout information,

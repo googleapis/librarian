@@ -28,10 +28,10 @@ type restTransportAnnotation struct {
 	ClientName, AsyncClientName                                         string
 	ServiceFQN, ServiceFQNClient, ServiceFQNAsyncClient                 string
 	ServiceProtoName, DefaultHost, VersionPackage, ClientPackageVersion string
-	PackageName                                                         string
+	PackageName, RestNumericEnumsBool                                   string
 	Scopes                                                              []string
 	HasLRO, HasLocationMixin, HasOperationsMixin, HasDocLines           bool
-	RestAsyncIOEnabled                                                  bool
+	RestAsyncIOEnabled, ShowRestBetaPreview                             bool
 	DocLines                                                            []string
 	TypeImports                                                         []*restTypeImport
 	BaseMethods                                                         []*restBaseMethodAnnotation
@@ -64,6 +64,7 @@ type restMethodDetailAnnotation struct {
 	InputDocRestLines, OutputDocRestLines                    []string
 	IsVoid, IsLRO, HasBody, DocSummaryWrap                   bool
 	HasInputDoc, HasOutputDoc, OutputDocNeedsTrailingNewline bool
+	IsInputProtoPlus, IsOutputProtoPlus                      bool
 }
 
 // restMixinMethodAnnotation contains metadata for an API mixin method in a REST transport.
@@ -187,7 +188,7 @@ func (c *codec) annotateRestTransport(service *api.Service, svcAnn *serviceAnnot
 		wrappedMethods = tAnn.WrappedMethods
 	}
 
-	return &restTransportAnnotation{
+	ann := &restTransportAnnotation{
 		Name:                   name,
 		BaseTransportClassName: baseTransportClassName,
 		TransportClassName:     transportClassName,
@@ -206,6 +207,8 @@ func (c *codec) annotateRestTransport(service *api.Service, svcAnn *serviceAnnot
 		HasLocationMixin:       hasLocationMixin,
 		HasOperationsMixin:     hasOperationsMixin,
 		RestAsyncIOEnabled:     restAsyncIOEnabled,
+		ShowRestBetaPreview:    !c.hasRestNumericEnums(),
+		RestNumericEnumsBool:   "False",
 		DocLines:               docLines,
 		HasDocLines:            len(docLines) > 0,
 		TypeImports:            typeImports,
@@ -214,263 +217,9 @@ func (c *codec) annotateRestTransport(service *api.Service, svcAnn *serviceAnnot
 		MixinMethods:           orderedMixinMethods,
 		LROOperations:          lroOps,
 		WrappedMethods:         wrappedMethods,
-	}, nil
-}
-
-// buildRestBaseMethods constructs base method class annotations for native and mixin methods.
-func buildRestBaseMethods(nativeMethods, mixinMethods []*api.Method) []*restBaseMethodAnnotation {
-	var result []*restBaseMethodAnnotation
-	for _, m := range nativeMethods {
-		var (
-			hasReq  bool
-			reqVals []*requiredFieldDefaultAnnotation
-			httpOpt []*httpOptionAnnotation
-		)
-		if mAnn, ok := m.Codec.(*methodAnnotations); ok && mAnn.RestMethod != nil {
-			hasReq = mAnn.RestMethod.HasRequiredFields
-			reqVals = mAnn.RestMethod.RequiredFieldsDefaultValues
-			httpOpt = mAnn.RestMethod.HTTPOptions
-		}
-		result = append(result, &restBaseMethodAnnotation{
-			BaseClassName:               "_Base" + pascalCase(m.Name),
-			IsMixin:                     false,
-			HasRequiredFields:           hasReq,
-			RequiredFieldsDefaultValues: reqVals,
-			HTTPOptions:                 httpOpt,
-		})
 	}
-	for _, entry := range mixinGroups {
-		for _, reqName := range entry.order {
-			for _, m := range mixinMethods {
-				if strings.HasPrefix(m.SourceServiceID, entry.prefix) && m.Name == reqName {
-					var httpOpt []*httpOptionAnnotation
-					if mAnn, ok := m.Codec.(*methodAnnotations); ok && mAnn.RestMethod != nil {
-						httpOpt = mAnn.RestMethod.HTTPOptions
-					}
-					result = append(result, &restBaseMethodAnnotation{
-						BaseClassName: "_Base" + pascalCase(m.Name),
-						IsMixin:       true,
-						HTTPOptions:   httpOpt,
-					})
-				}
-			}
-		}
+	if c.hasRestNumericEnums() {
+		ann.RestNumericEnumsBool = "True"
 	}
-	return result
-}
-
-// buildRestPrimaryMethods constructs method implementation annotations for native service methods.
-func (c *codec) buildRestPrimaryMethods(nativeMethods []*api.Method, service *api.Service) []*restMethodDetailAnnotation {
-	var result []*restMethodDetailAnnotation
-	for _, m := range nativeMethods {
-		var inputIdent string
-		if iamMod, iamType, ok := isIAMType(m.InputTypeID); ok {
-			inputIdent = iamMod + "." + iamType
-		} else {
-			inModule := c.resolveTypeModule(m.InputTypeID, service)
-			inTypeName := typeNameFromID(m.InputTypeID)
-			if m.InputType != nil && m.InputType.Name != "" {
-				inTypeName = m.InputType.Name
-			}
-			inputIdent = inModule + "." + inTypeName
-		}
-
-		isVoid := m.ReturnsEmpty || m.OutputTypeID == api.WktEmptyID
-		isLRO := m.OperationInfo != nil || m.OutputTypeID == ".google.longrunning.Operation"
-
-		outIdent := ""
-		if isVoid {
-			outIdent = "empty_pb2.Empty"
-		} else if isLRO {
-			outIdent = "operations_pb2.Operation"
-		} else if iamMod, iamType, ok := isIAMType(m.OutputTypeID); ok {
-			outIdent = iamMod + "." + iamType
-		} else {
-			outModule := c.resolveTypeModule(m.OutputTypeID, service)
-			outTypeName := typeNameFromID(m.OutputTypeID)
-			if m.OutputType != nil && m.OutputType.Name != "" {
-				outTypeName = m.OutputType.Name
-			}
-			outIdent = outModule + "." + outTypeName
-		}
-
-		hasBody := false
-		if mAnn, ok := m.Codec.(*methodAnnotations); ok && mAnn.RestMethod != nil && len(mAnn.RestMethod.HTTPOptions) > 0 {
-			hasBody = mAnn.RestMethod.HTTPOptions[0].HasBody
-		}
-
-		docLead, docRest, docWrap := docSummaryForRest(m.Name)
-		var (
-			hasInDoc, hasOutDoc       bool
-			inFirstLine, outFirstLine string
-			inRestLines, outRestLines []string
-		)
-		if m.InputType != nil && m.InputType.Documentation != "" {
-			inFirstLine, inRestLines, hasInDoc = methodArgsDoc(m.InputType.Documentation)
-		}
-		if isLRO {
-			outFirstLine, outRestLines, hasOutDoc = methodArgsDoc("This resource represents a long-running operation that is the result of a network API call.")
-		} else if m.OutputType != nil && m.OutputType.Documentation != "" && !isVoid {
-			outFirstLine, outRestLines, hasOutDoc = methodArgsDoc(m.OutputType.Documentation)
-		}
-
-		result = append(result, &restMethodDetailAnnotation{
-			Name:                          snakeCase(m.Name),
-			MethodPascalName:              pascalCase(m.Name),
-			MethodSnakeName:               snakeCase(m.Name),
-			InputTypeIdent:                inputIdent,
-			OutputTypeIdent:               outIdent,
-			PropertyOutputTypeIdent:       outIdent,
-			IsVoid:                        isVoid,
-			IsLRO:                         isLRO,
-			HasBody:                       hasBody,
-			DocSummaryLead:                docLead,
-			DocSummaryRest:                docRest,
-			DocSummaryWrap:                docWrap,
-			HasInputDoc:                   hasInDoc,
-			InputDocFirstLine:             inFirstLine,
-			InputDocRestLines:             inRestLines,
-			HasOutputDoc:                  hasOutDoc,
-			OutputDocFirstLine:            outFirstLine,
-			OutputDocRestLines:            outRestLines,
-			OutputDocNeedsTrailingNewline: !hasOutDoc || len(outRestLines) > 0,
-		})
-	}
-	return result
-}
-
-// buildRestMixinMethods constructs method implementation annotations for API mixins.
-func buildRestMixinMethods(mixinMethods []*api.Method) []*restMixinMethodAnnotation {
-	var result []*restMixinMethodAnnotation
-	for _, entry := range mixinGroups {
-		for _, reqName := range entry.order {
-			for _, m := range mixinMethods {
-				if strings.HasPrefix(m.SourceServiceID, entry.prefix) && m.Name == reqName {
-					spec := mixinSpecMap[reqName]
-					hasBody := false
-					if mAnn, ok := m.Codec.(*methodAnnotations); ok && mAnn.RestMethod != nil && len(mAnn.RestMethod.HTTPOptions) > 0 {
-						hasBody = mAnn.RestMethod.HTTPOptions[0].HasBody
-					}
-					result = append(result, &restMixinMethodAnnotation{
-						Name:             snakeCase(m.Name),
-						MethodPascalName: pascalCase(m.Name),
-						MethodSnakeName:  snakeCase(m.Name),
-						InputTypeIdent:   spec.inputIdent,
-						OutputTypeIdent:  spec.outputIdent,
-						DocName:          strings.ReplaceAll(snakeCase(m.Name), "_", " "),
-						IsVoid:           spec.isVoid,
-						HasBody:          hasBody,
-					})
-				}
-			}
-		}
-	}
-	return result
-}
-
-// buildRestLROOperations constructs metadata for long-running operations supported by the transport.
-func buildRestLROOperations(mixinMethods []*api.Method) []*restLROOperationAnnotation {
-	var result []*restLROOperationAnnotation
-	for _, reqName := range opOrder {
-		for _, m := range mixinMethods {
-			if strings.HasPrefix(m.SourceServiceID, operationsServiceIDPrefix) && m.Name == reqName {
-				var httpOpt []*httpOptionAnnotation
-				if mAnn, ok := m.Codec.(*methodAnnotations); ok && mAnn.RestMethod != nil {
-					httpOpt = mAnn.RestMethod.HTTPOptions
-				}
-				result = append(result, &restLROOperationAnnotation{
-					Selector:    "google.longrunning.Operations." + reqName,
-					HTTPOptions: httpOpt,
-				})
-			}
-		}
-	}
-	return result
-}
-
-// buildRestTypeImports computes and sorts the module imports required by REST transport methods.
-func (c *codec) buildRestTypeImports(nativeMethods []*api.Method, service *api.Service, hasLRO, hasOperationsMixin bool, versionPackage string) []*restTypeImport {
-	typeModules := make(map[string]bool)
-	usesEmpty := false
-	usesOperations := hasOperationsMixin || hasLRO
-	usesIAMPolicy := false
-	usesPolicy := false
-
-	for _, m := range nativeMethods {
-		if m.ReturnsEmpty || m.OutputTypeID == api.WktEmptyID {
-			usesEmpty = true
-		} else if m.OperationInfo != nil || m.OutputTypeID == ".google.longrunning.Operation" {
-			usesOperations = true
-		} else if iamMod, _, ok := isIAMType(m.OutputTypeID); ok {
-			switch iamMod {
-			case "iam_policy_pb2":
-				usesIAMPolicy = true
-			case "policy_pb2":
-				usesPolicy = true
-			}
-		} else if outMod := c.resolveTypeModule(m.OutputTypeID, service); outMod != "" {
-			typeModules[outMod] = true
-		}
-
-		if iamMod, _, ok := isIAMType(m.InputTypeID); ok {
-			switch iamMod {
-			case "iam_policy_pb2":
-				usesIAMPolicy = true
-			case "policy_pb2":
-				usesPolicy = true
-			}
-		} else if inMod := c.resolveTypeModule(m.InputTypeID, service); inMod != "" {
-			typeModules[inMod] = true
-		}
-	}
-
-	var methodImports []*restTypeImport
-	for mod := range typeModules {
-		methodImports = append(methodImports, &restTypeImport{
-			From:   versionPackage + ".types",
-			Import: mod,
-		})
-	}
-	if usesEmpty {
-		methodImports = append(methodImports, &restTypeImport{
-			From:   "google.protobuf.empty_pb2",
-			As:     "empty_pb2",
-			Ignore: true,
-		})
-	}
-	if usesIAMPolicy {
-		methodImports = append(methodImports, &restTypeImport{
-			From:   "google.iam.v1.iam_policy_pb2",
-			As:     "iam_policy_pb2",
-			Ignore: true,
-		})
-	}
-	if usesPolicy {
-		methodImports = append(methodImports, &restTypeImport{
-			From:   "google.iam.v1.policy_pb2",
-			As:     "policy_pb2",
-			Ignore: true,
-		})
-	}
-
-	slices.SortFunc(methodImports, func(a, b *restTypeImport) int {
-		return strings.Compare(restImportKey(a), restImportKey(b))
-	})
-
-	if usesOperations {
-		methodImports = append(methodImports, &restTypeImport{
-			From:   "google.longrunning",
-			Import: "operations_pb2",
-			Ignore: true,
-		})
-	}
-	return methodImports
-}
-
-// restImportKey returns a sort key string for a REST type import.
-func restImportKey(imp *restTypeImport) string {
-	if imp.As != "" {
-		return fmt.Sprintf("import %s as %s", imp.From, imp.As)
-	}
-	return fmt.Sprintf("from %s import %s", imp.From, imp.Import)
+	return ann, nil
 }

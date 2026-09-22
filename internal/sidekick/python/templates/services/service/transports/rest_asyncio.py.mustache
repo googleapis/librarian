@@ -377,14 +377,19 @@ class Async{{TransportClassName}}(_Base{{TransportClassName}}):
                     "_Base{{MethodPascalName}}__REQUIRED_FIELDS_DEFAULT_VALUES",
                     None,
                 ),
-                rest_numeric_enums=False,
+                rest_numeric_enums={{RestNumericEnumsBool}},
             )
 
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(logging.DEBUG):  # pragma: NO COVER
                 request_url = "{host}{uri}".format(host=self._host, uri=transcoded_request['uri'])
                 method = transcoded_request['method']
                 try:
+{{#IsInputProtoPlus}}
                     request_payload = type(request).to_json(request)
+{{/IsInputProtoPlus}}
+{{^IsInputProtoPlus}}
+                    request_payload = json_format.MessageToJson(request)
+{{/IsInputProtoPlus}}
                 except:
                     request_payload = None
                 http_request = {
@@ -449,7 +454,12 @@ class Async{{TransportClassName}}(_Base{{TransportClassName}}):
 {{/IsLRO}}
 {{^IsLRO}}
             resp = {{OutputTypeIdent}}()
+{{#IsOutputProtoPlus}}
             pb_resp = {{OutputTypeIdent}}.pb(resp)
+{{/IsOutputProtoPlus}}
+{{^IsOutputProtoPlus}}
+            pb_resp = resp
+{{/IsOutputProtoPlus}}
             content = await response.read()
             json_format.Parse(content, pb_resp, ignore_unknown_fields=True)
             resp = await self._interceptor.post_{{MethodSnakeName}}(resp)
@@ -457,7 +467,12 @@ class Async{{TransportClassName}}(_Base{{TransportClassName}}):
             resp, _ = await self._interceptor.post_{{MethodSnakeName}}_with_metadata(resp, response_metadata)
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(logging.DEBUG):  # pragma: NO COVER
                 try:
+{{#IsOutputProtoPlus}}
                     response_payload = {{OutputTypeIdent}}.to_json(response)
+{{/IsOutputProtoPlus}}
+{{^IsOutputProtoPlus}}
+                    response_payload = json_format.MessageToJson(resp)
+{{/IsOutputProtoPlus}}
                 except:
                     response_payload = None
                 http_response = {

@@ -203,10 +203,12 @@ class {{TransportClassName}}(_Base{{TransportClassName}}):
             api_audience: Optional[str] = None,
             ) -> None:
         """Instantiate the transport.
+{{#ShowRestBetaPreview}}
 
        NOTE: This REST transport functionality is currently in a beta
        state (preview). We welcome your feedback via a GitHub issue in
        this library's repository. Thank you!
+{{/ShowRestBetaPreview}}
 
         Args:
             host (Optional[str]):
@@ -321,7 +323,6 @@ class {{TransportClassName}}(_Base{{TransportClassName}}):
             timeout,
             transcoded_request,
             body=None):
-
             uri = transcoded_request['uri']
             method = transcoded_request['method']
             headers = dict(metadata)
@@ -395,14 +396,19 @@ class {{TransportClassName}}(_Base{{TransportClassName}}):
                     "_Base{{MethodPascalName}}__REQUIRED_FIELDS_DEFAULT_VALUES",
                     None,
                 ),
-                rest_numeric_enums=False,
+                rest_numeric_enums={{RestNumericEnumsBool}},
             )
 
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(logging.DEBUG):  # pragma: NO COVER
                 request_url = "{host}{uri}".format(host=self._host, uri=transcoded_request['uri'])
                 method = transcoded_request['method']
                 try:
+{{#IsInputProtoPlus}}
                     request_payload = type(request).to_json(request)
+{{/IsInputProtoPlus}}
+{{^IsInputProtoPlus}}
+                    request_payload = json_format.MessageToJson(request)
+{{/IsInputProtoPlus}}
                 except:
                     request_payload = None
                 http_request = {
@@ -437,7 +443,12 @@ class {{TransportClassName}}(_Base{{TransportClassName}}):
 {{/IsLRO}}
 {{^IsLRO}}
             resp = {{OutputTypeIdent}}()
+{{#IsOutputProtoPlus}}
             pb_resp = {{OutputTypeIdent}}.pb(resp)
+{{/IsOutputProtoPlus}}
+{{^IsOutputProtoPlus}}
+            pb_resp = resp
+{{/IsOutputProtoPlus}}
 
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 {{/IsLRO}}
@@ -451,7 +462,12 @@ class {{TransportClassName}}(_Base{{TransportClassName}}):
                     response_payload = json_format.MessageToJson(resp)
 {{/IsLRO}}
 {{^IsLRO}}
+{{#IsOutputProtoPlus}}
                     response_payload = {{OutputTypeIdent}}.to_json(response)
+{{/IsOutputProtoPlus}}
+{{^IsOutputProtoPlus}}
+                    response_payload = json_format.MessageToJson(resp)
+{{/IsOutputProtoPlus}}
 {{/IsLRO}}
                 except:
                     response_payload = None
@@ -501,7 +517,6 @@ class {{TransportClassName}}(_Base{{TransportClassName}}):
             timeout,
             transcoded_request,
             body=None):
-
             uri = transcoded_request['uri']
             method = transcoded_request['method']
             headers = dict(metadata)

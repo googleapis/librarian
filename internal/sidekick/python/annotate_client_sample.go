@@ -36,7 +36,11 @@ type sampleRequestArg struct {
 }
 
 func (c *codec) buildSampleCode(m *api.Method, versionSegment string) ([]string, []*sampleRequestArg) {
-	if m.InputType == nil {
+	inMsg := m.InputType
+	if inMsg == nil && m.InputTypeID != "" && c.Model != nil {
+		inMsg = c.resolveMessageType(m.InputTypeID)
+	}
+	if inMsg == nil {
 		return nil, nil
 	}
 
@@ -45,12 +49,12 @@ func (c *codec) buildSampleCode(m *api.Method, versionSegment string) ([]string,
 
 	// Order: selected_oneofs (first option of each oneof) + required_fields (not in oneof)
 	var requestFields []*api.Field
-	for _, o := range m.InputType.OneOfs {
+	for _, o := range inMsg.OneOfs {
 		if len(o.Fields) > 0 {
 			requestFields = append(requestFields, o.Fields[0])
 		}
 	}
-	for _, f := range m.InputType.Fields {
+	for _, f := range inMsg.Fields {
 		if f.IsOneOf {
 			continue
 		}

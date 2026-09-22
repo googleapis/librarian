@@ -273,12 +273,11 @@ func formatMethodReturnDoc(doc string) []string {
 		return nil
 	}
 	lines := strings.Split(doc, "\n")
-	if len(lines) > 1 && strings.HasPrefix(lines[0], "A [") && strings.Contains(lines[0], "][") && strings.Contains(doc, "\n\n") {
+	if len(lines) > 1 && strings.HasPrefix(lines[0], "A [") && strings.Contains(doc, "\n\n") {
 		term := strings.TrimSpace(lines[0])
 		rest := strings.TrimSpace(strings.Join(lines[1:], "\n"))
 		wrappedRest := formatRstDoc(rest, 56-3, 0)
-		var result []string
-		result = append(result, term)
+		result := []string{term}
 		for _, rl := range wrappedRest {
 			if rl == "" {
 				result = append(result, "")
@@ -290,7 +289,7 @@ func formatMethodReturnDoc(doc string) []string {
 	}
 
 	res := formatRstDoc(doc, 56, 16)
-	if len(res) > 1 && (strings.HasPrefix(res[0], "A ") || strings.HasPrefix(res[0], "The ")) {
+	if len(res) > 1 && (strings.HasPrefix(res[0], "A ") || strings.HasPrefix(res[0], "The ") || strings.Contains(doc, "\n[")) {
 		for i := 1; i < len(res); i++ {
 			if res[i] != "" && strings.HasPrefix(res[i], "[") {
 				res[i] = "   " + res[i]

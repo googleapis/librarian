@@ -273,8 +273,9 @@ func caseInsensitiveCompare(a, b string) int {
 // isIAMType checks if a protobuf type ID belongs to google.iam.v1 and returns the external
 // pb2 module name, type name, and true if so.
 func isIAMType(typeID string) (moduleName, typeName string, ok bool) {
-	if strings.HasPrefix(typeID, ".google.iam.v1.") {
-		tName := typeNameFromID(typeID)
+	trimmed := strings.TrimPrefix(typeID, ".")
+	if strings.HasPrefix(trimmed, "google.iam.v1.") {
+		tName := typeNameFromID(trimmed)
 		if tName == "Policy" {
 			return "policy_pb2", "Policy", true
 		}
