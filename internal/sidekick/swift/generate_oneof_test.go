@@ -29,62 +29,36 @@ import (
 func TestGenerateOneOf(t *testing.T) {
 	outDir := t.TempDir()
 
-	inner := &api.Message{
-		Name:    "Inner",
-		Package: "google.cloud.test.v1",
-		ID:      ".google.cloud.test.v1.Inner",
-	}
+	inner := api.NewTestMessage("Inner").
+		WithPackage("google.cloud.test.v1")
 
-	oneof := &api.OneOf{
-		Name:          "choice",
-		Documentation: "A group of fields where only one is set.",
-	}
+	oneofField1 := api.NewTestField("string_field").
+		WithType(api.TypezString).
+		WithDocumentation("A string field that is part of the oneof.")
 
-	outer := &api.Message{
-		Name:    "Outer",
-		Package: "google.cloud.test.v1",
-		ID:      ".google.cloud.test.v1.Outer",
-		Fields: []*api.Field{
-			{
-				Name:          "string_field",
-				JSONName:      "stringField",
-				ID:            ".google.cloud.test.v1.Outer.string_field",
-				Documentation: "A string field that is part of the oneof.",
-				Typez:         api.TypezString,
-				IsOneOf:       true,
-				Group:         oneof,
-			},
-			{
-				Name:          "message_field",
-				JSONName:      "messageField",
-				ID:            ".google.cloud.test.v1.Outer.message_field",
-				Documentation: "A message field that is part of the oneof.",
-				Typez:         api.TypezMessage,
-				TypezID:       ".google.cloud.test.v1.Inner",
-				IsOneOf:       true,
-				Group:         oneof,
-			},
-			{
-				Name:          "regular_int32",
-				JSONName:      "regularInt32",
-				ID:            ".google.cloud.test.v1.Outer.regular_int32",
-				Documentation: "A regular field.",
-				Typez:         api.TypezInt32,
-			},
-			{
-				Name:          "regular_string",
-				JSONName:      "regularStringSpecial",
-				ID:            ".google.cloud.test.v1.Outer.regular_string",
-				Documentation: "Another regular field.",
-				Typez:         api.TypezString,
-			},
-		},
-		OneOfs: []*api.OneOf{oneof},
-	}
-	oneof.Fields = []*api.Field{outer.Fields[0], outer.Fields[1]}
+	oneofField2 := api.NewTestField("message_field").
+		WithMessageType(inner).
+		WithDocumentation("A message field that is part of the oneof.")
 
-	model := api.NewTestAPI([]*api.Message{outer, inner}, []*api.Enum{}, []*api.Service{})
-	model.PackageName = "google.cloud.test.v1"
+	oneof := api.NewTestOneOf("choice").
+		WithFields(oneofField1, oneofField2).
+		WithDocumentation("A group of fields where only one is set.")
+
+	regField1 := api.NewTestField("regular_int32").
+		WithType(api.TypezInt32).
+		WithDocumentation("A regular field.")
+
+	regField2 := api.NewTestField("regular_string").
+		WithType(api.TypezString).
+		WithJSONName("regularStringSpecial").
+		WithDocumentation("Another regular field.")
+
+	outer := api.NewTestMessage("Outer").
+		WithPackage("google.cloud.test.v1").
+		WithOneOfs(oneof).
+		WithFields(regField1, regField2)
+
+	model := api.NewTestAPI([]*api.Message{outer, inner}, nil, nil)
 	library := &config.Library{
 		Swift: swiftConfig(t, nil),
 	}
@@ -239,46 +213,26 @@ func TestGenerateOneOf(t *testing.T) {
 func TestGenerateOneOfWithKeyword(t *testing.T) {
 	outDir := t.TempDir()
 
-	oneof := &api.OneOf{Name: "in"}
-	jwtLocation := &api.Message{
-		Name:    "JwtLocation",
-		Package: "google.api",
-		ID:      ".google.api",
-		Fields: []*api.Field{
-			{
-				Name:          "header",
-				JSONName:      "header",
-				ID:            ".google.api.JwtLocation.header",
-				Documentation: "Specifies HTTP header name to extract JWT token.",
-				Typez:         api.TypezString,
-				IsOneOf:       true,
-				Group:         oneof,
-			},
-			{
-				Name:          "query",
-				JSONName:      "query",
-				ID:            ".google.api.JwtLocation.query",
-				Documentation: "Specifies URL query parameter name to extract JWT token.",
-				Typez:         api.TypezString,
-				IsOneOf:       true,
-				Group:         oneof,
-			},
-			{
-				Name:          "cookie",
-				JSONName:      "cookie",
-				ID:            ".google.api.JwtLocation.cookie",
-				Documentation: "Specifies cookie name to extract JWT token.",
-				Typez:         api.TypezString,
-				IsOneOf:       true,
-				Group:         oneof,
-			},
-		},
-		OneOfs: []*api.OneOf{oneof},
-	}
-	oneof.Fields = jwtLocation.Fields
+	headerField := api.NewTestField("header").
+		WithType(api.TypezString).
+		WithDocumentation("Specifies HTTP header name to extract JWT token.")
 
-	model := api.NewTestAPI([]*api.Message{jwtLocation}, []*api.Enum{}, []*api.Service{})
-	model.PackageName = "google.api"
+	queryField := api.NewTestField("query").
+		WithType(api.TypezString).
+		WithDocumentation("Specifies URL query parameter name to extract JWT token.")
+
+	cookieField := api.NewTestField("cookie").
+		WithType(api.TypezString).
+		WithDocumentation("Specifies cookie name to extract JWT token.")
+
+	oneof := api.NewTestOneOf("in").
+		WithFields(headerField, queryField, cookieField)
+
+	jwtLocation := api.NewTestMessage("JwtLocation").
+		WithPackage("google.api").
+		WithOneOfs(oneof)
+
+	model := api.NewTestAPI([]*api.Message{jwtLocation}, nil, nil)
 	library := &config.Library{
 		Swift: swiftConfig(t, nil),
 	}

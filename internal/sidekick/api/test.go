@@ -16,6 +16,7 @@ package api
 
 import (
 	"fmt"
+	"slices"
 	"strings"
 
 	"github.com/iancoleman/strcase"
@@ -35,15 +36,27 @@ func NewTestAPI(messages []*Message, enums []*Enum, services []*Service) *API {
 		resourceByType: make(map[string]*Resource),
 	}
 
-	for _, m := range messages {
-		model.PackageName = m.Package
+	var indexMessage func(m *Message)
+	indexMessage = func(m *Message) {
 		model.messageByID[m.ID] = m
 		if m.Resource != nil {
 			model.resourceByType[m.Resource.Type] = m.Resource
 		}
 		for _, e := range m.Enums {
 			model.enumByID[e.ID] = e
+			e.Parent = m
+			for _, ev := range e.Values {
+				ev.Parent = e
+			}
 		}
+		for _, child := range m.Messages {
+			child.Parent = m
+			indexMessage(child)
+		}
+	}
+	for _, m := range messages {
+		model.PackageName = m.Package
+		indexMessage(m)
 	}
 	for _, e := range enums {
 		model.PackageName = e.Package
@@ -61,14 +74,18 @@ func NewTestAPI(messages []*Message, enums []*Enum, services []*Service) *API {
 		parent := model.messageByID[parentID]
 		if parent != nil {
 			m.Parent = parent
-			parent.Messages = append(parent.Messages, m)
+			if !slices.Contains(parent.Messages, m) {
+				parent.Messages = append(parent.Messages, m)
+			}
 		}
 	}
 	for _, e := range enums {
 		parent := model.messageByID[parentName(e.ID)]
 		if parent != nil {
 			e.Parent = parent
-			parent.Enums = append(parent.Enums, e)
+			if !slices.Contains(parent.Enums, e) {
+				parent.Enums = append(parent.Enums, e)
+			}
 		}
 		for _, ev := range e.Values {
 			ev.Parent = e
