@@ -253,8 +253,8 @@ func TestModelAnnotations_Gating(t *testing.T) {
 	}
 
 	wantAllTraits := []*traitDefinition{
-		{Name: "TestService", EnabledTraits: []string{"ZoneOperations"}},
-		{Name: "ZoneOperations"},
+		{Name: "TestService", ClientName: "TestServiceClient", IsDefault: true, EnabledTraits: []string{"ZoneOperations"}},
+		{Name: "ZoneOperations", ClientName: "ZoneOperationsClient", IsDefault: false},
 	}
 	if diff := cmp.Diff(wantAllTraits, ann.AllTraits); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
@@ -262,6 +262,10 @@ func TestModelAnnotations_Gating(t *testing.T) {
 
 	if !ann.HasTraits() {
 		t.Error("expected HasTraits() to be true")
+	}
+
+	if !ann.HasDefaultTraits() {
+		t.Error("expected HasDefaultTraits() to be true")
 	}
 
 	if diff := cmp.Diff([]string{"TestService"}, ann.DefaultTraits); diff != "" {
