@@ -1,5 +1,40 @@
 # Changelog
 
+## [0.45.0](https://github.com/googleapis/librarian/compare/v0.44.0...v0.45.0) (2026-09-22)
+
+
+### Features
+
+* **internal/config:** define Go internal copy settings ([#7605](https://github.com/googleapis/librarian/issues/7605)) ([1799f8a](https://github.com/googleapis/librarian/commit/1799f8a9ff31d5e5c10acae0812600f1cc81136a))
+* **internal/librarian/golang:** clean internal copy directories ([#7607](https://github.com/googleapis/librarian/issues/7607)) ([1aacd83](https://github.com/googleapis/librarian/commit/1aacd83ffc5bea325723b7b2d9c1df73255fefdb))
+* **internal/librarian/golang:** derive default library name from proto option ([#7594](https://github.com/googleapis/librarian/issues/7594)) ([71cf10d](https://github.com/googleapis/librarian/commit/71cf10dc6ffcb58223d4214fc805aeb5ddaad946)), refs [#7466](https://github.com/googleapis/librarian/issues/7466)
+* **internal/librarian/golang:** derive import path from proto option ([#7599](https://github.com/googleapis/librarian/issues/7599)) ([cbe019c](https://github.com/googleapis/librarian/commit/cbe019c2365982ee680efb1d47df9650db5303c6)), refs [#7466](https://github.com/googleapis/librarian/issues/7466)
+* **internal/librarian/golang:** derive versioned import path from proto ([#7598](https://github.com/googleapis/librarian/issues/7598)) ([f3613e4](https://github.com/googleapis/librarian/commit/f3613e4d30290b3dbc9aa08962dffb5cdd49650c)), refs [#7466](https://github.com/googleapis/librarian/issues/7466)
+* **internal/librarian/golang:** generate private protobuf copies ([#7613](https://github.com/googleapis/librarian/issues/7613)) ([8aa1ee4](https://github.com/googleapis/librarian/commit/8aa1ee4df6baa2c40fbda5e4283d0fc0ff378f0d))
+* **internal/librarian/golang:** rewrite internal copy descriptors ([#7606](https://github.com/googleapis/librarian/issues/7606)) ([562be84](https://github.com/googleapis/librarian/commit/562be840ff2267631f3b4c6773ae0dc850de563d))
+* **internal/librarian/java:** make min_java_version a repository default ([#7633](https://github.com/googleapis/librarian/issues/7633)) ([1c2496d](https://github.com/googleapis/librarian/commit/1c2496d570a32b2b9685fea575d789b1831a3775))
+* **internal/librarian/python:** allow adding APIs to custom GAPIC libs ([#7611](https://github.com/googleapis/librarian/issues/7611)) ([b49e8f4](https://github.com/googleapis/librarian/commit/b49e8f4141fa845682a1be5b1b79125a2800793b)), refs [#7600](https://github.com/googleapis/librarian/issues/7600)
+* **internal/librarian/python:** copy opt_args_by_api when adding new APIs ([#7612](https://github.com/googleapis/librarian/issues/7612)) ([60f76ef](https://github.com/googleapis/librarian/commit/60f76ef4f0d956789af24fa5c4769a8c0d52c062)), refs [#7600](https://github.com/googleapis/librarian/issues/7600)
+* **internal/librarian:** Swift and Rust generate the libraries index ([#7596](https://github.com/googleapis/librarian/issues/7596)) ([2425013](https://github.com/googleapis/librarian/commit/2425013230a1b3825146a4db801f89d302a1b82d))
+* **internal/proto:** add Search helper function ([#7592](https://github.com/googleapis/librarian/issues/7592)) ([372a1c7](https://github.com/googleapis/librarian/commit/372a1c72390e851eb300bb1dfc2261c464ff17ee)), refs [#7466](https://github.com/googleapis/librarian/issues/7466)
+* **sidekick/swift:** convert long-running operation payloads ([#7603](https://github.com/googleapis/librarian/issues/7603)) ([c76cf29](https://github.com/googleapis/librarian/commit/c76cf2954204b9f514896a88de9963a180ed2044))
+* **sidekick/swift:** document package traits ([#7645](https://github.com/googleapis/librarian/issues/7645)) ([a55b2f1](https://github.com/googleapis/librarian/commit/a55b2f12c6b771b7de877601b4412001be480fe1))
+* **sidekick/swift:** enum usage docs ([#7640](https://github.com/googleapis/librarian/issues/7640)) ([b147053](https://github.com/googleapis/librarian/commit/b14705360e44b647254af3311375cb3dd61edf51))
+* **sidekick/swift:** generate `.spi.yml` file ([#7637](https://github.com/googleapis/librarian/issues/7637)) ([bd04b53](https://github.com/googleapis/librarian/commit/bd04b53417856506b99b3c0752c97657d65dd8c0))
+* **sidekick/swift:** generate unknown field deserialization ([#7586](https://github.com/googleapis/librarian/issues/7586)) ([aa0aad8](https://github.com/googleapis/librarian/commit/aa0aad83eb975d0b9d434911db61f3117d915e33))
+* **sidekick/swift:** suppress `deprecated` diagnostics ([#7638](https://github.com/googleapis/librarian/issues/7638)) ([979e0b1](https://github.com/googleapis/librarian/commit/979e0b1f56b2b33df2889e4c20fa4fc95ddb44c8))
+* **sidekick/swift:** validate and encode URL paths ([#7589](https://github.com/googleapis/librarian/issues/7589)) ([b53c490](https://github.com/googleapis/librarian/commit/b53c490f3e6b2514fccfac6054ac97ffd8ea8797))
+* **sidekick/swift:** version type-only packages ([#7619](https://github.com/googleapis/librarian/issues/7619)) ([639e65e](https://github.com/googleapis/librarian/commit/639e65e45720a3daa59e44d48520fef6e04596c8))
+
+
+### Bug Fixes
+
+* **internal/tool/pnpm:** prevent corepack from overriding pnpm version ([#7627](https://github.com/googleapis/librarian/issues/7627)) ([aabffb8](https://github.com/googleapis/librarian/commit/aabffb86da8c98eff14d29c69d68ad0cdcb54b10)), refs [#7623](https://github.com/googleapis/librarian/issues/7623)
+* **librarian/swift:** fix bump command for Swift ([#7604](https://github.com/googleapis/librarian/issues/7604)) ([1d440c3](https://github.com/googleapis/librarian/commit/1d440c3600ad42165491511ba6ed92fa0e5b4af7))
+* **sidekick/swift:** generate internal methods with @_spi ([#7635](https://github.com/googleapis/librarian/issues/7635)) ([eda9633](https://github.com/googleapis/librarian/commit/eda963358ecc94505cd1a9976794f8d4958d3604))
+* **sidekick/swift:** generate Package.swift with conditional local or remote deps ([#7615](https://github.com/googleapis/librarian/issues/7615)) ([b0aa5eb](https://github.com/googleapis/librarian/commit/b0aa5eb2423c39999e0085f24ca4071f34db2dba))
+* **sidekick/swift:** path parameters and body ([#7595](https://github.com/googleapis/librarian/issues/7595)) ([f2209f8](https://github.com/googleapis/librarian/commit/f2209f8f5161b3f48d39aacf47eb1b24c736eea6))
+
 ## [0.44.0](https://github.com/googleapis/librarian/compare/v0.43.0...v0.44.0) (2026-09-14)
 
 
