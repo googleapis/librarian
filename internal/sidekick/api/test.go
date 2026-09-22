@@ -459,6 +459,12 @@ func (m *Method) WithDeprecated(deprecated bool) *Method {
 	return m
 }
 
+// WithSampleInfo sets the sample info for the method.
+func (m *Method) WithSampleInfo(sampleInfo *SampleInfo) *Method {
+	m.SampleInfo = sampleInfo
+	return m
+}
+
 // NewTestPathBinding creates a PathBinding with the given verb and path template.
 func NewTestPathBinding(verb string, pt *PathTemplate) *PathBinding {
 	return &PathBinding{
