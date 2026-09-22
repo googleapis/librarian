@@ -308,12 +308,85 @@ func TestGenerateService_WithImports(t *testing.T) {
 	}
 	contentStr := string(content)
 
-	expectedImports := `@_spi(GoogleCloudInternal) import GoogleCloudExternalV1
-@_spi(GoogleCloudInternal) import GoogleWKT
-@_spi(GoogleCloudInternal) import GoogleGax`
+	expectedImports := `@_spi(GoogleCloudInternal) public import GoogleCloudExternalV1
+@_spi(GoogleCloudInternal) public import GoogleGax`
 
 	if !strings.Contains(contentStr, expectedImports) {
 		t.Errorf("expected imports block not found in %s. Got content:\n%s", filename, contentStr)
+	}
+}
+
+func TestGenerateService_FoundationImport(t *testing.T) {
+	for _, test := range []struct {
+		name         string
+		service      *api.Service
+		wantImport   string
+		unwantImport string
+	}{
+		{
+			name: "without bytes in signatures uses internal import Foundation",
+			service: api.NewTestService("PlainService").
+				WithMethods(
+					api.NewTestMethod("DoSomething").
+						WithInput(api.NewTestMessage("Request").WithPackage("google.cloud.test.v1")).
+						WithOutput(api.NewTestMessage("Response").WithPackage("google.cloud.test.v1")).
+						WithVerb("POST").
+						WithPathTemplate((&api.PathTemplate{}).WithLiteral("v1").WithLiteral("action")),
+				),
+			wantImport:   "\nimport Foundation\n",
+			unwantImport: "\npublic import Foundation\n",
+		},
+		{
+			name: "with bytes in method signature uses public import Foundation",
+			service: api.NewTestService("DataService").
+				WithMethods(
+					api.NewTestMethod("Upload").
+						WithInput(api.NewTestMessage("UploadRequest").
+							WithPackage("google.cloud.test.v1").
+							WithFields(api.NewTestField("payload").WithType(api.TypezBytes))).
+						WithOutput(api.NewTestMessage("UploadResponse").WithPackage("google.cloud.test.v1")).
+						WithVerb("POST").
+						WithPathTemplate((&api.PathTemplate{}).WithLiteral("v1").WithLiteral("upload")).
+						WithSignatures(&api.MethodSignature{
+							Fields: []*api.Field{api.NewTestField("payload").WithType(api.TypezBytes)},
+						}),
+				),
+			wantImport:   "\npublic import Foundation\n",
+			unwantImport: "\nimport Foundation\n",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			outDir := t.TempDir()
+			var messages []*api.Message
+			for _, m := range test.service.Methods {
+				if m.InputType != nil {
+					messages = append(messages, m.InputType)
+				}
+				if m.OutputType != nil {
+					messages = append(messages, m.OutputType)
+				}
+			}
+			model := api.NewTestAPI(messages, nil, []*api.Service{test.service})
+			model.PackageName = "google.cloud.test.v1"
+			library := &config.Library{
+				Swift: swiftConfig(t, nil),
+			}
+			if err := Generate(t.Context(), model, outDir, library, nil); err != nil {
+				t.Fatal(err)
+			}
+			filename := filepath.Join(outDir, "Sources", "GoogleCloudTestV1", test.service.Name+".swift")
+			content, err := os.ReadFile(filename)
+			if err != nil {
+				t.Fatal(err)
+			}
+			contentStr := string(content)
+			if !strings.Contains(contentStr, test.wantImport) {
+				t.Errorf("expected %q in %s, got:\n%s", test.wantImport, filename, contentStr)
+			}
+			if strings.Contains(contentStr, test.unwantImport) {
+				t.Errorf("unexpected %q in %s, got:\n%s", test.unwantImport, filename, contentStr)
+			}
+		})
 	}
 }
 
@@ -842,7 +915,7 @@ func TestGenerateService_LRO(t *testing.T) {
 	content := string(contentBytes)
 
 	wantContains := []string{
-		"import GoogleRpc",
+		"public import GoogleCloudLongrunningV1",
 		"public func createWorkflow(withPolling: CreateWorkflowRequest) async throws -> any GoogleGax.PollableOperation<Workflow>",
 		"self.getOperation(request: .init().with { $0.name = rawOp.name }, options: options)",
 	}
@@ -850,6 +923,18 @@ func TestGenerateService_LRO(t *testing.T) {
 		if !strings.Contains(content, want) {
 			t.Errorf("expected %q in WorkflowsService.swift, got:\n%s", want, content)
 		}
+	}
+	if strings.Contains(content, "GoogleRpc") {
+		t.Errorf("expected no GoogleRpc in WorkflowsService.swift, got:\n%s", content)
+	}
+
+	transportFilename := filepath.Join(outDir, "Sources", "GoogleCloudWorkflowsV1", "WorkflowsService+Transport.swift")
+	transportBytes, err := os.ReadFile(transportFilename)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(transportBytes), "import GoogleRpc") {
+		t.Errorf("expected import GoogleRpc in WorkflowsService+Transport.swift, got:\n%s", string(transportBytes))
 	}
 
 	got := extractBlock(t, content, "GoogleGax._PollableOperationImpl(", "\n    )")
@@ -1216,7 +1301,7 @@ func TestGenerateServiceSwift_UnavailableStub(t *testing.T) {
 	contentStr := string(content)
 
 	wantStub := `#else
-@_spi(GoogleCloudInternal) import GoogleGax
+@_spi(GoogleCloudInternal) public import GoogleGax
 
 @available(*, unavailable, message: "Enable the 'Compute' trait in Package.swift to use this client.")
 public final class ComputeClient: Sendable {

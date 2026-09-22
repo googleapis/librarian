@@ -237,8 +237,8 @@ func TestGenerateMessage_WithExternalImports(t *testing.T) {
 	}
 	contentStr := string(content)
 
-	if !strings.Contains(contentStr, "import GoogleCloudExternalV1") {
-		t.Errorf("expected 'import GoogleCloudExternalV1' in %s", filename)
+	if !strings.Contains(contentStr, "public import GoogleCloudExternalV1") {
+		t.Errorf("expected 'public import GoogleCloudExternalV1' in %s", filename)
 	}
 	if strings.Contains(contentStr, "import GoogleCloudUnusedV1") {
 		t.Errorf("unexpected 'import GoogleCloudUnusedV1' in %s", filename)
@@ -529,5 +529,69 @@ func TestGenerateMessage_DocComments(t *testing.T) {
 	got = extractBlock(t, contentStr, "  /// Documentation for NestedMessage.", "public struct NestedMessage")
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+}
+
+func TestGenerateMessage_FoundationImport(t *testing.T) {
+	for _, test := range []struct {
+		name         string
+		message      *api.Message
+		wantImport   string
+		unwantImport string
+	}{
+		{
+			name: "without bytes field uses internal import Foundation",
+			message: api.NewTestMessage("StringMessage").
+				WithPackage("google.cloud.test.v1").
+				WithFields(api.NewTestField("name").WithType(api.TypezString)),
+			wantImport:   "\nimport Foundation\n",
+			unwantImport: "\npublic import Foundation\n",
+		},
+		{
+			name: "with bytes field uses public import Foundation",
+			message: api.NewTestMessage("DataMessage").
+				WithPackage("google.cloud.test.v1").
+				WithFields(api.NewTestField("payload").WithType(api.TypezBytes)),
+			wantImport:   "\npublic import Foundation\n",
+			unwantImport: "\nimport Foundation\n",
+		},
+		{
+			name: "with nested bytes message uses public import Foundation on parent",
+			message: api.NewTestMessage("ParentMessage").
+				WithPackage("google.cloud.test.v1").
+				WithMessages(
+					api.NewTestMessage("NestedData").
+						WithPackage("google.cloud.test.v1").
+						WithFields(api.NewTestField("payload").WithType(api.TypezBytes)),
+				),
+			wantImport:   "\npublic import Foundation\n",
+			unwantImport: "\nimport Foundation\n",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			outDir := t.TempDir()
+			model := api.NewTestAPI([]*api.Message{test.message}, nil, nil)
+			model.PackageName = "google.cloud.test.v1"
+			library := &config.Library{
+				Swift: swiftConfig(t, nil),
+			}
+			if err := Generate(t.Context(), model, outDir, library, nil); err != nil {
+				t.Fatal(err)
+			}
+
+			filename := filepath.Join(outDir, "Sources", "GoogleCloudTestV1", test.message.Name+".swift")
+			content, err := os.ReadFile(filename)
+			if err != nil {
+				t.Fatal(err)
+			}
+			contentStr := string(content)
+
+			if !strings.Contains(contentStr, test.wantImport) {
+				t.Errorf("expected %q in %s, got:\n%s", test.wantImport, filename, contentStr)
+			}
+			if test.unwantImport != "" && strings.Contains(contentStr, test.unwantImport) {
+				t.Errorf("did not expect %q in %s, got:\n%s", test.unwantImport, filename, contentStr)
+			}
+		})
 	}
 }

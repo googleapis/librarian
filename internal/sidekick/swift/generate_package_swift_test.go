@@ -96,6 +96,14 @@ func TestGeneratePackageSwift_WithDependencies(t *testing.T) {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 
+	gotSwiftSettings := extractBlock(t, contentStr, "      swiftSettings: [", "\n      ]")
+	wantSwiftSettings := `      swiftSettings: [
+        .enableUpcomingFeature("InternalImportsByDefault"),
+      ]`
+	if diff := cmp.Diff(wantSwiftSettings, gotSwiftSettings); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+
 	gotHelper := extractBlock(t, contentStr, "func localOrRemotePackage(", "  return .package(url: url, from: version)\n}\n")
 	wantHelper := `func localOrRemotePackage(url: String, path: String, from version: Version) -> Package.Dependency {
   if let env = Context.environment["GOOGLE_CLOUD_SWIFT_LOCAL_DEPS"], !env.isEmpty {

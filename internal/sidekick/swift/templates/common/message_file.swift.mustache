@@ -23,12 +23,17 @@ limitations under the License.
 {{#Codec.IsGated}}
 #if {{{Codec.GateExpression}}}
 {{/Codec.IsGated}}
+{{#Codec.HasData}}
+public import Foundation
+{{/Codec.HasData}}
+{{^Codec.HasData}}
 import Foundation
+{{/Codec.HasData}}
 {{#Codec.MessageImports}}
 {{#Attributes}}
 {{{.}}}
 {{/Attributes}}
-import {{Module}}
+public import {{Module}}
 {{/Codec.MessageImports}}
 
 {{> /templates/common/message}}

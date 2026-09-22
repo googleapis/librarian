@@ -23,15 +23,20 @@ limitations under the License.
 {{#Codec.IsGated}}
 #if {{Codec.Name}}
 {{/Codec.IsGated}}
+{{#Codec.HasData}}
+public import Foundation
+{{/Codec.HasData}}
+{{^Codec.HasData}}
 import Foundation
+{{/Codec.HasData}}
 {{! On Linux we need this additional import for `URLSession`. }}
 #if canImport(FoundationNetworking)
   import FoundationNetworking
 #endif
-{{#Codec.ServiceImports}}
-@_spi(GoogleCloudInternal) import {{.}}
-{{/Codec.ServiceImports}}
-@_spi(GoogleCloudInternal) import GoogleGax
+{{#Codec.PublicServiceImports}}
+@_spi(GoogleCloudInternal) public import {{.}}
+{{/Codec.PublicServiceImports}}
+@_spi(GoogleCloudInternal) public import GoogleGax
 
 {{#Codec.DocLines}}
 /// {{{.}}}
@@ -158,7 +163,7 @@ public final class {{Codec.ClientName}}: Clients.{{Codec.StubPrefix}}Protocol, S
 {{> /templates/common/client_protocol}}
 {{#Codec.IsGated}}
 #else
-@_spi(GoogleCloudInternal) import GoogleGax
+@_spi(GoogleCloudInternal) public import GoogleGax
 
 @available(*, unavailable, message: "Enable the '{{Codec.Name}}' trait in Package.swift to use this client.")
 public final class {{Codec.ClientName}}: Sendable {

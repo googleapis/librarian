@@ -274,6 +274,7 @@ func TestAnnotateMessage_Discovery(t *testing.T) {
 			want: &messageAnnotations{
 				Name:              "Secret",
 				TypeURL:           "type.googleapis.com/test.Secret",
+				HasData:           true,
 				SampleField:       "field",
 				ParameterTypeName: "Secret",
 				ProtoTypeName:     "Test_Secret",
@@ -287,6 +288,7 @@ func TestAnnotateMessage_Discovery(t *testing.T) {
 			want: &messageAnnotations{
 				Name:              "Secret",
 				TypeURL:           "type.googleapis.com/test.Secret",
+				HasData:           true,
 				SampleField:       "field",
 				ParameterTypeName: "Secret",
 				ProtoTypeName:     "Test_Secret",
@@ -300,6 +302,7 @@ func TestAnnotateMessage_Discovery(t *testing.T) {
 			want: &messageAnnotations{
 				Name:              "Secret",
 				TypeURL:           "type.googleapis.com/test.Secret",
+				HasData:           true,
 				SampleField:       "field",
 				ParameterTypeName: "Secret",
 				ProtoTypeName:     "Test_Secret",
@@ -313,6 +316,7 @@ func TestAnnotateMessage_Discovery(t *testing.T) {
 			want: &messageAnnotations{
 				Name:              "Secret",
 				TypeURL:           "type.googleapis.com/test.Secret",
+				HasData:           true,
 				SampleField:       "field",
 				ParameterTypeName: "Secret",
 				ProtoTypeName:     "Test_Secret",

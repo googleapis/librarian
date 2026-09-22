@@ -42,7 +42,7 @@ func TestAnnotateService(t *testing.T) {
 				StubPrefix:  "IAM",
 				DocLines:    []string{"IAM service documentation."},
 			},
-			wantImports: []string{"GoogleWKT"},
+			wantImports: []string{},
 		},
 		{
 			name:        "Service with mangled name",
@@ -55,7 +55,7 @@ func TestAnnotateService(t *testing.T) {
 				StubPrefix:  "Protocol",
 				DocLines:    []string{"Docs are not relevant."},
 			},
-			wantImports: []string{"GoogleWKT"},
+			wantImports: []string{},
 		},
 		{
 			name:        "SecretManagerService",
@@ -68,7 +68,7 @@ func TestAnnotateService(t *testing.T) {
 				StubPrefix:  "SecretManagerService",
 				DocLines:    []string{"Secret Manager Service documentation.", "Line 2."},
 			},
-			wantImports: []string{"GoogleWKT"},
+			wantImports: []string{},
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
@@ -81,7 +81,7 @@ func TestAnnotateService(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			if diff := cmp.Diff(test.wantAnnotations, s.Codec, cmpopts.IgnoreFields(serviceAnnotations{}, "QuickstartMethod", "Model", "DependsOn")); diff != "" {
+			if diff := cmp.Diff(test.wantAnnotations, s.Codec, cmpopts.IgnoreFields(serviceAnnotations{}, "QuickstartMethod", "Model", "DependsOn", "PublicDependsOn")); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 
@@ -303,8 +303,12 @@ func TestAnnotateService_LRO(t *testing.T) {
 	if !annotations.HasLROs() {
 		t.Errorf("expected HasLROs() == true, annotations=%+v", annotations)
 	}
-	wantImports := []string{"GoogleCloudExternal", "GoogleLongrunning", "GoogleRpc", "GoogleWKT"}
+	wantImports := []string{"GoogleCloudExternal", "GoogleLongrunning", "GoogleRpc"}
 	if diff := cmp.Diff(wantImports, annotations.ServiceImports()); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+	wantPublicImports := []string{"GoogleCloudExternal", "GoogleLongrunning"}
+	if diff := cmp.Diff(wantPublicImports, annotations.PublicServiceImports()); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
@@ -350,7 +354,7 @@ func TestAnnotateService_Pagination(t *testing.T) {
 	}
 
 	annotations := service.Codec.(*serviceAnnotations)
-	wantImports := []string{"GoogleCloudExternal", "GoogleWKT"}
+	wantImports := []string{"GoogleCloudExternal"}
 	if diff := cmp.Diff(wantImports, annotations.ServiceImports()); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
@@ -405,7 +409,7 @@ func TestAnnotateService_MapPagination(t *testing.T) {
 	}
 
 	annotations := service.Codec.(*serviceAnnotations)
-	wantImports := []string{"GoogleCloudExternal", "GoogleWKT"}
+	wantImports := []string{"GoogleCloudExternal"}
 	if diff := cmp.Diff(wantImports, annotations.ServiceImports()); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
@@ -416,21 +420,28 @@ func TestAnnotateService_MethodSignatures(t *testing.T) {
 		name        string
 		signatures  []*api.MethodSignature
 		wantImports []string
+		wantHasData bool
 	}{
 		{
 			name:        "no signature",
 			signatures:  nil,
-			wantImports: []string{"GoogleWKT"},
+			wantImports: []string{},
 		},
 		{
 			name:        "unrealistic, but good for testing",
 			signatures:  []*api.MethodSignature{{Names: []string{"parent", "thing_id"}}},
-			wantImports: []string{"GoogleWKT"},
+			wantImports: []string{},
 		},
 		{
 			name:        "with external field",
 			signatures:  []*api.MethodSignature{{Names: []string{"parent", "thing_id", "external_thing"}}},
-			wantImports: []string{"GoogleCloudExternal", "GoogleWKT"},
+			wantImports: []string{"GoogleCloudExternal"},
+		},
+		{
+			name:        "with bytes field",
+			signatures:  []*api.MethodSignature{{Names: []string{"parent", "data"}}},
+			wantImports: []string{},
+			wantHasData: true,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
@@ -440,6 +451,7 @@ func TestAnnotateService_MethodSignatures(t *testing.T) {
 					api.NewTestField("parent").WithType(api.TypezString),
 					api.NewTestField("thing_id").WithType(api.TypezString),
 					api.NewTestField("external_thing").WithMessageType(thing),
+					api.NewTestField("data").WithType(api.TypezBytes),
 				)
 			outputType := api.NewTestMessage("Response")
 			create := api.NewTestMethod("CreateThing").
@@ -472,6 +484,89 @@ func TestAnnotateService_MethodSignatures(t *testing.T) {
 			if diff := cmp.Diff(test.wantImports, annotations.ServiceImports()); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
+			if annotations.HasData != test.wantHasData {
+				t.Errorf("HasData mismatch: got %v, want %v", annotations.HasData, test.wantHasData)
+			}
 		})
+	}
+}
+
+func TestAnnotateService_WktImports(t *testing.T) {
+	inputType := api.NewTestMessage("DeleteThingRequest").WithPackage("test")
+	method := api.NewTestMethod("DeleteThing").
+		WithInput(inputType).
+		WithVerb("DELETE").
+		WithPathTemplate((&api.PathTemplate{}).WithLiteral("v1").WithLiteral("things"))
+	service := api.NewTestService("TestService").WithMethods(method)
+	model := api.NewTestAPI([]*api.Message{inputType}, nil, []*api.Service{service})
+	model.PackageName = "test"
+	wktEmpty := model.Message(".google.protobuf.Empty")
+	if wktEmpty == nil {
+		t.Fatal("expected .google.protobuf.Empty in model")
+	}
+	method.WithOutput(wktEmpty)
+	method.ReturnsEmpty = true
+	if err := api.CrossReference(model); err != nil {
+		t.Fatal(err)
+	}
+
+	codec := newTestCodec(t, model, nil)
+	if err := codec.annotateModel(); err != nil {
+		t.Fatal(err)
+	}
+
+	annotations := service.Codec.(*serviceAnnotations)
+	wantImports := []string{"GoogleWKT"}
+	if diff := cmp.Diff(wantImports, annotations.ServiceImports()); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+	wantPublicImports := []string{}
+	if diff := cmp.Diff(wantPublicImports, annotations.PublicServiceImports()); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+}
+
+func TestAnnotateService_MapFieldDependencies(t *testing.T) {
+	keyField := api.NewTestField("key").WithType(api.TypezString)
+	valField := api.NewTestField("value").WithType(api.TypezBytes)
+	mapEntry := api.NewTestMessage("DataMapEntry").
+		WithPackage("test").
+		WithIsMap().
+		WithFields(keyField, valField)
+
+	mapField := api.NewTestField("data_map").
+		WithMap().
+		WithMessageType(mapEntry)
+
+	signature := &api.MethodSignature{
+		Fields: []*api.Field{mapField},
+	}
+	inputType := api.NewTestMessage("Request").
+		WithPackage("test").
+		WithFields(mapField)
+	outputType := api.NewTestMessage("Response").WithPackage("test")
+
+	method := api.NewTestMethod("UploadMap").
+		WithInput(inputType).
+		WithOutput(outputType).
+		WithVerb("POST").
+		WithPathTemplate((&api.PathTemplate{}).WithLiteral("v1").WithLiteral("upload")).
+		WithSignatures(signature)
+
+	service := api.NewTestService("MapService").WithMethods(method)
+	model := api.NewTestAPI([]*api.Message{inputType, outputType, mapEntry}, nil, []*api.Service{service})
+	model.PackageName = "test"
+	if err := api.CrossReference(model); err != nil {
+		t.Fatal(err)
+	}
+
+	codec := newTestCodec(t, model, nil)
+	if err := codec.annotateModel(); err != nil {
+		t.Fatal(err)
+	}
+
+	annotations := service.Codec.(*serviceAnnotations)
+	if !annotations.HasData {
+		t.Errorf("expected annotations.HasData to be true for signature with map<string, bytes>")
 	}
 }
