@@ -125,6 +125,7 @@ func Tidy(library *config.Library) (*config.Library, error) {
 			library.Java.GroupID = ""
 		}
 		tidyReleasedVersion(library)
+		tidyDocumentation(library)
 		var err error
 		if library.Java, err = yaml.ClearIfEmpty(library.Java); err != nil {
 			return nil, err
@@ -304,6 +305,33 @@ func tidyReleasedVersion(library *config.Library) {
 	derived, err := deriveLastReleasedVersion(library.Version)
 	if err == nil && library.Java.ReleasedVersion == derived {
 		library.Java.ReleasedVersion = ""
+	}
+}
+
+// TODO(https://github.com/googleapis/librarian/issues/6692): Remove this temporary method
+// once google-cloud-java/librarian.yaml has been tidied and rest_documentation / rpc_documentation
+// fields are removed from config.JavaModule.
+//
+// tidyDocumentation clears the Java module's rest_documentation and rpc_documentation
+// if they match the primary API's service config / sdk.yaml.
+func tidyDocumentation(library *config.Library) {
+	if library.Java == nil || len(library.APIs) == 0 {
+		return
+	}
+	if library.Java.RestDocumentation == "" && library.Java.RpcDocumentation == "" {
+		return
+	}
+
+	apis := slices.Clone(library.APIs)
+	serviceconfig.SortAPIs(apis)
+	primaryPath := apis[0].Path
+
+	api := serviceconfig.FindAPI(primaryPath)
+	if api.RestDocumentation != "" && library.Java.RestDocumentation == api.RestDocumentation {
+		library.Java.RestDocumentation = ""
+	}
+	if api.RpcDocumentation != "" && library.Java.RpcDocumentation == api.RpcDocumentation {
+		library.Java.RpcDocumentation = ""
 	}
 }
 

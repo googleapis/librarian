@@ -105,6 +105,14 @@ type RepoMetadata struct {
 	// RecommendedPackage is the recommended package name.
 	// A Java-specific field.
 	RecommendedPackage string `json:"recommended_package,omitempty"`
+
+	// RestDocumentation is the URL for the REST documentation.
+	// A Java-specific field.
+	RestDocumentation string `json:"rest_documentation,omitempty"`
+
+	// RpcDocumentation is the URL for the RPC documentation.
+	// A Java-specific field.
+	RpcDocumentation string `json:"rpc_documentation,omitempty"`
 }
 
 // FromLibrary creates a RepoMetadata from a specific library in a
@@ -144,8 +152,12 @@ func FromLibrary(cfg *config.Config, library *config.Library, googleapisDir stri
 func fromAPI(cfg *config.Config, api *serviceconfig.API, library *config.Library) *RepoMetadata {
 	var transport string
 	var recommendedPackage string
+	var restDocumentation string
+	var rpcDocumentation string
 	if cfg.Language == config.LanguageJava {
 		transport = api.RepoMetadataTransport(cfg.Language, library)
+		restDocumentation = api.RestDocumentation
+		rpcDocumentation = api.RpcDocumentation
 		if library.Java != nil {
 			recommendedPackage = library.Java.RecommendedPackage
 		}
@@ -164,6 +176,8 @@ func fromAPI(cfg *config.Config, api *serviceconfig.API, library *config.Library
 		Repo:                 cfg.Repo,
 		Transport:            transport,
 		RecommendedPackage:   recommendedPackage,
+		RestDocumentation:    restDocumentation,
+		RpcDocumentation:     rpcDocumentation,
 	}
 }
 

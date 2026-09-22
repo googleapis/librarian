@@ -257,6 +257,42 @@ func TestTidy(t *testing.T) {
 			},
 		},
 		{
+			name: "tidy rest and rpc documentation matching sdk.yaml",
+			lib: &config.Library{
+				APIs: []*config.API{
+					{Path: "google/cloud/aiplatform/v1"},
+				},
+				Java: &config.JavaModule{
+					RestDocumentation: "https://cloud.google.com/vertex-ai/docs/reference/rest",
+					RpcDocumentation:  "https://cloud.google.com/vertex-ai/docs/reference/rpc",
+				},
+			},
+			want: &config.Library{
+				APIs: []*config.API{
+					{Path: "google/cloud/aiplatform/v1"},
+				},
+			},
+		},
+		{
+			name: "do not tidy rest and rpc documentation differing from sdk.yaml",
+			lib: &config.Library{
+				APIs: []*config.API{
+					{Path: "google/cloud/aiplatform/v1"},
+				},
+				Java: &config.JavaModule{
+					RestDocumentation: "https://custom.example.com/rest",
+				},
+			},
+			want: &config.Library{
+				APIs: []*config.API{
+					{Path: "google/cloud/aiplatform/v1"},
+				},
+				Java: &config.JavaModule{
+					RestDocumentation: "https://custom.example.com/rest",
+				},
+			},
+		},
+		{
 			name: "do not tidy false flags",
 			lib: &config.Library{
 				APIs: []*config.API{
