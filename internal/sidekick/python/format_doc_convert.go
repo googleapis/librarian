@@ -23,7 +23,7 @@ import (
 var (
 	mdLinkRegex            = regexp.MustCompile(`\[([^\]]+)\]\(([^)]+)\)`)
 	fencedCodeRegex        = regexp.MustCompile("(?s)```[a-zA-Z0-9_-]*\n(.*?)\n```")
-	rawHTMLTagRegex        = regexp.MustCompile(`<[a-zA-Z][a-zA-Z0-9-]*(?:\s+[^>]*)?>`)
+	rawHTMLTagRegex        = regexp.MustCompile(`</?[a-zA-Z][a-zA-Z0-9-]*(?:\s+[^>]*)?>`)
 	reStandaloneAsterisk   = regexp.MustCompile(`([(\s'])\*([)'\s,?])`)
 	reStandaloneUnderscore = regexp.MustCompile(`([(\s'])_([)'\s,?])`)
 	reDomainGlob           = regexp.MustCompile(`([a-zA-Z0-9_-]+\.[a-zA-Z0-9_-]+)\.\*`)
@@ -266,7 +266,10 @@ func formatRstDocLines(doc string, width, indent int) []string {
 	return formatRstDoc(doc, width-indent, indent)
 }
 
-// formatMethodReturnDoc formats a method's return documentation, handling definition list
+// definitionIndent defines the 3-space indentation required for Sphinx reST definition list bodies.
+const definitionIndent = "   "
+
+// formatMethodReturnDoc formats docstrings for method return values, handling Sphinx definition list
 // structures where line 1 is the term and subsequent lines are indented definitions.
 func formatMethodReturnDoc(doc string) []string {
 	if strings.TrimSpace(doc) == "" {
@@ -276,23 +279,34 @@ func formatMethodReturnDoc(doc string) []string {
 	if len(lines) > 1 && strings.HasPrefix(lines[0], "A [") && strings.Contains(doc, "\n\n") {
 		term := strings.TrimSpace(lines[0])
 		rest := strings.TrimSpace(strings.Join(lines[1:], "\n"))
-		wrappedRest := formatRstDoc(rest, 56-3, 0)
+		wrappedRest := formatRstDoc(rest, 56-len(definitionIndent), 0)
 		result := []string{term}
 		for _, rl := range wrappedRest {
 			if rl == "" {
 				result = append(result, "")
 			} else {
-				result = append(result, "   "+rl)
+				result = append(result, definitionIndent+rl)
 			}
 		}
 		return result
 	}
 
 	res := formatRstDoc(doc, 56, 16)
+	// In Sphinx reST definition lists, once a definition entry begins with a cross-reference
+	// link ([...]), subsequent lines in that definition block must be indented by 3 spaces
+	// until a blank line separating entries.
 	if len(res) > 1 && (strings.HasPrefix(res[0], "A ") || strings.HasPrefix(res[0], "The ") || strings.Contains(doc, "\n[")) {
+		indentRest := false
 		for i := 1; i < len(res); i++ {
-			if res[i] != "" && strings.HasPrefix(res[i], "[") {
-				res[i] = "   " + res[i]
+			if res[i] == "" {
+				indentRest = false
+				continue
+			}
+			if strings.HasPrefix(res[i], "[") {
+				indentRest = true
+			}
+			if indentRest {
+				res[i] = definitionIndent + res[i]
 			}
 		}
 	}

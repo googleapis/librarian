@@ -363,6 +363,11 @@ func wrapUnformatted(text string, width, indent int) []string {
 	return result
 }
 
+// shortLineThresholdRatio defines the fraction of line wrap width below which
+// a line is treated as terminal and flushed, preventing distinct sentences from being
+// merged inappropriately during docstring paragraph tokenization.
+const shortLineThresholdRatio = 0.80
+
 func tokenizeParagraph(text string, width int) []string {
 	lines := strings.Split(text, "\n")
 	var tokens []string
@@ -375,7 +380,7 @@ func tokenizeParagraph(text string, width int) []string {
 		}
 	}
 
-	shortThreshold := int(float64(width) * 0.75)
+	shortThreshold := int(float64(width) * shortLineThresholdRatio)
 
 	for _, line := range lines {
 		trimmed := strings.TrimSpace(line)
@@ -396,7 +401,7 @@ func tokenizeParagraph(text string, width int) []string {
 			current.WriteByte(' ')
 		}
 		current.WriteString(trimmed)
-		if len(trimmed) < shortThreshold || strings.HasSuffix(trimmed, ":") {
+		if len(trimmed) <= shortThreshold || strings.HasSuffix(trimmed, ":") {
 			flush()
 		}
 	}

@@ -47,6 +47,11 @@ func TestConvertMarkdownToRst(t *testing.T) {
 			want:  "Path: / with  and <service_account_email>",
 		},
 		{
+			name:  "strip raw HTML closing tags",
+			input: `<a href="https://cloud.google.com">link</a>`,
+			want:  "link",
+		},
+		{
 			name:  "escape glob asterisk in prose",
 			input: "Wildcard characters (such as * and ?) are supported.",
 			want:  "Wildcard characters (such as \\* and ?) are supported.",
@@ -229,6 +234,16 @@ func TestFormatMethodReturnDoc(t *testing.T) {
 			want: []string{
 				"A [Secret][google.cloud.secretmanager.v1.Secret] object.",
 				"   Description of the returned secret.",
+			},
+		},
+		{
+			name: "definition list return doc with multi-line definition",
+			doc:  "A method returning:\n\n[ListWorkflows][google.cloud.workflows.v1.Workflows.ListWorkflows]\nmethod result.",
+			want: []string{
+				"A method returning:",
+				"",
+				"   [ListWorkflows][google.cloud.workflows.v1.Workflows.ListWorkflows]",
+				"   method result.",
 			},
 		},
 	} {
