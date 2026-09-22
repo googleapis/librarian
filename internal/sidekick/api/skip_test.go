@@ -102,7 +102,7 @@ func TestSkipNestedMessages(t *testing.T) {
 		SkippedIDs: []string{".test.Message2.Message1"},
 	})
 	want := []*Message{m0}
-	if diff := cmp.Diff(want, m2.Messages); diff != "" {
+	if diff := cmp.Diff(want, m2.Messages, cmpopts.IgnoreFields(Message{}, "Messages")); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
@@ -136,7 +136,7 @@ func TestSkipNestedEnums(t *testing.T) {
 	})
 
 	want := []*Enum{e0, e2}
-	if diff := cmp.Diff(want, m.Enums); diff != "" {
+	if diff := cmp.Diff(want, m.Enums, cmpopts.IgnoreFields(Message{}, "Enums")); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }

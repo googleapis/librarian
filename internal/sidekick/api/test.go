@@ -44,8 +44,13 @@ func NewTestAPI(messages []*Message, enums []*Enum, services []*Service) *API {
 		}
 		for _, e := range m.Enums {
 			model.enumByID[e.ID] = e
+			e.Parent = m
+			for _, ev := range e.Values {
+				ev.Parent = e
+			}
 		}
 		for _, child := range m.Messages {
+			child.Parent = m
 			indexMessage(child)
 		}
 	}
@@ -78,7 +83,9 @@ func NewTestAPI(messages []*Message, enums []*Enum, services []*Service) *API {
 		parent := model.messageByID[parentName(e.ID)]
 		if parent != nil {
 			e.Parent = parent
-			parent.Enums = append(parent.Enums, e)
+			if !slices.Contains(parent.Enums, e) {
+				parent.Enums = append(parent.Enums, e)
+			}
 		}
 		for _, ev := range e.Values {
 			ev.Parent = e
