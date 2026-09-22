@@ -398,6 +398,7 @@
     ruby: grpc
 - path: google/cloud/billing/v1
   documentation_uri: https://cloud.google.com/billing
+  new_issue_uri: https://issuetracker.google.com/savedsearches/559770
 - path: google/cloud/binaryauthorization/v1
   documentation_uri: https://cloud.google.com/binary-authorization
 - path: google/cloud/binaryauthorization/v1beta1
@@ -661,6 +662,9 @@
 - path: google/cloud/integrations/v1alpha
   skip_rest_numeric_enums:
     - python
+- path: google/cloud/iot/v1
+  documentation_uri: https://cloud.google.com/iot
+  new_issue_uri: https://issuetracker.google.com/issues?q=status:open%20componentid:310170
 - path: google/cloud/kms/inventory/v1
   description: Cloud Key Management Service (Cloud KMS) lets you create and manage cryptographic keys for use in compatible Google Cloud services and in your own applications.
 - path: google/cloud/kms/v1
@@ -1268,6 +1272,7 @@
     ruby: grpc
 - path: google/privacy/dlp/v2
   documentation_uri: https://cloud.google.com/dlp/docs/
+  new_issue_uri: https://issuetracker.google.com/savedsearches/5548083
 - path: google/protobuf
   description: Core Protobuf types used by most services.
 - path: google/rpc/context

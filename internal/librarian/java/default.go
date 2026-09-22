@@ -125,6 +125,7 @@ func Tidy(library *config.Library) (*config.Library, error) {
 			library.Java.GroupID = ""
 		}
 		tidyReleasedVersion(library)
+		tidyIssueTrackerOverride(library)
 		var err error
 		if library.Java, err = yaml.ClearIfEmpty(library.Java); err != nil {
 			return nil, err
@@ -304,6 +305,25 @@ func tidyReleasedVersion(library *config.Library) {
 	derived, err := deriveLastReleasedVersion(library.Version)
 	if err == nil && library.Java.ReleasedVersion == derived {
 		library.Java.ReleasedVersion = ""
+	}
+}
+
+// tidyIssueTrackerOverride clears the Java module's issue_tracker_override if it
+// matches the new_issue_uri in sdk.yaml for the library's primary API.
+func tidyIssueTrackerOverride(library *config.Library) {
+	if library.Java == nil || library.Java.IssueTrackerOverride == "" {
+		return
+	}
+	if len(library.APIs) == 0 {
+		return
+	}
+	serviceconfig.SortAPIs(library.APIs)
+	primaryAPI := library.APIs[0]
+	if primaryAPI == nil || primaryAPI.Path == "" {
+		return
+	}
+	if serviceconfig.FindNewIssueURI(primaryAPI.Path) == library.Java.IssueTrackerOverride {
+		library.Java.IssueTrackerOverride = ""
 	}
 }
 

@@ -206,6 +206,13 @@ func HasAPIPath(path, language string) bool {
 	return ok
 }
 
+// FindNewIssueURI looks up the API by path in sdk.yaml and returns its configured new issue URI.
+// If the API is not explicitly configured in sdk.yaml or has no new_issue_uri, it returns an empty string.
+func FindNewIssueURI(path string) string {
+	api := findAPI(path)
+	return api.NewIssueURI
+}
+
 // FindTransport looks up the API by path in sdk.yaml and returns its configured transport.
 // If the API is not explicitly configured in sdk.yaml, it is assumed to default to GRPCRest.
 func FindTransport(path, language string) (Transport, error) {

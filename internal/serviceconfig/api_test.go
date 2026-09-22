@@ -425,3 +425,34 @@ func TestFindTransport(t *testing.T) {
 		})
 	}
 }
+
+func TestFindNewIssueURI(t *testing.T) {
+	for _, test := range []struct {
+		name string
+		path string
+		want string
+	}{
+		{
+			name: "configured new_issue_uri in sdk.yaml",
+			path: "google/cloud/billing/v1",
+			want: "https://issuetracker.google.com/savedsearches/559770",
+		},
+		{
+			name: "unknown path returns empty string",
+			path: "google/does/not/exist/v1",
+			want: "",
+		},
+		{
+			name: "empty path returns empty string",
+			path: "",
+			want: "",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := FindNewIssueURI(test.path)
+			if got != test.want {
+				t.Errorf("FindNewIssueURI(%q) = %q, want %q", test.path, got, test.want)
+			}
+		})
+	}
+}
