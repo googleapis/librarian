@@ -570,3 +570,86 @@ func TestAnnotateService_MapFieldDependencies(t *testing.T) {
 		t.Errorf("expected annotations.HasData to be true for signature with map<string, bytes>")
 	}
 }
+
+func TestAnnotateService_SnippetImports(t *testing.T) {
+	for _, test := range []struct {
+		name               string
+		updateMask         bool
+		externalDep        bool
+		wantSnippetImports []string
+	}{
+		{
+			name:               "no update mask and no external dep",
+			updateMask:         false,
+			externalDep:        false,
+			wantSnippetImports: nil,
+		},
+		{
+			name:               "with update mask",
+			updateMask:         true,
+			externalDep:        false,
+			wantSnippetImports: []string{"GoogleWKT"},
+		},
+		{
+			name:               "with external dep and no update mask",
+			updateMask:         false,
+			externalDep:        true,
+			wantSnippetImports: []string{"GoogleCloudExternal"},
+		},
+		{
+			name:               "with update mask and external dep",
+			updateMask:         true,
+			externalDep:        true,
+			wantSnippetImports: []string{"GoogleCloudExternal", "GoogleWKT"},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			inputType := api.NewTestMessage("Request").WithPackage("test")
+			outputType := api.NewTestMessage("Response").WithPackage("test")
+			method := api.NewTestMethod("DoThing").
+				WithInput(inputType).
+				WithOutput(outputType).
+				WithVerb("POST").
+				WithPathTemplate((&api.PathTemplate{}).WithLiteral("v1").WithLiteral("things"))
+
+			var messages []*api.Message
+			messages = append(messages, inputType, outputType)
+
+			if test.externalDep {
+				extType := api.NewTestMessage("External").WithPackage("google.cloud.external")
+				messages = append(messages, extType)
+				method.WithOutput(extType)
+			}
+
+			service := api.NewTestService("TestService").WithMethods(method)
+			model := api.NewTestAPI(messages, nil, []*api.Service{service})
+			model.PackageName = "test"
+			if err := api.CrossReference(model); err != nil {
+				t.Fatal(err)
+			}
+
+			if test.updateMask {
+				maskField := api.NewTestField("update_mask")
+				method.WithSampleInfo(&api.SampleInfo{UpdateMaskField: maskField})
+			}
+
+			codec := newTestCodec(t, model, nil)
+			if test.externalDep {
+				codec.withExtraDependencies(t, []config.SwiftDependency{
+					{Name: "GoogleCloudExternal", ApiPackage: "google.cloud.external"},
+				})
+			}
+			if err := codec.annotateModel(); err != nil {
+				t.Fatal(err)
+			}
+
+			annotations := service.Codec.(*serviceAnnotations)
+			if diff := cmp.Diff(test.wantSnippetImports, annotations.SnippetImports(), cmpopts.EquateEmpty()); diff != "" {
+				t.Errorf("SnippetImports mismatch (-want +got):\n%s", diff)
+			}
+			if test.updateMask != annotations.needsWktImport() {
+				t.Errorf("needsWktImport mismatch: got %v, want %v", annotations.needsWktImport(), test.updateMask)
+			}
+		})
+	}
+}

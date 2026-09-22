@@ -111,8 +111,35 @@ func (ann *serviceAnnotations) SnippetImports() []string {
 			result = append(result, dep.Name)
 		}
 	}
+	if ann.needsWktImport() && ann.Model != nil && ann.Model.WktPackage != "" {
+		if !slices.Contains(result, ann.Model.WktPackage) {
+			result = append(result, ann.Model.WktPackage)
+		}
+	}
 	slices.Sort(result)
 	return result
+}
+
+// needsWktImport determines whether the service snippets require importing
+// the well-known types package (e.g. `GoogleWKT`).
+//
+// Currently, this checks if any method uses an update mask field
+// (`GoogleWKT.FieldMask`). This is intended to be expanded if snippets need
+// well-known type imports for additional reasons in the future.
+func (ann *serviceAnnotations) needsWktImport() bool {
+	return ann.hasUpdateMask()
+}
+
+func (ann *serviceAnnotations) hasUpdateMask() bool {
+	for _, m := range ann.Methods {
+		if m.SampleInfo != nil && m.SampleInfo.UpdateMaskField != nil {
+			return true
+		}
+	}
+	if ann.QuickstartMethod != nil && ann.QuickstartMethod.SampleInfo != nil && ann.QuickstartMethod.SampleInfo.UpdateMaskField != nil {
+		return true
+	}
+	return false
 }
 
 // HasLROs returns true if one of the methods is an LRO.

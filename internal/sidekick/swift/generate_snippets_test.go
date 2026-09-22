@@ -15,13 +15,13 @@
 package swift
 
 import (
-	"github.com/googleapis/librarian/internal/config"
-
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/sidekick/api"
 )
 
@@ -230,5 +230,54 @@ func TestGenerateSnippets_Diagnose(t *testing.T) {
 			// names everything the method snippet does.
 			checkDiagnose(t, read("TestServiceQuickstart.swift"), "", "func sample(", test.wantSample)
 		})
+	}
+}
+
+func TestGenerateSnippets_UpdateMask(t *testing.T) {
+	outDir := t.TempDir()
+	thingResource := api.NewTestResource("test.googleapis.com/Thing").
+		WithSingular("thing").
+		WithPlural("things")
+	thing := api.NewTestMessage("Thing").WithResource(thingResource).WithFields(
+		api.NewTestField("name").WithType(api.TypezString).WithResourceReference(
+			thingResource.Type,
+		),
+	)
+	updateMask := api.NewTestField("update_mask").WithType(api.TypezMessage).WithTypezID(api.WktFieldMaskID)
+	updateThingRequest := api.NewTestMessage("UpdateThingRequest").WithFields(
+		api.NewTestField("name").WithType(api.TypezString).WithResourceReference(thingResource.Type),
+		updateMask,
+	)
+	updateThing := api.NewTestMethod("UpdateThing").
+		WithInput(updateThingRequest).
+		WithOutput(thing).
+		WithPathTemplate((&api.PathTemplate{}).WithLiteral("v1").WithLiteral("things"))
+	testService := api.NewTestService("TestService").WithMethods(updateThing)
+	model := api.NewTestAPI([]*api.Message{thing, updateThingRequest}, nil, []*api.Service{testService})
+	model.PackageName = "test"
+	model.AddResource(thingResource)
+	model.LoadWellKnownTypes()
+	if err := api.CrossReference(model); err != nil {
+		t.Fatal(err)
+	}
+	updateThing.SampleInfo = &api.SampleInfo{
+		UpdateMaskField: updateMask,
+	}
+	library := &config.Library{
+		Swift: swiftConfig(t, nil),
+	}
+	if err := Generate(t.Context(), model, outDir, library, nil); err != nil {
+		t.Fatal(err)
+	}
+	contentsBytes, err := os.ReadFile(filepath.Join(outDir, "Snippets", "TestService_UpdateThing.swift"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	contents := string(contentsBytes)
+	if !strings.Contains(contents, "import GoogleWKT") {
+		t.Errorf("expected snippet to contain 'import GoogleWKT', got:\n%s", contents)
+	}
+	if !strings.Contains(contents, "$0.updateMask = GoogleWKT.FieldMask(paths: [\"field.path1\", \"field.path2\"])") {
+		t.Errorf("expected snippet to contain updateMask assignment, got:\n%s", contents)
 	}
 }
