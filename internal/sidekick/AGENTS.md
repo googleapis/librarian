@@ -1,4 +1,4 @@
-# Sidekick Guidelines for Gemini
+# Sidekick Guidelines for Agents
 
 ## Overview
 
