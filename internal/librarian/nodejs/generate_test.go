@@ -571,7 +571,7 @@ func TestGenerateAPI(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	stagingDir := filepath.Join(repoRoot, "owl-bot-staging", "google-cloud-secretmanager", buildStagingSubdirName(0, "google/cloud/secretmanager/v1"))
+	stagingDir := filepath.Join(repoRoot, stagingDirName, "google-cloud-secretmanager", buildStagingSubdirName(0, "google/cloud/secretmanager/v1"))
 	if _, err := os.Stat(stagingDir); err != nil {
 		t.Errorf("expected staging directory to exist: %v", err)
 	}
@@ -618,7 +618,7 @@ func TestGenerateAPI_MultipleVersions(t *testing.T) {
 	}
 	for i, api := range library.APIs {
 		version := filepath.Base(api.Path)
-		stagingDir := filepath.Join(repoRoot, "owl-bot-staging", library.Name, buildStagingSubdirName(i, api.Path))
+		stagingDir := filepath.Join(repoRoot, stagingDirName, library.Name, buildStagingSubdirName(i, api.Path))
 		if _, err := os.Stat(stagingDir); err != nil {
 			t.Errorf("expected staging directory for %s to exist: %v", version, err)
 		}
@@ -649,12 +649,12 @@ func TestRunPostProcessor(t *testing.T) {
 		t.Fatal(err)
 	}
 	// Verify that the package staging directory is successfully cleaned up
-	if _, err := os.Stat(filepath.Join(repoRoot, "owl-bot-staging", library.Name)); !errors.Is(err, fs.ErrNotExist) {
+	if _, err := os.Stat(filepath.Join(repoRoot, stagingDirName, library.Name)); !errors.Is(err, fs.ErrNotExist) {
 		t.Error("expected package staging directory to be removed after post-processing")
 	}
-	// Verify that the top-level owl-bot-staging parent folder itself remains intact to support parallel executions
-	if _, err := os.Stat(filepath.Join(repoRoot, "owl-bot-staging")); err != nil {
-		t.Error("expected top-level owl-bot-staging directory to remain intact")
+	// Verify that the top-level staging parent folder itself remains intact to support parallel executions
+	if _, err := os.Stat(filepath.Join(repoRoot, stagingDirName)); err != nil {
+		t.Error("expected top-level staging directory to remain intact")
 	}
 }
 
@@ -673,7 +673,7 @@ func TestRunPostProcessor_RemovesOwlBotYaml(t *testing.T) {
 	}
 
 	// Create staging structure with a .OwlBot.yaml file.
-	stagingBase := filepath.Join(repoRoot, "owl-bot-staging", library.Name, "v1")
+	stagingBase := filepath.Join(repoRoot, stagingDirName, library.Name, "v1")
 	srcDir := filepath.Join(stagingBase, "src", "v1")
 	if err := os.MkdirAll(srcDir, 0o755); err != nil {
 		t.Fatal(err)
@@ -716,7 +716,7 @@ func TestRunPostProcessor_RemovesCloudCommonResourcesProto(t *testing.T) {
 	}
 
 	// Create staging structure with a common_resources.proto file.
-	stagingBase := filepath.Join(repoRoot, "owl-bot-staging", library.Name, "v1")
+	stagingBase := filepath.Join(repoRoot, stagingDirName, library.Name, "v1")
 	srcDir := filepath.Join(stagingBase, "src", "v1")
 	if err := os.MkdirAll(srcDir, 0o755); err != nil {
 		t.Fatal(err)
@@ -761,7 +761,7 @@ func TestRunPostProcessor_CustomScripts(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	stagingBase := filepath.Join(repoRoot, "owl-bot-staging", library.Name, "v1")
+	stagingBase := filepath.Join(repoRoot, stagingDirName, library.Name, "v1")
 	srcDir := filepath.Join(stagingBase, "src", "v1")
 	if err := os.MkdirAll(srcDir, 0o755); err != nil {
 		t.Fatal(err)
@@ -797,12 +797,12 @@ func TestRunPostProcessor_CustomScripts(t *testing.T) {
 		t.Fatal(err)
 	}
 	// Verify package staging directory is cleaned up
-	if _, err := os.Stat(filepath.Join(repoRoot, "owl-bot-staging", library.Name)); !errors.Is(err, fs.ErrNotExist) {
+	if _, err := os.Stat(filepath.Join(repoRoot, stagingDirName, library.Name)); !errors.Is(err, fs.ErrNotExist) {
 		t.Error("expected package staging directory to be removed after post-processing")
 	}
 	// Verify parent folder remains intact
-	if _, err := os.Stat(filepath.Join(repoRoot, "owl-bot-staging")); err != nil {
-		t.Error("expected top-level owl-bot-staging directory to remain intact")
+	if _, err := os.Stat(filepath.Join(repoRoot, stagingDirName)); err != nil {
+		t.Error("expected top-level staging directory to remain intact")
 	}
 	if _, err := os.Stat(filepath.Join(repoRoot, "librarian-ran.txt")); err != nil {
 		t.Errorf("expected librarian.js to run and create librarian-ran.txt in repoRoot: %v", err)
@@ -1217,7 +1217,7 @@ func TestGenerateAPI_NoProtos(t *testing.T) {
 func createStagingFixture(t *testing.T, repoRoot, libName string, versions []string) {
 	t.Helper()
 	for _, v := range versions {
-		stagingBase := filepath.Join(repoRoot, "owl-bot-staging", libName, v)
+		stagingBase := filepath.Join(repoRoot, stagingDirName, libName, v)
 		srcDir := filepath.Join(stagingBase, "src", v)
 		if err := os.MkdirAll(srcDir, 0o755); err != nil {
 			t.Fatal(err)

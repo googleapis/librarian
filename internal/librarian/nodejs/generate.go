@@ -40,6 +40,7 @@ import (
 const (
 	cloudCommonResourcesProto = "google/cloud/common_resources.proto"
 	protosPathPrefix          = "protos/"
+	stagingDirName            = ".librarian-staging"
 )
 
 var (
@@ -154,7 +155,7 @@ func generateAPI(ctx context.Context, params generateAPIParams) error {
 	if _, err := requireCachedTool("gapic-node-processing"); err != nil {
 		return err
 	}
-	stagingDir := filepath.Join(params.repoRoot, "owl-bot-staging", params.library.Name, buildStagingSubdirName(params.apiIndex, params.api.Path))
+	stagingDir := filepath.Join(params.repoRoot, stagingDirName, params.library.Name, buildStagingSubdirName(params.apiIndex, params.api.Path))
 	if err := os.MkdirAll(stagingDir, 0o755); err != nil {
 		return err
 	}
@@ -327,7 +328,7 @@ func buildGeneratorArgs(params buildGeneratorArgsParams) ([]string, error) {
 	return args, nil
 }
 
-// runPostProcessor combines versioned API outputs from owl-bot-staging/ into
+// runPostProcessor combines versioned API outputs from the staging directory into
 // the output directory using gapic-node-processing, then compiles protos.
 func runPostProcessor(ctx context.Context, cfg *config.Config, library *config.Library, googleapisDir, repoRoot, outDir string) error {
 	if err := movePackageFromStaging(ctx, library, repoRoot, outDir); err != nil {
@@ -402,7 +403,7 @@ func compileProtosArgs(library *config.Library) []string {
 }
 
 // movePackageFromStaging moves the generated code for a single package from
-// owl-bot-staging (in the repo root) to the package-specific directory.
+// the staging directory (in the repo root) to the package-specific directory.
 func movePackageFromStaging(ctx context.Context, library *config.Library, repoRoot, outDir string) error {
 	// combine-library wipes the destination directory before writing generated
 	// files (src/, protos/). Save the keep files it would delete, then restore
@@ -417,7 +418,7 @@ func movePackageFromStaging(ctx context.Context, library *config.Library, repoRo
 		return err
 	}
 
-	stagingDir := filepath.Join(repoRoot, "owl-bot-staging", library.Name)
+	stagingDir := filepath.Join(repoRoot, stagingDirName, library.Name)
 	combineArgs := []string{
 		"combine-library",
 		"--source-path", stagingDir,
@@ -576,7 +577,7 @@ func copyMissingProtos(googleapisDir, outDir string) error {
 
 // copySamplesFromStaging copies generated sample files from the staging
 // directory into the output directory. The generator writes samples to
-// owl-bot-staging/<lib>/<version>/samples/generated/<version>/ but
+// <stagingDir>/<version>/samples/generated/<version>/ but
 // combine-library does not move them.
 func copySamplesFromStaging(stagingDir, outDir string) error {
 	versions, err := os.ReadDir(stagingDir)
