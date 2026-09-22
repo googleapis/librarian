@@ -1,6 +1,6 @@
 ---
 name: new-sidekick
-description: Scaffolds a new language generator in internal/sidekick/<lang> and internal/librarian/<lang> with a decomposed, testable architecture following internal/sidekick/GEMINI.md.
+description: Scaffolds a new language generator in internal/sidekick/<lang> and internal/librarian/<lang> with a decomposed, testable architecture following internal/sidekick/AGENTS.md.
 ---
 
 # New Sidekick Generator Scaffolding
@@ -9,7 +9,7 @@ Use this skill when onboarding or creating a new target language generator in
 Librarian. It guides you to bootstrap the complete decomposed directory
 structure, annotation models, templates, librarian runner, configuration types,
 and test suites conforming strictly to
-[`internal/sidekick/GEMINI.md`](/internal/sidekick/GEMINI.md).
+[`internal/sidekick/AGENTS.md`](/internal/sidekick/AGENTS.md).
 
 ## Architectural Principles to Uphold
 
