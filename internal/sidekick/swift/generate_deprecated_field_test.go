@@ -95,8 +95,6 @@ func TestGenerateField_Deprecated(t *testing.T) {
 				WithFields(field)
 
 			model := api.NewTestAPI([]*api.Message{msg, deprecatedMessage}, nil, nil)
-
-			model.PackageName = "google.cloud.test.v1"
 			if err := Generate(t.Context(), model, outDir, &config.Library{}, nil); err != nil {
 				t.Fatal(err)
 			}

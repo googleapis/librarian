@@ -221,6 +221,18 @@ func (m *Message) WithDeprecated(deprecated bool) *Message {
 	return m
 }
 
+// WithDocumentation sets the documentation for the message.
+func (m *Message) WithDocumentation(doc string) *Message {
+	m.Documentation = doc
+	return m
+}
+
+// WithIsMap sets whether the message represents a map entry.
+func (m *Message) WithIsMap() *Message {
+	m.IsMap = true
+	return m
+}
+
 // NewTestService creates a service with defaults for testing.
 // Default package is "test".
 func NewTestService(name string) *Service {
@@ -471,6 +483,12 @@ func (o *OneOf) WithFields(fields ...*Field) *OneOf {
 	return o
 }
 
+// WithDocumentation sets the documentation for the oneof group.
+func (o *OneOf) WithDocumentation(doc string) *OneOf {
+	o.Documentation = doc
+	return o
+}
+
 // NewTestField creates a field with defaults for testing.
 // JSONName is automatically camelCased.
 func NewTestField(name string) *Field {
@@ -508,6 +526,12 @@ func (f *Field) WithMap() *Field {
 	f.Map = true
 	f.Repeated = false
 	f.Optional = false
+	return f
+}
+
+// WithRecursive marks the field as recursive.
+func (f *Field) WithRecursive() *Field {
+	f.Recursive = true
 	return f
 }
 

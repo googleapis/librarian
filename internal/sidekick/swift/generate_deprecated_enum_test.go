@@ -71,26 +71,16 @@ func TestGenerateEnum_Deprecated(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			outDir := t.TempDir()
 
-			enum := &api.Enum{
-				Name:          "Status",
-				Package:       "google.cloud.test.v1",
-				ID:            ".google.cloud.test.v1.Status",
-				Deprecated:    test.enumDeprecated,
-				Documentation: "-- enum marker --",
-			}
-			enum.Values = []*api.EnumValue{
-				{
-					Name:          "STATUS_UNSPECIFIED",
-					Number:        0,
-					Parent:        enum,
-					Deprecated:    test.valDeprecated,
-					Documentation: "-- case marker --",
-				},
-			}
-			enum.UniqueNumberValues = enum.Values
+			val := api.NewTestEnumValue("STATUS_UNSPECIFIED", 0).
+				WithDeprecated(test.valDeprecated).
+				WithDocumentation("-- case marker --")
+			enum := api.NewTestEnum("Status").
+				WithPackage("google.cloud.test.v1").
+				WithDeprecated(test.enumDeprecated).
+				WithDocumentation("-- enum marker --").
+				WithValues(val)
 
 			model := api.NewTestAPI(nil, []*api.Enum{enum}, nil)
-			model.PackageName = "google.cloud.test.v1"
 			if err := Generate(t.Context(), model, outDir, &config.Library{}, nil); err != nil {
 				t.Fatal(err)
 			}
