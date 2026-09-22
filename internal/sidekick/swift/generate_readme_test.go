@@ -136,12 +136,16 @@ func TestGenerateReadme_WithTraits(t *testing.T) {
 	service := api.NewTestService("Service").
 		WithPackage(pkg).
 		WithMethods(method)
-	model := api.NewTestAPI([]*api.Message{inputType, outputType}, nil, []*api.Service{service})
+	service2 := api.NewTestService("OtherService").
+		WithPackage(pkg).
+		WithMethods(method)
+	model := api.NewTestAPI([]*api.Message{inputType, outputType}, nil, []*api.Service{service, service2})
 	model.PackageName = pkg
 	model.Title = "Example API"
 
 	cfg := swiftConfig(t, nil)
 	cfg.PerServiceTraits = true
+	cfg.DefaultTraits = []string{"Service"}
 	library := &config.Library{
 		Name:    "google-cloud-example-v1",
 		Version: "1.0.0",
@@ -159,6 +163,31 @@ func TestGenerateReadme_WithTraits(t *testing.T) {
 
 	if !strings.Contains(content, "- `ServiceClient`: enabled by the `Service` trait.") {
 		t.Errorf("expected service to mention trait, got:\n%s", content)
+	}
+
+	wantTraitsSection := `### Package Traits
+
+This package uses Swift package traits to conditionally compile individual service
+clients and their associated types. Enabling a trait enables the corresponding
+client and all the request, response, and model types needed to use that client.
+
+The following traits are enabled by default:
+- ` + "`Service`" + `
+
+To enable additional traits alongside the defaults, specify them in ` + "`Package.swift`:" + `
+
+` + "```swift" + `
+.package(url: "https://github.com/googleapis/swift-google-cloud-example-v1.git", from: "1.0.0", traits: [".defaults", "<TraitName>"])
+` + "```" + `
+
+| Trait | Default | Enabled Client |
+|---|:---:|---|
+| ` + "`OtherService`" + ` | No | ` + "`OtherServiceClient`" + ` |
+| ` + "`Service`" + ` | Yes | ` + "`ServiceClient`" + ` |
+`
+
+	if !strings.Contains(content, wantTraitsSection) {
+		t.Errorf("expected package traits section in README.md, got:\n%s", content)
 	}
 }
 

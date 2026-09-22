@@ -157,5 +157,13 @@ public final class {{Codec.ClientName}}: Clients.{{Codec.StubPrefix}}Protocol, S
 
 {{> /templates/common/client_protocol}}
 {{#Codec.IsGated}}
+#else
+@_spi(GoogleCloudInternal) import GoogleGax
+
+@available(*, unavailable, message: "Enable the '{{Codec.Name}}' trait in Package.swift to use this client.")
+public final class {{Codec.ClientName}}: Sendable {
+  @available(*, unavailable, message: "Enable the '{{Codec.Name}}' trait in Package.swift to use this client.")
+  public init(_ options: GoogleGax.ClientOptions = .init()) throws {}
+}
 #endif
 {{/Codec.IsGated}}

@@ -1192,3 +1192,40 @@ func TestGenerateService_WildcardBodyOmitsPathFields(t *testing.T) {
 		t.Errorf("unexpected unfiltered request body in %s, got:\n%s", filename, content)
 	}
 }
+
+func TestGenerateServiceSwift_UnavailableStub(t *testing.T) {
+	outDir := t.TempDir()
+	service := &api.Service{Name: "Compute"}
+	model := api.NewTestAPI(nil, nil, []*api.Service{service})
+	model.PackageName = "google.cloud.compute.v1"
+
+	cfg := swiftConfig(t, nil)
+	cfg.PerServiceTraits = true
+	library := &config.Library{
+		Swift: cfg,
+	}
+	if err := Generate(t.Context(), model, outDir, library, nil); err != nil {
+		t.Fatal(err)
+	}
+
+	filename := filepath.Join(outDir, "Sources", "GoogleCloudComputeV1", "Compute.swift")
+	content, err := os.ReadFile(filename)
+	if err != nil {
+		t.Fatal(err)
+	}
+	contentStr := string(content)
+
+	wantStub := `#else
+@_spi(GoogleCloudInternal) import GoogleGax
+
+@available(*, unavailable, message: "Enable the 'Compute' trait in Package.swift to use this client.")
+public final class ComputeClient: Sendable {
+  @available(*, unavailable, message: "Enable the 'Compute' trait in Package.swift to use this client.")
+  public init(_ options: GoogleGax.ClientOptions = .init()) throws {}
+}
+#endif`
+
+	if !strings.Contains(contentStr, wantStub) {
+		t.Errorf("expected unavailable stub in %s, got:\n%s", filename, contentStr)
+	}
+}

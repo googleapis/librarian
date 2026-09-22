@@ -64,6 +64,10 @@ type modelAnnotations struct {
 type traitDefinition struct {
 	// The name of this trait.
 	Name string
+	// The name of the client class enabled by this trait.
+	ClientName string
+	// Whether this trait is enabled by default.
+	IsDefault bool
 	// The set of additional traits enabled by the service's trait.
 	EnabledTraits []string
 }
@@ -100,6 +104,10 @@ func (ann *modelAnnotations) Dependencies() []*Dependency {
 
 func (ann *modelAnnotations) HasTraits() bool {
 	return len(ann.AllTraits) != 0
+}
+
+func (ann *modelAnnotations) HasDefaultTraits() bool {
+	return len(ann.DefaultTraits) != 0
 }
 
 // HasLROAnyTypes returns true if the package has long-running operations whose
@@ -175,6 +183,8 @@ func (c *codec) annotateModel() error {
 		slices.Sort(enabledTraits)
 		trait := &traitDefinition{
 			Name:          c.traitName(service),
+			ClientName:    ann.ClientName,
+			IsDefault:     slices.Contains(c.DefaultTraits, c.traitName(service)),
 			EnabledTraits: enabledTraits,
 		}
 		allTraits = append(allTraits, trait)
