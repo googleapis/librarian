@@ -324,8 +324,11 @@ func TestGenerateStorage_MultiModel(t *testing.T) {
 		!strings.Contains(protocolStr, "any AsyncSequence<Bucket, Swift.Error>") {
 		t.Errorf("StorageControlProtocol.swift missing paginated helper method:\n%s", protocolStr)
 	}
-	if !strings.Contains(protocolStr, "import GoogleIAMV1") {
-		t.Errorf("StorageControlProtocol.swift missing import GoogleIAMV1:\n%s", protocolStr)
+	if !strings.Contains(protocolStr, "public import GoogleIAMV1") {
+		t.Errorf("StorageControlProtocol.swift missing public import GoogleIAMV1:\n%s", protocolStr)
+	}
+	if !strings.Contains(protocolStr, "public import GoogleGax") {
+		t.Errorf("StorageControlProtocol.swift missing public import GoogleGax:\n%s", protocolStr)
 	}
 	if !strings.Contains(protocolStr, "func createBucket(request: CreateBucketRequest) async throws") {
 		t.Errorf("StorageControlProtocol.swift missing convenience overload without options:\n%s", protocolStr)
@@ -364,6 +367,12 @@ func TestGenerateStorage_MultiModel(t *testing.T) {
 	}
 	if !strings.Contains(clientStr, "public final class StorageControlClient: StorageControlProtocol, Sendable {") {
 		t.Errorf("StorageControlClient.swift missing class declaration:\n%s", clientStr)
+	}
+	if !strings.Contains(clientStr, "@_spi(GoogleCloudInternal) public import GoogleGax") {
+		t.Errorf("StorageControlClient.swift missing @_spi(GoogleCloudInternal) public import GoogleGax:\n%s", clientStr)
+	}
+	if !strings.Contains(clientStr, "@_spi(GoogleCloudInternal) public import GoogleIAMV1") {
+		t.Errorf("StorageControlClient.swift missing @_spi(GoogleCloudInternal) public import GoogleIAMV1:\n%s", clientStr)
 	}
 	if !strings.Contains(clientStr, "private let storage: any Clients.StorageStub") ||
 		!strings.Contains(clientStr, "private let control: any Clients.StorageControlStub") {

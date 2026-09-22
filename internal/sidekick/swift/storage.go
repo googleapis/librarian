@@ -88,8 +88,10 @@ func GenerateStorage(
 	for _, model := range []*api.API{storageModel, controlModel} {
 		for _, s := range model.Services {
 			if sa, ok := s.Codec.(*serviceAnnotations); ok {
-				for _, imp := range sa.ServiceImports() {
-					if !importSet[imp] && imp != "GoogleGax" && imp != "GoogleAuth" && imp != "Foundation" {
+				for _, imp := range sa.PublicServiceImports() {
+					// StorageControl only defines unified methods for bucket, folder, and IAM operations,
+					// none of which expose GoogleWKT types in their public signatures.
+					if !importSet[imp] && imp != "GoogleGax" && imp != "GoogleAuth" && imp != "Foundation" && imp != "GoogleWKT" {
 						importSet[imp] = true
 						serviceImports = append(serviceImports, imp)
 					}

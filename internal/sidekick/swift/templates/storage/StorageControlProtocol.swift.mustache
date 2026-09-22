@@ -22,9 +22,9 @@ limitations under the License.
 
 import Foundation
 import GoogleAuth
-@_spi(GoogleCloudInternal) import GoogleGax
+@_spi(GoogleCloudInternal) public import GoogleGax
 {{#Codec.ServiceImports}}
-@_spi(GoogleCloudInternal) import {{.}}
+public import {{.}}
 {{/Codec.ServiceImports}}
 
 /// A Swift protocol representing the control-plane and administrative surface for Google Cloud Storage.

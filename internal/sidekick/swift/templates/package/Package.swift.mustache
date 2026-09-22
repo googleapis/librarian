@@ -80,6 +80,9 @@ let package = Package(
         {{/Codec.Dependencies}}
       ],
       {{/Codec.HasDependencies}}
+      swiftSettings: [
+        .enableUpcomingFeature("InternalImportsByDefault"),
+      ]
     )
   ]
 )

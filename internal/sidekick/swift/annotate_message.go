@@ -33,6 +33,7 @@ type messageAnnotations struct {
 	Model    *modelAnnotations
 	TypeURL  string
 
+	HasData             bool
 	IsPaginatedResponse bool
 	PageableItemField   string
 	PageableItemType    string
@@ -211,6 +212,7 @@ func (c *codec) annotateMessage(message *api.Message, model *modelAnnotations) e
 			return err
 		}
 	}
+	var hasData bool
 	for _, field := range message.Fields {
 		fieldCodec, err := c.annotateField(field, model)
 		if err != nil {
@@ -235,6 +237,9 @@ func (c *codec) annotateMessage(message *api.Message, model *modelAnnotations) e
 			if dep != nil {
 				annotations.DependsOn[dep.Name] = dep
 			}
+		}
+		if strings.Contains(fieldCodec.FieldType, "Foundation.Data") {
+			hasData = true
 		}
 	}
 
@@ -291,8 +296,12 @@ func (c *codec) annotateMessage(message *api.Message, model *modelAnnotations) e
 				}
 				annotations.DependsOn[dep.Name] = dep
 			}
+			if nestedCodec.HasData {
+				hasData = true
+			}
 		}
 	}
+	annotations.HasData = hasData
 	for _, enum := range message.Enums {
 		if err := c.annotateEnum(enum, model); err != nil {
 			return err
