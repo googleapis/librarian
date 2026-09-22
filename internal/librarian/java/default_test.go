@@ -504,6 +504,53 @@ func TestTidy(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "tidy redundant issue tracker override matching sdk.yaml",
+			lib: &config.Library{
+				Name: "kms",
+				APIs: []*config.API{
+					{
+						Path: "google/cloud/kms/v1",
+					},
+				},
+				Java: &config.JavaModule{
+					IssueTrackerOverride: "https://issuetracker.google.com/savedsearches/5264932",
+				},
+			},
+			want: &config.Library{
+				Name: "kms",
+				APIs: []*config.API{
+					{
+						Path: "google/cloud/kms/v1",
+					},
+				},
+			},
+		},
+		{
+			name: "do not tidy custom issue tracker override differing from sdk.yaml",
+			lib: &config.Library{
+				Name: "custom",
+				APIs: []*config.API{
+					{
+						Path: "google/cloud/kms/v1",
+					},
+				},
+				Java: &config.JavaModule{
+					IssueTrackerOverride: "https://issuetracker.google.com/custom/tracker",
+				},
+			},
+			want: &config.Library{
+				Name: "custom",
+				APIs: []*config.API{
+					{
+						Path: "google/cloud/kms/v1",
+					},
+				},
+				Java: &config.JavaModule{
+					IssueTrackerOverride: "https://issuetracker.google.com/custom/tracker",
+				},
+			},
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			got, err := Tidy(test.lib)

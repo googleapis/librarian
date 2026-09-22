@@ -126,6 +126,7 @@ func Tidy(library *config.Library) (*config.Library, error) {
 		}
 		tidyReleasedVersion(library)
 		tidyDocumentation(library)
+		tidyIssueTrackerOverride(library)
 		var err error
 		if library.Java, err = yaml.ClearIfEmpty(library.Java); err != nil {
 			return nil, err
@@ -332,6 +333,24 @@ func tidyDocumentation(library *config.Library) {
 	}
 	if api.RpcDocumentation != "" && library.Java.RpcDocumentation == api.RpcDocumentation {
 		library.Java.RpcDocumentation = ""
+	}
+}
+
+// tidyIssueTrackerOverride clears the Java module's issue_tracker_override if it
+// matches the new_issue_uri in sdk.yaml for the library's primary API.
+func tidyIssueTrackerOverride(library *config.Library) {
+	if library.Java.IssueTrackerOverride == "" || len(library.APIs) == 0 {
+		return
+	}
+	apis := slices.Clone(library.APIs)
+	serviceconfig.SortAPIs(apis)
+	primaryPath := apis[0].Path
+	if primaryPath == "" {
+		return
+	}
+	api := serviceconfig.FindAPI(primaryPath)
+	if api.NewIssueURI != "" && library.Java.IssueTrackerOverride == api.NewIssueURI {
+		library.Java.IssueTrackerOverride = ""
 	}
 }
 
