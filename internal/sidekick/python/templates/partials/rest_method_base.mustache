@@ -3,6 +3,7 @@
             return NotImplementedError("__hash__ must be implemented.")
 
 {{^IsMixin}}
+{{#HasRequiredFields}}
         __REQUIRED_FIELDS_DEFAULT_VALUES: Dict[str, Any] =  {
 {{#RequiredFieldsDefaultValues}}
 {{#Last}}
@@ -12,10 +13,11 @@
             "{{Key}}" : {{{Value}}},
 {{/Last}}
 {{/RequiredFieldsDefaultValues}}
-{{^HasRequiredFields}}
+{{^RequiredFieldsDefaultValues}}
         }
-{{/HasRequiredFields}}
+{{/RequiredFieldsDefaultValues}}
 
+{{/HasRequiredFields}}
 {{/IsMixin}}
         @staticmethod
         def _get_http_options():

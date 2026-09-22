@@ -214,12 +214,31 @@ func (c *codec) annotateClientMethod(m *api.Method, service *api.Service, ann *c
 			rawLines := strings.Split(respDoc, "\n")
 			firstLine := strings.TrimSpace(rawLines[0])
 			lroLines = append(lroLines, fmt.Sprintf("The result type for the operation will be :class:`%s` %s", respSphinx, firstLine))
+			hasIndentedBlock := false
 			for _, dl := range rawLines[1:] {
-				trimmed := strings.TrimRight(dl, " \t\r")
-				if strings.TrimSpace(trimmed) == "" {
-					lroLines = append(lroLines, "")
-				} else {
-					lroLines = append(lroLines, "   "+trimmed)
+				if strings.HasPrefix(dl, "    ") || strings.HasPrefix(dl, "\t") {
+					hasIndentedBlock = true
+					break
+				}
+			}
+			if hasIndentedBlock {
+				for _, dl := range rawLines[1:] {
+					trimmed := strings.TrimRight(dl, " \t\r")
+					if strings.TrimSpace(trimmed) == "" {
+						lroLines = append(lroLines, "")
+					} else {
+						lroLines = append(lroLines, "   "+trimmed)
+					}
+				}
+			} else {
+				rest := strings.TrimSpace(strings.Join(rawLines[1:], "\n"))
+				wrappedRest := formatReturnRstDoc(rest, 56-len(definitionIndent), 0)
+				for _, rl := range wrappedRest {
+					if rl == "" {
+						lroLines = append(lroLines, "")
+					} else {
+						lroLines = append(lroLines, definitionIndent+rl)
+					}
 				}
 			}
 		} else {
@@ -227,7 +246,7 @@ func (c *codec) annotateClientMethod(m *api.Method, service *api.Service, ann *c
 			if strings.TrimSpace(respDoc) != "" {
 				rawLRODoc += " " + respDoc
 			}
-			lroLines = formatRstDoc(rawLRODoc, 56, 16)
+			lroLines = formatReturnRstDoc(rawLRODoc, 56, 16)
 			for i, line := range lroLines {
 				lroLines[i] = reClassSphinx.ReplaceAllString(line, ":class:`$1`")
 			}

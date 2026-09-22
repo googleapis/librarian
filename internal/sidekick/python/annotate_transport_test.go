@@ -442,3 +442,23 @@ func TestAnnotateTransport_IAM(t *testing.T) {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
+
+func TestAnnotateTransport_IAMPolicyMixin(t *testing.T) {
+	meth := api.NewTestMethod("SetIamPolicy")
+	meth.SourceServiceID = ".google.iam.v1.IAMPolicy"
+	svc := api.NewTestService("ExampleService").
+		WithPackage("google.example.v1").
+		WithMethods(meth)
+	svc.DefaultHost = "example.googleapis.com"
+	model := api.NewTestAPI(nil, nil, []*api.Service{svc}).
+		WithPackageName("google.example.v1")
+	c := newTestCodec(t, model, nil)
+	if err := c.annotateModel(); err != nil {
+		t.Fatal(err)
+	}
+	sAnn := svc.Codec.(*serviceAnnotations)
+	if !sAnn.Transport.HasIAMPolicyMixin || !sAnn.Transport.HasSetIamPolicy {
+		t.Errorf("got HasIAMPolicyMixin=%v, HasSetIamPolicy=%v, want true, true",
+			sAnn.Transport.HasIAMPolicyMixin, sAnn.Transport.HasSetIamPolicy)
+	}
+}

@@ -123,12 +123,14 @@ func annotateRestMethod(m *api.Method) *restMethodAnnotation {
 	}
 
 	var requiredFieldsDefaultValues []*requiredFieldDefaultAnnotation
+	hasInputRequiredFields := false
 
 	if m.InputType != nil {
 		for _, f := range m.InputType.Fields {
 			if !f.DocumentAsRequired() {
 				continue
 			}
+			hasInputRequiredFields = true
 			if body == "*" || (body != "" && (f.Name == body || f.JSONName == body)) {
 				continue
 			}
@@ -159,7 +161,7 @@ func annotateRestMethod(m *api.Method) *restMethodAnnotation {
 		Name:                        name,
 		BaseClassName:               baseClassName,
 		HTTPOptions:                 httpOptions,
-		HasRequiredFields:           len(requiredFieldsDefaultValues) > 0,
+		HasRequiredFields:           hasInputRequiredFields,
 		RequiredFieldsDefaultValues: requiredFieldsDefaultValues,
 	}
 }

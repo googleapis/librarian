@@ -26,6 +26,7 @@ const (
 	defaultAuthScope          = "https://www.googleapis.com/auth/cloud-platform"
 	operationsServiceIDPrefix = ".google.longrunning.Operations"
 	locationsServiceIDPrefix  = ".google.cloud.location.Locations"
+	iamServiceIDPrefix        = ".google.iam.v1.IAMPolicy"
 
 	serviceDocWidth  = 72
 	serviceDocIndent = 4
@@ -52,19 +53,23 @@ type transportAnnotations struct {
 	HasLRO             bool
 	HasLocationMixin   bool
 	HasOperationsMixin bool
+	HasIAMPolicyMixin  bool
 	RestAsyncIOEnabled bool
 
 	DocLines    []string
 	HasDocLines bool
 
 	// Mixin method availability for property stubs
-	HasListOperations  bool
-	HasGetOperation    bool
-	HasCancelOperation bool
-	HasDeleteOperation bool
-	HasWaitOperation   bool
-	HasGetLocation     bool
-	HasListLocations   bool
+	HasListOperations     bool
+	HasGetOperation       bool
+	HasCancelOperation    bool
+	HasDeleteOperation    bool
+	HasWaitOperation      bool
+	HasGetLocation        bool
+	HasListLocations      bool
+	HasSetIamPolicy       bool
+	HasGetIamPolicy       bool
+	HasTestIamPermissions bool
 
 	Imports        []*transportImport
 	WrappedMethods []*wrappedMethodAnnotations
@@ -103,6 +108,7 @@ type transportMethodAnnotations struct {
 
 var (
 	locationOrder = []string{"GetLocation", "ListLocations"}
+	iamOrder      = []string{"GetIamPolicy", "SetIamPolicy", "TestIamPermissions"}
 	opOrder       = []string{"CancelOperation", "DeleteOperation", "GetOperation", "ListOperations", "WaitOperation"}
 )
 
@@ -129,28 +135,33 @@ func (c *codec) annotateTransport(service *api.Service) (*transportAnnotations, 
 	}
 
 	var (
-		hasLRO             bool
-		hasLocationMixin   bool
-		hasOperationsMixin bool
-		hasListOperations  bool
-		hasGetOperation    bool
-		hasCancelOperation bool
-		hasDeleteOperation bool
-		hasWaitOperation   bool
-		hasGetLocation     bool
-		hasListLocations   bool
+		hasLRO                bool
+		hasLocationMixin      bool
+		hasOperationsMixin    bool
+		hasIAMPolicyMixin     bool
+		hasListOperations     bool
+		hasGetOperation       bool
+		hasCancelOperation    bool
+		hasDeleteOperation    bool
+		hasWaitOperation      bool
+		hasGetLocation        bool
+		hasListLocations      bool
+		hasSetIamPolicy       bool
+		hasGetIamPolicy       bool
+		hasTestIamPermissions bool
 
 		nativeMethods []*api.Method
 		mixinMethods  []*api.Method
 	)
 
 	for _, m := range service.Methods {
-		if m.OperationInfo != nil || m.OutputTypeID == ".google.longrunning.Operation" {
+		if !isMixin(m, service) && (m.OperationInfo != nil || m.OutputTypeID == ".google.longrunning.Operation") {
 			hasLRO = true
 		}
 		if isMixin(m, service) {
 			mixinMethods = append(mixinMethods, m)
-			if strings.HasPrefix(m.SourceServiceID, operationsServiceIDPrefix) {
+			srcID := strings.TrimPrefix(m.SourceServiceID, ".")
+			if strings.HasPrefix(srcID, strings.TrimPrefix(operationsServiceIDPrefix, ".")) {
 				hasOperationsMixin = true
 				switch m.Name {
 				case "ListOperations":
@@ -164,13 +175,23 @@ func (c *codec) annotateTransport(service *api.Service) (*transportAnnotations, 
 				case "WaitOperation":
 					hasWaitOperation = true
 				}
-			} else if strings.HasPrefix(m.SourceServiceID, locationsServiceIDPrefix) {
+			} else if strings.HasPrefix(srcID, strings.TrimPrefix(locationsServiceIDPrefix, ".")) {
 				hasLocationMixin = true
 				switch m.Name {
 				case "GetLocation":
 					hasGetLocation = true
 				case "ListLocations":
 					hasListLocations = true
+				}
+			} else if strings.HasPrefix(srcID, strings.TrimPrefix(iamServiceIDPrefix, ".")) {
+				hasIAMPolicyMixin = true
+				switch m.Name {
+				case "SetIamPolicy":
+					hasSetIamPolicy = true
+				case "GetIamPolicy":
+					hasGetIamPolicy = true
+				case "TestIamPermissions":
+					hasTestIamPermissions = true
 				}
 			}
 		} else {
@@ -280,10 +301,23 @@ func (c *codec) annotateTransport(service *api.Service) (*transportAnnotations, 
 		wrappedMethods = append(wrappedMethods, c.buildWrappedMethod(m, service, cfg))
 	}
 
-	// Order mixins for wrapped methods: Location -> Operations
+	// Order mixins for wrapped methods: Location -> IAM -> Operations
 	for _, reqName := range locationOrder {
 		for _, m := range mixinMethods {
-			if strings.HasPrefix(m.SourceServiceID, locationsServiceIDPrefix) && m.Name == reqName {
+			srcID := strings.TrimPrefix(m.SourceServiceID, ".")
+			if strings.HasPrefix(srcID, strings.TrimPrefix(locationsServiceIDPrefix, ".")) && m.Name == reqName {
+				wrappedMethods = append(wrappedMethods, &wrappedMethodAnnotations{
+					Name:           snakeCase(m.Name),
+					HasRetry:       false,
+					DefaultTimeout: "None",
+				})
+			}
+		}
+	}
+	for _, reqName := range iamOrder {
+		for _, m := range mixinMethods {
+			srcID := strings.TrimPrefix(m.SourceServiceID, ".")
+			if strings.HasPrefix(srcID, strings.TrimPrefix(iamServiceIDPrefix, ".")) && m.Name == reqName {
 				wrappedMethods = append(wrappedMethods, &wrappedMethodAnnotations{
 					Name:           snakeCase(m.Name),
 					HasRetry:       false,
@@ -294,7 +328,8 @@ func (c *codec) annotateTransport(service *api.Service) (*transportAnnotations, 
 	}
 	for _, reqName := range opOrder {
 		for _, m := range mixinMethods {
-			if strings.HasPrefix(m.SourceServiceID, operationsServiceIDPrefix) && m.Name == reqName {
+			srcID := strings.TrimPrefix(m.SourceServiceID, ".")
+			if strings.HasPrefix(srcID, strings.TrimPrefix(operationsServiceIDPrefix, ".")) && m.Name == reqName {
 				wrappedMethods = append(wrappedMethods, &wrappedMethodAnnotations{
 					Name:           snakeCase(m.Name),
 					HasRetry:       false,
@@ -332,47 +367,63 @@ func (c *codec) annotateTransport(service *api.Service) (*transportAnnotations, 
 			Ignore: true,
 		})
 	}
-	if usesIAMPolicy {
+	if hasIAMPolicyMixin {
 		imports = append(imports, &transportImport{
-			From:   "google.iam.v1.iam_policy_pb2",
-			As:     "iam_policy_pb2",
+			From:   "google.iam.v1",
+			Import: "iam_policy_pb2",
+			Ignore: true,
+		}, &transportImport{
+			From:   "google.iam.v1",
+			Import: "policy_pb2",
 			Ignore: true,
 		})
-	}
-	if usesPolicy {
-		imports = append(imports, &transportImport{
-			From:   "google.iam.v1.policy_pb2",
-			As:     "policy_pb2",
-			Ignore: true,
-		})
+	} else {
+		if usesIAMPolicy {
+			imports = append(imports, &transportImport{
+				From:   "google.iam.v1.iam_policy_pb2",
+				As:     "iam_policy_pb2",
+				Ignore: true,
+			})
+		}
+		if usesPolicy {
+			imports = append(imports, &transportImport{
+				From:   "google.iam.v1.policy_pb2",
+				As:     "policy_pb2",
+				Ignore: true,
+			})
+		}
 	}
 	slices.SortFunc(imports, func(a, b *transportImport) int {
 		return strings.Compare(transportImportKey(a), transportImportKey(b))
 	})
 
 	return &transportAnnotations{
-		Name:               name,
-		TransportClassName: transportClassName,
-		ServiceFQN:         serviceFQN,
-		DefaultHost:        defaultHost,
-		VersionPackage:     versionPackage,
-		Scopes:             scopes,
-		HasLRO:             hasLRO,
-		HasLocationMixin:   hasLocationMixin,
-		HasOperationsMixin: hasOperationsMixin,
-		RestAsyncIOEnabled: restAsyncIOEnabled,
-		DocLines:           docLines,
-		HasDocLines:        len(docLines) > 0,
-		HasListOperations:  hasListOperations,
-		HasGetOperation:    hasGetOperation,
-		HasCancelOperation: hasCancelOperation,
-		HasDeleteOperation: hasDeleteOperation,
-		HasWaitOperation:   hasWaitOperation,
-		HasGetLocation:     hasGetLocation,
-		HasListLocations:   hasListLocations,
-		Imports:            imports,
-		WrappedMethods:     wrappedMethods,
-		ServiceMethods:     serviceMethods,
+		Name:                  name,
+		TransportClassName:    transportClassName,
+		ServiceFQN:            serviceFQN,
+		DefaultHost:           defaultHost,
+		VersionPackage:        versionPackage,
+		Scopes:                scopes,
+		HasLRO:                hasLRO,
+		HasLocationMixin:      hasLocationMixin,
+		HasOperationsMixin:    hasOperationsMixin,
+		HasIAMPolicyMixin:     hasIAMPolicyMixin,
+		RestAsyncIOEnabled:    restAsyncIOEnabled,
+		DocLines:              docLines,
+		HasDocLines:           len(docLines) > 0,
+		HasListOperations:     hasListOperations,
+		HasGetOperation:       hasGetOperation,
+		HasCancelOperation:    hasCancelOperation,
+		HasDeleteOperation:    hasDeleteOperation,
+		HasWaitOperation:      hasWaitOperation,
+		HasGetLocation:        hasGetLocation,
+		HasListLocations:      hasListLocations,
+		HasSetIamPolicy:       hasSetIamPolicy,
+		HasGetIamPolicy:       hasGetIamPolicy,
+		HasTestIamPermissions: hasTestIamPermissions,
+		Imports:               imports,
+		WrappedMethods:        wrappedMethods,
+		ServiceMethods:        serviceMethods,
 	}, nil
 }
 

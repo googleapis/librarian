@@ -8,6 +8,10 @@ from google.protobuf import json_format
 {{#HasLocationMixin}}
 from google.cloud.location import locations_pb2 # type: ignore
 {{/HasLocationMixin}}
+{{#HasIAMPolicyMixin}}
+from google.iam.v1 import iam_policy_pb2 # type: ignore
+from google.iam.v1 import policy_pb2 # type: ignore
+{{/HasIAMPolicyMixin}}
 from .base import {{BaseTransportClassName}}, DEFAULT_CLIENT_INFO
 
 import re

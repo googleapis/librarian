@@ -24,21 +24,21 @@ import (
 
 // restTransportAnnotation contains all metadata needed to render rest_base.py, rest.py, and rest_asyncio.py.
 type restTransportAnnotation struct {
-	Name, BaseTransportClassName, TransportClassName                    string
-	ClientName, AsyncClientName                                         string
-	ServiceFQN, ServiceFQNClient, ServiceFQNAsyncClient                 string
-	ServiceProtoName, DefaultHost, VersionPackage, ClientPackageVersion string
-	PackageName, RestNumericEnumsBool                                   string
-	Scopes                                                              []string
-	HasLRO, HasLocationMixin, HasOperationsMixin, HasDocLines           bool
-	RestAsyncIOEnabled, ShowRestBetaPreview                             bool
-	DocLines                                                            []string
-	TypeImports                                                         []*restTypeImport
-	BaseMethods                                                         []*restBaseMethodAnnotation
-	PrimaryMethods                                                      []*restMethodDetailAnnotation
-	MixinMethods                                                        []*restMixinMethodAnnotation
-	LROOperations                                                       []*restLROOperationAnnotation
-	WrappedMethods                                                      []*wrappedMethodAnnotations
+	Name, BaseTransportClassName, TransportClassName                             string
+	ClientName, AsyncClientName                                                  string
+	ServiceFQN, ServiceFQNClient, ServiceFQNAsyncClient                          string
+	ServiceProtoName, DefaultHost, VersionPackage, ClientPackageVersion          string
+	PackageName, RestNumericEnumsBool                                            string
+	Scopes                                                                       []string
+	HasLRO, HasLocationMixin, HasOperationsMixin, HasIAMPolicyMixin, HasDocLines bool
+	RestAsyncIOEnabled, ShowRestBetaPreview                                      bool
+	DocLines                                                                     []string
+	TypeImports                                                                  []*restTypeImport
+	BaseMethods                                                                  []*restBaseMethodAnnotation
+	PrimaryMethods                                                               []*restMethodDetailAnnotation
+	MixinMethods                                                                 []*restMixinMethodAnnotation
+	LROOperations                                                                []*restLROOperationAnnotation
+	WrappedMethods                                                               []*wrappedMethodAnnotations
 }
 
 // restTypeImport represents an imported module or symbol used in REST transport type hints.
@@ -89,19 +89,23 @@ type mixinSpec struct {
 
 var (
 	mixinSpecMap = map[string]mixinSpec{
-		"GetLocation":     {"locations_pb2.GetLocationRequest", "locations_pb2.Location", false},
-		"ListLocations":   {"locations_pb2.ListLocationsRequest", "locations_pb2.ListLocationsResponse", false},
-		"CancelOperation": {"operations_pb2.CancelOperationRequest", "None", true},
-		"DeleteOperation": {"operations_pb2.DeleteOperationRequest", "None", true},
-		"GetOperation":    {"operations_pb2.GetOperationRequest", "operations_pb2.Operation", false},
-		"ListOperations":  {"operations_pb2.ListOperationsRequest", "operations_pb2.ListOperationsResponse", false},
-		"WaitOperation":   {"operations_pb2.WaitOperationRequest", "operations_pb2.Operation", false},
+		"GetLocation":        {"locations_pb2.GetLocationRequest", "locations_pb2.Location", false},
+		"ListLocations":      {"locations_pb2.ListLocationsRequest", "locations_pb2.ListLocationsResponse", false},
+		"GetIamPolicy":       {"iam_policy_pb2.GetIamPolicyRequest", "policy_pb2.Policy", false},
+		"SetIamPolicy":       {"iam_policy_pb2.SetIamPolicyRequest", "policy_pb2.Policy", false},
+		"TestIamPermissions": {"iam_policy_pb2.TestIamPermissionsRequest", "iam_policy_pb2.TestIamPermissionsResponse", false},
+		"CancelOperation":    {"operations_pb2.CancelOperationRequest", "None", true},
+		"DeleteOperation":    {"operations_pb2.DeleteOperationRequest", "None", true},
+		"GetOperation":       {"operations_pb2.GetOperationRequest", "operations_pb2.Operation", false},
+		"ListOperations":     {"operations_pb2.ListOperationsRequest", "operations_pb2.ListOperationsResponse", false},
+		"WaitOperation":      {"operations_pb2.WaitOperationRequest", "operations_pb2.Operation", false},
 	}
 	mixinGroups = []struct {
 		order  []string
 		prefix string
 	}{
 		{locationOrder, locationsServiceIDPrefix},
+		{iamOrder, iamServiceIDPrefix},
 		{opOrder, operationsServiceIDPrefix},
 	}
 )
@@ -126,20 +130,23 @@ func (c *codec) annotateRestTransport(service *api.Service, svcAnn *serviceAnnot
 	scopes := c.findAuthScopes(svcConfig)
 
 	var (
-		hasLRO, hasLocationMixin, hasOperationsMixin bool
-		nativeMethods, mixinMethods                  []*api.Method
+		hasLRO, hasLocationMixin, hasOperationsMixin, hasIAMPolicyMixin bool
+		nativeMethods, mixinMethods                                     []*api.Method
 	)
 
 	for _, m := range service.Methods {
-		if m.OperationInfo != nil || m.OutputTypeID == ".google.longrunning.Operation" {
+		if !isMixin(m, service) && (m.OperationInfo != nil || m.OutputTypeID == ".google.longrunning.Operation") {
 			hasLRO = true
 		}
 		if isMixin(m, service) {
 			mixinMethods = append(mixinMethods, m)
-			if strings.HasPrefix(m.SourceServiceID, operationsServiceIDPrefix) {
+			srcID := strings.TrimPrefix(m.SourceServiceID, ".")
+			if strings.HasPrefix(srcID, strings.TrimPrefix(operationsServiceIDPrefix, ".")) {
 				hasOperationsMixin = true
-			} else if strings.HasPrefix(m.SourceServiceID, locationsServiceIDPrefix) {
+			} else if strings.HasPrefix(srcID, strings.TrimPrefix(locationsServiceIDPrefix, ".")) {
 				hasLocationMixin = true
+			} else if strings.HasPrefix(srcID, strings.TrimPrefix(iamServiceIDPrefix, ".")) {
+				hasIAMPolicyMixin = true
 			}
 		} else {
 			nativeMethods = append(nativeMethods, m)
@@ -206,6 +213,7 @@ func (c *codec) annotateRestTransport(service *api.Service, svcAnn *serviceAnnot
 		HasLRO:                 hasLRO,
 		HasLocationMixin:       hasLocationMixin,
 		HasOperationsMixin:     hasOperationsMixin,
+		HasIAMPolicyMixin:      hasIAMPolicyMixin,
 		RestAsyncIOEnabled:     restAsyncIOEnabled,
 		ShowRestBetaPreview:    !c.hasRestNumericEnums(),
 		RestNumericEnumsBool:   "False",

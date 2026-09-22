@@ -20,6 +20,10 @@ from google.api_core import operations_v1
 {{#HasLocationMixin}}
 from google.cloud.location import locations_pb2 # type: ignore
 {{/HasLocationMixin}}
+{{#HasIAMPolicyMixin}}
+from google.iam.v1 import iam_policy_pb2 # type: ignore
+from google.iam.v1 import policy_pb2 # type: ignore
+{{/HasIAMPolicyMixin}}
 
 from requests import __version__ as requests_version
 import dataclasses

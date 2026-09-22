@@ -146,11 +146,19 @@ func TestIsMixin(t *testing.T) {
 	sameMethod := api.NewTestMethod("SameMethod")
 	svc := api.NewTestService("TestService").WithPackage("test").WithMethods(sameMethod)
 
-	otherMethod := api.NewTestMethod("OtherMethod")
-	_ = api.NewTestService("OtherService").WithPackage("other").WithMethods(otherMethod)
+	opMethod := api.NewTestMethod("GetOperation")
+	_ = api.NewTestService("Operations").WithPackage("google.longrunning").WithMethods(opMethod)
+
+	locMethod := api.NewTestMethod("GetLocation")
+	_ = api.NewTestService("Locations").WithPackage("google.cloud.location").WithMethods(locMethod)
+
+	iamMethod := api.NewTestMethod("SetIamPolicy")
+	_ = api.NewTestService("IAMPolicy").WithPackage("google.iam.v1").WithMethods(iamMethod)
 
 	matchingMethod := api.NewTestMethod("MethodMatching").WithSourceMethod(sameMethod)
-	differentMethod := api.NewTestMethod("MethodDifferent").WithSourceMethod(otherMethod)
+	opMixinMethod := api.NewTestMethod("OpMixin").WithSourceMethod(opMethod)
+	locMixinMethod := api.NewTestMethod("LocMixin").WithSourceMethod(locMethod)
+	iamMixinMethod := api.NewTestMethod("IamMixin").WithSourceMethod(iamMethod)
 	noSourceMethod := api.NewTestMethod("MethodNoSource")
 
 	for _, test := range []struct {
@@ -167,7 +175,7 @@ func TestIsMixin(t *testing.T) {
 		},
 		{
 			name:    "nil service",
-			method:  differentMethod,
+			method:  opMixinMethod,
 			service: nil,
 			want:    false,
 		},
@@ -178,8 +186,20 @@ func TestIsMixin(t *testing.T) {
 			want:    false,
 		},
 		{
-			name:    "different service",
-			method:  differentMethod,
+			name:    "operations mixin",
+			method:  opMixinMethod,
+			service: svc,
+			want:    true,
+		},
+		{
+			name:    "locations mixin",
+			method:  locMixinMethod,
+			service: svc,
+			want:    true,
+		},
+		{
+			name:    "iam policy mixin",
+			method:  iamMixinMethod,
 			service: svc,
 			want:    true,
 		},

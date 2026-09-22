@@ -15,6 +15,8 @@
 package python
 
 import (
+	"strings"
+
 	"github.com/googleapis/librarian/internal/sidekick/api"
 )
 
@@ -70,5 +72,5 @@ func (c *codec) annotateMethod(method *api.Method, service *serviceAnnotations) 
 
 // isMixin returns true if m originates from a different service than the host service.
 func isMixin(m *api.Method, service *api.Service) bool {
-	return m != nil && m.SourceServiceID != "" && service != nil && m.SourceServiceID != service.ID
+	return m != nil && m.SourceServiceID != "" && service != nil && strings.TrimPrefix(m.SourceServiceID, ".") != strings.TrimPrefix(service.ID, ".")
 }

@@ -150,10 +150,56 @@ func TestAnnotateCustomResourcePaths(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			c := test.setup()
-			got := c.annotateCustomResourcePaths()
+			got := c.annotateCustomResourcePaths(nil)
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
+	}
+}
+
+func TestAnnotateCustomResourcePaths_ServiceScoped(t *testing.T) {
+	res1 := &api.Resource{
+		Type:     "example.googleapis.com/Included",
+		Singular: "included",
+		Patterns: []api.ResourcePattern{
+			{
+				{Literal: "projects"},
+				{Variable: &api.PathVariable{FieldPath: []string{"project"}}},
+				{Literal: "includedItems"},
+				{Variable: &api.PathVariable{FieldPath: []string{"included"}}},
+			},
+		},
+	}
+	res2 := &api.Resource{
+		Type:     "example.googleapis.com/Excluded",
+		Singular: "excluded",
+		Patterns: []api.ResourcePattern{
+			{
+				{Literal: "projects"},
+				{Variable: &api.PathVariable{FieldPath: []string{"project"}}},
+				{Literal: "excludedItems"},
+				{Variable: &api.PathVariable{FieldPath: []string{"excluded"}}},
+			},
+		},
+	}
+	msg1 := api.NewTestMessage("IncludedMsg").WithPackage("example.v1").WithResource(res1)
+	res1.Self = msg1
+	msg2 := api.NewTestMessage("ExcludedMsg").WithPackage("example.v1").WithResource(res2)
+	res2.Self = msg2
+
+	method := api.NewTestMethod("DoIncluded").WithInput(msg1).WithOutput(msg1)
+	svc := api.NewTestService("IncludedService").WithPackage("example.v1").WithMethods(method)
+
+	model := api.NewTestAPI([]*api.Message{msg1, msg2}, nil, []*api.Service{svc}).
+		WithPackageName("google.cloud.example.v1")
+	c := newTestCodec(t, model, nil)
+
+	got := c.annotateCustomResourcePaths(svc)
+	if len(got) != 1 {
+		t.Fatalf("expected 1 custom path, got %d", len(got))
+	}
+	if got[0].FunctionName != "included_path" {
+		t.Errorf("expected included_path, got %s", got[0].FunctionName)
 	}
 }

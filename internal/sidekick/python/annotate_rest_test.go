@@ -258,7 +258,7 @@ func TestAnnotateRestMethod_RequiredFields(t *testing.T) {
 				Name:              "list_instances",
 				BaseClassName:     "_BaseListInstances",
 				HTTPOptions:       []*httpOptionAnnotation{{Method: "get", URI: "/v1/{parent=*}", Body: "", HasBody: false, First: true}},
-				HasRequiredFields: false,
+				HasRequiredFields: true,
 			},
 		},
 		{
@@ -272,7 +272,7 @@ func TestAnnotateRestMethod_RequiredFields(t *testing.T) {
 				Name:              "do_something",
 				BaseClassName:     "_BaseDoSomething",
 				HTTPOptions:       []*httpOptionAnnotation{{Method: "post", URI: "/v1", Body: "*", HasBody: true, First: true}},
-				HasRequiredFields: false,
+				HasRequiredFields: true,
 			},
 		},
 		{
@@ -448,9 +448,6 @@ func TestRestMethodBase_TemplateRendering(t *testing.T) {
 			want: `    class _BaseDeleteInstance:
         def __hash__(self):  # pragma: NO COVER
             return NotImplementedError("__hash__ must be implemented.")
-
-        __REQUIRED_FIELDS_DEFAULT_VALUES: Dict[str, Any] =  {
-        }
 
         @staticmethod
         def _get_http_options():

@@ -72,6 +72,7 @@ func TestPythonIdentifier(t *testing.T) {
 	}{
 		{name: "keyword_from", input: "from", want: "from_"},
 		{name: "keyword_import", input: "import", want: "import_"},
+		{name: "builtin_format_not_keyword", input: "format", want: "format"},
 		{name: "non_keyword", input: "name", want: "name"},
 	} {
 		t.Run(test.name, func(t *testing.T) {

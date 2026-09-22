@@ -62,7 +62,7 @@ func TestBuildSampleCode(t *testing.T) {
 				},
 				{
 					Name:  "count",
-					Value: sampleIntegerFieldValue,
+					Value: "553",
 				},
 			},
 		},
@@ -134,12 +134,12 @@ func TestSampleFieldValue(t *testing.T) {
 		{
 			name:  "int",
 			field: api.NewTestField("size").WithType(api.TypezInt64),
-			want:  sampleIntegerFieldValue,
+			want:  "443",
 		},
 		{
 			name:  "float",
 			field: api.NewTestField("score").WithType(api.TypezFloat),
-			want:  sampleFloatFieldValue,
+			want:  "0.540",
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {

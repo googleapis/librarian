@@ -431,3 +431,27 @@ publishing:
 		}
 	})
 }
+
+func TestAnnotateRestTransport_IAMPolicyMixin(t *testing.T) {
+	reqMsg := api.NewTestMessage("SetIamPolicyRequest").WithPackage("google.iam.v1")
+	respMsg := api.NewTestMessage("Policy").WithPackage("google.iam.v1")
+	meth := api.NewTestMethod("SetIamPolicy").
+		WithInput(reqMsg).
+		WithOutput(respMsg)
+	meth.SourceServiceID = ".google.iam.v1.IAMPolicy"
+	svc := api.NewTestService("ExampleService").
+		WithPackage("google.example.v1").
+		WithMethods(meth)
+	svc.DefaultHost = "example.googleapis.com"
+	model := api.NewTestAPI([]*api.Message{reqMsg, respMsg}, nil, []*api.Service{svc}).
+		WithPackageName("google.example.v1")
+	c := newTestCodec(t, model, nil)
+	if err := c.annotateModel(); err != nil {
+		t.Fatal(err)
+	}
+	sAnn := svc.Codec.(*serviceAnnotations)
+	if sAnn.RestTransport == nil || !sAnn.RestTransport.HasIAMPolicyMixin {
+		t.Errorf("got HasIAMPolicyMixin=%v, want true",
+			sAnn.RestTransport != nil && sAnn.RestTransport.HasIAMPolicyMixin)
+	}
+}

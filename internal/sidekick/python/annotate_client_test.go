@@ -150,6 +150,7 @@ func TestAnnotateClient(t *testing.T) {
 				ServiceFQN:         "google.cloud.redis.v1.CloudRedis",
 				CopyrightYear:      currentYear,
 				HasOperations:      true,
+				HasLRO:             true,
 				Methods: []*clientMethodAnnotations{
 					{
 						Name:                  "create_instance",
@@ -443,5 +444,24 @@ func TestAnnotateClient_ShowRestBetaPreview(t *testing.T) {
 				t.Errorf("ShowRestBetaPreview = %v, want %v", sAnn.Client.ShowRestBetaPreview, test.wantPreview)
 			}
 		})
+	}
+}
+
+func TestAnnotateClient_IAMPolicyMixin(t *testing.T) {
+	setIamPolicy := api.NewTestMethod("SetIamPolicy")
+	setIamPolicy.SourceServiceID = ".google.iam.v1.IAMPolicy"
+	svc := api.NewTestService("ExampleService").
+		WithPackage("google.example.v1").
+		WithMethods(setIamPolicy)
+	model := api.NewTestAPI(nil, nil, []*api.Service{svc}).
+		WithPackageName("google.example.v1")
+	c := newTestCodec(t, model, &config.Library{})
+	if err := c.annotateModel(); err != nil {
+		t.Fatal(err)
+	}
+	sAnn := svc.Codec.(*serviceAnnotations)
+	if !sAnn.Client.HasIAMPolicyMixin || !sAnn.Client.HasSetIamPolicy {
+		t.Errorf("got HasIAMPolicyMixin=%v, HasSetIamPolicy=%v, want true, true",
+			sAnn.Client.HasIAMPolicyMixin, sAnn.Client.HasSetIamPolicy)
 	}
 }

@@ -30,11 +30,31 @@ var (
 	reDotAsteriskWord      = regexp.MustCompile(`\.\*([A-Z][a-zA-Z0-9]+)\.\*`)
 	reBracedEmphasis       = regexp.MustCompile(`\}_([a-zA-Z0-9_{}]+)_\{`)
 	reQuotedUnderscore     = regexp.MustCompile(`"_"`)
+	reHTMLBlock            = regexp.MustCompile(`(?s)<ol>.*?</ol>`)
 )
 
 // convertMarkdownToRst converts CommonMark Markdown syntax in proto comments to
 // reStructuredText syntax used in Python docstrings.
 func convertMarkdownToRst(text string) string {
+	return convertMarkdownToRstWithOptions(text, true)
+}
+
+// convertMarkdownToRstWithOptions converts CommonMark Markdown syntax to
+// reStructuredText syntax, optionally controlling whether Markdown links
+// [text](url) are converted to RST hyperlinks or preserved verbatim.
+func convertMarkdownToRstWithOptions(text string, convertLinks bool) string {
+	text = reHTMLBlock.ReplaceAllStringFunc(text, func(m string) string {
+		lines := strings.Split(m, "\n")
+		var indented []string
+		for _, l := range lines {
+			indented = append(indented, "    "+l)
+		}
+		raw := "\n\n.. raw:: html\n\n" + strings.Join(indented, "\n") + "\n\n"
+		raw = strings.ReplaceAll(raw, "<", "\uE001")
+		raw = strings.ReplaceAll(raw, ">", "\uE002")
+		return raw
+	})
+
 	// Normalize bullet items: lines starting with * or + become -
 	lines := strings.Split(text, "\n")
 	for idx, line := range lines {
@@ -137,27 +157,31 @@ func convertMarkdownToRst(text string) string {
 	res := sb.String()
 
 	// 2. Convert markdown links: [text](url) -> `text <url>`__
-	res = mdLinkRegex.ReplaceAllStringFunc(res, func(m string) string {
-		sub := mdLinkRegex.FindStringSubmatch(m)
-		if len(sub) < 3 {
-			return m
-		}
-		rawText := sub[1]
-		url := sub[2]
-		if strings.HasPrefix(rawText, "``") && strings.HasSuffix(rawText, "``") {
-			return "```" + strings.Trim(rawText, "`") + "``\uE000<" + url + ">`__"
-		}
-		linkText := strings.Trim(rawText, "`")
-		words := strings.Fields(linkText)
-		if len(words) == 0 {
-			return "`<" + url + ">`__"
-		}
-		if len(words) == 1 {
-			return "`" + words[0] + "\uE000<" + url + ">`__"
-		}
-		return "`" + strings.Join(words[:len(words)-1], " ") + " " + words[len(words)-1] + "\uE000<" + url + ">`__"
-	})
+	if convertLinks {
+		res = mdLinkRegex.ReplaceAllStringFunc(res, func(m string) string {
+			sub := mdLinkRegex.FindStringSubmatch(m)
+			if len(sub) < 3 {
+				return m
+			}
+			rawText := sub[1]
+			url := sub[2]
+			if strings.HasPrefix(rawText, "``") && strings.HasSuffix(rawText, "``") {
+				return "```" + strings.Trim(rawText, "`") + "``\uE000<" + url + ">`__"
+			}
+			linkText := strings.Trim(rawText, "`")
+			words := strings.Fields(linkText)
+			if len(words) == 0 {
+				return "`<" + url + ">`__"
+			}
+			if len(words) == 1 {
+				return "`" + words[0] + "\uE000<" + url + ">`__"
+			}
+			return "`" + strings.Join(words[:len(words)-1], " ") + " " + words[len(words)-1] + "\uE000<" + url + ">`__"
+		})
+	}
 
+	res = strings.ReplaceAll(res, "\uE001", "<")
+	res = strings.ReplaceAll(res, "\uE002", ">")
 	return res
 }
 
@@ -276,11 +300,21 @@ func formatMethodReturnDoc(doc string) []string {
 		return nil
 	}
 	lines := strings.Split(doc, "\n")
-	if len(lines) > 1 && strings.HasPrefix(lines[0], "A [") && strings.Contains(doc, "\n\n") {
+	term0 := strings.TrimSpace(lines[0])
+	isDefList := strings.HasSuffix(term0, ":") ||
+		strings.HasPrefix(term0, "A [") ||
+		strings.HasPrefix(term0, "An [") ||
+		strings.HasPrefix(term0, "Resource-oriented") ||
+		(strings.HasPrefix(term0, "A ") && len(lines) > 1 && strings.HasPrefix(strings.TrimSpace(lines[1]), "["))
+
+	if len(lines) > 1 && isDefList {
 		term := strings.TrimSpace(lines[0])
 		rest := strings.TrimSpace(strings.Join(lines[1:], "\n"))
-		wrappedRest := formatRstDoc(rest, 56-len(definitionIndent), 0)
+		wrappedRest := formatReturnRstDoc(rest, 56-len(definitionIndent), 0)
 		result := []string{term}
+		if strings.HasSuffix(term, ":") {
+			result = append(result, "")
+		}
 		for _, rl := range wrappedRest {
 			if rl == "" {
 				result = append(result, "")
@@ -291,10 +325,7 @@ func formatMethodReturnDoc(doc string) []string {
 		return result
 	}
 
-	res := formatRstDoc(doc, 56, 16)
-	// In Sphinx reST definition lists, once a definition entry begins with a cross-reference
-	// link ([...]), subsequent lines in that definition block must be indented by 3 spaces
-	// until a blank line separating entries.
+	res := formatReturnRstDoc(doc, 56, 16)
 	if len(res) > 1 && (strings.HasPrefix(res[0], "A ") || strings.HasPrefix(res[0], "The ") || strings.Contains(doc, "\n[")) {
 		indentRest := false
 		for i := 1; i < len(res); i++ {

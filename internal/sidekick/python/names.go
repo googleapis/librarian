@@ -52,7 +52,6 @@ var pythonKeywords = map[string]bool{
 	"exec":                  true,
 	"finally":               true,
 	"for":                   true,
-	"format":                true,
 	"from":                  true,
 	"global":                true,
 	"hash":                  true,

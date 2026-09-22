@@ -17,11 +17,14 @@ package python
 import (
 	"regexp"
 	"strings"
+	"unicode"
 )
 
 var (
-	numberedListRe = regexp.MustCompile(`^\d+\.\s+`)
-	reColonNewline = regexp.MustCompile(`:\n([^\n])`)
+	numberedListRe       = regexp.MustCompile(`^\d+\.\s+`)
+	reNumberedListPrefix = regexp.MustCompile(`^\d+\.`)
+	reNumberedListOnly   = regexp.MustCompile(`^\d+\.$`)
+	reColonNewline       = regexp.MustCompile(`:\n([^\n])`)
 )
 
 type blockKind int
@@ -77,9 +80,18 @@ func formatFieldDocLines(doc string) []string {
 
 // formatRstDoc converts documentation text to reStructuredText format and wraps it to the target width.
 func formatRstDoc(text string, width, indent int) []string {
-	hasFormatting := strings.ContainsAny(text, "|*`_[]")
-	converted := convertMarkdownToRst(text)
+	return formatRstDocInternal(text, width, indent, true)
+}
 
+// formatReturnRstDoc converts method return docstrings where Markdown links are not rewritten.
+func formatReturnRstDoc(text string, width, indent int) []string {
+	return formatRstDocInternal(text, width, indent, false)
+}
+
+// formatRstDocInternal converts text to RST, optionally rewriting markdown links, and wraps lines.
+func formatRstDocInternal(text string, width, indent int, convertLinks bool) []string {
+	hasFormatting := strings.ContainsAny(text, "|*`_[]")
+	converted := convertMarkdownToRstWithOptions(text, convertLinks)
 	var lines []string
 	if hasFormatting {
 		lines = wrapCommonMark(converted, width)
@@ -112,7 +124,7 @@ func wrapCommonMark(text string, width int) []string {
 	var result []string
 
 	for pIdx, p := range paragraphs {
-		if strings.HasPrefix(p, "     ") {
+		if strings.HasPrefix(p, "    ") {
 			if pIdx > 0 && len(result) > 0 {
 				result = append(result, "")
 			}
@@ -154,6 +166,18 @@ func wrapCommonMark(text string, width int) []string {
 				continue
 			}
 			leadSpaces := len(rl) - len(strings.TrimLeft(rl, " "))
+
+			if (strings.HasPrefix(trimmed, "- ") || strings.HasPrefix(trimmed, "* ") || strings.HasPrefix(trimmed, "+ ")) &&
+				reNumberedListPrefix.MatchString(trimmed[2:]) {
+				flushBlock()
+				blocks = append(blocks, docBlock{
+					kind: kindTopList,
+					text: "-",
+				})
+				curKind = kindNestedList
+				curBlock.WriteString(trimmed[2:])
+				continue
+			}
 
 			isList := false
 			if strings.HasPrefix(trimmed, "- ") || strings.HasPrefix(trimmed, "* ") || strings.HasPrefix(trimmed, "+ ") {
@@ -198,7 +222,11 @@ func wrapCommonMark(text string, width int) []string {
 			subsequentIndent := 0
 			switch b.kind {
 			case kindTopList:
-				subsequentIndent = 2
+				if m := numberedListRe.FindString(b.text); m != "" {
+					subsequentIndent = len(m)
+				} else {
+					subsequentIndent = 2
+				}
 			case kindNestedList:
 				initialIndent = 2
 				subsequentIndent = 4
@@ -219,7 +247,7 @@ func wrapCommonMark(text string, width int) []string {
 				wLen := len([]rune(wDisplay))
 
 				trimmedCur := strings.TrimSpace(curLine.String())
-				isBulletOnly := trimmedCur == "-" || trimmedCur == "*" || trimmedCur == "+" || numberedListRe.MatchString(trimmedCur+" ")
+				isBulletOnly := trimmedCur == "-" || trimmedCur == "*" || trimmedCur == "+" || reNumberedListOnly.MatchString(trimmedCur)
 
 				if curLine.Len() == initialIndent || curLine.Len() == 0 {
 					curLine.WriteString(wDisplay)
@@ -334,25 +362,31 @@ func wrapUnformatted(text string, width, indent int) []string {
 			continue
 		}
 		listIndent := getSubsequentLineIndentLevel(tok)
-		words := strings.Fields(tok)
-		if len(words) == 0 {
+		toks := parseTokensWithSpace(tok)
+		if len(toks) == 0 {
 			continue
 		}
 		curWidth := availableWidth
 		var curLine strings.Builder
-		for _, w := range words {
+		for _, t := range toks {
+			space := t.lead
+			if space == "" {
+				space = " "
+			}
+			wLen := len([]rune(t.text))
+			sLen := len([]rune(space))
 			if curLine.Len() == 0 {
-				curLine.WriteString(w)
-			} else if curLine.Len()+1+len(w) <= curWidth {
-				curLine.WriteByte(' ')
-				curLine.WriteString(w)
+				curLine.WriteString(t.text)
+			} else if len([]rune(curLine.String()))+sLen+wLen <= curWidth {
+				curLine.WriteString(space)
+				curLine.WriteString(t.text)
 			} else {
 				result = append(result, curLine.String())
 				curLine.Reset()
 				if listIndent > 0 {
 					curLine.WriteString(strings.Repeat(" ", listIndent))
 				}
-				curLine.WriteString(w)
+				curLine.WriteString(t.text)
 				curWidth = availableWidth
 			}
 		}
@@ -361,6 +395,38 @@ func wrapUnformatted(text string, width, indent int) []string {
 		}
 	}
 	return result
+}
+
+// tokenWithSpace holds a parsed token along with its leading whitespace.
+type tokenWithSpace struct {
+	lead string
+	text string
+}
+
+// parseTokensWithSpace decomposes a string into tokens while preserving interstitial whitespace.
+func parseTokensWithSpace(s string) []tokenWithSpace {
+	var tokens []tokenWithSpace
+	runes := []rune(s)
+	n := len(runes)
+	i := 0
+	for i < n && unicode.IsSpace(runes[i]) {
+		i++
+	}
+	lead := ""
+	for i < n {
+		start := i
+		for i < n && !unicode.IsSpace(runes[i]) {
+			i++
+		}
+		word := string(runes[start:i])
+		tokens = append(tokens, tokenWithSpace{lead: lead, text: word})
+		startSpace := i
+		for i < n && unicode.IsSpace(runes[i]) {
+			i++
+		}
+		lead = string(runes[startSpace:i])
+	}
+	return tokens
 }
 
 // shortLineThresholdRatio defines the fraction of line wrap width below which

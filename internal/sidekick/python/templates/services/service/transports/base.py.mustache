@@ -237,6 +237,44 @@ class {{Codec.Transport.TransportClassName}}(abc.ABC):
         raise NotImplementedError()
 {{/Codec.Transport.HasWaitOperation}}
 {{/Codec.Transport.HasOperationsMixin}}
+{{#Codec.Transport.HasIAMPolicyMixin}}
+{{#Codec.Transport.HasSetIamPolicy}}
+
+    @property
+    def set_iam_policy(
+        self,
+    ) -> Callable[
+        [iam_policy_pb2.SetIamPolicyRequest],
+        Union[policy_pb2.Policy, Awaitable[policy_pb2.Policy]],
+    ]:
+        raise NotImplementedError()
+{{/Codec.Transport.HasSetIamPolicy}}
+{{#Codec.Transport.HasGetIamPolicy}}
+
+    @property
+    def get_iam_policy(
+        self,
+    ) -> Callable[
+        [iam_policy_pb2.GetIamPolicyRequest],
+        Union[policy_pb2.Policy, Awaitable[policy_pb2.Policy]],
+    ]:
+        raise NotImplementedError()
+{{/Codec.Transport.HasGetIamPolicy}}
+{{#Codec.Transport.HasTestIamPermissions}}
+
+    @property
+    def test_iam_permissions(
+        self,
+    ) -> Callable[
+        [iam_policy_pb2.TestIamPermissionsRequest],
+        Union[
+            iam_policy_pb2.TestIamPermissionsResponse,
+            Awaitable[iam_policy_pb2.TestIamPermissionsResponse],
+        ],
+    ]:
+        raise NotImplementedError()
+{{/Codec.Transport.HasTestIamPermissions}}
+{{/Codec.Transport.HasIAMPolicyMixin}}
 {{#Codec.Transport.HasLocationMixin}}
 {{#Codec.Transport.HasGetLocation}}
 

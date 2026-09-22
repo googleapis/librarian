@@ -45,20 +45,25 @@ type clientAnnotations struct {
 	ExternalImports     []*clientExternalImport
 	Methods             []*clientMethodAnnotations
 
-	HasLocationMixin    bool
-	HasOperations       bool
-	HasOperationsMixin  bool
-	HasListOperations   bool
-	HasGetOperation     bool
-	HasDeleteOperation  bool
-	HasCancelOperation  bool
-	HasWaitOperation    bool
-	HasGetLocation      bool
-	HasListLocations    bool
-	RestAsyncIOEnabled  bool
-	ShowRestBetaPreview bool
-	HasPagers           bool
-	CopyrightYear       string
+	HasLocationMixin      bool
+	HasIAMPolicyMixin     bool
+	HasSetIamPolicy       bool
+	HasGetIamPolicy       bool
+	HasTestIamPermissions bool
+	HasOperations         bool
+	HasOperationsMixin    bool
+	HasLRO                bool
+	HasListOperations     bool
+	HasGetOperation       bool
+	HasDeleteOperation    bool
+	HasCancelOperation    bool
+	HasWaitOperation      bool
+	HasGetLocation        bool
+	HasListLocations      bool
+	RestAsyncIOEnabled    bool
+	ShowRestBetaPreview   bool
+	HasPagers             bool
+	CopyrightYear         string
 }
 
 func (c *codec) annotateClient(service *api.Service) (*clientAnnotations, error) {
@@ -100,7 +105,7 @@ func (c *codec) annotateClient(service *api.Service) (*clientAnnotations, error)
 		}
 	}
 
-	customPaths := c.annotateCustomResourcePaths()
+	customPaths := c.annotateCustomResourcePaths(service)
 	typeImports, externalImports := c.collectClientImports(service)
 
 	svcConfig, err := c.loadServiceConfig(service)
@@ -136,7 +141,7 @@ func (c *codec) annotateClient(service *api.Service) (*clientAnnotations, error)
 
 	var hasLRO bool
 	for _, m := range service.Methods {
-		if m.OperationInfo != nil || m.OutputTypeID == ".google.longrunning.Operation" {
+		if !isMixin(m, service) && (m.OperationInfo != nil || m.OutputTypeID == ".google.longrunning.Operation") {
 			hasLRO = true
 		}
 		if isMixin(m, service) {
@@ -163,6 +168,16 @@ func (c *codec) annotateClient(service *api.Service) (*clientAnnotations, error)
 				case "ListLocations":
 					ann.HasListLocations = true
 				}
+			} else if strings.HasPrefix(srcID, strings.TrimPrefix(iamServiceIDPrefix, ".")) {
+				ann.HasIAMPolicyMixin = true
+				switch m.Name {
+				case "SetIamPolicy":
+					ann.HasSetIamPolicy = true
+				case "GetIamPolicy":
+					ann.HasGetIamPolicy = true
+				case "TestIamPermissions":
+					ann.HasTestIamPermissions = true
+				}
 			}
 			continue
 		}
@@ -174,6 +189,7 @@ func (c *codec) annotateClient(service *api.Service) (*clientAnnotations, error)
 		ann.Methods = append(ann.Methods, mAnn)
 	}
 
+	ann.HasLRO = hasLRO
 	ann.HasOperations = ann.HasOperationsMixin || hasLRO
 	return ann, nil
 }

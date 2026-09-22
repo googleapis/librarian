@@ -36,12 +36,15 @@ type clientResourcePath struct {
 	RegexPattern      string
 }
 
-func (c *codec) annotateCustomResourcePaths() []*clientResourcePath {
+// annotateCustomResourcePaths generates custom resource path helper definitions.
+// When service is non-nil, only resources reachable from the service's dependency tree are included.
+// When service is nil, all resources defined in the API model are included.
+func (c *codec) annotateCustomResourcePaths(service *api.Service) []*clientResourcePath {
 	var paths []*clientResourcePath
 	seen := make(map[string]bool)
 
 	addRes := func(r *api.Resource) {
-		if r == nil || isCommonResource(r.Type) {
+		if r == nil || isCommonResource(r.Type) || r.Type == "*" {
 			return
 		}
 		name := snakeCase(r.Singular)
@@ -128,15 +131,72 @@ func (c *codec) annotateCustomResourcePaths() []*clientResourcePath {
 	}
 
 	if c.Model != nil {
-		for _, r := range c.Model.ResourceDefinitions {
-			addRes(r)
-		}
-		for r := range c.Model.AllResources() {
-			addRes(r)
-		}
-		for _, m := range c.Model.Messages {
-			if m.Resource != nil {
-				addRes(m.Resource)
+		if service == nil {
+			for _, r := range c.Model.ResourceDefinitions {
+				addRes(r)
+			}
+			for r := range c.Model.AllResources() {
+				addRes(r)
+			}
+			for _, m := range c.Model.Messages {
+				if m.Resource != nil {
+					addRes(m.Resource)
+				}
+			}
+		} else {
+			seenResources := make(map[string]bool)
+			var queue []*api.Resource
+			enqueue := func(r *api.Resource) {
+				if r == nil || isCommonResource(r.Type) || r.Type == "*" || seenResources[r.Type] {
+					return
+				}
+				seenResources[r.Type] = true
+				addRes(r)
+				queue = append(queue, r)
+			}
+
+			deps := api.FindServiceDependencies(c.Model, service.ID)
+			for _, id := range deps.Messages {
+				m := c.Model.Message(id)
+				if m == nil {
+					continue
+				}
+				if m.Resource != nil {
+					enqueue(m.Resource)
+				}
+				for _, f := range m.Fields {
+					if f.ResourceReference != nil {
+						refType := f.ResourceReference.Type
+						if refType == "" {
+							refType = f.ResourceReference.ChildType
+						}
+						if refType != "" {
+							if r := c.findResource(refType); r != nil {
+								enqueue(r)
+							}
+						}
+					}
+				}
+			}
+
+			for len(queue) > 0 {
+				r := queue[0]
+				queue = queue[1:]
+				if r.Self != nil {
+					for _, f := range r.Self.Fields {
+						if f.ResourceReference != nil {
+							refType := f.ResourceReference.Type
+							if refType == "" {
+								refType = f.ResourceReference.ChildType
+							}
+							if refType != "" {
+								if res := c.findResource(refType); res != nil {
+									enqueue(res)
+								}
+							}
+						}
+					}
+				}
 			}
 		}
 	}
@@ -159,4 +219,26 @@ func isCommonResource(typ string) bool {
 	default:
 		return false
 	}
+}
+
+// findResource looks up a resource by its type string across model resources,
+// definitions, and all message resources.
+func (c *codec) findResource(typeStr string) *api.Resource {
+	if c.Model == nil {
+		return nil
+	}
+	if r := c.Model.Resource(typeStr); r != nil {
+		return r
+	}
+	for _, r := range c.Model.ResourceDefinitions {
+		if r.Type == typeStr {
+			return r
+		}
+	}
+	for r := range c.Model.AllResources() {
+		if r.Type == typeStr {
+			return r
+		}
+	}
+	return nil
 }

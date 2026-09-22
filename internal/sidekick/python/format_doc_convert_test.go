@@ -246,6 +246,30 @@ func TestFormatMethodReturnDoc(t *testing.T) {
 				"   method result.",
 			},
 		},
+		{
+			name: "definition list return doc for RetiredResource",
+			doc: "A RetiredResource resource represents the record of a deleted\n" +
+				"[CryptoKey][google.cloud.kms.v1.CryptoKey]. Its purpose is to provide\n" +
+				"visibility into retained user data and to prevent reuse of these names for\n" +
+				"new [CryptoKeys][google.cloud.kms.v1.CryptoKey].",
+			want: []string{
+				"A RetiredResource resource represents the record of a deleted",
+				"   [CryptoKey][google.cloud.kms.v1.CryptoKey]. Its",
+				"   purpose is to provide visibility into retained user",
+				"   data and to prevent reuse of these names for new",
+				"   [CryptoKeys][google.cloud.kms.v1.CryptoKey].",
+			},
+		},
+		{
+			name: "preserves markdown link in return doc without converting to rst link",
+			doc: "An [ImportJob][google.cloud.kms.v1.ImportJob] can be used.\n\n" +
+				"For more information, see [Importing a key](https://cloud.google.com/kms/docs/importing-a-key).",
+			want: []string{
+				"An [ImportJob][google.cloud.kms.v1.ImportJob] can be used.",
+				"   For more information, see [Importing a",
+				"   key](https://cloud.google.com/kms/docs/importing-a-key).",
+			},
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			got := formatMethodReturnDoc(test.doc)
