@@ -277,7 +277,7 @@ func TestGenerateSnippets_UpdateMask(t *testing.T) {
 	if !strings.Contains(contents, "import GoogleWKT") {
 		t.Errorf("expected snippet to contain 'import GoogleWKT', got:\n%s", contents)
 	}
-	if !strings.Contains(contents, "$0.updateMask = GoogleWKT.FieldMask(paths: [\"field.path1\", \"field.path2\"])") {
+	if !strings.Contains(contents, "$0.updateMask = GoogleWKT.WKTFieldMask(paths: [\"field.path1\", \"field.path2\"])") {
 		t.Errorf("expected snippet to contain updateMask assignment, got:\n%s", contents)
 	}
 }

@@ -49,7 +49,7 @@ internal enum {{Codec.LROAnyConverterName}} {
   /// Converts an operation's metadata or response to its native form.
   internal static func fromProto(
     _ proto: SwiftProtobuf.Google_Protobuf_Any
-  ) throws -> {{Codec.WktPackage}}.`Any` {
+  ) throws -> {{Codec.WktPackage}}.WKTAny {
     switch proto.typeURL {
     {{#Codec.LROAnyTypes}}
     case "{{TypeURL}}":
@@ -68,7 +68,7 @@ internal enum {{Codec.LROAnyConverterName}} {
 
   /// Converts an operation's metadata or response back to its Protobuf form.
   internal static func toProto(
-    _ any: {{Codec.WktPackage}}.`Any`
+    _ any: {{Codec.WktPackage}}.WKTAny
   ) throws -> SwiftProtobuf.Google_Protobuf_Any {
     switch any.typeUrl {
     {{#Codec.LROAnyTypes}}

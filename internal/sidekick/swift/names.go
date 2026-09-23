@@ -173,6 +173,24 @@ func pascalCase(s string) string {
 	return escapeKeyword(pascalCaseNoMangling(s))
 }
 
+// messageName returns the Swift type name for a message, prefixing top-level
+// well-known protobuf types (google.protobuf) with "WKT".
+func messageName(m *api.Message) string {
+	if m.Parent == nil && m.Package == wellKnownProtobufPackage {
+		return escapeKeyword("WKT" + pascalCaseNoMangling(m.Name))
+	}
+	return pascalCase(m.Name)
+}
+
+// enumName returns the Swift type name for an enum, prefixing top-level
+// well-known protobuf types (google.protobuf) with "WKT".
+func enumName(e *api.Enum) string {
+	if e.Parent == nil && e.Package == wellKnownProtobufPackage {
+		return escapeKeyword("WKT" + pascalCaseNoMangling(e.Name))
+	}
+	return pascalCase(e.Name)
+}
+
 // pascalCaseNoMangling converts an identifier to PascalCase (note the leading uppercase).
 func pascalCaseNoMangling(s string) string {
 	// In Swift, it is conventional to preserve ALL CAPS names:

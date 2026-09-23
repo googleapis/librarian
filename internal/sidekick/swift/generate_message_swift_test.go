@@ -260,8 +260,8 @@ func TestGenerateMessage_WithRecursiveTypes(t *testing.T) {
 	}
 	contentStrA := string(contentA)
 
-	// Verify struct property uses Recursive
-	wantProp := "public var nodeB: GoogleWKT.Recursive<NodeB>?"
+	// Verify struct property uses WKTRecursive
+	wantProp := "public var nodeB: GoogleWKT.WKTRecursive<NodeB>?"
 	if !strings.Contains(contentStrA, wantProp) {
 		t.Errorf("property definition mismatch: want %q; got:\n%s", wantProp, contentStrA)
 	}
@@ -303,8 +303,8 @@ func TestGenerateMessage_SelfRecursive(t *testing.T) {
 	}
 	contentStr := string(content)
 
-	// Verify struct property uses Recursive
-	wantProp := "public var child: GoogleWKT.Recursive<Node>?"
+	// Verify struct property uses WKTRecursive
+	wantProp := "public var child: GoogleWKT.WKTRecursive<Node>?"
 	if !strings.Contains(contentStr, wantProp) {
 		t.Errorf("property definition mismatch: want %q; got:\n%s", wantProp, contentStr)
 	}
@@ -360,7 +360,7 @@ func TestGenerateMessage_RecursiveChain(t *testing.T) {
 	}
 	contentStrA := string(contentA)
 	// Verify NodeA contains wrapped NodeB
-	wantPropA := "public var nodeB: GoogleWKT.Recursive<NodeB>?"
+	wantPropA := "public var nodeB: GoogleWKT.WKTRecursive<NodeB>?"
 	if !strings.Contains(contentStrA, wantPropA) {
 		t.Errorf("nodeB property definition mismatch: want %q; got:\n%s", wantPropA, contentStrA)
 	}
@@ -376,7 +376,7 @@ func TestGenerateMessage_RecursiveChain(t *testing.T) {
 		t.Fatal(err)
 	}
 	contentStrB := string(contentB)
-	wantPropB := "public var nodeC: GoogleWKT.Recursive<NodeC>?"
+	wantPropB := "public var nodeC: GoogleWKT.WKTRecursive<NodeC>?"
 	if !strings.Contains(contentStrB, wantPropB) {
 		t.Errorf("nodeC property definition mismatch: want %q; got:\n%s", wantPropB, contentStrB)
 	}
@@ -392,7 +392,7 @@ func TestGenerateMessage_RecursiveChain(t *testing.T) {
 		t.Fatal(err)
 	}
 	contentStrC := string(contentC)
-	wantPropC := "public var nodeA: GoogleWKT.Recursive<NodeA>? = nil"
+	wantPropC := "public var nodeA: GoogleWKT.WKTRecursive<NodeA>? = nil"
 	if !strings.Contains(contentStrC, wantPropC) {
 		t.Errorf("nodeA property definition mismatch: want %q; got:\n%s", wantPropC, contentStrC)
 	}
@@ -505,5 +505,55 @@ func TestGenerateMessage_FoundationImport(t *testing.T) {
 				t.Errorf("did not expect %q in %s, got:\n%s", test.unwantImport, filename, contentStr)
 			}
 		})
+	}
+}
+
+func TestGenerateMessage_WKT(t *testing.T) {
+	outDir := t.TempDir()
+
+	kindEnum := api.NewTestEnum("Kind").
+		WithPackage(wellKnownProtobufPackage).
+		WithValues(api.NewTestEnumValue("TYPE_UNKNOWN", 0))
+	fieldMsg := api.NewTestMessage("Field").
+		WithPackage(wellKnownProtobufPackage).
+		WithEnums(kindEnum)
+	typeMsg := api.NewTestMessage("Type").
+		WithPackage(wellKnownProtobufPackage).
+		WithFields(api.NewTestField("fields").WithMessageType(fieldMsg).WithRepeated())
+	syntaxEnum := api.NewTestEnum("Syntax").
+		WithPackage(wellKnownProtobufPackage).
+		WithValues(api.NewTestEnumValue("SYNTAX_PROTO2", 0))
+
+	model := api.NewTestAPI([]*api.Message{fieldMsg, typeMsg}, []*api.Enum{syntaxEnum}, nil).
+		WithPackageName(wellKnownProtobufPackage)
+	library := &config.Library{
+		Swift: &config.SwiftPackage{
+			LibraryNameOverride: wellKnownSwiftPackage,
+		},
+	}
+	module := &config.SwiftModule{
+		ModuleType: "default",
+	}
+	if err := Generate(t.Context(), model, outDir, library, module); err != nil {
+		t.Fatal(err)
+	}
+
+	for _, test := range []struct {
+		filename string
+		wantDecl string
+	}{
+		{filename: "WKTType.swift", wantDecl: "public struct WKTType:"},
+		{filename: "WKTType.swift", wantDecl: "public var fields: [WKTField] = []"},
+		{filename: "WKTField.swift", wantDecl: "public struct WKTField:"},
+		{filename: "WKTField.swift", wantDecl: "public enum Kind:"},
+		{filename: "WKTSyntax.swift", wantDecl: "public enum WKTSyntax:"},
+	} {
+		content, err := os.ReadFile(filepath.Join(outDir, test.filename))
+		if err != nil {
+			t.Fatalf("expected generated file %s: %v", test.filename, err)
+		}
+		if !strings.Contains(string(content), test.wantDecl) {
+			t.Errorf("expected %s to contain %q, got:\n%s", test.filename, test.wantDecl, string(content))
+		}
 	}
 }

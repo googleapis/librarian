@@ -133,7 +133,7 @@ public struct {{Codec.Name}}: Codable, Equatable, {{Codec.Model.WktPackage}}._An
     {{/OneOfs}}
     for key in container.allKeys where !CodingKeys._knownKeys.contains(key.stringValue) {
       self._unknownFields.json[key.stringValue] = try container.decode(
-        {{Codec.Model.WktPackage}}.Value.self, forKey: key)
+        {{Codec.Model.WktPackage}}.WKTValue.self, forKey: key)
     }
   }
 
@@ -189,10 +189,10 @@ public struct {{Codec.Name}}: Codable, Equatable, {{Codec.Model.WktPackage}}._An
   public static var _anyTypeUrl: Swift.String {
     return "{{Codec.TypeURL}}"
   }
-  public init(fromAny any: {{Codec.Model.WktPackage}}.`Any`) throws {
+  public init(fromAny any: {{Codec.Model.WktPackage}}.WKTAny) throws {
     self = try {{Codec.Model.WktPackage}}._slowAnyDeserialize(Self.self, from: any)
   }
-  public func _pack() throws -> {{Codec.Model.WktPackage}}.Struct {
+  public func _pack() throws -> {{Codec.Model.WktPackage}}.WKTStruct {
     return try {{Codec.Model.WktPackage}}._slowAnySerialize(message: self)
   }
 }

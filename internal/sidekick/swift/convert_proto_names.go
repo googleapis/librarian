@@ -65,7 +65,7 @@ func (c *codec) messageFileName(m *api.Message) string {
 	var path []string
 	curr := m
 	for curr != nil {
-		path = append(path, pascalCase(curr.Name))
+		path = append(path, messageName(curr))
 		curr = curr.Parent
 	}
 	slices.Reverse(path)
@@ -74,9 +74,9 @@ func (c *codec) messageFileName(m *api.Message) string {
 
 func (c *codec) enumFileName(e *api.Enum) string {
 	if e.Parent == nil {
-		return pascalCase(e.Name)
+		return enumName(e)
 	}
-	return c.messageFileName(e.Parent) + "+" + pascalCase(e.Name)
+	return c.messageFileName(e.Parent) + "+" + enumName(e)
 }
 
 // protoFieldName converts a protobuf field name to its corresponding SwiftProtobuf property name.

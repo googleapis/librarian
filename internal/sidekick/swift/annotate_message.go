@@ -173,7 +173,7 @@ func (c *codec) annotateMessage(message *api.Message, model *modelAnnotations) e
 		return err
 	}
 	annotations := &messageAnnotations{
-		Name:              pascalCase(message.Name),
+		Name:              messageName(message),
 		DocLines:          docLines,
 		Model:             model,
 		TypeURL:           typeURLPrefix + strings.TrimPrefix(message.ID, "."),

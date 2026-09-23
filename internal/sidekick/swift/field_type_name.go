@@ -145,7 +145,7 @@ func scalarFieldTypeName(field *api.Field) (string, error) {
 }
 
 func (c *codec) messageTypeName(m *api.Message) (string, error) {
-	name := pascalCase(m.Name)
+	name := messageName(m)
 	if m.ServicePlaceholder {
 		name = pascalCase(m.Name + "Client")
 	}
@@ -167,7 +167,7 @@ func (c *codec) messageTypeName(m *api.Message) (string, error) {
 }
 
 func (c *codec) fullyQualifiedMessageTypeName(m *api.Message) (string, error) {
-	name := pascalCase(m.Name)
+	name := messageName(m)
 	if m.Parent == nil {
 		if m.Package == "" {
 			// there is no package, so return the bare type name
@@ -199,7 +199,7 @@ func (c *codec) fullyQualifiedMessageTypeName(m *api.Message) (string, error) {
 }
 
 func (c *codec) enumTypeName(e *api.Enum) (string, error) {
-	name := pascalCase(e.Name)
+	name := enumName(e)
 	if e.Parent == nil {
 		prefix, err := c.externalTypePrefix(e.Package)
 		if err != nil {

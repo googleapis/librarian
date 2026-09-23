@@ -79,9 +79,9 @@ type fieldAnnotations struct {
 	// PrimitiveFieldType is the raw Swift type name without any decorators or boxing wrappers (e.g. `Node`).
 	//
 	// This differs from `BaseFieldType` for recursive message fields: for recursive fields,
-	// `BaseFieldType` is boxed as `GoogleWKT.Recursive<Node>` for struct property declarations,
+	// `BaseFieldType` is boxed as `GoogleWKT.WKTRecursive<Node>` for struct property declarations,
 	// whereas `PrimitiveFieldType` remains the raw unwrapped type `Node` so that conversions can call
-	// `WktPackage.Recursive(value: try Node(proto: proto.childNode))`.
+	// `WktPackage.WKTRecursive(value: try Node(proto: proto.childNode))`.
 	PrimitiveFieldType string
 
 	// ValueField holds the value field of a map, for inspecting whether the value is an object or enum.
@@ -206,7 +206,7 @@ func (c *codec) annotateField(field *api.Field, model *modelAnnotations) (*field
 	//    automatically using the native indirect case mechanism.
 	if field.Recursive && field.Singular() && !field.IsOneOf {
 		annotations.Recursive = true
-		annotations.BaseFieldType = fmt.Sprintf("%s.Recursive<%s>", wellKnownSwiftPackage, parts.Base)
+		annotations.BaseFieldType = fmt.Sprintf("%s.WKTRecursive<%s>", wellKnownSwiftPackage, parts.Base)
 		annotations.FieldType = annotations.BaseFieldType + "?"
 		annotations.Decoding = DecodingOptional
 	}

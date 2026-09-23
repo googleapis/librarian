@@ -162,7 +162,7 @@ func TestGenerateOneOf(t *testing.T) {
     self.choice = choice
     for key in container.allKeys where !CodingKeys._knownKeys.contains(key.stringValue) {
       self._unknownFields.json[key.stringValue] = try container.decode(
-        GoogleWKT.Value.self, forKey: key)
+        GoogleWKT.WKTValue.self, forKey: key)
     }
   }
 
@@ -196,10 +196,10 @@ func TestGenerateOneOf(t *testing.T) {
   public static var _anyTypeUrl: Swift.String {
     return "type.googleapis.com/google.cloud.test.v1.Outer"
   }
-  public init(fromAny any: GoogleWKT.` + "`Any`" + `) throws {
+  public init(fromAny any: GoogleWKT.WKTAny) throws {
     self = try GoogleWKT._slowAnyDeserialize(Self.self, from: any)
   }
-  public func _pack() throws -> GoogleWKT.Struct {
+  public func _pack() throws -> GoogleWKT.WKTStruct {
     return try GoogleWKT._slowAnySerialize(message: self)
   }
 }
@@ -318,7 +318,7 @@ func TestGenerateOneOfWithKeyword(t *testing.T) {
     self.` + "`in` = `in`" + `
     for key in container.allKeys where !CodingKeys._knownKeys.contains(key.stringValue) {
       self._unknownFields.json[key.stringValue] = try container.decode(
-        GoogleWKT.Value.self, forKey: key)
+        GoogleWKT.WKTValue.self, forKey: key)
     }
   }
 
