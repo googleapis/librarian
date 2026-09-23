@@ -177,7 +177,7 @@ extension Clients.{{Codec.StubPrefix}}Protocol {
   {{> /templates/common/diagnose}}
   {{/Codec.DiagnoseTypes}}
   public func {{> /templates/common/method_signature/lro}} {
-    try await self.{{Codec.Name}}(withPolling: withPolling, options: .init())
+    try await self.{{Codec.Name}}PollingUntilDone(request: request, options: .init())
   }
 
   {{#Deprecated}}
@@ -204,7 +204,7 @@ extension Clients.{{Codec.StubPrefix}}Protocol {
     let request = {{Method.InputType.Codec.ParameterTypeName}}().with {
       {{> /templates/common/method_body/overload_fields}}
     }
-    return try await self.{{Method.Codec.Name}}(withPolling: request)
+    return try await self.{{Method.Codec.Name}}PollingUntilDone(request: request)
   }
   {{/Signatures}}
   {{/Codec.LRO}}
@@ -217,7 +217,7 @@ extension Clients.{{Codec.StubPrefix}}Protocol {
   {{> /templates/common/diagnose}}
   {{/Codec.DiagnoseTypes}}
   public func {{> /templates/common/method_signature/discovery_lro}} {
-    try await self.{{Codec.Name}}(withPolling: withPolling, options: .init())
+    try await self.{{Codec.Name}}PollingUntilDone(request: request, options: .init())
   }
 
   {{#Deprecated}}
@@ -244,7 +244,7 @@ extension Clients.{{Codec.StubPrefix}}Protocol {
     let request = {{Method.InputType.Codec.ParameterTypeName}}().with {
       {{> /templates/common/method_body/overload_fields}}
     }
-    return try await self.{{Method.Codec.Name}}(withPolling: request)
+    return try await self.{{Method.Codec.Name}}PollingUntilDone(request: request)
   }
   {{/Signatures}}
   {{/Codec.DiscoveryLRO}}

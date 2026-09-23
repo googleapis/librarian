@@ -34,8 +34,8 @@ for try await item in items {
 }
 {{/IsList}}
 {{#IsLRO}}
-let poller = try await client.{{Codec.Name}}(
-  withPolling: {{> /templates/snippet/method_request_body}})
+let poller = try await client.{{Codec.Name}}PollingUntilDone(
+  request: {{> /templates/snippet/method_request_body}})
 {{^LongRunningReturnsEmpty}}
 let response = try await poller.wait()
 print("Success: \(response)")

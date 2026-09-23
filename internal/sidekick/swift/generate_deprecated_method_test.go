@@ -148,7 +148,7 @@ func TestGenerateService_DeprecatedMethods(t *testing.T) {
 				{
 					start: "    /// See `TestServiceClient.lromethod`.",
 					end:   "-> any GoogleGax.PollableOperation<LROResult>",
-					want:  "    /// See `TestServiceClient.lromethod`.\n    @available(*, deprecated)\n    func lromethod(withPolling: Request) async throws -> any GoogleGax.PollableOperation<LROResult>",
+					want:  "    /// See `TestServiceClient.lromethod`.\n    @available(*, deprecated)\n    func lromethodPollingUntilDone(request: Request) async throws -> any GoogleGax.PollableOperation<LROResult>",
 				},
 				{
 					start: "  /// -- lro marker --",
@@ -156,9 +156,9 @@ func TestGenerateService_DeprecatedMethods(t *testing.T) {
 					want:  "  /// -- lro marker --\n  ///\n  /// @Snippet(path: \"TestService_LROMethod\")\n  @available(*, deprecated)\n  public func lromethod(\n    request: Request, options: GoogleGax.RequestOptions\n) async throws -> GoogleCloudLongrunningV1.Operation",
 				},
 				{
-					start: "  @available(*, deprecated)\n  public func lromethod(\n    withPolling: Request",
+					start: "  @available(*, deprecated)\n  public func lromethodPollingUntilDone(\n    request: Request",
 					end:   "-> any GoogleGax.PollableOperation<LROResult>",
-					want:  "  @available(*, deprecated)\n  public func lromethod(\n    withPolling: Request, options: GoogleGax.RequestOptions\n) async throws -> any GoogleGax.PollableOperation<LROResult>",
+					want:  "  @available(*, deprecated)\n  public func lromethodPollingUntilDone(\n    request: Request, options: GoogleGax.RequestOptions\n) async throws -> any GoogleGax.PollableOperation<LROResult>",
 				},
 			},
 		},

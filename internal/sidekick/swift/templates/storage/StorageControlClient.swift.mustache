@@ -106,7 +106,7 @@ public final class StorageControlClient: StorageControlProtocol, Sendable {
       return try op._extractStatus({{Codec.LRO.ReturnType}}.self)
       {{/Codec.LRO.ResponseIsEmpty}}
     }
-    let rawOp = try await self.{{Codec.Name}}(request: withPolling, options: options)
+    let rawOp = try await self.{{Codec.Name}}(request: request, options: options)
     let initialState = try extractStatus(rawOp)
     let poll = { () async throws -> GoogleGax._PollableOperationImpl<{{Codec.LRO.ReturnType}}>.State in
       let op = try await self.getOperation(request: .init().with { $0.name = rawOp.name }, options: options)
@@ -152,7 +152,7 @@ public final class StorageControlClient: StorageControlProtocol, Sendable {
       return try op._extractStatus({{Codec.LRO.ReturnType}}.self)
       {{/Codec.LRO.ResponseIsEmpty}}
     }
-    let rawOp = try await self.{{Codec.Name}}(request: withPolling, options: options)
+    let rawOp = try await self.{{Codec.Name}}(request: request, options: options)
     let initialState = try extractStatus(rawOp)
     let poll = { () async throws -> GoogleGax._PollableOperationImpl<{{Codec.LRO.ReturnType}}>.State in
       let op = try await self.getOperation(request: .init().with { $0.name = rawOp.name }, options: options)

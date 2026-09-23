@@ -100,9 +100,9 @@ func TestGenerateService_MethodSignatures(t *testing.T) {
 			name: "LROs",
 			want: []expectedBlock{
 				{
-					start: "public func lroMethod(\n  name: Swift.String,\n  optionalField: Swift.String?,",
+					start: "public func lroMethodPollingUntilDone(\n  name: Swift.String,\n  optionalField: Swift.String?,",
 					end:   "    }\n",
-					want: `public func lroMethod(
+					want: `public func lroMethodPollingUntilDone(
   name: Swift.String,
   optionalField: Swift.String?,
 ) async throws -> any GoogleGax.PollableOperation<LROResult>
@@ -114,9 +114,9 @@ func TestGenerateService_MethodSignatures(t *testing.T) {
 `,
 				},
 				{
-					start: "public func lroMethod(\n  name: Swift.String,\n  normalField: Swift.String,",
+					start: "public func lroMethodPollingUntilDone(\n  name: Swift.String,\n  normalField: Swift.String,",
 					end:   "    }\n",
-					want: `public func lroMethod(
+					want: `public func lroMethodPollingUntilDone(
   name: Swift.String,
   normalField: Swift.String,
 ) async throws -> any GoogleGax.PollableOperation<LROResult>
@@ -133,9 +133,9 @@ func TestGenerateService_MethodSignatures(t *testing.T) {
 			name: "Discovery LROs",
 			want: []expectedBlock{
 				{
-					start: "public func lroDiscoveryMethod(\n  name: Swift.String,\n  optionalField: Swift.String?,",
+					start: "public func lroDiscoveryMethodPollingUntilDone(\n  name: Swift.String,\n  optionalField: Swift.String?,",
 					end:   "    }\n",
-					want: `public func lroDiscoveryMethod(
+					want: `public func lroDiscoveryMethodPollingUntilDone(
   name: Swift.String,
   optionalField: Swift.String?,
 ) async throws -> any GoogleGax.PollableOperation<GoogleCloudLongrunningV1.GetOperationRequest>
@@ -147,9 +147,9 @@ func TestGenerateService_MethodSignatures(t *testing.T) {
 `,
 				},
 				{
-					start: "public func lroDiscoveryMethod(\n  name: Swift.String,\n  normalField: Swift.String,",
+					start: "public func lroDiscoveryMethodPollingUntilDone(\n  name: Swift.String,\n  normalField: Swift.String,",
 					end:   "    }\n",
-					want: `public func lroDiscoveryMethod(
+					want: `public func lroDiscoveryMethodPollingUntilDone(
   name: Swift.String,
   normalField: Swift.String,
 ) async throws -> any GoogleGax.PollableOperation<GoogleCloudLongrunningV1.GetOperationRequest>

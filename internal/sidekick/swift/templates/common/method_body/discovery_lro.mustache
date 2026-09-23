@@ -25,15 +25,15 @@ let extractStatus = { (op: {{Codec.ReturnType}}) throws -> GoogleGax._PollableOp
   }
   return .init(done: true, result: .success(op))
 }
-let rawOp = try await self.{{Codec.Name}}(request: withPolling, options: options)
+let rawOp = try await self.{{Codec.Name}}(request: request, options: options)
 let initialState = try extractStatus(rawOp)
 let poll = { () async throws -> GoogleGax._PollableOperationImpl<{{Codec.DiscoveryLRO.ReturnType}}>.State in
 {{! The polling function is always called `getOperation`, sidekick picks the name. }}
 let op = try await self.getOperation(request: .init().with {
     $0.operation = rawOp._name()
-    {{! The path pameters, if any, are captured from the request, which is called `withPolling` }}
+    {{! The path pameters, if any, are captured from the request, which is called `request` }}
     {{#Codec.DiscoveryLRO.PollingPathParameters}}
-    $0.{{{.}}} = withPolling.{{{.}}}
+    $0.{{{.}}} = request.{{{.}}}
     {{/Codec.DiscoveryLRO.PollingPathParameters}}
   }, options: options)
   return try extractStatus(op)
