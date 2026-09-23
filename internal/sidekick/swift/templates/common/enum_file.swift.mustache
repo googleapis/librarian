@@ -25,7 +25,12 @@ limitations under the License.
 {{/Codec.IsGated}}
 import Foundation
 
+{{#Codec.IsDiscovery}}
+{{> /templates/common/discovery_enum}}
+{{/Codec.IsDiscovery}}
+{{^Codec.IsDiscovery}}
 {{> /templates/common/enum}}
+{{/Codec.IsDiscovery}}
 {{#Codec.IsGated}}
 #endif
 {{/Codec.IsGated}}

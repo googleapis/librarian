@@ -1,0 +1,90 @@
+{{!
+Copyright 2026 Google LLC
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    https://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+}}
+{{#Codec.DocLines}}
+/// {{{.}}}
+{{/Codec.DocLines}}
+{{#Codec.HasDocLines}}
+///
+{{/Codec.HasDocLines}}
+/// - Note: Adding cases to this enumeration is not considered a breaking change.
+///   Always include an `@unknown default:` case when switching over this type.
+///   Do not pattern-match against `{{Codec.UnknownStringName}}`
+///   expecting specific values to remain unparsed; future releases may promote
+///   them to named cases.
+{{#Deprecated}}
+@available(*, deprecated)
+{{/Deprecated}}
+public enum {{Codec.Name}}: Codable, Equatable, Sendable {
+  {{#Values}}
+  {{#Codec.DocLines}}
+  /// {{{.}}}
+  {{/Codec.DocLines}}
+  {{#Deprecated}}
+  @available(*, deprecated)
+  {{/Deprecated}}
+  case {{Codec.CaseName}}
+  {{/Values}}
+  /// Encodes an unknown string value.
+  ///
+  /// The most common cause for an unknown value is for the service to send
+  /// a value unknown to the library. We recommend you update your library to
+  /// the latest version.
+  ///
+  /// - Warning: Do not pattern-match specific string literals in this case;
+  ///   future releases may promote them to named enum cases.
+  case {{Codec.UnknownStringName}}(String)
+
+  /// Returns the string value (or name) associated with the enumeration.
+  public var stringValue: Swift.String? {
+    switch self {
+    {{#Values}}
+    case .{{Codec.CaseName}}: return "{{Name}}"
+    {{/Values}}
+    case .{{Codec.UnknownStringName}}(let v): return v
+    }
+  }
+
+  /// Initialize from a string value.
+  ///
+  /// If the value is unknown, this initializes to [`{{Codec.UnknownStringName}}`](doc:{{Codec.Name}}/{{Codec.UnknownStringName}}(_:)).
+  {{#Codec.DiagnoseValues}}
+  {{> /templates/common/diagnose}}
+  {{/Codec.DiagnoseValues}}
+  public init(stringValue: Swift.String) {
+    switch stringValue {
+    {{#Values}}
+    case "{{Name}}": self = .{{Codec.CaseName}}
+    {{/Values}}
+    default: self = .{{Codec.UnknownStringName}}(stringValue)
+    }
+  }
+
+  public init(from decoder: Decoder) throws {
+    let container = try decoder.singleValueContainer()
+    let s = try container.decode(String.self)
+    self.init(stringValue: s)
+  }
+
+  public func encode(to encoder: Encoder) throws {
+    var container = encoder.singleValueContainer()
+    switch self {
+    {{#Values}}
+    case .{{Codec.CaseName}}: return try container.encode("{{Name}}")
+    {{/Values}}
+    case .{{Codec.UnknownStringName}}(let v): return try container.encode(v)
+    }
+  }
+}
