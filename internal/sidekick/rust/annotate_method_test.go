@@ -227,7 +227,7 @@ func annotateMethodModel(t *testing.T) *api.API {
 		WithDiscoveryLro(&api.DiscoveryLro{
 			PollingPathParameters: []string{"project", "zone", "type"},
 		}).
-		WithReturnsEmpty(true)
+		ReturnEmpty()
 
 	methodSelf := api.NewTestMethod("Self").
 		WithInput(request).

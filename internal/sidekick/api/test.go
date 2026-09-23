@@ -465,9 +465,9 @@ func (m *Method) WithSampleInfo(sampleInfo *SampleInfo) *Method {
 	return m
 }
 
-// WithReturnsEmpty sets whether the method returns empty.
-func (m *Method) WithReturnsEmpty(returnsEmpty bool) *Method {
-	m.ReturnsEmpty = returnsEmpty
+// ReturnEmpty marks the method as returning an empty response.
+func (m *Method) ReturnEmpty() *Method {
+	m.ReturnsEmpty = true
 	return m
 }
 
