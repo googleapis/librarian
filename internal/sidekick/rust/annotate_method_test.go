@@ -190,102 +190,67 @@ func TestAnnotateMethodInternalBuilders(t *testing.T) {
 
 func annotateMethodModel(t *testing.T) *api.API {
 	t.Helper()
-	request := &api.Message{
-		Name:    "Request",
-		Package: "test.v1",
-		ID:      ".test.v1.Request",
-		Fields: []*api.Field{
-			{Name: "project", ID: ".test.v1.Request.project", Typez: api.TypezString},
-			{Name: "zone", ID: ".test.v1.Request.zone", Typez: api.TypezString},
-			{Name: "type", ID: ".test.v1.Request.type", Typez: api.TypezString},
-			{Name: "name", ID: ".test.v1.Request.name", Typez: api.TypezString},
-			{Name: "location", ID: ".test.v1.Request.location", Typez: api.TypezString},
-			{Name: "cluster", ID: ".test.v1.Request.cluster", Typez: api.TypezString},
-		},
-	}
-	response := &api.Message{
-		Name:    "Response",
-		Package: "test.v1",
-		ID:      ".test.v1.Response",
-	}
-	methodMove := &api.Method{
-		Name:         "move",
-		ID:           ".test.v1.ResourceService.move",
-		InputType:    request,
-		InputTypeID:  ".test.v1.Request",
-		OutputTypeID: ".test.v1.Response",
-		PathInfo: &api.PathInfo{
-			Bindings: []*api.PathBinding{
-				{
-					Verb:         "POST",
-					PathTemplate: &api.PathTemplate{},
-				},
-			},
-		},
-	}
-	methodDelete := &api.Method{
-		Name:         "Delete",
-		ID:           ".test.v1.ResourceService.Delete",
-		InputType:    request,
-		InputTypeID:  ".test.v1.Request",
-		OutputTypeID: ".google.protobuf.Empty",
-		ReturnsEmpty: true,
-		PathInfo: &api.PathInfo{
-			Bindings: []*api.PathBinding{
-				{
-					Verb: "DELETE",
-					PathTemplate: (&api.PathTemplate{}).
-						WithLiteral("projects").
-						WithVariableNamed("project").
-						WithLiteral("zones").
-						WithVariableNamed("zone").
-						// This is unlikely, but want to test variables that
-						// are reserved words.
-						WithLiteral("types").
-						WithVariableNamed("type"),
-				},
-			},
-		},
-		DiscoveryLro: &api.DiscoveryLro{
+	request := api.NewTestMessage("Request").
+		WithPackage("test.v1").
+		WithFields(
+			api.NewTestField("project").WithType(api.TypezString),
+			api.NewTestField("zone").WithType(api.TypezString),
+			api.NewTestField("type").WithType(api.TypezString),
+			api.NewTestField("name").WithType(api.TypezString),
+			api.NewTestField("location").WithType(api.TypezString),
+			api.NewTestField("cluster").WithType(api.TypezString),
+		)
+	response := api.NewTestMessage("Response").
+		WithPackage("test.v1")
+	empty := api.NewTestMessage("Empty").
+		WithPackage("google.protobuf")
+
+	methodMove := api.NewTestMethod("move").
+		WithInput(request).
+		WithOutput(response).
+		WithVerb("POST").
+		WithPathTemplate(&api.PathTemplate{})
+
+	methodDelete := api.NewTestMethod("Delete").
+		WithInput(request).
+		WithOutput(empty).
+		WithVerb("DELETE").
+		WithPathTemplate((&api.PathTemplate{}).
+			WithLiteral("projects").
+			WithVariableNamed("project").
+			WithLiteral("zones").
+			WithVariableNamed("zone").
+			// This is unlikely, but want to test variables that
+			// are reserved words.
+			WithLiteral("types").
+			WithVariableNamed("type")).
+		WithDiscoveryLro(&api.DiscoveryLro{
 			PollingPathParameters: []string{"project", "zone", "type"},
-		},
-	}
-	methodSelf := &api.Method{
-		Name:         "Self",
-		ID:           ".test.v1.ResourceService.Self",
-		InputType:    request,
-		InputTypeID:  ".test.v1.Request",
-		OutputTypeID: ".test.v1.Response",
-		PathInfo: &api.PathInfo{
-			Bindings: []*api.PathBinding{
-				{
-					Verb:         "GET",
-					PathTemplate: &api.PathTemplate{},
-				},
-			},
-		},
-	}
-	service := &api.Service{
-		Name:    "ResourceService",
-		ID:      ".test.v1.ResourceService",
-		Package: "test.v1",
-		Methods: []*api.Method{methodMove, methodDelete, methodSelf},
-	}
+		}).
+		ReturnEmpty()
+
+	methodSelf := api.NewTestMethod("Self").
+		WithInput(request).
+		WithOutput(response).
+		WithVerb("GET").
+		WithPathTemplate(&api.PathTemplate{})
+
+	service := api.NewTestService("ResourceService").
+		WithPackage("test.v1").
+		WithMethods(methodMove, methodDelete, methodSelf)
 
 	model := api.NewTestAPI(
 		[]*api.Message{request, response},
-		[]*api.Enum{},
+		nil,
 		[]*api.Service{service})
-	api.CrossReference(model)
+	if err := api.CrossReference(model); err != nil {
+		t.Fatal(err)
+	}
 	return model
 }
 
 func TestAnnotateMethodResourceNameTemplate(t *testing.T) {
 	model := annotateMethodModel(t)
-	err := api.CrossReference(model)
-	if err != nil {
-		t.Fatal(err)
-	}
 
 	// Helper to inject TargetResource
 	injectTargetResource := func(methodID string, template string, fields [][]string) {
@@ -352,8 +317,7 @@ func TestAnnotateMethodResourceNameTemplate(t *testing.T) {
 	codec := newTestCodec(t, libconfig.SpecProtobuf, "", map[string]string{
 		"detailed-tracing-attributes": "true",
 	})
-	_, err = annotateModel(model, codec)
-	if err != nil {
+	if _, err := annotateModel(model, codec); err != nil {
 		t.Fatal(err)
 	}
 
@@ -431,21 +395,15 @@ func TestAnnotateMethodResourceNameTemplate(t *testing.T) {
 }
 
 func TestFormatResourceNameTemplateFromPath(t *testing.T) {
+	method := api.NewTestMethod("method")
 	for _, test := range []struct {
 		name    string
-		method  *api.Method
 		binding *api.PathBinding
 		want    string
 		wantErr bool
 	}{
 		{
 			name: "Basic",
-			method: &api.Method{
-				Model: &api.API{Name: "test"},
-				Service: &api.Service{
-					DefaultHost: "test.googleapis.com",
-				},
-			},
 			binding: &api.PathBinding{
 				TargetResource: &api.TargetResource{
 					Template: api.ParseTemplateForTest("//test.googleapis.com/projects/{project}/zones/{zone}"),
@@ -455,10 +413,6 @@ func TestFormatResourceNameTemplateFromPath(t *testing.T) {
 		},
 		{
 			name: "With Extended Field Path",
-			method: &api.Method{
-				Model:   &api.API{Name: "test"},
-				Service: &api.Service{},
-			},
 			binding: &api.PathBinding{
 				TargetResource: &api.TargetResource{
 					Template: api.ParseTemplateForTest("//test.googleapis.com/items/{item.id}"),
@@ -468,12 +422,6 @@ func TestFormatResourceNameTemplateFromPath(t *testing.T) {
 		},
 		{
 			name: "Discovery API Compute V1 Example",
-			method: &api.Method{
-				Model: &api.API{Name: "compute"},
-				Service: &api.Service{
-					DefaultHost: "compute.googleapis.com",
-				},
-			},
 			binding: &api.PathBinding{
 				PathTemplate: (&api.PathTemplate{}).
 					WithLiteral("compute").
@@ -490,17 +438,13 @@ func TestFormatResourceNameTemplateFromPath(t *testing.T) {
 			want: "//compute.googleapis.com/projects/{}/zones/{}",
 		},
 		{
-			name: "Missing TargetResource",
-			method: &api.Method{
-				ID:    "test.method",
-				Model: &api.API{Name: "test"},
-			},
+			name:    "Missing TargetResource",
 			binding: &api.PathBinding{},
 			wantErr: true,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got, err := formatResourceNameTemplateFromPath(test.method, test.binding)
+			got, err := formatResourceNameTemplateFromPath(method, test.binding)
 			if (err != nil) != test.wantErr {
 				t.Fatalf("formatResourceNameTemplateFromPath() error = %v, wantErr %v", err, test.wantErr)
 			}
@@ -512,35 +456,30 @@ func TestFormatResourceNameTemplateFromPath(t *testing.T) {
 }
 
 func TestAnnotateSampleInfo(t *testing.T) {
-	field := &api.Field{
-		Name:  "name",
-		ID:    ".test.v1.Message.name",
-		Typez: api.TypezString,
-		ResourceNamePattern: &api.ResourceNamePattern{
-			Segments: []api.ResourceNameSegment{
-				{Literal: "projects"},
-				{Variable: "project"},
-			},
+	field := api.NewTestField("name").
+		WithType(api.TypezString)
+	field.ResourceNamePattern = &api.ResourceNamePattern{
+		Segments: []api.ResourceNameSegment{
+			{Literal: "projects"},
+			{Variable: "project"},
 		},
 	}
-	message := &api.Message{
-		Name:    "TestMessage",
-		Package: "test.v1",
-		ID:      ".test.v1.TestMessage",
-		Fields:  []*api.Field{field},
-	}
-	method := &api.Method{
-		Name: "TestMethod",
-		ID:   ".test.v1.Service.TestMethod",
-	}
+	message := api.NewTestMessage("TestMessage").
+		WithPackage("test.v1").
+		WithFields(field)
+	method := api.NewTestMethod("TestMethod")
 	si := &api.SampleInfo{
 		ResourceNameField: field,
 	}
 
-	model := api.NewTestAPI([]*api.Message{message}, []*api.Enum{}, []*api.Service{})
-	api.CrossReference(model)
+	model := api.NewTestAPI([]*api.Message{message}, nil, nil)
+	if err := api.CrossReference(model); err != nil {
+		t.Fatal(err)
+	}
 	codec := newTestCodec(t, libconfig.SpecProtobuf, "test", map[string]string{})
-	annotateModel(model, codec)
+	if _, err := annotateModel(model, codec); err != nil {
+		t.Fatal(err)
+	}
 
 	codec.annotateSampleInfo(si, method)
 
@@ -649,7 +588,7 @@ func TestMethodUsesGrpc(t *testing.T) {
 	serverMethod := api.NewTestMethod("Server").WithInput(msg).WithOutput(msg).WithServerSideStreaming()
 	clientMethod := api.NewTestMethod("Client").WithInput(msg).WithOutput(msg).WithClientSideStreaming()
 
-	lroMethod := api.NewTestMethod("Lro").WithInput(msg).WithOutput(msg).WithOperationInfo(&api.OperationInfo{ResponseTypeID: "test.v1.Message", MetadataTypeID: "test.v1.Message"})
+	lroMethod := api.NewTestMethod("Lro").WithInput(msg).WithOutput(msg).WithOperationInfo(&api.OperationInfo{ResponseTypeID: msg.ID, MetadataTypeID: msg.ID})
 
 	for _, test := range []struct {
 		name             string

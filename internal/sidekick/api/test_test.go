@@ -226,3 +226,10 @@ func TestService_WithDocumentation(t *testing.T) {
 		t.Errorf("s.Documentation = %q, want %q", s.Documentation, doc)
 	}
 }
+
+func TestMethod_ReturnEmpty(t *testing.T) {
+	m := api.NewTestMethod("Delete").ReturnEmpty()
+	if got := m.ReturnsEmpty; !got {
+		t.Errorf("m.ReturnsEmpty = %v, want true", got)
+	}
+}
