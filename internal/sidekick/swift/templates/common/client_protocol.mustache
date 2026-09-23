@@ -22,49 +22,9 @@ extension Clients {
   {{#Deprecated}}
   @available(*, deprecated)
   {{/Deprecated}}
-  public protocol {{Codec.StubPrefix}}Protocol {
+  public protocol {{Codec.StubPrefix}}Protocol: Sendable {
     {{#Codec.Methods}}
     {{^IsLroPoller}}
-    /// See `{{Service.Codec.ClientName}}.{{Codec.Name}}`.
-    {{#Deprecated}}
-    @available(*, deprecated)
-    {{/Deprecated}}
-    {{#Codec.DiagnoseTypes}}
-    {{> /templates/common/diagnose}}
-    {{/Codec.DiagnoseTypes}}
-    func {{> /templates/common/method_signature/request}}
-    {{#Codec.PlainRPC}}
-    {{#Signatures}}
-    /// See `{{Service.Codec.ClientName}}.{{Codec.Name}}`.
-    {{#Deprecated}}
-    @available(*, deprecated)
-    {{/Deprecated}}
-    {{#Codec.DiagnoseFields}}
-    {{> /templates/common/diagnose}}
-    {{/Codec.DiagnoseFields}}
-    func {{> /templates/common/method_signature/overload}}
-    {{/Signatures}}
-    {{/Codec.PlainRPC}}
-    {{#Codec.Pagination}}
-    /// See `{{Service.Codec.ClientName}}.{{Codec.Name}}`.
-    {{#Deprecated}}
-    @available(*, deprecated)
-    {{/Deprecated}}
-    {{#Codec.DiagnoseTypes}}
-    {{> /templates/common/diagnose}}
-    {{/Codec.DiagnoseTypes}}
-    func {{> /templates/common/method_signature/pagination}}
-    {{#Signatures}}
-    /// See `{{Service.Codec.ClientName}}.{{Codec.Name}}`.
-    {{#Deprecated}}
-    @available(*, deprecated)
-    {{/Deprecated}}
-    {{#Codec.DiagnoseFields}}
-    {{> /templates/common/diagnose}}
-    {{/Codec.DiagnoseFields}}
-    func {{> /templates/common/method_signature/pagination_overload}}
-    {{/Signatures}}
-    {{/Codec.Pagination}}
     {{#Codec.LRO}}
     /// See `{{Service.Codec.ClientName}}.{{Codec.Name}}`.
     {{#Deprecated}}
@@ -98,16 +58,6 @@ extension Clients {
     {{> /templates/common/diagnose}}
     {{/Codec.DiagnoseTypes}}
     func {{> /templates/common/method_signature/request_options}}
-    {{#Codec.Pagination}}
-    /// See `{{Service.Codec.ClientName}}.{{Codec.Name}}`.
-    {{#Deprecated}}
-    @available(*, deprecated)
-    {{/Deprecated}}
-    {{#Codec.DiagnoseTypes}}
-    {{> /templates/common/diagnose}}
-    {{/Codec.DiagnoseTypes}}
-    func {{> /templates/common/method_signature/pagination_options}}
-    {{/Codec.Pagination}}
     {{#Codec.LRO}}
     /// See `{{Service.Codec.ClientName}}.{{Codec.Name}}`.
     {{#Deprecated}}
@@ -183,15 +133,22 @@ extension Clients.{{Codec.StubPrefix}}Protocol {
     self.{{Codec.Name}}(byItem: byItem, options: .init())
   }
 
+  {{#Codec.DocLines}}
+  /// {{{.}}}
+  {{/Codec.DocLines}}
+  ///
+  /// @Snippet(path: "{{Service.Name}}_{{Name}}")
   {{#Deprecated}}
   @available(*, deprecated)
   {{/Deprecated}}
-  {{#Codec.DiagnoseTypes}}
+  {{#Codec.DiagnoseFields}}
   {{> /templates/common/diagnose}}
-  {{/Codec.DiagnoseTypes}}
+  {{/Codec.DiagnoseFields}}
   public func {{> /templates/common/method_signature/pagination_options}} {
     let listRpc = { (token: Swift.String) async throws -> {{Codec.ReturnType}} in
-      throw GoogleGax.RequestError.unimplemented
+      var request = byItem
+      request.pageToken = token
+      return try await self.{{Codec.Name}}(request: request, options: options)
     }
     return GoogleGax.PaginatedResponseSequence(listRpc: listRpc)
   }

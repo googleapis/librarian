@@ -90,7 +90,7 @@ func TestGenerateService_DeprecatedMethods(t *testing.T) {
 				{
 					start: "    /// See `TestServiceClient.simpleMethod`.",
 					end:   "-> Test.Response",
-					want:  "    /// See `TestServiceClient.simpleMethod`.\n    @available(*, deprecated)\n    func simpleMethod(request: Request) async throws -> Test.Response",
+					want:  "    /// See `TestServiceClient.simpleMethod`.\n    @available(*, deprecated)\n    func simpleMethod(\n    request: Request, options: GoogleGax.RequestOptions\n) async throws -> Test.Response",
 				},
 				{
 					start: "  /// -- simple marker --",
@@ -114,13 +114,18 @@ func TestGenerateService_DeprecatedMethods(t *testing.T) {
 			want: []expectedBlock{
 				{
 					start: "    /// See `TestServiceClient.paginationMethod`.",
-					end:   "-> any AsyncSequence<Item, Swift.Error>",
-					want:  "    /// See `TestServiceClient.paginationMethod`.\n    @available(*, deprecated)\n    func paginationMethod(request: Request) async throws -> Test.PaginationResponse\n\n    /// See `TestServiceClient.paginationMethod`.\n    @available(*, deprecated)\n    func paginationMethod(\n  byItem: Request\n) -> any AsyncSequence<Item, Swift.Error>",
+					end:   " -> Test.PaginationResponse",
+					want:  "    /// See `TestServiceClient.paginationMethod`.\n    @available(*, deprecated)\n    func paginationMethod(\n    request: Request, options: GoogleGax.RequestOptions\n) async throws -> Test.PaginationResponse",
 				},
 				{
 					start: "  /// -- pagination marker --",
+					end:   " -> Test.PaginationResponse",
+					want:  "  /// -- pagination marker --\n  ///\n  /// @Snippet(path: \"TestService_PaginationMethod\")\n  @available(*, deprecated)\n  public func paginationMethod(\n    request: Request, options: GoogleGax.RequestOptions\n) async throws -> Test.PaginationResponse",
+				},
+				{
+					start: "  @available(*, deprecated)\n  public func paginationMethod(\n    byItem: Request",
 					end:   "-> any AsyncSequence<Item, Swift.Error>",
-					want:  "  /// -- pagination marker --\n  ///\n  /// @Snippet(path: \"TestService_PaginationMethod\")\n  @available(*, deprecated)\n  public func paginationMethod(\n    request: Request, options: GoogleGax.RequestOptions\n) async throws -> Test.PaginationResponse\n {\n      try await self.inner.paginationMethod(request: request, options: options)\n  }\n\n  /// -- pagination marker --\n  ///\n  /// @Snippet(path: \"TestService_PaginationMethod\")\n  @available(*, deprecated)\n  public func paginationMethod(\n    byItem: Request, options: GoogleGax.RequestOptions\n) -> any AsyncSequence<Item, Swift.Error>",
+					want:  "  @available(*, deprecated)\n  public func paginationMethod(\n    byItem: Request, options: GoogleGax.RequestOptions\n) -> any AsyncSequence<Item, Swift.Error>",
 				},
 			},
 		},
@@ -143,12 +148,17 @@ func TestGenerateService_DeprecatedMethods(t *testing.T) {
 				{
 					start: "    /// See `TestServiceClient.lromethod`.",
 					end:   "-> any GoogleGax.PollableOperation<LROResult>",
-					want:  "    /// See `TestServiceClient.lromethod`.\n    @available(*, deprecated)\n    func lromethod(request: Request) async throws -> GoogleCloudLongrunningV1.Operation\n\n    /// See `TestServiceClient.lromethod`.\n    @available(*, deprecated)\n    func lromethod(withPolling: Request) async throws -> any GoogleGax.PollableOperation<LROResult>",
+					want:  "    /// See `TestServiceClient.lromethod`.\n    @available(*, deprecated)\n    func lromethod(withPolling: Request) async throws -> any GoogleGax.PollableOperation<LROResult>",
 				},
 				{
 					start: "  /// -- lro marker --",
+					end:   "async throws -> GoogleCloudLongrunningV1.Operation",
+					want:  "  /// -- lro marker --\n  ///\n  /// @Snippet(path: \"TestService_LROMethod\")\n  @available(*, deprecated)\n  public func lromethod(\n    request: Request, options: GoogleGax.RequestOptions\n) async throws -> GoogleCloudLongrunningV1.Operation",
+				},
+				{
+					start: "  @available(*, deprecated)\n  public func lromethod(\n    withPolling: Request",
 					end:   "-> any GoogleGax.PollableOperation<LROResult>",
-					want:  "  /// -- lro marker --\n  ///\n  /// @Snippet(path: \"TestService_LROMethod\")\n  @available(*, deprecated)\n  public func lromethod(\n    request: Request, options: GoogleGax.RequestOptions\n) async throws -> GoogleCloudLongrunningV1.Operation\n {\n      try await self.inner.lromethod(request: request, options: options)\n  }\n\n  /// -- lro marker --\n  ///\n  /// @Snippet(path: \"TestService_LROMethod\")\n  @available(*, deprecated)\n  public func lromethod(\n    withPolling: Request, options: GoogleGax.RequestOptions\n) async throws -> any GoogleGax.PollableOperation<LROResult>",
+					want:  "  @available(*, deprecated)\n  public func lromethod(\n    withPolling: Request, options: GoogleGax.RequestOptions\n) async throws -> any GoogleGax.PollableOperation<LROResult>",
 				},
 			},
 		},
@@ -166,7 +176,7 @@ func TestGenerateService_DeprecatedMethods(t *testing.T) {
 				{
 					start: "    /// See `TestServiceClient.notDeprecatedMethod`.",
 					end:   "-> Test.Response",
-					want:  "    /// See `TestServiceClient.notDeprecatedMethod`.\n    func notDeprecatedMethod(request: Request) async throws -> Test.Response",
+					want:  "    /// See `TestServiceClient.notDeprecatedMethod`.\n    func notDeprecatedMethod(\n    request: Request, options: GoogleGax.RequestOptions\n) async throws -> Test.Response",
 				},
 				{
 					start: "  /// -- not deprecated marker --",
@@ -414,15 +424,13 @@ func TestGenerateService_DiagnoseRequestFields(t *testing.T) {
 			}
 			contentStr := read("TestService.swift")
 
-			// The overload requirement and its default implementation.
-			checkDiagnose(t, contentStr, "    ",
-				"func simpleMethod(\n  name: Swift.String,", test.fieldDeprecated)
+			// Overloads are only generated as default implementations in the protocol extension.
 			checkDiagnose(t, contentStr, "  ",
 				"public func simpleMethod(\n  name: Swift.String,", test.fieldDeprecated)
 
 			// The declarations that only pass the request through.
 			checkDiagnose(t, contentStr, "    ",
-				"func simpleMethod(request: Request)", false)
+				"func simpleMethod(\n    request: Request, options:", false)
 			checkDiagnose(t, contentStr, "  ",
 				"public func simpleMethod(\n    request: Request, options:", false)
 
