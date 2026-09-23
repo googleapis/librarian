@@ -255,3 +255,93 @@ func TestOneOfName(t *testing.T) {
 		})
 	}
 }
+
+func TestMessageName(t *testing.T) {
+	wktField := api.NewTestMessage("Field").WithPackage(wellKnownProtobufPackage)
+	wktNested := api.NewTestMessage("Nested").WithPackage(wellKnownProtobufPackage)
+	wktNested.Parent = wktField
+
+	for _, test := range []struct {
+		name string
+		msg  *api.Message
+		want string
+	}{
+		{
+			name: "standard message",
+			msg:  api.NewTestMessage("Secret").WithPackage("google.cloud.secretmanager.v1"),
+			want: "Secret",
+		},
+		{
+			name: "standard keyword message Any",
+			msg:  api.NewTestMessage("Any").WithPackage("google.cloud.test.v1"),
+			want: "`Any`",
+		},
+		{
+			name: "standard keyword message Type",
+			msg:  api.NewTestMessage("Type").WithPackage("google.cloud.test.v1"),
+			want: "Type_",
+		},
+		{
+			name: "wkt top-level message Any",
+			msg:  api.NewTestMessage("Any").WithPackage(wellKnownProtobufPackage),
+			want: "WKTAny",
+		},
+		{
+			name: "wkt top-level message Type",
+			msg:  api.NewTestMessage("Type").WithPackage(wellKnownProtobufPackage),
+			want: "WKTType",
+		},
+		{
+			name: "wkt top-level message Duration",
+			msg:  api.NewTestMessage("Duration").WithPackage(wellKnownProtobufPackage),
+			want: "WKTDuration",
+		},
+		{
+			name: "wkt nested message does not get WKT prefix",
+			msg:  wktNested,
+			want: "Nested",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := messageName(test.msg)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestEnumName(t *testing.T) {
+	wktField := api.NewTestMessage("Field").WithPackage(wellKnownProtobufPackage)
+	wktKind := api.NewTestEnum("Kind").WithPackage(wellKnownProtobufPackage)
+	wktKind.Parent = wktField
+
+	for _, test := range []struct {
+		name string
+		enum *api.Enum
+		want string
+	}{
+		{
+			name: "standard enum",
+			enum: api.NewTestEnum("Color").WithPackage("google.cloud.test.v1"),
+			want: "Color",
+		},
+		{
+			name: "wkt top-level enum Syntax",
+			enum: api.NewTestEnum("Syntax").WithPackage(wellKnownProtobufPackage),
+			want: "WKTSyntax",
+		},
+		{
+			name: "wkt nested enum Kind does not get WKT prefix",
+			enum: wktKind,
+			want: "Kind",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := enumName(test.enum)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}

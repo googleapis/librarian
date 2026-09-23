@@ -164,7 +164,7 @@ func (c *codec) annotateEnum(enum *api.Enum, model *modelAnnotations) error {
 	}
 	annotations := &enumAnnotations{
 		Model:              model,
-		Name:               pascalCase(enum.Name),
+		Name:               enumName(enum),
 		FullyQualifiedName: extensionTypeName,
 		DocLines:           docLines,
 		DefaultCaseName:    defaultCaseName,

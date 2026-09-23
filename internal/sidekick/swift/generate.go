@@ -124,7 +124,11 @@ func (c *codec) generateDocc(outdir string, model *api.API, provider language.Te
 
 func (c *codec) generateMessages(outdir string, model *api.API, provider language.TemplateProvider) error {
 	for _, m := range model.Messages {
-		output := c.swiftFilename(m.Name)
+		name := m.Name
+		if m.Parent == nil && m.Package == wellKnownProtobufPackage {
+			name = "WKT" + m.Name
+		}
+		output := c.swiftFilename(name)
 		template := "templates/common/message_file.swift.mustache"
 		if m.ServicePlaceholder {
 			output = c.swiftFilename(m.Name + "+Requests")
@@ -143,9 +147,13 @@ func (c *codec) generateMessages(outdir string, model *api.API, provider languag
 
 func (c *codec) generateEnums(outdir string, model *api.API, provider language.TemplateProvider) error {
 	for _, e := range model.Enums {
+		name := e.Name
+		if e.Parent == nil && e.Package == wellKnownProtobufPackage {
+			name = "WKT" + e.Name
+		}
 		generated := language.GeneratedFile{
 			TemplatePath: "templates/common/enum_file.swift.mustache",
-			OutputPath:   c.swiftFilename(e.Name),
+			OutputPath:   c.swiftFilename(name),
 		}
 		if err := language.GenerateEnum(outdir, e, provider, generated); err != nil {
 			return err

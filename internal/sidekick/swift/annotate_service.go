@@ -124,7 +124,7 @@ func (ann *serviceAnnotations) SnippetImports() []string {
 // the well-known types package (e.g. `GoogleWKT`).
 //
 // Currently, this checks if any method uses an update mask field
-// (`GoogleWKT.FieldMask`). This is intended to be expanded if snippets need
+// (`GoogleWKT.WKTFieldMask`). This is intended to be expanded if snippets need
 // well-known type imports for additional reasons in the future.
 func (ann *serviceAnnotations) needsWktImport() bool {
 	return ann.hasUpdateMask()
