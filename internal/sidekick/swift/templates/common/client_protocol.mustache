@@ -25,6 +25,7 @@ extension Clients {
   public protocol {{Codec.StubPrefix}}Protocol: Sendable {
     {{#Codec.Methods}}
     {{^IsLroPoller}}
+
     {{#Codec.LRO}}
     /// See `{{Service.Codec.ClientName}}.{{Codec.Name}}`.
     {{#Deprecated}}
@@ -130,7 +131,7 @@ extension Clients.{{Codec.StubPrefix}}Protocol {
   {{> /templates/common/diagnose}}
   {{/Codec.DiagnoseTypes}}
   public func {{> /templates/common/method_signature/pagination}} {
-    self.{{Codec.Name}}(byItem: byItem, options: .init())
+    self.{{Codec.Name}}ByItems(request: request, options: .init())
   }
 
   {{#Codec.DocLines}}
@@ -146,7 +147,7 @@ extension Clients.{{Codec.StubPrefix}}Protocol {
   {{/Codec.DiagnoseFields}}
   public func {{> /templates/common/method_signature/pagination_options}} {
     let listRpc = { (token: Swift.String) async throws -> {{Codec.ReturnType}} in
-      var request = byItem
+      var request = request
       request.pageToken = token
       return try await self.{{Codec.Name}}(request: request, options: options)
     }
@@ -164,7 +165,7 @@ extension Clients.{{Codec.StubPrefix}}Protocol {
     let request = {{Method.InputType.Codec.ParameterTypeName}}().with {
       {{> /templates/common/method_body/overload_fields}}
     }
-    return self.{{Codec.Name}}(byItem: request)
+    return self.{{Codec.Name}}ByItems(request: request)
   }
   {{/Signatures}}
   {{/Codec.Pagination}}

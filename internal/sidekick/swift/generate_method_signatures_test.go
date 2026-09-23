@@ -67,9 +67,9 @@ func TestGenerateService_MethodSignatures(t *testing.T) {
 			name: "Pagination",
 			want: []expectedBlock{
 				{
-					start: "public func paginationMethod(\n  name: Swift.String,\n  optionalField: Swift.String?,",
+					start: "public func paginationMethodByItems(\n  name: Swift.String,\n  optionalField: Swift.String?,",
 					end:   "    }\n",
-					want: `public func paginationMethod(
+					want: `public func paginationMethodByItems(
   name: Swift.String,
   optionalField: Swift.String?,
 ) -> any AsyncSequence<Item, Swift.Error>
@@ -81,9 +81,9 @@ func TestGenerateService_MethodSignatures(t *testing.T) {
 `,
 				},
 				{
-					start: "public func paginationMethod(\n  name: Swift.String,\n  normalField: Swift.String,",
+					start: "public func paginationMethodByItems(\n  name: Swift.String,\n  normalField: Swift.String,",
 					end:   "    }\n",
-					want: `public func paginationMethod(
+					want: `public func paginationMethodByItems(
   name: Swift.String,
   normalField: Swift.String,
 ) -> any AsyncSequence<Item, Swift.Error>
