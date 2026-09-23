@@ -15,12 +15,14 @@
 package maven
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/config"
@@ -250,5 +252,122 @@ func TestParsePOM_Error(t *testing.T) {
 				t.Errorf("parsePOM() error = %v, wantErr = %v", err, test.wantErr)
 			}
 		})
+	}
+}
+
+func TestDownloadM2Artifact_RetrySuccess(t *testing.T) {
+	tmpDir := t.TempDir()
+	stubDir := filepath.Join(tmpDir, "bin")
+	if err := os.MkdirAll(stubDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	mvnLogPath := filepath.Join(tmpDir, "mvn_invocations.log")
+	attemptsFile := filepath.Join(tmpDir, "attempts.txt")
+	// Fake mvn script that fails on the first invocation and succeeds on the second.
+	mvnContent := fmt.Sprintf(`#!/bin/sh
+echo mvn "$@" >> %q
+count=0
+if [ -f %q ]; then
+  count=$(cat %q)
+fi
+count=$((count + 1))
+echo $count > %q
+if [ "$count" -eq 1 ]; then
+  exit 1
+fi
+exit 0
+`, mvnLogPath, attemptsFile, attemptsFile, attemptsFile)
+
+	if err := os.WriteFile(filepath.Join(stubDir, "mvn"), []byte(mvnContent), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("PATH", stubDir+string(os.PathListSeparator)+os.Getenv("PATH"))
+
+	defaultMvnBackoff = time.Millisecond
+	t.Cleanup(func() {
+		defaultMvnBackoff = 30 * time.Second
+	})
+
+	err := downloadM2Artifact(t.Context(), "com.google:test-artifact:1.0.0", tmpDir)
+	if err != nil {
+		t.Fatalf("expected downloadM2Artifact to succeed on retry, got: %v", err)
+	}
+
+	mvnData, err := os.ReadFile(mvnLogPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	gotMvn := strings.TrimSpace(string(mvnData))
+	wantMvn := "mvn dependency:get -Dartifact=com.google:test-artifact:1.0.0\n" +
+		"mvn dependency:get -Dartifact=com.google:test-artifact:1.0.0 -U"
+	if diff := cmp.Diff(wantMvn, gotMvn); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+}
+
+func TestDownloadM2Artifact_RetryExhausted(t *testing.T) {
+	tmpDir := t.TempDir()
+	stubDir := filepath.Join(tmpDir, "bin")
+	if err := os.MkdirAll(stubDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	mvnLogPath := filepath.Join(tmpDir, "mvn_invocations.log")
+	// Fake mvn script that always fails.
+	mvnContent := fmt.Sprintf(`#!/bin/sh
+echo mvn "$@" >> %q
+exit 1
+`, mvnLogPath)
+
+	if err := os.WriteFile(filepath.Join(stubDir, "mvn"), []byte(mvnContent), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("PATH", stubDir+string(os.PathListSeparator)+os.Getenv("PATH"))
+
+	defaultMvnBackoff = time.Millisecond
+	t.Cleanup(func() {
+		defaultMvnBackoff = 30 * time.Second
+	})
+
+	err := downloadM2Artifact(t.Context(), "com.google:test-artifact:1.0.0", tmpDir)
+	if err == nil {
+		t.Fatal("expected downloadM2Artifact to fail after retries exhausted, got nil")
+	}
+
+	mvnData, err := os.ReadFile(mvnLogPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	gotMvn := strings.TrimSpace(string(mvnData))
+	wantMvn := "mvn dependency:get -Dartifact=com.google:test-artifact:1.0.0\n" +
+		"mvn dependency:get -Dartifact=com.google:test-artifact:1.0.0 -U\n" +
+		"mvn dependency:get -Dartifact=com.google:test-artifact:1.0.0 -U"
+	if diff := cmp.Diff(wantMvn, gotMvn); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+}
+
+func TestDownloadM2Artifact_ContextCanceled(t *testing.T) {
+	tmpDir := t.TempDir()
+	stubDir := filepath.Join(tmpDir, "bin")
+	if err := os.MkdirAll(stubDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	mvnContent := "#!/bin/sh\nexit 1\n"
+	if err := os.WriteFile(filepath.Join(stubDir, "mvn"), []byte(mvnContent), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("PATH", stubDir+string(os.PathListSeparator)+os.Getenv("PATH"))
+
+	ctx, cancel := context.WithCancel(t.Context())
+	cancel() // cancel context immediately
+
+	defaultMvnBackoff = time.Millisecond
+	t.Cleanup(func() {
+		defaultMvnBackoff = 30 * time.Second
+	})
+
+	err := downloadM2Artifact(ctx, "com.google:test-artifact:1.0.0", tmpDir)
+	if !errors.Is(err, context.Canceled) {
+		t.Errorf("downloadM2Artifact() error = %v, want %v", err, context.Canceled)
 	}
 }
