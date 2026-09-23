@@ -25,44 +25,17 @@ import (
 
 func TestEnumAnnotations(t *testing.T) {
 	// Verify we can handle values that are not in SCREAMING_SNAKE_CASE style.
-	v0 := &api.EnumValue{
-		Name:          "week5",
-		ID:            ".test.v1.TestEnum.week5",
-		Documentation: "week5 is also documented.",
-		Number:        2,
-	}
-	v1 := &api.EnumValue{
-		Name:          "MULTI_WORD_VALUE",
-		ID:            ".test.v1.TestEnum.MULTI_WORD_VALUES",
-		Documentation: "MULTI_WORD_VALUE is also documented.",
-		Number:        1,
-	}
-	v2 := &api.EnumValue{
-		Name:          "VALUE",
-		ID:            ".test.v1.TestEnum.VALUE",
-		Documentation: "VALUE is also documented.",
-		Number:        0,
-	}
-	v3 := &api.EnumValue{
-		Name:   "TEST_ENUM_V3",
-		ID:     ".test.v1.TestEnum.TEST_ENUM_V3",
-		Number: 3,
-	}
-	v4 := &api.EnumValue{
-		Name:   "TEST_ENUM_2025",
-		ID:     ".test.v1.TestEnum.TEST_ENUM_2025",
-		Number: 4,
-	}
-	enum := &api.Enum{
-		Name:          "TestEnum",
-		ID:            ".test.v1.TestEnum",
-		Package:       "test.v1",
-		Documentation: "The enum is documented.",
-		Values:        []*api.EnumValue{v0, v1, v2, v3, v4},
-	}
+	v0 := api.NewTestEnumValue("week5", 2).WithDocumentation("week5 is also documented.")
+	v1 := api.NewTestEnumValue("MULTI_WORD_VALUE", 1).WithDocumentation("MULTI_WORD_VALUE is also documented.")
+	v2 := api.NewTestEnumValue("VALUE", 0).WithDocumentation("VALUE is also documented.")
+	v3 := api.NewTestEnumValue("TEST_ENUM_V3", 3)
+	v4 := api.NewTestEnumValue("TEST_ENUM_2025", 4)
+	enum := api.NewTestEnum("TestEnum").
+		WithPackage("test.v1").
+		WithDocumentation("The enum is documented.").
+		WithValues(v0, v1, v2, v3, v4)
 
-	model := api.NewTestAPI(
-		[]*api.Message{}, []*api.Enum{enum}, []*api.Service{})
+	model := api.NewTestAPI(nil, []*api.Enum{enum}, nil)
 	api.CrossReference(model)
 	codec := newTestCodec(t, libconfig.SpecProtobuf, "", map[string]string{})
 	annotateModel(model, codec)
@@ -132,37 +105,17 @@ func TestEnumAnnotations(t *testing.T) {
 
 func TestDuplicateEnumValueAnnotations(t *testing.T) {
 	// Verify we can handle values that are not in SCREAMING_SNAKE_CASE style.
-	v0 := &api.EnumValue{
-		Name:   "full",
-		ID:     ".test.v1.TestEnum.full",
-		Number: 1,
-	}
-	v1 := &api.EnumValue{
-		Name:   "FULL",
-		ID:     ".test.v1.TestEnum.FULL",
-		Number: 1,
-	}
-	v2 := &api.EnumValue{
-		Name:   "partial",
-		ID:     ".test.v1.TestEnum.partial",
-		Number: 2,
-	}
+	v0 := api.NewTestEnumValue("full", 1)
+	v1 := api.NewTestEnumValue("FULL", 1)
+	v2 := api.NewTestEnumValue("partial", 2)
 	// This does not happen in practice, but we want to verify the code can
 	// handle it if it ever does.
-	v3 := &api.EnumValue{
-		Name:   "PARTIAL",
-		ID:     ".test.v1.TestEnum.PARTIAL",
-		Number: 3,
-	}
-	enum := &api.Enum{
-		Name:    "TestEnum",
-		ID:      ".test.v1.TestEnum",
-		Package: "test.v1",
-		Values:  []*api.EnumValue{v0, v1, v2, v3},
-	}
+	v3 := api.NewTestEnumValue("PARTIAL", 3)
+	enum := api.NewTestEnum("TestEnum").
+		WithPackage("test.v1").
+		WithValues(v0, v1, v2, v3)
 
-	model := api.NewTestAPI(
-		[]*api.Message{}, []*api.Enum{enum}, []*api.Service{})
+	model := api.NewTestAPI(nil, []*api.Enum{enum}, nil)
 	api.CrossReference(model)
 	codec := newTestCodec(t, libconfig.SpecProtobuf, "", map[string]string{})
 	annotateModel(model, codec)
@@ -183,27 +136,15 @@ func TestDuplicateEnumValueAnnotations(t *testing.T) {
 }
 
 func TestNestedEnumAnnotations(t *testing.T) {
-	parent := api.NewTestMessage("VertexAISearch").WithPackage("test.v1")
-	v0 := &api.EnumValue{
-		Name:   "IP_MODE_UNSPECIFIED",
-		ID:     ".test.v1.VertexAISearch.IPMode.IP_MODE_UNSPECIFIED",
-		Number: 0,
-	}
-	v1 := &api.EnumValue{
-		Name:   "DYNAMIC_IP",
-		ID:     ".test.v1.VertexAISearch.IPMode.DYNAMIC_IP",
-		Number: 1,
-	}
-	enum := &api.Enum{
-		Name:    "IPMode",
-		ID:      ".test.v1.VertexAISearch.IPMode",
-		Package: "test.v1",
-		Values:  []*api.EnumValue{v0, v1},
-		Parent:  parent,
-	}
-	parent.Enums = []*api.Enum{enum}
+	v0 := api.NewTestEnumValue("IP_MODE_UNSPECIFIED", 0)
+	v1 := api.NewTestEnumValue("DYNAMIC_IP", 1)
+	enum := api.NewTestEnum("IPMode").
+		WithValues(v0, v1)
+	parent := api.NewTestMessage("VertexAISearch").
+		WithPackage("test.v1").
+		WithEnums(enum)
 
-	model := api.NewTestAPI([]*api.Message{parent}, []*api.Enum{enum}, []*api.Service{})
+	model := api.NewTestAPI([]*api.Message{parent}, nil, nil)
 	api.CrossReference(model)
 	codec := newTestCodec(t, libconfig.SpecProtobuf, "test.v1", map[string]string{})
 	annotateModel(model, codec)
