@@ -25,7 +25,12 @@ limitations under the License.
 {{/Codec.IsGated}}
 import Foundation
 
+{{#Codec.UseStringEnums}}
+{{> /templates/common/string_enum}}
+{{/Codec.UseStringEnums}}
+{{^Codec.UseStringEnums}}
 {{> /templates/common/enum}}
+{{/Codec.UseStringEnums}}
 {{#Codec.IsGated}}
 #endif
 {{/Codec.IsGated}}

@@ -19,6 +19,7 @@ import (
 
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -231,5 +232,165 @@ func TestGenerateEnum_UnknownCaseDocComments(t *testing.T) {
 	got := extractBlock(t, contentStr, "/// Encodes an unknown integer value.", "case unknownStringValue(String)")
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+}
+
+func TestGenerateEnum_Discovery(t *testing.T) {
+	outDir := t.TempDir()
+
+	status := api.NewTestEnum("Status").
+		WithPackage("google.cloud.compute.v1").
+		WithValues(
+			api.NewTestEnumValue("DONE", 0),
+			api.NewTestEnumValue("PENDING", 1),
+			api.NewTestEnumValue("RUNNING", 2),
+		)
+
+	model := api.NewTestAPI(nil, []*api.Enum{status}, nil)
+	library := &config.Library{
+		SpecificationFormat: config.SpecDiscovery,
+	}
+	if err := Generate(t.Context(), model, outDir, library, nil); err != nil {
+		t.Fatal(err)
+	}
+
+	contentB, err := os.ReadFile(filepath.Join(outDir, "Sources", "GoogleCloudComputeV1", "Status.swift"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	contentStr := string(contentB)
+
+	// Verify no integer or default init artifacts
+	if strings.Contains(contentStr, "unknownIntValue") {
+		t.Errorf("expected no unknownIntValue in discovery enum, got:\n%s", contentStr)
+	}
+	if strings.Contains(contentStr, "init(intValue:") {
+		t.Errorf("expected no init(intValue:) in discovery enum, got:\n%s", contentStr)
+	}
+	if strings.Contains(contentStr, "var intValue:") {
+		t.Errorf("expected no intValue in discovery enum, got:\n%s", contentStr)
+	}
+	if strings.Contains(contentStr, "public init() {") {
+		t.Errorf("expected no public init() in discovery enum, got:\n%s", contentStr)
+	}
+
+	// Verify cases
+	wantCases := `  case done
+  case pending
+  case running
+  /// Encodes an unknown string value.
+  ///
+  /// The most common cause for an unknown value is for the service to send
+  /// a value unknown to the library. We recommend you update your library to
+  /// the latest version.
+  ///
+  /// - Warning: Do not pattern-match specific string literals in this case;
+  ///   future releases may promote them to named enum cases.
+  case unknownStringValue(Swift.String)`
+	gotCases := extractBlock(t, contentStr, "  case done", "case unknownStringValue(Swift.String)")
+	if diff := cmp.Diff(wantCases, gotCases); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+
+	// Verify stringValue
+	wantStringValue := `  public var stringValue: Swift.String? {
+    switch self {
+    case .done: return "DONE"
+    case .pending: return "PENDING"
+    case .running: return "RUNNING"
+    case .unknownStringValue(let v): return v
+    }
+  }`
+	gotStringValue := extractBlock(t, contentStr, "  public var stringValue: Swift.String? {", "\n  }")
+	if diff := cmp.Diff(wantStringValue, gotStringValue); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+
+	// Verify init(stringValue:)
+	wantInitString := `  public init(stringValue: Swift.String) {
+    switch stringValue {
+    case "DONE": self = .done
+    case "PENDING": self = .pending
+    case "RUNNING": self = .running
+    default: self = .unknownStringValue(stringValue)
+    }
+  }`
+	gotInitString := extractBlock(t, contentStr, "  public init(stringValue: Swift.String) {", "\n  }")
+	if diff := cmp.Diff(wantInitString, gotInitString); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+
+	// Verify decoder
+	wantDecoder := `  public init(from decoder: Decoder) throws {
+    let container = try decoder.singleValueContainer()
+    let s = try container.decode(Swift.String.self)
+    self.init(stringValue: s)
+  }`
+	gotDecoder := extractBlock(t, contentStr, "  public init(from decoder: Decoder) throws {", "\n  }")
+	if diff := cmp.Diff(wantDecoder, gotDecoder); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+
+	// Verify encoder
+	wantEncoder := `  public func encode(to encoder: Encoder) throws {
+    var container = encoder.singleValueContainer()
+    switch self {
+    case .done: return try container.encode("DONE")
+    case .pending: return try container.encode("PENDING")
+    case .running: return try container.encode("RUNNING")
+    case .unknownStringValue(let v): return try container.encode(v)
+    }
+  }`
+	gotEncoder := extractBlock(t, contentStr, "  public func encode(to encoder: Encoder) throws {", "\n  }")
+	if diff := cmp.Diff(wantEncoder, gotEncoder); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+}
+
+func TestGenerateMessageEnum_Discovery(t *testing.T) {
+	outDir := t.TempDir()
+
+	status := api.NewTestEnum("Status").
+		WithPackage("google.cloud.compute.v1").
+		WithValues(
+			api.NewTestEnumValue("DONE", 0),
+			api.NewTestEnumValue("PENDING", 1),
+		)
+
+	msg := api.NewTestMessage("Operation").
+		WithPackage("google.cloud.compute.v1").
+		WithEnums(status)
+
+	model := api.NewTestAPI([]*api.Message{msg}, nil, nil)
+	library := &config.Library{
+		SpecificationFormat: config.SpecDiscovery,
+	}
+	if err := Generate(t.Context(), model, outDir, library, nil); err != nil {
+		t.Fatal(err)
+	}
+
+	contentB, err := os.ReadFile(filepath.Join(outDir, "Sources", "GoogleCloudComputeV1", "Operation.swift"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	contentStr := string(contentB)
+
+	enumBlock := extractBlock(t, contentStr, "public enum Status: Codable, Equatable, Sendable {", "public static var _anyTypeUrl:")
+
+	// Verify nested enum in message does not contain integer conversions or default init
+	if strings.Contains(enumBlock, "unknownIntValue") {
+		t.Errorf("expected no unknownIntValue in nested discovery enum, got:\n%s", enumBlock)
+	}
+	if strings.Contains(enumBlock, "init(intValue:") {
+		t.Errorf("expected no init(intValue:) in nested discovery enum, got:\n%s", enumBlock)
+	}
+	if strings.Contains(enumBlock, "var intValue:") {
+		t.Errorf("expected no intValue in nested discovery enum, got:\n%s", enumBlock)
+	}
+	if strings.Contains(enumBlock, "public init() {") {
+		t.Errorf("expected no public init() in nested discovery enum, got:\n%s", enumBlock)
+	}
+	if !strings.Contains(contentStr, "public enum Status: Codable, Equatable, Sendable {") {
+		t.Errorf("expected Status enum in Operation.swift, got:\n%s", contentStr)
 	}
 }

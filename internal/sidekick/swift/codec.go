@@ -110,6 +110,9 @@ type codec struct {
 	// base64 alphabet.
 	UrlSafeForBytes bool
 
+	// If true, generate enums that represent only string values, with no integer conversions.
+	UseStringEnums bool
+
 	// Tracks generated files, considering case-insensitive filesystems.
 	//
 	// The generated file names are based on message, enum, and service names.
@@ -226,6 +229,7 @@ func newCodec(model *api.API, library *config.Library, module *config.SwiftModul
 		DependenciesByName: map[string]*Dependency{},
 		UrlSafeForBytes:    library.SpecificationFormat == config.SpecDiscovery,
 		ResponseEncoding:   responseEncoding,
+		UseStringEnums:     library.SpecificationFormat == config.SpecDiscovery,
 	}
 
 	swiftCfg := library.Swift
