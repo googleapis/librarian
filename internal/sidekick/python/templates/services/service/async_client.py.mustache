@@ -486,7 +486,9 @@ class {{AsyncClientName}}:
         metadata = tuple(metadata) + (
             gapic_v1.routing_header.to_grpc_metadata((
 {{#HasRoutingHeader}}
-                ("{{RoutingHeaderKey}}", {{{RoutingHeaderAccessor}}}),
+{{#RoutingHeaders}}
+                ("{{Key}}", {{{Accessor}}}),
+{{/RoutingHeaders}}
 {{/HasRoutingHeader}}
             )),
         )

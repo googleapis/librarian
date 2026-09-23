@@ -79,7 +79,7 @@ func TestFormatFieldDocLines(t *testing.T) {
 			want: []string{
 				"Optional. For example:",
 				"",
-				"  \"123/environment\": \"production\",",
+				"\"123/environment\": \"production\",",
 				"  \"123/costCenter\": \"marketing\"",
 				"",
 				"Tags are used.",
@@ -160,49 +160,6 @@ func TestFormatRstDoc(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			got := formatRstDoc(test.input, test.width, test.indent)
-			if diff := cmp.Diff(test.want, got); diff != "" {
-				t.Errorf("mismatch (-want +got):\n%s", diff)
-			}
-		})
-	}
-}
-
-func TestTokenizeParagraph(t *testing.T) {
-	for _, test := range []struct {
-		name  string
-		text  string
-		width int
-		want  []string
-	}{
-		{
-			name:  "flushes short line at or below threshold",
-			text:  "Short terminal line.\nNext sentence begins here.",
-			width: 48,
-			want: []string{
-				"Short terminal line.",
-				"Next sentence begins here.",
-			},
-		},
-		{
-			name:  "joins long line above threshold",
-			text:  "This line contains more than thirty-eight characters and continues\non the next line.",
-			width: 48,
-			want: []string{
-				"This line contains more than thirty-eight characters and continues on the next line.",
-			},
-		},
-		{
-			name:  "flushes line ending with colon",
-			text:  "Arguments:\narg1: First argument.",
-			width: 48,
-			want: []string{
-				"Arguments:",
-				"arg1: First argument.",
-			},
-		},
-	} {
-		t.Run(test.name, func(t *testing.T) {
-			got := tokenizeParagraph(test.text, test.width)
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}

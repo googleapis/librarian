@@ -84,6 +84,30 @@ func TestPythonIdentifier(t *testing.T) {
 	}
 }
 
+func TestPythonMethodIdentifier(t *testing.T) {
+	for _, test := range []struct {
+		name  string
+		input string
+		want  string
+	}{
+		{name: "keyword_def", input: "def", want: "def_"},
+		{name: "keyword_class", input: "class", want: "class_"},
+		{name: "keyword_import", input: "import", want: "import_"},
+		{name: "keyword_yield", input: "yield", want: "yield_"},
+		{name: "keyword_in", input: "in", want: "in_"},
+		{name: "builtin_exec_not_strict_keyword", input: "exec", want: "exec"},
+		{name: "builtin_filter_not_strict_keyword", input: "filter", want: "filter"},
+		{name: "normal_identifier", input: "create_instance", want: "create_instance"},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := pythonMethodIdentifier(test.input)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
 func TestIsVersionSegment(t *testing.T) {
 	for _, test := range []struct {
 		name  string

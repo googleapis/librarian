@@ -1,8 +1,12 @@
 {{> prologue}}
 from .client import {{Codec.ClientName}}
+{{#Codec.HasAsyncClient}}
 from .async_client import {{Codec.AsyncClientName}}
+{{/Codec.HasAsyncClient}}
 
 __all__ = (
     '{{Codec.ClientName}}',
+{{#Codec.HasAsyncClient}}
     '{{Codec.AsyncClientName}}',
+{{/Codec.HasAsyncClient}}
 )

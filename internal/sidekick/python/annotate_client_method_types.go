@@ -56,6 +56,21 @@ var iamClientPolicyReturnDocLines = []string{
 	"   documentation](https://cloud.google.com/iam/docs/).",
 }
 
+// iamComputePolicyReturnDocLines provides the return docstring for compute.v1.Policy.
+// In google.iam.v1.Policy (used by Secret Manager/KMS), the proto docstring has a newline
+// between "<" and "timestamp", which collapses to 13 spaces. In google.cloud.compute.v1.Policy,
+// the docstring is defined inline with a single space.
+var iamComputePolicyReturnDocLines = makeComputePolicyReturnDocLines()
+
+func makeComputePolicyReturnDocLines() []string {
+	lines := make([]string, len(iamClientPolicyReturnDocLines))
+	copy(lines, iamClientPolicyReturnDocLines)
+	for i, l := range lines {
+		lines[i] = strings.ReplaceAll(l, "request.time <             timestamp", "request.time < timestamp")
+	}
+	return lines
+}
+
 func findFieldInMessage(msg *api.Message, name string) *api.Field {
 	if msg == nil {
 		return nil

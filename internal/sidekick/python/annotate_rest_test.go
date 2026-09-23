@@ -97,7 +97,7 @@ func TestAnnotateRestMethod_HTTPOptions(t *testing.T) {
 				Name:          "get_instance",
 				BaseClassName: "_BaseGetInstance",
 				HTTPOptions: []*httpOptionAnnotation{
-					{Method: "get", URI: "/v1/{name=*}", Body: "", HasBody: false, First: true},
+					{Method: "get", URI: "/v1/{name}", Body: "", HasBody: false, First: true},
 				},
 			},
 		},
@@ -112,7 +112,7 @@ func TestAnnotateRestMethod_HTTPOptions(t *testing.T) {
 				Name:          "generate_access_token",
 				BaseClassName: "_BaseGenerateAccessToken",
 				HTTPOptions: []*httpOptionAnnotation{
-					{Method: "post", URI: "/v1/{name=*}:generateAccessToken", Body: "*", HasBody: true, First: true},
+					{Method: "post", URI: "/v1/{name}:generateAccessToken", Body: "*", HasBody: true, First: true},
 				},
 			},
 		},
@@ -123,7 +123,7 @@ func TestAnnotateRestMethod_HTTPOptions(t *testing.T) {
 				Name:          "create_instance",
 				BaseClassName: "_BaseCreateInstance",
 				HTTPOptions: []*httpOptionAnnotation{
-					{Method: "post", URI: "/v1/{parent=*}/instances", Body: "instance", HasBody: true, First: true},
+					{Method: "post", URI: "/v1/{parent}/instances", Body: "instance", HasBody: true, First: true},
 				},
 			},
 		},
@@ -134,7 +134,7 @@ func TestAnnotateRestMethod_HTTPOptions(t *testing.T) {
 				Name:          "delete_instance",
 				BaseClassName: "_BaseDeleteInstance",
 				HTTPOptions: []*httpOptionAnnotation{
-					{Method: "delete", URI: "/v1/{name=*}", Body: "", HasBody: false, First: true},
+					{Method: "delete", URI: "/v1/{name}", Body: "", HasBody: false, First: true},
 				},
 			},
 		},
@@ -145,7 +145,7 @@ func TestAnnotateRestMethod_HTTPOptions(t *testing.T) {
 				Name:          "update_instance",
 				BaseClassName: "_BaseUpdateInstance",
 				HTTPOptions: []*httpOptionAnnotation{
-					{Method: "patch", URI: "/v1/{instance.name=*}", Body: "instance", HasBody: true, First: true},
+					{Method: "patch", URI: "/v1/{instance.name}", Body: "instance", HasBody: true, First: true},
 				},
 			},
 		},
@@ -156,7 +156,7 @@ func TestAnnotateRestMethod_HTTPOptions(t *testing.T) {
 				Name:          "replace_instance",
 				BaseClassName: "_BaseReplaceInstance",
 				HTTPOptions: []*httpOptionAnnotation{
-					{Method: "put", URI: "/v1/{name=*}", Body: "*", HasBody: true, First: true},
+					{Method: "put", URI: "/v1/{name}", Body: "*", HasBody: true, First: true},
 				},
 			},
 		},
@@ -175,8 +175,8 @@ func TestAnnotateRestMethod_HTTPOptions(t *testing.T) {
 				Name:          "custom_method",
 				BaseClassName: "_BaseCustomMethod",
 				HTTPOptions: []*httpOptionAnnotation{
-					{Method: "post", URI: "/v1/{name=*}:custom", Body: "*", HasBody: true, First: true},
-					{Method: "get", URI: "/v1/{name=*}", Body: "", HasBody: false, First: false},
+					{Method: "post", URI: "/v1/{name}:custom", Body: "*", HasBody: true, First: true},
+					{Method: "get", URI: "/v1/{name}", Body: "", HasBody: false, First: false},
 				},
 			},
 		},
@@ -257,7 +257,7 @@ func TestAnnotateRestMethod_RequiredFields(t *testing.T) {
 			want: &restMethodAnnotation{
 				Name:              "list_instances",
 				BaseClassName:     "_BaseListInstances",
-				HTTPOptions:       []*httpOptionAnnotation{{Method: "get", URI: "/v1/{parent=*}", Body: "", HasBody: false, First: true}},
+				HTTPOptions:       []*httpOptionAnnotation{{Method: "get", URI: "/v1/{parent}", Body: "", HasBody: false, First: true}},
 				HasRequiredFields: true,
 			},
 		},
@@ -308,7 +308,7 @@ func TestAnnotateRestMethod_RequiredFields(t *testing.T) {
 			want: &restMethodAnnotation{
 				Name:                        "analyze_iam_policy",
 				BaseClassName:               "_BaseAnalyzeIamPolicy",
-				HTTPOptions:                 []*httpOptionAnnotation{{Method: "get", URI: "/v1/{analysis_query.scope=*}:analyzeIamPolicy", Body: "", HasBody: false, First: true}},
+				HTTPOptions:                 []*httpOptionAnnotation{{Method: "get", URI: "/v1/{analysis_query.scope}:analyzeIamPolicy", Body: "", HasBody: false, First: true}},
 				HasRequiredFields:           true,
 				RequiredFieldsDefaultValues: []*requiredFieldDefaultAnnotation{{Key: "analysisQuery", Value: "{}", Last: true}},
 			},

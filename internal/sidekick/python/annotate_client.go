@@ -63,7 +63,10 @@ type clientAnnotations struct {
 	RestAsyncIOEnabled    bool
 	ShowRestBetaPreview   bool
 	HasPagers             bool
+	HasExtendedOperations bool
 	CopyrightYear         string
+	HasGRPCTransport      bool
+	HasRESTTransport      bool
 }
 
 func (c *codec) annotateClient(service *api.Service) (*clientAnnotations, error) {
@@ -186,11 +189,16 @@ func (c *codec) annotateClient(service *api.Service) (*clientAnnotations, error)
 		if mAnn.IsPaged {
 			ann.HasPagers = true
 		}
+		if mAnn.IsExtendedOperation {
+			ann.HasExtendedOperations = true
+		}
 		ann.Methods = append(ann.Methods, mAnn)
 	}
 
 	ann.HasLRO = hasLRO
 	ann.HasOperations = ann.HasOperationsMixin || hasLRO
+	ann.HasGRPCTransport = c.hasGRPCTransport()
+	ann.HasRESTTransport = c.hasRESTTransport()
 	return ann, nil
 }
 

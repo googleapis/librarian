@@ -18,6 +18,7 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/googleapis/librarian/internal/sidekick/api"
 )
 
@@ -412,7 +413,7 @@ func TestAnnotatePagers(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			c, svc := test.setup()
 			got := c.annotatePagers(svc)
-			if diff := cmp.Diff(test.want, got); diff != "" {
+			if diff := cmp.Diff(test.want, got, cmpopts.IgnoreFields(pagerAnnotations{}, "HasAsyncClient")); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})

@@ -117,9 +117,56 @@ func pascalCase(s string) string {
 	return sb.String()
 }
 
+// pythonStrictKeywords contains Python language keywords (keyword.kwlist) reserved for method names.
+var pythonStrictKeywords = map[string]bool{
+	"False":    true,
+	"None":     true,
+	"True":     true,
+	"and":      true,
+	"as":       true,
+	"assert":   true,
+	"async":    true,
+	"await":    true,
+	"break":    true,
+	"class":    true,
+	"continue": true,
+	"def":      true,
+	"del":      true,
+	"elif":     true,
+	"else":     true,
+	"except":   true,
+	"finally":  true,
+	"for":      true,
+	"from":     true,
+	"global":   true,
+	"if":       true,
+	"import":   true,
+	"in":       true,
+	"is":       true,
+	"lambda":   true,
+	"nonlocal": true,
+	"not":      true,
+	"or":       true,
+	"pass":     true,
+	"raise":    true,
+	"return":   true,
+	"try":      true,
+	"while":    true,
+	"with":     true,
+	"yield":    true,
+}
+
 // pythonIdentifier escapes keywords with a trailing underscore.
 func pythonIdentifier(s string) string {
 	if pythonKeywords[s] {
+		return s + "_"
+	}
+	return s
+}
+
+// pythonMethodIdentifier escapes Python language keywords (keyword.kwlist) for method names.
+func pythonMethodIdentifier(s string) string {
+	if pythonStrictKeywords[s] {
 		return s + "_"
 	}
 	return s

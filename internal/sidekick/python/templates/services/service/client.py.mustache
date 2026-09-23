@@ -1,5 +1,8 @@
 {{> partials/prologue}}
 {{#Codec.Client}}
+{{#HasExtendedOperations}}
+import functools
+{{/HasExtendedOperations}}
 from collections import OrderedDict
 from http import HTTPStatus
 import json
@@ -13,7 +16,7 @@ from {{VersionPackage}} import gapic_version as package_version
 
 from google.api_core import client_options as client_options_lib
 from google.api_core import exceptions as core_exceptions
-from google.api_core import gapic_v1
+from google.api_core import {{#HasExtendedOperations}}extended_operation, {{/HasExtendedOperations}}gapic_v1
 from {{VersionPackage}}._compat import get_universe_domain, get_api_endpoint, get_default_mtls_endpoint, should_use_client_cert, read_environment_variables
 from google.api_core import retry as retries
 from google.auth import credentials as ga_credentials             # type: ignore
@@ -58,13 +61,20 @@ from google.longrunning import operations_pb2 # type: ignore
 import google.api_core.operation as operation  # type: ignore
 import google.api_core.operation_async as operation_async  # type: ignore
 {{/HasLRO}}
+{{#HasExtendedOperations}}
+import google.api_core.extended_operation as extended_operation  # type: ignore
+{{/HasExtendedOperations}}
 {{#ExternalImports}}
 import {{Module}} as {{Alias}}  # type: ignore
 {{/ExternalImports}}
 from .transports.base import {{TransportClassName}}, DEFAULT_CLIENT_INFO
+{{#HasGRPCTransport}}
 from .transports.grpc import {{Name}}GrpcTransport
 from .transports.grpc_asyncio import {{Name}}GrpcAsyncIOTransport
+{{/HasGRPCTransport}}
+{{#HasRESTTransport}}
 from .transports.rest import {{Name}}RestTransport
+{{/HasRESTTransport}}
 {{#RestAsyncIOEnabled}}
 ASYNC_REST_EXCEPTION = None
 try:
@@ -84,9 +94,13 @@ class {{ClientName}}Meta(type):
     objects.
     """
     _transport_registry = OrderedDict()  # type: Dict[str, Type[{{TransportClassName}}]]
+{{#HasGRPCTransport}}
     _transport_registry["grpc"] = {{Name}}GrpcTransport
     _transport_registry["grpc_asyncio"] = {{Name}}GrpcAsyncIOTransport
+{{/HasGRPCTransport}}
+{{#HasRESTTransport}}
     _transport_registry["rest"] = {{Name}}RestTransport
+{{/HasRESTTransport}}
 {{#RestAsyncIOEnabled}}
     if HAS_ASYNC_REST_DEPENDENCIES:  # pragma: NO COVER
         _transport_registry["rest_asyncio"] = Async{{Name}}RestTransport
@@ -594,7 +608,8 @@ class {{ClientName}}(metaclass={{ClientName}}Meta):
                 )
 
 {{#Methods}}
-    def {{Name}}(self,
+{{#IsExtendedOperation}}
+    def {{Name}}_unary(self,
             request: Optional[Union[{{{RequestTypeHint}}}, dict]] = None,
             *,
 {{#FlattenedParams}}
@@ -604,6 +619,184 @@ class {{ClientName}}(metaclass={{ClientName}}Meta):
             timeout: Union[float, object] = gapic_v1.method.DEFAULT,
             metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
             ) -> {{{ReturnType}}}:
+{{#HasDocHead}}
+        r"""{{{DocHead}}}
+{{#DocBody}}
+{{#.}}
+        {{{.}}}
+{{/.}}
+{{^.}}
+
+{{/.}}
+{{/DocBody}}
+{{/HasDocHead}}
+{{^HasDocHead}}
+        r"""
+{{/HasDocHead}}
+
+        .. code-block:: python
+
+            # This snippet has been automatically generated and should be regarded as a
+            # code template only.
+            # It will require modifications to work:
+            # - It may require correct/in-range values for request initialization.
+            # - It may require specifying regional endpoints when creating the service
+            #   client as shown in:
+            #   https://googleapis.dev/python/google-api-core/latest/client_options.html
+            from {{PackageImport}} import {{VersionSegment}}
+{{#IsExternalRequest}}
+            import {{{ExternalRequestModule}}} as {{{ExternalRequestAlias}}}  # type: ignore
+{{/IsExternalRequest}}
+
+            def sample_{{Name}}():
+                # Create a client
+                client = {{VersionSegment}}.{{ClientName}}()
+
+                # Initialize request argument(s)
+{{#HasSamplePreInit}}
+{{#SamplePreInitLines}}
+{{#.}}
+                {{{.}}}
+{{/.}}
+{{^.}}
+
+{{/.}}
+{{/SamplePreInitLines}}
+
+{{/HasSamplePreInit}}
+{{#IsExternalRequest}}
+                request = {{{RequestTypeHint}}}(
+{{/IsExternalRequest}}
+{{^IsExternalRequest}}
+                request = {{VersionSegment}}.{{RequestTypeName}}(
+{{/IsExternalRequest}}
+{{#SampleRequestArgs}}
+                    {{Name}}={{{Value}}},
+{{/SampleRequestArgs}}
+                )
+
+                # Make the request
+                response = client.{{Name}}(request=request)
+
+                # Handle the response
+                print(response)
+
+        Args:
+            request (Union[{{{RequestSphinxType}}}, dict]):
+{{#RequestDocLines}}
+{{#.}}
+                {{{.}}}
+{{/.}}
+{{^.}}
+
+{{/.}}
+{{/RequestDocLines}}
+{{#FlattenedParams}}
+            {{Name}} ({{{SphinxType}}}):
+{{#DocLines}}
+{{#.}}
+                {{{.}}}
+{{/.}}
+{{^.}}
+
+{{/.}}
+{{/DocLines}}
+{{/FlattenedParams}}
+            retry (google.api_core.retry.Retry): Designation of what errors, if any,
+                should be retried.
+            timeout (float): The timeout for this request.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
+
+        Returns:
+            google.api_core.extended_operation.ExtendedOperation:
+                An object representing a extended
+                long-running operation.
+
+        """
+{{#HasFlattenedParams}}
+        # Create or coerce a protobuf request object.
+        # - Quick check: If we got a request object, we should *not* have
+        #   gotten any keyword arguments that map to the request.
+        flattened_params = [{{FlattenedParamsList}}]
+        has_flattened_params = len([param for param in flattened_params if param is not None]) > 0
+        if request is not None and has_flattened_params:
+            raise ValueError('If the `request` argument is set, then none of '
+                             'the individual field arguments should be set.')
+
+        # - Use the request object if provided (there's no risk of modifying the input as
+        #   there are no flattened fields), or create one.
+        if not isinstance(request, {{{RequestTypeHint}}}):
+            request = {{{RequestTypeHint}}}(request)
+            # If we have keyword arguments corresponding to fields on the
+            # request, apply these.
+{{#FlattenedParams}}
+            if {{Name}} is not None:
+                request.{{Name}} = {{Name}}
+{{/FlattenedParams}}
+{{/HasFlattenedParams}}
+{{^HasFlattenedParams}}
+        # Create or coerce a protobuf request object.
+{{#IsExternalRequest}}
+        if isinstance(request, dict):
+            # - The request isn't a proto-plus wrapped type,
+            #   so it must be constructed via keyword expansion.
+            request = {{{RequestTypeHint}}}(**request)
+        elif not request:
+            # Null request, just make one.
+            request = {{{RequestTypeHint}}}()
+{{/IsExternalRequest}}
+{{^IsExternalRequest}}
+        # - Use the request object if provided (there's no risk of modifying the input as
+        #   there are no flattened fields), or create one.
+        if not isinstance(request, {{{RequestTypeHint}}}):
+            request = {{{RequestTypeHint}}}(request)
+{{/IsExternalRequest}}
+{{/HasFlattenedParams}}
+
+        # Wrap the RPC method; this adds retry and timeout information,
+        # and friendly error handling.
+        rpc = self._transport._wrapped_methods[self._transport.{{Name}}]
+
+        # Certain fields should be provided within the metadata header;
+        # add these here.
+        metadata = tuple(metadata) + (
+            gapic_v1.routing_header.to_grpc_metadata((
+{{#HasRoutingHeader}}
+{{#RoutingHeaders}}
+                ("{{Key}}", {{{Accessor}}}),
+{{/RoutingHeaders}}
+{{/HasRoutingHeader}}
+            )),
+        )
+
+        # Validate the universe domain.
+        self._validate_universe_domain()
+
+        # Send the request.
+        response = rpc(
+            request,
+            retry=retry,
+            timeout=timeout,
+            metadata=metadata,
+        )
+
+        # Done; return the response.
+        return response
+
+{{/IsExtendedOperation}}
+    def {{Name}}(self,
+            request: Optional[Union[{{{RequestTypeHint}}}, dict]] = None,
+            *,
+{{#FlattenedParams}}
+            {{Name}}: Optional[{{{TypeHint}}}] = None,
+{{/FlattenedParams}}
+            retry: OptionalRetry = gapic_v1.method.DEFAULT,
+            timeout: Union[float, object] = gapic_v1.method.DEFAULT,
+            metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
+            ) -> {{#IsExtendedOperation}}extended_operation.ExtendedOperation{{/IsExtendedOperation}}{{^IsExtendedOperation}}{{{ReturnType}}}{{/IsExtendedOperation}}:
 {{#HasDocHead}}
         r"""{{{DocHead}}}
 {{#DocBody}}
@@ -716,6 +909,15 @@ class {{ClientName}}(metaclass={{ClientName}}Meta):
                 sent along with the request as metadata. Normally, each value must be of type `str`,
                 but for metadata keys ending with the suffix `-bin`, the corresponding values must
                 be of type `bytes`.
+{{#IsExtendedOperation}}
+
+        Returns:
+            google.api_core.extended_operation.ExtendedOperation:
+                An object representing a extended
+                long-running operation.
+
+{{/IsExtendedOperation}}
+{{^IsExtendedOperation}}
 {{^ReturnsEmpty}}
 
         Returns:
@@ -737,6 +939,7 @@ class {{ClientName}}(metaclass={{ClientName}}Meta):
             {{{ReturnSphinxType}}}:
 {{/HasReturnDoc}}
 {{/ReturnsEmpty}}
+{{/IsExtendedOperation}}
         """
 {{#HasFlattenedParams}}
         # Create or coerce a protobuf request object.
@@ -787,7 +990,9 @@ class {{ClientName}}(metaclass={{ClientName}}Meta):
         metadata = tuple(metadata) + (
             gapic_v1.routing_header.to_grpc_metadata((
 {{#HasRoutingHeader}}
-                ("{{RoutingHeaderKey}}", {{{RoutingHeaderAccessor}}}),
+{{#RoutingHeaders}}
+                ("{{Key}}", {{{Accessor}}}),
+{{/RoutingHeaders}}
 {{/HasRoutingHeader}}
             )),
         )
@@ -811,6 +1016,44 @@ class {{ClientName}}(metaclass={{ClientName}}Meta):
             timeout=timeout,
             metadata=metadata,
         )
+{{#IsExtendedOperation}}
+
+        operation_service = self._transport._{{OpServiceSnake}}_client
+        operation_request = compute.Get{{OpServiceSingular}}Request()
+{{#OpHasProject}}
+        operation_request.project = request.project
+{{/OpHasProject}}
+{{#OpHasZone}}
+        operation_request.zone = request.zone
+{{/OpHasZone}}
+{{#OpHasRegion}}
+        operation_request.region = request.region
+{{/OpHasRegion}}
+        operation_request.operation = response.name
+
+        get_operation = functools.partial(operation_service.get, operation_request)
+        # Cancel is not part of extended operations yet.
+        cancel_operation = lambda: None
+
+        # Note: this class is an implementation detail to provide a uniform
+        # set of names for certain fields in the extended operation proto message.
+        # See google.api_core.extended_operation.ExtendedOperation for details
+        # on these properties and the  expected interface.
+        class _CustomOperation(extended_operation.ExtendedOperation):
+            @property
+            def error_message(self):
+                return self._extended_operation.http_error_message
+
+            @property
+            def error_code(self):
+                return self._extended_operation.http_error_status_code
+
+        response = _CustomOperation.make(get_operation, cancel_operation, response)
+
+        # Done; return the response.
+        return response
+{{/IsExtendedOperation}}
+{{^IsExtendedOperation}}
 {{#IsPaged}}
 
         # This method is paged; wrap the response in a pager, which provides
@@ -837,6 +1080,7 @@ class {{ClientName}}(metaclass={{ClientName}}Meta):
 
         # Done; return the response.
         return response
+{{/IsExtendedOperation}}
 {{/ReturnsEmpty}}
 
 {{/Methods}}

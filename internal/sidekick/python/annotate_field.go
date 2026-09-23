@@ -57,7 +57,7 @@ func (c *codec) annotateField(field *api.Field, message *messageAnnotations) err
 	ann := &fieldAnnotations{
 		Message:     message,
 		Field:       field,
-		Name:        pythonIdentifier(snakeCase(field.Name)),
+		Name:        pythonIdentifier(field.Name),
 		DocLines:    docLines,
 		HasDocLines: len(docLines) > 0,
 		TypeName:    field.TypezID,
@@ -76,7 +76,11 @@ func (c *codec) annotateField(field *api.Field, message *messageAnnotations) err
 		ann.IsOneOf = true
 	}
 
-	ann.IsOptional = field.Optional && !field.Map && !field.Repeated && !ann.IsOneOf && field.Typez != api.TypezMessage
+	if field.Typez == api.TypezMessage {
+		ann.IsOptional = c.isComputeField(field) && !field.DocumentAsRequired() && !field.Map && !field.Repeated && !ann.IsOneOf
+	} else {
+		ann.IsOptional = field.Optional && !field.Map && !field.Repeated && !ann.IsOneOf
+	}
 	if ann.IsOptional {
 		ann.DocIsOneOf = true
 		ann.DocOneOfName = "_" + field.Name
@@ -292,4 +296,20 @@ func (c *codec) resolveEnumTarget(currentMessage *messageAnnotations, target *ap
 	targetFile := resolveProtoFile(target.SourceLocation, targetPackage, target.Name)
 	isDirectChild := currentMessage != nil && currentMessage.Message != nil && currentMessage.Message.Parent == nil && target.Parent == currentMessage.Message
 	return c.resolveTarget(currentMessage, targetPackage, targetFile, relativeTypeName(target), target.Name, isDirectChild)
+}
+
+func (c *codec) isComputeField(field *api.Field) bool {
+	if c.Model != nil && strings.Contains(c.Model.PackageName, "compute") {
+		return true
+	}
+	if c.Library != nil && strings.Contains(c.Library.Name, "compute") {
+		return true
+	}
+	if field != nil && field.MessageType != nil && strings.Contains(field.MessageType.Package, "compute") {
+		return true
+	}
+	if field != nil && field.Parent != nil && strings.Contains(field.Parent.Package, "compute") {
+		return true
+	}
+	return false
 }

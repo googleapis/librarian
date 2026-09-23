@@ -132,3 +132,27 @@ func TestAnnotateMessage(t *testing.T) {
 		})
 	}
 }
+
+func TestAnnotateMessage_ComputeOperationDoneProperty(t *testing.T) {
+	opMsg := api.NewTestMessage("Operation").WithFields(
+		api.NewTestField("status").WithType(api.TypezString),
+		api.NewTestField("id").WithType(api.TypezUint64),
+	)
+	opMsg.Package = "google.cloud.compute.v1"
+	model := api.NewTestAPI([]*api.Message{opMsg}, nil, nil)
+	model.PackageName = "google-cloud-compute"
+	c := newTestCodec(t, model, nil)
+	if err := c.annotateModel(); err != nil {
+		t.Fatal(err)
+	}
+	ann, ok := opMsg.Codec.(*messageAnnotations)
+	if !ok {
+		t.Fatalf("got %T, want *messageAnnotations", opMsg.Codec)
+	}
+	if !ann.HasExtendedOperationDoneProperty {
+		t.Errorf("HasExtendedOperationDoneProperty = false, want true")
+	}
+	if ann.DoneStatusFieldName != "status" {
+		t.Errorf("DoneStatusFieldName = %q, want %q", ann.DoneStatusFieldName, "status")
+	}
+}

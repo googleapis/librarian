@@ -17,6 +17,7 @@ package python
 import (
 	"fmt"
 	"regexp"
+	"slices"
 	"strings"
 
 	"github.com/googleapis/librarian/internal/sidekick/api"
@@ -47,6 +48,12 @@ type flattenedParam struct {
 	SphinxType string
 	DocLines   []string
 	IsRepeated bool
+}
+
+// clientRoutingHeader represents an HTTP routing parameter extracted for gRPC metadata.
+type clientRoutingHeader struct {
+	Key      string
+	Accessor string
 }
 
 // clientMethodAnnotations contains metadata needed to render an RPC method on the client.
@@ -80,6 +87,7 @@ type clientMethodAnnotations struct {
 	RoutingHeaderKey      string
 	RoutingHeaderAccessor string
 	HasRoutingHeader      bool
+	RoutingHeaders        []*clientRoutingHeader
 	SamplePreInitLines    []string
 	HasSamplePreInit      bool
 	SampleRequestArgs     []*sampleRequestArg
@@ -92,10 +100,61 @@ type clientMethodAnnotations struct {
 	AsyncReturnType       string
 	AsyncReturnSphinxType string
 	AsyncPagerClassName   string
+	IsExtendedOperation   bool
+	OpServiceSnake        string
+	OpServiceSingular     string
+	OpHasProject          bool
+	OpHasZone             bool
+	OpHasRegion           bool
+}
+
+// formatRequestDocLines formats the parameter documentation lines for the request object.
+func formatRequestDocLines(docText string) []string {
+	if docText == "" {
+		return []string{"The request object."}
+	}
+	lines := formatRstDoc(docText, 56, 16)
+	if len(lines) > 0 {
+		lines[0] = "The request object. " + lines[0]
+		return lines
+	}
+	return []string{"The request object."}
+}
+
+// extractRoutingHeaders extracts explicit and path-derived routing header key-accessor pairs for method m.
+func extractRoutingHeaders(m *api.Method) []*clientRoutingHeader {
+	var headers []*clientRoutingHeader
+	seen := make(map[string]bool)
+	add := func(k, a string) {
+		if k != "" && !seen[k] {
+			seen[k] = true
+			headers = append(headers, &clientRoutingHeader{Key: k, Accessor: a})
+		}
+	}
+	if len(m.Routing) > 0 {
+		for _, r := range m.Routing {
+			if len(r.Variants) > 0 {
+				k := r.Name
+				a := r.Variants[0].FieldName()
+				if k == "" {
+					k = a
+				}
+				add(k, "request."+a)
+			}
+		}
+	} else if m.PathInfo != nil && len(m.PathInfo.Bindings) > 0 && m.PathInfo.Bindings[0].PathTemplate != nil {
+		for _, seg := range m.PathInfo.Bindings[0].PathTemplate.Segments {
+			if seg.Variable != nil && len(seg.Variable.FieldPath) > 0 {
+				f := strings.Join(seg.Variable.FieldPath, ".")
+				add(f, "request."+f)
+			}
+		}
+	}
+	return headers
 }
 
 func (c *codec) annotateClientMethod(m *api.Method, service *api.Service, ann *clientAnnotations) *clientMethodAnnotations {
-	name := pythonIdentifier(snakeCase(m.Name))
+	name := pythonMethodIdentifier(snakeCase(m.Name))
 	docLines := formatRstDocLines(m.Documentation, 72, 8)
 	var docHead string
 	var docBody []string
@@ -112,24 +171,12 @@ func (c *codec) annotateClientMethod(m *api.Method, service *api.Service, ann *c
 	if m.InputType != nil {
 		reqTypeName = m.InputType.Name
 		reqStem = c.resolveMessageStem(m.InputType)
-		docText := strings.TrimSpace(m.InputType.Documentation)
-		if docText == "" {
-			reqDocLines = []string{"The request object."}
-		} else {
-			converted := convertMarkdownToRst("The request object. " + docText)
-			reqDocLines = wrapCommonMark(converted, 56)
-		}
+		reqDocLines = formatRequestDocLines(strings.TrimSpace(m.InputType.Documentation))
 	} else if m.InputTypeID != "" && c.Model != nil {
 		if inMsg := c.resolveMessageType(m.InputTypeID); inMsg != nil {
 			reqTypeName = inMsg.Name
 			reqStem = c.resolveMessageStem(inMsg)
-			docText := strings.TrimSpace(inMsg.Documentation)
-			if docText == "" {
-				reqDocLines = []string{"The request object."}
-			} else {
-				converted := convertMarkdownToRst("The request object. " + docText)
-				reqDocLines = wrapCommonMark(converted, 56)
-			}
+			reqDocLines = formatRequestDocLines(strings.TrimSpace(inMsg.Documentation))
 		}
 	}
 	reqTypeHint := reqStem + "." + reqTypeName
@@ -279,7 +326,11 @@ func (c *codec) annotateClientMethod(m *api.Method, service *api.Service, ann *c
 		if outMsg != nil {
 			outStem = c.resolveMessageStem(outMsg)
 			outName = outMsg.Name
-			returnDocLines = formatMethodReturnDoc(outMsg.Documentation)
+			if outName == "Policy" && strings.HasPrefix(strings.TrimSpace(outMsg.Documentation), "An Identity and Access Management") {
+				returnDocLines = iamComputePolicyReturnDocLines
+			} else {
+				returnDocLines = formatMethodReturnDoc(outMsg.Documentation)
+			}
 		}
 		returnType = outStem + "." + outName
 		returnSphinxType = ann.VersionPackage + ".types." + outName
@@ -350,32 +401,31 @@ func (c *codec) annotateClientMethod(m *api.Method, service *api.Service, ann *c
 		}
 	}
 
-	// Routing header
-	var routingKey, routingAccessor string
-	if len(m.Routing) > 0 && len(m.Routing[0].Variants) > 0 {
-		routingKey = m.Routing[0].Name
-		routingAccessor = m.Routing[0].Variants[0].FieldName()
-		if routingKey == "" {
-			routingKey = routingAccessor
-		}
-	} else if m.PathInfo != nil && len(m.PathInfo.Bindings) > 0 && m.PathInfo.Bindings[0].PathTemplate != nil {
-		for _, seg := range m.PathInfo.Bindings[0].PathTemplate.Segments {
-			if seg.Variable != nil && len(seg.Variable.FieldPath) > 0 {
-				field := strings.Join(seg.Variable.FieldPath, ".")
-				routingKey = field
-				routingAccessor = field
-				break
-			}
-		}
+	// Routing headers
+	routingHeaders := extractRoutingHeaders(m)
+	var routingKey, routingHeaderAccessor string
+	if len(routingHeaders) > 0 {
+		routingKey = routingHeaders[0].Key
+		routingHeaderAccessor = routingHeaders[0].Accessor
 	}
 
 	// Sample generation
 	samplePreInitLines, sampleArgs := c.buildSampleCode(m, ann.VersionSegment)
 
 	hasReturnDocTrailer := len(returnDocLines) != 1
-	var routingHeaderAccessor string
-	if routingKey != "" {
-		routingHeaderAccessor = "request." + routingAccessor
+
+	var isExtendedOp, opHasProject, opHasZone, opHasRegion bool
+	var opServiceSnake, opServiceSingular string
+	protoOpts := c.loadProtoServiceOptions(service)
+	if opService, ok := protoOpts.MethodOperationServices[m.Name]; ok && opService != "" {
+		isExtendedOp = true
+		opServiceSnake = snakeCase(opService)
+		opServiceSingular = strings.TrimSuffix(opService, "s")
+		if m.InputType != nil {
+			opHasProject = slices.ContainsFunc(m.InputType.Fields, func(f *api.Field) bool { return f.Name == "project" })
+			opHasZone = slices.ContainsFunc(m.InputType.Fields, func(f *api.Field) bool { return f.Name == "zone" })
+			opHasRegion = slices.ContainsFunc(m.InputType.Fields, func(f *api.Field) bool { return f.Name == "region" })
+		}
 	}
 
 	return &clientMethodAnnotations{
@@ -407,7 +457,8 @@ func (c *codec) annotateClientMethod(m *api.Method, service *api.Service, ann *c
 		HasFlattenedParams:    len(flattenedParams) > 0,
 		RoutingHeaderKey:      routingKey,
 		RoutingHeaderAccessor: routingHeaderAccessor,
-		HasRoutingHeader:      routingKey != "",
+		HasRoutingHeader:      len(routingHeaders) > 0,
+		RoutingHeaders:        routingHeaders,
 		SamplePreInitLines:    samplePreInitLines,
 		HasSamplePreInit:      len(samplePreInitLines) > 0,
 		SampleRequestArgs:     sampleArgs,
@@ -420,5 +471,11 @@ func (c *codec) annotateClientMethod(m *api.Method, service *api.Service, ann *c
 		AsyncReturnType:       asyncReturnType,
 		AsyncReturnSphinxType: asyncReturnSphinxType,
 		AsyncPagerClassName:   asyncPagerClassName,
+		IsExtendedOperation:   isExtendedOp,
+		OpServiceSnake:        opServiceSnake,
+		OpServiceSingular:     opServiceSingular,
+		OpHasProject:          opHasProject,
+		OpHasZone:             opHasZone,
+		OpHasRegion:           opHasRegion,
 	}
 }

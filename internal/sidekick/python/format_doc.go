@@ -17,14 +17,12 @@ package python
 import (
 	"regexp"
 	"strings"
-	"unicode"
 )
 
 var (
-	numberedListRe       = regexp.MustCompile(`^\d+\.\s+`)
-	reNumberedListPrefix = regexp.MustCompile(`^\d+\.`)
-	reNumberedListOnly   = regexp.MustCompile(`^\d+\.$`)
-	reColonNewline       = regexp.MustCompile(`:\n([^\n])`)
+	numberedListRe       = regexp.MustCompile(`^\d+[.)]\s+`)
+	reNumberedListPrefix = regexp.MustCompile(`^\d+[.)]`)
+	reNumberedListOnly   = regexp.MustCompile(`^\d+[.)]$`)
 )
 
 type blockKind int
@@ -75,37 +73,81 @@ func formatFieldDocLines(doc string) []string {
 	if strings.TrimSpace(doc) == "" {
 		return nil
 	}
-	return formatRstDoc(doc, fieldDocWidth, fieldDocIndent)
+	return formatRstDocInternal(doc, fieldDocWidth, fieldDocIndent, true, true)
 }
 
 // formatRstDoc converts documentation text to reStructuredText format and wraps it to the target width.
 func formatRstDoc(text string, width, indent int) []string {
-	return formatRstDocInternal(text, width, indent, true)
+	return formatRstDocInternal(text, width, indent, true, false)
 }
 
 // formatReturnRstDoc converts method return docstrings where Markdown links are not rewritten.
 func formatReturnRstDoc(text string, width, indent int) []string {
-	return formatRstDocInternal(text, width, indent, false)
+	return formatRstDocInternal(text, width, indent, false, false)
 }
 
 // formatRstDocInternal converts text to RST, optionally rewriting markdown links, and wraps lines.
-func formatRstDocInternal(text string, width, indent int, convertLinks bool) []string {
+func formatRstDocInternal(text string, width, indent int, convertLinks, isFieldDoc bool) []string {
+	text = strings.TrimSpace(text)
+	if text == "" {
+		return nil
+	}
 	hasFormatting := strings.ContainsAny(text, "|*`_[]")
-	converted := convertMarkdownToRstWithOptions(text, convertLinks)
 	var lines []string
 	if hasFormatting {
-		lines = wrapCommonMark(converted, width)
+		text, literalBlocks := extractIndentedLiteralBlocks(text)
+		converted := convertMarkdownToRstWithOptions(text, convertLinks)
+		lines = wrapCommonMark(converted, width, literalBlocks)
 	} else {
-		lines = wrapUnformatted(converted, width, indent)
+		lines = wrapUnformatted(text, width, indent)
 	}
 
 	var result []string
-	for _, line := range lines {
-		if line == "" {
-			result = append(result, "")
-			continue
+	consecutiveBlanks := 0
+	lastNonBlank := ""
+	inLiteralBlock := false
+	for idx, line := range lines {
+		trimmed := strings.TrimSpace(line)
+		if trimmed == "" {
+			consecutiveBlanks++
+			if inLiteralBlock {
+				result = append(result, line)
+				continue
+			}
+			nextIsIndented := false
+			for k := idx + 1; k < len(lines); k++ {
+				if strings.TrimSpace(lines[k]) != "" {
+					nextIsIndented = strings.HasPrefix(lines[k], " ")
+					break
+				}
+			}
+			if strings.HasSuffix(lastNonBlank, ":") || strings.HasSuffix(lastNonBlank, "::") || strings.HasSuffix(lastNonBlank, "as follows.") {
+				if consecutiveBlanks <= 3 {
+					result = append(result, line)
+				}
+			} else if nextIsIndented {
+				if consecutiveBlanks <= 2 {
+					result = append(result, line)
+				}
+			} else {
+				if consecutiveBlanks <= 1 {
+					result = append(result, line)
+				}
+			}
+		} else {
+			consecutiveBlanks = 0
+			if inLiteralBlock && !strings.HasPrefix(line, " ") {
+				inLiteralBlock = false
+			}
+			if trimmed == "::" {
+				inLiteralBlock = true
+			}
+			lastNonBlank = trimmed
+			result = append(result, line)
 		}
-		result = append(result, line)
+	}
+	for len(result) > 0 && result[len(result)-1] == "" {
+		result = result[:len(result)-1]
 	}
 	if len(result) > 0 {
 		lastIdx := len(result) - 1
@@ -113,13 +155,15 @@ func formatRstDocInternal(text string, width, indent int, convertLinks bool) []s
 			lastIdx--
 		}
 		if lastIdx >= 0 && strings.HasSuffix(result[lastIdx], `"`) {
-			result[lastIdx] += "."
+			if isFieldDoc || len(result) == 1 {
+				result[lastIdx] += "."
+			}
 		}
 	}
 	return result
 }
 
-func wrapCommonMark(text string, width int) []string {
+func wrapCommonMark(text string, width int, literalBlocks [][]string) []string {
 	paragraphs := strings.Split(text, "\n\n")
 	var result []string
 
@@ -132,6 +176,7 @@ func wrapCommonMark(text string, width int) []string {
 			continue
 		}
 
+		pLeadSpaces := len(p) - len(strings.TrimLeft(p, " \t"))
 		p = strings.TrimSpace(p)
 		if p == "" {
 			continue
@@ -142,6 +187,22 @@ func wrapCommonMark(text string, width int) []string {
 
 		if p == "::" {
 			result = append(result, "::")
+			continue
+		}
+
+		if idx, ok := parseLiteralBlockIndex(p); ok && idx < len(literalBlocks) {
+			hasColonColon := false
+			if len(result) >= 1 && result[len(result)-1] == "::" {
+				result = append(result, "")
+				hasColonColon = true
+			} else if len(result) >= 2 && result[len(result)-2] == "::" && result[len(result)-1] == "" {
+				hasColonColon = true
+			}
+			if !hasColonColon {
+				result = append(result, "::")
+				result = append(result, "")
+			}
+			result = append(result, literalBlocks[idx]...)
 			continue
 		}
 
@@ -160,12 +221,15 @@ func wrapCommonMark(text string, width int) []string {
 			}
 		}
 
-		for _, rl := range rawLines {
+		for rlIdx, rl := range rawLines {
 			trimmed := strings.TrimSpace(rl)
 			if trimmed == "" {
 				continue
 			}
 			leadSpaces := len(rl) - len(strings.TrimLeft(rl, " "))
+			if rlIdx == 0 {
+				leadSpaces = pLeadSpaces
+			}
 
 			if (strings.HasPrefix(trimmed, "- ") || strings.HasPrefix(trimmed, "* ") || strings.HasPrefix(trimmed, "+ ")) &&
 				reNumberedListPrefix.MatchString(trimmed[2:]) {
@@ -188,7 +252,7 @@ func wrapCommonMark(text string, width int) []string {
 
 			if isList {
 				lineKind := kindTopList
-				if leadSpaces >= 4 {
+				if leadSpaces >= 4 || (leadSpaces >= 3 && (curKind == kindTopList || curKind == kindNestedList || (pIdx > 0 && strings.Contains(paragraphs[pIdx-1], "as in:")))) {
 					lineKind = kindNestedList
 				}
 				flushBlock()
@@ -206,13 +270,15 @@ func wrapCommonMark(text string, width int) []string {
 		}
 		flushBlock()
 
+		isLooseList := strings.Contains(p, "as in:")
 		var prevKind blockKind
 		for bIdx, b := range blocks {
 			if bIdx > 0 {
 				if (prevKind == kindRegular && (b.kind == kindTopList || b.kind == kindNestedList)) ||
 					((prevKind == kindTopList || prevKind == kindNestedList) && b.kind == kindRegular) ||
 					(prevKind == kindTopList && b.kind == kindNestedList) ||
-					(prevKind == kindNestedList && b.kind == kindTopList) {
+					(prevKind == kindNestedList && b.kind == kindTopList) ||
+					(isLooseList && prevKind == kindTopList && b.kind == kindTopList) {
 					result = append(result, "")
 				}
 			}
@@ -269,226 +335,4 @@ func wrapCommonMark(text string, width int) []string {
 		}
 	}
 	return result
-}
-
-func wrapUnformatted(text string, width, indent int) []string {
-	text = reColonNewline.ReplaceAllString(text, ":\n\n$1")
-	offset := indent + 3
-
-	// Protocol buffers preserves single initial spaces after line breaks
-	// when parsing comments. Re-wrapping causes these to be two spaces;
-	// correct for this, but preserve lines starting with two or more spaces (examples/code).
-	lines := strings.Split(text, "\n")
-	for i, line := range lines {
-		if strings.HasPrefix(line, " ") && !strings.HasPrefix(line, "  ") {
-			lines[i] = line[1:]
-		}
-	}
-	text = strings.Join(lines, "\n")
-
-	// Break off first line
-	rawLines := strings.Split(text, "\n")
-	firstRaw := rawLines[0]
-	var firstLine string
-	var remainder string
-
-	firstLimit := width - offset
-	if len(firstRaw) > firstLimit {
-		words := strings.Fields(firstRaw)
-		var cur strings.Builder
-		wIdx := 0
-		for wIdx < len(words) {
-			w := words[wIdx]
-			if cur.Len() == 0 {
-				cur.WriteString(w)
-			} else if cur.Len()+1+len(w) <= firstLimit {
-				cur.WriteByte(' ')
-				cur.WriteString(w)
-			} else {
-				break
-			}
-			wIdx++
-		}
-		var restOfFirst string
-		if wIdx > 0 {
-			searchPos := 0
-			for i := 0; i < wIdx; i++ {
-				pos := strings.Index(firstRaw[searchPos:], words[i])
-				if pos != -1 {
-					searchPos += pos + len(words[i])
-				}
-			}
-			firstLine = strings.TrimSpace(firstRaw[:searchPos])
-			restOfFirst = strings.TrimSpace(firstRaw[searchPos:])
-		} else {
-			firstLine = cur.String()
-			restOfFirst = strings.Join(words[wIdx:], " ")
-		}
-		restOfText := strings.Join(rawLines[1:], "\n")
-		switch {
-		case restOfFirst != "" && restOfText != "":
-			remainder = restOfFirst + " " + restOfText
-		case restOfFirst != "":
-			remainder = restOfFirst
-		default:
-			remainder = restOfText
-		}
-	} else {
-		firstLine = firstRaw
-		remainder = strings.Join(rawLines[1:], "\n")
-	}
-
-	var result []string
-	if strings.TrimSpace(firstLine) != "" {
-		result = append(result, strings.TrimSpace(firstLine))
-	}
-
-	if strings.TrimSpace(remainder) == "" {
-		return result
-	}
-
-	availableWidth := width - indent
-	tokens := tokenizeParagraph(remainder, availableWidth)
-	for _, tok := range tokens {
-		if strings.HasPrefix(tok, "  ") {
-			result = append(result, tok)
-			continue
-		}
-		tok = strings.TrimSpace(tok)
-		if tok == "" {
-			if len(result) > 0 {
-				result = append(result, "")
-			}
-			continue
-		}
-		listIndent := getSubsequentLineIndentLevel(tok)
-		toks := parseTokensWithSpace(tok)
-		if len(toks) == 0 {
-			continue
-		}
-		curWidth := availableWidth
-		var curLine strings.Builder
-		for _, t := range toks {
-			space := t.lead
-			if space == "" {
-				space = " "
-			}
-			wLen := len([]rune(t.text))
-			sLen := len([]rune(space))
-			if curLine.Len() == 0 {
-				curLine.WriteString(t.text)
-			} else if len([]rune(curLine.String()))+sLen+wLen <= curWidth {
-				curLine.WriteString(space)
-				curLine.WriteString(t.text)
-			} else {
-				result = append(result, curLine.String())
-				curLine.Reset()
-				if listIndent > 0 {
-					curLine.WriteString(strings.Repeat(" ", listIndent))
-				}
-				curLine.WriteString(t.text)
-				curWidth = availableWidth
-			}
-		}
-		if curLine.Len() > 0 {
-			result = append(result, curLine.String())
-		}
-	}
-	return result
-}
-
-// tokenWithSpace holds a parsed token along with its leading whitespace.
-type tokenWithSpace struct {
-	lead string
-	text string
-}
-
-// parseTokensWithSpace decomposes a string into tokens while preserving interstitial whitespace.
-func parseTokensWithSpace(s string) []tokenWithSpace {
-	var tokens []tokenWithSpace
-	runes := []rune(s)
-	n := len(runes)
-	i := 0
-	for i < n && unicode.IsSpace(runes[i]) {
-		i++
-	}
-	lead := ""
-	for i < n {
-		start := i
-		for i < n && !unicode.IsSpace(runes[i]) {
-			i++
-		}
-		word := string(runes[start:i])
-		tokens = append(tokens, tokenWithSpace{lead: lead, text: word})
-		startSpace := i
-		for i < n && unicode.IsSpace(runes[i]) {
-			i++
-		}
-		lead = string(runes[startSpace:i])
-	}
-	return tokens
-}
-
-// shortLineThresholdRatio defines the fraction of line wrap width below which
-// a line is treated as terminal and flushed, preventing distinct sentences from being
-// merged inappropriately during docstring paragraph tokenization.
-const shortLineThresholdRatio = 0.80
-
-func tokenizeParagraph(text string, width int) []string {
-	lines := strings.Split(text, "\n")
-	var tokens []string
-	var current strings.Builder
-
-	flush := func() {
-		if current.Len() > 0 {
-			tokens = append(tokens, strings.TrimSpace(current.String()))
-			current.Reset()
-		}
-	}
-
-	shortThreshold := int(float64(width) * shortLineThresholdRatio)
-
-	for _, line := range lines {
-		trimmed := strings.TrimSpace(line)
-		if trimmed == "" {
-			flush()
-			tokens = append(tokens, "")
-			continue
-		}
-		if strings.HasPrefix(line, "  ") {
-			flush()
-			tokens = append(tokens, line)
-			continue
-		}
-		if isListItem(trimmed) && current.Len() > 0 {
-			flush()
-		}
-		if current.Len() > 0 {
-			current.WriteByte(' ')
-		}
-		current.WriteString(trimmed)
-		if len(trimmed) <= shortThreshold || strings.HasSuffix(trimmed, ":") {
-			flush()
-		}
-	}
-	flush()
-	return tokens
-}
-
-// isListItem reports whether a line begins with a bullet or numbered list marker.
-func isListItem(s string) bool {
-	if strings.HasPrefix(s, "- ") || strings.HasPrefix(s, "+ ") || strings.HasPrefix(s, "* ") {
-		return true
-	}
-	return numberedListRe.MatchString(s)
-}
-
-func getSubsequentLineIndentLevel(s string) int {
-	if len(s) >= 2 && (s[0:2] == "- " || s[0:2] == "+ " || s[0:2] == "* ") {
-		return 2
-	}
-	if len(s) >= 4 && numberedListRe.MatchString(s) {
-		return 4
-	}
-	return 0
 }

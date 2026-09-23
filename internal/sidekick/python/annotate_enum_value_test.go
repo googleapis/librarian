@@ -32,8 +32,9 @@ func TestAnnotateEnumValue(t *testing.T) {
 			name: "basic enum value",
 			ev:   api.NewTestEnumValue("STATE_UNSPECIFIED", 0),
 			want: &enumValueAnnotations{
-				Name:   "STATE_UNSPECIFIED",
-				Number: 0,
+				Name:     "STATE_UNSPECIFIED",
+				Number:   0,
+				DocLines: []string{"No description available."},
 			},
 		},
 		{

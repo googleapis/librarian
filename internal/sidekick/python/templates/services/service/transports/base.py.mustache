@@ -1,8 +1,11 @@
 {{> partials/prologue}}
 import abc
-from typing import Awaitable, Callable, Dict, Optional, Sequence, Union
+from typing import {{#Codec.Transport.HasExtendedOperations}}Any, {{/Codec.Transport.HasExtendedOperations}}Awaitable, Callable, Dict, Optional, Sequence, Union
 
 from {{Codec.Transport.VersionPackage}} import gapic_version as package_version
+{{#Codec.Transport.ExtendedOperationsServices}}
+from {{Codec.Transport.VersionPackage}}.services import {{ServiceNameSnake}}
+{{/Codec.Transport.ExtendedOperationsServices}}
 
 import google.auth  # type: ignore
 import google.api_core
@@ -81,6 +84,9 @@ class {{Codec.Transport.TransportClassName}}(abc.ABC):
                 authentication flows. Audience is typically a resource identifier.
                 If not set, the host value will be used as a default.
         """
+{{#Codec.Transport.HasExtendedOperations}}
+        self._extended_operations_services: Dict[str, Any] = {}
+{{/Codec.Transport.HasExtendedOperations}}
 
         # Save the scopes.
         self._scopes = scopes
@@ -301,6 +307,20 @@ class {{Codec.Transport.TransportClassName}}(abc.ABC):
     @property
     def kind(self) -> str:
         raise NotImplementedError()
+{{#Codec.Transport.ExtendedOperationsServices}}
+
+    @property
+    def _{{ServiceNameSnake}}_client(self) -> {{ServiceNameSnake}}.{{ServiceNamePascal}}Client:
+        ex_op_service = self._extended_operations_services.get("{{ServiceNameSnake}}")
+        if not ex_op_service:
+            ex_op_service = {{ServiceNameSnake}}.{{ServiceNamePascal}}Client(
+                credentials=self._credentials,
+                transport=self.kind,
+            )
+            self._extended_operations_services["{{ServiceNameSnake}}"] = ex_op_service
+
+        return ex_op_service
+{{/Codec.Transport.ExtendedOperationsServices}}
 
 
 __all__ = (

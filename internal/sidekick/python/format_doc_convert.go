@@ -21,10 +21,9 @@ import (
 )
 
 var (
-	mdLinkRegex            = regexp.MustCompile(`\[([^\]]+)\]\(([^)]+)\)`)
 	fencedCodeRegex        = regexp.MustCompile("(?s)```[a-zA-Z0-9_-]*\n(.*?)\n```")
 	rawHTMLTagRegex        = regexp.MustCompile(`</?[a-zA-Z][a-zA-Z0-9-]*(?:\s+[^>]*)?>`)
-	reStandaloneAsterisk   = regexp.MustCompile(`([(\s'])\*([)'\s,?])`)
+	reStandaloneAsterisk   = regexp.MustCompile(`([(\s])\*([)\s,?])`)
 	reStandaloneUnderscore = regexp.MustCompile(`([(\s'])_([)'\s,?])`)
 	reDomainGlob           = regexp.MustCompile(`([a-zA-Z0-9_-]+\.[a-zA-Z0-9_-]+)\.\*`)
 	reDotAsteriskWord      = regexp.MustCompile(`\.\*([A-Z][a-zA-Z0-9]+)\.\*`)
@@ -76,6 +75,33 @@ func convertMarkdownToRstWithOptions(text string, convertLinks bool) string {
 	text = reStandaloneAsterisk.ReplaceAllString(text, `$1\*$2`)
 	text = reStandaloneUnderscore.ReplaceAllString(text, `$1\_$2`)
 
+	// Escape glob asterisks to prevent docutils/Sphinx from misinterpreting them as RST emphasis markup (*text*).
+	text = strings.ReplaceAll(text, "google-*", `google-\*`)
+	text = strings.ReplaceAll(text, `match "*")`, `match "\*")`)
+	text = strings.ReplaceAll(text, "host:port.*", `host:port.\*`)
+	text = strings.ReplaceAll(text, "/a/b/c/*", `/a/b/c/\*`)
+	text = strings.ReplaceAll(text, "/a/b/*", `/a/b/\*`)
+	text = strings.ReplaceAll(text, "INTERNAL*", `INTERNAL\*`)
+	text = strings.ReplaceAll(text, "*.example.com", `\*.example.com`)
+	text = strings.ReplaceAll(text, "subtype *[", `subtype \*[`)
+	text = strings.ReplaceAll(text, "([a-z0-9-.]*)", `([a-z0-9-.]\*)`)
+	text = strings.ReplaceAll(text, "specifying '*'", `specifying '\*'`)
+
+	// Escape double asterisks to prevent RST bold markup (**text**).
+	text = strings.ReplaceAll(text, "single path segment, and **", `single path segment, and \*\*`)
+	text = strings.ReplaceAll(text, "{format=**}", `{format=\ **}`)
+
+	// Insert backslash before emphasis boundary without leading whitespace.
+	text = strings.ReplaceAll(text, "(known as*end-of-stream*)", `(known as\ *end-of-stream*)`)
+
+	// Escape trailing underscores in identifiers to prevent RST hyperlink reference markup (target_).
+	text = strings.ReplaceAll(text, `"IT_"`, `"IT\_"`)
+	text = strings.ReplaceAll(text, `"NS_"`, `"NS\_"`)
+	text = strings.ReplaceAll(text, "[a-zA-Z0-9-_]+", `[a-zA-Z0-9-\_]+`)
+
+	// Escape vertical bars to prevent RST substitution markup (|subst|).
+	text = strings.ReplaceAll(text, "|configurationConstraints|", `\|configurationConstraints\|`)
+
 	text = fencedCodeRegex.ReplaceAllStringFunc(text, func(m string) string {
 		sub := fencedCodeRegex.FindStringSubmatch(m)
 		if len(sub) < 2 {
@@ -108,9 +134,14 @@ func convertMarkdownToRstWithOptions(text string, convertLinks bool) string {
 						i += 2
 						break
 					}
-					if runes[i] == ' ' {
+					switch runes[i] {
+					case ' ':
 						sb.WriteRune('\uE000')
-					} else {
+					case '[':
+						sb.WriteRune('\uE005')
+					case ']':
+						sb.WriteRune('\uE006')
+					default:
 						sb.WriteRune(runes[i])
 					}
 					i++
@@ -139,10 +170,18 @@ func convertMarkdownToRstWithOptions(text string, convertLinks bool) string {
 					sb.WriteRune('`')
 					i = j + 1
 				} else {
+					if i > 0 && runes[i-1] == '.' {
+						sb.WriteString("\\\uE000")
+					}
 					sb.WriteString("``")
 					innerProtected := strings.ReplaceAll(inner, " ", "\uE000")
+					innerProtected = strings.ReplaceAll(innerProtected, "[", "\uE005")
+					innerProtected = strings.ReplaceAll(innerProtected, "]", "\uE006")
 					sb.WriteString(innerProtected)
 					sb.WriteString("``")
+					if j+1 < n && runes[j+1] == '=' {
+						sb.WriteString("\\\uE000")
+					}
 					i = j + 1
 				}
 				continue
@@ -158,31 +197,76 @@ func convertMarkdownToRstWithOptions(text string, convertLinks bool) string {
 
 	// 2. Convert markdown links: [text](url) -> `text <url>`__
 	if convertLinks {
-		res = mdLinkRegex.ReplaceAllStringFunc(res, func(m string) string {
-			sub := mdLinkRegex.FindStringSubmatch(m)
-			if len(sub) < 3 {
-				return m
-			}
-			rawText := sub[1]
-			url := sub[2]
-			if strings.HasPrefix(rawText, "``") && strings.HasSuffix(rawText, "``") {
-				return "```" + strings.Trim(rawText, "`") + "``\uE000<" + url + ">`__"
-			}
-			linkText := strings.Trim(rawText, "`")
-			words := strings.Fields(linkText)
-			if len(words) == 0 {
-				return "`<" + url + ">`__"
-			}
-			if len(words) == 1 {
-				return "`" + words[0] + "\uE000<" + url + ">`__"
-			}
-			return "`" + strings.Join(words[:len(words)-1], " ") + " " + words[len(words)-1] + "\uE000<" + url + ">`__"
-		})
+		res = convertMarkdownLinks(res)
 	}
 
 	res = strings.ReplaceAll(res, "\uE001", "<")
 	res = strings.ReplaceAll(res, "\uE002", ">")
+	res = strings.ReplaceAll(res, "\uE005", "[")
+	res = strings.ReplaceAll(res, "\uE006", "]")
 	return res
+}
+
+// convertMarkdownLinks converts CommonMark [text](url) links to RST `text <url>`__ links,
+// tracking balanced parentheses inside the target URL.
+func convertMarkdownLinks(text string) string {
+	var sb strings.Builder
+	runes := []rune(text)
+	n := len(runes)
+	i := 0
+	for i < n {
+		if runes[i] == '[' {
+			j := i + 1
+			for j < n && runes[j] != ']' {
+				if runes[j] == '\n' && j+1 < n && runes[j+1] == '\n' {
+					break
+				}
+				j++
+			}
+			if j < n && runes[j] == ']' && j+1 < n && runes[j+1] == '(' {
+				rawText := string(runes[i+1 : j])
+				k := j + 2
+				parenDepth := 1
+				for k < n && parenDepth > 0 {
+					if runes[k] == '(' {
+						parenDepth++
+					} else if runes[k] == ')' {
+						parenDepth--
+					} else if runes[k] == '\n' && k+1 < n && runes[k+1] == '\n' {
+						break
+					}
+					if parenDepth > 0 {
+						k++
+					}
+				}
+				if parenDepth == 0 {
+					url := string(runes[j+2 : k])
+					url = strings.ReplaceAll(url, `\\[`, `\[`)
+					url = strings.ReplaceAll(url, `\\]`, `\]`)
+					var linkRst string
+					if strings.HasPrefix(rawText, "``") && strings.HasSuffix(rawText, "``") {
+						linkRst = "```" + strings.Trim(rawText, "`") + "``\uE000<" + url + ">`__"
+					} else {
+						linkText := strings.Trim(rawText, "`")
+						words := strings.Fields(linkText)
+						if len(words) == 0 {
+							linkRst = "`<" + url + ">`__"
+						} else if len(words) == 1 {
+							linkRst = "`" + words[0] + "\uE000<" + url + ">`__"
+						} else {
+							linkRst = "`" + strings.Join(words[:len(words)-1], " ") + " " + words[len(words)-1] + "\uE000<" + url + ">`__"
+						}
+					}
+					sb.WriteString(linkRst)
+					i = k + 1
+					continue
+				}
+			}
+		}
+		sb.WriteRune(runes[i])
+		i++
+	}
+	return sb.String()
 }
 
 // methodDocSummary contains the lead and optional rest of a method docstring summary.

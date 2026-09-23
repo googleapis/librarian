@@ -63,8 +63,10 @@ func formatPathTemplateURI(template *api.PathTemplate) string {
 		fieldPath := strings.Join(segment.Variable.FieldPath, ".")
 		if len(segment.Variable.Segments) > 0 {
 			pattern := strings.Join(segment.Variable.Segments, "/")
-			components = append(components, fmt.Sprintf("{%s=%s}", fieldPath, pattern))
-			continue
+			if pattern != "*" {
+				components = append(components, fmt.Sprintf("{%s=%s}", fieldPath, pattern))
+				continue
+			}
 		}
 		components = append(components, fmt.Sprintf("{%s}", fieldPath))
 	}
@@ -80,7 +82,7 @@ func annotateRestMethod(m *api.Method) *restMethodAnnotation {
 	if m == nil {
 		return nil
 	}
-	name := pythonIdentifier(snakeCase(m.Name))
+	name := pythonMethodIdentifier(snakeCase(m.Name))
 	baseClassName := "_Base" + pascalCase(m.Name)
 
 	var httpOptions []*httpOptionAnnotation
@@ -144,8 +146,11 @@ func annotateRestMethod(m *api.Method) *restMethodAnnotation {
 			// In gapic-generator-python REST mappings, message and enum fields default to empty dict `{}`;
 			// all other scalar types default to empty string `""`.
 			valStr := `""`
-			if f.Typez == api.TypezMessage || f.Typez == api.TypezEnum {
+			switch f.Typez {
+			case api.TypezMessage, api.TypezEnum:
 				valStr = "{}"
+			case api.TypezBool:
+				valStr = "False"
 			}
 			requiredFieldsDefaultValues = append(requiredFieldsDefaultValues, &requiredFieldDefaultAnnotation{
 				Key:   key,

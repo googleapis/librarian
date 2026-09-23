@@ -168,13 +168,6 @@ func Generate(ctx context.Context, model *api.API, outdir string, library *confi
 			serviceFilePair{
 				service: service,
 				file: language.GeneratedFile{
-					TemplatePath: "templates/services/service/async_client.py.mustache",
-					OutputPath:   filepath.Join(serviceDir, "async_client.py"),
-				},
-			},
-			serviceFilePair{
-				service: service,
-				file: language.GeneratedFile{
 					TemplatePath: "templates/services/service/transports/README.rst.mustache",
 					OutputPath:   filepath.Join(serviceDir, "transports", "README.rst"),
 				},
@@ -189,39 +182,56 @@ func Generate(ctx context.Context, model *api.API, outdir string, library *confi
 			serviceFilePair{
 				service: service,
 				file: language.GeneratedFile{
-					TemplatePath: "templates/services/service/transports/grpc.py.mustache",
-					OutputPath:   filepath.Join(serviceDir, "transports", "grpc.py"),
-				},
-			},
-			serviceFilePair{
-				service: service,
-				file: language.GeneratedFile{
-					TemplatePath: "templates/services/service/transports/grpc_asyncio.py.mustache",
-					OutputPath:   filepath.Join(serviceDir, "transports", "grpc_asyncio.py"),
-				},
-			},
-			serviceFilePair{
-				service: service,
-				file: language.GeneratedFile{
-					TemplatePath: "templates/services/service/transports/rest_base.py.mustache",
-					OutputPath:   filepath.Join(serviceDir, "transports", "rest_base.py"),
-				},
-			},
-			serviceFilePair{
-				service: service,
-				file: language.GeneratedFile{
-					TemplatePath: "templates/services/service/transports/rest.py.mustache",
-					OutputPath:   filepath.Join(serviceDir, "transports", "rest.py"),
-				},
-			},
-			serviceFilePair{
-				service: service,
-				file: language.GeneratedFile{
 					TemplatePath: "templates/services/service/transports/__init__.py.mustache",
 					OutputPath:   filepath.Join(serviceDir, "transports", "__init__.py"),
 				},
 			},
 		)
+		if ann.HasAsyncClient {
+			serviceFiles = append(serviceFiles, serviceFilePair{
+				service: service,
+				file: language.GeneratedFile{
+					TemplatePath: "templates/services/service/async_client.py.mustache",
+					OutputPath:   filepath.Join(serviceDir, "async_client.py"),
+				},
+			})
+		}
+		if ann.HasGRPCTransport {
+			serviceFiles = append(serviceFiles,
+				serviceFilePair{
+					service: service,
+					file: language.GeneratedFile{
+						TemplatePath: "templates/services/service/transports/grpc.py.mustache",
+						OutputPath:   filepath.Join(serviceDir, "transports", "grpc.py"),
+					},
+				},
+				serviceFilePair{
+					service: service,
+					file: language.GeneratedFile{
+						TemplatePath: "templates/services/service/transports/grpc_asyncio.py.mustache",
+						OutputPath:   filepath.Join(serviceDir, "transports", "grpc_asyncio.py"),
+					},
+				},
+			)
+		}
+		if ann.HasRESTTransport {
+			serviceFiles = append(serviceFiles,
+				serviceFilePair{
+					service: service,
+					file: language.GeneratedFile{
+						TemplatePath: "templates/services/service/transports/rest_base.py.mustache",
+						OutputPath:   filepath.Join(serviceDir, "transports", "rest_base.py"),
+					},
+				},
+				serviceFilePair{
+					service: service,
+					file: language.GeneratedFile{
+						TemplatePath: "templates/services/service/transports/rest.py.mustache",
+						OutputPath:   filepath.Join(serviceDir, "transports", "rest.py"),
+					},
+				},
+			)
+		}
 		if ann.RestTransport != nil && ann.RestTransport.RestAsyncIOEnabled {
 			serviceFiles = append(serviceFiles,
 				serviceFilePair{

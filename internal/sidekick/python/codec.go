@@ -17,7 +17,9 @@ package python
 import (
 	"errors"
 	"fmt"
+	"maps"
 	"path/filepath"
+	"slices"
 	"strings"
 	"time"
 
@@ -31,16 +33,17 @@ var ErrNilModel = errors.New("model cannot be nil")
 
 // codec holds the configuration and context for the Python sidekick generator.
 type codec struct {
-	Model          *api.API
-	Library        *config.Library
-	OutDir         string
-	GenerationYear string
-	PackageName    string
-	PackageVersion string
-	DefaultVersion string
-	CurrentVersion string
-	GAPICNamespace string
-	GAPICName      string
+	Model             *api.API
+	Library           *config.Library
+	OutDir            string
+	GenerationYear    string
+	PackageName       string
+	PackageVersion    string
+	DefaultVersion    string
+	CurrentVersion    string
+	GAPICNamespace    string
+	GAPICName         string
+	protoOptionsCache map[string]*protoServiceOptions
 }
 
 // newCodec constructs a new Python codec instance from model, library config, and outdir.
@@ -99,16 +102,17 @@ func newCodec(model *api.API, library *config.Library, outdir string) (*codec, e
 	}
 
 	return &codec{
-		Model:          model,
-		Library:        library,
-		OutDir:         outdir,
-		GenerationYear: year,
-		PackageName:    packageName,
-		PackageVersion: version,
-		DefaultVersion: defaultVersion,
-		CurrentVersion: currentVersion,
-		GAPICNamespace: namespace,
-		GAPICName:      name,
+		Model:             model,
+		Library:           library,
+		OutDir:            outdir,
+		GenerationYear:    year,
+		PackageName:       packageName,
+		PackageVersion:    version,
+		DefaultVersion:    defaultVersion,
+		CurrentVersion:    currentVersion,
+		GAPICNamespace:    namespace,
+		GAPICName:         name,
+		protoOptionsCache: make(map[string]*protoServiceOptions),
 	}, nil
 }
 
@@ -167,4 +171,37 @@ func (c *codec) resolveTypeModule(typeID string, service *api.Service) string {
 		return snakeCase(service.Name)
 	}
 	return "common"
+}
+
+// transport returns the configured transport ("grpc", "rest", or "grpc+rest")
+// across OptArgsByAPI settings, defaulting to "grpc+rest".
+func (c *codec) transport() string {
+	if c.Library != nil && c.Library.Python != nil {
+		keys := slices.Sorted(maps.Keys(c.Library.Python.OptArgsByAPI))
+		for _, k := range keys {
+			for _, arg := range c.Library.Python.OptArgsByAPI[k] {
+				if val, ok := strings.CutPrefix(arg, "transport="); ok {
+					return val
+				}
+			}
+		}
+	}
+	return "grpc+rest"
+}
+
+// hasGRPCTransport reports whether gRPC transport is enabled.
+func (c *codec) hasGRPCTransport() bool {
+	t := c.transport()
+	return t == "grpc" || t == "grpc+rest"
+}
+
+// hasRESTTransport reports whether REST transport is enabled.
+func (c *codec) hasRESTTransport() bool {
+	t := c.transport()
+	return t == "rest" || t == "grpc+rest"
+}
+
+// hasAsyncClient reports whether async client generation is supported.
+func (c *codec) hasAsyncClient() bool {
+	return c.hasGRPCTransport()
 }

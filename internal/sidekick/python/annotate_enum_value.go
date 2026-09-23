@@ -29,6 +29,9 @@ type enumValueAnnotations struct {
 
 func (c *codec) annotateEnumValue(ev *api.EnumValue, enum *enumAnnotations) error {
 	docLines := formatFieldDocLines(ev.Documentation)
+	if len(docLines) == 0 {
+		docLines = []string{"No description available."}
+	}
 	ann := &enumValueAnnotations{
 		Enum:     enum,
 		Value:    ev,

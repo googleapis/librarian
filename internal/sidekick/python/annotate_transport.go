@@ -56,6 +56,9 @@ type transportAnnotations struct {
 	HasIAMPolicyMixin  bool
 	RestAsyncIOEnabled bool
 
+	HasExtendedOperations      bool
+	ExtendedOperationsServices []*extendedOperationService
+
 	DocLines    []string
 	HasDocLines bool
 
@@ -127,6 +130,10 @@ func (c *codec) annotateTransport(service *api.Service) (*transportAnnotations, 
 		return nil, fmt.Errorf("%w for %s: %w", ErrLoadServiceConfig, service.Name, err)
 	}
 	scopes := c.findAuthScopes(svcConfig)
+	protoOpts := c.loadProtoServiceOptions(service)
+	if len(scopes) == 1 && scopes[0] == defaultAuthScope && len(protoOpts.OAuthScopes) > 0 {
+		scopes = protoOpts.OAuthScopes
+	}
 	restAsyncIOEnabled := c.isRestAsyncIOEnabled(svcConfig, service)
 
 	cfg, err := c.loadGRPCServiceConfig(service)
@@ -398,32 +405,34 @@ func (c *codec) annotateTransport(service *api.Service) (*transportAnnotations, 
 	})
 
 	return &transportAnnotations{
-		Name:                  name,
-		TransportClassName:    transportClassName,
-		ServiceFQN:            serviceFQN,
-		DefaultHost:           defaultHost,
-		VersionPackage:        versionPackage,
-		Scopes:                scopes,
-		HasLRO:                hasLRO,
-		HasLocationMixin:      hasLocationMixin,
-		HasOperationsMixin:    hasOperationsMixin,
-		HasIAMPolicyMixin:     hasIAMPolicyMixin,
-		RestAsyncIOEnabled:    restAsyncIOEnabled,
-		DocLines:              docLines,
-		HasDocLines:           len(docLines) > 0,
-		HasListOperations:     hasListOperations,
-		HasGetOperation:       hasGetOperation,
-		HasCancelOperation:    hasCancelOperation,
-		HasDeleteOperation:    hasDeleteOperation,
-		HasWaitOperation:      hasWaitOperation,
-		HasGetLocation:        hasGetLocation,
-		HasListLocations:      hasListLocations,
-		HasSetIamPolicy:       hasSetIamPolicy,
-		HasGetIamPolicy:       hasGetIamPolicy,
-		HasTestIamPermissions: hasTestIamPermissions,
-		Imports:               imports,
-		WrappedMethods:        wrappedMethods,
-		ServiceMethods:        serviceMethods,
+		Name:                       name,
+		TransportClassName:         transportClassName,
+		ServiceFQN:                 serviceFQN,
+		DefaultHost:                defaultHost,
+		VersionPackage:             versionPackage,
+		Scopes:                     scopes,
+		HasLRO:                     hasLRO,
+		HasLocationMixin:           hasLocationMixin,
+		HasOperationsMixin:         hasOperationsMixin,
+		HasIAMPolicyMixin:          hasIAMPolicyMixin,
+		RestAsyncIOEnabled:         restAsyncIOEnabled,
+		HasExtendedOperations:      len(protoOpts.ExtendedOperationsServices) > 0,
+		ExtendedOperationsServices: protoOpts.ExtendedOperationsServices,
+		DocLines:                   docLines,
+		HasDocLines:                len(docLines) > 0,
+		HasListOperations:          hasListOperations,
+		HasGetOperation:            hasGetOperation,
+		HasCancelOperation:         hasCancelOperation,
+		HasDeleteOperation:         hasDeleteOperation,
+		HasWaitOperation:           hasWaitOperation,
+		HasGetLocation:             hasGetLocation,
+		HasListLocations:           hasListLocations,
+		HasSetIamPolicy:            hasSetIamPolicy,
+		HasGetIamPolicy:            hasGetIamPolicy,
+		HasTestIamPermissions:      hasTestIamPermissions,
+		Imports:                    imports,
+		WrappedMethods:             wrappedMethods,
+		ServiceMethods:             serviceMethods,
 	}, nil
 }
 

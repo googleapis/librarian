@@ -86,6 +86,11 @@ func TestConvertMarkdownToRst(t *testing.T) {
 			input: "Use `SecretPayload` to store data.",
 			want:  "Use ``SecretPayload`` to store data.",
 		},
+		{
+			name:  "quoted wildcard asterisk preserved",
+			input: "Permissions with wildcards (such as '*' or 'storage.*') are not allowed.",
+			want:  "Permissions with wildcards (such as '*' or 'storage.*') are not allowed.",
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			got := convertMarkdownToRst(test.input)

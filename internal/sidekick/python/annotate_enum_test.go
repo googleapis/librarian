@@ -44,8 +44,8 @@ func TestAnnotateEnum(t *testing.T) {
 				HasMultiLineDoc: false,
 				HasValues:       true,
 				Values: []*enumValueAnnotations{
-					{Name: "STATUS_UNSPECIFIED", Number: 0},
-					{Name: "ENABLED", Number: 1},
+					{Name: "STATUS_UNSPECIFIED", Number: 0, DocLines: []string{"No description available."}},
+					{Name: "ENABLED", Number: 1, DocLines: []string{"No description available."}},
 				},
 			},
 		},
@@ -57,7 +57,7 @@ func TestAnnotateEnum(t *testing.T) {
 				Name:      "CryptoKeyVersionState",
 				HasValues: true,
 				Values: []*enumValueAnnotations{
-					{Name: "STATE_UNSPECIFIED", Number: 0},
+					{Name: "STATE_UNSPECIFIED", Number: 0, DocLines: []string{"No description available."}},
 				},
 			},
 		},

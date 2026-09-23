@@ -15,6 +15,7 @@
 package python
 
 import (
+	"fmt"
 	"slices"
 
 	"github.com/googleapis/librarian/internal/sidekick/api"
@@ -38,6 +39,9 @@ type pagerAnnotations struct {
 	PageTokenField     string
 	NextPageTokenField string
 	PageableItemField  string
+	IsMap              bool
+	MapValueType       string
+	HasAsyncClient     bool
 }
 
 // pagersAnnotation aggregates all pagers and required type imports for a service.
@@ -65,7 +69,7 @@ func (c *codec) annotatePagers(service *api.Service) *pagersAnnotation {
 			continue
 		}
 
-		methodNameSnake := pythonIdentifier(snakeCase(method.Name))
+		methodNameSnake := snakeCase(method.Name)
 		methodNamePascal := pascalCase(method.Name)
 
 		pageTokenField := "page_token"
@@ -90,7 +94,25 @@ func (c *codec) annotatePagers(service *api.Service) *pagersAnnotation {
 			typeModules[respModule] = true
 		}
 
-		itemType := c.resolveItemType(method.OutputType.Pagination.PageableItem, service, typeModules)
+		pageableItem := method.OutputType.Pagination.PageableItem
+		isMap := pageableItem.Map
+		var itemType string
+		var mapValueType string
+		if isMap {
+			entryMsg := pageableItem.MessageType
+			if entryMsg == nil && c.Model != nil && pageableItem.TypezID != "" {
+				entryMsg = c.Model.Message(pageableItem.TypezID)
+			}
+			if entryMsg != nil && len(entryMsg.Fields) >= 2 {
+				valField := entryMsg.Fields[1]
+				mapValueType = c.resolveItemType(valField, service, typeModules)
+				itemType = fmt.Sprintf("Tuple[str, %s]", mapValueType)
+			} else {
+				itemType = "Tuple[str, Any]"
+			}
+		} else {
+			itemType = c.resolveItemType(pageableItem, service, typeModules)
+		}
 
 		pager := &pagerAnnotations{
 			MethodNameSnake:    methodNameSnake,
@@ -103,6 +125,9 @@ func (c *codec) annotatePagers(service *api.Service) *pagersAnnotation {
 			PageTokenField:     pageTokenField,
 			NextPageTokenField: nextPageTokenField,
 			PageableItemField:  pageableItemField,
+			IsMap:              isMap,
+			MapValueType:       mapValueType,
+			HasAsyncClient:     c.hasAsyncClient(),
 		}
 		pagers = append(pagers, pager)
 		if mAnn, ok := method.Codec.(*methodAnnotations); ok {

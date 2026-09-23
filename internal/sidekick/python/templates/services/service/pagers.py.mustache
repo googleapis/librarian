@@ -78,10 +78,19 @@ class {{MethodNamePascal}}Pager:
 
     def __iter__(self) -> Iterator[{{ItemType}}]:
         for page in self.pages:
+{{#IsMap}}
+            yield from page.{{PageableItemField}}.items()
+
+    def get(self, key: str) -> Optional[{{MapValueType}}]:
+        return self._response.{{PageableItemField}}.get(key)
+{{/IsMap}}
+{{^IsMap}}
             yield from page.{{PageableItemField}}
+{{/IsMap}}
 
     def __repr__(self) -> str:
         return '{0}<{1!r}>'.format(self.__class__.__name__, self._response)
+{{#HasAsyncClient}}
 
 
 class {{MethodNamePascal}}AsyncPager:
@@ -146,11 +155,23 @@ class {{MethodNamePascal}}AsyncPager:
     def __aiter__(self) -> AsyncIterator[{{ItemType}}]:
         async def async_generator():
             async for page in self.pages:
+{{#IsMap}}
+                for response in page.{{PageableItemField}}.items():
+                    yield response
+{{/IsMap}}
+{{^IsMap}}
                 for response in page.{{PageableItemField}}:
                     yield response
+{{/IsMap}}
 
         return async_generator()
+{{#IsMap}}
+
+    def get(self, key: str) -> Optional[{{MapValueType}}]:
+        return self._response.{{PageableItemField}}.get(key)
+{{/IsMap}}
 
     def __repr__(self) -> str:
         return '{0}<{1!r}>'.format(self.__class__.__name__, self._response)
+{{/HasAsyncClient}}
 {{/Codec.Pagers}}

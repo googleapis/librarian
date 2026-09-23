@@ -32,6 +32,9 @@ class {{{Name}}}(proto.Message):
 {{#DocLines}}
             {{{.}}}
 {{/DocLines}}
+{{^HasDocLines}}
+
+{{/HasDocLines}}
 {{#DocIsOneOf}}
 {{#HasDocLines}}
 
@@ -118,6 +121,9 @@ class {{{Name}}}(proto.Message):
 {{#IsOneOf}}
         oneof='{{{OneOfName}}}',
 {{/IsOneOf}}
+{{#IsOptional}}
+        optional=True,
+{{/IsOptional}}
 {{#TypeRef}}
 {{#IsMessage}}
         message={{{TypeRef}}},
@@ -126,11 +132,15 @@ class {{{Name}}}(proto.Message):
         enum={{{TypeRef}}},
 {{/IsEnum}}
 {{/TypeRef}}
-{{#IsOptional}}
-        optional=True,
-{{/IsOptional}}
     )
 {{/IsMap}}
 {{/IsRepeated}}
 {{/Fields}}
 {{/HasFields}}
+{{#HasExtendedOperationDoneProperty}}
+
+    @property
+    def done(self) -> bool:
+        """Return True if the backing extended operation is completed, False otherwise."""
+        return self.{{{DoneStatusFieldName}}} == type(self.{{{DoneStatusFieldName}}}).DONE
+{{/HasExtendedOperationDoneProperty}}

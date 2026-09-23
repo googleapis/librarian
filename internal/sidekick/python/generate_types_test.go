@@ -133,7 +133,9 @@ func TestGenerateTypes(t *testing.T) {
 
     Attributes:
         name (str):
+
         payload (google.cloud.secretmanager_v1.types.SecretPayload):
+
     """
 
     name: str = proto.Field(

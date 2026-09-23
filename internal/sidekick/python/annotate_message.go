@@ -15,30 +15,34 @@
 package python
 
 import (
+	"strings"
+
 	"github.com/googleapis/librarian/internal/sidekick/api"
 )
 
 // messageAnnotations decorates api.Message with Python-specific metadata.
 type messageAnnotations struct {
-	Model             *modelAnnotations
-	Message           *api.Message
-	Name              string
-	DocLines          []string
-	FirstDocLine      string
-	RemainingDocLines []string
-	HasDocLines       bool
-	HasMultiLineDoc   bool
-	Fields            []*fieldAnnotations
-	OneOfs            []*oneofAnnotations
-	NestedMessages    []*messageAnnotations
-	NestedEnums       []*enumAnnotations
-	HasNestedMessages bool
-	HasNestedEnums    bool
-	HasFields         bool
-	HasOneOfs         bool
-	HasOneOfNote      bool
-	HasOneOfLink      bool
-	HasRawPage        bool
+	Model                            *modelAnnotations
+	Message                          *api.Message
+	Name                             string
+	DocLines                         []string
+	FirstDocLine                     string
+	RemainingDocLines                []string
+	HasDocLines                      bool
+	HasMultiLineDoc                  bool
+	Fields                           []*fieldAnnotations
+	OneOfs                           []*oneofAnnotations
+	NestedMessages                   []*messageAnnotations
+	NestedEnums                      []*enumAnnotations
+	HasNestedMessages                bool
+	HasNestedEnums                   bool
+	HasFields                        bool
+	HasOneOfs                        bool
+	HasOneOfNote                     bool
+	HasOneOfLink                     bool
+	HasRawPage                       bool
+	HasExtendedOperationDoneProperty bool
+	DoneStatusFieldName              string
 }
 
 func (c *codec) annotateMessage(message *api.Message, model *modelAnnotations) error {
@@ -132,6 +136,29 @@ func (c *codec) annotateMessage(message *api.Message, model *modelAnnotations) e
 		}
 	}
 
+	if c.isComputeMessage(message) && ann.Name == "Operation" {
+		for _, f := range ann.Fields {
+			if f.Name == "status" {
+				ann.HasExtendedOperationDoneProperty = true
+				ann.DoneStatusFieldName = "status"
+				break
+			}
+		}
+	}
+
 	message.Codec = ann
 	return nil
+}
+
+func (c *codec) isComputeMessage(message *api.Message) bool {
+	if c.Model != nil && strings.Contains(c.Model.PackageName, "compute") {
+		return true
+	}
+	if c.Library != nil && strings.Contains(c.Library.Name, "compute") {
+		return true
+	}
+	if message != nil && strings.Contains(message.Package, "compute") {
+		return true
+	}
+	return false
 }

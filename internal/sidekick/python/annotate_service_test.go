@@ -87,7 +87,7 @@ func TestAnnotateService(t *testing.T) {
 				t.Fatalf("got %T, want *serviceAnnotations", test.svc.Codec)
 			}
 			if diff := cmp.Diff(test.want, ann,
-				cmpopts.IgnoreFields(serviceAnnotations{}, "Model", "Service", "Transport", "Client", "RestTransport"),
+				cmpopts.IgnoreFields(serviceAnnotations{}, "Model", "Service", "Transport", "Client", "RestTransport", "HasGRPCTransport", "HasRESTTransport", "HasAsyncClient"),
 				cmpopts.IgnoreFields(methodAnnotations{}, "Service", "Method", "RestMethod"),
 			); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)

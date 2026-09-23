@@ -125,7 +125,7 @@ func TestNewCodec(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			if diff := cmp.Diff(test.want, got, cmpopts.IgnoreFields(codec{}, "Model", "Library", "OutDir")); diff != "" {
+			if diff := cmp.Diff(test.want, got, cmpopts.IgnoreFields(codec{}, "Model", "Library", "OutDir", "protoOptionsCache")); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})

@@ -3,10 +3,14 @@ from collections import OrderedDict
 from typing import Dict, Type{{#Codec.Transport.RestAsyncIOEnabled}}, Tuple{{/Codec.Transport.RestAsyncIOEnabled}}
 
 from .base import {{Name}}Transport
+{{#Codec.HasGRPCTransport}}
 from .grpc import {{Name}}GrpcTransport
 from .grpc_asyncio import {{Name}}GrpcAsyncIOTransport
+{{/Codec.HasGRPCTransport}}
+{{#Codec.HasRESTTransport}}
 from .rest import {{Name}}RestTransport
 from .rest import {{Name}}RestInterceptor
+{{/Codec.HasRESTTransport}}
 {{#Codec.Transport.RestAsyncIOEnabled}}
 ASYNC_REST_CLASSES: Tuple[str, ...]
 try:
@@ -22,9 +26,13 @@ except ImportError:  # pragma: NO COVER
 
 # Compile a registry of transports.
 _transport_registry = OrderedDict()  # type: Dict[str, Type[{{Name}}Transport]]
+{{#Codec.HasGRPCTransport}}
 _transport_registry['grpc'] = {{Name}}GrpcTransport
 _transport_registry['grpc_asyncio'] = {{Name}}GrpcAsyncIOTransport
+{{/Codec.HasGRPCTransport}}
+{{#Codec.HasRESTTransport}}
 _transport_registry['rest'] = {{Name}}RestTransport
+{{/Codec.HasRESTTransport}}
 {{#Codec.Transport.RestAsyncIOEnabled}}
 if HAS_REST_ASYNC:  # pragma: NO COVER
     _transport_registry['rest_asyncio'] = Async{{Name}}RestTransport
@@ -32,8 +40,12 @@ if HAS_REST_ASYNC:  # pragma: NO COVER
 
 __all__ = (
     '{{Name}}Transport',
+{{#Codec.HasGRPCTransport}}
     '{{Name}}GrpcTransport',
     '{{Name}}GrpcAsyncIOTransport',
+{{/Codec.HasGRPCTransport}}
+{{#Codec.HasRESTTransport}}
     '{{Name}}RestTransport',
     '{{Name}}RestInterceptor',
+{{/Codec.HasRESTTransport}}
 ){{#Codec.Transport.RestAsyncIOEnabled}} + ASYNC_REST_CLASSES{{/Codec.Transport.RestAsyncIOEnabled}}

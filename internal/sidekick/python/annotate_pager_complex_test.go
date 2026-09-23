@@ -18,6 +18,7 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/googleapis/librarian/internal/sidekick/api"
 )
 
@@ -125,7 +126,66 @@ func TestAnnotatePagers_MultiplePagedMethods(t *testing.T) {
 		HasPagers: true,
 	}
 
-	if diff := cmp.Diff(want, got); diff != "" {
+	if diff := cmp.Diff(want, got, cmpopts.IgnoreFields(pagerAnnotations{}, "HasAsyncClient")); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+}
+
+func TestAnnotatePagers_MapPager(t *testing.T) {
+	t.Parallel()
+
+	scopedListMsg := api.NewTestMessage("InstancesScopedList").
+		WithPackage("google.cloud.compute.v1").
+		WithSourceLocation("google/cloud/compute/v1/compute.proto", 10)
+	mapEntryKey := api.NewTestField("key").WithType(api.TypezString)
+	mapEntryValue := api.NewTestField("value").WithMessageType(scopedListMsg)
+	mapEntryMsg := api.NewTestMessage("ItemsEntry").
+		WithFields(mapEntryKey, mapEntryValue)
+
+	itemsField := api.NewTestField("items").
+		WithMessageType(mapEntryMsg)
+	itemsField.Map = true
+
+	nextPageToken := api.NewTestField("next_page_token").WithType(api.TypezString)
+	aggListResp := api.NewTestMessage("InstanceAggregatedList").
+		WithPackage("google.cloud.compute.v1").
+		WithSourceLocation("google/cloud/compute/v1/compute.proto", 20).
+		WithFields(itemsField, nextPageToken).
+		WithPagination(nextPageToken, itemsField)
+
+	pageToken := api.NewTestField("page_token").WithType(api.TypezString)
+	aggListReq := api.NewTestMessage("AggregatedListInstancesRequest").
+		WithPackage("google.cloud.compute.v1").
+		WithSourceLocation("google/cloud/compute/v1/compute.proto", 30).
+		WithFields(pageToken)
+
+	aggListMethod := api.NewTestMethod("AggregatedList").
+		WithInput(aggListReq).
+		WithOutput(aggListResp).
+		WithPagination(pageToken)
+
+	svc := api.NewTestService("Instances").
+		WithMethods(aggListMethod).
+		WithPackage("google.cloud.compute.v1").
+		WithSourceLocation("google/cloud/compute/v1/compute.proto", 40)
+
+	model := api.NewTestAPI([]*api.Message{scopedListMsg, mapEntryMsg, aggListResp, aggListReq}, nil, []*api.Service{svc}).
+		WithPackageName("google.cloud.compute.v1")
+
+	c := newTestCodec(t, model, nil)
+	got := c.annotatePagers(svc)
+
+	if len(got.Pagers) != 1 {
+		t.Fatalf("len(got.Pagers) = %d, want 1", len(got.Pagers))
+	}
+	p := got.Pagers[0]
+	if !p.IsMap {
+		t.Errorf("p.IsMap = false, want true")
+	}
+	if p.MapValueType != "compute.InstancesScopedList" {
+		t.Errorf("p.MapValueType = %q, want compute.InstancesScopedList", p.MapValueType)
+	}
+	if p.ItemType != "Tuple[str, compute.InstancesScopedList]" {
+		t.Errorf("p.ItemType = %q, want Tuple[str, compute.InstancesScopedList]", p.ItemType)
 	}
 }

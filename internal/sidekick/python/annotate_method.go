@@ -55,7 +55,7 @@ func (c *codec) annotateMethod(method *api.Method, service *serviceAnnotations) 
 	ann := &methodAnnotations{
 		Service:        service,
 		Method:         method,
-		Name:           pythonIdentifier(snakeCase(method.Name)),
+		Name:           pythonMethodIdentifier(snakeCase(method.Name)),
 		ProtoName:      method.Name,
 		DocLines:       docLines,
 		InputTypeName:  inputTypeName,

@@ -43,6 +43,10 @@ type serviceAnnotations struct {
 	Client *clientAnnotations
 	// RestTransport holds metadata for transports/rest_base.py and transports/rest.py.
 	RestTransport *restTransportAnnotation
+
+	HasGRPCTransport bool
+	HasRESTTransport bool
+	HasAsyncClient   bool
 }
 
 func (c *codec) annotateService(service *api.Service, model *modelAnnotations) error {
@@ -58,15 +62,18 @@ func (c *codec) annotateService(service *api.Service, model *modelAnnotations) e
 		copyrightYear = model.CopyrightYear
 	}
 	ann := &serviceAnnotations{
-		Model:           model,
-		Service:         service,
-		Name:            name,
-		ProtoName:       service.Name,
-		ClientName:      clientName,
-		AsyncClientName: asyncClientName,
-		DirectoryName:   snakeCase(name),
-		CopyrightYear:   copyrightYear,
-		DocLines:        docLines,
+		Model:            model,
+		Service:          service,
+		Name:             name,
+		ProtoName:        service.Name,
+		ClientName:       clientName,
+		AsyncClientName:  asyncClientName,
+		DirectoryName:    snakeCase(name),
+		CopyrightYear:    copyrightYear,
+		DocLines:         docLines,
+		HasGRPCTransport: c.hasGRPCTransport(),
+		HasRESTTransport: c.hasRESTTransport(),
+		HasAsyncClient:   c.hasAsyncClient(),
 	}
 
 	for _, method := range service.Methods {

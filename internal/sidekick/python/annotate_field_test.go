@@ -102,6 +102,40 @@ func TestAnnotateField(t *testing.T) {
 				IsMessage:  true,
 			},
 		},
+		{
+			name: "optional message field",
+			field: api.NewTestField("deprecation_status").
+				WithMessageType(api.NewTestMessage("DeprecationStatus").WithPackage("google.cloud.compute.v1")).
+				WithOptional(),
+			want: &fieldAnnotations{
+				Name:         "deprecation_status",
+				TypeName:     ".google.cloud.compute.v1.DeprecationStatus",
+				ProtoType:    "MESSAGE",
+				TypeHint:     "deprecation_status_pb2.DeprecationStatus",
+				SphinxType:   "google.cloud.compute.v1.deprecation_status_pb2.DeprecationStatus",
+				TypeRef:      "deprecation_status_pb2.DeprecationStatus",
+				IsMessage:    true,
+				IsOptional:   true,
+				DocIsOneOf:   true,
+				DocOneOfName: "_deprecation_status",
+			},
+		},
+		{
+			name: "optional primitive field",
+			field: api.NewTestField("description").
+				WithType(api.TypezString).
+				WithOptional(),
+			want: &fieldAnnotations{
+				Name:         "description",
+				ProtoType:    "STRING",
+				TypeHint:     "str",
+				SphinxType:   "str",
+				IsPrimitive:  true,
+				IsOptional:   true,
+				DocIsOneOf:   true,
+				DocOneOfName: "_description",
+			},
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			msg := api.NewTestMessage("Secret").WithFields(test.field)
