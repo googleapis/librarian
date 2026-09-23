@@ -465,6 +465,12 @@ func (m *Method) WithSampleInfo(sampleInfo *SampleInfo) *Method {
 	return m
 }
 
+// ReturnEmpty marks the method as returning an empty response.
+func (m *Method) ReturnEmpty() *Method {
+	m.ReturnsEmpty = true
+	return m
+}
+
 // NewTestPathBinding creates a PathBinding with the given verb and path template.
 func NewTestPathBinding(verb string, pt *PathTemplate) *PathBinding {
 	return &PathBinding{
