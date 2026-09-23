@@ -72,7 +72,7 @@ func TestGenerateService_MethodSignatures(t *testing.T) {
 					want: `public func paginationMethod(
   name: Swift.String,
   optionalField: Swift.String?,
-) throws -> any AsyncSequence<Item, Swift.Error>
+) -> any AsyncSequence<Item, Swift.Error>
  {
     let request = Request().with {
       $0.name = name
@@ -86,7 +86,7 @@ func TestGenerateService_MethodSignatures(t *testing.T) {
 					want: `public func paginationMethod(
   name: Swift.String,
   normalField: Swift.String,
-) throws -> any AsyncSequence<Item, Swift.Error>
+) -> any AsyncSequence<Item, Swift.Error>
  {
     let request = Request().with {
       $0.name = name

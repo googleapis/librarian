@@ -180,7 +180,7 @@ extension Clients.{{Codec.StubPrefix}}Protocol {
   {{> /templates/common/diagnose}}
   {{/Codec.DiagnoseTypes}}
   public func {{> /templates/common/method_signature/pagination}} {
-    try self.{{Codec.Name}}(byItem: byItem, options: .init())
+    self.{{Codec.Name}}(byItem: byItem, options: .init())
   }
 
   {{#Deprecated}}
@@ -207,7 +207,7 @@ extension Clients.{{Codec.StubPrefix}}Protocol {
     let request = {{Method.InputType.Codec.ParameterTypeName}}().with {
       {{> /templates/common/method_body/overload_fields}}
     }
-    return try self.{{Codec.Name}}(byItem: request)
+    return self.{{Codec.Name}}(byItem: request)
   }
   {{/Signatures}}
   {{/Codec.Pagination}}

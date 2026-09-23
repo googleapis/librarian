@@ -212,7 +212,7 @@ func TestGenerateStorage_MultiModel(t *testing.T) {
 		t.Errorf("StorageControlProtocol.swift missing convenience overload without options:\n%s", protocolStr)
 	}
 	if !strings.Contains(protocolStr, "byItem: ListBucketsRequest") ||
-		!strings.Contains(protocolStr, "try self.listBuckets(byItem: byItem, options: .init())") {
+		!strings.Contains(protocolStr, "self.listBuckets(byItem: byItem, options: .init())") {
 		t.Errorf("StorageControlProtocol.swift missing paginated convenience overload without options:\n%s", protocolStr)
 	}
 	if !strings.Contains(protocolStr, "func renameFolder(withPolling: RenameFolderRequest) async throws -> any GoogleGax.PollableOperation<Folder>") {

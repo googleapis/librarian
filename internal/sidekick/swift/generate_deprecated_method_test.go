@@ -115,12 +115,12 @@ func TestGenerateService_DeprecatedMethods(t *testing.T) {
 				{
 					start: "    /// See `TestServiceClient.paginationMethod`.",
 					end:   "-> any AsyncSequence<Item, Swift.Error>",
-					want:  "    /// See `TestServiceClient.paginationMethod`.\n    @available(*, deprecated)\n    func paginationMethod(request: Request) async throws -> Test.PaginationResponse\n\n    /// See `TestServiceClient.paginationMethod`.\n    @available(*, deprecated)\n    func paginationMethod(\n  byItem: Request\n) throws -> any AsyncSequence<Item, Swift.Error>",
+					want:  "    /// See `TestServiceClient.paginationMethod`.\n    @available(*, deprecated)\n    func paginationMethod(request: Request) async throws -> Test.PaginationResponse\n\n    /// See `TestServiceClient.paginationMethod`.\n    @available(*, deprecated)\n    func paginationMethod(\n  byItem: Request\n) -> any AsyncSequence<Item, Swift.Error>",
 				},
 				{
 					start: "  /// -- pagination marker --",
 					end:   "-> any AsyncSequence<Item, Swift.Error>",
-					want:  "  /// -- pagination marker --\n  ///\n  /// @Snippet(path: \"TestService_PaginationMethod\")\n  @available(*, deprecated)\n  public func paginationMethod(\n    request: Request, options: GoogleGax.RequestOptions\n) async throws -> Test.PaginationResponse\n {\n      try await self.inner.paginationMethod(request: request, options: options)\n  }\n\n  /// -- pagination marker --\n  ///\n  /// @Snippet(path: \"TestService_PaginationMethod\")\n  @available(*, deprecated)\n  public func paginationMethod(\n    byItem: Request, options: GoogleGax.RequestOptions\n) throws -> any AsyncSequence<Item, Swift.Error>",
+					want:  "  /// -- pagination marker --\n  ///\n  /// @Snippet(path: \"TestService_PaginationMethod\")\n  @available(*, deprecated)\n  public func paginationMethod(\n    request: Request, options: GoogleGax.RequestOptions\n) async throws -> Test.PaginationResponse\n {\n      try await self.inner.paginationMethod(request: request, options: options)\n  }\n\n  /// -- pagination marker --\n  ///\n  /// @Snippet(path: \"TestService_PaginationMethod\")\n  @available(*, deprecated)\n  public func paginationMethod(\n    byItem: Request, options: GoogleGax.RequestOptions\n) -> any AsyncSequence<Item, Swift.Error>",
 				},
 			},
 		},
