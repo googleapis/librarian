@@ -45,7 +45,7 @@ public enum {{Codec.Name}}: Codable, Equatable, Sendable {
   ///
   /// - Warning: Do not pattern-match specific string literals in this case;
   ///   future releases may promote them to named enum cases.
-  case {{Codec.UnknownStringName}}(String)
+  case {{Codec.UnknownStringName}}(Swift.String)
 
   /// Returns the string value (or name) associated with the enumeration.
   public var stringValue: Swift.String? {
@@ -74,7 +74,7 @@ public enum {{Codec.Name}}: Codable, Equatable, Sendable {
 
   public init(from decoder: Decoder) throws {
     let container = try decoder.singleValueContainer()
-    let s = try container.decode(String.self)
+    let s = try container.decode(Swift.String.self)
     self.init(stringValue: s)
   }
 

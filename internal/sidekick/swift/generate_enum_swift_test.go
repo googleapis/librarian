@@ -286,8 +286,8 @@ func TestGenerateEnum_Discovery(t *testing.T) {
   ///
   /// - Warning: Do not pattern-match specific string literals in this case;
   ///   future releases may promote them to named enum cases.
-  case unknownStringValue(String)`
-	gotCases := extractBlock(t, contentStr, "  case done", "case unknownStringValue(String)")
+  case unknownStringValue(Swift.String)`
+	gotCases := extractBlock(t, contentStr, "  case done", "case unknownStringValue(Swift.String)")
 	if diff := cmp.Diff(wantCases, gotCases); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
@@ -323,7 +323,7 @@ func TestGenerateEnum_Discovery(t *testing.T) {
 	// Verify decoder
 	wantDecoder := `  public init(from decoder: Decoder) throws {
     let container = try decoder.singleValueContainer()
-    let s = try container.decode(String.self)
+    let s = try container.decode(Swift.String.self)
     self.init(stringValue: s)
   }`
 	gotDecoder := extractBlock(t, contentStr, "  public init(from decoder: Decoder) throws {", "\n  }")
