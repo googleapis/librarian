@@ -40,6 +40,9 @@ func deriveArtifactID(name string) string {
 
 // DefaultOutput derives the default output directory name for a Java library.
 func DefaultOutput(name, defaultOutput string) string {
+	if strings.HasPrefix(name, javaPrefix) {
+		return path.Join(defaultOutput, name)
+	}
 	return path.Join(defaultOutput, javaPrefix+name)
 }
 

@@ -949,6 +949,12 @@ func TestDefaultOutput(t *testing.T) {
 			defaultOutput: "",
 			want:          "java-secretmanager",
 		},
+		{
+			name:          "already has java- prefix",
+			libName:       "java-secretmanager",
+			defaultOutput: "packages",
+			want:          "packages/java-secretmanager",
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			got := DefaultOutput(test.libName, test.defaultOutput)
