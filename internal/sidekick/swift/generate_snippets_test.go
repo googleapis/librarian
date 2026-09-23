@@ -281,3 +281,59 @@ func TestGenerateSnippets_UpdateMask(t *testing.T) {
 		t.Errorf("expected snippet to contain updateMask assignment, got:\n%s", contents)
 	}
 }
+
+func TestGenerateSnippets_List(t *testing.T) {
+	outDir := t.TempDir()
+	thing := api.NewTestMessage("Thing").WithFields(
+		api.NewTestField("name").WithType(api.TypezString),
+	)
+	pageToken := api.NewTestField("page_token").WithType(api.TypezString)
+	listThingsRequest := api.NewTestMessage("ListThingsRequest").WithFields(
+		api.NewTestField("parent").WithType(api.TypezString),
+		pageToken,
+	)
+	thingsField := api.NewTestField("things").WithMessageType(thing).WithRepeated()
+	nextPageTokenField := api.NewTestField("next_page_token").WithType(api.TypezString)
+	listThingsResponse := api.NewTestMessage("ListThingsResponse").
+		WithFields(thingsField, nextPageTokenField).
+		WithPagination(nextPageTokenField, thingsField)
+	listThings := api.NewTestMethod("ListThings").
+		WithInput(listThingsRequest).
+		WithOutput(listThingsResponse).
+		WithPagination(pageToken).
+		WithPathTemplate((&api.PathTemplate{}).WithLiteral("v1").WithLiteral("things"))
+	testService := api.NewTestService("TestService").WithMethods(listThings)
+	model := api.NewTestAPI([]*api.Message{thing, listThingsRequest, listThingsResponse}, nil, []*api.Service{testService})
+	model.PackageName = "test"
+	if err := api.CrossReference(model); err != nil {
+		t.Fatal(err)
+	}
+	library := &config.Library{
+		Swift: swiftConfig(t, []config.SwiftDependency{
+			{
+				Name:               "GoogleGax",
+				RequiredByServices: true,
+			},
+		}),
+	}
+	if err := Generate(t.Context(), model, outDir, library, nil); err != nil {
+		t.Fatal(err)
+	}
+	contentsBytes, err := os.ReadFile(filepath.Join(outDir, "Snippets", "TestService_ListThings.swift"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	got := extractBlock(t, string(contentsBytes), "func sample(", "\n}")
+	want := `func sample(client: TestServiceClient) async throws {
+  let items = client.listThings(
+    byItem: ListThingsRequest()
+  /* set fields using .with { $0... } */
+)
+  for try await item in items {
+    print("  \(item)")
+  }
+}`
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+}

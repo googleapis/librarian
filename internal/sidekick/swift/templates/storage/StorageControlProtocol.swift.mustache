@@ -166,7 +166,7 @@ extension StorageControlProtocol {
   @available(*, deprecated)
   {{/Deprecated}}
   public func {{> /templates/common/method_signature/pagination}} {
-    try self.{{Codec.Name}}(byItem: byItem, options: .init())
+    self.{{Codec.Name}}(byItem: byItem, options: .init())
   }
 
   {{#Deprecated}}
@@ -222,7 +222,7 @@ extension StorageControlProtocol {
   @available(*, deprecated)
   {{/Deprecated}}
   public func {{> /templates/common/method_signature/pagination}} {
-    try self.{{Codec.Name}}(byItem: byItem, options: .init())
+    self.{{Codec.Name}}(byItem: byItem, options: .init())
   }
 
   {{#Deprecated}}
