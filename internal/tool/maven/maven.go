@@ -184,8 +184,8 @@ func downloadM2Artifact(ctx context.Context, artifact, workDir string) error {
 			return nil
 		}
 
-		if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
-			return err
+		if ctx.Err() != nil {
+			return ctx.Err()
 		}
 	}
 
