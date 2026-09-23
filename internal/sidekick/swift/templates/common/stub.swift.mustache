@@ -32,6 +32,9 @@ import GoogleGax
 extension Clients {
   protocol {{Codec.StubPrefix}}Stub: Sendable {
     {{#Codec.Methods}}
+    {{#Codec.DiagnoseStubTypes}}
+    {{> /templates/common/diagnose}}
+    {{/Codec.DiagnoseStubTypes}}
     func {{> /templates/common/method_signature/request_options}}
     {{/Codec.Methods}}
   }

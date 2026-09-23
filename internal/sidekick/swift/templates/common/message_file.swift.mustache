@@ -23,15 +23,52 @@ limitations under the License.
 {{#Codec.IsGated}}
 #if {{{Codec.GateExpression}}}
 {{/Codec.IsGated}}
+{{#Codec.HasData}}
+public import Foundation
+{{/Codec.HasData}}
+{{^Codec.HasData}}
 import Foundation
+{{/Codec.HasData}}
 {{#Codec.MessageImports}}
 {{#Attributes}}
 {{{.}}}
 {{/Attributes}}
-import {{Module}}
+public import {{Module}}
 {{/Codec.MessageImports}}
 
 {{> /templates/common/message}}
+{{#Codec.IsPaginatedResponse}}
+
+{{#Deprecated}}
+@available(*, deprecated)
+{{/Deprecated}}
+@_spi(GoogleCloudInternal)
+extension {{Codec.ParameterTypeName}}: GoogleGax._PaginatedResponse {
+  {{#Codec.DiagnosePagination}}
+  {{> /templates/common/diagnose}}
+  {{/Codec.DiagnosePagination}}
+  public func _getPaginatedItems() -> [{{Codec.PageableItemType}}] {
+    {{^Pagination.PageableItem.Map}}
+    return self.{{Codec.PageableItemField}}
+    {{/Pagination.PageableItem.Map}}
+    {{#Pagination.PageableItem.Map}}
+    return self.{{Codec.PageableItemField}}.map { ($0, $1) }
+    {{/Pagination.PageableItem.Map}}
+  }
+
+  {{#Codec.DiagnosePagination}}
+  {{> /templates/common/diagnose}}
+  {{/Codec.DiagnosePagination}}
+  public func _nextPageToken() -> Swift.String {
+    {{#Pagination.NextPageToken.Optional}}
+    return self.{{Pagination.NextPageToken.Codec.Name}} ?? ""
+    {{/Pagination.NextPageToken.Optional}}
+    {{^Pagination.NextPageToken.Optional}}
+    return self.{{Pagination.NextPageToken.Codec.Name}}
+    {{/Pagination.NextPageToken.Optional}}
+  }
+}
+{{/Codec.IsPaginatedResponse}}
 {{#Codec.IsGated}}
 #endif
 {{/Codec.IsGated}}

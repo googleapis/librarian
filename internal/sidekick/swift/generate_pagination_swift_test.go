@@ -34,14 +34,14 @@ func TestGenerateService_MapPagination(t *testing.T) {
 		{
 			name:     "Required",
 			optional: false,
-			wantNextPageToken: `public func _nextPageToken() -> Swift.String {
+			wantNextPageToken: `  public func _nextPageToken() -> Swift.String {
     return self.nextPageToken
   }`,
 		},
 		{
 			name:     "Optional",
 			optional: true,
-			wantNextPageToken: `public func _nextPageToken() -> Swift.String {
+			wantNextPageToken: `  public func _nextPageToken() -> Swift.String {
     return self.nextPageToken ?? ""
   }`,
 		},
@@ -49,73 +49,50 @@ func TestGenerateService_MapPagination(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			outDir := t.TempDir()
 
-			pageSizeField := &api.Field{Name: "page_size", JSONName: "pageSize", Typez: api.TypezInt32}
-			pageTokenField := &api.Field{Name: "page_token", JSONName: "pageToken", Typez: api.TypezString}
-			inputType := &api.Message{
-				Name:    "ListSecretsRequest",
-				Package: "google.cloud.secretmanager.v1",
-				ID:      ".google.cloud.secretmanager.v1.ListSecretsRequest",
-				Fields:  []*api.Field{pageSizeField, pageTokenField},
-			}
-			pageSizeField.Parent = inputType
-			pageTokenField.Parent = inputType
+			pageSizeField := api.NewTestField("page_size").WithType(api.TypezInt32)
+			pageTokenField := api.NewTestField("page_token").WithType(api.TypezString)
+			inputType := api.NewTestMessage("ListSecretsRequest").
+				WithPackage("google.cloud.secretmanager.v1").
+				WithFields(pageSizeField, pageTokenField)
 
-			secretType := &api.Message{
-				Name:    "Secret",
-				Package: "google.cloud.secretmanager.v1",
-				ID:      ".google.cloud.secretmanager.v1.Secret",
-			}
+			secretType := api.NewTestMessage("Secret").
+				WithPackage("google.cloud.secretmanager.v1")
 
-			keyField := &api.Field{Name: "key", JSONName: "key", Typez: api.TypezString}
-			valueField := &api.Field{Name: "value", JSONName: "value", Typez: api.TypezMessage, TypezID: secretType.ID, MessageType: secretType}
-			mapEntryType := &api.Message{
-				Name:    "SecretsEntry",
-				Package: "google.cloud.secretmanager.v1",
-				ID:      ".google.cloud.secretmanager.v1.ListSecretsResponse.SecretsEntry",
-				IsMap:   true,
-				Fields:  []*api.Field{keyField, valueField},
-			}
-			keyField.Parent = mapEntryType
-			valueField.Parent = mapEntryType
+			outputType := api.NewTestMessage("ListSecretsResponse").
+				WithPackage("google.cloud.secretmanager.v1")
 
-			itemField := &api.Field{Name: "secrets", JSONName: "secrets", Typez: api.TypezMessage, TypezID: mapEntryType.ID, MessageType: mapEntryType, Map: true}
-			nextPageTokenField := &api.Field{Name: "next_page_token", JSONName: "nextPageToken", Typez: api.TypezString, Optional: test.optional}
-			outputType := &api.Message{
-				Name:    "ListSecretsResponse",
-				Package: "google.cloud.secretmanager.v1",
-				ID:      ".google.cloud.secretmanager.v1.ListSecretsResponse",
-				Fields:  []*api.Field{itemField, nextPageTokenField},
-				Pagination: &api.PaginationInfo{
-					NextPageToken: nextPageTokenField,
-					PageableItem:  itemField,
-				},
-			}
-			itemField.Parent = outputType
-			nextPageTokenField.Parent = outputType
+			keyField := api.NewTestField("key").WithType(api.TypezString)
+			valueField := api.NewTestField("value").WithMessageType(secretType)
+			mapEntryType := api.NewTestMessage("SecretsEntry").
+				WithFields(keyField, valueField).
+				WithIsMap()
+			outputType.WithMessages(mapEntryType)
 
-			iam := &api.Service{
-				Name: "SecretManagerService",
-				Methods: []*api.Method{
-					{
-						Name:          "ListSecrets",
-						Documentation: "Lists secrets.",
-						InputTypeID:   inputType.ID,
-						InputType:     inputType,
-						OutputTypeID:  outputType.ID,
-						OutputType:    outputType,
-						PathInfo: &api.PathInfo{
-							Bindings: []*api.PathBinding{{
-								Verb:         "GET",
-								PathTemplate: (&api.PathTemplate{}).WithLiteral("v1").WithLiteral("secrets"),
-							}},
-						},
-						Pagination: pageTokenField,
-					},
-				},
+			itemField := api.NewTestField("secrets").
+				WithMessageType(mapEntryType).
+				WithMap()
+			nextPageTokenField := api.NewTestField("next_page_token").
+				WithType(api.TypezString)
+			if test.optional {
+				nextPageTokenField.WithOptional()
 			}
+			outputType.
+				WithFields(itemField, nextPageTokenField).
+				WithPagination(nextPageTokenField, itemField)
 
-			model := api.NewTestAPI([]*api.Message{inputType, outputType, secretType, mapEntryType}, nil, []*api.Service{iam})
-			model.PackageName = "google.cloud.secretmanager.v1"
+			method := api.NewTestMethod("ListSecrets").
+				WithDocumentation("Lists secrets.").
+				WithInput(inputType).
+				WithOutput(outputType).
+				WithVerb("GET").
+				WithPathTemplate((&api.PathTemplate{}).WithLiteral("v1").WithLiteral("secrets")).
+				WithPagination(pageTokenField)
+
+			iam := api.NewTestService("SecretManagerService").
+				WithPackage("google.cloud.secretmanager.v1").
+				WithMethods(method)
+
+			model := api.NewTestAPI([]*api.Message{inputType, outputType, secretType}, nil, []*api.Service{iam})
 
 			swiftCfg := swiftConfig(t, []config.SwiftDependency{
 				{
@@ -154,7 +131,7 @@ func verifyGeneratedMapService(t *testing.T, outDir string) {
     byItem: `, "\n  }")
 	wantMethodOverload := `  public func listSecrets(
     byItem: ListSecretsRequest, options: GoogleGax.RequestOptions
-) throws -> any AsyncSequence<(Swift.String, Secret), Swift.Error>
+) -> any AsyncSequence<(Swift.String, Secret), Swift.Error>
  {
     let listRpc = { (token: Swift.String) async throws -> GoogleCloudSecretmanagerV1.ListSecretsResponse in
       var request = byItem
@@ -178,22 +155,20 @@ func verifyGeneratedMapResponse(t *testing.T, outDir string, wantNextPageToken s
 	respContentStr := string(respContent)
 
 	gotResponseMessage := extractBlock(t, respContentStr, "public struct ListSecretsResponse: ", "{")
-	for _, p := range []string{"Codable", "Equatable", "GoogleWKT._AnyPackable", "GoogleGax._PaginatedResponse", "Sendable"} {
+	for _, p := range []string{"Codable", "Equatable", "GoogleWKT._AnyPackable", "Sendable"} {
 		if !strings.Contains(gotResponseMessage, p) {
 			t.Errorf("expected %q in ListSecretsResponse declaration, got: %s", p, gotResponseMessage)
 		}
 	}
 
-	gotGetItems := extractBlock(t, respContentStr, "public func _getPaginatedItems()", "  }")
-	wantGetItems := `public func _getPaginatedItems() -> [(Swift.String, Secret)] {
+	gotExtension := extractBlock(t, respContentStr, "@_spi(GoogleCloudInternal)\nextension ListSecretsResponse: GoogleGax._PaginatedResponse {", "\n}")
+	wantGetItems := `  public func _getPaginatedItems() -> [(Swift.String, Secret)] {
     return self.secrets.map { ($0, $1) }
   }`
-	if diff := cmp.Diff(wantGetItems, gotGetItems); diff != "" {
-		t.Errorf("mismatch (-want +got):\n%s", diff)
+	if !strings.Contains(gotExtension, wantGetItems) {
+		t.Errorf("expected %q in ListSecretsResponse extension, got:\n%s", wantGetItems, gotExtension)
 	}
-
-	gotNextPageToken := extractBlock(t, respContentStr, "public func _nextPageToken()", "  }")
-	if diff := cmp.Diff(wantNextPageToken, gotNextPageToken); diff != "" {
-		t.Errorf("mismatch (-want +got):\n%s", diff)
+	if !strings.Contains(gotExtension, wantNextPageToken) {
+		t.Errorf("expected %q in ListSecretsResponse extension, got:\n%s", wantNextPageToken, gotExtension)
 	}
 }

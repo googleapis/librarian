@@ -16,6 +16,14 @@ limitations under the License.
 {{#Codec.DocLines}}
 /// {{{.}}}
 {{/Codec.DocLines}}
+{{#Codec.HasDocLines}}
+///
+{{/Codec.HasDocLines}}
+/// - Note: Adding cases to this enumeration is not considered a breaking change.
+///   Always include an `@unknown default:` case when switching over this type.
+///   Do not pattern-match against `{{Codec.UnknownStringName}}` or `{{Codec.UnknownIntName}}`
+///   expecting specific values to remain unparsed; future releases may promote
+///   them to named cases.
 {{#Deprecated}}
 @available(*, deprecated)
 {{/Deprecated}}
@@ -31,17 +39,26 @@ public enum {{Codec.Name}}: Codable, Equatable, Sendable {
   {{/UniqueNumberValues}}
   /// Encodes an unknown integer value.
   ///
-  /// The most common cause for an unknown values is for the service to send
+  /// The most common cause for an unknown value is for the service to send
   /// a value unknown to the library. We recommend you update your library to
   /// the latest version.
+  ///
+  /// - Warning: Do not pattern-match specific integer values in this case;
+  ///   future releases may promote them to named enum cases.
   case {{Codec.UnknownIntName}}(Int)
   /// Encodes an unknown string value.
   ///
-  /// The most common cause for an unknown values is for the service to send
+  /// The most common cause for an unknown value is for the service to send
   /// a value unknown to the library. We recommend you update your library to
   /// the latest version.
+  ///
+  /// - Warning: Do not pattern-match specific string literals in this case;
+  ///   future releases may promote them to named enum cases.
   case {{Codec.UnknownStringName}}(String)
 
+  {{#Codec.DiagnoseDefault}}
+  {{> /templates/common/diagnose}}
+  {{/Codec.DiagnoseDefault}}
   public init() {
     self = .{{Codec.DefaultCaseName}}
   }
@@ -75,6 +92,9 @@ public enum {{Codec.Name}}: Codable, Equatable, Sendable {
   /// Initialize from a string value.
   ///
   /// If the value is unknown, this initializes to [`{{Codec.UnknownStringName}}`](doc:{{Codec.Name}}/{{Codec.UnknownStringName}}(_:)).
+  {{#Codec.DiagnoseValues}}
+  {{> /templates/common/diagnose}}
+  {{/Codec.DiagnoseValues}}
   public init(stringValue: Swift.String) {
     switch stringValue {
     {{#Values}}
@@ -87,6 +107,9 @@ public enum {{Codec.Name}}: Codable, Equatable, Sendable {
   /// Initialize from an integer value.
   ///
   /// If the value is unknown, this initializes to [`{{Codec.UnknownIntName}}`](doc:{{Codec.Name}}/{{Codec.UnknownIntName}}(_:)).
+  {{#Codec.DiagnoseValues}}
+  {{> /templates/common/diagnose}}
+  {{/Codec.DiagnoseValues}}
   public init(intValue: Int) {
     switch intValue {
     {{#UniqueNumberValues}}

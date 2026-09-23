@@ -22,9 +22,9 @@ limitations under the License.
 
 import Foundation
 import GoogleAuth
-import GoogleGax
+@_spi(GoogleCloudInternal) public import GoogleGax
 {{#Codec.ServiceImports}}
-import {{.}}
+public import {{.}}
 {{/Codec.ServiceImports}}
 
 /// A Swift protocol representing the control-plane and administrative surface for Google Cloud Storage.
@@ -166,7 +166,7 @@ extension StorageControlProtocol {
   @available(*, deprecated)
   {{/Deprecated}}
   public func {{> /templates/common/method_signature/pagination}} {
-    try self.{{Codec.Name}}(byItem: byItem, options: .init())
+    self.{{Codec.Name}}(byItem: byItem, options: .init())
   }
 
   {{#Deprecated}}
@@ -222,7 +222,7 @@ extension StorageControlProtocol {
   @available(*, deprecated)
   {{/Deprecated}}
   public func {{> /templates/common/method_signature/pagination}} {
-    try self.{{Codec.Name}}(byItem: byItem, options: .init())
+    self.{{Codec.Name}}(byItem: byItem, options: .init())
   }
 
   {{#Deprecated}}

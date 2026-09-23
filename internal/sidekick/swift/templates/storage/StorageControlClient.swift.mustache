@@ -22,10 +22,10 @@ limitations under the License.
 
 import Foundation
 import GoogleAuth
-@_spi(GoogleCloudInternal) import GoogleGax
+@_spi(GoogleCloudInternal) public import GoogleGax
 @_spi(GoogleCloudInternal) import GoogleGaxGRPC
 {{#Codec.ServiceImports}}
-import {{.}}
+@_spi(GoogleCloudInternal) public import {{.}}
 {{/Codec.ServiceImports}}
 
 /// A client for Google Cloud Storage control-plane and administrative operations that unifies bucket lifecycle,

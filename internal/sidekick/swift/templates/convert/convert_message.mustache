@@ -16,6 +16,9 @@ limitations under the License.
 extension {{Codec.ParameterTypeName}} {
   internal typealias ProtoType = {{Codec.ProtoTypeName}}
 
+  {{#Codec.DiagnoseCodable}}
+  {{> /templates/common/diagnose}}
+  {{/Codec.DiagnoseCodable}}
   internal init(proto: ProtoType) throws {
     self.init()
     {{#Fields}}
@@ -119,6 +122,9 @@ extension {{Codec.ParameterTypeName}} {
     self._unknownFields.proto = proto.unknownFields.data
   }
 
+  {{#Codec.DiagnoseCodable}}
+  {{> /templates/common/diagnose}}
+  {{/Codec.DiagnoseCodable}}
   internal func toProto() throws -> ProtoType {
     var proto = ProtoType()
     {{#Fields}}

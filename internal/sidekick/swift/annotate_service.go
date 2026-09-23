@@ -33,15 +33,36 @@ type serviceAnnotations struct {
 	QuickstartMethod *api.Method
 	Model            *modelAnnotations
 	DependsOn        map[string]*Dependency
+	PublicDependsOn  map[string]*Dependency
 	IsGated          bool
 	ModulePath       string
 	IsGrpc           bool
+	HasData          bool
 
 	// Any additional services required by this service.
 	//
 	// Typically this happens on discovery-based APIs where services with LROs
 	// depend on request messages provided by the service that can poll the LRO.
 	RequiredServices map[string]*api.Service
+
+	// DiagnoseClientSnippet guards the sample function in the generated client
+	// snippet, which creates the client and inlines the quickstart method's
+	// body.
+	//
+	// A snippet is a standalone executable. Nothing in it is deprecated, so it
+	// needs the attribute even when the service itself is. The name avoids
+	// colliding with `methodAnnotations.DiagnoseSnippet`, which means
+	// something different: mustache resolves `{{#Codec.X}}` by walking the
+	// context stack, so two same-named fields on different annotation types
+	// can be confused.
+	DiagnoseClientSnippet bool
+
+	// DiagnoseSnippetRunner guards `SnippetRunner.main()` in the generated
+	// method snippet.
+	//
+	// The runner names the client type and nothing else deprecated: it calls
+	// the snippet's own `sample`, which is never deprecated.
+	DiagnoseSnippetRunner bool
 }
 
 // ServiceImports returns the list of dependencies for this service.
@@ -60,6 +81,20 @@ func (ann *serviceAnnotations) ServiceImports() []string {
 	return result
 }
 
+// PublicServiceImports returns the list of public dependencies for this service
+// that are exposed in public signatures of the client.
+func (ann *serviceAnnotations) PublicServiceImports() []string {
+	result := make([]string, 0, len(ann.PublicDependsOn))
+	for _, dep := range ann.PublicDependsOn {
+		if dep.RequiredByServices {
+			continue
+		}
+		result = append(result, dep.Name)
+	}
+	slices.Sort(result)
+	return result
+}
+
 // SnippetImports returns the sorted list of dependencies for this service's
 // snippets.
 //
@@ -69,15 +104,42 @@ func (ann *serviceAnnotations) ServiceImports() []string {
 // dependencies, such as `GoogleAuth` or `GoogleGax`.
 func (ann *serviceAnnotations) SnippetImports() []string {
 	var result []string
-	for _, dep := range ann.DependsOn {
+	for _, dep := range ann.PublicDependsOn {
 		// Only dependencies that map to some source-API package
 		// (e.g. google.protobuf) are needed by the snippets.
 		if dep.ApiPackage != "" {
 			result = append(result, dep.Name)
 		}
 	}
+	if ann.needsWktImport() && ann.Model != nil && ann.Model.WktPackage != "" {
+		if !slices.Contains(result, ann.Model.WktPackage) {
+			result = append(result, ann.Model.WktPackage)
+		}
+	}
 	slices.Sort(result)
 	return result
+}
+
+// needsWktImport determines whether the service snippets require importing
+// the well-known types package (e.g. `GoogleWKT`).
+//
+// Currently, this checks if any method uses an update mask field
+// (`GoogleWKT.FieldMask`). This is intended to be expanded if snippets need
+// well-known type imports for additional reasons in the future.
+func (ann *serviceAnnotations) needsWktImport() bool {
+	return ann.hasUpdateMask()
+}
+
+func (ann *serviceAnnotations) hasUpdateMask() bool {
+	for _, m := range ann.Methods {
+		if m.SampleInfo != nil && m.SampleInfo.UpdateMaskField != nil {
+			return true
+		}
+	}
+	if ann.QuickstartMethod != nil && ann.QuickstartMethod.SampleInfo != nil && ann.QuickstartMethod.SampleInfo.UpdateMaskField != nil {
+		return true
+	}
+	return false
 }
 
 // HasLROs returns true if one of the methods is an LRO.
@@ -110,21 +172,38 @@ func (c *codec) annotateService(service *api.Service, model *modelAnnotations) (
 	if service.QuickstartMethod != nil && c.isGeneratedMethod(service.QuickstartMethod) {
 		quickstartMethod = service.QuickstartMethod
 	}
+	// The client snippet creates the client and then runs the body of the
+	// quickstart method's snippet, so it names whatever either of them names.
+	//
+	// The quickstart method is normally one of `methods` and therefore already
+	// annotated above. It need not be: `api.Service.QuickstartMethod` is a
+	// separate field, and a service can name a method that is not in
+	// `service.Methods`. In that case the client snippet falls back to the
+	// service's own deprecation, which is all it can name anyway.
+	diagnoseClientSnippet := service.Deprecated
+	if quickstartMethod != nil {
+		if ann, ok := quickstartMethod.Codec.(*methodAnnotations); ok {
+			diagnoseClientSnippet = diagnoseClientSnippet || ann.DiagnoseSnippet
+		}
+	}
 
 	name := c.traitName(service)
 	annotations := &serviceAnnotations{
-		Name:             name,
-		ClientName:       pascalCase(service.Name + "Client"),
-		StubPrefix:       pascalCaseNoMangling(service.Name),
-		HostnameShort:    strings.TrimSuffix(service.DefaultHost, ".googleapis.com"),
-		DocLines:         docLines,
-		Methods:          methods,
-		LibraryName:      c.LibraryName,
-		QuickstartMethod: quickstartMethod,
-		Model:            model,
-		DependsOn:        map[string]*Dependency{},
-		ModulePath:       c.ModulePath,
-		IsGrpc:           c.isGrpc(),
+		Name:                  name,
+		ClientName:            pascalCase(service.Name + "Client"),
+		StubPrefix:            pascalCaseNoMangling(service.Name),
+		HostnameShort:         strings.TrimSuffix(service.DefaultHost, ".googleapis.com"),
+		DocLines:              docLines,
+		Methods:               methods,
+		LibraryName:           c.LibraryName,
+		QuickstartMethod:      quickstartMethod,
+		Model:                 model,
+		DependsOn:             map[string]*Dependency{},
+		PublicDependsOn:       map[string]*Dependency{},
+		ModulePath:            c.ModulePath,
+		IsGrpc:                c.isGrpc(),
+		DiagnoseClientSnippet: diagnoseClientSnippet,
+		DiagnoseSnippetRunner: service.Deprecated,
 	}
 	if c.PerServiceTraits {
 		annotations.IsGated = true
@@ -146,12 +225,10 @@ func (c *codec) annotateService(service *api.Service, model *modelAnnotations) (
 		}
 	}
 
-	// Services always depend on well known types
-	wktDep, err := c.addApiPackageDependency(wellKnownProtobufPackage)
-	if err != nil {
+	// Ensure package-level dependency on well known types
+	if _, err := c.addApiPackageDependency(wellKnownProtobufPackage); err != nil {
 		return nil, err
 	}
-	annotations.DependsOn[wktDep.Name] = wktDep
 
 	for _, method := range methods {
 		if method.InputType != nil {
@@ -162,6 +239,7 @@ func (c *codec) annotateService(service *api.Service, model *modelAnnotations) (
 				}
 				if dep != nil {
 					annotations.DependsOn[dep.Name] = dep
+					annotations.PublicDependsOn[dep.Name] = dep
 				}
 			}
 		}
@@ -173,6 +251,9 @@ func (c *codec) annotateService(service *api.Service, model *modelAnnotations) (
 				}
 				if dep != nil {
 					annotations.DependsOn[dep.Name] = dep
+					if !method.ReturnsEmpty && method.OutputType.ID != ".google.protobuf.Empty" {
+						annotations.PublicDependsOn[dep.Name] = dep
+					}
 				}
 			}
 		}
@@ -228,6 +309,9 @@ func (c *codec) addFieldDependencies(annotations *serviceAnnotations, field *api
 		if err != nil {
 			return err
 		}
+		if item.IsMap && len(item.Fields) == 2 {
+			return c.addFieldDependencies(annotations, item.Fields[1])
+		}
 		if item.Package != c.Model.PackageName {
 			dep, err := c.addApiPackageDependency(item.Package)
 			if err != nil {
@@ -235,6 +319,7 @@ func (c *codec) addFieldDependencies(annotations *serviceAnnotations, field *api
 			}
 			if dep != nil {
 				annotations.DependsOn[dep.Name] = dep
+				annotations.PublicDependsOn[dep.Name] = dep
 			}
 		}
 		return nil
@@ -250,8 +335,12 @@ func (c *codec) addFieldDependencies(annotations *serviceAnnotations, field *api
 			}
 			if dep != nil {
 				annotations.DependsOn[dep.Name] = dep
+				annotations.PublicDependsOn[dep.Name] = dep
 			}
 		}
+		return nil
+	case api.TypezBytes:
+		annotations.HasData = true
 		return nil
 	default:
 		return nil
@@ -289,6 +378,9 @@ func (c *codec) addLroDependencies(annotations *serviceAnnotations, method *api.
 		}
 		if dep != nil {
 			annotations.DependsOn[dep.Name] = dep
+			if respMsg.ID != ".google.protobuf.Empty" {
+				annotations.PublicDependsOn[dep.Name] = dep
+			}
 		}
 	}
 	metaMsg, err := lookupMessage(c.Model, method.OperationInfo.MetadataTypeID)

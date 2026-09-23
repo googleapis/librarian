@@ -38,7 +38,7 @@ different aspects of the API, consult the reference documentation for details.
 
 {{#Services}}
 {{! Codec.Name and the trait name are always identical }}
-- ``{{Codec.ClientName}}``{{#Codec.IsGated}}: enabled by the `{{Codec.Name}}` feature.{{/Codec.IsGated}}
+- ``{{Codec.ClientName}}``{{#Codec.IsGated}}: enabled by the `{{Codec.Name}}` trait.{{/Codec.IsGated}}
 {{/Services}}
 {{/HasServices}}
 {{^HasServices}}
@@ -46,3 +46,10 @@ different aspects of the API, consult the reference documentation for details.
 This is a type-only library. You will not find functions to make RPCs in this
 library. Its types are used in other libraries that access Google Cloud.
 {{/HasServices}}
+{{#Codec.HasTraits}}
+
+## See Also
+
+- <doc:PackageTraits>
+{{/Codec.HasTraits}}
+

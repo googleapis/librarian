@@ -855,6 +855,24 @@ func TestApplyDefaults_Error(t *testing.T) {
 	}
 }
 
+func TestApplyDefaults_Nodejs(t *testing.T) {
+	lib := &config.Library{
+		Name: "google-cloud-secretmanager",
+		APIs: []*config.API{{Path: "google/cloud/secretmanager/v1"}},
+	}
+	got, err := applyDefaults(config.LanguageNodejs, lib, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.Nodejs == nil {
+		t.Fatal("got.Nodejs is nil")
+	}
+	wantPackageName := "@google-cloud/secretmanager"
+	if diff := cmp.Diff(wantPackageName, got.Nodejs.PackageName); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+}
+
 func TestCanDeriveAPIPath(t *testing.T) {
 	for _, test := range []struct {
 		name     string

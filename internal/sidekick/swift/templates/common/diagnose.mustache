@@ -1,0 +1,28 @@
+{{!
+Copyright 2026 Google LLC
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    https://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+}}
+{{!
+Suppresses the deprecation warnings the generated code cannot avoid.
+
+We carry the deprecations from the source specification into the generated API,
+so customers are warned when they use them. The generated code must still read,
+write and convert those declarations, which warns in turn.
+
+`@diagnose` arrived in Swift 6.4 (SE-0522). Older toolchains skip this block and
+keep reporting the warning; the build scripts demote it there.
+}}
+#if hasAttribute(diagnose)
+@diagnose(DeprecatedDeclaration, as: ignored)
+#endif

@@ -40,11 +40,13 @@ import (
 const (
 	cloudCommonResourcesProto = "google/cloud/common_resources.proto"
 	protosPathPrefix          = "protos/"
+	stagingDirName            = ".librarian-staging"
 )
 
 var (
-	errToolNotInstalled = errors.New("tool not installed in librarian cache")
-	errProtoNotFound    = errors.New("no proto is found in api")
+	errToolNotInstalled    = errors.New("tool not installed in librarian cache")
+	errProtoNotFound       = errors.New("no proto is found in api")
+	errPackageNameRequired = errors.New("nodejs.package_name is required; non-cloud libraries must be configured in librarian.yaml or populated during librarian add")
 )
 
 type buildGeneratorArgsParams struct {
@@ -65,6 +67,9 @@ func IsMixedLibrary(lib *config.Library) bool {
 
 // Generate generates a Node.js client library.
 func Generate(ctx context.Context, cfg *config.Config, library *config.Library, srcs *sources.Sources) error {
+	if library.Nodejs == nil || library.Nodejs.PackageName == "" {
+		return fmt.Errorf("library %q: %w", library.Name, errPackageNameRequired)
+	}
 	googleapisDir := srcs.Googleapis
 	outdir, err := filepath.Abs(library.Output)
 	if err != nil {
@@ -150,7 +155,7 @@ func generateAPI(ctx context.Context, params generateAPIParams) error {
 	if _, err := requireCachedTool("gapic-node-processing"); err != nil {
 		return err
 	}
-	stagingDir := filepath.Join(params.repoRoot, "owl-bot-staging", params.library.Name, buildStagingSubdirName(params.apiIndex, params.api.Path))
+	stagingDir := filepath.Join(params.repoRoot, stagingDirName, params.library.Name, buildStagingSubdirName(params.apiIndex, params.api.Path))
 	if err := os.MkdirAll(stagingDir, 0o755); err != nil {
 		return err
 	}
@@ -281,7 +286,7 @@ func buildGeneratorArgs(params buildGeneratorArgsParams) ([]string, error) {
 		args = append(args, "--service-yaml", apiMetadata.ServiceConfig)
 	}
 
-	args = append(args, "--package-name", derivePackageName(params.library))
+	args = append(args, "--package-name", params.library.Nodejs.PackageName)
 	args = append(args, "--metadata")
 
 	// Only pass --transport for non-default values (default is grpc+rest).
@@ -323,7 +328,7 @@ func buildGeneratorArgs(params buildGeneratorArgsParams) ([]string, error) {
 	return args, nil
 }
 
-// runPostProcessor combines versioned API outputs from owl-bot-staging/ into
+// runPostProcessor combines versioned API outputs from the staging directory into
 // the output directory using gapic-node-processing, then compiles protos.
 func runPostProcessor(ctx context.Context, cfg *config.Config, library *config.Library, googleapisDir, repoRoot, outDir string) error {
 	if err := movePackageFromStaging(ctx, library, repoRoot, outDir); err != nil {
@@ -398,7 +403,7 @@ func compileProtosArgs(library *config.Library) []string {
 }
 
 // movePackageFromStaging moves the generated code for a single package from
-// owl-bot-staging (in the repo root) to the package-specific directory.
+// the staging directory (in the repo root) to the package-specific directory.
 func movePackageFromStaging(ctx context.Context, library *config.Library, repoRoot, outDir string) error {
 	// combine-library wipes the destination directory before writing generated
 	// files (src/, protos/). Save the keep files it would delete, then restore
@@ -413,7 +418,7 @@ func movePackageFromStaging(ctx context.Context, library *config.Library, repoRo
 		return err
 	}
 
-	stagingDir := filepath.Join(repoRoot, "owl-bot-staging", library.Name)
+	stagingDir := filepath.Join(repoRoot, stagingDirName, library.Name)
 	combineArgs := []string{
 		"combine-library",
 		"--source-path", stagingDir,
@@ -572,7 +577,7 @@ func copyMissingProtos(googleapisDir, outDir string) error {
 
 // copySamplesFromStaging copies generated sample files from the staging
 // directory into the output directory. The generator writes samples to
-// owl-bot-staging/<lib>/<version>/samples/generated/<version>/ but
+// <stagingDir>/<version>/samples/generated/<version>/ but
 // combine-library does not move them.
 func copySamplesFromStaging(stagingDir, outDir string) error {
 	versions, err := os.ReadDir(stagingDir)
@@ -618,31 +623,6 @@ func copySamplesFromStaging(stagingDir, outDir string) error {
 		}
 	}
 	return nil
-}
-
-// derivePackageName returns the npm package name for a library.
-// It uses nodejs.package_name if set, otherwise derives it by splitting the
-// library name on the second dash (e.g. "google-cloud-batch" → "@google-cloud/batch").
-func derivePackageName(library *config.Library) string {
-	if library.Nodejs != nil && library.Nodejs.PackageName != "" {
-		return library.Nodejs.PackageName
-	}
-	return derivePackageNameFromLibraryName(library.Name)
-}
-
-func derivePackageNameFromLibraryName(name string) string {
-	firstDash := strings.Index(name, "-")
-	if firstDash < 0 {
-		return name
-	}
-	secondDash := strings.Index(name[firstDash+1:], "-")
-	if secondDash < 0 {
-		return name
-	}
-	secondDash += firstDash + 1
-	scope := name[:secondDash]
-	pkg := name[secondDash+1:]
-	return fmt.Sprintf("@%s/%s", scope, pkg)
 }
 
 // DefaultOutput returns the output path for a library.

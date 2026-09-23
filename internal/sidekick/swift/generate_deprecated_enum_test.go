@@ -25,6 +25,13 @@ import (
 )
 
 func TestGenerateEnum_Deprecated(t *testing.T) {
+	const noteDoc = `///
+/// - Note: Adding cases to this enumeration is not considered a breaking change.
+///   Always include an ` + "`@unknown default:`" + ` case when switching over this type.
+///   Do not pattern-match against ` + "`unknownStringValue`" + ` or ` + "`unknownIntValue`" + `
+///   expecting specific values to remain unparsed; future releases may promote
+///   them to named cases.
+`
 	for _, test := range []struct {
 		name           string
 		enumDeprecated bool
@@ -36,54 +43,44 @@ func TestGenerateEnum_Deprecated(t *testing.T) {
 			name:           "deprecated-enum",
 			enumDeprecated: true,
 			valDeprecated:  false,
-			wantEnum:       "/// -- enum marker --\n@available(*, deprecated)\npublic enum Status",
+			wantEnum:       "/// -- enum marker --\n" + noteDoc + "@available(*, deprecated)\npublic enum Status",
 			wantCase:       "/// -- case marker --\n  case unspecified",
 		},
 		{
 			name:           "deprecated-value",
 			enumDeprecated: false,
 			valDeprecated:  true,
-			wantEnum:       "/// -- enum marker --\npublic enum Status",
+			wantEnum:       "/// -- enum marker --\n" + noteDoc + "public enum Status",
 			wantCase:       "/// -- case marker --\n  @available(*, deprecated)\n  case unspecified",
 		},
 		{
 			name:           "both-deprecated",
 			enumDeprecated: true,
 			valDeprecated:  true,
-			wantEnum:       "/// -- enum marker --\n@available(*, deprecated)\npublic enum Status",
+			wantEnum:       "/// -- enum marker --\n" + noteDoc + "@available(*, deprecated)\npublic enum Status",
 			wantCase:       "/// -- case marker --\n  @available(*, deprecated)\n  case unspecified",
 		},
 		{
 			name:           "not-deprecated",
 			enumDeprecated: false,
 			valDeprecated:  false,
-			wantEnum:       "/// -- enum marker --\npublic enum Status",
+			wantEnum:       "/// -- enum marker --\n" + noteDoc + "public enum Status",
 			wantCase:       "/// -- case marker --\n  case unspecified",
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			outDir := t.TempDir()
 
-			enum := &api.Enum{
-				Name:          "Status",
-				Package:       "google.cloud.test.v1",
-				ID:            ".google.cloud.test.v1.Status",
-				Deprecated:    test.enumDeprecated,
-				Documentation: "-- enum marker --",
-			}
-			enum.Values = []*api.EnumValue{
-				{
-					Name:          "STATUS_UNSPECIFIED",
-					Number:        0,
-					Parent:        enum,
-					Deprecated:    test.valDeprecated,
-					Documentation: "-- case marker --",
-				},
-			}
-			enum.UniqueNumberValues = enum.Values
+			val := api.NewTestEnumValue("STATUS_UNSPECIFIED", 0).
+				WithDeprecated(test.valDeprecated).
+				WithDocumentation("-- case marker --")
+			enum := api.NewTestEnum("Status").
+				WithPackage("google.cloud.test.v1").
+				WithDeprecated(test.enumDeprecated).
+				WithDocumentation("-- enum marker --").
+				WithValues(val)
 
 			model := api.NewTestAPI(nil, []*api.Enum{enum}, nil)
-			model.PackageName = "google.cloud.test.v1"
 			if err := Generate(t.Context(), model, outDir, &config.Library{}, nil); err != nil {
 				t.Fatal(err)
 			}
@@ -103,6 +100,81 @@ func TestGenerateEnum_Deprecated(t *testing.T) {
 			if diff := cmp.Diff(test.wantCase, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
+		})
+	}
+}
+
+// TestGenerateEnum_Diagnose covers the initializers that assign enum cases.
+//
+// Only assignment warns. `intValue`, `stringValue` and `encode(to:)` pattern
+// match instead, which Swift does not diagnose, so they need no guard.
+func TestGenerateEnum_Diagnose(t *testing.T) {
+	for _, test := range []struct {
+		name              string
+		enumDeprecated    bool
+		defaultDeprecated bool
+		valueDeprecated   bool
+		wantDefault       bool
+		wantValues        bool
+	}{
+		{
+			name:              "deprecated-default-value",
+			defaultDeprecated: true,
+			wantDefault:       true,
+			wantValues:        true,
+		},
+		{
+			// `init()` only names the default value, so it stays clean.
+			name:            "deprecated-other-value",
+			valueDeprecated: true,
+			wantDefault:     false,
+			wantValues:      true,
+		},
+		{
+			// Swift does not diagnose deprecated references inside a
+			// deprecated declaration.
+			name:              "deprecated-enum",
+			enumDeprecated:    true,
+			defaultDeprecated: true,
+			valueDeprecated:   true,
+			wantDefault:       false,
+			wantValues:        false,
+		},
+		{
+			name:        "not-deprecated",
+			wantDefault: false,
+			wantValues:  false,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			outDir := t.TempDir()
+
+			enum := api.NewTestEnum("Status").
+				WithPackage("google.cloud.test.v1").
+				WithDeprecated(test.enumDeprecated).
+				WithValues(
+					api.NewTestEnumValue("STATUS_UNSPECIFIED", 0).
+						WithDeprecated(test.defaultDeprecated),
+					api.NewTestEnumValue("STATUS_OK", 1).
+						WithDeprecated(test.valueDeprecated),
+				)
+
+			model := api.NewTestAPI(nil, []*api.Enum{enum}, nil)
+			model.PackageName = "google.cloud.test.v1"
+			if err := Generate(t.Context(), model, outDir, &config.Library{}, nil); err != nil {
+				t.Fatal(err)
+			}
+
+			filename := filepath.Join(outDir, "Sources", "GoogleCloudTestV1", "Status.swift")
+			content, err := os.ReadFile(filename)
+			if err != nil {
+				t.Fatal(err)
+			}
+			contentStr := string(content)
+
+			checkDiagnose(t, contentStr, "  ", "public init() {", test.wantDefault)
+			checkDiagnose(t, contentStr, "  ", "public init(stringValue: Swift.String) {", test.wantValues)
+			checkDiagnose(t, contentStr, "  ", "public init(intValue: Int) {", test.wantValues)
 		})
 	}
 }

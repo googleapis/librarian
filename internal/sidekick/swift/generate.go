@@ -107,12 +107,19 @@ func (c *codec) swiftFilename(basename string) string {
 
 func (c *codec) generateDocc(outdir string, model *api.API, provider language.TemplateProvider) error {
 	output := filepath.Join("Sources", c.LibraryName, c.LibraryName+".docc", "Index.md")
-	template := "templates/docc/landing_page.md.mustache"
-	generated := language.GeneratedFile{
-		TemplatePath: template,
-		OutputPath:   output,
+	files := []language.GeneratedFile{
+		{
+			TemplatePath: "templates/docc/landing_page.md.mustache",
+			OutputPath:   output,
+		},
 	}
-	return language.GenerateFromModel(outdir, model, provider, []language.GeneratedFile{generated})
+	if annotations, ok := model.Codec.(*modelAnnotations); ok && annotations.HasTraits() {
+		files = append(files, language.GeneratedFile{
+			TemplatePath: "templates/docc/package_traits.md.mustache",
+			OutputPath:   filepath.Join("Sources", c.LibraryName, c.LibraryName+".docc", "PackageTraits.md"),
+		})
+	}
+	return language.GenerateFromModel(outdir, model, provider, files)
 }
 
 func (c *codec) generateMessages(outdir string, model *api.API, provider language.TemplateProvider) error {

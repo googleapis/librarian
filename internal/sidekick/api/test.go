@@ -16,6 +16,7 @@ package api
 
 import (
 	"fmt"
+	"slices"
 	"strings"
 
 	"github.com/iancoleman/strcase"
@@ -35,15 +36,27 @@ func NewTestAPI(messages []*Message, enums []*Enum, services []*Service) *API {
 		resourceByType: make(map[string]*Resource),
 	}
 
-	for _, m := range messages {
-		model.PackageName = m.Package
+	var indexMessage func(m *Message)
+	indexMessage = func(m *Message) {
 		model.messageByID[m.ID] = m
 		if m.Resource != nil {
 			model.resourceByType[m.Resource.Type] = m.Resource
 		}
 		for _, e := range m.Enums {
 			model.enumByID[e.ID] = e
+			e.Parent = m
+			for _, ev := range e.Values {
+				ev.Parent = e
+			}
 		}
+		for _, child := range m.Messages {
+			child.Parent = m
+			indexMessage(child)
+		}
+	}
+	for _, m := range messages {
+		model.PackageName = m.Package
+		indexMessage(m)
 	}
 	for _, e := range enums {
 		model.PackageName = e.Package
@@ -61,14 +74,18 @@ func NewTestAPI(messages []*Message, enums []*Enum, services []*Service) *API {
 		parent := model.messageByID[parentID]
 		if parent != nil {
 			m.Parent = parent
-			parent.Messages = append(parent.Messages, m)
+			if !slices.Contains(parent.Messages, m) {
+				parent.Messages = append(parent.Messages, m)
+			}
 		}
 	}
 	for _, e := range enums {
 		parent := model.messageByID[parentName(e.ID)]
 		if parent != nil {
 			e.Parent = parent
-			parent.Enums = append(parent.Enums, e)
+			if !slices.Contains(parent.Enums, e) {
+				parent.Enums = append(parent.Enums, e)
+			}
 		}
 		for _, ev := range e.Values {
 			ev.Parent = e
@@ -156,6 +173,32 @@ func (m *Message) WithOneOfs(oneofs ...*OneOf) *Message {
 	return m
 }
 
+func (m *Message) withParentRecursive(parent *Message) {
+	m.Parent = parent
+	if m.Parent == nil {
+		return
+	}
+	m.Package = parent.Package
+	if strings.HasPrefix(m.ID, ".test.") || m.ID == "" {
+		m.ID = fmt.Sprintf("%s.%s", parent.ID, m.Name)
+	}
+	for _, c := range m.Messages {
+		c.withParentRecursive(m)
+	}
+	for _, e := range m.Enums {
+		_ = e.WithParent(m)
+	}
+}
+
+// WithMessages adds nested messages to the message and updates their parent/ID.
+func (m *Message) WithMessages(messages ...*Message) *Message {
+	for _, child := range messages {
+		child.withParentRecursive(m)
+	}
+	m.Messages = append(m.Messages, messages...)
+	return m
+}
+
 // WithEnums adds enums to the message and updates their parent/ID.
 func (m *Message) WithEnums(enums ...*Enum) *Message {
 	for _, e := range enums {
@@ -189,6 +232,24 @@ func (m *Message) WithResource(resource *Resource) *Message {
 	return m
 }
 
+// WithDeprecated sets whether the message is deprecated.
+func (m *Message) WithDeprecated(deprecated bool) *Message {
+	m.Deprecated = deprecated
+	return m
+}
+
+// WithDocumentation sets the documentation for the message.
+func (m *Message) WithDocumentation(doc string) *Message {
+	m.Documentation = doc
+	return m
+}
+
+// WithIsMap sets whether the message represents a map entry.
+func (m *Message) WithIsMap() *Message {
+	m.IsMap = true
+	return m
+}
+
 // NewTestService creates a service with defaults for testing.
 // Default package is "test".
 func NewTestService(name string) *Service {
@@ -212,6 +273,18 @@ func (s *Service) WithMethods(methods ...*Method) *Service {
 		}
 	}
 	s.Methods = append(s.Methods, methods...)
+	return s
+}
+
+// WithDeprecated sets whether the service is deprecated.
+func (s *Service) WithDeprecated(deprecated bool) *Service {
+	s.Deprecated = deprecated
+	return s
+}
+
+// WithDocumentation sets the documentation for the service.
+func (s *Service) WithDocumentation(doc string) *Service {
+	s.Documentation = doc
 	return s
 }
 
@@ -380,6 +453,18 @@ func (m *Method) WithSignatures(signatures ...*MethodSignature) *Method {
 	return m
 }
 
+// WithDeprecated sets whether the method is deprecated.
+func (m *Method) WithDeprecated(deprecated bool) *Method {
+	m.Deprecated = deprecated
+	return m
+}
+
+// WithSampleInfo sets the sample info for the method.
+func (m *Method) WithSampleInfo(sampleInfo *SampleInfo) *Method {
+	m.SampleInfo = sampleInfo
+	return m
+}
+
 // NewTestPathBinding creates a PathBinding with the given verb and path template.
 func NewTestPathBinding(verb string, pt *PathTemplate) *PathBinding {
 	return &PathBinding{
@@ -427,6 +512,12 @@ func (o *OneOf) WithFields(fields ...*Field) *OneOf {
 	return o
 }
 
+// WithDocumentation sets the documentation for the oneof group.
+func (o *OneOf) WithDocumentation(doc string) *OneOf {
+	o.Documentation = doc
+	return o
+}
+
 // NewTestField creates a field with defaults for testing.
 // JSONName is automatically camelCased.
 func NewTestField(name string) *Field {
@@ -464,6 +555,12 @@ func (f *Field) WithMap() *Field {
 	f.Map = true
 	f.Repeated = false
 	f.Optional = false
+	return f
+}
+
+// WithRecursive marks the field as recursive.
+func (f *Field) WithRecursive() *Field {
+	f.Recursive = true
 	return f
 }
 
@@ -511,6 +608,18 @@ func (f *Field) WithResourceReference(refType string) *Field {
 // WithChildTypeReference sets the child type resource reference on a field.
 func (f *Field) WithChildTypeReference(childType string) *Field {
 	f.ResourceReference = &ResourceReference{ChildType: childType}
+	return f
+}
+
+// WithDeprecated sets whether the field is deprecated.
+func (f *Field) WithDeprecated(deprecated bool) *Field {
+	f.Deprecated = deprecated
+	return f
+}
+
+// WithDocumentation sets the documentation of the field.
+func (f *Field) WithDocumentation(documentation string) *Field {
+	f.Documentation = documentation
 	return f
 }
 

@@ -23,15 +23,20 @@ limitations under the License.
 {{#Codec.IsGated}}
 #if {{Codec.Name}}
 {{/Codec.IsGated}}
+{{#Codec.HasData}}
+public import Foundation
+{{/Codec.HasData}}
+{{^Codec.HasData}}
 import Foundation
+{{/Codec.HasData}}
 {{! On Linux we need this additional import for `URLSession`. }}
 #if canImport(FoundationNetworking)
   import FoundationNetworking
 #endif
-{{#Codec.ServiceImports}}
-import {{.}}
-{{/Codec.ServiceImports}}
-import GoogleGax
+{{#Codec.PublicServiceImports}}
+@_spi(GoogleCloudInternal) public import {{.}}
+{{/Codec.PublicServiceImports}}
+@_spi(GoogleCloudInternal) public import GoogleGax
 
 {{#Codec.DocLines}}
 /// {{{.}}}
@@ -71,6 +76,9 @@ public final class {{Codec.ClientName}}: Clients.{{Codec.StubPrefix}}Protocol, S
   {{#Deprecated}}
   @available(*, deprecated)
   {{/Deprecated}}
+  {{#Codec.DiagnoseTypes}}
+  {{> /templates/common/diagnose}}
+  {{/Codec.DiagnoseTypes}}
   {{^IsLroPoller}}public {{/IsLroPoller}}func {{> /templates/common/method_signature/request_options}} {
       try await self.inner.{{Codec.Name}}(request: request, options: options)
   }
@@ -84,6 +92,9 @@ public final class {{Codec.ClientName}}: Clients.{{Codec.StubPrefix}}Protocol, S
   {{#Deprecated}}
   @available(*, deprecated)
   {{/Deprecated}}
+  {{#Codec.DiagnoseFields}}
+  {{> /templates/common/diagnose}}
+  {{/Codec.DiagnoseFields}}
   public func {{> /templates/common/method_signature/pagination_options}} {
     let listRpc = { (token: Swift.String) async throws -> {{Codec.ReturnType}} in
       var request = byItem
@@ -103,6 +114,9 @@ public final class {{Codec.ClientName}}: Clients.{{Codec.StubPrefix}}Protocol, S
   {{#Deprecated}}
   @available(*, deprecated)
   {{/Deprecated}}
+  {{#Codec.DiagnoseTypes}}
+  {{> /templates/common/diagnose}}
+  {{/Codec.DiagnoseTypes}}
   public func {{> /templates/common/method_signature/lro_options}} {
     let extractStatus = { (op: {{Codec.ReturnType}}) throws -> GoogleGax._PollableOperationImpl<{{Codec.LRO.ReturnType}}>.State in
       {{#Codec.LRO.ResponseIsEmpty}}
@@ -133,6 +147,12 @@ public final class {{Codec.ClientName}}: Clients.{{Codec.StubPrefix}}Protocol, S
   {{/Codec.DocLines}}
   ///
   /// @Snippet(path: "{{Service.Name}}_{{Name}}")
+  {{#Deprecated}}
+  @available(*, deprecated)
+  {{/Deprecated}}
+  {{#Codec.DiagnoseFields}}
+  {{> /templates/common/diagnose}}
+  {{/Codec.DiagnoseFields}}
   public func {{> /templates/common/method_signature/discovery_lro_options}} {
     {{> /templates/common/method_body/discovery_lro}}
   }
@@ -142,5 +162,13 @@ public final class {{Codec.ClientName}}: Clients.{{Codec.StubPrefix}}Protocol, S
 
 {{> /templates/common/client_protocol}}
 {{#Codec.IsGated}}
+#else
+@_spi(GoogleCloudInternal) public import GoogleGax
+
+@available(*, unavailable, message: "Enable the '{{Codec.Name}}' trait in Package.swift to use this client.")
+public final class {{Codec.ClientName}}: Sendable {
+  @available(*, unavailable, message: "Enable the '{{Codec.Name}}' trait in Package.swift to use this client.")
+  public init(_ options: GoogleGax.ClientOptions = .init()) throws {}
+}
 #endif
 {{/Codec.IsGated}}

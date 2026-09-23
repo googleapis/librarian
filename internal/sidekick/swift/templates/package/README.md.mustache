@@ -66,6 +66,41 @@ Then add `{{Codec.LibraryName}}` to your target's dependencies:
 ```bash
 swift package add-target-dependency {{Codec.LibraryName}} <target-name> --package {{Codec.PackageRepoName}}
 ```
+{{#Codec.HasTraits}}
+
+### Package Traits
+
+This package uses Swift package traits to conditionally compile individual service
+clients and their associated types. Enabling a trait enables the corresponding
+client and all the request, response, and model types needed to use that client.
+{{#Codec.HasDefaultTraits}}
+
+The following traits are enabled by default:
+{{#Codec.DefaultTraits}}
+- `{{{.}}}`
+{{/Codec.DefaultTraits}}
+
+To enable additional traits alongside the defaults, specify them in `Package.swift`:
+
+```swift
+.package(url: "https://github.com/googleapis/{{Codec.PackageRepoName}}.git", from: "{{Codec.PackageVersion}}", traits: [".defaults", "<TraitName>"])
+```
+{{/Codec.HasDefaultTraits}}
+{{^Codec.HasDefaultTraits}}
+
+No traits are enabled by default. Specify the traits you need in `Package.swift`:
+
+```swift
+.package(url: "https://github.com/googleapis/{{Codec.PackageRepoName}}.git", from: "{{Codec.PackageVersion}}", traits: ["<TraitName>"])
+```
+{{/Codec.HasDefaultTraits}}
+
+| Trait | Default | Enabled Client |
+|---|:---:|---|
+{{#Codec.AllTraits}}
+| `{{Name}}` | {{#IsDefault}}Yes{{/IsDefault}}{{^IsDefault}}No{{/IsDefault}} | `{{ClientName}}` |
+{{/Codec.AllTraits}}
+{{/Codec.HasTraits}}
 
 ## Troubleshooting
 

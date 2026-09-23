@@ -31,6 +31,9 @@ import {{Service.Codec.LibraryName}}
 import {{.}}
 {{/Service.Codec.SnippetImports}}
 
+{{#Codec.DiagnoseSnippet}}
+{{> /templates/common/diagnose}}
+{{/Codec.DiagnoseSnippet}}
 func sample(client: {{Service.Codec.ClientName}}{{#SampleInfo}}{{#Codec.Parameters}}, {{.}}: String{{/Codec.Parameters}}{{/SampleInfo}}) async throws {
   {{> /templates/snippet/generic}}
 }
@@ -38,6 +41,9 @@ func sample(client: {{Service.Codec.ClientName}}{{#SampleInfo}}{{#Codec.Paramete
 
 @main
 struct SnippetRunner {
+    {{#Service.Codec.DiagnoseSnippetRunner}}
+    {{> /templates/common/diagnose}}
+    {{/Service.Codec.DiagnoseSnippetRunner}}
     static func main() async throws {
         do {
             let client = try {{Service.Codec.LibraryName}}.{{Service.Codec.ClientName}}()

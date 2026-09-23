@@ -20,9 +20,6 @@ limitations under the License.
 @available(*, deprecated)
 {{/Deprecated}}
 public struct {{Codec.Name}}: Codable, Equatable, {{Codec.Model.WktPackage}}._AnyPackable,
-  {{#Codec.IsPaginatedResponse}}
-  GoogleGax._PaginatedResponse,
-  {{/Codec.IsPaginatedResponse}}
   Sendable {
   {{#Fields}}
   {{^IsOneOf}}
@@ -33,6 +30,9 @@ public struct {{Codec.Name}}: Codable, Equatable, {{Codec.Model.WktPackage}}._An
   {{#Deprecated}}
   @available(*, deprecated)
   {{/Deprecated}}
+  {{#Codec.DiagnoseType}}
+  {{> /templates/common/diagnose}}
+  {{/Codec.DiagnoseType}}
   {{#Singular}}
   {{#Codec.Recursive}}
   public var {{Codec.Name}}: {{{Codec.FieldType}}} = nil
@@ -100,6 +100,9 @@ public struct {{Codec.Name}}: Codable, Equatable, {{Codec.Model.WktPackage}}._An
     ]
   }
 
+  {{#Codec.DiagnoseCodable}}
+  {{> /templates/common/diagnose}}
+  {{/Codec.DiagnoseCodable}}
   public init(from decoder: Decoder) throws {
     let container = try decoder.container(keyedBy: CodingKeys.self)
     {{#Fields}}
@@ -134,6 +137,9 @@ public struct {{Codec.Name}}: Codable, Equatable, {{Codec.Model.WktPackage}}._An
     }
   }
 
+  {{#Codec.DiagnoseCodable}}
+  {{> /templates/common/diagnose}}
+  {{/Codec.DiagnoseCodable}}
   public func encode(to encoder: Encoder) throws {
     var container = encoder.container(keyedBy: CodingKeys.self)
     {{#Fields}}
@@ -184,24 +190,4 @@ public struct {{Codec.Name}}: Codable, Equatable, {{Codec.Model.WktPackage}}._An
   public func _pack() throws -> {{Codec.Model.WktPackage}}.Struct {
     return try {{Codec.Model.WktPackage}}._slowAnySerialize(message: self)
   }
-  {{#Codec.IsPaginatedResponse}}
-
-  public func _getPaginatedItems() -> [{{Codec.PageableItemType}}] {
-    {{^Pagination.PageableItem.Map}}
-    return self.{{Codec.PageableItemField}}
-    {{/Pagination.PageableItem.Map}}
-    {{#Pagination.PageableItem.Map}}
-    return self.{{Codec.PageableItemField}}.map { ($0, $1) }
-    {{/Pagination.PageableItem.Map}}
-  }
-
-  public func _nextPageToken() -> Swift.String {
-    {{#Pagination.NextPageToken.Optional}}
-    return self.{{Pagination.NextPageToken.Codec.Name}} ?? ""
-    {{/Pagination.NextPageToken.Optional}}
-    {{^Pagination.NextPageToken.Optional}}
-    return self.{{Pagination.NextPageToken.Codec.Name}}
-    {{/Pagination.NextPageToken.Optional}}
-  }
-  {{/Codec.IsPaginatedResponse}}
 }

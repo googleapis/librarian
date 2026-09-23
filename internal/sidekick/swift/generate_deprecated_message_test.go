@@ -64,25 +64,17 @@ func TestGenerateMessage_Deprecated(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			outDir := t.TempDir()
 
-			nested := &api.Message{
-				Name:          "NestedMessage",
-				Package:       "google.cloud.test.v1",
-				ID:            ".google.cloud.test.v1.TopMessage.NestedMessage",
-				Deprecated:    test.nestedDeprecated,
-				Documentation: "-- nested marker --",
-			}
+			nested := api.NewTestMessage("NestedMessage").
+				WithDeprecated(test.nestedDeprecated).
+				WithDocumentation("-- nested marker --")
 
-			top := &api.Message{
-				Name:          "TopMessage",
-				Package:       "google.cloud.test.v1",
-				ID:            ".google.cloud.test.v1.TopMessage",
-				Deprecated:    test.topDeprecated,
-				Documentation: "-- top marker --",
-				Messages:      []*api.Message{nested},
-			}
+			top := api.NewTestMessage("TopMessage").
+				WithPackage("google.cloud.test.v1").
+				WithDeprecated(test.topDeprecated).
+				WithDocumentation("-- top marker --").
+				WithMessages(nested)
 
 			model := api.NewTestAPI([]*api.Message{top}, nil, nil)
-			model.PackageName = "google.cloud.test.v1"
 			if err := Generate(t.Context(), model, outDir, &config.Library{}, nil); err != nil {
 				t.Fatal(err)
 			}
@@ -103,6 +95,160 @@ func TestGenerateMessage_Deprecated(t *testing.T) {
 			if diff := cmp.Diff(test.wantNested, gotNested); diff != "" {
 				t.Errorf("mismatch nested (-want +got):\n%s", diff)
 			}
+		})
+	}
+}
+
+// TestGenerateMessage_Diagnose covers the members that read and write every
+// field, and therefore name each deprecated field and field type.
+func TestGenerateMessage_Diagnose(t *testing.T) {
+	for _, test := range []struct {
+		name              string
+		messageDeprecated bool
+		fieldDeprecated   bool
+		typeDeprecated    bool
+		want              bool
+	}{
+		{
+			name:            "deprecated-field",
+			fieldDeprecated: true,
+			want:            true,
+		},
+		{
+			name:           "deprecated-field-type",
+			typeDeprecated: true,
+			want:           true,
+		},
+		{
+			// Swift does not diagnose deprecated references inside a
+			// deprecated declaration.
+			name:              "deprecated-message",
+			messageDeprecated: true,
+			fieldDeprecated:   true,
+			typeDeprecated:    true,
+			want:              false,
+		},
+		{
+			name: "not-deprecated",
+			want: false,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			outDir := t.TempDir()
+
+			other := api.NewTestMessage("OtherMessage").
+				WithPackage("google.cloud.test.v1").
+				WithDeprecated(test.typeDeprecated)
+			msg := api.NewTestMessage("TestMessage").
+				WithPackage("google.cloud.test.v1").
+				WithDeprecated(test.messageDeprecated).
+				WithFields(
+					api.NewTestField("normal_field").
+						WithType(api.TypezString).
+						WithDeprecated(test.fieldDeprecated),
+					api.NewTestField("other_field").WithMessageType(other),
+				)
+
+			model := api.NewTestAPI([]*api.Message{msg, other}, nil, nil)
+			model.PackageName = "google.cloud.test.v1"
+			if err := Generate(t.Context(), model, outDir, &config.Library{}, nil); err != nil {
+				t.Fatal(err)
+			}
+
+			filename := filepath.Join(outDir, "Sources", "GoogleCloudTestV1", "TestMessage.swift")
+			content, err := os.ReadFile(filename)
+			if err != nil {
+				t.Fatal(err)
+			}
+			contentStr := string(content)
+
+			checkDiagnose(t, contentStr, "  ", "public init(from decoder: Decoder) throws {", test.want)
+			checkDiagnose(t, contentStr, "  ", "public func encode(to encoder: Encoder) throws {", test.want)
+		})
+	}
+}
+
+// TestGenerateMessage_DiagnosePagination covers the
+// `GoogleGax._PaginatedResponse` members.
+//
+// `_getPaginatedItems()` names the item type in its return type, so guarding
+// the property that holds the items is not enough.
+func TestGenerateMessage_DiagnosePagination(t *testing.T) {
+	for _, test := range []struct {
+		name                string
+		messageDeprecated   bool
+		itemFieldDeprecated bool
+		itemTypeDeprecated  bool
+		tokenDeprecated     bool
+		want                bool
+	}{
+		{
+			name:               "deprecated-item-type",
+			itemTypeDeprecated: true,
+			want:               true,
+		},
+		{
+			name:                "deprecated-item-field",
+			itemFieldDeprecated: true,
+			want:                true,
+		},
+		{
+			name:            "deprecated-page-token",
+			tokenDeprecated: true,
+			want:            true,
+		},
+		{
+			// Swift does not diagnose deprecated references inside a
+			// deprecated declaration.
+			name:               "deprecated-message",
+			messageDeprecated:  true,
+			itemTypeDeprecated: true,
+			want:               false,
+		},
+		{
+			name: "not-deprecated",
+			want: false,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			outDir := t.TempDir()
+
+			item := api.NewTestMessage("Item").
+				WithPackage("google.cloud.test.v1").
+				WithDeprecated(test.itemTypeDeprecated)
+			itemField := api.NewTestField("items").
+				WithMessageType(item).
+				WithRepeated().
+				WithDeprecated(test.itemFieldDeprecated)
+			nextPageToken := api.NewTestField("next_page_token").
+				WithType(api.TypezString).
+				WithDeprecated(test.tokenDeprecated)
+			response := api.NewTestMessage("ListItemsResponse").
+				WithPackage("google.cloud.test.v1").
+				WithDeprecated(test.messageDeprecated).
+				WithFields(itemField, nextPageToken).
+				WithPagination(nextPageToken, itemField)
+
+			model := api.NewTestAPI([]*api.Message{response, item}, nil, nil)
+			model.PackageName = "google.cloud.test.v1"
+			library := &config.Library{
+				Swift: swiftConfig(t, []config.SwiftDependency{
+					{Name: "GoogleGax", RequiredByServices: true},
+				}),
+			}
+			if err := Generate(t.Context(), model, outDir, library, nil); err != nil {
+				t.Fatal(err)
+			}
+
+			filename := filepath.Join(outDir, "Sources", "GoogleCloudTestV1", "ListItemsResponse.swift")
+			content, err := os.ReadFile(filename)
+			if err != nil {
+				t.Fatal(err)
+			}
+			contentStr := string(content)
+
+			checkDiagnose(t, contentStr, "  ", "public func _getPaginatedItems()", test.want)
+			checkDiagnose(t, contentStr, "  ", "public func _nextPageToken()", test.want)
 		})
 	}
 }

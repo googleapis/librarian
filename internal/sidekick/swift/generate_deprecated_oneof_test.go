@@ -26,10 +26,11 @@ import (
 
 func TestGenerateOneOf_Deprecated(t *testing.T) {
 	for _, test := range []struct {
-		name       string
-		deprecated bool
-		isObject   bool
-		want       string
+		name           string
+		deprecated     bool
+		typeDeprecated bool
+		isObject       bool
+		want           string
 	}{
 		{
 			name:       "deprecated-scalar",
@@ -49,47 +50,49 @@ func TestGenerateOneOf_Deprecated(t *testing.T) {
 			isObject:   true,
 			want:       "    /// -- case marker --\n    @available(*, deprecated)\n    indirect case fieldOne(Inner)",
 		},
+		{
+			// Naming a deprecated type warns at the declaration, even though
+			// the variant itself is not deprecated.
+			name:           "deprecated-payload-type",
+			typeDeprecated: true,
+			isObject:       true,
+			want:           "    /// -- case marker --\n    #if hasAttribute(diagnose)\n    @diagnose(DeprecatedDeclaration, as: ignored)\n    #endif\n    indirect case fieldOne(Inner)",
+		},
+		{
+			// Swift does not diagnose deprecated references inside a
+			// deprecated declaration, so `@diagnose` would be redundant.
+			name:           "deprecated-variant-and-payload-type",
+			deprecated:     true,
+			typeDeprecated: true,
+			isObject:       true,
+			want:           "    /// -- case marker --\n    @available(*, deprecated)\n    indirect case fieldOne(Inner)",
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			outDir := t.TempDir()
 
-			inner := &api.Message{
-				Name:    "Inner",
-				Package: "google.cloud.test.v1",
-				ID:      ".google.cloud.test.v1.Inner",
-			}
+			inner := api.NewTestMessage("Inner").
+				WithPackage("google.cloud.test.v1").
+				WithDeprecated(test.typeDeprecated)
 
-			oneof := &api.OneOf{
-				Name:          "choice",
-				Documentation: "-- property marker --",
-			}
-
-			field := &api.Field{
-				Name:          "field_one",
-				Documentation: "-- case marker --",
-				ID:            ".google.cloud.test.v1.TestMessage.field_one",
-				Deprecated:    test.deprecated,
-				IsOneOf:       true,
-				Group:         oneof,
-			}
+			field := api.NewTestField("field_one").
+				WithDocumentation("-- case marker --").
+				WithDeprecated(test.deprecated)
 			if test.isObject {
-				field.Typez = api.TypezMessage
-				field.TypezID = ".google.cloud.test.v1.Inner"
+				field.WithMessageType(inner)
 			} else {
-				field.Typez = api.TypezString
+				field.WithType(api.TypezString)
 			}
 
-			msg := &api.Message{
-				Name:    "TestMessage",
-				Package: "google.cloud.test.v1",
-				ID:      ".google.cloud.test.v1.TestMessage",
-				Fields:  []*api.Field{field},
-				OneOfs:  []*api.OneOf{oneof},
-			}
-			oneof.Fields = []*api.Field{field}
+			oneof := api.NewTestOneOf("choice").
+				WithFields(field).
+				WithDocumentation("-- property marker --")
+
+			msg := api.NewTestMessage("TestMessage").
+				WithPackage("google.cloud.test.v1").
+				WithOneOfs(oneof)
 
 			model := api.NewTestAPI([]*api.Message{msg, inner}, nil, nil)
-			model.PackageName = "google.cloud.test.v1"
 			if err := Generate(t.Context(), model, outDir, &config.Library{}, nil); err != nil {
 				t.Fatal(err)
 			}

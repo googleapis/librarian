@@ -16,6 +16,7 @@ package swift
 
 import (
 	"fmt"
+	"slices"
 	"strings"
 
 	"github.com/googleapis/librarian/internal/sidekick/api"
@@ -52,6 +53,29 @@ type enumAnnotations struct {
 	// In Swift, extensions cannot be nested inside structs or other extensions. For nested enums,
 	// top-level extension declarations use FullyQualifiedName: `extension FindingSummary.SummaryDetails.ResourceType { ... }`.
 	FullyQualifiedName string
+
+	// DiagnoseValues is true when the initializers that assign enum cases need
+	// `@diagnose` to suppress a deprecation warning.
+	//
+	// Only assignment warns. The members that merely match a case in a
+	// `switch`, such as the `intValue` and `stringValue` computed properties
+	// and `encode(to:)`, need nothing.
+	//
+	// This is a slight over-approximation for `init(intValue:)` and the proto
+	// converting `init(proto:)`, which enumerate `UniqueNumberValues` while
+	// the flag scans every value: a deprecated alias sharing a number with a
+	// live value guards them unnecessarily. `init(stringValue:)` does
+	// enumerate every value, so one flag cannot be exact for all three.
+	DiagnoseValues bool
+
+	// DiagnoseDefault is true when `init()`, which assigns the default case,
+	// needs `@diagnose` to suppress a deprecation warning.
+	DiagnoseDefault bool
+}
+
+// HasDocLines returns true if this enum has proto documentation lines.
+func (ann *enumAnnotations) HasDocLines() bool {
+	return len(ann.DocLines) > 0
 }
 
 // IsGated returns true if this message is gated by some package traits.
@@ -93,6 +117,7 @@ func (c *codec) annotateEnum(enum *api.Enum, model *modelAnnotations) error {
 
 	existing := map[int32]*enumValueAnnotations{}
 	var defaultCaseName string
+	var defaultValue *api.EnumValue
 	for _, ev := range enum.UniqueNumberValues {
 		if err := c.annotateUniqueEnumValue(ev); err != nil {
 			return err
@@ -105,6 +130,7 @@ func (c *codec) annotateEnum(enum *api.Enum, model *modelAnnotations) error {
 		existing[ev.Number] = ann
 		if ev.Number == 0 {
 			defaultCaseName = ann.CaseName
+			defaultValue = ev
 		}
 	}
 	// Fallback to first case if no 0 value found (should not happen in proto3)
@@ -115,6 +141,7 @@ func (c *codec) annotateEnum(enum *api.Enum, model *modelAnnotations) error {
 				panic("mismatched annotation, previously checked, must be a bug")
 			}
 			defaultCaseName = ann.CaseName
+			defaultValue = enum.UniqueNumberValues[0]
 		} else {
 			return fmt.Errorf("cannot determine a default value for enum: %s", enum.ID)
 		}
@@ -144,6 +171,12 @@ func (c *codec) annotateEnum(enum *api.Enum, model *modelAnnotations) error {
 		UnknownStringName:  uniqueCaseName("unknownStringValue"),
 		ModulePath:         c.ModulePath,
 		ProtoTypeName:      c.protoEnumTypeName(enum),
+	}
+	if !enum.Deprecated {
+		annotations.DiagnoseDefault = defaultValue.Deprecated
+		annotations.DiagnoseValues = slices.ContainsFunc(enum.Values, func(ev *api.EnumValue) bool {
+			return ev.Deprecated
+		})
 	}
 
 	enum.Codec = annotations

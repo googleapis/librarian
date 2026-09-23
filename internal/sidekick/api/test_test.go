@@ -128,3 +128,101 @@ func TestField_WithJSONName(t *testing.T) {
 		t.Errorf("expected JSONName 'customName', got %q", f.JSONName)
 	}
 }
+
+func TestMessage_WithDocumentation(t *testing.T) {
+	m := api.NewTestMessage("Test").WithDocumentation("A test message.")
+	if m.Documentation != "A test message." {
+		t.Errorf("expected Documentation 'A test message.', got %q", m.Documentation)
+	}
+}
+
+func TestMessage_WithIsMap(t *testing.T) {
+	m := api.NewTestMessage("TestEntry").WithIsMap()
+	if !m.IsMap {
+		t.Errorf("expected IsMap to be true")
+	}
+}
+
+func TestOneOf_WithDocumentation(t *testing.T) {
+	o := api.NewTestOneOf("choice").WithDocumentation("A test oneof.")
+	if o.Documentation != "A test oneof." {
+		t.Errorf("expected Documentation 'A test oneof.', got %q", o.Documentation)
+	}
+}
+
+func TestField_WithRecursive(t *testing.T) {
+	f := api.NewTestField("child").WithRecursive()
+	if !f.Recursive {
+		t.Errorf("expected Recursive to be true")
+	}
+}
+
+func TestNewTestAPI_IndexesNestedMessages(t *testing.T) {
+	child := api.NewTestMessage("Child")
+	parent := api.NewTestMessage("Parent").WithMessages(child)
+	model := api.NewTestAPI([]*api.Message{parent}, nil, nil)
+
+	if got := model.Message(child.ID); got != child {
+		t.Errorf("model.Message(%q) = %v, want %v", child.ID, got, child)
+	}
+	if child.Parent != parent {
+		t.Errorf("child.Parent = %v, want %v", child.Parent, parent)
+	}
+}
+
+func TestNewTestAPI_IndexesNestedEnums(t *testing.T) {
+	val := api.NewTestEnumValue("VAL", 0)
+	nestedEnum := api.NewTestEnum("NestedEnum").WithValues(val)
+	parent := api.NewTestMessage("Parent")
+	// Bypassing WithEnums() deliberately leaves Parent and Value.Parent unwired,
+	// verifying that NewTestAPI properly initializes them during indexing.
+	parent.Enums = []*api.Enum{nestedEnum}
+
+	model := api.NewTestAPI([]*api.Message{parent}, nil, nil)
+
+	if got := model.Enum(nestedEnum.ID); got != nestedEnum {
+		t.Errorf("model.Enum(%q) = %v, want %v", nestedEnum.ID, got, nestedEnum)
+	}
+	if nestedEnum.Parent != parent {
+		t.Errorf("nestedEnum.Parent = %v, want %v", nestedEnum.Parent, parent)
+	}
+	if val.Parent != nestedEnum {
+		t.Errorf("val.Parent = %v, want %v", val.Parent, nestedEnum)
+	}
+}
+
+func TestNewTestAPI_DeduplicatesNestedEnums(t *testing.T) {
+	enum := api.NewTestEnum("NestedEnum")
+	parent := api.NewTestMessage("Parent").WithEnums(enum)
+
+	model := api.NewTestAPI([]*api.Message{parent}, []*api.Enum{enum}, nil)
+
+	if got := len(parent.Enums); got != 1 {
+		t.Errorf("len(parent.Enums) = %d, want 1", got)
+	}
+	if got := model.Enum(enum.ID); got != enum {
+		t.Errorf("model.Enum(%q) = %v, want %v", enum.ID, got, enum)
+	}
+}
+
+func TestNewTestAPI_DeduplicatesNestedMessages(t *testing.T) {
+	child := api.NewTestMessage("Child")
+	parent := api.NewTestMessage("Parent").WithMessages(child)
+
+	model := api.NewTestAPI([]*api.Message{parent, child}, nil, nil)
+
+	if got := len(parent.Messages); got != 1 {
+		t.Errorf("len(parent.Messages) = %d, want 1", got)
+	}
+	if got := model.Message(child.ID); got != child {
+		t.Errorf("model.Message(%q) = %v, want %v", child.ID, got, child)
+	}
+}
+
+func TestService_WithDocumentation(t *testing.T) {
+	const doc = "Test service documentation."
+	s := api.NewTestService("TestService").WithDocumentation(doc)
+	if s.Documentation != doc {
+		t.Errorf("s.Documentation = %q, want %q", s.Documentation, doc)
+	}
+}

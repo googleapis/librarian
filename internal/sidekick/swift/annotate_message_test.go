@@ -274,6 +274,7 @@ func TestAnnotateMessage_Discovery(t *testing.T) {
 			want: &messageAnnotations{
 				Name:              "Secret",
 				TypeURL:           "type.googleapis.com/test.Secret",
+				HasData:           true,
 				SampleField:       "field",
 				ParameterTypeName: "Secret",
 				ProtoTypeName:     "Test_Secret",
@@ -287,6 +288,7 @@ func TestAnnotateMessage_Discovery(t *testing.T) {
 			want: &messageAnnotations{
 				Name:              "Secret",
 				TypeURL:           "type.googleapis.com/test.Secret",
+				HasData:           true,
 				SampleField:       "field",
 				ParameterTypeName: "Secret",
 				ProtoTypeName:     "Test_Secret",
@@ -300,6 +302,7 @@ func TestAnnotateMessage_Discovery(t *testing.T) {
 			want: &messageAnnotations{
 				Name:              "Secret",
 				TypeURL:           "type.googleapis.com/test.Secret",
+				HasData:           true,
 				SampleField:       "field",
 				ParameterTypeName: "Secret",
 				ProtoTypeName:     "Test_Secret",
@@ -313,6 +316,7 @@ func TestAnnotateMessage_Discovery(t *testing.T) {
 			want: &messageAnnotations{
 				Name:              "Secret",
 				TypeURL:           "type.googleapis.com/test.Secret",
+				HasData:           true,
 				SampleField:       "field",
 				ParameterTypeName: "Secret",
 				ProtoTypeName:     "Test_Secret",
@@ -692,5 +696,147 @@ func TestAnnotateMessage_ParameterTypeName_Qualification(t *testing.T) {
 	extAnn := extParent.Codec.(*messageAnnotations)
 	if extAnn.ParameterTypeName != "GoogleType.ExtParent" {
 		t.Errorf("module conversion ParameterTypeName = %q, want %q", extAnn.ParameterTypeName, "GoogleType.ExtParent")
+	}
+}
+
+// messageDiagnoseFlags is the `Diagnose*` subset of messageAnnotations.
+//
+// The flags form a matrix that is far easier to read on its own than inside a
+// full messageAnnotations literal.
+type messageDiagnoseFlags struct {
+	Codable    bool
+	Pagination bool
+}
+
+func getMessageDiagnoseFlags(t *testing.T, message *api.Message) messageDiagnoseFlags {
+	t.Helper()
+	ann, ok := message.Codec.(*messageAnnotations)
+	if !ok {
+		t.Fatalf("message %q is not annotated", message.Name)
+	}
+	return messageDiagnoseFlags{
+		Codable:    ann.DiagnoseCodable,
+		Pagination: ann.DiagnosePagination,
+	}
+}
+
+func TestAnnotateMessage_DiagnoseCodable(t *testing.T) {
+	for _, test := range []struct {
+		name              string
+		messageDeprecated bool
+		fieldDeprecated   bool
+		typeDeprecated    bool
+		want              messageDiagnoseFlags
+	}{
+		{
+			name: "nothing-deprecated",
+			want: messageDiagnoseFlags{},
+		},
+		{
+			name:            "deprecated-field",
+			fieldDeprecated: true,
+			want:            messageDiagnoseFlags{Codable: true},
+		},
+		{
+			name:           "deprecated-field-type",
+			typeDeprecated: true,
+			want:           messageDiagnoseFlags{Codable: true},
+		},
+		{
+			// A deprecated message suppresses deprecation diagnostics in its
+			// whole scope, so its members need nothing.
+			name:              "deprecated-message",
+			messageDeprecated: true,
+			fieldDeprecated:   true,
+			typeDeprecated:    true,
+			want:              messageDiagnoseFlags{},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			payload := api.NewTestMessage("Payload").
+				WithDeprecated(test.typeDeprecated)
+			field := api.NewTestField("payload").
+				WithMessageType(payload).
+				WithDeprecated(test.fieldDeprecated)
+			message := api.NewTestMessage("Request").
+				WithFields(field).
+				WithDeprecated(test.messageDeprecated)
+
+			model := api.NewTestAPI([]*api.Message{message, payload}, nil, nil)
+			codec := newTestCodec(t, model, nil)
+			if err := codec.annotateModel(); err != nil {
+				t.Fatal(err)
+			}
+			got := getMessageDiagnoseFlags(t, message)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestAnnotateMessage_DiagnosePagination(t *testing.T) {
+	for _, test := range []struct {
+		name                string
+		messageDeprecated   bool
+		itemFieldDeprecated bool
+		itemTypeDeprecated  bool
+		tokenDeprecated     bool
+		want                messageDiagnoseFlags
+	}{
+		{
+			name: "nothing-deprecated",
+			want: messageDiagnoseFlags{},
+		},
+		{
+			name:                "deprecated-item-field",
+			itemFieldDeprecated: true,
+			want:                messageDiagnoseFlags{Codable: true, Pagination: true},
+		},
+		{
+			// `_getPaginatedItems()` names the item type in its return type.
+			name:               "deprecated-item-type",
+			itemTypeDeprecated: true,
+			want:               messageDiagnoseFlags{Codable: true, Pagination: true},
+		},
+		{
+			name:            "deprecated-page-token",
+			tokenDeprecated: true,
+			want:            messageDiagnoseFlags{Codable: true, Pagination: true},
+		},
+		{
+			name:                "deprecated-message",
+			messageDeprecated:   true,
+			itemFieldDeprecated: true,
+			itemTypeDeprecated:  true,
+			tokenDeprecated:     true,
+			want:                messageDiagnoseFlags{},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			itemType := api.NewTestMessage("Item").
+				WithDeprecated(test.itemTypeDeprecated)
+			itemField := api.NewTestField("items").
+				WithMessageType(itemType).
+				WithRepeated().
+				WithDeprecated(test.itemFieldDeprecated)
+			tokenField := api.NewTestField("next_page_token").
+				WithType(api.TypezString).
+				WithDeprecated(test.tokenDeprecated)
+			response := api.NewTestMessage("ListItemsResponse").
+				WithFields(itemField, tokenField).
+				WithPagination(tokenField, itemField).
+				WithDeprecated(test.messageDeprecated)
+
+			model := api.NewTestAPI([]*api.Message{response, itemType}, nil, nil)
+			codec := newTestCodec(t, model, nil)
+			if err := codec.annotateModel(); err != nil {
+				t.Fatal(err)
+			}
+			got := getMessageDiagnoseFlags(t, response)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
 	}
 }

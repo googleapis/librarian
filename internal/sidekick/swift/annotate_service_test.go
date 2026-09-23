@@ -42,7 +42,7 @@ func TestAnnotateService(t *testing.T) {
 				StubPrefix:  "IAM",
 				DocLines:    []string{"IAM service documentation."},
 			},
-			wantImports: []string{"GoogleWKT"},
+			wantImports: []string{},
 		},
 		{
 			name:        "Service with mangled name",
@@ -55,7 +55,7 @@ func TestAnnotateService(t *testing.T) {
 				StubPrefix:  "Protocol",
 				DocLines:    []string{"Docs are not relevant."},
 			},
-			wantImports: []string{"GoogleWKT"},
+			wantImports: []string{},
 		},
 		{
 			name:        "SecretManagerService",
@@ -68,24 +68,20 @@ func TestAnnotateService(t *testing.T) {
 				StubPrefix:  "SecretManagerService",
 				DocLines:    []string{"Secret Manager Service documentation.", "Line 2."},
 			},
-			wantImports: []string{"GoogleWKT"},
+			wantImports: []string{},
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			s := &api.Service{
-				Name:          test.serviceName,
-				Documentation: test.doc,
-				Package:       "test",
-			}
+			s := api.NewTestService(test.serviceName)
+			s.Documentation = test.doc
 			model := api.NewTestAPI(nil, nil, []*api.Service{s})
-			model.PackageName = "test"
 			codec := newTestCodec(t, model, nil)
 
 			if err := codec.annotateModel(); err != nil {
 				t.Fatal(err)
 			}
 
-			if diff := cmp.Diff(test.wantAnnotations, s.Codec, cmpopts.IgnoreFields(serviceAnnotations{}, "QuickstartMethod", "Model", "DependsOn")); diff != "" {
+			if diff := cmp.Diff(test.wantAnnotations, s.Codec, cmpopts.IgnoreFields(serviceAnnotations{}, "QuickstartMethod", "Model", "DependsOn", "PublicDependsOn")); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 
@@ -98,50 +94,24 @@ func TestAnnotateService(t *testing.T) {
 }
 
 func TestAnnotateService_SkipNoBindings(t *testing.T) {
-	inputType := &api.Message{
-		Name:    "Request",
-		ID:      ".test.Request",
-		Package: "test",
-	}
-	outputType := &api.Message{
-		Name:    "Response",
-		ID:      ".test.Response",
-		Package: "test",
-	}
-	service := &api.Service{
-		Name:    "TestService",
-		ID:      ".test.TestService",
-		Package: "test",
-		Methods: []*api.Method{
-			{
-				Name:         "ValidMethod",
-				InputTypeID:  inputType.ID,
-				InputType:    inputType,
-				OutputTypeID: outputType.ID,
-				OutputType:   outputType,
-				PathInfo: &api.PathInfo{
-					Bindings: []*api.PathBinding{{Verb: "GET", PathTemplate: &api.PathTemplate{}}},
-				},
-			},
-			{
-				Name:         "NoBindingMethod",
-				InputTypeID:  inputType.ID,
-				InputType:    inputType,
-				OutputTypeID: outputType.ID,
-				OutputType:   outputType,
-				PathInfo: &api.PathInfo{
-					Bindings: []*api.PathBinding{},
-				},
-			},
-			{
-				Name:         "NilPathInfoMethod",
-				InputTypeID:  inputType.ID,
-				InputType:    inputType,
-				OutputTypeID: outputType.ID,
-				OutputType:   outputType,
-			},
-		},
-	}
+	inputType := api.NewTestMessage("Request")
+	outputType := api.NewTestMessage("Response")
+	validMethod := api.NewTestMethod("ValidMethod").
+		WithInput(inputType).
+		WithOutput(outputType).
+		WithVerb("GET").
+		WithPathTemplate(&api.PathTemplate{})
+	noBindingMethod := api.NewTestMethod("NoBindingMethod").
+		WithInput(inputType).
+		WithOutput(outputType).
+		WithBindings()
+	nilPathInfoMethod := api.NewTestMethod("NilPathInfoMethod").
+		WithInput(inputType).
+		WithOutput(outputType)
+	nilPathInfoMethod.PathInfo = nil
+
+	service := api.NewTestService("TestService").
+		WithMethods(validMethod, noBindingMethod, nilPathInfoMethod)
 
 	model := api.NewTestAPI(nil, nil, []*api.Service{service})
 	codec := newTestCodec(t, model, nil)
@@ -179,40 +149,29 @@ func TestAnnotateService_Quickstart(t *testing.T) {
 		},
 		{
 			name: "non-generated quickstart (nil PathInfo)",
-			quickstartMethod: &api.Method{
-				Name:     "Quickstart",
-				PathInfo: nil,
-			},
+			quickstartMethod: func() *api.Method {
+				m := api.NewTestMethod("Quickstart")
+				m.PathInfo = nil
+				return m
+			}(),
 			wantQuickstart: false,
 		},
 		{
-			name: "non-generated quickstart (empty bindings)",
-			quickstartMethod: &api.Method{
-				Name: "Quickstart",
-				PathInfo: &api.PathInfo{
-					Bindings: []*api.PathBinding{},
-				},
-			},
-			wantQuickstart: false,
+			name:             "non-generated quickstart (empty bindings)",
+			quickstartMethod: api.NewTestMethod("Quickstart").WithBindings(),
+			wantQuickstart:   false,
 		},
 		{
 			name: "generated quickstart",
-			quickstartMethod: &api.Method{
-				Name: "Quickstart",
-				PathInfo: &api.PathInfo{
-					Bindings: []*api.PathBinding{{Verb: "GET", PathTemplate: &api.PathTemplate{}}},
-				},
-			},
+			quickstartMethod: api.NewTestMethod("Quickstart").
+				WithVerb("GET").
+				WithPathTemplate(&api.PathTemplate{}),
 			wantQuickstart: true,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			service := &api.Service{
-				Name:             "TestService",
-				Package:          "test",
-				ID:               ".test.TestService",
-				QuickstartMethod: test.quickstartMethod,
-			}
+			service := api.NewTestService("TestService")
+			service.QuickstartMethod = test.quickstartMethod
 
 			model := api.NewTestAPI(nil, nil, []*api.Service{service})
 			codec := newTestCodec(t, model, nil)
@@ -294,49 +253,22 @@ func TestAnnotateService_RequiredServices(t *testing.T) {
 }
 
 func TestAnnotateService_LRO(t *testing.T) {
-	inputType := &api.Message{
-		Name:    "Request",
-		Package: "test",
-		ID:      ".test.Request",
-	}
-	outputType := &api.Message{
-		Name:    "Operation",
-		Package: "google.longrunning",
-		ID:      ".google.longrunning.Operation",
-	}
-	lroResponseType := &api.Message{
-		Name:    "LroResponse",
-		Package: "external",
-		ID:      ".external.LroResponse",
-	}
-	lroMetadataType := &api.Message{
-		Name:    "LroMetadata",
-		Package: "external",
-		ID:      ".external.LroMetadata",
-	}
+	inputType := api.NewTestMessage("Request")
+	outputType := api.NewTestMessage("Operation").WithPackage("google.longrunning")
+	lroResponseType := api.NewTestMessage("LroResponse").WithPackage("external")
+	lroMetadataType := api.NewTestMessage("LroMetadata").WithPackage("external")
 
-	method := &api.Method{
-		Name:         "LroMethod",
-		InputTypeID:  inputType.ID,
-		InputType:    inputType,
-		OutputTypeID: outputType.ID,
-		OutputType:   outputType,
-		PathInfo: &api.PathInfo{
-			Bindings: []*api.PathBinding{{Verb: "POST", PathTemplate: &api.PathTemplate{}}},
-		},
-		IsLRO: true,
-		OperationInfo: &api.OperationInfo{
+	method := api.NewTestMethod("LroMethod").
+		WithInput(inputType).
+		WithOutput(outputType).
+		WithVerb("POST").
+		WithPathTemplate(&api.PathTemplate{}).
+		WithOperationInfo(&api.OperationInfo{
 			ResponseTypeID: lroResponseType.ID,
 			MetadataTypeID: lroMetadataType.ID,
-		},
-	}
+		})
 
-	service := &api.Service{
-		Name:    "TestService",
-		ID:      ".test.TestService",
-		Package: "test",
-		Methods: []*api.Method{method},
-	}
+	service := api.NewTestService("TestService").WithMethods(method)
 
 	model := api.NewTestAPI([]*api.Message{inputType, outputType, lroResponseType, lroMetadataType}, nil, []*api.Service{service})
 	model.PackageName = "test"
@@ -371,8 +303,12 @@ func TestAnnotateService_LRO(t *testing.T) {
 	if !annotations.HasLROs() {
 		t.Errorf("expected HasLROs() == true, annotations=%+v", annotations)
 	}
-	wantImports := []string{"GoogleCloudExternal", "GoogleLongrunning", "GoogleRpc", "GoogleWKT"}
+	wantImports := []string{"GoogleCloudExternal", "GoogleLongrunning", "GoogleRpc"}
 	if diff := cmp.Diff(wantImports, annotations.ServiceImports()); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+	wantPublicImports := []string{"GoogleCloudExternal", "GoogleLongrunning"}
+	if diff := cmp.Diff(wantPublicImports, annotations.PublicServiceImports()); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
@@ -418,7 +354,7 @@ func TestAnnotateService_Pagination(t *testing.T) {
 	}
 
 	annotations := service.Codec.(*serviceAnnotations)
-	wantImports := []string{"GoogleCloudExternal", "GoogleWKT"}
+	wantImports := []string{"GoogleCloudExternal"}
 	if diff := cmp.Diff(wantImports, annotations.ServiceImports()); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
@@ -473,7 +409,7 @@ func TestAnnotateService_MapPagination(t *testing.T) {
 	}
 
 	annotations := service.Codec.(*serviceAnnotations)
-	wantImports := []string{"GoogleCloudExternal", "GoogleWKT"}
+	wantImports := []string{"GoogleCloudExternal"}
 	if diff := cmp.Diff(wantImports, annotations.ServiceImports()); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
@@ -484,21 +420,28 @@ func TestAnnotateService_MethodSignatures(t *testing.T) {
 		name        string
 		signatures  []*api.MethodSignature
 		wantImports []string
+		wantHasData bool
 	}{
 		{
 			name:        "no signature",
 			signatures:  nil,
-			wantImports: []string{"GoogleWKT"},
+			wantImports: []string{},
 		},
 		{
 			name:        "unrealistic, but good for testing",
 			signatures:  []*api.MethodSignature{{Names: []string{"parent", "thing_id"}}},
-			wantImports: []string{"GoogleWKT"},
+			wantImports: []string{},
 		},
 		{
 			name:        "with external field",
 			signatures:  []*api.MethodSignature{{Names: []string{"parent", "thing_id", "external_thing"}}},
-			wantImports: []string{"GoogleCloudExternal", "GoogleWKT"},
+			wantImports: []string{"GoogleCloudExternal"},
+		},
+		{
+			name:        "with bytes field",
+			signatures:  []*api.MethodSignature{{Names: []string{"parent", "data"}}},
+			wantImports: []string{},
+			wantHasData: true,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
@@ -508,6 +451,7 @@ func TestAnnotateService_MethodSignatures(t *testing.T) {
 					api.NewTestField("parent").WithType(api.TypezString),
 					api.NewTestField("thing_id").WithType(api.TypezString),
 					api.NewTestField("external_thing").WithMessageType(thing),
+					api.NewTestField("data").WithType(api.TypezBytes),
 				)
 			outputType := api.NewTestMessage("Response")
 			create := api.NewTestMethod("CreateThing").
@@ -539,6 +483,172 @@ func TestAnnotateService_MethodSignatures(t *testing.T) {
 			}
 			if diff := cmp.Diff(test.wantImports, annotations.ServiceImports()); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+			if annotations.HasData != test.wantHasData {
+				t.Errorf("HasData mismatch: got %v, want %v", annotations.HasData, test.wantHasData)
+			}
+		})
+	}
+}
+
+func TestAnnotateService_WktImports(t *testing.T) {
+	inputType := api.NewTestMessage("DeleteThingRequest").WithPackage("test")
+	method := api.NewTestMethod("DeleteThing").
+		WithInput(inputType).
+		WithVerb("DELETE").
+		WithPathTemplate((&api.PathTemplate{}).WithLiteral("v1").WithLiteral("things"))
+	service := api.NewTestService("TestService").WithMethods(method)
+	model := api.NewTestAPI([]*api.Message{inputType}, nil, []*api.Service{service})
+	model.PackageName = "test"
+	wktEmpty := model.Message(".google.protobuf.Empty")
+	if wktEmpty == nil {
+		t.Fatal("expected .google.protobuf.Empty in model")
+	}
+	method.WithOutput(wktEmpty)
+	method.ReturnsEmpty = true
+	if err := api.CrossReference(model); err != nil {
+		t.Fatal(err)
+	}
+
+	codec := newTestCodec(t, model, nil)
+	if err := codec.annotateModel(); err != nil {
+		t.Fatal(err)
+	}
+
+	annotations := service.Codec.(*serviceAnnotations)
+	wantImports := []string{"GoogleWKT"}
+	if diff := cmp.Diff(wantImports, annotations.ServiceImports()); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+	wantPublicImports := []string{}
+	if diff := cmp.Diff(wantPublicImports, annotations.PublicServiceImports()); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+}
+
+func TestAnnotateService_MapFieldDependencies(t *testing.T) {
+	keyField := api.NewTestField("key").WithType(api.TypezString)
+	valField := api.NewTestField("value").WithType(api.TypezBytes)
+	mapEntry := api.NewTestMessage("DataMapEntry").
+		WithPackage("test").
+		WithIsMap().
+		WithFields(keyField, valField)
+
+	mapField := api.NewTestField("data_map").
+		WithMap().
+		WithMessageType(mapEntry)
+
+	signature := &api.MethodSignature{
+		Fields: []*api.Field{mapField},
+	}
+	inputType := api.NewTestMessage("Request").
+		WithPackage("test").
+		WithFields(mapField)
+	outputType := api.NewTestMessage("Response").WithPackage("test")
+
+	method := api.NewTestMethod("UploadMap").
+		WithInput(inputType).
+		WithOutput(outputType).
+		WithVerb("POST").
+		WithPathTemplate((&api.PathTemplate{}).WithLiteral("v1").WithLiteral("upload")).
+		WithSignatures(signature)
+
+	service := api.NewTestService("MapService").WithMethods(method)
+	model := api.NewTestAPI([]*api.Message{inputType, outputType, mapEntry}, nil, []*api.Service{service})
+	model.PackageName = "test"
+	if err := api.CrossReference(model); err != nil {
+		t.Fatal(err)
+	}
+
+	codec := newTestCodec(t, model, nil)
+	if err := codec.annotateModel(); err != nil {
+		t.Fatal(err)
+	}
+
+	annotations := service.Codec.(*serviceAnnotations)
+	if !annotations.HasData {
+		t.Errorf("expected annotations.HasData to be true for signature with map<string, bytes>")
+	}
+}
+
+func TestAnnotateService_SnippetImports(t *testing.T) {
+	for _, test := range []struct {
+		name               string
+		updateMask         bool
+		externalDep        bool
+		wantSnippetImports []string
+	}{
+		{
+			name:               "no update mask and no external dep",
+			updateMask:         false,
+			externalDep:        false,
+			wantSnippetImports: nil,
+		},
+		{
+			name:               "with update mask",
+			updateMask:         true,
+			externalDep:        false,
+			wantSnippetImports: []string{"GoogleWKT"},
+		},
+		{
+			name:               "with external dep and no update mask",
+			updateMask:         false,
+			externalDep:        true,
+			wantSnippetImports: []string{"GoogleCloudExternal"},
+		},
+		{
+			name:               "with update mask and external dep",
+			updateMask:         true,
+			externalDep:        true,
+			wantSnippetImports: []string{"GoogleCloudExternal", "GoogleWKT"},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			inputType := api.NewTestMessage("Request").WithPackage("test")
+			outputType := api.NewTestMessage("Response").WithPackage("test")
+			method := api.NewTestMethod("DoThing").
+				WithInput(inputType).
+				WithOutput(outputType).
+				WithVerb("POST").
+				WithPathTemplate((&api.PathTemplate{}).WithLiteral("v1").WithLiteral("things"))
+
+			var messages []*api.Message
+			messages = append(messages, inputType, outputType)
+
+			if test.externalDep {
+				extType := api.NewTestMessage("External").WithPackage("google.cloud.external")
+				messages = append(messages, extType)
+				method.WithOutput(extType)
+			}
+
+			service := api.NewTestService("TestService").WithMethods(method)
+			model := api.NewTestAPI(messages, nil, []*api.Service{service})
+			model.PackageName = "test"
+			if err := api.CrossReference(model); err != nil {
+				t.Fatal(err)
+			}
+
+			if test.updateMask {
+				maskField := api.NewTestField("update_mask")
+				method.WithSampleInfo(&api.SampleInfo{UpdateMaskField: maskField})
+			}
+
+			codec := newTestCodec(t, model, nil)
+			if test.externalDep {
+				codec.withExtraDependencies(t, []config.SwiftDependency{
+					{Name: "GoogleCloudExternal", ApiPackage: "google.cloud.external"},
+				})
+			}
+			if err := codec.annotateModel(); err != nil {
+				t.Fatal(err)
+			}
+
+			annotations := service.Codec.(*serviceAnnotations)
+			if diff := cmp.Diff(test.wantSnippetImports, annotations.SnippetImports(), cmpopts.EquateEmpty()); diff != "" {
+				t.Errorf("SnippetImports mismatch (-want +got):\n%s", diff)
+			}
+			if test.updateMask != annotations.needsWktImport() {
+				t.Errorf("needsWktImport mismatch: got %v, want %v", annotations.needsWktImport(), test.updateMask)
 			}
 		})
 	}

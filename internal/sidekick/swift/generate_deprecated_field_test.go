@@ -26,11 +26,12 @@ import (
 
 func TestGenerateField_Deprecated(t *testing.T) {
 	for _, test := range []struct {
-		name       string
-		deprecated bool
-		repeated   bool
-		want       string
-		endStr     string
+		name           string
+		deprecated     bool
+		typeDeprecated bool
+		repeated       bool
+		want           string
+		endStr         string
 	}{
 		{
 			name:       "deprecated",
@@ -53,28 +54,47 @@ func TestGenerateField_Deprecated(t *testing.T) {
 			want:       "  /// -- field marker --\n  @available(*, deprecated)\n  public var normalField: [Swift.String]",
 			endStr:     "public var normalField: [Swift.String]",
 		},
+		{
+			// Naming a deprecated type warns at the declaration, even though
+			// the field itself is not deprecated.
+			name:           "deprecated-type",
+			typeDeprecated: true,
+			want:           "  /// -- field marker --\n  #if hasAttribute(diagnose)\n  @diagnose(DeprecatedDeclaration, as: ignored)\n  #endif\n  public var normalField: DeprecatedMessage",
+			endStr:         "public var normalField: DeprecatedMessage",
+		},
+		{
+			// Swift does not diagnose deprecated references inside a
+			// deprecated declaration, so `@diagnose` would be redundant.
+			name:           "deprecated-field-and-type",
+			deprecated:     true,
+			typeDeprecated: true,
+			want:           "  /// -- field marker --\n  @available(*, deprecated)\n  public var normalField: DeprecatedMessage",
+			endStr:         "public var normalField: DeprecatedMessage",
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			outDir := t.TempDir()
 
-			field := &api.Field{
-				Name:          "normal_field",
-				Documentation: "-- field marker --",
-				ID:            ".google.cloud.test.v1.TestMessage.normal_field",
-				Typez:         api.TypezString,
-				Deprecated:    test.deprecated,
-				Repeated:      test.repeated,
+			deprecatedMessage := api.NewTestMessage("DeprecatedMessage").
+				WithPackage("google.cloud.test.v1").
+				WithDeprecated(true)
+
+			field := api.NewTestField("normal_field").
+				WithDocumentation("-- field marker --").
+				WithType(api.TypezString).
+				WithDeprecated(test.deprecated)
+			if test.typeDeprecated {
+				field = field.WithMessageType(deprecatedMessage)
+			}
+			if test.repeated {
+				field = field.WithRepeated()
 			}
 
-			msg := &api.Message{
-				Name:    "TestMessage",
-				Package: "google.cloud.test.v1",
-				ID:      ".google.cloud.test.v1.TestMessage",
-				Fields:  []*api.Field{field},
-			}
+			msg := api.NewTestMessage("TestMessage").
+				WithPackage("google.cloud.test.v1").
+				WithFields(field)
 
-			model := api.NewTestAPI([]*api.Message{msg}, nil, nil)
-			model.PackageName = "google.cloud.test.v1"
+			model := api.NewTestAPI([]*api.Message{msg, deprecatedMessage}, nil, nil)
 			if err := Generate(t.Context(), model, outDir, &config.Library{}, nil); err != nil {
 				t.Fatal(err)
 			}

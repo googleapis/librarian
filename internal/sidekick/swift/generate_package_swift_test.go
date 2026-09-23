@@ -34,9 +34,9 @@ func TestGeneratePackageSwift_WithDependencies(t *testing.T) {
 	}
 	defer os.RemoveAll("generated")
 
-	service := &api.Service{Name: "Workflows", Package: "google.cloud.workflows.v1"}
+	service := api.NewTestService("Workflows").
+		WithPackage("google.cloud.workflows.v1")
 	model := api.NewTestAPI(nil, nil, []*api.Service{service})
-	model.PackageName = "google.cloud.workflows.v1"
 
 	swiftCfg := &config.SwiftPackage{
 		SwiftDefault: config.SwiftDefault{
@@ -93,6 +93,14 @@ func TestGeneratePackageSwift_WithDependencies(t *testing.T) {
         .product(name: "wkt", package: "wkt"),
       ]`
 	if diff := cmp.Diff(wantTargetDeps, gotTargetDeps); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+
+	gotSwiftSettings := extractBlock(t, contentStr, "      swiftSettings: [", "\n      ]")
+	wantSwiftSettings := `      swiftSettings: [
+        .enableUpcomingFeature("InternalImportsByDefault"),
+      ]`
+	if diff := cmp.Diff(wantSwiftSettings, gotSwiftSettings); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 

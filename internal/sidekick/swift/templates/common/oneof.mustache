@@ -24,6 +24,9 @@ public enum {{Codec.Name}}: Codable, Equatable, Sendable {
   {{#Deprecated}}
   @available(*, deprecated)
   {{/Deprecated}}
+  {{#Codec.DiagnoseType}}
+  {{> /templates/common/diagnose}}
+  {{/Codec.DiagnoseType}}
   {{^IsObject}}
   case {{Codec.Name}}({{Codec.FieldType}})
   {{/IsObject}}

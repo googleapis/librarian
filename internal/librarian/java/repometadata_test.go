@@ -207,5 +207,51 @@ func TestDeriveRepoMetadata_Overrides(t *testing.T) {
 			}
 		})
 	}
+}
 
+func TestDeriveRepoMetadata_Documentation(t *testing.T) {
+	googleapis := "../../testdata/googleapis"
+	cfg := sample.Config()
+	cfg.Language = config.LanguageJava
+	cfg.Repo = "googleapis/google-cloud-java"
+
+	for _, test := range []struct {
+		name    string
+		library *config.Library
+		want    *repoMetadata
+	}{
+		{
+			name: "derived from sdk.yaml",
+			library: &config.Library{
+				Name: "aiplatform",
+				APIs: []*config.API{{Path: "google/cloud/aiplatform/v1"}},
+			},
+			want: &repoMetadata{
+				RestDocumentation: "https://cloud.google.com/vertex-ai/docs/reference/rest",
+				RpcDocumentation:  "https://cloud.google.com/vertex-ai/docs/reference/rpc",
+			},
+		},
+		{
+			name: "empty when not in sdk.yaml",
+			library: &config.Library{
+				Name: "secretmanager",
+				APIs: []*config.API{{Path: "google/cloud/secretmanager/v1"}},
+			},
+			want: &repoMetadata{},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got, err := deriveRepoMetadata(cfg, test.library, googleapis)
+			if err != nil {
+				t.Fatal(err)
+			}
+			gotDoc := &repoMetadata{
+				RestDocumentation: got.RestDocumentation,
+				RpcDocumentation:  got.RpcDocumentation,
+			}
+			if diff := cmp.Diff(test.want, gotDoc, cmp.AllowUnexported(repoMetadata{})); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
 }
