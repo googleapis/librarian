@@ -88,9 +88,18 @@ func generateSidekick(ctx context.Context, cfg *config.Config, library *config.L
 					apiRoot = srcs.Showcase
 				}
 				svcConfig, err := serviceconfig.Find(apiRoot, apiCfg.Path, config.LanguagePython)
-				if err == nil && svcConfig != nil && svcConfig.HasRESTNumericEnums(config.LanguagePython) {
-					if !slices.Contains(pyCopy.OptArgsByAPI[apiCfg.Path], "rest-numeric-enums") {
-						pyCopy.OptArgsByAPI[apiCfg.Path] = append(pyCopy.OptArgsByAPI[apiCfg.Path], "rest-numeric-enums")
+				if err == nil && svcConfig != nil {
+					if svcConfig.HasRESTNumericEnums(config.LanguagePython) {
+						if !slices.Contains(pyCopy.OptArgsByAPI[apiCfg.Path], "rest-numeric-enums") {
+							pyCopy.OptArgsByAPI[apiCfg.Path] = append(pyCopy.OptArgsByAPI[apiCfg.Path], "rest-numeric-enums")
+						}
+					}
+					transport := string(svcConfig.Transport(config.LanguagePython))
+					if transport != "" {
+						transportOpt := "transport=" + transport
+						if !slices.Contains(pyCopy.OptArgsByAPI[apiCfg.Path], transportOpt) {
+							pyCopy.OptArgsByAPI[apiCfg.Path] = append(pyCopy.OptArgsByAPI[apiCfg.Path], transportOpt)
+						}
 					}
 				}
 			}
