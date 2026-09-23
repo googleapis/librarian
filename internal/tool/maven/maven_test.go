@@ -283,14 +283,8 @@ exit 0
 	}
 	t.Setenv("PATH", stubDir+string(os.PathListSeparator)+os.Getenv("PATH"))
 
-	defaultMvnBackoff = time.Millisecond
-	t.Cleanup(func() {
-		defaultMvnBackoff = 30 * time.Second
-	})
-
-	err := downloadM2Artifact(t.Context(), "com.google:test-artifact:1.0.0", tmpDir)
-	if err != nil {
-		t.Fatalf("expected downloadM2Artifact to succeed on retry, got: %v", err)
+	if err := downloadM2Artifact(t.Context(), "com.google:test-artifact:1.0.0", tmpDir, time.Millisecond); err != nil {
+		t.Fatal(err)
 	}
 
 	mvnData, err := os.ReadFile(mvnLogPath)
@@ -323,12 +317,7 @@ exit 1
 	}
 	t.Setenv("PATH", stubDir+string(os.PathListSeparator)+os.Getenv("PATH"))
 
-	defaultMvnBackoff = time.Millisecond
-	t.Cleanup(func() {
-		defaultMvnBackoff = 30 * time.Second
-	})
-
-	err := downloadM2Artifact(t.Context(), "com.google:test-artifact:1.0.0", tmpDir)
+	err := downloadM2Artifact(t.Context(), "com.google:test-artifact:1.0.0", tmpDir, time.Millisecond)
 	if err == nil {
 		t.Fatal("expected downloadM2Artifact to fail after retries exhausted, got nil")
 	}
@@ -361,13 +350,25 @@ func TestDownloadM2Artifact_ContextCanceled(t *testing.T) {
 	ctx, cancel := context.WithCancel(t.Context())
 	cancel() // cancel context immediately
 
-	defaultMvnBackoff = time.Millisecond
-	t.Cleanup(func() {
-		defaultMvnBackoff = 30 * time.Second
-	})
-
-	err := downloadM2Artifact(ctx, "com.google:test-artifact:1.0.0", tmpDir)
+	err := downloadM2Artifact(ctx, "com.google:test-artifact:1.0.0", tmpDir, time.Millisecond)
 	if !errors.Is(err, context.Canceled) {
 		t.Errorf("downloadM2Artifact() error = %v, want %v", err, context.Canceled)
+	}
+}
+
+func TestBackoffWait_Success(t *testing.T) {
+	if err := backoffWait(t.Context(), time.Millisecond); err != nil {
+		t.Errorf("backoffWait() error = %v, want nil", err)
+	}
+}
+
+func TestBackoffWait_ContextCanceled(t *testing.T) {
+	ctx, cancel := context.WithCancel(t.Context())
+	cancel() // already canceled
+
+	// Pass a 1-hour duration; because ctx is canceled, it returns instantly.
+	err := backoffWait(ctx, time.Hour)
+	if !errors.Is(err, context.Canceled) {
+		t.Errorf("backoffWait() error = %v, want %v", err, context.Canceled)
 	}
 }

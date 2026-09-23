@@ -20,6 +20,7 @@ import (
 	"encoding/xml"
 	"errors"
 	"fmt"
+	"log/slog"
 	"os"
 	"path/filepath"
 	"strings"
@@ -31,14 +32,14 @@ import (
 )
 
 const (
-	maxMvnRetries = 3
+	maxMvnAttempts    = 3
+	defaultMvnBackoff = 30 * time.Second
 )
 
 var (
-	errReadPOM        = errors.New("failed to read pom.xml")
-	errParsePOM       = errors.New("failed to parse pom.xml")
-	errInvalidPOM     = errors.New("invalid pom.xml metadata")
-	defaultMvnBackoff = 30 * time.Second
+	errReadPOM    = errors.New("failed to read pom.xml")
+	errParsePOM   = errors.New("failed to parse pom.xml")
+	errInvalidPOM = errors.New("invalid pom.xml metadata")
 )
 
 // pomProject represents the target Maven metadata structured from pom.xml.
@@ -72,7 +73,7 @@ func Install(ctx context.Context, tools []*config.MavenTool, binDir, libDir stri
 // in the bin folder pointing directly to that library file.
 func installExternalMavenTool(ctx context.Context, mvnTool *config.MavenTool, binDir, libDir string) error {
 	artifact, ext := getM2ArtifactSpec(mvnTool)
-	if err := downloadM2Artifact(ctx, artifact, binDir); err != nil {
+	if err := downloadM2Artifact(ctx, artifact, binDir, defaultMvnBackoff); err != nil {
 		return err
 	}
 	artifactPath, err := resolveM2ArtifactPath(mvnTool, ext)
@@ -156,18 +157,22 @@ func getM2ArtifactSpec(mvnTool *config.MavenTool) (string, string) {
 }
 
 // downloadM2Artifact executes mvn dependency:get to download the target artifact.
-// It retries up to maxMvnRetries times with exponential backoff on failure.
-func downloadM2Artifact(ctx context.Context, artifact, workDir string) error {
+// It retries up to maxMvnAttempts times with exponential backoff on failure.
+func downloadM2Artifact(ctx context.Context, artifact, workDir string, initialBackoff time.Duration) error {
 	var err error
-	backoff := defaultMvnBackoff
-	for attempt := range maxMvnRetries {
+	backoff := initialBackoff
+	for attempt := range maxMvnAttempts {
 		if attempt > 0 {
-			select {
-			case <-time.After(backoff):
-				backoff *= 2
-			case <-ctx.Done():
-				return ctx.Err()
+			slog.Warn("failed to download maven artifact, retrying",
+				"artifact", artifact,
+				"attempt", attempt,
+				"backoff", backoff,
+				"error", err,
+			)
+			if waitErr := backoffWait(ctx, backoff); waitErr != nil {
+				return waitErr
 			}
+			backoff *= 2
 		}
 
 		args := []string{
@@ -189,7 +194,19 @@ func downloadM2Artifact(ctx context.Context, artifact, workDir string) error {
 		}
 	}
 
-	return fmt.Errorf("failed to download artifact %s after %d attempts: %w", artifact, maxMvnRetries, err)
+	return fmt.Errorf("failed to download artifact %s after %d attempts: %w", artifact, maxMvnAttempts, err)
+}
+
+// backoffWait waits for d or until ctx is canceled.
+func backoffWait(ctx context.Context, d time.Duration) error {
+	timer := time.NewTimer(d)
+	defer timer.Stop()
+	select {
+	case <-timer.C:
+		return nil
+	case <-ctx.Done():
+		return ctx.Err()
+	}
 }
 
 // resolveM2ArtifactPath returns the absolute path to the downloaded artifact in the local .m2 repository.
