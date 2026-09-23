@@ -851,6 +851,10 @@ type NodejsPackage struct {
 	MainService string `yaml:"main_service,omitempty"`
 
 	// PackageName is the npm package name (e.g., "@google-cloud/access-approval").
+	// For standard Google Cloud libraries ("google-cloud-*"), it is automatically
+	// derived as "@google-cloud/<suffix>" if omitted. For non-cloud libraries,
+	// this is required and must be configured explicitly or populated during
+	// "librarian add".
 	PackageName string `yaml:"package_name,omitempty"`
 
 	// ClientDocumentationOverride allows the client_documentation field in

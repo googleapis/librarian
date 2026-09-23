@@ -461,7 +461,7 @@ This document describes the schema for the librarian.yaml.
 | `extra_protoc_parameters` | list of string | Is a list of extra parameters to pass to protoc. |
 | `handwritten_layer` | bool | Indicates the library has a handwritten layer on top of the generated code. |
 | `main_service` | string | Is the name of the main service for libraries with a handwritten layer. |
-| `package_name` | string | Is the npm package name (e.g., "@google-cloud/access-approval"). |
+| `package_name` | string | Is the npm package name (e.g., "@google-cloud/access-approval"). For standard Google Cloud libraries ("google-cloud-*"), it is automatically derived as "@google-cloud/<suffix>" if omitted. For non-cloud libraries, this is required and must be configured explicitly or populated during "librarian add". |
 | `client_documentation_override` | string | Allows the client_documentation field in .repo-metadata.json to be overridden from the default that's inferred. |
 | `metadata_name_override` | string | Allows the name field in .repo-metadata.json to be overridden. |
 | `name_pretty_override` | string | Allows the name_pretty field in .repo-metadata.json to be overridden. |
