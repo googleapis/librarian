@@ -110,8 +110,8 @@ type codec struct {
 	// base64 alphabet.
 	UrlSafeForBytes bool
 
-	// If true, the API is based on a Discovery document.
-	IsDiscovery bool
+	// If true, generate enums that represent only string values, with no integer conversions.
+	UseStringEnums bool
 
 	// Tracks generated files, considering case-insensitive filesystems.
 	//
@@ -229,7 +229,7 @@ func newCodec(model *api.API, library *config.Library, module *config.SwiftModul
 		DependenciesByName: map[string]*Dependency{},
 		UrlSafeForBytes:    library.SpecificationFormat == config.SpecDiscovery,
 		ResponseEncoding:   responseEncoding,
-		IsDiscovery:        library.SpecificationFormat == config.SpecDiscovery,
+		UseStringEnums:     library.SpecificationFormat == config.SpecDiscovery,
 	}
 
 	swiftCfg := library.Swift

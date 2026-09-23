@@ -177,7 +177,7 @@ func TestParseOptions(t *testing.T) {
 				DependenciesByName: map[string]*Dependency{},
 				UrlSafeForBytes:    true,
 				ResponseEncoding:   discoveryResponseEncoding,
-				IsDiscovery:        true,
+				UseStringEnums:     true,
 			},
 		},
 		{

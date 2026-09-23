@@ -29,7 +29,7 @@ type enumAnnotations struct {
 	DefaultCaseName   string
 	UnknownIntName    string
 	UnknownStringName string
-	IsDiscovery       bool
+	UseStringEnums    bool
 
 	// GatedBy is the list of package traits that enables this enum.
 	//
@@ -172,7 +172,7 @@ func (c *codec) annotateEnum(enum *api.Enum, model *modelAnnotations) error {
 		UnknownStringName:  uniqueCaseName("unknownStringValue"),
 		ModulePath:         c.ModulePath,
 		ProtoTypeName:      c.protoEnumTypeName(enum),
-		IsDiscovery:        c.IsDiscovery,
+		UseStringEnums:     c.UseStringEnums,
 	}
 	if !enum.Deprecated {
 		annotations.DiagnoseDefault = defaultValue.Deprecated

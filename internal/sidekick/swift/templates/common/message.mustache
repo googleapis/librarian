@@ -174,12 +174,12 @@ public struct {{Codec.Name}}: Codable, Equatable, {{Codec.Model.WktPackage}}._An
   {{/Messages}}
   {{#Enums}}
 
-  {{#Codec.IsDiscovery}}
-  {{> /templates/common/discovery_enum}}
-  {{/Codec.IsDiscovery}}
-  {{^Codec.IsDiscovery}}
+  {{#Codec.UseStringEnums}}
+  {{> /templates/common/string_enum}}
+  {{/Codec.UseStringEnums}}
+  {{^Codec.UseStringEnums}}
   {{> /templates/common/enum}}
-  {{/Codec.IsDiscovery}}
+  {{/Codec.UseStringEnums}}
   {{/Enums}}
   {{#OneOfs}}
 
