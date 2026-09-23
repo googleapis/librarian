@@ -93,7 +93,7 @@ func TestGenerateServiceSwift_SnippetReference(t *testing.T) {
 	contentStr := string(content)
 
 	gotBlock := extractBlock(t, contentStr, "public protocol ", "{")
-	wantBlock := `public protocol ProtocolProtocol {`
+	wantBlock := `public protocol ProtocolProtocol: Sendable {`
 	if diff := cmp.Diff(wantBlock, gotBlock); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}

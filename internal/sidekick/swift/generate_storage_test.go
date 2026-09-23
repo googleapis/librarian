@@ -189,7 +189,7 @@ func TestGenerateStorage_MultiModel(t *testing.T) {
 	if !strings.Contains(protocolStr, "// Copyright 2026 Google LLC") {
 		t.Errorf("StorageControlProtocol.swift missing Copyright header:\n%s", protocolStr)
 	}
-	if !strings.Contains(protocolStr, "public protocol StorageControlProtocol {") {
+	if !strings.Contains(protocolStr, "public protocol StorageControlProtocol: Sendable {") {
 		t.Errorf("StorageControlProtocol.swift missing StorageControlProtocol declaration:\n%s", protocolStr)
 	}
 	if !strings.Contains(protocolStr, "func createBucket(") ||
@@ -199,7 +199,8 @@ func TestGenerateStorage_MultiModel(t *testing.T) {
 		t.Errorf("StorageControlProtocol.swift missing unified methods:\n%s", protocolStr)
 	}
 	if !strings.Contains(protocolStr, "byItem: ListBucketsRequest, options: GoogleGax.RequestOptions") ||
-		!strings.Contains(protocolStr, "any AsyncSequence<Bucket, Swift.Error>") {
+		!strings.Contains(protocolStr, "any AsyncSequence<Bucket, Swift.Error>") ||
+		!strings.Contains(protocolStr, "return GoogleGax.PaginatedResponseSequence(listRpc: listRpc)") {
 		t.Errorf("StorageControlProtocol.swift missing paginated helper method:\n%s", protocolStr)
 	}
 	if !strings.Contains(protocolStr, "public import GoogleIAMV1") {
@@ -284,10 +285,7 @@ func TestGenerateStorage_MultiModel(t *testing.T) {
 		!strings.Contains(clientStr, "try await self.control.getIamPolicy(request: request, options: options)") {
 		t.Errorf("StorageControlClient.swift missing method delegation:\n%s", clientStr)
 	}
-	if !strings.Contains(clientStr, "byItem: ListBucketsRequest, options: GoogleGax.RequestOptions") ||
-		!strings.Contains(clientStr, "return GoogleGax.PaginatedResponseSequence(listRpc: listRpc)") {
-		t.Errorf("StorageControlClient.swift missing paginated sequence helper:\n%s", clientStr)
-	}
+
 	if !strings.Contains(clientStr, "public func renameFolder(") ||
 		!strings.Contains(clientStr, "withPolling: RenameFolderRequest, options: GoogleGax.RequestOptions") {
 		t.Errorf("StorageControlClient.swift missing LRO helper method:\n%s", clientStr)
