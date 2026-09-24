@@ -137,6 +137,11 @@ func (c *codec) tryEnumValueDocLink(id string) (string, error) {
 }
 
 func (c *codec) methodDocLink(m *api.Method) (string, error) {
+	// Swift does not yet support streaming RPCs.
+	// See https://github.com/googleapis/google-cloud-swift/issues/451
+	if m.ClientSideStreaming || m.ServerSideStreaming {
+		return "", nil
+	}
 	idx := strings.LastIndex(m.ID, ".")
 	if idx == -1 {
 		return "", nil

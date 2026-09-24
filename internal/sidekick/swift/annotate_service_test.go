@@ -653,3 +653,62 @@ func TestAnnotateService_SnippetImports(t *testing.T) {
 		})
 	}
 }
+
+func TestAnnotateService_SkipStreamingMethods(t *testing.T) {
+	req := api.NewTestMessage("Request").WithPackage("test")
+	resp := api.NewTestMessage("Response").WithPackage("test")
+
+	unary := api.NewTestMethod("Unary").
+		WithInput(req).
+		WithOutput(resp).
+		WithVerb("POST").
+		WithPathTemplate((&api.PathTemplate{}).WithLiteral("v1").WithLiteral("unary"))
+
+	serverStreaming := api.NewTestMethod("ServerStreaming").
+		WithInput(req).
+		WithOutput(resp).
+		WithVerb("POST").
+		WithPathTemplate((&api.PathTemplate{}).WithLiteral("v1").WithLiteral("serverStreaming")).
+		WithServerSideStreaming()
+
+	clientStreaming := api.NewTestMethod("ClientStreaming").
+		WithInput(req).
+		WithOutput(resp).
+		WithVerb("POST").
+		WithPathTemplate((&api.PathTemplate{}).WithLiteral("v1").WithLiteral("clientStreaming")).
+		WithClientSideStreaming()
+
+	bidiStreaming := api.NewTestMethod("BidiStreaming").
+		WithInput(req).
+		WithOutput(resp).
+		WithVerb("POST").
+		WithPathTemplate((&api.PathTemplate{}).WithLiteral("v1").WithLiteral("bidiStreaming")).
+		WithServerSideStreaming().
+		WithClientSideStreaming()
+
+	service := api.NewTestService("StreamingTestService").WithMethods(unary, serverStreaming, clientStreaming, bidiStreaming)
+	model := api.NewTestAPI([]*api.Message{req, resp}, nil, []*api.Service{service})
+	model.PackageName = "test"
+	if err := api.CrossReference(model); err != nil {
+		t.Fatal(err)
+	}
+
+	codec := newTestCodec(t, model, nil)
+	if err := codec.annotateModel(); err != nil {
+		t.Fatal(err)
+	}
+
+	annotations, ok := service.Codec.(*serviceAnnotations)
+	if !ok {
+		t.Fatalf("expected *serviceAnnotations, got %T", service.Codec)
+	}
+
+	var gotMethods []string
+	for _, m := range annotations.Methods {
+		gotMethods = append(gotMethods, m.Name)
+	}
+	wantMethods := []string{"Unary"}
+	if diff := cmp.Diff(wantMethods, gotMethods); diff != "" {
+		t.Errorf("Methods mismatch (-want +got):\n%s", diff)
+	}
+}

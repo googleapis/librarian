@@ -1111,3 +1111,67 @@ public final class ComputeClient: Sendable {
 		t.Errorf("expected unavailable stub in %s, got:\n%s", filename, contentStr)
 	}
 }
+
+func TestGenerateServiceSwift_SkipStreamingMethods(t *testing.T) {
+	outDir := t.TempDir()
+
+	req := api.NewTestMessage("PredictRequest").WithPackage("google.cloud.prediction.v1")
+	resp := api.NewTestMessage("PredictResponse").WithPackage("google.cloud.prediction.v1")
+
+	unary := api.NewTestMethod("Predict").
+		WithInput(req).
+		WithOutput(resp).
+		WithVerb("POST").
+		WithPathTemplate((&api.PathTemplate{}).WithLiteral("v1").WithLiteral("predict"))
+
+	streaming := api.NewTestMethod("StreamPredict").
+		WithInput(req).
+		WithOutput(resp).
+		WithVerb("POST").
+		WithPathTemplate((&api.PathTemplate{}).WithLiteral("v1").WithLiteral("streamPredict")).
+		WithServerSideStreaming()
+
+	service := api.NewTestService("PredictionService").
+		WithPackage("google.cloud.prediction.v1").
+		WithMethods(unary, streaming)
+
+	model := api.NewTestAPI([]*api.Message{req, resp}, nil, []*api.Service{service})
+
+	library := &config.Library{Swift: swiftConfig(t, nil)}
+	if err := Generate(t.Context(), model, outDir, library, nil); err != nil {
+		t.Fatal(err)
+	}
+
+	serviceFile := filepath.Join(outDir, "Sources", "GoogleCloudPredictionV1", "PredictionService.swift")
+	content, err := os.ReadFile(serviceFile)
+	if err != nil {
+		t.Fatal(err)
+	}
+	contentStr := string(content)
+
+	if !strings.Contains(contentStr, "func predict(") {
+		t.Errorf("expected unary method 'predict' in %s, got:\n%s", serviceFile, contentStr)
+	}
+	if strings.Contains(contentStr, "streamPredict") {
+		t.Errorf("unexpected streaming method 'streamPredict' in %s, got:\n%s", serviceFile, contentStr)
+	}
+
+	transportFile := filepath.Join(outDir, "Sources", "GoogleCloudPredictionV1", "PredictionService+Transport.swift")
+	transportContent, err := os.ReadFile(transportFile)
+	if err != nil {
+		t.Fatal(err)
+	}
+	transportStr := string(transportContent)
+	if strings.Contains(transportStr, "streamPredict") {
+		t.Errorf("unexpected streaming method 'streamPredict' in %s, got:\n%s", transportFile, transportStr)
+	}
+
+	// Verify snippets
+	snippetsDir := filepath.Join(outDir, "Snippets")
+	if _, err := os.Stat(filepath.Join(snippetsDir, "PredictionService_Predict.swift")); err != nil {
+		t.Errorf("expected unary snippet to exist: %v", err)
+	}
+	if _, err := os.Stat(filepath.Join(snippetsDir, "PredictionService_StreamPredict.swift")); !os.IsNotExist(err) {
+		t.Errorf("expected streaming snippet to NOT exist, got err: %v", err)
+	}
+}
