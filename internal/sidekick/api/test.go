@@ -96,6 +96,30 @@ func NewTestAPI(messages []*Message, enums []*Enum, services []*Service) *API {
 	return model
 }
 
+// WithName changes the name of an API instance.
+func (a *API) WithName(name string) *API {
+	a.Name = name
+	return a
+}
+
+// WithTitle changes the title of an API instance.
+func (a *API) WithTitle(title string) *API {
+	a.Title = title
+	return a
+}
+
+// WithDescription changes the description of an API instance.
+func (a *API) WithDescription(description string) *API {
+	a.Description = description
+	return a
+}
+
+// WithQuickstartService sets the quickstart service on an API instance.
+func (a *API) WithQuickstartService(service *Service) *API {
+	a.QuickstartService = service
+	return a
+}
+
 // WithPackageName changes the package name of an API instance.
 func (a *API) WithPackageName(name string) *API {
 	a.PackageName = name
@@ -252,12 +276,18 @@ func (m *Message) WithIsMap() *Message {
 
 // NewTestMapMessage creates a synthetic map entry Message with "key" and "value" fields.
 func NewTestMapMessage(name string, keyType, valueType Typez) *Message {
+	return NewTestMapMessageWithFields(
+		name,
+		NewTestField("key").WithType(keyType),
+		NewTestField("value").WithType(valueType),
+	)
+}
+
+// NewTestMapMessageWithFields creates a synthetic map entry Message with custom key and value fields.
+func NewTestMapMessageWithFields(name string, key, value *Field) *Message {
 	return NewTestMessage(name).
 		WithIsMap().
-		WithFields(
-			NewTestField("key").WithType(keyType),
-			NewTestField("value").WithType(valueType),
-		)
+		WithFields(key, value)
 }
 
 // NewTestService creates a service with defaults for testing.
@@ -298,6 +328,12 @@ func (s *Service) WithDocumentation(doc string) *Service {
 	return s
 }
 
+// WithDefaultHost sets the default host for the service.
+func (s *Service) WithDefaultHost(host string) *Service {
+	s.DefaultHost = host
+	return s
+}
+
 // NewTestMethod creates a method with defaults for testing.
 // Default package is "test" (implies ID .test.Name).
 func NewTestMethod(name string) *Method {
@@ -308,6 +344,39 @@ func NewTestMethod(name string) *Method {
 			Bindings: []*PathBinding{{}},
 		},
 	}
+}
+
+// WithID overrides the method's ID.
+func (m *Method) WithID(id string) *Method {
+	m.ID = id
+	return m
+}
+
+// WithAPIVersion sets the APIVersion for the method.
+func (m *Method) WithAPIVersion(version string) *Method {
+	m.APIVersion = version
+	return m
+}
+
+// WithPathInfo sets the PathInfo for the method.
+func (m *Method) WithPathInfo(pathInfo *PathInfo) *Method {
+	m.PathInfo = pathInfo
+	return m
+}
+
+// WithRouting adds routing info to the method.
+func (m *Method) WithRouting(routing ...*RoutingInfo) *Method {
+	m.Routing = append(m.Routing, routing...)
+	return m
+}
+
+// WithAutoPopulated adds auto-populated fields to the method and marks them as auto-populated.
+func (m *Method) WithAutoPopulated(fields ...*Field) *Method {
+	for _, f := range fields {
+		f.AutoPopulated = true
+	}
+	m.AutoPopulated = append(m.AutoPopulated, fields...)
+	return m
 }
 
 // WithDocumentation sets the documentation for the method.
@@ -594,6 +663,29 @@ func (f *Field) WithMessageType(msg *Message) *Field {
 	if msg != nil {
 		f.TypezID = msg.ID
 	}
+	return f
+}
+
+// WithEnumType sets the field's enum type.
+// It sets EnumType, Typez=TypezEnum, and TypezID.
+func (f *Field) WithEnumType(enum *Enum) *Field {
+	f.EnumType = enum
+	f.Typez = TypezEnum
+	if enum != nil {
+		f.TypezID = enum.ID
+	}
+	return f
+}
+
+// WithAutoPopulated marks the field as auto-populated.
+func (f *Field) WithAutoPopulated() *Field {
+	f.AutoPopulated = true
+	return f
+}
+
+// WithResourceNamePattern sets the resource name pattern on the field.
+func (f *Field) WithResourceNamePattern(pattern *ResourceNamePattern) *Field {
+	f.ResourceNamePattern = pattern
 	return f
 }
 
