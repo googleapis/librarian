@@ -51,9 +51,7 @@ func TestGenerate(t *testing.T) {
 }
 
 func TestGenerateService(t *testing.T) {
-	service := &api.Service{
-		Name: "ExpectedName",
-	}
+	service := api.NewTestService("ExpectedName")
 	outDir := t.TempDir()
 
 	gen := GeneratedFile{
@@ -68,9 +66,7 @@ func TestGenerateService(t *testing.T) {
 }
 
 func TestGenerateMessage(t *testing.T) {
-	message := &api.Message{
-		Name: "ExpectedName",
-	}
+	message := api.NewTestMessage("ExpectedName")
 	outDir := t.TempDir()
 
 	gen := GeneratedFile{
@@ -85,9 +81,7 @@ func TestGenerateMessage(t *testing.T) {
 }
 
 func TestGenerateEnum(t *testing.T) {
-	enum := &api.Enum{
-		Name: "ExpectedName",
-	}
+	enum := api.NewTestEnum("ExpectedName")
 	outDir := t.TempDir()
 
 	gen := GeneratedFile{
