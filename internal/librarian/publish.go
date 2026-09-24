@@ -55,6 +55,11 @@ Only Dart, Rust, and Swift are supported.`,
 				Aliases: []string{"v"},
 				Usage:   "streams output of publishing commands executed",
 			},
+			&cli.BoolFlag{
+				Name:    "force",
+				Aliases: []string{"f"},
+				Usage:   "force push to the remote repository",
+			},
 			&cli.StringFlag{
 				Name:  "remote-url-format",
 				Usage: "template for remote repository URLs (e.g. 'git@github.com:googleapis/{name}.git')",
@@ -132,6 +137,7 @@ func swiftPublish(ctx context.Context, cfg *config.Config, cmd *cli.Command) err
 	skipSemverChecks := cmd.Bool("skip-semver-checks")
 	dryRunKeepGoing := cmd.Bool("dry-run-keep-going")
 	verbose := cmd.Bool("verbose")
+	force := cmd.Bool("force")
 	remoteURLFormat := cmd.String("remote-url-format")
 	origin := cmd.String("origin")
 	remoteBranch := cmd.String("remote-branch")
@@ -145,6 +151,7 @@ func swiftPublish(ctx context.Context, cfg *config.Config, cmd *cli.Command) err
 		DryRunKeepGoing:  dryRunKeepGoing,
 		SkipSemverChecks: skipSemverChecks,
 		Verbose:          verbose,
+		Force:            force,
 		RemoteURLFormat:  remoteURLFormat,
 		Origin:           origin,
 		RemoteBranch:     remoteBranch,

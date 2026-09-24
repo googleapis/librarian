@@ -99,4 +99,16 @@ func TestPublishCommand_Swift(t *testing.T) {
 	if err != nil {
 		t.Fatalf("librarian publish with --upstream failed: %v", err)
 	}
+
+	// Non-force push to splitBareRepo (which has unrelated history) should fail
+	err = Run(t.Context(), "librarian", "publish", "--remote-url-format", filepath.Dir(splitBareRepo)+"/{name}.git", "google-cloud-auth")
+	if err == nil {
+		t.Fatal("expected librarian publish without --force to fail on diverged history, got nil")
+	}
+
+	// Force push with --force should succeed
+	err = Run(t.Context(), "librarian", "publish", "--force", "--remote-url-format", filepath.Dir(splitBareRepo)+"/{name}.git", "google-cloud-auth")
+	if err != nil {
+		t.Fatalf("librarian publish with --force failed: %v", err)
+	}
 }

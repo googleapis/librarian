@@ -41,6 +41,8 @@ type PublishParams struct {
 	SkipSemverChecks bool
 	// Verbose indicates whether to stream the output of executed commands.
 	Verbose bool
+	// Force indicates whether to force push to the remote repository.
+	Force bool
 	// IgnoredChanges is a list of file paths/patterns to ignore when detecting changed libraries.
 	IgnoredChanges []string
 	// RemoteURLFormat is an optional template for remote repository URLs (e.g. 'git@github.com:googleapis/{name}.git').
@@ -161,7 +163,7 @@ func Publish(ctx context.Context, params PublishParams) error {
 			continue
 		}
 
-		if err := git.PushBranch(ctx, gitExe, remoteURL, splitSHA, remoteBranch, true); err != nil {
+		if err := git.PushBranch(ctx, gitExe, remoteURL, splitSHA, remoteBranch, params.Force); err != nil {
 			if params.DryRunKeepGoing {
 				slog.Error("failed to push branch, but continuing due to --keep-going", "library", lib.Name, "remote", remoteURL, "error", err)
 				continue
@@ -169,7 +171,7 @@ func Publish(ctx context.Context, params PublishParams) error {
 			return fmt.Errorf("failed to push branch for %s to %s: %w", lib.Name, remoteURL, err)
 		}
 
-		if err := git.PushRefToTag(ctx, gitExe, remoteURL, splitSHA, tag, true); err != nil {
+		if err := git.PushRefToTag(ctx, gitExe, remoteURL, splitSHA, tag, params.Force); err != nil {
 			if params.DryRunKeepGoing {
 				slog.Error("failed to push tag, but continuing due to --keep-going", "library", lib.Name, "remote", remoteURL, "error", err)
 				continue

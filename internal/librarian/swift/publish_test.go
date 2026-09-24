@@ -135,9 +135,8 @@ func setupSplitRemoteRepo(t *testing.T, tag string) string {
 func TestPublishSuccess(t *testing.T) {
 	testhelper.RequireCommand(t, "git")
 
-	// Create remote split repos for two libraries: auth and storage
+	// Create remote split repos for two libraries: auth (already tagged) and storage (empty bare repo)
 	authRemote := setupSplitRemoteRepo(t, "1.0.0")
-	storageRemote := setupSplitRemoteRepo(t, "")
 
 	// Set up monorepo
 	monorepoRemote := setupMonorepoWithRootFiles(t)
@@ -146,10 +145,6 @@ func TestPublishSuccess(t *testing.T) {
 	testhelper.RunGit(t, "clone", monorepoRemote, ".")
 	testhelper.RunGit(t, "remote", "rename", "origin", config.RemoteUpstream)
 	testhelper.ConfigNewGitRepository(t)
-	remotesMap := map[string]string{
-		"swift-auth":    authRemote,
-		"swift-storage": storageRemote,
-	}
 
 	cfg := &config.Config{
 		Language: config.LanguageSwift,
@@ -179,14 +174,11 @@ func TestPublishSuccess(t *testing.T) {
 		},
 	}
 
-	// Publish with dynamic remote format using template
-	// We can use a custom remote URL format using local paths:
-	// For testing, we point FormatRemoteURL to remotesMap entries
 	tempDir := t.TempDir()
-	for name, remotePath := range remotesMap {
-		linkPath := filepath.Join(tempDir, name+".git")
-		testhelper.RunGit(t, "clone", "--bare", remotePath, linkPath)
-	}
+	authBareRepo := filepath.Join(tempDir, "swift-auth.git")
+	testhelper.RunGit(t, "clone", "--bare", authRemote, authBareRepo)
+	storageBareRepo := filepath.Join(tempDir, "swift-storage.git")
+	testhelper.RunGit(t, "init", "--bare", storageBareRepo)
 
 	err := Publish(t.Context(), PublishParams{
 		Config:          cfg,
@@ -199,7 +191,67 @@ func TestPublishSuccess(t *testing.T) {
 	}
 
 	// Verify that storage remote now has tag 1.1.0
+	hasTag, err := git.RemoteTagExists(t.Context(), command.Git, storageBareRepo, "1.1.0")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !hasTag {
+		t.Errorf("tag 1.1.0 was not pushed to storage remote")
+	}
+}
+
+func TestPublishForcePush(t *testing.T) {
+	testhelper.RequireCommand(t, "git")
+
+	// Create a remote repository with an unrelated commit on main so non-force push is rejected
+	storageRemote := setupSplitRemoteRepo(t, "")
+
+	monorepoRemote := setupMonorepoWithRootFiles(t)
+	cloneDir := t.TempDir()
+	t.Chdir(cloneDir)
+	testhelper.RunGit(t, "clone", monorepoRemote, ".")
+	testhelper.RunGit(t, "remote", "rename", "origin", config.RemoteUpstream)
+	testhelper.ConfigNewGitRepository(t)
+
+	cfg := &config.Config{
+		Language: config.LanguageSwift,
+		Repo:     "googleapis/google-cloud-swift",
+		Libraries: []*config.Library{
+			{
+				Name:    "google-cloud-storage",
+				Version: "1.1.0",
+				Output:  "packages/storage",
+			},
+		},
+	}
+
+	tempDir := t.TempDir()
 	storageBareRepo := filepath.Join(tempDir, "swift-storage.git")
+	testhelper.RunGit(t, "clone", "--bare", storageRemote, storageBareRepo)
+
+	// Without Force, pushing diverged history should fail
+	err := Publish(t.Context(), PublishParams{
+		Config:          cfg,
+		RemoteURLFormat: filepath.Join(tempDir, "{name}.git"),
+		Origin:          "HEAD",
+		RemoteBranch:    config.BranchMain,
+	})
+	if err == nil {
+		t.Fatal("expected Publish() without Force to fail on diverged history, got nil")
+	}
+
+	// With Force: true, pushing diverged history should succeed
+	err = Publish(t.Context(), PublishParams{
+		Config:          cfg,
+		RemoteURLFormat: filepath.Join(tempDir, "{name}.git"),
+		Origin:          "HEAD",
+		RemoteBranch:    config.BranchMain,
+		Force:           true,
+	})
+	if err != nil {
+		t.Fatalf("Publish() with Force: true failed: %v", err)
+	}
+
 	hasTag, err := git.RemoteTagExists(t.Context(), command.Git, storageBareRepo, "1.1.0")
 	if err != nil {
 		t.Fatal(err)
