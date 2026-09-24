@@ -199,7 +199,7 @@ func TestGenerateStorage_MultiModel(t *testing.T) {
 		t.Errorf("StorageControlProtocol.swift missing unified methods:\n%s", protocolStr)
 	}
 	if !strings.Contains(protocolStr, "request: ListBucketsRequest, options: GoogleGax.RequestOptions") ||
-		!strings.Contains(protocolStr, "any AsyncSequence<Bucket, Swift.Error>") ||
+		!strings.Contains(protocolStr, "any AsyncSequence<Bucket, Swift.Error> & Sendable") ||
 		!strings.Contains(protocolStr, "return GoogleGax.PaginatedResponseSequence(listRpc: listRpc)") {
 		t.Errorf("StorageControlProtocol.swift missing paginated helper method:\n%s", protocolStr)
 	}
