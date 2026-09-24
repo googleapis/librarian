@@ -18,10 +18,10 @@ import "testing"
 
 func TestValidate(t *testing.T) {
 	model := NewTestAPI(
-		[]*Message{{Name: "m1", Package: "p1"}},
-		[]*Enum{{Name: "e1", Package: "p1"}},
-		[]*Service{{Name: "s1", Package: "p1"}})
-	model.PackageName = "p1"
+		[]*Message{NewTestMessage("m1").WithPackage("p1")},
+		[]*Enum{NewTestEnum("e1").WithPackage("p1")},
+		[]*Service{NewTestService("s1").WithPackage("p1")}).
+		WithPackageName("p1")
 	if err := Validate(model); err != nil {
 		t.Errorf("unexpected error in API validation %q", err)
 	}
@@ -29,28 +29,28 @@ func TestValidate(t *testing.T) {
 
 func TestValidateMessageMismatch(t *testing.T) {
 	test := NewTestAPI(
-		[]*Message{{Name: "m1", Package: "p1"}, {Name: "m2", Package: "p2"}},
-		[]*Enum{{Name: "e1", Package: "p1"}},
-		[]*Service{{Name: "s1", Package: "p1"}})
-	test.PackageName = "p1"
+		[]*Message{NewTestMessage("m1").WithPackage("p1"), NewTestMessage("m2").WithPackage("p2")},
+		[]*Enum{NewTestEnum("e1").WithPackage("p1")},
+		[]*Service{NewTestService("s1").WithPackage("p1")}).
+		WithPackageName("p1")
 	if err := Validate(test); err == nil {
 		t.Errorf("expected an error in API validation got=%s", test.PackageName)
 	}
 
 	test = NewTestAPI(
-		[]*Message{{Name: "m1", Package: "p1"}},
-		[]*Enum{{Name: "e1", Package: "p1"}, {Name: "e2", Package: "p2"}},
-		[]*Service{{Name: "s1", Package: "p1"}})
-	test.PackageName = "p1"
+		[]*Message{NewTestMessage("m1").WithPackage("p1")},
+		[]*Enum{NewTestEnum("e1").WithPackage("p1"), NewTestEnum("e2").WithPackage("p2")},
+		[]*Service{NewTestService("s1").WithPackage("p1")}).
+		WithPackageName("p1")
 	if err := Validate(test); err == nil {
 		t.Errorf("expected an error in API validation got=%s", test.PackageName)
 	}
 
 	test = NewTestAPI(
-		[]*Message{{Name: "m1", Package: "p1"}},
-		[]*Enum{{Name: "e1", Package: "p1"}},
-		[]*Service{{Name: "s1", Package: "p1"}, {Name: "s2", Package: "p2"}})
-	test.PackageName = "p1"
+		[]*Message{NewTestMessage("m1").WithPackage("p1")},
+		[]*Enum{NewTestEnum("e1").WithPackage("p1")},
+		[]*Service{NewTestService("s1").WithPackage("p1"), NewTestService("s2").WithPackage("p2")}).
+		WithPackageName("p1")
 	if err := Validate(test); err == nil {
 		t.Errorf("expected an error in API validation got=%s", test.PackageName)
 	}
@@ -58,25 +58,28 @@ func TestValidateMessageMismatch(t *testing.T) {
 
 func TestValidateMessageMismatchNoPackage(t *testing.T) {
 	test := NewTestAPI(
-		[]*Message{{Name: "m1", Package: "p1"}, {Name: "m2", Package: "p2"}},
-		[]*Enum{{Name: "e1", Package: "p1"}},
-		[]*Service{{Name: "s1", Package: "p1"}})
+		[]*Message{NewTestMessage("m1").WithPackage("p1"), NewTestMessage("m2").WithPackage("p2")},
+		[]*Enum{NewTestEnum("e1").WithPackage("p1")},
+		[]*Service{NewTestService("s1").WithPackage("p1")}).
+		WithPackageName("")
 	if err := Validate(test); err == nil {
 		t.Errorf("expected an error in API validation got=%s", test.PackageName)
 	}
 
 	test = NewTestAPI(
-		[]*Message{{Name: "m1", Package: "p1"}},
-		[]*Enum{{Name: "e1", Package: "p1"}, {Name: "e2", Package: "p2"}},
-		[]*Service{{Name: "s1", Package: "p1"}})
+		[]*Message{NewTestMessage("m1").WithPackage("p1")},
+		[]*Enum{NewTestEnum("e1").WithPackage("p1"), NewTestEnum("e2").WithPackage("p2")},
+		[]*Service{NewTestService("s1").WithPackage("p1")}).
+		WithPackageName("")
 	if err := Validate(test); err == nil {
 		t.Errorf("expected an error in API validation got=%s", test.PackageName)
 	}
 
 	test = NewTestAPI(
-		[]*Message{{Name: "m1", Package: "p1"}},
-		[]*Enum{{Name: "e1", Package: "p1"}},
-		[]*Service{{Name: "s1", Package: "p1"}, {Name: "s2", Package: "p2"}})
+		[]*Message{NewTestMessage("m1").WithPackage("p1")},
+		[]*Enum{NewTestEnum("e1").WithPackage("p1")},
+		[]*Service{NewTestService("s1").WithPackage("p1"), NewTestService("s2").WithPackage("p2")}).
+		WithPackageName("")
 	if err := Validate(test); err == nil {
 		t.Errorf("expected an error in API validation got=%s", test.PackageName)
 	}

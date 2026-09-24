@@ -22,100 +22,38 @@ import (
 )
 
 func TestFindServiceDependencies(t *testing.T) {
-	enums := []*Enum{
-		{
-			Name: "SomeEnum",
-			ID:   ".test.SomeEnum",
-		},
-	}
-	messages := []*Message{
-		{
-			Name: "Message",
-			ID:   ".test.Message",
-			Fields: []*Field{
-				{
-					Name:  "a",
-					Typez: TypezString,
-				},
-				{
-					Name:    "b",
-					Typez:   TypezEnum,
-					TypezID: ".test.SomeEnum",
-				},
-				{
-					Name:     "c",
-					Typez:    TypezMessage,
-					TypezID:  ".test.Message",
-					Optional: true,
-				},
-			},
-		},
-		{
-			Name:   "Unused",
-			ID:     ".test.Unused",
-			Fields: []*Field{},
-		},
-		{
-			Name: "Request",
-			ID:   ".test.Request",
-			Fields: []*Field{
-				{
-					Name:    "body",
-					Typez:   TypezMessage,
-					TypezID: ".test.Message",
-				},
-			},
-		},
-		{
-			Name:   "Response",
-			ID:     ".test.Response",
-			Fields: []*Field{},
-		},
-		{
-			Name:   "Empty",
-			ID:     ".test.Empty",
-			Fields: []*Field{},
-		},
-		{
-			Name:   "OpMetadata",
-			ID:     ".test.OpMetadata",
-			Fields: []*Field{},
-		},
-		{
-			Name:   "OpResponse",
-			ID:     ".test.OpResponse",
-			Fields: []*Field{},
-		},
-	}
+	someEnum := NewTestEnum("SomeEnum")
+	msg := NewTestMessage("Message")
+	msg.WithFields(
+		NewTestField("a").WithType(TypezString),
+		NewTestField("b").WithEnumType(someEnum),
+		NewTestField("c").WithMessageType(msg).WithOptional(),
+	)
+	unused := NewTestMessage("Unused")
+	request := NewTestMessage("Request").
+		WithFields(NewTestField("body").WithMessageType(msg))
+	response := NewTestMessage("Response")
+	empty := NewTestMessage("Empty")
+	opMetadata := NewTestMessage("OpMetadata")
+	opResponse := NewTestMessage("OpResponse")
+
+	enums := []*Enum{someEnum}
+	messages := []*Message{msg, unused, request, response, empty, opMetadata, opResponse}
 	services := []*Service{
-		{
-			Name: "Service1",
-			ID:   ".test.Service1",
-			Methods: []*Method{
-				{
-					Name:         "Method0",
-					ID:           ".test.Service1.Method0",
-					InputTypeID:  ".test.Request",
-					OutputTypeID: ".test.Response",
-				},
-			},
-		},
-		{
-			Name: "Service2",
-			ID:   ".test.Service2",
-			Methods: []*Method{
-				{
-					Name:         "Method0",
-					ID:           ".test.Service2.Method0",
-					InputTypeID:  ".test.Empty",
-					OutputTypeID: ".test.Empty",
-					OperationInfo: &OperationInfo{
-						MetadataTypeID: ".test.OpMetadata",
-						ResponseTypeID: ".test.OpResponse",
-					},
-				},
-			},
-		},
+		NewTestService("Service1").WithMethods(
+			NewTestMethod("Method0").
+				WithInput(request).
+				WithOutput(response),
+		),
+		NewTestService("Service2").WithMethods(
+			NewTestMethod("Method0").
+				WithInput(empty).
+				WithOutput(empty).
+				WithOperationInfo(&OperationInfo{
+					MetadataTypeID: opMetadata.ID,
+					ResponseTypeID: opResponse.ID,
+				}),
+		),
 	}
 	less := func(a, b string) bool { return a < b }
 	model := NewTestAPI(messages, enums, services)
