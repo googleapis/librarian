@@ -255,3 +255,105 @@ func TestNewTestMapMessage(t *testing.T) {
 		t.Errorf("m.Fields[1].Typez = %v, want %v", got, want)
 	}
 }
+
+func TestNewTestMapMessageWithFields(t *testing.T) {
+	valMsg := api.NewTestMessage("ValueMsg")
+	m := api.NewTestMapMessageWithFields(
+		"TestEntry",
+		api.NewTestField("key").WithType(api.TypezString),
+		api.NewTestField("value").WithMessageType(valMsg),
+	)
+	if !m.IsMap {
+		t.Errorf("m.IsMap = %v, want true", m.IsMap)
+	}
+	if len(m.Fields) != 2 {
+		t.Fatalf("len(m.Fields) = %d, want 2", len(m.Fields))
+	}
+	if got := m.Fields[1].MessageType; got != valMsg {
+		t.Errorf("m.Fields[1].MessageType = %v, want %v", got, valMsg)
+	}
+}
+
+func TestAPI_FluentSetters(t *testing.T) {
+	svc := api.NewTestService("TestService")
+	model := api.NewTestAPI(nil, nil, []*api.Service{svc}).
+		WithName("custom-name").
+		WithTitle("Custom Title").
+		WithDescription("Custom Description").
+		WithQuickstartService(svc)
+
+	if got, want := model.Name, "custom-name"; got != want {
+		t.Errorf("model.Name = %q, want %q", got, want)
+	}
+	if got, want := model.Title, "Custom Title"; got != want {
+		t.Errorf("model.Title = %q, want %q", got, want)
+	}
+	if got, want := model.Description, "Custom Description"; got != want {
+		t.Errorf("model.Description = %q, want %q", got, want)
+	}
+	if got := model.QuickstartService; got != svc {
+		t.Errorf("model.QuickstartService = %v, want %v", got, svc)
+	}
+}
+
+func TestService_WithDefaultHost(t *testing.T) {
+	svc := api.NewTestService("TestService").WithDefaultHost("test.googleapis.com")
+	if got, want := svc.DefaultHost, "test.googleapis.com"; got != want {
+		t.Errorf("svc.DefaultHost = %q, want %q", got, want)
+	}
+}
+
+func TestMethod_FluentSetters(t *testing.T) {
+	reqID := api.NewTestField("request_id").WithType(api.TypezString)
+	routing := &api.RoutingInfo{Name: "bucket"}
+	m := api.NewTestMethod("Create").
+		WithID(".custom.Service.Create").
+		WithAPIVersion("v1_20260101").
+		WithPathInfo(nil).
+		WithRouting(routing).
+		WithAutoPopulated(reqID)
+
+	if got, want := m.ID, ".custom.Service.Create"; got != want {
+		t.Errorf("m.ID = %q, want %q", got, want)
+	}
+	if got, want := m.APIVersion, "v1_20260101"; got != want {
+		t.Errorf("m.APIVersion = %q, want %q", got, want)
+	}
+	if m.PathInfo != nil {
+		t.Errorf("m.PathInfo = %v, want nil", m.PathInfo)
+	}
+	if len(m.Routing) != 1 || m.Routing[0] != routing {
+		t.Errorf("m.Routing = %v, want [%v]", m.Routing, routing)
+	}
+	if len(m.AutoPopulated) != 1 || m.AutoPopulated[0] != reqID {
+		t.Errorf("m.AutoPopulated = %v, want [%v]", m.AutoPopulated, reqID)
+	}
+	if !reqID.AutoPopulated {
+		t.Errorf("reqID.AutoPopulated = false, want true")
+	}
+}
+
+func TestField_FluentSetters(t *testing.T) {
+	enum := api.NewTestEnum("State").WithPackage("test.v1")
+	pattern := &api.ResourceNamePattern{Segments: []api.ResourceNameSegment{{Literal: "items"}}}
+	f := api.NewTestField("state").
+		WithEnumType(enum).
+		WithAutoPopulated().
+		WithResourceNamePattern(pattern)
+
+	if f.EnumType != enum {
+		t.Errorf("f.EnumType = %v, want %v", f.EnumType, enum)
+	}
+	if f.Typez != api.TypezEnum {
+		t.Errorf("f.Typez = %v, want %v", f.Typez, api.TypezEnum)
+	}
+	if got, want := f.TypezID, enum.ID; got != want {
+		t.Errorf("f.TypezID = %q, want %q", got, want)
+	}
+	if !f.AutoPopulated {
+		t.Errorf("f.AutoPopulated = false, want true")
+	}
+	if f.ResourceNamePattern != pattern {
+		t.Errorf("f.ResourceNamePattern = %v, want %v", f.ResourceNamePattern, pattern)
+	}
+}
