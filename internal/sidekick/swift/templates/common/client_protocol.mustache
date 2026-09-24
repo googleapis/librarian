@@ -23,7 +23,6 @@ extension Clients {
   @available(*, deprecated)
   {{/Deprecated}}
   public protocol {{Codec.StubPrefix}}Protocol: Sendable {
-
     {{#Codec.Methods}}
     {{^IsLroPoller}}
     /// See `{{Service.Codec.ClientName}}.{{Codec.Name}}`.
