@@ -409,6 +409,9 @@ func (c *codec) addSignatureDependencies(annotations *serviceAnnotations, signat
 }
 
 func (c *codec) isGeneratedMethod(method *api.Method) bool {
+	if method.ClientSideStreaming || method.ServerSideStreaming {
+		return false
+	}
 	if c.isGrpc() {
 		return true
 	}

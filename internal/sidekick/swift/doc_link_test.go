@@ -42,6 +42,7 @@ func TestDocLink(t *testing.T) {
 		WithPackage("test.v1").
 		WithMethods(
 			api.NewTestMethod("CreateFoo"),
+			api.NewTestMethod("StreamFoo").WithServerSideStreaming(),
 		)
 
 	model := api.NewTestAPI(
@@ -101,6 +102,12 @@ func TestDocLink(t *testing.T) {
 			link:   "SomeService.CreateFoo",
 			scopes: []string{"test.v1"},
 			want:   "<doc:SomeServiceClient/createFoo(request:options:)>",
+		},
+		{
+			name:   "streaming method link",
+			link:   "SomeService.StreamFoo",
+			scopes: []string{"test.v1"},
+			want:   "",
 		},
 		{
 			name:   "service link",
