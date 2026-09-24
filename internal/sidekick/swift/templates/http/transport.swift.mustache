@@ -45,6 +45,7 @@ extension Clients {
     }
     {{#Codec.Methods}}
 
+    @concurrent
     {{#Codec.DiagnoseStubFields}}
     {{> /templates/common/diagnose}}
     {{/Codec.DiagnoseStubFields}}

@@ -99,6 +99,7 @@ func TestGeneratePackageSwift_WithDependencies(t *testing.T) {
 	gotSwiftSettings := extractBlock(t, contentStr, "      swiftSettings: [", "\n      ]")
 	wantSwiftSettings := `      swiftSettings: [
         .enableUpcomingFeature("InternalImportsByDefault"),
+        .enableUpcomingFeature("NonisolatedNonsendingByDefault"),
         .strictMemorySafety(),
       ]`
 	if diff := cmp.Diff(wantSwiftSettings, gotSwiftSettings); diff != "" {
