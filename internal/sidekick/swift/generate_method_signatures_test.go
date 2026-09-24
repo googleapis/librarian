@@ -255,12 +255,11 @@ func newModelWithSignatures(t *testing.T) *api.API {
 			&api.MethodSignature{Names: []string{"name", "optional_field"}},
 			&api.MethodSignature{Names: []string{"name", "normal_field"}},
 		).
-		WithPathTemplate((&api.PathTemplate{}).WithLiteral("v1").WithLiteral("lro"))
-	lroMethod.IsLRO = true
-	lroMethod.OperationInfo = &api.OperationInfo{
-		ResponseTypeID: lroResultType.ID,
-		MetadataTypeID: lroMetadataType.ID,
-	}
+		WithPathTemplate((&api.PathTemplate{}).WithLiteral("v1").WithLiteral("lro")).
+		WithOperationInfo(&api.OperationInfo{
+			ResponseTypeID: lroResultType.ID,
+			MetadataTypeID: lroMetadataType.ID,
+		})
 
 	discoveryLroMethod := api.NewTestMethod("LroDiscoveryMethod").
 		WithInput(requestType).
@@ -270,10 +269,10 @@ func newModelWithSignatures(t *testing.T) *api.API {
 			&api.MethodSignature{Names: []string{"name", "optional_field"}},
 			&api.MethodSignature{Names: []string{"name", "normal_field"}},
 		).
-		WithPathTemplate((&api.PathTemplate{}).WithLiteral("v1").WithLiteral("discoveryLro"))
-	discoveryLroMethod.DiscoveryLro = &api.DiscoveryLro{
-		PollingPathParameters: []string{"test_only"},
-	}
+		WithPathTemplate((&api.PathTemplate{}).WithLiteral("v1").WithLiteral("discoveryLro")).
+		WithDiscoveryLro(&api.DiscoveryLro{
+			PollingPathParameters: []string{"test_only"},
+		})
 
 	service := api.NewTestService("TestService").
 		WithPackage("test").
@@ -281,8 +280,8 @@ func newModelWithSignatures(t *testing.T) *api.API {
 	model := api.NewTestAPI([]*api.Message{
 		requestType, responseType, itemType, paginationResponseType,
 		operationType, lroResultType, lroMetadataType,
-	}, nil, []*api.Service{service})
-	model.PackageName = "test"
+	}, nil, []*api.Service{service}).
+		WithPackageName("test")
 	model.AddMessage(getOperationInputType)
 	model.AddMessage(operationType)
 	return model

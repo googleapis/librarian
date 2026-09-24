@@ -115,8 +115,8 @@ func TestGenerateSnippets(t *testing.T) {
 				WithOutput(thing).
 				WithPathTemplate((&api.PathTemplate{}).WithLiteral("v1").WithLiteral("one"))
 			testService := api.NewTestService("TestService").WithMethods(getThing)
-			model := api.NewTestAPI([]*api.Message{thing, getThingRequest}, nil, []*api.Service{testService})
-			model.PackageName = "test"
+			model := api.NewTestAPI([]*api.Message{thing, getThingRequest}, nil, []*api.Service{testService}).
+				WithPackageName("test")
 			model.AddResource(thingResource)
 			if err := api.CrossReference(model); err != nil {
 				t.Fatal(err)
@@ -198,8 +198,8 @@ func TestGenerateSnippets_Diagnose(t *testing.T) {
 			testService := api.NewTestService("TestService").
 				WithDeprecated(test.serviceDeprecated).
 				WithMethods(getThing)
-			model := api.NewTestAPI([]*api.Message{thing, getThingRequest}, nil, []*api.Service{testService})
-			model.PackageName = "test"
+			model := api.NewTestAPI([]*api.Message{thing, getThingRequest}, nil, []*api.Service{testService}).
+				WithPackageName("test")
 			model.AddResource(thingResource)
 			if err := api.CrossReference(model); err != nil {
 				t.Fatal(err)
@@ -253,16 +253,16 @@ func TestGenerateSnippets_UpdateMask(t *testing.T) {
 		WithOutput(thing).
 		WithPathTemplate((&api.PathTemplate{}).WithLiteral("v1").WithLiteral("things"))
 	testService := api.NewTestService("TestService").WithMethods(updateThing)
-	model := api.NewTestAPI([]*api.Message{thing, updateThingRequest}, nil, []*api.Service{testService})
-	model.PackageName = "test"
+	model := api.NewTestAPI([]*api.Message{thing, updateThingRequest}, nil, []*api.Service{testService}).
+		WithPackageName("test")
 	model.AddResource(thingResource)
 	model.LoadWellKnownTypes()
 	if err := api.CrossReference(model); err != nil {
 		t.Fatal(err)
 	}
-	updateThing.SampleInfo = &api.SampleInfo{
+	updateThing.WithSampleInfo(&api.SampleInfo{
 		UpdateMaskField: updateMask,
-	}
+	})
 	library := &config.Library{
 		Swift: swiftConfig(t, nil),
 	}
@@ -303,8 +303,8 @@ func TestGenerateSnippets_List(t *testing.T) {
 		WithPagination(pageToken).
 		WithPathTemplate((&api.PathTemplate{}).WithLiteral("v1").WithLiteral("things"))
 	testService := api.NewTestService("TestService").WithMethods(listThings)
-	model := api.NewTestAPI([]*api.Message{thing, listThingsRequest, listThingsResponse}, nil, []*api.Service{testService})
-	model.PackageName = "test"
+	model := api.NewTestAPI([]*api.Message{thing, listThingsRequest, listThingsResponse}, nil, []*api.Service{testService}).
+		WithPackageName("test")
 	if err := api.CrossReference(model); err != nil {
 		t.Fatal(err)
 	}

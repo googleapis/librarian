@@ -149,8 +149,8 @@ func TestGenerateMessage_Diagnose(t *testing.T) {
 					api.NewTestField("other_field").WithMessageType(other),
 				)
 
-			model := api.NewTestAPI([]*api.Message{msg, other}, nil, nil)
-			model.PackageName = "google.cloud.test.v1"
+			model := api.NewTestAPI([]*api.Message{msg, other}, nil, nil).
+				WithPackageName("google.cloud.test.v1")
 			if err := Generate(t.Context(), model, outDir, &config.Library{}, nil); err != nil {
 				t.Fatal(err)
 			}
@@ -229,8 +229,8 @@ func TestGenerateMessage_DiagnosePagination(t *testing.T) {
 				WithFields(itemField, nextPageToken).
 				WithPagination(nextPageToken, itemField)
 
-			model := api.NewTestAPI([]*api.Message{response, item}, nil, nil)
-			model.PackageName = "google.cloud.test.v1"
+			model := api.NewTestAPI([]*api.Message{response, item}, nil, nil).
+				WithPackageName("google.cloud.test.v1")
 			library := &config.Library{
 				Swift: swiftConfig(t, []config.SwiftDependency{
 					{Name: "GoogleGax", RequiredByServices: true},

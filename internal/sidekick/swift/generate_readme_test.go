@@ -41,10 +41,10 @@ func TestGenerateReadme_ServiceLibrary(t *testing.T) {
 	service := api.NewTestService("SecretManagerService").
 		WithPackage(pkg).
 		WithMethods(method)
-	model := api.NewTestAPI([]*api.Message{inputType, outputType}, nil, []*api.Service{service})
-	model.PackageName = pkg
-	model.Title = "Secret Manager API"
-	model.Description = "Stores sensitive data such as API keys, passwords, and certificates."
+	model := api.NewTestAPI([]*api.Message{inputType, outputType}, nil, []*api.Service{service}).
+		WithPackageName(pkg).
+		WithTitle("Secret Manager API").
+		WithDescription("Stores sensitive data such as API keys, passwords, and certificates.")
 
 	library := &config.Library{
 		Name:    "google-cloud-secretmanager-v1",
@@ -139,9 +139,9 @@ func TestGenerateReadme_WithTraits(t *testing.T) {
 	service2 := api.NewTestService("OtherService").
 		WithPackage(pkg).
 		WithMethods(method)
-	model := api.NewTestAPI([]*api.Message{inputType, outputType}, nil, []*api.Service{service, service2})
-	model.PackageName = pkg
-	model.Title = "Example API"
+	model := api.NewTestAPI([]*api.Message{inputType, outputType}, nil, []*api.Service{service, service2}).
+		WithPackageName(pkg).
+		WithTitle("Example API")
 
 	cfg := swiftConfig(t, nil)
 	cfg.PerServiceTraits = true
@@ -197,9 +197,9 @@ func TestGenerateReadme_TypeOnlyLibrary(t *testing.T) {
 	message := api.NewTestMessage("Color").
 		WithPackage(pkg).
 		WithFields(api.NewTestField("red").WithType(api.TypezFloat))
-	model := api.NewTestAPI([]*api.Message{message}, nil, nil)
-	model.PackageName = pkg
-	model.Title = "Google Type"
+	model := api.NewTestAPI([]*api.Message{message}, nil, nil).
+		WithPackageName(pkg).
+		WithTitle("Google Type")
 
 	library := &config.Library{
 		Name:    "google-type",
@@ -239,9 +239,9 @@ func TestGenerateReadme_WithRevision(t *testing.T) {
 	pkg := "google.cloud.compute.v1"
 	message := api.NewTestMessage("Instance").
 		WithPackage(pkg)
-	model := api.NewTestAPI([]*api.Message{message}, nil, nil)
-	model.PackageName = pkg
-	model.Title = "Compute Engine API"
+	model := api.NewTestAPI([]*api.Message{message}, nil, nil).
+		WithPackageName(pkg).
+		WithTitle("Compute Engine API")
 	model.Revision = "20260101"
 
 	library := &config.Library{

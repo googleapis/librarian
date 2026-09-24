@@ -159,8 +159,8 @@ func TestGenerateEnum_Diagnose(t *testing.T) {
 						WithDeprecated(test.valueDeprecated),
 				)
 
-			model := api.NewTestAPI(nil, []*api.Enum{enum}, nil)
-			model.PackageName = "google.cloud.test.v1"
+			model := api.NewTestAPI(nil, []*api.Enum{enum}, nil).
+				WithPackageName("google.cloud.test.v1")
 			if err := Generate(t.Context(), model, outDir, &config.Library{}, nil); err != nil {
 				t.Fatal(err)
 			}

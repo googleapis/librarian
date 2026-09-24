@@ -313,8 +313,8 @@ func TestGenerateService_DiagnoseMethodTypes(t *testing.T) {
 
 			model := api.NewTestAPI([]*api.Message{
 				requestType, responseType, operationType, getOperationInputType,
-			}, nil, []*api.Service{service})
-			model.PackageName = "test"
+			}, nil, []*api.Service{service}).
+				WithPackageName("test")
 
 			library := &config.Library{
 				Swift: swiftConfig(t, []config.SwiftDependency{
@@ -399,8 +399,8 @@ func TestGenerateService_DiagnoseRequestFields(t *testing.T) {
 
 			model := api.NewTestAPI([]*api.Message{
 				requestType, responseType, operationType, getOperationInputType,
-			}, nil, []*api.Service{service})
-			model.PackageName = "test"
+			}, nil, []*api.Service{service}).
+				WithPackageName("test")
 
 			library := &config.Library{
 				Swift: swiftConfig(t, []config.SwiftDependency{

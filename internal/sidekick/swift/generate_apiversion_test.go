@@ -79,16 +79,16 @@ func TestGenerateService_APIVersion(t *testing.T) {
 				WithInput(requestType).
 				WithOutput(responseType).
 				WithVerb("POST").
-				WithPathTemplate((&api.PathTemplate{}).WithLiteral("v1").WithLiteral("method"))
-			method.APIVersion = test.apiVersion
+				WithPathTemplate((&api.PathTemplate{}).WithLiteral("v1").WithLiteral("method")).
+				WithAPIVersion(test.apiVersion)
 			if test.hasQueryParams {
-				method.PathInfo.Bindings[0].QueryParameters = map[string]bool{
+				method.WithQueryParameters(map[string]bool{
 					"name": true,
-				}
+				})
 			}
 			service := api.NewTestService("TestService").WithMethods(method)
-			model := api.NewTestAPI([]*api.Message{requestType, responseType}, nil, []*api.Service{service})
-			model.PackageName = "test"
+			model := api.NewTestAPI([]*api.Message{requestType, responseType}, nil, []*api.Service{service}).
+				WithPackageName("test")
 			swiftCfg := swiftConfig(t, []config.SwiftDependency{
 				{Name: "GoogleGax", RequiredByServices: true},
 			})

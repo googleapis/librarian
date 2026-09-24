@@ -47,8 +47,8 @@ func TestGenerateSpiYml(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			outDir := t.TempDir()
 			service := api.NewTestService("Workflows").WithPackage("google.cloud.workflows.v1")
-			model := api.NewTestAPI(nil, nil, []*api.Service{service})
-			model.PackageName = "google.cloud.workflows.v1"
+			model := api.NewTestAPI(nil, nil, []*api.Service{service}).
+				WithPackageName("google.cloud.workflows.v1")
 
 			cfg := swiftConfig(t, nil)
 			if test.override != "" {

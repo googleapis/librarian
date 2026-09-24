@@ -482,8 +482,8 @@ func TestGenerateMessage_FoundationImport(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			outDir := t.TempDir()
-			model := api.NewTestAPI([]*api.Message{test.message}, nil, nil)
-			model.PackageName = "google.cloud.test.v1"
+			model := api.NewTestAPI([]*api.Message{test.message}, nil, nil).
+				WithPackageName("google.cloud.test.v1")
 			library := &config.Library{
 				Swift: swiftConfig(t, nil),
 			}
