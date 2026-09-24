@@ -41,13 +41,6 @@ public protocol StorageControlProtocol: Sendable {
   func {{> /templates/common/method_signature/request_options}}
   {{#Codec.LRO}}
 
-  {{#Codec.DocLines}}
-  /// {{{.}}}
-  {{/Codec.DocLines}}
-  {{#Deprecated}}
-  @available(*, deprecated)
-  {{/Deprecated}}
-  func {{> /templates/common/method_signature/lro}}
 
   {{#Codec.DocLines}}
   /// {{{.}}}
@@ -71,13 +64,6 @@ public protocol StorageControlProtocol: Sendable {
   func {{> /templates/common/method_signature/request_options}}
   {{#Codec.LRO}}
 
-  {{#Codec.DocLines}}
-  /// {{{.}}}
-  {{/Codec.DocLines}}
-  {{#Deprecated}}
-  @available(*, deprecated)
-  {{/Deprecated}}
-  func {{> /templates/common/method_signature/lro}}
 
   {{#Codec.DocLines}}
   /// {{{.}}}

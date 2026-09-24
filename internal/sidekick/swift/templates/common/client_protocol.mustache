@@ -23,31 +23,6 @@ extension Clients {
   @available(*, deprecated)
   {{/Deprecated}}
   public protocol {{Codec.StubPrefix}}Protocol: Sendable {
-    {{#Codec.Methods}}
-    {{^IsLroPoller}}
-
-    {{#Codec.LRO}}
-    /// See `{{Service.Codec.ClientName}}.{{Codec.Name}}`.
-    {{#Deprecated}}
-    @available(*, deprecated)
-    {{/Deprecated}}
-    {{#Codec.DiagnoseTypes}}
-    {{> /templates/common/diagnose}}
-    {{/Codec.DiagnoseTypes}}
-    func {{> /templates/common/method_signature/lro}}
-    {{#Signatures}}
-    /// See `{{Service.Codec.ClientName}}.{{Codec.Name}}`.
-    {{#Deprecated}}
-    @available(*, deprecated)
-    {{/Deprecated}}
-    {{#Codec.DiagnoseFields}}
-    {{> /templates/common/diagnose}}
-    {{/Codec.DiagnoseFields}}
-    func {{> /templates/common/method_signature/lro_overload}}
-    {{/Signatures}}
-    {{/Codec.LRO}}
-    {{/IsLroPoller}}
-    {{/Codec.Methods}}
 
     {{#Codec.Methods}}
     {{^IsLroPoller}}
