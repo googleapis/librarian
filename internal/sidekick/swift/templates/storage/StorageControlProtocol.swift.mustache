@@ -135,7 +135,7 @@ extension StorageControlProtocol {
   @available(*, deprecated)
   {{/Deprecated}}
   public func {{> /templates/common/method_signature/lro}} {
-    try await self.{{Codec.Name}}(withPolling: withPolling, options: .init())
+    try await self.{{Codec.Name}}PollingUntilDone(request: request, options: .init())
   }
 
   {{#Deprecated}}
@@ -193,7 +193,7 @@ extension StorageControlProtocol {
   @available(*, deprecated)
   {{/Deprecated}}
   public func {{> /templates/common/method_signature/lro}} {
-    try await self.{{Codec.Name}}(withPolling: withPolling, options: .init())
+    try await self.{{Codec.Name}}PollingUntilDone(request: request, options: .init())
   }
 
   {{#Deprecated}}

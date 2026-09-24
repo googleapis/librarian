@@ -13,6 +13,6 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 }}
-{{Codec.Name}}(
-  withPolling: {{InputType.Codec.ParameterTypeName}}
+{{Codec.Name}}PollingUntilDone(
+  request: {{InputType.Codec.ParameterTypeName}}
 ) async throws -> any GoogleGax.PollableOperation<{{Codec.DiscoveryLRO.ReturnType}}>

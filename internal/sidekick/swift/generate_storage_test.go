@@ -216,10 +216,11 @@ func TestGenerateStorage_MultiModel(t *testing.T) {
 		!strings.Contains(protocolStr, "self.listBuckets(byItem: byItem, options: .init())") {
 		t.Errorf("StorageControlProtocol.swift missing paginated convenience overload without options:\n%s", protocolStr)
 	}
-	if !strings.Contains(protocolStr, "func renameFolder(withPolling: RenameFolderRequest) async throws -> any GoogleGax.PollableOperation<Folder>") {
+	if !strings.Contains(protocolStr, "func renameFolderPollingUntilDone(request: RenameFolderRequest) async throws -> any GoogleGax.PollableOperation<Folder>") {
 		t.Errorf("StorageControlProtocol.swift missing LRO method requirement:\n%s", protocolStr)
 	}
-	if !strings.Contains(protocolStr, "withPolling: RenameFolderRequest, options: GoogleGax.RequestOptions") ||
+	if !strings.Contains(protocolStr, "renameFolderPollingUntilDone(") ||
+		!strings.Contains(protocolStr, "request: RenameFolderRequest, options: GoogleGax.RequestOptions") ||
 		!strings.Contains(protocolStr, ") async throws -> any GoogleGax.PollableOperation<Folder>") {
 		t.Errorf("StorageControlProtocol.swift missing LRO method with options requirement:\n%s", protocolStr)
 	}
@@ -229,7 +230,7 @@ func TestGenerateStorage_MultiModel(t *testing.T) {
 	if !strings.Contains(protocolStr, "try await self.createBucket(request: request, options: .init())") {
 		t.Errorf("StorageControlProtocol.swift missing default implementation forwarding to options:\n%s", protocolStr)
 	}
-	if !strings.Contains(protocolStr, "try await self.renameFolder(withPolling: withPolling, options: .init())") {
+	if !strings.Contains(protocolStr, "try await self.renameFolderPollingUntilDone(request: request, options: .init())") {
 		t.Errorf("StorageControlProtocol.swift missing LRO default implementation forwarding to options:\n%s", protocolStr)
 	}
 
@@ -285,12 +286,11 @@ func TestGenerateStorage_MultiModel(t *testing.T) {
 		!strings.Contains(clientStr, "try await self.control.getIamPolicy(request: request, options: options)") {
 		t.Errorf("StorageControlClient.swift missing method delegation:\n%s", clientStr)
 	}
-
-	if !strings.Contains(clientStr, "public func renameFolder(") ||
-		!strings.Contains(clientStr, "withPolling: RenameFolderRequest, options: GoogleGax.RequestOptions") {
+	if !strings.Contains(clientStr, "public func renameFolderPollingUntilDone(") ||
+		!strings.Contains(clientStr, "request: RenameFolderRequest, options: GoogleGax.RequestOptions") {
 		t.Errorf("StorageControlClient.swift missing LRO helper method:\n%s", clientStr)
 	}
-	if !strings.Contains(clientStr, "let rawOp = try await self.renameFolder(request: withPolling, options: options)") ||
+	if !strings.Contains(clientStr, "let rawOp = try await self.renameFolder(request: request, options: options)") ||
 		!strings.Contains(clientStr, "let op = try await self.getOperation(request: .init().with { $0.name = rawOp.name }, options: options)") ||
 		!strings.Contains(clientStr, "return GoogleGax._PollableOperationImpl(") {
 		t.Errorf("StorageControlClient.swift missing LRO helper implementation:\n%s", clientStr)
