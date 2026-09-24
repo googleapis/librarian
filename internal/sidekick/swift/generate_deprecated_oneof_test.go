@@ -116,8 +116,8 @@ func TestGenerateOneOf_Deprecated(t *testing.T) {
 
 			// Verify the oneof property in the message.
 			// It should NOT be deprecated because api.OneOf doesn't have Deprecated field.
-			gotProperty := extractBlock(t, contentStr, "  /// -- property marker --", "public var choice: OneOf_Choice? = nil")
-			wantProperty := "  /// -- property marker --\n  public var choice: OneOf_Choice? = nil"
+			gotProperty := extractBlock(t, contentStr, "  /// -- property marker --", "public var choice: ChoiceOneOf? = nil")
+			wantProperty := "  /// -- property marker --\n  public var choice: ChoiceOneOf? = nil"
 			if diff := cmp.Diff(wantProperty, gotProperty); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}

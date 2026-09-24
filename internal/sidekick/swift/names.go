@@ -242,6 +242,13 @@ func ProtoPackagePrefix(packageName string) string {
 // message that contains it. This function computes the (unqualified) name. By
 // convention, `oneof` names are `snake_case`, while Swift types are
 // `PascalCase`.
+//
+// The name is the group name in `PascalCase` with a `OneOf` suffix, so `oneof
+// source_code` becomes `SourceCodeOneOf`. The suffix is applied uniformly: a
+// group named `key_oneof` becomes `KeyOneofOneOf`.
+//
+// The result never needs keyword escaping. No Swift keyword ends in `OneOf`, so
+// unlike `pascalCase`, this function calls `pascalCaseNoMangling`.
 func OneOfName(oneOfName string) string {
-	return "OneOf_" + pascalCaseNoMangling(oneOfName)
+	return pascalCaseNoMangling(oneOfName) + "OneOf"
 }

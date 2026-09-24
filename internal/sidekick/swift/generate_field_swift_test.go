@@ -124,8 +124,8 @@ func TestGenerateField_DocComments(t *testing.T) {
 	}
 
 	// Verify oneof documentation in the message
-	want = "  /// Documentation for my_oneof.\n  public var myOneof: OneOf_MyOneof?"
-	got = extractBlock(t, contentStr, "  /// Documentation for my_oneof.", "public var myOneof: OneOf_MyOneof?")
+	want = "  /// Documentation for my_oneof.\n  public var myOneof: MyOneofOneOf?"
+	got = extractBlock(t, contentStr, "  /// Documentation for my_oneof.", "public var myOneof: MyOneofOneOf?")
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}

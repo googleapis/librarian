@@ -136,6 +136,7 @@ func TestStubSuffixes(t *testing.T) {
 		{suffix: "Retry"},
 		{suffix: "ClientSignals"},
 		{suffix: "TransportSignals"},
+		{suffix: "OneOf"},
 	} {
 		for keyword := range keywords {
 			t.Run(fmt.Sprintf("%s : %s", test.suffix, keyword), func(t *testing.T) {
@@ -242,10 +243,16 @@ func TestOneOfName(t *testing.T) {
 		input string
 		want  string
 	}{
-		{input: "branches", want: "OneOf_Branches"},
-		{input: "several_things", want: "OneOf_SeveralThings"},
-		{input: "type", want: "OneOf_Type"},
-		{input: "self", want: "OneOf_Self"},
+		{input: "branches", want: "BranchesOneOf"},
+		{input: "several_things", want: "SeveralThingsOneOf"},
+		{input: "type", want: "TypeOneOf"},
+		{input: "self", want: "SelfOneOf"},
+		// Keywords need no escaping, as no Swift keyword ends in `OneOf`.
+		{input: "protocol", want: "ProtocolOneOf"},
+		{input: "Any", want: "AnyOneOf"},
+		// The suffix is applied uniformly, even when the group name already
+		// ends in `oneof`. `strcase` treats `oneof` as a single word.
+		{input: "key_oneof", want: "KeyOneofOneOf"},
 	} {
 		t.Run(test.input, func(t *testing.T) {
 			got := OneOfName(test.input)
