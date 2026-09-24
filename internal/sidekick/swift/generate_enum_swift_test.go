@@ -148,8 +148,8 @@ func TestGenerateEnum_DocComments(t *testing.T) {
 ///   Do not pattern-match against ` + "`unknownStringValue`" + ` or ` + "`unknownIntValue`" + `
 ///   expecting specific values to remain unparsed; future releases may promote
 ///   them to named cases.
-public enum Color`
-	got := extractBlock(t, contentStr, "/// Documentation for the Color enum.", "public enum Color")
+public enum Color: Codable, Equatable, Hashable, Sendable {`
+	got := extractBlock(t, contentStr, "/// Documentation for the Color enum.", "public enum Color: Codable, Equatable, Hashable, Sendable {")
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
@@ -375,7 +375,7 @@ func TestGenerateMessageEnum_Discovery(t *testing.T) {
 	}
 	contentStr := string(contentB)
 
-	enumBlock := extractBlock(t, contentStr, "public enum Status: Codable, Equatable, Sendable {", "public static var _anyTypeUrl:")
+	enumBlock := extractBlock(t, contentStr, "public enum Status: Codable, Equatable, Hashable, Sendable {", "public static var _anyTypeUrl:")
 
 	// Verify nested enum in message does not contain integer conversions or default init
 	if strings.Contains(enumBlock, "unknownIntValue") {
@@ -390,7 +390,7 @@ func TestGenerateMessageEnum_Discovery(t *testing.T) {
 	if strings.Contains(enumBlock, "public init() {") {
 		t.Errorf("expected no public init() in nested discovery enum, got:\n%s", enumBlock)
 	}
-	if !strings.Contains(contentStr, "public enum Status: Codable, Equatable, Sendable {") {
+	if !strings.Contains(contentStr, "public enum Status: Codable, Equatable, Hashable, Sendable {") {
 		t.Errorf("expected Status enum in Operation.swift, got:\n%s", contentStr)
 	}
 }

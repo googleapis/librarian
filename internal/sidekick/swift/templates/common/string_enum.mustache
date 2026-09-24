@@ -27,7 +27,7 @@ limitations under the License.
 {{#Deprecated}}
 @available(*, deprecated)
 {{/Deprecated}}
-public enum {{Codec.Name}}: Codable, Equatable, Sendable {
+public enum {{Codec.Name}}: Codable, Equatable, Hashable, Sendable {
   {{#Values}}
   {{#Codec.DocLines}}
   /// {{{.}}}
