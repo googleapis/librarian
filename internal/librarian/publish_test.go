@@ -107,8 +107,7 @@ func TestPublishCommand_Swift(t *testing.T) {
 	}
 
 	// Force push with --force should succeed
-	err = Run(t.Context(), "librarian", "publish", "--force", "--remote-url-format", filepath.Dir(splitBareRepo)+"/{name}.git", "google-cloud-auth")
-	if err != nil {
-		t.Fatalf("librarian publish with --force failed: %v", err)
+	if err := Run(t.Context(), "librarian", "publish", "--force", "--remote-url-format", filepath.Dir(splitBareRepo)+"/{name}.git", "google-cloud-auth"); err != nil {
+		t.Fatal(err)
 	}
 }

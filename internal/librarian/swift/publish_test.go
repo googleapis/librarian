@@ -241,15 +241,14 @@ func TestPublishForcePush(t *testing.T) {
 	}
 
 	// With Force: true, pushing diverged history should succeed
-	err = Publish(t.Context(), PublishParams{
+	if err := Publish(t.Context(), PublishParams{
 		Config:          cfg,
 		RemoteURLFormat: filepath.Join(tempDir, "{name}.git"),
 		Origin:          "HEAD",
 		RemoteBranch:    config.BranchMain,
 		Force:           true,
-	})
-	if err != nil {
-		t.Fatalf("Publish() with Force: true failed: %v", err)
+	}); err != nil {
+		t.Fatal(err)
 	}
 
 	hasTag, err := git.RemoteTagExists(t.Context(), command.Git, storageBareRepo, "1.1.0")
