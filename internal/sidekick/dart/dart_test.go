@@ -152,8 +152,7 @@ func TestFieldType_EnumImports(t *testing.T) {
 	}
 
 	field := api.NewTestField("testField").
-		WithType(api.TypezEnum).
-		WithTypezID(dayOfWeek.ID)
+		WithEnumType(dayOfWeek)
 	annotate.imports = map[string]bool{}
 	annotate.fieldType(field)
 	want := "package:google_cloud_type/type.dart"
@@ -245,8 +244,7 @@ func TestFieldType(t *testing.T) {
 	msgField := api.NewTestField("msgField").
 		WithMessageType(sampleMessage)
 	enumField := api.NewTestField("enumField").
-		WithType(api.TypezEnum).
-		WithTypezID(sampleEnum.ID)
+		WithEnumType(sampleEnum)
 	message := api.NewTestMessage("UpdateSecretRequest").
 		WithPackage(sample.Package).
 		WithID("..UpdateRequest").
@@ -289,11 +287,9 @@ func TestFieldType_Maps(t *testing.T) {
 }
 
 func TestFieldType_Bytes(t *testing.T) {
-	field := api.NewTestField("test").WithType(api.TypezBytes)
-	message := api.NewTestMessage("$test").
-		WithID("$test").
-		WithIsMap().
-		WithFields(field)
+	message := api.NewTestMapMessage("$test", api.TypezString, api.TypezBytes).
+		WithID("$test")
+	field := message.Fields[1]
 	model := api.NewTestAPI([]*api.Message{message}, nil, nil)
 	annotate := newAnnotateModel(model)
 	annotate.annotateModel(map[string]string{})
@@ -353,8 +349,7 @@ func TestFieldType_Repeated(t *testing.T) {
 		WithMessageType(sampleMessage).
 		WithRepeated()
 	repeatedEnumField := api.NewTestField("enumField").
-		WithType(api.TypezEnum).
-		WithTypezID(sampleEnum.ID).
+		WithEnumType(sampleEnum).
 		WithRepeated()
 	message := api.NewTestMessage("UpdateSecretRequest").
 		WithPackage(sample.Package).
