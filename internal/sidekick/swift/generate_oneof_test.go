@@ -98,7 +98,7 @@ func TestGenerateOneOf(t *testing.T) {
   public var regularString: Swift.String = Swift.String()
 
   /// A group of fields where only one is set.
-  public var choice: OneOf_Choice? = nil
+  public var choice: ChoiceOneOf? = nil
 
   @_spi(GoogleCloudInternal) public var _unknownFields: GoogleWKT._UnknownFields = .init()
 
@@ -146,7 +146,7 @@ func TestGenerateOneOf(t *testing.T) {
       self.regularString = value
     }
 
-    var choice: OneOf_Choice? = nil
+    var choice: ChoiceOneOf? = nil
     let choiceCheckAndSet = {
       if choice != nil {
         throw DecodingError.dataCorrupted(DecodingError.Context(codingPath: decoder.codingPath, debugDescription: "Multiple values set for oneof 'choice'"))
@@ -186,7 +186,7 @@ func TestGenerateOneOf(t *testing.T) {
 
 
   /// A group of fields where only one is set.
-  public enum OneOf_Choice: Codable, Equatable, Sendable {
+  public enum ChoiceOneOf: Codable, Equatable, Sendable {
     /// A string field that is part of the oneof.
     case stringField(Swift.String)
     /// A message field that is part of the oneof.
@@ -248,7 +248,7 @@ func TestGenerateOneOfWithKeyword(t *testing.T) {
 		t.Fatal(err)
 	}
 	contentStr := string(content)
-	got := extractBlock(t, contentStr, "public struct JwtLocation", "public enum OneOf_In")
+	got := extractBlock(t, contentStr, "public struct JwtLocation", "public enum InOneOf")
 
 	// I (coryan@) don't particularly like testing a big string like this. It is a bit of a change
 	// detector test. On the other hand, checking that the oneof fields are defined properly, and
@@ -259,7 +259,7 @@ func TestGenerateOneOfWithKeyword(t *testing.T) {
 	want := `public struct JwtLocation: Codable, Equatable, GoogleWKT._AnyPackable,
   Sendable {
 
-  public var ` + "`in`" + `: OneOf_In? = nil
+  public var ` + "`in`" + `: InOneOf? = nil
 
   @_spi(GoogleCloudInternal) public var _unknownFields: GoogleWKT._UnknownFields = .init()
 
@@ -299,7 +299,7 @@ func TestGenerateOneOfWithKeyword(t *testing.T) {
   public init(from decoder: Decoder) throws {
     let container = try decoder.container(keyedBy: CodingKeys.self)
 
-    var ` + "`in`" + `: OneOf_In? = nil
+    var ` + "`in`" + `: InOneOf? = nil
     let inCheckAndSet = {
       if ` + "`in`" + ` != nil {
         throw DecodingError.dataCorrupted(DecodingError.Context(codingPath: decoder.codingPath, debugDescription: "Multiple values set for oneof '` + "`in`" + `'"))
@@ -341,7 +341,7 @@ func TestGenerateOneOfWithKeyword(t *testing.T) {
   }
 
 
-  public enum OneOf_In`
+  public enum InOneOf`
 
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)

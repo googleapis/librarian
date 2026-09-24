@@ -35,7 +35,7 @@ func TestAnnotateOneOf(t *testing.T) {
 	}
 
 	want := &oneOfAnnotations{
-		Name:         "OneOf_TestAlternatives",
+		Name:         "TestAlternativesOneOf",
 		PropertyName: "testAlternatives",
 		DocLines:     []string{"A test oneof."},
 		Checker:      "testAlternativesCheckAndSet",
