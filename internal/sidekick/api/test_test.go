@@ -233,3 +233,25 @@ func TestMethod_ReturnEmpty(t *testing.T) {
 		t.Errorf("m.ReturnsEmpty = %v, want true", got)
 	}
 }
+
+func TestNewTestMapMessage(t *testing.T) {
+	m := api.NewTestMapMessage("TestEntry", api.TypezString, api.TypezInt32)
+	if !m.IsMap {
+		t.Errorf("m.IsMap = %v, want true", m.IsMap)
+	}
+	if len(m.Fields) != 2 {
+		t.Fatalf("len(m.Fields) = %d, want 2", len(m.Fields))
+	}
+	if got, want := m.Fields[0].Name, "key"; got != want {
+		t.Errorf("m.Fields[0].Name = %q, want %q", got, want)
+	}
+	if got, want := m.Fields[0].Typez, api.TypezString; got != want {
+		t.Errorf("m.Fields[0].Typez = %v, want %v", got, want)
+	}
+	if got, want := m.Fields[1].Name, "value"; got != want {
+		t.Errorf("m.Fields[1].Name = %q, want %q", got, want)
+	}
+	if got, want := m.Fields[1].Typez, api.TypezInt32; got != want {
+		t.Errorf("m.Fields[1].Typez = %v, want %v", got, want)
+	}
+}
