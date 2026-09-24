@@ -146,7 +146,7 @@ extension Clients.{{Codec.StubPrefix}}Protocol {
   {{> /templates/common/diagnose}}
   {{/Codec.DiagnoseFields}}
   public func {{> /templates/common/method_signature/pagination_options}} {
-    let listRpc = { (token: Swift.String) async throws -> {{Codec.ReturnType}} in
+    let listRpc = { @Sendable (token: Swift.String) async throws -> {{Codec.ReturnType}} in
       var request = request
       request.pageToken = token
       return try await self.{{Codec.Name}}(request: request, options: options)
