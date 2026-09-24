@@ -21,6 +21,12 @@ import (
 )
 
 func TestBuildHeuristicVocabulary(t *testing.T) {
+	newAIPMethod := func(name string, pt *PathTemplate) *Method {
+		m := NewTestMethod(name).WithPathTemplate(pt)
+		m.IsAIPStandard = true
+		return m
+	}
+
 	for _, test := range []struct {
 		name     string
 		services []*Service
@@ -29,23 +35,11 @@ func TestBuildHeuristicVocabulary(t *testing.T) {
 		{
 			name: "from standard method path",
 			services: []*Service{
-				{
-					Methods: []*Method{
-						{
-							Name:          "GetWidget",
-							IsAIPStandard: true,
-							PathInfo: &PathInfo{
-								Bindings: []*PathBinding{
-									{
-										PathTemplate: (&PathTemplate{}).
-											WithLiteral("users").WithVariableNamed("user").
-											WithLiteral("widgets").WithVariableNamed("widget"),
-									},
-								},
-							},
-						},
-					},
-				},
+				NewTestService("Service").WithMethods(
+					newAIPMethod("GetWidget", (&PathTemplate{}).
+						WithLiteral("users").WithVariableNamed("user").
+						WithLiteral("widgets").WithVariableNamed("widget")),
+				),
 			},
 			want: map[string]bool{
 				"projects":        true,
@@ -60,22 +54,10 @@ func TestBuildHeuristicVocabulary(t *testing.T) {
 		{
 			name: "includes standard CRUD methods",
 			services: []*Service{
-				{
-					Methods: []*Method{
-						{
-							Name:          "CreateWidget",
-							IsAIPStandard: true,
-							PathInfo: &PathInfo{
-								Bindings: []*PathBinding{
-									{
-										PathTemplate: (&PathTemplate{}).
-											WithLiteral("internal").WithVariableNamed("id"),
-									},
-								},
-							},
-						},
-					},
-				},
+				NewTestService("Service").WithMethods(
+					newAIPMethod("CreateWidget", (&PathTemplate{}).
+						WithLiteral("internal").WithVariableNamed("id")),
+				),
 			},
 			want: map[string]bool{
 				"projects":        true,
@@ -89,21 +71,10 @@ func TestBuildHeuristicVocabulary(t *testing.T) {
 		{
 			name: "ignores custom action methods",
 			services: []*Service{
-				{
-					Methods: []*Method{
-						{
-							Name: "StartWidget",
-							PathInfo: &PathInfo{
-								Bindings: []*PathBinding{
-									{
-										PathTemplate: (&PathTemplate{}).
-											WithLiteral("internal").WithVariableNamed("id"),
-									},
-								},
-							},
-						},
-					},
-				},
+				NewTestService("Service").WithMethods(
+					NewTestMethod("StartWidget").WithPathTemplate((&PathTemplate{}).
+						WithLiteral("internal").WithVariableNamed("id")),
+				),
 			},
 			want: map[string]bool{
 				"projects":        true,
@@ -116,26 +87,14 @@ func TestBuildHeuristicVocabulary(t *testing.T) {
 		{
 			name: "from nested variable template",
 			services: []*Service{
-				{
-					Methods: []*Method{
-						{
-							Name:          "GetInstance",
-							IsAIPStandard: true,
-							PathInfo: &PathInfo{
-								Bindings: []*PathBinding{
-									{
-										PathTemplate: (&PathTemplate{}).
-											WithLiteral("v1").
-											WithVariable(&PathVariable{
-												FieldPath: []string{"name"},
-												Segments:  []string{"projects", SingleSegmentWildcard, "instances", MultiSegmentWildcard},
-											}),
-									},
-								},
-							},
-						},
-					},
-				},
+				NewTestService("Service").WithMethods(
+					newAIPMethod("GetInstance", (&PathTemplate{}).
+						WithLiteral("v1").
+						WithVariable(&PathVariable{
+							FieldPath: []string{"name"},
+							Segments:  []string{"projects", SingleSegmentWildcard, "instances", MultiSegmentWildcard},
+						})),
+				),
 			},
 			want: map[string]bool{
 				"projects":        true,
@@ -157,9 +116,7 @@ func TestBuildHeuristicVocabulary(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			model := &API{
-				Services: test.services,
-			}
+			model := NewTestAPI(nil, nil, test.services)
 			got := BuildHeuristicVocabulary(model)
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)

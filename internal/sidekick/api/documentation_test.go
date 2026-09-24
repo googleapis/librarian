@@ -63,13 +63,8 @@ More things that are preserved.
 )
 
 func TestPatchCommentsMessage(t *testing.T) {
-	m0 := &Message{
-		Name:          "Message0",
-		Package:       "test",
-		ID:            ".test.Message0",
-		Documentation: Input,
-	}
-	model := NewTestAPI([]*Message{m0}, []*Enum{}, []*Service{})
+	m0 := NewTestMessage("Message0").WithDocumentation(Input)
+	model := NewTestAPI([]*Message{m0}, nil, nil)
 	overrides := []DocumentationOverride{
 		{
 			ID:      ".test.Message0",
@@ -87,45 +82,15 @@ func TestPatchCommentsMessage(t *testing.T) {
 }
 
 func testPatchCommentsModel() *API {
-	m0 := &Message{
-		Name:          "Message0",
-		Package:       "test",
-		ID:            ".test.Message0",
-		Documentation: Input,
-		Fields: []*Field{
-			{
-				Name:          "Field0",
-				ID:            ".test.Message0.Field0",
-				Documentation: Input,
-			},
-		},
-	}
-	e0 := &Enum{
-		Name:          "Enum0",
-		Package:       "test",
-		ID:            ".test.Enum0",
-		Documentation: Input,
-		Values: []*EnumValue{
-			{
-				Name:          "EV0",
-				ID:            ".test.Enum0.EV0",
-				Documentation: Input,
-			},
-		},
-	}
-	s0 := &Service{
-		Name:          "Service0",
-		Package:       "test",
-		ID:            ".test.Service0",
-		Documentation: Input,
-		Methods: []*Method{
-			{
-				Name:          "Method0",
-				ID:            ".test.Service0.Method0",
-				Documentation: Input,
-			},
-		},
-	}
+	m0 := NewTestMessage("Message0").
+		WithDocumentation(Input).
+		WithFields(NewTestField("Field0").WithDocumentation(Input))
+	e0 := NewTestEnum("Enum0").
+		WithDocumentation(Input).
+		WithValues(NewTestEnumValue("EV0", 0).WithDocumentation(Input))
+	s0 := NewTestService("Service0").
+		WithDocumentation(Input).
+		WithMethods(NewTestMethod("Method0").WithDocumentation(Input))
 	return NewTestAPI([]*Message{m0}, []*Enum{e0}, []*Service{s0})
 }
 
@@ -179,18 +144,9 @@ func TestPatchCommentsNoMatch(t *testing.T) {
 }
 
 func TestPatchCommentsField(t *testing.T) {
-	f0 := &Field{
-		Name:          "field_name",
-		ID:            ".test.Message0.field_name",
-		Documentation: Input,
-	}
-	m0 := &Message{
-		Name:    "Message0",
-		Package: "test",
-		ID:      ".test.Message0",
-		Fields:  []*Field{f0},
-	}
-	model := NewTestAPI([]*Message{m0}, []*Enum{}, []*Service{})
+	f0 := NewTestField("field_name").WithDocumentation(Input)
+	m0 := NewTestMessage("Message0").WithFields(f0)
+	model := NewTestAPI([]*Message{m0}, nil, nil)
 	overrides := []DocumentationOverride{
 		{
 			ID:      ".test.Message0.field_name",
@@ -208,13 +164,8 @@ func TestPatchCommentsField(t *testing.T) {
 }
 
 func TestPatchCommentsEnum(t *testing.T) {
-	e0 := &Enum{
-		Name:          "Enum0",
-		Package:       "test",
-		ID:            ".test.Enum0",
-		Documentation: Input,
-	}
-	model := NewTestAPI([]*Message{}, []*Enum{e0}, []*Service{})
+	e0 := NewTestEnum("Enum0").WithDocumentation(Input)
+	model := NewTestAPI(nil, []*Enum{e0}, nil)
 	overrides := []DocumentationOverride{
 		{
 			ID:      ".test.Enum0",
@@ -232,19 +183,9 @@ func TestPatchCommentsEnum(t *testing.T) {
 }
 
 func TestPatchCommentsEnumValue(t *testing.T) {
-	v0 := &EnumValue{
-		Name:          "ENUM_VALUE",
-		ID:            ".test.Enum0.ENUM_VALUE",
-		Documentation: Input,
-	}
-	e0 := &Enum{
-		Name:          "Enum0",
-		Package:       "test",
-		ID:            ".test.Enum0",
-		Values:        []*EnumValue{v0},
-		Documentation: Input,
-	}
-	model := NewTestAPI([]*Message{}, []*Enum{e0}, []*Service{})
+	v0 := NewTestEnumValue("ENUM_VALUE", 0).WithDocumentation(Input)
+	e0 := NewTestEnum("Enum0").WithDocumentation(Input).WithValues(v0)
+	model := NewTestAPI(nil, []*Enum{e0}, nil)
 	overrides := []DocumentationOverride{
 		{
 			ID:      ".test.Enum0.ENUM_VALUE",
@@ -262,13 +203,8 @@ func TestPatchCommentsEnumValue(t *testing.T) {
 }
 
 func TestPatchCommentsService(t *testing.T) {
-	s0 := &Service{
-		Name:          "Service0",
-		Package:       "test",
-		ID:            ".test.Service0",
-		Documentation: Input,
-	}
-	model := NewTestAPI([]*Message{}, []*Enum{}, []*Service{s0})
+	s0 := NewTestService("Service0").WithDocumentation(Input)
+	model := NewTestAPI(nil, nil, []*Service{s0})
 	overrides := []DocumentationOverride{
 		{
 			ID:      ".test.Service0",
@@ -286,18 +222,9 @@ func TestPatchCommentsService(t *testing.T) {
 }
 
 func TestPatchCommentsMethod(t *testing.T) {
-	m0 := &Method{
-		Name:          "Method",
-		ID:            ".test.Service0.Method",
-		Documentation: Input,
-	}
-	s0 := &Service{
-		Name:    "Service0",
-		Package: "test",
-		ID:      ".test.Service0",
-		Methods: []*Method{m0},
-	}
-	model := NewTestAPI([]*Message{}, []*Enum{}, []*Service{s0})
+	m0 := NewTestMethod("Method").WithDocumentation(Input)
+	s0 := NewTestService("Service0").WithMethods(m0)
+	model := NewTestAPI(nil, nil, []*Service{s0})
 	overrides := []DocumentationOverride{
 		{
 			ID:      ".test.Service0.Method",
