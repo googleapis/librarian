@@ -158,7 +158,7 @@ func (c *codec) annotateService(service *api.Service, model *modelAnnotations) (
 	requiredServices := make(map[string]*api.Service)
 	var methods []*api.Method
 	for _, method := range service.Methods {
-		if c.isGeneratedMethod(method) {
+		if c.shouldGenerateMethod(method) {
 			if err := c.annotateMethod(method, model); err != nil {
 				return nil, err
 			}
@@ -169,7 +169,7 @@ func (c *codec) annotateService(service *api.Service, model *modelAnnotations) (
 		}
 	}
 	var quickstartMethod *api.Method
-	if service.QuickstartMethod != nil && c.isGeneratedMethod(service.QuickstartMethod) {
+	if service.QuickstartMethod != nil && c.shouldGenerateMethod(service.QuickstartMethod) {
 		quickstartMethod = service.QuickstartMethod
 	}
 	// The client snippet creates the client and then runs the body of the
@@ -408,7 +408,9 @@ func (c *codec) addSignatureDependencies(annotations *serviceAnnotations, signat
 	return nil
 }
 
-func (c *codec) isGeneratedMethod(method *api.Method) bool {
+func (c *codec) shouldGenerateMethod(method *api.Method) bool {
+	// Swift does not yet support streaming RPCs.
+	// See https://github.com/googleapis/google-cloud-swift/issues/451
 	if method.ClientSideStreaming || method.ServerSideStreaming {
 		return false
 	}

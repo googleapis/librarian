@@ -250,7 +250,7 @@ func (c *codec) generateSnippets(outdir string, model *api.API, provider languag
 			return err
 		}
 		for _, m := range s.Methods {
-			if !c.isGeneratedMethod(m) || m.IsLroPoller {
+			if !c.shouldGenerateMethod(m) || m.IsLroPoller {
 				continue
 			}
 			mGenerated := language.GeneratedFile{
