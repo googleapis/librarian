@@ -89,6 +89,7 @@ public final class StorageControlClient: StorageControlProtocol, Sendable {
     try await self.storage.{{Codec.Name}}(request: request, options: options)
   }
 
+
   {{#Codec.LRO}}
 
   {{#Codec.DocLines}}
@@ -134,6 +135,7 @@ public final class StorageControlClient: StorageControlProtocol, Sendable {
   public func {{> /templates/common/method_signature/request_options}} {
     try await self.control.{{Codec.Name}}(request: request, options: options)
   }
+
 
   {{#Codec.LRO}}
 

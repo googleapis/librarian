@@ -83,6 +83,7 @@ public final class {{Codec.ClientName}}: Clients.{{Codec.StubPrefix}}Protocol, S
       try await self.inner.{{Codec.Name}}(request: request, options: options)
   }
 
+
   {{#Codec.LRO}}
 
   {{#Codec.DocLines}}

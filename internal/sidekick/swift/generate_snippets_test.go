@@ -325,8 +325,8 @@ func TestGenerateSnippets_List(t *testing.T) {
 	}
 	got := extractBlock(t, string(contentsBytes), "func sample(", "\n}")
 	want := `func sample(client: TestServiceClient) async throws {
-  let items = client.listThings(
-    byItem: ListThingsRequest()
+  let items = client.listThingsByItems(
+    request: ListThingsRequest()
   /* set fields using .with { $0... } */
 )
   for try await item in items {

@@ -198,7 +198,7 @@ func TestGenerateStorage_MultiModel(t *testing.T) {
 		!strings.Contains(protocolStr, "func getIamPolicy(") {
 		t.Errorf("StorageControlProtocol.swift missing unified methods:\n%s", protocolStr)
 	}
-	if !strings.Contains(protocolStr, "byItem: ListBucketsRequest, options: GoogleGax.RequestOptions") ||
+	if !strings.Contains(protocolStr, "request: ListBucketsRequest, options: GoogleGax.RequestOptions") ||
 		!strings.Contains(protocolStr, "any AsyncSequence<Bucket, Swift.Error>") ||
 		!strings.Contains(protocolStr, "return GoogleGax.PaginatedResponseSequence(listRpc: listRpc)") {
 		t.Errorf("StorageControlProtocol.swift missing paginated helper method:\n%s", protocolStr)
@@ -212,8 +212,8 @@ func TestGenerateStorage_MultiModel(t *testing.T) {
 	if !strings.Contains(protocolStr, "func createBucket(request: CreateBucketRequest) async throws") {
 		t.Errorf("StorageControlProtocol.swift missing convenience overload without options:\n%s", protocolStr)
 	}
-	if !strings.Contains(protocolStr, "byItem: ListBucketsRequest") ||
-		!strings.Contains(protocolStr, "self.listBuckets(byItem: byItem, options: .init())") {
+	if !strings.Contains(protocolStr, "func listBucketsByItems(\n  request: ListBucketsRequest\n)") ||
+		!strings.Contains(protocolStr, "self.listBucketsByItems(request: request, options: .init())") {
 		t.Errorf("StorageControlProtocol.swift missing paginated convenience overload without options:\n%s", protocolStr)
 	}
 	if !strings.Contains(protocolStr, "func renameFolderPollingUntilDone(request: RenameFolderRequest) async throws -> any GoogleGax.PollableOperation<Folder>") {

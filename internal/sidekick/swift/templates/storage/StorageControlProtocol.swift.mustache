@@ -114,7 +114,7 @@ extension StorageControlProtocol {
   @available(*, deprecated)
   {{/Deprecated}}
   public func {{> /templates/common/method_signature/pagination}} {
-    self.{{Codec.Name}}(byItem: byItem, options: .init())
+    self.{{Codec.Name}}ByItems(request: request, options: .init())
   }
 
   {{#Deprecated}}
@@ -122,7 +122,7 @@ extension StorageControlProtocol {
   {{/Deprecated}}
   public func {{> /templates/common/method_signature/pagination_options}} {
     let listRpc = { (token: Swift.String) async throws -> {{Codec.ReturnType}} in
-      var request = byItem
+      var request = request
       request.pageToken = token
       return try await self.{{Codec.Name}}(request: request, options: options)
     }
@@ -172,7 +172,7 @@ extension StorageControlProtocol {
   @available(*, deprecated)
   {{/Deprecated}}
   public func {{> /templates/common/method_signature/pagination}} {
-    self.{{Codec.Name}}(byItem: byItem, options: .init())
+    self.{{Codec.Name}}ByItems(request: request, options: .init())
   }
 
   {{#Deprecated}}
@@ -180,7 +180,7 @@ extension StorageControlProtocol {
   {{/Deprecated}}
   public func {{> /templates/common/method_signature/pagination_options}} {
     let listRpc = { (token: Swift.String) async throws -> {{Codec.ReturnType}} in
-      var request = byItem
+      var request = request
       request.pageToken = token
       return try await self.{{Codec.Name}}(request: request, options: options)
     }
