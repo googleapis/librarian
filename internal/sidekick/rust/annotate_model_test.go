@@ -294,7 +294,7 @@ func TestQuickstartServiceAnnotation(t *testing.T) {
 	t.Run("survives filtering", func(t *testing.T) {
 		model := newTestAnnotateModelAPI(t)
 		// model.Services[0] is Service0, model.Services[1] is Service1
-		model.QuickstartService = model.Services[1]
+		model.WithQuickstartService(model.Services[1])
 
 		codec := newTestCodec(t, libconfig.SpecProtobuf, "", nil)
 		got, err := annotateModel(model, codec)
@@ -329,7 +329,7 @@ func TestQuickstartServiceAnnotation(t *testing.T) {
 		}
 
 		// Set the filtered service as the global quickstart.
-		model.QuickstartService = filteredService
+		model.WithQuickstartService(filteredService)
 
 		codec := newTestCodec(t, libconfig.SpecProtobuf, "", nil)
 		got, err := annotateModel(model, codec)
@@ -344,7 +344,7 @@ func TestQuickstartServiceAnnotation(t *testing.T) {
 
 	t.Run("with override", func(t *testing.T) {
 		model := newTestAnnotateModelAPI(t)
-		model.QuickstartService = model.Services[0] // Set default to 0
+		model.WithQuickstartService(model.Services[0]) // Set default to 0
 
 		codec := newTestCodec(t, libconfig.SpecProtobuf, "", nil)
 		// Set override to Service1
@@ -415,12 +415,11 @@ func newTestAnnotateModelAPI(t *testing.T) *api.API {
 func TestPackageNames(t *testing.T) {
 	model := api.NewTestAPI(
 		nil, nil,
-		[]*api.Service{api.NewTestService("Workflows").WithPackage("google.cloud.workflows.v1")})
+		[]*api.Service{api.NewTestService("Workflows").WithPackage("google.cloud.workflows.v1")}).
+		WithName("workflows-v1")
 	if err := api.CrossReference(model); err != nil {
 		t.Fatal(err)
 	}
-	// Override the default name for test APIs ("Test").
-	model.Name = "workflows-v1"
 	codec, err := newCodec(libconfig.SpecProtobuf, map[string]string{
 		"version":                     "1.2.3",
 		"release-level":               "stable",

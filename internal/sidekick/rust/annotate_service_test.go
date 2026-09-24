@@ -150,7 +150,7 @@ func TestServiceAnnotationsAPIVersions(t *testing.T) {
 		if method == nil {
 			t.Fatalf("cannot find method %s", id)
 		}
-		method.APIVersion = "v1_20260205"
+		method.WithAPIVersion("v1_20260205")
 	}
 	setMultipleMethodVersions := func(t *testing.T, model *api.API) {
 		t.Helper()
@@ -160,7 +160,7 @@ func TestServiceAnnotationsAPIVersions(t *testing.T) {
 		if method == nil {
 			t.Fatalf("cannot find method %s", id)
 		}
-		method.APIVersion = "v1_20270305"
+		method.WithAPIVersion("v1_20270305")
 	}
 
 	for _, test := range []struct {

@@ -141,7 +141,7 @@ func TestAnnotateMethodAPIVersion(t *testing.T) {
 	if gotMethod == nil {
 		t.Fatalf("missing method %s", methodID)
 	}
-	gotMethod.APIVersion = "v1_20260205"
+	gotMethod.WithAPIVersion("v1_20260205")
 
 	codec := newTestCodec(t, libconfig.SpecDiscovery, "", map[string]string{})
 	_, err = annotateModel(model, codec)
@@ -457,13 +457,13 @@ func TestFormatResourceNameTemplateFromPath(t *testing.T) {
 
 func TestAnnotateSampleInfo(t *testing.T) {
 	field := api.NewTestField("name").
-		WithType(api.TypezString)
-	field.ResourceNamePattern = &api.ResourceNamePattern{
-		Segments: []api.ResourceNameSegment{
-			{Literal: "projects"},
-			{Variable: "project"},
-		},
-	}
+		WithType(api.TypezString).
+		WithResourceNamePattern(&api.ResourceNamePattern{
+			Segments: []api.ResourceNameSegment{
+				{Literal: "projects"},
+				{Variable: "project"},
+			},
+		})
 	message := api.NewTestMessage("TestMessage").
 		WithPackage("test.v1").
 		WithFields(field)

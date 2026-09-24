@@ -24,12 +24,8 @@ import (
 )
 
 func TestOneOfAnnotations(t *testing.T) {
-	keyField := api.NewTestField("key").WithType(api.TypezInt32)
-	valueField := api.NewTestField("value").WithType(api.TypezFloat)
-	mapMessage := api.NewTestMessage("$Map").
-		WithPackage("test").
-		WithFields(keyField, valueField).
-		WithIsMap()
+	mapMessage := api.NewTestMapMessage("$Map", api.TypezInt32, api.TypezFloat).
+		WithPackage("test")
 
 	doubleValue := api.NewTestMessage("DoubleValue").WithPackage("google.protobuf")
 
@@ -117,9 +113,9 @@ func TestOneOfAnnotations(t *testing.T) {
 		PrimitiveFieldType: "std::collections::HashMap<i32,f32>",
 		AddQueryParameter:  `let builder = req.oneof_field_map().map(|p| serde_json::to_value(p).map_err(Error::ser) ).transpose()?.into_iter().fold(builder, |builder, p| { use gaxi::query_parameter::QueryParameter; p.add(builder, "oneofFieldMap") });`,
 		KeyType:            "i32",
-		KeyField:           keyField,
+		KeyField:           mapMessage.Fields[0],
 		ValueType:          "f32",
-		ValueField:         valueField,
+		ValueField:         mapMessage.Fields[1],
 		IsBoxed:            true,
 		SerdeAs:            "std::collections::HashMap<wkt::internal::I32, wkt::internal::F32>",
 		SkipIfIsDefault:    true,
