@@ -72,8 +72,7 @@ func TestAnnotateService(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			s := api.NewTestService(test.serviceName)
-			s.Documentation = test.doc
+			s := api.NewTestService(test.serviceName).WithDocumentation(test.doc)
 			model := api.NewTestAPI(nil, nil, []*api.Service{s})
 			codec := newTestCodec(t, model, nil)
 
@@ -107,8 +106,8 @@ func TestAnnotateService_SkipNoBindings(t *testing.T) {
 		WithBindings()
 	nilPathInfoMethod := api.NewTestMethod("NilPathInfoMethod").
 		WithInput(inputType).
-		WithOutput(outputType)
-	nilPathInfoMethod.PathInfo = nil
+		WithOutput(outputType).
+		WithPathInfo(nil)
 
 	service := api.NewTestService("TestService").
 		WithMethods(validMethod, noBindingMethod, nilPathInfoMethod)
@@ -148,13 +147,9 @@ func TestAnnotateService_Quickstart(t *testing.T) {
 			wantQuickstart:   false,
 		},
 		{
-			name: "non-generated quickstart (nil PathInfo)",
-			quickstartMethod: func() *api.Method {
-				m := api.NewTestMethod("Quickstart")
-				m.PathInfo = nil
-				return m
-			}(),
-			wantQuickstart: false,
+			name:             "non-generated quickstart (nil PathInfo)",
+			quickstartMethod: api.NewTestMethod("Quickstart").WithPathInfo(nil),
+			wantQuickstart:   false,
 		},
 		{
 			name:             "non-generated quickstart (empty bindings)",
@@ -270,8 +265,8 @@ func TestAnnotateService_LRO(t *testing.T) {
 
 	service := api.NewTestService("TestService").WithMethods(method)
 
-	model := api.NewTestAPI([]*api.Message{inputType, outputType, lroResponseType, lroMetadataType}, nil, []*api.Service{service})
-	model.PackageName = "test"
+	model := api.NewTestAPI([]*api.Message{inputType, outputType, lroResponseType, lroMetadataType}, nil, []*api.Service{service}).
+		WithPackageName("test")
 	if err := api.CrossReference(model); err != nil {
 		t.Fatal(err)
 	}
@@ -334,8 +329,8 @@ func TestAnnotateService_Pagination(t *testing.T) {
 
 	service := api.NewTestService("TestService").WithMethods(list)
 
-	model := api.NewTestAPI([]*api.Message{inputType, outputType}, nil, []*api.Service{service})
-	model.PackageName = "test"
+	model := api.NewTestAPI([]*api.Message{inputType, outputType}, nil, []*api.Service{service}).
+		WithPackageName("test")
 	model.AddMessage(itemType)
 	if err := api.CrossReference(model); err != nil {
 		t.Fatal(err)
@@ -362,13 +357,11 @@ func TestAnnotateService_Pagination(t *testing.T) {
 
 func TestAnnotateService_MapPagination(t *testing.T) {
 	itemType := api.NewTestMessage("Item").WithPackage("external")
-	mapType := api.NewTestMessage("$map<string, Item>").
-		WithPackage("test").
-		WithFields(
-			api.NewTestField("key").WithType(api.TypezString),
-			api.NewTestField("value").WithMessageType(itemType),
-		)
-	mapType.IsMap = true
+	mapType := api.NewTestMapMessageWithFields(
+		"$map<string, Item>",
+		api.NewTestField("key").WithType(api.TypezString),
+		api.NewTestField("value").WithMessageType(itemType),
+	).WithPackage("test")
 
 	pageToken := api.NewTestField("page_token").WithType(api.TypezString)
 	inputType := api.NewTestMessage("ListItemsRequest").
@@ -388,8 +381,8 @@ func TestAnnotateService_MapPagination(t *testing.T) {
 
 	service := api.NewTestService("TestService").WithMethods(list)
 
-	model := api.NewTestAPI([]*api.Message{inputType, outputType}, nil, []*api.Service{service})
-	model.PackageName = "test"
+	model := api.NewTestAPI([]*api.Message{inputType, outputType}, nil, []*api.Service{service}).
+		WithPackageName("test")
 	model.AddMessage(itemType)
 	model.AddMessage(mapType)
 	if err := api.CrossReference(model); err != nil {
@@ -461,8 +454,8 @@ func TestAnnotateService_MethodSignatures(t *testing.T) {
 				WithVerb("POST").
 				WithPathTemplate((&api.PathTemplate{}).WithLiteral("v1").WithLiteral("things"))
 			service := api.NewTestService("TestService").WithMethods(create)
-			model := api.NewTestAPI([]*api.Message{inputType, outputType}, nil, []*api.Service{service})
-			model.PackageName = "test"
+			model := api.NewTestAPI([]*api.Message{inputType, outputType}, nil, []*api.Service{service}).
+				WithPackageName("test")
 			model.AddMessage(thing)
 			if err := api.CrossReference(model); err != nil {
 				t.Fatal(err)
@@ -496,16 +489,16 @@ func TestAnnotateService_WktImports(t *testing.T) {
 	method := api.NewTestMethod("DeleteThing").
 		WithInput(inputType).
 		WithVerb("DELETE").
-		WithPathTemplate((&api.PathTemplate{}).WithLiteral("v1").WithLiteral("things"))
+		WithPathTemplate((&api.PathTemplate{}).WithLiteral("v1").WithLiteral("things")).
+		ReturnEmpty()
 	service := api.NewTestService("TestService").WithMethods(method)
-	model := api.NewTestAPI([]*api.Message{inputType}, nil, []*api.Service{service})
-	model.PackageName = "test"
+	model := api.NewTestAPI([]*api.Message{inputType}, nil, []*api.Service{service}).
+		WithPackageName("test")
 	wktEmpty := model.Message(".google.protobuf.Empty")
 	if wktEmpty == nil {
 		t.Fatal("expected .google.protobuf.Empty in model")
 	}
 	method.WithOutput(wktEmpty)
-	method.ReturnsEmpty = true
 	if err := api.CrossReference(model); err != nil {
 		t.Fatal(err)
 	}
@@ -527,12 +520,8 @@ func TestAnnotateService_WktImports(t *testing.T) {
 }
 
 func TestAnnotateService_MapFieldDependencies(t *testing.T) {
-	keyField := api.NewTestField("key").WithType(api.TypezString)
-	valField := api.NewTestField("value").WithType(api.TypezBytes)
-	mapEntry := api.NewTestMessage("DataMapEntry").
-		WithPackage("test").
-		WithIsMap().
-		WithFields(keyField, valField)
+	mapEntry := api.NewTestMapMessage("DataMapEntry", api.TypezString, api.TypezBytes).
+		WithPackage("test")
 
 	mapField := api.NewTestField("data_map").
 		WithMap().
@@ -554,8 +543,8 @@ func TestAnnotateService_MapFieldDependencies(t *testing.T) {
 		WithSignatures(signature)
 
 	service := api.NewTestService("MapService").WithMethods(method)
-	model := api.NewTestAPI([]*api.Message{inputType, outputType, mapEntry}, nil, []*api.Service{service})
-	model.PackageName = "test"
+	model := api.NewTestAPI([]*api.Message{inputType, outputType, mapEntry}, nil, []*api.Service{service}).
+		WithPackageName("test")
 	if err := api.CrossReference(model); err != nil {
 		t.Fatal(err)
 	}
@@ -622,8 +611,8 @@ func TestAnnotateService_SnippetImports(t *testing.T) {
 			}
 
 			service := api.NewTestService("TestService").WithMethods(method)
-			model := api.NewTestAPI(messages, nil, []*api.Service{service})
-			model.PackageName = "test"
+			model := api.NewTestAPI(messages, nil, []*api.Service{service}).
+				WithPackageName("test")
 			if err := api.CrossReference(model); err != nil {
 				t.Fatal(err)
 			}

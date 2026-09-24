@@ -141,8 +141,8 @@ func TestModelAnnotations_WithExternalDependencies(t *testing.T) {
 
 func TestModelAnnotations_IgnoreSelfDependency(t *testing.T) {
 	service := api.NewTestService("DummyService").WithPackage("google.cloud.placeholder.v1")
-	model := api.NewTestAPI(nil, nil, []*api.Service{service})
-	model.PackageName = "google.cloud.placeholder.v1"
+	model := api.NewTestAPI(nil, nil, []*api.Service{service}).
+		WithPackageName("google.cloud.placeholder.v1")
 	codec := newTestCodec(t, model, nil)
 	codec.withExtraDependencies(t, []config.SwiftDependency{
 		{ApiPackage: "google.cloud.placeholder.v1", Name: "GoogleCloudPlaceholderV1"},
@@ -212,8 +212,8 @@ func TestModelAnnotations_Pagination(t *testing.T) {
 		WithPackage("google.cloud.secretmanager.v1").
 		WithMethods(method)
 
-	model := api.NewTestAPI([]*api.Message{inputType, outputType, secretType}, nil, []*api.Service{iam})
-	model.PackageName = "google.cloud.secretmanager.v1"
+	model := api.NewTestAPI([]*api.Message{inputType, outputType, secretType}, nil, []*api.Service{iam}).
+		WithPackageName("google.cloud.secretmanager.v1")
 
 	codec := newTestCodec(t, model, nil)
 	codec.withExtraDependencies(t, []config.SwiftDependency{

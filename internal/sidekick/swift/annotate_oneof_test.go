@@ -22,13 +22,13 @@ import (
 )
 
 func TestAnnotateOneOf(t *testing.T) {
-	oneof := api.NewTestOneOf("test_alternatives")
-	oneof.Documentation = "A test oneof."
+	oneof := api.NewTestOneOf("test_alternatives").
+		WithDocumentation("A test oneof.")
 	message := api.NewTestMessage("TestMessage").
 		WithPackage("google.cloud.test.v1").
 		WithOneOfs(oneof)
-	model := api.NewTestAPI([]*api.Message{message}, nil, nil)
-	model.PackageName = "google.cloud.test.v1"
+	model := api.NewTestAPI([]*api.Message{message}, nil, nil).
+		WithPackageName("google.cloud.test.v1")
 	codec := newTestCodec(t, model, nil)
 	if err := codec.annotateModel(); err != nil {
 		t.Fatal(err)

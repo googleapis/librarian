@@ -35,23 +35,23 @@ func TestAnnotateSampleInfo(t *testing.T) {
 		{
 			name: "ResourceNameField with pattern",
 			method: func() *api.Method {
-				field := api.NewTestField("secret").WithType(api.TypezString)
+				field := api.NewTestField("secret").
+					WithType(api.TypezString).
+					WithResourceNamePattern(&api.ResourceNamePattern{
+						Segments: []api.ResourceNameSegment{
+							{Literal: "projects"},
+							{Variable: "project"},
+							{Literal: "secrets"},
+							{Variable: "secret"},
+						},
+					})
 				field.Codec = &fieldAnnotations{
 					Name: "secretField",
 				}
-				field.ResourceNamePattern = &api.ResourceNamePattern{
-					Segments: []api.ResourceNameSegment{
-						{Literal: "projects"},
-						{Variable: "project"},
-						{Literal: "secrets"},
-						{Variable: "secret"},
-					},
-				}
-				m := api.NewTestMethod("TestMethod")
-				m.SampleInfo = &api.SampleInfo{
-					ResourceNameField: field,
-				}
-				return m
+				return api.NewTestMethod("TestMethod").
+					WithSampleInfo(&api.SampleInfo{
+						ResourceNameField: field,
+					})
 			}(),
 			want: &sampleInfoAnnotation{
 				Parameters:   []string{"projectId", "secretId"},
@@ -66,11 +66,10 @@ func TestAnnotateSampleInfo(t *testing.T) {
 				field.Codec = &fieldAnnotations{
 					Name: "secretField",
 				}
-				m := api.NewTestMethod("TestMethod")
-				m.SampleInfo = &api.SampleInfo{
-					ResourceNameField: field,
-				}
-				return m
+				return api.NewTestMethod("TestMethod").
+					WithSampleInfo(&api.SampleInfo{
+						ResourceNameField: field,
+					})
 			}(),
 			want: &sampleInfoAnnotation{
 				Parameters:   []string{"secretField"},
@@ -81,9 +80,9 @@ func TestAnnotateSampleInfo(t *testing.T) {
 		{
 			name: "AIP standard update",
 			method: func() *api.Method {
-				m := api.NewTestMethod("TestMethod")
+				m := api.NewTestMethod("TestMethod").
+					WithSampleInfo(&api.SampleInfo{})
 				m.IsAIPStandardUpdate = true
-				m.SampleInfo = &api.SampleInfo{}
 				return m
 			}(),
 			want: &sampleInfoAnnotation{

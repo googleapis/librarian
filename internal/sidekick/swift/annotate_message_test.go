@@ -33,14 +33,11 @@ func TestAnnotateMessage(t *testing.T) {
 	}{
 		{
 			name: "simple",
-			message: func() *api.Message {
-				m := api.NewTestMessage("Secret").
-					WithFields(
-						api.NewTestField("secret_key").WithType(api.TypezString),
-					)
-				m.Documentation = "A secret message.\nWith two lines."
-				return m
-			}(),
+			message: api.NewTestMessage("Secret").
+				WithDocumentation("A secret message.\nWith two lines.").
+				WithFields(
+					api.NewTestField("secret_key").WithType(api.TypezString),
+				),
 			want: &messageAnnotations{
 				Name:              "Secret",
 				DocLines:          []string{"A secret message.", "With two lines."},
@@ -54,11 +51,8 @@ func TestAnnotateMessage(t *testing.T) {
 		},
 		{
 			name: "escaped name",
-			message: func() *api.Message {
-				m := api.NewTestMessage("Protocol")
-				m.Documentation = "A message named Protocol."
-				return m
-			}(),
+			message: api.NewTestMessage("Protocol").
+				WithDocumentation("A message named Protocol."),
 			want: &messageAnnotations{
 				Name:              "Protocol_",
 				DocLines:          []string{"A message named Protocol."},
@@ -86,11 +80,12 @@ func TestAnnotateMessage(t *testing.T) {
 		},
 		{
 			name: "with custom json name",
-			message: func() *api.Message {
-				f := api.NewTestField("secret_key").WithType(api.TypezString)
-				f.JSONName = "specialKey"
-				return api.NewTestMessage("WithCustomJSON").WithFields(f)
-			}(),
+			message: api.NewTestMessage("WithCustomJSON").
+				WithFields(
+					api.NewTestField("secret_key").
+						WithType(api.TypezString).
+						WithJSONName("specialKey"),
+				),
 			want: &messageAnnotations{
 				Name:              "WithCustomJSON",
 				TypeURL:           "type.googleapis.com/test.WithCustomJSON",
@@ -103,24 +98,18 @@ func TestAnnotateMessage(t *testing.T) {
 		},
 		{
 			name: "with pagination",
-			message: func() *api.Message {
-				pageableItem := api.NewTestField("pageable_item").WithType(api.TypezString).WithRepeated()
-				pageableItem.Codec = &fieldAnnotations{Name: "secretKey", BaseFieldType: "SecretKey"}
-				m := api.NewTestMessage("WithPagination").
-					WithFields(api.NewTestField("secret_key").WithType(api.TypezString))
-				m.Pagination = &api.PaginationInfo{
-					NextPageToken: api.NewTestField("next_page_token").WithType(api.TypezString),
-					PageableItem:  pageableItem,
-				}
-				return m
-			}(),
+			message: api.NewTestMessage("WithPagination").
+				WithPagination(
+					api.NewTestField("next_page_token").WithType(api.TypezString),
+					api.NewTestField("secret_key").WithType(api.TypezString).WithRepeated(),
+				),
 			want: &messageAnnotations{
 				Name:                "WithPagination",
 				TypeURL:             "type.googleapis.com/test.WithPagination",
 				IsPaginatedResponse: true,
 				PageableItemField:   "secretKey",
-				PageableItemType:    "SecretKey",
-				SampleField:         "secretKey",
+				PageableItemType:    "Swift.String",
+				SampleField:         "nextPageToken",
 				ParameterTypeName:   "WithPagination",
 				ProtoTypeName:       "Test_WithPagination",
 				ModulePath:          "",
@@ -241,13 +230,8 @@ func TestAnnotateMessage_ImportAttributes(t *testing.T) {
 }
 
 func TestAnnotateMessage_Discovery(t *testing.T) {
-	mapMessage := api.NewTestMessage("map<string, bytes>").
-		WithID("$map<string, bytes>").
-		WithFields(
-			api.NewTestField("key").WithType(api.TypezString),
-			api.NewTestField("value").WithType(api.TypezBytes),
-		)
-	mapMessage.IsMap = true
+	mapMessage := api.NewTestMapMessage("map<string, bytes>", api.TypezString, api.TypezBytes).
+		WithID("$map<string, bytes>")
 
 	for _, test := range []struct {
 		name    string
@@ -387,10 +371,9 @@ func TestAnnotateMessage_DiscoveryRequests(t *testing.T) {
 			// within a placeholder named after the service.
 			servicePlaceholder := api.NewTestMessage(test.service.Name).
 				WithPackage(test.service.Package).
-				WithID(test.service.ID)
+				WithID(test.service.ID).
+				WithMessages(test.request)
 			servicePlaceholder.ServicePlaceholder = true
-			test.request.Parent = servicePlaceholder
-			servicePlaceholder.Messages = append(servicePlaceholder.Messages, test.request)
 			model := api.NewTestAPI([]*api.Message{servicePlaceholder}, nil, []*api.Service{test.service})
 			model.AddMessage(test.request)
 			codec := newTestCodec(t, model, nil)
@@ -432,8 +415,8 @@ func TestAnnotateMessage_Pagination(t *testing.T) {
 		WithPackage("google.cloud.secretmanager.v1").
 		WithMethods(method)
 
-	model := api.NewTestAPI([]*api.Message{inputType, outputType, secretType}, nil, []*api.Service{iam})
-	model.PackageName = "google.cloud.secretmanager.v1"
+	model := api.NewTestAPI([]*api.Message{inputType, outputType, secretType}, nil, []*api.Service{iam}).
+		WithPackageName("google.cloud.secretmanager.v1")
 
 	codec := newTestCodec(t, model, nil)
 	if err := codec.annotateModel(); err != nil {
@@ -493,12 +476,11 @@ func TestAnnotateMessage_RecursiveNested(t *testing.T) {
 		WithPagination(nextPageTokenField, itemField)
 
 	outerMessage := api.NewTestMessage("OuterMessage").
-		WithPackage("google.cloud.secretmanager.v1")
-	outerMessage.Messages = []*api.Message{nestedOutputType}
-	nestedOutputType.Parent = outerMessage
+		WithPackage("google.cloud.secretmanager.v1").
+		WithMessages(nestedOutputType)
 
-	model := api.NewTestAPI([]*api.Message{outerMessage, secretType}, nil, nil)
-	model.PackageName = "google.cloud.secretmanager.v1"
+	model := api.NewTestAPI([]*api.Message{outerMessage, secretType}, nil, nil).
+		WithPackageName("google.cloud.secretmanager.v1")
 
 	codec := newTestCodec(t, model, nil)
 	if err := codec.annotateModel(); err != nil {
@@ -611,29 +593,25 @@ func TestAnnotateMessage_ParameterTypeName_Qualification(t *testing.T) {
 		WithID(".google.cloud.secretmanager.v1.Parent.Child.DeepChild")
 	child := api.NewTestMessage("Child").
 		WithPackage("google.cloud.secretmanager.v1").
-		WithID(".google.cloud.secretmanager.v1.Parent.Child")
-	child.Messages = []*api.Message{deepChild}
-	deepChild.Parent = child
+		WithID(".google.cloud.secretmanager.v1.Parent.Child").
+		WithMessages(deepChild)
 	parent := api.NewTestMessage("Parent").
-		WithPackage("google.cloud.secretmanager.v1")
-	parent.Messages = []*api.Message{child}
-	child.Parent = parent
+		WithPackage("google.cloud.secretmanager.v1").
+		WithMessages(child)
 
 	extDeepChild := api.NewTestMessage("ExtDeepChild").
 		WithPackage("google.type").
 		WithID(".google.type.ExtParent.ExtChild.ExtDeepChild")
 	extChild := api.NewTestMessage("ExtChild").
 		WithPackage("google.type").
-		WithID(".google.type.ExtParent.ExtChild")
-	extChild.Messages = []*api.Message{extDeepChild}
-	extDeepChild.Parent = extChild
+		WithID(".google.type.ExtParent.ExtChild").
+		WithMessages(extDeepChild)
 	extParent := api.NewTestMessage("ExtParent").
-		WithPackage("google.type")
-	extParent.Messages = []*api.Message{extChild}
-	extChild.Parent = extParent
+		WithPackage("google.type").
+		WithMessages(extChild)
 
-	model := api.NewTestAPI([]*api.Message{parent, extParent}, nil, nil)
-	model.PackageName = "google.cloud.secretmanager.v1"
+	model := api.NewTestAPI([]*api.Message{parent, extParent}, nil, nil).
+		WithPackageName("google.cloud.secretmanager.v1")
 	swiftPkg := &config.SwiftPackage{
 		SwiftDefault: config.SwiftDefault{
 			Dependencies: []config.SwiftDependency{
@@ -675,8 +653,8 @@ func TestAnnotateMessage_ParameterTypeName_Qualification(t *testing.T) {
 	}
 
 	// Also verify module conversion for external packages (e.g. google/type inside GoogleCloudStorage)
-	extModuleModel := api.NewTestAPI([]*api.Message{extParent}, nil, nil)
-	extModuleModel.PackageName = "google.type"
+	extModuleModel := api.NewTestAPI([]*api.Message{extParent}, nil, nil).
+		WithPackageName("google.type")
 	extModuleCodec := newTestCodec(t, extModuleModel, &config.Library{
 		Name: "google-cloud-storage",
 		Swift: &config.SwiftPackage{

@@ -313,7 +313,7 @@ func makeGatedTestModel() *api.API {
 	makeMsg := func(name string, e *api.Enum) *api.Message {
 		return api.NewTestMessage(name).
 			WithPackage("google.cloud.test.v1").
-			WithFields(api.NewTestField("e").WithType(api.TypezEnum).WithTypezID(e.ID))
+			WithFields(api.NewTestField("e").WithEnumType(e))
 	}
 	sharedMessage := makeMsg("SharedMessage", sharedEnum)
 	s1Message := makeMsg("Service1Message", s1Enum)

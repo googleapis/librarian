@@ -54,8 +54,8 @@ func TestPackageName(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			model := api.NewTestAPI(nil, nil, nil)
-			model.PackageName = test.input
+			model := api.NewTestAPI(nil, nil, nil).
+				WithPackageName(test.input)
 			got := PackageName(model)
 			if got != test.want {
 				t.Errorf("mismatch got = %q, want %q", got, test.want)
