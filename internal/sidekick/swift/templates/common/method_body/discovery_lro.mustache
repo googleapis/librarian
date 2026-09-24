@@ -31,7 +31,7 @@ let poll = { () async throws -> GoogleGax._PollableOperationImpl<{{Codec.Discove
 {{! The polling function is always called `getOperation`, sidekick picks the name. }}
 let op = try await self.getOperation(request: .init().with {
     $0.operation = rawOp._name()
-    {{! The path pameters, if any, are captured from the request, which is called `request` }}
+    {{! The path parameters, if any, are captured from the request, which is called `request` }}
     {{#Codec.DiscoveryLRO.PollingPathParameters}}
     $0.{{{.}}} = request.{{{.}}}
     {{/Codec.DiscoveryLRO.PollingPathParameters}}
