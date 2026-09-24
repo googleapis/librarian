@@ -126,7 +126,7 @@ extension StorageControlProtocol {
   @available(*, deprecated)
   {{/Deprecated}}
   public func {{> /templates/common/method_signature/lro_options}} {
-    let poll = { () async throws -> GoogleGax._PollableOperationImpl<{{Codec.LRO.ReturnType}}>.State in
+    let poll = { @Sendable () async throws -> GoogleGax._PollableOperationImpl<{{Codec.LRO.ReturnType}}>.State in
       throw GoogleGax.RequestError.unimplemented
     }
     return GoogleGax._PollableOperationImpl(initialState: .init(done: false, result: nil), poll: poll)
@@ -184,7 +184,7 @@ extension StorageControlProtocol {
   @available(*, deprecated)
   {{/Deprecated}}
   public func {{> /templates/common/method_signature/lro_options}} {
-    let poll = { () async throws -> GoogleGax._PollableOperationImpl<{{Codec.LRO.ReturnType}}>.State in
+    let poll = { @Sendable () async throws -> GoogleGax._PollableOperationImpl<{{Codec.LRO.ReturnType}}>.State in
       throw GoogleGax.RequestError.unimplemented
     }
     return GoogleGax._PollableOperationImpl(initialState: .init(done: false, result: nil), poll: poll)
