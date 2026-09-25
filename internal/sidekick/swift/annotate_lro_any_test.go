@@ -29,108 +29,49 @@ import (
 // stands in for the messages that keep the generic conversion.
 func lroAnyFieldsTestModel(t *testing.T) *api.API {
 	t.Helper()
-	anyMessage := &api.Message{
-		Name:    "Any",
-		Package: "google.protobuf",
-		ID:      ".google.protobuf.Any",
-	}
-	detailsField := &api.Field{
-		Name:     "details",
-		JSONName: "details",
-		Typez:    api.TypezMessage,
-		TypezID:  ".google.protobuf.Any",
-		Repeated: true,
-	}
-	status := &api.Message{
-		Name:    "Status",
-		Package: "google.rpc",
-		ID:      ".google.rpc.Status",
-		Fields:  []*api.Field{detailsField},
-	}
-	detailsField.Parent = status
+	anyMessage := api.NewTestMessage("Any").WithPackage("google.protobuf")
+	detailsField := api.NewTestField("details").
+		WithMessageType(anyMessage).
+		WithRepeated()
+	status := api.NewTestMessage("Status").
+		WithPackage("google.rpc").
+		WithFields(detailsField)
 
-	metadata := &api.Message{
-		Name:    "RenameFolderMetadata",
-		Package: "google.storage.control.v2",
-		ID:      ".google.storage.control.v2.RenameFolderMetadata",
-	}
-	folder := &api.Message{
-		Name:    "Folder",
-		Package: "google.storage.control.v2",
-		ID:      ".google.storage.control.v2.Folder",
-	}
+	metadata := api.NewTestMessage("RenameFolderMetadata").
+		WithPackage("google.storage.control.v2")
+	folder := api.NewTestMessage("Folder").
+		WithPackage("google.storage.control.v2")
 
-	nameField := &api.Field{
-		Name:     "name",
-		JSONName: "name",
-		Typez:    api.TypezString,
-	}
-	metadataField := &api.Field{
-		Name:     "metadata",
-		JSONName: "metadata",
-		Typez:    api.TypezMessage,
-		TypezID:  ".google.protobuf.Any",
-		Optional: true,
-	}
-	doneField := &api.Field{
-		Name:     "done",
-		JSONName: "done",
-		Typez:    api.TypezBool,
-	}
-	errorField := &api.Field{
-		Name:     "error",
-		JSONName: "error",
-		Typez:    api.TypezMessage,
-		TypezID:  ".google.rpc.Status",
-		IsOneOf:  true,
-	}
-	responseField := &api.Field{
-		Name:     "response",
-		JSONName: "response",
-		Typez:    api.TypezMessage,
-		TypezID:  ".google.protobuf.Any",
-		IsOneOf:  true,
-	}
-	resultGroup := &api.OneOf{
-		Name:   "result",
-		ID:     ".google.longrunning.Operation.result",
-		Fields: []*api.Field{errorField, responseField},
-	}
-	operation := &api.Message{
-		Name:    "Operation",
-		Package: "google.longrunning",
-		ID:      ".google.longrunning.Operation",
-		Fields:  []*api.Field{nameField, metadataField, doneField, errorField, responseField},
-		OneOfs:  []*api.OneOf{resultGroup},
-	}
-	for _, field := range operation.Fields {
-		field.Parent = operation
-	}
-	errorField.Group = resultGroup
-	responseField.Group = resultGroup
+	nameField := api.NewTestField("name").WithType(api.TypezString)
+	metadataField := api.NewTestField("metadata").
+		WithMessageType(anyMessage).
+		WithOptional()
+	doneField := api.NewTestField("done").WithType(api.TypezBool)
+	errorField := api.NewTestField("error").WithMessageType(status)
+	responseField := api.NewTestField("response").WithMessageType(anyMessage)
+	resultGroup := api.NewTestOneOf("result").WithFields(errorField, responseField)
+	operation := api.NewTestMessage("Operation").
+		WithPackage("google.longrunning").
+		WithFields(nameField, metadataField, doneField).
+		WithOneOfs(resultGroup)
 
-	method := &api.Method{
-		Name:         "RenameFolder",
-		ID:           ".google.storage.control.v2.StorageControl.RenameFolder",
-		InputTypeID:  ".google.storage.control.v2.Folder",
-		OutputTypeID: ".google.longrunning.Operation",
-		OperationInfo: &api.OperationInfo{
-			MetadataTypeID: ".google.storage.control.v2.RenameFolderMetadata",
-			ResponseTypeID: ".google.storage.control.v2.Folder",
-		},
-	}
-	service := &api.Service{
-		Name:    "StorageControl",
-		Package: "google.storage.control.v2",
-		ID:      ".google.storage.control.v2.StorageControl",
-		Methods: []*api.Method{method},
-	}
+	method := api.NewTestMethod("RenameFolder").
+		WithInput(folder).
+		WithOutput(operation).
+		WithPathInfo(nil).
+		WithOperationInfo(&api.OperationInfo{
+			MetadataTypeID: metadata.ID,
+			ResponseTypeID: folder.ID,
+		})
+	service := api.NewTestService("StorageControl").
+		WithPackage("google.storage.control.v2").
+		WithMethods(method)
 
 	model := api.NewTestAPI(
 		[]*api.Message{operation, status, metadata, folder, anyMessage},
-		[]*api.Enum{},
-		[]*api.Service{service})
-	model.PackageName = "google.storage.control.v2"
+		nil,
+		[]*api.Service{service}).
+		WithPackageName("google.storage.control.v2")
 	if err := api.CrossReference(model); err != nil {
 		t.Fatal(err)
 	}
