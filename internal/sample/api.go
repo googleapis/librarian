@@ -42,138 +42,105 @@ const (
 
 // API returns a sample API.
 func API() *api.API {
-	return &api.API{
-		Name:        APIName,
-		Title:       APITitle,
-		PackageName: APIPackageName,
-		Description: APIDescription,
-		Services:    []*api.Service{Service()},
-		Messages: []*api.Message{
+	return api.NewTestAPI(
+		[]*api.Message{
 			Replication(),
 			Automatic(),
 		},
-		Enums: []*api.Enum{EnumState()},
-	}
+		[]*api.Enum{EnumState()},
+		[]*api.Service{Service()},
+	).
+		WithName(APIName).
+		WithTitle(APITitle).
+		WithPackageName(APIPackageName).
+		WithDescription(APIDescription)
 }
 
 // Service returns a sample service.
 func Service() *api.Service {
-	return &api.Service{
-		Name:          ServiceName,
-		Documentation: APIDescription,
-		DefaultHost:   DefaultHost,
-		Methods: []*api.Method{
+	return api.NewTestService(ServiceName).
+		WithPackage(Package).
+		WithDocumentation(APIDescription).
+		WithDefaultHost(DefaultHost).
+		WithMethods(
 			MethodCreate(),
 			MethodUpdate(),
 			MethodListSecretVersions(),
-		},
-		Package: Package,
-	}
+		)
 }
 
 // MethodCreate returns a sample create method.
 func MethodCreate() *api.Method {
-	return &api.Method{
-		Name:          "CreateSecret",
-		Documentation: "Creates a new Secret containing no SecretVersions.",
-		ID:            "..Service.CreateSecret",
-		InputTypeID:   CreateRequest().ID,
-		OutputTypeID:  Secret().ID,
-		PathInfo: &api.PathInfo{
-			Bindings: []*api.PathBinding{
-				{
-					Verb: http.MethodPost,
-					PathTemplate: (&api.PathTemplate{}).
-						WithLiteral("v1").
-						WithLiteral("projects").
-						WithVariableNamed("project").
-						WithLiteral("secrets"),
-					QueryParameters: map[string]bool{"secretId": true},
-				},
-			},
-			BodyFieldPath: "body",
-		},
-	}
+	m := api.NewTestMethod("CreateSecret").
+		WithID("..Service.CreateSecret").
+		WithDocumentation("Creates a new Secret containing no SecretVersions.").
+		WithVerb(http.MethodPost).
+		WithPathTemplate((&api.PathTemplate{}).
+			WithLiteral("v1").
+			WithLiteral("projects").
+			WithVariableNamed("project").
+			WithLiteral("secrets")).
+		WithQueryParameters(map[string]bool{"secretId": true}).
+		WithBodyFieldPath("body")
+	m.InputTypeID = CreateRequest().ID
+	m.OutputTypeID = Secret().ID
+	return m
 }
 
 // MethodUpdate returns a sample update method.
 func MethodUpdate() *api.Method {
-	return &api.Method{
-		Name:          "UpdateSecret",
-		Documentation: "Updates metadata of an existing Secret.",
-		ID:            "..Service.UpdateSecret",
-		InputTypeID:   UpdateRequest().ID,
-		OutputTypeID:  ".google.protobuf.Empty",
-		PathInfo: &api.PathInfo{
-			Bindings: []*api.PathBinding{
-				{
-					Verb: http.MethodPatch,
-					PathTemplate: (&api.PathTemplate{}).
-						WithLiteral("v1").
-						WithVariableNamed("secret", "name"),
-					QueryParameters: map[string]bool{
-						"field_mask": true,
-					},
-				},
-			},
-		},
-	}
+	m := api.NewTestMethod("UpdateSecret").
+		WithID("..Service.UpdateSecret").
+		WithDocumentation("Updates metadata of an existing Secret.").
+		WithVerb(http.MethodPatch).
+		WithPathTemplate((&api.PathTemplate{}).
+			WithLiteral("v1").
+			WithVariableNamed("secret", "name")).
+		WithQueryParameters(map[string]bool{
+			"field_mask": true,
+		})
+	m.InputTypeID = UpdateRequest().ID
+	m.OutputTypeID = ".google.protobuf.Empty"
+	return m
 }
 
 // MethodAddSecretVersion returns a sample add secret version method.
 func MethodAddSecretVersion() *api.Method {
-	return &api.Method{
-		Name:          "AddSecretVersion",
-		ID:            "..Service.AddSecretVersion",
-		Documentation: "Creates a new SecretVersion containing secret data and attaches\nit to an existing Secret.",
-		InputTypeID:   "..Service.AddSecretVersionRequest",
-		OutputTypeID:  "..SecretVersion",
-		PathInfo: &api.PathInfo{
-			Bindings: []*api.PathBinding{
-				{
-					Verb: http.MethodPost,
-					PathTemplate: (&api.PathTemplate{}).
-						WithLiteral("v1").
-						WithLiteral("projects").
-						WithVariableNamed("project").
-						WithLiteral("secrets").
-						WithVariableNamed("secret").
-						WithVerb("addVersion"),
-					QueryParameters: map[string]bool{},
-				},
-			},
-			BodyFieldPath: "body",
-		},
-	}
+	m := api.NewTestMethod("AddSecretVersion").
+		WithID("..Service.AddSecretVersion").
+		WithDocumentation("Creates a new SecretVersion containing secret data and attaches\nit to an existing Secret.").
+		WithVerb(http.MethodPost).
+		WithPathTemplate((&api.PathTemplate{}).
+			WithLiteral("v1").
+			WithLiteral("projects").
+			WithVariableNamed("project").
+			WithLiteral("secrets").
+			WithVariableNamed("secret").
+			WithVerb("addVersion")).
+		WithQueryParameters(map[string]bool{}).
+		WithBodyFieldPath("body")
+	m.InputTypeID = "..Service.AddSecretVersionRequest"
+	m.OutputTypeID = "..SecretVersion"
+	return m
 }
 
 // MethodListSecretVersions returns a sample list secret versions method.
 func MethodListSecretVersions() *api.Method {
-	return &api.Method{
-		Name:          "ListSecretVersions",
-		ID:            "..Service.ListVersion",
-		Documentation: "Lists [SecretVersions][google.cloud.secretmanager.v1.SecretVersion]. This call does not return secret data.",
-		InputTypeID:   ListSecretVersionsRequest().ID,
-		InputType:     ListSecretVersionsRequest(),
-		OutputTypeID:  ListSecretVersionsResponse().ID,
-		OutputType:    ListSecretVersionsResponse(),
-		PathInfo: &api.PathInfo{
-			Bindings: []*api.PathBinding{
-				{
-					Verb: http.MethodPost,
-					PathTemplate: (&api.PathTemplate{}).
-						WithLiteral("v1").
-						WithLiteral("projects").
-						WithVariableNamed("parent").
-						WithLiteral("secrets").
-						WithVariableNamed("secret").
-						WithVerb("listSecretVersions"),
-					QueryParameters: map[string]bool{},
-				},
-			},
-			BodyFieldPath: "*",
-		},
-	}
+	return api.NewTestMethod("ListSecretVersions").
+		WithID("..Service.ListVersion").
+		WithDocumentation("Lists [SecretVersions][google.cloud.secretmanager.v1.SecretVersion]. This call does not return secret data.").
+		WithInput(ListSecretVersionsRequest()).
+		WithOutput(ListSecretVersionsResponse()).
+		WithVerb(http.MethodPost).
+		WithPathTemplate((&api.PathTemplate{}).
+			WithLiteral("v1").
+			WithLiteral("projects").
+			WithVariableNamed("parent").
+			WithLiteral("secrets").
+			WithVariableNamed("secret").
+			WithVerb("listSecretVersions")).
+		WithQueryParameters(map[string]bool{}).
+		WithBodyFieldPath("*")
 }
 
 // CreateRequest returns a sample create request.
