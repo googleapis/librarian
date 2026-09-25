@@ -902,6 +902,63 @@ func TestGenerateService_LRO_Empty(t *testing.T) {
 	}
 }
 
+func TestGenerateService_DiscoveryLRO(t *testing.T) {
+	outDir := t.TempDir()
+
+	operationType := api.NewTestMessage("Operation").
+		WithPackage("google.cloud.compute.v1")
+
+	inputType := api.NewTestMessage("InsertInstanceRequest").
+		WithPackage("google.cloud.compute.v1")
+
+	insertInstance := api.NewTestMethod("InsertInstance").
+		WithDocumentation("Inserts an instance.").
+		WithInput(inputType).
+		WithOutput(operationType).
+		WithVerb("POST").
+		WithPathTemplate((&api.PathTemplate{}).WithLiteral("v1").WithLiteral("instances"))
+	insertInstance.DiscoveryLro = &api.DiscoveryLro{
+		PollingPathParameters: []string{"zone"},
+	}
+
+	service := api.NewTestService("Instances").
+		WithPackage("google.cloud.compute.v1").
+		WithMethods(insertInstance)
+
+	model := api.NewTestAPI([]*api.Message{inputType, operationType}, nil, []*api.Service{service}).
+		WithPackageName("google.cloud.compute.v1")
+
+	swiftCfg := swiftConfig(t, []config.SwiftDependency{
+		{
+			Name:               "GoogleGax",
+			RequiredByServices: true,
+		},
+		{
+			Name:               "GoogleAuth",
+			RequiredByServices: true,
+		},
+	})
+	library := &config.Library{
+		SpecificationFormat: config.SpecDiscovery,
+		Swift:               swiftCfg,
+	}
+	if err := Generate(t.Context(), model, outDir, library, nil); err != nil {
+		t.Fatal(err)
+	}
+
+	filename := filepath.Join(outDir, "Sources", "GoogleCloudComputeV1", "Instances.swift")
+	contentBytes, err := os.ReadFile(filename)
+	if err != nil {
+		t.Fatal(err)
+	}
+	content := string(contentBytes)
+
+	protocolBlock := extractBlock(t, content, "public protocol InstancesProtocol: Sendable {", "}")
+	if !strings.Contains(protocolBlock, "func insertInstancePollingUntilDone(") {
+		t.Errorf("expected insertInstancePollingUntilDone in protocol definition, got:\n%s", protocolBlock)
+	}
+}
+
 func TestGenerateDiscoveryService_Files(t *testing.T) {
 	testdataDir, err := filepath.Abs("../../testdata")
 	if err != nil {
