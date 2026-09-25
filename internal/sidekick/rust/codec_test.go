@@ -450,14 +450,16 @@ func TestParsePackageOptionError(t *testing.T) {
 }
 
 func TestPackageName(t *testing.T) {
-	serviceAPI := api.NewTestAPI(nil, nil, nil).WithPackageName("google.cloud.service.v3")
-	serviceAPI.Name = "test-only-name"
+	serviceAPI := api.NewTestAPI(nil, nil, nil).
+		WithPackageName("google.cloud.service.v3").
+		WithName("test-only-name")
 	rustPackageNameImpl(t, "test-only-overridden", map[string]string{
 		"package-name-override": "test-only-overridden",
 	}, serviceAPI)
 	rustPackageNameImpl(t, "google-cloud-service-v3", nil, serviceAPI)
-	typeAPI := api.NewTestAPI(nil, nil, nil).WithPackageName("")
-	typeAPI.Name = "type"
+	typeAPI := api.NewTestAPI(nil, nil, nil).
+		WithPackageName("").
+		WithName("type")
 	rustPackageNameImpl(t, "google-cloud-type", nil, typeAPI)
 }
 
@@ -663,13 +665,8 @@ func TestMethodInOut(t *testing.T) {
 
 func rustFieldTypesCases() *api.API {
 	target := api.NewTestMessage("Target").WithPackage("")
-	mapMessage := api.NewTestMessage("$MapMessage").
-		WithPackage("").
-		WithIsMap().
-		WithFields(
-			api.NewTestField("key").WithType(api.TypezInt32),
-			api.NewTestField("value").WithType(api.TypezInt32),
-		)
+	mapMessage := api.NewTestMapMessage("$MapMessage", api.TypezInt32, api.TypezInt32).
+		WithPackage("")
 
 	message := api.NewTestMessage("Message").WithPackage("")
 	timestamp := api.NewTestMessage("Timestamp").WithPackage("google.protobuf")
@@ -832,12 +829,11 @@ func TestFieldMapTypeValues(t *testing.T) {
 		},
 	} {
 		t.Run(test.want, func(t *testing.T) {
-			mapThing := api.NewTestMessage("$MapThing").
-				WithIsMap().
-				WithFields(
-					api.NewTestField("key").WithType(api.TypezInt32),
-					test.value,
-				)
+			mapThing := api.NewTestMapMessageWithFields(
+				"$MapThing",
+				api.NewTestField("key").WithType(api.TypezInt32),
+				test.value,
+			)
 
 			field := api.NewTestField("indexed").WithMessageType(mapThing)
 			message := api.NewTestMessage("Message").WithFields(field)
@@ -872,15 +868,14 @@ func TestFieldMapTypeKey(t *testing.T) {
 		},
 		{
 			"std::collections::HashMap<crate::model::EnumType,i64>",
-			api.NewTestField("key").WithType(api.TypezEnum).WithTypezID(enum.ID),
+			api.NewTestField("key").WithEnumType(enum),
 		},
 	} {
-		mapThing := api.NewTestMessage("$MapThing").
-			WithIsMap().
-			WithFields(
-				test.key,
-				api.NewTestField("value").WithType(api.TypezInt64),
-			)
+		mapThing := api.NewTestMapMessageWithFields(
+			"$MapThing",
+			test.key,
+			api.NewTestField("value").WithType(api.TypezInt64),
+		)
 
 		field := api.NewTestField("indexed").WithMessageType(mapThing)
 		message := api.NewTestMessage("Message").WithFields(field)
@@ -1559,12 +1554,12 @@ func TestFormatDocCommentsSkippedMethodsAndServices(t *testing.T) {
 		WithPackage("test.v1").
 		WithMethods(createFoo)
 	skippedMethod := api.NewTestMethod("SkippedMethod").
+		WithID(fmt.Sprintf("%s.SkippedMethod", someService.ID)).
 		WithVerb("GET").
 		WithPathTemplate((&api.PathTemplate{}).
 			WithLiteral("v1").
 			WithLiteral("skipped"))
 	skippedMethod.Service = someService
-	skippedMethod.ID = fmt.Sprintf("%s.%s", someService.ID, skippedMethod.Name)
 
 	skippedServiceMethod := api.NewTestMethod("SomeMethod").
 		WithVerb("GET").
@@ -1784,8 +1779,7 @@ func makeApiForRustFormatDocCommentsCrossLinks() *api.API {
 		WithPathTemplate((&api.PathTemplate{}).
 			WithLiteral("v1").
 			WithLiteral("foo"))
-	createBar := api.NewTestMethod("CreateBar")
-	createBar.PathInfo = nil
+	createBar := api.NewTestMethod("CreateBar").WithPathInfo(nil)
 	someService := api.NewTestService("SomeService").
 		WithPackage("test.v1").
 		WithMethods(createFoo, createBar)

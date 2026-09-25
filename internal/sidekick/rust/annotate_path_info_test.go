@@ -32,8 +32,7 @@ func serviceAnnotationsModel() *api.API {
 		WithPackage("test.v1").
 		WithFields(
 			api.NewTestField("field").
-				WithType(api.TypezEnum).
-				WithTypezID(usedEnum.ID),
+				WithEnumType(usedEnum),
 		)
 	method := api.NewTestMethod("GetResource").
 		WithInput(request).
@@ -54,8 +53,8 @@ func serviceAnnotationsModel() *api.API {
 
 	noHttpMethod := api.NewTestMethod("DoAThing").
 		WithInput(request).
-		WithOutput(response)
-	noHttpMethod.PathInfo = nil
+		WithOutput(response).
+		WithPathInfo(nil)
 
 	service := api.NewTestService("ResourceService").
 		WithPackage("test.v1").

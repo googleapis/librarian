@@ -73,7 +73,7 @@ func TestSetterSampleAnnotations(t *testing.T) {
 	enum := api.NewTestEnum("TestEnum").WithPackage("test.v1")
 	message := api.NewTestMessage("TestMessage").WithPackage("test.v1")
 	message.WithFields(
-		api.NewTestField("enum_field").WithType(api.TypezEnum).WithTypezID(enum.ID),
+		api.NewTestField("enum_field").WithEnumType(enum),
 		api.NewTestField("message_field").WithMessageType(message),
 	)
 

@@ -430,8 +430,8 @@ func TestGenerateConvertOneOfWithSkippedProtoConversion(t *testing.T) {
 func TestGenerateConvertImports(t *testing.T) {
 	msg := api.NewTestMessage("SimpleMessage").WithPackage("google.cloud.speech.v2")
 	outDir := t.TempDir()
-	model := api.NewTestAPI([]*api.Message{msg}, nil, nil)
-	model.PackageName = "google.cloud.speech.v2"
+	model := api.NewTestAPI([]*api.Message{msg}, nil, nil).
+		WithPackageName("google.cloud.speech.v2")
 	if err := api.CrossReference(model); err != nil {
 		t.Fatal(err)
 	}

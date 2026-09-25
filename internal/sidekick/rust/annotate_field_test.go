@@ -42,10 +42,8 @@ func newTestCodec(t *testing.T, specificationFormat, packageName string, options
 func TestFieldAnnotations(t *testing.T) {
 	keyField := api.NewTestField("key").WithType(api.TypezInt32)
 	valueField := api.NewTestField("value").WithType(api.TypezInt64)
-	mapMessage := api.NewTestMessage("$Map").
-		WithPackage("test.v1").
-		WithFields(keyField, valueField).
-		WithIsMap()
+	mapMessage := api.NewTestMapMessageWithFields("$Map", keyField, valueField).
+		WithPackage("test.v1")
 
 	message := api.NewTestMessage("TestMessage").
 		WithPackage("test.v1").
@@ -182,10 +180,8 @@ func TestRecursiveFieldAnnotations(t *testing.T) {
 
 	keyField := api.NewTestField("key").WithType(api.TypezInt32)
 	valueField := api.NewTestField("value").WithMessageType(message)
-	mapMessage := api.NewTestMessage("$Map").
-		WithPackage("test.v1").
-		WithFields(keyField, valueField).
-		WithIsMap()
+	mapMessage := api.NewTestMapMessageWithFields("$Map", keyField, valueField).
+		WithPackage("test.v1")
 
 	mapField := api.NewTestField("map_field").WithMessageType(mapMessage)
 	oneOfField := api.NewTestField("oneof_field").WithMessageType(message)
@@ -336,10 +332,8 @@ func TestSameTypeNameFieldAnnotations(t *testing.T) {
 
 	keyField := api.NewTestField("key").WithType(api.TypezInt32)
 	valueField := api.NewTestField("value").WithMessageType(innerMessage)
-	mapMessage := api.NewTestMessage("$Map").
-		WithPackage("test.v1").
-		WithFields(keyField, valueField).
-		WithIsMap()
+	mapMessage := api.NewTestMapMessageWithFields("$Map", keyField, valueField).
+		WithPackage("test.v1")
 
 	mapField := api.NewTestField("map_field").WithMessageType(mapMessage)
 	oneOfField := api.NewTestField("oneof_field").WithMessageType(innerMessage)
@@ -628,15 +622,12 @@ func TestWrapperFieldAnnotations(t *testing.T) {
 func TestEnumFieldAnnotations(t *testing.T) {
 	enumz := api.NewTestEnum("TestEnum").WithPackage("test.v1")
 	singularField := api.NewTestField("singular_field").
-		WithType(api.TypezEnum).
-		WithTypezID(enumz.ID)
+		WithEnumType(enumz)
 	repeatedField := api.NewTestField("repeated_field").
-		WithType(api.TypezEnum).
-		WithTypezID(enumz.ID).
+		WithEnumType(enumz).
 		WithRepeated()
 	optionalField := api.NewTestField("optional_field").
-		WithType(api.TypezEnum).
-		WithTypezID(enumz.ID).
+		WithEnumType(enumz).
 		WithOptional()
 	nullValueField := api.NewTestField("null_value_field").
 		WithType(api.TypezEnum).
@@ -645,13 +636,10 @@ func TestEnumFieldAnnotations(t *testing.T) {
 	keyField := api.NewTestField("key").
 		WithType(api.TypezString)
 	valueField := api.NewTestField("value").
-		WithType(api.TypezEnum).
-		WithTypezID(enumz.ID)
-	mapMessage := api.NewTestMessage("$map<string, .test.v1.TestEnum>").
+		WithEnumType(enumz)
+	mapMessage := api.NewTestMapMessageWithFields("$map<string, .test.v1.TestEnum>", keyField, valueField).
 		WithPackage("test.v1").
-		WithID("$map<string, .test.v1.TestEnum>").
-		WithFields(keyField, valueField).
-		WithIsMap()
+		WithID("$map<string, .test.v1.TestEnum>")
 	mapField := api.NewTestField("map_field").
 		WithMessageType(mapMessage)
 	message := api.NewTestMessage("TestMessage").
@@ -810,10 +798,10 @@ func TestFormattedResourceAnnotations(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			field := api.NewTestField("name").
-				WithType(api.TypezString)
-			field.ResourceNamePattern = &api.ResourceNamePattern{
-				Segments: test.segments,
-			}
+				WithType(api.TypezString).
+				WithResourceNamePattern(&api.ResourceNamePattern{
+					Segments: test.segments,
+				})
 			message := api.NewTestMessage("TestMessage").
 				WithPackage("test.v1").
 				WithFields(field)

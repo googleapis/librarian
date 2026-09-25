@@ -42,25 +42,21 @@ func extractBlock(t *testing.T, content, startStr, endStr string) string {
 func TestGenerateBidiStreaming(t *testing.T) {
 	outDir := t.TempDir()
 
-	request := api.NewTestMessage("Request").WithPackage("test.v1")
-	request.Fields = []*api.Field{
-		{
-			Name:     "query",
-			JSONName: "query",
-			ID:       ".test.v1.Request.query",
-			Typez:    api.TypezString,
-		},
-	}
+	request := api.NewTestMessage("Request").
+		WithPackage("test.v1").
+		WithFields(api.NewTestField("query").WithType(api.TypezString))
 	response := api.NewTestMessage("Response").WithPackage("test.v1")
 
-	bidiMethod := api.NewTestMethod("Chat").WithInput(request).WithOutput(response).WithBidiStreaming()
-	bidiMethod.PathInfo = &api.PathInfo{
-		Bindings: []*api.PathBinding{{Verb: "GET", PathTemplate: &api.PathTemplate{}}},
-	}
+	bidiMethod := api.NewTestMethod("Chat").
+		WithInput(request).
+		WithOutput(response).
+		WithBidiStreaming().
+		WithVerb("GET").
+		WithPathTemplate(&api.PathTemplate{})
 	service := api.NewTestService("Protocol").WithPackage("test.v1").WithMethods(bidiMethod)
 
-	model := api.NewTestAPI([]*api.Message{request, response}, []*api.Enum{}, []*api.Service{service})
-	model.PackageName = "test.v1"
+	model := api.NewTestAPI([]*api.Message{request, response}, nil, []*api.Service{service}).
+		WithPackageName("test.v1")
 	if err := api.CrossReference(model); err != nil {
 		t.Fatal(err)
 	}
@@ -321,25 +317,21 @@ prost.workspace      = true
 func TestGenerateGrpcClientBidiStreaming(t *testing.T) {
 	outDir := t.TempDir()
 
-	request := api.NewTestMessage("Request").WithPackage("test.v1")
-	request.Fields = []*api.Field{
-		{
-			Name:     "query",
-			JSONName: "query",
-			ID:       ".test.v1.Request.query",
-			Typez:    api.TypezString,
-		},
-	}
+	request := api.NewTestMessage("Request").
+		WithPackage("test.v1").
+		WithFields(api.NewTestField("query").WithType(api.TypezString))
 	response := api.NewTestMessage("Response").WithPackage("test.v1")
 
-	bidiMethod := api.NewTestMethod("Chat").WithInput(request).WithOutput(response).WithBidiStreaming()
-	bidiMethod.PathInfo = &api.PathInfo{
-		Bindings: []*api.PathBinding{{Verb: "GET", PathTemplate: &api.PathTemplate{}}},
-	}
+	bidiMethod := api.NewTestMethod("Chat").
+		WithInput(request).
+		WithOutput(response).
+		WithBidiStreaming().
+		WithVerb("GET").
+		WithPathTemplate(&api.PathTemplate{})
 	service := api.NewTestService("Protocol").WithPackage("test.v1").WithMethods(bidiMethod)
 
-	model := api.NewTestAPI([]*api.Message{request, response}, []*api.Enum{}, []*api.Service{service})
-	model.PackageName = "test.v1"
+	model := api.NewTestAPI([]*api.Message{request, response}, nil, []*api.Service{service}).
+		WithPackageName("test.v1")
 	if err := api.CrossReference(model); err != nil {
 		t.Fatal(err)
 	}

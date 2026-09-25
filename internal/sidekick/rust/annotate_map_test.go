@@ -40,16 +40,9 @@ func TestMapKeyAnnotations(t *testing.T) {
 		{"serde_with::DisplayFromStr", api.TypezBool},
 	} {
 		t.Run(test.wantSerdeAs, func(t *testing.T) {
-			mapMessage := api.NewTestMessage("$map<unused, unused>").
+			mapMessage := api.NewTestMapMessage("$map<unused, unused>", test.typez, api.TypezString).
 				WithPackage("$").
-				WithID("$map<unused, unused>").
-				WithFields(
-					api.NewTestField("key").
-						WithType(test.typez),
-					api.NewTestField("value").
-						WithType(api.TypezString),
-				).
-				WithIsMap()
+				WithID("$map<unused, unused>")
 
 			field := api.NewTestField("field").
 				WithMessageType(mapMessage)
@@ -124,14 +117,13 @@ func TestMapValueAnnotations(t *testing.T) {
 			} else {
 				valueField.WithType(test.typez)
 			}
-			mapMessage := api.NewTestMessage("$map<unused, unused>").
+			mapMessage := api.NewTestMapMessageWithFields(
+				"$map<unused, unused>",
+				api.NewTestField("key").WithType(api.TypezInt32),
+				valueField,
+			).
 				WithPackage("$").
-				WithID("$map<unused, unused>").
-				WithFields(
-					api.NewTestField("key").WithType(api.TypezInt32),
-					valueField,
-				).
-				WithIsMap()
+				WithID("$map<unused, unused>")
 
 			field := api.NewTestField("field").WithMessageType(mapMessage)
 
@@ -157,16 +149,9 @@ func TestMapValueAnnotations(t *testing.T) {
 
 // A map without any SerdeAs mapping receives a special annotation.
 func TestMapAnnotationsSameSame(t *testing.T) {
-	mapMessage := api.NewTestMessage("$map<string, string>").
+	mapMessage := api.NewTestMapMessage("$map<string, string>", api.TypezString, api.TypezString).
 		WithPackage("$").
-		WithID("$map<string, string>").
-		WithFields(
-			api.NewTestField("key").
-				WithType(api.TypezString),
-			api.NewTestField("value").
-				WithType(api.TypezString),
-		).
-		WithIsMap()
+		WithID("$map<string, string>")
 
 	field := api.NewTestField("field").
 		WithMessageType(mapMessage)

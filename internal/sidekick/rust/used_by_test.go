@@ -141,10 +141,8 @@ func TestUsedByLROsWithoutLRO(t *testing.T) {
 }
 
 func TestUsedByUuidWithAutoPopulation(t *testing.T) {
-	requestID := api.NewTestField("request_id").WithType(api.TypezString)
-	requestID.AutoPopulated = true
-	method := api.NewTestMethod("CreateResource")
-	method.AutoPopulated = []*api.Field{requestID}
+	requestID := api.NewTestField("request_id").WithType(api.TypezString).WithAutoPopulated()
+	method := api.NewTestMethod("CreateResource").WithAutoPopulated(requestID)
 	service := api.NewTestService("TestService").WithMethods(method)
 	model := api.NewTestAPI(nil, nil, []*api.Service{service})
 	c, err := newCodec(libconfig.SpecProtobuf, map[string]string{
@@ -424,12 +422,11 @@ func TestFindUsedPackages_MapFields(t *testing.T) {
 	message := api.NewTestMessage("Fake").
 		WithPackage("test")
 
-	mapEntry := api.NewTestMessage("FakeMapEntry").
-		WithIsMap().
-		WithFields(
-			api.NewTestField("key").WithType(api.TypezString),
-			api.NewTestField("value").WithMessageType(externalMessage),
-		)
+	mapEntry := api.NewTestMapMessageWithFields(
+		"FakeMapEntry",
+		api.NewTestField("key").WithType(api.TypezString),
+		api.NewTestField("value").WithMessageType(externalMessage),
+	)
 	message.WithMessages(mapEntry)
 
 	mapField := api.NewTestField("map_field").

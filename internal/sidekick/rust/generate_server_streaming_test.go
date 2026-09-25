@@ -29,8 +29,7 @@ import (
 func TestGenerateServerStreaming(t *testing.T) {
 	outDir := t.TempDir()
 
-	requestID := api.NewTestField("request_id").WithType(api.TypezString)
-	requestID.AutoPopulated = true
+	requestID := api.NewTestField("request_id").WithType(api.TypezString).WithAutoPopulated()
 	content := api.NewTestField("content").WithType(api.TypezString)
 	request := api.NewTestMessage("ExpandRequest").
 		WithPackage("test.v1").
@@ -42,8 +41,8 @@ func TestGenerateServerStreaming(t *testing.T) {
 		WithOutput(response).
 		WithServerSideStreaming().
 		WithVerb("POST").
-		WithPathTemplate(&api.PathTemplate{})
-	serverMethod.AutoPopulated = []*api.Field{requestID}
+		WithPathTemplate(&api.PathTemplate{}).
+		WithAutoPopulated(requestID)
 	service := api.NewTestService("Echo").WithPackage("test.v1").WithMethods(serverMethod)
 
 	model := api.NewTestAPI([]*api.Message{request, response}, nil, []*api.Service{service})
