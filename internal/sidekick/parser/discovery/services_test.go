@@ -32,67 +32,52 @@ func TestService(t *testing.T) {
 	if got == nil {
 		t.Fatalf("expected service %s in the API model", id)
 	}
-	want := &api.Service{
-		Name:          "zones",
-		ID:            id,
-		Package:       "",
-		Documentation: "Service for the `zones` resource.",
-		DefaultHost:   "compute.googleapis.com",
-		Methods: []*api.Method{
-			{
-				ID:            "..zones.get",
-				Name:          "get",
-				Documentation: "Returns the specified Zone resource.",
-				InputTypeID:   "..zones.getRequest",
-				OutputTypeID:  "..Zone",
-				PathInfo: &api.PathInfo{
-					Bindings: []*api.PathBinding{
-						{
-							Verb: "GET",
-							PathTemplate: (&api.PathTemplate{}).
-								WithLiteral("compute").
-								WithLiteral("v1").
-								WithLiteral("projects").
-								WithVariableNamed("project").
-								WithLiteral("zones").
-								WithVariableNamed("zone"),
-							QueryParameters: map[string]bool{},
-						},
-					},
-					BodyFieldPath: "",
-				},
-				Signatures: []*api.MethodSignature{{Names: []string{"project", "zone"}}},
-			},
-			{
-				ID:            "..zones.list",
-				Name:          "list",
-				Documentation: "Retrieves the list of Zone resources available to the specified project.",
-				InputTypeID:   "..zones.listRequest",
-				OutputTypeID:  "..ZoneList",
-				PathInfo: &api.PathInfo{
-					Bindings: []*api.PathBinding{
-						{
-							Verb: "GET",
-							PathTemplate: (&api.PathTemplate{}).
-								WithLiteral("compute").
-								WithLiteral("v1").
-								WithLiteral("projects").
-								WithVariableNamed("project").
-								WithLiteral("zones"),
-							QueryParameters: map[string]bool{
-								"filter":               true,
-								"maxResults":           true,
-								"orderBy":              true,
-								"pageToken":            true,
-								"returnPartialSuccess": true,
-							},
-						},
-					},
-					BodyFieldPath: "",
-				},
-				Signatures: []*api.MethodSignature{{Names: []string{"project"}}},
-			},
-		},
+	getMethod := api.NewTestMethod("get").
+		WithID("..zones.get").
+		WithDocumentation("Returns the specified Zone resource.").
+		WithVerb("GET").
+		WithPathTemplate((&api.PathTemplate{}).
+			WithLiteral("compute").
+			WithLiteral("v1").
+			WithLiteral("projects").
+			WithVariableNamed("project").
+			WithLiteral("zones").
+			WithVariableNamed("zone")).
+		WithQueryParameters(map[string]bool{}).
+		WithBodyFieldPath("")
+	getMethod.InputTypeID = "..zones.getRequest"
+	getMethod.OutputTypeID = "..Zone"
+	getMethod.Signatures = []*api.MethodSignature{{Names: []string{"project", "zone"}}}
+
+	listMethod := api.NewTestMethod("list").
+		WithID("..zones.list").
+		WithDocumentation("Retrieves the list of Zone resources available to the specified project.").
+		WithVerb("GET").
+		WithPathTemplate((&api.PathTemplate{}).
+			WithLiteral("compute").
+			WithLiteral("v1").
+			WithLiteral("projects").
+			WithVariableNamed("project").
+			WithLiteral("zones")).
+		WithQueryParameters(map[string]bool{
+			"filter":               true,
+			"maxResults":           true,
+			"orderBy":              true,
+			"pageToken":            true,
+			"returnPartialSuccess": true,
+		}).
+		WithBodyFieldPath("")
+	listMethod.InputTypeID = "..zones.listRequest"
+	listMethod.OutputTypeID = "..ZoneList"
+	listMethod.Signatures = []*api.MethodSignature{{Names: []string{"project"}}}
+
+	want := api.NewTestService("zones").
+		WithPackage("").
+		WithDocumentation("Service for the `zones` resource.").
+		WithDefaultHost("compute.googleapis.com").
+		WithMethods(getMethod, listMethod)
+	for _, m := range want.Methods {
+		m.Service = nil
 	}
 	apitest.CheckService(t, got, want)
 }
@@ -110,12 +95,10 @@ func TestServiceDeprecated(t *testing.T) {
 	if err := addService(model, &doc, &input); err != nil {
 		t.Fatal(err)
 	}
-	want := &api.Service{
-		ID:            "..TestDeprecated",
-		Name:          "TestDeprecated",
-		Documentation: "Service for the `TestDeprecated` resource.",
-		Deprecated:    true,
-	}
+	want := api.NewTestService("TestDeprecated").
+		WithPackage("").
+		WithDocumentation("Service for the `TestDeprecated` resource.").
+		WithDeprecated(true)
 	got := model.Service(want.ID)
 	if got == nil {
 		t.Fatalf("missing service %s", want.ID)
@@ -138,15 +121,12 @@ func TestServiceMessages(t *testing.T) {
 		t.Fatalf("expected message %s in the API model", "..zones.listRequest")
 	}
 
-	want := &api.Message{
-		Name:               "zones",
-		ID:                 "..zones",
-		Package:            "",
-		Documentation:      "Synthetic messages for the [zones][.zones] service",
-		ServicePlaceholder: true,
-		Messages:           []*api.Message{getMessage, listMessage},
-	}
-
+	want := api.NewTestMessage("zones").
+		WithPackage("").
+		WithID("..zones").
+		WithDocumentation("Synthetic messages for the [zones][.zones] service").
+		WithMessages(getMessage, listMessage)
+	want.ServicePlaceholder = true
 	got := model.Message(want.ID)
 	if got == nil {
 		t.Fatalf("expected service %s in the API model", want.ID)

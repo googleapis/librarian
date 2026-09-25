@@ -35,37 +35,29 @@ func TestLroAnnotations(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	want := &api.Method{
-		ID:           "..instances.insert",
-		Name:         "insert",
-		InputTypeID:  "..instances.insertRequest",
-		OutputTypeID: "..Operation",
-		PathInfo: &api.PathInfo{
-			Bindings: []*api.PathBinding{
-				{
-					Verb: "POST",
-					PathTemplate: (&api.PathTemplate{}).
-						WithLiteral("compute").
-						WithLiteral("v1").
-						WithLiteral("projects").
-						WithVariableNamed("project").
-						WithLiteral("zones").
-						WithVariableNamed("zone").
-						WithLiteral("instances"),
-					QueryParameters: map[string]bool{
-						"requestId":              true,
-						"sourceInstanceTemplate": true,
-						"sourceMachineImage":     true,
-					},
-				},
-			},
-			BodyFieldPath: "body",
-		},
-		DiscoveryLro: &api.DiscoveryLro{
+	want := api.NewTestMethod("insert").
+		WithID("..instances.insert").
+		WithVerb("POST").
+		WithPathTemplate((&api.PathTemplate{}).
+			WithLiteral("compute").
+			WithLiteral("v1").
+			WithLiteral("projects").
+			WithVariableNamed("project").
+			WithLiteral("zones").
+			WithVariableNamed("zone").
+			WithLiteral("instances")).
+		WithQueryParameters(map[string]bool{
+			"requestId":              true,
+			"sourceInstanceTemplate": true,
+			"sourceMachineImage":     true,
+		}).
+		WithBodyFieldPath("body").
+		WithDiscoveryLro(&api.DiscoveryLro{
 			PollingPathParameters: []string{"project", "zone"},
-		},
-		Signatures: []*api.MethodSignature{{Names: []string{"project", "zone", "body"}}},
-	}
+		})
+	want.InputTypeID = "..instances.insertRequest"
+	want.OutputTypeID = "..Operation"
+	want.Signatures = []*api.MethodSignature{{Names: []string{"project", "zone", "body"}}}
 	got := model.Method(want.ID)
 	if got == nil {
 		t.Fatalf("missing method %s in model", want.ID)
@@ -75,32 +67,24 @@ func TestLroAnnotations(t *testing.T) {
 	}
 
 	// The parser should have injected a mixin method.
-	wantMixin := &api.Method{
-		ID:              "..instances.getOperation",
-		Name:            "getOperation",
-		InputTypeID:     "..zoneOperations.getRequest",
-		OutputTypeID:    "..Operation",
-		SourceServiceID: "..zoneOperations",
-		IsLroPoller:     true,
-		PathInfo: &api.PathInfo{
-			Bindings: []*api.PathBinding{
-				{
-					Verb: "GET",
-					PathTemplate: (&api.PathTemplate{}).
-						WithLiteral("compute").
-						WithLiteral("v1").
-						WithLiteral("projects").
-						WithVariableNamed("project").
-						WithLiteral("zones").
-						WithVariableNamed("zone").
-						WithLiteral("operations").
-						WithVariableNamed("operation"),
-					QueryParameters: map[string]bool{},
-				},
-			},
-			BodyFieldPath: "",
-		},
-	}
+	wantMixin := api.NewTestMethod("getOperation").
+		WithID("..instances.getOperation").
+		WithVerb("GET").
+		WithPathTemplate((&api.PathTemplate{}).
+			WithLiteral("compute").
+			WithLiteral("v1").
+			WithLiteral("projects").
+			WithVariableNamed("project").
+			WithLiteral("zones").
+			WithVariableNamed("zone").
+			WithLiteral("operations").
+			WithVariableNamed("operation")).
+		WithQueryParameters(map[string]bool{}).
+		WithBodyFieldPath("")
+	wantMixin.InputTypeID = "..zoneOperations.getRequest"
+	wantMixin.OutputTypeID = "..Operation"
+	wantMixin.SourceServiceID = "..zoneOperations"
+	wantMixin.IsLroPoller = true
 	gotMixin := model.Method(wantMixin.ID)
 	if gotMixin == nil {
 		t.Fatalf("missing method %s in model", wantMixin.ID)
