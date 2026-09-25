@@ -148,7 +148,7 @@ func TestFieldIsMap(t *testing.T) {
 	field2 := api.NewTestField("singular").WithType(api.TypezMessage).WithTypezID("invalid")
 	parent.WithFields(field0, field1, field2)
 
-	model := api.NewTestAPI([]*api.Message{parent, mapMessage}, nil, nil)
+	model := api.NewTestAPI([]*api.Message{parent}, nil, nil)
 
 	if !FieldIsMap(field0, model) {
 		t.Errorf("expected FieldIsMap(field0) to be true")
