@@ -21,11 +21,7 @@ import (
 )
 
 func TestScopesService(t *testing.T) {
-	service := &Service{
-		Name:    "Service",
-		Package: "test",
-		ID:      ".test.Service",
-	}
+	service := NewTestService("Service")
 	got := service.Scopes()
 	want := []string{"test.Service", "test"}
 	if diff := cmp.Diff(want, got); len(diff) != 0 {
@@ -34,18 +30,8 @@ func TestScopesService(t *testing.T) {
 }
 
 func TestScopesMessage(t *testing.T) {
-	parent := &Message{
-		Name:    "Parent",
-		Package: "test",
-		ID:      ".test.Parent",
-	}
-	child := &Message{
-		Name:    "Child",
-		Package: "test",
-		ID:      ".test.Parent.Child",
-		Parent:  parent,
-	}
-	parent.Messages = []*Message{child}
+	child := NewTestMessage("Child")
+	parent := NewTestMessage("Parent").WithMessages(child)
 
 	got := parent.Scopes()
 	want := []string{"test.Parent", "test"}
@@ -61,11 +47,7 @@ func TestScopesMessage(t *testing.T) {
 }
 
 func TestScopesEnum(t *testing.T) {
-	enum := &Enum{
-		Name:    "Enum",
-		Package: "test",
-		ID:      ".test.Enum",
-	}
+	enum := NewTestEnum("Enum")
 
 	got := enum.Scopes()
 	want := []string{"test.Enum", "test"}
@@ -75,18 +57,8 @@ func TestScopesEnum(t *testing.T) {
 }
 
 func TestScopesEnumInMessage(t *testing.T) {
-	parent := &Message{
-		Name:    "Parent",
-		Package: "test",
-		ID:      ".test.Parent",
-	}
-	child := &Enum{
-		Name:    "Child",
-		Package: "test",
-		ID:      ".test.Parent.Child",
-		Parent:  parent,
-	}
-	parent.Enums = []*Enum{child}
+	child := NewTestEnum("Child")
+	_ = NewTestMessage("Parent").WithEnums(child)
 
 	got := child.Scopes()
 	want := []string{"test.Parent.Child", "test.Parent", "test"}
@@ -96,17 +68,8 @@ func TestScopesEnumInMessage(t *testing.T) {
 }
 
 func TestScopesEnumValue(t *testing.T) {
-	enum := &Enum{
-		Name:    "Enum",
-		Package: "test",
-		ID:      ".test.Enum",
-	}
-	enumValue := &EnumValue{
-		Name:   "EV",
-		ID:     ".test.Enum.EV",
-		Parent: enum,
-	}
-	enum.Values = []*EnumValue{enumValue}
+	enumValue := NewTestEnumValue("EV", 0)
+	_ = NewTestEnum("Enum").WithValues(enumValue)
 
 	got := enumValue.Scopes()
 	want := []string{"test.Enum", "test"}
@@ -116,24 +79,9 @@ func TestScopesEnumValue(t *testing.T) {
 }
 
 func TestScopesEnumValueInMessage(t *testing.T) {
-	parent := &Message{
-		Name:    "Parent",
-		Package: "test",
-		ID:      ".test.Parent",
-	}
-	enum := &Enum{
-		Name:    "Enum",
-		Package: "test",
-		ID:      ".test.Parent.Enum",
-		Parent:  parent,
-	}
-	enumValue := &EnumValue{
-		Name:   "EV",
-		ID:     ".test.Parent.Enum.EV",
-		Parent: enum,
-	}
-	enum.Values = []*EnumValue{enumValue}
-	parent.Enums = []*Enum{enum}
+	enumValue := NewTestEnumValue("EV", 0)
+	enum := NewTestEnum("Enum").WithValues(enumValue)
+	_ = NewTestMessage("Parent").WithEnums(enum)
 
 	got := enumValue.Scopes()
 	want := []string{"test.Parent.Enum", "test.Parent", "test"}
@@ -143,32 +91,26 @@ func TestScopesEnumValueInMessage(t *testing.T) {
 }
 
 func TestScopesField(t *testing.T) {
-	parent := &Message{
-		Name:    "Parent",
-		Package: "test",
-		ID:      ".test.Parent",
-	}
+	standardField := NewTestField("field")
+	_ = NewTestMessage("Parent").WithFields(standardField)
+
+	nilParentField := NewTestField("field")
+	nilParentField.ID = ".test.Parent.field"
+
 	for _, test := range []struct {
 		name  string
 		field *Field
 		want  []string
 	}{
 		{
-			name: "standard",
-			field: &Field{
-				Name:   "field",
-				ID:     ".test.Parent.field",
-				Parent: parent,
-			},
-			want: []string{"test.Parent", "test"},
+			name:  "standard",
+			field: standardField,
+			want:  []string{"test.Parent", "test"},
 		},
 		{
-			name: "nil parent",
-			field: &Field{
-				Name: "field",
-				ID:   ".test.Parent.field",
-			},
-			want: []string{"test.Parent", "test"},
+			name:  "nil parent",
+			field: nilParentField,
+			want:  []string{"test.Parent", "test"},
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
@@ -181,32 +123,22 @@ func TestScopesField(t *testing.T) {
 }
 
 func TestScopesMethod(t *testing.T) {
-	service := &Service{
-		Name:    "Service",
-		Package: "test",
-		ID:      ".test.Service",
-	}
+	standardMethod := NewTestMethod("Method")
+	_ = NewTestService("Service").WithMethods(standardMethod)
 	for _, test := range []struct {
 		name   string
 		method *Method
 		want   []string
 	}{
 		{
-			name: "standard",
-			method: &Method{
-				Name:    "Method",
-				ID:      ".test.Service.Method",
-				Service: service,
-			},
-			want: []string{"test.Service", "test"},
+			name:   "standard",
+			method: standardMethod,
+			want:   []string{"test.Service", "test"},
 		},
 		{
-			name: "none set",
-			method: &Method{
-				Name: "Method",
-				ID:   ".test2.Service2.Method",
-			},
-			want: []string{"test2.Service2", "test2"},
+			name:   "none set",
+			method: NewTestMethod("Method").WithID(".test2.Service2.Method"),
+			want:   []string{"test2.Service2", "test2"},
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
@@ -219,16 +151,10 @@ func TestScopesMethod(t *testing.T) {
 }
 
 func TestScopesOneOf(t *testing.T) {
-	parent := &Message{
-		Name:    "Parent",
-		Package: "test",
-		ID:      ".test.Parent",
-	}
-	field := &Field{
-		Name:   "field",
-		ID:     ".test.Parent.field",
-		Parent: parent,
-	}
+	field := NewTestField("field")
+	withFieldsOneOf := NewTestOneOf("oneof").WithFields(field)
+	emptyOneOf := NewTestOneOf("empty_oneof")
+	_ = NewTestMessage("Parent").WithOneOfs(withFieldsOneOf, emptyOneOf)
 
 	for _, test := range []struct {
 		name  string
@@ -236,21 +162,14 @@ func TestScopesOneOf(t *testing.T) {
 		want  []string
 	}{
 		{
-			name: "with fields",
-			oneof: &OneOf{
-				Name:   "oneof",
-				ID:     ".test.Parent.oneof",
-				Fields: []*Field{field},
-			},
-			want: []string{"test.Parent", "test"},
+			name:  "with fields",
+			oneof: withFieldsOneOf,
+			want:  []string{"test.Parent", "test"},
 		},
 		{
-			name: "empty",
-			oneof: &OneOf{
-				Name: "empty_oneof",
-				ID:   ".test.Parent.empty_oneof",
-			},
-			want: []string{"test.Parent", "test"},
+			name:  "empty",
+			oneof: emptyOneOf,
+			want:  []string{"test.Parent", "test"},
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
