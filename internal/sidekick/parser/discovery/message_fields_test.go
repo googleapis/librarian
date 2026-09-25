@@ -79,58 +79,43 @@ func TestMakeMessageFields(t *testing.T) {
 			},
 		},
 	}
-	message := &api.Message{ID: ".package.Message"}
+	message := api.NewTestMessage("Message").WithPackage("package")
 	err := makeMessageFields(model, message, input)
 	if err != nil {
 		t.Fatal(err)
 	}
-	want := []*api.Field{
-		{
-			Name:          "deprecatedField",
-			JSONName:      "deprecatedField",
-			ID:            ".package.Message.deprecatedField",
-			Documentation: "The field description.",
-			Typez:         api.TypezUint32,
-			TypezID:       "uint32",
-			Deprecated:    true,
-			Optional:      true,
-		},
-		{
-			Name:          "intField",
-			JSONName:      "intField",
-			ID:            ".package.Message.intField",
-			Documentation: "The field description.",
-			Typez:         api.TypezInt32,
-			TypezID:       "int32",
-			Optional:      true,
-		},
-		{
-			Name:          "longField",
-			JSONName:      "longField",
-			ID:            ".package.Message.longField",
-			Documentation: "The field description.",
-			Typez:         api.TypezUint64,
-			TypezID:       "uint64",
-			Optional:      true,
-		},
-		{
-			Name:          "arrayFieldString",
-			JSONName:      "arrayFieldString",
-			ID:            ".package.Message.arrayFieldString",
-			Documentation: "The field description.",
-			Typez:         api.TypezString,
-			TypezID:       "string",
-			Repeated:      true,
-		},
-		{
-			Name:          "arrayFieldObject",
-			JSONName:      "arrayFieldObject",
-			ID:            ".package.Message.arrayFieldObject",
-			Documentation: "The field description.",
-			Typez:         api.TypezMessage,
-			TypezID:       ".package.AnotherMessage",
-			Repeated:      true,
-		},
+	want := api.NewTestMessage("Message").
+		WithPackage("package").
+		WithFields(
+			api.NewTestField("deprecatedField").
+				WithDocumentation("The field description.").
+				WithType(api.TypezUint32).
+				WithTypezID("uint32").
+				WithDeprecated(true).
+				WithOptional(),
+			api.NewTestField("intField").
+				WithDocumentation("The field description.").
+				WithType(api.TypezInt32).
+				WithTypezID("int32").
+				WithOptional(),
+			api.NewTestField("longField").
+				WithDocumentation("The field description.").
+				WithType(api.TypezUint64).
+				WithTypezID("uint64").
+				WithOptional(),
+			api.NewTestField("arrayFieldString").
+				WithDocumentation("The field description.").
+				WithType(api.TypezString).
+				WithTypezID("string").
+				WithRepeated(),
+			api.NewTestField("arrayFieldObject").
+				WithDocumentation("The field description.").
+				WithType(api.TypezMessage).
+				WithTypezID(".package.AnotherMessage").
+				WithRepeated(),
+		).Fields
+	for _, f := range want {
+		f.Parent = nil
 	}
 	less := func(a, b *api.Field) bool { return a.Name < b.Name }
 	if diff := cmp.Diff(want, message.Fields, cmpopts.SortSlices(less)); diff != "" {
@@ -153,7 +138,7 @@ func TestMakeMessageFieldsError(t *testing.T) {
 			},
 		},
 	}
-	message := &api.Message{ID: ".package.Message"}
+	message := api.NewTestMessage("Message").WithPackage("package")
 	if err := makeMessageFields(model, message, input); err == nil {
 		t.Errorf("expected error makeScalarField(), got=%v, Input=%v", message, input)
 	}
@@ -173,7 +158,7 @@ func TestMakeArrayFieldError(t *testing.T) {
 			},
 		},
 	}
-	message := &api.Message{ID: ".package.Message"}
+	message := api.NewTestMessage("Message").WithPackage("package")
 	if got, err := makeArrayField(model, message, input); err == nil {
 		t.Errorf("expected error makeScalarField(), got=%v, Input=%v", got, input)
 	}
@@ -190,7 +175,7 @@ func TestMakeScalarFieldError(t *testing.T) {
 			Format:      "--unused--",
 		},
 	}
-	message := &api.Message{ID: ".package.Message"}
+	message := api.NewTestMessage("Message").WithPackage("package")
 	if got, err := makeScalarField(model, message, input.Name, input.Schema); err == nil {
 		t.Errorf("expected error makeScalarField(), got=%v, Input=%v", got, input)
 	}
