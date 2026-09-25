@@ -48,7 +48,7 @@ public enum {{Codec.Name}}: Codable, Equatable, Hashable, Sendable {
   case {{Codec.UnknownStringName}}(Swift.String)
 
   /// Returns the string value (or name) associated with the enumeration.
-  public var stringValue: Swift.String? {
+  public var stringValue: Swift.String {
     switch self {
     {{#Values}}
     case .{{Codec.CaseName}}: return "{{Name}}"
