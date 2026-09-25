@@ -43,6 +43,16 @@ extension Clients {
     {{/Codec.DiagnoseTypes}}
     func {{> /templates/common/method_signature/lro_options}}
     {{/Codec.LRO}}
+    {{#Codec.DiscoveryLRO}}
+    /// See `{{Service.Codec.ClientName}}.{{Codec.Name}}`.
+    {{#Deprecated}}
+    @available(*, deprecated)
+    {{/Deprecated}}
+    {{#Codec.DiagnoseTypes}}
+    {{> /templates/common/diagnose}}
+    {{/Codec.DiagnoseTypes}}
+    func {{> /templates/common/method_signature/discovery_lro_options}}
+    {{/Codec.DiscoveryLRO}}
     {{/IsLroPoller}}
     {{/Codec.Methods}}
   }
