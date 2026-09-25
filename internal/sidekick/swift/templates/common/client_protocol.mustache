@@ -162,7 +162,7 @@ extension Clients.{{Codec.StubPrefix}}Protocol {
   {{> /templates/common/diagnose}}
   {{/Codec.DiagnoseTypes}}
   public func {{> /templates/common/method_signature/lro_options}} {
-    let poll = { () async throws -> GoogleGax._PollableOperationImpl<{{Codec.LRO.ReturnType}}>.State in
+    let poll = { @Sendable () async throws -> GoogleGax._PollableOperationImpl<{{Codec.LRO.ReturnType}}>.State in
       throw GoogleGax.RequestError.unimplemented
     }
     return GoogleGax._PollableOperationImpl(initialState: .init(done: false, result: nil), poll: poll)
@@ -202,7 +202,7 @@ extension Clients.{{Codec.StubPrefix}}Protocol {
   {{> /templates/common/diagnose}}
   {{/Codec.DiagnoseTypes}}
   public func {{> /templates/common/method_signature/discovery_lro_options}} {
-    let poll = { () async throws -> GoogleGax._PollableOperationImpl<{{Codec.DiscoveryLRO.ReturnType}}>.State in
+    let poll = { @Sendable () async throws -> GoogleGax._PollableOperationImpl<{{Codec.DiscoveryLRO.ReturnType}}>.State in
       throw GoogleGax.RequestError.unimplemented
     }
     return GoogleGax._PollableOperationImpl(initialState: .init(done: false, result: nil), poll: poll)

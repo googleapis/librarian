@@ -98,7 +98,7 @@ public final class {{Codec.ClientName}}: Clients.{{Codec.StubPrefix}}Protocol, S
   {{> /templates/common/diagnose}}
   {{/Codec.DiagnoseTypes}}
   public func {{> /templates/common/method_signature/lro_options}} {
-    let extractStatus = { (op: {{Codec.ReturnType}}) throws -> GoogleGax._PollableOperationImpl<{{Codec.LRO.ReturnType}}>.State in
+    let extractStatus = { @Sendable (op: {{Codec.ReturnType}}) throws -> GoogleGax._PollableOperationImpl<{{Codec.LRO.ReturnType}}>.State in
       {{#Codec.LRO.ResponseIsEmpty}}
       return try op._extractStatusEmpty()
       {{/Codec.LRO.ResponseIsEmpty}}
@@ -108,7 +108,7 @@ public final class {{Codec.ClientName}}: Clients.{{Codec.StubPrefix}}Protocol, S
     }
     let rawOp = try await self.{{Codec.Name}}(request: request, options: options)
     let initialState = try extractStatus(rawOp)
-    let poll = { () async throws -> GoogleGax._PollableOperationImpl<{{Codec.LRO.ReturnType}}>.State in
+    let poll = { @Sendable () async throws -> GoogleGax._PollableOperationImpl<{{Codec.LRO.ReturnType}}>.State in
       let op = try await self.getOperation(request: .init().with { $0.name = rawOp.name }, options: options)
       return try extractStatus(op)
     }

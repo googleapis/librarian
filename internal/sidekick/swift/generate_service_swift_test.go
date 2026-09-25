@@ -784,6 +784,8 @@ func TestGenerateService_LRO(t *testing.T) {
 	wantContains := []string{
 		"public import GoogleCloudLongrunningV1",
 		"public func createWorkflowPollingUntilDone(request: CreateWorkflowRequest) async throws -> any GoogleGax.PollableOperation<Workflow>",
+		"let extractStatus = { @Sendable (op: GoogleCloudLongrunningV1.Operation) throws -> GoogleGax._PollableOperationImpl<Workflow>.State in",
+		"let poll = { @Sendable () async throws -> GoogleGax._PollableOperationImpl<Workflow>.State in",
 		"self.getOperation(request: .init().with { $0.name = rawOp.name }, options: options)",
 	}
 	for _, want := range wantContains {
