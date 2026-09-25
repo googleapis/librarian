@@ -163,3 +163,31 @@ func TestNestedEnumAnnotations(t *testing.T) {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
+
+func TestDiscoveryEnumAnnotations(t *testing.T) {
+	v0 := api.NewTestEnumValue("CREATING", 0)
+	v1 := api.NewTestEnumValue("READY", 1)
+	enum := api.NewTestEnum("Status").
+		WithPackage("test.v1").
+		WithValues(v0, v1)
+
+	model := api.NewTestAPI(nil, []*api.Enum{enum}, nil)
+	api.CrossReference(model)
+	codec := newTestCodec(t, libconfig.SpecDiscovery, "", map[string]string{})
+	annotateModel(model, codec)
+
+	want := &enumAnnotation{
+		Name:              "Status",
+		ModuleName:        "status",
+		QualifiedName:     "crate::model::Status",
+		RelativeName:      "Status",
+		ProstRelativeName: "Status",
+		UniqueNames:       []*api.EnumValue{v0, v1},
+		SerializeAsString: true,
+		NameInExamples:    "google_cloud_test_v1::model::Status",
+	}
+
+	if diff := cmp.Diff(want, enum.Codec, cmpopts.IgnoreFields(api.EnumValue{}, "Codec", "Parent")); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+}

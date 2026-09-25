@@ -55,8 +55,13 @@ pub enum {{Codec.Name}} {
     {{/Codec.UniqueNames}}
     /// If set, the enum was initialized with an unknown value.
     ///
+    {{#Codec.SerializeAsString}}
+    /// Applications can examine the value using [{{Codec.Name}}::name].
+    {{/Codec.SerializeAsString}}
+    {{^Codec.SerializeAsString}}
     /// Applications can examine the value using [{{Codec.Name}}::value] or
     /// [{{Codec.Name}}::name].
+    {{/Codec.SerializeAsString}}
     UnknownValue({{Codec.ModuleName}}::UnknownValue),
 }
 
@@ -77,6 +82,7 @@ pub mod {{Codec.ModuleName}} {
 
 {{> /templates/common/feature_gate}}
 impl {{Codec.Name}} {
+    {{^Codec.SerializeAsString}}
     /// Gets the enum value.
     ///
     /// Returns `None` if the enum contains an unknown value deserialized from
@@ -89,11 +95,14 @@ impl {{Codec.Name}} {
             Self::UnknownValue(u) => u.0.value(),
         }
     }
+    {{/Codec.SerializeAsString}}
 
     /// Gets the enum value as a string.
+    {{^Codec.SerializeAsString}}
     ///
     /// Returns `None` if the enum contains an unknown value deserialized from
     /// the integer representation of enums.
+    {{/Codec.SerializeAsString}}
     pub fn name(&self) -> std::option::Option<&str> {
         match self {
             {{#Codec.UniqueNames}}
@@ -104,6 +113,7 @@ impl {{Codec.Name}} {
     }
 }
 
+{{^Codec.SerializeAsString}}
 {{> /templates/common/feature_gate}}
 impl std::default::Default for {{Codec.Name}} {
     fn default() -> Self {
@@ -111,14 +121,21 @@ impl std::default::Default for {{Codec.Name}} {
         Self::from(0)
     }
 }
+{{/Codec.SerializeAsString}}
 
 {{> /templates/common/feature_gate}}
 impl std::fmt::Display for {{Codec.Name}} {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::result::Result<(), std::fmt::Error> {
+        {{#Codec.SerializeAsString}}
+        wkt::internal::display_enum(f, self.name(), std::option::Option::None)
+        {{/Codec.SerializeAsString}}
+        {{^Codec.SerializeAsString}}
         wkt::internal::display_enum(f, self.name(), self.value())
+        {{/Codec.SerializeAsString}}
     }
 }
 
+{{^Codec.SerializeAsString}}
 {{> /templates/common/feature_gate}}
 impl std::convert::From<i32> for {{Codec.Name}} {
     fn from(value: i32) -> Self {
@@ -130,6 +147,7 @@ impl std::convert::From<i32> for {{Codec.Name}} {
         }
     }
 }
+{{/Codec.SerializeAsString}}
 
 {{> /templates/common/feature_gate}}
 impl std::convert::From<&str> for {{Codec.Name}} {
@@ -170,7 +188,13 @@ impl<'de> serde::de::Deserialize<'de> for {{Codec.Name}} {
     where
         D: serde::Deserializer<'de>,
     {
+        {{#Codec.SerializeAsString}}
+        deserializer.deserialize_str(wkt::internal::StringEnumVisitor::<{{Codec.Name}}>::new(
+            "{{ID}}"))
+        {{/Codec.SerializeAsString}}
+        {{^Codec.SerializeAsString}}
         deserializer.deserialize_any(wkt::internal::EnumVisitor::<{{Codec.Name}}>::new(
             "{{ID}}"))
+        {{/Codec.SerializeAsString}}
     }
 }

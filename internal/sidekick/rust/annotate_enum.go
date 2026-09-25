@@ -22,10 +22,11 @@ import (
 )
 
 type enumAnnotation struct {
-	Name        string
-	ModuleName  string
-	DocLines    []string
-	UniqueNames []*api.EnumValue
+	Name              string
+	ModuleName        string
+	DocLines          []string
+	UniqueNames       []*api.EnumValue
+	SerializeAsString bool
 	// The fully qualified name, including the `codec.modulePath`
 	// (typically `crate::model::`) prefix. For external enums this is prefixed
 	// by the external crate name.
@@ -102,6 +103,7 @@ func (c *codec) annotateEnum(e *api.Enum, model *api.API, full bool) error {
 		ProstRelativeName: prostEnumRelativePath(e),
 		NameInExamples:    nameInExamples,
 		IsWktNullValue:    nameInExamples == "wkt::NullValue",
+		SerializeAsString: c.serializeEnumsAsStrings,
 	}
 	e.Codec = annotations
 
