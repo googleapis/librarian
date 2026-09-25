@@ -310,9 +310,6 @@ func generateLibraries(ctx context.Context, cfg *config.Config, libraries []*con
 		// Run the generation in parallel.
 		g, gctx := errgroup.WithContext(ctx)
 		g.SetLimit(runtime.NumCPU())
-		g.Go(func() error {
-			return writeDocIndex(cfg, src.Googleapis)
-		})
 		for _, library := range libraries {
 			g.Go(func() error {
 				if err := rust.Generate(gctx, cfg, library, src); err != nil {
@@ -340,13 +337,13 @@ func generateLibraries(ctx context.Context, cfg *config.Config, libraries []*con
 		if err := f.Wait(); err != nil {
 			return err
 		}
+		if err := writeDocIndex(cfg, src.Googleapis); err != nil {
+			return err
+		}
 		return rust.UpdateWorkspace(ctx)
 	case config.LanguageSwift:
 		g, gctx := errgroup.WithContext(ctx)
 		g.SetLimit(runtime.NumCPU())
-		g.Go(func() error {
-			return writeDocIndex(cfg, src.Googleapis)
-		})
 		for _, library := range libraries {
 			g.Go(func() error {
 				if err := swift.Generate(gctx, cfg, library, src); err != nil {
@@ -358,7 +355,10 @@ func generateLibraries(ctx context.Context, cfg *config.Config, libraries []*con
 				return nil
 			})
 		}
-		return g.Wait()
+		if err := g.Wait(); err != nil {
+			return err
+		}
+		return writeDocIndex(cfg, src.Googleapis)
 	default:
 		return fmt.Errorf("%w: %q", errUnsupportedLanguage, cfg.Language)
 	}
