@@ -23,16 +23,22 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/filesystem"
 )
 
+const (
+	maxMvnRetries = 3
+)
+
 var (
-	errReadPOM    = errors.New("failed to read pom.xml")
-	errParsePOM   = errors.New("failed to parse pom.xml")
-	errInvalidPOM = errors.New("invalid pom.xml metadata")
+	errReadPOM        = errors.New("failed to read pom.xml")
+	errParsePOM       = errors.New("failed to parse pom.xml")
+	errInvalidPOM     = errors.New("invalid pom.xml metadata")
+	defaultMvnBackoff = 30 * time.Second
 )
 
 // pomProject represents the target Maven metadata structured from pom.xml.
@@ -150,15 +156,40 @@ func getM2ArtifactSpec(mvnTool *config.MavenTool) (string, string) {
 }
 
 // downloadM2Artifact executes mvn dependency:get to download the target artifact.
+// It retries up to maxMvnRetries times with exponential backoff on failure.
 func downloadM2Artifact(ctx context.Context, artifact, workDir string) error {
-	args := []string{
-		"dependency:get",
-		"-Dartifact=" + artifact,
+	var err error
+	backoff := defaultMvnBackoff
+	for attempt := range maxMvnRetries {
+		if attempt > 0 {
+			select {
+			case <-time.After(backoff):
+				backoff *= 2
+			case <-ctx.Done():
+				return ctx.Err()
+			}
+		}
+
+		args := []string{
+			"dependency:get",
+			"-Dartifact=" + artifact,
+		}
+		// On retries, pass -U to force Maven to re-query the remote repo
+		// and bypass any cached failure markers (.lastUpdated).
+		if attempt > 0 {
+			args = append(args, "-U")
+		}
+
+		if err = command.RunStreamingInDir(ctx, workDir, "mvn", args...); err == nil {
+			return nil
+		}
+
+		if ctx.Err() != nil {
+			return ctx.Err()
+		}
 	}
-	if err := command.RunStreamingInDir(ctx, workDir, "mvn", args...); err != nil {
-		return fmt.Errorf("failed to download artifact %s: %w", artifact, err)
-	}
-	return nil
+
+	return fmt.Errorf("failed to download artifact %s after %d attempts: %w", artifact, maxMvnRetries, err)
 }
 
 // resolveM2ArtifactPath returns the absolute path to the downloaded artifact in the local .m2 repository.
