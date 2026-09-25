@@ -403,160 +403,102 @@ func TestOpenAPI_MakeAPI(t *testing.T) {
 		t.Errorf("missing message (Location) in MessageByID index")
 		return
 	}
-	apitest.CheckMessage(t, location, &api.Message{
-		Documentation: "A resource that represents a Google Cloud location.",
-		Name:          "Location",
-		ID:            "..Location",
-		Fields: []*api.Field{
-			{
-				Name:          "name",
-				ID:            "..Location.name",
-				JSONName:      "name",
-				Documentation: "Resource name for the location, which may vary between implementations." + "\nFor example: `\"projects/example-project/locations/us-east1\"`",
-				Typez:         api.TypezString,
-				TypezID:       "string",
-				Optional:      true,
-			},
-			{
-				Name:          "locationId",
-				ID:            "..Location.locationId",
-				JSONName:      "locationId",
-				Documentation: "The canonical id for this location. For example: `\"us-east1\"`.",
-				Typez:         api.TypezString,
-				TypezID:       "string",
-				Optional:      true,
-			},
-			{
-				Name:          "displayName",
-				ID:            "..Location.displayName",
-				JSONName:      "displayName",
-				Documentation: `The friendly name for this location, typically a nearby city name.` + "\n" + `For example, "Tokyo".`,
-				Typez:         api.TypezString,
-				TypezID:       "string",
-				Optional:      true,
-			},
-			{
-				Name:          "labels",
-				ID:            "..Location.labels",
-				JSONName:      "labels",
-				Documentation: "Cross-service attributes for the location. For example\n\n    {\"cloud.googleapis.com/region\": \"us-east1\"}",
-				Typez:         api.TypezMessage,
-				TypezID:       "$map<string, string>",
-				Optional:      false,
-				Map:           true,
-			},
-			{
-				Name:          "metadata",
-				ID:            "..Location.metadata",
-				JSONName:      "metadata",
-				Documentation: `Service-specific metadata. For example the available capacity at the given` + "\n" + `location.`,
-				Typez:         api.TypezMessage,
-				TypezID:       ".google.protobuf.Any",
-				Optional:      true,
-			},
-		},
-	})
+	wantLocation := api.NewTestMessage("Location").
+		WithPackage("").
+		WithID("..Location").
+		WithDocumentation("A resource that represents a Google Cloud location.").
+		WithFields(
+			api.NewTestField("name").
+				WithDocumentation("Resource name for the location, which may vary between implementations."+"\nFor example: `\"projects/example-project/locations/us-east1\"`").
+				WithType(api.TypezString).
+				WithTypezID("string").
+				WithOptional(),
+			api.NewTestField("locationId").
+				WithDocumentation("The canonical id for this location. For example: `\"us-east1\"`.").
+				WithType(api.TypezString).
+				WithTypezID("string").
+				WithOptional(),
+			api.NewTestField("displayName").
+				WithDocumentation(`The friendly name for this location, typically a nearby city name.`+"\n"+`For example, "Tokyo".`).
+				WithType(api.TypezString).
+				WithTypezID("string").
+				WithOptional(),
+			api.NewTestField("labels").
+				WithDocumentation("Cross-service attributes for the location. For example\n\n    {\"cloud.googleapis.com/region\": \"us-east1\"}").
+				WithType(api.TypezMessage).
+				WithTypezID("$map<string, string>").
+				WithMap(),
+			api.NewTestField("metadata").
+				WithDocumentation(`Service-specific metadata. For example the available capacity at the given`+"\n"+`location.`).
+				WithType(api.TypezMessage).
+				WithTypezID(".google.protobuf.Any").
+				WithOptional(),
+		)
+	for _, f := range wantLocation.Fields {
+		f.Parent = nil
+	}
+	apitest.CheckMessage(t, location, wantLocation)
 
 	listLocationsResponse := test.Message("..ListLocationsResponse")
 	if listLocationsResponse == nil {
 		t.Errorf("missing message (ListLocationsResponse) in MessageByID index")
 		return
 	}
-	apitest.CheckMessage(t, listLocationsResponse, &api.Message{
-		Documentation: "The response message for Locations.ListLocations.",
-		Name:          "ListLocationsResponse",
-		ID:            "..ListLocationsResponse",
-		Fields: []*api.Field{
-			{
-				Name:          "locations",
-				ID:            "..ListLocationsResponse.locations",
-				JSONName:      "locations",
-				Documentation: "A list of locations that matches the specified filter in the request.",
-				Typez:         api.TypezMessage,
-				TypezID:       "..Location",
-				Repeated:      true,
-			},
-			{
-				Name:          "nextPageToken",
-				ID:            "..ListLocationsResponse.nextPageToken",
-				JSONName:      "nextPageToken",
-				Documentation: "The standard List next-page token.",
-				Typez:         api.TypezString,
-				TypezID:       "string",
-				Optional:      true,
-			},
-		},
-		Pagination: &api.PaginationInfo{
-			NextPageToken: &api.Field{
-				Name:          "nextPageToken",
-				ID:            "..ListLocationsResponse.nextPageToken",
-				JSONName:      "nextPageToken",
-				Documentation: "The standard List next-page token.",
-				Typez:         api.TypezString,
-				TypezID:       "string",
-				Optional:      true,
-			},
-			PageableItem: &api.Field{
-				Name:          "locations",
-				ID:            "..ListLocationsResponse.locations",
-				JSONName:      "locations",
-				Documentation: "A list of locations that matches the specified filter in the request.",
-				Typez:         api.TypezMessage,
-				TypezID:       "..Location",
-				Repeated:      true,
-			},
-		},
-	})
+	nextPageToken := api.NewTestField("nextPageToken").
+		WithDocumentation("The standard List next-page token.").
+		WithType(api.TypezString).
+		WithTypezID("string").
+		WithOptional()
+	locations := api.NewTestField("locations").
+		WithDocumentation("A list of locations that matches the specified filter in the request.").
+		WithType(api.TypezMessage).
+		WithTypezID("..Location").
+		WithRepeated()
+	wantListLocationsResponse := api.NewTestMessage("ListLocationsResponse").
+		WithPackage("").
+		WithID("..ListLocationsResponse").
+		WithDocumentation("The response message for Locations.ListLocations.").
+		WithPagination(nextPageToken, locations)
+	for _, f := range wantListLocationsResponse.Fields {
+		f.Parent = nil
+	}
+	apitest.CheckMessage(t, listLocationsResponse, wantListLocationsResponse)
 
 	// This is a synthetic message, the OpenAPI spec does not contain requests
 	// messages for messages without a body.
-	want := &api.Message{
-		Name:             "ListLocationsRequest",
-		ID:               "..Service.ListLocationsRequest",
-		Documentation:    "Synthetic request message for the [ListLocations()][.Service.ListLocations] method.",
-		SyntheticRequest: true,
-		Fields: []*api.Field{
-			{
-				Name:          "project",
-				ID:            "..Service.ListLocationsRequest.project",
-				JSONName:      "project",
-				Documentation: "The `{project}` component of the target path.\n\nThe full target path will be in the form `/v1/projects/{project}/locations`.",
-				Typez:         api.TypezString,
-				TypezID:       "string",
-				Behavior:      []api.FieldBehavior{api.FieldBehaviorRequired},
-			},
-			{
-				Name:     "filter",
-				ID:       "..Service.ListLocationsRequest.filter",
-				JSONName: "filter",
-				Documentation: "A filter to narrow down results to a preferred subset." +
-					"\nThe filtering language accepts strings like `\"displayName=tokyo" +
-					"\"`, and\nis documented in more detail in [AIP-160](https://google" +
-					".aip.dev/160).",
-				Typez:    api.TypezString,
-				TypezID:  "string",
-				Optional: true,
-			},
-			{
-				Name:          "pageSize",
-				ID:            "..Service.ListLocationsRequest.pageSize",
-				JSONName:      "pageSize",
-				Documentation: "The maximum number of results to return.\nIf not set, the service selects a default.",
-				Typez:         api.TypezInt32,
-				TypezID:       "int32",
-				Optional:      true,
-			},
-			{
-				Name:          "pageToken",
-				ID:            "..Service.ListLocationsRequest.pageToken",
-				JSONName:      "pageToken",
-				Documentation: "A page token received from the `next_page_token` field in the response.\nSend that page token to receive the subsequent page.",
-				Typez:         api.TypezString,
-				TypezID:       "string",
-				Optional:      true,
-			},
-		},
+	want := api.NewTestMessage("ListLocationsRequest").
+		WithPackage("").
+		WithID("..Service.ListLocationsRequest").
+		WithDocumentation("Synthetic request message for the [ListLocations()][.Service.ListLocations] method.").
+		WithFields(
+			api.NewTestField("project").
+				WithDocumentation("The `{project}` component of the target path.\n\nThe full target path will be in the form `/v1/projects/{project}/locations`.").
+				WithType(api.TypezString).
+				WithTypezID("string").
+				WithBehavior(api.FieldBehaviorRequired),
+			api.NewTestField("filter").
+				WithDocumentation("A filter to narrow down results to a preferred subset."+
+					"\nThe filtering language accepts strings like `\"displayName=tokyo"+
+					"\"`, and\nis documented in more detail in [AIP-160](https://google"+
+					".aip.dev/160).").
+				WithType(api.TypezString).
+				WithTypezID("string").
+				WithOptional(),
+			api.NewTestField("pageSize").
+				WithDocumentation("The maximum number of results to return.\nIf not set, the service selects a default.").
+				WithType(api.TypezInt32).
+				WithTypezID("int32").
+				WithOptional(),
+			api.NewTestField("pageToken").
+				WithDocumentation("A page token received from the `next_page_token` field in the response.\nSend that page token to receive the subsequent page.").
+				WithType(api.TypezString).
+				WithTypezID("string").
+				WithOptional(),
+		)
+	for _, f := range want.Fields {
+		f.Parent = nil
 	}
+	want.SyntheticRequest = true
 	listLocationsRequest := test.Message(want.ID)
 	if listLocationsRequest == nil {
 		t.Errorf("missing message (%s) in MessageByID index", want.ID)
@@ -587,39 +529,26 @@ func TestOpenAPI_MakeAPI(t *testing.T) {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 
-	apitest.CheckMethod(t, service, "ListLocations", &api.Method{
-		Name:          "ListLocations",
-		ID:            "..Service.ListLocations",
-		Documentation: "Lists information about the supported locations for this service.",
-		InputTypeID:   "..Service.ListLocationsRequest",
-		OutputTypeID:  "..ListLocationsResponse",
-		PathInfo: &api.PathInfo{
-			Bindings: []*api.PathBinding{
-				{
-					Verb: "GET",
-					PathTemplate: (&api.PathTemplate{}).
-						WithLiteral("v1").
-						WithLiteral("projects").
-						WithVariableNamed("project").
-						WithLiteral("locations"),
-					QueryParameters: map[string]bool{
-						"filter":    true,
-						"pageSize":  true,
-						"pageToken": true,
-					},
-				},
-			},
-		},
-		Pagination: &api.Field{
-			Name:          "pageToken",
-			ID:            "..Service.ListLocationsRequest.pageToken",
-			JSONName:      "pageToken",
-			Documentation: "A page token received from the `next_page_token` field in the response.\nSend that page token to receive the subsequent page.",
-			Typez:         api.TypezString,
-			TypezID:       "string",
-			Optional:      true,
-		},
-	})
+	listLocationsPagination := want.Fields[3]
+	wantListLocationsMethod := api.NewTestMethod("ListLocations").
+		WithID("..Service.ListLocations").
+		WithDocumentation("Lists information about the supported locations for this service.").
+		WithVerb("GET").
+		WithPathTemplate((&api.PathTemplate{}).
+			WithLiteral("v1").
+			WithLiteral("projects").
+			WithVariableNamed("project").
+			WithLiteral("locations")).
+		WithQueryParameters(map[string]bool{
+			"filter":    true,
+			"pageSize":  true,
+			"pageToken": true,
+		}).
+		WithPagination(listLocationsPagination)
+	wantListLocationsMethod.IsList = false
+	wantListLocationsMethod.InputTypeID = "..Service.ListLocationsRequest"
+	wantListLocationsMethod.OutputTypeID = "..ListLocationsResponse"
+	apitest.CheckMethod(t, service, "ListLocations", wantListLocationsMethod)
 
 	cs := sample.MethodCreate()
 	apitest.CheckMethod(t, service, cs.Name, cs)
@@ -630,13 +559,11 @@ func TestOpenAPI_MakeAPI(t *testing.T) {
 
 func TestOpenAPI_ServicePlaceholder(t *testing.T) {
 	test := openapiSecretManagerAPI(t)
-	want := &api.Message{
-		Name:               "Service",
-		ID:                 "..Service",
-		Package:            "",
-		Documentation:      "Synthetic messages for the [Service][.Service] service.",
-		ServicePlaceholder: true,
-	}
+	want := api.NewTestMessage("Service").
+		WithPackage("").
+		WithID("..Service").
+		WithDocumentation("Synthetic messages for the [Service][.Service] service.")
+	want.ServicePlaceholder = true
 	got := test.Message("..Service")
 	if got == nil {
 		t.Errorf("missing service placeholder message in MessageById index")
