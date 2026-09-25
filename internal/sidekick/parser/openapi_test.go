@@ -77,6 +77,18 @@ func TestOpenAPI_AllOf(t *testing.T) {
 	apitest.CheckMessage(t, message, want)
 }
 
+func newTestOpenAPIFakeMessage(fields ...*api.Field) *api.Message {
+	m := api.NewTestMessage("Fake").
+		WithPackage("").
+		WithID("..Fake").
+		WithDocumentation("A test message.").
+		WithFields(fields...)
+	for _, f := range m.Fields {
+		f.Parent = nil
+	}
+	return m
+}
+
 func TestOpenAPI_BasicTypes(t *testing.T) {
 	// A message with basic types.
 	const messageWithBasicTypes = `
@@ -124,115 +136,22 @@ func TestOpenAPI_BasicTypes(t *testing.T) {
 		t.Errorf("missing message in MessageByID index")
 		return
 	}
-	apitest.CheckMessage(t, message, &api.Message{
-		Name:          "Fake",
-		ID:            "..Fake",
-		Documentation: "A test message.",
-		Fields: []*api.Field{
-			{
-				Name:     "fBool",
-				ID:       "..Fake.fBool",
-				JSONName: "fBool",
-				Typez:    api.TypezBool,
-				TypezID:  "bool",
-			},
-			{
-				Name:     "fInt64",
-				ID:       "..Fake.fInt64",
-				JSONName: "fInt64",
-				Typez:    api.TypezInt64,
-				TypezID:  "int64",
-			},
-			{
-				Name:     "fInt32",
-				ID:       "..Fake.fInt32",
-				JSONName: "fInt32",
-				Typez:    api.TypezInt32,
-				TypezID:  "int32",
-			},
-			{
-				Name:     "fUInt32",
-				ID:       "..Fake.fUInt32",
-				JSONName: "fUInt32",
-				Typez:    api.TypezUint32,
-				TypezID:  "uint32",
-			},
-			{
-				Name:     "fFloat",
-				ID:       "..Fake.fFloat",
-				JSONName: "fFloat",
-				Typez:    api.TypezFloat,
-				TypezID:  "float",
-			},
-			{
-				Name:     "fDouble",
-				ID:       "..Fake.fDouble",
-				JSONName: "fDouble",
-				Typez:    api.TypezDouble,
-				TypezID:  "double",
-			},
-			{
-				Name:     "fString",
-				ID:       "..Fake.fString",
-				JSONName: "fString",
-				Typez:    api.TypezString,
-				TypezID:  "string",
-			},
-			{
-				Name:     "fOptional",
-				ID:       "..Fake.fOptional",
-				JSONName: "fOptional",
-				Typez:    api.TypezString,
-				TypezID:  "string",
-				Optional: true,
-			},
-			{
-				Name:     "fSInt64",
-				ID:       "..Fake.fSInt64",
-				JSONName: "fSInt64",
-				Typez:    api.TypezInt64,
-				TypezID:  "int64",
-			},
-			{
-				Name:     "fSUInt64",
-				ID:       "..Fake.fSUInt64",
-				JSONName: "fSUInt64",
-				Typez:    api.TypezUint64,
-				TypezID:  "uint64",
-			},
-			{
-				Name:     "fDuration",
-				ID:       "..Fake.fDuration",
-				JSONName: "fDuration",
-				Typez:    api.TypezMessage,
-				TypezID:  ".google.protobuf.Duration",
-				Optional: true,
-			},
-			{
-				Name:     "fTimestamp",
-				ID:       "..Fake.fTimestamp",
-				JSONName: "fTimestamp",
-				Typez:    api.TypezMessage,
-				TypezID:  ".google.protobuf.Timestamp",
-				Optional: true,
-			},
-			{
-				Name:     "fFieldMask",
-				ID:       "..Fake.fFieldMask",
-				JSONName: "fFieldMask",
-				Typez:    api.TypezMessage,
-				TypezID:  ".google.protobuf.FieldMask",
-				Optional: true,
-			},
-			{
-				Name:     "fBytes",
-				ID:       "..Fake.fBytes",
-				JSONName: "fBytes",
-				Typez:    api.TypezBytes,
-				TypezID:  "bytes",
-			},
-		},
-	})
+	apitest.CheckMessage(t, message, newTestOpenAPIFakeMessage(
+		api.NewTestField("fBool").WithType(api.TypezBool).WithTypezID("bool"),
+		api.NewTestField("fInt64").WithType(api.TypezInt64).WithTypezID("int64"),
+		api.NewTestField("fInt32").WithType(api.TypezInt32).WithTypezID("int32"),
+		api.NewTestField("fUInt32").WithType(api.TypezUint32).WithTypezID("uint32").WithJSONName("fUInt32"),
+		api.NewTestField("fFloat").WithType(api.TypezFloat).WithTypezID("float"),
+		api.NewTestField("fDouble").WithType(api.TypezDouble).WithTypezID("double"),
+		api.NewTestField("fString").WithType(api.TypezString).WithTypezID("string"),
+		api.NewTestField("fOptional").WithType(api.TypezString).WithTypezID("string").WithOptional(),
+		api.NewTestField("fSInt64").WithType(api.TypezInt64).WithTypezID("int64").WithJSONName("fSInt64"),
+		api.NewTestField("fSUInt64").WithType(api.TypezUint64).WithTypezID("uint64").WithJSONName("fSUInt64"),
+		api.NewTestField("fDuration").WithType(api.TypezMessage).WithTypezID(".google.protobuf.Duration").WithOptional(),
+		api.NewTestField("fTimestamp").WithType(api.TypezMessage).WithTypezID(".google.protobuf.Timestamp").WithOptional(),
+		api.NewTestField("fFieldMask").WithType(api.TypezMessage).WithTypezID(".google.protobuf.FieldMask").WithOptional(),
+		api.NewTestField("fBytes").WithType(api.TypezBytes).WithTypezID("bytes"),
+	))
 }
 
 func TestOpenAPI_ArrayTypes(t *testing.T) {
@@ -271,94 +190,19 @@ func TestOpenAPI_ArrayTypes(t *testing.T) {
 		t.Errorf("missing message in MessageByID index")
 		return
 	}
-	apitest.CheckMessage(t, message, &api.Message{
-		Name:          "Fake",
-		ID:            "..Fake",
-		Documentation: "A test message.",
-		Fields: []*api.Field{
-			{
-				Repeated: true,
-				Name:     "fBool",
-				ID:       "..Fake.fBool",
-				JSONName: "fBool",
-				Typez:    api.TypezBool,
-				TypezID:  "bool"},
-			{
-				Repeated: true,
-				Name:     "fInt64",
-				ID:       "..Fake.fInt64",
-				JSONName: "fInt64",
-				Typez:    api.TypezInt64,
-				TypezID:  "int64"},
-			{
-				Repeated: true,
-				Name:     "fInt32",
-				ID:       "..Fake.fInt32",
-				JSONName: "fInt32",
-				Typez:    api.TypezInt32,
-				TypezID:  "int32"},
-			{
-				Repeated: true,
-				Name:     "fUInt32",
-				ID:       "..Fake.fUInt32",
-				JSONName: "fUInt32",
-				Typez:    api.TypezUint32,
-				TypezID:  "uint32"},
-			{
-				Repeated: true,
-				Name:     "fString",
-				ID:       "..Fake.fString",
-				JSONName: "fString",
-				Typez:    api.TypezString,
-				TypezID:  "string"},
-			{
-				Repeated: true,
-				Name:     "fSInt64",
-				ID:       "..Fake.fSInt64",
-				JSONName: "fSInt64",
-				Typez:    api.TypezInt64,
-				TypezID:  "int64"},
-			{
-				Repeated: true,
-				Name:     "fSUInt64",
-				ID:       "..Fake.fSUInt64",
-				JSONName: "fSUInt64",
-				Typez:    api.TypezUint64,
-				TypezID:  "uint64"},
-			{
-				Repeated: true,
-				Name:     "fDuration",
-				ID:       "..Fake.fDuration",
-				JSONName: "fDuration",
-				Typez:    api.TypezMessage,
-				TypezID:  ".google.protobuf.Duration",
-			},
-			{
-				Repeated: true,
-				Name:     "fTimestamp",
-				ID:       "..Fake.fTimestamp",
-				JSONName: "fTimestamp",
-				Typez:    api.TypezMessage,
-				TypezID:  ".google.protobuf.Timestamp",
-			},
-			{
-				Repeated: true,
-				Name:     "fFieldMask",
-				ID:       "..Fake.fFieldMask",
-				JSONName: "fFieldMask",
-				Typez:    api.TypezMessage,
-				TypezID:  ".google.protobuf.FieldMask",
-			},
-			{
-				Repeated: true,
-				Name:     "fBytes",
-				ID:       "..Fake.fBytes",
-				JSONName: "fBytes",
-				Typez:    api.TypezBytes,
-				TypezID:  "bytes",
-			},
-		},
-	})
+	apitest.CheckMessage(t, message, newTestOpenAPIFakeMessage(
+		api.NewTestField("fBool").WithType(api.TypezBool).WithTypezID("bool").WithRepeated(),
+		api.NewTestField("fInt64").WithType(api.TypezInt64).WithTypezID("int64").WithRepeated(),
+		api.NewTestField("fInt32").WithType(api.TypezInt32).WithTypezID("int32").WithRepeated(),
+		api.NewTestField("fUInt32").WithType(api.TypezUint32).WithTypezID("uint32").WithJSONName("fUInt32").WithRepeated(),
+		api.NewTestField("fString").WithType(api.TypezString).WithTypezID("string").WithRepeated(),
+		api.NewTestField("fSInt64").WithType(api.TypezInt64).WithTypezID("int64").WithJSONName("fSInt64").WithRepeated(),
+		api.NewTestField("fSUInt64").WithType(api.TypezUint64).WithTypezID("uint64").WithJSONName("fSUInt64").WithRepeated(),
+		api.NewTestField("fDuration").WithType(api.TypezMessage).WithTypezID(".google.protobuf.Duration").WithRepeated(),
+		api.NewTestField("fTimestamp").WithType(api.TypezMessage).WithTypezID(".google.protobuf.Timestamp").WithRepeated(),
+		api.NewTestField("fFieldMask").WithType(api.TypezMessage).WithTypezID(".google.protobuf.FieldMask").WithRepeated(),
+		api.NewTestField("fBytes").WithType(api.TypezBytes).WithTypezID("bytes").WithRepeated(),
+	))
 }
 
 func TestOpenAPI_SimpleObject(t *testing.T) {
@@ -392,32 +236,18 @@ func TestOpenAPI_SimpleObject(t *testing.T) {
 		t.Fatalf("Error in makeAPI() %q", err)
 	}
 
-	apitest.CheckMessage(t, test.Messages[0], &api.Message{
-		Name:          "Fake",
-		ID:            "..Fake",
-		Documentation: "A test message.",
-		Fields: []*api.Field{
-			{
-				Name:          "fObject",
-				ID:            "..Fake.fObject",
-				JSONName:      "fObject",
-				Typez:         api.TypezMessage,
-				TypezID:       "..Foo",
-				Documentation: "An object field.",
-				Optional:      true,
-			},
-			{
-				Name:          "fObjectArray",
-				ID:            "..Fake.fObjectArray",
-				JSONName:      "fObjectArray",
-				Typez:         api.TypezMessage,
-				TypezID:       "..Bar",
-				Documentation: "An object array field.",
-				Optional:      false,
-				Repeated:      true,
-			},
-		},
-	})
+	apitest.CheckMessage(t, test.Messages[0], newTestOpenAPIFakeMessage(
+		api.NewTestField("fObject").
+			WithDocumentation("An object field.").
+			WithType(api.TypezMessage).
+			WithTypezID("..Foo").
+			WithOptional(),
+		api.NewTestField("fObjectArray").
+			WithDocumentation("An object array field.").
+			WithType(api.TypezMessage).
+			WithTypezID("..Bar").
+			WithRepeated(),
+	))
 }
 
 func TestOpenAPI_Any(t *testing.T) {
@@ -441,14 +271,9 @@ func TestOpenAPI_Any(t *testing.T) {
 		t.Errorf("Error in makeAPI() %q", err)
 	}
 
-	apitest.CheckMessage(t, test.Messages[0], &api.Message{
-		Name:          "Fake",
-		ID:            "..Fake",
-		Documentation: "A test message.",
-		Fields: []*api.Field{
-			{Name: "fMap", ID: "..Fake.fMap", JSONName: "fMap", Typez: api.TypezMessage, TypezID: ".google.protobuf.Any", Optional: true},
-		},
-	})
+	apitest.CheckMessage(t, test.Messages[0], newTestOpenAPIFakeMessage(
+		api.NewTestField("fMap").WithType(api.TypezMessage).WithTypezID(".google.protobuf.Any").WithOptional(),
+	))
 }
 
 func TestOpenAPI_MapString(t *testing.T) {
