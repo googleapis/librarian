@@ -76,7 +76,7 @@ func (c *codec) annotateMessage(m *api.Message, model *api.API, full bool) error
 	nameInExamples := c.nameInExamplesFromQualifiedName(qualifiedName, model)
 	annotations := &messageAnnotation{
 		Name:              toPascal(m.Name),
-		ModuleName:        toSnake(m.Name),
+		ModuleName:        c.messageModuleName(m),
 		QualifiedName:     qualifiedName,
 		RelativeName:      relativeName,
 		ProstRelativeName: prostMessageRelativePath(m),
