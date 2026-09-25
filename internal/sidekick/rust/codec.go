@@ -672,6 +672,14 @@ func (c *codec) modelModule(packageName, sourceSpecificationPackageName string) 
 	return packageNameToRootModule(mapped.name) + "::model", nil
 }
 
+func (c *codec) messageModuleName(m *api.Message) string {
+	name := toSnake(m.Name)
+	if m.ServicePlaceholder {
+		name += "_client"
+	}
+	return name
+}
+
 func (c *codec) messageScopeName(m *api.Message, childPackageName, sourceSpecificationPackageName string) (string, error) {
 	rustPkg := func(packageName string) (string, error) {
 		return c.modelModule(packageName, sourceSpecificationPackageName)
@@ -685,13 +693,13 @@ func (c *codec) messageScopeName(m *api.Message, childPackageName, sourceSpecifi
 		if err != nil {
 			return "", err
 		}
-		return p + "::" + toSnake(m.Name), nil
+		return p + "::" + c.messageModuleName(m), nil
 	}
 	p, err := c.messageScopeName(m.Parent, m.Package, sourceSpecificationPackageName)
 	if err != nil {
 		return "", err
 	}
-	return p + "::" + toSnake(m.Name), nil
+	return p + "::" + c.messageModuleName(m), nil
 }
 
 func (c *codec) enumScopeName(e *api.Enum, sourceSpecificationPackageName string) (string, error) {

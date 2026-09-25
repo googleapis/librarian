@@ -128,3 +128,47 @@ func TestInternalMessageOverrides(t *testing.T) {
 		t.Errorf("Private method should not be flagged as internal")
 	}
 }
+
+func TestServicePlaceholderModuleSuffix(t *testing.T) {
+	servicePlaceholder := api.NewTestMessage("globalFrontendSettings")
+	servicePlaceholder.ServicePlaceholder = true
+	childReq := api.NewTestMessage("GetRequest")
+	childReq.Parent = servicePlaceholder
+	servicePlaceholder.Messages = []*api.Message{childReq}
+
+	schemaMessage := api.NewTestMessage("GlobalFrontendSettings")
+
+	model := api.NewTestAPI([]*api.Message{servicePlaceholder, schemaMessage}, nil, nil)
+	codec := newTestCodec(t, libconfig.SpecDiscovery, "", nil)
+	if _, err := annotateModel(model, codec); err != nil {
+		t.Fatalf("failed to annotate model: %v", err)
+	}
+
+	placeholderAnn, ok := servicePlaceholder.Codec.(*messageAnnotation)
+	if !ok {
+		t.Fatalf("expected messageAnnotation on servicePlaceholder")
+	}
+	if placeholderAnn.ModuleName != "global_frontend_settings_client" {
+		t.Errorf("got servicePlaceholder.ModuleName = %q, want %q", placeholderAnn.ModuleName, "global_frontend_settings_client")
+	}
+
+	childAnn, ok := childReq.Codec.(*messageAnnotation)
+	if !ok {
+		t.Fatalf("expected messageAnnotation on childReq")
+	}
+	if childAnn.QualifiedName != "crate::model::global_frontend_settings_client::GetRequest" {
+		t.Errorf("got childReq.QualifiedName = %q, want %q", childAnn.QualifiedName, "crate::model::global_frontend_settings_client::GetRequest")
+	}
+
+	schemaAnn, ok := schemaMessage.Codec.(*messageAnnotation)
+	if !ok {
+		t.Fatalf("expected messageAnnotation on schemaMessage")
+	}
+	if schemaAnn.ModuleName != "global_frontend_settings" {
+		t.Errorf("got schemaMessage.ModuleName = %q, want %q", schemaAnn.ModuleName, "global_frontend_settings")
+	}
+	if schemaAnn.QualifiedName != "crate::model::GlobalFrontendSettings" {
+		t.Errorf("got schemaMessage.QualifiedName = %q, want %q", schemaAnn.QualifiedName, "crate::model::GlobalFrontendSettings")
+	}
+}
+
