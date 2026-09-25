@@ -93,6 +93,10 @@ func TestScopesEnumValueInMessage(t *testing.T) {
 func TestScopesField(t *testing.T) {
 	standardField := NewTestField("field")
 	_ = NewTestMessage("Parent").WithFields(standardField)
+
+	nilParentField := NewTestField("field")
+	nilParentField.ID = ".test.Parent.field"
+
 	for _, test := range []struct {
 		name  string
 		field *Field
@@ -105,13 +109,10 @@ func TestScopesField(t *testing.T) {
 		},
 		{
 			name:  "nil parent",
-			field: NewTestField("field").WithTypezID(".test.Parent.field"),
+			field: nilParentField,
 			want:  []string{"test.Parent", "test"},
 		},
 	} {
-		if test.name == "nil parent" {
-			test.field.ID = ".test.Parent.field"
-		}
 		t.Run(test.name, func(t *testing.T) {
 			got := test.field.Scopes()
 			if diff := cmp.Diff(test.want, got); diff != "" {
