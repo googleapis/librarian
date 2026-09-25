@@ -121,104 +121,61 @@ func TestLroAnnotationsError(t *testing.T) {
 
 	// None of the real services does this, but we want the parser to report an
 	// error if it ever does.
-	badService := &api.Service{
-		ID:   "..Service",
-		Name: "Service",
-		Methods: []*api.Method{
-			{
-				Name:         "create_foo",
-				ID:           "..Service.create_foo",
-				OutputTypeID: "..Operation",
-				PathInfo: &api.PathInfo{
-					Bindings: []*api.PathBinding{
-						{
-							Verb: "GET",
-							PathTemplate: (&api.PathTemplate{}).
-								WithLiteral("p").
-								WithVariableNamed("project").
-								WithLiteral("l").
-								WithVariableNamed("zone").
-								WithLiteral("foo").
-								WithVariableNamed("id"),
-							QueryParameters: map[string]bool{},
-						},
-					},
-				},
-			},
-			{
-				Name:         "create_bar",
-				ID:           "..Service.create_bar",
-				OutputTypeID: "..Operation",
-				PathInfo: &api.PathInfo{
-					Bindings: []*api.PathBinding{
-						{
-							Verb: "GET",
-							PathTemplate: (&api.PathTemplate{}).
-								WithLiteral("p").
-								WithVariableNamed("project").
-								WithLiteral("l").
-								WithVariableNamed("region").
-								WithLiteral("foo").
-								WithVariableNamed("id"),
-							QueryParameters: map[string]bool{},
-						},
-					},
-				},
-			},
-		},
-	}
-	pollerService := &api.Service{
-		ID:   "..Operations",
-		Name: "Operations",
-		Methods: []*api.Method{
-			{
-				Name:         "get_1",
-				ID:           "..Operations.get_1",
-				OutputTypeID: "..Operation",
-				PathInfo: &api.PathInfo{
-					Bindings: []*api.PathBinding{
-						{
-							Verb: "GET",
-							PathTemplate: (&api.PathTemplate{}).
-								WithLiteral("p").
-								WithVariableNamed("project").
-								WithLiteral("l").
-								WithVariableNamed("zone").
-								WithLiteral("operations").
-								WithVariableNamed("operation"),
-							QueryParameters: map[string]bool{},
-						},
-					},
-				},
-			},
-			{
-				Name:         "get_2",
-				ID:           "..Operations.get_2",
-				OutputTypeID: "..Operation",
-				PathInfo: &api.PathInfo{
-					Bindings: []*api.PathBinding{
-						{
-							Verb: "GET",
-							PathTemplate: (&api.PathTemplate{}).
-								WithLiteral("p").
-								WithVariableNamed("project").
-								WithLiteral("l").
-								WithVariableNamed("region").
-								WithLiteral("operations").
-								WithVariableNamed("operation"),
-							QueryParameters: map[string]bool{},
-						},
-					},
-				},
-			},
-		},
-	}
-	operation := &api.Message{
-		ID:   "..Operation",
-		Name: "Operation",
-	}
+	operation := api.NewTestMessage("Operation").WithPackage("")
+	badService := api.NewTestService("Service").
+		WithPackage("").
+		WithMethods(
+			api.NewTestMethod("create_foo").
+				WithOutput(operation).
+				WithVerb("GET").
+				WithPathTemplate((&api.PathTemplate{}).
+					WithLiteral("p").
+					WithVariableNamed("project").
+					WithLiteral("l").
+					WithVariableNamed("zone").
+					WithLiteral("foo").
+					WithVariableNamed("id")).
+				WithQueryParameters(map[string]bool{}),
+			api.NewTestMethod("create_bar").
+				WithOutput(operation).
+				WithVerb("GET").
+				WithPathTemplate((&api.PathTemplate{}).
+					WithLiteral("p").
+					WithVariableNamed("project").
+					WithLiteral("l").
+					WithVariableNamed("region").
+					WithLiteral("foo").
+					WithVariableNamed("id")).
+				WithQueryParameters(map[string]bool{}),
+		)
+	pollerService := api.NewTestService("Operations").
+		WithPackage("").
+		WithMethods(
+			api.NewTestMethod("get_1").
+				WithOutput(operation).
+				WithVerb("GET").
+				WithPathTemplate((&api.PathTemplate{}).
+					WithLiteral("p").
+					WithVariableNamed("project").
+					WithLiteral("l").
+					WithVariableNamed("zone").
+					WithLiteral("operations").
+					WithVariableNamed("operation")).
+				WithQueryParameters(map[string]bool{}),
+			api.NewTestMethod("get_2").
+				WithOutput(operation).
+				WithVerb("GET").
+				WithPathTemplate((&api.PathTemplate{}).
+					WithLiteral("p").
+					WithVariableNamed("project").
+					WithLiteral("l").
+					WithVariableNamed("region").
+					WithLiteral("operations").
+					WithVariableNamed("operation")).
+				WithQueryParameters(map[string]bool{}),
+		)
 
-	model := api.NewTestAPI([]*api.Message{operation}, []*api.Enum{}, []*api.Service{badService, pollerService})
+	model := api.NewTestAPI([]*api.Message{operation}, nil, []*api.Service{badService, pollerService})
 	if lroAnnotations(model, discoveryConfig) == nil {
 		t.Errorf("expected an error, got %v", badService)
 	}

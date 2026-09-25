@@ -25,40 +25,25 @@ import (
 )
 
 func TestQueryParams(t *testing.T) {
-	field1 := &api.Field{
-		Name: "field1",
-	}
-	field2 := &api.Field{
-		Name: "field2",
-	}
-	request := &api.Message{
-		Name: "TestRequest",
-		ID:   "..TestRequest",
-		Fields: []*api.Field{
-			field1, field2,
-			{
-				Name: "used_in_path",
-			},
-			{
-				Name: "used_in_body",
-			},
-		},
-	}
-	binding := &api.PathBinding{
-		Verb: "GET",
-		QueryParameters: map[string]bool{
+	field1 := api.NewTestField("field1")
+	field2 := api.NewTestField("field2")
+	request := api.NewTestMessage("TestRequest").
+		WithPackage("").
+		WithFields(
+			field1,
+			field2,
+			api.NewTestField("used_in_path"),
+			api.NewTestField("used_in_body"),
+		)
+	binding := api.NewTestPathBinding("GET", nil).
+		WithQueryParameters(map[string]bool{
 			"field1": true,
 			"field2": true,
-		},
-	}
-	method := &api.Method{
-		Name:      "Test",
-		ID:        "..TestService.Test",
-		InputType: request,
-		PathInfo: &api.PathInfo{
-			Bindings: []*api.PathBinding{binding},
-		},
-	}
+		})
+	method := api.NewTestMethod("Test").
+		WithID("..TestService.Test").
+		WithInput(request).
+		WithBindings(binding)
 
 	got := QueryParams(method, binding)
 	want := []*api.Field{field1, field2}
@@ -118,37 +103,27 @@ func TestHasNestedTypes(t *testing.T) {
 		want  bool
 	}{
 		{
-			input: &api.Message{
-				Name: "NoNested",
-			},
-			want: false,
+			input: api.NewTestMessage("NoNested"),
+			want:  false,
 		},
 		{
-			input: &api.Message{
-				Name:  "WithEnums",
-				Enums: []*api.Enum{{Name: "Enum"}},
-			},
+			input: api.NewTestMessage("WithEnums").
+				WithEnums(api.NewTestEnum("Enum")),
 			want: true,
 		},
 		{
-			input: &api.Message{
-				Name:   "WithOneOf",
-				OneOfs: []*api.OneOf{{Name: "OneOf"}},
-			},
+			input: api.NewTestMessage("WithOneOf").
+				WithOneOfs(api.NewTestOneOf("OneOf")),
 			want: true,
 		},
 		{
-			input: &api.Message{
-				Name:     "WithChildMessage",
-				Messages: []*api.Message{{Name: "Child"}},
-			},
+			input: api.NewTestMessage("WithChildMessage").
+				WithMessages(api.NewTestMessage("Child")),
 			want: true,
 		},
 		{
-			input: &api.Message{
-				Name:     "WithMap",
-				Messages: []*api.Message{{Name: "Map", IsMap: true}},
-			},
+			input: api.NewTestMessage("WithMap").
+				WithMessages(api.NewTestMapMessage("Map", api.TypezString, api.TypezString)),
 			want: false,
 		},
 	} {
@@ -160,52 +135,20 @@ func TestHasNestedTypes(t *testing.T) {
 }
 
 func TestFieldIsMap(t *testing.T) {
-	field0 := &api.Field{
-		Repeated: false,
-		Optional: false,
-		Name:     "children",
-		ID:       ".test.ParentMessage.children",
-		Typez:    api.TypezMessage,
-		TypezID:  ".test.ParentMessage.SingularMapEntry",
-	}
-	field1 := &api.Field{
-		Name:  "singular",
-		ID:    ".test.ParentMessage.singular",
-		Typez: api.TypezInt32,
-	}
-	field2 := &api.Field{
-		Name:    "singular",
-		ID:      ".test.ParentMessage.singular",
-		Typez:   api.TypezMessage,
-		TypezID: "invalid",
-	}
-	parent := &api.Message{
-		Name:   "ParentMessage",
-		ID:     ".test.ParentMessage",
-		Fields: []*api.Field{field0, field1, field2},
-	}
+	parent := api.NewTestMessage("ParentMessage")
+	mapMessage := api.NewTestMapMessageWithFields(
+		"SingularMapEntry",
+		api.NewTestField("key").WithType(api.TypezString),
+		api.NewTestField("value").WithMessageType(parent),
+	)
+	parent.WithMessages(mapMessage)
 
-	key := &api.Field{
-		Name:     "key",
-		JSONName: "key",
-		ID:       ".test.ParentMessage.SingularMapEntry.key",
-		Typez:    api.TypezString,
-	}
-	value := &api.Field{
-		Name:     "value",
-		JSONName: "value",
-		ID:       ".test.ParentMessage.SingularMapEntry.value",
-		Typez:    api.TypezMessage,
-		TypezID:  ".test.ParentMessage",
-	}
-	map_message := &api.Message{
-		Name:    "SingularMapEntry",
-		Package: "test",
-		ID:      ".test.ParentMessage.SingularMapEntry",
-		IsMap:   true,
-		Fields:  []*api.Field{key, value},
-	}
-	model := api.NewTestAPI([]*api.Message{parent, map_message}, []*api.Enum{}, []*api.Service{})
+	field0 := api.NewTestField("children").WithMessageType(mapMessage)
+	field1 := api.NewTestField("singular").WithType(api.TypezInt32)
+	field2 := api.NewTestField("singular").WithType(api.TypezMessage).WithTypezID("invalid")
+	parent.WithFields(field0, field1, field2)
+
+	model := api.NewTestAPI([]*api.Message{parent}, nil, nil)
 
 	if !FieldIsMap(field0, model) {
 		t.Errorf("expected FieldIsMap(field0) to be true")
