@@ -48,12 +48,12 @@ func TestInfo(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	want := &api.API{
-		Name:        "compute",
-		Title:       "Compute Engine API",
-		Description: "Creates and runs virtual machines on Google Cloud Platform. ",
-		Revision:    "20250810",
-	}
+	want := api.NewTestAPI(nil, nil, nil).
+		WithName("compute").
+		WithTitle("Compute Engine API").
+		WithDescription("Creates and runs virtual machines on Google Cloud Platform. ")
+	want.Revision = "20250810"
+	want.PackageName = ""
 	if diff := cmp.Diff(want, got, cmpopts.IgnoreFields(api.API{}, "Services", "Messages", "Enums"), cmpopts.IgnoreUnexported(api.API{})); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
@@ -69,13 +69,12 @@ func TestServiceConfigOverridesInfo(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	want := &api.API{
-		Name:        sc.Name,
-		Title:       sc.Title,
-		Description: sc.Documentation.Summary,
-		Revision:    "20250810",
-		PackageName: "google.cloud.secretmanager.v1",
-	}
+	want := api.NewTestAPI(nil, nil, nil).
+		WithName(sc.Name).
+		WithTitle(sc.Title).
+		WithDescription(sc.Documentation.Summary).
+		WithPackageName("google.cloud.secretmanager.v1")
+	want.Revision = "20250810"
 	if diff := cmp.Diff(want, got, cmpopts.IgnoreFields(api.API{}, "Services", "Messages", "Enums"), cmpopts.IgnoreUnexported(api.API{})); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
@@ -128,40 +127,29 @@ func TestMessage(t *testing.T) {
 	if got == nil {
 		t.Fatalf("expected message %s in the API model", id)
 	}
-	want := &api.Message{
-		Name:          "WeightedBackendService",
-		ID:            id,
-		Package:       "",
-		Documentation: "In contrast to a single BackendService in HttpRouteAction to which all matching traffic is directed to, WeightedBackendService allows traffic to be split across multiple backend services. The volume of traffic for each backend service is proportional to the weight specified in each WeightedBackendService",
-		Fields: []*api.Field{
-			{
-				Name:          "backendService",
-				JSONName:      "backendService",
-				ID:            "..WeightedBackendService.backendService",
-				Documentation: "The full or partial URL to the default BackendService resource. Before forwarding the request to backendService, the load balancer applies any relevant headerActions specified as part of this backendServiceWeight.",
-				Typez:         api.TypezString,
-				TypezID:       "string",
-				Optional:      true,
-			},
-			{
-				Name:          "headerAction",
-				JSONName:      "headerAction",
-				ID:            "..WeightedBackendService.headerAction",
-				Documentation: "Specifies changes to request and response headers that need to take effect for the selected backendService. headerAction specified here take effect before headerAction in the enclosing HttpRouteRule, PathMatcher and UrlMap. headerAction is not supported for load balancers that have their loadBalancingScheme set to EXTERNAL. Not supported when the URL map is bound to a target gRPC proxy that has validateForProxyless field set to true.",
-				Typez:         api.TypezMessage,
-				TypezID:       "..HttpHeaderAction",
-				Optional:      true,
-			},
-			{
-				Name:          "weight",
-				JSONName:      "weight",
-				ID:            "..WeightedBackendService.weight",
-				Documentation: "Specifies the fraction of traffic sent to a backend service, computed as weight / (sum of all weightedBackendService weights in routeAction) . The selection of a backend service is determined only for new traffic. Once a user's request has been directed to a backend service, subsequent requests are sent to the same backend service as determined by the backend service's session affinity policy. Don't configure session affinity if you're using weighted traffic splitting. If you do, the weighted traffic splitting configuration takes precedence. The value must be from 0 to 1000.",
-				Typez:         api.TypezUint32,
-				TypezID:       "uint32",
-				Optional:      true,
-			},
-		},
+	want := api.NewTestMessage("WeightedBackendService").
+		WithPackage("").
+		WithID(id).
+		WithDocumentation("In contrast to a single BackendService in HttpRouteAction to which all matching traffic is directed to, WeightedBackendService allows traffic to be split across multiple backend services. The volume of traffic for each backend service is proportional to the weight specified in each WeightedBackendService").
+		WithFields(
+			api.NewTestField("backendService").
+				WithDocumentation("The full or partial URL to the default BackendService resource. Before forwarding the request to backendService, the load balancer applies any relevant headerActions specified as part of this backendServiceWeight.").
+				WithType(api.TypezString).
+				WithTypezID("string").
+				WithOptional(),
+			api.NewTestField("headerAction").
+				WithDocumentation("Specifies changes to request and response headers that need to take effect for the selected backendService. headerAction specified here take effect before headerAction in the enclosing HttpRouteRule, PathMatcher and UrlMap. headerAction is not supported for load balancers that have their loadBalancingScheme set to EXTERNAL. Not supported when the URL map is bound to a target gRPC proxy that has validateForProxyless field set to true.").
+				WithType(api.TypezMessage).
+				WithTypezID("..HttpHeaderAction").
+				WithOptional(),
+			api.NewTestField("weight").
+				WithDocumentation("Specifies the fraction of traffic sent to a backend service, computed as weight / (sum of all weightedBackendService weights in routeAction) . The selection of a backend service is determined only for new traffic. Once a user's request has been directed to a backend service, subsequent requests are sent to the same backend service as determined by the backend service's session affinity policy. Don't configure session affinity if you're using weighted traffic splitting. If you do, the weighted traffic splitting configuration takes precedence. The value must be from 0 to 1000.").
+				WithType(api.TypezUint32).
+				WithTypezID("uint32").
+				WithOptional(),
+		)
+	for _, f := range want.Fields {
+		f.Parent = nil
 	}
 	apitest.CheckMessage(t, got, want)
 }
@@ -181,16 +169,17 @@ func TestDeprecatedField(t *testing.T) {
 		t.Fatalf("expected a `port` field in the message, got=%v", gotMessage)
 	}
 	gotField := gotMessage.Fields[idx]
-	wantField := &api.Field{
-		Name:          "port",
-		JSONName:      "port",
-		ID:            "..BackendService.port",
-		Deprecated:    true,
-		Documentation: gotField.Documentation,
-		Typez:         api.TypezInt32,
-		TypezID:       "int32",
-		Optional:      true,
-	}
+	wantField := api.NewTestMessage("BackendService").
+		WithPackage("").
+		WithFields(
+			api.NewTestField("port").
+				WithDeprecated(true).
+				WithDocumentation(gotField.Documentation).
+				WithType(api.TypezInt32).
+				WithTypezID("int32").
+				WithOptional(),
+		).Fields[0]
+	wantField.Parent = nil
 	if diff := cmp.Diff(wantField, gotField, cmpopts.IgnoreFields(api.Field{}, "Parent")); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
