@@ -82,6 +82,7 @@ let package = Package(
       {{/Codec.HasDependencies}}
       swiftSettings: [
         .enableUpcomingFeature("InternalImportsByDefault"),
+        .enableUpcomingFeature("NonisolatedNonsendingByDefault"),
         .strictMemorySafety(),
       ]
     )
