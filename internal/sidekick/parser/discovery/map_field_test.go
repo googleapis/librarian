@@ -15,7 +15,6 @@
 package discovery
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -23,6 +22,32 @@ import (
 	"github.com/googleapis/librarian/internal/sidekick/api"
 	"github.com/googleapis/librarian/internal/sidekick/api/apitest"
 )
+
+func newTestDiscoveryMap(id string, valueTypez api.Typez, valueTypezID string) *api.Message {
+	m := api.NewTestMessage(id).
+		WithIsMap().
+		WithPackage("$").
+		WithID(id).
+		WithDocumentation(id).
+		WithFields(
+			api.NewTestField("key").WithType(api.TypezString).WithTypezID("string").WithJSONName(""),
+			api.NewTestField("value").WithType(valueTypez).WithTypezID(valueTypezID).WithJSONName(""),
+		)
+	for _, f := range m.Fields {
+		f.Parent = nil
+	}
+	return m
+}
+
+func newTestDiscoveryMessage(fields ...*api.Field) *api.Message {
+	m := api.NewTestMessage("Message").
+		WithPackage("package").
+		WithFields(fields...)
+	for _, f := range m.Fields {
+		f.Parent = nil
+	}
+	return m
+}
 
 func TestMapFields(t *testing.T) {
 	model := api.NewTestAPI([]*api.Message{}, []*api.Enum{}, []*api.Service{})
@@ -42,49 +67,22 @@ func TestMapFields(t *testing.T) {
 			},
 		},
 	}
-	message := &api.Message{ID: ".package.Message"}
+	message := api.NewTestMessage("Message").WithPackage("package")
 	if err := makeMessageFields(model, message, input); err != nil {
 		t.Fatal(err)
 	}
 
-	wantMessage := &api.Message{
-		ID: ".package.Message",
-		Fields: []*api.Field{
-			{
-				Name:          "labels",
-				JSONName:      "labels",
-				ID:            ".package.Message.labels",
-				Documentation: "Lots of messages have labels.",
-				Deprecated:    true,
-				Typez:         api.TypezMessage,
-				TypezID:       "$map<string, string>",
-				Map:           true,
-			},
-		},
-	}
+	wantMessage := newTestDiscoveryMessage(
+		api.NewTestField("labels").
+			WithDocumentation("Lots of messages have labels.").
+			WithDeprecated(true).
+			WithType(api.TypezMessage).
+			WithTypezID("$map<string, string>").
+			WithMap(),
+	)
 	apitest.CheckMessage(t, message, wantMessage)
 
-	wantMap := &api.Message{
-		IsMap:         true,
-		Name:          "$map<string, string>",
-		ID:            "$map<string, string>",
-		Documentation: "$map<string, string>",
-		Package:       "$",
-		Fields: []*api.Field{
-			{
-				Name:    "key",
-				ID:      "$map<string, string>.key",
-				Typez:   api.TypezString,
-				TypezID: "string",
-			},
-			{
-				Name:    "value",
-				ID:      "$map<string, string>.value",
-				Typez:   api.TypezString,
-				TypezID: "string",
-			},
-		},
-	}
+	wantMap := newTestDiscoveryMap("$map<string, string>", api.TypezString, "string")
 	gotMap := model.Message(wantMap.ID)
 	if gotMap == nil {
 		t.Fatalf("missing map message %s", wantMap.ID)
@@ -111,49 +109,22 @@ func TestMapFieldWithObjectValues(t *testing.T) {
 			},
 		},
 	}
-	message := &api.Message{ID: ".package.Message"}
+	message := api.NewTestMessage("Message").WithPackage("package")
 	if err := makeMessageFields(model, message, input); err != nil {
 		t.Fatal(err)
 	}
 
-	wantMessage := &api.Message{
-		ID: ".package.Message",
-		Fields: []*api.Field{
-			{
-				Name:          "objectMapField",
-				JSONName:      "objectMapField",
-				ID:            ".package.Message.objectMapField",
-				Documentation: "The description for objectMapField.",
-				Deprecated:    true,
-				Typez:         api.TypezMessage,
-				TypezID:       "$map<string, .package.SomeOtherMessage>",
-				Map:           true,
-			},
-		},
-	}
+	wantMessage := newTestDiscoveryMessage(
+		api.NewTestField("objectMapField").
+			WithDocumentation("The description for objectMapField.").
+			WithDeprecated(true).
+			WithType(api.TypezMessage).
+			WithTypezID("$map<string, .package.SomeOtherMessage>").
+			WithMap(),
+	)
 	apitest.CheckMessage(t, message, wantMessage)
 
-	wantMap := &api.Message{
-		IsMap:         true,
-		Name:          "$map<string, .package.SomeOtherMessage>",
-		ID:            "$map<string, .package.SomeOtherMessage>",
-		Documentation: "$map<string, .package.SomeOtherMessage>",
-		Package:       "$",
-		Fields: []*api.Field{
-			{
-				Name:    "key",
-				ID:      "$map<string, .package.SomeOtherMessage>.key",
-				Typez:   api.TypezString,
-				TypezID: "string",
-			},
-			{
-				Name:    "value",
-				ID:      "$map<string, .package.SomeOtherMessage>.value",
-				Typez:   api.TypezMessage,
-				TypezID: ".package.SomeOtherMessage",
-			},
-		},
-	}
+	wantMap := newTestDiscoveryMap("$map<string, .package.SomeOtherMessage>", api.TypezMessage, ".package.SomeOtherMessage")
 	gotMap := model.Message(wantMap.ID)
 	if gotMap == nil {
 		t.Fatalf("missing map message %s", wantMap.ID)
@@ -187,75 +158,40 @@ func TestMapFieldWithEnumValues(t *testing.T) {
 			},
 		},
 	}
-	message := &api.Message{ID: ".package.Message"}
+	message := api.NewTestMessage("Message").WithPackage("package")
 	if err := makeMessageFields(model, message, input); err != nil {
 		t.Fatal(err)
 	}
 
-	wantMessage := &api.Message{
-		ID: ".package.Message",
-		Fields: []*api.Field{
-			{
-				Name:          "enumMapField",
-				JSONName:      "enumMapField",
-				ID:            ".package.Message.enumMapField",
-				Documentation: "The description for enumMapField.",
-				Deprecated:    true,
-				Typez:         api.TypezMessage,
-				TypezID:       "$map<string, .package.Message.enumMapField>",
-				Map:           true,
-			},
-		},
-	}
+	wantMessage := newTestDiscoveryMessage(
+		api.NewTestField("enumMapField").
+			WithDocumentation("The description for enumMapField.").
+			WithDeprecated(true).
+			WithType(api.TypezMessage).
+			WithTypezID("$map<string, .package.Message.enumMapField>").
+			WithMap(),
+	)
 	apitest.CheckMessage(t, message, wantMessage)
 
-	wantMap := &api.Message{
-		IsMap:         true,
-		Name:          "$map<string, .package.Message.enumMapField>",
-		ID:            "$map<string, .package.Message.enumMapField>",
-		Documentation: "$map<string, .package.Message.enumMapField>",
-		Package:       "$",
-		Fields: []*api.Field{
-			{
-				Name:    "key",
-				ID:      "$map<string, .package.Message.enumMapField>.key",
-				Typez:   api.TypezString,
-				TypezID: "string",
-			},
-			{
-				Name:    "value",
-				ID:      "$map<string, .package.Message.enumMapField>.value",
-				Typez:   api.TypezEnum,
-				TypezID: ".package.Message.enumMapField",
-			},
-		},
-	}
+	wantMap := newTestDiscoveryMap("$map<string, .package.Message.enumMapField>", api.TypezEnum, ".package.Message.enumMapField")
 	gotMap := model.Message(wantMap.ID)
 	if gotMap == nil {
 		t.Fatalf("missing map message %s", wantMap.ID)
 	}
 	apitest.CheckMessage(t, gotMap, wantMap)
 
-	wantEnum := &api.Enum{
-		Name:          "enumMapField",
-		ID:            ".package.Message.enumMapField",
-		Documentation: "The enumerated type for the [enumMapField][package.Message.enumMapField] field.",
-		Values: []*api.EnumValue{
-			{
-				Name:          "ACTIVE",
-				ID:            ".package.Message.enumMapField.ACTIVE",
-				Number:        0,
-				Documentation: "The description for the ACTIVE state.",
-			},
-			{
-				Name:          "PROVISIONING",
-				ID:            ".package.Message.enumMapField.PROVISIONING",
-				Number:        1,
-				Documentation: "The description for the PROVISIONING state.",
-			},
-		},
-	}
-	wantEnum.UniqueNumberValues = wantEnum.Values
+	wantEnum := api.NewTestEnum("enumMapField").
+		WithPackage("package").
+		WithID(".package.Message.enumMapField").
+		WithDocumentation("The enumerated type for the [enumMapField][package.Message.enumMapField] field.").
+		WithValues(
+			api.NewTestEnumValue("ACTIVE", 0).
+				WithID(".package.Message.enumMapField.ACTIVE").
+				WithDocumentation("The description for the ACTIVE state."),
+			api.NewTestEnumValue("PROVISIONING", 1).
+				WithID(".package.Message.enumMapField.PROVISIONING").
+				WithDocumentation("The description for the PROVISIONING state."),
+		)
 	gotEnum := model.Enum(wantEnum.ID)
 	if gotEnum == nil {
 		t.Fatalf("missing enum %s", wantEnum.ID)
@@ -306,22 +242,23 @@ func TestMapScalarTypes(t *testing.T) {
 				},
 			},
 		}
-		message := &api.Message{ID: ".package.Message"}
+		message := api.NewTestMessage("Message").WithPackage("package")
 		if err := makeMessageFields(model, message, input); err != nil {
 			t.Error(err)
 			continue
 		}
 		wantFields := []*api.Field{
-			{
-				Name:          "mapField",
-				JSONName:      "mapField",
-				ID:            ".package.Message.mapField",
-				Documentation: "The description for mapField.",
-				Typez:         api.TypezMessage,
-				Map:           true,
-			},
+			api.NewTestMessage("Message").
+				WithPackage("package").
+				WithFields(
+					api.NewTestField("mapField").
+						WithDocumentation("The description for mapField.").
+						WithType(api.TypezMessage).
+						WithMap(),
+				).Fields[0],
 		}
-		if diff := cmp.Diff(wantFields, message.Fields, cmpopts.IgnoreFields(api.Field{}, "TypezID")); diff != "" {
+		wantFields[0].Parent = nil
+		if diff := cmp.Diff(wantFields, message.Fields, cmpopts.IgnoreFields(api.Field{}, "TypezID", "Parent")); diff != "" {
 			t.Errorf("mismatch (-want +got):\n%s", diff)
 			continue
 		}
@@ -335,12 +272,16 @@ func TestMapScalarTypes(t *testing.T) {
 			continue
 		}
 		got := mapMessage.Fields[1]
-		want := &api.Field{
-			Name:    "value",
-			ID:      fmt.Sprintf("%s.value", mapMessage.ID),
-			Typez:   test.WantTypez,
-			TypezID: test.WantTypeID,
-		}
+		want := api.NewTestMessage(mapMessage.ID).
+			WithID(mapMessage.ID).
+			WithFields(
+				api.NewTestField("key").WithJSONName(""),
+				api.NewTestField("value").
+					WithType(test.WantTypez).
+					WithTypezID(test.WantTypeID).
+					WithJSONName(""),
+			).Fields[1]
+		want.Parent = nil
 		if diff := cmp.Diff(want, got); diff != "" {
 			t.Errorf("mismatch (-want +got):\n%s", diff)
 		}
@@ -365,7 +306,7 @@ func TestMapFieldEnumError(t *testing.T) {
 			},
 		},
 	}
-	message := &api.Message{ID: ".package.Message"}
+	message := api.NewTestMessage("Message").WithPackage("package")
 	if err := makeMessageFields(model, message, input); err == nil {
 		t.Errorf("expected error in map with invalid enum, got=%v", message)
 	}
@@ -389,7 +330,7 @@ func TestMapFieldScalarError(t *testing.T) {
 			},
 		},
 	}
-	message := &api.Message{ID: ".package.Message"}
+	message := api.NewTestMessage("Message").WithPackage("package")
 	if err := makeMessageFields(model, message, input); err == nil {
 		t.Errorf("expected error in map with invalid value format, got=%v", message)
 	}
