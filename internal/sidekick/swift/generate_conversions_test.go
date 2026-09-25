@@ -215,8 +215,7 @@ func TestGenerateConversions_RepeatedFields(t *testing.T) {
 		WithMessageType(item).
 		WithRepeated()
 	field3 := api.NewTestField("categories").
-		WithType(api.TypezEnum).
-		WithTypezID(enum.ID).
+		WithEnumType(enum).
 		WithRepeated()
 
 	container := api.NewTestMessage("Container").
@@ -343,33 +342,26 @@ func TestGenerateConversions_OneOf(t *testing.T) {
 func TestGenerateConversions_MapFields(t *testing.T) {
 	outDir := t.TempDir()
 
-	stringMapEntry := api.NewTestMessage("LabelsEntry").
-		WithFields(
-			api.NewTestField("key").WithType(api.TypezString),
-			api.NewTestField("value").WithType(api.TypezString),
-		).
-		WithIsMap()
+	stringMapEntry := api.NewTestMapMessage("LabelsEntry", api.TypezString, api.TypezString)
 
 	objectMessage := api.NewTestMessage("RapidCachePolicy")
 
-	objectMapEntry := api.NewTestMessage("PoliciesEntry").
-		WithFields(
-			api.NewTestField("key").WithType(api.TypezString),
-			api.NewTestField("value").WithMessageType(objectMessage),
-		).
-		WithIsMap()
+	objectMapEntry := api.NewTestMapMessageWithFields(
+		"PoliciesEntry",
+		api.NewTestField("key").WithType(api.TypezString),
+		api.NewTestField("value").WithMessageType(objectMessage),
+	)
 
 	enumVal := api.NewTestEnumValue("UNSPECIFIED", 0)
 	enumType := api.NewTestEnum("FindingCategory").
 		WithPackage("test").
 		WithValues(enumVal)
 
-	enumMapEntry := api.NewTestMessage("CategoriesEntry").
-		WithFields(
-			api.NewTestField("key").WithType(api.TypezString),
-			api.NewTestField("value").WithType(api.TypezEnum).WithTypezID(enumType.ID),
-		).
-		WithIsMap()
+	enumMapEntry := api.NewTestMapMessageWithFields(
+		"CategoriesEntry",
+		api.NewTestField("key").WithType(api.TypezString),
+		api.NewTestField("value").WithEnumType(enumType),
+	)
 
 	fieldPrimitive := api.NewTestField("labels").
 		WithMessageType(stringMapEntry).
@@ -454,8 +446,8 @@ func TestGenerateConversions_Diagnose(t *testing.T) {
 					WithType(api.TypezString).
 					WithDeprecated(test.deprecated))
 
-			model := api.NewTestAPI([]*api.Message{folder}, []*api.Enum{status}, nil)
-			model.PackageName = "test"
+			model := api.NewTestAPI([]*api.Message{folder}, []*api.Enum{status}, nil).
+				WithPackageName("test")
 			module := &config.SwiftModule{ModulePath: "TestProtos"}
 			if err := GenerateConversions(t.Context(), model, outDir, &config.Library{}, module); err != nil {
 				t.Fatal(err)

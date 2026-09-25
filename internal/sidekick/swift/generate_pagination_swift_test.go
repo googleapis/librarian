@@ -63,9 +63,7 @@ func TestGenerateService_MapPagination(t *testing.T) {
 
 			keyField := api.NewTestField("key").WithType(api.TypezString)
 			valueField := api.NewTestField("value").WithMessageType(secretType)
-			mapEntryType := api.NewTestMessage("SecretsEntry").
-				WithFields(keyField, valueField).
-				WithIsMap()
+			mapEntryType := api.NewTestMapMessageWithFields("SecretsEntry", keyField, valueField)
 			outputType.WithMessages(mapEntryType)
 
 			itemField := api.NewTestField("secrets").

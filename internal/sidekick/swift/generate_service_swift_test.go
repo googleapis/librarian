@@ -313,8 +313,8 @@ func TestGenerateService_FoundationImport(t *testing.T) {
 					messages = append(messages, m.OutputType)
 				}
 			}
-			model := api.NewTestAPI(messages, nil, []*api.Service{test.service})
-			model.PackageName = "google.cloud.test.v1"
+			model := api.NewTestAPI(messages, nil, []*api.Service{test.service}).
+				WithPackageName("google.cloud.test.v1")
 			library := &config.Library{
 				Swift: swiftConfig(t, nil),
 			}

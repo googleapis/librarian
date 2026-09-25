@@ -65,8 +65,8 @@ func TestGenerateStorage_MultiModel(t *testing.T) {
 				WithOutput(listBucketsResponse).
 				WithVerb("GET").
 				WithPathTemplate((&api.PathTemplate{}).WithLiteral("v2").WithVariableNamed("parent").WithLiteral("buckets")),
-		)
-	storageService.DefaultHost = "storage.googleapis.com"
+		).
+		WithDefaultHost("storage.googleapis.com")
 
 	storageModel := api.NewTestAPI([]*api.Message{bucket, createBucketRequest, listBucketsRequest, listBucketsResponse}, nil, []*api.Service{storageService})
 	if err := api.CrossReference(storageModel); err != nil {
@@ -130,8 +130,8 @@ func TestGenerateStorage_MultiModel(t *testing.T) {
 				WithOutput(operation).
 				WithVerb("GET").
 				WithPathTemplate((&api.PathTemplate{}).WithLiteral("v1").WithLiteral("operations")),
-		)
-	controlService.DefaultHost = "storage.googleapis.com"
+		).
+		WithDefaultHost("storage.googleapis.com")
 
 	controlModel := api.NewTestAPI([]*api.Message{folder, createFolderRequest, renameFolderRequest, renameFolderMetadata}, nil, []*api.Service{controlService})
 	controlModel.AddMessage(policy)

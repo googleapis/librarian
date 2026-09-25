@@ -255,33 +255,33 @@ func TestGenerateStub_Grpc(t *testing.T) {
 
 	deleteFolder := api.NewTestMethod("DeleteFolder").
 		WithInput(deleteFolderRequest).
-		WithOutput(empty)
-	deleteFolder.PathInfo = nil
-	deleteFolder.ReturnsEmpty = true
-	deleteFolder.Routing = []*api.RoutingInfo{
-		{
+		WithOutput(empty).
+		WithPathInfo(nil).
+		ReturnEmpty().
+		WithRouting(&api.RoutingInfo{
 			Name: "bucket",
 			Variants: []*api.RoutingInfoVariant{
 				{
 					FieldPath: []string{"name"},
 				},
 			},
-		},
-	}
+		})
 
+	sourceGetOperation := api.NewTestMethod("GetOperation").
+		WithInput(getOperationRequest).
+		WithOutput(operation).
+		WithPathInfo(nil)
 	operationsService := api.NewTestService("Operations").
-		WithPackage("google.longrunning")
+		WithPackage("google.longrunning").
+		WithMethods(sourceGetOperation)
 
 	getOperation := api.NewTestMethod("GetOperation").
-		WithInput(getOperationRequest).
-		WithOutput(operation)
-	getOperation.PathInfo = nil
-	getOperation.SourceService = operationsService
-	getOperation.SourceServiceID = operationsService.ID
-	getOperation.ID = ".google.longrunning.Operations.GetOperation"
+		WithSourceMethod(sourceGetOperation).
+		WithID(".google.longrunning.Operations.GetOperation")
 
 	service := api.NewTestService("StorageControl").
 		WithPackage("google.storage.control.v2").
+		WithDefaultHost("storage.googleapis.com").
 		WithMethods(
 			api.NewTestMethod("CreateFolder").
 				WithInput(createFolderRequest).
@@ -291,7 +291,6 @@ func TestGenerateStub_Grpc(t *testing.T) {
 			deleteFolder,
 			getOperation,
 		)
-	service.DefaultHost = "storage.googleapis.com"
 
 	model := api.NewTestAPI([]*api.Message{folder, createFolderRequest, deleteFolderRequest}, nil, []*api.Service{service})
 	model.AddService(operationsService)
