@@ -72,8 +72,8 @@ func TestLibraryName(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			model := api.NewTestAPI(nil, nil, nil)
-			model.PackageName = test.input
+			model := api.NewTestAPI(nil, nil, nil).
+				WithPackageName(test.input)
 			got, err := LibraryName(model, test.config)
 			if err != nil {
 				t.Fatal(err)

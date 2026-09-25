@@ -70,8 +70,8 @@ func TestAnnotateField(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			field := api.NewTestField("secret_payload").
-				WithType(api.TypezString)
-			field.Documentation = "The secret version payload."
+				WithType(api.TypezString).
+				WithDocumentation("The secret version payload.")
 			if test.optional {
 				field.WithOptional()
 			}
@@ -95,13 +95,8 @@ func TestAnnotateField(t *testing.T) {
 }
 
 func TestAnnotateField_Discovery(t *testing.T) {
-	mapMessage := api.NewTestMessage("map<string, bytes>").
-		WithID("$map<string, bytes>").
-		WithFields(
-			api.NewTestField("key").WithType(api.TypezString),
-			api.NewTestField("value").WithType(api.TypezBytes),
-		)
-	mapMessage.IsMap = true
+	mapMessage := api.NewTestMapMessage("map<string, bytes>", api.TypezString, api.TypezBytes).
+		WithID("$map<string, bytes>")
 
 	for _, test := range []struct {
 		name  string
@@ -200,8 +195,8 @@ func TestAnnotateField_TypeNames(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			field := api.NewTestField("test_field").
-				WithType(test.typez)
-			field.Documentation = "Test documentation."
+				WithType(test.typez).
+				WithDocumentation("Test documentation.")
 			msg := api.NewTestMessage("TestMessage").
 				WithFields(field)
 			model := api.NewTestAPI([]*api.Message{msg}, nil, nil)
@@ -230,8 +225,8 @@ func TestAnnotateField_PackageName(t *testing.T) {
 	referencedMsg := api.NewTestMessage("SomeMessage").
 		WithPackage("google.cloud.external.v1")
 	field := api.NewTestField("external_message").
-		WithMessageType(referencedMsg)
-	field.Documentation = "The external message."
+		WithMessageType(referencedMsg).
+		WithDocumentation("The external message.")
 	msg := api.NewTestMessage("Secret").
 		WithID(".test.SecretVersion").
 		WithFields(field)
@@ -337,9 +332,9 @@ func TestAnnotateField_Recursive(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			msg := api.NewTestMessage("Node")
 			field := api.NewTestField("child_node").
-				WithMessageType(msg)
-			field.Documentation = "Recursive link."
-			field.Recursive = true
+				WithMessageType(msg).
+				WithDocumentation("Recursive link.").
+				WithRecursive()
 			if test.optional {
 				field.WithOptional()
 			}

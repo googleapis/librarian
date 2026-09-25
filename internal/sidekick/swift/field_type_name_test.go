@@ -126,15 +126,13 @@ func TestFieldTypeName_BaseEnum(t *testing.T) {
 		{
 			name: "simple enum",
 			field: api.NewTestField("field1").
-				WithType(api.TypezEnum).
-				WithTypezID(simple.ID),
+				WithEnumType(simple),
 			want: "SimpleEnum",
 		},
 		{
 			name: "nested enum",
 			field: api.NewTestField("field2").
-				WithType(api.TypezEnum).
-				WithTypezID(nested.ID),
+				WithEnumType(nested),
 			want: "OuterMessage.NestedEnum",
 		},
 	} {
@@ -280,14 +278,9 @@ func TestFieldTypeName_Repeated(t *testing.T) {
 }
 
 func TestFieldTypeName_Map(t *testing.T) {
-	mapEntry := api.NewTestMessage("SingularMapEntry").
+	mapEntry := api.NewTestMapMessage("SingularMapEntry", api.TypezString, api.TypezInt32).
 		WithPackage("google.cloud.test.v1").
-		WithID(".google.cloud.test.v1.WithMap.SingularMapEntry").
-		WithFields(
-			api.NewTestField("key").WithType(api.TypezString),
-			api.NewTestField("value").WithType(api.TypezInt32),
-		)
-	mapEntry.IsMap = true
+		WithID(".google.cloud.test.v1.WithMap.SingularMapEntry")
 
 	model := api.NewTestAPI([]*api.Message{mapEntry}, nil, nil)
 	c := newTestCodec(t, model, nil)

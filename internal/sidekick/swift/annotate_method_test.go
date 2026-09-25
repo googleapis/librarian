@@ -296,8 +296,8 @@ func TestAnnotateMethod_WithExternalMessages(t *testing.T) {
 		WithVerb("POST").
 		WithPathTemplate(&api.PathTemplate{})
 	service := api.NewTestService("TestService").WithMethods(method)
-	model := api.NewTestAPI([]*api.Message{}, nil, []*api.Service{service})
-	model.PackageName = "google.cloud.test.v1"
+	model := api.NewTestAPI([]*api.Message{}, nil, []*api.Service{service}).
+		WithPackageName("google.cloud.test.v1")
 	model.AddMessage(inputMessage)
 	model.AddMessage(outputMessage)
 	if err := api.CrossReference(model); err != nil {
@@ -347,8 +347,8 @@ func TestAnnotateMethod_Pagination(t *testing.T) {
 
 	service := api.NewTestService("TestService").WithMethods(method)
 
-	model := api.NewTestAPI([]*api.Message{inputType, outputType, itemType}, nil, []*api.Service{service})
-	model.PackageName = "test"
+	model := api.NewTestAPI([]*api.Message{inputType, outputType, itemType}, nil, []*api.Service{service}).
+		WithPackageName("test")
 	if err := api.CrossReference(model); err != nil {
 		t.Fatal(err)
 	}
@@ -432,8 +432,8 @@ func TestAnnotateMethod_LRO(t *testing.T) {
 
 	service := api.NewTestService("TestService").WithMethods(method)
 
-	model := api.NewTestAPI([]*api.Message{inputType, outputType, lroResponseType, lroMetadataType}, nil, []*api.Service{service})
-	model.PackageName = "test"
+	model := api.NewTestAPI([]*api.Message{inputType, outputType, lroResponseType, lroMetadataType}, nil, []*api.Service{service}).
+		WithPackageName("test")
 	if err := api.CrossReference(model); err != nil {
 		t.Fatal(err)
 	}
@@ -481,8 +481,8 @@ func TestAnnotateMethod_LRO_Empty(t *testing.T) {
 
 	service := api.NewTestService("TestService").WithMethods(method)
 
-	model := api.NewTestAPI([]*api.Message{inputType, outputType, lroMetadataType}, nil, []*api.Service{service})
-	model.PackageName = "test"
+	model := api.NewTestAPI([]*api.Message{inputType, outputType, lroMetadataType}, nil, []*api.Service{service}).
+		WithPackageName("test")
 	if err := api.CrossReference(model); err != nil {
 		t.Fatal(err)
 	}
@@ -691,8 +691,8 @@ func TestAnnotateMethod_Diagnose(t *testing.T) {
 				WithDeprecated(test.serviceDeprecated).
 				WithMethods(method)
 
-			model := api.NewTestAPI([]*api.Message{inputType, outputType}, nil, []*api.Service{service})
-			model.PackageName = "test"
+			model := api.NewTestAPI([]*api.Message{inputType, outputType}, nil, []*api.Service{service}).
+				WithPackageName("test")
 			if err := api.CrossReference(model); err != nil {
 				t.Fatal(err)
 			}
@@ -755,8 +755,8 @@ func TestAnnotateMethod_DiagnosePaginationItemType(t *testing.T) {
 			service := api.NewTestService("TestService").WithMethods(method)
 
 			model := api.NewTestAPI(
-				[]*api.Message{inputType, outputType, itemType}, nil, []*api.Service{service})
-			model.PackageName = "test"
+				[]*api.Message{inputType, outputType, itemType}, nil, []*api.Service{service}).
+				WithPackageName("test")
 			if err := api.CrossReference(model); err != nil {
 				t.Fatal(err)
 			}
@@ -827,8 +827,8 @@ func TestAnnotateMethod_DiagnoseLROResponseType(t *testing.T) {
 
 			model := api.NewTestAPI(
 				[]*api.Message{inputType, outputType, lroResponseType, lroMetadataType},
-				nil, []*api.Service{service})
-			model.PackageName = "test"
+				nil, []*api.Service{service}).
+				WithPackageName("test")
 			if err := api.CrossReference(model); err != nil {
 				t.Fatal(err)
 			}
