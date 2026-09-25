@@ -323,7 +323,6 @@ func TestQuickstartServiceAnnotation(t *testing.T) {
 			WithPackage("").
 			WithMethods(noBindingsMethod)
 		model.AddService(filteredService)
-		model.Services = append(model.Services, filteredService)
 		if err := api.CrossReference(model); err != nil {
 			t.Fatal(err)
 		}
