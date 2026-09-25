@@ -295,37 +295,19 @@ func TestOpenAPI_MapString(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	apitest.CheckMessage(t, test.Messages[0], &api.Message{
-		Name:          "Fake",
-		ID:            "..Fake",
-		Documentation: "A test message.",
-		Fields: []*api.Field{
-			{
-				Name:     "fMap",
-				ID:       "..Fake.fMap",
-				JSONName: "fMap",
-				Typez:    api.TypezMessage,
-				TypezID:  "$map<string, string>",
-				Map:      true,
-			},
-			{
-				Name:     "fMapS32",
-				ID:       "..Fake.fMapS32",
-				JSONName: "fMapS32",
-				Typez:    api.TypezMessage,
-				TypezID:  "$map<string, int32>",
-				Map:      true,
-			},
-			{
-				Name:     "fMapS64",
-				ID:       "..Fake.fMapS64",
-				JSONName: "fMapS64",
-				Typez:    api.TypezMessage,
-				TypezID:  "$map<string, int64>",
-				Map:      true,
-			},
-		},
-	})
+	wantMap := api.NewTestMessage("Fake").
+		WithPackage("").
+		WithID("..Fake").
+		WithDocumentation("A test message.").
+		WithFields(
+			api.NewTestField("fMap").WithType(api.TypezMessage).WithTypezID("$map<string, string>").WithMap(),
+			api.NewTestField("fMapS32").WithType(api.TypezMessage).WithTypezID("$map<string, int32>").WithMap(),
+			api.NewTestField("fMapS64").WithType(api.TypezMessage).WithTypezID("$map<string, int64>").WithMap(),
+		)
+	for _, f := range wantMap.Fields {
+		f.Parent = nil
+	}
+	apitest.CheckMessage(t, test.Messages[0], wantMap)
 }
 
 func TestOpenAPI_MapInteger(t *testing.T) {
@@ -350,31 +332,18 @@ func TestOpenAPI_MapInteger(t *testing.T) {
 		t.Errorf("Error in makeAPI() %q", err)
 	}
 
-	apitest.CheckMessage(t, test.Messages[0], &api.Message{
-		Name:          "Fake",
-		ID:            "..Fake",
-		Documentation: "A test message.",
-		Fields: []*api.Field{
-			{
-				Name:     "fMapI32",
-				ID:       "..Fake.fMapI32",
-				JSONName: "fMapI32",
-				Typez:    api.TypezMessage,
-				TypezID:  "$map<string, int32>",
-				Optional: false,
-				Map:      true,
-			},
-			{
-				Name:     "fMapI64",
-				ID:       "..Fake.fMapI64",
-				JSONName: "fMapI64",
-				Typez:    api.TypezMessage,
-				TypezID:  "$map<string, int64>",
-				Optional: false,
-				Map:      true,
-			},
-		},
-	})
+	wantMapInteger := api.NewTestMessage("Fake").
+		WithPackage("").
+		WithID("..Fake").
+		WithDocumentation("A test message.").
+		WithFields(
+			api.NewTestField("fMapI32").WithType(api.TypezMessage).WithTypezID("$map<string, int32>").WithMap(),
+			api.NewTestField("fMapI64").WithType(api.TypezMessage).WithTypezID("$map<string, int64>").WithMap(),
+		)
+	for _, f := range wantMapInteger.Fields {
+		f.Parent = nil
+	}
+	apitest.CheckMessage(t, test.Messages[0], wantMapInteger)
 }
 
 func openapiSecretManagerAPI(t *testing.T) *api.API {
@@ -702,12 +671,11 @@ func TestOpenAPI_SyntheticMessageWithExistingBody(t *testing.T) {
 		t.Fatalf("Error in makeAPI() %q", err)
 	}
 
-	want := &api.Message{
-		Name:               "Service",
-		ID:                 "..Service",
-		Documentation:      "Synthetic messages for the [Service][.Service] service.",
-		ServicePlaceholder: true,
-	}
+	want := api.NewTestMessage("Service").
+		WithPackage("").
+		WithID("..Service").
+		WithDocumentation("Synthetic messages for the [Service][.Service] service.")
+	want.ServicePlaceholder = true
 	got := test.Message(want.ID)
 	if got == nil {
 		t.Errorf("missing message (%s) in MessageByID index", want.ID)
@@ -716,50 +684,36 @@ func TestOpenAPI_SyntheticMessageWithExistingBody(t *testing.T) {
 	apitest.CheckMessage(t, got, want)
 
 	// Methods that share a body should create separate requests.
-	want = &api.Message{
-		Name:             "SetIamPolicyByProjectAndLocationAndSecretRequest",
-		ID:               "..Service.SetIamPolicyByProjectAndLocationAndSecretRequest",
-		Documentation:    "Synthetic request message for the [SetIamPolicyByProjectAndLocationAndSecret()][.Service.SetIamPolicyByProjectAndLocationAndSecret] method.",
-		SyntheticRequest: true,
-		Fields: []*api.Field{
-			{
-				Name:          "project",
-				ID:            "..Service.SetIamPolicyByProjectAndLocationAndSecretRequest.project",
-				JSONName:      "project",
-				Documentation: "The `{project}` component of the target path.\n\nThe full target path will be in the form `/v1/projects/{project}/locations/{location}/secrets/{secret}:setIamPolicy`.",
-				Typez:         api.TypezString,
-				TypezID:       "string",
-				Behavior:      []api.FieldBehavior{api.FieldBehaviorRequired},
-			},
-			{
-				Name:          "location",
-				ID:            "..Service.SetIamPolicyByProjectAndLocationAndSecretRequest.location",
-				JSONName:      "location",
-				Documentation: "The `{location}` component of the target path.\n\nThe full target path will be in the form `/v1/projects/{project}/locations/{location}/secrets/{secret}:setIamPolicy`.",
-				Typez:         api.TypezString,
-				TypezID:       "string",
-				Behavior:      []api.FieldBehavior{api.FieldBehaviorRequired},
-			},
-			{
-				Name:          "secret",
-				ID:            "..Service.SetIamPolicyByProjectAndLocationAndSecretRequest.secret",
-				JSONName:      "secret",
-				Documentation: "The `{secret}` component of the target path.\n\nThe full target path will be in the form `/v1/projects/{project}/locations/{location}/secrets/{secret}:setIamPolicy`.",
-				Typez:         api.TypezString,
-				TypezID:       "string",
-				Behavior:      []api.FieldBehavior{api.FieldBehaviorRequired},
-			},
-			{
-				Name:          "body",
-				ID:            "..Service.SetIamPolicyByProjectAndLocationAndSecretRequest.body",
-				JSONName:      "body",
-				Documentation: "The request body.",
-				Typez:         api.TypezMessage,
-				TypezID:       "..SetIamPolicyRequest",
-				Optional:      true,
-			},
-		},
+	want = api.NewTestMessage("SetIamPolicyByProjectAndLocationAndSecretRequest").
+		WithPackage("").
+		WithID("..Service.SetIamPolicyByProjectAndLocationAndSecretRequest").
+		WithDocumentation("Synthetic request message for the [SetIamPolicyByProjectAndLocationAndSecret()][.Service.SetIamPolicyByProjectAndLocationAndSecret] method.").
+		WithFields(
+			api.NewTestField("project").
+				WithDocumentation("The `{project}` component of the target path.\n\nThe full target path will be in the form `/v1/projects/{project}/locations/{location}/secrets/{secret}:setIamPolicy`.").
+				WithType(api.TypezString).
+				WithTypezID("string").
+				WithBehavior(api.FieldBehaviorRequired),
+			api.NewTestField("location").
+				WithDocumentation("The `{location}` component of the target path.\n\nThe full target path will be in the form `/v1/projects/{project}/locations/{location}/secrets/{secret}:setIamPolicy`.").
+				WithType(api.TypezString).
+				WithTypezID("string").
+				WithBehavior(api.FieldBehaviorRequired),
+			api.NewTestField("secret").
+				WithDocumentation("The `{secret}` component of the target path.\n\nThe full target path will be in the form `/v1/projects/{project}/locations/{location}/secrets/{secret}:setIamPolicy`.").
+				WithType(api.TypezString).
+				WithTypezID("string").
+				WithBehavior(api.FieldBehaviorRequired),
+			api.NewTestField("body").
+				WithDocumentation("The request body.").
+				WithType(api.TypezMessage).
+				WithTypezID("..SetIamPolicyRequest").
+				WithOptional(),
+		)
+	for _, f := range want.Fields {
+		f.Parent = nil
 	}
+	want.SyntheticRequest = true
 	got = test.Message(want.ID)
 	if got == nil {
 		t.Errorf("missing message (%s) in MessageByID index", want.ID)
@@ -767,41 +721,31 @@ func TestOpenAPI_SyntheticMessageWithExistingBody(t *testing.T) {
 	}
 	apitest.CheckMessage(t, got, want)
 
-	want = &api.Message{
-		Name:             "SetIamPolicyRequest",
-		ID:               "..Service.SetIamPolicyRequest",
-		Documentation:    "Synthetic request message for the [SetIamPolicy()][.Service.SetIamPolicy] method.",
-		SyntheticRequest: true,
-		Fields: []*api.Field{
-			{
-				Name:          "project",
-				ID:            "..Service.SetIamPolicyRequest.project",
-				JSONName:      "project",
-				Documentation: "The `{project}` component of the target path.\n\nThe full target path will be in the form `/v1/projects/{project}/secrets/{secret}:setIamPolicy`.",
-				Typez:         api.TypezString,
-				TypezID:       "string",
-				Behavior:      []api.FieldBehavior{api.FieldBehaviorRequired},
-			},
-			{
-				Name:          "secret",
-				ID:            "..Service.SetIamPolicyRequest.secret",
-				JSONName:      "secret",
-				Documentation: "The `{secret}` component of the target path.\n\nThe full target path will be in the form `/v1/projects/{project}/secrets/{secret}:setIamPolicy`.",
-				Typez:         api.TypezString,
-				TypezID:       "string",
-				Behavior:      []api.FieldBehavior{api.FieldBehaviorRequired},
-			},
-			{
-				Name:          "body",
-				ID:            "..Service.SetIamPolicyRequest.body",
-				JSONName:      "body",
-				Documentation: "The request body.",
-				Typez:         api.TypezMessage,
-				TypezID:       "..SetIamPolicyRequest",
-				Optional:      true,
-			},
-		},
+	want = api.NewTestMessage("SetIamPolicyRequest").
+		WithPackage("").
+		WithID("..Service.SetIamPolicyRequest").
+		WithDocumentation("Synthetic request message for the [SetIamPolicy()][.Service.SetIamPolicy] method.").
+		WithFields(
+			api.NewTestField("project").
+				WithDocumentation("The `{project}` component of the target path.\n\nThe full target path will be in the form `/v1/projects/{project}/secrets/{secret}:setIamPolicy`.").
+				WithType(api.TypezString).
+				WithTypezID("string").
+				WithBehavior(api.FieldBehaviorRequired),
+			api.NewTestField("secret").
+				WithDocumentation("The `{secret}` component of the target path.\n\nThe full target path will be in the form `/v1/projects/{project}/secrets/{secret}:setIamPolicy`.").
+				WithType(api.TypezString).
+				WithTypezID("string").
+				WithBehavior(api.FieldBehaviorRequired),
+			api.NewTestField("body").
+				WithDocumentation("The request body.").
+				WithType(api.TypezMessage).
+				WithTypezID("..SetIamPolicyRequest").
+				WithOptional(),
+		)
+	for _, f := range want.Fields {
+		f.Parent = nil
 	}
+	want.SyntheticRequest = true
 	got = test.Message(want.ID)
 	if got == nil {
 		t.Errorf("missing message (%s) in MessageByID index", want.ID)
