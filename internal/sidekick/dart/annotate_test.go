@@ -64,8 +64,7 @@ func TestAnnotateModel_HasDocLines(t *testing.T) {
 		WithDescription("Has a description")
 
 	modelWithoutDesc := api.NewTestAPI(nil, nil, nil).
-		WithPackageName("test").
-		WithDescription("")
+		WithPackageName("test")
 
 	options := maps.Clone(requiredConfig)
 
