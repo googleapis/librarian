@@ -15,4 +15,4 @@ limitations under the License.
 }}
 {{Codec.Name}}ByItems(
     request: {{InputType.Codec.ParameterTypeName}}, options: GoogleGax.RequestOptions
-) -> any AsyncSequence<{{OutputType.Codec.PageableItemType}}, Swift.Error> & Sendable
+) -> some AsyncSequence<{{OutputType.Codec.PageableItemType}}, Swift.Error> & Sendable

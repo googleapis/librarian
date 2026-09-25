@@ -124,8 +124,8 @@ func TestGenerateService_DeprecatedMethods(t *testing.T) {
 				},
 				{
 					start: "  @available(*, deprecated)\n  public func paginationMethodByItems(\n    request: Request",
-					end:   "-> any AsyncSequence<Item, Swift.Error> & Sendable",
-					want:  "  @available(*, deprecated)\n  public func paginationMethodByItems(\n    request: Request, options: GoogleGax.RequestOptions\n) -> any AsyncSequence<Item, Swift.Error> & Sendable",
+					end:   "-> some AsyncSequence<Item, Swift.Error> & Sendable",
+					want:  "  @available(*, deprecated)\n  public func paginationMethodByItems(\n    request: Request, options: GoogleGax.RequestOptions\n) -> some AsyncSequence<Item, Swift.Error> & Sendable",
 				},
 			},
 		},

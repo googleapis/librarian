@@ -627,7 +627,7 @@ func verifyGeneratedService(t *testing.T, outDir string) {
     request: ListSecretsRequest, options: `, "\n  }")
 	wantMethodOverload := `  public func listSecretsByItems(
     request: ListSecretsRequest, options: GoogleGax.RequestOptions
-) -> any AsyncSequence<Secret, Swift.Error> & Sendable
+) -> some AsyncSequence<Secret, Swift.Error> & Sendable
  {
     let listRpc = { @Sendable (token: Swift.String) async throws -> GoogleCloudSecretmanagerV1.ListSecretsResponse in
       var request = request
