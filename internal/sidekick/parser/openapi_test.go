@@ -1066,98 +1066,82 @@ func TestOpenAPI_Deprecated(t *testing.T) {
 		t.Errorf("cannot find service %s in model", "..Service.ListFoos")
 		return
 	}
-	apitest.CheckMethod(t, service, "RpcA", &api.Method{
-		Name:         "RpcA",
-		ID:           "..Service.RpcA",
-		InputTypeID:  "..Service.RpcARequest",
-		OutputTypeID: "..Response",
-		PathInfo: &api.PathInfo{
-			Bindings: []*api.PathBinding{
-				{
-					Verb: "GET",
-					PathTemplate: (&api.PathTemplate{}).
-						WithLiteral("v1").
-						WithLiteral("projects").
-						WithVariableNamed("project").
-						WithLiteral("rpc").
-						WithLiteral("a"),
-					QueryParameters: map[string]bool{"filter": true},
-				},
-			},
-		},
-	})
+	rpcA := api.NewTestMethod("RpcA").
+		WithID("..Service.RpcA").
+		WithVerb("GET").
+		WithPathTemplate(
+			(&api.PathTemplate{}).
+				WithLiteral("v1").
+				WithLiteral("projects").
+				WithVariableNamed("project").
+				WithLiteral("rpc").
+				WithLiteral("a"),
+		).
+		WithQueryParameters(map[string]bool{"filter": true})
+	rpcA.InputTypeID = "..Service.RpcARequest"
+	rpcA.OutputTypeID = "..Response"
+	apitest.CheckMethod(t, service, "RpcA", rpcA)
 
-	apitest.CheckMethod(t, service, "RpcB", &api.Method{
-		Name:         "RpcB",
-		ID:           "..Service.RpcB",
-		Deprecated:   true,
-		InputTypeID:  "..Service.RpcBRequest",
-		OutputTypeID: "..Response",
-		PathInfo: &api.PathInfo{
-			Bindings: []*api.PathBinding{
-				{
-					Verb: "GET",
-					PathTemplate: (&api.PathTemplate{}).
-						WithLiteral("v1").
-						WithLiteral("projects").
-						WithVariableNamed("project").
-						WithLiteral("rpc").
-						WithLiteral("b"),
-					QueryParameters: map[string]bool{},
-				},
-			},
-		},
-	})
+	rpcB := api.NewTestMethod("RpcB").
+		WithID("..Service.RpcB").
+		WithDeprecated(true).
+		WithVerb("GET").
+		WithPathTemplate(
+			(&api.PathTemplate{}).
+				WithLiteral("v1").
+				WithLiteral("projects").
+				WithVariableNamed("project").
+				WithLiteral("rpc").
+				WithLiteral("b"),
+		).
+		WithQueryParameters(map[string]bool{})
+	rpcB.InputTypeID = "..Service.RpcBRequest"
+	rpcB.OutputTypeID = "..Response"
+	apitest.CheckMethod(t, service, "RpcB", rpcB)
 
 	response := test.Message("..Response")
 	if response == nil {
 		t.Errorf("cannot find message %s", "..Response")
 		return
 	}
-	apitest.CheckMessage(t, response, &api.Message{
-		Name: "Response",
-		ID:   "..Response",
-		Fields: []*api.Field{
-			{
-				Name:     "name",
-				ID:       "..Response.name",
-				Typez:    api.TypezString,
-				TypezID:  "string",
-				JSONName: "name",
-				Optional: true,
-			},
-			{
-				Name:       "other",
-				ID:         "..Response.other",
-				Typez:      api.TypezString,
-				TypezID:    "string",
-				JSONName:   "other",
-				Deprecated: true,
-				Optional:   true,
-			},
-		},
-	})
+	wantResponse := api.NewTestMessage("Response").
+		WithPackage("").
+		WithID("..Response").
+		WithFields(
+			api.NewTestField("name").
+				WithType(api.TypezString).
+				WithTypezID("string").
+				WithOptional(),
+			api.NewTestField("other").
+				WithType(api.TypezString).
+				WithTypezID("string").
+				WithDeprecated(true).
+				WithOptional(),
+		)
+	for _, f := range wantResponse.Fields {
+		f.Parent = nil
+	}
+	apitest.CheckMessage(t, response, wantResponse)
 
 	deprecatedMessage := test.Message("..DeprecatedMessage")
 	if deprecatedMessage == nil {
 		t.Errorf("cannot find message %s", "..DeprecatedMessage")
 		return
 	}
-	apitest.CheckMessage(t, deprecatedMessage, &api.Message{
-		Name:       "DeprecatedMessage",
-		ID:         "..DeprecatedMessage",
-		Deprecated: true,
-		Fields: []*api.Field{
-			{
-				Name:     "name",
-				ID:       "..DeprecatedMessage.name",
-				Typez:    api.TypezString,
-				TypezID:  "string",
-				JSONName: "name",
-				Optional: true,
-			},
-		},
-	})
+	wantDeprecatedMessage := api.NewTestMessage("DeprecatedMessage").
+		WithPackage("").
+		WithID("..DeprecatedMessage").
+		WithDeprecated(true).
+		WithFields(
+			api.NewTestField("name").
+				WithType(api.TypezString).
+				WithTypezID("string").
+				WithOptional(),
+		)
+	for _, f := range wantDeprecatedMessage.Fields {
+		f.Parent = nil
+	}
+	apitest.CheckMessage(t, deprecatedMessage, wantDeprecatedMessage)
 }
 
 func TestOpenAPI_ParseBadFiles(t *testing.T) {
