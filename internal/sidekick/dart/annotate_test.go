@@ -59,11 +59,12 @@ func TestAnnotateModel(t *testing.T) {
 }
 
 func TestAnnotateModel_HasDocLines(t *testing.T) {
-	modelWithDesc := api.NewTestAPI(nil, nil, nil).WithPackageName("test")
-	modelWithDesc.Description = "Has a description"
+	modelWithDesc := api.NewTestAPI(nil, nil, nil).
+		WithPackageName("test").
+		WithDescription("Has a description")
 
-	modelWithoutDesc := api.NewTestAPI(nil, nil, nil).WithPackageName("test")
-	modelWithoutDesc.Description = ""
+	modelWithoutDesc := api.NewTestAPI(nil, nil, nil).
+		WithPackageName("test")
 
 	options := maps.Clone(requiredConfig)
 
@@ -264,8 +265,8 @@ func TestAnnotateModel_Options_MissingRequired(t *testing.T) {
 	service := api.NewTestService(sample.ServiceName).
 		WithPackage(sample.Package).
 		WithDocumentation(sample.APIDescription).
+		WithDefaultHost(sample.DefaultHost).
 		WithMethods(method)
-	service.DefaultHost = sample.DefaultHost
 	model := api.NewTestAPI(
 		[]*api.Message{sample.ListSecretVersionsRequest(), sample.ListSecretVersionsResponse(),
 			sample.Secret(), sample.SecretVersion(), sample.Replication(), sample.Automatic(),
@@ -401,8 +402,8 @@ func TestAnnotateMethod(t *testing.T) {
 	service := api.NewTestService(sample.ServiceName).
 		WithPackage(sample.Package).
 		WithDocumentation(sample.APIDescription).
+		WithDefaultHost(sample.DefaultHost).
 		WithMethods(method)
-	service.DefaultHost = sample.DefaultHost
 	model := api.NewTestAPI(
 		[]*api.Message{sample.ListSecretVersionsRequest(), sample.ListSecretVersionsResponse(),
 			sample.Secret(), sample.SecretVersion(), sample.Replication(), sample.Automatic(),
@@ -441,15 +442,15 @@ func TestAnnotateMethod(t *testing.T) {
 
 func TestAnnotateMethod_IsLast(t *testing.T) {
 	notLastMethod := sample.MethodListSecretVersions()
-	lastMethod := sample.MethodListSecretVersions()
+	lastMethod := sample.MethodListSecretVersions().
+		WithID(notLastMethod.ID + "2")
 	lastMethod.Name = "ListSecretVersions2"
-	lastMethod.ID = notLastMethod.ID + "2"
 
 	service := api.NewTestService(sample.ServiceName).
 		WithPackage(sample.Package).
 		WithDocumentation(sample.APIDescription).
+		WithDefaultHost(sample.DefaultHost).
 		WithMethods(notLastMethod, lastMethod)
-	service.DefaultHost = sample.DefaultHost
 	model := api.NewTestAPI(
 		[]*api.Message{sample.ListSecretVersionsRequest(), sample.ListSecretVersionsResponse(),
 			sample.Secret(), sample.SecretVersion(), sample.Replication(), sample.Automatic(),
@@ -790,14 +791,13 @@ func TestAnnotateMessage_OmitGeneration_Allowlisted(t *testing.T) {
 func TestAnnotateMessage_OmitGeneration_Map(t *testing.T) {
 	status := api.NewTestMessage("Status").
 		WithPackage("google.rpc")
-	mapMessage := api.NewTestMessage("Entry").
+	mapMessage := api.NewTestMapMessageWithFields(
+		"Entry",
+		api.NewTestField("key").WithType(api.TypezString),
+		api.NewTestField("value").WithMessageType(status),
+	).
 		WithPackage("some.package").
-		WithID(".some.package.HasMap.MapFieldEntry").
-		WithIsMap().
-		WithFields(
-			api.NewTestField("key").WithType(api.TypezString),
-			api.NewTestField("value").WithMessageType(status),
-		)
+		WithID(".some.package.HasMap.MapFieldEntry")
 	message := api.NewTestMessage("HasMap").
 		WithPackage("some.package").
 		WithFields(
@@ -997,16 +997,14 @@ func TestBuildQueryLines_Enums(t *testing.T) {
 		{
 			name: "enumName",
 			enumField: api.NewTestField("enumName").
-				WithType(api.TypezEnum).
-				WithTypezID(enum.ID).
+				WithEnumType(enum).
 				WithJSONName("jsonEnumName"),
 			want: []string{"if (result.enumName case final $1 when $1.isNotDefault) 'jsonEnumName': $1.value"},
 		},
 		{
 			name: "optionalEnum",
 			enumField: api.NewTestField("optionalEnum").
-				WithType(api.TypezEnum).
-				WithTypezID(enum.ID).
+				WithEnumType(enum).
 				WithOptional().
 				WithJSONName("optionalJsonEnum"),
 			want: []string{"'optionalJsonEnum': ?result.optionalEnum?.value"},
@@ -1014,8 +1012,7 @@ func TestBuildQueryLines_Enums(t *testing.T) {
 		{
 			name: "foreignEnum",
 			enumField: api.NewTestField("enumName").
-				WithType(api.TypezEnum).
-				WithTypezID(foreignEnumState.ID).
+				WithEnumType(foreignEnumState).
 				WithJSONName("jsonEnumName"),
 			want: []string{"if (result.enumName case final $1 when $1.isNotDefault) 'jsonEnumName': $1.value"},
 		},
@@ -1288,12 +1285,12 @@ func TestCreateFromJsonLine(t *testing.T) {
 		// enums
 		{
 			name:  "enum",
-			field: api.NewTestField("message").WithType(api.TypezEnum).WithTypezID(enumState.ID),
+			field: api.NewTestField("message").WithEnumType(enumState),
 			want:  "switch (json['message']) { null => State.$default, Object $1 => State.fromJson($1)}",
 		},
 		{
 			name:  "foreign enum",
-			field: api.NewTestField("message").WithType(api.TypezEnum).WithTypezID(foreignEnumState.ID),
+			field: api.NewTestField("message").WithEnumType(foreignEnumState),
 			want:  "switch (json['message']) { null => foo.ForeignEnum.$default, Object $1 => foo.ForeignEnum.fromJson($1)}",
 		},
 
@@ -1317,7 +1314,7 @@ func TestCreateFromJsonLine(t *testing.T) {
 		// canBeNull exceptions
 		{
 			name:  "nullValue enum",
-			field: api.NewTestField("nullValue").WithType(api.TypezEnum).WithTypezID(nullValueEnum.ID),
+			field: api.NewTestField("nullValue").WithEnumType(nullValueEnum),
 			want:  "switch ((json.containsKey('nullValue'), json['nullValue'])) {(false,_) => NullValue.$default, (true, Object? $1) => NullValue.fromJson($1)}",
 		},
 		{
@@ -1457,12 +1454,12 @@ func TestToJson(t *testing.T) {
 		// enums (implicitly non-nullable unless optional)
 		{
 			name:  "enum1",
-			field: api.NewTestField("enum1").WithType(api.TypezEnum).WithTypezID(enumState.ID),
+			field: api.NewTestField("enum1").WithEnumType(enumState),
 			want:  "if (enum1.isNotDefault) 'enum1': enum1.toJson()",
 		},
 		{
 			name:  "enum_opt",
-			field: api.NewTestField("enum_opt").WithType(api.TypezEnum).WithTypezID(enumState.ID).WithOptional(),
+			field: api.NewTestField("enum_opt").WithEnumType(enumState).WithOptional(),
 			want:  "'enumOpt': ?enumOpt?.toJson()",
 		},
 
@@ -1545,7 +1542,7 @@ func TestToJson(t *testing.T) {
 		// repeated enums
 		{
 			name:  "enumList",
-			field: api.NewTestField("enumList").WithType(api.TypezEnum).WithTypezID(enumState.ID).WithRepeated(),
+			field: api.NewTestField("enumList").WithEnumType(enumState).WithRepeated(),
 			want:  "if (enumList.isNotDefault) 'enumList': [for (final i in enumList) i.toJson()]",
 		},
 
@@ -1836,7 +1833,7 @@ func TestAnnotateField(t *testing.T) {
 		{
 			name: "enum",
 			makeField: func(_, _, _ *api.Message, enumState *api.Enum) *api.Field {
-				return api.NewTestField("enum_field").WithType(api.TypezEnum).WithTypezID(enumState.ID)
+				return api.NewTestField("enum_field").WithEnumType(enumState)
 			},
 			want: &fieldAnnotation{
 				Name:                  "enumField",
@@ -1853,8 +1850,7 @@ func TestAnnotateField(t *testing.T) {
 			name: "required enum",
 			makeField: func(_, _, _ *api.Message, enumState *api.Enum) *api.Field {
 				return api.NewTestField("enum_field").
-					WithType(api.TypezEnum).
-					WithTypezID(enumState.ID).
+					WithEnumType(enumState).
 					WithBehavior(api.FieldBehaviorRequired)
 			},
 			want: &fieldAnnotation{
