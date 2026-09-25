@@ -293,7 +293,7 @@ func TestGenerateEnum_Discovery(t *testing.T) {
 	}
 
 	// Verify stringValue
-	wantStringValue := `  public var stringValue: Swift.String? {
+	wantStringValue := `  public var stringValue: Swift.String {
     switch self {
     case .done: return "DONE"
     case .pending: return "PENDING"
@@ -301,7 +301,7 @@ func TestGenerateEnum_Discovery(t *testing.T) {
     case .unknownStringValue(let v): return v
     }
   }`
-	gotStringValue := extractBlock(t, contentStr, "  public var stringValue: Swift.String? {", "\n  }")
+	gotStringValue := extractBlock(t, contentStr, "  public var stringValue: Swift.String {", "\n  }")
 	if diff := cmp.Diff(wantStringValue, gotStringValue); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
