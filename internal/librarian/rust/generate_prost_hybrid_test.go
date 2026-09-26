@@ -133,11 +133,7 @@ func TestFilterModelToTypesUnusedFieldLookup(t *testing.T) {
 	streamMsg := api.NewTestMessage("StreamMsg").WithPackage("google.test.v1")
 	childData := api.NewTestMessage("ChildData").WithPackage("google.test.v1")
 	unaryReq := api.NewTestMessage("UnaryReq").WithPackage("google.test.v1").WithFields(
-		&api.Field{
-			Name:    "info",
-			TypezID: childData.ID,
-			Typez:   api.TypezMessage,
-		},
+		api.NewTestField("info").WithMessageType(childData),
 	)
 
 	model := api.NewTestAPI([]*api.Message{streamMsg, unaryReq, childData}, []*api.Enum{}, []*api.Service{})
@@ -159,22 +155,12 @@ func TestFilterModelToTypesUnusedFieldLookup(t *testing.T) {
 }
 
 func TestFilterModelToTypesExternalTypes(t *testing.T) {
-	streamMsg := api.NewTestMessage("StreamMsg").WithPackage("google.test.v1")
 	externalMsg := api.NewTestMessage("LatLng").WithPackage("google.type")
-	externalEnum := &api.Enum{Name: "DayOfWeek", ID: ".google.type.DayOfWeek", Package: "google.type"}
-
-	streamMsg.Fields = []*api.Field{
-		{
-			Name:    "location",
-			TypezID: externalMsg.ID,
-			Typez:   api.TypezMessage,
-		},
-		{
-			Name:    "day",
-			TypezID: externalEnum.ID,
-			Typez:   api.TypezEnum,
-		},
-	}
+	externalEnum := api.NewTestEnum("DayOfWeek").WithPackage("google.type")
+	streamMsg := api.NewTestMessage("StreamMsg").WithPackage("google.test.v1").WithFields(
+		api.NewTestField("location").WithMessageType(externalMsg),
+		api.NewTestField("day").WithEnumType(externalEnum),
+	)
 
 	model := api.NewTestAPI([]*api.Message{streamMsg}, []*api.Enum{}, []*api.Service{})
 	model.AddMessage(externalMsg)
@@ -201,11 +187,7 @@ func TestFilterModelToTypesExternalTypes(t *testing.T) {
 
 func TestFilterModelToTypesAnyError(t *testing.T) {
 	anyMsg := api.NewTestMessage("AnyReq").WithPackage("google.test.v1").WithFields(
-		&api.Field{
-			Name:    "details",
-			TypezID: ".google.protobuf.Any",
-			Typez:   api.TypezMessage,
-		},
+		api.NewTestField("details").WithType(api.TypezMessage).WithTypezID(".google.protobuf.Any"),
 	)
 
 	anyModel := api.NewTestAPI([]*api.Message{anyMsg}, []*api.Enum{}, []*api.Service{})
@@ -228,16 +210,8 @@ func TestFilterModelToTypesAnyError(t *testing.T) {
 func TestFilterModelToStreamingMultipleAnyError(t *testing.T) {
 	// Verify multiple unsupported Any fields are batched into a single sorted error
 	anyMsg := api.NewTestMessage("AnyReq").WithPackage("google.test.v1").WithFields(
-		&api.Field{
-			Name:    "metadata",
-			TypezID: ".google.protobuf.Any",
-			Typez:   api.TypezMessage,
-		},
-		&api.Field{
-			Name:    "details",
-			TypezID: ".google.protobuf.Any",
-			Typez:   api.TypezMessage,
-		},
+		api.NewTestField("metadata").WithType(api.TypezMessage).WithTypezID(".google.protobuf.Any"),
+		api.NewTestField("details").WithType(api.TypezMessage).WithTypezID(".google.protobuf.Any"),
 	)
 	chatAnyMethod := api.NewTestMethod("ChatAny").WithInput(anyMsg).WithOutput(anyMsg).WithBidiStreaming()
 	anyService := api.NewTestService("AnyService").WithPackage("google.test.v1").WithMethods(chatAnyMethod)
@@ -266,16 +240,8 @@ func TestFilterModelToStreamingMultipleAnyError(t *testing.T) {
 func TestFilterModelToStreamingPartialAllowedAny(t *testing.T) {
 	// Verify allowing one Any field still reports the remaining unallowed Any fields
 	anyMsg := api.NewTestMessage("AnyReq").WithPackage("google.test.v1").WithFields(
-		&api.Field{
-			Name:    "details",
-			TypezID: ".google.protobuf.Any",
-			Typez:   api.TypezMessage,
-		},
-		&api.Field{
-			Name:    "metadata",
-			TypezID: ".google.protobuf.Any",
-			Typez:   api.TypezMessage,
-		},
+		api.NewTestField("details").WithType(api.TypezMessage).WithTypezID(".google.protobuf.Any"),
+		api.NewTestField("metadata").WithType(api.TypezMessage).WithTypezID(".google.protobuf.Any"),
 	)
 	chatAnyMethod := api.NewTestMethod("ChatAny").WithInput(anyMsg).WithOutput(anyMsg).WithBidiStreaming()
 	anyService := api.NewTestService("AnyService").WithPackage("google.test.v1").WithMethods(chatAnyMethod)
@@ -302,24 +268,12 @@ func TestFilterModelToStreamingPartialAllowedAny(t *testing.T) {
 func TestFilterModelToStreamingNestedAndOneofAnyError(t *testing.T) {
 	// Verify Any fields in nested messages and oneofs are all discovered and reported
 	childMsg := api.NewTestMessage("ChildReq").WithPackage("google.test.v1").WithFields(
-		&api.Field{
-			Name:    "extra",
-			TypezID: ".google.protobuf.Any",
-			Typez:   api.TypezMessage,
-		},
+		api.NewTestField("extra").WithType(api.TypezMessage).WithTypezID(".google.protobuf.Any"),
 	)
-	oneofField := &api.Field{
-		Name:    "payload",
-		TypezID: ".google.protobuf.Any",
-		Typez:   api.TypezMessage,
-	}
+	oneofField := api.NewTestField("payload").WithType(api.TypezMessage).WithTypezID(".google.protobuf.Any")
 	oneof := api.NewTestOneOf("data").WithFields(oneofField)
 	parentMsg := api.NewTestMessage("ParentReq").WithPackage("google.test.v1").WithFields(
-		&api.Field{
-			Name:    "child",
-			TypezID: childMsg.ID,
-			Typez:   api.TypezMessage,
-		},
+		api.NewTestField("child").WithMessageType(childMsg),
 	).WithOneOfs(oneof)
 
 	chatMethod := api.NewTestMethod("Chat").WithInput(parentMsg).WithOutput(parentMsg).WithBidiStreaming()
@@ -381,28 +335,13 @@ func TestFilterModelToTypesAllowedAny(t *testing.T) {
 
 func TestFilterModelToTypesGoogleRpcStatus(t *testing.T) {
 	statusMsg := api.NewTestMessage("Status").WithPackage("google.rpc").WithFields(
-		&api.Field{
-			Name:  "code",
-			Typez: api.TypezInt32,
-		},
-		&api.Field{
-			Name:  "message",
-			Typez: api.TypezString,
-		},
-		&api.Field{
-			Name:     "details",
-			TypezID:  ".google.protobuf.Any",
-			Typez:    api.TypezMessage,
-			Repeated: true,
-		},
+		api.NewTestField("code").WithType(api.TypezInt32),
+		api.NewTestField("message").WithType(api.TypezString),
+		api.NewTestField("details").WithType(api.TypezMessage).WithTypezID(".google.protobuf.Any").WithRepeated(),
 	)
 
 	reqMsg := api.NewTestMessage("StreamReq").WithPackage("google.test.v1").WithFields(
-		&api.Field{
-			Name:    "status",
-			TypezID: statusMsg.ID,
-			Typez:   api.TypezMessage,
-		},
+		api.NewTestField("status").WithMessageType(statusMsg),
 	)
 
 	statusModel := api.NewTestAPI([]*api.Message{reqMsg}, []*api.Enum{}, []*api.Service{})
@@ -429,28 +368,19 @@ func TestFilterModelToTypesGoogleRpcStatus(t *testing.T) {
 }
 
 func TestFilterModelToTypesNestedTypeParentPreservation(t *testing.T) {
-	parent := api.NewTestMessage("Parent").WithPackage("google.test.v1")
-	child := api.NewTestMessage("Child").WithPackage("google.test.v1")
+	child := api.NewTestMessage("Child")
+	parent := api.NewTestMessage("Parent").WithPackage("google.test.v1").WithMessages(child)
 	sibling := api.NewTestMessage("Sibling").WithPackage("google.test.v1")
-	child.Parent = parent
 
-	parent.Fields = []*api.Field{
-		{
-			Name:    "sibling_ref",
-			TypezID: sibling.ID,
-			Typez:   api.TypezMessage,
-		},
-	}
-
-	streamReq := api.NewTestMessage("StreamReq").WithPackage("google.test.v1").WithFields(
-		&api.Field{
-			Name:    "child_ref",
-			TypezID: child.ID,
-			Typez:   api.TypezMessage,
-		},
+	parent.WithFields(
+		api.NewTestField("sibling_ref").WithMessageType(sibling),
 	)
 
-	model := api.NewTestAPI([]*api.Message{parent, child, sibling, streamReq}, []*api.Enum{}, []*api.Service{})
+	streamReq := api.NewTestMessage("StreamReq").WithPackage("google.test.v1").WithFields(
+		api.NewTestField("child_ref").WithMessageType(child),
+	)
+
+	model := api.NewTestAPI([]*api.Message{parent, sibling, streamReq}, []*api.Enum{}, []*api.Service{})
 
 	_, unusedTypes, _, err := filterModelToTypes(model, []string{streamReq.ID}, nil)
 	if err != nil {
@@ -531,13 +461,9 @@ func TestFilterModelToTypesMultipleRoots(t *testing.T) {
 func TestFilterModelToTypesCyclicRecursion(t *testing.T) {
 	// A message with a field referring back to itself or its parent should not infinite loop
 	parent := api.NewTestMessage("Node").WithPackage("google.test.v1")
-	parent.Fields = []*api.Field{
-		{
-			Name:    "child",
-			TypezID: parent.ID,
-			Typez:   api.TypezMessage,
-		},
-	}
+	parent.WithFields(
+		api.NewTestField("child").WithMessageType(parent),
+	)
 	model := api.NewTestAPI([]*api.Message{parent}, []*api.Enum{}, []*api.Service{})
 
 	filtered, _, _, err := filterModelToTypes(model, []string{parent.ID}, nil)
