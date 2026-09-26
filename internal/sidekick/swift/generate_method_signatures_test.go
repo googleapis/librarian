@@ -105,7 +105,7 @@ func TestGenerateService_MethodSignatures(t *testing.T) {
 					want: `public func lroMethodPollingUntilDone(
   name: Swift.String,
   optionalField: Swift.String?,
-) async throws -> any GoogleGax.PollableOperation<LROResult>
+) async throws -> LROResult
  {
     let request = Request().with {
       $0.name = name
@@ -119,7 +119,7 @@ func TestGenerateService_MethodSignatures(t *testing.T) {
 					want: `public func lroMethodPollingUntilDone(
   name: Swift.String,
   normalField: Swift.String,
-) async throws -> any GoogleGax.PollableOperation<LROResult>
+) async throws -> LROResult
  {
     let request = Request().with {
       $0.name = name
@@ -138,7 +138,7 @@ func TestGenerateService_MethodSignatures(t *testing.T) {
 					want: `public func lroDiscoveryMethodPollingUntilDone(
   name: Swift.String,
   optionalField: Swift.String?,
-) async throws -> any GoogleGax.PollableOperation<GoogleCloudLongrunningV1.GetOperationRequest>
+) async throws -> GoogleCloudLongrunningV1.GetOperationRequest
  {
     let request = Request().with {
       $0.name = name
@@ -152,7 +152,7 @@ func TestGenerateService_MethodSignatures(t *testing.T) {
 					want: `public func lroDiscoveryMethodPollingUntilDone(
   name: Swift.String,
   normalField: Swift.String,
-) async throws -> any GoogleGax.PollableOperation<GoogleCloudLongrunningV1.GetOperationRequest>
+) async throws -> GoogleCloudLongrunningV1.GetOperationRequest
  {
     let request = Request().with {
       $0.name = name

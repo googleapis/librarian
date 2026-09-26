@@ -351,7 +351,7 @@ func (c *codec) annotateMethod(method *api.Method, modelAnn *modelAnnotations) e
 			MetadataType:    metaTypeName,
 			ResponseIsEmpty: responseIsEmpty,
 		}
-		// The LRO signatures return `any GoogleGax.PollableOperation<ReturnType>`.
+		// The LRO signatures return `ReturnType` (or Void if empty).
 		// `MetadataType` needs nothing: no template names it.
 		diagnoseSignatureTypes = diagnoseSignatureTypes || respMsg.Deprecated
 	}
