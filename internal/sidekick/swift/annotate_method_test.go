@@ -847,11 +847,11 @@ func TestAnnotateMethod_DiagnoseLROResponseType(t *testing.T) {
 
 func TestAnnotateMethod_AutoPopulated(t *testing.T) {
 	for _, test := range []struct {
-		name                   string
-		verb                   string
-		autoPopulated          bool
-		wantHasAutoPopulated   bool
-		wantIdempotent         bool
+		name                 string
+		verb                 string
+		autoPopulated        bool
+		wantHasAutoPopulated bool
+		wantIdempotent       bool
 	}{
 		{
 			name:                 "post-without-auto-populated",
@@ -914,4 +914,3 @@ func TestAnnotateMethod_AutoPopulated(t *testing.T) {
 		})
 	}
 }
-
