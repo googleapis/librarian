@@ -23,21 +23,23 @@ import (
 )
 
 type serviceAnnotations struct {
-	Name             string
-	ClientName       string
-	StubPrefix       string
-	HostnameShort    string
-	DocLines         []string
-	Methods          []*api.Method
-	LibraryName      string
-	QuickstartMethod *api.Method
-	Model            *modelAnnotations
-	DependsOn        map[string]*Dependency
-	PublicDependsOn  map[string]*Dependency
-	IsGated          bool
-	ModulePath       string
-	IsGrpc           bool
-	HasData          bool
+	Name                       string
+	ClientName                 string
+	StubPrefix                 string
+	HostnameShort              string
+	DocLines                   []string
+	Description                string
+	IsRecommendedStartingPoint bool
+	Methods                    []*api.Method
+	LibraryName                string
+	QuickstartMethod           *api.Method
+	Model                      *modelAnnotations
+	DependsOn                  map[string]*Dependency
+	PublicDependsOn            map[string]*Dependency
+	IsGated                    bool
+	ModulePath                 string
+	IsGrpc                     bool
+	HasData                    bool
 
 	// Any additional services required by this service.
 	//
@@ -187,23 +189,28 @@ func (c *codec) annotateService(service *api.Service, model *modelAnnotations) (
 		}
 	}
 
+	isRecommendedStartingPoint := c.Model.QuickstartService != nil && c.Model.QuickstartService.ID == service.ID && len(c.Model.Services) > 1
+	desc := extractServiceDescription(service.Documentation, service.Name)
+
 	name := c.traitName(service)
 	annotations := &serviceAnnotations{
-		Name:                  name,
-		ClientName:            pascalCase(service.Name + "Client"),
-		StubPrefix:            pascalCaseNoMangling(service.Name),
-		HostnameShort:         strings.TrimSuffix(service.DefaultHost, ".googleapis.com"),
-		DocLines:              docLines,
-		Methods:               methods,
-		LibraryName:           c.LibraryName,
-		QuickstartMethod:      quickstartMethod,
-		Model:                 model,
-		DependsOn:             map[string]*Dependency{},
-		PublicDependsOn:       map[string]*Dependency{},
-		ModulePath:            c.ModulePath,
-		IsGrpc:                c.isGrpc(),
-		DiagnoseClientSnippet: diagnoseClientSnippet,
-		DiagnoseSnippetRunner: service.Deprecated,
+		Name:                       name,
+		ClientName:                 pascalCase(service.Name + "Client"),
+		StubPrefix:                 pascalCaseNoMangling(service.Name),
+		HostnameShort:              strings.TrimSuffix(service.DefaultHost, ".googleapis.com"),
+		DocLines:                   docLines,
+		Description:                desc,
+		IsRecommendedStartingPoint: isRecommendedStartingPoint,
+		Methods:                    methods,
+		LibraryName:                c.LibraryName,
+		QuickstartMethod:           quickstartMethod,
+		Model:                      model,
+		DependsOn:                  map[string]*Dependency{},
+		PublicDependsOn:            map[string]*Dependency{},
+		ModulePath:                 c.ModulePath,
+		IsGrpc:                     c.isGrpc(),
+		DiagnoseClientSnippet:      diagnoseClientSnippet,
+		DiagnoseSnippetRunner:      service.Deprecated,
 	}
 	if c.PerServiceTraits {
 		annotations.IsGated = true
