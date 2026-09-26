@@ -907,6 +907,9 @@ func mergeSwift(dst, src *config.SwiftPackage) *config.SwiftPackage {
 	if src.DefaultTraits != nil {
 		res.DefaultTraits = src.DefaultTraits
 	}
+	if src.IdempotencyHook != "" {
+		res.IdempotencyHook = src.IdempotencyHook
+	}
 	res.Discovery = mergeCommonDiscovery(res.Discovery, src.Discovery)
 	return &res
 }

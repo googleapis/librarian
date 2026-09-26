@@ -679,6 +679,7 @@ This document describes the schema for the librarian.yaml.
 | `skipped_ids` | list of string | Is a list of proto IDs to skip in generation for this module. |
 | `module_path` | string | Is the module import path or target containing stubs (used by convert-swift and gRPC transports). |
 | `name_overrides` | map[string]string | Contains codec-level overrides for service names for this module. |
+| `idempotency_hook` | string | Configures an opt-in method on the request struct to resolve and transform idempotency request options before dispatch for this module. |
 
 ## SwiftPackage Configuration
 
@@ -696,6 +697,7 @@ This document describes the schema for the librarian.yaml.
 | `default_traits` | list of string | Is a list of compile-time traits enabled by default. |
 | `discovery` | SwiftDiscovery (optional) | Contains discovery-specific configuration for LRO polling. |
 | `lro_any_converter` | string | Names the generated converter for the `Any` fields of `google.longrunning.Operation` (e.g. "StorageControlLROAnyConverter"), which converts long-running operation payloads by type URL. Cannot be combined with `per_service_traits`. |
+| `idempotency_hook` | string | Configures an opt-in method on the request struct to resolve and transform idempotency request options before dispatch. |
 
 ## SwiftTool Configuration
 

@@ -844,3 +844,59 @@ func TestAnnotateMethod_DiagnoseLROResponseType(t *testing.T) {
 		})
 	}
 }
+
+func TestAnnotateMethodIdempotencyHook(t *testing.T) {
+	for _, test := range []struct {
+		name                   string
+		library                *config.Library
+		wantHasIdempotencyHook bool
+		wantIdempotencyHook    string
+	}{
+		{
+			name: "with idempotency hook configured",
+			library: &config.Library{
+				Swift: &config.SwiftPackage{
+					IdempotencyHook: "resolveIdempotency",
+				},
+			},
+			wantHasIdempotencyHook: true,
+			wantIdempotencyHook:    "resolveIdempotency",
+		},
+		{
+			name:                   "without idempotency hook configured",
+			library:                nil,
+			wantHasIdempotencyHook: false,
+			wantIdempotencyHook:    "",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			inputType := api.NewTestMessage("Request")
+			outputType := api.NewTestMessage("Response")
+			method := api.NewTestMethod("DeleteObject").
+				WithInput(inputType).
+				WithOutput(outputType).
+				WithVerb("POST").
+				WithPathTemplate(&api.PathTemplate{})
+			service := api.NewTestService("Storage").WithMethods(method)
+			model := api.NewTestAPI([]*api.Message{inputType, outputType}, nil, []*api.Service{service}).
+				WithPackageName("test")
+			if err := api.CrossReference(model); err != nil {
+				t.Fatal(err)
+			}
+			codec := newTestCodec(t, model, test.library)
+			if err := codec.annotateModel(); err != nil {
+				t.Fatal(err)
+			}
+			ann, ok := method.Codec.(*methodAnnotations)
+			if !ok {
+				t.Fatalf("expected method.Codec to be *methodAnnotations, got %T", method.Codec)
+			}
+			if ann.HasIdempotencyHook != test.wantHasIdempotencyHook {
+				t.Errorf("got HasIdempotencyHook = %v, want %v", ann.HasIdempotencyHook, test.wantHasIdempotencyHook)
+			}
+			if ann.IdempotencyHook != test.wantIdempotencyHook {
+				t.Errorf("got IdempotencyHook = %q, want %q", ann.IdempotencyHook, test.wantIdempotencyHook)
+			}
+		})
+	}
+}

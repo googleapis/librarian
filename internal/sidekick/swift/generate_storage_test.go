@@ -144,9 +144,10 @@ func TestGenerateStorage_MultiModel(t *testing.T) {
 
 	// Module definitions
 	storageModule := &config.SwiftModule{
-		Output:     filepath.Join(outDir, "Storage"),
-		ModuleType: "grpc-client",
-		ModulePath: "StorageProtos",
+		Output:          filepath.Join(outDir, "Storage"),
+		ModuleType:      "grpc-client",
+		ModulePath:      "StorageProtos",
+		IdempotencyHook: "resolveIdempotency",
 	}
 	controlModule := &config.SwiftModule{
 		Output:     filepath.Join(outDir, "Control"),
@@ -327,5 +328,28 @@ func TestGenerateStorage_MultiModel(t *testing.T) {
 	controlStubStr := string(controlStubContent)
 	if !strings.Contains(controlStubStr, "protocol StorageControlStub") {
 		t.Errorf("StorageControl+Stub.swift missing StorageControlStub:\n%s", controlStubStr)
+	}
+
+	// 5. Verify Storage+Retry.swift contains idempotency hook call
+	storageRetryPath := filepath.Join(outDir, "Storage", "Storage+Retry.swift")
+	storageRetryContent, err := os.ReadFile(storageRetryPath)
+	if err != nil {
+		t.Fatalf("Storage+Retry.swift not generated: %v", err)
+	}
+	storageRetryStr := string(storageRetryContent)
+	wantHook := "let options = request.resolveIdempotency(options: options)"
+	if !strings.Contains(storageRetryStr, wantHook) {
+		t.Errorf("Storage+Retry.swift missing idempotency hook call %q:\n%s", wantHook, storageRetryStr)
+	}
+
+	// 6. Verify StorageControl+Retry.swift does NOT contain idempotency hook call
+	controlRetryPath := filepath.Join(outDir, "Control", "StorageControl+Retry.swift")
+	controlRetryContent, err := os.ReadFile(controlRetryPath)
+	if err != nil {
+		t.Fatalf("StorageControl+Retry.swift not generated: %v", err)
+	}
+	controlRetryStr := string(controlRetryContent)
+	if strings.Contains(controlRetryStr, wantHook) {
+		t.Errorf("StorageControl+Retry.swift unexpectedly contains idempotency hook call %q:\n%s", wantHook, controlRetryStr)
 	}
 }

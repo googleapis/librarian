@@ -65,7 +65,10 @@ extension Clients {
     {{> /templates/common/diagnose}}
     {{/Codec.DiagnoseStubTypes}}
     public func {{> /templates/common/method_signature/request_options}} {
-      try await self._intercept(
+      {{#Codec.HasIdempotencyHook}}
+      let options = request.{{{Codec.IdempotencyHook}}}(options: options)
+      {{/Codec.HasIdempotencyHook}}
+      {{^ReturnsEmpty}}return {{/ReturnsEmpty}}try await self._intercept(
         request: request,
         options: options,
         idempotent: {{Codec.Idempotent}},

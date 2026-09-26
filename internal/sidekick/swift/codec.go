@@ -159,6 +159,9 @@ type codec struct {
 	// operations span two modules would declare the name twice, which does not
 	// compile; no library is in that shape today.
 	LROAnyConverter string
+
+	// IdempotencyHook configures an opt-in method on the request struct to resolve and transform idempotency request options before dispatch.
+	IdempotencyHook string
 }
 
 const (
@@ -259,6 +262,15 @@ func newCodec(model *api.API, library *config.Library, module *config.SwiftModul
 		result.ModuleType = module.ModuleType
 		result.ModulePath = module.ModulePath
 	}
+
+	idempotencyHook := ""
+	if swiftCfg != nil {
+		idempotencyHook = swiftCfg.IdempotencyHook
+	}
+	if module != nil && module.IdempotencyHook != "" {
+		idempotencyHook = module.IdempotencyHook
+	}
+	result.IdempotencyHook = idempotencyHook
 
 	nameOverrides := make(map[string]string)
 	if swiftCfg != nil {
