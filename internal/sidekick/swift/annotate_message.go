@@ -105,7 +105,7 @@ func (ann *messageAnnotations) ConvertImports() []string {
 			importMap["@_spi(GoogleCloudInternal) import "+dep.Name] = true
 		}
 		if dep.Name == "GoogleWKT" {
-			importMap["internal import GoogleWKTConvert"] = true
+			importMap["@_spi(GoogleCloudInternal) import GoogleWKTConvert"] = true
 		}
 	}
 	var result []string

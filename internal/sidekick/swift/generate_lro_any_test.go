@@ -242,6 +242,9 @@ func TestGenerateLROAnyConverter(t *testing.T) {
 		t.Fatal(err)
 	}
 	gotContent := string(b)
+	if !strings.Contains(gotContent, "@_spi(GoogleCloudInternal) import GoogleWKTConvert") {
+		t.Errorf("expected generated LRO converter to import GoogleWKTConvert with @_spi(GoogleCloudInternal), got:\n%s", gotContent)
+	}
 
 	got := extractBlock(t, gotContent, "  internal static func fromProto(", "\n  }")
 	wantFromProto := `  internal static func fromProto(
