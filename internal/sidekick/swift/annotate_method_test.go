@@ -844,3 +844,73 @@ func TestAnnotateMethod_DiagnoseLROResponseType(t *testing.T) {
 		})
 	}
 }
+
+func TestAnnotateMethod_AutoPopulated(t *testing.T) {
+	for _, test := range []struct {
+		name                 string
+		verb                 string
+		autoPopulated        bool
+		wantHasAutoPopulated bool
+		wantIdempotent       bool
+	}{
+		{
+			name:                 "post-without-auto-populated",
+			verb:                 "POST",
+			autoPopulated:        false,
+			wantHasAutoPopulated: false,
+			wantIdempotent:       false,
+		},
+		{
+			name:                 "post-with-auto-populated",
+			verb:                 "POST",
+			autoPopulated:        true,
+			wantHasAutoPopulated: true,
+			wantIdempotent:       true,
+		},
+		{
+			name:                 "get-with-auto-populated",
+			verb:                 "GET",
+			autoPopulated:        true,
+			wantHasAutoPopulated: true,
+			wantIdempotent:       true,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			reqIDField := api.NewTestField("request_id").WithType(api.TypezString)
+			if test.autoPopulated {
+				reqIDField.WithAutoPopulated()
+			}
+			inputType := api.NewTestMessage("CreateRequest").WithFields(reqIDField)
+			outputType := api.NewTestMessage("CreateResponse")
+			method := api.NewTestMethod("CreateResource").
+				WithInput(inputType).
+				WithOutput(outputType).
+				WithVerb(test.verb).
+				WithPathTemplate(&api.PathTemplate{})
+			if test.autoPopulated {
+				method.WithAutoPopulated(reqIDField)
+			}
+			service := api.NewTestService("TestService").WithMethods(method)
+			model := api.NewTestAPI([]*api.Message{inputType, outputType}, nil, []*api.Service{service}).
+				WithPackageName("test")
+			if err := api.CrossReference(model); err != nil {
+				t.Fatal(err)
+			}
+			codec := newTestCodec(t, model, nil)
+			if err := codec.annotateModel(); err != nil {
+				t.Fatal(err)
+			}
+
+			ann, ok := method.Codec.(*methodAnnotations)
+			if !ok {
+				t.Fatalf("method.Codec is not *methodAnnotations")
+			}
+			if ann.HasAutoPopulatedFields != test.wantHasAutoPopulated {
+				t.Errorf("ann.HasAutoPopulatedFields = %v, want %v", ann.HasAutoPopulatedFields, test.wantHasAutoPopulated)
+			}
+			if ann.Idempotent() != test.wantIdempotent {
+				t.Errorf("ann.Idempotent() = %v, want %v", ann.Idempotent(), test.wantIdempotent)
+			}
+		})
+	}
+}

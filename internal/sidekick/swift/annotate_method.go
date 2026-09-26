@@ -24,22 +24,23 @@ import (
 )
 
 type methodAnnotations struct {
-	Name                string
-	DocLines            []string
-	PathVariables       []*pathVariable
-	PathBindings        []*pathBindingAnnotations
-	HasMultipleBindings bool
-	RoutingParams       []*routingParam
-	PathExpression      string
-	HTTPMethod          string
-	HasBody             bool
-	IsBodyWildcard      bool
-	BodyField           string
-	QueryParams         []*api.Field
-	Pagination          *paginationAnnotations
-	LRO                 *lroAnnotations
-	DiscoveryLRO        *discoveryLroAnnotations
-	ReturnType          string
+	Name                   string
+	DocLines               []string
+	PathVariables          []*pathVariable
+	PathBindings           []*pathBindingAnnotations
+	HasMultipleBindings    bool
+	RoutingParams          []*routingParam
+	PathExpression         string
+	HTTPMethod             string
+	HasBody                bool
+	IsBodyWildcard         bool
+	BodyField              string
+	QueryParams            []*api.Field
+	Pagination             *paginationAnnotations
+	LRO                    *lroAnnotations
+	DiscoveryLRO           *discoveryLroAnnotations
+	ReturnType             string
+	HasAutoPopulatedFields bool
 
 	// ResponseEncoding sets the `$alt` query parameter value.
 	//
@@ -373,28 +374,29 @@ func (c *codec) annotateMethod(method *api.Method, modelAnn *modelAnnotations) e
 	diagnoseFields = diagnoseFields || diagnoseTypes
 	deprecatedScope := inDeprecatedScope(method)
 	method.Codec = &methodAnnotations{
-		Name:                camelCase(method.Name),
-		DocLines:            docLines,
-		PathExpression:      pathExpressionStr,
-		PathVariables:       pathVariables,
-		PathBindings:        pathBindings,
-		HasMultipleBindings: len(pathBindings) > 1,
-		RoutingParams:       routingParams,
-		HTTPMethod:          httpMethod,
-		HasBody:             hasBody,
-		IsBodyWildcard:      isBodyWildcard,
-		BodyField:           bodyField,
-		QueryParams:         queryParams,
-		Pagination:          pagination,
-		LRO:                 lro,
-		ReturnType:          returnType,
-		DiscoveryLRO:        discoveryLRO,
-		ResponseEncoding:    c.ResponseEncoding,
-		DiagnoseTypes:       diagnoseTypes && !deprecatedScope,
-		DiagnoseFields:      diagnoseFields && !deprecatedScope,
-		DiagnoseStubTypes:   diagnoseTypes,
-		DiagnoseStubFields:  diagnoseFields,
-		DiagnoseSnippet:     diagnoseFields || deprecatedScope,
+		Name:                   camelCase(method.Name),
+		DocLines:               docLines,
+		PathExpression:         pathExpressionStr,
+		PathVariables:          pathVariables,
+		PathBindings:           pathBindings,
+		HasMultipleBindings:    len(pathBindings) > 1,
+		RoutingParams:          routingParams,
+		HTTPMethod:             httpMethod,
+		HasBody:                hasBody,
+		IsBodyWildcard:         isBodyWildcard,
+		BodyField:              bodyField,
+		QueryParams:            queryParams,
+		Pagination:             pagination,
+		LRO:                    lro,
+		ReturnType:             returnType,
+		DiscoveryLRO:           discoveryLRO,
+		HasAutoPopulatedFields: method.HasAutoPopulatedFields(),
+		ResponseEncoding:       c.ResponseEncoding,
+		DiagnoseTypes:          diagnoseTypes && !deprecatedScope,
+		DiagnoseFields:         diagnoseFields && !deprecatedScope,
+		DiagnoseStubTypes:      diagnoseTypes,
+		DiagnoseStubFields:     diagnoseFields,
+		DiagnoseSnippet:        diagnoseFields || deprecatedScope,
 	}
 	if method.SampleInfo != nil {
 		c.annotateSampleInfo(method)
@@ -460,5 +462,5 @@ func inDeprecatedScope(method *api.Method) bool {
 }
 
 func (a *methodAnnotations) Idempotent() bool {
-	return a.HTTPMethod == "GET" || a.HTTPMethod == "PUT"
+	return a.HTTPMethod == "GET" || a.HTTPMethod == "PUT" || a.HasAutoPopulatedFields
 }

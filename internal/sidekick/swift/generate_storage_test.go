@@ -81,6 +81,7 @@ func TestGenerateStorage_MultiModel(t *testing.T) {
 		WithFields(
 			api.NewTestField("parent").WithType(api.TypezString),
 			api.NewTestField("folder_id").WithType(api.TypezString),
+			api.NewTestField("request_id").WithType(api.TypezString).WithAutoPopulated(),
 		)
 	policy := api.NewTestMessage("Policy").WithPackage("google.iam.v1")
 	getIamPolicyRequest := api.NewTestMessage("GetIamPolicyRequest").
@@ -110,7 +111,8 @@ func TestGenerateStorage_MultiModel(t *testing.T) {
 				WithInput(createFolderRequest).
 				WithOutput(folder).
 				WithVerb("POST").
-				WithPathTemplate((&api.PathTemplate{}).WithLiteral("v2").WithVariableNamed("parent").WithLiteral("folders")),
+				WithPathTemplate((&api.PathTemplate{}).WithLiteral("v2").WithVariableNamed("parent").WithLiteral("folders")).
+				WithAutoPopulated(createFolderRequest.Fields[2]),
 			api.NewTestMethod("GetIamPolicy").
 				WithInput(getIamPolicyRequest).
 				WithOutput(policy).
@@ -282,9 +284,21 @@ func TestGenerateStorage_MultiModel(t *testing.T) {
 		t.Errorf("StorageControlClient.swift missing retry decorators:\n%s", clientStr)
 	}
 	if !strings.Contains(clientStr, "try await self.storage.createBucket(request: request, options: options)") ||
-		!strings.Contains(clientStr, "try await self.control.createFolder(request: request, options: options)") ||
 		!strings.Contains(clientStr, "try await self.control.getIamPolicy(request: request, options: options)") {
 		t.Errorf("StorageControlClient.swift missing method delegation:\n%s", clientStr)
+	}
+	wantCreateFolder := `  public func createFolder(
+    request: CreateFolderRequest, options: GoogleGax.RequestOptions
+) async throws -> Folder
+ {
+    var request = request
+    if request.requestId.isEmpty {
+      request.requestId = UUID().uuidString
+    }
+    return try await self.control.createFolder(request: request, options: options)
+  }`
+	if !strings.Contains(clientStr, wantCreateFolder) {
+		t.Errorf("StorageControlClient.swift missing auto-populated createFolder:\nwant:\n%s\n\ngot:\n%s", wantCreateFolder, clientStr)
 	}
 	if !strings.Contains(clientStr, "public func renameFolderPollingUntilDone(") ||
 		!strings.Contains(clientStr, "request: RenameFolderRequest, options: GoogleGax.RequestOptions") {
