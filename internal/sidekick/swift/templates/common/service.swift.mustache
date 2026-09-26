@@ -112,12 +112,18 @@ public final class {{Codec.ClientName}}: Clients.{{Codec.StubPrefix}}Protocol, S
       let op = try await self.getOperation(request: .init().with { $0.name = rawOp.name }, options: options)
       return try extractStatus(op)
     }
-    return GoogleGax._PollableOperationImpl(
+    let poller = GoogleGax._PollableOperationImpl(
       initialState: initialState,
       polling: options.pollingErrorPolicy ?? self.pollingErrorPolicy,
       backoff: options.pollingBackoffPolicy ?? self.pollingBackoffPolicy,
       poll: poll,
     )
+    {{#Codec.LRO.ResponseIsEmpty}}
+    try await poller.wait()
+    {{/Codec.LRO.ResponseIsEmpty}}
+    {{^Codec.LRO.ResponseIsEmpty}}
+    return try await poller.wait()
+    {{/Codec.LRO.ResponseIsEmpty}}
   }
   {{/Codec.LRO}}
   {{#Codec.DiscoveryLRO}}

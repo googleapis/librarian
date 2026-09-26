@@ -775,7 +775,7 @@ func TestAnnotateMethod_DiagnosePaginationItemType(t *testing.T) {
 
 // TestAnnotateMethod_DiagnoseLROResponseType covers the LRO response type.
 //
-// The LRO signatures return `any GoogleGax.PollableOperation<ReturnType>`. For
+// The LRO signatures return `ReturnType` (or Void if empty). For
 // a real LRO the output type is `google.longrunning.Operation`; the type the
 // caller sees is resolved from `OperationInfo.ResponseTypeID`, so
 // `diagnoseMethodTypes` alone cannot see it.

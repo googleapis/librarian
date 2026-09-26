@@ -119,17 +119,19 @@ extension StorageControlProtocol {
   @available(*, deprecated)
   {{/Deprecated}}
   public func {{> /templates/common/method_signature/lro}} {
+    {{#Codec.LRO.ResponseIsEmpty}}
     try await self.{{Codec.Name}}PollingUntilDone(request: request, options: .init())
+    {{/Codec.LRO.ResponseIsEmpty}}
+    {{^Codec.LRO.ResponseIsEmpty}}
+    return try await self.{{Codec.Name}}PollingUntilDone(request: request, options: .init())
+    {{/Codec.LRO.ResponseIsEmpty}}
   }
 
   {{#Deprecated}}
   @available(*, deprecated)
   {{/Deprecated}}
   public func {{> /templates/common/method_signature/lro_options}} {
-    let poll = { @Sendable () async throws -> GoogleGax._PollableOperationImpl<{{Codec.LRO.ReturnType}}>.State in
-      throw GoogleGax.RequestError.unimplemented
-    }
-    return GoogleGax._PollableOperationImpl(initialState: .init(done: false, result: nil), poll: poll)
+    throw GoogleGax.RequestError.unimplemented
   }
   {{/Codec.LRO}}
   {{/Codec.Methods}}
@@ -177,17 +179,19 @@ extension StorageControlProtocol {
   @available(*, deprecated)
   {{/Deprecated}}
   public func {{> /templates/common/method_signature/lro}} {
+    {{#Codec.LRO.ResponseIsEmpty}}
     try await self.{{Codec.Name}}PollingUntilDone(request: request, options: .init())
+    {{/Codec.LRO.ResponseIsEmpty}}
+    {{^Codec.LRO.ResponseIsEmpty}}
+    return try await self.{{Codec.Name}}PollingUntilDone(request: request, options: .init())
+    {{/Codec.LRO.ResponseIsEmpty}}
   }
 
   {{#Deprecated}}
   @available(*, deprecated)
   {{/Deprecated}}
   public func {{> /templates/common/method_signature/lro_options}} {
-    let poll = { @Sendable () async throws -> GoogleGax._PollableOperationImpl<{{Codec.LRO.ReturnType}}>.State in
-      throw GoogleGax.RequestError.unimplemented
-    }
-    return GoogleGax._PollableOperationImpl(initialState: .init(done: false, result: nil), poll: poll)
+    throw GoogleGax.RequestError.unimplemented
   }
   {{/Codec.LRO}}
   {{/Codec.Methods}}

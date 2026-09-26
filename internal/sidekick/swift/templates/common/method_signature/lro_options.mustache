@@ -15,4 +15,4 @@ limitations under the License.
 }}
 {{Codec.Name}}PollingUntilDone(
     request: {{InputType.Codec.ParameterTypeName}}, options: GoogleGax.RequestOptions
-) async throws -> any GoogleGax.PollableOperation<{{Codec.LRO.ReturnType}}>
+) async throws{{^Codec.LRO.ResponseIsEmpty}} -> {{Codec.LRO.ReturnType}}{{/Codec.LRO.ResponseIsEmpty}}

@@ -337,3 +337,100 @@ func TestGenerateSnippets_List(t *testing.T) {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
+
+func TestGenerateSnippets_LRO(t *testing.T) {
+	outDir := t.TempDir()
+	operationType := api.NewTestMessage("Operation").WithPackage("google.longrunning")
+	metadataType := api.NewTestMessage("OperationMetadata").WithPackage("test")
+	thing := api.NewTestMessage("Thing").WithPackage("test").WithFields(
+		api.NewTestField("name").WithType(api.TypezString),
+	)
+	createThingRequest := api.NewTestMessage("CreateThingRequest").WithPackage("test").WithFields(
+		api.NewTestField("name").WithType(api.TypezString),
+	)
+	createThing := api.NewTestMethod("CreateThing").
+		WithInput(createThingRequest).
+		WithOutput(operationType).
+		WithPathTemplate((&api.PathTemplate{}).WithLiteral("v1").WithLiteral("things")).
+		WithOperationInfo(&api.OperationInfo{
+			ResponseTypeID: thing.ID,
+			MetadataTypeID: metadataType.ID,
+		})
+	testService := api.NewTestService("TestService").WithPackage("test").WithMethods(createThing)
+	model := api.NewTestAPI([]*api.Message{thing, metadataType, createThingRequest, operationType}, nil, []*api.Service{testService}).
+		WithPackageName("test")
+	if err := api.CrossReference(model); err != nil {
+		t.Fatal(err)
+	}
+	library := &config.Library{
+		Swift: swiftConfig(t, []config.SwiftDependency{
+			{Name: "GoogleGax", RequiredByServices: true},
+			{ApiPackage: "google.longrunning", Name: "GoogleCloudLongrunningV1"},
+		}),
+	}
+	if err := Generate(t.Context(), model, outDir, library, nil); err != nil {
+		t.Fatal(err)
+	}
+	contentsBytes, err := os.ReadFile(filepath.Join(outDir, "Snippets", "TestService_CreateThing.swift"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	got := extractBlock(t, string(contentsBytes), "func sample(", "\n}")
+	want := `func sample(client: TestServiceClient) async throws {
+  let response = try await client.createThingPollingUntilDone(
+    request: CreateThingRequest()
+  /* set fields using .with { $0... } */
+)
+  print("Success: \(response)")
+}`
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+}
+
+func TestGenerateSnippets_LRO_Empty(t *testing.T) {
+	outDir := t.TempDir()
+	operationType := api.NewTestMessage("Operation").WithPackage("google.longrunning")
+	metadataType := api.NewTestMessage("OperationMetadata").WithPackage("test")
+	deleteThingRequest := api.NewTestMessage("DeleteThingRequest").WithPackage("test").WithFields(
+		api.NewTestField("name").WithType(api.TypezString),
+	)
+	deleteThing := api.NewTestMethod("DeleteThing").
+		WithInput(deleteThingRequest).
+		WithOutput(operationType).
+		WithPathTemplate((&api.PathTemplate{}).WithLiteral("v1").WithLiteral("things")).
+		WithOperationInfo(&api.OperationInfo{
+			ResponseTypeID: ".google.protobuf.Empty",
+			MetadataTypeID: metadataType.ID,
+		})
+	testService := api.NewTestService("TestService").WithPackage("test").WithMethods(deleteThing)
+	model := api.NewTestAPI([]*api.Message{metadataType, deleteThingRequest, operationType}, nil, []*api.Service{testService}).
+		WithPackageName("test")
+	if err := api.CrossReference(model); err != nil {
+		t.Fatal(err)
+	}
+	library := &config.Library{
+		Swift: swiftConfig(t, []config.SwiftDependency{
+			{Name: "GoogleGax", RequiredByServices: true},
+			{ApiPackage: "google.longrunning", Name: "GoogleCloudLongrunningV1"},
+		}),
+	}
+	if err := Generate(t.Context(), model, outDir, library, nil); err != nil {
+		t.Fatal(err)
+	}
+	contentsBytes, err := os.ReadFile(filepath.Join(outDir, "Snippets", "TestService_DeleteThing.swift"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	got := extractBlock(t, string(contentsBytes), "func sample(", "\n}")
+	want := `func sample(client: TestServiceClient) async throws {
+  try await client.deleteThingPollingUntilDone(
+    request: DeleteThingRequest()
+  /* set fields using .with { $0... } */
+)
+  print("Success")
+}`
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+}

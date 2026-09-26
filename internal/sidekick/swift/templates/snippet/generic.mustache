@@ -34,15 +34,15 @@ for try await item in items {
 }
 {{/IsList}}
 {{#IsLRO}}
-let poller = try await client.{{Codec.Name}}PollingUntilDone(
-  request: {{> /templates/snippet/method_request_body}})
-{{^LongRunningReturnsEmpty}}
-let response = try await poller.wait()
-print("Success: \(response)")
-{{/LongRunningReturnsEmpty}}
 {{#LongRunningReturnsEmpty}}
-try await poller.wait()
+try await client.{{Codec.Name}}PollingUntilDone(
+  request: {{> /templates/snippet/method_request_body}})
 print("Success")
+{{/LongRunningReturnsEmpty}}
+{{^LongRunningReturnsEmpty}}
+let response = try await client.{{Codec.Name}}PollingUntilDone(
+  request: {{> /templates/snippet/method_request_body}})
+print("Success: \(response)")
 {{/LongRunningReturnsEmpty}}
 {{/IsLRO}}
 {{/ReturnsEmpty}}

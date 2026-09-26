@@ -162,7 +162,12 @@ extension Clients.{{Codec.StubPrefix}}Protocol {
   {{> /templates/common/diagnose}}
   {{/Codec.DiagnoseTypes}}
   public func {{> /templates/common/method_signature/lro}} {
+    {{#Codec.LRO.ResponseIsEmpty}}
     try await self.{{Codec.Name}}PollingUntilDone(request: request, options: .init())
+    {{/Codec.LRO.ResponseIsEmpty}}
+    {{^Codec.LRO.ResponseIsEmpty}}
+    return try await self.{{Codec.Name}}PollingUntilDone(request: request, options: .init())
+    {{/Codec.LRO.ResponseIsEmpty}}
   }
 
   {{#Deprecated}}
@@ -172,10 +177,7 @@ extension Clients.{{Codec.StubPrefix}}Protocol {
   {{> /templates/common/diagnose}}
   {{/Codec.DiagnoseTypes}}
   public func {{> /templates/common/method_signature/lro_options}} {
-    let poll = { @Sendable () async throws -> GoogleGax._PollableOperationImpl<{{Codec.LRO.ReturnType}}>.State in
-      throw GoogleGax.RequestError.unimplemented
-    }
-    return GoogleGax._PollableOperationImpl(initialState: .init(done: false, result: nil), poll: poll)
+    throw GoogleGax.RequestError.unimplemented
   }
   {{#Signatures}}
 
@@ -189,7 +191,12 @@ extension Clients.{{Codec.StubPrefix}}Protocol {
     let request = {{Method.InputType.Codec.ParameterTypeName}}().with {
       {{> /templates/common/method_body/overload_fields}}
     }
+    {{#Method.Codec.LRO.ResponseIsEmpty}}
+    try await self.{{Method.Codec.Name}}PollingUntilDone(request: request)
+    {{/Method.Codec.LRO.ResponseIsEmpty}}
+    {{^Method.Codec.LRO.ResponseIsEmpty}}
     return try await self.{{Method.Codec.Name}}PollingUntilDone(request: request)
+    {{/Method.Codec.LRO.ResponseIsEmpty}}
   }
   {{/Signatures}}
   {{/Codec.LRO}}
@@ -202,7 +209,7 @@ extension Clients.{{Codec.StubPrefix}}Protocol {
   {{> /templates/common/diagnose}}
   {{/Codec.DiagnoseTypes}}
   public func {{> /templates/common/method_signature/discovery_lro}} {
-    try await self.{{Codec.Name}}PollingUntilDone(request: request, options: .init())
+    return try await self.{{Codec.Name}}PollingUntilDone(request: request, options: .init())
   }
 
   {{#Deprecated}}
@@ -212,10 +219,7 @@ extension Clients.{{Codec.StubPrefix}}Protocol {
   {{> /templates/common/diagnose}}
   {{/Codec.DiagnoseTypes}}
   public func {{> /templates/common/method_signature/discovery_lro_options}} {
-    let poll = { @Sendable () async throws -> GoogleGax._PollableOperationImpl<{{Codec.DiscoveryLRO.ReturnType}}>.State in
-      throw GoogleGax.RequestError.unimplemented
-    }
-    return GoogleGax._PollableOperationImpl(initialState: .init(done: false, result: nil), poll: poll)
+    throw GoogleGax.RequestError.unimplemented
   }
   {{#Signatures}}
 
