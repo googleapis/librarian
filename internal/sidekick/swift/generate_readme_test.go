@@ -285,3 +285,60 @@ func TestGenerateReadme_WithRevision(t *testing.T) {
 		t.Errorf("expected revision text, got:\n%s", content)
 	}
 }
+
+func TestGenerateDoc_UnescapedDescription(t *testing.T) {
+	outDir := t.TempDir()
+	pkg := "google.cloud.example.v1"
+	inputType := api.NewTestMessage("Request").
+		WithPackage(pkg).
+		WithFields(api.NewTestField("name").WithType(api.TypezString))
+	outputType := api.NewTestMessage("Response").
+		WithPackage(pkg).
+		WithFields(api.NewTestField("value").WithType(api.TypezString))
+	method := api.NewTestMethod("Get").
+		WithInput(inputType).
+		WithOutput(outputType).
+		WithVerb("GET").WithPathTemplate(&api.PathTemplate{})
+	service := api.NewTestService("ExampleService").
+		WithPackage(pkg).
+		WithMethods(method)
+	service.Documentation = "Manages user's & group's private clusters in the Cloud."
+	model := api.NewTestAPI([]*api.Message{inputType, outputType}, nil, []*api.Service{service}).
+		WithPackageName(pkg).
+		WithTitle("Example API")
+
+	library := &config.Library{
+		Name:    "google-cloud-example-v1",
+		Version: "1.0.0",
+		Swift:   swiftConfig(t, nil),
+	}
+	if err := Generate(t.Context(), model, outDir, library, nil); err != nil {
+		t.Fatal(err)
+	}
+
+	readmeBytes, err := os.ReadFile(filepath.Join(outDir, "README.md"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	readme := string(readmeBytes)
+	wantReadmeLine := "- `ExampleServiceClient`: Manages user's & group's private clusters in the Cloud."
+	if !strings.Contains(readme, wantReadmeLine) {
+		t.Errorf("expected README.md to contain unescaped line %q, got:\n%s", wantReadmeLine, readme)
+	}
+	if strings.Contains(readme, "&#39;") || strings.Contains(readme, "&amp;") {
+		t.Errorf("expected README.md to not contain HTML entities, got:\n%s", readme)
+	}
+
+	doccBytes, err := os.ReadFile(filepath.Join(outDir, "Sources", "GoogleCloudExampleV1", "GoogleCloudExampleV1.docc", "Index.md"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	docc := string(doccBytes)
+	wantDoccLine := "- ``ExampleServiceClient``: Manages user's & group's private clusters in the Cloud."
+	if !strings.Contains(docc, wantDoccLine) {
+		t.Errorf("expected Index.md to contain unescaped line %q, got:\n%s", wantDoccLine, docc)
+	}
+	if strings.Contains(docc, "&#39;") || strings.Contains(docc, "&amp;") {
+		t.Errorf("expected Index.md to not contain HTML entities, got:\n%s", docc)
+	}
+}
