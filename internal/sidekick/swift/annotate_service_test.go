@@ -41,6 +41,7 @@ func TestAnnotateService(t *testing.T) {
 				ClientName:  "IAMClient",
 				StubPrefix:  "IAM",
 				DocLines:    []string{"IAM service documentation."},
+				Description: "IAM service documentation.",
 			},
 			wantImports: []string{},
 		},
@@ -54,6 +55,7 @@ func TestAnnotateService(t *testing.T) {
 				ClientName:  "ProtocolClient",
 				StubPrefix:  "Protocol",
 				DocLines:    []string{"Docs are not relevant."},
+				Description: "Docs are not relevant.",
 			},
 			wantImports: []string{},
 		},
@@ -67,6 +69,7 @@ func TestAnnotateService(t *testing.T) {
 				ClientName:  "SecretManagerServiceClient",
 				StubPrefix:  "SecretManagerService",
 				DocLines:    []string{"Secret Manager Service documentation.", "Line 2."},
+				Description: "Secret Manager Service documentation.",
 			},
 			wantImports: []string{},
 		},
@@ -699,5 +702,64 @@ func TestAnnotateService_SkipStreamingMethods(t *testing.T) {
 	wantMethods := []string{"Unary"}
 	if diff := cmp.Diff(wantMethods, gotMethods); diff != "" {
 		t.Errorf("Methods mismatch (-want +got):\n%s", diff)
+	}
+}
+
+func TestExtractServiceDescription(t *testing.T) {
+	for _, test := range []struct {
+		name        string
+		doc         string
+		serviceName string
+		want        string
+	}{
+		{
+			name:        "empty documentation falls back to service name",
+			doc:         "",
+			serviceName: "SecretManagerService",
+			want:        "Client for the SecretManagerService.",
+		},
+		{
+			name:        "single paragraph with sentence",
+			doc:         "Service to manage Security and Privacy Notifications.",
+			serviceName: "NotificationsService",
+			want:        "Service to manage Security and Privacy Notifications.",
+		},
+		{
+			name:        "title header followed by descriptive paragraph",
+			doc:         "Secret Manager Service\n\nManages secrets and operations using those secrets. Implements a REST model with the following objects:\n\n* Secret\n* SecretVersion",
+			serviceName: "SecretManagerService",
+			want:        "Manages secrets and operations using those secrets.",
+		},
+		{
+			name:        "strips proto cross-reference and markdown links",
+			doc:         "Provides interfaces for using [Cloud KMS Autokey](https://cloud.google.com/kms/help/autokey) to provision new [CryptoKeys][google.cloud.kms.v1.CryptoKey], ready for use.",
+			serviceName: "Autokey",
+			want:        "Provides interfaces for using Cloud KMS Autokey to provision new CryptoKeys, ready for use.",
+		},
+		{
+			name:        "skips generic section header ending in colon",
+			doc:         "API Overview:\n\nThe beyondcorp.googleapis.com service implements the Google Cloud BeyondCorp API.",
+			serviceName: "AppConnectionsService",
+			want:        "The beyondcorp.googleapis.com service implements the Google Cloud BeyondCorp API.",
+		},
+		{
+			name:        "short title followed by description in same paragraph",
+			doc:         "Google Batch Service.\nThe service manages user submitted batch jobs and allocates instances.",
+			serviceName: "BatchService",
+			want:        "Google Batch Service. The service manages user submitted batch jobs and allocates instances.",
+		},
+		{
+			name:        "ensures terminal punctuation",
+			doc:         "Google Cloud Key Management Service",
+			serviceName: "KeyManagementService",
+			want:        "Google Cloud Key Management Service.",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := extractServiceDescription(test.doc, test.serviceName)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
 	}
 }

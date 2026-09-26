@@ -31,21 +31,26 @@ This client library was generated from the "{{Revision}}" revision of the API.
 {{/Revision}}
 {{#HasServices}}
 
-Most applications use the `*Client` types in this library. A default initialized
-client will let you interact with the API. The methods in the client type
-corresponds to RPCs in the API. Many APIs have more than one client, exposing
-different aspects of the API, consult the reference documentation for details.
+Most applications use the `*Client` types in this library:
 
 {{#Services}}
 {{! Codec.Name and the trait name are always identical }}
-- ``{{Codec.ClientName}}``{{#Codec.IsGated}}: enabled by the `{{Codec.Name}}` trait.{{/Codec.IsGated}}
+- ``{{Codec.ClientName}}``: {{Codec.Description}}{{#Codec.IsRecommendedStartingPoint}} (Recommended starting point){{/Codec.IsRecommendedStartingPoint}}{{#Codec.IsGated}} (enabled by the `{{Codec.Name}}` trait){{/Codec.IsGated}}
 {{/Services}}
 {{/HasServices}}
 {{^HasServices}}
 
-This is a type-only library. You will not find functions to make RPCs in this
-library. Its types are used in other libraries that access Google Cloud.
+This is a type-only library containing a collection of common types used by other
+Google Cloud packages. It does not contain client types to make RPCs.
 {{/HasServices}}
+{{#Codec.HasQuickstart}}
+
+## Quickstart
+
+The following example demonstrates using ``{{Codec.QuickstartClientName}}``:
+
+@Snippet(path: "{{Codec.QuickstartSnippetPath}}")
+{{/Codec.HasQuickstart}}
 {{#Codec.HasTraits}}
 
 ## See Also

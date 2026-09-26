@@ -16,6 +16,7 @@ package swift
 
 import (
 	"fmt"
+	"regexp"
 	"slices"
 	"strings"
 
@@ -23,21 +24,23 @@ import (
 )
 
 type serviceAnnotations struct {
-	Name             string
-	ClientName       string
-	StubPrefix       string
-	HostnameShort    string
-	DocLines         []string
-	Methods          []*api.Method
-	LibraryName      string
-	QuickstartMethod *api.Method
-	Model            *modelAnnotations
-	DependsOn        map[string]*Dependency
-	PublicDependsOn  map[string]*Dependency
-	IsGated          bool
-	ModulePath       string
-	IsGrpc           bool
-	HasData          bool
+	Name                       string
+	ClientName                 string
+	StubPrefix                 string
+	HostnameShort              string
+	DocLines                   []string
+	Description                string
+	IsRecommendedStartingPoint bool
+	Methods                    []*api.Method
+	LibraryName                string
+	QuickstartMethod           *api.Method
+	Model                      *modelAnnotations
+	DependsOn                  map[string]*Dependency
+	PublicDependsOn            map[string]*Dependency
+	IsGated                    bool
+	ModulePath                 string
+	IsGrpc                     bool
+	HasData                    bool
 
 	// Any additional services required by this service.
 	//
@@ -187,23 +190,28 @@ func (c *codec) annotateService(service *api.Service, model *modelAnnotations) (
 		}
 	}
 
+	isRecommendedStartingPoint := c.Model.QuickstartService != nil && c.Model.QuickstartService.ID == service.ID && len(c.Model.Services) > 1
+	desc := extractServiceDescription(service.Documentation, service.Name)
+
 	name := c.traitName(service)
 	annotations := &serviceAnnotations{
-		Name:                  name,
-		ClientName:            pascalCase(service.Name + "Client"),
-		StubPrefix:            pascalCaseNoMangling(service.Name),
-		HostnameShort:         strings.TrimSuffix(service.DefaultHost, ".googleapis.com"),
-		DocLines:              docLines,
-		Methods:               methods,
-		LibraryName:           c.LibraryName,
-		QuickstartMethod:      quickstartMethod,
-		Model:                 model,
-		DependsOn:             map[string]*Dependency{},
-		PublicDependsOn:       map[string]*Dependency{},
-		ModulePath:            c.ModulePath,
-		IsGrpc:                c.isGrpc(),
-		DiagnoseClientSnippet: diagnoseClientSnippet,
-		DiagnoseSnippetRunner: service.Deprecated,
+		Name:                       name,
+		ClientName:                 pascalCase(service.Name + "Client"),
+		StubPrefix:                 pascalCaseNoMangling(service.Name),
+		HostnameShort:              strings.TrimSuffix(service.DefaultHost, ".googleapis.com"),
+		DocLines:                   docLines,
+		Description:                desc,
+		IsRecommendedStartingPoint: isRecommendedStartingPoint,
+		Methods:                    methods,
+		LibraryName:                c.LibraryName,
+		QuickstartMethod:           quickstartMethod,
+		Model:                      model,
+		DependsOn:                  map[string]*Dependency{},
+		PublicDependsOn:            map[string]*Dependency{},
+		ModulePath:                 c.ModulePath,
+		IsGrpc:                     c.isGrpc(),
+		DiagnoseClientSnippet:      diagnoseClientSnippet,
+		DiagnoseSnippetRunner:      service.Deprecated,
 	}
 	if c.PerServiceTraits {
 		annotations.IsGated = true
@@ -469,4 +477,64 @@ func insertGatingTrait(gatedBy []string, traitName string) []string {
 		gatedBy = slices.Insert(gatedBy, index, traitName)
 	}
 	return gatedBy
+}
+
+var reDocXref = regexp.MustCompile(`\[([^\]]+)\](?:\([^\)]+\)|\[[^\]]*\])`)
+
+// extractServiceDescription extracts a concise single-line description from
+// service documentation comments.
+func extractServiceDescription(doc string, serviceName string) string {
+	if doc == "" {
+		return fmt.Sprintf("Client for the %s.", serviceName)
+	}
+	paragraphs := strings.Split(strings.ReplaceAll(doc, "\r\n", "\n"), "\n\n")
+	var cleaned []string
+	for _, p := range paragraphs {
+		trimmed := strings.TrimSpace(p)
+		if trimmed == "" || strings.HasPrefix(trimmed, "#") {
+			continue
+		}
+		// Skip short generic header lines ending in ":" like "API Overview:"
+		if strings.HasSuffix(trimmed, ":") && len(trimmed) < 40 && !strings.Contains(trimmed, ". ") {
+			continue
+		}
+		cleaned = append(cleaned, trimmed)
+	}
+	if len(cleaned) == 0 {
+		return fmt.Sprintf("Client for the %s.", serviceName)
+	}
+
+	selected := cleaned[0]
+	// If the first paragraph is just a title without sentence-ending punctuation,
+	// and a subsequent paragraph exists, prefer the subsequent paragraph.
+	if !strings.HasSuffix(selected, ".") && !strings.HasSuffix(selected, "!") && !strings.HasSuffix(selected, "?") && len(cleaned) > 1 {
+		selected = cleaned[1]
+	}
+
+	// Remove proto cross-reference link targets like [Text][proto.id] -> Text
+	// and markdown link targets like [Text](url) -> Text
+	selected = reDocXref.ReplaceAllString(selected, "$1")
+	selected = strings.ReplaceAll(selected, "`", "")
+	fields := strings.Fields(selected)
+	text := strings.Join(fields, " ")
+
+	// Extract the first sentence if multiple sentences exist.
+	if idx := strings.Index(text, ". "); idx != -1 {
+		// If the first sentence is very short (< 30 chars), try to include the second sentence
+		if idx < 30 {
+			if secIdx := strings.Index(text[idx+2:], ". "); secIdx != -1 {
+				text = text[:idx+2+secIdx+1]
+			}
+		} else {
+			text = text[:idx+1]
+		}
+	} else if !strings.HasSuffix(text, ".") && !strings.HasSuffix(text, "!") && !strings.HasSuffix(text, "?") {
+		text = strings.TrimSuffix(text, ":")
+		text = strings.TrimSpace(text) + "."
+	}
+
+	if text == "" || text == "." {
+		return fmt.Sprintf("Client for the %s.", serviceName)
+	}
+	return text
 }
