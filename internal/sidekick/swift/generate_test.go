@@ -23,6 +23,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/sidekick/parser"
 	"github.com/googleapis/librarian/internal/sources"
@@ -89,5 +90,57 @@ func TestFromProtobuf(t *testing.T) {
 	clientsFile := filepath.Join(outDir, "Sources", "GoogleType", "Clients.swift")
 	if _, err := os.Stat(clientsFile); !errors.Is(err, fs.ErrNotExist) {
 		t.Errorf("expected Clients.swift to not exist for type-only library, got err = %v", err)
+	}
+}
+
+func TestExtractSnippetShow(t *testing.T) {
+	for _, test := range []struct {
+		name    string
+		content string
+		want    string
+	}{
+		{
+			name: "extracts code between show and hide markers",
+			content: `// snippet.hide
+// Boilerplate license
+// snippet.show
+import Foundation
+import TestPkg
+
+func sample() async throws {
+  let client = try TestPkg.Client()
+}
+// snippet.hide
+struct Runner {}
+`,
+			want: `import Foundation
+import TestPkg
+
+func sample() async throws {
+  let client = try TestPkg.Client()
+}`,
+		},
+		{
+			name:    "handles CRLF line endings",
+			content: "// snippet.hide\r\n// license\r\n// snippet.show\r\nlet x = 1\r\n// snippet.hide\r\n",
+			want:    "let x = 1",
+		},
+		{
+			name:    "returns trimmed content when show marker is missing",
+			content: "  let x = 42\n  ",
+			want:    "let x = 42",
+		},
+		{
+			name:    "returns content after show when hide marker is missing",
+			content: "// snippet.show\nlet y = 100",
+			want:    "let y = 100",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := extractSnippetShow(test.content)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
 	}
 }

@@ -31,13 +31,15 @@ func TestModelAnnotations(t *testing.T) {
 		t.Fatal(err)
 	}
 	want := &modelAnnotations{
-		LibraryName:     "GoogleCloudWorkflowsV1",
-		PackageName:     "google-cloud-workflows-v1",
-		PackageRepoName: "swift-google-cloud-workflows-v1",
-		PackageVersion:  "0.0.0",
-		CopyrightYear:   "2038",
-		MonorepoRoot:    ".",
-		WktPackage:      "GoogleWKT",
+		LibraryName:           "GoogleCloudWorkflowsV1",
+		PackageName:           "google-cloud-workflows-v1",
+		PackageRepoName:       "swift-google-cloud-workflows-v1",
+		PackageVersion:        "0.0.0",
+		CopyrightYear:         "2038",
+		MonorepoRoot:          ".",
+		WktPackage:            "GoogleWKT",
+		QuickstartSnippetPath: "WorkflowsQuickstart",
+		QuickstartClientName:  "WorkflowsClient",
 	}
 	if diff := cmp.Diff(want, model.Codec, cmpopts.IgnoreFields(modelAnnotations{}, "BoilerPlate", "DependsOn")); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
