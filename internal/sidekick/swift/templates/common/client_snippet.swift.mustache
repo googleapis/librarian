@@ -25,24 +25,7 @@ limitations under the License.
 #if {{Codec.Name}}
 {{/Codec.IsGated}}
 // snippet.show
-import Foundation
-import {{Codec.LibraryName}}
-{{#Codec.SnippetImports}}
-import {{.}}
-{{/Codec.SnippetImports}}
-
-{{#Codec.DiagnoseClientSnippet}}
-{{> /templates/common/diagnose}}
-{{/Codec.DiagnoseClientSnippet}}
-func sample({{#Codec.QuickstartMethod.SampleInfo}}{{#Codec.Parameters}}{{.}}: String, {{/Codec.Parameters}}{{/Codec.QuickstartMethod.SampleInfo}}) async throws {
-  let client = try {{Codec.LibraryName}}.{{Codec.ClientName}}()
-  {{#Codec.QuickstartMethod}}
-  {{> /templates/snippet/generic}}
-  {{/Codec.QuickstartMethod}}
-  {{^Codec.QuickstartMethod}}
-  print("use `client` to make requests: \(client)")
-  {{/Codec.QuickstartMethod}}
-}
+{{> /templates/snippet/client_sample}}
 // snippet.hide
 
 @main

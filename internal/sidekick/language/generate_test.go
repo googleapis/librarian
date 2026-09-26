@@ -95,6 +95,18 @@ func TestGenerateEnum(t *testing.T) {
 	verifyElementOutput(t, outDir)
 }
 
+func TestRenderTemplate(t *testing.T) {
+	service := api.NewTestService("ExpectedName")
+	got, err := RenderTemplate("testTemplates/test002.mustache", service, provider)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := "\n\nmessage ExpectedName\n"
+	if got != want {
+		t.Errorf("got %q, want %q", got, want)
+	}
+}
+
 func verifyElementOutput(t *testing.T, outDir string) {
 	t.Helper()
 	for _, expected := range []string{"test002.txt"} {

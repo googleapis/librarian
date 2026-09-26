@@ -72,20 +72,25 @@ func GenerateEnum(outDir string, enum *api.Enum, provider TemplateProvider, gen 
 	return generateElement(outDir, enum, provider, gen)
 }
 
-func generateElement(outDir string, element any, provider TemplateProvider, gen GeneratedFile) error {
-	templateContents, err := provider(gen.TemplatePath)
+// RenderTemplate renders a template with its partials to a string without writing to a file.
+func RenderTemplate(templatePath string, element any, provider TemplateProvider) (string, error) {
+	templateContents, err := provider(templatePath)
 	if err != nil {
-		return err
+		return "", err
 	}
+	nestedProvider := mustacheProvider{
+		impl:    provider,
+		dirname: filepath.Dir(templatePath),
+	}
+	return mustache.RenderPartials(templateContents, &nestedProvider, element)
+}
+
+func generateElement(outDir string, element any, provider TemplateProvider, gen GeneratedFile) error {
 	destination := filepath.Join(outDir, gen.OutputPath)
 	if err := os.MkdirAll(filepath.Dir(destination), 0o755); err != nil {
 		return err
 	}
-	nestedProvider := mustacheProvider{
-		impl:    provider,
-		dirname: filepath.Dir(gen.TemplatePath),
-	}
-	s, err := mustache.RenderPartials(templateContents, &nestedProvider, element)
+	s, err := RenderTemplate(gen.TemplatePath, element, provider)
 	if err != nil {
 		return err
 	}

@@ -19,7 +19,6 @@ import (
 	"context"
 	"embed"
 	"fmt"
-	"os"
 	"path/filepath"
 	"strings"
 
@@ -75,7 +74,7 @@ func Generate(ctx context.Context, model *api.API, outdir string, library *confi
 	if err := codec.generateSnippets(outdir, model, provider); err != nil {
 		return err
 	}
-	if err := codec.loadQuickstartSnippet(outdir, model); err != nil {
+	if err := codec.annotateQuickstartSnippet(model, provider); err != nil {
 		return err
 	}
 	if err := codec.generateDocc(outdir, model, provider); err != nil {
@@ -291,33 +290,16 @@ func (c *codec) generatePackageVersion(outdir string, model *api.API, provider l
 	return language.GenerateFromModel(outdir, model, provider, []language.GeneratedFile{generated})
 }
 
-func (c *codec) loadQuickstartSnippet(outdir string, model *api.API) error {
+func (c *codec) annotateQuickstartSnippet(model *api.API, provider language.TemplateProvider) error {
 	if model.QuickstartService == nil {
 		return nil
 	}
-	filename := filepath.Join(outdir, "Snippets", model.QuickstartService.Name+"Quickstart.swift")
-	contentBytes, err := os.ReadFile(filename)
+	snippet, err := language.RenderTemplate("templates/snippet/client_sample.mustache", model.QuickstartService, provider)
 	if err != nil {
 		return err
 	}
-	content := string(contentBytes)
-	snippet := extractSnippetShow(content)
 	if ann, ok := model.Codec.(*modelAnnotations); ok {
-		ann.QuickstartSnippet = snippet
+		ann.QuickstartSnippet = strings.TrimSpace(snippet)
 	}
 	return nil
-}
-
-func extractSnippetShow(content string) string {
-	const startMarker = "// snippet.show"
-	const endMarker = "// snippet.hide"
-
-	_, after, found := strings.Cut(content, startMarker)
-	if !found {
-		return strings.TrimSpace(content)
-	}
-	after = strings.TrimPrefix(after, "\r\n")
-	after = strings.TrimPrefix(after, "\n")
-	before, _, _ := strings.Cut(after, endMarker)
-	return strings.TrimSpace(before)
 }
