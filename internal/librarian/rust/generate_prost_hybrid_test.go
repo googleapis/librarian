@@ -155,11 +155,9 @@ func TestFilterModelToTypesUnusedFieldLookup(t *testing.T) {
 }
 
 func TestFilterModelToTypesExternalTypes(t *testing.T) {
-	streamMsg := api.NewTestMessage("StreamMsg").WithPackage("google.test.v1")
 	externalMsg := api.NewTestMessage("LatLng").WithPackage("google.type")
 	externalEnum := api.NewTestEnum("DayOfWeek").WithPackage("google.type")
-
-	streamMsg.WithFields(
+	streamMsg := api.NewTestMessage("StreamMsg").WithPackage("google.test.v1").WithFields(
 		api.NewTestField("location").WithMessageType(externalMsg),
 		api.NewTestField("day").WithEnumType(externalEnum),
 	)
@@ -464,7 +462,7 @@ func TestFilterModelToTypesCyclicRecursion(t *testing.T) {
 	// A message with a field referring back to itself or its parent should not infinite loop
 	parent := api.NewTestMessage("Node").WithPackage("google.test.v1")
 	parent.WithFields(
-		api.NewTestField("child").WithType(api.TypezMessage).WithTypezID(parent.ID),
+		api.NewTestField("child").WithMessageType(parent),
 	)
 	model := api.NewTestAPI([]*api.Message{parent}, []*api.Enum{}, []*api.Service{})
 
