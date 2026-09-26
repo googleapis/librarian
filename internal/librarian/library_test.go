@@ -1841,6 +1841,7 @@ func TestMergeSwift(t *testing.T) {
 					OperationID: "op2",
 				},
 				QuickstartServiceOverride: "Service2",
+				IdempotencyHook:           "resolveIdempotency",
 			},
 			want: &config.SwiftPackage{
 				SwiftDefault: config.SwiftDefault{
@@ -1855,6 +1856,7 @@ func TestMergeSwift(t *testing.T) {
 					OperationID: "op2",
 				},
 				QuickstartServiceOverride: "Service2",
+				IdempotencyHook:           "resolveIdempotency",
 			},
 		},
 	} {
