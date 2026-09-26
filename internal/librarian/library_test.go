@@ -1839,6 +1839,7 @@ func TestMergeSwift(t *testing.T) {
 				Discovery: &config.SwiftDiscovery{
 					OperationID: "op2",
 				},
+				IdempotencyHook: "resolveIdempotency",
 			},
 			want: &config.SwiftPackage{
 				SwiftDefault: config.SwiftDefault{
@@ -1852,6 +1853,7 @@ func TestMergeSwift(t *testing.T) {
 				Discovery: &config.SwiftDiscovery{
 					OperationID: "op2",
 				},
+				IdempotencyHook: "resolveIdempotency",
 			},
 		},
 	} {

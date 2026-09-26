@@ -209,6 +209,55 @@ func TestParseOptions(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "idempotency hook in package",
+			library: &config.Library{
+				CopyrightYear: "2038",
+				Swift: &config.SwiftPackage{
+					IdempotencyHook: "resolveIdempotency",
+				},
+			},
+			want: &codec{
+				GenerationYear:     "2038",
+				LibraryName:        "Test",
+				TargetLibraryName:  "Test",
+				PackageName:        "test",
+				PackageRepoName:    "swift-test",
+				PackageVersion:     "0.0.0",
+				MonorepoRoot:       ".",
+				Model:              model,
+				ApiPackages:        map[string]*Dependency{},
+				DependenciesByName: map[string]*Dependency{},
+				ResponseEncoding:   defaultResponseEncoding,
+				IdempotencyHook:    "resolveIdempotency",
+			},
+		},
+		{
+			name: "idempotency hook module override",
+			library: &config.Library{
+				CopyrightYear: "2038",
+				Swift: &config.SwiftPackage{
+					IdempotencyHook: "packageHook",
+				},
+			},
+			module: &config.SwiftModule{
+				IdempotencyHook: "moduleHook",
+			},
+			want: &codec{
+				Module:             true,
+				GenerationYear:     "2038",
+				TargetLibraryName:  "Test",
+				PackageName:        "test",
+				PackageRepoName:    "swift-test",
+				PackageVersion:     "0.0.0",
+				MonorepoRoot:       ".",
+				Model:              model,
+				ApiPackages:        map[string]*Dependency{},
+				DependenciesByName: map[string]*Dependency{},
+				ResponseEncoding:   defaultResponseEncoding,
+				IdempotencyHook:    "moduleHook",
+			},
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			got, err := newCodec(model, test.library, test.module, ".")
