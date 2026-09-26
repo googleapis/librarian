@@ -229,6 +229,61 @@ func TestAnnotateMessage_ImportAttributes(t *testing.T) {
 	}
 }
 
+func TestAnnotateMessage_ConvertImports(t *testing.T) {
+	for _, test := range []struct {
+		name        string
+		message     *api.Message
+		config      *config.Library
+		wantImports []string
+	}{
+		{
+			name:    "simple message with GoogleWKT",
+			message: api.NewTestMessage("SimpleMessage"),
+			config: &config.Library{
+				Swift: &config.SwiftPackage{
+					SwiftDefault: config.SwiftDefault{
+						Dependencies: []config.SwiftDependency{
+							{Name: wellKnownSwiftPackage, ApiPackage: wellKnownProtobufPackage},
+						},
+					},
+				},
+			},
+			wantImports: []string{
+				"@_spi(GoogleCloudInternal) import GoogleWKT",
+				"@_spi(GoogleCloudInternal) import GoogleWKTConvert",
+			},
+		},
+		{
+			name:    "message with custom SPI",
+			message: api.NewTestMessage("CustomSpi"),
+			config: &config.Library{
+				Swift: &config.SwiftPackage{
+					SwiftDefault: config.SwiftDefault{
+						Dependencies: []config.SwiftDependency{
+							{Name: wellKnownSwiftPackage, ApiPackage: wellKnownProtobufPackage, SpiAttribute: "CustomSPI"},
+						},
+					},
+				},
+			},
+			wantImports: []string{
+				"@_spi(CustomSPI) import GoogleWKT",
+				"@_spi(GoogleCloudInternal) import GoogleWKTConvert",
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			model := api.NewTestAPI([]*api.Message{test.message}, []*api.Enum{}, []*api.Service{})
+			codec := newTestCodec(t, model, test.config)
+			if err := codec.annotateModel(); err != nil {
+				t.Fatal(err)
+			}
+			if diff := cmp.Diff(test.wantImports, test.message.Codec.(*messageAnnotations).ConvertImports()); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
 func TestAnnotateMessage_Discovery(t *testing.T) {
 	mapMessage := api.NewTestMapMessage("map<string, bytes>", api.TypezString, api.TypezBytes).
 		WithID("$map<string, bytes>")
