@@ -82,6 +82,8 @@ func MethodCreate() *api.Method {
 			WithLiteral("secrets")).
 		WithQueryParameters(map[string]bool{"secretId": true}).
 		WithBodyFieldPath("body")
+	// Note: InputType and OutputType are intentionally left nil because OpenAPI parser tests
+	// (e.g. TestOpenAPI_MakeAPI) assert against this fixture before CrossReference runs.
 	m.InputTypeID = CreateRequest().ID
 	m.OutputTypeID = Secret().ID
 	return m
@@ -92,6 +94,7 @@ func MethodUpdate() *api.Method {
 	m := api.NewTestMethod("UpdateSecret").
 		WithID("..Service.UpdateSecret").
 		WithDocumentation("Updates metadata of an existing Secret.").
+		WithInput(UpdateRequest()).
 		WithVerb(http.MethodPatch).
 		WithPathTemplate((&api.PathTemplate{}).
 			WithLiteral("v1").
@@ -99,7 +102,6 @@ func MethodUpdate() *api.Method {
 		WithQueryParameters(map[string]bool{
 			"field_mask": true,
 		})
-	m.InputTypeID = UpdateRequest().ID
 	m.OutputTypeID = ".google.protobuf.Empty"
 	return m
 }
