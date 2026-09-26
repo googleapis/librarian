@@ -103,6 +103,18 @@ func TestExtractServiceDescription(t *testing.T) {
 			serviceName: "KeyManagementService",
 			want:        "Google Cloud Key Management Service.",
 		},
+		{
+			name:        "first sentence ends with question mark",
+			doc:         "Looking for an easy way to manage secrets? The SecretManagerService stores and versions sensitive keys.",
+			serviceName: "SecretManagerService",
+			want:        "Looking for an easy way to manage secrets?",
+		},
+		{
+			name:        "first sentence ends with exclamation mark",
+			doc:         "Welcome to the Cloud Key Management Service! Use this client to manage your cryptographic keys.",
+			serviceName: "KeyManagementService",
+			want:        "Welcome to the Cloud Key Management Service!",
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			got := extractServiceDescription(test.doc, test.serviceName)

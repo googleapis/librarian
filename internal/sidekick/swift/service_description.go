@@ -141,7 +141,16 @@ func extractNodeText(node ast.Node, source []byte) string {
 // extractFirstSentence extracts the first sentence of a paragraph. If the first
 // sentence is very short (< minFirstSentenceLength chars), it attempts to include the second sentence.
 func extractFirstSentence(s string) string {
-	idx := strings.Index(s, ". ")
+	findTerminator := func(text string) int {
+		for i := 0; i < len(text)-1; i++ {
+			if (text[i] == '.' || text[i] == '?' || text[i] == '!') && text[i+1] == ' ' {
+				return i
+			}
+		}
+		return -1
+	}
+
+	idx := findTerminator(s)
 	if idx == -1 {
 		if !strings.HasSuffix(s, ".") && !strings.HasSuffix(s, "!") && !strings.HasSuffix(s, "?") {
 			s = strings.TrimSuffix(s, ":")
@@ -152,7 +161,7 @@ func extractFirstSentence(s string) string {
 
 	if idx < minFirstSentenceLength {
 		rest := s[idx+2:]
-		if secIdx := strings.Index(rest, ". "); secIdx != -1 {
+		if secIdx := findTerminator(rest); secIdx != -1 {
 			return s[:idx+2+secIdx+1]
 		}
 		if strings.HasSuffix(rest, ".") || strings.HasSuffix(rest, "!") || strings.HasSuffix(rest, "?") {
