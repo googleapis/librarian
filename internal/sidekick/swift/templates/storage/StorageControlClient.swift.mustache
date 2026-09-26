@@ -86,7 +86,25 @@ public final class StorageControlClient: StorageControlProtocol, Sendable {
   @available(*, deprecated)
   {{/Deprecated}}
   public func {{> /templates/common/method_signature/request_options}} {
+    {{#HasAutoPopulatedFields}}
+    var request = request
+    {{#AutoPopulated}}
+    {{#Optional}}
+    if request.{{Codec.Name}}?.isEmpty ?? true {
+      request.{{Codec.Name}} = UUID().uuidString
+    }
+    {{/Optional}}
+    {{^Optional}}
+    if request.{{Codec.Name}}.isEmpty {
+      request.{{Codec.Name}} = UUID().uuidString
+    }
+    {{/Optional}}
+    {{/AutoPopulated}}
+    {{^ReturnsEmpty}}return {{/ReturnsEmpty}}try await self.storage.{{Codec.Name}}(request: request, options: options)
+    {{/HasAutoPopulatedFields}}
+    {{^HasAutoPopulatedFields}}
     try await self.storage.{{Codec.Name}}(request: request, options: options)
+    {{/HasAutoPopulatedFields}}
   }
 
 
@@ -133,7 +151,25 @@ public final class StorageControlClient: StorageControlProtocol, Sendable {
   @available(*, deprecated)
   {{/Deprecated}}
   public func {{> /templates/common/method_signature/request_options}} {
+    {{#HasAutoPopulatedFields}}
+    var request = request
+    {{#AutoPopulated}}
+    {{#Optional}}
+    if request.{{Codec.Name}}?.isEmpty ?? true {
+      request.{{Codec.Name}} = UUID().uuidString
+    }
+    {{/Optional}}
+    {{^Optional}}
+    if request.{{Codec.Name}}.isEmpty {
+      request.{{Codec.Name}} = UUID().uuidString
+    }
+    {{/Optional}}
+    {{/AutoPopulated}}
+    {{^ReturnsEmpty}}return {{/ReturnsEmpty}}try await self.control.{{Codec.Name}}(request: request, options: options)
+    {{/HasAutoPopulatedFields}}
+    {{^HasAutoPopulatedFields}}
     try await self.control.{{Codec.Name}}(request: request, options: options)
+    {{/HasAutoPopulatedFields}}
   }
 
 
