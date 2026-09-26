@@ -80,7 +80,25 @@ public final class {{Codec.ClientName}}: Clients.{{Codec.StubPrefix}}Protocol, S
   {{> /templates/common/diagnose}}
   {{/Codec.DiagnoseTypes}}
   {{^IsLroPoller}}public {{/IsLroPoller}}func {{> /templates/common/method_signature/request_options}} {
-      try await self.inner.{{Codec.Name}}(request: request, options: options)
+    {{#HasAutoPopulatedFields}}
+    var request = request
+    {{#AutoPopulated}}
+    {{#Optional}}
+    if request.{{Codec.Name}}?.isEmpty ?? true {
+      request.{{Codec.Name}} = UUID().uuidString
+    }
+    {{/Optional}}
+    {{^Optional}}
+    if request.{{Codec.Name}}.isEmpty {
+      request.{{Codec.Name}} = UUID().uuidString
+    }
+    {{/Optional}}
+    {{/AutoPopulated}}
+    {{^ReturnsEmpty}}return {{/ReturnsEmpty}}try await self.inner.{{Codec.Name}}(request: request, options: options)
+    {{/HasAutoPopulatedFields}}
+    {{^HasAutoPopulatedFields}}
+    try await self.inner.{{Codec.Name}}(request: request, options: options)
+    {{/HasAutoPopulatedFields}}
   }
 
 

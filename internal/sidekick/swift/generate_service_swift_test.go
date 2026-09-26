@@ -1234,3 +1234,118 @@ func TestGenerateServiceSwift_SkipStreamingMethods(t *testing.T) {
 		t.Errorf("expected streaming snippet to NOT exist, got err: %v", err)
 	}
 }
+
+func TestGenerateService_AutoPopulated(t *testing.T) {
+	outDir := t.TempDir()
+
+	reqIDField := api.NewTestField("request_id").WithType(api.TypezString).WithAutoPopulated()
+	inputType := api.NewTestMessage("CreateResourceRequest").
+		WithPackage("test").
+		WithFields(reqIDField)
+
+	optReqIDField := api.NewTestField("request_id").WithType(api.TypezString).WithOptional().WithAutoPopulated()
+	optInputType := api.NewTestMessage("CreateResourceOptionalRequest").
+		WithPackage("test").
+		WithFields(optReqIDField)
+
+	plainInputType := api.NewTestMessage("DeleteResourceRequest").
+		WithPackage("test")
+
+	responseType := api.NewTestMessage("CreateResourceResponse").
+		WithPackage("test")
+
+	createResource := api.NewTestMethod("CreateResource").
+		WithInput(inputType).
+		WithOutput(responseType).
+		WithVerb("POST").
+		WithPathTemplate(&api.PathTemplate{}).
+		WithAutoPopulated(reqIDField)
+
+	createResourceOptional := api.NewTestMethod("CreateResourceOptional").
+		WithInput(optInputType).
+		WithOutput(responseType).
+		WithVerb("POST").
+		WithPathTemplate(&api.PathTemplate{}).
+		WithAutoPopulated(optReqIDField)
+
+	deleteResource := api.NewTestMethod("DeleteResource").
+		WithInput(plainInputType).
+		WithOutput(responseType).
+		WithVerb("POST").
+		WithPathTemplate(&api.PathTemplate{})
+
+	service := api.NewTestService("TestService").
+		WithPackage("test").
+		WithMethods(createResource, createResourceOptional, deleteResource)
+
+	model := api.NewTestAPI([]*api.Message{inputType, optInputType, plainInputType, responseType}, nil, []*api.Service{service}).
+		WithPackageName("test")
+
+	library := &config.Library{Swift: swiftConfig(t, []config.SwiftDependency{
+		{Name: "GoogleGax", RequiredByServices: true},
+	})}
+
+	if err := Generate(t.Context(), model, outDir, library, nil); err != nil {
+		t.Fatal(err)
+	}
+
+	serviceFile := filepath.Join(outDir, "Sources", "Test", "TestService.swift")
+	content, err := os.ReadFile(serviceFile)
+	if err != nil {
+		t.Fatal(err)
+	}
+	contentStr := string(content)
+
+	wantNonOptional := `  public func createResource(
+    request: CreateResourceRequest, options: GoogleGax.RequestOptions
+) async throws -> Test.CreateResourceResponse
+ {
+    var request = request
+    if request.requestId.isEmpty {
+      request.requestId = UUID().uuidString
+    }
+    return try await self.inner.createResource(request: request, options: options)
+  }`
+	if !strings.Contains(contentStr, wantNonOptional) {
+		t.Errorf("expected non-optional auto-population in %s:\nwant:\n%s\n\ngot:\n%s", serviceFile, wantNonOptional, contentStr)
+	}
+
+	wantOptional := `  public func createResourceOptional(
+    request: CreateResourceOptionalRequest, options: GoogleGax.RequestOptions
+) async throws -> Test.CreateResourceResponse
+ {
+    var request = request
+    if request.requestId?.isEmpty ?? true {
+      request.requestId = UUID().uuidString
+    }
+    return try await self.inner.createResourceOptional(request: request, options: options)
+  }`
+	if !strings.Contains(contentStr, wantOptional) {
+		t.Errorf("expected optional auto-population in %s:\nwant:\n%s\n\ngot:\n%s", serviceFile, wantOptional, contentStr)
+	}
+
+	wantPlain := `  public func deleteResource(
+    request: DeleteResourceRequest, options: GoogleGax.RequestOptions
+) async throws -> Test.CreateResourceResponse
+ {
+    try await self.inner.deleteResource(request: request, options: options)
+  }`
+	if !strings.Contains(contentStr, wantPlain) {
+		t.Errorf("expected unpopulated method in %s:\nwant:\n%s\n\ngot:\n%s", serviceFile, wantPlain, contentStr)
+	}
+
+	retryFile := filepath.Join(outDir, "Sources", "Test", "TestService+Retry.swift")
+	retryContent, err := os.ReadFile(retryFile)
+	if err != nil {
+		t.Fatal(err)
+	}
+	retryStr := string(retryContent)
+
+	if !strings.Contains(retryStr, "idempotent: true") {
+		t.Errorf("expected idempotent: true in %s, got:\n%s", retryFile, retryStr)
+	}
+	if !strings.Contains(retryStr, "idempotent: false") {
+		t.Errorf("expected idempotent: false in %s, got:\n%s", retryFile, retryStr)
+	}
+}
+
