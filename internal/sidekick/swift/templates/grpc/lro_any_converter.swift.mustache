@@ -70,7 +70,7 @@ internal enum {{Codec.LROAnyConverterName}} {
   internal static func toProto(
     _ any: {{Codec.WktPackage}}.WKTAny
   ) throws -> SwiftProtobuf.Google_Protobuf_Any {
-    switch any.typeUrl {
+    switch any.typeURL {
     {{#Codec.LROAnyTypes}}
     case "{{TypeURL}}":
       return try .init(message: {{ParameterTypeName}}(fromAny: any).toProto())
@@ -79,7 +79,7 @@ internal enum {{Codec.LROAnyConverterName}} {
       do {
         return try any.toProto()
       } catch {
-        throw ProtobufConversionError.unknownTypeUrl(typeUrl: any.typeUrl)
+        throw ProtobufConversionError.unknownTypeUrl(typeUrl: any.typeURL)
       }
     }
   }
