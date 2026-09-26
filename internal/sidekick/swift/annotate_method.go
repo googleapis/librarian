@@ -40,6 +40,7 @@ type methodAnnotations struct {
 	LRO                 *lroAnnotations
 	DiscoveryLRO        *discoveryLroAnnotations
 	ReturnType          string
+	HasAutoPopulatedFields bool
 
 	// ResponseEncoding sets the `$alt` query parameter value.
 	//
@@ -389,6 +390,7 @@ func (c *codec) annotateMethod(method *api.Method, modelAnn *modelAnnotations) e
 		LRO:                 lro,
 		ReturnType:          returnType,
 		DiscoveryLRO:        discoveryLRO,
+		HasAutoPopulatedFields: method.HasAutoPopulatedFields(),
 		ResponseEncoding:    c.ResponseEncoding,
 		DiagnoseTypes:       diagnoseTypes && !deprecatedScope,
 		DiagnoseFields:      diagnoseFields && !deprecatedScope,
@@ -460,5 +462,5 @@ func inDeprecatedScope(method *api.Method) bool {
 }
 
 func (a *methodAnnotations) Idempotent() bool {
-	return a.HTTPMethod == "GET" || a.HTTPMethod == "PUT"
+	return a.HTTPMethod == "GET" || a.HTTPMethod == "PUT" || a.HasAutoPopulatedFields
 }
