@@ -1350,4 +1350,3 @@ func TestGenerateService_AutoPopulated(t *testing.T) {
 		t.Errorf("expected idempotent: false in %s, got:\n%s", retryFile, retryStr)
 	}
 }
-
