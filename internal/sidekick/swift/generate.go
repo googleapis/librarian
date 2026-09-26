@@ -74,9 +74,6 @@ func Generate(ctx context.Context, model *api.API, outdir string, library *confi
 	if err := codec.generateSnippets(outdir, model, provider); err != nil {
 		return err
 	}
-	if err := codec.annotateQuickstartSnippet(model, provider); err != nil {
-		return err
-	}
 	if err := codec.generateDocc(outdir, model, provider); err != nil {
 		return err
 	}
@@ -288,18 +285,4 @@ func (c *codec) generatePackageVersion(outdir string, model *api.API, provider l
 		OutputPath:   c.swiftFilename("PackageVersion"),
 	}
 	return language.GenerateFromModel(outdir, model, provider, []language.GeneratedFile{generated})
-}
-
-func (c *codec) annotateQuickstartSnippet(model *api.API, provider language.TemplateProvider) error {
-	if model.QuickstartService == nil {
-		return nil
-	}
-	snippet, err := language.RenderTemplate("templates/snippet/client_sample.mustache", model.QuickstartService, provider)
-	if err != nil {
-		return err
-	}
-	if ann, ok := model.Codec.(*modelAnnotations); ok {
-		ann.QuickstartSnippet = strings.TrimSpace(snippet)
-	}
-	return nil
 }

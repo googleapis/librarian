@@ -38,10 +38,6 @@ type modelAnnotations struct {
 	DefaultTraits    []string
 	AllTraits        []*traitDefinition
 
-	QuickstartSnippetPath string
-	QuickstartClientName  string
-	QuickstartSnippet     string
-
 	// ModulePath is the generated Protobuf module for this package, if the
 	// package has one (e.g. "StorageControlProtos").
 	ModulePath string
@@ -112,10 +108,6 @@ func (ann *modelAnnotations) HasTraits() bool {
 
 func (ann *modelAnnotations) HasDefaultTraits() bool {
 	return len(ann.DefaultTraits) != 0
-}
-
-func (ann *modelAnnotations) HasQuickstart() bool {
-	return ann.QuickstartSnippetPath != ""
 }
 
 // HasLROAnyTypes returns true if the package has long-running operations whose
@@ -199,14 +191,6 @@ func (c *codec) annotateModel() error {
 			EnabledTraits: enabledTraits,
 		}
 		allTraits = append(allTraits, trait)
-	}
-	if c.Model.QuickstartService != nil {
-		annotations.QuickstartSnippetPath = c.Model.QuickstartService.Name + "Quickstart"
-		if qsAnn, ok := c.Model.QuickstartService.Codec.(*serviceAnnotations); ok {
-			annotations.QuickstartClientName = qsAnn.ClientName
-		} else {
-			annotations.QuickstartClientName = pascalCase(c.Model.QuickstartService.Name + "Client")
-		}
 	}
 	if err := c.annotateLROAnyConverter(annotations, generatedMethods); err != nil {
 		return err
