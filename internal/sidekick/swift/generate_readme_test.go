@@ -73,7 +73,8 @@ Stores sensitive data such as API keys, passwords, and certificates.
 
 ## Overview
 
-Most applications use the ` + "`*Client`" + ` types in this library:
+The following types provide methods to make RPCs. They are a good starting point
+to learn about this library.
 
 - ` + "`SecretManagerServiceClient`: Client for the SecretManagerService." + `
 
@@ -175,8 +176,8 @@ func TestGenerateReadme_WithTraits(t *testing.T) {
 	}
 	content := string(contentBytes)
 
-	if !strings.Contains(content, "- `ServiceClient`: Client for the Service. (Recommended starting point) (enabled by the `Service` trait)") {
-		t.Errorf("expected service to mention trait and recommended starting point, got:\n%s", content)
+	if !strings.Contains(content, "- `ServiceClient`: Client for the Service. (enabled by the `Service` trait)") {
+		t.Errorf("expected service to mention trait, got:\n%s", content)
 	}
 	if !strings.Contains(content, "- `OtherServiceClient`: Client for the OtherService. (enabled by the `OtherService` trait)") {
 		t.Errorf("expected other service to mention trait, got:\n%s", content)
@@ -340,5 +341,66 @@ func TestGenerateDoc_UnescapedDescription(t *testing.T) {
 	}
 	if strings.Contains(docc, "&#39;") || strings.Contains(docc, "&amp;") {
 		t.Errorf("expected Index.md to not contain HTML entities, got:\n%s", docc)
+	}
+}
+
+func TestGenerateReadme_QuickstartServiceOverride(t *testing.T) {
+	outDir := t.TempDir()
+	pkg := "google.cloud.example.v1"
+	inputType := api.NewTestMessage("Request").
+		WithPackage(pkg).
+		WithFields(api.NewTestField("name").WithType(api.TypezString))
+	outputType := api.NewTestMessage("Response").
+		WithPackage(pkg).
+		WithFields(api.NewTestField("value").WithType(api.TypezString))
+	method := api.NewTestMethod("Get").
+		WithInput(inputType).
+		WithOutput(outputType).
+		WithVerb("GET").WithPathTemplate(&api.PathTemplate{})
+	service1 := api.NewTestService("Service1").
+		WithPackage(pkg).
+		WithMethods(method)
+	service2 := api.NewTestService("Service2").
+		WithPackage(pkg).
+		WithMethods(method)
+	model := api.NewTestAPI([]*api.Message{inputType, outputType}, nil, []*api.Service{service1, service2}).
+		WithPackageName(pkg).
+		WithTitle("Example API")
+
+	cfg := swiftConfig(t, nil)
+	cfg.QuickstartServiceOverride = "Service2"
+	library := &config.Library{
+		Name:    "google-cloud-example-v1",
+		Version: "1.0.0",
+		Swift:   cfg,
+	}
+	if err := Generate(t.Context(), model, outDir, library, nil); err != nil {
+		t.Fatal(err)
+	}
+
+	contentBytes, err := os.ReadFile(filepath.Join(outDir, "README.md"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	content := string(contentBytes)
+
+	// Quickstart section in README should show Service2Client.
+	if !strings.Contains(content, "The following example demonstrates using `Service2Client`:") {
+		t.Errorf("expected Quickstart section to show Service2Client, got:\n%s", content)
+	}
+	if !strings.Contains(content, "try GoogleCloudExampleV1.Service2Client()") {
+		t.Errorf("expected quickstart code sample to use Service2Client, got:\n%s", content)
+	}
+
+	doccBytes, err := os.ReadFile(filepath.Join(outDir, "Sources", "GoogleCloudExampleV1", "GoogleCloudExampleV1.docc", "Index.md"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	docc := string(doccBytes)
+	if !strings.Contains(docc, "The following example demonstrates using ``Service2Client``:") {
+		t.Errorf("expected Index.md Quickstart section to show Service2Client, got:\n%s", docc)
+	}
+	if !strings.Contains(docc, `@Snippet(path: "Service2Quickstart")`) {
+		t.Errorf("expected Index.md Quickstart section to snippet Service2Quickstart, got:\n%s", docc)
 	}
 }

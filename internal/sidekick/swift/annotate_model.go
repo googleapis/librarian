@@ -16,13 +16,19 @@ package swift
 
 import (
 	"cmp"
+	"errors"
+	"fmt"
 	"log/slog"
 	"maps"
 	"slices"
+	"strings"
 
 	"github.com/googleapis/librarian/internal/license"
 	"github.com/googleapis/librarian/internal/sidekick/api"
 )
+
+// errQuickstartServiceNotFound is returned when the requested quickstart service override is not found.
+var errQuickstartServiceNotFound = errors.New("quickstart_service_override not found")
 
 type modelAnnotations struct {
 	CopyrightYear    string
@@ -164,7 +170,18 @@ func (c *codec) annotateModel() error {
 		}
 	}
 	c.annotateLROAnyFields()
-	if c.Model.QuickstartService == nil && len(c.Model.Services) > 0 {
+	if c.QuickstartServiceOverride != "" {
+		idx := slices.IndexFunc(c.Model.Services, func(s *api.Service) bool {
+			clientName := pascalCase(c.ServiceName(s) + "Client")
+			return strings.EqualFold(s.Name, c.QuickstartServiceOverride) ||
+				strings.EqualFold(c.ServiceName(s), c.QuickstartServiceOverride) ||
+				strings.EqualFold(clientName, c.QuickstartServiceOverride)
+		})
+		if idx == -1 {
+			return fmt.Errorf("%w: %q not found in services for package %q", errQuickstartServiceNotFound, c.QuickstartServiceOverride, c.PackageName)
+		}
+		c.Model.QuickstartService = c.Model.Services[idx]
+	} else if c.Model.QuickstartService == nil && len(c.Model.Services) > 0 {
 		c.Model.QuickstartService = c.Model.Services[0]
 	}
 	// The services are annotated last because the annotation assumes messages
