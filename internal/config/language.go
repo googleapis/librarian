@@ -239,6 +239,9 @@ type RustModule struct {
 
 	ModuleRoots map[string]string `yaml:"module_roots,omitempty"`
 
+	// MessageModuleNameOverrides contains codec-level overrides for message module names in model.rs.
+	MessageModuleNameOverrides map[string]string `yaml:"message_module_name_overrides,omitempty"`
+
 	// NameOverrides contains codec-level overrides for type and service names.
 	NameOverrides string `yaml:"name_overrides,omitempty"`
 
@@ -344,6 +347,9 @@ type RustCrate struct {
 
 	// PaginationOverrides contains overrides for pagination configuration.
 	PaginationOverrides []RustPaginationOverride `yaml:"pagination_overrides,omitempty"`
+
+	// MessageModuleNameOverrides contains codec-level overrides for message module names in model.rs.
+	MessageModuleNameOverrides map[string]string `yaml:"message_module_name_overrides,omitempty"`
 
 	// NameOverrides contains codec-level overrides for type and service names.
 	NameOverrides string `yaml:"name_overrides,omitempty"`

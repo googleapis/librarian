@@ -566,6 +566,7 @@ This document describes the schema for the librarian.yaml.
 | `post_process_protos` | string | Indicates whether to post-process protos. |
 | `documentation_overrides` | list of [RustDocumentationOverride](#rustdocumentationoverride-configuration) | Contains overrides for element documentation. |
 | `pagination_overrides` | list of [RustPaginationOverride](#rustpaginationoverride-configuration) | Contains overrides for pagination configuration. |
+| `message_module_name_overrides` | map[string]string | Contains codec-level overrides for message module names in model.rs. |
 | `name_overrides` | string | Contains codec-level overrides for type and service names. |
 | `discovery` | RustDiscovery (optional) | Contains discovery-specific configuration for LRO polling. |
 | `quickstart_service_override` | string | Overrides the default heuristically selected service for the package-level quickstart. |
@@ -616,6 +617,7 @@ This document describes the schema for the librarian.yaml.
 | `internal_builders` | bool | Indicates whether generated builders should be internal to the crate. |
 | `module_path` | string | Is the Rust module path for converters (e.g., "crate::generated::gapic::model"). |
 | `module_roots` | map[string]string |  |
+| `message_module_name_overrides` | map[string]string | Contains codec-level overrides for message module names in model.rs. |
 | `name_overrides` | string | Contains codec-level overrides for type and service names. |
 | `output` | string | Is the directory where generated code is written (e.g., "src/storage/src/generated/gapic"). |
 | `post_process_protos` | string | Contains code to post-process generated protos. |
