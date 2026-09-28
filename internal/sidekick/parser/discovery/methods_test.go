@@ -225,8 +225,7 @@ func TestMethodEmptyBody(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	want := api.NewTestMessage("getRequest").
-		WithPackage("").
+	want := newDiscoveryTestMessage("getRequest").
 		WithID("..zones.getRequest").
 		WithDocumentation("Synthetic request message for the [get()][.zones.get] method.").
 		WithFields(
@@ -264,8 +263,7 @@ func TestMethodWithQueryParameters(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	want := api.NewTestMessage("listRequest").
-		WithPackage("").
+	want := newDiscoveryTestMessage("listRequest").
 		WithID("..zones.listRequest").
 		WithDocumentation("Synthetic request message for the [list()][.zones.list] method.").
 		WithFields(
@@ -315,8 +313,7 @@ func TestMethodWithBody(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	wantInsertRequest := api.NewTestMessage("insertRequest").
-		WithPackage("").
+	wantInsertRequest := newDiscoveryTestMessage("insertRequest").
 		WithID("..addresses.insertRequest").
 		WithDocumentation("Synthetic request message for the [insert()][.addresses.insert] method.").
 		WithFields(
