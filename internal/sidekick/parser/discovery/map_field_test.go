@@ -257,7 +257,6 @@ func TestMapScalarTypes(t *testing.T) {
 						WithMap(),
 				).Fields[0],
 		}
-		wantFields[0].Parent = nil
 		if diff := cmp.Diff(wantFields, message.Fields, cmpopts.IgnoreFields(api.Field{}, "TypezID", "Parent")); diff != "" {
 			t.Errorf("mismatch (-want +got):\n%s", diff)
 			continue
@@ -281,8 +280,7 @@ func TestMapScalarTypes(t *testing.T) {
 					WithTypezID(test.WantTypeID).
 					WithJSONName(""),
 			).Fields[1]
-		want.Parent = nil
-		if diff := cmp.Diff(want, got); diff != "" {
+		if diff := cmp.Diff(want, got, cmpopts.IgnoreFields(api.Field{}, "Parent")); diff != "" {
 			t.Errorf("mismatch (-want +got):\n%s", diff)
 		}
 	}
