@@ -53,7 +53,6 @@ func TestInfo(t *testing.T) {
 		WithTitle("Compute Engine API").
 		WithDescription("Creates and runs virtual machines on Google Cloud Platform. ")
 	want.Revision = "20250810"
-	want.PackageName = ""
 	if diff := cmp.Diff(want, got, cmpopts.IgnoreFields(api.API{}, "Services", "Messages", "Enums"), cmpopts.IgnoreUnexported(api.API{})); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
@@ -179,7 +178,6 @@ func TestDeprecatedField(t *testing.T) {
 				WithTypezID("int32").
 				WithOptional(),
 		).Fields[0]
-	wantField.Parent = nil
 	if diff := cmp.Diff(wantField, gotField, cmpopts.IgnoreFields(api.Field{}, "Parent")); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
