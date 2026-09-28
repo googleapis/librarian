@@ -218,17 +218,18 @@ func Secret() *api.Message {
 
 // SecretVersion returns a sample secret version.
 func SecretVersion() *api.Message {
-	return api.NewTestMessage("SecretVersion").
+	state := EnumState()
+	m := api.NewTestMessage("SecretVersion").
 		WithPackage(Package).
 		WithID("google.cloud.secretmanager.v1.SecretVersion").
-		WithEnums(EnumState()).
-		WithFields(
-			api.NewTestField("name").
-				WithType(api.TypezString),
-			api.NewTestField("state").
-				WithType(api.TypezEnum).
-				WithTypezID(EnumState().ID),
-		)
+		WithEnums(state)
+	return m.WithFields(
+		api.NewTestField("name").
+			WithType(api.TypezString),
+		api.NewTestField("state").
+			WithType(api.TypezEnum).
+			WithTypezID(state.ID),
+	)
 }
 
 // EnumState returns a sample enum state.
