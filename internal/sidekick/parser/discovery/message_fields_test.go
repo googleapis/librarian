@@ -114,11 +114,8 @@ func TestMakeMessageFields(t *testing.T) {
 				WithTypezID(".package.AnotherMessage").
 				WithRepeated(),
 		).Fields
-	for _, f := range want {
-		f.Parent = nil
-	}
 	less := func(a, b *api.Field) bool { return a.Name < b.Name }
-	if diff := cmp.Diff(want, message.Fields, cmpopts.SortSlices(less)); diff != "" {
+	if diff := cmp.Diff(want, message.Fields, cmpopts.SortSlices(less), cmpopts.IgnoreFields(api.Field{}, "Parent")); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
