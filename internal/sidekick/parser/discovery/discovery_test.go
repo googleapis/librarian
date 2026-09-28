@@ -126,8 +126,7 @@ func TestMessage(t *testing.T) {
 	if got == nil {
 		t.Fatalf("expected message %s in the API model", id)
 	}
-	want := api.NewTestMessage("WeightedBackendService").
-		WithPackage("").
+	want := newDiscoveryTestMessage("WeightedBackendService").
 		WithID(id).
 		WithDocumentation("In contrast to a single BackendService in HttpRouteAction to which all matching traffic is directed to, WeightedBackendService allows traffic to be split across multiple backend services. The volume of traffic for each backend service is proportional to the weight specified in each WeightedBackendService").
 		WithFields(
@@ -168,8 +167,7 @@ func TestDeprecatedField(t *testing.T) {
 		t.Fatalf("expected a `port` field in the message, got=%v", gotMessage)
 	}
 	gotField := gotMessage.Fields[idx]
-	wantField := api.NewTestMessage("BackendService").
-		WithPackage("").
+	wantField := newDiscoveryTestMessage("BackendService").
 		WithFields(
 			api.NewTestField("port").
 				WithDeprecated(true).
