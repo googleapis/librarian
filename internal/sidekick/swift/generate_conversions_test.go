@@ -68,6 +68,9 @@ func TestGenerateConversions_Message(t *testing.T) {
 	gotContent := string(b)
 
 	// Check output imports
+	if !strings.Contains(gotContent, "@_spi(GoogleCloudInternal) import GoogleGax") {
+		t.Errorf("expected generated file to import GoogleGax with @_spi(GoogleCloudInternal)")
+	}
 	if !strings.Contains(gotContent, "internal import StorageControlProtos") {
 		t.Errorf("expected generated file to import StorageControlProtos")
 	}
@@ -465,8 +468,12 @@ func TestGenerateConversions_Diagnose(t *testing.T) {
 			checkDiagnose(t, message, "  ", "internal func toProto() throws -> ProtoType {", test.deprecated)
 
 			// `toProto()` only pattern matches, which does not warn.
-			checkDiagnose(t, read("Status+Convert.swift"), "  ",
+			statusContent := read("Status+Convert.swift")
+			checkDiagnose(t, statusContent, "  ",
 				"internal init(proto: TestProtos.Test_Status) {", test.deprecated)
+			if !strings.Contains(statusContent, "@_spi(GoogleCloudInternal) import GoogleGax") {
+				t.Errorf("expected Status+Convert.swift to import GoogleGax with @_spi(GoogleCloudInternal), got:\n%s", statusContent)
+			}
 		})
 	}
 }

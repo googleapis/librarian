@@ -240,6 +240,9 @@ func TestGenerateLROAnyConverter(t *testing.T) {
 		t.Fatal(err)
 	}
 	gotContent := string(b)
+	if !strings.Contains(gotContent, "@_spi(GoogleCloudInternal) import GoogleGax") {
+		t.Errorf("expected generated LRO converter to import GoogleGax with @_spi(GoogleCloudInternal), got:\n%s", gotContent)
+	}
 	if !strings.Contains(gotContent, "@_spi(GoogleCloudInternal) import GoogleWKTConvert") {
 		t.Errorf("expected generated LRO converter to import GoogleWKTConvert with @_spi(GoogleCloudInternal), got:\n%s", gotContent)
 	}
