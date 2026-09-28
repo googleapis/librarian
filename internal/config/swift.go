@@ -92,6 +92,9 @@ type SwiftPackage struct {
 	// which converts long-running operation payloads by type URL. Cannot be
 	// combined with `per_service_traits`.
 	LROAnyConverter string `yaml:"lro_any_converter,omitempty"`
+
+	// QuickstartServiceOverride overrides the default heuristically selected service for the package-level quickstart.
+	QuickstartServiceOverride string `yaml:"quickstart_service_override,omitempty"`
 }
 
 // SwiftDependency represents a dependency in Swift Package Manager.

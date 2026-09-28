@@ -28,6 +28,7 @@ type serviceAnnotations struct {
 	StubPrefix       string
 	HostnameShort    string
 	DocLines         []string
+	Description      string
 	Methods          []*api.Method
 	LibraryName      string
 	QuickstartMethod *api.Method
@@ -187,6 +188,8 @@ func (c *codec) annotateService(service *api.Service, model *modelAnnotations) (
 		}
 	}
 
+	desc := extractServiceDescription(service.Documentation, service.Name)
+
 	name := c.traitName(service)
 	annotations := &serviceAnnotations{
 		Name:                  name,
@@ -194,6 +197,7 @@ func (c *codec) annotateService(service *api.Service, model *modelAnnotations) (
 		StubPrefix:            pascalCaseNoMangling(service.Name),
 		HostnameShort:         strings.TrimSuffix(service.DefaultHost, ".googleapis.com"),
 		DocLines:              docLines,
+		Description:           desc,
 		Methods:               methods,
 		LibraryName:           c.LibraryName,
 		QuickstartMethod:      quickstartMethod,

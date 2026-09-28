@@ -15,6 +15,7 @@
 package swift
 
 import (
+	"errors"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -271,4 +272,70 @@ func TestModelAnnotations_Gating(t *testing.T) {
 	if diff := cmp.Diff([]string{"TestService"}, ann.DefaultTraits); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
+}
+
+func TestQuickstartServiceOverride(t *testing.T) {
+	service1 := api.NewTestService("Service1").WithPackage("test.pkg")
+	service2 := api.NewTestService("Service2").WithPackage("test.pkg")
+	model := api.NewTestAPI(nil, nil, []*api.Service{service1, service2}).
+		WithPackageName("test.pkg")
+
+	t.Run("defaults to first service when no override", func(t *testing.T) {
+		m := *model
+		m.Services = []*api.Service{service1, service2}
+		m.QuickstartService = nil
+		codec := newTestCodec(t, &m, nil)
+		if err := codec.annotateModel(); err != nil {
+			t.Fatal(err)
+		}
+		if m.QuickstartService != service1 {
+			t.Errorf("expected QuickstartService to default to service1, got %v", m.QuickstartService)
+		}
+	})
+
+	t.Run("overrides quickstart service by service name", func(t *testing.T) {
+		m := *model
+		m.Services = []*api.Service{service1, service2}
+		m.QuickstartService = nil
+		lib := &config.Library{
+			Swift: &config.SwiftPackage{QuickstartServiceOverride: "Service2"},
+		}
+		codec := newTestCodec(t, &m, lib)
+		if err := codec.annotateModel(); err != nil {
+			t.Fatal(err)
+		}
+		if m.QuickstartService != service2 {
+			t.Errorf("expected QuickstartService to be service2, got %v", m.QuickstartService)
+		}
+	})
+
+	t.Run("overrides quickstart service by client name", func(t *testing.T) {
+		m := *model
+		m.Services = []*api.Service{service1, service2}
+		m.QuickstartService = nil
+		lib := &config.Library{
+			Swift: &config.SwiftPackage{QuickstartServiceOverride: "Service2Client"},
+		}
+		codec := newTestCodec(t, &m, lib)
+		if err := codec.annotateModel(); err != nil {
+			t.Fatal(err)
+		}
+		if m.QuickstartService != service2 {
+			t.Errorf("expected QuickstartService to be service2, got %v", m.QuickstartService)
+		}
+	})
+
+	t.Run("returns error when override not found", func(t *testing.T) {
+		m := *model
+		m.Services = []*api.Service{service1, service2}
+		m.QuickstartService = nil
+		lib := &config.Library{
+			Swift: &config.SwiftPackage{QuickstartServiceOverride: "NonExistentService"},
+		}
+		codec := newTestCodec(t, &m, lib)
+		err := codec.annotateModel()
+		if !errors.Is(err, errQuickstartServiceNotFound) {
+			t.Errorf("expected errQuickstartServiceNotFound, got %v", err)
+		}
+	})
 }

@@ -907,6 +907,9 @@ func mergeSwift(dst, src *config.SwiftPackage) *config.SwiftPackage {
 	if src.DefaultTraits != nil {
 		res.DefaultTraits = src.DefaultTraits
 	}
+	if src.QuickstartServiceOverride != "" {
+		res.QuickstartServiceOverride = src.QuickstartServiceOverride
+	}
 	res.Discovery = mergeCommonDiscovery(res.Discovery, src.Discovery)
 	return &res
 }

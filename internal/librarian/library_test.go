@@ -1826,6 +1826,7 @@ func TestMergeSwift(t *testing.T) {
 				Discovery: &config.SwiftDiscovery{
 					OperationID: "op1",
 				},
+				QuickstartServiceOverride: "Service1",
 			},
 			src: &config.SwiftPackage{
 				SwiftDefault: config.SwiftDefault{
@@ -1839,6 +1840,7 @@ func TestMergeSwift(t *testing.T) {
 				Discovery: &config.SwiftDiscovery{
 					OperationID: "op2",
 				},
+				QuickstartServiceOverride: "Service2",
 			},
 			want: &config.SwiftPackage{
 				SwiftDefault: config.SwiftDefault{
@@ -1852,6 +1854,7 @@ func TestMergeSwift(t *testing.T) {
 				Discovery: &config.SwiftDiscovery{
 					OperationID: "op2",
 				},
+				QuickstartServiceOverride: "Service2",
 			},
 		},
 	} {

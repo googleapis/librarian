@@ -36,8 +36,8 @@ func TestGenerateLandingPage(t *testing.T) {
 		wantClientLink string
 		hasTraits      bool
 	}{
-		{"basic", basicConfig, "- ``ServiceClient``\n", false},
-		{"perService", perServiceConfig, "- ``ServiceClient``: enabled by the `Service` trait.\n", true},
+		{"basic", basicConfig, "- ``ServiceClient``: Client for the Service.\n", false},
+		{"perService", perServiceConfig, "- ``ServiceClient``: Client for the Service. (enabled by the `Service` trait)\n", true},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			outDir := t.TempDir()
@@ -76,6 +76,9 @@ func TestGenerateLandingPage(t *testing.T) {
 			got := extractBlock(t, content, "- ``ServiceClient``", "\n")
 			if diff := cmp.Diff(test.wantClientLink, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+			if !strings.Contains(content, "@Snippet(path: \"ServiceQuickstart\")") {
+				t.Errorf("expected Index.md to contain @Snippet directive, got:\n%s", content)
 			}
 
 			packageTraitsPath := filepath.Join(outDir, "Sources", "Test", "Test.docc", "PackageTraits.md")

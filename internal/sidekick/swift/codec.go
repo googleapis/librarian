@@ -159,6 +159,9 @@ type codec struct {
 	// operations span two modules would declare the name twice, which does not
 	// compile; no library is in that shape today.
 	LROAnyConverter string
+
+	// QuickstartServiceOverride overrides the default heuristically selected service for the package-level quickstart.
+	QuickstartServiceOverride string
 }
 
 const (
@@ -245,6 +248,7 @@ func newCodec(model *api.API, library *config.Library, module *config.SwiftModul
 		result.PerServiceTraits = swiftCfg.PerServiceTraits
 		result.DefaultTraits = swiftCfg.DefaultTraits
 		result.LROAnyConverter = swiftCfg.LROAnyConverter
+		result.QuickstartServiceOverride = swiftCfg.QuickstartServiceOverride
 		if result.LROAnyConverter != "" && result.PerServiceTraits {
 			// The converter covers every service in the package, so there is
 			// no single trait to gate it on. Supporting both would mean
