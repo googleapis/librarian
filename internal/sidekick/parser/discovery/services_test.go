@@ -71,8 +71,7 @@ func TestService(t *testing.T) {
 	listMethod.OutputTypeID = "..ZoneList"
 	listMethod.Signatures = []*api.MethodSignature{{Names: []string{"project"}}}
 
-	want := api.NewTestService("zones").
-		WithPackage("").
+	want := newDiscoveryTestService("zones").
 		WithDocumentation("Service for the `zones` resource.").
 		WithDefaultHost("compute.googleapis.com")
 	want.Methods = []*api.Method{getMethod, listMethod}
@@ -92,8 +91,7 @@ func TestServiceDeprecated(t *testing.T) {
 	if err := addService(model, &doc, &input); err != nil {
 		t.Fatal(err)
 	}
-	want := api.NewTestService("TestDeprecated").
-		WithPackage("").
+	want := newDiscoveryTestService("TestDeprecated").
 		WithDocumentation("Service for the `TestDeprecated` resource.").
 		WithDeprecated(true)
 	got := model.Service(want.ID)
@@ -118,8 +116,7 @@ func TestServiceMessages(t *testing.T) {
 		t.Fatalf("expected message %s in the API model", "..zones.listRequest")
 	}
 
-	want := api.NewTestMessage("zones").
-		WithPackage("").
+	want := newDiscoveryTestMessage("zones").
 		WithID("..zones").
 		WithDocumentation("Synthetic messages for the [zones][.zones] service").
 		WithMessages(getMessage, listMessage)
@@ -129,6 +126,18 @@ func TestServiceMessages(t *testing.T) {
 		t.Fatalf("expected service %s in the API model", want.ID)
 	}
 	apitest.CheckMessage(t, got, want)
+}
+
+// newDiscoveryTestMessage creates a Message with an empty package, matching
+// Discovery parser output for APIs without a service config.
+func newDiscoveryTestMessage(name string) *api.Message {
+	return api.NewTestMessage(name).WithPackage("")
+}
+
+// newDiscoveryTestService creates a Service with an empty package, matching
+// Discovery parser output for APIs without a service config.
+func newDiscoveryTestService(name string) *api.Service {
+	return api.NewTestService(name).WithPackage("")
 }
 
 func TestServiceTopLevelMethodErrors(t *testing.T) {

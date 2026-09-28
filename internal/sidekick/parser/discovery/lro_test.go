@@ -105,9 +105,8 @@ func TestLroAnnotationsError(t *testing.T) {
 
 	// None of the real services does this, but we want the parser to report an
 	// error if it ever does.
-	operation := api.NewTestMessage("Operation").WithPackage("")
-	badService := api.NewTestService("Service").
-		WithPackage("").
+	operation := newDiscoveryTestMessage("Operation")
+	badService := newDiscoveryTestService("Service").
 		WithMethods(
 			api.NewTestMethod("create_foo").
 				WithOutput(operation).
@@ -132,8 +131,7 @@ func TestLroAnnotationsError(t *testing.T) {
 					WithVariableNamed("id")).
 				WithQueryParameters(map[string]bool{}),
 		)
-	pollerService := api.NewTestService("Operations").
-		WithPackage("").
+	pollerService := newDiscoveryTestService("Operations").
 		WithMethods(
 			api.NewTestMethod("get_1").
 				WithOutput(operation).
