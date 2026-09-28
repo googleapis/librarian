@@ -162,6 +162,9 @@ type codec struct {
 
 	// QuickstartServiceOverride overrides the default heuristically selected service for the package-level quickstart.
 	QuickstartServiceOverride string
+
+	// IdempotencyHook configures an opt-in method on the request struct to resolve and transform idempotency request options before dispatch.
+	IdempotencyHook string
 }
 
 const (
@@ -263,6 +266,15 @@ func newCodec(model *api.API, library *config.Library, module *config.SwiftModul
 		result.ModuleType = module.ModuleType
 		result.ModulePath = module.ModulePath
 	}
+
+	idempotencyHook := ""
+	if swiftCfg != nil {
+		idempotencyHook = swiftCfg.IdempotencyHook
+	}
+	if module != nil && module.IdempotencyHook != "" {
+		idempotencyHook = module.IdempotencyHook
+	}
+	result.IdempotencyHook = idempotencyHook
 
 	nameOverrides := make(map[string]string)
 	if swiftCfg != nil {

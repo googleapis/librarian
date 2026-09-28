@@ -910,6 +910,9 @@ func mergeSwift(dst, src *config.SwiftPackage) *config.SwiftPackage {
 	if src.QuickstartServiceOverride != "" {
 		res.QuickstartServiceOverride = src.QuickstartServiceOverride
 	}
+	if src.IdempotencyHook != "" {
+		res.IdempotencyHook = src.IdempotencyHook
+	}
 	res.Discovery = mergeCommonDiscovery(res.Discovery, src.Discovery)
 	return &res
 }
