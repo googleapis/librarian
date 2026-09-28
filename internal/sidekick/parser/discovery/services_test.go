@@ -74,11 +74,8 @@ func TestService(t *testing.T) {
 	want := api.NewTestService("zones").
 		WithPackage("").
 		WithDocumentation("Service for the `zones` resource.").
-		WithDefaultHost("compute.googleapis.com").
-		WithMethods(getMethod, listMethod)
-	for _, m := range want.Methods {
-		m.Service = nil
-	}
+		WithDefaultHost("compute.googleapis.com")
+	want.Methods = []*api.Method{getMethod, listMethod}
 	apitest.CheckService(t, got, want)
 }
 
