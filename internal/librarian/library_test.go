@@ -1718,6 +1718,25 @@ func TestMergeRust(t *testing.T) {
 				Discovery: &config.RustDiscovery{},
 			},
 		},
+		{
+			name: "replaces message module name overrides",
+			dst: &config.RustCrate{
+				MessageModuleNameOverrides: map[string]string{
+					"id1": "mod1",
+					"id2": "mod2",
+				},
+			},
+			src: &config.RustCrate{
+				MessageModuleNameOverrides: map[string]string{
+					"id3": "mod3",
+				},
+			},
+			want: &config.RustCrate{
+				MessageModuleNameOverrides: map[string]string{
+					"id3": "mod3",
+				},
+			},
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			got := mergeRust(test.dst, test.src)
