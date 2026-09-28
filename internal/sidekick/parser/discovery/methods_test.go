@@ -27,65 +27,53 @@ func TestMakeServiceMethods(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	m1 := api.NewTestMethod("get").
+		WithID("..zones.get").
+		WithDocumentation("Returns the specified Zone resource.").
+		WithVerb("GET").
+		WithPathTemplate((&api.PathTemplate{}).
+			WithLiteral("compute").
+			WithLiteral("v1").
+			WithLiteral("projects").
+			WithVariableNamed("project").
+			WithLiteral("zones").
+			WithVariableNamed("zone")).
+		WithQueryParameters(map[string]bool{}).
+		WithBodyFieldPath("")
+	m1.InputTypeID = "..zones.getRequest"
+	m1.OutputTypeID = "..Zone"
+	m1.Signatures = []*api.MethodSignature{{Names: []string{"project", "zone"}}}
+
+	m2 := api.NewTestMethod("insert").
+		WithID("..firewallPolicies.insert").
+		WithDocumentation("Creates a new policy in the specified project using the data included in the request.").
+		WithVerb("POST").
+		WithPathTemplate((&api.PathTemplate{}).
+			WithLiteral("compute").
+			WithLiteral("v1").
+			WithLiteral("locations").
+			WithLiteral("global").
+			WithLiteral("firewallPolicies")).
+		WithQueryParameters(map[string]bool{
+			"parentId":  true,
+			"requestId": true,
+		}).
+		WithBodyFieldPath("body")
+	m2.InputTypeID = "..firewallPolicies.insertRequest"
+	m2.OutputTypeID = "..Operation"
+	m2.Signatures = []*api.MethodSignature{}
+
 	for _, test := range []struct {
 		id   string
 		want *api.Method
 	}{
 		{
-			id: "..zones.get",
-			want: &api.Method{
-				ID:            "..zones.get",
-				Name:          "get",
-				Documentation: "Returns the specified Zone resource.",
-				InputTypeID:   "..zones.getRequest",
-				OutputTypeID:  "..Zone",
-				PathInfo: &api.PathInfo{
-					Bindings: []*api.PathBinding{
-						{
-							Verb: "GET",
-							PathTemplate: (&api.PathTemplate{}).
-								WithLiteral("compute").
-								WithLiteral("v1").
-								WithLiteral("projects").
-								WithVariableNamed("project").
-								WithLiteral("zones").
-								WithVariableNamed("zone"),
-							QueryParameters: map[string]bool{},
-						},
-					},
-					BodyFieldPath: "",
-				},
-				Signatures: []*api.MethodSignature{{Names: []string{"project", "zone"}}},
-			},
+			id:   "..zones.get",
+			want: m1,
 		},
 		{
-			id: "..firewallPolicies.insert",
-			want: &api.Method{
-				ID:            "..firewallPolicies.insert",
-				Name:          "insert",
-				Documentation: "Creates a new policy in the specified project using the data included in the request.",
-				InputTypeID:   "..firewallPolicies.insertRequest",
-				OutputTypeID:  "..Operation",
-				PathInfo: &api.PathInfo{
-					Bindings: []*api.PathBinding{
-						{
-							Verb: "POST",
-							PathTemplate: (&api.PathTemplate{}).
-								WithLiteral("compute").
-								WithLiteral("v1").
-								WithLiteral("locations").
-								WithLiteral("global").
-								WithLiteral("firewallPolicies"),
-							QueryParameters: map[string]bool{
-								"parentId":  true,
-								"requestId": true,
-							},
-						},
-					},
-					BodyFieldPath: "body",
-				},
-				Signatures: []*api.MethodSignature{},
-			},
+			id:   "..firewallPolicies.insert",
+			want: m2,
 		},
 	} {
 		t.Run(test.id, func(t *testing.T) {
@@ -110,33 +98,25 @@ func TestMakeServiceMethodsReturnsEmpty(t *testing.T) {
 	if got == nil {
 		t.Fatalf("expected method %s in the API model", id)
 	}
-	want := &api.Method{
-		ID:            "..zoneOperations.delete",
-		Name:          "delete",
-		Documentation: "Deletes the specified zone-specific Operations resource.",
-		InputTypeID:   "..zoneOperations.deleteRequest",
-		OutputTypeID:  ".google.protobuf.Empty",
-		ReturnsEmpty:  true,
-		PathInfo: &api.PathInfo{
-			Bindings: []*api.PathBinding{
-				{
-					Verb: "DELETE",
-					PathTemplate: (&api.PathTemplate{}).
-						WithLiteral("compute").
-						WithLiteral("v1").
-						WithLiteral("projects").
-						WithVariableNamed("project").
-						WithLiteral("zones").
-						WithVariableNamed("zone").
-						WithLiteral("operations").
-						WithVariableNamed("operation"),
-					QueryParameters: map[string]bool{},
-				},
-			},
-			BodyFieldPath: "",
-		},
-		Signatures: []*api.MethodSignature{{Names: []string{"project", "zone", "operation"}}},
-	}
+	want := api.NewTestMethod("delete").
+		WithID("..zoneOperations.delete").
+		WithDocumentation("Deletes the specified zone-specific Operations resource.").
+		WithVerb("DELETE").
+		WithPathTemplate((&api.PathTemplate{}).
+			WithLiteral("compute").
+			WithLiteral("v1").
+			WithLiteral("projects").
+			WithVariableNamed("project").
+			WithLiteral("zones").
+			WithVariableNamed("zone").
+			WithLiteral("operations").
+			WithVariableNamed("operation")).
+		WithQueryParameters(map[string]bool{}).
+		WithBodyFieldPath("").
+		ReturnEmpty()
+	want.InputTypeID = "..zoneOperations.deleteRequest"
+	want.OutputTypeID = ".google.protobuf.Empty"
+	want.Signatures = []*api.MethodSignature{{Names: []string{"project", "zone", "operation"}}}
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
@@ -152,30 +132,22 @@ func TestMakeServiceMethodsDeprecated(t *testing.T) {
 	if got == nil {
 		t.Fatalf("expected method %s in the API model", id)
 	}
-	want := &api.Method{
-		ID:            "..projects.moveInstance",
-		Name:          "moveInstance",
-		Documentation: "Moves an instance and its attached persistent disks from one zone to another. *Note*: Moving VMs or disks by using this method might cause unexpected behavior. For more information, see the [known issue](/compute/docs/troubleshooting/known-issues#moving_vms_or_disks_using_the_moveinstance_api_or_the_causes_unexpected_behavior). [Deprecated] This method is deprecated. See [moving instance across zones](/compute/docs/instances/moving-instance-across-zones) instead.",
-		Deprecated:    true,
-		InputTypeID:   "..projects.moveInstanceRequest",
-		OutputTypeID:  "..Operation",
-		PathInfo: &api.PathInfo{
-			Bindings: []*api.PathBinding{
-				{
-					Verb: "POST",
-					PathTemplate: (&api.PathTemplate{}).
-						WithLiteral("compute").
-						WithLiteral("v1").
-						WithLiteral("projects").
-						WithVariableNamed("project").
-						WithLiteral("moveInstance"),
-					QueryParameters: map[string]bool{"requestId": true},
-				},
-			},
-			BodyFieldPath: "body",
-		},
-		Signatures: []*api.MethodSignature{{Names: []string{"project", "body"}}},
-	}
+	want := api.NewTestMethod("moveInstance").
+		WithID("..projects.moveInstance").
+		WithDocumentation("Moves an instance and its attached persistent disks from one zone to another. *Note*: Moving VMs or disks by using this method might cause unexpected behavior. For more information, see the [known issue](/compute/docs/troubleshooting/known-issues#moving_vms_or_disks_using_the_moveinstance_api_or_the_causes_unexpected_behavior). [Deprecated] This method is deprecated. See [moving instance across zones](/compute/docs/instances/moving-instance-across-zones) instead.").
+		WithDeprecated(true).
+		WithVerb("POST").
+		WithPathTemplate((&api.PathTemplate{}).
+			WithLiteral("compute").
+			WithLiteral("v1").
+			WithLiteral("projects").
+			WithVariableNamed("project").
+			WithLiteral("moveInstance")).
+		WithQueryParameters(map[string]bool{"requestId": true}).
+		WithBodyFieldPath("body")
+	want.InputTypeID = "..projects.moveInstanceRequest"
+	want.OutputTypeID = "..Operation"
+	want.Signatures = []*api.MethodSignature{{Names: []string{"project", "body"}}}
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
