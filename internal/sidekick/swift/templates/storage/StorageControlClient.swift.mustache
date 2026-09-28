@@ -34,7 +34,7 @@ public final class StorageControlClient: StorageControlProtocol, Sendable {
   private let storage: any Clients.StorageStub
   private let control: any Clients.StorageControlStub
   let pollingErrorPolicy: any GoogleGax.PollingErrorPolicy
-  let pollingBackoffPolicy: any GoogleGax.BackoffPolicy
+  let pollingBackoffPolicy: any GoogleGax.PollingBackoffPolicy
 
   /// Creates a new `StorageControlClient` using the given client options.
   public init(_ options: GoogleGax.ClientOptions = .init()) throws {
