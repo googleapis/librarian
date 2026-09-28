@@ -47,52 +47,47 @@ func TestMaybeInlineObject(t *testing.T) {
 			},
 		},
 	}
-	message := &api.Message{ID: ".package.Message"}
+	message := api.NewTestMessage("Message").WithPackage("package")
 	field, err := maybeInlineObjectField(model, message, "inline", input)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	wantField := &api.Field{
-		Name:          "inline",
-		JSONName:      "inline",
-		ID:            ".package.Message.inline",
-		Documentation: "A field with an inline object.",
-		Deprecated:    true,
-		Optional:      true,
-		Typez:         api.TypezMessage,
-		TypezID:       ".package.Message.inline",
-	}
+	wantField := api.NewTestMessage("Message").
+		WithPackage("package").
+		WithFields(
+			api.NewTestField("inline").
+				WithDocumentation("A field with an inline object.").
+				WithDeprecated(true).
+				WithOptional().
+				WithType(api.TypezMessage).
+				WithTypezID(".package.Message.inline"),
+		).Fields[0]
+	wantField.Parent = nil
 	if diff := cmp.Diff(wantField, field); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 
-	wantInlineMessage := &api.Message{
-		ID:            ".package.Message.inline",
-		Name:          "inline",
-		Documentation: "The message type for the [inline][package.Message.inline] field.",
-		Fields: []*api.Field{
-			{
-				Name:          "stringField",
-				JSONName:      "stringField",
-				ID:            ".package.Message.inline.stringField",
-				Documentation: "The stringField field.",
-				Typez:         api.TypezString,
-				TypezID:       "string",
-				Optional:      true,
-			},
-			{
-				Name:          "intField",
-				JSONName:      "intField",
-				ID:            ".package.Message.inline.intField",
-				Documentation: "The intField field.",
-				Typez:         api.TypezUint64,
-				TypezID:       "uint64",
-				Optional:      true,
-			},
-		},
-		Parent: message,
+	wantInlineMessage := api.NewTestMessage("inline").
+		WithPackage("package").
+		WithID(".package.Message.inline").
+		WithDocumentation("The message type for the [inline][package.Message.inline] field.").
+		WithFields(
+			api.NewTestField("stringField").
+				WithDocumentation("The stringField field.").
+				WithType(api.TypezString).
+				WithTypezID("string").
+				WithOptional(),
+			api.NewTestField("intField").
+				WithDocumentation("The intField field.").
+				WithType(api.TypezUint64).
+				WithTypezID("uint64").
+				WithOptional(),
+		)
+	for _, f := range wantInlineMessage.Fields {
+		f.Parent = nil
 	}
+	wantInlineMessage.Parent = message
 	gotInlineMessage := model.Message(wantInlineMessage.ID)
 	if gotInlineMessage == nil {
 		t.Fatalf("missing inline message %s", wantInlineMessage.ID)
@@ -133,51 +128,46 @@ func TestArrayWithInlineObject(t *testing.T) {
 			},
 		},
 	}
-	message := &api.Message{ID: ".package.Message"}
+	message := api.NewTestMessage("Message").WithPackage("package")
 	field, err := makeArrayField(model, message, input)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	wantField := &api.Field{
-		Name:          "arrayWithObject",
-		JSONName:      "arrayWithObject",
-		ID:            ".package.Message.arrayWithObject",
-		Documentation: "An array field with an inline object.",
-		Repeated:      true,
-		Typez:         api.TypezMessage,
-		TypezID:       ".package.Message.arrayWithObject",
-	}
+	wantField := api.NewTestMessage("Message").
+		WithPackage("package").
+		WithFields(
+			api.NewTestField("arrayWithObject").
+				WithDocumentation("An array field with an inline object.").
+				WithRepeated().
+				WithType(api.TypezMessage).
+				WithTypezID(".package.Message.arrayWithObject"),
+		).Fields[0]
+	wantField.Parent = nil
 	if diff := cmp.Diff(wantField, field); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 
-	wantInlineMessage := &api.Message{
-		ID:            ".package.Message.arrayWithObject",
-		Name:          "arrayWithObject",
-		Documentation: "The message type for the [arrayWithObject][package.Message.arrayWithObject] field.",
-		Fields: []*api.Field{
-			{
-				Name:          "stringField",
-				JSONName:      "stringField",
-				ID:            ".package.Message.arrayWithObject.stringField",
-				Documentation: "The stringField field.",
-				Typez:         api.TypezString,
-				TypezID:       "string",
-				Optional:      true,
-			},
-			{
-				Name:          "intField",
-				JSONName:      "intField",
-				ID:            ".package.Message.arrayWithObject.intField",
-				Documentation: "The intField field.",
-				Typez:         api.TypezUint64,
-				TypezID:       "uint64",
-				Optional:      true,
-			},
-		},
-		Parent: message,
+	wantInlineMessage := api.NewTestMessage("arrayWithObject").
+		WithPackage("package").
+		WithID(".package.Message.arrayWithObject").
+		WithDocumentation("The message type for the [arrayWithObject][package.Message.arrayWithObject] field.").
+		WithFields(
+			api.NewTestField("stringField").
+				WithDocumentation("The stringField field.").
+				WithType(api.TypezString).
+				WithTypezID("string").
+				WithOptional(),
+			api.NewTestField("intField").
+				WithDocumentation("The intField field.").
+				WithType(api.TypezUint64).
+				WithTypezID("uint64").
+				WithOptional(),
+		)
+	for _, f := range wantInlineMessage.Fields {
+		f.Parent = nil
 	}
+	wantInlineMessage.Parent = message
 	gotInlineMessage := model.Message(wantInlineMessage.ID)
 	if gotInlineMessage == nil {
 		t.Fatalf("missing inline message %s", wantInlineMessage.ID)
@@ -204,7 +194,7 @@ func TestMaybeInlineObjectErrors(t *testing.T) {
 			},
 		},
 	}
-	message := &api.Message{ID: ".package.Message"}
+	message := api.NewTestMessage("Message").WithPackage("package")
 	if field, err := maybeInlineObjectField(model, message, "inline", input); err == nil {
 		t.Errorf("expected an error with an invalid inline object, got=%v", field)
 	}
@@ -233,7 +223,7 @@ func TestArrayWithInlineObjectError(t *testing.T) {
 			},
 		},
 	}
-	message := &api.Message{ID: ".package.Message"}
+	message := api.NewTestMessage("Message").WithPackage("package")
 	if field, err := makeArrayField(model, message, input); err == nil {
 		t.Errorf("expected an error with an invalid inline object, got=%v", field)
 	}
