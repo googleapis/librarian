@@ -36,8 +36,11 @@ func TestGenerateOneOf(t *testing.T) {
 		WithType(api.TypezString).
 		WithDocumentation("A string field that is part of the oneof.")
 
+	// Intentionally marked WithOptional() to verify that oneof enum cases always use
+	// BaseFieldType, guaranteeing non-optional associated values even if Optional is set.
 	oneofField2 := api.NewTestField("message_field").
 		WithMessageType(inner).
+		WithOptional().
 		WithDocumentation("A message field that is part of the oneof.")
 
 	oneof := api.NewTestOneOf("choice").

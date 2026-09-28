@@ -207,14 +207,10 @@ extension {{Codec.ParameterTypeName}} {
       case .{{Codec.Name}}(let value):
         {{#IsObject}}
         {{#Codec.LROAnyConverter}}
-        if let value = value {
-          proto.{{Group.Codec.PropertyName}} = .{{Codec.ProtoFieldName}}(try {{.}}.toProto(value))
-        }
+        proto.{{Group.Codec.PropertyName}} = .{{Codec.ProtoFieldName}}(try {{.}}.toProto(value))
         {{/Codec.LROAnyConverter}}
         {{^Codec.LROAnyConverter}}
-        if let value = value {
-          proto.{{Group.Codec.PropertyName}} = .{{Codec.ProtoFieldName}}(try value.toProto())
-        }
+        proto.{{Group.Codec.PropertyName}} = .{{Codec.ProtoFieldName}}(try value.toProto())
         {{/Codec.LROAnyConverter}}
         {{/IsObject}}
         {{#IsEnum}}
