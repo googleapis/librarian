@@ -33,6 +33,7 @@ func Generate(ctx context.Context, model *api.API, outdir string, cfg *parser.Mo
 	if err != nil {
 		return err
 	}
+	c.messageModuleNameOverrides = cfg.MessageModuleNameOverrides
 	annotations, err := annotateModel(model, c)
 	if err != nil {
 		return err

@@ -63,6 +63,9 @@ type ModelConfig struct {
 	// Resource heuristic enablement
 	ResourceNameHeuristic bool
 
+	// Message module name overrides
+	MessageModuleNameOverrides map[string]string
+
 	// Model overrides
 	Override api.ModelOverride
 }

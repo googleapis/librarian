@@ -283,6 +283,9 @@ type codec struct {
 	//
 	// TODO(#1173) - this only supports services and oneofs at the moment.
 	nameOverrides map[string]string
+	// Message module name overrides. Maps message IDs to new module names in model.rs, e.g.:
+	//   .google.cloud.compute.v1.globalFrontendSettings: global_frontend_settings_requests
+	messageModuleNameOverrides map[string]string
 	// The year when the files were first generated.
 	generationYear string
 	// The full path of the generated module within the crate. This defaults to
@@ -685,13 +688,13 @@ func (c *codec) messageScopeName(m *api.Message, childPackageName, sourceSpecifi
 		if err != nil {
 			return "", err
 		}
-		return p + "::" + toSnake(m.Name), nil
+		return p + "::" + c.MessageModuleName(m), nil
 	}
 	p, err := c.messageScopeName(m.Parent, m.Package, sourceSpecificationPackageName)
 	if err != nil {
 		return "", err
 	}
-	return p + "::" + toSnake(m.Name), nil
+	return p + "::" + c.MessageModuleName(m), nil
 }
 
 func (c *codec) enumScopeName(e *api.Enum, sourceSpecificationPackageName string) (string, error) {
@@ -1615,6 +1618,14 @@ func (c *codec) FieldName(field *api.Field) string {
 		return override
 	}
 	return field.Name
+}
+
+// MessageModuleName returns the module name for a message in model.rs, taking message_module_name_overrides into account.
+func (c *codec) MessageModuleName(m *api.Message) string {
+	if override, ok := c.messageModuleNameOverrides[m.ID]; ok {
+		return override
+	}
+	return toSnake(m.Name)
 }
 
 func (c *codec) generateMethod(m *api.Method) bool {

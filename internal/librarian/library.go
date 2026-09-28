@@ -834,6 +834,9 @@ func mergeRust(dst, src *config.RustCrate) *config.RustCrate {
 	if src.PaginationOverrides != nil {
 		res.PaginationOverrides = src.PaginationOverrides
 	}
+	if src.MessageModuleNameOverrides != nil {
+		res.MessageModuleNameOverrides = src.MessageModuleNameOverrides
+	}
 	if src.NameOverrides != "" {
 		res.NameOverrides = src.NameOverrides
 	}

@@ -128,3 +128,59 @@ func TestInternalMessageOverrides(t *testing.T) {
 		t.Errorf("Private method should not be flagged as internal")
 	}
 }
+
+func TestMessageModuleNameOverrides(t *testing.T) {
+	childReq := api.NewTestMessage("GetRequest")
+	servicePlaceholder := api.NewTestMessage("globalFrontendSettings").
+		WithPackage("google.cloud.compute.v1").
+		WithMessages(childReq)
+	servicePlaceholder.ServicePlaceholder = true
+
+	schemaChild := api.NewTestMessage("NestedType")
+	schemaMessage := api.NewTestMessage("GlobalFrontendSettings").
+		WithPackage("google.cloud.compute.v1").
+		WithMessages(schemaChild)
+
+	model := api.NewTestAPI([]*api.Message{servicePlaceholder, schemaMessage}, nil, nil)
+	codec := newTestCodec(t, libconfig.SpecDiscovery, "", nil)
+	codec.messageModuleNameOverrides = map[string]string{
+		".google.cloud.compute.v1.globalFrontendSettings": "global_frontend_settings_requests",
+	}
+	if _, err := annotateModel(model, codec); err != nil {
+		t.Fatalf("failed to annotate model: %v", err)
+	}
+
+	placeholderAnn, ok := servicePlaceholder.Codec.(*messageAnnotation)
+	if !ok {
+		t.Fatalf("expected messageAnnotation on servicePlaceholder")
+	}
+	if placeholderAnn.ModuleName != "global_frontend_settings_requests" {
+		t.Errorf("got servicePlaceholder.ModuleName = %q, want %q", placeholderAnn.ModuleName, "global_frontend_settings_requests")
+	}
+
+	childAnn, ok := childReq.Codec.(*messageAnnotation)
+	if !ok {
+		t.Fatalf("expected messageAnnotation on childReq")
+	}
+	if childAnn.QualifiedName != "crate::model::global_frontend_settings_requests::GetRequest" {
+		t.Errorf("got childReq.QualifiedName = %q, want %q", childAnn.QualifiedName, "crate::model::global_frontend_settings_requests::GetRequest")
+	}
+
+	schemaAnn, ok := schemaMessage.Codec.(*messageAnnotation)
+	if !ok {
+		t.Fatalf("expected messageAnnotation on schemaMessage")
+	}
+	if schemaAnn.ModuleName != "global_frontend_settings" {
+		t.Errorf("got schemaMessage.ModuleName = %q, want %q", schemaAnn.ModuleName, "global_frontend_settings")
+	}
+	if schemaAnn.QualifiedName != "crate::model::GlobalFrontendSettings" {
+		t.Errorf("got schemaMessage.QualifiedName = %q, want %q", schemaAnn.QualifiedName, "crate::model::GlobalFrontendSettings")
+	}
+	schemaChildAnn, ok := schemaChild.Codec.(*messageAnnotation)
+	if !ok {
+		t.Fatalf("expected messageAnnotation on schemaChild")
+	}
+	if schemaChildAnn.QualifiedName != "crate::model::global_frontend_settings::NestedType" {
+		t.Errorf("got schemaChild.QualifiedName = %q, want %q", schemaChildAnn.QualifiedName, "crate::model::global_frontend_settings::NestedType")
+	}
+}

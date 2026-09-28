@@ -93,6 +93,9 @@ func libraryToModelConfig(library *config.Library, ch *config.API, srcs *sources
 				}
 			}
 		}
+		if len(library.Rust.MessageModuleNameOverrides) > 0 {
+			modelCfg.MessageModuleNameOverrides = library.Rust.MessageModuleNameOverrides
+		}
 		if library.Rust.Discovery != nil {
 			pollers := make([]*api.Poller, len(library.Rust.Discovery.Pollers))
 			for i, poller := range library.Rust.Discovery.Pollers {
@@ -309,6 +312,13 @@ func moduleToModelConfig(library *config.Library, module *config.RustModule, src
 				ItemField: override.ItemField,
 			}
 		}
+	}
+	messageModuleNameOverrides := module.MessageModuleNameOverrides
+	if len(messageModuleNameOverrides) == 0 && len(library.Rust.MessageModuleNameOverrides) > 0 {
+		messageModuleNameOverrides = library.Rust.MessageModuleNameOverrides
+	}
+	if len(messageModuleNameOverrides) > 0 {
+		modelCfg.MessageModuleNameOverrides = messageModuleNameOverrides
 	}
 	return modelCfg, nil
 }
