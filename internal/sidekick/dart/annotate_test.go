@@ -441,10 +441,8 @@ func TestAnnotateMethod(t *testing.T) {
 }
 
 func TestAnnotateMethod_IsLast(t *testing.T) {
-	notLastMethod := sample.MethodListSecretVersions()
-	lastMethod := sample.MethodListSecretVersions().
-		WithID(notLastMethod.ID + "2")
-	lastMethod.Name = "ListSecretVersions2"
+	notLastMethod := sample.MethodCreate()
+	lastMethod := sample.MethodListSecretVersions()
 
 	service := api.NewTestService(sample.ServiceName).
 		WithPackage(sample.Package).
@@ -452,12 +450,18 @@ func TestAnnotateMethod_IsLast(t *testing.T) {
 		WithDefaultHost(sample.DefaultHost).
 		WithMethods(notLastMethod, lastMethod)
 	model := api.NewTestAPI(
-		[]*api.Message{sample.ListSecretVersionsRequest(), sample.ListSecretVersionsResponse(),
+		[]*api.Message{
+			sample.CreateRequest(),
+			sample.ListSecretVersionsRequest(), sample.ListSecretVersionsResponse(),
 			sample.Secret(), sample.SecretVersion(), sample.Replication(), sample.Automatic(),
-			sample.CustomerManagedEncryption()},
+			sample.CustomerManagedEncryption(),
+		},
 		[]*api.Enum{sample.EnumState()},
 		[]*api.Service{service},
 	)
+	if err := api.CrossReference(model); err != nil {
+		t.Fatal(err)
+	}
 	api.Validate(model)
 	annotate := newAnnotateModel(model)
 	err := annotate.annotateModel(requiredConfig)
