@@ -261,7 +261,7 @@ func TestGenerateStorage_MultiModel(t *testing.T) {
 		t.Errorf("StorageControlClient.swift missing private stub fields:\n%s", clientStr)
 	}
 	if !strings.Contains(clientStr, "let pollingErrorPolicy: any GoogleGax.PollingErrorPolicy") ||
-		!strings.Contains(clientStr, "let pollingBackoffPolicy: any GoogleGax.BackoffPolicy") {
+		!strings.Contains(clientStr, "let pollingBackoffPolicy: any GoogleGax.PollingBackoffPolicy") {
 		t.Errorf("StorageControlClient.swift missing polling policy fields:\n%s", clientStr)
 	}
 	if !strings.Contains(clientStr, "let sharedGrpcClient = try GoogleGaxGRPC._GRPCClient(") ||

@@ -50,7 +50,7 @@ public final class {{Codec.ClientName}}: Clients.{{Codec.StubPrefix}}Protocol, S
   let inner: any Clients.{{Codec.StubPrefix}}Stub
   {{#Codec.HasLROs}}
   let pollingErrorPolicy: GoogleGax.PollingErrorPolicy
-  let pollingBackoffPolicy: GoogleGax.BackoffPolicy
+  let pollingBackoffPolicy: GoogleGax.PollingBackoffPolicy
   {{/Codec.HasLROs}}
 
   /// Creates a new `{{Codec.ClientName}}` instance.

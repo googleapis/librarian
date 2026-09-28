@@ -783,6 +783,8 @@ func TestGenerateService_LRO(t *testing.T) {
 
 	wantContains := []string{
 		"public import GoogleCloudLongrunningV1",
+		"let pollingErrorPolicy: GoogleGax.PollingErrorPolicy",
+		"let pollingBackoffPolicy: GoogleGax.PollingBackoffPolicy",
 		"public func createWorkflowPollingUntilDone(request: CreateWorkflowRequest) async throws -> Workflow",
 		"let extractStatus = { @Sendable (op: GoogleCloudLongrunningV1.Operation) throws -> GoogleGax._PollableOperationImpl<Workflow>.State in",
 		"let poll = { @Sendable () async throws -> GoogleGax._PollableOperationImpl<Workflow>.State in",
