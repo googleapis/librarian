@@ -143,9 +143,7 @@ func TestGenerateConversions_LROAnyConverter(t *testing.T) {
     if let oneof = self.result {
       switch oneof {
       case .response(let value):
-        if let value = value {
-          proto.result = .response(try StorageControlLROAnyConverter.toProto(value))
-        }
+        proto.result = .response(try StorageControlLROAnyConverter.toProto(value))
       }
     }
     if !self._unknownFields.proto.isEmpty {

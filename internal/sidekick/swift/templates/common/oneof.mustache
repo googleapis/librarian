@@ -28,10 +28,10 @@ public enum {{Codec.Name}}: Codable, Equatable, Sendable {
   {{> /templates/common/diagnose}}
   {{/Codec.DiagnoseType}}
   {{^IsObject}}
-  case {{Codec.Name}}({{Codec.FieldType}})
+  case {{Codec.Name}}({{Codec.BaseFieldType}})
   {{/IsObject}}
   {{#IsObject}}
-  indirect case {{Codec.Name}}({{Codec.FieldType}})
+  indirect case {{Codec.Name}}({{Codec.BaseFieldType}})
   {{/IsObject}}
   {{/Fields}}
 }

@@ -324,9 +324,7 @@ func TestGenerateConversions_OneOf(t *testing.T) {
       case .stringField(let value):
         proto.choice = .stringField(value)
       case .messageField(let value):
-        if let value = value {
-          proto.choice = .messageField(try value.toProto())
-        }
+        proto.choice = .messageField(try value.toProto())
       }
     }
     if !self._unknownFields.proto.isEmpty {

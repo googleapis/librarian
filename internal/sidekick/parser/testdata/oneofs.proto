@@ -15,6 +15,11 @@
 syntax = "proto3";
 package test;
 
+// An inner message.
+message Inner {
+  string value = 1;
+}
+
 // A test message.
 message Fake {
   oneof choice {
@@ -23,6 +28,9 @@ message Fake {
 
     // An int choice
     int64 field_two = 2;
+
+    // A message choice
+    Inner field_five = 5;
   }
 
   // Optional is oneof in proto

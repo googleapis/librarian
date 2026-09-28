@@ -534,8 +534,9 @@ func normalizeTypes(model *api.API, in *descriptorpb.FieldDescriptorProto, field
 	case descriptorpb.FieldDescriptorProto_TYPE_MESSAGE:
 		field.TypezID = in.GetTypeName()
 		// Repeated fields are not optional, they can be empty, but always have
-		// presence.
-		field.Optional = !field.Repeated
+		// presence. Oneof fields are also not optional because presence is
+		// managed by the oneof itself.
+		field.Optional = !field.Repeated && !field.IsOneOf
 		if message := model.Message(field.TypezID); message != nil && message.IsMap {
 			// Map fields appear as repeated in Protobuf. This is confusing,
 			// as they typically are represented by a single `map<k, v>`-like
