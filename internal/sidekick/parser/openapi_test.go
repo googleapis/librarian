@@ -304,9 +304,6 @@ func TestOpenAPI_MapString(t *testing.T) {
 			api.NewTestField("fMapS32").WithType(api.TypezMessage).WithTypezID("$map<string, int32>").WithMap(),
 			api.NewTestField("fMapS64").WithType(api.TypezMessage).WithTypezID("$map<string, int64>").WithMap(),
 		)
-	for _, f := range wantMap.Fields {
-		f.Parent = nil
-	}
 	apitest.CheckMessage(t, test.Messages[0], wantMap)
 }
 
@@ -340,9 +337,6 @@ func TestOpenAPI_MapInteger(t *testing.T) {
 			api.NewTestField("fMapI32").WithType(api.TypezMessage).WithTypezID("$map<string, int32>").WithMap(),
 			api.NewTestField("fMapI64").WithType(api.TypezMessage).WithTypezID("$map<string, int64>").WithMap(),
 		)
-	for _, f := range wantMapInteger.Fields {
-		f.Parent = nil
-	}
 	apitest.CheckMessage(t, test.Messages[0], wantMapInteger)
 }
 
@@ -710,9 +704,6 @@ func TestOpenAPI_SyntheticMessageWithExistingBody(t *testing.T) {
 				WithTypezID("..SetIamPolicyRequest").
 				WithOptional(),
 		)
-	for _, f := range want.Fields {
-		f.Parent = nil
-	}
 	want.SyntheticRequest = true
 	got = test.Message(want.ID)
 	if got == nil {
@@ -742,9 +733,6 @@ func TestOpenAPI_SyntheticMessageWithExistingBody(t *testing.T) {
 				WithTypezID("..SetIamPolicyRequest").
 				WithOptional(),
 		)
-	for _, f := range want.Fields {
-		f.Parent = nil
-	}
 	want.SyntheticRequest = true
 	got = test.Message(want.ID)
 	if got == nil {
