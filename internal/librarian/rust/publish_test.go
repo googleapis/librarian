@@ -457,6 +457,10 @@ func TestRunSemverChecks(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
+			t.Chdir(t.TempDir())
+			for name, manifest := range test.manifests {
+				testhelper.AddCrate(t, filepath.Dir(manifest), name)
+			}
 			script := `#!/bin/bash
 if [[ "$1" == "semver-checks" ]] && [[ "$*" == *"fail-me"* ]]; then
 	exit 1
@@ -477,6 +481,8 @@ exit 0
 }
 
 func TestRunSemverChecks_Errors(t *testing.T) {
+	t.Chdir(t.TempDir())
+	testhelper.AddCrate(t, "fail", "fail-me")
 	manifests := map[string]string{
 		"fail-me": "fail/Cargo.toml",
 	}
@@ -502,6 +508,8 @@ exit 1
 }
 
 func TestRunSemverChecks_CargoInfoCrateNotFoundSkips(t *testing.T) {
+	t.Chdir(t.TempDir())
+	testhelper.AddCrate(t, "new", "new-crate")
 	manifests := map[string]string{
 		"new-crate": "new/Cargo.toml",
 	}
@@ -522,6 +530,8 @@ exit 101
 }
 
 func TestRunSemverChecks_CargoInfoNetworkErrorDoesNotSkip(t *testing.T) {
+	t.Chdir(t.TempDir())
+	testhelper.AddCrate(t, "existing", "existing-crate")
 	manifests := map[string]string{
 		"existing-crate": "existing/Cargo.toml",
 	}
@@ -538,6 +548,36 @@ exit 1
 	// Because of a network error, we should NOT skip, so we expect an error from cargo info.
 	if err := runSemverChecks(t.Context(), sData); err == nil {
 		t.Error("runSemverChecks() expected error when cargo info fails with network error, got nil")
+	}
+}
+
+func TestRunSemverChecks_ProcMacroSkips(t *testing.T) {
+	t.Chdir(t.TempDir())
+	testhelper.AddCrate(t, "macro", "macro-crate")
+	manifest := path.Join("macro", "Cargo.toml")
+	contents := `[package]
+name = "macro-crate"
+version = "1.0.0"
+
+[lib]
+proc-macro = true
+`
+	if err := os.WriteFile(manifest, []byte(contents), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	// Fail on any cargo invocation to verify both cargo info and cargo semver-checks are skipped.
+	script := `#!/bin/bash
+exit 1
+`
+	setupFakeCargoScript(t, script)
+	sData := semverData{
+		manifests: map[string]string{
+			"macro-crate": manifest,
+		},
+	}
+	if err := runSemverChecks(t.Context(), sData); err != nil {
+		t.Errorf("runSemverChecks() expected nil error for proc-macro crate, got %v", err)
 	}
 }
 

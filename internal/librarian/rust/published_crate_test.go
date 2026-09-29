@@ -76,3 +76,83 @@ func TestPublishedCrateNotForPublication(t *testing.T) {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
+
+func TestIsProcMacro(t *testing.T) {
+	for _, test := range []struct {
+		name    string
+		content string
+		want    bool
+	}{
+		{
+			name: "standard library crate",
+			content: `[package]
+name = "google-cloud-storage"
+version = "1.0.0"
+`,
+			want: false,
+		},
+		{
+			name: "proc-macro false",
+			content: `[package]
+name = "google-cloud-storage"
+version = "1.0.0"
+
+[lib]
+proc-macro = false
+`,
+			want: false,
+		},
+		{
+			name: "proc-macro true",
+			content: `[package]
+name = "google-cloud-macros"
+version = "1.0.0"
+
+[lib]
+proc-macro = true
+`,
+			want: true,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			manifest := path.Join(t.TempDir(), "Cargo.toml")
+			if err := os.WriteFile(manifest, []byte(test.content), 0o644); err != nil {
+				t.Fatal(err)
+			}
+			got, err := isProcMacro(manifest)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if got != test.want {
+				t.Errorf("isProcMacro() = %v, want %v", got, test.want)
+			}
+		})
+	}
+}
+
+func TestIsProcMacro_Error(t *testing.T) {
+	for _, test := range []struct {
+		name    string
+		content string
+	}{
+		{
+			name: "missing manifest",
+		},
+		{
+			name:    "invalid toml",
+			content: "invalid-toml={\n",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			manifest := path.Join(t.TempDir(), "Cargo.toml")
+			if test.content != "" {
+				if err := os.WriteFile(manifest, []byte(test.content), 0o644); err != nil {
+					t.Fatal(err)
+				}
+			}
+			if got, err := isProcMacro(manifest); err == nil {
+				t.Errorf("expected error, got=%v", got)
+			}
+		})
+	}
+}

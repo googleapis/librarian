@@ -151,9 +151,9 @@ func publishCrates(ctx context.Context, params PublishParams, lastTag string, fi
 func runSemverChecks(ctx context.Context, semverData semverData) error {
 	group, ctx := errgroup.WithContext(ctx)
 	group.SetLimit(max(runtime.NumCPU()/semverCheckCPUDivisor, 1))
-	for name := range semverData.manifests {
+	for name, manifest := range semverData.manifests {
 		group.Go(func() error {
-			if err := semverCheck(ctx, semverData, name); err != nil {
+			if err := semverCheck(ctx, semverData, name, manifest); err != nil {
 				return fmt.Errorf("%s: %w: %v", name, errSemverCheck, err)
 			}
 			return nil
@@ -163,8 +163,17 @@ func runSemverChecks(ctx context.Context, semverData semverData) error {
 }
 
 // semverCheck runs semver checks for a specific crate.
-func semverCheck(ctx context.Context, semverData semverData, name string) error {
-	err := command.Run(ctx, command.Cargo, "info", name, "--registry", "crates-io")
+func semverCheck(ctx context.Context, semverData semverData, name, manifest string) error {
+	procMacro, err := isProcMacro(manifest)
+	if err != nil {
+		return err
+	}
+	if procMacro {
+		// Procedural macro crates do not export a standard library API surface
+		// that cargo-semver-checks can inspect.
+		return nil
+	}
+	err = command.Run(ctx, command.Cargo, "info", name, "--registry", "crates-io")
 	if err != nil {
 		if exitErr, ok := errors.AsType[*exec.ExitError](err); ok {
 			if exitErr.ExitCode() == 101 && strings.Contains(err.Error(), "could not find") {
