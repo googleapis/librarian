@@ -460,6 +460,11 @@ func TestOpenAPI_MakeAPI(t *testing.T) {
 
 	// This is a synthetic message, the OpenAPI spec does not contain requests
 	// messages for messages without a body.
+	pageToken := api.NewTestField("pageToken").
+		WithDocumentation("A page token received from the `next_page_token` field in the response.\nSend that page token to receive the subsequent page.").
+		WithType(api.TypezString).
+		WithTypezID("string").
+		WithOptional()
 	want := api.NewTestMessage("ListLocationsRequest").
 		WithPackage("").
 		WithID("..Service.ListLocationsRequest").
@@ -483,11 +488,7 @@ func TestOpenAPI_MakeAPI(t *testing.T) {
 				WithType(api.TypezInt32).
 				WithTypezID("int32").
 				WithOptional(),
-			api.NewTestField("pageToken").
-				WithDocumentation("A page token received from the `next_page_token` field in the response.\nSend that page token to receive the subsequent page.").
-				WithType(api.TypezString).
-				WithTypezID("string").
-				WithOptional(),
+			pageToken,
 		)
 	want.SyntheticRequest = true
 	listLocationsRequest := test.Message(want.ID)
@@ -520,7 +521,6 @@ func TestOpenAPI_MakeAPI(t *testing.T) {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 
-	listLocationsPagination := want.Fields[3]
 	wantListLocationsMethod := api.NewTestMethod("ListLocations").
 		WithID("..Service.ListLocations").
 		WithDocumentation("Lists information about the supported locations for this service.").
@@ -535,7 +535,7 @@ func TestOpenAPI_MakeAPI(t *testing.T) {
 			"pageSize":  true,
 			"pageToken": true,
 		}).
-		WithPagination(listLocationsPagination)
+		WithPagination(pageToken)
 	wantListLocationsMethod.IsList = false
 	wantListLocationsMethod.InputTypeID = "..Service.ListLocationsRequest"
 	wantListLocationsMethod.OutputTypeID = "..ListLocationsResponse"
