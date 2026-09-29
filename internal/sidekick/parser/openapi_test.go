@@ -876,9 +876,6 @@ func TestOpenAPI_Pagination(t *testing.T) {
 				WithTypezID("..Foo").
 				WithRepeated(),
 		)
-	for _, f := range wantResp.Fields {
-		f.Parent = nil
-	}
 	apitest.CheckMessage(t, resp, wantResp)
 }
 
@@ -969,9 +966,6 @@ func TestOpenAPI_AutoPopulated(t *testing.T) {
 				WithOptional().
 				WithAutoPopulated(),
 		)
-	for _, f := range wantMessage.Fields {
-		f.Parent = nil
-	}
 	wantMessage.SyntheticRequest = true
 	message := test.Message(wantMessage.ID)
 	if message == nil {
