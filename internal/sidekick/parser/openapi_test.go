@@ -1118,9 +1118,6 @@ func TestOpenAPI_Deprecated(t *testing.T) {
 				WithDeprecated(true).
 				WithOptional(),
 		)
-	for _, f := range wantResponse.Fields {
-		f.Parent = nil
-	}
 	apitest.CheckMessage(t, response, wantResponse)
 
 	deprecatedMessage := test.Message("..DeprecatedMessage")
@@ -1138,9 +1135,6 @@ func TestOpenAPI_Deprecated(t *testing.T) {
 				WithTypezID("string").
 				WithOptional(),
 		)
-	for _, f := range wantDeprecatedMessage.Fields {
-		f.Parent = nil
-	}
 	apitest.CheckMessage(t, deprecatedMessage, wantDeprecatedMessage)
 }
 
