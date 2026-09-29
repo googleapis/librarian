@@ -123,8 +123,8 @@ proc-macro = true
 			if err != nil {
 				t.Fatal(err)
 			}
-			if diff := cmp.Diff(test.want, got); diff != "" {
-				t.Errorf("mismatch (-want +got):\n%s", diff)
+			if got != test.want {
+				t.Errorf("isProcMacro() = %v, want %v", got, test.want)
 			}
 		})
 	}
