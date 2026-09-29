@@ -40,3 +40,16 @@ func publishedCrate(manifest string) ([]string, error) {
 	}
 	return []string{info.Package.Name}, nil
 }
+
+// isProcMacro checks a Cargo.toml manifest to determine if the crate is a procedural macro.
+func isProcMacro(manifest string) (bool, error) {
+	contents, err := os.ReadFile(manifest)
+	if err != nil {
+		return false, err
+	}
+	var info Cargo
+	if err := toml.Unmarshal(contents, &info); err != nil {
+		return false, err
+	}
+	return info.Lib != nil && info.Lib.ProcMacro, nil
+}
