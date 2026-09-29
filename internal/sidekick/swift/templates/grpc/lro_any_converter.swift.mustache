@@ -21,7 +21,7 @@ limitations under the License.
 {{/Codec.BoilerPlate}}
 
 import Foundation
-import GoogleGax
+@_spi(GoogleCloudInternal) import GoogleGax
 {{#Codec.PackageImports}}
 import {{.}}
 {{/Codec.PackageImports}}
