@@ -78,15 +78,11 @@ func TestOpenAPI_AllOf(t *testing.T) {
 }
 
 func newTestOpenAPIFakeMessage(fields ...*api.Field) *api.Message {
-	m := api.NewTestMessage("Fake").
+	return api.NewTestMessage("Fake").
 		WithPackage("").
 		WithID("..Fake").
 		WithDocumentation("A test message.").
 		WithFields(fields...)
-	for _, f := range m.Fields {
-		f.Parent = nil
-	}
-	return m
 }
 
 func TestOpenAPI_BasicTypes(t *testing.T) {
