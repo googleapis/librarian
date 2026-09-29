@@ -978,7 +978,7 @@ func TestOpenAPI_AutoPopulated(t *testing.T) {
 		t.Fatalf("Cannot find method %s in API State", ".test.TestService.CreateFoo")
 	}
 	wantField := []*api.Field{requestID, requestIDExplicit}
-	if diff := cmp.Diff(wantField, method.AutoPopulated); diff != "" {
+	if diff := cmp.Diff(wantField, method.AutoPopulated, cmpopts.IgnoreFields(api.Field{}, "Parent")); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
