@@ -31,7 +31,7 @@ func CheckMessage(t *testing.T, got *api.Message, want *api.Message) {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 	less := func(a, b *api.Field) bool { return a.Name < b.Name }
-	if diff := cmp.Diff(want.Fields, got.Fields, cmpopts.SortSlices(less)); diff != "" {
+	if diff := cmp.Diff(want.Fields, got.Fields, cmpopts.SortSlices(less), cmpopts.IgnoreFields(api.Field{}, "Parent")); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 	// Ignore parent because types are cyclic
