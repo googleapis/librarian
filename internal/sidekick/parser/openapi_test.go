@@ -434,9 +434,6 @@ func TestOpenAPI_MakeAPI(t *testing.T) {
 				WithTypezID(".google.protobuf.Any").
 				WithOptional(),
 		)
-	for _, f := range wantLocation.Fields {
-		f.Parent = nil
-	}
 	apitest.CheckMessage(t, location, wantLocation)
 
 	listLocationsResponse := test.Message("..ListLocationsResponse")
@@ -459,9 +456,6 @@ func TestOpenAPI_MakeAPI(t *testing.T) {
 		WithID("..ListLocationsResponse").
 		WithDocumentation("The response message for Locations.ListLocations.").
 		WithPagination(nextPageToken, locations)
-	for _, f := range wantListLocationsResponse.Fields {
-		f.Parent = nil
-	}
 	apitest.CheckMessage(t, listLocationsResponse, wantListLocationsResponse)
 
 	// This is a synthetic message, the OpenAPI spec does not contain requests
@@ -495,9 +489,6 @@ func TestOpenAPI_MakeAPI(t *testing.T) {
 				WithTypezID("string").
 				WithOptional(),
 		)
-	for _, f := range want.Fields {
-		f.Parent = nil
-	}
 	want.SyntheticRequest = true
 	listLocationsRequest := test.Message(want.ID)
 	if listLocationsRequest == nil {
