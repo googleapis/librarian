@@ -280,10 +280,7 @@ func Publish(ctx context.Context, params PublishParams) error {
 		var levelCandidates []publishCandidate
 		for _, lib := range level {
 			if c, ok := toPublishMap[lib.Name]; ok {
-				splitMu.Lock()
-				_, hasSHA := splitSHAs[lib.Name]
-				splitMu.Unlock()
-				if hasSHA {
+				if _, hasSHA := splitSHAs[lib.Name]; hasSHA {
 					levelCandidates = append(levelCandidates, c)
 				}
 			}
@@ -296,9 +293,7 @@ func Publish(ctx context.Context, params PublishParams) error {
 
 		if params.DryRun || params.DryRunKeepGoing {
 			for _, c := range levelCandidates {
-				splitMu.Lock()
 				sha := splitSHAs[c.lib.Name]
-				splitMu.Unlock()
 				slog.Info("[DRY-RUN] Would push to remote", "library", c.lib.Name, "remote", c.remoteURL, "branch", remoteBranch, "sha", sha, "tag", c.tag)
 			}
 			continue
@@ -308,9 +303,7 @@ func Publish(ctx context.Context, params PublishParams) error {
 		pushGroup.SetLimit(concurrency)
 
 		for _, c := range levelCandidates {
-			splitMu.Lock()
 			sha := splitSHAs[c.lib.Name]
-			splitMu.Unlock()
 
 			pushGroup.Go(func() error {
 				if err := git.PushBranchAndTag(pushCtx, gitExe, c.remoteURL, sha, remoteBranch, c.tag, params.Force); err != nil {
