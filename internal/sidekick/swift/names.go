@@ -182,6 +182,16 @@ func messageName(m *api.Message) string {
 	return pascalCase(m.Name)
 }
 
+// messageSimpleName returns the simple Swift type name for a message, taking
+// into account well-known types and service placeholders.
+func messageSimpleName(m *api.Message) string {
+	name := messageName(m)
+	if m.ServicePlaceholder {
+		return pascalCase(name + "Client")
+	}
+	return name
+}
+
 // enumName returns the Swift type name for an enum, prefixing top-level
 // well-known protobuf types (google.protobuf) with "WKT".
 func enumName(e *api.Enum) string {

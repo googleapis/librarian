@@ -145,12 +145,9 @@ func scalarFieldTypeName(field *api.Field) (string, error) {
 }
 
 func (c *codec) messageTypeName(m *api.Message) (string, error) {
-	name := messageName(m)
-	if m.ServicePlaceholder {
-		name = pascalCase(m.Name + "Client")
-	}
+	name := messageSimpleName(m)
 	if m.Parent == nil {
-		prefix, err := c.externalTypePrefix(m.Package)
+		prefix, err := c.typePrefix(m.Package, name)
 		if err != nil {
 			return "", err
 		}
@@ -167,7 +164,7 @@ func (c *codec) messageTypeName(m *api.Message) (string, error) {
 }
 
 func (c *codec) fullyQualifiedMessageTypeName(m *api.Message) (string, error) {
-	name := messageName(m)
+	name := messageSimpleName(m)
 	if m.Parent == nil {
 		if m.Package == "" {
 			// there is no package, so return the bare type name
@@ -201,7 +198,7 @@ func (c *codec) fullyQualifiedMessageTypeName(m *api.Message) (string, error) {
 func (c *codec) enumTypeName(e *api.Enum) (string, error) {
 	name := enumName(e)
 	if e.Parent == nil {
-		prefix, err := c.externalTypePrefix(e.Package)
+		prefix, err := c.typePrefix(e.Package, name)
 		if err != nil {
 			return "", err
 		}
@@ -215,6 +212,31 @@ func (c *codec) enumTypeName(e *api.Enum) (string, error) {
 		return "", err
 	}
 	return fmt.Sprintf("%s.%s", parent, name), nil
+}
+
+// typePrefix returns the module namespace prefix required when referencing a top-level type
+// defined in packageName from the Swift target currently being generated.
+func (c *codec) typePrefix(packageName, name string) (string, error) {
+	prefix, err := c.externalTypePrefix(packageName)
+	if err != nil || prefix != "" {
+		return prefix, err
+	}
+	if c.Model == nil || packageName != c.Model.PackageName {
+		return "", nil
+	}
+	if c.Module || c.LibraryName == "" {
+		// Sub-modules do not use top-level library namespace prefixes.
+		return "", nil
+	}
+	// If a top-level type shares its name with another type in the model (for example,
+	// a synthetic request message such as AdviceClient.CapacityHistoryRequest colliding
+	// with top-level CapacityHistoryRequest), unqualified references inside the nested
+	// scope resolve to the inner type (Self). Qualify the top-level type with the library
+	// name to disambiguate and prevent recursive struct definitions.
+	if c.isDuplicateTypeName(name) {
+		return c.LibraryName, nil
+	}
+	return "", nil
 }
 
 // externalTypePrefix returns the module namespace prefix (e.g., "GoogleType", "GoogleLongRunning")

@@ -318,6 +318,40 @@ func TestMessageName(t *testing.T) {
 	}
 }
 
+func TestMessageSimpleName(t *testing.T) {
+	servicePlaceholder := api.NewTestMessage("Advice").WithPackage("google.cloud.compute.v1")
+	servicePlaceholder.ServicePlaceholder = true
+
+	for _, test := range []struct {
+		name string
+		msg  *api.Message
+		want string
+	}{
+		{
+			name: "standard message",
+			msg:  api.NewTestMessage("Secret").WithPackage("google.cloud.secretmanager.v1"),
+			want: "Secret",
+		},
+		{
+			name: "service placeholder message",
+			msg:  servicePlaceholder,
+			want: "AdviceClient",
+		},
+		{
+			name: "wkt message",
+			msg:  api.NewTestMessage("Duration").WithPackage(wellKnownProtobufPackage),
+			want: "WKTDuration",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := messageSimpleName(test.msg)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
 func TestEnumName(t *testing.T) {
 	wktField := api.NewTestMessage("Field").WithPackage(wellKnownProtobufPackage)
 	wktKind := api.NewTestEnum("Kind").WithPackage(wellKnownProtobufPackage)
