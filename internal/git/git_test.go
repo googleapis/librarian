@@ -761,3 +761,28 @@ func TestPushBranchAndPushTag(t *testing.T) {
 		t.Errorf("RemoteTagExists(v2.0.0) = false; want true after PushRefToTag")
 	}
 }
+
+func TestPushBranchAndTag(t *testing.T) {
+	remoteDir := testhelper.SetupRepo(t)
+	cloneDir := t.TempDir()
+	t.Chdir(cloneDir)
+	testhelper.RunGit(t, "clone", remoteDir, ".")
+	testhelper.ConfigNewGitRepository(t)
+
+	head, err := GetCommitHash(t.Context(), command.Git, "HEAD")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if err := PushBranchAndTag(t.Context(), command.Git, remoteDir, head, "feature-branch", "v3.0.0", false); err != nil {
+		t.Fatalf("PushBranchAndTag() = %v", err)
+	}
+
+	exists, err := RemoteTagExists(t.Context(), command.Git, remoteDir, "v3.0.0")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !exists {
+		t.Errorf("RemoteTagExists(v3.0.0) = false; want true after PushBranchAndTag")
+	}
+}

@@ -38,6 +38,8 @@ type SplitParams struct {
 	Origin string
 	// RootFiles is the list of root files to preserve across every commit.
 	RootFiles []string
+	// RootEntries contains pre-fetched tree entries for root files. If non-nil, getRootEntries is skipped.
+	RootEntries []string
 	// GitExe is the path to the git binary (default: command.Git).
 	GitExe string
 }
@@ -69,8 +71,8 @@ func Split(ctx context.Context, params SplitParams) (string, error) {
 	if rootFiles == nil {
 		rootFiles = DefaultRootFiles
 	}
-	var rootEntries []string
-	if len(rootFiles) > 0 {
+	rootEntries := params.RootEntries
+	if rootEntries == nil && len(rootFiles) > 0 {
 		var err error
 		rootEntries, err = getRootEntries(ctx, gitExe, origin, rootFiles)
 		if err != nil {
@@ -101,7 +103,7 @@ func discoverPackageDirs(ctx context.Context, gitExe, origin, targetDir string) 
 	}
 
 	pkgSwift := filepath.ToSlash(filepath.Join(targetDir, "Package.swift"))
-	out, err := command.Output(ctx, gitExe, "log", "--follow", "--name-status", "--pretty=format:", origin, "--", pkgSwift)
+	out, err := command.Output(ctx, gitExe, "-c", "gc.auto=0", "log", "--follow", "--name-status", "--pretty=format:", origin, "--", pkgSwift)
 	if err == nil {
 		for line := range strings.SplitSeq(out, "\n") {
 			line = strings.TrimSpace(line)
@@ -129,7 +131,7 @@ func discoverPackageDirs(ctx context.Context, gitExe, origin, targetDir string) 
 }
 
 func splitDirs(ctx context.Context, gitExe, origin string, dirs, rootFiles, rootEntries []string) (string, error) {
-	revArgs := []string{"rev-list", "--parents", "--reverse", "--topo-order", origin, "--"}
+	revArgs := []string{"-c", "gc.auto=0", "rev-list", "--parents", "--reverse", "--topo-order", origin, "--"}
 	revArgs = append(revArgs, dirs...)
 	revOutput, err := command.Output(ctx, gitExe, revArgs...)
 	if err != nil {
@@ -151,7 +153,7 @@ func splitDirs(ctx context.Context, gitExe, origin string, dirs, rootFiles, root
 
 		var treeOut string
 		for _, d := range dirs {
-			out, err := command.Output(ctx, gitExe, "ls-tree", fmt.Sprintf("%s:%s", c, d))
+			out, err := command.Output(ctx, gitExe, "-c", "gc.auto=0", "ls-tree", fmt.Sprintf("%s:%s", c, d))
 			if err == nil && strings.TrimSpace(out) != "" {
 				treeOut = out
 				break
@@ -206,7 +208,7 @@ func splitDirs(ctx context.Context, gitExe, origin string, dirs, rootFiles, root
 		})
 		mktreeInput := strings.Join(combined, "\n") + "\n"
 
-		newTree, err := command.OutputWithStdin(ctx, strings.NewReader(mktreeInput), gitExe, "mktree")
+		newTree, err := command.OutputWithStdin(ctx, strings.NewReader(mktreeInput), gitExe, "-c", "gc.auto=0", "mktree")
 		if err != nil {
 			return "", fmt.Errorf("git mktree failed for %s: %w", c, err)
 		}
@@ -229,7 +231,7 @@ func splitDirs(ctx context.Context, gitExe, origin string, dirs, rootFiles, root
 			parentArgs = append(parentArgs, "-p", mp)
 		}
 
-		metaOut, err := command.Output(ctx, gitExe, "log", "-n", "1", "--pretty=format:%an%x00%ae%x00%ad%x00%cn%x00%ce%x00%cd%x00%B", c)
+		metaOut, err := command.Output(ctx, gitExe, "-c", "gc.auto=0", "log", "-n", "1", "--pretty=format:%an%x00%ae%x00%ad%x00%cn%x00%ce%x00%cd%x00%B", c)
 		if err != nil {
 			return "", err
 		}
@@ -249,7 +251,7 @@ func splitDirs(ctx context.Context, gitExe, origin string, dirs, rootFiles, root
 			"GIT_COMMITTER_EMAIL": committerEmail,
 			"GIT_COMMITTER_DATE":  committerDate,
 		}
-		args := []string{"-c", "commit.gpgsign=false", "commit-tree", newTree}
+		args := []string{"-c", "gc.auto=0", "-c", "commit.gpgsign=false", "commit-tree", newTree}
 		args = append(args, parentArgs...)
 
 		newCommit, err := command.OutputWithStdinAndEnv(ctx, strings.NewReader(commitMsg), env, gitExe, args...)
@@ -271,7 +273,7 @@ func splitDirs(ctx context.Context, gitExe, origin string, dirs, rootFiles, root
 func getRootEntries(ctx context.Context, gitExe, origin string, rootFiles []string) ([]string, error) {
 	var entries []string
 	for _, f := range rootFiles {
-		out, err := command.Output(ctx, gitExe, "ls-tree", origin, "--", f)
+		out, err := command.Output(ctx, gitExe, "-c", "gc.auto=0", "ls-tree", origin, "--", f)
 		if err != nil {
 			return nil, fmt.Errorf("failed to ls-tree for %s at %s: %w", f, origin, err)
 		}
