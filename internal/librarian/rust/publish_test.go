@@ -20,7 +20,6 @@ import (
 	"path"
 	"path/filepath"
 	"runtime"
-	"strings"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -296,8 +295,8 @@ func TestPublishCratesDryRunKeepGoing(t *testing.T) {
 	script := `#!/bin/bash
 if [ "$1" == "workspaces" ] && [ "$2" == "plan" ]; then
 	echo "google-cloud-storage"
-elif [ "$1" == "workspaces" ] && [ "$2" == "publish" ]; then
-	echo $@ >> "` + filepath.Join(tmpDir, "cargo_args.txt") + `"
+elif [ "$1" == "publish" ]; then
+	echo "$@" >> "` + filepath.Join(tmpDir, "cargo_args.txt") + `"
 else
 	exit 0
 fi
@@ -321,16 +320,14 @@ fi
 		t.Fatal(err)
 	}
 
-	// Verify that arguments were passed to cargo workspaces publish.
+	// Verify that arguments were passed to cargo publish.
 	output, err := os.ReadFile(filepath.Join(tmpDir, "cargo_args.txt"))
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !strings.Contains(string(output), "--keep-going") {
-		t.Errorf("expected cargo command to contain '--keep-going', got: %s", string(output))
-	}
-	if count := strings.Count(string(output), "--dry-run"); count != 1 {
-		t.Errorf("expected cargo command to contain '--dry-run' once, but found %d times: %s", count, string(output))
+	want := "publish --dry-run --keep-going -p google-cloud-storage\n"
+	if diff := cmp.Diff(want, string(output)); diff != "" {
+		t.Errorf("cargo args mismatch (-want +got):\n%s", diff)
 	}
 }
 

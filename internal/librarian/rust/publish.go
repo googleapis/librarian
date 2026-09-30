@@ -135,11 +135,20 @@ func publishCrates(ctx context.Context, params PublishParams, lastTag string, fi
 			return err
 		}
 	}
-	args := []string{"workspaces", "publish", "--skip-published", "--publish-interval=60", "--no-git-commit", "--from-git", "skip"}
-	if params.DryRunKeepGoing {
-		args = append(args, "--dry-run", "--keep-going")
-	} else if params.DryRun {
-		args = append(args, "--dry-run")
+	if len(plannedCrates) == 0 {
+		return nil
+	}
+	var args []string
+	if params.DryRun || params.DryRunKeepGoing {
+		args = []string{"publish", "--dry-run"}
+		if params.DryRunKeepGoing {
+			args = append(args, "--keep-going")
+		}
+		for _, crate := range plannedCrates {
+			args = append(args, "-p", crate)
+		}
+	} else {
+		args = []string{"workspaces", "publish", "--skip-published", "--publish-interval=60", "--no-git-commit", "--from-git", "skip"}
 	}
 	if params.Verbose {
 		return command.RunStreaming(ctx, command.Cargo, args...)
