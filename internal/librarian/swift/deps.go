@@ -15,16 +15,23 @@
 package swift
 
 import (
+	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io/fs"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"regexp"
+	"runtime"
 	"slices"
 	"strings"
+	"sync"
 
+	"github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/config"
+	"golang.org/x/sync/errgroup"
 )
 
 var localOrRemotePathRegex = regexp.MustCompile(`(?s)localOrRemotePackage\s*\([^\)]*?path:\s*"([^"]+)"`)
@@ -47,9 +54,58 @@ func extractInternalPackageDependencies(manifestContent string) []string {
 	return paths
 }
 
-// buildDependencyGraph reads Package.swift for each library and returns a map of
+func dumpPackageDependencies(ctx context.Context, swiftExe, pkgDir string) ([]string, error) {
+	out, err := command.OutputWithEnv(ctx, map[string]string{"GOOGLE_CLOUD_SWIFT_LOCAL_DEPS": "1"}, swiftExe, "package", "--package-path", pkgDir, "dump-package")
+	if err != nil {
+		return nil, err
+	}
+	var dump struct {
+		Dependencies []struct {
+			FileSystem []struct {
+				Identity string `json:"identity"`
+				Path     string `json:"path"`
+			} `json:"fileSystem"`
+		} `json:"dependencies"`
+	}
+	if err := json.Unmarshal([]byte(out), &dump); err != nil {
+		return nil, err
+	}
+	var paths []string
+	for _, dep := range dump.Dependencies {
+		for _, fs := range dep.FileSystem {
+			if fs.Path != "" {
+				paths = append(paths, fs.Path)
+			} else if fs.Identity != "" {
+				paths = append(paths, fs.Identity)
+			}
+		}
+	}
+	return paths, nil
+}
+
+func extractPackageDependencies(ctx context.Context, swiftExe, pkgDir string) ([]string, error) {
+	if swiftExe != "" {
+		if _, err := exec.LookPath(swiftExe); err == nil {
+			paths, err := dumpPackageDependencies(ctx, swiftExe, pkgDir)
+			if err == nil {
+				return paths, nil
+			}
+		}
+	}
+	manifestPath := filepath.Join(pkgDir, "Package.swift")
+	content, err := os.ReadFile(manifestPath)
+	if err != nil {
+		if errors.Is(err, fs.ErrNotExist) {
+			return nil, nil
+		}
+		return nil, fmt.Errorf("failed to read %s: %w", manifestPath, err)
+	}
+	return extractInternalPackageDependencies(string(content)), nil
+}
+
+// buildDependencyGraph reads or dumps package manifests for each library and returns a map of
 // library name to the names of its internal monorepo dependencies.
-func buildDependencyGraph(cfg *config.Config, libraries []*config.Library) (map[string][]string, error) {
+func buildDependencyGraph(ctx context.Context, cfg *config.Config, libraries []*config.Library, swiftExe string) (map[string][]string, error) {
 	pathToLib := make(map[string]*config.Library)
 	for _, lib := range cfg.Libraries {
 		pkgDir := libraryPackageDirectory(lib, cfg.Default)
@@ -67,33 +123,43 @@ func buildDependencyGraph(cfg *config.Config, libraries []*config.Library) (map[
 		}
 	}
 
+	var mu sync.Mutex
 	deps := make(map[string][]string)
+
+	g, gctx := errgroup.WithContext(ctx)
+	g.SetLimit(runtime.NumCPU())
+
 	for _, lib := range libraries {
 		pkgDir := libraryPackageDirectory(lib, cfg.Default)
 		if pkgDir == "" {
+			mu.Lock()
 			deps[lib.Name] = nil
+			mu.Unlock()
 			continue
 		}
-		manifestPath := filepath.Join(pkgDir, "Package.swift")
-		content, err := os.ReadFile(manifestPath)
-		if err != nil {
-			if errors.Is(err, fs.ErrNotExist) {
-				deps[lib.Name] = nil
-				continue
-			}
-			return nil, fmt.Errorf("failed to read %s: %w", manifestPath, err)
-		}
 
-		rawPaths := extractInternalPackageDependencies(string(content))
-		var libDeps []string
-		for _, rawPath := range rawPaths {
-			depLib := resolveDependencyLibrary(rawPath, pathToLib)
-			if depLib != nil && depLib.Name != lib.Name && !slices.Contains(libDeps, depLib.Name) {
-				libDeps = append(libDeps, depLib.Name)
+		g.Go(func() error {
+			rawPaths, err := extractPackageDependencies(gctx, swiftExe, pkgDir)
+			if err != nil {
+				return err
 			}
-		}
-		slices.Sort(libDeps)
-		deps[lib.Name] = libDeps
+			var libDeps []string
+			for _, rawPath := range rawPaths {
+				depLib := resolveDependencyLibrary(rawPath, pathToLib)
+				if depLib != nil && depLib.Name != lib.Name && !slices.Contains(libDeps, depLib.Name) {
+					libDeps = append(libDeps, depLib.Name)
+				}
+			}
+			slices.Sort(libDeps)
+
+			mu.Lock()
+			deps[lib.Name] = libDeps
+			mu.Unlock()
+			return nil
+		})
+	}
+	if err := g.Wait(); err != nil {
+		return nil, err
 	}
 
 	return deps, nil
@@ -110,6 +176,11 @@ func resolveDependencyLibrary(rawPath string, pathToLib map[string]*config.Libra
 	}
 	if repo := SplitRepoName(cleanPath); repo != "" {
 		if lib, ok := pathToLib[repo]; ok {
+			return lib
+		}
+	}
+	for dir, lib := range pathToLib {
+		if strings.HasSuffix(cleanPath, "/"+dir) {
 			return lib
 		}
 	}

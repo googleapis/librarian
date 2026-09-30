@@ -62,6 +62,8 @@ type PublishParams struct {
 	RootFiles []string
 	// GitExe is the path to the git binary (default: command.Git).
 	GitExe string
+	// SwiftExe is the path to the swift binary (default: command.Swift).
+	SwiftExe string
 }
 
 type publishCandidate struct {
@@ -80,6 +82,11 @@ func Publish(ctx context.Context, params PublishParams) error {
 	if gitExe == "" {
 		gitExe = command.Git
 	}
+	swiftExe := params.SwiftExe
+	if swiftExe == "" {
+		swiftExe = command.Swift
+	}
+
 	upstream := params.Upstream
 	if upstream == "" {
 		upstream = config.RemoteUpstream
@@ -161,7 +168,7 @@ func Publish(ctx context.Context, params PublishParams) error {
 		return nil
 	}
 
-	deps, err := buildDependencyGraph(params.Config, eligibleLibs)
+	deps, err := buildDependencyGraph(ctx, params.Config, eligibleLibs, swiftExe)
 	if err != nil {
 		if params.DryRunKeepGoing {
 			slog.Error("failed to build dependency graph, but continuing due to --keep-going", "error", err)

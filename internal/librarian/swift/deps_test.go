@@ -15,6 +15,7 @@
 package swift
 
 import (
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"slices"
@@ -185,7 +186,7 @@ localOrRemotePackage(
 		Libraries: []*config.Library{authLib, gaxLib},
 	}
 
-	deps, err := buildDependencyGraph(cfg, []*config.Library{authLib, gaxLib})
+	deps, err := buildDependencyGraph(t.Context(), cfg, []*config.Library{authLib, gaxLib}, "")
 	if err != nil {
 		t.Fatalf("buildDependencyGraph failed: %v", err)
 	}
@@ -196,6 +197,61 @@ localOrRemotePackage(
 	wantGaxDeps := []string{"auth"}
 	if !slices.Equal(deps["gax"], wantGaxDeps) {
 		t.Errorf("gax deps = %v, want %v", deps["gax"], wantGaxDeps)
+	}
+}
+
+func TestDumpPackageParsing(t *testing.T) {
+	rawJSON := `{
+  "dependencies": [
+    {
+      "fileSystem": [
+        {
+          "identity": "swift-google-auth",
+          "path": "/path/to/pkgs/swift-google-auth"
+        }
+      ]
+    },
+    {
+      "fileSystem": [
+        {
+          "identity": "swift-google-wkt",
+          "path": "/path/to/pkgs/swift-google-wkt"
+        }
+      ]
+    },
+    {
+      "sourceControl": [
+        {
+          "identity": "swift-log"
+        }
+      ]
+    }
+  ]
+}`
+	var dump struct {
+		Dependencies []struct {
+			FileSystem []struct {
+				Identity string `json:"identity"`
+				Path     string `json:"path"`
+			} `json:"fileSystem"`
+		} `json:"dependencies"`
+	}
+	if err := json.Unmarshal([]byte(rawJSON), &dump); err != nil {
+		t.Fatalf("json.Unmarshal failed: %v", err)
+	}
+	var paths []string
+	for _, dep := range dump.Dependencies {
+		for _, fs := range dep.FileSystem {
+			if fs.Path != "" {
+				paths = append(paths, fs.Path)
+			} else if fs.Identity != "" {
+				paths = append(paths, fs.Identity)
+			}
+		}
+	}
+	want := []string{"/path/to/pkgs/swift-google-auth", "/path/to/pkgs/swift-google-wkt"}
+	if diff := cmp.Diff(want, paths); diff != "" {
+		t.Errorf("dump paths mismatch (-want +got):\n%s", diff)
 	}
 }
 
