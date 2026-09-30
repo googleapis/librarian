@@ -145,10 +145,7 @@ func scalarFieldTypeName(field *api.Field) (string, error) {
 }
 
 func (c *codec) messageTypeName(m *api.Message) (string, error) {
-	name := messageName(m)
-	if m.ServicePlaceholder {
-		name = pascalCase(m.Name + "Client")
-	}
+	name := messageSimpleName(m)
 	if m.Parent == nil {
 		prefix, err := c.typePrefix(m.Package, name)
 		if err != nil {
@@ -167,10 +164,7 @@ func (c *codec) messageTypeName(m *api.Message) (string, error) {
 }
 
 func (c *codec) fullyQualifiedMessageTypeName(m *api.Message) (string, error) {
-	name := messageName(m)
-	if m.ServicePlaceholder {
-		name = pascalCase(m.Name + "Client")
-	}
+	name := messageSimpleName(m)
 	if m.Parent == nil {
 		if m.Package == "" {
 			// there is no package, so return the bare type name

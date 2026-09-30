@@ -306,11 +306,7 @@ func newCodec(model *api.API, library *config.Library, module *config.SwiftModul
 	if model != nil {
 		typeCounts := make(map[string]int)
 		for m := range model.AllMessages() {
-			name := messageName(m)
-			if m.ServicePlaceholder {
-				name = pascalCase(m.Name + "Client")
-			}
-			typeCounts[name]++
+			typeCounts[messageSimpleName(m)]++
 		}
 		for e := range model.AllEnums() {
 			typeCounts[enumName(e)]++
