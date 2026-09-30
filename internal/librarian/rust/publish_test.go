@@ -20,7 +20,6 @@ import (
 	"path"
 	"path/filepath"
 	"runtime"
-	"strings"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -295,9 +294,10 @@ func TestPublishCratesDryRunKeepGoing(t *testing.T) {
 	// Create a fake cargo that captures its arguments.
 	script := `#!/bin/bash
 if [ "$1" == "workspaces" ] && [ "$2" == "plan" ]; then
+	echo "google-cloud-wkt"
 	echo "google-cloud-storage"
-elif [ "$1" == "workspaces" ] && [ "$2" == "publish" ]; then
-	echo $@ >> "` + filepath.Join(tmpDir, "cargo_args.txt") + `"
+elif [ "$1" == "publish" ]; then
+	echo "$@" >> "` + filepath.Join(tmpDir, "cargo_args.txt") + `"
 else
 	exit 0
 fi
@@ -307,7 +307,10 @@ fi
 	cfg := &config.Config{}
 	remoteDir := testhelper.SetupRepoWithChange(t, "release-2001-02-03")
 	testhelper.CloneRepository(t, remoteDir)
+	testhelper.AddCrate(t, path.Join("src", "wkt"), "google-cloud-wkt")
 	files := []string{
+		path.Join("src", "wkt", "Cargo.toml"),
+		path.Join("src", "wkt", "src", "lib.rs"),
 		path.Join("src", "storage", "Cargo.toml"),
 		path.Join("src", "storage", "src", "lib.rs"),
 	}
@@ -321,16 +324,14 @@ fi
 		t.Fatal(err)
 	}
 
-	// Verify that arguments were passed to cargo workspaces publish.
+	// Verify that arguments were passed to cargo publish.
 	output, err := os.ReadFile(filepath.Join(tmpDir, "cargo_args.txt"))
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !strings.Contains(string(output), "--keep-going") {
-		t.Errorf("expected cargo command to contain '--keep-going', got: %s", string(output))
-	}
-	if count := strings.Count(string(output), "--dry-run"); count != 1 {
-		t.Errorf("expected cargo command to contain '--dry-run' once, but found %d times: %s", count, string(output))
+	want := "publish --dry-run --keep-going -p google-cloud-wkt -p google-cloud-storage\n"
+	if diff := cmp.Diff(want, string(output)); diff != "" {
+		t.Errorf("cargo args mismatch (-want +got):\n%s", diff)
 	}
 }
 
