@@ -165,6 +165,10 @@ type codec struct {
 
 	// IdempotencyHook configures an opt-in method on the request struct to resolve and transform idempotency request options before dispatch.
 	IdempotencyHook string
+
+	// DuplicateTypeNames maps simple type names to true if they occur multiple times
+	// across messages and enums in the model.
+	DuplicateTypeNames map[string]bool
 }
 
 const (
@@ -297,7 +301,35 @@ func newCodec(model *api.API, library *config.Library, module *config.SwiftModul
 		// Modules cannot have library names, so they should not try to set the value.
 		result.LibraryName = libraryName
 	}
+
+	duplicateTypeNames := make(map[string]bool)
+	if model != nil {
+		typeCounts := make(map[string]int)
+		for m := range model.AllMessages() {
+			name := messageName(m)
+			if m.ServicePlaceholder {
+				name = pascalCase(m.Name + "Client")
+			}
+			typeCounts[name]++
+		}
+		for e := range model.AllEnums() {
+			typeCounts[enumName(e)]++
+		}
+		for name, count := range typeCounts {
+			if count > 1 {
+				duplicateTypeNames[name] = true
+			}
+		}
+	}
+	if len(duplicateTypeNames) > 0 {
+		result.DuplicateTypeNames = duplicateTypeNames
+	}
+
 	return result, nil
+}
+
+func (c *codec) isDuplicateTypeName(name string) bool {
+	return c.DuplicateTypeNames[name]
 }
 
 func (c *codec) addApiPackageDependency(apiName string) (*Dependency, error) {

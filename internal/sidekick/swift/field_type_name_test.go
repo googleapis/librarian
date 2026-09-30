@@ -424,4 +424,126 @@ func TestFullyQualifiedMessageTypeName(t *testing.T) {
 			t.Errorf("got %q, want %q", got, want)
 		}
 	})
+
+	t.Run("nested inside service placeholder", func(t *testing.T) {
+		placeholder := api.NewTestMessage("Advice").
+			WithPackage("google.cloud.test.v1")
+		placeholder.ServicePlaceholder = true
+		nested := api.NewTestMessage("CapacityHistoryRequest")
+		placeholder.WithMessages(nested)
+
+		modelWithPlaceholder := api.NewTestAPI([]*api.Message{placeholder}, nil, nil)
+		c := newTestCodec(t, modelWithPlaceholder, nil)
+		c.LibraryName = "GoogleCloudTestV1"
+		c.Module = false
+
+		got, err := c.fullyQualifiedMessageTypeName(nested)
+		if err != nil {
+			t.Fatal(err)
+		}
+		want := "GoogleCloudTestV1.AdviceClient.CapacityHistoryRequest"
+		if diff := cmp.Diff(want, got); diff != "" {
+			t.Errorf("mismatch (-want +got):\n%s", diff)
+		}
+	})
+}
+
+func TestMessageTypeName_DuplicateNameQualification(t *testing.T) {
+	pkg := "google.cloud.test.v1"
+	nestedMsg := api.NewTestMessage("CapacityHistoryRequest")
+	servicePlaceholder := api.NewTestMessage("Advice").
+		WithPackage(pkg).
+		WithMessages(nestedMsg)
+	servicePlaceholder.ServicePlaceholder = true
+
+	topLevelMsg := api.NewTestMessage("CapacityHistoryRequest").
+		WithPackage(pkg)
+
+	uniqueMsg := api.NewTestMessage("UniqueMessage").
+		WithPackage(pkg)
+
+	model := api.NewTestAPI([]*api.Message{servicePlaceholder, topLevelMsg, uniqueMsg}, nil, nil)
+	c := newTestCodec(t, model, nil)
+	c.LibraryName = "GoogleCloudTestV1"
+	c.Module = false
+
+	for _, test := range []struct {
+		name string
+		msg  *api.Message
+		want string
+	}{
+		{
+			name: "top-level message with duplicate name is qualified with LibraryName",
+			msg:  topLevelMsg,
+			want: "GoogleCloudTestV1.CapacityHistoryRequest",
+		},
+		{
+			name: "nested message with duplicate name uses parent qualification",
+			msg:  nestedMsg,
+			want: "AdviceClient.CapacityHistoryRequest",
+		},
+		{
+			name: "unique top-level message remains unqualified",
+			msg:  uniqueMsg,
+			want: "UniqueMessage",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got, err := c.messageTypeName(test.msg)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestEnumTypeName_DuplicateNameQualification(t *testing.T) {
+	pkg := "google.cloud.test.v1"
+	nestedEnum := api.NewTestEnum("Status")
+	parentMsg := api.NewTestMessage("Parent").
+		WithPackage(pkg).
+		WithEnums(nestedEnum)
+
+	topLevelEnum := api.NewTestEnum("Status").WithPackage(pkg)
+	uniqueEnum := api.NewTestEnum("UniqueEnum").WithPackage(pkg)
+
+	model := api.NewTestAPI([]*api.Message{parentMsg}, []*api.Enum{topLevelEnum, uniqueEnum}, nil)
+	c := newTestCodec(t, model, nil)
+	c.LibraryName = "GoogleCloudTestV1"
+	c.Module = false
+
+	for _, test := range []struct {
+		name string
+		enum *api.Enum
+		want string
+	}{
+		{
+			name: "top-level enum with duplicate name is qualified with LibraryName",
+			enum: topLevelEnum,
+			want: "GoogleCloudTestV1.Status",
+		},
+		{
+			name: "nested enum with duplicate name uses parent qualification",
+			enum: nestedEnum,
+			want: "Parent.Status",
+		},
+		{
+			name: "unique top-level enum remains unqualified",
+			enum: uniqueEnum,
+			want: "UniqueEnum",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got, err := c.enumTypeName(test.enum)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
 }

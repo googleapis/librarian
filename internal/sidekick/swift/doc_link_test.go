@@ -17,6 +17,7 @@ package swift
 import (
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/sidekick/api"
 )
@@ -260,5 +261,39 @@ func TestDocLink_ModuleNameOverrides(t *testing.T) {
 	wantService := "<doc:ModuleOverrideClient>"
 	if gotService != wantService {
 		t.Errorf("serviceDocLink() = %q, want %q", gotService, wantService)
+	}
+}
+
+func TestDocLink_TrimsLibraryName(t *testing.T) {
+	msg := api.NewTestMessage("CapacityHistoryRequest").WithPackage("google.cloud.compute.v1")
+	model := api.NewTestAPI([]*api.Message{msg}, nil, nil)
+	c := newTestCodec(t, model, nil)
+	c.LibraryName = "GoogleCloudComputeV1"
+
+	for _, test := range []struct {
+		name        string
+		packageName string
+		typeName    string
+		want        string
+	}{
+		{
+			name:        "qualified with LibraryName",
+			packageName: "google.cloud.compute.v1",
+			typeName:    "GoogleCloudComputeV1.CapacityHistoryRequest",
+			want:        "<doc:CapacityHistoryRequest>",
+		},
+		{
+			name:        "unqualified in current package",
+			packageName: "google.cloud.compute.v1",
+			typeName:    "Instance",
+			want:        "<doc:Instance>",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := c.docLink(test.packageName, test.typeName)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
 	}
 }
