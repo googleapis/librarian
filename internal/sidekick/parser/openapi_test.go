@@ -706,7 +706,6 @@ func TestOpenAPI_Pagination(t *testing.T) {
 	wantService := api.NewTestService("Service").
 		WithPackage("").
 		WithMethods(listFoosMethod)
-	listFoosMethod.Service = nil
 	apitest.CheckService(t, service, wantService)
 	resp := test.Message("..ListFoosResponse")
 	if resp == nil {
