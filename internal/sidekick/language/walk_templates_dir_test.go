@@ -62,3 +62,12 @@ func TestWalkDir_GoTemplates(t *testing.T) {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
+
+func TestWalkDir_Error(t *testing.T) {
+	fsys := fstest.MapFS{}
+	got := WalkTemplatesDir(fsys, "nonexistent")
+	if len(got) != 0 {
+		t.Errorf("WalkTemplatesDir(nonexistent) = %v, want empty", got)
+	}
+}
+

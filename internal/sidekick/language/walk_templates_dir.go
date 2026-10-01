@@ -37,7 +37,10 @@ import (
 // assumed to be used internally and are skipped.
 func WalkTemplatesDir(fsys fs.FS, root string) []GeneratedFile {
 	var result []GeneratedFile
-	fs.WalkDir(fsys, root, func(path string, d fs.DirEntry, err error) error {
+	_ = fs.WalkDir(fsys, root, func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
 		ext := filepath.Ext(path)
 		if ext != ".mustache" && ext != ".gotmpl" {
 			return nil
