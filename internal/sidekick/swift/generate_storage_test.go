@@ -203,7 +203,7 @@ func TestGenerateStorage_MultiModel(t *testing.T) {
 	}
 	if !strings.Contains(protocolStr, "request: ListBucketsRequest, options: GoogleGax.RequestOptions") ||
 		!strings.Contains(protocolStr, "some AsyncSequence<Bucket, Swift.Error> & Sendable") ||
-		!strings.Contains(protocolStr, "return GoogleGax.PaginatedResponseSequence(listRpc: listRpc)") {
+		!strings.Contains(protocolStr, "return GoogleGax.PaginatedResponseSequence(listRpc: listRpc, initialPageToken: request.pageToken)") {
 		t.Errorf("StorageControlProtocol.swift missing paginated helper method:\n%s", protocolStr)
 	}
 	if !strings.Contains(protocolStr, "public import GoogleIAMV1") {
