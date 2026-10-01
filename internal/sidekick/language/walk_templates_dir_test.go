@@ -17,6 +17,7 @@ package language
 import (
 	"path/filepath"
 	"testing"
+	"testing/fstest"
 
 	"github.com/google/go-cmp/cmp"
 )
@@ -35,6 +36,29 @@ func TestWalkDir(t *testing.T) {
 		},
 	}
 	if diff := cmp.Diff(want, got); len(diff) != 0 {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+}
+
+func TestWalkDir_GoTemplates(t *testing.T) {
+	fsys := fstest.MapFS{
+		"templates/package/.spi.yml.gotmpl":      &fstest.MapFile{Data: []byte("spi")},
+		"templates/package/Package.swift.gotmpl": &fstest.MapFile{Data: []byte("pkg")},
+		"templates/package/partial.gotmpl":       &fstest.MapFile{Data: []byte("partial")},
+		"templates/package/ignored.txt":          &fstest.MapFile{Data: []byte("ignored")},
+	}
+	got := WalkTemplatesDir(fsys, "templates/package")
+	want := []GeneratedFile{
+		{
+			TemplatePath: "templates/package/.spi.yml.gotmpl",
+			OutputPath:   filepath.FromSlash("/.spi.yml"),
+		},
+		{
+			TemplatePath: "templates/package/Package.swift.gotmpl",
+			OutputPath:   filepath.FromSlash("/Package.swift"),
+		},
+	}
+	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
