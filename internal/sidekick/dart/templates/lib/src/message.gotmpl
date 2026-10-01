@@ -1,0 +1,100 @@
+{{/*
+Copyright 2025 Google LLC
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    https://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/}}
+{{- if not .Codec.OmitGeneration }}
+{{- range .Codec.DocLines }}
+{{ . }}
+{{- end }}
+final class {{ .Codec.Name }} extends {{ .Codec.Model.Codec.ProtoPrefix }}ProtoMessage {
+  static const String fullyQualifiedName = '{{ .Codec.QualifiedName }}';
+
+  {{- range .Fields }}
+  {{- include "templates/lib/src/field" . | indent 2 }}
+  {{- "\n" }}
+  {{- end }}
+  {{ .Codec.Name }}({{- if .Codec.HasFields }}{
+    {{- range .Fields }}
+    {{- if .Codec.FieldBehaviorRequired }}
+    required this.{{ .Codec.Name }},
+    {{- else }}
+    {{- /* If the default value is `const` (e.g. `0`) then we can use it as a
+    default value. Otherwise (e.g. `Uint8List(0)`), we need to make the type
+    nullable and assign the default value in the initializer list. */}}
+    {{- if .Codec.ConstDefault }}
+    this.{{ .Codec.Name }}{{- if .Codec.DefaultValue }} = {{ .Codec.DefaultValue }}{{- end }},
+    {{- else }}
+    {{ .Codec.Type }}? {{ .Codec.Name }},
+    {{- end }}
+    {{- end }}
+    {{- end }}
+  }{{- end }}) :
+    {{- range .Fields }}
+    {{- if not .Codec.ConstDefault }}
+    {{ .Codec.Name }} = {{ .Codec.Name }} ?? {{ .Codec.DefaultValue }},
+    {{- end }}
+    {{- end }}
+    super(fullyQualifiedName){{ .Codec.ConstructorBody }}
+
+  {{- if .Codec.HasCustomEncoding }}
+  factory {{ .Codec.Name }}.fromJson(Object? json) => _{{ .Codec.Name }}Helper.decode(json);
+  {{- else }}
+  factory {{ .Codec.Name }}.fromJson(Object? {{ if .Codec.HasFields }}j{{ else }}_{{ end }})
+    {{- if .Codec.HasFields }} {
+      final json = j as Map<String, Object?>;
+      return {{ .Codec.Name }}(
+        {{- range .Fields }}
+        {{ .Codec.Name }}: {{ .Codec.FromJson }},
+        {{- end }}
+      );
+    }
+    {{- else }}
+    => {{ .Codec.Name }}();
+    {{- end }}
+  {{- end }}
+
+  @override
+  {{- if .Codec.HasCustomEncoding }}
+  Object toJson() => _{{ .Codec.Name }}Helper.encode(this);
+  {{- else }}
+  Object toJson() => {
+    {{- range .Fields }}
+    {{ .Codec.ToJson }},
+    {{- end }}
+  };
+  {{- end }}
+
+  @override
+  {{- if .Codec.HasToStringLines }}
+  String toString() {
+    final $contents = [
+      {{- range .Codec.ToStringLines }}
+      {{ . }}
+      {{- end }}
+    ].join(',');
+    return '{{ .Name }}(${$contents})';
+  }
+  {{- else }}
+  String toString() => '{{ .Name }}()';
+  {{- end }}
+}
+{{- range .Messages }}
+{{- "\n" }}
+{{- include "templates/lib/src/message" . }}
+{{- end }}
+{{- range .Enums }}
+{{- "\n" }}
+{{- include "templates/lib/src/enum" . }}
+{{- end }}
+{{- end }}
