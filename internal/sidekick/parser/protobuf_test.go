@@ -15,6 +15,7 @@
 package parser
 
 import (
+	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -63,15 +64,26 @@ func TestProtobuf_PartialInfo(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to make API for Protobuf %v", err)
 	}
-	want := &api.API{
-		Name:        "secretmanager",
-		PackageName: "test",
-		Title:       "Secret Manager API",
-		Description: "",
-	}
+	want := api.NewTestAPI(nil, nil, nil).
+		WithName("secretmanager").
+		WithPackageName("test").
+		WithTitle("Secret Manager API").
+		WithDescription("")
 	if diff := cmp.Diff(want, got, cmpopts.IgnoreFields(api.API{}, "Services", "Messages", "Enums"), cmpopts.IgnoreUnexported(api.API{})); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
+}
+
+func newTestProtobufFakeMessage(fields ...*api.Field) *api.Message {
+	m := api.NewTestMessage("Fake").
+		WithPackage("test").
+		WithID(".test.Fake").
+		WithDocumentation("A test message.").
+		WithFields(fields...)
+	for _, f := range m.Fields {
+		f.Parent = nil
+	}
+	return m
 }
 
 func TestProtobuf_Scalar(t *testing.T) {
@@ -84,119 +96,53 @@ func TestProtobuf_Scalar(t *testing.T) {
 	if message == nil {
 		t.Fatalf("Cannot find message %s in API State", ".test.Fake")
 	}
-	apitest.CheckMessage(t, message, &api.Message{
-		Name:          "Fake",
-		Package:       "test",
-		ID:            ".test.Fake",
-		Documentation: "A test message.",
-		Fields: []*api.Field{
-			{
-				Documentation: "A singular field tag = 1",
-				Name:          "f_double",
-				JSONName:      "fDouble",
-				ID:            ".test.Fake.f_double",
-				Typez:         api.TypezDouble,
-			},
-			{
-				Documentation: "A singular field tag = 2",
-				Name:          "f_float",
-				JSONName:      "fFloat",
-				ID:            ".test.Fake.f_float",
-				Typez:         api.TypezFloat,
-			},
-			{
-				Documentation: "A singular field tag = 3",
-				Name:          "f_int64",
-				JSONName:      "fInt64",
-				ID:            ".test.Fake.f_int64",
-				Typez:         api.TypezInt64,
-			},
-			{
-				Documentation: "A singular field tag = 4",
-				Name:          "f_uint64",
-				JSONName:      "fUint64",
-				ID:            ".test.Fake.f_uint64",
-				Typez:         api.TypezUint64,
-			},
-			{
-				Documentation: "A singular field tag = 5",
-				Name:          "f_int32",
-				JSONName:      "fInt32",
-				ID:            ".test.Fake.f_int32",
-				Typez:         api.TypezInt32,
-			},
-			{
-				Documentation: "A singular field tag = 6",
-				Name:          "f_fixed64",
-				JSONName:      "fFixed64",
-				ID:            ".test.Fake.f_fixed64",
-				Typez:         api.TypezFixed64,
-			},
-			{
-				Documentation: "A singular field tag = 7",
-				Name:          "f_fixed32",
-				JSONName:      "fFixed32",
-				ID:            ".test.Fake.f_fixed32",
-				Typez:         api.TypezFixed32,
-			},
-			{
-				Documentation: "A singular field tag = 8",
-				Name:          "f_bool",
-				JSONName:      "fBool",
-				ID:            ".test.Fake.f_bool",
-				Typez:         api.TypezBool,
-			},
-			{
-				Documentation: "A singular field tag = 9",
-				Name:          "f_string",
-				JSONName:      "fString",
-				ID:            ".test.Fake.f_string",
-				Typez:         api.TypezString,
-			},
-			{
-				Documentation: "A singular field tag = 12",
-				Name:          "f_bytes",
-				JSONName:      "fBytes",
-				ID:            ".test.Fake.f_bytes",
-				Typez:         api.TypezBytes,
-			},
-			{
-				Documentation: "A singular field tag = 13",
-				Name:          "f_uint32",
-				JSONName:      "fUint32",
-				ID:            ".test.Fake.f_uint32",
-				Typez:         api.TypezUint32,
-			},
-			{
-				Documentation: "A singular field tag = 15",
-				Name:          "f_sfixed32",
-				JSONName:      "fSfixed32",
-				ID:            ".test.Fake.f_sfixed32",
-				Typez:         api.TypezSfixed32,
-			},
-			{
-				Documentation: "A singular field tag = 16",
-				Name:          "f_sfixed64",
-				JSONName:      "fSfixed64",
-				ID:            ".test.Fake.f_sfixed64",
-				Typez:         api.TypezSfixed64,
-			},
-			{
-				Documentation: "A singular field tag = 17",
-				Name:          "f_sint32",
-				JSONName:      "fSint32",
-				ID:            ".test.Fake.f_sint32",
-				Typez:         api.TypezSint32,
-			},
-			{
-				Documentation: "A singular field tag = 18",
-				Name:          "f_sint64",
-				JSONName:      "fSint64",
-				ID:            ".test.Fake.f_sint64",
-				Typez:         api.TypezSint64,
-			},
-		},
-	})
+	apitest.CheckMessage(t, message, newTestProtobufFakeMessage(
+		api.NewTestField("f_double").
+			WithDocumentation("A singular field tag = 1").
+			WithType(api.TypezDouble),
+		api.NewTestField("f_float").
+			WithDocumentation("A singular field tag = 2").
+			WithType(api.TypezFloat),
+		api.NewTestField("f_int64").
+			WithDocumentation("A singular field tag = 3").
+			WithType(api.TypezInt64),
+		api.NewTestField("f_uint64").
+			WithDocumentation("A singular field tag = 4").
+			WithType(api.TypezUint64),
+		api.NewTestField("f_int32").
+			WithDocumentation("A singular field tag = 5").
+			WithType(api.TypezInt32),
+		api.NewTestField("f_fixed64").
+			WithDocumentation("A singular field tag = 6").
+			WithType(api.TypezFixed64),
+		api.NewTestField("f_fixed32").
+			WithDocumentation("A singular field tag = 7").
+			WithType(api.TypezFixed32),
+		api.NewTestField("f_bool").
+			WithDocumentation("A singular field tag = 8").
+			WithType(api.TypezBool),
+		api.NewTestField("f_string").
+			WithDocumentation("A singular field tag = 9").
+			WithType(api.TypezString),
+		api.NewTestField("f_bytes").
+			WithDocumentation("A singular field tag = 12").
+			WithType(api.TypezBytes),
+		api.NewTestField("f_uint32").
+			WithDocumentation("A singular field tag = 13").
+			WithType(api.TypezUint32),
+		api.NewTestField("f_sfixed32").
+			WithDocumentation("A singular field tag = 15").
+			WithType(api.TypezSfixed32),
+		api.NewTestField("f_sfixed64").
+			WithDocumentation("A singular field tag = 16").
+			WithType(api.TypezSfixed64),
+		api.NewTestField("f_sint32").
+			WithDocumentation("A singular field tag = 17").
+			WithType(api.TypezSint32),
+		api.NewTestField("f_sint64").
+			WithDocumentation("A singular field tag = 18").
+			WithType(api.TypezSint64),
+	))
 }
 
 func TestProtobuf_ScalarArray(t *testing.T) {
@@ -209,46 +155,24 @@ func TestProtobuf_ScalarArray(t *testing.T) {
 	if message == nil {
 		t.Fatalf("Cannot find message %s in API State", ".test.Fake")
 	}
-	apitest.CheckMessage(t, message, &api.Message{
-		Name:          "Fake",
-		Package:       "test",
-		ID:            ".test.Fake",
-		Documentation: "A test message.",
-		Fields: []*api.Field{
-			{
-				Repeated:      true,
-				Documentation: "A repeated field tag = 1",
-				Name:          "f_double",
-				JSONName:      "fDouble",
-				ID:            ".test.Fake.f_double",
-				Typez:         api.TypezDouble,
-			},
-			{
-				Repeated:      true,
-				Documentation: "A repeated field tag = 3",
-				Name:          "f_int64",
-				JSONName:      "fInt64",
-				ID:            ".test.Fake.f_int64",
-				Typez:         api.TypezInt64,
-			},
-			{
-				Repeated:      true,
-				Documentation: "A repeated field tag = 9",
-				Name:          "f_string",
-				JSONName:      "fString",
-				ID:            ".test.Fake.f_string",
-				Typez:         api.TypezString,
-			},
-			{
-				Repeated:      true,
-				Documentation: "A repeated field tag = 12",
-				Name:          "f_bytes",
-				JSONName:      "fBytes",
-				ID:            ".test.Fake.f_bytes",
-				Typez:         api.TypezBytes,
-			},
-		},
-	})
+	apitest.CheckMessage(t, message, newTestProtobufFakeMessage(
+		api.NewTestField("f_double").
+			WithDocumentation("A repeated field tag = 1").
+			WithType(api.TypezDouble).
+			WithRepeated(),
+		api.NewTestField("f_int64").
+			WithDocumentation("A repeated field tag = 3").
+			WithType(api.TypezInt64).
+			WithRepeated(),
+		api.NewTestField("f_string").
+			WithDocumentation("A repeated field tag = 9").
+			WithType(api.TypezString).
+			WithRepeated(),
+		api.NewTestField("f_bytes").
+			WithDocumentation("A repeated field tag = 12").
+			WithType(api.TypezBytes).
+			WithRepeated(),
+	))
 }
 
 func TestProtobuf_ScalarOptional(t *testing.T) {
@@ -261,46 +185,24 @@ func TestProtobuf_ScalarOptional(t *testing.T) {
 	if message == nil {
 		t.Fatalf("Cannot find message %s in API", "Fake")
 	}
-	apitest.CheckMessage(t, message, &api.Message{
-		Name:          "Fake",
-		Package:       "test",
-		ID:            ".test.Fake",
-		Documentation: "A test message.",
-		Fields: []*api.Field{
-			{
-				Optional:      true,
-				Documentation: "An optional field tag = 1",
-				Name:          "f_double",
-				JSONName:      "fDouble",
-				ID:            ".test.Fake.f_double",
-				Typez:         api.TypezDouble,
-			},
-			{
-				Optional:      true,
-				Documentation: "An optional field tag = 3",
-				Name:          "f_int64",
-				JSONName:      "fInt64",
-				ID:            ".test.Fake.f_int64",
-				Typez:         api.TypezInt64,
-			},
-			{
-				Optional:      true,
-				Documentation: "An optional field tag = 9",
-				Name:          "f_string",
-				JSONName:      "fString",
-				ID:            ".test.Fake.f_string",
-				Typez:         api.TypezString,
-			},
-			{
-				Optional:      true,
-				Documentation: "An optional field tag = 12",
-				Name:          "f_bytes",
-				JSONName:      "fBytes",
-				ID:            ".test.Fake.f_bytes",
-				Typez:         api.TypezBytes,
-			},
-		},
-	})
+	apitest.CheckMessage(t, message, newTestProtobufFakeMessage(
+		api.NewTestField("f_double").
+			WithDocumentation("An optional field tag = 1").
+			WithType(api.TypezDouble).
+			WithOptional(),
+		api.NewTestField("f_int64").
+			WithDocumentation("An optional field tag = 3").
+			WithType(api.TypezInt64).
+			WithOptional(),
+		api.NewTestField("f_string").
+			WithDocumentation("An optional field tag = 9").
+			WithType(api.TypezString).
+			WithOptional(),
+		api.NewTestField("f_bytes").
+			WithDocumentation("An optional field tag = 12").
+			WithType(api.TypezBytes).
+			WithOptional(),
+	))
 }
 
 func TestProtobuf_SkipExternalMessages(t *testing.T) {
@@ -317,32 +219,24 @@ func TestProtobuf_SkipExternalMessages(t *testing.T) {
 	if message == nil {
 		t.Fatalf("Cannot find message %s in API State", ".test.LocalMessage")
 	}
-	apitest.CheckMessage(t, message, &api.Message{
-		Name:          "LocalMessage",
-		Package:       "test",
-		ID:            ".test.LocalMessage",
-		Documentation: "This is a local message, it should be generated.",
-		Fields: []*api.Field{
-			{
-				Name:          "payload",
-				JSONName:      "payload",
-				ID:            ".test.LocalMessage.payload",
-				Documentation: "This field uses an imported message.",
-				Typez:         api.TypezMessage,
-				TypezID:       ".away.ImportedMessage",
-				Optional:      true,
-			},
-			{
-				Name:          "value",
-				JSONName:      "value",
-				ID:            ".test.LocalMessage.value",
-				Documentation: "This field uses an imported enum.",
-				Typez:         api.TypezEnum,
-				TypezID:       ".away.ImportedEnum",
-				Optional:      false,
-			},
-		},
-	})
+	want := api.NewTestMessage("LocalMessage").
+		WithPackage("test").
+		WithDocumentation("This is a local message, it should be generated.").
+		WithFields(
+			api.NewTestField("payload").
+				WithDocumentation("This field uses an imported message.").
+				WithType(api.TypezMessage).
+				WithTypezID(".away.ImportedMessage").
+				WithOptional(),
+			api.NewTestField("value").
+				WithDocumentation("This field uses an imported enum.").
+				WithType(api.TypezEnum).
+				WithTypezID(".away.ImportedEnum"),
+		)
+	for _, f := range want.Fields {
+		f.Parent = nil
+	}
+	apitest.CheckMessage(t, message, want)
 	// Only `LocalMessage` should be found in the messages list:
 	for _, msg := range test.Messages {
 		if msg.ID == ".test.ImportedMessage" {
@@ -365,26 +259,18 @@ func TestProtobuf_SkipExternaEnums(t *testing.T) {
 	if enum == nil {
 		t.Fatalf("Cannot find enum %s in API State", ".test.LocalEnum")
 	}
-	apitest.CheckEnum(t, *enum, api.Enum{
-		Name:          "LocalEnum",
-		ID:            ".test.LocalEnum",
-		Package:       "test",
-		Documentation: "This is a local enum, it should be generated.",
-		Values: []*api.EnumValue{
-			{
-				Name:   "RED",
-				Number: 0,
-			},
-			{
-				Name:   "WHITE",
-				Number: 1,
-			},
-			{
-				Name:   "BLUE",
-				Number: 2,
-			},
-		},
-	})
+	wantEnum := api.NewTestEnum("LocalEnum").
+		WithPackage("test").
+		WithDocumentation("This is a local enum, it should be generated.").
+		WithValues(
+			api.NewTestEnumValue("RED", 0),
+			api.NewTestEnumValue("WHITE", 1),
+			api.NewTestEnumValue("BLUE", 2),
+		)
+	for _, v := range wantEnum.Values {
+		v.ID = ""
+	}
+	apitest.CheckEnum(t, *enum, *wantEnum)
 	// Only `LocalMessage` should be found in the messages list:
 	for _, msg := range test.Messages {
 		if msg.ID == ".test.ImportedMessage" {
@@ -403,100 +289,85 @@ func TestProtobuf_Comments(t *testing.T) {
 	if message == nil {
 		t.Fatalf("Cannot find message %s in API State", ".test.Request")
 	}
-	apitest.CheckMessage(t, message, &api.Message{
-		Name:          "Request",
-		Package:       "test",
-		ID:            ".test.Request",
-		Documentation: "A test message.\n\nWith even more of a description.\nMaybe in more than one line.\nAnd some markdown:\n- An item\n  - A nested item\n- Another item",
-		Fields: []*api.Field{
-			{
-				Name:          "parent",
-				Documentation: "A field.\n\nWith a longer description.",
-				JSONName:      "parent",
-				ID:            ".test.Request.parent",
-				Typez:         api.TypezString,
-			},
-		},
-	})
+	wantRequest := api.NewTestMessage("Request").
+		WithPackage("test").
+		WithDocumentation("A test message.\n\nWith even more of a description.\nMaybe in more than one line.\nAnd some markdown:\n- An item\n  - A nested item\n- Another item").
+		WithFields(
+			api.NewTestField("parent").
+				WithDocumentation("A field.\n\nWith a longer description.").
+				WithType(api.TypezString),
+		)
+	for _, f := range wantRequest.Fields {
+		f.Parent = nil
+	}
+	apitest.CheckMessage(t, message, wantRequest)
 
 	message = test.Message(".test.Response.Nested")
 	if message == nil {
 		t.Fatalf("Cannot find message %s in API State", ".test.Response.nested")
 	}
-	apitest.CheckMessage(t, message, &api.Message{
-		Name:          "Nested",
-		Package:       "test",
-		ID:            ".test.Response.Nested",
-		Documentation: "A nested message.\n\n- Item 1\n  Item 1 continued",
-		Fields: []*api.Field{
-			{
-				Name:          "path",
-				Documentation: "Field in a nested message.\n\n* Bullet 1\n  Bullet 1 continued\n* Bullet 2\n  Bullet 2 continued",
-				JSONName:      "path",
-				ID:            ".test.Response.Nested.path",
-				Typez:         api.TypezString,
-			},
-		},
-	})
+	wantNested := api.NewTestMessage("Nested").
+		WithPackage("test").
+		WithID(".test.Response.Nested").
+		WithDocumentation("A nested message.\n\n- Item 1\n  Item 1 continued").
+		WithFields(
+			api.NewTestField("path").
+				WithDocumentation("Field in a nested message.\n\n* Bullet 1\n  Bullet 1 continued\n* Bullet 2\n  Bullet 2 continued").
+				WithType(api.TypezString),
+		)
+	for _, f := range wantNested.Fields {
+		f.Parent = nil
+	}
+	apitest.CheckMessage(t, message, wantNested)
 
 	e := test.Enum(".test.Response.Status")
 	if e == nil {
 		t.Fatalf("Cannot find enum %s in API State", ".test.Response.Status")
 	}
-	apitest.CheckEnum(t, *e, api.Enum{
-		Name:          "Status",
-		ID:            ".test.Response.Status",
-		Package:       "test",
-		Documentation: "Some enum.\n\nLine 1.\nLine 2.",
-		Values: []*api.EnumValue{
-			{
-				Name:          "NOT_READY",
-				Documentation: "The first enum value description.\n\nValue Line 1.\nValue Line 2.",
-				Number:        0,
-			},
-			{
-				Name:          "READY",
-				Documentation: "The second enum value description.",
-				Number:        1,
-			},
-		},
-	})
+	wantStatus := api.NewTestEnum("Status").
+		WithPackage("test").
+		WithID(".test.Response.Status").
+		WithDocumentation("Some enum.\n\nLine 1.\nLine 2.").
+		WithValues(
+			api.NewTestEnumValue("NOT_READY", 0).
+				WithDocumentation("The first enum value description.\n\nValue Line 1.\nValue Line 2."),
+			api.NewTestEnumValue("READY", 1).
+				WithDocumentation("The second enum value description."),
+		)
+	for _, v := range wantStatus.Values {
+		v.ID = ""
+	}
+	apitest.CheckEnum(t, *e, *wantStatus)
 
 	service := test.Service(".test.Service")
 	if service == nil {
 		t.Fatalf("Cannot find service %s in API State", ".test.Service")
 	}
-	apitest.CheckService(t, service, &api.Service{
-		Name:          "Service",
-		ID:            ".test.Service",
-		Package:       "test",
-		Documentation: "A service.\n\nWith a longer service description.",
-		DefaultHost:   "test.googleapis.com",
-		Methods: []*api.Method{
-			{
-				Name:            "Create",
-				ID:              ".test.Service.Create",
-				SourceServiceID: ".test.Service",
-				Documentation:   "Some RPC.\n\nIt does not do much.",
-				InputTypeID:     ".test.Request",
-				OutputTypeID:    ".test.Response",
-				PathInfo: &api.PathInfo{
-					Bindings: []*api.PathBinding{
-						{
-							Verb: "POST",
-							PathTemplate: (&api.PathTemplate{}).
-								WithLiteral("v1").
-								WithVariable(api.NewPathVariable("parent").
-									WithLiteral("projects").
-									WithMatch()).
-								WithLiteral("foos"),
-							QueryParameters: map[string]bool{}},
-					},
-					BodyFieldPath: "*",
-				},
-			},
-		},
-	})
+	createMethod := api.NewTestMethod("Create").
+		WithID(".test.Service.Create").
+		WithDocumentation("Some RPC.\n\nIt does not do much.").
+		WithVerb("POST").
+		WithPathTemplate(
+			(&api.PathTemplate{}).
+				WithLiteral("v1").
+				WithVariable(api.NewPathVariable("parent").
+					WithLiteral("projects").
+					WithMatch()).
+				WithLiteral("foos"),
+		).
+		WithQueryParameters(map[string]bool{}).
+		WithBodyFieldPath("*")
+	createMethod.SourceServiceID = ".test.Service"
+	createMethod.InputTypeID = ".test.Request"
+	createMethod.OutputTypeID = ".test.Response"
+
+	wantService := api.NewTestService("Service").
+		WithPackage("test").
+		WithDocumentation("A service.\n\nWith a longer service description.").
+		WithDefaultHost("test.googleapis.com").
+		WithMethods(createMethod)
+	createMethod.Service = nil
+	apitest.CheckService(t, service, wantService)
 }
 
 func TestProtobuf_UniqueEnumValues(t *testing.T) {
@@ -510,41 +381,17 @@ func TestProtobuf_UniqueEnumValues(t *testing.T) {
 		t.Fatalf("Cannot find enum %s in API State", ".test.WithAlias")
 	}
 	fullList := []*api.EnumValue{
-		{
-			Name:   "X_UNSPECIFIED",
-			Number: 0,
-		},
-		{
-			Name:   "LONG_NAME_VALUE",
-			Number: 2,
-		},
-		{
-			Name:   "V2",
-			Number: 2,
-		},
-		{
-			Name:   "bad_style",
-			Number: 3,
-		},
-		{
-			Name:   "FOLLOWS_STYLE",
-			Number: 3,
-		},
+		api.NewTestEnumValue("X_UNSPECIFIED", 0).WithID(""),
+		api.NewTestEnumValue("LONG_NAME_VALUE", 2).WithID(""),
+		api.NewTestEnumValue("V2", 2).WithID(""),
+		api.NewTestEnumValue("bad_style", 3).WithID(""),
+		api.NewTestEnumValue("FOLLOWS_STYLE", 3).WithID(""),
 	}
 
 	uniqueList := []*api.EnumValue{
-		{
-			Name:   "X_UNSPECIFIED",
-			Number: 0,
-		},
-		{
-			Name:   "V2",
-			Number: 2,
-		},
-		{
-			Name:   "FOLLOWS_STYLE",
-			Number: 3,
-		},
+		api.NewTestEnumValue("X_UNSPECIFIED", 0).WithID(""),
+		api.NewTestEnumValue("V2", 2).WithID(""),
+		api.NewTestEnumValue("FOLLOWS_STYLE", 3).WithID(""),
 	}
 
 	less := func(a, b *api.EnumValue) bool { return a.Name < b.Name }
@@ -566,87 +413,36 @@ func TestProtobuf_OneOfs(t *testing.T) {
 	if message == nil {
 		t.Fatalf("Cannot find message %s in API State", ".test.Request")
 	}
-	apitest.CheckMessage(t, message, &api.Message{
-		Name:          "Fake",
-		Package:       "test",
-		ID:            ".test.Fake",
-		Documentation: "A test message.",
-		Fields: []*api.Field{
-			{
-				Name:          "field_one",
-				Documentation: "A string choice",
-				JSONName:      "fieldOne",
-				ID:            ".test.Fake.field_one",
-				Typez:         api.TypezString,
-				IsOneOf:       true,
-			},
-			{
-				Documentation: "An int choice",
-				Name:          "field_two",
-				ID:            ".test.Fake.field_two",
-				Typez:         api.TypezInt64,
-				JSONName:      "fieldTwo",
-				IsOneOf:       true,
-			},
-			{
-				Documentation: "A message choice",
-				Name:          "field_five",
-				ID:            ".test.Fake.field_five",
-				Typez:         api.TypezMessage,
-				TypezID:       ".test.Inner",
-				JSONName:      "fieldFive",
-				IsOneOf:       true,
-			},
-			{
-				Documentation: "Optional is oneof in proto",
-				Name:          "field_three",
-				ID:            ".test.Fake.field_three",
-				Typez:         api.TypezString,
-				JSONName:      "fieldThree",
-				Optional:      true,
-			},
-			{
-				Documentation: "A normal field",
-				Name:          "field_four",
-				ID:            ".test.Fake.field_four",
-				Typez:         api.TypezInt32,
-				JSONName:      "fieldFour",
-			},
-		},
-		OneOfs: []*api.OneOf{
-			{
-				Name: "choice",
-				ID:   ".test.Fake.choice",
-				Fields: []*api.Field{
-					{
-						Documentation: "A string choice",
-						Name:          "field_one",
-						ID:            ".test.Fake.field_one",
-						Typez:         api.TypezString,
-						JSONName:      "fieldOne",
-						IsOneOf:       true,
-					},
-					{
-						Documentation: "An int choice",
-						Name:          "field_two",
-						ID:            ".test.Fake.field_two",
-						Typez:         api.TypezInt64,
-						JSONName:      "fieldTwo",
-						IsOneOf:       true,
-					},
-					{
-						Documentation: "A message choice",
-						Name:          "field_five",
-						ID:            ".test.Fake.field_five",
-						Typez:         api.TypezMessage,
-						TypezID:       ".test.Inner",
-						JSONName:      "fieldFive",
-						IsOneOf:       true,
-					},
-				},
-			},
-		},
-	})
+	choice := api.NewTestOneOf("choice").
+		WithFields(
+			api.NewTestField("field_one").
+				WithDocumentation("A string choice").
+				WithType(api.TypezString),
+			api.NewTestField("field_two").
+				WithDocumentation("An int choice").
+				WithType(api.TypezInt64),
+			api.NewTestField("field_five").
+				WithDocumentation("A message choice").
+				WithType(api.TypezMessage).
+				WithTypezID(".test.Inner"),
+		)
+	for _, f := range choice.Fields {
+		f.Group = nil
+	}
+	wantFake := api.NewTestMessage("Fake").
+		WithPackage("test").
+		WithDocumentation("A test message.").
+		WithOneOfs(choice).
+		WithFields(
+			api.NewTestField("field_three").
+				WithDocumentation("Optional is oneof in proto").
+				WithType(api.TypezString).
+				WithOptional(),
+			api.NewTestField("field_four").
+				WithDocumentation("A normal field").
+				WithType(api.TypezInt32),
+		)
+	apitest.CheckMessage(t, message, wantFake)
 }
 
 func TestProtobuf_ObjectFields(t *testing.T) {
@@ -659,31 +455,22 @@ func TestProtobuf_ObjectFields(t *testing.T) {
 	if message == nil {
 		t.Fatalf("Cannot find message %s in API State", ".test.Fake")
 	}
-	apitest.CheckMessage(t, message, &api.Message{
-		Name:    "Fake",
-		Package: "test",
-		ID:      ".test.Fake",
-		Fields: []*api.Field{
-			{
-				Repeated: false,
-				Optional: true,
-				Name:     "singular_object",
-				JSONName: "singularObject",
-				ID:       ".test.Fake.singular_object",
-				Typez:    api.TypezMessage,
-				TypezID:  ".test.Other",
-			},
-			{
-				Repeated: true,
-				Optional: false,
-				Name:     "repeated_object",
-				JSONName: "repeatedObject",
-				ID:       ".test.Fake.repeated_object",
-				Typez:    api.TypezMessage,
-				TypezID:  ".test.Other",
-			},
-		},
-	})
+	wantObjectMessage := api.NewTestMessage("Fake").
+		WithPackage("test").
+		WithFields(
+			api.NewTestField("singular_object").
+				WithType(api.TypezMessage).
+				WithTypezID(".test.Other").
+				WithOptional(),
+			api.NewTestField("repeated_object").
+				WithType(api.TypezMessage).
+				WithTypezID(".test.Other").
+				WithRepeated(),
+		)
+	for _, f := range wantObjectMessage.Fields {
+		f.Parent = nil
+	}
+	apitest.CheckMessage(t, message, wantObjectMessage)
 }
 
 func TestProtobuf_WellKnownTypeFields(t *testing.T) {
@@ -696,61 +483,38 @@ func TestProtobuf_WellKnownTypeFields(t *testing.T) {
 	if message == nil {
 		t.Fatalf("Cannot find message %s in API State", ".test.Fake")
 	}
-	apitest.CheckMessage(t, message, &api.Message{
-		Name:    "Fake",
-		Package: "test",
-		ID:      ".test.Fake",
-		Fields: []*api.Field{
-			{
-				Name:     "field_mask",
-				JSONName: "fieldMask",
-				ID:       ".test.Fake.field_mask",
-				Typez:    api.TypezMessage,
-				TypezID:  ".google.protobuf.FieldMask",
-				Optional: true,
-			},
-			{
-				Name:     "timestamp",
-				JSONName: "timestamp",
-				ID:       ".test.Fake.timestamp",
-				Typez:    api.TypezMessage,
-				TypezID:  ".google.protobuf.Timestamp",
-				Optional: true,
-			},
-			{
-				Name:     "any",
-				JSONName: "any",
-				ID:       ".test.Fake.any",
-				Typez:    api.TypezMessage,
-				TypezID:  ".google.protobuf.Any",
-				Optional: true,
-			},
-			{
-				Name:     "repeated_field_mask",
-				JSONName: "repeatedFieldMask",
-				ID:       ".test.Fake.repeated_field_mask",
-				Typez:    api.TypezMessage,
-				TypezID:  ".google.protobuf.FieldMask",
-				Repeated: true,
-			},
-			{
-				Name:     "repeated_timestamp",
-				JSONName: "repeatedTimestamp",
-				ID:       ".test.Fake.repeated_timestamp",
-				Typez:    api.TypezMessage,
-				TypezID:  ".google.protobuf.Timestamp",
-				Repeated: true,
-			},
-			{
-				Name:     "repeated_any",
-				JSONName: "repeatedAny",
-				ID:       ".test.Fake.repeated_any",
-				Typez:    api.TypezMessage,
-				TypezID:  ".google.protobuf.Any",
-				Repeated: true,
-			},
-		},
-	})
+	want := api.NewTestMessage("Fake").
+		WithPackage("test").
+		WithFields(
+			api.NewTestField("field_mask").
+				WithType(api.TypezMessage).
+				WithTypezID(".google.protobuf.FieldMask").
+				WithOptional(),
+			api.NewTestField("timestamp").
+				WithType(api.TypezMessage).
+				WithTypezID(".google.protobuf.Timestamp").
+				WithOptional(),
+			api.NewTestField("any").
+				WithType(api.TypezMessage).
+				WithTypezID(".google.protobuf.Any").
+				WithOptional(),
+			api.NewTestField("repeated_field_mask").
+				WithType(api.TypezMessage).
+				WithTypezID(".google.protobuf.FieldMask").
+				WithRepeated(),
+			api.NewTestField("repeated_timestamp").
+				WithType(api.TypezMessage).
+				WithTypezID(".google.protobuf.Timestamp").
+				WithRepeated(),
+			api.NewTestField("repeated_any").
+				WithType(api.TypezMessage).
+				WithTypezID(".google.protobuf.Any").
+				WithRepeated(),
+		)
+	for _, f := range want.Fields {
+		f.Parent = nil
+	}
+	apitest.CheckMessage(t, message, want)
 }
 
 func TestProtobuf_JsonName(t *testing.T) {
@@ -763,32 +527,22 @@ func TestProtobuf_JsonName(t *testing.T) {
 	if message == nil {
 		t.Fatalf("Cannot find message %s in API State", ".test.Request")
 	}
-	apitest.CheckMessage(t, message, &api.Message{
-		Name:          "Request",
-		Package:       "test",
-		ID:            ".test.Request",
-		Documentation: "A test message.",
-		Fields: []*api.Field{
-			{
-				Name:     "parent",
-				JSONName: "parent",
-				ID:       ".test.Request.parent",
-				Typez:    api.TypezString,
-			},
-			{
-				Name:     "public_key",
-				JSONName: "public_key",
-				ID:       ".test.Request.public_key",
-				Typez:    api.TypezString,
-			},
-			{
-				Name:     "read_time",
-				JSONName: "readTime",
-				ID:       ".test.Request.read_time",
-				Typez:    api.TypezInt32,
-			},
-		},
-	})
+	wantRequest := api.NewTestMessage("Request").
+		WithPackage("test").
+		WithDocumentation("A test message.").
+		WithFields(
+			api.NewTestField("parent").
+				WithType(api.TypezString),
+			api.NewTestField("public_key").
+				WithJSONName("public_key").
+				WithType(api.TypezString),
+			api.NewTestField("read_time").
+				WithType(api.TypezInt32),
+		)
+	for _, f := range wantRequest.Fields {
+		f.Parent = nil
+	}
+	apitest.CheckMessage(t, message, wantRequest)
 }
 
 func TestProtobuf_MapFields(t *testing.T) {
@@ -801,33 +555,22 @@ func TestProtobuf_MapFields(t *testing.T) {
 	if message == nil {
 		t.Fatalf("Cannot find message %s in API State", ".test.Fake")
 	}
-	apitest.CheckMessage(t, message, &api.Message{
-		Name:    "Fake",
-		Package: "test",
-		ID:      ".test.Fake",
-		Fields: []*api.Field{
-			{
-				Repeated: false,
-				Optional: false,
-				Map:      true,
-				Name:     "singular_map",
-				JSONName: "singularMap",
-				ID:       ".test.Fake.singular_map",
-				Typez:    api.TypezMessage,
-				TypezID:  ".test.Fake.SingularMapEntry",
-			},
-			{
-				Repeated: false,
-				Optional: false,
-				Map:      true,
-				Name:     "enum_value",
-				JSONName: "enumValue",
-				ID:       ".test.Fake.enum_value",
-				Typez:    api.TypezMessage,
-				TypezID:  ".test.Fake.EnumValueEntry",
-			},
-		},
-	})
+	want := api.NewTestMessage("Fake").
+		WithPackage("test").
+		WithFields(
+			api.NewTestField("singular_map").
+				WithMap().
+				WithType(api.TypezMessage).
+				WithTypezID(".test.Fake.SingularMapEntry"),
+			api.NewTestField("enum_value").
+				WithMap().
+				WithType(api.TypezMessage).
+				WithTypezID(".test.Fake.EnumValueEntry"),
+		)
+	for _, f := range want.Fields {
+		f.Parent = nil
+	}
+	apitest.CheckMessage(t, message, want)
 
 	if diff := cmp.Diff([]*api.Message(nil), message.Messages); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
@@ -837,60 +580,40 @@ func TestProtobuf_MapFields(t *testing.T) {
 	if message == nil {
 		t.Fatalf("Cannot find message %s in API State", ".test.Fake.SingularMapEntry")
 	}
-	apitest.CheckMessage(t, message, &api.Message{
-		Name:    "SingularMapEntry",
-		Package: "test",
-		ID:      ".test.Fake.SingularMapEntry",
-		IsMap:   true,
-		Fields: []*api.Field{
-			{
-				Repeated: false,
-				Optional: false,
-				Name:     "key",
-				JSONName: "key",
-				ID:       ".test.Fake.SingularMapEntry.key",
-				Typez:    api.TypezString,
-			},
-			{
-				Repeated: false,
-				Optional: false,
-				Name:     "value",
-				JSONName: "value",
-				ID:       ".test.Fake.SingularMapEntry.value",
-				Typez:    api.TypezInt32,
-			},
-		},
-	})
+	wantSingularMapEntry := api.NewTestMessage("SingularMapEntry").
+		WithPackage("test").
+		WithID(".test.Fake.SingularMapEntry").
+		WithFields(
+			api.NewTestField("key").
+				WithType(api.TypezString),
+			api.NewTestField("value").
+				WithType(api.TypezInt32),
+		)
+	wantSingularMapEntry.IsMap = true
+	for _, f := range wantSingularMapEntry.Fields {
+		f.Parent = nil
+	}
+	apitest.CheckMessage(t, message, wantSingularMapEntry)
 
 	message = test.Message(".test.Fake.EnumValueEntry")
 	if message == nil {
 		t.Fatalf("Cannot find message %s in API State", ".test.Fake.EnumValueEntry")
 	}
-	apitest.CheckMessage(t, message, &api.Message{
-		Name:    "EnumValueEntry",
-		Package: "test",
-		ID:      ".test.Fake.EnumValueEntry",
-		IsMap:   true,
-		Fields: []*api.Field{
-			{
-				Repeated: false,
-				Optional: false,
-				Name:     "key",
-				JSONName: "key",
-				ID:       ".test.Fake.EnumValueEntry.key",
-				Typez:    api.TypezString,
-			},
-			{
-				Repeated: false,
-				Optional: false,
-				Name:     "value",
-				JSONName: "value",
-				ID:       ".test.Fake.EnumValueEntry.value",
-				Typez:    api.TypezEnum,
-				TypezID:  ".test.TestEnum",
-			},
-		},
-	})
+	wantEnumValueEntry := api.NewTestMessage("EnumValueEntry").
+		WithPackage("test").
+		WithID(".test.Fake.EnumValueEntry").
+		WithFields(
+			api.NewTestField("key").
+				WithType(api.TypezString),
+			api.NewTestField("value").
+				WithType(api.TypezEnum).
+				WithTypezID(".test.TestEnum"),
+		)
+	wantEnumValueEntry.IsMap = true
+	for _, f := range wantEnumValueEntry.Fields {
+		f.Parent = nil
+	}
+	apitest.CheckMessage(t, message, wantEnumValueEntry)
 }
 
 func TestProtobuf_Service(t *testing.T) {
@@ -903,132 +626,112 @@ func TestProtobuf_Service(t *testing.T) {
 	if service == nil {
 		t.Fatalf("Cannot find service %s in API State", ".test.TestService")
 	}
-	apitest.CheckService(t, service, &api.Service{
-		Name:          "TestService",
-		Package:       "test",
-		ID:            ".test.TestService",
-		Documentation: "A service to unit test the protobuf translator.",
-		DefaultHost:   "test.googleapis.com",
-		Methods: []*api.Method{
-			{
-				Name:            "GetFoo",
-				ID:              ".test.TestService.GetFoo",
-				SourceServiceID: ".test.TestService",
-				Documentation:   "Gets a Foo resource.",
-				InputTypeID:     ".test.GetFooRequest",
-				OutputTypeID:    ".test.Foo",
-				PathInfo: &api.PathInfo{
-					Bindings: []*api.PathBinding{
-						{
-							Verb: "GET",
-							PathTemplate: (&api.PathTemplate{}).
-								WithLiteral("v1").
-								WithVariable(api.NewPathVariable("name").
-									WithLiteral("projects").
-									WithMatch().
-									WithLiteral("foos").
-									WithMatch()),
-							QueryParameters: map[string]bool{}},
-					},
-					BodyFieldPath: "",
-				},
-				Signatures: []*api.MethodSignature{{Names: []string{"name"}}},
-			},
-			{
-				Name:            "CreateFoo",
-				ID:              ".test.TestService.CreateFoo",
-				SourceServiceID: ".test.TestService",
-				Documentation:   "Creates a new Foo resource.",
-				InputTypeID:     ".test.CreateFooRequest",
-				OutputTypeID:    ".test.Foo",
-				PathInfo: &api.PathInfo{
-					Bindings: []*api.PathBinding{
-						{
-							Verb: "POST",
-							PathTemplate: (&api.PathTemplate{}).
-								WithLiteral("v1").
-								WithVariable(api.NewPathVariable("parent").
-									WithLiteral("projects").
-									WithMatch()).
-								WithLiteral("foos"),
-							QueryParameters: map[string]bool{"foo_id": true},
-						},
-					},
-					BodyFieldPath: "foo",
-				},
-				Signatures: []*api.MethodSignature{{Names: []string{"parent", "foo_id", "foo"}}},
-			},
-			{
-				Name:            "DeleteFoo",
-				ID:              ".test.TestService.DeleteFoo",
-				SourceServiceID: ".test.TestService",
-				Documentation:   "Deletes a Foo resource.",
-				InputTypeID:     ".test.DeleteFooRequest",
-				OutputTypeID:    ".google.protobuf.Empty",
-				PathInfo: &api.PathInfo{
-					Bindings: []*api.PathBinding{
-						{
-							Verb: "DELETE",
-							PathTemplate: (&api.PathTemplate{}).
-								WithLiteral("v1").
-								WithVariable(api.NewPathVariable("name").
-									WithLiteral("projects").
-									WithMatch().
-									WithLiteral("foos").
-									WithMatch()),
-							QueryParameters: map[string]bool{}},
-					},
-				},
-				ReturnsEmpty: true,
-			},
-			{
-				Name:                "UploadFoos",
-				ID:                  ".test.TestService.UploadFoos",
-				SourceServiceID:     ".test.TestService",
-				Documentation:       "A client-side streaming RPC.",
-				InputTypeID:         ".test.CreateFooRequest",
-				OutputTypeID:        ".test.Foo",
-				PathInfo:            &api.PathInfo{},
-				ClientSideStreaming: true,
-			},
-			{
-				Name:            "DownloadFoos",
-				ID:              ".test.TestService.DownloadFoos",
-				SourceServiceID: ".test.TestService",
-				Documentation:   "A server-side streaming RPC.",
-				InputTypeID:     ".test.GetFooRequest",
-				OutputTypeID:    ".test.Foo",
-				PathInfo: &api.PathInfo{
-					Bindings: []*api.PathBinding{
-						{
-							Verb: "GET",
-							PathTemplate: (&api.PathTemplate{}).
-								WithLiteral("v1").
-								WithVariable(api.NewPathVariable("name").
-									WithLiteral("projects").
-									WithMatch().
-									WithLiteral("foos").
-									WithMatch()).
-								WithVerb("Download"),
-							QueryParameters: map[string]bool{}},
-					},
-					BodyFieldPath: "",
-				},
-				ServerSideStreaming: true,
-			},
-			{
-				Name:                "ChatLike",
-				ID:                  ".test.TestService.ChatLike",
-				SourceServiceID:     ".test.TestService",
-				Documentation:       "A bidi streaming RPC.",
-				InputTypeID:         ".test.Foo",
-				OutputTypeID:        ".test.Foo",
-				PathInfo:            &api.PathInfo{},
-				ClientSideStreaming: true,
-				ServerSideStreaming: true,
-			},
-		},
-	})
+	getFoo := api.NewTestMethod("GetFoo").
+		WithID(".test.TestService.GetFoo").
+		WithDocumentation("Gets a Foo resource.").
+		WithVerb("GET").
+		WithPathTemplate(
+			(&api.PathTemplate{}).
+				WithLiteral("v1").
+				WithVariable(api.NewPathVariable("name").
+					WithLiteral("projects").
+					WithMatch().
+					WithLiteral("foos").
+					WithMatch()),
+		).
+		WithQueryParameters(map[string]bool{})
+	getFoo.SourceServiceID = ".test.TestService"
+	getFoo.InputTypeID = ".test.GetFooRequest"
+	getFoo.OutputTypeID = ".test.Foo"
+	getFoo.PathInfo.BodyFieldPath = ""
+	getFoo.Signatures = []*api.MethodSignature{{Names: []string{"name"}}}
+
+	createFoo := api.NewTestMethod("CreateFoo").
+		WithID(".test.TestService.CreateFoo").
+		WithDocumentation("Creates a new Foo resource.").
+		WithVerb("POST").
+		WithPathTemplate(
+			(&api.PathTemplate{}).
+				WithLiteral("v1").
+				WithVariable(api.NewPathVariable("parent").
+					WithLiteral("projects").
+					WithMatch()).
+				WithLiteral("foos"),
+		).
+		WithQueryParameters(map[string]bool{"foo_id": true}).
+		WithBodyFieldPath("foo")
+	createFoo.SourceServiceID = ".test.TestService"
+	createFoo.InputTypeID = ".test.CreateFooRequest"
+	createFoo.OutputTypeID = ".test.Foo"
+	createFoo.Signatures = []*api.MethodSignature{{Names: []string{"parent", "foo_id", "foo"}}}
+
+	deleteFoo := api.NewTestMethod("DeleteFoo").
+		WithID(".test.TestService.DeleteFoo").
+		WithDocumentation("Deletes a Foo resource.").
+		WithVerb("DELETE").
+		WithPathTemplate(
+			(&api.PathTemplate{}).
+				WithLiteral("v1").
+				WithVariable(api.NewPathVariable("name").
+					WithLiteral("projects").
+					WithMatch().
+					WithLiteral("foos").
+					WithMatch()),
+		).
+		WithQueryParameters(map[string]bool{}).
+		ReturnEmpty()
+	deleteFoo.SourceServiceID = ".test.TestService"
+	deleteFoo.InputTypeID = ".test.DeleteFooRequest"
+	deleteFoo.OutputTypeID = ".google.protobuf.Empty"
+
+	uploadFoos := api.NewTestMethod("UploadFoos").
+		WithID(".test.TestService.UploadFoos").
+		WithDocumentation("A client-side streaming RPC.").
+		WithClientSideStreaming()
+	uploadFoos.SourceServiceID = ".test.TestService"
+	uploadFoos.InputTypeID = ".test.CreateFooRequest"
+	uploadFoos.OutputTypeID = ".test.Foo"
+	uploadFoos.PathInfo = &api.PathInfo{}
+
+	downloadFoos := api.NewTestMethod("DownloadFoos").
+		WithID(".test.TestService.DownloadFoos").
+		WithDocumentation("A server-side streaming RPC.").
+		WithVerb("GET").
+		WithPathTemplate(
+			(&api.PathTemplate{}).
+				WithLiteral("v1").
+				WithVariable(api.NewPathVariable("name").
+					WithLiteral("projects").
+					WithMatch().
+					WithLiteral("foos").
+					WithMatch()).
+				WithVerb("Download"),
+		).
+		WithQueryParameters(map[string]bool{}).
+		WithServerSideStreaming()
+	downloadFoos.SourceServiceID = ".test.TestService"
+	downloadFoos.InputTypeID = ".test.GetFooRequest"
+	downloadFoos.OutputTypeID = ".test.Foo"
+	downloadFoos.PathInfo.BodyFieldPath = ""
+
+	chatLike := api.NewTestMethod("ChatLike").
+		WithID(".test.TestService.ChatLike").
+		WithDocumentation("A bidi streaming RPC.").
+		WithBidiStreaming()
+	chatLike.SourceServiceID = ".test.TestService"
+	chatLike.InputTypeID = ".test.Foo"
+	chatLike.OutputTypeID = ".test.Foo"
+	chatLike.PathInfo = &api.PathInfo{}
+
+	wantService := api.NewTestService("TestService").
+		WithPackage("test").
+		WithDocumentation("A service to unit test the protobuf translator.").
+		WithDefaultHost("test.googleapis.com").
+		WithMethods(getFoo, createFoo, deleteFoo, uploadFoos, downloadFoos, chatLike)
+	for _, m := range wantService.Methods {
+		m.Service = nil
+	}
+	apitest.CheckService(t, service, wantService)
 }
 
 func TestProtobuf_QueryParameters(t *testing.T) {
@@ -1041,65 +744,55 @@ func TestProtobuf_QueryParameters(t *testing.T) {
 	if service == nil {
 		t.Fatalf("Cannot find service %s in API State", ".test.TestService")
 	}
-	apitest.CheckService(t, service, &api.Service{
-		Name:          "TestService",
-		Package:       "test",
-		ID:            ".test.TestService",
-		Documentation: "A service to unit test the protobuf translator.",
-		DefaultHost:   "test.googleapis.com",
-		Methods: []*api.Method{
-			{
-				Name:            "CreateFoo",
-				ID:              ".test.TestService.CreateFoo",
-				SourceServiceID: ".test.TestService",
-				Documentation:   "Creates a new `Foo` resource. `Foo`s are containers for `Bar`s.\n\nShows how a `body: \"${field}\"` option works.",
-				InputTypeID:     ".test.CreateFooRequest",
-				OutputTypeID:    ".test.Foo",
-				PathInfo: &api.PathInfo{
-					Bindings: []*api.PathBinding{
-						{
-							Verb: "POST",
-							PathTemplate: (&api.PathTemplate{}).
-								WithLiteral("v1").
-								WithVariable(api.NewPathVariable("parent").
-									WithLiteral("projects").
-									WithMatch()).
-								WithLiteral("foos"),
-							QueryParameters: map[string]bool{"foo_id": true},
-						},
-					},
-					BodyFieldPath: "bar",
-				},
-				Signatures: []*api.MethodSignature{{Names: []string{"parent", "foo_id", "bar"}}},
-			},
-			{
-				Name:            "AddBar",
-				ID:              ".test.TestService.AddBar",
-				SourceServiceID: ".test.TestService",
-				Documentation:   "Add a Bar resource.\n\nShows how a `body: \"*\"` option works.",
-				InputTypeID:     ".test.AddBarRequest",
-				OutputTypeID:    ".test.Bar",
-				PathInfo: &api.PathInfo{
-					Bindings: []*api.PathBinding{
-						{
-							Verb: "POST",
-							PathTemplate: (&api.PathTemplate{}).
-								WithLiteral("v1").
-								WithVariable(api.NewPathVariable("parent").
-									WithLiteral("projects").
-									WithMatch().
-									WithLiteral("foos").
-									WithMatch()).
-								WithVerb("addFoo"),
-							QueryParameters: map[string]bool{},
-						},
-					},
-					BodyFieldPath: "*",
-				},
-				Signatures: []*api.MethodSignature{{Names: []string{"parent", "payload"}}},
-			},
-		},
-	})
+	createFoo := api.NewTestMethod("CreateFoo").
+		WithID(".test.TestService.CreateFoo").
+		WithDocumentation("Creates a new `Foo` resource. `Foo`s are containers for `Bar`s.\n\nShows how a `body: \"${field}\"` option works.").
+		WithVerb("POST").
+		WithPathTemplate(
+			(&api.PathTemplate{}).
+				WithLiteral("v1").
+				WithVariable(api.NewPathVariable("parent").
+					WithLiteral("projects").
+					WithMatch()).
+				WithLiteral("foos"),
+		).
+		WithQueryParameters(map[string]bool{"foo_id": true}).
+		WithBodyFieldPath("bar")
+	createFoo.SourceServiceID = ".test.TestService"
+	createFoo.InputTypeID = ".test.CreateFooRequest"
+	createFoo.OutputTypeID = ".test.Foo"
+	createFoo.Signatures = []*api.MethodSignature{{Names: []string{"parent", "foo_id", "bar"}}}
+
+	addBar := api.NewTestMethod("AddBar").
+		WithID(".test.TestService.AddBar").
+		WithDocumentation("Add a Bar resource.\n\nShows how a `body: \"*\"` option works.").
+		WithVerb("POST").
+		WithPathTemplate(
+			(&api.PathTemplate{}).
+				WithLiteral("v1").
+				WithVariable(api.NewPathVariable("parent").
+					WithLiteral("projects").
+					WithMatch().
+					WithLiteral("foos").
+					WithMatch()).
+				WithVerb("addFoo"),
+		).
+		WithQueryParameters(map[string]bool{}).
+		WithBodyFieldPath("*")
+	addBar.SourceServiceID = ".test.TestService"
+	addBar.InputTypeID = ".test.AddBarRequest"
+	addBar.OutputTypeID = ".test.Bar"
+	addBar.Signatures = []*api.MethodSignature{{Names: []string{"parent", "payload"}}}
+
+	wantService := api.NewTestService("TestService").
+		WithPackage("test").
+		WithDocumentation("A service to unit test the protobuf translator.").
+		WithDefaultHost("test.googleapis.com").
+		WithMethods(createFoo, addBar)
+	for _, m := range wantService.Methods {
+		m.Service = nil
+	}
+	apitest.CheckService(t, service, wantService)
 }
 
 func TestProtobuf_Enum(t *testing.T) {
@@ -1112,24 +805,19 @@ func TestProtobuf_Enum(t *testing.T) {
 	if e == nil {
 		t.Fatalf("Cannot find enum %s in API State", ".test.Code")
 	}
-	apitest.CheckEnum(t, *e, api.Enum{
-		Name:          "Code",
-		ID:            ".test.Code",
-		Package:       "test",
-		Documentation: "An enum.",
-		Values: []*api.EnumValue{
-			{
-				Name:          "OK",
-				Documentation: "Not an error; returned on success.",
-				Number:        0,
-			},
-			{
-				Name:          "UNKNOWN",
-				Documentation: "Unknown error.",
-				Number:        1,
-			},
-		},
-	})
+	wantEnum := api.NewTestEnum("Code").
+		WithPackage("test").
+		WithDocumentation("An enum.").
+		WithValues(
+			api.NewTestEnumValue("OK", 0).
+				WithDocumentation("Not an error; returned on success."),
+			api.NewTestEnumValue("UNKNOWN", 1).
+				WithDocumentation("Unknown error."),
+		)
+	for _, v := range wantEnum.Values {
+		v.ID = ""
+	}
+	apitest.CheckEnum(t, *e, *wantEnum)
 }
 
 func TestProtobuf_TrimLeadingSpacesInDocumentation(t *testing.T) {
@@ -1155,6 +843,36 @@ func TestProtobuf_TrimLeadingSpacesInDocumentation(t *testing.T) {
 	}
 }
 
+func newTestPaginationMethod(name, inputType string, queryParams map[string]bool, pageTokenReq string) *api.Method {
+	m := api.NewTestMethod(name).
+		WithID(".test.TestService." + name).
+		WithVerb("GET").
+		WithPathTemplate(
+			(&api.PathTemplate{}).
+				WithLiteral("v1").
+				WithVariable(api.NewPathVariable("parent").
+					WithLiteral("projects").
+					WithMatch()).
+				WithLiteral("foos"),
+		).
+		WithQueryParameters(queryParams)
+	m.SourceServiceID = ".test.TestService"
+	m.InputTypeID = ".test." + inputType
+	m.OutputTypeID = ".test.ListFooResponse"
+	m.Signatures = []*api.MethodSignature{{Names: []string{"parent"}}}
+	if pageTokenReq != "" {
+		m.WithPagination(
+			api.NewTestField("page_token").
+				WithJSONName("pageToken").
+				WithType(api.TypezString).
+				WithBehavior(api.FieldBehaviorOptional),
+		)
+		m.Pagination.ID = fmt.Sprintf(".test.%s.page_token", pageTokenReq)
+		m.IsList = false
+	}
+	return m
+}
+
 func TestProtobuf_Pagination(t *testing.T) {
 	requireProtoc(t)
 	test, err := makeAPIForProtobuf(nil, newTestCodeGeneratorRequest(t, "pagination.proto"))
@@ -1166,318 +884,54 @@ func TestProtobuf_Pagination(t *testing.T) {
 	if service == nil {
 		t.Fatalf("Cannot find service %s in API State", ".test.TestService")
 	}
-	apitest.CheckService(t, service, &api.Service{
-		Name:        "TestService",
-		ID:          ".test.TestService",
-		DefaultHost: "test.googleapis.com",
-		Package:     "test",
-		Methods: []*api.Method{
-			{
-				Name:            "ListFoo",
-				ID:              ".test.TestService.ListFoo",
-				SourceServiceID: ".test.TestService",
-				InputTypeID:     ".test.ListFooRequest",
-				OutputTypeID:    ".test.ListFooResponse",
-				PathInfo: &api.PathInfo{
-					Bindings: []*api.PathBinding{
-						{
-							Verb: "GET",
-							PathTemplate: (&api.PathTemplate{}).
-								WithLiteral("v1").
-								WithVariable(api.NewPathVariable("parent").
-									WithLiteral("projects").
-									WithMatch()).
-								WithLiteral("foos"),
-							QueryParameters: map[string]bool{"page_size": true, "page_token": true},
-						},
-					},
-				},
-				Pagination: &api.Field{
-					Name:     "page_token",
-					ID:       ".test.ListFooRequest.page_token",
-					Typez:    9,
-					JSONName: "pageToken",
-					Behavior: []api.FieldBehavior{api.FieldBehaviorOptional},
-				},
-				Signatures: []*api.MethodSignature{{Names: []string{"parent"}}},
-			},
-			{
-				Name:            "ListFooWithMaxResultsInt32",
-				ID:              ".test.TestService.ListFooWithMaxResultsInt32",
-				SourceServiceID: ".test.TestService",
-				InputTypeID:     ".test.ListFooMaxResultsInt32Request",
-				OutputTypeID:    ".test.ListFooResponse",
-				PathInfo: &api.PathInfo{
-					Bindings: []*api.PathBinding{
-						{
-							Verb: "GET",
-							PathTemplate: (&api.PathTemplate{}).
-								WithLiteral("v1").
-								WithVariable(api.NewPathVariable("parent").
-									WithLiteral("projects").
-									WithMatch()).
-								WithLiteral("foos"),
-							QueryParameters: map[string]bool{"max_results": true, "page_token": true},
-						},
-					},
-				},
-				Pagination: &api.Field{
-					Name:     "page_token",
-					ID:       ".test.ListFooMaxResultsInt32Request.page_token",
-					Typez:    9,
-					JSONName: "pageToken",
-					Behavior: []api.FieldBehavior{api.FieldBehaviorOptional},
-				},
-				Signatures: []*api.MethodSignature{{Names: []string{"parent"}}},
-			},
-			{
-				Name:            "ListFooWithMaxResultsUInt32",
-				ID:              ".test.TestService.ListFooWithMaxResultsUInt32",
-				SourceServiceID: ".test.TestService",
-				InputTypeID:     ".test.ListFooMaxResultsUInt32Request",
-				OutputTypeID:    ".test.ListFooResponse",
-				PathInfo: &api.PathInfo{
-					Bindings: []*api.PathBinding{
-						{
-							Verb: "GET",
-							PathTemplate: (&api.PathTemplate{}).
-								WithLiteral("v1").
-								WithVariable(api.NewPathVariable("parent").
-									WithLiteral("projects").
-									WithMatch()).
-								WithLiteral("foos"),
-							QueryParameters: map[string]bool{"max_results": true, "page_token": true},
-						},
-					},
-				},
-				Pagination: &api.Field{
-					Name:     "page_token",
-					ID:       ".test.ListFooMaxResultsUInt32Request.page_token",
-					Typez:    9,
-					JSONName: "pageToken",
-					Behavior: []api.FieldBehavior{api.FieldBehaviorOptional},
-				},
-				Signatures: []*api.MethodSignature{{Names: []string{"parent"}}},
-			},
-			{
-				Name:            "ListFooWithMaxResultsUInt32Value",
-				ID:              ".test.TestService.ListFooWithMaxResultsUInt32Value",
-				SourceServiceID: ".test.TestService",
-				InputTypeID:     ".test.ListFooMaxResultsUInt32ValueRequest",
-				OutputTypeID:    ".test.ListFooResponse",
-				PathInfo: &api.PathInfo{
-					Bindings: []*api.PathBinding{
-						{
-							Verb: "GET",
-							PathTemplate: (&api.PathTemplate{}).
-								WithLiteral("v1").
-								WithVariable(api.NewPathVariable("parent").
-									WithLiteral("projects").
-									WithMatch()).
-								WithLiteral("foos"),
-							QueryParameters: map[string]bool{"max_results": true, "page_token": true},
-						},
-					},
-				},
-				Pagination: &api.Field{
-					Name:     "page_token",
-					ID:       ".test.ListFooMaxResultsUInt32ValueRequest.page_token",
-					Typez:    9,
-					JSONName: "pageToken",
-					Behavior: []api.FieldBehavior{api.FieldBehaviorOptional},
-				},
-				Signatures: []*api.MethodSignature{{Names: []string{"parent"}}},
-			},
-			{
-				Name:            "ListFooWithMaxResultsInt32Value",
-				ID:              ".test.TestService.ListFooWithMaxResultsInt32Value",
-				SourceServiceID: ".test.TestService",
-				InputTypeID:     ".test.ListFooMaxResultsInt32ValueRequest",
-				OutputTypeID:    ".test.ListFooResponse",
-				PathInfo: &api.PathInfo{
-					Bindings: []*api.PathBinding{
-						{
-							Verb: "GET",
-							PathTemplate: (&api.PathTemplate{}).
-								WithLiteral("v1").
-								WithVariable(api.NewPathVariable("parent").
-									WithLiteral("projects").
-									WithMatch()).
-								WithLiteral("foos"),
-							QueryParameters: map[string]bool{"max_results": true, "page_token": true},
-						},
-					},
-				},
-				Pagination: &api.Field{
-					Name:     "page_token",
-					ID:       ".test.ListFooMaxResultsInt32ValueRequest.page_token",
-					Typez:    9,
-					JSONName: "pageToken",
-					Behavior: []api.FieldBehavior{api.FieldBehaviorOptional},
-				},
-				Signatures: []*api.MethodSignature{{Names: []string{"parent"}}},
-			},
-			{
-				Name:            "ListFooWithMaxResultsIncorrectMessageType",
-				ID:              ".test.TestService.ListFooWithMaxResultsIncorrectMessageType",
-				SourceServiceID: ".test.TestService",
-				InputTypeID:     ".test.ListFooMaxResultIncorrectMessageTypeRequest",
-				OutputTypeID:    ".test.ListFooResponse",
-				PathInfo: &api.PathInfo{
-					Bindings: []*api.PathBinding{
-						{
-							Verb: "GET",
-							PathTemplate: (&api.PathTemplate{}).
-								WithLiteral("v1").
-								WithVariable(api.NewPathVariable("parent").
-									WithLiteral("projects").
-									WithMatch()).
-								WithLiteral("foos"),
-							QueryParameters: map[string]bool{"max_results": true, "page_token": true},
-						},
-					},
-				},
-				Signatures: []*api.MethodSignature{{Names: []string{"parent"}}},
-			},
-			{
-				Name:            "ListFooMissingNextPageToken",
-				ID:              ".test.TestService.ListFooMissingNextPageToken",
-				SourceServiceID: ".test.TestService",
-				InputTypeID:     ".test.ListFooRequest",
-				OutputTypeID:    ".test.ListFooMissingNextPageTokenResponse",
-				PathInfo: &api.PathInfo{
-					Bindings: []*api.PathBinding{
-						{
-							Verb: "GET",
-							PathTemplate: (&api.PathTemplate{}).
-								WithLiteral("v1").
-								WithVariable(api.NewPathVariable("parent").
-									WithLiteral("projects").
-									WithMatch()).
-								WithLiteral("foos"),
-							QueryParameters: map[string]bool{"page_size": true, "page_token": true},
-						},
-					},
-				},
-				Signatures: []*api.MethodSignature{{Names: []string{"parent"}}},
-			},
-			{
-				Name:            "ListFooMissingPageSize",
-				ID:              ".test.TestService.ListFooMissingPageSize",
-				SourceServiceID: ".test.TestService",
-				InputTypeID:     ".test.ListFooMissingPageSizeRequest",
-				OutputTypeID:    ".test.ListFooResponse",
-				PathInfo: &api.PathInfo{
-					Bindings: []*api.PathBinding{
-						{
-							Verb: "GET",
-							PathTemplate: (&api.PathTemplate{}).
-								WithLiteral("v1").
-								WithVariable(api.NewPathVariable("parent").
-									WithLiteral("projects").
-									WithMatch()).
-								WithLiteral("foos"),
-							QueryParameters: map[string]bool{"page_token": true},
-						},
-					},
-				},
-				Signatures: []*api.MethodSignature{{Names: []string{"parent"}}},
-			},
-			{
-				Name:            "ListFooMissingPageToken",
-				ID:              ".test.TestService.ListFooMissingPageToken",
-				SourceServiceID: ".test.TestService",
-				InputTypeID:     ".test.ListFooMissingPageTokenRequest",
-				OutputTypeID:    ".test.ListFooResponse",
-				PathInfo: &api.PathInfo{
-					Bindings: []*api.PathBinding{
-						{
-							Verb: "GET",
-							PathTemplate: (&api.PathTemplate{}).
-								WithLiteral("v1").
-								WithVariable(api.NewPathVariable("parent").
-									WithLiteral("projects").
-									WithMatch()).
-								WithLiteral("foos"),
-							QueryParameters: map[string]bool{"page_size": true},
-						},
-					},
-				},
-				Signatures: []*api.MethodSignature{{Names: []string{"parent"}}},
-			},
-			{
-				Name:            "ListFooMissingRepeatedItemToken",
-				ID:              ".test.TestService.ListFooMissingRepeatedItemToken",
-				SourceServiceID: ".test.TestService",
-				InputTypeID:     ".test.ListFooRequest",
-				OutputTypeID:    ".test.ListFooMissingRepeatedItemResponse",
-				PathInfo: &api.PathInfo{
-					Bindings: []*api.PathBinding{
-						{
-							Verb: "GET",
-							PathTemplate: (&api.PathTemplate{}).
-								WithLiteral("v1").
-								WithVariable(api.NewPathVariable("parent").
-									WithLiteral("projects").
-									WithMatch()).
-								WithLiteral("foos"),
-							QueryParameters: map[string]bool{"page_size": true, "page_token": true},
-						},
-					},
-				},
-				Signatures: []*api.MethodSignature{{Names: []string{"parent"}}},
-			},
-		},
-	})
+	missingNextPageToken := newTestPaginationMethod("ListFooMissingNextPageToken", "ListFooRequest", map[string]bool{"page_size": true, "page_token": true}, "")
+	missingNextPageToken.OutputTypeID = ".test.ListFooMissingNextPageTokenResponse"
+
+	missingRepeatedItem := newTestPaginationMethod("ListFooMissingRepeatedItemToken", "ListFooRequest", map[string]bool{"page_size": true, "page_token": true}, "")
+	missingRepeatedItem.OutputTypeID = ".test.ListFooMissingRepeatedItemResponse"
+
+	wantService := api.NewTestService("TestService").
+		WithPackage("test").
+		WithDefaultHost("test.googleapis.com").
+		WithMethods(
+			newTestPaginationMethod("ListFoo", "ListFooRequest", map[string]bool{"page_size": true, "page_token": true}, "ListFooRequest"),
+			newTestPaginationMethod("ListFooWithMaxResultsInt32", "ListFooMaxResultsInt32Request", map[string]bool{"max_results": true, "page_token": true}, "ListFooMaxResultsInt32Request"),
+			newTestPaginationMethod("ListFooWithMaxResultsUInt32", "ListFooMaxResultsUInt32Request", map[string]bool{"max_results": true, "page_token": true}, "ListFooMaxResultsUInt32Request"),
+			newTestPaginationMethod("ListFooWithMaxResultsUInt32Value", "ListFooMaxResultsUInt32ValueRequest", map[string]bool{"max_results": true, "page_token": true}, "ListFooMaxResultsUInt32ValueRequest"),
+			newTestPaginationMethod("ListFooWithMaxResultsInt32Value", "ListFooMaxResultsInt32ValueRequest", map[string]bool{"max_results": true, "page_token": true}, "ListFooMaxResultsInt32ValueRequest"),
+			newTestPaginationMethod("ListFooWithMaxResultsIncorrectMessageType", "ListFooMaxResultIncorrectMessageTypeRequest", map[string]bool{"max_results": true, "page_token": true}, ""),
+			missingNextPageToken,
+			newTestPaginationMethod("ListFooMissingPageSize", "ListFooMissingPageSizeRequest", map[string]bool{"page_token": true}, ""),
+			newTestPaginationMethod("ListFooMissingPageToken", "ListFooMissingPageTokenRequest", map[string]bool{"page_size": true}, ""),
+			missingRepeatedItem,
+		)
+	for _, m := range wantService.Methods {
+		m.Service = nil
+	}
+	apitest.CheckService(t, service, wantService)
 
 	resp := test.Message(".test.ListFooResponse")
 	if resp == nil {
 		t.Errorf("missing message (ListFooResponse) in MessageByID index")
 		return
 	}
-	apitest.CheckMessage(t, resp, &api.Message{
-		Name:    "ListFooResponse",
-		ID:      ".test.ListFooResponse",
-		Package: "test",
-		Fields: []*api.Field{
-			{
-				Name:     "next_page_token",
-				ID:       ".test.ListFooResponse.next_page_token",
-				Typez:    9,
-				JSONName: "nextPageToken",
-			},
-			{
-				Name:     "foos",
-				ID:       ".test.ListFooResponse.foos",
-				Typez:    11,
-				TypezID:  ".test.Foo",
-				JSONName: "foos",
-				Repeated: true,
-			},
-			{
-				Name:     "total_size",
-				ID:       ".test.ListFooResponse.total_size",
-				Typez:    5,
-				JSONName: "totalSize",
-			},
-		},
-		Pagination: &api.PaginationInfo{
-			NextPageToken: &api.Field{
-				Name:     "next_page_token",
-				ID:       ".test.ListFooResponse.next_page_token",
-				Typez:    9,
-				JSONName: "nextPageToken",
-			},
-			PageableItem: &api.Field{
-				Name:     "foos",
-				ID:       ".test.ListFooResponse.foos",
-				Typez:    11,
-				TypezID:  ".test.Foo",
-				JSONName: "foos",
-				Repeated: true,
-			},
-		},
-	})
+	nextPageToken := api.NewTestField("next_page_token").
+		WithType(api.TypezString)
+	foos := api.NewTestField("foos").
+		WithType(api.TypezMessage).
+		WithTypezID(".test.Foo").
+		WithRepeated()
+	wantResp := api.NewTestMessage("ListFooResponse").
+		WithPackage("test").
+		WithFields(
+			api.NewTestField("total_size").
+				WithType(api.TypezInt32),
+		).
+		WithPagination(nextPageToken, foos)
+	for _, f := range wantResp.Fields {
+		f.Parent = nil
+	}
+	apitest.CheckMessage(t, resp, wantResp)
 }
 
 func TestProtobuf_OperationInfo(t *testing.T) {
@@ -1523,89 +977,79 @@ func TestProtobuf_OperationInfo(t *testing.T) {
 	if service == nil {
 		t.Fatalf("Cannot find service %s in API State", ".test.LroService")
 	}
-	apitest.CheckService(t, service, &api.Service{
-		Documentation: "A service to unit test the protobuf translator.",
-		DefaultHost:   "test.googleapis.com",
-		Name:          "LroService",
-		ID:            ".test.LroService",
-		Package:       "test",
-		Methods: []*api.Method{
-			{
-				Documentation:   "Creates a new Foo resource.",
-				Name:            "CreateFoo",
-				ID:              ".test.LroService.CreateFoo",
-				SourceServiceID: ".test.LroService",
-				InputTypeID:     ".test.CreateFooRequest",
-				OutputTypeID:    ".google.longrunning.Operation",
-				PathInfo: &api.PathInfo{
-					Bindings: []*api.PathBinding{
-						{
-							Verb: "POST",
-							PathTemplate: (&api.PathTemplate{}).
-								WithLiteral("v1").
-								WithVariable(api.NewPathVariable("parent").
-									WithLiteral("projects").
-									WithMatch()).
-								WithLiteral("foos"),
-							QueryParameters: map[string]bool{}},
-					},
-					BodyFieldPath: "foo",
-				},
-				OperationInfo: &api.OperationInfo{
-					MetadataTypeID: ".google.protobuf.Empty",
-					ResponseTypeID: ".test.Foo",
-				},
-			},
-			{
-				Documentation:   "Creates a new Foo resource.",
-				Name:            "CreateFooWithProgress",
-				ID:              ".test.LroService.CreateFooWithProgress",
-				SourceServiceID: ".test.LroService",
-				InputTypeID:     ".test.CreateFooRequest",
-				OutputTypeID:    ".google.longrunning.Operation",
-				PathInfo: &api.PathInfo{
-					Bindings: []*api.PathBinding{
-						{
-							Verb: "POST",
-							PathTemplate: (&api.PathTemplate{}).
-								WithLiteral("v1").
-								WithVariable(api.NewPathVariable("parent").
-									WithLiteral("projects").
-									WithMatch()).
-								WithLiteral("foos"),
-							QueryParameters: map[string]bool{}},
-					},
-					BodyFieldPath: "foo",
-				},
-				OperationInfo: &api.OperationInfo{
-					MetadataTypeID: ".test.CreateMetadata",
-					ResponseTypeID: ".test.Foo",
-				},
-			},
-			{
-				Documentation:   "Custom docs.",
-				Name:            "GetOperation",
-				ID:              ".test.LroService.GetOperation",
-				SourceServiceID: ".google.longrunning.Operations",
-				InputTypeID:     ".google.longrunning.GetOperationRequest",
-				OutputTypeID:    ".google.longrunning.Operation",
-				PathInfo: &api.PathInfo{
-					Bindings: []*api.PathBinding{
-						{
-							Verb: "GET",
-							PathTemplate: (&api.PathTemplate{}).
-								WithLiteral("v2").
-								WithVariable(api.NewPathVariable("name").
-									WithLiteral("operations").
-									WithMatch()),
-							QueryParameters: map[string]bool{}},
-					},
-					BodyFieldPath: "*",
-				},
-				Signatures: []*api.MethodSignature{{Names: []string{"name"}}},
-			},
-		},
-	})
+	createFoo := api.NewTestMethod("CreateFoo").
+		WithID(".test.LroService.CreateFoo").
+		WithDocumentation("Creates a new Foo resource.").
+		WithVerb("POST").
+		WithPathTemplate(
+			(&api.PathTemplate{}).
+				WithLiteral("v1").
+				WithVariable(api.NewPathVariable("parent").
+					WithLiteral("projects").
+					WithMatch()).
+				WithLiteral("foos"),
+		).
+		WithQueryParameters(map[string]bool{}).
+		WithBodyFieldPath("foo").
+		WithOperationInfo(&api.OperationInfo{
+			MetadataTypeID: ".google.protobuf.Empty",
+			ResponseTypeID: ".test.Foo",
+		})
+	createFoo.SourceServiceID = ".test.LroService"
+	createFoo.InputTypeID = ".test.CreateFooRequest"
+	createFoo.OutputTypeID = ".google.longrunning.Operation"
+	createFoo.IsLRO = false
+
+	createFooWithProgress := api.NewTestMethod("CreateFooWithProgress").
+		WithID(".test.LroService.CreateFooWithProgress").
+		WithDocumentation("Creates a new Foo resource.").
+		WithVerb("POST").
+		WithPathTemplate(
+			(&api.PathTemplate{}).
+				WithLiteral("v1").
+				WithVariable(api.NewPathVariable("parent").
+					WithLiteral("projects").
+					WithMatch()).
+				WithLiteral("foos"),
+		).
+		WithQueryParameters(map[string]bool{}).
+		WithBodyFieldPath("foo").
+		WithOperationInfo(&api.OperationInfo{
+			MetadataTypeID: ".test.CreateMetadata",
+			ResponseTypeID: ".test.Foo",
+		})
+	createFooWithProgress.SourceServiceID = ".test.LroService"
+	createFooWithProgress.InputTypeID = ".test.CreateFooRequest"
+	createFooWithProgress.OutputTypeID = ".google.longrunning.Operation"
+	createFooWithProgress.IsLRO = false
+
+	getOperation := api.NewTestMethod("GetOperation").
+		WithID(".test.LroService.GetOperation").
+		WithDocumentation("Custom docs.").
+		WithVerb("GET").
+		WithPathTemplate(
+			(&api.PathTemplate{}).
+				WithLiteral("v2").
+				WithVariable(api.NewPathVariable("name").
+					WithLiteral("operations").
+					WithMatch()),
+		).
+		WithQueryParameters(map[string]bool{}).
+		WithBodyFieldPath("*")
+	getOperation.SourceServiceID = ".google.longrunning.Operations"
+	getOperation.InputTypeID = ".google.longrunning.GetOperationRequest"
+	getOperation.OutputTypeID = ".google.longrunning.Operation"
+	getOperation.Signatures = []*api.MethodSignature{{Names: []string{"name"}}}
+
+	wantService := api.NewTestService("LroService").
+		WithPackage("test").
+		WithDocumentation("A service to unit test the protobuf translator.").
+		WithDefaultHost("test.googleapis.com").
+		WithMethods(createFoo, createFooWithProgress, getOperation)
+	for _, m := range wantService.Methods {
+		m.Service = nil
+	}
+	apitest.CheckService(t, service, wantService)
 }
 
 func TestProtobuf_AutoPopulated(t *testing.T) {
@@ -1656,123 +1100,71 @@ func TestProtobuf_AutoPopulated(t *testing.T) {
 	if message == nil {
 		t.Fatalf("Cannot find message %s in API State", ".test.CreateFooRequest")
 	}
-	request_id := &api.Field{
-		Name:     "request_id",
-		JSONName: "requestId",
-		ID:       ".test.CreateFooRequest.request_id",
-		Documentation: "This is an auto-populated field. The remaining fields almost meet the\n" +
+	requestID := api.NewTestField("request_id").
+		WithDocumentation("This is an auto-populated field. The remaining fields almost meet the\n" +
 			"requirements to be auto-populated, but fail for the reasons implied by\n" +
-			"their name.",
-		Typez:         api.TypezString,
-		AutoPopulated: true,
+			"their name.").
+		WithType(api.TypezString).
+		WithAutoPopulated()
+	requestIDOptional := api.NewTestField("request_id_optional").
+		WithType(api.TypezString).
+		WithOptional().
+		WithAutoPopulated()
+	requestIDWithFieldBehavior := api.NewTestField("request_id_with_field_behavior").
+		WithType(api.TypezString).
+		WithAutoPopulated().
+		WithBehavior(api.FieldBehaviorOptional, api.FieldBehaviorInputOnly)
+
+	wantMessage := api.NewTestMessage("CreateFooRequest").
+		WithPackage("test").
+		WithDocumentation("A request to create a `Foo` resource.").
+		WithFields(
+			api.NewTestField("parent").
+				WithDocumentation("Required. The resource name of the project.").
+				WithType(api.TypezString).
+				WithBehavior(api.FieldBehaviorRequired).
+				WithResourceReference("cloudresourcemanager.googleapis.com/Project"),
+			api.NewTestField("foo_id").
+				WithDocumentation("Required. This must be unique within the project.").
+				WithType(api.TypezString).
+				WithBehavior(api.FieldBehaviorRequired),
+			api.NewTestField("foo").
+				WithDocumentation("Required. A [Foo][test.Foo] with initial field values.").
+				WithType(api.TypezMessage).
+				WithTypezID(".test.Foo").
+				WithOptional().
+				WithBehavior(api.FieldBehaviorRequired),
+			requestID,
+			requestIDOptional,
+			requestIDWithFieldBehavior,
+			api.NewTestField("not_request_id_bad_type").
+				WithType(api.TypezBytes),
+			api.NewTestField("not_request_id_required").
+				WithType(api.TypezString).
+				WithBehavior(api.FieldBehaviorRequired),
+			api.NewTestField("not_request_id_required_with_other_field_behavior").
+				WithType(api.TypezString).
+				WithBehavior(api.FieldBehaviorInputOnly, api.FieldBehaviorRequired),
+			api.NewTestField("not_request_id_missing_field_info").
+				WithType(api.TypezString),
+			api.NewTestField("not_request_id_missing_field_info_format").
+				WithType(api.TypezString),
+			api.NewTestField("not_request_id_bad_field_info_format").
+				WithType(api.TypezString),
+			api.NewTestField("not_request_id_missing_service_config").
+				WithType(api.TypezString).
+				WithAutoPopulated(),
+		)
+	for _, f := range wantMessage.Fields {
+		f.Parent = nil
 	}
-	request_id_optional := &api.Field{
-		Name:          "request_id_optional",
-		ID:            ".test.CreateFooRequest.request_id_optional",
-		Typez:         api.TypezString,
-		JSONName:      "requestIdOptional",
-		Optional:      true,
-		AutoPopulated: true,
-	}
-	request_id_with_field_behavior := &api.Field{
-		Name:          "request_id_with_field_behavior",
-		ID:            ".test.CreateFooRequest.request_id_with_field_behavior",
-		Typez:         api.TypezString,
-		JSONName:      "requestIdWithFieldBehavior",
-		AutoPopulated: true,
-		Behavior:      []api.FieldBehavior{api.FieldBehaviorOptional, api.FieldBehaviorInputOnly},
-	}
-	apitest.CheckMessage(t, message, &api.Message{
-		Name:          "CreateFooRequest",
-		Package:       "test",
-		ID:            ".test.CreateFooRequest",
-		Documentation: "A request to create a `Foo` resource.",
-		Fields: []*api.Field{
-			{
-				Name:              "parent",
-				JSONName:          "parent",
-				ID:                ".test.CreateFooRequest.parent",
-				Documentation:     "Required. The resource name of the project.",
-				Typez:             api.TypezString,
-				Behavior:          []api.FieldBehavior{api.FieldBehaviorRequired},
-				ResourceReference: &api.ResourceReference{Type: "cloudresourcemanager.googleapis.com/Project"},
-			},
-			{
-				Name:          "foo_id",
-				JSONName:      "fooId",
-				ID:            ".test.CreateFooRequest.foo_id",
-				Documentation: "Required. This must be unique within the project.",
-				Typez:         api.TypezString,
-				Behavior:      []api.FieldBehavior{api.FieldBehaviorRequired},
-			},
-			{
-				Name:          "foo",
-				JSONName:      "foo",
-				ID:            ".test.CreateFooRequest.foo",
-				Documentation: "Required. A [Foo][test.Foo] with initial field values.",
-				Typez:         api.TypezMessage,
-				TypezID:       ".test.Foo",
-				Optional:      true,
-				Behavior:      []api.FieldBehavior{api.FieldBehaviorRequired},
-			},
-			request_id,
-			request_id_optional,
-			request_id_with_field_behavior,
-			{
-				Name:     "not_request_id_bad_type",
-				ID:       ".test.CreateFooRequest.not_request_id_bad_type",
-				Typez:    api.TypezBytes,
-				JSONName: "notRequestIdBadType",
-			},
-			{
-				Name:     "not_request_id_required",
-				ID:       ".test.CreateFooRequest.not_request_id_required",
-				Typez:    api.TypezString,
-				JSONName: "notRequestIdRequired",
-				Behavior: []api.FieldBehavior{api.FieldBehaviorRequired},
-			},
-			{
-				Name:     "not_request_id_required_with_other_field_behavior",
-				ID:       ".test.CreateFooRequest.not_request_id_required_with_other_field_behavior",
-				Typez:    api.TypezString,
-				JSONName: "notRequestIdRequiredWithOtherFieldBehavior",
-				Behavior: []api.FieldBehavior{api.FieldBehaviorInputOnly, api.FieldBehaviorRequired},
-			},
-			{
-				Name:     "not_request_id_missing_field_info",
-				ID:       ".test.CreateFooRequest.not_request_id_missing_field_info",
-				Typez:    api.TypezString,
-				JSONName: "notRequestIdMissingFieldInfo",
-			},
-			{
-				Name:     "not_request_id_missing_field_info_format",
-				ID:       ".test.CreateFooRequest.not_request_id_missing_field_info_format",
-				Typez:    api.TypezString,
-				JSONName: "notRequestIdMissingFieldInfoFormat",
-			},
-			{
-				Name:     "not_request_id_bad_field_info_format",
-				ID:       ".test.CreateFooRequest.not_request_id_bad_field_info_format",
-				Typez:    api.TypezString,
-				JSONName: "notRequestIdBadFieldInfoFormat",
-			},
-			{
-				Name:     "not_request_id_missing_service_config",
-				ID:       ".test.CreateFooRequest.not_request_id_missing_service_config",
-				Typez:    api.TypezString,
-				JSONName: "notRequestIdMissingServiceConfig",
-				// This just denotes that the field is eligible
-				// to be auto-populated
-				AutoPopulated: true,
-			},
-		},
-	})
+	apitest.CheckMessage(t, message, wantMessage)
 
 	method := test.Method(".test.TestService.CreateFoo")
 	if method == nil {
 		t.Fatalf("Cannot find method %s in API State", ".test.TestService.CreateFoo")
 	}
-	want := []*api.Field{request_id, request_id_optional, request_id_with_field_behavior}
+	want := []*api.Field{requestID, requestIDOptional, requestIDWithFieldBehavior}
 	if diff := cmp.Diff(want, method.AutoPopulated); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
@@ -1788,117 +1180,87 @@ func TestProtobuf_Deprecated(t *testing.T) {
 	if s == nil {
 		t.Fatalf("Cannot find %s in API State", ".test.ServiceA")
 	}
-	apitest.CheckService(t, s, &api.Service{
-		Name:       "ServiceA",
-		ID:         ".test.ServiceA",
-		Package:    "test",
-		Deprecated: true,
-	})
+	apitest.CheckService(t, s, api.NewTestService("ServiceA").
+		WithPackage("test").
+		WithDeprecated(true),
+	)
 
 	s = test.Service(".test.ServiceB")
 	if s == nil {
 		t.Fatalf("Cannot find %s in API State", ".test.ServiceB")
 	}
-	apitest.CheckService(t, s, &api.Service{
-		Name:       "ServiceB",
-		ID:         ".test.ServiceB",
-		Package:    "test",
-		Deprecated: false,
-		Methods: []*api.Method{
-			{
-				Name:            "RpcA",
-				ID:              ".test.ServiceB.RpcA",
-				Deprecated:      true,
-				InputTypeID:     ".test.Request",
-				OutputTypeID:    ".test.Response",
-				PathInfo:        &api.PathInfo{},
-				SourceServiceID: ".test.ServiceB",
-			},
-		},
-	})
+	rpcA := api.NewTestMethod("RpcA").
+		WithID(".test.ServiceB.RpcA").
+		WithDeprecated(true)
+	rpcA.InputTypeID = ".test.Request"
+	rpcA.OutputTypeID = ".test.Response"
+	rpcA.PathInfo = &api.PathInfo{}
+	rpcA.SourceServiceID = ".test.ServiceB"
+
+	wantServiceB := api.NewTestService("ServiceB").
+		WithPackage("test").
+		WithMethods(rpcA)
+	rpcA.Service = nil
+	apitest.CheckService(t, s, wantServiceB)
 
 	m := test.Message(".test.Request")
 	if m == nil {
 		t.Fatalf("Cannot find %s in API State", ".test.Request")
 	}
-	apitest.CheckMessage(t, m, &api.Message{
-		Name:       "Request",
-		ID:         ".test.Request",
-		Package:    "test",
-		Deprecated: false,
-		Fields: []*api.Field{
-			{
-				Name:     "name",
-				JSONName: "name",
-				ID:       ".test.Request.name",
-				Typez:    api.TypezString,
-			},
-			{
-				Name:       "other",
-				JSONName:   "other",
-				ID:         ".test.Request.other",
-				Typez:      api.TypezString,
-				Deprecated: true,
-			},
-		},
-	})
+	wantRequest := api.NewTestMessage("Request").
+		WithPackage("test").
+		WithFields(
+			api.NewTestField("name").
+				WithType(api.TypezString),
+			api.NewTestField("other").
+				WithType(api.TypezString).
+				WithDeprecated(true),
+		)
+	for _, f := range wantRequest.Fields {
+		f.Parent = nil
+	}
+	apitest.CheckMessage(t, m, wantRequest)
 
 	m = test.Message(".test.Response")
 	if m == nil {
 		t.Fatalf("Cannot find %s in API State", ".test.Response")
 	}
-	apitest.CheckMessage(t, m, &api.Message{
-		Name:       "Response",
-		ID:         ".test.Response",
-		Package:    "test",
-		Deprecated: true,
-	})
+	apitest.CheckMessage(t, m, api.NewTestMessage("Response").
+		WithPackage("test").
+		WithDeprecated(true),
+	)
 
 	e := test.Enum(".test.EnumA")
 	if e == nil {
 		t.Fatalf("Cannot find %s in API State", ".test.EnumA")
 	}
-	apitest.CheckEnum(t, *e, api.Enum{
-		Name:       "EnumA",
-		ID:         ".test.EnumA",
-		Package:    "test",
-		Deprecated: true,
-		Values: []*api.EnumValue{
-			{
-				Name:   "ENUM_A_UNSPECIFIED",
-				Number: 0,
-			},
-		},
-	})
+	wantEnumA := api.NewTestEnum("EnumA").
+		WithPackage("test").
+		WithDeprecated(true).
+		WithValues(
+			api.NewTestEnumValue("ENUM_A_UNSPECIFIED", 0),
+		)
+	for _, v := range wantEnumA.Values {
+		v.ID = ""
+	}
+	apitest.CheckEnum(t, *e, *wantEnumA)
 
 	e = test.Enum(".test.EnumB")
 	if e == nil {
 		t.Fatalf("Cannot find %s in API State", ".test.EnumB")
 	}
-	apitest.CheckEnum(t, *e, api.Enum{
-		Name:    "EnumB",
-		ID:      ".test.EnumB",
-		Package: "test",
-		Values: []*api.EnumValue{
-			{
-				Name:   "ENUM_B_UNSPECIFIED",
-				Number: 0,
-			},
-			{
-				Name:       "RED",
-				Number:     1,
-				Deprecated: true,
-			},
-			{
-				Name:   "GREEN",
-				Number: 2,
-			},
-			{
-				Name:   "BLUE",
-				Number: 3,
-			},
-		},
-	})
+	wantEnumB := api.NewTestEnum("EnumB").
+		WithPackage("test").
+		WithValues(
+			api.NewTestEnumValue("ENUM_B_UNSPECIFIED", 0),
+			api.NewTestEnumValue("RED", 1).WithDeprecated(true),
+			api.NewTestEnumValue("GREEN", 2),
+			api.NewTestEnumValue("BLUE", 3),
+		)
+	for _, v := range wantEnumB.Values {
+		v.ID = ""
+	}
+	apitest.CheckEnum(t, *e, *wantEnumB)
 }
 
 func TestProtobuf_ResourceAnnotations(t *testing.T) {
@@ -1915,17 +1277,15 @@ func TestProtobuf_ResourceAnnotations(t *testing.T) {
 		}
 
 		// Verify Shelf
-		shelfResourceDef := &api.Resource{
-			Type: "library.googleapis.com/Shelf",
-			Patterns: []api.ResourcePattern{
-				{
+		shelfResourceDef := api.NewTestResource("library.googleapis.com/Shelf").
+			WithPatterns(
+				api.ResourcePattern{
 					*(&api.PathSegment{}).WithLiteral("publishers"),
 					*(&api.PathSegment{}).WithVariable(api.NewPathVariable("publisher").WithMatch()),
 					*(&api.PathSegment{}).WithLiteral("shelves"),
 					*(&api.PathSegment{}).WithVariable(api.NewPathVariable("shelf").WithMatch()),
 				},
-			},
-		}
+			)
 		// Find Shelf in the slice
 		var foundShelf *api.Resource
 		for _, r := range test.ResourceDefinitions {
@@ -1942,10 +1302,9 @@ func TestProtobuf_ResourceAnnotations(t *testing.T) {
 		}
 
 		// Verify Book
-		bookResourceDef := &api.Resource{
-			Type: "library.googleapis.com/Book",
-			Patterns: []api.ResourcePattern{
-				{
+		bookResourceDef := api.NewTestResource("library.googleapis.com/Book").
+			WithPatterns(
+				api.ResourcePattern{
 					*(&api.PathSegment{}).WithLiteral("publishers"),
 					*(&api.PathSegment{}).WithVariable(api.NewPathVariable("publisher").WithMatch()),
 					*(&api.PathSegment{}).WithLiteral("shelves"),
@@ -1953,10 +1312,9 @@ func TestProtobuf_ResourceAnnotations(t *testing.T) {
 					*(&api.PathSegment{}).WithLiteral("books"),
 					*(&api.PathSegment{}).WithVariable(api.NewPathVariable("book").WithMatch()),
 				},
-			},
-			Plural:   "books",
-			Singular: "book",
-		}
+			).
+			WithPlural("books").
+			WithSingular("book")
 		// Find Book in the slice
 		var foundBook *api.Resource
 		for _, r := range test.ResourceDefinitions {
@@ -1999,10 +1357,9 @@ func TestProtobuf_ResourceAnnotations(t *testing.T) {
 		}
 
 		// Check Resource separately to handle 'Self' cycle and ignore Codec
-		wantBookResource := &api.Resource{
-			Type: "library.googleapis.com/Book",
-			Patterns: []api.ResourcePattern{
-				{
+		wantBookResource := api.NewTestResource("library.googleapis.com/Book").
+			WithPatterns(
+				api.ResourcePattern{
 					*(&api.PathSegment{}).WithLiteral("publishers"),
 					*(&api.PathSegment{}).WithVariable(api.NewPathVariable("publisher").WithMatch()),
 					*(&api.PathSegment{}).WithLiteral("shelves"),
@@ -2010,28 +1367,24 @@ func TestProtobuf_ResourceAnnotations(t *testing.T) {
 					*(&api.PathSegment{}).WithLiteral("books"),
 					*(&api.PathSegment{}).WithVariable(api.NewPathVariable("book").WithMatch()),
 				},
-			},
-			Plural:   "books",
-			Singular: "book",
-		}
+			).
+			WithPlural("books").
+			WithSingular("book")
 
 		if diff := cmp.Diff(wantBookResource, bookMessage.Resource, cmpopts.IgnoreFields(api.Resource{}, "Self", "Codec")); diff != "" {
 			t.Errorf("mismatch (-want +got):\n%s", diff)
 		}
 
-		apitest.CheckMessage(t, bookMessage, &api.Message{
-			Name:    "Book",
-			ID:      ".test.Book",
-			Package: "test",
-			Fields: []*api.Field{
-				{
-					Name:     "name",
-					JSONName: "name",
-					ID:       ".test.Book.name",
-					Typez:    api.TypezString,
-				},
-			},
-		})
+		wantBook := api.NewTestMessage("Book").
+			WithPackage("test").
+			WithFields(
+				api.NewTestField("name").
+					WithType(api.TypezString),
+			)
+		for _, f := range wantBook.Fields {
+			f.Parent = nil
+		}
+		apitest.CheckMessage(t, bookMessage, wantBook)
 	})
 
 	t.Run("CreateBookRequest", func(t *testing.T) {
@@ -2040,36 +1393,23 @@ func TestProtobuf_ResourceAnnotations(t *testing.T) {
 			t.Fatalf("Cannot find message %s in API State", ".test.CreateBookRequest")
 		}
 
-		apitest.CheckMessage(t, createBookRequest, &api.Message{
-			Name:    "CreateBookRequest",
-			ID:      ".test.CreateBookRequest",
-			Package: "test",
-			Fields: []*api.Field{
-				{
-					Name:     "parent",
-					JSONName: "parent",
-					ID:       ".test.CreateBookRequest.parent",
-					Typez:    api.TypezString,
-					ResourceReference: &api.ResourceReference{
-						Type: "library.googleapis.com/Shelf",
-					},
-				},
-				{
-					Name:     "book_id",
-					JSONName: "bookId",
-					ID:       ".test.CreateBookRequest.book_id",
-					Typez:    api.TypezString,
-				},
-				{
-					Name:     "book",
-					JSONName: "book",
-					ID:       ".test.CreateBookRequest.book",
-					Typez:    api.TypezMessage,
-					TypezID:  ".test.Book",
-					Optional: true,
-				},
-			},
-		})
+		wantCreate := api.NewTestMessage("CreateBookRequest").
+			WithPackage("test").
+			WithFields(
+				api.NewTestField("parent").
+					WithType(api.TypezString).
+					WithResourceReference("library.googleapis.com/Shelf"),
+				api.NewTestField("book_id").
+					WithType(api.TypezString),
+				api.NewTestField("book").
+					WithType(api.TypezMessage).
+					WithTypezID(".test.Book").
+					WithOptional(),
+			)
+		for _, f := range wantCreate.Fields {
+			f.Parent = nil
+		}
+		apitest.CheckMessage(t, createBookRequest, wantCreate)
 	})
 
 	t.Run("ListBooksRequest", func(t *testing.T) {
@@ -2078,34 +1418,21 @@ func TestProtobuf_ResourceAnnotations(t *testing.T) {
 			t.Fatalf("Cannot find message %s in API State", ".test.ListBooksRequest")
 		}
 
-		apitest.CheckMessage(t, listBooksRequest, &api.Message{
-			Name:    "ListBooksRequest",
-			ID:      ".test.ListBooksRequest",
-			Package: "test",
-			Fields: []*api.Field{
-				{
-					Name:     "parent",
-					JSONName: "parent",
-					ID:       ".test.ListBooksRequest.parent",
-					Typez:    api.TypezString,
-					ResourceReference: &api.ResourceReference{
-						ChildType: "library.googleapis.com/Book",
-					},
-				},
-				{
-					Name:     "page_size",
-					JSONName: "pageSize",
-					ID:       ".test.ListBooksRequest.page_size",
-					Typez:    api.TypezInt32,
-				},
-				{
-					Name:     "page_token",
-					JSONName: "pageToken",
-					ID:       ".test.ListBooksRequest.page_token",
-					Typez:    api.TypezString,
-				},
-			},
-		})
+		wantList := api.NewTestMessage("ListBooksRequest").
+			WithPackage("test").
+			WithFields(
+				api.NewTestField("parent").
+					WithType(api.TypezString).
+					WithChildTypeReference("library.googleapis.com/Book"),
+				api.NewTestField("page_size").
+					WithType(api.TypezInt32),
+				api.NewTestField("page_token").
+					WithType(api.TypezString),
+			)
+		for _, f := range wantList.Fields {
+			f.Parent = nil
+		}
+		apitest.CheckMessage(t, listBooksRequest, wantList)
 	})
 
 	t.Run("NoResourceMessage", func(t *testing.T) {

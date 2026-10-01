@@ -38,53 +38,41 @@ func TestProtobuf_ApiVersion(t *testing.T) {
 	if service == nil {
 		t.Fatalf("Cannot find service %s in API State", id)
 	}
-	want := &api.Service{
-		Name:          "Service",
-		ID:            ".test.Service",
-		Package:       "test",
-		Documentation: "A service with an API version.",
-		DefaultHost:   "test.googleapis.com",
-		Methods: []*api.Method{
-			{
-				Name:            "Create",
-				ID:              ".test.Service.Create",
-				SourceServiceID: ".test.Service",
-				Documentation:   "A create method.",
-				InputTypeID:     ".test.Request",
-				OutputTypeID:    ".test.Response",
-				PathInfo: &api.PathInfo{
-					Bindings: []*api.PathBinding{
-						{
-							Verb: "POST",
-							PathTemplate: (&api.PathTemplate{}).
-								WithLiteral("v7").
-								WithLiteral("thing"),
-							QueryParameters: map[string]bool{"parent": true}},
-					},
-				},
-				APIVersion: "v7_20260206",
-			},
-			{
-				Name:            "Make",
-				ID:              ".test.Service.Make",
-				SourceServiceID: ".test.Service",
-				Documentation:   "Another sort of method.",
-				InputTypeID:     ".test.Request",
-				OutputTypeID:    ".test.Response",
-				PathInfo: &api.PathInfo{
-					Bindings: []*api.PathBinding{
-						{
-							Verb: "POST",
-							PathTemplate: (&api.PathTemplate{}).
-								WithLiteral("v7").
-								WithLiteral("thing").
-								WithVerb("make"),
-							QueryParameters: map[string]bool{"parent": true}},
-					},
-				},
-				APIVersion: "v7_20260206",
-			},
-		},
-	}
+	createMethod := api.NewTestMethod("Create").
+		WithID(".test.Service.Create").
+		WithDocumentation("A create method.").
+		WithVerb("POST").
+		WithPathTemplate(
+			(&api.PathTemplate{}).
+				WithLiteral("v7").
+				WithLiteral("thing"),
+		).
+		WithQueryParameters(map[string]bool{"parent": true}).
+		WithAPIVersion("v7_20260206")
+	createMethod.SourceServiceID = ".test.Service"
+	createMethod.InputTypeID = ".test.Request"
+	createMethod.OutputTypeID = ".test.Response"
+
+	makeMethod := api.NewTestMethod("Make").
+		WithID(".test.Service.Make").
+		WithDocumentation("Another sort of method.").
+		WithVerb("POST").
+		WithPathTemplate(
+			(&api.PathTemplate{}).
+				WithLiteral("v7").
+				WithLiteral("thing").
+				WithVerb("make"),
+		).
+		WithQueryParameters(map[string]bool{"parent": true}).
+		WithAPIVersion("v7_20260206")
+	makeMethod.SourceServiceID = ".test.Service"
+	makeMethod.InputTypeID = ".test.Request"
+	makeMethod.OutputTypeID = ".test.Response"
+
+	want := api.NewTestService("Service").
+		WithPackage("test").
+		WithDocumentation("A service with an API version.").
+		WithDefaultHost("test.googleapis.com").
+		WithMethods(createMethod, makeMethod)
 	apitest.CheckService(t, service, want)
 }
