@@ -110,7 +110,7 @@ extension StorageControlProtocol {
       request.pageToken = token
       return try await self.{{Codec.Name}}(request: request, options: options)
     }
-    return GoogleGax.PaginatedResponseSequence(listRpc: listRpc)
+    return GoogleGax.PaginatedResponseSequence(listRpc: listRpc, initialPageToken: request.pageToken)
   }
   {{/Codec.Pagination}}
   {{#Codec.LRO}}
@@ -170,7 +170,7 @@ extension StorageControlProtocol {
       request.pageToken = token
       return try await self.{{Codec.Name}}(request: request, options: options)
     }
-    return GoogleGax.PaginatedResponseSequence(listRpc: listRpc)
+    return GoogleGax.PaginatedResponseSequence(listRpc: listRpc, initialPageToken: request.pageToken)
   }
   {{/Codec.Pagination}}
   {{#Codec.LRO}}

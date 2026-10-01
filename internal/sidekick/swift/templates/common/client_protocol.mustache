@@ -135,7 +135,7 @@ extension Clients.{{Codec.StubPrefix}}Protocol {
       request.pageToken = token
       return try await self.{{Codec.Name}}(request: request, options: options)
     }
-    return GoogleGax.PaginatedResponseSequence(listRpc: listRpc)
+    return GoogleGax.PaginatedResponseSequence(listRpc: listRpc, initialPageToken: request.pageToken)
   }
   {{#Signatures}}
 

@@ -634,7 +634,7 @@ func verifyGeneratedService(t *testing.T, outDir string) {
       request.pageToken = token
       return try await self.listSecrets(request: request, options: options)
     }
-    return GoogleGax.PaginatedResponseSequence(listRpc: listRpc)
+    return GoogleGax.PaginatedResponseSequence(listRpc: listRpc, initialPageToken: request.pageToken)
   }`
 	if diff := cmp.Diff(wantMethodOverload, gotMethodOverload); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
