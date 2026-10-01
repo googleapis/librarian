@@ -70,4 +70,3 @@ func TestWalkDir_Error(t *testing.T) {
 		t.Errorf("WalkTemplatesDir(nonexistent) = %v, want empty", got)
 	}
 }
-
