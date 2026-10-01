@@ -62,7 +62,11 @@ func CheckService(t *testing.T, got *api.Service, want *api.Service) {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 	less := func(a, b *api.Method) bool { return a.Name < b.Name }
-	if diff := cmp.Diff(want.Methods, got.Methods, cmpopts.SortSlices(less), cmpopts.IgnoreFields(api.Field{}, "Parent")); diff != "" {
+	if diff := cmp.Diff(want.Methods, got.Methods,
+		cmpopts.SortSlices(less),
+		cmpopts.IgnoreFields(api.Field{}, "Parent"),
+		cmpopts.IgnoreFields(api.Method{}, "Service", "Model"),
+	); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
@@ -82,7 +86,10 @@ func CheckMethod(t *testing.T, service *api.Service, name string, want *api.Meth
 	if !ok {
 		t.Errorf("missing method %s", name)
 	}
-	if diff := cmp.Diff(want, got, cmpopts.IgnoreFields(api.Field{}, "Parent")); diff != "" {
+	if diff := cmp.Diff(want, got,
+		cmpopts.IgnoreFields(api.Field{}, "Parent"),
+		cmpopts.IgnoreFields(api.Method{}, "Service", "Model"),
+	); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
