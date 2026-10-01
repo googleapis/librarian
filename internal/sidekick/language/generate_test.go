@@ -33,8 +33,13 @@ func TestGenerate(t *testing.T) {
 	outDir := t.TempDir()
 
 	// The list of files to generate, just load them from the embedded templates.
+	parsedTemplates, err := ParseTemplatesDir(templates, "testTemplates")
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	generatedFiles := WalkTemplatesDir(templates, "testTemplates")
-	err := GenerateFromModel(outDir, model, provider, generatedFiles)
+	err = parsedTemplates.GenerateFromModel(outDir, model, generatedFiles)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -54,11 +59,16 @@ func TestGenerateService(t *testing.T) {
 	service := api.NewTestService("ExpectedName")
 	outDir := t.TempDir()
 
+	parsedTemplates, err := ParseTemplatesDir(templates, "testTemplates")
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	gen := GeneratedFile{
-		TemplatePath: "testTemplates/test002.mustache",
+		TemplatePath: "testTemplates/test002.gotmpl",
 		OutputPath:   "test002.txt",
 	}
-	err := GenerateService(outDir, service, provider, gen)
+	err = parsedTemplates.GenerateService(outDir, service, gen)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -69,11 +79,16 @@ func TestGenerateMessage(t *testing.T) {
 	message := api.NewTestMessage("ExpectedName")
 	outDir := t.TempDir()
 
+	parsedTemplates, err := ParseTemplatesDir(templates, "testTemplates")
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	gen := GeneratedFile{
-		TemplatePath: "testTemplates/test002.mustache",
+		TemplatePath: "testTemplates/test002.gotmpl",
 		OutputPath:   "test002.txt",
 	}
-	err := GenerateMessage(outDir, message, provider, gen)
+	err = parsedTemplates.GenerateMessage(outDir, message, gen)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -84,11 +99,16 @@ func TestGenerateEnum(t *testing.T) {
 	enum := api.NewTestEnum("ExpectedName")
 	outDir := t.TempDir()
 
+	parsedTemplates, err := ParseTemplatesDir(templates, "testTemplates")
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	gen := GeneratedFile{
-		TemplatePath: "testTemplates/test002.mustache",
+		TemplatePath: "testTemplates/test002.gotmpl",
 		OutputPath:   "test002.txt",
 	}
-	err := GenerateEnum(outDir, enum, provider, gen)
+	err = parsedTemplates.GenerateEnum(outDir, enum, gen)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -107,12 +127,4 @@ func verifyElementOutput(t *testing.T, outDir string) {
 			t.Errorf("generated files should not be executable %s: %o", filename, stat.Mode())
 		}
 	}
-}
-
-func provider(name string) (string, error) {
-	contents, err := templates.ReadFile(name)
-	if err != nil {
-		return "", err
-	}
-	return string(contents), nil
 }
