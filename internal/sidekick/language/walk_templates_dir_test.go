@@ -23,15 +23,15 @@ import (
 )
 
 func TestWalkDir(t *testing.T) {
-	// It should get the `*.md.mustache` files and skip `partial.mustache`
+	// It should get the `*.md.gotmpl` files and skip `partial.gotmpl`
 	got := WalkTemplatesDir(templates, "testTemplates")
 	want := []GeneratedFile{
 		{
-			TemplatePath: "testTemplates/README.md.mustache",
+			TemplatePath: "testTemplates/README.md.gotmpl",
 			OutputPath:   filepath.FromSlash("/README.md"),
 		},
 		{
-			TemplatePath: "testTemplates/test001.txt.mustache",
+			TemplatePath: "testTemplates/test001.txt.gotmpl",
 			OutputPath:   filepath.FromSlash("/test001.txt"),
 		},
 	}

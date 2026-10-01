@@ -23,8 +23,8 @@ import (
 // WalkTemplatesDir handles a common case for Codecs: the templates filenames can encode the
 // output filenames.
 //
-// For some languages (e.g. Go and Rust) the name of the mustache templates can
-// encode the name of the output file, for example, `src/foo.go.mustache` can
+// For some languages (e.g. Go and Rust) the name of the Go templates can
+// encode the name of the output file, for example, `src/foo.go.gotmpl` can
 // generate `src/foo.go`.
 //
 // This is not true for all languages. For example, in Java it would be more
@@ -33,7 +33,7 @@ import (
 // Even in Rust, we may want to skip some files if the crate does not have
 // any services.
 //
-// Files whose output names would do not have an extension (e.g. `enum.mustache`) are
+// Files whose output names would do not have an extension (e.g. `enum.gotmpl`) are
 // assumed to be used internally and are skipped.
 func WalkTemplatesDir(fsys fs.FS, root string) []GeneratedFile {
 	var result []GeneratedFile
@@ -42,7 +42,7 @@ func WalkTemplatesDir(fsys fs.FS, root string) []GeneratedFile {
 			return err
 		}
 		ext := filepath.Ext(path)
-		if ext != ".mustache" && ext != ".gotmpl" {
+		if ext != ".gotmpl" {
 			return nil
 		}
 		if strings.Count(d.Name(), ".") == 1 {
