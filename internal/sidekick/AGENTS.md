@@ -103,7 +103,8 @@ Mustache templates (`.mustache`) to Go templates (`.gotmpl`).
 
 Templates must remain readable, maintainable, and visually aligned with the
 generated target language code. For the comprehensive style guide and ecosystem
-references (Helm / Hugo), see `@doc/styleguide/go-template-style-guide.md`.
+references (Helm / Hugo), see
+[Go Template Style Guide](/doc/styleguide/go-template-style-guide.md).
 
 Key rules:
 1. **Visual Alignment:** Indent template control flow (`{{- range }}`,
@@ -113,8 +114,10 @@ Key rules:
 2. **Emitting Blank Lines:** Use `{{- "\n" }}` aligned with the surrounding
    block to emit a blank line without leaking trailing spaces into the output.
 3. **Partial Indentation:** When including partials, explicitly pipe through
-   `| indent N` (e.g., `{{- include "templates/common/body" . | indent 4 }}`).
-4. **Spacing:** Include spaces inside delimiters: `{{- foo }}`, never `{{-foo}}`.
+   `| indent N`
+   (e.g., `{{- include "templates/common/body" . | indent 4 }}`).
+4. **Spacing:** Include spaces inside delimiters: `{{- foo }}`, never
+   `{{-foo}}`.
 5. **Comments & Headers:** Use `{{/* ... */}}` for template comments and file
    license headers.
 

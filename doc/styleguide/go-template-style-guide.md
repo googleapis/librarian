@@ -11,8 +11,8 @@ and Hugo's template practices, adapted for target source code generation.
 
 ## Core Principles
 
-1. **Visual Alignment:** Template control flow must visually reflect the structure
-   and indentation of the generated code.
+1. **Visual Alignment:** Template control flow must visually reflect the
+   structure and indentation of the generated code.
 2. **Zero Trailing Whitespace:** Blank lines and code lines must never contain
    trailing spaces or tabs.
 3. **Explicit Indentation:** Use `| indent N` explicitly for nested partials.
