@@ -295,37 +295,16 @@ func TestOpenAPI_MapString(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	apitest.CheckMessage(t, test.Messages[0], &api.Message{
-		Name:          "Fake",
-		ID:            "..Fake",
-		Documentation: "A test message.",
-		Fields: []*api.Field{
-			{
-				Name:     "fMap",
-				ID:       "..Fake.fMap",
-				JSONName: "fMap",
-				Typez:    api.TypezMessage,
-				TypezID:  "$map<string, string>",
-				Map:      true,
-			},
-			{
-				Name:     "fMapS32",
-				ID:       "..Fake.fMapS32",
-				JSONName: "fMapS32",
-				Typez:    api.TypezMessage,
-				TypezID:  "$map<string, int32>",
-				Map:      true,
-			},
-			{
-				Name:     "fMapS64",
-				ID:       "..Fake.fMapS64",
-				JSONName: "fMapS64",
-				Typez:    api.TypezMessage,
-				TypezID:  "$map<string, int64>",
-				Map:      true,
-			},
-		},
-	})
+	wantMap := api.NewTestMessage("Fake").
+		WithPackage("").
+		WithID("..Fake").
+		WithDocumentation("A test message.").
+		WithFields(
+			api.NewTestField("fMap").WithType(api.TypezMessage).WithTypezID("$map<string, string>").WithMap(),
+			api.NewTestField("fMapS32").WithType(api.TypezMessage).WithTypezID("$map<string, int32>").WithMap(),
+			api.NewTestField("fMapS64").WithType(api.TypezMessage).WithTypezID("$map<string, int64>").WithMap(),
+		)
+	apitest.CheckMessage(t, test.Messages[0], wantMap)
 }
 
 func TestOpenAPI_MapInteger(t *testing.T) {
@@ -350,31 +329,15 @@ func TestOpenAPI_MapInteger(t *testing.T) {
 		t.Errorf("Error in makeAPI() %q", err)
 	}
 
-	apitest.CheckMessage(t, test.Messages[0], &api.Message{
-		Name:          "Fake",
-		ID:            "..Fake",
-		Documentation: "A test message.",
-		Fields: []*api.Field{
-			{
-				Name:     "fMapI32",
-				ID:       "..Fake.fMapI32",
-				JSONName: "fMapI32",
-				Typez:    api.TypezMessage,
-				TypezID:  "$map<string, int32>",
-				Optional: false,
-				Map:      true,
-			},
-			{
-				Name:     "fMapI64",
-				ID:       "..Fake.fMapI64",
-				JSONName: "fMapI64",
-				Typez:    api.TypezMessage,
-				TypezID:  "$map<string, int64>",
-				Optional: false,
-				Map:      true,
-			},
-		},
-	})
+	wantMapInteger := api.NewTestMessage("Fake").
+		WithPackage("").
+		WithID("..Fake").
+		WithDocumentation("A test message.").
+		WithFields(
+			api.NewTestField("fMapI32").WithType(api.TypezMessage).WithTypezID("$map<string, int32>").WithMap(),
+			api.NewTestField("fMapI64").WithType(api.TypezMessage).WithTypezID("$map<string, int64>").WithMap(),
+		)
+	apitest.CheckMessage(t, test.Messages[0], wantMapInteger)
 }
 
 func openapiSecretManagerAPI(t *testing.T) *api.API {
@@ -403,160 +366,94 @@ func TestOpenAPI_MakeAPI(t *testing.T) {
 		t.Errorf("missing message (Location) in MessageByID index")
 		return
 	}
-	apitest.CheckMessage(t, location, &api.Message{
-		Documentation: "A resource that represents a Google Cloud location.",
-		Name:          "Location",
-		ID:            "..Location",
-		Fields: []*api.Field{
-			{
-				Name:          "name",
-				ID:            "..Location.name",
-				JSONName:      "name",
-				Documentation: "Resource name for the location, which may vary between implementations." + "\nFor example: `\"projects/example-project/locations/us-east1\"`",
-				Typez:         api.TypezString,
-				TypezID:       "string",
-				Optional:      true,
-			},
-			{
-				Name:          "locationId",
-				ID:            "..Location.locationId",
-				JSONName:      "locationId",
-				Documentation: "The canonical id for this location. For example: `\"us-east1\"`.",
-				Typez:         api.TypezString,
-				TypezID:       "string",
-				Optional:      true,
-			},
-			{
-				Name:          "displayName",
-				ID:            "..Location.displayName",
-				JSONName:      "displayName",
-				Documentation: `The friendly name for this location, typically a nearby city name.` + "\n" + `For example, "Tokyo".`,
-				Typez:         api.TypezString,
-				TypezID:       "string",
-				Optional:      true,
-			},
-			{
-				Name:          "labels",
-				ID:            "..Location.labels",
-				JSONName:      "labels",
-				Documentation: "Cross-service attributes for the location. For example\n\n    {\"cloud.googleapis.com/region\": \"us-east1\"}",
-				Typez:         api.TypezMessage,
-				TypezID:       "$map<string, string>",
-				Optional:      false,
-				Map:           true,
-			},
-			{
-				Name:          "metadata",
-				ID:            "..Location.metadata",
-				JSONName:      "metadata",
-				Documentation: `Service-specific metadata. For example the available capacity at the given` + "\n" + `location.`,
-				Typez:         api.TypezMessage,
-				TypezID:       ".google.protobuf.Any",
-				Optional:      true,
-			},
-		},
-	})
+	wantLocation := api.NewTestMessage("Location").
+		WithPackage("").
+		WithID("..Location").
+		WithDocumentation("A resource that represents a Google Cloud location.").
+		WithFields(
+			api.NewTestField("name").
+				WithDocumentation("Resource name for the location, which may vary between implementations."+"\nFor example: `\"projects/example-project/locations/us-east1\"`").
+				WithType(api.TypezString).
+				WithTypezID("string").
+				WithOptional(),
+			api.NewTestField("locationId").
+				WithDocumentation("The canonical id for this location. For example: `\"us-east1\"`.").
+				WithType(api.TypezString).
+				WithTypezID("string").
+				WithOptional(),
+			api.NewTestField("displayName").
+				WithDocumentation(`The friendly name for this location, typically a nearby city name.`+"\n"+`For example, "Tokyo".`).
+				WithType(api.TypezString).
+				WithTypezID("string").
+				WithOptional(),
+			api.NewTestField("labels").
+				WithDocumentation("Cross-service attributes for the location. For example\n\n    {\"cloud.googleapis.com/region\": \"us-east1\"}").
+				WithType(api.TypezMessage).
+				WithTypezID("$map<string, string>").
+				WithMap(),
+			api.NewTestField("metadata").
+				WithDocumentation(`Service-specific metadata. For example the available capacity at the given`+"\n"+`location.`).
+				WithType(api.TypezMessage).
+				WithTypezID(".google.protobuf.Any").
+				WithOptional(),
+		)
+	apitest.CheckMessage(t, location, wantLocation)
 
 	listLocationsResponse := test.Message("..ListLocationsResponse")
 	if listLocationsResponse == nil {
 		t.Errorf("missing message (ListLocationsResponse) in MessageByID index")
 		return
 	}
-	apitest.CheckMessage(t, listLocationsResponse, &api.Message{
-		Documentation: "The response message for Locations.ListLocations.",
-		Name:          "ListLocationsResponse",
-		ID:            "..ListLocationsResponse",
-		Fields: []*api.Field{
-			{
-				Name:          "locations",
-				ID:            "..ListLocationsResponse.locations",
-				JSONName:      "locations",
-				Documentation: "A list of locations that matches the specified filter in the request.",
-				Typez:         api.TypezMessage,
-				TypezID:       "..Location",
-				Repeated:      true,
-			},
-			{
-				Name:          "nextPageToken",
-				ID:            "..ListLocationsResponse.nextPageToken",
-				JSONName:      "nextPageToken",
-				Documentation: "The standard List next-page token.",
-				Typez:         api.TypezString,
-				TypezID:       "string",
-				Optional:      true,
-			},
-		},
-		Pagination: &api.PaginationInfo{
-			NextPageToken: &api.Field{
-				Name:          "nextPageToken",
-				ID:            "..ListLocationsResponse.nextPageToken",
-				JSONName:      "nextPageToken",
-				Documentation: "The standard List next-page token.",
-				Typez:         api.TypezString,
-				TypezID:       "string",
-				Optional:      true,
-			},
-			PageableItem: &api.Field{
-				Name:          "locations",
-				ID:            "..ListLocationsResponse.locations",
-				JSONName:      "locations",
-				Documentation: "A list of locations that matches the specified filter in the request.",
-				Typez:         api.TypezMessage,
-				TypezID:       "..Location",
-				Repeated:      true,
-			},
-		},
-	})
+	nextPageToken := api.NewTestField("nextPageToken").
+		WithDocumentation("The standard List next-page token.").
+		WithType(api.TypezString).
+		WithTypezID("string").
+		WithOptional()
+	locations := api.NewTestField("locations").
+		WithDocumentation("A list of locations that matches the specified filter in the request.").
+		WithType(api.TypezMessage).
+		WithTypezID("..Location").
+		WithRepeated()
+	wantListLocationsResponse := api.NewTestMessage("ListLocationsResponse").
+		WithPackage("").
+		WithID("..ListLocationsResponse").
+		WithDocumentation("The response message for Locations.ListLocations.").
+		WithPagination(nextPageToken, locations)
+	apitest.CheckMessage(t, listLocationsResponse, wantListLocationsResponse)
 
 	// This is a synthetic message, the OpenAPI spec does not contain requests
 	// messages for messages without a body.
-	want := &api.Message{
-		Name:             "ListLocationsRequest",
-		ID:               "..Service.ListLocationsRequest",
-		Documentation:    "Synthetic request message for the [ListLocations()][.Service.ListLocations] method.",
-		SyntheticRequest: true,
-		Fields: []*api.Field{
-			{
-				Name:          "project",
-				ID:            "..Service.ListLocationsRequest.project",
-				JSONName:      "project",
-				Documentation: "The `{project}` component of the target path.\n\nThe full target path will be in the form `/v1/projects/{project}/locations`.",
-				Typez:         api.TypezString,
-				TypezID:       "string",
-				Behavior:      []api.FieldBehavior{api.FieldBehaviorRequired},
-			},
-			{
-				Name:     "filter",
-				ID:       "..Service.ListLocationsRequest.filter",
-				JSONName: "filter",
-				Documentation: "A filter to narrow down results to a preferred subset." +
-					"\nThe filtering language accepts strings like `\"displayName=tokyo" +
-					"\"`, and\nis documented in more detail in [AIP-160](https://google" +
-					".aip.dev/160).",
-				Typez:    api.TypezString,
-				TypezID:  "string",
-				Optional: true,
-			},
-			{
-				Name:          "pageSize",
-				ID:            "..Service.ListLocationsRequest.pageSize",
-				JSONName:      "pageSize",
-				Documentation: "The maximum number of results to return.\nIf not set, the service selects a default.",
-				Typez:         api.TypezInt32,
-				TypezID:       "int32",
-				Optional:      true,
-			},
-			{
-				Name:          "pageToken",
-				ID:            "..Service.ListLocationsRequest.pageToken",
-				JSONName:      "pageToken",
-				Documentation: "A page token received from the `next_page_token` field in the response.\nSend that page token to receive the subsequent page.",
-				Typez:         api.TypezString,
-				TypezID:       "string",
-				Optional:      true,
-			},
-		},
-	}
+	pageToken := api.NewTestField("pageToken").
+		WithDocumentation("A page token received from the `next_page_token` field in the response.\nSend that page token to receive the subsequent page.").
+		WithType(api.TypezString).
+		WithTypezID("string").
+		WithOptional()
+	want := api.NewTestMessage("ListLocationsRequest").
+		WithPackage("").
+		WithID("..Service.ListLocationsRequest").
+		WithDocumentation("Synthetic request message for the [ListLocations()][.Service.ListLocations] method.").
+		WithFields(
+			api.NewTestField("project").
+				WithDocumentation("The `{project}` component of the target path.\n\nThe full target path will be in the form `/v1/projects/{project}/locations`.").
+				WithType(api.TypezString).
+				WithTypezID("string").
+				WithBehavior(api.FieldBehaviorRequired),
+			api.NewTestField("filter").
+				WithDocumentation("A filter to narrow down results to a preferred subset."+
+					"\nThe filtering language accepts strings like `\"displayName=tokyo"+
+					"\"`, and\nis documented in more detail in [AIP-160](https://google"+
+					".aip.dev/160).").
+				WithType(api.TypezString).
+				WithTypezID("string").
+				WithOptional(),
+			api.NewTestField("pageSize").
+				WithDocumentation("The maximum number of results to return.\nIf not set, the service selects a default.").
+				WithType(api.TypezInt32).
+				WithTypezID("int32").
+				WithOptional(),
+			pageToken,
+		)
+	want.SyntheticRequest = true
 	listLocationsRequest := test.Message(want.ID)
 	if listLocationsRequest == nil {
 		t.Errorf("missing message (%s) in MessageByID index", want.ID)
@@ -587,39 +484,25 @@ func TestOpenAPI_MakeAPI(t *testing.T) {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 
-	apitest.CheckMethod(t, service, "ListLocations", &api.Method{
-		Name:          "ListLocations",
-		ID:            "..Service.ListLocations",
-		Documentation: "Lists information about the supported locations for this service.",
-		InputTypeID:   "..Service.ListLocationsRequest",
-		OutputTypeID:  "..ListLocationsResponse",
-		PathInfo: &api.PathInfo{
-			Bindings: []*api.PathBinding{
-				{
-					Verb: "GET",
-					PathTemplate: (&api.PathTemplate{}).
-						WithLiteral("v1").
-						WithLiteral("projects").
-						WithVariableNamed("project").
-						WithLiteral("locations"),
-					QueryParameters: map[string]bool{
-						"filter":    true,
-						"pageSize":  true,
-						"pageToken": true,
-					},
-				},
-			},
-		},
-		Pagination: &api.Field{
-			Name:          "pageToken",
-			ID:            "..Service.ListLocationsRequest.pageToken",
-			JSONName:      "pageToken",
-			Documentation: "A page token received from the `next_page_token` field in the response.\nSend that page token to receive the subsequent page.",
-			Typez:         api.TypezString,
-			TypezID:       "string",
-			Optional:      true,
-		},
-	})
+	wantListLocationsMethod := api.NewTestMethod("ListLocations").
+		WithID("..Service.ListLocations").
+		WithDocumentation("Lists information about the supported locations for this service.").
+		WithVerb("GET").
+		WithPathTemplate((&api.PathTemplate{}).
+			WithLiteral("v1").
+			WithLiteral("projects").
+			WithVariableNamed("project").
+			WithLiteral("locations")).
+		WithQueryParameters(map[string]bool{
+			"filter":    true,
+			"pageSize":  true,
+			"pageToken": true,
+		}).
+		WithPagination(pageToken)
+	wantListLocationsMethod.IsList = false
+	wantListLocationsMethod.InputTypeID = "..Service.ListLocationsRequest"
+	wantListLocationsMethod.OutputTypeID = "..ListLocationsResponse"
+	apitest.CheckMethod(t, service, "ListLocations", wantListLocationsMethod)
 
 	cs := sample.MethodCreate()
 	apitest.CheckMethod(t, service, cs.Name, cs)
@@ -630,13 +513,11 @@ func TestOpenAPI_MakeAPI(t *testing.T) {
 
 func TestOpenAPI_ServicePlaceholder(t *testing.T) {
 	test := openapiSecretManagerAPI(t)
-	want := &api.Message{
-		Name:               "Service",
-		ID:                 "..Service",
-		Package:            "",
-		Documentation:      "Synthetic messages for the [Service][.Service] service.",
-		ServicePlaceholder: true,
-	}
+	want := api.NewTestMessage("Service").
+		WithPackage("").
+		WithID("..Service").
+		WithDocumentation("Synthetic messages for the [Service][.Service] service.")
+	want.ServicePlaceholder = true
 	got := test.Message("..Service")
 	if got == nil {
 		t.Errorf("missing service placeholder message in MessageById index")
@@ -702,12 +583,11 @@ func TestOpenAPI_SyntheticMessageWithExistingBody(t *testing.T) {
 		t.Fatalf("Error in makeAPI() %q", err)
 	}
 
-	want := &api.Message{
-		Name:               "Service",
-		ID:                 "..Service",
-		Documentation:      "Synthetic messages for the [Service][.Service] service.",
-		ServicePlaceholder: true,
-	}
+	want := api.NewTestMessage("Service").
+		WithPackage("").
+		WithID("..Service").
+		WithDocumentation("Synthetic messages for the [Service][.Service] service.")
+	want.ServicePlaceholder = true
 	got := test.Message(want.ID)
 	if got == nil {
 		t.Errorf("missing message (%s) in MessageByID index", want.ID)
@@ -716,50 +596,33 @@ func TestOpenAPI_SyntheticMessageWithExistingBody(t *testing.T) {
 	apitest.CheckMessage(t, got, want)
 
 	// Methods that share a body should create separate requests.
-	want = &api.Message{
-		Name:             "SetIamPolicyByProjectAndLocationAndSecretRequest",
-		ID:               "..Service.SetIamPolicyByProjectAndLocationAndSecretRequest",
-		Documentation:    "Synthetic request message for the [SetIamPolicyByProjectAndLocationAndSecret()][.Service.SetIamPolicyByProjectAndLocationAndSecret] method.",
-		SyntheticRequest: true,
-		Fields: []*api.Field{
-			{
-				Name:          "project",
-				ID:            "..Service.SetIamPolicyByProjectAndLocationAndSecretRequest.project",
-				JSONName:      "project",
-				Documentation: "The `{project}` component of the target path.\n\nThe full target path will be in the form `/v1/projects/{project}/locations/{location}/secrets/{secret}:setIamPolicy`.",
-				Typez:         api.TypezString,
-				TypezID:       "string",
-				Behavior:      []api.FieldBehavior{api.FieldBehaviorRequired},
-			},
-			{
-				Name:          "location",
-				ID:            "..Service.SetIamPolicyByProjectAndLocationAndSecretRequest.location",
-				JSONName:      "location",
-				Documentation: "The `{location}` component of the target path.\n\nThe full target path will be in the form `/v1/projects/{project}/locations/{location}/secrets/{secret}:setIamPolicy`.",
-				Typez:         api.TypezString,
-				TypezID:       "string",
-				Behavior:      []api.FieldBehavior{api.FieldBehaviorRequired},
-			},
-			{
-				Name:          "secret",
-				ID:            "..Service.SetIamPolicyByProjectAndLocationAndSecretRequest.secret",
-				JSONName:      "secret",
-				Documentation: "The `{secret}` component of the target path.\n\nThe full target path will be in the form `/v1/projects/{project}/locations/{location}/secrets/{secret}:setIamPolicy`.",
-				Typez:         api.TypezString,
-				TypezID:       "string",
-				Behavior:      []api.FieldBehavior{api.FieldBehaviorRequired},
-			},
-			{
-				Name:          "body",
-				ID:            "..Service.SetIamPolicyByProjectAndLocationAndSecretRequest.body",
-				JSONName:      "body",
-				Documentation: "The request body.",
-				Typez:         api.TypezMessage,
-				TypezID:       "..SetIamPolicyRequest",
-				Optional:      true,
-			},
-		},
-	}
+	want = api.NewTestMessage("SetIamPolicyByProjectAndLocationAndSecretRequest").
+		WithPackage("").
+		WithID("..Service.SetIamPolicyByProjectAndLocationAndSecretRequest").
+		WithDocumentation("Synthetic request message for the [SetIamPolicyByProjectAndLocationAndSecret()][.Service.SetIamPolicyByProjectAndLocationAndSecret] method.").
+		WithFields(
+			api.NewTestField("project").
+				WithDocumentation("The `{project}` component of the target path.\n\nThe full target path will be in the form `/v1/projects/{project}/locations/{location}/secrets/{secret}:setIamPolicy`.").
+				WithType(api.TypezString).
+				WithTypezID("string").
+				WithBehavior(api.FieldBehaviorRequired),
+			api.NewTestField("location").
+				WithDocumentation("The `{location}` component of the target path.\n\nThe full target path will be in the form `/v1/projects/{project}/locations/{location}/secrets/{secret}:setIamPolicy`.").
+				WithType(api.TypezString).
+				WithTypezID("string").
+				WithBehavior(api.FieldBehaviorRequired),
+			api.NewTestField("secret").
+				WithDocumentation("The `{secret}` component of the target path.\n\nThe full target path will be in the form `/v1/projects/{project}/locations/{location}/secrets/{secret}:setIamPolicy`.").
+				WithType(api.TypezString).
+				WithTypezID("string").
+				WithBehavior(api.FieldBehaviorRequired),
+			api.NewTestField("body").
+				WithDocumentation("The request body.").
+				WithType(api.TypezMessage).
+				WithTypezID("..SetIamPolicyRequest").
+				WithOptional(),
+		)
+	want.SyntheticRequest = true
 	got = test.Message(want.ID)
 	if got == nil {
 		t.Errorf("missing message (%s) in MessageByID index", want.ID)
@@ -767,41 +630,28 @@ func TestOpenAPI_SyntheticMessageWithExistingBody(t *testing.T) {
 	}
 	apitest.CheckMessage(t, got, want)
 
-	want = &api.Message{
-		Name:             "SetIamPolicyRequest",
-		ID:               "..Service.SetIamPolicyRequest",
-		Documentation:    "Synthetic request message for the [SetIamPolicy()][.Service.SetIamPolicy] method.",
-		SyntheticRequest: true,
-		Fields: []*api.Field{
-			{
-				Name:          "project",
-				ID:            "..Service.SetIamPolicyRequest.project",
-				JSONName:      "project",
-				Documentation: "The `{project}` component of the target path.\n\nThe full target path will be in the form `/v1/projects/{project}/secrets/{secret}:setIamPolicy`.",
-				Typez:         api.TypezString,
-				TypezID:       "string",
-				Behavior:      []api.FieldBehavior{api.FieldBehaviorRequired},
-			},
-			{
-				Name:          "secret",
-				ID:            "..Service.SetIamPolicyRequest.secret",
-				JSONName:      "secret",
-				Documentation: "The `{secret}` component of the target path.\n\nThe full target path will be in the form `/v1/projects/{project}/secrets/{secret}:setIamPolicy`.",
-				Typez:         api.TypezString,
-				TypezID:       "string",
-				Behavior:      []api.FieldBehavior{api.FieldBehaviorRequired},
-			},
-			{
-				Name:          "body",
-				ID:            "..Service.SetIamPolicyRequest.body",
-				JSONName:      "body",
-				Documentation: "The request body.",
-				Typez:         api.TypezMessage,
-				TypezID:       "..SetIamPolicyRequest",
-				Optional:      true,
-			},
-		},
-	}
+	want = api.NewTestMessage("SetIamPolicyRequest").
+		WithPackage("").
+		WithID("..Service.SetIamPolicyRequest").
+		WithDocumentation("Synthetic request message for the [SetIamPolicy()][.Service.SetIamPolicy] method.").
+		WithFields(
+			api.NewTestField("project").
+				WithDocumentation("The `{project}` component of the target path.\n\nThe full target path will be in the form `/v1/projects/{project}/secrets/{secret}:setIamPolicy`.").
+				WithType(api.TypezString).
+				WithTypezID("string").
+				WithBehavior(api.FieldBehaviorRequired),
+			api.NewTestField("secret").
+				WithDocumentation("The `{secret}` component of the target path.\n\nThe full target path will be in the form `/v1/projects/{project}/secrets/{secret}:setIamPolicy`.").
+				WithType(api.TypezString).
+				WithTypezID("string").
+				WithBehavior(api.FieldBehaviorRequired),
+			api.NewTestField("body").
+				WithDocumentation("The request body.").
+				WithType(api.TypezMessage).
+				WithTypezID("..SetIamPolicyRequest").
+				WithOptional(),
+		)
+	want.SyntheticRequest = true
 	got = test.Message(want.ID)
 	if got == nil {
 		t.Errorf("missing message (%s) in MessageByID index", want.ID)
@@ -830,85 +680,53 @@ func TestOpenAPI_Pagination(t *testing.T) {
 		t.Errorf("missing service (Service) in ServiceByID index")
 		return
 	}
-	apitest.CheckService(t, service, &api.Service{
-		Name: "Service",
-		ID:   "..Service",
-		Methods: []*api.Method{
-			{
-				Name:         "ListFoos",
-				ID:           "..Service.ListFoos",
-				InputTypeID:  "..Service.ListFoosRequest",
-				OutputTypeID: "..ListFoosResponse",
-				PathInfo: &api.PathInfo{
-					Bindings: []*api.PathBinding{
-						{
-							Verb: "GET",
-							PathTemplate: (&api.PathTemplate{}).
-								WithLiteral("v1").
-								WithLiteral("projects").
-								WithVariableNamed("project").
-								WithLiteral("foos"),
-							QueryParameters: map[string]bool{"pageSize": true, "pageToken": true},
-						},
-					},
-				},
-				Pagination: &api.Field{
-					Name:          "pageToken",
-					ID:            "..Service.ListFoosRequest.pageToken",
-					JSONName:      "pageToken",
-					Documentation: "The `{pageToken}` component of the target path.\n\nThe full target path will be in the form `/v1/projects/{project}/foos`.",
-					Typez:         api.TypezString,
-					TypezID:       "string",
-					Optional:      true,
-				},
-			},
-		},
-	})
+	listFoosMethod := api.NewTestMethod("ListFoos").
+		WithID("..Service.ListFoos").
+		WithVerb("GET").
+		WithPathTemplate(
+			(&api.PathTemplate{}).
+				WithLiteral("v1").
+				WithLiteral("projects").
+				WithVariableNamed("project").
+				WithLiteral("foos"),
+		).
+		WithQueryParameters(map[string]bool{"pageSize": true, "pageToken": true}).
+		WithPagination(
+			api.NewTestField("pageToken").
+				WithDocumentation("The `{pageToken}` component of the target path.\n\nThe full target path will be in the form `/v1/projects/{project}/foos`.").
+				WithType(api.TypezString).
+				WithTypezID("string").
+				WithOptional(),
+		)
+	listFoosMethod.Pagination.ID = "..Service.ListFoosRequest.pageToken"
+	listFoosMethod.IsList = false
+	listFoosMethod.InputTypeID = "..Service.ListFoosRequest"
+	listFoosMethod.OutputTypeID = "..ListFoosResponse"
+
+	wantService := api.NewTestService("Service").
+		WithPackage("").
+		WithMethods(listFoosMethod)
+	listFoosMethod.Service = nil
+	apitest.CheckService(t, service, wantService)
 	resp := test.Message("..ListFoosResponse")
 	if resp == nil {
 		t.Errorf("missing message (ListFoosResponse) in MessageByID index")
 		return
 	}
-	apitest.CheckMessage(t, resp, &api.Message{
-		Name: "ListFoosResponse",
-		ID:   "..ListFoosResponse",
-		Fields: []*api.Field{
-			{
-				Name:     "nextPageToken",
-				ID:       "..ListFoosResponse.nextPageToken",
-				Typez:    9,
-				TypezID:  "string",
-				JSONName: "nextPageToken",
-				Optional: true,
-			},
-			{
-				Name:     "secrets",
-				ID:       "..ListFoosResponse.secrets",
-				Typez:    api.TypezMessage,
-				TypezID:  "..Foo",
-				JSONName: "secrets",
-				Repeated: true,
-			},
-		},
-		Pagination: &api.PaginationInfo{
-			NextPageToken: &api.Field{
-				Name:     "nextPageToken",
-				ID:       "..ListFoosResponse.nextPageToken",
-				Typez:    9,
-				TypezID:  "string",
-				JSONName: "nextPageToken",
-				Optional: true,
-			},
-			PageableItem: &api.Field{
-				Name:     "secrets",
-				ID:       "..ListFoosResponse.secrets",
-				Typez:    api.TypezMessage,
-				TypezID:  "..Foo",
-				JSONName: "secrets",
-				Repeated: true,
-			},
-		},
-	})
+	wantResp := api.NewTestMessage("ListFoosResponse").
+		WithPackage("").
+		WithID("..ListFoosResponse").
+		WithPagination(
+			api.NewTestField("nextPageToken").
+				WithType(api.TypezString).
+				WithTypezID("string").
+				WithOptional(),
+			api.NewTestField("secrets").
+				WithType(api.TypezMessage).
+				WithTypezID("..Foo").
+				WithRepeated(),
+		)
+	apitest.CheckMessage(t, resp, wantResp)
 }
 
 func TestOpenAPI_AutoPopulated(t *testing.T) {
@@ -952,85 +770,53 @@ func TestOpenAPI_AutoPopulated(t *testing.T) {
 		t.Fatalf("Error in makeAPI() %q", err)
 	}
 
-	request_id := &api.Field{
-		Name:          "requestId",
-		ID:            ".test.TestService.CreateFooRequest.requestId",
-		JSONName:      "requestId",
-		Documentation: "Test-only Description",
-		Typez:         api.TypezString,
-		TypezID:       "string",
-		Optional:      true,
-		AutoPopulated: true,
-	}
-	request_id_explicit := &api.Field{
-		Name:          "requestIdExplicitlyNotRequired",
-		ID:            ".test.TestService.CreateFooRequest.requestIdExplicitlyNotRequired",
-		JSONName:      "requestIdExplicitlyNotRequired",
-		Documentation: "Test-only Description",
-		Typez:         api.TypezString,
-		TypezID:       "string",
-		Optional:      true,
-		AutoPopulated: true,
-	}
-	wantMessage := &api.Message{
-		Name:             "CreateFooRequest",
-		ID:               ".test.TestService.CreateFooRequest",
-		Package:          "test",
-		Documentation:    "Synthetic request message for the [CreateFoo()][test.TestService.CreateFoo] method.",
-		SyntheticRequest: true,
-		Fields: []*api.Field{
-			{
-				Name:          "project",
-				ID:            ".test.TestService.CreateFooRequest.project",
-				JSONName:      "project",
-				Documentation: "The `{project}` component of the target path.\n\nThe full target path will be in the form `/v1/projects/{project}/foos`.",
-				Typez:         api.TypezString,
-				TypezID:       "string",
-				Behavior:      []api.FieldBehavior{api.FieldBehaviorRequired},
-			},
-			{
-				Name:          "fooId",
-				ID:            ".test.TestService.CreateFooRequest.fooId",
-				JSONName:      "fooId",
-				Documentation: "Test-only Description",
-				Typez:         api.TypezString,
-				TypezID:       "string",
-				Behavior:      []api.FieldBehavior{api.FieldBehaviorRequired},
-			},
-			request_id,
-			request_id_explicit,
-			{
-				Name:          "notRequestIdRequired",
-				ID:            ".test.TestService.CreateFooRequest.notRequestIdRequired",
-				Documentation: "Test-only Description",
-				Typez:         api.TypezString,
-				TypezID:       "string",
-				JSONName:      "notRequestIdRequired",
-				Behavior:      []api.FieldBehavior{api.FieldBehaviorRequired},
-			},
-			{
-				Name:          "notRequestIdMissingFormat",
-				ID:            ".test.TestService.CreateFooRequest.notRequestIdMissingFormat",
-				Documentation: "Test-only Description",
-				Typez:         api.TypezString,
-				TypezID:       "string",
-				JSONName:      "notRequestIdMissingFormat",
-				Optional:      true,
-			},
-			{
-				Name:          "notRequestIdMissingServiceConfig",
-				ID:            ".test.TestService.CreateFooRequest.notRequestIdMissingServiceConfig",
-				Documentation: "Test-only Description",
-				Typez:         api.TypezString,
-				TypezID:       "string",
-				JSONName:      "notRequestIdMissingServiceConfig",
-				Optional:      true,
-				// This just denotes that the field is eligible
-				// to be auto-populated
-				AutoPopulated: true,
-			},
-		},
-	}
+	requestID := api.NewTestField("requestId").
+		WithDocumentation("Test-only Description").
+		WithType(api.TypezString).
+		WithTypezID("string").
+		WithOptional().
+		WithAutoPopulated()
+	requestIDExplicit := api.NewTestField("requestIdExplicitlyNotRequired").
+		WithDocumentation("Test-only Description").
+		WithType(api.TypezString).
+		WithTypezID("string").
+		WithOptional().
+		WithAutoPopulated()
+	wantMessage := api.NewTestMessage("CreateFooRequest").
+		WithPackage("test").
+		WithID(".test.TestService.CreateFooRequest").
+		WithDocumentation("Synthetic request message for the [CreateFoo()][test.TestService.CreateFoo] method.").
+		WithFields(
+			api.NewTestField("project").
+				WithDocumentation("The `{project}` component of the target path.\n\nThe full target path will be in the form `/v1/projects/{project}/foos`.").
+				WithType(api.TypezString).
+				WithTypezID("string").
+				WithBehavior(api.FieldBehaviorRequired),
+			api.NewTestField("fooId").
+				WithDocumentation("Test-only Description").
+				WithType(api.TypezString).
+				WithTypezID("string").
+				WithBehavior(api.FieldBehaviorRequired),
+			requestID,
+			requestIDExplicit,
+			api.NewTestField("notRequestIdRequired").
+				WithDocumentation("Test-only Description").
+				WithType(api.TypezString).
+				WithTypezID("string").
+				WithBehavior(api.FieldBehaviorRequired),
+			api.NewTestField("notRequestIdMissingFormat").
+				WithDocumentation("Test-only Description").
+				WithType(api.TypezString).
+				WithTypezID("string").
+				WithOptional(),
+			api.NewTestField("notRequestIdMissingServiceConfig").
+				WithDocumentation("Test-only Description").
+				WithType(api.TypezString).
+				WithTypezID("string").
+				WithOptional().
+				WithAutoPopulated(),
+		)
+	wantMessage.SyntheticRequest = true
 	message := test.Message(wantMessage.ID)
 	if message == nil {
 		t.Fatalf("Cannot find message %s in API State", wantMessage.ID)
@@ -1041,8 +827,8 @@ func TestOpenAPI_AutoPopulated(t *testing.T) {
 	if method == nil {
 		t.Fatalf("Cannot find method %s in API State", ".test.TestService.CreateFoo")
 	}
-	wantField := []*api.Field{request_id, request_id_explicit}
-	if diff := cmp.Diff(wantField, method.AutoPopulated); diff != "" {
+	wantField := []*api.Field{requestID, requestIDExplicit}
+	if diff := cmp.Diff(wantField, method.AutoPopulated, cmpopts.IgnoreFields(api.Field{}, "Parent")); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
@@ -1066,98 +852,76 @@ func TestOpenAPI_Deprecated(t *testing.T) {
 		t.Errorf("cannot find service %s in model", "..Service.ListFoos")
 		return
 	}
-	apitest.CheckMethod(t, service, "RpcA", &api.Method{
-		Name:         "RpcA",
-		ID:           "..Service.RpcA",
-		InputTypeID:  "..Service.RpcARequest",
-		OutputTypeID: "..Response",
-		PathInfo: &api.PathInfo{
-			Bindings: []*api.PathBinding{
-				{
-					Verb: "GET",
-					PathTemplate: (&api.PathTemplate{}).
-						WithLiteral("v1").
-						WithLiteral("projects").
-						WithVariableNamed("project").
-						WithLiteral("rpc").
-						WithLiteral("a"),
-					QueryParameters: map[string]bool{"filter": true},
-				},
-			},
-		},
-	})
+	rpcA := api.NewTestMethod("RpcA").
+		WithID("..Service.RpcA").
+		WithVerb("GET").
+		WithPathTemplate(
+			(&api.PathTemplate{}).
+				WithLiteral("v1").
+				WithLiteral("projects").
+				WithVariableNamed("project").
+				WithLiteral("rpc").
+				WithLiteral("a"),
+		).
+		WithQueryParameters(map[string]bool{"filter": true})
+	rpcA.InputTypeID = "..Service.RpcARequest"
+	rpcA.OutputTypeID = "..Response"
+	apitest.CheckMethod(t, service, "RpcA", rpcA)
 
-	apitest.CheckMethod(t, service, "RpcB", &api.Method{
-		Name:         "RpcB",
-		ID:           "..Service.RpcB",
-		Deprecated:   true,
-		InputTypeID:  "..Service.RpcBRequest",
-		OutputTypeID: "..Response",
-		PathInfo: &api.PathInfo{
-			Bindings: []*api.PathBinding{
-				{
-					Verb: "GET",
-					PathTemplate: (&api.PathTemplate{}).
-						WithLiteral("v1").
-						WithLiteral("projects").
-						WithVariableNamed("project").
-						WithLiteral("rpc").
-						WithLiteral("b"),
-					QueryParameters: map[string]bool{},
-				},
-			},
-		},
-	})
+	rpcB := api.NewTestMethod("RpcB").
+		WithID("..Service.RpcB").
+		WithDeprecated(true).
+		WithVerb("GET").
+		WithPathTemplate(
+			(&api.PathTemplate{}).
+				WithLiteral("v1").
+				WithLiteral("projects").
+				WithVariableNamed("project").
+				WithLiteral("rpc").
+				WithLiteral("b"),
+		).
+		WithQueryParameters(map[string]bool{})
+	rpcB.InputTypeID = "..Service.RpcBRequest"
+	rpcB.OutputTypeID = "..Response"
+	apitest.CheckMethod(t, service, "RpcB", rpcB)
 
 	response := test.Message("..Response")
 	if response == nil {
 		t.Errorf("cannot find message %s", "..Response")
 		return
 	}
-	apitest.CheckMessage(t, response, &api.Message{
-		Name: "Response",
-		ID:   "..Response",
-		Fields: []*api.Field{
-			{
-				Name:     "name",
-				ID:       "..Response.name",
-				Typez:    api.TypezString,
-				TypezID:  "string",
-				JSONName: "name",
-				Optional: true,
-			},
-			{
-				Name:       "other",
-				ID:         "..Response.other",
-				Typez:      api.TypezString,
-				TypezID:    "string",
-				JSONName:   "other",
-				Deprecated: true,
-				Optional:   true,
-			},
-		},
-	})
+	wantResponse := api.NewTestMessage("Response").
+		WithPackage("").
+		WithID("..Response").
+		WithFields(
+			api.NewTestField("name").
+				WithType(api.TypezString).
+				WithTypezID("string").
+				WithOptional(),
+			api.NewTestField("other").
+				WithType(api.TypezString).
+				WithTypezID("string").
+				WithDeprecated(true).
+				WithOptional(),
+		)
+	apitest.CheckMessage(t, response, wantResponse)
 
 	deprecatedMessage := test.Message("..DeprecatedMessage")
 	if deprecatedMessage == nil {
 		t.Errorf("cannot find message %s", "..DeprecatedMessage")
 		return
 	}
-	apitest.CheckMessage(t, deprecatedMessage, &api.Message{
-		Name:       "DeprecatedMessage",
-		ID:         "..DeprecatedMessage",
-		Deprecated: true,
-		Fields: []*api.Field{
-			{
-				Name:     "name",
-				ID:       "..DeprecatedMessage.name",
-				Typez:    api.TypezString,
-				TypezID:  "string",
-				JSONName: "name",
-				Optional: true,
-			},
-		},
-	})
+	wantDeprecatedMessage := api.NewTestMessage("DeprecatedMessage").
+		WithPackage("").
+		WithID("..DeprecatedMessage").
+		WithDeprecated(true).
+		WithFields(
+			api.NewTestField("name").
+				WithType(api.TypezString).
+				WithTypezID("string").
+				WithOptional(),
+		)
+	apitest.CheckMessage(t, deprecatedMessage, wantDeprecatedMessage)
 }
 
 func TestOpenAPI_ParseBadFiles(t *testing.T) {
