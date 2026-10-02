@@ -16,7 +16,7 @@ limitations under the License.
 {{- include "templates/partials/prologue-md" . }}
 
 # Sample Codec - {{ .Title }}
-{{- if .Description }}
+{{ if .Description }}
 {{- "\n" }}
 {{ .Description }}
-{{- end }}
+{{ end }}
