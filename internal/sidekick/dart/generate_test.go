@@ -205,7 +205,7 @@ func TestGeneratedFiles(t *testing.T) {
 func TestTemplatesAvailable(t *testing.T) {
 	var count = 0
 	fs.WalkDir(dartTemplates, "templates", func(path string, d fs.DirEntry, err error) error {
-		if filepath.Ext(path) != ".mustache" {
+		if filepath.Ext(path) != ".gotmpl" {
 			return nil
 		}
 		if strings.Count(d.Name(), ".") == 1 {
@@ -218,6 +218,12 @@ func TestTemplatesAvailable(t *testing.T) {
 
 	if count == 0 {
 		t.Errorf("no dart templates found")
+	}
+}
+
+func TestValidateTemplates(t *testing.T) {
+	if err := parsedTemplates.Validate(); err != nil {
+		t.Fatal(err)
 	}
 }
 

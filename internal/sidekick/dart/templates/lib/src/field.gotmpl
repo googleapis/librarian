@@ -1,4 +1,4 @@
-{{!
+{{/*
 Copyright 2025 Google LLC
 
 Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,9 +12,8 @@ distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
-}}
-{{#Codec.DocLines}}
-{{{.}}}
-{{/Codec.DocLines}}
-final {{{Codec.Type}}}{{^Codec.Required}}?{{/Codec.Required}} {{Codec.Name}};
-
+*/}}
+{{- range .Codec.DocLines }}
+{{ . }}
+{{- end }}
+final {{ .Codec.Type }}{{- if not .Codec.Required }}?{{- end }} {{ .Codec.Name }};
