@@ -212,41 +212,10 @@ func Publish(ctx context.Context, params PublishParams) error {
 	}
 
 	// Phase 1: Parallel Pre-Check (git.RemoteTagExists across all candidates)
-	needsPublish := make([]bool, len(candidates))
-	checkGroup, checkCtx := errgroup.WithContext(ctx)
-	checkGroup.SetLimit(max(concurrency*2, 16))
-
-	for i, c := range candidates {
-		checkGroup.Go(func() error {
-			tagExists, err := git.RemoteTagExists(checkCtx, gitExe, c.remoteURL, c.tag)
-			if err != nil {
-				if params.DryRunKeepGoing {
-					slog.Error("failed to check remote tags, but continuing due to --keep-going", "library", c.lib.Name, "remote", c.remoteURL, "error", err)
-					return nil
-				}
-				return fmt.Errorf("failed to check remote tags for %s on %s: %w", c.lib.Name, c.remoteURL, err)
-			}
-			if tagExists {
-				slog.Info("version already tagged on remote repository, skipping", "library", c.lib.Name, "version", c.tag, "remote", c.remoteURL)
-				return nil
-			}
-			needsPublish[i] = true
-			return nil
-		})
-	}
-	if err := checkGroup.Wait(); err != nil {
+	toPublish, err := filterUnpublishedCandidates(ctx, gitExe, candidates, concurrency, params.DryRunKeepGoing)
+	if err != nil {
 		return err
 	}
-
-	var toPublish []publishCandidate
-	toPublishMap := make(map[string]publishCandidate)
-	for i, c := range candidates {
-		if needsPublish[i] {
-			toPublish = append(toPublish, c)
-			toPublishMap[c.lib.Name] = c
-		}
-	}
-
 	if len(toPublish) == 0 {
 		slog.Info("all eligible libraries are already tagged on remote repositories")
 		return nil
@@ -266,6 +235,57 @@ func Publish(ctx context.Context, params PublishParams) error {
 		}
 	}
 
+	splitSHAs, err := splitCandidateLibraries(ctx, gitExe, origin, rootFiles, rootEntries, toPublish, params.DryRunKeepGoing)
+	if err != nil {
+		return err
+	}
+
+	toPublishMap := make(map[string]publishCandidate, len(toPublish))
+	for _, c := range toPublish {
+		toPublishMap[c.lib.Name] = c
+	}
+
+	// Phase 3: Topological Parallel Push (Level by Level)
+	return pushTopologicalLevels(ctx, gitExe, remoteBranch, levels, toPublishMap, splitSHAs, params, concurrency)
+}
+
+func filterUnpublishedCandidates(ctx context.Context, gitExe string, candidates []publishCandidate, concurrency int, dryRunKeepGoing bool) ([]publishCandidate, error) {
+	needsPublish := make([]bool, len(candidates))
+	checkGroup, checkCtx := errgroup.WithContext(ctx)
+	checkGroup.SetLimit(max(concurrency*2, 16))
+
+	for i, c := range candidates {
+		checkGroup.Go(func() error {
+			tagExists, err := git.RemoteTagExists(checkCtx, gitExe, c.remoteURL, c.tag)
+			if err != nil {
+				if dryRunKeepGoing {
+					slog.Error("failed to check remote tags, but continuing due to --keep-going", "library", c.lib.Name, "remote", c.remoteURL, "error", err)
+					return nil
+				}
+				return fmt.Errorf("failed to check remote tags for %s on %s: %w", c.lib.Name, c.remoteURL, err)
+			}
+			if tagExists {
+				slog.Info("version already tagged on remote repository, skipping", "library", c.lib.Name, "version", c.tag, "remote", c.remoteURL)
+				return nil
+			}
+			needsPublish[i] = true
+			return nil
+		})
+	}
+	if err := checkGroup.Wait(); err != nil {
+		return nil, err
+	}
+
+	var toPublish []publishCandidate
+	for i, c := range candidates {
+		if needsPublish[i] {
+			toPublish = append(toPublish, c)
+		}
+	}
+	return toPublish, nil
+}
+
+func splitCandidateLibraries(ctx context.Context, gitExe, origin string, rootFiles, rootEntries []string, toPublish []publishCandidate, dryRunKeepGoing bool) (map[string]string, error) {
 	splitSHAs := make(map[string]string)
 	var splitMu sync.Mutex
 
@@ -283,7 +303,7 @@ func Publish(ctx context.Context, params PublishParams) error {
 				GitExe:      gitExe,
 			})
 			if err != nil {
-				if params.DryRunKeepGoing {
+				if dryRunKeepGoing {
 					slog.Error("failed to split library, but continuing due to --keep-going", "library", c.lib.Name, "error", err)
 					return nil
 				}
@@ -296,10 +316,12 @@ func Publish(ctx context.Context, params PublishParams) error {
 		})
 	}
 	if err := splitGroup.Wait(); err != nil {
-		return err
+		return nil, err
 	}
+	return splitSHAs, nil
+}
 
-	// Phase 3: Topological Parallel Push (Level by Level)
+func pushTopologicalLevels(ctx context.Context, gitExe, remoteBranch string, levels [][]*config.Library, toPublishMap map[string]publishCandidate, splitSHAs map[string]string, params PublishParams, concurrency int) error {
 	for levelIdx, level := range levels {
 		var levelCandidates []publishCandidate
 		for _, lib := range level {
@@ -345,7 +367,6 @@ func Publish(ctx context.Context, params PublishParams) error {
 			return err
 		}
 	}
-
 	return nil
 }
 
