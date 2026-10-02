@@ -16,11 +16,7 @@ limitations under the License.
 {{/* Serialize message fields that do not require transformations. */}}
 {{- if .Singular }}
 {{/* First deal with all the fields that are not part of a oneof */}}
-{{- if .IsOneOf }}
-if let Some(value) = self.{{ .Codec.FieldName }}() {
-    state.serialize_entry("{{ .JSONName }}", value)?;
-}
-{{- else }}
+{{- if not .IsOneOf }}
 {{- if .Optional }}
 if self.{{ .Codec.FieldName }}.is_some() {
     state.serialize_entry("{{ .JSONName }}", &self.{{ .Codec.FieldName }})?;
@@ -36,6 +32,10 @@ if !wkt::internal::is_default(&self.{{ .Codec.FieldName }}) {
 }
 {{- end }}
 {{- end }}
+{{- else }}
+if let Some(value) = self.{{ .Codec.FieldName }}() {
+    state.serialize_entry("{{ .JSONName }}", value)?;
+}
 {{- end }}
 {{- end }}
 {{/* repeated and map fields are never part of a oneof */}}

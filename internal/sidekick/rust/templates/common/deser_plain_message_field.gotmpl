@@ -16,18 +16,7 @@ limitations under the License.
 {{/* Deserialize message fields that do not require transformations. */}}
 {{- if .Singular }}
 {{/* First deal with all the fields that are not part of a oneof */}}
-{{- if .IsOneOf }}
-if result.{{ .Group.Codec.FieldName }}.is_some() {
-    return std::result::Result::Err(A::Error::duplicate_field(
-        "multiple values for `{{ .Group.Codec.FieldName }}`, a oneof with full ID {{ .ID }}, latest field was {{ .JSONName }}",
-    ));
-}
-result.{{ .Group.Codec.FieldName }} = std::option::Option::Some(
-    {{ .Group.Codec.QualifiedName }}::{{ .Codec.BranchName }}(
-        map.next_value::<std::option::Option<{{ .Codec.FieldType }}>>()?.unwrap_or_default()
-    ),
-);
-{{- else }}
+{{- if not .IsOneOf }}
 {{- if .Optional }}
 result.{{ .Codec.FieldName }} = map.next_value::<{{ .Codec.FieldType }}>()?
     {{- if .Codec.IsWktNullValue }}
@@ -40,6 +29,17 @@ result.{{ .Codec.FieldName }} = map.next_value::<{{ .Codec.FieldType }}>()?
 {{- else }}
 result.{{ .Codec.FieldName }} = map.next_value::<std::option::Option<{{ .Codec.FieldType }}>>()?.unwrap_or_default();
 {{- end }}
+{{- else }}
+if result.{{ .Group.Codec.FieldName }}.is_some() {
+    return std::result::Result::Err(A::Error::duplicate_field(
+        "multiple values for `{{ .Group.Codec.FieldName }}`, a oneof with full ID {{ .ID }}, latest field was {{ .JSONName }}",
+    ));
+}
+result.{{ .Group.Codec.FieldName }} = std::option::Option::Some(
+    {{ .Group.Codec.QualifiedName }}::{{ .Codec.BranchName }}(
+        map.next_value::<std::option::Option<{{ .Codec.FieldType }}>>()?.unwrap_or_default()
+    ),
+);
 {{- end }}
 {{- end }}
 {{/* repeated and map fields are never part of a oneof */}}

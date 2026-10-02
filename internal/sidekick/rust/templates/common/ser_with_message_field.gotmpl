@@ -16,20 +16,7 @@ limitations under the License.
 {{/* Serialize message fields that **do** require transformations. */}}
 {{- if .Singular }}
 {{/* First deal with all the fields that are not part of a oneof */}}
-{{- if .IsOneOf }}
-if let Some(value) = self.{{ .Codec.FieldName }}() {
-    struct __With<'a>(&'a {{ .Codec.FieldType }});
-    impl<'a> serde::ser::Serialize for __With<'a> {
-        fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
-        where
-            S: serde::ser::Serializer,
-        {
-            serde_with::As::<{{ .Codec.SerdeAs }}>::serialize(self.0, serializer)
-        }
-    }
-    state.serialize_entry("{{ .JSONName }}", &__With(value))?;
-}
-{{- else }}
+{{- if not .IsOneOf }}
 {{- if .Optional }}
 if self.{{ .Codec.FieldName }}.is_some() {
     struct __With<'a>(&'a {{ .Codec.FieldType }});
@@ -61,6 +48,19 @@ if !wkt::internal::is_default(&self.{{ .Codec.FieldName }}) {
     state.serialize_entry("{{ .JSONName }}", &__With(&self.{{ .Codec.FieldName }}))?;
 }
 {{- end }}
+{{- else }}
+if let Some(value) = self.{{ .Codec.FieldName }}() {
+    struct __With<'a>(&'a {{ .Codec.FieldType }});
+    impl<'a> serde::ser::Serialize for __With<'a> {
+        fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+        where
+            S: serde::ser::Serializer,
+        {
+            serde_with::As::<{{ .Codec.SerdeAs }}>::serialize(self.0, serializer)
+        }
+    }
+    state.serialize_entry("{{ .JSONName }}", &__With(value))?;
+}
 {{- end }}
 {{- end }}
 {{/* repeated and map fields are never part of a oneof */}}
