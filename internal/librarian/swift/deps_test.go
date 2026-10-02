@@ -139,19 +139,224 @@ func TestTopologicalLevelsDiamond(t *testing.T) {
 
 func TestTopologicalLevelsCycleDetection(t *testing.T) {
 	libs := []*config.Library{
-		{Name: "a"},
-		{Name: "b"},
-		{Name: "c"},
+		{Name: "pkg-a"},
+		{Name: "pkg-b"},
+		{Name: "pkg-c"},
 	}
 	deps := map[string][]string{
-		"a": {"b"},
-		"b": {"c"},
-		"c": {"a"},
+		"pkg-a": {"pkg-b"},
+		"pkg-b": {"pkg-c"},
+		"pkg-c": {"pkg-a"},
 	}
 
 	_, err := topologicalLevels(libs, deps)
 	if err == nil {
 		t.Fatal("expected cycle detection error, got nil")
+	}
+	wantErr := "cycle detected in Swift dependency graph among libraries: pkg-a, pkg-b, pkg-c"
+	if diff := cmp.Diff(wantErr, err.Error()); diff != "" {
+		t.Errorf("error message mismatch (-want +got):\n%s", diff)
+	}
+}
+
+func TestTopologicalLevelsEmpty(t *testing.T) {
+	levels, err := topologicalLevels(nil, nil)
+	if err != nil {
+		t.Fatalf("topologicalLevels(nil) failed: %v", err)
+	}
+	if len(levels) != 0 {
+		t.Errorf("got %d levels, want 0", len(levels))
+	}
+
+	levels, err = topologicalLevels([]*config.Library{}, map[string][]string{})
+	if err != nil {
+		t.Fatalf("topologicalLevels([]) failed: %v", err)
+	}
+	if len(levels) != 0 {
+		t.Errorf("got %d levels, want 0", len(levels))
+	}
+}
+
+func TestTopologicalLevelsSingle(t *testing.T) {
+	libs := []*config.Library{{Name: "single"}}
+	deps := map[string][]string{"single": nil}
+
+	levels, err := topologicalLevels(libs, deps)
+	if err != nil {
+		t.Fatalf("topologicalLevels failed: %v", err)
+	}
+	if len(levels) != 1 {
+		t.Fatalf("got %d levels, want 1", len(levels))
+	}
+	checkLevel(t, levels[0], []string{"single"})
+}
+
+func TestTopologicalLevelsSelfCycle(t *testing.T) {
+	libs := []*config.Library{{Name: "self-referential"}}
+	deps := map[string][]string{"self-referential": {"self-referential"}}
+
+	_, err := topologicalLevels(libs, deps)
+	if err == nil {
+		t.Fatal("expected cycle detection error for self-dependency, got nil")
+	}
+	wantErr := "cycle detected in Swift dependency graph among libraries: self-referential"
+	if diff := cmp.Diff(wantErr, err.Error()); diff != "" {
+		t.Errorf("error message mismatch (-want +got):\n%s", diff)
+	}
+}
+
+func TestTopologicalLevelsExternalDependencyIgnored(t *testing.T) {
+	libs := []*config.Library{
+		{Name: "app"},
+		{Name: "auth"},
+	}
+	// app depends on auth (internal) and swift-nio / swift-log (external, not in libraries)
+	deps := map[string][]string{
+		"auth": {"swift-nio"},
+		"app":  {"auth", "swift-log"},
+	}
+
+	levels, err := topologicalLevels(libs, deps)
+	if err != nil {
+		t.Fatalf("topologicalLevels failed: %v", err)
+	}
+	if len(levels) != 2 {
+		t.Fatalf("got %d levels, want 2", len(levels))
+	}
+	checkLevel(t, levels[0], []string{"auth"})
+	checkLevel(t, levels[1], []string{"app"})
+}
+
+func TestTopologicalLevelsForest(t *testing.T) {
+	// Tree 1: a -> b -> c
+	// Tree 2: d -> e
+	// Tree 3: f (isolated)
+	libs := []*config.Library{
+		{Name: "c"},
+		{Name: "b"},
+		{Name: "a"},
+		{Name: "e"},
+		{Name: "d"},
+		{Name: "f"},
+	}
+	deps := map[string][]string{
+		"a": nil,
+		"b": {"a"},
+		"c": {"b"},
+		"d": nil,
+		"e": {"d"},
+		"f": nil,
+	}
+
+	levels, err := topologicalLevels(libs, deps)
+	if err != nil {
+		t.Fatalf("topologicalLevels failed: %v", err)
+	}
+	if len(levels) != 3 {
+		t.Fatalf("got %d levels, want 3", len(levels))
+	}
+	checkLevel(t, levels[0], []string{"a", "d", "f"})
+	checkLevel(t, levels[1], []string{"b", "e"})
+	checkLevel(t, levels[2], []string{"c"})
+}
+
+func TestTopologicalLevelsPartialCycle(t *testing.T) {
+	// pkg-a -> pkg-b is valid, but cycle-x <-> cycle-y forms a cycle
+	libs := []*config.Library{
+		{Name: "pkg-a"},
+		{Name: "pkg-b"},
+		{Name: "cycle-x"},
+		{Name: "cycle-y"},
+	}
+	deps := map[string][]string{
+		"pkg-a":   nil,
+		"pkg-b":   {"pkg-a"},
+		"cycle-x": {"cycle-y"},
+		"cycle-y": {"cycle-x"},
+	}
+
+	_, err := topologicalLevels(libs, deps)
+	if err == nil {
+		t.Fatal("expected cycle detection error for partial cycle, got nil")
+	}
+	wantErr := "cycle detected in Swift dependency graph among libraries: cycle-x, cycle-y"
+	if diff := cmp.Diff(wantErr, err.Error()); diff != "" {
+		t.Errorf("error message mismatch (-want +got):\n%s", diff)
+	}
+}
+
+func TestTopologicalLevelsAlphabeticalSorting(t *testing.T) {
+	libs := []*config.Library{
+		{Name: "zebra"},
+		{Name: "apple"},
+		{Name: "mango"},
+	}
+	deps := map[string][]string{
+		"zebra": nil,
+		"apple": nil,
+		"mango": nil,
+	}
+
+	levels, err := topologicalLevels(libs, deps)
+	if err != nil {
+		t.Fatalf("topologicalLevels failed: %v", err)
+	}
+	if len(levels) != 1 {
+		t.Fatalf("got %d levels, want 1", len(levels))
+	}
+	checkLevel(t, levels[0], []string{"apple", "mango", "zebra"})
+}
+
+func TestResolveDependencyLibrary(t *testing.T) {
+	authLib := &config.Library{Name: "auth"}
+	wktLib := &config.Library{Name: "wkt"}
+	gaxLib := &config.Library{Name: "gax"}
+
+	pathToLib := map[string]*config.Library{
+		"pkgs/swift-google-auth": authLib,
+		"swift-wkt":              wktLib,
+		"generated/gax":          gaxLib,
+	}
+
+	tests := []struct {
+		name    string
+		rawPath string
+		want    *config.Library
+	}{
+		{
+			name:    "exact path match",
+			rawPath: "pkgs/swift-google-auth",
+			want:    authLib,
+		},
+		{
+			name:    "base name match",
+			rawPath: "some/nested/swift-wkt",
+			want:    wktLib,
+		},
+		{
+			name:    "SplitRepoName match",
+			rawPath: "packages/wkt",
+			want:    wktLib,
+		},
+		{
+			name:    "suffix match",
+			rawPath: "../../pkgs/swift-google-auth",
+			want:    authLib,
+		},
+		{
+			name:    "no match",
+			rawPath: "thirdparty/apple/swift-log",
+			want:    nil,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			got := resolveDependencyLibrary(tc.rawPath, pathToLib)
+			if got != tc.want {
+				t.Errorf("resolveDependencyLibrary(%q) = %v; want %v", tc.rawPath, got, tc.want)
+			}
+		})
 	}
 }
 
