@@ -241,11 +241,11 @@ func TestDumpPackageParsing(t *testing.T) {
 	}
 	var paths []string
 	for _, dep := range dump.Dependencies {
-		for _, fs := range dep.FileSystem {
-			if fs.Path != "" {
-				paths = append(paths, fs.Path)
-			} else if fs.Identity != "" {
-				paths = append(paths, fs.Identity)
+		for _, f := range dep.FileSystem {
+			if f.Path != "" {
+				paths = append(paths, f.Path)
+			} else if f.Identity != "" {
+				paths = append(paths, f.Identity)
 			}
 		}
 	}
