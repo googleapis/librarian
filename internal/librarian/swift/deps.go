@@ -194,9 +194,12 @@ func resolveDependencyLibrary(rawPath string, pathToLib map[string]*config.Libra
 	return nil
 }
 
+// dependencyNode represents a library in the dependency graph for Kahn's topological sort.
 type dependencyNode struct {
-	library    *config.Library
-	inDegree   int
+	library *config.Library
+	// inDegree is the number of unresolved incoming dependencies (libraries this node depends on).
+	inDegree int
+	// dependents lists the nodes that depend on this library and should be notified when this node is resolved.
 	dependents []*dependencyNode
 }
 
