@@ -206,25 +206,8 @@ type dependencyNode struct {
 // topologicalLevels groups libraries into discrete dependency levels L0..Lk using Kahn's algorithm.
 // Level 0 has no internal dependencies; level i+1 depends only on libraries in levels 0..i.
 func topologicalLevels(libraries []*config.Library, deps map[string][]string) ([][]*config.Library, error) {
-	nodes := make(map[string]*dependencyNode, len(libraries))
-	nodeList := make([]*dependencyNode, len(libraries))
-	for i, lib := range libraries {
-		node := &dependencyNode{library: lib}
-		nodes[lib.Name] = node
-		nodeList[i] = node
-	}
-
-	for _, lib := range libraries {
-		node := nodes[lib.Name]
-		for _, depName := range deps[lib.Name] {
-			if depNode, ok := nodes[depName]; ok {
-				node.inDegree++
-				depNode.dependents = append(depNode.dependents, node)
-			}
-		}
-	}
-
-	currentLevel := librariesWithoutDependencies(nodeList)
+	nodes := buildDependencyNodes(libraries, deps)
+	currentLevel := librariesWithoutDependencies(nodes)
 
 	var levels [][]*config.Library
 	processedCount := 0
@@ -237,7 +220,7 @@ func topologicalLevels(libraries []*config.Library, deps map[string][]string) ([
 
 	if processedCount < len(libraries) {
 		var cycleLibs []string
-		for _, node := range nodeList {
+		for _, node := range nodes {
 			if node.inDegree > 0 {
 				cycleLibs = append(cycleLibs, node.library.Name)
 			}
@@ -247,6 +230,26 @@ func topologicalLevels(libraries []*config.Library, deps map[string][]string) ([
 	}
 
 	return levels, nil
+}
+
+func buildDependencyNodes(libraries []*config.Library, deps map[string][]string) []*dependencyNode {
+	nodes := make(map[string]*dependencyNode, len(libraries))
+	nodeList := make([]*dependencyNode, len(libraries))
+	for i, lib := range libraries {
+		node := &dependencyNode{library: lib}
+		nodes[lib.Name] = node
+		nodeList[i] = node
+	}
+	for _, lib := range libraries {
+		node := nodes[lib.Name]
+		for _, depName := range deps[lib.Name] {
+			if depNode, ok := nodes[depName]; ok {
+				node.inDegree++
+				depNode.dependents = append(depNode.dependents, node)
+			}
+		}
+	}
+	return nodeList
 }
 
 func directDependentsOf(currentLevel []*dependencyNode) []*dependencyNode {
