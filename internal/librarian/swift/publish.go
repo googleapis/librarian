@@ -14,17 +14,43 @@
 
 package swift
 
+// Testing publish workflows:
+//
+// 1. Local End-to-End Simulation with Mock Remotes:
+//
+// To test publishing locally without network access or pushing to remote repositories,
+// point --remote-url-format to local bare git repositories:
+//
+//	mkdir -p /tmp/mock-swift-remotes
+//	librarian publish \
+//	  --dry-run \
+//	  --remote-url-format "/tmp/mock-swift-remotes/{name}.git" \
+//	  --concurrency 8 \
+//	  --verbose
+//
+// 2. Dry-Run Against GitHub:
+//
+// To test against live remote repositories without pushing changes:
+//
+//	# Check existing remote tags and dry-run unpublished libraries:
+//	librarian publish --dry-run --verbose
+//
+//	# Dry-run with force flag (simulating push to diverged remote branches):
+//	librarian publish --dry-run --force --concurrency 8 --verbose
+
 import (
 	"context"
 	"fmt"
 	"log/slog"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 
 	"github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/git"
+	"golang.org/x/sync/errgroup"
 )
 
 // PublishParams holds parameters for running the Swift Publish function.
@@ -43,6 +69,8 @@ type PublishParams struct {
 	Verbose bool
 	// Force indicates whether to force push to the remote repository.
 	Force bool
+	// Concurrency is the maximum number of concurrent remote operations (default: 8).
+	Concurrency int
 	// IgnoredChanges is a list of file paths/patterns to ignore when detecting changed libraries.
 	IgnoredChanges []string
 	// RemoteURLFormat is an optional template for remote repository URLs (e.g. 'git@github.com:googleapis/{name}.git').
@@ -57,15 +85,29 @@ type PublishParams struct {
 	RootFiles []string
 	// GitExe is the path to the git binary (default: command.Git).
 	GitExe string
+	// SwiftExe is the path to the swift binary (default: command.Swift).
+	SwiftExe string
 }
 
-// Publish iterates through every library in librarian.yaml, checks if the version
-// has already been published to the target split repository, and performs a repo split
-// and push if needed.
+type publishCandidate struct {
+	lib       *config.Library
+	libDir    string
+	repoName  string
+	remoteURL string
+	tag       string
+}
+
+// Publish discovers internal dependencies among Swift libraries, checks if their versions
+// have already been published, splits their commit histories in parallel, and pushes them
+// in topological dependency order.
 func Publish(ctx context.Context, params PublishParams) error {
 	gitExe := params.GitExe
 	if gitExe == "" {
 		gitExe = command.Git
+	}
+	swiftExe := params.SwiftExe
+	if swiftExe == "" {
+		swiftExe = command.Swift
 	}
 
 	upstream := params.Upstream
@@ -97,6 +139,13 @@ func Publish(ctx context.Context, params PublishParams) error {
 	if len(rootFiles) == 0 {
 		rootFiles = DefaultRootFiles
 	}
+	concurrency := params.Concurrency
+	if concurrency <= 0 {
+		concurrency = 8
+	}
+
+	var eligibleLibs []*config.Library
+	var candidates []publishCandidate
 
 	for _, lib := range params.Config.Libraries {
 		if lib.SkipRelease || lib.Version == "" {
@@ -128,60 +177,202 @@ func Publish(ctx context.Context, params PublishParams) error {
 		remoteURL := FormatRemoteURL(params.RemoteURLFormat, params.Config.Repo, repoName)
 		tag := lib.Version
 
-		tagExists, err := git.RemoteTagExists(ctx, gitExe, remoteURL, tag)
-		if err != nil {
-			if params.DryRunKeepGoing {
-				slog.Error("failed to check remote tags, but continuing due to --keep-going", "library", lib.Name, "remote", remoteURL, "error", err)
-				continue
-			}
-			return fmt.Errorf("failed to check remote tags for %s on %s: %w", lib.Name, remoteURL, err)
-		}
-
-		if tagExists {
-			slog.Info("version already tagged on remote repository, skipping", "library", lib.Name, "version", tag, "remote", remoteURL)
-			continue
-		}
-
-		slog.Info("splitting repository for library", "library", lib.Name, "path", libDir, "version", tag, "remote", remoteURL)
-
-		splitSHA, err := Split(ctx, SplitParams{
-			TargetDir: libDir,
-			Origin:    origin,
-			RootFiles: rootFiles,
-			GitExe:    gitExe,
+		eligibleLibs = append(eligibleLibs, lib)
+		candidates = append(candidates, publishCandidate{
+			lib:       lib,
+			libDir:    libDir,
+			repoName:  repoName,
+			remoteURL: remoteURL,
+			tag:       tag,
 		})
-		if err != nil {
-			if params.DryRunKeepGoing {
-				slog.Error("failed to split library, but continuing due to --keep-going", "library", lib.Name, "error", err)
-				continue
-			}
-			return fmt.Errorf("failed to split %s: %w", lib.Name, err)
-		}
-
-		if params.DryRun || params.DryRunKeepGoing {
-			slog.Info("[DRY-RUN] Would push to remote", "library", lib.Name, "remote", remoteURL, "branch", remoteBranch, "sha", splitSHA, "tag", tag)
-			continue
-		}
-
-		if err := git.PushBranch(ctx, gitExe, remoteURL, splitSHA, remoteBranch, params.Force); err != nil {
-			if params.DryRunKeepGoing {
-				slog.Error("failed to push branch, but continuing due to --keep-going", "library", lib.Name, "remote", remoteURL, "error", err)
-				continue
-			}
-			return fmt.Errorf("failed to push branch for %s to %s: %w", lib.Name, remoteURL, err)
-		}
-
-		if err := git.PushRefToTag(ctx, gitExe, remoteURL, splitSHA, tag, params.Force); err != nil {
-			if params.DryRunKeepGoing {
-				slog.Error("failed to push tag, but continuing due to --keep-going", "library", lib.Name, "remote", remoteURL, "error", err)
-				continue
-			}
-			return fmt.Errorf("failed to push tag %s for %s to %s: %w", tag, lib.Name, remoteURL, err)
-		}
-
-		slog.Info("successfully published library", "library", lib.Name, "version", tag, "remote", remoteURL)
 	}
 
+	if len(candidates) == 0 {
+		return nil
+	}
+
+	deps, err := buildDependencyGraph(ctx, params.Config, eligibleLibs, swiftExe)
+	if err != nil {
+		if params.DryRunKeepGoing {
+			slog.Error("failed to build dependency graph, but continuing due to --keep-going", "error", err)
+		} else {
+			return err
+		}
+	}
+
+	levels, err := topologicalLevels(eligibleLibs, deps)
+	if err != nil {
+		if params.DryRunKeepGoing {
+			slog.Error("topological sort failed, but continuing due to --keep-going", "error", err)
+			levels = [][]*config.Library{eligibleLibs}
+		} else {
+			return err
+		}
+	}
+
+	// Phase 1: Parallel Pre-Check (git.RemoteTagExists across all candidates)
+	toPublish, err := filterUnpublishedCandidates(ctx, gitExe, candidates, concurrency, params.DryRunKeepGoing)
+	if err != nil {
+		return err
+	}
+	if len(toPublish) == 0 {
+		slog.Info("all eligible libraries are already tagged on remote repositories")
+		return nil
+	}
+
+	// Phase 2: Parallel Local History Split (swift.Split across unpublished libraries)
+	var rootEntries []string
+	if len(rootFiles) > 0 {
+		var err error
+		rootEntries, err = getRootEntries(ctx, gitExe, origin, rootFiles)
+		if err != nil {
+			if params.DryRunKeepGoing {
+				slog.Error("failed to get root entries, but continuing due to --keep-going", "error", err)
+			} else {
+				return err
+			}
+		}
+	}
+
+	splitSHAs, err := splitCandidateLibraries(ctx, gitExe, origin, rootFiles, rootEntries, toPublish, params.DryRunKeepGoing)
+	if err != nil {
+		return err
+	}
+
+	toPublishMap := make(map[string]publishCandidate, len(toPublish))
+	for _, c := range toPublish {
+		toPublishMap[c.lib.Name] = c
+	}
+
+	// Phase 3: Topological Parallel Push (Level by Level)
+	return pushTopologicalLevels(ctx, gitExe, remoteBranch, levels, toPublishMap, splitSHAs, params, concurrency)
+}
+
+func filterUnpublishedCandidates(ctx context.Context, gitExe string, candidates []publishCandidate, concurrency int, dryRunKeepGoing bool) ([]publishCandidate, error) {
+	needsPublish := make([]bool, len(candidates))
+	checkGroup, checkCtx := errgroup.WithContext(ctx)
+	checkGroup.SetLimit(max(concurrency*2, 16))
+
+	for i, c := range candidates {
+		checkGroup.Go(func() error {
+			tagExists, err := git.RemoteTagExists(checkCtx, gitExe, c.remoteURL, c.tag)
+			if err != nil {
+				if dryRunKeepGoing {
+					slog.Error("failed to check remote tags, but continuing due to --keep-going", "library", c.lib.Name, "remote", c.remoteURL, "error", err)
+					return nil
+				}
+				return fmt.Errorf("failed to check remote tags for %s on %s: %w", c.lib.Name, c.remoteURL, err)
+			}
+			if tagExists {
+				slog.Info("version already tagged on remote repository, skipping", "library", c.lib.Name, "version", c.tag, "remote", c.remoteURL)
+				return nil
+			}
+			needsPublish[i] = true
+			return nil
+		})
+	}
+	if err := checkGroup.Wait(); err != nil {
+		return nil, err
+	}
+
+	var toPublish []publishCandidate
+	for i, c := range candidates {
+		if needsPublish[i] {
+			toPublish = append(toPublish, c)
+		}
+	}
+	return toPublish, nil
+}
+
+func splitCandidateLibraries(ctx context.Context, gitExe, origin string, rootFiles, rootEntries []string, toPublish []publishCandidate, dryRunKeepGoing bool) (map[string]string, error) {
+	type splitResult struct {
+		name string
+		sha  string
+	}
+	results := make(chan splitResult, len(toPublish))
+
+	splitGroup, splitCtx := errgroup.WithContext(ctx)
+	splitGroup.SetLimit(runtime.NumCPU())
+
+	for _, c := range toPublish {
+		splitGroup.Go(func() error {
+			slog.Info("splitting repository for library", "library", c.lib.Name, "path", c.libDir, "version", c.tag, "remote", c.remoteURL)
+			splitSHA, err := Split(splitCtx, SplitParams{
+				TargetDir:   c.libDir,
+				Origin:      origin,
+				RootFiles:   rootFiles,
+				RootEntries: rootEntries,
+				GitExe:      gitExe,
+			})
+			if err != nil {
+				if dryRunKeepGoing {
+					slog.Error("failed to split library, but continuing due to --keep-going", "library", c.lib.Name, "error", err)
+					return nil
+				}
+				return fmt.Errorf("failed to split %s: %w", c.lib.Name, err)
+			}
+			results <- splitResult{name: c.lib.Name, sha: splitSHA}
+			return nil
+		})
+	}
+	if err := splitGroup.Wait(); err != nil {
+		return nil, err
+	}
+	close(results)
+
+	splitSHAs := make(map[string]string, len(toPublish))
+	for r := range results {
+		splitSHAs[r.name] = r.sha
+	}
+	return splitSHAs, nil
+}
+
+func pushTopologicalLevels(ctx context.Context, gitExe, remoteBranch string, levels [][]*config.Library, toPublishMap map[string]publishCandidate, splitSHAs map[string]string, params PublishParams, concurrency int) error {
+	for levelIdx, level := range levels {
+		var levelCandidates []publishCandidate
+		for _, lib := range level {
+			if c, ok := toPublishMap[lib.Name]; ok {
+				if _, hasSHA := splitSHAs[lib.Name]; hasSHA {
+					levelCandidates = append(levelCandidates, c)
+				}
+			}
+		}
+		if len(levelCandidates) == 0 {
+			continue
+		}
+
+		slog.Info("pushing topological level", "level", levelIdx, "count", len(levelCandidates))
+
+		if params.DryRun || params.DryRunKeepGoing {
+			for _, c := range levelCandidates {
+				sha := splitSHAs[c.lib.Name]
+				slog.Info("[DRY-RUN] Would push to remote", "library", c.lib.Name, "remote", c.remoteURL, "branch", remoteBranch, "sha", sha, "tag", c.tag)
+			}
+			continue
+		}
+
+		pushGroup, pushCtx := errgroup.WithContext(ctx)
+		pushGroup.SetLimit(concurrency)
+
+		for _, c := range levelCandidates {
+			sha := splitSHAs[c.lib.Name]
+
+			pushGroup.Go(func() error {
+				if err := git.PushBranchAndTag(pushCtx, gitExe, c.remoteURL, sha, remoteBranch, c.tag, params.Force); err != nil {
+					if params.DryRunKeepGoing {
+						slog.Error("failed to push, but continuing due to --keep-going", "library", c.lib.Name, "remote", c.remoteURL, "error", err)
+						return nil
+					}
+					return fmt.Errorf("failed to push %s to %s: %w", c.lib.Name, c.remoteURL, err)
+				}
+				slog.Info("successfully published library", "library", c.lib.Name, "version", c.tag, "remote", c.remoteURL)
+				return nil
+			})
+		}
+		if err := pushGroup.Wait(); err != nil {
+			return err
+		}
+	}
 	return nil
 }
 

@@ -79,6 +79,12 @@ Only Dart, Rust, and Swift are supported.`,
 				Value: config.RemoteUpstream,
 				Usage: "name of the upstream git remote",
 			},
+			&cli.IntFlag{
+				Name:    "concurrency",
+				Aliases: []string{"j"},
+				Value:   8,
+				Usage:   "concurrency limit for parallel publish operations",
+			},
 		},
 		Action: func(ctx context.Context, cmd *cli.Command) error {
 			cfg, err := yaml.Read[config.Config](config.LibrarianYAML)
@@ -142,6 +148,7 @@ func swiftPublish(ctx context.Context, cfg *config.Config, cmd *cli.Command) err
 	origin := cmd.String("origin")
 	remoteBranch := cmd.String("remote-branch")
 	upstream := cmd.String("upstream")
+	concurrency := int(cmd.Int("concurrency"))
 	command.Verbose = verbose
 	setupLogger(verbose)
 	return swift.Publish(ctx, swift.PublishParams{
@@ -152,6 +159,7 @@ func swiftPublish(ctx context.Context, cfg *config.Config, cmd *cli.Command) err
 		SkipSemverChecks: skipSemverChecks,
 		Verbose:          verbose,
 		Force:            force,
+		Concurrency:      concurrency,
 		RemoteURLFormat:  remoteURLFormat,
 		Origin:           origin,
 		RemoteBranch:     remoteBranch,

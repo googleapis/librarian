@@ -264,3 +264,13 @@ func PushRefToTag(ctx context.Context, gitExe, remote, localRef, tag string, for
 	args = append(args, remote, fmt.Sprintf("%s:refs/tags/%s", localRef, tag))
 	return command.Run(ctx, gitExe, args...)
 }
+
+// PushBranchAndTag pushes a local ref to both a branch and a tag on the remote repository in a single command.
+func PushBranchAndTag(ctx context.Context, gitExe, remote, localRef, remoteBranch, tag string, force bool) error {
+	args := []string{"push"}
+	if force {
+		args = append(args, "--force")
+	}
+	args = append(args, remote, fmt.Sprintf("%s:refs/heads/%s", localRef, remoteBranch), fmt.Sprintf("%s:refs/tags/%s", localRef, tag))
+	return command.Run(ctx, gitExe, args...)
+}
