@@ -14,6 +14,30 @@
 
 package swift
 
+// Testing publish workflows:
+//
+// 1. Local End-to-End Simulation with Mock Remotes:
+//
+// To test publishing locally without network access or pushing to remote repositories,
+// point --remote-url-format to local bare git repositories:
+//
+//	mkdir -p /tmp/mock-swift-remotes
+//	librarian publish \
+//	  --dry-run \
+//	  --remote-url-format "/tmp/mock-swift-remotes/{name}.git" \
+//	  --concurrency 8 \
+//	  --verbose
+//
+// 2. Dry-Run Against GitHub:
+//
+// To test against live remote repositories without pushing changes:
+//
+//	# Check existing remote tags and dry-run unpublished libraries:
+//	librarian publish --dry-run --verbose
+//
+//	# Simulate a full release pipeline (force dry-run across all libraries):
+//	librarian publish --dry-run --force --concurrency 8 --verbose
+
 import (
 	"context"
 	"fmt"
