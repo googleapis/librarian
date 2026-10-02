@@ -27,7 +27,6 @@ import (
 	"runtime"
 	"slices"
 	"strings"
-	"sync"
 
 	"github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/config"
@@ -123,8 +122,11 @@ func buildDependencyGraph(ctx context.Context, cfg *config.Config, libraries []*
 		}
 	}
 
-	var mu sync.Mutex
-	deps := make(map[string][]string)
+	type libDepResult struct {
+		name string
+		deps []string
+	}
+	results := make(chan libDepResult, len(libraries))
 
 	g, gctx := errgroup.WithContext(ctx)
 	g.SetLimit(runtime.NumCPU())
@@ -132,9 +134,7 @@ func buildDependencyGraph(ctx context.Context, cfg *config.Config, libraries []*
 	for _, lib := range libraries {
 		pkgDir := libraryPackageDirectory(lib, cfg.Default)
 		if pkgDir == "" {
-			mu.Lock()
-			deps[lib.Name] = nil
-			mu.Unlock()
+			results <- libDepResult{name: lib.Name}
 			continue
 		}
 
@@ -151,17 +151,19 @@ func buildDependencyGraph(ctx context.Context, cfg *config.Config, libraries []*
 				}
 			}
 			slices.Sort(libDeps)
-
-			mu.Lock()
-			deps[lib.Name] = libDeps
-			mu.Unlock()
+			results <- libDepResult{name: lib.Name, deps: libDeps}
 			return nil
 		})
 	}
 	if err := g.Wait(); err != nil {
 		return nil, err
 	}
+	close(results)
 
+	deps := make(map[string][]string, len(libraries))
+	for r := range results {
+		deps[r.name] = r.deps
+	}
 	return deps, nil
 }
 

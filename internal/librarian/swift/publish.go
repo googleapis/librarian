@@ -46,7 +46,6 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
-	"sync"
 
 	"github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/config"
@@ -286,8 +285,11 @@ func filterUnpublishedCandidates(ctx context.Context, gitExe string, candidates 
 }
 
 func splitCandidateLibraries(ctx context.Context, gitExe, origin string, rootFiles, rootEntries []string, toPublish []publishCandidate, dryRunKeepGoing bool) (map[string]string, error) {
-	splitSHAs := make(map[string]string)
-	var splitMu sync.Mutex
+	type splitResult struct {
+		name string
+		sha  string
+	}
+	results := make(chan splitResult, len(toPublish))
 
 	splitGroup, splitCtx := errgroup.WithContext(ctx)
 	splitGroup.SetLimit(runtime.NumCPU())
@@ -309,14 +311,18 @@ func splitCandidateLibraries(ctx context.Context, gitExe, origin string, rootFil
 				}
 				return fmt.Errorf("failed to split %s: %w", c.lib.Name, err)
 			}
-			splitMu.Lock()
-			splitSHAs[c.lib.Name] = splitSHA
-			splitMu.Unlock()
+			results <- splitResult{name: c.lib.Name, sha: splitSHA}
 			return nil
 		})
 	}
 	if err := splitGroup.Wait(); err != nil {
 		return nil, err
+	}
+	close(results)
+
+	splitSHAs := make(map[string]string, len(toPublish))
+	for r := range results {
+		splitSHAs[r.name] = r.sha
 	}
 	return splitSHAs, nil
 }
