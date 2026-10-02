@@ -181,9 +181,14 @@ func resolveDependencyLibrary(rawPath string, pathToLib map[string]*config.Libra
 			return lib
 		}
 	}
-	for dir, lib := range pathToLib {
+	var dirs []string
+	for dir := range pathToLib {
+		dirs = append(dirs, dir)
+	}
+	slices.Sort(dirs)
+	for _, dir := range dirs {
 		if strings.HasSuffix(cleanPath, "/"+dir) {
-			return lib
+			return pathToLib[dir]
 		}
 	}
 	return nil
