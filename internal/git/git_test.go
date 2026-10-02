@@ -785,4 +785,12 @@ func TestPushBranchAndTag(t *testing.T) {
 	if !exists {
 		t.Errorf("RemoteTagExists(v3.0.0) = false; want true after PushBranchAndTag")
 	}
+
+	gotBranchSHA, err := command.Output(t.Context(), command.Git, "-C", remoteDir, "rev-parse", "refs/heads/feature-branch")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.TrimSpace(gotBranchSHA) != head {
+		t.Errorf("remote branch feature-branch = %q; want %q", strings.TrimSpace(gotBranchSHA), head)
+	}
 }
