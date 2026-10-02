@@ -39,7 +39,7 @@ library;
 // ignore_for_file: non_constant_identifier_names {{- /* field names may not follow Dart naming conventions if there are multiple fields that differ only in case */}}
 // ignore_for_file: unintended_html_in_doc_comment {{- /* TODO(#25): improve the generated dartdocs */}}
 
-{{- range .Codec.Imports }}
+{{ range .Codec.Imports }}
 {{ . }}
 {{- end }}
 
