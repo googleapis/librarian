@@ -1,4 +1,4 @@
-{{!
+{{/*
 Copyright 2026 Google LLC
 
 Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,59 +12,57 @@ distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
-}}
-{{#Codec.DocLines}}
-/// {{{.}}}
-{{/Codec.DocLines}}
-{{#Deprecated}}
+*/}}
+{{- range .Codec.DocLines }}
+/// {{ . }}
+{{- end }}
+{{- if .Deprecated }}
 @available(*, deprecated)
-{{/Deprecated}}
-public struct {{Codec.Name}}: Codable, Equatable, {{Codec.Model.WktPackage}}._AnyPackable,
+{{- end }}
+public struct {{ .Codec.Name }}: Codable, Equatable, {{ .Codec.Model.WktPackage }}._AnyPackable,
   Sendable {
-  {{#Fields}}
-  {{^IsOneOf}}
-
-  {{#Codec.DocLines}}
-  /// {{{.}}}
-  {{/Codec.DocLines}}
-  {{#Deprecated}}
+  {{- range .Fields }}
+  {{- if not .IsOneOf }}
+  {{- "\n" }}
+  {{- range .Codec.DocLines }}
+  /// {{ . }}
+  {{- end }}
+  {{- if .Deprecated }}
   @available(*, deprecated)
-  {{/Deprecated}}
-  {{#Codec.DiagnoseType}}
-  {{> /templates/common/diagnose}}
-  {{/Codec.DiagnoseType}}
-  {{#Singular}}
-  {{#Codec.Recursive}}
-  public var {{Codec.Name}}: {{{Codec.FieldType}}} = nil
-  {{/Codec.Recursive}}
-  {{^Codec.Recursive}}
-  {{^Optional}}
-  public var {{Codec.Name}}: {{{Codec.FieldType}}} = {{{Codec.FieldType}}}()
-  {{/Optional}}
-  {{#Optional}}
-  public var {{Codec.Name}}: {{{Codec.FieldType}}} = nil
-  {{/Optional}}
-  {{/Codec.Recursive}}
-  {{/Singular}}
-  {{#Repeated}}
-  public var {{Codec.Name}}: {{{Codec.FieldType}}} = []
-  {{/Repeated}}
-  {{#Map}}
-  public var {{Codec.Name}}: {{{Codec.FieldType}}} = [:]
-  {{/Map}}
-  {{/IsOneOf}}
-  {{/Fields}}
-  {{#OneOfs}}
+  {{- end }}
+  {{- if .Codec.DiagnoseType }}
+  {{- include "templates/common/diagnose" . | indent 2 }}
+  {{- end }}
+  {{- if .Singular }}
+  {{- if .Codec.Recursive }}
+  public var {{ .Codec.Name }}: {{ .Codec.FieldType }} = nil
+  {{- else }}
+  {{- if not .Optional }}
+  public var {{ .Codec.Name }}: {{ .Codec.FieldType }} = {{ .Codec.FieldType }}()
+  {{- else }}
+  public var {{ .Codec.Name }}: {{ .Codec.FieldType }} = nil
+  {{- end }}
+  {{- end }}
+  {{- end }}
+  {{- if .Repeated }}
+  public var {{ .Codec.Name }}: {{ .Codec.FieldType }} = []
+  {{- end }}
+  {{- if .Map }}
+  public var {{ .Codec.Name }}: {{ .Codec.FieldType }} = [:]
+  {{- end }}
+  {{- end }}
+  {{- end }}
+  {{- range .OneOfs }}
+  {{- "\n" }}
+  {{- range .Codec.DocLines }}
+  /// {{ . }}
+  {{- end }}
+  public var {{ .Codec.PropertyName }}: {{ .Codec.Name }}? = nil
+  {{- end }}
 
-  {{#Codec.DocLines}}
-  /// {{{.}}}
-  {{/Codec.DocLines}}
-  public var {{Codec.PropertyName}}: {{Codec.Name}}? = nil
-  {{/OneOfs}}
+  @_spi(GoogleCloudInternal) public var _unknownFields: {{ .Codec.Model.WktPackage }}._UnknownFields = .init()
 
-  @_spi(GoogleCloudInternal) public var _unknownFields: {{Codec.Model.WktPackage}}._UnknownFields = .init()
-
-  /// Initialize a new instance of `{{Codec.Name}}`.
+  /// Initialize a new instance of `{{ .Codec.Name }}`.
   public init() {}
 
   /// Use `config` to return a new instance of this object, with some fields updated.
@@ -72,9 +70,9 @@ public struct {{Codec.Name}}: Codable, Equatable, {{Codec.Model.WktPackage}}._An
   /// Commonly used to initialize the value, for example:
   ///
   /// ```
-  /// let value = {{Codec.Name}}().with { $0.{{{Codec.SampleField}}} = ... }
+  /// let value = {{ .Codec.Name }}().with { $0.{{ .Codec.SampleField }} = ... }
   /// ```
-  {{! Using `with` for the name does not conflict with field name: https://godbolt.org/z/bxbsdfhfo }}
+  {{- /* Using `with` for the name does not conflict with field name: https://godbolt.org/z/bxbsdfhfo */}}
   public func with(_ config: (inout Self) throws -> Swift.Void) rethrows -> Self {
     var copy = self
     try config(&copy)
@@ -86,113 +84,110 @@ public struct {{Codec.Name}}: Codable, Equatable, {{Codec.Model.WktPackage}}._An
     var intValue: Swift.Int? { nil }
     init(stringValue: Swift.String) { self.stringValue = stringValue }
     init?(intValue: Swift.Int) { nil }
-    {{#HasFields}}
-
-    {{#Fields}}
-    static let {{Codec.Name}} = CodingKeys(stringValue: "{{JSONName}}")
-    {{/Fields}}
-    {{/HasFields}}
+    {{- if .HasFields }}
+    {{- "\n" }}
+    {{- range .Fields }}
+    static let {{ .Codec.Name }} = CodingKeys(stringValue: "{{ .JSONName }}")
+    {{- end }}
+    {{- end }}
 
     static let _knownKeys: Set<Swift.String> = [
-      {{#Fields}}
-      "{{JSONName}}",
-      {{/Fields}}
+      {{- range .Fields }}
+      "{{ .JSONName }}",
+      {{- end }}
     ]
   }
-
-  {{#Codec.DiagnoseCodable}}
-  {{> /templates/common/diagnose}}
-  {{/Codec.DiagnoseCodable}}
+  {{- "\n" }}
+  {{- if .Codec.DiagnoseCodable }}
+  {{- include "templates/common/diagnose" . | indent 2 }}
+  {{- end }}
   public init(from decoder: Decoder) throws {
     let container = try decoder.container(keyedBy: CodingKeys.self)
-    {{#Fields}}
-    {{^IsOneOf}}
-    {{^Codec.UrlSafeValue}}
-    {{> /templates/common/field_decode}}
-    {{/Codec.UrlSafeValue}}
-    {{#Codec.UrlSafeValue}}
-    {{> /templates/common/field_decode_url_safe}}
-    {{/Codec.UrlSafeValue}}
-    {{/IsOneOf}}
-    {{/Fields}}
-    {{#OneOfs}}
+    {{- range .Fields }}
+    {{- if not .IsOneOf }}
+    {{- if not .Codec.UrlSafeValue }}
+    {{- include "templates/common/field_decode" . | indent 4 }}
+    {{- else }}
+    {{- include "templates/common/field_decode_url_safe" . | indent 4 }}
+    {{- end }}
+    {{- end }}
+    {{- end }}
+    {{- range .OneOfs }}
 
-    var {{Codec.PropertyName}}: {{Codec.Name}}? = nil
-    let {{Codec.Checker}} = {
-      if {{Codec.PropertyName}} != nil {
-        throw DecodingError.dataCorrupted(DecodingError.Context(codingPath: decoder.codingPath, debugDescription: "Multiple values set for oneof '{{Codec.PropertyName}}'"))
+    var {{ .Codec.PropertyName }}: {{ .Codec.Name }}? = nil
+    let {{ .Codec.Checker }} = {
+      if {{ .Codec.PropertyName }} != nil {
+        throw DecodingError.dataCorrupted(DecodingError.Context(codingPath: decoder.codingPath, debugDescription: "Multiple values set for oneof '{{ .Codec.PropertyName }}'"))
       }
-      {{Codec.PropertyName}} = $0
+      {{ .Codec.PropertyName }} = $0
     }
-    {{#Fields}}
-    if let {{Codec.Name}} = try container.decodeIfPresent({{{Codec.BaseFieldType}}}.self, forKey: .{{Codec.Name}}) {
-      try {{Codec.OneOfChecker}}(.{{Codec.Name}}({{Codec.Name}}))
+    {{- range .Fields }}
+    if let {{ .Codec.Name }} = try container.decodeIfPresent({{ .Codec.BaseFieldType }}.self, forKey: .{{ .Codec.Name }}) {
+      try {{ .Codec.OneOfChecker }}(.{{ .Codec.Name }}({{ .Codec.Name }}))
     }
-    {{/Fields}}
-    self.{{Codec.PropertyName}} = {{Codec.PropertyName}}
-    {{/OneOfs}}
+    {{- end }}
+    self.{{ .Codec.PropertyName }} = {{ .Codec.PropertyName }}
+    {{- end }}
     for key in container.allKeys where !CodingKeys._knownKeys.contains(key.stringValue) {
       self._unknownFields.json[key.stringValue] = try container.decode(
-        {{Codec.Model.WktPackage}}.WKTValue.self, forKey: key)
+        {{ .Codec.Model.WktPackage }}.WKTValue.self, forKey: key)
     }
   }
-
-  {{#Codec.DiagnoseCodable}}
-  {{> /templates/common/diagnose}}
-  {{/Codec.DiagnoseCodable}}
+  {{- "\n" }}
+  {{- if .Codec.DiagnoseCodable }}
+  {{- include "templates/common/diagnose" . | indent 2 }}
+  {{- end }}
   public func encode(to encoder: Encoder) throws {
     var container = encoder.container(keyedBy: CodingKeys.self)
-    {{#Fields}}
-    {{^IsOneOf}}
-    {{^Codec.UrlSafeValue}}
-    {{> /templates/common/field_encode}}
-    {{/Codec.UrlSafeValue}}
-    {{#Codec.UrlSafeValue}}
-    {{> /templates/common/field_encode_url_safe}}
-    {{/Codec.UrlSafeValue}}
-    {{/IsOneOf}}
-    {{/Fields}}
-    {{#OneOfs}}
+    {{- range .Fields }}
+    {{- if not .IsOneOf }}
+    {{- if not .Codec.UrlSafeValue }}
+    {{- include "templates/common/field_encode" . | indent 4 }}
+    {{- else }}
+    {{- include "templates/common/field_encode_url_safe" . | indent 4 }}
+    {{- end }}
+    {{- end }}
+    {{- end }}
+    {{- range .OneOfs }}
 
-    if let choice = self.{{Codec.PropertyName}} {
+    if let choice = self.{{ .Codec.PropertyName }} {
       switch choice {
-      {{#Fields}}
-      case .{{Codec.Name}}(let value):
-        try container.encode(value, forKey: .{{Codec.Name}})
-      {{/Fields}}
+      {{- range .Fields }}
+      case .{{ .Codec.Name }}(let value):
+        try container.encode(value, forKey: .{{ .Codec.Name }})
+      {{- end }}
       }
     }
-    {{/OneOfs}}
+    {{- end }}
     for (key, value) in self._unknownFields.json {
       try container.encode(value, forKey: CodingKeys(stringValue: key))
     }
   }
-
-  {{#Messages}}
-
-  {{> /templates/common/message}}
-  {{/Messages}}
-  {{#Enums}}
-
-  {{#Codec.UseStringEnums}}
-  {{> /templates/common/string_enum}}
-  {{/Codec.UseStringEnums}}
-  {{^Codec.UseStringEnums}}
-  {{> /templates/common/enum}}
-  {{/Codec.UseStringEnums}}
-  {{/Enums}}
-  {{#OneOfs}}
-
-  {{> /templates/common/oneof}}
-  {{/OneOfs}}
+  {{- "\n" }}
+  {{- range .Messages }}
+  {{- "\n" }}
+  {{- include "templates/common/message" . | indent 2 }}
+  {{- end }}
+  {{- range .Enums }}
+  {{- "\n" }}
+  {{- if .Codec.UseStringEnums }}
+  {{- include "templates/common/string_enum" . | indent 2 }}
+  {{- else }}
+  {{- include "templates/common/enum" . | indent 2 }}
+  {{- end }}
+  {{- end }}
+  {{- range .OneOfs }}
+  {{- "\n" }}
+  {{- include "templates/common/oneof" . | indent 2 }}
+  {{- end }}
 
   public static var _anyTypeUrl: Swift.String {
-    return "{{Codec.TypeURL}}"
+    return "{{ .Codec.TypeURL }}"
   }
-  public init(fromAny any: {{Codec.Model.WktPackage}}.WKTAny) throws {
-    self = try {{Codec.Model.WktPackage}}._slowAnyDeserialize(Self.self, from: any)
+  public init(fromAny any: {{ .Codec.Model.WktPackage }}.WKTAny) throws {
+    self = try {{ .Codec.Model.WktPackage }}._slowAnyDeserialize(Self.self, from: any)
   }
-  public func _pack() throws -> {{Codec.Model.WktPackage}}.WKTStruct {
-    return try {{Codec.Model.WktPackage}}._slowAnySerialize(message: self)
+  public func _pack() throws -> {{ .Codec.Model.WktPackage }}.WKTStruct {
+    return try {{ .Codec.Model.WktPackage }}._slowAnySerialize(message: self)
   }
 }

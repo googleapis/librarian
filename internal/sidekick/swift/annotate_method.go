@@ -194,7 +194,7 @@ func (ann *methodAnnotations) HasOmittedBodyFields() bool {
 
 // HasQueryParams returns true if the method's default binding has query parameters
 //
-// The mustache templates use this to (1) use a `var query` vs. `let query` for the collection of
+// The templates use this to (1) use a `var query` vs. `let query` for the collection of
 // query parameters, and (2) generate the query parameter encoder only once, and only if needed.
 func (ann *methodAnnotations) HasQueryParams() bool {
 	return len(ann.QueryParams) != 0
@@ -219,6 +219,15 @@ func (c *codec) annotateMethod(method *api.Method, modelAnn *modelAnnotations) e
 	if method.InputType != nil {
 		if err := c.annotateMessage(method.InputType, modelAnn); err != nil {
 			return err
+		}
+	}
+	for _, sig := range method.Signatures {
+		for _, field := range sig.Fields {
+			if field.Codec == nil {
+				if _, err := c.annotateField(field, modelAnn); err != nil {
+					return err
+				}
+			}
 		}
 	}
 	var returnType string
@@ -459,7 +468,7 @@ func (c *codec) diagnoseRequestFields(method *api.Method) (bool, error) {
 //
 // Swift does not report deprecated references inside a deprecated declaration,
 // so those declarations need no attribute. Every public declaration that this
-// governs is preceded by `{{#Deprecated}} @available(*, deprecated) {{/Deprecated}}`
+// governs is preceded by `{{- if .Deprecated }} @available(*, deprecated) {{- end }}`
 // in the templates.
 func inDeprecatedScope(method *api.Method) bool {
 	return method.Deprecated || (method.Service != nil && method.Service.Deprecated)

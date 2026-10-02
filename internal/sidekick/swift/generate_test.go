@@ -91,3 +91,9 @@ func TestFromProtobuf(t *testing.T) {
 		t.Errorf("expected Clients.swift to not exist for type-only library, got err = %v", err)
 	}
 }
+
+func TestValidateTemplates(t *testing.T) {
+	if err := parsedTemplates.Validate(); err != nil {
+		t.Fatal(err)
+	}
+}

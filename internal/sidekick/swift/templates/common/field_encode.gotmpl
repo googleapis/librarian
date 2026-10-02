@@ -1,4 +1,4 @@
-{{!
+{{/*
 Copyright 2026 Google LLC
 
 Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,20 +12,19 @@ distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
-}}
-{{#Codec.IsEncodingSimple}}
-{{#Optional}}
-try container.encodeIfPresent(self.{{Codec.Name}}, forKey: .{{Codec.Name}})
-{{/Optional}}
-{{^Optional}}
-try container.encode(self.{{Codec.Name}}, forKey: .{{Codec.Name}})
-{{/Optional}}
-{{/Codec.IsEncodingSimple}}
-{{#Codec.IsEncodingMapCustomKey}}
+*/}}
+{{- if .Codec.IsEncodingSimple }}
+{{- if .Optional }}
+try container.encodeIfPresent(self.{{ .Codec.Name }}, forKey: .{{ .Codec.Name }})
+{{- else }}
+try container.encode(self.{{ .Codec.Name }}, forKey: .{{ .Codec.Name }})
+{{- end }}
+{{- end }}
+{{- if .Codec.IsEncodingMapCustomKey }}
 do {
   let stringKeyed = Dictionary(
-    uniqueKeysWithValues: self.{{Codec.Name}}.lazy.map { (Swift.String($0), $1) }
+    uniqueKeysWithValues: self.{{ .Codec.Name }}.lazy.map { (Swift.String($0), $1) }
   )
-  try container.encode(stringKeyed, forKey: .{{Codec.Name}})
+  try container.encode(stringKeyed, forKey: .{{ .Codec.Name }})
 }
-{{/Codec.IsEncodingMapCustomKey}}
+{{- end }}

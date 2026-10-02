@@ -1,4 +1,4 @@
-{{!
+{{/*
 Copyright 2026 Google LLC
 
 Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,230 +12,228 @@ distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
-}}
+*/}}
 extension Clients {
-  /// A Swift protocol to mock `{{Codec.ClientName}}`.
+  /// A Swift protocol to mock `{{ .Codec.ClientName }}`.
   ///
-  /// To mock `{{Codec.ClientName}}` change your functions to receive
-  /// `some {{Codec.StubPrefix}}Protocol` or `any {{Codec.StubPrefix}}Protocol`
+  /// To mock `{{ .Codec.ClientName }}` change your functions to receive
+  /// `some {{ .Codec.StubPrefix }}Protocol` or `any {{ .Codec.StubPrefix }}Protocol`
   /// and pass a mock implementation in your tests.
-  {{#Deprecated}}
+  {{- if .Deprecated }}
   @available(*, deprecated)
-  {{/Deprecated}}
-  public protocol {{Codec.StubPrefix}}Protocol: Sendable {
-    {{#Codec.Methods}}
-    {{^IsLroPoller}}
-    /// See `{{Service.Codec.ClientName}}.{{Codec.Name}}`.
-    {{#Deprecated}}
+  {{- end }}
+  public protocol {{ .Codec.StubPrefix }}Protocol: Sendable {
+    {{- range .Codec.Methods }}
+    {{- if not .IsLroPoller }}
+    {{- "\n" }}
+    /// See `{{ .Service.Codec.ClientName }}.{{ .Codec.Name }}`.
+    {{- if .Deprecated }}
     @available(*, deprecated)
-    {{/Deprecated}}
-    {{#Codec.DiagnoseTypes}}
-    {{> /templates/common/diagnose}}
-    {{/Codec.DiagnoseTypes}}
-    func {{> /templates/common/method_signature/request_options}}
-    {{#Codec.LRO}}
-    /// See `{{Service.Codec.ClientName}}.{{Codec.Name}}`.
-    {{#Deprecated}}
+    {{- end }}
+    {{- if .Codec.DiagnoseTypes }}
+    {{- include "templates/common/diagnose" . | indent 4 }}
+    {{- end }}
+    func {{ template "templates/common/method_signature/request_options" . }}
+    {{- if .Codec.LRO }}
+    /// See `{{ .Service.Codec.ClientName }}.{{ .Codec.Name }}`.
+    {{- if .Deprecated }}
     @available(*, deprecated)
-    {{/Deprecated}}
-    {{#Codec.DiagnoseTypes}}
-    {{> /templates/common/diagnose}}
-    {{/Codec.DiagnoseTypes}}
-    func {{> /templates/common/method_signature/lro_options}}
-    {{/Codec.LRO}}
-    {{#Codec.DiscoveryLRO}}
-    /// See `{{Service.Codec.ClientName}}.{{Codec.Name}}`.
-    {{#Deprecated}}
+    {{- end }}
+    {{- if .Codec.DiagnoseTypes }}
+    {{- include "templates/common/diagnose" . | indent 4 }}
+    {{- end }}
+    func {{ template "templates/common/method_signature/lro_options" . }}
+    {{- end }}
+    {{- if .Codec.DiscoveryLRO }}
+    /// See `{{ .Service.Codec.ClientName }}.{{ .Codec.Name }}`.
+    {{- if .Deprecated }}
     @available(*, deprecated)
-    {{/Deprecated}}
-    {{#Codec.DiagnoseTypes}}
-    {{> /templates/common/diagnose}}
-    {{/Codec.DiagnoseTypes}}
-    func {{> /templates/common/method_signature/discovery_lro_options}}
-    {{/Codec.DiscoveryLRO}}
-    {{/IsLroPoller}}
-    {{/Codec.Methods}}
+    {{- end }}
+    {{- if .Codec.DiagnoseTypes }}
+    {{- include "templates/common/diagnose" . | indent 4 }}
+    {{- end }}
+    func {{ template "templates/common/method_signature/discovery_lro_options" . }}
+    {{- end }}
+    {{- end }}
+    {{- end }}
   }
 }
 
 // Default implementations
-{{#Deprecated}}
+{{- if .Deprecated }}
 @available(*, deprecated)
-{{/Deprecated}}
-extension Clients.{{Codec.StubPrefix}}Protocol {
-  {{#Codec.Methods}}
-
-  {{#Deprecated}}
+{{- end }}
+extension Clients.{{ .Codec.StubPrefix }}Protocol {
+  {{- range .Codec.Methods }}
+  {{- "\n" }}
+  {{- if .Deprecated }}
   @available(*, deprecated)
-  {{/Deprecated}}
-  {{#Codec.DiagnoseTypes}}
-  {{> /templates/common/diagnose}}
-  {{/Codec.DiagnoseTypes}}
-  public func {{> /templates/common/method_signature/request}} {
-    try await self.{{Codec.Name}}(request: request, options: .init())
+  {{- end }}
+  {{- if .Codec.DiagnoseTypes }}
+  {{- include "templates/common/diagnose" . | indent 2 }}
+  {{- end }}
+  public func {{ template "templates/common/method_signature/request" . }} {
+    try await self.{{ .Codec.Name }}(request: request, options: .init())
   }
-
-  {{#Deprecated}}
+  {{- "\n" }}
+  {{- if .Deprecated }}
   @available(*, deprecated)
-  {{/Deprecated}}
-  {{#Codec.DiagnoseTypes}}
-  {{> /templates/common/diagnose}}
-  {{/Codec.DiagnoseTypes}}
-  public func {{> /templates/common/method_signature/request_options}} {
+  {{- end }}
+  {{- if .Codec.DiagnoseTypes }}
+  {{- include "templates/common/diagnose" . | indent 2 }}
+  {{- end }}
+  public func {{ template "templates/common/method_signature/request_options" . }} {
     throw GoogleGax.RequestError.unimplemented
   }
-  {{#Codec.PlainRPC}}
-  {{#Signatures}}
-
-  {{#Deprecated}}
+  {{- if .Codec.PlainRPC }}
+  {{- range .Signatures }}
+  {{- "\n" }}
+  {{- if .Method.Deprecated }}
   @available(*, deprecated)
-  {{/Deprecated}}
-  {{#Codec.DiagnoseFields}}
-  {{> /templates/common/diagnose}}
-  {{/Codec.DiagnoseFields}}
-  public func {{> /templates/common/method_signature/overload}} {
-    let request = {{Method.InputType.Codec.ParameterTypeName}}().with {
-      {{> /templates/common/method_body/overload_fields}}
+  {{- end }}
+  {{- if .Method.Codec.DiagnoseFields }}
+  {{- include "templates/common/diagnose" . | indent 2 }}
+  {{- end }}
+  public func {{ template "templates/common/method_signature/overload" . }} {
+    let request = {{ .Method.InputType.Codec.ParameterTypeName }}().with {
+      {{- include "templates/common/method_body/overload_fields" . | indent 6 }}
     }
-    {{#Method.ReturnsEmpty}}
-    try await self.{{Method.Codec.Name}}(request: request)
-    {{/Method.ReturnsEmpty}}
-    {{^Method.ReturnsEmpty}}
-    return try await self.{{Method.Codec.Name}}(request: request)
-    {{/Method.ReturnsEmpty}}
+    {{- if .Method.ReturnsEmpty }}
+    try await self.{{ .Method.Codec.Name }}(request: request)
+    {{- else }}
+    return try await self.{{ .Method.Codec.Name }}(request: request)
+    {{- end }}
   }
-  {{/Signatures}}
-  {{/Codec.PlainRPC}}
-  {{#Codec.Pagination}}
-
-  {{#Deprecated}}
+  {{- end }}
+  {{- end }}
+  {{- if .Codec.Pagination }}
+  {{- "\n" }}
+  {{- if .Deprecated }}
   @available(*, deprecated)
-  {{/Deprecated}}
-  {{#Codec.DiagnoseTypes}}
-  {{> /templates/common/diagnose}}
-  {{/Codec.DiagnoseTypes}}
-  public func {{> /templates/common/method_signature/pagination}} {
-    self.{{Codec.Name}}ByItems(request: request, options: .init())
+  {{- end }}
+  {{- if .Codec.DiagnoseTypes }}
+  {{- include "templates/common/diagnose" . | indent 2 }}
+  {{- end }}
+  public func {{ template "templates/common/method_signature/pagination" . }} {
+    self.{{ .Codec.Name }}ByItems(request: request, options: .init())
   }
-
-  {{#Codec.DocLines}}
-  /// {{{.}}}
-  {{/Codec.DocLines}}
+  {{- "\n" }}
+  {{- range .Codec.DocLines }}
+  /// {{ . }}
+  {{- end }}
   ///
-  /// @Snippet(path: "{{Service.Name}}_{{Name}}")
-  {{#Deprecated}}
+  /// @Snippet(path: "{{ .Service.Name }}_{{ .Name }}")
+  {{- if .Deprecated }}
   @available(*, deprecated)
-  {{/Deprecated}}
-  {{#Codec.DiagnoseFields}}
-  {{> /templates/common/diagnose}}
-  {{/Codec.DiagnoseFields}}
-  public func {{> /templates/common/method_signature/pagination_options}} {
-    let listRpc = { @Sendable (token: Swift.String) async throws -> {{Codec.ReturnType}} in
+  {{- end }}
+  {{- if .Codec.DiagnoseFields }}
+  {{- include "templates/common/diagnose" . | indent 2 }}
+  {{- end }}
+  public func {{ template "templates/common/method_signature/pagination_options" . }} {
+    let listRpc = { @Sendable (token: Swift.String) async throws -> {{ .Codec.ReturnType }} in
       var request = request
       request.pageToken = token
-      return try await self.{{Codec.Name}}(request: request, options: options)
+      return try await self.{{ .Codec.Name }}(request: request, options: options)
     }
     return GoogleGax.PaginatedResponseSequence(listRpc: listRpc, initialPageToken: request.pageToken)
   }
-  {{#Signatures}}
-
-  {{#Deprecated}}
+  {{- range .Signatures }}
+  {{- "\n" }}
+  {{- if .Method.Deprecated }}
   @available(*, deprecated)
-  {{/Deprecated}}
-  {{#Codec.DiagnoseFields}}
-  {{> /templates/common/diagnose}}
-  {{/Codec.DiagnoseFields}}
-  public func {{> /templates/common/method_signature/pagination_overload}} {
-    let request = {{Method.InputType.Codec.ParameterTypeName}}().with {
-      {{> /templates/common/method_body/overload_fields}}
+  {{- end }}
+  {{- if .Method.Codec.DiagnoseFields }}
+  {{- include "templates/common/diagnose" . | indent 2 }}
+  {{- end }}
+  public func {{ template "templates/common/method_signature/pagination_overload" . }} {
+    let request = {{ .Method.InputType.Codec.ParameterTypeName }}().with {
+      {{- include "templates/common/method_body/overload_fields" . | indent 6 }}
     }
-    return self.{{Codec.Name}}ByItems(request: request)
+    return self.{{ .Method.Codec.Name }}ByItems(request: request)
   }
-  {{/Signatures}}
-  {{/Codec.Pagination}}
-  {{#Codec.LRO}}
-
-  {{#Deprecated}}
+  {{- end }}
+  {{- end }}
+  {{- if .Codec.LRO }}
+  {{- "\n" }}
+  {{- if .Deprecated }}
   @available(*, deprecated)
-  {{/Deprecated}}
-  {{#Codec.DiagnoseTypes}}
-  {{> /templates/common/diagnose}}
-  {{/Codec.DiagnoseTypes}}
-  public func {{> /templates/common/method_signature/lro}} {
-    {{#Codec.LRO.ResponseIsEmpty}}
-    try await self.{{Codec.Name}}PollingUntilDone(request: request, options: .init())
-    {{/Codec.LRO.ResponseIsEmpty}}
-    {{^Codec.LRO.ResponseIsEmpty}}
-    return try await self.{{Codec.Name}}PollingUntilDone(request: request, options: .init())
-    {{/Codec.LRO.ResponseIsEmpty}}
+  {{- end }}
+  {{- if .Codec.DiagnoseTypes }}
+  {{- include "templates/common/diagnose" . | indent 2 }}
+  {{- end }}
+  public func {{ template "templates/common/method_signature/lro" . }} {
+    {{- if .Codec.LRO.ResponseIsEmpty }}
+    try await self.{{ .Codec.Name }}PollingUntilDone(request: request, options: .init())
+    {{- else }}
+    return try await self.{{ .Codec.Name }}PollingUntilDone(request: request, options: .init())
+    {{- end }}
   }
-
-  {{#Deprecated}}
+  {{- "\n" }}
+  {{- if .Deprecated }}
   @available(*, deprecated)
-  {{/Deprecated}}
-  {{#Codec.DiagnoseTypes}}
-  {{> /templates/common/diagnose}}
-  {{/Codec.DiagnoseTypes}}
-  public func {{> /templates/common/method_signature/lro_options}} {
+  {{- end }}
+  {{- if .Codec.DiagnoseTypes }}
+  {{- include "templates/common/diagnose" . | indent 2 }}
+  {{- end }}
+  public func {{ template "templates/common/method_signature/lro_options" . }} {
     throw GoogleGax.RequestError.unimplemented
   }
-  {{#Signatures}}
-
-  {{#Deprecated}}
+  {{- range .Signatures }}
+  {{- "\n" }}
+  {{- if .Method.Deprecated }}
   @available(*, deprecated)
-  {{/Deprecated}}
-  {{#Codec.DiagnoseFields}}
-  {{> /templates/common/diagnose}}
-  {{/Codec.DiagnoseFields}}
-  public func {{> /templates/common/method_signature/lro_overload}} {
-    let request = {{Method.InputType.Codec.ParameterTypeName}}().with {
-      {{> /templates/common/method_body/overload_fields}}
+  {{- end }}
+  {{- if .Method.Codec.DiagnoseFields }}
+  {{- include "templates/common/diagnose" . | indent 2 }}
+  {{- end }}
+  public func {{ template "templates/common/method_signature/lro_overload" . }} {
+    let request = {{ .Method.InputType.Codec.ParameterTypeName }}().with {
+      {{- include "templates/common/method_body/overload_fields" . | indent 6 }}
     }
-    {{#Method.Codec.LRO.ResponseIsEmpty}}
-    try await self.{{Method.Codec.Name}}PollingUntilDone(request: request)
-    {{/Method.Codec.LRO.ResponseIsEmpty}}
-    {{^Method.Codec.LRO.ResponseIsEmpty}}
-    return try await self.{{Method.Codec.Name}}PollingUntilDone(request: request)
-    {{/Method.Codec.LRO.ResponseIsEmpty}}
+    {{- if .Method.Codec.LRO.ResponseIsEmpty }}
+    try await self.{{ .Method.Codec.Name }}PollingUntilDone(request: request)
+    {{- else }}
+    return try await self.{{ .Method.Codec.Name }}PollingUntilDone(request: request)
+    {{- end }}
   }
-  {{/Signatures}}
-  {{/Codec.LRO}}
-  {{#Codec.DiscoveryLRO}}
-
-  {{#Deprecated}}
+  {{- end }}
+  {{- end }}
+  {{- if .Codec.DiscoveryLRO }}
+  {{- "\n" }}
+  {{- if .Deprecated }}
   @available(*, deprecated)
-  {{/Deprecated}}
-  {{#Codec.DiagnoseTypes}}
-  {{> /templates/common/diagnose}}
-  {{/Codec.DiagnoseTypes}}
-  public func {{> /templates/common/method_signature/discovery_lro}} {
-    return try await self.{{Codec.Name}}PollingUntilDone(request: request, options: .init())
+  {{- end }}
+  {{- if .Codec.DiagnoseTypes }}
+  {{- include "templates/common/diagnose" . | indent 2 }}
+  {{- end }}
+  public func {{ template "templates/common/method_signature/discovery_lro" . }} {
+    return try await self.{{ .Codec.Name }}PollingUntilDone(request: request, options: .init())
   }
-
-  {{#Deprecated}}
+  {{- "\n" }}
+  {{- if .Deprecated }}
   @available(*, deprecated)
-  {{/Deprecated}}
-  {{#Codec.DiagnoseTypes}}
-  {{> /templates/common/diagnose}}
-  {{/Codec.DiagnoseTypes}}
-  public func {{> /templates/common/method_signature/discovery_lro_options}} {
+  {{- end }}
+  {{- if .Codec.DiagnoseTypes }}
+  {{- include "templates/common/diagnose" . | indent 2 }}
+  {{- end }}
+  public func {{ template "templates/common/method_signature/discovery_lro_options" . }} {
     throw GoogleGax.RequestError.unimplemented
   }
-  {{#Signatures}}
-
-  {{#Deprecated}}
+  {{- range .Signatures }}
+  {{- "\n" }}
+  {{- if .Method.Deprecated }}
   @available(*, deprecated)
-  {{/Deprecated}}
-  {{#Codec.DiagnoseFields}}
-  {{> /templates/common/diagnose}}
-  {{/Codec.DiagnoseFields}}
-  public func {{> /templates/common/method_signature/discovery_lro_overload}} {
-    let request = {{Method.InputType.Codec.ParameterTypeName}}().with {
-      {{> /templates/common/method_body/overload_fields}}
+  {{- end }}
+  {{- if .Method.Codec.DiagnoseFields }}
+  {{- include "templates/common/diagnose" . | indent 2 }}
+  {{- end }}
+  public func {{ template "templates/common/method_signature/discovery_lro_overload" . }} {
+    let request = {{ .Method.InputType.Codec.ParameterTypeName }}().with {
+      {{- include "templates/common/method_body/overload_fields" . | indent 6 }}
     }
-    return try await self.{{Method.Codec.Name}}PollingUntilDone(request: request)
+    return try await self.{{ .Method.Codec.Name }}PollingUntilDone(request: request)
   }
-  {{/Signatures}}
-  {{/Codec.DiscoveryLRO}}
-  {{/Codec.Methods}}
+  {{- end }}
+  {{- end }}
+  {{- end }}
 }

@@ -22,7 +22,7 @@ import (
 // checkDiagnose verifies whether the block suppressing deprecation warnings
 // immediately precedes `decl`, a declaration indented by `indent`.
 //
-// The generator emits the block from `templates/common/diagnose.mustache` only
+// The generator emits the block from `templates/common/diagnose.gotmpl` only
 // where the generated code cannot avoid naming a deprecated declaration. Every
 // occurrence of `decl` must agree, so a template guarded in one place but not
 // another fails.

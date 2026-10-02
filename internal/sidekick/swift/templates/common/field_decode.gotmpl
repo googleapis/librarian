@@ -1,4 +1,4 @@
-{{!
+{{/*
 Copyright 2026 Google LLC
 
 Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,24 +12,24 @@ distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
-}}
-{{#Codec.IsDecodingSimple}}
-if let value = try container.decodeIfPresent({{{Codec.FieldType}}}.self, forKey: .{{Codec.Name}}) {
-  self.{{Codec.Name}} = value
+*/}}
+{{- if .Codec.IsDecodingSimple }}
+if let value = try container.decodeIfPresent({{ .Codec.FieldType }}.self, forKey: .{{ .Codec.Name }}) {
+  self.{{ .Codec.Name }} = value
 }
-{{/Codec.IsDecodingSimple}}
-{{#Codec.IsDecodingOptional}}
-self.{{Codec.Name}} = try container.decodeIfPresent({{{Codec.BaseFieldType}}}.self, forKey: .{{Codec.Name}})
-{{/Codec.IsDecodingOptional}}
-{{#Codec.IsDecodingMapCustomKey}}
-if let stringKeyed = try container.decodeIfPresent([Swift.String : {{{Codec.ValueType}}}].self, forKey: .{{Codec.Name}}) {
-  let tuples = try stringKeyed.lazy.map { (key, value) throws -> ({{{Codec.KeyType}}}, {{{Codec.ValueType}}}) in
-    guard let newKey = {{{Codec.KeyType}}}(key) else {
+{{- end }}
+{{- if .Codec.IsDecodingOptional }}
+self.{{ .Codec.Name }} = try container.decodeIfPresent({{ .Codec.BaseFieldType }}.self, forKey: .{{ .Codec.Name }})
+{{- end }}
+{{- if .Codec.IsDecodingMapCustomKey }}
+if let stringKeyed = try container.decodeIfPresent([Swift.String : {{ .Codec.ValueType }}].self, forKey: .{{ .Codec.Name }}) {
+  let tuples = try stringKeyed.lazy.map { (key, value) throws -> ({{ .Codec.KeyType }}, {{ .Codec.ValueType }}) in
+    guard let newKey = {{ .Codec.KeyType }}(key) else {
       throw DecodingError.typeMismatch(
-        {{{Codec.KeyType}}}.self, DecodingError.Context(codingPath: decoder.codingPath, debugDescription: "Incorrect type for map key '{{Codec.Name}}'"))
+        {{ .Codec.KeyType }}.self, DecodingError.Context(codingPath: decoder.codingPath, debugDescription: "Incorrect type for map key '{{ .Codec.Name }}'"))
     }
     return (newKey, value)
   }
-  self.{{Codec.Name}} = Dictionary(uniqueKeysWithValues: tuples)
+  self.{{ .Codec.Name }} = Dictionary(uniqueKeysWithValues: tuples)
 }
-{{/Codec.IsDecodingMapCustomKey}}
+{{- end }}

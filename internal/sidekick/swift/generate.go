@@ -27,8 +27,11 @@ import (
 	"github.com/googleapis/librarian/internal/sidekick/language"
 )
 
-//go:embed all:templates
-var templates embed.FS
+var (
+	//go:embed all:templates
+	templates       embed.FS
+	parsedTemplates = language.MustParseTemplates(templates)
+)
 
 // Generate generates code from the model.
 func Generate(ctx context.Context, model *api.API, outdir string, library *config.Library, module *config.SwiftModule) error {
@@ -39,46 +42,39 @@ func Generate(ctx context.Context, model *api.API, outdir string, library *confi
 	if err := codec.annotateModel(); err != nil {
 		return err
 	}
-	provider := func(name string) (string, error) {
-		contents, err := templates.ReadFile(name)
-		if err != nil {
-			return "", err
-		}
-		return string(contents), nil
-	}
-	if err := codec.generateMessages(outdir, model, provider); err != nil {
+	if err := codec.generateMessages(outdir, model); err != nil {
 		return err
 	}
-	if err := codec.generateEnums(outdir, model, provider); err != nil {
+	if err := codec.generateEnums(outdir, model); err != nil {
 		return err
 	}
-	if err := codec.generateStubs(outdir, model, provider); err != nil {
+	if err := codec.generateStubs(outdir, model); err != nil {
 		return err
 	}
-	if err := codec.generateLROAnyConverter(outdir, model, provider); err != nil {
+	if err := codec.generateLROAnyConverter(outdir, model); err != nil {
 		return err
 	}
 	if codec.Module {
 		// Modules only get the top-level messages, enums, and stubs generated.
 		return nil
 	}
-	if err := codec.generateServices(outdir, model, provider); err != nil {
+	if err := codec.generateServices(outdir, model); err != nil {
 		return err
 	}
-	if err := codec.generateClients(outdir, model, provider); err != nil {
+	if err := codec.generateClients(outdir, model); err != nil {
 		return err
 	}
-	if err := codec.generatePackageVersion(outdir, model, provider); err != nil {
+	if err := codec.generatePackageVersion(outdir, model); err != nil {
 		return err
 	}
-	if err := codec.generateSnippets(outdir, model, provider); err != nil {
+	if err := codec.generateSnippets(outdir, model); err != nil {
 		return err
 	}
-	if err := codec.generateDocc(outdir, model, provider); err != nil {
+	if err := codec.generateDocc(outdir, model); err != nil {
 		return err
 	}
 	generatedFiles := language.WalkTemplatesDir(templates, "templates/package")
-	return language.GenerateFromModel(outdir, model, provider, generatedFiles)
+	return parsedTemplates.GenerateFromModel(outdir, model, generatedFiles)
 }
 
 func (c *codec) swiftFilename(basename string) string {
@@ -105,96 +101,96 @@ func (c *codec) swiftFilename(basename string) string {
 	return filepath.Join("Sources", c.LibraryName, name)
 }
 
-func (c *codec) generateDocc(outdir string, model *api.API, provider language.TemplateProvider) error {
+func (c *codec) generateDocc(outdir string, model *api.API) error {
 	output := filepath.Join("Sources", c.LibraryName, c.LibraryName+".docc", "Index.md")
 	files := []language.GeneratedFile{
 		{
-			TemplatePath: "templates/docc/landing_page.md.mustache",
+			TemplatePath: "templates/docc/landing_page.md.gotmpl",
 			OutputPath:   output,
 		},
 	}
 	if annotations, ok := model.Codec.(*modelAnnotations); ok && annotations.HasTraits() {
 		files = append(files, language.GeneratedFile{
-			TemplatePath: "templates/docc/package_traits.md.mustache",
+			TemplatePath: "templates/docc/package_traits.md.gotmpl",
 			OutputPath:   filepath.Join("Sources", c.LibraryName, c.LibraryName+".docc", "PackageTraits.md"),
 		})
 	}
-	return language.GenerateFromModel(outdir, model, provider, files)
+	return parsedTemplates.GenerateFromModel(outdir, model, files)
 }
 
-func (c *codec) generateMessages(outdir string, model *api.API, provider language.TemplateProvider) error {
+func (c *codec) generateMessages(outdir string, model *api.API) error {
 	for _, m := range model.Messages {
 		name := m.Name
 		if m.Parent == nil && m.Package == wellKnownProtobufPackage {
 			name = "WKT" + m.Name
 		}
 		output := c.swiftFilename(name)
-		template := "templates/common/message_file.swift.mustache"
+		tmpl := "templates/common/message_file.swift.gotmpl"
 		if m.ServicePlaceholder {
 			output = c.swiftFilename(m.Name + "+Requests")
-			template = "templates/common/placeholder_file.swift.mustache"
+			tmpl = "templates/common/placeholder_file.swift.gotmpl"
 		}
 		generated := language.GeneratedFile{
-			TemplatePath: template,
+			TemplatePath: tmpl,
 			OutputPath:   output,
 		}
-		if err := language.GenerateMessage(outdir, m, provider, generated); err != nil {
+		if err := parsedTemplates.GenerateElement(outdir, m, generated); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func (c *codec) generateEnums(outdir string, model *api.API, provider language.TemplateProvider) error {
+func (c *codec) generateEnums(outdir string, model *api.API) error {
 	for _, e := range model.Enums {
 		name := e.Name
 		if e.Parent == nil && e.Package == wellKnownProtobufPackage {
 			name = "WKT" + e.Name
 		}
 		generated := language.GeneratedFile{
-			TemplatePath: "templates/common/enum_file.swift.mustache",
+			TemplatePath: "templates/common/enum_file.swift.gotmpl",
 			OutputPath:   c.swiftFilename(name),
 		}
-		if err := language.GenerateEnum(outdir, e, provider, generated); err != nil {
+		if err := parsedTemplates.GenerateElement(outdir, e, generated); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func (c *codec) generateServices(outdir string, model *api.API, provider language.TemplateProvider) error {
+func (c *codec) generateServices(outdir string, model *api.API) error {
 	for _, s := range model.Services {
 		generated := language.GeneratedFile{
-			TemplatePath: "templates/common/service.swift.mustache",
+			TemplatePath: "templates/common/service.swift.gotmpl",
 			OutputPath:   c.swiftFilename(s.Name),
 		}
-		if err := language.GenerateService(outdir, s, provider, generated); err != nil {
+		if err := parsedTemplates.GenerateElement(outdir, s, generated); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func (c *codec) generateStubs(outdir string, model *api.API, provider language.TemplateProvider) error {
-	transportTemplate := "templates/http/transport.swift.mustache"
+func (c *codec) generateStubs(outdir string, model *api.API) error {
+	transportTemplate := "templates/http/transport.swift.gotmpl"
 	if c.isGrpc() {
-		transportTemplate = "templates/grpc/transport.swift.mustache"
+		transportTemplate = "templates/grpc/transport.swift.gotmpl"
 	}
 	for _, s := range model.Services {
 		for _, stub := range []struct {
 			suffix   string
 			template string
 		}{
-			{suffix: "+Stub", template: "templates/common/stub.swift.mustache"},
+			{suffix: "+Stub", template: "templates/common/stub.swift.gotmpl"},
 			{suffix: "+Transport", template: transportTemplate},
-			{suffix: "+Logging", template: "templates/common/logging.swift.mustache"},
-			{suffix: "+Retry", template: "templates/common/retry.swift.mustache"},
+			{suffix: "+Logging", template: "templates/common/logging.swift.gotmpl"},
+			{suffix: "+Retry", template: "templates/common/retry.swift.gotmpl"},
 		} {
 			generated := language.GeneratedFile{
 				TemplatePath: stub.template,
 				OutputPath:   c.swiftFilename(s.Name + stub.suffix),
 			}
-			if err := language.GenerateService(outdir, s, provider, generated); err != nil {
+			if err := parsedTemplates.GenerateElement(outdir, s, generated); err != nil {
 				return err
 			}
 		}
@@ -208,7 +204,7 @@ func (c *codec) generateStubs(outdir string, model *api.API, provider language.T
 // The converter is generated once per package, from the model, rather than
 // once per service: the `Operation` fields that use it name a single
 // converter, so every service's payload types resolve through one table.
-func (c *codec) generateLROAnyConverter(outdir string, model *api.API, provider language.TemplateProvider) error {
+func (c *codec) generateLROAnyConverter(outdir string, model *api.API) error {
 	if !c.isGrpc() {
 		// The converter decodes the Protobuf stubs directly, which only the
 		// gRPC transport generates.
@@ -217,15 +213,15 @@ func (c *codec) generateLROAnyConverter(outdir string, model *api.API, provider 
 	annotations, ok := model.Codec.(*modelAnnotations)
 	if ok && annotations.HasLROAnyTypes() {
 		generated := language.GeneratedFile{
-			TemplatePath: "templates/grpc/lro_any_converter.swift.mustache",
+			TemplatePath: "templates/grpc/lro_any_converter.swift.gotmpl",
 			OutputPath:   c.swiftFilename(annotations.LROAnyConverterName),
 		}
-		return language.GenerateFromModel(outdir, model, provider, []language.GeneratedFile{generated})
+		return parsedTemplates.GenerateFromModel(outdir, model, []language.GeneratedFile{generated})
 	}
 	return nil
 }
 
-func (c *codec) generateSnippets(outdir string, model *api.API, provider language.TemplateProvider) error {
+func (c *codec) generateSnippets(outdir string, model *api.API) error {
 	for _, s := range model.Services {
 		// If two services differ only in case (such as `fooService` and
 		// `FooService`), then this might generate clashing filenames in
@@ -243,10 +239,10 @@ func (c *codec) generateSnippets(outdir string, model *api.API, provider languag
 		//
 		// If I (coryan@) am wrong, we can fix the generator at that time.
 		generated := language.GeneratedFile{
-			TemplatePath: "templates/common/client_snippet.swift.mustache",
+			TemplatePath: "templates/common/client_snippet.swift.gotmpl",
 			OutputPath:   filepath.Join("Snippets", s.Name+"Quickstart.swift"),
 		}
-		if err := language.GenerateService(outdir, s, provider, generated); err != nil {
+		if err := parsedTemplates.GenerateElement(outdir, s, generated); err != nil {
 			return err
 		}
 		for _, m := range s.Methods {
@@ -254,10 +250,10 @@ func (c *codec) generateSnippets(outdir string, model *api.API, provider languag
 				continue
 			}
 			mGenerated := language.GeneratedFile{
-				TemplatePath: "templates/common/method_snippet.swift.mustache",
+				TemplatePath: "templates/common/method_snippet.swift.gotmpl",
 				OutputPath:   filepath.Join("Snippets", fmt.Sprintf("%s_%s.swift", s.Name, m.Name)),
 			}
-			if err := language.GenerateMethod(outdir, m, provider, mGenerated); err != nil {
+			if err := parsedTemplates.GenerateElement(outdir, m, mGenerated); err != nil {
 				return err
 			}
 		}
@@ -265,24 +261,24 @@ func (c *codec) generateSnippets(outdir string, model *api.API, provider languag
 	return nil
 }
 
-func (c *codec) generateClients(outdir string, model *api.API, provider language.TemplateProvider) error {
+func (c *codec) generateClients(outdir string, model *api.API) error {
 	if len(model.Services) == 0 {
 		return nil
 	}
 	generated := language.GeneratedFile{
-		TemplatePath: "templates/common/clients.swift.mustache",
+		TemplatePath: "templates/common/clients.swift.gotmpl",
 		OutputPath:   c.swiftFilename("Clients"),
 	}
-	return language.GenerateFromModel(outdir, model, provider, []language.GeneratedFile{generated})
+	return parsedTemplates.GenerateFromModel(outdir, model, []language.GeneratedFile{generated})
 }
 
-func (c *codec) generatePackageVersion(outdir string, model *api.API, provider language.TemplateProvider) error {
+func (c *codec) generatePackageVersion(outdir string, model *api.API) error {
 	if len(model.Services) > 0 {
 		return nil
 	}
 	generated := language.GeneratedFile{
-		TemplatePath: "templates/common/package_version.swift.mustache",
+		TemplatePath: "templates/common/package_version.swift.gotmpl",
 		OutputPath:   c.swiftFilename("PackageVersion"),
 	}
-	return language.GenerateFromModel(outdir, model, provider, []language.GeneratedFile{generated})
+	return parsedTemplates.GenerateFromModel(outdir, model, []language.GeneratedFile{generated})
 }

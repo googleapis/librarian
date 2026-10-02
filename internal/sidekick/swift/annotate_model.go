@@ -80,7 +80,7 @@ type traitDefinition struct {
 
 // HasDependencies returns true if the package has dependencies on other packages.
 //
-// The mustache templates use this to omit code that goes unused when the package has no
+// The templates use this to omit code that goes unused when the package has no
 // dependencies.
 func (ann *modelAnnotations) HasDependencies() bool {
 	return len(ann.DependsOn) != 0

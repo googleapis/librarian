@@ -1,4 +1,4 @@
-{{!
+{{/*
 Copyright 2026 Google LLC
 
 Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,229 +12,221 @@ distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
-}}
-extension {{Codec.ParameterTypeName}} {
-  internal typealias ProtoType = {{Codec.ProtoTypeName}}
-
-  {{#Codec.DiagnoseCodable}}
-  {{> /templates/common/diagnose}}
-  {{/Codec.DiagnoseCodable}}
+*/}}
+extension {{ .Codec.ParameterTypeName }} {
+  internal typealias ProtoType = {{ .Codec.ProtoTypeName }}
+  {{- "\n" }}
+  {{- if .Codec.DiagnoseCodable }}
+  {{- include "templates/common/diagnose" . | indent 2 }}
+  {{- end }}
   internal init(proto: ProtoType) throws {
     self.init()
-    {{#Fields}}
-    {{^IsOneOf}}
-    {{#Singular}}
-    {{^Optional}}
-    {{#IsObject}}
-    {{#Codec.Recursive}}
-    self.{{Codec.Name}} = proto.has{{Codec.ProtoFieldNamePascal}} ? {{Codec.Model.WktPackage}}.WKTRecursive(value: try .init(proto: proto.{{Codec.ProtoFieldName}})) : nil
-    {{/Codec.Recursive}}
-    {{^Codec.Recursive}}
-    self.{{Codec.Name}} = try .init(proto: proto.{{Codec.ProtoFieldName}})
-    {{/Codec.Recursive}}
-    {{/IsObject}}
-    {{#IsEnum}}
-    self.{{Codec.Name}} = .init(proto: proto.{{Codec.ProtoFieldName}})
-    {{/IsEnum}}
-    {{^IsObject}}
-    {{^IsEnum}}
-    self.{{Codec.Name}} = proto.{{Codec.ProtoFieldName}}
-    {{/IsEnum}}
-    {{/IsObject}}
-    {{/Optional}}
-    {{#Optional}}
-    {{#IsObject}}
-    {{#Codec.Recursive}}
-    self.{{Codec.Name}} = proto.has{{Codec.ProtoFieldNamePascal}} ? {{Codec.Model.WktPackage}}.WKTRecursive(value: try .init(proto: proto.{{Codec.ProtoFieldName}})) : nil
-    {{/Codec.Recursive}}
-    {{^Codec.Recursive}}
-    {{#Codec.LROAnyConverter}}
-    self.{{Codec.Name}} = proto.has{{Codec.ProtoFieldNamePascal}} ? try {{.}}.fromProto(proto.{{Codec.ProtoFieldName}}) : nil
-    {{/Codec.LROAnyConverter}}
-    {{^Codec.LROAnyConverter}}
-    self.{{Codec.Name}} = proto.has{{Codec.ProtoFieldNamePascal}} ? try .init(proto: proto.{{Codec.ProtoFieldName}}) : nil
-    {{/Codec.LROAnyConverter}}
-    {{/Codec.Recursive}}
-    {{/IsObject}}
-    {{#IsEnum}}
-    self.{{Codec.Name}} = proto.has{{Codec.ProtoFieldNamePascal}} ? .init(proto: proto.{{Codec.ProtoFieldName}}) : nil
-    {{/IsEnum}}
-    {{^IsObject}}
-    {{^IsEnum}}
-    self.{{Codec.Name}} = proto.has{{Codec.ProtoFieldNamePascal}} ? proto.{{Codec.ProtoFieldName}} : nil
-    {{/IsEnum}}
-    {{/IsObject}}
-    {{/Optional}}
-    {{/Singular}}
-    {{#Repeated}}
-    {{#IsObject}}
-    self.{{Codec.Name}} = try proto.{{Codec.ProtoFieldName}}.map { try .init(proto: $0) }
-    {{/IsObject}}
-    {{#IsEnum}}
-    self.{{Codec.Name}} = proto.{{Codec.ProtoFieldName}}.map { .init(proto: $0) }
-    {{/IsEnum}}
-    {{^IsObject}}
-    {{^IsEnum}}
-    self.{{Codec.Name}} = proto.{{Codec.ProtoFieldName}}
-    {{/IsEnum}}
-    {{/IsObject}}
-    {{/Repeated}}
-    {{#Map}}
-    {{#Codec.ValueField.IsObject}}
-    self.{{Codec.Name}} = try proto.{{Codec.ProtoFieldName}}.mapValues { try .init(proto: $0) }
-    {{/Codec.ValueField.IsObject}}
-    {{#Codec.ValueField.IsEnum}}
-    self.{{Codec.Name}} = proto.{{Codec.ProtoFieldName}}.mapValues { .init(proto: $0) }
-    {{/Codec.ValueField.IsEnum}}
-    {{^Codec.ValueField.IsObject}}
-    {{^Codec.ValueField.IsEnum}}
-    self.{{Codec.Name}} = proto.{{Codec.ProtoFieldName}}
-    {{/Codec.ValueField.IsEnum}}
-    {{/Codec.ValueField.IsObject}}
-    {{/Map}}
-    {{/IsOneOf}}
-    {{/Fields}}
-    {{#OneOfs}}
-    if let oneof = proto.{{Codec.PropertyName}} {
+    {{- range .Fields }}
+    {{- if not .IsOneOf }}
+    {{- if .Singular }}
+    {{- if not .Optional }}
+    {{- if .IsObject }}
+    {{- if .Codec.Recursive }}
+    self.{{ .Codec.Name }} = proto.has{{ .Codec.ProtoFieldNamePascal }} ? {{ .Codec.Model.WktPackage }}.WKTRecursive(value: try .init(proto: proto.{{ .Codec.ProtoFieldName }})) : nil
+    {{- else }}
+    self.{{ .Codec.Name }} = try .init(proto: proto.{{ .Codec.ProtoFieldName }})
+    {{- end }}
+    {{- end }}
+    {{- if .IsEnum }}
+    self.{{ .Codec.Name }} = .init(proto: proto.{{ .Codec.ProtoFieldName }})
+    {{- end }}
+    {{- if not .IsObject }}
+    {{- if not .IsEnum }}
+    self.{{ .Codec.Name }} = proto.{{ .Codec.ProtoFieldName }}
+    {{- end }}
+    {{- end }}
+    {{- end }}
+    {{- if .Optional }}
+    {{- if .IsObject }}
+    {{- if .Codec.Recursive }}
+    self.{{ .Codec.Name }} = proto.has{{ .Codec.ProtoFieldNamePascal }} ? {{ .Codec.Model.WktPackage }}.WKTRecursive(value: try .init(proto: proto.{{ .Codec.ProtoFieldName }})) : nil
+    {{- else }}
+    {{- if .Codec.LROAnyConverter }}
+    self.{{ .Codec.Name }} = proto.has{{ .Codec.ProtoFieldNamePascal }} ? try {{ .Codec.LROAnyConverter }}.fromProto(proto.{{ .Codec.ProtoFieldName }}) : nil
+    {{- else }}
+    self.{{ .Codec.Name }} = proto.has{{ .Codec.ProtoFieldNamePascal }} ? try .init(proto: proto.{{ .Codec.ProtoFieldName }}) : nil
+    {{- end }}
+    {{- end }}
+    {{- end }}
+    {{- if .IsEnum }}
+    self.{{ .Codec.Name }} = proto.has{{ .Codec.ProtoFieldNamePascal }} ? .init(proto: proto.{{ .Codec.ProtoFieldName }}) : nil
+    {{- end }}
+    {{- if not .IsObject }}
+    {{- if not .IsEnum }}
+    self.{{ .Codec.Name }} = proto.has{{ .Codec.ProtoFieldNamePascal }} ? proto.{{ .Codec.ProtoFieldName }} : nil
+    {{- end }}
+    {{- end }}
+    {{- end }}
+    {{- end }}
+    {{- if .Repeated }}
+    {{- if .IsObject }}
+    self.{{ .Codec.Name }} = try proto.{{ .Codec.ProtoFieldName }}.map { try .init(proto: $0) }
+    {{- end }}
+    {{- if .IsEnum }}
+    self.{{ .Codec.Name }} = proto.{{ .Codec.ProtoFieldName }}.map { .init(proto: $0) }
+    {{- end }}
+    {{- if not .IsObject }}
+    {{- if not .IsEnum }}
+    self.{{ .Codec.Name }} = proto.{{ .Codec.ProtoFieldName }}
+    {{- end }}
+    {{- end }}
+    {{- end }}
+    {{- if .Map }}
+    {{- if .Codec.ValueField.IsObject }}
+    self.{{ .Codec.Name }} = try proto.{{ .Codec.ProtoFieldName }}.mapValues { try .init(proto: $0) }
+    {{- end }}
+    {{- if .Codec.ValueField.IsEnum }}
+    self.{{ .Codec.Name }} = proto.{{ .Codec.ProtoFieldName }}.mapValues { .init(proto: $0) }
+    {{- end }}
+    {{- if not .Codec.ValueField.IsObject }}
+    {{- if not .Codec.ValueField.IsEnum }}
+    self.{{ .Codec.Name }} = proto.{{ .Codec.ProtoFieldName }}
+    {{- end }}
+    {{- end }}
+    {{- end }}
+    {{- end }}
+    {{- end }}
+    {{- range .OneOfs }}
+    if let oneof = proto.{{ .Codec.PropertyName }} {
       switch oneof {
-      {{#Fields}}
-      case .{{Codec.ProtoFieldName}}(let value):
-        {{#IsObject}}
-        {{#Codec.LROAnyConverter}}
-        self.{{Group.Codec.PropertyName}} = .{{Codec.Name}}(try {{.}}.fromProto(value))
-        {{/Codec.LROAnyConverter}}
-        {{^Codec.LROAnyConverter}}
-        self.{{Group.Codec.PropertyName}} = .{{Codec.Name}}(try .init(proto: value))
-        {{/Codec.LROAnyConverter}}
-        {{/IsObject}}
-        {{#IsEnum}}
-        self.{{Group.Codec.PropertyName}} = .{{Codec.Name}}(.init(proto: value))
-        {{/IsEnum}}
-        {{^IsObject}}
-        {{^IsEnum}}
-        self.{{Group.Codec.PropertyName}} = .{{Codec.Name}}(value)
-        {{/IsEnum}}
-        {{/IsObject}}
-      {{/Fields}}
+      {{- range .Fields }}
+      case .{{ .Codec.ProtoFieldName }}(let value):
+        {{- if .IsObject }}
+        {{- if .Codec.LROAnyConverter }}
+        self.{{ .Group.Codec.PropertyName }} = .{{ .Codec.Name }}(try {{ .Codec.LROAnyConverter }}.fromProto(value))
+        {{- else }}
+        self.{{ .Group.Codec.PropertyName }} = .{{ .Codec.Name }}(try .init(proto: value))
+        {{- end }}
+        {{- end }}
+        {{- if .IsEnum }}
+        self.{{ .Group.Codec.PropertyName }} = .{{ .Codec.Name }}(.init(proto: value))
+        {{- end }}
+        {{- if not .IsObject }}
+        {{- if not .IsEnum }}
+        self.{{ .Group.Codec.PropertyName }} = .{{ .Codec.Name }}(value)
+        {{- end }}
+        {{- end }}
+      {{- end }}
       }
     }
-    {{/OneOfs}}
+    {{- end }}
     self._unknownFields.proto = proto.unknownFields.data
   }
-
-  {{#Codec.DiagnoseCodable}}
-  {{> /templates/common/diagnose}}
-  {{/Codec.DiagnoseCodable}}
+  {{- "\n" }}
+  {{- if .Codec.DiagnoseCodable }}
+  {{- include "templates/common/diagnose" . | indent 2 }}
+  {{- end }}
   internal func toProto() throws -> ProtoType {
     var proto = ProtoType()
-    {{#Fields}}
-    {{^IsOneOf}}
-    {{#Singular}}
-    {{^Optional}}
-    {{#IsObject}}
-    {{#Codec.Recursive}}
-    if let {{Codec.Name}} = self.{{Codec.Name}} { proto.{{Codec.ProtoFieldName}} = try {{Codec.Name}}.value.toProto() }
-    {{/Codec.Recursive}}
-    {{^Codec.Recursive}}
-    proto.{{Codec.ProtoFieldName}} = try self.{{Codec.Name}}.toProto()
-    {{/Codec.Recursive}}
-    {{/IsObject}}
-    {{#IsEnum}}
-    proto.{{Codec.ProtoFieldName}} = try self.{{Codec.Name}}.toProto()
-    {{/IsEnum}}
-    {{^IsObject}}
-    {{^IsEnum}}
-    proto.{{Codec.ProtoFieldName}} = self.{{Codec.Name}}
-    {{/IsEnum}}
-    {{/IsObject}}
-    {{/Optional}}
-    {{#Optional}}
-    {{#IsObject}}
-    {{#Codec.Recursive}}
-    if let {{Codec.Name}} = self.{{Codec.Name}} { proto.{{Codec.ProtoFieldName}} = try {{Codec.Name}}.value.toProto() }
-    {{/Codec.Recursive}}
-    {{^Codec.Recursive}}
-    {{#Codec.LROAnyConverter}}
-    if let {{Codec.Name}} = self.{{Codec.Name}} { proto.{{Codec.ProtoFieldName}} = try {{.}}.toProto({{Codec.Name}}) }
-    {{/Codec.LROAnyConverter}}
-    {{^Codec.LROAnyConverter}}
-    if let {{Codec.Name}} = self.{{Codec.Name}} { proto.{{Codec.ProtoFieldName}} = try {{Codec.Name}}.toProto() }
-    {{/Codec.LROAnyConverter}}
-    {{/Codec.Recursive}}
-    {{/IsObject}}
-    {{#IsEnum}}
-    if let {{Codec.Name}} = self.{{Codec.Name}} { proto.{{Codec.ProtoFieldName}} = try {{Codec.Name}}.toProto() }
-    {{/IsEnum}}
-    {{^IsObject}}
-    {{^IsEnum}}
-    if let {{Codec.Name}} = self.{{Codec.Name}} { proto.{{Codec.ProtoFieldName}} = {{Codec.Name}} }
-    {{/IsEnum}}
-    {{/IsObject}}
-    {{/Optional}}
-    {{/Singular}}
-    {{#Repeated}}
-    {{#IsObject}}
-    proto.{{Codec.ProtoFieldName}} = try self.{{Codec.Name}}.map { try $0.toProto() }
-    {{/IsObject}}
-    {{#IsEnum}}
-    proto.{{Codec.ProtoFieldName}} = try self.{{Codec.Name}}.map { try $0.toProto() }
-    {{/IsEnum}}
-    {{^IsObject}}
-    {{^IsEnum}}
-    proto.{{Codec.ProtoFieldName}} = self.{{Codec.Name}}
-    {{/IsEnum}}
-    {{/IsObject}}
-    {{/Repeated}}
-    {{#Map}}
-    {{#Codec.ValueField.IsObject}}
-    proto.{{Codec.ProtoFieldName}} = try self.{{Codec.Name}}.mapValues { try $0.toProto() }
-    {{/Codec.ValueField.IsObject}}
-    {{#Codec.ValueField.IsEnum}}
-    proto.{{Codec.ProtoFieldName}} = try self.{{Codec.Name}}.mapValues { try $0.toProto() }
-    {{/Codec.ValueField.IsEnum}}
-    {{^Codec.ValueField.IsObject}}
-    {{^Codec.ValueField.IsEnum}}
-    proto.{{Codec.ProtoFieldName}} = self.{{Codec.Name}}
-    {{/Codec.ValueField.IsEnum}}
-    {{/Codec.ValueField.IsObject}}
-    {{/Map}}
-    {{/IsOneOf}}
-    {{/Fields}}
-    {{#OneOfs}}
-    if let oneof = self.{{Codec.PropertyName}} {
+    {{- range .Fields }}
+    {{- if not .IsOneOf }}
+    {{- if .Singular }}
+    {{- if not .Optional }}
+    {{- if .IsObject }}
+    {{- if .Codec.Recursive }}
+    if let {{ .Codec.Name }} = self.{{ .Codec.Name }} { proto.{{ .Codec.ProtoFieldName }} = try {{ .Codec.Name }}.value.toProto() }
+    {{- else }}
+    proto.{{ .Codec.ProtoFieldName }} = try self.{{ .Codec.Name }}.toProto()
+    {{- end }}
+    {{- end }}
+    {{- if .IsEnum }}
+    proto.{{ .Codec.ProtoFieldName }} = try self.{{ .Codec.Name }}.toProto()
+    {{- end }}
+    {{- if not .IsObject }}
+    {{- if not .IsEnum }}
+    proto.{{ .Codec.ProtoFieldName }} = self.{{ .Codec.Name }}
+    {{- end }}
+    {{- end }}
+    {{- end }}
+    {{- if .Optional }}
+    {{- if .IsObject }}
+    {{- if .Codec.Recursive }}
+    if let {{ .Codec.Name }} = self.{{ .Codec.Name }} { proto.{{ .Codec.ProtoFieldName }} = try {{ .Codec.Name }}.value.toProto() }
+    {{- else }}
+    {{- if .Codec.LROAnyConverter }}
+    if let {{ .Codec.Name }} = self.{{ .Codec.Name }} { proto.{{ .Codec.ProtoFieldName }} = try {{ .Codec.LROAnyConverter }}.toProto({{ .Codec.Name }}) }
+    {{- else }}
+    if let {{ .Codec.Name }} = self.{{ .Codec.Name }} { proto.{{ .Codec.ProtoFieldName }} = try {{ .Codec.Name }}.toProto() }
+    {{- end }}
+    {{- end }}
+    {{- end }}
+    {{- if .IsEnum }}
+    if let {{ .Codec.Name }} = self.{{ .Codec.Name }} { proto.{{ .Codec.ProtoFieldName }} = try {{ .Codec.Name }}.toProto() }
+    {{- end }}
+    {{- if not .IsObject }}
+    {{- if not .IsEnum }}
+    if let {{ .Codec.Name }} = self.{{ .Codec.Name }} { proto.{{ .Codec.ProtoFieldName }} = {{ .Codec.Name }} }
+    {{- end }}
+    {{- end }}
+    {{- end }}
+    {{- end }}
+    {{- if .Repeated }}
+    {{- if .IsObject }}
+    proto.{{ .Codec.ProtoFieldName }} = try self.{{ .Codec.Name }}.map { try $0.toProto() }
+    {{- end }}
+    {{- if .IsEnum }}
+    proto.{{ .Codec.ProtoFieldName }} = try self.{{ .Codec.Name }}.map { try $0.toProto() }
+    {{- end }}
+    {{- if not .IsObject }}
+    {{- if not .IsEnum }}
+    proto.{{ .Codec.ProtoFieldName }} = self.{{ .Codec.Name }}
+    {{- end }}
+    {{- end }}
+    {{- end }}
+    {{- if .Map }}
+    {{- if .Codec.ValueField.IsObject }}
+    proto.{{ .Codec.ProtoFieldName }} = try self.{{ .Codec.Name }}.mapValues { try $0.toProto() }
+    {{- end }}
+    {{- if .Codec.ValueField.IsEnum }}
+    proto.{{ .Codec.ProtoFieldName }} = try self.{{ .Codec.Name }}.mapValues { try $0.toProto() }
+    {{- end }}
+    {{- if not .Codec.ValueField.IsObject }}
+    {{- if not .Codec.ValueField.IsEnum }}
+    proto.{{ .Codec.ProtoFieldName }} = self.{{ .Codec.Name }}
+    {{- end }}
+    {{- end }}
+    {{- end }}
+    {{- end }}
+    {{- end }}
+    {{- range .OneOfs }}
+    if let oneof = self.{{ .Codec.PropertyName }} {
       switch oneof {
-      {{#Fields}}
-      case .{{Codec.Name}}(let value):
-        {{#IsObject}}
-        {{#Codec.LROAnyConverter}}
-        proto.{{Group.Codec.PropertyName}} = .{{Codec.ProtoFieldName}}(try {{.}}.toProto(value))
-        {{/Codec.LROAnyConverter}}
-        {{^Codec.LROAnyConverter}}
-        proto.{{Group.Codec.PropertyName}} = .{{Codec.ProtoFieldName}}(try value.toProto())
-        {{/Codec.LROAnyConverter}}
-        {{/IsObject}}
-        {{#IsEnum}}
-        proto.{{Group.Codec.PropertyName}} = .{{Codec.ProtoFieldName}}(try value.toProto())
-        {{/IsEnum}}
-        {{^IsObject}}
-        {{^IsEnum}}
-        proto.{{Group.Codec.PropertyName}} = .{{Codec.ProtoFieldName}}(value)
-        {{/IsEnum}}
-        {{/IsObject}}
-      {{/Fields}}
+      {{- range .Fields }}
+      case .{{ .Codec.Name }}(let value):
+        {{- if .IsObject }}
+        {{- if .Codec.LROAnyConverter }}
+        proto.{{ .Group.Codec.PropertyName }} = .{{ .Codec.ProtoFieldName }}(try {{ .Codec.LROAnyConverter }}.toProto(value))
+        {{- else }}
+        proto.{{ .Group.Codec.PropertyName }} = .{{ .Codec.ProtoFieldName }}(try value.toProto())
+        {{- end }}
+        {{- end }}
+        {{- if .IsEnum }}
+        proto.{{ .Group.Codec.PropertyName }} = .{{ .Codec.ProtoFieldName }}(try value.toProto())
+        {{- end }}
+        {{- if not .IsObject }}
+        {{- if not .IsEnum }}
+        proto.{{ .Group.Codec.PropertyName }} = .{{ .Codec.ProtoFieldName }}(value)
+        {{- end }}
+        {{- end }}
+      {{- end }}
       }
     }
-    {{/OneOfs}}
+    {{- end }}
     if !self._unknownFields.proto.isEmpty {
       try proto.merge(serializedBytes: self._unknownFields.proto)
     }
     return proto
   }
 }
-
-{{#Messages}}
-{{> /templates/convert/convert_message}}
-{{/Messages}}
-{{#Enums}}
-{{> /templates/convert/convert_enum}}
-{{/Enums}}
+{{- "\n" }}
+{{- range .Messages }}
+{{- include "templates/convert/convert_message" . }}
+{{- end }}
+{{- range .Enums }}
+{{- include "templates/convert/convert_enum" . }}
+{{- end }}

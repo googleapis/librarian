@@ -1,4 +1,4 @@
-{{!
+{{/*
 Copyright 2026 Google LLC
 
 Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,8 +12,8 @@ distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
-}}
-let extractStatus = { @Sendable (op: {{Codec.ReturnType}}) throws -> GoogleGax._PollableOperationImpl<{{Codec.DiscoveryLRO.ReturnType}}>.State in
+*/}}
+let extractStatus = { @Sendable (op: {{ .Codec.ReturnType }}) throws -> GoogleGax._PollableOperationImpl<{{ .Codec.DiscoveryLRO.ReturnType }}>.State in
   guard op._done() else {
     return .init(done: false, result: nil)
   }
@@ -25,16 +25,16 @@ let extractStatus = { @Sendable (op: {{Codec.ReturnType}}) throws -> GoogleGax._
   }
   return .init(done: true, result: .success(op))
 }
-let rawOp = try await self.{{Codec.Name}}(request: request, options: options)
+let rawOp = try await self.{{ .Codec.Name }}(request: request, options: options)
 let initialState = try extractStatus(rawOp)
-let poll = { @Sendable () async throws -> GoogleGax._PollableOperationImpl<{{Codec.DiscoveryLRO.ReturnType}}>.State in
-{{! The polling function is always called `getOperation`, sidekick picks the name. }}
-let op = try await self.getOperation(request: .init().with {
+let poll = { @Sendable () async throws -> GoogleGax._PollableOperationImpl<{{ .Codec.DiscoveryLRO.ReturnType }}>.State in
+{{- /* The polling function is always called `getOperation`, sidekick picks the name. */}}
+  let op = try await self.getOperation(request: .init().with {
     $0.operation = rawOp._name()
-    {{! The path parameters, if any, are captured from the request, which is called `request` }}
-    {{#Codec.DiscoveryLRO.PollingPathParameters}}
-    $0.{{{.}}} = request.{{{.}}}
-    {{/Codec.DiscoveryLRO.PollingPathParameters}}
+    {{- /* The path parameters, if any, are captured from the request, which is called `request` */}}
+    {{- range .Codec.DiscoveryLRO.PollingPathParameters }}
+    $0.{{ . }} = request.{{ . }}
+    {{- end }}
   }, options: options)
   return try extractStatus(op)
 }
