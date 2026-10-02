@@ -60,25 +60,6 @@ func TestLibrarianUsage(t *testing.T) {
 	}
 }
 
-func TestLibrarianopsUsage(t *testing.T) {
-	const bin = "github.com/googleapis/librarian/cmd/librarianops"
-	for _, test := range []struct {
-		desc string
-		args []string
-		want string
-	}{
-		{"root", nil, "librarianops [command]"},
-		{"generate", []string{"generate"}, "librarianops generate [<repo> | -C <dir>]"},
-	} {
-		t.Run(test.desc, func(t *testing.T) {
-			got := runUsage(t, bin, test.args)
-			if diff := cmp.Diff(test.want, got); diff != "" {
-				t.Errorf("mismatch (-want +got):\n%s", diff)
-			}
-		})
-	}
-}
-
 // runUsage executes the binary with the given args and the appropriate help flag,
 // returning the captured usage string.
 func runUsage(t *testing.T, bin string, args []string) string {

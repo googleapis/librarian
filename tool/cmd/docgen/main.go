@@ -50,12 +50,6 @@ Global flags:
 
 	--verbose, -v    enable verbose logging
 `
-	librarianopsDesc = `Librarianops orchestrates librarian operations across multiple repositories.
-
-Usage:
-
-	librarianops <command> [arguments]
-`
 
 	docTemplate = `// Copyright {{.Year}} Google LLC
 //
@@ -116,13 +110,11 @@ const afterFlagsMarker = "[after-flags]"
 
 var (
 	descriptions = map[string]string{
-		"librarian":    librarianDesc,
-		"librarianops": librarianopsDesc,
+		"librarian": librarianDesc,
 	}
 
 	years = map[string]string{
-		"librarian":    "2026",
-		"librarianops": "2026",
+		"librarian": "2026",
 	}
 
 	cmdPath = flag.String("cmd", "", "Path to the command to generate docs for (e.g., ../../cmd/librarian)")

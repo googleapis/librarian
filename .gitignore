@@ -12,7 +12,6 @@
 cmd/legacyautomation/legacyautomation
 cmd/legacylibrarian/legacylibrarian
 cmd/librarian/librarian
-cmd/librarianops/librarianops
 cmd/sidekick/sidekick
 tool/cmd/builddockerimages/builddockerimages
 tool/cmd/configcheck/configcheck
@@ -28,7 +27,6 @@ tool/cmd/syncversion/syncversion
 /legacyautomation
 /legacylibrarian
 /librarian
-/librarianops
 /sidekick
 /builddockerimages
 /configcheck
