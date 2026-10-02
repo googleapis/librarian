@@ -302,6 +302,7 @@ impl super::stub::{{ .Codec.Name }} for {{ .Codec.Name }} {
     {{- end }}
     {{- end }}
     {{- if .Codec.HasLROs }}
+    {{- "\n" }}
     fn get_polling_error_policy(
         &self,
         options: &crate::RequestOptions,
@@ -319,6 +320,7 @@ impl super::stub::{{ .Codec.Name }} for {{ .Codec.Name }} {
 }
 {{- end }}
 {{- if .Codec.HasLROs }}
+{{- "\n" }}
 use gaxi::prost::{ConvertError, FromProto, ToProto};
 /// Convert from our `wkt::Any` to a `prost_types::Any`
 ///

@@ -17,7 +17,7 @@ limitations under the License.
 {{- range .Codec.Model.Codec.BoilerPlate }}
 //{{ . }}
 {{- end }}
-
+{{- "\n" }}
 {{- range .Codec.Model.Codec.DisabledRustdocWarnings }}
 #![allow(rustdoc::{{ . }})]
 {{- end }}

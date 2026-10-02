@@ -20,7 +20,7 @@ limitations under the License.
 
 #![allow(missing_docs)]
 
-{{- with .Codec.QuickstartService }}
+{{ with .Codec.QuickstartService }}
 //! End-to-end mocks for the `{{ .Package }}.{{ .Name }}` gRPC service.
 //!
 //! Use this crate for end-to-end client library tests. Start a local server
@@ -67,7 +67,7 @@ use tokio::task::JoinHandle;
 /// A mock for the `{{ .Package }}.{{ .Name }}` gRPC service.
 ///
 /// # Example
-{{/* We build samples marked `ignore`, so use `no_rust` instead. */}}
+{{/* We build samples marked `ignore`, so use `no_rust` instead. */ -}}
 /// ```no_rust
 /// use {{ .Model.Codec.PackageNamespace }}::Mock{{ .Codec.Name }};
 /// let mut mock = Mock{{ .Codec.Name }}::new();
@@ -78,7 +78,7 @@ use tokio::task::JoinHandle;
 /// ```
 pub use mocks::Mock{{ .Codec.Name }};
 
-{{/* TODO(#5333) - `start()` should be scoped to a service. */}}
+{{/* TODO(#5333) - `start()` should be scoped to a service. */ -}}
 /// Starts a mock `{{ .Package }}.{{ .Name }}` gRPC service.
 ///
 /// # Example

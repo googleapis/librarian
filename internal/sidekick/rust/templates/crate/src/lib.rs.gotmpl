@@ -91,7 +91,7 @@ limitations under the License.
     - fields that reference deprecated messages and enums.
     - clients and stubs use deprecated RPCs.
     - clients and stubs use deprecated services and deprecated request messages.
-*/}}
+*/ -}}
 {{- if .HasDeprecatedEntities }}
 #![allow(deprecated)]
 {{- end }}
@@ -104,9 +104,9 @@ pub mod model;
 pub use google_cloud_gax::Result;
 pub use google_cloud_gax::error::Error;
 
-{{/* Google APIs often use angle brackets for <PLACEHOLDERS>, rustdoc does not like those. */}}
+{{/* Google APIs often use angle brackets for <PLACEHOLDERS>, rustdoc does not like those. */ -}}
 #[allow(rustdoc::invalid_html_tags)]
-{{/* We use explicit links because it is easier to generate the code with them. */}}
+{{/* We use explicit links because it is easier to generate the code with them. */ -}}
 #[allow(rustdoc::redundant_explicit_links)]
 pub mod stub;
 

@@ -32,8 +32,7 @@ pub trait {{ .Codec.Name }} {
     // streams. The `impl` adapts between these concrete types and the more
     // general types / traits that Tonic uses.
 
-    {{- range .Codec.Methods }}
-    {{- "\n" }}
+    {{ range .Codec.Methods }}
     async fn {{ .Codec.Name }}(
         &self,
         {{- if .ClientSideStreaming }}
@@ -53,8 +52,7 @@ pub trait {{ .Codec.Name }} {
 
 #[async_trait]
 impl {{ .Codec.PackageModuleName }}::{{ .Codec.ModuleName }}_server::{{ .Codec.Name }} for Mock{{ .Codec.Name }} {
-    {{- range .Codec.Methods }}
-    {{- "\n" }}
+    {{ range .Codec.Methods }}
     {{- if .ServerSideStreaming }}
     type {{ .Codec.BuilderName }}Stream = ReceiverStream<tonic::Result<{{ .OutputType.Codec.PackageModuleName }}::{{ .OutputType.Codec.ProstRelativeName }}>>;
     {{- end }}

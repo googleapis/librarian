@@ -605,7 +605,7 @@ pub mod {{ .Codec.ModuleName }} {
         ///
         /// Note that all the setters affecting `{{ .Codec.FieldName }}` are
         /// mutually exclusive.
-        pub fn set_{{ .Codec.SetterName }}<T: Into<Option<{{ .Codec.FieldType }}>>>(mut self, v: T) -> Self {
+        pub fn set_{{ .Codec.SetterName }}<T: Into<Option<{{ .Codec.FieldType }}>>>(mut self, v: T) ->Self {
             self.0.request.{{ .Codec.FieldName }} = v.into();
             self
         }

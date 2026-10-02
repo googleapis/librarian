@@ -18,11 +18,11 @@ limitations under the License.
 //{{ . }}
 {{- end }}
 {{- if .Codec.IsGaxiCrate }}
+
 {{/*
   This file is used to bootstrap the `google-cloud-gax-internal` crate. In all
   other crates `gaxi` is well-defined and refers to said crate.
-*/}}
-
+*/ -}}
 use crate as gaxi;
 {{- end }}
 {{- if .Codec.ProstPath }}

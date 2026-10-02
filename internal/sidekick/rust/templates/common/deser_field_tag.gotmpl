@@ -13,7 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */}}
-{{/*
+{{- /*
     The serde guide recommends using an enumeration to avoid data copies
     and allocations related to the field names. The basic idea is to create
     an enumeration to convert the (borrowed) field names into enumeration
@@ -22,7 +22,7 @@ limitations under the License.
 
     Then we implement deserialization for this enumeration, so they can be
     extracted from the map, and use the enumeration to extract the fields.
-*/}}
+*/ -}}
 #[allow(non_camel_case_types)]
 #[doc(hidden)]
 #[derive(PartialEq, Eq, Hash)]

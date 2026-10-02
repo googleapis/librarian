@@ -18,8 +18,8 @@ limitations under the License.
 //{{ . }}
 {{- end }}
 
-{{/* Disable warnings that are known to cause trouble */}}
-{{- range .Codec.DisabledRustdocWarnings }}
+{{/* Disable warnings that are known to cause trouble */ -}}
+{{ range .Codec.DisabledRustdocWarnings }}
 #![allow(rustdoc::{{ . }})]
 {{- end }}
 {{- range .Codec.DisabledClippyWarnings }}
