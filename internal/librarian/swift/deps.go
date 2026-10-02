@@ -189,44 +189,49 @@ func resolveDependencyLibrary(rawPath string, pathToLib map[string]*config.Libra
 	return nil
 }
 
+type dependencyNode struct {
+	library    *config.Library
+	inDegree   int
+	dependents []*dependencyNode
+}
+
 // topologicalLevels groups libraries into discrete dependency levels L0..Lk using Kahn's algorithm.
 // Level 0 has no internal dependencies; level i+1 depends only on libraries in levels 0..i.
 func topologicalLevels(libraries []*config.Library, deps map[string][]string) ([][]*config.Library, error) {
-	libMap := make(map[string]*config.Library, len(libraries))
-	for _, lib := range libraries {
-		libMap[lib.Name] = lib
+	nodes := make(map[string]*dependencyNode, len(libraries))
+	nodeList := make([]*dependencyNode, len(libraries))
+	for i, lib := range libraries {
+		node := &dependencyNode{library: lib}
+		nodes[lib.Name] = node
+		nodeList[i] = node
 	}
 
-	inDegree := make(map[string]int, len(libraries))
-	dependents := make(map[string][]string, len(libraries))
-
 	for _, lib := range libraries {
-		var validDeps []string
+		node := nodes[lib.Name]
 		for _, depName := range deps[lib.Name] {
-			if _, ok := libMap[depName]; ok {
-				validDeps = append(validDeps, depName)
-				dependents[depName] = append(dependents[depName], lib.Name)
+			if depNode, ok := nodes[depName]; ok {
+				node.inDegree++
+				depNode.dependents = append(depNode.dependents, node)
 			}
 		}
-		inDegree[lib.Name] = len(validDeps)
 	}
 
-	currentLevel := librariesWithoutDependencies(libraries, inDegree)
+	currentLevel := librariesWithoutDependencies(nodeList)
 
 	var levels [][]*config.Library
 	processedCount := 0
 
 	for len(currentLevel) > 0 {
-		levels = append(levels, currentLevel)
+		levels = append(levels, toLibraries(currentLevel))
 		processedCount += len(currentLevel)
-		currentLevel = directDependentsOf(currentLevel, dependents, inDegree, libMap)
+		currentLevel = directDependentsOf(currentLevel)
 	}
 
 	if processedCount < len(libraries) {
 		var cycleLibs []string
-		for _, lib := range libraries {
-			if inDegree[lib.Name] > 0 {
-				cycleLibs = append(cycleLibs, lib.Name)
+		for _, node := range nodeList {
+			if node.inDegree > 0 {
+				cycleLibs = append(cycleLibs, node.library.Name)
 			}
 		}
 		slices.Sort(cycleLibs)
@@ -236,31 +241,39 @@ func topologicalLevels(libraries []*config.Library, deps map[string][]string) ([
 	return levels, nil
 }
 
-func directDependentsOf(currentLevel []*config.Library, dependents map[string][]string, inDegree map[string]int, libMap map[string]*config.Library) []*config.Library {
-	var nextLevel []*config.Library
-	for _, lib := range currentLevel {
-		for _, dep := range dependents[lib.Name] {
-			inDegree[dep]--
-			if inDegree[dep] == 0 {
-				nextLevel = append(nextLevel, libMap[dep])
+func directDependentsOf(currentLevel []*dependencyNode) []*dependencyNode {
+	var nextLevel []*dependencyNode
+	for _, node := range currentLevel {
+		for _, dep := range node.dependents {
+			dep.inDegree--
+			if dep.inDegree == 0 {
+				nextLevel = append(nextLevel, dep)
 			}
 		}
 	}
-	slices.SortFunc(nextLevel, func(a, b *config.Library) int {
-		return strings.Compare(a.Name, b.Name)
+	slices.SortFunc(nextLevel, func(a, b *dependencyNode) int {
+		return strings.Compare(a.library.Name, b.library.Name)
 	})
 	return nextLevel
 }
 
-func librariesWithoutDependencies(libraries []*config.Library, inDegree map[string]int) []*config.Library {
-	var zeroDegree []*config.Library
-	for _, lib := range libraries {
-		if inDegree[lib.Name] == 0 {
-			zeroDegree = append(zeroDegree, lib)
+func librariesWithoutDependencies(nodes []*dependencyNode) []*dependencyNode {
+	var zeroDegree []*dependencyNode
+	for _, node := range nodes {
+		if node.inDegree == 0 {
+			zeroDegree = append(zeroDegree, node)
 		}
 	}
-	slices.SortFunc(zeroDegree, func(a, b *config.Library) int {
-		return strings.Compare(a.Name, b.Name)
+	slices.SortFunc(zeroDegree, func(a, b *dependencyNode) int {
+		return strings.Compare(a.library.Name, b.library.Name)
 	})
 	return zeroDegree
+}
+
+func toLibraries(nodes []*dependencyNode) []*config.Library {
+	libs := make([]*config.Library, len(nodes))
+	for i, node := range nodes {
+		libs[i] = node.library
+	}
+	return libs
 }
