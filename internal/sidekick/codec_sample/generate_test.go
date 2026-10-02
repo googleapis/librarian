@@ -72,3 +72,9 @@ func TestGenerate(t *testing.T) {
 		})
 	}
 }
+
+func TestValidateTemplates(t *testing.T) {
+	if err := parsedTemplates.Validate(); err != nil {
+		t.Fatal(err)
+	}
+}
