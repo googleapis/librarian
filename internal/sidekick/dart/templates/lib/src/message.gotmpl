@@ -22,7 +22,6 @@ final class {{ .Codec.Name }} extends {{ .Codec.Model.Codec.ProtoPrefix }}ProtoM
 
   {{- range .Fields }}
   {{- include "templates/lib/src/field" . | indent 2 }}
-  {{- "\n" }}
   {{- end }}
   {{ .Codec.Name }}({{- if .Codec.HasFields }}{
     {{- range .Fields }}
