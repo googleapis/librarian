@@ -95,25 +95,74 @@ expected annotation struct on the corresponding model element:
 
 ## Template Architecture & Boilerplate
 
-Mustache templates (`internal/sidekick/<lang>/templates/`) define the emitted
-source code structure.
+Sidekick generators use templates (`internal/sidekick/<lang>/templates/`) to
+define the emitted source code structure. Generators are migrating from legacy
+Mustache templates (`.mustache`) to Go templates (`.gotmpl`).
+
+### Go Template Formatting Guidelines
+
+Templates must remain readable, maintainable, and visually aligned with the
+generated target language code. For the comprehensive style guide and ecosystem
+references (Helm / Hugo), see
+[Go Template Style Guide](/doc/styleguide/go-template-style-guide.md).
+
+Key rules:
+1. **Visual Alignment:** Indent template control flow (`{{- range }}`,
+   `{{- if }}`, `{{- end }}`) so it matches the indentation level of the
+   generated code. Do not pull template tags to column 0 if the generated code
+   is indented.
+2. **Emitting Blank Lines:** Use `{{- "\n" }}` aligned with the surrounding
+   block to emit a blank line without leaking trailing spaces into the output.
+3. **Partial Indentation:** When including partials, explicitly pipe through
+   `| indent N`
+   (e.g., `{{- include "templates/common/body" . | indent 4 }}`).
+4. **Spacing:** Include spaces inside delimiters: `{{- foo }}`, never
+   `{{-foo}}`.
+5. **Comments & Headers:** Use `{{/* ... */}}` for template comments and file
+   license headers.
+
+#### Good Example:
+```gotmpl
+    {{- range .Codec.Methods }}
+    {{- "\n" }}
+    {{- range .DocLines }}
+    /// {{ . }}
+    {{- end }}
+    public func {{ .Name }}() {
+        {{- include "templates/common/method_body" . | indent 8 }}
+    }
+    {{- end }}
+```
+
+#### Bad Example:
+```gotmpl
+    {{- range .Codec.Methods }}
+{{ "" }}
+    {{- range .DocLines }}
+    /// {{ . }}
+    {{- end }}
+    public func {{ .Name }}() {
+{{ include "templates/common/method_body" . }}
+    }
+    {{- end }}
+```
+*Why the bad example is problematic:* `{{ "" }}` breaks indentation flow by
+jumping to column 0 (or if indented `    {{ "" }}`, it leaves trailing
+whitespace on the blank line); omitting `| indent 8` on the partial leaves
+multiline partials unindented.
 
 ### Template and Output Boilerplate
 
-- **Template Copyright Header:** Every `.mustache` file itself must begin with
-  an Apache 2.0 license comment enclosed in Mustache comment delimiters
-  (`{{! ... }}`). Always use the current year for newly created files. See
-  [`swift/templates/common/service.swift.mustache`](swift/templates/common/service.swift.mustache)
-  for an example of this template comment header.
+- **Template Copyright Header:** Every template file must begin with an Apache
+  2.0 license comment (using `{{/* ... */}}` for Go templates or `{{! ... }}`
+  for legacy Mustache). Always use the current year for newly created files.
 - **Output File Boilerplate:** Templates that render standalone source files
   (not partials) must emit the target file's license and copyright boilerplate.
 - **Reusable Partials:** Output boilerplate must be rendered using a reusable
-  Mustache partial (e.g., `{{> /templates/partials/prologue}}`), referencing
-  `Codec.Model.CopyrightYear` and `Codec.Model.BoilerPlate` (or
-  `Codec.CopyrightYear` and `Codec.BoilerPlate` when rendering root models),
-  rather than duplicating license text across dozens of templates. See
-  [`codec_sample/templates/readme/README.md.mustache`](codec_sample/templates/readme/README.md.mustache)
-  for an example.
+  partial, referencing `Codec.Model.CopyrightYear` and
+  `Codec.Model.BoilerPlate` (or `Codec.CopyrightYear` and `Codec.BoilerPlate`
+  when rendering root models), rather than duplicating license text across
+  dozens of templates.
 - **Decomposition via Partials:** Decompose complex files into logical partials
   (e.g., method signatures, routing matchers, client protocols, documentation
   blocks).
