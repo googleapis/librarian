@@ -211,15 +211,7 @@ func topologicalLevels(libraries []*config.Library, deps map[string][]string) ([
 		inDegree[lib.Name] = len(validDeps)
 	}
 
-	var currentLevel []*config.Library
-	for _, lib := range libraries {
-		if inDegree[lib.Name] == 0 {
-			currentLevel = append(currentLevel, lib)
-		}
-	}
-	slices.SortFunc(currentLevel, func(a, b *config.Library) int {
-		return strings.Compare(a.Name, b.Name)
-	})
+	currentLevel := librariesWithoutDependencies(libraries, inDegree)
 
 	var levels [][]*config.Library
 	processedCount := 0
@@ -227,20 +219,7 @@ func topologicalLevels(libraries []*config.Library, deps map[string][]string) ([
 	for len(currentLevel) > 0 {
 		levels = append(levels, currentLevel)
 		processedCount += len(currentLevel)
-
-		var nextLevel []*config.Library
-		for _, lib := range currentLevel {
-			for _, dep := range dependents[lib.Name] {
-				inDegree[dep]--
-				if inDegree[dep] == 0 {
-					nextLevel = append(nextLevel, libMap[dep])
-				}
-			}
-		}
-		slices.SortFunc(nextLevel, func(a, b *config.Library) int {
-			return strings.Compare(a.Name, b.Name)
-		})
-		currentLevel = nextLevel
+		currentLevel = directDependentsOf(currentLevel, dependents, inDegree, libMap)
 	}
 
 	if processedCount < len(libraries) {
@@ -255,4 +234,33 @@ func topologicalLevels(libraries []*config.Library, deps map[string][]string) ([
 	}
 
 	return levels, nil
+}
+
+func directDependentsOf(currentLevel []*config.Library, dependents map[string][]string, inDegree map[string]int, libMap map[string]*config.Library) []*config.Library {
+	var nextLevel []*config.Library
+	for _, lib := range currentLevel {
+		for _, dep := range dependents[lib.Name] {
+			inDegree[dep]--
+			if inDegree[dep] == 0 {
+				nextLevel = append(nextLevel, libMap[dep])
+			}
+		}
+	}
+	slices.SortFunc(nextLevel, func(a, b *config.Library) int {
+		return strings.Compare(a.Name, b.Name)
+	})
+	return nextLevel
+}
+
+func librariesWithoutDependencies(libraries []*config.Library, inDegree map[string]int) []*config.Library {
+	var zeroDegree []*config.Library
+	for _, lib := range libraries {
+		if inDegree[lib.Name] == 0 {
+			zeroDegree = append(zeroDegree, lib)
+		}
+	}
+	slices.SortFunc(zeroDegree, func(a, b *config.Library) int {
+		return strings.Compare(a.Name, b.Name)
+	})
+	return zeroDegree
 }
