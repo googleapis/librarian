@@ -43,14 +43,6 @@ func GenerateStorage(
 	controlModule *config.SwiftModule,
 	library *config.Library,
 ) error {
-	provider := func(name string) (string, error) {
-		contents, err := templates.ReadFile(name)
-		if err != nil {
-			return "", err
-		}
-		return string(contents), nil
-	}
-
 	storageCodec, err := newCodec(storageModel, library, storageModule, outdir)
 	if err != nil {
 		return err
@@ -126,8 +118,8 @@ func GenerateStorage(
 
 	generatedFiles := language.WalkTemplatesDir(templates, "templates/storage")
 	generatedFiles = append(generatedFiles, language.GeneratedFile{
-		TemplatePath: "templates/common/clients.swift.mustache",
+		TemplatePath: "templates/common/clients.swift.gotmpl",
 		OutputPath:   "Clients.swift",
 	})
-	return language.GenerateFromModel(outdir, mergedModel, provider, generatedFiles)
+	return parsedTemplates.GenerateFromModel(outdir, mergedModel, generatedFiles)
 }

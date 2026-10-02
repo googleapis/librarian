@@ -34,7 +34,7 @@ type fieldAnnotations struct {
 
 	// BaseFieldType is `FieldType` without optional/repeated decorations.
 	//
-	// This is used in the mustache templates, which sometimes need to refer to the underlying type.
+	// This is used in the templates, which sometimes need to refer to the underlying type.
 	BaseFieldType string
 
 	// KeyType is the key's Swift type for maps and empty otherwise.
@@ -138,32 +138,27 @@ func (a *fieldAnnotations) IsStringKeyed() bool {
 	return a.KeyType == "Swift.String"
 }
 
-// IsDecodingSimple is used in mustache templates, where it is not possible to
-// compare a field to a constant.
+// IsDecodingSimple is used in templates to check for simple decoding.
 func (a *fieldAnnotations) IsDecodingSimple() bool {
 	return a.Decoding == DecodingSimple
 }
 
-// IsDecodingOptional is used in mustache templates, where it is not possible to
-// compare a field to a constant.
+// IsDecodingOptional is used in templates to check for optional decoding.
 func (a *fieldAnnotations) IsDecodingOptional() bool {
 	return a.Decoding == DecodingOptional
 }
 
-// IsDecodingMapCustomKey is used in mustache templates, where it is not
-// possible to compare a field to a constant.
+// IsDecodingMapCustomKey is used in templates to check for custom-key map decoding.
 func (a *fieldAnnotations) IsDecodingMapCustomKey() bool {
 	return a.Decoding == DecodingMapCustomKey
 }
 
-// IsEncodingSimple is used in mustache templates, where it is not possible to
-// compare a field to a constant.
+// IsEncodingSimple is used in templates to check for simple encoding.
 func (a *fieldAnnotations) IsEncodingSimple() bool {
 	return a.Encoding == EncodingSimple
 }
 
-// IsEncodingMapCustomKey is used in mustache templates, where it is not
-// possible to compare a field to a constant.
+// IsEncodingMapCustomKey is used in templates to check for custom-key map encoding.
 func (a *fieldAnnotations) IsEncodingMapCustomKey() bool {
 	return a.Encoding == EncodingMapCustomKey
 }

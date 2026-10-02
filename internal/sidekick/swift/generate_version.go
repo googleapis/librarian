@@ -16,12 +16,10 @@ package swift
 
 import (
 	"context"
-	"os"
-	"path/filepath"
 
-	"github.com/cbroglie/mustache"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/license"
+	"github.com/googleapis/librarian/internal/sidekick/language"
 )
 
 type versionView struct {
@@ -49,18 +47,8 @@ func (v *versionView) BoilerPlate() []string {
 // This function generates a small "version file" based on the information in
 // librarian.
 func GenerateVersion(ctx context.Context, outDir string, library *config.Library) error {
-	const templatePath = "templates/version/version.swift.mustache"
-	contents, err := templates.ReadFile(templatePath)
-	if err != nil {
-		return err
-	}
-	destination := filepath.Join(outDir, "PackageVersion.swift")
-	if err := os.MkdirAll(filepath.Dir(destination), 0o755); err != nil {
-		return err
-	}
-	s, err := mustache.Render(string(contents), &versionView{library: library})
-	if err != nil {
-		return err
-	}
-	return os.WriteFile(destination, []byte(s), 0o666)
+	return parsedTemplates.GenerateElement(outDir, &versionView{library: library}, language.GeneratedFile{
+		TemplatePath: "templates/version/version.swift.gotmpl",
+		OutputPath:   "PackageVersion.swift",
+	})
 }
