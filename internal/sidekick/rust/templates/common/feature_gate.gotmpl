@@ -17,4 +17,4 @@ limitations under the License.
 #[cfg({{ .Codec.FeatureGatesOp }} ( {{- range .Codec.FeatureGates }}feature = "{{ . }}",{{- end }} ) )]
 {{- else if .Codec.SingleFeatureGate }}
 #[cfg({{- range .Codec.FeatureGates }}feature = "{{ . }}"{{- end }} )]
-{{- end -}}
+{{- end }}

@@ -87,17 +87,10 @@ impl gaxi::prost::FromProto<{{ .Codec.QualifiedName }}> for {{ .Codec.ProstRelat
                     .collect::<std::result::Result<std::vec::Vec<_>, _>>()?)
                 {{- end }}
                 {{- else if .Map }}
-                {{- if .Codec.ValueType.IsEnum }}
-                .set_{{ .Codec.SetterName }}(self.{{ .Codec.FieldName }}.into_iter()
-                    .map(|(k, v)| {
-                        gaxi::prost::pair_transpose(k.cnv(), Ok({{ .Codec.ValueType.PrimitiveFieldType }}::from(v)))
-                    }).collect::<std::result::Result<std::collections::HashMap<_, _>, _>>()?)
-                {{- else }}
                 .set_{{ .Codec.SetterName }}(self.{{ .Codec.FieldName }}.into_iter()
                     .map(|(k, v)| {
                         gaxi::prost::pair_transpose(k.cnv(), v.cnv())
                     }).collect::<std::result::Result<std::collections::HashMap<_, _>, _>>()?)
-                {{- end }}
                 {{- end }}
                 {{- end }}
                 {{- end }}

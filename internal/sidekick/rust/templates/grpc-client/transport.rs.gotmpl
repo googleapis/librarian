@@ -19,7 +19,7 @@ limitations under the License.
 {{- end }}
 {{- if .Codec.HasServices }}
 
-{{- if .Codec.PerServiceFeatures }}
+{{ if .Codec.PerServiceFeatures }}
 #[cfg(any({{- range .Codec.Services }}feature = "{{ .Codec.FeatureName }}",{{- end }}))]
 {{- end }}
 {{- if .Codec.HasBidiStreaming }}
@@ -29,12 +29,12 @@ use crate::Result;
 #[allow(unused_imports)]
 use crate::Error;
 
-{{- if .Codec.PerServiceFeatures }}
+{{ if .Codec.PerServiceFeatures }}
 #[cfg(any({{- range .Codec.Services }}feature = "{{ .Codec.FeatureName }}",{{- end }}))]
 {{- end }}
 const DEFAULT_HOST: &str = "https://{{ .Codec.DefaultHost }}";
 
-{{- if .Codec.PerServiceFeatures }}
+{{ if .Codec.PerServiceFeatures }}
 #[cfg(any({{- range .Codec.Services }}feature = "{{ .Codec.FeatureName }}",{{- end }}))]
 {{- end }}
 mod info {
@@ -67,7 +67,7 @@ pub struct {{ .Codec.Name }} {
     {{- end }}
 }
 
-{{- if .Codec.PerServiceFeatures }}
+{{ if .Codec.PerServiceFeatures }}
 #[cfg(any({{- range .Codec.Services }}feature = "{{ .Codec.FeatureName }}",{{- end }}))]
 {{- end }}
 impl std::fmt::Debug for {{ .Codec.Name }} {
@@ -78,7 +78,7 @@ impl std::fmt::Debug for {{ .Codec.Name }} {
     }
 }
 
-{{- if .Codec.PerServiceFeatures }}
+{{ if .Codec.PerServiceFeatures }}
 #[cfg(any({{- range .Codec.Services }}feature = "{{ .Codec.FeatureName }}",{{- end }}))]
 {{- end }}
 impl {{ .Codec.Name }} {
@@ -96,7 +96,7 @@ impl {{ .Codec.Name }} {
     }
 }
 
-{{- if .Codec.PerServiceFeatures }}
+{{ if .Codec.PerServiceFeatures }}
 #[cfg(any({{- range .Codec.Services }}feature = "{{ .Codec.FeatureName }}",{{- end }}))]
 {{- end }}
 impl super::stub::{{ .Codec.Name }} for {{ .Codec.Name }} {
@@ -256,7 +256,7 @@ impl super::stub::{{ .Codec.Name }} for {{ .Codec.Name }} {
         .fold(String::new(), |b, p| b + "&" + &p);
         {{- end }}
 
-        {{- if .ReturnsEmpty }}
+        {{ if .ReturnsEmpty }}
         type TR = ();
         {{- else }}
         type TR = crate::{{ .OutputType.Codec.PackageModuleName }}::{{ .OutputType.Codec.ProstRelativeName }};

@@ -19,7 +19,7 @@ limitations under the License.
 {{- end }}
 {{- if .Codec.HasServices }}
 
-{{- if .Codec.PerServiceFeatures }}
+{{ if .Codec.PerServiceFeatures }}
 #[cfg(any({{- range .Codec.Services }}feature = "{{ .Codec.FeatureName }}",{{- end }}))]
 {{- end }}
 {{- if .Codec.HasBidiStreaming }}
@@ -32,7 +32,7 @@ use crate::Error;
 {{- end }}
 {{- range .Codec.Services }}
 {{- "\n" }}
-/// Implements [{{ .Codec.Name }}](super::stub::{{ .Codec.Name }}) using {{- if .Codec.IsPureGrpc }}a [gaxi::grpc::Client]{{- else if .Codec.IsPureHttp }}a [gaxi::http::ReqwestClient]{{- else if .Codec.IsHybrid }}a [gaxi::http::ReqwestClient] and a [gaxi::grpc::Client]{{- end }}.
+/// Implements [{{ .Codec.Name }}](super::stub::{{ .Codec.Name }}) using {{ if .Codec.IsPureGrpc }}a [gaxi::grpc::Client]{{ else if .Codec.IsPureHttp }}a [gaxi::http::ReqwestClient]{{ else if .Codec.IsHybrid }}a [gaxi::http::ReqwestClient] and a [gaxi::grpc::Client]{{ end }}.
 {{- if .Codec.PerServiceFeatures }}
 #[cfg(feature = "{{ .Codec.FeatureName }}")]
 {{- end }}
@@ -46,7 +46,7 @@ pub struct {{ .Codec.Name }} {
     {{- end }}
 }
 
-{{- if .Codec.PerServiceFeatures }}
+{{ if .Codec.PerServiceFeatures }}
 #[cfg(feature = "{{ .Codec.FeatureName }}")]
 {{- end }}
 impl std::fmt::Debug for {{ .Codec.Name }} {
@@ -62,7 +62,7 @@ impl std::fmt::Debug for {{ .Codec.Name }} {
     }
 }
 
-{{- if .Codec.PerServiceFeatures }}
+{{ if .Codec.PerServiceFeatures }}
 #[cfg(feature = "{{ .Codec.FeatureName }}")]
 {{- end }}
 impl {{ .Codec.Name }} {
@@ -113,7 +113,7 @@ impl {{ .Codec.Name }} {
     }
 }
 
-{{- if .Codec.PerServiceFeatures }}
+{{ if .Codec.PerServiceFeatures }}
 #[cfg(feature = "{{ .Codec.FeatureName }}")]
 {{- end }}
 impl super::stub::{{ .Codec.Name }} for {{ .Codec.Name }} {
@@ -366,7 +366,7 @@ impl super::stub::{{ .Codec.Name }} for {{ .Codec.Name }} {
             {{- if .Codec.DetailedTracingAttributes }}
             let path_template = "{{ .Codec.PathTemplate }}";
             {{- end }}
-
+            {{- "\n" }}
             {{- if .Codec.HasResourceNameGeneration }}
             {{- if .Codec.ResourceNameTemplate }}
             let resource_name = format!(
@@ -472,6 +472,7 @@ impl super::stub::{{ .Codec.Name }} for {{ .Codec.Name }} {
     }
     {{- end }}
     {{- end }}
+    {{- "\n" }}
     {{- if .Codec.HasLROs }}
     fn get_polling_error_policy(
         &self,

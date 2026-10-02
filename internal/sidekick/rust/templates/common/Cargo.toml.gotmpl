@@ -60,8 +60,7 @@ default-rustls-provider = ["gaxi/_default-rustls-provider"]
 {{ . }} = []
 {{- end }}
 {{- end }}
-
-{{/* We want docs for all features, not just the default features. */}}
+{{- "\n" }}
 [package.metadata.docs.rs]
 all-features = true
 {{- end }}

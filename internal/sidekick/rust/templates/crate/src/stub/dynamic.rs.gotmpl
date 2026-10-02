@@ -51,6 +51,7 @@ pub trait {{ .Codec.Name }}: std::fmt::Debug + Send + Sync {
     ) -> crate::Result<crate::Response<{{ .Codec.ReturnType }}>>;
     {{- end }}
     {{- end }}
+    {{- "\n" }}
     {{- if .Codec.HasLROs }}
     fn get_polling_error_policy(
         &self,
@@ -62,7 +63,7 @@ pub trait {{ .Codec.Name }}: std::fmt::Debug + Send + Sync {
         options: &crate::RequestOptions,
     ) -> std::sync::Arc<dyn google_cloud_gax::polling_backoff_policy::PollingBackoffPolicy>;
 
-    {{- if .Model.Codec.LroStubOptions }}
+    {{ if .Model.Codec.LroStubOptions }}
     fn get_poller_options(
         &self,
         options: &crate::RequestOptions,
@@ -110,6 +111,7 @@ impl<T: super::{{ .Codec.Name }}> {{ .Codec.Name }} for T {
     }
     {{- end }}
     {{- end }}
+    {{- "\n" }}
     {{- if .Codec.HasLROs }}
     fn get_polling_error_policy(
         &self,
@@ -125,7 +127,7 @@ impl<T: super::{{ .Codec.Name }}> {{ .Codec.Name }} for T {
         T::get_polling_backoff_policy(self, options)
     }
 
-    {{- if .Model.Codec.LroStubOptions }}
+    {{ if .Model.Codec.LroStubOptions }}
     fn get_poller_options(
         &self,
         options: &crate::RequestOptions,

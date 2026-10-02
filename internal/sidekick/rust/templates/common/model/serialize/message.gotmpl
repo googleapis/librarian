@@ -15,7 +15,8 @@ limitations under the License.
 */}}
 
 {{- if not .ServicePlaceholder }}
-{{- include "templates/common/feature_gate" . }}
+{{- "\n" }}
+{{ include "templates/common/feature_gate" . }}
 #[doc(hidden)]
 impl serde::ser::Serialize for super::{{ .Codec.RelativeName }} {
     fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>

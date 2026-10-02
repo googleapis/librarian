@@ -15,7 +15,8 @@ limitations under the License.
 */}}
 
 {{- if not .ServicePlaceholder }}
-{{- include "templates/common/feature_gate" . }}
+{{- "\n" }}
+{{ include "templates/common/feature_gate" . }}
 #[doc(hidden)]
 impl<'de> serde::de::Deserialize<'de> for super::{{ .Codec.RelativeName }} {
     fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>

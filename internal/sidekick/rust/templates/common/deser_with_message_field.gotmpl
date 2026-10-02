@@ -13,9 +13,9 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */}}
-{{/* Deserialize message fields that **do** require transformations. */}}
+{{- /* Deserialize message fields that **do** require transformations. */ -}}
 {{- if .Singular }}
-{{/* First deal with all the fields that are not part of a oneof */}}
+{{- /* First deal with all the fields that are not part of a oneof */ -}}
 {{- if not .IsOneOf }}
 {{- if .Optional }}
 struct __With( {{ .Codec.FieldType }} );
@@ -66,7 +66,7 @@ result.{{ .Group.Codec.FieldName }} = std::option::Option::Some(
 );
 {{- end }}
 {{- end }}
-{{/* repeated and map fields are never part of a oneof */}}
+{{- /* repeated and map fields are never part of a oneof */ -}}
 {{- if .Repeated }}
 struct __With( std::option::Option<{{ .Codec.FieldType }}> );
 impl<'de> serde::de::Deserialize<'de> for __With {

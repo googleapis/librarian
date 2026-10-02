@@ -13,9 +13,9 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */}}
-{{/* Serialize message fields that **do** require transformations. */}}
+{{- /* Serialize message fields that **do** require transformations. */ -}}
 {{- if .Singular }}
-{{/* First deal with all the fields that are not part of a oneof */}}
+{{- /* First deal with all the fields that are not part of a oneof */ -}}
 {{- if not .IsOneOf }}
 {{- if .Optional }}
 if self.{{ .Codec.FieldName }}.is_some() {
@@ -63,7 +63,7 @@ if let Some(value) = self.{{ .Codec.FieldName }}() {
 }
 {{- end }}
 {{- end }}
-{{/* repeated and map fields are never part of a oneof */}}
+{{- /* repeated and map fields are never part of a oneof */ -}}
 {{- if .Repeated }}
 if !self.{{ .Codec.FieldName }}.is_empty() {
     struct __With<'a>(&'a {{ .Codec.FieldType }});

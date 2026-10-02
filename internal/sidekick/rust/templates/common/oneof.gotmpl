@@ -13,8 +13,8 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */}}
-
-{{- range .Codec.DocLines }}
+{{- "\n" }}
+{{ range .Codec.DocLines }}
 {{ . }}
 {{- else }}
 #[allow(missing_docs)]
@@ -35,3 +35,14 @@ pub enum {{ .Codec.EnumName }} {
     {{ .Codec.BranchName }}({{ .Codec.FieldType }}),
     {{- end }}
 }
+{{- if .Codec.GenerateBranchConstructors }}
+
+impl {{ .Codec.EnumName }} {
+    {{- range .Fields }}
+    /// Initializes the enum to the [{{ .Codec.BranchName }}](Self::{{ .Codec.BranchName }}) branch.
+    pub fn from_{{ .Codec.SetterName }}(value: impl std::convert::Into<{{ .Codec.FieldType }}>) -> Self {
+        Self::{{ .Codec.BranchName }}(value.into())
+    }
+    {{- end }}
+}
+{{- end }}

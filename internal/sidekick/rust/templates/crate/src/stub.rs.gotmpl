@@ -84,6 +84,7 @@ pub trait {{ .Codec.Name }}: std::fmt::Debug + Send + Sync {
     }
     {{- end }}
     {{- end }}
+    {{- "\n" }}
     {{- if .Codec.HasLROs }}
 
     /// Returns the polling error policy.
@@ -108,7 +109,7 @@ pub trait {{ .Codec.Name }}: std::fmt::Debug + Send + Sync {
         std::sync::Arc::new(google_cloud_gax::exponential_backoff::ExponentialBackoff::default())
     }
 
-    {{- if .Model.Codec.LroStubOptions }}
+    {{ if .Model.Codec.LroStubOptions }}
     #[doc(hidden)]
     /// Returns the poller options.
     ///

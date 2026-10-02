@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */}}
 {{- if not .ServicePlaceholder }}
-
+{{- "\n" }}
 {{- range .Codec.DocLines }}
 {{ . }}
 {{- else }}
@@ -55,8 +55,7 @@ pub struct {{ .Codec.Name }} {
 
     pub(crate) _unknown_fields: serde_json::Map<std::string::String, serde_json::Value>,
 }
-{{- "\n" }}
-{{- include "templates/common/feature_gate" . }}
+{{ include "templates/common/feature_gate" . }}
 impl {{ .Codec.Name }} {
     /// Creates a new default instance.
     pub fn new() -> Self {
@@ -65,8 +64,7 @@ impl {{ .Codec.Name }} {
     {{- include "templates/common/setters" . | indent 4 }}
 }
 {{- if not .SyntheticRequest }}
-{{- "\n" }}
-{{- include "templates/common/feature_gate" . }}
+{{ include "templates/common/feature_gate" . }}
 impl wkt::message::Message for {{ .Codec.Name }} {
     fn typename() -> &'static str {
         "type.googleapis.com/{{ .Codec.SourceFQN }}"
@@ -74,8 +72,7 @@ impl wkt::message::Message for {{ .Codec.Name }} {
 }
 {{- end }}
 {{- if .Pagination }}
-{{- "\n" }}
-{{- include "templates/common/feature_gate" . }}
+{{ include "templates/common/feature_gate" . }}
 #[doc(hidden)]
 impl google_cloud_gax::paginator::internal::PageableResponse for {{ .Codec.Name }} {
     {{- with .Pagination.PageableItem }}
@@ -96,6 +93,7 @@ impl google_cloud_gax::paginator::internal::PageableResponse for {{ .Codec.Name 
 
     {{- end }}
     {{- with .Pagination.NextPageToken }}
+    {{- "\n" }}
     fn next_page_token(&self) -> std::string::String {
         use std::clone::Clone;
         {{- if .Optional }}

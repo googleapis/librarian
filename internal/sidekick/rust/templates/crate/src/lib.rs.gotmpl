@@ -19,10 +19,10 @@ limitations under the License.
 {{- end }}
 
 //! Google Cloud Client Libraries for Rust - {{ .Title }}
-{{/*
+{{- /*
     Discovery-doc based APIs include a revision.
     Publishing the information is useful for troubleshooting.
-*/}}
+*/ -}}
 {{- if .Revision }}
 //!
 //! This client library was generated from the "{{ .Revision }}" revision of the API.
@@ -125,7 +125,7 @@ pub(crate) mod tracing;
 #[doc(hidden)]
 pub(crate) mod transport;
 
-{{- if .Codec.HasGrpc }}
+{{ if .Codec.HasGrpc }}
 {{- if .Codec.PerServiceFeatures }}
 #[cfg(any(
 {{- range .Codec.GrpcServices }}
@@ -142,7 +142,7 @@ pub(crate) mod prost {
     include!("prost/includes.rs");
 }
 
-{{- if .Codec.PerServiceFeatures }}
+{{ if .Codec.PerServiceFeatures }}
 #[cfg(any(
 {{- range .Codec.GrpcServices }}
     feature = "{{ .Codec.FeatureName }}",
@@ -163,7 +163,7 @@ pub(crate) mod convert;
 {{- end }}
 const DEFAULT_HOST: &str = "https://{{ .Codec.DefaultHost }}/";
 
-{{- if .Codec.PerServiceFeatures }}
+{{ if .Codec.PerServiceFeatures }}
 #[cfg(any({{- range .Codec.Services }}feature = "{{ .Codec.FeatureName }}",{{- end }}))]
 {{- end }}
 pub(crate) mod info {

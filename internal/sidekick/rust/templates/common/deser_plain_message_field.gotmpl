@@ -13,9 +13,9 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */}}
-{{/* Deserialize message fields that do not require transformations. */}}
+{{- /* Deserialize message fields that do not require transformations. */ -}}
 {{- if .Singular }}
-{{/* First deal with all the fields that are not part of a oneof */}}
+{{- /* First deal with all the fields that are not part of a oneof */ -}}
 {{- if not .IsOneOf }}
 {{- if .Optional }}
 result.{{ .Codec.FieldName }} = map.next_value::<{{ .Codec.FieldType }}>()?
@@ -42,7 +42,7 @@ result.{{ .Group.Codec.FieldName }} = std::option::Option::Some(
 );
 {{- end }}
 {{- end }}
-{{/* repeated and map fields are never part of a oneof */}}
+{{- /* repeated and map fields are never part of a oneof */ -}}
 {{- if .Repeated }}
 result.{{ .Codec.FieldName }} = map.next_value::<std::option::Option<{{ .Codec.FieldType }}>>()?.unwrap_or_default();
 {{- end }}

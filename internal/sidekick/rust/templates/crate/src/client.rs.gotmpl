@@ -18,7 +18,7 @@ limitations under the License.
 //{{ . }}
 {{- end }}
 {{- if .Codec.HasServices }}
-{{/* Disable warnings that are known to cause trouble */}}
+{{- /* Disable warnings that are known to cause trouble */ -}}
 {{- range .Codec.DisabledRustdocWarnings }}
 #![allow(rustdoc::{{ . }})]
 {{- end }}
@@ -78,7 +78,7 @@ pub struct {{ .Codec.Name }} {
     inner: std::sync::Arc<dyn super::stub::dynamic::{{ .Codec.Name }}>,
 }
 
-{{- if .Codec.PerServiceFeatures }}
+{{ if .Codec.PerServiceFeatures }}
 #[cfg(feature = "{{ .Codec.FeatureName }}")]
 {{- end }}
 impl {{ .Codec.Name }} {

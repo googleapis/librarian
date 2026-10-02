@@ -39,10 +39,10 @@ GitHub repository.
 
 {{ .Description }}
 {{- end }}
-{{/*
+{{- /*
     Discovery-doc based APIs include a revision.
     Publishing the information is useful for troubleshooting.
-*/}}
+*/ -}}
 {{- if .Revision }}
 
 This client library was generated from the "{{ .Revision }}" revision of the API.
@@ -60,8 +60,7 @@ should not introduce breaking changes to the client libraries.
 ## Quickstart
 
 The main types to work with this crate are the clients:
-
-{{- range .Codec.Services }}
+{{ range .Codec.Services }}
 - [{{ .Codec.Name }}]{{- if .Codec.PerServiceFeatures }}: enabled by the `{{ .Codec.FeatureName }}` feature.{{- end }}
 {{- end }}
 

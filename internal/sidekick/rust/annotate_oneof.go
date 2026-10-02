@@ -54,7 +54,8 @@ type oneOfAnnotation struct {
 	// If set, this enum is only enabled when some features are enabled.
 	FeatureGates          []string
 	FeatureGatesOp        string
-	GenerateSetterSamples bool
+	GenerateSetterSamples      bool
+	GenerateBranchConstructors bool
 }
 
 // MultiFeatureGates returns true if there are multiple feature gates.
@@ -94,9 +95,10 @@ func (c *codec) annotateOneOf(oneof *api.OneOf, message *api.Message, model *api
 		ProstRelativeName:     prostMessageModulePath(message) + "::" + toProstPascal(enumName),
 		StructQualifiedName:   structQualifiedName,
 		NameInExamples:        nameInExamples,
-		FieldType:             fmt.Sprintf("%s::%s", scope, enumName),
-		DocLines:              docLines,
-		GenerateSetterSamples: c.generateSetterSamples,
+		FieldType:                  fmt.Sprintf("%s::%s", scope, enumName),
+		DocLines:                   docLines,
+		GenerateSetterSamples:      c.generateSetterSamples,
+		GenerateBranchConstructors: c.templateOverride == "templates/grpc-client",
 	}
 	// Note that this is different from OneOf name-overrides
 	// as those solve for fully qualified name clashes where a oneof

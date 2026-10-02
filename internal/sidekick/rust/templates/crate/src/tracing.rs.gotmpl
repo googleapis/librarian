@@ -47,7 +47,7 @@ where T: super::stub::{{ .Codec.Name }} + std::fmt::Debug + Send + Sync {
     {{- end }}
 }
 
-{{- if .Codec.PerServiceFeatures }}
+{{ if .Codec.PerServiceFeatures }}
 #[cfg(feature = "{{ .Codec.FeatureName }}")]
 {{- end }}
 impl<T> {{ .Codec.Name }}<T>
@@ -64,7 +64,7 @@ where T: super::stub::{{ .Codec.Name }} + std::fmt::Debug + Send + Sync {
     }
 }
 
-{{- if .Codec.PerServiceFeatures }}
+{{ if .Codec.PerServiceFeatures }}
 #[cfg(feature = "{{ .Codec.FeatureName }}")]
 {{- end }}
 impl<T> super::stub::{{ .Codec.Name }} for {{ .Codec.Name }}<T>
@@ -152,6 +152,7 @@ where T: super::stub::{{ .Codec.Name }} + std::fmt::Debug + Send + Sync {
     }
     {{- end }}
     {{- end }}
+    {{- "\n" }}
     {{- if .Codec.HasLROs }}
 
     fn get_polling_error_policy(
@@ -168,7 +169,7 @@ where T: super::stub::{{ .Codec.Name }} + std::fmt::Debug + Send + Sync {
         self.inner.get_polling_backoff_policy(options)
     }
 
-    {{- if .Model.Codec.LroStubOptions }}
+    {{ if .Model.Codec.LroStubOptions }}
     #[doc(hidden)]
     fn get_poller_options(
         &self,
@@ -183,6 +184,7 @@ where T: super::stub::{{ .Codec.Name }} + std::fmt::Debug + Send + Sync {
     {{- end }}
 }
 {{- end }}
+{{- "\n" }}
 {{- if .Codec.HasServices }}
 {{- if .Codec.DetailedTracingAttributes }}
 pub(crate) mod info {
