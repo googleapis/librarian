@@ -1,0 +1,208 @@
+{{/*
+Copyright 2024 Google LLC
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    https://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/}}
+// Copyright {{ .Codec.CopyrightYear }} Google LLC
+{{- range .Codec.BoilerPlate }}
+//{{ . }}
+{{- end }}
+
+//! Google Cloud Client Libraries for Rust - {{ .Title }}
+{{/*
+    Discovery-doc based APIs include a revision.
+    Publishing the information is useful for troubleshooting.
+*/}}
+{{- if .Revision }}
+//!
+//! This client library was generated from the "{{ .Revision }}" revision of the API.
+{{- end }}
+{{- if not .Codec.ReleaseLevelIsGA }}
+//!
+//! **FEEDBACK WANTED:** We believe the APIs in this crate are stable, and
+//! do not anticipate any breaking changes are needed. We are looking for
+//! feedback before labeling the APIs "1.0". Changes (even breaking changes)
+//! are still possible, but not expected.
+//!
+//! We also believe the implementation is ready for production, bugs are
+//! still possible, but not expected.
+{{- end }}
+{{- if .Codec.Incomplete }}
+//!
+//! **WARNING:** some RPCs have no corresponding Rust function to call them.
+//! Typically these are streaming RPCs. We expect adding these RPCs in a
+//! way that does not break the existing APIs or changes their behavior in a
+//! significant way. We do anticipate a number of new crate dependencies
+//! will be required. If you need these RPCs please open an issue in our
+//! GitHub repository.
+{{- end }}
+//!
+//! This crate contains traits, types, and functions to interact with {{ .Title }}
+//! Most applications will use the structs defined in the [client] module.
+{{- if .Codec.ReleaseLevelIsGA }}
+//!
+//! The client library types and functions are stable and not expected to change.
+//! Please note that Google Cloud services do change from time to time. The client
+//! libraries are designed to preserve backwards compatibility when the service
+//! changes in compatible ways. For example, adding RPCs, or fields to messages
+//! should not introduce breaking changes to the client libraries.
+{{- end }}
+//!
+//! # Available Clients
+//!
+{{- range .Codec.Services }}
+//! * [{{ .Codec.Name }}](client/struct.{{ .Codec.Name }}.html)
+{{- end }}
+{{- if .Codec.HasServices }}
+//!
+//! # Features
+//!
+//! - `default-rustls-provider`: enabled by default. Use the default rustls
+//!   crypto provider ([aws-lc-rs]) for TLS and authentication. Applications
+//!   with specific requirements for cryptography (such as exclusively using the
+//!   [ring] crate) should disable this default and call
+//!   `rustls::crypto::CryptoProvider::install_default()`.
+{{- if .Codec.PerServiceFeatures }}
+//! - Each client can be enabled using its own feature. Use the client's name
+//!   in `kebab-case` to enable the client.
+{{- end }}
+//!
+//! [aws-lc-rs]: https://crates.io/crates/aws-lc-rs
+//! [ring]: https://crates.io/crates/ring
+{{- end }}
+{{- if .Codec.PerServiceFeatures }}
+
+#![cfg_attr(docsrs, feature(doc_cfg))]
+{{- end }}
+
+{{/*
+    The generated code uses deprecated items in:
+    - setters for deprecated fields.
+    - fields that reference deprecated messages and enums.
+    - clients and stubs use deprecated RPCs.
+    - clients and stubs use deprecated services and deprecated request messages.
+*/}}
+{{- if .HasDeprecatedEntities }}
+#![allow(deprecated)]
+{{- end }}
+
+/// The messages and enums that are part of this client library.
+#[allow(clippy::module_inception)]
+pub mod model;
+{{- if .Codec.HasServices }}
+
+pub use google_cloud_gax::Result;
+pub use google_cloud_gax::error::Error;
+
+{{/* Google APIs often use angle brackets for <PLACEHOLDERS>, rustdoc does not like those. */}}
+#[allow(rustdoc::invalid_html_tags)]
+{{/* We use explicit links because it is easier to generate the code with them. */}}
+#[allow(rustdoc::redundant_explicit_links)]
+pub mod stub;
+
+/// Concrete implementations of client library traits.
+{{- with .Codec.QuickstartService }}
+{{- include "templates/common/quickstart" . }}
+{{- end }}
+pub mod client;
+
+/// Request builders.
+pub mod builder;
+
+#[doc(hidden)]
+pub(crate) mod tracing;
+
+#[doc(hidden)]
+pub(crate) mod transport;
+
+{{- if .Codec.HasGrpc }}
+{{- if .Codec.PerServiceFeatures }}
+#[cfg(any(
+{{- range .Codec.GrpcServices }}
+    feature = "{{ .Codec.FeatureName }}",
+{{- end }}
+))]
+{{- end }}
+#[doc(hidden)]
+#[allow(clippy::all)]
+#[allow(unused_imports)]
+#[allow(dead_code)]
+#[allow(missing_docs)]
+pub(crate) mod prost {
+    include!("prost/includes.rs");
+}
+
+{{- if .Codec.PerServiceFeatures }}
+#[cfg(any(
+{{- range .Codec.GrpcServices }}
+    feature = "{{ .Codec.FeatureName }}",
+{{- end }}
+))]
+{{- end }}
+#[doc(hidden)]
+#[allow(clippy::all)]
+#[allow(unused_imports)]
+#[allow(dead_code)]
+#[allow(missing_docs)]
+pub(crate) mod convert;
+{{- end }}
+
+/// The default host used by the service.
+{{- if .Codec.PerServiceFeatures }}
+#[cfg(any({{- range .Codec.Services }}feature = "{{ .Codec.FeatureName }}",{{- end }}))]
+{{- end }}
+const DEFAULT_HOST: &str = "https://{{ .Codec.DefaultHost }}/";
+
+{{- if .Codec.PerServiceFeatures }}
+#[cfg(any({{- range .Codec.Services }}feature = "{{ .Codec.FeatureName }}",{{- end }}))]
+{{- end }}
+pub(crate) mod info {
+    const NAME: &str = env!("CARGO_PKG_NAME");
+    const VERSION: &str = env!("CARGO_PKG_VERSION");
+    {{- if .Codec.HasHttp }}
+    pub(crate) static X_GOOG_API_CLIENT_HEADER: std::sync::LazyLock<String> =
+        std::sync::LazyLock::new(|| {
+            let ac = gaxi::api_header::XGoogApiClient {
+                name: NAME,
+                version: VERSION,
+                library_type: gaxi::api_header::GAPIC,
+            };
+            ac.rest_header_value()
+        });
+    {{- end }}
+    {{- if .Codec.HasGrpc }}
+    pub(crate) static X_GOOG_API_CLIENT_GRPC_HEADER: std::sync::LazyLock<String> =
+        std::sync::LazyLock::new(|| {
+            let ac = gaxi::api_header::XGoogApiClient {
+                name: NAME,
+                version: VERSION,
+                library_type: gaxi::api_header::GAPIC,
+            };
+            ac.grpc_header_value()
+        });
+    {{- end }}
+}
+
+// Define some shortcuts for imported crates.
+pub(crate) use google_cloud_gax::client_builder::ClientBuilder;
+pub(crate) use google_cloud_gax::client_builder::Result as ClientBuilderResult;
+pub(crate) use google_cloud_gax::client_builder::internal::ClientFactory;
+pub(crate) use google_cloud_gax::client_builder::internal::new_builder as new_client_builder;
+pub(crate) use google_cloud_gax::options::RequestOptions;
+pub(crate) use google_cloud_gax::options::internal::RequestBuilder;
+pub(crate) use google_cloud_gax::response::Response;
+{{- end }}
+{{- range .Codec.ExtraModules }}
+{{- "\n" }}
+pub mod {{ . }};
+{{- end }}

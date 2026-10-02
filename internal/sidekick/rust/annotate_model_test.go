@@ -947,3 +947,48 @@ func TestGrpcRootTypeIDs(t *testing.T) {
 		})
 	}
 }
+
+func TestModelAnnotations_HasBidiStreaming(t *testing.T) {
+	req := api.NewTestMessage("Request").WithPackage("google.cloud.test.v1")
+	resp := api.NewTestMessage("Response").WithPackage("google.cloud.test.v1")
+	unaryMethod := api.NewTestMethod("Unary").WithInput(req).WithOutput(resp)
+	bidiMethod := api.NewTestMethod("Bidi").WithInput(req).WithOutput(resp).WithBidiStreaming()
+
+	for _, test := range []struct {
+		name    string
+		methods []*api.Method
+		want    bool
+	}{
+		{
+			name:    "no methods",
+			methods: nil,
+			want:    false,
+		},
+		{
+			name:    "unary method only",
+			methods: []*api.Method{unaryMethod},
+			want:    false,
+		},
+		{
+			name:    "bidi streaming method present",
+			methods: []*api.Method{unaryMethod, bidiMethod},
+			want:    true,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			svc := api.NewTestService("Service").WithPackage("google.cloud.test.v1").WithMethods(test.methods...)
+			model := api.NewTestAPI([]*api.Message{req, resp}, nil, []*api.Service{svc})
+			if err := api.CrossReference(model); err != nil {
+				t.Fatal(err)
+			}
+			codec := newTestCodec(t, libconfig.SpecProtobuf, "", nil)
+			ann, err := annotateModel(model, codec)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if diff := cmp.Diff(test.want, ann.HasBidiStreaming()); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}

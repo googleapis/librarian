@@ -32,3 +32,9 @@ func TestGenerate_ProtocConfigError(t *testing.T) {
 		t.Fatal("Generate with nonexistent protoc binary expected error, got nil")
 	}
 }
+
+func TestValidateTemplates(t *testing.T) {
+	if err := parsedTemplates.Validate(); err != nil {
+		t.Fatal(err)
+	}
+}

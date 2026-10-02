@@ -1,0 +1,668 @@
+{{/*
+Copyright 2024 Google LLC
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    https://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/}}
+// Copyright {{ .Codec.CopyrightYear }} Google LLC
+{{- range .Codec.BoilerPlate }}
+//{{ . }}
+{{- end }}
+{{- range .Codec.Services }}
+{{- "\n" }}
+/// Request and client builders for [{{ .Codec.Name }}][crate::client::{{ .Codec.Name }}].
+{{- if .Codec.PerServiceFeatures }}
+#[cfg(feature = "{{ .Codec.FeatureName }}")]
+#[cfg_attr(docsrs, doc(cfg(feature = "{{ .Codec.FeatureName }}")))]
+{{- end }}
+pub mod {{ .Codec.ModuleName }} {
+    {{- if .Codec.NeedsRequestBuilder }}
+    use crate::Result;
+    {{- end }}
+    {{- if not .Codec.HasVeneer }}
+
+    /// A builder for [{{ .Codec.Name }}][crate::client::{{ .Codec.Name }}].
+    {{- if not .Codec.InternalBuilders }}
+    ///
+    /// ```
+    /// # async fn sample() -> google_cloud_gax::client_builder::Result<()> {
+    /// # use {{ .Model.Codec.PackageNamespace }}::*;
+    /// # use builder::{{ .Codec.ModuleName }}::ClientBuilder;
+    /// # use client::{{ .Codec.Name }};
+    /// let builder : ClientBuilder = {{ .Codec.Name }}::builder();
+    /// let client = builder
+    ///     .with_endpoint("https://{{ .Model.Codec.DefaultHost }}")
+    ///     .build().await?;
+    /// # Ok(()) }
+    /// ```
+    {{- end }}
+    {{ .Codec.BuilderVisibility }} type ClientBuilder =
+        crate::ClientBuilder<client::Factory, gaxi::options::Credentials>;
+
+    pub(crate) mod client {
+        use super::super::super::client::{{ .Codec.Name }};
+        pub struct Factory;
+        impl crate::ClientFactory for Factory {
+            type Client = {{ .Codec.Name }};
+            type Credentials = gaxi::options::Credentials;
+            async fn build(self, config: gaxi::options::ClientConfig) -> crate::ClientBuilderResult<Self::Client> {
+                Self::Client::new(config).await
+            }
+        }
+    }
+    {{- end }}
+    {{- if .Codec.NeedsRequestBuilder }}
+
+    /// Common implementation for [crate::client::{{ .Codec.Name }}] request builders.
+    #[derive(Clone, Debug)]
+    pub(crate) struct RequestBuilder<R: std::default::Default> {
+        stub: std::sync::Arc<dyn super::super::stub::dynamic::{{ .Codec.Name }}>,
+        request: R,
+        options: crate::RequestOptions,
+    }
+
+    impl<R> RequestBuilder<R>
+    where R: std::default::Default {
+        pub(crate) fn new(stub: std::sync::Arc<dyn super::super::stub::dynamic::{{ .Codec.Name }}>) -> Self {
+            Self {
+                stub,
+                request: R::default(),
+                options: crate::RequestOptions::default(),
+            }
+        }
+    }
+    {{- end }}
+    {{- if .Codec.NeedsBidiStreamBuilder }}
+
+    /// Common implementation for [crate::client::{{ .Codec.Name }}] bidi stream builders.
+    #[derive(Clone, Debug)]
+    pub(crate) struct BidiStreamBuilder {
+        stub: std::sync::Arc<dyn super::super::stub::dynamic::{{ .Codec.Name }}>,
+        options: crate::RequestOptions,
+    }
+
+    impl BidiStreamBuilder {
+        pub(crate) fn new(stub: std::sync::Arc<dyn super::super::stub::dynamic::{{ .Codec.Name }}>) -> Self {
+            Self {
+                stub,
+                options: crate::RequestOptions::default(),
+            }
+        }
+    }
+    {{- end }}
+
+    {{- range .Codec.Methods }}
+    {{- "\n" }}
+    /// The request builder for [{{ .Codec.ServiceNameToPascal }}::{{ .Codec.NameNoMangling }}][crate::client::{{ .Codec.ServiceNameToPascal }}::{{ .Codec.NameNoMangling }}] calls.
+    {{- if not .Codec.InternalBuilders }}
+    ///
+    /// # Example
+    /// ```
+    /// # use {{ .Model.Codec.PackageNamespace }}::builder::{{ .Service.Codec.ModuleName }}::{{ .Codec.BuilderName }};
+    {{- if .Codec.IsBidiStreaming }}
+    /// # use {{ .InputType.Codec.NameInExamples }};
+    /// # async fn sample() -> anyhow::Result<()> {
+    {{- else }}
+    /// # async fn sample() -> {{ .Model.Codec.PackageNamespace }}::Result<()> {
+    {{- end }}
+    {{- if .Codec.IsBidiStreaming }}
+    /// let builder = prepare_request_builder();
+    /// let (sender, mut resp_stream) = builder.build();
+    ///
+    /// sender.send({{ .InputType.Codec.Name }}::default()).await?;
+    /// drop(sender); // Half-close the stream
+    ///
+    /// while let Some(response) = resp_stream.next().await {
+    ///     let response = response?;
+    ///     println!("response {:?}", response);
+    /// }
+    {{- else if .Codec.IsServerStreaming }}
+    /// let builder = prepare_request_builder();
+    /// let mut resp_stream = builder.send().await?;
+    /// while let Some(response) = resp_stream.next().await {
+    ///     let response = response?;
+    ///     println!("response {:?}", response);
+    /// }
+    {{- else }}
+    {{- with .OperationInfo }}
+    /// use google_cloud_lro::Poller;
+    ///
+    /// let builder = prepare_request_builder();
+    /// let response = builder.poller().until_done().await?;
+    {{- else }}
+    {{- with .Pagination }}
+    /// use google_cloud_gax::paginator::ItemPaginator;
+    ///
+    /// let builder = prepare_request_builder();
+    /// let mut items = builder.by_item();
+    /// while let Some(result) = items.next().await {
+    ///   let item = result?;
+    /// }
+    {{- else }}
+    ///
+    /// let builder = prepare_request_builder();
+    /// let response = builder.send().await?;
+    {{- end }}
+    {{- end }}
+    {{- end }}
+    /// # Ok(()) }
+    ///
+    /// fn prepare_request_builder() -> {{ .Codec.BuilderName }} {
+    ///   # panic!();
+    ///   // ... details omitted ...
+    /// }
+    /// ```
+    {{- end }}
+    {{- if .Codec.IsBidiStreaming }}
+    #[derive(Clone, Debug)]
+    {{ .Codec.BuilderVisibility }} struct {{ .Codec.BuilderName }}(BidiStreamBuilder);
+    {{- else }}
+    #[derive(Clone, Debug)]
+    {{ .Codec.BuilderVisibility }} struct {{ .Codec.BuilderName }}(RequestBuilder<{{ .InputType.Codec.QualifiedName }}>);
+    {{- end }}
+
+    impl {{ .Codec.BuilderName }} {
+        pub(crate) fn new(stub: std::sync::Arc<dyn super::super::stub::dynamic::{{ .Codec.ServiceNameToPascal }}>) -> Self {
+            Self(
+                {{- if .Codec.IsBidiStreaming }}
+                BidiStreamBuilder::new(stub)
+                {{- else }}
+                RequestBuilder::new(stub)
+                {{- end }}
+            )
+        }
+        {{- if not .Codec.IsBidiStreaming }}
+
+        /// Sets the full request, replacing any prior values.
+        pub fn with_request<V: Into<{{ .InputType.Codec.QualifiedName }}>>(mut self, v: V) -> Self {
+            self.0.request = v.into();
+            self
+        }
+        {{- end }}
+        {{- "\n" }}
+
+        /// Sets all the options, replacing any prior values.
+        pub fn with_options<V: Into<crate::RequestOptions>>(mut self, v: V) -> Self {
+            self.0.options = v.into();
+            self
+        }
+        {{- if .Codec.IsBidiStreaming }}
+        {{- /* TODO(#6835) - support explicit routing parameters for bidirectional streaming RPCs */}}
+
+        /// Initiates the bidirectional stream.
+        pub fn build(
+            self,
+        ) -> (
+            google_cloud_gax::streaming::RequestSender<{{ .InputType.Codec.QualifiedName }}>,
+            google_cloud_gax::streaming::ResponseStream<{{ .OutputType.Codec.QualifiedName }}>,
+        ) {
+            (*self.0.stub).{{ .Codec.Name }}(self.0.options)
+        }
+        {{- else }}
+        {{- if .Codec.IsServerStreaming }}
+        /// Initiates the server stream.
+        pub async fn send(
+            self,
+        ) -> Result<google_cloud_gax::streaming::ResponseStream<{{ .OutputType.Codec.QualifiedName }}>> {
+            (*self.0.stub).{{ .Codec.Name }}(self.0.request, self.0.options).await
+        }
+        {{- else }}
+        /// Sends the request.
+        {{- with .OperationInfo }}
+        ///
+        /// # Long running operations
+        ///
+        /// This starts, but does not poll, a longrunning operation. More information
+        /// on [{{ .Method.Codec.Name }}][crate::client::{{ .Method.Codec.ServiceNameToPascal }}::{{ .Method.Codec.Name }}].
+        {{- end }}
+        pub async fn send(self) -> Result<{{ .Codec.ReturnType }}> {
+            {{- /*
+                In rare cases `self.0.stub.foo` is ambiguous: we are calling
+                via `Arc<dyn T>` which implements `T` but also implements other
+                traits (e.g. `std::clone::Clone`) making the call ambiguous.
+                Using `*self.0.stub` makes the call not-ambiguous.
+            */}}
+            {{- if .HasAutoPopulatedFields }}
+            let req = Self::auto_populate(self.0.request, false);
+            (*self.0.stub).{{ .Codec.Name }}(req, self.0.options).await.map(crate::Response::into_body)
+            {{- else }}
+            (*self.0.stub).{{ .Codec.Name }}(self.0.request, self.0.options).await.map(crate::Response::into_body)
+            {{- end }}
+        }
+        {{- if .Pagination }}
+
+        /// Streams each page in the collection.
+        pub fn by_page(self) -> impl google_cloud_gax::paginator::Paginator<{{ .OutputType.Codec.QualifiedName }}, crate::Error> {
+            use std::clone::Clone;
+            {{- if .Pagination.Optional }}
+            let token = self.0.request.{{ .Pagination.Codec.FieldName }}.clone().unwrap_or_default();
+            {{- else }}
+            let token = self.0.request.{{ .Pagination.Codec.FieldName }}.clone();
+            {{- end }}
+            let execute = move |token: String| {
+                let mut builder = self.clone();
+                {{- if .HasAutoPopulatedFields }}
+                {{- /*
+                    If we have a new page token, this is a new request. New
+                    requests need new request IDs.
+                */}}
+                {{- if .Pagination.Optional }}
+                let initial = builder.0.request.{{ .Pagination.Codec.FieldName }}.as_deref().is_none_or(|s| s == token);
+                {{- else }}
+                let initial = builder.0.request.{{ .Pagination.Codec.FieldName }} == token;
+                {{- end }}
+                builder.0.request = Self::auto_populate(builder.0.request, !initial);
+                {{- end }}
+                builder.0.request = builder.0.request.set_{{ .Pagination.Codec.SetterName }}(token);
+                builder.send()
+            };
+            google_cloud_gax::paginator::internal::new_paginator(token, execute)
+        }
+
+        /// Streams each item in the collection.
+        pub fn by_item(self) -> impl google_cloud_gax::paginator::ItemPaginator<{{ .OutputType.Codec.QualifiedName }}, crate::Error> {
+            use google_cloud_gax::paginator::Paginator;
+            self.by_page().items()
+        }
+        {{- end }}
+        {{- if .DiscoveryLro }}
+
+        /// Creates a [Poller][google_cloud_lro::Poller] to work with `{{ .DiscoveryLro.Codec.MethodName }}`.
+        pub fn poller(
+            self
+        ) -> impl google_cloud_lro::Poller<{{ .DiscoveryLro.Codec.ReturnType }}, {{ .DiscoveryLro.Codec.ReturnType }}>
+        {
+            let polling_error_policy = self.0.stub.get_polling_error_policy(&self.0.options);
+            let polling_backoff_policy = self.0.stub.get_polling_backoff_policy(&self.0.options);
+            {{- if .Model.Codec.LroStubOptions }}
+            {{- /*
+              `poller_options` must be extracted here before `self` is moved into
+              the `start` closure.
+            */}}
+            let mut poller_options = self.0.stub.get_poller_options(&self.0.options);
+            if let Some(ref mut details) = poller_options.tracing {
+                details.method_name = "{{ .Model.Codec.PackageNamespace }}::client::{{ .DiscoveryLro.Codec.ServiceNameToPascal }}::{{ .DiscoveryLro.Codec.MethodName }}::until_done";
+            }
+            {{- end }}
+
+            let stub = self.0.stub.clone();
+            let mut options = self.0.options.clone();
+            options.set_retry_policy(google_cloud_gax::retry_policy::NeverRetry);
+            {{- range .DiscoveryLro.Codec.PollingPathParameters }}
+            let {{ .Name }} = self.0.request.{{ .Name }}.clone();
+            {{- end }}
+            let query = move |name| {
+                let stub = stub.clone();
+                let options = options.clone();
+                {{- range .DiscoveryLro.Codec.PollingPathParameters }}
+                let {{ .Name }} = {{ .Name }}.clone();
+                {{- end }}
+                async {
+                    GetOperation::new(stub)
+                        {{- range .DiscoveryLro.Codec.PollingPathParameters }}
+                        .set_{{ .SetterName }}({{ .Name }})
+                        {{- end }}
+                        .set_operation(name)
+                        .with_options(options)
+                        .send()
+                        .await
+                }
+            };
+
+            let start = move || async {
+                self.send().await
+            };
+
+            {{- if .Model.Codec.LroStubOptions }}
+            use google_cloud_lro::internal::PollerExt;
+            google_cloud_lro::internal::new_discovery_poller(
+                polling_error_policy,
+                polling_backoff_policy,
+                start,
+                query,
+            )
+            .with_options(poller_options)
+            {{- else }}
+            google_cloud_lro::internal::new_discovery_poller(
+                polling_error_policy,
+                polling_backoff_policy,
+                start,
+                query,
+            )
+            {{- end }}
+        }
+        {{- end }}
+        {{- if .Codec.IsBigQueryInsertJob }}
+
+        /// Creates a [Poller][google_cloud_lro::Poller] to work with `InsertJob`.
+        pub fn poller(
+            self
+        ) -> impl google_cloud_lro::Poller<crate::model::Job, crate::model::Job>
+        {
+            let req = self.0.request.clone();
+            let stub = self.0.stub.clone();
+            let mut options = self.0.options.clone();
+            options.set_retry_policy(google_cloud_gax::retry_policy::NeverRetry);
+
+            let polling_error_policy =
+                std::sync::Arc::new(google_cloud_gax::polling_error_policy::AlwaysContinue);
+            let polling_backoff_policy = std::sync::Arc::new(
+                google_cloud_gax::exponential_backoff::ExponentialBackoff::default(),
+            );
+
+            let shared_location = std::sync::Arc::new(std::sync::OnceLock::<String>::new());
+            let shared_location_for_start = shared_location.clone();
+            let shared_location_for_query = shared_location.clone();
+
+            let query = move |name: String| {
+                let stub_clone = stub.clone();
+                let options_clone = options.clone();
+                let req_clone = req.clone();
+                let shared_location_clone = shared_location_for_query.clone();
+                async move {
+                    let loc = shared_location_clone
+                        .get()
+                        .cloned()
+                        .or_else(|| {
+                            req_clone
+                                .job
+                                .as_ref()
+                                .and_then(|j| j.job_reference.as_ref())
+                                .and_then(|jr| jr.location.clone())
+                        })
+                        .unwrap_or_default();
+
+                    let get_req = crate::model::GetJobRequest {
+                        project_id: req_clone.project_id.clone(),
+                        job_id: name,
+                        location: loc,
+                        _unknown_fields: std::default::Default::default(),
+                    };
+                    let job = stub_clone
+                        .get_job(get_req, options_clone)
+                        .await
+                        .map(crate::Response::into_body)?;
+
+                    Ok(job)
+                }
+            };
+
+            let start = move || {
+                let shared_location_clone = shared_location_for_start.clone();
+                async move {
+                    let res = self.send().await;
+                    if let Ok(ref job) = res
+                        && let Some(ref jr) = job.job_reference
+                        && let Some(ref loc) = jr.location
+                    {
+                        let _ = shared_location_clone.set(loc.clone());
+                    }
+                    res
+                }
+            };
+
+            google_cloud_lro::internal::new_discovery_poller(
+                polling_error_policy,
+                polling_backoff_policy,
+                start,
+                query,
+            )
+        }
+        {{- end }}
+        {{- with .OperationInfo }}
+
+        /// Creates a [Poller][google_cloud_lro::Poller] to work with `{{ .Method.Codec.Name }}`.
+        pub fn poller(
+            self
+        ) ->
+            {{- if .Codec.NoneAreEmpty }}
+            impl google_cloud_lro::Poller<{{ .Codec.ResponseType }}, {{ .Codec.MetadataType }}>
+            {{- else if .Codec.OnlyResponseIsEmpty }}
+            impl google_cloud_lro::Poller<(), {{ .Codec.MetadataType }}>
+            {{- else if .Codec.OnlyMetadataIsEmpty }}
+            impl google_cloud_lro::Poller<{{ .Codec.ResponseType }}, ()>
+            {{- else if .Codec.BothAreEmpty }}
+            impl google_cloud_lro::Poller<(), ()>
+            {{- end }}
+        {
+            type Operation = google_cloud_lro::internal::Operation<{{ .Codec.ResponseType }}, {{ .Codec.MetadataType }}>;
+            let polling_error_policy = self.0.stub.get_polling_error_policy(&self.0.options);
+            let polling_backoff_policy = self.0.stub.get_polling_backoff_policy(&self.0.options);
+            {{- if .Method.Model.Codec.LroStubOptions }}
+            {{- /*
+              `poller_options` must be extracted here before `self` is moved into
+              the `start` closure.
+            */}}
+            let mut poller_options = self.0.stub.get_poller_options(&self.0.options);
+            if let Some(ref mut details) = poller_options.tracing {
+                details.method_name = "{{ .Method.Model.Codec.PackageNamespace }}::client::{{ .Method.Codec.ServiceNameToPascal }}::{{ .Method.Codec.Name }}::until_done";
+            }
+            {{- end }}
+
+            let stub = self.0.stub.clone();
+            let mut options = self.0.options.clone();
+            options.set_retry_policy(google_cloud_gax::retry_policy::NeverRetry);
+            let query = move |name| {
+                let stub = stub.clone();
+                let options = options.clone();
+                async {
+                    let op = GetOperation::new(stub)
+                        .set_name(name)
+                        .with_options(options)
+                        .send()
+                        .await?;
+                    Ok(Operation::new(op))
+                }
+            };
+
+            let start = move || async {
+                let op = self.send().await?;
+                Ok(Operation::new(op))
+            };
+
+            {{- if .Method.Model.Codec.LroStubOptions }}
+            use google_cloud_lro::internal::PollerExt;
+            {
+                {{- if .Codec.NoneAreEmpty }}
+                google_cloud_lro::internal::new_poller(polling_error_policy, polling_backoff_policy, start, query)
+                {{- else if .Codec.OnlyResponseIsEmpty }}
+                google_cloud_lro::internal::new_unit_response_poller(polling_error_policy, polling_backoff_policy, start, query)
+                {{- else if .Codec.OnlyMetadataIsEmpty }}
+                google_cloud_lro::internal::new_unit_metadata_poller(polling_error_policy, polling_backoff_policy, start, query)
+                {{- else if .Codec.BothAreEmpty }}
+                google_cloud_lro::internal::new_unit_poller(polling_error_policy, polling_backoff_policy, start, query)
+                {{- end }}
+            }
+            .with_options(poller_options)
+            {{- else }}
+            {{- if .Codec.NoneAreEmpty }}
+            google_cloud_lro::internal::new_poller(polling_error_policy, polling_backoff_policy, start, query)
+            {{- else if .Codec.OnlyResponseIsEmpty }}
+            google_cloud_lro::internal::new_unit_response_poller(polling_error_policy, polling_backoff_policy, start, query)
+            {{- else if .Codec.OnlyMetadataIsEmpty }}
+            google_cloud_lro::internal::new_unit_metadata_poller(polling_error_policy, polling_backoff_policy, start, query)
+            {{- else if .Codec.BothAreEmpty }}
+            google_cloud_lro::internal::new_unit_poller(polling_error_policy, polling_backoff_policy, start, query)
+            {{- end }}
+            {{- end }}
+        }
+        {{- end }}
+        {{- if .HasAutoPopulatedFields }}
+
+        fn auto_populate(mut req: {{ .InputType.Codec.QualifiedName }}, force: bool) -> {{ .InputType.Codec.QualifiedName }} {
+            {{- range .AutoPopulated }}
+            {{- if .Optional }}
+            if force || req.{{ .Codec.FieldName }}.is_none() {
+            {{- else }}
+            if force || req.{{ .Codec.FieldName }}.is_empty() {
+            {{- end }}
+                req = req.set_{{ .Codec.SetterName }}(uuid::Uuid::new_v4().to_string())
+            }
+            {{- end }}
+            req
+        }
+        {{- end }}
+        {{- end }}
+        {{- range .InputType.Codec.BasicFields }}
+        {{- "\n" }}
+        /// Sets the value of [{{ .Codec.FieldName }}][{{ .Codec.FQMessageName }}::{{ .Codec.SetterName }}].
+        {{- if .DocumentAsRequired }}
+        ///
+        /// This is a **required** field for requests.
+        {{- end }}
+        {{- if .Deprecated }}
+        #[deprecated]
+        {{- end }}
+        {{- if .Singular }}
+        {{- if .Optional }}
+        {{- if .Codec.IsBoxed }}
+        pub fn set_{{ .Codec.SetterName }}<T>(mut self, v: T) -> Self
+        where T: std::convert::Into<{{ .Codec.PrimitiveFieldType }}>
+        {
+            self.0.request.{{ .Codec.FieldName }} = std::option::Option::Some(std::boxed::Box::new(v.into()));
+            self
+        }
+
+        /// Sets or clears the value of [{{ .Codec.FieldName }}][{{ .Codec.FQMessageName }}::{{ .Codec.SetterName }}].
+        {{- if .DocumentAsRequired }}
+        ///
+        /// This is a **required** field for requests.
+        {{- end }}
+        {{- if .Deprecated }}
+        #[deprecated]
+        {{- end }}
+        pub fn set_or_clear_{{ .Codec.SetterName }}<T>(mut self, v: std::option::Option<T>) -> Self
+        where T: std::convert::Into<{{ .Codec.PrimitiveFieldType }}>
+        {
+            self.0.request.{{ .Codec.FieldName }} = v.map(|x| std::boxed::Box::new(x.into()));
+            self
+        }
+        {{- else }}
+        pub fn set_{{ .Codec.SetterName }}<T>(mut self, v: T) -> Self
+        where T: std::convert::Into<{{ .Codec.PrimitiveFieldType }}>
+        {
+            self.0.request.{{ .Codec.FieldName }} = std::option::Option::Some(v.into());
+            self
+        }
+
+        /// Sets or clears the value of [{{ .Codec.FieldName }}][{{ .Codec.FQMessageName }}::{{ .Codec.SetterName }}].
+        {{- if .DocumentAsRequired }}
+        ///
+        /// This is a **required** field for requests.
+        {{- end }}
+        {{- if .Deprecated }}
+        #[deprecated]
+        {{- end }}
+        pub fn set_or_clear_{{ .Codec.SetterName }}<T>(mut self, v: std::option::Option<T>) -> Self
+        where T: std::convert::Into<{{ .Codec.PrimitiveFieldType }}>
+        {
+            self.0.request.{{ .Codec.FieldName }} = v.map(|x| x.into());
+            self
+        }
+        {{- end }}
+        {{- else }}
+        pub fn set_{{ .Codec.SetterName }}<T: Into<{{ .Codec.FieldType }}>>(mut self, v: T) -> Self {
+            self.0.request.{{ .Codec.FieldName }} = v.into();
+            self
+        }
+        {{- end }}
+        {{- else if .Repeated }}
+        pub fn set_{{ .Codec.SetterName }}<T, V>(mut self, v: T) -> Self
+        where
+            T: std::iter::IntoIterator<Item = V>,
+            V: std::convert::Into<{{ .Codec.PrimitiveFieldType }}>
+        {
+            use std::iter::Iterator;
+            self.0.request.{{ .Codec.FieldName }} = v.into_iter().map(|i| i.into()).collect();
+            self
+        }
+        {{- else if .Map }}
+        pub fn set_{{ .Codec.SetterName }}<T, K, V>(mut self, v: T) -> Self
+        where
+            T: std::iter::IntoIterator<Item = (K, V)>,
+            K: std::convert::Into<{{ .Codec.KeyType }}>,
+            V: std::convert::Into<{{ .Codec.ValueType }}>,
+        {
+            self.0.request.{{ .Codec.FieldName }} = v.into_iter().map(|(k, v)| (k.into(), v.into())).collect();
+            self
+        }
+        {{- end }}
+        {{- end }}
+        {{- range .InputType.OneOfs }}
+        {{- "\n" }}
+        /// Sets the value of [{{ .Codec.FieldName }}][{{ .Codec.StructQualifiedName }}::{{ .Codec.SetterName }}].
+        ///
+        /// Note that all the setters affecting `{{ .Codec.FieldName }}` are
+        /// mutually exclusive.
+        pub fn set_{{ .Codec.SetterName }}<T: Into<Option<{{ .Codec.FieldType }}>>>(mut self, v: T) -> Self {
+            self.0.request.{{ .Codec.FieldName }} = v.into();
+            self
+        }
+        {{- range .Fields }}
+        {{- "\n" }}
+        /// Sets the value of [{{ .Group.Codec.FieldName }}][{{ .Codec.FQMessageName }}::{{ .Group.Codec.FieldName }}]
+        /// to hold a `{{ .Codec.BranchName }}`.
+        ///
+        /// Note that all the setters affecting `{{ .Group.Codec.FieldName }}` are
+        /// mutually exclusive.
+        {{- if .Deprecated }}
+        #[deprecated]
+        {{- end }}
+        {{- if .Singular }}
+        pub fn set_{{ .Codec.SetterName }}<T: std::convert::Into<{{ .Codec.FieldType }}>>(mut self, v: T) -> Self {
+            self.0.request = self.0.request.set_{{ .Codec.SetterName }}(v);
+            self
+        }
+        {{- else if .Repeated }}
+        pub fn set_{{ .Codec.SetterName }}<T, V>(mut self, v: T) -> Self
+        where
+            T: std::iter::IntoIterator<Item = V>,
+            V: std::convert::Into<{{ .Codec.PrimitiveFieldType }}>
+        {
+            use std::iter::Iterator;
+            self.0.request.{{ .Group.Codec.FieldName }} = std::option::Option::Some(
+                {{ .Group.Codec.QualifiedName }}::{{ .Codec.BranchName }}(
+                    v.into_iter().map(|i| i.into()).collect()
+                )
+            );
+            self
+        }
+        {{- else if .Map }}
+        pub fn set_{{ .Codec.SetterName }}<T, K, V>(mut self, v: T) -> Self
+        where
+            T: std::iter::IntoIterator<Item = (K, V)>,
+            K: std::convert::Into<{{ .Codec.KeyType }}>,
+            V: std::convert::Into<{{ .Codec.ValueType }}>,
+        {
+            use std::iter::Iterator;
+            self.0.request.{{ .Group.Codec.FieldName }} = std::option::Option::Some(
+                {{ .Group.Codec.QualifiedName }}::{{ .Codec.BranchName }}(
+                    v.into_iter().map(|(k, v)| (k.into(), v.into())).collect()
+                )
+            );
+            self
+        }
+        {{- end }}
+        {{- end }}
+        {{- end }}
+        {{- end }}
+    }
+
+    #[doc(hidden)]
+    impl crate::RequestBuilder for {{ .Codec.BuilderName }} {
+        fn request_options(&mut self) -> &mut crate::RequestOptions {
+            &mut self.0.options
+        }
+    }
+    {{- end }}
+}
+{{- end }}

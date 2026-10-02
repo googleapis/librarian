@@ -1,0 +1,126 @@
+{{/*
+Copyright 2024 Google LLC
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    https://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/}}
+// Copyright {{ .Codec.CopyrightYear }} Google LLC
+{{- range .Codec.BoilerPlate }}
+//{{ . }}
+{{- end }}
+{{- if .Codec.HasServices }}
+
+//! Traits to mock the clients in this library.
+//!
+//! Application developers may need to mock the clients in this library to test
+//! how their application works with different (and sometimes hard to trigger)
+//! client and service behavior. Such test can define mocks implementing the
+//! trait(s) defined in this module, initialize the client with an instance of
+//! this mock in their tests, and verify their application responds as expected.
+
+{{/* TODO(#742) - remove this workaround once the bug is fixed */}}
+#![allow(rustdoc::broken_intra_doc_links)]
+
+pub(crate) mod dynamic;
+
+{{- end }}
+{{- range .Codec.Services }}
+{{- "\n" }}
+/// Defines the trait used to implement [super::client::{{ .Codec.Name }}].
+///
+/// Application developers may need to implement this trait to mock
+/// `client::{{ .Codec.Name }}`.  In other use-cases, application developers only
+/// use `client::{{ .Codec.Name }}` and need not be concerned with this trait or
+/// its implementations.
+///
+/// Services gain new RPCs routinely. Consequently, this trait gains new methods
+/// too. To avoid breaking applications the trait provides a default
+/// implementation of each method. Most of these implementations just return an
+/// error.
+{{- if .Codec.PerServiceFeatures }}
+#[cfg(feature = "{{ .Codec.FeatureName }}")]
+#[cfg_attr(docsrs, doc(cfg(feature = "{{ .Codec.FeatureName }}")))]
+{{- end }}
+pub trait {{ .Codec.Name }}: std::fmt::Debug + Send + Sync {
+    {{- range .Codec.Methods }}
+    {{- "\n" }}
+    /// Implements [super::client::{{ .Codec.ServiceNameToPascal }}::{{ .Codec.Name }}].
+    {{- if .Codec.IsBidiStreaming }}
+    fn {{ .Codec.Name }}(
+        &self,
+        _options: crate::RequestOptions,
+    ) -> (
+        google_cloud_gax::streaming::RequestSender<{{ .InputType.Codec.QualifiedName }}>,
+        google_cloud_gax::streaming::ResponseStream<{{ .OutputType.Codec.QualifiedName }}>,
+    ) {
+        gaxi::unimplemented::unimplemented_bidi_stub()
+    }
+    {{- else if .Codec.IsServerStreaming }}
+    fn {{ .Codec.Name }}(
+        &self,
+        _req: {{ .InputType.Codec.QualifiedName }},
+        _options: crate::RequestOptions,
+    ) -> impl std::future::Future<Output = crate::Result<
+        google_cloud_gax::streaming::ResponseStream<{{ .OutputType.Codec.QualifiedName }}>,
+    >> + Send {
+        gaxi::unimplemented::unimplemented_server_streaming_stub()
+    }
+    {{- else }}
+    fn {{ .Codec.Name }}(
+        &self,
+        _req: {{ .InputType.Codec.QualifiedName }},
+        _options: crate::RequestOptions,
+    ) -> impl std::future::Future<Output = crate::Result<crate::Response<{{ .Codec.ReturnType }}>>> + Send {
+        gaxi::unimplemented::unimplemented_stub()
+    }
+    {{- end }}
+    {{- end }}
+    {{- if .Codec.HasLROs }}
+
+    /// Returns the polling error policy.
+    ///
+    /// When mocking, this method is typically irrelevant. Do not try to verify
+    /// it is called by your mocks.
+    fn get_polling_error_policy(
+        &self,
+        _options: &crate::RequestOptions,
+    ) -> std::sync::Arc<dyn google_cloud_gax::polling_error_policy::PollingErrorPolicy> {
+        std::sync::Arc::new(google_cloud_gax::polling_error_policy::Aip194Strict)
+    }
+
+    /// Returns the polling backoff policy.
+    ///
+    /// When mocking, this method is typically irrelevant. Do not try to verify
+    /// it is called by your mocks.
+    fn get_polling_backoff_policy(
+        &self,
+        _options: &crate::RequestOptions,
+    ) -> std::sync::Arc<dyn google_cloud_gax::polling_backoff_policy::PollingBackoffPolicy> {
+        std::sync::Arc::new(google_cloud_gax::exponential_backoff::ExponentialBackoff::default())
+    }
+
+    {{- if .Model.Codec.LroStubOptions }}
+    #[doc(hidden)]
+    /// Returns the poller options.
+    ///
+    /// When mocking, this method is typically irrelevant. Do not try to verify
+    /// it is called by your mocks.
+    fn get_poller_options(
+        &self,
+        _options: &crate::RequestOptions,
+    ) -> google_cloud_lro::PollerOptions {
+        google_cloud_lro::PollerOptions::default()
+    }
+    {{- end }}
+    {{- end }}
+}
+{{- end }}
