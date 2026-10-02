@@ -21,8 +21,10 @@ final class {{ .Codec.Name }} extends {{ .Codec.Model.Codec.ProtoPrefix }}ProtoM
   static const String fullyQualifiedName = '{{ .Codec.QualifiedName }}';
 
   {{- range .Fields }}
+  {{- "\n" }}
   {{- include "templates/lib/src/field" . | indent 2 }}
   {{- end }}
+  {{- "\n" }}
   {{ .Codec.Name }}({{- if .Codec.HasFields }}{
     {{- range .Fields }}
     {{- if .Codec.FieldBehaviorRequired }}
@@ -47,8 +49,10 @@ final class {{ .Codec.Name }} extends {{ .Codec.Model.Codec.ProtoPrefix }}ProtoM
     super(fullyQualifiedName){{ .Codec.ConstructorBody }}
 
   {{- if .Codec.HasCustomEncoding }}
+  {{- "\n" }}
   factory {{ .Codec.Name }}.fromJson(Object? json) => _{{ .Codec.Name }}Helper.decode(json);
   {{- else }}
+  {{- "\n" }}
   factory {{ .Codec.Name }}.fromJson(Object? {{ if .Codec.HasFields }}j{{ else }}_{{ end }})
     {{- if .Codec.HasFields }} {
       final json = j as Map<String, Object?>;
