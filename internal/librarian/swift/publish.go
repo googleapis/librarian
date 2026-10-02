@@ -35,7 +35,7 @@ package swift
 //	# Check existing remote tags and dry-run unpublished libraries:
 //	librarian publish --dry-run --verbose
 //
-//	# Simulate a full release pipeline (force dry-run across all libraries):
+//	# Dry-run with force flag (simulating push to diverged remote branches):
 //	librarian publish --dry-run --force --concurrency 8 --verbose
 
 import (
