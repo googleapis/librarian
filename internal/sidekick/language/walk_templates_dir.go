@@ -37,8 +37,12 @@ import (
 // assumed to be used internally and are skipped.
 func WalkTemplatesDir(fsys fs.FS, root string) []GeneratedFile {
 	var result []GeneratedFile
-	fs.WalkDir(fsys, root, func(path string, d fs.DirEntry, err error) error {
-		if filepath.Ext(path) != ".mustache" {
+	_ = fs.WalkDir(fsys, root, func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		ext := filepath.Ext(path)
+		if ext != ".mustache" && ext != ".gotmpl" {
 			return nil
 		}
 		if strings.Count(d.Name(), ".") == 1 {
@@ -46,7 +50,7 @@ func WalkTemplatesDir(fsys fs.FS, root string) []GeneratedFile {
 			return nil
 		}
 		dirname := filepath.Dir(strings.TrimPrefix(path, root))
-		basename := strings.TrimSuffix(d.Name(), ".mustache")
+		basename := strings.TrimSuffix(d.Name(), ext)
 		result = append(result, GeneratedFile{
 			TemplatePath: path,
 			OutputPath:   filepath.Join(dirname, basename),
