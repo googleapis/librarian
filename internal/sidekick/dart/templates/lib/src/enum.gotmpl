@@ -32,12 +32,15 @@ final class {{ .Codec.Name }} extends {{ .Codec.Model.Codec.ProtoPrefix }}ProtoE
   const {{ .Codec.Name }}(super.value);
 
   {{- if .Codec.HasCustomEncoding }}
+  {{- "\n" }}
   factory {{ .Codec.Name }}.fromJson(Object? json) => _{{ .Codec.Name }}Helper.decode(json);
   {{- else }}
+  {{- "\n" }}
   factory {{ .Codec.Name }}.fromJson(Object? json) => {{ .Codec.Name }}(json as String);
   {{- end }}
 
   {{- if .Codec.HasCustomEncoding }}
+  {{- "\n" }}
   @override
   Object? toJson() => _{{ .Codec.Name }}Helper.encode(this);
   {{- end }}
