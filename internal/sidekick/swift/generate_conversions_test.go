@@ -343,11 +343,11 @@ func TestGenerateConversions_OneOf(t *testing.T) {
 func TestGenerateConversions_MapFields(t *testing.T) {
 	outDir := t.TempDir()
 
-	stringMapEntry := api.NewTestMapMessage("LabelsEntry", api.TypezString, api.TypezString)
+	stringMapEntry := api.NewTestMap("LabelsEntry", api.TypezString, api.TypezString)
 
 	objectMessage := api.NewTestMessage("RapidCachePolicy")
 
-	objectMapEntry := api.NewTestMapMessageWithFields(
+	objectMapEntry := api.NewTestMapWithFields(
 		"PoliciesEntry",
 		api.NewTestField("key").WithType(api.TypezString),
 		api.NewTestField("value").WithMessageType(objectMessage),
@@ -358,28 +358,26 @@ func TestGenerateConversions_MapFields(t *testing.T) {
 		WithPackage("test").
 		WithValues(enumVal)
 
-	enumMapEntry := api.NewTestMapMessageWithFields(
+	enumMapEntry := api.NewTestMapWithFields(
 		"CategoriesEntry",
 		api.NewTestField("key").WithType(api.TypezString),
 		api.NewTestField("value").WithEnumType(enumType),
 	)
 
 	fieldPrimitive := api.NewTestField("labels").
-		WithMessageType(stringMapEntry).
-		WithMap()
+		WithMapType(stringMapEntry)
 
 	fieldObject := api.NewTestField("policies").
-		WithMessageType(objectMapEntry).
-		WithMap()
+		WithMapType(objectMapEntry)
 
 	fieldEnum := api.NewTestField("categories").
-		WithMessageType(enumMapEntry).
-		WithMap()
+		WithMapType(enumMapEntry)
 
 	msg := api.NewTestMessage("ObjectIndex").
 		WithFields(fieldPrimitive, fieldObject, fieldEnum)
 
-	model := api.NewTestAPI([]*api.Message{msg, stringMapEntry, objectMessage, objectMapEntry, enumMapEntry}, []*api.Enum{enumType}, nil)
+	model := api.NewTestAPI([]*api.Message{msg, objectMessage}, []*api.Enum{enumType}, nil).
+		WithMaps(stringMapEntry, objectMapEntry, enumMapEntry)
 
 	library := &config.Library{Name: "GoogleCloudStorage"}
 	module := &config.SwiftModule{ModulePath: "StorageControlProtos"}

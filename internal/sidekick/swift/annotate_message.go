@@ -259,8 +259,8 @@ func (c *codec) annotateMessage(message *api.Message, model *modelAnnotations) e
 		switch {
 		case itemField.Repeated:
 			annotations.PageableItemType = itemFieldCodec.BaseFieldType
-		case itemField.Map:
-			keyType, valueType, err := c.mapFieldTypeComponents(itemField.MessageType)
+		case itemField.Map || itemField.Typez == api.TypezMap:
+			keyType, valueType, err := c.mapFieldTypeComponents(itemField)
 			if err != nil {
 				return err
 			}

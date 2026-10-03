@@ -305,28 +305,29 @@ func (c *codec) addPaginationDependencies(annotations *serviceAnnotations, metho
 	if itemsField.Repeated {
 		return c.addFieldDependencies(annotations, itemsField)
 	}
-	if itemsField.Map {
-		mapType, err := lookupMessage(c.Model, itemsField.TypezID)
+	if itemsField.Map || itemsField.Typez == api.TypezMap {
+		mapType, err := lookupMap(c.Model, itemsField)
 		if err != nil {
 			return err
 		}
-		if len(mapType.Fields) != 2 {
-			return fmt.Errorf("missing key/value fields for map type: %s", itemsField.TypezID)
-		}
-		return c.addFieldDependencies(annotations, mapType.Fields[1])
+		return c.addFieldDependencies(annotations, mapType.Value)
 	}
 	return nil
 }
 
 func (c *codec) addFieldDependencies(annotations *serviceAnnotations, field *api.Field) error {
+	if field.Map || field.Typez == api.TypezMap {
+		mapType, err := lookupMap(c.Model, field)
+		if err != nil {
+			return err
+		}
+		return c.addFieldDependencies(annotations, mapType.Value)
+	}
 	switch field.Typez {
 	case api.TypezMessage:
 		item, err := lookupMessage(c.Model, field.TypezID)
 		if err != nil {
 			return err
-		}
-		if item.IsMap && len(item.Fields) == 2 {
-			return c.addFieldDependencies(annotations, item.Fields[1])
 		}
 		if item.Package != c.Model.PackageName {
 			dep, err := c.addApiPackageDependency(item.Package)
