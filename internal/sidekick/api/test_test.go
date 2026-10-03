@@ -20,6 +20,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/googleapis/librarian/internal/sidekick/api"
+	"github.com/googleapis/librarian/internal/sidekick/api/apitest"
 )
 
 func TestMethod_WithBindings_NilPathInfo(t *testing.T) {
@@ -271,6 +272,108 @@ func TestNewTestMapMessageWithFields(t *testing.T) {
 	}
 	if got := m.Fields[1].MessageType; got != valMsg {
 		t.Errorf("m.Fields[1].MessageType = %v, want %v", got, valMsg)
+	}
+}
+
+func TestNewTestMap(t *testing.T) {
+	got := api.NewTestMap("TestMap", api.TypezString, api.TypezInt32)
+	want := &api.Map{
+		ID: ".test.TestMap",
+		Key: &api.Field{
+			Name:     "key",
+			JSONName: "key",
+			ID:       ".test.TestMap.key",
+			Typez:    api.TypezString,
+		},
+		Value: &api.Field{
+			Name:     "value",
+			JSONName: "value",
+			ID:       ".test.TestMap.value",
+			Typez:    api.TypezInt32,
+		},
+	}
+	apitest.CheckMap(t, got, want)
+}
+
+func TestNewTestMapWithFields(t *testing.T) {
+	valMsg := api.NewTestMessage("ValueMsg")
+	key := api.NewTestField("custom_key").WithType(api.TypezString)
+	val := api.NewTestField("custom_val").WithMessageType(valMsg)
+	got := api.NewTestMapWithFields(".custom.package.MyMap", key, val)
+	want := &api.Map{
+		ID: ".custom.package.MyMap",
+		Key: &api.Field{
+			Name:     "custom_key",
+			JSONName: "customKey",
+			ID:       ".custom.package.MyMap.custom_key",
+			Typez:    api.TypezString,
+		},
+		Value: &api.Field{
+			Name:        "custom_val",
+			JSONName:    "customVal",
+			ID:          ".custom.package.MyMap.custom_val",
+			Typez:       api.TypezMessage,
+			TypezID:     valMsg.ID,
+			MessageType: valMsg,
+		},
+	}
+	apitest.CheckMap(t, got, want)
+}
+
+func TestMap_WithID(t *testing.T) {
+	m := api.NewTestMap("TestMap", api.TypezString, api.TypezInt32)
+	m.WithID(".new.package.TestMap")
+	if got, want := m.ID, ".new.package.TestMap"; got != want {
+		t.Errorf("m.ID = %q, want %q", got, want)
+	}
+	if got, want := m.Key.ID, ".new.package.TestMap.key"; got != want {
+		t.Errorf("m.Key.ID = %q, want %q", got, want)
+	}
+	if got, want := m.Value.ID, ".new.package.TestMap.value"; got != want {
+		t.Errorf("m.Value.ID = %q, want %q", got, want)
+	}
+}
+
+func TestField_WithMapType(t *testing.T) {
+	m := api.NewTestMap("TestMap", api.TypezString, api.TypezInt32)
+	f := api.NewTestField("test_field").WithRepeated().WithOptional().WithMapType(m)
+	if got := f.MapType; got != m {
+		t.Errorf("f.MapType = %v, want %v", got, m)
+	}
+	if got, want := f.Typez, api.TypezMap; got != want {
+		t.Errorf("f.Typez = %v, want %v", got, want)
+	}
+	if !f.Map {
+		t.Errorf("f.Map = %v, want true", f.Map)
+	}
+	if f.Repeated {
+		t.Errorf("f.Repeated = %v, want false", f.Repeated)
+	}
+	if f.Optional {
+		t.Errorf("f.Optional = %v, want false", f.Optional)
+	}
+	if got, want := f.TypezID, m.ID; got != want {
+		t.Errorf("f.TypezID = %q, want %q", got, want)
+	}
+}
+
+func TestAPI_WithMaps(t *testing.T) {
+	m1 := api.NewTestMap("Map1", api.TypezString, api.TypezInt32)
+	m2 := api.NewTestMap("Map2", api.TypezString, api.TypezString)
+	model := api.NewTestAPI(nil, nil, nil).WithMaps(m1, m2)
+
+	if got := model.Map(m1.ID); got != m1 {
+		t.Errorf("model.Map(%q) = %v, want %v", m1.ID, got, m1)
+	}
+	if got := model.Map(m2.ID); got != m2 {
+		t.Errorf("model.Map(%q) = %v, want %v", m2.ID, got, m2)
+	}
+	var count int
+	for range model.AllMaps() {
+		count++
+	}
+	if count != 2 {
+		t.Errorf("AllMaps count = %d, want 2", count)
 	}
 }
 

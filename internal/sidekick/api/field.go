@@ -82,6 +82,8 @@ type Field struct {
 	MessageType *Message
 	// The enum type for this field, can be nil.
 	EnumType *Enum
+	// The map type for this field, can be nil.
+	MapType *Map
 	// ResourceReference contains the data from the `google.api.resource_reference`
 	// annotation.
 	ResourceReference *ResourceReference
@@ -182,9 +184,6 @@ func (f *Field) IsEnum() bool {
 //
 // This is useful for mustache templates that differ only
 // in the broad category of field type involved.
-//
-// The templates *should* first check if the field is singular, as all maps are
-// also objects.
 func (f *Field) IsObject() bool {
 	return f.Typez == TypezMessage
 }

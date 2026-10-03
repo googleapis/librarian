@@ -37,13 +37,12 @@ func TestSimpleMap(t *testing.T) {
 	parent := NewTestMessage("ParentMessage")
 	key := NewTestField("key").WithType(TypezString)
 	value := NewTestField("value").WithMessageType(parent)
-	mapMessage := NewTestMapMessageWithFields("SingularMapEntry", key, value)
-	parent.WithMessages(mapMessage)
+	mapType := NewTestMapWithFields("SingularMapEntry", key, value)
 
-	field0 := NewTestField("children").WithMessageType(mapMessage)
+	field0 := NewTestField("children").WithMapType(mapType)
 	parent.WithFields(field0)
 
-	model := NewTestAPI([]*Message{parent, mapMessage}, nil, nil)
+	model := NewTestAPI([]*Message{parent}, nil, nil)
 	LabelRecursiveFields(model)
 	for _, field := range []*Field{value, field0} {
 		if !field.Recursive {
@@ -86,13 +85,12 @@ func TestViaMap(t *testing.T) {
 
 	key := NewTestField("key").WithType(TypezString)
 	value := NewTestField("value").WithMessageType(child)
-	mapMessage := NewTestMapMessageWithFields("SingularMapEntry", key, value)
-	parent.WithMessages(mapMessage)
+	mapType := NewTestMapWithFields("SingularMapEntry", key, value)
 
-	field1 := NewTestField("children").WithMessageType(mapMessage)
+	field1 := NewTestField("children").WithMapType(mapType)
 	parent.WithFields(field1)
 
-	model := NewTestAPI([]*Message{parent, child, mapMessage}, nil, nil)
+	model := NewTestAPI([]*Message{parent, child}, nil, nil)
 	LabelRecursiveFields(model)
 	for _, field := range []*Field{value, field0, field1} {
 		if !field.Recursive {
