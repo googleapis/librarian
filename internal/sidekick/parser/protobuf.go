@@ -537,11 +537,12 @@ func normalizeTypes(model *api.API, in *descriptorpb.FieldDescriptorProto, field
 		// presence. Oneof fields are also not optional because presence is
 		// managed by the oneof itself.
 		field.Optional = !field.Repeated && !field.IsOneOf
-		if message := model.Message(field.TypezID); message != nil && message.IsMap {
+		if model.Map(field.TypezID) != nil {
 			// Map fields appear as repeated in Protobuf. This is confusing,
 			// as they typically are represented by a single `map<k, v>`-like
 			// datatype. Protobuf leaks the wire-representation of maps, i.e.,
 			// repeated pairs.
+			field.Typez = api.TypezMap
 			field.Map = true
 			field.Repeated = false
 			field.Optional = false
@@ -635,9 +636,6 @@ func processMessage(model *api.API, m *descriptorpb.DescriptorProto, mFQN, packa
 	model.AddMessage(message)
 
 	if opts := m.GetOptions(); opts != nil {
-		if opts.GetMapEntry() {
-			message.IsMap = true
-		}
 		if err := processResourceAnnotation(opts, message, model); err != nil {
 			return nil, err
 		}
@@ -645,13 +643,17 @@ func processMessage(model *api.API, m *descriptorpb.DescriptorProto, mFQN, packa
 	if len(m.GetNestedType()) > 0 {
 		for _, nm := range m.GetNestedType() {
 			nmFQN := mFQN + "." + nm.GetName()
+			if nm.GetOptions().GetMapEntry() {
+				if err := processMapEntry(model, nm, nmFQN); err != nil {
+					return nil, err
+				}
+				continue
+			}
 			nmsg, err := processMessage(model, nm, nmFQN, packagez, proto2, message)
 			if err != nil {
 				return nil, err
 			}
-			if !nmsg.IsMap {
-				message.Messages = append(message.Messages, nmsg)
-			}
+			message.Messages = append(message.Messages, nmsg)
 		}
 	}
 	for _, e := range m.GetEnumType() {
@@ -667,23 +669,11 @@ func processMessage(model *api.API, m *descriptorpb.DescriptorProto, mFQN, packa
 		message.OneOfs = append(message.OneOfs, oneOfs)
 	}
 	for _, mf := range m.Field {
-		isProtoOptional := mf.Proto3Optional != nil && *mf.Proto3Optional
-		field := &api.Field{
-			Name:          mf.GetName(),
-			ID:            mFQN + "." + mf.GetName(),
-			JSONName:      mf.GetJsonName(),
-			Deprecated:    mf.GetOptions().GetDeprecated(),
-			Optional:      isProtoOptional,
-			IsOneOf:       mf.OneofIndex != nil && !isProtoOptional,
-			AutoPopulated: protobufIsAutoPopulated(mf),
-			Behavior:      protobufFieldBehavior(mf),
-		}
-		if err := processResourceReference(mf, field); err != nil {
+		field, err := processField(model, mf, mFQN)
+		if err != nil {
 			return nil, err
 		}
-		normalizeTypes(model, mf, field)
-		// protoc labels map entry fields optional, but they have no presence.
-		field.Proto2Optional = proto2 && !message.IsMap && !field.IsOneOf &&
+		field.Proto2Optional = proto2 && !field.IsOneOf &&
 			mf.GetLabel() == descriptorpb.FieldDescriptorProto_LABEL_OPTIONAL &&
 			field.Typez != api.TypezMessage && field.Typez != api.TypezGroup
 		message.Fields = append(message.Fields, field)
@@ -707,6 +697,47 @@ func processMessage(model *api.API, m *descriptorpb.DescriptorProto, mFQN, packa
 	}
 
 	return message, nil
+}
+
+func processField(model *api.API, mf *descriptorpb.FieldDescriptorProto, mFQN string) (*api.Field, error) {
+	isProtoOptional := mf.Proto3Optional != nil && *mf.Proto3Optional
+	field := &api.Field{
+		Name:          mf.GetName(),
+		ID:            mFQN + "." + mf.GetName(),
+		JSONName:      mf.GetJsonName(),
+		Deprecated:    mf.GetOptions().GetDeprecated(),
+		Optional:      isProtoOptional,
+		IsOneOf:       mf.OneofIndex != nil && !isProtoOptional,
+		AutoPopulated: protobufIsAutoPopulated(mf),
+		Behavior:      protobufFieldBehavior(mf),
+	}
+	if err := processResourceReference(mf, field); err != nil {
+		return nil, err
+	}
+	normalizeTypes(model, mf, field)
+	return field, nil
+}
+
+func processMapEntry(model *api.API, nm *descriptorpb.DescriptorProto, nmFQN string) error {
+	var keyField, valueField *api.Field
+	for _, mf := range nm.Field {
+		field, err := processField(model, mf, nmFQN)
+		if err != nil {
+			return err
+		}
+		switch field.Name {
+		case "key":
+			keyField = field
+		case "value":
+			valueField = field
+		}
+	}
+	model.AddMap(&api.Map{
+		ID:    nmFQN,
+		Key:   keyField,
+		Value: valueField,
+	})
+	return nil
 }
 
 func processResourceAnnotation(opts *descriptorpb.MessageOptions, message *api.Message, model *api.API) error {
@@ -857,23 +888,30 @@ func addServiceDocumentation(model *api.API, p []int32, doc string, sFQN string)
 }
 
 func addMessageDocumentation(model *api.API, m *descriptorpb.DescriptorProto, p []int32, doc string, mFQN string) {
+	message := model.Message(mFQN)
+	if message == nil {
+		return
+	}
 	// Beware of refactoring the calls to `trimLeadingSpacesInDocumentation`.
 	// We should modify `doc` only once, upon assignment to `.Documentation`
 	switch {
 	case len(p) == 0:
 		// This is a comment for a top level message
-		model.Message(mFQN).Documentation = trimLeadingSpacesInDocumentation(doc)
+		message.Documentation = trimLeadingSpacesInDocumentation(doc)
 	case p[0] == messageDescriptorNestedType:
 		nmsg := m.GetNestedType()[p[1]]
+		if nmsg.GetOptions().GetMapEntry() {
+			return
+		}
 		nmFQN := mFQN + "." + nmsg.GetName()
 		addMessageDocumentation(model, nmsg, p[2:], doc, nmFQN)
 	case p[0] == messageDescriptorField && len(p) == 2:
-		model.Message(mFQN).Fields[p[1]].Documentation = trimLeadingSpacesInDocumentation(doc)
+		message.Fields[p[1]].Documentation = trimLeadingSpacesInDocumentation(doc)
 	case p[0] == messageDescriptorEnum:
 		eFQN := mFQN + "." + m.GetEnumType()[p[1]].GetName()
 		addEnumDocumentation(model, p[2:], doc, eFQN)
 	case p[0] == messageDescriptorOneOf && len(p) == 2:
-		model.Message(mFQN).OneOfs[p[1]].Documentation = trimLeadingSpacesInDocumentation(doc)
+		message.OneOfs[p[1]].Documentation = trimLeadingSpacesInDocumentation(doc)
 	case p[0] == messageDescriptorExtensionRange:
 	case p[0] == messageDescriptorOptions:
 	case p[0] == messageDescriptorExtension:

@@ -137,13 +137,6 @@ func TestMessage_WithDocumentation(t *testing.T) {
 	}
 }
 
-func TestMessage_WithIsMap(t *testing.T) {
-	m := api.NewTestMessage("TestEntry").WithIsMap()
-	if !m.IsMap {
-		t.Errorf("expected IsMap to be true")
-	}
-}
-
 func TestOneOf_WithDocumentation(t *testing.T) {
 	o := api.NewTestOneOf("choice").WithDocumentation("A test oneof.")
 	if o.Documentation != "A test oneof." {
@@ -245,46 +238,6 @@ func TestMethod_ReturnEmpty(t *testing.T) {
 	}
 }
 
-func TestNewTestMapMessage(t *testing.T) {
-	m := api.NewTestMapMessage("TestEntry", api.TypezString, api.TypezInt32)
-	if !m.IsMap {
-		t.Errorf("m.IsMap = %v, want true", m.IsMap)
-	}
-	if len(m.Fields) != 2 {
-		t.Fatalf("len(m.Fields) = %d, want 2", len(m.Fields))
-	}
-	if got, want := m.Fields[0].Name, "key"; got != want {
-		t.Errorf("m.Fields[0].Name = %q, want %q", got, want)
-	}
-	if got, want := m.Fields[0].Typez, api.TypezString; got != want {
-		t.Errorf("m.Fields[0].Typez = %v, want %v", got, want)
-	}
-	if got, want := m.Fields[1].Name, "value"; got != want {
-		t.Errorf("m.Fields[1].Name = %q, want %q", got, want)
-	}
-	if got, want := m.Fields[1].Typez, api.TypezInt32; got != want {
-		t.Errorf("m.Fields[1].Typez = %v, want %v", got, want)
-	}
-}
-
-func TestNewTestMapMessageWithFields(t *testing.T) {
-	valMsg := api.NewTestMessage("ValueMsg")
-	m := api.NewTestMapMessageWithFields(
-		"TestEntry",
-		api.NewTestField("key").WithType(api.TypezString),
-		api.NewTestField("value").WithMessageType(valMsg),
-	)
-	if !m.IsMap {
-		t.Errorf("m.IsMap = %v, want true", m.IsMap)
-	}
-	if len(m.Fields) != 2 {
-		t.Fatalf("len(m.Fields) = %d, want 2", len(m.Fields))
-	}
-	if got := m.Fields[1].MessageType; got != valMsg {
-		t.Errorf("m.Fields[1].MessageType = %v, want %v", got, valMsg)
-	}
-}
-
 func TestNewTestMap(t *testing.T) {
 	got := api.NewTestMap("TestMap", api.TypezString, api.TypezInt32)
 	want := &api.Map{
@@ -341,6 +294,22 @@ func TestMap_WithID(t *testing.T) {
 	}
 	if got, want := m.Value.ID, ".new.package.TestMap.value"; got != want {
 		t.Errorf("m.Value.ID = %q, want %q", got, want)
+	}
+}
+
+func TestField_WithMap(t *testing.T) {
+	f := api.NewTestField("test_field").WithRepeated().WithOptional().WithMap()
+	if got, want := f.Typez, api.TypezMap; got != want {
+		t.Errorf("f.Typez = %v, want %v", got, want)
+	}
+	if !f.Map {
+		t.Errorf("f.Map = %v, want true", f.Map)
+	}
+	if f.Repeated {
+		t.Errorf("f.Repeated = %v, want false", f.Repeated)
+	}
+	if f.Optional {
+		t.Errorf("f.Optional = %v, want false", f.Optional)
 	}
 }
 

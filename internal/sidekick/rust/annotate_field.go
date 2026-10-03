@@ -215,16 +215,17 @@ func (c *codec) annotateField(field *api.Field, message *api.Message, model *api
 		IsWktNullValue:        field.Typez == api.TypezEnum && field.TypezID == ".google.protobuf.NullValue",
 		GenerateSetterSamples: c.generateSetterSamples,
 	}
-	if field.Recursive || (field.Typez == api.TypezMessage && !field.Map && field.IsOneOf) {
+	if field.Recursive || (field.Typez == api.TypezMessage && field.IsOneOf) {
 		ann.IsBoxed = true
 	}
 	ann.MapToBoxed = mapToBoxed(field, message, model)
 	field.Codec = ann
-	if field.Map || field.Typez == api.TypezMap {
+	switch field.Typez {
+	case api.TypezMap:
 		if err := c.annotateMapField(field, ann, message, model); err != nil {
 			return nil, err
 		}
-	} else if field.Typez == api.TypezMessage {
+	case api.TypezMessage:
 		ann.SerdeAs = c.messageFieldSerdeAs(field)
 		ann.MessageType = field.MessageType
 	}

@@ -292,12 +292,6 @@ func (m *Message) WithDocumentation(doc string) *Message {
 	return m
 }
 
-// WithIsMap sets whether the message represents a map entry.
-func (m *Message) WithIsMap() *Message {
-	m.IsMap = true
-	return m
-}
-
 // NewTestMap creates a synthetic Map with "key" and "value" fields.
 func NewTestMap(name string, keyType, valueType Typez) *Map {
 	return NewTestMapWithFields(
@@ -333,22 +327,6 @@ func (m *Map) WithID(id string) *Map {
 		m.Value.ID = fmt.Sprintf("%s.%s", id, m.Value.Name)
 	}
 	return m
-}
-
-// NewTestMapMessage creates a synthetic map entry Message with "key" and "value" fields.
-func NewTestMapMessage(name string, keyType, valueType Typez) *Message {
-	return NewTestMapMessageWithFields(
-		name,
-		NewTestField("key").WithType(keyType),
-		NewTestField("value").WithType(valueType),
-	)
-}
-
-// NewTestMapMessageWithFields creates a synthetic map entry Message with custom key and value fields.
-func NewTestMapMessageWithFields(name string, key, value *Field) *Message {
-	return NewTestMessage(name).
-		WithIsMap().
-		WithFields(key, value)
 }
 
 // NewTestService creates a service with defaults for testing.
@@ -749,6 +727,7 @@ func (f *Field) WithProto2Optional() *Field {
 
 // WithMap marks the field as a map.
 func (f *Field) WithMap() *Field {
+	f.Typez = TypezMap
 	f.Map = true
 	f.Repeated = false
 	f.Optional = false

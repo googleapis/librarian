@@ -205,7 +205,7 @@ func (c *codec) annotateField(field *api.Field, model *modelAnnotations) (*field
 		annotations.FieldType = annotations.BaseFieldType + "?"
 		annotations.Decoding = DecodingOptional
 	}
-	if field.Map || field.Typez == api.TypezMap {
+	if field.Typez == api.TypezMap {
 		if !annotations.IsStringKeyed() {
 			annotations.Decoding = DecodingMapCustomKey
 			annotations.Encoding = EncodingMapCustomKey
@@ -237,7 +237,7 @@ func (c *codec) annotateField(field *api.Field, model *modelAnnotations) (*field
 		if field.Typez == api.TypezBytes {
 			annotations.UrlSafeValue = true
 		}
-		if (field.Map || field.Typez == api.TypezMap) && annotations.ValueType == "Foundation.Data" {
+		if field.Typez == api.TypezMap && annotations.ValueType == "Foundation.Data" {
 			annotations.UrlSafeValue = true
 		}
 	}
@@ -245,7 +245,7 @@ func (c *codec) annotateField(field *api.Field, model *modelAnnotations) (*field
 	// For map fields, parts.Base is the full dictionary type `[K: V]`,
 	// (which is not a single primitive/scalar type) so PrimitiveFieldType remains empty
 	// and map entry components are inspected via KeyType, ValueType, and ValueField instead.
-	if !field.Map && field.Typez != api.TypezMap {
+	if field.Typez != api.TypezMap {
 		annotations.PrimitiveFieldType = parts.Base
 	}
 	deprecatedType, err := c.fieldTypeDeprecated(field)
@@ -260,7 +260,7 @@ func (c *codec) annotateField(field *api.Field, model *modelAnnotations) (*field
 // fieldTypeDeprecated reports whether the message or enum naming this field's
 // type is deprecated. For maps it inspects the value type.
 func (c *codec) fieldTypeDeprecated(field *api.Field) (bool, error) {
-	if field.Map || field.Typez == api.TypezMap {
+	if field.Typez == api.TypezMap {
 		mapType, err := lookupMap(c.Model, field)
 		if err != nil {
 			return false, err
@@ -285,7 +285,7 @@ func (c *codec) fieldTypeDeprecated(field *api.Field) (bool, error) {
 }
 
 func (c *codec) fieldPackage(field *api.Field) (string, error) {
-	if field.Map || field.Typez == api.TypezMap {
+	if field.Typez == api.TypezMap {
 		mapType, err := lookupMap(c.Model, field)
 		if err != nil {
 			return "", err

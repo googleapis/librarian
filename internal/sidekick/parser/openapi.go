@@ -459,7 +459,7 @@ func makeObjectField(model *api.API, packageName, messageName, name string, fiel
 				Optional:      true,
 			}, nil
 		}
-		message, err := makeMapMessage(model, messageName, name, schema)
+		mapEntry, err := makeMap(model, messageName, name, schema)
 		if err != nil {
 			return nil, err
 		}
@@ -469,8 +469,8 @@ func makeObjectField(model *api.API, packageName, messageName, name string, fiel
 			JSONName:      name, // OpenAPI field names are always camelCase
 			Documentation: field.Description,
 			Deprecated:    field.Deprecated != nil && *field.Deprecated,
-			Typez:         api.TypezMessage,
-			TypezID:       message.ID,
+			Typez:         api.TypezMap,
+			TypezID:       mapEntry.ID,
 			Optional:      false,
 			Repeated:      false,
 			Map:           true,
@@ -554,21 +554,14 @@ func makeObjectFieldAllOf(packageName, messageName, name string, field *base.Sch
 	return nil, fmt.Errorf("cannot build any AllOf schema for field %s.%s", messageName, name)
 }
 
-func makeMapMessage(model *api.API, messageName, name string, schema *base.Schema) (*api.Message, error) {
-	value_typez, value_id, err := scalarType(messageName, name, schema)
+func makeMap(model *api.API, messageName, name string, schema *base.Schema) (*api.Map, error) {
+	valueTypez, valueID, err := scalarType(messageName, name, schema)
 	if err != nil {
 		return nil, err
 	}
-	value := &api.Field{
-		Name:    "value",
-		ID:      value_id,
-		Typez:   value_typez,
-		TypezID: value_id,
-	}
-
-	id := fmt.Sprintf("$map<string, %s>", value.TypezID)
-	message := model.Message(id)
-	if message == nil {
+	id := fmt.Sprintf("$map<string, %s>", valueID)
+	mapEntry := model.Map(id)
+	if mapEntry == nil {
 		// The map was not found, insert the type.
 		key := &api.Field{
 			Name:    "key",
@@ -576,19 +569,21 @@ func makeMapMessage(model *api.API, messageName, name string, schema *base.Schem
 			Typez:   api.TypezString,
 			TypezID: "string",
 		}
-		placeholder := &api.Message{
-			Name:          id,
-			Documentation: id,
-			ID:            id,
-			IsMap:         true,
-			Fields:        []*api.Field{key, value},
-			Parent:        nil,
-			Package:       "$",
+		value := &api.Field{
+			Name:    "value",
+			ID:      valueID,
+			Typez:   valueTypez,
+			TypezID: valueID,
 		}
-		model.AddMessage(placeholder)
-		message = placeholder
+		placeholder := &api.Map{
+			ID:    id,
+			Key:   key,
+			Value: value,
+		}
+		model.AddMap(placeholder)
+		mapEntry = placeholder
 	}
-	return message, nil
+	return mapEntry, nil
 }
 
 func scalarType(messageName, name string, schema *base.Schema) (api.Typez, string, error) {

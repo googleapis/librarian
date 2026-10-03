@@ -49,9 +49,6 @@ func (c *codec) fieldTypeBase(field *api.Field) (*fieldTypeNames, error) {
 	case api.TypezMap:
 		return c.mapFieldTypeNames(field)
 	case api.TypezMessage:
-		if field.Map {
-			return c.mapFieldTypeNames(field)
-		}
 		m, err := lookupMessage(c.Model, field.TypezID)
 		if err != nil {
 			return nil, err

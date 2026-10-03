@@ -118,42 +118,10 @@ func TestHasNestedTypes(t *testing.T) {
 				WithMessages(api.NewTestMessage("Child")),
 			want: true,
 		},
-		{
-			input: api.NewTestMessage("WithMap").
-				WithMessages(api.NewTestMapMessage("Map", api.TypezString, api.TypezString)),
-			want: false,
-		},
 	} {
 		got := HasNestedTypes(test.input)
 		if got != test.want {
 			t.Errorf("mismatched result for HasNestedTypes on %v", test.input)
 		}
-	}
-}
-
-func TestFieldIsMap(t *testing.T) {
-	parent := api.NewTestMessage("ParentMessage")
-	mapMessage := api.NewTestMapMessageWithFields(
-		"SingularMapEntry",
-		api.NewTestField("key").WithType(api.TypezString),
-		api.NewTestField("value").WithMessageType(parent),
-	)
-	parent.WithMessages(mapMessage)
-
-	field0 := api.NewTestField("children").WithMessageType(mapMessage)
-	field1 := api.NewTestField("singular").WithType(api.TypezInt32)
-	field2 := api.NewTestField("singular").WithType(api.TypezMessage).WithTypezID("invalid")
-	parent.WithFields(field0, field1, field2)
-
-	model := api.NewTestAPI([]*api.Message{parent}, nil, nil)
-
-	if !FieldIsMap(field0, model) {
-		t.Errorf("expected FieldIsMap(field0) to be true")
-	}
-	if FieldIsMap(field1, model) {
-		t.Errorf("expected FieldIsMap(field1) to be false")
-	}
-	if FieldIsMap(field2, model) {
-		t.Errorf("expected FieldIsMap(field2) to be false")
 	}
 }

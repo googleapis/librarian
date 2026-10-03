@@ -700,12 +700,18 @@ func TestCalculateImports(t *testing.T) {
 }
 
 func TestAnnotateMessage_ToString(t *testing.T) {
+	mapType := api.NewTestMap("LabelsEntry", api.TypezString, api.TypezString)
+	withMapMsg := api.NewTestMessage("WithMap").
+		WithFields(
+			api.NewTestField("name").WithType(api.TypezString),
+			api.NewTestField("labels").WithMapType(mapType),
+		)
 	model := api.NewTestAPI(
 		[]*api.Message{sample.Secret(), sample.SecretVersion(), sample.Replication(),
-			sample.Automatic(), sample.CustomerManagedEncryption()},
+			sample.Automatic(), sample.CustomerManagedEncryption(), withMapMsg},
 		[]*api.Enum{sample.EnumState()},
 		nil,
-	)
+	).WithMaps(mapType)
 	annotate := newAnnotateModel(model)
 	annotate.annotateModel(map[string]string{})
 
@@ -713,11 +719,12 @@ func TestAnnotateMessage_ToString(t *testing.T) {
 		message *api.Message
 		want    int
 	}{
-		// Expect the number of fields less the number of message fields.
+		// Expect the number of fields less the number of message and map fields.
 		{message: sample.Secret(), want: 1},
 		{message: sample.SecretVersion(), want: 2},
 		{message: sample.Replication(), want: 0},
 		{message: sample.Automatic(), want: 0},
+		{message: withMapMsg, want: 1},
 	} {
 		t.Run(test.message.Name, func(t *testing.T) {
 			annotate.annotateMessage(test.message)
@@ -729,6 +736,30 @@ func TestAnnotateMessage_ToString(t *testing.T) {
 				t.Errorf("len(ToStringLines) = %d, want %d", len(got), test.want)
 			}
 		})
+	}
+}
+
+func TestAnnotateMessage_ToString_MapField(t *testing.T) {
+	mapType := api.NewTestMap("LabelsEntry", api.TypezString, api.TypezString)
+	msg := api.NewTestMessage("WithMapMessage").
+		WithFields(
+			api.NewTestField("name").WithType(api.TypezString),
+			api.NewTestField("description").WithType(api.TypezString).WithOptional(),
+			api.NewTestField("labels").WithMapType(mapType),
+		)
+	model := api.NewTestAPI([]*api.Message{msg}, nil, nil).WithMaps(mapType)
+	annotate := newAnnotateModel(model)
+	if err := annotate.annotateModel(requiredConfig); err != nil {
+		t.Fatal(err)
+	}
+
+	codec := msg.Codec.(*messageAnnotation)
+	want := []string{
+		"'name=$name',",
+		"if (description != null) 'description=$description',",
+	}
+	if diff := cmp.Diff(want, codec.ToStringLines); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
 

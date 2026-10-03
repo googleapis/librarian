@@ -61,7 +61,6 @@ type Message struct {
 	Parent *Message
 	// The Protobuf package this message belongs to.
 	Package string
-	IsMap   bool
 	// Indicates that this Message is returned by a standard
 	// List RPC and conforms to [AIP-4233](https://google.aip.dev/client-libraries/4233).
 	Pagination *PaginationInfo
