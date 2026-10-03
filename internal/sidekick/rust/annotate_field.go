@@ -77,7 +77,8 @@ type fieldAnnotations struct {
 	// in the group.
 	OtherFieldsInGroup []*api.Field
 	// FormattedResource contains information on how to format the resource name.
-	FormattedResource *FormattedResource
+	FormattedResource     *FormattedResource
+	GenerateSetterSamples bool
 }
 
 // FormattedResource contain the format string and the format arguments of a resource name.
@@ -199,19 +200,20 @@ func (c *codec) annotateField(field *api.Field, message *api.Message, model *api
 	}
 	fieldName := c.FieldName(field)
 	ann := &fieldAnnotations{
-		FieldName:          toSnake(fieldName),
-		SetterName:         toSnakeNoMangling(fieldName),
-		FQMessageName:      fqMessageName,
-		BranchName:         toPascal(fieldName),
-		ProstBranchName:    toProstPascal(field.Name),
-		DocLines:           docLines,
-		FieldType:          fieldType,
-		PrimitiveFieldType: primitiveFieldType,
-		AddQueryParameter:  c.addQueryParameter(field),
-		SerdeAs:            c.primitiveSerdeAs(field),
-		SkipIfIsDefault:    field.Typez != api.TypezString && field.Typez != api.TypezBytes,
-		IsWktValue:         field.Typez == api.TypezMessage && field.TypezID == ".google.protobuf.Value",
-		IsWktNullValue:     field.Typez == api.TypezEnum && field.TypezID == ".google.protobuf.NullValue",
+		FieldName:             toSnake(fieldName),
+		SetterName:            toSnakeNoMangling(fieldName),
+		FQMessageName:         fqMessageName,
+		BranchName:            toPascal(fieldName),
+		ProstBranchName:       toProstPascal(field.Name),
+		DocLines:              docLines,
+		FieldType:             fieldType,
+		PrimitiveFieldType:    primitiveFieldType,
+		AddQueryParameter:     c.addQueryParameter(field),
+		SerdeAs:               c.primitiveSerdeAs(field),
+		SkipIfIsDefault:       field.Typez != api.TypezString && field.Typez != api.TypezBytes,
+		IsWktValue:            field.Typez == api.TypezMessage && field.TypezID == ".google.protobuf.Value",
+		IsWktNullValue:        field.Typez == api.TypezEnum && field.TypezID == ".google.protobuf.NullValue",
+		GenerateSetterSamples: c.generateSetterSamples,
 	}
 	if field.Recursive || (field.Typez == api.TypezMessage && field.IsOneOf) {
 		ann.IsBoxed = true

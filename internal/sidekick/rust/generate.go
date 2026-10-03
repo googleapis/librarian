@@ -17,15 +17,17 @@ package rust
 import (
 	"context"
 	"embed"
-	"path/filepath"
 
 	"github.com/googleapis/librarian/internal/sidekick/api"
 	"github.com/googleapis/librarian/internal/sidekick/language"
 	"github.com/googleapis/librarian/internal/sidekick/parser"
 )
 
-//go:embed all:templates
-var templates embed.FS
+var (
+	//go:embed all:templates
+	templates       embed.FS
+	parsedTemplates = language.MustParseTemplates(templates)
+)
 
 // Generate generates Rust code from the model.
 func Generate(ctx context.Context, model *api.API, outdir string, cfg *parser.ModelConfig) error {
@@ -38,9 +40,8 @@ func Generate(ctx context.Context, model *api.API, outdir string, cfg *parser.Mo
 	if err != nil {
 		return err
 	}
-	provider := templatesProvider()
 	generatedFiles := c.generatedFiles(annotations.HasServices())
-	return language.GenerateFromModel(outdir, model, provider, generatedFiles)
+	return parsedTemplates.GenerateFromModel(outdir, model, generatedFiles)
 }
 
 // GenerateStorage generates Rust code for the storage service.
@@ -66,9 +67,8 @@ func GenerateStorage(ctx context.Context, outdir string, storageModel *api.API, 
 			Control: controlModel,
 		},
 	}
-	provider := templatesProvider()
 	generatedFiles := language.WalkTemplatesDir(templates, "templates/storage")
-	return language.GenerateFromModel(outdir, model, provider, generatedFiles)
+	return parsedTemplates.GenerateFromModel(outdir, model, generatedFiles)
 }
 
 type storageAnnotations struct {
@@ -137,9 +137,8 @@ func GenerateBigQueryBuilder(ctx context.Context, outdir string, model *api.API,
 		},
 	}
 
-	provider := templatesProvider()
 	generatedFiles := language.WalkTemplatesDir(templates, "templates/bigquery")
-	return language.GenerateFromModel(outdir, model, provider, generatedFiles)
+	return parsedTemplates.GenerateFromModel(outdir, model, generatedFiles)
 }
 
 type bigQueryAnnotations struct {
@@ -151,16 +150,6 @@ type bigQueryAnnotations struct {
 	QueryMetadataMsg            *api.Message
 	CompleteQueryMetadataFields []*fieldGroup
 	CompleteQueryMetadataMsg    *api.Message
-}
-
-func templatesProvider() language.TemplateProvider {
-	return func(name string) (string, error) {
-		contents, err := templates.ReadFile(filepath.ToSlash(name))
-		if err != nil {
-			return "", err
-		}
-		return string(contents), nil
-	}
 }
 
 func (c *codec) generatedFiles(hasServices bool) []language.GeneratedFile {
