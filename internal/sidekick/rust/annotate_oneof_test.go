@@ -24,14 +24,13 @@ import (
 )
 
 func TestOneOfAnnotations(t *testing.T) {
-	mapMessage := api.NewTestMapMessage("$Map", api.TypezInt32, api.TypezFloat).
-		WithPackage("test")
+	mapType := api.NewTestMap("$Map", api.TypezInt32, api.TypezFloat)
 
 	doubleValue := api.NewTestMessage("DoubleValue").WithPackage("google.protobuf")
 
 	singular := api.NewTestField("oneof_field").WithType(api.TypezString)
 	repeated := api.NewTestField("oneof_field_repeated").WithType(api.TypezString).WithRepeated()
-	mapField := api.NewTestField("oneof_field_map").WithMessageType(mapMessage)
+	mapField := api.NewTestField("oneof_field_map").WithMapType(mapType)
 	integerField := api.NewTestField("oneof_field_integer").WithType(api.TypezInt64)
 	boxedField := api.NewTestField("oneof_field_boxed").
 		WithMessageType(doubleValue).
@@ -42,7 +41,7 @@ func TestOneOfAnnotations(t *testing.T) {
 		WithFields(singular, repeated, mapField, integerField, boxedField)
 	message := api.NewTestMessage("Message").
 		WithOneOfs(group)
-	model := api.NewTestAPI([]*api.Message{message, mapMessage}, nil, nil)
+	model := api.NewTestAPI([]*api.Message{message}, nil, nil).WithMaps(mapType)
 	api.CrossReference(model)
 	codec := createRustCodec()
 	annotateModel(model, codec)
@@ -113,10 +112,9 @@ func TestOneOfAnnotations(t *testing.T) {
 		PrimitiveFieldType: "std::collections::HashMap<i32,f32>",
 		AddQueryParameter:  `let builder = req.oneof_field_map().map(|p| serde_json::to_value(p).map_err(Error::ser) ).transpose()?.into_iter().fold(builder, |builder, p| { use gaxi::query_parameter::QueryParameter; p.add(builder, "oneofFieldMap") });`,
 		KeyType:            "i32",
-		KeyField:           mapMessage.Fields[0],
+		KeyField:           mapType.Key,
 		ValueType:          "f32",
-		ValueField:         mapMessage.Fields[1],
-		IsBoxed:            true,
+		ValueField:         mapType.Value,
 		SerdeAs:            "std::collections::HashMap<wkt::internal::I32, wkt::internal::F32>",
 		SkipIfIsDefault:    true,
 		OtherFieldsInGroup: []*api.Field{singular, repeated, integerField, boxedField},

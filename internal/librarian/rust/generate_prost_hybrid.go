@@ -172,6 +172,38 @@ func filterModelToTypes(model *api.API, rootTypeIDs []string, allowGrpcAnyFields
 					unsupportedAnyFields = append(unsupportedAnyFields, fieldPath)
 					continue
 				}
+				if f.Map || f.Typez == api.TypezMap {
+					mapType := f.MapType
+					if mapType == nil {
+						mapType = model.Map(f.TypezID)
+					}
+					if mapType != nil {
+						for _, sub := range []*api.Field{mapType.Key, mapType.Value} {
+							if sub == nil {
+								continue
+							}
+							subPath := fieldPath + "." + sub.Name
+							if isAnyType(sub.TypezID) {
+								if matchesAllowedAnyField(sub.ID, allowGrpcAnyFields) || matchesAllowedAnyField(subPath, allowGrpcAnyFields) {
+									sub.SkipProtoConversion = true
+									continue
+								}
+								unsupportedAnyFields = append(unsupportedAnyFields, subPath)
+								continue
+							}
+							if sub.Typez == api.TypezMessage && sub.TypezID != "" {
+								queue = append(queue, typeItem{
+									id:   sub.TypezID,
+									path: subPath,
+								})
+							}
+							if sub.Typez == api.TypezEnum && sub.TypezID != "" {
+								enqueueEnum(model.Enum(sub.TypezID), subPath)
+							}
+						}
+					}
+					continue
+				}
 				if f.Typez == api.TypezMessage && f.TypezID != "" {
 					queue = append(queue, typeItem{
 						id:   f.TypezID,
@@ -191,6 +223,38 @@ func filterModelToTypes(model *api.API, rootTypeIDs []string, allowGrpcAnyFields
 							continue
 						}
 						unsupportedAnyFields = append(unsupportedAnyFields, fieldPath)
+						continue
+					}
+					if f.Map || f.Typez == api.TypezMap {
+						mapType := f.MapType
+						if mapType == nil {
+							mapType = model.Map(f.TypezID)
+						}
+						if mapType != nil {
+							for _, sub := range []*api.Field{mapType.Key, mapType.Value} {
+								if sub == nil {
+									continue
+								}
+								subPath := fieldPath + "." + sub.Name
+								if isAnyType(sub.TypezID) {
+									if matchesAllowedAnyField(sub.ID, allowGrpcAnyFields) || matchesAllowedAnyField(subPath, allowGrpcAnyFields) {
+										sub.SkipProtoConversion = true
+										continue
+									}
+									unsupportedAnyFields = append(unsupportedAnyFields, subPath)
+									continue
+								}
+								if sub.Typez == api.TypezMessage && sub.TypezID != "" {
+									queue = append(queue, typeItem{
+										id:   sub.TypezID,
+										path: subPath,
+									})
+								}
+								if sub.Typez == api.TypezEnum && sub.TypezID != "" {
+									enqueueEnum(model.Enum(sub.TypezID), subPath)
+								}
+							}
+						}
 						continue
 					}
 					if f.Typez == api.TypezMessage && f.TypezID != "" {
@@ -234,7 +298,7 @@ func filterModelToTypes(model *api.API, rootTypeIDs []string, allowGrpcAnyFields
 	// iteration order is randomized by the Go runtime.
 	var externalMessages []*api.Message
 	for m := range model.AllMessages() {
-		if m.ID != "" && reachableMsgs[m.ID] && !isWKT(m.ID) && m.ID != ".google.rpc.Status" && !m.IsMap && m.Parent == nil {
+		if m.ID != "" && reachableMsgs[m.ID] && !isWKT(m.ID) && m.ID != ".google.rpc.Status" && m.Parent == nil {
 			if m.Package != model.PackageName && m.Package != api.ReservedPackageName {
 				externalMessages = append(externalMessages, m)
 			}
@@ -284,13 +348,16 @@ func filterModelToTypes(model *api.API, rootTypeIDs []string, allowGrpcAnyFields
 	for e := range model.AllEnums() {
 		hybridModel.AddEnum(e)
 	}
+	for m := range model.AllMaps() {
+		hybridModel.AddMap(m)
+	}
 	for _, r := range hybridModel.ResourceDefinitions {
 		hybridModel.AddResource(r)
 	}
 
 	var unusedTypes []string
 	for m := range model.AllMessages() {
-		if m.ID != "" && !isWKT(m.ID) && !reachableMsgs[m.ID] {
+		if m.ID != "" && !isWKT(m.ID) && !m.IsMap && !reachableMsgs[m.ID] {
 			unusedTypes = append(unusedTypes, m.ID)
 		}
 	}

@@ -683,8 +683,7 @@ func TestMethodInOut(t *testing.T) {
 
 func rustFieldTypesCases() *api.API {
 	target := api.NewTestMessage("Target").WithPackage("")
-	mapMessage := api.NewTestMapMessage("$MapMessage", api.TypezInt32, api.TypezInt32).
-		WithPackage("")
+	mapType := api.NewTestMap("$MapMessage", api.TypezInt32, api.TypezInt32)
 
 	message := api.NewTestMessage("Message").WithPackage("")
 	timestamp := api.NewTestMessage("Timestamp").WithPackage("google.protobuf")
@@ -708,9 +707,9 @@ func rustFieldTypesCases() *api.API {
 			WithRecursive(),
 		api.NewTestField("f_timestamp").WithMessageType(timestamp).WithOptional(),
 		api.NewTestField("f_timestamp_repeated").WithMessageType(timestamp).WithRepeated(),
-		api.NewTestField("f_map").WithMessageType(mapMessage),
+		api.NewTestField("f_map").WithMapType(mapType),
 	)
-	return api.NewTestAPI([]*api.Message{target, message, mapMessage}, nil, nil)
+	return api.NewTestAPI([]*api.Message{target, message}, nil, nil).WithMaps(mapType)
 }
 
 func TestFieldType(t *testing.T) {
@@ -847,15 +846,15 @@ func TestFieldMapTypeValues(t *testing.T) {
 		},
 	} {
 		t.Run(test.want, func(t *testing.T) {
-			mapThing := api.NewTestMapMessageWithFields(
+			mapThing := api.NewTestMapWithFields(
 				"$MapThing",
 				api.NewTestField("key").WithType(api.TypezInt32),
 				test.value,
 			)
 
-			field := api.NewTestField("indexed").WithMessageType(mapThing)
+			field := api.NewTestField("indexed").WithMapType(mapThing)
 			message := api.NewTestMessage("Message").WithFields(field)
-			model := api.NewTestAPI([]*api.Message{message, otherMessage, mapThing}, nil, nil)
+			model := api.NewTestAPI([]*api.Message{message, otherMessage}, nil, nil).WithMaps(mapThing)
 			api.LabelRecursiveFields(model)
 			c := createRustCodec()
 			got, err := c.fieldType(field, model, false, model.PackageName)
@@ -889,16 +888,16 @@ func TestFieldMapTypeKey(t *testing.T) {
 			api.NewTestField("key").WithEnumType(enum),
 		},
 	} {
-		mapThing := api.NewTestMapMessageWithFields(
+		mapThing := api.NewTestMapWithFields(
 			"$MapThing",
 			test.key,
 			api.NewTestField("value").WithType(api.TypezInt64),
 		)
 
-		field := api.NewTestField("indexed").WithMessageType(mapThing)
+		field := api.NewTestField("indexed").WithMapType(mapThing)
 		message := api.NewTestMessage("Message").WithFields(field)
 
-		model := api.NewTestAPI([]*api.Message{message, mapThing}, []*api.Enum{enum}, nil)
+		model := api.NewTestAPI([]*api.Message{message}, []*api.Enum{enum}, nil).WithMaps(mapThing)
 		api.LabelRecursiveFields(model)
 		c := createRustCodec()
 		got, err := c.fieldType(field, model, false, model.PackageName)

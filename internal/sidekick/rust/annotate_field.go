@@ -215,43 +215,18 @@ func (c *codec) annotateField(field *api.Field, message *api.Message, model *api
 		IsWktNullValue:        field.Typez == api.TypezEnum && field.TypezID == ".google.protobuf.NullValue",
 		GenerateSetterSamples: c.generateSetterSamples,
 	}
-	if field.Recursive || (field.Typez == api.TypezMessage && field.IsOneOf) {
+	if field.Recursive || (field.Typez == api.TypezMessage && !field.Map && field.IsOneOf) {
 		ann.IsBoxed = true
 	}
 	ann.MapToBoxed = mapToBoxed(field, message, model)
 	field.Codec = ann
-	if field.Typez == api.TypezMessage {
-		if msg := model.Message(field.TypezID); msg != nil && msg.IsMap {
-			if len(msg.Fields) != 2 {
-				return nil, fmt.Errorf("expected exactly two fields for field's map message (%q), fieldId=%s", field.TypezID, field.ID)
-			}
-			keyType, err := c.mapType(msg.Fields[0], model, model.PackageName)
-			if err != nil {
-				return nil, err
-			}
-			valueType, err := c.mapType(msg.Fields[1], model, model.PackageName)
-			if err != nil {
-				return nil, err
-			}
-			ann.KeyField = msg.Fields[0]
-			ann.KeyType = keyType
-			ann.ValueField = msg.Fields[1]
-			ann.ValueType = valueType
-			key := c.mapKeySerdeAs(msg.Fields[0])
-			value := c.mapValueSerdeAs(msg.Fields[1])
-			if key != "" || value != "" {
-				if key == "" {
-					key = "serde_with::Same"
-				}
-				if value == "" {
-					value = "serde_with::Same"
-				}
-				ann.SerdeAs = fmt.Sprintf("std::collections::HashMap<%s, %s>", key, value)
-			}
-		} else {
-			ann.SerdeAs = c.messageFieldSerdeAs(field)
-			ann.MessageType = field.MessageType
+	if field.Map || field.Typez == api.TypezMap {
+		if err := c.annotateMapField(field, ann, message, model); err != nil {
+			return nil, err
 		}
+	} else if field.Typez == api.TypezMessage {
+		ann.SerdeAs = c.messageFieldSerdeAs(field)
+		ann.MessageType = field.MessageType
 	}
 	if field.Group != nil {
 		ann.OtherFieldsInGroup = language.FilterSlice(field.Group.Fields, func(f *api.Field) bool { return field != f })
@@ -314,6 +289,40 @@ func (c *codec) annotateField(field *api.Field, message *api.Message, model *api
 	}
 
 	return ann, nil
+}
+
+func (c *codec) annotateMapField(field *api.Field, ann *fieldAnnotations, m *api.Message, model *api.API) error {
+	mapType := field.MapType
+	if mapType == nil {
+		mapType = model.Map(field.TypezID)
+	}
+	if mapType == nil {
+		return fmt.Errorf("missing map type for field %s (%s)", field.ID, field.TypezID)
+	}
+	keyAnn, err := c.annotateField(mapType.Key, m, model)
+	if err != nil {
+		return err
+	}
+	valAnn, err := c.annotateField(mapType.Value, m, model)
+	if err != nil {
+		return err
+	}
+	ann.KeyField = mapType.Key
+	ann.KeyType = keyAnn.PrimitiveFieldType
+	ann.ValueField = mapType.Value
+	ann.ValueType = valAnn.PrimitiveFieldType
+	key := c.mapKeySerdeAs(mapType.Key)
+	value := c.mapValueSerdeAs(mapType.Value)
+	if key != "" || value != "" {
+		if key == "" {
+			key = "serde_with::Same"
+		}
+		if value == "" {
+			value = "serde_with::Same"
+		}
+		ann.SerdeAs = fmt.Sprintf("std::collections::HashMap<%s, %s>", key, value)
+	}
+	return nil
 }
 
 func mapToBoxed(field *api.Field, message *api.Message, model *api.API) bool {
