@@ -22,9 +22,6 @@ limitations under the License.
 {{ if .Codec.PerServiceFeatures }}
 #[cfg(any({{- range .Codec.Services }}feature = "{{ .Codec.FeatureName }}",{{- end }}))]
 {{- end }}
-{{- if .Codec.HasBidiStreaming }}
-#[allow(unused_imports)]
-{{- end }}
 use crate::Result;
 #[allow(unused_imports)]
 use crate::Error;

@@ -148,16 +148,6 @@ func (m *modelAnnotations) HasHttp() bool {
 	})
 }
 
-// HasBidiStreaming returns true if any service in the model has at least one generated bidirectional streaming method.
-func (m *modelAnnotations) HasBidiStreaming() bool {
-	return slices.ContainsFunc(m.Services, func(s *api.Service) bool {
-		if ann, ok := s.Codec.(*serviceAnnotations); ok {
-			return ann.HasBidiStreaming()
-		}
-		return false
-	})
-}
-
 // IsGaxiCrate returns true if we handle references to `gaxi` traits from within the `gaxi` crate, by
 // injecting some ad-hoc code.
 func (m *modelAnnotations) IsGaxiCrate() bool {
