@@ -1,0 +1,92 @@
+{{/*
+Copyright 2026 Google LLC
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    https://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/}}
+// Copyright {{ .Codec.Model.Codec.CopyrightYear }} Google LLC
+{{- range .Codec.Model.Codec.BoilerPlate }}
+//{{ . }}
+{{- end }}
+{{- "\n" }}
+{{- range .Codec.Model.Codec.DisabledRustdocWarnings }}
+#![allow(rustdoc::{{ . }})]
+{{- end }}
+{{- range .Codec.Model.Codec.DisabledClippyWarnings }}
+#![allow(clippy::{{ . }})]
+{{- end }}
+{{- with .Codec.QueryBuilderRequestMsg }}
+{{- include "templates/common/message" . }}
+
+mod debug {
+    {{- include "templates/common/model/debug/message" . | indent 4 }}
+}
+{{- end }}
+
+impl {{ .Codec.QueryBuilderRequestMsg.Codec.Name }} {
+    {{- /* Clippy doesn't like this expression since false is not needed for the bool expression */}}
+    #[allow(clippy::nonminimal_bool)]
+    pub(crate) fn force_job_path(&self) -> bool {
+        false
+        {{- range .Codec.QueryBuilderFields }}
+        {{- if .JobOnly }}
+        || !wkt::internal::is_default(&self.{{ .FieldName }})
+        {{- end }}
+        {{- end }}
+    }
+}
+
+impl std::convert::From<{{ .Codec.QueryBuilderRequestMsg.Codec.Name }}> for google_cloud_bigquery_v2::model::QueryRequest {
+    fn from(req: {{ .Codec.QueryBuilderRequestMsg.Codec.Name }}) -> Self {
+        let mut out = Self::default();
+        {{- range .Codec.QueryBuilderFields }}
+        {{- if .QueryRequest }}
+        out.{{ .GapicFieldName }} = req.{{ .FieldName }};
+        {{- end }}
+        {{- end }}
+        out
+    }
+}
+
+impl std::convert::From<{{ .Codec.QueryBuilderRequestMsg.Codec.Name }}> for google_cloud_bigquery_v2::model::JobConfigurationQuery {
+    fn from(req: {{ .Codec.QueryBuilderRequestMsg.Codec.Name }}) -> Self {
+        let mut out = Self::default();
+        {{- range .Codec.QueryBuilderFields }}
+        {{- if .JobConfigurationQuery }}
+        out.{{ .GapicFieldName }} = req.{{ .FieldName }};
+        {{- end }}
+        {{- end }}
+        out
+    }
+}
+
+impl std::convert::From<{{ .Codec.QueryBuilderRequestMsg.Codec.Name }}> for google_cloud_bigquery_v2::model::JobConfiguration {
+    {{- /* The `dry_run` field is a `bool` in `QueryRequest`, but a `wkt::BoolValue` in `JobConfiguration`. We use `into()` to normalize these. */}}
+    {{- /* Clippy complains about the other fields that don't require this conversion, hence this allowance. */}}
+    #[allow(clippy::useless_conversion)]
+    fn from(req: {{ .Codec.QueryBuilderRequestMsg.Codec.Name }}) -> Self {
+        let mut query = google_cloud_bigquery_v2::model::JobConfigurationQuery::default();
+        {{- range .Codec.QueryBuilderFields }}
+        {{- if .JobConfigurationQuery }}
+        query.{{ .GapicFieldName }} = req.{{ .FieldName }};
+        {{- end }}
+        {{- end }}
+        let mut out = Self::default();
+        out.query = Some(query);
+        {{- range .Codec.QueryBuilderFields }}
+        {{- if .JobConfiguration }}
+        out.{{ .GapicFieldName }} = req.{{ .FieldName }}.into();
+        {{- end }}
+        {{- end }}
+        out
+    }
+}

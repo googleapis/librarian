@@ -1,0 +1,51 @@
+{{/*
+Copyright 2025 Google LLC
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    https://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/}}
+{{- /* Serialize message fields that do not require transformations. */ -}}
+{{- if .Singular }}
+{{- /* First deal with all the fields that are not part of a oneof */ -}}
+{{- if not .IsOneOf }}
+{{- if .Optional }}
+if self.{{ .Codec.FieldName }}.is_some() {
+    state.serialize_entry("{{ .JSONName }}", &self.{{ .Codec.FieldName }})?;
+}
+{{- else }}
+{{- if .Codec.SkipIfIsEmpty }}
+if !self.{{ .Codec.FieldName }}.is_empty() {
+    state.serialize_entry("{{ .JSONName }}", &self.{{ .Codec.FieldName }})?;
+}
+{{- else if .Codec.SkipIfIsDefault }}
+if !wkt::internal::is_default(&self.{{ .Codec.FieldName }}) {
+    state.serialize_entry("{{ .JSONName }}", &self.{{ .Codec.FieldName }})?;
+}
+{{- end }}
+{{- end }}
+{{- else }}
+if let Some(value) = self.{{ .Codec.FieldName }}() {
+    state.serialize_entry("{{ .JSONName }}", value)?;
+}
+{{- end }}
+{{- end }}
+{{- /* repeated and map fields are never part of a oneof */ -}}
+{{- if .Repeated }}
+if !self.{{ .Codec.FieldName }}.is_empty() {
+    state.serialize_entry("{{ .JSONName }}", &self.{{ .Codec.FieldName }})?;
+}
+{{- end }}
+{{- if .Map }}
+if !self.{{ .Codec.FieldName }}.is_empty() {
+    state.serialize_entry("{{ .JSONName }}", &self.{{ .Codec.FieldName }})?;
+}
+{{- end }}

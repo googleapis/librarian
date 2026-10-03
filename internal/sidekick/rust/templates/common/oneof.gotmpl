@@ -1,0 +1,48 @@
+{{/*
+Copyright 2024 Google LLC
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    https://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/}}
+{{- "\n" }}
+{{ range .Codec.DocLines }}
+{{ . }}
+{{- else }}
+#[allow(missing_docs)]
+{{- end }}
+{{- include "templates/common/feature_gate" . }}
+#[derive(Clone, Debug, PartialEq)]
+#[non_exhaustive]
+pub enum {{ .Codec.EnumName }} {
+    {{- range .Fields }}
+    {{- range .Codec.DocLines }}
+    {{ . }}
+    {{- else }}
+    #[allow(missing_docs)]
+    {{- end }}
+    {{- if .Deprecated }}
+    #[deprecated]
+    {{- end }}
+    {{ .Codec.BranchName }}({{ .Codec.FieldType }}),
+    {{- end }}
+}
+{{- if .Codec.GenerateBranchConstructors }}
+
+impl {{ .Codec.EnumName }} {
+    {{- range .Fields }}
+    /// Initializes the enum to the [{{ .Codec.BranchName }}](Self::{{ .Codec.BranchName }}) branch.
+    pub fn from_{{ .Codec.SetterName }}(value: impl std::convert::Into<{{ .Codec.FieldType }}>) -> Self {
+        Self::{{ .Codec.BranchName }}(value.into())
+    }
+    {{- end }}
+}
+{{- end }}
