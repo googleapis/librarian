@@ -64,6 +64,32 @@ func FindDependencies(model *API, ids []string) (map[string]bool, error) {
 		includedIDs[id] = true
 	}
 
+	addMapDependencies := func(m *Map) {
+		if m == nil {
+			return
+		}
+		for _, subField := range []*Field{m.Key, m.Value} {
+			if subField != nil && (subField.Typez == TypezEnum || subField.Typez == TypezMessage) {
+				add(subField.TypezID)
+			}
+		}
+	}
+
+	addFieldDependencies := func(fields []*Field) {
+		for _, field := range fields {
+			if field.Typez == TypezEnum || field.Typez == TypezMessage {
+				add(field.TypezID)
+			}
+			if field.Typez == TypezMap {
+				mapType := field.MapType
+				if mapType == nil {
+					mapType = model.Map(field.TypezID)
+				}
+				addMapDependencies(mapType)
+			}
+		}
+	}
+
 	// Seed with the given ids
 	for _, id := range ids {
 		add(id)
@@ -93,15 +119,16 @@ func FindDependencies(model *API, ids []string) (map[string]bool, error) {
 		}
 
 		if message := model.Message(id); message != nil {
-			for _, field := range message.Fields {
-				if field.Typez == TypezEnum || field.Typez == TypezMessage {
-					add(field.TypezID)
-				}
-			}
+			addFieldDependencies(message.Fields)
 			continue
 		}
 
 		if model.Enum(id) != nil {
+			continue
+		}
+
+		if m := model.Map(id); m != nil {
+			addMapDependencies(m)
 			continue
 		}
 
@@ -129,11 +156,7 @@ func FindDependencies(model *API, ids []string) (map[string]bool, error) {
 			}
 			// In the current definition of APIState, a message must
 			// includes all of its fields.
-			for _, field := range message.Fields {
-				if field.Typez == TypezEnum || field.Typez == TypezMessage {
-					add(field.TypezID)
-				}
-			}
+			addFieldDependencies(message.Fields)
 			continue
 		}
 
@@ -141,6 +164,10 @@ func FindDependencies(model *API, ids []string) (map[string]bool, error) {
 			if enum.Parent != nil {
 				add(enum.Parent.ID)
 			}
+			continue
+		}
+
+		if model.Map(id) != nil {
 			continue
 		}
 	}
