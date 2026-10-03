@@ -20,13 +20,20 @@ import (
 	"encoding/xml"
 	"errors"
 	"fmt"
+	"log/slog"
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/filesystem"
+)
+
+const (
+	maxMvnAttempts    = 3
+	defaultMvnBackoff = 30 * time.Second
 )
 
 var (
@@ -66,7 +73,7 @@ func Install(ctx context.Context, tools []*config.MavenTool, binDir, libDir stri
 // in the bin folder pointing directly to that library file.
 func installExternalMavenTool(ctx context.Context, mvnTool *config.MavenTool, binDir, libDir string) error {
 	artifact, ext := getM2ArtifactSpec(mvnTool)
-	if err := downloadM2Artifact(ctx, artifact, binDir); err != nil {
+	if err := downloadM2Artifact(ctx, artifact, binDir, defaultMvnBackoff); err != nil {
 		return err
 	}
 	artifactPath, err := resolveM2ArtifactPath(mvnTool, ext)
@@ -150,15 +157,56 @@ func getM2ArtifactSpec(mvnTool *config.MavenTool) (string, string) {
 }
 
 // downloadM2Artifact executes mvn dependency:get to download the target artifact.
-func downloadM2Artifact(ctx context.Context, artifact, workDir string) error {
-	args := []string{
-		"dependency:get",
-		"-Dartifact=" + artifact,
+// It retries up to maxMvnAttempts times with exponential backoff on failure.
+func downloadM2Artifact(ctx context.Context, artifact, workDir string, initialBackoff time.Duration) error {
+	var err error
+	backoff := initialBackoff
+	for attempt := range maxMvnAttempts {
+		if attempt > 0 {
+			slog.Warn("failed to download maven artifact, retrying",
+				"artifact", artifact,
+				"attempt", attempt,
+				"backoff", backoff,
+				"error", err,
+			)
+			if waitErr := backoffWait(ctx, backoff); waitErr != nil {
+				return waitErr
+			}
+			backoff *= 2
+		}
+
+		args := []string{
+			"dependency:get",
+			"-Dartifact=" + artifact,
+		}
+		// On retries, pass -U to force Maven to re-query the remote repo
+		// and bypass any cached failure markers (.lastUpdated).
+		if attempt > 0 {
+			args = append(args, "-U")
+		}
+
+		if err = command.RunStreamingInDir(ctx, workDir, "mvn", args...); err == nil {
+			return nil
+		}
+
+		if ctx.Err() != nil {
+			return ctx.Err()
+		}
 	}
-	if err := command.RunStreamingInDir(ctx, workDir, "mvn", args...); err != nil {
-		return fmt.Errorf("failed to download artifact %s: %w", artifact, err)
+
+	return fmt.Errorf("failed to download artifact %s after %d attempts: %w", artifact, maxMvnAttempts, err)
+}
+
+// backoffWait waits for d or until ctx is canceled.
+func backoffWait(ctx context.Context, d time.Duration) error {
+	timer := time.NewTimer(d)
+	defer timer.Stop()
+	select {
+	case <-timer.C:
+		return nil
+	case <-ctx.Done():
+		return ctx.Err()
 	}
-	return nil
 }
 
 // resolveM2ArtifactPath returns the absolute path to the downloaded artifact in the local .m2 repository.
