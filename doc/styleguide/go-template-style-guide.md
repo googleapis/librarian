@@ -112,18 +112,21 @@ producing trailing whitespace that fails linters and git hooks.
 
 ### 3. Partial Inclusion and Indentation
 
-When calling partial templates, explicitly pipe the output through the `indent`
-helper:
+When calling partial templates inside indented blocks, explicitly pipe the
+output through the `indent` helper:
 
 ```gotmpl
     {{- include "templates/common/method_signature" . | indent 4 }}
 ```
 
-- Prefer explicit `| indent N` over implicit or "magic" indentation inference.
-  Explicit indentation makes the emitted column depth obvious to template
-  readers and is robust across whitespace trimming flags.
-- When nesting partials within indented blocks, increase the indent accordingly
-  (e.g., 4 spaces for class body, 8 spaces for method body).
+- When including partials at column 0 (e.g., top-level file headers, licenses,
+  or top-level documentation sections), piping to `indent` is not required:
+  `{{- include "templates/partials/prologue-md" . }}`.
+- Prefer explicit `| indent N` over implicit or "magic" indentation inference
+  when indenting. Explicit indentation makes the emitted column depth obvious
+  to template readers and is robust across whitespace trimming flags.
+- When nesting partials within indented blocks, increase the indent
+  accordingly (e.g., 4 spaces for class body, 8 spaces for method body).
 
 ---
 

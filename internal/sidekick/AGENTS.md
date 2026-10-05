@@ -113,9 +113,11 @@ Key rules:
    is indented.
 2. **Emitting Blank Lines:** Use `{{- "\n" }}` aligned with the surrounding
    block to emit a blank line without leaking trailing spaces into the output.
-3. **Partial Indentation:** When including partials, explicitly pipe through
-   `| indent N`
-   (e.g., `{{- include "templates/common/body" . | indent 4 }}`).
+3. **Partial Indentation:** When including partials inside indented blocks,
+   pipe through `| indent N`
+   (e.g., `{{- include "templates/common/body" . | indent 4 }}`). Partials
+   at column 0 (e.g., top-level file includes) do not require piping to
+   `indent`.
 4. **Spacing:** Include spaces inside delimiters: `{{- foo }}`, never
    `{{-foo}}`.
 5. **Comments & Headers:** Use `{{/* ... */}}` for template comments and file
