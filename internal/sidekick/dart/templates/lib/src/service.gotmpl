@@ -1,4 +1,4 @@
-{{!
+{{/*
 Copyright 2025 Google LLC
 
 Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,21 +12,20 @@ distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
-}}
-
-{{#Codec.DocLines}}
-{{{.}}}
-{{/Codec.DocLines}}
-final class {{Codec.Name}} {
-  static const _defaultHost = '{{DefaultHost}}';
+*/}}
+{{- range .Codec.DocLines }}
+{{ . }}
+{{- end }}
+final class {{ .Codec.Name }} {
+  static const _defaultHost = '{{ .DefaultHost }}';
   final Uri _endPoint;
 
   final ServiceClient _client;
 
-  /// Creates a `{{Codec.Name}}` using [client] for transport.
+  /// Creates a `{{ .Codec.Name }}` using [client] for transport.
   ///
   /// The provided [http.Client] must be configured to provide whatever
-  /// authentication is required by `{{Codec.Name}}`. You can do that using
+  /// authentication is required by `{{ .Codec.Name }}`. You can do that using
   /// [`package:googleapis_auth`](https://pub.dev/packages/googleapis_auth).
   ///
   /// If [endPoint] is provided then its `scheme`, `host`, and `port` are
@@ -37,7 +36,7 @@ final class {{Codec.Name}} {
   /// If [gcclVersion] is set then `gccl/<version>` will be included in the
   /// `x-google-api-client` header. This argument is only meant for use by
   /// hand-written official Google Cloud API clients.
-  {{Codec.Name}}({required http.Client client, Uri? endPoint, String? gcclVersion})
+  {{ .Codec.Name }}({required http.Client client, Uri? endPoint, String? gcclVersion})
       : _client = ServiceClient(client: client, gapicVersion: packageVersion, gcclVersion: gcclVersion),
         _endPoint =
             endPoint == null
@@ -48,26 +47,27 @@ final class {{Codec.Name}} {
                     port: endPoint.port,
                   );
 
-  /// Creates a `{{Codec.Name}}` that does authentication through an API key.
+  /// Creates a `{{ .Codec.Name }}` that does authentication through an API key.
   ///
   /// If called without arguments, the API key is taken from these environment
   /// variables:
   ///
-{{#Model.Codec.ApiKeyEnvironmentVariables}}
-  /// - `{{{.}}}`
-{{/Model.Codec.ApiKeyEnvironmentVariables}}
+  {{- range .Model.Codec.ApiKeyEnvironmentVariables }}
+  /// - `{{ . }}`
+  {{- end }}
   ///
   /// Throws [ConfigurationException] if called without arguments and none of
   /// the above environment variables are set. On the web,
   /// always throws [ConfigurationException] if called without arguments.
   ///
   /// See [API Keys Overview](https://cloud.google.com/api-keys/docs/overview).
-  factory {{Codec.Name}}.fromApiKey([String? apiKey]) =>
-    {{Codec.Name}}(client: httpClientFromApiKey(apiKey, _apiKeys));
+  factory {{ .Codec.Name }}.fromApiKey([String? apiKey]) =>
+    {{ .Codec.Name }}(client: httpClientFromApiKey(apiKey, _apiKeys));
 
-  {{#Codec.Methods}}
-  {{> method}}
-  {{/Codec.Methods}}
+  {{- range .Codec.Methods }}
+  {{- "\n" }}
+  {{- include "templates/lib/src/method" . | indent 2 }}
+  {{- end }}
 
   /// Closes the client and cleans up any resources associated with it.
   ///

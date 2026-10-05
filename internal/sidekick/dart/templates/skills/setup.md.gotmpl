@@ -1,16 +1,31 @@
+{{/*
+Copyright 2026 Google LLC
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    https://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/}}
 ---
-name: {{Codec.PackageSkillName}}-setup
+name: {{ .Codec.PackageSkillName }}-setup
 description: >-
   Use this skill to help the developer get started with
-  package:{{Codec.PackageName}}
+  package:{{ .Codec.PackageName }}
 ---
 
-## Getting Started with package:{{Codec.PackageName}}
+## Getting Started with package:{{ .Codec.PackageName }}
 
 ### 1. Add the package to your pubspec.yaml
 
 ```shell
-dart pub add {{Codec.PackageName}}
+dart pub add {{ .Codec.PackageName }}
 ```
 
 ### 2. Import the library
@@ -18,13 +33,13 @@ dart pub add {{Codec.PackageName}}
 In your Dart code, import the library:
 
 ```dart
-import 'package:{{Codec.PackageName}}/{{Codec.MainFileNameWithExtension}}';
+import 'package:{{ .Codec.PackageName }}/{{ .Codec.MainFileNameWithExtension }}';
 ```
 
 ### 3. Initialize the client
 
 To call the client, you need to create an instance of the service that
-you want to use, e.g., `{{Codec.ExampleServiceName}}`.
+you want to use, e.g., `{{ .Codec.ExampleServiceName }}`.
 
 There are two ways of creating an instance with the necessary credentials.
 
@@ -52,7 +67,7 @@ dart pub add googleapis_auth
 
 ```dart
 import 'package:googleapis_auth/auth_io.dart';
-import 'package:{{Codec.PackageName}}/{{Codec.MainFileNameWithExtension}}';
+import 'package:{{ .Codec.PackageName }}/{{ .Codec.MainFileNameWithExtension }}';
 
 Future<void> main() async {
   final authClient = await clientViaApplicationDefaultCredentials(
@@ -61,22 +76,21 @@ Future<void> main() async {
     ],
   );
 
-  final client = {{Codec.ExampleServiceName}}(client: authClient);
+  final client = {{ .Codec.ExampleServiceName }}(client: authClient);
 
   try {
     // Call a method on the client.
-    {{#Codec.ExampleMethodReturnsValue}}
-    final response = await client.{{Codec.ExampleMethodName}}(
-      {{Codec.ExampleMethodRequestType}}(),
+    {{- if .Codec.ExampleMethodReturnsValue }}
+    final response = await client.{{ .Codec.ExampleMethodName }}(
+      {{ .Codec.ExampleMethodRequestType }}(),
     );
     print('Response: $response');
-    {{/Codec.ExampleMethodReturnsValue}}
-    {{^Codec.ExampleMethodReturnsValue}}
-    await client.{{Codec.ExampleMethodName}}(
-      {{Codec.ExampleMethodRequestType}}(),
+    {{- else }}
+    await client.{{ .Codec.ExampleMethodName }}(
+      {{ .Codec.ExampleMethodRequestType }}(),
     );
     print('Method completed successfully.');
-    {{/Codec.ExampleMethodReturnsValue}}
+    {{- end }}
   } finally {
     // Always close the client to release resources.
     client.close();
@@ -92,35 +106,34 @@ If the user does not have an API key, then they can obtain one using the
 [Google Cloud Console](https://console.cloud.google.com/apis/credentials).
 
 Add the API key to one of these environment variables:
-{{#Codec.ApiKeyEnvironmentVariables}}
-- `{{{.}}}`
-{{/Codec.ApiKeyEnvironmentVariables}}
-
+{{- range .Codec.ApiKeyEnvironmentVariables }}
+- `{{ . }}`
+{{- end }}
+{{- "\n" }}
 
 ```dart
-import 'package:{{Codec.PackageName}}/{{Codec.MainFileNameWithExtension}}';
+import 'package:{{ .Codec.PackageName }}/{{ .Codec.MainFileNameWithExtension }}';
 
 Future<void> main() async {
-  final client = {{Codec.ExampleServiceName}}.fromApiKey();
+  final client = {{ .Codec.ExampleServiceName }}.fromApiKey();
 
   try {
     // Call a method on the client.
-    {{#Codec.ExampleMethodReturnsValue}}
-    final response = await client.{{Codec.ExampleMethodName}}(
-      {{Codec.ExampleMethodRequestType}}(),
+    {{- if .Codec.ExampleMethodReturnsValue }}
+    final response = await client.{{ .Codec.ExampleMethodName }}(
+      {{ .Codec.ExampleMethodRequestType }}(),
     );
     print('Response: $response');
-    {{/Codec.ExampleMethodReturnsValue}}
-    {{^Codec.ExampleMethodReturnsValue}}
-    await client.{{Codec.ExampleMethodName}}(
-      {{Codec.ExampleMethodRequestType}}(),
+    {{- else }}
+    await client.{{ .Codec.ExampleMethodName }}(
+      {{ .Codec.ExampleMethodRequestType }}(),
     );
     print('Method completed successfully.');
-    {{/Codec.ExampleMethodReturnsValue}}
+    {{- end }}
   } finally {
     // Always close the client to release resources.
     client.close();
   }
 }
 ```
-
+{{- "\n" }}
