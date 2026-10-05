@@ -70,9 +70,9 @@ func TestAnnotateMethodNames(t *testing.T) {
 		{
 			MethodID: ".test.v1.ResourceService.Self",
 			Want: &methodAnnotation{
-				Name:                "r#self",
+				Name:                "self_",
 				NameNoMangling:      "self",
-				BuilderName:         "r#Self",
+				BuilderName:         "Self_",
 				Body:                "None::<gaxi::http::NoBody>",
 				ServiceNameToPascal: "ResourceService",
 				ServiceNameToCamel:  "resourceService",

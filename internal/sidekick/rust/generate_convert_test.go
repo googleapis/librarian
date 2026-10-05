@@ -459,3 +459,70 @@ func TestGenerateConvertImports(t *testing.T) {
 		t.Errorf("convert.rs missing expected imports %q, got:\n%s", wantImports, contentStr)
 	}
 }
+
+func TestGenerateConvertOneOf_ReservedRawIdentifiers(t *testing.T) {
+	primaryDataSource := api.NewTestMessage("PrimaryProductDataSource").WithOneOfs(
+		api.NewTestOneOf("default_rule").WithFields(
+			api.NewTestField("self").WithType(api.TypezBool),
+			api.NewTestField("crate").WithType(api.TypezString),
+			api.NewTestField("super").WithType(api.TypezInt32),
+		),
+	)
+
+	outDir := t.TempDir()
+	model := api.NewTestAPI([]*api.Message{primaryDataSource}, nil, nil)
+	if err := api.CrossReference(model); err != nil {
+		t.Fatal(err)
+	}
+
+	cfg := &parser.ModelConfig{
+		SpecificationFormat: libconfig.SpecProtobuf,
+		Codec: map[string]string{
+			"package:wkt":       "source=google.protobuf,package=google-cloud-wkt",
+			"template-override": "templates/convert-prost",
+		},
+	}
+	if err := Generate(t.Context(), model, outDir, cfg); err != nil {
+		t.Fatal(err)
+	}
+
+	contents, err := os.ReadFile(filepath.Join(outDir, "convert.rs"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	contentStr := string(contents)
+
+	wantToProto := `impl gaxi::prost::ToProto<primary_product_data_source::DefaultRule> for crate::model::primary_product_data_source::DefaultRule {
+    type Output = primary_product_data_source::DefaultRule;
+    fn to_proto(self) -> std::result::Result<Self::Output, gaxi::prost::ConvertError> {
+        match self {
+            Self::Self_(v) => Ok(Self::Output::Self_(v.to_proto()?)),
+            Self::Crate(v) => Ok(Self::Output::Crate(v.to_proto()?)),
+            Self::Super(v) => Ok(Self::Output::Super(v.to_proto()?)),
+        }
+    }
+}`
+	t.Run("ToProto", func(t *testing.T) {
+		gotToProto := extractBlock(t, contentStr, "impl gaxi::prost::ToProto<primary_product_data_source::DefaultRule>", "\n        }\n    }\n}")
+		if diff := cmp.Diff(wantToProto, gotToProto); diff != "" {
+			t.Errorf("mismatch (-want +got):\n%s", diff)
+		}
+	})
+
+	wantFromProto := `impl gaxi::prost::FromProto<crate::model::primary_product_data_source::DefaultRule> for primary_product_data_source::DefaultRule {
+    fn cnv(self) -> std::result::Result<crate::model::primary_product_data_source::DefaultRule, gaxi::prost::ConvertError> {
+        use crate::model::primary_product_data_source::DefaultRule as T;
+        match self {
+            Self::Self_(v) => Ok(T::Self_(v.cnv()?)),
+            Self::Crate(v) => Ok(T::Crate(v.cnv()?)),
+            Self::Super(v) => Ok(T::Super(v.cnv()?)),
+        }
+    }
+}`
+	t.Run("FromProto", func(t *testing.T) {
+		gotFromProto := extractBlock(t, contentStr, "impl gaxi::prost::FromProto<crate::model::primary_product_data_source::DefaultRule>", "\n        }\n    }\n}")
+		if diff := cmp.Diff(wantFromProto, gotFromProto); diff != "" {
+			t.Errorf("mismatch (-want +got):\n%s", diff)
+		}
+	})
+}
