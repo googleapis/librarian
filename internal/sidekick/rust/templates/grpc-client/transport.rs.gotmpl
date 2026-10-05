@@ -1,0 +1,367 @@
+{{/*
+Copyright 2025 Google LLC
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    https://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/}}
+// Copyright {{ .Codec.CopyrightYear }} Google LLC
+{{- range .Codec.BoilerPlate }}
+//{{ . }}
+{{- end }}
+{{- if .Codec.HasServices }}
+
+{{ if .Codec.PerServiceFeatures }}
+#[cfg(any({{- range .Codec.Services }}feature = "{{ .Codec.FeatureName }}",{{- end }}))]
+{{- end }}
+use crate::Result;
+#[allow(unused_imports)]
+use crate::Error;
+
+{{ if .Codec.PerServiceFeatures }}
+#[cfg(any({{- range .Codec.Services }}feature = "{{ .Codec.FeatureName }}",{{- end }}))]
+{{- end }}
+const DEFAULT_HOST: &str = "https://{{ .Codec.DefaultHost }}";
+
+{{ if .Codec.PerServiceFeatures }}
+#[cfg(any({{- range .Codec.Services }}feature = "{{ .Codec.FeatureName }}",{{- end }}))]
+{{- end }}
+mod info {
+    const NAME: &str = env!("CARGO_PKG_NAME");
+    const VERSION: &str = env!("CARGO_PKG_VERSION");
+    pub(crate) static X_GOOG_API_CLIENT_HEADER: std::sync::LazyLock<String> =
+        std::sync::LazyLock::new(|| {
+            let ac = gaxi::api_header::XGoogApiClient {
+                name: NAME,
+                version: VERSION,
+                library_type: gaxi::api_header::GAPIC,
+            };
+            ac.grpc_header_value()
+        });
+}
+
+{{- end }}
+{{- range .Codec.Services }}
+{{- "\n" }}
+/// Implements [{{ .Codec.Name }}](super::stub::{{ .Codec.Name }}) using a gRPC client.
+{{- if .Codec.PerServiceFeatures }}
+#[cfg(feature = "{{ .Codec.FeatureName }}")]
+{{- end }}
+#[derive(Clone)]
+pub struct {{ .Codec.Name }} {
+    {{- if .Codec.ExtendGrpcTransport }}
+    pub(crate) inner: {{ .Codec.GrpcClient }},
+    {{- else }}
+    inner: {{ .Codec.GrpcClient }},
+    {{- end }}
+}
+
+{{ if .Codec.PerServiceFeatures }}
+#[cfg(any({{- range .Codec.Services }}feature = "{{ .Codec.FeatureName }}",{{- end }}))]
+{{- end }}
+impl std::fmt::Debug for {{ .Codec.Name }} {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::result::Result<(), std::fmt::Error> {
+        f.debug_struct("{{ .Codec.Name }}")
+            .field("inner", &self.inner)
+            .finish()
+    }
+}
+
+{{ if .Codec.PerServiceFeatures }}
+#[cfg(any({{- range .Codec.Services }}feature = "{{ .Codec.FeatureName }}",{{- end }}))]
+{{- end }}
+impl {{ .Codec.Name }} {
+    pub async fn new(config: gaxi::options::ClientConfig) -> crate::ClientBuilderResult<Self> {
+        {{- if .Codec.DetailedTracingAttributes }}
+        let inner = if gaxi::options::tracing_enabled(&config) {
+            {{ .Codec.GrpcClient }}::new_with_instrumentation(config, DEFAULT_HOST, &super::tracing::info::INSTRUMENTATION_CLIENT_INFO).await?
+        } else {
+            {{ .Codec.GrpcClient }}::new(config, DEFAULT_HOST).await?
+        };
+        {{- else }}
+        let inner = {{ .Codec.GrpcClient }}::new(config, DEFAULT_HOST).await?;
+        {{- end }}
+        Ok(Self { inner })
+    }
+}
+
+{{ if .Codec.PerServiceFeatures }}
+#[cfg(any({{- range .Codec.Services }}feature = "{{ .Codec.FeatureName }}",{{- end }}))]
+{{- end }}
+impl super::stub::{{ .Codec.Name }} for {{ .Codec.Name }} {
+    {{- range .Codec.Methods }}
+    {{- "\n" }}
+    {{- if .Codec.IsBidiStreaming }}
+    fn {{ .Codec.Name }}(
+        &self,
+        options: crate::RequestOptions,
+    ) -> (
+        google_cloud_gax::streaming::RequestSender<{{ .InputType.Codec.QualifiedName }}>,
+        google_cloud_gax::streaming::ResponseStream<{{ .OutputType.Codec.QualifiedName }}>,
+    ) {
+        {{- /* TODO(#6835) - support explicit routing parameters for bidirectional streaming RPCs */}}
+        let x_goog_request_params = "";
+
+        let extensions = {
+            let mut e = gaxi::grpc::tonic::Extensions::new();
+            e.insert(gaxi::grpc::tonic::GrpcMethod::new(
+                "{{ .SourceService.Package }}.{{ .SourceService.Name }}",
+                "{{ .Name }}",
+            ));
+            e
+        };
+        let path = http::uri::PathAndQuery::from_static(
+            "/{{ .SourceService.Package }}.{{ .SourceService.Name }}/{{ .Name }}"
+        );
+
+        self.inner
+            .execute_bidi_streaming::<
+                {{ .InputType.Codec.QualifiedName }},
+                {{ .OutputType.Codec.QualifiedName }},
+                crate::{{ .InputType.Codec.PackageModuleName }}::{{ .InputType.Codec.ProstRelativeName }},
+                crate::{{ .OutputType.Codec.PackageModuleName }}::{{ .OutputType.Codec.ProstRelativeName }},
+            >(
+                extensions,
+                path,
+                options,
+                &info::X_GOOG_API_CLIENT_HEADER,
+                x_goog_request_params,
+            )
+    }
+    {{- else if .Codec.IsServerStreaming }}
+    async fn {{ .Codec.Name }}(
+        &self,
+        req: {{ .InputType.Codec.QualifiedName }},
+        options: crate::RequestOptions,
+    ) -> Result<google_cloud_gax::streaming::ResponseStream<{{ .OutputType.Codec.QualifiedName }}>> {
+        let extensions = {
+            let mut e = gaxi::grpc::tonic::Extensions::new();
+            e.insert(gaxi::grpc::tonic::GrpcMethod::new(
+                "{{ .SourceService.Package }}.{{ .SourceService.Name }}",
+                "{{ .Name }}",
+            ));
+            e
+        };
+        let path = http::uri::PathAndQuery::from_static(
+            "/{{ .SourceService.Package }}.{{ .SourceService.Name }}/{{ .Name }}"
+        );
+        {{- /*
+        AIP-4222 says:
+
+            For any given RPC, if the explicit routing headers annotation is
+            present, the code generators **must** use it and **ignore** any
+            routing headers that might be implicitly specified in the
+            google.api.http annotation.
+
+        So we only need to generate one of the two code paths.
+        */ -}}
+        {{- if .HasRouting }}
+        {{- include "templates/grpc-client/routinginfo" . | indent 8 }}
+        {{- else }}
+        let x_goog_request_params = [
+            {{- range .PathInfo.Codec.UniqueParameters }}
+                {{ .FieldAccessor }}.map(|v| format!("{{ .FieldName }}={v}")),
+            {{- else }}
+            None::<String>; 0
+            {{- end }}
+        ]
+        .into_iter()
+        .flatten()
+        {{- /* TODO(#2548) - skip empty strings, and don't lead with a '&' */}}
+        .fold(String::new(), |b, p| b + "&" + &p);
+        {{- end }}
+
+        self.inner
+            .execute_server_streaming::<
+                {{ .InputType.Codec.QualifiedName }},
+                {{ .OutputType.Codec.QualifiedName }},
+                crate::{{ .InputType.Codec.PackageModuleName }}::{{ .InputType.Codec.ProstRelativeName }},
+                crate::{{ .OutputType.Codec.PackageModuleName }}::{{ .OutputType.Codec.ProstRelativeName }},
+            >(
+                extensions,
+                path,
+                req,
+                options,
+                &info::X_GOOG_API_CLIENT_HEADER,
+                &x_goog_request_params,
+            )
+            .await
+    }
+    {{- else }}
+    async fn {{ .Codec.Name }}(
+        &self,
+        req: {{ .InputType.Codec.QualifiedName }},
+        options: crate::RequestOptions,
+    ) -> Result<crate::Response<{{ .Codec.ReturnType }}>> {
+        use gaxi::{prost::ToProto, grpc::tonic::{GrpcMethod, Extensions}};
+        {{- if .Codec.HasIdempotencyHook }}
+        let options = req.{{ .Codec.IdempotencyHook }}(options);
+        {{- else }}
+        let options = google_cloud_gax::options::internal::set_default_idempotency(
+            options,
+            {{- /* TODO(#2588) - resolve this in the model */}}
+            {{- if .HasAutoPopulatedFields }}
+            true,
+            {{- else }}
+            {{- with .PathInfo }}
+            {{ .Codec.IsIdempotent }},
+            {{- else }}
+            false,
+            {{- end }}
+            {{- end }}
+        );
+        {{- end }}
+        let extensions = {
+            let mut e = Extensions::new();
+            e.insert(GrpcMethod::new("{{ .SourceService.Package }}.{{ .SourceService.Name }}", "{{ .Name }}"));
+            e
+        };
+        let path = http::uri::PathAndQuery::from_static(
+            "/{{ .SourceService.Package }}.{{ .SourceService.Name }}/{{ .Name }}"
+        );
+        {{- /*
+        AIP-4222 says:
+
+            For any given RPC, if the explicit routing headers annotation is
+            present, the code generators **must** use it and **ignore** any
+            routing headers that might be implicitly specified in the
+            google.api.http annotation.
+
+        So we only need to generate one of the two code paths.
+        */ -}}
+        {{- if .HasRouting }}
+        {{- include "templates/grpc-client/routinginfo" . | indent 8 }}
+        {{- else }}
+        let x_goog_request_params = [
+            {{- range .PathInfo.Codec.UniqueParameters }}
+                {{ .FieldAccessor }}.map(|v| format!("{{ .FieldName }}={v}")),
+            {{- else }}
+            ""; 0
+            {{- end }}
+        ]
+        .into_iter()
+        .flatten()
+        {{- /* TODO(#2548) - skip empty strings, and don't lead with a '&' */}}
+        .fold(String::new(), |b, p| b + "&" + &p);
+        {{- end }}
+
+        {{ if .ReturnsEmpty }}
+        type TR = ();
+        {{- else }}
+        type TR = crate::{{ .OutputType.Codec.PackageModuleName }}::{{ .OutputType.Codec.ProstRelativeName }};
+        {{- end }}
+        {{- if .Codec.DetailedTracingAttributes }}
+        if let Some(recorder) = gaxi::observability::RequestRecorder::current() {
+            let attributes = gaxi::observability::ClientRequestAttributes::default()
+                .set_rpc_method("{{ .SourceService.Package }}.{{ .SourceService.Name }}/{{ .Name }}");
+            {{- if .Codec.HasGrpcResourceNameArgs }}
+            let resource_name = (|| {
+                {{- if .Codec.ResourceNameTemplateGrpc }}
+                Some(format!(
+                    "{{ .Codec.ResourceNameTemplateGrpc }}",
+                    {{- range .Codec.GrpcResourceNameArgs }}
+                    {{ . }}?,
+                    {{- end }}
+                ))
+                {{- else }}
+                Some(String::new())
+                {{- end }}
+            })();
+            let attributes = if let Some(rn) = resource_name.filter(|s| !s.is_empty()) {
+                attributes.set_resource_name(rn)
+            } else {
+                attributes
+            };
+            {{- end }}
+            recorder.on_client_request(attributes);
+        }
+        {{- end }}
+        self.inner
+            .execute(
+                extensions,
+                path,
+                req.to_proto().map_err(Error::deser)?,
+                options,
+                &info::X_GOOG_API_CLIENT_HEADER,
+                &x_goog_request_params,
+            )
+            .await
+            .and_then(gaxi::grpc::to_gax_response::<TR, {{ .Codec.ReturnType }}>)
+    }
+    {{- end }}
+    {{- end }}
+    {{- if .Codec.HasLROs }}
+    {{- "\n" }}
+    fn get_polling_error_policy(
+        &self,
+        options: &crate::RequestOptions,
+    ) -> std::sync::Arc<dyn google_cloud_gax::polling_error_policy::PollingErrorPolicy> {
+        self.inner.get_polling_error_policy(options)
+    }
+
+    fn get_polling_backoff_policy(
+        &self,
+        options: &crate::RequestOptions,
+    ) -> std::sync::Arc<dyn google_cloud_gax::polling_backoff_policy::PollingBackoffPolicy> {
+        self.inner.get_polling_backoff_policy(options)
+    }
+    {{- end }}
+}
+{{- end }}
+{{- if .Codec.HasLROs }}
+{{- "\n" }}
+use gaxi::prost::{ConvertError, FromProto, ToProto};
+/// Convert from our `wkt::Any` to a `prost_types::Any`
+///
+/// The encoded types considered for conversion are either metadata or result
+/// types for LROs in this service.
+pub(crate) fn lro_any_to_prost(
+    value: wkt::Any,
+) -> std::result::Result<prost_types::Any, ConvertError> {
+    match value.type_url().unwrap_or_default() {
+        "" => Ok(prost_types::Any::default()),
+        {{- range .Codec.Services }}
+        {{- range .Codec.LROTypes }}
+        "type.googleapis.com/{{ .Codec.SourceFQN }}" => value
+            .to_msg::<{{ .Codec.QualifiedName }}>()
+            .map_err(ConvertError::other)?
+            .to_proto()
+            .and_then(|prost_msg| {
+                prost_types::Any::from_msg(&prost_msg).map_err(ConvertError::other)
+            }),
+        {{- end }}
+        {{- end }}
+        type_url => Err(ConvertError::UnexpectedTypeUrl(type_url.to_string())),
+    }
+}
+
+/// Convert from a `prost_types::Any` to our `wkt::Any`
+///
+/// The encoded types considered for conversion are either metadata or result
+/// types for LROs in this service.
+pub(crate) fn lro_any_from_prost(
+    value: prost_types::Any,
+) -> std::result::Result<wkt::Any, ConvertError> {
+    match value.type_url.as_str() {
+        "" => Ok(wkt::Any::default()),
+        {{- range .Codec.Services }}
+        {{- range .Codec.LROTypes }}
+        "type.googleapis.com/{{ .Codec.SourceFQN }}" => value
+            .to_msg::<crate::{{ .Codec.PackageModuleName }}::{{ .Codec.ProstRelativeName }}>()
+            .map_err(ConvertError::other)?
+            .cnv()
+            .and_then(|our_msg| wkt::Any::from_msg(&our_msg).map_err(ConvertError::other)),
+        {{- end }}
+        {{- end }}
+        type_url => Err(ConvertError::UnexpectedTypeUrl(type_url.to_string())),
+    }
+}
+{{- end }}

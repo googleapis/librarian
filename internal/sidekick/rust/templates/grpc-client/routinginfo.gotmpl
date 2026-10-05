@@ -1,0 +1,60 @@
+{{/*
+Copyright 2025 Google LLC
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    https://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/}}
+let x_goog_request_params = {
+    use gaxi::routing_parameter::Segment;
+    gaxi::routing_parameter::format(&[
+        {{- range .Routing }}
+        None
+        {{- range .Variants }}
+        .or_else(|| gaxi::routing_parameter::value(
+            Some(&req){{- range .Codec.FieldAccessors }}{{ . }}{{- end }},
+            &[ {{- range .Codec.PrefixSegments }}{{ . }}, {{- end }} ],
+            &[ {{- range .Codec.MatchingSegments }}{{ . }}, {{- end }} ],
+            &[ {{- range .Codec.SuffixSegments }}{{ . }}, {{- end }} ],
+        ))
+        {{- end }}
+        .map(|v| ("{{ .Name }}", v)),
+        {{- end }}
+    ])
+};
+{{- if .Codec.RoutingRequired }}
+if x_goog_request_params.is_empty() {
+    use google_cloud_gax::error::binding::BindingError;
+    use gaxi::routing_parameter::Segment;
+    use gaxi::path_parameter::PathMismatchBuilder;
+    let mut paths = Vec::new();
+    {{- range .RoutingCombos }}
+    {
+        let builder = PathMismatchBuilder::default();
+        {{- range .Items }}
+        {{- with .Variant }}
+        let builder = builder.maybe_add(
+            Some(&req){{- range .Codec.FieldAccessors }}{{ . }}{{- end }},
+            &[
+                {{- range .Codec.PrefixSegments }}{{ . }}, {{- end }}
+                {{- range .Codec.MatchingSegments }}{{ . }}, {{- end }}
+                {{- range .Codec.SuffixSegments }}{{ . }}, {{- end }}
+            ],
+            "{{ .FieldName }}",
+            "{{ .TemplateAsString }}");
+        {{- end }}
+        {{- end }}
+        paths.push(builder.build());
+    }
+    {{- end }}
+    return Err(google_cloud_gax::error::Error::binding(BindingError { paths }))
+}
+{{- end }}

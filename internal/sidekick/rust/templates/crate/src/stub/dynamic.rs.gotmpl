@@ -1,0 +1,140 @@
+{{/*
+Copyright 2024 Google LLC
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    https://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/}}
+// Copyright {{ .Codec.CopyrightYear }} Google LLC
+{{- range .Codec.BoilerPlate }}
+//{{ . }}
+{{- end }}
+{{- range .Codec.Services }}
+{{- "\n" }}
+/// A dyn-compatible, crate-private version of [super::{{ .Codec.Name }}].
+{{- if .Codec.PerServiceFeatures }}
+#[cfg(feature = "{{ .Codec.FeatureName }}")]
+{{- end }}
+#[async_trait::async_trait]
+pub trait {{ .Codec.Name }}: std::fmt::Debug + Send + Sync {
+    {{- range .Codec.Methods }}
+    {{- "\n" }}
+    {{- if .Codec.IsBidiStreaming }}
+    fn {{ .Codec.Name }}(
+        &self,
+        options: crate::RequestOptions,
+    ) -> (
+        google_cloud_gax::streaming::RequestSender<{{ .InputType.Codec.QualifiedName }}>,
+        google_cloud_gax::streaming::ResponseStream<{{ .OutputType.Codec.QualifiedName }}>,
+    );
+    {{- else if .Codec.IsServerStreaming }}
+    async fn {{ .Codec.Name }}(
+        &self,
+        req: {{ .InputType.Codec.QualifiedName }},
+        options: crate::RequestOptions,
+    ) -> crate::Result<
+        google_cloud_gax::streaming::ResponseStream<{{ .OutputType.Codec.QualifiedName }}>,
+    >;
+    {{- else }}
+    async fn {{ .Codec.Name }}(
+        &self,
+        req: {{ .InputType.Codec.QualifiedName }},
+        options: crate::RequestOptions,
+    ) -> crate::Result<crate::Response<{{ .Codec.ReturnType }}>>;
+    {{- end }}
+    {{- end }}
+    {{- "\n" }}
+    {{- if .Codec.HasLROs }}
+    fn get_polling_error_policy(
+        &self,
+        options: &crate::RequestOptions,
+    ) -> std::sync::Arc<dyn google_cloud_gax::polling_error_policy::PollingErrorPolicy>;
+
+    fn get_polling_backoff_policy(
+        &self,
+        options: &crate::RequestOptions,
+    ) -> std::sync::Arc<dyn google_cloud_gax::polling_backoff_policy::PollingBackoffPolicy>;
+
+    {{ if .Model.Codec.LroStubOptions }}
+    fn get_poller_options(
+        &self,
+        options: &crate::RequestOptions,
+    ) -> google_cloud_lro::PollerOptions;
+    {{- end }}
+    {{- end }}
+}
+
+/// All implementations of [super::{{ .Codec.Name }}] also implement [{{ .Codec.Name }}].
+{{- if .Codec.PerServiceFeatures }}
+#[cfg(feature = "{{ .Codec.FeatureName }}")]
+{{- end }}
+#[async_trait::async_trait]
+impl<T: super::{{ .Codec.Name }}> {{ .Codec.Name }} for T {
+    {{- range .Codec.Methods }}
+    {{- "\n" }}
+    /// Forwards the call to the implementation provided by `T`.
+    {{- if .Codec.IsBidiStreaming }}
+    fn {{ .Codec.Name }}(
+        &self,
+        options: crate::RequestOptions,
+    ) -> (
+        google_cloud_gax::streaming::RequestSender<{{ .InputType.Codec.QualifiedName }}>,
+        google_cloud_gax::streaming::ResponseStream<{{ .OutputType.Codec.QualifiedName }}>,
+    ) {
+        T::{{ .Codec.Name }}(self, options)
+    }
+    {{- else if .Codec.IsServerStreaming }}
+    async fn {{ .Codec.Name }}(
+        &self,
+        req: {{ .InputType.Codec.QualifiedName }},
+        options: crate::RequestOptions,
+    ) -> crate::Result<
+        google_cloud_gax::streaming::ResponseStream<{{ .OutputType.Codec.QualifiedName }}>,
+    > {
+        T::{{ .Codec.Name }}(self, req, options).await
+    }
+    {{- else }}
+    async fn {{ .Codec.Name }}(
+        &self,
+        req: {{ .InputType.Codec.QualifiedName }},
+        options: crate::RequestOptions,
+    ) -> crate::Result<crate::Response<{{ .Codec.ReturnType }}>> {
+        T::{{ .Codec.Name }}(self, req, options).await
+    }
+    {{- end }}
+    {{- end }}
+    {{- "\n" }}
+    {{- if .Codec.HasLROs }}
+    fn get_polling_error_policy(
+        &self,
+        options: &crate::RequestOptions,
+    ) -> std::sync::Arc<dyn google_cloud_gax::polling_error_policy::PollingErrorPolicy> {
+        T::get_polling_error_policy(self, options)
+    }
+
+    fn get_polling_backoff_policy(
+        &self,
+        options: &crate::RequestOptions,
+    ) -> std::sync::Arc<dyn google_cloud_gax::polling_backoff_policy::PollingBackoffPolicy> {
+        T::get_polling_backoff_policy(self, options)
+    }
+
+    {{ if .Model.Codec.LroStubOptions }}
+    fn get_poller_options(
+        &self,
+        options: &crate::RequestOptions,
+    ) -> google_cloud_lro::PollerOptions {
+        T::get_poller_options(self, options)
+    }
+    {{- end }}
+    {{- end }}
+}
+{{- end }}

@@ -110,6 +110,7 @@ func (m *unifiedMessage) createSyntheticMessage(name string) (*api.Message, erro
 			return nil, fmt.Errorf("expected field annotation for %q", f.ID)
 		}
 		fAnn.FQMessageName = fmt.Sprintf("crate::model_ext::%s", name)
+		fAnn.GenerateSetterSamples = false
 	}
 	return msg, nil
 }

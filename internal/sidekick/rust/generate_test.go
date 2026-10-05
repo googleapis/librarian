@@ -542,3 +542,9 @@ func requireProtoc(t *testing.T) {
 		t.Skip("skipping test because protoc is not installed")
 	}
 }
+
+func TestValidateTemplates(t *testing.T) {
+	if err := parsedTemplates.Validate(); err != nil {
+		t.Fatal(err)
+	}
+}
