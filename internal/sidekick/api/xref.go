@@ -34,22 +34,23 @@ import (
 // codecs need. For example, the `oneof` fields use the containing `OneOf` to
 // reference any types or names of the `OneOf` during their generation.
 func CrossReference(model *API) error {
+	for m := range model.AllMaps() {
+		if m.Key != nil {
+			if err := crossReferenceField(model, m.Key); err != nil {
+				return err
+			}
+		}
+		if m.Value != nil {
+			if err := crossReferenceField(model, m.Value); err != nil {
+				return err
+			}
+		}
+	}
 	for m := range model.AllMessages() {
 		for _, f := range m.Fields {
 			f.Parent = m
-			switch f.Typez {
-			case TypezMessage:
-				t := model.Message(f.TypezID)
-				if t == nil {
-					return fmt.Errorf("cannot find message type %s for field %s", f.TypezID, f.ID)
-				}
-				f.MessageType = t
-			case TypezEnum:
-				t := model.Enum(f.TypezID)
-				if t == nil {
-					return fmt.Errorf("cannot find enum type %s for field %s", f.TypezID, f.ID)
-				}
-				f.EnumType = t
+			if err := crossReferenceField(model, f); err != nil {
+				return err
 			}
 		}
 		for _, o := range m.OneOfs {
@@ -787,6 +788,36 @@ func standardMethodOutputResource(m *Method) *Resource {
 		if lroResponse := m.LongRunningResponseType; lroResponse != nil {
 			return lroResponse.Resource
 		}
+	}
+	return nil
+}
+
+func crossReferenceField(model *API, f *Field) error {
+	switch f.Typez {
+	case TypezMessage:
+		t := model.Message(f.TypezID)
+		if t == nil {
+			return fmt.Errorf("unknown message type %s for field %s", f.TypezID, f.ID)
+		}
+		f.MessageType = t
+		if t.IsMap && len(t.Fields) == 2 {
+			if model.Map(f.TypezID) == nil {
+				model.AddMap(&Map{ID: f.TypezID, Key: t.Fields[0], Value: t.Fields[1]})
+			}
+			f.MapType = model.Map(f.TypezID)
+		}
+	case TypezEnum:
+		t := model.Enum(f.TypezID)
+		if t == nil {
+			return fmt.Errorf("unknown enum type %s for field %s", f.TypezID, f.ID)
+		}
+		f.EnumType = t
+	case TypezMap:
+		t := model.Map(f.TypezID)
+		if t == nil {
+			return fmt.Errorf("unknown map type %s for field %s", f.TypezID, f.ID)
+		}
+		f.MapType = t
 	}
 	return nil
 }

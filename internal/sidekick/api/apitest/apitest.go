@@ -93,3 +93,11 @@ func CheckMethod(t *testing.T, service *api.Service, name string, want *api.Meth
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
+
+// CheckMap compares two `Map` instances.
+func CheckMap(t *testing.T, got *api.Map, want *api.Map) {
+	t.Helper()
+	if diff := cmp.Diff(want, got, cmpopts.IgnoreFields(api.Field{}, "Parent")); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+}

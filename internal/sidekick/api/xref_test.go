@@ -293,59 +293,17 @@ func TestEnrichSamplesEnumValues(t *testing.T) {
 }
 
 func TestEnrichSamplesOneOfExampleField(t *testing.T) {
-	deprecated := &Field{
-		Name:       "deprecated_field",
-		ID:         ".test.Message.deprecated_field",
-		Typez:      TypezString,
-		IsOneOf:    true,
-		Deprecated: true,
-	}
-	mapMessage := &Message{
-		Name:  "$map<string, string>",
-		ID:    "$map<string, string>",
-		IsMap: true,
-		Fields: []*Field{
-			{Name: "key", ID: "$map<string, string>.key", Typez: TypezString},
-			{Name: "value", ID: "$map<string, string>.value", Typez: TypezString},
-		},
-	}
-	mapField := &Field{
-		Name:    "map_field",
-		ID:      ".test.Message.map_field",
-		Typez:   TypezMessage,
-		TypezID: "$map<string, string>",
-		IsOneOf: true,
-		Map:     true,
-	}
-	repeated := &Field{
-		Name:     "repeated_field",
-		ID:       ".test.Message.repeated_field",
-		Typez:    TypezString,
-		Repeated: true,
-		IsOneOf:  true,
-	}
-	scalar := &Field{
-		Name:    "scalar_field",
-		ID:      ".test.Message.scalar_field",
-		Typez:   TypezInt32,
-		IsOneOf: true,
-	}
-	messageField := &Field{
-		Name:    "message_field",
-		ID:      ".test.Message.message_field",
-		Typez:   TypezMessage,
-		TypezID: ".test.OneMessage",
-		IsOneOf: true,
-	}
-	anotherMessageField := &Field{
-		Name:    "another_message_field",
-		ID:      ".test.Message.another_message_field",
-		Typez:   TypezMessage,
-		TypezID: ".test.AnotherMessage",
-		IsOneOf: true,
-	}
+	deprecated := NewTestField("deprecated_field").WithType(TypezString).WithOneOf().WithDeprecated(true)
+	mapType := NewTestMap("StringToString", TypezString, TypezString)
+	mapField := NewTestField("map_field").WithMapType(mapType).WithOneOf()
+	repeated := NewTestField("repeated_field").WithType(TypezString).WithRepeated().WithOneOf()
+	scalar := NewTestField("scalar_field").WithType(TypezInt32).WithOneOf()
+	oneMessage := NewTestMessage("OneMessage")
+	messageField := NewTestField("message_field").WithMessageType(oneMessage).WithOneOf()
+	anotherMessage := NewTestMessage("AnotherMessage")
+	anotherMessageField := NewTestField("another_message_field").WithMessageType(anotherMessage).WithOneOf()
 
-	testCases := []struct {
+	for _, test := range []struct {
 		name   string
 		fields []*Field
 		want   *Field
@@ -380,42 +338,59 @@ func TestEnrichSamplesOneOfExampleField(t *testing.T) {
 			fields: []*Field{deprecated},
 			want:   deprecated,
 		},
-	}
-
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			group := &OneOf{
-				Name:   "test_oneof",
-				ID:     ".test.Message.test_oneof",
-				Fields: tc.fields,
-			}
-			message := &Message{
-				Name:    "Message",
-				ID:      ".test.Message",
-				Package: "test",
-				Fields:  tc.fields,
-				OneOfs:  []*OneOf{group},
-			}
-			oneMessage := &Message{
-				Name:    "OneMessage",
-				ID:      ".test.OneMessage",
-				Package: "test",
-			}
-			anotherMessage := &Message{
-				Name:    "AnotherMessage",
-				ID:      ".test.AnotherMessage",
-				Package: "test",
-			}
-			model := NewTestAPI([]*Message{message, oneMessage, anotherMessage, mapMessage}, []*Enum{}, []*Service{})
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			group := NewTestOneOf("test_oneof").WithFields(test.fields...)
+			message := NewTestMessage("Message").
+				WithFields(test.fields...).
+				WithOneOfs(group)
+			model := NewTestAPI([]*Message{message, oneMessage, anotherMessage}, nil, nil).WithMaps(mapType)
 			if err := CrossReference(model); err != nil {
 				t.Fatal(err)
 			}
 
 			got := group.ExampleField
-			if diff := cmp.Diff(tc.want, got); diff != "" {
+			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
+	}
+}
+
+func TestCrossReferenceMap(t *testing.T) {
+	valMsg := NewTestMessage("ValueMessage")
+	key := NewTestField("key").WithType(TypezString)
+	val := NewTestField("value").WithType(TypezMessage).WithTypezID(valMsg.ID)
+	mapType := NewTestMapWithFields("MapEntry", key, val)
+	mapField := NewTestField("map_field").WithMapType(mapType)
+	msg := NewTestMessage("Container").WithFields(mapField)
+
+	model := NewTestAPI([]*Message{msg, valMsg}, nil, nil).WithMaps(mapType)
+	if err := CrossReference(model); err != nil {
+		t.Fatal(err)
+	}
+
+	if mapField.MapType != mapType {
+		t.Errorf("mismatched MapType for %s, got=%v, want=%v", mapField.Name, mapField.MapType, mapType)
+	}
+	if val.MessageType != valMsg {
+		t.Errorf("mismatched MessageType for map value %s, got=%v, want=%v", val.Name, val.MessageType, valMsg)
+	}
+}
+
+func TestCrossReferenceMap_Error(t *testing.T) {
+	mapField := NewTestField("map_field").WithType(TypezMap)
+	mapField.TypezID = ".test.NonExistentMap"
+	msg := NewTestMessage("Container").WithFields(mapField)
+
+	model := NewTestAPI([]*Message{msg}, nil, nil)
+	err := CrossReference(model)
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+	wantErr := "unknown map type .test.NonExistentMap for field .test.Container.map_field"
+	if err.Error() != wantErr {
+		t.Errorf("CrossReference() error = %q, want %q", err.Error(), wantErr)
 	}
 }
 

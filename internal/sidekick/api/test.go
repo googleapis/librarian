@@ -34,6 +34,7 @@ func NewTestAPI(messages []*Message, enums []*Enum, services []*Service) *API {
 		enumByID:       make(map[string]*Enum),
 		serviceByID:    make(map[string]*Service),
 		resourceByType: make(map[string]*Resource),
+		mapByID:        make(map[string]*Map),
 	}
 
 	var indexMessage func(m *Message)
@@ -41,6 +42,11 @@ func NewTestAPI(messages []*Message, enums []*Enum, services []*Service) *API {
 		model.messageByID[m.ID] = m
 		if m.Resource != nil {
 			model.resourceByType[m.Resource.Type] = m.Resource
+		}
+		for _, f := range m.Fields {
+			if f.MapType != nil {
+				model.AddMap(f.MapType)
+			}
 		}
 		for _, e := range m.Enums {
 			model.enumByID[e.ID] = e
@@ -141,6 +147,14 @@ func (a *API) WithPhpNamespace(name string) *API {
 // WithRubyPackage changes the RubyNamespace of an API instance.
 func (a *API) WithRubyPackage(name string) *API {
 	a.RubyPackage = name
+	return a
+}
+
+// WithMaps adds maps to the API.
+func (a *API) WithMaps(maps ...*Map) *API {
+	for _, m := range maps {
+		a.AddMap(m)
+	}
 	return a
 }
 
@@ -271,6 +285,43 @@ func (m *Message) WithDocumentation(doc string) *Message {
 // WithIsMap sets whether the message represents a map entry.
 func (m *Message) WithIsMap() *Message {
 	m.IsMap = true
+	return m
+}
+
+// NewTestMap creates a synthetic Map with "key" and "value" fields.
+func NewTestMap(name string, keyType, valueType Typez) *Map {
+	return NewTestMapWithFields(
+		name,
+		NewTestField("key").WithType(keyType),
+		NewTestField("value").WithType(valueType),
+	)
+}
+
+// NewTestMapWithFields creates a synthetic Map with custom key and value fields.
+func NewTestMapWithFields(name string, key, value *Field) *Map {
+	id := name
+	if !strings.HasPrefix(name, ".") && !strings.HasPrefix(name, "$") {
+		id = fmt.Sprintf(".test.%s", name)
+	}
+	if key != nil && (strings.HasPrefix(key.ID, ".test.") || key.ID == "") {
+		key.ID = fmt.Sprintf("%s.%s", id, key.Name)
+	}
+	if value != nil && (strings.HasPrefix(value.ID, ".test.") || value.ID == "") {
+		value.ID = fmt.Sprintf("%s.%s", id, value.Name)
+	}
+	return &Map{ID: id, Key: key, Value: value}
+}
+
+// WithID overrides the map's ID.
+func (m *Map) WithID(id string) *Map {
+	oldID := m.ID
+	m.ID = id
+	if m.Key != nil && (strings.HasPrefix(m.Key.ID, oldID+".") || strings.HasPrefix(m.Key.ID, ".test.") || m.Key.ID == "") {
+		m.Key.ID = fmt.Sprintf("%s.%s", id, m.Key.Name)
+	}
+	if m.Value != nil && (strings.HasPrefix(m.Value.ID, oldID+".") || strings.HasPrefix(m.Value.ID, ".test.") || m.Value.ID == "") {
+		m.Value.ID = fmt.Sprintf("%s.%s", id, m.Value.Name)
+	}
 	return m
 }
 
@@ -613,6 +664,18 @@ func NewTestField(name string) *Field {
 	}
 }
 
+// WithID overrides the field's ID.
+func (f *Field) WithID(id string) *Field {
+	f.ID = id
+	return f
+}
+
+// WithOneOf marks the field as belonging to a oneof.
+func (f *Field) WithOneOf() *Field {
+	f.IsOneOf = true
+	return f
+}
+
 // WithType sets the type of the field.
 func (f *Field) WithType(t Typez) *Field {
 	f.Typez = t
@@ -640,6 +703,20 @@ func (f *Field) WithMap() *Field {
 	f.Map = true
 	f.Repeated = false
 	f.Optional = false
+	return f
+}
+
+// WithMapType sets the field's map type.
+// It sets MapType, Typez=TypezMap, Map=true, and TypezID.
+func (f *Field) WithMapType(m *Map) *Field {
+	f.MapType = m
+	f.Typez = TypezMap
+	f.Map = true
+	f.Repeated = false
+	f.Optional = false
+	if m != nil {
+		f.TypezID = m.ID
+	}
 	return f
 }
 

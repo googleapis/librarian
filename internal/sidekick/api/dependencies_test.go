@@ -583,6 +583,47 @@ func TestFindDependenciesService(t *testing.T) {
 	}
 }
 
+func TestFindDependenciesMapFields(t *testing.T) {
+	valMsg := NewTestMessage("ValueMessage")
+	valEnum := NewTestEnum("ValueEnum")
+
+	msgMap := NewTestMapWithFields("StringMsgMap",
+		NewTestField("key").WithType(TypezString),
+		NewTestField("value").WithMessageType(valMsg),
+	)
+	enumMap := NewTestMapWithFields("StringEnumMap",
+		NewTestField("key").WithType(TypezString),
+		NewTestField("value").WithEnumType(valEnum),
+	)
+
+	msgField := NewTestField("msg_map").WithMapType(msgMap)
+	enumField := NewTestField("enum_map").WithMapType(enumMap)
+
+	container := NewTestMessage("Container").WithFields(msgField, enumField)
+
+	model := NewTestAPI([]*Message{container, valMsg}, []*Enum{valEnum}, nil).
+		WithMaps(msgMap, enumMap)
+
+	got, err := FindDependencies(model, []string{container.ID})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	for _, wantID := range []string{container.ID, valMsg.ID, valEnum.ID} {
+		if !got[wantID] {
+			t.Errorf("expected %s to be included in dependencies", wantID)
+		}
+	}
+
+	gotFromMap, err := FindDependencies(model, []string{msgMap.ID})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !gotFromMap[valMsg.ID] {
+		t.Errorf("expected %s to be included when resolving map dependencies", valMsg.ID)
+	}
+}
+
 // Simplify the test expectations.
 func flatten(m map[string]bool) []string {
 	var arr []string

@@ -62,6 +62,8 @@ type API struct {
 	enumByID map[string]*Enum
 	// resourceByType returns a resource that is associated with the API.
 	resourceByType map[string]*Resource
+	// mapByID returns a map that is associated with the API.
+	mapByID map[string]*Map
 
 	// RubyPackage captures the package name override for Ruby.
 	//
@@ -230,4 +232,22 @@ func (a *API) AddResource(r *Resource) {
 		a.resourceByType = make(map[string]*Resource)
 	}
 	a.resourceByType[r.Type] = r
+}
+
+// Map returns a map that is associated with the API.
+func (a *API) Map(id string) *Map {
+	return a.mapByID[id]
+}
+
+// AllMaps returns an iterator over the maps in the API.
+func (a *API) AllMaps() iter.Seq[*Map] {
+	return maps.Values(a.mapByID)
+}
+
+// AddMap adds a map to the API.
+func (a *API) AddMap(m *Map) {
+	if a.mapByID == nil {
+		a.mapByID = make(map[string]*Map)
+	}
+	a.mapByID[m.ID] = m
 }

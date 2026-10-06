@@ -14,7 +14,11 @@
 
 package api
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/google/go-cmp/cmp"
+)
 
 func TestValidate(t *testing.T) {
 	model := NewTestAPI(
@@ -82,5 +86,97 @@ func TestValidateMessageMismatchNoPackage(t *testing.T) {
 		WithPackageName("")
 	if err := Validate(test); err == nil {
 		t.Errorf("expected an error in API validation got=%s", test.PackageName)
+	}
+}
+
+func TestValidateMap(t *testing.T) {
+	validMap := NewTestMap("ValidMap", TypezString, TypezInt32)
+	model := NewTestAPI(nil, nil, nil).WithPackageName("p1").WithMaps(validMap)
+	if err := Validate(model); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestValidateMap_Error(t *testing.T) {
+	for _, test := range []struct {
+		name    string
+		mapType *Map
+		wantErr string
+	}{
+		{
+			name:    "nil key",
+			mapType: &Map{ID: ".test.NilKey", Value: NewTestField("value").WithType(TypezString)},
+			wantErr: `map ".test.NilKey" must have non-nil key and value fields`,
+		},
+		{
+			name:    "nil value",
+			mapType: &Map{ID: ".test.NilValue", Key: NewTestField("key").WithType(TypezString)},
+			wantErr: `map ".test.NilValue" must have non-nil key and value fields`,
+		},
+		{
+			name: "key is map type",
+			mapType: NewTestMapWithFields(
+				"KeyIsMap",
+				NewTestField("key").WithType(TypezMap),
+				NewTestField("value").WithType(TypezString),
+			),
+			wantErr: `map ".test.KeyIsMap" key cannot be a map or repeated field`,
+		},
+		{
+			name: "key is map flag",
+			mapType: NewTestMapWithFields(
+				"KeyIsMapFlag",
+				NewTestField("key").WithType(TypezString).WithMap(),
+				NewTestField("value").WithType(TypezString),
+			),
+			wantErr: `map ".test.KeyIsMapFlag" key cannot be a map or repeated field`,
+		},
+		{
+			name: "key is repeated",
+			mapType: NewTestMapWithFields(
+				"KeyIsRepeated",
+				NewTestField("key").WithType(TypezString).WithRepeated(),
+				NewTestField("value").WithType(TypezString),
+			),
+			wantErr: `map ".test.KeyIsRepeated" key cannot be a map or repeated field`,
+		},
+		{
+			name: "value is map type",
+			mapType: NewTestMapWithFields(
+				"ValueIsMap",
+				NewTestField("key").WithType(TypezString),
+				NewTestField("value").WithType(TypezMap),
+			),
+			wantErr: `map ".test.ValueIsMap" value cannot be a map or repeated field`,
+		},
+		{
+			name: "value is map flag",
+			mapType: NewTestMapWithFields(
+				"ValueIsMapFlag",
+				NewTestField("key").WithType(TypezString),
+				NewTestField("value").WithType(TypezString).WithMap(),
+			),
+			wantErr: `map ".test.ValueIsMapFlag" value cannot be a map or repeated field`,
+		},
+		{
+			name: "value is repeated",
+			mapType: NewTestMapWithFields(
+				"ValueIsRepeated",
+				NewTestField("key").WithType(TypezString),
+				NewTestField("value").WithType(TypezString).WithRepeated(),
+			),
+			wantErr: `map ".test.ValueIsRepeated" value cannot be a map or repeated field`,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			model := NewTestAPI(nil, nil, nil).WithPackageName("p1").WithMaps(test.mapType)
+			err := Validate(model)
+			if err == nil {
+				t.Fatalf("expected error %q, got nil", test.wantErr)
+			}
+			if diff := cmp.Diff(test.wantErr, err.Error()); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
 	}
 }
