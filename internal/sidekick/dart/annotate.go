@@ -65,7 +65,7 @@ type skillFile struct {
 
 var skillFiles = []skillFile{
 	{
-		templatePath: "skills/tests.md.mustache",
+		templatePath: "skills/tests.md.gotmpl",
 		suffix:       "-tests",
 		relevant: func(codec *modelAnnotations) bool {
 			// The test skill is not meaningful if there are no fakes to test with
@@ -74,7 +74,7 @@ var skillFiles = []skillFile{
 		},
 	},
 	{
-		templatePath: "skills/setup.md.mustache",
+		templatePath: "skills/setup.md.gotmpl",
 		suffix:       "-setup",
 		relevant: func(codec *modelAnnotations) bool {
 			// The setup skill is not meaningful if there are no methods to call.
@@ -311,10 +311,10 @@ func newAnnotateModel(model *api.API) *annotateModel {
 	}
 }
 
-// annotateModel creates a struct used as input for Mustache templates.
-// Fields and methods defined in this struct directly correspond to Mustache
-// tags. For example, the Mustache tag {{#Services}} uses the
-// [Template.Services] field.
+// annotateModel creates a struct used as input for Go templates.
+// Fields and methods defined in this struct directly correspond to Go template
+// tags. For example, the template tag {{ range .Services }} uses the
+// [api.API.Services] field.
 func (annotate *annotateModel) annotateModel(options map[string]string) error {
 	var (
 		packageNameOverride        string

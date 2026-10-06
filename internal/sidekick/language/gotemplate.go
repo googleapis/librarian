@@ -76,6 +76,13 @@ func MustParseTemplates(fsys fs.FS) *Templates {
 // shared template tree configured with missingkey=error and standard helpers
 // ("include" and "indent").
 func ParseTemplates(fsys fs.FS) (*Templates, error) {
+	return ParseTemplatesDir(fsys, "templates")
+}
+
+// ParseTemplatesDir parses all .gotmpl files in fsys under root into a
+// shared template tree configured with missingkey=error and standard helpers
+// ("include" and "indent").
+func ParseTemplatesDir(fsys fs.FS, root string) (*Templates, error) {
 	t := &Templates{}
 	funcMap := template.FuncMap{
 		"include": func(name string, data any) (string, error) {
@@ -92,7 +99,7 @@ func ParseTemplates(fsys fs.FS) (*Templates, error) {
 	}
 	tmpl := template.New("sidekick").Funcs(funcMap).Option("missingkey=error")
 	t.tmpl = tmpl
-	err := fs.WalkDir(fsys, "templates", func(path string, d fs.DirEntry, err error) error {
+	err := fs.WalkDir(fsys, root, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
@@ -160,6 +167,26 @@ func (t *Templates) GenerateFromModel(outDir string, model *api.API, generatedFi
 		}
 	}
 	return nil
+}
+
+// GenerateService renders a single file using the api.Service model.
+func (t *Templates) GenerateService(outDir string, service *api.Service, gen GeneratedFile) error {
+	return t.GenerateElement(outDir, service, gen)
+}
+
+// GenerateMethod renders a single file using the api.Method model.
+func (t *Templates) GenerateMethod(outDir string, method *api.Method, gen GeneratedFile) error {
+	return t.GenerateElement(outDir, method, gen)
+}
+
+// GenerateMessage renders a single file using the api.Message model.
+func (t *Templates) GenerateMessage(outDir string, message *api.Message, gen GeneratedFile) error {
+	return t.GenerateElement(outDir, message, gen)
+}
+
+// GenerateEnum renders a single file using the api.Enum model.
+func (t *Templates) GenerateEnum(outDir string, enum *api.Enum, gen GeneratedFile) error {
+	return t.GenerateElement(outDir, enum, gen)
 }
 
 func indent(spaces int, s string) string {

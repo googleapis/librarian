@@ -234,3 +234,94 @@ func TestOneOfUnqualifiedConflictAnnotations(t *testing.T) {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
+
+func TestOneOf_ReservedRawIdentifiers(t *testing.T) {
+	branchSelf := api.NewTestField("self").WithType(api.TypezBool)
+	branchCrate := api.NewTestField("crate").WithType(api.TypezString)
+	branchSuper := api.NewTestField("super").WithType(api.TypezInt32)
+	group := api.NewTestOneOf("self").
+		WithFields(branchSelf, branchCrate, branchSuper)
+	message := api.NewTestMessage("Message").WithOneOfs(group)
+	model := api.NewTestAPI([]*api.Message{message}, nil, nil)
+	if err := api.CrossReference(model); err != nil {
+		t.Fatal(err)
+	}
+	codec := createRustCodec()
+	if _, err := annotateModel(model, codec); err != nil {
+		t.Fatal(err)
+	}
+
+	ignore := cmpopts.IgnoreFields(api.OneOf{}, "Codec")
+	wantOneOf := &oneOfAnnotation{
+		FieldName:           "self_",
+		SetterName:          "self",
+		EnumName:            "Self_",
+		QualifiedName:       "crate::model::message::Self_",
+		RelativeName:        "message::Self_",
+		ProstRelativeName:   "message::Self_",
+		StructQualifiedName: "crate::model::Message",
+		NameInExamples:      "google_cloud_test::model::message::Self_",
+		EnumNameInExamples:  "Self_",
+		FieldType:           "crate::model::message::Self_",
+	}
+	t.Run("oneof", func(t *testing.T) {
+		if diff := cmp.Diff(wantOneOf, group.Codec, ignore); diff != "" {
+			t.Errorf("mismatch (-want +got):\n%s", diff)
+		}
+	})
+
+	ignoreField := cmpopts.IgnoreFields(api.Field{}, "Codec")
+	wantSelfBranch := &fieldAnnotations{
+		FieldName:          "self_",
+		SetterName:         "self",
+		BranchName:         "Self_",
+		ProstBranchName:    "Self_",
+		FQMessageName:      "crate::model::Message",
+		FieldType:          "bool",
+		PrimitiveFieldType: "bool",
+		AddQueryParameter:  `let builder = req.self_().iter().fold(builder, |builder, p| builder.query(&[("self", p)]));`,
+		SkipIfIsDefault:    true,
+		OtherFieldsInGroup: []*api.Field{branchCrate, branchSuper},
+	}
+	t.Run("branch_self", func(t *testing.T) {
+		if diff := cmp.Diff(wantSelfBranch, branchSelf.Codec, ignoreField); diff != "" {
+			t.Errorf("mismatch (-want +got):\n%s", diff)
+		}
+	})
+
+	wantCrateBranch := &fieldAnnotations{
+		FieldName:          "crate_",
+		SetterName:         "crate",
+		BranchName:         "Crate",
+		ProstBranchName:    "Crate",
+		FQMessageName:      "crate::model::Message",
+		FieldType:          "std::string::String",
+		PrimitiveFieldType: "std::string::String",
+		AddQueryParameter:  `let builder = req.crate_().iter().fold(builder, |builder, p| builder.query(&[("crate", p)]));`,
+		OtherFieldsInGroup: []*api.Field{branchSelf, branchSuper},
+	}
+	t.Run("branch_crate", func(t *testing.T) {
+		if diff := cmp.Diff(wantCrateBranch, branchCrate.Codec, ignoreField); diff != "" {
+			t.Errorf("mismatch (-want +got):\n%s", diff)
+		}
+	})
+
+	wantSuperBranch := &fieldAnnotations{
+		FieldName:          "super_",
+		SetterName:         "super",
+		BranchName:         "Super",
+		ProstBranchName:    "Super",
+		FQMessageName:      "crate::model::Message",
+		FieldType:          "i32",
+		PrimitiveFieldType: "i32",
+		AddQueryParameter:  `let builder = req.super_().iter().fold(builder, |builder, p| builder.query(&[("super", p)]));`,
+		SerdeAs:            "wkt::internal::I32",
+		SkipIfIsDefault:    true,
+		OtherFieldsInGroup: []*api.Field{branchSelf, branchCrate},
+	}
+	t.Run("branch_super", func(t *testing.T) {
+		if diff := cmp.Diff(wantSuperBranch, branchSuper.Codec, ignoreField); diff != "" {
+			t.Errorf("mismatch (-want +got):\n%s", diff)
+		}
+	})
+}

@@ -1377,7 +1377,7 @@ func (c *codec) tryFieldRustdocLink(id string, model *api.API, scope string) (st
 				if err != nil {
 					return "", err
 				}
-				return fmt.Sprintf("%s::%s", p, toSnakeNoMangling(c.FieldName(f))), nil
+				return fmt.Sprintf("%s::%s", p, strings.TrimPrefix(toSnake(c.FieldName(f)), "r#")), nil
 			}
 			return c.tryOneOfRustdocLink(f, m, scope)
 		}
@@ -1388,7 +1388,7 @@ func (c *codec) tryFieldRustdocLink(id string, model *api.API, scope string) (st
 			if err != nil {
 				return "", err
 			}
-			return fmt.Sprintf("%s::%s", p, toSnakeNoMangling(o.Name)), nil
+			return fmt.Sprintf("%s::%s", p, strings.TrimPrefix(toSnake(o.Name), "r#")), nil
 		}
 	}
 	return "", nil
@@ -1402,7 +1402,7 @@ func (c *codec) tryOneOfRustdocLink(field *api.Field, message *api.Message, scop
 				if err != nil {
 					return "", err
 				}
-				return fmt.Sprintf("%s::%s", p, toSnakeNoMangling(o.Name)), nil
+				return fmt.Sprintf("%s::%s", p, strings.TrimPrefix(toSnake(o.Name), "r#")), nil
 			}
 		}
 	}
@@ -1701,15 +1701,22 @@ func (c *codec) serviceGenerateRpcSamples(serviceID string) bool {
 	return c.generateRpcSamples
 }
 
-// escapeKeyword is the list of Rust keywords and reserved words can be found
-// at https://doc.rust-lang.org/reference/keywords.html.
+// escapeKeyword maps Rust keywords to safe identifiers.
+//
+// Keywords that cannot be used as raw identifiers (r#crate, r#self, r#super, r#Self)
+// according to https://doc.rust-lang.org/reference/identifiers.html#grammar-RESERVED_RAW_IDENTIFIER
+// are suffixed with an underscore, matching prost-build.
+// All other keywords are prefixed with "r#".
 func escapeKeyword(symbol string) string {
+	switch symbol {
+	case "crate", "self", "super", "Self":
+		return symbol + "_"
+	}
 	keywords := map[string]bool{
 		"as":       true,
 		"break":    true,
 		"const":    true,
 		"continue": true,
-		"crate":    true,
 		"else":     true,
 		"enum":     true,
 		"extern":   true,
@@ -1728,11 +1735,8 @@ func escapeKeyword(symbol string) string {
 		"pub":      true,
 		"ref":      true,
 		"return":   true,
-		"self":     true,
-		"Self":     true,
 		"static":   true,
 		"struct":   true,
-		"super":    true,
 		"trait":    true,
 		"true":     true,
 		"type":     true,
@@ -1763,9 +1767,8 @@ func escapeKeyword(symbol string) string {
 		// Reserved in Rust 2018+
 		"try": true,
 	}
-	_, ok := keywords[symbol]
-	if !ok {
-		return symbol
+	if keywords[symbol] {
+		return "r#" + symbol
 	}
-	return "r#" + symbol
+	return symbol
 }

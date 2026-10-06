@@ -977,3 +977,71 @@ func TestFieldNameConflictWithNestedMessage(t *testing.T) {
 		t.Errorf("mismatch in AliasInExamples, want CustomBody, got %s", gotOverrideFA.AliasInExamples)
 	}
 }
+
+func TestAnnotateField_ReservedRawIdentifiers(t *testing.T) {
+	fieldSelf := api.NewTestField("self").WithType(api.TypezBool)
+	fieldCrate := api.NewTestField("crate").WithType(api.TypezString)
+	fieldSuper := api.NewTestField("super").WithType(api.TypezInt32)
+	message := api.NewTestMessage("Message").
+		WithPackage("test.v1").
+		WithFields(fieldSelf, fieldCrate, fieldSuper)
+	model := api.NewTestAPI([]*api.Message{message}, nil, nil)
+	if err := api.CrossReference(model); err != nil {
+		t.Fatal(err)
+	}
+	codec := newTestCodec(t, libconfig.SpecProtobuf, "test", nil)
+	if _, err := annotateModel(model, codec); err != nil {
+		t.Fatal(err)
+	}
+
+	wantSelf := &fieldAnnotations{
+		FieldName:          "self_",
+		SetterName:         "self",
+		BranchName:         "Self_",
+		ProstBranchName:    "Self_",
+		FQMessageName:      "crate::model::Message",
+		FieldType:          "bool",
+		PrimitiveFieldType: "bool",
+		AddQueryParameter:  `let builder = builder.query(&[("self", &req.self_)]);`,
+		SkipIfIsDefault:    true,
+	}
+	t.Run("self", func(t *testing.T) {
+		if diff := cmp.Diff(wantSelf, fieldSelf.Codec); diff != "" {
+			t.Errorf("mismatch (-want +got):\n%s", diff)
+		}
+	})
+
+	wantCrate := &fieldAnnotations{
+		FieldName:          "crate_",
+		SetterName:         "crate",
+		BranchName:         "Crate",
+		ProstBranchName:    "Crate",
+		FQMessageName:      "crate::model::Message",
+		FieldType:          "std::string::String",
+		PrimitiveFieldType: "std::string::String",
+		AddQueryParameter:  `let builder = builder.query(&[("crate", &req.crate_)]);`,
+	}
+	t.Run("crate", func(t *testing.T) {
+		if diff := cmp.Diff(wantCrate, fieldCrate.Codec); diff != "" {
+			t.Errorf("mismatch (-want +got):\n%s", diff)
+		}
+	})
+
+	wantSuper := &fieldAnnotations{
+		FieldName:          "super_",
+		SetterName:         "super",
+		BranchName:         "Super",
+		ProstBranchName:    "Super",
+		FQMessageName:      "crate::model::Message",
+		FieldType:          "i32",
+		PrimitiveFieldType: "i32",
+		AddQueryParameter:  `let builder = builder.query(&[("super", &req.super_)]);`,
+		SerdeAs:            "wkt::internal::I32",
+		SkipIfIsDefault:    true,
+	}
+	t.Run("super", func(t *testing.T) {
+		if diff := cmp.Diff(wantSuper, fieldSuper.Codec); diff != "" {
+			t.Errorf("mismatch (-want +got):\n%s", diff)
+		}
+	})
+}

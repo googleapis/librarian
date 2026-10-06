@@ -1,0 +1,51 @@
+{{/*
+Copyright 2025 Google LLC
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    https://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/}}
+{{- if .IsAIPStandard }}
+{{- with .SampleInfo }}
+{{- if .IsRequestResourceName }}
+{{- if .Codec.FormatResourceName }}
+///         .set_{{ .ResourceNameField.Codec.SetterName }}(format!("{{ .ResourceNameField.Codec.FormattedResource.FormatString }}"))
+{{- else }}
+///         .set_{{ .ResourceNameField.Codec.SetterName }}({{- range .Codec.StringParameters }}{{ . }}{{- end }})
+{{- end }}
+{{- end }}
+{{- with .ResourceIDField }}
+///         .set_{{ .Codec.SetterName }}("{{ .Codec.SetterName }}_value")
+{{- end }}
+{{- if .IsMessageResourceName }}
+{{- if .Codec.FormatResourceName }}
+///         .set_{{ .MessageField.Codec.SetterName }}(
+///             {{ .MessageField.MessageType.Codec.Name }}::new().set_name(format!("{{ .ResourceNameField.Codec.FormattedResource.FormatString }}"))/* set fields */
+///         )
+{{- else }}
+///         .set_{{ .MessageField.Codec.SetterName }}(
+///             {{ .MessageField.MessageType.Codec.Name }}::new().set_name({{- range .Codec.StringParameters }}{{ . }}{{- end }})/* set fields */
+///         )
+{{- end }}
+{{- else }}
+{{- with .MessageField }}
+///         .set_{{ .Codec.SetterName }}(
+///             {{ .MessageType.Codec.Name }}::new()/* set fields */
+///         )
+{{- end }}
+{{- end }}
+{{- with .UpdateMaskField }}
+///         .set_{{ .Codec.SetterName }}(FieldMask::default().set_paths(["updated.field.path1", "updated.field.path2"]))
+{{- end }}
+{{- end }}
+{{- else }}
+///         /* set fields */
+{{- end }}
