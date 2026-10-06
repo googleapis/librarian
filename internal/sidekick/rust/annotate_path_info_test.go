@@ -156,9 +156,7 @@ func TestPathBindingAnnotations(t *testing.T) {
 			WithLiteral("locations").
 			WithMatch()).
 		WithVerb("create")).
-		WithQueryParameters(map[string]bool{
-			"id": true,
-		})
+		WithQueryParameters("id")
 	wantB0 := &pathBindingAnnotation{
 		PathFmt:     "/v2/{}:create",
 		QueryParams: []*api.Field{fID},
@@ -239,11 +237,7 @@ func TestPathBindingAnnotations(t *testing.T) {
 	b3 := api.NewTestPathBinding("GET", (&api.PathTemplate{}).
 		WithLiteral("v2").
 		WithLiteral("foos")).
-		WithQueryParameters(map[string]bool{
-			"name":     true,
-			"optional": true,
-			"child":    true,
-		})
+		WithQueryParameters("name", "optional", "child")
 	wantB3 := &pathBindingAnnotation{
 		PathFmt:     "/v2/foos",
 		QueryParams: []*api.Field{fName, fOptional, fChild},
@@ -357,7 +351,7 @@ func TestPathBindingAnnotationsStyle(t *testing.T) {
 			WithVariable(api.NewPathVariable(test.FieldName).
 				WithMatch()).
 			WithVerb("create")).
-			WithQueryParameters(map[string]bool{})
+			WithQueryParameters()
 		wantBinding := &pathBindingAnnotation{
 			PathFmt: "/v1/machines/{}:create",
 			Substitutions: []*bindingSubstitution{
