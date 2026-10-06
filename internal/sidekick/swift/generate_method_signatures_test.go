@@ -220,8 +220,8 @@ func newModelWithSignatures(t *testing.T) *api.API {
 		WithOutput(responseType).
 		WithVerb("POST").
 		WithSignatures(
-			&api.MethodSignature{Names: []string{"name", "optional_field"}},
-			&api.MethodSignature{Names: []string{"name", "normal_field"}},
+			api.NewTestMethodSignature("name", "optional_field"),
+			api.NewTestMethodSignature("name", "normal_field"),
 		).
 		WithPathTemplate((&api.PathTemplate{}).WithLiteral("v1").WithLiteral("simple"))
 
@@ -237,8 +237,8 @@ func newModelWithSignatures(t *testing.T) *api.API {
 		WithPagination(pageToken).
 		WithVerb("GET").
 		WithSignatures(
-			&api.MethodSignature{Names: []string{"name", "optional_field"}},
-			&api.MethodSignature{Names: []string{"name", "normal_field"}},
+			api.NewTestMethodSignature("name", "optional_field"),
+			api.NewTestMethodSignature("name", "normal_field"),
 		).
 		WithPathTemplate((&api.PathTemplate{}).WithLiteral("v1").WithLiteral("page"))
 
@@ -252,27 +252,22 @@ func newModelWithSignatures(t *testing.T) *api.API {
 		WithOutput(getOperationInputType).
 		WithVerb("POST").
 		WithSignatures(
-			&api.MethodSignature{Names: []string{"name", "optional_field"}},
-			&api.MethodSignature{Names: []string{"name", "normal_field"}},
+			api.NewTestMethodSignature("name", "optional_field"),
+			api.NewTestMethodSignature("name", "normal_field"),
 		).
 		WithPathTemplate((&api.PathTemplate{}).WithLiteral("v1").WithLiteral("lro")).
-		WithOperationInfo(&api.OperationInfo{
-			ResponseTypeID: lroResultType.ID,
-			MetadataTypeID: lroMetadataType.ID,
-		})
+		WithOperationInfo(api.NewTestOperationInfo(lroResultType.ID, lroMetadataType.ID))
 
 	discoveryLroMethod := api.NewTestMethod("LroDiscoveryMethod").
 		WithInput(requestType).
 		WithOutput(getOperationInputType).
 		WithVerb("POST").
 		WithSignatures(
-			&api.MethodSignature{Names: []string{"name", "optional_field"}},
-			&api.MethodSignature{Names: []string{"name", "normal_field"}},
+			api.NewTestMethodSignature("name", "optional_field"),
+			api.NewTestMethodSignature("name", "normal_field"),
 		).
 		WithPathTemplate((&api.PathTemplate{}).WithLiteral("v1").WithLiteral("discoveryLro")).
-		WithDiscoveryLro(&api.DiscoveryLro{
-			PollingPathParameters: []string{"test_only"},
-		})
+		WithDiscoveryLro(api.NewTestDiscoveryLro("test_only"))
 
 	service := api.NewTestService("TestService").
 		WithPackage("test").
