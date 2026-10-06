@@ -75,15 +75,11 @@ func TestProtobuf_PartialInfo(t *testing.T) {
 }
 
 func newTestProtobufFakeMessage(fields ...*api.Field) *api.Message {
-	m := api.NewTestMessage("Fake").
+	return api.NewTestMessage("Fake").
 		WithPackage("test").
 		WithID(".test.Fake").
 		WithDocumentation("A test message.").
 		WithFields(fields...)
-	for _, f := range m.Fields {
-		f.Parent = nil
-	}
-	return m
 }
 
 func TestProtobuf_Scalar(t *testing.T) {
@@ -233,9 +229,6 @@ func TestProtobuf_SkipExternalMessages(t *testing.T) {
 				WithType(api.TypezEnum).
 				WithTypezID(".away.ImportedEnum"),
 		)
-	for _, f := range want.Fields {
-		f.Parent = nil
-	}
 	apitest.CheckMessage(t, message, want)
 	// Only `LocalMessage` should be found in the messages list:
 	for _, msg := range test.Messages {
@@ -297,9 +290,6 @@ func TestProtobuf_Comments(t *testing.T) {
 				WithDocumentation("A field.\n\nWith a longer description.").
 				WithType(api.TypezString),
 		)
-	for _, f := range wantRequest.Fields {
-		f.Parent = nil
-	}
 	apitest.CheckMessage(t, message, wantRequest)
 
 	message = test.Message(".test.Response.Nested")
@@ -315,9 +305,6 @@ func TestProtobuf_Comments(t *testing.T) {
 				WithDocumentation("Field in a nested message.\n\n* Bullet 1\n  Bullet 1 continued\n* Bullet 2\n  Bullet 2 continued").
 				WithType(api.TypezString),
 		)
-	for _, f := range wantNested.Fields {
-		f.Parent = nil
-	}
 	apitest.CheckMessage(t, message, wantNested)
 
 	e := test.Enum(".test.Response.Status")
@@ -366,7 +353,6 @@ func TestProtobuf_Comments(t *testing.T) {
 		WithDocumentation("A service.\n\nWith a longer service description.").
 		WithDefaultHost("test.googleapis.com").
 		WithMethods(createMethod)
-	createMethod.Service = nil
 	apitest.CheckService(t, service, wantService)
 }
 
@@ -467,9 +453,6 @@ func TestProtobuf_ObjectFields(t *testing.T) {
 				WithTypezID(".test.Other").
 				WithRepeated(),
 		)
-	for _, f := range wantObjectMessage.Fields {
-		f.Parent = nil
-	}
 	apitest.CheckMessage(t, message, wantObjectMessage)
 }
 
@@ -511,9 +494,6 @@ func TestProtobuf_WellKnownTypeFields(t *testing.T) {
 				WithTypezID(".google.protobuf.Any").
 				WithRepeated(),
 		)
-	for _, f := range want.Fields {
-		f.Parent = nil
-	}
 	apitest.CheckMessage(t, message, want)
 }
 
@@ -539,9 +519,6 @@ func TestProtobuf_JsonName(t *testing.T) {
 			api.NewTestField("read_time").
 				WithType(api.TypezInt32),
 		)
-	for _, f := range wantRequest.Fields {
-		f.Parent = nil
-	}
 	apitest.CheckMessage(t, message, wantRequest)
 }
 
@@ -567,9 +544,6 @@ func TestProtobuf_MapFields(t *testing.T) {
 				WithType(api.TypezMessage).
 				WithTypezID(".test.Fake.EnumValueEntry"),
 		)
-	for _, f := range want.Fields {
-		f.Parent = nil
-	}
 	apitest.CheckMessage(t, message, want)
 
 	if diff := cmp.Diff([]*api.Message(nil), message.Messages); diff != "" {
@@ -590,9 +564,6 @@ func TestProtobuf_MapFields(t *testing.T) {
 				WithType(api.TypezInt32),
 		)
 	wantSingularMapEntry.IsMap = true
-	for _, f := range wantSingularMapEntry.Fields {
-		f.Parent = nil
-	}
 	apitest.CheckMessage(t, message, wantSingularMapEntry)
 
 	message = test.Message(".test.Fake.EnumValueEntry")
@@ -610,9 +581,6 @@ func TestProtobuf_MapFields(t *testing.T) {
 				WithTypezID(".test.TestEnum"),
 		)
 	wantEnumValueEntry.IsMap = true
-	for _, f := range wantEnumValueEntry.Fields {
-		f.Parent = nil
-	}
 	apitest.CheckMessage(t, message, wantEnumValueEntry)
 }
 
@@ -728,9 +696,6 @@ func TestProtobuf_Service(t *testing.T) {
 		WithDocumentation("A service to unit test the protobuf translator.").
 		WithDefaultHost("test.googleapis.com").
 		WithMethods(getFoo, createFoo, deleteFoo, uploadFoos, downloadFoos, chatLike)
-	for _, m := range wantService.Methods {
-		m.Service = nil
-	}
 	apitest.CheckService(t, service, wantService)
 }
 
@@ -789,9 +754,6 @@ func TestProtobuf_QueryParameters(t *testing.T) {
 		WithDocumentation("A service to unit test the protobuf translator.").
 		WithDefaultHost("test.googleapis.com").
 		WithMethods(createFoo, addBar)
-	for _, m := range wantService.Methods {
-		m.Service = nil
-	}
 	apitest.CheckService(t, service, wantService)
 }
 
@@ -905,9 +867,6 @@ func TestProtobuf_Pagination(t *testing.T) {
 			newTestPaginationMethod("ListFooMissingPageToken", "ListFooMissingPageTokenRequest", map[string]bool{"page_size": true}, ""),
 			missingRepeatedItem,
 		)
-	for _, m := range wantService.Methods {
-		m.Service = nil
-	}
 	apitest.CheckService(t, service, wantService)
 
 	resp := test.Message(".test.ListFooResponse")
@@ -928,9 +887,6 @@ func TestProtobuf_Pagination(t *testing.T) {
 				WithType(api.TypezInt32),
 		).
 		WithPagination(nextPageToken, foos)
-	for _, f := range wantResp.Fields {
-		f.Parent = nil
-	}
 	apitest.CheckMessage(t, resp, wantResp)
 }
 
@@ -1046,9 +1002,6 @@ func TestProtobuf_OperationInfo(t *testing.T) {
 		WithDocumentation("A service to unit test the protobuf translator.").
 		WithDefaultHost("test.googleapis.com").
 		WithMethods(createFoo, createFooWithProgress, getOperation)
-	for _, m := range wantService.Methods {
-		m.Service = nil
-	}
 	apitest.CheckService(t, service, wantService)
 }
 
@@ -1155,9 +1108,6 @@ func TestProtobuf_AutoPopulated(t *testing.T) {
 				WithType(api.TypezString).
 				WithAutoPopulated(),
 		)
-	for _, f := range wantMessage.Fields {
-		f.Parent = nil
-	}
 	apitest.CheckMessage(t, message, wantMessage)
 
 	method := test.Method(".test.TestService.CreateFoo")
@@ -1165,7 +1115,7 @@ func TestProtobuf_AutoPopulated(t *testing.T) {
 		t.Fatalf("Cannot find method %s in API State", ".test.TestService.CreateFoo")
 	}
 	want := []*api.Field{requestID, requestIDOptional, requestIDWithFieldBehavior}
-	if diff := cmp.Diff(want, method.AutoPopulated); diff != "" {
+	if diff := cmp.Diff(want, method.AutoPopulated, cmpopts.IgnoreFields(api.Field{}, "Parent")); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
@@ -1200,7 +1150,6 @@ func TestProtobuf_Deprecated(t *testing.T) {
 	wantServiceB := api.NewTestService("ServiceB").
 		WithPackage("test").
 		WithMethods(rpcA)
-	rpcA.Service = nil
 	apitest.CheckService(t, s, wantServiceB)
 
 	m := test.Message(".test.Request")
@@ -1216,9 +1165,6 @@ func TestProtobuf_Deprecated(t *testing.T) {
 				WithType(api.TypezString).
 				WithDeprecated(true),
 		)
-	for _, f := range wantRequest.Fields {
-		f.Parent = nil
-	}
 	apitest.CheckMessage(t, m, wantRequest)
 
 	m = test.Message(".test.Response")
@@ -1381,9 +1327,6 @@ func TestProtobuf_ResourceAnnotations(t *testing.T) {
 				api.NewTestField("name").
 					WithType(api.TypezString),
 			)
-		for _, f := range wantBook.Fields {
-			f.Parent = nil
-		}
 		apitest.CheckMessage(t, bookMessage, wantBook)
 	})
 
@@ -1406,9 +1349,6 @@ func TestProtobuf_ResourceAnnotations(t *testing.T) {
 					WithTypezID(".test.Book").
 					WithOptional(),
 			)
-		for _, f := range wantCreate.Fields {
-			f.Parent = nil
-		}
 		apitest.CheckMessage(t, createBookRequest, wantCreate)
 	})
 
@@ -1429,9 +1369,6 @@ func TestProtobuf_ResourceAnnotations(t *testing.T) {
 				api.NewTestField("page_token").
 					WithType(api.TypezString),
 			)
-		for _, f := range wantList.Fields {
-			f.Parent = nil
-		}
 		apitest.CheckMessage(t, listBooksRequest, wantList)
 	})
 
