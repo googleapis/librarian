@@ -69,29 +69,22 @@ func TestProtobuf_LocationMixin(t *testing.T) {
 		t.Fatal("Cannot find .test.TestService.GetLocation")
 	}
 
-	apitest.CheckMethod(t, service, "GetLocation", &api.Method{
-		Documentation:   "Provides the [Locations][google.cloud.location.Locations] service functionality in this service.",
-		Name:            "GetLocation",
-		ID:              ".test.TestService.GetLocation",
-		SourceServiceID: ".google.cloud.location.Locations",
-		InputTypeID:     ".google.cloud.location.GetLocationRequest",
-		OutputTypeID:    ".google.cloud.location.Location",
-		PathInfo: &api.PathInfo{
-			Bindings: []*api.PathBinding{
-				{
-					Verb: "GET",
-					PathTemplate: (&api.PathTemplate{}).
-						WithLiteral("v1").
-						WithVariable(api.NewPathVariable("name").
-							WithLiteral("projects").
-							WithMatch().
-							WithLiteral("locations").
-							WithMatch()),
-					QueryParameters: map[string]bool{},
-				},
-			},
-		},
-	})
+	want := api.NewTestMethod("GetLocation").
+		WithID(".test.TestService.GetLocation").
+		WithDocumentation("Provides the [Locations][google.cloud.location.Locations] service functionality in this service.").
+		WithVerb("GET").
+		WithPathTemplate((&api.PathTemplate{}).
+			WithLiteral("v1").
+			WithVariable(api.NewPathVariable("name").
+				WithLiteral("projects").
+				WithMatch().
+				WithLiteral("locations").
+				WithMatch())).
+		WithQueryParameters(map[string]bool{})
+	want.SourceServiceID = ".google.cloud.location.Locations"
+	want.InputTypeID = ".google.cloud.location.GetLocationRequest"
+	want.OutputTypeID = ".google.cloud.location.Location"
+	apitest.CheckMethod(t, service, "GetLocation", want)
 }
 
 func TestProtobuf_IAMMixin(t *testing.T) {
@@ -140,29 +133,22 @@ func TestProtobuf_IAMMixin(t *testing.T) {
 	if test.Method(".test.TestService.GetIamPolicy") == nil {
 		t.Fatal("Cannot find .test.TestService.GetIamPolicy")
 	}
-	apitest.CheckMethod(t, service, "GetIamPolicy", &api.Method{
-		Documentation:   "Provides the [IAMPolicy][google.iam.v1.IAMPolicy] service functionality in this service.",
-		Name:            "GetIamPolicy",
-		ID:              ".test.TestService.GetIamPolicy",
-		SourceServiceID: ".google.iam.v1.IAMPolicy",
-		InputTypeID:     ".google.iam.v1.GetIamPolicyRequest",
-		OutputTypeID:    ".google.iam.v1.Policy",
-		PathInfo: &api.PathInfo{
-			Bindings: []*api.PathBinding{
-				{
-					Verb: "POST",
-					PathTemplate: (&api.PathTemplate{}).
-						WithLiteral("v1").
-						WithVariable(api.NewPathVariable("resource").
-							WithLiteral("services").
-							WithMatch()).
-						WithVerb("getIamPolicy"),
-					QueryParameters: map[string]bool{},
-				},
-			},
-			BodyFieldPath: "*",
-		},
-	})
+	want := api.NewTestMethod("GetIamPolicy").
+		WithID(".test.TestService.GetIamPolicy").
+		WithDocumentation("Provides the [IAMPolicy][google.iam.v1.IAMPolicy] service functionality in this service.").
+		WithVerb("POST").
+		WithPathTemplate((&api.PathTemplate{}).
+			WithLiteral("v1").
+			WithVariable(api.NewPathVariable("resource").
+				WithLiteral("services").
+				WithMatch()).
+			WithVerb("getIamPolicy")).
+		WithQueryParameters(map[string]bool{}).
+		WithBodyFieldPath("*")
+	want.SourceServiceID = ".google.iam.v1.IAMPolicy"
+	want.InputTypeID = ".google.iam.v1.GetIamPolicyRequest"
+	want.OutputTypeID = ".google.iam.v1.Policy"
+	apitest.CheckMethod(t, service, "GetIamPolicy", want)
 }
 
 func TestProtobuf_OperationMixin(t *testing.T) {
@@ -217,29 +203,22 @@ func TestProtobuf_OperationMixin(t *testing.T) {
 		t.Fatal("Cannot find .test.TestService.GetOperation")
 	}
 
-	apitest.CheckMethod(t, service, "GetOperation", &api.Method{
-		Documentation:   "Custom docs.",
-		Name:            "GetOperation",
-		ID:              ".test.TestService.GetOperation",
-		SourceServiceID: ".google.longrunning.Operations",
-		InputTypeID:     ".google.longrunning.GetOperationRequest",
-		OutputTypeID:    ".google.longrunning.Operation",
-		PathInfo: &api.PathInfo{
-			Bindings: []*api.PathBinding{
-				{
-					Verb: "GET",
-					PathTemplate: (&api.PathTemplate{}).
-						WithLiteral("v2").
-						WithVariable(api.NewPathVariable("name").
-							WithLiteral("operations").
-							WithMatch()),
-					QueryParameters: map[string]bool{},
-				},
-			},
-			BodyFieldPath: "*",
-		},
-		Signatures: []*api.MethodSignature{{Names: []string{"name"}}},
-	})
+	want := api.NewTestMethod("GetOperation").
+		WithID(".test.TestService.GetOperation").
+		WithDocumentation("Custom docs.").
+		WithVerb("GET").
+		WithPathTemplate((&api.PathTemplate{}).
+			WithLiteral("v2").
+			WithVariable(api.NewPathVariable("name").
+				WithLiteral("operations").
+				WithMatch())).
+		WithQueryParameters(map[string]bool{}).
+		WithBodyFieldPath("*")
+	want.SourceServiceID = ".google.longrunning.Operations"
+	want.InputTypeID = ".google.longrunning.GetOperationRequest"
+	want.OutputTypeID = ".google.longrunning.Operation"
+	want.Signatures = []*api.MethodSignature{{Names: []string{"name"}}}
+	apitest.CheckMethod(t, service, "GetOperation", want)
 }
 
 func TestProtobuf_OperationMixinNoEmpty(t *testing.T) {
@@ -305,39 +284,29 @@ func TestProtobuf_OperationMixinNoEmpty(t *testing.T) {
 		t.Fatal("Cannot find .test.TestService.GetOperation")
 	}
 
-	apitest.CheckMethod(t, service, "CancelOperation", &api.Method{
-		Documentation:   "Custom docs.",
-		Name:            "CancelOperation",
-		ID:              ".test.TestService.CancelOperation",
-		SourceServiceID: ".google.longrunning.Operations",
-		InputTypeID:     ".google.longrunning.CancelOperationRequest",
-		OutputTypeID:    ".google.protobuf.Empty",
-		ReturnsEmpty:    true,
-		PathInfo: &api.PathInfo{
-			Bindings: []*api.PathBinding{
-				{
-					Verb: "DELETE",
-					PathTemplate: (&api.PathTemplate{}).
-						WithLiteral("v2").
-						WithVariable(api.NewPathVariable("name").
-							WithLiteral("operations").
-							WithMatch()),
-					QueryParameters: map[string]bool{},
-				},
-			},
-			BodyFieldPath: "*",
-		},
-		Signatures: []*api.MethodSignature{{Names: []string{"name"}}},
-	})
+	want := api.NewTestMethod("CancelOperation").
+		WithID(".test.TestService.CancelOperation").
+		WithDocumentation("Custom docs.").
+		WithVerb("DELETE").
+		WithPathTemplate((&api.PathTemplate{}).
+			WithLiteral("v2").
+			WithVariable(api.NewPathVariable("name").
+				WithLiteral("operations").
+				WithMatch())).
+		WithQueryParameters(map[string]bool{}).
+		WithBodyFieldPath("*").
+		ReturnEmpty()
+	want.SourceServiceID = ".google.longrunning.Operations"
+	want.InputTypeID = ".google.longrunning.CancelOperationRequest"
+	want.OutputTypeID = ".google.protobuf.Empty"
+	want.Signatures = []*api.MethodSignature{{Names: []string{"name"}}}
+	apitest.CheckMethod(t, service, "CancelOperation", want)
 	got := test.Message(".google.protobuf.Empty")
 	if got == nil {
 		t.Fatal("Cannot find .google.protobuf.Empty")
 	}
-	apitest.CheckMessage(t, got, &api.Message{
-		Name:    "Empty",
-		ID:      ".google.protobuf.Empty",
-		Package: "google.protobuf",
-	})
+	apitest.CheckMessage(t, got, api.NewTestMessage("Empty").
+		WithPackage("google.protobuf"))
 }
 
 func TestProtobuf_DuplicateMixin(t *testing.T) {
@@ -392,25 +361,18 @@ func TestProtobuf_DuplicateMixin(t *testing.T) {
 		t.Fatal("Cannot find .test.LroService.GetOperation")
 	}
 
-	apitest.CheckMethod(t, service, "GetOperation", &api.Method{
-		Documentation:   "Source file docs.",
-		Name:            "GetOperation",
-		ID:              ".test.LroService.GetOperation",
-		SourceServiceID: ".test.LroService",
-		InputTypeID:     ".google.longrunning.GetOperationRequest",
-		OutputTypeID:    ".google.longrunning.Operation",
-		PathInfo: &api.PathInfo{
-			Bindings: []*api.PathBinding{
-				{
-					Verb: "GET",
-					PathTemplate: (&api.PathTemplate{}).
-						WithLiteral("v1").
-						WithVariable(api.NewPathVariable("name").
-							WithLiteral("operations").
-							WithMatch()),
-					QueryParameters: map[string]bool{},
-				},
-			},
-		},
-	})
+	want := api.NewTestMethod("GetOperation").
+		WithID(".test.LroService.GetOperation").
+		WithDocumentation("Source file docs.").
+		WithVerb("GET").
+		WithPathTemplate((&api.PathTemplate{}).
+			WithLiteral("v1").
+			WithVariable(api.NewPathVariable("name").
+				WithLiteral("operations").
+				WithMatch())).
+		WithQueryParameters(map[string]bool{})
+	want.SourceServiceID = ".test.LroService"
+	want.InputTypeID = ".google.longrunning.GetOperationRequest"
+	want.OutputTypeID = ".google.longrunning.Operation"
+	apitest.CheckMethod(t, service, "GetOperation", want)
 }
