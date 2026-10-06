@@ -48,8 +48,8 @@ import Foundation
 public final class {{ .Codec.ClientName }}: Clients.{{ .Codec.StubPrefix }}Protocol, Sendable {
   let inner: any Clients.{{ .Codec.StubPrefix }}Stub
   {{- if .Codec.HasLROs }}
-  let pollingErrorPolicy: GoogleGax.PollingErrorPolicy
-  let pollingBackoffPolicy: GoogleGax.PollingBackoffPolicy
+  let pollingErrorPolicy: any GoogleGax.PollingErrorPolicy
+  let pollingBackoffPolicy: any GoogleGax.PollingBackoffPolicy
   {{- end }}
 
   /// Creates a new `{{ .Codec.ClientName }}` instance.

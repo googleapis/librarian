@@ -63,9 +63,9 @@ func TestGenerateField_InitFromDecoder(t *testing.T) {
 	}
 	contentStr := string(content)
 
-	// Verify init(from decoder: Decoder) content
-	gotBlock := extractBlock(t, contentStr, "  public init(from decoder: Decoder) throws {", "\n  }")
-	wantBlock := `  public init(from decoder: Decoder) throws {
+	// Verify init(from decoder: any Decoder) content
+	gotBlock := extractBlock(t, contentStr, "  public init(from decoder: any Decoder) throws {", "\n  }")
+	wantBlock := `  public init(from decoder: any Decoder) throws {
     let container = try decoder.container(keyedBy: CodingKeys.self)
     if let value = try container.decodeIfPresent(Swift.String.self, forKey: .normalField) {
       self.normalField = value
