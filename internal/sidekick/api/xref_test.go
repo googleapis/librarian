@@ -23,52 +23,23 @@ func TestCrossReferenceOneOfs(t *testing.T) {
 	var fields1 []*Field
 	for i := range 4 {
 		name := fmt.Sprintf("field%d", i)
-		fields1 = append(fields1, &Field{
-			Name:    name,
-			ID:      ".test.Message." + name,
-			Typez:   TypezString,
-			IsOneOf: true,
-		})
+		fields1 = append(fields1, NewTestField(name).WithType(TypezString))
 	}
-	fields1 = append(fields1, &Field{
-		Name:    "basic_field",
-		ID:      ".test.Message.basic_field",
-		Typez:   TypezString,
-		IsOneOf: true,
-	})
-	group0 := &OneOf{
-		Name:   "group0",
-		Fields: []*Field{fields1[0], fields1[1]},
-	}
-	group1 := &OneOf{
-		Name:   "group1",
-		Fields: []*Field{fields1[2], fields1[3]},
-	}
-	message1 := &Message{
-		Name:   "Message1",
-		ID:     ".test.Message1",
-		Fields: fields1,
-		OneOfs: []*OneOf{group0, group1},
-	}
+	fields1 = append(fields1, NewTestField("basic_field").WithType(TypezString))
+	group0 := NewTestOneOf("group0").WithFields(fields1[0], fields1[1])
+	group1 := NewTestOneOf("group1").WithFields(fields1[2], fields1[3])
+	message1 := NewTestMessage("Message1").
+		WithFields(fields1...).
+		WithOneOfs(group0, group1)
+
 	var fields2 []*Field
 	for i := range 2 {
 		name := fmt.Sprintf("field%d", i+4)
-		fields2 = append(fields2, &Field{
-			Name:    name,
-			ID:      ".test.Message." + name,
-			Typez:   TypezString,
-			IsOneOf: true,
-		})
+		fields2 = append(fields2, NewTestField(name).WithType(TypezString))
 	}
-	group2 := &OneOf{
-		Name:   "group2",
-		Fields: []*Field{fields2[0], fields2[1]},
-	}
-	message2 := &Message{
-		Name:   "Message2",
-		ID:     ".test.Message2",
-		OneOfs: []*OneOf{group2},
-	}
+	group2 := NewTestOneOf("group2").WithFields(fields2[0], fields2[1])
+	message2 := NewTestMessage("Message2").WithOneOfs(group2)
+
 	model := NewTestAPI([]*Message{message1, message2}, []*Enum{}, []*Service{})
 	if err := CrossReference(model); err != nil {
 		t.Fatal(err)
@@ -97,31 +68,15 @@ func TestCrossReferenceOneOfs(t *testing.T) {
 }
 
 func TestCrossReferenceFields(t *testing.T) {
-	messageT := &Message{
-		Name: "MessageT",
-		ID:   ".test.MessageT",
-	}
-	fieldM := &Field{
-		Name:    "message_field",
-		ID:      ".test.Message.message_field",
-		Typez:   TypezMessage,
-		TypezID: ".test.MessageT",
-	}
-	enumT := &Enum{
-		Name: "EnumT",
-		ID:   ".test.EnumT",
-	}
-	fieldE := &Field{
-		Name:    "enum_field",
-		ID:      ".test.Message.enum_field",
-		Typez:   TypezEnum,
-		TypezID: ".test.EnumT",
-	}
-	message := &Message{
-		Name:   "Message",
-		ID:     ".test.Message",
-		Fields: []*Field{fieldM, fieldE},
-	}
+	messageT := NewTestMessage("MessageT")
+	fieldM := NewTestField("message_field").
+		WithType(TypezMessage).
+		WithTypezID(".test.MessageT")
+	enumT := NewTestEnum("EnumT")
+	fieldE := NewTestField("enum_field").
+		WithType(TypezEnum).
+		WithTypezID(".test.EnumT")
+	message := NewTestMessage("Message").WithFields(fieldM, fieldE)
 
 	model := NewTestAPI([]*Message{messageT, message}, []*Enum{enumT}, []*Service{})
 	if err := CrossReference(model); err != nil {
@@ -148,37 +103,17 @@ func TestCrossReferenceFields(t *testing.T) {
 }
 
 func TestCrossReferenceMethod(t *testing.T) {
-	request := &Message{
-		Name: "Request",
-		ID:   ".test.Request",
-	}
-	response := &Message{
-		Name: "Response",
-		ID:   ".test.Response",
-	}
-	method := &Method{
-		Name:         "GetResource",
-		ID:           ".test.Service.GetResource",
-		InputTypeID:  ".test.Request",
-		OutputTypeID: ".test.Response",
-	}
-	mixinMethod := &Method{
-		Name:            "GetOperation",
-		ID:              ".test.Service.GetOperation",
-		SourceServiceID: ".google.longrunning.Operations",
-		InputTypeID:     ".test.Request",
-		OutputTypeID:    ".test.Response",
-	}
-	service := &Service{
-		Name:    "Service",
-		ID:      ".test.Service",
-		Methods: []*Method{method, mixinMethod},
-	}
-	mixinService := &Service{
-		Name:    "Operations",
-		ID:      ".google.longrunning.Operations",
-		Methods: []*Method{},
-	}
+	request := NewTestMessage("Request")
+	response := NewTestMessage("Response")
+	method := NewTestMethod("GetResource").
+		WithInputTypeID(".test.Request").
+		WithOutputTypeID(".test.Response")
+	mixinMethod := NewTestMethod("GetOperation").
+		WithSourceServiceID(".google.longrunning.Operations").
+		WithInputTypeID(".test.Request").
+		WithOutputTypeID(".test.Response")
+	service := NewTestService("Service").WithMethods(method, mixinMethod)
+	mixinService := NewTestService("Operations").WithID(".google.longrunning.Operations")
 
 	model := NewTestAPI([]*Message{request, response}, []*Enum{}, []*Service{service, mixinService})
 	if err := CrossReference(model); err != nil {
@@ -193,14 +128,8 @@ func TestCrossReferenceMethod(t *testing.T) {
 }
 
 func TestCrossReferenceService(t *testing.T) {
-	service := &Service{
-		Name: "Service",
-		ID:   ".test.Service",
-	}
-	mixin := &Service{
-		Name: "Mixin",
-		ID:   ".external.Mixin",
-	}
+	service := NewTestService("Service")
+	mixin := NewTestService("Mixin").WithID(".external.Mixin")
 
 	model := NewTestAPI([]*Message{}, []*Enum{}, []*Service{service})
 	model.AddService(mixin)

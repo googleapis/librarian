@@ -22,41 +22,41 @@ import (
 )
 
 func TestEnrichSamplesEnumValues(t *testing.T) {
-	v_good1 := &EnumValue{Name: "GOOD_1", Number: 1}
-	v_good2 := &EnumValue{Name: "GOOD_2", Number: 2}
-	v_good3 := &EnumValue{Name: "GOOD_3", Number: 3}
-	v_good4 := &EnumValue{Name: "GOOD_4", Number: 4}
-	v_bad_deprecated := &EnumValue{Name: "BAD_DEPRECATED", Number: 5, Deprecated: true}
-	v_bad_default := &EnumValue{Name: "BAD_DEFAULT", Number: 0}
+	vGood1 := NewTestEnumValue("GOOD_1", 1)
+	vGood2 := NewTestEnumValue("GOOD_2", 2)
+	vGood3 := NewTestEnumValue("GOOD_3", 3)
+	vGood4 := NewTestEnumValue("GOOD_4", 4)
+	vBadDeprecated := NewTestEnumValue("BAD_DEPRECATED", 5).WithDeprecated(true)
+	vBadDefault := NewTestEnumValue("BAD_DEFAULT", 0)
 
-	testCases := []struct {
+	for _, test := range []struct {
 		name         string
 		values       []*EnumValue
 		wantExamples []*SampleValue
 	}{
 		{
 			name:   "more than 3 good values",
-			values: []*EnumValue{v_good1, v_good2, v_good3, v_good4},
+			values: []*EnumValue{vGood1, vGood2, vGood3, vGood4},
 			wantExamples: []*SampleValue{
-				{EnumValue: v_good1, Index: 0},
-				{EnumValue: v_good2, Index: 1},
-				{EnumValue: v_good3, Index: 2},
+				{EnumValue: vGood1, Index: 0},
+				{EnumValue: vGood2, Index: 1},
+				{EnumValue: vGood3, Index: 2},
 			},
 		},
 		{
 			name:   "less than 3 good values",
-			values: []*EnumValue{v_good1, v_good2, v_bad_deprecated},
+			values: []*EnumValue{vGood1, vGood2, vBadDeprecated},
 			wantExamples: []*SampleValue{
-				{EnumValue: v_good1, Index: 0},
-				{EnumValue: v_good2, Index: 1},
+				{EnumValue: vGood1, Index: 0},
+				{EnumValue: vGood2, Index: 1},
 			},
 		},
 		{
 			name:   "no good values",
-			values: []*EnumValue{v_bad_default, v_bad_deprecated},
+			values: []*EnumValue{vBadDefault, vBadDeprecated},
 			wantExamples: []*SampleValue{
-				{EnumValue: v_bad_default, Index: 0},
-				{EnumValue: v_bad_deprecated, Index: 1},
+				{EnumValue: vBadDefault, Index: 0},
+				{EnumValue: vBadDeprecated, Index: 1},
 			},
 		},
 		{
@@ -66,29 +66,24 @@ func TestEnrichSamplesEnumValues(t *testing.T) {
 		},
 		{
 			name:   "mixed good and bad values",
-			values: []*EnumValue{v_bad_default, v_good1, v_bad_deprecated, v_good2},
+			values: []*EnumValue{vBadDefault, vGood1, vBadDeprecated, vGood2},
 			wantExamples: []*SampleValue{
-				{EnumValue: v_good1, Index: 0},
-				{EnumValue: v_good2, Index: 1},
+				{EnumValue: vGood1, Index: 0},
+				{EnumValue: vGood2, Index: 1},
 			},
 		},
-	}
-
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			enum := &Enum{
-				Name:    "TestEnum",
-				ID:      ".test.v1.TestEnum",
-				Package: "test.v1",
-				Values:  tc.values,
-			}
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			enum := NewTestEnum("TestEnum").
+				WithPackage("test.v1").
+				WithValues(test.values...)
 			model := NewTestAPI([]*Message{}, []*Enum{enum}, []*Service{})
 			if err := CrossReference(model); err != nil {
 				t.Fatal(err)
 			}
 
 			got := enum.ValuesForExamples
-			if diff := cmp.Diff(tc.wantExamples, got, cmpopts.IgnoreFields(EnumValue{}, "Parent")); diff != "" {
+			if diff := cmp.Diff(test.wantExamples, got, cmpopts.IgnoreFields(EnumValue{}, "Parent")); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
@@ -96,59 +91,27 @@ func TestEnrichSamplesEnumValues(t *testing.T) {
 }
 
 func TestEnrichSamplesOneOfExampleField(t *testing.T) {
-	deprecated := &Field{
-		Name:       "deprecated_field",
-		ID:         ".test.Message.deprecated_field",
-		Typez:      TypezString,
-		IsOneOf:    true,
-		Deprecated: true,
-	}
-	mapMessage := &Message{
-		Name:  "$map<string, string>",
-		ID:    "$map<string, string>",
-		IsMap: true,
-		Fields: []*Field{
-			{Name: "key", ID: "$map<string, string>.key", Typez: TypezString},
-			{Name: "value", ID: "$map<string, string>.value", Typez: TypezString},
-		},
-	}
-	mapField := &Field{
-		Name:    "map_field",
-		ID:      ".test.Message.map_field",
-		Typez:   TypezMessage,
-		TypezID: "$map<string, string>",
-		IsOneOf: true,
-		Map:     true,
-	}
-	repeated := &Field{
-		Name:     "repeated_field",
-		ID:       ".test.Message.repeated_field",
-		Typez:    TypezString,
-		Repeated: true,
-		IsOneOf:  true,
-	}
-	scalar := &Field{
-		Name:    "scalar_field",
-		ID:      ".test.Message.scalar_field",
-		Typez:   TypezInt32,
-		IsOneOf: true,
-	}
-	messageField := &Field{
-		Name:    "message_field",
-		ID:      ".test.Message.message_field",
-		Typez:   TypezMessage,
-		TypezID: ".test.OneMessage",
-		IsOneOf: true,
-	}
-	anotherMessageField := &Field{
-		Name:    "another_message_field",
-		ID:      ".test.Message.another_message_field",
-		Typez:   TypezMessage,
-		TypezID: ".test.AnotherMessage",
-		IsOneOf: true,
-	}
+	deprecated := NewTestField("deprecated_field").
+		WithType(TypezString).
+		WithDeprecated(true)
+	mapMessage := NewTestMapMessage("$map<string, string>", TypezString, TypezString).
+		WithID("$map<string, string>")
+	mapField := NewTestField("map_field").
+		WithMessageType(mapMessage).
+		WithMap()
+	repeated := NewTestField("repeated_field").
+		WithType(TypezString).
+		WithRepeated()
+	scalar := NewTestField("scalar_field").
+		WithType(TypezInt32)
+	messageField := NewTestField("message_field").
+		WithType(TypezMessage).
+		WithTypezID(".test.OneMessage")
+	anotherMessageField := NewTestField("another_message_field").
+		WithType(TypezMessage).
+		WithTypezID(".test.AnotherMessage")
 
-	testCases := []struct {
+	for _, test := range []struct {
 		name   string
 		fields []*Field
 		want   *Field
@@ -183,39 +146,21 @@ func TestEnrichSamplesOneOfExampleField(t *testing.T) {
 			fields: []*Field{deprecated},
 			want:   deprecated,
 		},
-	}
-
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			group := &OneOf{
-				Name:   "test_oneof",
-				ID:     ".test.Message.test_oneof",
-				Fields: tc.fields,
-			}
-			message := &Message{
-				Name:    "Message",
-				ID:      ".test.Message",
-				Package: "test",
-				Fields:  tc.fields,
-				OneOfs:  []*OneOf{group},
-			}
-			oneMessage := &Message{
-				Name:    "OneMessage",
-				ID:      ".test.OneMessage",
-				Package: "test",
-			}
-			anotherMessage := &Message{
-				Name:    "AnotherMessage",
-				ID:      ".test.AnotherMessage",
-				Package: "test",
-			}
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			group := NewTestOneOf("test_oneof").WithFields(test.fields...)
+			message := NewTestMessage("Message").
+				WithFields(test.fields...).
+				WithOneOfs(group)
+			oneMessage := NewTestMessage("OneMessage")
+			anotherMessage := NewTestMessage("AnotherMessage")
 			model := NewTestAPI([]*Message{message, oneMessage, anotherMessage, mapMessage}, []*Enum{}, []*Service{})
 			if err := CrossReference(model); err != nil {
 				t.Fatal(err)
 			}
 
 			got := group.ExampleField
-			if diff := cmp.Diff(tc.want, got); diff != "" {
+			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
@@ -224,29 +169,17 @@ func TestEnrichSamplesOneOfExampleField(t *testing.T) {
 
 func TestEnrichSamplesWithResourceNamePattern(t *testing.T) {
 	t.Run("resource type resolution", func(t *testing.T) {
-		res := &Resource{
-			Type: "test.googleapis.com/Resource",
-			Patterns: []ResourcePattern{
-				{
-					*(&PathSegment{}).WithLiteral("resources"),
-					*(&PathSegment{}).WithVariable(NewPathVariable("resource").WithMatch()),
-				},
-			},
-		}
-		field := &Field{
-			Name:  "notName",
-			ID:    ".test.ResourceMessage.name",
-			Typez: TypezString,
-			ResourceReference: &ResourceReference{
-				Type: "test.googleapis.com/Resource",
-			},
-		}
-		message := &Message{
-			Name:     "ResourceMessage",
-			ID:       ".test.ResourceMessage",
-			Fields:   []*Field{field},
-			Resource: res,
-		}
+		res := NewTestResource("test.googleapis.com/Resource").
+			WithPatterns(ResourcePattern{
+				*(&PathSegment{}).WithLiteral("resources"),
+				*(&PathSegment{}).WithVariable(NewPathVariable("resource").WithMatch()),
+			})
+		field := NewTestField("notName").
+			WithType(TypezString).
+			WithResourceReference("test.googleapis.com/Resource")
+		message := NewTestMessage("ResourceMessage").
+			WithFields(field).
+			WithResource(res)
 		model := NewTestAPI([]*Message{message}, []*Enum{}, []*Service{})
 
 		if err := CrossReference(model); err != nil {
@@ -254,41 +187,24 @@ func TestEnrichSamplesWithResourceNamePattern(t *testing.T) {
 		}
 
 		got := field.ResourceNamePattern
-		want := &ResourceNamePattern{
-			Segments: []ResourceNameSegment{
-				{Literal: "resources", Variable: "resource"},
-			},
-		}
+		want := NewTestResourceNamePattern(ResourceNameSegment{Literal: "resources", Variable: "resource"})
 		if diff := cmp.Diff(want, got); diff != "" {
 			t.Errorf("mismatch (-want +got):\n%s", diff)
 		}
 	})
 
 	t.Run("child type resolution", func(t *testing.T) {
-		res := &Resource{
-			Type: "test.googleapis.com/Child",
-			Patterns: []ResourcePattern{
-				{
-					*(&PathSegment{}).WithLiteral("parents"),
-					*(&PathSegment{}).WithVariable(NewPathVariable("parent").WithMatch()),
-					*(&PathSegment{}).WithLiteral("children"),
-					*(&PathSegment{}).WithVariable(NewPathVariable("child").WithMatch()),
-				},
-			},
-		}
-		field := &Field{
-			Name:  "parent",
-			ID:    ".test.Message.parent",
-			Typez: TypezString,
-			ResourceReference: &ResourceReference{
-				ChildType: "test.googleapis.com/Child",
-			},
-		}
-		message := &Message{
-			Name:   "Message",
-			ID:     ".test.Message",
-			Fields: []*Field{field},
-		}
+		res := NewTestResource("test.googleapis.com/Child").
+			WithPatterns(ResourcePattern{
+				*(&PathSegment{}).WithLiteral("parents"),
+				*(&PathSegment{}).WithVariable(NewPathVariable("parent").WithMatch()),
+				*(&PathSegment{}).WithLiteral("children"),
+				*(&PathSegment{}).WithVariable(NewPathVariable("child").WithMatch()),
+			})
+		field := NewTestField("parent").
+			WithType(TypezString).
+			WithChildTypeReference("test.googleapis.com/Child")
+		message := NewTestMessage("Message").WithFields(field)
 		model := NewTestAPI([]*Message{message}, []*Enum{}, []*Service{})
 		model.AddResource(res)
 
@@ -297,37 +213,22 @@ func TestEnrichSamplesWithResourceNamePattern(t *testing.T) {
 		}
 
 		got := field.ResourceNamePattern
-		want := &ResourceNamePattern{
-			Segments: []ResourceNameSegment{
-				{Literal: "parents", Variable: "parent"},
-			},
-		}
+		want := NewTestResourceNamePattern(ResourceNameSegment{Literal: "parents", Variable: "parent"})
 		if diff := cmp.Diff(want, got); diff != "" {
 			t.Errorf("mismatch (-want +got):\n%s", diff)
 		}
 	})
 
 	t.Run("name field resolution", func(t *testing.T) {
-		res := &Resource{
-			Type: "test.googleapis.com/Resource",
-			Patterns: []ResourcePattern{
-				{
-					*(&PathSegment{}).WithLiteral("resources"),
-					*(&PathSegment{}).WithVariable(NewPathVariable("resource").WithMatch()),
-				},
-			},
-		}
-		field := &Field{
-			Name:  "name",
-			ID:    ".test.ResourceMessage.name",
-			Typez: TypezString,
-		}
-		message := &Message{
-			Name:     "ResourceMessage",
-			ID:       ".test.ResourceMessage",
-			Fields:   []*Field{field},
-			Resource: res,
-		}
+		res := NewTestResource("test.googleapis.com/Resource").
+			WithPatterns(ResourcePattern{
+				*(&PathSegment{}).WithLiteral("resources"),
+				*(&PathSegment{}).WithVariable(NewPathVariable("resource").WithMatch()),
+			})
+		field := NewTestField("name").WithType(TypezString)
+		message := NewTestMessage("ResourceMessage").
+			WithFields(field).
+			WithResource(res)
 		field.MessageType = message
 		model := NewTestAPI([]*Message{message}, []*Enum{}, []*Service{})
 
@@ -336,11 +237,7 @@ func TestEnrichSamplesWithResourceNamePattern(t *testing.T) {
 		}
 
 		got := field.ResourceNamePattern
-		want := &ResourceNamePattern{
-			Segments: []ResourceNameSegment{
-				{Literal: "resources", Variable: "resource"},
-			},
-		}
+		want := NewTestResourceNamePattern(ResourceNameSegment{Literal: "resources", Variable: "resource"})
 		if diff := cmp.Diff(want, got); diff != "" {
 			t.Errorf("mismatch (-want +got):\n%s", diff)
 		}
@@ -361,11 +258,9 @@ func TestToResourceNamePattern(t *testing.T) {
 				*(&PathSegment{}).WithVariable(NewPathVariable("project").WithMatch()),
 			},
 			skipLast: false,
-			want: &ResourceNamePattern{
-				Segments: []ResourceNameSegment{
-					{Literal: "projects", Variable: "project"},
-				},
-			},
+			want: NewTestResourceNamePattern(
+				ResourceNameSegment{Literal: "projects", Variable: "project"},
+			),
 		},
 		{
 			name: "multi-segment",
@@ -376,12 +271,10 @@ func TestToResourceNamePattern(t *testing.T) {
 				*(&PathSegment{}).WithVariable(NewPathVariable("secret").WithMatch()),
 			},
 			skipLast: false,
-			want: &ResourceNamePattern{
-				Segments: []ResourceNameSegment{
-					{Literal: "projects", Variable: "project"},
-					{Literal: "secrets", Variable: "secret"},
-				},
-			},
+			want: NewTestResourceNamePattern(
+				ResourceNameSegment{Literal: "projects", Variable: "project"},
+				ResourceNameSegment{Literal: "secrets", Variable: "secret"},
+			),
 		},
 		{
 			name: "multi-segment-skip-last",
@@ -392,11 +285,9 @@ func TestToResourceNamePattern(t *testing.T) {
 				*(&PathSegment{}).WithVariable(NewPathVariable("secret").WithMatch()),
 			},
 			skipLast: true,
-			want: &ResourceNamePattern{
-				Segments: []ResourceNameSegment{
-					{Literal: "projects", Variable: "project"},
-				},
-			},
+			want: NewTestResourceNamePattern(
+				ResourceNameSegment{Literal: "projects", Variable: "project"},
+			),
 		},
 		{
 			name: "with trailing literal",
@@ -406,12 +297,10 @@ func TestToResourceNamePattern(t *testing.T) {
 				*(&PathSegment{}).WithLiteral("config"),
 			},
 			skipLast: false,
-			want: &ResourceNamePattern{
-				Segments: []ResourceNameSegment{
-					{Literal: "projects", Variable: "project"},
-					{Literal: "config", Variable: ""},
-				},
-			},
+			want: NewTestResourceNamePattern(
+				ResourceNameSegment{Literal: "projects", Variable: "project"},
+				ResourceNameSegment{Literal: "config", Variable: ""},
+			),
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
