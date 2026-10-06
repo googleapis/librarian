@@ -143,6 +143,13 @@ public final class {{ .Codec.ClientName }}: Clients.{{ .Codec.StubPrefix }}Proto
   {{- range .Codec.DocLines }}
   /// {{ . }}
   {{- end }}
+  {{- if .Codec.DocLines }}
+  ///
+  {{- end }}
+  /// - Note: Unlike standard gRPC long-running operations where polling returns the resulting
+  ///   resource, Discovery-based operations return the terminal `{{ .Codec.DiscoveryLRO.ReturnType }}`
+  ///   status object. To obtain the created or modified resource, invoke the corresponding `get`
+  ///   method once the operation completes.
   ///
   /// @Snippet(path: "{{ .Service.Name }}_{{ .Name }}")
   {{- if .Deprecated }}
