@@ -23,21 +23,9 @@ import (
 )
 
 func TestSkipMessages(t *testing.T) {
-	m0 := &Message{
-		Name:    "Message0",
-		Package: "test",
-		ID:      ".test.Message0",
-	}
-	m1 := &Message{
-		Name:    "Message1",
-		Package: "test",
-		ID:      ".test.Message1",
-	}
-	m2 := &Message{
-		Name:    "Message2",
-		Package: "test",
-		ID:      ".test.Message2",
-	}
+	m0 := NewTestMessage("Message0")
+	m1 := NewTestMessage("Message1")
+	m2 := NewTestMessage("Message2")
 	model := NewTestAPI([]*Message{m0, m1, m2}, []*Enum{}, []*Service{})
 	CrossReference(model)
 	SkipModelElements(model, ModelOverride{
@@ -51,21 +39,9 @@ func TestSkipMessages(t *testing.T) {
 }
 
 func TestSkipEnums(t *testing.T) {
-	e0 := &Enum{
-		Name:    "Enum0",
-		Package: "test",
-		ID:      ".test.Enum0",
-	}
-	e1 := &Enum{
-		Name:    "Enum1",
-		Package: "test",
-		ID:      ".test.Enum1",
-	}
-	e2 := &Enum{
-		Name:    "Enum2",
-		Package: "test",
-		ID:      ".test.Enum2",
-	}
+	e0 := NewTestEnum("Enum0")
+	e1 := NewTestEnum("Enum1")
+	e2 := NewTestEnum("Enum2")
 	model := NewTestAPI([]*Message{}, []*Enum{e0, e1, e2}, []*Service{})
 	CrossReference(model)
 	SkipModelElements(model, ModelOverride{
@@ -80,22 +56,9 @@ func TestSkipEnums(t *testing.T) {
 }
 
 func TestSkipNestedMessages(t *testing.T) {
-	m0 := &Message{
-		Name:    "Message0",
-		Package: "test",
-		ID:      ".test.Message2.Message0",
-	}
-	m1 := &Message{
-		Name:    "Message1",
-		Package: "test",
-		ID:      ".test.Message2.Message1",
-	}
-	m2 := &Message{
-		Name:     "Message2",
-		Package:  "test",
-		ID:       ".test.Message2",
-		Messages: []*Message{m0, m1},
-	}
+	m0 := NewTestMessage("Message0")
+	m1 := NewTestMessage("Message1")
+	m2 := NewTestMessage("Message2").WithMessages(m0, m1)
 	model := NewTestAPI([]*Message{m2}, []*Enum{}, []*Service{})
 	CrossReference(model)
 	SkipModelElements(model, ModelOverride{
@@ -108,27 +71,10 @@ func TestSkipNestedMessages(t *testing.T) {
 }
 
 func TestSkipNestedEnums(t *testing.T) {
-	e0 := &Enum{
-		Name:    "Enum0",
-		Package: "test",
-		ID:      ".test.Message.Enum0",
-	}
-	e1 := &Enum{
-		Name:    "Enum1",
-		Package: "test",
-		ID:      ".test.Message.Enum1",
-	}
-	e2 := &Enum{
-		Name:    "Enum2",
-		Package: "test",
-		ID:      ".test.Message.Enum2",
-	}
-	m := &Message{
-		Name:    "Message",
-		Package: "test",
-		ID:      ".test.Message",
-		Enums:   []*Enum{e0, e1, e2},
-	}
+	e0 := NewTestEnum("Enum0")
+	e1 := NewTestEnum("Enum1")
+	e2 := NewTestEnum("Enum2")
+	m := NewTestMessage("Message").WithEnums(e0, e1, e2)
 	model := NewTestAPI([]*Message{m}, []*Enum{}, []*Service{})
 	CrossReference(model)
 	SkipModelElements(model, ModelOverride{
@@ -142,21 +88,9 @@ func TestSkipNestedEnums(t *testing.T) {
 }
 
 func TestSkipServices(t *testing.T) {
-	s0 := &Service{
-		Name:    "Service0",
-		Package: "test",
-		ID:      ".test.Service0",
-	}
-	s1 := &Service{
-		Name:    "Service1",
-		Package: "test",
-		ID:      ".test.Service1",
-	}
-	s2 := &Service{
-		Name:    "Service2",
-		Package: "test",
-		ID:      ".test.Service2",
-	}
+	s0 := NewTestService("Service0")
+	s1 := NewTestService("Service1")
+	s2 := NewTestService("Service2")
 	model := NewTestAPI([]*Message{}, []*Enum{}, []*Service{s0, s1, s2})
 	CrossReference(model)
 	SkipModelElements(model, ModelOverride{
@@ -166,137 +100,6 @@ func TestSkipServices(t *testing.T) {
 	want := []*Service{s0, s2}
 
 	if diff := cmp.Diff(want, model.Services, cmpopts.IgnoreFields(Service{}, "Model")); diff != "" {
-		t.Errorf("mismatch (-want +got):\n%s", diff)
-	}
-}
-
-func TestSkipMethods(t *testing.T) {
-	s0 := &Service{
-		Name:    "Service0",
-		Package: "test",
-		ID:      ".test.Service0",
-	}
-	s1 := &Service{
-		Name:    "Service1",
-		Package: "test",
-		ID:      ".test.Service1",
-		Methods: []*Method{
-			{
-				Name: "Method0",
-				ID:   ".test.Service1.Method0",
-			},
-			{
-				Name: "Method1",
-				ID:   ".test.Service1.Method1",
-			},
-			{
-				Name: "Method2",
-				ID:   ".test.Service1.Method2",
-			},
-		},
-	}
-	s2 := &Service{
-		Name:    "Service2",
-		Package: "test",
-		ID:      ".test.Service2",
-	}
-	model := NewTestAPI([]*Message{}, []*Enum{}, []*Service{s0, s1, s2})
-	CrossReference(model)
-	SkipModelElements(model, ModelOverride{
-		SkippedIDs: []string{".test.Service1.Method1"},
-	})
-
-	wantServices := []*Service{s0, s1, s2}
-	if diff := cmp.Diff(wantServices, model.Services, cmpopts.IgnoreFields(Service{}, "Model")); diff != "" {
-		t.Errorf("mismatch (-want +got):\n%s", diff)
-	}
-
-	wantMethods := []*Method{
-		{
-			Name: "Method0",
-			ID:   ".test.Service1.Method0",
-		},
-		{
-			Name: "Method2",
-			ID:   ".test.Service1.Method2",
-		},
-	}
-	if diff := cmp.Diff(wantMethods, s1.Methods); diff != "" {
-		t.Errorf("mismatch (-want +got):\n%s", diff)
-	}
-}
-
-func TestIncludeUnknownIdError(t *testing.T) {
-	model := NewTestAPI([]*Message{}, []*Enum{}, []*Service{})
-	err := SkipModelElements(model, ModelOverride{
-		IncludedIDs: []string{".test.UnknownId"},
-	})
-	if err == nil {
-		t.Fatal("SkipModelElements should error on unknown IDs")
-	}
-
-	msg := err.Error()
-	if !strings.Contains(msg, ".test.UnknownId") {
-		t.Errorf("SkipModelElements should report unknown IDs in its error message. message=`%s`", msg)
-	}
-}
-
-func TestIncludeNestedEnums(t *testing.T) {
-	e0 := &Enum{
-		Name:    "Enum0",
-		Package: "test",
-		ID:      ".test.Message.Enum0",
-	}
-	e1 := &Enum{
-		Name:    "Enum1",
-		Package: "test",
-		ID:      ".test.Message.Enum1",
-	}
-	e2 := &Enum{
-		Name:    "Enum2",
-		Package: "test",
-		ID:      ".test.Message.Enum2",
-	}
-	m := &Message{
-		Name:    "Message",
-		Package: "test",
-		ID:      ".test.Message",
-	}
-	model := NewTestAPI([]*Message{m}, []*Enum{e0, e1, e2}, []*Service{})
-	CrossReference(model)
-	SkipModelElements(model, ModelOverride{
-		IncludedIDs: []string{".test.Message.Enum0"},
-	})
-
-	want := []*Enum{e0}
-	if diff := cmp.Diff(want, m.Enums, cmpopts.IgnoreFields(Message{}, "Enums")); diff != "" {
-		t.Errorf("mismatch (-want +got):\n%s", diff)
-	}
-}
-
-func TestIncludeNestedMessages(t *testing.T) {
-	m0 := &Message{
-		Name:    "Message0",
-		Package: "test",
-		ID:      ".test.Message2.Message0",
-	}
-	m1 := &Message{
-		Name:    "Message1",
-		Package: "test",
-		ID:      ".test.Message2.Message1",
-	}
-	m2 := &Message{
-		Name:    "Message2",
-		Package: "test",
-		ID:      ".test.Message2",
-	}
-	model := NewTestAPI([]*Message{m0, m1, m2}, []*Enum{}, []*Service{})
-	CrossReference(model)
-	SkipModelElements(model, ModelOverride{
-		IncludedIDs: []string{".test.Message2.Message0"},
-	})
-	want := []*Message{m0}
-	if diff := cmp.Diff(want, m2.Messages, cmpopts.IgnoreFields(Message{}, "Messages")); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
@@ -325,46 +128,85 @@ var methodIgnoreFields = []string{
 	"SampleInfo",
 }
 
+func TestSkipMethods(t *testing.T) {
+	s0 := NewTestService("Service0")
+	m0 := NewTestMethod("Method0")
+	m1 := NewTestMethod("Method1")
+	m2 := NewTestMethod("Method2")
+	s1 := NewTestService("Service1").WithMethods(m0, m1, m2)
+	s2 := NewTestService("Service2")
+	model := NewTestAPI([]*Message{}, []*Enum{}, []*Service{s0, s1, s2})
+	CrossReference(model)
+	SkipModelElements(model, ModelOverride{
+		SkippedIDs: []string{".test.Service1.Method1"},
+	})
+
+	wantServices := []*Service{s0, s1, s2}
+	if diff := cmp.Diff(wantServices, model.Services, cmpopts.IgnoreFields(Service{}, "Model")); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+
+	wantMethods := []*Method{m0, m2}
+	if diff := cmp.Diff(wantMethods, s1.Methods, cmpopts.IgnoreFields(Method{}, methodIgnoreFields...)); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+}
+
+func TestIncludeUnknownIdError(t *testing.T) {
+	model := NewTestAPI([]*Message{}, []*Enum{}, []*Service{})
+	err := SkipModelElements(model, ModelOverride{
+		IncludedIDs: []string{".test.UnknownId"},
+	})
+	if err == nil {
+		t.Fatal("SkipModelElements should error on unknown IDs")
+	}
+
+	msg := err.Error()
+	if !strings.Contains(msg, ".test.UnknownId") {
+		t.Errorf("SkipModelElements should report unknown IDs in its error message. message=`%s`", msg)
+	}
+}
+
+func TestIncludeNestedEnums(t *testing.T) {
+	e0 := NewTestEnum("Enum0")
+	e1 := NewTestEnum("Enum1")
+	e2 := NewTestEnum("Enum2")
+	m := NewTestMessage("Message").WithEnums(e0, e1, e2)
+	model := NewTestAPI([]*Message{m}, []*Enum{e0, e1, e2}, []*Service{})
+	CrossReference(model)
+	SkipModelElements(model, ModelOverride{
+		IncludedIDs: []string{".test.Message.Enum0"},
+	})
+
+	want := []*Enum{e0}
+	if diff := cmp.Diff(want, m.Enums, cmpopts.IgnoreFields(Message{}, "Enums")); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+}
+
+func TestIncludeNestedMessages(t *testing.T) {
+	m0 := NewTestMessage("Message0")
+	m1 := NewTestMessage("Message1")
+	m2 := NewTestMessage("Message2").WithMessages(m0, m1)
+	model := NewTestAPI([]*Message{m0, m1, m2}, []*Enum{}, []*Service{})
+	CrossReference(model)
+	SkipModelElements(model, ModelOverride{
+		IncludedIDs: []string{".test.Message2.Message0"},
+	})
+	want := []*Message{m0}
+	if diff := cmp.Diff(want, m2.Messages, cmpopts.IgnoreFields(Message{}, "Messages")); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+}
+
 func TestIncludeMethods(t *testing.T) {
-	m := &Message{
-		Name: "Empty",
-		ID:   ".test.Empty",
-	}
-	s0 := &Service{
-		Name:    "Service0",
-		Package: "test",
-		ID:      ".test.Service0",
-	}
-	s1 := &Service{
-		Name:    "Service1",
-		Package: "test",
-		ID:      ".test.Service1",
-		Methods: []*Method{
-			{
-				Name:         "Method0",
-				ID:           ".test.Service1.Method0",
-				InputTypeID:  ".test.Empty",
-				OutputTypeID: ".test.Empty",
-			},
-			{
-				Name:         "Method1",
-				ID:           ".test.Service1.Method1",
-				InputTypeID:  ".test.Empty",
-				OutputTypeID: ".test.Empty",
-			},
-			{
-				Name:         "Method2",
-				ID:           ".test.Service1.Method2",
-				InputTypeID:  ".test.Empty",
-				OutputTypeID: ".test.Empty",
-			},
-		},
-	}
-	s2 := &Service{
-		Name:    "Service2",
-		Package: "test",
-		ID:      ".test.Service2",
-	}
+	m := NewTestMessage("Empty")
+	s0 := NewTestService("Service0")
+	m0 := NewTestMethod("Method0").WithInput(m).WithOutput(m)
+	m1 := NewTestMethod("Method1").WithInput(m).WithOutput(m)
+	m2 := NewTestMethod("Method2").WithInput(m).WithOutput(m)
+	s1 := NewTestService("Service1").WithMethods(m0, m1, m2)
+	s2 := NewTestService("Service2")
 	model := NewTestAPI([]*Message{m}, []*Enum{}, []*Service{s0, s1, s2})
 	CrossReference(model)
 	SkipModelElements(model, ModelOverride{
@@ -376,31 +218,17 @@ func TestIncludeMethods(t *testing.T) {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 
-	wantMethods := []*Method{
-		{
-			Name: "Method1",
-			ID:   ".test.Service1.Method1",
-		},
-		{
-			Name: "Method2",
-			ID:   ".test.Service1.Method2",
-		},
-	}
+	wantMethods := []*Method{m1, m2}
 	if diff := cmp.Diff(wantMethods, s1.Methods, cmpopts.IgnoreFields(Method{}, methodIgnoreFields...)); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
 
 func TestSkipMessageFields(t *testing.T) {
-	f0 := &Field{Name: "field0", ID: ".test.Message0.field0", Typez: TypezString}
-	f1 := &Field{Name: "field1", ID: ".test.Message0.field1", Typez: TypezString}
-	f2 := &Field{Name: "field2", ID: ".test.Message0.field2", Typez: TypezInt32}
-	m0 := &Message{
-		Name:    "Message0",
-		Package: "test",
-		ID:      ".test.Message0",
-		Fields:  []*Field{f0, f1, f2},
-	}
+	f0 := NewTestField("field0").WithType(TypezString)
+	f1 := NewTestField("field1").WithType(TypezString)
+	f2 := NewTestField("field2").WithType(TypezInt32)
+	m0 := NewTestMessage("Message0").WithFields(f0, f1, f2)
 	model := NewTestAPI([]*Message{m0}, []*Enum{}, []*Service{})
 	CrossReference(model)
 	SkipModelElements(model, ModelOverride{
@@ -413,20 +241,10 @@ func TestSkipMessageFields(t *testing.T) {
 }
 
 func TestSkipNestedMessageFields(t *testing.T) {
-	f0 := &Field{Name: "field0", ID: ".test.Outer.Inner.field0", Typez: TypezString}
-	f1 := &Field{Name: "field1", ID: ".test.Outer.Inner.field1", Typez: TypezString}
-	inner := &Message{
-		Name:    "Inner",
-		Package: "test",
-		ID:      ".test.Outer.Inner",
-		Fields:  []*Field{f0, f1},
-	}
-	outer := &Message{
-		Name:     "Outer",
-		Package:  "test",
-		ID:       ".test.Outer",
-		Messages: []*Message{inner},
-	}
+	f0 := NewTestField("field0").WithType(TypezString)
+	f1 := NewTestField("field1").WithType(TypezString)
+	inner := NewTestMessage("Inner").WithFields(f0, f1)
+	outer := NewTestMessage("Outer").WithMessages(inner)
 	model := NewTestAPI([]*Message{outer, inner}, []*Enum{}, []*Service{})
 	CrossReference(model)
 	SkipModelElements(model, ModelOverride{
@@ -439,21 +257,11 @@ func TestSkipNestedMessageFields(t *testing.T) {
 }
 
 func TestSkipOneOfField(t *testing.T) {
-	f0 := &Field{Name: "field0", ID: ".test.Message.field0", Typez: TypezString}
-	f1 := &Field{Name: "field1", ID: ".test.Message.field1", Typez: TypezString, IsOneOf: true}
-	f2 := &Field{Name: "field2", ID: ".test.Message.field2", Typez: TypezInt32, IsOneOf: true}
-	oneof := &OneOf{
-		Name:   "choice",
-		ID:     ".test.Message.choice",
-		Fields: []*Field{f1, f2},
-	}
-	m := &Message{
-		Name:    "Message",
-		Package: "test",
-		ID:      ".test.Message",
-		Fields:  []*Field{f0, f1, f2},
-		OneOfs:  []*OneOf{oneof},
-	}
+	f0 := NewTestField("field0").WithType(TypezString)
+	f1 := NewTestField("field1").WithType(TypezString)
+	f2 := NewTestField("field2").WithType(TypezInt32)
+	oneof := NewTestOneOf("choice").WithFields(f1, f2)
+	m := NewTestMessage("Message").WithFields(f0).WithOneOfs(oneof)
 	model := NewTestAPI([]*Message{m}, []*Enum{}, []*Service{})
 	CrossReference(model)
 	SkipModelElements(model, ModelOverride{
@@ -473,20 +281,10 @@ func TestSkipOneOfField(t *testing.T) {
 }
 
 func TestSkipAllOneOfFields(t *testing.T) {
-	f1 := &Field{Name: "field1", ID: ".test.Message.field1", Typez: TypezString, IsOneOf: true}
-	f2 := &Field{Name: "field2", ID: ".test.Message.field2", Typez: TypezInt32, IsOneOf: true}
-	oneof := &OneOf{
-		Name:   "choice",
-		ID:     ".test.Message.choice",
-		Fields: []*Field{f1, f2},
-	}
-	m := &Message{
-		Name:    "Message",
-		Package: "test",
-		ID:      ".test.Message",
-		Fields:  []*Field{f1, f2},
-		OneOfs:  []*OneOf{oneof},
-	}
+	f1 := NewTestField("field1").WithType(TypezString)
+	f2 := NewTestField("field2").WithType(TypezInt32)
+	oneof := NewTestOneOf("choice").WithFields(f1, f2)
+	m := NewTestMessage("Message").WithOneOfs(oneof)
 	model := NewTestAPI([]*Message{m}, []*Enum{}, []*Service{})
 	CrossReference(model)
 	SkipModelElements(model, ModelOverride{
@@ -501,21 +299,11 @@ func TestSkipAllOneOfFields(t *testing.T) {
 }
 
 func TestSkipOneOfDirectly(t *testing.T) {
-	f0 := &Field{Name: "field0", ID: ".test.Message.field0", Typez: TypezString}
-	f1 := &Field{Name: "field1", ID: ".test.Message.field1", Typez: TypezString, IsOneOf: true}
-	f2 := &Field{Name: "field2", ID: ".test.Message.field2", Typez: TypezInt32, IsOneOf: true}
-	oneof := &OneOf{
-		Name:   "choice",
-		ID:     ".test.Message.choice",
-		Fields: []*Field{f1, f2},
-	}
-	m := &Message{
-		Name:    "Message",
-		Package: "test",
-		ID:      ".test.Message",
-		Fields:  []*Field{f0, f1, f2},
-		OneOfs:  []*OneOf{oneof},
-	}
+	f0 := NewTestField("field0").WithType(TypezString)
+	f1 := NewTestField("field1").WithType(TypezString)
+	f2 := NewTestField("field2").WithType(TypezInt32)
+	oneof := NewTestOneOf("choice").WithFields(f1, f2)
+	m := NewTestMessage("Message").WithFields(f0).WithOneOfs(oneof)
 	model := NewTestAPI([]*Message{m}, []*Enum{}, []*Service{})
 	CrossReference(model)
 	SkipModelElements(model, ModelOverride{
@@ -531,41 +319,15 @@ func TestSkipOneOfDirectly(t *testing.T) {
 }
 
 func TestSkipFieldAffectsMethodSignature(t *testing.T) {
-	fName := &Field{Name: "name", ID: ".test.Req.name", Typez: TypezString}
-	fTarget := &Field{Name: "target", ID: ".test.Req.target", Typez: TypezString}
-	fSkip := &Field{Name: "skip_me", ID: ".test.Req.skip_me", Typez: TypezString}
-	req := &Message{
-		Name:    "Req",
-		Package: "test",
-		ID:      ".test.Req",
-		Fields:  []*Field{fName, fTarget, fSkip},
-	}
-	resp := &Message{
-		Name:    "Resp",
-		Package: "test",
-		ID:      ".test.Resp",
-	}
-	sigKeep := &MethodSignature{
-		Names:  []string{"name", "target"},
-		Fields: []*Field{fName, fTarget},
-	}
-	sigDrop := &MethodSignature{
-		Names:  []string{"name", "skip_me"},
-		Fields: []*Field{fName, fSkip},
-	}
-	method := &Method{
-		Name:         "DoWork",
-		ID:           ".test.Service.DoWork",
-		InputTypeID:  req.ID,
-		OutputTypeID: resp.ID,
-		Signatures:   []*MethodSignature{sigKeep, sigDrop},
-	}
-	service := &Service{
-		Name:    "Service",
-		Package: "test",
-		ID:      ".test.Service",
-		Methods: []*Method{method},
-	}
+	fName := NewTestField("name").WithType(TypezString)
+	fTarget := NewTestField("target").WithType(TypezString)
+	fSkip := NewTestField("skip_me").WithType(TypezString)
+	req := NewTestMessage("Req").WithFields(fName, fTarget, fSkip)
+	resp := NewTestMessage("Resp")
+	sigKeep := NewTestMethodSignature("name", "target").WithFields(fName, fTarget)
+	sigDrop := NewTestMethodSignature("name", "skip_me").WithFields(fName, fSkip)
+	method := NewTestMethod("DoWork").WithInput(req).WithOutput(resp).WithSignatures(sigKeep, sigDrop)
+	service := NewTestService("Service").WithMethods(method)
 	model := NewTestAPI([]*Message{req, resp}, []*Enum{}, []*Service{service})
 	CrossReference(model)
 	err := SkipModelElements(model, ModelOverride{SkippedIDs: []string{".test.Req.skip_me"}})
@@ -575,40 +337,16 @@ func TestSkipFieldAffectsMethodSignature(t *testing.T) {
 }
 
 func TestSkipFieldAffectsPagination(t *testing.T) {
-	pageSizeField := &Field{Name: "page_size", JSONName: "pageSize", ID: ".test.ListReq.page_size", Typez: TypezInt32}
-	pageTokenField := &Field{Name: "page_token", JSONName: "pageToken", ID: ".test.ListReq.page_token", Typez: TypezString}
-	nextPageTokenField := &Field{Name: "next_page_token", JSONName: "nextPageToken", ID: ".test.ListResp.next_page_token", Typez: TypezString}
-	itemsField := &Field{Name: "items", JSONName: "items", ID: ".test.ListResp.items", Typez: TypezMessage, TypezID: ".test.Item", Repeated: true}
+	pageSizeField := NewTestField("page_size").WithJSONName("pageSize").WithType(TypezInt32)
+	pageTokenField := NewTestField("page_token").WithJSONName("pageToken").WithType(TypezString)
+	nextPageTokenField := NewTestField("next_page_token").WithJSONName("nextPageToken").WithType(TypezString)
+	itemsField := NewTestField("items").WithJSONName("items").WithType(TypezMessage).WithTypezID(".test.Item").WithRepeated()
 
-	req := &Message{
-		Name:    "ListReq",
-		Package: "test",
-		ID:      ".test.ListReq",
-		Fields:  []*Field{pageSizeField, pageTokenField},
-	}
-	resp := &Message{
-		Name:    "ListResp",
-		Package: "test",
-		ID:      ".test.ListResp",
-		Fields:  []*Field{nextPageTokenField, itemsField},
-	}
-	item := &Message{
-		Name:    "Item",
-		Package: "test",
-		ID:      ".test.Item",
-	}
-	method := &Method{
-		Name:         "ListItems",
-		ID:           ".test.Service.ListItems",
-		InputTypeID:  req.ID,
-		OutputTypeID: resp.ID,
-	}
-	service := &Service{
-		Name:    "Service",
-		Package: "test",
-		ID:      ".test.Service",
-		Methods: []*Method{method},
-	}
+	req := NewTestMessage("ListReq").WithFields(pageSizeField, pageTokenField)
+	resp := NewTestMessage("ListResp").WithFields(nextPageTokenField, itemsField)
+	item := NewTestMessage("Item")
+	method := NewTestMethod("ListItems").WithInput(req).WithOutput(resp)
+	service := NewTestService("Service").WithMethods(method)
 	model := NewTestAPI([]*Message{req, resp, item}, []*Enum{}, []*Service{service})
 	UpdateMethodPagination(nil, model)
 	CrossReference(model)
@@ -625,14 +363,9 @@ func TestSkipFieldAffectsPagination(t *testing.T) {
 }
 
 func TestIncludeKeepsAllMessageFields(t *testing.T) {
-	f0 := &Field{Name: "field0", ID: ".test.Message0.field0", Typez: TypezString}
-	f1 := &Field{Name: "field1", ID: ".test.Message0.field1", Typez: TypezString}
-	m0 := &Message{
-		Name:    "Message0",
-		Package: "test",
-		ID:      ".test.Message0",
-		Fields:  []*Field{f0, f1},
-	}
+	f0 := NewTestField("field0").WithType(TypezString)
+	f1 := NewTestField("field1").WithType(TypezString)
+	m0 := NewTestMessage("Message0").WithFields(f0, f1)
 	model := NewTestAPI([]*Message{m0}, []*Enum{}, []*Service{})
 	CrossReference(model)
 	SkipModelElements(model, ModelOverride{
@@ -645,20 +378,10 @@ func TestIncludeKeepsAllMessageFields(t *testing.T) {
 }
 
 func TestSkipPreservesExternalAndDependencyMessagesInSymbolTable(t *testing.T) {
-	timestamp := &Message{
-		Name:    "Timestamp",
-		Package: "google.protobuf",
-		ID:      ".google.protobuf.Timestamp",
-	}
-	m0 := &Message{
-		Name:    "Message0",
-		Package: "test",
-		ID:      ".test.Message0",
-		Fields: []*Field{
-			{Name: "field0", ID: ".test.Message0.field0", Typez: TypezString},
-			{Name: "field1", ID: ".test.Message0.field1", Typez: TypezString},
-		},
-	}
+	timestamp := NewTestMessage("Timestamp").WithPackage("google.protobuf")
+	f0 := NewTestField("field0").WithType(TypezString)
+	f1 := NewTestField("field1").WithType(TypezString)
+	m0 := NewTestMessage("Message0").WithFields(f0, f1)
 	model := NewTestAPI([]*Message{m0}, []*Enum{}, []*Service{})
 	model.AddMessage(timestamp)
 	CrossReference(model)

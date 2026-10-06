@@ -18,150 +18,77 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 )
 
 func TestPageSimple(t *testing.T) {
-	resource := &Message{
-		Name: "Resource",
-		ID:   ".package.Resource",
-	}
-	request := &Message{
-		Name: "Request",
-		ID:   ".package.Request",
-		Fields: []*Field{
-			{
-				Name:     "parent",
-				JSONName: "parent",
-				ID:       ".package.Request.parent",
-				Typez:    TypezString,
-			},
-			{
-				Name:     "page_token",
-				JSONName: "pageToken",
-				ID:       ".package.Request.pageToken",
-				Typez:    TypezString,
-			},
-			{
-				Name:     "page_size",
-				JSONName: "pageSize",
-				ID:       ".package.Request.pageSize",
-				Typez:    TypezInt32,
-			},
-		},
-	}
-	response := &Message{
-		Name: "Response",
-		ID:   ".package.Response",
-		Fields: []*Field{
-			{
-				Name:     "next_page_token",
-				JSONName: "nextPageToken",
-				ID:       ".package.Request.nextPageToken",
-				Typez:    TypezString,
-			},
-			{
-				Name:     "items",
-				JSONName: "items",
-				ID:       ".package.Request.items",
-				Typez:    TypezMessage,
-				TypezID:  ".package.Resource",
-				Repeated: true,
-			},
-		},
-	}
-	method := &Method{
-		Name:         "List",
-		ID:           ".package.Service.List",
-		InputTypeID:  ".package.Request",
-		OutputTypeID: ".package.Response",
-	}
-	service := &Service{
-		Name:    "Service",
-		ID:      ".package.Service",
-		Methods: []*Method{method},
-	}
+	resource := NewTestMessage("Resource").WithPackage("package")
+	request := NewTestMessage("Request").
+		WithPackage("package").
+		WithFields(
+			NewTestField("parent").WithJSONName("parent").WithType(TypezString),
+			NewTestField("page_token").WithJSONName("pageToken").WithType(TypezString),
+			NewTestField("page_size").WithJSONName("pageSize").WithType(TypezInt32),
+		)
+	response := NewTestMessage("Response").
+		WithPackage("package").
+		WithFields(
+			NewTestField("next_page_token").WithJSONName("nextPageToken").WithType(TypezString),
+			NewTestField("items").
+				WithJSONName("items").
+				WithType(TypezMessage).
+				WithTypezID(".package.Resource").
+				WithRepeated(),
+		)
+	method := NewTestMethod("List").
+		WithID(".package.Service.List").
+		WithInputTypeID(".package.Request").
+		WithOutputTypeID(".package.Response")
+	service := NewTestService("Service").
+		WithPackage("package").
+		WithMethods(method)
 	model := NewTestAPI([]*Message{request, response, resource}, []*Enum{}, []*Service{service})
 	UpdateMethodPagination(nil, model)
 	if method.Pagination != request.Fields[1] {
 		t.Errorf("mismatch, want=%v, got=%v", request.Fields[1], method.Pagination)
 	}
-	want := &PaginationInfo{
-		NextPageToken: response.Fields[0],
-		PageableItem:  response.Fields[1],
-	}
-	if diff := cmp.Diff(want, response.Pagination); diff != "" {
+	want := NewTestPaginationInfo(response.Fields[0], response.Fields[1])
+	if diff := cmp.Diff(want, response.Pagination, cmpopts.IgnoreFields(Field{}, "Parent")); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
 
 func TestPageWithOverride(t *testing.T) {
-	resource := &Message{
-		Name: "Resource",
-		ID:   ".package.Resource",
-	}
-	request := &Message{
-		Name: "Request",
-		ID:   ".package.Request",
-		Fields: []*Field{
-			{
-				Name:     "parent",
-				JSONName: "parent",
-				ID:       ".package.Request.parent",
-				Typez:    TypezString,
-			},
-			{
-				Name:     "page_token",
-				JSONName: "pageToken",
-				ID:       ".package.Request.pageToken",
-				Typez:    TypezString,
-			},
-			{
-				Name:     "page_size",
-				JSONName: "pageSize",
-				ID:       ".package.Request.pageSize",
-				Typez:    TypezInt32,
-			},
-		},
-	}
-	response := &Message{
-		Name: "Response",
-		ID:   ".package.Response",
-		Fields: []*Field{
-			{
-				Name:     "next_page_token",
-				JSONName: "nextPageToken",
-				ID:       ".package.Request.nextPageToken",
-				Typez:    TypezString,
-			},
-			{
-				Name:     "warnings",
-				JSONName: "warnings",
-				ID:       ".package.Request.warnings",
-				Typez:    TypezMessage,
-				TypezID:  ".package.Warning",
-				Repeated: true,
-			},
-			{
-				Name:     "items",
-				JSONName: "items",
-				ID:       ".package.Request.items",
-				Typez:    TypezMessage,
-				TypezID:  ".package.Resource",
-				Repeated: true,
-			},
-		},
-	}
-	method := &Method{
-		Name:         "List",
-		ID:           ".package.Service.List",
-		InputTypeID:  ".package.Request",
-		OutputTypeID: ".package.Response",
-	}
-	service := &Service{
-		Name:    "Service",
-		ID:      ".package.Service",
-		Methods: []*Method{method},
-	}
+	resource := NewTestMessage("Resource").WithPackage("package")
+	request := NewTestMessage("Request").
+		WithPackage("package").
+		WithFields(
+			NewTestField("parent").WithJSONName("parent").WithType(TypezString),
+			NewTestField("page_token").WithJSONName("pageToken").WithType(TypezString),
+			NewTestField("page_size").WithJSONName("pageSize").WithType(TypezInt32),
+		)
+	response := NewTestMessage("Response").
+		WithPackage("package").
+		WithFields(
+			NewTestField("next_page_token").WithJSONName("nextPageToken").WithType(TypezString),
+			NewTestField("warnings").
+				WithJSONName("warnings").
+				WithType(TypezMessage).
+				WithTypezID(".package.Warning").
+				WithRepeated(),
+			NewTestField("items").
+				WithJSONName("items").
+				WithType(TypezMessage).
+				WithTypezID(".package.Resource").
+				WithRepeated(),
+		)
+	method := NewTestMethod("List").
+		WithID(".package.Service.List").
+		WithInputTypeID(".package.Request").
+		WithOutputTypeID(".package.Response")
+	service := NewTestService("Service").
+		WithPackage("package").
+		WithMethods(method)
 	model := NewTestAPI([]*Message{request, response, resource}, []*Enum{}, []*Service{service})
 	overrides := []PaginationOverride{
 		{ID: ".package.Service.List", ItemField: "items"},
@@ -170,51 +97,31 @@ func TestPageWithOverride(t *testing.T) {
 	if method.Pagination != request.Fields[1] {
 		t.Errorf("mismatch, want=%v, got=%v", request.Fields[1], method.Pagination)
 	}
-	want := &PaginationInfo{
-		NextPageToken: response.Fields[0],
-		PageableItem:  response.Fields[2],
-	}
-	if diff := cmp.Diff(want, response.Pagination); diff != "" {
+	want := NewTestPaginationInfo(response.Fields[0], response.Fields[2])
+	if diff := cmp.Diff(want, response.Pagination, cmpopts.IgnoreFields(Field{}, "Parent")); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
 
 func TestPageMissingInputType(t *testing.T) {
-	resource := &Message{
-		Name: "Resource",
-		ID:   ".package.Resource",
-	}
-	response := &Message{
-		Name: "Response",
-		ID:   ".package.Response",
-		Fields: []*Field{
-			{
-				Name:     "next_page_token",
-				JSONName: "nextPageToken",
-				ID:       ".package.Request.nextPageToken",
-				Typez:    TypezString,
-			},
-			{
-				Name:     "items",
-				JSONName: "items",
-				ID:       ".package.Request.items",
-				Typez:    TypezMessage,
-				TypezID:  ".package.Resource",
-				Repeated: true,
-			},
-		},
-	}
-	method := &Method{
-		Name:         "List",
-		ID:           ".package.Service.List",
-		InputTypeID:  ".package.Request",
-		OutputTypeID: ".package.Response",
-	}
-	service := &Service{
-		Name:    "Service",
-		ID:      ".package.Service",
-		Methods: []*Method{method},
-	}
+	resource := NewTestMessage("Resource").WithPackage("package")
+	response := NewTestMessage("Response").
+		WithPackage("package").
+		WithFields(
+			NewTestField("next_page_token").WithJSONName("nextPageToken").WithType(TypezString),
+			NewTestField("items").
+				WithJSONName("items").
+				WithType(TypezMessage).
+				WithTypezID(".package.Resource").
+				WithRepeated(),
+		)
+	method := NewTestMethod("List").
+		WithID(".package.Service.List").
+		WithInputTypeID(".package.Request").
+		WithOutputTypeID(".package.Response")
+	service := NewTestService("Service").
+		WithPackage("package").
+		WithMethods(method)
 	model := NewTestAPI([]*Message{response, resource}, []*Enum{}, []*Service{service})
 	UpdateMethodPagination(nil, model)
 	if method.Pagination != nil {
@@ -223,45 +130,21 @@ func TestPageMissingInputType(t *testing.T) {
 }
 
 func TestPageMissingOutputType(t *testing.T) {
-	resource := &Message{
-		Name: "Resource",
-		ID:   ".package.Resource",
-	}
-	request := &Message{
-		Name: "Request",
-		ID:   ".package.Request",
-		Fields: []*Field{
-			{
-				Name:     "parent",
-				JSONName: "parent",
-				ID:       ".package.Request.parent",
-				Typez:    TypezString,
-			},
-			{
-				Name:     "page_token",
-				JSONName: "pageToken",
-				ID:       ".package.Request.pageToken",
-				Typez:    TypezString,
-			},
-			{
-				Name:     "page_size",
-				JSONName: "pageSize",
-				ID:       ".package.Request.pageSize",
-				Typez:    TypezInt32,
-			},
-		},
-	}
-	method := &Method{
-		Name:         "List",
-		ID:           ".package.Service.List",
-		InputTypeID:  ".package.Request",
-		OutputTypeID: ".package.Response",
-	}
-	service := &Service{
-		Name:    "Service",
-		ID:      ".package.Service",
-		Methods: []*Method{method},
-	}
+	resource := NewTestMessage("Resource").WithPackage("package")
+	request := NewTestMessage("Request").
+		WithPackage("package").
+		WithFields(
+			NewTestField("parent").WithJSONName("parent").WithType(TypezString),
+			NewTestField("page_token").WithJSONName("pageToken").WithType(TypezString),
+			NewTestField("page_size").WithJSONName("pageSize").WithType(TypezInt32),
+		)
+	method := NewTestMethod("List").
+		WithID(".package.Service.List").
+		WithInputTypeID(".package.Request").
+		WithOutputTypeID(".package.Response")
+	service := NewTestService("Service").
+		WithPackage("package").
+		WithMethods(method)
 	model := NewTestAPI([]*Message{request, resource}, []*Enum{}, []*Service{service})
 	UpdateMethodPagination(nil, model)
 	if method.Pagination != nil {
@@ -270,46 +153,25 @@ func TestPageMissingOutputType(t *testing.T) {
 }
 
 func TestPageBadRequest(t *testing.T) {
-	resource := &Message{
-		Name: "Resource",
-		ID:   ".package.Resource",
-	}
-	request := &Message{
-		Name:   "Request",
-		ID:     ".package.Request",
-		Fields: []*Field{},
-	}
-	response := &Message{
-		Name: "Response",
-		ID:   ".package.Response",
-		Fields: []*Field{
-			{
-				Name:     "next_page_token",
-				JSONName: "nextPageToken",
-				ID:       ".package.Request.nextPageToken",
-				Typez:    TypezString,
-			},
-			{
-				Name:     "items",
-				JSONName: "items",
-				ID:       ".package.Request.items",
-				Typez:    TypezMessage,
-				TypezID:  ".package.Resource",
-				Repeated: true,
-			},
-		},
-	}
-	method := &Method{
-		Name:         "List",
-		ID:           ".package.Service.List",
-		InputTypeID:  ".package.Request",
-		OutputTypeID: ".package.Response",
-	}
-	service := &Service{
-		Name:    "Service",
-		ID:      ".package.Service",
-		Methods: []*Method{method},
-	}
+	resource := NewTestMessage("Resource").WithPackage("package")
+	request := NewTestMessage("Request").WithPackage("package")
+	response := NewTestMessage("Response").
+		WithPackage("package").
+		WithFields(
+			NewTestField("next_page_token").WithJSONName("nextPageToken").WithType(TypezString),
+			NewTestField("items").
+				WithJSONName("items").
+				WithType(TypezMessage).
+				WithTypezID(".package.Resource").
+				WithRepeated(),
+		)
+	method := NewTestMethod("List").
+		WithID(".package.Service.List").
+		WithInputTypeID(".package.Request").
+		WithOutputTypeID(".package.Response")
+	service := NewTestService("Service").
+		WithPackage("package").
+		WithMethods(method)
 	model := NewTestAPI([]*Message{request, response, resource}, []*Enum{}, []*Service{service})
 	UpdateMethodPagination(nil, model)
 	if method.Pagination != nil {
@@ -318,50 +180,22 @@ func TestPageBadRequest(t *testing.T) {
 }
 
 func TestPageBadResponse(t *testing.T) {
-	resource := &Message{
-		Name: "Resource",
-		ID:   ".package.Resource",
-	}
-	request := &Message{
-		Name:   "Request",
-		ID:     ".package.Request",
-		Fields: []*Field{},
-	}
-	response := &Message{
-		Name: "Response",
-		ID:   ".package.Response",
-		Fields: []*Field{
-			{
-				Name:     "parent",
-				JSONName: "parent",
-				ID:       ".package.Request.parent",
-				Typez:    TypezString,
-			},
-			{
-				Name:     "page_token",
-				JSONName: "pageToken",
-				ID:       ".package.Request.pageToken",
-				Typez:    TypezString,
-			},
-			{
-				Name:     "page_size",
-				JSONName: "pageSize",
-				ID:       ".package.Request.pageSize",
-				Typez:    TypezInt32,
-			},
-		},
-	}
-	method := &Method{
-		Name:         "List",
-		ID:           ".package.Service.List",
-		InputTypeID:  ".package.Request",
-		OutputTypeID: ".package.Response",
-	}
-	service := &Service{
-		Name:    "Service",
-		ID:      ".package.Service",
-		Methods: []*Method{method},
-	}
+	resource := NewTestMessage("Resource").WithPackage("package")
+	request := NewTestMessage("Request").WithPackage("package")
+	response := NewTestMessage("Response").
+		WithPackage("package").
+		WithFields(
+			NewTestField("parent").WithJSONName("parent").WithType(TypezString),
+			NewTestField("page_token").WithJSONName("pageToken").WithType(TypezString),
+			NewTestField("page_size").WithJSONName("pageSize").WithType(TypezInt32),
+		)
+	method := NewTestMethod("List").
+		WithID(".package.Service.List").
+		WithInputTypeID(".package.Request").
+		WithOutputTypeID(".package.Response")
+	service := NewTestService("Service").
+		WithPackage("package").
+		WithMethods(method)
 	model := NewTestAPI([]*Message{request, response, resource}, []*Enum{}, []*Service{service})
 	UpdateMethodPagination(nil, model)
 	if method.Pagination != nil {
@@ -370,30 +204,16 @@ func TestPageBadResponse(t *testing.T) {
 }
 
 func TestPaginationRequestInfoErrors(t *testing.T) {
-	badSize := &Message{
-		Name: "Request",
-		ID:   ".package.Request",
-		Fields: []*Field{
-			{
-				Name:     "page_token",
-				JSONName: "pageToken",
-				ID:       ".package.Request.pageToken",
-				Typez:    TypezString,
-			},
-		},
-	}
-	badToken := &Message{
-		Name: "Request",
-		ID:   ".package.Request",
-		Fields: []*Field{
-			{
-				Name:     "page_size",
-				JSONName: "pageSize",
-				ID:       ".package.Request.pageSize",
-				Typez:    TypezInt32,
-			},
-		},
-	}
+	badSize := NewTestMessage("Request").
+		WithPackage("package").
+		WithFields(
+			NewTestField("page_token").WithJSONName("pageToken").WithType(TypezString),
+		)
+	badToken := NewTestMessage("Request").
+		WithPackage("package").
+		WithFields(
+			NewTestField("page_size").WithJSONName("pageSize").WithType(TypezInt32),
+		)
 
 	for _, input := range []*Message{nil, badSize, badToken} {
 		if got := paginationRequestInfo(input); got != nil {
@@ -415,18 +235,14 @@ func TestPaginationRequestPageSizeSuccess(t *testing.T) {
 		{"maxResults", TypezMessage, ".google.protobuf.Int32Value"},
 		{"maxResults", TypezMessage, ".google.protobuf.UInt32Value"},
 	} {
-		response := &Message{
-			Name: "Response",
-			ID:   ".package.Response",
-			Fields: []*Field{
-				{
-					Name:     test.Name,
-					JSONName: test.Name,
-					Typez:    test.Typez,
-					TypezID:  test.TypezID,
-				},
-			},
-		}
+		response := NewTestMessage("Response").
+			WithPackage("package").
+			WithFields(
+				NewTestField(test.Name).
+					WithJSONName(test.Name).
+					WithType(test.Typez).
+					WithTypezID(test.TypezID),
+			)
 		got := paginationRequestPageSize(response)
 		if diff := cmp.Diff(response.Fields[0], got); diff != "" {
 			t.Errorf("mismatch (-want +got):\n%s", diff)
@@ -454,18 +270,14 @@ func TestPaginationRequestPageSizeNotMatching(t *testing.T) {
 		{"maxResults", TypezMessage, ".google.protobuf.Int64Value"},
 		{"maxResults", TypezMessage, ".google.protobuf.UInt64Value"},
 	} {
-		response := &Message{
-			Name: "Response",
-			ID:   ".package.Response",
-			Fields: []*Field{
-				{
-					Name:     test.Name,
-					JSONName: test.Name,
-					Typez:    test.Typez,
-					TypezID:  test.TypezID,
-				},
-			},
-		}
+		response := NewTestMessage("Response").
+			WithPackage("package").
+			WithFields(
+				NewTestField(test.Name).
+					WithJSONName(test.Name).
+					WithType(test.Typez).
+					WithTypezID(test.TypezID),
+			)
 		got := paginationRequestPageSize(response)
 		if got != nil {
 			t.Errorf("the field should not be a page size, got=%v", got)
@@ -481,17 +293,13 @@ func TestPaginationRequestToken(t *testing.T) {
 		{"badName", TypezString},
 		{"nextPageToken", TypezInt32},
 	} {
-		response := &Message{
-			Name: "Response",
-			ID:   ".package.Response",
-			Fields: []*Field{
-				{
-					Name:     test.Name,
-					JSONName: test.Name,
-					Typez:    test.Typez,
-				},
-			},
-		}
+		response := NewTestMessage("Response").
+			WithPackage("package").
+			WithFields(
+				NewTestField(test.Name).
+					WithJSONName(test.Name).
+					WithType(test.Typez),
+			)
 		got := paginationRequestToken(response)
 		if got != nil {
 			t.Errorf("the field should not be a  page token, got=%v", got)
@@ -500,32 +308,22 @@ func TestPaginationRequestToken(t *testing.T) {
 }
 
 func TestPaginationResponseErrors(t *testing.T) {
-	badToken := &Message{
-		Name: "Response",
-		ID:   ".package.Response",
-		Fields: []*Field{
-			{
-				Name:     "items",
-				JSONName: "items",
-				ID:       ".package.Request.items",
-				Typez:    TypezMessage,
-				TypezID:  ".package.Resource",
-				Repeated: true,
-			},
-		},
-	}
-	badItems := &Message{
-		Name: "Response",
-		ID:   ".package.Response",
-		Fields: []*Field{
-			{
-				Name:     "next_page_token",
-				JSONName: "nextPageToken",
-				ID:       ".package.Request.nextPageToken",
-				Typez:    TypezString,
-			},
-		},
-	}
+	badToken := NewTestMessage("Response").
+		WithPackage("package").
+		WithFields(
+			NewTestField("items").
+				WithJSONName("items").
+				WithType(TypezMessage).
+				WithTypezID(".package.Resource").
+				WithRepeated(),
+		)
+	badItems := NewTestMessage("Response").
+		WithPackage("package").
+		WithFields(
+			NewTestField("next_page_token").
+				WithJSONName("nextPageToken").
+				WithType(TypezString),
+		)
 
 	for _, input := range []*Message{badToken, badItems, nil} {
 		if got := paginationResponseInfo(nil, ".package.Service.List", input); got != nil {
@@ -544,19 +342,18 @@ func TestPaginationResponseItemMatching(t *testing.T) {
 		{false, true, TypezMessage, "items"},
 		{true, false, TypezMessage, "items"},
 	} {
-		response := &Message{
-			Name: "Response",
-			ID:   ".package.Response",
-			Fields: []*Field{
-				{
-					Name:     test.Name,
-					JSONName: test.Name,
-					Typez:    test.Typez,
-					Repeated: test.Repeated,
-					Map:      test.Map,
-				},
-			},
+		f := NewTestField(test.Name).
+			WithJSONName(test.Name).
+			WithType(test.Typez)
+		if test.Repeated {
+			f.WithRepeated()
 		}
+		if test.Map {
+			f.WithMap()
+		}
+		response := NewTestMessage("Response").
+			WithPackage("package").
+			WithFields(f)
 		got := paginationResponseItem(nil, "package.Service.List", response)
 		if diff := cmp.Diff(response.Fields[0], got); diff != "" {
 			t.Errorf("mismatch (-want +got):\n%s", diff)
@@ -572,26 +369,19 @@ func TestPaginationResponseItemMatchingMany(t *testing.T) {
 		{true, false},
 		{false, true},
 	} {
-		response := &Message{
-			Name: "Response",
-			ID:   ".package.Response",
-			Fields: []*Field{
-				{
-					Name:     "first",
-					JSONName: "first",
-					Typez:    TypezMessage,
-					Repeated: test.Repeated,
-					Map:      test.Map,
-				},
-				{
-					Name:     "second",
-					JSONName: "second",
-					Typez:    TypezMessage,
-					Repeated: test.Repeated,
-					Map:      test.Map,
-				},
-			},
+		f1 := NewTestField("first").WithJSONName("first").WithType(TypezMessage)
+		f2 := NewTestField("second").WithJSONName("second").WithType(TypezMessage)
+		if test.Repeated {
+			f1.WithRepeated()
+			f2.WithRepeated()
 		}
+		if test.Map {
+			f1.WithMap()
+			f2.WithMap()
+		}
+		response := NewTestMessage("Response").
+			WithPackage("package").
+			WithFields(f1, f2)
 		got := paginationResponseItem(nil, "package.Service.List", response)
 		if diff := cmp.Diff(response.Fields[0], got); diff != "" {
 			t.Errorf("mismatch (-want +got):\n%s", diff)
@@ -600,24 +390,12 @@ func TestPaginationResponseItemMatchingMany(t *testing.T) {
 }
 
 func TestPaginationResponseItemMatchingPreferRepeatedOverMap(t *testing.T) {
-	response := &Message{
-		Name: "Response",
-		ID:   ".package.Response",
-		Fields: []*Field{
-			{
-				Name:     "map",
-				JSONName: "map",
-				Typez:    TypezMessage,
-				Map:      true,
-			},
-			{
-				Name:     "repeated",
-				JSONName: "repeated",
-				Typez:    TypezMessage,
-				Repeated: true,
-			},
-		},
-	}
+	response := NewTestMessage("Response").
+		WithPackage("package").
+		WithFields(
+			NewTestField("map").WithJSONName("map").WithType(TypezMessage).WithMap(),
+			NewTestField("repeated").WithJSONName("repeated").WithType(TypezMessage).WithRepeated(),
+		)
 	got := paginationResponseItem(nil, "package.Service.List", response)
 	if diff := cmp.Diff(response.Fields[1], got); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
@@ -639,18 +417,15 @@ func TestPaginationResponseItemNotMatching(t *testing.T) {
 		{"bothBad", false, TypezEnum, nil},
 		{"badOverride", true, TypezMessage, overrides},
 	} {
-		response := &Message{
-			Name: "Response",
-			ID:   ".package.Response",
-			Fields: []*Field{
-				{
-					Name:     test.Name,
-					JSONName: test.Name,
-					Typez:    test.Typez,
-					Repeated: test.Repeated,
-				},
-			},
+		f := NewTestField(test.Name).
+			WithJSONName(test.Name).
+			WithType(test.Typez)
+		if test.Repeated {
+			f.WithRepeated()
 		}
+		response := NewTestMessage("Response").
+			WithPackage("package").
+			WithFields(f)
 		got := paginationResponseItem(test.Overrides, ".package.Service.List", response)
 		if got != nil {
 			t.Errorf("the field should not be a pagination item, got=%v", got)
@@ -666,17 +441,13 @@ func TestPaginationResponseNextPageToken(t *testing.T) {
 		{"badName", TypezString},
 		{"nextPageToken", TypezInt32},
 	} {
-		response := &Message{
-			Name: "Response",
-			ID:   ".package.Response",
-			Fields: []*Field{
-				{
-					Name:     test.Name,
-					JSONName: test.Name,
-					Typez:    test.Typez,
-				},
-			},
-		}
+		response := NewTestMessage("Response").
+			WithPackage("package").
+			WithFields(
+				NewTestField(test.Name).
+					WithJSONName(test.Name).
+					WithType(test.Typez),
+			)
 		got := paginationResponseNextPageToken(response)
 		if got != nil {
 			t.Errorf("the field should not be a next page token, got=%v", got)
