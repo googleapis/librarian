@@ -384,14 +384,17 @@ func TestPathBinding_WithTargetResource(t *testing.T) {
 }
 
 func TestMethodSignature_Builders(t *testing.T) {
-	f := api.NewTestField("name")
-	sig := api.NewTestMethodSignature("name", "parent").WithFields(f)
+	f1 := api.NewTestField("name")
+	f2 := api.NewTestField("parent")
+	sig := api.NewTestMethodSignature("name", "parent").
+		WithFields(f1).
+		WithFields(f2)
 
 	if diff := cmp.Diff([]string{"name", "parent"}, sig.Names); diff != "" {
 		t.Errorf("mismatch in Names (-want +got):\n%s", diff)
 	}
-	if len(sig.Fields) != 1 || sig.Fields[0] != f {
-		t.Errorf("sig.Fields = %v, want [%v]", sig.Fields, f)
+	if diff := cmp.Diff([]*api.Field{f1, f2}, sig.Fields); diff != "" {
+		t.Errorf("mismatch in Fields (-want +got):\n%s", diff)
 	}
 }
 

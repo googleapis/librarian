@@ -912,9 +912,9 @@ func NewTestMethodSignature(names ...string) *MethodSignature {
 	return &MethodSignature{Names: names}
 }
 
-// WithFields sets the resolved fields for the signature.
+// WithFields appends the resolved fields to the signature.
 func (s *MethodSignature) WithFields(fields ...*Field) *MethodSignature {
-	s.Fields = fields
+	s.Fields = append(s.Fields, fields...)
 	return s
 }
 
