@@ -23,7 +23,7 @@ import (
 )
 
 func TestMethod_WithBindings_NilPathInfo(t *testing.T) {
-	method := &api.Method{Name: "Test"}
+	method := api.NewTestMethod("Test").WithPathInfo(nil)
 	b1 := api.NewTestPathBinding("GET", (&api.PathTemplate{}).WithLiteral("v1"))
 	b2 := api.NewTestPathBinding("POST", (&api.PathTemplate{}).WithLiteral("v2"))
 
@@ -49,7 +49,7 @@ func TestMethod_WithBindings_NonNilPathInfo(t *testing.T) {
 }
 
 func TestMethod_WithBodyFieldPath_NilPathInfo(t *testing.T) {
-	method := &api.Method{Name: "Test"}
+	method := api.NewTestMethod("Test").WithPathInfo(nil)
 	method.WithBodyFieldPath("data")
 
 	if method.PathInfo == nil {
@@ -61,7 +61,7 @@ func TestMethod_WithBodyFieldPath_NilPathInfo(t *testing.T) {
 }
 
 func TestMethod_WithVerb_NilPathInfo(t *testing.T) {
-	method := &api.Method{Name: "Test"}
+	method := api.NewTestMethod("Test").WithPathInfo(nil)
 	method.WithVerb("PUT")
 
 	if method.PathInfo == nil || len(method.PathInfo.Bindings) == 0 {
@@ -73,7 +73,7 @@ func TestMethod_WithVerb_NilPathInfo(t *testing.T) {
 }
 
 func TestMethod_WithPathTemplate_NilPathInfo(t *testing.T) {
-	method := &api.Method{Name: "Test"}
+	method := api.NewTestMethod("Test").WithPathInfo(nil)
 	pt := (&api.PathTemplate{}).WithLiteral("v1")
 	method.WithPathTemplate(pt)
 
@@ -86,7 +86,7 @@ func TestMethod_WithPathTemplate_NilPathInfo(t *testing.T) {
 }
 
 func TestMethod_WithQueryParameters_NilPathInfo(t *testing.T) {
-	method := &api.Method{Name: "Test"}
+	method := api.NewTestMethod("Test").WithPathInfo(nil)
 	params := map[string]bool{"page_size": true}
 	method.WithQueryParameters(params)
 
@@ -355,5 +355,108 @@ func TestField_FluentSetters(t *testing.T) {
 	}
 	if f.ResourceNamePattern != pattern {
 		t.Errorf("f.ResourceNamePattern = %v, want %v", f.ResourceNamePattern, pattern)
+	}
+}
+
+func TestMethod_TypeIDSetters(t *testing.T) {
+	m := api.NewTestMethod("DoWork").
+		WithInputTypeID(".test.Request").
+		WithOutputTypeID(".test.Response").
+		WithSourceServiceID(".test.Service")
+
+	if m.InputTypeID != ".test.Request" {
+		t.Errorf("m.InputTypeID = %q, want %q", m.InputTypeID, ".test.Request")
+	}
+	if m.OutputTypeID != ".test.Response" {
+		t.Errorf("m.OutputTypeID = %q, want %q", m.OutputTypeID, ".test.Response")
+	}
+	if m.SourceServiceID != ".test.Service" {
+		t.Errorf("m.SourceServiceID = %q, want %q", m.SourceServiceID, ".test.Service")
+	}
+}
+
+func TestPathBinding_WithTargetResource(t *testing.T) {
+	tr := &api.TargetResource{FieldPaths: [][]string{{"parent"}}}
+	b := api.NewTestPathBinding("GET", nil).WithTargetResource(tr)
+	if b.TargetResource != tr {
+		t.Errorf("b.TargetResource = %v, want %v", b.TargetResource, tr)
+	}
+}
+
+func TestMethodSignature_Builders(t *testing.T) {
+	f := api.NewTestField("name")
+	sig := api.NewTestMethodSignature("name", "parent").WithFields(f)
+
+	if diff := cmp.Diff([]string{"name", "parent"}, sig.Names); diff != "" {
+		t.Errorf("mismatch in Names (-want +got):\n%s", diff)
+	}
+	if len(sig.Fields) != 1 || sig.Fields[0] != f {
+		t.Errorf("sig.Fields = %v, want [%v]", sig.Fields, f)
+	}
+}
+
+func TestResourceNamePattern_Builder(t *testing.T) {
+	p := api.NewTestResourceNamePattern(
+		api.ResourceNameSegment{Literal: "projects"},
+		api.ResourceNameSegment{Variable: "project"},
+	)
+	if len(p.Segments) != 2 {
+		t.Fatalf("len(p.Segments) = %d, want 2", len(p.Segments))
+	}
+	if p.Segments[0].Literal != "projects" || p.Segments[1].Variable != "project" {
+		t.Errorf("unexpected segments: %+v", p.Segments)
+	}
+}
+
+func TestRoutingInfo_Builders(t *testing.T) {
+	v := api.NewTestRoutingInfoVariant("name", "id")
+	r := api.NewTestRoutingInfo("routing", v)
+
+	if r.Name != "routing" {
+		t.Errorf("r.Name = %q, want 'routing'", r.Name)
+	}
+	if len(r.Variants) != 1 || r.Variants[0] != v {
+		t.Errorf("r.Variants = %v, want [%v]", r.Variants, v)
+	}
+	if diff := cmp.Diff([]string{"name", "id"}, v.FieldPath); diff != "" {
+		t.Errorf("mismatch in FieldPath (-want +got):\n%s", diff)
+	}
+}
+
+func TestOperationInfo_Builder(t *testing.T) {
+	op := api.NewTestOperationInfo(".test.Response", ".test.Metadata")
+	if op.ResponseTypeID != ".test.Response" {
+		t.Errorf("op.ResponseTypeID = %q, want .test.Response", op.ResponseTypeID)
+	}
+	if op.MetadataTypeID != ".test.Metadata" {
+		t.Errorf("op.MetadataTypeID = %q, want .test.Metadata", op.MetadataTypeID)
+	}
+}
+
+func TestDiscoveryLro_Builder(t *testing.T) {
+	lro := api.NewTestDiscoveryLro("project", "zone")
+	if diff := cmp.Diff([]string{"project", "zone"}, lro.PollingPathParameters); diff != "" {
+		t.Errorf("mismatch in PollingPathParameters (-want +got):\n%s", diff)
+	}
+}
+
+func TestSampleInfo_Builder(t *testing.T) {
+	f := api.NewTestField("name")
+	s := api.NewTestSampleInfo(f)
+	if s.ResourceNameField != f {
+		t.Errorf("s.ResourceNameField = %v, want %v", s.ResourceNameField, f)
+	}
+}
+
+func TestPaginationInfo_Builder(t *testing.T) {
+	token := api.NewTestField("next_page_token")
+	items := api.NewTestField("items")
+	p := api.NewTestPaginationInfo(token, items)
+
+	if p.NextPageToken != token {
+		t.Errorf("p.NextPageToken = %v, want %v", p.NextPageToken, token)
+	}
+	if p.PageableItem != items {
+		t.Errorf("p.PageableItem = %v, want %v", p.PageableItem, items)
 	}
 }
