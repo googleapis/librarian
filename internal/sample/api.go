@@ -291,7 +291,6 @@ func CustomerManagedEncryption() *api.Message {
 func SecretPayload() *api.Message {
 	msg := api.NewTestMessage("SecretPayload").
 		WithPackage("").
-		WithID("..SecretPayload").
 		WithDocumentation("A secret payload resource in the Secret Manager API. This contains the\nsensitive secret payload that is associated with a SecretVersion.").
 		WithFields(
 			api.NewTestField("data").
