@@ -557,3 +557,49 @@ func TestGenerateMessage_WKT(t *testing.T) {
 		}
 	}
 }
+
+func TestGenerateMessage_AnyPackableDocComments(t *testing.T) {
+	outDir := t.TempDir()
+
+	msg := api.NewTestMessage("FooMessage").WithPackage("google.cloud.test.v1")
+	model := api.NewTestAPI([]*api.Message{msg}, nil, nil)
+	library := &config.Library{
+		Swift: swiftConfig(t, nil),
+	}
+	if err := Generate(t.Context(), model, outDir, library, nil); err != nil {
+		t.Fatal(err)
+	}
+
+	filename := filepath.Join(outDir, "Sources", "GoogleCloudTestV1", "FooMessage.swift")
+	content, err := os.ReadFile(filename)
+	if err != nil {
+		t.Fatal(err)
+	}
+	contentStr := string(content)
+
+	wantAnyBlock := `  /// The type URL for ` + "`FooMessage`: `\"type.googleapis.com/google.cloud.test.v1.FooMessage\"`." + `
+  public static var _anyTypeUrl: Swift.String {
+    return "type.googleapis.com/google.cloud.test.v1.FooMessage"
+  }
+
+  /// Initialize an instance of ` + "`FooMessage` by unpacking from a `GoogleWKT.WKTAny`." + `
+  ///
+  /// - Parameter any: The ` + "`GoogleWKT.WKTAny` instance to unpack." + `
+  /// - Throws: An error if the type URL in ` + "`any` does not match `\"type.googleapis.com/google.cloud.test.v1.FooMessage\"`," + `
+  ///   or if deserialization fails.
+  public init(fromAny any: GoogleWKT.WKTAny) throws {
+    self = try GoogleWKT._slowAnyDeserialize(Self.self, from: any)
+  }
+
+  /// Packs this ` + "`FooMessage` into a `GoogleWKT.WKTStruct` representation." + `
+  ///
+  /// - Throws: An error if serialization fails.
+  public func _pack() throws -> GoogleWKT.WKTStruct {
+    return try GoogleWKT._slowAnySerialize(message: self)
+  }`
+
+	got := extractBlock(t, contentStr, "  /// The type URL for `FooMessage`", "GoogleWKT._slowAnySerialize(message: self)\n  }")
+	if diff := cmp.Diff(wantAnyBlock, got); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+}

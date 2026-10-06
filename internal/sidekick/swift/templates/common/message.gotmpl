@@ -181,12 +181,23 @@ public struct {{ .Codec.Name }}: Codable, Equatable, {{ .Codec.Model.WktPackage 
   {{- include "templates/common/oneof" . | indent 2 }}
   {{- end }}
 
+  /// The type URL for `{{ .Codec.Name }}`: `"{{ .Codec.TypeURL }}"`.
   public static var _anyTypeUrl: Swift.String {
     return "{{ .Codec.TypeURL }}"
   }
+
+  /// Initialize an instance of `{{ .Codec.Name }}` by unpacking from a `{{ .Codec.Model.WktPackage }}.WKTAny`.
+  ///
+  /// - Parameter any: The `{{ .Codec.Model.WktPackage }}.WKTAny` instance to unpack.
+  /// - Throws: An error if the type URL in `any` does not match `"{{ .Codec.TypeURL }}"`,
+  ///   or if deserialization fails.
   public init(fromAny any: {{ .Codec.Model.WktPackage }}.WKTAny) throws {
     self = try {{ .Codec.Model.WktPackage }}._slowAnyDeserialize(Self.self, from: any)
   }
+
+  /// Packs this `{{ .Codec.Name }}` into a `{{ .Codec.Model.WktPackage }}.WKTStruct` representation.
+  ///
+  /// - Throws: An error if serialization fails.
   public func _pack() throws -> {{ .Codec.Model.WktPackage }}.WKTStruct {
     return try {{ .Codec.Model.WktPackage }}._slowAnySerialize(message: self)
   }
