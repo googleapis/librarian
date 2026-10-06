@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.47.0](https://github.com/googleapis/librarian/compare/v0.46.0...v0.47.0) (2026-10-06)
+
+
+### Features
+
+* **librarian/swift/publish:** parallelize publish with topological sort ([#7740](https://github.com/googleapis/librarian/issues/7740)) ([0b2d680](https://github.com/googleapis/librarian/commit/0b2d680a7e46163f5c7addb5c13960491c20948f))
+* **sidekick/swift:** enable MemberImportVisibility ([#7754](https://github.com/googleapis/librarian/issues/7754)) ([c79cd37](https://github.com/googleapis/librarian/commit/c79cd374b1965ce6f6ba407eb6c5a8d3e7ebddb7))
+* **sidekick/swift:** handle duplicate names ([#7736](https://github.com/googleapis/librarian/issues/7736)) ([42dc482](https://github.com/googleapis/librarian/commit/42dc48284952022420dd48b93fe9c33f79e25687))
+
+
+### Bug Fixes
+
+* **rust:** publish dry runs ([#7735](https://github.com/googleapis/librarian/issues/7735)) ([7e63426](https://github.com/googleapis/librarian/commit/7e63426757f3d19e49c03a7e4e07e741adf79e44)), refs [#7734](https://github.com/googleapis/librarian/issues/7734)
+* **sidekick/rust:** support reserved raw idents ([#7752](https://github.com/googleapis/librarian/issues/7752)) ([8462101](https://github.com/googleapis/librarian/commit/846210126594b287952cabfb69bd8fe161d7ec65))
+* **sidekick/swift:** pass initial pageToken ([#7745](https://github.com/googleapis/librarian/issues/7745)) ([65e3b6c](https://github.com/googleapis/librarian/commit/65e3b6c145ea05d1e4a0270bd0e6d2388804e029))
+
 ## [0.46.0](https://github.com/googleapis/librarian/compare/v0.45.0...v0.46.0) (2026-09-29)
 
 
