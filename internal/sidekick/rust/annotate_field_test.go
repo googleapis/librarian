@@ -799,9 +799,7 @@ func TestFormattedResourceAnnotations(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			field := api.NewTestField("name").
 				WithType(api.TypezString).
-				WithResourceNamePattern(&api.ResourceNamePattern{
-					Segments: test.segments,
-				})
+				WithResourceNamePattern(api.NewTestResourceNamePattern(test.segments...))
 			message := api.NewTestMessage("TestMessage").
 				WithPackage("test.v1").
 				WithFields(field)
