@@ -421,6 +421,18 @@ func (m *Method) WithOutput(msg *Message) *Method {
 	return m
 }
 
+// WithInputTypeID sets the input type ID for the method.
+func (m *Method) WithInputTypeID(id string) *Method {
+	m.InputTypeID = id
+	return m
+}
+
+// WithOutputTypeID sets the output type ID for the method.
+func (m *Method) WithOutputTypeID(id string) *Method {
+	m.OutputTypeID = id
+	return m
+}
+
 // WithPathTemplate sets the path template for the first binding.
 func (m *Method) WithPathTemplate(pt *PathTemplate) *Method {
 	m.ensureFirstBinding().PathTemplate = pt
@@ -462,6 +474,12 @@ func (m *Method) WithSourceMethod(source *Method) *Method {
 		m.SourceServiceID = m.SourceService.ID
 	}
 	m.PathInfo = source.PathInfo
+	return m
+}
+
+// WithSourceServiceID sets the source service ID for the method.
+func (m *Method) WithSourceServiceID(id string) *Method {
+	m.SourceServiceID = id
 	return m
 }
 
@@ -573,6 +591,12 @@ func (b *PathBinding) WithPathTemplate(pt *PathTemplate) *PathBinding {
 // WithQueryParameters sets the query parameters for the binding.
 func (b *PathBinding) WithQueryParameters(params map[string]bool) *PathBinding {
 	b.QueryParameters = params
+	return b
+}
+
+// WithTargetResource sets the target resource for the binding.
+func (b *PathBinding) WithTargetResource(tr *TargetResource) *PathBinding {
+	b.TargetResource = tr
 	return b
 }
 
@@ -881,4 +905,56 @@ func ParseTemplateForTest(template string) []PathSegment {
 		}
 	}
 	return segments
+}
+
+// NewTestMethodSignature creates a MethodSignature with parameter names.
+func NewTestMethodSignature(names ...string) *MethodSignature {
+	return &MethodSignature{Names: names}
+}
+
+// WithFields appends the resolved fields to the signature.
+func (s *MethodSignature) WithFields(fields ...*Field) *MethodSignature {
+	s.Fields = append(s.Fields, fields...)
+	return s
+}
+
+// NewTestResourceNamePattern creates a ResourceNamePattern with segments.
+func NewTestResourceNamePattern(segments ...ResourceNameSegment) *ResourceNamePattern {
+	return &ResourceNamePattern{Segments: segments}
+}
+
+// NewTestRoutingInfo creates a RoutingInfo struct with variants.
+func NewTestRoutingInfo(name string, variants ...*RoutingInfoVariant) *RoutingInfo {
+	return &RoutingInfo{Name: name, Variants: variants}
+}
+
+// NewTestRoutingInfoVariant creates a RoutingInfoVariant with a field path.
+func NewTestRoutingInfoVariant(fieldPath ...string) *RoutingInfoVariant {
+	return &RoutingInfoVariant{FieldPath: fieldPath}
+}
+
+// NewTestOperationInfo creates an OperationInfo with response and metadata type IDs.
+func NewTestOperationInfo(responseTypeID, metadataTypeID string) *OperationInfo {
+	return &OperationInfo{
+		ResponseTypeID: responseTypeID,
+		MetadataTypeID: metadataTypeID,
+	}
+}
+
+// NewTestDiscoveryLro creates a DiscoveryLro with polling path parameters.
+func NewTestDiscoveryLro(pollingParams ...string) *DiscoveryLro {
+	return &DiscoveryLro{PollingPathParameters: pollingParams}
+}
+
+// NewTestSampleInfo creates a SampleInfo initialized with a resource name field.
+func NewTestSampleInfo(resourceNameField *Field) *SampleInfo {
+	return &SampleInfo{ResourceNameField: resourceNameField}
+}
+
+// NewTestPaginationInfo creates a PaginationInfo for pagination responses.
+func NewTestPaginationInfo(nextPageToken, pageableItem *Field) *PaginationInfo {
+	return &PaginationInfo{
+		NextPageToken: nextPageToken,
+		PageableItem:  pageableItem,
+	}
 }
