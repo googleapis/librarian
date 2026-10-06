@@ -81,6 +81,7 @@ let package = Package(
       ],
       {{- end }}
       swiftSettings: [
+        .enableUpcomingFeature("ExistentialAny"),
         .enableUpcomingFeature("InternalImportsByDefault"),
         .enableUpcomingFeature("MemberImportVisibility"),
         .enableUpcomingFeature("NonisolatedNonsendingByDefault"),

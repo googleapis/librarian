@@ -98,6 +98,7 @@ func TestGeneratePackageSwift_WithDependencies(t *testing.T) {
 
 	gotSwiftSettings := extractBlock(t, contentStr, "      swiftSettings: [", "\n      ]")
 	wantSwiftSettings := `      swiftSettings: [
+        .enableUpcomingFeature("ExistentialAny"),
         .enableUpcomingFeature("InternalImportsByDefault"),
         .enableUpcomingFeature("MemberImportVisibility"),
         .enableUpcomingFeature("NonisolatedNonsendingByDefault"),

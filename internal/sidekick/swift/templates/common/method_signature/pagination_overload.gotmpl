@@ -17,4 +17,4 @@ limitations under the License.
   {{- range .Fields }}
   {{ .Codec.Name }}: {{ .Codec.FieldType }},
   {{- end }}
-) -> some AsyncSequence<{{ .Method.OutputType.Codec.PageableItemType }}, Swift.Error> & Sendable
+) -> some AsyncSequence<{{ .Method.OutputType.Codec.PageableItemType }}, any Swift.Error> & Sendable
