@@ -234,101 +234,79 @@ func SecretVersion() *api.Message {
 
 // EnumState returns a sample enum state.
 func EnumState() *api.Enum {
-	var (
-		stateEnabled = &api.EnumValue{
-			Name:   "Enabled",
-			Number: 1,
-		}
-		stateDisabled = &api.EnumValue{
-			Name:   "Disabled",
-			Number: 2,
-		}
-	)
-	return &api.Enum{
-		Name:    "State",
-		ID:      ".test.EnumState",
-		Package: Package,
-		Values: []*api.EnumValue{
-			stateEnabled,
-			stateDisabled,
-		},
-	}
+	return api.NewTestEnum("State").
+		WithPackage(Package).
+		WithID(".test.EnumState").
+		WithValues(
+			api.NewTestEnumValue("Enabled", 1),
+			api.NewTestEnumValue("Disabled", 2),
+		)
 }
 
 // Replication returns a sample replication.
 func Replication() *api.Message {
-	return &api.Message{
-		Name:    "Replication",
-		Package: Package,
-		ID:      "google.cloud.secretmanager.v1.Replication",
-		Fields: []*api.Field{
-			{
-				Name:     "automatic",
-				Typez:    api.TypezMessage,
-				TypezID:  "..Automatic",
-				Optional: true,
-				Repeated: false,
-			},
-		},
+	msg := api.NewTestMessage("Replication").
+		WithPackage(Package).
+		WithID("google.cloud.secretmanager.v1.Replication").
+		WithFields(
+			api.NewTestField("automatic").
+				WithType(api.TypezMessage).
+				WithTypezID("..Automatic").
+				WithOptional(),
+		)
+	for _, f := range msg.Fields {
+		f.Parent = nil
 	}
+	return msg
 }
 
 // Automatic returns a sample automatic.
 func Automatic() *api.Message {
-	return &api.Message{
-		Name:          "Automatic",
-		ID:            "..Automatic",
-		Package:       Package,
-		Documentation: "A replication policy that replicates the Secret payload without any restrictions.",
-		Parent:        Replication(),
-		Fields: []*api.Field{
-			{
-				Name:          "customerManagedEncryption",
-				ID:            "..Automatic.customerManagedEncryption",
-				JSONName:      "customerManagedEncryption",
-				Documentation: "Optional. The customer-managed encryption configuration of the Secret.",
-				Typez:         api.TypezMessage,
-				TypezID:       "..CustomerManagedEncryption",
-				Optional:      true,
-			},
-		},
+	msg := api.NewTestMessage("Automatic").
+		WithPackage(Package).
+		WithID("..Automatic").
+		WithDocumentation("A replication policy that replicates the Secret payload without any restrictions.").
+		WithFields(
+			api.NewTestField("customerManagedEncryption").
+				WithDocumentation("Optional. The customer-managed encryption configuration of the Secret.").
+				WithType(api.TypezMessage).
+				WithTypezID("..CustomerManagedEncryption").
+				WithOptional(),
+		)
+	for _, f := range msg.Fields {
+		f.Parent = nil
 	}
+	msg.Parent = Replication()
+	return msg
 }
 
 // CustomerManagedEncryption returns a sample customer managed encryption.
 func CustomerManagedEncryption() *api.Message {
-	return &api.Message{
-		Name:    "CustomerManagedEncryption",
-		ID:      "..CustomerManagedEncryption",
-		Package: Package,
-	}
+	return api.NewTestMessage("CustomerManagedEncryption").
+		WithPackage(Package).
+		WithID("..CustomerManagedEncryption")
 }
 
 // SecretPayload returns a sample secret payload.
 func SecretPayload() *api.Message {
-	return &api.Message{
-		Name:          "SecretPayload",
-		ID:            "..SecretPayload",
-		Documentation: "A secret payload resource in the Secret Manager API. This contains the\nsensitive secret payload that is associated with a SecretVersion.",
-		Fields: []*api.Field{
-			{
-				Name:          "data",
-				ID:            "..SecretPayload.data",
-				JSONName:      "data",
-				Documentation: "The secret data. Must be no larger than 64KiB.",
-				Typez:         api.TypezBytes,
-				TypezID:       "bytes",
-				Optional:      true,
-			},
-			{
-				Name:          "dataCrc32c",
-				ID:            "..SecretPayload.dataCrc32c",
-				JSONName:      "dataCrc32c",
-				Documentation: "Optional. If specified, SecretManagerService will verify the integrity of the\nreceived data on SecretManagerService.AddSecretVersion calls using\nthe crc32c checksum and store it to include in future\nSecretManagerService.AccessSecretVersion responses. If a checksum is\nnot provided in the SecretManagerService.AddSecretVersion request, the\nSecretManagerService will generate and store one for you.\n\nThe CRC32C value is encoded as a Int64 for compatibility, and can be\nsafely downconverted to uint32 in languages that support this type.\nhttps://cloud.google.com/apis/design/design_patterns#integer_types",
-				Typez:         api.TypezInt64,
-				TypezID:       "int64",
-				Optional:      true,
-			},
-		},
+	msg := api.NewTestMessage("SecretPayload").
+		WithPackage("").
+		WithDocumentation("A secret payload resource in the Secret Manager API. This contains the\nsensitive secret payload that is associated with a SecretVersion.").
+		WithFields(
+			api.NewTestField("data").
+				WithDocumentation("The secret data. Must be no larger than 64KiB.").
+				WithType(api.TypezBytes).
+				WithTypezID("bytes").
+				WithOptional(),
+			api.NewTestField("dataCrc32c").
+				WithJSONName("dataCrc32c").
+				WithDocumentation("Optional. If specified, SecretManagerService will verify the integrity of the\nreceived data on SecretManagerService.AddSecretVersion calls using\nthe crc32c checksum and store it to include in future\nSecretManagerService.AccessSecretVersion responses. If a checksum is\nnot provided in the SecretManagerService.AddSecretVersion request, the\nSecretManagerService will generate and store one for you.\n\nThe CRC32C value is encoded as a Int64 for compatibility, and can be\nsafely downconverted to uint32 in languages that support this type.\nhttps://cloud.google.com/apis/design/design_patterns#integer_types").
+				WithType(api.TypezInt64).
+				WithTypezID("int64").
+				WithOptional(),
+		)
+	for _, f := range msg.Fields {
+		f.Parent = nil
 	}
+	return msg
 }
