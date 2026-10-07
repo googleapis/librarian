@@ -15,13 +15,13 @@
 package swift
 
 import (
-	"github.com/googleapis/librarian/internal/config"
-
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/sidekick/api"
 )
 
@@ -87,9 +87,16 @@ func checkStubContents(t *testing.T, outDir string) {
 		t.Fatal(err)
 	}
 	contentStr := string(content)
-	got := extractBlock(t, contentStr, "req.addHeader(name: ", "value: Clients.clientHeader)")
-	want := `req.addHeader(name: GoogleGax._HeaderNames.apiClient, value: Clients.clientHeader)`
+	got := extractBlock(t, contentStr, "self.inner = try GoogleGax._HTTPClient(", "\n      )")
+	want := `self.inner = try GoogleGax._HTTPClient(
+        from: options,
+        withDefaultEndpoint: "https://",
+        clientHeader: Clients.clientHeader
+      )`
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+	if strings.Contains(contentStr, "GoogleGax._HeaderNames.apiClient") {
+		t.Errorf("transport unexpectedly contains apiClient header call per RPC stub:\n%s", contentStr)
 	}
 }
