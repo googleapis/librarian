@@ -165,20 +165,17 @@ func setupStubPip(t *testing.T, script string) {
 }
 
 func TestBinDir(t *testing.T) {
-	binDir := t.TempDir()
-	t.Setenv(cache.EnvLibrarianBin, binDir)
-	got, err := binDirFunc()
+	tmpDir := t.TempDir()
+	t.Setenv(cache.EnvLibrarianBin, tmpDir)
+	got, err := binDir()
 	if err != nil {
 		t.Fatal(err)
 	}
-	want := filepath.Join(binDir, "python_tools", "bin")
+	want := filepath.Join(tmpDir, "python_tools", "bin")
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
-
-// alias for binDir to avoid shadowing.
-var binDirFunc = binDir
 
 func TestPandocPath(t *testing.T) {
 	tmpDir := t.TempDir()

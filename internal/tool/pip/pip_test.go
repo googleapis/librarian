@@ -182,3 +182,104 @@ func TestInstall_Error(t *testing.T) {
 		})
 	}
 }
+
+func TestInstallToTarget(t *testing.T) {
+	tmpDir := t.TempDir()
+	stubLogPath := filepath.Join(tmpDir, "pip_invocations.log")
+	stubContent := fmt.Sprintf(`#!/bin/sh
+echo "pip $@" >> %q
+`, stubLogPath)
+	stubDir := filepath.Join(tmpDir, "bin")
+	if err := os.MkdirAll(stubDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	stubPath := filepath.Join(stubDir, "pip")
+	if err := os.WriteFile(stubPath, []byte(stubContent), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("PATH", stubDir)
+	localPkgPath := filepath.Join(tmpDir, "mylocalpkg")
+	if err := os.MkdirAll(localPkgPath, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	targetDir := filepath.Join(tmpDir, "target")
+
+	for _, test := range []struct {
+		name           string
+		tool           *config.PipTool
+		wantInvocation string
+	}{
+		{
+			name:           "install external package with version",
+			tool:           &config.PipTool{Name: "pypandoc-binary", Version: "1.16.2"},
+			wantInvocation: "pip install --no-deps --target " + targetDir + " pypandoc-binary==1.16.2",
+		},
+		{
+			name:           "install with raw package spec",
+			tool:           &config.PipTool{Name: "somepkg", Package: "https://example.com/somepkg.whl"},
+			wantInvocation: "pip install --no-deps --target " + targetDir + " https://example.com/somepkg.whl",
+		},
+		{
+			name:           "install with local path",
+			tool:           &config.PipTool{Name: "somepkg", LocalPath: localPkgPath},
+			wantInvocation: "pip install --no-deps --target " + targetDir + " " + localPkgPath,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			_ = os.Remove(stubLogPath)
+			err := InstallToTarget(t.Context(), test.tool, targetDir)
+			if err != nil {
+				t.Fatal(err)
+			}
+			var got string
+			if data, err := os.ReadFile(stubLogPath); err == nil {
+				got = strings.TrimSpace(string(data))
+			}
+			if diff := cmp.Diff(test.wantInvocation, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestInstallToTarget_Error(t *testing.T) {
+	tmpDir := t.TempDir()
+	stubDir := filepath.Join(tmpDir, "bin")
+	if err := os.MkdirAll(stubDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	stubPath := filepath.Join(stubDir, "pip")
+	if err := os.WriteFile(stubPath, []byte("#!/bin/sh\nexit 1\n"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	for _, test := range []struct {
+		name    string
+		tool    *config.PipTool
+		setup   func(t *testing.T)
+		wantErr error
+	}{
+		{
+			name: "pip command fails",
+			tool: &config.PipTool{Name: "failpkg"},
+			setup: func(t *testing.T) {
+				t.Setenv("PATH", stubDir)
+			},
+			wantErr: ErrInstall,
+		},
+		{
+			name:    "local path not found",
+			tool:    &config.PipTool{Name: "failpkg", LocalPath: filepath.Join(tmpDir, "nonexistentpkg")},
+			wantErr: ErrLocalPathNotFound,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			if test.setup != nil {
+				test.setup(t)
+			}
+			err := InstallToTarget(t.Context(), test.tool, tmpDir)
+			if !errors.Is(err, test.wantErr) {
+				t.Errorf("InstallToTarget() error = %v, wantErr = %v", err, test.wantErr)
+			}
+		})
+	}
+}

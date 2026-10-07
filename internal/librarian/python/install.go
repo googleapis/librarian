@@ -24,9 +24,9 @@ import (
 	"path/filepath"
 
 	"runtime"
+	"slices"
 
 	"github.com/googleapis/librarian/internal/cache"
-	"github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/filesystem"
 	"github.com/googleapis/librarian/internal/tool/pip"
@@ -107,16 +107,13 @@ func toolsEnv() (map[string]string, error) {
 
 // installPandocBinary extracts the pandoc binary from pypandoc-binary into the tools bin directory.
 func installPandocBinary(ctx context.Context, tools []*config.PipTool) error {
-	var pypandocTool *config.PipTool
-	for _, tool := range tools {
-		if tool.Name == "pypandoc-binary" {
-			pypandocTool = tool
-			break
-		}
-	}
-	if pypandocTool == nil {
+	idx := slices.IndexFunc(tools, func(tool *config.PipTool) bool {
+		return tool.Name == "pypandoc-binary"
+	})
+	if idx == -1 {
 		return nil
 	}
+	pypandocTool := tools[idx]
 
 	bin, err := binDir()
 	if err != nil {
@@ -146,22 +143,7 @@ func installPandocBinary(ctx context.Context, tools []*config.PipTool) error {
 	}
 	defer os.RemoveAll(tmpDir)
 
-	pkgSpec := pypandocTool.Name
-	if pypandocTool.Version != "" {
-		pkgSpec = fmt.Sprintf("%s==%s", pypandocTool.Name, pypandocTool.Version)
-	}
-	if pypandocTool.Package != "" {
-		pkgSpec = pypandocTool.Package
-	}
-	if pypandocTool.LocalPath != "" {
-		absPath, err := filepath.Abs(pypandocTool.LocalPath)
-		if err != nil {
-			return fmt.Errorf("failed to resolve absolute path for %s: %w", pypandocTool.LocalPath, err)
-		}
-		pkgSpec = absPath
-	}
-
-	if err := command.Run(ctx, "pip", "install", "--no-deps", "--target", tmpDir, pkgSpec); err != nil {
+	if err := pip.InstallToTarget(ctx, pypandocTool, tmpDir); err != nil {
 		return fmt.Errorf("failed to extract pandoc binary from %s: %w", pypandocTool.Name, err)
 	}
 

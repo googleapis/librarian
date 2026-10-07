@@ -40,32 +40,49 @@ func Install(ctx context.Context, tools []*config.PipTool) error {
 	var stdPackages []string
 	var gitPackages []string
 	for _, tool := range tools {
-		switch {
-		case tool.LocalPath != "":
-			absPath, err := filepath.Abs(tool.LocalPath)
-			if err != nil {
-				return fmt.Errorf("failed to resolve absolute path for %s: %w", tool.LocalPath, err)
-			}
-			if _, err := os.Stat(absPath); err != nil {
-				return fmt.Errorf("%w: %w", ErrLocalPathNotFound, err)
-			}
-			stdPackages = append(stdPackages, absPath)
-		case tool.Package != "":
-			if strings.Contains(tool.Package, "git+") {
-				gitPackages = append(gitPackages, tool.Package)
-			} else {
-				stdPackages = append(stdPackages, tool.Package)
-			}
-		case tool.Version != "":
-			stdPackages = append(stdPackages, fmt.Sprintf("%s==%s", tool.Name, tool.Version))
-		default:
-			stdPackages = append(stdPackages, tool.Name)
+		spec, err := packageSpec(tool)
+		if err != nil {
+			return err
+		}
+		if tool.Package != "" && strings.Contains(tool.Package, "git+") {
+			gitPackages = append(gitPackages, spec)
+		} else {
+			stdPackages = append(stdPackages, spec)
 		}
 	}
 	if err := installPackages(ctx, stdPackages); err != nil {
 		return err
 	}
 	return forceInstallPackages(ctx, gitPackages)
+}
+
+// InstallToTarget installs a pip tool into a specific target directory with --no-deps.
+func InstallToTarget(ctx context.Context, tool *config.PipTool, targetDir string) error {
+	spec, err := packageSpec(tool)
+	if err != nil {
+		return err
+	}
+	return runPip(ctx, "install", "--no-deps", "--target", targetDir, spec)
+}
+
+func packageSpec(tool *config.PipTool) (string, error) {
+	switch {
+	case tool.LocalPath != "":
+		absPath, err := filepath.Abs(tool.LocalPath)
+		if err != nil {
+			return "", fmt.Errorf("failed to resolve absolute path for %s: %w", tool.LocalPath, err)
+		}
+		if _, err := os.Stat(absPath); err != nil {
+			return "", fmt.Errorf("%w: %w", ErrLocalPathNotFound, err)
+		}
+		return absPath, nil
+	case tool.Package != "":
+		return tool.Package, nil
+	case tool.Version != "":
+		return fmt.Sprintf("%s==%s", tool.Name, tool.Version), nil
+	default:
+		return tool.Name, nil
+	}
 }
 
 // installPackages installs non-git packages.
