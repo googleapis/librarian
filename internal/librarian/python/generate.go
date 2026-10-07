@@ -287,8 +287,13 @@ func generateAPI(ctx context.Context, api *config.API, library *config.Library, 
 		return fmt.Errorf("failed to find protoc: %w", err)
 	}
 
+	env, err := toolsEnv()
+	if err != nil {
+		return err
+	}
+
 	cmdArgs := append(protos, protocOptions...)
-	if err := command.RunInDir(ctx, googleapisDir, protocCmd, cmdArgs...); err != nil {
+	if err := command.RunInDirWithEnv(ctx, googleapisDir, env, protocCmd, cmdArgs...); err != nil {
 		return fmt.Errorf("failed to execute protoc: %w", err)
 	}
 
@@ -426,7 +431,11 @@ python_mono_repo.owlbot_main(%q)
 	if err != nil {
 		return err
 	}
-	env := map[string]string{"SYNTHTOOL_TEMPLATES": templateDir}
+	env, err := toolsEnv()
+	if err != nil {
+		return err
+	}
+	env["SYNTHTOOL_TEMPLATES"] = templateDir
 	if err := command.RunInDirWithEnv(ctx, generationRoot, env, "python3", "-c", pythonCode); err != nil {
 		return fmt.Errorf("failed to run post-processor: %w", err)
 	}
@@ -437,7 +446,7 @@ python_mono_repo.owlbot_main(%q)
 	// as well... we can do all of that after migration, when we remove
 	// synthtool entirely - see
 	// https://github.com/googleapis/librarian/issues/3008)
-	if err := command.RunInDir(ctx, outDir, "nox", "-s", "format", "--no-venv", "--no-install"); err != nil {
+	if err := command.RunInDirWithEnv(ctx, outDir, env, "nox", "-s", "format", "--no-venv", "--no-install"); err != nil {
 		return fmt.Errorf("failed to format code after post-processing: %w", err)
 	}
 	return nil
