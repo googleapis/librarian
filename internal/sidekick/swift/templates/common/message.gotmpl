@@ -101,7 +101,7 @@ public struct {{ .Codec.Name }}: Codable, Equatable, {{ .Codec.Model.WktPackage 
   {{- if .Codec.DiagnoseCodable }}
   {{- include "templates/common/diagnose" . | indent 2 }}
   {{- end }}
-  public init(from decoder: Decoder) throws {
+  public init(from decoder: any Decoder) throws {
     let container = try decoder.container(keyedBy: CodingKeys.self)
     {{- range .Fields }}
     {{- if not .IsOneOf }}
@@ -137,7 +137,7 @@ public struct {{ .Codec.Name }}: Codable, Equatable, {{ .Codec.Model.WktPackage 
   {{- if .Codec.DiagnoseCodable }}
   {{- include "templates/common/diagnose" . | indent 2 }}
   {{- end }}
-  public func encode(to encoder: Encoder) throws {
+  public func encode(to encoder: any Encoder) throws {
     var container = encoder.container(keyedBy: CodingKeys.self)
     {{- range .Fields }}
     {{- if not .IsOneOf }}

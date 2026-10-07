@@ -627,7 +627,7 @@ func verifyGeneratedService(t *testing.T, outDir string) {
     request: ListSecretsRequest, options: `, "\n  }")
 	wantMethodOverload := `  public func listSecretsByItems(
     request: ListSecretsRequest, options: GoogleGax.RequestOptions
-) -> some AsyncSequence<Secret, Swift.Error> & Sendable
+) -> some AsyncSequence<Secret, any Swift.Error> & Sendable
  {
     let listRpc = { @Sendable (token: Swift.String) async throws -> GoogleCloudSecretmanagerV1.ListSecretsResponse in
       var request = request
@@ -783,8 +783,8 @@ func TestGenerateService_LRO(t *testing.T) {
 
 	wantContains := []string{
 		"public import GoogleCloudLongrunningV1",
-		"let pollingErrorPolicy: GoogleGax.PollingErrorPolicy",
-		"let pollingBackoffPolicy: GoogleGax.PollingBackoffPolicy",
+		"let pollingErrorPolicy: any GoogleGax.PollingErrorPolicy",
+		"let pollingBackoffPolicy: any GoogleGax.PollingBackoffPolicy",
 		"public func createWorkflowPollingUntilDone(request: CreateWorkflowRequest) async throws -> Workflow",
 		"let extractStatus = { @Sendable (op: GoogleCloudLongrunningV1.Operation) throws -> GoogleGax._PollableOperationImpl<Workflow>.State in",
 		"let poll = { @Sendable () async throws -> GoogleGax._PollableOperationImpl<Workflow>.State in",

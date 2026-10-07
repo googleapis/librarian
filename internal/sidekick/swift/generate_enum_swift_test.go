@@ -103,8 +103,8 @@ func TestGenerateEnum_UniqueNumbers(t *testing.T) {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 
-	gotEncode := extractBlock(t, string(contentsB), "public func encode(to encoder: Encoder) throws {", "\n  }")
-	wantEncode := `public func encode(to encoder: Encoder) throws {
+	gotEncode := extractBlock(t, string(contentsB), "public func encode(to encoder: any Encoder) throws {", "\n  }")
+	wantEncode := `public func encode(to encoder: any Encoder) throws {
     var container = encoder.singleValueContainer()
     switch self {
     case .test: return try container.encode("KIND_TEST")
@@ -321,18 +321,18 @@ func TestGenerateEnum_Discovery(t *testing.T) {
 	}
 
 	// Verify decoder
-	wantDecoder := `  public init(from decoder: Decoder) throws {
+	wantDecoder := `  public init(from decoder: any Decoder) throws {
     let container = try decoder.singleValueContainer()
     let s = try container.decode(Swift.String.self)
     self.init(stringValue: s)
   }`
-	gotDecoder := extractBlock(t, contentStr, "  public init(from decoder: Decoder) throws {", "\n  }")
+	gotDecoder := extractBlock(t, contentStr, "  public init(from decoder: any Decoder) throws {", "\n  }")
 	if diff := cmp.Diff(wantDecoder, gotDecoder); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 
 	// Verify encoder
-	wantEncoder := `  public func encode(to encoder: Encoder) throws {
+	wantEncoder := `  public func encode(to encoder: any Encoder) throws {
     var container = encoder.singleValueContainer()
     switch self {
     case .done: return try container.encode("DONE")
@@ -341,7 +341,7 @@ func TestGenerateEnum_Discovery(t *testing.T) {
     case .unknownStringValue(let v): return try container.encode(v)
     }
   }`
-	gotEncoder := extractBlock(t, contentStr, "  public func encode(to encoder: Encoder) throws {", "\n  }")
+	gotEncoder := extractBlock(t, contentStr, "  public func encode(to encoder: any Encoder) throws {", "\n  }")
 	if diff := cmp.Diff(wantEncoder, gotEncoder); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}

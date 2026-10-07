@@ -162,8 +162,8 @@ func TestGenerateMessage_Diagnose(t *testing.T) {
 			}
 			contentStr := string(content)
 
-			checkDiagnose(t, contentStr, "  ", "public init(from decoder: Decoder) throws {", test.want)
-			checkDiagnose(t, contentStr, "  ", "public func encode(to encoder: Encoder) throws {", test.want)
+			checkDiagnose(t, contentStr, "  ", "public init(from decoder: any Decoder) throws {", test.want)
+			checkDiagnose(t, contentStr, "  ", "public func encode(to encoder: any Encoder) throws {", test.want)
 		})
 	}
 }
