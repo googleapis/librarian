@@ -196,12 +196,23 @@ func TestGenerateOneOf(t *testing.T) {
     indirect case messageField(Inner)
   }
 
+  /// The type URL for ` + "`Outer`: `\"type.googleapis.com/google.cloud.test.v1.Outer\"`." + `
   public static var _anyTypeUrl: Swift.String {
     return "type.googleapis.com/google.cloud.test.v1.Outer"
   }
+
+  /// Initialize an instance of ` + "`Outer` by unpacking from a `GoogleWKT.WKTAny`." + `
+  ///
+  /// - Parameter any: The ` + "`GoogleWKT.WKTAny` instance to unpack." + `
+  /// - Throws: An error if the type URL in ` + "`any` does not match `\"type.googleapis.com/google.cloud.test.v1.Outer\"`," + `
+  ///   or if deserialization fails.
   public init(fromAny any: GoogleWKT.WKTAny) throws {
     self = try GoogleWKT._slowAnyDeserialize(Self.self, from: any)
   }
+
+  /// Packs this ` + "`Outer` into a `GoogleWKT.WKTStruct` representation." + `
+  ///
+  /// - Throws: An error if serialization fails.
   public func _pack() throws -> GoogleWKT.WKTStruct {
     return try GoogleWKT._slowAnySerialize(message: self)
   }
