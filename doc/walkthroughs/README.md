@@ -50,8 +50,8 @@ say where the step runs and whose code does the work; GitHub hides it.
 ```
 
 `nav` is optional and only shortens the page's label in the site header.
-Files under `static/` are copied to the site unchanged and listed on the index
-under "Related"; the architecture tour lives there as a self-contained page.
+Files under `static/`, if present, are copied to the site unchanged and listed
+on the index under "Related".
 
 Three fenced blocks are rendered specially. On GitHub they show as code.
 
