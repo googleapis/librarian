@@ -19,6 +19,8 @@ tool/cmd/importconfigs/importconfigs
 tool/cmd/importmetadata/importmetadata
 tool/cmd/migrate/migrate
 tool/cmd/syncversion/syncversion
+/walkthrough
+tool/cmd/walkthrough/walkthrough
 
 # The same binaries, but in the root directory
 # (These are in the same order as the list above,
@@ -59,3 +61,6 @@ go.work.sum
 
 # Local bin directory (for local dev)
 /bin/
+
+# Output of go run ./tool/cmd/walkthrough
+/_site/

@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<!--
+  Copyright 2026 Google LLC
+
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+      https://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+
+  Self-contained architecture tour. Unlike the walkthrough pages, this file
+  is a hand-maintained snapshot: its package descriptions reflect commit
+  d8be62b8 and are not regenerated at build time. See doc/architecture for
+  the source documents.
+-->
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Librarian architecture tour</title>
+  <style>
+:root{color-scheme:light dark;--background:#ffffff;--card:#f8fafc;--foreground:#0f172a;--muted-foreground:#64748b;--border:#e2e8f0;--primary:#2563eb;--primary-foreground:#ffffff}
+@media (prefers-color-scheme:dark){:root{--background:#0b1220;--card:#121b2f;--foreground:#e5e7eb;--muted-foreground:#9aa7b8;--border:#263247;--primary:#60a5fa;--primary-foreground:#0b1220}}
+*,::before,::after{box-sizing:border-box;border-width:0;border-style:solid;border-color:var(--border)}
+html{line-height:1.5;-webkit-text-size-adjust:100%;font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;background:var(--background)}
+body{margin:0;line-height:inherit}h1,h2,h3,p{margin:0;font-size:inherit;font-weight:inherit}ol,ul{list-style:none;margin:0;padding:0}
+a{color:inherit;text-decoration:inherit}button,input{font:inherit;color:inherit;margin:0;padding:0}button{background:transparent;cursor:pointer}
+code,pre{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono","Courier New",monospace}table{border-collapse:collapse;border-color:inherit;text-indent:0}svg{display:block}
+.absolute{position:absolute}.relative{position:relative}.inset-0{inset:0}.hidden{display:none !important}.flex{display:flex}.inline-flex{display:inline-flex}.inline-block{display:inline-block}.grid{display:grid}.flex-col{flex-direction:column}.flex-wrap{flex-wrap:wrap}.items-center{align-items:center}.items-baseline{align-items:baseline}.items-end{align-items:flex-end}.justify-between{justify-content:space-between}.self-start{align-self:flex-start}.gap-1{gap:.25rem}.gap-2{gap:.5rem}.gap-3{gap:.75rem}.gap-4{gap:1rem}.w-3{width:.75rem}.h-3{height:.75rem}.w-full{width:100%}.h-full{height:100%}.max-w-7xl{max-width:80rem}.mx-auto{margin-left:auto;margin-right:auto}.ml-auto{margin-left:auto}.mb-1{margin-bottom:.25rem}.mb-2{margin-bottom:.5rem}.mb-3{margin-bottom:.75rem}.mb-4{margin-bottom:1rem}.mr-1{margin-right:.25rem}.mr-2{margin-right:.5rem}.mt-1{margin-top:.25rem}.mt-2{margin-top:.5rem}.mt-3{margin-top:.75rem}.mt-4{margin-top:1rem}.p-1{padding:.25rem}.p-2{padding:.5rem}.p-3{padding:.75rem}.p-4{padding:1rem}.p-5{padding:1.25rem}.pl-5{padding-left:1.25rem}.pt-3{padding-top:.75rem}.px-1\.5{padding-left:.375rem;padding-right:.375rem}.px-2\.5{padding-left:.625rem;padding-right:.625rem}.px-3{padding-left:.75rem;padding-right:.75rem}.px-5{padding-left:1.25rem;padding-right:1.25rem}.py-0\.5{padding-top:.125rem;padding-bottom:.125rem}.py-1\.5{padding-top:.375rem;padding-bottom:.375rem}.py-5{padding-top:1.25rem;padding-bottom:1.25rem}.border{border-width:1px}.border-t{border-top-width:1px}.border-\[var\(--border\)\]{border-color:var(--border)}.rounded-sm{border-radius:.125rem}.rounded-md{border-radius:.375rem}.rounded-lg{border-radius:.5rem}.rounded-xl{border-radius:.75rem}.bg-\[var\(--background\)\]{background-color:var(--background)}.bg-\[var\(--card\)\]{background-color:var(--card)}.bg-\[var\(--primary\)\]{background-color:var(--primary)}.text-\[var\(--foreground\)\]{color:var(--foreground)}.text-\[var\(--muted-foreground\)\]{color:var(--muted-foreground)}.text-\[var\(--primary-foreground\)\]{color:var(--primary-foreground)}.text-xs{font-size:.75rem;line-height:1rem}.text-sm{font-size:.875rem;line-height:1.25rem}.text-base{font-size:1rem;line-height:1.5rem}.text-lg{font-size:1.125rem;line-height:1.75rem}.text-2xl{font-size:1.5rem;line-height:2rem}.font-normal{font-weight:400}.font-medium{font-weight:500}.font-semibold{font-weight:600}.leading-relaxed{line-height:1.625}.text-center{text-align:center}.text-left{text-align:left}.whitespace-nowrap{white-space:nowrap}.underline{text-decoration-line:underline}.underline-offset-2{text-underline-offset:2px}.list-disc{list-style-type:disc}.overflow-x-auto{overflow-x:auto}.pointer-events-none{pointer-events:none}.antialiased{-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}.hover\:border-\[var\(--primary\)\]:hover{border-color:var(--primary)}
+.space-y-1>:not([hidden])~:not([hidden]){margin-top:.25rem}.space-y-3>:not([hidden])~:not([hidden]){margin-top:.75rem}
+@media (min-width:768px){.md\:grid-cols-2{grid-template-columns:repeat(2,minmax(0,1fr))}.md\:grid-cols-\[2fr_1fr\]{grid-template-columns:2fr 1fr}}
+@media (min-width:1024px){.lg\:grid-cols-\[minmax\(0\,1fr\)_340px\]{grid-template-columns:minmax(0,1fr) 340px}.lg\:grid-cols-\[260px_minmax\(0\,1fr\)\]{grid-template-columns:260px minmax(0,1fr)}.lg\:flex-col{flex-direction:column}.lg\:sticky{position:sticky}.lg\:top-4{top:1rem}.lg\:overflow-visible{overflow:visible}.lg\:whitespace-normal{white-space:normal}}
+  </style>
+  <style>
+    .pkg { transition: opacity .15s ease, box-shadow .15s ease, border-color .15s ease; cursor: pointer; }
+    .pkg.dim { opacity: .35; }
+    .pkg.sel { box-shadow: 0 0 0 2px var(--primary); border-color: var(--primary); }
+    .pkg.imp { border-color: var(--primary); background: color-mix(in srgb, var(--primary) 14%, transparent); }
+    .pkg.dep { border-color: #10b981; background: color-mix(in srgb, #10b981 14%, transparent); }
+    .tab.active { background: var(--primary); color: var(--primary-foreground); }
+    .chip { cursor: pointer; }
+    .chip:hover { border-color: var(--primary); }
+    .step-nav.active { background: color-mix(in srgb, var(--primary) 16%, transparent); border-color: var(--primary); }
+    .lang-row { cursor: pointer; }
+    .lang-row:hover td { background: color-mix(in srgb, var(--primary) 8%, transparent); }
+    code { font-size: .85em; padding: .05rem .3rem; border-radius: .25rem; background: color-mix(in srgb, var(--foreground) 8%, transparent); }
+    a.src { text-decoration: underline; text-underline-offset: 2px; text-decoration-color: color-mix(in srgb, var(--foreground) 35%, transparent); }
+    a.src:hover { text-decoration-color: var(--primary); }
+    table.grid th, table.grid td { border-bottom: 1px solid var(--border); padding: .4rem .5rem; vertical-align: top; text-align: left; }
+    table.grid th { font-weight: 600; }
+    .timeline li { position: relative; padding-left: 1.75rem; }
+    .timeline li::before { content: attr(data-n); position: absolute; left: 0; top: .1rem; width: 1.25rem; height: 1.25rem; border-radius: 9999px; background: var(--primary); color: var(--primary-foreground); font-size: 12px; display: flex; align-items: center; justify-content: center; }
+    .timeline li::after { content: ""; position: absolute; left: .6rem; top: 1.5rem; bottom: -.4rem; width: 1px; background: var(--border); }
+    .timeline li:last-child::after { display: none; }
+  </style>
+</head>
+<body class="bg-[var(--background)] text-[var(--foreground)] antialiased">
+<div class="max-w-7xl mx-auto px-5 py-5">
+
+  <header class="flex flex-wrap items-end justify-between gap-3 mb-4">
+    <div>
+      <h1 class="text-2xl font-semibold">Librarian architecture tour</h1>
+      <p class="text-sm text-[var(--muted-foreground)] mt-1">
+        An interactive companion to <code>doc/architecture/</code>. Snapshot:
+        <a class="src" href="https://github.com/googleapis/librarian/tree/d8be62b8b83ffd619217bf652255620b1457fad4" target="_blank" rel="noopener"><code>d8be62b8</code></a>
+        (v0.47.0, Go 1.26.1). Package sizes are non-test Go lines.
+      </p>
+    </div>
+    <nav class="flex flex-wrap gap-1 bg-[var(--card)] border border-[var(--border)] rounded-xl p-1" id="tabs">
+      <button class="tab px-3 py-1.5 rounded-lg text-sm" data-tab="map">Map</button>
+      <button class="tab px-3 py-1.5 rounded-lg text-sm" data-tab="tour">Guided tour</button>
+      <button class="tab px-3 py-1.5 rounded-lg text-sm" data-tab="flows">Command flows</button>
+      <button class="tab px-3 py-1.5 rounded-lg text-sm" data-tab="languages">Languages</button>
+      <button class="tab px-3 py-1.5 rounded-lg text-sm" data-tab="findings">Findings</button>
+    </nav>
+  </header>
+
+  <!-- ============================ MAP ============================ -->
+  <section id="tab-map" class="hidden">
+    <div class="grid gap-4 lg:grid-cols-[minmax(0,1fr)_340px]">
+      <div>
+        <div class="flex flex-wrap items-center gap-3 text-xs text-[var(--muted-foreground)] mb-3">
+          <span>Click a package. Lines and tints show its direct imports and dependents.</span>
+          <span class="inline-flex items-center gap-1"><i class="inline-block w-3 h-3 rounded-sm border" style="border-color: var(--primary); background: color-mix(in srgb, var(--primary) 14%, transparent)"></i> imports</span>
+          <span class="inline-flex items-center gap-1"><i class="inline-block w-3 h-3 rounded-sm border" style="border-color:#10b981; background: color-mix(in srgb, #10b981 14%, transparent)"></i> imported by</span>
+          <label class="inline-flex items-center gap-1 ml-auto"><input type="checkbox" id="showDeps" checked> draw lines to dependents</label>
+        </div>
+        <div id="map" class="relative">
+          <svg id="wires" class="absolute inset-0 w-full h-full pointer-events-none" style="z-index:0"></svg>
+          <div id="layers" class="relative flex flex-col gap-3" style="z-index:1"></div>
+        </div>
+      </div>
+      <aside class="lg:sticky lg:top-4 self-start">
+        <div id="detail" class="bg-[var(--card)] border border-[var(--border)] rounded-xl p-4 text-sm">
+          <p class="text-[var(--muted-foreground)]">Select a package to see what it does, what it imports, who imports it, and a link to the source at the snapshot commit.</p>
+        </div>
+      </aside>
+    </div>
+  </section>
+
+  <!-- ============================ TOUR ============================ -->
+  <section id="tab-tour" class="hidden">
+    <div class="grid gap-4 lg:grid-cols-[260px_minmax(0,1fr)]">
+      <ol id="stepNav" class="flex lg:flex-col gap-1 overflow-x-auto lg:overflow-visible"></ol>
+      <div>
+        <article id="stepBody" class="bg-[var(--card)] border border-[var(--border)] rounded-xl p-5 text-sm leading-relaxed"></article>
+        <div class="flex items-center justify-between mt-3 text-sm">
+          <button id="prevStep" class="px-3 py-1.5 rounded-lg border border-[var(--border)] hover:border-[var(--primary)]">&larr; Previous</button>
+          <span id="stepCounter" class="text-[var(--muted-foreground)] text-xs"></span>
+          <button id="nextStep" class="px-3 py-1.5 rounded-lg bg-[var(--primary)] text-[var(--primary-foreground)]">Next &rarr;</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================ FLOWS ============================ -->
+  <section id="tab-flows" class="hidden">
+    <div class="flex flex-wrap gap-1 mb-3" id="flowTabs"></div>
+    <div id="flowBody" class="bg-[var(--card)] border border-[var(--border)] rounded-xl p-5 text-sm"></div>
+  </section>
+
+  <!-- ============================ LANGUAGES ============================ -->
+  <section id="tab-languages" class="hidden">
+    <p class="text-sm text-[var(--muted-foreground)] mb-3">Nine language packages under <code>internal/librarian/</code>. Click a row for the step-by-step pipeline. The second table is the implicit contract: which exported functions <code>internal/librarian</code> looks for in each package (there is no Go interface).</p>
+    <div class="bg-[var(--card)] border border-[var(--border)] rounded-xl p-2 overflow-x-auto mb-4">
+      <table class="grid w-full text-sm" id="langTable"></table>
+    </div>
+    <h3 class="font-semibold text-sm mb-2">The implicit language contract</h3>
+    <div class="bg-[var(--card)] border border-[var(--border)] rounded-xl p-2 overflow-x-auto">
+      <table class="grid w-full text-xs" id="contractTable"></table>
+    </div>
+  </section>
+
+  <!-- ============================ FINDINGS ============================ -->
+  <section id="tab-findings" class="hidden">
+    <p class="text-sm text-[var(--muted-foreground)] mb-3">Observations collected while mapping the repository. None of them block anything; they are places where the code and its documentation have drifted, or where a package is unused.</p>
+    <div id="findings" class="grid gap-3 md:grid-cols-2"></div>
+  </section>
+
+</div>
+
+<script>
+const SHA = "d8be62b8b83ffd619217bf652255620b1457fad4";
+const gh = p => `https://github.com/googleapis/librarian/${p.endsWith("/") || !p.includes(".") ? "tree" : "blob"}/${SHA}/${p}`;
+const src = (p, label) => `<a class="src" target="_blank" rel="noopener" href="${gh(p)}">${label || p}</a>`;
+
+// ---------------------------------------------------------------- packages
+const LAYERS = [
+  { id: "entry", title: "Entry points", hint: "process start and developer tools" },
+  { id: "orch", title: "Command orchestration", hint: "urfave/cli commands, config loading, dispatch" },
+  { id: "lang", title: "Language integrations", hint: "one package per language; plain exported functions" },
+  { id: "engine", title: "Generation engine (sidekick) and tool installers", hint: "in-process codecs on the left, external toolchains on the right" },
+  { id: "domain", title: "Domain services", hint: "know about librarian.yaml and API metadata, not about commands" },
+  { id: "infra", title: "Infrastructure", hint: "no knowledge of commands, languages or configuration" },
+  { id: "test", title: "Test support", hint: "imported only by tests" },
+];
+
+const PKGS = [
+  { id: "cmd/librarian", layer: "entry", loc: 259, desc: "<code>main</code> calls <code>librarian.Run</code>. Also holds the generated <code>doc.go</code> help text and a multi-language Dockerfile.", imports: ["internal/librarian"] },
+  { id: "tool/cmd", layer: "entry", loc: 1007, path: "tool/cmd/", desc: "Developer tools: <code>coverage</code> (the 80% gate every CI job runs), <code>docgen</code> (regenerates <code>cmd/librarian/doc.go</code>), <code>builddockerimages</code>, and <code>migrate</code> (legacy .NET <code>apis.json</code> to <code>librarian.yaml</code>).", imports: ["internal/command", "internal/config", "internal/fetch", "internal/librarian"] },
+
+  { id: "internal/librarian", layer: "orch", loc: 4347, desc: "Command registration, <code>librarian.yaml</code> loading, defaults and preview resolution, source fetching, language dispatch (about fifteen <code>switch cfg.Language</code> sites plus two maps in <code>tidy.go</code>), and the release flow.", imports: ["internal/cache", "internal/command", "internal/config", "internal/fetch", "internal/git", "internal/librarian/dart", "internal/librarian/golang", "internal/librarian/java", "internal/librarian/nodejs", "internal/librarian/php", "internal/librarian/python", "internal/librarian/ruby", "internal/librarian/rust", "internal/librarian/swift", "internal/repometadata", "internal/semver", "internal/serviceconfig", "internal/sources", "internal/tool/protoc", "internal/yaml"] },
+
+  { id: "internal/librarian/dart", layer: "lang", loc: 977, desc: "Dart: in-process sidekick codec producing HTTP/JSON clients; <code>dart format</code>; bump and publish to pub.dev.", imports: ["internal/command", "internal/config", "internal/git", "internal/semver", "internal/serviceconfig", "internal/sidekick/api", "internal/sidekick/dart", "internal/sidekick/parser", "internal/sources"] },
+  { id: "internal/librarian/golang", layer: "lang", loc: 2076, desc: "Go: three <code>protoc</code> passes with <code>protoc-gen-go</code>, <code>-go-grpc</code> and <code>-go_gapic</code>; <code>go mod tidy</code>; snippet and repo metadata; per-library tags.", imports: ["internal/cache", "internal/command", "internal/config", "internal/filesystem", "internal/license", "internal/proto", "internal/repometadata", "internal/serviceconfig", "internal/snippetmetadata", "internal/sources", "internal/tool/protoc"] },
+  { id: "internal/librarian/java", layer: "lang", loc: 3621, desc: "Java: <code>protoc</code> + gapic-generator-java installed with Maven; the only user of <code>internal/postprocessing</code>; POM and BOM maintenance; generated sequentially.", imports: ["internal/cache", "internal/command", "internal/config", "internal/filesystem", "internal/license", "internal/postprocessing", "internal/proto", "internal/repometadata", "internal/semver", "internal/serviceconfig", "internal/sources", "internal/tool/maven", "internal/tool/protoc", "internal/yaml"] },
+  { id: "internal/librarian/nodejs", layer: "lang", loc: 1293, desc: "Node.js: gapic-generator-typescript (which drives <code>protoc</code> itself) via pnpm; staging directory then <code>combine-library</code>.", imports: ["internal/cache", "internal/command", "internal/config", "internal/filesystem", "internal/proto", "internal/repometadata", "internal/serviceconfig", "internal/sources", "internal/tool/pnpm", "internal/tool/protoc", "internal/yaml"] },
+  { id: "internal/librarian/php", layer: "lang", loc: 1213, desc: "PHP: <code>protoc</code> + gapic-generator-php via Composer (plus pip and pnpm for the post-processor); <code>owl-bot-staging</code> then <code>php-post-processor</code> and <code>owlbot.py</code>.", imports: ["internal/cache", "internal/command", "internal/config", "internal/filesystem", "internal/proto", "internal/repometadata", "internal/serviceconfig", "internal/sources", "internal/tool/composer", "internal/tool/pip", "internal/tool/pnpm", "internal/tool/protoc", "internal/yaml"] },
+  { id: "internal/librarian/python", layer: "lang", loc: 1422, desc: "Python: <code>protoc</code> + gapic-generator-python via pip; <code>owl-bot-staging</code> then synthtool <code>owlbot_main</code>; <code>nox -s format</code>; bump support.", imports: ["internal/cache", "internal/command", "internal/config", "internal/filesystem", "internal/repometadata", "internal/serviceconfig", "internal/snippetmetadata", "internal/sources", "internal/tool/pip", "internal/tool/protoc"] },
+  { id: "internal/librarian/ruby", layer: "lang", loc: 1470, desc: "Ruby: <code>protoc</code> + gapic-generator-ruby via gem; multi-wrapper gems and <code>toys</code> tasks; <code>Format</code> is a no-op.", imports: ["internal/cache", "internal/command", "internal/config", "internal/filesystem", "internal/proto", "internal/serviceconfig", "internal/sources", "internal/tool/gem", "internal/tool/protoc", "internal/yaml"] },
+  { id: "internal/librarian/rust", layer: "lang", loc: 2094, desc: "Rust: in-process sidekick (<code>rust</code> plus the <code>rust_prost</code> hybrid for gRPC types); Cargo workspace updates; <code>taplo fmt</code> and <code>cargo fmt</code>; publishes to crates.io.", imports: ["internal/command", "internal/config", "internal/git", "internal/repometadata", "internal/semver", "internal/serviceconfig", "internal/sidekick/api", "internal/sidekick/language", "internal/sidekick/parser", "internal/sidekick/rust", "internal/sidekick/rust_prost", "internal/sources", "internal/yaml"] },
+  { id: "internal/librarian/swift", layer: "lang", loc: 2084, desc: "Swift: in-process sidekick plus <code>protoc --swift_out</code>; <code>swift-format</code>; publishing splits git history into per-package repositories.", imports: ["internal/cache", "internal/command", "internal/config", "internal/filesystem", "internal/git", "internal/repometadata", "internal/serviceconfig", "internal/sidekick/api", "internal/sidekick/parser", "internal/sidekick/swift", "internal/sources", "internal/tool/protoc"] },
+
+  { id: "internal/sidekick/rust_prost", layer: "engine", loc: 274, desc: "Hybrid path for Rust gRPC types: runs <code>protoc</code> with prost/tonic and wraps the result with the Rust codec.", imports: ["internal/command", "internal/config", "internal/license", "internal/sidekick/api", "internal/sidekick/language", "internal/sidekick/parser", "internal/sidekick/protobuf", "internal/sidekick/rust", "internal/tool/protoc"] },
+  { id: "internal/sidekick/rust", layer: "engine", loc: 4422, desc: "Rust codec: 98 Go templates; annotates the model with Rust names, builders, transports and tracing.", imports: ["internal/config", "internal/license", "internal/sidekick/api", "internal/sidekick/language", "internal/sidekick/parser"] },
+  { id: "internal/sidekick/swift", layer: "engine", loc: 5011, desc: "Swift codec: 54 templates. The reference structure that <code>internal/sidekick/AGENTS.md</code> asks new codecs to copy.", imports: ["internal/config", "internal/license", "internal/sidekick/api", "internal/sidekick/language"] },
+  { id: "internal/sidekick/dart", layer: "engine", loc: 1966, desc: "Dart codec: 17 templates for HTTP/JSON clients.", imports: ["internal/command", "internal/license", "internal/sidekick/api", "internal/sidekick/language"] },
+  { id: "internal/sidekick/codec_sample", layer: "engine", loc: 353, desc: "Teaching skeleton for a new codec. Nothing imports it.", imports: ["internal/config", "internal/license", "internal/sidekick/api", "internal/sidekick/language"] },
+  { id: "internal/sidekick/language", layer: "engine", loc: 563, desc: "Go <code>text/template</code> wrapper: template discovery (<code>WalkTemplatesDir</code>), <code>include</code>/<code>indent</code>, strict missing-key mode, AST lint, Markdown doc-link rewriting.", imports: ["internal/sidekick/api"] },
+  { id: "internal/sidekick/parser", layer: "engine", loc: 2692, desc: "<code>CreateModel</code>: protobuf (via <code>protoc</code> descriptor sets), OpenAPI and Discovery front-ends, mixins, and the fixed post-passes that produce an <code>api.API</code>.", imports: ["internal/config", "internal/serviceconfig", "internal/sidekick/api", "internal/sidekick/parser/discovery", "internal/sidekick/parser/httprule", "internal/sidekick/parser/svcconfig", "internal/sidekick/protobuf", "internal/sources", "internal/tool/protoc"] },
+  { id: "internal/sidekick/parser/discovery", layer: "engine", loc: 1427, desc: "Discovery-document front-end.", imports: ["internal/serviceconfig", "internal/sidekick/api", "internal/sidekick/parser/svcconfig"] },
+  { id: "internal/sidekick/parser/httprule", layer: "engine", loc: 355, desc: "<code>google.api.http</code> path template parsing.", imports: ["internal/sidekick/api"] },
+  { id: "internal/sidekick/parser/svcconfig", layer: "engine", loc: 62, desc: "Service-config helpers shared by the parsers.", imports: ["internal/serviceconfig"] },
+  { id: "internal/sidekick/protobuf", layer: "engine", loc: 83, desc: "Finds the <code>.proto</code> input files for a specification directory.", imports: ["internal/sources"] },
+  { id: "internal/sidekick/api", layer: "engine", loc: 4916, desc: "Language-neutral model: <code>API</code>, <code>Service</code>, <code>Method</code>, <code>Message</code>, <code>Field</code>, <code>Enum</code>, resources, pagination, LROs, cross-references, validation. Sixteen node types carry a <code>Codec any</code> slot for language annotations.", imports: [] },
+  { id: "internal/tool/protoc", layer: "engine", side: "tools", loc: 183, desc: "Downloads a pinned <code>protoc</code> release into the cache; <code>BinaryPathOrSystem</code> and <code>RunOrSystem</code> fall back to the one on <code>PATH</code>.", imports: ["internal/cache", "internal/command", "internal/config", "internal/fetch", "internal/filesystem"] },
+  { id: "internal/tool/maven", layer: "engine", side: "tools", loc: 230, desc: "Installs gapic-generator-java into <code>java_tools</code>.", imports: ["internal/command", "internal/config", "internal/filesystem"] },
+  { id: "internal/tool/pip", layer: "engine", side: "tools", loc: 96, desc: "Installs Python tools (gapic-generator-python, synthtool helpers) into a virtual environment.", imports: ["internal/command", "internal/config"] },
+  { id: "internal/tool/pnpm", layer: "engine", side: "tools", loc: 166, desc: "Downloads pnpm and installs Node packages such as gapic-generator-typescript.", imports: ["internal/cache", "internal/config", "internal/fetch"] },
+  { id: "internal/tool/gem", layer: "engine", side: "tools", loc: 76, desc: "Installs gapic-generator-ruby and friends with <code>gem</code>.", imports: ["internal/command", "internal/config"] },
+  { id: "internal/tool/composer", layer: "engine", side: "tools", loc: 134, desc: "Downloads Composer and installs the PHP generator and post-processor.", imports: ["internal/command", "internal/config", "internal/fetch"] },
+
+  { id: "internal/config", layer: "domain", loc: 1838, desc: "The <code>librarian.yaml</code> schema as Go structs: <code>Config</code>, <code>Sources</code>, <code>Tools</code>, <code>Default</code>, <code>Library</code>, <code>API</code>, <code>Postprocess</code> and one block per language. Pure data, no functions.", imports: ["internal/yaml"] },
+  { id: "internal/serviceconfig", layer: "domain", loc: 659, desc: "Google API service config YAML to protobuf, plus the embedded <code>sdk.yaml</code> exception list (369 entries) consulted first by <code>Find</code>.", imports: ["internal/config", "internal/yaml"] },
+  { id: "internal/sources", layer: "domain", loc: 110, desc: "Resolved source roots (<code>googleapis</code>, <code>discovery</code>, <code>showcase</code>, ...) and path lookup over the active roots.", imports: [] },
+  { id: "internal/repometadata", layer: "domain", loc: 235, desc: "<code>.repo-metadata.json</code> model and builder.", imports: ["internal/config", "internal/serviceconfig"] },
+  { id: "internal/postprocessing", layer: "domain", loc: 660, desc: "Declarative <code>postprocess:</code> steps: replace, regex replace, copy and remove files, method operations. Used only by Java.", imports: ["internal/config", "internal/filesystem"] },
+  { id: "internal/snippetmetadata", layer: "domain", loc: 164, desc: "Reformat and version-bump <code>snippet_metadata*.json</code>.", imports: [] },
+  { id: "internal/semver", layer: "domain", loc: 421, desc: "SemVer parse, compare and derive-next, including the preview rules.", imports: [] },
+  { id: "internal/proto", layer: "domain", loc: 108, desc: "Enumerate <code>.proto</code> files; regex search in the first proto.", imports: [] },
+  { id: "internal/license", layer: "domain", loc: 52, desc: "Apache license header lines.", imports: [] },
+  { id: "internal/docuploader", layer: "domain", loc: 154, desc: "<code>docs.metadata.json</code> and doc tarballs. Currently imported by nothing.", imports: ["internal/command", "internal/repometadata"] },
+
+  { id: "internal/command", layer: "infra", loc: 222, desc: "The one way to run subprocesses: <code>Run</code>, <code>Output</code>, <code>RunStreaming</code>, with <code>--verbose</code> echoing.", imports: [] },
+  { id: "internal/cache", layer: "infra", loc: 58, desc: "<code>$LIBRARIAN_CACHE</code> (default <code>~/.cache/librarian</code>) and <code>$LIBRARIAN_BIN</code>.", imports: [] },
+  { id: "internal/fetch", layer: "infra", loc: 473, desc: "GitHub tarball download with SHA-256 verification, retries and extraction into the cache; latest-commit lookup.", imports: ["internal/cache"] },
+  { id: "internal/filesystem", layer: "infra", loc: 195, desc: "Move-and-merge with <code>keep</code> rules, copy, unzip, prune empty directories.", imports: ["internal/command"] },
+  { id: "internal/git", layer: "infra", loc: 276, desc: "Thin wrappers over the <code>git</code> CLI; gitignore matching via go-git.", imports: ["internal/command"] },
+  { id: "internal/yaml", layer: "infra", loc: 178, desc: "The only YAML entry point: generic read/write with license header and yamlfmt. Also defines <code>RefString</code> (the <code>!REF</code> tag).", imports: ["internal/license"] },
+
+  { id: "internal/testhelper", layer: "test", loc: 340, desc: "Temporary git repositories, <code>RequireCommand</code>, fake executables. Check here before writing a new test utility.", imports: ["internal/command", "internal/config", "internal/sample", "internal/yaml"] },
+  { id: "internal/sample", layer: "test", loc: 548, desc: "Canned <code>config.Config</code>, <code>api.API</code>, service config and repo metadata, using the <code>fake</code> language.", imports: ["internal/config", "internal/repometadata", "internal/serviceconfig", "internal/sidekick/api"] },
+  { id: "internal/sidekick/api/apitest", layer: "test", loc: 95, desc: "<code>go-cmp</code> helpers for <code>api</code> structures.", imports: ["internal/sidekick/api"] },
+];
+const byId = Object.fromEntries(PKGS.map(p => [p.id, p]));
+const dependents = id => PKGS.filter(p => p.imports.includes(id)).map(p => p.id);
+const shortName = id => id.replace(/^internal\//, "");
+
+// ---------------------------------------------------------------- map rendering
+function renderMap() {
+  const root = document.getElementById("layers");
+  root.innerHTML = "";
+  for (const L of LAYERS) {
+    const pk = PKGS.filter(p => p.layer === L.id);
+    const wrap = document.createElement("div");
+    wrap.className = "border border-[var(--border)] rounded-xl p-3 bg-[var(--card)]";
+    wrap.innerHTML = `<div class="flex items-baseline gap-2 mb-2"><h3 class="font-semibold text-sm">${L.title}</h3><span class="text-xs text-[var(--muted-foreground)]">${L.hint}</span></div>`;
+    if (L.id === "engine") {
+      const grid = document.createElement("div");
+      grid.className = "grid gap-3 md:grid-cols-[2fr_1fr]";
+      grid.appendChild(nodeGrid(pk.filter(p => !p.side), "internal/sidekick"));
+      grid.appendChild(nodeGrid(pk.filter(p => p.side === "tools"), "internal/tool"));
+      wrap.appendChild(grid);
+    } else {
+      wrap.appendChild(nodeGrid(pk));
+    }
+    root.appendChild(wrap);
+  }
+}
+function nodeGrid(pk, caption) {
+  const box = document.createElement("div");
+  if (caption) box.innerHTML = `<div class="text-xs text-[var(--muted-foreground)] mb-1">${caption}/</div>`;
+  const g = document.createElement("div");
+  g.className = "flex flex-wrap gap-2";
+  for (const p of pk) {
+    const n = document.createElement("button");
+    n.className = "pkg text-left border border-[var(--border)] rounded-lg px-2.5 py-1.5 text-xs bg-[var(--background)]";
+    n.dataset.id = p.id;
+    n.innerHTML = `<div class="font-medium">${shortName(p.id)}</div><div class="text-[var(--muted-foreground)]">${p.loc.toLocaleString()} lines</div>`;
+    n.addEventListener("click", () => selectPkg(p.id));
+    g.appendChild(n);
+  }
+  box.appendChild(g);
+  return box;
+}
+let selected = null;
+function selectPkg(id) {
+  selected = id;
+  const p = byId[id];
+  const deps = dependents(id);
+  document.querySelectorAll(".pkg").forEach(el => {
+    el.classList.remove("sel", "imp", "dep", "dim");
+    const eid = el.dataset.id;
+    if (eid === id) el.classList.add("sel");
+    else if (p.imports.includes(eid)) el.classList.add("imp");
+    else if (deps.includes(eid)) el.classList.add("dep");
+    else el.classList.add("dim");
+  });
+  const chips = ids => ids.length ? ids.map(i => `<button class="chip border border-[var(--border)] rounded-md px-1.5 py-0.5 text-xs mr-1 mb-1" data-go="${i}">${shortName(i)}</button>`).join("") : `<span class="text-[var(--muted-foreground)] text-xs">none</span>`;
+  const layer = LAYERS.find(l => l.id === p.layer).title;
+  document.getElementById("detail").innerHTML = `
+    <div class="text-xs text-[var(--muted-foreground)]">${layer}</div>
+    <h3 class="font-semibold text-base mb-1"><code>${p.id}</code></h3>
+    <div class="text-xs text-[var(--muted-foreground)] mb-2">${p.loc.toLocaleString()} non-test lines · ${src(p.path || p.id + "/", "source at d8be62b8")}</div>
+    <p class="mb-3">${p.desc}</p>
+    <div class="font-medium text-xs mb-1">Imports (${p.imports.length})</div>
+    <div class="mb-3">${chips(p.imports)}</div>
+    <div class="font-medium text-xs mb-1">Imported by (${deps.length})</div>
+    <div>${chips(deps)}</div>`;
+  document.querySelectorAll("#detail .chip").forEach(c => c.addEventListener("click", () => selectPkg(c.dataset.go)));
+  drawWires();
+}
+function anchor(a, b) {
+  // a: source rect, b: target rect (relative to map). Returns [x1,y1,x2,y2,vertical]
+  if (b.top >= a.bottom - 4) return [a.left + a.width / 2, a.bottom, b.left + b.width / 2, b.top, true];
+  if (a.top >= b.bottom - 4) return [a.left + a.width / 2, a.top, b.left + b.width / 2, b.bottom, true];
+  if (b.left > a.left) return [a.right, a.top + a.height / 2, b.left, b.top + b.height / 2, false];
+  return [a.left, a.top + a.height / 2, b.right, b.top + b.height / 2, false];
+}
+function drawWires() {
+  const svg = document.getElementById("wires");
+  const map = document.getElementById("map");
+  const mr = map.getBoundingClientRect();
+  svg.setAttribute("viewBox", `0 0 ${mr.width} ${mr.height}`);
+  svg.innerHTML = `<defs>
+    <marker id="arrI" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--primary)"/></marker>
+    <marker id="arrD" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#10b981"/></marker>
+  </defs>`;
+  if (!selected) return;
+  const rel = el => { const r = el.getBoundingClientRect(); return { left: r.left - mr.left, right: r.right - mr.left, top: r.top - mr.top, bottom: r.bottom - mr.top, width: r.width, height: r.height }; };
+  const node = id => document.querySelector(`.pkg[data-id="${CSS.escape(id)}"]`);
+  const me = node(selected); if (!me) return;
+  const a = rel(me);
+  const path = (x1, y1, x2, y2, v) => v ? `M${x1},${y1} C${x1},${(y1 + y2) / 2} ${x2},${(y1 + y2) / 2} ${x2},${y2}` : `M${x1},${y1} C${(x1 + x2) / 2},${y1} ${(x1 + x2) / 2},${y2} ${x2},${y2}`;
+  const add = (ids, color, marker, reverse) => {
+    for (const id of ids) {
+      const t = node(id); if (!t) continue;
+      const b = rel(t);
+      const [x1, y1, x2, y2, v] = reverse ? anchor(b, a) : anchor(a, b);
+      const el = document.createElementNS("http://www.w3.org/2000/svg", "path");
+      el.setAttribute("d", path(x1, y1, x2, y2, v));
+      el.setAttribute("fill", "none"); el.setAttribute("stroke", color); el.setAttribute("stroke-width", "1.5"); el.setAttribute("opacity", "0.8");
+      el.setAttribute("marker-end", `url(#${marker})`);
+      svg.appendChild(el);
+    }
+  };
+  add(byId[selected].imports, "var(--primary)", "arrI", false);
+  if (document.getElementById("showDeps").checked) add(dependents(selected), "#10b981", "arrD", true);
+}
+window.addEventListener("resize", () => drawWires());
+document.getElementById("showDeps").addEventListener("change", drawWires);
+
+// ---------------------------------------------------------------- tour
+const STEPS = [
+  { t: "One binary, one YAML file", body: `
+    <p>Librarian is a single Go binary. ${src("cmd/librarian/main.go")} does nothing but call <code>librarian.Run(ctx, os.Args...)</code>; the urfave/cli v3 application, every subcommand and all orchestration live in ${src("internal/librarian/librarian.go", "internal/librarian")}. A <code>--verbose</code> flag is handled in a <code>Before</code> hook that sets <code>command.Verbose</code> and the <code>slog</code> level.</p>
+    <p>Each command starts by reading <code>librarian.yaml</code> from the <em>current directory</em> with <code>yaml.Read[config.Config]</code>. There is no repository-root discovery: consumers run Librarian from the root of a <code>google-cloud-LANG</code> repository.</p>`,
+    look: ["cmd/librarian/main.go", "internal/librarian/librarian.go", "internal/librarian/verbose.go"], pkg: "cmd/librarian" },
+  { t: "librarian.yaml is the schema of everything", body: `
+    <p>${src("internal/config/", "internal/config")} is pure data: structs and constants that map 1:1 to <code>librarian.yaml</code>, by repository rule with no functions. <code>Config</code> holds <code>language</code>, <code>version</code> (the pinned Librarian release), <code>sources</code> (pinned upstream commits with SHA-256 checksums), <code>tools</code> (toolchain versions), <code>default</code> (per-repository defaults) and <code>libraries</code>.</p>
+    <p>A <code>Library</code> names its APIs, output directory, <code>keep</code> rules, an optional <code>preview</code> overlay, declarative <code>postprocess</code> steps and one language block (<code>GoModule</code>, <code>JavaModule</code>, <code>RustCrate</code>, <code>SwiftPackage</code>, ...). The schema document ${src("doc/config-schema.md")} is generated from these structs by ${src("cmd/config_doc_generate.go")}.</p>`,
+    look: ["internal/config/config.go", "internal/config/library.go", "doc/config-schema.md"], pkg: "internal/config" },
+  { t: "Loading, defaults and preview libraries", body: `
+    <p>Reading is cheap; most of the work is filling in what the file leaves out. ${src("internal/librarian/library.go")} runs <code>applyDefaults</code> (derive <code>apis</code> and <code>output</code> from the name), <code>fillDefaults</code> (copy <code>default.keep</code>, <code>default.output</code>, then <code>fillGo</code>, <code>fillRust</code>, <code>fillDart</code>, ...) and <code>fillLibraryDefaults</code>, which calls <code>golang.Fill</code>, <code>java.Fill</code>, <code>php.Fill</code>, <code>python.Fill</code> or <code>nodejs.Fill</code>.</p>
+    <p>If a <code>LIBRARY-preview</code> variant is requested, <code>resolvePreview</code> overlays the non-zero fields of the <code>preview</code> block and merges the language block. Validation (<code>validateTools</code>, <code>validateLibraries</code>, <code>java.Validate</code>, <code>php.Validate</code>) happens only in <code>tidy</code> and at the end of <code>add</code> and <code>bump</code>; <code>generate</code> does not validate.</p>`,
+    look: ["internal/librarian/library.go", "internal/librarian/tidy.go"], pkg: "internal/librarian" },
+  { t: "Sources: pinned googleapis tarballs", body: `
+    <p>Librarian never clones googleapis. <code>sources.googleapis</code> (and <code>discovery</code>, <code>showcase</code>, <code>protobuf</code>, <code>conformance</code>) pin a commit and a tarball checksum. ${src("internal/librarian/source.go")} loads all of them in parallel with <code>errgroup</code>; ${src("internal/fetch/", "internal/fetch")} downloads <code>archive/COMMIT.tar.gz</code> from GitHub, verifies the SHA-256, retries, and extracts into <code>$LIBRARIAN_CACHE</code> (default <code>~/.cache/librarian</code>, from ${src("internal/cache/", "internal/cache")}).</p>
+    <p>The result is a <code>sources.Sources</code> value of resolved directories that every generator receives. <code>librarian update sources.googleapis</code> moves the pin by asking GitHub for the branch head and streaming the new tarball through SHA-256.</p>`,
+    look: ["internal/librarian/source.go", "internal/fetch/fetch.go", "internal/sources/sources.go", "internal/librarian/update.go"], pkg: "internal/fetch" },
+  { t: "The generate command", body: `
+    <p>${src("internal/librarian/generate.go")} selects libraries by name, <code>-preview</code> suffix or <code>--all</code>, resolves their defaults, and calls <code>cleanLibraries</code>, which removes previous output while honouring <code>keep</code> rules (per-language <code>Clean</code> or the shared <code>checkAndClean</code>).</p>
+    <p>Generation then runs in parallel, up to <code>NumCPU</code> libraries at once (Java is sequential): <code>LANG.Generate(ctx, cfg, lib, sources)</code> followed by <code>LANG.Format(ctx, lib)</code> where the language has a formatter. A per-language post step closes the command: <code>java.PostGenerate</code>, <code>rust.UpdateWorkspace</code>, or the documentation index for Rust and Swift.</p>`,
+    look: ["internal/librarian/generate.go", "internal/librarian/clean.go", "internal/librarian/docindex.go"], pkg: "internal/librarian" },
+  { t: "Language dispatch: switch, not interface", body: `
+    <p>There is no Go interface a language package implements. <code>internal/librarian</code> contains about fifteen <code>switch cfg.Language</code> blocks plus two maps in ${src("internal/librarian/tidy.go")}; each language package simply exports the plain functions it supports (<code>Generate</code>, <code>Format</code>, <code>Clean</code>, <code>Install</code>, <code>Bump</code>, <code>Publish</code>, ...). The <em>Languages</em> tab tabulates this implicit contract.</p>
+    <p>A <code>fake</code> language exists as a test seam, and <code>.NET</code> (<code>csharp</code>) is configuration-only: it has a language block in <code>internal/config</code> but no package. Adding a language therefore means touching every dispatch site, which the docs call out as the main cost of this design.</p>`,
+    look: ["internal/librarian/generate.go", "internal/librarian/library.go", "internal/librarian/tidy.go", "internal/librarian/fake.go"], pkg: "internal/librarian" },
+  { t: "Two generation strategies", body: `
+    <p><strong>External generators.</strong> Go, Java, Node.js, PHP, Python and Ruby shell out to <code>protoc</code> plus a GAPIC generator plugin. <code>librarian install</code> places those tools in <code>$LIBRARIAN_BIN/LANG_tools</code> using ${src("internal/tool/", "internal/tool")} (Maven, pip, pnpm, gem, Composer, or <code>go install</code>), and ${src("internal/tool/protoc/protoc.go", "tool/protoc.RunOrSystem")} runs the pinned <code>protoc</code> with that directory prepended to <code>PATH</code>.</p>
+    <p><strong>In-process sidekick.</strong> Dart, Rust and Swift build a <code>parser.ModelConfig</code> and call <code>parser.CreateModel</code>; the language codec then renders Go templates directly. Rust adds a <code>rust_prost</code> hybrid for gRPC types and Swift adds a <code>protoc --swift_out</code> pass. Every subprocess in either strategy goes through ${src("internal/command/", "internal/command")}, so <code>-v</code> prints each command line.</p>`,
+    look: ["internal/librarian/golang/generate.go", "internal/librarian/rust/generate.go", "internal/tool/protoc/protoc.go", "internal/librarian/install.go"], pkg: "internal/tool/protoc" },
+  { t: "Inside sidekick: specification to api.API", body: `
+    <p>${src("internal/sidekick/parser/", "parser.CreateModel")} picks a front-end by <code>SpecificationFormat</code>: <code>ParseProtobuf</code> (runs <code>protoc --descriptor_set_out</code> over the active source roots and reads the <code>FileDescriptorSet</code>), <code>ParseOpenAPI</code> (libopenapi v3) or <code>ParseDisco</code> (Discovery documents). Veneer libraries with no specification get a nil model.</p>
+    <p>Mixins (Locations, IAMPolicy, Operations) are loaded from Go-linked descriptors when the service config lists them. A fixed sequence of post-passes in ${src("internal/sidekick/api/", "internal/sidekick/api")} then normalises the model: <code>UpdateMethodPagination</code>, <code>LabelRecursiveFields</code>, <code>CrossReference</code>, <code>IdentifyTargetResources</code>, <code>SkipModelElements</code>, <code>PatchDocumentation</code> and <code>Validate</code>. ${src("internal/serviceconfig/", "internal/serviceconfig")} contributes titles, descriptions and the <code>sdk.yaml</code> overrides.</p>`,
+    look: ["internal/sidekick/parser/parser.go", "internal/sidekick/parser/protobuf.go", "internal/sidekick/api/api.go", "internal/serviceconfig/sdk.yaml"], pkg: "internal/sidekick/parser" },
+  { t: "Codecs and templates", body: `
+    <p>A codec such as ${src("internal/sidekick/swift/", "sidekick/swift")} calls <code>annotateModel</code>, which stores a language-specific struct in the <code>Codec any</code> slot of each of the sixteen node types (service, method, message, field, enum, one-of, ...). Templates never compute names; they read annotations.</p>
+    <p>${src("internal/sidekick/language/", "internal/sidekick/language")} wraps Go <code>text/template</code>: <code>WalkTemplatesDir</code> maps the template tree onto the output tree, <code>include</code> and <code>indent</code> compose partials, missing keys are errors and an AST lint rejects risky constructs. The repository holds 177 <code>.gotmpl</code> files (Rust 98, Swift 54, Dart 17); there are no mustache templates any more, although <code>internal/sidekick/AGENTS.md</code> still mentions them. The language package's <code>Format</code> runs <code>cargo fmt</code> and <code>taplo</code>, <code>swift-format</code> or <code>dart format</code> afterwards.</p>`,
+    look: ["internal/sidekick/language/gotemplate.go", "internal/sidekick/language/walk_templates_dir.go", "internal/sidekick/swift/swift.go", "internal/sidekick/AGENTS.md"], pkg: "internal/sidekick/language" },
+  { t: "Post-processing and metadata", body: `
+    <p>Generated code is rarely the final artifact. Go, Java, Node.js, PHP, Python, Rust and Swift write <code>.repo-metadata.json</code> through ${src("internal/repometadata/", "internal/repometadata")}; Go and Python refresh <code>snippet_metadata*.json</code> through ${src("internal/snippetmetadata/", "internal/snippetmetadata")}; license headers come from ${src("internal/license/", "internal/license")}.</p>
+    <p>PHP and Python generate into an <code>owl-bot-staging</code> directory and then run their historical post-processors (<code>php-post-processor</code> and <code>owlbot.py</code>, synthtool <code>owlbot_main</code>); Node.js stages and runs <code>combine-library</code>. The declarative <code>postprocess:</code> block (${src("internal/postprocessing/", "internal/postprocessing")}: replace, regex replace, copy, remove, method operations) is currently used only by Java. Moves honour <code>keep</code> rules through ${src("internal/filesystem/", "internal/filesystem")}.</p>`,
+    look: ["internal/postprocessing/postprocessing.go", "internal/repometadata/repometadata.go", "internal/librarian/python/generate.go", "internal/librarian/java/postgenerate.go"], pkg: "internal/postprocessing" },
+  { t: "The release pipeline", body: `
+    <p>Three hidden commands form the release flow for the languages Librarian releases itself. ${src("internal/librarian/bump.go", "bump")} requires a clean tree, finds changed libraries with <code>git describe</code> and <code>git diff --name-only</code> (one repository tag for Rust and Swift, one tag per library for Go and Python, pub.dev lookups for Dart) and asks the language package to derive the next version and update manifests and changelogs; <code>postBump</code> runs <code>cargo update --workspace</code> for Rust and tidies <code>librarian.yaml</code>.</p>
+    <p>After the release PR merges, ${src("internal/librarian/publish.go", "publish")} pushes packages (Dart to pub.dev, Rust to crates.io, Swift into per-package GitHub repositories) and ${src("internal/librarian/tag.go", "tag")} compares the two latest versions of <code>librarian.yaml</code> to find released libraries and creates local tags from <code>default.tag_format</code>. Go, Node.js, Python and Ruby instead rely on release-please, whose manifest and config ${src("internal/librarian/release_please.go", "librarian add")} keeps in sync.</p>`,
+    look: ["internal/librarian/bump.go", "internal/librarian/publish.go", "internal/librarian/tag.go", "internal/librarian/release_please.go"], pkg: "internal/semver" },
+  { t: "Tests, CI and consumers", body: `
+    <p>${src("all_test.go")} enforces repository-wide rules (licence headers, import restrictions, formatting). Twelve GitHub workflows run <code>go test -race</code> through ${src("tool/cmd/coverage/", "tool/cmd/coverage")} with an 80% coverage gate; one workflow per language sparse-checks-out the matching <code>google-cloud-LANG</code> repository, runs <code>librarian install</code>, the language's unit tests and a smoke <code>librarian generate</code> for one library, and regenerates everything after merges. Swift has no end-to-end job yet. ${src(".github/workflows/linter.yaml", "linter.yaml")} runs addlicense, typos, yamlfmt, goimports, golangci-lint, <code>go mod tidy</code> and <code>go generate</code> checks.</p>
+    <p>Consumers never vendor Librarian. They pin <code>version: vX.Y.Z</code> in <code>librarian.yaml</code> and run <code>go run github.com/googleapis/librarian/cmd/librarian@vX.Y.Z install|generate|add|update</code>; the root ${src("action.yaml")} does the same inside GitHub Actions and caches <code>~/.cache/librarian</code>. Librarian's own releases are cut by release-please from ${src("release-please-config.json")}.</p>`,
+    look: ["all_test.go", ".github/workflows/ci.yaml", ".github/workflows/go.yaml", "action.yaml", "tool/cmd/coverage/main.go"], pkg: "tool/cmd" },
+  { t: "Where to go next", body: `
+    <p>The written documents go deeper than this tour and are meant to be checked in under <code>doc/architecture/</code>:</p>
+    <ul class="list-disc pl-5 space-y-1">
+      <li><code>README.md</code>: the big picture, package inventory and the library lifecycle.</li>
+      <li><code>cli-and-commands.md</code>: every command, the config pipeline, the implicit language contract and sequence diagrams.</li>
+      <li><code>config-and-serviceconfig.md</code>: the <code>librarian.yaml</code> model, defaults and previews, <code>sdk.yaml</code> and service configs.</li>
+      <li><code>sidekick.md</code>: the generation engine, the <code>api</code> model, templates and how a codec plugs in.</li>
+      <li><code>languages.md</code>: the same six subsections for each of the nine languages.</li>
+      <li><code>dependencies.md</code>: the import graph, layering rules, external modules, how to regenerate the data, and a proposed (not committed) layering test.</li>
+      <li><code>ci-and-integration.md</code>: workflows, release process and the consumer's view.</li>
+    </ul>
+    <p class="mt-3">Suggested first contribution: pick a language in the <em>Languages</em> tab, read its section in <code>languages.md</code>, run <code>librarian install</code> and <code>librarian generate ONE_LIBRARY</code> in a sparse checkout of its repository, and follow the calls with <code>-v</code>.</p>`,
+    look: ["doc/README.md", "CONTRIBUTING.md", ".agents/skills/new-sidekick/SKILL.md"], pkg: null },
+];
+let step = 0;
+function renderTourNav() {
+  const nav = document.getElementById("stepNav");
+  nav.innerHTML = STEPS.map((s, i) => `<li><button class="step-nav w-full text-left border border-[var(--border)] rounded-lg px-2.5 py-1.5 text-xs whitespace-nowrap lg:whitespace-normal" data-i="${i}"><span class="text-[var(--muted-foreground)] mr-1">${i + 1}.</span>${s.t}</button></li>`).join("");
+  nav.querySelectorAll("button").forEach(b => b.addEventListener("click", () => showStep(+b.dataset.i)));
+}
+function showStep(i) {
+  step = Math.max(0, Math.min(STEPS.length - 1, i));
+  const s = STEPS[step];
+  document.querySelectorAll(".step-nav").forEach((b, j) => b.classList.toggle("active", j === step));
+  document.getElementById("stepBody").innerHTML = `
+    <div class="text-xs text-[var(--muted-foreground)]">Step ${step + 1} of ${STEPS.length}</div>
+    <h2 class="text-lg font-semibold mb-3">${s.t}</h2>
+    <div class="space-y-3">${s.body}</div>
+    <div class="mt-4 pt-3 border-t border-[var(--border)]">
+      <div class="text-xs font-medium mb-1">Where to look</div>
+      <div class="flex flex-wrap gap-1">${s.look.map(f => `<span class="border border-[var(--border)] rounded-md px-1.5 py-0.5 text-xs">${src(f)}</span>`).join("")}</div>
+      ${s.pkg ? `<button class="mt-3 text-xs underline underline-offset-2" id="openInMap">Show <code>${s.pkg}</code> in the map &rarr;</button>` : ""}
+    </div>`;
+  document.getElementById("stepCounter").textContent = `${step + 1} / ${STEPS.length}`;
+  document.getElementById("prevStep").disabled = step === 0;
+  document.getElementById("nextStep").textContent = step === STEPS.length - 1 ? "Back to start" : "Next →";
+  const o = document.getElementById("openInMap");
+  if (o) o.addEventListener("click", () => { showTab("map"); selectPkg(s.pkg); });
+}
+document.getElementById("prevStep").addEventListener("click", () => showStep(step - 1));
+document.getElementById("nextStep").addEventListener("click", () => showStep(step === STEPS.length - 1 ? 0 : step + 1));
+document.addEventListener("keydown", e => {
+  if (currentTab !== "tour") return;
+  if (e.key === "ArrowRight") showStep(step + 1);
+  if (e.key === "ArrowLeft") showStep(step - 1);
+});
+
+// ---------------------------------------------------------------- flows
+const FLOWS = [
+  { id: "generate", title: "generate", cmd: "librarian generate LIBRARY  |  librarian generate --all", file: "internal/librarian/generate.go", steps: [
+    ["generate.go", "Read <code>librarian.yaml</code> from the current directory."],
+    ["source.go", "<code>LoadSources(cfg.Sources)</code>: an <code>errgroup</code> fetches every pinned source (cache hit, cached tarball, or download with checksum)."],
+    ["library.go", "For each library selected by name, <code>-preview</code> suffix or <code>--all</code>: <code>applyDefaults</code>, then <code>resolvePreview</code> when a preview variant is selected."],
+    ["clean.go", "<code>cleanLibraries</code>: the language's <code>Clean</code> or the shared <code>checkAndClean</code>, honouring <code>keep</code> rules."],
+    ["LANG", "In parallel, up to <code>NumCPU</code> libraries (Java sequential): <code>Generate(ctx, cfg, lib, sources)</code> then <code>Format(ctx, lib)</code> where the language has one."],
+    ["LANG", "Post step: <code>java.PostGenerate</code>, <code>rust.UpdateWorkspace</code>, or <code>writeDocIndex</code> for Rust and Swift."],
+  ]},
+  { id: "add", title: "add", cmd: "librarian add google/cloud/secretmanager/v1", file: "internal/librarian/add.go", steps: [
+    ["add.go", "Read <code>librarian.yaml</code>; <code>fetchSource(googleapis)</code>."],
+    ["add.go", "<code>validateAPIPathExistence</code>: the directory must exist and must not contain <code>..</code>."],
+    ["add.go", "Strip a <code>preview/</code> prefix, then <code>findExistingLibraryForAPI</code> or <code>deriveLibraryName</code>."],
+    ["LANG", "New library: <code>DefaultLibraryName(api)</code> and <code>Add(...)</code>; set <code>copyright_year</code>, sort libraries. Existing library (Go, Java, Node.js, PHP, Python): <code>updateExistingLibrary</code> appends the API. Preview: <code>addPreviewLibrary</code> with <code>semver.DeriveNextPreview</code>."],
+    ["LANG", "<code>ResolveMixinDependencies</code> (Java, PHP) or <code>ResolveDependencies</code> (Rust)."],
+    ["release_please.go", "Go, Node.js, Python, Ruby with release-please files present: <code>syncToReleasePlease</code> updates the manifest and config JSON."],
+    ["tidy.go", "<code>RunTidyOnConfig</code> validates, removes derivable values, sorts and writes <code>librarian.yaml</code>."],
+  ]},
+  { id: "update", title: "update", cmd: "librarian update version sources.googleapis", file: "internal/librarian/update.go", steps: [
+    ["update.go", "Read <code>librarian.yaml</code>; loop over the arguments."],
+    ["go toolchain", "<code>version</code>: <code>go list -m github.com/googleapis/librarian@latest</code> with <code>GOPROXY=direct</code>."],
+    ["GitHub", "<code>sources.NAME</code>: <code>GET repos/ORG/REPO/commits/BRANCH</code> with the SHA accept header, then <code>GET archive/SHA.tar.gz</code> streamed through SHA-256."],
+    ["internal/yaml", "Write <code>librarian.yaml</code> with the license header and yamlfmt."],
+  ]},
+  { id: "release", title: "bump → publish → tag", cmd: "librarian bump --all  ·  librarian publish  ·  librarian tag", file: "internal/librarian/bump.go", steps: [
+    ["bump.go", "<code>git status --porcelain</code>: the tree must be clean."],
+    ["git", "Rust, Swift (one tag for the repository): <code>git describe --abbrev=0 --tags upstream/main</code>, <code>git diff --name-only LAST_TAG</code>. Go, Python (one tag per library): <code>git rev-parse TAG</code> and <code>git diff --name-only COMMIT</code> per library. Dart: pub.dev versions and <code>dart-apitool</code> diff."],
+    ["LANG", "<code>rust.Bump</code>, <code>swift.Bump</code>, <code>golang.Bump</code>, <code>python.Bump</code> or <code>dart.Bump</code> for each changed library: next version, manifests, changelog."],
+    ["bump.go", "<code>postBump</code> (Rust: <code>cargo update --workspace</code>), then <code>RunTidyOnConfig</code>. The result is committed and merged as a release PR."],
+    ["publish.go", "<code>dart.Publish</code>, <code>rust.Publish</code> (<code>cargo workspaces publish</code>) or <code>swift.Publish</code> (split history into <code>googleapis/swift-NAME</code>). Flags: <code>--dry-run</code>, <code>--skip-semver-checks</code>, <code>--force</code>, <code>--concurrency</code>."],
+    ["tag.go", "<code>git log -- librarian.yaml</code>, <code>git show REV:librarian.yaml</code>; <code>findReleasedLibraries(older, newer)</code> picks versions that appeared or grew; <code>git tag NAME REV</code> (local tags only)."],
+  ]},
+];
+let flow = "generate";
+function renderFlows() {
+  const tabs = document.getElementById("flowTabs");
+  tabs.innerHTML = FLOWS.map(f => `<button class="flow-tab border border-[var(--border)] rounded-lg px-3 py-1.5 text-sm ${f.id === flow ? "bg-[var(--primary)] text-[var(--primary-foreground)]" : ""}" data-f="${f.id}">${f.title}</button>`).join("");
+  tabs.querySelectorAll("button").forEach(b => b.addEventListener("click", () => { flow = b.dataset.f; renderFlows(); }));
+  const f = FLOWS.find(x => x.id === flow);
+  document.getElementById("flowBody").innerHTML = `
+    <div class="flex flex-wrap items-baseline justify-between gap-2 mb-3">
+      <code class="text-sm">${f.cmd}</code>
+      <span class="text-xs">${src(f.file)}</span>
+    </div>
+    <ol class="timeline space-y-3">${f.steps.map((s, i) => `<li data-n="${i + 1}"><span class="inline-block text-xs font-medium text-[var(--muted-foreground)] mr-2">${s[0]}</span><span>${s[1]}</span></li>`).join("")}</ol>`;
+}
+
+// ---------------------------------------------------------------- languages
+const LANGS = [
+  { n: "Dart", pkg: "internal/librarian/dart", loc: 977, gen: "sidekick (<code>internal/sidekick/dart</code>, 17 templates)", inst: "nothing; Dart SDK on <code>PATH</code>", fmt: "<code>dart format</code> (runs twice)", meta: false, bump: true, pub: "pub.dev (<code>dart pub publish</code>)", ci: "dart.yaml",
+    detail: "HTTP/JSON clients only. <code>DeriveAPIPath</code> maps the package name to the API path. Bump reads published versions from pub.dev, diffs the public API with <code>dart-apitool</code>, and rewrites <code>pubspec.yaml</code> and <code>CHANGELOG.md</code>. Publish runs <code>dart pub publish</code>." },
+  { n: "Go", pkg: "internal/librarian/golang", loc: 2076, gen: "<code>protoc</code> + <code>protoc-gen-go</code>, <code>protoc-gen-go-grpc</code>, <code>protoc-gen-go_gapic</code>", inst: "<code>go install</code> into <code>go_tools</code>", fmt: "<code>goimports</code>", meta: true, bump: true, pub: "release-please + module proxy (outside Librarian)", ci: "go.yaml",
+    detail: "Three <code>protoc</code> passes (messages, gRPC, GAPIC), then <code>go mod tidy</code>. Writes <code>.repo-metadata.json</code> and refreshes snippet metadata. <code>Fill</code> derives module paths and import paths. Tags are per library; <code>ReleasePleaseExtraFiles</code> lists the files release-please must bump." },
+  { n: "Java", pkg: "internal/librarian/java", loc: 3621, gen: "<code>protoc</code> + <code>protoc-gen-java_gapic</code>, <code>protoc-gen-java_grpc</code>, <code>--java_out</code>", inst: "<code>internal/tool/maven</code> into <code>java_tools</code>", fmt: "<code>google-java-format</code> (all libraries at once)", meta: true, bump: false, pub: "Maven Central (outside Librarian)", ci: "java.yaml",
+    detail: "The largest language package. Only user of <code>internal/postprocessing</code>. <code>PostGenerate</code> maintains POMs, the BOM and version files across the repository, which is why Java libraries are generated sequentially. <code>Validate</code> checks the Java-specific configuration; <code>ResolveMixinDependencies</code> adds mixin artifacts." },
+  { n: "Node.js", pkg: "internal/librarian/nodejs", loc: 1293, gen: "<code>gapic-generator-typescript</code> (drives <code>protoc</code> itself)", inst: "<code>internal/tool/pnpm</code> into <code>nodejs_tools</code>", fmt: "inside the Node tools", meta: true, bump: false, pub: "npm via release-please (outside Librarian)", ci: "nodejs.yaml",
+    detail: "Generates into a staging directory and runs <code>combine-library</code> to merge multiple API versions into one package. Supports mixed libraries (<code>IsMixedLibrary</code>) and finding an existing library for a new API version (<code>FindExistingLibraryForNewAPI</code>)." },
+  { n: "PHP", pkg: "internal/librarian/php", loc: 1213, gen: "<code>protoc</code> + <code>gapic-generator-php</code> plugin, <code>--php_out</code>", inst: "<code>internal/tool/composer</code>, <code>pip</code>, <code>pnpm</code> into <code>php_tools</code>", fmt: "<code>prettier</code> with the PHP plugin", meta: false, bump: false, pub: "Packagist (outside Librarian)", ci: "php.yaml",
+    detail: "Generates into <code>owl-bot-staging</code>, then runs <code>php-post-processor</code> and the library's <code>owlbot.py</code>, which is why pip and pnpm are needed as well as Composer. <code>Validate</code> and <code>ResolveMixinDependencies</code> are implemented." },
+  { n: "Python", pkg: "internal/librarian/python", loc: 1422, gen: "<code>protoc</code> + <code>protoc-gen-python_gapic</code>", inst: "<code>internal/tool/pip</code> (plus embedded templates) into <code>python_tools</code>", fmt: "<code>nox -s format</code>", meta: true, bump: true, pub: "PyPI via release-please (outside Librarian)", ci: "python.yaml",
+    detail: "Generates into <code>owl-bot-staging</code> and runs synthtool's <code>owlbot_main</code>. Refreshes snippet metadata and <code>.repo-metadata.json</code>. Bump supports per-library tags; <code>FindExistingLibraryForNewAPI</code> attaches new API versions to an existing package." },
+  { n: "Ruby", pkg: "internal/librarian/ruby", loc: 1470, gen: "<code>protoc</code> + <code>gapic-generator-ruby</code>, gRPC plugin, <code>--ruby_out</code>", inst: "<code>internal/tool/gem</code> into <code>ruby_tools</code>", fmt: "none (TODO)", meta: false, bump: false, pub: "RubyGems via release-please (outside Librarian)", ci: "ruby.yaml",
+    detail: "Multi-wrapper gems driven by <code>toys</code> tasks. <code>librarian add --name</code> is Ruby-only. <code>AddManifest</code> and <code>AddPackage</code> keep the release-please files in sync. <code>Format</code> currently does nothing." },
+  { n: "Rust", pkg: "internal/librarian/rust", loc: 2094, gen: "sidekick (<code>internal/sidekick/rust</code>, 98 templates, plus <code>rust_prost</code>)", inst: "<code>cargo install --locked</code> for the formatters", fmt: "<code>taplo fmt</code>, <code>cargo fmt</code>", meta: true, bump: true, pub: "crates.io (<code>cargo workspaces publish</code>)", ci: "sidekick.yaml",
+    detail: "After generation <code>UpdateWorkspace</code> edits the workspace <code>Cargo.toml</code> with go-toml. <code>ResolveDependencies</code> adds crate dependencies for referenced packages. <code>Keep</code> plus keep rules decide what <code>Clean</code> preserves. Bump uses one repository tag and <code>cargo update --workspace</code>; a documentation index is written for the docs site." },
+  { n: "Swift", pkg: "internal/librarian/swift", loc: 2084, gen: "sidekick (<code>internal/sidekick/swift</code>, 54 templates) + <code>protoc --swift_out</code>", inst: "<code>git clone</code> + <code>swift build</code> into <code>swift_tools</code>", fmt: "<code>swift-format</code>", meta: true, bump: true, pub: "per-package GitHub repositories <code>googleapis/swift-NAME</code>", ci: "sidekick.yaml (no end-to-end job)",
+    detail: "The reference codec architecture. Supports mixed libraries. Publish splits the monorepo history into one repository per package and pushes tags there. <code>PackageName</code> and <code>DocumentationURL</code> feed the documentation index." },
+];
+function renderLanguages() {
+  const t = document.getElementById("langTable");
+  t.innerHTML = `<thead><tr><th>Language</th><th>Generator</th><th>Installed by</th><th>Formatter</th><th>.repo-metadata.json</th><th>Bump</th><th>Publish target</th><th>CI</th></tr></thead>
+    <tbody>${LANGS.map((l, i) => `
+      <tr class="lang-row" data-i="${i}"><td class="font-medium whitespace-nowrap">${l.n}<div class="text-xs text-[var(--muted-foreground)] font-normal">${l.loc.toLocaleString()} lines</div></td><td>${l.gen}</td><td>${l.inst}</td><td>${l.fmt}</td><td class="text-center">${l.meta ? "✓" : ""}</td><td class="text-center">${l.bump ? "✓" : ""}</td><td>${l.pub}</td><td><code>${l.ci}</code></td></tr>
+      <tr class="lang-detail hidden" data-i="${i}"><td colspan="8" class="text-xs leading-relaxed" style="background: color-mix(in srgb, var(--primary) 6%, transparent)">${l.detail} ${src(l.pkg + "/", "source")}</td></tr>`).join("")}</tbody>`;
+  t.querySelectorAll(".lang-row").forEach(r => r.addEventListener("click", () => {
+    const d = t.querySelector(`.lang-detail[data-i="${r.dataset.i}"]`);
+    d.classList.toggle("hidden");
+  }));
+  const hooks = [
+    ["Generate(ctx, cfg, lib, sources)", "generateLibraries", "x x x x x x x x x"],
+    ["Format(ctx, lib)", "generateLibraries", "x x x(all) - x - x x x"],
+    ["post-generate step", "generateLibraries", "- - PostGenerate - - - - UpdateWorkspace+docindex docindex"],
+    ["Clean(lib)", "cleanLibraries", "keep x x x x x x Keep+keep keep"],
+    ["DefaultOutput(name, default)", "applyDefaults", "x x x x x x x x x"],
+    ["DeriveAPIPath(name)", "applyDefaults", "x - - - - - - x -"],
+    ["IsMixedLibrary(lib)", "applyDefaults", "- - - x - - - x x"],
+    ["Fill(lib)", "fillLibraryDefaults", "- x x x x x - - -"],
+    ["DefaultLibraryName(api), Add(...)", "addNewLibrary", "x x x x x x x x x"],
+    ["FindExistingLibraryForNewAPI", "findExistingLibraryForAPI", "- - - x - x - - -"],
+    ["dependency resolution", "resolveDependencies", "- - Mixin - Mixin - - Deps -"],
+    ["Tidy(lib)", "tidyLanguageConfig", "- x x x x x x x -"],
+    ["Validate(cfg)", "validateLibraries", "- - x - x - - - -"],
+    ["Bump(...)", "runBump", "x x - - - x - x x"],
+    ["Publish(ctx, params)", "publishCommand", "x - - - - - - x x"],
+    ["Install(ctx, tools)", "installCommand", "no-op x x x x x x x x"],
+    ["InstallDir()", "debug env", "- x x x - x x - x"],
+    ["release-please extras", "syncToReleasePlease", "- ExtraFiles - - - ExtraFiles Manifest+Package - -"],
+    ["doc index helpers", "GenerateDocIndex", "- - - - - - - DocURL PackageName+DocURL"],
+  ];
+  const cols = ["dart", "go", "java", "nodejs", "php", "python", "ruby", "rust", "swift"];
+  const c = document.getElementById("contractTable");
+  c.innerHTML = `<thead><tr><th>Hook</th><th>Called from</th>${cols.map(x => `<th class="text-center">${x}</th>`).join("")}</tr></thead>
+    <tbody>${hooks.map(h => `<tr><td><code>${h[0]}</code></td><td class="text-[var(--muted-foreground)]">${h[1]}</td>${h[2].split(" ").map(v => `<td class="text-center ${v === "-" ? "text-[var(--muted-foreground)]" : ""}">${v === "-" ? "·" : v === "x" ? "✓" : v.replace(/\+/g, " + ")}</td>`).join("")}</tr>`).join("")}</tbody>`;
+}
+
+// ---------------------------------------------------------------- findings
+const FINDINGS = [
+  { t: "No language interface", b: "Dispatch is about fifteen <code>switch cfg.Language</code> blocks plus two maps in <code>tidy.go</code>. Adding a language touches every site; a Go interface (or a registry) would make the contract explicit.", f: "internal/librarian/generate.go" },
+  { t: "internal/docuploader is unused", b: "No package imports it (only its own tests). Either a consumer is coming or it can be deleted.", f: "internal/docuploader/" },
+  { t: "codec_sample is unreferenced", b: "<code>internal/sidekick/codec_sample</code> is a teaching skeleton that nothing imports; it still compiles and is tested, but it is not what <code>internal/sidekick/AGENTS.md</code> points new codecs at (that is Swift).", f: "internal/sidekick/codec_sample/" },
+  { t: "postprocessing is Java-only", b: "The declarative <code>postprocess:</code> block is parsed for every library but applied only by the Java package. Other languages do their fix-ups in code.", f: "internal/postprocessing/" },
+  { t: "AGENTS.md mentions mustache", b: "The repository contains 177 <code>.gotmpl</code> files and no mustache templates; the sidekick AGENTS.md text about mustache is stale.", f: "internal/sidekick/AGENTS.md" },
+  { t: "generate help text vs update syntax", b: "The <code>generate</code> help says <code>librarian update googleapis</code>, but the command takes <code>sources.googleapis</code>.", f: "internal/librarian/generate.go" },
+  { t: "Dart formats twice", b: "The Dart pipeline runs <code>dart format</code> in two places; the second run is redundant.", f: "internal/librarian/dart/" },
+  { t: "Ruby Format is a no-op", b: "Marked TODO in the package; generated Ruby is not formatted by Librarian.", f: "internal/librarian/ruby/" },
+  { t: "No Swift end-to-end job", b: "Every other language has a workflow that installs tools and smoke-generates one library against its repository; Swift is only covered by sidekick unit tests.", f: ".github/workflows/sidekick.yaml" },
+  { t: "librarian.yaml is read from the current directory", b: "There is no walk-up to find the repository root, so every command must run from the root of the language repository. Worth documenting prominently for consumers.", f: "internal/librarian/librarian.go" },
+];
+function renderFindings() {
+  document.getElementById("findings").innerHTML = FINDINGS.map(x => `<div class="bg-[var(--card)] border border-[var(--border)] rounded-xl p-4 text-sm"><h3 class="font-semibold mb-1">${x.t}</h3><p class="text-[var(--muted-foreground)]">${x.b}</p><div class="mt-2 text-xs">${src(x.f)}</div></div>`).join("");
+}
+
+// ---------------------------------------------------------------- tabs
+let currentTab = "map";
+function showTab(id) {
+  currentTab = id;
+  document.querySelectorAll("section[id^=tab-]").forEach(s => s.classList.toggle("hidden", s.id !== "tab-" + id));
+  document.querySelectorAll("#tabs .tab").forEach(b => b.classList.toggle("active", b.dataset.tab === id));
+  if (id === "map") requestAnimationFrame(drawWires);
+}
+document.querySelectorAll("#tabs .tab").forEach(b => b.addEventListener("click", () => showTab(b.dataset.tab)));
+
+renderMap(); renderTourNav(); showStep(0); renderFlows(); renderLanguages(); renderFindings();
+showTab("map");
+selectPkg("internal/librarian");
+</script>
+</body>
+</html>
