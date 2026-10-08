@@ -308,3 +308,64 @@ func TestReproducible(t *testing.T) {
 		}
 	}
 }
+
+func TestImportsMap(t *testing.T) {
+	root := writeRepo(t)
+	layers := []importsLayer{
+		{ID: "entry", Label: "Entry", Kind: "user", Match: []string{"cmd/"}},
+		{ID: "app", Label: "App", Match: []string{"internal/app"}},
+		{ID: "data", Label: "Data", Kind: "ext", Match: []string{"internal/config"}},
+	}
+	got, err := importsMap(root, layers)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, want := range []string{
+		`<div class="pkgmap">`,
+		`<section class="pkgmap-layer kind-user"><h4>Entry <span>1</span></h4>`,
+		`<section class="pkgmap-layer kind-default"><h4>App <span>1</span></h4>`,
+		`<button type="button" class="pkg" data-id="internal/app" title="Package app dispatches to languages.">app</button>`,
+		`<button type="button" class="pkg" data-id="cmd/tool" title="">cmd/tool</button>`,
+		`"id":"internal/app","desc":"Package app dispatches to languages.","imports":["internal/config"]`,
+		`"id":"internal/config","desc":"Package config is pure data.","imports":[]`,
+		`<script type="application/json" class="pkgmap-data">`,
+	} {
+		if !strings.Contains(got, want) {
+			t.Errorf("imports map does not contain %q", want)
+		}
+	}
+	if strings.Contains(got, "\n\n") {
+		t.Error("imports map must not contain blank lines (goldmark would end the HTML block)")
+	}
+	_, err = importsMap(root, layers[:2])
+	if err == nil || !strings.Contains(err.Error(), "packages not in any layer: internal/config") {
+		t.Errorf("want unassigned error, got %v", err)
+	}
+	if _, err := importsMap(root, nil); err == nil {
+		t.Error("want error without layers")
+	}
+	if _, err := importsMap(t.TempDir(), layers); err == nil {
+		t.Error("want error without go.mod")
+	}
+	s := &site{rootDir: root}
+	if _, err := s.renderGenerated("kind: imports\nlayers:\n  - id: all\n    label: All\n    match: [cmd/, internal/]\n"); err != nil {
+		t.Errorf("renderGenerated imports: %v", err)
+	}
+	if _, err := s.renderGenerated("kind: imports\n"); err == nil || !strings.Contains(err.Error(), "generated imports") {
+		t.Errorf("want generated imports error, got %v", err)
+	}
+}
+
+func TestLayerIndex(t *testing.T) {
+	layers := []importsLayer{{Match: []string{"a/"}}, {Match: []string{"a"}}, {Match: []string{"b/c"}}}
+	for _, test := range []struct {
+		path string
+		want int
+	}{
+		{"a/x", 0}, {"a", 1}, {"b/c", 2}, {"b/c/d", -1}, {"ab", -1},
+	} {
+		if got := layerIndex(layers, test.path); got != test.want {
+			t.Errorf("layerIndex(%q) = %d, want %d", test.path, got, test.want)
+		}
+	}
+}

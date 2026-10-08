@@ -14,6 +14,37 @@
  * limitations under the License.
  */
 
+// Theme toggle: light, dark, or follow the system. The choice is stored in
+// localStorage and applied as early as possible by an inline script in the
+// page head; this only wires the button.
+(function () {
+  "use strict";
+  var key = "walkthrough.theme";
+  var button = document.getElementById("theme");
+  if (!button) {
+    return;
+  }
+  function effective() {
+    var t = document.documentElement.getAttribute("data-theme");
+    if (t) {
+      return t;
+    }
+    return window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+  }
+  function label() {
+    button.textContent = effective() === "dark" ? "☾" : "☀";
+    button.title = "Switch to " + (effective() === "dark" ? "light" : "dark") + " theme";
+  }
+  button.addEventListener("click", function () {
+    var next = effective() === "dark" ? "light" : "dark";
+    document.documentElement.setAttribute("data-theme", next);
+    localStorage.setItem(key, next);
+    label();
+    window.dispatchEvent(new Event("resize"));
+  });
+  label();
+})();
+
 // Stepper for walkthrough pages: one step visible at a time, driven by the
 // URL hash (#intro, #step-N), with keyboard navigation, a progress bar, an
 // optional show-all mode, and best-effort mermaid rendering.
@@ -135,10 +166,125 @@
     var s = document.createElement("script");
     s.src = "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js";
     s.onload = function () {
-      var dark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
+      var theme = document.documentElement.getAttribute("data-theme");
+      var dark = theme ? theme === "dark" : window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
       window.mermaid.initialize({ startOnLoad: false, theme: dark ? "dark" : "default" });
       window.mermaid.run({ querySelector: "pre.mermaid" });
     };
     document.head.appendChild(s);
   }
+})();
+
+// Interactive package map (the `imports` generated block): click a package
+// to highlight and wire what it imports and what imports it. The data is
+// embedded in the page as JSON at build time.
+(function () {
+  "use strict";
+  Array.prototype.slice.call(document.querySelectorAll(".pkgmap")).forEach(function (map) {
+    var data = JSON.parse(map.querySelector(".pkgmap-data").textContent);
+    var body = map.querySelector(".pkgmap-body");
+    var layers = map.querySelector(".pkgmap-layers");
+    var panel = map.querySelector(".pkgmap-panel");
+    var svg = map.querySelector(".pkgmap-wires");
+    var byId = {};
+    var dependents = {};
+    data.layers.forEach(function (l) {
+      l.packages.forEach(function (p) {
+        byId[p.id] = p;
+        p.imports = p.imports || [];
+        p.imports.forEach(function (d) {
+          (dependents[d] = dependents[d] || []).push(p.id);
+        });
+      });
+    });
+    var selected = null;
+    function node(id) {
+      return layers.querySelector('.pkg[data-id="' + id.replace(/"/g, '\\"') + '"]');
+    }
+    function short(id) {
+      return id.replace(/^internal\//, "");
+    }
+    function chips(ids) {
+      if (!ids || ids.length === 0) {
+        return '<span class="muted">none</span>';
+      }
+      return ids.map(function (id) {
+        return '<button type="button" class="chip" data-go="' + id + '">' + short(id) + "</button>";
+      }).join("");
+    }
+    function draw() {
+      while (svg.firstChild) {
+        svg.removeChild(svg.firstChild);
+      }
+      if (!selected || layers.offsetWidth === 0) {
+        return;
+      }
+      var box = layers.getBoundingClientRect();
+      svg.setAttribute("width", box.width);
+      svg.setAttribute("height", box.height);
+      var ns = "http://www.w3.org/2000/svg";
+      var defs = document.createElementNS(ns, "defs");
+      defs.innerHTML = '<marker id="pm-imp" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0 L10,5 L0,10 z" class="imp"/></marker>' +
+        '<marker id="pm-dep" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0 L10,5 L0,10 z" class="dep"/></marker>';
+      svg.appendChild(defs);
+      function rect(el) {
+        var r = el.getBoundingClientRect();
+        return { l: r.left - box.left, r: r.right - box.left, t: r.top - box.top, b: r.bottom - box.top, x: (r.left + r.right) / 2 - box.left, y: (r.top + r.bottom) / 2 - box.top };
+      }
+      function wire(fromId, toId, cls) {
+        var a = node(fromId), c = node(toId);
+        if (!a || !c) {
+          return;
+        }
+        var p = rect(a), q = rect(c);
+        var d;
+        if (Math.abs(p.y - q.y) < 4) {
+          var y = p.y, x1 = p.x < q.x ? p.r : p.l, x2 = p.x < q.x ? q.l : q.r;
+          d = "M" + x1 + "," + y + " C" + (x1 + x2) / 2 + "," + (y - 24) + " " + (x1 + x2) / 2 + "," + (y - 24) + " " + x2 + "," + y;
+        } else {
+          var y1 = p.y < q.y ? p.b : p.t, y2 = p.y < q.y ? q.t : q.b;
+          d = "M" + p.x + "," + y1 + " C" + p.x + "," + (y1 + y2) / 2 + " " + q.x + "," + (y1 + y2) / 2 + " " + q.x + "," + y2;
+        }
+        var path = document.createElementNS(ns, "path");
+        path.setAttribute("d", d);
+        path.setAttribute("class", cls);
+        path.setAttribute("marker-end", "url(#pm-" + cls + ")");
+        svg.appendChild(path);
+      }
+      byId[selected].imports.forEach(function (id) { wire(selected, id, "imp"); });
+      (dependents[selected] || []).forEach(function (id) { wire(id, selected, "dep"); });
+    }
+    function select(id) {
+      selected = id;
+      var p = byId[id];
+      var imps = p.imports, deps = dependents[id] || [];
+      Array.prototype.slice.call(layers.querySelectorAll(".pkg")).forEach(function (el) {
+        var pid = el.getAttribute("data-id");
+        el.classList.toggle("sel", pid === id);
+        el.classList.toggle("imp", imps.indexOf(pid) >= 0);
+        el.classList.toggle("dep", deps.indexOf(pid) >= 0);
+      });
+      panel.innerHTML = '<h4><code>' + id + "</code></h4>" +
+        '<p class="muted">' + (p.desc || "No package comment.") + "</p>" +
+        '<p class="pkgmap-sub">Imports <span>' + imps.length + "</span></p>" + chips(imps) +
+        '<p class="pkgmap-sub">Imported by <span>' + deps.length + "</span></p>" + chips(deps);
+      draw();
+    }
+    layers.addEventListener("click", function (e) {
+      var el = e.target.closest(".pkg");
+      if (el) {
+        select(el.getAttribute("data-id"));
+      }
+    });
+    panel.addEventListener("click", function (e) {
+      var el = e.target.closest(".chip");
+      if (el) {
+        select(el.getAttribute("data-go"));
+        node(el.getAttribute("data-go")).scrollIntoView({ block: "nearest" });
+      }
+    });
+    window.addEventListener("resize", draw);
+    window.addEventListener("hashchange", function () { setTimeout(draw, 0); });
+    body.classList.add("ready");
+  });
 })();

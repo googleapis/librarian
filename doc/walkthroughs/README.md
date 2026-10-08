@@ -35,10 +35,10 @@ first:
    layering; `TestBuildDocs` checks that every excerpt anchor still
    resolves; `TestReproducible` checks that two builds of the same commit
    are byte-identical. Nobody maintains these; `go test ./...` does.
-2. **Generated from the tree.** Code excerpts and the `generated` tables
-   (package list, command list, language dispatch matrix, CI workflows) are
-   computed by Go code from the checked-out commit. They cannot drift, and
-   nobody edits them.
+2. **Generated from the tree.** Code excerpts, the `generated` tables
+   (package list, command list, language dispatch matrix, CI workflows) and
+   the interactive package map are computed by Go code from the checked-out
+   commit. They cannot drift, and nobody edits them.
 3. **Authored.** The prose, step order, badges and diagrams. This is the
    only part a human maintains, and it only needs to change when behavior
    changes.
@@ -150,6 +150,7 @@ kind: dispatch
 | `commands` | every `cli.Command` literal with its usage line | `dir` (default `internal/librarian`) |
 | `dispatch` | each declaration that names a `config.Language*` constant, by language | `dir` (default `internal/librarian`) |
 | `workflows` | each GitHub Actions workflow with its triggers and jobs | `dir` (default `.github/workflows`) |
+| `imports` | the interactive package map: packages grouped into `layers`, click one to see what it imports and what imports it | `layers`: list of `{id, label, kind, match}`; a `match` entry ending in `/` is a prefix, otherwise an exact path. Every package must match a layer or the build fails |
 
 Files from other repositories cannot be read at build time, so their excerpts
 carry the code inline together with the repository and commit it was taken

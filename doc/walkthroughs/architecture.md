@@ -10,81 +10,62 @@ Librarian is one Go module with about fifty packages. This tour groups them
 into layers, then walks the layers in the order a command passes through
 them. It is the entry point; the other walkthroughs go deeper into the
 [command workflow](workflow.html) and the
-[generation engine](generate-and-sidekick.html). The tables on this page are
-derived from the tree when the site is built, so they cannot go stale.
+[generation engine](generate-and-sidekick.html). The map below and the
+tables on this page are derived from the tree when the site is built, so
+they cannot go stale; only the assignment of packages to layers is written
+by hand, and a new package that fits no layer fails the build.
 
-```flow
-title: Layers, from process start to the file system
-lanes:
+```generated
+kind: imports
+layers:
   - id: entry
     label: Entry points
     kind: user
+    match: [cmd, cmd/, tool/]
   - id: orch
     label: Command orchestration
     kind: lib
+    match: [internal/librarian]
   - id: lang
     label: Language integrations
     kind: lib
+    match: [internal/librarian/]
+  - id: test
+    label: Test support
+    kind: user
+    match: [internal/testhelper, internal/sample, internal/sidekick/api/apitest]
   - id: engine
-    label: Generation engine and tool installers
+    label: Generation engine
     kind: lib
+    match: [internal/sidekick/]
+  - id: tools
+    label: Tool installers
+    kind: lib
+    match: [internal/tool/]
   - id: domain
     label: Domain services
     kind: lang
+    match:
+      - internal/config
+      - internal/serviceconfig
+      - internal/sources
+      - internal/repometadata
+      - internal/postprocessing
+      - internal/snippetmetadata
+      - internal/semver
+      - internal/proto
+      - internal/license
+      - internal/docuploader
   - id: infra
     label: Infrastructure
     kind: ext
-nodes:
-  - id: main
-    lane: entry
-    label: cmd/librarian
-    step: 2
-    col: 0
-  - id: lib
-    lane: orch
-    label: internal/librarian
-    step: 4
-    col: 1
-  - id: langs
-    lane: lang
-    label: internal/librarian/<lang>
-    step: 7
-    col: 2
-  - id: sidekick
-    lane: engine
-    label: internal/sidekick
-    step: 9
-    col: 3
-  - id: tools
-    lane: engine
-    label: internal/tool/*
-    step: 8
-    col: 4
-  - id: config
-    lane: domain
-    label: config, serviceconfig, sources
-    step: 3
-    col: 3
-  - id: meta
-    lane: domain
-    label: repometadata, postprocessing, semver
-    step: 11
-    col: 4
-  - id: infra
-    lane: infra
-    label: command, fetch, cache, git, yaml, filesystem
-    step: 5
-    col: 5
-edges:
-  - main -> lib
-  - lib -> langs
-  - langs -> sidekick
-  - langs -> tools
-  - langs -> config
-  - langs -> meta
-  - sidekick -> infra
-  - tools -> infra
-  - meta -> infra
+    match:
+      - internal/command
+      - internal/cache
+      - internal/fetch
+      - internal/filesystem
+      - internal/git
+      - internal/yaml
 ```
 
 ## The package map

@@ -15,11 +15,13 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"go/ast"
 	"go/doc"
 	"go/parser"
 	"go/token"
+	"html"
 	"io/fs"
 	"maps"
 	"os"
@@ -42,6 +44,17 @@ type generatedSpec struct {
 	Dir string `yaml:"dir"`
 	// Prefix filters the packages kind to import paths under a prefix.
 	Prefix string `yaml:"prefix"`
+	// Layers buckets packages for the imports kind. Every package must
+	// match one layer; a match entry ending in "/" is a prefix, any other
+	// is an exact import path.
+	Layers []importsLayer `yaml:"layers"`
+}
+
+type importsLayer struct {
+	ID    string   `yaml:"id"`
+	Label string   `yaml:"label"`
+	Kind  string   `yaml:"kind"`
+	Match []string `yaml:"match"`
 }
 
 func (s *site) renderGenerated(body string) (string, error) {
@@ -59,6 +72,13 @@ func (s *site) renderGenerated(body string) (string, error) {
 		table, err = commandsTable(s.rootDir, orDefault(spec.Dir, "internal/librarian"))
 	case "workflows":
 		table, err = workflowsTable(s.rootDir, orDefault(spec.Dir, ".github/workflows"))
+	case "imports":
+		// The import map is interactive HTML rather than a table.
+		out, err := importsMap(s.rootDir, spec.Layers)
+		if err != nil {
+			return "", fmt.Errorf("generated imports: %w", err)
+		}
+		return "\n" + out + "\n", nil
 	default:
 		return "", fmt.Errorf("generated: unknown kind %q", spec.Kind)
 	}
@@ -94,14 +114,23 @@ func markdownTable(header []string, rows [][]string) string {
 	return b.String()
 }
 
-// packagesTable lists every Go package under root with the first sentence of
-// its package comment.
-func packagesTable(root, prefix string) (string, error) {
+// goPackage is one package of the module as read from its source files.
+type goPackage struct {
+	Path     string   `json:"id"`
+	Name     string   `json:"-"`
+	Synopsis string   `json:"desc"`
+	Imports  []string `json:"imports"`
+}
+
+// listPackages returns every Go package under root, sorted by path, with
+// the first sentence of its package comment and its module-internal
+// imports from non-test files.
+func listPackages(root string) ([]goPackage, error) {
 	module, err := modulePath(root)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
-	var rows [][]string
+	var pkgs []goPackage
 	err = filepath.WalkDir(root, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err
@@ -113,54 +142,142 @@ func packagesTable(root, prefix string) (string, error) {
 		if path != root && (strings.HasPrefix(name, ".") || strings.HasPrefix(name, "_") || name == "testdata" || name == "node_modules" || name == "vendor") {
 			return filepath.SkipDir
 		}
-		rel, _ := filepath.Rel(root, path)
-		rel = filepath.ToSlash(rel)
-		if !strings.HasPrefix(rel, strings.TrimSuffix(prefix, "/")) {
-			return nil
-		}
-		pkgName, synopsis, ok, err := packageDoc(path)
+		pkg, ok, err := readPackage(path, module)
 		if err != nil || !ok {
 			return err
 		}
-		importPath := module
-		if rel != "." {
-			importPath = rel
+		rel, _ := filepath.Rel(root, path)
+		pkg.Path = filepath.ToSlash(rel)
+		if pkg.Path == "." {
+			pkg.Path = module
 		}
-		if pkgName == "main" {
-			synopsis = strings.TrimSpace("Command. " + synopsis)
-		}
-		rows = append(rows, []string{"`" + importPath + "`", synopsis})
+		pkgs = append(pkgs, pkg)
 		return nil
 	})
-	if err != nil {
-		return "", err
-	}
-	return markdownTable([]string{"Package", "Description"}, rows), nil
+	return pkgs, err
 }
 
-// packageDoc returns the package name and synopsis of the non-test Go files
-// in dir. ok is false when dir holds no such files.
-func packageDoc(dir string) (name, synopsis string, ok bool, err error) {
+// readPackage parses the non-test Go files in dir. ok is false when dir
+// holds no such files.
+func readPackage(dir, module string) (pkg goPackage, ok bool, err error) {
 	entries, err := os.ReadDir(dir)
 	if err != nil {
-		return "", "", false, err
+		return pkg, false, err
 	}
 	fset := token.NewFileSet()
+	imports := map[string]bool{}
 	for _, e := range entries {
 		if e.IsDir() || !strings.HasSuffix(e.Name(), ".go") || strings.HasSuffix(e.Name(), "_test.go") {
 			continue
 		}
-		f, err := parser.ParseFile(fset, filepath.Join(dir, e.Name()), nil, parser.PackageClauseOnly|parser.ParseComments)
+		f, err := parser.ParseFile(fset, filepath.Join(dir, e.Name()), nil, parser.ImportsOnly|parser.ParseComments)
 		if err != nil {
-			return "", "", false, err
+			return pkg, false, err
 		}
 		ok = true
-		name = f.Name.Name
-		if f.Doc != nil && synopsis == "" {
-			synopsis = new(doc.Package).Synopsis(f.Doc.Text())
+		pkg.Name = f.Name.Name
+		if f.Doc != nil && pkg.Synopsis == "" {
+			pkg.Synopsis = new(doc.Package).Synopsis(f.Doc.Text())
+		}
+		for _, imp := range f.Imports {
+			if p, err := strconv.Unquote(imp.Path.Value); err == nil && strings.HasPrefix(p, module+"/") {
+				imports[strings.TrimPrefix(p, module+"/")] = true
+			}
 		}
 	}
-	return name, synopsis, ok, nil
+	// Never nil: the map's JSON must carry [] rather than null.
+	pkg.Imports = append([]string{}, slices.Sorted(maps.Keys(imports))...)
+	return pkg, ok, nil
+}
+
+// packagesTable lists every Go package under root with the first sentence of
+// its package comment.
+func packagesTable(root, prefix string) (string, error) {
+	pkgs, err := listPackages(root)
+	if err != nil {
+		return "", err
+	}
+	var rows [][]string
+	for _, pkg := range pkgs {
+		if !strings.HasPrefix(pkg.Path, strings.TrimSuffix(prefix, "/")) {
+			continue
+		}
+		synopsis := pkg.Synopsis
+		if pkg.Name == "main" {
+			synopsis = strings.TrimSpace("Command. " + synopsis)
+		}
+		rows = append(rows, []string{"`" + pkg.Path + "`", synopsis})
+	}
+	return markdownTable([]string{"Package", "Description"}, rows), nil
+}
+
+// importsMap renders the interactive package map: packages grouped into the
+// given layers, with their imports embedded as JSON for app.js to draw.
+func importsMap(root string, layers []importsLayer) (string, error) {
+	if len(layers) == 0 {
+		return "", fmt.Errorf("layers are required")
+	}
+	pkgs, err := listPackages(root)
+	if err != nil {
+		return "", err
+	}
+	type layerData struct {
+		ID       string      `json:"id"`
+		Label    string      `json:"label"`
+		Kind     string      `json:"kind"`
+		Packages []goPackage `json:"packages"`
+	}
+	data := make([]layerData, len(layers))
+	for i, l := range layers {
+		data[i] = layerData{ID: l.ID, Label: l.Label, Kind: kindOr(l.Kind), Packages: []goPackage{}}
+	}
+	var unassigned []string
+	for _, pkg := range pkgs {
+		i := layerIndex(layers, pkg.Path)
+		if i < 0 {
+			unassigned = append(unassigned, pkg.Path)
+			continue
+		}
+		data[i].Packages = append(data[i].Packages, pkg)
+	}
+	if len(unassigned) > 0 {
+		return "", fmt.Errorf("packages not in any layer: %s", strings.Join(unassigned, ", "))
+	}
+	js, err := json.Marshal(map[string]any{"layers": data})
+	if err != nil {
+		return "", err
+	}
+	// No blank lines: goldmark ends an HTML block at the first one.
+	var b strings.Builder
+	b.WriteString(`<div class="pkgmap">` + "\n")
+	b.WriteString(`<p class="pkgmap-hint">Click a package to see what it imports <span class="key imp">imports</span> and who imports it <span class="key dep">imported by</span>. Computed from the source tree at build time.</p>` + "\n")
+	b.WriteString(`<div class="pkgmap-body">` + "\n")
+	b.WriteString(`<div class="pkgmap-layers">` + "\n")
+	for _, l := range data {
+		fmt.Fprintf(&b, `<section class="pkgmap-layer kind-%s"><h4>%s <span>%d</span></h4><div class="pkgmap-pkgs">`, html.EscapeString(l.Kind), html.EscapeString(l.Label), len(l.Packages))
+		for _, p := range l.Packages {
+			fmt.Fprintf(&b, `<button type="button" class="pkg" data-id="%s" title="%s">%s</button>`, html.EscapeString(p.Path), html.EscapeString(p.Synopsis), html.EscapeString(strings.TrimPrefix(p.Path, "internal/")))
+		}
+		b.WriteString("</div></section>\n")
+	}
+	b.WriteString(`<svg class="pkgmap-wires" aria-hidden="true"></svg>` + "\n")
+	b.WriteString("</div>\n")
+	b.WriteString(`<aside class="pkgmap-panel"><p class="muted">Nothing selected.</p></aside>` + "\n")
+	b.WriteString("</div>\n")
+	b.WriteString(`<script type="application/json" class="pkgmap-data">` + string(js) + "</script>\n")
+	b.WriteString("</div>")
+	return b.String(), nil
+}
+
+func layerIndex(layers []importsLayer, path string) int {
+	for i, l := range layers {
+		for _, m := range l.Match {
+			if strings.HasSuffix(m, "/") && strings.HasPrefix(path, m) || m == path {
+				return i
+			}
+		}
+	}
+	return -1
 }
 
 func modulePath(root string) (string, error) {

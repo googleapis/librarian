@@ -15,57 +15,34 @@
  */
 
 :root {
-  --bg: #ffffff;
-  --bg-2: #f6f8fa;
-  --bg-3: #eef1f4;
-  --fg: #1f2328;
-  --fg-2: #59636e;
-  --line: #d1d9e0;
-  --accent: #0969da;
-  --accent-bg: #ddf4ff;
-  --hl: #fff8c5;
-  --kw: #cf222e;
-  --str: #0a3069;
-  --cmt: #6e7781;
-  --ci: #ddf4ff;
-  --ci-fg: #0550ae;
-  --lib: #dafbe1;
-  --lib-fg: #116329;
-  --lang: #fbefff;
-  --lang-fg: #8250df;
-  --ext: #fff1e5;
-  --ext-fg: #953800;
-  --user: #f6f8fa;
-  --user-fg: #57606a;
+  color-scheme: light dark;
+  --bg: light-dark(#ffffff, #0d1117);
+  --bg-2: light-dark(#f6f8fa, #161b22);
+  --bg-3: light-dark(#eef1f4, #21262d);
+  --fg: light-dark(#1f2328, #e6edf3);
+  --fg-2: light-dark(#59636e, #9198a1);
+  --line: light-dark(#d1d9e0, #30363d);
+  --accent: light-dark(#0969da, #4493f8);
+  --accent-bg: light-dark(#ddf4ff, #121d2f);
+  --hl: light-dark(#fff8c5, #3b2e00);
+  --kw: light-dark(#cf222e, #ff7b72);
+  --str: light-dark(#0a3069, #a5d6ff);
+  --cmt: light-dark(#6e7781, #8b949e);
+  --ci: light-dark(#ddf4ff, #0c2d6b);
+  --ci-fg: light-dark(#0550ae, #79c0ff);
+  --lib: light-dark(#dafbe1, #033a16);
+  --lib-fg: light-dark(#116329, #56d364);
+  --lang: light-dark(#fbefff, #271052);
+  --lang-fg: light-dark(#8250df, #d2a8ff);
+  --ext: light-dark(#fff1e5, #3d1300);
+  --ext-fg: light-dark(#953800, #ffa657);
+  --user: light-dark(#f6f8fa, #21262d);
+  --user-fg: light-dark(#57606a, #9198a1);
   --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
   --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
 }
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #0d1117;
-    --bg-2: #161b22;
-    --bg-3: #21262d;
-    --fg: #e6edf3;
-    --fg-2: #9198a1;
-    --line: #30363d;
-    --accent: #4493f8;
-    --accent-bg: #121d2f;
-    --hl: #3b2e00;
-    --kw: #ff7b72;
-    --str: #a5d6ff;
-    --cmt: #8b949e;
-    --ci: #0c2d6b;
-    --ci-fg: #79c0ff;
-    --lib: #033a16;
-    --lib-fg: #56d364;
-    --lang: #271052;
-    --lang-fg: #d2a8ff;
-    --ext: #3d1300;
-    --ext-fg: #ffa657;
-    --user: #21262d;
-    --user-fg: #9198a1;
-  }
-}
+:root[data-theme="light"] { color-scheme: light; }
+:root[data-theme="dark"] { color-scheme: dark; }
 
 * { box-sizing: border-box; }
 html { scroll-behavior: smooth; }
@@ -213,3 +190,42 @@ body.show-all .pager { display: none; }
   .step { display: block !important; }
   .steps, .pager, .progress, .top .pages { display: none; }
 }
+
+/* Theme toggle in the header. */
+.theme { margin-left: 0.6rem; border: 1px solid var(--line); background: var(--bg-2); color: var(--fg); border-radius: 6px; width: 1.9rem; height: 1.9rem; cursor: pointer; font-size: 0.95rem; line-height: 1; }
+.theme:hover { background: var(--bg-3); }
+
+/* Interactive package map (generated `imports` block). */
+.pkgmap { margin: 1.2rem 0; }
+.pkgmap-hint { font-size: 0.88rem; color: var(--fg-2); margin: 0 0 0.6rem; }
+.pkgmap .key { display: inline-block; padding: 0 0.4rem; border-radius: 4px; border: 1px solid; font-size: 0.8rem; }
+.pkgmap .key.imp, .pkgmap .pkg.imp { border-color: var(--accent); background: var(--accent-bg); }
+.pkgmap .key.dep, .pkgmap .pkg.dep { border-color: var(--lib-fg); background: var(--lib); }
+.pkgmap-body { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 1rem; align-items: start; }
+@media (max-width: 1000px) { .pkgmap-body { grid-template-columns: 1fr; } }
+.pkgmap-layers { position: relative; display: flex; flex-direction: column; gap: 0.6rem; }
+.pkgmap-layer { border: 1px solid var(--line); border-radius: 10px; padding: 0.55rem 0.7rem; background: var(--bg-2); }
+.pkgmap-layer.kind-ci { background: color-mix(in srgb, var(--ci) 45%, var(--bg)); }
+.pkgmap-layer.kind-lib { background: color-mix(in srgb, var(--lib) 45%, var(--bg)); }
+.pkgmap-layer.kind-lang { background: color-mix(in srgb, var(--lang) 45%, var(--bg)); }
+.pkgmap-layer.kind-ext { background: color-mix(in srgb, var(--ext) 45%, var(--bg)); }
+.pkgmap-layer.kind-user { background: color-mix(in srgb, var(--user) 45%, var(--bg)); }
+.pkgmap-layer h4 { margin: 0 0 0.4rem; font-size: 0.82rem; color: var(--fg-2); text-transform: uppercase; letter-spacing: 0.03em; }
+.pkgmap-layer h4 span { font-weight: 400; margin-left: 0.3rem; }
+.pkgmap-pkgs { display: flex; flex-wrap: wrap; gap: 0.35rem; }
+.pkgmap .pkg { font-family: var(--mono); font-size: 0.8rem; padding: 0.25rem 0.5rem; border-radius: 6px; border: 1px solid var(--line); background: var(--bg); color: var(--fg); cursor: pointer; }
+.pkgmap .pkg:hover { border-color: var(--fg-2); }
+.pkgmap .pkg.sel { border-color: var(--fg); background: var(--fg); color: var(--bg); font-weight: 600; }
+.pkgmap-wires { position: absolute; left: 0; top: 0; pointer-events: none; overflow: visible; }
+.pkgmap-wires path { fill: none; stroke-width: 1.5; opacity: 0.85; }
+.pkgmap-wires path.imp { stroke: var(--accent); }
+.pkgmap-wires path.dep { stroke: var(--lib-fg); }
+.pkgmap-wires marker path.imp { fill: var(--accent); stroke: none; }
+.pkgmap-wires marker path.dep { fill: var(--lib-fg); stroke: none; }
+.pkgmap-panel { border: 1px solid var(--line); border-radius: 10px; padding: 0.7rem 0.9rem; background: var(--bg-2); font-size: 0.9rem; position: sticky; top: 64px; }
+.pkgmap-panel h4 { margin: 0 0 0.4rem; font-size: 0.95rem; word-break: break-all; }
+.pkgmap-panel .muted, .pkgmap .muted { color: var(--fg-2); }
+.pkgmap-sub { margin: 0.7rem 0 0.3rem; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.03em; color: var(--fg-2); }
+.pkgmap-sub span { font-weight: 600; color: var(--fg); margin-left: 0.2rem; }
+.pkgmap .chip { font-family: var(--mono); font-size: 0.78rem; padding: 0.15rem 0.4rem; margin: 0 0.3rem 0.3rem 0; border-radius: 5px; border: 1px solid var(--line); background: var(--bg); color: var(--fg); cursor: pointer; }
+.pkgmap .chip:hover { border-color: var(--accent); }

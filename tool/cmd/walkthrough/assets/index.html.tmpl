@@ -6,6 +6,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>{{.Site.Title}}</title>
 <link rel="stylesheet" href="style.css">
+<script>try{var t=localStorage.getItem("walkthrough.theme");if(t){document.documentElement.setAttribute("data-theme",t)}}catch(e){}</script>
 </head>
 <body class="home">
 <header class="top">
@@ -13,6 +14,7 @@
   <span class="sha" title="Code excerpts and links are pinned to this commit">
     <a href="https://github.com/{{.Site.Repo}}/tree/{{.Site.SHA}}" target="_blank" rel="noopener">{{short .Site.SHA}}</a>
   </span>
+  <button type="button" class="theme" id="theme" aria-label="Toggle theme">☀</button>
 </header>
 <main class="cards">
   <h1>Interactive walkthroughs of <a href="https://github.com/{{.Site.Repo}}">{{.Site.Repo}}</a></h1>
