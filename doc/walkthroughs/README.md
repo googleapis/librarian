@@ -27,7 +27,7 @@ flowchart LR
   tool --> site
 ```
 
-You author and maintain:
+We author and maintain:
 
 - The markdown pages: prose, step order, badges, diagrams.
 - The excerpt anchors: a file path and a string that occurs on exactly one
@@ -36,7 +36,7 @@ You author and maintain:
 - Excerpts from other repositories, which carry their code inline. These are
   the only excerpts that nothing checks.
 
-Generated for you:
+Generated for us:
 
 - The HTML site, by `tool/cmd/walkthrough` locally and by the `Walkthroughs`
   workflow on every pull request and on every push to `main`.
