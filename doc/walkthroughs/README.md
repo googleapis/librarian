@@ -2,8 +2,7 @@
 
 This directory holds step-by-step walkthroughs of Librarian for specific
 questions, such as "what runs where during a release?" or "how would I add a
-language to sidekick?". They complement the reference material in
-[doc/architecture](../architecture/README.md).
+language to sidekick?".
 
 Each walkthrough is a markdown file that GitHub renders as-is. The
 `tool/cmd/walkthrough` command also compiles the same files into a small
@@ -13,8 +12,10 @@ built from.
 
 ## Source of truth
 
-The markdown files in this directory are the source of truth. Nothing else is
-checked in: the HTML site is built from them and is never committed.
+The code is the source of truth. The markdown files here hold only what the
+code cannot say: why things are shaped the way they are, and in what order
+to read them. Nothing else is checked in; the HTML site is built from the
+markdown and the code, and is never committed.
 
 ```mermaid
 flowchart LR
@@ -23,24 +24,30 @@ flowchart LR
   tool["tool/cmd/walkthrough"]
   site["_site/*.html<br/>generated, not committed"]
   md --> tool
-  code -- "excerpts read at build time" --> tool
+  code -- "excerpts and tables<br/>read at build time" --> tool
   tool --> site
 ```
 
-We author and maintain:
+Every statement on the site is kept true in one of three ways, strongest
+first:
 
-- The markdown pages: prose, step order, badges, diagrams.
-- The excerpt anchors: a file path and a string that occurs on exactly one
-  line of that file. The code itself is not copied into the page; the tool
-  reads it from the repository when the site is built.
-- Excerpts from other repositories, which carry their code inline. These are
-  the only excerpts that nothing checks.
+1. **Enforced by a test.** `TestDependencyRules` checks the package
+   layering; `TestBuildDocs` checks that every excerpt anchor still
+   resolves; `TestReproducible` checks that two builds of the same commit
+   are byte-identical. Nobody maintains these; `go test ./...` does.
+2. **Generated from the tree.** Code excerpts and the `generated` tables
+   (package list, command list, language dispatch matrix, CI workflows) are
+   computed by Go code from the checked-out commit. They cannot drift, and
+   nobody edits them.
+3. **Authored.** The prose, step order, badges and diagrams. This is the
+   only part a human maintains, and it only needs to change when behavior
+   changes.
 
-Generated for us:
-
-- The HTML site, by `tool/cmd/walkthrough` locally and by the `Walkthroughs`
-  workflow on every pull request and on every push to `main`.
-- The index page, from each page's front matter.
+Because of 1 and 2, the published site is a pure function of the commit it
+was built from: same tree in, same bytes out. Keep it that way. Do not add
+anything to the build that depends on time, network, or a language model;
+agents are welcome to draft prose in a pull request that a person reviews,
+never to regenerate content unattended in CI.
 
 When a code change moves or removes an anchored line, `go test ./...` fails
 and names the page and anchor. Update the anchor, or the prose if the
@@ -88,29 +95,61 @@ say where the step runs and whose code does the work; GitHub hides it.
 Files under `static/`, if present, are copied to the site unchanged and listed
 on the index under "Related".
 
-Three fenced blocks are rendered specially. On GitHub they show as code.
+Four fenced blocks are rendered specially. On GitHub they show as code.
 
 ### Code excerpts
 
-An `excerpt` block names a file and a fragment that occurs on exactly one line
-of that file. The lines are read when the site is built.
+An `excerpt` block names a file and an anchor. The lines are read when the
+site is built. For Go files the anchor is a `symbol`: a top-level function,
+method (`Type.Method`), type, var or const. It survives edits to the
+signature and body; only a rename or deletion breaks it, which is exactly
+when the page needs a human anyway.
 
 ````markdown
 ```excerpt
 file: internal/librarian/generate.go
-start: "func generateLibraries("
+symbol: generateLibraries
 end: "+14"
 highlight: "switch cfg.Language"
 caption: Each language owns its generate/format ordering.
 ```
 ````
 
+For other files the anchor is a `start` fragment that occurs on exactly one
+line of the file.
+
+````markdown
+```excerpt
+file: action.yaml
+start: "- name: Install librarian"
+end: "+6"
+```
+````
+
 - `end` is optional: `+N` takes N lines, any other string takes lines up to
   and including the first later line containing it, and when omitted the
-  block closed by the brace that matches the start line is used (at most 60
-  lines, falling back to 10).
-- Prefer anchors that are stable and unique, such as a function signature or
-  a distinctive string literal, over line numbers or common identifiers.
+  symbol's whole declaration or the block closed by the brace that matches
+  the start line is used (at most 60 lines, falling back to 10).
+- With `start`, prefer anchors that are stable and unique, such as a
+  distinctive string literal, over line numbers or common identifiers.
+
+### Generated tables
+
+A `generated` block is replaced by a table computed from the repository.
+There is nothing to keep up to date.
+
+````markdown
+```generated
+kind: dispatch
+```
+````
+
+| Kind | Table | Options |
+|---|---|---|
+| `packages` | every Go package and the first sentence of its package comment | `prefix` to restrict to a path |
+| `commands` | every `cli.Command` literal with its usage line | `dir` (default `internal/librarian`) |
+| `dispatch` | each declaration that names a `config.Language*` constant, by language | `dir` (default `internal/librarian`) |
+| `workflows` | each GitHub Actions workflow with its triggers and jobs | `dir` (default `.github/workflows`) |
 
 Files from other repositories cannot be read at build time, so their excerpts
 carry the code inline together with the repository and commit it was taken
@@ -168,7 +207,5 @@ otherwise, so prefer `flow` blocks for anything essential.
 
 ## See also
 
-- [doc/architecture/README.md](../architecture/README.md): package-level
-  reference documentation.
 - [doc/styleguide/markdown-style-guide.md](../styleguide/markdown-style-guide.md):
   conventions for the markdown itself.

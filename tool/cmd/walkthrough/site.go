@@ -34,14 +34,15 @@ import (
 
 // site is the fully resolved input for the HTML templates.
 type site struct {
-	Title    string
-	Repo     string
-	SHA      string
-	Pages    []*page
-	Static   []string
-	srcDir   string
-	rootDir  string
-	excerpts int
+	Title     string
+	Repo      string
+	SHA       string
+	Pages     []*page
+	Static    []string
+	srcDir    string
+	rootDir   string
+	excerpts  int
+	generated int
 }
 
 // frontMatter is the YAML header of a walkthrough source file.
@@ -237,7 +238,7 @@ var markdown = goldmark.New(
 )
 
 // render converts markdown to HTML after replacing the special fenced blocks
-// (excerpt, flow, mermaid) with pre-rendered HTML.
+// (excerpt, generated, flow, mermaid) with pre-rendered content.
 func (s *site) render(md string) (template.HTML, error) {
 	pre, err := s.expandBlocks(md)
 	if err != nil {
@@ -277,7 +278,7 @@ func (s *site) expandBlocks(md string) (string, error) {
 			if m := fenceRE.FindStringSubmatch(line); m != nil {
 				fence = m[1]
 				switch m[2] {
-				case "excerpt", "flow", "mermaid":
+				case "excerpt", "flow", "mermaid", "generated":
 					kind = m[2]
 					continue
 				}
@@ -297,6 +298,9 @@ func (s *site) renderBlock(kind, body string) (string, error) {
 	case "excerpt":
 		s.excerpts++
 		return s.renderExcerpt(body)
+	case "generated":
+		s.generated++
+		return s.renderGenerated(body)
 	case "flow":
 		return renderFlow(body)
 	case "mermaid":
@@ -314,3 +318,5 @@ func (s *site) stepCount() int {
 }
 
 func (s *site) excerptCount() int { return s.excerpts }
+
+func (s *site) generatedCount() int { return s.generated }

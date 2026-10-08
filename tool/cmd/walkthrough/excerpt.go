@@ -29,12 +29,14 @@ import (
 
 // excerptSpec is the YAML body of an ```excerpt block.
 //
-// Local excerpts name a file in this repository and a unique start fragment;
-// the lines are read at build time. External excerpts (repo set) carry their
-// code inline, as a snapshot taken at ref.
+// Local excerpts name a file in this repository and either a unique start
+// fragment or, for Go files, a top-level symbol; the lines are read at build
+// time. External excerpts (repo set) carry their code inline, as a snapshot
+// taken at ref.
 type excerptSpec struct {
 	File      string `yaml:"file"`
 	Start     string `yaml:"start"`
+	Symbol    string `yaml:"symbol"`
 	End       string `yaml:"end"`
 	Highlight string `yaml:"highlight"`
 	Caption   string `yaml:"caption"`
@@ -44,7 +46,8 @@ type excerptSpec struct {
 	Line      int    `yaml:"line"`
 }
 
-// maxExcerptLines bounds excerpts whose end is inferred from braces.
+// maxExcerptLines bounds excerpts whose end is inferred from braces or from
+// a symbol's declaration.
 const maxExcerptLines = 60
 
 func (s *site) renderExcerpt(body string) (string, error) {
@@ -105,13 +108,27 @@ func extract(path string, spec *excerptSpec) ([]string, int, error) {
 		return nil, 0, err
 	}
 	all := strings.Split(strings.TrimRight(string(data), "\n"), "\n")
-	start, err := findUnique(all, spec.Start)
-	if err != nil {
-		return nil, 0, err
-	}
-	end, err := findEnd(all, start, spec.End)
-	if err != nil {
-		return nil, 0, err
+	var start, end int
+	switch {
+	case spec.Symbol != "" && spec.Start != "":
+		return nil, 0, fmt.Errorf("start and symbol are mutually exclusive")
+	case spec.Symbol != "":
+		if start, end, err = findSymbol(path, spec.Symbol); err != nil {
+			return nil, 0, err
+		}
+		end = min(end, start+maxExcerptLines-1)
+		if spec.End != "" {
+			if end, err = findEnd(all, start, spec.End); err != nil {
+				return nil, 0, err
+			}
+		}
+	default:
+		if start, err = findUnique(all, spec.Start); err != nil {
+			return nil, 0, err
+		}
+		if end, err = findEnd(all, start, spec.End); err != nil {
+			return nil, 0, err
+		}
 	}
 	return all[start : end+1], start + 1, nil
 }

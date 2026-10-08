@@ -77,7 +77,7 @@ everywhere: detection is by field name, not by annotation.
 
 ```excerpt
 file: internal/sidekick/parser/protobuf_annotations.go
-start: "func parseOperationInfo("
+symbol: parseOperationInfo
 end: "+12"
 caption: LRO detection reads a protobuf extension; neither OpenAPI nor Discovery has an equivalent.
 ```
@@ -92,7 +92,7 @@ synthetic service with a synthetic `<OperationId>Request` message.
 
 ```excerpt
 file: internal/sidekick/parser/openapi.go
-start: "func makeMethods("
+symbol: makeMethods
 end: "+30"
 caption: Operations become methods on one service; path and query parameters become request fields.
 ```
@@ -136,7 +136,7 @@ annotations the LRO templates expect.
 
 ```excerpt
 file: internal/sidekick/parser/discovery/lro.go
-start: "func lroAnnotations("
+symbol: lroAnnotations
 end: "+25"
 ```
 
@@ -170,7 +170,7 @@ must:
 
 ```excerpt
 file: internal/sidekick/api/xref.go
-start: "func CrossReference(model *API) error {"
+symbol: CrossReference
 end: "+40"
 caption: The IDs a parser must get right; this pass turns them into pointers or fails.
 ```
@@ -180,7 +180,7 @@ message and bindings from a non-proto source.
 
 ```excerpt
 file: internal/sidekick/parser/discovery/methods.go
-start: "func makeMethod("
+symbol: makeMethod
 end: "+30"
 ```
 
@@ -200,7 +200,7 @@ With a parser written, the registration list is short but spread out:
 
 ```excerpt
 file: internal/librarian/source.go
-start: "func LoadSources("
+symbol: LoadSources
 end: "+20"
 caption: Sources are fetched by name; a new input repository needs a name here and in config.Sources.
 ```
@@ -237,7 +237,7 @@ is not published in `googleapis`, meets assumptions in every stage:
 
 ```excerpt
 file: internal/serviceconfig/serviceconfig.go
-start: "func findServiceConfig("
+symbol: findServiceConfig
 end: "+20"
 caption: The naming authority is found by scanning the API directory in googleapis.
 ```

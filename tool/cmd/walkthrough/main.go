@@ -21,9 +21,10 @@
 //
 // Every markdown file with front matter becomes one page. Level-two headings
 // split a page into steps. Fenced blocks whose info string is "excerpt",
-// "flow" or "mermaid" are rendered specially: excerpts are extracted from the
-// repository at build time, so the site always shows the code at the commit
-// it was built from. See doc/walkthroughs/README.md for the authoring guide.
+// "generated", "flow" or "mermaid" are rendered specially: excerpts and
+// generated tables are derived from the repository at build time, so the site
+// always reflects the commit it was built from. See doc/walkthroughs/README.md
+// for the authoring guide.
 //
 // With -check, the tool resolves every excerpt and exits without writing
 // files. TestBuildDocs runs the same check, so a change that removes a line
@@ -80,7 +81,7 @@ func run(ctx context.Context, opts options) error {
 		return err
 	}
 	if opts.check {
-		fmt.Printf("%d pages, %d steps, %d excerpts resolved at %s\n", len(s.Pages), s.stepCount(), s.excerptCount(), s.SHA)
+		fmt.Printf("%d pages, %d steps, %d excerpts and %d generated tables resolved at %s\n", len(s.Pages), s.stepCount(), s.excerptCount(), s.generatedCount(), s.SHA)
 		return nil
 	}
 	if err := writeSite(s, opts.out); err != nil {

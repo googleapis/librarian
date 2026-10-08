@@ -103,7 +103,7 @@ steps for its language.
 
 ```excerpt
 file: internal/librarian/generate.go
-start: "func generateLibraries("
+symbol: generateLibraries
 end: "+20"
 highlight: "switch cfg.Language"
 caption: The dispatch point; what each case calls is where the two families diverge.
@@ -150,7 +150,7 @@ when a new kind of input needs a new repository.
 
 ```excerpt
 file: internal/sources/sources.go
-start: "func (c *SourceConfig) Root(name string) string {"
+symbol: SourceConfig.Root
 end: "+19"
 caption: The five source roots sidekick can resolve paths against; googleapis is the default.
 ```
@@ -164,7 +164,7 @@ output directories while respecting `keep`, and only then generates.
 
 ```excerpt
 file: internal/librarian/generate.go
-start: "func runGenerate("
+symbol: runGenerate
 end: "+48"
 caption: Sources, defaults, clean, generate. Everything after LoadSources is offline.
 ```
@@ -187,7 +187,7 @@ handed to the codec.
 
 ```excerpt
 file: internal/librarian/rust/codec.go
-start: "func libraryToModelConfig("
+symbol: libraryToModelConfig
 end: "+42"
 highlight: "switch specFormat"
 caption: specification_format decides whether the source is a Discovery document, an OpenAPI document or a proto directory.
@@ -195,7 +195,7 @@ caption: specification_format decides whether the source is a Discovery document
 
 ```excerpt
 file: internal/serviceconfig/serviceconfig.go
-start: "func FindAPI(path string) *API {"
+symbol: FindAPI
 end: "+18"
 caption: sdk.yaml entries match on the API path, the OpenAPI path or the Discovery path.
 ```
@@ -218,7 +218,7 @@ lists, documentation patches, validation and name overrides.
 
 ```excerpt
 file: internal/sidekick/parser/parser.go
-start: "func CreateModel(cfg *ModelConfig)"
+symbol: CreateModel
 end: "+46"
 highlight: "switch cfg.SpecificationFormat"
 caption: Every parser must produce a model that survives the passes below the switch.
@@ -232,7 +232,7 @@ exception.
 
 ```excerpt
 file: internal/sidekick/api/validate.go
-start: "func Validate(model *API) error {"
+symbol: Validate
 end: "+16"
 ```
 
@@ -256,7 +256,7 @@ source comments and options.
 
 ```excerpt
 file: internal/sidekick/parser/protobuf.go
-start: "func runProtoc("
+symbol: runProtoc
 end: "+42"
 caption: The only external process in parsing; everything after this reads the descriptor set in memory.
 ```
@@ -268,7 +268,7 @@ long-running operation info, streaming flags and the API version header.
 
 ```excerpt
 file: internal/sidekick/parser/protobuf.go
-start: "func processMethod("
+symbol: processMethod
 end: "+33"
 caption: Each annotation becomes a plain field on api.Method; templates never see descriptors.
 ```
@@ -295,7 +295,7 @@ the API and on every service, method, message, field, enum and enum value.
 
 ```excerpt
 file: internal/sidekick/api/api.go
-start: "type API struct {"
+symbol: API
 end: "Codec any"
 caption: The language-neutral root of the model; Codec is where a language attaches its own struct.
 ```
@@ -318,14 +318,14 @@ logic lives.
 
 ```excerpt
 file: internal/sidekick/rust/annotate_model.go
-start: "func annotateModel(model *api.API, codec *codec)"
+symbol: annotateModel
 end: "+30"
 caption: Rust annotates enums, then messages, then external types, then services and methods.
 ```
 
 ```excerpt
 file: internal/sidekick/swift/annotate_model.go
-start: "func (c *codec) annotateModel() error {"
+symbol: codec.annotateModel
 end: "+30"
 caption: "Swift is the architectural reference in internal/sidekick/AGENTS.md: one file per node type, slim driver."
 ```
@@ -337,7 +337,7 @@ changes defaults such as the `$alt` system parameter.
 
 ```excerpt
 file: internal/sidekick/rust/codec.go
-start: "func newCodec(specificationFormat string, options map[string]string)"
+symbol: newCodec
 end: "+30"
 ```
 
@@ -351,7 +351,7 @@ with `missingkey=error` and exactly two helper functions, `include` and
 
 ```excerpt
 file: internal/sidekick/language/gotemplate.go
-start: "func ParseTemplatesDir("
+symbol: ParseTemplatesDir
 end: "+37"
 caption: Template names are their paths without .gotmpl, so partials are included by path.
 ```
@@ -374,7 +374,7 @@ extension removed; a single-dot name (`message.gotmpl`) is a partial.
 
 ```excerpt
 file: internal/sidekick/language/walk_templates_dir.go
-start: "func WalkTemplatesDir("
+symbol: WalkTemplatesDir
 end: "+24"
 ```
 
@@ -385,7 +385,7 @@ message, enum and service and then walks a `package` tree.
 
 ```excerpt
 file: internal/sidekick/rust/generate.go
-start: "func (c *codec) generatedFiles(hasServices bool)"
+symbol: codec.generatedFiles
 end: "+12"
 caption: Rust template roots; template-override lets a crate use a completely different set.
 ```
@@ -414,7 +414,7 @@ end. Swift dispatches on a module type that can also mean "run `protoc
 
 ```excerpt
 file: internal/librarian/swift/generate_module.go
-start: "func generateModule("
+symbol: generateModule
 end: "+40"
 caption: Not every Swift module goes through templates; module_type picks the strategy.
 ```

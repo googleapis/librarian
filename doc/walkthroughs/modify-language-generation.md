@@ -101,7 +101,7 @@ how many edits a *new* knob costs. Rust and Dart flatten the struct into a
 
 ```excerpt
 file: internal/librarian/rust/codec.go
-start: "func buildCodec(library *config.Library, releaseLevel string)"
+symbol: buildCodec
 end: "+22"
 caption: Every Rust option is a string key. The consumer never sees these names; they are an internal wire format.
 ```
@@ -110,7 +110,7 @@ and the codec parses the map back with a string switch:
 
 ```excerpt
 file: internal/sidekick/rust/codec.go
-start: "func newCodec(specificationFormat string, options map[string]string)"
+symbol: newCodec
 end: "+29"
 caption: Defaults depend on the specification format; then each key sets a codec field. Unknown keys are an error.
 ```
@@ -120,7 +120,7 @@ Swift skips the map. The codec receives the `*config.Library` and the
 
 ```excerpt
 file: internal/sidekick/swift/codec.go
-start: "func newCodec(model *api.API, library *config.Library, module *config.SwiftModule, outdir string)"
+symbol: newCodec
 end: "generationYear := library.CopyrightYear"
 caption: The codec signature is the config contract.
 ```
@@ -159,7 +159,7 @@ in for the protos.
 
 ```excerpt
 file: internal/serviceconfig/serviceconfig.go
-start: "func FindAPI(path string) *API {"
+symbol: FindAPI
 end: "+17"
 caption: Lookup matches the googleapis path, or the OpenAPI or Discovery document path, so one entry serves all three input formats.
 ```
@@ -168,7 +168,7 @@ Per-language values fall back to an `all` key and then to a derivation:
 
 ```excerpt
 file: internal/serviceconfig/api.go
-start: "func (api *API) ReleaseLevel(language, version string) string {"
+symbol: API.ReleaseLevel
 end: "+18"
 caption: Rust passes this into the codec as release-level, which changes README and crate-level docs wording.
 ```
@@ -201,7 +201,7 @@ Where each language keeps them:
 
 ```excerpt
 file: internal/sidekick/rust/annotate_model.go
-start: "func annotateModel(model *api.API, codec *codec)"
+symbol: annotateModel
 end: "+27"
 caption: Order matters. Enums and messages first, because service and method annotations look up their annotated types.
 ```
@@ -231,7 +231,7 @@ How the three languages pick which templates to render:
 
 ```excerpt
 file: internal/sidekick/rust/generate.go
-start: "func (c *codec) generatedFiles(hasServices bool)"
+symbol: codec.generatedFiles
 end: "+12"
 caption: template-override is how a library opts into a different output shape without a new codec.
 ```
@@ -240,7 +240,7 @@ caption: template-override is how a library opts into a different output shape w
 
 ```excerpt
 file: internal/sidekick/dart/generate.go
-start: "func generatedFiles(model *api.API) []language.GeneratedFile {"
+symbol: generatedFiles
 end: "+17"
 caption: main.dart becomes <package>.dart, LICENSE.txt loses its extension, testing.dart is skipped without services.
 ```
@@ -274,14 +274,14 @@ Dart is the odd one out because the codec formats its own output:
 
 ```excerpt
 file: internal/sidekick/dart/generate.go
-start: "func Generate(ctx context.Context, model *api.API, outdir string, codec map[string]string) error {"
+symbol: Generate
 end: "+15"
 caption: Tests pass skip-format to stay hermetic; librarian's Format runs dart format again afterwards.
 ```
 
 ```excerpt
 file: internal/librarian/rust/generate.go
-start: "func Format(ctx context.Context, library *config.Library) error {"
+symbol: Format
 end: "+8"
 caption: --frozen lets formatting run in parallel across crates without fighting over the cargo lock.
 ```
@@ -316,7 +316,7 @@ different generator, including one that is not a template at all:
 
 ```excerpt
 file: internal/librarian/swift/generate_module.go
-start: "func generateModule("
+symbol: generateModule
 end: "case \"storage\":"
 caption: swift-protobuf modules run protoc --swift_out; convert-swift modules render conversion code from a second model.
 ```
@@ -378,7 +378,7 @@ owns none of the templates.
 
 ```excerpt
 file: internal/librarian/golang/generate.go
-start: "func buildGAPICOpts("
+symbol: buildGAPICOpts
 end: "+25"
 caption: sdk.yaml and the service config become plugin options; the plugin decides what code those options produce.
 ```

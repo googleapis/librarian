@@ -9,8 +9,9 @@ nav: Architecture
 Librarian is one Go module with about fifty packages. This tour groups them
 into layers, then walks the layers in the order a command passes through
 them. It is the entry point; the other walkthroughs go deeper into the
-[command workflow](workflow.html) and the [generation engine](generate-and-sidekick.html),
-and `doc/architecture` holds the reference documents.
+[command workflow](workflow.html) and the
+[generation engine](generate-and-sidekick.html). The tables on this page are
+derived from the tree when the site is built, so they cannot go stale.
 
 ```flow
 title: Layers, from process start to the file system
@@ -91,21 +92,25 @@ edges:
 
 Lower layers know nothing about the layers above them: infrastructure does
 not know about configuration, domain services do not know about commands,
-and only `internal/librarian` knows the names of the languages.
+and only `internal/librarian` knows the names of the languages. Reading the
+import paths top-down: `cmd/` and `tool/cmd/` are entry points,
+`internal/librarian` is command orchestration with one subpackage per
+language, `internal/sidekick` is the generation engine, `internal/tool`
+installs external generators, and the remaining `internal/*` packages are
+domain services and infrastructure.
 
-| Layer | Packages | Role |
-|---|---|---|
-| Entry points | `cmd/librarian`, `tool/cmd/*` | `main` calls `librarian.Run`; `tool/cmd` holds developer tools such as the coverage gate, `docgen` and this site's generator |
-| Command orchestration | `internal/librarian` | command registration, `librarian.yaml` loading, defaults and preview resolution, source fetching, language dispatch, the release flow |
-| Language integrations | `internal/librarian/{dart,golang,java,nodejs,php,python,ruby,rust,swift}` | one package per language exporting plain functions (`Generate`, `Format`, `Install`, `Bump`, ...) |
-| Generation engine | `internal/sidekick/{api,parser,language,rust,rust_prost,swift,dart,codec_sample}` | the in-process generator: model, parsers, template engine, codecs |
-| Tool installers | `internal/tool/{protoc,maven,pip,pnpm,gem,composer}` | download or build the external generators and formatters into the cache |
-| Domain services | `internal/{config,serviceconfig,sources,repometadata,postprocessing,snippetmetadata,semver,proto,license,docuploader}` | know about `librarian.yaml` and API metadata, not about commands |
-| Infrastructure | `internal/{command,cache,fetch,filesystem,git,yaml}` | subprocesses, the cache directory, GitHub tarballs, file moves, git, YAML |
-| Test support | `internal/{testhelper,sample}`, `internal/sidekick/api/apitest` | imported only by tests |
+```generated
+kind: packages
+```
 
-Two rules from `AGENTS.md` shape the map: `internal/config` is pure data
-with no functions, and `internal/yaml` is the only YAML entry point.
+The rules that keep the layers apart are not a convention; they are a test.
+`TestDependencyRules` reads the import graph with `go list` and fails on any
+forbidden edge, so a pull request cannot cross a layer by accident.
+
+```excerpt
+file: dependency_test.go
+symbol: dependencyRules
+```
 
 ## One binary, one YAML file
 <!-- step runs="Developer machine or CI in a language repository" code="librarian" -->
@@ -115,8 +120,14 @@ with no functions, and `internal/yaml` is the only YAML entry point.
 
 ```excerpt
 file: cmd/librarian/main.go
-start: "func main() {"
+symbol: main
 caption: The whole entry point.
+```
+
+The commands, read from the `cli.Command` literals in `internal/librarian`:
+
+```generated
+kind: commands
 ```
 
 Every command begins by reading `librarian.yaml` from the current
@@ -125,7 +136,7 @@ consumers run Librarian from the root of a `google-cloud-<lang>` repository.
 
 ```excerpt
 file: internal/yaml/yaml.go
-start: "func Read[T any](path string) (*T, error) {"
+symbol: Read
 caption: Generic YAML read; config.LibrarianYAML is a relative path.
 ```
 
@@ -138,7 +149,7 @@ versions, repository-wide defaults and the list of libraries.
 
 ```excerpt
 file: internal/config/config.go
-start: "type Config struct {"
+symbol: Config
 end: "Libraries []*Library"
 caption: The top level of librarian.yaml; doc/config-schema.md is generated from these comments.
 ```
@@ -159,7 +170,7 @@ functions; `resolvePreview` overlays the `preview` block when a
 
 ```excerpt
 file: internal/librarian/library.go
-start: "func applyDefaults("
+symbol: applyDefaults
 caption: The resolution pipeline every command runs before touching a library.
 ```
 
@@ -177,7 +188,7 @@ each one to a directory in `$LIBRARIAN_CACHE`, downloading
 
 ```excerpt
 file: internal/librarian/source.go
-start: "func fetchSource("
+symbol: fetchSource
 caption: A dir override skips the network entirely, which is how tests and local experiments work.
 ```
 
@@ -196,7 +207,7 @@ files.
 
 ```excerpt
 file: internal/librarian/generate.go
-start: "func runGenerate("
+symbol: runGenerate
 end: "+30"
 ```
 
@@ -210,30 +221,19 @@ switch calls the ones it needs.
 
 ```excerpt
 file: internal/librarian/generate.go
-start: "func generateLibraries("
+symbol: generateLibraries
 end: "+20"
 highlight: "switch cfg.Language"
 ```
 
-The implicit contract, read off those switches:
+The implicit contract is every declaration in `internal/librarian` that
+names a language constant. The matrix below is read from the source each
+time the site is built; a new language is complete when its column is as
+full as its neighbours'.
 
-| Hook | Called from | dart | go | java | nodejs | php | python | ruby | rust | swift |
-|---|---|---|---|---|---|---|---|---|---|---|
-| `Generate` | `generateLibraries` | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
-| `Format` | `generateLibraries` | ✓ | ✓ | ✓ (all at once) | · | ✓ | · | ✓ (no-op) | ✓ | ✓ |
-| post-generate step | `generateLibraries` | · | · | `PostGenerate` | · | · | · | · | `UpdateWorkspace`, doc index | doc index |
-| `Clean` | `cleanLibraries` | keep | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | `Keep` + keep | keep |
-| `DefaultOutput` | `applyDefaults` | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
-| `DeriveAPIPath` | `applyDefaults` | ✓ | · | · | · | · | · | · | ✓ | · |
-| `Fill` | `fillLibraryDefaults` | · | ✓ | ✓ | ✓ | ✓ | ✓ | · | · | · |
-| `DefaultLibraryName`, `Add` | `addNewLibrary` | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
-| dependency resolution | `resolveDependencies` | · | · | mixins | · | mixins | · | · | crates | · |
-| `Tidy` | `languageTidiers` | · | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | · |
-| `Validate` | `languageValidators` | · | · | ✓ | · | ✓ | · | · | · | · |
-| `Bump` | `runBump` | ✓ | ✓ | · | · | · | ✓ | · | ✓ | ✓ |
-| `Publish` | `publish` | ✓ | · | · | · | · | · | · | ✓ | ✓ |
-| `Install` | `install` | no-op | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
-| release-please extras | `syncToReleasePlease` | · | extra files | · | · | · | extra files | manifest, package | · | · |
+```generated
+kind: dispatch
+```
 
 A `fake` language exists as a test seam, and .NET has a configuration block
 but no package. Adding a language means visiting every row above; [Adding a
@@ -250,7 +250,7 @@ directory on `PATH`.
 
 ```excerpt
 file: internal/tool/protoc/protoc.go
-start: "func RunOrSystem("
+symbol: RunOrSystem
 caption: The pinned protoc, falling back to whatever is on PATH.
 ```
 
@@ -262,7 +262,7 @@ Every subprocess in either strategy goes through `internal/command`, so
 
 ```excerpt
 file: internal/command/command.go
-start: "func Run(ctx context.Context, command string, arg ...string) error {"
+symbol: Run
 caption: The one way to run a subprocess.
 ```
 
@@ -277,7 +277,7 @@ include and skip lists, documentation patches and validation.
 
 ```excerpt
 file: internal/sidekick/parser/parser.go
-start: "func CreateModel(cfg *ModelConfig)"
+symbol: CreateModel
 end: "+20"
 highlight: "switch cfg.SpecificationFormat"
 ```
@@ -298,7 +298,7 @@ mode and a lint that bans logic in templates.
 
 ```excerpt
 file: internal/sidekick/language/walk_templates_dir.go
-start: "func WalkTemplatesDir("
+symbol: WalkTemplatesDir
 end: "+24"
 caption: A template with two dots in its name is an output file; one dot is a partial.
 ```
@@ -318,7 +318,7 @@ post-processors; Node.js stages and runs `combine-library`.
 
 ```excerpt
 file: internal/postprocessing/fileops.go
-start: "func Apply(outDir string, cfg *config.Postprocess) error {"
+symbol: Apply
 caption: The declarative postprocess block; parsed for every library, applied only by Java.
 ```
 
@@ -338,7 +338,7 @@ libraries and creates local tags.
 
 ```excerpt
 file: internal/librarian/bump.go
-start: "func runBump("
+symbol: runBump
 end: "+24"
 ```
 
@@ -350,18 +350,27 @@ walkthrough](workflow.html#step-10) covers all three commands in detail.
 <!-- step runs="GitHub Actions in this repository" code="librarian CI" -->
 
 `all_test.go` enforces repository-wide rules: license headers, imports,
-formatting, `go mod tidy` and `go generate` cleanliness.
+formatting, `go mod tidy` and `go generate` cleanliness;
+`dependency_test.go` enforces the layering from step 1, and
+`tool/cmd/walkthrough` fails `go test` when a page on this site points at a
+line that no longer exists.
 
 ```excerpt
 file: all_test.go
-start: "func TestAddLicense(t *testing.T) {"
+symbol: TestAddLicense
 end: "+15"
 ```
 
 One workflow per language sparse-checks-out the matching consumer
 repository, runs `librarian install` and a smoke `librarian generate` for
 one library on pull requests, and `generate --all` after merges; every job
-runs through `tool/cmd/coverage` with an 80% gate. Consumers never vendor
+runs through `tool/cmd/coverage` with an 80% gate.
+
+```generated
+kind: workflows
+```
+
+Consumers never vendor
 Librarian: they pin `version:` in `librarian.yaml` and run
 `go run github.com/googleapis/librarian/cmd/librarian@<version>`, or use the
 composite action at the repository root.
@@ -371,21 +380,6 @@ file: action.yaml
 start: "- name: Install librarian"
 end: "+6"
 ```
-
-## The nine languages at a glance
-<!-- step runs="Reading" code="summary" -->
-
-| Language | Generator | Installed by | Formatter | Bump | Publish target |
-|---|---|---|---|---|---|
-| Dart | sidekick (`internal/sidekick/dart`) | nothing; Dart SDK on `PATH` | `dart format` | ✓ | pub.dev via `librarian publish` |
-| Go | `protoc` + `protoc-gen-go`, `-go-grpc`, `-go_gapic` | `go install` | `goimports` | ✓ | module proxy via release-please |
-| Java | `protoc` + gapic-generator-java | `internal/tool/maven` (built from the repository) | `google-java-format` | · | Maven Central (outside Librarian) |
-| Node.js | gapic-generator-typescript (drives `protoc` itself) | `internal/tool/pnpm` | inside the Node tools | · | npm via release-please |
-| PHP | `protoc` + gapic-generator-php | `internal/tool/composer`, pip, pnpm | `prettier` with the PHP plugin | · | Packagist (outside Librarian) |
-| Python | `protoc` + gapic-generator-python | `internal/tool/pip` | `nox -s format` | ✓ | PyPI via release-please |
-| Ruby | `protoc` + gapic-generator-ruby | `internal/tool/gem` | none | · | RubyGems via release-please |
-| Rust | sidekick (`internal/sidekick/rust` + `rust_prost`) | `cargo install` for formatters | `taplo fmt`, `cargo fmt` | ✓ | crates.io via `librarian publish` |
-| Swift | sidekick (`internal/sidekick/swift`) + `protoc --swift_out` | `git clone` + `swift build` | `swift-format` | ✓ | per-package GitHub repositories via `librarian publish` |
 
 ## Observations
 <!-- step runs="Reading" code="findings" -->
@@ -442,9 +436,7 @@ end: "+3"
   [Supporting a different input format](extend-new-input.html) and
   [Changing what sidekick generates for one language](modify-language-generation.html):
   the three extension questions.
-- `doc/architecture/` in the repository: the written reference behind this
-  tour.
 
-A good first exercise: pick a language from the table above, run
+A good first exercise: pick a language from the dispatch matrix, run
 `librarian install` and `librarian generate <one library>` in a sparse
 checkout of its repository, and follow the calls with `-v`.

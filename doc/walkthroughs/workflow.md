@@ -139,7 +139,7 @@ Every command starts from the same data model in `internal/config`, a pure
 
 ```excerpt
 file: internal/config/config.go
-start: "type Config struct {"
+symbol: Config
 caption: The root of the configuration. Each language has its own optional block in Default and Library.
 ```
 
@@ -183,7 +183,7 @@ which merges `$LIBRARIAN_BIN` into `PATH` so later steps find the tools.
 
 ```excerpt
 file: internal/command/command.go
-start: "func buildCmd("
+symbol: buildCmd
 end: "+30"
 caption: All external processes go through buildCmd; with --verbose the full command line is echoed, which is the quickest way to see what a language actually runs.
 ```
@@ -198,7 +198,7 @@ service configuration.
 
 ```excerpt
 file: internal/librarian/add.go
-start: "func runAdd("
+symbol: runAdd
 end: "+30"
 caption: Fetch googleapis, validate the API path, add or update the library, resolve dependencies, sync release-please files, then tidy.
 ```
@@ -208,7 +208,7 @@ new library needs. Each language package exposes an `Add` function:
 
 ```excerpt
 file: internal/librarian/add.go
-start: "func addNewLibrary("
+symbol: addNewLibrary
 end: "+59"
 caption: The per-language Add dispatch. Dart has no case and gets a bare library entry.
 ```
@@ -220,7 +220,7 @@ the entries it must add.
 
 ```excerpt
 file: internal/librarian/release_please.go
-start: "func releasePleaseFiles("
+symbol: releasePleaseFiles
 end: "+28"
 caption: Which release-please files each language keeps at its repository root.
 ```
@@ -246,7 +246,7 @@ caption: The updatable sources and the branch each one tracks.
 
 ```excerpt
 file: internal/librarian/config_value.go
-start: "func fetchSourceCommitAndChecksum("
+symbol: fetchSourceCommitAndChecksum
 end: "+12"
 caption: A pin is a commit plus the checksum of GitHub's tarball for it.
 ```
@@ -265,7 +265,7 @@ checksum, and extracted under the cache directory keyed by commit.
 
 ```excerpt
 file: internal/fetch/fetch.go
-start: "func Repo(ctx context.Context, repo, commit, expectedSHA256 string)"
+symbol: Repo
 end: "+50"
 caption: Cache hit on the extracted directory, then on a verified tarball, then download.
 ```
@@ -280,7 +280,7 @@ into a separate library to generate.
 
 ```excerpt
 file: internal/librarian/library.go
-start: "func applyDefaults("
+symbol: applyDefaults
 end: "+29"
 caption: Every library passes through this once per run; the result is never written back to librarian.yaml.
 ```
@@ -295,14 +295,14 @@ Each phase is a `switch` on `cfg.Language`.
 
 ```excerpt
 file: internal/librarian/generate.go
-start: "func runGenerate("
+symbol: runGenerate
 end: "+48"
 caption: Selection, preview resolution, clean, then generate.
 ```
 
 ```excerpt
 file: internal/librarian/generate.go
-start: "func generateLibraries("
+symbol: generateLibraries
 end: "+20"
 highlight: "switch cfg.Language"
 caption: Each case decides its own concurrency and whether formatting is per library or repository-wide.
@@ -345,7 +345,7 @@ A typical external invocation, assembled for Go:
 
 ```excerpt
 file: internal/librarian/golang/generate.go
-start: "func generateAPI("
+symbol: generateAPI
 end: "+31"
 caption: Librarian builds the protoc command line; the generator plugin does the actual code generation.
 ```
@@ -372,7 +372,7 @@ through which `add` and `bump` persist their changes.
 
 ```excerpt
 file: internal/librarian/tidy.go
-start: "func RunTidyOnConfig("
+symbol: RunTidyOnConfig
 end: "+18"
 caption: Validate, normalize, sort, write.
 ```
@@ -382,7 +382,7 @@ than a switch:
 
 ```excerpt
 file: internal/librarian/tidy.go
-start: "var languageTidiers = "
+symbol: languageTidiers
 end: "+8"
 ```
 
@@ -395,7 +395,7 @@ depending on the language:
 
 ```excerpt
 file: internal/librarian/bump.go
-start: "func runBump("
+symbol: runBump
 end: "+38"
 caption: Rust and Swift use a repository-wide last tag; Dart has its own dependency-ordered flow; everyone else is tag-per-library.
 ```
@@ -406,7 +406,7 @@ comes from `default.tag_format`.
 
 ```excerpt
 file: internal/librarian/bump.go
-start: "func findLibrariesToBump("
+symbol: findLibrariesToBump
 end: "+29"
 caption: Per-library git tags must exist locally; the diff since the tag decides what changed.
 ```
@@ -419,7 +419,7 @@ and snippet metadata for Go, `gapic_version.py` for Python, `Cargo.toml` and
 
 ```excerpt
 file: internal/librarian/bump.go
-start: "func bumpLibrary("
+symbol: bumpLibrary
 end: "+19"
 ```
 
@@ -466,14 +466,14 @@ released library.
 
 ```excerpt
 file: internal/librarian/tag.go
-start: "func tag(ctx context.Context, releaseCommit string) error {"
+symbol: tag
 end: "+53"
 caption: Release discovery from history; tags are local, pushing is left to the caller.
 ```
 
 ```excerpt
 file: internal/librarian/bump.go
-start: "func findReleasedLibraries("
+symbol: findReleasedLibraries
 end: "+32"
 caption: The before/after diff that defines "released".
 ```

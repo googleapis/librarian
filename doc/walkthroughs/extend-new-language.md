@@ -96,7 +96,7 @@ generate path is eighteen lines:
 
 ```excerpt
 file: internal/librarian/dart/generate.go
-start: "func Generate(ctx context.Context, cfg *config.Config, library *config.Library, sources *sources.Sources) error {"
+symbol: Generate
 end: "+17"
 caption: Build a ModelConfig, parse, hand the model to the codec. Everything else is shared.
 ```
@@ -159,7 +159,7 @@ non-nil, so your case must be added to the switch and backed by a
 
 ```excerpt
 file: internal/librarian/library.go
-start: "func fillDefaults("
+symbol: fillDefaults
 end: "+28"
 highlight: "case d.Dart != nil:"
 caption: fillDart (further down the file) is a dozen lines of "if empty, copy from default".
@@ -194,7 +194,7 @@ It does three things in order:
 
 ```excerpt
 file: internal/librarian/dart/codec.go
-start: "func toModelConfig("
+symbol: toModelConfig
 end: "+18"
 caption: Reject unsupported formats, build the source roots, look up the service config.
 ```
@@ -240,7 +240,7 @@ miniature:
 
 ```excerpt
 file: internal/sidekick/codec_sample/generate.go
-start: "func Generate(_ context.Context, model *api.API, outdir string, cfg *config.Library) error {"
+symbol: Generate
 end: "+7"
 caption: Construct the codec from typed config, annotate, pick output files, render.
 ```
@@ -254,7 +254,7 @@ read. The driver that does this is `annotate_model.go`:
 
 ```excerpt
 file: internal/sidekick/codec_sample/annotate_model.go
-start: "func (c *codec) annotateModel(model *api.API) error {"
+symbol: codec.annotateModel
 end: "+21"
 caption: Model annotations carry CopyrightYear and the license boilerplate; then one pass per node kind.
 ```
@@ -294,7 +294,7 @@ Which templates become output files is a naming convention:
 
 ```excerpt
 file: internal/sidekick/language/walk_templates_dir.go
-start: "func WalkTemplatesDir("
+symbol: WalkTemplatesDir
 end: "+23"
 caption: Two dots in the basename (src/lib.rs.gotmpl) make an output file; one dot (enum.gotmpl) makes a partial.
 ```
@@ -342,7 +342,7 @@ calls its `Generate` then `Format`:
 
 ```excerpt
 file: internal/librarian/generate.go
-start: "func generateLibraries("
+symbol: generateLibraries
 end: "+16"
 caption: The Dart case is the simplest one to copy; an errgroup, Generate, Format.
 ```
@@ -353,7 +353,7 @@ language it does not know:
 
 ```excerpt
 file: internal/librarian/generate.go
-start: "func cleanLibraries("
+symbol: cleanLibraries
 end: "default:"
 caption: For most languages the case is one line, checkAndClean(library.Output, library.Keep). Rust computes a wider keep list for veneers.
 ```
@@ -370,7 +370,7 @@ Recommended, because otherwise `librarian.yaml` must spell out everything:
 
 ```excerpt
 file: internal/librarian/generate.go
-start: "func deriveAPIPath("
+symbol: deriveAPIPath
 end: "+9"
 caption: Dart needs its own case because its names use underscores.
 ```
@@ -421,7 +421,7 @@ in the `_test.go` files, split by feature as in
 
 ```excerpt
 file: internal/sidekick/codec_sample/generate_test.go
-start: "func TestValidateTemplates(t *testing.T) {"
+symbol: TestValidateTemplates
 end: "+4"
 caption: The cheapest and most valuable test in the package.
 ```
