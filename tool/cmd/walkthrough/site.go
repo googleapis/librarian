@@ -34,10 +34,14 @@ import (
 
 // site is the fully resolved input for the HTML templates.
 type site struct {
-	Title     string
-	Repo      string
-	SHA       string
-	Pages     []*page
+	Title string
+	Repo  string
+	SHA   string
+	Pages []*page
+	// Token and Ask are set only by the local server: the page sends the
+	// token with questions, and Ask enables the question panel.
+	Token     string
+	Ask       bool
 	Static    []string
 	srcDir    string
 	rootDir   string
@@ -89,7 +93,7 @@ var (
 )
 
 func loadSite(opts options) (*site, error) {
-	s := &site{Title: "Librarian walkthroughs", Repo: opts.repo, SHA: opts.sha, srcDir: opts.src, rootDir: opts.root}
+	s := &site{Title: "Librarian walkthroughs", Repo: opts.repo, SHA: opts.sha, Token: opts.serveToken, Ask: opts.askEnabled, srcDir: opts.src, rootDir: opts.root}
 	entries, err := os.ReadDir(opts.src)
 	if err != nil {
 		return nil, err

@@ -18,6 +18,7 @@
 // Usage:
 //
 //	walkthrough [-src doc/walkthroughs] [-out _site] [-root .] [-sha <commit>] [-check]
+//	walkthrough -serve 127.0.0.1:8080 [-ask "<command>"]
 //
 // Every markdown file with front matter becomes one page. Level-two headings
 // split a page into steps. Fenced blocks whose info string is "excerpt",
@@ -29,6 +30,11 @@
 // With -check, the tool resolves every excerpt and exits without writing
 // files. TestBuildDocs runs the same check, so a change that removes a line
 // referenced by a walkthrough fails the test suite.
+//
+// With -serve, the tool serves the site on a loopback address and rebuilds
+// it on every page load. With -ask, each step gets an "Ask" panel whose
+// question is piped on stdin to the given shell command (for example an
+// agent CLI); its stdout is shown in the page.
 package main
 
 import (
@@ -48,6 +54,11 @@ type options struct {
 	sha   string
 	repo  string
 	check bool
+	serve string
+	ask   string
+	// Set by the server for each build.
+	serveToken string
+	askEnabled bool
 }
 
 func main() {
@@ -58,8 +69,10 @@ func main() {
 	flag.StringVar(&opts.sha, "sha", "", "commit used in source links (default: git rev-parse HEAD)")
 	flag.StringVar(&opts.repo, "repo", "googleapis/librarian", "GitHub repository used in source links")
 	flag.BoolVar(&opts.check, "check", false, "resolve all excerpts and exit without writing files")
+	flag.StringVar(&opts.serve, "serve", "", "serve the site on this loopback address, rebuilding on every page load (e.g. 127.0.0.1:8080)")
+	flag.StringVar(&opts.ask, "ask", "", "with -serve: shell command that answers questions piped on stdin, e.g. an agent CLI")
 	flag.Usage = func() {
-		fmt.Fprintf(flag.CommandLine.Output(), "usage: walkthrough [-src dir] [-out dir] [-root dir] [-sha commit] [-check]\n")
+		fmt.Fprintf(flag.CommandLine.Output(), "usage: walkthrough [-src dir] [-out dir] [-root dir] [-sha commit] [-check]\n       walkthrough -serve addr [-ask command]\n")
 		flag.PrintDefaults()
 	}
 	flag.Parse()
@@ -76,17 +89,29 @@ func run(ctx context.Context, opts options) error {
 		}
 		opts.sha = strings.TrimSpace(out)
 	}
+	if opts.serve != "" {
+		return serve(ctx, opts)
+	}
+	if opts.check {
+		s, err := loadSite(opts)
+		if err != nil {
+			return err
+		}
+		fmt.Printf("%d pages, %d steps, %d excerpts and %d generated tables resolved at %s\n", len(s.Pages), s.stepCount(), s.excerptCount(), s.generatedCount(), s.SHA)
+		return nil
+	}
+	if err := build(ctx, opts); err != nil {
+		return err
+	}
+	fmt.Printf("wrote site to %s\n", opts.out)
+	return nil
+}
+
+// build loads the sources and writes the site to opts.out.
+func build(_ context.Context, opts options) error {
 	s, err := loadSite(opts)
 	if err != nil {
 		return err
 	}
-	if opts.check {
-		fmt.Printf("%d pages, %d steps, %d excerpts and %d generated tables resolved at %s\n", len(s.Pages), s.stepCount(), s.excerptCount(), s.generatedCount(), s.SHA)
-		return nil
-	}
-	if err := writeSite(s, opts.out); err != nil {
-		return err
-	}
-	fmt.Printf("wrote %d pages to %s\n", len(s.Pages)+1, opts.out)
-	return nil
+	return writeSite(s, opts.out)
 }

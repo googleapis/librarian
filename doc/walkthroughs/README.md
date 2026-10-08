@@ -53,20 +53,39 @@ When a code change moves or removes an anchored line, `go test ./...` fails
 and names the page and anchor. Update the anchor, or the prose if the
 behavior changed, and rerun the check below.
 
-## Building and previewing
+## Running locally
+
+The site is not published anywhere. Run it on your machine:
 
 ```sh
-go run ./tool/cmd/walkthrough -out _site
+go run ./tool/cmd/walkthrough -serve 127.0.0.1:8080
 ```
 
-Open `_site/index.html` in a browser. The `_site` directory is ignored by git.
-Use `-check` to resolve every excerpt without writing files; `TestBuildDocs` in
-`tool/cmd/walkthrough` runs the same check, so a code change that removes a
-line a walkthrough points at fails `go test ./...` until the anchor is updated.
+Open <http://127.0.0.1:8080/>. Pages are rebuilt on every load, so edits to
+the markdown or to the code show up on refresh. The address must be
+loopback.
 
-The `Walkthroughs` workflow builds the site on every pull request that touches
-these files (the result is attached as the `github-pages` artifact) and
-deploys it to GitHub Pages on every push to `main`.
+Every step has an **Ask about this step** panel. Without further flags it
+copies a prompt to the clipboard: which page and step you are on, the commit,
+the files excerpted in that step, and your question. Paste it into whatever
+agent you use. To answer in the page instead, name a command that reads the
+prompt on stdin and prints the answer on stdout:
+
+```sh
+go run ./tool/cmd/walkthrough -serve 127.0.0.1:8080 -ask gemini
+```
+
+The command runs in the repository root through `sh -c`, so the agent sees
+the same tree the site was built from. Any CLI with that shape works. The
+`walkthrough` skill in `.agents/skills` tells an agent in your editor how to
+start the server and answer questions from the same sources.
+
+To write the site to disk instead, use `-out _site` and open
+`_site/index.html`; `_site` is ignored by git. Use `-check` to resolve every
+excerpt without writing files. `TestBuildDocs` in `tool/cmd/walkthrough` runs
+the same check, so a code change that removes a line a walkthrough points at
+fails `go test ./...` until the anchor is updated. The `Walkthroughs`
+workflow runs the check and a build on pull requests that touch these files.
 
 ## Writing a walkthrough
 

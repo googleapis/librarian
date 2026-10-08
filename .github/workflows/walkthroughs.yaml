@@ -11,13 +11,10 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-# Builds the interactive walkthroughs from doc/walkthroughs and publishes
-# them to GitHub Pages. Pull requests only build the site and upload it as
-# an artifact for preview; pushes to main also deploy it.
-#
-# Deploying requires GitHub Pages to be enabled for the repository with
-# "GitHub Actions" as the source (Settings > Pages). Until then the deploy
-# job fails harmlessly and the build job still verifies the excerpts.
+# Verifies the interactive walkthroughs in doc/walkthroughs: every code
+# excerpt, symbol anchor and generated table must still resolve against the
+# tree, and the site must build. The site is not published; developers run
+# it locally with `go run ./tool/cmd/walkthrough -serve 127.0.0.1:8080`.
 name: Walkthroughs
 on:
   push:
@@ -31,7 +28,7 @@ on:
 permissions:
   contents: read
 jobs:
-  build:
+  check:
     runs-on: ubuntu-24.04
     # Presubmit jobs must complete within 5 minutes. See CONTRIBUTING.md.
     timeout-minutes: 5
@@ -42,22 +39,7 @@ jobs:
       - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
         with:
           go-version-file: "go.mod"
+      - name: Check anchors
+        run: go run ./tool/cmd/walkthrough -check
       - name: Build site
         run: go run ./tool/cmd/walkthrough -out _site
-      - uses: actions/upload-pages-artifact@7b1f4a764d45c48632c6b24a0339c27f5614fb0b # v4
-        with:
-          path: _site
-  deploy:
-    if: github.event_name != 'pull_request'
-    needs: build
-    runs-on: ubuntu-24.04
-    timeout-minutes: 5
-    permissions:
-      pages: write
-      id-token: write
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    steps:
-      - id: deployment
-        uses: actions/deploy-pages@d6db90164ac5ed86f2b6aed7e0febac5b3c0c03e # v4

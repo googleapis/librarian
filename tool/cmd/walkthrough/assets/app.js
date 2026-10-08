@@ -14,6 +14,25 @@
  * limitations under the License.
  */
 
+// Storage that tolerates sandboxed frames (embedded previews deny
+// localStorage and throw on access). Preferences then last for the page.
+var store = (function () {
+  "use strict";
+  var memory = {};
+  return {
+    get: function (k) {
+      try { return localStorage.getItem(k); } catch (e) { return memory[k] === undefined ? null : memory[k]; }
+    },
+    set: function (k, v) {
+      try { localStorage.setItem(k, v); } catch (e) { memory[k] = v; }
+    }
+  };
+})();
+
+// Steps are hidden by CSS only once scripting is known to work, so a page
+// whose script fails still shows everything.
+document.body.classList.add("js");
+
 // Theme toggle: light, dark, or follow the system. The choice is stored in
 // localStorage and applied as early as possible by an inline script in the
 // page head; this only wires the button.
@@ -38,7 +57,7 @@
   button.addEventListener("click", function () {
     var next = effective() === "dark" ? "light" : "dark";
     document.documentElement.setAttribute("data-theme", next);
-    localStorage.setItem(key, next);
+    store.set(key, next);
     label();
     window.dispatchEvent(new Event("resize"));
   });
@@ -144,10 +163,10 @@
 
   if (showAll) {
     var key = "walkthrough.showAll";
-    showAll.checked = localStorage.getItem(key) === "1";
+    showAll.checked = store.get(key) === "1";
     document.body.classList.toggle("show-all", showAll.checked);
     showAll.addEventListener("change", function () {
-      localStorage.setItem(key, showAll.checked ? "1" : "0");
+      store.set(key, showAll.checked ? "1" : "0");
       document.body.classList.toggle("show-all", showAll.checked);
       show(current, false);
     });
@@ -286,5 +305,71 @@
     window.addEventListener("resize", draw);
     window.addEventListener("hashchange", function () { setTimeout(draw, 0); });
     body.classList.add("ready");
+  });
+})();
+
+// Ask panel under each step. The prompt bundles the page, the step and the
+// files it excerpts. With the local server started with -ask, the question
+// is POSTed to /ask and the answer shown inline; otherwise the prompt is
+// copied to the clipboard for any agent.
+(function () {
+  "use strict";
+  var meta = function (name) {
+    var m = document.querySelector('meta[name="' + name + '"]');
+    return m ? m.getAttribute("content") : "";
+  };
+  var token = meta("walkthrough-token");
+  var live = meta("walkthrough-ask") === "1" && token;
+  var sha = (document.querySelector(".sha a") || {}).textContent || "";
+  Array.prototype.slice.call(document.querySelectorAll("details.ask")).forEach(function (box) {
+    var step = box.parentNode;
+    var input = box.querySelector("textarea");
+    var send = box.querySelector(".ask-send");
+    var status = box.querySelector(".ask-status");
+    var answer = box.querySelector(".ask-answer");
+    function prompt() {
+      var files = Array.prototype.slice.call(step.querySelectorAll("figure.excerpt .path")).map(function (el) {
+        return el.textContent;
+      });
+      var lines = [
+        "Context: walkthrough page \"" + box.getAttribute("data-page") + "\", step \"" + box.getAttribute("data-step") + "\"" + (sha ? " (commit " + sha.trim() + ")" : "") + ".",
+        files.length ? "Files excerpted on this step: " + files.join(", ") + "." : "",
+        "Step text:",
+        step.querySelector(".body").innerText.trim().slice(0, 4000),
+        "",
+        "Question: " + input.value.trim()
+      ];
+      return lines.filter(function (l) { return l !== null; }).join("\n");
+    }
+    send.addEventListener("click", function () {
+      if (!input.value.trim()) {
+        input.focus();
+        return;
+      }
+      var p = prompt();
+      if (!live) {
+        var done = function () { status.textContent = "Copied. Paste it into your agent."; };
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(p).then(done, function () { answer.textContent = p; answer.hidden = false; });
+        } else {
+          answer.textContent = p;
+          answer.hidden = false;
+        }
+        return;
+      }
+      send.disabled = true;
+      status.textContent = "Asking…";
+      answer.hidden = true;
+      fetch("ask", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ token: token, prompt: p }) })
+        .then(function (r) { return r.text().then(function (t) { return { ok: r.ok, text: t }; }); })
+        .then(function (r) {
+          status.textContent = r.ok ? "" : "The agent command failed.";
+          answer.textContent = r.text;
+          answer.hidden = false;
+        }, function (e) {
+          status.textContent = "Request failed: " + e;
+        })
+        .then(function () { send.disabled = false; });
+    });
   });
 })();

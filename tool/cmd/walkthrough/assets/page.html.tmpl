@@ -6,6 +6,12 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>{{.Page.Title}} · {{.Site.Title}}</title>
 <link rel="stylesheet" href="style.css">
+{{- if .Site.Token}}
+<meta name="walkthrough-token" content="{{.Site.Token}}">
+{{- end}}
+{{- if .Site.Ask}}
+<meta name="walkthrough-ask" content="1">
+{{- end}}
 <script>try{var t=localStorage.getItem("walkthrough.theme");if(t){document.documentElement.setAttribute("data-theme",t)}}catch(e){}</script>
 </head>
 <body data-steps="{{len .Page.Steps}}">
@@ -53,6 +59,13 @@
       </p>
       {{- end}}
       <div class="body">{{.Body}}</div>
+      <details class="ask" data-page="{{$.Page.Title}}" data-step="{{.Title}}">
+        <summary>Ask about this step</summary>
+        <p class="hint">The question is sent with this page, step and the files it excerpts as context{{if not $.Site.Ask}}; without <code>-ask</code> it is copied to the clipboard for you to paste into any agent{{end}}.</p>
+        <textarea rows="3" placeholder="e.g. Why does Java generate sequentially?"></textarea>
+        <p class="ask-actions"><button type="button" class="ask-send">{{if $.Site.Ask}}Ask{{else}}Copy prompt{{end}}</button> <span class="ask-status"></span></p>
+        <pre class="ask-answer" hidden></pre>
+      </details>
     </section>
     {{- end}}
     <nav class="pager">

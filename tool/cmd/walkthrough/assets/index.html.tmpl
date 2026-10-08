@@ -6,6 +6,12 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>{{.Site.Title}}</title>
 <link rel="stylesheet" href="style.css">
+{{- if .Site.Token}}
+<meta name="walkthrough-token" content="{{.Site.Token}}">
+{{- end}}
+{{- if .Site.Ask}}
+<meta name="walkthrough-ask" content="1">
+{{- end}}
 <script>try{var t=localStorage.getItem("walkthrough.theme");if(t){document.documentElement.setAttribute("data-theme",t)}}catch(e){}</script>
 </head>
 <body class="home">
