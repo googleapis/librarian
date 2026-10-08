@@ -292,7 +292,7 @@ func splitCandidateLibraries(ctx context.Context, gitExe, origin string, rootFil
 	results := make(chan splitResult, len(toPublish))
 
 	splitGroup, splitCtx := errgroup.WithContext(ctx)
-	splitGroup.SetLimit(runtime.NumCPU())
+	splitGroup.SetLimit(runtime.GOMAXPROCS(0))
 
 	for _, c := range toPublish {
 		splitGroup.Go(func() error {

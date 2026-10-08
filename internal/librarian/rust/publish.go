@@ -159,7 +159,7 @@ func publishCrates(ctx context.Context, params PublishParams, lastTag string, fi
 // runSemverChecks iterates through manifests and runs semver checks for each.
 func runSemverChecks(ctx context.Context, semverData semverData) error {
 	group, ctx := errgroup.WithContext(ctx)
-	group.SetLimit(max(runtime.NumCPU()/semverCheckCPUDivisor, 1))
+	group.SetLimit(max(runtime.GOMAXPROCS(0)/semverCheckCPUDivisor, 1))
 	for name, manifest := range semverData.manifests {
 		group.Go(func() error {
 			if err := semverCheck(ctx, semverData, name, manifest); err != nil {
