@@ -11,6 +11,41 @@ interactive site: one step at a time, with code excerpts extracted from the
 repository at build time, so the excerpts always match the commit the site was
 built from.
 
+## Source of truth
+
+The markdown files in this directory are the source of truth. Nothing else is
+checked in: the HTML site is built from them and is never committed.
+
+```mermaid
+flowchart LR
+  code["Go source tree"]
+  md["doc/walkthroughs/*.md<br/>authored"]
+  tool["tool/cmd/walkthrough"]
+  site["_site/*.html<br/>generated, not committed"]
+  md --> tool
+  code -- "excerpts read at build time" --> tool
+  tool --> site
+```
+
+You author and maintain:
+
+- The markdown pages: prose, step order, badges, diagrams.
+- The excerpt anchors: a file path and a string that occurs on exactly one
+  line of that file. The code itself is not copied into the page; the tool
+  reads it from the repository when the site is built.
+- Excerpts from other repositories, which carry their code inline. These are
+  the only excerpts that nothing checks.
+
+Generated for you:
+
+- The HTML site, by `tool/cmd/walkthrough` locally and by the `Walkthroughs`
+  workflow on every pull request and on every push to `main`.
+- The index page, from each page's front matter.
+
+When a code change moves or removes an anchored line, `go test ./...` fails
+and names the page and anchor. Update the anchor, or the prose if the
+behavior changed, and rerun the check below.
+
 ## Building and previewing
 
 ```sh
