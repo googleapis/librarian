@@ -41,3 +41,5 @@ Before submitting changes, run the full test suite:
  @doc/howwewritego.md
  @doc/styleguide/markdown-style-guide.md
  @CONTRIBUTING.md
+
+1. `doc/decision-records` for ADRs to reference for related changes or new designs/features.
