@@ -554,6 +554,8 @@ func validate(s *Site, f *facts) []string {
 			add("%s cites %q which does not exist", paths[p], p)
 		case strings.HasSuffix(p, "/") && !info.IsDir():
 			add("%s cites %q with a trailing slash but it is a file", paths[p], p)
+		case !strings.HasSuffix(p, "/") && info.IsDir():
+			add("%s cites directory %q without a trailing slash; write %q", paths[p], p, p+"/")
 		}
 	}
 	return errs
