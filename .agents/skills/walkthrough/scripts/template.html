@@ -19,7 +19,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data:;">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; base-uri 'none'; form-action 'none';">
   <title>Architecture walkthrough</title>
   <style>
 :root{color-scheme:light dark;--background:#ffffff;--card:#f8fafc;--foreground:#0f172a;--muted-foreground:#64748b;--border:#e2e8f0;--primary:#2563eb;--primary-foreground:#ffffff}
@@ -293,6 +293,12 @@ function sanitizeHTML(raw) {
           for (const attr of Array.from(child.attributes)) {
             if (!allowedAttrs.has(attr.name.toLowerCase())) child.removeAttribute(attr.name);
           }
+          // Source links are rebuilt here, in the DOM, so the path never
+          // round-trips through serialized HTML.
+          if (tag === "A" && child.hasAttribute("data-src")) {
+            child.setAttribute("href", "#src:" + encodeURIComponent(child.getAttribute("data-src")));
+            child.className = "src";
+          }
           walk(child);
         }
       }
@@ -320,9 +326,7 @@ document.getElementById("mapIntro").textContent =
 document.getElementById("langIntro").textContent =
   `${plural(DATA.langs.length, "language integration")}. Click a row to expand details or jump to the package on the map.`;
 
-function hydrateLinks(html) {
-  return sanitizeHTML(html).replace(/<a data-src="([^"]+)">([\s\S]*?)<\/a>/g, (_, p, label) => src(p, label));
-}
+const hydrateLinks = sanitizeHTML;
 
 // Global delegated handler for ALL <a data-src="..."> links across the page
 document.addEventListener("click", e => {
