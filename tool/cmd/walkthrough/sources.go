@@ -17,6 +17,7 @@ package main
 import (
 	"bytes"
 	"fmt"
+	"maps"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -24,11 +25,20 @@ import (
 	"strings"
 )
 
-const maxEmbeddedFileLines = 80
+const (
+	maxEmbeddedFileLines = 80
+	maxEmbeddedFileBytes = 2 << 20 // 2 MiB guard against large binaries
+)
 
 var dataSrcRe = regexp.MustCompile(`data-src="([^"]+)"`)
 
 func collectAndValidateSources(root string, data *SiteData) (map[string]SourceEntry, error) {
+	rootFS, err := os.OpenRoot(root)
+	if err != nil {
+		return nil, fmt.Errorf("opening repository root %s: %w", root, err)
+	}
+	defer rootFS.Close()
+
 	pkgByID := make(map[string]bool, len(data.Pkgs))
 	for _, p := range data.Pkgs {
 		pkgByID[p.ID] = true
@@ -46,7 +56,7 @@ func collectAndValidateSources(root string, data *SiteData) (map[string]SourceEn
 		}
 	}
 
-	addRef("")
+	refs[""] = true
 	for _, p := range data.Pkgs {
 		if p.Path != "" {
 			addRef(p.Path)
@@ -70,6 +80,9 @@ func collectAndValidateSources(root string, data *SiteData) (map[string]SourceEn
 	}
 	for _, l := range data.Langs {
 		addRef(l.Pkg + "/")
+		if l.CI != "" {
+			addRef(".github/workflows/" + l.CI)
+		}
 		extractHTMLRefs(l.Detail)
 	}
 	for _, fn := range data.Findings {
@@ -95,6 +108,7 @@ func collectAndValidateSources(root string, data *SiteData) (map[string]SourceEn
 			}
 		}
 	}
+	builtInRefs := maps.Clone(refs)
 	for k := range customRefs {
 		refs[k] = true
 	}
@@ -107,9 +121,10 @@ func collectAndValidateSources(root string, data *SiteData) (map[string]SourceEn
 	slices.Sort(keys)
 
 	for _, ref := range keys {
-		entry, err := loadSourceEntry(root, ref, pkgByID)
+		entry, err := loadSourceEntry(rootFS, ref, pkgByID)
 		if err != nil {
-			if customRefs[ref] && !hasBuiltInRef(data, ref) {
+			if !builtInRefs[ref] {
+				fmt.Fprintf(os.Stderr, "warning: ignoring invalid custom guide source path %q: %v\n", ref, err)
 				continue
 			}
 			return nil, fmt.Errorf("referenced source path %q invalid in %s: %w", ref, root, err)
@@ -119,33 +134,34 @@ func collectAndValidateSources(root string, data *SiteData) (map[string]SourceEn
 	return out, nil
 }
 
-func hasBuiltInRef(data *SiteData, target string) bool {
-	for _, g := range data.Guides {
-		if g.Custom {
-			continue
-		}
-		for _, s := range g.Steps {
-			if slices.Contains(s.Look, target) || strings.Contains(s.Body, `data-src="`+target+`"`) {
-				return true
-			}
-		}
+func isGeneratedWalkthroughArtifact(name string, cleanRel string, isDir bool) bool {
+	if name == "walkthrough.html" || name == "walkthrough.zip" {
+		return true
+	}
+	if cleanRel == "" {
+		return name == "_site" || (name == "walkthrough" && !isDir)
 	}
 	return false
 }
 
-func loadSourceEntry(root, ref string, pkgByID map[string]bool) (SourceEntry, error) {
+func loadSourceEntry(rootFS *os.Root, ref string, pkgByID map[string]bool) (SourceEntry, error) {
 	cleanRel := strings.TrimSuffix(ref, "/")
-	fullPath := root
+	fsPath := "."
 	if cleanRel != "" {
-		fullPath = filepath.Join(root, filepath.FromSlash(cleanRel))
+		fsPath = filepath.FromSlash(cleanRel)
 	}
-	info, err := os.Stat(fullPath)
+	info, err := rootFS.Stat(fsPath)
 	if err != nil {
 		return SourceEntry{}, err
 	}
 	pkg := resolveOwningPkg(cleanRel, pkgByID)
 	if info.IsDir() {
-		dirEntries, err := os.ReadDir(fullPath)
+		dirFile, err := rootFS.Open(fsPath)
+		if err != nil {
+			return SourceEntry{}, err
+		}
+		defer dirFile.Close()
+		dirEntries, err := dirFile.ReadDir(-1)
 		if err != nil {
 			return SourceEntry{}, err
 		}
@@ -153,14 +169,26 @@ func loadSourceEntry(root, ref string, pkgByID map[string]bool) (SourceEntry, er
 		totalLines := 0
 		for _, e := range dirEntries {
 			name := e.Name()
-			if strings.HasPrefix(name, ".") && cleanRel != "" {
+			if strings.HasPrefix(name, ".") || isGeneratedWalkthroughArtifact(name, cleanRel, e.IsDir()) {
 				continue
 			}
 			if e.IsDir() {
 				names = append(names, name+"/")
 				continue
 			}
-			if b, err := os.ReadFile(filepath.Join(fullPath, name)); err == nil {
+			if !e.Type().IsRegular() {
+				continue
+			}
+			entryInfo, err := e.Info()
+			if err != nil || entryInfo.Size() > maxEmbeddedFileBytes {
+				names = append(names, name)
+				continue
+			}
+			childPath := name
+			if fsPath != "." {
+				childPath = filepath.Join(fsPath, name)
+			}
+			if b, err := rootFS.ReadFile(childPath); err == nil && bytes.IndexByte(b, 0) < 0 {
 				nLines := bytes.Count(b, []byte{'\n'})
 				if !strings.HasSuffix(name, "_test.go") {
 					totalLines += nLines
@@ -179,7 +207,17 @@ func loadSourceEntry(root, ref string, pkgByID map[string]bool) (SourceEntry, er
 		}, nil
 	}
 
-	raw, err := os.ReadFile(fullPath)
+	if !info.Mode().IsRegular() {
+		return SourceEntry{}, fmt.Errorf("non-regular file mode %s", info.Mode())
+	}
+	if info.Size() > maxEmbeddedFileBytes {
+		return SourceEntry{
+			IsDir:     false,
+			Truncated: true,
+			Pkg:       pkg,
+		}, nil
+	}
+	raw, err := rootFS.ReadFile(fsPath)
 	if err != nil {
 		return SourceEntry{}, err
 	}

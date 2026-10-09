@@ -94,7 +94,7 @@ func buildSteps(stats *repoStats) []TourStep {
 		},
 		{
 			Title: "Post-processing and metadata",
-			Body: `<p>Go, Java, Node.js, PHP, Python, Rust and Swift write <code>.repo-metadata.json</code> through <a class="src" data-src="internal/repometadata/">internal/repometadata</a>; Go and Python refresh <code>snippet_metadata*.json</code> through <a class="src" data-src="internal/snippetmetadata/">internal/snippetmetadata</a>; license headers come from <a class="src" data-src="internal/license/">internal/license</a>.</p>` +
+			Body: `<p>Go, Java, Node.js, Python, Rust and Swift write <code>.repo-metadata.json</code> through <a class="src" data-src="internal/repometadata/">internal/repometadata</a>; Go and Python refresh <code>snippet_metadata*.json</code> through <a class="src" data-src="internal/snippetmetadata/">internal/snippetmetadata</a>; license headers come from <a class="src" data-src="internal/license/">internal/license</a>.</p>` +
 				`<p>PHP and Python stage output under <code>owl-bot-staging</code> and run their post-processors; Node.js runs <code>combine-library</code>; Java runs declarative <a class="src" data-src="internal/postprocessing/">internal/postprocessing</a> edits. Directory moves preserve handwritten files matching <code>keep</code> rules via <a class="src" data-src="internal/filesystem/">internal/filesystem</a>.</p>`,
 			Look: []string{"internal/postprocessing/fileops.go", "internal/repometadata/repometadata.go", "internal/librarian/python/generate.go", "internal/librarian/java/postgenerate.go"},
 			Pkg:  "internal/postprocessing",
@@ -274,10 +274,10 @@ func buildFlows() []CommandFlow {
 }
 
 func buildFindings(stats *repoStats) []Finding {
-	imported := make(map[string]int)
+	importers := make(map[string][]string)
 	for _, p := range stats.pkgs {
 		for _, dep := range p.Imports {
-			imported[dep]++
+			importers[dep] = append(importers[dep], p.ID)
 		}
 	}
 	var out []Finding
@@ -287,15 +287,7 @@ func buildFindings(stats *repoStats) []Finding {
 		File:  "internal/librarian/generate.go",
 		Pkg:   "internal/librarian",
 	})
-	if hasPkg(stats.pkgs, "internal/docuploader") && imported["internal/docuploader"] == 0 {
-		out = append(out, Finding{
-			Title: "internal/docuploader currently has zero production importers",
-			Body:  "Detected live from the AST import graph: no non-test package imports <code>internal/docuploader</code> at this commit.",
-			File:  "internal/docuploader/",
-			Pkg:   "internal/docuploader",
-		})
-	}
-	if hasPkg(stats.pkgs, "internal/sidekick/codec_sample") && imported["internal/sidekick/codec_sample"] == 0 {
+	if hasPkg(stats.pkgs, "internal/sidekick/codec_sample") && len(importers["internal/sidekick/codec_sample"]) == 0 {
 		out = append(out, Finding{
 			Title: "codec_sample is a standalone reference skeleton",
 			Body:  "<code>internal/sidekick/codec_sample</code> compiles and runs unit tests in isolation as a minimal example, while <code>internal/sidekick/swift</code> serves as the full production blueprint.",
@@ -303,13 +295,15 @@ func buildFindings(stats *repoStats) []Finding {
 			Pkg:   "internal/sidekick/codec_sample",
 		})
 	}
-	out = append(out,
-		Finding{
+	if len(importers["internal/postprocessing"]) == 1 && importers["internal/postprocessing"][0] == "internal/librarian/java" {
+		out = append(out, Finding{
 			Title: "Declarative postprocess: rules are currently Java-only",
 			Body:  "<code>config.Library.Postprocess</code> is parsed for all repositories, while <code>internal/postprocessing</code> is invoked by <code>internal/librarian/java</code>.",
 			File:  "internal/postprocessing/",
 			Pkg:   "internal/postprocessing",
-		},
+		})
+	}
+	out = append(out,
 		Finding{
 			Title: "Layering boundaries are enforced by dependency_test.go",
 			Body:  "<code>TestDependencyRules</code> checks non-test imports across every package in the repository so lower layers never accidentally import higher orchestration layers.",
@@ -380,7 +374,7 @@ func buildGuides(stats *repoStats, extraDir string) ([]Guide, error) {
 					Code:  "internal/sidekick/rust_prost + internal/librarian/swift",
 					Body: `<p>Languages do not have to choose strictly all-or-nothing:</p>` +
 						`<ul class="list-disc pl-5 space-y-1">` +
-						`<li><strong>Swift</strong> uses sidekick templates for idiopathic client services, pagination, LROs, and HTTP/JSON serialization, while invoking <code>protoc --swift_out</code> in <a class="src" data-src="internal/librarian/swift/">internal/librarian/swift</a> when generating wire-level SwiftProtobuf types.</li>` +
+						`<li><strong>Swift</strong> uses sidekick templates for idiomatic client services, pagination, LROs, and HTTP/JSON serialization, while invoking <code>protoc --swift_out</code> in <a class="src" data-src="internal/librarian/swift/">internal/librarian/swift</a> when generating wire-level SwiftProtobuf types.</li>` +
 						`<li><strong>Rust</strong> uses <a class="src" data-src="internal/sidekick/rust_prost/">internal/sidekick/rust_prost</a> to run <code>protoc</code> with <code>prost</code>/<code>tonic</code> for raw gRPC transport crates while wrapping and idiomatizing public crates through the Rust sidekick codec.</li>` +
 						`</ul>`,
 					Look: []string{"internal/sidekick/rust_prost/", "internal/librarian/swift/", "internal/librarian/rust/"},

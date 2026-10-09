@@ -24,6 +24,7 @@ type SiteData struct {
 	GoVersion        string                 `json:"goVersion"`
 	LibrarianVersion string                 `json:"librarianVersion"`
 	TotalLOC         int                    `json:"totalLoc"`
+	MaxEmbeddedLines int                    `json:"maxEmbeddedLines"`
 	Layers           []Layer                `json:"layers"`
 	Pkgs             []Pkg                  `json:"pkgs"`
 	Steps            []TourStep             `json:"steps"`

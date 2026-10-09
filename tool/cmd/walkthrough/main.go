@@ -26,7 +26,6 @@ package main
 
 import (
 	"archive/zip"
-	"bytes"
 	"context"
 	_ "embed"
 	"encoding/json"
@@ -34,11 +33,12 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
-
-	"github.com/googleapis/librarian/internal/command"
 )
+
+const defaultExtraDir = ".agents/skills/walkthrough/custom"
 
 //go:embed template.html
 var pageTemplate string
@@ -58,7 +58,7 @@ func main() {
 	var opts options
 	flag.StringVar(&opts.out, "out", "walkthrough.html", "output path (.html self-contained file, .zip archive, or directory)")
 	flag.StringVar(&opts.root, "root", ".", "repository root inspected to derive packages, LOC, imports and hooks")
-	flag.StringVar(&opts.extra, "extra", ".agents/skills/walkthrough/custom", "optional directory containing custom JSON guide files")
+	flag.StringVar(&opts.extra, "extra", defaultExtraDir, "optional directory containing custom JSON guide files")
 	flag.StringVar(&opts.sha, "sha", "", "git commit SHA for source links (default: git rev-parse HEAD)")
 	flag.StringVar(&opts.gitRef, "git-ref", "main", "upstream GitHub branch/ref for external GitHub fallback links")
 	flag.StringVar(&opts.repo, "repo", "googleapis/librarian", "GitHub org/repo used in source links")
@@ -71,13 +71,38 @@ func main() {
 	}
 }
 
-func run(ctx context.Context, opts options) error {
-	if opts.sha == "" {
-		out, err := command.OutputInDir(ctx, opts.root, "git", "rev-parse", "HEAD")
-		if err != nil {
-			return fmt.Errorf("determining git commit SHA: %w", err)
+func resolveRepoRoot(root string) string {
+	if root != "." && root != "" {
+		return root
+	}
+	dir, err := os.Getwd()
+	if err != nil {
+		return "."
+	}
+	for {
+		if _, err := os.Stat(filepath.Join(dir, "go.mod")); err == nil {
+			return dir
 		}
-		opts.sha = strings.TrimSpace(out)
+		parent := filepath.Dir(dir)
+		if parent == dir {
+			break
+		}
+		dir = parent
+	}
+	return "."
+}
+
+func run(ctx context.Context, opts options) error {
+	opts.root = resolveRepoRoot(opts.root)
+	if opts.extra == defaultExtraDir && !filepath.IsAbs(opts.extra) {
+		opts.extra = filepath.Join(opts.root, opts.extra)
+	}
+	if opts.sha == "" {
+		if out, err := exec.CommandContext(ctx, "git", "-C", opts.root, "rev-parse", "HEAD").Output(); err == nil {
+			opts.sha = strings.TrimSpace(string(out))
+		} else {
+			opts.sha = "HEAD"
+		}
 	}
 	if opts.gitRef == "" {
 		opts.gitRef = "main"
@@ -167,6 +192,7 @@ func buildSiteData(opts options) (*SiteData, error) {
 		GoVersion:        stats.goVersion,
 		LibrarianVersion: stats.librarianVersion,
 		TotalLOC:         stats.totalLOC,
+		MaxEmbeddedLines: maxEmbeddedFileLines,
 		Layers:           defaultLayers,
 		Pkgs:             stats.pkgs,
 		Steps:            buildSteps(stats),
@@ -194,12 +220,9 @@ func renderSiteHTML(opts options) ([]byte, error) {
 }
 
 func renderHTML(data *SiteData) ([]byte, error) {
-	var buf bytes.Buffer
-	enc := json.NewEncoder(&buf)
-	enc.SetEscapeHTML(false)
-	if err := enc.Encode(data); err != nil {
+	jsonBytes, err := json.Marshal(data)
+	if err != nil {
 		return nil, err
 	}
-	jsonText := strings.ReplaceAll(strings.TrimSpace(buf.String()), "</script", `<\/script`)
-	return []byte(strings.Replace(pageTemplate, "{{.JSON}}", jsonText, 1)), nil
+	return []byte(strings.Replace(pageTemplate, "{{.JSON}}", string(jsonBytes), 1)), nil
 }

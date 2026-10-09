@@ -21,6 +21,7 @@ import (
 	"go/ast"
 	"go/parser"
 	"go/token"
+	"html"
 	"io/fs"
 	"os"
 	"path/filepath"
@@ -157,7 +158,7 @@ func scanGoPackages(root string, stats *repoStats) ([]Pkg, error) {
 		}
 		if acc.doc == "" && f.Doc != nil {
 			if first, _, _ := strings.Cut(strings.TrimSpace(f.Doc.Text()), "\n\n"); first != "" {
-				acc.doc = strings.ReplaceAll(first, "\n", " ")
+				acc.doc = html.EscapeString(strings.ReplaceAll(first, "\n", " "))
 			}
 		}
 		for _, imp := range f.Imports {
@@ -253,7 +254,7 @@ func classifyLayer(id string) (string, string, error) {
 	case slices.Contains([]string{
 		"internal/config", "internal/serviceconfig", "internal/sources",
 		"internal/repometadata", "internal/postprocessing", "internal/snippetmetadata",
-		"internal/semver", "internal/proto", "internal/license", "internal/docuploader",
+		"internal/semver", "internal/proto", "internal/license",
 	}, id):
 		return "domain", "", nil
 	case slices.Contains([]string{
@@ -281,7 +282,7 @@ var pkgDisplayOrder = []string{
 	"internal/tool/pnpm", "internal/tool/gem", "internal/tool/composer",
 	"internal/config", "internal/serviceconfig", "internal/sources", "internal/repometadata",
 	"internal/postprocessing", "internal/snippetmetadata", "internal/semver",
-	"internal/proto", "internal/license", "internal/docuploader",
+	"internal/proto", "internal/license",
 	"internal/command", "internal/cache", "internal/fetch",
 	"internal/filesystem", "internal/git", "internal/yaml",
 	"internal/testhelper", "internal/sample", "internal/sidekick/api/apitest",
@@ -329,71 +330,73 @@ func readLibrarianVersion(root string) string {
 
 func buildLangInfos(stats *repoStats) []LangInfo {
 	locByPkg := make(map[string]int, len(stats.pkgs))
+	hasRepoMeta := make(map[string]bool, len(stats.pkgs))
 	for _, p := range stats.pkgs {
 		locByPkg[p.ID] = p.LOC
+		hasRepoMeta[p.ID] = slices.Contains(p.Imports, "internal/repometadata")
 	}
 	return []LangInfo{
 		{
 			Name: "Dart", Pkg: "internal/librarian/dart", LOC: locByPkg["internal/librarian/dart"],
 			Gen:  fmt.Sprintf("sidekick (<code>internal/sidekick/dart</code>, %d templates)", stats.tmplCounts["dart"]),
 			Inst: "nothing; Dart SDK on <code>PATH</code>", Fmt: "<code>dart format</code>",
-			Meta: false, Bump: true, Pub: "pub.dev (<code>dart pub publish</code>)", CI: "dart.yaml",
+			Meta: hasRepoMeta["internal/librarian/dart"], Bump: true, Pub: "pub.dev (<code>dart pub publish</code>)", CI: "dart.yaml",
 			Detail: "HTTP/JSON clients rendered directly by sidekick templates. <code>DeriveAPIPath</code> maps the package name to the API path. Bump reads published versions from pub.dev, diffs the public API with <code>dart-apitool</code>, and rewrites <code>pubspec.yaml</code> and <code>CHANGELOG.md</code>.",
 		},
 		{
 			Name: "Go", Pkg: "internal/librarian/golang", LOC: locByPkg["internal/librarian/golang"],
 			Gen:  "<code>protoc</code> + <code>protoc-gen-go</code>, <code>protoc-gen-go-grpc</code>, <code>protoc-gen-go_gapic</code>",
 			Inst: "<code>go install</code> into <code>go_tools</code>", Fmt: "<code>goimports</code>",
-			Meta: true, Bump: true, Pub: "release-please + module proxy (outside Librarian)", CI: "go.yaml",
+			Meta: hasRepoMeta["internal/librarian/golang"], Bump: true, Pub: "release-please + module proxy (outside Librarian)", CI: "go.yaml",
 			Detail: "Three <code>protoc</code> passes (messages, gRPC, GAPIC), then <code>go mod tidy</code>. Writes <code>.repo-metadata.json</code> and refreshes snippet metadata. <code>Fill</code> derives module paths and import paths.",
 		},
 		{
 			Name: "Java", Pkg: "internal/librarian/java", LOC: locByPkg["internal/librarian/java"],
 			Gen:  "<code>protoc</code> + <code>protoc-gen-java_gapic</code>, <code>protoc-gen-java_grpc</code>, <code>--java_out</code>",
 			Inst: "<code>internal/tool/maven</code> into <code>java_tools</code>", Fmt: "<code>google-java-format</code> (all libraries at once)",
-			Meta: true, Bump: false, Pub: "Maven Central (outside Librarian)", CI: "java.yaml",
+			Meta: hasRepoMeta["internal/librarian/java"], Bump: false, Pub: "Maven Central (outside Librarian)", CI: "java.yaml",
 			Detail: "Largest language integration and sole consumer of declarative <code>internal/postprocessing</code> rules. <code>PostGenerate</code> maintains POMs, BOMs and version files across the repository, which is why Java libraries generate sequentially.",
 		},
 		{
 			Name: "Node.js", Pkg: "internal/librarian/nodejs", LOC: locByPkg["internal/librarian/nodejs"],
 			Gen:  "<code>gapic-generator-typescript</code> (drives <code>protoc</code> itself)",
 			Inst: "<code>internal/tool/pnpm</code> into <code>nodejs_tools</code>", Fmt: "inside the Node tools",
-			Meta: true, Bump: false, Pub: "npm via release-please (outside Librarian)", CI: "nodejs.yaml",
+			Meta: hasRepoMeta["internal/librarian/nodejs"], Bump: false, Pub: "npm via release-please (outside Librarian)", CI: "nodejs.yaml",
 			Detail: "Generates into a staging directory and runs <code>combine-library</code> to merge multiple API versions into one package. Supports mixed libraries (<code>IsMixedLibrary</code>) and finding an existing library for a new API version.",
 		},
 		{
 			Name: "PHP", Pkg: "internal/librarian/php", LOC: locByPkg["internal/librarian/php"],
 			Gen:  "<code>protoc</code> + <code>gapic-generator-php</code> plugin, <code>--php_out</code>",
 			Inst: "<code>internal/tool/composer</code>, <code>pip</code>, <code>pnpm</code> into <code>php_tools</code>", Fmt: "<code>prettier</code> with the PHP plugin",
-			Meta: false, Bump: false, Pub: "Packagist (outside Librarian)", CI: "php.yaml",
+			Meta: hasRepoMeta["internal/librarian/php"], Bump: false, Pub: "Packagist (outside Librarian)", CI: "php.yaml",
 			Detail: "Generates into <code>owl-bot-staging</code>, then runs <code>php-post-processor</code> and the library's <code>owlbot.py</code>, using Composer, pip and pnpm together.",
 		},
 		{
 			Name: "Python", Pkg: "internal/librarian/python", LOC: locByPkg["internal/librarian/python"],
 			Gen:  "<code>protoc</code> + <code>protoc-gen-python_gapic</code>",
 			Inst: "<code>internal/tool/pip</code> into <code>python_tools</code>", Fmt: "<code>nox -s format</code>",
-			Meta: true, Bump: true, Pub: "PyPI via release-please (outside Librarian)", CI: "python.yaml",
+			Meta: hasRepoMeta["internal/librarian/python"], Bump: true, Pub: "PyPI via release-please (outside Librarian)", CI: "python.yaml",
 			Detail: "Generates into <code>owl-bot-staging</code> and runs synthtool's <code>owlbot_main</code>. Refreshes snippet metadata and <code>.repo-metadata.json</code>. Supports per-library tags on <code>bump</code>.",
 		},
 		{
 			Name: "Ruby", Pkg: "internal/librarian/ruby", LOC: locByPkg["internal/librarian/ruby"],
 			Gen:  "<code>protoc</code> + <code>gapic-generator-ruby</code>, gRPC plugin, <code>--ruby_out</code>",
 			Inst: "<code>internal/tool/gem</code> into <code>ruby_tools</code>", Fmt: "none (no-op)",
-			Meta: false, Bump: false, Pub: "RubyGems via release-please (outside Librarian)", CI: "ruby.yaml",
+			Meta: hasRepoMeta["internal/librarian/ruby"], Bump: false, Pub: "RubyGems via release-please (outside Librarian)", CI: "ruby.yaml",
 			Detail: "Multi-wrapper gems driven by <code>toys</code> tasks. <code>librarian add --name</code> is Ruby-only. <code>AddManifest</code> and <code>AddPackage</code> keep release-please configs synchronized.",
 		},
 		{
 			Name: "Rust", Pkg: "internal/librarian/rust", LOC: locByPkg["internal/librarian/rust"],
 			Gen:  fmt.Sprintf("sidekick (<code>internal/sidekick/rust</code>, %d templates, plus <code>rust_prost</code>)", stats.tmplCounts["rust"]),
 			Inst: "<code>cargo install --locked</code> for formatters", Fmt: "<code>taplo fmt</code>, <code>cargo fmt</code>",
-			Meta: true, Bump: true, Pub: "crates.io (<code>cargo workspaces publish</code>)", CI: "sidekick.yaml",
+			Meta: hasRepoMeta["internal/librarian/rust"], Bump: true, Pub: "crates.io (<code>cargo workspaces publish</code>)", CI: "sidekick.yaml",
 			Detail: "After generation <code>UpdateWorkspace</code> updates Cargo workspace manifests. <code>ResolveDependencies</code> wires inter-crate dependencies. Publishes directly to crates.io and emits docs index metadata.",
 		},
 		{
 			Name: "Swift", Pkg: "internal/librarian/swift", LOC: locByPkg["internal/librarian/swift"],
 			Gen:  fmt.Sprintf("sidekick (<code>internal/sidekick/swift</code>, %d templates) + <code>protoc --swift_out</code>", stats.tmplCounts["swift"]),
 			Inst: "<code>git clone</code> + <code>swift build</code> into <code>swift_tools</code>", Fmt: "<code>swift-format</code>",
-			Meta: true, Bump: true, Pub: "per-package GitHub repositories <code>googleapis/swift-NAME</code>", CI: "sidekick.yaml",
+			Meta: hasRepoMeta["internal/librarian/swift"], Bump: true, Pub: "per-package GitHub repositories <code>googleapis/swift-NAME</code>", CI: "sidekick.yaml",
 			Detail: "The reference sidekick codec design. Supports mixed libraries and publishes by splitting monorepo git history into per-package GitHub repositories.",
 		},
 	}
@@ -533,7 +536,6 @@ var curatedPkgDescriptions = map[string]string{
 	"internal/semver":                    "SemVer parsing, comparison and next-version derivation including preview rules.",
 	"internal/proto":                     "Enumerates <code>.proto</code> files and extracts package options.",
 	"internal/license":                   "Canonical Apache 2.0 license header formatting across languages.",
-	"internal/docuploader":               "<code>docs.metadata.json</code> and documentation tarball builder.",
 	"internal/command":                   "Single subprocess runner: <code>Run</code>, <code>Output</code>, <code>RunStreaming</code> with <code>--verbose</code> command echoing.",
 	"internal/cache":                     "Manages <code>$LIBRARIAN_CACHE</code> (default <code>~/.cache/librarian</code>) and <code>$LIBRARIAN_BIN</code>.",
 	"internal/fetch":                     "GitHub tarball downloader with SHA-256 verification, retries, and cache extraction.",

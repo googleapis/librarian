@@ -19,6 +19,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data:;">
   <title>Librarian architecture &amp; walkthroughs</title>
   <style>
 :root{color-scheme:light dark;--background:#ffffff;--card:#f8fafc;--foreground:#0f172a;--muted-foreground:#64748b;--border:#e2e8f0;--primary:#2563eb;--primary-foreground:#ffffff}
@@ -249,18 +250,45 @@ code,pre,textarea.mono{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Cons
 <script>
 const DATA = JSON.parse(document.getElementById("walkthrough-data").textContent);
 const gh = p => `https://github.com/${DATA.repo}/${p === "" || p.endsWith("/") || !p.includes(".") ? "tree" : "blob"}/${DATA.gitRef || "main"}/${p}`;
-const src = (p, label) => `<a class="src" href="#src:${encodeURIComponent(p)}" data-src="${p}">${label || p}</a>`;
+
+function escapeHTML(str) {
+  return String(str ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+}
+
+function sanitizeHTML(raw) {
+  const tpl = document.createElement("template");
+  tpl.innerHTML = String(raw ?? "");
+  const allowedTags = new Set(["P", "STRONG", "EM", "CODE", "PRE", "UL", "OL", "LI", "A", "BR", "SPAN", "DIV", "H3", "H4"]);
+  const allowedAttrs = new Set(["class", "data-src", "href", "aria-hidden"]);
+  const walk = node => {
+    for (const child of Array.from(node.childNodes)) {
+      if (child.nodeType === Node.ELEMENT_NODE) {
+        if (!allowedTags.has(child.tagName)) {
+          child.replaceWith(document.createTextNode(child.outerHTML));
+          continue;
+        }
+        for (const attr of Array.from(child.attributes)) {
+          const name = attr.name.toLowerCase();
+          if (!allowedAttrs.has(name) || (name === "href" && /^\s*(javascript|data|vbscript):/i.test(attr.value))) {
+            child.removeAttribute(attr.name);
+          }
+        }
+        walk(child);
+      }
+    }
+  };
+  walk(tpl.content);
+  return tpl.innerHTML;
+}
+
+const src = (p, label) => `<a class="src" href="#src:${encodeURIComponent(p)}" data-src="${escapeHTML(p)}">${label || escapeHTML(p)}</a>`;
 
 document.getElementById("subtitle").innerHTML =
-  `Generated live from source commit ${src("", `<code>${DATA.shortSha}</code>`)} (${DATA.librarianVersion}, ${DATA.goVersion}). ` +
+  `Generated live from source commit ${src("", `<code>${escapeHTML(DATA.shortSha)}</code>`)} (${escapeHTML(DATA.librarianVersion)}, ${escapeHTML(DATA.goVersion)}). ` +
   `${DATA.pkgs.length} packages · ${DATA.totalLoc.toLocaleString()} non-test Go lines.`;
 
 function hydrateLinks(html) {
-  return html.replace(/<a class="src" data-src="([^"]+)">([\s\S]*?)<\/a>/g, (_, p, label) => src(p, label));
-}
-
-function escapeHTML(str) {
-  return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+  return sanitizeHTML(html).replace(/<a class="src" data-src="([^"]+)">([\s\S]*?)<\/a>/g, (_, p, label) => src(p, label));
 }
 
 // Global delegated handler for ALL <a class="src" data-src="..."> links across the page
@@ -380,7 +408,7 @@ function openSourceModal(relPath) {
       ? renderLineNumberedCode(entry.content, entry.trunc)
       : `<p class="text-[var(--muted-foreground)]">Select a file above or use <strong>Copy prompt for agent</strong> to explore files in <code>${escapeHTML(displayPath)}</code>.</p>`;
   } else {
-    document.getElementById("srcModalKind").textContent = `Source file (${entry.lines.toLocaleString()} lines${entry.trunc ? ", showing first 180 lines" : ""})`;
+    document.getElementById("srcModalKind").textContent = `Source file (${entry.lines.toLocaleString()} lines${entry.trunc ? `, showing first ${DATA.maxEmbeddedLines || 80} lines` : ""})`;
     dirBox.classList.add("hidden");
     codeBox.innerHTML = renderLineNumberedCode(entry.content || "", entry.trunc);
   }
@@ -436,10 +464,10 @@ updateThemeButton();
 // ---------------------------------------------------------------- landing paths
 function renderPaths() {
   const core = [
-    { tab: "map", title: "Interactive Architecture Map", eyebrow: "7 layers · SVG dependency wires", desc: "Explore how CLI entry points, orchestration, language packages, sidekick codecs, external tool installers, domain models, and leaf infrastructure connect." },
+    { tab: "map", title: "Interactive Architecture Map", eyebrow: `${DATA.layers.length} layers · SVG dependency wires`, desc: "Explore how CLI entry points, orchestration, language packages, sidekick codecs, external tool installers, domain models, and leaf infrastructure connect." },
     { tab: "tour", title: "Overall Design Guided Tour", eyebrow: `${DATA.steps.length} interactive steps`, desc: "Walk end-to-end through how Librarian loads configuration, caches upstream tarballs, runs generators, post-processes code, and releases packages." },
     { tab: "flows", title: "Command Lifecycle Timelines", eyebrow: `${DATA.flows.length} command flows`, desc: "Trace exact file-by-file execution paths for generate, add, update, and bump → publish → tag." },
-    { tab: "languages", title: "Languages & Implicit Contract Matrix", eyebrow: "9 languages · AST verified", desc: "Compare external protoc micro-generators against sidekick codecs and inspect every exported hook across internal/librarian/LANG." },
+    { tab: "languages", title: "Languages & Implicit Contract Matrix", eyebrow: `${DATA.langs.length} languages · AST verified`, desc: "Compare external protoc micro-generators against sidekick codecs and inspect every exported hook across internal/librarian/LANG." },
     { tab: "findings", title: "Live Architectural Findings", eyebrow: `${DATA.findings.length} live AST checks`, desc: "Inspect design invariants, layer boundaries enforced by dependency_test.go, and live repository findings." },
   ];
   const coreEl = document.getElementById("coreCards");
@@ -456,11 +484,11 @@ function renderPaths() {
   guideEl.innerHTML = DATA.guides.map((g, idx) => `
     <div class="path-card bg-[var(--card)] border border-[var(--border)] rounded-xl p-4 text-sm" data-guide-idx="${idx}">
       <div class="flex items-center justify-between gap-2 text-xs text-[var(--muted-foreground)] mb-1">
-        <span>${g.audience}</span>
+        <span>${escapeHTML(g.audience)}</span>
         <span>${g.steps.length} steps${g.custom ? " · custom" : ""}</span>
       </div>
-      <h4 class="font-semibold text-base mb-1">${g.title}</h4>
-      <p class="text-[var(--muted-foreground)]">${g.subtitle}</p>
+      <h4 class="font-semibold text-base mb-1">${escapeHTML(g.title)}</h4>
+      <p class="text-[var(--muted-foreground)]">${escapeHTML(g.subtitle)}</p>
     </div>`).join("");
   guideEl.querySelectorAll(".path-card").forEach(el =>
     el.addEventListener("click", () => openGuide(+el.dataset.guideIdx)));
@@ -484,7 +512,7 @@ function renderMap() {
     const pk = DATA.pkgs.filter(p => p.layer === L.id);
     const wrap = document.createElement("div");
     wrap.className = "border border-[var(--border)] rounded-xl p-3 bg-[var(--card)]";
-    wrap.innerHTML = `<div class="flex items-baseline gap-2 mb-2"><h3 class="font-semibold text-sm">${L.title}</h3><span class="text-xs text-[var(--muted-foreground)]">${L.hint}</span></div>`;
+    wrap.innerHTML = `<div class="flex items-baseline gap-2 mb-2"><h3 class="font-semibold text-sm">${escapeHTML(L.title)}</h3><span class="text-xs text-[var(--muted-foreground)]">${escapeHTML(L.hint)}</span></div>`;
     if (L.id === "engine") {
       const grid = document.createElement("div");
       grid.className = "grid gap-3 md:grid-cols-[2fr_1fr]";
@@ -499,14 +527,14 @@ function renderMap() {
 }
 function nodeGrid(pk, caption) {
   const box = document.createElement("div");
-  if (caption) box.innerHTML = `<div class="text-xs text-[var(--muted-foreground)] mb-1">${caption}/</div>`;
+  if (caption) box.innerHTML = `<div class="text-xs text-[var(--muted-foreground)] mb-1">${escapeHTML(caption)}/</div>`;
   const g = document.createElement("div");
   g.className = "flex flex-wrap gap-2";
   for (const p of pk) {
     const n = document.createElement("button");
     n.className = "pkg text-left border border-[var(--border)] rounded-lg px-2.5 py-1.5 text-xs bg-[var(--background)]";
     n.dataset.id = p.id;
-    n.innerHTML = `<div class="font-medium">${shortName(p.id)}</div><div class="text-[var(--muted-foreground)]">${p.loc.toLocaleString()} lines</div>`;
+    n.innerHTML = `<div class="font-medium">${escapeHTML(shortName(p.id))}</div><div class="text-[var(--muted-foreground)]">${p.loc.toLocaleString()} lines</div>`;
     n.addEventListener("click", () => {
       if (selected === p.id) clearMapSelection();
       else selectPkg(p.id, false);
@@ -549,12 +577,12 @@ function selectPkg(id, scrollCard) {
   const cardEl = document.querySelector(`.pkg[data-id="${CSS.escape(id)}"]`);
   if (scrollCard && cardEl) cardEl.scrollIntoView({ behavior: "smooth", block: "center" });
 
-  const chips = ids => ids.length ? ids.map(i => `<button class="chip border border-[var(--border)] rounded-md px-1.5 py-0.5 text-xs mr-1 mb-1" data-go="${i}">${shortName(i)}</button>`).join("") : `<span class="text-[var(--muted-foreground)] text-xs">none</span>`;
+  const chips = ids => ids.length ? ids.map(i => `<button class="chip border border-[var(--border)] rounded-md px-1.5 py-0.5 text-xs mr-1 mb-1" data-go="${escapeHTML(i)}">${escapeHTML(shortName(i))}</button>`).join("") : `<span class="text-[var(--muted-foreground)] text-xs">none</span>`;
   const layer = DATA.layers.find(l => l.id === p.layer).title;
   const pkgPath = p.path || (p.id + "/");
   document.getElementById("detail").innerHTML = `
-    <div class="text-xs text-[var(--muted-foreground)]">${layer}</div>
-    <h3 class="font-semibold text-base mb-1"><code>${p.id}</code></h3>
+    <div class="text-xs text-[var(--muted-foreground)]">${escapeHTML(layer)}</div>
+    <h3 class="font-semibold text-base mb-1"><code>${escapeHTML(p.id)}</code></h3>
     <div class="text-xs text-[var(--muted-foreground)] mb-2">${p.loc.toLocaleString()} non-test lines · ${src(pkgPath, "inspect files")}</div>
     <p class="mb-3">${hydrateLinks(p.desc)}</p>
     <div class="font-medium text-xs mb-1">Imports (${imps.length})</div>
@@ -625,7 +653,7 @@ document.getElementById("showDeps").addEventListener("change", drawWires);
 let step = 0;
 function renderTourNav() {
   const nav = document.getElementById("stepNav");
-  nav.innerHTML = DATA.steps.map((s, i) => `<li><button class="step-nav w-full text-left border border-[var(--border)] rounded-lg px-2.5 py-1.5 text-xs whitespace-nowrap lg:whitespace-normal" data-i="${i}"><span class="text-[var(--muted-foreground)] mr-1">${i + 1}.</span>${s.t}</button></li>`).join("");
+  nav.innerHTML = DATA.steps.map((s, i) => `<li><button class="step-nav w-full text-left border border-[var(--border)] rounded-lg px-2.5 py-1.5 text-xs whitespace-nowrap lg:whitespace-normal" data-i="${i}"><span class="text-[var(--muted-foreground)] mr-1">${i + 1}.</span>${escapeHTML(s.t)}</button></li>`).join("");
   nav.querySelectorAll("button").forEach(b => b.addEventListener("click", () => showStep(+b.dataset.i)));
 }
 function showStep(i) {
@@ -634,13 +662,13 @@ function showStep(i) {
   document.querySelectorAll("#stepNav .step-nav").forEach((b, j) => b.classList.toggle("active", j === step));
   document.getElementById("stepBody").innerHTML = `
     <div class="text-xs text-[var(--muted-foreground)]">Step ${step + 1} of ${DATA.steps.length}</div>
-    <h2 class="text-lg font-semibold mb-3">${s.t}</h2>
+    <h2 class="text-lg font-semibold mb-3">${escapeHTML(s.t)}</h2>
     <div class="space-y-3">${hydrateLinks(s.body)}</div>
     <div class="mt-4 pt-3 border-t border-[var(--border)]">
       <div class="text-xs font-medium mb-1">Where to look (click to inspect source)</div>
       <div class="flex flex-wrap gap-1 mb-3">${s.look.map(f => `<span class="border border-[var(--border)] rounded-md px-1.5 py-0.5 text-xs">${src(f)}</span>`).join("")}</div>
       <div class="flex flex-wrap items-center gap-3">
-        ${s.pkg ? `<button class="text-xs underline underline-offset-2 hover:text-[var(--primary)]" id="openInMap">Show <code>${s.pkg}</code> in the map &rarr;</button>` : ""}
+        ${s.pkg ? `<button class="text-xs underline underline-offset-2 hover:text-[var(--primary)]" id="openInMap">Show <code>${escapeHTML(s.pkg)}</code> in the map &rarr;</button>` : ""}
         <button class="text-xs border border-[var(--border)] hover:border-[var(--primary)] rounded-md px-2.5 py-1" id="copyTourPrompt">Copy prompt for agent</button>
       </div>
       <div id="tourPromptHost"></div>
@@ -672,7 +700,7 @@ function renderGuide() {
   const g = DATA.guides[activeGuide];
   const sel = document.getElementById("guideSelector");
   sel.innerHTML = DATA.guides.map((item, idx) =>
-    `<button class="border border-[var(--border)] rounded-lg px-3 py-1.5 text-xs ${idx === activeGuide ? "bg-[var(--primary)] text-[var(--primary-foreground)]" : "bg-[var(--card)]"}" data-idx="${idx}">${item.title}</button>`
+    `<button class="border border-[var(--border)] rounded-lg px-3 py-1.5 text-xs ${idx === activeGuide ? "bg-[var(--primary)] text-[var(--primary-foreground)]" : "bg-[var(--card)]"}" data-idx="${idx}">${escapeHTML(item.title)}</button>`
   ).join("");
   sel.querySelectorAll("button").forEach(b => b.addEventListener("click", () => {
     activeGuide = +b.dataset.idx;
@@ -681,13 +709,13 @@ function renderGuide() {
   }));
 
   document.getElementById("guideHeader").innerHTML = `
-    <div class="text-xs text-[var(--muted-foreground)]">${g.audience}</div>
-    <h2 class="text-lg font-semibold">${g.title}</h2>
-    <p class="text-[var(--muted-foreground)] mt-1">${g.subtitle}</p>`;
+    <div class="text-xs text-[var(--muted-foreground)]">${escapeHTML(g.audience)}</div>
+    <h2 class="text-lg font-semibold">${escapeHTML(g.title)}</h2>
+    <p class="text-[var(--muted-foreground)] mt-1">${escapeHTML(g.subtitle)}</p>`;
 
   const nav = document.getElementById("guideStepNav");
   nav.innerHTML = g.steps.map((s, i) =>
-    `<li><button class="step-nav w-full text-left border border-[var(--border)] rounded-lg px-2.5 py-1.5 text-xs whitespace-nowrap lg:whitespace-normal" data-i="${i}"><span class="text-[var(--muted-foreground)] mr-1">${i + 1}.</span>${s.t}</button></li>`
+    `<li><button class="step-nav w-full text-left border border-[var(--border)] rounded-lg px-2.5 py-1.5 text-xs whitespace-nowrap lg:whitespace-normal" data-i="${i}"><span class="text-[var(--muted-foreground)] mr-1">${i + 1}.</span>${escapeHTML(s.t)}</button></li>`
   ).join("");
   nav.querySelectorAll("button").forEach(b => b.addEventListener("click", () => showGuideStep(+b.dataset.i)));
   showGuideStep(guideStep);
@@ -702,16 +730,16 @@ function showGuideStep(i) {
     <div class="flex flex-wrap items-center justify-between gap-2 mb-1">
       <span class="text-xs text-[var(--muted-foreground)]">Step ${guideStep + 1} of ${g.steps.length}</span>
       <div class="flex flex-wrap gap-1">
-        ${s.runs ? `<span class="badge"><strong>Stage:</strong> ${s.runs}</span>` : ""}
-        ${s.code ? `<span class="badge"><strong>Code:</strong> <code>${s.code}</code></span>` : ""}
+        ${s.runs ? `<span class="badge"><strong>Stage:</strong> ${escapeHTML(s.runs)}</span>` : ""}
+        ${s.code ? `<span class="badge"><strong>Code:</strong> <code>${escapeHTML(s.code)}</code></span>` : ""}
       </div>
     </div>
-    <h2 class="text-lg font-semibold mb-3">${s.t}</h2>
+    <h2 class="text-lg font-semibold mb-3">${escapeHTML(s.t)}</h2>
     <div class="space-y-3">${hydrateLinks(s.body)}</div>
     <div class="mt-4 pt-3 border-t border-[var(--border)]">
       ${s.look && s.look.length ? `<div class="text-xs font-medium mb-1">Key files to inspect (click any file)</div><div class="flex flex-wrap gap-1 mb-3">${s.look.map(f => `<span class="border border-[var(--border)] rounded-md px-1.5 py-0.5 text-xs">${src(f)}</span>`).join("")}</div>` : ""}
       <div class="flex flex-wrap items-center gap-3">
-        ${s.pkg ? `<button class="text-xs underline underline-offset-2 hover:text-[var(--primary)]" id="guideOpenInMap">Show <code>${s.pkg}</code> in the map &rarr;</button>` : ""}
+        ${s.pkg ? `<button class="text-xs underline underline-offset-2 hover:text-[var(--primary)]" id="guideOpenInMap">Show <code>${escapeHTML(s.pkg)}</code> in the map &rarr;</button>` : ""}
         <button class="text-xs border border-[var(--border)] hover:border-[var(--primary)] rounded-md px-2.5 py-1" id="copyGuidePrompt">Copy prompt for agent</button>
       </div>
       <div id="guidePromptHost"></div>
