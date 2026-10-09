@@ -50,15 +50,25 @@ code,pre,textarea.mono{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Cons
     .lang-row:hover td { background: color-mix(in srgb, var(--primary) 8%, transparent); }
     .path-card { transition: border-color .15s ease, box-shadow .15s ease; cursor: pointer; }
     .path-card:hover { border-color: var(--primary); box-shadow: 0 0 0 1px var(--primary); }
-    code { font-size: .85em; padding: .05rem .3rem; border-radius: .25rem; background: color-mix(in srgb, var(--foreground) 8%, transparent); }
+    code { font-size: .85em; padding: .05rem .3rem; border-radius: .25rem; background: color-mix(in srgb, var(--foreground) 8%, transparent); overflow-wrap: anywhere; }
     a.src { color: var(--primary); text-decoration: underline; text-underline-offset: 2px; text-decoration-color: color-mix(in srgb, var(--primary) 45%, transparent); cursor: pointer; }
     a.src:hover { text-decoration-color: var(--primary); }
-    table.grid th, table.grid td { border-bottom: 1px solid var(--border); padding: .4rem .5rem; vertical-align: top; text-align: left; }
-    table.grid th { font-weight: 600; }
-    .timeline li { position: relative; padding-left: 1.75rem; }
-    .timeline li::before { content: attr(data-n); position: absolute; left: 0; top: .1rem; width: 1.25rem; height: 1.25rem; border-radius: 9999px; background: var(--primary); color: var(--primary-foreground); font-size: 12px; display: flex; align-items: center; justify-content: center; }
-    .timeline li::after { content: ""; position: absolute; left: .6rem; top: 1.5rem; bottom: -.4rem; width: 1px; background: var(--border); }
-    .timeline li:last-child::after { display: none; }
+    .grid > * { min-width: 0; }
+    .table-scroll { width: 100%; max-width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    table.data-table { display: table; width: 100%; min-width: 640px; border-collapse: collapse; table-layout: auto; }
+    table.data-table th, table.data-table td { border-bottom: 1px solid var(--border); padding: .5rem .65rem; vertical-align: middle; text-align: left; }
+    table.data-table th { font-weight: 600; color: var(--muted-foreground); font-size: .75rem; text-transform: uppercase; letter-spacing: .025em; background: color-mix(in srgb, var(--foreground) 4%, transparent); white-space: nowrap; }
+    table.data-table th.text-center, table.data-table td.text-center { text-align: center; }
+    .flow-inputs { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; padding: .6rem .85rem; border-radius: .65rem; border: 1px dashed var(--border); background: var(--background); margin-bottom: 1rem; font-size: .75rem; }
+    .flow-diagram { display: flex; flex-direction: column; gap: 0; margin-bottom: 1rem; }
+    .flow-stage { display: grid; grid-template-columns: 2rem minmax(0, 1fr); gap: .85rem; align-items: stretch; }
+    .flow-rail { display: flex; flex-direction: column; align-items: center; }
+    .flow-num { width: 1.75rem; height: 1.75rem; border-radius: 9999px; background: var(--primary); color: var(--primary-foreground); font-size: .75rem; font-weight: 600; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .flow-arrow-v { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--primary); min-height: 1.25rem; }
+    .flow-line-v { flex: 1; width: 2px; background: color-mix(in srgb, var(--primary) 45%, var(--border)); }
+    .flow-card { border: 1px solid var(--border); border-radius: .65rem; padding: .75rem .9rem; background: var(--background); margin-bottom: .65rem; display: flex; flex-direction: column; gap: .35rem; }
+    .flow-stage:last-child .flow-card { margin-bottom: 0; }
+    .flow-out { display: inline-flex; align-items: center; gap: .35rem; font-size: .72rem; padding: .15rem .55rem; border-radius: 9999px; border: 1px solid color-mix(in srgb, #10b981 45%, var(--border)); background: color-mix(in srgb, #10b981 10%, transparent); color: #10b981; font-weight: 500; align-self: flex-start; margin-top: .15rem; }
     .badge { font-size: 11px; padding: .1rem .45rem; border-radius: .375rem; border: 1px solid var(--border); background: var(--background); }
     .prompt-box { margin-top: .65rem; padding: .6rem .75rem; border-radius: .5rem; border: 1px solid var(--primary); background: var(--background); font-size: .75rem; }
     .prompt-box textarea { width: 100%; border: 1px solid var(--border); border-radius: .375rem; padding: .4rem .5rem; background: var(--card); color: var(--foreground); resize: vertical; margin-top: .35rem; font-size: .75rem; line-height: 1.4; }
@@ -70,14 +80,14 @@ code,pre,textarea.mono{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Cons
   </style>
 </head>
 <body class="bg-[var(--background)] text-[var(--foreground)] antialiased">
-<div class="max-w-7xl mx-auto px-5 py-5">
+<div class="max-w-7xl mx-auto px-3 sm:px-5 py-4 sm:py-5" style="overflow-x: clip">
 
-  <header class="flex flex-wrap items-end justify-between gap-3 mb-4">
-    <div>
+  <header class="flex flex-wrap items-center justify-between gap-3 mb-4">
+    <div style="min-width: 0">
       <h1 class="text-2xl font-semibold">Librarian architecture &amp; walkthroughs</h1>
       <p class="text-sm text-[var(--muted-foreground)] mt-1" id="subtitle"></p>
     </div>
-    <div class="flex flex-wrap items-center gap-2">
+    <div class="flex flex-wrap items-center gap-2" style="max-width: 100%">
       <nav class="flex flex-wrap gap-1 bg-[var(--card)] border border-[var(--border)] rounded-xl p-1" id="tabs">
         <button class="tab px-3 py-1.5 rounded-lg text-sm" data-tab="paths">Paths</button>
         <button class="tab px-3 py-1.5 rounded-lg text-sm" data-tab="map">Map</button>
@@ -196,12 +206,12 @@ code,pre,textarea.mono{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Cons
   <!-- ============================ LANGUAGES ============================ -->
   <section id="tab-languages" class="hidden">
     <p class="text-sm text-[var(--muted-foreground)] mb-3">Nine language packages under <code>internal/librarian/</code>. Click any row to expand pipeline details, inspect package files, or jump to the architecture map. The second table is verified live against exported Go AST symbols in each package.</p>
-    <div class="bg-[var(--card)] border border-[var(--border)] rounded-xl p-2 overflow-x-auto mb-4">
-      <table class="grid w-full text-sm" id="langTable"></table>
+    <div class="bg-[var(--card)] border border-[var(--border)] rounded-xl p-2 table-scroll mb-4">
+      <table class="data-table text-sm" id="langTable"></table>
     </div>
     <h3 class="font-semibold text-sm mb-2">The implicit language contract (verified from Go AST)</h3>
-    <div class="bg-[var(--card)] border border-[var(--border)] rounded-xl p-2 overflow-x-auto">
-      <table class="grid w-full text-xs" id="contractTable"></table>
+    <div class="bg-[var(--card)] border border-[var(--border)] rounded-xl p-2 table-scroll">
+      <table class="data-table text-xs" id="contractTable"></table>
     </div>
   </section>
 
@@ -604,6 +614,11 @@ function drawWires() {
   if (document.getElementById("showDeps").checked) add(dependents(selected), depCol, "arrD", true);
 }
 window.addEventListener("resize", () => drawWires());
+if (typeof ResizeObserver !== "undefined") {
+  new ResizeObserver(() => {
+    if (currentTab === "map") requestAnimationFrame(drawWires);
+  }).observe(document.getElementById("map"));
+}
 document.getElementById("showDeps").addEventListener("change", drawWires);
 
 // ---------------------------------------------------------------- guided tour
@@ -737,12 +752,35 @@ function renderFlows() {
   tabs.innerHTML = DATA.flows.map(f => `<button class="flow-tab border border-[var(--border)] rounded-lg px-3 py-1.5 text-sm ${f.id === flow ? "bg-[var(--primary)] text-[var(--primary-foreground)]" : ""}" data-f="${f.id}">${f.title}</button>`).join("");
   tabs.querySelectorAll("button").forEach(b => b.addEventListener("click", () => { flow = b.dataset.f; renderFlows(); }));
   const f = DATA.flows.find(x => x.id === flow);
+  const inputsHtml = (f.inputs || []).map(inp => `<span class="badge">${inp}</span>`).join("");
+  const stagesHtml = (f.stages || []).map((st, i) => {
+    const isLast = i === f.stages.length - 1;
+    return `
+      <div class="flow-stage">
+        <div class="flow-rail">
+          <div class="flow-num">${i + 1}</div>
+          ${!isLast ? `<div class="flow-arrow-v" aria-hidden="true"><div class="flow-line-v"></div><span style="font-size:11px; line-height:1">▼</span></div>` : ""}
+        </div>
+        <div class="flow-card">
+          <div class="flex flex-wrap items-baseline justify-between gap-2">
+            <div class="font-semibold text-sm">${st.title}</div>
+            <span class="badge">${hydrateLinks(st.where)}</span>
+          </div>
+          <div class="text-xs text-[var(--muted-foreground)] leading-relaxed">${hydrateLinks(st.body)}</div>
+          ${st.out ? `<div class="flow-out">&rarr; Output: ${st.out}</div>` : ""}
+        </div>
+      </div>`;
+  }).join("");
   document.getElementById("flowBody").innerHTML = `
     <div class="flex flex-wrap items-baseline justify-between gap-2 mb-3">
       <code class="text-sm">${f.cmd}</code>
       <span class="text-xs">${src(f.file, "Inspect " + f.file)}</span>
     </div>
-    <ol class="timeline space-y-3 mb-4">${f.steps.map((s, i) => `<li data-n="${i + 1}"><span class="inline-block text-xs font-medium text-[var(--muted-foreground)] mr-2">${hydrateLinks(s[0])}</span><span>${hydrateLinks(s[1])}</span></li>`).join("")}</ol>
+    <div class="flow-inputs">
+      <strong class="text-xs text-[var(--foreground)]">Inputs &amp; state read:</strong>
+      ${inputsHtml}
+    </div>
+    <div class="flow-diagram">${stagesHtml}</div>
     <div class="pt-3 border-t border-[var(--border)] flex flex-wrap items-center gap-3">
       <button class="text-xs underline underline-offset-2 hover:text-[var(--primary)]" id="flowOpenMap">Show <code>internal/librarian</code> in the map &rarr;</button>
       <button class="text-xs border border-[var(--border)] hover:border-[var(--primary)] rounded-md px-2.5 py-1" id="copyFlowPrompt">Copy prompt for agent</button>

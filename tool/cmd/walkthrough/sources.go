@@ -63,9 +63,9 @@ func collectAndValidateSources(root string, data *SiteData) (map[string]SourceEn
 	}
 	for _, f := range data.Flows {
 		addRef(f.File)
-		for _, step := range f.Steps {
-			extractHTMLRefs(step[0])
-			extractHTMLRefs(step[1])
+		for _, st := range f.Stages {
+			extractHTMLRefs(st.Where)
+			extractHTMLRefs(st.Body)
 		}
 	}
 	for _, l := range data.Langs {

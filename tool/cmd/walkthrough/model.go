@@ -73,13 +73,22 @@ type TourStep struct {
 	Pkg   string   `json:"pkg,omitempty"`
 }
 
-// CommandFlow describes a CLI command execution timeline.
+// FlowStage represents one stage node in a visual CommandFlow pipeline diagram.
+type FlowStage struct {
+	Title string `json:"title"`
+	Where string `json:"where"`
+	Body  string `json:"body"`
+	Out   string `json:"out,omitempty"`
+}
+
+// CommandFlow describes a CLI command execution pipeline with explicit inputs and stages.
 type CommandFlow struct {
-	ID    string      `json:"id"`
-	Title string      `json:"title"`
-	Cmd   string      `json:"cmd"`
-	File  string      `json:"file"`
-	Steps [][2]string `json:"steps"`
+	ID     string      `json:"id"`
+	Title  string      `json:"title"`
+	Cmd    string      `json:"cmd"`
+	File   string      `json:"file"`
+	Inputs []string    `json:"inputs"`
+	Stages []FlowStage `json:"stages"`
 }
 
 // LangInfo summarizes one of the nine language integrations under internal/librarian.

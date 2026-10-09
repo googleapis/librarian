@@ -130,45 +130,144 @@ func buildFlows() []CommandFlow {
 	return []CommandFlow{
 		{
 			ID: "generate", Title: "generate", Cmd: "librarian generate LIBRARY  |  librarian generate --all", File: "internal/librarian/generate.go",
-			Steps: [][2]string{
-				{`<a class="src" data-src="internal/librarian/generate.go">generate.go</a>`, "Read <code>librarian.yaml</code> from the current working directory."},
-				{`<a class="src" data-src="internal/librarian/source.go">source.go</a>`, "<code>LoadSources(cfg.Sources)</code>: an <code>errgroup</code> fetches every pinned source tarball (cache hit or SHA-256 verified download)."},
-				{`<a class="src" data-src="internal/librarian/library.go">library.go</a>`, "For each library selected by name, <code>-preview</code> suffix or <code>--all</code>: run <code>applyDefaults</code> and <code>resolvePreview</code>."},
-				{`<a class="src" data-src="internal/librarian/clean.go">clean.go</a>`, "<code>cleanLibraries</code>: run language <code>Clean</code> or shared <code>checkAndClean</code> honoring <code>keep</code> paths."},
-				{"LANG", "In parallel across CPU cores (Java sequential): invoke <code>Generate(ctx, cfg, lib, sources)</code> then <code>Format(ctx, lib)</code>."},
-				{"LANG", "Repository post-step: <code>java.PostGenerate</code>, <code>rust.UpdateWorkspace</code>, or <code>writeDocIndex</code>."},
+			Inputs: []string{
+				"<code>librarian.yaml</code> (repo config)",
+				"CLI flags (<code>LIBRARY</code>, <code>-preview</code>, <code>--all</code>)",
+				"Pinned tarballs (<code>sources.googleapis</code>, <code>discovery</code>, <code>showcase</code>)",
+			},
+			Stages: []FlowStage{
+				{
+					Title: "Load Config & Defaults",
+					Where: `<a class="src" data-src="internal/librarian/library.go">library.go</a>`,
+					Body:  "Read <code>librarian.yaml</code> from CWD, expand defaults via <code>applyDefaults</code>, and overlay any <code>-preview</code> blocks.",
+					Out:   "*config.Config",
+				},
+				{
+					Title: "Fetch & Verify Sources",
+					Where: `<a class="src" data-src="internal/librarian/source.go">source.go</a>`,
+					Body:  "Parallel <code>errgroup</code> fetches pinned upstream tarballs into <code>$LIBRARIAN_CACHE</code> and verifies SHA-256 digests.",
+					Out:   "*sources.Sources",
+				},
+				{
+					Title: "Clean Target Directories",
+					Where: `<a class="src" data-src="internal/librarian/clean.go">clean.go</a>`,
+					Body:  "Remove stale generated output across selected libraries while preserving handwritten files matching <code>keep:</code> rules.",
+					Out:   "clean output tree",
+				},
+				{
+					Title: "Parallel Generate & Format",
+					Where: `<a class="src" data-src="internal/librarian/generate.go">internal/librarian/&lt;lang&gt;</a>`,
+					Body:  "Worker pool across CPU cores (Java sequential) runs <code>LANG.Generate(...)</code> (Sidekick or <code>protoc</code>) then <code>LANG.Format(...)</code>.",
+					Out:   "formatted client code",
+				},
+				{
+					Title: "Repo Post-Processing",
+					Where: `<a class="src" data-src="internal/librarian/docindex.go">docindex.go</a>`,
+					Body:  "Run <code>java.PostGenerate</code>, <code>rust.UpdateWorkspace</code>, or write documentation metadata indices.",
+					Out:   "ready working tree",
+				},
 			},
 		},
 		{
 			ID: "add", Title: "add", Cmd: "librarian add google/cloud/secretmanager/v1", File: "internal/librarian/add.go",
-			Steps: [][2]string{
-				{`<a class="src" data-src="internal/librarian/add.go">add.go</a>`, "Read <code>librarian.yaml</code> and ensure <code>sources.googleapis</code> is fetched."},
-				{`<a class="src" data-src="internal/librarian/add.go">add.go</a>`, "Validate API directory existence in upstream googleapis."},
-				{`<a class="src" data-src="internal/librarian/add.go">add.go</a>`, "Derive library name or locate an existing multi-version library package."},
-				{"LANG", "Invoke <code>DefaultLibraryName(api)</code> and <code>Add(...)</code>, populate defaults, and sort entries."},
-				{"LANG", "Run <code>ResolveMixinDependencies</code> (Java, PHP) or <code>ResolveDependencies</code> (Rust)."},
-				{`<a class="src" data-src="internal/librarian/release_please.go">release_please.go</a>`, "Synchronize release-please manifests when present in the repository."},
-				{`<a class="src" data-src="internal/librarian/tidy.go">tidy.go</a>`, "<code>RunTidyOnConfig</code> validates, strips derivable defaults, sorts, and formats <code>librarian.yaml</code>."},
+			Inputs: []string{
+				"API path arg (<code>google/cloud/.../vN</code>)",
+				"<code>librarian.yaml</code>",
+				"Cached <code>sources.googleapis</code> tree",
+			},
+			Stages: []FlowStage{
+				{
+					Title: "Validate Upstream API",
+					Where: `<a class="src" data-src="internal/librarian/add.go">add.go</a>`,
+					Body:  "Ensure <code>sources.googleapis</code> is fetched and confirm the target API directory and service YAML exist.",
+					Out:   "verified API path",
+				},
+				{
+					Title: "Resolve Target Library",
+					Where: `<a class="src" data-src="internal/librarian/add.go">add.go</a>`,
+					Body:  "Locate an existing multi-version package via <code>FindExistingLibraryForNewAPI</code> or derive a new library name.",
+					Out:   "*config.Library",
+				},
+				{
+					Title: "Language Add & Dependencies",
+					Where: `<a class="src" data-src="internal/librarian/add.go">internal/librarian/&lt;lang&gt;</a>`,
+					Body:  "Invoke <code>LANG.Add(...)</code> and resolve mixin or Cargo workspace dependencies.",
+					Out:   "updated manifest entries",
+				},
+				{
+					Title: "Sync & Tidy Config",
+					Where: `<a class="src" data-src="internal/librarian/tidy.go">tidy.go</a>`,
+					Body:  "Sync release-please files via <a class=\"src\" data-src=\"internal/librarian/release_please.go\">release_please.go</a>, strip derivable defaults, and format <code>librarian.yaml</code>.",
+					Out:   "tidied librarian.yaml",
+				},
 			},
 		},
 		{
 			ID: "update", Title: "update", Cmd: "librarian update version sources.googleapis", File: "internal/librarian/update.go",
-			Steps: [][2]string{
-				{`<a class="src" data-src="internal/librarian/update.go">update.go</a>`, "Read <code>librarian.yaml</code> and iterate over target pins."},
-				{"go toolchain", "For <code>version</code>: query latest module release via <code>go list -m</code>."},
-				{`<a class="src" data-src="internal/fetch/">internal/fetch</a>`, "For <code>sources.NAME</code>: resolve branch HEAD commit SHA and stream archive tarball through SHA-256."},
-				{`<a class="src" data-src="internal/yaml/">internal/yaml</a>`, "Write updated <code>librarian.yaml</code> with Apache license header and <code>yamlfmt</code>."},
+			Inputs: []string{
+				"Target pins (<code>version</code>, <code>sources.NAME</code>)",
+				"<code>librarian.yaml</code>",
+				"Upstream Git / Go module metadata",
+			},
+			Stages: []FlowStage{
+				{
+					Title: "Parse Target Pins",
+					Where: `<a class="src" data-src="internal/librarian/update.go">update.go</a>`,
+					Body:  "Read <code>librarian.yaml</code> and select requested <code>version</code> or <code>sources.*</code> pins.",
+					Out:   "target pin list",
+				},
+				{
+					Title: "Query Upstream HEAD",
+					Where: `<a class="src" data-src="internal/librarian/update.go">update.go</a>`,
+					Body:  "Resolve latest module release via <code>go list -m</code> or upstream GitHub branch HEAD commit SHA.",
+					Out:   "commit SHA / version",
+				},
+				{
+					Title: "Stream SHA-256 Digest",
+					Where: `<a class="src" data-src="internal/fetch/">internal/fetch</a>`,
+					Body:  "Stream upstream GitHub archive tarball through SHA-256 without writing unverified files.",
+					Out:   "verified sha256 pin",
+				},
+				{
+					Title: "Write Formatted YAML",
+					Where: `<a class="src" data-src="internal/yaml/">internal/yaml</a>`,
+					Body:  "Persist updated pins to <code>librarian.yaml</code> preserving Apache license headers and <code>yamlfmt</code> formatting.",
+					Out:   "updated librarian.yaml",
+				},
 			},
 		},
 		{
 			ID: "release", Title: "bump → publish → tag", Cmd: "librarian bump --all  ·  librarian publish  ·  librarian tag", File: "internal/librarian/bump.go",
-			Steps: [][2]string{
-				{`<a class="src" data-src="internal/librarian/bump.go">bump.go</a>`, "Verify git working tree is clean via <code>git status --porcelain</code>."},
-				{`<a class="src" data-src="internal/git/">internal/git</a>`, "Diff changed directories since the last release tag (or pub.dev for Dart)."},
-				{"LANG", "Run language <code>Bump</code> to compute next SemVer version, update manifests, and write changelogs."},
-				{`<a class="src" data-src="internal/librarian/bump.go">bump.go</a>`, "Run <code>postBump</code> workspace updates and tidy <code>librarian.yaml</code> for the release PR."},
-				{`<a class="src" data-src="internal/librarian/publish.go">publish.go</a>`, "Publish artifacts via <code>dart.Publish</code>, <code>rust.Publish</code>, or <code>swift.Publish</code>."},
-				{`<a class="src" data-src="internal/librarian/tag.go">tag.go</a>`, "Diff <code>librarian.yaml</code> history and create release tags matching <code>default.tag_format</code>."},
+			Inputs: []string{
+				"Clean git working tree",
+				"Git commits since last release tag (or <code>pub.dev</code>)",
+				"<code>librarian.yaml</code> + registry credentials",
+			},
+			Stages: []FlowStage{
+				{
+					Title: "Detect Changed Libraries",
+					Where: `<a class="src" data-src="internal/git/">internal/git</a>`,
+					Body:  "Verify clean working tree via <code>git status --porcelain</code> and diff commits since each library's last release tag.",
+					Out:   "changed library set",
+				},
+				{
+					Title: "Bump Versions & Changelogs",
+					Where: `<a class="src" data-src="internal/librarian/bump.go">bump.go</a>`,
+					Body:  "Run <code>LANG.Bump(...)</code> to compute SemVer bumps, update package manifests and changelogs, and tidy config for the release PR.",
+					Out:   "release PR commit",
+				},
+				{
+					Title: "Publish Artifacts",
+					Where: `<a class="src" data-src="internal/librarian/publish.go">publish.go</a>`,
+					Body:  "Publish packages to <code>crates.io</code> (Rust), <code>pub.dev</code> (Dart), or per-package GitHub repositories (Swift).",
+					Out:   "published packages",
+				},
+				{
+					Title: "Create Git Release Tags",
+					Where: `<a class="src" data-src="internal/librarian/tag.go">tag.go</a>`,
+					Body:  "Diff merged release commit and create annotated git tags matching <code>default.tag_format</code>.",
+					Out:   "release tags",
+				},
 			},
 		},
 	}
