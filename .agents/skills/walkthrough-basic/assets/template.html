@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<!--
+Copyright 2026 Google LLC
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    https://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Architecture &amp; walkthroughs</title>
+<style>
+:root{color-scheme:light dark;--background:#fff;--card:#f8fafc;--foreground:#0f172a;--muted:#64748b;--border:#e2e8f0;--primary:#2563eb;--primary-fg:#fff;--dep:#10b981}
+@media (prefers-color-scheme:dark){:root{--background:#0b1220;--card:#121b2f;--foreground:#e5e7eb;--muted:#9aa7b8;--border:#263247;--primary:#60a5fa;--primary-fg:#0b1220}}
+:root[data-theme=light]{color-scheme:light;--background:#fff;--card:#f8fafc;--foreground:#0f172a;--muted:#64748b;--border:#e2e8f0;--primary:#2563eb;--primary-fg:#fff}
+:root[data-theme=dark]{color-scheme:dark;--background:#0b1220;--card:#121b2f;--foreground:#e5e7eb;--muted:#9aa7b8;--border:#263247;--primary:#60a5fa;--primary-fg:#0b1220}
+*{box-sizing:border-box}
+body{margin:0;font:14px/1.55 ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:var(--background);color:var(--foreground)}
+h1,h2,h3,p{margin:0}
+button,input,textarea{font:inherit;color:inherit}
+button{background:none;border:1px solid var(--border);border-radius:.5rem;padding:.3rem .7rem;cursor:pointer}
+button:hover{border-color:var(--primary)}
+button.primary{background:var(--primary);color:var(--primary-fg);border-color:var(--primary)}
+button:disabled{opacity:.4;cursor:not-allowed}
+code,pre,.mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+code{font-size:.85em;padding:.05rem .3rem;border-radius:.25rem;background:color-mix(in srgb,var(--foreground) 8%,transparent)}
+.wrap{max-width:80rem;margin:0 auto;padding:1.25rem}
+.muted{color:var(--muted)}.xs{font-size:12px}.sm{font-size:13px}
+.card{background:var(--card);border:1px solid var(--border);border-radius:.75rem;padding:1rem}
+.row{display:flex;flex-wrap:wrap;gap:.5rem;align-items:center}
+.grid2{display:grid;gap:.75rem}
+@media(min-width:768px){.grid2{grid-template-columns:1fr 1fr}}
+.mb{margin-bottom:1rem}.mt{margin-top:.75rem}
+header{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:flex-end;gap:.75rem;margin-bottom:1rem}
+h1{font-size:1.5rem;font-weight:600}
+h2{font-size:1.1rem;font-weight:600;margin-bottom:.35rem}
+h3{font-size:.9rem;font-weight:600;margin:.9rem 0 .4rem}
+nav#tabs{display:flex;gap:.25rem;padding:.25rem;border:1px solid var(--border);border-radius:.75rem;background:var(--card)}
+nav#tabs button{border:0}
+nav#tabs button.active,.sel-btn.active{background:var(--primary);color:var(--primary-fg)}
+section{display:none}section.show{display:block}
+.path-card{text-align:left;padding:1rem;border-radius:.75rem;background:var(--card);transition:box-shadow .15s}
+.path-card:hover{box-shadow:0 0 0 1px var(--primary)}
+.split{display:grid;gap:1rem}
+@media(min-width:1024px){.split.map{grid-template-columns:minmax(0,1fr) 340px}.split.tour{grid-template-columns:260px minmax(0,1fr)}.sticky{position:sticky;top:1rem;align-self:start}}
+#map{position:relative}
+#wires{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:0}
+#layers{position:relative;z-index:1;display:flex;flex-direction:column;gap:.75rem}
+.layer{border:1px dashed var(--border);border-radius:.75rem;padding:.6rem}
+.layer-b{display:flex;flex-wrap:wrap;gap:.4rem;margin-top:.4rem}
+.pkg{text-align:left;background:var(--background);padding:.35rem .55rem;transition:opacity .15s,box-shadow .15s}
+.pkg.dim{opacity:.3}.pkg.sel{box-shadow:0 0 0 2px var(--primary);border-color:var(--primary)}
+.pkg.imp{border-color:var(--primary);background:color-mix(in srgb,var(--primary) 14%,transparent)}
+.pkg.dep{border-color:var(--dep);background:color-mix(in srgb,var(--dep) 14%,transparent)}
+.chip{font-size:12px;padding:.1rem .5rem;border-radius:.4rem}
+a.src,a.pkgref{color:var(--primary);text-decoration:underline;text-underline-offset:2px;cursor:pointer}
+.step-nav{display:flex;gap:.25rem;overflow-x:auto;padding:0;margin:0;list-style:none}
+@media(min-width:1024px){.step-nav{flex-direction:column}}
+.step-nav button{width:100%;text-align:left;font-size:13px;white-space:nowrap}
+@media(min-width:1024px){.step-nav button{white-space:normal}}
+.step-nav button.active{border-color:var(--primary);background:color-mix(in srgb,var(--primary) 16%,transparent)}
+article p+p{margin-top:.6rem}article ul{margin:.4rem 0;padding-left:1.25rem}
+.badge{font-size:11px;padding:.1rem .45rem;border-radius:.375rem;border:1px solid var(--border);background:var(--background)}
+.timeline{list-style:none;padding:0;margin:0}
+.timeline li{position:relative;padding:0 0 .8rem 1.9rem}
+.timeline li::before{content:attr(data-n);position:absolute;left:0;top:.1rem;width:1.3rem;height:1.3rem;border-radius:9999px;background:var(--primary);color:var(--primary-fg);font-size:12px;display:flex;align-items:center;justify-content:center}
+.timeline li::after{content:"";position:absolute;left:.62rem;top:1.5rem;bottom:.1rem;width:1px;background:var(--border)}
+.timeline li:last-child::after{display:none}
+.prompt-box{margin-top:.6rem;padding:.6rem .75rem;border:1px solid var(--primary);border-radius:.5rem;background:var(--background);font-size:12px}
+.prompt-box textarea{width:100%;margin-top:.35rem;border:1px solid var(--border);border-radius:.375rem;padding:.4rem;background:var(--card);resize:vertical;font-size:12px}
+.modal{position:fixed;inset:0;background:rgba(2,6,23,.72);z-index:50;display:flex;align-items:center;justify-content:center;padding:1.25rem}
+.modal.hidden,.hidden{display:none!important}
+.modal-panel{width:100%;max-width:56rem;max-height:85vh;display:flex;flex-direction:column;border:1px solid var(--border);border-radius:.75rem;background:var(--card);overflow:hidden}
+.modal-head{padding:.9rem 1rem;border-bottom:1px solid var(--border);display:flex;flex-wrap:wrap;justify-content:space-between;gap:.5rem}
+.code{overflow:auto;padding:.8rem 1rem;background:var(--background);font-size:12px;line-height:1.5;flex:1}
+.ln{display:grid;grid-template-columns:3rem minmax(0,1fr);gap:.75rem;white-space:pre}
+.ln span:first-child{color:var(--muted);text-align:right;user-select:none}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div><h1 id="title"></h1><p class="sm muted" id="subtitle"></p></div>
+    <div class="row">
+      <nav id="tabs">
+        <button data-tab="paths">Paths</button>
+        <button data-tab="map">Map</button>
+        <button data-tab="tours">Tours</button>
+        <button data-tab="flows">Command flows</button>
+        <button data-tab="findings">Findings</button>
+      </nav>
+      <button id="themeToggle" class="xs"></button>
+    </div>
+  </header>
+
+  <section id="tab-paths">
+    <div class="card mb"><h2>Welcome</h2><div class="sm muted" id="summary"></div>
+      <p class="xs muted mt">Every package, import wire, line count and source preview is generated from the checked-out tree. Click a file link to inspect its source in-page, or <strong>Copy prompt for agent</strong> to continue with your coding agent.</p></div>
+    <div id="pathGroups"></div>
+    <div class="card sm">
+      <strong>Ask your coding agent</strong>
+      <p class="xs muted">Type a topic to format a ready-to-paste walkthrough prompt.</p>
+      <div class="row mt"><input id="customTopic" class="xs" style="flex:1;min-width:220px;padding:.35rem .6rem;border:1px solid var(--border);border-radius:.5rem;background:var(--background)" placeholder="e.g. Walk me through how errors propagate from the CLI">
+        <button id="copyCustom" class="primary xs">Copy prompt for agent</button></div>
+      <div id="customPromptHost"></div>
+    </div>
+  </section>
+
+  <section id="tab-map">
+    <div class="card mb sm muted">Packages are grouped top-to-bottom into architectural layers. <strong>Click a package</strong> to draw wires: <span style="color:var(--primary)">blue</span> to packages it imports, <span style="color:var(--dep)">green</span> from packages that import it. Click it again to reset.</div>
+    <div class="split map">
+      <div>
+        <div class="row xs muted" style="margin-bottom:.6rem"><button id="resetMap" class="xs">Reset highlight</button>
+          <label><input type="checkbox" id="showDeps" checked> show dependents</label></div>
+        <div id="map"><svg id="wires"></svg><div id="layers"></div></div>
+      </div>
+      <aside class="sticky"><div id="detail" class="card sm"><p class="muted">Select a package to see what it does, what it imports, who imports it, and its files.</p></div></aside>
+    </div>
+  </section>
+
+  <section id="tab-tours">
+    <div class="row mb" id="tourSelector"></div>
+    <div class="card mb sm" id="tourHeader"></div>
+    <div class="split tour">
+      <ol class="step-nav" id="stepNav"></ol>
+      <div>
+        <article id="stepBody" class="card"></article>
+        <div class="row mt" style="justify-content:space-between"><button id="prevStep">&larr; Previous</button><span id="stepCounter" class="xs muted"></span><button id="nextStep" class="primary">Next &rarr;</button></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="tab-flows">
+    <div class="row mb" id="flowTabs"></div>
+    <div class="card" id="flowBody"></div>
+    <h3>All detected commands</h3>
+    <div class="card"><table class="sm" id="cmdTable" style="width:100%;border-collapse:collapse"></table></div>
+  </section>
+
+  <section id="tab-findings">
+    <p class="sm muted mb">Architectural observations gathered from the current commit.</p>
+    <div class="grid2" id="findings"></div>
+  </section>
+</div>
+
+<div id="srcModal" class="modal hidden" role="dialog" aria-modal="true">
+  <div class="modal-panel">
+    <div class="modal-head">
+      <div><div class="xs muted" id="srcKind"></div><code id="srcPath"></code></div>
+      <div class="row">
+        <button class="xs" id="srcCopyPath">Copy path</button>
+        <button class="xs" id="srcCopyPrompt">Copy prompt for agent</button>
+        <button class="xs hidden" id="srcOpenMap">Show in map &rarr;</button>
+        <button class="xs" id="srcCopyGH">Copy GitHub URL</button>
+        <button class="xs primary" id="srcClose">&times; Close</button>
+      </div>
+    </div>
+    <div id="srcPromptHost" style="padding:0 1rem"></div>
+    <div class="code mono" id="srcBody"></div>
+  </div>
+</div>
+
+<script id="walkthrough-data" type="application/json">__WALKTHROUGH_DATA__</script>
+<script>
+const D = JSON.parse(document.getElementById("walkthrough-data").textContent);
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const el = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e; };
+const pkgById = Object.fromEntries(D.packages.map(p => [p.id, p]));
+const layerOf = {}; D.layers.forEach(l => l.packages.forEach(id => layerOf[id] = l));
+const desc = id => (D.descriptions || {})[id] || esc(pkgById[id]?.doc || "");
+const srcLink = (p, label) => `<a class="src" data-src="${esc(p)}">${esc(label || p)}</a>`;
+const pkgLink = id => `<a class="pkgref" data-pkg="${esc(id)}">${esc(id)}</a>`;
+const ghURL = p => {
+  if (!D.repo) return "";
+  const f = D.files[p], kind = !f || f.dir ? "tree" : "blob";
+  return `https://github.com/${D.repo}/${kind}/${D.sha}/${p.replace(/\/$/, "").replace(/^\.$/, "")}`;
+};
+
+// ---------- clipboard & prompts ----------
+async function copyText(text) {
+  try { await navigator.clipboard.writeText(text); return true; } catch (_) {}
+  const ta = el("textarea"); ta.value = text; document.body.append(ta); ta.select();
+  const ok = document.execCommand("copy"); ta.remove(); return ok;
+}
+function flash(btn, msg) { const old = btn.textContent; btn.textContent = msg; setTimeout(() => btn.textContent = old, 1200); }
+function showPrompt(host, text, btn) {
+  copyText(text).then(ok => btn && flash(btn, ok ? "Copied!" : "Copy failed"));
+  host.innerHTML = `<div class="prompt-box"><strong>Prompt copied — paste it into your agent</strong><textarea rows="4" readonly>${esc(text)}</textarea></div>`;
+}
+const ctx = `in the ${D.repo || D.module} repository at commit ${D.shortSha}`;
+const filePrompt = p => `Walk me through ${p} ${ctx}. Read the file first, then explain what it does, how it fits into the architecture, and its most important functions and types. Cite file paths and line numbers.`;
+const topicPrompt = t => `${t} — answer ${ctx}. Read the relevant source files before answering and cite file paths and line numbers.`;
+
+// ---------- source inspector ----------
+let modalPath = "";
+function openSource(p) {
+  modalPath = p;
+  const f = D.files[p];
+  $("#srcPath").textContent = p;
+  $("#srcPromptHost").innerHTML = "";
+  $("#srcCopyGH").classList.toggle("hidden", !D.repo);
+  const pkg = f?.pkg ?? (f?.dir ? null : pkgById[p.replace(/\/[^/]*$/, "")]?.id);
+  $("#srcOpenMap").classList.toggle("hidden", !pkg);
+  $("#srcOpenMap").dataset.pkg = pkg || "";
+  const body = $("#srcBody");
+  if (!f) {
+    $("#srcKind").textContent = "Not inlined";
+    body.innerHTML = `<p class="muted">This file is not inlined in the walkthrough. Use <em>Copy GitHub URL</em> or <em>Copy prompt for agent</em>.</p>`;
+  } else if (f.dir) {
+    $("#srcKind").textContent = `Directory · ${f.lines} lines${f.pkg ? " · package " + f.pkg : ""}`;
+    body.innerHTML = f.entries.map(e => {
+      const name = e.replace(/ \(\d+ lines\)$/, ""), child = p + name;
+      return D.files[child] ? `<div>${srcLink(child, e)}</div>` : `<div>${esc(e)}</div>`;
+    }).join("");
+  } else {
+    $("#srcKind").textContent = `${f.lines} lines${f.trunc ? " · truncated preview" : ""}`;
+    body.innerHTML = f.content.split("\n").map((l, i) => `<div class="ln"><span>${i + 1}</span><span>${esc(l)}</span></div>`).join("") +
+      (f.trunc ? `<p class="muted">… truncated. Open on GitHub for the full file.</p>` : "");
+  }
+  $("#srcModal").classList.remove("hidden");
+}
+const closeModal = () => $("#srcModal").classList.add("hidden");
+$("#srcClose").onclick = closeModal;
+$("#srcModal").onclick = e => { if (e.target.id === "srcModal") closeModal(); };
+document.addEventListener("keydown", e => { if (e.key === "Escape") closeModal(); });
+$("#srcCopyPath").onclick = e => copyText(modalPath).then(() => flash(e.target, "Copied!"));
+$("#srcCopyGH").onclick = e => copyText(ghURL(modalPath)).then(() => flash(e.target, "Copied!"));
+$("#srcCopyPrompt").onclick = e => showPrompt($("#srcPromptHost"), filePrompt(modalPath), e.target);
+$("#srcOpenMap").onclick = e => { closeModal(); jumpToPkg(e.target.dataset.pkg); };
+document.addEventListener("click", e => {
+  const s = e.target.closest("[data-src]"); if (s) { e.preventDefault(); openSource(s.dataset.src); return; }
+  const k = e.target.closest("a.pkgref,[data-pkg]:not(.pkg):not(#srcOpenMap)"); if (k) { e.preventDefault(); jumpToPkg(k.dataset.pkg); }
+});
+
+// ---------- theme & tabs ----------
+function setTheme(t) { document.documentElement.dataset.theme = t; localStorage.setItem("wt-theme", t); $("#themeToggle").textContent = t === "dark" ? "☾ Dark" : "☀ Light"; }
+setTheme(localStorage.getItem("wt-theme") || (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light"));
+$("#themeToggle").onclick = () => setTheme(document.documentElement.dataset.theme === "dark" ? "light" : "dark");
+function showTab(name) {
+  document.querySelectorAll("#tabs button").forEach(b => b.classList.toggle("active", b.dataset.tab === name));
+  document.querySelectorAll("section").forEach(s => s.classList.toggle("show", s.id === "tab-" + name));
+  if (location.hash.slice(1).split("/")[0] !== name) history.replaceState(null, "", "#" + name);
+  if (name === "map") requestAnimationFrame(drawWires);
+}
+document.querySelectorAll("#tabs button").forEach(b => b.onclick = () => showTab(b.dataset.tab));
+
+// ---------- header & paths ----------
+document.title = D.title || document.title;
+$("#title").textContent = D.title;
+$("#subtitle").innerHTML = [D.repo || D.module, `<code>${esc(D.shortSha)}</code> (${esc(D.ref)})`, esc(D.goVersion),
+  `${D.packages.length} packages`, `${D.totalLoc.toLocaleString()} LOC`, `generated ${esc(D.generatedAt)}`].filter(Boolean).join(" · ");
+$("#summary").innerHTML = D.summary;
+function renderPaths() {
+  const groups = {};
+  D.tours.forEach(t => (groups[t.group || "Tours"] ||= []).push(t));
+  const host = $("#pathGroups");
+  Object.entries(groups).forEach(([g, tours], gi) => {
+    host.append(el("h3", "", `${gi + 1}. ${esc(g)}`));
+    const grid = el("div", "grid2 mb");
+    tours.forEach(t => {
+      const c = el("button", "path-card", `<div style="font-weight:600">${esc(t.title)}</div><div class="xs muted">${esc(t.subtitle)}</div><div class="xs muted mt">${t.steps.length} steps →</div>`);
+      c.onclick = () => openTour(t.id, 0);
+      grid.append(c);
+    });
+    host.append(grid);
+  });
+  const card = (title, sub, tab) => { const c = el("button", "path-card", `<div style="font-weight:600">${title}</div><div class="xs muted">${sub}</div>`); c.onclick = () => showTab(tab); return c; };
+  host.append(el("h3", "", `${Object.keys(groups).length + 1}. Explore`));
+  const g = el("div", "grid2 mb");
+  g.append(card("Architecture map", `${D.layers.length} layers, ${D.packages.length} packages with live import wires`, "map"),
+    card("Command flows", `${D.flows.length} traced commands, ${D.commands.length} detected`, "flows"),
+    card("Findings", `${D.findings.length} architectural observations`, "findings"));
+  host.append(g);
+}
+$("#copyCustom").onclick = e => { const t = $("#customTopic").value.trim(); if (t) showPrompt($("#customPromptHost"), topicPrompt(t), e.target); };
+
+// ---------- map ----------
+let selected = null;
+const card = id => document.querySelector(`.pkg[data-id="${CSS.escape(id)}"]`);
+function renderMap() {
+  const host = $("#layers");
+  D.layers.forEach(l => {
+    const sec = el("div", "layer", `<div class="sm"><strong>${esc(l.title)}</strong> <span class="xs muted">${esc(l.hint)}</span></div>`);
+    const body = el("div", "layer-b");
+    l.packages.forEach(id => {
+      const p = pkgById[id];
+      const b = el("button", "pkg", `<div class="mono xs">${esc(id)}</div><div class="xs muted">${p.loc.toLocaleString()} LOC · ${p.files.length} files</div>`);
+      b.dataset.id = id; b.onclick = () => selectPkg(id);
+      body.append(b);
+    });
+    sec.append(body); host.append(sec);
+  });
+}
+function clearMap() {
+  selected = null;
+  document.querySelectorAll(".pkg").forEach(c => c.classList.remove("sel", "imp", "dep", "dim"));
+  $("#wires").innerHTML = "";
+  $("#detail").innerHTML = `<p class="muted">Select a package to see what it does, what it imports, who imports it, and its files.</p>`;
+}
+function selectPkg(id) {
+  if (selected === id) return clearMap();
+  selected = id;
+  const p = pkgById[id], imp = new Set(p.imports), deps = $("#showDeps").checked ? new Set(p.importedBy) : new Set();
+  document.querySelectorAll(".pkg").forEach(c => {
+    const cid = c.dataset.id;
+    c.classList.toggle("sel", cid === id); c.classList.toggle("imp", imp.has(cid)); c.classList.toggle("dep", deps.has(cid));
+    c.classList.toggle("dim", cid !== id && !imp.has(cid) && !deps.has(cid));
+  });
+  drawWires(); renderDetail(p);
+}
+function jumpToPkg(id) {
+  if (!pkgById[id]) return;
+  showTab("map"); if (selected === id) selected = null; selectPkg(id);
+  card(id)?.scrollIntoView({behavior: "smooth", block: "center"});
+}
+function drawWires() {
+  const svg = $("#wires"); svg.innerHTML = "";
+  if (!selected || !$("#tab-map").classList.contains("show")) return;
+  const box = $("#map").getBoundingClientRect(), from = card(selected).getBoundingClientRect();
+  const color = { imp: "var(--primary)", dep: "var(--dep)" };
+  svg.innerHTML = Object.entries(color).map(([k, c]) => `<defs><marker id="m-${k}" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0L10,5L0,10z" fill="${c}"/></marker></defs>`).join("");
+  const wire = (a, b, kind) => {
+    const x1 = a.left + a.width / 2 - box.left, x2 = b.left + b.width / 2 - box.left;
+    const down = b.top >= a.bottom - 1;
+    const y1 = (down ? a.bottom : a.top) - box.top, y2 = (down ? b.top : b.bottom) - box.top, my = (y1 + y2) / 2;
+    const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+    path.setAttribute("d", `M${x1},${y1} C${x1},${my} ${x2},${my} ${x2},${y2}`);
+    path.setAttribute("fill", "none"); path.setAttribute("stroke", color[kind]); path.setAttribute("stroke-width", "1.5");
+    path.setAttribute("opacity", ".8"); path.setAttribute("marker-end", `url(#m-${kind})`);
+    svg.append(path);
+  };
+  pkgById[selected].imports.forEach(i => card(i) && wire(from, card(i).getBoundingClientRect(), "imp"));
+  if ($("#showDeps").checked) pkgById[selected].importedBy.forEach(i => card(i) && wire(card(i).getBoundingClientRect(), from, "dep"));
+}
+function renderDetail(p) {
+  const chips = ids => ids.length ? `<div class="row">${ids.map(i => `<button class="chip" data-pkg="${esc(i)}">${esc(i)}</button>`).join("")}</div>` : `<p class="xs muted">none</p>`;
+  $("#detail").innerHTML = `
+    <div class="xs muted">${esc(layerOf[p.id]?.title)}</div>
+    <h2 class="mono">${esc(p.id)}</h2>
+    <p>${desc(p.id)}</p>
+    <p class="xs muted mt">${p.loc.toLocaleString()} LOC · ${p.files.length} files · ${p.tests} test files</p>
+    <div class="row mt"><button class="xs" data-src="${esc(p.id)}/">Open folder</button><button class="xs" id="pkgPrompt">Copy prompt for agent</button></div>
+    <div id="pkgPromptHost"></div>
+    <h3>Imports (${p.imports.length})</h3>${chips(p.imports)}
+    <h3>Imported by (${p.importedBy.length})</h3>${chips(p.importedBy)}
+    <h3>Exported</h3><p class="xs">${p.exported.map(s => `<code>${esc(s)}</code>`).join(" ") || "<span class='muted'>none</span>"}${p.moreExported ? ` <span class="muted">+${p.moreExported} more</span>` : ""}</p>
+    <h3>Files</h3><div class="row">${p.files.map(f => `<button class="chip" data-src="${esc(p.id)}/${esc(f.name)}">${esc(f.name)} <span class="muted">${f.lines}</span></button>`).join("")}</div>`;
+  $("#pkgPrompt").onclick = e => showPrompt($("#pkgPromptHost"), filePrompt(p.id + "/"), e.target);
+}
+$("#resetMap").onclick = clearMap;
+$("#showDeps").onchange = () => { if (selected) { const s = selected; selected = null; selectPkg(s); } };
+addEventListener("resize", drawWires);
+
+// ---------- tours ----------
+let tour = null, stepIdx = 0;
+function openTour(id, n) { tour = D.tours.find(t => t.id === id) || D.tours[0]; stepIdx = n || 0; showTab("tours"); renderTour(); }
+function renderTour() {
+  $("#tourSelector").innerHTML = "";
+  D.tours.forEach(t => { const b = el("button", "sel-btn xs" + (t === tour ? " active" : ""), esc(t.title)); b.onclick = () => openTour(t.id, 0); $("#tourSelector").append(b); });
+  $("#tourHeader").innerHTML = `<div class="xs muted">${esc(tour.group)}</div><h2>${esc(tour.title)}</h2><p class="muted">${esc(tour.subtitle)}</p>`;
+  $("#stepNav").innerHTML = "";
+  tour.steps.forEach((s, i) => { const li = el("li"); const b = el("button", i === stepIdx ? "active" : "", `${i + 1}. ${esc(s.t)}`); b.onclick = () => { stepIdx = i; renderTour(); }; li.append(b); $("#stepNav").append(li); });
+  const s = tour.steps[stepIdx];
+  $("#stepBody").innerHTML = `
+    <div class="row xs muted">Step ${stepIdx + 1} of ${tour.steps.length}${s.runs ? ` <span class="badge mono">$ ${esc(s.runs)}</span>` : ""}${s.pkg ? ` <button class="xs" data-pkg="${esc(s.pkg)}">Show ${esc(s.pkg)} in map →</button>` : ""}</div>
+    <h2 class="mt">${esc(s.t)}</h2><div class="sm">${s.body}</div>
+    ${s.look?.length ? `<h3>Look at</h3><div class="row">${s.look.map(f => `<button class="chip" data-src="${esc(f)}">${esc(f)}</button>`).join("")}</div>` : ""}
+    <div class="row mt"><button class="xs" id="stepPrompt">Copy prompt for agent</button></div><div id="stepPromptHost"></div>`;
+  $("#stepPrompt").onclick = e => showPrompt($("#stepPromptHost"), topicPrompt(`Walk me through "${s.t}" (${tour.title}), starting from ${(s.look || []).join(", ")}`), e.target);
+  $("#stepCounter").textContent = `${stepIdx + 1} / ${tour.steps.length}`;
+  $("#prevStep").disabled = stepIdx === 0; $("#nextStep").disabled = stepIdx === tour.steps.length - 1;
+  history.replaceState(null, "", `#tours/${tour.id}/${stepIdx}`);
+}
+$("#prevStep").onclick = () => { if (stepIdx > 0) { stepIdx--; renderTour(); } };
+$("#nextStep").onclick = () => { if (stepIdx < tour.steps.length - 1) { stepIdx++; renderTour(); } };
+
+// ---------- flows & findings ----------
+function renderFlows() {
+  const show = f => {
+    document.querySelectorAll("#flowTabs button").forEach(b => b.classList.toggle("active", b.dataset.id === f.id));
+    $("#flowBody").innerHTML = `<div class="row"><code>$ ${esc(f.cmd)}</code> <span class="xs muted">entry:</span> ${srcLink(f.file)}</div>
+      <ol class="timeline mt">${f.steps.map(([who, what], i) => `<li data-n="${i + 1}"><div class="xs muted">${who}</div><div class="sm">${what}</div></li>`).join("")}</ol>`;
+  };
+  D.flows.forEach(f => { const b = el("button", "sel-btn xs", esc(f.title)); b.dataset.id = f.id; b.onclick = () => show(f); $("#flowTabs").append(b); });
+  if (D.flows.length) show(D.flows[0]); else $("#flowBody").innerHTML = `<p class="muted">No flows.</p>`;
+  $("#cmdTable").innerHTML = `<tr><th align="left">Command</th><th align="left">Usage</th><th align="left">Action</th><th align="left">Defined in</th></tr>` +
+    D.commands.map(c => `<tr><td><code>${esc(c.name)}</code></td><td class="muted">${esc(c.usage)}</td><td><code>${esc(c.action || "")}</code></td><td class="xs">${esc(c.file)}:${c.line}</td></tr>`).join("");
+}
+function renderFindings() {
+  $("#findings").innerHTML = D.findings.map(f => `<div class="card sm"><strong>${esc(f.t)}</strong><p class="mt">${f.b}</p>
+    <div class="row mt xs">${srcLink(f.f)}${f.pkg ? " · " + pkgLink(f.pkg) : ""}</div></div>`).join("");
+}
+
+// ---------- boot ----------
+renderPaths(); renderMap(); renderFlows(); renderFindings();
+tour = D.tours[0];
+const [tab, tid, n] = location.hash.slice(1).split("/");
+if (tab === "tours" && tid) openTour(tid, +n || 0);
+else { if (tour) renderTour(); showTab(["paths", "map", "tours", "flows", "findings"].includes(tab) ? tab : "paths"); }
+</script>
+</body>
+</html>
