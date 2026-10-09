@@ -212,18 +212,26 @@ const $ = s => document.querySelector(s);
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const el = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e; };
 const plural = (n, word) => `${n.toLocaleString()} ${word}${n === 1 ? "" : "s"}`;
-const pkgById = Object.fromEntries(D.packages.map(p => [p.id, p]));
-const layerOf = {}; D.layers.forEach(l => l.packages.forEach(id => layerOf[id] = l));
-const contractOf = Object.fromEntries((D.contracts || []).map(c => [c.parent, c]));
+// own reads only an object's own keys, so names like "constructor" or
+// "__proto__" in data or URLs never resolve to inherited properties.
+const own = (o, k) => o && Object.prototype.hasOwnProperty.call(o, k) ? o[k] : undefined;
+const dict = entries => Object.assign(Object.create(null), Object.fromEntries(entries));
+const pkgById = dict(D.packages.map(p => [p.id, p]));
+const layerOf = Object.create(null); D.layers.forEach(l => l.packages.forEach(id => layerOf[id] = l));
+const contractOf = dict((D.contracts || []).map(c => [c.parent, c]));
+const fileOf = p => own(D.files, p);
+// joinPath joins a directory ("./" or "." for the module root) and a name.
+const joinPath = (dir, name) => (dir === "./" || dir === "." || dir === "") ? name : dir.replace(/\/?$/, "/") + name;
+const pkgOfPath = p => pkgById[p.includes("/") ? p.replace(/\/[^/]*$/, "") : "."];
 const tour = D.tour && D.tour.steps.length ? D.tour : null;
 const guides = D.guides || [], flows = D.flows || [], findings = D.findings || [];
 const families = (D.families || []).filter(f => contractOf[f.parent]);
-const desc = id => (D.descriptions || {})[id] || esc(pkgById[id]?.doc || "");
+const desc = id => own(D.descriptions, id) || esc(pkgById[id]?.doc || "");
 const srcLink = (p, label) => `<a class="src" data-src="${esc(p)}">${esc(label || p)}</a>`;
 const pkgLink = id => pkgById[id] ? `<a class="pkgref" data-pkg="${esc(id)}">${esc(id)}</a>` : esc(id);
 const ghURL = p => {
   if (!D.repo) return "";
-  const f = D.files[p], kind = !f || f.dir ? "tree" : "blob";
+  const kind = p.endsWith("/") ? "tree" : "blob";
   return `https://github.com/${D.repo}/${kind}/${D.sha}/${p.replace(/\/$/, "").replace(/^\.$/, "")}`;
 };
 
@@ -248,23 +256,29 @@ function showPrompt(host, text, btn) {
   host.innerHTML = `<div class="prompt-box"><strong></strong><textarea rows="4" readonly>${esc(text)}</textarea></div>`;
   copyText(text).then(ok => {
     if (btn) flash(btn, ok ? "Copied!" : "Select and copy below");
-    host.querySelector("strong").textContent = ok ? "Copied — paste it into your agent" : "Clipboard unavailable here — select the text and copy it";
+    host.querySelector("strong").textContent = ok ? "Copied \u2014 paste it into your agent" : "Clipboard unavailable here \u2014 select the text and copy it";
     if (!ok) host.querySelector("textarea").select();
   });
 }
-const ctx = `in the ${D.repo || D.module} repository at commit ${D.shortSha}`;
+// Prompts are built only from fixed wording plus values the render step
+// validated (commit, module path, package ids, file paths, guide and flow
+// ids), never from free narrative text, so a shared page cannot smuggle
+// instructions into the reader's agent. topicPrompt's text is typed by the
+// reader.
+const ctx = `in the ${D.repo || D.module || "current"} repository at commit ${D.shortSha}`;
 const filePrompt = p => `Walk me through ${p} ${ctx}. Read the file first, then explain what it does, how it fits into the architecture, and its most important functions and types. Cite file paths and line numbers.`;
-const topicPrompt = t => `${t} — answer ${ctx}. Read the relevant source files before answering and cite file paths and line numbers.`;
+const filesPrompt = (what, files) => `Walk me through ${what} ${ctx}, starting from: ${[...new Set(files)].join(", ") || "the module root"}. Read those files first and cite file paths and line numbers.`;
+const topicPrompt = t => `${t} \u2014 answer ${ctx}. Read the relevant source files before answering and cite file paths and line numbers.`;
 
 // ---------- source inspector ----------
 let modalPath = "";
 function openSource(p) {
   modalPath = p;
-  const f = D.files[p];
+  const f = fileOf(p);
   $("#srcPath").textContent = p;
   $("#srcPromptHost").innerHTML = "";
   $("#srcCopyGH").classList.toggle("hidden", !D.repo);
-  const pkg = f?.pkg ?? (f?.dir ? null : pkgById[p.replace(/\/[^/]*$/, "")]?.id);
+  const pkg = f?.pkg || (f?.dir ? null : pkgOfPath(p)?.id);
   $("#srcOpenMap").classList.toggle("hidden", !pkg);
   $("#srcOpenMap").dataset.pkg = pkg || "";
   const body = $("#srcBody");
@@ -272,15 +286,15 @@ function openSource(p) {
     $("#srcKind").textContent = "Not inlined";
     body.innerHTML = `<p class="muted">This file is not inlined in the walkthrough. Use <em>Copy GitHub URL</em> or <em>Copy prompt for agent</em>.</p>`;
   } else if (f.dir) {
-    $("#srcKind").textContent = `Directory · ${plural(f.lines, "line")}${f.pkg ? " · package " + f.pkg : ""}`;
+    $("#srcKind").textContent = `Directory \u00b7 ${plural(f.lines, "line")}${f.pkg ? " \u00b7 package " + f.pkg : ""}`;
     body.innerHTML = f.entries.map(e => {
-      const name = e.replace(/ \(\d+ lines\)$/, ""), child = p + name;
-      return D.files[child] ? `<div>${srcLink(child, e)}</div>` : `<div>${esc(e)}</div>`;
+      const name = e.replace(/ \(\d+ lines\)$/, ""), child = joinPath(p, name);
+      return fileOf(child) ? `<div>${srcLink(child, e)}</div>` : `<div>${esc(e)}</div>`;
     }).join("");
   } else {
-    $("#srcKind").textContent = `${plural(f.lines, "line")}${f.trunc ? " · truncated preview" : ""}`;
+    $("#srcKind").textContent = `${plural(f.lines, "line")}${f.trunc ? " \u00b7 truncated preview" : ""}`;
     body.innerHTML = f.content.split("\n").map((l, i) => `<div class="ln"><span>${i + 1}</span><span>${esc(l)}</span></div>`).join("") +
-      (f.trunc ? `<p class="muted">… truncated. Open on GitHub for the full file.</p>` : "");
+      (f.trunc ? `<p class="muted">\u2026 truncated. Open on GitHub for the full file.</p>` : "");
   }
   $("#srcModal").classList.remove("hidden");
 }
@@ -298,7 +312,7 @@ document.addEventListener("click", e => {
 }, true);
 
 // ---------- theme & tabs ----------
-function setTheme(t) { document.documentElement.dataset.theme = t; store.set("wt-theme", t); $("#themeToggle").textContent = t === "dark" ? "☾ Dark" : "☀ Light"; }
+function setTheme(t) { document.documentElement.dataset.theme = t; store.set("wt-theme", t); $("#themeToggle").textContent = t === "dark" ? "\u263e Dark" : "\u2600 Light"; }
 setTheme(store.get("wt-theme") || (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light"));
 $("#themeToggle").onclick = () => setTheme(document.documentElement.dataset.theme === "dark" ? "light" : "dark");
 const available = { paths: true, map: true, tour: !!tour, guides: guides.length > 0, flows: true, families: families.length > 0, findings: true };
@@ -308,21 +322,24 @@ document.querySelectorAll("#tabs button").forEach(b => {
 });
 if (families.length === 1) $('#tabs button[data-tab="families"]').textContent = families[0].title;
 function showTab(name) {
-  if (!available[name]) name = "paths";
+  if (!own(available, name)) name = "paths";
   document.querySelectorAll("#tabs button").forEach(b => b.classList.toggle("active", b.dataset.tab === name));
   document.querySelectorAll("section").forEach(s => s.classList.toggle("show", s.id === "tab-" + name));
   if (location.hash.slice(1).split("/")[0] !== name) setHash("#" + name);
   if (name === "map") requestAnimationFrame(drawWires);
+  onShow[name]?.();
 }
+// onShow refreshes a tab's own hash (step, item) when it is shown.
+const onShow = {};
 const visible = name => $("#tab-" + name).classList.contains("show");
 
 // ---------- header & paths ----------
 document.title = D.title || document.title;
 $("#title").textContent = D.title;
 $("#subtitle").innerHTML = [esc(D.repo || D.module), `<code>${esc(D.shortSha)}</code> (${esc(D.ref)})`,
-  D.dirty ? `<span class="badge" title="Generated from a work tree with uncommitted changes">uncommitted changes</span>` : "",
+  D.dirty ? `<span class="badge" title="The work tree had uncommitted changes; this walkthrough shows the commit only">uncommitted changes not shown</span>` : "",
   D.tag ? `latest tag ${esc(D.tag)}` : "", esc(D.goVersion), plural(D.packages.length, "package"), `${D.totalLoc.toLocaleString()} LOC`,
-  `committed ${esc(D.commitDate)}`, esc(D.platform)].filter(Boolean).join(" · ");
+  `committed ${esc(D.commitDate)}`, esc(D.platform)].filter(Boolean).join(" \u00b7 ");
 $("#summary").innerHTML = D.summary;
 function card(eyebrow, title, sub, onclick) {
   const c = el("button", "path-card", `<div class="xs muted">${eyebrow}</div><h4>${esc(title)}</h4><div class="xs muted">${esc(sub)}</div>`);
@@ -330,17 +347,17 @@ function card(eyebrow, title, sub, onclick) {
 }
 function renderPaths() {
   const core = $("#coreCards");
-  core.append(card(`${plural(D.layers.length, "layer")} · ${plural(D.packages.length, "package")}`, "Interactive architecture map", "Click any package to trace what it imports and what imports it.", () => showTab("map")));
+  core.append(card(`${plural(D.layers.length, "layer")} \u00b7 ${plural(D.packages.length, "package")}`, "Interactive architecture map", "Click any package to trace what it imports and what imports it.", () => showTab("map")));
   if (tour) core.append(card(plural(tour.steps.length, "step"), tour.title, tour.subtitle, () => openTour(0)));
-  core.append(card(`${plural(flows.length, "traced flow")} · ${plural(D.commands.length, "detected command")}`, "Command lifecycle timelines", "Follow commands stage by stage through the code.", () => showTab("flows")));
+  core.append(card(`${plural(flows.length, "traced flow")} \u00b7 ${plural(D.commands.length, "detected command")}`, "Command lifecycle timelines", "Follow commands stage by stage through the code.", () => showTab("flows")));
   families.forEach((f, i) => {
     const c = contractOf[f.parent];
-    core.append(card(`${plural(c.members.length, "member")} · ${plural(c.hooks.length, "shared function")} (Go AST)`, f.title, `Compare the packages under ${f.parent}/ and the implicit contract they share.`, () => openFamily(i)));
+    core.append(card(`${plural(c.members.length, "member")} \u00b7 ${plural(c.hooks.length, "shared function")} (Go AST)`, f.title, `Compare the packages under ${f.parent}/ and the implicit contract they share.`, () => openFamily(i)));
   });
-  core.append(card(`${plural(findings.length, "finding")} · ${plural(D.checks.length, "computed check")}`, "Architectural findings", "Design decisions and checks computed from the code.", () => showTab("findings")));
+  core.append(card(`${plural(findings.length, "finding")} \u00b7 ${plural(D.checks.length, "computed check")}`, "Architectural findings", "Design decisions and checks computed from the code.", () => showTab("findings")));
   $("#guidesHeading").textContent = `2. ${D.guidesHeading || "Deep dives"}`;
   $("#guidesHeading").classList.toggle("hidden", !guides.length);
-  guides.forEach(g => $("#guideCards").append(card(`${esc(g.audience)} · ${plural(g.steps.length, "step")}`, g.title, g.subtitle, () => openGuide(g.id, 0))));
+  guides.forEach(g => $("#guideCards").append(card(`${esc(g.audience)} \u00b7 ${plural(g.steps.length, "step")}`, g.title, g.subtitle, () => openGuide(g.id, 0))));
 }
 $("#copyCustom").onclick = e => { const t = $("#customTopic").value.trim(); if (t) showPrompt($("#customPromptHost"), topicPrompt(t), e.target); };
 
@@ -354,7 +371,7 @@ function renderMap() {
     const body = el("div", "layer-b");
     l.packages.forEach(id => {
       const p = pkgById[id];
-      const b = el("button", "pkg", `<div class="mono xs">${esc(id)}</div><div class="xs muted">${p.loc.toLocaleString()} LOC · ${plural(p.files.length, "file")}</div>`);
+      const b = el("button", "pkg", `<div class="mono xs">${esc(id)}</div><div class="xs muted">${p.loc.toLocaleString()} LOC \u00b7 ${plural(p.files.length, "file")}</div>`);
       b.dataset.id = id; b.onclick = () => selectPkg(id);
       body.append(b);
     });
@@ -408,13 +425,13 @@ function renderDetail(p) {
     <div class="xs muted">${esc(layerOf[p.id]?.title)}</div>
     <h2 class="mono">${esc(p.id)}</h2>
     <p>${desc(p.id)}</p>
-    <p class="xs muted mt">${p.loc.toLocaleString()} LOC · ${plural(p.files.length, "file")} · ${plural(p.tests, "test file")}</p>
+    <p class="xs muted mt">${p.loc.toLocaleString()} LOC \u00b7 ${plural(p.files.length, "file")} \u00b7 ${plural(p.tests, "test file")}</p>
     <div class="row mt"><button class="xs" data-src="${esc(p.id)}/">Open folder</button><button class="xs" id="pkgPrompt">Copy prompt for agent</button></div>
     <div id="pkgPromptHost"></div>
     <h3>Imports (${p.imports.length})</h3>${chips(p.imports)}
     <h3>Imported by (${p.importedBy.length})</h3>${chips(p.importedBy)}
     <h3>Exported</h3><p class="xs">${p.exported.map(s => `<code>${esc(s)}</code>`).join(" ") || "<span class='muted'>none</span>"}${p.moreExported ? ` <span class="muted">+${p.moreExported} more</span>` : ""}</p>
-    <h3>Files</h3><div class="row">${p.files.map(f => `<button class="chip" data-src="${esc(p.id)}/${esc(f.name)}">${esc(f.name)} <span class="muted">${f.lines}</span></button>`).join("")}</div>`;
+    <h3>Files</h3><div class="row">${p.files.map(f => `<button class="chip" data-src="${esc(joinPath(p.id, f.name))}">${esc(f.name)} <span class="muted">${f.lines}</span></button>`).join("")}</div>`;
   $("#pkgPrompt").onclick = e => showPrompt($("#pkgPromptHost"), filePrompt(p.id + "/"), e.target);
 }
 $("#resetMap").onclick = clearMap;
@@ -434,11 +451,11 @@ function makeStepper(p, context, hashFor) {
       <div class="row xs muted">Step ${st.idx + 1} of ${steps.length}
         ${s.runs ? `<span class="badge"><strong>Stage:</strong> ${esc(s.runs)}</span>` : ""}
         ${s.code ? `<span class="badge"><strong>Code:</strong> ${srcLink(s.code)}</span>` : ""}
-        ${s.pkg ? `<button class="xs" data-pkg="${esc(s.pkg)}">Show ${esc(s.pkg)} in map →</button>` : ""}</div>
+        ${s.pkg ? `<button class="xs" data-pkg="${esc(s.pkg)}">Show ${esc(s.pkg)} in map \u2192</button>` : ""}</div>
       <h2 class="mt">${esc(s.t)}</h2><div class="sm">${s.body}</div>
       ${s.look?.length ? `<h3>Key files to inspect</h3><div class="row">${s.look.map(f => `<button class="chip" data-src="${esc(f)}">${esc(f)}</button>`).join("")}</div>` : ""}
       <div class="row mt"><button class="xs" id="${p}Prompt">Copy prompt for agent</button></div><div id="${p}PromptHost"></div>`;
-    $(`#${p}Prompt`).onclick = e => showPrompt($(`#${p}PromptHost`), topicPrompt(`Walk me through "${s.t}" (${context()}), starting from ${(s.look || []).join(", ")}`), e.target);
+    $(`#${p}Prompt`).onclick = e => showPrompt($(`#${p}PromptHost`), filesPrompt(`step ${st.idx + 1} of ${context()}`, [...(s.code ? [s.code] : []), ...(s.look || [])]), e.target);
     $(`#${p}Counter`).textContent = `${st.idx + 1} / ${steps.length}`;
     $(`#${p}Prev`).disabled = st.idx === 0; $(`#${p}Next`).disabled = st.idx === steps.length - 1;
     if (visible(p === "tour" ? "tour" : "guides")) setHash(hashFor(st.idx));
@@ -447,15 +464,16 @@ function makeStepper(p, context, hashFor) {
   $(`#${p}Next`).onclick = () => { st.idx++; st.render(); };
   return st;
 }
-const tourStepper = makeStepper("tour", () => tour.title, i => `#tour/${i}`);
+const tourStepper = makeStepper("tour", () => "the guided tour", i => `#tour/${i}`);
 function openTour(n) {
   if (!tour) return showTab("paths");
   tourStepper.steps = tour.steps; tourStepper.idx = n || 0;
   $("#tourHeader").innerHTML = `<h2>${esc(tour.title)}</h2><p class="muted">${esc(tour.subtitle)}</p>`;
   showTab("tour"); tourStepper.render();
 }
+onShow.tour = () => tourStepper.render();
 let guide = guides[0];
-const guideStepper = makeStepper("guide", () => guide.title, i => `#guides/${encodeURIComponent(guide.id)}/${i}`);
+const guideStepper = makeStepper("guide", () => `the "${guide.id}" guide`, i => `#guides/${encodeURIComponent(guide.id)}/${i}`);
 function openGuide(id, n, show = true) {
   if (!guides.length) return showTab("paths");
   guide = guides.find(g => g.id === id) || guides[0];
@@ -466,11 +484,14 @@ function openGuide(id, n, show = true) {
   if (show) showTab("guides");
   guideStepper.render();
 }
+onShow.guides = () => guideStepper.render();
 $("#backToPaths").onclick = () => showTab("paths");
 
 // ---------- flows ----------
+let currentFlow = flows[0];
+onShow.flows = () => currentFlow && setHash(`#flows/${encodeURIComponent(currentFlow.id)}`);
 function showFlow(id) {
-  const f = flows.find(x => x.id === id) || flows[0];
+  const f = currentFlow = flows.find(x => x.id === id) || flows[0];
   if (!f) { $("#flowBody").innerHTML = `<p class="muted">No traced flows.</p>`; return; }
   document.querySelectorAll("#flowTabs button").forEach(b => b.classList.toggle("active", b.dataset.id === f.id));
   const list = (label, items) => items?.length ? `<div class="row mt xs"><strong>${label}</strong>${items.map(i => `<span class="badge">${i}</span>`).join("")}</div>` : "";
@@ -478,55 +499,56 @@ function showFlow(id) {
     ${list("Inputs &amp; state read:", f.inputs)}
     <div class="mt">${f.stages.map((s, i) => `<div class="stage"><div class="stage-rail"><div class="stage-num">${i + 1}</div>${i < f.stages.length - 1 ? `<div class="stage-line"></div>` : ""}</div>
       <div class="stage-card"><div class="row" style="justify-content:space-between"><strong class="sm">${esc(s.title)}</strong><span class="badge">${srcLink(s.where, s.where.split("/").filter(Boolean).pop())}</span></div>
-      <div class="xs muted mt">${s.body}</div>${s.out ? `<div class="xs mt">→ Output: <code>${esc(s.out)}</code></div>` : ""}</div></div>`).join("")}</div>
+      <div class="xs muted mt">${s.body}</div>${s.out ? `<div class="xs mt">\u2192 Output: <code>${esc(s.out)}</code></div>` : ""}</div></div>`).join("")}</div>
     ${list("Outputs:", f.outputs)}
     <div class="row mt"><button class="xs" id="flowPrompt">Copy prompt for agent</button></div><div id="flowPromptHost"></div>`;
-  $("#flowPrompt").onclick = e => showPrompt($("#flowPromptHost"), topicPrompt(`Trace \`${f.cmd}\` end to end, starting at ${f.file}`), e.target);
+  $("#flowPrompt").onclick = e => showPrompt($("#flowPromptHost"), filesPrompt(`the "${f.id}" command flow end to end`, [f.file, ...f.stages.map(s => s.where)]), e.target);
   if (visible("flows")) setHash(`#flows/${encodeURIComponent(f.id)}`);
 }
 function renderFlows() {
   flows.forEach(f => { const b = el("button", "sel-btn xs", esc(f.title)); b.dataset.id = f.id; b.onclick = () => showFlow(f.id); $("#flowTabs").append(b); });
   showFlow(flows[0]?.id);
   $("#cmdTable").innerHTML = `<tr><th>Command</th><th>Usage</th><th>Action</th><th>Defined in</th></tr>` +
-    D.commands.map(c => `<tr><td><code>${esc(c.name)}</code></td><td class="muted">${esc(c.usage)}</td><td>${c.action ? `<code>${esc(c.action)}</code>` : `<span class="muted">—</span>`}</td><td class="xs">${D.files[c.file] ? srcLink(c.file, `${c.file}:${c.line}`) : esc(`${c.file}:${c.line}`)}</td></tr>`).join("");
+    D.commands.map(c => `<tr><td><code>${esc(c.name)}</code></td><td class="muted">${esc(c.usage)}</td><td>${c.action ? `<code>${esc(c.action)}</code>` : `<span class="muted">\u2014</span>`}</td><td class="xs">${fileOf(c.file) ? srcLink(c.file, `${c.file}:${c.line}`) : esc(`${c.file}:${c.line}`)}</td></tr>`).join("");
 }
 
 // ---------- families ----------
 let familyIdx = 0;
+onShow.families = () => families.length && setHash(`#families/${familyIdx}`);
 function openFamily(i) { familyIdx = Math.min(Math.max(i || 0, 0), families.length - 1); showTab("families"); renderFamily(); }
 function renderFamily() {
   const f = families[familyIdx]; if (!f) return;
   const c = contractOf[f.parent];
   $("#familySelector").innerHTML = "";
   if (families.length > 1) families.forEach((x, i) => { const b = el("button", "sel-btn xs" + (i === familyIdx ? " active" : ""), esc(x.title)); b.onclick = () => openFamily(i); $("#familySelector").append(b); });
-  $("#familyHeader").innerHTML = `<div class="xs muted">${esc(f.parent)}/ · ${plural(c.members.length, "member")} · ${plural(c.hooks.length, "shared function")}</div><h2>${esc(f.title)}</h2><div>${f.intro}</div>`;
+  $("#familyHeader").innerHTML = `<div class="xs muted">${esc(f.parent)}/ \u00b7 ${plural(c.members.length, "member")} \u00b7 ${plural(c.hooks.length, "shared function")}</div><h2>${esc(f.title)}</h2><div>${f.intro}</div>`;
   const cols = f.columns || [], short = id => id.split("/").pop();
   $("#familyTable").innerHTML = `<tr><th>Member</th><th>LOC</th>${cols.map(x => `<th>${esc(x)}</th>`).join("")}</tr>` + c.members.map((id, i) => {
-    const r = f.rows[id] || { cells: cols.map(() => `<span class="muted">—</span>`), detail: desc(id) };
-    return `<tr class="fam-row" data-i="${i}"><td class="mono"><span class="xs muted" data-chev="${i}">▸</span> ${esc(short(id))}</td><td>${pkgById[id].loc.toLocaleString()}</td>${r.cells.map(x => `<td>${x}</td>`).join("")}</tr>
+    const r = own(f.rows, id) || { cells: cols.map(() => `<span class="muted">\u2014</span>`), detail: desc(id) };
+    return `<tr class="fam-row" data-i="${i}"><td class="mono"><span class="xs muted" data-chev="${i}">\u25b8</span> ${esc(short(id))}</td><td>${pkgById[id].loc.toLocaleString()}</td>${r.cells.map(x => `<td>${x}</td>`).join("")}</tr>
       <tr class="fam-detail hidden" data-i="${i}"><td colspan="${cols.length + 2}"><div class="sm">${r.detail}</div>
-        <div class="row mt"><button class="xs" data-src="${esc(id)}/">Open ${esc(id)}/</button><button class="xs" data-pkg="${esc(id)}">Show in map →</button><button class="xs fam-prompt" data-id="${esc(id)}">Copy prompt for agent</button></div><div class="fam-prompt-host"></div></td></tr>`;
+        <div class="row mt"><button class="xs" data-src="${esc(id)}/">Open ${esc(id)}/</button><button class="xs" data-pkg="${esc(id)}">Show in map \u2192</button><button class="xs fam-prompt" data-id="${esc(id)}">Copy prompt for agent</button></div><div class="fam-prompt-host"></div></td></tr>`;
   }).join("");
   document.querySelectorAll("#familyTable tr.fam-row").forEach(r => r.onclick = () => {
     const d = $(`#familyTable tr.fam-detail[data-i="${r.dataset.i}"]`);
     const hidden = d.classList.toggle("hidden");
-    $(`#familyTable [data-chev="${r.dataset.i}"]`).textContent = hidden ? "▸" : "▾";
+    $(`#familyTable [data-chev="${r.dataset.i}"]`).textContent = hidden ? "\u25b8" : "\u25be";
   });
   document.querySelectorAll("#familyTable .fam-prompt").forEach(b => b.onclick = e => {
     e.stopPropagation();
-    showPrompt(b.closest("td").querySelector(".fam-prompt-host"), topicPrompt(`Explain how ${b.dataset.id} implements the shared functions of ${f.parent}/ and how it differs from its siblings`), b);
+    showPrompt(b.closest("td").querySelector(".fam-prompt-host"), filesPrompt(`how ${b.dataset.id} implements the functions it shares with the other packages under ${f.parent}/, and how it differs from them`, [b.dataset.id + "/"]), b);
   });
   $("#contractTable").innerHTML = `<tr><th>Function</th><th>Referenced from</th>${c.members.map(id => `<th class="c mono">${esc(short(id))}</th>`).join("")}</tr>` +
-    c.hooks.map(h => `<tr><td><code>${esc(h.sig)}</code></td><td>${h.callers.map(x => `<code>${esc(x.split("/").pop())}</code>`).join(" ") || `<span class="muted">—</span>`}</td>${c.members.map(id => `<td class="c">${h.members.includes(id) ? "✓" : `<span class="muted">·</span>`}</td>`).join("")}</tr>`).join("");
+    c.hooks.map(h => `<tr><td><code>${esc(h.sig)}</code></td><td>${h.callers.map(x => `<code>${esc(x.split("/").pop())}</code>`).join(" ") || `<span class="muted">\u2014</span>`}</td>${c.members.map(id => `<td class="c">${h.members.includes(id) ? "\u2713" : `<span class="muted">\u00b7</span>`}</td>`).join("")}</tr>`).join("");
   if (visible("families")) setHash(`#families/${familyIdx}`);
 }
 
 // ---------- findings ----------
 function renderFindings() {
   $("#findings").innerHTML = findings.map(f => `<div class="card sm"><strong>${esc(f.t)}</strong><p class="mt">${f.b}</p>
-    <div class="row mt xs">${srcLink(f.f)}${f.pkg ? " · " + pkgLink(f.pkg) : ""}</div></div>`).join("") || `<p class="muted sm">No findings.</p>`;
+    <div class="row mt xs">${srcLink(f.f)}${f.pkg ? " \u00b7 " + pkgLink(f.pkg) : ""}</div></div>`).join("") || `<p class="muted sm">No findings.</p>`;
   $("#checks").innerHTML = D.checks.map(c => `<div class="card sm"><strong>${esc(c.title)}</strong> <span class="badge">${c.rows.length}</span><p class="xs muted mt">${esc(c.detail)}</p>
-    <div class="xs mt">${c.rows.length ? c.rows.map(r => `<div>${r.map(pkgLink).join(" → ")}</div>`).join("") : `<span class="muted">None found.</span>`}</div></div>`).join("");
+    <div class="xs mt">${c.rows.length ? c.rows.map(r => `<div>${r.map(pkgLink).join(" \u2192 ")}</div>`).join("") : `<span class="muted">None found.</span>`}</div></div>`).join("");
 }
 
 // ---------- routing & boot ----------
@@ -538,7 +560,7 @@ function route() {
   if (tab === "guides") return openGuide(a, +b || 0);
   if (tab === "families") return openFamily(+a || 0);
   if (tab === "flows") { showTab("flows"); return showFlow(a); }
-  showTab(tab in available ? tab : "paths");
+  showTab(own(available, tab) ? tab : "paths");
 }
 renderPaths(); renderMap(); renderFlows(); renderFindings();
 if (tour) { tourStepper.steps = tour.steps; $("#tourHeader").innerHTML = `<h2>${esc(tour.title)}</h2><p class="muted">${esc(tour.subtitle)}</p>`; tourStepper.render(); }

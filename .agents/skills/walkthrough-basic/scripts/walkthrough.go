@@ -21,12 +21,14 @@
 //	go run walkthrough.go analyze -root . -out facts.json
 //	go run walkthrough.go render -root . -facts facts.json -narrative narrative.json -out walkthrough.html
 //
-// Only files tracked by git are analyzed or inlined, so the output depends on
-// the commit (plus any uncommitted edits, which are flagged) and never on
-// untracked or ignored files such as credentials.
+// Every file is read from git objects at HEAD, never from the work tree, so
+// the output depends only on the commit: untracked, ignored, staged-only and
+// uncommitted content, symlinks, and files outside the repository can never
+// be read.
 package main
 
 import (
+	"bufio"
 	"bytes"
 	"crypto/sha256"
 	"encoding/base64"
@@ -48,9 +50,11 @@ import (
 	"path"
 	"path/filepath"
 	"regexp"
+	"runtime"
 	"sort"
 	"strconv"
 	"strings"
+	"time"
 )
 
 const (
@@ -58,6 +62,7 @@ const (
 	hashPlaceholder = "__WALKTHROUGH_SCRIPT_HASH__"
 	maxExported     = 60
 	maxInlineLines  = 600
+	maxReadBytes    = 8 << 20
 )
 
 // Facts is everything that can be derived mechanically from the source tree.
@@ -106,7 +111,7 @@ type Package struct {
 	Tests      int               `json:"tests"`
 	Imports    []string          `json:"imports"`
 	ImportedBy []string          `json:"importedBy"`
-	TestOnly   bool              `json:"testOnly,omitempty"`
+	TestOnly   bool              `json:"testOnly"`
 	Exported   []string          `json:"exported"`
 	MoreExport int               `json:"moreExported,omitempty"`
 	TestDeps   []string          `json:"-"`
@@ -247,11 +252,15 @@ type File struct {
 	Entries []string `json:"entries,omitempty"`
 }
 
-// repo is a git work tree restricted to its tracked files.
+// repo is a read-only view of the git tree at HEAD below root.
 type repo struct {
-	root    string
-	tracked map[string]bool // slash-separated paths relative to root
-	dirs    map[string]bool // every directory containing a tracked file, "." for root
+	root  string
+	blobs map[string]string   // regular file path relative to root -> blob id
+	dirs  map[string][]string // directory ("." for root) -> sorted entries; subdirectories end in "/"
+	cache map[string][]byte
+	cat   *exec.Cmd
+	in    io.WriteCloser
+	out   *bufio.Reader
 }
 
 func main() {
@@ -274,65 +283,151 @@ func main() {
 	}
 }
 
+// gitArgs disables repository-configured hooks and file system monitors, so
+// running git inside an untrusted checkout cannot execute its commands.
+func gitArgs(root string, args ...string) []string {
+	return append([]string{"-c", "core.fsmonitor=false", "-c", "core.hooksPath=/dev/null", "-C", root}, args...)
+}
+
 func openRepo(root string) (*repo, error) {
 	root, err := filepath.Abs(root)
 	if err != nil {
 		return nil, err
 	}
-	out, err := exec.Command("git", "-C", root, "ls-files", "-z").Output()
+	out, err := exec.Command("git", gitArgs(root, "ls-tree", "-r", "-z", "HEAD")...).Output()
 	if err != nil {
-		return nil, fmt.Errorf("%s must be inside a git work tree: %w", root, err)
+		return nil, fmt.Errorf("%s must be inside a git work tree with a HEAD commit: %w", root, err)
 	}
-	r := &repo{root: root, tracked: map[string]bool{}, dirs: map[string]bool{".": true}}
-	for _, p := range strings.Split(string(out), "\x00") {
-		if p == "" {
+	r := &repo{root: root, blobs: map[string]string{}, dirs: map[string][]string{".": nil}, cache: map[string][]byte{}}
+	seen := map[string]bool{}
+	add := func(dir, entry string) {
+		if !seen[dir+"\x00"+entry] {
+			seen[dir+"\x00"+entry] = true
+			r.dirs[dir] = append(r.dirs[dir], entry)
+		}
+	}
+	for _, rec := range strings.Split(string(out), "\x00") {
+		meta, p, ok := strings.Cut(rec, "\t")
+		fields := strings.Fields(meta)
+		// Keep regular files only; symlinks (120000) and submodules are skipped.
+		if !ok || len(fields) != 3 || fields[1] != "blob" || (fields[0] != "100644" && fields[0] != "100755") {
 			continue
 		}
-		r.tracked[p] = true
+		r.blobs[p] = fields[2]
+		add(path.Dir(p), path.Base(p))
 		for d := path.Dir(p); d != "."; d = path.Dir(d) {
-			r.dirs[d] = true
+			add(path.Dir(d), path.Base(d)+"/")
 		}
+	}
+	for d := range r.dirs {
+		sort.Strings(r.dirs[d])
 	}
 	return r, nil
 }
 
 func (r *repo) git(args ...string) string {
-	out, err := exec.Command("git", append([]string{"-C", r.root}, args...)...).Output()
+	out, err := exec.Command("git", gitArgs(r.root, args...)...).Output()
 	if err != nil {
 		return ""
 	}
 	return strings.TrimSpace(string(out))
 }
 
-// resolve validates a narrative reference and returns its absolute path. A
-// reference must be a clean relative path to a tracked regular file, or to a
-// directory with tracked files when it ends in "/". Symlinks are rejected so
-// that nothing outside the work tree can be read.
+// read returns a file's content at HEAD, at most maxReadBytes, and whether it
+// was cut short. A single "git cat-file --batch" process serves all reads.
+func (r *repo) read(rel string) ([]byte, bool, error) {
+	id, ok := r.blobs[rel]
+	if !ok {
+		return nil, false, fmt.Errorf("%s is not a file at HEAD", rel)
+	}
+	if b, ok := r.cache[rel]; ok {
+		return b, len(b) == maxReadBytes, nil
+	}
+	if r.cat == nil {
+		r.cat = exec.Command("git", gitArgs(r.root, "cat-file", "--batch")...)
+		var err error
+		if r.in, err = r.cat.StdinPipe(); err != nil {
+			return nil, false, err
+		}
+		stdout, err := r.cat.StdoutPipe()
+		if err != nil {
+			return nil, false, err
+		}
+		r.out = bufio.NewReader(stdout)
+		if err := r.cat.Start(); err != nil {
+			return nil, false, err
+		}
+	}
+	if _, err := fmt.Fprintln(r.in, id); err != nil {
+		return nil, false, err
+	}
+	header, err := r.out.ReadString('\n')
+	if err != nil {
+		return nil, false, err
+	}
+	var gotID, kind string
+	var size int64
+	if _, err := fmt.Sscan(header, &gotID, &kind, &size); err != nil || kind != "blob" {
+		return nil, false, fmt.Errorf("git cat-file %s: unexpected header %q", rel, header)
+	}
+	n := min(size, maxReadBytes)
+	b := make([]byte, n)
+	if _, err := io.ReadFull(r.out, b); err != nil {
+		return nil, false, err
+	}
+	if _, err := io.CopyN(io.Discard, r.out, size-n+1); err != nil { // rest plus trailing newline
+		return nil, false, err
+	}
+	r.cache[rel] = b
+	return b, size > maxReadBytes, nil
+}
+
+var refRE = regexp.MustCompile(`^[A-Za-z0-9_.@+-][A-Za-z0-9_./@+-]*$`)
+
+// resolve validates a narrative reference and returns it relative to root
+// without a trailing slash. A reference must be a clean relative path, use a
+// conservative character set, name a regular file at HEAD (or a directory
+// when it ends in "/"), and not look like a credential file.
 func (r *repo) resolve(ref string) (string, error) {
 	isDir := strings.HasSuffix(ref, "/")
 	rel := strings.TrimSuffix(ref, "/")
-	if rel == "" {
+	if rel == "" || rel == "." {
 		rel = "."
+	} else if !refRE.MatchString(rel) || path.Clean(rel) != rel || rel == ".." || strings.HasPrefix(rel, "../") {
+		return "", fmt.Errorf("reference %q must be a clean relative path using only letters, digits and _ . / @ + -", ref)
 	}
-	if ref == "" || path.IsAbs(rel) || strings.Contains(rel, `\`) || path.Clean(rel) != rel ||
-		rel == ".." || strings.HasPrefix(rel, "../") {
-		return "", fmt.Errorf("reference %q must be a clean path relative to the module root", ref)
+	if isSecretName(path.Base(rel)) {
+		return "", fmt.Errorf("reference %q looks like a credential or secret file", ref)
 	}
-	if isDir && !r.dirs[rel] || !isDir && !r.tracked[rel] {
-		if !isDir && r.dirs[rel] {
-			return "", fmt.Errorf("directory reference %q must end with /", ref)
+	_, isFile := r.blobs[rel]
+	_, isDirAtHead := r.dirs[rel]
+	switch {
+	case isDir && isDirAtHead, !isDir && isFile:
+		return rel, nil
+	case !isDir && isDirAtHead:
+		return "", fmt.Errorf("directory reference %q must end with /", ref)
+	}
+	return "", fmt.Errorf("reference %q is not a regular file or directory at HEAD", ref)
+}
+
+// isSecretName reports whether a file name looks like it holds credentials.
+func isSecretName(name string) bool {
+	n := strings.ToLower(name)
+	for _, p := range []string{".env", "id_rsa", "id_dsa", "id_ecdsa", "id_ed25519", "credentials", ".git-credentials"} {
+		if strings.HasPrefix(n, p) {
+			return true
 		}
-		return "", fmt.Errorf("reference %q is not tracked by git", ref)
 	}
-	full := filepath.Join(r.root, filepath.FromSlash(rel))
-	info, err := os.Lstat(full)
-	if err != nil {
-		return "", fmt.Errorf("reference %q: %w", ref, err)
+	for _, sfx := range []string{".pem", ".key", ".p12", ".pfx", ".jks", ".keystore", ".kdbx"} {
+		if strings.HasSuffix(n, sfx) {
+			return true
+		}
 	}
-	if info.Mode()&fs.ModeSymlink != 0 {
-		return "", fmt.Errorf("reference %q is a symlink", ref)
+	switch n {
+	case ".npmrc", ".netrc", ".pypirc", ".htpasswd", ".dockercfg", "secrets.yaml", "secrets.yml", "secrets.json":
+		return true
 	}
-	return full, nil
+	return false
 }
 
 func runAnalyze(args []string) error {
@@ -363,9 +458,9 @@ func runAnalyze(args []string) error {
 }
 
 func analyze(r *repo, goos, goarch string) (*Facts, error) {
-	gomod, err := os.ReadFile(filepath.Join(r.root, "go.mod"))
+	gomod, _, err := r.read("go.mod")
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("go.mod at HEAD: %w", err)
 	}
 	f := &Facts{
 		SHA:        r.git("rev-parse", "HEAD"),
@@ -381,7 +476,7 @@ func analyze(r *repo, goos, goarch string) (*Facts, error) {
 	}
 	for _, line := range strings.Split(string(gomod), "\n") {
 		fields := strings.Fields(line)
-		if len(fields) == 2 && fields[0] == "module" {
+		if len(fields) == 2 && fields[0] == "module" && moduleRE.MatchString(fields[1]) {
 			f.Module = fields[1]
 		}
 		if len(fields) == 2 && fields[0] == "go" {
@@ -390,16 +485,21 @@ func analyze(r *repo, goos, goarch string) (*Facts, error) {
 	}
 	ctx := build.Default
 	ctx.GOOS, ctx.GOARCH, ctx.CgoEnabled, ctx.BuildTags = goos, goarch, true, nil
-	ctx.ReadDir = r.readTrackedDir
+	ctx.ReadDir = r.readDir
+	ctx.OpenFile = func(p string) (io.ReadCloser, error) {
+		b, _, err := r.read(r.rel(p))
+		return io.NopCloser(bytes.NewReader(b)), err
+	}
+	ctx.IsDir = func(p string) bool { _, ok := r.dirs[r.rel(p)]; return ok }
 	goDirs := map[string]bool{}
-	for p := range r.tracked {
+	for p := range r.blobs {
 		switch {
 		case skipPath(p):
 		case path.Base(p) == "go.mod" && p != "go.mod":
 			f.NestedModules = append(f.NestedModules, path.Dir(p))
 		case strings.HasSuffix(p, ".go"):
 			goDirs[path.Dir(p)] = true
-		case strings.HasSuffix(p, ".md") && (!strings.Contains(p, "/") || isDocName(path.Base(p))):
+		case strings.HasSuffix(p, ".md") && strings.Count(p, "/") <= 2:
 			f.Docs = append(f.Docs, p)
 		}
 	}
@@ -415,7 +515,7 @@ func analyze(r *repo, goos, goarch string) (*Facts, error) {
 	}
 	sort.Strings(dirs)
 	for _, d := range dirs {
-		pkg, cmds, err := loadPackage(&ctx, r.root, d, f.Module)
+		pkg, cmds, err := loadPackage(&ctx, r, d, f.Module)
 		if err != nil {
 			return nil, err
 		}
@@ -525,30 +625,37 @@ func contracts(pkgs []Package) []Contract {
 	return nonNil(out)
 }
 
-// readTrackedDir lists only tracked files so that untracked Go files never
-// influence the analysis.
-func (r *repo) readTrackedDir(dir string) ([]fs.FileInfo, error) {
-	entries, err := os.ReadDir(dir)
-	if err != nil {
-		return nil, err
+// fileInfo describes a file at HEAD for go/build.
+type fileInfo struct{ name string }
+
+func (fi fileInfo) Name() string       { return fi.name }
+func (fi fileInfo) Size() int64        { return 0 }
+func (fi fileInfo) Mode() fs.FileMode  { return 0o644 }
+func (fi fileInfo) ModTime() time.Time { return time.Time{} }
+func (fi fileInfo) IsDir() bool        { return false }
+func (fi fileInfo) Sys() any           { return nil }
+
+func (r *repo) rel(abs string) string {
+	return filepath.ToSlash(mustRel(r.root, abs))
+}
+
+// readDir lists the regular files of a directory at HEAD for go/build.
+func (r *repo) readDir(dir string) ([]fs.FileInfo, error) {
+	entries, ok := r.dirs[r.rel(dir)]
+	if !ok {
+		return nil, fmt.Errorf("%s is not a directory at HEAD", dir)
 	}
-	rel := filepath.ToSlash(mustRel(r.root, dir))
 	var out []fs.FileInfo
 	for _, e := range entries {
-		if e.IsDir() || !r.tracked[path.Join(rel, e.Name())] || e.Type()&fs.ModeSymlink != 0 {
-			continue
+		if !strings.HasSuffix(e, "/") {
+			out = append(out, fileInfo{e})
 		}
-		info, err := e.Info()
-		if err != nil {
-			return nil, err
-		}
-		out = append(out, info)
 	}
 	return out, nil
 }
 
-func loadPackage(ctx *build.Context, root, id, module string) (*Package, []Command, error) {
-	dir := filepath.Join(root, filepath.FromSlash(id))
+func loadPackage(ctx *build.Context, r *repo, id, module string) (*Package, []Command, error) {
+	dir := filepath.Join(r.root, filepath.FromSlash(id))
 	bp, err := ctx.ImportDir(dir, build.ImportComment)
 	if err != nil {
 		var noGo *build.NoGoError
@@ -574,7 +681,7 @@ func loadPackage(ctx *build.Context, root, id, module string) (*Package, []Comma
 	var cmds []Command
 	var exported []string
 	for _, name := range bp.GoFiles {
-		src, err := os.ReadFile(filepath.Join(dir, name))
+		src, _, err := r.read(path.Join(id, name))
 		if err != nil {
 			return nil, nil, err
 		}
@@ -712,8 +819,16 @@ func findCommands(fset *token.FileSet, f *ast.File, pkg, file string) []Command 
 		if !ok {
 			return true
 		}
-		sel, ok := lit.Type.(*ast.SelectorExpr)
-		if !ok || sel.Sel.Name != "Command" {
+		switch t := lit.Type.(type) {
+		case *ast.SelectorExpr:
+			if t.Sel.Name != "Command" {
+				return true
+			}
+		case *ast.Ident:
+			if t.Name != "Command" {
+				return true
+			}
+		default:
 			return true
 		}
 		c := Command{Pkg: pkg, File: file, Line: fset.Position(lit.Pos()).Line}
@@ -780,12 +895,23 @@ func exprName(e ast.Expr) string {
 	return ""
 }
 
+// defaultTemplate locates the template next to this script's own source file,
+// never relative to the analyzed repository, so a repository cannot supply its
+// own template.
+func defaultTemplate() string {
+	_, file, _, ok := runtime.Caller(0)
+	if !ok || !filepath.IsAbs(file) {
+		return ""
+	}
+	return filepath.Join(filepath.Dir(file), "..", "assets", "template.html")
+}
+
 func runRender(args []string) error {
 	fset := flag.NewFlagSet("render", flag.ExitOnError)
 	root := fset.String("root", ".", "module root")
 	factsPath := fset.String("facts", "facts.json", "facts file from analyze")
 	narrPath := fset.String("narrative", "narrative.json", "agent-written narrative file")
-	tmplPath := fset.String("template", ".agents/skills/walkthrough-basic/assets/template.html", "HTML template")
+	tmplPath := fset.String("template", defaultTemplate(), "HTML template (defaults to ../assets/template.html next to this script)")
 	out := fset.String("out", "walkthrough.html", "output HTML file")
 	inlineAll := fset.Bool("inline-all", false, "inline every package source file, not only referenced ones")
 	fset.Parse(args)
@@ -848,6 +974,9 @@ func runRender(args []string) error {
 	if err != nil {
 		return err
 	}
+	if err := os.MkdirAll(filepath.Dir(*out), 0o755); err != nil {
+		return err
+	}
 	if err := os.WriteFile(*out, page, 0o644); err != nil {
 		return err
 	}
@@ -860,9 +989,19 @@ func runRender(args []string) error {
 // Content-Security-Policy by hash, so no other script (including inline
 // event handlers) can run and the page cannot make network requests.
 func fillTemplate(tmplPath string, data []byte) ([]byte, error) {
+	if tmplPath == "" {
+		return nil, errors.New("cannot locate the template; pass -template")
+	}
 	tmpl, err := os.ReadFile(tmplPath)
 	if err != nil {
 		return nil, err
+	}
+	// Browsers normalize newlines before hashing inline scripts.
+	tmpl = bytes.ReplaceAll(bytes.ReplaceAll(tmpl, []byte("\r\n"), []byte("\n")), []byte("\r"), []byte("\n"))
+	for i, c := range tmpl {
+		if c > 0x7f {
+			return nil, fmt.Errorf("%s: non-ASCII byte at offset %d; use \\u escapes in script and entities in HTML so the script hash survives viewers that guess the wrong encoding", tmplPath, i)
+		}
 	}
 	for _, ph := range []string{dataPlaceholder, hashPlaceholder} {
 		if bytes.Count(tmpl, []byte(ph)) != 1 {
@@ -878,7 +1017,38 @@ func fillTemplate(tmplPath string, data []byte) ([]byte, error) {
 	sum := sha256.Sum256(tmpl[i+len(open) : j])
 	page := bytes.Replace(tmpl, []byte(hashPlaceholder), []byte(base64.StdEncoding.EncodeToString(sum[:])), 1)
 	// json.Marshal escapes <, > and &, so the data cannot close its <script>.
-	return bytes.Replace(page, []byte(dataPlaceholder), data, 1), nil
+	return bytes.Replace(page, []byte(dataPlaceholder), asciiJSON(data), 1), nil
+}
+
+// asciiJSON rewrites non-ASCII characters in JSON as \u escapes, so the page
+// is pure ASCII and decodes identically under any ASCII-compatible encoding.
+func asciiJSON(b []byte) []byte {
+	var out bytes.Buffer
+	for _, r := range string(b) {
+		switch {
+		case r < 0x80:
+			out.WriteRune(r)
+		case r > 0xffff:
+			r -= 0x10000
+			fmt.Fprintf(&out, `\u%04x\u%04x`, 0xd800+(r>>10), 0xdc00+(r&0x3ff))
+		default:
+			fmt.Fprintf(&out, `\u%04x`, r)
+		}
+	}
+	return out.Bytes()
+}
+
+var (
+	githubRE = regexp.MustCompile(`^(?:https://github\.com/|git@github\.com:|ssh://git@github\.com/)([A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+?)(?:\.git)?/?$`)
+	moduleRE = regexp.MustCompile(`^[A-Za-z0-9._~+/-]+$`)
+	idRE     = regexp.MustCompile(`^[a-z0-9][a-z0-9-]*$`)
+)
+
+func truncate(s string, n int) string {
+	if len(s) <= n {
+		return s
+	}
+	return s[:n] + "…"
 }
 
 var tokenRE = regexp.MustCompile(`\{\{(\w+)(?::([^}]+))?\}\}`)
@@ -915,7 +1085,7 @@ func expandTokens(r *repo, raw []byte, f *Facts) ([]byte, error) {
 				return m
 			}
 			n := 0
-			for p := range r.tracked {
+			for p := range r.blobs {
 				if strings.HasPrefix(p, arg) || arg == "./" {
 					n++
 				}
@@ -930,10 +1100,10 @@ func expandTokens(r *repo, raw []byte, f *Facts) ([]byte, error) {
 		case name == "importedBy" && hasPkg:
 			v = strconv.Itoa(len(p.ImportedBy))
 		case name == "lines":
-			full, err := r.resolve(arg)
+			rel, err := r.resolve(arg)
 			if err == nil {
 				var b []byte
-				if b, err = os.ReadFile(full); err == nil {
+				if b, _, err = r.read(rel); err == nil {
 					v = strconv.Itoa(countLines(b))
 					break
 				}
@@ -944,7 +1114,9 @@ func expandTokens(r *repo, raw []byte, f *Facts) ([]byte, error) {
 			errs = append(errs, fmt.Sprintf("unknown token or package in %s", m))
 			return m
 		}
-		return []byte(v)
+		// Values are spliced into raw JSON, so escape them as JSON string content.
+		q, _ := json.Marshal(v)
+		return q[1 : len(q)-1]
 	})
 	if len(errs) > 0 {
 		return nil, errors.New(strings.Join(errs, "\n"))
@@ -953,7 +1125,7 @@ func expandTokens(r *repo, raw []byte, f *Facts) ([]byte, error) {
 }
 
 var (
-	allowedTagRE = regexp.MustCompile(`&lt;(/?)(p|code|strong|em|ul|ol|li|br)&gt;`)
+	allowedTagRE = regexp.MustCompile(`&lt;(/?)(p|code|strong|em|ul|ol|li)&gt;|&lt;()(br)&gt;`)
 	linkRE       = regexp.MustCompile(`&lt;a class=&#34;(src|pkgref)&#34; data-(src|pkg)=&#34;([A-Za-z0-9_./-]+)&#34;&gt;`)
 	srcAttrRE    = regexp.MustCompile(`data-src="([^"]+)"`)
 	pkgAttrRE    = regexp.MustCompile(`data-pkg="([^"]+)"`)
@@ -962,7 +1134,7 @@ var (
 // sanitize escapes all HTML and then re-enables only a fixed set of
 // attribute-free tags and the two link forms the template understands.
 func sanitize(s string) string {
-	e := allowedTagRE.ReplaceAllString(html.EscapeString(s), "<$1$2>")
+	e := allowedTagRE.ReplaceAllString(html.EscapeString(s), "<$1$2$3$4>")
 	e = linkRE.ReplaceAllStringFunc(e, func(m string) string {
 		sub := linkRE.FindStringSubmatch(m)
 		if (sub[1] == "src") != (sub[2] == "src") {
@@ -971,6 +1143,25 @@ func sanitize(s string) string {
 		return fmt.Sprintf(`<a class="%s" data-%s="%s">`, sub[1], sub[2], sub[3])
 	})
 	return strings.ReplaceAll(e, "&lt;/a&gt;", "</a>")
+}
+
+var tagRE = regexp.MustCompile(`<(/?)(p|code|strong|em|ul|ol|li|a)[ >]`)
+
+// balanced reports whether every allowed tag in sanitized HTML is closed in
+// order, so a fragment cannot swallow the page markup that follows it.
+func balanced(s string) bool {
+	var stack []string
+	for _, m := range tagRE.FindAllStringSubmatch(s, -1) {
+		if m[1] == "" {
+			stack = append(stack, m[2])
+			continue
+		}
+		if len(stack) == 0 || stack[len(stack)-1] != m[2] {
+			return false
+		}
+		stack = stack[:len(stack)-1]
+	}
+	return len(stack) == 0
 }
 
 // htmlFields returns every narrative field rendered as HTML, except map
@@ -1023,6 +1214,9 @@ func validate(r *repo, f *Facts, n *Narrative) (refs, warnings []string, err err
 		}
 	}
 	scan := func(s string) {
+		if !balanced(s) {
+			errs = append(errs, fmt.Sprintf("unbalanced or misnested tags in %q", truncate(s, 80)))
+		}
 		for _, m := range srcAttrRE.FindAllStringSubmatch(s, -1) {
 			refs = append(refs, m[1])
 		}
@@ -1121,15 +1315,15 @@ func validate(r *repo, f *Facts, n *Narrative) (refs, warnings []string, err err
 	}
 	ids := map[string]bool{}
 	for _, g := range n.Guides {
-		if g.ID == "" || ids["g:"+g.ID] {
-			errs = append(errs, fmt.Sprintf("guide id %q must be unique and non-empty", g.ID))
+		if !idRE.MatchString(g.ID) || ids["g:"+g.ID] {
+			errs = append(errs, fmt.Sprintf("guide id %q must be unique and match %s", g.ID, idRE))
 		}
 		ids["g:"+g.ID] = true
 		checkSteps("guide "+g.ID, g.Steps)
 	}
 	for _, fl := range n.Flows {
-		if fl.ID == "" || ids["f:"+fl.ID] {
-			errs = append(errs, fmt.Sprintf("flow id %q must be unique and non-empty", fl.ID))
+		if !idRE.MatchString(fl.ID) || ids["f:"+fl.ID] {
+			errs = append(errs, fmt.Sprintf("flow id %q must be unique and match %s", fl.ID, idRE))
 		}
 		ids["f:"+fl.ID] = true
 		if len(fl.Stages) == 0 {
@@ -1194,12 +1388,12 @@ func collectFiles(r *repo, f *Facts, refs []string) (map[string]File, error) {
 		refs = append(refs, p.ID+"/")
 	}
 	for _, ref := range dedupe(refs) {
-		full, err := r.resolve(ref)
+		rel, err := r.resolve(ref)
 		if err != nil {
 			return nil, err
 		}
 		if strings.HasSuffix(ref, "/") {
-			d, err := r.listDir(strings.TrimSuffix(ref, "/"))
+			d, err := r.listDir(rel)
 			if err != nil {
 				return nil, err
 			}
@@ -1207,12 +1401,12 @@ func collectFiles(r *repo, f *Facts, refs []string) (map[string]File, error) {
 			files[ref] = d
 			continue
 		}
-		b, err := readLimited(full)
+		b, cut, err := r.read(rel)
 		if err != nil {
 			return nil, err
 		}
-		lines := strings.Split(string(b), "\n")
-		file := File{Lines: countLines(b), Pkg: pkgOfDir[path.Dir(ref)+"/"]}
+		file := File{Lines: countLines(b), Trunc: cut, Pkg: pkgOfDir[path.Dir(rel)+"/"]}
+		lines := strings.Split(strings.TrimSuffix(string(b), "\n"), "\n")
 		if len(lines) > maxInlineLines {
 			lines, file.Trunc = lines[:maxInlineLines], true
 		}
@@ -1222,54 +1416,26 @@ func collectFiles(r *repo, f *Facts, refs []string) (map[string]File, error) {
 	return files, nil
 }
 
-// listDir lists the tracked files and subdirectories directly inside dir.
+// listDir lists a directory at HEAD, omitting credential-like files.
 func (r *repo) listDir(dir string) (File, error) {
 	d := File{Dir: true}
-	var names []string
-	subdirs := map[string]bool{}
-	for p := range r.tracked {
-		rel := p
-		if dir != "." {
-			if !strings.HasPrefix(p, dir+"/") {
-				continue
-			}
-			rel = strings.TrimPrefix(p, dir+"/")
-		}
-		if i := strings.Index(rel, "/"); i >= 0 {
-			subdirs[rel[:i]+"/"] = true
+	for _, e := range r.dirs[dir] {
+		if strings.HasSuffix(e, "/") {
+			d.Entries = append(d.Entries, e)
 			continue
 		}
-		names = append(names, rel)
-	}
-	sort.Strings(names)
-	for _, name := range names {
-		full, err := r.resolve(path.Join(dir, name))
-		if err != nil {
-			continue // symlinks are not listed
+		if isSecretName(e) {
+			continue
 		}
-		b, err := readLimited(full)
+		b, _, err := r.read(path.Join(dir, e))
 		if err != nil {
 			return d, err
 		}
 		n := countLines(b)
 		d.Lines += n
-		d.Entries = append(d.Entries, fmt.Sprintf("%s (%d lines)", name, n))
-	}
-	for _, s := range sortedKeys(subdirs) {
-		d.Entries = append(d.Entries, s)
+		d.Entries = append(d.Entries, fmt.Sprintf("%s (%d lines)", e, n))
 	}
 	return d, nil
-}
-
-// readLimited reads at most 8 MiB so that a large tracked file (for example a
-// generated artifact) cannot exhaust memory.
-func readLimited(p string) ([]byte, error) {
-	fh, err := os.Open(p)
-	if err != nil {
-		return nil, err
-	}
-	defer fh.Close()
-	return io.ReadAll(io.LimitReader(fh, 8<<20))
 }
 
 func internalImports(imports []string, module string) []string {
@@ -1297,10 +1463,6 @@ func skipPath(p string) bool {
 	return false
 }
 
-func isDocName(name string) bool {
-	return name == "README.md" || name == "AGENTS.md" || name == "ARCHITECTURE.md"
-}
-
 func inModule(dir string, nested []string) bool {
 	for _, m := range nested {
 		if dir == m || strings.HasPrefix(dir, m+"/") {
@@ -1311,7 +1473,7 @@ func inModule(dir string, nested []string) bool {
 }
 
 func githubRepo(remote string) string {
-	m := regexp.MustCompile(`github\.com[:/]([^/]+/[^/]+?)(\.git)?$`).FindStringSubmatch(remote)
+	m := githubRE.FindStringSubmatch(remote)
 	if m == nil {
 		return ""
 	}
