@@ -1,0 +1,938 @@
+<!DOCTYPE html>
+<!--
+ Copyright 2026 Google LLC
+
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at
+
+     https://www.apache.org/licenses/LICENSE-2.0
+
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
+-->
+
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; base-uri 'none'; form-action 'none';">
+  <title>Architecture walkthrough</title>
+  <style>
+:root{color-scheme:light dark;--background:#ffffff;--card:#f8fafc;--foreground:#0f172a;--muted-foreground:#64748b;--border:#e2e8f0;--primary:#2563eb;--primary-foreground:#ffffff}
+@media (prefers-color-scheme:dark){:root{--background:#0b1220;--card:#121b2f;--foreground:#e5e7eb;--muted-foreground:#9aa7b8;--border:#263247;--primary:#60a5fa;--primary-foreground:#0b1220}}
+:root[data-theme="light"]{color-scheme:light;--background:#ffffff;--card:#f8fafc;--foreground:#0f172a;--muted-foreground:#64748b;--border:#e2e8f0;--primary:#2563eb;--primary-foreground:#ffffff}
+:root[data-theme="dark"]{color-scheme:dark;--background:#0b1220;--card:#121b2f;--foreground:#e5e7eb;--muted-foreground:#9aa7b8;--border:#263247;--primary:#60a5fa;--primary-foreground:#0b1220}
+*,::before,::after{box-sizing:border-box;border-width:0;border-style:solid;border-color:var(--border)}
+html{line-height:1.5;-webkit-text-size-adjust:100%;font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;background:var(--background)}
+body{margin:0;line-height:inherit}h1,h2,h3,h4,p{margin:0;font-size:inherit;font-weight:inherit}ol,ul{list-style:none;margin:0;padding:0}
+a{color:inherit;text-decoration:inherit}button,input,textarea{font:inherit;color:inherit;margin:0;padding:0}button{background:transparent;cursor:pointer}
+button:disabled{opacity:.4;cursor:not-allowed}
+code,pre,textarea.mono{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono","Courier New",monospace}table{border-collapse:collapse;border-color:inherit;text-indent:0}svg{display:block}
+.fixed{position:fixed}.absolute{position:absolute}.relative{position:relative}.inset-0{inset:0}.hidden{display:none !important}.flex{display:flex}.inline-flex{display:inline-flex}.inline-block{display:inline-block}.grid{display:grid}.flex-col{flex-direction:column}.flex-wrap{flex-wrap:wrap}.items-center{align-items:center}.items-baseline{align-items:baseline}.items-end{align-items:flex-end}.justify-between{justify-content:space-between}.self-start{align-self:start}.gap-1{gap:.25rem}.gap-2{gap:.5rem}.gap-3{gap:.75rem}.gap-4{gap:1rem}.w-3{width:.75rem}.h-3{height:.75rem}.w-full{width:100%}.h-full{height:100%}.max-w-7xl{max-width:80rem}.mx-auto{margin-left:auto;margin-right:auto}.ml-auto{margin-left:auto}.mb-1{margin-bottom:.25rem}.mb-2{margin-bottom:.5rem}.mb-3{margin-bottom:.75rem}.mb-4{margin-bottom:1rem}.mr-1{margin-right:.25rem}.mr-2{margin-right:.5rem}.mt-1{margin-top:.25rem}.mt-2{margin-top:.5rem}.mt-3{margin-top:.75rem}.mt-4{margin-top:1rem}.p-1{padding:.25rem}.p-2{padding:.5rem}.p-3{padding:.75rem}.p-4{padding:1rem}.p-5{padding:1.25rem}.pl-5{padding-left:1.25rem}.pt-3{padding-top:.75rem}.px-1\.5{padding-left:.375rem;padding-right:.375rem}.px-2\.5{padding-left:.625rem;padding-right:.625rem}.px-3{padding-left:.75rem;padding-right:.75rem}.px-5{padding-left:1.25rem;padding-right:1.25rem}.py-0\.5{padding-top:.125rem;padding-bottom:.125rem}.py-1{padding-top:.25rem;padding-bottom:.25rem}.py-1\.5{padding-top:.375rem;padding-bottom:.375rem}.py-5{padding-top:1.25rem;padding-bottom:1.25rem}.border{border-width:1px}.border-t{border-top-width:1px}.border-b{border-bottom-width:1px}.border-\[var\(--border\)\]{border-color:var(--border)}.rounded-sm{border-radius:.125rem}.rounded-md{border-radius:.375rem}.rounded-lg{border-radius:.5rem}.rounded-xl{border-radius:.75rem}.bg-\[var\(--background\)\]{background-color:var(--background)}.bg-\[var\(--card\)\]{background-color:var(--card)}.bg-\[var\(--primary\)\]{background-color:var(--primary)}.text-\[var\(--foreground\)\]{color:var(--foreground)}.text-\[var\(--muted-foreground\)\]{color:var(--muted-foreground)}.text-\[var\(--primary-foreground\)\]{color:var(--primary-foreground)}.text-xs{font-size:.75rem;line-height:1rem}.text-sm{font-size:.875rem;line-height:1.25rem}.text-base{font-size:1rem;line-height:1.5rem}.text-lg{font-size:1.125rem;line-height:1.75rem}.text-2xl{font-size:1.5rem;line-height:2rem}.font-normal{font-weight:400}.font-medium{font-weight:500}.font-semibold{font-weight:600}.leading-relaxed{line-height:1.625}.text-center{text-align:center}.text-left{text-align:left}.whitespace-nowrap{white-space:nowrap}.underline{text-decoration-line:underline}.underline-offset-2{text-underline-offset:2px}.list-disc{list-style-type:disc}.overflow-x-auto{overflow-x-auto}.pointer-events-none{pointer-events:none}.antialiased{-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}.hover\:border-\[var\(--primary\)\]:hover{border-color:var(--primary)}
+.space-y-1>:not([hidden])~:not([hidden]){margin-top:.25rem}.space-y-3>:not([hidden])~:not([hidden]){margin-top:.75rem}
+@media (min-width:768px){.md\:grid-cols-2{grid-template-columns:repeat(2,minmax(0,1fr))}.md\:grid-cols-\[2fr_1fr\]{grid-template-columns:2fr 1fr}}
+@media (min-width:1024px){.lg\:grid-cols-\[minmax\(0\,1fr\)_340px\]{grid-template-columns:minmax(0,1fr) 340px}.lg\:grid-cols-\[260px_minmax\(0\,1fr\)\]{grid-template-columns:260px minmax(0,1fr)}.lg\:flex-col{flex-direction:column}.lg\:sticky{position:sticky}.lg\:top-4{top:1rem}.lg\:overflow-visible{overflow:visible}.lg\:whitespace-normal{white-space:normal}}
+  </style>
+  <style>
+    .pkg { transition: opacity .15s ease, box-shadow .15s ease, border-color .15s ease; cursor: pointer; }
+    .pkg.dim { opacity: .35; }
+    .pkg.sel { box-shadow: 0 0 0 2px var(--primary); border-color: var(--primary); }
+    .pkg.imp { border-color: var(--primary); background: color-mix(in srgb, var(--primary) 14%, transparent); }
+    .pkg.dep { border-color: #10b981; background: color-mix(in srgb, #10b981 14%, transparent); }
+    .tab.active { background: var(--primary); color: var(--primary-foreground); }
+    .chip { cursor: pointer; }
+    .chip:hover { border-color: var(--primary); }
+    .step-nav.active { background: color-mix(in srgb, var(--primary) 16%, transparent); border-color: var(--primary); }
+    .lang-row { cursor: pointer; }
+    .lang-row:hover td { background: color-mix(in srgb, var(--primary) 8%, transparent); }
+    .path-card { transition: border-color .15s ease, box-shadow .15s ease; cursor: pointer; }
+    .path-card:hover { border-color: var(--primary); box-shadow: 0 0 0 1px var(--primary); }
+    code { font-size: .85em; padding: .05rem .3rem; border-radius: .25rem; background: color-mix(in srgb, var(--foreground) 8%, transparent); overflow-wrap: anywhere; }
+    a.src { color: var(--primary); text-decoration: underline; text-underline-offset: 2px; text-decoration-color: color-mix(in srgb, var(--primary) 45%, transparent); cursor: pointer; }
+    a.src:hover { text-decoration-color: var(--primary); }
+    .grid > * { min-width: 0; }
+    .space-y-3 ul, .space-y-3 ol { list-style-type: disc; padding-left: 1.25rem; }
+    .space-y-3 li + li { margin-top: .25rem; }
+    .space-y-3 table { border-collapse: collapse; font-size: .85em; }
+    .space-y-3 th, .space-y-3 td { border: 1px solid var(--border); padding: .25rem .5rem; text-align: left; }
+    .space-y-3 blockquote { border-left: 3px solid var(--border); padding-left: .75rem; color: var(--muted-foreground); }
+    .space-y-3 pre { padding: .5rem .75rem; border-radius: .375rem; background: color-mix(in srgb, var(--foreground) 6%, transparent); overflow-x: auto; }
+    .table-scroll { width: 100%; max-width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    table.data-table { display: table; width: 100%; min-width: 640px; border-collapse: collapse; table-layout: auto; }
+    table.data-table th, table.data-table td { border-bottom: 1px solid var(--border); padding: .5rem .65rem; vertical-align: middle; text-align: left; }
+    table.data-table th { font-weight: 600; color: var(--muted-foreground); font-size: .75rem; text-transform: uppercase; letter-spacing: .025em; background: color-mix(in srgb, var(--foreground) 4%, transparent); white-space: nowrap; }
+    table.data-table th.text-center, table.data-table td.text-center { text-align: center; }
+    .flow-inputs { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; padding: .6rem .85rem; border-radius: .65rem; border: 1px dashed var(--border); background: var(--background); margin-bottom: 1rem; font-size: .75rem; }
+    .flow-diagram { display: flex; flex-direction: column; gap: 0; margin-bottom: 1rem; }
+    .flow-stage { display: grid; grid-template-columns: 2rem minmax(0, 1fr); gap: .85rem; align-items: stretch; }
+    .flow-rail { display: flex; flex-direction: column; align-items: center; }
+    .flow-num { width: 1.75rem; height: 1.75rem; border-radius: 9999px; background: var(--primary); color: var(--primary-foreground); font-size: .75rem; font-weight: 600; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .flow-arrow-v { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--primary); min-height: 1.25rem; }
+    .flow-line-v { flex: 1; width: 2px; background: color-mix(in srgb, var(--primary) 45%, var(--border)); }
+    .flow-card { border: 1px solid var(--border); border-radius: .65rem; padding: .75rem .9rem; background: var(--background); margin-bottom: .65rem; display: flex; flex-direction: column; gap: .35rem; }
+    .flow-stage:last-child .flow-card { margin-bottom: 0; }
+    .flow-out { display: inline-flex; align-items: center; gap: .35rem; font-size: .72rem; padding: .15rem .55rem; border-radius: 9999px; border: 1px solid color-mix(in srgb, #10b981 45%, var(--border)); background: color-mix(in srgb, #10b981 10%, transparent); color: #10b981; font-weight: 500; align-self: flex-start; margin-top: .15rem; }
+    .badge { font-size: 11px; padding: .1rem .45rem; border-radius: .375rem; border: 1px solid var(--border); background: var(--background); }
+    .prompt-box { margin-top: .65rem; padding: .6rem .75rem; border-radius: .5rem; border: 1px solid var(--primary); background: var(--background); font-size: .75rem; }
+    .prompt-box textarea { width: 100%; border: 1px solid var(--border); border-radius: .375rem; padding: .4rem .5rem; background: var(--card); color: var(--foreground); resize: vertical; margin-top: .35rem; font-size: .75rem; line-height: 1.4; }
+    .modal-backdrop { position: fixed; inset: 0; background: rgba(2, 6, 23, 0.72); z-index: 50; display: flex; align-items: center; justify-content: center; padding: 1.25rem; }
+    .modal-panel { width: 100%; max-width: 56rem; max-height: 85vh; display: flex; flex-direction: column; border-radius: .75rem; border: 1px solid var(--border); background: var(--card); box-shadow: 0 25px 50px -12px rgba(0,0,0,.45); overflow: hidden; }
+  </style>
+</head>
+<body class="bg-[var(--background)] text-[var(--foreground)] antialiased">
+<div class="max-w-7xl mx-auto px-3 sm:px-5 py-4 sm:py-5" style="overflow-x: clip">
+
+  <header class="flex flex-wrap items-center justify-between gap-3 mb-4">
+    <div style="min-width: 0">
+      <h1 class="text-2xl font-semibold" id="pageTitle"></h1>
+      <p class="text-sm text-[var(--muted-foreground)] mt-1" id="subtitle"></p>
+    </div>
+    <div class="flex flex-wrap items-center gap-2" style="max-width: 100%">
+      <nav class="flex flex-wrap gap-1 bg-[var(--card)] border border-[var(--border)] rounded-xl p-1" id="tabs">
+        <button class="tab px-3 py-1.5 rounded-lg text-sm" data-tab="paths">Paths</button>
+        <button class="tab px-3 py-1.5 rounded-lg text-sm" data-tab="map">Map</button>
+        <button class="tab px-3 py-1.5 rounded-lg text-sm" data-tab="tour">Guided tour</button>
+        <button class="tab px-3 py-1.5 rounded-lg text-sm" data-tab="guides">Guides</button>
+        <button class="tab px-3 py-1.5 rounded-lg text-sm" data-tab="flows">Command flows</button>
+        <button class="tab px-3 py-1.5 rounded-lg text-sm" data-tab="languages">Languages</button>
+        <button class="tab px-3 py-1.5 rounded-lg text-sm" data-tab="findings">Findings</button>
+      </nav>
+      <button id="themeToggle" class="border border-[var(--border)] bg-[var(--card)] hover:border-[var(--primary)] rounded-lg px-2.5 py-1.5 text-xs font-medium" title="Toggle light/dark theme">☀ Light</button>
+    </div>
+  </header>
+
+  <!-- ============================ PATHS (LANDING) ============================ -->
+  <section id="tab-paths" class="hidden">
+    <div class="bg-[var(--card)] border border-[var(--border)] rounded-xl p-5 mb-4">
+      <h2 class="text-lg font-semibold mb-1" id="welcomeTitle"></h2>
+      <p class="text-sm text-[var(--muted-foreground)] leading-relaxed">
+        Package boundaries, dependency wires and line counts come from <code>go list</code> on the commit shown above; the narrative was written against that same checkout.
+        Pick a starting path below, click any file chip to see its path and GitHub link, or click <strong>Copy prompt for agent</strong> to get a ready-to-paste prompt for your coding agent.
+      </p>
+    </div>
+
+    <h3 class="font-semibold text-sm mb-2">1. Architecture</h3>
+    <div class="grid gap-3 md:grid-cols-2 mb-4" id="coreCards"></div>
+
+    <h3 class="font-semibold text-sm mb-2" id="guideCardsTitle">2. Guides</h3>
+    <div class="grid gap-3 md:grid-cols-2 mb-4" id="guideCards"></div>
+
+    <div class="bg-[var(--card)] border border-[var(--border)] rounded-xl p-4 text-sm">
+      <div class="font-semibold mb-1">Ask your coding agent for a custom walkthrough</div>
+      <p class="text-xs text-[var(--muted-foreground)] mb-2">Type a question or topic to format a prompt for your local agent session.</p>
+      <div class="flex flex-wrap gap-2">
+        <input id="customTopicInput" type="text" class="border border-[var(--border)] bg-[var(--background)] rounded-lg px-3 py-1.5 text-xs" style="flex:1; min-width:220px" placeholder="e.g. Walk me through how X works in package Y">
+        <button id="copyCustomPrompt" class="px-3 py-1.5 rounded-lg bg-[var(--primary)] text-[var(--primary-foreground)] text-xs font-medium">Copy prompt for agent</button>
+      </div>
+      <div id="pathsPromptHost"></div>
+    </div>
+  </section>
+
+  <!-- ============================ MAP ============================ -->
+  <section id="tab-map" class="hidden">
+    <div class="bg-[var(--card)] border border-[var(--border)] rounded-xl p-4 mb-4 text-sm">
+      <div class="font-semibold mb-1">What this architecture map shows &amp; how to use it</div>
+      <p class="text-[var(--muted-foreground)] leading-relaxed">
+        <span id="mapIntro"></span>
+        <strong>Click any package card</strong> to draw dependency wires: <span style="color: var(--primary); font-weight: 500">blue lines</span> point to packages it directly <strong>imports</strong>, and <span style="color: #10b981; font-weight: 500">emerald lines</span> come from packages that <strong>import it</strong>.
+        Click the selected card again (or <em>Reset highlight</em>) to un-dim all cards.
+      </p>
+    </div>
+    <div class="grid gap-4 lg:grid-cols-[minmax(0,1fr)_340px]">
+      <div>
+        <div class="flex flex-wrap items-center gap-3 text-xs text-[var(--muted-foreground)] mb-3">
+          <span>Click a package card to inspect direct imports and dependents.</span>
+          <span class="inline-flex items-center gap-1"><i class="inline-block w-3 h-3 rounded-sm border" style="border-color: var(--primary); background: color-mix(in srgb, var(--primary) 14%, transparent)"></i> imports (downstream)</span>
+          <span class="inline-flex items-center gap-1"><i class="inline-block w-3 h-3 rounded-sm border" style="border-color:#10b981; background: color-mix(in srgb, #10b981 14%, transparent)"></i> imported by (upstream)</span>
+          <div class="ml-auto flex items-center gap-3">
+            <button id="resetMapSel" class="underline underline-offset-2 hover:text-[var(--foreground)]">Reset highlight</button>
+            <label class="inline-flex items-center gap-1"><input type="checkbox" id="showDeps" checked> draw lines to dependents</label>
+          </div>
+        </div>
+        <div id="map" class="relative">
+          <svg id="wires" class="absolute inset-0 w-full h-full pointer-events-none" style="z-index:0"></svg>
+          <div id="layers" class="relative flex flex-col gap-3" style="z-index:1"></div>
+        </div>
+      </div>
+      <aside class="lg:sticky lg:top-4 self-start">
+        <div id="detail" class="bg-[var(--card)] border border-[var(--border)] rounded-xl p-4 text-sm">
+          <p class="text-[var(--muted-foreground)]">Select a package card to see what it does, what it imports, who imports it, and inspect its files.</p>
+        </div>
+      </aside>
+    </div>
+  </section>
+
+  <!-- ============================ GUIDED TOUR ============================ -->
+  <section id="tab-tour" class="hidden">
+    <div class="grid gap-4 lg:grid-cols-[260px_minmax(0,1fr)]">
+      <ol id="stepNav" class="flex lg:flex-col gap-1 overflow-x-auto lg:overflow-visible"></ol>
+      <div>
+        <article id="stepBody" class="bg-[var(--card)] border border-[var(--border)] rounded-xl p-5 text-sm leading-relaxed"></article>
+        <div class="flex items-center justify-between mt-3 text-sm">
+          <button id="prevStep" class="px-3 py-1.5 rounded-lg border border-[var(--border)] hover:border-[var(--primary)]">&larr; Previous</button>
+          <span id="stepCounter" class="text-[var(--muted-foreground)] text-xs"></span>
+          <button id="nextStep" class="px-3 py-1.5 rounded-lg bg-[var(--primary)] text-[var(--primary-foreground)]">Next &rarr;</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================ GENERATION GUIDES ============================ -->
+  <section id="tab-guides" class="hidden">
+    <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+      <div class="flex flex-wrap gap-1" id="guideSelector"></div>
+      <button class="text-xs underline underline-offset-2 text-[var(--muted-foreground)] hover:text-[var(--foreground)]" id="backToPaths">&larr; All paths</button>
+    </div>
+    <div class="bg-[var(--card)] border border-[var(--border)] rounded-xl p-4 mb-4 text-sm" id="guideHeader"></div>
+    <div class="grid gap-4 lg:grid-cols-[260px_minmax(0,1fr)]">
+      <ol id="guideStepNav" class="flex lg:flex-col gap-1 overflow-x-auto lg:overflow-visible"></ol>
+      <div>
+        <article id="guideStepBody" class="bg-[var(--card)] border border-[var(--border)] rounded-xl p-5 text-sm leading-relaxed"></article>
+        <div class="flex items-center justify-between mt-3 text-sm">
+          <button id="prevGuideStep" class="px-3 py-1.5 rounded-lg border border-[var(--border)] hover:border-[var(--primary)]">&larr; Previous</button>
+          <span id="guideStepCounter" class="text-[var(--muted-foreground)] text-xs"></span>
+          <button id="nextGuideStep" class="px-3 py-1.5 rounded-lg bg-[var(--primary)] text-[var(--primary-foreground)]">Next &rarr;</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================ FLOWS ============================ -->
+  <section id="tab-flows" class="hidden">
+    <div class="flex flex-wrap gap-1 mb-3" id="flowTabs"></div>
+    <div id="flowBody" class="bg-[var(--card)] border border-[var(--border)] rounded-xl p-5 text-sm"></div>
+  </section>
+
+  <!-- ============================ LANGUAGES ============================ -->
+  <section id="tab-languages" class="hidden">
+    <p class="text-sm text-[var(--muted-foreground)] mb-3" id="langIntro"></p>
+    <div class="bg-[var(--card)] border border-[var(--border)] rounded-xl p-2 table-scroll mb-4">
+      <table class="data-table text-sm" id="langTable"></table>
+    </div>
+    <div id="contractSection">
+      <h3 class="font-semibold text-sm mb-2">Exported hooks per package</h3>
+      <div class="bg-[var(--card)] border border-[var(--border)] rounded-xl p-2 table-scroll">
+        <table class="data-table text-xs" id="contractTable"></table>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================ FINDINGS ============================ -->
+  <section id="tab-findings" class="hidden">
+    <p class="text-sm text-[var(--muted-foreground)] mb-3">Observations about the code at this commit. Click any file link to see its path and GitHub link, or jump to it on the map.</p>
+    <div id="findings" class="grid gap-3 md:grid-cols-2"></div>
+  </section>
+
+</div>
+
+<!-- ============================ PATH REFERENCE MODAL ============================ -->
+<div id="srcModal" class="modal-backdrop hidden" role="dialog" aria-modal="true">
+  <div class="modal-panel" id="srcModalPanel">
+    <div class="p-4 border-b border-[var(--border)] flex flex-wrap items-center justify-between gap-2">
+      <div>
+        <div class="text-xs text-[var(--muted-foreground)]" id="srcModalKind">Repository path</div>
+        <h3 class="font-semibold text-sm"><code id="srcModalPath"></code></h3>
+      </div>
+      <div class="flex flex-wrap items-center gap-1.5">
+        <button id="srcCopyPath" class="text-xs border border-[var(--border)] hover:border-[var(--primary)] rounded-md px-2.5 py-1">Copy path</button>
+        <button id="srcCopyPrompt" class="text-xs border border-[var(--border)] hover:border-[var(--primary)] rounded-md px-2.5 py-1">Copy prompt for agent</button>
+        <button id="srcOpenMap" class="text-xs border border-[var(--border)] hover:border-[var(--primary)] rounded-md px-2.5 py-1 hidden">Show in Map &rarr;</button>
+        <a id="srcOpenGH" class="text-xs border border-[var(--border)] hover:border-[var(--primary)] rounded-md px-2.5 py-1" target="_blank" rel="noopener noreferrer">Open on GitHub &nearr;</a>
+        <button id="srcClose" class="text-xs bg-[var(--primary)] text-[var(--primary-foreground)] rounded-md px-2.5 py-1 font-medium">&times; Close</button>
+      </div>
+    </div>
+    <div id="srcModalPromptHost" class="px-4"></div>
+    <div class="p-4 text-sm" id="srcModalBody"></div>
+  </div>
+</div>
+
+<script id="walkthrough-data" type="application/json">{{.JSON}}</script>
+<script>
+const DATA = JSON.parse(document.getElementById("walkthrough-data").textContent);
+const gh = p => `https://github.com/${DATA.repo}/${p === "" || p.endsWith("/") ? "tree" : "blob"}/${DATA.gitRef || "main"}/${p}`;
+
+function escapeHTML(str) {
+  return String(str ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+}
+
+function sanitizeHTML(raw) {
+  const tpl = document.createElement("template");
+  tpl.innerHTML = String(raw ?? "");
+  // Formatting, lists, headings and tables. Anything else is either dropped
+  // with its subtree (elements that can run script, load resources or
+  // change document semantics) or unwrapped so its text still shows.
+  const allowedTags = new Set(["P", "BR", "HR", "STRONG", "B", "EM", "I", "U", "S", "CODE", "PRE", "KBD", "SAMP", "VAR", "MARK", "SMALL", "SUB", "SUP",
+    "UL", "OL", "LI", "DL", "DT", "DD", "A", "SPAN", "DIV", "H3", "H4", "H5", "H6", "BLOCKQUOTE",
+    "TABLE", "THEAD", "TBODY", "TFOOT", "TR", "TH", "TD", "CAPTION"]);
+  const dropTags = new Set(["SCRIPT", "STYLE", "IFRAME", "FRAME", "FRAMESET", "OBJECT", "EMBED", "APPLET", "TEMPLATE", "SLOT", "BASE", "LINK", "META",
+    "FORM", "INPUT", "BUTTON", "SELECT", "TEXTAREA", "OPTION", "NOSCRIPT", "SVG", "MATH", "IMG", "PICTURE", "SOURCE", "VIDEO", "AUDIO", "TRACK", "CANVAS", "DIALOG", "MARQUEE"]);
+  // Only data-src survives: hrefs are regenerated by src() and class/id/style
+  // are never author-controlled, so neither URL schemes nor page styling nor
+  // DOM clobbering can come from guide content.
+  const allowedAttrs = new Set(["data-src"]);
+  const walk = node => {
+    let child = node.firstChild;
+    while (child) {
+      const next = child.nextSibling;
+      if (child.nodeType === Node.COMMENT_NODE) {
+        child.remove();
+      } else if (child.nodeType === Node.ELEMENT_NODE) {
+        const tag = child.tagName.toUpperCase();
+        if (dropTags.has(tag) || child.namespaceURI !== "http://www.w3.org/1999/xhtml") {
+          child.remove();
+        } else if (!allowedTags.has(tag)) {
+          const first = child.firstChild;
+          child.replaceWith(...child.childNodes);
+          child = first || next;
+          continue;
+        } else {
+          for (const attr of Array.from(child.attributes)) {
+            if (!allowedAttrs.has(attr.name.toLowerCase())) child.removeAttribute(attr.name);
+          }
+          // Source links are rebuilt here, in the DOM, so the path never
+          // round-trips through serialized HTML.
+          if (tag === "A" && child.hasAttribute("data-src")) {
+            child.setAttribute("href", "#src:" + encodeURIComponent(child.getAttribute("data-src")));
+            child.className = "src";
+          }
+          walk(child);
+        }
+      }
+      child = next;
+    }
+  };
+  walk(tpl.content);
+  return tpl.innerHTML;
+}
+
+const src = (p, label) => `<a class="src" href="#src:${encodeURIComponent(p)}" data-src="${escapeHTML(p)}">${label || escapeHTML(p)}</a>`;
+const plural = (n, word) => `${n} ${word}${n === 1 ? "" : "s"}`;
+
+for (const k of ["layers", "pkgs", "steps", "flows", "guides", "findings", "langCols", "langs", "contractCols", "contractHooks"]) {
+  if (!Array.isArray(DATA[k])) DATA[k] = [];
+}
+document.title = DATA.title;
+document.getElementById("pageTitle").textContent = DATA.title;
+document.getElementById("welcomeTitle").textContent = DATA.subtitle || DATA.title;
+document.getElementById("subtitle").innerHTML =
+  `${escapeHTML(DATA.repo || DATA.module)} at commit ${src("", `<code>${escapeHTML(DATA.shortSha)}</code>`)}${DATA.goVersion ? ` (Go ${escapeHTML(DATA.goVersion)})` : ""} · ` +
+  `${plural(DATA.pkgs.length, "package")} · ${(DATA.totalLoc || 0).toLocaleString()} non-test Go lines.`;
+document.getElementById("mapIntro").textContent =
+  `Every package in the module (from go list ./...) is grouped into ${plural(DATA.layers.length, "layer")} assigned when this walkthrough was written.`;
+document.getElementById("langIntro").textContent =
+  `${plural(DATA.langs.length, "language integration")}. Click a row to expand details or jump to the package on the map.`;
+
+const hydrateLinks = sanitizeHTML;
+
+// Global delegated handler for ALL <a data-src="..."> links across the page
+document.addEventListener("click", e => {
+  const link = e.target.closest("a[data-src]");
+  if (!link) return;
+  e.preventDefault();
+  openSourceModal(link.getAttribute("data-src"));
+});
+
+// ---------------------------------------------------------------- clipboard + visible prompt drawer
+// Resolves to true only if some clipboard write actually succeeded; the
+// drawer below always shows the text so a failed copy is never silent.
+async function writeTextReliable(text) {
+  if (navigator.clipboard && typeof navigator.clipboard.writeText === "function") {
+    try { await navigator.clipboard.writeText(text); return true; } catch (_) {}
+  }
+  try {
+    const ta = document.createElement("textarea");
+    ta.value = text;
+    ta.setAttribute("readonly", "");
+    ta.style.position = "fixed";
+    ta.style.opacity = "0";
+    ta.style.left = "-9999px";
+    document.body.appendChild(ta);
+    ta.focus();
+    ta.select();
+    const ok = document.execCommand("copy");
+    document.body.removeChild(ta);
+    return ok;
+  } catch (_) {
+    return false;
+  }
+}
+
+function flashButton(btn, msg, ok = true) {
+  if (!btn) return;
+  const orig = btn.dataset.origLabel || btn.textContent;
+  btn.dataset.origLabel = orig;
+  btn.textContent = msg;
+  btn.style.borderColor = ok ? "#10b981" : "#f59e0b";
+  clearTimeout(btn._timer);
+  btn._timer = setTimeout(() => {
+    btn.textContent = orig;
+    btn.style.borderColor = "";
+  }, 1800);
+}
+
+function copyPrompt(text, btn, hostEl) {
+  const container = hostEl || btn.parentElement.parentElement;
+  let box = container ? container.querySelector(".prompt-box") : null;
+  if (container && !box) {
+    box = document.createElement("div");
+    box.className = "prompt-box";
+    container.appendChild(box);
+  }
+  if (box) {
+    box.innerHTML = `
+      <div class="flex items-center justify-between gap-2">
+        <span class="prompt-status" style="font-weight:600">Prompt ready:</span>
+        <div class="flex items-center gap-1.5">
+          <button class="underline text-xs copy-again-btn">Copy again</button>
+          <button class="text-[var(--muted-foreground)] hover:text-[var(--foreground)] text-xs close-prompt-btn">&times; Hide</button>
+        </div>
+      </div>
+      <textarea class="mono" rows="2" readonly>${escapeHTML(text)}</textarea>`;
+    const ta = box.querySelector("textarea");
+    ta.focus();
+    ta.select();
+    box.querySelector(".copy-again-btn").addEventListener("click", ev => {
+      writeTextReliable(ta.value).then(ok => flashButton(ev.target, ok ? "✓ Copied!" : "Copy blocked", ok));
+      ta.select();
+    });
+    box.querySelector(".close-prompt-btn").addEventListener("click", () => box.remove());
+  }
+  writeTextReliable(text).then(ok => {
+    flashButton(btn, ok ? "✓ Copied prompt!" : "Select text below", ok);
+    const status = box && box.querySelector(".prompt-status");
+    if (status) {
+      status.textContent = ok ? "✓ Prompt copied to clipboard — paste into chat:" : "Clipboard unavailable — select and copy the text below:";
+      status.style.color = ok ? "#10b981" : "#f59e0b";
+    }
+  });
+}
+
+// ---------------------------------------------------------------- path reference modal
+const srcModal = document.getElementById("srcModal");
+let activeModalPath = "";
+let activeModalPkg = "";
+
+// owningPkg returns the package whose directory is the longest prefix of p.
+function owningPkg(p) {
+  const clean = p.replace(/\/$/, "");
+  let best = "";
+  for (const pkg of DATA.pkgs) {
+    if ((clean === pkg.id || clean.startsWith(pkg.id + "/")) && pkg.id.length > best.length) best = pkg.id;
+  }
+  return best;
+}
+
+function openSourceModal(relPath) {
+  activeModalPath = relPath;
+  activeModalPkg = owningPkg(relPath);
+  const displayPath = relPath === "" ? `${DATA.repo || DATA.module} @ ${DATA.shortSha} (root)` : relPath;
+  document.getElementById("srcModalPath").textContent = displayPath;
+  document.getElementById("srcModalPromptHost").innerHTML = "";
+  document.getElementById("srcModalKind").textContent = relPath.endsWith("/") || relPath === "" ? "Repository directory" : "Repository file";
+
+  const mapBtn = document.getElementById("srcOpenMap");
+  mapBtn.classList.toggle("hidden", !activeModalPkg);
+  if (activeModalPkg) mapBtn.textContent = `Show ${shortName(activeModalPkg)} in Map →`;
+
+  const ghLink = document.getElementById("srcOpenGH");
+  ghLink.href = gh(relPath);
+  ghLink.classList.toggle("hidden", !DATA.repo);
+
+  const pkg = activeModalPkg ? byId[activeModalPkg] : null;
+  document.getElementById("srcModalBody").innerHTML = pkg
+    ? `<div class="text-xs text-[var(--muted-foreground)] mb-1">Owned by <code>${escapeHTML(pkg.id)}</code> · ${(pkg.loc || 0).toLocaleString()} non-test lines</div><p>${hydrateLinks(pkg.desc)}</p>`
+    : `<p class="text-[var(--muted-foreground)]">Open this path in your editor, or copy a prompt to have your agent walk you through it.</p>`;
+  srcModal.classList.remove("hidden");
+}
+
+document.getElementById("srcClose").addEventListener("click", () => srcModal.classList.add("hidden"));
+srcModal.addEventListener("click", e => { if (e.target === srcModal) srcModal.classList.add("hidden"); });
+document.getElementById("srcCopyPath").addEventListener("click", e => {
+  writeTextReliable(activeModalPath || ".").then(ok => flashButton(e.target, ok ? "✓ Copied path!" : "Copy blocked", ok));
+});
+document.getElementById("srcCopyPrompt").addEventListener("click", e => {
+  const target = activeModalPath || "the repository root";
+  copyPrompt(`Walk me through "${target}" in ${DATA.repo || DATA.module} (commit ${DATA.shortSha}) and explain how it fits into the architecture.`, e.target, document.getElementById("srcModalPromptHost"));
+});
+document.getElementById("srcOpenMap").addEventListener("click", () => {
+  const targetPkg = activeModalPkg;
+  srcModal.classList.add("hidden");
+  if (targetPkg) jumpToPkgInMap(targetPkg);
+});
+
+// ---------------------------------------------------------------- theme toggle
+function updateThemeButton() {
+  const root = document.documentElement;
+  const isDark = root.getAttribute("data-theme") === "dark" ||
+    (!root.getAttribute("data-theme") && window.matchMedia("(prefers-color-scheme: dark)").matches);
+  document.getElementById("themeToggle").textContent = isDark ? "☀ Light" : "☾ Dark";
+}
+document.getElementById("themeToggle").addEventListener("click", () => {
+  const root = document.documentElement;
+  const isDark = root.getAttribute("data-theme") === "dark" ||
+    (!root.getAttribute("data-theme") && window.matchMedia("(prefers-color-scheme: dark)").matches);
+  root.setAttribute("data-theme", isDark ? "light" : "dark");
+  updateThemeButton();
+  if (currentTab === "map") requestAnimationFrame(drawWires);
+});
+updateThemeButton();
+
+// ---------------------------------------------------------------- landing paths
+function renderPaths() {
+  const core = [
+    { tab: "map", title: "Architecture map", eyebrow: `${plural(DATA.layers.length, "layer")} · dependency wires`, desc: "Every package in the module grouped by layer, with its imports and importers drawn on click.", has: DATA.pkgs.length > 0 },
+    { tab: "tour", title: "Guided tour", eyebrow: `${plural(DATA.steps.length, "step")}`, desc: "A step-by-step narrative with the files to read at each stop.", has: DATA.steps.length > 0 },
+    { tab: "flows", title: "Command flows", eyebrow: `${plural(DATA.flows.length, "flow")}`, desc: "Stage-by-stage execution of specific commands, with inputs and outputs.", has: DATA.flows.length > 0 },
+    { tab: "languages", title: "Languages", eyebrow: `${plural(DATA.langs.length, "integration")}`, desc: "Side-by-side comparison of per-language packages and the hooks each one exports.", has: DATA.langs.length > 0 },
+    { tab: "findings", title: "Findings", eyebrow: `${plural(DATA.findings.length, "note")}`, desc: "Observations and invariants worth knowing before changing the code.", has: DATA.findings.length > 0 },
+  ];
+  for (const c of core) {
+    document.querySelector(`#tabs .tab[data-tab="${c.tab}"]`).classList.toggle("hidden", !c.has);
+  }
+  document.querySelector(`#tabs .tab[data-tab="guides"]`).classList.toggle("hidden", DATA.guides.length === 0);
+  const coreEl = document.getElementById("coreCards");
+  coreEl.innerHTML = core.filter(c => c.has).map(c => `
+    <div class="path-card bg-[var(--card)] border border-[var(--border)] rounded-xl p-4 text-sm" data-goto-tab="${c.tab}">
+      <div class="text-xs text-[var(--muted-foreground)] mb-1">${c.eyebrow}</div>
+      <h4 class="font-semibold text-base mb-1">${c.title}</h4>
+      <p class="text-[var(--muted-foreground)]">${c.desc}</p>
+    </div>`).join("");
+  coreEl.querySelectorAll(".path-card").forEach(el =>
+    el.addEventListener("click", () => showTab(el.dataset.gotoTab)));
+
+  document.getElementById("guideCardsTitle").classList.toggle("hidden", DATA.guides.length === 0);
+  const guideEl = document.getElementById("guideCards");
+  guideEl.innerHTML = DATA.guides.map((g, idx) => `
+    <div class="path-card bg-[var(--card)] border border-[var(--border)] rounded-xl p-4 text-sm" data-guide-idx="${idx}">
+      <div class="flex items-center justify-between gap-2 text-xs text-[var(--muted-foreground)] mb-1">
+        <span>${escapeHTML(g.audience || "")}</span>
+        <span>${plural(g.steps.length, "step")}</span>
+      </div>
+      <h4 class="font-semibold text-base mb-1">${escapeHTML(g.title)}</h4>
+      <p class="text-[var(--muted-foreground)]">${escapeHTML(g.subtitle || "")}</p>
+    </div>`).join("");
+  guideEl.querySelectorAll(".path-card").forEach(el =>
+    el.addEventListener("click", () => openGuide(+el.dataset.guideIdx)));
+
+  document.getElementById("customTopicInput").addEventListener("keydown", e => {
+    if (e.key === "Enter") document.getElementById("copyCustomPrompt").click();
+  });
+  document.getElementById("copyCustomPrompt").addEventListener("click", e => {
+    const topic = document.getElementById("customTopicInput").value.trim() || "the overall architecture";
+    copyPrompt(`Using the walkthrough skill, regenerate walkthrough.html for ${DATA.repo || DATA.module} at the current commit with a guide about: ${topic}`, e.target, document.getElementById("pathsPromptHost"));
+  });
+}
+
+// ---------------------------------------------------------------- map rendering
+const byId = Object.fromEntries(DATA.pkgs.map(p => [p.id, p]));
+const dependents = id => DATA.pkgs.filter(p => (p.imports || []).includes(id)).map(p => p.id);
+const shortName = id => id.replace(/^internal\//, "");  // common Go convention; purely cosmetic
+
+function renderMap() {
+  const root = document.getElementById("layers");
+  root.innerHTML = "";
+  for (const L of DATA.layers) {
+    const pk = DATA.pkgs.filter(p => p.layer === L.id);
+    if (!pk.length) continue;
+    const wrap = document.createElement("div");
+    wrap.className = "border border-[var(--border)] rounded-xl p-3 bg-[var(--card)]";
+    wrap.innerHTML = `<div class="flex items-baseline gap-2 mb-2"><h3 class="font-semibold text-sm">${escapeHTML(L.title)}</h3><span class="text-xs text-[var(--muted-foreground)]">${escapeHTML(L.hint || "")}</span></div>`;
+    const sides = [...new Set(pk.map(p => p.side || ""))];
+    if (sides.length > 1) {
+      const grid = document.createElement("div");
+      grid.className = "grid gap-3 md:grid-cols-2";
+      for (const side of sides) grid.appendChild(nodeGrid(pk.filter(p => (p.side || "") === side), side));
+      wrap.appendChild(grid);
+    } else {
+      wrap.appendChild(nodeGrid(pk));
+    }
+    root.appendChild(wrap);
+  }
+}
+function nodeGrid(pk, caption) {
+  const box = document.createElement("div");
+  if (caption) box.innerHTML = `<div class="text-xs text-[var(--muted-foreground)] mb-1">${escapeHTML(caption)}</div>`;
+  const g = document.createElement("div");
+  g.className = "flex flex-wrap gap-2";
+  for (const p of pk) {
+    const n = document.createElement("button");
+    n.className = "pkg text-left border border-[var(--border)] rounded-lg px-2.5 py-1.5 text-xs bg-[var(--background)]";
+    n.dataset.id = p.id;
+    n.innerHTML = `<div class="font-medium">${escapeHTML(shortName(p.id))}</div><div class="text-[var(--muted-foreground)]">${(p.loc || 0).toLocaleString()} lines</div>`;
+    n.addEventListener("click", () => {
+      if (selected === p.id) clearMapSelection();
+      else selectPkg(p.id, false);
+    });
+    g.appendChild(n);
+  }
+  box.appendChild(g);
+  return box;
+}
+
+let selected = null;
+function clearMapSelection() {
+  selected = null;
+  document.querySelectorAll(".pkg").forEach(el => el.classList.remove("sel", "imp", "dep", "dim"));
+  document.getElementById("detail").innerHTML = `<p class="text-[var(--muted-foreground)]">All ${DATA.pkgs.length} packages highlighted equally. Click any package card to inspect its direct imports, dependents, and source files.</p>`;
+  drawWires();
+}
+
+document.getElementById("resetMapSel").addEventListener("click", clearMapSelection);
+
+function jumpToPkgInMap(id) {
+  showTab("map");
+  requestAnimationFrame(() => selectPkg(id, true));
+}
+
+function selectPkg(id, scrollCard) {
+  if (!byId[id]) return;
+  selected = id;
+  const p = byId[id];
+  const imps = p.imports || [];
+  const deps = dependents(id);
+  document.querySelectorAll(".pkg").forEach(el => {
+    el.classList.remove("sel", "imp", "dep", "dim");
+    const eid = el.dataset.id;
+    if (eid === id) el.classList.add("sel");
+    else if (imps.includes(eid)) el.classList.add("imp");
+    else if (deps.includes(eid)) el.classList.add("dep");
+    else el.classList.add("dim");
+  });
+  const cardEl = document.querySelector(`.pkg[data-id="${CSS.escape(id)}"]`);
+  if (scrollCard && cardEl) cardEl.scrollIntoView({ behavior: "smooth", block: "center" });
+
+  const chips = ids => ids.length ? ids.map(i => `<button class="chip border border-[var(--border)] rounded-md px-1.5 py-0.5 text-xs mr-1 mb-1" data-go="${escapeHTML(i)}">${escapeHTML(shortName(i))}</button>`).join("") : `<span class="text-[var(--muted-foreground)] text-xs">none</span>`;
+  const layer = DATA.layers.find(l => l.id === p.layer).title;
+  const pkgPath = p.path || (p.id + "/");
+  document.getElementById("detail").innerHTML = `
+    <div class="text-xs text-[var(--muted-foreground)]">${escapeHTML(layer)}</div>
+    <h3 class="font-semibold text-base mb-1"><code>${escapeHTML(p.id)}</code></h3>
+    <div class="text-xs text-[var(--muted-foreground)] mb-2">${(p.loc || 0).toLocaleString()} non-test lines · ${src(pkgPath, "inspect files")}</div>
+    <p class="mb-3">${hydrateLinks(p.desc)}</p>
+    <div class="font-medium text-xs mb-1">Imports (${imps.length})</div>
+    <div class="mb-3">${chips(imps)}</div>
+    <div class="font-medium text-xs mb-1">Imported by (${deps.length})</div>
+    <div class="mb-3">${chips(deps)}</div>
+    <div class="flex flex-wrap gap-1.5">
+      <button class="text-xs border border-[var(--border)] hover:border-[var(--primary)] rounded-md px-2.5 py-1" id="inspectPkgBtn">Inspect files</button>
+      <button class="text-xs border border-[var(--border)] hover:border-[var(--primary)] rounded-md px-2.5 py-1" id="copyPkgPrompt">Copy prompt for agent</button>
+    </div>
+    <div id="pkgPromptHost"></div>`;
+  document.querySelectorAll("#detail .chip").forEach(c => c.addEventListener("click", () => selectPkg(c.dataset.go, true)));
+  document.getElementById("inspectPkgBtn").addEventListener("click", () => openSourceModal(pkgPath));
+  document.getElementById("copyPkgPrompt").addEventListener("click", e => {
+    copyPrompt(`Explain package ${p.id} in ${DATA.repo || DATA.module} (commit ${DATA.shortSha}), its key responsibilities, and how it interacts with [${imps.join(", ")}].`, e.target, document.getElementById("pkgPromptHost"));
+  });
+  drawWires();
+}
+
+function anchor(a, b) {
+  if (b.top >= a.bottom - 4) return [a.left + a.width / 2, a.bottom, b.left + b.width / 2, b.top, true];
+  if (a.top >= b.bottom - 4) return [a.left + a.width / 2, a.top, b.left + b.width / 2, b.bottom, true];
+  if (b.left > a.left) return [a.right, a.top + a.height / 2, b.left, b.top + b.height / 2, false];
+  return [a.left, a.top + a.height / 2, b.right, b.top + b.height / 2, false];
+}
+function drawWires() {
+  const svg = document.getElementById("wires");
+  const map = document.getElementById("map");
+  const mr = map.getBoundingClientRect();
+  if (!mr.width || !mr.height) return;
+  const primaryCol = getComputedStyle(document.documentElement).getPropertyValue("--primary").trim() || "#60a5fa";
+  const depCol = "#10b981";
+  svg.setAttribute("viewBox", `0 0 ${mr.width} ${mr.height}`);
+  svg.innerHTML = `<defs>
+    <marker id="arrI" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="${primaryCol}"/></marker>
+    <marker id="arrD" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="${depCol}"/></marker>
+  </defs>`;
+  if (!selected) return;
+  const rel = el => { const r = el.getBoundingClientRect(); return { left: r.left - mr.left, right: r.right - mr.left, top: r.top - mr.top, bottom: r.bottom - mr.top, width: r.width, height: r.height }; };
+  const node = id => document.querySelector(`.pkg[data-id="${CSS.escape(id)}"]`);
+  const me = node(selected); if (!me) return;
+  const a = rel(me);
+  const path = (x1, y1, x2, y2, v) => v ? `M${x1},${y1} C${x1},${(y1 + y2) / 2} ${x2},${(y1 + y2) / 2} ${x2},${y2}` : `M${x1},${y1} C${(x1 + x2) / 2},${y1} ${(x1 + x2) / 2},${y2} ${x2},${y2}`;
+  const add = (ids, color, marker, reverse) => {
+    for (const id of ids) {
+      const t = node(id); if (!t) continue;
+      const b = rel(t);
+      const [x1, y1, x2, y2, v] = reverse ? anchor(b, a) : anchor(a, b);
+      const el = document.createElementNS("http://www.w3.org/2000/svg", "path");
+      el.setAttribute("d", path(x1, y1, x2, y2, v));
+      el.setAttribute("fill", "none"); el.setAttribute("stroke", color); el.setAttribute("stroke-width", "1.6"); el.setAttribute("opacity", "0.85");
+      el.setAttribute("marker-end", `url(#${marker})`);
+      svg.appendChild(el);
+    }
+  };
+  add(byId[selected].imports || [], primaryCol, "arrI", false);
+  if (document.getElementById("showDeps").checked) add(dependents(selected), depCol, "arrD", true);
+}
+window.addEventListener("resize", () => drawWires());
+if (typeof ResizeObserver !== "undefined") {
+  new ResizeObserver(() => {
+    if (currentTab === "map") requestAnimationFrame(drawWires);
+  }).observe(document.getElementById("map"));
+}
+document.getElementById("showDeps").addEventListener("change", drawWires);
+
+// ---------------------------------------------------------------- guided tour
+let step = 0;
+function renderTourNav() {
+  const nav = document.getElementById("stepNav");
+  nav.innerHTML = DATA.steps.map((s, i) => `<li><button class="step-nav w-full text-left border border-[var(--border)] rounded-lg px-2.5 py-1.5 text-xs whitespace-nowrap lg:whitespace-normal" data-i="${i}"><span class="text-[var(--muted-foreground)] mr-1">${i + 1}.</span>${escapeHTML(s.t)}</button></li>`).join("");
+  nav.querySelectorAll("button").forEach(b => b.addEventListener("click", () => showStep(+b.dataset.i)));
+}
+function showStep(i) {
+  step = Math.max(0, Math.min(DATA.steps.length - 1, i));
+  const s = DATA.steps[step];
+  document.querySelectorAll("#stepNav .step-nav").forEach((b, j) => b.classList.toggle("active", j === step));
+  document.getElementById("stepBody").innerHTML = `
+    <div class="text-xs text-[var(--muted-foreground)]">Step ${step + 1} of ${DATA.steps.length}</div>
+    <h2 class="text-lg font-semibold mb-3">${escapeHTML(s.t)}</h2>
+    <div class="space-y-3">${hydrateLinks(s.body)}</div>
+    <div class="mt-4 pt-3 border-t border-[var(--border)]">
+      <div class="text-xs font-medium mb-1">Where to look (click to inspect source)</div>
+      <div class="flex flex-wrap gap-1 mb-3">${(s.look || []).map(f => `<span class="border border-[var(--border)] rounded-md px-1.5 py-0.5 text-xs">${src(f)}</span>`).join("")}</div>
+      <div class="flex flex-wrap items-center gap-3">
+        ${s.pkg ? `<button class="text-xs underline underline-offset-2 hover:text-[var(--primary)]" id="openInMap">Show <code>${escapeHTML(s.pkg)}</code> in the map &rarr;</button>` : ""}
+        <button class="text-xs border border-[var(--border)] hover:border-[var(--primary)] rounded-md px-2.5 py-1" id="copyTourPrompt">Copy prompt for agent</button>
+      </div>
+      <div id="tourPromptHost"></div>
+    </div>`;
+  document.getElementById("stepCounter").textContent = `${step + 1} / ${DATA.steps.length}`;
+  document.getElementById("prevStep").disabled = step === 0;
+  document.getElementById("nextStep").textContent = step === DATA.steps.length - 1 ? "Back to start" : "Next →";
+  const o = document.getElementById("openInMap");
+  if (o) o.addEventListener("click", () => jumpToPkgInMap(s.pkg));
+  document.getElementById("copyTourPrompt").addEventListener("click", e => {
+    copyPrompt(`Walk me deeper through "${s.t}" in ${DATA.repo || DATA.module} (commit ${DATA.shortSha}), specifically looking at [${(s.look || []).join(", ")}].`, e.target, document.getElementById("tourPromptHost"));
+  });
+}
+document.getElementById("prevStep").addEventListener("click", () => showStep(step - 1));
+document.getElementById("nextStep").addEventListener("click", () => showStep(step === DATA.steps.length - 1 ? 0 : step + 1));
+
+// ---------------------------------------------------------------- generation deep-dive guides
+let activeGuide = 0;
+let guideStep = 0;
+
+function openGuide(idx) {
+  activeGuide = Math.max(0, Math.min(DATA.guides.length - 1, idx));
+  guideStep = 0;
+  showTab("guides");
+  renderGuide();
+}
+
+function renderGuide() {
+  if (!DATA.guides.length) return;
+  const g = DATA.guides[activeGuide];
+  const sel = document.getElementById("guideSelector");
+  sel.innerHTML = DATA.guides.map((item, idx) =>
+    `<button class="border border-[var(--border)] rounded-lg px-3 py-1.5 text-xs ${idx === activeGuide ? "bg-[var(--primary)] text-[var(--primary-foreground)]" : "bg-[var(--card)]"}" data-idx="${idx}">${escapeHTML(item.title)}</button>`
+  ).join("");
+  sel.querySelectorAll("button").forEach(b => b.addEventListener("click", () => {
+    activeGuide = +b.dataset.idx;
+    guideStep = 0;
+    renderGuide();
+  }));
+
+  document.getElementById("guideHeader").innerHTML = `
+    <div class="text-xs text-[var(--muted-foreground)]">${escapeHTML(g.audience)}</div>
+    <h2 class="text-lg font-semibold">${escapeHTML(g.title)}</h2>
+    <p class="text-[var(--muted-foreground)] mt-1">${escapeHTML(g.subtitle)}</p>`;
+
+  const nav = document.getElementById("guideStepNav");
+  nav.innerHTML = g.steps.map((s, i) =>
+    `<li><button class="step-nav w-full text-left border border-[var(--border)] rounded-lg px-2.5 py-1.5 text-xs whitespace-nowrap lg:whitespace-normal" data-i="${i}"><span class="text-[var(--muted-foreground)] mr-1">${i + 1}.</span>${escapeHTML(s.t)}</button></li>`
+  ).join("");
+  nav.querySelectorAll("button").forEach(b => b.addEventListener("click", () => showGuideStep(+b.dataset.i)));
+  showGuideStep(guideStep);
+}
+
+function showGuideStep(i) {
+  const g = DATA.guides[activeGuide];
+  guideStep = Math.max(0, Math.min(g.steps.length - 1, i));
+  const s = g.steps[guideStep];
+  document.querySelectorAll("#guideStepNav .step-nav").forEach((b, j) => b.classList.toggle("active", j === guideStep));
+  document.getElementById("guideStepBody").innerHTML = `
+    <div class="flex flex-wrap items-center justify-between gap-2 mb-1">
+      <span class="text-xs text-[var(--muted-foreground)]">Step ${guideStep + 1} of ${g.steps.length}</span>
+      <div class="flex flex-wrap gap-1">
+        ${s.runs ? `<span class="badge"><strong>Stage:</strong> ${escapeHTML(s.runs)}</span>` : ""}
+        ${s.code ? `<span class="badge"><strong>Code:</strong> <code>${escapeHTML(s.code)}</code></span>` : ""}
+      </div>
+    </div>
+    <h2 class="text-lg font-semibold mb-3">${escapeHTML(s.t)}</h2>
+    <div class="space-y-3">${hydrateLinks(s.body)}</div>
+    <div class="mt-4 pt-3 border-t border-[var(--border)]">
+      ${s.look && s.look.length ? `<div class="text-xs font-medium mb-1">Key files to inspect (click any file)</div><div class="flex flex-wrap gap-1 mb-3">${s.look.map(f => `<span class="border border-[var(--border)] rounded-md px-1.5 py-0.5 text-xs">${src(f)}</span>`).join("")}</div>` : ""}
+      <div class="flex flex-wrap items-center gap-3">
+        ${s.pkg ? `<button class="text-xs underline underline-offset-2 hover:text-[var(--primary)]" id="guideOpenInMap">Show <code>${escapeHTML(s.pkg)}</code> in the map &rarr;</button>` : ""}
+        <button class="text-xs border border-[var(--border)] hover:border-[var(--primary)] rounded-md px-2.5 py-1" id="copyGuidePrompt">Copy prompt for agent</button>
+      </div>
+      <div id="guidePromptHost"></div>
+    </div>`;
+  document.getElementById("guideStepCounter").textContent = `${guideStep + 1} / ${g.steps.length}`;
+  document.getElementById("prevGuideStep").disabled = guideStep === 0;
+  document.getElementById("nextGuideStep").textContent = guideStep === g.steps.length - 1 ? "Back to step 1" : "Next →";
+  const gm = document.getElementById("guideOpenInMap");
+  if (gm) gm.addEventListener("click", () => jumpToPkgInMap(s.pkg));
+  document.getElementById("copyGuidePrompt").addEventListener("click", e => {
+    copyPrompt(`In guide "${g.title}" -> "${s.t}" (commit ${DATA.shortSha}), walk me through the code in [${(s.look || []).join(", ")}] with concrete examples.`, e.target, document.getElementById("guidePromptHost"));
+  });
+}
+document.getElementById("prevGuideStep").addEventListener("click", () => showGuideStep(guideStep - 1));
+document.getElementById("nextGuideStep").addEventListener("click", () => showGuideStep(guideStep === DATA.guides[activeGuide].steps.length - 1 ? 0 : guideStep + 1));
+document.getElementById("backToPaths").addEventListener("click", () => showTab("paths"));
+
+document.addEventListener("keydown", e => {
+  if (!srcModal.classList.contains("hidden")) {
+    if (e.key === "Escape") srcModal.classList.add("hidden");
+    return;
+  }
+  const tag = e.target && e.target.tagName;
+  if (tag === "INPUT" || tag === "TEXTAREA") return;
+  if (currentTab === "tour") {
+    if (e.key === "ArrowRight") showStep(step + 1);
+    if (e.key === "ArrowLeft") showStep(step - 1);
+  } else if (currentTab === "guides") {
+    if (e.key === "ArrowRight") showGuideStep(guideStep + 1);
+    if (e.key === "ArrowLeft") showGuideStep(guideStep - 1);
+  }
+});
+
+// ---------------------------------------------------------------- flows
+let flow = DATA.flows.length ? DATA.flows[0].id : "";
+function renderFlows() {
+  if (!DATA.flows.length) return;
+  const tabs = document.getElementById("flowTabs");
+  tabs.innerHTML = DATA.flows.map(f => `<button class="flow-tab border border-[var(--border)] rounded-lg px-3 py-1.5 text-sm ${f.id === flow ? "bg-[var(--primary)] text-[var(--primary-foreground)]" : ""}" data-f="${escapeHTML(f.id)}">${escapeHTML(f.title)}</button>`).join("");
+  tabs.querySelectorAll("button").forEach(b => b.addEventListener("click", () => { flow = b.dataset.f; renderFlows(); }));
+  const f = DATA.flows.find(x => x.id === flow) || DATA.flows[0];
+  const inputsHtml = (f.inputs || []).map(inp => `<span class="badge">${hydrateLinks(inp)}</span>`).join("");
+  const stagesHtml = (f.stages || []).map((st, i) => {
+    const isLast = i === f.stages.length - 1;
+    return `
+      <div class="flow-stage">
+        <div class="flow-rail">
+          <div class="flow-num">${i + 1}</div>
+          ${!isLast ? `<div class="flow-arrow-v" aria-hidden="true"><div class="flow-line-v"></div><span style="font-size:11px; line-height:1">▼</span></div>` : ""}
+        </div>
+        <div class="flow-card">
+          <div class="flex flex-wrap items-baseline justify-between gap-2">
+            <div class="font-semibold text-sm">${escapeHTML(st.title)}</div>
+            <span class="badge">${hydrateLinks(st.where)}</span>
+          </div>
+          <div class="text-xs text-[var(--muted-foreground)] leading-relaxed">${hydrateLinks(st.body)}</div>
+          ${st.out ? `<div class="flow-out">&rarr; Output: ${escapeHTML(st.out)}</div>` : ""}
+        </div>
+      </div>`;
+  }).join("");
+  const mapPkg = f.pkg || owningPkg(f.file || "");
+  document.getElementById("flowBody").innerHTML = `
+    <div class="flex flex-wrap items-baseline justify-between gap-2 mb-3">
+      <code class="text-sm">${escapeHTML(f.cmd)}</code>
+      ${f.file ? `<span class="text-xs">${src(f.file, "Inspect " + escapeHTML(f.file))}</span>` : ""}
+    </div>
+    <div class="flow-inputs">
+      <strong class="text-xs text-[var(--foreground)]">Inputs &amp; state read:</strong>
+      ${inputsHtml}
+    </div>
+    <div class="flow-diagram">${stagesHtml}</div>
+    <div class="pt-3 border-t border-[var(--border)] flex flex-wrap items-center gap-3">
+      ${mapPkg ? `<button class="text-xs underline underline-offset-2 hover:text-[var(--primary)]" id="flowOpenMap">Show <code>${escapeHTML(mapPkg)}</code> in the map &rarr;</button>` : ""}
+      <button class="text-xs border border-[var(--border)] hover:border-[var(--primary)] rounded-md px-2.5 py-1" id="copyFlowPrompt">Copy prompt for agent</button>
+    </div>
+    <div id="flowPromptHost"></div>`;
+  const fm = document.getElementById("flowOpenMap");
+  if (fm) fm.addEventListener("click", () => jumpToPkgInMap(mapPkg));
+  document.getElementById("copyFlowPrompt").addEventListener("click", e => {
+    copyPrompt(`Trace the execution of "${f.cmd}" starting at ${f.file} (commit ${DATA.shortSha}) and walk me through each step in detail.`, e.target, document.getElementById("flowPromptHost"));
+  });
+}
+
+// ---------------------------------------------------------------- languages
+function renderLanguages() {
+  if (!DATA.langs.length) return;
+  const t = document.getElementById("langTable");
+  const cols = DATA.langCols;
+  t.innerHTML = `<thead><tr><th>Language</th>${cols.map(c => `<th>${escapeHTML(c.title)}</th>`).join("")}</tr></thead>
+    <tbody>${DATA.langs.map((l, i) => `
+      <tr class="lang-row" data-i="${i}"><td class="font-medium whitespace-nowrap"><span class="mr-1 text-xs lang-chev" data-chev="${i}">&#9656;</span>${escapeHTML(l.n)}<div class="text-xs text-[var(--muted-foreground)] font-normal">${(l.loc || 0).toLocaleString()} lines</div></td>${cols.map(c => `<td>${hydrateLinks((l.cells || {})[c.key] || "")}</td>`).join("")}</tr>
+      <tr class="lang-detail hidden" data-i="${i}"><td colspan="${cols.length + 1}" class="text-xs leading-relaxed" style="background: color-mix(in srgb, var(--primary) 6%, transparent)">
+        <div class="mb-2">${hydrateLinks(l.detail)}</div>
+        <div class="flex flex-wrap items-center gap-3">
+          ${l.pkg ? src(l.pkg + "/", `Inspect ${escapeHTML(l.pkg)}/`) : ""}
+          ${l.pkg ? `<button class="underline underline-offset-2 hover:text-[var(--primary)] lang-map-btn" data-pkg="${escapeHTML(l.pkg)}">Show <code>${escapeHTML(l.pkg)}</code> in the map &rarr;</button>` : ""}
+          <button class="border border-[var(--border)] hover:border-[var(--primary)] rounded-md px-2 py-0.5 lang-prompt-btn" data-lang="${escapeHTML(l.n)}" data-pkg="${escapeHTML(l.pkg || "")}">Copy prompt for agent</button>
+        </div>
+        <div class="lang-prompt-host"></div>
+      </td></tr>`).join("")}</tbody>`;
+  t.querySelectorAll(".lang-row").forEach(r => r.addEventListener("click", () => {
+    const idx = r.dataset.i;
+    const detailRow = t.querySelector(`.lang-detail[data-i="${idx}"]`);
+    const hidden = detailRow.classList.toggle("hidden");
+    const chev = t.querySelector(`.lang-chev[data-chev="${idx}"]`);
+    if (chev) chev.textContent = hidden ? "▸" : "▾";
+  }));
+  t.querySelectorAll(".lang-map-btn").forEach(b => b.addEventListener("click", e => {
+    e.stopPropagation();
+    jumpToPkgInMap(b.dataset.pkg);
+  }));
+  t.querySelectorAll(".lang-prompt-btn").forEach(b => b.addEventListener("click", e => {
+    e.stopPropagation();
+    const host = b.closest("td").querySelector(".lang-prompt-host");
+    copyPrompt(`Explain how ${b.dataset.lang} is integrated in ${b.dataset.pkg || DATA.repo || DATA.module} (commit ${DATA.shortSha}).`, b, host);
+  }));
+  document.getElementById("contractSection").classList.toggle("hidden", !DATA.contractHooks.length);
+  const c = document.getElementById("contractTable");
+  c.innerHTML = `<thead><tr><th>Hook</th><th>Called from</th>${DATA.contractCols.map(x => `<th class="text-center">${escapeHTML(x)}</th>`).join("")}</tr></thead>
+    <tbody>${DATA.contractHooks.map(h => `<tr><td><code>${escapeHTML(h.hook)}</code></td><td class="text-[var(--muted-foreground)]">${escapeHTML(h.caller || "")}</td>${h.cells.map(v => `<td class="text-center ${v === "·" || v === "" ? "text-[var(--muted-foreground)]" : ""}">${escapeHTML(v || "·")}</td>`).join("")}</tr>`).join("")}</tbody>`;
+}
+
+// ---------------------------------------------------------------- findings
+function renderFindings() {
+  const el = document.getElementById("findings");
+  el.innerHTML = DATA.findings.map((x, idx) =>
+    `<div class="bg-[var(--card)] border border-[var(--border)] rounded-xl p-4 text-sm">
+      <h3 class="font-semibold mb-1">${escapeHTML(x.t)}</h3>
+      <p class="text-[var(--muted-foreground)]">${hydrateLinks(x.b)}</p>
+      <div class="mt-3 pt-2 border-t border-[var(--border)] flex flex-wrap items-center gap-3 text-xs">
+        ${x.f ? src(x.f, "Inspect " + escapeHTML(x.f)) : ""}
+        ${x.pkg ? `<button class="underline underline-offset-2 hover:text-[var(--primary)] finding-map-btn" data-pkg="${escapeHTML(x.pkg)}">Show <code>${escapeHTML(x.pkg)}</code> in the map &rarr;</button>` : ""}
+        <button class="border border-[var(--border)] hover:border-[var(--primary)] rounded-md px-2 py-0.5 finding-prompt-btn" data-idx="${idx}">Copy prompt for agent</button>
+      </div>
+      <div class="finding-prompt-host"></div>
+    </div>`
+  ).join("");
+  el.querySelectorAll(".finding-map-btn").forEach(b => b.addEventListener("click", () => jumpToPkgInMap(b.dataset.pkg)));
+  el.querySelectorAll(".finding-prompt-btn").forEach(b => b.addEventListener("click", () => {
+    const x = DATA.findings[+b.dataset.idx];
+    const host = b.closest("div.rounded-xl").querySelector(".finding-prompt-host");
+    copyPrompt(`Explain the finding "${x.t}" in ${x.f || DATA.repo || DATA.module} (commit ${DATA.shortSha}).`, b, host);
+  }));
+}
+
+// ---------------------------------------------------------------- tabs
+let currentTab = "map";
+function showTab(id) {
+  currentTab = id;
+  document.querySelectorAll("section[id^=tab-]").forEach(s => s.classList.toggle("hidden", s.id !== "tab-" + id));
+  document.querySelectorAll("#tabs .tab").forEach(b => b.classList.toggle("active", b.dataset.tab === id));
+  if (id === "map") requestAnimationFrame(() => selectPkg(selected || DATA.defaultPkg, false));
+}
+document.querySelectorAll("#tabs .tab").forEach(b => b.addEventListener("click", () => showTab(b.dataset.tab)));
+
+renderPaths();
+renderMap();
+renderTourNav();
+if (DATA.steps.length) showStep(0);
+renderGuide();
+renderFlows();
+renderLanguages();
+renderFindings();
+showTab(DATA.steps.length || DATA.guides.length ? "paths" : "map");
+</script>
+</body>
+</html>
