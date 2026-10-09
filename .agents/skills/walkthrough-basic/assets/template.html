@@ -18,6 +18,7 @@ limitations under the License.
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-__WALKTHROUGH_SCRIPT_HASH__'; style-src 'unsafe-inline'; base-uri 'none'; form-action 'none'">
 <title>Architecture &amp; walkthroughs</title>
 <style>
 :root{color-scheme:light dark;--background:#fff;--card:#f8fafc;--foreground:#0f172a;--muted:#64748b;--border:#e2e8f0;--primary:#2563eb;--primary-fg:#fff;--dep:#10b981}
@@ -258,8 +259,10 @@ document.querySelectorAll("#tabs button").forEach(b => b.onclick = () => showTab
 // ---------- header & paths ----------
 document.title = D.title || document.title;
 $("#title").textContent = D.title;
-$("#subtitle").innerHTML = [D.repo || D.module, `<code>${esc(D.shortSha)}</code> (${esc(D.ref)})`, esc(D.goVersion),
-  `${D.packages.length} packages`, `${D.totalLoc.toLocaleString()} LOC`, `generated ${esc(D.generatedAt)}`].filter(Boolean).join(" · ");
+$("#subtitle").innerHTML = [esc(D.repo || D.module), `<code>${esc(D.shortSha)}</code> (${esc(D.ref)})`,
+  D.dirty ? `<span class="badge" title="Generated from a work tree with uncommitted changes">uncommitted changes</span>` : "",
+  esc(D.goVersion), `${D.packages.length} packages`, `${D.totalLoc.toLocaleString()} LOC`,
+  `committed ${esc(D.commitDate)}`, esc(D.platform)].filter(Boolean).join(" · ");
 $("#summary").innerHTML = D.summary;
 function renderPaths() {
   const groups = {};
