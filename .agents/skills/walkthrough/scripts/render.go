@@ -56,14 +56,16 @@ type Site struct {
 	ShortSHA      string        `json:"shortSha,omitempty"` // computed
 	Repo          string        `json:"repo,omitempty"`     // computed from module path unless given
 	GitRef        string        `json:"gitRef,omitempty"`
-	Module        string        `json:"module,omitempty"`   // computed
-	TotalLOC      int           `json:"totalLoc,omitempty"` // computed
+	Module        string        `json:"module,omitempty"`    // computed
+	GoVersion     string        `json:"goVersion,omitempty"` // computed
+	TotalLOC      int           `json:"totalLoc,omitempty"`  // computed
 	Layers        []Layer       `json:"layers"`
 	Pkgs          []Pkg         `json:"pkgs"`
 	Steps         []Step        `json:"steps,omitempty"`
 	Flows         []Flow        `json:"flows,omitempty"`
 	Guides        []Guide       `json:"guides,omitempty"`
 	Findings      []Finding     `json:"findings,omitempty"`
+	LangCols      []LangCol     `json:"langCols,omitempty"`
 	Langs         []Lang        `json:"langs,omitempty"`
 	ContractCols  []string      `json:"contractCols,omitempty"`
 	ContractHooks []ContractRow `json:"contractHooks,omitempty"`
@@ -133,15 +135,19 @@ type Finding struct {
 	Pkg   string `json:"pkg,omitempty"`
 }
 
+// LangCol names one column of the languages table; each Lang supplies the
+// matching cell by key so the table's shape is authored, not built in.
+type LangCol struct {
+	Key   string `json:"key"`
+	Title string `json:"title"`
+}
+
 type Lang struct {
-	Name   string `json:"n"`
-	Pkg    string `json:"pkg"`
-	Gen    string `json:"gen,omitempty"`
-	Inst   string `json:"inst,omitempty"`
-	Fmt    string `json:"fmt,omitempty"`
-	Pub    string `json:"pub,omitempty"`
-	Detail string `json:"detail,omitempty"`
-	LOC    int    `json:"loc"` // computed from Pkg
+	Name   string            `json:"n"`
+	Pkg    string            `json:"pkg"`
+	Cells  map[string]string `json:"cells,omitempty"`
+	Detail string            `json:"detail,omitempty"`
+	LOC    int               `json:"loc"` // computed from Pkg
 }
 
 type ContractRow struct {
@@ -152,24 +158,28 @@ type ContractRow struct {
 
 func main() {
 	var in, out, root, tmplPath string
-	var initSkeleton, check bool
+	var initSkeleton, check, dumpFacts bool
 	flag.StringVar(&in, "in", "", "walkthrough JSON authored by the skill")
 	flag.StringVar(&out, "out", "", "output path: .html when rendering, .json with -init (default: stdout)")
 	flag.StringVar(&root, "root", "", "module root (default: directory of go env GOMOD)")
 	flag.StringVar(&tmplPath, "template", "", "HTML template with a {{.JSON}} slot (default: the embedded template)")
 	flag.BoolVar(&initSkeleton, "init", false, "write a skeleton JSON listing every package with its doc synopsis")
 	flag.BoolVar(&check, "check", false, "validate -in without writing HTML")
+	flag.BoolVar(&dumpFacts, "facts", false, "print the computed facts (packages, imports, LOC, docs) as JSON and exit")
 	flag.Parse()
-	if err := run(context.Background(), in, out, root, tmplPath, initSkeleton, check); err != nil {
+	if err := run(context.Background(), in, out, root, tmplPath, initSkeleton, check, dumpFacts); err != nil {
 		fmt.Fprintln(os.Stderr, "render:", err)
 		os.Exit(1)
 	}
 }
 
-func run(ctx context.Context, in, out, root, tmplPath string, initSkeleton, check bool) error {
+func run(ctx context.Context, in, out, root, tmplPath string, initSkeleton, check, dumpFacts bool) error {
 	facts, err := loadFacts(ctx, root)
 	if err != nil {
 		return err
+	}
+	if dumpFacts {
+		return writeOutput(out, facts.export())
 	}
 	if initSkeleton {
 		if out != "" {
@@ -223,10 +233,27 @@ func run(ctx context.Context, in, out, root, tmplPath string, initSkeleton, chec
 
 // facts is everything derived from the checkout rather than authored.
 type facts struct {
-	root, module, sha string
-	pkgs              map[string]*Pkg // keyed by module-relative ID, in go list order
-	order             []string
-	docs              map[string]string
+	root, module, sha, goVersion string
+	pkgs                         map[string]*Pkg // keyed by module-relative ID, in go list order
+	order                        []string
+	docs                         map[string]string
+}
+
+// factPkg is one package in the -facts output.
+type factPkg struct {
+	ID      string   `json:"id"`
+	Doc     string   `json:"doc,omitempty"`
+	LOC     int      `json:"loc"`
+	Imports []string `json:"imports"`
+}
+
+func (f *facts) export() map[string]any {
+	pkgs := make([]factPkg, 0, len(f.order))
+	for _, id := range f.order {
+		p := f.pkgs[id]
+		pkgs = append(pkgs, factPkg{ID: id, Doc: f.docs[id], LOC: p.LOC, Imports: p.Imports})
+	}
+	return map[string]any{"module": f.module, "goVersion": f.goVersion, "sha": f.sha, "root": f.root, "pkgs": pkgs}
 }
 
 type goListPkg struct {
@@ -235,7 +262,7 @@ type goListPkg struct {
 	Doc        string
 	GoFiles    []string
 	Imports    []string
-	Module     *struct{ Path, Dir string }
+	Module     *struct{ Path, Dir, GoVersion string }
 }
 
 func loadFacts(ctx context.Context, root string) (*facts, error) {
@@ -270,6 +297,7 @@ func loadFacts(ctx context.Context, root string) (*facts, error) {
 		return nil, errors.New("go list found no module packages under " + root)
 	}
 	f.module = listed[0].Module.Path
+	f.goVersion = listed[0].Module.GoVersion
 	// rel maps an import path inside the module to a module-relative ID; the
 	// module root itself is ".".
 	rel := func(importPath string) (string, bool) {
@@ -298,6 +326,9 @@ func loadFacts(ctx context.Context, root string) (*facts, error) {
 			}
 		}
 		slices.Sort(imports)
+		if imports == nil {
+			imports = []string{}
+		}
 		f.pkgs[id] = &Pkg{ID: id, LOC: loc, Imports: imports}
 		f.docs[id] = p.Doc
 		f.order = append(f.order, id)
@@ -366,6 +397,7 @@ func readSite(path string) (*Site, error) {
 // JSON omitted to the "other" layer so the map never silently drops code.
 func merge(s *Site, f *facts) {
 	s.Module = f.module
+	s.GoVersion = f.goVersion
 	if s.SHA == "" {
 		s.SHA = f.sha
 	}
@@ -561,6 +593,16 @@ func validate(s *Site, f *facts) []string {
 		citeHTML(w, fn.Body)
 		checkPkg(w+".pkg", fn.Pkg)
 	}
+	langCols := map[string]bool{}
+	for i, c := range s.LangCols {
+		if c.Key == "" || c.Title == "" {
+			add("langCols[%d] needs key and title", i)
+		}
+		langCols[c.Key] = true
+	}
+	if len(s.Langs) > 0 && len(s.LangCols) == 0 {
+		add("langs requires langCols to name the table columns")
+	}
 	for i, l := range s.Langs {
 		w := fmt.Sprintf("langs[%d]", i)
 		if l.Name == "" {
@@ -568,6 +610,12 @@ func validate(s *Site, f *facts) []string {
 		}
 		checkPkg(w+".pkg", l.Pkg)
 		citeHTML(w, l.Detail)
+		for k, v := range l.Cells {
+			if !langCols[k] {
+				add("%s.cells has key %q not declared in langCols", w, k)
+			}
+			citeHTML(w+".cells."+k, v)
+		}
 	}
 	for i, r := range s.ContractHooks {
 		if len(r.Cells) != len(s.ContractCols) {
