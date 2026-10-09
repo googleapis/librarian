@@ -61,8 +61,8 @@ section{display:none}section.show{display:block}
 .layer-b{display:flex;flex-wrap:wrap;gap:.4rem;margin-top:.4rem}
 .pkg{text-align:left;background:var(--background);padding:.35rem .55rem;transition:opacity .15s,box-shadow .15s}
 .pkg.dim{opacity:.3}.pkg.sel{box-shadow:0 0 0 2px var(--primary);border-color:var(--primary)}
-.pkg.imp{border-color:var(--primary);background:color-mix(in srgb,var(--primary) 14%,transparent)}
-.pkg.dep{border-color:var(--dep);background:color-mix(in srgb,var(--dep) 14%,transparent)}
+.pkg.imp{border-color:var(--primary);background:color-mix(in srgb,var(--primary) 14%,var(--background))}
+.pkg.dep{border-color:var(--dep);background:color-mix(in srgb,var(--dep) 14%,var(--background))}
 .chip{font-size:12px;padding:.1rem .5rem;border-radius:.4rem}
 a.src,a.pkgref{color:var(--primary);text-decoration:underline;text-underline-offset:2px;cursor:pointer}
 .step-nav{display:flex;gap:.25rem;overflow-x:auto;padding:0;margin:0;list-style:none}
@@ -180,6 +180,7 @@ const el = (tag, cls, html) => { const e = document.createElement(tag); if (cls)
 const pkgById = Object.fromEntries(D.packages.map(p => [p.id, p]));
 const layerOf = {}; D.layers.forEach(l => l.packages.forEach(id => layerOf[id] = l));
 const desc = id => (D.descriptions || {})[id] || esc(pkgById[id]?.doc || "");
+const plural = (n, word) => `${n.toLocaleString()} ${word}${n === 1 ? "" : "s"}`;
 const srcLink = (p, label) => `<a class="src" data-src="${esc(p)}">${esc(label || p)}</a>`;
 const pkgLink = id => `<a class="pkgref" data-pkg="${esc(id)}">${esc(id)}</a>`;
 const ghURL = p => {
@@ -272,7 +273,7 @@ function renderPaths() {
     host.append(el("h3", "", `${gi + 1}. ${esc(g)}`));
     const grid = el("div", "grid2 mb");
     tours.forEach(t => {
-      const c = el("button", "path-card", `<div style="font-weight:600">${esc(t.title)}</div><div class="xs muted">${esc(t.subtitle)}</div><div class="xs muted mt">${t.steps.length} steps →</div>`);
+      const c = el("button", "path-card", `<div style="font-weight:600">${esc(t.title)}</div><div class="xs muted">${esc(t.subtitle)}</div><div class="xs muted mt">${plural(t.steps.length, "step")} →</div>`);
       c.onclick = () => openTour(t.id, 0);
       grid.append(c);
     });
@@ -298,7 +299,7 @@ function renderMap() {
     const body = el("div", "layer-b");
     l.packages.forEach(id => {
       const p = pkgById[id];
-      const b = el("button", "pkg", `<div class="mono xs">${esc(id)}</div><div class="xs muted">${p.loc.toLocaleString()} LOC · ${p.files.length} files</div>`);
+      const b = el("button", "pkg", `<div class="mono xs">${esc(id)}</div><div class="xs muted">${p.loc.toLocaleString()} LOC · ${plural(p.files.length, "file")}</div>`);
       b.dataset.id = id; b.onclick = () => selectPkg(id);
       body.append(b);
     });
@@ -352,7 +353,7 @@ function renderDetail(p) {
     <div class="xs muted">${esc(layerOf[p.id]?.title)}</div>
     <h2 class="mono">${esc(p.id)}</h2>
     <p>${desc(p.id)}</p>
-    <p class="xs muted mt">${p.loc.toLocaleString()} LOC · ${p.files.length} files · ${p.tests} test files</p>
+    <p class="xs muted mt">${p.loc.toLocaleString()} LOC · ${plural(p.files.length, "file")} · ${plural(p.tests, "test file")}</p>
     <div class="row mt"><button class="xs" data-src="${esc(p.id)}/">Open folder</button><button class="xs" id="pkgPrompt">Copy prompt for agent</button></div>
     <div id="pkgPromptHost"></div>
     <h3>Imports (${p.imports.length})</h3>${chips(p.imports)}
@@ -367,8 +368,13 @@ addEventListener("resize", drawWires);
 
 // ---------- tours ----------
 let tour = null, stepIdx = 0;
-function openTour(id, n) { tour = D.tours.find(t => t.id === id) || D.tours[0]; stepIdx = n || 0; showTab("tours"); renderTour(); }
+function openTour(id, n) {
+  tour = D.tours.find(t => t.id === id) || D.tours[0];
+  stepIdx = Math.min(Math.max(n || 0, 0), tour.steps.length - 1);
+  showTab("tours"); renderTour();
+}
 function renderTour() {
+  if (!tour) { $("#stepBody").innerHTML = `<p class="muted">No tours.</p>`; return; }
   $("#tourSelector").innerHTML = "";
   D.tours.forEach(t => { const b = el("button", "sel-btn xs" + (t === tour ? " active" : ""), esc(t.title)); b.onclick = () => openTour(t.id, 0); $("#tourSelector").append(b); });
   $("#tourHeader").innerHTML = `<div class="xs muted">${esc(tour.group)}</div><h2>${esc(tour.title)}</h2><p class="muted">${esc(tour.subtitle)}</p>`;
@@ -383,7 +389,7 @@ function renderTour() {
   $("#stepPrompt").onclick = e => showPrompt($("#stepPromptHost"), topicPrompt(`Walk me through "${s.t}" (${tour.title}), starting from ${(s.look || []).join(", ")}`), e.target);
   $("#stepCounter").textContent = `${stepIdx + 1} / ${tour.steps.length}`;
   $("#prevStep").disabled = stepIdx === 0; $("#nextStep").disabled = stepIdx === tour.steps.length - 1;
-  history.replaceState(null, "", `#tours/${tour.id}/${stepIdx}`);
+  if ($("#tab-tours").classList.contains("show")) history.replaceState(null, "", `#tours/${tour.id}/${stepIdx}`);
 }
 $("#prevStep").onclick = () => { if (stepIdx > 0) { stepIdx--; renderTour(); } };
 $("#nextStep").onclick = () => { if (stepIdx < tour.steps.length - 1) { stepIdx++; renderTour(); } };
@@ -398,7 +404,7 @@ function renderFlows() {
   D.flows.forEach(f => { const b = el("button", "sel-btn xs", esc(f.title)); b.dataset.id = f.id; b.onclick = () => show(f); $("#flowTabs").append(b); });
   if (D.flows.length) show(D.flows[0]); else $("#flowBody").innerHTML = `<p class="muted">No flows.</p>`;
   $("#cmdTable").innerHTML = `<tr><th align="left">Command</th><th align="left">Usage</th><th align="left">Action</th><th align="left">Defined in</th></tr>` +
-    D.commands.map(c => `<tr><td><code>${esc(c.name)}</code></td><td class="muted">${esc(c.usage)}</td><td><code>${esc(c.action || "")}</code></td><td class="xs">${esc(c.file)}:${c.line}</td></tr>`).join("");
+    D.commands.map(c => `<tr><td><code>${esc(c.name)}</code></td><td class="muted">${esc(c.usage)}</td><td>${c.action ? `<code>${esc(c.action)}</code>` : `<span class="muted">—</span>`}</td><td class="xs">${esc(c.file)}:${c.line}</td></tr>`).join("");
 }
 function renderFindings() {
   $("#findings").innerHTML = D.findings.map(f => `<div class="card sm"><strong>${esc(f.t)}</strong><p class="mt">${f.b}</p>
@@ -407,10 +413,17 @@ function renderFindings() {
 
 // ---------- boot ----------
 renderPaths(); renderMap(); renderFlows(); renderFindings();
+// route shows the tab (and tour step) named by the URL hash, on load and on
+// back/forward or manual hash edits.
+function route() {
+  const [tab, tid, n] = location.hash.slice(1).split("/");
+  if (tab === "tours" && tid && D.tours.length) return openTour(tid, +n || 0);
+  showTab(["paths", "map", "tours", "flows", "findings"].includes(tab) ? tab : "paths");
+}
 tour = D.tours[0];
-const [tab, tid, n] = location.hash.slice(1).split("/");
-if (tab === "tours" && tid) openTour(tid, +n || 0);
-else { if (tour) renderTour(); showTab(["paths", "map", "tours", "flows", "findings"].includes(tab) ? tab : "paths"); }
+renderTour();
+route();
+addEventListener("hashchange", route);
 </script>
 </body>
 </html>

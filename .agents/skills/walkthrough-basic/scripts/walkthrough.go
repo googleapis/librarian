@@ -514,8 +514,13 @@ func stringLit(e ast.Expr) string {
 	return ""
 }
 
+// errorCtors are calls that build an error rather than doing the work.
+var errorCtors = map[string]bool{"fmt.Errorf": true, "errors.New": true, "errors.Join": true}
+
 // exprName names a command action. For an inline function literal it names
-// the call the literal returns, which is usually the real implementation.
+// the call in the literal's final top-level return statement, which is
+// usually the real implementation; otherwise the logic is inline.
+// A final error constructor means the work happened earlier, inline.
 func exprName(e ast.Expr) string {
 	switch v := e.(type) {
 	case *ast.Ident:
@@ -523,21 +528,16 @@ func exprName(e ast.Expr) string {
 	case *ast.SelectorExpr:
 		return exprName(v.X) + "." + v.Sel.Name
 	case *ast.FuncLit:
-		name := "func literal"
-		ast.Inspect(v.Body, func(n ast.Node) bool {
-			if _, ok := n.(*ast.FuncLit); ok {
-				return false
-			}
-			if ret, ok := n.(*ast.ReturnStmt); ok && len(ret.Results) > 0 {
+		if n := len(v.Body.List); n > 0 {
+			if ret, ok := v.Body.List[n-1].(*ast.ReturnStmt); ok && len(ret.Results) == 1 {
 				if call, ok := ret.Results[0].(*ast.CallExpr); ok {
-					if s := exprName(call.Fun); s != "" {
-						name = s
+					if s := exprName(call.Fun); s != "" && !errorCtors[s] {
+						return s
 					}
 				}
 			}
-			return true
-		})
-		return name
+		}
+		return "inline"
 	}
 	return ""
 }
