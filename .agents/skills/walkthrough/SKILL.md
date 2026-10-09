@@ -18,7 +18,7 @@ code is computed by the renderer and cannot be typed by hand:
 
 | You author in JSON | Renderer computes |
 |---|---|
-| layers, each package's layer and (optionally) a better one-line description | package list, imports, non-test LOC, doc synopses, module path, repo, commit |
+| layers, each package's layer and (optionally) a better one-line description | package list, imports, non-test LOC, doc synopses, module path, Go version, repo, commit |
 | tour steps, flows, guides, findings, languages table | validation of every cited path and package |
 
 ## Workflow
@@ -28,6 +28,11 @@ code is computed by the renderer and cannot be typed by hand:
    ```sh
    go run .agents/skills/walkthrough/scripts/render.go -init -out walkthrough.json
    ```
+
+   `-facts` prints the same computed facts as JSON (`module`, `goVersion`,
+   `sha`, `pkgs[]` with `imports` and `loc`). Use it for any claim about who
+   imports what ("only X and Y import Z", "nothing imports W") instead of
+   reading import blocks by hand.
 
 2. **Read before you write.** Open the packages and files relevant to the
    request. Do not describe code you have not read in this session; do not
@@ -50,10 +55,14 @@ code is computed by the renderer and cannot be typed by hand:
      where a request like "walk me through LRO handling" belongs.
    - `findings`: short observations a reader should know before changing code.
      Only claims you verified in this session.
-   - `langs` / `contractCols` / `contractHooks`: optional per-language table.
-     Derive hook presence with
-     `grep -lE '^func (Generate|Format|Bump)\(' internal/librarian/*/*.go`
-     style commands, not from memory.
+   - `langCols` / `langs`: optional per-language table. `langCols` names the
+     columns (`{"key": "gen", "title": "Generator"}`); each language supplies
+     `cells` keyed by column, plus `pkg` (its LOC is computed) and an optional
+     `detail` body. Pick columns that answer the request; nothing is built in.
+   - `contractCols` / `contractHooks`: optional per-language matrix of
+     exported hooks. Derive it from the checkout, e.g.
+     `grep -lE '^func (Generate|Format|Bump)\(' internal/librarian/*/*.go`,
+     and never from memory; a wrong cell here is worse than no table.
    - `defaultPkg`: the package the map selects first.
 
 4. **Render and fix until clean.** The renderer reports every problem at once.
@@ -74,7 +83,8 @@ code is computed by the renderer and cannot be typed by hand:
 
 ## Citing code
 
-Link files and directories from any `body`, `desc`, `where` or `detail` with
+Link files and directories from any `body`, `desc`, `where`, `detail` or
+language `cells` value with
 `<a data-src="internal/foo/bar.go">bar.go</a>` (directories end in `/`). The
 renderer fails if the path does not exist; the page shows the path, its owning
 package and a GitHub link. Cite the exact file a sentence is about, not the

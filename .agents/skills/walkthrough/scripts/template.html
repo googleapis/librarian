@@ -312,14 +312,14 @@ function sanitizeHTML(raw) {
 const src = (p, label) => `<a class="src" href="#src:${encodeURIComponent(p)}" data-src="${escapeHTML(p)}">${label || escapeHTML(p)}</a>`;
 const plural = (n, word) => `${n} ${word}${n === 1 ? "" : "s"}`;
 
-for (const k of ["layers", "pkgs", "steps", "flows", "guides", "findings", "langs", "contractCols", "contractHooks"]) {
+for (const k of ["layers", "pkgs", "steps", "flows", "guides", "findings", "langCols", "langs", "contractCols", "contractHooks"]) {
   if (!Array.isArray(DATA[k])) DATA[k] = [];
 }
 document.title = DATA.title;
 document.getElementById("pageTitle").textContent = DATA.title;
 document.getElementById("welcomeTitle").textContent = DATA.subtitle || DATA.title;
 document.getElementById("subtitle").innerHTML =
-  `${escapeHTML(DATA.repo || DATA.module)} at commit ${src("", `<code>${escapeHTML(DATA.shortSha)}</code>`)} · ` +
+  `${escapeHTML(DATA.repo || DATA.module)} at commit ${src("", `<code>${escapeHTML(DATA.shortSha)}</code>`)}${DATA.goVersion ? ` (Go ${escapeHTML(DATA.goVersion)})` : ""} · ` +
   `${plural(DATA.pkgs.length, "package")} · ${(DATA.totalLoc || 0).toLocaleString()} non-test Go lines.`;
 document.getElementById("mapIntro").textContent =
   `Every package in the module (from go list ./...) is grouped into ${plural(DATA.layers.length, "layer")} assigned when this walkthrough was written.`;
@@ -856,10 +856,11 @@ function renderFlows() {
 function renderLanguages() {
   if (!DATA.langs.length) return;
   const t = document.getElementById("langTable");
-  t.innerHTML = `<thead><tr><th>Language</th><th>Generator</th><th>Installed by</th><th>Formatter</th><th>Publish target</th></tr></thead>
+  const cols = DATA.langCols;
+  t.innerHTML = `<thead><tr><th>Language</th>${cols.map(c => `<th>${escapeHTML(c.title)}</th>`).join("")}</tr></thead>
     <tbody>${DATA.langs.map((l, i) => `
-      <tr class="lang-row" data-i="${i}"><td class="font-medium whitespace-nowrap"><span class="mr-1 text-xs lang-chev" data-chev="${i}">&#9656;</span>${escapeHTML(l.n)}<div class="text-xs text-[var(--muted-foreground)] font-normal">${(l.loc || 0).toLocaleString()} lines</div></td><td>${hydrateLinks(l.gen)}</td><td>${hydrateLinks(l.inst)}</td><td>${hydrateLinks(l.fmt)}</td><td>${hydrateLinks(l.pub)}</td></tr>
-      <tr class="lang-detail hidden" data-i="${i}"><td colspan="5" class="text-xs leading-relaxed" style="background: color-mix(in srgb, var(--primary) 6%, transparent)">
+      <tr class="lang-row" data-i="${i}"><td class="font-medium whitespace-nowrap"><span class="mr-1 text-xs lang-chev" data-chev="${i}">&#9656;</span>${escapeHTML(l.n)}<div class="text-xs text-[var(--muted-foreground)] font-normal">${(l.loc || 0).toLocaleString()} lines</div></td>${cols.map(c => `<td>${hydrateLinks((l.cells || {})[c.key] || "")}</td>`).join("")}</tr>
+      <tr class="lang-detail hidden" data-i="${i}"><td colspan="${cols.length + 1}" class="text-xs leading-relaxed" style="background: color-mix(in srgb, var(--primary) 6%, transparent)">
         <div class="mb-2">${hydrateLinks(l.detail)}</div>
         <div class="flex flex-wrap items-center gap-3">
           ${l.pkg ? src(l.pkg + "/", `Inspect ${escapeHTML(l.pkg)}/`) : ""}
