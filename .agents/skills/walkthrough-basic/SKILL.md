@@ -2,8 +2,9 @@
 name: walkthrough-basic
 description:
   Generates a self-contained interactive HTML walkthrough (architecture map
-  with import wires, guided tours, command flows, findings, and an in-page
-  source inspector) by analyzing the current Go code. Use when asked to walk
+  with import wires, guided tour, deep-dive guides, staged command flows,
+  package-family comparison with an AST-computed contract matrix, findings,
+  and an in-page source inspector) by analyzing the current Go code. Use when asked to walk
   through the codebase, explain the architecture, onboard someone, or produce
   an interactive code tour.
 ---
@@ -27,9 +28,12 @@ that references packages or files that do not exist.
 | Packages, LOC, imports   | `go/build` + `go/ast`                  | `analyze`           |
 | Exported symbols         | `go/ast`                               | `analyze`           |
 | CLI commands             | `*.Command{Name/Use: ...}` literals    | `analyze`           |
-| Commit, ref, Go version  | `git`, `go.mod`                        | `analyze`           |
+| Implicit contracts       | Exported funcs shared by sibling pkgs, and their references | `analyze` |
+| Commit, ref, tag, Go version | `git`, `go.mod`                    | `analyze`           |
+| Computed checks          | Upward imports, untested, unimported packages | `render`     |
 | Layers, descriptions     | Reading the code and the import graph  | You (narrative)     |
-| Tours, flows, findings   | Reading the code                       | You (narrative)     |
+| Tour, guides, flows      | Reading the code                       | You (narrative)     |
+| Family tables, findings  | Reading the code                       | You (narrative)     |
 | Inlined source previews  | Every file the narrative references    | `render`            |
 
 Only files tracked by git are analyzed, listed, or inlined, so untracked or
@@ -51,7 +55,10 @@ directory if you have one).
     Read `facts.json`. It lists every package with its doc synopsis, LOC,
     files, internal `imports` and `importedBy`, exported symbols, and
     `testOnly`; every detected CLI command with its file, line, and action;
-    top-level and `README.md`/`AGENTS.md`/`ARCHITECTURE.md` docs; and nested
+    `contracts`: groups of three or more sibling packages (same parent
+    directory) with the exported functions two or more of them define, which
+    members define each, and every function or package variable that
+    references it; top-level and `README.md`/`AGENTS.md`/`ARCHITECTURE.md` docs; and nested
     modules, which are skipped (run the skill again from their root if
     needed). If `dirty` is true, tell the user the walkthrough includes
     uncommitted edits. Build constraints are evaluated for `-goos linux
@@ -63,6 +70,8 @@ directory if you have one).
     - The `action` function of each detected command you plan to trace.
     - The most-imported packages (high `importedBy`) and the packages with the
       most imports (orchestrators).
+    - For each contract you will present, the callers listed for its most
+      shared functions, and each member's implementation of them.
 
 3.  **Design layers from the import graph.** Group packages into 4–8 layers,
     ordered top (entry points) to bottom (leaf infrastructure), so that imports
@@ -77,12 +86,15 @@ directory if you have one).
       `<a class="src" data-src="path/to/file.go">label</a>` or a `look` entry.
     - Never type counts. Use tokens, which `render` resolves from facts:
       `{{packages}}`, `{{totalLoc}}`, `{{commands}}`, `{{sha}}`,
-      `{{goVersion}}`, `{{loc:PKG}}`, `{{files:PKG}}`, `{{imports:PKG}}`,
-      `{{importedBy:PKG}}`, `{{lines:FILE}}`.
+      `{{goVersion}}`, `{{tag}}`, `{{loc:PKG}}`, `{{files:PKG}}`,
+      `{{imports:PKG}}`, `{{importedBy:PKG}}`, `{{lines:FILE}}`, and
+      `{{tracked:DIR/}}` (number of tracked files under a directory, for
+      example templates).
     - Directory references end with `/` (for example `internal/config/`).
     - Link packages with `<a class="pkgref" data-pkg="internal/x">…</a>`.
-    - HTML fields (`summary`, `descriptions`, step `body`, flow steps, finding
-      `b`) allow only `p`, `code`, `strong`, `em`, `ul`, `ol`, `li`, `br`, and
+    - HTML fields (`summary`, `descriptions`, step `body`, flow `inputs`,
+      `outputs` and stage `body`, family `intro`, `cells` and `detail`,
+      finding `b`) allow only `p`, `code`, `strong`, `em`, `ul`, `ol`, `li`, `br`, and
       the two link forms above, written exactly as shown. `render` escapes
       everything else, so write plain characters, not entities. All other
       fields are plain text.
@@ -96,7 +108,9 @@ directory if you have one).
     ```
 
     `render` fails on unknown packages, unassigned or duplicated packages,
-    unknown tokens, references that are not clean relative paths to tracked
+    unknown tokens, duplicate guide or flow ids, flows without stages, family
+    rows that are not contract members or whose cell count differs from
+    `columns`, references that are not clean relative paths to tracked
     files, and facts extracted at a different commit than `HEAD`. Fix the
     narrative (or re-run `analyze`), not the script. Add `-inline-all` to
     inline every package file (larger output, every file chip on the map
@@ -108,6 +122,10 @@ directory if you have one).
 
 ## Narrative schema
 
+`step.code`, `stage.where`, `flow.file`, `finding.f`, and `look` entries are
+file references (directories end with `/`). `tour`, `guides`, `flows`,
+`families`, and `findings` are optional; tabs without content are hidden.
+
 ```json
 {
   "title": "Project architecture & walkthroughs",
@@ -115,33 +133,37 @@ directory if you have one).
   "layers": [
     {"id": "entry", "title": "Entry points", "hint": "process start", "packages": ["cmd/app"]}
   ],
-  "descriptions": {
-    "cmd/app": "HTML, one or two sentences per package."
+  "descriptions": {"cmd/app": "HTML, one or two sentences per package."},
+  "tour": {
+    "title": "Overall design guided tour",
+    "subtitle": "From process start to output",
+    "steps": [
+      {"t": "Step title", "runs": "app generate", "code": "internal/app/generate.go",
+       "body": "<p>HTML.</p>", "look": ["cmd/app/main.go"], "pkg": "cmd/app"}
+    ]
   },
-  "tours": [
-    {
-      "id": "core",
-      "title": "Core architecture",
-      "subtitle": "From process start to output",
-      "group": "Overall architecture",
-      "steps": [
-        {
-          "t": "Step title",
-          "runs": "app generate (optional command this step explains)",
-          "body": "<p>HTML.</p>",
-          "look": ["cmd/app/main.go"],
-          "pkg": "cmd/app"
-        }
-      ]
-    }
+  "guidesHeading": "Deep dives & extension guides",
+  "guides": [
+    {"id": "add-backend", "title": "Adding a backend", "subtitle": "What to implement and where",
+     "audience": "Contributors", "steps": [{"t": "…", "body": "<p>…</p>", "look": ["internal/app/"]}]}
   ],
   "flows": [
     {
-      "id": "generate",
-      "title": "generate",
-      "cmd": "app generate NAME",
+      "id": "generate", "title": "generate", "cmd": "app generate NAME",
       "file": "internal/app/generate.go",
-      "steps": [["<a class=\"src\" data-src=\"internal/app/generate.go\">generate.go</a>", "HTML: what happens."]]
+      "inputs": ["<code>app.yaml</code>"],
+      "stages": [{"title": "Load config", "where": "internal/app/config.go",
+                  "body": "HTML: what happens.", "out": "*config.Config"}],
+      "outputs": ["Generated files under <code>out/</code>"]
+    }
+  ],
+  "families": [
+    {
+      "parent": "internal/backend",
+      "title": "Backends",
+      "intro": "<p>HTML: what the members have in common.</p>",
+      "columns": ["Strategy", "Formatter"],
+      "rows": {"internal/backend/foo": {"cells": ["HTML", "HTML"], "detail": "<p>HTML.</p>"}}
     }
   ],
   "findings": [
@@ -154,13 +176,18 @@ Aim for:
 
 - **Descriptions** for every package (missing ones fall back to the doc
   comment, with a warning).
-- **Tours:** one core tour of 6–12 steps that follows a request from `main`
-  to output, plus 1–3 deep-dive tours for the most complex subsystems. Tours
-  sharing a `group` appear together on the Paths tab.
-- **Flows:** 2–4 of the most important commands, traced call by call from
-  the command's `action`, one step per hop.
+- **Tour:** 6–12 steps that follow a request from `main` to output.
+- **Guides:** 2–4 deep dives for the most complex or most extended
+  subsystems, each for a named `audience` (for example "how to add a new
+  X", "how to modify Y"). Name `guidesHeading` after what they cover.
+- **Flows:** 2–4 of the most important commands, traced stage by stage from
+  the command's `action`, with the inputs it reads and the outputs it writes.
+- **Families:** one per contract that represents a real extension point
+  (members are interchangeable implementations), with columns that contrast
+  how members differ. Skip contracts that are coincidental name overlaps.
 - **Findings:** 4–8 non-obvious observations (design decisions, invariants,
-  enforced rules, risks), each anchored to a file.
+  enforced rules, risks), each anchored to a file. Do not repeat the
+  computed checks; interpret them if they matter.
 
 ## Principles
 

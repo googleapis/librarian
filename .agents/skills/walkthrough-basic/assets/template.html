@@ -27,7 +27,7 @@ limitations under the License.
 :root[data-theme=dark]{color-scheme:dark;--background:#0b1220;--card:#121b2f;--foreground:#e5e7eb;--muted:#9aa7b8;--border:#263247;--primary:#60a5fa;--primary-fg:#0b1220}
 *{box-sizing:border-box}
 body{margin:0;font:14px/1.55 ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:var(--background);color:var(--foreground)}
-h1,h2,h3,p{margin:0}
+h1,h2,h3,h4,p{margin:0}
 button,input,textarea{font:inherit;color:inherit}
 button{background:none;border:1px solid var(--border);border-radius:.5rem;padding:.3rem .7rem;cursor:pointer}
 button:hover{border-color:var(--primary)}
@@ -46,12 +46,13 @@ header{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:fle
 h1{font-size:1.5rem;font-weight:600}
 h2{font-size:1.1rem;font-weight:600;margin-bottom:.35rem}
 h3{font-size:.9rem;font-weight:600;margin:.9rem 0 .4rem}
-nav#tabs{display:flex;gap:.25rem;padding:.25rem;border:1px solid var(--border);border-radius:.75rem;background:var(--card)}
+nav#tabs{display:flex;flex-wrap:wrap;gap:.25rem;padding:.25rem;border:1px solid var(--border);border-radius:.75rem;background:var(--card)}
 nav#tabs button{border:0}
 nav#tabs button.active,.sel-btn.active{background:var(--primary);color:var(--primary-fg)}
 section{display:none}section.show{display:block}
 .path-card{text-align:left;padding:1rem;border-radius:.75rem;background:var(--card);transition:box-shadow .15s}
 .path-card:hover{box-shadow:0 0 0 1px var(--primary)}
+.path-card h4{font-size:1rem;font-weight:600;margin:.15rem 0}
 .split{display:grid;gap:1rem}
 @media(min-width:1024px){.split.map{grid-template-columns:minmax(0,1fr) 340px}.split.tour{grid-template-columns:260px minmax(0,1fr)}.sticky{position:sticky;top:1rem;align-self:start}}
 #map{position:relative}
@@ -70,13 +71,19 @@ a.src,a.pkgref{color:var(--primary);text-decoration:underline;text-underline-off
 .step-nav button{width:100%;text-align:left;font-size:13px;white-space:nowrap}
 @media(min-width:1024px){.step-nav button{white-space:normal}}
 .step-nav button.active{border-color:var(--primary);background:color-mix(in srgb,var(--primary) 16%,transparent)}
-article p+p{margin-top:.6rem}article ul{margin:.4rem 0;padding-left:1.25rem}
-.badge{font-size:11px;padding:.1rem .45rem;border-radius:.375rem;border:1px solid var(--border);background:var(--background)}
-.timeline{list-style:none;padding:0;margin:0}
-.timeline li{position:relative;padding:0 0 .8rem 1.9rem}
-.timeline li::before{content:attr(data-n);position:absolute;left:0;top:.1rem;width:1.3rem;height:1.3rem;border-radius:9999px;background:var(--primary);color:var(--primary-fg);font-size:12px;display:flex;align-items:center;justify-content:center}
-.timeline li::after{content:"";position:absolute;left:.62rem;top:1.5rem;bottom:.1rem;width:1px;background:var(--border)}
-.timeline li:last-child::after{display:none}
+article p+p{margin-top:.6rem}article ul,article ol{margin:.4rem 0;padding-left:1.25rem}
+.badge{font-size:12px;padding:.1rem .45rem;border-radius:.375rem;border:1px solid var(--border);background:var(--background)}
+.stage{display:grid;grid-template-columns:2rem minmax(0,1fr);gap:.6rem}
+.stage-rail{display:flex;flex-direction:column;align-items:center}
+.stage-num{width:1.5rem;height:1.5rem;border-radius:9999px;background:var(--primary);color:var(--primary-fg);font-size:12px;display:flex;align-items:center;justify-content:center}
+.stage-line{flex:1;width:1px;background:var(--border);margin:.2rem 0}
+.stage-card{border:1px solid var(--border);border-radius:.6rem;padding:.6rem .75rem;margin-bottom:.6rem;background:var(--background)}
+table.grid{width:100%;border-collapse:collapse}
+table.grid th,table.grid td{border-bottom:1px solid var(--border);padding:.4rem .5rem;vertical-align:top;text-align:left}
+table.grid th{font-weight:600}
+tr.fam-row{cursor:pointer}tr.fam-row:hover td{background:color-mix(in srgb,var(--primary) 8%,transparent)}
+td.c{text-align:center}
+.scroll-x{overflow-x:auto}
 .prompt-box{margin-top:.6rem;padding:.6rem .75rem;border:1px solid var(--primary);border-radius:.5rem;background:var(--background);font-size:12px}
 .prompt-box textarea{width:100%;margin-top:.35rem;border:1px solid var(--border);border-radius:.375rem;padding:.4rem;background:var(--card);resize:vertical;font-size:12px}
 .modal{position:fixed;inset:0;background:rgba(2,6,23,.72);z-index:50;display:flex;align-items:center;justify-content:center;padding:1.25rem}
@@ -96,8 +103,10 @@ article p+p{margin-top:.6rem}article ul{margin:.4rem 0;padding-left:1.25rem}
       <nav id="tabs">
         <button data-tab="paths">Paths</button>
         <button data-tab="map">Map</button>
-        <button data-tab="tours">Tours</button>
+        <button data-tab="tour">Guided tour</button>
+        <button data-tab="guides">Guides</button>
         <button data-tab="flows">Command flows</button>
+        <button data-tab="families">Families</button>
         <button data-tab="findings">Findings</button>
       </nav>
       <button id="themeToggle" class="xs"></button>
@@ -106,8 +115,11 @@ article p+p{margin-top:.6rem}article ul{margin:.4rem 0;padding-left:1.25rem}
 
   <section id="tab-paths">
     <div class="card mb"><h2>Welcome</h2><div class="sm muted" id="summary"></div>
-      <p class="xs muted mt">Every package, import wire, line count and source preview is generated from the checked-out tree. Click a file link to inspect its source in-page, or <strong>Copy prompt for agent</strong> to continue with your coding agent.</p></div>
-    <div id="pathGroups"></div>
+      <p class="xs muted mt">Every package, import wire, line count, shared-function matrix and source preview is generated from the checked-out tree. Click a file link to inspect its source in-page, or <strong>Copy prompt for agent</strong> to continue with your coding agent.</p></div>
+    <h3>1. Overall architecture &amp; repository design</h3>
+    <div class="grid2 mb" id="coreCards"></div>
+    <h3 id="guidesHeading"></h3>
+    <div class="grid2 mb" id="guideCards"></div>
     <div class="card sm">
       <strong>Ask your coding agent</strong>
       <p class="xs muted">Type a topic to format a ready-to-paste walkthrough prompt.</p>
@@ -129,14 +141,25 @@ article p+p{margin-top:.6rem}article ul{margin:.4rem 0;padding-left:1.25rem}
     </div>
   </section>
 
-  <section id="tab-tours">
-    <div class="row mb" id="tourSelector"></div>
+  <section id="tab-tour">
     <div class="card mb sm" id="tourHeader"></div>
     <div class="split tour">
-      <ol class="step-nav" id="stepNav"></ol>
+      <ol class="step-nav" id="tourNav"></ol>
       <div>
-        <article id="stepBody" class="card"></article>
-        <div class="row mt" style="justify-content:space-between"><button id="prevStep">&larr; Previous</button><span id="stepCounter" class="xs muted"></span><button id="nextStep" class="primary">Next &rarr;</button></div>
+        <article id="tourBody" class="card"></article>
+        <div class="row mt" style="justify-content:space-between"><button id="tourPrev">&larr; Previous</button><span id="tourCounter" class="xs muted"></span><button id="tourNext" class="primary">Next &rarr;</button></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="tab-guides">
+    <div class="row mb" style="justify-content:space-between"><div class="row" id="guideSelector"></div><button class="xs" id="backToPaths">&larr; All paths</button></div>
+    <div class="card mb sm" id="guideHeader"></div>
+    <div class="split tour">
+      <ol class="step-nav" id="guideNav"></ol>
+      <div>
+        <article id="guideBody" class="card"></article>
+        <div class="row mt" style="justify-content:space-between"><button id="guidePrev">&larr; Previous</button><span id="guideCounter" class="xs muted"></span><button id="guideNext" class="primary">Next &rarr;</button></div>
       </div>
     </div>
   </section>
@@ -145,12 +168,23 @@ article p+p{margin-top:.6rem}article ul{margin:.4rem 0;padding-left:1.25rem}
     <div class="row mb" id="flowTabs"></div>
     <div class="card" id="flowBody"></div>
     <h3>All detected commands</h3>
-    <div class="card"><table class="sm" id="cmdTable" style="width:100%;border-collapse:collapse"></table></div>
+    <div class="card scroll-x"><table class="grid sm" id="cmdTable"></table></div>
+  </section>
+
+  <section id="tab-families">
+    <div class="row mb" id="familySelector"></div>
+    <div class="card mb sm" id="familyHeader"></div>
+    <div class="card scroll-x mb"><table class="grid sm" id="familyTable"></table></div>
+    <h3>Implicit contract (computed from the Go AST)</h3>
+    <p class="xs muted mb">Exported functions defined by two or more members, and every function or variable in the module that references them.</p>
+    <div class="card scroll-x"><table class="grid xs" id="contractTable"></table></div>
   </section>
 
   <section id="tab-findings">
     <p class="sm muted mb">Architectural observations gathered from the current commit.</p>
     <div class="grid2" id="findings"></div>
+    <h3>Computed from the code</h3>
+    <div class="grid2" id="checks"></div>
   </section>
 </div>
 
@@ -177,19 +211,23 @@ const D = JSON.parse(document.getElementById("walkthrough-data").textContent);
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const el = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e; };
+const plural = (n, word) => `${n.toLocaleString()} ${word}${n === 1 ? "" : "s"}`;
 const pkgById = Object.fromEntries(D.packages.map(p => [p.id, p]));
 const layerOf = {}; D.layers.forEach(l => l.packages.forEach(id => layerOf[id] = l));
+const contractOf = Object.fromEntries((D.contracts || []).map(c => [c.parent, c]));
+const tour = D.tour && D.tour.steps.length ? D.tour : null;
+const guides = D.guides || [], flows = D.flows || [], findings = D.findings || [];
+const families = (D.families || []).filter(f => contractOf[f.parent]);
 const desc = id => (D.descriptions || {})[id] || esc(pkgById[id]?.doc || "");
-const plural = (n, word) => `${n.toLocaleString()} ${word}${n === 1 ? "" : "s"}`;
 const srcLink = (p, label) => `<a class="src" data-src="${esc(p)}">${esc(label || p)}</a>`;
-const pkgLink = id => `<a class="pkgref" data-pkg="${esc(id)}">${esc(id)}</a>`;
+const pkgLink = id => pkgById[id] ? `<a class="pkgref" data-pkg="${esc(id)}">${esc(id)}</a>` : esc(id);
 const ghURL = p => {
   if (!D.repo) return "";
   const f = D.files[p], kind = !f || f.dir ? "tree" : "blob";
   return `https://github.com/${D.repo}/${kind}/${D.sha}/${p.replace(/\/$/, "").replace(/^\.$/, "")}`;
 };
 
-// ---------- clipboard & prompts ----------
+// ---------- sandbox-safe browser APIs ----------
 // Embedding viewers often load pages in sandboxed iframes where storage,
 // history and the clipboard throw or are unavailable. These wrappers degrade
 // to no-ops so the page keeps working.
@@ -234,13 +272,13 @@ function openSource(p) {
     $("#srcKind").textContent = "Not inlined";
     body.innerHTML = `<p class="muted">This file is not inlined in the walkthrough. Use <em>Copy GitHub URL</em> or <em>Copy prompt for agent</em>.</p>`;
   } else if (f.dir) {
-    $("#srcKind").textContent = `Directory · ${f.lines} lines${f.pkg ? " · package " + f.pkg : ""}`;
+    $("#srcKind").textContent = `Directory · ${plural(f.lines, "line")}${f.pkg ? " · package " + f.pkg : ""}`;
     body.innerHTML = f.entries.map(e => {
       const name = e.replace(/ \(\d+ lines\)$/, ""), child = p + name;
       return D.files[child] ? `<div>${srcLink(child, e)}</div>` : `<div>${esc(e)}</div>`;
     }).join("");
   } else {
-    $("#srcKind").textContent = `${f.lines} lines${f.trunc ? " · truncated preview" : ""}`;
+    $("#srcKind").textContent = `${plural(f.lines, "line")}${f.trunc ? " · truncated preview" : ""}`;
     body.innerHTML = f.content.split("\n").map((l, i) => `<div class="ln"><span>${i + 1}</span><span>${esc(l)}</span></div>`).join("") +
       (f.trunc ? `<p class="muted">… truncated. Open on GitHub for the full file.</p>` : "");
   }
@@ -255,57 +293,60 @@ $("#srcCopyGH").onclick = e => showPrompt($("#srcPromptHost"), ghURL(modalPath),
 $("#srcCopyPrompt").onclick = e => showPrompt($("#srcPromptHost"), filePrompt(modalPath), e.target);
 $("#srcOpenMap").onclick = e => { closeModal(); jumpToPkg(e.target.dataset.pkg); };
 document.addEventListener("click", e => {
-  const s = e.target.closest("[data-src]"); if (s) { e.preventDefault(); openSource(s.dataset.src); return; }
-  const k = e.target.closest("a.pkgref,[data-pkg]:not(.pkg):not(#srcOpenMap)"); if (k) { e.preventDefault(); jumpToPkg(k.dataset.pkg); }
-});
+  const s = e.target.closest("[data-src]"); if (s) { e.preventDefault(); e.stopPropagation(); openSource(s.dataset.src); return; }
+  const k = e.target.closest("a.pkgref,[data-pkg]:not(.pkg):not(#srcOpenMap)"); if (k) { e.preventDefault(); e.stopPropagation(); jumpToPkg(k.dataset.pkg); }
+}, true);
 
 // ---------- theme & tabs ----------
 function setTheme(t) { document.documentElement.dataset.theme = t; store.set("wt-theme", t); $("#themeToggle").textContent = t === "dark" ? "☾ Dark" : "☀ Light"; }
 setTheme(store.get("wt-theme") || (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light"));
 $("#themeToggle").onclick = () => setTheme(document.documentElement.dataset.theme === "dark" ? "light" : "dark");
+const available = { paths: true, map: true, tour: !!tour, guides: guides.length > 0, flows: true, families: families.length > 0, findings: true };
+document.querySelectorAll("#tabs button").forEach(b => {
+  b.classList.toggle("hidden", !available[b.dataset.tab]);
+  b.onclick = () => showTab(b.dataset.tab);
+});
+if (families.length === 1) $('#tabs button[data-tab="families"]').textContent = families[0].title;
 function showTab(name) {
+  if (!available[name]) name = "paths";
   document.querySelectorAll("#tabs button").forEach(b => b.classList.toggle("active", b.dataset.tab === name));
   document.querySelectorAll("section").forEach(s => s.classList.toggle("show", s.id === "tab-" + name));
   if (location.hash.slice(1).split("/")[0] !== name) setHash("#" + name);
   if (name === "map") requestAnimationFrame(drawWires);
 }
-document.querySelectorAll("#tabs button").forEach(b => b.onclick = () => showTab(b.dataset.tab));
+const visible = name => $("#tab-" + name).classList.contains("show");
 
 // ---------- header & paths ----------
 document.title = D.title || document.title;
 $("#title").textContent = D.title;
 $("#subtitle").innerHTML = [esc(D.repo || D.module), `<code>${esc(D.shortSha)}</code> (${esc(D.ref)})`,
   D.dirty ? `<span class="badge" title="Generated from a work tree with uncommitted changes">uncommitted changes</span>` : "",
-  esc(D.goVersion), `${D.packages.length} packages`, `${D.totalLoc.toLocaleString()} LOC`,
+  D.tag ? `latest tag ${esc(D.tag)}` : "", esc(D.goVersion), plural(D.packages.length, "package"), `${D.totalLoc.toLocaleString()} LOC`,
   `committed ${esc(D.commitDate)}`, esc(D.platform)].filter(Boolean).join(" · ");
 $("#summary").innerHTML = D.summary;
+function card(eyebrow, title, sub, onclick) {
+  const c = el("button", "path-card", `<div class="xs muted">${eyebrow}</div><h4>${esc(title)}</h4><div class="xs muted">${esc(sub)}</div>`);
+  c.onclick = onclick; return c;
+}
 function renderPaths() {
-  const groups = {};
-  D.tours.forEach(t => (groups[t.group || "Tours"] ||= []).push(t));
-  const host = $("#pathGroups");
-  Object.entries(groups).forEach(([g, tours], gi) => {
-    host.append(el("h3", "", `${gi + 1}. ${esc(g)}`));
-    const grid = el("div", "grid2 mb");
-    tours.forEach(t => {
-      const c = el("button", "path-card", `<div style="font-weight:600">${esc(t.title)}</div><div class="xs muted">${esc(t.subtitle)}</div><div class="xs muted mt">${plural(t.steps.length, "step")} →</div>`);
-      c.onclick = () => openTour(t.id, 0);
-      grid.append(c);
-    });
-    host.append(grid);
+  const core = $("#coreCards");
+  core.append(card(`${plural(D.layers.length, "layer")} · ${plural(D.packages.length, "package")}`, "Interactive architecture map", "Click any package to trace what it imports and what imports it.", () => showTab("map")));
+  if (tour) core.append(card(plural(tour.steps.length, "step"), tour.title, tour.subtitle, () => openTour(0)));
+  core.append(card(`${plural(flows.length, "traced flow")} · ${plural(D.commands.length, "detected command")}`, "Command lifecycle timelines", "Follow commands stage by stage through the code.", () => showTab("flows")));
+  families.forEach((f, i) => {
+    const c = contractOf[f.parent];
+    core.append(card(`${plural(c.members.length, "member")} · ${plural(c.hooks.length, "shared function")} (Go AST)`, f.title, `Compare the packages under ${f.parent}/ and the implicit contract they share.`, () => openFamily(i)));
   });
-  const card = (title, sub, tab) => { const c = el("button", "path-card", `<div style="font-weight:600">${title}</div><div class="xs muted">${sub}</div>`); c.onclick = () => showTab(tab); return c; };
-  host.append(el("h3", "", `${Object.keys(groups).length + 1}. Explore`));
-  const g = el("div", "grid2 mb");
-  g.append(card("Architecture map", `${D.layers.length} layers, ${D.packages.length} packages with live import wires`, "map"),
-    card("Command flows", `${D.flows.length} traced commands, ${D.commands.length} detected`, "flows"),
-    card("Findings", `${D.findings.length} architectural observations`, "findings"));
-  host.append(g);
+  core.append(card(`${plural(findings.length, "finding")} · ${plural(D.checks.length, "computed check")}`, "Architectural findings", "Design decisions and checks computed from the code.", () => showTab("findings")));
+  $("#guidesHeading").textContent = `2. ${D.guidesHeading || "Deep dives"}`;
+  $("#guidesHeading").classList.toggle("hidden", !guides.length);
+  guides.forEach(g => $("#guideCards").append(card(`${esc(g.audience)} · ${plural(g.steps.length, "step")}`, g.title, g.subtitle, () => openGuide(g.id, 0))));
 }
 $("#copyCustom").onclick = e => { const t = $("#customTopic").value.trim(); if (t) showPrompt($("#customPromptHost"), topicPrompt(t), e.target); };
 
 // ---------- map ----------
 let selected = null;
-const card = id => document.querySelector(`.pkg[data-id="${CSS.escape(id)}"]`);
+const pkgCard = id => document.querySelector(`.pkg[data-id="${CSS.escape(id)}"]`);
 function renderMap() {
   const host = $("#layers");
   D.layers.forEach(l => {
@@ -340,12 +381,12 @@ function selectPkg(id) {
 function jumpToPkg(id) {
   if (!pkgById[id]) return;
   showTab("map"); if (selected === id) selected = null; selectPkg(id);
-  card(id)?.scrollIntoView({behavior: "smooth", block: "center"});
+  pkgCard(id)?.scrollIntoView({behavior: "smooth", block: "center"});
 }
 function drawWires() {
   const svg = $("#wires"); svg.innerHTML = "";
-  if (!selected || !$("#tab-map").classList.contains("show")) return;
-  const box = $("#map").getBoundingClientRect(), from = card(selected).getBoundingClientRect();
+  if (!selected || !visible("map")) return;
+  const box = $("#map").getBoundingClientRect(), from = pkgCard(selected).getBoundingClientRect();
   const color = { imp: "var(--primary)", dep: "var(--dep)" };
   svg.innerHTML = Object.entries(color).map(([k, c]) => `<defs><marker id="m-${k}" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0L10,5L0,10z" fill="${c}"/></marker></defs>`).join("");
   const wire = (a, b, kind) => {
@@ -358,8 +399,8 @@ function drawWires() {
     path.setAttribute("opacity", ".8"); path.setAttribute("marker-end", `url(#m-${kind})`);
     svg.append(path);
   };
-  pkgById[selected].imports.forEach(i => card(i) && wire(from, card(i).getBoundingClientRect(), "imp"));
-  if ($("#showDeps").checked) pkgById[selected].importedBy.forEach(i => card(i) && wire(card(i).getBoundingClientRect(), from, "dep"));
+  pkgById[selected].imports.forEach(i => pkgCard(i) && wire(from, pkgCard(i).getBoundingClientRect(), "imp"));
+  if ($("#showDeps").checked) pkgById[selected].importedBy.forEach(i => pkgCard(i) && wire(pkgCard(i).getBoundingClientRect(), from, "dep"));
 }
 function renderDetail(p) {
   const chips = ids => ids.length ? `<div class="row">${ids.map(i => `<button class="chip" data-pkg="${esc(i)}">${esc(i)}</button>`).join("")}</div>` : `<p class="xs muted">none</p>`;
@@ -380,62 +421,129 @@ $("#resetMap").onclick = clearMap;
 $("#showDeps").onchange = () => { if (selected) { const s = selected; selected = null; selectPkg(s); } };
 addEventListener("resize", drawWires);
 
-// ---------- tours ----------
-let tour = null, stepIdx = 0;
-function openTour(id, n) {
-  tour = D.tours.find(t => t.id === id) || D.tours[0];
-  stepIdx = Math.min(Math.max(n || 0, 0), tour.steps.length - 1);
-  showTab("tours"); renderTour();
-}
-function renderTour() {
-  if (!tour) { $("#stepBody").innerHTML = `<p class="muted">No tours.</p>`; return; }
-  $("#tourSelector").innerHTML = "";
-  D.tours.forEach(t => { const b = el("button", "sel-btn xs" + (t === tour ? " active" : ""), esc(t.title)); b.onclick = () => openTour(t.id, 0); $("#tourSelector").append(b); });
-  $("#tourHeader").innerHTML = `<div class="xs muted">${esc(tour.group)}</div><h2>${esc(tour.title)}</h2><p class="muted">${esc(tour.subtitle)}</p>`;
-  $("#stepNav").innerHTML = "";
-  tour.steps.forEach((s, i) => { const li = el("li"); const b = el("button", i === stepIdx ? "active" : "", `${i + 1}. ${esc(s.t)}`); b.onclick = () => { stepIdx = i; renderTour(); }; li.append(b); $("#stepNav").append(li); });
-  const s = tour.steps[stepIdx];
-  $("#stepBody").innerHTML = `
-    <div class="row xs muted">Step ${stepIdx + 1} of ${tour.steps.length}${s.runs ? ` <span class="badge mono">$ ${esc(s.runs)}</span>` : ""}${s.pkg ? ` <button class="xs" data-pkg="${esc(s.pkg)}">Show ${esc(s.pkg)} in map →</button>` : ""}</div>
-    <h2 class="mt">${esc(s.t)}</h2><div class="sm">${s.body}</div>
-    ${s.look?.length ? `<h3>Look at</h3><div class="row">${s.look.map(f => `<button class="chip" data-src="${esc(f)}">${esc(f)}</button>`).join("")}</div>` : ""}
-    <div class="row mt"><button class="xs" id="stepPrompt">Copy prompt for agent</button></div><div id="stepPromptHost"></div>`;
-  $("#stepPrompt").onclick = e => showPrompt($("#stepPromptHost"), topicPrompt(`Walk me through "${s.t}" (${tour.title}), starting from ${(s.look || []).join(", ")}`), e.target);
-  $("#stepCounter").textContent = `${stepIdx + 1} / ${tour.steps.length}`;
-  $("#prevStep").disabled = stepIdx === 0; $("#nextStep").disabled = stepIdx === tour.steps.length - 1;
-  if ($("#tab-tours").classList.contains("show")) setHash(`#tours/${tour.id}/${stepIdx}`);
-}
-$("#prevStep").onclick = () => { if (stepIdx > 0) { stepIdx--; renderTour(); } };
-$("#nextStep").onclick = () => { if (stepIdx < tour.steps.length - 1) { stepIdx++; renderTour(); } };
-
-// ---------- flows & findings ----------
-function renderFlows() {
-  const show = f => {
-    document.querySelectorAll("#flowTabs button").forEach(b => b.classList.toggle("active", b.dataset.id === f.id));
-    $("#flowBody").innerHTML = `<div class="row"><code>$ ${esc(f.cmd)}</code> <span class="xs muted">entry:</span> ${srcLink(f.file)}</div>
-      <ol class="timeline mt">${f.steps.map(([who, what], i) => `<li data-n="${i + 1}"><div class="xs muted">${who}</div><div class="sm">${what}</div></li>`).join("")}</ol>`;
+// ---------- steppers (guided tour and guides) ----------
+function makeStepper(p, context, hashFor) {
+  const st = { steps: [], idx: 0 };
+  st.render = () => {
+    const steps = st.steps; if (!steps.length) return;
+    st.idx = Math.min(Math.max(st.idx, 0), steps.length - 1);
+    const s = steps[st.idx];
+    $(`#${p}Nav`).innerHTML = "";
+    steps.forEach((x, i) => { const li = el("li"); const b = el("button", i === st.idx ? "active" : "", `${i + 1}. ${esc(x.t)}`); b.onclick = () => { st.idx = i; st.render(); }; li.append(b); $(`#${p}Nav`).append(li); });
+    $(`#${p}Body`).innerHTML = `
+      <div class="row xs muted">Step ${st.idx + 1} of ${steps.length}
+        ${s.runs ? `<span class="badge"><strong>Stage:</strong> ${esc(s.runs)}</span>` : ""}
+        ${s.code ? `<span class="badge"><strong>Code:</strong> ${srcLink(s.code)}</span>` : ""}
+        ${s.pkg ? `<button class="xs" data-pkg="${esc(s.pkg)}">Show ${esc(s.pkg)} in map →</button>` : ""}</div>
+      <h2 class="mt">${esc(s.t)}</h2><div class="sm">${s.body}</div>
+      ${s.look?.length ? `<h3>Key files to inspect</h3><div class="row">${s.look.map(f => `<button class="chip" data-src="${esc(f)}">${esc(f)}</button>`).join("")}</div>` : ""}
+      <div class="row mt"><button class="xs" id="${p}Prompt">Copy prompt for agent</button></div><div id="${p}PromptHost"></div>`;
+    $(`#${p}Prompt`).onclick = e => showPrompt($(`#${p}PromptHost`), topicPrompt(`Walk me through "${s.t}" (${context()}), starting from ${(s.look || []).join(", ")}`), e.target);
+    $(`#${p}Counter`).textContent = `${st.idx + 1} / ${steps.length}`;
+    $(`#${p}Prev`).disabled = st.idx === 0; $(`#${p}Next`).disabled = st.idx === steps.length - 1;
+    if (visible(p === "tour" ? "tour" : "guides")) setHash(hashFor(st.idx));
   };
-  D.flows.forEach(f => { const b = el("button", "sel-btn xs", esc(f.title)); b.dataset.id = f.id; b.onclick = () => show(f); $("#flowTabs").append(b); });
-  if (D.flows.length) show(D.flows[0]); else $("#flowBody").innerHTML = `<p class="muted">No flows.</p>`;
-  $("#cmdTable").innerHTML = `<tr><th align="left">Command</th><th align="left">Usage</th><th align="left">Action</th><th align="left">Defined in</th></tr>` +
-    D.commands.map(c => `<tr><td><code>${esc(c.name)}</code></td><td class="muted">${esc(c.usage)}</td><td>${c.action ? `<code>${esc(c.action)}</code>` : `<span class="muted">—</span>`}</td><td class="xs">${esc(c.file)}:${c.line}</td></tr>`).join("");
+  $(`#${p}Prev`).onclick = () => { st.idx--; st.render(); };
+  $(`#${p}Next`).onclick = () => { st.idx++; st.render(); };
+  return st;
 }
-function renderFindings() {
-  $("#findings").innerHTML = D.findings.map(f => `<div class="card sm"><strong>${esc(f.t)}</strong><p class="mt">${f.b}</p>
-    <div class="row mt xs">${srcLink(f.f)}${f.pkg ? " · " + pkgLink(f.pkg) : ""}</div></div>`).join("");
+const tourStepper = makeStepper("tour", () => tour.title, i => `#tour/${i}`);
+function openTour(n) {
+  if (!tour) return showTab("paths");
+  tourStepper.steps = tour.steps; tourStepper.idx = n || 0;
+  $("#tourHeader").innerHTML = `<h2>${esc(tour.title)}</h2><p class="muted">${esc(tour.subtitle)}</p>`;
+  showTab("tour"); tourStepper.render();
+}
+let guide = guides[0];
+const guideStepper = makeStepper("guide", () => guide.title, i => `#guides/${encodeURIComponent(guide.id)}/${i}`);
+function openGuide(id, n, show = true) {
+  if (!guides.length) return showTab("paths");
+  guide = guides.find(g => g.id === id) || guides[0];
+  $("#guideSelector").innerHTML = "";
+  guides.forEach(g => { const b = el("button", "sel-btn xs" + (g === guide ? " active" : ""), esc(g.title)); b.onclick = () => openGuide(g.id, 0); $("#guideSelector").append(b); });
+  $("#guideHeader").innerHTML = `<div class="xs muted">${esc(guide.audience)}</div><h2>${esc(guide.title)}</h2><p class="muted">${esc(guide.subtitle)}</p>`;
+  guideStepper.steps = guide.steps; guideStepper.idx = n || 0;
+  if (show) showTab("guides");
+  guideStepper.render();
+}
+$("#backToPaths").onclick = () => showTab("paths");
+
+// ---------- flows ----------
+function showFlow(id) {
+  const f = flows.find(x => x.id === id) || flows[0];
+  if (!f) { $("#flowBody").innerHTML = `<p class="muted">No traced flows.</p>`; return; }
+  document.querySelectorAll("#flowTabs button").forEach(b => b.classList.toggle("active", b.dataset.id === f.id));
+  const list = (label, items) => items?.length ? `<div class="row mt xs"><strong>${label}</strong>${items.map(i => `<span class="badge">${i}</span>`).join("")}</div>` : "";
+  $("#flowBody").innerHTML = `<div class="row" style="justify-content:space-between"><code>$ ${esc(f.cmd)}</code><span class="xs">entry: ${srcLink(f.file)}</span></div>
+    ${list("Inputs &amp; state read:", f.inputs)}
+    <div class="mt">${f.stages.map((s, i) => `<div class="stage"><div class="stage-rail"><div class="stage-num">${i + 1}</div>${i < f.stages.length - 1 ? `<div class="stage-line"></div>` : ""}</div>
+      <div class="stage-card"><div class="row" style="justify-content:space-between"><strong class="sm">${esc(s.title)}</strong><span class="badge">${srcLink(s.where, s.where.split("/").filter(Boolean).pop())}</span></div>
+      <div class="xs muted mt">${s.body}</div>${s.out ? `<div class="xs mt">→ Output: <code>${esc(s.out)}</code></div>` : ""}</div></div>`).join("")}</div>
+    ${list("Outputs:", f.outputs)}
+    <div class="row mt"><button class="xs" id="flowPrompt">Copy prompt for agent</button></div><div id="flowPromptHost"></div>`;
+  $("#flowPrompt").onclick = e => showPrompt($("#flowPromptHost"), topicPrompt(`Trace \`${f.cmd}\` end to end, starting at ${f.file}`), e.target);
+  if (visible("flows")) setHash(`#flows/${encodeURIComponent(f.id)}`);
+}
+function renderFlows() {
+  flows.forEach(f => { const b = el("button", "sel-btn xs", esc(f.title)); b.dataset.id = f.id; b.onclick = () => showFlow(f.id); $("#flowTabs").append(b); });
+  showFlow(flows[0]?.id);
+  $("#cmdTable").innerHTML = `<tr><th>Command</th><th>Usage</th><th>Action</th><th>Defined in</th></tr>` +
+    D.commands.map(c => `<tr><td><code>${esc(c.name)}</code></td><td class="muted">${esc(c.usage)}</td><td>${c.action ? `<code>${esc(c.action)}</code>` : `<span class="muted">—</span>`}</td><td class="xs">${D.files[c.file] ? srcLink(c.file, `${c.file}:${c.line}`) : esc(`${c.file}:${c.line}`)}</td></tr>`).join("");
 }
 
-// ---------- boot ----------
-renderPaths(); renderMap(); renderFlows(); renderFindings();
-// route shows the tab (and tour step) named by the URL hash, on load and on
+// ---------- families ----------
+let familyIdx = 0;
+function openFamily(i) { familyIdx = Math.min(Math.max(i || 0, 0), families.length - 1); showTab("families"); renderFamily(); }
+function renderFamily() {
+  const f = families[familyIdx]; if (!f) return;
+  const c = contractOf[f.parent];
+  $("#familySelector").innerHTML = "";
+  if (families.length > 1) families.forEach((x, i) => { const b = el("button", "sel-btn xs" + (i === familyIdx ? " active" : ""), esc(x.title)); b.onclick = () => openFamily(i); $("#familySelector").append(b); });
+  $("#familyHeader").innerHTML = `<div class="xs muted">${esc(f.parent)}/ · ${plural(c.members.length, "member")} · ${plural(c.hooks.length, "shared function")}</div><h2>${esc(f.title)}</h2><div>${f.intro}</div>`;
+  const cols = f.columns || [], short = id => id.split("/").pop();
+  $("#familyTable").innerHTML = `<tr><th>Member</th><th>LOC</th>${cols.map(x => `<th>${esc(x)}</th>`).join("")}</tr>` + c.members.map((id, i) => {
+    const r = f.rows[id] || { cells: cols.map(() => `<span class="muted">—</span>`), detail: desc(id) };
+    return `<tr class="fam-row" data-i="${i}"><td class="mono"><span class="xs muted" data-chev="${i}">▸</span> ${esc(short(id))}</td><td>${pkgById[id].loc.toLocaleString()}</td>${r.cells.map(x => `<td>${x}</td>`).join("")}</tr>
+      <tr class="fam-detail hidden" data-i="${i}"><td colspan="${cols.length + 2}"><div class="sm">${r.detail}</div>
+        <div class="row mt"><button class="xs" data-src="${esc(id)}/">Open ${esc(id)}/</button><button class="xs" data-pkg="${esc(id)}">Show in map →</button><button class="xs fam-prompt" data-id="${esc(id)}">Copy prompt for agent</button></div><div class="fam-prompt-host"></div></td></tr>`;
+  }).join("");
+  document.querySelectorAll("#familyTable tr.fam-row").forEach(r => r.onclick = () => {
+    const d = $(`#familyTable tr.fam-detail[data-i="${r.dataset.i}"]`);
+    const hidden = d.classList.toggle("hidden");
+    $(`#familyTable [data-chev="${r.dataset.i}"]`).textContent = hidden ? "▸" : "▾";
+  });
+  document.querySelectorAll("#familyTable .fam-prompt").forEach(b => b.onclick = e => {
+    e.stopPropagation();
+    showPrompt(b.closest("td").querySelector(".fam-prompt-host"), topicPrompt(`Explain how ${b.dataset.id} implements the shared functions of ${f.parent}/ and how it differs from its siblings`), b);
+  });
+  $("#contractTable").innerHTML = `<tr><th>Function</th><th>Referenced from</th>${c.members.map(id => `<th class="c mono">${esc(short(id))}</th>`).join("")}</tr>` +
+    c.hooks.map(h => `<tr><td><code>${esc(h.sig)}</code></td><td>${h.callers.map(x => `<code>${esc(x.split("/").pop())}</code>`).join(" ") || `<span class="muted">—</span>`}</td>${c.members.map(id => `<td class="c">${h.members.includes(id) ? "✓" : `<span class="muted">·</span>`}</td>`).join("")}</tr>`).join("");
+  if (visible("families")) setHash(`#families/${familyIdx}`);
+}
+
+// ---------- findings ----------
+function renderFindings() {
+  $("#findings").innerHTML = findings.map(f => `<div class="card sm"><strong>${esc(f.t)}</strong><p class="mt">${f.b}</p>
+    <div class="row mt xs">${srcLink(f.f)}${f.pkg ? " · " + pkgLink(f.pkg) : ""}</div></div>`).join("") || `<p class="muted sm">No findings.</p>`;
+  $("#checks").innerHTML = D.checks.map(c => `<div class="card sm"><strong>${esc(c.title)}</strong> <span class="badge">${c.rows.length}</span><p class="xs muted mt">${esc(c.detail)}</p>
+    <div class="xs mt">${c.rows.length ? c.rows.map(r => `<div>${r.map(pkgLink).join(" → ")}</div>`).join("") : `<span class="muted">None found.</span>`}</div></div>`).join("");
+}
+
+// ---------- routing & boot ----------
+// route shows the tab (and step or item) named by the URL hash, on load and on
 // back/forward or manual hash edits.
 function route() {
-  const [tab, tid, n] = location.hash.slice(1).split("/");
-  if (tab === "tours" && tid && D.tours.length) return openTour(tid, +n || 0);
-  showTab(["paths", "map", "tours", "flows", "findings"].includes(tab) ? tab : "paths");
+  const [tab, a, b] = location.hash.slice(1).split("/").map(x => { try { return decodeURIComponent(x); } catch (_) { return x; } });
+  if (tab === "tour") return openTour(+a || 0);
+  if (tab === "guides") return openGuide(a, +b || 0);
+  if (tab === "families") return openFamily(+a || 0);
+  if (tab === "flows") { showTab("flows"); return showFlow(a); }
+  showTab(tab in available ? tab : "paths");
 }
-tour = D.tours[0];
-renderTour();
+renderPaths(); renderMap(); renderFlows(); renderFindings();
+if (tour) { tourStepper.steps = tour.steps; $("#tourHeader").innerHTML = `<h2>${esc(tour.title)}</h2><p class="muted">${esc(tour.subtitle)}</p>`; tourStepper.render(); }
+if (guides.length) openGuide(guides[0].id, 0, false);
+if (families.length) renderFamily();
 route();
 addEventListener("hashchange", route);
 </script>

@@ -39,6 +39,7 @@ import (
 	"go/doc"
 	"go/parser"
 	"go/token"
+	"go/types"
 	"html"
 	"io"
 	"io/fs"
@@ -61,37 +62,67 @@ const (
 
 // Facts is everything that can be derived mechanically from the source tree.
 type Facts struct {
-	Repo          string    `json:"repo"`
-	Module        string    `json:"module"`
-	GoVersion     string    `json:"goVersion"`
-	SHA           string    `json:"sha"`
-	ShortSHA      string    `json:"shortSha"`
-	Ref           string    `json:"ref"`
-	CommitDate    string    `json:"commitDate"`
-	Dirty         bool      `json:"dirty"`
-	Platform      string    `json:"platform"`
-	TotalLOC      int       `json:"totalLoc"`
-	Packages      []Package `json:"packages"`
-	Commands      []Command `json:"commands"`
-	Docs          []string  `json:"docs"`
-	NestedModules []string  `json:"nestedModules"`
+	Repo          string     `json:"repo"`
+	Module        string     `json:"module"`
+	GoVersion     string     `json:"goVersion"`
+	SHA           string     `json:"sha"`
+	ShortSHA      string     `json:"shortSha"`
+	Ref           string     `json:"ref"`
+	Tag           string     `json:"tag"`
+	CommitDate    string     `json:"commitDate"`
+	Dirty         bool       `json:"dirty"`
+	Platform      string     `json:"platform"`
+	TotalLOC      int        `json:"totalLoc"`
+	Packages      []Package  `json:"packages"`
+	Commands      []Command  `json:"commands"`
+	Docs          []string   `json:"docs"`
+	NestedModules []string   `json:"nestedModules"`
+	Contracts     []Contract `json:"contracts"`
+}
+
+// Contract is an implicit interface: exported functions that several sibling
+// packages (same parent directory) each define, with the code that calls them.
+type Contract struct {
+	Parent  string   `json:"parent"`
+	Members []string `json:"members"`
+	Hooks   []Hook   `json:"hooks"`
+}
+
+// Hook is one function of a Contract.
+type Hook struct {
+	Name    string   `json:"name"`
+	Sig     string   `json:"sig"`
+	Members []string `json:"members"`
+	Callers []string `json:"callers"`
 }
 
 // Package describes one Go package in the module.
 type Package struct {
-	ID         string     `json:"id"`
-	Name       string     `json:"name"`
-	Doc        string     `json:"doc,omitempty"`
-	LOC        int        `json:"loc"`
-	Files      []FileStat `json:"files"`
-	Tests      int        `json:"tests"`
-	Imports    []string   `json:"imports"`
-	ImportedBy []string   `json:"importedBy"`
-	TestOnly   bool       `json:"testOnly,omitempty"`
-	Exported   []string   `json:"exported"`
-	MoreExport int        `json:"moreExported,omitempty"`
-	TestDeps   []string   `json:"-"`
+	ID         string            `json:"id"`
+	Name       string            `json:"name"`
+	Doc        string            `json:"doc,omitempty"`
+	LOC        int               `json:"loc"`
+	Files      []FileStat        `json:"files"`
+	Tests      int               `json:"tests"`
+	Imports    []string          `json:"imports"`
+	ImportedBy []string          `json:"importedBy"`
+	TestOnly   bool              `json:"testOnly,omitempty"`
+	Exported   []string          `json:"exported"`
+	MoreExport int               `json:"moreExported,omitempty"`
+	TestDeps   []string          `json:"-"`
+	funcs      map[string]string // exported top-level function name -> signature
+	refs       []fileRefs
 }
+
+// fileRefs records, for one file, how imported packages are named and which
+// qualified references (pkg.Func) each top-level function makes.
+type fileRefs struct {
+	named   map[string]string // import alias -> package ID
+	unnamed []string          // package IDs imported without an alias
+	calls   []call
+}
+
+type call struct{ from, qual, sel string }
 
 // FileStat is a file name with its line count.
 type FileStat struct {
@@ -111,13 +142,16 @@ type Command struct {
 
 // Narrative is the agent-written interpretation of the facts.
 type Narrative struct {
-	Title        string            `json:"title"`
-	Summary      string            `json:"summary"`
-	Layers       []Layer           `json:"layers"`
-	Descriptions map[string]string `json:"descriptions"`
-	Tours        []Tour            `json:"tours"`
-	Flows        []Flow            `json:"flows"`
-	Findings     []Finding         `json:"findings"`
+	Title         string            `json:"title"`
+	Summary       string            `json:"summary"`
+	Layers        []Layer           `json:"layers"`
+	Descriptions  map[string]string `json:"descriptions"`
+	Tour          *Tour             `json:"tour"`
+	GuidesHeading string            `json:"guidesHeading"`
+	Guides        []Guide           `json:"guides"`
+	Flows         []Flow            `json:"flows"`
+	Families      []Family          `json:"families"`
+	Findings      []Finding         `json:"findings"`
 }
 
 // Layer is an architectural tier on the map.
@@ -128,31 +162,64 @@ type Layer struct {
 	Packages []string `json:"packages"`
 }
 
-// Tour is an ordered, step-by-step walkthrough.
+// Tour is the end-to-end guided tour.
 type Tour struct {
-	ID       string `json:"id"`
 	Title    string `json:"title"`
 	Subtitle string `json:"subtitle"`
-	Group    string `json:"group"`
 	Steps    []Step `json:"steps"`
 }
 
-// Step is a single tour step.
+// Guide is a focused deep dive for a specific audience.
+type Guide struct {
+	ID       string `json:"id"`
+	Title    string `json:"title"`
+	Subtitle string `json:"subtitle"`
+	Audience string `json:"audience"`
+	Steps    []Step `json:"steps"`
+}
+
+// Step is a single tour or guide step.
 type Step struct {
 	T    string   `json:"t"`
 	Runs string   `json:"runs,omitempty"`
+	Code string   `json:"code,omitempty"`
 	Body string   `json:"body"`
 	Look []string `json:"look"`
 	Pkg  string   `json:"pkg,omitempty"`
 }
 
-// Flow traces one command through the code.
+// Flow traces one command through the code in stages.
 type Flow struct {
-	ID    string      `json:"id"`
-	Title string      `json:"title"`
-	Cmd   string      `json:"cmd"`
-	File  string      `json:"file"`
-	Steps [][2]string `json:"steps"`
+	ID      string   `json:"id"`
+	Title   string   `json:"title"`
+	Cmd     string   `json:"cmd"`
+	File    string   `json:"file"`
+	Inputs  []string `json:"inputs"`
+	Stages  []Stage  `json:"stages"`
+	Outputs []string `json:"outputs"`
+}
+
+// Stage is one hop of a Flow.
+type Stage struct {
+	Title string `json:"title"`
+	Where string `json:"where"`
+	Body  string `json:"body"`
+	Out   string `json:"out,omitempty"`
+}
+
+// Family describes the members of a computed Contract in a comparison table.
+type Family struct {
+	Parent  string               `json:"parent"`
+	Title   string               `json:"title"`
+	Intro   string               `json:"intro"`
+	Columns []string             `json:"columns"`
+	Rows    map[string]FamilyRow `json:"rows"`
+}
+
+// FamilyRow is one member's cells and expandable detail.
+type FamilyRow struct {
+	Cells  []string `json:"cells"`
+	Detail string   `json:"detail"`
 }
 
 // Finding is an architectural observation backed by a file.
@@ -161,6 +228,13 @@ type Finding struct {
 	B   string `json:"b"`
 	F   string `json:"f"`
 	Pkg string `json:"pkg,omitempty"`
+}
+
+// Check is a finding computed from facts and layers at render time.
+type Check struct {
+	Title  string     `json:"title"`
+	Detail string     `json:"detail"`
+	Rows   [][]string `json:"rows"`
 }
 
 // File is inlined source or a directory listing for the in-page inspector.
@@ -296,6 +370,7 @@ func analyze(r *repo, goos, goarch string) (*Facts, error) {
 	f := &Facts{
 		SHA:        r.git("rev-parse", "HEAD"),
 		Ref:        r.git("rev-parse", "--abbrev-ref", "HEAD"),
+		Tag:        r.git("describe", "--tags", "--abbrev=0"),
 		CommitDate: r.git("show", "-s", "--format=%cI", "HEAD"),
 		Dirty:      r.git("status", "--porcelain", "--untracked-files=no") != "",
 		Repo:       githubRepo(r.git("remote", "get-url", "origin")),
@@ -366,7 +441,88 @@ func analyze(r *repo, goos, goarch string) (*Facts, error) {
 		f.TotalLOC += p.LOC
 	}
 	f.Commands = nonNil(f.Commands)
+	f.Contracts = contracts(f.Packages)
 	return f, nil
+}
+
+// contracts finds groups of at least three sibling packages and the exported
+// functions that two or more of them define, plus every caller of those
+// functions anywhere in the module (calls or function-value references).
+func contracts(pkgs []Package) []Contract {
+	nameOf := map[string]string{}
+	for _, p := range pkgs {
+		nameOf[p.ID] = p.Name
+	}
+	callers := map[string]map[string]bool{} // "pkgID.Func" -> callers
+	for _, p := range pkgs {
+		for _, fr := range p.refs {
+			alias := map[string]string{}
+			for _, id := range fr.unnamed {
+				alias[nameOf[id]] = id
+			}
+			for a, id := range fr.named {
+				alias[a] = id
+			}
+			for _, c := range fr.calls {
+				if id, ok := alias[c.qual]; ok {
+					key := id + "." + c.sel
+					if callers[key] == nil {
+						callers[key] = map[string]bool{}
+					}
+					callers[key][p.ID+"."+c.from] = true
+				}
+			}
+		}
+	}
+	groups := map[string][]Package{}
+	for _, p := range pkgs {
+		if p.ID != "." && p.Name != "main" && !p.TestOnly {
+			groups[path.Dir(p.ID)] = append(groups[path.Dir(p.ID)], p)
+		}
+	}
+	var out []Contract
+	for _, parent := range sortedKeys(groups) {
+		members := groups[parent]
+		if len(members) < 3 {
+			continue
+		}
+		c := Contract{Parent: parent}
+		byName := map[string]*Hook{}
+		for _, m := range members {
+			c.Members = append(c.Members, m.ID)
+			for name, sig := range m.funcs {
+				h := byName[name]
+				if h == nil {
+					h = &Hook{Name: name, Sig: sig}
+					byName[name] = h
+				}
+				h.Members = append(h.Members, m.ID)
+				for caller := range callers[m.ID+"."+name] {
+					h.Callers = append(h.Callers, caller)
+				}
+			}
+		}
+		for _, h := range byName {
+			if len(h.Members) < 2 {
+				continue
+			}
+			sort.Strings(h.Members)
+			h.Callers = nonNil(dedupe(sortedStrings(h.Callers)))
+			c.Hooks = append(c.Hooks, *h)
+		}
+		if len(c.Hooks) == 0 {
+			continue
+		}
+		sort.Slice(c.Hooks, func(i, j int) bool {
+			a, b := c.Hooks[i], c.Hooks[j]
+			if len(a.Members) != len(b.Members) {
+				return len(a.Members) > len(b.Members)
+			}
+			return a.Name < b.Name
+		})
+		out = append(out, c)
+	}
+	return nonNil(out)
 }
 
 // readTrackedDir lists only tracked files so that untracked Go files never
@@ -412,6 +568,7 @@ func loadPackage(ctx *build.Context, root, id, module string) (*Package, []Comma
 		Tests:    len(bp.TestGoFiles) + len(bp.XTestGoFiles),
 		Imports:  internalImports(bp.Imports, module),
 		TestDeps: internalImports(append(bp.TestImports, bp.XTestImports...), module),
+		funcs:    map[string]string{},
 	}
 	fset := token.NewFileSet()
 	var cmds []Command
@@ -432,6 +589,10 @@ func loadPackage(ctx *build.Context, root, id, module string) (*Package, []Comma
 			pkg.Doc = new(doc.Package).Synopsis(file.Doc.Text())
 		}
 		exported = append(exported, exportedDecls(file)...)
+		for name, sig := range exportedFuncs(file) {
+			pkg.funcs[name] = sig
+		}
+		pkg.refs = append(pkg.refs, fileCalls(file, module))
 		cmds = append(cmds, findCommands(fset, file, id, path.Join(id, name))...)
 	}
 	sort.Strings(exported)
@@ -463,6 +624,83 @@ func exportedDecls(f *ast.File) []string {
 		}
 	}
 	return out
+}
+
+// exportedFuncs returns exported top-level functions with a short signature
+// built from parameter names (or types when unnamed).
+func exportedFuncs(f *ast.File) map[string]string {
+	out := map[string]string{}
+	for _, decl := range f.Decls {
+		fn, ok := decl.(*ast.FuncDecl)
+		if !ok || fn.Recv != nil || !fn.Name.IsExported() {
+			continue
+		}
+		var params []string
+		for _, field := range fn.Type.Params.List {
+			if len(field.Names) == 0 {
+				params = append(params, types.ExprString(field.Type))
+			}
+			for _, n := range field.Names {
+				params = append(params, n.Name)
+			}
+		}
+		out[fn.Name.Name] = fn.Name.Name + "(" + strings.Join(params, ", ") + ")"
+	}
+	return out
+}
+
+// fileCalls records the file's internal imports and every qualified
+// reference (x.F, called or passed as a value) inside each top-level function
+// (including closures) or package-level variable initializer.
+func fileCalls(f *ast.File, module string) fileRefs {
+	fr := fileRefs{named: map[string]string{}}
+	for _, spec := range f.Imports {
+		ip, err := strconv.Unquote(spec.Path.Value)
+		if err != nil {
+			continue
+		}
+		ids := internalImports([]string{ip}, module)
+		if len(ids) == 0 {
+			continue
+		}
+		if spec.Name != nil {
+			fr.named[spec.Name.Name] = ids[0]
+		} else {
+			fr.unnamed = append(fr.unnamed, ids[0])
+		}
+	}
+	record := func(from string, node ast.Node) {
+		ast.Inspect(node, func(n ast.Node) bool {
+			if sel, ok := n.(*ast.SelectorExpr); ok {
+				if x, ok := sel.X.(*ast.Ident); ok {
+					fr.calls = append(fr.calls, call{from: from, qual: x.Name, sel: sel.Sel.Name})
+				}
+			}
+			return true
+		})
+	}
+	for _, decl := range f.Decls {
+		switch d := decl.(type) {
+		case *ast.FuncDecl:
+			if d.Body == nil {
+				continue
+			}
+			from := d.Name.Name
+			if d.Recv != nil && len(d.Recv.List) == 1 {
+				from = strings.TrimPrefix(types.ExprString(d.Recv.List[0].Type), "*") + "." + from
+			}
+			record(from, d.Body)
+		case *ast.GenDecl:
+			for _, spec := range d.Specs {
+				if vs, ok := spec.(*ast.ValueSpec); ok && len(vs.Names) > 0 {
+					for _, v := range vs.Values {
+						record(vs.Names[0].Name, v)
+					}
+				}
+			}
+		}
+	}
+	return fr
 }
 
 // findCommands detects CLI command definitions such as urfave/cli
@@ -583,6 +821,9 @@ func runRender(args []string) error {
 	if err != nil {
 		return err
 	}
+	for _, c := range facts.Commands {
+		refs = append(refs, c.File)
+	}
 	if *inlineAll {
 		for _, p := range facts.Packages {
 			for _, f := range p.Files {
@@ -597,8 +838,9 @@ func runRender(args []string) error {
 	data, err := json.Marshal(struct {
 		Facts
 		Narrative
-		Files map[string]File `json:"files"`
-	}{facts, narr, files})
+		Checks []Check         `json:"checks"`
+		Files  map[string]File `json:"files"`
+	}{facts, narr, computeChecks(&facts, &narr), files})
 	if err != nil {
 		return err
 	}
@@ -609,8 +851,8 @@ func runRender(args []string) error {
 	if err := os.WriteFile(*out, page, 0o644); err != nil {
 		return err
 	}
-	fmt.Fprintf(os.Stderr, "wrote %s (%d KB, %d files inlined, %d tours, %d flows, %d findings)\n",
-		*out, len(page)/1024, len(files), len(narr.Tours), len(narr.Flows), len(narr.Findings))
+	fmt.Fprintf(os.Stderr, "wrote %s (%d KB, %d files inlined, %d guides, %d flows, %d families, %d findings)\n",
+		*out, len(page)/1024, len(files), len(narr.Guides), len(narr.Flows), len(narr.Families), len(narr.Findings))
 	return nil
 }
 
@@ -665,6 +907,20 @@ func expandTokens(r *repo, raw []byte, f *Facts) ([]byte, error) {
 			v = f.ShortSHA
 		case name == "goVersion":
 			v = f.GoVersion
+		case name == "tag" && f.Tag != "":
+			v = f.Tag
+		case name == "tracked" && strings.HasSuffix(arg, "/"):
+			if _, err := r.resolve(arg); err != nil {
+				errs = append(errs, fmt.Sprintf("token %s: %v", m, err))
+				return m
+			}
+			n := 0
+			for p := range r.tracked {
+				if strings.HasPrefix(p, arg) || arg == "./" {
+					n++
+				}
+			}
+			v = strconv.Itoa(n)
 		case name == "loc" && hasPkg:
 			v = strconv.Itoa(p.LOC)
 		case name == "files" && hasPkg:
@@ -717,19 +973,35 @@ func sanitize(s string) string {
 	return strings.ReplaceAll(e, "&lt;/a&gt;", "</a>")
 }
 
-// htmlFields returns every narrative field rendered as HTML, except the
-// descriptions map, whose values are not addressable.
+// htmlFields returns every narrative field rendered as HTML, except map
+// values (descriptions and family rows), which validate handles directly.
 func htmlFields(n *Narrative) []*string {
 	fields := []*string{&n.Summary}
-	for i := range n.Tours {
-		for j := range n.Tours[i].Steps {
-			fields = append(fields, &n.Tours[i].Steps[j].Body)
+	steps := func(ss []Step) {
+		for i := range ss {
+			fields = append(fields, &ss[i].Body)
 		}
 	}
+	if n.Tour != nil {
+		steps(n.Tour.Steps)
+	}
+	for i := range n.Guides {
+		steps(n.Guides[i].Steps)
+	}
 	for i := range n.Flows {
-		for j := range n.Flows[i].Steps {
-			fields = append(fields, &n.Flows[i].Steps[j][0], &n.Flows[i].Steps[j][1])
+		fl := &n.Flows[i]
+		for j := range fl.Inputs {
+			fields = append(fields, &fl.Inputs[j])
 		}
+		for j := range fl.Outputs {
+			fields = append(fields, &fl.Outputs[j])
+		}
+		for j := range fl.Stages {
+			fields = append(fields, &fl.Stages[j].Body)
+		}
+	}
+	for i := range n.Families {
+		fields = append(fields, &n.Families[i].Intro)
 	}
 	for i := range n.Findings {
 		fields = append(fields, &n.Findings[i].B)
@@ -761,6 +1033,36 @@ func validate(r *repo, f *Facts, n *Narrative) (refs, warnings []string, err err
 	for id, d := range n.Descriptions {
 		n.Descriptions[id] = sanitize(d)
 		scan(n.Descriptions[id])
+	}
+	contractOf := map[string]Contract{}
+	for _, c := range f.Contracts {
+		contractOf[c.Parent] = c
+	}
+	for i := range n.Families {
+		fam := &n.Families[i]
+		c, ok := contractOf[fam.Parent]
+		if !ok {
+			errs = append(errs, fmt.Sprintf("family %q: no computed contract for that parent directory", fam.Parent))
+		}
+		members := map[string]bool{}
+		for _, m := range c.Members {
+			members[m] = true
+		}
+		for id, row := range fam.Rows {
+			if ok && !members[id] {
+				errs = append(errs, fmt.Sprintf("family %q: %q is not a member", fam.Parent, id))
+			}
+			if len(row.Cells) != len(fam.Columns) {
+				errs = append(errs, fmt.Sprintf("family %q row %q: %d cells for %d columns", fam.Parent, id, len(row.Cells), len(fam.Columns)))
+			}
+			for j := range row.Cells {
+				row.Cells[j] = sanitize(row.Cells[j])
+				scan(row.Cells[j])
+			}
+			row.Detail = sanitize(row.Detail)
+			scan(row.Detail)
+			fam.Rows[id] = row
+		}
 	}
 	for _, s := range htmlFields(n) {
 		*s = sanitize(*s)
@@ -802,17 +1104,41 @@ func validate(r *repo, f *Facts, n *Narrative) (refs, warnings []string, err err
 	for id := range n.Descriptions {
 		checkPkg("descriptions", id)
 	}
-	for _, t := range n.Tours {
-		if len(t.Steps) == 0 {
-			errs = append(errs, fmt.Sprintf("tour %q has no steps", t.ID))
+	checkSteps := func(where string, ss []Step) {
+		if len(ss) == 0 {
+			errs = append(errs, where+" has no steps")
 		}
-		for _, s := range t.Steps {
-			checkPkg("tour "+t.ID, s.Pkg)
+		for _, s := range ss {
+			checkPkg(where, s.Pkg)
 			refs = append(refs, s.Look...)
+			if s.Code != "" {
+				refs = append(refs, s.Code)
+			}
 		}
 	}
+	if n.Tour != nil {
+		checkSteps("tour", n.Tour.Steps)
+	}
+	ids := map[string]bool{}
+	for _, g := range n.Guides {
+		if g.ID == "" || ids["g:"+g.ID] {
+			errs = append(errs, fmt.Sprintf("guide id %q must be unique and non-empty", g.ID))
+		}
+		ids["g:"+g.ID] = true
+		checkSteps("guide "+g.ID, g.Steps)
+	}
 	for _, fl := range n.Flows {
+		if fl.ID == "" || ids["f:"+fl.ID] {
+			errs = append(errs, fmt.Sprintf("flow id %q must be unique and non-empty", fl.ID))
+		}
+		ids["f:"+fl.ID] = true
+		if len(fl.Stages) == 0 {
+			errs = append(errs, fmt.Sprintf("flow %q has no stages", fl.ID))
+		}
 		refs = append(refs, fl.File)
+		for _, st := range fl.Stages {
+			refs = append(refs, st.Where)
+		}
 	}
 	for _, fd := range n.Findings {
 		checkPkg("finding "+fd.T, fd.Pkg)
@@ -828,6 +1154,36 @@ func validate(r *repo, f *Facts, n *Narrative) (refs, warnings []string, err err
 		return nil, warnings, fmt.Errorf("narrative is invalid:\n  %s", strings.Join(errs, "\n  "))
 	}
 	return refs, warnings, nil
+}
+
+// computeChecks derives findings directly from facts and the layer map.
+func computeChecks(f *Facts, n *Narrative) []Check {
+	layerOf := map[string]int{}
+	for i, l := range n.Layers {
+		for _, id := range l.Packages {
+			layerOf[id] = i
+		}
+	}
+	isTest := func(p Package) bool { return p.TestOnly || n.Layers[layerOf[p.ID]].ID == "test" }
+	upward := Check{Title: "Upward imports", Detail: "Packages that import a package placed in a higher layer on the map.", Rows: [][]string{}}
+	untested := Check{Title: "Packages without tests", Detail: "Non-main packages with no _test.go files.", Rows: [][]string{}}
+	orphans := Check{Title: "Packages nothing imports", Detail: "Non-main, non-test packages that no other package in the module imports.", Rows: [][]string{}}
+	for _, p := range f.Packages {
+		if !isTest(p) {
+			for _, imp := range p.Imports {
+				if lj, ok := layerOf[imp]; ok && lj < layerOf[p.ID] {
+					upward.Rows = append(upward.Rows, []string{p.ID, imp})
+				}
+			}
+		}
+		if p.Name != "main" && p.Tests == 0 && !isTest(p) {
+			untested.Rows = append(untested.Rows, []string{p.ID})
+		}
+		if p.Name != "main" && len(p.ImportedBy) == 0 && !isTest(p) {
+			orphans.Rows = append(orphans.Rows, []string{p.ID})
+		}
+	}
+	return []Check{upward, untested, orphans}
 }
 
 func collectFiles(r *repo, f *Facts, refs []string) (map[string]File, error) {
@@ -982,7 +1338,12 @@ func dedupe(in []string) []string {
 	return out
 }
 
-func sortedKeys(m map[string]bool) []string {
+func sortedStrings(s []string) []string {
+	sort.Strings(s)
+	return s
+}
+
+func sortedKeys[V any](m map[string]V) []string {
 	keys := make([]string, 0, len(m))
 	for k := range m {
 		keys = append(keys, k)
