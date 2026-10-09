@@ -64,3 +64,6 @@ go.work.sum
 
 # Output of go run ./tool/cmd/walkthrough
 /_site/
+/walkthrough.html
+/.worktrees/
+

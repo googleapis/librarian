@@ -1,67 +1,76 @@
 ---
 name: walkthrough
-description: Runs the interactive Librarian walkthroughs locally and answers questions about them. Use this skill when asked to open, run or serve the walkthroughs, the architecture tour or the guides, or when asked a question about how Librarian works that a walkthrough covers.
+description: Builds a self-contained interactive Librarian architecture map and step-by-step developer walkthrough artifact (.html or .zip) directly from the live codebase with zero background server. Use when asked to walk through the code ("walk me through the code"), explore Librarian's architecture or dependencies, compare sidekick vs external micro-generators, modify or add a sidekick language, or generate custom outputs/parsers.
 ---
 
-# Walkthrough
+# Interactive Architecture Map & Walkthrough Artifact
 
 ## Overview
 
-`doc/walkthroughs/*.md` are step-by-step guides to Librarian. The
-`tool/cmd/walkthrough` command compiles them into an interactive site whose
-code excerpts and tables are read from the tree at build time. The site is
-not published; it runs on the developer's machine. This skill starts it and
-answers the questions a reader asks along the way.
+`tool/cmd/walkthrough` analyzes the checked-out Go repository tree using `go/ast` and compiles a **single, self-contained HTML artifact** (or portable `.zip` archive) with zero servers, zero external CDN/runtime dependencies, and zero manual drift:
 
-## Starting the site
+- **Live SVG Architecture & Dependency Map**: Every Go package across all 7 layers (`Entry points`, `Command orchestration`, `Language integrations`, `Generation engine (sidekick) | Tool installers`, `Domain services`, `Infrastructure`, and `Test support`), non-test Go LOC, and direct/reverse intra-repo dependencies (`imports` in blue, `imported by` in emerald) computed live from the AST.
+- **Overall Architecture Guided Tour & Command Timelines**: Step-by-step tour from `cmd/librarian` and `librarian.yaml` through source tarballs, parallel generation, post-processing, and `bump → publish → tag`.
+- **Languages & AST-Verified Contract Matrix**: Live comparison of all 9 language packages and every exported lifecycle function verified directly against the Go AST.
+- **4 Built-In Generation Deep Dives**:
+  1. *Sidekick vs. External Micro-Generators*
+  2. *Modifying Sidekick Generation for an Existing Language* (`rust`, `swift`, `dart`)
+  3. *Adding a New Language Generator with Sidekick*
+  4. *New Input Sources (`sidekick/parser`) & Custom Non-Cloud-SDK Outputs (`templates/`)*
 
-Run the server as a background process from the repository root and tell the
-user the URL:
+## 1. Open Directly in Jetski / Any Agent Harness or Browser (Zero Server Required)
 
-```sh
-go run ./tool/cmd/walkthrough -serve 127.0.0.1:8080
+When a developer asks *"walk me through the code"* (or asks about architecture, layers, dependencies, or code generation):
+
+1. Build the standalone single-file HTML artifact (or `.zip` archive):
+   ```sh
+   # Self-contained HTML file (opens directly in Jetski artifact preview, Claude Artifacts, or any browser via file://)
+   go run ./tool/cmd/walkthrough -out walkthrough.html
+
+   # Optional portable zip package
+   go run ./tool/cmd/walkthrough -out walkthrough.zip
+   ```
+2. **In Jetski / Artifact-Enabled Harnesses**: Write or register `walkthrough.html` in the conversation artifact directory with `UserFacing: true` so it renders directly in the side preview panel with one click!
+3. Ask which learning path the developer wants to explore or customize together:
+   - Overall architecture & package dependency map (**Map** & **Guided tour**)
+   - Generation internals: Sidekick vs. external `protoc` GAPIC micro-generators
+   - Modifying Sidekick generation/templates for an existing language (`rust`, `swift`, `dart`)
+   - Adding a brand-new language generator with Sidekick
+   - Supporting new specification input sources (`internal/sidekick/parser`) or non-Cloud-SDK outputs via custom template trees (`internal/sidekick/language`)
+
+## 2. Adding Custom Local Walkthroughs on Demand
+
+Developers can ask you at any time to explain a specific subsystem or create a brand-new interactive walkthrough (e.g., *"Create a walkthrough showing how Rust workspace dependency resolution and bump work"*).
+
+Drop a JSON file into `.agents/skills/walkthrough/custom/<slug>.json` matching the `Guide` schema in `tool/cmd/walkthrough/model.go`:
+
+```json
+{
+  "id": "rust-bump-and-deps",
+  "title": "Rust Workspace Dependency Resolution & Bump",
+  "subtitle": "How internal/librarian/rust resolves Cargo crate dependencies and computes SemVer bumps",
+  "audience": "Custom local walkthrough",
+  "steps": [
+    {
+      "t": "Crate dependency resolution during add and tidy",
+      "runs": "librarian add / tidy",
+      "code": "internal/librarian/rust/",
+      "body": "<p>Explain the exact functions and data flow with <code>code</code> and <a class=\"src\" data-src=\"internal/librarian/rust/\">source links</a>.</p>",
+      "look": ["internal/librarian/rust/"],
+      "pkg": "internal/librarian/rust"
+    }
+  ]
+}
 ```
 
-The address must be loopback. Pages are rebuilt on every load, so the user can
-edit a walkthrough or the code and refresh. If the port is taken, pick another.
+Then regenerate `walkthrough.html` and update the preview artifact:
+```sh
+go run ./tool/cmd/walkthrough -out walkthrough.html
+```
+The custom walkthrough appears immediately on the **Paths** landing page and inside **Generation guides** alongside the built-in paths.
 
-Each step has an **Ask about this step** panel. With the command above it
-copies a prompt to the clipboard, which the user pastes to you. To route
-questions to a command instead, pass `-ask`. The command runs in the
-repository root through `sh -c`, reads the prompt on stdin and must print the
-answer on stdout. Examples (check the tool is installed first):
+## 3. Verifying Changes
 
 ```sh
-# Any CLI that answers a prompt from stdin.
-go run ./tool/cmd/walkthrough -serve 127.0.0.1:8080 -ask gemini
-# In an editor with agentapi: open the question as a new conversation.
-go run ./tool/cmd/walkthrough -serve 127.0.0.1:8080 \
-  -ask 'agentapi new-conversation --title="Walkthrough question" "$(cat)"'
+go test -race ./tool/cmd/walkthrough/...
 ```
-
-With `agentapi` the answer appears in the editor, not in the page; the page
-shows the conversation id.
-
-## Answering questions
-
-Every prompt from the panel names the page, the step, the commit and the files
-excerpted in that step, followed by the question. Answer from those sources:
-
-1. Read the step in `doc/walkthroughs/<page>.md` and the files it excerpts
-   at the stated commit. Prefer the code over the prose when they disagree,
-   and say so.
-2. Cite files and line ranges. Keep answers short; the reader is mid-tour.
-3. If the question is about a different step or page, point to it by name.
-4. If the prose is wrong or stale, offer to fix the markdown. After editing,
-   run `go run ./tool/cmd/walkthrough -check`; it fails if an excerpt anchor
-   no longer resolves. See `doc/walkthroughs/README.md` for the format.
-
-## Verifying changes
-
-```sh
-go run ./tool/cmd/walkthrough -check
-go test ./tool/cmd/walkthrough/
-```
-
-Do not add anything to the build that depends on time, network or a language
-model: the site must be a pure function of the commit.
