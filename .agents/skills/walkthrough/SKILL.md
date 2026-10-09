@@ -82,12 +82,18 @@ package root.
 
 ## Allowed markup
 
-Bodies are sanitized in the browser. Only these tags survive: `p`, `strong`,
-`em`, `code`, `pre`, `ul`, `ol`, `li`, `a`, `br`, `span`, `div`, `h3`, `h4`.
-The only attribute kept is `data-src`; `href`, `class`, `style`, `id` and event
-handlers are stripped. Titles (`t`, `title`, `subtitle`, `audience`, `runs`,
-`code`, `cmd`, `out`) are plain text. The renderer HTML-escapes the JSON
-payload, so content cannot break out of the page's data block.
+Bodies are sanitized in the browser. Formatting, list, heading and table tags
+survive (`p`, `br`, `hr`, `strong`, `b`, `em`, `i`, `u`, `s`, `code`, `pre`,
+`kbd`, `samp`, `var`, `mark`, `small`, `sub`, `sup`, `ul`, `ol`, `li`, `dl`,
+`dt`, `dd`, `a`, `span`, `div`, `h3`–`h6`, `blockquote`, `table` and its
+parts). Elements that can run script or load resources (`script`, `style`,
+`iframe`, `img`, `svg`, `math`, `form`, `input`, …) are removed with their
+contents; any other tag is unwrapped so its text still shows. The only
+attribute kept is `data-src`; `href`, `class`, `id`, `style` and event handlers
+are stripped. Titles (`t`, `title`, `subtitle`, `audience`, `runs`, `code`,
+`cmd`, `out`) are plain text: no HTML and no Markdown (backticks will show
+literally). The renderer HTML-escapes the JSON payload, so content cannot
+break out of the page's data block.
 
 ## Checks before you hand it over
 
