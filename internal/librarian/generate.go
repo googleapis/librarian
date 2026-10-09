@@ -192,7 +192,7 @@ func generateLibraries(ctx context.Context, cfg *config.Config, libraries []*con
 	switch cfg.Language {
 	case config.LanguageDart:
 		g, gctx := errgroup.WithContext(ctx)
-		g.SetLimit(runtime.NumCPU())
+		g.SetLimit(runtime.GOMAXPROCS(0))
 		for _, library := range libraries {
 			g.Go(func() error {
 				if err := dart.Generate(gctx, cfg, library, src); err != nil {
@@ -217,7 +217,7 @@ func generateLibraries(ctx context.Context, cfg *config.Config, libraries []*con
 		return fakePostGenerate()
 	case config.LanguageGo:
 		g, gctx := errgroup.WithContext(ctx)
-		g.SetLimit(runtime.NumCPU())
+		g.SetLimit(runtime.GOMAXPROCS(0))
 		for _, library := range libraries {
 			g.Go(func() error {
 				if err := golang.Generate(gctx, cfg, library, src); err != nil {
@@ -230,7 +230,7 @@ func generateLibraries(ctx context.Context, cfg *config.Config, libraries []*con
 			return err
 		}
 		g, gctx = errgroup.WithContext(ctx)
-		g.SetLimit(runtime.NumCPU())
+		g.SetLimit(runtime.GOMAXPROCS(0))
 		for _, library := range libraries {
 			g.Go(func() error {
 				if err := golang.Format(gctx, library); err != nil {
@@ -252,7 +252,7 @@ func generateLibraries(ctx context.Context, cfg *config.Config, libraries []*con
 		return java.PostGenerate(ctx, ".", cfg)
 	case config.LanguageNodejs:
 		g, gctx := errgroup.WithContext(ctx)
-		g.SetLimit(runtime.NumCPU())
+		g.SetLimit(runtime.GOMAXPROCS(0))
 		for _, library := range libraries {
 			g.Go(func() error {
 				if err := nodejs.Generate(gctx, cfg, library, src); err != nil {
@@ -264,7 +264,7 @@ func generateLibraries(ctx context.Context, cfg *config.Config, libraries []*con
 		return g.Wait()
 	case config.LanguagePhp:
 		g, gctx := errgroup.WithContext(ctx)
-		g.SetLimit(runtime.NumCPU())
+		g.SetLimit(runtime.GOMAXPROCS(0))
 		for _, library := range libraries {
 			g.Go(func() error {
 				if err := php.Generate(gctx, cfg, library, src); err != nil {
@@ -279,7 +279,7 @@ func generateLibraries(ctx context.Context, cfg *config.Config, libraries []*con
 		return g.Wait()
 	case config.LanguagePython:
 		g, gctx := errgroup.WithContext(ctx)
-		g.SetLimit(runtime.NumCPU())
+		g.SetLimit(runtime.GOMAXPROCS(0))
 		for _, library := range libraries {
 			g.Go(func() error {
 				// TODO(https://github.com/googleapis/librarian/issues/3730):
@@ -293,7 +293,7 @@ func generateLibraries(ctx context.Context, cfg *config.Config, libraries []*con
 		return g.Wait()
 	case config.LanguageRuby:
 		g, gctx := errgroup.WithContext(ctx)
-		g.SetLimit(runtime.NumCPU())
+		g.SetLimit(runtime.GOMAXPROCS(0))
 		for _, library := range libraries {
 			g.Go(func() error {
 				if err := ruby.Generate(gctx, cfg, library, src); err != nil {
@@ -309,7 +309,7 @@ func generateLibraries(ctx context.Context, cfg *config.Config, libraries []*con
 	case config.LanguageRust:
 		// Run the generation in parallel.
 		g, gctx := errgroup.WithContext(ctx)
-		g.SetLimit(runtime.NumCPU())
+		g.SetLimit(runtime.GOMAXPROCS(0))
 		for _, library := range libraries {
 			g.Go(func() error {
 				if err := rust.Generate(gctx, cfg, library, src); err != nil {
@@ -325,7 +325,7 @@ func generateLibraries(ctx context.Context, cfg *config.Config, libraries []*con
 		// During generation files are removed, and formatting reads the
 		// `Cargo.toml` file from dependencies.
 		f, fctx := errgroup.WithContext(ctx)
-		f.SetLimit(runtime.NumCPU())
+		f.SetLimit(runtime.GOMAXPROCS(0))
 		for _, library := range libraries {
 			f.Go(func() error {
 				if err := rust.Format(fctx, library); err != nil {
@@ -343,7 +343,7 @@ func generateLibraries(ctx context.Context, cfg *config.Config, libraries []*con
 		return rust.UpdateWorkspace(ctx)
 	case config.LanguageSwift:
 		g, gctx := errgroup.WithContext(ctx)
-		g.SetLimit(runtime.NumCPU())
+		g.SetLimit(runtime.GOMAXPROCS(0))
 		for _, library := range libraries {
 			g.Go(func() error {
 				if err := swift.Generate(gctx, cfg, library, src); err != nil {

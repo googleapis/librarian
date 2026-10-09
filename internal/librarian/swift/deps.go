@@ -129,7 +129,7 @@ func buildDependencyGraph(ctx context.Context, cfg *config.Config, libraries []*
 	results := make(chan libDepResult, len(libraries))
 
 	g, gctx := errgroup.WithContext(ctx)
-	g.SetLimit(runtime.NumCPU())
+	g.SetLimit(runtime.GOMAXPROCS(0))
 
 	for _, lib := range libraries {
 		pkgDir := libraryPackageDirectory(lib, cfg.Default)
