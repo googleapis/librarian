@@ -94,7 +94,7 @@ func buildSteps(stats *repoStats) []TourStep {
 		},
 		{
 			Title: "Post-processing and metadata",
-			Body: `<p>Go, Java, Node.js, Python, Rust and Swift write <code>.repo-metadata.json</code> through <a class="src" data-src="internal/repometadata/">internal/repometadata</a>; Go and Python refresh <code>snippet_metadata*.json</code> through <a class="src" data-src="internal/snippetmetadata/">internal/snippetmetadata</a>; license headers come from <a class="src" data-src="internal/license/">internal/license</a>.</p>` +
+			Body: `<p>Go, Java, Node.js, PHP, Python, Rust and Swift write <code>.repo-metadata.json</code> through <a class="src" data-src="internal/repometadata/">internal/repometadata</a>; Go and Python refresh <code>snippet_metadata*.json</code> through <a class="src" data-src="internal/snippetmetadata/">internal/snippetmetadata</a>; license headers come from <a class="src" data-src="internal/license/">internal/license</a>.</p>` +
 				`<p>PHP and Python stage output under <code>owl-bot-staging</code> and run their post-processors; Node.js runs <code>combine-library</code>; Java runs declarative <a class="src" data-src="internal/postprocessing/">internal/postprocessing</a> edits. Directory moves preserve handwritten files matching <code>keep</code> rules via <a class="src" data-src="internal/filesystem/">internal/filesystem</a>.</p>`,
 			Look: []string{"internal/postprocessing/fileops.go", "internal/repometadata/repometadata.go", "internal/librarian/python/generate.go", "internal/librarian/java/postgenerate.go"},
 			Pkg:  "internal/postprocessing",

@@ -825,16 +825,17 @@ function renderLanguages() {
   const t = document.getElementById("langTable");
   t.innerHTML = `<thead><tr><th>Language</th><th>Generator</th><th>Installed by</th><th>Formatter</th><th>.repo-metadata.json</th><th>Bump</th><th>Publish target</th><th>CI</th></tr></thead>
     <tbody>${DATA.langs.map((l, i) => `
-      <tr class="lang-row" data-i="${i}"><td class="font-medium whitespace-nowrap"><span class="mr-1 text-xs lang-chev" data-chev="${i}">&#9656;</span>${l.n}<div class="text-xs text-[var(--muted-foreground)] font-normal">${l.loc.toLocaleString()} lines</div></td><td>${l.gen}</td><td>${l.inst}</td><td>${l.fmt}</td><td class="text-center">${l.meta ? "✓" : ""}</td><td class="text-center">${l.bump ? "✓" : ""}</td><td>${l.pub}</td><td><code>${l.ci}</code></td></tr>
+      <tr class="lang-row" data-i="${i}"><td class="font-medium whitespace-nowrap"><span class="mr-1 text-xs lang-chev" data-chev="${i}">&#9656;</span>${escapeHTML(l.n)}<div class="text-xs text-[var(--muted-foreground)] font-normal">${l.loc.toLocaleString()} lines</div></td><td>${hydrateLinks(l.gen)}</td><td>${hydrateLinks(l.inst)}</td><td>${hydrateLinks(l.fmt)}</td><td class="text-center">${l.meta ? "✓" : ""}</td><td class="text-center">${l.bump ? "✓" : ""}</td><td>${hydrateLinks(l.pub)}</td><td class="whitespace-nowrap">${l.ci ? src(".github/workflows/" + l.ci, `<code>${escapeHTML(l.ci)}</code>`) : ""}</td></tr>
       <tr class="lang-detail hidden" data-i="${i}"><td colspan="8" class="text-xs leading-relaxed" style="background: color-mix(in srgb, var(--primary) 6%, transparent)">
         <div class="mb-2">${hydrateLinks(l.detail)}</div>
         <div class="flex flex-wrap items-center gap-3">
-          ${src(l.pkg + "/", `Inspect ${l.pkg}/`)}
-          <button class="underline underline-offset-2 hover:text-[var(--primary)] lang-map-btn" data-pkg="${l.pkg}">Show <code>${l.pkg}</code> in the map &rarr;</button>
-          <button class="border border-[var(--border)] hover:border-[var(--primary)] rounded-md px-2 py-0.5 lang-prompt-btn" data-lang="${l.n}" data-pkg="${l.pkg}">Copy prompt for agent</button>
+          ${src(l.pkg + "/", `Inspect ${escapeHTML(l.pkg)}/`)}
+          <button class="underline underline-offset-2 hover:text-[var(--primary)] lang-map-btn" data-pkg="${escapeHTML(l.pkg)}">Show <code>${escapeHTML(l.pkg)}</code> in the map &rarr;</button>
+          <button class="border border-[var(--border)] hover:border-[var(--primary)] rounded-md px-2 py-0.5 lang-prompt-btn" data-lang="${escapeHTML(l.n)}" data-pkg="${escapeHTML(l.pkg)}">Copy prompt for agent</button>
         </div>
         <div class="lang-prompt-host"></div>
       </td></tr>`).join("")}</tbody>`;
+  t.querySelectorAll(".lang-row a.src").forEach(a => a.addEventListener("click", e => e.stopPropagation()));
   t.querySelectorAll(".lang-row").forEach(r => r.addEventListener("click", () => {
     const idx = r.dataset.i;
     const detailRow = t.querySelector(`.lang-detail[data-i="${idx}"]`);
