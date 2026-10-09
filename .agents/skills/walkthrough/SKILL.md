@@ -108,10 +108,23 @@ break out of the page's data block.
 
 ```text
 .agents/skills/walkthrough/
-├── SKILL.md                 this file
-├── resources/template.html  static page; the renderer fills the {{.JSON}} slot
-└── scripts/render.go        go list facts + validation + HTML output
+├── SKILL.md                this file
+└── scripts/
+    ├── render.go           go list facts + validation + HTML output
+    └── template.html       static page embedded into render.go; fills the {{.JSON}} slot
 ```
 
 The template is repo-agnostic. Change it only to add a visualization; never
-put repository names, package lists or prose in it.
+put repository names, package lists or prose in it. `-template PATH` renders
+with a different template file for experiments.
+
+## Scope and limits
+
+- Go modules only: facts come from `go list ./...`, which needs the module's
+  dependencies resolvable (a populated module cache or network).
+- Packages with no non-test Go files are omitted from the map; the module
+  root package, if it has code, appears as `.`.
+- The GitHub link is derived from a `github.com/ORG/REPO` module path. For
+  other hosts set `repo` in the JSON or accept that the link is hidden.
+- "Copy prompt for agent" buttons interpolate guide titles and paths into the
+  prompt text. Write them as you would write them into a chat yourself.

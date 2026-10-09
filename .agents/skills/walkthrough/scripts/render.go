@@ -28,6 +28,7 @@ package main
 import (
 	"bytes"
 	"context"
+	_ "embed"
 	"encoding/json"
 	"errors"
 	"flag"
@@ -41,10 +42,10 @@ import (
 	"strings"
 )
 
-const (
-	templateRel = ".agents/skills/walkthrough/resources/template.html"
-	otherLayer  = "other"
-)
+//go:embed template.html
+var defaultTemplate []byte
+
+const otherLayer = "other"
 
 // Site is the JSON contract between the skill and the template. Fields marked
 // "computed" are filled by this program and ignored on input.
@@ -150,26 +151,32 @@ type ContractRow struct {
 }
 
 func main() {
-	var in, out, root string
+	var in, out, root, tmplPath string
 	var initSkeleton, check bool
 	flag.StringVar(&in, "in", "", "walkthrough JSON authored by the skill")
 	flag.StringVar(&out, "out", "", "output path: .html when rendering, .json with -init (default: stdout)")
-	flag.StringVar(&root, "root", "", "module root (default: go list -m)")
+	flag.StringVar(&root, "root", "", "module root (default: directory of go env GOMOD)")
+	flag.StringVar(&tmplPath, "template", "", "HTML template with a {{.JSON}} slot (default: the embedded template)")
 	flag.BoolVar(&initSkeleton, "init", false, "write a skeleton JSON listing every package with its doc synopsis")
 	flag.BoolVar(&check, "check", false, "validate -in without writing HTML")
 	flag.Parse()
-	if err := run(context.Background(), in, out, root, initSkeleton, check); err != nil {
+	if err := run(context.Background(), in, out, root, tmplPath, initSkeleton, check); err != nil {
 		fmt.Fprintln(os.Stderr, "render:", err)
 		os.Exit(1)
 	}
 }
 
-func run(ctx context.Context, in, out, root string, initSkeleton, check bool) error {
+func run(ctx context.Context, in, out, root, tmplPath string, initSkeleton, check bool) error {
 	facts, err := loadFacts(ctx, root)
 	if err != nil {
 		return err
 	}
 	if initSkeleton {
+		if out != "" {
+			if _, err := os.Stat(out); err == nil {
+				return fmt.Errorf("%s already exists; -init will not overwrite authored content", out)
+			}
+		}
 		return writeOutput(out, skeleton(facts))
 	}
 	if in == "" {
@@ -188,18 +195,20 @@ func run(ctx context.Context, in, out, root string, initSkeleton, check bool) er
 			len(site.Pkgs), len(site.Layers), len(site.Steps), len(site.Flows), len(site.Guides), site.ShortSHA)
 		return nil
 	}
-	tmpl, err := os.ReadFile(filepath.Join(facts.root, templateRel))
-	if err != nil {
-		return err
+	tmpl := defaultTemplate
+	if tmplPath != "" {
+		if tmpl, err = os.ReadFile(tmplPath); err != nil {
+			return err
+		}
+	}
+	if !bytes.Contains(tmpl, []byte("{{.JSON}}")) {
+		return errors.New("template has no {{.JSON}} slot")
 	}
 	// json.Marshal escapes <, > and & as \u003c etc., so the payload can never
 	// close the <script type="application/json"> block it is embedded in.
 	payload, err := json.Marshal(site)
 	if err != nil {
 		return err
-	}
-	if !bytes.Contains(tmpl, []byte("{{.JSON}}")) {
-		return fmt.Errorf("%s has no {{.JSON}} slot", templateRel)
 	}
 	html := bytes.Replace(tmpl, []byte("{{.JSON}}"), payload, 1)
 	if out == "" {
@@ -231,11 +240,15 @@ type goListPkg struct {
 
 func loadFacts(ctx context.Context, root string) (*facts, error) {
 	if root == "" {
-		mod, err := goCmd(ctx, ".", "list", "-m", "-f", "{{.Dir}}")
+		gomod, err := goCmd(ctx, ".", "env", "GOMOD")
 		if err != nil {
-			return nil, fmt.Errorf("finding module root (run from inside the module or pass -root): %w", err)
+			return nil, err
 		}
-		root = strings.TrimSpace(mod)
+		gomod = strings.TrimSpace(gomod)
+		if gomod == "" || gomod == os.DevNull {
+			return nil, errors.New("not inside a Go module (run from the repository or pass -root)")
+		}
+		root = filepath.Dir(gomod)
 	}
 	raw, err := goCmd(ctx, root, "list", "-json=ImportPath,Dir,Doc,GoFiles,Imports,Module", "./...")
 	if err != nil {
@@ -253,16 +266,21 @@ func loadFacts(ctx context.Context, root string) (*facts, error) {
 		}
 		listed = append(listed, p)
 	}
-	if len(listed) == 0 {
-		return nil, errors.New("go list found no packages")
+	if len(listed) == 0 || listed[0].Module == nil {
+		return nil, errors.New("go list found no module packages under " + root)
 	}
 	f.module = listed[0].Module.Path
+	// rel maps an import path inside the module to a module-relative ID; the
+	// module root itself is ".".
 	rel := func(importPath string) (string, bool) {
+		if importPath == f.module {
+			return ".", true
+		}
 		return strings.CutPrefix(importPath, f.module+"/")
 	}
 	for _, p := range listed {
 		id, ok := rel(p.ImportPath)
-		if !ok {
+		if !ok || len(p.GoFiles) == 0 { // skip test-only directories
 			continue
 		}
 		loc := 0
@@ -403,7 +421,11 @@ func merge(s *Site, f *facts) {
 	}
 }
 
-var dataSrcRe = regexp.MustCompile(`data-src="([^"]+)"`)
+var (
+	dataSrcRe = regexp.MustCompile(`data-src="([^"]+)"`)
+	repoRe    = regexp.MustCompile(`^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$`)
+	gitRefRe  = regexp.MustCompile(`^[A-Za-z0-9_./-]+$`)
+)
 
 // validate returns every problem at once so an agent can fix them in one pass.
 func validate(s *Site, f *facts) []string {
@@ -413,6 +435,26 @@ func validate(s *Site, f *facts) []string {
 	if strings.TrimSpace(s.Title) == "" {
 		add("title is required")
 	}
+	// repo and gitRef are interpolated into GitHub URLs by the page.
+	if s.Repo != "" && !repoRe.MatchString(s.Repo) {
+		add("repo %q must look like org/name", s.Repo)
+	}
+	if !gitRefRe.MatchString(s.GitRef) || strings.Contains(s.GitRef, "..") {
+		add("gitRef %q must be a plain branch or tag name", s.GitRef)
+	}
+	unique := func(kind string) func(id string) {
+		seen := map[string]bool{}
+		return func(id string) {
+			if id == "" {
+				return
+			}
+			if seen[id] {
+				add("duplicate %s id %q", kind, id)
+			}
+			seen[id] = true
+		}
+	}
+	flowID, guideID := unique("flow"), unique("guide")
 	layers := map[string]bool{}
 	for _, l := range s.Layers {
 		if l.ID == "" || l.Title == "" {
@@ -481,6 +523,7 @@ func validate(s *Site, f *facts) []string {
 		if fl.ID == "" || fl.Title == "" || fl.Cmd == "" || len(fl.Stages) == 0 {
 			add("%s needs id, title, cmd and at least one stage", w)
 		}
+		flowID(fl.ID)
 		cite(w+".file", fl.File)
 		checkPkg(w+".pkg", fl.Pkg)
 		for j, stg := range fl.Stages {
@@ -496,6 +539,7 @@ func validate(s *Site, f *facts) []string {
 		if g.ID == "" || g.Title == "" || len(g.Steps) == 0 {
 			add("%s needs id, title and at least one step", w)
 		}
+		guideID(g.ID)
 		for j, st := range g.Steps {
 			sw := fmt.Sprintf("%s.steps[%d]", w, j)
 			if st.Title == "" || st.Body == "" {
