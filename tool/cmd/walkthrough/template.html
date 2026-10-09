@@ -521,7 +521,7 @@ let selected = null;
 function clearMapSelection() {
   selected = null;
   document.querySelectorAll(".pkg").forEach(el => el.classList.remove("sel", "imp", "dep", "dim"));
-  document.getElementById("detail").innerHTML = `<p class="text-[var(--muted-foreground)]">All 49 packages highlighted equally. Click any package card to inspect its direct imports, dependents, and source files.</p>`;
+  document.getElementById("detail").innerHTML = `<p class="text-[var(--muted-foreground)]">All ${DATA.pkgs.length} packages highlighted equally. Click any package card to inspect its direct imports, dependents, and source files.</p>`;
   drawWires();
 }
 
