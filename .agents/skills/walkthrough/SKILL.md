@@ -73,8 +73,9 @@ code is computed by the renderer and cannot be typed by hand:
 
    Common errors: a cited path that does not exist, a `pkg` that is not a Go
    package, an unknown field name (typo), a layer id used by a package but not
-   declared. Packages missing from the JSON are not an error; they appear
-   under "Unclassified" with a warning, so assign them.
+   declared. Packages missing from the JSON, or still on the skeleton's
+   `other` layer, are not an error; they appear under "Unclassified" with a
+   warning each, so assign them.
 
 5. **Surface it.** In Jetski, copy `walkthrough.html` into the artifact
    directory and register it with `UserFacing: true` so it previews in-pane.

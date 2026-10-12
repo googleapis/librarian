@@ -296,8 +296,10 @@ function sanitizeHTML(raw) {
           // Source links are rebuilt here, in the DOM, so the path never
           // round-trips through serialized HTML.
           if (tag === "A" && child.hasAttribute("data-src")) {
-            child.setAttribute("href", "#src:" + encodeURIComponent(child.getAttribute("data-src")));
+            const path = child.getAttribute("data-src");
+            child.setAttribute("href", "#src:" + encodeURIComponent(path));
             child.className = "src";
+            if (!child.textContent.trim()) child.textContent = path;
           }
           walk(child);
         }

@@ -425,16 +425,23 @@ func merge(s *Site, f *facts) {
 			p.Desc = f.docs[p.ID]
 		}
 	}
-	missing := false
 	for _, id := range f.order {
 		if !seen[id] {
 			fp := f.pkgs[id]
 			s.Pkgs = append(s.Pkgs, Pkg{ID: id, Layer: otherLayer, Desc: f.docs[id], LOC: fp.LOC, Imports: fp.Imports})
-			fmt.Fprintf(os.Stderr, "warning: %s is not in the JSON; shown as Unclassified\n", id)
-			missing = true
 		}
 	}
-	if missing && !slices.ContainsFunc(s.Layers, func(l Layer) bool { return l.ID == otherLayer }) {
+	// The skeleton and any omitted package land in "other"; declare the layer
+	// whenever it is used so the map renders, and warn so -check stays noisy
+	// until every package has a real layer.
+	usesOther := false
+	for _, p := range s.Pkgs {
+		if p.Layer == otherLayer {
+			usesOther = true
+			fmt.Fprintf(os.Stderr, "warning: %s has no layer; shown as Unclassified\n", p.ID)
+		}
+	}
+	if usesOther && !slices.ContainsFunc(s.Layers, func(l Layer) bool { return l.ID == otherLayer }) {
 		s.Layers = append(s.Layers, Layer{ID: otherLayer, Title: "Unclassified", Hint: "packages not yet assigned a layer in walkthrough.json"})
 	}
 	s.TotalLOC = 0
