@@ -22,7 +22,7 @@ For guidance, refer to the following resources:
 
 - [Effective Go](https://go.dev/doc/effective_go): The canonical guide to
   writing idiomatic Go code.
-- [Code Review Principles](code-review-principles.md): Key code review feedback
+- [Code Review Principles](/doc/code-review-principles.md): Key code review feedback
   and recurring conventions from maintainers.
 - [Go Code Review Comments](styleguide/go-code-review-comments.md): Common
   feedback and best practices used in Go code reviews.
