@@ -52,10 +52,11 @@ const otherLayer = "other"
 type Site struct {
 	Title         string        `json:"title"`
 	Subtitle      string        `json:"subtitle,omitempty"`
-	SHA           string        `json:"sha,omitempty"`      // computed unless given
-	ShortSHA      string        `json:"shortSha,omitempty"` // computed
-	Repo          string        `json:"repo,omitempty"`     // computed from module path unless given
-	GitRef        string        `json:"gitRef,omitempty"`
+	Focus         string        `json:"focus,omitempty"`     // set for a single-subsystem request; silences completeness warnings
+	SHA           string        `json:"sha,omitempty"`       // computed unless given
+	ShortSHA      string        `json:"shortSha,omitempty"`  // computed
+	Repo          string        `json:"repo,omitempty"`      // computed from module path unless given
+	GitRef        string        `json:"gitRef,omitempty"`    // defaults to SHA so links match the commit described
 	Module        string        `json:"module,omitempty"`    // computed
 	GoVersion     string        `json:"goVersion,omitempty"` // computed
 	TotalLOC      int           `json:"totalLoc,omitempty"`  // computed
@@ -409,7 +410,23 @@ func merge(s *Site, f *facts) {
 		s.Repo = repoFromModule(f.module)
 	}
 	if s.GitRef == "" {
+		s.GitRef = s.SHA
+	}
+	if s.GitRef == "" {
 		s.GitRef = "main"
+		fmt.Fprintln(os.Stderr, "warning: no commit found; GitHub links point at main")
+	}
+	// A whole-architecture walkthrough has flows, guides and findings. A
+	// request about one subsystem sets focus and may omit them.
+	if s.Focus == "" {
+		for _, sec := range []struct {
+			name string
+			n    int
+		}{{"flows", len(s.Flows)}, {"guides", len(s.Guides)}, {"findings", len(s.Findings)}} {
+			if sec.n == 0 {
+				fmt.Fprintf(os.Stderr, "warning: no %s; a whole-architecture walkthrough needs them (set focus for a single-subsystem request)\n", sec.name)
+			}
+		}
 	}
 	seen := map[string]bool{}
 	for i := range s.Pkgs {
@@ -480,7 +497,7 @@ func validate(s *Site, f *facts) []string {
 		add("repo %q must look like org/name", s.Repo)
 	}
 	if !gitRefRe.MatchString(s.GitRef) || strings.Contains(s.GitRef, "..") {
-		add("gitRef %q must be a plain branch or tag name", s.GitRef)
+		add("gitRef %q must be a plain branch, tag or commit", s.GitRef)
 	}
 	unique := func(kind string) func(id string) {
 		seen := map[string]bool{}
