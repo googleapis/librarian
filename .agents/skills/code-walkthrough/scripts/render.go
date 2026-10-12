@@ -20,9 +20,9 @@
 //
 // Usage:
 //
-//	go run .agents/skills/walkthrough/scripts/render.go -init -out walkthrough.json
-//	go run .agents/skills/walkthrough/scripts/render.go -in walkthrough.json -out walkthrough.html
-//	go run .agents/skills/walkthrough/scripts/render.go -in walkthrough.json -check
+//	go run .agents/skills/code-walkthrough/scripts/render.go -init -out walkthrough.json
+//	go run .agents/skills/code-walkthrough/scripts/render.go -in walkthrough.json -out walkthrough.html
+//	go run .agents/skills/code-walkthrough/scripts/render.go -in walkthrough.json -check
 package main
 
 import (
