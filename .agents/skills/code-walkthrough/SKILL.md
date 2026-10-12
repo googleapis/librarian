@@ -37,8 +37,9 @@ code is computed by the renderer and cannot be typed by hand:
 2. **Read before you write.** Open the packages and files relevant to the
    request. Do not describe code you have not read in this session; do not
    reuse text from an earlier walkthrough. Package doc comments are usually the
-   best one-line description; if one is missing or wrong, fix the comment in
-   the package (that helps godoc too) rather than only overriding `desc`.
+   best one-line description; if one is missing or wrong, override `desc` and
+   report it as a finding. This task is read-only: do not edit repository
+   files.
 
 3. **Decide the scope.** "Walk me through the code / the architecture" or any
    request that does not name one subsystem is a **whole-architecture**
@@ -65,15 +66,21 @@ code is computed by the renderer and cannot be typed by hand:
      for each follow the call chain from the handler: every stage is a
      function it calls, `where` cites that function's file, `out` says what
      exists afterwards. Each flow has `cmd`, `file`, `inputs`, `stages[]`.
-   - `guides`: multi-step deep dives, at least these for a whole-architecture
-     request:
-     1. how the core engine works end to end (the subsystem most packages
-        serve; pick it by fan-in in `-facts`);
-     2. how to add a new instance of the main extension point (whatever the
+   - `guides`: multi-step deep dives. A whole-architecture request has at
+     least these five, each a separate guide with its own id:
+     1. how the main command does its job end to end, from the handler to
+        the files it writes (in this repository: how `librarian generate`
+        produces a library);
+     2. how the engine that command delegates to turns its input into output,
+        stage by stage with the data structure between stages (here: how
+        sidekick turns an API spec into generated code). The engine is the
+        subsystem the main command spends its time in, not the most-imported
+        package; `-facts` fan-in finds leaf utilities, not engines;
+     3. how to add a new instance of the main extension point (whatever the
         `switch`/registry in the orchestration layer dispatches on: a
         language, provider, backend, format);
-     3. how to modify an existing instance of it;
-     4. when two mechanisms coexist for the same job (in-process vs external,
+     4. how to modify an existing instance of it;
+     5. when two mechanisms coexist for the same job (in-process vs external,
         old vs new path), how they compare and when to use which.
      A how-to guide shows code: for each step, quote the smallest real example
      in the checkout (a sample or the simplest existing implementation) in
@@ -89,7 +96,7 @@ code is computed by the renderer and cannot be typed by hand:
      first time a term appears ("annotating: storing a per-language struct in
      each node's `Codec` field for templates to read").
    - `findings`: 3–6 short observations a reader should know before changing
-     code: conventions that are not enforced, duplicated logic, a package that
+     code (more when the user asks for full detail): conventions that are not enforced, duplicated logic, a package that
      every other one imports, a hook only some instances implement. Only
      claims you verified in this session.
    - `langCols` / `langs`: required when the repository has one package per
@@ -114,23 +121,64 @@ code is computed by the renderer and cannot be typed by hand:
 
    Common errors: a cited path that does not exist, a `pkg` that is not a Go
    package, an unknown field name (typo), a layer id used by a package but not
-   declared. Packages missing from the JSON, or still on the skeleton's
-   `other` layer, are not an error; they appear under "Unclassified" with a
-   warning each, so assign them.
+   declared, a step title that numbers itself. Warnings (a package still on
+   the skeleton's `other` layer, a missing section without `focus`) do not
+   stop rendering, but `-check` exits non-zero while any remain.
 
 6. **Surface it.** In Jetski, copy `walkthrough.html` into the artifact
    directory and register it with `UserFacing: true` so it previews in-pane.
    Elsewhere, tell the user to open it in a browser. Offer the next step: a
    deeper guide on one area, which is an edit to the JSON and a re-render.
 
+## JSON reference
+
+One compact example per section. Fields not shown are optional; unknown
+fields are errors. `body`, `desc`, `detail`, `where`, `inputs[]` and `cells`
+values are HTML (see allowed markup); every other string is plain text.
+
+```jsonc
+{
+  "title": "…", "subtitle": "…", "focus": "",            // focus only for a single-subsystem request
+  "defaultPkg": "internal/foo",                           // map selects this first
+  "layers": [{"id": "entry", "title": "Entry points", "hint": "process start"}],
+  "pkgs":   [{"id": "cmd/foo", "layer": "entry", "side": "", "desc": "<p>…</p>"}],
+  "steps":  [{"t": "One binary, one YAML file", "body": "<p>…</p>",
+              "look": ["cmd/foo/main.go"], "pkg": "cmd/foo"}],
+  "flows":  [{"id": "generate", "title": "foo generate", "cmd": "foo generate LIB",
+              "file": "internal/foo/generate.go", "pkg": "internal/foo",
+              "inputs": ["<a data-src=\"foo.yaml\">foo.yaml</a>"],
+              "stages": [{"title": "Load config", "where": "<a data-src=\"internal/foo/config.go\">config.go</a>",
+                          "body": "<p>…</p>", "out": "*config.Config in memory"}]}],
+  "guides": [{"id": "new-target", "title": "Adding a target", "subtitle": "…",
+              "audience": "Target authors",                // shown above the title
+              "steps": [{"t": "Declare the target", "runs": "Schema",   // shown as "Stage:"
+                         "code": "internal/config/",                    // shown as "Code:"
+                         "body": "<p>…</p><pre><code>…</code></pre>",
+                         "look": ["internal/config/target.go"], "pkg": "internal/config"}]}],
+  "findings": [{"t": "Layering is a convention", "b": "<p>…</p>", "f": "AGENTS.md", "pkg": ""}],
+  "langCols": [{"key": "gen", "title": "Generator"}],
+  "langs":    [{"n": "Go", "pkg": "internal/foo/golang", "cells": {"gen": "protoc plugin"},
+                "detail": "<p>…</p>"}],                    // "·" or "" renders as a muted dash
+  "contractCols":  ["Go", "Rust"],
+  "contractHooks": [{"hook": "Generate", "caller": "generate.go", "cells": ["✓", "✓"]}],
+  "gitRef": ""                                             // defaults to the commit
+}
+```
+
+Computed on output and ignored on input: `sha`, `shortSha`, `repo`, `module`,
+`goVersion`, `totalLoc`, `pkgs[].loc`, `pkgs[].imports`, `pkgs[].files`,
+`langs[].loc`, `cited`.
+
 ## Citing code
 
 Link files and directories from any `body`, `desc`, `where`, `detail` or
 language `cells` value with
 `<a data-src="internal/foo/bar.go">bar.go</a>` (directories end in `/`). The
-renderer fails if the path does not exist; the page shows the path, its owning
-package and a GitHub link. Cite the exact file a sentence is about, not the
-package root.
+renderer fails if the path does not exist, whatever quoting or casing the
+attribute uses, and the page itself turns any `data-src` it did not validate
+into plain text. The modal shows the path, its owning package, that package's
+files and a GitHub link pinned to the commit. Cite the exact file a sentence
+is about, not the package root.
 
 ## Allowed markup
 
@@ -145,7 +193,8 @@ attribute kept is `data-src`; `href`, `class`, `id`, `style` and event handlers
 are stripped. Titles (`t`, `title`, `subtitle`, `audience`, `runs`, `code`,
 `cmd`, `out`) are plain text: no HTML and no Markdown (backticks will show
 literally). The renderer HTML-escapes the JSON payload, so content cannot
-break out of the page's data block.
+break out of the page's data block, and the page's CSP allows only the
+template's own script by hash.
 
 ## Checks before you hand it over
 
@@ -165,6 +214,7 @@ break out of the page's data block.
 ├── SKILL.md                this file
 └── scripts/
     ├── render.go           go list facts + validation + HTML output
+    ├── render_test.go      validation, merge and -init/-check round-trip tests
     └── template.html       static page embedded into render.go; fills the {{.JSON}} slot
 ```
 
