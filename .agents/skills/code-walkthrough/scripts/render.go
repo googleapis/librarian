@@ -461,9 +461,10 @@ func merge(s *Site, f *facts) {
 }
 
 var (
-	dataSrcRe = regexp.MustCompile(`data-src="([^"]+)"`)
-	repoRe    = regexp.MustCompile(`^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$`)
-	gitRefRe  = regexp.MustCompile(`^[A-Za-z0-9_./-]+$`)
+	dataSrcRe  = regexp.MustCompile(`data-src="([^"]+)"`)
+	repoRe     = regexp.MustCompile(`^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$`)
+	gitRefRe   = regexp.MustCompile(`^[A-Za-z0-9_./-]+$`)
+	numberedRe = regexp.MustCompile(`^\s*(\d+|[A-Za-z])[.):]\s`)
 )
 
 // validate returns every problem at once so an agent can fix them in one pass.
@@ -546,11 +547,17 @@ func validate(s *Site, f *facts) []string {
 	for _, p := range s.Pkgs {
 		citeHTML("pkgs."+p.ID+".desc", p.Desc)
 	}
+	title := func(where, t string) {
+		if numberedRe.MatchString(t) {
+			add("%s title %q starts with a number; the page numbers steps itself", where, t)
+		}
+	}
 	for i, st := range s.Steps {
 		w := fmt.Sprintf("steps[%d]", i)
 		if st.Title == "" || st.Body == "" {
 			add("%s needs t and body", w)
 		}
+		title(w, st.Title)
 		citeHTML(w, st.Body)
 		for _, l := range st.Look {
 			cite(w+".look", l)
@@ -569,6 +576,7 @@ func validate(s *Site, f *facts) []string {
 			if stg.Title == "" || stg.Body == "" {
 				add("%s.stages[%d] needs title and body", w, j)
 			}
+			title(fmt.Sprintf("%s.stages[%d]", w, j), stg.Title)
 			citeHTML(w, stg.Where)
 			citeHTML(w, stg.Body)
 		}
@@ -584,6 +592,7 @@ func validate(s *Site, f *facts) []string {
 			if st.Title == "" || st.Body == "" {
 				add("%s needs t and body", sw)
 			}
+			title(sw, st.Title)
 			citeHTML(sw, st.Body)
 			for _, l := range st.Look {
 				cite(sw+".look", l)

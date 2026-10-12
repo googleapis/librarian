@@ -48,11 +48,23 @@ code is computed by the renderer and cannot be typed by hand:
    - `steps`: the guided tour, 6–12 steps for a whole-architecture request, or
      3–6 focused on the subsystem the user asked about. Each step has `t`,
      `body` (HTML, see allowed markup below), `look` (files to read) and
-     usually `pkg`.
+     usually `pkg`. Titles are plain phrases; the page numbers steps, so a
+     title that starts with its own ordinal is rejected.
    - `flows`: only when the request is about a command's execution; each has
      `cmd`, `file`, `inputs`, `stages[]` with `where`/`body`/`out`.
    - `guides`: multi-step deep dives ("how to add X", "how Y works"). This is
-     where a request like "walk me through LRO handling" belongs.
+     where a request like "walk me through LRO handling" belongs. A how-to
+     guide shows code: for each step, quote the smallest real example in the
+     checkout (a sample or the simplest existing implementation) in
+     `<pre><code>`, 5–20 lines, with `<` and `&` escaped, directly after a
+     link to the file it came from. Trim with a `// ...` line rather than
+     paraphrasing. Never show code that is not in the checkout; if the reader
+     must adapt it, say what to rename.
+   - Write for someone who has not opened the package. Name the type and field
+     ("the `Services`, `Messages` and `Enums` slices of `api.API`"), not a
+     shorthand ("walk model.Services"), and say what an operation does the
+     first time a term appears ("annotating: storing a per-language struct in
+     each node's `Codec` field for templates to read").
    - `findings`: short observations a reader should know before changing code.
      Only claims you verified in this session.
    - `langCols` / `langs`: optional per-language table. `langCols` names the
