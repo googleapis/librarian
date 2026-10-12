@@ -28,7 +28,9 @@ package main
 import (
 	"bytes"
 	"context"
+	"crypto/sha256"
 	_ "embed"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"flag"
@@ -71,23 +73,28 @@ type Site struct {
 	ContractCols  []string      `json:"contractCols,omitempty"`
 	ContractHooks []ContractRow `json:"contractHooks,omitempty"`
 	DefaultPkg    string        `json:"defaultPkg,omitempty"`
+	Cited         []string      `json:"cited,omitempty"` // computed: every validated path; the page drops data-src values not in it
 }
 
+// Layer is one horizontal band of the architecture map, top to bottom.
 type Layer struct {
 	ID    string `json:"id"`
 	Title string `json:"title"`
 	Hint  string `json:"hint,omitempty"`
 }
 
+// Pkg is one Go package in the module. Only Layer, Side and Desc are authored.
 type Pkg struct {
 	ID      string   `json:"id"`
 	Layer   string   `json:"layer"`
 	Side    string   `json:"side,omitempty"`
 	Desc    string   `json:"desc,omitempty"`
-	LOC     int      `json:"loc"`     // computed
-	Imports []string `json:"imports"` // computed
+	LOC     int      `json:"loc"`             // computed
+	Imports []string `json:"imports"`         // computed
+	Files   []string `json:"files,omitempty"` // computed: non-test Go files
 }
 
+// Step is one stop on the guided tour.
 type Step struct {
 	Title string   `json:"t"`
 	Body  string   `json:"body"`
@@ -95,6 +102,7 @@ type Step struct {
 	Pkg   string   `json:"pkg,omitempty"`
 }
 
+// Flow traces one CLI command from invocation to its effects.
 type Flow struct {
 	ID     string      `json:"id"`
 	Title  string      `json:"title"`
@@ -105,6 +113,7 @@ type Flow struct {
 	Stages []FlowStage `json:"stages"`
 }
 
+// FlowStage is one function-level stop in a Flow.
 type FlowStage struct {
 	Title string `json:"title"`
 	Where string `json:"where"`
@@ -112,6 +121,7 @@ type FlowStage struct {
 	Out   string `json:"out,omitempty"`
 }
 
+// Guide is a multi-step deep dive into one subsystem or task.
 type Guide struct {
 	ID       string      `json:"id"`
 	Title    string      `json:"title"`
@@ -120,6 +130,8 @@ type Guide struct {
 	Steps    []GuideStep `json:"steps"`
 }
 
+// GuideStep is one step of a Guide; Runs and Code are short labels shown
+// beside the title ("Stage:" and "Code:").
 type GuideStep struct {
 	Title string   `json:"t"`
 	Runs  string   `json:"runs,omitempty"`
@@ -129,6 +141,7 @@ type GuideStep struct {
 	Pkg   string   `json:"pkg,omitempty"`
 }
 
+// Finding is a short observation a reader should know before changing code.
 type Finding struct {
 	Title string `json:"t"`
 	Body  string `json:"b"`
@@ -143,6 +156,7 @@ type LangCol struct {
 	Title string `json:"title"`
 }
 
+// Lang is one row of the per-target table; cells are keyed by LangCol.Key.
 type Lang struct {
 	Name   string            `json:"n"`
 	Pkg    string            `json:"pkg"`
@@ -151,10 +165,24 @@ type Lang struct {
 	LOC    int               `json:"loc"` // computed from Pkg
 }
 
+// ContractRow is one exported hook in the hooks matrix, with one cell per
+// contractCols entry ("·" or "" renders muted).
 type ContractRow struct {
 	Hook   string   `json:"hook"`
 	Caller string   `json:"caller,omitempty"`
 	Cells  []string `json:"cells"`
+}
+
+// warnOut receives non-fatal findings about the JSON; -check fails if any
+// were emitted, so an agent cannot hand over a page with known gaps.
+var (
+	warnOut  io.Writer = os.Stderr
+	warnings int
+)
+
+func warnf(format string, a ...any) {
+	warnings++
+	fmt.Fprintf(warnOut, "warning: "+format+"\n", a...)
 }
 
 func main() {
@@ -202,6 +230,9 @@ func run(ctx context.Context, in, out, root, tmplPath string, initSkeleton, chec
 		return fmt.Errorf("%d problem(s) in %s:\n  - %s", len(errs), in, strings.Join(errs, "\n  - "))
 	}
 	if check {
+		if warnings > 0 {
+			return fmt.Errorf("%d warning(s) above; -check passes only when there are none", warnings)
+		}
 		fmt.Printf("ok: %d packages, %d layers, %d tour steps, %d flows, %d guides at %s\n",
 			len(site.Pkgs), len(site.Layers), len(site.Steps), len(site.Flows), len(site.Guides), site.ShortSHA)
 		return nil
@@ -222,6 +253,7 @@ func run(ctx context.Context, in, out, root, tmplPath string, initSkeleton, chec
 		return err
 	}
 	html := bytes.Replace(tmpl, []byte("{{.JSON}}"), payload, 1)
+	html = pinScripts(html)
 	if out == "" {
 		out = "walkthrough.html"
 	}
@@ -238,6 +270,34 @@ type facts struct {
 	pkgs                         map[string]*Pkg // keyed by module-relative ID, in go list order
 	order                        []string
 	docs                         map[string]string
+}
+
+var (
+	scriptRe   = regexp.MustCompile(`(?s)<script(\s[^>]*)?>(.*?)</script>`)
+	jsonTypeRe = regexp.MustCompile(`(?i)type\s*=\s*["']?application/json`)
+)
+
+// pinScripts replaces script-src 'unsafe-inline' in the page's CSP with the
+// sha256 of each executable inline script, so only the template's own code
+// can run. Data blocks (type="application/json") are not scripts and are
+// skipped. Templates without that exact CSP token are left unchanged.
+func pinScripts(html []byte) []byte {
+	const token = "script-src 'unsafe-inline'"
+	if !bytes.Contains(html, []byte(token)) {
+		return html
+	}
+	var hashes []string
+	for _, m := range scriptRe.FindAllSubmatch(html, -1) {
+		if jsonTypeRe.Match(m[1]) {
+			continue
+		}
+		sum := sha256.Sum256(m[2])
+		hashes = append(hashes, "'sha256-"+base64.StdEncoding.EncodeToString(sum[:])+"'")
+	}
+	if len(hashes) == 0 {
+		return html
+	}
+	return bytes.Replace(html, []byte(token), []byte("script-src "+strings.Join(hashes, " ")), 1)
 }
 
 // factPkg is one package in the -facts output.
@@ -330,7 +390,7 @@ func loadFacts(ctx context.Context, root string) (*facts, error) {
 		if imports == nil {
 			imports = []string{}
 		}
-		f.pkgs[id] = &Pkg{ID: id, LOC: loc, Imports: imports}
+		f.pkgs[id] = &Pkg{ID: id, LOC: loc, Imports: imports, Files: slices.Clone(p.GoFiles)}
 		f.docs[id] = p.Doc
 		f.order = append(f.order, id)
 	}
@@ -414,7 +474,7 @@ func merge(s *Site, f *facts) {
 	}
 	if s.GitRef == "" {
 		s.GitRef = "main"
-		fmt.Fprintln(os.Stderr, "warning: no commit found; GitHub links point at main")
+		warnf("no commit found; GitHub links point at main")
 	}
 	// A whole-architecture walkthrough has flows, guides and findings. A
 	// request about one subsystem sets focus and may omit them.
@@ -424,7 +484,7 @@ func merge(s *Site, f *facts) {
 			n    int
 		}{{"flows", len(s.Flows)}, {"guides", len(s.Guides)}, {"findings", len(s.Findings)}} {
 			if sec.n == 0 {
-				fmt.Fprintf(os.Stderr, "warning: no %s; a whole-architecture walkthrough needs them (set focus for a single-subsystem request)\n", sec.name)
+				warnf("no %s; a whole-architecture walkthrough needs them (set focus for a single-subsystem request)", sec.name)
 			}
 		}
 	}
@@ -433,7 +493,7 @@ func merge(s *Site, f *facts) {
 		p := &s.Pkgs[i]
 		seen[p.ID] = true
 		if fp, ok := f.pkgs[p.ID]; ok {
-			p.LOC, p.Imports = fp.LOC, fp.Imports
+			p.LOC, p.Imports, p.Files = fp.LOC, fp.Imports, fp.Files
 		}
 		if p.Imports == nil {
 			p.Imports = []string{}
@@ -445,7 +505,7 @@ func merge(s *Site, f *facts) {
 	for _, id := range f.order {
 		if !seen[id] {
 			fp := f.pkgs[id]
-			s.Pkgs = append(s.Pkgs, Pkg{ID: id, Layer: otherLayer, Desc: f.docs[id], LOC: fp.LOC, Imports: fp.Imports})
+			s.Pkgs = append(s.Pkgs, Pkg{ID: id, Layer: otherLayer, Desc: f.docs[id], LOC: fp.LOC, Imports: fp.Imports, Files: fp.Files})
 		}
 	}
 	// The skeleton and any omitted package land in "other"; declare the layer
@@ -455,7 +515,7 @@ func merge(s *Site, f *facts) {
 	for _, p := range s.Pkgs {
 		if p.Layer == otherLayer {
 			usesOther = true
-			fmt.Fprintf(os.Stderr, "warning: %s has no layer; shown as Unclassified\n", p.ID)
+			warnf("%s has no layer; shown as Unclassified", p.ID)
 		}
 	}
 	if usesOther && !slices.ContainsFunc(s.Layers, func(l Layer) bool { return l.ID == otherLayer }) {
@@ -478,13 +538,14 @@ func merge(s *Site, f *facts) {
 }
 
 var (
-	dataSrcRe  = regexp.MustCompile(`data-src="([^"]+)"`)
+	dataSrcRe  = regexp.MustCompile(`(?i)data-src\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'>]+))`)
 	repoRe     = regexp.MustCompile(`^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$`)
 	gitRefRe   = regexp.MustCompile(`^[A-Za-z0-9_./-]+$`)
-	numberedRe = regexp.MustCompile(`^\s*(\d+|[A-Za-z])[.):]\s`)
+	numberedRe = regexp.MustCompile(`(?i)^\s*(?:step\s+)?(\d+|[a-z])[.):]\s`)
 )
 
 // validate returns every problem at once so an agent can fix them in one pass.
+// As a side effect it records every cited path in s.Cited.
 func validate(s *Site, f *facts) []string {
 	var errs []string
 	add := func(format string, a ...any) { errs = append(errs, fmt.Sprintf(format, a...)) }
@@ -558,7 +619,12 @@ func validate(s *Site, f *facts) []string {
 	}
 	citeHTML := func(where, html string) {
 		for _, m := range dataSrcRe.FindAllStringSubmatch(html, -1) {
-			cite(where, m[1])
+			p := m[1] + m[2] + m[3] // exactly one group matches
+			if p == "" {
+				add("%s has a data-src with an empty path", where)
+				continue
+			}
+			cite(where, p)
 		}
 	}
 	for _, p := range s.Pkgs {
@@ -622,6 +688,7 @@ func validate(s *Site, f *facts) []string {
 		if fn.Title == "" || fn.Body == "" {
 			add("%s needs t and b", w)
 		}
+		title(w, fn.Title)
 		cite(w+".f", fn.File)
 		citeHTML(w, fn.Body)
 		checkPkg(w+".pkg", fn.Pkg)
@@ -667,6 +734,7 @@ func validate(s *Site, f *facts) []string {
 		cited = append(cited, p)
 	}
 	slices.Sort(cited)
+	s.Cited = cited // the page refuses any data-src outside this list
 	for _, p := range cited {
 		clean := strings.TrimSuffix(p, "/")
 		if clean == "" || filepath.IsAbs(clean) || strings.HasPrefix(clean, "../") || clean == ".." || strings.Contains(clean, "/../") {

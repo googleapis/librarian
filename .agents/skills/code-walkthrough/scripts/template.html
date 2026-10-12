@@ -22,27 +22,30 @@
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; base-uri 'none'; form-action 'none';">
   <title>Architecture walkthrough</title>
   <style>
-:root{color-scheme:light dark;--background:#ffffff;--card:#f8fafc;--foreground:#0f172a;--muted-foreground:#64748b;--border:#e2e8f0;--primary:#2563eb;--primary-foreground:#ffffff}
-@media (prefers-color-scheme:dark){:root{--background:#0b1220;--card:#121b2f;--foreground:#e5e7eb;--muted-foreground:#9aa7b8;--border:#263247;--primary:#60a5fa;--primary-foreground:#0b1220}}
-:root[data-theme="light"]{color-scheme:light;--background:#ffffff;--card:#f8fafc;--foreground:#0f172a;--muted-foreground:#64748b;--border:#e2e8f0;--primary:#2563eb;--primary-foreground:#ffffff}
-:root[data-theme="dark"]{color-scheme:dark;--background:#0b1220;--card:#121b2f;--foreground:#e5e7eb;--muted-foreground:#9aa7b8;--border:#263247;--primary:#60a5fa;--primary-foreground:#0b1220}
+:root{color-scheme:light dark;--background:#ffffff;--card:#f8fafc;--foreground:#0f172a;--muted-foreground:#64748b;--border:#e2e8f0;--primary:#2563eb;--primary-foreground:#ffffff;--ok:#047857;--warn:#b45309}
+@media (prefers-color-scheme:dark){:root{--background:#0b1220;--card:#121b2f;--foreground:#e5e7eb;--muted-foreground:#9aa7b8;--border:#263247;--primary:#60a5fa;--primary-foreground:#0b1220;--ok:#10b981;--warn:#f59e0b}}
+:root[data-theme="light"]{color-scheme:light;--background:#ffffff;--card:#f8fafc;--foreground:#0f172a;--muted-foreground:#64748b;--border:#e2e8f0;--primary:#2563eb;--primary-foreground:#ffffff;--ok:#047857;--warn:#b45309}
+:root[data-theme="dark"]{color-scheme:dark;--background:#0b1220;--card:#121b2f;--foreground:#e5e7eb;--muted-foreground:#9aa7b8;--border:#263247;--primary:#60a5fa;--primary-foreground:#0b1220;--ok:#10b981;--warn:#f59e0b}
 *,::before,::after{box-sizing:border-box;border-width:0;border-style:solid;border-color:var(--border)}
 html{line-height:1.5;-webkit-text-size-adjust:100%;font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;background:var(--background)}
 body{margin:0;line-height:inherit}h1,h2,h3,h4,p{margin:0;font-size:inherit;font-weight:inherit}ol,ul{list-style:none;margin:0;padding:0}
 a{color:inherit;text-decoration:inherit}button,input,textarea{font:inherit;color:inherit;margin:0;padding:0}button{background:transparent;cursor:pointer}
 button:disabled{opacity:.4;cursor:not-allowed}
 code,pre,textarea.mono{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono","Courier New",monospace}table{border-collapse:collapse;border-color:inherit;text-indent:0}svg{display:block}
-.fixed{position:fixed}.absolute{position:absolute}.relative{position:relative}.inset-0{inset:0}.hidden{display:none !important}.flex{display:flex}.inline-flex{display:inline-flex}.inline-block{display:inline-block}.grid{display:grid}.flex-col{flex-direction:column}.flex-wrap{flex-wrap:wrap}.items-center{align-items:center}.items-baseline{align-items:baseline}.items-end{align-items:flex-end}.justify-between{justify-content:space-between}.self-start{align-self:start}.gap-1{gap:.25rem}.gap-2{gap:.5rem}.gap-3{gap:.75rem}.gap-4{gap:1rem}.w-3{width:.75rem}.h-3{height:.75rem}.w-full{width:100%}.h-full{height:100%}.max-w-7xl{max-width:80rem}.mx-auto{margin-left:auto;margin-right:auto}.ml-auto{margin-left:auto}.mb-1{margin-bottom:.25rem}.mb-2{margin-bottom:.5rem}.mb-3{margin-bottom:.75rem}.mb-4{margin-bottom:1rem}.mr-1{margin-right:.25rem}.mr-2{margin-right:.5rem}.mt-1{margin-top:.25rem}.mt-2{margin-top:.5rem}.mt-3{margin-top:.75rem}.mt-4{margin-top:1rem}.p-1{padding:.25rem}.p-2{padding:.5rem}.p-3{padding:.75rem}.p-4{padding:1rem}.p-5{padding:1.25rem}.pl-5{padding-left:1.25rem}.pt-3{padding-top:.75rem}.px-1\.5{padding-left:.375rem;padding-right:.375rem}.px-2\.5{padding-left:.625rem;padding-right:.625rem}.px-3{padding-left:.75rem;padding-right:.75rem}.px-5{padding-left:1.25rem;padding-right:1.25rem}.py-0\.5{padding-top:.125rem;padding-bottom:.125rem}.py-1{padding-top:.25rem;padding-bottom:.25rem}.py-1\.5{padding-top:.375rem;padding-bottom:.375rem}.py-5{padding-top:1.25rem;padding-bottom:1.25rem}.border{border-width:1px}.border-t{border-top-width:1px}.border-b{border-bottom-width:1px}.border-\[var\(--border\)\]{border-color:var(--border)}.rounded-sm{border-radius:.125rem}.rounded-md{border-radius:.375rem}.rounded-lg{border-radius:.5rem}.rounded-xl{border-radius:.75rem}.bg-\[var\(--background\)\]{background-color:var(--background)}.bg-\[var\(--card\)\]{background-color:var(--card)}.bg-\[var\(--primary\)\]{background-color:var(--primary)}.text-\[var\(--foreground\)\]{color:var(--foreground)}.text-\[var\(--muted-foreground\)\]{color:var(--muted-foreground)}.text-\[var\(--primary-foreground\)\]{color:var(--primary-foreground)}.text-xs{font-size:.75rem;line-height:1rem}.text-sm{font-size:.875rem;line-height:1.25rem}.text-base{font-size:1rem;line-height:1.5rem}.text-lg{font-size:1.125rem;line-height:1.75rem}.text-2xl{font-size:1.5rem;line-height:2rem}.font-normal{font-weight:400}.font-medium{font-weight:500}.font-semibold{font-weight:600}.leading-relaxed{line-height:1.625}.text-center{text-align:center}.text-left{text-align:left}.whitespace-nowrap{white-space:nowrap}.underline{text-decoration-line:underline}.underline-offset-2{text-underline-offset:2px}.list-disc{list-style-type:disc}.overflow-x-auto{overflow-x:auto}.pointer-events-none{pointer-events:none}.antialiased{-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}.hover\:border-\[var\(--primary\)\]:hover{border-color:var(--primary)}
+.fixed{position:fixed}.absolute{position:absolute}.relative{position:relative}.inset-0{inset:0}.hidden{display:none !important}.flex{display:flex}.inline-flex{display:inline-flex}.inline-block{display:inline-block}.grid{display:grid}.flex-col{flex-direction:column}.flex-wrap{flex-wrap:wrap}.items-center{align-items:center}.items-baseline{align-items:baseline}.items-end{align-items:flex-end}.justify-between{justify-content:space-between}.self-start{align-self:start}.gap-1{gap:.25rem}.gap-2{gap:.5rem}.gap-3{gap:.75rem}.gap-4{gap:1rem}.w-3{width:.75rem}.h-3{height:.75rem}.w-full{width:100%}.h-full{height:100%}.max-w-7xl{max-width:80rem}.mx-auto{margin-left:auto;margin-right:auto}.ml-auto{margin-left:auto}.mb-1{margin-bottom:.25rem}.mb-2{margin-bottom:.5rem}.mb-3{margin-bottom:.75rem}.mb-4{margin-bottom:1rem}.mr-1{margin-right:.25rem}.mr-2{margin-right:.5rem}.mt-1{margin-top:.25rem}.mt-2{margin-top:.5rem}.mt-3{margin-top:.75rem}.mt-4{margin-top:1rem}.p-1{padding:.25rem}.p-2{padding:.5rem}.p-3{padding:.75rem}.p-4{padding:1rem}.p-5{padding:1.25rem}.pl-5{padding-left:1.25rem}.pt-3{padding-top:.75rem}.px-1\.5{padding-left:.375rem;padding-right:.375rem}.px-2\.5{padding-left:.625rem;padding-right:.625rem}.px-3{padding-left:.75rem;padding-right:.75rem}.px-5{padding-left:1.25rem;padding-right:1.25rem}.px-2{padding-left:.5rem;padding-right:.5rem}.px-4{padding-left:1rem;padding-right:1rem}.py-4{padding-top:1rem;padding-bottom:1rem}.pt-2{padding-top:.5rem}.gap-1\.5{gap:.375rem}.hover\:text-\[var\(--foreground\)\]:hover{color:var(--foreground)}.hover\:text-\[var\(--primary\)\]:hover{color:var(--primary)}.py-0\.5{padding-top:.125rem;padding-bottom:.125rem}.py-1{padding-top:.25rem;padding-bottom:.25rem}.py-1\.5{padding-top:.375rem;padding-bottom:.375rem}.py-5{padding-top:1.25rem;padding-bottom:1.25rem}.border{border-width:1px}.border-t{border-top-width:1px}.border-b{border-bottom-width:1px}.border-\[var\(--border\)\]{border-color:var(--border)}.rounded-sm{border-radius:.125rem}.rounded-md{border-radius:.375rem}.rounded-lg{border-radius:.5rem}.rounded-xl{border-radius:.75rem}.bg-\[var\(--background\)\]{background-color:var(--background)}.bg-\[var\(--card\)\]{background-color:var(--card)}.bg-\[var\(--primary\)\]{background-color:var(--primary)}.text-\[var\(--foreground\)\]{color:var(--foreground)}.text-\[var\(--muted-foreground\)\]{color:var(--muted-foreground)}.text-\[var\(--primary-foreground\)\]{color:var(--primary-foreground)}.text-xs{font-size:.75rem;line-height:1rem}.text-sm{font-size:.875rem;line-height:1.25rem}.text-base{font-size:1rem;line-height:1.5rem}.text-lg{font-size:1.125rem;line-height:1.75rem}.text-2xl{font-size:1.5rem;line-height:2rem}.font-normal{font-weight:400}.font-medium{font-weight:500}.font-semibold{font-weight:600}.leading-relaxed{line-height:1.625}.text-center{text-align:center}.text-left{text-align:left}.whitespace-nowrap{white-space:nowrap}.underline{text-decoration-line:underline}.underline-offset-2{text-underline-offset:2px}.list-disc{list-style-type:disc}.overflow-x-auto{overflow-x:auto}.pointer-events-none{pointer-events:none}.antialiased{-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}.hover\:border-\[var\(--primary\)\]:hover{border-color:var(--primary)}
 .space-y-1>:not([hidden])~:not([hidden]){margin-top:.25rem}.space-y-3>:not([hidden])~:not([hidden]){margin-top:.75rem}
 @media (min-width:768px){.md\:grid-cols-2{grid-template-columns:repeat(2,minmax(0,1fr))}.md\:grid-cols-\[2fr_1fr\]{grid-template-columns:2fr 1fr}}
+@media (min-width:640px){.sm\:px-5{padding-left:1.25rem;padding-right:1.25rem}.sm\:py-5{padding-top:1.25rem;padding-bottom:1.25rem}}
 @media (min-width:1024px){.lg\:grid-cols-\[minmax\(0\,1fr\)_340px\]{grid-template-columns:minmax(0,1fr) 340px}.lg\:grid-cols-\[260px_minmax\(0\,1fr\)\]{grid-template-columns:260px minmax(0,1fr)}.lg\:flex-col{flex-direction:column}.lg\:sticky{position:sticky}.lg\:top-4{top:1rem}.lg\:overflow-visible{overflow:visible}.lg\:whitespace-normal{white-space:normal}}
   </style>
   <style>
+    .layer-head > * { position: relative; z-index: 2; }
+    table.data-table td code, table.data-table th { white-space: nowrap; }
     .pkg { position: relative; z-index: 2; transition: opacity .15s ease, box-shadow .15s ease, border-color .15s ease; cursor: pointer; }
     .pkg.dim { opacity: .35; }
     .pkg.sel { box-shadow: 0 0 0 2px var(--primary); border-color: var(--primary); }
     .pkg.imp { border-color: var(--primary); background: color-mix(in srgb, var(--primary) 14%, transparent); }
-    .pkg.dep { border-color: #10b981; background: color-mix(in srgb, #10b981 14%, transparent); }
+    .pkg.dep { border-color: var(--ok); background: color-mix(in srgb, var(--ok) 14%, transparent); }
     .tab.active { background: var(--primary); color: var(--primary-foreground); }
     .chip { cursor: pointer; }
     .chip:hover { border-color: var(--primary); }
@@ -77,7 +80,7 @@ code,pre,textarea.mono{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Cons
     .flow-line-v { flex: 1; width: 2px; background: color-mix(in srgb, var(--primary) 45%, var(--border)); }
     .flow-card { border: 1px solid var(--border); border-radius: .65rem; padding: .75rem .9rem; background: var(--background); margin-bottom: .65rem; display: flex; flex-direction: column; gap: .35rem; }
     .flow-stage:last-child .flow-card { margin-bottom: 0; }
-    .flow-out { display: inline-flex; align-items: center; gap: .35rem; font-size: .72rem; padding: .15rem .55rem; border-radius: 9999px; border: 1px solid color-mix(in srgb, #10b981 45%, var(--border)); background: color-mix(in srgb, #10b981 10%, transparent); color: #10b981; font-weight: 500; align-self: flex-start; margin-top: .15rem; }
+    .flow-out { display: inline-flex; align-items: center; gap: .35rem; font-size: .72rem; padding: .15rem .55rem; border-radius: 9999px; border: 1px solid color-mix(in srgb, var(--ok) 45%, var(--border)); background: color-mix(in srgb, var(--ok) 10%, transparent); color: var(--ok); font-weight: 500; align-self: flex-start; margin-top: .15rem; }
     .badge { font-size: 11px; padding: .1rem .45rem; border-radius: .375rem; border: 1px solid var(--border); background: var(--background); }
     .prompt-box { margin-top: .65rem; padding: .6rem .75rem; border-radius: .5rem; border: 1px solid var(--primary); background: var(--background); font-size: .75rem; }
     .prompt-box textarea { width: 100%; border: 1px solid var(--border); border-radius: .375rem; padding: .4rem .5rem; background: var(--card); color: var(--foreground); resize: vertical; margin-top: .35rem; font-size: .75rem; line-height: 1.4; }
@@ -140,7 +143,7 @@ code,pre,textarea.mono{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Cons
       <div class="font-semibold mb-1">What this architecture map shows &amp; how to use it</div>
       <p class="text-[var(--muted-foreground)] leading-relaxed">
         <span id="mapIntro"></span>
-        <strong>Click any package card</strong> to draw dependency wires: <span style="color: var(--primary); font-weight: 500">blue lines</span> point to packages it directly <strong>imports</strong>, and <span style="color: #10b981; font-weight: 500">emerald lines</span> come from packages that <strong>import it</strong>.
+        <strong>Click any package card</strong> to draw dependency wires: <span style="color: var(--primary); font-weight: 500">blue lines</span> point to packages it directly <strong>imports</strong>, and <span style="color: var(--ok); font-weight: 500">emerald lines</span> come from packages that <strong>import it</strong>.
         Click the selected card again (or <em>Reset highlight</em>) to un-dim all cards.
       </p>
     </div>
@@ -149,7 +152,7 @@ code,pre,textarea.mono{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Cons
         <div class="flex flex-wrap items-center gap-3 text-xs text-[var(--muted-foreground)] mb-3">
           <span>Click a package card to inspect direct imports and dependents.</span>
           <span class="inline-flex items-center gap-1"><i class="inline-block w-3 h-3 rounded-sm border" style="border-color: var(--primary); background: color-mix(in srgb, var(--primary) 14%, transparent)"></i> imports (downstream)</span>
-          <span class="inline-flex items-center gap-1"><i class="inline-block w-3 h-3 rounded-sm border" style="border-color:#10b981; background: color-mix(in srgb, #10b981 14%, transparent)"></i> imported by (upstream)</span>
+          <span class="inline-flex items-center gap-1"><i class="inline-block w-3 h-3 rounded-sm border" style="border-color:var(--ok); background: color-mix(in srgb, var(--ok) 14%, transparent)"></i> imported by (upstream)</span>
           <div class="ml-auto flex items-center gap-3">
             <button id="resetMapSel" class="underline underline-offset-2 hover:text-[var(--foreground)]">Reset highlight</button>
             <label class="inline-flex items-center gap-1"><input type="checkbox" id="showDeps" checked> draw lines to dependents</label>
@@ -255,7 +258,10 @@ code,pre,textarea.mono{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Cons
 <script id="walkthrough-data" type="application/json">{{.JSON}}</script>
 <script>
 const DATA = JSON.parse(document.getElementById("walkthrough-data").textContent);
+const CITED = new Set(Array.isArray(DATA.cited) ? DATA.cited : []);
 const gh = p => `https://github.com/${DATA.repo}/${p === "" || p.endsWith("/") ? "tree" : "blob"}/${DATA.gitRef || "main"}/${p}`;
+
+const cssVar = name => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
 
 function escapeHTML(str) {
   return String(str ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
@@ -263,7 +269,10 @@ function escapeHTML(str) {
 
 function sanitizeHTML(raw) {
   const tpl = document.createElement("template");
-  tpl.innerHTML = String(raw ?? "");
+  // Chrome logs a CSP violation merely for parsing an inline handler, even
+  // into an inert template. Rename handler attributes first so the console
+  // stays clean; the DOM walk below is still what removes them.
+  tpl.innerHTML = String(raw ?? "").replace(/<[^>]*>/g, tag => tag.replace(/([\s"'/])on([a-z]+)(?=\s*=)/gi, "$1data-dropped-on$2"));
   // Formatting, lists, headings and tables. Anything else is either dropped
   // with its subtree (elements that can run script, load resources or
   // change document semantics) or unwrapped so its text still shows.
@@ -299,9 +308,16 @@ function sanitizeHTML(raw) {
           // round-trips through serialized HTML.
           if (tag === "A" && child.hasAttribute("data-src")) {
             const path = child.getAttribute("data-src");
-            child.setAttribute("href", "#src:" + encodeURIComponent(path));
-            child.className = "src";
-            if (!child.textContent.trim()) child.textContent = path;
+            // Defense in depth: the renderer validated every cited path and
+            // listed them in DATA.cited; anything else (an encoding the
+            // renderer's scan did not see) becomes plain text.
+            if (!CITED.has(path)) {
+              child.removeAttribute("data-src");
+            } else {
+              child.setAttribute("href", "#src:" + encodeURIComponent(path));
+              child.className = "src";
+              if (!child.textContent.trim()) child.textContent = path;
+            }
           }
           walk(child);
         }
@@ -370,7 +386,7 @@ function flashButton(btn, msg, ok = true) {
   const orig = btn.dataset.origLabel || btn.textContent;
   btn.dataset.origLabel = orig;
   btn.textContent = msg;
-  btn.style.borderColor = ok ? "#10b981" : "#f59e0b";
+  btn.style.borderColor = ok ? cssVar("--ok") : cssVar("--warn");
   clearTimeout(btn._timer);
   btn._timer = setTimeout(() => {
     btn.textContent = orig;
@@ -410,7 +426,7 @@ function copyPrompt(text, btn, hostEl) {
     const status = box && box.querySelector(".prompt-status");
     if (status) {
       status.textContent = ok ? "✓ Prompt copied to clipboard — paste into chat:" : "Clipboard unavailable — select and copy the text below:";
-      status.style.color = ok ? "#10b981" : "#f59e0b";
+      status.style.color = ok ? cssVar("--ok") : cssVar("--warn");
     }
   });
 }
@@ -447,8 +463,13 @@ function openSourceModal(relPath) {
   ghLink.classList.toggle("hidden", !DATA.repo);
 
   const pkg = activeModalPkg ? byId[activeModalPkg] : null;
+  const isPkgDir = pkg && (relPath === "" ? pkg.id === "." : relPath === pkg.id + "/");
+  const files = isPkgDir && Array.isArray(pkg.files) && pkg.files.length
+    ? `<div class="text-xs text-[var(--muted-foreground)] mt-3 mb-1">${plural(pkg.files.length, "non-test Go file")}</div>
+       <div class="flex flex-wrap gap-1">${pkg.files.map(f => src((pkg.id === "." ? "" : pkg.id + "/") + f, `<span class="badge">${escapeHTML(f)}</span>`)).join("")}</div>`
+    : "";
   document.getElementById("srcModalBody").innerHTML = pkg
-    ? `<div class="text-xs text-[var(--muted-foreground)] mb-1">Owned by <code>${escapeHTML(pkg.id)}</code> · ${(pkg.loc || 0).toLocaleString()} non-test lines</div><p>${hydrateLinks(pkg.desc)}</p>`
+    ? `<div class="text-xs text-[var(--muted-foreground)] mb-1">Owned by <code>${escapeHTML(pkg.id)}</code> · ${(pkg.loc || 0).toLocaleString()} non-test lines</div><p>${hydrateLinks(pkg.desc)}</p>${files}`
     : `<p class="text-[var(--muted-foreground)]">Open this path in your editor, or copy a prompt to have your agent walk you through it.</p>`;
   srcModal.classList.remove("hidden");
 }
@@ -544,7 +565,7 @@ function renderMap() {
     if (!pk.length) continue;
     const wrap = document.createElement("div");
     wrap.className = "border border-[var(--border)] rounded-xl p-3 bg-[var(--card)]";
-    wrap.innerHTML = `<div class="flex items-baseline gap-2 mb-2"><h3 class="font-semibold text-sm">${escapeHTML(L.title)}</h3><span class="text-xs text-[var(--muted-foreground)]">${escapeHTML(L.hint || "")}</span></div>`;
+    wrap.innerHTML = `<div class="layer-head flex items-baseline gap-2 mb-2"><h3 class="font-semibold text-sm">${escapeHTML(L.title)}</h3><span class="text-xs text-[var(--muted-foreground)]">${escapeHTML(L.hint || "")}</span></div>`;
     const sides = [...new Set(pk.map(p => p.side || ""))];
     if (sides.length > 1) {
       const grid = document.createElement("div");
@@ -646,7 +667,7 @@ function drawWires() {
   const mr = map.getBoundingClientRect();
   if (!mr.width || !mr.height) return;
   const primaryCol = getComputedStyle(document.documentElement).getPropertyValue("--primary").trim() || "#60a5fa";
-  const depCol = "#10b981";
+  const depCol = cssVar("--ok");
   svg.setAttribute("viewBox", `0 0 ${mr.width} ${mr.height}`);
   svg.innerHTML = `<defs>
     <marker id="arrI" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="${primaryCol}"/></marker>
@@ -710,6 +731,7 @@ function showStep(i) {
   document.getElementById("nextStep").textContent = step === DATA.steps.length - 1 ? "Back to start" : "Next →";
   const o = document.getElementById("openInMap");
   if (o) o.addEventListener("click", () => jumpToPkgInMap(s.pkg));
+  setRoute();
   document.getElementById("copyTourPrompt").addEventListener("click", e => {
     copyPrompt(`Walk me deeper through "${s.t}" in ${DATA.repo || DATA.module} (commit ${DATA.shortSha}), specifically looking at [${(s.look || []).join(", ")}].`, e.target, document.getElementById("tourPromptHost"));
   });
@@ -782,6 +804,7 @@ function showGuideStep(i) {
   document.getElementById("nextGuideStep").textContent = guideStep === g.steps.length - 1 ? "Back to step 1" : "Next →";
   const gm = document.getElementById("guideOpenInMap");
   if (gm) gm.addEventListener("click", () => jumpToPkgInMap(s.pkg));
+  setRoute();
   document.getElementById("copyGuidePrompt").addEventListener("click", e => {
     copyPrompt(`In guide "${g.title}" -> "${s.t}" (commit ${DATA.shortSha}), walk me through the code in [${(s.look || []).join(", ")}] with concrete examples.`, e.target, document.getElementById("guidePromptHost"));
   });
@@ -812,7 +835,7 @@ function renderFlows() {
   if (!DATA.flows.length) return;
   const tabs = document.getElementById("flowTabs");
   tabs.innerHTML = DATA.flows.map(f => `<button class="flow-tab border border-[var(--border)] rounded-lg px-3 py-1.5 text-sm ${f.id === flow ? "bg-[var(--primary)] text-[var(--primary-foreground)]" : ""}" data-f="${escapeHTML(f.id)}">${escapeHTML(f.title)}</button>`).join("");
-  tabs.querySelectorAll("button").forEach(b => b.addEventListener("click", () => { flow = b.dataset.f; renderFlows(); }));
+  tabs.querySelectorAll("button").forEach(b => b.addEventListener("click", () => { flow = b.dataset.f; renderFlows(); setRoute(); }));
   const f = DATA.flows.find(x => x.id === flow) || DATA.flows[0];
   const inputsHtml = (f.inputs || []).map(inp => `<span class="badge">${hydrateLinks(inp)}</span>`).join("");
   const stagesHtml = (f.stages || []).map((st, i) => {
@@ -873,7 +896,8 @@ function renderLanguages() {
         </div>
         <div class="lang-prompt-host"></div>
       </td></tr>`).join("")}</tbody>`;
-  t.querySelectorAll(".lang-row").forEach(r => r.addEventListener("click", () => {
+  t.querySelectorAll(".lang-row").forEach(r => r.addEventListener("click", e => {
+    if (e.target.closest("a, button")) return;
     const idx = r.dataset.i;
     const detailRow = t.querySelector(`.lang-detail[data-i="${idx}"]`);
     const hidden = detailRow.classList.toggle("hidden");
@@ -920,12 +944,22 @@ function renderFindings() {
 
 // ---------------------------------------------------------------- tabs
 let currentTab = "map";
+let routingReady = false; // setRoute is a no-op until initial rendering is done
 function showTab(id) {
   currentTab = id;
   document.querySelectorAll("section[id^=tab-]").forEach(s => s.classList.toggle("hidden", s.id !== "tab-" + id));
   document.querySelectorAll("#tabs .tab").forEach(b => b.classList.toggle("active", b.dataset.tab === id));
-  if (id === "map") requestAnimationFrame(() => selectPkg(selected || DATA.defaultPkg, false));
+  if (id === "map") {
+    if (!mapVisited) {
+      mapVisited = true;
+      requestAnimationFrame(() => selectPkg(DATA.defaultPkg, false));
+    } else {
+      requestAnimationFrame(drawWires);
+    }
+  }
+  setRoute();
 }
+let mapVisited = false;
 document.querySelectorAll("#tabs .tab").forEach(b => b.addEventListener("click", () => showTab(b.dataset.tab)));
 
 renderPaths();
@@ -936,7 +970,39 @@ renderGuide();
 renderFlows();
 renderLanguages();
 renderFindings();
-showTab(DATA.steps.length || DATA.guides.length ? "paths" : "map");
+
+// ---------------------------------------------------------------- deep links
+// #tab, #tour/N, #guides/<id>/N, #flows/<id>. Hash parts are only ever
+// compared against known ids or parsed as integers, never rendered.
+function setRoute() {
+  if (!routingReady) return;
+  let r = currentTab;
+  if (currentTab === "tour" && DATA.steps.length) r += "/" + (step + 1);
+  else if (currentTab === "guides" && DATA.guides.length) r += "/" + encodeURIComponent(DATA.guides[activeGuide].id) + "/" + (guideStep + 1);
+  else if (currentTab === "flows" && flow) r += "/" + encodeURIComponent(flow);
+  if (location.hash.slice(1) === r) return;
+  try { history.replaceState(null, "", "#" + r); } catch (_) { location.replace("#" + r); }
+}
+function applyRoute() {
+  let parts;
+  try { parts = location.hash.slice(1).split("/").map(decodeURIComponent); } catch (_) { return false; }
+  const tab = parts[0];
+  const btn = document.querySelector(`#tabs .tab[data-tab="${CSS.escape(tab)}"]`);
+  if (!tab || !btn || btn.classList.contains("hidden")) return false;
+  const n = v => Math.max(0, (parseInt(v, 10) || 1) - 1);
+  if (tab === "guides" && DATA.guides.length) {
+    const gi = DATA.guides.findIndex(g => g.id === parts[1]);
+    if (gi >= 0) { activeGuide = gi; guideStep = n(parts[2]); renderGuide(); }
+  } else if (tab === "flows" && DATA.flows.length && DATA.flows.some(f => f.id === parts[1])) {
+    flow = parts[1]; renderFlows();
+  }
+  showTab(tab);
+  if (tab === "tour" && DATA.steps.length) showStep(n(parts[1]));
+  return true;
+}
+window.addEventListener("hashchange", applyRoute);
+routingReady = true;
+if (!applyRoute()) showTab(DATA.steps.length || DATA.guides.length ? "paths" : "map");
 </script>
 </body>
 </html>
