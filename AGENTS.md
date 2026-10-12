@@ -41,6 +41,7 @@ Before submitting changes, run the full test suite:
 ## Additional Context
 
  @doc/howwewritego.md
+ @doc/code-review-principles.md
  @doc/styleguide/markdown-style-guide.md
  @CONTRIBUTING.md
 
