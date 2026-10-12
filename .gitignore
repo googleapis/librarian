@@ -60,6 +60,6 @@ go.work.sum
 # Local bin directory (for local dev)
 /bin/
 
-# Output of the walkthrough skill (.agents/skills/walkthrough)
+# Output of the code-walkthrough skill (.agents/skills/code-walkthrough)
 /walkthrough.html
 /walkthrough.json

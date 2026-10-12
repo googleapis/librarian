@@ -1,9 +1,9 @@
 ---
-name: walkthrough
+name: code-walkthrough
 description: Produces a self-contained interactive HTML architecture walkthrough (dependency map, guided tour, command flows, guides) for this repository at the current commit. Use when asked to "walk me through the code", explain the architecture or a subsystem, or build a guide for modifying or extending a part of the codebase. The narrative is written fresh against the checkout; the facts (packages, imports, line counts) are computed.
 ---
 
-# Walkthrough
+# Code walkthrough
 
 ## What you produce
 
@@ -26,7 +26,7 @@ code is computed by the renderer and cannot be typed by hand:
 1. **Get the skeleton.** It lists every package with its doc comment synopsis.
 
    ```sh
-   go run .agents/skills/walkthrough/scripts/render.go -init -out walkthrough.json
+   go run .agents/skills/code-walkthrough/scripts/render.go -init -out walkthrough.json
    ```
 
    `-facts` prints the same computed facts as JSON (`module`, `goVersion`,
@@ -68,7 +68,7 @@ code is computed by the renderer and cannot be typed by hand:
 4. **Render and fix until clean.** The renderer reports every problem at once.
 
    ```sh
-   go run .agents/skills/walkthrough/scripts/render.go -in walkthrough.json -out walkthrough.html
+   go run .agents/skills/code-walkthrough/scripts/render.go -in walkthrough.json -out walkthrough.html
    ```
 
    Common errors: a cited path that does not exist, a `pkg` that is not a Go
@@ -118,7 +118,7 @@ break out of the page's data block.
 ## Files
 
 ```text
-.agents/skills/walkthrough/
+.agents/skills/code-walkthrough/
 ├── SKILL.md                this file
 └── scripts/
     ├── render.go           go list facts + validation + HTML output
