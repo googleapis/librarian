@@ -130,7 +130,8 @@ func processRuleShallow(httpRule *httpRule, model *api.API, mID string) (*api.Pa
 	if err != nil {
 		return nil, "", err
 	}
-	queryParameters, err := queryParameters(mID, pathTemplate, httpRule.GetBody(), model)
+	body := resolveBodyFieldPath(mID, httpRule.GetBody(), model)
+	queryParameters, err := queryParameters(mID, pathTemplate, body, model)
 	if err != nil {
 		return nil, "", err
 	}
@@ -139,7 +140,29 @@ func processRuleShallow(httpRule *httpRule, model *api.API, mID string) (*api.Pa
 		Verb:            verb,
 		PathTemplate:    pathTemplate,
 		QueryParameters: queryParameters,
-	}, httpRule.GetBody(), nil
+	}, body, nil
+}
+
+// resolveBodyFieldPath rewrites wildcard body mappings ("*") to the name of the
+// top-level google.api.HttpBody field when the request message wraps an
+// HttpBody field. Per google.api.HttpRule semantics, the HttpBody field acts as
+// the raw HTTP payload and any remaining non-path fields are mapped to query
+// parameters.
+func resolveBodyFieldPath(msgID, body string, model *api.API) string {
+	if body != "*" || msgID == ".google.api.HttpBody" {
+		return body
+	}
+	msg := model.Message(msgID)
+	if msg == nil {
+		return body
+	}
+	idx := slices.IndexFunc(msg.Fields, func(f *api.Field) bool {
+		return f.Typez == api.TypezMessage && f.TypezID == ".google.api.HttpBody"
+	})
+	if idx != -1 {
+		return msg.Fields[idx].Name
+	}
+	return body
 }
 
 func queryParameters(msgID string, pathTemplate *api.PathTemplate, body string, model *api.API) (map[string]bool, error) {
