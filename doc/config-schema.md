@@ -417,7 +417,6 @@ This document describes the schema for the librarian.yaml.
 | `client_documentation_override` | string | Allows the "client_documentation" field in .repo-metadata.json to be overridden. |
 | `codeowner_team` | string | Is the GitHub team that owns the code. |
 | `excluded_poms` | list of string | Is a list of artifact ids, whose module should be excluded when updating pom.xml and are omitted when counting new modules. |
-| `extra_versioned_modules` | string | Is a list of extra versioned modules. |
 | `group_id` | string | Is the Maven group ID, defaults to "com.google.cloud". |
 | `issue_tracker_override` | string | Allows the "issue_tracker" field in .repo-metadata.json to be overridden. |
 | `released_version` | string | Is the last released version of the library. If omitted, it will be derived from the library version. Note: It assumes a minor bump from the previous '.0' version (e.g., '1.2.0-SNAPSHOT' -> '1.1.0') and does not support deriving previous patch releases (e.g., '1.1.1'). |

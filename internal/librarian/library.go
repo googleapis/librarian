@@ -618,9 +618,6 @@ func mergeJava(dst, src *config.JavaModule) *config.JavaModule {
 	if src.ExcludedPOMs != nil {
 		res.ExcludedPOMs = src.ExcludedPOMs
 	}
-	if src.ExtraVersionedModules != "" {
-		res.ExtraVersionedModules = src.ExtraVersionedModules
-	}
 	if src.GroupID != "" {
 		res.GroupID = src.GroupID
 	}

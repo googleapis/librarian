@@ -592,9 +592,6 @@ type JavaModule struct {
 	// when updating pom.xml and are omitted when counting new modules.
 	ExcludedPOMs []string `yaml:"excluded_poms,omitempty"`
 
-	// ExtraVersionedModules is a list of extra versioned modules.
-	ExtraVersionedModules string `yaml:"extra_versioned_modules,omitempty"`
-
 	// GroupID is the Maven group ID, defaults to "com.google.cloud".
 	GroupID string `yaml:"group_id,omitempty"`
 
