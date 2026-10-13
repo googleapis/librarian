@@ -30,16 +30,16 @@ const modulePath = "github.com/googleapis/librarian"
 
 // layers lists the package layers of this module from top to bottom. A
 // package may import packages in its own layer or any layer below it, never
-// above. A pattern ending in "/" matches every package under that directory;
-// any other pattern matches one package exactly.
+// above. A path pattern ending in "/" matches every package under that
+// directory; any other pattern matches one package exactly.
 //
 // Every package in the module must match exactly one pattern (or be listed in
 // testSupport), and every pattern must match at least one package, so adding,
 // moving or deleting a package forces this table to be updated rather than
 // silently weakening the check.
 var layers = []struct {
-	name     string
-	patterns []string
+	name         string
+	pathPatterns []string
 }{
 	{"entry points", []string{"cmd/", "tool/"}},
 	{"command orchestration", []string{"internal/librarian"}},
@@ -95,8 +95,9 @@ type modulePackage struct {
 func TestDependencyRules(t *testing.T) {
 	pkgs := modulePackages(t)
 	for _, l := range layers {
-		if !slices.IsSorted(l.patterns) {
-			t.Errorf("layer %q patterns are not sorted; keep the table sorted so diffs stay small", l.name)
+		if !slices.IsSorted(l.pathPatterns) {
+			t.Errorf("layer %q path patterns are not sorted; keep the table sorted so diffs stay small. Expected order:\n\t%s",
+				l.name, strings.Join(slices.Sorted(slices.Values(l.pathPatterns)), "\n\t"))
 		}
 	}
 	layerOf := map[string]int{}
@@ -108,7 +109,7 @@ func TestDependencyRules(t *testing.T) {
 		}
 		var matched []int
 		for i, l := range layers {
-			if slices.ContainsFunc(l.patterns, func(pat string) bool { return matches(pat, id) }) {
+			if slices.ContainsFunc(l.pathPatterns, func(pat string) bool { return matches(pat, id) }) {
 				matched = append(matched, i)
 			}
 		}
@@ -122,7 +123,7 @@ func TestDependencyRules(t *testing.T) {
 		}
 	}
 	for _, l := range layers {
-		for _, pat := range l.patterns {
+		for _, pat := range l.pathPatterns {
 			if !slices.ContainsFunc(pkgs, func(p modulePackage) bool { return matches(pat, relative(p.ImportPath)) }) {
 				t.Errorf("layer %q pattern %q matches no package; remove or fix it", l.name, pat)
 			}
