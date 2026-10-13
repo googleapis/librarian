@@ -616,6 +616,7 @@ This document describes the schema for the librarian.yaml.
 | `include_streaming_methods` | bool | Indicates whether to include gRPC streaming methods. |
 | `handwritten_surface` | string | Indicates whether the module or specific services have a handwritten surface. Accepts "true" for all services, or a comma-separated list of service IDs. |
 | `internal_builders` | bool | Indicates whether generated builders should be internal to the crate. |
+| `extensible_builders` | list of string | Is a list of method IDs whose generated request builders expose pub(crate) internals. |
 | `module_path` | string | Is the Rust module path for converters (e.g., "crate::generated::gapic::model"). |
 | `module_roots` | map[string]string |  |
 | `message_module_name_overrides` | map[string]string | Contains codec-level overrides for message module names in model.rs. |

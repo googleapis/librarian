@@ -233,6 +233,9 @@ type RustModule struct {
 	// InternalBuilders indicates whether generated builders should be internal to the crate.
 	InternalBuilders bool `yaml:"internal_builders,omitempty"`
 
+	// ExtensibleBuilders is a list of method IDs whose generated request builders expose pub(crate) internals.
+	ExtensibleBuilders []string `yaml:"extensible_builders,omitempty"`
+
 	// ModulePath is the Rust module path for converters
 	// (e.g., "crate::generated::gapic::model").
 	ModulePath string `yaml:"module_path,omitempty"`
