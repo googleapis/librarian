@@ -363,6 +363,15 @@ func TestParseOptions(t *testing.T) {
 		{
 			Format: libconfig.SpecProtobuf,
 			Options: map[string]string{
+				"extensible-builders": ".test.v1.ServiceA.Method1,.test.v1.ServiceB.Method2",
+			},
+			Update: func(c *codec) {
+				c.extensibleBuilders = []string{".test.v1.ServiceA.Method1", ".test.v1.ServiceB.Method2"}
+			},
+		},
+		{
+			Format: libconfig.SpecProtobuf,
+			Options: map[string]string{
 				"quickstart-service-override": "OverriddenService",
 			},
 			Update: func(c *codec) {

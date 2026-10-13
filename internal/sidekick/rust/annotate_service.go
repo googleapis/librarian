@@ -156,6 +156,16 @@ func (s *serviceAnnotations) NeedsBidiStreamBuilder() bool {
 	})
 }
 
+// HasExtensibleBuilder returns true if the service has at least one method with an extensible builder.
+func (s *serviceAnnotations) HasExtensibleBuilder() bool {
+	return slices.ContainsFunc(s.Methods, func(m *api.Method) bool {
+		if ann, ok := m.Codec.(*methodAnnotation); ok {
+			return ann.ExtensibleBuilder
+		}
+		return false
+	})
+}
+
 // MaximumAPIVersion returns the highest (in alphanumeric order) APIVersion of
 // all the methods in the service.
 func (s *serviceAnnotations) MaximumAPIVersion() string {

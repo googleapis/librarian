@@ -65,9 +65,15 @@ pub mod {{ .Codec.ModuleName }} {
     /// Common implementation for [crate::client::{{ .Codec.Name }}] request builders.
     #[derive(Clone, Debug)]
     pub(crate) struct RequestBuilder<R: std::default::Default> {
+        {{- if .Codec.HasExtensibleBuilder }}
+        pub(crate) stub: std::sync::Arc<dyn super::super::stub::dynamic::{{ .Codec.Name }}>,
+        pub(crate) request: R,
+        pub(crate) options: crate::RequestOptions,
+        {{- else }}
         stub: std::sync::Arc<dyn super::super::stub::dynamic::{{ .Codec.Name }}>,
         request: R,
         options: crate::RequestOptions,
+        {{- end }}
     }
 
     impl<R> RequestBuilder<R>
@@ -167,7 +173,11 @@ pub mod {{ .Codec.ModuleName }} {
     {{ .Codec.BuilderVisibility }} struct {{ .Codec.BuilderName }}(BidiStreamBuilder);
     {{- else }}
     #[derive(Clone, Debug)]
+    {{- if .Codec.ExtensibleBuilder }}
+    {{ .Codec.BuilderVisibility }} struct {{ .Codec.BuilderName }}(pub(crate) RequestBuilder<{{ .InputType.Codec.QualifiedName }}>);
+    {{- else }}
     {{ .Codec.BuilderVisibility }} struct {{ .Codec.BuilderName }}(RequestBuilder<{{ .InputType.Codec.QualifiedName }}>);
+    {{- end }}
     {{- end }}
 
     impl {{ .Codec.BuilderName }} {

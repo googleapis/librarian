@@ -810,6 +810,9 @@ func mergeRust(dst, src *config.RustCrate) *config.RustCrate {
 	if src.HandwrittenSurface != "" {
 		res.HandwrittenSurface = src.HandwrittenSurface
 	}
+	if src.ExtensibleBuilders != nil {
+		res.ExtensibleBuilders = src.ExtensibleBuilders
+	}
 	if src.HasVeneer {
 		res.HasVeneer = src.HasVeneer
 	}

@@ -162,6 +162,9 @@ func buildCodec(library *config.Library, releaseLevel string) map[string]string 
 	if rust.HandwrittenSurface != "" {
 		codec["handwritten-surface"] = rust.HandwrittenSurface
 	}
+	if len(rust.ExtensibleBuilders) > 0 {
+		codec["extensible-builders"] = strings.Join(rust.ExtensibleBuilders, ",")
+	}
 	if rust.HasVeneer {
 		codec["has-veneer"] = "true"
 	}

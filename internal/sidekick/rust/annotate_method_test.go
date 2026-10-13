@@ -712,3 +712,33 @@ func TestAnnotateMethodIdempotencyHook(t *testing.T) {
 		t.Errorf("gotDefault.IdempotencyHook = %q, want empty", gotDefault.IdempotencyHook)
 	}
 }
+
+func TestAnnotateMethodExtensibleBuilders(t *testing.T) {
+	model := annotateMethodModel(t)
+	if err := api.CrossReference(model); err != nil {
+		t.Fatal(err)
+	}
+	codec := newTestCodec(t, libconfig.SpecProtobuf, "", map[string]string{
+		"include-grpc-only-methods": "true",
+		"extensible-builders":       ".test.v1.ResourceService.Delete",
+	})
+	if _, err := annotateModel(model, codec); err != nil {
+		t.Fatal(err)
+	}
+
+	deleteMethod := model.Method(".test.v1.ResourceService.Delete")
+	if deleteMethod == nil {
+		t.Fatal("missing method .test.v1.ResourceService.Delete")
+	}
+	if !deleteMethod.Codec.(*methodAnnotation).ExtensibleBuilder {
+		t.Error("expected ExtensibleBuilder to be true for .test.v1.ResourceService.Delete")
+	}
+
+	moveMethod := model.Method(".test.v1.ResourceService.move")
+	if moveMethod == nil {
+		t.Fatal("missing method .test.v1.ResourceService.move")
+	}
+	if moveMethod.Codec.(*methodAnnotation).ExtensibleBuilder {
+		t.Error("expected ExtensibleBuilder to be false for .test.v1.ResourceService.move")
+	}
+}

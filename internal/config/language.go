@@ -323,6 +323,9 @@ type RustCrate struct {
 	// Accepts "true" for all services, or a comma-separated list of service IDs.
 	HandwrittenSurface string `yaml:"handwritten_surface,omitempty"`
 
+	// ExtensibleBuilders is a list of method IDs whose generated request builders expose pub(crate) internals.
+	ExtensibleBuilders []string `yaml:"extensible_builders,omitempty"`
+
 	// HasVeneer indicates whether the crate has a veneer.
 	HasVeneer bool `yaml:"has_veneer,omitempty"`
 
