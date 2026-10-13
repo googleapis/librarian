@@ -73,6 +73,7 @@ public struct {{ .Codec.Name }}: Codable, Equatable, {{ .Codec.Model.WktPackage 
   /// let value = {{ .Codec.Name }}().with { $0.{{ .Codec.SampleField }} = ... }
   /// ```
   {{- /* Using `with` for the name does not conflict with field name: https://godbolt.org/z/bxbsdfhfo */}}
+  @inlinable
   public func with(_ config: (inout Self) throws -> Swift.Void) rethrows -> Self {
     var copy = self
     try config(&copy)

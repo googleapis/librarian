@@ -115,6 +115,7 @@ func TestGenerateOneOf(t *testing.T) {
   /// ` + "```" + `
   /// let value = Outer().with { $0.stringField = ... }
   /// ` + "```" + `
+  @inlinable
   public func with(_ config: (inout Self) throws -> Swift.Void) rethrows -> Self {
     var copy = self
     try config(&copy)
@@ -287,6 +288,7 @@ func TestGenerateOneOfWithKeyword(t *testing.T) {
   /// ` + "```" + `
   /// let value = JwtLocation().with { $0.header = ... }
   /// ` + "```" + `
+  @inlinable
   public func with(_ config: (inout Self) throws -> Swift.Void) rethrows -> Self {
     var copy = self
     try config(&copy)
