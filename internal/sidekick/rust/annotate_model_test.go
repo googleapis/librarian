@@ -140,6 +140,63 @@ func TestClippyWarnings(t *testing.T) {
 	}
 }
 
+func TestExtraAndInternalModules(t *testing.T) {
+	for _, test := range []struct {
+		name         string
+		options      map[string]string
+		wantExtra    []string
+		wantInternal []string
+	}{
+		{
+			name:         "none",
+			options:      map[string]string{},
+			wantExtra:    nil,
+			wantInternal: nil,
+		},
+		{
+			name: "extra modules only",
+			options: map[string]string{
+				"extra-modules": "errors,operation",
+			},
+			wantExtra:    []string{"errors", "operation"},
+			wantInternal: nil,
+		},
+		{
+			name: "mixed extra and internal modules",
+			options: map[string]string{
+				"extra-modules":    "errors,operation",
+				"internal-modules": "operation",
+			},
+			wantExtra:    []string{"errors"},
+			wantInternal: []string{"operation"},
+		},
+		{
+			name: "all extra modules are internal",
+			options: map[string]string{
+				"extra-modules":    "wait_for_consistency",
+				"internal-modules": "wait_for_consistency",
+			},
+			wantExtra:    nil,
+			wantInternal: []string{"wait_for_consistency"},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			model := newTestAnnotateModelAPI(t)
+			codec := newTestCodec(t, libconfig.SpecProtobuf, "", test.options)
+			got, err := annotateModel(model, codec)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if diff := cmp.Diff(test.wantExtra, got.ExtraModules); diff != "" {
+				t.Errorf("ExtraModules mismatch (-want +got):\n%s", diff)
+			}
+			if diff := cmp.Diff(test.wantInternal, got.InternalModules); diff != "" {
+				t.Errorf("InternalModules mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
 func TestInternalBuildersAnnotation(t *testing.T) {
 	for _, test := range []struct {
 		Options        map[string]string

@@ -618,9 +618,6 @@ func mergeJava(dst, src *config.JavaModule) *config.JavaModule {
 	if src.ExcludedPOMs != nil {
 		res.ExcludedPOMs = src.ExcludedPOMs
 	}
-	if src.ExtraVersionedModules != "" {
-		res.ExtraVersionedModules = src.ExtraVersionedModules
-	}
 	if src.GroupID != "" {
 		res.GroupID = src.GroupID
 	}
@@ -810,6 +807,9 @@ func mergeRust(dst, src *config.RustCrate) *config.RustCrate {
 	if src.HandwrittenSurface != "" {
 		res.HandwrittenSurface = src.HandwrittenSurface
 	}
+	if src.ExtensibleBuilders != nil {
+		res.ExtensibleBuilders = src.ExtensibleBuilders
+	}
 	if src.HasVeneer {
 		res.HasVeneer = src.HasVeneer
 	}
@@ -843,6 +843,9 @@ func mergeRust(dst, src *config.RustCrate) *config.RustCrate {
 	res.Discovery = mergeCommonDiscovery(res.Discovery, src.Discovery)
 	if src.QuickstartServiceOverride != "" {
 		res.QuickstartServiceOverride = src.QuickstartServiceOverride
+	}
+	if src.InternalModules != nil {
+		res.InternalModules = src.InternalModules
 	}
 	return &res
 }

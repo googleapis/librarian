@@ -47,3 +47,6 @@ pub mod model;
 {{- range .Codec.ExtraModules }}
 pub mod {{ . }};
 {{- end }}
+{{- range .Codec.InternalModules }}
+pub(crate) mod {{ . }};
+{{- end }}

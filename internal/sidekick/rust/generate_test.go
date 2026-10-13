@@ -548,3 +548,66 @@ func TestValidateTemplates(t *testing.T) {
 		t.Fatal(err)
 	}
 }
+
+func TestGenerateExtensibleBuilders(t *testing.T) {
+	msg := api.NewTestMessage("Request").WithPackage("test.v1")
+	method1 := api.NewTestMethod("GetResource").
+		WithInput(msg).
+		WithOutput(msg).
+		WithVerb("GET").
+		WithPathTemplate(&api.PathTemplate{})
+	method2 := api.NewTestMethod("ListResources").
+		WithInput(msg).
+		WithOutput(msg).
+		WithVerb("GET").
+		WithPathTemplate(&api.PathTemplate{})
+	svc1 := api.NewTestService("ExtensibleService").
+		WithPackage("test.v1").
+		WithMethods(method1, method2)
+
+	method3 := api.NewTestMethod("OtherAction").
+		WithInput(msg).
+		WithOutput(msg).
+		WithVerb("POST").
+		WithPathTemplate(&api.PathTemplate{})
+	svc2 := api.NewTestService("PrivateService").
+		WithPackage("test.v1").
+		WithMethods(method3)
+
+	model := api.NewTestAPI([]*api.Message{msg}, nil, []*api.Service{svc1, svc2}).
+		WithPackageName("test.v1")
+	if err := api.CrossReference(model); err != nil {
+		t.Fatal(err)
+	}
+
+	outDir := t.TempDir()
+	cfg := &parser.ModelConfig{
+		SpecificationFormat: libconfig.SpecProtobuf,
+		Codec: map[string]string{
+			"package:wkt":         "source=google.protobuf,package=google-cloud-wkt",
+			"extensible-builders": ".test.v1.ExtensibleService.GetResource",
+		},
+	}
+	if err := Generate(t.Context(), model, outDir, cfg); err != nil {
+		t.Fatal(err)
+	}
+
+	builderBytes, err := os.ReadFile(filepath.Join(outDir, "src", "builder.rs"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	builderRs := string(builderBytes)
+
+	wantSnippets := []string{
+		"pub(crate) stub: std::sync::Arc<dyn super::super::stub::dynamic::ExtensibleService>,",
+		"pub struct GetResource(pub(crate) RequestBuilder<crate::model::Request>);",
+		"pub struct ListResources(RequestBuilder<crate::model::Request>);",
+		"stub: std::sync::Arc<dyn super::super::stub::dynamic::PrivateService>,",
+		"pub struct OtherAction(RequestBuilder<crate::model::Request>);",
+	}
+	for _, want := range wantSnippets {
+		if !strings.Contains(builderRs, want) {
+			t.Errorf("builder.rs missing %q in:\n%s", want, builderRs)
+		}
+	}
+}

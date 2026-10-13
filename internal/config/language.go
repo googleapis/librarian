@@ -323,6 +323,9 @@ type RustCrate struct {
 	// Accepts "true" for all services, or a comma-separated list of service IDs.
 	HandwrittenSurface string `yaml:"handwritten_surface,omitempty"`
 
+	// ExtensibleBuilders is a list of method IDs whose generated request builders expose pub(crate) internals.
+	ExtensibleBuilders []string `yaml:"extensible_builders,omitempty"`
+
 	// HasVeneer indicates whether the crate has a veneer.
 	HasVeneer bool `yaml:"has_veneer,omitempty"`
 
@@ -359,6 +362,9 @@ type RustCrate struct {
 
 	// QuickstartServiceOverride overrides the default heuristically selected service for the package-level quickstart.
 	QuickstartServiceOverride string `yaml:"quickstart_service_override,omitempty"`
+
+	// InternalModules is a list of kept extra modules that should have pub(crate) visibility instead of pub.
+	InternalModules []string `yaml:"internal_modules,omitempty"`
 }
 
 // RustPackageDependency represents a package dependency configuration.
@@ -591,9 +597,6 @@ type JavaModule struct {
 	// ExcludedPOMs is a list of artifact ids, whose module should be excluded
 	// when updating pom.xml and are omitted when counting new modules.
 	ExcludedPOMs []string `yaml:"excluded_poms,omitempty"`
-
-	// ExtraVersionedModules is a list of extra versioned modules.
-	ExtraVersionedModules string `yaml:"extra_versioned_modules,omitempty"`
 
 	// GroupID is the Maven group ID, defaults to "com.google.cloud".
 	GroupID string `yaml:"group_id,omitempty"`

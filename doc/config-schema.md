@@ -417,7 +417,6 @@ This document describes the schema for the librarian.yaml.
 | `client_documentation_override` | string | Allows the "client_documentation" field in .repo-metadata.json to be overridden. |
 | `codeowner_team` | string | Is the GitHub team that owns the code. |
 | `excluded_poms` | list of string | Is a list of artifact ids, whose module should be excluded when updating pom.xml and are omitted when counting new modules. |
-| `extra_versioned_modules` | string | Is a list of extra versioned modules. |
 | `group_id` | string | Is the Maven group ID, defaults to "com.google.cloud". |
 | `issue_tracker_override` | string | Allows the "issue_tracker" field in .repo-metadata.json to be overridden. |
 | `released_version` | string | Is the last released version of the library. If omitted, it will be derived from the library version. Note: It assumes a minor bump from the previous '.0' version (e.g., '1.2.0-SNAPSHOT' -> '1.1.0') and does not support deriving previous patch releases (e.g., '1.1.1'). |
@@ -558,6 +557,7 @@ This document describes the schema for the librarian.yaml.
 | `skipped_ids` | list of string | Is a list of IDs to skip. |
 | `disabled_clippy_warnings` | list of string | Is a list of clippy warnings to disable. |
 | `handwritten_surface` | string | Indicates whether the crate or specific services have a handwritten surface. Accepts "true" for all services, or a comma-separated list of service IDs. |
+| `extensible_builders` | list of string | Is a list of method IDs whose generated request builders expose pub(crate) internals. |
 | `has_veneer` | bool | Indicates whether the crate has a veneer. |
 | `routing_required` | bool | Indicates whether routing is required. |
 | `include_grpc_only_methods` | bool | Indicates whether to include gRPC-only methods. |
@@ -570,6 +570,7 @@ This document describes the schema for the librarian.yaml.
 | `name_overrides` | string | Contains codec-level overrides for type and service names. |
 | `discovery` | RustDiscovery (optional) | Contains discovery-specific configuration for LRO polling. |
 | `quickstart_service_override` | string | Overrides the default heuristically selected service for the package-level quickstart. |
+| `internal_modules` | list of string | Is a list of kept extra modules that should have pub(crate) visibility instead of pub. |
 
 ## RustDefault Configuration
 

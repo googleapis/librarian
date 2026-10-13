@@ -1426,7 +1426,6 @@ func TestMergeJava(t *testing.T) {
 				ClientDocumentationOverride:  "doc",
 				CodeownerTeam:                "team",
 				ExcludedPOMs:                 []string{"ex-pom"},
-				ExtraVersionedModules:        "extra",
 				GroupID:                      "com.new",
 				IssueTrackerOverride:         "issue",
 				LibraryTypeOverride:          "type",
@@ -1449,7 +1448,6 @@ func TestMergeJava(t *testing.T) {
 				ClientDocumentationOverride:  "doc",
 				CodeownerTeam:                "team",
 				ExcludedPOMs:                 []string{"ex-pom"},
-				ExtraVersionedModules:        "extra",
 				GroupID:                      "com.new",
 				IssueTrackerOverride:         "issue",
 				LibraryTypeOverride:          "type",
@@ -1636,6 +1634,7 @@ func TestMergeRust(t *testing.T) {
 				IncludedIds:               []string{"iid"},
 				SkippedIds:                []string{"sid"},
 				DisabledClippyWarnings:    []string{"clip"},
+				ExtensibleBuilders:        []string{".a.b.C.D"},
 				HasVeneer:                 true,
 				RoutingRequired:           true,
 				IncludeGrpcOnlyMethods:    true,
@@ -1646,6 +1645,7 @@ func TestMergeRust(t *testing.T) {
 				NameOverrides:             "name",
 				Discovery:                 &config.RustDiscovery{OperationID: "op-new", Pollers: []config.RustPoller{{Prefix: "pre"}}},
 				QuickstartServiceOverride: "quick",
+				InternalModules:           []string{"internal_mod"},
 			},
 			want: &config.RustCrate{
 				RustDefault: config.RustDefault{
@@ -1668,6 +1668,7 @@ func TestMergeRust(t *testing.T) {
 				IncludedIds:               []string{"iid"},
 				SkippedIds:                []string{"sid"},
 				DisabledClippyWarnings:    []string{"clip"},
+				ExtensibleBuilders:        []string{".a.b.C.D"},
 				HasVeneer:                 true,
 				RoutingRequired:           true,
 				IncludeGrpcOnlyMethods:    true,
@@ -1678,6 +1679,7 @@ func TestMergeRust(t *testing.T) {
 				NameOverrides:             "name",
 				Discovery:                 &config.RustDiscovery{OperationID: "op-new", Pollers: []config.RustPoller{{Prefix: "pre"}}},
 				QuickstartServiceOverride: "quick",
+				InternalModules:           []string{"internal_mod"},
 			},
 		},
 		{

@@ -206,3 +206,7 @@ pub(crate) use google_cloud_gax::response::Response;
 {{- "\n" }}
 pub mod {{ . }};
 {{- end }}
+{{- range .Codec.InternalModules }}
+{{- "\n" }}
+pub(crate) mod {{ . }};
+{{- end }}

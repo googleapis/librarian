@@ -129,6 +129,9 @@ func buildCodec(library *config.Library, releaseLevel string) map[string]string 
 		return codec
 	}
 	rust := library.Rust
+	if len(rust.InternalModules) > 0 {
+		codec["internal-modules"] = strings.Join(rust.InternalModules, ",")
+	}
 	if rust.ModulePath != "" {
 		codec["module-path"] = rust.ModulePath
 	}
@@ -161,6 +164,9 @@ func buildCodec(library *config.Library, releaseLevel string) map[string]string 
 	}
 	if rust.HandwrittenSurface != "" {
 		codec["handwritten-surface"] = rust.HandwrittenSurface
+	}
+	if len(rust.ExtensibleBuilders) > 0 {
+		codec["extensible-builders"] = strings.Join(rust.ExtensibleBuilders, ",")
 	}
 	if rust.HasVeneer {
 		codec["has-veneer"] = "true"
