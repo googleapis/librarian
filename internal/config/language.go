@@ -359,6 +359,9 @@ type RustCrate struct {
 
 	// QuickstartServiceOverride overrides the default heuristically selected service for the package-level quickstart.
 	QuickstartServiceOverride string `yaml:"quickstart_service_override,omitempty"`
+
+	// InternalModules is a list of kept extra modules that should have pub(crate) visibility instead of pub.
+	InternalModules []string `yaml:"internal_modules,omitempty"`
 }
 
 // RustPackageDependency represents a package dependency configuration.

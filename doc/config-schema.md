@@ -570,6 +570,7 @@ This document describes the schema for the librarian.yaml.
 | `name_overrides` | string | Contains codec-level overrides for type and service names. |
 | `discovery` | RustDiscovery (optional) | Contains discovery-specific configuration for LRO polling. |
 | `quickstart_service_override` | string | Overrides the default heuristically selected service for the package-level quickstart. |
+| `internal_modules` | list of string | Is a list of kept extra modules that should have pub(crate) visibility instead of pub. |
 
 ## RustDefault Configuration
 

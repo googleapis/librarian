@@ -1646,6 +1646,7 @@ func TestMergeRust(t *testing.T) {
 				NameOverrides:             "name",
 				Discovery:                 &config.RustDiscovery{OperationID: "op-new", Pollers: []config.RustPoller{{Prefix: "pre"}}},
 				QuickstartServiceOverride: "quick",
+				InternalModules:           []string{"internal_mod"},
 			},
 			want: &config.RustCrate{
 				RustDefault: config.RustDefault{
@@ -1678,6 +1679,7 @@ func TestMergeRust(t *testing.T) {
 				NameOverrides:             "name",
 				Discovery:                 &config.RustDiscovery{OperationID: "op-new", Pollers: []config.RustPoller{{Prefix: "pre"}}},
 				QuickstartServiceOverride: "quick",
+				InternalModules:           []string{"internal_mod"},
 			},
 		},
 		{

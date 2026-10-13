@@ -1462,6 +1462,7 @@ func TestBuildCodec(t *testing.T) {
 					QuickstartServiceOverride: "OverriddenService",
 					DefaultFeatures:           []string{"feature1", "feature2"},
 					DisabledClippyWarnings:    []string{"clippy1", "clippy2"},
+					InternalModules:           []string{"internal_mod1", "internal_mod2"},
 				},
 			},
 			want: map[string]string{
@@ -1482,6 +1483,7 @@ func TestBuildCodec(t *testing.T) {
 				"default-features":            "feature1,feature2",
 				"disabled-rustdoc-warnings":   "warning1,warning2",
 				"disabled-clippy-warnings":    "clippy1,clippy2",
+				"internal-modules":            "internal_mod1,internal_mod2",
 				"release-level":               "stable",
 				"package:dep1":                "package=pkg1,source=1.0",
 				"package:dep2":                "feature=feat2,ignore=true",

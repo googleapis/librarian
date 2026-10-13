@@ -129,6 +129,9 @@ func buildCodec(library *config.Library, releaseLevel string) map[string]string 
 		return codec
 	}
 	rust := library.Rust
+	if len(rust.InternalModules) > 0 {
+		codec["internal-modules"] = strings.Join(rust.InternalModules, ",")
+	}
 	if rust.ModulePath != "" {
 		codec["module-path"] = rust.ModulePath
 	}

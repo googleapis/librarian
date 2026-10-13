@@ -291,6 +291,15 @@ func TestParseOptions(t *testing.T) {
 		{
 			Format: libconfig.SpecProtobuf,
 			Options: map[string]string{
+				"internal-modules": "a,b,c",
+			},
+			Update: func(c *codec) {
+				c.internalModules = []string{"a", "b", "c"}
+			},
+		},
+		{
+			Format: libconfig.SpecProtobuf,
+			Options: map[string]string{
 				"internal-types": "a,b,c",
 			},
 			Update: func(c *codec) {

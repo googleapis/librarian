@@ -86,6 +86,8 @@ type modelAnnotations struct {
 	ExtraFeatures []string
 	// A list of additional modules loaded by the `lib.rs` file.
 	ExtraModules []string
+	// A list of additional `pub(crate)` modules loaded by the `lib.rs` file.
+	InternalModules []string
 	// If true, at lease one service has a method we cannot wrap (yet).
 	Incomplete bool
 	// If true, the generator will produce reference documentation samples for message fields setters.
@@ -361,6 +363,12 @@ func annotateModel(model *api.API, codec *codec) (*modelAnnotations, error) {
 	if hasDiscoveryLROs && perServiceFeatures {
 		extraFeatures = []string{lroOperationFeature}
 	}
+	var extraModules []string
+	for _, mod := range codec.extraModules {
+		if !slices.Contains(codec.internalModules, mod) {
+			extraModules = append(extraModules, mod)
+		}
+	}
 
 	ann := &modelAnnotations{
 		PackageName:                codec.packageName(model),
@@ -386,7 +394,8 @@ func annotateModel(model *api.API, codec *codec) (*modelAnnotations, error) {
 		DisabledClippyWarnings:  codec.disabledClippyWarnings,
 		PerServiceFeatures:      perServiceFeatures,
 		ExtraFeatures:           extraFeatures,
-		ExtraModules:            codec.extraModules,
+		ExtraModules:            extraModules,
+		InternalModules:         codec.internalModules,
 		Incomplete: slices.ContainsFunc(model.Services, func(s *api.Service) bool {
 			return slices.ContainsFunc(s.Methods, func(m *api.Method) bool { return !codec.generateMethod(m) })
 		}),

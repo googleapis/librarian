@@ -844,6 +844,9 @@ func mergeRust(dst, src *config.RustCrate) *config.RustCrate {
 	if src.QuickstartServiceOverride != "" {
 		res.QuickstartServiceOverride = src.QuickstartServiceOverride
 	}
+	if src.InternalModules != nil {
+		res.InternalModules = src.InternalModules
+	}
 	return &res
 }
 

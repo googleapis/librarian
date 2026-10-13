@@ -163,6 +163,8 @@ func newCodec(specificationFormat string, options map[string]string) (*codec, er
 			codec.hasVeneer = value
 		case key == "extra-modules":
 			codec.extraModules = splitOption(definition)
+		case key == "internal-modules":
+			codec.internalModules = splitOption(definition)
 		case key == "internal-types":
 			codec.internalTypes = splitOption(definition)
 		case key == "routing-required":
@@ -349,6 +351,8 @@ type codec struct {
 	hasVeneer bool
 	// Additional modules, maybe with hand-crafted code.
 	extraModules []string
+	// A list of extra modules which should only be `pub(crate)`.
+	internalModules []string
 	// A list of types which should only be `pub(crate)`.
 	//
 	// In rare cases, it is easiest to manage type visibility via the codec
