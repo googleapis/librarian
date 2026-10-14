@@ -410,7 +410,6 @@ This document describes the schema for the librarian.yaml.
 | :--- | :--- | :--- |
 | `alternate_headers` | string | Is the path to a file containing alternate license header text. |
 | `api_id_override` | string | Is the ID of the API (e.g., "pubsub.googleapis.com"), allows the "api_id" field in .repo-metadata.json to be overridden. Defaults to "{library.api_shortname}.googleapis.com". |
-| `api_reference` | string | Is the URL for the API reference documentation. |
 | `api_description_override` | string | Allows the "api_description" field in .repo-metadata.json to be overridden. |
 | `api_shortname_override` | string | Allows the "api_shortname" field in .repo-metadata.json to be overridden. |
 | `artifact_id` | string | Is the Maven artifact ID. |
