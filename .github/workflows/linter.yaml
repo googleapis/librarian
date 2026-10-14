@@ -103,7 +103,7 @@ jobs:
           go-version-file: "go.mod"
       - name: Run TestGoGenerate
         run: go test -run TestGoGenerate -count=1 .
-  dependencies:
+  layer-dependencies-check:
     runs-on: ubuntu-24.04
     # Presubmit jobs must complete within 5 minutes. See CONTRIBUTING.md.
     timeout-minutes: 5
