@@ -163,6 +163,8 @@ func newCodec(specificationFormat string, options map[string]string) (*codec, er
 			codec.hasVeneer = value
 		case key == "extra-modules":
 			codec.extraModules = splitOption(definition)
+		case key == "internal-modules":
+			codec.internalModules = splitOption(definition)
 		case key == "internal-types":
 			codec.internalTypes = splitOption(definition)
 		case key == "routing-required":
@@ -197,6 +199,8 @@ func newCodec(specificationFormat string, options map[string]string) (*codec, er
 				return nil, fmt.Errorf("cannot convert `internal-builders` value %q to boolean: %w", definition, err)
 			}
 			codec.internalBuilders = value
+		case key == "extensible-builders":
+			codec.extensibleBuilders = splitOption(definition)
 		case key == "quickstart-service-override":
 			codec.quickstartServiceOverride = definition
 		case key == "include-rpc-status-conversion":
@@ -349,6 +353,8 @@ type codec struct {
 	hasVeneer bool
 	// Additional modules, maybe with hand-crafted code.
 	extraModules []string
+	// A list of extra modules which should only be `pub(crate)`.
+	internalModules []string
 	// A list of types which should only be `pub(crate)`.
 	//
 	// In rare cases, it is easiest to manage type visibility via the codec
@@ -375,6 +381,8 @@ type codec struct {
 	handwrittenSurface []string
 	// If true, the generator will set the internal builder's visibility to public (crate).
 	internalBuilders bool
+	// A list of method IDs whose generated request builders expose `pub(crate)` internals.
+	extensibleBuilders []string
 	// Overrides the default heuristically selected service for the package-level quickstart.
 	quickstartServiceOverride string
 	// The Rust type used for the inner gRPC client in generated transports.

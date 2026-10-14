@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.48.0](https://github.com/googleapis/librarian/compare/v0.47.0...v0.48.0) (2026-10-09)
+
+
+### Features
+
+* **sidekick/swift:** add doc comments for init(fromAny:) ([#7767](https://github.com/googleapis/librarian/issues/7767)) ([effccd5](https://github.com/googleapis/librarian/commit/effccd554d55bf97a44257d075c04491c614b831))
+* **sidekick/swift:** support ExistentialAny ([#7762](https://github.com/googleapis/librarian/issues/7762)) ([d8be62b](https://github.com/googleapis/librarian/commit/d8be62b8b83ffd619217bf652255620b1457fad4))
+
+
+### Bug Fixes
+
+* **python:** force using tools installed pandoc binary ([#7765](https://github.com/googleapis/librarian/issues/7765)) ([d264768](https://github.com/googleapis/librarian/commit/d2647684eec5494833609d023fd4f7cf58075d3f))
+* **sidekick/swift:** note Discovery LRO return type ([#7763](https://github.com/googleapis/librarian/issues/7763)) ([a6ef617](https://github.com/googleapis/librarian/commit/a6ef6178eb85ebc1d77bdd5c1ac27fb13e578ff0))
+
 ## [0.47.0](https://github.com/googleapis/librarian/compare/v0.46.0...v0.47.0) (2026-10-06)
 
 

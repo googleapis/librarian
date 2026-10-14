@@ -291,6 +291,15 @@ func TestParseOptions(t *testing.T) {
 		{
 			Format: libconfig.SpecProtobuf,
 			Options: map[string]string{
+				"internal-modules": "a,b,c",
+			},
+			Update: func(c *codec) {
+				c.internalModules = []string{"a", "b", "c"}
+			},
+		},
+		{
+			Format: libconfig.SpecProtobuf,
+			Options: map[string]string{
 				"internal-types": "a,b,c",
 			},
 			Update: func(c *codec) {
@@ -358,6 +367,15 @@ func TestParseOptions(t *testing.T) {
 			},
 			Update: func(c *codec) {
 				c.internalBuilders = true
+			},
+		},
+		{
+			Format: libconfig.SpecProtobuf,
+			Options: map[string]string{
+				"extensible-builders": ".test.v1.ServiceA.Method1,.test.v1.ServiceB.Method2",
+			},
+			Update: func(c *codec) {
+				c.extensibleBuilders = []string{".test.v1.ServiceA.Method1", ".test.v1.ServiceB.Method2"}
 			},
 		},
 		{

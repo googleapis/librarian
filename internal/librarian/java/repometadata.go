@@ -55,8 +55,6 @@ type repoMetadata struct {
 	// Java-specific field.
 	RpcDocumentation string `json:"rpc_documentation,omitempty"`
 	// Java-specific field.
-	ExtraVersionedModules string `json:"extra_versioned_modules,omitempty"`
-	// Java-specific field.
 	RecommendedPackage string `json:"recommended_package,omitempty"`
 }
 
@@ -139,7 +137,6 @@ func deriveRepoMetadata(cfg *config.Config, library *config.Library, sourceDir s
 		// Java only fields
 		metadata.APIReference = library.Java.APIReference
 		metadata.CodeownerTeam = library.Java.CodeownerTeam
-		metadata.ExtraVersionedModules = library.Java.ExtraVersionedModules
 	}
 
 	// Default ClientDocumentation uses artifact ID
