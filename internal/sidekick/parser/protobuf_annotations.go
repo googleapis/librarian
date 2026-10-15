@@ -149,8 +149,14 @@ func processRuleShallow(httpRule *httpRule, model *api.API, mID string) (*api.Pa
 // data field is the raw payload, and its content_type field is set as the
 // Content-Type header of the request. Any remaining non-path fields are mapped
 // to query parameters.
+//
+// When the request message is google.api.HttpBody itself, the whole request is
+// always the body, regardless of the body field in the annotation.
 func resolveBodyFieldPath(msgID, body string, model *api.API) string {
-	if body != "*" || msgID == ".google.api.HttpBody" {
+	if msgID == ".google.api.HttpBody" {
+		return "*"
+	}
+	if body != "*" {
 		return body
 	}
 	msg := model.Message(msgID)

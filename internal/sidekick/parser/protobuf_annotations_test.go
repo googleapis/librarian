@@ -44,24 +44,35 @@ func TestProcessRule_HttpBodyWildcard(t *testing.T) {
 	for _, test := range []struct {
 		name            string
 		msgID           string
+		body            string
 		wantBodyField   string
 		wantQueryParams map[string]bool
 	}{
 		{
 			name:            "wildcard with top-level HttpBody field resolves to field name",
 			msgID:           ".test.RawPredictRequest",
+			body:            "*",
 			wantBodyField:   "http_body",
 			wantQueryParams: map[string]bool{"extra_param": true},
 		},
 		{
 			name:            "wildcard when request is HttpBody itself stays wildcard",
 			msgID:           ".google.api.HttpBody",
+			body:            "*",
+			wantBodyField:   "*",
+			wantQueryParams: map[string]bool{},
+		},
+		{
+			name:            "field body when request is HttpBody itself resolves to wildcard",
+			msgID:           ".google.api.HttpBody",
+			body:            "data",
 			wantBodyField:   "*",
 			wantQueryParams: map[string]bool{},
 		},
 		{
 			name:            "wildcard without HttpBody field stays wildcard",
 			msgID:           ".test.RegularRequest",
+			body:            "*",
 			wantBodyField:   "*",
 			wantQueryParams: map[string]bool{},
 		},
@@ -71,7 +82,7 @@ func TestProcessRule_HttpBodyWildcard(t *testing.T) {
 				Pattern: &httpRulePost{
 					Post: "/v1/{endpoint=projects/*/locations/*/endpoints/*}:rawPredict",
 				},
-				Body: "*",
+				Body: test.body,
 			}
 			got, err := processRule(rule, model, test.msgID)
 			if err != nil {
