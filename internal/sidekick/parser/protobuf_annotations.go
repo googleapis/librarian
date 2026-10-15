@@ -145,9 +145,10 @@ func processRuleShallow(httpRule *httpRule, model *api.API, mID string) (*api.Pa
 
 // resolveBodyFieldPath rewrites wildcard body mappings ("*") to the name of the
 // top-level google.api.HttpBody field when the request message wraps an
-// HttpBody field. Per google.api.HttpRule semantics, the HttpBody field acts as
-// the raw HTTP payload and any remaining non-path fields are mapped to query
-// parameters.
+// HttpBody field. The HttpBody field is sent as the HTTP request body: its
+// data field is the raw payload, and its content_type field is set as the
+// Content-Type header of the request. Any remaining non-path fields are mapped
+// to query parameters.
 func resolveBodyFieldPath(msgID, body string, model *api.API) string {
 	if body != "*" || msgID == ".google.api.HttpBody" {
 		return body
