@@ -6,8 +6,8 @@ reviews for this repository.
 When reviewing or generating code, apply the following checks and references:
 
 - **Follow local standards:** Ensure all changes conform to
-  [`doc/howwewritego.md`](../doc/howwewritego.md) and
-  [`doc/code-review-principles.md`](../doc/code-review-principles.md), which
+  [`doc/howwewritecode.md`](/doc/howwewritecode.md) and
+  [`doc/howwewritego.md`](/doc/howwewritego.md), which
   define the project’s architectural patterns, design decisions, and testing
   requirements.
 - **Verify testing quality:** Add or update tests as needed, following the

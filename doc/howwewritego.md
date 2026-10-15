@@ -22,8 +22,6 @@ For guidance, refer to the following resources:
 
 - [Effective Go](https://go.dev/doc/effective_go): The canonical guide to
   writing idiomatic Go code.
-- [Code Review Principles](/doc/code-review-principles.md): Key code review feedback
-  and recurring conventions from maintainers.
 - [Go Code Review Comments](styleguide/go-code-review-comments.md): Common
   feedback and best practices used in Go code reviews.
 - [Google's Go Style Guide](https://google.github.io/styleguide/go/decisions):
@@ -147,6 +145,14 @@ Prefer `errors.Is(err, fs.ErrNotExist)` over `os.IsNotExist(err)` as described
 in the [documentation for `os.IsNotExist`](https://pkg.go.dev/os#IsNotExist),
 and prefer `fs.ErrNotExist` over `os.ErrNotExist` in general.
 
+Do not combine `err == nil` with other conditions; always check `err != nil`
+explicitly and handle errors gracefully rather than masking them. Do not add
+redundant nil checks before `errors.Is` or `errors.As`.
+
+When writing files, check errors returned by `Close()` inside a `defer` using
+named returns, or prefer `os.WriteFile` when writing complete files. Check if
+file content was modified before overwriting to avoid unnecessary I/O.
+
 ### Export sentinel errors
 
 If a package exposes public functions that return sentinel errors, those errors
@@ -192,6 +198,8 @@ if err != nil {
 However, when including a sentinel error in the newly formatted error, the `%w`
 specifier for that sentinel error should appear at the front of the formatted
 error, as per the [Go Style Guide](https://google.github.io/styleguide/go/best-practices#sentinel-error-placement).
+Combine related error branches into a single contextual `fmt.Errorf` that wraps
+the original error.
 
 ### Avoid redundant error wrapping
 
@@ -432,6 +440,11 @@ files (e.g., mustache templates) to keep the Go logic clean.
 Follow the latest recommendations for the current Go version, such as using
 `runtime.GOMAXPROCS(0)` instead of `runtime.NumCPU()` to respect CPU quotas. 
 
+### Modern octal literals
+
+Always use the modern Go `0o` prefix (e.g., `0o644`) for octal literals instead
+of the legacy `0` prefix.
+
 ## Writing Tests
 
 When writing tests, we follow the patterns below to ensure consistency,
@@ -522,8 +535,16 @@ Use this structure:
 - **Loop Variable**: Always use `test` as the loop variable name
   (avoid abbreviations like `tt` or `tc`).
 
+- **Standardize Test Variables**: Use `got` and `want` for single-value
+  comparisons. When checking errors against a wanted error, consistently use
+  `gotErr` over `err`.
+
 - Use `t.Run(test.name, ...)` to create subtests. Subtests can be run
   individually and parallelized when needed.
+
+- **Isolate Test State**: Always initialize mutable test data inside the
+  `t.Run` block to prevent subtests from polluting each other's state. Use
+  `t.Chdir` for directory changes and `t.Cleanup` for any global modifications.
 
 - **Simplify Test Case Structs**: Avoid adding boolean flags to the test case
   struct if the same logic can be controlled by checking the zero-value or empty
