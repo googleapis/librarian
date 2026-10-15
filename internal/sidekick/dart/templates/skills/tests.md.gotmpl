@@ -47,7 +47,7 @@ import 'package:{{ .Codec.PackageName }}/{{ .Codec.MainFileNameWithExtension }}'
 import 'package:{{ .Codec.PackageName }}/testing.dart';
 
 final fake = Fake{{ .Codec.ExampleServiceName }}(
-  {{ .Codec.ExampleMethodName }}: (request) async {
+  {{ .Codec.ExampleMethodName }}: (request, {retry}) async {
     // Assert request contents here if needed.
     {{- if .Codec.ExampleMethodReturnsValue }}
     return {{ .Codec.ExampleMethodResponseType }}();
@@ -97,7 +97,7 @@ Future<void> functionUnderTest({{ .Codec.ExampleServiceName }} service) async {
 void main() {
   test('test', () async {
     final fake = Fake{{ .Codec.ExampleServiceName }}(
-      {{ .Codec.ExampleMethodName }}: (request) async {
+      {{ .Codec.ExampleMethodName }}: (request, {retry}) async {
           // Assert request contents here.
           {{- if .Codec.ExampleMethodReturnsValue }}
           return {{ .Codec.ExampleMethodResponseType }}();

@@ -28,7 +28,7 @@ limitations under the License.
 Stream<{{ .Codec.ResponseType }}> {{ .Codec.Name }}({{ .Codec.RequestType }} request, {RetryRunner? retry}) {
   if (isClosed) throw StateError('Service is closed');
   if (_{{ .Codec.Name }} case final {{ .Codec.Name }}?) {
-    return {{ .Codec.Name }}(request);
+    return {{ .Codec.Name }}(request, retry: retry);
   }
   throw UnsupportedError('{{ .Codec.Name }}');
 }
@@ -38,7 +38,7 @@ Future<Operation<T, S>> getOperation<T extends {{ .Model.Codec.ProtoPrefix }}Pro
   if (isClosed) throw StateError('Service is closed');
 
   if (_getOperation case final getOperation?) {
-    return getOperation(request);
+    return getOperation(request, retry: retry);
   }
   throw UnsupportedError('getOperation');
 }
@@ -56,7 +56,7 @@ Future<{{ .Codec.ResponseType }}{{- if .OperationInfo }}<{{ .OperationInfo.Codec
   if (isClosed) throw StateError('Service is closed');
 
   if (_{{ .Codec.Name }} case final {{ .Codec.Name }}?) {
-    return {{ .Codec.Name }}(request);
+    return {{ .Codec.Name }}(request, retry: retry);
   }
   throw UnsupportedError('{{ .Codec.Name }}');
 }
