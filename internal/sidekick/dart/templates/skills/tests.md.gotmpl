@@ -69,8 +69,9 @@ import 'package:{{ .Codec.PackageName }}/testing.dart';
 final class MyFake{{ .Codec.ExampleServiceName }} extends Fake{{ .Codec.ExampleServiceName }} {
   @override
   Future<{{ .Codec.ExampleMethodResponseType }}> {{ .Codec.ExampleMethodName }}(
-    {{ .Codec.ExampleMethodRequestType }} request,
-  ) async {
+    {{ .Codec.ExampleMethodRequestType }} request, {
+    RetryRunner? retry,
+  }) async {
     // Assert request contents here if needed.
     {{- if .Codec.ExampleMethodReturnsValue }}
     return {{ .Codec.ExampleMethodResponseType }}();

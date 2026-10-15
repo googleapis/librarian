@@ -20,9 +20,12 @@ limitations under the License.
 /// Throws a [http.ClientException] if there were problems communicating with
 /// the API service. Throws a [ServiceException] if the API method failed for
 /// any reason.
+///
+/// Failed requests are retried using [retry] if provided, or the default retry
+/// policy for this method otherwise.
 {{- if .Codec.ServerSideStreaming }}
 @override
-Stream<{{ .Codec.ResponseType }}> {{ .Codec.Name }}({{ .Codec.RequestType }} request) {
+Stream<{{ .Codec.ResponseType }}> {{ .Codec.Name }}({{ .Codec.RequestType }} request, {RetryRunner? retry}) {
   if (isClosed) throw StateError('Service is closed');
   if (_{{ .Codec.Name }} case final {{ .Codec.Name }}?) {
     return {{ .Codec.Name }}(request);
@@ -31,7 +34,7 @@ Stream<{{ .Codec.ResponseType }}> {{ .Codec.Name }}({{ .Codec.RequestType }} req
 }
 {{- else if .Codec.IsLROGetOperation }}
 @override
-Future<Operation<T, S>> getOperation<T extends {{ .Model.Codec.ProtoPrefix }}ProtoMessage, S extends {{ .Model.Codec.ProtoPrefix }}ProtoMessage>(Operation<T, S> request) async {
+Future<Operation<T, S>> getOperation<T extends {{ .Model.Codec.ProtoPrefix }}ProtoMessage, S extends {{ .Model.Codec.ProtoPrefix }}ProtoMessage>(Operation<T, S> request, {RetryRunner? retry}) async {
   if (isClosed) throw StateError('Service is closed');
 
   if (_getOperation case final getOperation?) {
@@ -49,7 +52,7 @@ Future<Operation<T, S>> getOperation<T extends {{ .Model.Codec.ProtoPrefix }}Pro
 /// [Operation.responseAsMessage] will contain the operation's result.
 {{- end }}
 @override
-Future<{{ .Codec.ResponseType }}{{- if .OperationInfo }}<{{ .OperationInfo.Codec.ResponseType }}, {{ .OperationInfo.Codec.MetadataType }}>{{- end }}> {{ .Codec.Name }}({{ .Codec.RequestType }} request) async {
+Future<{{ .Codec.ResponseType }}{{- if .OperationInfo }}<{{ .OperationInfo.Codec.ResponseType }}, {{ .OperationInfo.Codec.MetadataType }}>{{- end }}> {{ .Codec.Name }}({{ .Codec.RequestType }} request, {RetryRunner? retry}) async {
   if (isClosed) throw StateError('Service is closed');
 
   if (_{{ .Codec.Name }} case final {{ .Codec.Name }}?) {
