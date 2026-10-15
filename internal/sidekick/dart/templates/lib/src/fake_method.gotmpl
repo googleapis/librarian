@@ -21,8 +21,8 @@ limitations under the License.
 /// the API service. Throws a [ServiceException] if the API method failed for
 /// any reason.
 ///
-/// Failed requests are retried using [retry] if provided, or the default retry
-/// policy for this method otherwise.
+/// Failed requests are retried using [retry] if provided, and not retried
+/// otherwise.
 {{- if .Codec.ServerSideStreaming }}
 @override
 Stream<{{ .Codec.ResponseType }}> {{ .Codec.Name }}({{ .Codec.RequestType }} request, {RetryRunner? retry}) {
