@@ -42,42 +42,8 @@ func Add(cfg *config.Config, lib *config.Library) (*config.Library, error) {
 	if err != nil {
 		return nil, err
 	}
+	copyFromSiblingAPI(cfg, newLib)
 	return newLib, nil
-}
-
-func copyCloudOpts(existingLib *config.Library, newAPI *config.API) {
-	if len(existingLib.APIs) == 0 {
-		return
-	}
-	firstAPI := existingLib.APIs[0]
-	if firstAPI.Ruby == nil || firstAPI.Ruby.RubyCloudOpts == nil {
-		return
-	}
-	if newAPI.Ruby == nil {
-		newAPI.Ruby = &config.RubyAPI{}
-	}
-	newAPI.Ruby.RubyCloudOpts = &config.RubyCloudOpts{
-		EnvPrefix:           firstAPI.Ruby.RubyCloudOpts.EnvPrefix,
-		ExtraDependencies:   firstAPI.Ruby.RubyCloudOpts.ExtraDependencies,
-		FactoryMethodSuffix: firstAPI.Ruby.RubyCloudOpts.FactoryMethodSuffix,
-		GemName:             firstAPI.Ruby.RubyCloudOpts.GemName,
-		GemNamespace:        firstAPI.Ruby.RubyCloudOpts.GemNamespace,
-		GenericEndpoint:     firstAPI.Ruby.RubyCloudOpts.GenericEndpoint,
-		MigrationVersion:    firstAPI.Ruby.RubyCloudOpts.MigrationVersion,
-		NamespaceOverride:   firstAPI.Ruby.RubyCloudOpts.NamespaceOverride,
-		PathOverride:        firstAPI.Ruby.RubyCloudOpts.PathOverride,
-		RenamedFrom:         firstAPI.Ruby.RubyCloudOpts.RenamedFrom,
-		ServiceOverride:     firstAPI.Ruby.RubyCloudOpts.ServiceOverride,
-		Title:               firstAPI.Ruby.RubyCloudOpts.Title,
-		WrapperGemOverride:  firstAPI.Ruby.RubyCloudOpts.WrapperGemOverride,
-		WrapperOf:           firstAPI.Ruby.RubyCloudOpts.WrapperOf,
-		YardStrict:          firstAPI.Ruby.RubyCloudOpts.YardStrict,
-	}
-	log.Printf(
-		"WARNING: customized ruby_cloud_opts is copied from %q to %q, but this may not be correct for %q. "+
-			"Please review and edit ruby_cloud_opts in librarian.yaml if needed.",
-		firstAPI.Path, newAPI.Path, newAPI.Path,
-	)
 }
 
 // addWrapper initializes a new Ruby main client library configuration.
@@ -119,4 +85,57 @@ func configureWrapper(lib *config.Library, versionedAPI string) *config.Library 
 	}
 	lib.Ruby.WrapperOf = []string{fmt.Sprintf("%s:0.0", filepath.Base(versionedAPI))}
 	return lib
+}
+
+func copyFromSiblingAPI(cfg *config.Config, lib *config.Library) {
+	for _, existingLib := range cfg.Libraries {
+		existingAPI := existingLib.APIs[0]
+		if !hasSamePathPrefix(existingAPI.Path, lib.APIs[0].Path) {
+			continue
+		}
+		copyCloudOpts(existingAPI, lib.APIs[0])
+	}
+}
+
+func hasSamePathPrefix(oneAPI, otherAPI string) bool {
+	return trimVersion(oneAPI) == trimVersion(otherAPI)
+}
+
+func trimVersion(apiPath string) string {
+	version := serviceconfig.ExtractVersion(apiPath)
+	if version == "" {
+		return apiPath
+	}
+	return strings.TrimSuffix(apiPath, "/"+version)
+}
+
+func copyCloudOpts(existingAPI, newAPI *config.API) {
+	if existingAPI.Ruby == nil || existingAPI.Ruby.RubyCloudOpts == nil {
+		return
+	}
+	if newAPI.Ruby == nil {
+		newAPI.Ruby = &config.RubyAPI{}
+	}
+	newAPI.Ruby.RubyCloudOpts = &config.RubyCloudOpts{
+		EnvPrefix:           existingAPI.Ruby.RubyCloudOpts.EnvPrefix,
+		ExtraDependencies:   existingAPI.Ruby.RubyCloudOpts.ExtraDependencies,
+		FactoryMethodSuffix: existingAPI.Ruby.RubyCloudOpts.FactoryMethodSuffix,
+		GemName:             existingAPI.Ruby.RubyCloudOpts.GemName,
+		GemNamespace:        existingAPI.Ruby.RubyCloudOpts.GemNamespace,
+		GenericEndpoint:     existingAPI.Ruby.RubyCloudOpts.GenericEndpoint,
+		MigrationVersion:    existingAPI.Ruby.RubyCloudOpts.MigrationVersion,
+		NamespaceOverride:   existingAPI.Ruby.RubyCloudOpts.NamespaceOverride,
+		PathOverride:        existingAPI.Ruby.RubyCloudOpts.PathOverride,
+		RenamedFrom:         existingAPI.Ruby.RubyCloudOpts.RenamedFrom,
+		ServiceOverride:     existingAPI.Ruby.RubyCloudOpts.ServiceOverride,
+		Title:               existingAPI.Ruby.RubyCloudOpts.Title,
+		WrapperGemOverride:  existingAPI.Ruby.RubyCloudOpts.WrapperGemOverride,
+		WrapperOf:           existingAPI.Ruby.RubyCloudOpts.WrapperOf,
+		YardStrict:          existingAPI.Ruby.RubyCloudOpts.YardStrict,
+	}
+	log.Printf(
+		"WARNING: customized ruby_cloud_opts is copied from %q to %q, but this may not be correct for %q. "+
+			"Please review and edit ruby_cloud_opts in librarian.yaml if needed.",
+		existingAPI.Path, newAPI.Path, newAPI.Path,
+	)
 }
