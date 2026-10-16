@@ -15,13 +15,13 @@
 package swift
 
 import (
-	"github.com/googleapis/librarian/internal/config"
-
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/sidekick/api"
 )
 
@@ -72,8 +72,8 @@ func checkClientsContents(t *testing.T, outDir string) {
 		t.Fatal(err)
 	}
 	contentStr := string(content)
-	got := extractBlock(t, contentStr, "_gapicApiClientHeader(", "\n")
-	want := "_gapicApiClientHeader(packageVersion: \"1.2.3-preview\")\n"
+	got := extractBlock(t, contentStr, ".gapic(", "\n")
+	want := ".gapic(packageVersion: \"1.2.3-preview\")\n"
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
@@ -87,9 +87,16 @@ func checkStubContents(t *testing.T, outDir string) {
 		t.Fatal(err)
 	}
 	contentStr := string(content)
-	got := extractBlock(t, contentStr, "req.addHeader(name: ", "value: Clients.clientHeader)")
-	want := `req.addHeader(name: GoogleGax._HeaderNames.apiClient, value: Clients.clientHeader)`
+	got := extractBlock(t, contentStr, "self.inner = try GoogleGax._HTTPClient(", "\n      )")
+	want := `self.inner = try GoogleGax._HTTPClient(
+        from: options,
+        withDefaultEndpoint: "https://",
+        clientHeader: Clients.clientHeader
+      )`
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+	if strings.Contains(contentStr, "req.addHeader(name: GoogleGax._HeaderNames.apiClient") {
+		t.Errorf("expected no per-RPC clientHeader addition in method stub:\n%s", contentStr)
 	}
 }

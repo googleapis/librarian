@@ -29,6 +29,6 @@ import Foundation
 
 // Defines concrete implementations of the client protocols.
 public enum Clients {
-  static let clientHeader: Swift.String =
-    GoogleGax._gapicApiClientHeader(packageVersion: "{{ .Codec.PackageVersion }}")
+  static let clientHeader: GoogleGax._ApiClientHeader =
+    .gapic(packageVersion: "{{ .Codec.PackageVersion }}")
 }
