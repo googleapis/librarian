@@ -265,3 +265,242 @@ func TestSearchVersionedAPI(t *testing.T) {
 		})
 	}
 }
+
+func TestUpdateExistingLibrary(t *testing.T) {
+	for _, test := range []struct {
+		name string
+		lib  *config.Library
+		api  *config.API
+		want *config.Library
+	}{
+		{
+			name: "no ruby config on first API",
+			lib: &config.Library{
+				Name: "google-cloud-secretmanager",
+				APIs: []*config.API{
+					{Path: "google/cloud/secretmanager/v1"},
+				},
+			},
+			api: &config.API{Path: "google/cloud/secretmanager/v1beta1"},
+			want: &config.Library{
+				Name: "google-cloud-secretmanager",
+				APIs: []*config.API{
+					{Path: "google/cloud/secretmanager/v1"},
+					{Path: "google/cloud/secretmanager/v1beta1"},
+				},
+			},
+		},
+		{
+			name: "no ruby cloud opts on first API",
+			lib: &config.Library{
+				Name: "google-cloud-secretmanager",
+				APIs: []*config.API{
+					{
+						Path: "google/cloud/secretmanager/v1",
+						Ruby: &config.RubyAPI{
+							AdditionalProtos: []string{"extra.proto"},
+						},
+					},
+				},
+			},
+			api: &config.API{Path: "google/cloud/secretmanager/v1beta1"},
+			want: &config.Library{
+				Name: "google-cloud-secretmanager",
+				APIs: []*config.API{
+					{
+						Path: "google/cloud/secretmanager/v1",
+						Ruby: &config.RubyAPI{
+							AdditionalProtos: []string{"extra.proto"},
+						},
+					},
+					{Path: "google/cloud/secretmanager/v1beta1"},
+				},
+			},
+		},
+		{
+			name: "ruby cloud opts copied to API with nil Ruby config",
+			lib: &config.Library{
+				Name: "google-cloud-secretmanager",
+				APIs: []*config.API{
+					{
+						Path: "google/cloud/secretmanager/v1",
+						Ruby: &config.RubyAPI{
+							RubyCloudOpts: &config.RubyCloudOpts{
+								EnvPrefix:           "SECRET_MANAGER",
+								ExtraDependencies:   "google-cloud-core ~> 1.6",
+								FactoryMethodSuffix: "service",
+								GemName:             "google-cloud-secret_manager",
+								GemNamespace:        "Google::Cloud::SecretManager",
+								GenericEndpoint:     true,
+								MigrationVersion:    "0.1.0",
+								NamespaceOverride:   "Google::Cloud::SecretManager",
+								PathOverride:        "google/cloud/secret_manager",
+								RenamedFrom:         "google-cloud-secretmanager-v1",
+								ServiceOverride:     "SecretManagerService",
+								Title:               "Secret Manager",
+								WrapperGemOverride:  "google-cloud-secret_manager",
+								WrapperOf:           "v1:0.0",
+								YardStrict:          "true",
+							},
+						},
+					},
+				},
+			},
+			api: &config.API{Path: "google/cloud/secretmanager/v1beta1"},
+			want: &config.Library{
+				Name: "google-cloud-secretmanager",
+				APIs: []*config.API{
+					{
+						Path: "google/cloud/secretmanager/v1",
+						Ruby: &config.RubyAPI{
+							RubyCloudOpts: &config.RubyCloudOpts{
+								EnvPrefix:           "SECRET_MANAGER",
+								ExtraDependencies:   "google-cloud-core ~> 1.6",
+								FactoryMethodSuffix: "service",
+								GemName:             "google-cloud-secret_manager",
+								GemNamespace:        "Google::Cloud::SecretManager",
+								GenericEndpoint:     true,
+								MigrationVersion:    "0.1.0",
+								NamespaceOverride:   "Google::Cloud::SecretManager",
+								PathOverride:        "google/cloud/secret_manager",
+								RenamedFrom:         "google-cloud-secretmanager-v1",
+								ServiceOverride:     "SecretManagerService",
+								Title:               "Secret Manager",
+								WrapperGemOverride:  "google-cloud-secret_manager",
+								WrapperOf:           "v1:0.0",
+								YardStrict:          "true",
+							},
+						},
+					},
+					{
+						Path: "google/cloud/secretmanager/v1beta1",
+						Ruby: &config.RubyAPI{
+							RubyCloudOpts: &config.RubyCloudOpts{
+								EnvPrefix:           "SECRET_MANAGER",
+								ExtraDependencies:   "google-cloud-core ~> 1.6",
+								FactoryMethodSuffix: "service",
+								GemName:             "google-cloud-secret_manager",
+								GemNamespace:        "Google::Cloud::SecretManager",
+								GenericEndpoint:     true,
+								MigrationVersion:    "0.1.0",
+								NamespaceOverride:   "Google::Cloud::SecretManager",
+								PathOverride:        "google/cloud/secret_manager",
+								RenamedFrom:         "google-cloud-secretmanager-v1",
+								ServiceOverride:     "SecretManagerService",
+								Title:               "Secret Manager",
+								WrapperGemOverride:  "google-cloud-secret_manager",
+								WrapperOf:           "v1:0.0",
+								YardStrict:          "true",
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "ruby cloud opts copied preserving existing Ruby fields",
+			lib: &config.Library{
+				Name: "google-cloud-secretmanager",
+				APIs: []*config.API{
+					{
+						Path: "google/cloud/secretmanager/v1",
+						Ruby: &config.RubyAPI{
+							RubyCloudOpts: &config.RubyCloudOpts{
+								GemName: "google-cloud-secret_manager",
+							},
+						},
+					},
+				},
+			},
+			api: &config.API{
+				Path: "google/cloud/secretmanager/v1beta1",
+				Ruby: &config.RubyAPI{
+					AdditionalProtos: []string{"beta.proto"},
+				},
+			},
+			want: &config.Library{
+				Name: "google-cloud-secretmanager",
+				APIs: []*config.API{
+					{
+						Path: "google/cloud/secretmanager/v1",
+						Ruby: &config.RubyAPI{
+							RubyCloudOpts: &config.RubyCloudOpts{
+								GemName: "google-cloud-secret_manager",
+							},
+						},
+					},
+					{
+						Path: "google/cloud/secretmanager/v1beta1",
+						Ruby: &config.RubyAPI{
+							AdditionalProtos: []string{"beta.proto"},
+							RubyCloudOpts: &config.RubyCloudOpts{
+								GemName: "google-cloud-secret_manager",
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "ruby cloud opts copied from first API only when multiple APIs exist",
+			lib: &config.Library{
+				Name: "google-cloud-secretmanager",
+				APIs: []*config.API{
+					{
+						Path: "google/cloud/secretmanager/v1",
+						Ruby: &config.RubyAPI{
+							RubyCloudOpts: &config.RubyCloudOpts{
+								GemName: "gem-from-first-api",
+							},
+						},
+					},
+					{
+						Path: "google/cloud/secretmanager/v1alpha",
+						Ruby: &config.RubyAPI{
+							RubyCloudOpts: &config.RubyCloudOpts{
+								GemName: "gem-from-second-api",
+							},
+						},
+					},
+				},
+			},
+			api: &config.API{Path: "google/cloud/secretmanager/v1beta1"},
+			want: &config.Library{
+				Name: "google-cloud-secretmanager",
+				APIs: []*config.API{
+					{
+						Path: "google/cloud/secretmanager/v1",
+						Ruby: &config.RubyAPI{
+							RubyCloudOpts: &config.RubyCloudOpts{
+								GemName: "gem-from-first-api",
+							},
+						},
+					},
+					{
+						Path: "google/cloud/secretmanager/v1alpha",
+						Ruby: &config.RubyAPI{
+							RubyCloudOpts: &config.RubyCloudOpts{
+								GemName: "gem-from-second-api",
+							},
+						},
+					},
+					{
+						Path: "google/cloud/secretmanager/v1beta1",
+						Ruby: &config.RubyAPI{
+							RubyCloudOpts: &config.RubyCloudOpts{
+								GemName: "gem-from-first-api",
+							},
+						},
+					},
+				},
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			UpdateExistingLibrary(test.lib, test.api)
+			if diff := cmp.Diff(test.want, test.lib); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
