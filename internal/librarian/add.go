@@ -392,8 +392,6 @@ func updateExistingLibrary(cfg *config.Config, existingLib *config.Library, api 
 		if err != nil {
 			return "", nil, err
 		}
-	case config.LanguageRuby:
-		ruby.UpdateExistingLibrary(existingLib, api)
 	default:
 		return "", nil, fmt.Errorf("%w: %s", errLibraryAlreadyExists, existingLib.Name)
 	}

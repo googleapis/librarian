@@ -45,13 +45,6 @@ func Add(cfg *config.Config, lib *config.Library) (*config.Library, error) {
 	return newLib, nil
 }
 
-// UpdateExistingLibrary adds a new API to an existing Ruby library configuration,
-// copying Ruby cloud options from the first API.
-func UpdateExistingLibrary(existingLib *config.Library, api *config.API) {
-	copyCloudOpts(existingLib, api)
-	existingLib.APIs = append(existingLib.APIs, api)
-}
-
 func copyCloudOpts(existingLib *config.Library, newAPI *config.API) {
 	if len(existingLib.APIs) == 0 {
 		return
