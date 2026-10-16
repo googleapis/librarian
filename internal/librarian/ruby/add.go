@@ -44,6 +44,35 @@ func Add(cfg *config.Config, lib *config.Library) (*config.Library, error) {
 	return newLib, nil
 }
 
+func UpdateExistingLibrary(existingLib *config.Library, api *config.API) {
+	copyCloudOpts(existingLib, api)
+	existingLib.APIs = append(existingLib.APIs, api)
+}
+
+func copyCloudOpts(existingLib *config.Library, newAPI *config.API) {
+	firstAPI := existingLib.APIs[0]
+	if firstAPI.Ruby == nil || firstAPI.Ruby.RubyCloudOpts == nil {
+		return
+	}
+	newAPI.Ruby.RubyCloudOpts = &config.RubyCloudOpts{
+		EnvPrefix:           firstAPI.Ruby.RubyCloudOpts.EnvPrefix,
+		ExtraDependencies:   firstAPI.Ruby.RubyCloudOpts.ExtraDependencies,
+		FactoryMethodSuffix: firstAPI.Ruby.RubyCloudOpts.FactoryMethodSuffix,
+		GemName:             firstAPI.Ruby.RubyCloudOpts.GemName,
+		GemNamespace:        firstAPI.Ruby.RubyCloudOpts.GemNamespace,
+		GenericEndpoint:     firstAPI.Ruby.RubyCloudOpts.GenericEndpoint,
+		MigrationVersion:    firstAPI.Ruby.RubyCloudOpts.MigrationVersion,
+		NamespaceOverride:   firstAPI.Ruby.RubyCloudOpts.NamespaceOverride,
+		PathOverride:        firstAPI.Ruby.RubyCloudOpts.PathOverride,
+		RenamedFrom:         firstAPI.Ruby.RubyCloudOpts.RenamedFrom,
+		ServiceOverride:     firstAPI.Ruby.RubyCloudOpts.ServiceOverride,
+		Title:               firstAPI.Ruby.RubyCloudOpts.Title,
+		WrapperGemOverride:  firstAPI.Ruby.RubyCloudOpts.WrapperGemOverride,
+		WrapperOf:           firstAPI.Ruby.RubyCloudOpts.WrapperOf,
+		YardStrict:          firstAPI.Ruby.RubyCloudOpts.YardStrict,
+	}
+}
+
 // addWrapper initializes a new Ruby main client library configuration.
 func addWrapper(cfg *config.Config, lib *config.Library) (*config.Library, error) {
 	if len(lib.APIs) != 1 {
