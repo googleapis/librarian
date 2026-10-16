@@ -15,15 +15,13 @@
 package swift
 
 import (
-	"strings"
-
-	"github.com/googleapis/librarian/internal/config"
-
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/sidekick/api"
 )
 
