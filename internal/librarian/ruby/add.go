@@ -97,6 +97,9 @@ func copyFromSiblingAPI(cfg *config.Config, lib *config.Library) {
 	}
 }
 
+// hasSamePathPrefix reports whether the two API paths have the same prefix when the
+// version suffix is trimmed.
+// This function doesn't check if the API paths are the same since it should be filtered out by the caller.
 func hasSamePathPrefix(oneAPI, otherAPI string) bool {
 	return trimVersion(oneAPI) == trimVersion(otherAPI)
 }
