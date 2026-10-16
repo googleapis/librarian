@@ -600,9 +600,6 @@ func mergeJava(dst, src *config.JavaModule) *config.JavaModule {
 	if src.ArtifactID != "" {
 		res.ArtifactID = src.ArtifactID
 	}
-	if src.APIReference != "" {
-		res.APIReference = src.APIReference
-	}
 	if src.APIDescriptionOverride != "" {
 		res.APIDescriptionOverride = src.APIDescriptionOverride
 	}

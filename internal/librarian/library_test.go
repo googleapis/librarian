@@ -1419,7 +1419,6 @@ func TestMergeJava(t *testing.T) {
 			dst:  &config.JavaModule{GroupID: "com.google"},
 			src: &config.JavaModule{
 				APIIDOverride:                "id",
-				APIReference:                 "ref",
 				APIDescriptionOverride:       "desc",
 				APIShortnameOverride:         "short",
 				ArtifactID:                   "new-artifact",
@@ -1441,7 +1440,6 @@ func TestMergeJava(t *testing.T) {
 			},
 			want: &config.JavaModule{
 				APIIDOverride:                "id",
-				APIReference:                 "ref",
 				APIDescriptionOverride:       "desc",
 				APIShortnameOverride:         "short",
 				ArtifactID:                   "new-artifact",
