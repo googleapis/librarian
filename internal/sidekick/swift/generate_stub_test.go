@@ -356,7 +356,8 @@ func TestGenerateStub_Grpc(t *testing.T) {
 		t.Errorf("transport missing inner: GoogleGaxGRPC._GRPCClient field:\n%s", transportStr)
 	}
 	if !strings.Contains(transportStr, `self.inner = try GoogleGaxGRPC._GRPCClient(`) ||
-		!strings.Contains(transportStr, `withDefaultEndpoint: "https://storage.googleapis.com"`) {
+		!strings.Contains(transportStr, `withDefaultEndpoint: "https://storage.googleapis.com"`) ||
+		!strings.Contains(transportStr, `clientHeader: Clients.clientHeader`) {
 		t.Errorf("transport missing _GRPCClient initialization with default endpoint:\n%s", transportStr)
 	}
 

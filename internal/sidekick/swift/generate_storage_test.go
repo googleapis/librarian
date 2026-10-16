@@ -266,7 +266,8 @@ func TestGenerateStorage_MultiModel(t *testing.T) {
 		t.Errorf("StorageControlClient.swift missing polling policy fields:\n%s", clientStr)
 	}
 	if !strings.Contains(clientStr, "let sharedGrpcClient = try GoogleGaxGRPC._GRPCClient(") ||
-		!strings.Contains(clientStr, `withDefaultEndpoint: "https://storage.googleapis.com"`) {
+		!strings.Contains(clientStr, `withDefaultEndpoint: "https://storage.googleapis.com"`) ||
+		!strings.Contains(clientStr, `clientHeader: Clients.clientHeader`) {
 		t.Errorf("StorageControlClient.swift missing shared _GRPCClient initialization:\n%s", clientStr)
 	}
 	if !strings.Contains(clientStr, "options.retryPolicy = StorageBaseRetryPolicy.defaultPolicy") {

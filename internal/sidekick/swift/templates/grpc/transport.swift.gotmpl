@@ -43,7 +43,8 @@ extension Clients {
     public init(_ options: GoogleGax.ClientOptions = .init()) throws {
       self.inner = try GoogleGaxGRPC._GRPCClient(
         from: options,
-        withDefaultEndpoint: "https://{{ .DefaultHost }}"
+        withDefaultEndpoint: "https://{{ .DefaultHost }}",
+        clientHeader: Clients.clientHeader
       )
     }
 
@@ -80,8 +81,7 @@ extension Clients {
       let protoResponse: {{ with .OutputType }}{{ .Codec.ProtoTypeName }}{{ end }} = try await self.inner.execute(
         path: "/{{ .SourceService.Package }}.{{ .SourceService.Name }}/{{ .Name }}",
         request: protoRequest,
-        options: options,
-        clientHeader: Clients.clientHeader{{ if .Codec.HasRoutingParams }},
+        options: options{{ if .Codec.HasRoutingParams }},
         routingParams: routingParams{{ end }}
       )
       return try {{ .Codec.ReturnType }}(proto: protoResponse)
@@ -89,8 +89,7 @@ extension Clients {
       let _: SwiftProtobuf.Google_Protobuf_Empty = try await self.inner.execute(
         path: "/{{ .SourceService.Package }}.{{ .SourceService.Name }}/{{ .Name }}",
         request: protoRequest,
-        options: options,
-        clientHeader: Clients.clientHeader{{ if .Codec.HasRoutingParams }},
+        options: options{{ if .Codec.HasRoutingParams }},
         routingParams: routingParams{{ end }}
       )
       {{- end }}
