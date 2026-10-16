@@ -17,6 +17,7 @@ package ruby
 import (
 	"errors"
 	"fmt"
+	"log"
 	"path/filepath"
 	"strings"
 
@@ -79,6 +80,11 @@ func copyCloudOpts(existingLib *config.Library, newAPI *config.API) {
 		WrapperOf:           firstAPI.Ruby.RubyCloudOpts.WrapperOf,
 		YardStrict:          firstAPI.Ruby.RubyCloudOpts.YardStrict,
 	}
+	log.Printf(
+		"WARNING: customized ruby_cloud_opts is copied from %q to %q, but this may not be correct for %q. "+
+			"Please review and edit ruby_cloud_opts in librarian.yaml if needed.",
+		firstAPI.Path, newAPI.Path, newAPI.Path,
+	)
 }
 
 // addWrapper initializes a new Ruby main client library configuration.
