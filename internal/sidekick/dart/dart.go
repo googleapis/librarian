@@ -30,6 +30,7 @@ import (
 const (
 	httpImport          = "package:http/http.dart as http"
 	serviceClientImport = "package:google_cloud_rpc/service_client.dart"
+	retryImport         = "package:google_cloud_rpc/retry.dart"
 	encodingImport      = "package:google_cloud_protobuf/src/encoding.dart"
 	protobufImport      = "package:google_cloud_protobuf/protobuf.dart"
 )
