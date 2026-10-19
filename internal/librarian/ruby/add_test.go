@@ -96,6 +96,15 @@ func TestAdd(t *testing.T) {
 							},
 						},
 					},
+					{
+						Name: "google-cloud-secretmanager",
+						APIs: []*config.API{
+							{Path: "google/cloud/secretmanager/v1"},
+						},
+						Ruby: &config.RubyPackage{
+							WrapperOf: []string{"v1:0.0"},
+						},
+					},
 				},
 			},
 			in: &config.Library{
