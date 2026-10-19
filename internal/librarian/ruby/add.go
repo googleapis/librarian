@@ -88,10 +88,12 @@ func configureWrapper(lib *config.Library, versionedAPI string) *config.Library 
 }
 
 func copyFromSiblingAPI(cfg *config.Config, lib *config.Library) {
+	if lib.Ruby != nil && len(lib.Ruby.WrapperOf) > 0 {
+		return // wrappers don't inherit ruby_cloud_opts
+	}
 	for _, existingLib := range cfg.Libraries {
 		existingAPI := existingLib.APIs[0]
-		if (lib.Ruby != nil && len(lib.Ruby.WrapperOf) != 0) ||
-			!hasSamePathPrefix(existingAPI.Path, lib.APIs[0].Path) {
+		if !hasSamePathPrefix(existingAPI.Path, lib.APIs[0].Path) {
 			continue
 		}
 		copyCloudOpts(existingAPI, lib.APIs[0])
