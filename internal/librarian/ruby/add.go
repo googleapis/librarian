@@ -17,6 +17,7 @@ package ruby
 import (
 	"errors"
 	"fmt"
+	"log"
 	"path/filepath"
 	"strings"
 
@@ -41,6 +42,7 @@ func Add(cfg *config.Config, lib *config.Library) (*config.Library, error) {
 	if err != nil {
 		return nil, err
 	}
+	copyFromSiblingAPI(cfg, newLib)
 	return newLib, nil
 }
 
@@ -83,4 +85,48 @@ func configureWrapper(lib *config.Library, versionedAPI string) *config.Library 
 	}
 	lib.Ruby.WrapperOf = []string{fmt.Sprintf("%s:0.0", filepath.Base(versionedAPI))}
 	return lib
+}
+
+func copyFromSiblingAPI(cfg *config.Config, lib *config.Library) {
+	if lib.Ruby != nil && len(lib.Ruby.WrapperOf) > 0 {
+		return // wrappers don't inherit ruby_cloud_opts
+	}
+	for _, existingLib := range cfg.Libraries {
+		existingAPI := existingLib.APIs[0]
+		if !hasSamePathPrefix(existingAPI.Path, lib.APIs[0].Path) {
+			continue
+		}
+		copyCloudOpts(existingAPI, lib.APIs[0])
+	}
+}
+
+// hasSamePathPrefix reports whether the two API paths have the same prefix when the
+// version suffix is trimmed. The caller is responsible for ensuring that the two API
+// paths are not the same.
+func hasSamePathPrefix(oneAPI, otherAPI string) bool {
+	return trimVersion(oneAPI) == trimVersion(otherAPI)
+}
+
+func trimVersion(apiPath string) string {
+	version := serviceconfig.ExtractVersion(apiPath)
+	if version == "" {
+		return apiPath
+	}
+	return strings.TrimSuffix(apiPath, "/"+version)
+}
+
+func copyCloudOpts(existingAPI, newAPI *config.API) {
+	if existingAPI.Ruby == nil || existingAPI.Ruby.RubyCloudOpts == nil {
+		return
+	}
+	opts := *existingAPI.Ruby.RubyCloudOpts
+	if newAPI.Ruby == nil {
+		newAPI.Ruby = &config.RubyAPI{}
+	}
+	newAPI.Ruby.RubyCloudOpts = &opts
+	log.Printf(
+		"WARNING: customized ruby_cloud_opts is copied from %q to %q, but this may not be correct for %q. "+
+			"Please review and edit ruby_cloud_opts in librarian.yaml if needed.",
+		existingAPI.Path, newAPI.Path, newAPI.Path,
+	)
 }
