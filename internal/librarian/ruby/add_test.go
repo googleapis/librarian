@@ -244,7 +244,7 @@ func TestAdd(t *testing.T) {
 			},
 		},
 		{
-			name: "do not copy from API for a wrapper gem",
+			name: "a new wrapper doesn't inherit options",
 			cfg: &config.Config{
 				Libraries: []*config.Library{
 					{
