@@ -227,6 +227,15 @@ func TestAdd(t *testing.T) {
 							},
 						},
 					},
+					{
+						Name: "google-cloud-asset",
+						APIs: []*config.API{
+							{Path: "google/cloud/asset/v1"},
+						},
+						Ruby: &config.RubyPackage{
+							WrapperOf: []string{"v1:0.29.0"},
+						},
+					},
 				},
 			},
 			in: &config.Library{
