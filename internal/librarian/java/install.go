@@ -28,8 +28,11 @@ import (
 )
 
 const (
-	envPath  = "PATH"
-	toolsDir = "java_tools"
+	// defaultJavaToolOptions bounds per-JVM heap and threads for concurrent execution and disables perfdata locking.
+	defaultJavaToolOptions = "-Xmx1024m -XX:ActiveProcessorCount=2 -XX:-UsePerfData"
+	envJavaToolOptions     = "JAVA_TOOL_OPTIONS"
+	envPath                = "PATH"
+	toolsDir               = "java_tools"
 )
 
 // errNoToolsSpecified indicates no Java tools were provided in the configuration.
@@ -93,11 +96,19 @@ func getLibDir() (string, error) {
 	return filepath.Abs(filepath.Join(installDir, "lib"))
 }
 
-// getToolsEnv returns an environment map with the Java tools bin directory prepended to the PATH.
+// getToolsEnv returns an environment map with the Java tools bin directory prepended to the PATH
+// and bounded JVM memory and thread options for concurrent execution.
 func getToolsEnv() (map[string]string, error) {
 	binDir, err := getBinDir()
 	if err != nil {
 		return nil, err
 	}
-	return map[string]string{envPath: binDir}, nil
+	javaToolOptions := defaultJavaToolOptions
+	if existing := os.Getenv(envJavaToolOptions); existing != "" {
+		javaToolOptions = defaultJavaToolOptions + " " + existing
+	}
+	return map[string]string{
+		envJavaToolOptions: javaToolOptions,
+		envPath:            binDir,
+	}, nil
 }
