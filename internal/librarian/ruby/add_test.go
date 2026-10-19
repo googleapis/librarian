@@ -243,6 +243,45 @@ func TestAdd(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "do not copy from API for a wrapper gem",
+			cfg: &config.Config{
+				Libraries: []*config.Library{
+					{
+						Name: "google-cloud-asset-v1",
+						APIs: []*config.API{
+							{
+								Path: "google/cloud/asset/v1",
+								Ruby: &config.RubyAPI{
+									RubyCloudOpts: &config.RubyCloudOpts{
+										GemName: "google-cloud-asset",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			in: &config.Library{
+				Name: "google-cloud-asset",
+				APIs: []*config.API{
+					{Path: "google/cloud/asset/v1"},
+				},
+				Ruby: &config.RubyPackage{
+					WrapperOf: []string{"v1:0.29.0"},
+				},
+			},
+			want: &config.Library{
+				Name:    "google-cloud-asset",
+				Version: "0.0.1",
+				APIs: []*config.API{
+					{Path: "google/cloud/asset/v1"},
+				},
+				Ruby: &config.RubyPackage{
+					WrapperOf: []string{"v1:0.29.0"},
+				},
+			},
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			got, err := Add(test.cfg, test.in)

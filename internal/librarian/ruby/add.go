@@ -90,7 +90,7 @@ func configureWrapper(lib *config.Library, versionedAPI string) *config.Library 
 func copyFromSiblingAPI(cfg *config.Config, lib *config.Library) {
 	for _, existingLib := range cfg.Libraries {
 		existingAPI := existingLib.APIs[0]
-		if (lib.Ruby != nil && len(lib.Ruby.WrapperOf) != 0) || 
+		if (lib.Ruby != nil && len(lib.Ruby.WrapperOf) != 0) ||
 			!hasSamePathPrefix(existingAPI.Path, lib.APIs[0].Path) {
 			continue
 		}
