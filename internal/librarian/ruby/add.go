@@ -116,26 +116,11 @@ func copyCloudOpts(existingAPI, newAPI *config.API) {
 	if existingAPI.Ruby == nil || existingAPI.Ruby.RubyCloudOpts == nil {
 		return
 	}
+	opts := *existingAPI.Ruby.RubyCloudOpts
 	if newAPI.Ruby == nil {
 		newAPI.Ruby = &config.RubyAPI{}
 	}
-	newAPI.Ruby.RubyCloudOpts = &config.RubyCloudOpts{
-		EnvPrefix:           existingAPI.Ruby.RubyCloudOpts.EnvPrefix,
-		ExtraDependencies:   existingAPI.Ruby.RubyCloudOpts.ExtraDependencies,
-		FactoryMethodSuffix: existingAPI.Ruby.RubyCloudOpts.FactoryMethodSuffix,
-		GemName:             existingAPI.Ruby.RubyCloudOpts.GemName,
-		GemNamespace:        existingAPI.Ruby.RubyCloudOpts.GemNamespace,
-		GenericEndpoint:     existingAPI.Ruby.RubyCloudOpts.GenericEndpoint,
-		MigrationVersion:    existingAPI.Ruby.RubyCloudOpts.MigrationVersion,
-		NamespaceOverride:   existingAPI.Ruby.RubyCloudOpts.NamespaceOverride,
-		PathOverride:        existingAPI.Ruby.RubyCloudOpts.PathOverride,
-		RenamedFrom:         existingAPI.Ruby.RubyCloudOpts.RenamedFrom,
-		ServiceOverride:     existingAPI.Ruby.RubyCloudOpts.ServiceOverride,
-		Title:               existingAPI.Ruby.RubyCloudOpts.Title,
-		WrapperGemOverride:  existingAPI.Ruby.RubyCloudOpts.WrapperGemOverride,
-		WrapperOf:           existingAPI.Ruby.RubyCloudOpts.WrapperOf,
-		YardStrict:          existingAPI.Ruby.RubyCloudOpts.YardStrict,
-	}
+	newAPI.Ruby.RubyCloudOpts = &opts
 	log.Printf(
 		"WARNING: customized ruby_cloud_opts is copied from %q to %q, but this may not be correct for %q. "+
 			"Please review and edit ruby_cloud_opts in librarian.yaml if needed.",
