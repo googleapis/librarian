@@ -46,7 +46,6 @@ type methodAnnotation struct {
 	GrpcResourceNameArgs      []string
 	IsLroPoller               bool
 	IsDiscoveryLro            bool
-	IsBigQueryInsertJob       bool
 	ExtensibleBuilder         bool
 	ClientSideStreaming       bool
 	ServerSideStreaming       bool
@@ -363,7 +362,6 @@ func (c *codec) annotateMethod(m *api.Method) (*methodAnnotation, error) {
 		GenerateRpcSamples:        generateRpcSamples,
 		IsLroPoller:               m.IsLroPoller,
 		IsDiscoveryLro:            isDiscoveryLro(m),
-		IsBigQueryInsertJob:       m.ID == ".google.cloud.bigquery.v2.JobService.InsertJob" && !slices.Contains(c.extensibleBuilders, m.ID),
 		ExtensibleBuilder:         slices.Contains(c.extensibleBuilders, m.ID),
 		ClientSideStreaming:       m.ClientSideStreaming,
 		ServerSideStreaming:       m.ServerSideStreaming,
