@@ -38,9 +38,7 @@ on:
       - 'review_requested'
       - 'review_request_removed'
 permissions:
-  actions: 'write'
   contents: 'read'
-  id-token: 'write'
   pull-requests: 'read'
 concurrency:
   group: '${{ github.workflow }}-${{ github.head_ref || github.ref }}'
