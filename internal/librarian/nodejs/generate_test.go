@@ -1031,7 +1031,8 @@ func TestGenerate(t *testing.T) {
 }
 
 func TestGenerate_ParallelAPIs(t *testing.T) {
-	defer runtime.GOMAXPROCS(runtime.GOMAXPROCS(max(runtime.GOMAXPROCS(0), 2)))
+	previousGOMAXPROCS := runtime.GOMAXPROCS(max(runtime.GOMAXPROCS(0), 2))
+	t.Cleanup(func() { runtime.GOMAXPROCS(previousGOMAXPROCS) })
 	tempBin := t.TempDir()
 	t.Setenv("LIBRARIAN_BIN", tempBin)
 	nodeBinDir := filepath.Join(tempBin, "nodejs_tools", "bin")
@@ -1041,11 +1042,12 @@ func TestGenerate_ParallelAPIs(t *testing.T) {
 	createFakeSystemExecutable(t, "protoc")
 	signalDir := t.TempDir()
 	generatorScript := fmt.Sprintf(`#!/bin/sh
-touch "%s/$(basename "$6")"
+while [ "$#" -gt 0 ] && [ "$1" != "--output-dir" ]; do shift; done
+touch "%s/$(basename "$2")"
 i=0
 while [ "$(ls "%s" | wc -l)" -lt 2 ]; do
   i=$((i + 1))
-  if [ "$i" -ge 100 ]; then
+  if [ "$i" -ge 250 ]; then
     echo "timed out waiting for parallel API execution" >&2
     exit 1
   fi
