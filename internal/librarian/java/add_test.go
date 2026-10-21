@@ -327,6 +327,7 @@ func TestDefaultLibraryName(t *testing.T) {
 		{"google/cloud/datacatalog/lineage/v1", "datacatalog-lineage"},
 		{"google/cloud/aiplatform/v1beta1", "aiplatform"},
 		{"google/shopping/merchant/datasources/v1", "shopping-merchant-datasources"},
+		{"google/devicesandservices/health/v4beta", "health"},
 	} {
 		t.Run(test.api, func(t *testing.T) {
 			got := DefaultLibraryName(test.api)

@@ -1,5 +1,23 @@
 # Changelog
 
+## [0.49.0](https://github.com/googleapis/librarian/compare/v0.48.0...v0.49.0) (2026-10-19)
+
+
+### Features
+
+* **internal/librarian/ruby:** copy sibling API `ruby_cloud_opts` ([#7789](https://github.com/googleapis/librarian/issues/7789)) ([108eacd](https://github.com/googleapis/librarian/commit/108eacd5b94422f0766421b0a247b21df064b325))
+* **internal/sidekick/rust:** extensible builders for module ([#7784](https://github.com/googleapis/librarian/issues/7784)) ([7f41f9c](https://github.com/googleapis/librarian/commit/7f41f9c03270c747f583f6bf7285fd052da46fe6))
+* **internal/sidekick/rust:** make GAPIC builders extensible ([#7782](https://github.com/googleapis/librarian/issues/7782)) ([f64425b](https://github.com/googleapis/librarian/commit/f64425b9a042e337c62d981ec8be0238978f5253))
+* **internal/sidekick/rust:** mark keep modules as internal ([#7781](https://github.com/googleapis/librarian/issues/7781)) ([6b0bf3b](https://github.com/googleapis/librarian/commit/6b0bf3b43336e58be104ecc2e358d803242f6efa))
+* **sidekick/swift:** mark .with helper as [@inlinable](https://github.com/inlinable) ([#7785](https://github.com/googleapis/librarian/issues/7785)) ([984188e](https://github.com/googleapis/librarian/commit/984188ef724e707146280a0702a8a8d0e8cfb5f3))
+
+
+### Bug Fixes
+
+* **internal/librarian/java:** strip google/devicesandservices/ prefix ([#7788](https://github.com/googleapis/librarian/issues/7788)) ([49220d5](https://github.com/googleapis/librarian/commit/49220d534cf561e076465c5bbd121f83d8180e06))
+* **parser/protobuf:** resolve HttpBody wildcards ([#7780](https://github.com/googleapis/librarian/issues/7780)) ([a30365b](https://github.com/googleapis/librarian/commit/a30365b7eda4cfd3b5988074282c59826b72e5e9)), refs [#7779](https://github.com/googleapis/librarian/issues/7779)
+* **sidekick/swift:** configure client header at init ([#7792](https://github.com/googleapis/librarian/issues/7792)) ([7b9c44c](https://github.com/googleapis/librarian/commit/7b9c44c06ee1528665bb224ba11661d54aad5768))
+
 ## [0.48.0](https://github.com/googleapis/librarian/compare/v0.47.0...v0.48.0) (2026-10-09)
 
 

@@ -46,8 +46,6 @@ type repoMetadata struct {
 
 	// Optional fields (appended in this order in Python)
 	// Java-specific field.
-	APIReference string `json:"api_reference,omitempty"`
-	// Java-specific field.
 	CodeownerTeam string `json:"codeowner_team,omitempty"`
 	IssueTracker  string `json:"issue_tracker,omitempty"`
 	// Java-specific field.
@@ -135,7 +133,6 @@ func deriveRepoMetadata(cfg *config.Config, library *config.Library, sourceDir s
 			metadata.ClientDocumentation = library.Java.ClientDocumentationOverride
 		}
 		// Java only fields
-		metadata.APIReference = library.Java.APIReference
 		metadata.CodeownerTeam = library.Java.CodeownerTeam
 	}
 

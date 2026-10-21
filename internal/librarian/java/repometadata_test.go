@@ -41,7 +41,6 @@ func TestRepoMetadata_write(t *testing.T) {
 		DistributionName:     "com.google.cloud:google-cloud-secretmanager",
 		APIID:                s.APIID,
 		LibraryType:          s.LibraryType,
-		APIReference:         "https://cloud.google.com/secret-manager/docs/reference/rest",
 		CodeownerTeam:        "cloud-java-team",
 		IssueTracker:         s.IssueTracker,
 		RestDocumentation:    "https://example.com/rest",
@@ -95,7 +94,6 @@ func TestDeriveRepoMetadata_Overrides(t *testing.T) {
 				APIIDOverride:                "custom.googleapis.com",
 				APIDescriptionOverride:       "Custom description",
 				APIShortnameOverride:         "custom-shortname",
-				APIReference:                 "https://custom.api.reference",
 				ArtifactID:                   "custom-artifact",
 				NamePrettyOverride:           "Custom Pretty Name",
 				ProductDocumentationOverride: "https://custom.docs",
@@ -117,7 +115,6 @@ func TestDeriveRepoMetadata_Overrides(t *testing.T) {
 				DistributionName:     "com.custom:custom-artifact",
 				APIID:                "custom.googleapis.com",
 				LibraryType:          "OTHER",
-				APIReference:         "https://custom.api.reference",
 			},
 		},
 		{

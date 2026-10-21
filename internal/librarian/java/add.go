@@ -33,6 +33,7 @@ var knownPrefixes = []string{
 	"google/cloud/",
 	"google/api/",
 	"google/devtools/",
+	"google/devicesandservices/",
 	"google/",
 }
 

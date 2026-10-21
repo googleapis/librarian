@@ -576,9 +576,6 @@ type JavaModule struct {
 	// Defaults to "{library.api_shortname}.googleapis.com".
 	APIIDOverride string `yaml:"api_id_override,omitempty"`
 
-	// APIReference is the URL for the API reference documentation.
-	APIReference string `yaml:"api_reference,omitempty"`
-
 	// APIDescriptionOverride allows the "api_description" field in
 	// .repo-metadata.json to be overridden.
 	APIDescriptionOverride string `yaml:"api_description_override,omitempty"`
