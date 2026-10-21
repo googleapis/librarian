@@ -779,6 +779,7 @@ func TestFindReleasedLibraries(t *testing.T) {
 			{Name: "PreviewBump", Version: "1.0.0-beta.1"},
 			{Name: "StaysUnversioned"},
 			{Name: "Deleted", Version: "1.2.3"},
+			{Name: "BumpedSkipped", Version: "1.2.3"},
 		},
 	}
 	cfgAfter := &config.Config{
@@ -791,6 +792,8 @@ func TestFindReleasedLibraries(t *testing.T) {
 			{Name: "StaysUnversioned"},
 			{Name: "AddedUnversioned", Version: ""},
 			{Name: "AddedWithVersion", Version: "1.0.0"},
+			{Name: "AddedSkipped", Version: "1.0.0", SkipRelease: true},
+			{Name: "BumpedSkipped", Version: "1.3.0", SkipRelease: true},
 		},
 	}
 	got, err := findReleasedLibraries(cfgBefore, cfgAfter)

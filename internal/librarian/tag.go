@@ -18,15 +18,27 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"path"
+	"path/filepath"
+	"slices"
 
 	"github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/git"
+	"github.com/googleapis/librarian/internal/semver"
 	"github.com/googleapis/librarian/internal/yaml"
 	"github.com/urfave/cli/v3"
 )
 
-var errNoLibrariesAtReleaseCommit = errors.New("commit does not release any libraries")
+// dartChangelogFile is created by `librarian bump` when preparing an initial
+// Dart package release, distinguishing released libraries from newly generated
+// unpublished libraries that already carry an initial version in librarian.yaml.
+const dartChangelogFile = "CHANGELOG.md"
+
+var (
+	errMissingTagFormat           = errors.New("no tag format configured")
+	errNoLibrariesAtReleaseCommit = errors.New("commit does not release any libraries")
+)
 
 func tagCommand() *cli.Command {
 	return &cli.Command{
@@ -66,34 +78,20 @@ func tag(ctx context.Context, releaseCommit string) error {
 		return err
 	}
 	if releaseCommit == "" {
-		latestReleaseCommit, err := findLatestReleaseCommitHash(ctx)
+		var err error
+		releaseCommit, err = findReleaseCommit(ctx)
 		if err != nil {
 			return err
 		}
-		releaseCommit = latestReleaseCommit
 	}
-	releaseCommitCfgContent, err := git.ShowFileAtRevision(ctx, command.Git, releaseCommit, config.LibrarianYAML)
+	releaseCommitCfg, err := loadConfigAtRevision(ctx, releaseCommit)
 	if err != nil {
 		return err
 	}
-	releaseCommitCfg, err := yaml.Unmarshal[config.Config]([]byte(releaseCommitCfgContent))
-	if err != nil {
-		return err
+	if releaseCommitCfg.Default == nil || releaseCommitCfg.Default.TagFormat == "" {
+		return errMissingTagFormat
 	}
-	// Load the immediately-preceding config so we can find all libraries that
-	// were released by that commit. (This duplicates work done in
-	// findLatestReleaseCommitHash, but keeps the interface simple - and means
-	// that if we specify the release commit directly, we can skip
-	// findLatestReleaseCommitHash entirely.)
-	beforeReleaseCommitCfgContent, err := git.ShowFileAtRevision(ctx, command.Git, releaseCommit+"~", config.LibrarianYAML)
-	if err != nil {
-		return err
-	}
-	beforeReleaseCommitCfg, err := yaml.Unmarshal[config.Config]([]byte(beforeReleaseCommitCfgContent))
-	if err != nil {
-		return err
-	}
-	librariesToTag, err := findReleasedLibraries(beforeReleaseCommitCfg, releaseCommitCfg)
+	librariesToTag, err := librariesToTagAtCommit(ctx, releaseCommit, releaseCommitCfg)
 	if err != nil {
 		return err
 	}
@@ -108,10 +106,201 @@ func tag(ctx context.Context, releaseCommit string) error {
 			return err
 		}
 		tagName := git.FormatTagName(tagFormat, lib.Name, lib.Version)
-		err = git.Tag(ctx, command.Git, tagName, releaseCommit)
-		if err != nil {
+		if err := git.Tag(ctx, command.Git, tagName, releaseCommit); err != nil {
 			return fmt.Errorf("error creating tag %s: %w", tagName, err)
 		}
 	}
 	return nil
+}
+
+func findReleaseCommit(ctx context.Context) (string, error) {
+	headCfg, err := loadConfigAtRevision(ctx, "HEAD")
+	if err == nil && headCfg.Language == config.LanguageDart {
+		return findDartReleaseCommit(ctx, headCfg)
+	}
+	return findLatestReleaseCommitHash(ctx)
+}
+
+func librariesToTagAtCommit(ctx context.Context, releaseCommit string, releaseCommitCfg *config.Config) ([]string, error) {
+	if releaseCommitCfg.Language == config.LanguageDart {
+		localTags, err := git.Tags(ctx, command.Git)
+		if err != nil {
+			return nil, err
+		}
+		return findDartLibrariesToTag(ctx, releaseCommit, releaseCommitCfg, localTags)
+	}
+	beforeReleaseCommitCfg, err := loadConfigAtRevision(ctx, releaseCommit+"~")
+	if err != nil {
+		return nil, err
+	}
+	return findReleasedLibraries(beforeReleaseCommitCfg, releaseCommitCfg)
+}
+
+func findDartReleaseCommit(ctx context.Context, headCfg *config.Config) (string, error) {
+	if headCfg.Default == nil || headCfg.Default.TagFormat == "" {
+		return "", errMissingTagFormat
+	}
+	localTags, err := git.Tags(ctx, command.Git)
+	if err != nil {
+		return "", err
+	}
+	paths := append([]string{config.LibrarianYAML}, dartChangelogPaths(headCfg)...)
+	commits, err := git.FindCommitsForPaths(ctx, command.Git, paths...)
+	if err != nil {
+		return "", err
+	}
+	for _, commit := range commits {
+		commitCfg, err := loadConfigAtRevision(ctx, commit)
+		if err != nil {
+			if errors.Is(err, git.ErrGitShow) {
+				continue
+			}
+			return "", err
+		}
+		released, err := findDartLibrariesToTag(ctx, commit, commitCfg, localTags)
+		if err != nil {
+			return "", err
+		}
+		if len(released) > 0 {
+			return commit, nil
+		}
+	}
+	return "", errReleaseCommitNotFound
+}
+
+func findDartLibrariesToTag(ctx context.Context, commit string, commitCfg *config.Config, localTags []string) ([]string, error) {
+	beforeCfg, hasParentCfg, err := loadParentConfig(ctx, commit)
+	if err != nil {
+		return nil, err
+	}
+	releasedByCfg, err := findReleasedLibraries(beforeCfg, commitCfg)
+	if err != nil {
+		return nil, err
+	}
+	changelogsAtCommit, err := existingDartChangelogs(ctx, commit, commitCfg)
+	if err != nil {
+		return nil, err
+	}
+	var changelogsBefore map[string]bool
+	if hasParentCfg {
+		changelogsBefore, err = existingDartChangelogs(ctx, commit+"~", beforeCfg)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	tagFormat := ""
+	if commitCfg.Default != nil {
+		tagFormat = commitCfg.Default.TagFormat
+	}
+
+	inCommitRelease := make(map[string]bool)
+	for _, name := range releasedByCfg {
+		lib, err := FindLibrary(commitCfg, name)
+		if err != nil {
+			return nil, err
+		}
+		if _, beforeErr := FindLibrary(beforeCfg, name); errors.Is(beforeErr, ErrLibraryNotFound) {
+			if !changelogsAtCommit[name] {
+				continue
+			}
+			if !hasParentCfg {
+				tagName := git.FormatTagName(tagFormat, lib.Name, lib.Version)
+				if slices.Contains(localTags, tagName) {
+					continue
+				}
+			}
+		}
+		inCommitRelease[name] = true
+	}
+
+	untaggedWithChangelog := make(map[string]bool)
+	for _, lib := range commitCfg.Libraries {
+		if lib.SkipRelease || lib.Version == "" {
+			continue
+		}
+		if err := semver.ValidateNext("", lib.Version); err != nil {
+			return nil, err
+		}
+		if !changelogsAtCommit[lib.Name] {
+			continue
+		}
+		tagName := git.FormatTagName(tagFormat, lib.Name, lib.Version)
+		if !slices.Contains(localTags, tagName) {
+			untaggedWithChangelog[lib.Name] = true
+		}
+		if inCommitRelease[lib.Name] || !hasParentCfg {
+			continue
+		}
+		beforeLib, beforeErr := FindLibrary(beforeCfg, lib.Name)
+		unskippedInCommit := beforeErr == nil && beforeLib.SkipRelease
+		if !changelogsBefore[lib.Name] || unskippedInCommit {
+			inCommitRelease[lib.Name] = true
+		}
+	}
+
+	if len(inCommitRelease) == 0 {
+		return nil, nil
+	}
+
+	var results []string
+	for _, lib := range commitCfg.Libraries {
+		if inCommitRelease[lib.Name] || untaggedWithChangelog[lib.Name] {
+			results = append(results, lib.Name)
+		}
+	}
+	return results, nil
+}
+
+func existingDartChangelogs(ctx context.Context, revision string, cfg *config.Config) (map[string]bool, error) {
+	paths := dartChangelogPaths(cfg)
+	if len(paths) == 0 {
+		return nil, nil
+	}
+	existingFiles, err := git.ListFilesAtRevision(ctx, command.Git, revision, paths...)
+	if err != nil {
+		return nil, err
+	}
+	result := make(map[string]bool, len(existingFiles))
+	for _, lib := range cfg.Libraries {
+		if slices.Contains(existingFiles, dartChangelogPath(cfg, lib)) {
+			result[lib.Name] = true
+		}
+	}
+	return result, nil
+}
+
+func dartChangelogPaths(cfg *config.Config) []string {
+	var paths []string
+	for _, lib := range cfg.Libraries {
+		p := dartChangelogPath(cfg, lib)
+		if p != "" && !slices.Contains(paths, p) {
+			paths = append(paths, p)
+		}
+	}
+	return paths
+}
+
+func dartChangelogPath(cfg *config.Config, lib *config.Library) string {
+	output := filepath.ToSlash(libraryOutput(config.LanguageDart, lib, cfg.Default))
+	return path.Join(output, dartChangelogFile)
+}
+
+func loadConfigAtRevision(ctx context.Context, revision string) (*config.Config, error) {
+	content, err := git.ShowFileAtRevision(ctx, command.Git, revision, config.LibrarianYAML)
+	if err != nil {
+		return nil, err
+	}
+	return yaml.Unmarshal[config.Config]([]byte(content))
+}
+
+func loadParentConfig(ctx context.Context, commit string) (*config.Config, bool, error) {
+	cfg, err := loadConfigAtRevision(ctx, commit+"~")
+	if err != nil {
+		if errors.Is(err, git.ErrGitShow) {
+			return &config.Config{}, false, nil
+		}
+		return nil, false, err
+	}
+	return cfg, true, nil
 }

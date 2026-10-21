@@ -267,6 +267,9 @@ func deriveNextVersion(library *config.Library, opts semver.DeriveNextOptions, v
 func findReleasedLibraries(cfgBefore, cfgAfter *config.Config) ([]string, error) {
 	results := []string{}
 	for _, candidate := range cfgAfter.Libraries {
+		if candidate.SkipRelease {
+			continue
+		}
 		candidateBefore, err := FindLibrary(cfgBefore, candidate.Name)
 		if err != nil {
 			// Any error other than "not found" is effectively fatal.
