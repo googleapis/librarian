@@ -1,4 +1,4 @@
-# How We Write Code
+# How We Write Software
 
 This document distills foundational, language-agnostic engineering and code
 review principles to preemptively address recurring concerns in pull requests.
