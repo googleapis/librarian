@@ -23,6 +23,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"slices"
 	"strings"
 	"syscall"
@@ -1026,6 +1027,68 @@ func TestGenerate(t *testing.T) {
 		if _, err := os.Stat(library.Output); err != nil {
 			t.Errorf("expected output directory for %q to exist: %v", library.Name, err)
 		}
+	}
+}
+
+func TestGenerate_ParallelAPIs(t *testing.T) {
+	defer runtime.GOMAXPROCS(runtime.GOMAXPROCS(max(runtime.GOMAXPROCS(0), 2)))
+	tempBin := t.TempDir()
+	t.Setenv("LIBRARIAN_BIN", tempBin)
+	nodeBinDir := filepath.Join(tempBin, "nodejs_tools", "bin")
+	if err := os.MkdirAll(nodeBinDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	createFakeSystemExecutable(t, "protoc")
+	signalDir := t.TempDir()
+	generatorScript := fmt.Sprintf(`#!/bin/sh
+touch "%s/$(basename "$6")"
+i=0
+while [ "$(ls "%s" | wc -l)" -lt 2 ]; do
+  i=$((i + 1))
+  if [ "$i" -ge 100 ]; then
+    echo "timed out waiting for parallel API execution" >&2
+    exit 1
+  fi
+  sleep 0.02
+done
+`, signalDir, signalDir)
+	testhelper.WriteExecutable(t, filepath.Join(nodeBinDir, "gapic-generator-typescript"), generatorScript)
+	testhelper.WriteExecutable(t, filepath.Join(nodeBinDir, "gapic-node-processing"), "#!/bin/sh\nexit 0\n")
+	testhelper.WriteExecutable(t, filepath.Join(nodeBinDir, "compileProtos"), "#!/bin/sh\nexit 0\n")
+	absGoogleapisDir, err := filepath.Abs(googleapisDir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	repoRoot := t.TempDir()
+	library := Fill(&config.Library{
+		Name:   "google-cloud-secretmanager",
+		Output: filepath.Join(repoRoot, "packages", "google-cloud-secretmanager"),
+		APIs: []*config.API{
+			{Path: "google/cloud/secretmanager/v1"},
+			{Path: "google/cloud/secretmanager/v1beta2"},
+		},
+	})
+	cfg := &config.Config{
+		Language: config.LanguageNodejs,
+		Repo:     "googleapis/google-cloud-node",
+	}
+	if err := Generate(t.Context(), cfg, library, &sources.Sources{Googleapis: absGoogleapisDir}); err != nil {
+		t.Fatal(err)
+	}
+	entries, err := os.ReadDir(signalDir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var got []string
+	for _, entry := range entries {
+		got = append(got, entry.Name())
+	}
+	want := []string{
+		"0_google_cloud_secretmanager_v1",
+		"1_google_cloud_secretmanager_v1beta2",
+	}
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
 

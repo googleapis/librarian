@@ -25,6 +25,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"runtime"
 	"slices"
 	"strings"
 
@@ -35,6 +36,7 @@ import (
 	"github.com/googleapis/librarian/internal/serviceconfig"
 	"github.com/googleapis/librarian/internal/sources"
 	"github.com/googleapis/librarian/internal/tool/protoc"
+	"golang.org/x/sync/errgroup"
 )
 
 const (
@@ -83,23 +85,31 @@ func Generate(ctx context.Context, cfg *config.Config, library *config.Library, 
 		pc = cfg.Tools.Protoc
 	}
 	repoRoot := filepath.Dir(filepath.Dir(outdir))
-	for i, api := range library.APIs {
+	group, groupCtx := errgroup.WithContext(ctx)
+	group.SetLimit(runtime.GOMAXPROCS(0))
+	for index, api := range library.APIs {
 		// TODO(https://github.com/googleapis/google-cloud-node/issues/8149): Do not
 		// generate v1small. This package is not meant to be used and will be
 		// deprecated and removed in a future major release. Remove this workaround once resolved.
 		if api.Path == "google/cloud/compute/v1small" {
 			continue
 		}
-		if err := generateAPI(ctx, generateAPIParams{
-			apiIndex:      i,
-			api:           api,
-			library:       library,
-			googleapisDir: googleapisDir,
-			repoRoot:      repoRoot,
-			protoc:        pc,
-		}); err != nil {
-			return fmt.Errorf("failed to generate api %q: %w", api.Path, err)
-		}
+		group.Go(func() error {
+			if err := generateAPI(groupCtx, generateAPIParams{
+				apiIndex:      index,
+				api:           api,
+				library:       library,
+				googleapisDir: googleapisDir,
+				repoRoot:      repoRoot,
+				protoc:        pc,
+			}); err != nil {
+				return fmt.Errorf("failed to generate api %q: %w", api.Path, err)
+			}
+			return nil
+		})
+	}
+	if err := group.Wait(); err != nil {
+		return err
 	}
 	if err := runPostProcessor(ctx, cfg, library, googleapisDir, repoRoot, outdir); err != nil {
 		return fmt.Errorf("failed to run post processor: %w", err)
