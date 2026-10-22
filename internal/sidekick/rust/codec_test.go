@@ -1153,7 +1153,7 @@ func TestToProstSnake(t *testing.T) {
 		{"OAuth2Config", "o_auth2_config"},
 		{"VertexAISearch", "vertex_ai_search"},
 		{"FIELD_NAME11", "field_name11"},
-		{"FieldNamE11", "field_nam_e11"},
+		{"FieldTagE11", "field_tag_e11"},
 		{"99BOTTLES", "_99bottles"},
 		{"abc123def456", "abc123def456"},
 		{"abc123DEF456", "abc123_def456"},
