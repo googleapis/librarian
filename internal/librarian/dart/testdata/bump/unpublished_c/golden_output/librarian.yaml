@@ -24,4 +24,4 @@ libraries:
   - name: b
     version: 1.0.0
   - name: c
-    version: 1.0.0
+    version: 0.1.0

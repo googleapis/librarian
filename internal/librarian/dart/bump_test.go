@@ -16,9 +16,11 @@ package dart
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 
@@ -362,6 +364,9 @@ func TestBump_UnpublishedLibrary(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	// c has never been released, so librarian.yaml has no version for it.
+	i := slices.IndexFunc(cfg.Libraries, func(lib *config.Library) bool { return lib.Name == "c" })
+	cfg.Libraries[i].Version = ""
 
 	err = Bump(t.Context(), cfg, true, "", "")
 	if err != nil {
@@ -373,6 +378,119 @@ func TestBump_UnpublishedLibrary(t *testing.T) {
 	}
 
 	compareDirWithGolden(t, goldenDir)
+}
+
+func TestBump_UnpublishedLibraryDefaultVersion(t *testing.T) {
+	testhelper.RequireCommand(t, "git")
+	testhelper.RequireCommand(t, "dart")
+
+	inputDir, err := filepath.Abs("testdata/bump/input")
+	if err != nil {
+		t.Fatal(err)
+	}
+	goldenDir, err := filepath.Abs("testdata/bump/unpublished_default_version/golden_output")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	setupRepoFromDir(t, inputDir)
+	testhelper.RunGit(t, "tag", "a-v1.0.0")
+	testhelper.RunGit(t, "tag", "b-v1.0.0")
+
+	// Now make a commit with changes to package c.
+	appendToFile(t, "generated/c/lib.dart", []byte("// library c: new changes\n"))
+	testhelper.RunGit(t, "add", ".")
+	testhelper.RunGit(t, "commit", "-m", "feat: added support for c", ".")
+
+	publishedVersions := map[string]string{"a": "1.0.0", "b": "1.0.0"}
+	setupMockPubdevServer(t, publishedVersions)
+
+	// responses map only has "a" and "b" but NOT "c"!
+	apiToolResponses := map[string]packageVersion{
+		"a": {needed: "1.0.0", old: "1.0.0"},
+		"b": {needed: "1.0.0", old: "1.0.0"},
+	}
+	setupFakeApitool(t, apiToolResponses)
+
+	cfg, err := yaml.Read[config.Config]("librarian.yaml")
+	if err != nil {
+		t.Fatal(err)
+	}
+	// c has never been released, so librarian.yaml has no version for it.
+	i := slices.IndexFunc(cfg.Libraries, func(lib *config.Library) bool { return lib.Name == "c" })
+	cfg.Libraries[i].Version = ""
+	// The first release uses default.dart.version instead of initialVersion.
+	cfg.Default.Dart.Version = "0.5.0"
+
+	err = Bump(t.Context(), cfg, true, "", "")
+	if err != nil {
+		t.Fatalf("Bump failed: %v", err)
+	}
+
+	if err := yaml.Write("librarian.yaml", cfg); err != nil {
+		t.Fatal(err)
+	}
+
+	compareDirWithGolden(t, goldenDir)
+}
+
+func TestBump_UnpublishedLibraryWithVersion(t *testing.T) {
+	testhelper.RequireCommand(t, "git")
+	testhelper.RequireCommand(t, "dart")
+
+	inputDir, err := filepath.Abs("testdata/bump/input")
+	if err != nil {
+		t.Fatal(err)
+	}
+	setupRepoFromDir(t, inputDir)
+	testhelper.RunGit(t, "tag", "a-v1.0.0")
+	testhelper.RunGit(t, "tag", "b-v1.0.0")
+	setupMockPubdevServer(t, map[string]string{"a": "1.0.0", "b": "1.0.0"})
+	setupFakeApitool(t, map[string]packageVersion{
+		"a": {needed: "1.0.0", old: "1.0.0"},
+		"b": {needed: "1.0.0", old: "1.0.0"},
+	})
+
+	// c is not published, but librarian.yaml has version 1.0.0 for it.
+	cfg, err := yaml.Read[config.Config]("librarian.yaml")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := Bump(t.Context(), cfg, true, "", ""); !errors.Is(err, ErrUnpublishedVersion) {
+		t.Errorf("Bump() error = %v, want %v", err, ErrUnpublishedVersion)
+	}
+}
+
+func TestBump_PublishedLibraryWithoutVersion(t *testing.T) {
+	testhelper.RequireCommand(t, "git")
+	testhelper.RequireCommand(t, "dart")
+
+	inputDir, err := filepath.Abs("testdata/bump/input")
+	if err != nil {
+		t.Fatal(err)
+	}
+	setupRepoFromDir(t, inputDir)
+	testhelper.RunGit(t, "tag", "a-v1.0.0")
+	testhelper.RunGit(t, "tag", "b-v1.0.0")
+	setupMockPubdevServer(t, map[string]string{"a": "1.0.0", "b": "1.0.0", "c": "1.0.0"})
+	setupFakeApitool(t, map[string]packageVersion{
+		"a": {needed: "1.0.0", old: "1.0.0"},
+		"b": {needed: "1.0.0", old: "1.0.0"},
+	})
+
+	cfg, err := yaml.Read[config.Config]("librarian.yaml")
+	if err != nil {
+		t.Fatal(err)
+	}
+	// c is published, but librarian.yaml has no version for it.
+	i := slices.IndexFunc(cfg.Libraries, func(lib *config.Library) bool { return lib.Name == "c" })
+	cfg.Libraries[i].Version = ""
+
+	err = Bump(t.Context(), cfg, true, "", "")
+	wantErr := "pub.dev version 1.0.0 does not match librarian.yaml version"
+	if err == nil || !strings.Contains(err.Error(), wantErr) {
+		t.Fatalf("Bump() error = %v, want error containing %q", err, wantErr)
+	}
 }
 
 func TestBump_VersionMismatch(t *testing.T) {

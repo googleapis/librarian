@@ -18,6 +18,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 
 	"github.com/googleapis/librarian/internal/config"
@@ -65,13 +66,10 @@ func updatePubspecVersion(path string, newVersion string) error {
 		return err
 	}
 	lines := strings.Split(string(content), "\n")
-	var newLines []string
-	for _, line := range lines {
-		if strings.HasPrefix(line, "version:") {
-			newLines = append(newLines, fmt.Sprintf("version: %s", newVersion))
-			continue
-		}
-		newLines = append(newLines, line)
+	i := slices.IndexFunc(lines, func(line string) bool { return strings.HasPrefix(line, "version:") })
+	if i < 0 {
+		return fmt.Errorf("no version found in %s", path)
 	}
-	return os.WriteFile(path, []byte(strings.Join(newLines, "\n")), 0644)
+	lines[i] = "version: " + newVersion
+	return os.WriteFile(path, []byte(strings.Join(lines, "\n")), 0644)
 }
