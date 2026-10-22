@@ -80,9 +80,9 @@ func Generate(ctx context.Context, cfg *config.Config, library *config.Library, 
 	if err := os.MkdirAll(outdir, 0o755); err != nil {
 		return fmt.Errorf("failed to create output directory: %w", err)
 	}
-	var pc *config.Protoc
+	var protocConfig *config.Protoc
 	if cfg.Tools != nil {
-		pc = cfg.Tools.Protoc
+		protocConfig = cfg.Tools.Protoc
 	}
 	repoRoot := filepath.Dir(filepath.Dir(outdir))
 	group, groupCtx := errgroup.WithContext(ctx)
@@ -101,7 +101,7 @@ func Generate(ctx context.Context, cfg *config.Config, library *config.Library, 
 				library:       library,
 				googleapisDir: googleapisDir,
 				repoRoot:      repoRoot,
-				protoc:        pc,
+				protoc:        protocConfig,
 			}); err != nil {
 				return fmt.Errorf("failed to generate api %q: %w", api.Path, err)
 			}

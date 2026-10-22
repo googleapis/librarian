@@ -1044,37 +1044,23 @@ func TestGenerate_ParallelAPIs(t *testing.T) {
 	generatorScript := fmt.Sprintf(`#!/bin/sh
 while [ "$#" -gt 0 ] && [ "$1" != "--output-dir" ]; do shift; done
 touch "%s/$(basename "$2")"
-i=0
+attempt=0
 while [ "$(ls "%s" | wc -l)" -lt 2 ]; do
-  i=$((i + 1))
-  if [ "$i" -ge 250 ]; then
-    echo "timed out waiting for parallel API execution" >&2
-    exit 1
-  fi
+  attempt=$((attempt + 1))
+  if [ "$attempt" -ge 250 ]; then exit 1; fi
   sleep 0.02
 done
 `, signalDir, signalDir)
 	testhelper.WriteExecutable(t, filepath.Join(nodeBinDir, "gapic-generator-typescript"), generatorScript)
 	testhelper.WriteExecutable(t, filepath.Join(nodeBinDir, "gapic-node-processing"), "#!/bin/sh\nexit 0\n")
 	testhelper.WriteExecutable(t, filepath.Join(nodeBinDir, "compileProtos"), "#!/bin/sh\nexit 0\n")
-	absGoogleapisDir, err := filepath.Abs(googleapisDir)
-	if err != nil {
-		t.Fatal(err)
-	}
-	repoRoot := t.TempDir()
 	library := Fill(&config.Library{
 		Name:   "google-cloud-secretmanager",
-		Output: filepath.Join(repoRoot, "packages", "google-cloud-secretmanager"),
-		APIs: []*config.API{
-			{Path: "google/cloud/secretmanager/v1"},
-			{Path: "google/cloud/secretmanager/v1beta2"},
-		},
+		Output: filepath.Join(t.TempDir(), "packages", "google-cloud-secretmanager"),
+		APIs:   []*config.API{{Path: "google/cloud/secretmanager/v1"}, {Path: "google/cloud/secretmanager/v1beta2"}},
 	})
-	cfg := &config.Config{
-		Language: config.LanguageNodejs,
-		Repo:     "googleapis/google-cloud-node",
-	}
-	if err := Generate(t.Context(), cfg, library, &sources.Sources{Googleapis: absGoogleapisDir}); err != nil {
+	cfg := &config.Config{Language: config.LanguageNodejs, Repo: "googleapis/google-cloud-node"}
+	if err := Generate(t.Context(), cfg, library, &sources.Sources{Googleapis: googleapisDir}); err != nil {
 		t.Fatal(err)
 	}
 	entries, err := os.ReadDir(signalDir)
@@ -1085,12 +1071,23 @@ done
 	for _, entry := range entries {
 		got = append(got, entry.Name())
 	}
-	want := []string{
-		"0_google_cloud_secretmanager_v1",
-		"1_google_cloud_secretmanager_v1beta2",
-	}
+	want := []string{"0_google_cloud_secretmanager_v1", "1_google_cloud_secretmanager_v1beta2"}
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+}
+
+func TestGenerate_ParallelAPIs_Error(t *testing.T) {
+	createFakeSystemExecutable(t, "protoc")
+	library := Fill(&config.Library{
+		Name:   "google-cloud-secretmanager",
+		Output: filepath.Join(t.TempDir(), "packages", "google-cloud-secretmanager"),
+		APIs:   []*config.API{{Path: "google/cloud/compute/v1small"}, {Path: "google/cloud/nonexistent/v1"}},
+	})
+	cfg := &config.Config{Language: config.LanguageNodejs, Repo: "googleapis/google-cloud-node"}
+	gotErr := Generate(t.Context(), cfg, library, &sources.Sources{Googleapis: googleapisDir})
+	if !errors.Is(gotErr, fs.ErrNotExist) {
+		t.Errorf("Generate() error = %v, want %v", gotErr, fs.ErrNotExist)
 	}
 }
 
