@@ -364,7 +364,7 @@ func TestBump_UnpublishedLibrary(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	// c has never been released, so librarian.yaml has no version for it.
+	// The shared input gives c version 1.0.0, but c has never been released in this test.
 	i := slices.IndexFunc(cfg.Libraries, func(lib *config.Library) bool { return lib.Name == "c" })
 	cfg.Libraries[i].Version = ""
 
@@ -416,10 +416,9 @@ func TestBump_UnpublishedLibraryDefaultVersion(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	// c has never been released, so librarian.yaml has no version for it.
+	// The shared input gives c version 1.0.0, but c has never been released in this test.
 	i := slices.IndexFunc(cfg.Libraries, func(lib *config.Library) bool { return lib.Name == "c" })
 	cfg.Libraries[i].Version = ""
-	// The first release uses default.dart.version instead of initialVersion.
 	cfg.Default.Dart.Version = "0.5.0"
 
 	err = Bump(t.Context(), cfg, true, "", "")
