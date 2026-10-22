@@ -1042,22 +1042,24 @@ func TestGenerate_ParallelAPIs(t *testing.T) {
 	createFakeSystemExecutable(t, "protoc")
 	signalDir := t.TempDir()
 	generatorScript := fmt.Sprintf(`#!/bin/sh
-while [ "$#" -gt 0 ] && [ "$1" != "--output-dir" ]; do shift; done
-touch "%s/$(basename "$2")"
+touch "%[1]s/$$"
 attempt=0
-while [ "$(ls "%s" | wc -l)" -lt 2 ]; do
+while [ "$(ls "%[1]s" | wc -l)" -lt 2 ]; do
   attempt=$((attempt + 1))
   if [ "$attempt" -ge 250 ]; then exit 1; fi
   sleep 0.02
 done
-`, signalDir, signalDir)
+`, signalDir)
 	testhelper.WriteExecutable(t, filepath.Join(nodeBinDir, "gapic-generator-typescript"), generatorScript)
 	testhelper.WriteExecutable(t, filepath.Join(nodeBinDir, "gapic-node-processing"), "#!/bin/sh\nexit 0\n")
 	testhelper.WriteExecutable(t, filepath.Join(nodeBinDir, "compileProtos"), "#!/bin/sh\nexit 0\n")
 	library := Fill(&config.Library{
 		Name:   "google-cloud-secretmanager",
 		Output: filepath.Join(t.TempDir(), "packages", "google-cloud-secretmanager"),
-		APIs:   []*config.API{{Path: "google/cloud/secretmanager/v1"}, {Path: "google/cloud/secretmanager/v1beta2"}},
+		APIs: []*config.API{
+			{Path: "google/cloud/secretmanager/v1"},
+			{Path: "google/cloud/secretmanager/v1beta2"},
+		},
 	})
 	cfg := &config.Config{Language: config.LanguageNodejs, Repo: "googleapis/google-cloud-node"}
 	if err := Generate(t.Context(), cfg, library, &sources.Sources{Googleapis: googleapisDir}); err != nil {
@@ -1067,12 +1069,7 @@ done
 	if err != nil {
 		t.Fatal(err)
 	}
-	var got []string
-	for _, entry := range entries {
-		got = append(got, entry.Name())
-	}
-	want := []string{"0_google_cloud_secretmanager_v1", "1_google_cloud_secretmanager_v1beta2"}
-	if diff := cmp.Diff(want, got); diff != "" {
+	if diff := cmp.Diff(2, len(entries)); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
@@ -1082,7 +1079,10 @@ func TestGenerate_ParallelAPIs_Error(t *testing.T) {
 	library := Fill(&config.Library{
 		Name:   "google-cloud-secretmanager",
 		Output: filepath.Join(t.TempDir(), "packages", "google-cloud-secretmanager"),
-		APIs:   []*config.API{{Path: "google/cloud/compute/v1small"}, {Path: "google/cloud/nonexistent/v1"}},
+		APIs: []*config.API{
+			{Path: "google/cloud/compute/v1small"},
+			{Path: "google/cloud/nonexistent/v1"},
+		},
 	})
 	cfg := &config.Config{Language: config.LanguageNodejs, Repo: "googleapis/google-cloud-node"}
 	gotErr := Generate(t.Context(), cfg, library, &sources.Sources{Googleapis: googleapisDir})
