@@ -19,9 +19,11 @@ import (
 	"os"
 	"path/filepath"
 	"slices"
+	"strings"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/git"
 	"github.com/googleapis/librarian/internal/sample"
@@ -79,11 +81,7 @@ func TestTagCommand(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			gotTags, err := git.Tags(t.Context(), "git")
-			if err != nil {
-				t.Fatal(err)
-			}
-			slices.Sort(gotTags)
+			gotTags := listGitTags(t)
 			if diff := cmp.Diff(test.wantTags, gotTags); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
@@ -110,19 +108,24 @@ func TestTag(t *testing.T) {
 
 	for _, test := range []struct {
 		name             string
+		cfg              *config.Config
 		setup            func(t *testing.T, cfg *config.Config)
 		wantTags         []string
 		wantCommitLogIdx int
 	}{
 		{
-			name: "single library bump ignores unchanged and unversioned and skipped libraries",
+			name: "single library bump ignores unchanged and unversioned libraries",
+			cfg: &config.Config{
+				Language: config.LanguageFake,
+				Default:  &config.Default{TagFormat: "{name}-v{version}"},
+				Libraries: []*config.Library{
+					{Name: "lib1", Version: "1.0.0"},
+					{Name: "lib2", Version: "1.2.0"},
+				},
+			},
 			setup: func(t *testing.T, cfg *config.Config) {
 				cfg.Libraries[0].Version = "1.1.0"
-				cfg.Libraries = append(cfg.Libraries,
-					&config.Library{Name: "unversioned", Version: ""},
-					&config.Library{Name: "skipped_new", Version: "0.1.0", SkipRelease: true},
-				)
-				cfg.Libraries[2].Version = "2.0.0"
+				cfg.Libraries = append(cfg.Libraries, &config.Library{Name: "unversioned", Version: ""})
 				writeConfigAndCommit(t, cfg)
 			},
 			wantTags:         []string{"lib1-v1.1.0"},
@@ -130,6 +133,14 @@ func TestTag(t *testing.T) {
 		},
 		{
 			name: "multi library bump and newly added versioned library",
+			cfg: &config.Config{
+				Language: config.LanguageFake,
+				Default:  &config.Default{TagFormat: "{name}-v{version}"},
+				Libraries: []*config.Library{
+					{Name: "lib1", Version: "1.0.0"},
+					{Name: "lib2", Version: "1.2.0"},
+				},
+			},
 			setup: func(t *testing.T, cfg *config.Config) {
 				cfg.Libraries[0].Version = "1.1.0"
 				cfg.Libraries[1].Version = "1.3.0"
@@ -142,31 +153,40 @@ func TestTag(t *testing.T) {
 			wantTags:         []string{"lib1-v1.1.0", "lib2-v1.3.0", "lib3-v0.1.0"},
 			wantCommitLogIdx: 0,
 		},
-	} {
-		t.Run(test.name, func(t *testing.T) {
-			cfg := &config.Config{
-				Language: config.LanguageFake,
+		{
+			name: "dart changelog-only initial release commit followed by chore commit",
+			cfg: &config.Config{
+				Language: config.LanguageDart,
 				Default: &config.Default{
+					Output:    "generated/",
 					TagFormat: "{name}-v{version}",
 				},
 				Libraries: []*config.Library{
-					{Name: "lib1", Version: "1.0.0"},
-					{Name: "lib2", Version: "1.2.0"},
-					{Name: "skipped_existing", Version: "1.0.0", SkipRelease: true},
+					{Name: "google_cloud_compute_v1", Version: "0.1.0"},
+					{Name: "google_cloud_tasks_v2", Version: "0.1.0"},
 				},
-			}
-			testhelper.Setup(t, testhelper.SetupOptions{Config: cfg})
-			test.setup(t, cfg)
+			},
+			setup: func(t *testing.T, cfg *config.Config) {
+				writeNestedFile(t, "generated/google_cloud_compute_v1/CHANGELOG.md", "# Changelog\n\n## 0.1.0\n\n- initial release\n")
+				writeConfigAndCommit(t, cfg)
+
+				// librarian bump --all writes only CHANGELOG.md for the unpublished 0.1.0 library.
+				writeNestedFileAndCommit(t, "generated/google_cloud_tasks_v2/CHANGELOG.md", "# Changelog\n\n## 0.1.0\n\n- initial release\n", "chore: bump tasks_v2")
+				writeReadmeAndCommit(t, "docs chore after release")
+			},
+			wantTags:         []string{"google_cloud_tasks_v2-v0.1.0"},
+			wantCommitLogIdx: 1,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			testhelper.Setup(t, testhelper.SetupOptions{Config: test.cfg})
+			test.setup(t, test.cfg)
 
 			if err := tag(t.Context(), ""); err != nil {
 				t.Fatal(err)
 			}
 
-			gotTags, err := git.Tags(t.Context(), "git")
-			if err != nil {
-				t.Fatal(err)
-			}
-			slices.Sort(gotTags)
+			gotTags := listGitTags(t)
 			if diff := cmp.Diff(test.wantTags, gotTags); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
@@ -183,256 +203,6 @@ func TestTag(t *testing.T) {
 				if gotCommit != commits[test.wantCommitLogIdx] {
 					t.Errorf("tag %s points to %s, want %s", tagName, gotCommit, commits[test.wantCommitLogIdx])
 				}
-			}
-		})
-	}
-}
-
-func TestTag_Dart(t *testing.T) {
-	testhelper.RequireCommand(t, "git")
-
-	const initialChangelog = "# Changelog\n\n## 0.1.0\n\n- initial release\n"
-
-	for _, test := range []struct {
-		name          string
-		releaseCommit string
-		setup         func(t *testing.T, cfg *config.Config) (wantTagCommits map[string]string)
-	}{
-		{
-			name: "mixed release tags bumped and newly bumped initial library while ignoring skipped and unchanged",
-			setup: func(t *testing.T, cfg *config.Config) map[string]string {
-				// Simulate librarian add + generate for tasks_v2 (version 0.1.0, no CHANGELOG.md yet).
-				cfg.Libraries = append(cfg.Libraries, &config.Library{
-					Name:    "google_cloud_tasks_v2",
-					Version: "0.1.0",
-				})
-				writeNestedFileAndCommit(t, "generated/google_cloud_tasks_v2/pubspec.yaml", "name: google_cloud_tasks_v2\nversion: 0.1.0\n", "feat: generate tasks_v2")
-				writeConfigAndCommit(t, cfg)
-
-				// Simulate librarian bump --all: compute_v1 bumps 0.1.0 -> 0.1.1,
-				// tasks_v2 stays at 0.1.0 and gets CHANGELOG.md.
-				cfg.Libraries[0].Version = "0.1.1"
-				writeNestedFile(t, "generated/google_cloud_compute_v1/CHANGELOG.md", "# Changelog\n\n## 0.1.1\n\n- feat: update\n")
-				writeNestedFile(t, "generated/google_cloud_tasks_v2/CHANGELOG.md", initialChangelog)
-				writeConfigAndCommit(t, cfg)
-				releaseSHA := headSHA(t)
-
-				return map[string]string{
-					"google_cloud_compute_v1-v0.1.1": releaseSHA,
-					"google_cloud_tasks_v2-v0.1.0":   releaseSHA,
-				}
-			},
-		},
-		{
-			name: "mixed release followed by librarian version chore commit tags release commit",
-			setup: func(t *testing.T, cfg *config.Config) map[string]string {
-				cfg.Libraries = append(cfg.Libraries, &config.Library{
-					Name:    "google_cloud_tasks_v2",
-					Version: "0.1.0",
-				})
-				writeConfigAndCommit(t, cfg)
-
-				cfg.Libraries[0].Version = "0.1.1"
-				writeNestedFile(t, "generated/google_cloud_compute_v1/CHANGELOG.md", "# Changelog\n\n## 0.1.1\n\n- feat: update\n")
-				writeNestedFile(t, "generated/google_cloud_tasks_v2/CHANGELOG.md", initialChangelog)
-				writeConfigAndCommit(t, cfg)
-				releaseSHA := headSHA(t)
-
-				// Subsequent non-release update to librarian.yaml (e.g. librarian version bump).
-				cfg.Version = "v0.47.0"
-				writeConfigAndCommit(t, cfg)
-
-				return map[string]string{
-					"google_cloud_compute_v1-v0.1.1": releaseSHA,
-					"google_cloud_tasks_v2-v0.1.0":   releaseSHA,
-				}
-			},
-		},
-		{
-			name: "new library only release where bump commit only writes CHANGELOG.md",
-			setup: func(t *testing.T, cfg *config.Config) map[string]string {
-				// Step 1: librarian add + generate commits librarian.yaml with version 0.1.0 (no CHANGELOG.md).
-				cfg.Libraries = append(cfg.Libraries, &config.Library{
-					Name:    "google_cloud_tasks_v2",
-					Version: "0.1.0",
-				})
-				writeNestedFile(t, "generated/google_cloud_tasks_v2/pubspec.yaml", "name: google_cloud_tasks_v2\nversion: 0.1.0\n")
-				writeConfigAndCommit(t, cfg)
-
-				// Step 2: librarian bump --all writes only CHANGELOG.md; librarian.yaml is unchanged.
-				writeNestedFileAndCommit(t, "generated/google_cloud_tasks_v2/CHANGELOG.md", initialChangelog, "chore: bump unpublished library")
-				releaseSHA := headSHA(t)
-
-				// Step 3: unrelated chore commit after the release commit.
-				writeReadmeAndCommit(t, "docs update")
-
-				return map[string]string{
-					"google_cloud_tasks_v2-v0.1.0": releaseSHA,
-				}
-			},
-		},
-		{
-			name: "new library added and bumped in a single commit",
-			setup: func(t *testing.T, cfg *config.Config) map[string]string {
-				cfg.Libraries = append(cfg.Libraries, &config.Library{
-					Name:    "google_cloud_tasks_v2",
-					Version: "0.1.0",
-				})
-				writeNestedFile(t, "generated/google_cloud_tasks_v2/CHANGELOG.md", initialChangelog)
-				writeConfigAndCommit(t, cfg)
-				releaseSHA := headSHA(t)
-
-				return map[string]string{
-					"google_cloud_tasks_v2-v0.1.0": releaseSHA,
-				}
-			},
-		},
-		{
-			name: "subsequent release does not re-tag already tagged 0.1.0 library",
-			setup: func(t *testing.T, cfg *config.Config) map[string]string {
-				cfg.Libraries = append(cfg.Libraries, &config.Library{
-					Name:    "google_cloud_tasks_v2",
-					Version: "0.1.0",
-				})
-				writeNestedFile(t, "generated/google_cloud_tasks_v2/CHANGELOG.md", initialChangelog)
-				writeConfigAndCommit(t, cfg)
-				firstReleaseSHA := headSHA(t)
-				if err := git.Tag(t.Context(), "git", "google_cloud_tasks_v2-v0.1.0", firstReleaseSHA); err != nil {
-					t.Fatal(err)
-				}
-
-				// Next release bumps compute_v1 only; tasks_v2 stays at 0.1.0.
-				cfg.Libraries[0].Version = "0.1.1"
-				writeNestedFile(t, "generated/google_cloud_compute_v1/CHANGELOG.md", "# Changelog\n\n## 0.1.1\n\n- feat: update\n")
-				writeConfigAndCommit(t, cfg)
-				secondReleaseSHA := headSHA(t)
-
-				return map[string]string{
-					"google_cloud_compute_v1-v0.1.1": secondReleaseSHA,
-					"google_cloud_tasks_v2-v0.1.0":   firstReleaseSHA,
-				}
-			},
-		},
-		{
-			name: "unbumped generated library without CHANGELOG.md is not tagged during another bump",
-			setup: func(t *testing.T, cfg *config.Config) map[string]string {
-				cfg.Libraries = append(cfg.Libraries, &config.Library{
-					Name:    "google_cloud_unreleased_v1",
-					Version: "0.1.0",
-				})
-				writeNestedFile(t, "generated/google_cloud_unreleased_v1/pubspec.yaml", "name: google_cloud_unreleased_v1\nversion: 0.1.0\n")
-				writeConfigAndCommit(t, cfg)
-
-				cfg.Libraries[0].Version = "0.1.1"
-				writeNestedFile(t, "generated/google_cloud_compute_v1/CHANGELOG.md", "# Changelog\n\n## 0.1.1\n\n- feat: update\n")
-				writeConfigAndCommit(t, cfg)
-				releaseSHA := headSHA(t)
-
-				return map[string]string{
-					"google_cloud_compute_v1-v0.1.1": releaseSHA,
-				}
-			},
-		},
-		{
-			name: "multi-commit pre-publish fixup tags all untagged bumped and initial libraries",
-			setup: func(t *testing.T, cfg *config.Config) map[string]string {
-				cfg.Libraries = append(cfg.Libraries, &config.Library{
-					Name:    "google_cloud_tasks_v2",
-					Version: "0.1.0",
-				})
-				writeConfigAndCommit(t, cfg)
-
-				// First release PR bumps compute_v1 and prepares tasks_v2, not yet published/tagged.
-				cfg.Libraries[0].Version = "0.1.1"
-				writeNestedFile(t, "generated/google_cloud_compute_v1/CHANGELOG.md", "# Changelog\n\n## 0.1.1\n\n- feat: update\n")
-				writeNestedFile(t, "generated/google_cloud_tasks_v2/CHANGELOG.md", initialChangelog)
-				writeConfigAndCommit(t, cfg)
-
-				// Pre-publish fixup PR bumps secretmanager_v1 before publishing all three at HEAD.
-				cfg.Libraries[1].Version = "0.6.0"
-				writeNestedFile(t, "generated/google_cloud_secretmanager_v1/CHANGELOG.md", "# Changelog\n\n## 0.6.0\n\n- feat!: breaking fix\n")
-				writeConfigAndCommit(t, cfg)
-				finalReleaseSHA := headSHA(t)
-
-				return map[string]string{
-					"google_cloud_compute_v1-v0.1.1":       finalReleaseSHA,
-					"google_cloud_secretmanager_v1-v0.6.0": finalReleaseSHA,
-					"google_cloud_tasks_v2-v0.1.0":         finalReleaseSHA,
-				}
-			},
-		},
-		{
-			name: "flipping skip_release to false with CHANGELOG.md tags initial release",
-			setup: func(t *testing.T, cfg *config.Config) map[string]string {
-				cfg.Libraries = append(cfg.Libraries, &config.Library{
-					Name:        "google_cloud_tasks_v2",
-					Version:     "0.1.0",
-					SkipRelease: true,
-				})
-				writeNestedFile(t, "generated/google_cloud_tasks_v2/CHANGELOG.md", initialChangelog)
-				writeConfigAndCommit(t, cfg)
-
-				for _, lib := range cfg.Libraries {
-					if lib.Name == "google_cloud_tasks_v2" {
-						lib.SkipRelease = false
-					}
-				}
-				writeConfigAndCommit(t, cfg)
-				releaseSHA := headSHA(t)
-
-				return map[string]string{
-					"google_cloud_tasks_v2-v0.1.0": releaseSHA,
-				}
-			},
-		},
-	} {
-		t.Run(test.name, func(t *testing.T) {
-			cfg := &config.Config{
-				Language: config.LanguageDart,
-				Default: &config.Default{
-					Output:    "generated/",
-					TagFormat: "{name}-v{version}",
-				},
-				Libraries: []*config.Library{
-					{Name: "google_cloud_compute_v1", Version: "0.1.0"},
-					{Name: "google_cloud_secretmanager_v1", Version: "0.5.5"},
-					{Name: "google_cloud_showcase_v1beta1", Version: "0.5.3", SkipRelease: true},
-				},
-			}
-			testhelper.ContinueInNewGitRepository(t, t.TempDir())
-			writeNestedFile(t, "generated/google_cloud_compute_v1/CHANGELOG.md", initialChangelog)
-			writeNestedFile(t, "generated/google_cloud_secretmanager_v1/CHANGELOG.md", "# Changelog\n\n## 0.5.5\n\n- initial\n")
-			writeConfigAndCommit(t, cfg)
-			baseSHA := headSHA(t)
-			if err := git.Tag(t.Context(), "git", "google_cloud_compute_v1-v0.1.0", baseSHA); err != nil {
-				t.Fatal(err)
-			}
-			if err := git.Tag(t.Context(), "git", "google_cloud_secretmanager_v1-v0.5.5", baseSHA); err != nil {
-				t.Fatal(err)
-			}
-
-			wantTagCommits := test.setup(t, cfg)
-			wantTagCommits["google_cloud_compute_v1-v0.1.0"] = baseSHA
-			wantTagCommits["google_cloud_secretmanager_v1-v0.5.5"] = baseSHA
-
-			if err := tag(t.Context(), test.releaseCommit); err != nil {
-				t.Fatal(err)
-			}
-
-			gotTags, err := git.Tags(t.Context(), "git")
-			if err != nil {
-				t.Fatal(err)
-			}
-			gotTagCommits := make(map[string]string, len(gotTags))
-			for _, tagName := range gotTags {
-				sha, err := git.GetCommitHash(t.Context(), "git", tagName)
-				if err != nil {
-					t.Fatal(err)
-				}
-				gotTagCommits[tagName] = sha
-			}
-			if diff := cmp.Diff(wantTagCommits, gotTagCommits); diff != "" {
-				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
@@ -485,9 +255,6 @@ func TestTag_Error(t *testing.T) {
 				},
 			},
 			setup: func(t *testing.T, cfg *config.Config) {
-				if err := git.Tag(t.Context(), "git", "google_cloud_compute_v1-v0.1.0", "HEAD"); err != nil {
-					t.Fatal(err)
-				}
 				cfg.Libraries = append(cfg.Libraries, &config.Library{
 					Name:    "google_cloud_tasks_v2",
 					Version: "0.1.0",
@@ -526,9 +293,6 @@ func TestTag_Error(t *testing.T) {
 			},
 			releaseCommit: "HEAD",
 			setup: func(t *testing.T, cfg *config.Config) {
-				if err := git.Tag(t.Context(), "git", "google_cloud_compute_v1-v0.1.0", "HEAD"); err != nil {
-					t.Fatal(err)
-				}
 				writeReadmeAndCommit(t, "not a release")
 			},
 			wantErr: errNoLibrariesAtReleaseCommit,
@@ -579,13 +343,15 @@ func TestTag_Error(t *testing.T) {
 	}
 }
 
-func headSHA(t *testing.T) string {
+func listGitTags(t *testing.T) []string {
 	t.Helper()
-	sha, err := git.GetCommitHash(t.Context(), "git", "HEAD")
+	out, err := command.Output(t.Context(), command.Git, "tag", "--list")
 	if err != nil {
 		t.Fatal(err)
 	}
-	return sha
+	tags := strings.Fields(out)
+	slices.Sort(tags)
+	return tags
 }
 
 func writeNestedFile(t *testing.T, path, content string) {

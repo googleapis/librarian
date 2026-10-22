@@ -71,15 +71,6 @@ func Tag(ctx context.Context, gitExe, tagName, revision string) error {
 	return nil
 }
 
-// Tags returns the names of all local tags in the repository.
-func Tags(ctx context.Context, gitExe string) ([]string, error) {
-	output, err := command.Output(ctx, gitExe, "tag", "--list")
-	if err != nil {
-		return nil, fmt.Errorf("failed to list git tags: %w", err)
-	}
-	return strings.Fields(output), nil
-}
-
 // GetCommitHash returns the commit hash pointed at by the given revision,
 // which could be a tag name, a branch name, a relative revision (e.g. "HEAD~").
 func GetCommitHash(ctx context.Context, gitExe, revision string) (string, error) {

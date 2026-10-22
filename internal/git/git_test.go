@@ -795,42 +795,6 @@ func TestPushBranchAndTag(t *testing.T) {
 	}
 }
 
-func TestTags(t *testing.T) {
-	testhelper.RequireCommand(t, command.Git)
-	testhelper.SetupRepo(t)
-
-	gotEmpty, err := Tags(t.Context(), command.Git)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if diff := cmp.Diff([]string{}, gotEmpty); diff != "" {
-		t.Errorf("mismatch (-want +got):\n%s", diff)
-	}
-
-	if err := Tag(t.Context(), command.Git, "alpha-v0.1.0", "HEAD"); err != nil {
-		t.Fatal(err)
-	}
-	if err := Tag(t.Context(), command.Git, "beta-v1.0.0", "HEAD"); err != nil {
-		t.Fatal(err)
-	}
-
-	got, err := Tags(t.Context(), command.Git)
-	if err != nil {
-		t.Fatal(err)
-	}
-	want := []string{"alpha-v0.1.0", "beta-v1.0.0"}
-	if diff := cmp.Diff(want, got); diff != "" {
-		t.Errorf("mismatch (-want +got):\n%s", diff)
-	}
-}
-
-func TestTags_Error(t *testing.T) {
-	t.Chdir(t.TempDir())
-	if _, err := Tags(t.Context(), command.Git); err == nil {
-		t.Fatal("expected an error outside a git repository")
-	}
-}
-
 func TestListFilesAtRevision(t *testing.T) {
 	testhelper.RequireCommand(t, command.Git)
 	testhelper.SetupRepo(t)
