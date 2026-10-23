@@ -24,18 +24,24 @@ import (
 )
 
 type methodAnnotations struct {
-	Name                   string
-	DocLines               []string
-	PathVariables          []*pathVariable
-	PathBindings           []*pathBindingAnnotations
-	HasMultipleBindings    bool
-	RoutingParams          []*routingParam
-	PathExpression         string
-	HTTPMethod             string
-	HasBody                bool
-	IsBodyWildcard         bool
-	BodyField              string
-	IsHTTPBodyRequest      bool
+	Name                string
+	DocLines            []string
+	PathVariables       []*pathVariable
+	PathBindings        []*pathBindingAnnotations
+	HasMultipleBindings bool
+	RoutingParams       []*routingParam
+	PathExpression      string
+	HTTPMethod          string
+	HasBody             bool
+	IsBodyWildcard      bool
+	BodyField           string
+	// IsHTTPBodyRequest reports whether the HTTP request body is a
+	// google.api.HttpBody message, which transcodes as raw bytes and Content-Type
+	// rather than JSON.
+	IsHTTPBodyRequest bool
+	// IsHTTPBodyResponse reports whether the method returns a
+	// google.api.HttpBody message, which receives raw response bytes and
+	// Content-Type rather than decoding JSON.
 	IsHTTPBodyResponse     bool
 	QueryParams            []*api.Field
 	Pagination             *paginationAnnotations
@@ -279,12 +285,16 @@ func (c *codec) annotateMethod(method *api.Method, modelAnn *modelAnnotations) e
 		isBodyWildcard = method.PathInfo.BodyFieldPath == "*"
 		if hasBody && !isBodyWildcard {
 			bodyField = camelCase(method.PathInfo.BodyFieldPath)
+			// Wrapper requests (or body: "*" rules resolved by the protobuf parser)
+			// point BodyFieldPath at a top-level google.api.HttpBody field.
 			if method.InputType != nil {
 				isHTTPBodyRequest = slices.ContainsFunc(method.InputType.Fields, func(f *api.Field) bool {
 					return f.Name == method.PathInfo.BodyFieldPath && f.Typez == api.TypezMessage && f.TypezID == ".google.api.HttpBody"
 				})
 			}
 		} else if isBodyWildcard && method.InputType != nil && method.InputType.ID == ".google.api.HttpBody" {
+			// When the request message itself is google.api.HttpBody, BodyFieldPath
+			// remains "*".
 			isHTTPBodyRequest = true
 		}
 		for _, binding := range method.PathInfo.Bindings {
