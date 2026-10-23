@@ -15,14 +15,18 @@
 package librarian
 
 import (
+	"bytes"
 	"encoding/json"
+	"fmt"
 	"go/ast"
 	"go/parser"
 	"go/token"
 	"io"
+	"os/exec"
 	"path/filepath"
 	"slices"
 	"strings"
+	"sync"
 	"testing"
 )
 
@@ -36,7 +40,7 @@ const modulePath = "github.com/googleapis/librarian"
 // Every package in the module must match exactly one pattern (or be listed in
 // testSupport), and every pattern must match at least one package, so adding,
 // moving or deleting a package forces this table to be updated rather than
-// silently weakening the check.
+// silently weakening the check. The TestLayering* tests below enforce this.
 var layers = []struct {
 	name         string
 	pathPatterns []string
@@ -83,6 +87,162 @@ var thirdPartyGates = []struct {
 	{"github.com/go-git/", "internal/git"},
 }
 
+// testSupportLayer is the pseudo-layer index used for testSupport packages;
+// it sorts below every real layer.
+var testSupportLayer = len(layers)
+
+func TestLayeringTableIsSorted(t *testing.T) {
+	// Given the layer table above.
+	for _, l := range layers {
+		// When the patterns of each layer are compared with their sorted order.
+		sorted := slices.Sorted(slices.Values(l.pathPatterns))
+		// Then they already are in that order, so diffs to the table stay small.
+		if !slices.Equal(l.pathPatterns, sorted) {
+			t.Errorf("layer %q path patterns are not sorted. Expected order:\n\t%s", l.name, strings.Join(sorted, "\n\t"))
+		}
+	}
+}
+
+func TestLayeringEveryPackageHasExactlyOneLayer(t *testing.T) {
+	// Given every package in the module with non-test Go files.
+	pkgs := modulePackages(t)
+	for _, p := range pkgs {
+		id := relative(p.ImportPath)
+		// When it is matched against testSupport (an explicit list, which wins
+		// over directory patterns) and then against every layer pattern.
+		if slices.Contains(testSupport, id) {
+			continue
+		}
+		var matched []string
+		for _, l := range layers {
+			if slices.ContainsFunc(l.pathPatterns, func(pat string) bool { return matches(pat, id) }) {
+				matched = append(matched, l.name)
+			}
+		}
+		// Then exactly one entry claims it.
+		switch len(matched) {
+		case 1:
+		case 0:
+			t.Errorf("package %s matches no layer; add it to layers or testSupport in dependency_test.go", id)
+		default:
+			t.Errorf("package %s matches more than one layer: %v", id, matched)
+		}
+	}
+}
+
+func TestLayeringEveryPatternMatchesAPackage(t *testing.T) {
+	// Given every package in the module.
+	pkgs := modulePackages(t)
+	ids := make([]string, 0, len(pkgs))
+	for _, p := range pkgs {
+		ids = append(ids, relative(p.ImportPath))
+	}
+	// When each layer pattern and testSupport entry is applied to them.
+	for _, l := range layers {
+		for _, pat := range l.pathPatterns {
+			// Then it matches at least one package, so renames and deletions
+			// cannot leave a stale entry behind.
+			if !slices.ContainsFunc(ids, func(id string) bool { return matches(pat, id) }) {
+				t.Errorf("layer %q pattern %q matches no package; remove or fix it", l.name, pat)
+			}
+		}
+	}
+	for _, id := range testSupport {
+		if !slices.Contains(ids, id) {
+			t.Errorf("testSupport %q is not a package; remove or fix it", id)
+		}
+	}
+}
+
+func TestLayeringImportsPointDownward(t *testing.T) {
+	// Given every package with its layer index.
+	pkgs := modulePackages(t)
+	layerOf := classify(pkgs)
+	for _, p := range pkgs {
+		from := relative(p.ImportPath)
+		fromLayer, ok := layerOf[from]
+		if !ok || fromLayer == testSupportLayer {
+			continue // unclassified packages are reported by another test; test support may import anything
+		}
+		// When each of its non-test imports inside the module is looked up.
+		for _, to := range moduleImports(p) {
+			toLayer, ok := layerOf[to]
+			if !ok || toLayer == testSupportLayer {
+				continue // covered by TestLayeringProductionCodeDoesNotImportTestSupport
+			}
+			// Then the imported package is in the same layer or a lower one.
+			if toLayer < fromLayer {
+				t.Errorf("%s (%s) imports %s (%s): dependencies must point downward", from, layers[fromLayer].name, to, layers[toLayer].name)
+			}
+		}
+	}
+}
+
+func TestLayeringProductionCodeDoesNotImportTestSupport(t *testing.T) {
+	// Given every package with its layer index.
+	pkgs := modulePackages(t)
+	layerOf := classify(pkgs)
+	for _, p := range pkgs {
+		from := relative(p.ImportPath)
+		if layerOf[from] == testSupportLayer {
+			continue
+		}
+		// When its non-test imports are checked against testSupport.
+		for _, to := range moduleImports(p) {
+			// Then none of them is a test-support package.
+			if slices.Contains(testSupport, to) {
+				t.Errorf("%s imports test support package %s from non-test code", from, to)
+			}
+		}
+	}
+}
+
+func TestLayeringThirdPartyLibrariesAreImportedOnlyThroughTheirWrapper(t *testing.T) {
+	// Given every package and the gated third-party prefixes.
+	pkgs := modulePackages(t)
+	for _, gate := range thirdPartyGates {
+		t.Run(gate.prefix, func(t *testing.T) {
+			for _, p := range pkgs {
+				from := relative(p.ImportPath)
+				// When a non-test import starts with the gated prefix.
+				for _, imp := range p.Imports {
+					if !strings.HasPrefix(imp, gate.prefix) {
+						continue
+					}
+					// Then the importer is the one wrapper package allowed to use it.
+					if from != gate.only {
+						t.Errorf("%s imports %s; only %s may (use its wrapper)", from, imp, gate.only)
+					}
+				}
+			}
+		})
+	}
+}
+
+func TestLayeringInternalConfigDeclaresNoFunctions(t *testing.T) {
+	// Given the non-test files of internal/config, which AGENTS.md defines as
+	// a 1:1 mirror of librarian.yaml holding data types only.
+	pkgs := modulePackages(t)
+	i := slices.IndexFunc(pkgs, func(p modulePackage) bool { return relative(p.ImportPath) == "internal/config" })
+	if i < 0 {
+		t.Fatal("internal/config not found")
+	}
+	cfg := pkgs[i]
+	for _, name := range cfg.GoFiles {
+		// When each file is parsed.
+		f, err := parser.ParseFile(token.NewFileSet(), filepath.Join(cfg.Dir, name), nil, parser.SkipObjectResolution)
+		if err != nil {
+			t.Fatal(err)
+		}
+		// Then it declares no functions or methods.
+		for _, d := range f.Decls {
+			if fn, ok := d.(*ast.FuncDecl); ok {
+				t.Errorf("internal/config/%s declares func %s; internal/config holds data types only", name, fn.Name.Name)
+			}
+		}
+	}
+}
+
 type modulePackage struct {
 	ImportPath string
 	Dir        string
@@ -90,122 +250,77 @@ type modulePackage struct {
 	Imports    []string
 }
 
-// TestDependencyRules enforces the layering above against the non-test
-// imports of every package in the module.
-func TestDependencyRules(t *testing.T) {
-	pkgs := modulePackages(t)
-	for _, l := range layers {
-		if !slices.IsSorted(l.pathPatterns) {
-			t.Errorf("layer %q path patterns are not sorted; keep the table sorted so diffs stay small. Expected order:\n\t%s",
-				l.name, strings.Join(slices.Sorted(slices.Values(l.pathPatterns)), "\n\t"))
-		}
+// listPackages runs go list once for the whole file; every test shares the
+// result.
+var listPackages = sync.OnceValues(func() ([]modulePackage, error) {
+	cmd := exec.Command("go", "list", "-json=ImportPath,Dir,GoFiles,Imports", "./...")
+	var stderr bytes.Buffer
+	cmd.Stderr = &stderr
+	out, err := cmd.Output()
+	if err != nil {
+		return nil, fmt.Errorf("go list ./...: %w\n%s", err, stderr.String())
 	}
-	layerOf := map[string]int{}
-	for _, p := range pkgs {
-		id := relative(p.ImportPath)
-		if slices.Contains(testSupport, id) {
-			layerOf[id] = len(layers)
-			continue
-		}
-		var matched []int
-		for i, l := range layers {
-			if slices.ContainsFunc(l.pathPatterns, func(pat string) bool { return matches(pat, id) }) {
-				matched = append(matched, i)
-			}
-		}
-		switch len(matched) {
-		case 1:
-			layerOf[id] = matched[0]
-		case 0:
-			t.Errorf("package %s matches no layer; add it to layers or testSupport in dependency_test.go", id)
-		default:
-			t.Errorf("package %s matches more than one layer: %v", id, matched)
-		}
-	}
-	for _, l := range layers {
-		for _, pat := range l.pathPatterns {
-			if !slices.ContainsFunc(pkgs, func(p modulePackage) bool { return matches(pat, relative(p.ImportPath)) }) {
-				t.Errorf("layer %q pattern %q matches no package; remove or fix it", l.name, pat)
-			}
-		}
-	}
-	for _, id := range testSupport {
-		if !slices.ContainsFunc(pkgs, func(p modulePackage) bool { return relative(p.ImportPath) == id }) {
-			t.Errorf("testSupport %q is not a package; remove or fix it", id)
-		}
-	}
-	if t.Failed() {
-		return
-	}
-	for _, p := range pkgs {
-		from := relative(p.ImportPath)
-		fromLayer := layerOf[from]
-		if fromLayer == len(layers) {
-			continue // test support may import anything
-		}
-		for _, imp := range p.Imports {
-			for _, gate := range thirdPartyGates {
-				if strings.HasPrefix(imp, gate.prefix) && from != gate.only {
-					t.Errorf("%s imports %s; only %s may (use its wrapper)", from, imp, gate.only)
-				}
-			}
-			to, ok := strings.CutPrefix(imp, modulePath+"/")
-			if !ok {
-				continue
-			}
-			toLayer := layerOf[to]
-			switch {
-			case toLayer == len(layers):
-				t.Errorf("%s imports test support package %s from non-test code", from, to)
-			case toLayer < fromLayer:
-				t.Errorf("%s (%s) imports %s (%s): dependencies must point downward", from, layers[fromLayer].name, to, layers[toLayer].name)
-			}
-		}
-	}
-}
-
-// TestConfigIsPureData enforces the internal/config rule in AGENTS.md: the
-// package mirrors librarian.yaml and declares no functions or methods.
-func TestConfigIsPureData(t *testing.T) {
-	for _, p := range modulePackages(t) {
-		if relative(p.ImportPath) != "internal/config" {
-			continue
-		}
-		for _, name := range p.GoFiles {
-			f, err := parser.ParseFile(token.NewFileSet(), filepath.Join(p.Dir, name), nil, parser.SkipObjectResolution)
-			if err != nil {
-				t.Fatal(err)
-			}
-			for _, d := range f.Decls {
-				if fn, ok := d.(*ast.FuncDecl); ok {
-					t.Errorf("internal/config/%s declares func %s; internal/config holds data types only", name, fn.Name.Name)
-				}
-			}
-		}
-	}
-}
-
-// modulePackages returns every package in the module that has non-test Go
-// files, with its non-test imports.
-func modulePackages(t *testing.T) []modulePackage {
-	t.Helper()
-	dec := json.NewDecoder(strings.NewReader(rungo(t, "list", "-json=ImportPath,Dir,GoFiles,Imports", "./...")))
+	dec := json.NewDecoder(bytes.NewReader(out))
 	var pkgs []modulePackage
 	for {
 		var p modulePackage
 		if err := dec.Decode(&p); err == io.EOF {
 			break
 		} else if err != nil {
-			t.Fatalf("parsing go list output: %v", err)
+			return nil, err
 		}
 		if len(p.GoFiles) > 0 && strings.HasPrefix(p.ImportPath, modulePath) {
 			pkgs = append(pkgs, p)
 		}
 	}
+	return pkgs, nil
+})
+
+// modulePackages returns every package in the module that has non-test Go
+// files, with its non-test imports.
+func modulePackages(t *testing.T) []modulePackage {
+	t.Helper()
+	pkgs, err := listPackages()
+	if err != nil {
+		t.Fatal(err)
+	}
 	if len(pkgs) == 0 {
 		t.Fatal("go list found no packages")
 	}
 	return pkgs
+}
+
+// classify maps each package to its layer index, or testSupportLayer.
+// Packages matching no layer are omitted; TestLayeringEveryPackageHasExactlyOneLayer
+// reports those.
+func classify(pkgs []modulePackage) map[string]int {
+	layerOf := map[string]int{}
+	for _, p := range pkgs {
+		id := relative(p.ImportPath)
+		if slices.Contains(testSupport, id) {
+			layerOf[id] = testSupportLayer
+			continue
+		}
+		for i, l := range layers {
+			if slices.ContainsFunc(l.pathPatterns, func(pat string) bool { return matches(pat, id) }) {
+				layerOf[id] = i
+				break
+			}
+		}
+	}
+	return layerOf
+}
+
+// moduleImports returns the module-relative IDs of p's imports that are inside
+// this module.
+func moduleImports(p modulePackage) []string {
+	var out []string
+	for _, imp := range p.Imports {
+		if to, ok := strings.CutPrefix(imp, modulePath+"/"); ok {
+			out = append(out, to)
+		}
+	}
+	return out
 }
 
 func relative(importPath string) string {

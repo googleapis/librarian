@@ -114,5 +114,5 @@ jobs:
       - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
         with:
           go-version-file: "go.mod"
-      - name: Run TestDependencyRules and TestConfigIsPureData
-        run: go test -run 'TestDependencyRules|TestConfigIsPureData' -count=1 .
+      - name: Run the TestLayering tests
+        run: go test -run '^TestLayering' -count=1 .
