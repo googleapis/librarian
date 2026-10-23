@@ -22,11 +22,15 @@ import (
 	"github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/git"
+	"github.com/googleapis/librarian/internal/librarian/dart"
 	"github.com/googleapis/librarian/internal/yaml"
 	"github.com/urfave/cli/v3"
 )
 
-var errNoLibrariesAtReleaseCommit = errors.New("commit does not release any libraries")
+var (
+	errMissingTagFormat           = errors.New("no tag format configured")
+	errNoLibrariesAtReleaseCommit = errors.New("commit does not release any libraries")
+)
 
 func tagCommand() *cli.Command {
 	return &cli.Command{
@@ -66,34 +70,20 @@ func tag(ctx context.Context, releaseCommit string) error {
 		return err
 	}
 	if releaseCommit == "" {
-		latestReleaseCommit, err := findLatestReleaseCommitHash(ctx)
+		var err error
+		releaseCommit, err = findReleaseCommit(ctx)
 		if err != nil {
 			return err
 		}
-		releaseCommit = latestReleaseCommit
 	}
-	releaseCommitCfgContent, err := git.ShowFileAtRevision(ctx, command.Git, releaseCommit, config.LibrarianYAML)
+	releaseCommitCfg, err := loadConfigAtRevision(ctx, releaseCommit)
 	if err != nil {
 		return err
 	}
-	releaseCommitCfg, err := yaml.Unmarshal[config.Config]([]byte(releaseCommitCfgContent))
-	if err != nil {
-		return err
+	if releaseCommitCfg.Default == nil || releaseCommitCfg.Default.TagFormat == "" {
+		return errMissingTagFormat
 	}
-	// Load the immediately-preceding config so we can find all libraries that
-	// were released by that commit. (This duplicates work done in
-	// findLatestReleaseCommitHash, but keeps the interface simple - and means
-	// that if we specify the release commit directly, we can skip
-	// findLatestReleaseCommitHash entirely.)
-	beforeReleaseCommitCfgContent, err := git.ShowFileAtRevision(ctx, command.Git, releaseCommit+"~", config.LibrarianYAML)
-	if err != nil {
-		return err
-	}
-	beforeReleaseCommitCfg, err := yaml.Unmarshal[config.Config]([]byte(beforeReleaseCommitCfgContent))
-	if err != nil {
-		return err
-	}
-	librariesToTag, err := findReleasedLibraries(beforeReleaseCommitCfg, releaseCommitCfg)
+	librariesToTag, err := librariesToTagAtCommit(ctx, releaseCommit, releaseCommitCfg)
 	if err != nil {
 		return err
 	}
@@ -108,10 +98,43 @@ func tag(ctx context.Context, releaseCommit string) error {
 			return err
 		}
 		tagName := git.FormatTagName(tagFormat, lib.Name, lib.Version)
-		err = git.Tag(ctx, command.Git, tagName, releaseCommit)
-		if err != nil {
+		if err := git.Tag(ctx, command.Git, tagName, releaseCommit); err != nil {
 			return fmt.Errorf("error creating tag %s: %w", tagName, err)
 		}
 	}
 	return nil
+}
+
+func findReleaseCommit(ctx context.Context) (string, error) {
+	headCfg, err := loadConfigAtRevision(ctx, "HEAD")
+	if err == nil && headCfg.Language == config.LanguageDart {
+		commit, err := dart.FindReleaseCommit(ctx, headCfg)
+		if err != nil {
+			return "", err
+		}
+		if commit == "" {
+			return "", errReleaseCommitNotFound
+		}
+		return commit, nil
+	}
+	return findLatestReleaseCommitHash(ctx)
+}
+
+func librariesToTagAtCommit(ctx context.Context, releaseCommit string, releaseCommitCfg *config.Config) ([]string, error) {
+	if releaseCommitCfg.Language == config.LanguageDart {
+		return dart.LibrariesToTag(ctx, releaseCommit, releaseCommitCfg)
+	}
+	beforeReleaseCommitCfg, err := loadConfigAtRevision(ctx, releaseCommit+"~")
+	if err != nil {
+		return nil, err
+	}
+	return findReleasedLibraries(beforeReleaseCommitCfg, releaseCommitCfg)
+}
+
+func loadConfigAtRevision(ctx context.Context, revision string) (*config.Config, error) {
+	content, err := git.ShowFileAtRevision(ctx, command.Git, revision, config.LibrarianYAML)
+	if err != nil {
+		return nil, err
+	}
+	return yaml.Unmarshal[config.Config]([]byte(content))
 }

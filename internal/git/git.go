@@ -27,8 +27,9 @@ import (
 )
 
 var (
-	// errGitShow is included in any error returned by [ShowFile].
-	errGitShow = errors.New("failed to show file")
+	// ErrGitShow is included in any error returned by [ShowFileAtRevision] or
+	// [ShowFileAtRemoteBranch].
+	ErrGitShow = errors.New("failed to show file")
 
 	// ErrGitStatusUnclean reported when the git status reports uncommitted
 	// changes.
@@ -135,9 +136,24 @@ func ShowFileAtRevision(ctx context.Context, gitExe, revision, path string) (str
 	revisionAndPath := fmt.Sprintf("%s:%s", revision, path)
 	output, err := command.Output(ctx, gitExe, "show", revisionAndPath)
 	if err != nil {
-		return "", fmt.Errorf("%s: %w", revisionAndPath, errors.Join(errGitShow, err))
+		return "", fmt.Errorf("%s: %w", revisionAndPath, errors.Join(ErrGitShow, err))
 	}
 	return strings.TrimSuffix(output, "\n"), nil
+}
+
+// ListFilesAtRevision returns the repository-relative paths of existing files
+// at revision matching paths, or all files in the tree when paths is empty.
+func ListFilesAtRevision(ctx context.Context, gitExe, revision string, paths ...string) ([]string, error) {
+	args := []string{"ls-tree", "-r", "--name-only", revision}
+	if len(paths) > 0 {
+		args = append(args, "--")
+		args = append(args, paths...)
+	}
+	output, err := command.Output(ctx, gitExe, args...)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list files at revision %s: %w", revision, err)
+	}
+	return filesFilter(nil, strings.Split(output, "\n")), nil
 }
 
 // MatchesBranchPoint returns an error if the local repository has unpushed changes.
@@ -157,9 +173,16 @@ func MatchesBranchPoint(ctx context.Context, gitExe, remote, branch string) erro
 // FindCommitsForPath returns the full hashes of all commits affecting the given path.
 // The commits are returned in normal log order, i.e. latest commit first.
 func FindCommitsForPath(ctx context.Context, gitExe, path string) ([]string, error) {
-	output, err := command.Output(ctx, gitExe, "log", "--pretty=format:%H", "--", path)
+	return FindCommitsForPaths(ctx, gitExe, path)
+}
+
+// FindCommitsForPaths returns the full hashes of all commits affecting any of the given paths.
+// The commits are returned in normal log order, i.e. latest commit first.
+func FindCommitsForPaths(ctx context.Context, gitExe string, paths ...string) ([]string, error) {
+	args := append([]string{"log", "--pretty=format:%H", "--"}, paths...)
+	output, err := command.Output(ctx, gitExe, args...)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get change commits from path %s: %w", path, err)
+		return nil, fmt.Errorf("failed to get change commits from paths %v: %w", paths, err)
 	}
 	return strings.Fields(output), nil
 }

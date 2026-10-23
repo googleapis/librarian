@@ -276,8 +276,8 @@ func TestShowFileAtRemoteBranch_Error(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected an error showing file that should not exist")
 	}
-	if !errors.Is(err, errGitShow) {
-		t.Errorf("expected errGitShow but got %v", err)
+	if !errors.Is(err, ErrGitShow) {
+		t.Errorf("expected ErrGitShow but got %v", err)
 	}
 }
 
@@ -329,8 +329,8 @@ func TestShowFileAtRevision_Error(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected an error showing file that should not exist")
 	}
-	if !errors.Is(err, errGitShow) {
-		t.Errorf("expected errGitShow but got %v", err)
+	if !errors.Is(err, ErrGitShow) {
+		t.Errorf("expected ErrGitShow but got %v", err)
 	}
 }
 
@@ -792,5 +792,54 @@ func TestPushBranchAndTag(t *testing.T) {
 	}
 	if strings.TrimSpace(gotBranchSHA) != head {
 		t.Errorf("remote branch feature-branch = %q; want %q", strings.TrimSpace(gotBranchSHA), head)
+	}
+}
+
+func TestListFilesAtRevision(t *testing.T) {
+	testhelper.RequireCommand(t, command.Git)
+	testhelper.SetupRepo(t)
+
+	gotFiltered, err := ListFilesAtRevision(t.Context(), command.Git, "HEAD", testhelper.ReadmeFile, "nonexistent.txt")
+	if err != nil {
+		t.Fatal(err)
+	}
+	wantFiltered := []string{testhelper.ReadmeFile}
+	if diff := cmp.Diff(wantFiltered, gotFiltered); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+
+	gotAll, err := ListFilesAtRevision(t.Context(), command.Git, "HEAD")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(gotAll) == 0 {
+		t.Fatal("expected non-empty file list at HEAD")
+	}
+}
+
+func TestListFilesAtRevision_Error(t *testing.T) {
+	testhelper.RequireCommand(t, command.Git)
+	testhelper.SetupRepo(t)
+
+	if _, err := ListFilesAtRevision(t.Context(), command.Git, "invalid-revision"); err == nil {
+		t.Fatal("expected an error for invalid revision")
+	}
+}
+
+func TestFindCommitsForPaths(t *testing.T) {
+	testhelper.RequireCommand(t, command.Git)
+	testhelper.SetupRepo(t)
+	if err := os.WriteFile("extra.txt", []byte("extra"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	testhelper.RunGit(t, "add", "extra.txt")
+	testhelper.RunGit(t, "commit", "-m", "feat: add extra")
+
+	got, err := FindCommitsForPaths(t.Context(), command.Git, testhelper.ReadmeFile, "extra.txt")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(got) != 2 {
+		t.Errorf("FindCommitsForPaths() returned %d commits, want 2", len(got))
 	}
 }
