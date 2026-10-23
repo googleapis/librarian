@@ -248,11 +248,20 @@ func addLibrary(cfg *config.Config, googleapisDir, apiPath, explicitLibraryName 
 
 // findExistingLibraryForAPI determines if an existing library in cfg is
 // the natural library to contain apiPath, and returns it if so. If no existing
-// library is found, nil is returned. In most languages this check is performed
-// by deriving the library name from the API path and seeing if that library
-// already exists. In Python the mapping from API path to library name isn't
-// always as simple for historical reasons.
+// library is found, nil is returned. First, it checks if any library already
+// explicitly lists apiPath in its APIs (unless explicitLibraryName is specified).
+// Otherwise, in most languages this check is performed by deriving the library
+// name from the API path and seeing if that library already exists. In Python
+// and Node.js the mapping from API path to library name isn't always as simple
+// for historical reasons.
 func findExistingLibraryForAPI(cfg *config.Config, googleapisDir, apiPath, explicitLibraryName string) (*config.Library, error) {
+	if explicitLibraryName == "" {
+		for _, library := range cfg.Libraries {
+			if slices.ContainsFunc(library.APIs, func(api *config.API) bool { return api.Path == apiPath }) {
+				return library, nil
+			}
+		}
+	}
 	switch cfg.Language {
 	case config.LanguageNodejs:
 		return nodejs.FindExistingLibraryForNewAPI(cfg.Libraries, apiPath), nil
