@@ -307,7 +307,7 @@ func (c *codec) annotateMethod(method *api.Method, modelAnn *modelAnnotations) e
 			// With `body: "*"` the request body only contains the fields not bound by the path
 			// template.
 			var omittedBodyFields []string
-			if isBodyWildcard {
+			if isBodyWildcard && !isHTTPBodyRequest {
 				for _, pVar := range pVars {
 					omittedBodyFields = append(omittedBodyFields, pVar.JSONFieldPath)
 				}
