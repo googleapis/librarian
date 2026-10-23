@@ -203,6 +203,7 @@ func buildGAPICOpts(api *config.API, library *config.Library, googleapisDir stri
 	gemName := apiGemName(library, api)
 	opts := []string{
 		"ruby-cloud-gem-name=" + gemName,
+		"ruby-cloud-format=false",
 	}
 	if serviceConfig != nil && serviceConfig.ServiceConfig != "" {
 		opts = append(opts, "service-yaml="+filepath.Join(googleapisDir, serviceConfig.ServiceConfig))

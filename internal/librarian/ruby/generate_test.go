@@ -55,6 +55,7 @@ func TestBuildGAPICOpts(t *testing.T) {
 			},
 			want: []string{
 				"ruby-cloud-gem-name=google-cloud-secret_manager-v1",
+				"ruby-cloud-format=false",
 				"service-yaml=" + filepath.Join(googleapisDir, "google/cloud/secretmanager/v1/secretmanager_v1.yaml"),
 				"ruby-cloud-description=Stores sensitive data such as API keys\\, passwords\\, and certificates. Provides convenience while improving security.",
 				"ruby-cloud-summary=Stores sensitive data such as API keys\\, passwords\\, and certificates. Provides convenience while improving security.",
@@ -73,6 +74,7 @@ func TestBuildGAPICOpts(t *testing.T) {
 			},
 			want: []string{
 				"ruby-cloud-gem-name=google-cloud-compute-v1",
+				"ruby-cloud-format=false",
 				"service-yaml=" + filepath.Join(googleapisDir, "google/cloud/compute/v1/compute_v1.yaml"),
 				"ruby-cloud-description=Compute Engine is an infrastructure as a service (IaaS) product that offers self-managed virtual machine (VM) instances and bare metal instances.",
 				"ruby-cloud-summary=Compute Engine is an infrastructure as a service (IaaS) product that offers self-managed virtual machine (VM) instances and bare metal instances.",
@@ -94,6 +96,7 @@ func TestBuildGAPICOpts(t *testing.T) {
 			},
 			want: []string{
 				"ruby-cloud-gem-name=google-cloud-secret_manager",
+				"ruby-cloud-format=false",
 				"service-yaml=" + filepath.Join(googleapisDir, "google/cloud/secretmanager/v1/secretmanager_v1.yaml"),
 				"ruby-cloud-description=Stores sensitive data such as API keys\\, passwords\\, and certificates. Provides convenience while improving security.",
 				"ruby-cloud-summary=Stores sensitive data such as API keys\\, passwords\\, and certificates. Provides convenience while improving security.",
@@ -118,6 +121,7 @@ func TestBuildGAPICOpts(t *testing.T) {
 			},
 			want: []string{
 				"ruby-cloud-gem-name=google-cloud-secret_manager",
+				"ruby-cloud-format=false",
 				"service-yaml=" + filepath.Join(googleapisDir, "google/cloud/secretmanager/v1/secretmanager_v1.yaml"),
 				"ruby-cloud-description=Stores sensitive data such as API keys\\, passwords\\, and certificates. Provides convenience while improving security.",
 				"ruby-cloud-summary=Stores sensitive data such as API keys\\, passwords\\, and certificates. Provides convenience while improving security.",
@@ -142,6 +146,7 @@ func TestBuildGAPICOpts(t *testing.T) {
 			},
 			want: []string{
 				"ruby-cloud-gem-name=google-cloud-secret_manager",
+				"ruby-cloud-format=false",
 				"service-yaml=" + filepath.Join(googleapisDir, "google/cloud/secretmanager/v1/secretmanager_v1.yaml"),
 				"ruby-cloud-description=Stores sensitive data such as API keys\\, passwords\\, and certificates. Provides convenience while improving security.",
 				"ruby-cloud-summary=Stores sensitive data such as API keys\\, passwords\\, and certificates. Provides convenience while improving security.",
@@ -167,6 +172,7 @@ func TestBuildGAPICOpts(t *testing.T) {
 			},
 			want: []string{
 				"ruby-cloud-gem-name=google-cloud-secret_manager",
+				"ruby-cloud-format=false",
 				"service-yaml=" + filepath.Join(googleapisDir, "google/cloud/secretmanager/v1/secretmanager_v1.yaml"),
 				"ruby-cloud-description=Stores sensitive data such as API keys\\, passwords\\, and certificates. Provides convenience while improving security.",
 				"ruby-cloud-summary=Stores sensitive data such as API keys\\, passwords\\, and certificates. Provides convenience while improving security.",
@@ -203,6 +209,7 @@ func TestBuildGAPICOpts(t *testing.T) {
 			},
 			want: []string{
 				"ruby-cloud-gem-name=google-cloud-secret_manager",
+				"ruby-cloud-format=false",
 				"service-yaml=" + filepath.Join(googleapisDir, "google/cloud/secretmanager/v1/secretmanager_v1.yaml"),
 				"ruby-cloud-description=Stores sensitive data such as API keys\\, passwords\\, and certificates. Provides convenience while improving security.",
 				"ruby-cloud-summary=Stores sensitive data such as API keys\\, passwords\\, and certificates. Provides convenience while improving security.",
@@ -237,6 +244,7 @@ func TestBuildGAPICOpts(t *testing.T) {
 			},
 			want: []string{
 				"ruby-cloud-gem-name=google-cloud-secret_manager",
+				"ruby-cloud-format=false",
 				"service-yaml=" + filepath.Join(googleapisDir, "google/cloud/secretmanager/v1/secretmanager_v1.yaml"),
 				"ruby-cloud-description=Stores sensitive data such as API keys\\, passwords\\, and certificates. Provides convenience while improving security.",
 				"ruby-cloud-summary=Stores sensitive data such as API keys\\, passwords\\, and certificates. Provides convenience while improving security.",
@@ -265,6 +273,7 @@ func TestBuildGAPICOpts(t *testing.T) {
 			},
 			want: []string{
 				"ruby-cloud-gem-name=google-cloud-secret_manager-custom",
+				"ruby-cloud-format=false",
 				"service-yaml=" + filepath.Join(googleapisDir, "google/cloud/secretmanager/v1/secretmanager_v1.yaml"),
 				"ruby-cloud-description=Stores sensitive data such as API keys\\, passwords\\, and certificates. Provides convenience while improving security.",
 				"ruby-cloud-summary=Stores sensitive data such as API keys\\, passwords\\, and certificates. Provides convenience while improving security.",
