@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.49.1](https://github.com/googleapis/librarian/compare/v0.49.0...v0.49.1) (2026-10-23)
+
+
+### Bug Fixes
+
+* **internal/librarian:** check explicit API paths in findExistingLibraryForAPI ([#7816](https://github.com/googleapis/librarian/issues/7816)) ([00ae0ab](https://github.com/googleapis/librarian/commit/00ae0ab2bf5e506433ccfcbb7030b1748e87abc8)), refs [#7814](https://github.com/googleapis/librarian/issues/7814)
+* **internal/sidekick/rust_prost:** map BytesValue ([#7798](https://github.com/googleapis/librarian/issues/7798)) ([7080958](https://github.com/googleapis/librarian/commit/70809581943f00b16202f7f31ee39e4fca8d3103))
+* **swift:** strip backticks from DocC xref links ([#7804](https://github.com/googleapis/librarian/issues/7804)) ([6a931c5](https://github.com/googleapis/librarian/commit/6a931c5a0bb6fb46f5d24a615031903638dd41f7)), refs [#751](https://github.com/googleapis/librarian/issues/751)
+
 ## [0.49.0](https://github.com/googleapis/librarian/compare/v0.48.0...v0.49.0) (2026-10-19)
 
 
