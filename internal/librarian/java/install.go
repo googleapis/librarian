@@ -21,6 +21,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 
 	"github.com/googleapis/librarian/internal/cache"
 	"github.com/googleapis/librarian/internal/config"
@@ -28,12 +29,22 @@ import (
 )
 
 const (
-	envPath  = "PATH"
-	toolsDir = "java_tools"
+	// envJavaToolOptions is the standard JVM environment variable read automatically by HotSpot at startup.
+	envJavaToolOptions = "JAVA_TOOL_OPTIONS"
+	envPath            = "PATH"
+	toolsDir           = "java_tools"
 )
 
-// errNoToolsSpecified indicates no Java tools were provided in the configuration.
-var errNoToolsSpecified = errors.New("no tools specified in configuration")
+var (
+	// defaultJavaToolOptions maps each JVM option family prefix to its default flag for concurrent execution.
+	defaultJavaToolOptions = []struct{ prefix, flag string }{
+		{"-Xmx", "-Xmx1024m"},
+		{"-XX:ActiveProcessorCount=", "-XX:ActiveProcessorCount=2"},
+		{"UsePerfData", "-XX:-UsePerfData"},
+	}
+	// errNoToolsSpecified indicates no Java tools were provided in the configuration.
+	errNoToolsSpecified = errors.New("no tools specified in configuration")
+)
 
 // Install installs Java tool dependencies.
 // It creates two sibling directories:
@@ -93,11 +104,22 @@ func getLibDir() (string, error) {
 	return filepath.Abs(filepath.Join(installDir, "lib"))
 }
 
-// getToolsEnv returns an environment map with the Java tools bin directory prepended to the PATH.
+// getToolsEnv returns an environment map with the Java tools bin directory prepended to the PATH
+// and bounded JVM memory and thread options for concurrent execution.
 func getToolsEnv() (map[string]string, error) {
 	binDir, err := getBinDir()
 	if err != nil {
 		return nil, err
 	}
-	return map[string]string{envPath: binDir}, nil
+	existing := os.Getenv(envJavaToolOptions)
+	var options []string
+	for _, option := range defaultJavaToolOptions {
+		if !strings.Contains(existing, option.prefix) {
+			options = append(options, option.flag)
+		}
+	}
+	if existing != "" {
+		options = append(options, existing)
+	}
+	return map[string]string{envJavaToolOptions: strings.Join(options, " "), envPath: binDir}, nil
 }
