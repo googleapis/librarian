@@ -311,7 +311,7 @@ func TestInitCheckRoundTrip(t *testing.T) {
 	for i := range s.Pkgs {
 		s.Pkgs[i].Layer = "core"
 	}
-	s.Steps = []Step{{Title: "Leaf first", Body: `<p>See <a data-src="a/a.go">a.go</a>.</p>`, Look: []string{"a/a.go"}, Pkg: "a"}}
+	s.Steps = []Step{{Title: "Leaf first — ✓", Body: `<p>See <a data-src="a/a.go">a.go</a> → done.</p>`, Look: []string{"a/a.go"}, Pkg: "a"}}
 	authored, _ := json.Marshal(s)
 	if err := os.WriteFile(skel, authored, 0o644); err != nil {
 		t.Fatal(err)
@@ -329,13 +329,21 @@ func TestInitCheckRoundTrip(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, want := range []string{`"module":"github.com/org/tiny"`, `"imports":["a"]`, `"files":["b.go"]`, `"cited":["a/a.go"]`, "script-src 'sha256-"} {
+	for i, c := range html {
+		if c > 0x7f {
+			t.Fatalf("rendered page has non-ASCII byte 0x%02x at offset %d", c, i)
+		}
+	}
+	for _, want := range []string{`"module":"github.com/org/tiny"`, `"imports":["a"]`, `"files":["b.go"]`, `"cited":["a/a.go"]`, `\u2014 \u2713`, "script-src 'sha256-"} {
 		if !bytes.Contains(html, []byte(want)) {
 			t.Errorf("rendered page lacks %s", want)
 		}
 	}
 	if bytes.Contains(html, []byte("script-src 'unsafe-inline'")) {
 		t.Error("rendered page still allows unsafe-inline scripts")
+	}
+	if bytes.Contains(html, []byte("location.replace")) {
+		t.Error("rendered page uses location.replace fallback which breaks about:srcdoc iframes")
 	}
 }
 

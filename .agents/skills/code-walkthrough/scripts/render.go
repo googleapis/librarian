@@ -243,6 +243,13 @@ func run(ctx context.Context, in, out, root, tmplPath string, initSkeleton, chec
 			return err
 		}
 	}
+	// Browsers normalize newlines before hashing inline scripts.
+	tmpl = bytes.ReplaceAll(bytes.ReplaceAll(tmpl, []byte("\r\n"), []byte("\n")), []byte("\r"), []byte("\n"))
+	for i, c := range tmpl {
+		if c > 0x7f {
+			return fmt.Errorf("template has non-ASCII byte at offset %d; use \\u escapes in script and entities in HTML so the script hash survives viewers that guess the wrong encoding", i)
+		}
+	}
 	if !bytes.Contains(tmpl, []byte("{{.JSON}}")) {
 		return errors.New("template has no {{.JSON}} slot")
 	}
@@ -252,7 +259,7 @@ func run(ctx context.Context, in, out, root, tmplPath string, initSkeleton, chec
 	if err != nil {
 		return err
 	}
-	html := bytes.Replace(tmpl, []byte("{{.JSON}}"), payload, 1)
+	html := bytes.Replace(tmpl, []byte("{{.JSON}}"), asciiJSON(payload), 1)
 	html = pinScripts(html)
 	if out == "" {
 		out = "walkthrough.html"
@@ -298,6 +305,24 @@ func pinScripts(html []byte) []byte {
 		return html
 	}
 	return bytes.Replace(html, []byte(token), []byte("script-src "+strings.Join(hashes, " ")), 1)
+}
+
+// asciiJSON rewrites non-ASCII characters in JSON as \u escapes, so the page
+// is pure ASCII and decodes identically under any ASCII-compatible encoding.
+func asciiJSON(b []byte) []byte {
+	var out bytes.Buffer
+	for _, r := range string(b) {
+		switch {
+		case r < 0x80:
+			out.WriteRune(r)
+		case r > 0xffff:
+			r -= 0x10000
+			fmt.Fprintf(&out, `\u%04x\u%04x`, 0xd800+(r>>10), 0xdc00+(r&0x3ff))
+		default:
+			fmt.Fprintf(&out, `\u%04x`, r)
+		}
+	}
+	return out.Bytes()
 }
 
 // factPkg is one package in the -facts output.

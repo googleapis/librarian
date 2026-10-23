@@ -106,7 +106,7 @@ code,pre,textarea.mono{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Cons
         <button class="tab px-3 py-1.5 rounded-lg text-sm" data-tab="languages">Languages</button>
         <button class="tab px-3 py-1.5 rounded-lg text-sm" data-tab="findings">Findings</button>
       </nav>
-      <button id="themeToggle" class="border border-[var(--border)] bg-[var(--card)] hover:border-[var(--primary)] rounded-lg px-2.5 py-1.5 text-xs font-medium" title="Toggle light/dark theme">☀ Light</button>
+      <button id="themeToggle" class="border border-[var(--border)] bg-[var(--card)] hover:border-[var(--primary)] rounded-lg px-2.5 py-1.5 text-xs font-medium" title="Toggle light/dark theme">&#9728; Light</button>
     </div>
   </header>
 
@@ -339,8 +339,8 @@ document.title = DATA.title;
 document.getElementById("pageTitle").textContent = DATA.title;
 document.getElementById("welcomeTitle").textContent = DATA.subtitle || DATA.title;
 document.getElementById("subtitle").innerHTML =
-  `${escapeHTML(DATA.repo || DATA.module)} at commit ${src("", `<code>${escapeHTML(DATA.shortSha)}</code>`)}${DATA.goVersion ? ` (Go ${escapeHTML(DATA.goVersion)})` : ""} · ` +
-  `${plural(DATA.pkgs.length, "package")} · ${(DATA.totalLoc || 0).toLocaleString()} non-test Go lines.`;
+  `${escapeHTML(DATA.repo || DATA.module)} at commit ${src("", `<code>${escapeHTML(DATA.shortSha)}</code>`)}${DATA.goVersion ? ` (Go ${escapeHTML(DATA.goVersion)})` : ""} \u00b7 ` +
+  `${plural(DATA.pkgs.length, "package")} \u00b7 ${(DATA.totalLoc || 0).toLocaleString()} non-test Go lines.`;
 document.getElementById("mapIntro").textContent =
   `Every package in the module (from go list ./...) is grouped into ${plural(DATA.layers.length, "layer")} assigned when this walkthrough was written.`;
 document.getElementById("langIntro").textContent =
@@ -416,16 +416,16 @@ function copyPrompt(text, btn, hostEl) {
     ta.focus();
     ta.select();
     box.querySelector(".copy-again-btn").addEventListener("click", ev => {
-      writeTextReliable(ta.value).then(ok => flashButton(ev.target, ok ? "✓ Copied!" : "Copy blocked", ok));
+      writeTextReliable(ta.value).then(ok => flashButton(ev.target, ok ? "\u2713 Copied!" : "Copy blocked", ok));
       ta.select();
     });
     box.querySelector(".close-prompt-btn").addEventListener("click", () => box.remove());
   }
   writeTextReliable(text).then(ok => {
-    flashButton(btn, ok ? "✓ Copied prompt!" : "Select text below", ok);
+    flashButton(btn, ok ? "\u2713 Copied prompt!" : "Select text below", ok);
     const status = box && box.querySelector(".prompt-status");
     if (status) {
-      status.textContent = ok ? "✓ Prompt copied to clipboard — paste into chat:" : "Clipboard unavailable — select and copy the text below:";
+      status.textContent = ok ? "\u2713 Prompt copied to clipboard \u2014 paste into chat:" : "Clipboard unavailable \u2014 select and copy the text below:";
       status.style.color = ok ? cssVar("--ok") : cssVar("--warn");
     }
   });
@@ -456,7 +456,7 @@ function openSourceModal(relPath) {
 
   const mapBtn = document.getElementById("srcOpenMap");
   mapBtn.classList.toggle("hidden", !activeModalPkg);
-  if (activeModalPkg) mapBtn.textContent = `Show ${shortName(activeModalPkg)} in Map →`;
+  if (activeModalPkg) mapBtn.textContent = `Show ${shortName(activeModalPkg)} in Map \u2192`;
 
   const ghLink = document.getElementById("srcOpenGH");
   ghLink.href = gh(relPath);
@@ -469,7 +469,7 @@ function openSourceModal(relPath) {
        <div class="flex flex-wrap gap-1">${pkg.files.map(f => src((pkg.id === "." ? "" : pkg.id + "/") + f, `<span class="badge">${escapeHTML(f)}</span>`)).join("")}</div>`
     : "";
   document.getElementById("srcModalBody").innerHTML = pkg
-    ? `<div class="text-xs text-[var(--muted-foreground)] mb-1">Owned by <code>${escapeHTML(pkg.id)}</code> · ${(pkg.loc || 0).toLocaleString()} non-test lines</div><p>${hydrateLinks(pkg.desc)}</p>${files}`
+    ? `<div class="text-xs text-[var(--muted-foreground)] mb-1">Owned by <code>${escapeHTML(pkg.id)}</code> \u00b7 ${(pkg.loc || 0).toLocaleString()} non-test lines</div><p>${hydrateLinks(pkg.desc)}</p>${files}`
     : `<p class="text-[var(--muted-foreground)]">Open this path in your editor, or copy a prompt to have your agent walk you through it.</p>`;
   srcModal.classList.remove("hidden");
 }
@@ -477,7 +477,7 @@ function openSourceModal(relPath) {
 document.getElementById("srcClose").addEventListener("click", () => srcModal.classList.add("hidden"));
 srcModal.addEventListener("click", e => { if (e.target === srcModal) srcModal.classList.add("hidden"); });
 document.getElementById("srcCopyPath").addEventListener("click", e => {
-  writeTextReliable(activeModalPath || ".").then(ok => flashButton(e.target, ok ? "✓ Copied path!" : "Copy blocked", ok));
+  writeTextReliable(activeModalPath || ".").then(ok => flashButton(e.target, ok ? "\u2713 Copied path!" : "Copy blocked", ok));
 });
 document.getElementById("srcCopyPrompt").addEventListener("click", e => {
   const target = activeModalPath || "the repository root";
@@ -494,7 +494,7 @@ function updateThemeButton() {
   const root = document.documentElement;
   const isDark = root.getAttribute("data-theme") === "dark" ||
     (!root.getAttribute("data-theme") && window.matchMedia("(prefers-color-scheme: dark)").matches);
-  document.getElementById("themeToggle").textContent = isDark ? "☀ Light" : "☾ Dark";
+  document.getElementById("themeToggle").textContent = isDark ? "\u2600 Light" : "\u263e Dark";
 }
 document.getElementById("themeToggle").addEventListener("click", () => {
   const root = document.documentElement;
@@ -509,7 +509,7 @@ updateThemeButton();
 // ---------------------------------------------------------------- landing paths
 function renderPaths() {
   const core = [
-    { tab: "map", title: "Architecture map", eyebrow: `${plural(DATA.layers.length, "layer")} · dependency wires`, desc: "Every package in the module grouped by layer, with its imports and importers drawn on click.", has: DATA.pkgs.length > 0 },
+    { tab: "map", title: "Architecture map", eyebrow: `${plural(DATA.layers.length, "layer")} \u00b7 dependency wires`, desc: "Every package in the module grouped by layer, with its imports and importers drawn on click.", has: DATA.pkgs.length > 0 },
     { tab: "tour", title: "Guided tour", eyebrow: `${plural(DATA.steps.length, "step")}`, desc: "A step-by-step narrative with the files to read at each stop.", has: DATA.steps.length > 0 },
     { tab: "flows", title: "Command flows", eyebrow: `${plural(DATA.flows.length, "flow")}`, desc: "Stage-by-stage execution of specific commands, with inputs and outputs.", has: DATA.flows.length > 0 },
     { tab: "languages", title: "Languages", eyebrow: `${plural(DATA.langs.length, "integration")}`, desc: "Side-by-side comparison of per-language packages and the hooks each one exports.", has: DATA.langs.length > 0 },
@@ -636,7 +636,7 @@ function selectPkg(id, scrollCard) {
   document.getElementById("detail").innerHTML = `
     <div class="text-xs text-[var(--muted-foreground)]">${escapeHTML(layer)}</div>
     <h3 class="font-semibold text-base mb-1"><code>${escapeHTML(p.id)}</code></h3>
-    <div class="text-xs text-[var(--muted-foreground)] mb-2">${(p.loc || 0).toLocaleString()} non-test lines · ${src(pkgPath, "inspect files")}</div>
+    <div class="text-xs text-[var(--muted-foreground)] mb-2">${(p.loc || 0).toLocaleString()} non-test lines \u00b7 ${src(pkgPath, "inspect files")}</div>
     <p class="mb-3">${hydrateLinks(p.desc)}</p>
     <div class="font-medium text-xs mb-1">Imports (${imps.length})</div>
     <div class="mb-3">${chips(imps)}</div>
@@ -728,7 +728,7 @@ function showStep(i) {
     </div>`;
   document.getElementById("stepCounter").textContent = `${step + 1} / ${DATA.steps.length}`;
   document.getElementById("prevStep").disabled = step === 0;
-  document.getElementById("nextStep").textContent = step === DATA.steps.length - 1 ? "Back to start" : "Next →";
+  document.getElementById("nextStep").textContent = step === DATA.steps.length - 1 ? "Back to start" : "Next \u2192";
   const o = document.getElementById("openInMap");
   if (o) o.addEventListener("click", () => jumpToPkgInMap(s.pkg));
   setRoute();
@@ -801,7 +801,7 @@ function showGuideStep(i) {
     </div>`;
   document.getElementById("guideStepCounter").textContent = `${guideStep + 1} / ${g.steps.length}`;
   document.getElementById("prevGuideStep").disabled = guideStep === 0;
-  document.getElementById("nextGuideStep").textContent = guideStep === g.steps.length - 1 ? "Back to step 1" : "Next →";
+  document.getElementById("nextGuideStep").textContent = guideStep === g.steps.length - 1 ? "Back to step 1" : "Next \u2192";
   const gm = document.getElementById("guideOpenInMap");
   if (gm) gm.addEventListener("click", () => jumpToPkgInMap(s.pkg));
   setRoute();
@@ -844,7 +844,7 @@ function renderFlows() {
       <div class="flow-stage">
         <div class="flow-rail">
           <div class="flow-num">${i + 1}</div>
-          ${!isLast ? `<div class="flow-arrow-v" aria-hidden="true"><div class="flow-line-v"></div><span style="font-size:11px; line-height:1">▼</span></div>` : ""}
+          ${!isLast ? `<div class="flow-arrow-v" aria-hidden="true"><div class="flow-line-v"></div><span style="font-size:11px; line-height:1">\u25bc</span></div>` : ""}
         </div>
         <div class="flow-card">
           <div class="flex flex-wrap items-baseline justify-between gap-2">
@@ -902,7 +902,7 @@ function renderLanguages() {
     const detailRow = t.querySelector(`.lang-detail[data-i="${idx}"]`);
     const hidden = detailRow.classList.toggle("hidden");
     const chev = t.querySelector(`.lang-chev[data-chev="${idx}"]`);
-    if (chev) chev.textContent = hidden ? "▸" : "▾";
+    if (chev) chev.textContent = hidden ? "\u25b8" : "\u25be";
   }));
   t.querySelectorAll(".lang-map-btn").forEach(b => b.addEventListener("click", e => {
     e.stopPropagation();
@@ -916,7 +916,7 @@ function renderLanguages() {
   document.getElementById("contractSection").classList.toggle("hidden", !DATA.contractHooks.length);
   const c = document.getElementById("contractTable");
   c.innerHTML = `<thead><tr><th>Hook</th><th>Called from</th>${DATA.contractCols.map(x => `<th class="text-center">${escapeHTML(x)}</th>`).join("")}</tr></thead>
-    <tbody>${DATA.contractHooks.map(h => `<tr><td><code>${escapeHTML(h.hook)}</code></td><td class="text-[var(--muted-foreground)]">${escapeHTML(h.caller || "")}</td>${h.cells.map(v => `<td class="text-center ${v === "·" || v === "" ? "text-[var(--muted-foreground)]" : ""}">${escapeHTML(v || "·")}</td>`).join("")}</tr>`).join("")}</tbody>`;
+    <tbody>${DATA.contractHooks.map(h => `<tr><td><code>${escapeHTML(h.hook)}</code></td><td class="text-[var(--muted-foreground)]">${escapeHTML(h.caller || "")}</td>${h.cells.map(v => `<td class="text-center ${v === "\u00b7" || v === "" ? "text-[var(--muted-foreground)]" : ""}">${escapeHTML(v || "\u00b7")}</td>`).join("")}</tr>`).join("")}</tbody>`;
 }
 
 // ---------------------------------------------------------------- findings
@@ -981,7 +981,7 @@ function setRoute() {
   else if (currentTab === "guides" && DATA.guides.length) r += "/" + encodeURIComponent(DATA.guides[activeGuide].id) + "/" + (guideStep + 1);
   else if (currentTab === "flows" && flow) r += "/" + encodeURIComponent(flow);
   if (location.hash.slice(1) === r) return;
-  try { history.replaceState(null, "", "#" + r); } catch (_) { location.replace("#" + r); }
+  try { history.replaceState(null, "", "#" + r); } catch (_) {}
 }
 function applyRoute() {
   let parts;
