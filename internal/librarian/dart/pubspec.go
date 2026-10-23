@@ -15,6 +15,7 @@
 package dart
 
 import (
+	"bytes"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -65,11 +66,11 @@ func updatePubspecVersion(path string, newVersion string) error {
 	if err != nil {
 		return err
 	}
-	lines := strings.Split(string(content), "\n")
-	i := slices.IndexFunc(lines, func(line string) bool { return strings.HasPrefix(line, "version:") })
+	lines := bytes.Split(content, []byte("\n"))
+	i := slices.IndexFunc(lines, func(line []byte) bool { return bytes.HasPrefix(line, []byte("version:")) })
 	if i < 0 {
 		return fmt.Errorf("no version found in %s", path)
 	}
-	lines[i] = "version: " + newVersion
-	return os.WriteFile(path, []byte(strings.Join(lines, "\n")), 0644)
+	lines[i] = []byte("version: " + newVersion)
+	return os.WriteFile(path, bytes.Join(lines, []byte("\n")), 0644)
 }
