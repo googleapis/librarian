@@ -108,11 +108,10 @@ func TestLayeringEveryPackageHasExactlyOneLayer(t *testing.T) {
 	pkgs := modulePackages(t)
 	for _, p := range pkgs {
 		id := relative(p.ImportPath)
-		// When it is matched against testSupport (an explicit list, which wins
-		// over directory patterns) and then against every layer pattern.
 		if slices.Contains(testSupport, id) {
 			continue
 		}
+		// When it is matched against every layer pattern.
 		var matched []string
 		for _, l := range layers {
 			if slices.ContainsFunc(l.pathPatterns, func(pat string) bool { return matches(pat, id) }) {
@@ -187,7 +186,7 @@ func TestLayeringProductionCodeDoesNotImportTestSupport(t *testing.T) {
 		if layerOf[from] == testSupportLayer {
 			continue
 		}
-		// When its non-test imports are checked against testSupport.
+		// When its non-test imports are checked.
 		for _, to := range moduleImports(p) {
 			// Then none of them is a test-support package.
 			if slices.Contains(testSupport, to) {
