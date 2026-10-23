@@ -14,8 +14,6 @@
 - path: google/ads/admanager/v1
   transports:
     all: rest
-- path: google/ads/datamanager/v1
-  rpc_documentation: https://developers.google.com/data-manager/api/reference/rpc
 - path: google/analytics/admin/v1alpha
   documentation_uri: https://developers.google.com/analytics/
   new_issue_uri: https://issuetracker.google.com/issues?q=componentid:187400
@@ -222,7 +220,6 @@
     ruby: rest
 - path: google/cloud/apphub/v1
   description: App Hub acts as the foundational data model and central registry for your applications on Google Cloud.
-  rpc_documentation: https://cloud.google.com/app-hub/docs/reference/rpc
 - path: google/cloud/asset/v1
   documentation_uri: https://cloud.google.com/resource-manager/docs/cloud-asset-inventory/overview
   new_issue_uri: https://issuetracker.google.com/savedsearches/559757
@@ -427,8 +424,6 @@
 - path: google/cloud/certificatemanager/v1
   description: Certificate Manager simplifies the acquisition, deployment, and management of Transport Layer Security (TLS) certificates.
   documentation_uri: https://docs.cloud.google.com/certificate-manager/docs/overview
-- path: google/cloud/ces/v1
-  rpc_documentation: https://docs.cloud.google.com/customer-engagement-ai/conversational-agents/ps/reference/rpc
 - path: google/cloud/channel/v1
   documentation_uri: https://cloud.google.com/channel/
   transports:
@@ -516,7 +511,6 @@
     ruby: grpc
 - path: google/cloud/dataplex/v1
   rest_documentation: https://cloud.google.com/dataplex/docs/reference/rest
-  rpc_documentation: https://cloud.google.com/dataplex/docs/reference/rpc
 - path: google/cloud/dataproc/logging
   skip_rest_numeric_enums:
     - python
@@ -604,9 +598,6 @@
   rpc_documentation: https://cloud.google.com/functions/docs/reference/rpc
 - path: google/cloud/gdchardwaremanagement/v1alpha
   description: GDC is a fully managed software and hardware solution for data centers and edge locations to address regulatory, local data processing, survivability, and low-latency needs.
-  rpc_documentation: https://cloud.google.com/distributed-cloud/edge/latest/docs/reference/hardware/rpc
-- path: google/cloud/geminidataanalytics/v1
-  rpc_documentation: https://cloud.google.com/gemini/docs/conversational-analytics-api/reference
 - path: google/cloud/geminidataanalytics/v1alpha
   description: Developers can use the Conversational Analytics API, accessed through geminidataanalytics.googleapis.com, to build an artificial intelligence (AI)-powered chat interface, or data agent, that answers questions about structured data in BigQuery, Looker, and Looker Studio using natural language.
 - path: google/cloud/geminidataanalytics/v1beta
@@ -724,18 +715,14 @@
 - path: google/cloud/language/v2
   new_issue_uri: https://issuetracker.google.com/savedsearches/559753
   rest_documentation: https://cloud.google.com/natural-language/docs/reference/rest
-  rpc_documentation: https://cloud.google.com/natural-language/docs/reference/rpc
 - path: google/cloud/lifesciences/v2beta
   documentation_uri: https://cloud.google.com/life-sciences/
   rest_documentation: https://cloud.google.com/life-sciences/docs/reference/rest
   rpc_documentation: https://cloud.google.com/life-sciences/docs/reference/rpc
 - path: google/cloud/locationfinder/v1
   description: Cloud Location Finder is a public API that offers a repository of all Google Cloud and Google Distributed Cloud locations, as well as cloud locations for other cloud providers.
-  rpc_documentation: https://cloud.google.com/locationfinder/docs/reference/rest
 - path: google/cloud/lustre/v1
   description: Google Cloud Managed Lustre delivers a high-performance, fully managed parallel file system optimized for AI and HPC applications.
-- path: google/cloud/maintenance/api/v1
-  rpc_documentation: https://cloud.google.com/unified-maintenance/docs/reference/rpc
 - path: google/cloud/managedidentities/v1
   documentation_uri: https://cloud.google.com/managed-microsoft-ad/
   transports:
@@ -874,8 +861,6 @@
   description: Policy Troubleshooter helps you understand whether a principal can access a resource. Given a principal, a resource, and a permission, Policy Troubleshooter examines the allow policies, deny policies, and principal access boundary (PAB) policies that impact the principal's access.
 - path: google/cloud/privatecatalog/v1beta1
   documentation_uri: https://cloud.google.com/private-catalog/
-- path: google/cloud/privilegedaccessmanager/v1
-  rpc_documentation: https://cloud.google.com/iam/docs/reference/pam/rpc
 - path: google/cloud/pubsublite/v1
   skip_rest_numeric_enums:
     - csharp
@@ -922,8 +907,6 @@
   documentation_uri: https://cloud.google.com/run/docs
   rest_documentation: https://cloud.google.com/run/docs/reference/rest
   rpc_documentation: https://cloud.google.com/run/docs/reference/rpc
-- path: google/cloud/saasplatform/saasservicemgmt/v1beta1
-  rpc_documentation: https://cloud.google.com/saas-runtime/docs/apis
 - path: google/cloud/scheduler/v1
   documentation_uri: https://cloud.google.com/scheduler/docs
   new_issue_uri: https://issuetracker.google.com/savedsearches/5411429
@@ -947,7 +930,6 @@
   release_level:
     go: preview
     java: stable
-  rpc_documentation: https://cloud.google.com/certificate-manager/docs/reference/public-ca/rpc
 - path: google/cloud/securitycenter/settings/v1beta1
   skip_rest_numeric_enums:
     - all
@@ -976,8 +958,6 @@
   rpc_documentation: https://cloud.google.com/service-directory/docs/reference/rpc
 - path: google/cloud/servicedirectory/v1beta1
   documentation_uri: https://cloud.google.com/service-directory/
-- path: google/cloud/servicehealth/v1
-  rpc_documentation: https://cloud.google.com/service-health/docs/reference/rpc
 - path: google/cloud/shell/v1
   documentation_uri: https://cloud.google.com/shell/
   rest_documentation: https://cloud.google.com/shell/docs/reference/rest
@@ -1172,8 +1152,6 @@
 - path: google/cloud/workflows/v1beta
   documentation_uri: https://cloud.google.com/workflows/
   new_issue_uri: https://issuetracker.google.com/savedsearches/559729
-- path: google/cloud/workloadmanager/v1
-  rpc_documentation: https://docs.cloud.google.com/workload-manager/docs/reference/rest
 - path: google/cloud/workstations/v1
   release_level:
     java: stable
@@ -1203,8 +1181,6 @@
 - path: google/datastore/v1
   documentation_uri: https://cloud.google.com/datastore
   new_issue_uri: https://issuetracker.google.com/savedsearches/559768
-- path: google/devicesandservices/health/v4
-  rpc_documentation: https://developers.google.com/health/api/reference/rpc
 - path: google/devtools/artifactregistry/v1
   documentation_uri: https://cloud.google.com/artifact-registry
   rest_documentation: https://cloud.google.com/artifact-registry/docs/reference/rest
@@ -1357,11 +1333,8 @@
   release_level:
     go: preview
   rest_documentation: https://developers.google.com/maps/documentation/route-optimization/reference/rest/
-  rpc_documentation: https://developers.google.com/maps/documentation/route-optimization/reference/rpc
 - path: google/maps/routing/v2
   documentation_uri: https://mapsplatform.google.com/maps-products/#routes-section
-- path: google/maps/solar/v1
-  rpc_documentation: https://developers.google.com/maps/documentation/solar/reference/rest
 - path: google/monitoring/dashboard/v1
   documentation_uri: https://cloud.google.com/monitoring/dashboards/
   new_issue_uri: https://issuetracker.google.com/savedsearches/559785

@@ -201,6 +201,12 @@ func populateFromServiceConfig(api *API, cfg *Service) *API {
 		if api.ShortName == "" {
 			api.ShortName = publishing.GetApiShortName()
 		}
+		if api.RestDocumentation == "" {
+			api.RestDocumentation = publishing.GetRestReferenceDocumentationUri()
+		}
+		if api.RpcDocumentation == "" {
+			api.RpcDocumentation = publishing.GetProtoReferenceDocumentationUri()
+		}
 	}
 	if api.ShortName == "" {
 		api.ShortName = defaultShortName(api.ServiceName)

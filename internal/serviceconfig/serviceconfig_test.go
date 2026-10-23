@@ -100,6 +100,7 @@ func TestFind(t *testing.T) {
 				NewIssueURI:      "https://issuetracker.google.com/issues/new?component=784854&template=1380926",
 				DocumentationURI: "https://cloud.google.com/secret-manager/docs/overview",
 				OpenAPI:          "testdata/secretmanager_openapi_v1.json",
+				RpcDocumentation: "https://cloud.google.com/secret-manager/docs/reference/rpc",
 				ServiceName:      "secretmanager.googleapis.com",
 				ShortName:        "secretmanager",
 				Title:            "Secret Manager API",
@@ -146,6 +147,7 @@ func TestFind(t *testing.T) {
 				Title:            "Secret Manager API",
 				NewIssueURI:      "https://issuetracker.google.com/issues/new?component=784854&template=1380926",
 				DocumentationURI: "https://cloud.google.com/secret-manager/docs/overview",
+				RpcDocumentation: "https://cloud.google.com/secret-manager/docs/reference/rpc",
 				ServiceName:      "secretmanager.googleapis.com",
 				ShortName:        "secretmanager",
 			},
@@ -371,6 +373,40 @@ func TestPopulateFromServiceConfig(t *testing.T) {
 			},
 			want: &API{
 				ShortName: "short name from service",
+			},
+		},
+		{
+			name: "rest and rpc documentation from service config",
+			api:  &API{ShortName: "short name"},
+			cfg: &Service{
+				Publishing: &annotations.Publishing{
+					RestReferenceDocumentationUri:  "service config rest doc uri",
+					ProtoReferenceDocumentationUri: "service config rpc doc uri",
+				},
+			},
+			want: &API{
+				ShortName:         "short name",
+				RestDocumentation: "service config rest doc uri",
+				RpcDocumentation:  "service config rpc doc uri",
+			},
+		},
+		{
+			name: "rest and rpc documentation overridden",
+			api: &API{
+				ShortName:         "short name",
+				RestDocumentation: "override rest doc uri",
+				RpcDocumentation:  "override rpc doc uri",
+			},
+			cfg: &Service{
+				Publishing: &annotations.Publishing{
+					RestReferenceDocumentationUri:  "service config rest doc uri",
+					ProtoReferenceDocumentationUri: "service config rpc doc uri",
+				},
+			},
+			want: &API{
+				ShortName:         "short name",
+				RestDocumentation: "override rest doc uri",
+				RpcDocumentation:  "override rpc doc uri",
 			},
 		},
 	} {

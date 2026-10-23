@@ -88,6 +88,7 @@ func TestFromLibrary(t *testing.T) {
 				APIDescription:       "Stores sensitive data such as API keys, passwords, and certificates.\nProvides convenience while improving security.",
 				RecommendedPackage:   "com.google.cloud.secretmanager.v1",
 				Transport:            "grpc+rest",
+				RpcDocumentation:     "https://cloud.google.com/secret-manager/docs/reference/rpc",
 			},
 		},
 	} {
