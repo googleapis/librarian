@@ -21,6 +21,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 
 	"github.com/googleapis/librarian/internal/cache"
 	"github.com/googleapis/librarian/internal/config"
@@ -28,15 +29,22 @@ import (
 )
 
 const (
-	// defaultJavaToolOptions bounds per-JVM heap and threads for concurrent execution and disables perfdata locking.
-	defaultJavaToolOptions = "-Xmx1024m -XX:ActiveProcessorCount=2 -XX:-UsePerfData"
-	envJavaToolOptions     = "JAVA_TOOL_OPTIONS"
-	envPath                = "PATH"
-	toolsDir               = "java_tools"
+	// envJavaToolOptions is the standard JVM environment variable read automatically by HotSpot at startup.
+	envJavaToolOptions = "JAVA_TOOL_OPTIONS"
+	envPath            = "PATH"
+	toolsDir           = "java_tools"
 )
 
-// errNoToolsSpecified indicates no Java tools were provided in the configuration.
-var errNoToolsSpecified = errors.New("no tools specified in configuration")
+var (
+	// defaultJavaToolOptions maps each JVM option family prefix to its default flag for concurrent execution.
+	defaultJavaToolOptions = []struct{ prefix, flag string }{
+		{"-Xmx", "-Xmx1024m"},
+		{"-XX:ActiveProcessorCount=", "-XX:ActiveProcessorCount=2"},
+		{"UsePerfData", "-XX:-UsePerfData"},
+	}
+	// errNoToolsSpecified indicates no Java tools were provided in the configuration.
+	errNoToolsSpecified = errors.New("no tools specified in configuration")
+)
 
 // Install installs Java tool dependencies.
 // It creates two sibling directories:
@@ -103,12 +111,15 @@ func getToolsEnv() (map[string]string, error) {
 	if err != nil {
 		return nil, err
 	}
-	javaToolOptions := defaultJavaToolOptions
-	if existing := os.Getenv(envJavaToolOptions); existing != "" {
-		javaToolOptions = defaultJavaToolOptions + " " + existing
+	existing := os.Getenv(envJavaToolOptions)
+	var options []string
+	for _, option := range defaultJavaToolOptions {
+		if !strings.Contains(existing, option.prefix) {
+			options = append(options, option.flag)
+		}
 	}
-	return map[string]string{
-		envJavaToolOptions: javaToolOptions,
-		envPath:            binDir,
-	}, nil
+	if existing != "" {
+		options = append(options, existing)
+	}
+	return map[string]string{envJavaToolOptions: strings.Join(options, " "), envPath: binDir}, nil
 }

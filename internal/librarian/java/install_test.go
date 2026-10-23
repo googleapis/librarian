@@ -99,27 +99,18 @@ func TestGetToolsEnv(t *testing.T) {
 		{
 			name:         "LIBRARIAN_BIN is set",
 			librarianBin: tmpDir,
-			want: map[string]string{
-				"JAVA_TOOL_OPTIONS": "-Xmx1024m -XX:ActiveProcessorCount=2 -XX:-UsePerfData",
-				"PATH":              filepath.Join(tmpDir, "java_tools", "bin"),
-			},
+			want:         map[string]string{"JAVA_TOOL_OPTIONS": "-Xmx1024m -XX:ActiveProcessorCount=2 -XX:-UsePerfData", "PATH": filepath.Join(tmpDir, "java_tools", "bin")},
 		},
 		{
 			name:           "LIBRARIAN_CACHE is set",
 			librarianCache: tmpDir,
-			want: map[string]string{
-				"JAVA_TOOL_OPTIONS": "-Xmx1024m -XX:ActiveProcessorCount=2 -XX:-UsePerfData",
-				"PATH":              filepath.Join(tmpDir, "bin", "java_tools", "bin"),
-			},
+			want:           map[string]string{"JAVA_TOOL_OPTIONS": "-Xmx1024m -XX:ActiveProcessorCount=2 -XX:-UsePerfData", "PATH": filepath.Join(tmpDir, "bin", "java_tools", "bin")},
 		},
 		{
-			name:            "existing JAVA_TOOL_OPTIONS is preserved",
+			name:            "existing JAVA_TOOL_OPTIONS is preserved and overrides matching defaults",
 			librarianBin:    tmpDir,
-			javaToolOptions: "-Dfile.encoding=UTF-8",
-			want: map[string]string{
-				"JAVA_TOOL_OPTIONS": "-Xmx1024m -XX:ActiveProcessorCount=2 -XX:-UsePerfData -Dfile.encoding=UTF-8",
-				"PATH":              filepath.Join(tmpDir, "java_tools", "bin"),
-			},
+			javaToolOptions: "-Xmx2048m -Dfile.encoding=UTF-8",
+			want:            map[string]string{"JAVA_TOOL_OPTIONS": "-XX:ActiveProcessorCount=2 -XX:-UsePerfData -Xmx2048m -Dfile.encoding=UTF-8", "PATH": filepath.Join(tmpDir, "java_tools", "bin")},
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
