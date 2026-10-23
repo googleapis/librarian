@@ -111,6 +111,7 @@ func TestLayeringEveryPackageHasExactlyOneLayer(t *testing.T) {
 		if slices.Contains(testSupport, id) {
 			continue
 		}
+
 		// When it is matched against every layer pattern.
 		var matched []string
 		for _, l := range layers {
@@ -118,7 +119,8 @@ func TestLayeringEveryPackageHasExactlyOneLayer(t *testing.T) {
 				matched = append(matched, l.name)
 			}
 		}
-		// Then exactly one entry claims it.
+
+		// Then exactly one layer claims it.
 		switch len(matched) {
 		case 1:
 		case 0:
@@ -136,6 +138,7 @@ func TestLayeringEveryPatternMatchesAPackage(t *testing.T) {
 	for _, p := range pkgs {
 		ids = append(ids, relative(p.ImportPath))
 	}
+
 	// When each layer pattern and testSupport entry is applied to them.
 	for _, l := range layers {
 		for _, pat := range l.pathPatterns {
@@ -163,12 +166,14 @@ func TestLayeringImportsPointDownward(t *testing.T) {
 		if !ok || fromLayer == testSupportLayer {
 			continue // unclassified packages are reported by another test; test support may import anything
 		}
+
 		// When each of its non-test imports inside the module is looked up.
 		for _, to := range moduleImports(p) {
 			toLayer, ok := layerOf[to]
 			if !ok || toLayer == testSupportLayer {
 				continue // covered by TestLayeringProductionCodeDoesNotImportTestSupport
 			}
+
 			// Then the imported package is in the same layer or a lower one.
 			if toLayer < fromLayer {
 				t.Errorf("%s (%s) imports %s (%s): dependencies must point downward", from, layers[fromLayer].name, to, layers[toLayer].name)
@@ -186,6 +191,7 @@ func TestLayeringProductionCodeDoesNotImportTestSupport(t *testing.T) {
 		if layerOf[from] == testSupportLayer {
 			continue
 		}
+
 		// When its non-test imports are checked.
 		for _, to := range moduleImports(p) {
 			// Then none of them is a test-support package.
@@ -227,12 +233,14 @@ func TestLayeringInternalConfigDeclaresNoFunctions(t *testing.T) {
 		t.Fatal("internal/config not found")
 	}
 	cfg := pkgs[i]
+
 	for _, name := range cfg.GoFiles {
 		// When each file is parsed.
 		f, err := parser.ParseFile(token.NewFileSet(), filepath.Join(cfg.Dir, name), nil, parser.SkipObjectResolution)
 		if err != nil {
 			t.Fatal(err)
 		}
+
 		// Then it declares no functions or methods.
 		for _, d := range f.Decls {
 			if fn, ok := d.(*ast.FuncDecl); ok {
