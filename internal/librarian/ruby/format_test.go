@@ -89,7 +89,7 @@ func TestFormat_Error(t *testing.T) {
 		t.Fatal(err)
 	}
 	gotErr := Format(t.Context(), &config.Library{Name: "foo", Output: outDir})
-	if !errors.Is(gotErr, errRubocopConfigNotFound) {
-		t.Errorf("Format() error = %v, wantErr %v", gotErr, errRubocopConfigNotFound)
+	if !errors.Is(gotErr, ErrRubocopConfigNotFound) {
+		t.Errorf("Format() error = %v, wantErr %v", gotErr, ErrRubocopConfigNotFound)
 	}
 }

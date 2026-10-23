@@ -30,7 +30,8 @@ import (
 
 const maxFilesPerFormatBatch = 200
 
-var errRubocopConfigNotFound = errors.New("cloud-rubocop.yml not found in gapic-generator-cloud gem")
+// ErrRubocopConfigNotFound indicates that the cloud-rubocop.yml configuration file could not be found.
+var ErrRubocopConfigNotFound = errors.New("cloud-rubocop.yml not found in gapic-generator-cloud gem")
 
 // Format formats generated Ruby libraries using rubocop in batches.
 func Format(ctx context.Context, libraries ...*config.Library) error {
@@ -58,9 +59,10 @@ func Format(ctx context.Context, libraries ...*config.Library) error {
 		return err
 	}
 	if len(matches) == 0 {
-		return errRubocopConfigNotFound
+		return ErrRubocopConfigNotFound
 	}
-	configPath := matches[len(matches)-1]
+	// Install provisions a single pinned gapic-generator-cloud version in installDir.
+	configPath := matches[0]
 	group, groupCtx := errgroup.WithContext(ctx)
 	group.SetLimit(runtime.GOMAXPROCS(0))
 	for i := 0; i < len(allFiles); i += maxFilesPerFormatBatch {
