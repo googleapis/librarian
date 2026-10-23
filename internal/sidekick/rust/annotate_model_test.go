@@ -880,12 +880,24 @@ func TestModelAnnotationsGrpcServices(t *testing.T) {
 }
 
 func TestExternalTypesAnnotations(t *testing.T) {
-	extMsg := api.NewTestMessage("LatLng").WithPackage("google.type")
+	nestedMsg := api.NewTestMessage("NestedMsg")
+	nestedEnum := api.NewTestEnum("NestedEnum")
+	oneof := api.NewTestOneOf("kind").WithFields(
+		api.NewTestField("val").WithType(api.TypezString),
+	)
+	extMsg := api.NewTestMessage("LatLng").
+		WithPackage("google.type").
+		WithMessages(nestedMsg).
+		WithEnums(nestedEnum).
+		WithOneOfs(oneof)
 	extEnum := api.NewTestEnum("DayOfWeek").WithPackage("google.type")
 
 	model := api.NewTestAPI(nil, nil, nil)
 	model.ExternalMessages = []*api.Message{extMsg}
 	model.ExternalEnums = []*api.Enum{extEnum}
+	if err := api.CrossReference(model); err != nil {
+		t.Fatal(err)
+	}
 
 	codec := newTestCodec(t, libconfig.SpecProtobuf, "", map[string]string{
 		"template-override": "templates/convert-prost",
@@ -900,20 +912,39 @@ func TestExternalTypesAnnotations(t *testing.T) {
 	if !ok {
 		t.Fatalf("expected messageAnnotation on extMsg")
 	}
-	if want := "google_cloud_type::model::LatLng"; msgAnn.RelativeName != want {
-		t.Errorf("msgAnn.RelativeName = %q, want %q", msgAnn.RelativeName, want)
+	if diff := cmp.Diff("google_cloud_type::model::LatLng", msgAnn.RelativeName); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
-	if want := "crate::prost::google::r#type::LatLng"; msgAnn.ProstRelativeName != want {
-		t.Errorf("msgAnn.ProstRelativeName = %q, want %q", msgAnn.ProstRelativeName, want)
+	if diff := cmp.Diff("crate::google::r#type::LatLng", msgAnn.ProstRelativeName); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+
+	nestedMsgAnn := nestedMsg.Codec.(*messageAnnotation)
+	if diff := cmp.Diff("crate::google::r#type::lat_lng::NestedMsg", nestedMsgAnn.ProstRelativeName); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+
+	nestedEnumAnn := nestedEnum.Codec.(*enumAnnotation)
+	if diff := cmp.Diff("crate::google::r#type::lat_lng::NestedEnum", nestedEnumAnn.ProstRelativeName); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+
+	oneofAnn := oneof.Codec.(*oneOfAnnotation)
+	if diff := cmp.Diff("crate::google::r#type::lat_lng::Kind", oneofAnn.ProstRelativeName); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 
 	enumAnn, ok := extEnum.Codec.(*enumAnnotation)
 	if !ok {
 		t.Fatalf("expected enumAnnotation on extEnum")
 	}
-	if want := "google_cloud_type::model::DayOfWeek"; enumAnn.RelativeName != want {
-		t.Errorf("enumAnn.RelativeName = %q, want %q", enumAnn.RelativeName, want)
+	if diff := cmp.Diff("google_cloud_type::model::DayOfWeek", enumAnn.RelativeName); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
+	if diff := cmp.Diff("crate::google::r#type::DayOfWeek", enumAnn.ProstRelativeName); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+
 	t.Run("with prost-path option", func(t *testing.T) {
 		extMsg2 := api.NewTestMessage("LatLng").WithPackage("google.type")
 		extEnum2 := api.NewTestEnum("DayOfWeek").WithPackage("google.type")
@@ -932,13 +963,13 @@ func TestExternalTypesAnnotations(t *testing.T) {
 		}
 
 		msgAnn2 := extMsg2.Codec.(*messageAnnotation)
-		if want := "super::prost::google::r#type::LatLng"; msgAnn2.ProstRelativeName != want {
-			t.Errorf("msgAnn2.ProstRelativeName = %q, want %q", msgAnn2.ProstRelativeName, want)
+		if diff := cmp.Diff("super::prost::google::r#type::LatLng", msgAnn2.ProstRelativeName); diff != "" {
+			t.Errorf("mismatch (-want +got):\n%s", diff)
 		}
 
 		enumAnn2 := extEnum2.Codec.(*enumAnnotation)
-		if want := "super::prost::google::r#type::DayOfWeek"; enumAnn2.ProstRelativeName != want {
-			t.Errorf("enumAnn2.ProstRelativeName = %q, want %q", enumAnn2.ProstRelativeName, want)
+		if diff := cmp.Diff("super::prost::google::r#type::DayOfWeek", enumAnn2.ProstRelativeName); diff != "" {
+			t.Errorf("mismatch (-want +got):\n%s", diff)
 		}
 	})
 }
