@@ -30,7 +30,6 @@ import (
 
 const maxFilesPerFormatBatch = 200
 
-// ErrRubocopConfigNotFound indicates that the cloud-rubocop.yml configuration file could not be found.
 var ErrRubocopConfigNotFound = errors.New("cloud-rubocop.yml not found in gapic-generator-cloud gem")
 
 // Format formats generated Ruby libraries using rubocop in batches.
