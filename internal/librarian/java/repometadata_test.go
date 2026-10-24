@@ -82,6 +82,7 @@ func TestDeriveRepoMetadata_Overrides(t *testing.T) {
 	wantNamePretty := "Secret Manager"
 	wantProductDoc := "https://cloud.google.com/secret-manager/"
 	wantAPIDescription := "Stores sensitive data such as API keys, passwords, and certificates.\nProvides convenience while improving security."
+	wantRpcDoc := "https://cloud.google.com/secret-manager/docs/reference/rpc"
 	for _, test := range []struct {
 		name string
 		java *config.JavaModule
@@ -115,6 +116,7 @@ func TestDeriveRepoMetadata_Overrides(t *testing.T) {
 				DistributionName:     "com.custom:custom-artifact",
 				APIID:                "custom.googleapis.com",
 				LibraryType:          "OTHER",
+				RpcDocumentation:     wantRpcDoc,
 			},
 		},
 		{
@@ -137,8 +139,9 @@ func TestDeriveRepoMetadata_Overrides(t *testing.T) {
 				RepoShort:            "java-secretmanager",
 				DistributionName:     "com.google.cloud:google-cloud-secretmanager",
 				// API ID is also override.
-				APIID:       "custom-shortname.googleapis.com",
-				LibraryType: "GAPIC_AUTO",
+				APIID:            "custom-shortname.googleapis.com",
+				LibraryType:      "GAPIC_AUTO",
+				RpcDocumentation: wantRpcDoc,
 			},
 		},
 		{
@@ -162,6 +165,7 @@ func TestDeriveRepoMetadata_Overrides(t *testing.T) {
 				DistributionName:     "com.google.cloud:google-cloud-secretmanager",
 				APIID:                "secretmanager.googleapis.com",
 				LibraryType:          "GAPIC_AUTO",
+				RpcDocumentation:     wantRpcDoc,
 			},
 		},
 		{
@@ -185,6 +189,7 @@ func TestDeriveRepoMetadata_Overrides(t *testing.T) {
 				DistributionName:     "com.google.cloud:google-cloud-secretmanager",
 				APIID:                "secretmanager.googleapis.com",
 				LibraryType:          "GAPIC_AUTO",
+				RpcDocumentation:     wantRpcDoc,
 				RecommendedPackage:   "com.google.cloud.secretmanager.v1",
 			},
 		},
@@ -229,12 +234,14 @@ func TestDeriveRepoMetadata_Documentation(t *testing.T) {
 			},
 		},
 		{
-			name: "empty when not in sdk.yaml",
+			name: "derived from service config",
 			library: &config.Library{
 				Name: "secretmanager",
 				APIs: []*config.API{{Path: "google/cloud/secretmanager/v1"}},
 			},
-			want: &repoMetadata{},
+			want: &repoMetadata{
+				RpcDocumentation: "https://cloud.google.com/secret-manager/docs/reference/rpc",
+			},
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
