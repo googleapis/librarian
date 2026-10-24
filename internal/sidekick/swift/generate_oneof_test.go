@@ -15,14 +15,13 @@
 package swift
 
 import (
-	"github.com/googleapis/librarian/internal/config"
-
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/sidekick/api"
 )
 
@@ -172,8 +171,12 @@ func TestGenerateOneOf(t *testing.T) {
 
   public func encode(to encoder: any Encoder) throws {
     var container = encoder.container(keyedBy: CodingKeys.self)
-    try container.encode(self.regularInt32, forKey: .regularInt32)
-    try container.encode(self.regularString, forKey: .regularString)
+    if self.regularInt32 != 0 {
+      try container.encode(self.regularInt32, forKey: .regularInt32)
+    }
+    if !self.regularString.isEmpty {
+      try container.encode(self.regularString, forKey: .regularString)
+    }
 
     if let choice = self.choice {
       switch choice {

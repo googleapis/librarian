@@ -16,12 +16,48 @@ limitations under the License.
 {{- if .Codec.IsEncodingSimple }}
 {{- if .Optional }}
 try container.encodeIfPresent(self.{{ .Codec.Name }}, forKey: .{{ .Codec.Name }})
+{{- else if .Codec.Recursive }}
+try container.encodeIfPresent(self.{{ .Codec.Name }}, forKey: .{{ .Codec.Name }})
+{{- else if .Repeated }}
+if !self.{{ .Codec.Name }}.isEmpty {
+  try container.encode(self.{{ .Codec.Name }}, forKey: .{{ .Codec.Name }})
+}
+{{- else if .Map }}
+if !self.{{ .Codec.Name }}.isEmpty {
+  try container.encode(self.{{ .Codec.Name }}, forKey: .{{ .Codec.Name }})
+}
+{{- else if .IsString }}
+if !self.{{ .Codec.Name }}.isEmpty {
+  try container.encode(self.{{ .Codec.Name }}, forKey: .{{ .Codec.Name }})
+}
+{{- else if .IsBytes }}
+if !self.{{ .Codec.Name }}.isEmpty {
+  try container.encode(self.{{ .Codec.Name }}, forKey: .{{ .Codec.Name }})
+}
+{{- else if .IsLikeInt }}
+if self.{{ .Codec.Name }} != 0 {
+  try container.encode(self.{{ .Codec.Name }}, forKey: .{{ .Codec.Name }})
+}
+{{- else if .IsLikeUInt }}
+if self.{{ .Codec.Name }} != 0 {
+  try container.encode(self.{{ .Codec.Name }}, forKey: .{{ .Codec.Name }})
+}
+{{- else if .IsLikeFloat }}
+if self.{{ .Codec.Name }} != 0 {
+  try container.encode(self.{{ .Codec.Name }}, forKey: .{{ .Codec.Name }})
+}
+{{- else if .IsBool }}
+if self.{{ .Codec.Name }} {
+  try container.encode(self.{{ .Codec.Name }}, forKey: .{{ .Codec.Name }})
+}
 {{- else }}
-try container.encode(self.{{ .Codec.Name }}, forKey: .{{ .Codec.Name }})
+if self.{{ .Codec.Name }} != {{ .Codec.FieldType }}() {
+  try container.encode(self.{{ .Codec.Name }}, forKey: .{{ .Codec.Name }})
+}
 {{- end }}
 {{- end }}
 {{- if .Codec.IsEncodingMapCustomKey }}
-do {
+if !self.{{ .Codec.Name }}.isEmpty {
   let stringKeyed = Dictionary(
     uniqueKeysWithValues: self.{{ .Codec.Name }}.lazy.map { (Swift.String($0), $1) }
   )

@@ -15,25 +15,29 @@ limitations under the License.
 */}}
 {{- if .Singular }}
 {{- if .Optional }}
-if let v = {{ .Codec.Name }} {
+if let v = self.{{ .Codec.Name }} {
   try container.encode(
     {{ .Codec.Model.WktPackage }}._DiscoveryBase64.encode(v), forKey: .{{ .Codec.Name }}
   )
 }
 {{- else }}
-try container.encode(
-  {{ .Codec.Model.WktPackage }}._DiscoveryBase64.encode({{ .Codec.Name }}), forKey: .{{ .Codec.Name }}
-)
+if !self.{{ .Codec.Name }}.isEmpty {
+  try container.encode(
+    {{ .Codec.Model.WktPackage }}._DiscoveryBase64.encode(self.{{ .Codec.Name }}), forKey: .{{ .Codec.Name }}
+  )
+}
 {{- end }}
 {{- end }}
 {{- if .Repeated }}
-try container.encode(
-  {{ .Codec.Name }}.map { {{ .Codec.Model.WktPackage }}._DiscoveryBase64.encode($0) }, forKey: .{{ .Codec.Name }}
-)
+if !self.{{ .Codec.Name }}.isEmpty {
+  try container.encode(
+    self.{{ .Codec.Name }}.map { {{ .Codec.Model.WktPackage }}._DiscoveryBase64.encode($0) }, forKey: .{{ .Codec.Name }}
+  )
+}
 {{- end }}
 {{- if .Map }}
 {{- /* Discovery-based services only have string-key maps, we only need to map the values */}}
-do {
+if !self.{{ .Codec.Name }}.isEmpty {
   let transformed = self.{{ .Codec.Name }}.mapValues {
     {{ .Codec.Model.WktPackage }}._DiscoveryBase64.encode($0)
   }
