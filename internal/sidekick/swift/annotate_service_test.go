@@ -704,3 +704,45 @@ func TestAnnotateService_SkipStreamingMethods(t *testing.T) {
 		t.Errorf("Methods mismatch (-want +got):\n%s", diff)
 	}
 }
+
+func TestAnnotateService_HTTPBodyRequestImports(t *testing.T) {
+	httpBodyMsg := api.NewTestMessage("HttpBody").WithPackage("google.api")
+	req := api.NewTestMessage("ReceiveWebhookRequest").
+		WithPackage("test").
+		WithFields(api.NewTestField("body").WithMessageType(httpBodyMsg).WithOptional())
+	resp := api.NewTestMessage("ReceiveWebhookResponse").WithPackage("test")
+	method := api.NewTestMethod("ReceiveWebhook").
+		WithInput(req).
+		WithOutput(resp).
+		WithBodyFieldPath("body").
+		WithVerb("POST").
+		WithPathTemplate((&api.PathTemplate{}).WithLiteral("v1").WithLiteral("webhook"))
+	service := api.NewTestService("TestService").WithMethods(method)
+	model := api.NewTestAPI([]*api.Message{req, resp}, nil, []*api.Service{service}).
+		WithPackageName("test")
+	model.AddMessage(httpBodyMsg)
+	if err := api.CrossReference(model); err != nil {
+		t.Fatal(err)
+	}
+
+	codec := newTestCodec(t, model, nil)
+	codec.withExtraDependencies(t, []config.SwiftDependency{
+		{
+			ApiPackage: "google.api",
+			Name:       "GoogleApi",
+		},
+	})
+	if err := codec.annotateModel(); err != nil {
+		t.Fatal(err)
+	}
+
+	annotations := service.Codec.(*serviceAnnotations)
+	wantImports := []string{"GoogleApi"}
+	if diff := cmp.Diff(wantImports, annotations.ServiceImports()); diff != "" {
+		t.Errorf("ServiceImports() mismatch (-want +got):\n%s", diff)
+	}
+	wantPublicImports := []string{}
+	if diff := cmp.Diff(wantPublicImports, annotations.PublicServiceImports()); diff != "" {
+		t.Errorf("PublicServiceImports() mismatch (-want +got):\n%s", diff)
+	}
+}

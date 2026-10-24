@@ -271,6 +271,20 @@ func (c *codec) annotateService(service *api.Service, model *modelAnnotations) (
 				return nil, err
 			}
 		}
+		// When a wrapper request message in this package embeds a
+		// google.api.HttpBody field, the generated transport reads body.data and
+		// body.contentType directly. Swift's MemberImportVisibility requires
+		// importing the defining module (GoogleApi) in the transport file even if
+		// GoogleApi does not appear in the service's public signatures.
+		if ma, ok := method.Codec.(*methodAnnotations); ok && ma.IsHTTPBodyRequest && c.Model.PackageName != "google.api" {
+			dep, err := c.addApiPackageDependency("google.api")
+			if err != nil {
+				return nil, err
+			}
+			if dep != nil {
+				annotations.DependsOn[dep.Name] = dep
+			}
+		}
 		for _, signature := range method.Signatures {
 			if err := c.addSignatureDependencies(annotations, signature); err != nil {
 				return nil, err
