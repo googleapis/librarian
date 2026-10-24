@@ -17,7 +17,7 @@ permissions:
   contents: read
 jobs:
   test:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     # Presubmit jobs must complete within 5 minutes. See CONTRIBUTING.md.
     timeout-minutes: 5
     steps:
@@ -36,7 +36,7 @@ jobs:
           go run ./tool/cmd/coverage -target=80 \
             $(go list ./... | grep -v -E 'github.com/googleapis/librarian$|internal/librarian/(dart|golang|java|nodejs|php|python|ruby|rust|swift)|internal/sidekick|internal/sample|internal/testhelper')
   create-issue-on-failure:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     permissions:
       contents: read
       issues: write
