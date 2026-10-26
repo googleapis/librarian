@@ -418,24 +418,24 @@ func TestFindDependenciesMapFields(t *testing.T) {
 
 	model := NewTestAPI([]*Message{container, valMsg}, []*Enum{valEnum}, nil).
 		WithMaps(msgMap, enumMap)
+	less := func(a, b string) bool { return a < b }
 
 	got, err := FindDependencies(model, []string{container.ID})
 	if err != nil {
 		t.Fatal(err)
 	}
-
-	for _, wantID := range []string{container.ID, valMsg.ID, valEnum.ID} {
-		if !got[wantID] {
-			t.Errorf("expected %s to be included in dependencies", wantID)
-		}
+	want := []string{container.ID, msgMap.ID, enumMap.ID, valMsg.ID, valEnum.ID}
+	if diff := cmp.Diff(want, flatten(got), cmpopts.SortSlices(less)); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 
 	gotFromMap, err := FindDependencies(model, []string{msgMap.ID})
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !gotFromMap[valMsg.ID] {
-		t.Errorf("expected %s to be included when resolving map dependencies", valMsg.ID)
+	wantFromMap := []string{msgMap.ID, valMsg.ID}
+	if diff := cmp.Diff(wantFromMap, flatten(gotFromMap), cmpopts.SortSlices(less)); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
 
