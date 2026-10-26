@@ -970,3 +970,127 @@ func TestAnnotateMethodIdempotencyHook(t *testing.T) {
 		})
 	}
 }
+
+func TestAnnotateMethod_HTTPBody(t *testing.T) {
+	httpBodyMsg := api.NewTestMessage("HttpBody").
+		WithPackage("google.api").
+		WithFields(
+			api.NewTestField("content_type").WithType(api.TypezString),
+			api.NewTestField("data").WithType(api.TypezBytes),
+		)
+	wrapperReq := api.NewTestMessage("RawPredictRequest").
+		WithFields(
+			api.NewTestField("endpoint").WithType(api.TypezString),
+			api.NewTestField("http_body").WithMessageType(httpBodyMsg).WithOptional(),
+		)
+	regularMsg := api.NewTestMessage("RegularMessage").
+		WithFields(
+			api.NewTestField("name").WithType(api.TypezString),
+		)
+
+	for _, test := range []struct {
+		name          string
+		input         *api.Message
+		output        *api.Message
+		bodyFieldPath string
+		want          *methodAnnotations
+	}{
+		{
+			name:          "wrapper request with http_body field and HttpBody response",
+			input:         wrapperReq,
+			output:        httpBodyMsg,
+			bodyFieldPath: "http_body",
+			want: &methodAnnotations{
+				Name:               "testMethod",
+				PathExpression:     "/v1/test",
+				HTTPMethod:         "POST",
+				HasBody:            true,
+				BodyField:          "httpBody",
+				IsHTTPBodyRequest:  true,
+				IsHTTPBodyResponse: true,
+				ReturnType:         "GoogleApi.HttpBody",
+				ResponseEncoding:   "json;enum-encoding=int",
+			},
+		},
+		{
+			name:          "direct HttpBody request with wildcard body and regular response",
+			input:         httpBodyMsg,
+			output:        regularMsg,
+			bodyFieldPath: "*",
+			want: &methodAnnotations{
+				Name:               "testMethod",
+				PathExpression:     "/v1/test",
+				HTTPMethod:         "POST",
+				HasBody:            true,
+				IsBodyWildcard:     true,
+				IsHTTPBodyRequest:  true,
+				IsHTTPBodyResponse: false,
+				ReturnType:         "Test.RegularMessage",
+				ResponseEncoding:   "json;enum-encoding=int",
+			},
+		},
+		{
+			name:          "regular request and HttpBody response",
+			input:         regularMsg,
+			output:        httpBodyMsg,
+			bodyFieldPath: "",
+			want: &methodAnnotations{
+				Name:               "testMethod",
+				PathExpression:     "/v1/test",
+				HTTPMethod:         "POST",
+				HasBody:            false,
+				IsHTTPBodyRequest:  false,
+				IsHTTPBodyResponse: true,
+				ReturnType:         "GoogleApi.HttpBody",
+				ResponseEncoding:   "json;enum-encoding=int",
+			},
+		},
+		{
+			name:          "regular request with wildcard body and regular response",
+			input:         regularMsg,
+			output:        regularMsg,
+			bodyFieldPath: "*",
+			want: &methodAnnotations{
+				Name:               "testMethod",
+				PathExpression:     "/v1/test",
+				HTTPMethod:         "POST",
+				HasBody:            true,
+				IsBodyWildcard:     true,
+				IsHTTPBodyRequest:  false,
+				IsHTTPBodyResponse: false,
+				ReturnType:         "Test.RegularMessage",
+				ResponseEncoding:   "json;enum-encoding=int",
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			method := api.NewTestMethod("TestMethod").
+				WithInput(test.input).
+				WithOutput(test.output).
+				WithVerb("POST").
+				WithPathTemplate((&api.PathTemplate{}).WithLiteral("v1").WithLiteral("test")).
+				WithBodyFieldPath(test.bodyFieldPath)
+			service := api.NewTestService("TestService").WithMethods(method)
+			model := api.NewTestAPI([]*api.Message{wrapperReq, regularMsg}, nil, []*api.Service{service}).
+				WithPackageName("test")
+			model.AddMessage(httpBodyMsg)
+			if err := api.CrossReference(model); err != nil {
+				t.Fatal(err)
+			}
+			codec := newTestCodec(t, model, nil)
+			codec.withExtraDependencies(t, []config.SwiftDependency{
+				{
+					ApiPackage: "google.api",
+					Name:       "GoogleApi",
+				},
+			})
+			if err := codec.annotateModel(); err != nil {
+				t.Fatal(err)
+			}
+			got := method.Codec.(*methodAnnotations)
+			if diff := cmp.Diff(test.want, got, cmpopts.IgnoreFields(methodAnnotations{}, "PathBindings", "HasMultipleBindings")); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}

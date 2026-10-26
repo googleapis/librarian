@@ -1352,3 +1352,80 @@ func TestGenerateService_AutoPopulated(t *testing.T) {
 		t.Errorf("expected idempotent: false in %s, got:\n%s", retryFile, retryStr)
 	}
 }
+
+func TestGenerateService_HTTPBody(t *testing.T) {
+	outDir := t.TempDir()
+	httpBodyMsg := api.NewTestMessage("HttpBody").
+		WithPackage("google.api").
+		WithFields(
+			api.NewTestField("content_type").WithType(api.TypezString),
+			api.NewTestField("data").WithType(api.TypezBytes),
+		)
+	rawPredictReq := api.NewTestMessage("RawPredictRequest").
+		WithPackage("google.cloud.aiplatform.v1").
+		WithFields(
+			api.NewTestField("endpoint").WithType(api.TypezString),
+			api.NewTestField("http_body").WithMessageType(httpBodyMsg).WithOptional(),
+		)
+	emptyResp := api.NewTestMessage("Empty").
+		WithPackage("google.protobuf")
+
+	rawPredict := api.NewTestMethod("RawPredict").
+		WithInput(rawPredictReq).
+		WithOutput(httpBodyMsg).
+		WithBodyFieldPath("http_body").
+		WithVerb("POST").
+		WithPathTemplate((&api.PathTemplate{}).WithLiteral("v1").WithVariableNamed("endpoint"))
+	directBody := api.NewTestMethod("UploadRaw").
+		WithInput(httpBodyMsg).
+		WithOutput(emptyResp).
+		WithBodyFieldPath("*").
+		WithVerb("POST").
+		WithPathTemplate((&api.PathTemplate{}).WithLiteral("v1").WithLiteral("upload"))
+	service := api.NewTestService("PredictionService").
+		WithPackage("google.cloud.aiplatform.v1").
+		WithMethods(rawPredict, directBody)
+
+	model := api.NewTestAPI([]*api.Message{rawPredictReq}, nil, []*api.Service{service})
+	model.AddMessage(httpBodyMsg)
+	model.AddMessage(emptyResp)
+
+	swiftCfg := swiftConfig(t, []config.SwiftDependency{
+		{
+			ApiPackage: "google.api",
+			Name:       "GoogleApi",
+		},
+	})
+	library := &config.Library{
+		Swift: swiftCfg,
+	}
+	if err := Generate(t.Context(), model, outDir, library, nil); err != nil {
+		t.Fatal(err)
+	}
+
+	transportFile := filepath.Join(outDir, "Sources", "GoogleCloudAiplatformV1", "PredictionService+Transport.swift")
+	content, err := os.ReadFile(transportFile)
+	if err != nil {
+		t.Fatal(err)
+	}
+	contentStr := string(content)
+	wantBlocks := []string{
+		`if let body = request.httpBody {
+        req.setBody(data: body.data, ofContentType: body.contentType)
+      }
+      let raw = try await req.rpcRaw(timeout: options.attemptTimeout).get()
+      return GoogleApi.HttpBody().with {
+        $0.data = raw.data
+        $0.contentType = raw.contentType
+      }`,
+		`req.setBody(data: request.data, ofContentType: request.contentType)`,
+	}
+	for _, want := range wantBlocks {
+		if !strings.Contains(contentStr, want) {
+			t.Errorf("expected %q in %s, got:\n%s", want, transportFile, contentStr)
+		}
+	}
+	if strings.Contains(contentStr, "req.setBody(json:") {
+		t.Errorf("unexpected req.setBody(json:) in %s, got:\n%s", transportFile, contentStr)
+	}
+}
