@@ -52,6 +52,7 @@ import (
 // - a message to each of its fields' types (if they are a message, enum, or map)
 //   - this edge is only necessary because we are too lazy to support pruning
 //     the fields of a message.
+//
 // - a map to its key and value types (if they are a message, enum, or map)
 //
 // [reachable set]: https://en.wikipedia.org/wiki/Reachability
