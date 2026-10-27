@@ -90,25 +90,33 @@ func TestGetLibDir(t *testing.T) {
 func TestGetToolsEnv(t *testing.T) {
 	tmpDir := t.TempDir()
 	for _, test := range []struct {
-		name           string
-		librarianBin   string
-		librarianCache string
-		want           map[string]string
+		name            string
+		librarianBin    string
+		librarianCache  string
+		javaToolOptions string
+		want            map[string]string
 	}{
 		{
 			name:         "LIBRARIAN_BIN is set",
 			librarianBin: tmpDir,
-			want:         map[string]string{"PATH": filepath.Join(tmpDir, "java_tools", "bin")},
+			want:         map[string]string{"JAVA_TOOL_OPTIONS": "-Xmx1024m -XX:ActiveProcessorCount=2 -XX:-UsePerfData", "PATH": filepath.Join(tmpDir, "java_tools", "bin")},
 		},
 		{
 			name:           "LIBRARIAN_CACHE is set",
 			librarianCache: tmpDir,
-			want:           map[string]string{"PATH": filepath.Join(tmpDir, "bin", "java_tools", "bin")},
+			want:           map[string]string{"JAVA_TOOL_OPTIONS": "-Xmx1024m -XX:ActiveProcessorCount=2 -XX:-UsePerfData", "PATH": filepath.Join(tmpDir, "bin", "java_tools", "bin")},
+		},
+		{
+			name:            "existing JAVA_TOOL_OPTIONS is preserved and overrides matching defaults",
+			librarianBin:    tmpDir,
+			javaToolOptions: "-Xmx2048m -Dfile.encoding=UTF-8",
+			want:            map[string]string{"JAVA_TOOL_OPTIONS": "-XX:ActiveProcessorCount=2 -XX:-UsePerfData -Xmx2048m -Dfile.encoding=UTF-8", "PATH": filepath.Join(tmpDir, "java_tools", "bin")},
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Setenv("LIBRARIAN_BIN", test.librarianBin)
 			t.Setenv("LIBRARIAN_CACHE", test.librarianCache)
+			t.Setenv("JAVA_TOOL_OPTIONS", test.javaToolOptions)
 			got, err := getToolsEnv()
 			if err != nil {
 				t.Fatal(err)
