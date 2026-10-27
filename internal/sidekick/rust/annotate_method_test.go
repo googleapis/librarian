@@ -404,42 +404,36 @@ func TestFormatResourceNameTemplateFromPath(t *testing.T) {
 	}{
 		{
 			name: "Basic",
-			binding: &api.PathBinding{
-				TargetResource: &api.TargetResource{
-					Template: api.ParseTemplateForTest("//test.googleapis.com/projects/{project}/zones/{zone}"),
-				},
-			},
+			binding: api.NewTestPathBinding("", nil).WithTargetResource(&api.TargetResource{
+				Template: api.ParseTemplateForTest("//test.googleapis.com/projects/{project}/zones/{zone}"),
+			}),
 			want: "//test.googleapis.com/projects/{}/zones/{}",
 		},
 		{
 			name: "With Extended Field Path",
-			binding: &api.PathBinding{
-				TargetResource: &api.TargetResource{
-					Template: api.ParseTemplateForTest("//test.googleapis.com/items/{item.id}"),
-				},
-			},
+			binding: api.NewTestPathBinding("", nil).WithTargetResource(&api.TargetResource{
+				Template: api.ParseTemplateForTest("//test.googleapis.com/items/{item.id}"),
+			}),
 			want: "//test.googleapis.com/items/{}",
 		},
 		{
 			name: "Discovery API Compute V1 Example",
-			binding: &api.PathBinding{
-				PathTemplate: (&api.PathTemplate{}).
-					WithLiteral("compute").
-					WithLiteral("v1").
-					WithLiteral("projects").
-					WithVariableNamed("project").
-					WithLiteral("zones").
-					WithVariableNamed("zone"),
-				TargetResource: &api.TargetResource{
+			binding: api.NewTestPathBinding("", (&api.PathTemplate{}).
+				WithLiteral("compute").
+				WithLiteral("v1").
+				WithLiteral("projects").
+				WithVariableNamed("project").
+				WithLiteral("zones").
+				WithVariableNamed("zone")).
+				WithTargetResource(&api.TargetResource{
 					// Notice that constructTemplate already stripped out "compute/v1"
 					Template: api.ParseTemplateForTest("//compute.googleapis.com/projects/{project}/zones/{zone}"),
-				},
-			},
+				}),
 			want: "//compute.googleapis.com/projects/{}/zones/{}",
 		},
 		{
 			name:    "Missing TargetResource",
-			binding: &api.PathBinding{},
+			binding: api.NewTestPathBinding("", nil),
 			wantErr: true,
 		},
 	} {
