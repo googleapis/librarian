@@ -62,7 +62,7 @@ func TestFindBestResourceFieldByType(t *testing.T) {
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			msg := &Message{Fields: tc.fields}
+			msg := NewTestMessage("Message").WithFields(tc.fields...)
 			got := findBestResourceFieldByType(msg, f.model, targetType)
 			if diff := cmp.Diff(tc.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
@@ -117,7 +117,7 @@ func TestFindBestResourceFieldBySingular(t *testing.T) {
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			msg := &Message{Fields: tc.fields}
+			msg := NewTestMessage("Message").WithFields(tc.fields...)
 			got := findBestResourceFieldBySingular(msg, f.model, targetSingular)
 			if diff := cmp.Diff(tc.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
@@ -129,22 +129,10 @@ func TestFindBestResourceFieldBySingular(t *testing.T) {
 func TestFindBestParentFieldByType(t *testing.T) {
 	childType := "google.cloud.secretmanager.v1/SecretVersion"
 
-	parentField := &Field{
-		Name:              "parent",
-		ResourceReference: &ResourceReference{ChildType: childType},
-	}
-
-	parentFieldByName := &Field{
-		Name: "parent",
-		// No matching child type, just name
-	}
-
-	parentFieldByChildType := &Field{
-		Name:              "database",
-		ResourceReference: &ResourceReference{ChildType: childType},
-	}
-
-	wrongField := &Field{Name: "wrong"}
+	parentField := NewTestField("parent").WithChildTypeReference(childType)
+	parentFieldByName := NewTestField("parent")
+	parentFieldByChildType := NewTestField("database").WithChildTypeReference(childType)
+	wrongField := NewTestField("wrong")
 
 	for _, tc := range []struct {
 		name   string
@@ -178,7 +166,7 @@ func TestFindBestParentFieldByType(t *testing.T) {
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			msg := &Message{Fields: tc.fields}
+			msg := NewTestMessage("Message").WithFields(tc.fields...)
 			got := findBestParentFieldByType(msg, childType)
 			if diff := cmp.Diff(tc.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
@@ -200,23 +188,23 @@ func TestFieldTypePredicates(t *testing.T) {
 		isObject bool
 	}
 	testCases := []TestCase{
-		{field: &Field{Typez: TypezString}, isString: true},
-		{field: &Field{Typez: TypezBytes}, isBytes: true},
-		{field: &Field{Typez: TypezBool}, isBool: true},
-		{field: &Field{Typez: TypezInt32}, isInt: true},
-		{field: &Field{Typez: TypezInt64}, isInt: true},
-		{field: &Field{Typez: TypezSint32}, isInt: true},
-		{field: &Field{Typez: TypezSint64}, isInt: true},
-		{field: &Field{Typez: TypezSfixed32}, isInt: true},
-		{field: &Field{Typez: TypezSfixed64}, isInt: true},
-		{field: &Field{Typez: TypezUint32}, isUInt: true},
-		{field: &Field{Typez: TypezUint64}, isUInt: true},
-		{field: &Field{Typez: TypezFixed32}, isUInt: true},
-		{field: &Field{Typez: TypezFixed64}, isUInt: true},
-		{field: &Field{Typez: TypezFloat}, isFloat: true},
-		{field: &Field{Typez: TypezDouble}, isFloat: true},
-		{field: &Field{Typez: TypezEnum}, isEnum: true},
-		{field: &Field{Typez: TypezMessage}, isObject: true},
+		{field: NewTestField("f").WithType(TypezString), isString: true},
+		{field: NewTestField("f").WithType(TypezBytes), isBytes: true},
+		{field: NewTestField("f").WithType(TypezBool), isBool: true},
+		{field: NewTestField("f").WithType(TypezInt32), isInt: true},
+		{field: NewTestField("f").WithType(TypezInt64), isInt: true},
+		{field: NewTestField("f").WithType(TypezSint32), isInt: true},
+		{field: NewTestField("f").WithType(TypezSint64), isInt: true},
+		{field: NewTestField("f").WithType(TypezSfixed32), isInt: true},
+		{field: NewTestField("f").WithType(TypezSfixed64), isInt: true},
+		{field: NewTestField("f").WithType(TypezUint32), isUInt: true},
+		{field: NewTestField("f").WithType(TypezUint64), isUInt: true},
+		{field: NewTestField("f").WithType(TypezFixed32), isUInt: true},
+		{field: NewTestField("f").WithType(TypezFixed64), isUInt: true},
+		{field: NewTestField("f").WithType(TypezFloat), isFloat: true},
+		{field: NewTestField("f").WithType(TypezDouble), isFloat: true},
+		{field: NewTestField("f").WithType(TypezEnum), isEnum: true},
+		{field: NewTestField("f").WithType(TypezMessage), isObject: true},
 	}
 	for _, tc := range testCases {
 		if tc.field.IsString() != tc.isString {
@@ -293,12 +281,12 @@ func TestField_IsResourceReference(t *testing.T) {
 	}{
 		{
 			name:  "nil ResourceReference",
-			field: &Field{},
+			field: NewTestField("f"),
 			want:  false,
 		},
 		{
 			name:  "non-nil ResourceReference",
-			field: &Field{ResourceReference: &ResourceReference{}},
+			field: NewTestField("f").WithResourceReference("type"),
 			want:  true,
 		},
 	} {
@@ -312,10 +300,10 @@ func TestField_IsResourceReference(t *testing.T) {
 }
 
 func TestFindBodyField(t *testing.T) {
-	messageType := &Message{ID: "message_id"}
-	bodyField := &Field{Name: "body_field"}
-	typeMatchField := &Field{Typez: TypezMessage, TypezID: messageType.ID, Name: "type_match"}
-	otherField := &Field{Name: "other"}
+	messageType := NewTestMessage("message_id").WithID("message_id")
+	bodyField := NewTestField("body_field")
+	typeMatchField := NewTestField("type_match").WithMessageType(messageType)
+	otherField := NewTestField("other")
 
 	testCases := []struct {
 		name       string
@@ -327,34 +315,34 @@ func TestFindBodyField(t *testing.T) {
 	}{
 		{
 			name:     "match by path info",
-			message:  &Message{Fields: []*Field{bodyField, otherField}},
+			message:  NewTestMessage("Request").WithFields(bodyField, otherField),
 			pathInfo: &PathInfo{BodyFieldPath: "body_field"},
 			want:     bodyField,
 		},
 		{
 			name:       "match by type and name",
-			message:    &Message{Fields: []*Field{typeMatchField, otherField}},
+			message:    NewTestMessage("Request").WithFields(typeMatchField, otherField),
 			targetType: messageType.ID,
 			singular:   "type_match",
 			want:       typeMatchField,
 		},
 		{
 			name:       "match by type but wrong name",
-			message:    &Message{Fields: []*Field{typeMatchField, otherField}},
+			message:    NewTestMessage("Request").WithFields(typeMatchField, otherField),
 			targetType: messageType.ID,
 			singular:   "wrong_name",
 			want:       nil,
 		},
 		{
 			name:       "match by name but wrong type",
-			message:    &Message{Fields: []*Field{typeMatchField, otherField}},
+			message:    NewTestMessage("Request").WithFields(typeMatchField, otherField),
 			targetType: "different_message_id",
 			singular:   "type_match",
 			want:       nil,
 		},
 		{
 			name:       "path info overrides type match",
-			message:    &Message{Fields: []*Field{typeMatchField, bodyField}},
+			message:    NewTestMessage("Request").WithFields(typeMatchField, bodyField),
 			pathInfo:   &PathInfo{BodyFieldPath: "body_field"},
 			targetType: messageType.ID,
 			singular:   "type_match",
@@ -362,7 +350,7 @@ func TestFindBodyField(t *testing.T) {
 		},
 		{
 			name:    "no match",
-			message: &Message{Fields: []*Field{otherField}},
+			message: NewTestMessage("Request").WithFields(otherField),
 			want:    nil,
 		},
 	}
@@ -378,8 +366,8 @@ func TestFindBodyField(t *testing.T) {
 }
 
 func TestFindResourceIDField(t *testing.T) {
-	idField := &Field{Name: "book_id", Typez: TypezString}
-	otherField := &Field{Name: "other"}
+	idField := NewTestField("book_id").WithType(TypezString)
+	otherField := NewTestField("other")
 
 	testCases := []struct {
 		name     string
@@ -389,13 +377,13 @@ func TestFindResourceIDField(t *testing.T) {
 	}{
 		{
 			name:     "found id field",
-			message:  &Message{Fields: []*Field{idField, otherField}},
+			message:  NewTestMessage("Request").WithFields(idField, otherField),
 			singular: "book",
 			want:     idField,
 		},
 		{
 			name:     "not found",
-			message:  &Message{Fields: []*Field{otherField}},
+			message:  NewTestMessage("Request").WithFields(otherField),
 			singular: "book",
 			want:     nil,
 		},
@@ -412,13 +400,28 @@ func TestFindResourceIDField(t *testing.T) {
 }
 
 func TestFindQuickstartMethod(t *testing.T) {
-	fooMethod := &Method{Name: "FooMethod"}
-	listPolicies := &Method{Name: "ListAccessPolicies", IsAIPStandardList: true, OutputType: &Message{Resource: &Resource{Singular: "accesspolicy"}}}
-	getPolicy := &Method{Name: "GetAccessPolicy", IsAIPStandardGet: true}
-	createPolicy := &Method{Name: "CreateAccessPolicy", IsAIPStandardCreate: true}
-	deletePolicy := &Method{Name: "DeleteAccessPolicy", IsAIPStandardDelete: true}
-	updatePolicy := &Method{Name: "UpdateAccessPolicy", IsAIPStandardUpdate: true}
-	listOther := &Method{Name: "ListOtherThings", IsAIPStandardList: true, OutputType: &Message{Resource: &Resource{Singular: "otherthing"}}}
+	fooMethod := NewTestMethod("FooMethod")
+	listPolicies := NewTestMethod("ListAccessPolicies").
+		WithOutput(NewTestMessage("ListAccessPoliciesResponse").WithResource(NewTestResource("accesspolicy").WithSingular("accesspolicy")))
+	listPolicies.IsAIPStandardList = true
+	getPolicy := NewTestMethod("GetAccessPolicy")
+	getPolicy.IsAIPStandardGet = true
+	createPolicy := NewTestMethod("CreateAccessPolicy")
+	createPolicy.IsAIPStandardCreate = true
+	deletePolicy := NewTestMethod("DeleteAccessPolicy")
+	deletePolicy.IsAIPStandardDelete = true
+	updatePolicy := NewTestMethod("UpdateAccessPolicy")
+	updatePolicy.IsAIPStandardUpdate = true
+	listOther := NewTestMethod("ListOtherThings").
+		WithOutput(NewTestMessage("ListOtherThingsResponse").WithResource(NewTestResource("otherthing").WithSingular("otherthing")))
+	listOther.IsAIPStandardList = true
+
+	deprecatedList := NewTestMethod("DeprecatedList").WithDeprecated(true)
+	listPoliciesMatch := NewTestMethod("ListPolicies").
+		WithOutput(NewTestMessage("ListPoliciesResponse").WithResource(NewTestResource("accesspolicy").WithSingular("accesspolicy")))
+	listPoliciesMatch.IsAIPStandardList = true
+	expandMethod := NewTestMethod("Expand").WithServerSideStreaming()
+	chatMethod := NewTestMethod("Chat").WithBidiStreaming()
 
 	testCases := []struct {
 		name    string
@@ -427,58 +430,58 @@ func TestFindQuickstartMethod(t *testing.T) {
 	}{
 		{
 			name:    "empty service",
-			service: &Service{Name: "AccessPolicyService", Methods: []*Method{}},
+			service: NewTestService("AccessPolicyService"),
 			want:    nil,
 		},
 		{
 			name:    "fallback to simple method when no standard methods exist",
-			service: &Service{Name: "AccessPolicyService", Methods: []*Method{fooMethod}},
+			service: NewTestService("AccessPolicyService").WithMethods(fooMethod),
 			want:    fooMethod,
 		},
 		{
 			name:    "prefer non-deprecated simple method",
-			service: &Service{Name: "AccessPolicyService", Methods: []*Method{{Name: "DeprecatedList", Deprecated: true}, fooMethod}},
+			service: NewTestService("AccessPolicyService").WithMethods(deprecatedList, fooMethod),
 			want:    fooMethod,
 		},
 		{
 			name:    "only get method",
-			service: &Service{Name: "AccessPolicyService", Methods: []*Method{getPolicy}},
+			service: NewTestService("AccessPolicyService").WithMethods(getPolicy),
 			want:    getPolicy,
 		},
 		{
 			name:    "prioritizes list over get",
-			service: &Service{Name: "AccessPolicyService", Methods: []*Method{getPolicy, listOther}},
+			service: NewTestService("AccessPolicyService").WithMethods(getPolicy, listOther),
 			want:    listOther,
 		},
 		{
 			name:    "prioritizes create over delete",
-			service: &Service{Name: "AccessPolicyService", Methods: []*Method{deletePolicy, createPolicy}},
+			service: NewTestService("AccessPolicyService").WithMethods(deletePolicy, createPolicy),
 			want:    createPolicy,
 		},
 		{
 			name:    "prioritizes delete over update",
-			service: &Service{Name: "AccessPolicyService", Methods: []*Method{updatePolicy, deletePolicy}},
+			service: NewTestService("AccessPolicyService").WithMethods(updatePolicy, deletePolicy),
 			want:    deletePolicy,
 		},
 		{
 			name:    "tie-breaking on name matching (ListAccessPolicies vs ListOtherThings for AccessPolicyService)",
-			service: &Service{Name: "AccessPolicyService", Methods: []*Method{listOther, listPolicies}},
+			service: NewTestService("AccessPolicyService").WithMethods(listOther, listPolicies),
 			want:    listPolicies,
 		},
 		{
 			name:    "tie-breaking fallback to resource singular/plural",
-			service: &Service{Name: "AccessPolicyService", Methods: []*Method{listOther, {Name: "ListPolicies", IsAIPStandardList: true, OutputType: &Message{Resource: &Resource{Singular: "accesspolicy"}}}}},
-			want:    &Method{Name: "ListPolicies", IsAIPStandardList: true, OutputType: &Message{Resource: &Resource{Singular: "accesspolicy"}}}, // matches singular 'accesspolicy'
+			service: NewTestService("AccessPolicyService").WithMethods(listOther, listPoliciesMatch),
+			want:    listPoliciesMatch,
 		},
 		{
 			name:    "fallback to server streaming method when no simple methods exist",
-			service: &Service{Name: "EchoService", Methods: []*Method{{Name: "Expand", ServerSideStreaming: true}}},
-			want:    &Method{Name: "Expand", ServerSideStreaming: true},
+			service: NewTestService("EchoService").WithMethods(expandMethod),
+			want:    expandMethod,
 		},
 		{
 			name:    "fallback to bidi streaming method when no unary or server streaming methods exist",
-			service: &Service{Name: "EchoService", Methods: []*Method{{Name: "Chat", ClientSideStreaming: true, ServerSideStreaming: true}}},
-			want:    &Method{Name: "Chat", ClientSideStreaming: true, ServerSideStreaming: true},
+			service: NewTestService("EchoService").WithMethods(chatMethod),
+			want:    chatMethod,
 		},
 	}
 
@@ -493,10 +496,10 @@ func TestFindQuickstartMethod(t *testing.T) {
 }
 
 func TestFindQuickstartService(t *testing.T) {
-	fooMethod := &Method{Name: "FooMethod"}
-	serviceA := &Service{Name: "ServiceA", Methods: []*Method{fooMethod}}
-	serviceB := &Service{Name: "SecretManagerService", Methods: []*Method{fooMethod}}
-	deprecatedService := &Service{Name: "SecretManagerService", Deprecated: true, Methods: []*Method{fooMethod}}
+	fooMethod := NewTestMethod("FooMethod")
+	serviceA := NewTestService("ServiceA").WithMethods(fooMethod)
+	serviceB := NewTestService("SecretManagerService").WithMethods(fooMethod)
+	deprecatedService := NewTestService("SecretManagerService").WithDeprecated(true).WithMethods(fooMethod)
 
 	testCases := []struct {
 		name string
@@ -505,27 +508,27 @@ func TestFindQuickstartService(t *testing.T) {
 	}{
 		{
 			name: "no services",
-			api:  &API{Name: "secretmanager", Services: nil},
+			api:  NewTestAPI(nil, nil, nil),
 			want: nil,
 		},
 		{
 			name: "one service",
-			api:  &API{Name: "secretmanager", Services: []*Service{serviceA}},
+			api:  NewTestAPI(nil, nil, []*Service{serviceA}),
 			want: serviceA,
 		},
 		{
 			name: "match service name to api name",
-			api:  &API{Name: "secretmanager", Services: []*Service{serviceA, serviceB}},
+			api:  NewTestAPI(nil, nil, []*Service{serviceA, serviceB}).WithName("secretmanager"),
 			want: serviceB,
 		},
 		{
 			name: "no match defaults to first",
-			api:  &API{Name: "otherapi", Services: []*Service{serviceA, serviceB}},
+			api:  NewTestAPI(nil, nil, []*Service{serviceA, serviceB}).WithName("otherapi"),
 			want: serviceA,
 		},
 		{
 			name: "prefer non-deprecated service",
-			api:  &API{Name: "secretmanager", Services: []*Service{deprecatedService, serviceA}},
+			api:  NewTestAPI(nil, nil, []*Service{deprecatedService, serviceA}).WithName("secretmanager"),
 			want: serviceA,
 		},
 	}
