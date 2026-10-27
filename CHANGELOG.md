@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.50.0](https://github.com/googleapis/librarian/compare/v0.49.0...v0.50.0) (2026-10-27)
+
+
+### Features
+
+* **internal/librarian/java:** parallelize generation and formatting ([#7813](https://github.com/googleapis/librarian/issues/7813)) ([bf3b603](https://github.com/googleapis/librarian/commit/bf3b6034ee47d5f1776013e55b8c296438b10473))
+
+
+### Bug Fixes
+
+* **internal/librarian:** check explicit API paths in findExistingLibraryForAPI ([#7816](https://github.com/googleapis/librarian/issues/7816)) ([00ae0ab](https://github.com/googleapis/librarian/commit/00ae0ab2bf5e506433ccfcbb7030b1748e87abc8)), refs [#7814](https://github.com/googleapis/librarian/issues/7814)
+* **internal/sidekick/rust_prost:** map BytesValue ([#7798](https://github.com/googleapis/librarian/issues/7798)) ([7080958](https://github.com/googleapis/librarian/commit/70809581943f00b16202f7f31ee39e4fca8d3103))
+* **internal/sidekick/rust:** match prost-build module snake_case ([#7806](https://github.com/googleapis/librarian/issues/7806)) ([8790f1b](https://github.com/googleapis/librarian/commit/8790f1b3a1b8ee5407117ae475d5a09170cd3c5c))
+* **sidekick/swift:** support google.api.HttpBody in REST ([#7811](https://github.com/googleapis/librarian/issues/7811)) ([d427811](https://github.com/googleapis/librarian/commit/d427811683db9112a2c4ad5d9ae8779262bb6042))
+* **swift:** strip backticks from DocC xref links ([#7804](https://github.com/googleapis/librarian/issues/7804)) ([6a931c5](https://github.com/googleapis/librarian/commit/6a931c5a0bb6fb46f5d24a615031903638dd41f7)), refs [#751](https://github.com/googleapis/librarian/issues/751)
+
 ## [0.49.0](https://github.com/googleapis/librarian/compare/v0.48.0...v0.49.0) (2026-10-19)
 
 
