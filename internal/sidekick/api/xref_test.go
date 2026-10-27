@@ -69,13 +69,16 @@ func TestCrossReferenceOneOfs(t *testing.T) {
 
 func TestCrossReferenceFields(t *testing.T) {
 	messageT := NewTestMessage("MessageT")
+	// Note: We deliberately do not use WithMessageType / WithEnumType here because
+	// those helpers pre-populate MessageType / EnumType. This test specifically verifies
+	// that CrossReference resolves and sets MessageType and EnumType from TypezID.
 	fieldM := NewTestField("message_field").
 		WithType(TypezMessage).
-		WithTypezID(".test.MessageT")
+		WithTypezID(messageT.ID)
 	enumT := NewTestEnum("EnumT")
 	fieldE := NewTestField("enum_field").
 		WithType(TypezEnum).
-		WithTypezID(".test.EnumT")
+		WithTypezID(enumT.ID)
 	message := NewTestMessage("Message").WithFields(fieldM, fieldE)
 
 	model := NewTestAPI([]*Message{messageT, message}, []*Enum{enumT}, []*Service{})

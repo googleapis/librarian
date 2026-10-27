@@ -302,7 +302,7 @@ func TestField_IsResourceReference(t *testing.T) {
 func TestFindBodyField(t *testing.T) {
 	messageType := NewTestMessage("message_id").WithID("message_id")
 	bodyField := NewTestField("body_field")
-	typeMatchField := NewTestField("type_match").WithType(TypezMessage).WithMessageType(messageType)
+	typeMatchField := NewTestField("type_match").WithMessageType(messageType)
 	otherField := NewTestField("other")
 
 	testCases := []struct {

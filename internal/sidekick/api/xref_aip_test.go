@@ -565,8 +565,7 @@ func TestAIPStandardCreateInfo(t *testing.T) {
 		WithType(TypezString).
 		WithChildTypeReference(f.resource.Type)
 	resourceField := NewTestField("secret").
-		WithType(TypezMessage).
-		WithTypezID(secretMessage.ID)
+		WithMessageType(secretMessage)
 	idField := NewTestField("secret_id").
 		WithType(TypezString)
 	output := NewTestMessage("Response").WithResource(f.resource)
@@ -634,8 +633,8 @@ func TestAIPStandardUpdateInfo(t *testing.T) {
 
 	// Setup for Update
 	secretMessage := NewTestMessage("secret_message_id").
+		WithID("secret_message_id").
 		WithFields(f.resourceNameField)
-	secretMessage.ID = "secret_message_id"
 
 	resourceField := NewTestField("secret").
 		WithMessageType(secretMessage)
@@ -733,8 +732,8 @@ func TestAIPStandardListInfo(t *testing.T) {
 	secretMessage := NewTestMessage("Secret").WithResource(secretResource)
 	parentField := NewTestField("parent").
 		WithChildTypeReference(resourceType)
-	otherParentField := NewTestField("database"). // Not named "parent"
-							WithChildTypeReference(resourceType)
+	otherParentField := NewTestField("database").
+		WithChildTypeReference(resourceType) // Not named "parent"
 	plainParentField := NewTestField("parent") // No child_type
 
 	pageableItem := NewTestField("secrets").WithMessageType(secretMessage)
