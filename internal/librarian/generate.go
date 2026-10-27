@@ -152,7 +152,11 @@ func cleanLibraries(language string, libraries []*config.Library) error {
 	for _, library := range libraries {
 		switch language {
 		case config.LanguageDart:
-			err = checkAndClean(library.Output, library.Keep)
+			keep, keepErr := dart.Keep(library)
+			if keepErr != nil {
+				return fmt.Errorf("generating keep list: %w", keepErr)
+			}
+			err = checkAndClean(library.Output, keep)
 		case config.LanguageFake:
 			err = fakeClean(library)
 		case config.LanguageGo:
