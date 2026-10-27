@@ -303,6 +303,12 @@ func (s *Service) WithPackage(pkg string) *Service {
 	return s
 }
 
+// WithID overrides the service's ID.
+func (s *Service) WithID(id string) *Service {
+	s.ID = id
+	return s
+}
+
 // WithMethods adds methods to the service and updates their ID/Service.
 func (s *Service) WithMethods(methods ...*Method) *Service {
 	for _, m := range methods {
