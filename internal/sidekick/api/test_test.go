@@ -219,6 +219,16 @@ func TestNewTestAPI_DeduplicatesNestedMessages(t *testing.T) {
 	}
 }
 
+func TestMessage_WithMessages_UpdatesOneOfIDs(t *testing.T) {
+	oneof := api.NewTestOneOf("choice")
+	child := api.NewTestMessage("Child").WithOneOfs(oneof)
+	_ = api.NewTestMessage("Parent").WithMessages(child)
+
+	if got, want := child.OneOfs[0].ID, ".test.Parent.Child.choice"; got != want {
+		t.Errorf("child.OneOfs[0].ID = %q, want %q", got, want)
+	}
+}
+
 func TestService_WithDocumentation(t *testing.T) {
 	const doc = "Test service documentation."
 	s := api.NewTestService("TestService").WithDocumentation(doc)

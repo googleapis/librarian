@@ -211,6 +211,11 @@ func (m *Message) withParentRecursive(parent *Message) {
 			f.ID = fmt.Sprintf("%s.%s", m.ID, f.Name)
 		}
 	}
+	for _, o := range m.OneOfs {
+		if strings.HasPrefix(o.ID, ".test.") || o.ID == "" {
+			o.ID = fmt.Sprintf("%s.%s", m.ID, o.Name)
+		}
+	}
 	for _, c := range m.Messages {
 		c.withParentRecursive(m)
 	}

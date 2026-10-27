@@ -181,7 +181,13 @@ func TestPageBadRequest(t *testing.T) {
 
 func TestPageBadResponse(t *testing.T) {
 	resource := NewTestMessage("Resource").WithPackage("package")
-	request := NewTestMessage("Request").WithPackage("package")
+	request := NewTestMessage("Request").
+		WithPackage("package").
+		WithFields(
+			NewTestField("parent").WithJSONName("parent").WithType(TypezString),
+			NewTestField("page_token").WithJSONName("pageToken").WithType(TypezString),
+			NewTestField("page_size").WithJSONName("pageSize").WithType(TypezInt32),
+		)
 	response := NewTestMessage("Response").
 		WithPackage("package").
 		WithFields(
