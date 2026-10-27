@@ -21,13 +21,11 @@ import (
 )
 
 func TestLroServices(t *testing.T) {
-	d := &Discovery{
-		Pollers: []*Poller{
-			{Prefix: "p1", MethodID: "Service1.Method1"},
-			{Prefix: "p2", MethodID: "Service1.Method2"},
-			{Prefix: "p3", MethodID: "Service2.Method3"},
-		},
-	}
+	d := NewTestDiscovery("").WithPollers(
+		NewTestPoller("p1", "Service1.Method1"),
+		NewTestPoller("p2", "Service1.Method2"),
+		NewTestPoller("p3", "Service2.Method3"),
+	)
 	want := map[string]bool{
 		"Service1": true,
 		"Service2": true,
@@ -46,17 +44,17 @@ func TestPathParameters(t *testing.T) {
 	}{
 		{
 			name:  "multiple parameters",
-			input: &Poller{Prefix: "projects/{project}/zones/{zone}"},
+			input: NewTestPoller("projects/{project}/zones/{zone}"),
 			want:  []string{"project", "zone"},
 		},
 		{
 			name:  "no parameters",
-			input: &Poller{Prefix: "abc/def"},
+			input: NewTestPoller("abc/def"),
 			want:  nil,
 		},
 		{
 			name:  "single parameter",
-			input: &Poller{Prefix: "a/{b}"},
+			input: NewTestPoller("a/{b}"),
 			want:  []string{"b"},
 		},
 	} {

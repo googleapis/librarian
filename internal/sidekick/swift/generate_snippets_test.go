@@ -260,9 +260,7 @@ func TestGenerateSnippets_UpdateMask(t *testing.T) {
 	if err := api.CrossReference(model); err != nil {
 		t.Fatal(err)
 	}
-	updateThing.WithSampleInfo(&api.SampleInfo{
-		UpdateMaskField: updateMask,
-	})
+	updateThing.WithSampleInfo(api.NewTestSampleInfo().WithUpdateMaskField(updateMask))
 	library := &config.Library{
 		Swift: swiftConfig(t, nil),
 	}
@@ -351,11 +349,8 @@ func TestGenerateSnippets_LRO(t *testing.T) {
 	createThing := api.NewTestMethod("CreateThing").
 		WithInput(createThingRequest).
 		WithOutput(operationType).
-		WithPathTemplate((&api.PathTemplate{}).WithLiteral("v1").WithLiteral("things")).
-		WithOperationInfo(&api.OperationInfo{
-			ResponseTypeID: thing.ID,
-			MetadataTypeID: metadataType.ID,
-		})
+		WithPathTemplate(api.NewTestPathTemplate().WithLiteral("v1").WithLiteral("things")).
+		WithOperationInfo(api.NewTestOperationInfo(thing.ID, metadataType.ID))
 	testService := api.NewTestService("TestService").WithPackage("test").WithMethods(createThing)
 	model := api.NewTestAPI([]*api.Message{thing, metadataType, createThingRequest, operationType}, nil, []*api.Service{testService}).
 		WithPackageName("test")
@@ -398,11 +393,8 @@ func TestGenerateSnippets_LRO_Empty(t *testing.T) {
 	deleteThing := api.NewTestMethod("DeleteThing").
 		WithInput(deleteThingRequest).
 		WithOutput(operationType).
-		WithPathTemplate((&api.PathTemplate{}).WithLiteral("v1").WithLiteral("things")).
-		WithOperationInfo(&api.OperationInfo{
-			ResponseTypeID: ".google.protobuf.Empty",
-			MetadataTypeID: metadataType.ID,
-		})
+		WithPathTemplate(api.NewTestPathTemplate().WithLiteral("v1").WithLiteral("things")).
+		WithOperationInfo(api.NewTestOperationInfo(".google.protobuf.Empty", metadataType.ID))
 	testService := api.NewTestService("TestService").WithPackage("test").WithMethods(deleteThing)
 	model := api.NewTestAPI([]*api.Message{metadataType, deleteThingRequest, operationType}, nil, []*api.Service{testService}).
 		WithPackageName("test")

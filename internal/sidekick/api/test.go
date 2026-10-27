@@ -144,6 +144,21 @@ func (a *API) WithRubyPackage(name string) *API {
 	return a
 }
 
+// WithResourceDefinitions appends resource definitions and indexes them in resourceByType.
+func (a *API) WithResourceDefinitions(resources ...*Resource) *API {
+	a.ResourceDefinitions = append(a.ResourceDefinitions, resources...)
+	if a.resourceByType == nil {
+		a.resourceByType = make(map[string]*Resource)
+	}
+	for _, r := range resources {
+		if r == nil {
+			continue
+		}
+		a.resourceByType[r.Type] = r
+	}
+	return a
+}
+
 // parentName returns the parent's name from a fully qualified identifier.
 func parentName(id string) string {
 	if lastIndex := strings.LastIndex(id, "."); lastIndex != -1 {
@@ -965,9 +980,91 @@ func NewTestDiscoveryLro(pollingParams ...string) *DiscoveryLro {
 	return &DiscoveryLro{PollingPathParameters: pollingParams}
 }
 
-// NewTestSampleInfo creates a SampleInfo initialized with a resource name field.
-func NewTestSampleInfo(resourceNameField *Field) *SampleInfo {
-	return &SampleInfo{ResourceNameField: resourceNameField}
+// NewTestSampleInfo creates a SampleInfo optionally initialized with a resource name field.
+func NewTestSampleInfo(resourceNameField ...*Field) *SampleInfo {
+	s := &SampleInfo{}
+	if len(resourceNameField) > 0 {
+		s.ResourceNameField = resourceNameField[0]
+	}
+	return s
+}
+
+// WithResourceNameField sets the ResourceNameField on SampleInfo.
+func (s *SampleInfo) WithResourceNameField(f *Field) *SampleInfo {
+	s.ResourceNameField = f
+	return s
+}
+
+// WithResourceIDField sets the ResourceIDField on SampleInfo.
+func (s *SampleInfo) WithResourceIDField(f *Field) *SampleInfo {
+	s.ResourceIDField = f
+	return s
+}
+
+// WithMessageField sets the MessageField on SampleInfo.
+func (s *SampleInfo) WithMessageField(f *Field) *SampleInfo {
+	s.MessageField = f
+	return s
+}
+
+// WithUpdateMaskField sets the UpdateMaskField on SampleInfo.
+func (s *SampleInfo) WithUpdateMaskField(f *Field) *SampleInfo {
+	s.UpdateMaskField = f
+	return s
+}
+
+// WithIsRequestResourceName sets IsRequestResourceName on SampleInfo.
+func (s *SampleInfo) WithIsRequestResourceName(b bool) *SampleInfo {
+	s.IsRequestResourceName = b
+	return s
+}
+
+// WithIsMessageResourceName sets IsMessageResourceName on SampleInfo.
+func (s *SampleInfo) WithIsMessageResourceName(b bool) *SampleInfo {
+	s.IsMessageResourceName = b
+	return s
+}
+
+// NewTestDiscovery creates a Discovery configuration for testing.
+func NewTestDiscovery(operationID string) *Discovery {
+	return &Discovery{OperationID: operationID}
+}
+
+// WithPollers adds pollers to the discovery configuration.
+func (d *Discovery) WithPollers(pollers ...*Poller) *Discovery {
+	d.Pollers = append(d.Pollers, pollers...)
+	return d
+}
+
+// NewTestPoller creates a Poller with prefix and optional method ID.
+func NewTestPoller(prefix string, methodID ...string) *Poller {
+	p := &Poller{Prefix: prefix}
+	if len(methodID) > 0 {
+		p.MethodID = methodID[0]
+	}
+	return p
+}
+
+// WithMethodID sets the MethodID on Poller.
+func (p *Poller) WithMethodID(methodID string) *Poller {
+	p.MethodID = methodID
+	return p
+}
+
+// NewTestTargetResource creates a TargetResource with field paths.
+func NewTestTargetResource(fieldPaths ...[]string) *TargetResource {
+	return &TargetResource{FieldPaths: fieldPaths}
+}
+
+// WithTemplate sets the template for the target resource.
+func (tr *TargetResource) WithTemplate(template ...PathSegment) *TargetResource {
+	tr.Template = template
+	return tr
+}
+
+// NewTestPathTemplate creates an empty PathTemplate for fluent building.
+func NewTestPathTemplate() *PathTemplate {
+	return &PathTemplate{}
 }
 
 // NewTestPaginationInfo creates a PaginationInfo for pagination responses.

@@ -59,10 +59,7 @@ func lroAnyFieldsTestModel(t *testing.T) *api.API {
 		WithInput(folder).
 		WithOutput(operation).
 		WithPathInfo(nil).
-		WithOperationInfo(&api.OperationInfo{
-			MetadataTypeID: metadata.ID,
-			ResponseTypeID: folder.ID,
-		})
+		WithOperationInfo(api.NewTestOperationInfo(folder.ID, metadata.ID))
 	service := api.NewTestService("StorageControl").
 		WithPackage("google.storage.control.v2").
 		WithMethods(method)

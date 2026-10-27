@@ -342,7 +342,7 @@ func TestAnnotateMethod_Pagination(t *testing.T) {
 		WithInput(inputType).
 		WithOutput(outputType).
 		WithVerb("GET").
-		WithPathTemplate(&api.PathTemplate{}).
+		WithPathTemplate(api.NewTestPathTemplate()).
 		WithPagination(pageTokenField)
 
 	service := api.NewTestService("TestService").WithMethods(method)
@@ -424,11 +424,8 @@ func TestAnnotateMethod_LRO(t *testing.T) {
 		WithInput(inputType).
 		WithOutput(outputType).
 		WithVerb("POST").
-		WithPathTemplate(&api.PathTemplate{}).
-		WithOperationInfo(&api.OperationInfo{
-			ResponseTypeID: lroResponseType.ID,
-			MetadataTypeID: lroMetadataType.ID,
-		})
+		WithPathTemplate(api.NewTestPathTemplate()).
+		WithOperationInfo(api.NewTestOperationInfo(lroResponseType.ID, lroMetadataType.ID))
 
 	service := api.NewTestService("TestService").WithMethods(method)
 
@@ -473,11 +470,8 @@ func TestAnnotateMethod_LRO_Empty(t *testing.T) {
 		WithInput(inputType).
 		WithOutput(outputType).
 		WithVerb("POST").
-		WithPathTemplate(&api.PathTemplate{}).
-		WithOperationInfo(&api.OperationInfo{
-			ResponseTypeID: ".google.protobuf.Empty",
-			MetadataTypeID: lroMetadataType.ID,
-		})
+		WithPathTemplate(api.NewTestPathTemplate()).
+		WithOperationInfo(api.NewTestOperationInfo(".google.protobuf.Empty", lroMetadataType.ID))
 
 	service := api.NewTestService("TestService").WithMethods(method)
 
@@ -685,7 +679,7 @@ func TestAnnotateMethod_Diagnose(t *testing.T) {
 				WithInput(inputType).
 				WithOutput(outputType).
 				WithVerb("POST").
-				WithPathTemplate(&api.PathTemplate{}).
+				WithPathTemplate(api.NewTestPathTemplate()).
 				WithDeprecated(test.methodDeprecated)
 			service := api.NewTestService("TestService").
 				WithDeprecated(test.serviceDeprecated).
@@ -750,7 +744,7 @@ func TestAnnotateMethod_DiagnosePaginationItemType(t *testing.T) {
 				WithInput(inputType).
 				WithOutput(outputType).
 				WithVerb("GET").
-				WithPathTemplate(&api.PathTemplate{}).
+				WithPathTemplate(api.NewTestPathTemplate()).
 				WithPagination(pageTokenField)
 			service := api.NewTestService("TestService").WithMethods(method)
 
@@ -818,11 +812,8 @@ func TestAnnotateMethod_DiagnoseLROResponseType(t *testing.T) {
 				WithInput(inputType).
 				WithOutput(outputType).
 				WithVerb("POST").
-				WithPathTemplate(&api.PathTemplate{}).
-				WithOperationInfo(&api.OperationInfo{
-					ResponseTypeID: lroResponseType.ID,
-					MetadataTypeID: lroMetadataType.ID,
-				})
+				WithPathTemplate(api.NewTestPathTemplate()).
+				WithOperationInfo(api.NewTestOperationInfo(lroResponseType.ID, lroMetadataType.ID))
 			service := api.NewTestService("TestService").WithMethods(method)
 
 			model := api.NewTestAPI(

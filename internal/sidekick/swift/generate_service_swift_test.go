@@ -728,17 +728,14 @@ func TestGenerateService_LRO(t *testing.T) {
 		WithInput(inputType).
 		WithOutput(operationType).
 		WithVerb("POST").
-		WithPathTemplate((&api.PathTemplate{}).WithLiteral("v1").WithLiteral("workflows")).
-		WithOperationInfo(&api.OperationInfo{
-			ResponseTypeID: workflowType.ID,
-			MetadataTypeID: metadataType.ID,
-		})
+		WithPathTemplate(api.NewTestPathTemplate().WithLiteral("v1").WithLiteral("workflows")).
+		WithOperationInfo(api.NewTestOperationInfo(workflowType.ID, metadataType.ID))
 
 	getOperation := api.NewTestMethod("GetOperation").
 		WithInput(getOperationInputType).
 		WithOutput(operationType).
 		WithVerb("GET").
-		WithPathTemplate((&api.PathTemplate{}).WithLiteral("v1").WithLiteral("operations"))
+		WithPathTemplate(api.NewTestPathTemplate().WithLiteral("v1").WithLiteral("operations"))
 
 	workflows := api.NewTestService("WorkflowsService").
 		WithPackage("google.cloud.workflows.v1").
@@ -841,17 +838,14 @@ func TestGenerateService_LRO_Empty(t *testing.T) {
 		WithInput(inputType).
 		WithOutput(operationType).
 		WithVerb("DELETE").
-		WithPathTemplate((&api.PathTemplate{}).WithLiteral("v1").WithLiteral("workflows")).
-		WithOperationInfo(&api.OperationInfo{
-			ResponseTypeID: ".google.protobuf.Empty",
-			MetadataTypeID: metadataType.ID,
-		})
+		WithPathTemplate(api.NewTestPathTemplate().WithLiteral("v1").WithLiteral("workflows")).
+		WithOperationInfo(api.NewTestOperationInfo(".google.protobuf.Empty", metadataType.ID))
 
 	getOperation := api.NewTestMethod("GetOperation").
 		WithInput(getOperationInputType).
 		WithOutput(operationType).
 		WithVerb("GET").
-		WithPathTemplate((&api.PathTemplate{}).WithLiteral("v1").WithLiteral("operations"))
+		WithPathTemplate(api.NewTestPathTemplate().WithLiteral("v1").WithLiteral("operations"))
 
 	workflows := api.NewTestService("WorkflowsService").
 		WithPackage("google.cloud.workflows.v1").
@@ -920,10 +914,8 @@ func TestGenerateService_DiscoveryLRO(t *testing.T) {
 		WithInput(inputType).
 		WithOutput(operationType).
 		WithVerb("POST").
-		WithPathTemplate((&api.PathTemplate{}).WithLiteral("v1").WithLiteral("instances"))
-	insertInstance.DiscoveryLro = &api.DiscoveryLro{
-		PollingPathParameters: []string{"zone"},
-	}
+		WithPathTemplate(api.NewTestPathTemplate().WithLiteral("v1").WithLiteral("instances")).
+		WithDiscoveryLro(api.NewTestDiscoveryLro("zone"))
 
 	service := api.NewTestService("Instances").
 		WithPackage("google.cloud.compute.v1").

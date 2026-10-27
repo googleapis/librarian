@@ -260,11 +260,8 @@ func TestAnnotateService_LRO(t *testing.T) {
 		WithInput(inputType).
 		WithOutput(outputType).
 		WithVerb("POST").
-		WithPathTemplate(&api.PathTemplate{}).
-		WithOperationInfo(&api.OperationInfo{
-			ResponseTypeID: lroResponseType.ID,
-			MetadataTypeID: lroMetadataType.ID,
-		})
+		WithPathTemplate(api.NewTestPathTemplate()).
+		WithOperationInfo(api.NewTestOperationInfo(lroResponseType.ID, lroMetadataType.ID))
 
 	service := api.NewTestService("TestService").WithMethods(method)
 
@@ -620,7 +617,7 @@ func TestAnnotateService_SnippetImports(t *testing.T) {
 
 			if test.updateMask {
 				maskField := api.NewTestField("update_mask")
-				method.WithSampleInfo(&api.SampleInfo{UpdateMaskField: maskField})
+				method.WithSampleInfo(api.NewTestSampleInfo().WithUpdateMaskField(maskField))
 			}
 
 			codec := newTestCodec(t, model, nil)

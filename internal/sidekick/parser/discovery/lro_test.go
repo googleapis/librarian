@@ -23,13 +23,10 @@ import (
 )
 
 func TestLroAnnotations(t *testing.T) {
-	discoveryConfig := &api.Discovery{
-		OperationID: "..Operation",
-		Pollers: []*api.Poller{
-			{Prefix: "compute/v1/projects/{project}/zones/{zone}", MethodID: "..zoneOperations.get"},
-			{Prefix: "compute/v1/projects/{project}/regions/{region}", MethodID: "..regionOperations.get"},
-		},
-	}
+	discoveryConfig := api.NewTestDiscovery("..Operation").WithPollers(
+		api.NewTestPoller("compute/v1/projects/{project}/zones/{zone}", "..zoneOperations.get"),
+		api.NewTestPoller("compute/v1/projects/{project}/regions/{region}", "..regionOperations.get"),
+	)
 	model, err := ComputeDiscoWithLros(t, discoveryConfig)
 	if err != nil {
 		t.Fatal(err)
@@ -52,9 +49,7 @@ func TestLroAnnotations(t *testing.T) {
 			"sourceMachineImage",
 		).
 		WithBodyFieldPath("body").
-		WithDiscoveryLro(&api.DiscoveryLro{
-			PollingPathParameters: []string{"project", "zone"},
-		})
+		WithDiscoveryLro(api.NewTestDiscoveryLro("project", "zone"))
 	want.InputTypeID = "..instances.insertRequest"
 	want.OutputTypeID = "..Operation"
 	want.Signatures = []*api.MethodSignature{{Names: []string{"project", "zone", "body"}}}
@@ -95,13 +90,10 @@ func TestLroAnnotations(t *testing.T) {
 }
 
 func TestLroAnnotationsError(t *testing.T) {
-	discoveryConfig := &api.Discovery{
-		OperationID: "..Operation",
-		Pollers: []*api.Poller{
-			{Prefix: "p/{project}/l/{zone}", MethodID: "..Operations.get_1"},
-			{Prefix: "p/{project}/l/{region}", MethodID: "..Operations.get_2"},
-		},
-	}
+	discoveryConfig := api.NewTestDiscovery("..Operation").WithPollers(
+		api.NewTestPoller("p/{project}/l/{zone}", "..Operations.get_1"),
+		api.NewTestPoller("p/{project}/l/{region}", "..Operations.get_2"),
+	)
 
 	// None of the real services does this, but we want the parser to report an
 	// error if it ever does.

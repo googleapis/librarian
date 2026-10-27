@@ -137,10 +137,7 @@ func TestGenerateService_DeprecatedMethods(t *testing.T) {
 					WithOutput(f.operationType).
 					WithVerb("POST").
 					WithPathTemplate((&api.PathTemplate{}).WithLiteral("v1").WithLiteral("lro")).
-					WithOperationInfo(&api.OperationInfo{
-						ResponseTypeID: f.lroResultType.ID,
-						MetadataTypeID: f.lroMetadataType.ID,
-					}).
+					WithOperationInfo(api.NewTestOperationInfo(f.lroResultType.ID, f.lroMetadataType.ID)).
 					WithDeprecated(true).
 					WithDocumentation("-- lro marker --")
 			},

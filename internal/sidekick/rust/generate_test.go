@@ -194,27 +194,12 @@ func TestRustFromDiscoveryWithLro(t *testing.T) {
 			"package:wkt":          "source=google.protobuf,package=google-cloud-wkt",
 			"per-service-features": "true",
 		},
-		Discovery: &api.Discovery{
-			OperationID: ".google.cloud.compute.v1.Operation",
-			Pollers: []*api.Poller{
-				{
-					Prefix:   "compute/v1/projects/{project}/zones/{zone}",
-					MethodID: ".google.cloud.compute.v1.zoneOperations.get",
-				},
-				{
-					Prefix:   "compute/v1/projects/{project}/regions/{region}",
-					MethodID: ".google.cloud.compute.v1.regionOperations.get",
-				},
-				{
-					Prefix:   "compute/v1/projects/{project}",
-					MethodID: ".google.cloud.compute.v1.globalOperations.get",
-				},
-				{
-					Prefix:   "compute/v1/",
-					MethodID: ".google.cloud.compute.v1.globalOrganizationOperations.get",
-				},
-			},
-		},
+		Discovery: api.NewTestDiscovery(".google.cloud.compute.v1.Operation").WithPollers(
+			api.NewTestPoller("compute/v1/projects/{project}/zones/{zone}", ".google.cloud.compute.v1.zoneOperations.get"),
+			api.NewTestPoller("compute/v1/projects/{project}/regions/{region}", ".google.cloud.compute.v1.regionOperations.get"),
+			api.NewTestPoller("compute/v1/projects/{project}", ".google.cloud.compute.v1.globalOperations.get"),
+			api.NewTestPoller("compute/v1/", ".google.cloud.compute.v1.globalOrganizationOperations.get"),
+		),
 	}
 	model, err := parser.CreateModel(cfg)
 	if err != nil {

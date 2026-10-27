@@ -224,19 +224,13 @@ func TestServiceAnnotationsLROTypes(t *testing.T) {
 	methodCreate := api.NewTestMethod("CreateResource").
 		WithInput(createReq).
 		WithOutput(operation).
-		WithOperationInfo(&api.OperationInfo{
-			MetadataTypeID: metadata.ID,
-			ResponseTypeID: resource.ID,
-		}).
+		WithOperationInfo(api.NewTestOperationInfo(resource.ID, metadata.ID)).
 		WithBindings()
 
 	methodDelete := api.NewTestMethod("DeleteResource").
 		WithInput(deleteReq).
 		WithOutput(operation).
-		WithOperationInfo(&api.OperationInfo{
-			MetadataTypeID: metadata.ID,
-			ResponseTypeID: api.WktEmptyID,
-		}).
+		WithOperationInfo(api.NewTestOperationInfo(api.WktEmptyID, metadata.ID)).
 		WithBindings()
 
 	service := api.NewTestService("LroService").

@@ -350,7 +350,7 @@ func TestMethod_FluentSetters(t *testing.T) {
 
 func TestField_FluentSetters(t *testing.T) {
 	enum := api.NewTestEnum("State").WithPackage("test.v1")
-	pattern := &api.ResourceNamePattern{Segments: []api.ResourceNameSegment{{Literal: "items"}}}
+	pattern := api.NewTestResourceNamePattern(api.ResourceNameSegment{Literal: "items"})
 	f := api.NewTestField("state").
 		WithEnumType(enum).
 		WithAutoPopulated().
@@ -391,7 +391,7 @@ func TestMethod_TypeIDSetters(t *testing.T) {
 }
 
 func TestPathBinding_WithTargetResource(t *testing.T) {
-	tr := &api.TargetResource{FieldPaths: [][]string{{"parent"}}}
+	tr := api.NewTestTargetResource([]string{"parent"})
 	b := api.NewTestPathBinding("GET", nil).WithTargetResource(tr)
 	if b.TargetResource != tr {
 		t.Errorf("b.TargetResource = %v, want %v", b.TargetResource, tr)
@@ -459,10 +459,92 @@ func TestDiscoveryLro_Builder(t *testing.T) {
 }
 
 func TestSampleInfo_Builder(t *testing.T) {
-	f := api.NewTestField("name")
-	s := api.NewTestSampleInfo(f)
-	if s.ResourceNameField != f {
-		t.Errorf("s.ResourceNameField = %v, want %v", s.ResourceNameField, f)
+	nameField := api.NewTestField("name")
+	idField := api.NewTestField("id")
+	msgField := api.NewTestField("secret")
+	maskField := api.NewTestField("update_mask")
+
+	s := api.NewTestSampleInfo().
+		WithResourceNameField(nameField).
+		WithResourceIDField(idField).
+		WithMessageField(msgField).
+		WithUpdateMaskField(maskField).
+		WithIsRequestResourceName(true).
+		WithIsMessageResourceName(true)
+
+	if s.ResourceNameField != nameField {
+		t.Errorf("s.ResourceNameField = %v, want %v", s.ResourceNameField, nameField)
+	}
+	if s.ResourceIDField != idField {
+		t.Errorf("s.ResourceIDField = %v, want %v", s.ResourceIDField, idField)
+	}
+	if s.MessageField != msgField {
+		t.Errorf("s.MessageField = %v, want %v", s.MessageField, msgField)
+	}
+	if s.UpdateMaskField != maskField {
+		t.Errorf("s.UpdateMaskField = %v, want %v", s.UpdateMaskField, maskField)
+	}
+	if !s.IsRequestResourceName {
+		t.Errorf("s.IsRequestResourceName = false, want true")
+	}
+	if !s.IsMessageResourceName {
+		t.Errorf("s.IsMessageResourceName = false, want true")
+	}
+
+	sWithArg := api.NewTestSampleInfo(nameField)
+	if sWithArg.ResourceNameField != nameField {
+		t.Errorf("sWithArg.ResourceNameField = %v, want %v", sWithArg.ResourceNameField, nameField)
+	}
+}
+
+func TestDiscovery_Builder(t *testing.T) {
+	poller := api.NewTestPoller("prefix").WithMethodID("Service.Method")
+	d := api.NewTestDiscovery(".test.Operation").
+		WithPollers(poller)
+	if d.OperationID != ".test.Operation" {
+		t.Errorf("d.OperationID = %q, want .test.Operation", d.OperationID)
+	}
+	if len(d.Pollers) != 1 || d.Pollers[0] != poller {
+		t.Errorf("unexpected pollers: %v", d.Pollers)
+	}
+	if poller.Prefix != "prefix" || poller.MethodID != "Service.Method" {
+		t.Errorf("unexpected poller: %v", poller)
+	}
+}
+
+func TestTargetResource_Builder(t *testing.T) {
+	tr := api.NewTestTargetResource([]string{"project"}, []string{"instance"}).
+		WithTemplate(api.PathSegment{Literal: "projects"})
+	if diff := cmp.Diff([][]string{{"project"}, {"instance"}}, tr.FieldPaths); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+	wantTemplate := []api.PathSegment{{Literal: "projects"}}
+	if diff := cmp.Diff(wantTemplate, tr.Template); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+}
+
+func TestPathTemplate_Builder(t *testing.T) {
+	pt := api.NewTestPathTemplate().WithLiteral("v1")
+	wantSegments := []api.PathSegment{{Literal: "v1"}}
+	if diff := cmp.Diff(wantSegments, pt.Segments); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+}
+
+func TestAPI_WithResourceDefinitions(t *testing.T) {
+	r1 := api.NewTestResource("type1")
+	r2 := api.NewTestResource("type2")
+	model := api.NewTestAPI(nil, nil, nil).WithResourceDefinitions(r1, nil, r2)
+
+	if len(model.ResourceDefinitions) != 3 {
+		t.Errorf("len(ResourceDefinitions) = %d, want 3", len(model.ResourceDefinitions))
+	}
+	if model.Resource("type1") != r1 {
+		t.Errorf("model.Resource(type1) = %v, want %v", model.Resource("type1"), r1)
+	}
+	if model.Resource("type2") != r2 {
+		t.Errorf("model.Resource(type2) = %v, want %v", model.Resource("type2"), r2)
 	}
 }
 

@@ -563,23 +563,11 @@ func TestLibraryToModelConfig(t *testing.T) {
 					Title:       "Google Compute Engine API",
 					Description: "Compute Engine is an infrastructure as a service (IaaS) product that offers self-managed virtual machine (VM) instances and bare metal instances.",
 				},
-				Discovery: &api.Discovery{
-					OperationID: ".google.cloud.compute.v1.Operation",
-					Pollers: []*api.Poller{
-						{
-							Prefix:   "compute/v1/projects/{project}/zones/{zone}",
-							MethodID: ".google.cloud.compute.v1.zoneOperations.get",
-						},
-						{
-							Prefix:   "compute/v1/projects/{project}/regions/{region}",
-							MethodID: ".google.cloud.compute.v1.regionOperations.get",
-						},
-						{
-							Prefix:   "compute/v1/projects/{project}",
-							MethodID: ".google.cloud.compute.v1.globalOperations.get",
-						},
-					},
-				},
+				Discovery: api.NewTestDiscovery(".google.cloud.compute.v1.Operation").WithPollers(
+					api.NewTestPoller("compute/v1/projects/{project}/zones/{zone}", ".google.cloud.compute.v1.zoneOperations.get"),
+					api.NewTestPoller("compute/v1/projects/{project}/regions/{region}", ".google.cloud.compute.v1.regionOperations.get"),
+					api.NewTestPoller("compute/v1/projects/{project}", ".google.cloud.compute.v1.globalOperations.get"),
+				),
 			},
 		},
 		{

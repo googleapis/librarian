@@ -117,21 +117,18 @@ func TestGenerateStorage_MultiModel(t *testing.T) {
 				WithInput(getIamPolicyRequest).
 				WithOutput(policy).
 				WithVerb("POST").
-				WithPathTemplate((&api.PathTemplate{}).WithLiteral("v2").WithVariableNamed("resource").WithLiteral(":getIamPolicy")),
+				WithPathTemplate(api.NewTestPathTemplate().WithLiteral("v2").WithVariableNamed("resource").WithLiteral(":getIamPolicy")),
 			api.NewTestMethod("RenameFolder").
 				WithInput(renameFolderRequest).
 				WithOutput(operation).
 				WithVerb("POST").
-				WithPathTemplate((&api.PathTemplate{}).WithLiteral("v2").WithVariableNamed("name").WithLiteral(":rename")).
-				WithOperationInfo(&api.OperationInfo{
-					ResponseTypeID: folder.ID,
-					MetadataTypeID: renameFolderMetadata.ID,
-				}),
+				WithPathTemplate(api.NewTestPathTemplate().WithLiteral("v2").WithVariableNamed("name").WithLiteral(":rename")).
+				WithOperationInfo(api.NewTestOperationInfo(folder.ID, renameFolderMetadata.ID)),
 			api.NewTestMethod("GetOperation").
 				WithInput(getOperationRequest).
 				WithOutput(operation).
 				WithVerb("GET").
-				WithPathTemplate((&api.PathTemplate{}).WithLiteral("v1").WithLiteral("operations")),
+				WithPathTemplate(api.NewTestPathTemplate().WithLiteral("v1").WithLiteral("operations")),
 		).
 		WithDefaultHost("storage.googleapis.com")
 

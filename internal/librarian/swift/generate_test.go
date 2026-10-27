@@ -392,15 +392,9 @@ func TestLibraryToModelConfig(t *testing.T) {
 				Source: &sources.SourceConfig{
 					ActiveRoots: []string{"discovery", "googleapis"},
 				},
-				Discovery: &api.Discovery{
-					OperationID: ".google.cloud.compute.v1.",
-					Pollers: []*api.Poller{
-						{
-							Prefix:   "compute/v1/projects/{project}/zones/{zone}",
-							MethodID: ".google.cloud.compute.v1.zoneOperations.get",
-						},
-					},
-				},
+				Discovery: api.NewTestDiscovery(".google.cloud.compute.v1.").WithPollers(
+					api.NewTestPoller("compute/v1/projects/{project}/zones/{zone}", ".google.cloud.compute.v1.zoneOperations.get"),
+				),
 			},
 		},
 	} {
