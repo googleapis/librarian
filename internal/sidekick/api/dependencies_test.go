@@ -104,8 +104,8 @@ func TestFindDependenciesNestedMessage(t *testing.T) {
 	enums := []*Enum{}
 	messages := []*Message{
 		NewTestMessage("Grandparent"),
-		NewTestMessage("Grandparent.Parent").WithID(".test.Grandparent.Parent"),
-		NewTestMessage("Grandparent.Parent.Child").WithID(".test.Grandparent.Parent.Child"),
+		NewTestMessage("Grandparent.Parent"),
+		NewTestMessage("Grandparent.Parent.Child"),
 	}
 	services := []*Service{}
 	model := NewTestAPI(messages, enums, services)
@@ -338,7 +338,7 @@ func TestFindDependenciesService(t *testing.T) {
 		NewTestMessage("ParentMessage").WithFields(
 			NewTestField("enum").WithType(TypezEnum).WithTypezID(".test.Enum"),
 		),
-		NewTestMessage("ParentMessage.ChildMessage").WithID(".test.ParentMessage.ChildMessage"),
+		NewTestMessage("ParentMessage.ChildMessage"),
 		NewTestMessage("Response"),
 		NewTestMessage("OtherRequest"),
 		NewTestMessage("OtherResponse"),
