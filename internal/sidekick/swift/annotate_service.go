@@ -53,9 +53,7 @@ type serviceAnnotations struct {
 	// A snippet is a standalone executable. Nothing in it is deprecated, so it
 	// needs the attribute even when the service itself is. The name avoids
 	// colliding with `methodAnnotations.DiagnoseSnippet`, which means
-	// something different: mustache resolves `{{#Codec.X}}` by walking the
-	// context stack, so two same-named fields on different annotation types
-	// can be confused.
+	// something different.
 	DiagnoseClientSnippet bool
 
 	// DiagnoseSnippetRunner guards `SnippetRunner.main()` in the generated
