@@ -87,13 +87,13 @@ func TestMethod_WithPathTemplate_NilPathInfo(t *testing.T) {
 
 func TestMethod_WithQueryParameters_NilPathInfo(t *testing.T) {
 	method := api.NewTestMethod("Test").WithPathInfo(nil)
-	params := map[string]bool{"page_size": true}
-	method.WithQueryParameters(params)
+	method.WithQueryParameters("page_size")
 
 	if method.PathInfo == nil || len(method.PathInfo.Bindings) == 0 {
 		t.Fatal("expected PathInfo and at least one binding to be initialized")
 	}
-	if diff := cmp.Diff(params, method.PathInfo.Bindings[0].QueryParameters); diff != "" {
+	want := map[string]bool{"page_size": true}
+	if diff := cmp.Diff(want, method.PathInfo.Bindings[0].QueryParameters); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
@@ -109,7 +109,7 @@ func TestPathBinding_Fluent(t *testing.T) {
 	pt := (&api.PathTemplate{}).WithLiteral("v1")
 	b := api.NewTestPathBinding("GET", pt).
 		WithVerb("POST").
-		WithQueryParameters(map[string]bool{"filter": true})
+		WithQueryParameters("filter")
 
 	if b.Verb != "POST" {
 		t.Errorf("expected Verb 'POST', got %q", b.Verb)

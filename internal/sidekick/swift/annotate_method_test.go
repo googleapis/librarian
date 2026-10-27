@@ -96,7 +96,7 @@ func TestAnnotateMethod(t *testing.T) {
 				return api.NewTestMethod("ListThings").
 					WithVerb("GET").
 					WithPathTemplate((&api.PathTemplate{}).WithLiteral("v1").WithLiteral("things")).
-					WithQueryParameters(map[string]bool{"key": true}).
+					WithQueryParameters("key").
 					WithDocumentation("Lists things.")
 			},
 			wantFunc: func(keyField *api.Field) *methodAnnotations {

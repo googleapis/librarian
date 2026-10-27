@@ -80,7 +80,7 @@ func MethodCreate() *api.Method {
 			WithLiteral("projects").
 			WithVariableNamed("project").
 			WithLiteral("secrets")).
-		WithQueryParameters(map[string]bool{"secretId": true}).
+		WithQueryParameters("secretId").
 		WithBodyFieldPath("body")
 	// Note: InputType and OutputType are intentionally left nil because OpenAPI parser tests
 	// (e.g. TestOpenAPI_MakeAPI) assert against this fixture before CrossReference runs.
@@ -99,9 +99,7 @@ func MethodUpdate() *api.Method {
 		WithPathTemplate((&api.PathTemplate{}).
 			WithLiteral("v1").
 			WithVariableNamed("secret", "name")).
-		WithQueryParameters(map[string]bool{
-			"field_mask": true,
-		})
+		WithQueryParameters("field_mask")
 	m.OutputTypeID = ".google.protobuf.Empty"
 	return m
 }
@@ -119,7 +117,7 @@ func MethodAddSecretVersion() *api.Method {
 			WithLiteral("secrets").
 			WithVariableNamed("secret").
 			WithVerb("addVersion")).
-		WithQueryParameters(map[string]bool{}).
+		WithQueryParameters().
 		WithBodyFieldPath("body")
 	m.InputTypeID = "..Service.AddSecretVersionRequest"
 	m.OutputTypeID = "..SecretVersion"
@@ -141,7 +139,7 @@ func MethodListSecretVersions() *api.Method {
 			WithLiteral("secrets").
 			WithVariableNamed("secret").
 			WithVerb("listSecretVersions")).
-		WithQueryParameters(map[string]bool{}).
+		WithQueryParameters().
 		WithBodyFieldPath("*")
 }
 

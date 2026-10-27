@@ -128,10 +128,7 @@ func TestGenerateStub_QueryParameters(t *testing.T) {
 		WithOutput(response).
 		WithVerb("GET").
 		WithPathTemplate((&api.PathTemplate{}).WithLiteral("v1").WithLiteral("projects").WithVariableNamed("project")).
-		WithQueryParameters(map[string]bool{
-			"ttl_days": true,
-			"enable":   true,
-		})
+		WithQueryParameters("ttl_days", "enable")
 
 	service := api.NewTestService("Service").
 		WithPackage("test").
