@@ -191,9 +191,9 @@ func GrpcRootTypeIDs(model *api.API) []string {
 	return slices.Compact(rootTypeIDs)
 }
 
-// annotateModel creates a struct used as input for Mustache templates.
-// Fields and methods defined in this struct directly correspond to Mustache
-// tags. For example, the Mustache tag {{#Services}} uses the
+// annotateModel creates a struct used as input for Go templates.
+// Fields and methods defined in this struct directly correspond to template
+// actions. For example, the template action {{ range .Services }} uses the
 // [Template.Services] field.
 func annotateModel(model *api.API, codec *codec) (*modelAnnotations, error) {
 	codec.hasServices = len(model.Services) > 0
