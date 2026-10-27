@@ -70,13 +70,13 @@ func TestBigQueryQueryFieldOverride(t *testing.T) {
 	if overriddenFg.GapicFieldName() != "bad_query" {
 		t.Errorf("expected gapic field name 'bad_query', got %q", overriddenFg.GapicFieldName())
 	}
-	if overriddenFg.QueryRequest() == nil {
+	if !overriddenFg.QueryRequest() {
 		t.Error("expected QueryRequest to be set on overriddenFg")
 	}
-	if overriddenFg.JobConfigurationQuery() == nil {
+	if !overriddenFg.JobConfigurationQuery() {
 		t.Error("expected JobConfigurationQuery to be set on overriddenFg")
 	}
-	if overriddenFg.JobConfiguration() == nil {
+	if !overriddenFg.JobConfiguration() {
 		t.Error("expected JobConfiguration to be set on overriddenFg")
 	}
 
@@ -87,14 +87,14 @@ func TestBigQueryQueryFieldOverride(t *testing.T) {
 	if qf.GapicFieldName() != "gapic_query" {
 		t.Errorf("expected gapic field name 'gapic_query', got %q", qf.GapicFieldName())
 	}
-	if qf.QueryRequest() == nil {
+	if !qf.QueryRequest() {
 		t.Error("expected QueryRequest to be set")
 	}
-	if qf.JobConfigurationQuery() == nil {
+	if !qf.JobConfigurationQuery() {
 		t.Error("expected JobConfigurationQuery to be set")
 	}
-	if qf.JobConfiguration() != nil {
-		t.Error("expected JobConfiguration to be nil for field name 'query'")
+	if qf.JobConfiguration() {
+		t.Error("expected JobConfiguration to be false for field name 'query'")
 	}
 }
 
@@ -201,6 +201,13 @@ func TestBigQuerySyntheticMessages(t *testing.T) {
 	if !syntheticMsg.SyntheticRequest {
 		t.Error("expected SyntheticRequest to be true")
 	}
+	mAnn, ok := syntheticMsg.Codec.(*messageAnnotation)
+	if !ok {
+		t.Fatal("expected messageAnnotation on syntheticMsg")
+	}
+	if mAnn.HasNestedTypes {
+		t.Error("expected HasNestedTypes to be false on syntheticMsg")
+	}
 	if syntheticMsg.Name != "MySyntheticMessage" {
 		t.Errorf("expected name 'MySyntheticMessage', got %q", syntheticMsg.Name)
 	}
@@ -277,6 +284,160 @@ func TestBigQuerySyntheticMessages(t *testing.T) {
 	}
 	if reqfAnn.FieldName != "good_field_00" {
 		t.Errorf("expected FieldName to be 'good_field_00', got %q", reqfAnn.FieldName)
+	}
+}
+
+func TestBigQueryOneOfs(t *testing.T) {
+	c := createRustCodec()
+
+	arrowOptsMsg := api.NewTestMessage("ArrowSerializationOptions").
+		WithPackage("google.cloud.bigquery.v2")
+
+	arrowField := api.NewTestField("arrow_serialization_options").
+		WithMessageType(arrowOptsMsg)
+	oneofGroup := api.NewTestOneOf("results_format_serialization_options").
+		WithFields(arrowField)
+
+	regularField := api.NewTestField("query_results_format").
+		WithType(api.TypezString)
+
+	qrMsg := api.NewTestMessage("QueryRequest").
+		WithPackage("google.cloud.bigquery.v2").
+		WithFields(regularField, arrowField).
+		WithOneOfs(oneofGroup)
+
+	jcqMsg := api.NewTestMessage("JobConfigurationQuery").
+		WithPackage("google.cloud.bigquery.v2")
+	jcMsg := api.NewTestMessage("JobConfiguration").
+		WithPackage("google.cloud.bigquery.v2")
+
+	model := api.NewTestAPI([]*api.Message{qrMsg, jcqMsg, jcMsg, arrowOptsMsg}, nil, nil)
+	api.CrossReference(model)
+	if _, err := annotateModel(model, c); err != nil {
+		t.Fatal(err)
+	}
+
+	builder, err := newQueryBuilder(c, model, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Verify field groups contains oneof
+	fgs := builder.fieldGroupList()
+	var foundOneOf *fieldGroup
+	for _, fg := range fgs {
+		if fg.FieldName() == "results_format_serialization_options" {
+			foundOneOf = fg
+			break
+		}
+	}
+	if foundOneOf == nil {
+		t.Fatal("expected results_format_serialization_options in fieldGroupList")
+	}
+	if !foundOneOf.IsOneOf() {
+		t.Errorf("expected foundOneOf.IsOneOf() to be true")
+	}
+	if !foundOneOf.QueryRequest() {
+		t.Errorf("expected QueryRequest() to be true")
+	}
+
+	// Verify oneof branch fields like arrow_serialization_options are not in fieldGroupList
+	for _, fg := range fgs {
+		if fg.FieldName() == "arrow_serialization_options" {
+			t.Errorf("unexpected branch field 'arrow_serialization_options' in fieldGroupList")
+		}
+	}
+
+	// Verify synthetic QueryRequest
+	queryRequest, err := builder.createSyntheticMessage("QueryRequest")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(queryRequest.OneOfs) != 1 {
+		t.Fatalf("expected 1 oneof in synthetic QueryRequest, got %d", len(queryRequest.OneOfs))
+	}
+	qrOneOf := queryRequest.OneOfs[0]
+	qrOneOfAnn, ok := qrOneOf.Codec.(*oneOfAnnotation)
+	if !ok {
+		t.Fatal("expected oneOfAnnotation on synthetic QueryRequest oneof")
+	}
+	if qrOneOfAnn.FieldName != "results_format_serialization_options" {
+		t.Errorf("expected FieldName 'results_format_serialization_options', got %q", qrOneOfAnn.FieldName)
+	}
+	// Verify qualified name points to GAPIC enum
+	wantEnumQualifiedName := "crate::model::query_request::ResultsFormatSerializationOptions"
+	if qrOneOfAnn.QualifiedName != wantEnumQualifiedName {
+		t.Errorf("expected QualifiedName %q, got %q", wantEnumQualifiedName, qrOneOfAnn.QualifiedName)
+	}
+
+	// Verify synthetic Query builder message
+	queryBuilderMsg, err := createQueryBuilderMessage(builder)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(queryBuilderMsg.OneOfs) != 1 {
+		t.Fatalf("expected 1 oneof in Query builder, got %d", len(queryBuilderMsg.OneOfs))
+	}
+	qOneOf := queryBuilderMsg.OneOfs[0]
+	qOneOfAnn, ok := qOneOf.Codec.(*oneOfAnnotation)
+	if !ok {
+		t.Fatal("expected oneOfAnnotation on Query builder oneof")
+	}
+	if qOneOfAnn.FieldName != "request.results_format_serialization_options" {
+		t.Errorf("expected FieldName 'request.results_format_serialization_options', got %q", qOneOfAnn.FieldName)
+	}
+	if qOneOfAnn.QualifiedName != wantEnumQualifiedName {
+		t.Errorf("expected QualifiedName %q, got %q", wantEnumQualifiedName, qOneOfAnn.QualifiedName)
+	}
+}
+
+func TestBigQueryOneOfMerging(t *testing.T) {
+	c, err := newCodec("protobuf", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	oneOfField1 := api.NewTestField("branch1").WithType(api.TypezString)
+	oneOfField1.Codec = &fieldAnnotations{}
+	oneOf1 := api.NewTestOneOf("my_oneof").WithFields(oneOfField1)
+	oneOf1.Codec = &oneOfAnnotation{
+		QualifiedName: "crate::model::MyOneOf",
+	}
+
+	oneOfField2 := api.NewTestField("branch2").WithType(api.TypezInt64)
+	oneOfField2.Codec = &fieldAnnotations{}
+	oneOf2 := api.NewTestOneOf("my_oneof").WithFields(oneOfField2)
+	oneOf2.Codec = &oneOfAnnotation{
+		QualifiedName: "crate::model::MyOneOf",
+	}
+
+	msg1 := api.NewTestMessage("Msg1").
+		WithPackage("google.cloud.bigquery.v2").
+		WithFields(oneOfField1).
+		WithOneOfs(oneOf1)
+	msg2 := api.NewTestMessage("Msg2").
+		WithPackage("google.cloud.bigquery.v2").
+		WithFields(oneOfField2).
+		WithOneOfs(oneOf2)
+
+	model := api.NewTestAPI([]*api.Message{msg1, msg2}, nil, nil)
+	unified, err := newUnifiedMessage(c, model, []string{"Msg1", "Msg2"}, func(f *api.Field) bool { return false })
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if len(unified.oneofs) != 1 {
+		t.Fatalf("expected 1 unified oneof, got %d", len(unified.oneofs))
+	}
+	mergedOneOf := unified.oneofs[0]
+	if len(mergedOneOf.Fields) != 2 {
+		t.Fatalf("expected 2 merged fields in unified oneof, got %d", len(mergedOneOf.Fields))
+	}
+	wantFields := []string{"branch1", "branch2"}
+	for i, want := range wantFields {
+		if mergedOneOf.Fields[i].Name != want {
+			t.Errorf("field %d: expected %q, got %q", i, want, mergedOneOf.Fields[i].Name)
+		}
 	}
 }
 

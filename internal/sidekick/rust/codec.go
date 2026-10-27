@@ -1628,6 +1628,13 @@ func (c *codec) FieldName(field *api.Field) string {
 	return field.Name
 }
 
+func (c *codec) OneOfName(oneof *api.OneOf) string {
+	if override, ok := c.nameOverrides[oneof.ID]; ok {
+		return override
+	}
+	return oneof.Name
+}
+
 // MessageModuleName returns the module name for a message in model.rs, taking message_module_name_overrides into account.
 func (c *codec) MessageModuleName(m *api.Message) string {
 	if override, ok := c.messageModuleNameOverrides[m.ID]; ok {
