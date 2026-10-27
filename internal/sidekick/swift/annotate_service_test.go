@@ -530,9 +530,7 @@ func TestAnnotateService_MapFieldDependencies(t *testing.T) {
 		WithMap().
 		WithMessageType(mapEntry)
 
-	signature := &api.MethodSignature{
-		Fields: []*api.Field{mapField},
-	}
+	signature := api.NewTestMethodSignature().WithFields(mapField)
 	inputType := api.NewTestMessage("Request").
 		WithPackage("test").
 		WithFields(mapField)

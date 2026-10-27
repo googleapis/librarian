@@ -258,14 +258,7 @@ func TestGenerateStub_Grpc(t *testing.T) {
 		WithOutput(empty).
 		WithPathInfo(nil).
 		ReturnEmpty().
-		WithRouting(&api.RoutingInfo{
-			Name: "bucket",
-			Variants: []*api.RoutingInfoVariant{
-				{
-					FieldPath: []string{"name"},
-				},
-			},
-		})
+		WithRouting(api.NewTestRoutingInfo("bucket", api.NewTestRoutingInfoVariant("name")))
 
 	sourceGetOperation := api.NewTestMethod("GetOperation").
 		WithInput(getOperationRequest).

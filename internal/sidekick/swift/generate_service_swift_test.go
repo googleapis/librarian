@@ -294,9 +294,9 @@ func TestGenerateService_FoundationImport(t *testing.T) {
 						WithOutput(api.NewTestMessage("UploadResponse").WithPackage("google.cloud.test.v1")).
 						WithVerb("POST").
 						WithPathTemplate((&api.PathTemplate{}).WithLiteral("v1").WithLiteral("upload")).
-						WithSignatures(&api.MethodSignature{
-							Fields: []*api.Field{api.NewTestField("payload").WithType(api.TypezBytes)},
-						}),
+						WithSignatures(api.NewTestMethodSignature().WithFields(
+							api.NewTestField("payload").WithType(api.TypezBytes),
+						)),
 				),
 			wantImport:   "\npublic import Foundation\n",
 			unwantImport: "\nimport Foundation\n",
