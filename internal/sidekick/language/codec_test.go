@@ -36,10 +36,7 @@ func TestQueryParams(t *testing.T) {
 			api.NewTestField("used_in_body"),
 		)
 	binding := api.NewTestPathBinding("GET", nil).
-		WithQueryParameters(map[string]bool{
-			"field1": true,
-			"field2": true,
-		})
+		WithQueryParameters("field1", "field2")
 	method := api.NewTestMethod("Test").
 		WithID("..TestService.Test").
 		WithInput(request).

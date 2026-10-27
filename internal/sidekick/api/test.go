@@ -477,8 +477,8 @@ func (m *Method) WithBodyFieldPath(path string) *Method {
 
 // WithQueryParameters sets the query parameters on the first binding of the method.
 // It initializes PathInfo if it is nil, and creates a binding if none exists.
-func (m *Method) WithQueryParameters(params map[string]bool) *Method {
-	m.ensureFirstBinding().QueryParameters = params
+func (m *Method) WithQueryParameters(params ...string) *Method {
+	m.ensureFirstBinding().WithQueryParameters(params...)
 	return m
 }
 
@@ -605,8 +605,11 @@ func (b *PathBinding) WithPathTemplate(pt *PathTemplate) *PathBinding {
 }
 
 // WithQueryParameters sets the query parameters for the binding.
-func (b *PathBinding) WithQueryParameters(params map[string]bool) *PathBinding {
-	b.QueryParameters = params
+func (b *PathBinding) WithQueryParameters(params ...string) *PathBinding {
+	b.QueryParameters = make(map[string]bool, len(params))
+	for _, p := range params {
+		b.QueryParameters[p] = true
+	}
 	return b
 }
 

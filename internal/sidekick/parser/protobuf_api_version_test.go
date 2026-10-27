@@ -47,7 +47,7 @@ func TestProtobuf_ApiVersion(t *testing.T) {
 				WithLiteral("v7").
 				WithLiteral("thing"),
 		).
-		WithQueryParameters(map[string]bool{"parent": true}).
+		WithQueryParameters("parent").
 		WithAPIVersion("v7_20260206")
 	createMethod.SourceServiceID = ".test.Service"
 	createMethod.InputTypeID = ".test.Request"
@@ -63,7 +63,7 @@ func TestProtobuf_ApiVersion(t *testing.T) {
 				WithLiteral("thing").
 				WithVerb("make"),
 		).
-		WithQueryParameters(map[string]bool{"parent": true}).
+		WithQueryParameters("parent").
 		WithAPIVersion("v7_20260206")
 	makeMethod.SourceServiceID = ".test.Service"
 	makeMethod.InputTypeID = ".test.Request"
