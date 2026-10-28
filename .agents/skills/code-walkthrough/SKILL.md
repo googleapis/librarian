@@ -7,7 +7,7 @@ description: Produces a self-contained interactive HTML architecture walkthrough
 
 ## What you produce
 
-A single `walkthrough.html` that opens from `file://` with no server and no
+A self-contained HTML page that opens from `file://` with no server and no
 network. It has an architecture map (every Go package in the module, grouped
 into layers you assign, with import wires drawn from `go list`), a guided tour,
 one flow per CLI command, deep-dive guides, a per-target table and findings. The
@@ -19,14 +19,34 @@ code is computed by the renderer and cannot be typed by hand:
 | You author in JSON | Renderer computes |
 |---|---|
 | layers, each package's layer and (optionally) a better one-line description | package list, imports, non-test LOC, doc synopses, module path, Go version, repo, commit |
-| tour steps, flows, guides, findings, languages table | validation of every cited path and package |
+| tour steps, flows, guides, findings, languages table | validation of every cited path and package, links between walkthroughs |
+
+## Where output goes
+
+Every file goes in `.walkthrough/` at the module root, which is gitignored as a
+whole. The renderer refuses any `-out` outside it. Each walkthrough is a pair
+named after its scope:
+
+- `.walkthrough/architecture.json` and `.walkthrough/architecture.html` for a
+  whole-architecture request.
+- `.walkthrough/<focus>.json` and `.walkthrough/<focus>.html` for a focused
+  request, where `<focus>` is the subsystem in lowercase kebab case, such as
+  `rust-bump` or `python-generate`.
+
+Names use only letters, digits, `.`, `_` and `-`. When the user asks for more
+on an existing walkthrough, edit its JSON and re-render it; do not start a new
+pair. Every page has a "Walkthroughs" bar linking to the other pages in
+`.walkthrough/`, and rendering one page updates that bar in the others.
 
 ## Workflow
 
-1. **Get the skeleton.** It lists every package with its doc comment synopsis.
+1. **Get the skeleton.** Pick `<name>` as described in
+   [Where output goes](#where-output-goes). The skeleton lists every package
+   with its doc comment synopsis. Skip this step when `<name>.json` already
+   exists; `-init` never overwrites it.
 
    ```sh
-   go run .agents/skills/code-walkthrough/scripts/render.go -init -out walkthrough.json
+   go run .agents/skills/code-walkthrough/scripts/render.go -init -out .walkthrough/<name>.json
    ```
 
    `-facts` prints the same computed facts as JSON (`module`, `goVersion`,
@@ -48,7 +68,7 @@ code is computed by the renderer and cannot be typed by hand:
    tour (3–6 steps) plus the guide or flow it asked for; the renderer warns
    about missing sections unless `focus` is set.
 
-4. **Edit `walkthrough.json`.** For each section, the content comes from the
+4. **Edit `.walkthrough/<name>.json`.** For each section, the content comes from the
    checkout, found as described; do not wait for the prompt to name it.
    - `title`, optional `subtitle`, `focus` (see above).
    - `layers`: 4–8 entries, top (entry points) to bottom (leaf infrastructure).
@@ -114,9 +134,10 @@ code is computed by the renderer and cannot be typed by hand:
      describes. Set it to a branch only if that commit is not pushed.
 
 5. **Render and fix until clean.** The renderer reports every problem at once.
+   It writes `.walkthrough/<name>.html` next to the JSON.
 
    ```sh
-   go run .agents/skills/code-walkthrough/scripts/render.go -in walkthrough.json -out walkthrough.html
+   go run .agents/skills/code-walkthrough/scripts/render.go -in .walkthrough/<name>.json
    ```
 
    Common errors: a cited path that does not exist, a `pkg` that is not a Go
@@ -125,10 +146,12 @@ code is computed by the renderer and cannot be typed by hand:
    the skeleton's `other` layer, a missing section without `focus`) do not
    stop rendering, but `-check` exits non-zero while any remain.
 
-6. **Surface it.** In Jetski, copy `walkthrough.html` into the artifact
-   directory and register it with `UserFacing: true` so it previews in-pane.
-   Elsewhere, tell the user to open it in a browser. Offer the next step: a
-   deeper guide on one area, which is an edit to the JSON and a re-render.
+6. **Surface it.** In Jetski, copy `.walkthrough/<name>.html` into the
+   artifact directory and register it with `UserFacing: true` so it previews
+   in-pane; the "Walkthroughs" links only work when the other pages are
+   opened from `.walkthrough/` in a browser. Elsewhere, tell the user to open
+   `.walkthrough/<name>.html` in a browser. Offer the next step: a deeper
+   guide on one area, which is an edit to the JSON and a re-render.
 
 ## JSON reference
 
@@ -205,7 +228,8 @@ template's own script by hash.
 - Counts and names in prose (number of languages, package names, function
   names) match what you saw; prefer "the language packages under
   `internal/librarian/`" over a number that will go stale.
-- `walkthrough.json` and `walkthrough.html` are not staged for commit.
+- Every file you wrote is under `.walkthrough/`, and `git status` shows none
+  of them.
 
 ## Files
 
@@ -214,7 +238,7 @@ template's own script by hash.
 ├── SKILL.md                this file
 └── scripts/
     ├── render.go           go list facts + validation + HTML output
-    ├── render_test.go      validation, merge and -init/-check round-trip tests
+    ├── render_test.go      validation, merge, output-directory and -init/-check round-trip tests
     └── template.html       static page embedded into render.go; fills the {{.JSON}} slot
 ```
 

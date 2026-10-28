@@ -61,5 +61,4 @@ go.work.sum
 /bin/
 
 # Output of the code-walkthrough skill (.agents/skills/code-walkthrough)
-/walkthrough.html
-/walkthrough.json
+/.walkthrough/

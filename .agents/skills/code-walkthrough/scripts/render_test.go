@@ -21,6 +21,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 )
@@ -264,12 +265,19 @@ func TestPinScripts(t *testing.T) {
 	}
 }
 
-func TestInitCheckRoundTrip(t *testing.T) {
+// tinyModule writes a two-package Go module to a temp dir and returns its root.
+func tinyModule(t *testing.T) string {
+	t.Helper()
 	if _, err := exec.LookPath("go"); err != nil {
 		t.Skip("go not on PATH")
 	}
 	root := t.TempDir()
-	write := func(name, content string) {
+	for name, content := range map[string]string{
+		"go.mod":      "module github.com/org/tiny\n\ngo 1.22\n",
+		"a/a.go":      "// Package a is the leaf.\npackage a\n\nfunc A() int { return 1 }\n",
+		"b/b.go":      "// Package b uses a.\npackage b\n\nimport \"github.com/org/tiny/a\"\n\nfunc B() int { return a.A() }\n",
+		"b/b_test.go": "package b\n",
+	} {
 		p := filepath.Join(root, filepath.FromSlash(name))
 		if err := os.MkdirAll(filepath.Dir(p), 0o755); err != nil {
 			t.Fatal(err)
@@ -278,12 +286,35 @@ func TestInitCheckRoundTrip(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	write("go.mod", "module github.com/org/tiny\n\ngo 1.22\n")
-	write("a/a.go", "// Package a is the leaf.\npackage a\n\nfunc A() int { return 1 }\n")
-	write("b/b.go", "// Package b uses a.\npackage b\n\nimport \"github.com/org/tiny/a\"\n\nfunc B() int { return a.A() }\n")
-	write("b/b_test.go", "package b\n")
+	return root
+}
+
+// writeSite writes an authored, warning-free walkthrough JSON to path.
+func writeSite(t *testing.T, path, title, focus string) {
+	t.Helper()
+	s := Site{
+		Title:  title,
+		Focus:  focus,
+		Layers: []Layer{{ID: "core", Title: "Core"}},
+		Pkgs:   []Pkg{{ID: "a", Layer: "core"}, {ID: "b", Layer: "core"}},
+		Steps:  []Step{{Title: "Leaf", Body: "<p>leaf</p>", Pkg: "a"}},
+	}
+	b, err := json.Marshal(s)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(path, b, 0o644); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestInitCheckRoundTrip(t *testing.T) {
+	root := tinyModule(t)
 	ctx := context.Background()
-	skel := filepath.Join(root, "walkthrough.json")
+	skel := filepath.Join(root, outDir, "architecture.json")
 	if err := run(ctx, "", skel, root, "", true, false, false); err != nil {
 		t.Fatalf("-init: %v", err)
 	}
@@ -321,10 +352,11 @@ func TestInitCheckRoundTrip(t *testing.T) {
 	if err := run(ctx, skel, "", root, "", false, true, false); err != nil {
 		t.Fatalf("-check on authored JSON: %v\n%s", err, buf.String())
 	}
-	out := filepath.Join(root, "walkthrough.html")
-	if err := run(ctx, skel, out, root, "", false, false, false); err != nil {
+	// With no -out, the page lands beside its JSON in the output directory.
+	if err := run(ctx, skel, "", root, "", false, false, false); err != nil {
 		t.Fatalf("render: %v", err)
 	}
+	out := filepath.Join(root, outDir, "architecture.html")
 	html, err := os.ReadFile(out)
 	if err != nil {
 		t.Fatal(err)
@@ -345,6 +377,107 @@ func TestInitCheckRoundTrip(t *testing.T) {
 	if bytes.Contains(html, []byte("location.replace")) {
 		t.Error("rendered page uses location.replace fallback which breaks about:srcdoc iframes")
 	}
+}
+
+func TestRunRejectsOutputOutsideOutDir(t *testing.T) {
+	root := tinyModule(t)
+	ctx := context.Background()
+	in := filepath.Join(root, outDir, "architecture.json")
+	writeSite(t, in, "Arch", "a")
+	for _, tc := range []struct {
+		name string
+		init bool
+		out  string
+	}{
+		{"init at module root", true, filepath.Join(root, "walkthrough.json")},
+		{"render at module root", false, filepath.Join(root, "walkthrough.html")},
+		{"render in a subdirectory", false, filepath.Join(root, outDir, "sub", "x.html")},
+		{"render in another module", false, filepath.Join(t.TempDir(), outDir, "x.html")},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			src := in
+			if tc.init {
+				src = ""
+			}
+			err := run(ctx, src, tc.out, root, "", tc.init, false, false)
+			if err == nil || !strings.Contains(err.Error(), "is outside") {
+				t.Fatalf("want an outside-directory error, got %v", err)
+			}
+			if _, err := os.Stat(tc.out); err == nil {
+				t.Errorf("%s was written", tc.out)
+			}
+		})
+	}
+	if err := run(ctx, in, filepath.Join(root, outDir, "bad name.html"), root, "", false, false, false); err == nil || !strings.Contains(err.Error(), "must end in .html") {
+		t.Errorf("want a bad-name error, got %v", err)
+	}
+}
+
+func TestWalkthroughsLinkEachOther(t *testing.T) {
+	root := tinyModule(t)
+	ctx := context.Background()
+	dir := filepath.Join(root, outDir)
+	writeSite(t, filepath.Join(dir, "rust-bump.json"), "Rust bump", "rust bump")
+	writeSite(t, filepath.Join(dir, "architecture.json"), "Architecture", "")
+	writeSite(t, filepath.Join(dir, "unrendered.json"), "Never rendered", "x")
+	captureWarnings(t) // architecture.json lacks flows, guides and findings
+	if err := run(ctx, filepath.Join(dir, "rust-bump.json"), "", root, "", false, false, false); err != nil {
+		t.Fatal(err)
+	}
+	first, err := os.ReadFile(filepath.Join(dir, "rust-bump.html"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := pageLinks(t, first); len(got) != 1 || !got[0].Current {
+		t.Fatalf("a lone page should list only itself, got %+v", got)
+	}
+	if err := run(ctx, filepath.Join(dir, "architecture.json"), "", root, "", false, false, false); err != nil {
+		t.Fatal(err)
+	}
+	want := []Walkthrough{
+		{Title: "Architecture", Href: "architecture.html", Current: true},
+		{Title: "Rust bump", Focus: "rust bump", Href: "rust-bump.html"},
+	}
+	second, err := os.ReadFile(filepath.Join(dir, "architecture.html"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := pageLinks(t, second); !slices.Equal(got, want) {
+		t.Errorf("new page links = %+v, want %+v", got, want)
+	}
+	// The earlier page is relinked with itself as current.
+	relinked, err := os.ReadFile(filepath.Join(dir, "rust-bump.html"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	want[0].Current, want[1].Current = false, true
+	if got := pageLinks(t, relinked); !slices.Equal(got, want) {
+		t.Errorf("relinked page links = %+v, want %+v", got, want)
+	}
+	// Only the data block changed, so the pinned script hashes still match.
+	strip := func(b []byte) []byte { return dataBlockRe.ReplaceAll(b, nil) }
+	if !bytes.Equal(strip(first), strip(relinked)) {
+		t.Error("relinking changed the page outside its data block")
+	}
+	for i, c := range relinked {
+		if c > 0x7f {
+			t.Fatalf("relinked page has non-ASCII byte 0x%02x at offset %d", c, i)
+		}
+	}
+}
+
+// pageLinks decodes the walkthrough list embedded in a rendered page.
+func pageLinks(t *testing.T, html []byte) []Walkthrough {
+	t.Helper()
+	m := dataBlockRe.FindSubmatch(html)
+	if m == nil {
+		t.Fatal("page has no data block")
+	}
+	var s struct{ Walkthroughs []Walkthrough }
+	if err := json.Unmarshal(m[2], &s); err != nil {
+		t.Fatal(err)
+	}
+	return s.Walkthroughs
 }
 
 func containsSubstring(list []string, sub string) bool {

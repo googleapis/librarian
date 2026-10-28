@@ -47,6 +47,9 @@ code,pre,textarea.mono{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Cons
     .pkg.imp { border-color: var(--primary); background: color-mix(in srgb, var(--primary) 14%, transparent); }
     .pkg.dep { border-color: var(--ok); background: color-mix(in srgb, var(--ok) 14%, transparent); }
     .tab.active { background: var(--primary); color: var(--primary-foreground); }
+    .wt-link { background: var(--card); }
+    .wt-link:hover { border-color: var(--primary); }
+    .wt-current { background: var(--primary); color: var(--primary-foreground); }
     .chip { cursor: pointer; }
     .chip:hover { border-color: var(--primary); }
     .step-nav.active { background: color-mix(in srgb, var(--primary) 16%, transparent); border-color: var(--primary); }
@@ -95,6 +98,7 @@ code,pre,textarea.mono{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Cons
     <div style="min-width: 0">
       <h1 class="text-2xl font-semibold" id="pageTitle"></h1>
       <p class="text-sm text-[var(--muted-foreground)] mt-1" id="subtitle"></p>
+      <nav class="hidden flex flex-wrap items-center gap-1 mt-2 text-xs" id="walkthroughNav" aria-label="Walkthroughs"></nav>
     </div>
     <div class="flex flex-wrap items-center gap-2" style="max-width: 100%">
       <nav class="flex flex-wrap gap-1 bg-[var(--card)] border border-[var(--border)] rounded-xl p-1" id="tabs">
@@ -332,11 +336,23 @@ function sanitizeHTML(raw) {
 const src = (p, label) => `<a class="src" href="#src:${encodeURIComponent(p)}" data-src="${escapeHTML(p)}">${label || escapeHTML(p)}</a>`;
 const plural = (n, word) => `${n} ${word}${n === 1 ? "" : "s"}`;
 
-for (const k of ["layers", "pkgs", "steps", "flows", "guides", "findings", "langCols", "langs", "contractCols", "contractHooks"]) {
+for (const k of ["layers", "pkgs", "steps", "flows", "guides", "findings", "langCols", "langs", "contractCols", "contractHooks", "walkthroughs"]) {
   if (!Array.isArray(DATA[k])) DATA[k] = [];
 }
 document.title = DATA.title;
 document.getElementById("pageTitle").textContent = DATA.title;
+
+// Other pages rendered into the same directory, listed by the renderer. Hrefs
+// are re-checked so only a sibling .html file can ever be linked.
+(function renderWalkthroughNav() {
+  const list = DATA.walkthroughs.filter(w => typeof w.href === "string" && /^[A-Za-z0-9_-][A-Za-z0-9._-]*\.html$/.test(w.href));
+  if (list.length < 2) return;
+  const nav = document.getElementById("walkthroughNav");
+  nav.innerHTML = `<span class="text-[var(--muted-foreground)] mr-1">Walkthroughs:</span>` + list.map(w => w.current
+    ? `<span class="wt-current rounded-lg px-2 py-0.5" aria-current="page">${escapeHTML(w.title)}</span>`
+    : `<a class="wt-link border border-[var(--border)] rounded-lg px-2 py-0.5" href="${escapeHTML(w.href)}" title="${escapeHTML(w.focus ? "Focus: " + w.focus : "Whole architecture")}">${escapeHTML(w.title)}</a>`).join("");
+  nav.classList.remove("hidden");
+})();
 document.getElementById("welcomeTitle").textContent = DATA.subtitle || DATA.title;
 document.getElementById("subtitle").innerHTML =
   `${escapeHTML(DATA.repo || DATA.module)} at commit ${src("", `<code>${escapeHTML(DATA.shortSha)}</code>`)}${DATA.goVersion ? ` (Go ${escapeHTML(DATA.goVersion)})` : ""} \u00b7 ` +

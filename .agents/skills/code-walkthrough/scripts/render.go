@@ -12,21 +12,25 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// render turns an agent-authored walkthrough.json into a self-contained
-// walkthrough.html. It computes every fact about the repository itself (the
-// package list, imports, line counts, doc synopses, module path, commit) so
-// the JSON only has to carry what a human or agent should write: layer
-// assignments and narrative.
+// render turns an agent-authored walkthrough JSON into a self-contained HTML
+// page. It computes every fact about the repository itself (the package list,
+// imports, line counts, doc synopses, module path, commit) so the JSON only
+// has to carry what a human or agent should write: layer assignments and
+// narrative.
+//
+// Every file it writes goes under .walkthrough/ at the module root, which is
+// gitignored. Each page links to the other walkthroughs in that directory.
 //
 // Usage:
 //
-//	go run .agents/skills/code-walkthrough/scripts/render.go -init -out walkthrough.json
-//	go run .agents/skills/code-walkthrough/scripts/render.go -in walkthrough.json -out walkthrough.html
-//	go run .agents/skills/code-walkthrough/scripts/render.go -in walkthrough.json -check
+//	go run .agents/skills/code-walkthrough/scripts/render.go -init -out .walkthrough/architecture.json
+//	go run .agents/skills/code-walkthrough/scripts/render.go -in .walkthrough/architecture.json
+//	go run .agents/skills/code-walkthrough/scripts/render.go -in .walkthrough/architecture.json -check
 package main
 
 import (
 	"bytes"
+	"cmp"
 	"context"
 	"crypto/sha256"
 	_ "embed"
@@ -47,7 +51,12 @@ import (
 //go:embed template.html
 var defaultTemplate []byte
 
-const otherLayer = "other"
+const (
+	otherLayer = "other"
+	// outDir holds every file the skill writes, relative to the module root.
+	// It is gitignored as a whole so any walkthrough name stays untracked.
+	outDir = ".walkthrough"
+)
 
 // Site is the JSON contract between the skill and the template. Fields marked
 // "computed" are filled by this program and ignored on input.
@@ -73,7 +82,16 @@ type Site struct {
 	ContractCols  []string      `json:"contractCols,omitempty"`
 	ContractHooks []ContractRow `json:"contractHooks,omitempty"`
 	DefaultPkg    string        `json:"defaultPkg,omitempty"`
-	Cited         []string      `json:"cited,omitempty"` // computed: every validated path; the page drops data-src values not in it
+	Cited         []string      `json:"cited,omitempty"`        // computed: every validated path; the page drops data-src values not in it
+	Walkthroughs  []Walkthrough `json:"walkthroughs,omitempty"` // computed: every page in the output directory, for cross-navigation
+}
+
+// Walkthrough is one rendered page in the output directory.
+type Walkthrough struct {
+	Title   string `json:"title"`
+	Focus   string `json:"focus,omitempty"`
+	Href    string `json:"href"`
+	Current bool   `json:"current,omitempty"`
 }
 
 // Layer is one horizontal band of the architecture map, top to bottom.
@@ -189,7 +207,7 @@ func main() {
 	var in, out, root, tmplPath string
 	var initSkeleton, check, dumpFacts bool
 	flag.StringVar(&in, "in", "", "walkthrough JSON authored by the skill")
-	flag.StringVar(&out, "out", "", "output path: .html when rendering, .json with -init (default: stdout)")
+	flag.StringVar(&out, "out", "", "output path under "+outDir+"/: .html when rendering (default: "+outDir+"/<name of -in>.html), .json with -init or -facts (default: stdout)")
 	flag.StringVar(&root, "root", "", "module root (default: directory of go env GOMOD)")
 	flag.StringVar(&tmplPath, "template", "", "HTML template with a {{.JSON}} slot (default: the embedded template)")
 	flag.BoolVar(&initSkeleton, "init", false, "write a skeleton JSON listing every package with its doc synopsis")
@@ -206,6 +224,12 @@ func run(ctx context.Context, in, out, root, tmplPath string, initSkeleton, chec
 	facts, err := loadFacts(ctx, root)
 	if err != nil {
 		return err
+	}
+	dir := filepath.Join(facts.root, outDir)
+	if out != "" {
+		if err := checkOut(dir, out); err != nil {
+			return err
+		}
 	}
 	if dumpFacts {
 		return writeOutput(out, facts.export())
@@ -253,6 +277,19 @@ func run(ctx context.Context, in, out, root, tmplPath string, initSkeleton, chec
 	if !bytes.Contains(tmpl, []byte("{{.JSON}}")) {
 		return errors.New("template has no {{.JSON}} slot")
 	}
+	if out == "" {
+		out = filepath.Join(dir, strings.TrimSuffix(filepath.Base(in), filepath.Ext(in))+".html")
+	}
+	href := filepath.Base(out)
+	if !pageNameRe.MatchString(href) {
+		return fmt.Errorf("output name %q must end in .html and use only letters, digits, '.', '_' and '-'", href)
+	}
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		return err
+	}
+	if site.Walkthroughs, err = walkthroughs(dir, href, site); err != nil {
+		return err
+	}
 	// json.Marshal escapes <, > and & as \u003c etc., so the payload can never
 	// close the <script type="application/json"> block it is embedded in.
 	payload, err := json.Marshal(site)
@@ -261,13 +298,111 @@ func run(ctx context.Context, in, out, root, tmplPath string, initSkeleton, chec
 	}
 	html := bytes.Replace(tmpl, []byte("{{.JSON}}"), asciiJSON(payload), 1)
 	html = pinScripts(html)
-	if out == "" {
-		out = "walkthrough.html"
-	}
 	if err := os.WriteFile(out, html, 0o644); err != nil {
 		return err
 	}
 	fmt.Printf("wrote %s (%d bytes) for %s@%s\n", out, len(html), site.Repo, site.ShortSHA)
+	return relink(dir, site.Walkthroughs)
+}
+
+var (
+	pageNameRe  = regexp.MustCompile(`^[A-Za-z0-9_-][A-Za-z0-9._-]*\.html$`)
+	dataBlockRe = regexp.MustCompile(`(?s)(<script id="walkthrough-data" type="application/json">)(.*?)</script>`)
+)
+
+// checkOut rejects any output path that is not directly inside dir, so
+// everything the skill writes is covered by the .gitignore entry for dir.
+func checkOut(dir, out string) error {
+	abs, err := filepath.Abs(out)
+	if err != nil {
+		return err
+	}
+	parent := filepath.Dir(abs)
+	if filepath.Base(parent) == outDir {
+		want, err1 := filepath.EvalSymlinks(filepath.Dir(dir))
+		got, err2 := filepath.EvalSymlinks(filepath.Dir(parent))
+		if err1 == nil && err2 == nil && want == got {
+			return nil
+		}
+	}
+	return fmt.Errorf("-out %s is outside %s; write every walkthrough file there so it stays gitignored", out, dir)
+}
+
+// walkthroughs lists the page being rendered (href) and every other page in
+// dir, which is each NAME.html that sits beside its NAME.json. Whole-
+// architecture walkthroughs come first, then focused ones by title.
+func walkthroughs(dir, href string, site *Site) ([]Walkthrough, error) {
+	matches, err := filepath.Glob(filepath.Join(dir, "*.json"))
+	if err != nil {
+		return nil, err
+	}
+	list := []Walkthrough{{Title: site.Title, Focus: site.Focus, Href: href, Current: true}}
+	for _, m := range matches {
+		other := strings.TrimSuffix(filepath.Base(m), ".json") + ".html"
+		if other == href || !pageNameRe.MatchString(other) {
+			continue
+		}
+		if _, err := os.Stat(filepath.Join(dir, other)); err != nil {
+			continue
+		}
+		b, err := os.ReadFile(m)
+		if err != nil {
+			return nil, err
+		}
+		var head struct{ Title, Focus string }
+		if err := json.Unmarshal(b, &head); err != nil || head.Title == "" {
+			continue
+		}
+		list = append(list, Walkthrough{Title: head.Title, Focus: head.Focus, Href: other})
+	}
+	slices.SortFunc(list, func(a, b Walkthrough) int {
+		if (a.Focus == "") != (b.Focus == "") {
+			if a.Focus == "" {
+				return -1
+			}
+			return 1
+		}
+		return cmp.Or(strings.Compare(a.Title, b.Title), strings.Compare(a.Href, b.Href))
+	})
+	return list, nil
+}
+
+// relink rewrites the walkthrough list in every other page of list so pages
+// rendered earlier link to the one just written. Only the JSON data block
+// changes; it is not an executable script, so the pinned CSP hashes still hold.
+func relink(dir string, list []Walkthrough) error {
+	for _, w := range list {
+		if w.Current {
+			continue
+		}
+		path := filepath.Join(dir, w.Href)
+		html, err := os.ReadFile(path)
+		if err != nil {
+			return err
+		}
+		m := dataBlockRe.FindSubmatchIndex(html)
+		var data map[string]json.RawMessage
+		if m == nil || json.Unmarshal(html[m[4]:m[5]], &data) != nil {
+			fmt.Fprintf(os.Stderr, "note: %s has no readable walkthrough data; re-render it to link it\n", path)
+			continue
+		}
+		own := slices.Clone(list)
+		for i := range own {
+			own[i].Current = own[i].Href == w.Href
+		}
+		links, err := json.Marshal(own)
+		if err != nil {
+			return err
+		}
+		data["walkthroughs"] = links
+		payload, err := json.Marshal(data)
+		if err != nil {
+			return err
+		}
+		if err := os.WriteFile(path, slices.Concat(html[:m[4]], asciiJSON(payload), html[m[5]:]), 0o644); err != nil {
+			return err
+		}
+	}
 	return nil
 }
 
@@ -544,7 +679,7 @@ func merge(s *Site, f *facts) {
 		}
 	}
 	if usesOther && !slices.ContainsFunc(s.Layers, func(l Layer) bool { return l.ID == otherLayer }) {
-		s.Layers = append(s.Layers, Layer{ID: otherLayer, Title: "Unclassified", Hint: "packages not yet assigned a layer in walkthrough.json"})
+		s.Layers = append(s.Layers, Layer{ID: otherLayer, Title: "Unclassified", Hint: "packages not yet assigned a layer in the walkthrough JSON"})
 	}
 	s.TotalLOC = 0
 	for _, p := range s.Pkgs {
@@ -800,6 +935,9 @@ func writeOutput(out string, v any) error {
 	b = append(b, '\n')
 	if out == "" {
 		_, err = os.Stdout.Write(b)
+		return err
+	}
+	if err := os.MkdirAll(filepath.Dir(out), 0o755); err != nil {
 		return err
 	}
 	return os.WriteFile(out, b, 0o644)
