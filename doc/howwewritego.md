@@ -147,7 +147,7 @@ and prefer `fs.ErrNotExist` over `os.ErrNotExist` in general.
 
 Do not combine `err == nil` with other conditions; always check `err != nil`
 explicitly and handle errors gracefully rather than masking them. Do not add
-redundant nil checks before `errors.Is` or `errors.As`.
+redundant nil checks before `errors.Is` or `errors.AsType`.
 
 When writing files, check errors returned by `Close()` inside a `defer` using
 named returns, or prefer `os.WriteFile` when writing complete files. Check if
