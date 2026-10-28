@@ -167,17 +167,17 @@ func TestPathTemplateBuilder(t *testing.T) {
 	want := &PathTemplate{
 		Segments: []PathSegment{
 			{
-				Literal: "v1",
+				literal: "v1",
 			},
 			{
-				Variable: &PathVariable{
+				variable: &PathVariable{
 					fieldPath:     []string{"parent", "child"},
 					segments:      []string{"projects", "*", "locations", "**"},
 					allowReserved: true,
 				},
 			},
 			{
-				Variable: &PathVariable{
+				variable: &PathVariable{
 					fieldPath: []string{"v2", "field"},
 					segments:  []string{"*"},
 				},
@@ -185,10 +185,13 @@ func TestPathTemplateBuilder(t *testing.T) {
 		},
 		Verb: verb,
 	}
-	if diff := cmp.Diff(want, got, cmp.AllowUnexported(PathVariable{})); diff != "" {
+	if diff := cmp.Diff(want, got, cmp.AllowUnexported(PathSegment{}, PathVariable{})); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
-	v := got.Segments[1].Variable
+	if got.Segments[0].Literal() != "v1" {
+		t.Errorf("Segments[0].Literal() = %q, want %q", got.Segments[0].Literal(), "v1")
+	}
+	v := got.Segments[1].Variable()
 	if diff := cmp.Diff([]string{"parent", "child"}, v.FieldPath()); diff != "" {
 		t.Errorf("FieldPath() mismatch (-want +got):\n%s", diff)
 	}

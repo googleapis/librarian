@@ -975,14 +975,14 @@ func ParseTemplateForTest(template string) []PathSegment {
 	if hasDoubleSlash {
 		host = "//" + parts[0]
 	}
-	segments = append(segments, PathSegment{Literal: host})
+	segments = append(segments, *NewPathSegmentBuilder().WithLiteral(host).Build())
 
 	for _, part := range parts[1:] {
 		if strings.HasPrefix(part, "{") && strings.HasSuffix(part, "}") {
 			fieldPath := strings.Split(part[1:len(part)-1], ".")
-			segments = append(segments, PathSegment{Variable: NewPathVariableBuilder(fieldPath...).Build()})
+			segments = append(segments, *NewPathSegmentBuilder().WithVariable(NewPathVariableBuilder(fieldPath...).Build()).Build())
 		} else {
-			segments = append(segments, PathSegment{Literal: part})
+			segments = append(segments, *NewPathSegmentBuilder().WithLiteral(part).Build())
 		}
 	}
 	return segments

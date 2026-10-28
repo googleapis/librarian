@@ -798,9 +798,9 @@ func bodyAccessor(m *api.Method) string {
 func httpPathFmt(t *api.PathTemplate) string {
 	fmt := ""
 	for _, segment := range t.Segments {
-		if segment.Literal != "" {
-			fmt = fmt + "/" + segment.Literal
-		} else if segment.Variable != nil {
+		if segment.Literal() != "" {
+			fmt = fmt + "/" + segment.Literal()
+		} else if segment.Variable() != nil {
 			fmt = fmt + "/{}"
 		}
 	}

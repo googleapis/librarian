@@ -33,7 +33,7 @@ func TestMethod_WithBindings_NilPathInfo(t *testing.T) {
 	if method.PathInfo == nil {
 		t.Fatal("expected PathInfo to be initialized, got nil")
 	}
-	if diff := cmp.Diff([]*api.PathBinding{b1, b2}, method.PathInfo.Bindings, cmpopts.IgnoreUnexported(api.PathTemplate{})); diff != "" {
+	if diff := cmp.Diff([]*api.PathBinding{b1, b2}, method.PathInfo.Bindings, cmpopts.IgnoreUnexported(api.PathTemplate{}), cmp.AllowUnexported(api.PathSegment{}, api.PathVariable{})); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
@@ -44,7 +44,7 @@ func TestMethod_WithBindings_NonNilPathInfo(t *testing.T) {
 
 	method.WithBindings(b1)
 
-	if diff := cmp.Diff([]*api.PathBinding{b1}, method.PathInfo.Bindings, cmpopts.IgnoreUnexported(api.PathTemplate{})); diff != "" {
+	if diff := cmp.Diff([]*api.PathBinding{b1}, method.PathInfo.Bindings, cmpopts.IgnoreUnexported(api.PathTemplate{}), cmp.AllowUnexported(api.PathSegment{}, api.PathVariable{})); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
@@ -548,5 +548,24 @@ func TestPaginationInfo_Builder(t *testing.T) {
 	}
 	if p.PageableItem != items {
 		t.Errorf("p.PageableItem = %v, want %v", p.PageableItem, items)
+	}
+}
+
+func TestPathSegment_Builder(t *testing.T) {
+	v := api.NewPathVariableBuilder().WithFieldPath("name").WithSegments("items", "*").Build()
+	s1 := api.NewPathSegmentBuilder().WithLiteral("v1").Build()
+	s2 := api.NewPathSegmentBuilder().WithVariable(v).Build()
+
+	if got := s1.Literal(); got != "v1" {
+		t.Errorf("s1.Literal() = %q, want %q", got, "v1")
+	}
+	if got := s1.Variable(); got != nil {
+		t.Errorf("s1.Variable() = %v, want nil", got)
+	}
+	if got := s2.Literal(); got != "" {
+		t.Errorf("s2.Literal() = %q, want empty", got)
+	}
+	if got := s2.Variable(); got != v {
+		t.Errorf("s2.Variable() = %v, want %v", got, v)
 	}
 }

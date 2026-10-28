@@ -187,9 +187,9 @@ func queryParameters(msgID string, pathTemplate *api.PathTemplate, body string, 
 		params[field.Name] = true
 	}
 	for _, s := range pathTemplate.Segments {
-		if s.Variable != nil {
+		if s.Variable() != nil {
 			// TODO(#2508) - Note that nested fields are not excluded
-			delete(params, strings.Join(s.Variable.FieldPath(), "."))
+			delete(params, strings.Join(s.Variable().FieldPath(), "."))
 		}
 	}
 	if body != "" {

@@ -202,9 +202,9 @@ func parseLiteralSegment(literalSegment string) (*api.PathSegment, int, error) {
 	if err != nil {
 		return nil, 0, err
 	}
-	return &api.PathSegment{
-		Literal: string(literal),
-	}, width, nil
+	return api.NewPathSegmentBuilder().
+		WithLiteral(string(literal)).
+		Build(), width, nil
 }
 
 func parseVarSegment(varString string) (*api.PathSegment, int, error) {
@@ -239,11 +239,11 @@ func parseVarSegment(varString string) (*api.PathSegment, int, error) {
 		// When there are no segments, the single "*" matcher is implied.
 		segments = append(segments, api.SingleSegmentWildcard)
 	}
-	return &api.PathSegment{
-		Variable: api.NewPathVariableBuilder(fieldPath...).
+	return api.NewPathSegmentBuilder().
+		WithVariable(api.NewPathVariableBuilder(fieldPath...).
 			WithSegments(segments...).
-			Build(),
-	}, pos, nil
+			Build()).
+		Build(), pos, nil
 }
 
 func parseVarSubsegments(segmentsString string) ([]string, int, error) {
