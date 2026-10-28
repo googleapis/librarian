@@ -27,8 +27,8 @@ build       = "build.rs"
 edition     = "2021"
 
 [build-dependencies]
-prost-build = { version = "0.14", optional = true }
-tonic-prost-build = { version = "0.14", optional = true }
+prost-build = { version = "*", optional = true }
+tonic-prost-build = { version = "*", optional = true }
 
 [features]
 _generate-protos = ["dep:prost-build", "dep:tonic-prost-build"]

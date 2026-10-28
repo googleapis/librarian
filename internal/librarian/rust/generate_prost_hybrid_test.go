@@ -63,15 +63,31 @@ func TestGenerateProstHybrid(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			outDir := t.TempDir()
+			absSpecSource, err := filepath.Abs("../../testdata/googleapis/google/type")
+			if err != nil {
+				t.Fatal(err)
+			}
+			t.Chdir(outDir)
+			const cargoLock = `version = 4
+
+[[package]]
+name = "prost-build"
+version = "0.14.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+
+[[package]]
+name = "tonic-prost-build"
+version = "0.14.8"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+`
+			if err := os.WriteFile(filepath.Join(outDir, "Cargo.lock"), []byte(cargoLock), 0o644); err != nil {
+				t.Fatal(err)
+			}
 			lib := &config.Library{
 				Name: "test-package",
 				Rust: &config.RustCrate{
 					TemplateOverride: test.templateOverride,
 				},
-			}
-			absSpecSource, err := filepath.Abs("../../testdata/googleapis/google/type")
-			if err != nil {
-				t.Fatal(err)
 			}
 			srcs := &sources.Sources{
 				Googleapis: filepath.Dir(filepath.Dir(absSpecSource)),
