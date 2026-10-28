@@ -138,6 +138,42 @@ func filterModelToTypes(model *api.API, rootTypeIDs []string, allowGrpcAnyFields
 	hasGoogleRpcStatus := false
 	var unsupportedAnyFields []string
 
+	var enqueueField func(parentPath string, f *api.Field)
+	enqueueField = func(parentPath string, f *api.Field) {
+		if f == nil {
+			return
+		}
+		fieldPath := parentPath + "." + f.Name
+		if isAnyType(f.TypezID) {
+			if matchesAllowedAnyField(f.ID, allowGrpcAnyFields) || matchesAllowedAnyField(fieldPath, allowGrpcAnyFields) {
+				f.SkipProtoConversion = true
+				return
+			}
+			unsupportedAnyFields = append(unsupportedAnyFields, fieldPath)
+			return
+		}
+		if f.Map || f.Typez == api.TypezMap {
+			mapType := f.MapType
+			if mapType == nil {
+				mapType = model.Map(f.TypezID)
+			}
+			if mapType != nil {
+				enqueueField(fieldPath, mapType.Key)
+				enqueueField(fieldPath, mapType.Value)
+			}
+			return
+		}
+		if f.Typez == api.TypezMessage && f.TypezID != "" {
+			queue = append(queue, typeItem{
+				id:   f.TypezID,
+				path: fieldPath,
+			})
+		}
+		if f.Typez == api.TypezEnum && f.TypezID != "" {
+			enqueueEnum(model.Enum(f.TypezID), fieldPath)
+		}
+	}
+
 	for len(queue) > 0 {
 		item := queue[0]
 		queue = queue[1:]
@@ -163,45 +199,11 @@ func filterModelToTypes(model *api.API, rootTypeIDs []string, allowGrpcAnyFields
 			}
 			enqueueMsg(msg, item.path)
 			for _, f := range msg.Fields {
-				fieldPath := item.path + "." + f.Name
-				if isAnyType(f.TypezID) {
-					if matchesAllowedAnyField(f.ID, allowGrpcAnyFields) || matchesAllowedAnyField(fieldPath, allowGrpcAnyFields) {
-						f.SkipProtoConversion = true
-						continue
-					}
-					unsupportedAnyFields = append(unsupportedAnyFields, fieldPath)
-					continue
-				}
-				if f.Typez == api.TypezMessage && f.TypezID != "" {
-					queue = append(queue, typeItem{
-						id:   f.TypezID,
-						path: fieldPath,
-					})
-				}
-				if f.Typez == api.TypezEnum && f.TypezID != "" {
-					enqueueEnum(model.Enum(f.TypezID), fieldPath)
-				}
+				enqueueField(item.path, f)
 			}
 			for _, o := range msg.OneOfs {
 				for _, f := range o.Fields {
-					fieldPath := item.path + "." + f.Name
-					if isAnyType(f.TypezID) {
-						if matchesAllowedAnyField(f.ID, allowGrpcAnyFields) || matchesAllowedAnyField(fieldPath, allowGrpcAnyFields) {
-							f.SkipProtoConversion = true
-							continue
-						}
-						unsupportedAnyFields = append(unsupportedAnyFields, fieldPath)
-						continue
-					}
-					if f.Typez == api.TypezMessage && f.TypezID != "" {
-						queue = append(queue, typeItem{
-							id:   f.TypezID,
-							path: fieldPath,
-						})
-					}
-					if f.Typez == api.TypezEnum && f.TypezID != "" {
-						enqueueEnum(model.Enum(f.TypezID), fieldPath)
-					}
+					enqueueField(item.path, f)
 				}
 			}
 		}
@@ -234,7 +236,7 @@ func filterModelToTypes(model *api.API, rootTypeIDs []string, allowGrpcAnyFields
 	// iteration order is randomized by the Go runtime.
 	var externalMessages []*api.Message
 	for m := range model.AllMessages() {
-		if m.ID != "" && reachableMsgs[m.ID] && !isWKT(m.ID) && m.ID != ".google.rpc.Status" && !m.IsMap && m.Parent == nil {
+		if m.ID != "" && reachableMsgs[m.ID] && !isWKT(m.ID) && m.ID != ".google.rpc.Status" && m.Parent == nil {
 			if m.Package != model.PackageName && m.Package != api.ReservedPackageName {
 				externalMessages = append(externalMessages, m)
 			}
@@ -284,13 +286,16 @@ func filterModelToTypes(model *api.API, rootTypeIDs []string, allowGrpcAnyFields
 	for e := range model.AllEnums() {
 		hybridModel.AddEnum(e)
 	}
+	for m := range model.AllMaps() {
+		hybridModel.AddMap(m)
+	}
 	for _, r := range hybridModel.ResourceDefinitions {
 		hybridModel.AddResource(r)
 	}
 
 	var unusedTypes []string
 	for m := range model.AllMessages() {
-		if m.ID != "" && !isWKT(m.ID) && !reachableMsgs[m.ID] {
+		if m.ID != "" && !isWKT(m.ID) && !m.IsMap && !reachableMsgs[m.ID] {
 			unusedTypes = append(unusedTypes, m.ID)
 		}
 	}

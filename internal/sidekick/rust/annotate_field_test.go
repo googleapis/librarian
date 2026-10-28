@@ -42,8 +42,7 @@ func newTestCodec(t *testing.T, specificationFormat, packageName string, options
 func TestFieldAnnotations(t *testing.T) {
 	keyField := api.NewTestField("key").WithType(api.TypezInt32)
 	valueField := api.NewTestField("value").WithType(api.TypezInt64)
-	mapMessage := api.NewTestMapMessageWithFields("$Map", keyField, valueField).
-		WithPackage("test.v1")
+	mapType := api.NewTestMapWithFields("$Map", keyField, valueField)
 
 	message := api.NewTestMessage("TestMessage").
 		WithPackage("test.v1").
@@ -51,13 +50,13 @@ func TestFieldAnnotations(t *testing.T) {
 
 	singularField := api.NewTestField("singular_field").WithType(api.TypezString)
 	repeatedField := api.NewTestField("repeated_field").WithType(api.TypezString).WithRepeated()
-	mapField := api.NewTestField("map_field").WithMessageType(mapMessage)
+	mapField := api.NewTestField("map_field").WithMapType(mapType)
 	boxedField := api.NewTestField("boxed_field").
 		WithMessageType(message).
 		WithOptional()
 	message.WithFields(singularField, repeatedField, mapField, boxedField)
 
-	model := api.NewTestAPI([]*api.Message{message, mapMessage}, nil, nil)
+	model := api.NewTestAPI([]*api.Message{message}, nil, nil).WithMaps(mapType)
 	api.CrossReference(model)
 	api.LabelRecursiveFields(model)
 	codec := newTestCodec(t, libconfig.SpecProtobuf, "test", map[string]string{})
@@ -180,10 +179,9 @@ func TestRecursiveFieldAnnotations(t *testing.T) {
 
 	keyField := api.NewTestField("key").WithType(api.TypezInt32)
 	valueField := api.NewTestField("value").WithMessageType(message)
-	mapMessage := api.NewTestMapMessageWithFields("$Map", keyField, valueField).
-		WithPackage("test.v1")
+	mapType := api.NewTestMapWithFields("$Map", keyField, valueField)
 
-	mapField := api.NewTestField("map_field").WithMessageType(mapMessage)
+	mapField := api.NewTestField("map_field").WithMapType(mapType)
 	oneOfField := api.NewTestField("oneof_field").WithMessageType(message)
 	group := api.NewTestOneOf("oneof_type").WithFields(oneOfField)
 	repeatedField := api.NewTestField("repeated_field").
@@ -195,7 +193,7 @@ func TestRecursiveFieldAnnotations(t *testing.T) {
 		WithOneOfs(group).
 		WithFields(repeatedField, messageField)
 
-	model := api.NewTestAPI([]*api.Message{message, mapMessage}, nil, nil)
+	model := api.NewTestAPI([]*api.Message{message}, nil, nil).WithMaps(mapType)
 	api.CrossReference(model)
 	api.LabelRecursiveFields(model)
 	codec := newTestCodec(t, libconfig.SpecProtobuf, "test", map[string]string{})
@@ -235,7 +233,6 @@ func TestRecursiveFieldAnnotations(t *testing.T) {
 		ValueField:            valueField,
 		SerdeAs:               "std::collections::HashMap<wkt::internal::I32, serde_with::Same>",
 		IsBoxed:               true,
-		MapToBoxed:            true,
 		SkipIfIsDefault:       true,
 		FieldTypeIsParentType: true,
 	}
@@ -332,10 +329,9 @@ func TestSameTypeNameFieldAnnotations(t *testing.T) {
 
 	keyField := api.NewTestField("key").WithType(api.TypezInt32)
 	valueField := api.NewTestField("value").WithMessageType(innerMessage)
-	mapMessage := api.NewTestMapMessageWithFields("$Map", keyField, valueField).
-		WithPackage("test.v1")
+	mapType := api.NewTestMapWithFields("$Map", keyField, valueField)
 
-	mapField := api.NewTestField("map_field").WithMessageType(mapMessage)
+	mapField := api.NewTestField("map_field").WithMapType(mapType)
 	oneOfField := api.NewTestField("oneof_field").WithMessageType(innerMessage)
 	group := api.NewTestOneOf("oneof_type").WithFields(oneOfField)
 	repeatedField := api.NewTestField("repeated_field").
@@ -349,7 +345,7 @@ func TestSameTypeNameFieldAnnotations(t *testing.T) {
 		WithOneOfs(group).
 		WithFields(repeatedField, messageField)
 
-	model := api.NewTestAPI([]*api.Message{message, mapMessage}, nil, nil)
+	model := api.NewTestAPI([]*api.Message{message}, nil, nil).WithMaps(mapType)
 	model.AddMessage(innerMessage)
 	api.CrossReference(model)
 	api.LabelRecursiveFields(model)
@@ -637,17 +633,15 @@ func TestEnumFieldAnnotations(t *testing.T) {
 		WithType(api.TypezString)
 	valueField := api.NewTestField("value").
 		WithEnumType(enumz)
-	mapMessage := api.NewTestMapMessageWithFields("$map<string, .test.v1.TestEnum>", keyField, valueField).
-		WithPackage("test.v1").
-		WithID("$map<string, .test.v1.TestEnum>")
+	mapType := api.NewTestMapWithFields("$map<string, .test.v1.TestEnum>", keyField, valueField)
 	mapField := api.NewTestField("map_field").
-		WithMessageType(mapMessage)
+		WithMapType(mapType)
 	message := api.NewTestMessage("TestMessage").
 		WithPackage("test.v1").
 		WithFields(singularField, repeatedField, optionalField, nullValueField, mapField).
 		WithDocumentation("A test message.")
 
-	model := api.NewTestAPI([]*api.Message{message, mapMessage}, []*api.Enum{enumz}, nil)
+	model := api.NewTestAPI([]*api.Message{message}, []*api.Enum{enumz}, nil).WithMaps(mapType)
 	api.CrossReference(model)
 	api.LabelRecursiveFields(model)
 	codec, err := newCodec(libconfig.SpecProtobuf, map[string]string{
