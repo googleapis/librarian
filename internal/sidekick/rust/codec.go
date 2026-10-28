@@ -298,7 +298,7 @@ type codec struct {
 	// Note that using `self` does not work, as the generated code may contain
 	// nested modules for nested messages.
 	modulePath string
-	// Additional Rust packages imported by this module. The Mustache template
+	// Additional Rust packages imported by this module. The Go template
 	// hardcodes a number of packages, but some are configured via the
 	// command-line.
 	extraPackages []*packagez
