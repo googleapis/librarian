@@ -20,8 +20,11 @@ limitations under the License.
 /// Throws a [http.ClientException] if there were problems communicating with
 /// the API service. Throws a [ServiceException] if the API method failed for
 /// any reason.
+///
+/// Failed requests are retried using [retry] if provided, and not retried
+/// otherwise.
 {{- if .Codec.ServerSideStreaming }}
-Stream<{{ .Codec.ResponseType }}> {{ .Codec.Name }}({{ .Codec.RequestType }} request) {
+Stream<{{ .Codec.ResponseType }}> {{ .Codec.Name }}({{ .Codec.RequestType }} request, {RetryRunner? retry}) {
   final url = _endPoint.replace(path: '{{ .PathInfo.Codec.PathFmt }}'
     {{- if .Codec.HasQueryLines }}, queryParameters: {
       {{- range .Codec.QueryLines }}
@@ -33,19 +36,20 @@ Stream<{{ .Codec.ResponseType }}> {{ .Codec.Name }}({{ .Codec.RequestType }} req
   return _client
       .{{ .Codec.RequestMethod }}Streaming(url{{- if .Codec.HasBody }},
         body: {{ .Codec.BodyMessageName }}{{- end }},
-        enableSse: {{ .Codec.EnableSSE }})
+        enableSse: {{ .Codec.EnableSSE }},
+        retry: retry ?? noRetry)
       .map({{ .Codec.ResponseType }}.fromJson);
 }
 {{- else if .Codec.IsLROGetOperation }}
 ///
 /// This method can be used to get the current status of a long-running
 /// operation.
-Future<Operation<T, S>> getOperation<T extends {{ .Model.Codec.ProtoPrefix }}ProtoMessage, S extends {{ .Model.Codec.ProtoPrefix }}ProtoMessage>(Operation<T, S> request) async {
+Future<Operation<T, S>> getOperation<T extends {{ .Model.Codec.ProtoPrefix }}ProtoMessage, S extends {{ .Model.Codec.ProtoPrefix }}ProtoMessage>(Operation<T, S> request, {RetryRunner? retry}) async {
   final url = _endPoint.replace(path: '{{ .PathInfo.Codec.PathFmt }}');
   {{- if .Codec.ReturnsValue }}
-  final response = await _client.{{ .Codec.RequestMethod }}(url{{- if .Codec.HasBody }}, body: {{ .Codec.BodyMessageName }}{{- end }});
+  final response = await _client.{{ .Codec.RequestMethod }}(url{{- if .Codec.HasBody }}, body: {{ .Codec.BodyMessageName }}{{- end }}, retry: retry ?? noRetry);
   {{- else }}
-  await _client.{{ .Codec.RequestMethod }}(url{{- if .Codec.HasBody }}, body: {{ .Codec.BodyMessageName }}{{- end }});
+  await _client.{{ .Codec.RequestMethod }}(url{{- if .Codec.HasBody }}, body: {{ .Codec.BodyMessageName }}{{- end }}, retry: retry ?? noRetry);
   {{- end }}
   return Operation.fromJson(response, request.operationHelper);
 }
@@ -58,7 +62,7 @@ Future<Operation<T, S>> getOperation<T extends {{ .Model.Codec.ProtoPrefix }}Pro
 /// When complete, [Operation.done] will be `true`. If successful,
 /// [Operation.responseAsMessage] will contain the operation's result.
 {{- end }}
-Future<{{ .Codec.ResponseType }}{{- if .OperationInfo }}<{{ .OperationInfo.Codec.ResponseType }}, {{ .OperationInfo.Codec.MetadataType }}>{{- end }}> {{ .Codec.Name }}({{ .Codec.RequestType }} request) async {
+Future<{{ .Codec.ResponseType }}{{- if .OperationInfo }}<{{ .OperationInfo.Codec.ResponseType }}, {{ .OperationInfo.Codec.MetadataType }}>{{- end }}> {{ .Codec.Name }}({{ .Codec.RequestType }} request, {RetryRunner? retry}) async {
   final url = _endPoint.replace(path: '{{ .PathInfo.Codec.PathFmt }}'
     {{- if .Codec.HasQueryLines }}, queryParameters: {
       {{- range .Codec.QueryLines }}
@@ -68,10 +72,10 @@ Future<{{ .Codec.ResponseType }}{{- if .OperationInfo }}<{{ .OperationInfo.Codec
     {{- end }}
   );
   {{- if .Codec.ReturnsValue }}
-  final response = await _client.{{ .Codec.RequestMethod }}(url{{- if .Codec.HasBody }}, body: {{ .Codec.BodyMessageName }}{{- end }});
+  final response = await _client.{{ .Codec.RequestMethod }}(url{{- if .Codec.HasBody }}, body: {{ .Codec.BodyMessageName }}{{- end }}, retry: retry ?? noRetry);
   return {{ .Codec.ResponseType }}.fromJson(response{{- if .OperationInfo }}, OperationHelper({{ .OperationInfo.Codec.ResponseType }}.fromJson, {{ .OperationInfo.Codec.MetadataType }}.fromJson),{{- end }});
   {{- else }}
-  await _client.{{ .Codec.RequestMethod }}(url{{- if .Codec.HasBody }}, body: {{ .Codec.BodyMessageName }}{{- end }});
+  await _client.{{ .Codec.RequestMethod }}(url{{- if .Codec.HasBody }}, body: {{ .Codec.BodyMessageName }}{{- end }}, retry: retry ?? noRetry);
   {{- end }}
 }
 {{- end }}
