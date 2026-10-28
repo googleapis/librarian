@@ -279,7 +279,7 @@ func (c *codec) fieldTypeDeprecated(field *api.Field) (bool, error) {
 		if err != nil {
 			return false, err
 		}
-		return e.Deprecated, nil
+		return e.Deprecated(), nil
 	}
 	return false, nil
 }
@@ -304,7 +304,7 @@ func (c *codec) fieldPackage(field *api.Field) (string, error) {
 		if err != nil {
 			return "", err
 		}
-		return e.Package, nil
+		return e.Package(), nil
 	}
 	return "", nil
 }

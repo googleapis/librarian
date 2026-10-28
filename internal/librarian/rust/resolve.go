@@ -68,7 +68,7 @@ func findExternalPackages(lib *config.Library, sources *sources.Sources, pc *con
 		ownedPackages[m.Package] = true
 	}
 	for _, e := range model.Enums {
-		ownedPackages[e.Package] = true
+		ownedPackages[e.Package()] = true
 	}
 	// Identify all dependencies.
 	var targetIDs []string
@@ -79,7 +79,7 @@ func findExternalPackages(lib *config.Library, sources *sources.Sources, pc *con
 		targetIDs = append(targetIDs, m.ID)
 	}
 	for _, e := range model.Enums {
-		targetIDs = append(targetIDs, e.ID)
+		targetIDs = append(targetIDs, e.ID())
 	}
 	allDeps, err := api.FindDependencies(model, targetIDs)
 	if err != nil {
@@ -94,7 +94,7 @@ func findExternalPackages(lib *config.Library, sources *sources.Sources, pc *con
 		} else if m := model.Message(id); m != nil {
 			pkg = m.Package
 		} else if e := model.Enum(id); e != nil {
-			pkg = e.Package
+			pkg = e.Package()
 		}
 		if pkg != "" && !ownedPackages[pkg] {
 			externalPackages[pkg] = true

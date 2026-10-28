@@ -843,27 +843,18 @@ func processResourceReference(f *descriptorpb.FieldDescriptorProto, field *api.F
 }
 
 func processEnum(model *api.API, e *descriptorpb.EnumDescriptorProto, eFQN, packagez string, parent *api.Message, comments map[string]string, pathPrefix []int32) *api.Enum {
-	enum := &api.Enum{
-		Name:          e.GetName(),
-		ID:            eFQN,
-		Parent:        parent,
-		Package:       packagez,
-		Documentation: lookupComment(comments, pathPrefix),
-		Deprecated:    e.GetOptions().GetDeprecated(),
-	}
-	model.AddEnum(enum)
+	var values []*api.EnumValue
 	for i, ev := range e.Value {
 		enumValue := api.NewEnumValueBuilder().
 			WithName(ev.GetName()).
 			WithNumber(ev.GetNumber()).
-			WithParent(enum).
 			WithDocumentation(lookupComment(comments, append(pathPrefix, enumDescriptorValue, int32(i)))).
 			WithDeprecated(ev.GetOptions().GetDeprecated()).
 			Build()
-		enum.Values = append(enum.Values, enumValue)
+		values = append(values, enumValue)
 	}
 	numbers := map[int32]*api.EnumValue{}
-	for _, v := range enum.Values {
+	for _, v := range values {
 		matchesStyle := func(v *api.EnumValue) bool {
 			return strings.ToUpper(v.Name()) == v.Name()
 		}
@@ -877,7 +868,17 @@ func processEnum(model *api.API, e *descriptorpb.EnumDescriptorProto, eFQN, pack
 	}
 	unique := slices.Collect(maps.Values(numbers))
 	slices.SortFunc(unique, func(a, b *api.EnumValue) int { return int(a.Number() - b.Number()) })
-	enum.UniqueNumberValues = unique
+	enum := api.NewEnumBuilder().
+		WithName(e.GetName()).
+		WithID(eFQN).
+		WithParent(parent).
+		WithPackage(packagez).
+		WithDocumentation(lookupComment(comments, pathPrefix)).
+		WithDeprecated(e.GetOptions().GetDeprecated()).
+		WithValues(values...).
+		WithUniqueNumberValues(unique...).
+		Build()
+	model.AddEnum(enum)
 	return enum
 }
 

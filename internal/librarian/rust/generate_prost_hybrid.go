@@ -129,9 +129,9 @@ func filterModelToTypes(model *api.API, rootTypeIDs []string, allowGrpcAnyFields
 		if e == nil {
 			return
 		}
-		reachableEnums[e.ID] = true
-		if e.Parent != nil {
-			enqueueMsg(e.Parent, path)
+		reachableEnums[e.ID()] = true
+		if e.Parent() != nil {
+			enqueueMsg(e.Parent(), path)
 		}
 	}
 
@@ -247,13 +247,13 @@ func filterModelToTypes(model *api.API, rootTypeIDs []string, allowGrpcAnyFields
 	// Collect external top-level enums referenced by roots.
 	var externalEnums []*api.Enum
 	for e := range model.AllEnums() {
-		if e.ID != "" && reachableEnums[e.ID] && !isWKT(e.ID) && e.Parent == nil {
-			if e.Package != model.PackageName && e.Package != api.ReservedPackageName {
+		if e.ID() != "" && reachableEnums[e.ID()] && !isWKT(e.ID()) && e.Parent() == nil {
+			if e.Package() != model.PackageName && e.Package() != api.ReservedPackageName {
 				externalEnums = append(externalEnums, e)
 			}
 		}
 	}
-	slices.SortFunc(externalEnums, func(a, b *api.Enum) int { return cmp.Compare(a.ID, b.ID) })
+	slices.SortFunc(externalEnums, func(a, b *api.Enum) int { return cmp.Compare(a.ID(), b.ID()) })
 
 	// Construct hybridModel for prost conversion code generation.
 	hybridModel := api.API{
@@ -265,7 +265,7 @@ func filterModelToTypes(model *api.API, rootTypeIDs []string, allowGrpcAnyFields
 		Services:            model.Services,
 		Messages:            language.FilterSlice(model.Messages, func(m *api.Message) bool { return reachableMsgs[m.ID] }),
 		ExternalMessages:    externalMessages,
-		Enums:               language.FilterSlice(model.Enums, func(e *api.Enum) bool { return reachableEnums[e.ID] }),
+		Enums:               language.FilterSlice(model.Enums, func(e *api.Enum) bool { return reachableEnums[e.ID()] }),
 		ExternalEnums:       externalEnums,
 		ResourceDefinitions: model.ResourceDefinitions,
 		QuickstartService:   model.QuickstartService,
@@ -300,8 +300,8 @@ func filterModelToTypes(model *api.API, rootTypeIDs []string, allowGrpcAnyFields
 		}
 	}
 	for e := range model.AllEnums() {
-		if e.ID != "" && !isWKT(e.ID) && !reachableEnums[e.ID] {
-			unusedTypes = append(unusedTypes, e.ID)
+		if e.ID() != "" && !isWKT(e.ID()) && !reachableEnums[e.ID()] {
+			unusedTypes = append(unusedTypes, e.ID())
 		}
 	}
 	slices.Sort(unusedTypes)

@@ -181,11 +181,11 @@ func TestNewTestAPI_IndexesNestedEnums(t *testing.T) {
 
 	model := api.NewTestAPI([]*api.Message{parent}, nil, nil)
 
-	if got := model.Enum(nestedEnum.ID); got != nestedEnum {
-		t.Errorf("model.Enum(%q) = %v, want %v", nestedEnum.ID, got, nestedEnum)
+	if got := model.Enum(nestedEnum.ID()); got != nestedEnum {
+		t.Errorf("model.Enum(%q) = %v, want %v", nestedEnum.ID(), got, nestedEnum)
 	}
-	if nestedEnum.Parent != parent {
-		t.Errorf("nestedEnum.Parent = %v, want %v", nestedEnum.Parent, parent)
+	if nestedEnum.Parent() != parent {
+		t.Errorf("nestedEnum.Parent() = %v, want %v", nestedEnum.Parent(), parent)
 	}
 	if val.Parent() != nestedEnum {
 		t.Errorf("val.Parent() = %v, want %v", val.Parent(), nestedEnum)
@@ -201,8 +201,8 @@ func TestNewTestAPI_DeduplicatesNestedEnums(t *testing.T) {
 	if got := len(parent.Enums); got != 1 {
 		t.Errorf("len(parent.Enums) = %d, want 1", got)
 	}
-	if got := model.Enum(enum.ID); got != enum {
-		t.Errorf("model.Enum(%q) = %v, want %v", enum.ID, got, enum)
+	if got := model.Enum(enum.ID()); got != enum {
+		t.Errorf("model.Enum(%q) = %v, want %v", enum.ID(), got, enum)
 	}
 }
 
@@ -441,7 +441,7 @@ func TestField_FluentSetters(t *testing.T) {
 	if f.Typez != api.TypezEnum {
 		t.Errorf("f.Typez = %v, want %v", f.Typez, api.TypezEnum)
 	}
-	if got, want := f.TypezID, enum.ID; got != want {
+	if got, want := f.TypezID, enum.ID(); got != want {
 		t.Errorf("f.TypezID = %q, want %q", got, want)
 	}
 	if !f.AutoPopulated {
@@ -759,5 +759,61 @@ func TestEnumValue_Builder(t *testing.T) {
 	}
 	if sv.Index() != 2 {
 		t.Errorf("sv.Index() = %d, want 2", sv.Index())
+	}
+}
+
+func TestEnum_Builder(t *testing.T) {
+	parent := api.NewTestMessage("Parent")
+	ev := api.NewEnumValueBuilder().
+		WithName("ACTIVE").
+		WithID(".test.Parent.Status.ACTIVE").
+		WithNumber(1).
+		Build()
+	sv := api.NewSampleValue(ev, 0)
+	enum := api.NewEnumBuilder().
+		WithName("Status").
+		WithID(".test.Parent.Status").
+		WithDocumentation("Status enum").
+		WithDeprecated(true).
+		WithValues(ev).
+		WithUniqueNumberValues(ev).
+		WithValuesForExamples(sv).
+		WithParent(parent).
+		WithPackage("test").
+		Build()
+	enum.SetAnnotations("enum-codec")
+
+	if enum.Name() != "Status" {
+		t.Errorf("enum.Name() = %q, want %q", enum.Name(), "Status")
+	}
+	if enum.ID() != ".test.Parent.Status" {
+		t.Errorf("enum.ID() = %q, want %q", enum.ID(), ".test.Parent.Status")
+	}
+	if enum.Documentation() != "Status enum" {
+		t.Errorf("enum.Documentation() = %q, want %q", enum.Documentation(), "Status enum")
+	}
+	if !enum.Deprecated() {
+		t.Errorf("enum.Deprecated() = false, want true")
+	}
+	if len(enum.Values()) != 1 || enum.Values()[0] != ev {
+		t.Errorf("enum.Values() = %v, want [%v]", enum.Values(), ev)
+	}
+	if ev.Parent() != enum {
+		t.Errorf("ev.Parent() = %v, want %v", ev.Parent(), enum)
+	}
+	if len(enum.UniqueNumberValues()) != 1 || enum.UniqueNumberValues()[0] != ev {
+		t.Errorf("enum.UniqueNumberValues() = %v, want [%v]", enum.UniqueNumberValues(), ev)
+	}
+	if len(enum.ValuesForExamples()) != 1 || enum.ValuesForExamples()[0] != sv {
+		t.Errorf("enum.ValuesForExamples() = %v, want [%v]", enum.ValuesForExamples(), sv)
+	}
+	if enum.Parent() != parent {
+		t.Errorf("enum.Parent() = %v, want %v", enum.Parent(), parent)
+	}
+	if enum.Package() != "test" {
+		t.Errorf("enum.Package() = %q, want %q", enum.Package(), "test")
+	}
+	if enum.Codec() != "enum-codec" {
+		t.Errorf("enum.Codec() = %v, want %q", enum.Codec(), "enum-codec")
 	}
 }

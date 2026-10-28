@@ -97,14 +97,21 @@ func CheckMessage(t *testing.T, got *api.Message, want *api.Message) {
 // CheckEnum compares two `Enum` instances ignoring the enum value order.
 func CheckEnum(t *testing.T, got api.Enum, want api.Enum) {
 	t.Helper()
+	ignoreEnumFields := cmp.FilterPath(func(p cmp.Path) bool {
+		switch p.Last().String() {
+		case ".values", ".uniqueNumberValues", ".parent":
+			return true
+		}
+		return false
+	}, cmp.Ignore())
 	if diff := cmp.Diff(want, got,
 		AllowUnexported(),
-		cmpopts.IgnoreFields(api.Enum{}, "Values", "UniqueNumberValues", "Parent"),
+		ignoreEnumFields,
 	); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 	less := func(a, b *api.EnumValue) bool { return a.Name() < b.Name() }
-	if diff := cmp.Diff(want.Values, got.Values,
+	if diff := cmp.Diff(want.Values(), got.Values(),
 		AllowUnexported(),
 		cmpopts.SortSlices(less),
 		cmp.FilterPath(func(p cmp.Path) bool { return p.Last().String() == ".parent" }, cmp.Ignore()),

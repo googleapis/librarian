@@ -78,7 +78,7 @@ func TestCrossReferenceFields(t *testing.T) {
 	enumT := NewTestEnum("EnumT")
 	fieldE := NewTestField("enum_field").
 		WithType(TypezEnum).
-		WithTypezID(enumT.ID)
+		WithTypezID(enumT.ID())
 	message := NewTestMessage("Message").WithFields(fieldM, fieldE)
 
 	model := NewTestAPI([]*Message{messageT, message}, []*Enum{enumT}, []*Service{})

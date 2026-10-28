@@ -424,7 +424,7 @@ func TestFindDependenciesMapFields(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	want := []string{container.ID, msgMap.ID, enumMap.ID, valMsg.ID, valEnum.ID}
+	want := []string{container.ID, msgMap.ID, enumMap.ID, valMsg.ID, valEnum.ID()}
 	if diff := cmp.Diff(want, flatten(got), cmpopts.SortSlices(less)); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
