@@ -44,7 +44,7 @@ func TestRoutingCombosSimpleOr(t *testing.T) {
 			},
 		},
 	}
-	if diff := cmp.Diff(want, method.RoutingCombos()); diff != "" {
+	if diff := cmp.Diff(want, method.RoutingCombos(), allowUnexported()); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
@@ -70,7 +70,7 @@ func TestRoutingCombosSimpleAnd(t *testing.T) {
 			},
 		},
 	}
-	if diff := cmp.Diff(want, method.RoutingCombos()); diff != "" {
+	if diff := cmp.Diff(want, method.RoutingCombos(), allowUnexported()); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
@@ -116,15 +116,15 @@ func TestRoutingCombosFull(t *testing.T) {
 		make_combo(va3, vb1, vc1),
 		make_combo(va3, vb2, vc1),
 	}
-	if diff := cmp.Diff(want, method.RoutingCombos()); diff != "" {
+	if diff := cmp.Diff(want, method.RoutingCombos(), allowUnexported()); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
 
 func TestRoutingInfoVariantFieldName(t *testing.T) {
-	variant := &RoutingInfoVariant{
-		FieldPath: []string{"request", "b", "c"},
-	}
+	variant := NewRoutingInfoVariantBuilder().
+		WithFieldPath("request", "b", "c").
+		Build()
 	got := variant.FieldName()
 	want := "request.b.c"
 	if got != want {
@@ -133,21 +133,40 @@ func TestRoutingInfoVariantFieldName(t *testing.T) {
 }
 
 func TestRoutingInfoVariantTemplateAsString(t *testing.T) {
-	variant := &RoutingInfoVariant{
-		Prefix: RoutingPathSpec{
-			Segments: []string{"a", "b", "c"},
-		},
-		Matching: RoutingPathSpec{
-			Segments: []string{"d", "*"},
-		},
-		Suffix: RoutingPathSpec{
-			Segments: []string{"e", "**"},
-		},
-	}
+	variant := NewRoutingInfoVariantBuilder().
+		WithPrefixSegments("a", "b", "c").
+		WithMatchingSegments("d", "*").
+		WithSuffixSegments("e", "**").
+		Build()
 	got := variant.TemplateAsString()
 	want := "a/b/c/d/*/e/**"
 	if got != want {
 		t.Errorf("mismatch in TemplateAsString got=%q, want=%q", got, want)
+	}
+}
+
+func TestRoutingInfoVariantBuilder(t *testing.T) {
+	variant := NewRoutingInfoVariantBuilder().
+		WithFieldPath("a", "b").
+		WithPrefix(NewRoutingPathSpec("p")).
+		WithMatching(NewRoutingPathSpec("m")).
+		WithSuffix(NewRoutingPathSpec("s")).
+		Build()
+	variant.SetAnnotations("codec-value")
+	if diff := cmp.Diff([]string{"a", "b"}, variant.FieldPath()); diff != "" {
+		t.Errorf("mismatch in FieldPath (-want +got):\n%s", diff)
+	}
+	if diff := cmp.Diff([]string{"p"}, variant.Prefix().Segments()); diff != "" {
+		t.Errorf("mismatch in Prefix.Segments (-want +got):\n%s", diff)
+	}
+	if diff := cmp.Diff([]string{"m"}, variant.Matching().Segments()); diff != "" {
+		t.Errorf("mismatch in Matching.Segments (-want +got):\n%s", diff)
+	}
+	if diff := cmp.Diff([]string{"s"}, variant.Suffix().Segments()); diff != "" {
+		t.Errorf("mismatch in Suffix.Segments (-want +got):\n%s", diff)
+	}
+	if variant.Codec() != "codec-value" {
+		t.Errorf("mismatch in Codec got=%v, want=%v", variant.Codec(), "codec-value")
 	}
 }
 

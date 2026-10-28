@@ -229,7 +229,7 @@ func annotateSegments(segments []string, isPrefix bool, isSuffix bool) []string 
 func (c *codec) routingParamsFromRouting(routingInfos []*api.RoutingInfo) []*routingParam {
 	var params []*routingParam
 	for _, info := range routingInfos {
-		if info.Name == "" && len(info.Variants) > 0 && len(info.Variants[0].FieldPath) == 0 {
+		if info.Name == "" && len(info.Variants) > 0 && len(info.Variants[0].FieldPath()) == 0 {
 			// Explicit empty routing annotation disables routing headers per AIP-4222.
 			continue
 		}
@@ -237,17 +237,17 @@ func (c *codec) routingParamsFromRouting(routingInfos []*api.RoutingInfo) []*rou
 
 		var variants []*routingParamVariant
 		for _, variant := range info.Variants {
-			if len(variant.FieldPath) == 0 {
+			if len(variant.FieldPath()) == 0 {
 				continue
 			}
 			if routingKey == "" {
-				routingKey = strings.Join(variant.FieldPath, ".")
+				routingKey = strings.Join(variant.FieldPath(), ".")
 			}
 			variants = append(variants, &routingParamVariant{
-				FieldAccessor:    formatFieldAccessor(variant.FieldPath),
-				PrefixSegments:   annotateSegments(variant.Prefix.Segments, true, false),
-				MatchingSegments: annotateSegments(variant.Matching.Segments, false, false),
-				SuffixSegments:   annotateSegments(variant.Suffix.Segments, false, true),
+				FieldAccessor:    formatFieldAccessor(variant.FieldPath()),
+				PrefixSegments:   annotateSegments(variant.Prefix().Segments(), true, false),
+				MatchingSegments: annotateSegments(variant.Matching().Segments(), false, false),
+				SuffixSegments:   annotateSegments(variant.Suffix().Segments(), false, true),
 			})
 		}
 

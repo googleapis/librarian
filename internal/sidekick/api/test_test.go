@@ -530,7 +530,7 @@ func TestRoutingInfo_Builders(t *testing.T) {
 	if len(r.Variants) != 1 || r.Variants[0] != v {
 		t.Errorf("r.Variants = %v, want [%v]", r.Variants, v)
 	}
-	if diff := cmp.Diff([]string{"name", "id"}, v.FieldPath); diff != "" {
+	if diff := cmp.Diff([]string{"name", "id"}, v.FieldPath()); diff != "" {
 		t.Errorf("mismatch in FieldPath (-want +got):\n%s", diff)
 	}
 }
