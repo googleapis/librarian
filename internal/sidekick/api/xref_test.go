@@ -146,3 +146,40 @@ func TestCrossReferenceService(t *testing.T) {
 		t.Errorf("mismatched model, got=%v, want=%v", mixin.Model, model)
 	}
 }
+
+func TestCrossReferenceMap(t *testing.T) {
+	valMsg := NewTestMessage("ValueMessage")
+	key := NewTestField("key").WithType(TypezString)
+	val := NewTestField("value").WithType(TypezMessage).WithTypezID(valMsg.ID)
+	mapType := NewTestMapWithFields("MapEntry", key, val)
+	mapField := NewTestField("map_field").WithMapType(mapType)
+	msg := NewTestMessage("Container").WithFields(mapField)
+
+	model := NewTestAPI([]*Message{msg, valMsg}, nil, nil).WithMaps(mapType)
+	if err := CrossReference(model); err != nil {
+		t.Fatal(err)
+	}
+
+	if mapField.MapType != mapType {
+		t.Errorf("mismatched MapType for %s, got=%v, want=%v", mapField.Name, mapField.MapType, mapType)
+	}
+	if val.MessageType != valMsg {
+		t.Errorf("mismatched MessageType for map value %s, got=%v, want=%v", val.Name, val.MessageType, valMsg)
+	}
+}
+
+func TestCrossReferenceMap_Error(t *testing.T) {
+	mapField := NewTestField("map_field").WithType(TypezMap)
+	mapField.TypezID = ".test.NonExistentMap"
+	msg := NewTestMessage("Container").WithFields(mapField)
+
+	model := NewTestAPI([]*Message{msg}, nil, nil)
+	err := CrossReference(model)
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+	wantErr := "unknown map type .test.NonExistentMap for field .test.Container.map_field"
+	if err.Error() != wantErr {
+		t.Errorf("CrossReference() error = %q, want %q", err.Error(), wantErr)
+	}
+}

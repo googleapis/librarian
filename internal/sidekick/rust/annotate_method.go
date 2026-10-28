@@ -175,7 +175,7 @@ type bindingSubstitution struct {
 	//
 	// This field can be deeply nested. We need to capture code for the entire
 	// chain. This accessor always returns an `Option<&T>`, even for fields
-	// which are always present. This simplifies the mustache templates.
+	// which are always present. This simplifies the Go templates.
 	//
 	// The accessor should not
 	// - copy any fields

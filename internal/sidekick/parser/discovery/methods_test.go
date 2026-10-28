@@ -38,7 +38,7 @@ func TestMakeServiceMethods(t *testing.T) {
 			WithVariableNamed("project").
 			WithLiteral("zones").
 			WithVariableNamed("zone")).
-		WithQueryParameters(map[string]bool{}).
+		WithQueryParameters().
 		WithBodyFieldPath("")
 	m1.InputTypeID = "..zones.getRequest"
 	m1.OutputTypeID = "..Zone"
@@ -54,10 +54,7 @@ func TestMakeServiceMethods(t *testing.T) {
 			WithLiteral("locations").
 			WithLiteral("global").
 			WithLiteral("firewallPolicies")).
-		WithQueryParameters(map[string]bool{
-			"parentId":  true,
-			"requestId": true,
-		}).
+		WithQueryParameters("parentId", "requestId").
 		WithBodyFieldPath("body")
 	m2.InputTypeID = "..firewallPolicies.insertRequest"
 	m2.OutputTypeID = "..Operation"
@@ -111,7 +108,7 @@ func TestMakeServiceMethodsReturnsEmpty(t *testing.T) {
 			WithVariableNamed("zone").
 			WithLiteral("operations").
 			WithVariableNamed("operation")).
-		WithQueryParameters(map[string]bool{}).
+		WithQueryParameters().
 		WithBodyFieldPath("").
 		ReturnEmpty()
 	want.InputTypeID = "..zoneOperations.deleteRequest"
@@ -143,7 +140,7 @@ func TestMakeServiceMethodsDeprecated(t *testing.T) {
 			WithLiteral("projects").
 			WithVariableNamed("project").
 			WithLiteral("moveInstance")).
-		WithQueryParameters(map[string]bool{"requestId": true}).
+		WithQueryParameters("requestId").
 		WithBodyFieldPath("body")
 	want.InputTypeID = "..projects.moveInstanceRequest"
 	want.OutputTypeID = "..Operation"

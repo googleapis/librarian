@@ -80,7 +80,7 @@ func TestProtobuf_LocationMixin(t *testing.T) {
 				WithMatch().
 				WithLiteral("locations").
 				WithMatch())).
-		WithQueryParameters(map[string]bool{})
+		WithQueryParameters()
 	want.SourceServiceID = ".google.cloud.location.Locations"
 	want.InputTypeID = ".google.cloud.location.GetLocationRequest"
 	want.OutputTypeID = ".google.cloud.location.Location"
@@ -143,7 +143,7 @@ func TestProtobuf_IAMMixin(t *testing.T) {
 				WithLiteral("services").
 				WithMatch()).
 			WithVerb("getIamPolicy")).
-		WithQueryParameters(map[string]bool{}).
+		WithQueryParameters().
 		WithBodyFieldPath("*")
 	want.SourceServiceID = ".google.iam.v1.IAMPolicy"
 	want.InputTypeID = ".google.iam.v1.GetIamPolicyRequest"
@@ -212,7 +212,7 @@ func TestProtobuf_OperationMixin(t *testing.T) {
 			WithVariable(api.NewPathVariable("name").
 				WithLiteral("operations").
 				WithMatch())).
-		WithQueryParameters(map[string]bool{}).
+		WithQueryParameters().
 		WithBodyFieldPath("*")
 	want.SourceServiceID = ".google.longrunning.Operations"
 	want.InputTypeID = ".google.longrunning.GetOperationRequest"
@@ -293,7 +293,7 @@ func TestProtobuf_OperationMixinNoEmpty(t *testing.T) {
 			WithVariable(api.NewPathVariable("name").
 				WithLiteral("operations").
 				WithMatch())).
-		WithQueryParameters(map[string]bool{}).
+		WithQueryParameters().
 		WithBodyFieldPath("*").
 		ReturnEmpty()
 	want.SourceServiceID = ".google.longrunning.Operations"
@@ -370,7 +370,7 @@ func TestProtobuf_DuplicateMixin(t *testing.T) {
 			WithVariable(api.NewPathVariable("name").
 				WithLiteral("operations").
 				WithMatch())).
-		WithQueryParameters(map[string]bool{})
+		WithQueryParameters()
 	want.SourceServiceID = ".test.LroService"
 	want.InputTypeID = ".google.longrunning.GetOperationRequest"
 	want.OutputTypeID = ".google.longrunning.Operation"

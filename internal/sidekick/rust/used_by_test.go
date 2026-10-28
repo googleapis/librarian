@@ -422,20 +422,18 @@ func TestFindUsedPackages_MapFields(t *testing.T) {
 	message := api.NewTestMessage("Fake").
 		WithPackage("test")
 
-	mapEntry := api.NewTestMapMessageWithFields(
+	mapEntry := api.NewTestMapWithFields(
 		"FakeMapEntry",
 		api.NewTestField("key").WithType(api.TypezString),
 		api.NewTestField("value").WithMessageType(externalMessage),
 	)
-	message.WithMessages(mapEntry)
 
 	mapField := api.NewTestField("map_field").
-		WithMessageType(mapEntry).
-		WithMap()
+		WithMapType(mapEntry)
 
 	message.WithFields(mapField)
 
-	model := api.NewTestAPI([]*api.Message{message}, nil, nil)
+	model := api.NewTestAPI([]*api.Message{message}, nil, nil).WithMaps(mapEntry)
 	model.AddMessage(externalMessage)
 
 	c, err := newCodec(libconfig.SpecProtobuf, map[string]string{
