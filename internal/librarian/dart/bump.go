@@ -31,6 +31,14 @@ import (
 	"github.com/googleapis/librarian/internal/semver"
 )
 
+// initialVersion is the version of a package's first release if
+// default.dart.version is not set.
+const initialVersion = "0.1.0"
+
+// ErrUnpublishedVersion indicates that a package that has never been published
+// has a version in librarian.yaml.
+var ErrUnpublishedVersion = errors.New("unpublished package has a version in librarian.yaml")
+
 // Bump updates the version number and dependencies of Dart packages in the workspace.
 //
 // The algorithm (minus edge cases) is:
@@ -46,6 +54,10 @@ import (
 //     - Update the "dependencies:" section of each dependent package.
 //     - Update the version for the package in cfg.Default.Dart.Packages if the package
 //     has an entry there.
+//
+// A package that has never been published must not have a version in
+// librarian.yaml; it is released at default.dart.version, or 0.1.0 if that is
+// not set.
 func Bump(ctx context.Context, cfg *config.Config, all bool, libraryName, versionOverride string) error {
 	if !all {
 		return errors.New("bumping a single Dart package not supported, use --all")
@@ -99,7 +111,7 @@ func Bump(ctx context.Context, cfg *config.Config, all bool, libraryName, versio
 }
 
 func maybeBumpLibrary(ctx context.Context, cloudDeps []string, newVersions map[string]string, lib *config.Library, defaults *config.Default) (string, error) {
-	if lib.SkipRelease || lib.Version == "" {
+	if lib.SkipRelease {
 		return lib.Version, nil
 	}
 
@@ -111,11 +123,24 @@ func maybeBumpLibrary(ctx context.Context, cloudDeps []string, newVersions map[s
 	}
 
 	if publishedVersion == "" {
-		// The packaged is unpublished so the only work to do is create a CHANGELOG.md.
-		if err := updateChangelog(ctx, packageDir, lib.Version, "", false); err != nil {
+		// Unpublished packages should not have a version.
+		if lib.Version != "" {
+			return "", fmt.Errorf("%w: %s has version %s; publish and tag the pending release, or remove the version if it was added by hand", ErrUnpublishedVersion, lib.Name, lib.Version)
+		}
+		version := initialVersion
+		if defaults != nil && defaults.Dart != nil && defaults.Dart.Version != "" {
+			version = defaults.Dart.Version
+		}
+		if err := updatePubspecVersion(filepath.Join(packageDir, "pubspec.yaml"), version); err != nil {
 			return "", err
 		}
-		return lib.Version, nil
+		if err := updateLibraryVersion(packageDir, version); err != nil {
+			return "", err
+		}
+		if err := updateChangelog(ctx, packageDir, version, "", false); err != nil {
+			return "", err
+		}
+		return version, nil
 	}
 
 	if lib.Version != publishedVersion {
