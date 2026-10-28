@@ -152,7 +152,7 @@ func TestRoutingInfoVariantTemplateAsString(t *testing.T) {
 }
 
 func TestPathTemplateBuilder(t *testing.T) {
-	got := (&PathTemplate{}).
+	got := NewPathTemplateBuilder().
 		WithLiteral("v1").
 		WithVariable(NewPathVariableBuilder("parent", "child").
 			WithLiteral("projects").
@@ -162,10 +162,11 @@ func TestPathTemplateBuilder(t *testing.T) {
 			WithMatchRecursive().
 			Build()).
 		WithVariableNamed("v2", "field").
-		WithVerb("verb")
+		WithVerb("verb").
+		Build()
 	verb := "verb"
 	want := &PathTemplate{
-		Segments: []PathSegment{
+		segments: []PathSegment{
 			{
 				literal: "v1",
 			},
@@ -183,15 +184,18 @@ func TestPathTemplateBuilder(t *testing.T) {
 				},
 			},
 		},
-		Verb: verb,
+		verb: verb,
 	}
-	if diff := cmp.Diff(want, got, cmp.AllowUnexported(PathSegment{}, PathVariable{})); diff != "" {
+	if diff := cmp.Diff(want, got, cmp.AllowUnexported(PathTemplate{}, PathSegment{}, PathVariable{})); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
-	if got.Segments[0].Literal() != "v1" {
-		t.Errorf("Segments[0].Literal() = %q, want %q", got.Segments[0].Literal(), "v1")
+	if got.Segments()[0].Literal() != "v1" {
+		t.Errorf("Segments()[0].Literal() = %q, want %q", got.Segments()[0].Literal(), "v1")
 	}
-	v := got.Segments[1].Variable()
+	if got.Verb() != "verb" {
+		t.Errorf("Verb() = %q, want %q", got.Verb(), "verb")
+	}
+	v := got.Segments()[1].Variable()
 	if diff := cmp.Diff([]string{"parent", "child"}, v.FieldPath()); diff != "" {
 		t.Errorf("FieldPath() mismatch (-want +got):\n%s", diff)
 	}

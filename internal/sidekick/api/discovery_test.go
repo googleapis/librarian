@@ -83,14 +83,15 @@ func TestAddDiscoveryLroAnnotations(t *testing.T) {
 			WithID("..instances.insert").
 			WithOutput(operation).
 			WithVerb("POST").
-			WithPathTemplate((&PathTemplate{}).
+			WithPathTemplate(NewPathTemplateBuilder().
 				WithLiteral("compute").
 				WithLiteral("v1").
 				WithLiteral("projects").
 				WithVariableNamed("project").
 				WithLiteral("zones").
 				WithVariableNamed("zone").
-				WithLiteral("instances")).
+				WithLiteral("instances").
+				Build()).
 			WithQueryParameters(),
 	)
 	pollerService := NewTestService("zoneOperations").WithPackage("").WithMethods(
@@ -98,7 +99,7 @@ func TestAddDiscoveryLroAnnotations(t *testing.T) {
 			WithID("..zoneOperations.get").
 			WithOutput(operation).
 			WithVerb("GET").
-			WithPathTemplate((&PathTemplate{}).
+			WithPathTemplate(NewPathTemplateBuilder().
 				WithLiteral("compute").
 				WithLiteral("v1").
 				WithLiteral("projects").
@@ -106,7 +107,8 @@ func TestAddDiscoveryLroAnnotations(t *testing.T) {
 				WithLiteral("zones").
 				WithVariableNamed("zone").
 				WithLiteral("operations").
-				WithVariableNamed("operation")).
+				WithVariableNamed("operation").
+				Build()).
 			WithQueryParameters(),
 	)
 	model := NewTestAPI([]*Message{operation}, nil, []*Service{service, pollerService})
@@ -128,7 +130,7 @@ func TestAddDiscoveryLroAnnotations(t *testing.T) {
 	if diff := cmp.Diff("..zoneOperations", gotPoller.SourceServiceID); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
-	if diff := cmp.Diff(pollerService.Methods[0].PathInfo, gotPoller.PathInfo, cmp.AllowUnexported(PathSegment{}, PathVariable{}), cmpopts.EquateEmpty()); diff != "" {
+	if diff := cmp.Diff(pollerService.Methods[0].PathInfo, gotPoller.PathInfo, cmp.AllowUnexported(PathTemplate{}, PathSegment{}, PathVariable{}), cmpopts.EquateEmpty()); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
@@ -146,48 +148,52 @@ func TestAddDiscoveryLroAnnotationsError(t *testing.T) {
 		NewTestMethod("create_foo").
 			WithOutput(operation).
 			WithVerb("GET").
-			WithPathTemplate((&PathTemplate{}).
+			WithPathTemplate(NewPathTemplateBuilder().
 				WithLiteral("p").
 				WithVariableNamed("project").
 				WithLiteral("l").
 				WithVariableNamed("zone").
 				WithLiteral("foo").
-				WithVariableNamed("id")).
+				WithVariableNamed("id").
+				Build()).
 			WithQueryParameters(),
 		NewTestMethod("create_bar").
 			WithOutput(operation).
 			WithVerb("GET").
-			WithPathTemplate((&PathTemplate{}).
+			WithPathTemplate(NewPathTemplateBuilder().
 				WithLiteral("p").
 				WithVariableNamed("project").
 				WithLiteral("l").
 				WithVariableNamed("region").
 				WithLiteral("foo").
-				WithVariableNamed("id")).
+				WithVariableNamed("id").
+				Build()).
 			WithQueryParameters(),
 	)
 	pollerService := NewTestService("Operations").WithPackage("").WithMethods(
 		NewTestMethod("get_1").
 			WithOutput(operation).
 			WithVerb("GET").
-			WithPathTemplate((&PathTemplate{}).
+			WithPathTemplate(NewPathTemplateBuilder().
 				WithLiteral("p").
 				WithVariableNamed("project").
 				WithLiteral("l").
 				WithVariableNamed("zone").
 				WithLiteral("operations").
-				WithVariableNamed("operation")).
+				WithVariableNamed("operation").
+				Build()).
 			WithQueryParameters(),
 		NewTestMethod("get_2").
 			WithOutput(operation).
 			WithVerb("GET").
-			WithPathTemplate((&PathTemplate{}).
+			WithPathTemplate(NewPathTemplateBuilder().
 				WithLiteral("p").
 				WithVariableNamed("project").
 				WithLiteral("l").
 				WithVariableNamed("region").
 				WithLiteral("operations").
-				WithVariableNamed("operation")).
+				WithVariableNamed("operation").
+				Build()).
 			WithQueryParameters(),
 	)
 	model := NewTestAPI([]*Message{operation}, nil, []*Service{badService, pollerService})

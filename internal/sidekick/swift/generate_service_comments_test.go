@@ -42,7 +42,7 @@ func TestGenerateService_DocComments(t *testing.T) {
 		WithInput(req).
 		WithOutput(res).
 		WithVerb("GET").
-		WithPathTemplate((&api.PathTemplate{}).WithLiteral("v1").WithLiteral("projects").WithVariableNamed("project").WithLiteral("secrets").WithVariableNamed("secret"))
+		WithPathTemplate(api.NewPathTemplateBuilder().WithLiteral("v1").WithLiteral("projects").WithVariableNamed("project").WithLiteral("secrets").WithVariableNamed("secret").Build())
 
 	service := api.NewTestService("SecretManager").
 		WithDocumentation("Documentation for SecretManager service.").
@@ -97,7 +97,7 @@ func TestGenerateService_DiscoveryLRODocComments(t *testing.T) {
 		WithInput(req).
 		WithOutput(op).
 		WithVerb("POST").
-		WithPathTemplate((&api.PathTemplate{}).WithLiteral("compute").WithLiteral("v1").WithLiteral("projects").WithVariableNamed("project").WithLiteral("zones").WithVariableNamed("zone").WithLiteral("instances")).
+		WithPathTemplate(api.NewPathTemplateBuilder().WithLiteral("compute").WithLiteral("v1").WithLiteral("projects").WithVariableNamed("project").WithLiteral("zones").WithVariableNamed("zone").WithLiteral("instances").Build()).
 		WithDiscoveryLro(&api.DiscoveryLro{
 			PollingPathParameters: []string{"project", "zone"},
 		})

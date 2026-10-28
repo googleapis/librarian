@@ -88,10 +88,10 @@ func BuildHeuristicVocabulary(model *API) map[string]bool {
 			}
 
 			// Iterate backwards.
-			for i, seg := range slices.Backward(tmpl.Segments) {
+			for i, seg := range slices.Backward(tmpl.Segments()) {
 				if seg.Variable() != nil {
-					if i > 0 && tmpl.Segments[i-1].Literal() != "" {
-						token := tmpl.Segments[i-1].Literal()
+					if i > 0 && tmpl.Segments()[i-1].Literal() != "" {
+						token := tmpl.Segments()[i-1].Literal()
 						// Do not add API version strings (e.g., v1, v1beta1) to the vocabulary
 						if isVersionString(token) {
 							continue

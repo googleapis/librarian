@@ -223,7 +223,7 @@ func newModelWithSignatures(t *testing.T) *api.API {
 			api.NewTestMethodSignature("name", "optional_field"),
 			api.NewTestMethodSignature("name", "normal_field"),
 		).
-		WithPathTemplate((&api.PathTemplate{}).WithLiteral("v1").WithLiteral("simple"))
+		WithPathTemplate(api.NewPathTemplateBuilder().WithLiteral("v1").WithLiteral("simple").Build())
 
 	itemType := api.NewTestMessage("Item")
 	paginationResponseType := api.NewTestMessage("PaginationResponse").
@@ -240,7 +240,7 @@ func newModelWithSignatures(t *testing.T) *api.API {
 			api.NewTestMethodSignature("name", "optional_field"),
 			api.NewTestMethodSignature("name", "normal_field"),
 		).
-		WithPathTemplate((&api.PathTemplate{}).WithLiteral("v1").WithLiteral("page"))
+		WithPathTemplate(api.NewPathTemplateBuilder().WithLiteral("v1").WithLiteral("page").Build())
 
 	operationType := api.NewTestMessage("Operation").WithPackage("google.longrunning")
 	getOperationInputType := api.NewTestMessage("GetOperationRequest").WithPackage("google.longrunning")
@@ -255,7 +255,7 @@ func newModelWithSignatures(t *testing.T) *api.API {
 			api.NewTestMethodSignature("name", "optional_field"),
 			api.NewTestMethodSignature("name", "normal_field"),
 		).
-		WithPathTemplate((&api.PathTemplate{}).WithLiteral("v1").WithLiteral("lro")).
+		WithPathTemplate(api.NewPathTemplateBuilder().WithLiteral("v1").WithLiteral("lro").Build()).
 		WithOperationInfo(api.NewTestOperationInfo(lroResultType.ID, lroMetadataType.ID))
 
 	discoveryLroMethod := api.NewTestMethod("LroDiscoveryMethod").
@@ -266,7 +266,7 @@ func newModelWithSignatures(t *testing.T) *api.API {
 			api.NewTestMethodSignature("name", "optional_field"),
 			api.NewTestMethodSignature("name", "normal_field"),
 		).
-		WithPathTemplate((&api.PathTemplate{}).WithLiteral("v1").WithLiteral("discoveryLro")).
+		WithPathTemplate(api.NewPathTemplateBuilder().WithLiteral("v1").WithLiteral("discoveryLro").Build()).
 		WithDiscoveryLro(api.NewTestDiscoveryLro("test_only"))
 
 	service := api.NewTestService("TestService").

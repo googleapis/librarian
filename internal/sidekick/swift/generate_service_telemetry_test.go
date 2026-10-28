@@ -41,12 +41,13 @@ func TestGenerateService_Telemetry(t *testing.T) {
 		WithOutput(res).
 		WithVerb("GET").
 		WithPathTemplate(
-			(&api.PathTemplate{}).
+			api.NewPathTemplateBuilder().
 				WithLiteral("v1").
 				WithLiteral("projects").
 				WithVariableNamed("project").
 				WithLiteral("secrets").
-				WithVariableNamed("secret"))
+				WithVariableNamed("secret").
+				Build())
 
 	service := api.NewTestService("SecretManager").
 		WithPackage("google.cloud.test.v1").

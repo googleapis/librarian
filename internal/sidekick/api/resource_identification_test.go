@@ -46,8 +46,9 @@ func TestIdentifyTargetResources(t *testing.T) {
 		{
 			name:      "explicit: standard resource reference",
 			serviceID: "any.service",
-			path: (&PathTemplate{}).
-				WithLiteral("projects").WithVariableNamed("project"),
+			path: NewPathTemplateBuilder().
+				WithLiteral("projects").WithVariableNamed("project").
+				Build(),
 			fields: []*Field{
 				NewTestField("project").
 					WithType(TypezString).
@@ -61,9 +62,10 @@ func TestIdentifyTargetResources(t *testing.T) {
 		{
 			name:      "explicit: multiple resource references",
 			serviceID: "any.service",
-			path: (&PathTemplate{}).
+			path: NewPathTemplateBuilder().
 				WithLiteral("projects").WithVariableNamed("project").
-				WithLiteral("locations").WithVariableNamed("location"),
+				WithLiteral("locations").WithVariableNamed("location").
+				Build(),
 			fields: []*Field{
 				NewTestField("project").
 					WithType(TypezString).
@@ -80,8 +82,9 @@ func TestIdentifyTargetResources(t *testing.T) {
 		{
 			name:      "explicit: nested field reference",
 			serviceID: "any.service",
-			path: (&PathTemplate{}).
-				WithLiteral("projects").WithVariableNamed("parent", "project"),
+			path: NewPathTemplateBuilder().
+				WithLiteral("projects").WithVariableNamed("parent", "project").
+				Build(),
 			fields: []*Field{
 				NewTestField("parent").WithMessageType(
 					NewTestMessage("Parent").WithFields(
@@ -99,9 +102,10 @@ func TestIdentifyTargetResources(t *testing.T) {
 		{
 			name:      "explicit: complex variable pattern treated as full name",
 			serviceID: "any.service",
-			path: (&PathTemplate{}).
+			path: NewPathTemplateBuilder().
 				WithLiteral("v1").
-				WithVariable(NewPathVariableBuilder("name").WithLiteral("projects").WithMatch().WithLiteral("locations").WithMatch().Build()),
+				WithVariable(NewPathVariableBuilder("name").WithLiteral("projects").WithMatch().WithLiteral("locations").WithMatch().Build()).
+				Build(),
 			fields: []*Field{
 				NewTestField("name").
 					WithType(TypezString).
@@ -115,10 +119,11 @@ func TestIdentifyTargetResources(t *testing.T) {
 		{
 			name:      "explicit: crop trailing literals (API Keys keyString case)",
 			serviceID: "apikeys.googleapis.com",
-			path: (&PathTemplate{}).
+			path: NewPathTemplateBuilder().
 				WithLiteral("v2").
 				WithVariable(NewPathVariableBuilder("name").WithLiteral("projects").WithMatch().WithLiteral("locations").WithMatch().WithLiteral("keys").WithMatch().Build()).
-				WithLiteral("keyString"),
+				WithLiteral("keyString").
+				Build(),
 			fields: []*Field{
 				NewTestField("name").
 					WithType(TypezString).
@@ -152,8 +157,9 @@ func TestIdentifyTargetResources_NoMatch(t *testing.T) {
 		{
 			name:      "Explicit: missing reference returns nil",
 			serviceID: "any.service",
-			path: (&PathTemplate{}).
-				WithLiteral("projects").WithVariableNamed("project"),
+			path: NewPathTemplateBuilder().
+				WithLiteral("projects").WithVariableNamed("project").
+				Build(),
 			fields: []*Field{
 				NewTestField("project").WithType(TypezString),
 			},
@@ -161,9 +167,10 @@ func TestIdentifyTargetResources_NoMatch(t *testing.T) {
 		{
 			name:      "Explicit: partial reference returns nil",
 			serviceID: "any.service",
-			path: (&PathTemplate{}).
+			path: NewPathTemplateBuilder().
 				WithLiteral("projects").WithVariableNamed("project").
-				WithLiteral("glossaries").WithVariableNamed("glossary"),
+				WithLiteral("glossaries").WithVariableNamed("glossary").
+				Build(),
 			fields: []*Field{
 				NewTestField("project").
 					WithType(TypezString).
@@ -198,9 +205,10 @@ func TestIdentifyTargetResources_Heuristic(t *testing.T) {
 		{
 			name:      "heuristic: standard infrastructure tokens",
 			serviceID: ".google.cloud.compute.v1.Instances", // eligible
-			path: (&PathTemplate{}).
+			path: NewPathTemplateBuilder().
 				WithLiteral("projects").WithVariableNamed("project").
-				WithLiteral("locations").WithVariableNamed("location"),
+				WithLiteral("locations").WithVariableNamed("location").
+				Build(),
 			fields: []*Field{
 				NewTestField("project").WithType(TypezString),
 				NewTestField("location").WithType(TypezString),
@@ -213,20 +221,22 @@ func TestIdentifyTargetResources_Heuristic(t *testing.T) {
 		{
 			name:      "heuristic: learns custom tokens from GET methods",
 			serviceID: ".google.cloud.compute.v1.Instances", // eligible
-			path: (&PathTemplate{}).
+			path: NewPathTemplateBuilder().
 				WithLiteral("projects").WithVariableNamed("project").
 				WithLiteral("zones").WithVariableNamed("zone").
-				WithLiteral("instances").WithVariableNamed("instance"),
+				WithLiteral("instances").WithVariableNamed("instance").
+				Build(),
 			fields: []*Field{
 				NewTestField("project").WithType(TypezString),
 				NewTestField("zone").WithType(TypezString),
 				NewTestField("instance").WithType(TypezString),
 			},
 			getPaths: []*PathTemplate{
-				(&PathTemplate{}).
+				NewPathTemplateBuilder().
 					WithLiteral("projects").WithVariableNamed("project").
 					WithLiteral("zones").WithVariableNamed("zone").
-					WithLiteral("instances").WithVariableNamed("instance"),
+					WithLiteral("instances").WithVariableNamed("instance").
+					Build(),
 			},
 			want: &TargetResource{
 				FieldPaths: [][]string{{"project"}, {"zone"}, {"instance"}},
@@ -236,19 +246,21 @@ func TestIdentifyTargetResources_Heuristic(t *testing.T) {
 		{
 			name:      "heuristic: paths with standalone literals without variables (e.g. global)",
 			serviceID: ".google.cloud.compute.v1.BackendServices",
-			path: (&PathTemplate{}).
+			path: NewPathTemplateBuilder().
 				WithLiteral("projects").WithVariableNamed("project").
 				WithLiteral("global").
-				WithLiteral("backendServices").WithVariableNamed("backend_service"),
+				WithLiteral("backendServices").WithVariableNamed("backend_service").
+				Build(),
 			fields: []*Field{
 				NewTestField("project").WithType(TypezString),
 				NewTestField("backend_service").WithType(TypezString),
 			},
 			getPaths: []*PathTemplate{
-				(&PathTemplate{}).
+				NewPathTemplateBuilder().
 					WithLiteral("projects").WithVariableNamed("project").
 					WithLiteral("global").
-					WithLiteral("backendServices").WithVariableNamed("backend_service"),
+					WithLiteral("backendServices").WithVariableNamed("backend_service").
+					Build(),
 			},
 			want: &TargetResource{
 				FieldPaths: [][]string{{"project"}, {"backend_service"}},
@@ -258,22 +270,24 @@ func TestIdentifyTargetResources_Heuristic(t *testing.T) {
 		{
 			name:      "heuristic: path with non-variable standalone literal",
 			serviceID: ".google.cloud.example.v1.Service",
-			path: (&PathTemplate{}).
+			path: NewPathTemplateBuilder().
 				WithLiteral("v1").
 				WithLiteral("projects").
 				WithLiteral("xyz").
 				WithLiteral("global").
-				WithLiteral("foos").WithVariableNamed("foo"),
+				WithLiteral("foos").WithVariableNamed("foo").
+				Build(),
 			fields: []*Field{
 				NewTestField("foo").WithType(TypezString),
 			},
 			getPaths: []*PathTemplate{
-				(&PathTemplate{}).
+				NewPathTemplateBuilder().
 					WithLiteral("v1").
 					WithLiteral("projects").
 					WithLiteral("xyz").
 					WithLiteral("global").
-					WithLiteral("foos").WithVariableNamed("foo"),
+					WithLiteral("foos").WithVariableNamed("foo").
+					Build(),
 			},
 			want: &TargetResource{
 				FieldPaths: [][]string{{"foo"}},
@@ -283,17 +297,19 @@ func TestIdentifyTargetResources_Heuristic(t *testing.T) {
 		{
 			name:      "heuristic: paths with un-grouped variable after version string",
 			serviceID: ".google.cloud.compute.v1.Instances",
-			path: (&PathTemplate{}).
+			path: NewPathTemplateBuilder().
 				WithLiteral("v1").WithVariableNamed("resource").
-				WithLiteral("children").WithVariableNamed("child"),
+				WithLiteral("children").WithVariableNamed("child").
+				Build(),
 			fields: []*Field{
 				NewTestField("resource").WithType(TypezString),
 				NewTestField("child").WithType(TypezString),
 			},
 			getPaths: []*PathTemplate{
-				(&PathTemplate{}).
+				NewPathTemplateBuilder().
 					WithLiteral("v1").WithVariableNamed("resource").
-					WithLiteral("children").WithVariableNamed("child"),
+					WithLiteral("children").WithVariableNamed("child").
+					Build(),
 			},
 			want: &TargetResource{
 				FieldPaths: [][]string{{"resource"}, {"child"}},
@@ -303,10 +319,11 @@ func TestIdentifyTargetResources_Heuristic(t *testing.T) {
 		{
 			name:      "heuristic: valid compute path with version string",
 			serviceID: ".google.cloud.compute.v1.Instances",
-			path: (&PathTemplate{}).
+			path: NewPathTemplateBuilder().
 				WithLiteral("v1").
 				WithLiteral("projects").WithVariableNamed("project").
-				WithLiteral("locations").WithVariableNamed("location"),
+				WithLiteral("locations").WithVariableNamed("location").
+				Build(),
 			fields: []*Field{
 				NewTestField("project").WithType(TypezString),
 				NewTestField("location").WithType(TypezString),
@@ -319,11 +336,12 @@ func TestIdentifyTargetResources_Heuristic(t *testing.T) {
 		{
 			name:      "heuristic: stops at trailing action",
 			serviceID: ".google.cloud.compute.v1.Instances",
-			path: (&PathTemplate{}).
+			path: NewPathTemplateBuilder().
 				WithLiteral("projects").WithVariableNamed("project").
 				WithLiteral("zones").WithVariableNamed("zone").
 				WithLiteral("instances").WithVariableNamed("instance").
-				WithLiteral("start").WithVariableNamed("action_id"), // "start" is not a collection
+				WithLiteral("start").WithVariableNamed("action_id"). // "start" is not a collection
+				Build(),
 			fields: []*Field{
 				NewTestField("project").WithType(TypezString),
 				NewTestField("zone").WithType(TypezString),
@@ -331,10 +349,11 @@ func TestIdentifyTargetResources_Heuristic(t *testing.T) {
 				NewTestField("action_id").WithType(TypezString),
 			},
 			getPaths: []*PathTemplate{
-				(&PathTemplate{}).
+				NewPathTemplateBuilder().
 					WithLiteral("projects").WithVariableNamed("project").
 					WithLiteral("zones").WithVariableNamed("zone").
-					WithLiteral("instances").WithVariableNamed("instance"),
+					WithLiteral("instances").WithVariableNamed("instance").
+					Build(),
 			},
 			want: &TargetResource{
 				FieldPaths: [][]string{{"project"}, {"zone"}, {"instance"}},
@@ -344,20 +363,22 @@ func TestIdentifyTargetResources_Heuristic(t *testing.T) {
 		{
 			name:      "heuristic: stops at unknown segment",
 			serviceID: ".google.cloud.compute.v1.Instances",
-			path: (&PathTemplate{}).
+			path: NewPathTemplateBuilder().
 				WithLiteral("projects").WithVariableNamed("project").
 				WithLiteral("unknown").WithVariableNamed("other").
-				WithLiteral("instances").WithVariableNamed("instance"),
+				WithLiteral("instances").WithVariableNamed("instance").
+				Build(),
 			fields: []*Field{
 				NewTestField("project").WithType(TypezString),
 				NewTestField("other").WithType(TypezString),
 				NewTestField("instance").WithType(TypezString),
 			},
 			getPaths: []*PathTemplate{
-				(&PathTemplate{}).
+				NewPathTemplateBuilder().
 					WithLiteral("projects").WithVariableNamed("project").
 					WithLiteral("zones").WithVariableNamed("zone").
-					WithLiteral("instances").WithVariableNamed("instance"),
+					WithLiteral("instances").WithVariableNamed("instance").
+					Build(),
 			},
 			want: &TargetResource{
 				FieldPaths: [][]string{{"project"}},
@@ -367,16 +388,18 @@ func TestIdentifyTargetResources_Heuristic(t *testing.T) {
 		{
 			name:      "heuristic: skips if input field missing",
 			serviceID: ".google.cloud.compute.v1.Instances",
-			path: (&PathTemplate{}).
-				WithLiteral("projects").WithVariableNamed("project"),
+			path: NewPathTemplateBuilder().
+				WithLiteral("projects").WithVariableNamed("project").
+				Build(),
 			fields: []*Field{}, // No fields
 			want:   nil,
 		},
 		{
 			name:      "heuristic: skips non-collection literal without 's'",
 			serviceID: ".google.cloud.compute.v1.Instances",
-			path: (&PathTemplate{}).
-				WithLiteral("metadata").WithVariableNamed("data"), // does not match fallback
+			path: NewPathTemplateBuilder().
+				WithLiteral("metadata").WithVariableNamed("data"). // does not match fallback
+				Build(),
 			fields: []*Field{
 				NewTestField("data").WithType(TypezString),
 			},
@@ -385,19 +408,21 @@ func TestIdentifyTargetResources_Heuristic(t *testing.T) {
 		{
 			name:      "heuristic: known custom resource after standalone literal",
 			serviceID: ".google.cloud.compute.v1.CrossSiteNetworks",
-			path: (&PathTemplate{}).
+			path: NewPathTemplateBuilder().
 				WithLiteral("projects").WithVariableNamed("project").
 				WithLiteral("global").
-				WithLiteral("crossSiteNetworks").WithVariableNamed("cross_site_network"),
+				WithLiteral("crossSiteNetworks").WithVariableNamed("cross_site_network").
+				Build(),
 			fields: []*Field{
 				NewTestField("project").WithType(TypezString),
 				NewTestField("cross_site_network").WithType(TypezString),
 			},
 			getPaths: []*PathTemplate{
-				(&PathTemplate{}).
+				NewPathTemplateBuilder().
 					WithLiteral("projects").WithVariableNamed("project").
 					WithLiteral("global").
-					WithLiteral("crossSiteNetworks").WithVariableNamed("cross_site_network"),
+					WithLiteral("crossSiteNetworks").WithVariableNamed("cross_site_network").
+					Build(),
 			},
 			want: &TargetResource{
 				FieldPaths: [][]string{{"project"}, {"cross_site_network"}},
@@ -407,17 +432,19 @@ func TestIdentifyTargetResources_Heuristic(t *testing.T) {
 		{
 			name:      "heuristic: unknown custom resource falls back to parent",
 			serviceID: ".google.cloud.compute.v1.CrossSiteNetworks",
-			path: (&PathTemplate{}).
+			path: NewPathTemplateBuilder().
 				WithLiteral("projects").WithVariableNamed("project").
 				WithLiteral("global").
-				WithLiteral("crossSiteNetworks").WithVariableNamed("cross_site_network"),
+				WithLiteral("crossSiteNetworks").WithVariableNamed("cross_site_network").
+				Build(),
 			fields: []*Field{
 				NewTestField("project").WithType(TypezString),
 				NewTestField("cross_site_network").WithType(TypezString),
 			},
 			getPaths: []*PathTemplate{
-				(&PathTemplate{}).
-					WithLiteral("projects").WithVariableNamed("project"),
+				NewPathTemplateBuilder().
+					WithLiteral("projects").WithVariableNamed("project").
+					Build(),
 			},
 			want: &TargetResource{
 				FieldPaths: [][]string{{"project"}},
@@ -427,18 +454,20 @@ func TestIdentifyTargetResources_Heuristic(t *testing.T) {
 		{
 			name:      "heuristic: multiple standalone literals before known resource",
 			serviceID: ".google.cloud.compute.v1.FirewallPolicies",
-			path: (&PathTemplate{}).
+			path: NewPathTemplateBuilder().
 				WithLiteral("locations").
 				WithLiteral("global").
-				WithLiteral("firewallPolicies").WithVariableNamed("resource"),
+				WithLiteral("firewallPolicies").WithVariableNamed("resource").
+				Build(),
 			fields: []*Field{
 				NewTestField("resource").WithType(TypezString),
 			},
 			getPaths: []*PathTemplate{
-				(&PathTemplate{}).
+				NewPathTemplateBuilder().
 					WithLiteral("locations").
 					WithLiteral("global").
-					WithLiteral("firewallPolicies").WithVariableNamed("resource"),
+					WithLiteral("firewallPolicies").WithVariableNamed("resource").
+					Build(),
 			},
 			want: &TargetResource{
 				FieldPaths: [][]string{{"resource"}},
@@ -473,9 +502,10 @@ func TestIdentifyTargetResources_Heuristic(t *testing.T) {
 func TestIdentifyTargetResources_HeuristicsDisabled(t *testing.T) {
 	// A setup that would normally match the heuristics
 	serviceID := ".google.cloud.compute.v1.Instances"
-	path := (&PathTemplate{}).
+	path := NewPathTemplateBuilder().
 		WithLiteral("projects").WithVariableNamed("project").
-		WithLiteral("locations").WithVariableNamed("location")
+		WithLiteral("locations").WithVariableNamed("location").
+		Build()
 	fields := []*Field{
 		NewTestField("project").WithType(TypezString),
 		NewTestField("location").WithType(TypezString),

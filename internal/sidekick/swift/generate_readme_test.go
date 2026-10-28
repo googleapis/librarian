@@ -37,7 +37,7 @@ func TestGenerateReadme_ServiceLibrary(t *testing.T) {
 	method := api.NewTestMethod("GetSecret").
 		WithInput(inputType).
 		WithOutput(outputType).
-		WithVerb("GET").WithPathTemplate(&api.PathTemplate{})
+		WithVerb("GET").WithPathTemplate(api.NewPathTemplateBuilder().Build())
 	service := api.NewTestService("SecretManagerService").
 		WithPackage(pkg).
 		WithMethods(method)
@@ -147,7 +147,7 @@ func TestGenerateReadme_WithTraits(t *testing.T) {
 	method := api.NewTestMethod("Get").
 		WithInput(inputType).
 		WithOutput(outputType).
-		WithVerb("GET").WithPathTemplate(&api.PathTemplate{})
+		WithVerb("GET").WithPathTemplate(api.NewPathTemplateBuilder().Build())
 	service := api.NewTestService("Service").
 		WithPackage(pkg).
 		WithMethods(method)
@@ -299,7 +299,7 @@ func TestGenerateDoc_UnescapedDescription(t *testing.T) {
 	method := api.NewTestMethod("Get").
 		WithInput(inputType).
 		WithOutput(outputType).
-		WithVerb("GET").WithPathTemplate(&api.PathTemplate{})
+		WithVerb("GET").WithPathTemplate(api.NewPathTemplateBuilder().Build())
 	service := api.NewTestService("ExampleService").
 		WithPackage(pkg).
 		WithMethods(method)
@@ -356,7 +356,7 @@ func TestGenerateReadme_QuickstartServiceOverride(t *testing.T) {
 	method := api.NewTestMethod("Get").
 		WithInput(inputType).
 		WithOutput(outputType).
-		WithVerb("GET").WithPathTemplate(&api.PathTemplate{})
+		WithVerb("GET").WithPathTemplate(api.NewPathTemplateBuilder().Build())
 	service1 := api.NewTestService("Service1").
 		WithPackage(pkg).
 		WithMethods(method)

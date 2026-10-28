@@ -21,8 +21,18 @@ import (
 
 // PathTemplate is a template for a path.
 type PathTemplate struct {
-	Segments []PathSegment
-	Verb     string
+	segments []PathSegment
+	verb     string
+}
+
+// Segments returns the segments of the path template.
+func (template *PathTemplate) Segments() []PathSegment {
+	return template.segments
+}
+
+// Verb returns the verb of the path template, if any.
+func (template *PathTemplate) Verb() string {
+	return template.verb
 }
 
 // FlatPath returns a simplified representation of the path template as a string.
@@ -34,7 +44,7 @@ type PathTemplate struct {
 func (template *PathTemplate) FlatPath() string {
 	var buffer strings.Builder
 	sep := ""
-	for _, segment := range template.Segments {
+	for _, segment := range template.segments {
 		buffer.WriteString(sep)
 		if segment.Literal() != "" {
 			buffer.WriteString(segment.Literal())
@@ -44,29 +54,4 @@ func (template *PathTemplate) FlatPath() string {
 		sep = "/"
 	}
 	return buffer.String()
-}
-
-// WithLiteral adds a literal to the path template.
-func (p *PathTemplate) WithLiteral(l string) *PathTemplate {
-	p.Segments = append(p.Segments, *NewPathSegmentBuilder().WithLiteral(l).Build())
-	return p
-}
-
-// WithVariable adds a variable to the path template.
-func (p *PathTemplate) WithVariable(v *PathVariable) *PathTemplate {
-	p.Segments = append(p.Segments, *NewPathSegmentBuilder().WithVariable(v).Build())
-	return p
-}
-
-// WithVariableNamed adds a variable with the given name to the path template.
-func (p *PathTemplate) WithVariableNamed(fields ...string) *PathTemplate {
-	v := NewPathVariableBuilder(fields...).WithMatch().Build()
-	p.Segments = append(p.Segments, *NewPathSegmentBuilder().WithVariable(v).Build())
-	return p
-}
-
-// WithVerb adds a verb to the path template.
-func (p *PathTemplate) WithVerb(v string) *PathTemplate {
-	p.Verb = v
-	return p
 }

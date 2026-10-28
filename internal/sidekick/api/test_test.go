@@ -18,33 +18,32 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
-	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/googleapis/librarian/internal/sidekick/api"
 	"github.com/googleapis/librarian/internal/sidekick/api/apitest"
 )
 
 func TestMethod_WithBindings_NilPathInfo(t *testing.T) {
 	method := api.NewTestMethod("Test").WithPathInfo(nil)
-	b1 := api.NewTestPathBinding("GET", (&api.PathTemplate{}).WithLiteral("v1"))
-	b2 := api.NewTestPathBinding("POST", (&api.PathTemplate{}).WithLiteral("v2"))
+	b1 := api.NewTestPathBinding("GET", api.NewPathTemplateBuilder().WithLiteral("v1").Build())
+	b2 := api.NewTestPathBinding("POST", api.NewPathTemplateBuilder().WithLiteral("v2").Build())
 
 	method.WithBindings(b1, b2)
 
 	if method.PathInfo == nil {
 		t.Fatal("expected PathInfo to be initialized, got nil")
 	}
-	if diff := cmp.Diff([]*api.PathBinding{b1, b2}, method.PathInfo.Bindings, cmpopts.IgnoreUnexported(api.PathTemplate{}), cmp.AllowUnexported(api.PathSegment{}, api.PathVariable{})); diff != "" {
+	if diff := cmp.Diff([]*api.PathBinding{b1, b2}, method.PathInfo.Bindings, cmp.AllowUnexported(api.PathTemplate{}, api.PathSegment{}, api.PathVariable{})); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
 
 func TestMethod_WithBindings_NonNilPathInfo(t *testing.T) {
 	method := api.NewTestMethod("Test")
-	b1 := api.NewTestPathBinding("DELETE", (&api.PathTemplate{}).WithLiteral("v1"))
+	b1 := api.NewTestPathBinding("DELETE", api.NewPathTemplateBuilder().WithLiteral("v1").Build())
 
 	method.WithBindings(b1)
 
-	if diff := cmp.Diff([]*api.PathBinding{b1}, method.PathInfo.Bindings, cmpopts.IgnoreUnexported(api.PathTemplate{}), cmp.AllowUnexported(api.PathSegment{}, api.PathVariable{})); diff != "" {
+	if diff := cmp.Diff([]*api.PathBinding{b1}, method.PathInfo.Bindings, cmp.AllowUnexported(api.PathTemplate{}, api.PathSegment{}, api.PathVariable{})); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
@@ -75,7 +74,7 @@ func TestMethod_WithVerb_NilPathInfo(t *testing.T) {
 
 func TestMethod_WithPathTemplate_NilPathInfo(t *testing.T) {
 	method := api.NewTestMethod("Test").WithPathInfo(nil)
-	pt := (&api.PathTemplate{}).WithLiteral("v1")
+	pt := api.NewPathTemplateBuilder().WithLiteral("v1").Build()
 	method.WithPathTemplate(pt)
 
 	if method.PathInfo == nil || len(method.PathInfo.Bindings) == 0 {
@@ -107,7 +106,7 @@ func TestMethod_WithDocumentation(t *testing.T) {
 }
 
 func TestPathBinding_Fluent(t *testing.T) {
-	pt := (&api.PathTemplate{}).WithLiteral("v1")
+	pt := api.NewPathTemplateBuilder().WithLiteral("v1").Build()
 	b := api.NewTestPathBinding("GET", pt).
 		WithVerb("POST").
 		WithQueryParameters("filter")
@@ -567,5 +566,40 @@ func TestPathSegment_Builder(t *testing.T) {
 	}
 	if got := s2.Variable(); got != v {
 		t.Errorf("s2.Variable() = %v, want %v", got, v)
+	}
+}
+
+func TestPathTemplate_Builder(t *testing.T) {
+	v1 := api.NewPathVariableBuilder().WithFieldPath("project").WithSegments("*").Build()
+	s1 := api.NewPathSegmentBuilder().WithLiteral("projects").Build()
+	pt := api.NewPathTemplateBuilder().
+		WithSegments(*s1).
+		WithSegment(*api.NewPathSegmentBuilder().WithVariable(v1).Build()).
+		WithLiteral("zones").
+		WithVariable(api.NewPathVariableBuilder().WithFieldPath("zone").WithSegments("*").Build()).
+		WithVariableNamed("instance", "info").
+		WithVerb("start").
+		Build()
+
+	if got := pt.Verb(); got != "start" {
+		t.Errorf("pt.Verb() = %q, want %q", got, "start")
+	}
+	if got := len(pt.Segments()); got != 5 {
+		t.Fatalf("len(pt.Segments()) = %d, want 5", got)
+	}
+	if got := pt.Segments()[0].Literal(); got != "projects" {
+		t.Errorf("Segments()[0].Literal() = %q, want %q", got, "projects")
+	}
+	if got := pt.Segments()[1].Variable(); got != v1 {
+		t.Errorf("Segments()[1].Variable() = %v, want %v", got, v1)
+	}
+	if got := pt.Segments()[2].Literal(); got != "zones" {
+		t.Errorf("Segments()[2].Literal() = %q, want %q", got, "zones")
+	}
+	if diff := cmp.Diff([]string{"zone"}, pt.Segments()[3].Variable().FieldPath()); diff != "" {
+		t.Errorf("mismatch in Segments()[3].Variable().FieldPath() (-want +got):\n%s", diff)
+	}
+	if diff := cmp.Diff([]string{"instance", "info"}, pt.Segments()[4].Variable().FieldPath()); diff != "" {
+		t.Errorf("mismatch in Segments()[4].Variable().FieldPath() (-want +got):\n%s", diff)
 	}
 }

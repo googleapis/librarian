@@ -186,7 +186,7 @@ func queryParameters(msgID string, pathTemplate *api.PathTemplate, body string, 
 	for _, field := range msg.Fields {
 		params[field.Name] = true
 	}
-	for _, s := range pathTemplate.Segments {
+	for _, s := range pathTemplate.Segments() {
 		if s.Variable() != nil {
 			// TODO(#2508) - Note that nested fields are not excluded
 			delete(params, strings.Join(s.Variable().FieldPath(), "."))
