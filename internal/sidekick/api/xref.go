@@ -187,7 +187,7 @@ func findQuickstartMethod(s *Service) *Method {
 		for _, m := range searchList {
 			res := standardMethodOutputResource(m)
 			if res != nil {
-				if strings.ToLower(res.Singular) == lowerStripped || strings.ToLower(res.Plural) == lowerStripped {
+				if strings.ToLower(res.Singular()) == lowerStripped || strings.ToLower(res.Plural()) == lowerStripped {
 					return m
 				}
 			}
@@ -419,8 +419,8 @@ func enrichWithResourceNamePattern(f *Field, m *Message, model *API) {
 		resource = m.Resource
 	}
 
-	if resource != nil && len(resource.Patterns) > 0 {
-		f.ResourceNamePattern = toResourceNamePattern(resource.Patterns[0], truncateChild)
+	if resource != nil && len(resource.Patterns()) > 0 {
+		f.ResourceNamePattern = toResourceNamePattern(resource.Patterns()[0], truncateChild)
 	}
 }
 
@@ -481,12 +481,12 @@ func aipStandardGetInfo(m *Method) *SampleInfo {
 		return nil
 	}
 
-	if outputResource.Singular != "" &&
-		strings.ToLower(outputResource.Singular) != maybeSingular {
+	if outputResource.Singular() != "" &&
+		strings.ToLower(outputResource.Singular()) != maybeSingular {
 		return nil
 	}
 
-	resourceField := findBestResourceFieldByType(m.InputType, m.Model, outputResource.Type)
+	resourceField := findBestResourceFieldByType(m.InputType, m.Model, outputResource.Type())
 
 	if resourceField == nil {
 		return nil
@@ -566,19 +566,19 @@ func aipStandardCreateInfo(m *Method) *SampleInfo {
 		return nil
 	}
 
-	if outputResource.Singular != "" &&
-		strings.ToLower(outputResource.Singular) != maybeSingular {
+	if outputResource.Singular() != "" &&
+		strings.ToLower(outputResource.Singular()) != maybeSingular {
 		return nil
 	}
 
-	parentField := findBestParentFieldByType(m.InputType, outputResource.Type)
+	parentField := findBestParentFieldByType(m.InputType, outputResource.Type())
 	if parentField == nil {
 		return nil
 	}
 
 	var targetTypeID string
-	if outputResource.Self != nil {
-		targetTypeID = outputResource.Self.ID
+	if outputResource.Self() != nil {
+		targetTypeID = outputResource.Self().ID
 	}
 	resourceField := findBodyField(m.InputType, m.PathInfo, targetTypeID, maybeSingular)
 	if resourceField == nil {
@@ -614,14 +614,14 @@ func aipStandardUpdateInfo(m *Method) *SampleInfo {
 	if strings.ToLower(m.InputType.Name) != fmt.Sprintf("update%srequest", maybeSingular) {
 		return nil
 	}
-	if outputResource.Singular != "" &&
-		strings.ToLower(outputResource.Singular) != maybeSingular {
+	if outputResource.Singular() != "" &&
+		strings.ToLower(outputResource.Singular()) != maybeSingular {
 		return nil
 	}
 
 	var targetTypeID string
-	if outputResource.Self != nil {
-		targetTypeID = outputResource.Self.ID
+	if outputResource.Self() != nil {
+		targetTypeID = outputResource.Self().ID
 	}
 	resourceField := findBodyField(m.InputType, m.PathInfo, targetTypeID, maybeSingular)
 	if resourceField == nil {
@@ -675,7 +675,7 @@ func aipStandardListInfo(m *Method) *SampleInfo {
 	if pageableItem == nil || pageableItem.MessageType == nil || pageableItem.MessageType.Resource == nil {
 		return nil
 	}
-	resourceType := pageableItem.MessageType.Resource.Type
+	resourceType := pageableItem.MessageType.Resource.Type()
 
 	parentField := findBestParentFieldByType(m.InputType, resourceType)
 
@@ -702,7 +702,7 @@ func findBestResourceFieldByType(message *Message, model *API, targetType string
 		if resource == nil {
 			continue
 		}
-		if resource.Type == targetType {
+		if resource.Type() == targetType {
 			if field.Name == StandardFieldNameForResourceRef {
 				return field
 			}
@@ -725,7 +725,7 @@ func findBestResourceFieldBySingular(message *Message, model *API, targetSingula
 		if resource == nil {
 			continue
 		}
-		actualSingular := strings.ToLower(resource.Singular)
+		actualSingular := strings.ToLower(resource.Singular())
 		matchesTarget := actualSingular == targetSingular
 		if field.Name == StandardFieldNameForResourceRef && (matchesTarget || actualSingular == "") {
 			return field

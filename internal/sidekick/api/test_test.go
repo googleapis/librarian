@@ -684,3 +684,37 @@ func TestPathInfo_Builder(t *testing.T) {
 		t.Errorf("pi.Codec() = %v, want %q", pi.Codec(), "pi-codec")
 	}
 }
+
+func TestResource_Builder(t *testing.T) {
+	msg := api.NewTestMessage("Book")
+	pat := api.ResourcePattern{
+		*api.NewPathSegmentBuilder().WithLiteral("books").Build(),
+	}
+	res := api.NewResourceBuilder().
+		WithType("library.googleapis.com/Book").
+		WithPatterns(pat).
+		WithSingular("book").
+		WithPlural("books").
+		WithSelf(msg).
+		Build()
+	res.SetAnnotations("res-codec")
+
+	if res.Type() != "library.googleapis.com/Book" {
+		t.Errorf("res.Type() = %q, want %q", res.Type(), "library.googleapis.com/Book")
+	}
+	if len(res.Patterns()) != 1 {
+		t.Fatalf("len(res.Patterns()) = %d, want 1", len(res.Patterns()))
+	}
+	if res.Singular() != "book" {
+		t.Errorf("res.Singular() = %q, want %q", res.Singular(), "book")
+	}
+	if res.Plural() != "books" {
+		t.Errorf("res.Plural() = %q, want %q", res.Plural(), "books")
+	}
+	if res.Self() != msg {
+		t.Errorf("res.Self() = %v, want %v", res.Self(), msg)
+	}
+	if res.Codec() != "res-codec" {
+		t.Errorf("res.Codec() = %v, want %q", res.Codec(), "res-codec")
+	}
+}

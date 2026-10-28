@@ -230,7 +230,7 @@ func (a *API) AddResource(r *Resource) {
 	if a.resourceByType == nil {
 		a.resourceByType = make(map[string]*Resource)
 	}
-	a.resourceByType[r.Type] = r
+	a.resourceByType[r.typez] = r
 }
 
 // Map returns a map that is associated with the API.

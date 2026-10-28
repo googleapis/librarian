@@ -324,20 +324,20 @@ func makeAPIForProtobuf(serviceConfig *serviceconfig.Service, req *pluginpb.Code
 	// file-level resources (already in result.ResourceDefinitions).
 	seen := map[string]int{}
 	for i, r := range result.ResourceDefinitions {
-		seen[r.Type] = i
+		seen[r.Type()] = i
 	}
 	for r := range result.AllResources() {
-		if i, found := seen[r.Type]; found {
+		if i, found := seen[r.Type()]; found {
 			result.ResourceDefinitions[i] = r
 		} else {
-			seen[r.Type] = len(result.ResourceDefinitions)
+			seen[r.Type()] = len(result.ResourceDefinitions)
 			result.ResourceDefinitions = append(result.ResourceDefinitions, r)
 		}
 	}
 
 	// Sort to ensure deterministic output.
 	slices.SortFunc(result.ResourceDefinitions, func(a, b *api.Resource) int {
-		return strings.Compare(a.Type, b.Type)
+		return strings.Compare(a.Type(), b.Type())
 	})
 
 	// Collect all mixin methods enabled for services in this API.
@@ -767,13 +767,13 @@ func processResourceAnnotation(opts *descriptorpb.MessageOptions, message *api.M
 		return fmt.Errorf("in message %q: %w", message.ID, err)
 	}
 
-	resource := &api.Resource{
-		Type:     res.GetType(),
-		Patterns: patterns,
-		Plural:   res.GetPlural(),
-		Singular: res.GetSingular(),
-		Self:     message,
-	}
+	resource := api.NewResourceBuilder().
+		WithType(res.GetType()).
+		WithPatterns(patterns...).
+		WithPlural(res.GetPlural()).
+		WithSingular(res.GetSingular()).
+		WithSelf(message).
+		Build()
 	message.Resource = resource
 	model.AddResource(resource)
 	return nil
@@ -800,12 +800,12 @@ func processFileResourceDefinitions(f *descriptorpb.FileDescriptorProto) ([]*api
 			return nil, fmt.Errorf("in file %q: %w", f.GetName(), err)
 		}
 
-		resources = append(resources, &api.Resource{
-			Type:     r.GetType(),
-			Patterns: patterns,
-			Plural:   r.GetPlural(),
-			Singular: r.GetSingular(),
-		})
+		resources = append(resources, api.NewResourceBuilder().
+			WithType(r.GetType()).
+			WithPatterns(patterns...).
+			WithPlural(r.GetPlural()).
+			WithSingular(r.GetSingular()).
+			Build())
 	}
 	return resources, nil
 }

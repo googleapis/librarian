@@ -35,18 +35,18 @@ type aipTestFixture struct {
 func newAIPTestFixture() *aipTestFixture {
 	resource := NewTestResource("google.cloud.secretmanager.v1/Secret").WithSingular("secret")
 	resourceWithoutSingular := NewTestResource("google.cloud.secretmanager.v1/SecretWithoutSingular")
-	resourceNameField := NewTestField("name").WithResourceReference(resource.Type)
-	resourceOtherNameField := NewTestField("other_name").WithResourceReference(resource.Type)
-	resourceNameNoSingularField := NewTestField("name").WithResourceReference(resourceWithoutSingular.Type)
-	resourceOtherNameNoSingularField := NewTestField("other_name").WithResourceReference(resourceWithoutSingular.Type)
+	resourceNameField := NewTestField("name").WithResourceReference(resource.Type())
+	resourceOtherNameField := NewTestField("other_name").WithResourceReference(resource.Type())
+	resourceNameNoSingularField := NewTestField("name").WithResourceReference(resourceWithoutSingular.Type())
+	resourceOtherNameNoSingularField := NewTestField("other_name").WithResourceReference(resourceWithoutSingular.Type())
 	nonExistentResourceField := NewTestField("name").WithResourceReference("nonexistent.googleapis.com/NonExistent")
 	wildcardResourceField := NewTestField("name").WithResourceReference("*")
 
 	model := &API{
 		ResourceDefinitions: []*Resource{resource, resourceWithoutSingular},
 		resourceByType: map[string]*Resource{
-			resource.Type:                resource,
-			resourceWithoutSingular.Type: resourceWithoutSingular,
+			resource.Type():                resource,
+			resourceWithoutSingular.Type(): resourceWithoutSingular,
 		},
 	}
 
@@ -563,13 +563,13 @@ func TestAIPStandardCreateInfo(t *testing.T) {
 
 	parentField := NewTestField("parent").
 		WithType(TypezString).
-		WithChildTypeReference(f.resource.Type)
+		WithChildTypeReference(f.resource.Type())
 	resourceField := NewTestField("secret").
 		WithMessageType(secretMessage)
 	idField := NewTestField("secret_id").
 		WithType(TypezString)
 	output := NewTestMessage("Response").WithResource(f.resource)
-	f.resource.Self = secretMessage
+	f.resource.self = secretMessage
 
 	testCases := []struct {
 		name   string
@@ -641,7 +641,7 @@ func TestAIPStandardUpdateInfo(t *testing.T) {
 	updateMaskField := NewTestField("update_mask").
 		WithTypezID(".google.protobuf.FieldMask")
 	output := NewTestMessage("Response").WithResource(f.resource)
-	f.resource.Self = secretMessage
+	f.resource.self = secretMessage
 
 	testCases := []struct {
 		name   string

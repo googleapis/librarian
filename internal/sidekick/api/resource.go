@@ -21,25 +21,46 @@ package api
 // collection of resources.
 // This definition is based on AIP-121 (https://google.aip.dev/121).
 type Resource struct {
-	// Type identifies the kind of resource (e.g., "cloudresourcemanager.googleapis.com/Project").
+	// typez identifies the kind of resource (e.g., "cloudresourcemanager.googleapis.com/Project").
 	// This string is globally unique and identifies the type of resource across Google Cloud.
-	Type string
-	// Pattern is a list of resource patterns, where each pattern is a sequence of path segments.
+	typez string
+	// patterns is a list of resource patterns, where each pattern is a sequence of path segments.
 	// This defines the structure of the resource's unique identifier.
-	Patterns []ResourcePattern
-	// Plural is the plural form of the resource name.
-	// For example, for a "Book" resource, Plural would be "books".
-	Plural string
-	// Singular is the singular form of the resource name.
-	// For example, for a "Book" resource, Singular would be "book".
-	Singular string
-	// Self points to the Message that defines this resource.
+	patterns []ResourcePattern
+	// plural is the plural form of the resource name.
+	// For example, for a "Book" resource, plural would be "books".
+	plural string
+	// singular is the singular form of the resource name.
+	// For example, for a "Book" resource, singular would be "book".
+	singular string
+	// self points to the Message that defines this resource.
 	// This creates a back-reference for navigating the API model,
 	// allowing a Resource definition to access its originating Message structure.
-	Self *Message
+	self *Message
 	// Language specific annotations.
-	Codec any
+	codec any
 }
+
+// Type returns the kind of resource.
+func (r *Resource) Type() string { return r.typez }
+
+// Patterns returns the list of resource patterns.
+func (r *Resource) Patterns() []ResourcePattern { return r.patterns }
+
+// Plural returns the plural form of the resource name.
+func (r *Resource) Plural() string { return r.plural }
+
+// Singular returns the singular form of the resource name.
+func (r *Resource) Singular() string { return r.singular }
+
+// Self returns the Message that defines this resource.
+func (r *Resource) Self() *Message { return r.self }
+
+// Codec returns the language-specific annotations.
+func (r *Resource) Codec() any { return r.codec }
+
+// SetAnnotations sets the language-specific annotations.
+func (r *Resource) SetAnnotations(codec any) { r.codec = codec }
 
 // ResourcePattern is a sequence of path segments that defines the structure of a resource's unique identifier.
 //
