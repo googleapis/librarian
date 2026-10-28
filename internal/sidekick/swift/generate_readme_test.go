@@ -302,8 +302,8 @@ func TestGenerateDoc_UnescapedDescription(t *testing.T) {
 		WithVerb("GET").WithPathTemplate(api.NewPathTemplateBuilder().Build())
 	service := api.NewTestService("ExampleService").
 		WithPackage(pkg).
-		WithMethods(method)
-	service.Documentation = "Manages user's & group's private clusters in the Cloud."
+		WithMethods(method).
+		WithDocumentation("Manages user's & group's private clusters in the Cloud.")
 	model := api.NewTestAPI([]*api.Message{inputType, outputType}, nil, []*api.Service{service}).
 		WithPackageName(pkg).
 		WithTitle("Example API")

@@ -81,6 +81,25 @@ func IgnoreMethodFields(names ...string) cmp.Option {
 	}, cmp.Ignore())
 }
 
+// IgnoreServiceFields returns a [cmp.Option] that ignores the named unexported
+// fields on [api.Service].
+func IgnoreServiceFields(names ...string) cmp.Option {
+	set := make(map[string]bool, len(names))
+	for _, n := range names {
+		set["."+n] = true
+	}
+	serviceType := reflect.TypeFor[api.Service]()
+	return cmp.FilterPath(func(p cmp.Path) bool {
+		if len(p) < 2 {
+			return false
+		}
+		if p.Index(-2).Type() != serviceType {
+			return false
+		}
+		return set[p.Last().String()]
+	}, cmp.Ignore())
+}
+
 // AllowUnexported returns a [cmp.Option] that permits comparing unexported
 // fields on all read-only [api] AST and metadata structs.
 func AllowUnexported() cmp.Option {
@@ -193,12 +212,12 @@ func CheckService(t *testing.T, got *api.Service, want *api.Service) {
 	t.Helper()
 	if diff := cmp.Diff(want, got,
 		AllowUnexported(),
-		cmpopts.IgnoreFields(api.Service{}, "Methods"),
+		IgnoreServiceFields("methods"),
 	); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 	less := func(a, b *api.Method) bool { return a.Name() < b.Name() }
-	if diff := cmp.Diff(want.Methods, got.Methods,
+	if diff := cmp.Diff(want.Methods(), got.Methods(),
 		AllowUnexported(),
 		cmpopts.SortSlices(less),
 		IgnoreFieldNames("parent"),
@@ -212,7 +231,7 @@ func CheckService(t *testing.T, got *api.Service, want *api.Service) {
 func CheckMethod(t *testing.T, service *api.Service, name string, want *api.Method) {
 	t.Helper()
 	findMethod := func(name string) (*api.Method, bool) {
-		for _, method := range service.Methods {
+		for _, method := range service.Methods() {
 			if method.Name() == name {
 				return method, true
 			}

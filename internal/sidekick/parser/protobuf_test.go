@@ -1147,8 +1147,8 @@ func TestProtobuf_AutoPopulated(t *testing.T) {
 		t.Fatalf("Failed to make API for Protobuf %v", err)
 	}
 	for _, service := range test.Services {
-		if service.ID == ".google.longrunning.Operations" {
-			t.Fatalf("Mixin %s should not be in list of services to generate", service.ID)
+		if service.ID() == ".google.longrunning.Operations" {
+			t.Fatalf("Mixin %s should not be in list of services to generate", service.ID())
 		}
 	}
 	message := test.Message(".test.CreateFooRequest")

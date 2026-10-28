@@ -130,7 +130,7 @@ func TestAddDiscoveryLroAnnotations(t *testing.T) {
 	if diff := cmp.Diff("..zoneOperations", gotPoller.SourceServiceID()); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
-	if diff := cmp.Diff(pollerService.Methods[0].PathInfo(), gotPoller.PathInfo(), allowUnexported(), cmpopts.EquateEmpty()); diff != "" {
+	if diff := cmp.Diff(pollerService.Methods()[0].PathInfo(), gotPoller.PathInfo(), allowUnexported(), cmpopts.EquateEmpty()); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }

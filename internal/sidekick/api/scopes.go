@@ -46,7 +46,7 @@ import "strings"
 
 // Scopes returns the scopes for a service.
 func (x *Service) Scopes() []string {
-	return []string{strings.TrimPrefix(x.ID, "."), x.Package}
+	return []string{strings.TrimPrefix(x.id, "."), x.packagez}
 }
 
 // Scopes returns the scopes for a message.

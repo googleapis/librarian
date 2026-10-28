@@ -78,12 +78,12 @@ func (codec *codec) annotateModel(model *api.API, cfg *parser.ModelConfig) error
 
 func (codec *codec) annotateService(service *api.Service) {
 	annotations := &serviceAnnotations{
-		ID: strings.TrimPrefix(service.ID, "."),
+		ID: strings.TrimPrefix(service.ID(), "."),
 	}
-	for _, method := range service.Methods {
+	for _, method := range service.Methods() {
 		codec.annotateMethod(method)
 	}
-	service.Codec = annotations
+	service.SetAnnotations(annotations)
 }
 
 func (codec *codec) annotateMethod(method *api.Method) {

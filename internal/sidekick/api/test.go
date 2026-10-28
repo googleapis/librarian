@@ -69,9 +69,9 @@ func NewTestAPI(messages []*Message, enums []*Enum, services []*Service) *API {
 		model.enumByID[e.id] = e
 	}
 	for _, s := range services {
-		model.PackageName = s.Package
-		model.serviceByID[s.ID] = s
-		for _, m := range s.Methods {
+		model.PackageName = s.packagez
+		model.serviceByID[s.id] = s
+		for _, m := range s.methods {
 			model.methodByID[m.id] = m
 		}
 	}
@@ -353,19 +353,25 @@ func (m *Map) WithID(id string) *Map {
 // NewTestService creates a service with defaults for testing.
 // Default package is "test".
 func NewTestService(name string) *Service {
-	return (&Service{Name: name}).WithPackage("test")
+	return NewServiceBuilder().WithName(name).Build().WithPackage("test")
 }
 
 // WithPackage sets the package for the service and updates its ID.
 func (s *Service) WithPackage(pkg string) *Service {
-	s.Package = pkg
-	s.ID = fmt.Sprintf(".%s.%s", pkg, s.Name)
+	s.packagez = pkg
+	s.id = fmt.Sprintf(".%s.%s", pkg, s.name)
+	return s
+}
+
+// WithName overrides the service's Name.
+func (s *Service) WithName(name string) *Service {
+	s.name = name
 	return s
 }
 
 // WithID overrides the service's ID.
 func (s *Service) WithID(id string) *Service {
-	s.ID = id
+	s.id = id
 	return s
 }
 
@@ -375,28 +381,34 @@ func (s *Service) WithMethods(methods ...*Method) *Service {
 		m.service = s
 		// If method ID is generic/default, re-scope it to the service.
 		if strings.HasPrefix(m.id, ".test.") || m.id == "" {
-			m.id = fmt.Sprintf("%s.%s", s.ID, m.name)
+			m.id = fmt.Sprintf("%s.%s", s.id, m.name)
 		}
 	}
-	s.Methods = append(s.Methods, methods...)
+	s.methods = append(s.methods, methods...)
 	return s
 }
 
 // WithDeprecated sets whether the service is deprecated.
 func (s *Service) WithDeprecated(deprecated bool) *Service {
-	s.Deprecated = deprecated
+	s.deprecated = deprecated
 	return s
 }
 
 // WithDocumentation sets the documentation for the service.
 func (s *Service) WithDocumentation(doc string) *Service {
-	s.Documentation = doc
+	s.documentation = doc
 	return s
 }
 
 // WithDefaultHost sets the default host for the service.
 func (s *Service) WithDefaultHost(host string) *Service {
-	s.DefaultHost = host
+	s.defaultHost = host
+	return s
+}
+
+// WithQuickstartMethod sets the quickstart method for the service.
+func (s *Service) WithQuickstartMethod(method *Method) *Service {
+	s.quickstartMethod = method
 	return s
 }
 
@@ -541,7 +553,7 @@ func (m *Method) WithSourceMethod(source *Method) *Method {
 	m.WithOutput(source.outputType).WithInput(source.inputType)
 	m.sourceService = source.service
 	if m.sourceService != nil {
-		m.sourceServiceID = m.sourceService.ID
+		m.sourceServiceID = m.sourceService.id
 	}
 	m.pathInfo = source.pathInfo
 	return m

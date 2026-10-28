@@ -494,7 +494,7 @@ func (c *codec) diagnoseRequestFields(method *api.Method) (bool, error) {
 // governs is preceded by `{{- if .Deprecated }} @available(*, deprecated) {{- end }}`
 // in the templates.
 func inDeprecatedScope(method *api.Method) bool {
-	return method.Deprecated() || (method.Service() != nil && method.Service().Deprecated)
+	return method.Deprecated() || (method.Service() != nil && method.Service().Deprecated())
 }
 
 func (a *methodAnnotations) Idempotent() bool {

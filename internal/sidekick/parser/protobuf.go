@@ -565,15 +565,15 @@ func normalizeTypes(model *api.API, in *descriptorpb.FieldDescriptorProto, isOne
 }
 
 func processService(model *api.API, s *descriptorpb.ServiceDescriptorProto, sFQN, packagez, doc string, methods []*api.Method) *api.Service {
-	service := &api.Service{
-		Name:          s.GetName(),
-		ID:            sFQN,
-		Package:       packagez,
-		Documentation: doc,
-		DefaultHost:   parseDefaultHost(s.GetOptions()),
-		Deprecated:    s.GetOptions().GetDeprecated(),
-		Methods:       methods,
-	}
+	service := api.NewServiceBuilder().
+		WithName(s.GetName()).
+		WithID(sFQN).
+		WithPackage(packagez).
+		WithDocumentation(doc).
+		WithDefaultHost(parseDefaultHost(s.GetOptions())).
+		WithDeprecated(s.GetOptions().GetDeprecated()).
+		WithMethods(methods...).
+		Build()
 	model.AddService(service)
 	return service
 }

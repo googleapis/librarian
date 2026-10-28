@@ -232,8 +232,8 @@ func TestMessage_WithMessages_UpdatesOneOfIDs(t *testing.T) {
 func TestService_WithDocumentation(t *testing.T) {
 	const doc = "Test service documentation."
 	s := api.NewTestService("TestService").WithDocumentation(doc)
-	if s.Documentation != doc {
-		t.Errorf("s.Documentation = %q, want %q", s.Documentation, doc)
+	if s.Documentation() != doc {
+		t.Errorf("s.Documentation() = %q, want %q", s.Documentation(), doc)
 	}
 }
 
@@ -399,11 +399,11 @@ func TestService_FluentSetters(t *testing.T) {
 	svc := api.NewTestService("TestService").
 		WithDefaultHost("test.googleapis.com").
 		WithID(".custom.TestService")
-	if got, want := svc.DefaultHost, "test.googleapis.com"; got != want {
-		t.Errorf("svc.DefaultHost = %q, want %q", got, want)
+	if got, want := svc.DefaultHost(), "test.googleapis.com"; got != want {
+		t.Errorf("svc.DefaultHost() = %q, want %q", got, want)
 	}
-	if got, want := svc.ID, ".custom.TestService"; got != want {
-		t.Errorf("svc.ID = %q, want %q", got, want)
+	if got, want := svc.ID(), ".custom.TestService"; got != want {
+		t.Errorf("svc.ID() = %q, want %q", got, want)
 	}
 }
 

@@ -57,8 +57,8 @@ func TestProtobuf_LocationMixin(t *testing.T) {
 		t.Fatal(err)
 	}
 	for _, service := range test.Services {
-		if service.ID == ".google.cloud.location.Locations" {
-			t.Fatalf("Mixin %s should not be in list of services to generate", service.ID)
+		if service.ID() == ".google.cloud.location.Locations" {
+			t.Fatalf("Mixin %s should not be in list of services to generate", service.ID())
 		}
 	}
 	service := test.Service(".test.TestService")
@@ -123,8 +123,8 @@ func TestProtobuf_IAMMixin(t *testing.T) {
 		t.Fatal(err)
 	}
 	for _, service := range test.Services {
-		if service.ID == ".google.iam.v1.IAMPolicy" {
-			t.Fatalf("Mixin %s should not be in list of services to generate", service.ID)
+		if service.ID() == ".google.iam.v1.IAMPolicy" {
+			t.Fatalf("Mixin %s should not be in list of services to generate", service.ID())
 		}
 	}
 
@@ -195,8 +195,8 @@ func TestProtobuf_OperationMixin(t *testing.T) {
 		t.Fatal(err)
 	}
 	for _, service := range test.Services {
-		if service.ID == ".google.longrunning.Operations" {
-			t.Fatalf("Mixin %s should not be in list of services to generate", service.ID)
+		if service.ID() == ".google.longrunning.Operations" {
+			t.Fatalf("Mixin %s should not be in list of services to generate", service.ID())
 		}
 	}
 	service := test.Service(".test.TestService")
@@ -278,8 +278,8 @@ func TestProtobuf_OperationMixinNoEmpty(t *testing.T) {
 		t.Fatal(err)
 	}
 	for _, service := range test.Services {
-		if service.ID == ".google.longrunning.Operations" {
-			t.Fatalf("Mixin %s should not be in list of services to generate", service.ID)
+		if service.ID() == ".google.longrunning.Operations" {
+			t.Fatalf("Mixin %s should not be in list of services to generate", service.ID())
 		}
 	}
 	service := test.Service(".test.TestService")
@@ -357,8 +357,8 @@ func TestProtobuf_DuplicateMixin(t *testing.T) {
 		t.Fatal(err)
 	}
 	for _, service := range test.Services {
-		if service.ID == ".google.longrunning.Operations" {
-			t.Fatalf("Mixin %s should not be in list of services to generate", service.ID)
+		if service.ID() == ".google.longrunning.Operations" {
+			t.Fatalf("Mixin %s should not be in list of services to generate", service.ID())
 		}
 	}
 	service := test.Service(".test.LroService")

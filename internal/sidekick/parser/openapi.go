@@ -136,14 +136,14 @@ func makeServices(a *api.API, model *libopenapi.DocumentModel[v3.Document], serv
 	if err != nil {
 		return err
 	}
-	service := &api.Service{
-		Name:          serviceName,
-		ID:            sID,
-		Package:       packageName,
-		Documentation: a.Description,
-		DefaultHost:   defaultHost(model),
-		Methods:       methods,
-	}
+	service := api.NewServiceBuilder().
+		WithName(serviceName).
+		WithID(sID).
+		WithPackage(packageName).
+		WithDocumentation(a.Description).
+		WithDefaultHost(defaultHost(model)).
+		WithMethods(methods...).
+		Build()
 	a.Services = append(a.Services, service)
 	a.AddService(service)
 	return nil

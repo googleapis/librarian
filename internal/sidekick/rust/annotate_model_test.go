@@ -232,7 +232,7 @@ func TestInternalBuildersAnnotation(t *testing.T) {
 		if got.InternalBuilders != test.Want {
 			t.Errorf("mismatch in InternalBuilders, want=%v, got=%v", test.Want, got.InternalBuilders)
 		}
-		svcAnn := model.Services[0].Codec.(*serviceAnnotations)
+		svcAnn := model.Services[0].Codec().(*serviceAnnotations)
 		if svcAnn.InternalBuilders != test.Want {
 			t.Errorf("mismatch in service InternalBuilders, want=%v, got=%v", test.Want, svcAnn.InternalBuilders)
 		}
@@ -290,7 +290,7 @@ func TestHandwrittenSurfaceAnnotation(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			svc0Ann := model.Services[0].Codec.(*serviceAnnotations)
+			svc0Ann := model.Services[0].Codec().(*serviceAnnotations)
 			if svc0Ann.HasVeneer != test.wantService0Veneer {
 				t.Errorf("mismatch in Service0 HasVeneer, want=%v, got=%v", test.wantService0Veneer, svc0Ann.HasVeneer)
 			}
@@ -301,7 +301,7 @@ func TestHandwrittenSurfaceAnnotation(t *testing.T) {
 				t.Errorf("mismatch in Service0 GenerateRpcSamples, want=%v, got=%v", test.wantService0Samples, svc0Ann.GenerateRpcSamples)
 			}
 
-			svc1Ann := model.Services[1].Codec.(*serviceAnnotations)
+			svc1Ann := model.Services[1].Codec().(*serviceAnnotations)
 			if svc1Ann.HasVeneer != test.wantService1Veneer {
 				t.Errorf("mismatch in Service1 HasVeneer, want=%v, got=%v", test.wantService1Veneer, svc1Ann.HasVeneer)
 			}
@@ -340,7 +340,7 @@ func TestGrpcClientAnnotation(t *testing.T) {
 		if got.GrpcClient != test.Want {
 			t.Errorf("mismatch in GrpcClient, want=%v, got=%v", test.Want, got.GrpcClient)
 		}
-		svcAnn := model.Services[0].Codec.(*serviceAnnotations)
+		svcAnn := model.Services[0].Codec().(*serviceAnnotations)
 		if svcAnn.GrpcClient != test.Want {
 			t.Errorf("mismatch in service GrpcClient, want=%v, got=%v", test.Want, svcAnn.GrpcClient)
 		}
@@ -363,7 +363,7 @@ func TestQuickstartServiceAnnotation(t *testing.T) {
 			t.Fatal("QuickstartService should not be nil")
 		}
 		if got.QuickstartService != model.Services[1] {
-			t.Errorf("expected QuickstartService to be Service1, got %v", got.QuickstartService.Name)
+			t.Errorf("expected QuickstartService to be Service1, got %v", got.QuickstartService.Name())
 		}
 	})
 
@@ -394,7 +394,7 @@ func TestQuickstartServiceAnnotation(t *testing.T) {
 		}
 
 		if got.QuickstartService != nil {
-			t.Errorf("expected QuickstartService to be nil because it was filtered out and there is no override, got %v", got.QuickstartService.Name)
+			t.Errorf("expected QuickstartService to be nil because it was filtered out and there is no override, got %v", got.QuickstartService.Name())
 		}
 	})
 
@@ -415,7 +415,7 @@ func TestQuickstartServiceAnnotation(t *testing.T) {
 			t.Fatal("QuickstartService should not be nil")
 		}
 		if got.QuickstartService != model.Services[1] {
-			t.Errorf("expected QuickstartService to be overridden to Service1, got %v", got.QuickstartService.Name)
+			t.Errorf("expected QuickstartService to be overridden to Service1, got %v", got.QuickstartService.Name())
 		}
 	})
 
@@ -810,7 +810,7 @@ func TestModelAnnotationsHasStreaming(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			sAnn := test.service.Codec.(*serviceAnnotations)
+			sAnn := test.service.Codec().(*serviceAnnotations)
 			if sAnn.HasBidiStreaming() != test.wantBidi {
 				t.Errorf("HasBidiStreaming = %v, want %v", sAnn.HasBidiStreaming(), test.wantBidi)
 			}
@@ -865,11 +865,11 @@ func TestModelAnnotationsGrpcServices(t *testing.T) {
 	if len(grpcServices) != 2 {
 		t.Fatalf("expected 2 GrpcServices, got %d", len(grpcServices))
 	}
-	if grpcServices[0].Name != "BidiService" {
-		t.Errorf("expected GrpcServices[0].Name == %q, got %q", "BidiService", grpcServices[0].Name)
+	if grpcServices[0].Name() != "BidiService" {
+		t.Errorf("expected GrpcServices[0].Name == %q, got %q", "BidiService", grpcServices[0].Name())
 	}
-	if grpcServices[1].Name != "ServerService" {
-		t.Errorf("expected GrpcServices[1].Name == %q, got %q", "ServerService", grpcServices[1].Name)
+	if grpcServices[1].Name() != "ServerService" {
+		t.Errorf("expected GrpcServices[1].Name == %q, got %q", "ServerService", grpcServices[1].Name())
 	}
 	if !got.HasGrpc() {
 		t.Errorf("expected HasGrpc() == true")
