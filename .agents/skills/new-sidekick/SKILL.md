@@ -22,12 +22,12 @@ Before creating any files, review the core invariants:
 2. **Decomposed Coordinator:** `annotate_model.go` coordinates the annotation
    passes across all model elements. Never bury model traversal inside service
    or method files.
-3. **Template-First Emission:** Mustache templates and partials own all syntax,
+3. **Template-First Emission:** Go templates (`.gotmpl`) and partials own all syntax,
    code structure, and formatting. Never emit target-language syntax or
    multi-line doc comments from Go using `strings.Builder` or `fmt.Sprintf`.
-4. **Mustache Boilerplate & Partials:** Every `.mustache` file must have an
-   Apache 2.0 license comment (`{{! ... }}`) using the current year (see
-   [`internal/sidekick/swift/templates/common/service.swift.mustache`](/internal/sidekick/swift/templates/common/service.swift.mustache)
+4. **Go Template Boilerplate & Partials:** Every `.gotmpl` file must have an
+   Apache 2.0 license comment (`{{/* ... */}}`) using the current year (see
+   [`internal/sidekick/swift/templates/common/service.swift.gotmpl`](/internal/sidekick/swift/templates/common/service.swift.gotmpl)
    for reference).
 5. **Emit Boilerplate from file-level templates:** The file-level templates
    should emit the copyright boilerplate, using the correct formatting for the
@@ -103,9 +103,9 @@ structure:
   value traversal.
 - `annotate_enum_value.go` & `annotate_enum_value_test.go` —
   `enumValueAnnotations`.
-- `templates/partials/prologue.mustache` — Reusable output file license header.
-- Target templates (e.g. `templates/readme/README.md.mustache`) — Rendering
-  logic including `{{> /templates/partials/prologue}}`.
+- `templates/partials/prologue-md.gotmpl` — Reusable output file license header.
+- Target templates (e.g. `templates/readme/README.md.gotmpl`) — Rendering
+  logic including `{{- include "templates/partials/prologue-md" . }}`.
 
 When copying from `internal/sidekick/codec_sample/`:
 1. Change package declarations from `package codec_sample` to `package <lang>`.
@@ -205,8 +205,8 @@ go test ./...
   service annotators.
 - [ ] Zero target-language syntax generation in Go source
   (`strings.Builder`/`fmt.Sprintf`).
-- [ ] Every `.mustache` file has a license comment enclosed in `{{! ... }}`.
-- [ ] Standalone templates include `{{> /templates/partials/prologue}}` for
+- [ ] Every `.gotmpl` file has a license comment enclosed in `{{/* ... */}}`.
+- [ ] Standalone templates include `{{- include "templates/partials/prologue-md" . }}` for
   output file headers.
 - [ ] `merge<Lang>` merges every field of `<Lang>Library`; no fields dropped.
 - [ ] `fill<Lang>` applies defaults from `<Lang>Default`.
