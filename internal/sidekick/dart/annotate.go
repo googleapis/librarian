@@ -1136,6 +1136,10 @@ func (annotate *annotateModel) createFromJsonLine(field *api.Field, required boo
 			data, defaultValue, decoder, field.JSONName)
 	case field.Map:
 		mapType := lookupMap(annotate.model, field)
+		if mapType == nil {
+			slog.Error("unable to lookup map type", "id", field.TypezID)
+			return ""
+		}
 		keyType := mapType.Key.Typez
 		keyDecoder := annotate.keyDecoder(keyType)
 		valueType := mapType.Value.Typez
@@ -1168,6 +1172,10 @@ func createNonNullableToJson(field *api.Field, model *api.API) string {
 		}
 	case field.Map:
 		mapType := lookupMap(model, field)
+		if mapType == nil {
+			slog.Error("unable to lookup map type", "id", field.TypezID)
+			return ""
+		}
 		keyType := mapType.Key.Typez
 		keyEncoder, keyEncodingRequired := keyEncoder(keyType, "e.key")
 		valueType := mapType.Value.Typez
