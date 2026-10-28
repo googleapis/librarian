@@ -138,6 +138,42 @@ func filterModelToTypes(model *api.API, rootTypeIDs []string, allowGrpcAnyFields
 	hasGoogleRpcStatus := false
 	var unsupportedAnyFields []string
 
+	var enqueueField func(parentPath string, f *api.Field)
+	enqueueField = func(parentPath string, f *api.Field) {
+		if f == nil {
+			return
+		}
+		fieldPath := parentPath + "." + f.Name
+		if isAnyType(f.TypezID) {
+			if matchesAllowedAnyField(f.ID, allowGrpcAnyFields) || matchesAllowedAnyField(fieldPath, allowGrpcAnyFields) {
+				f.SkipProtoConversion = true
+				return
+			}
+			unsupportedAnyFields = append(unsupportedAnyFields, fieldPath)
+			return
+		}
+		if f.Map || f.Typez == api.TypezMap {
+			mapType := f.MapType
+			if mapType == nil {
+				mapType = model.Map(f.TypezID)
+			}
+			if mapType != nil {
+				enqueueField(fieldPath, mapType.Key)
+				enqueueField(fieldPath, mapType.Value)
+			}
+			return
+		}
+		if f.Typez == api.TypezMessage && f.TypezID != "" {
+			queue = append(queue, typeItem{
+				id:   f.TypezID,
+				path: fieldPath,
+			})
+		}
+		if f.Typez == api.TypezEnum && f.TypezID != "" {
+			enqueueEnum(model.Enum(f.TypezID), fieldPath)
+		}
+	}
+
 	for len(queue) > 0 {
 		item := queue[0]
 		queue = queue[1:]
@@ -163,109 +199,11 @@ func filterModelToTypes(model *api.API, rootTypeIDs []string, allowGrpcAnyFields
 			}
 			enqueueMsg(msg, item.path)
 			for _, f := range msg.Fields {
-				fieldPath := item.path + "." + f.Name
-				if isAnyType(f.TypezID) {
-					if matchesAllowedAnyField(f.ID, allowGrpcAnyFields) || matchesAllowedAnyField(fieldPath, allowGrpcAnyFields) {
-						f.SkipProtoConversion = true
-						continue
-					}
-					unsupportedAnyFields = append(unsupportedAnyFields, fieldPath)
-					continue
-				}
-				if f.Map || f.Typez == api.TypezMap {
-					mapType := f.MapType
-					if mapType == nil {
-						mapType = model.Map(f.TypezID)
-					}
-					if mapType != nil {
-						for _, sub := range []*api.Field{mapType.Key, mapType.Value} {
-							if sub == nil {
-								continue
-							}
-							subPath := fieldPath + "." + sub.Name
-							if isAnyType(sub.TypezID) {
-								if matchesAllowedAnyField(sub.ID, allowGrpcAnyFields) || matchesAllowedAnyField(subPath, allowGrpcAnyFields) {
-									sub.SkipProtoConversion = true
-									continue
-								}
-								unsupportedAnyFields = append(unsupportedAnyFields, subPath)
-								continue
-							}
-							if sub.Typez == api.TypezMessage && sub.TypezID != "" {
-								queue = append(queue, typeItem{
-									id:   sub.TypezID,
-									path: subPath,
-								})
-							}
-							if sub.Typez == api.TypezEnum && sub.TypezID != "" {
-								enqueueEnum(model.Enum(sub.TypezID), subPath)
-							}
-						}
-					}
-					continue
-				}
-				if f.Typez == api.TypezMessage && f.TypezID != "" {
-					queue = append(queue, typeItem{
-						id:   f.TypezID,
-						path: fieldPath,
-					})
-				}
-				if f.Typez == api.TypezEnum && f.TypezID != "" {
-					enqueueEnum(model.Enum(f.TypezID), fieldPath)
-				}
+				enqueueField(item.path, f)
 			}
 			for _, o := range msg.OneOfs {
 				for _, f := range o.Fields {
-					fieldPath := item.path + "." + f.Name
-					if isAnyType(f.TypezID) {
-						if matchesAllowedAnyField(f.ID, allowGrpcAnyFields) || matchesAllowedAnyField(fieldPath, allowGrpcAnyFields) {
-							f.SkipProtoConversion = true
-							continue
-						}
-						unsupportedAnyFields = append(unsupportedAnyFields, fieldPath)
-						continue
-					}
-					if f.Map || f.Typez == api.TypezMap {
-						mapType := f.MapType
-						if mapType == nil {
-							mapType = model.Map(f.TypezID)
-						}
-						if mapType != nil {
-							for _, sub := range []*api.Field{mapType.Key, mapType.Value} {
-								if sub == nil {
-									continue
-								}
-								subPath := fieldPath + "." + sub.Name
-								if isAnyType(sub.TypezID) {
-									if matchesAllowedAnyField(sub.ID, allowGrpcAnyFields) || matchesAllowedAnyField(subPath, allowGrpcAnyFields) {
-										sub.SkipProtoConversion = true
-										continue
-									}
-									unsupportedAnyFields = append(unsupportedAnyFields, subPath)
-									continue
-								}
-								if sub.Typez == api.TypezMessage && sub.TypezID != "" {
-									queue = append(queue, typeItem{
-										id:   sub.TypezID,
-										path: subPath,
-									})
-								}
-								if sub.Typez == api.TypezEnum && sub.TypezID != "" {
-									enqueueEnum(model.Enum(sub.TypezID), subPath)
-								}
-							}
-						}
-						continue
-					}
-					if f.Typez == api.TypezMessage && f.TypezID != "" {
-						queue = append(queue, typeItem{
-							id:   f.TypezID,
-							path: fieldPath,
-						})
-					}
-					if f.Typez == api.TypezEnum && f.TypezID != "" {
-						enqueueEnum(model.Enum(f.TypezID), fieldPath)
-					}
+					enqueueField(item.path, f)
 				}
 			}
 		}
