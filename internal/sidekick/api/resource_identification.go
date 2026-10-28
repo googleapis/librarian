@@ -33,10 +33,10 @@ func IdentifyTargetResources(model *API, enableHeuristics bool) error {
 
 	for _, service := range model.Services {
 		for _, method := range service.Methods {
-			if method.PathInfo == nil {
+			if method.pathInfo == nil {
 				continue
 			}
-			for _, binding := range method.PathInfo.Bindings() {
+			for _, binding := range method.pathInfo.Bindings() {
 				if err := identifyTargetResourceForBinding(method, binding, vocabulary, enableHeuristics); err != nil {
 					return err
 				}
@@ -137,8 +137,8 @@ func identifyHeuristicTarget(method *Method, binding *PathBinding, vocabulary ma
 			}
 		}
 
-		if method.InputType == nil {
-			return nil, fmt.Errorf("consistency error: method %q has no InputType", method.Name)
+		if method.inputType == nil {
+			return nil, fmt.Errorf("consistency error: method %q has no InputType", method.name)
 		}
 
 		// Verify the chain connects properly to the root of the path.
@@ -158,7 +158,7 @@ func identifyHeuristicTarget(method *Method, binding *PathBinding, vocabulary ma
 		targetSegments := tmpl.Segments()[firstIndex : i+1]
 		for _, s := range targetSegments {
 			if s.Variable() != nil {
-				_, err := findField(method.InputType, s.Variable().FieldPath())
+				_, err := findField(method.inputType, s.Variable().FieldPath())
 				if err != nil {
 					return nil, err
 				}
@@ -176,8 +176,8 @@ func identifyHeuristicTarget(method *Method, binding *PathBinding, vocabulary ma
 
 func identifyExplicitTarget(method *Method, binding *PathBinding) (*TargetResource, error) {
 	var fieldPaths [][]string
-	if method.InputType == nil {
-		return nil, fmt.Errorf("consistency error: method %q has no InputType", method.Name)
+	if method.inputType == nil {
+		return nil, fmt.Errorf("consistency error: method %q has no InputType", method.name)
 	}
 
 	var lastVarIndex = -1
@@ -188,12 +188,12 @@ func identifyExplicitTarget(method *Method, binding *PathBinding) (*TargetResour
 		}
 
 		fieldPath := segment.Variable().FieldPath()
-		field, err := findField(method.InputType, fieldPath)
+		field, err := findField(method.inputType, fieldPath)
 		if err != nil {
 			return nil, err
 		}
 		if field == nil {
-			return nil, fmt.Errorf("consistency error: field %v not found in message %q", fieldPath, method.InputType.name)
+			return nil, fmt.Errorf("consistency error: field %v not found in message %q", fieldPath, method.inputType.name)
 		}
 		if !field.IsResourceReference() {
 			return nil, nil
@@ -269,13 +269,13 @@ func constructTemplate(method *Method, segments []PathSegment) ([]PathSegment, e
 }
 
 func getServiceHost(method *Method) (string, error) {
-	if method.Service != nil && method.Service.DefaultHost != "" {
-		return method.Service.DefaultHost, nil
+	if method.service != nil && method.service.DefaultHost != "" {
+		return method.service.DefaultHost, nil
 	}
-	if method.Model != nil && method.Model.Name != "" {
-		return method.Model.Name + ".googleapis.com", nil
+	if method.model != nil && method.model.Name != "" {
+		return method.model.Name + ".googleapis.com", nil
 	}
-	return "", fmt.Errorf("consistency error: no service host found for method %q", method.Name)
+	return "", fmt.Errorf("consistency error: no service host found for method %q", method.name)
 }
 
 // isVersionString checks if a string appears to be an API version segment,

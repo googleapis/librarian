@@ -248,13 +248,13 @@ func shouldGenerateMethod(m *api.Method) bool {
 	// Ignore methods without HTTP annotations; we cannot generate working RPCs
 	// for them.
 	// TODO(#499) Switch to explicitly excluding such functions.
-	if m.ClientSideStreaming || m.PathInfo == nil {
+	if m.ClientSideStreaming() || m.PathInfo() == nil {
 		return false
 	}
-	if len(m.PathInfo.Bindings()) == 0 {
+	if len(m.PathInfo().Bindings()) == 0 {
 		return false
 	}
-	return m.PathInfo.Bindings()[0].PathTemplate() != nil
+	return m.PathInfo().Bindings()[0].PathTemplate() != nil
 }
 
 func formatDirectory(ctx context.Context, dir string) error {

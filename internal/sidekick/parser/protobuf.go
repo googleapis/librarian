@@ -609,24 +609,24 @@ func buildProtobufMethod(model *api.API, m *descriptorpb.MethodDescriptorProto, 
 	if err != nil {
 		return nil, err
 	}
-	method := &api.Method{
-		ID:                  mFQN,
-		PathInfo:            pathInfo,
-		Name:                m.GetName(),
-		Documentation:       doc,
-		Deprecated:          m.GetOptions().GetDeprecated(),
-		InputTypeID:         inputTypeID,
-		OutputTypeID:        outputTypeID,
-		ClientSideStreaming: m.GetClientStreaming(),
-		ServerSideStreaming: m.GetServerStreaming(),
-		OperationInfo:       parseOperationInfo(packagez, m),
-		Routing:             routing,
-		ReturnsEmpty:        outputTypeID == ".google.protobuf.Empty",
-		SourceServiceID:     serviceID,
-		APIVersion:          apiVersion,
-		Signatures:          signatures,
-		AutoPopulated:       findAutoPopulatedFields(serviceConfig, mFQN, model.Message(inputTypeID)),
-	}
+	method := api.NewMethodBuilder().
+		WithID(mFQN).
+		WithPathInfo(pathInfo).
+		WithName(m.GetName()).
+		WithDocumentation(doc).
+		WithDeprecated(m.GetOptions().GetDeprecated()).
+		WithInputTypeID(inputTypeID).
+		WithOutputTypeID(outputTypeID).
+		WithClientSideStreaming(m.GetClientStreaming()).
+		WithServerSideStreaming(m.GetServerStreaming()).
+		WithOperationInfo(parseOperationInfo(packagez, m)).
+		WithRouting(routing).
+		WithReturnsEmpty(outputTypeID == ".google.protobuf.Empty").
+		WithSourceServiceID(serviceID).
+		WithAPIVersion(apiVersion).
+		WithSignatures(signatures).
+		WithAutoPopulated(findAutoPopulatedFields(serviceConfig, mFQN, model.Message(inputTypeID))).
+		Build()
 	model.AddMethod(method)
 	return method, nil
 }

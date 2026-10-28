@@ -125,14 +125,14 @@ func AddDiscoveryLroAnnotations(model *API, discoveryConfig *Discovery) error {
 		}
 		var svcMixin *Method
 		for _, method := range svc.Methods {
-			if method.OutputTypeID != discoveryConfig.OperationID {
+			if method.outputTypeID != discoveryConfig.OperationID {
 				continue
 			}
 			mixin, pathParams := findDiscoveryLroPoller(method, model, discoveryConfig)
 			if mixin == nil {
 				continue
 			}
-			method.DiscoveryLro = NewDiscoveryLroBuilder().
+			method.discoveryLro = NewDiscoveryLroBuilder().
 				WithPollingPathParameters(pathParams...).
 				Build()
 			if svcMixin != nil && mixin != svcMixin {
@@ -144,23 +144,23 @@ func AddDiscoveryLroAnnotations(model *API, discoveryConfig *Discovery) error {
 			continue
 		}
 		sourceID := ""
-		if l := strings.LastIndex(svcMixin.ID, "."); l != -1 {
-			sourceID = svcMixin.ID[0:l]
+		if l := strings.LastIndex(svcMixin.id, "."); l != -1 {
+			sourceID = svcMixin.id[0:l]
 		}
 		method := &Method{
-			Name:            "getOperation",
-			ID:              fmt.Sprintf("%s.getOperation", svc.ID),
-			Documentation:   svcMixin.Documentation,
-			InputTypeID:     svcMixin.InputTypeID,
-			OutputTypeID:    svcMixin.OutputTypeID,
-			ReturnsEmpty:    svcMixin.ReturnsEmpty,
-			PathInfo:        svcMixin.PathInfo,
-			Pagination:      svcMixin.Pagination,
-			Routing:         svcMixin.Routing,
-			AutoPopulated:   svcMixin.AutoPopulated,
-			Service:         svc,
-			SourceServiceID: sourceID,
-			IsLroPoller:     true,
+			name:            "getOperation",
+			id:              fmt.Sprintf("%s.getOperation", svc.ID),
+			documentation:   svcMixin.documentation,
+			inputTypeID:     svcMixin.inputTypeID,
+			outputTypeID:    svcMixin.outputTypeID,
+			returnsEmpty:    svcMixin.returnsEmpty,
+			pathInfo:        svcMixin.pathInfo,
+			pagination:      svcMixin.pagination,
+			routing:         svcMixin.routing,
+			autoPopulated:   svcMixin.autoPopulated,
+			service:         svc,
+			sourceServiceID: sourceID,
+			isLroPoller:     true,
 		}
 		svc.Methods = append(svc.Methods, method)
 		model.AddMethod(method)
@@ -169,11 +169,11 @@ func AddDiscoveryLroAnnotations(model *API, discoveryConfig *Discovery) error {
 }
 
 func findDiscoveryLroPoller(method *Method, model *API, discoveryConfig *Discovery) (*Method, []string) {
-	if method.PathInfo == nil {
+	if method.pathInfo == nil {
 		return nil, nil
 	}
 	var flatPath []string
-	for _, binding := range method.PathInfo.Bindings() {
+	for _, binding := range method.pathInfo.Bindings() {
 		if binding.PathTemplate() == nil {
 			continue
 		}

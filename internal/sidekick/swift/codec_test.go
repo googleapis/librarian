@@ -422,13 +422,13 @@ func makeRequiredServicesTestModel() *api.API {
 	sourceService := api.NewTestService("zoneOperations").
 		WithPackage("test").
 		WithMethods(sourceMethod)
-	sourceMethod.Service = sourceService
-	internalMixin := api.NewTestMethod(sourceMethod.Name).
-		WithSourceMethod(sourceMethod)
-	internalMixin.IsLroPoller = true
-	externalMixin := api.NewTestMethod(externalMethod.Name).
-		WithSourceMethod(externalMethod)
-	externalMixin.IsLroPoller = true
+	sourceMethod.WithService(sourceService)
+	internalMixin := api.NewTestMethod(sourceMethod.Name()).
+		WithSourceMethod(sourceMethod).
+		WithIsLroPoller()
+	externalMixin := api.NewTestMethod(externalMethod.Name()).
+		WithSourceMethod(externalMethod).
+		WithIsLroPoller()
 	targetService := api.NewTestService("TestService").
 		WithPackage("test").
 		WithMethods(internalMixin, externalMixin)

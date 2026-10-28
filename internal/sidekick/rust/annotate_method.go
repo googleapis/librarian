@@ -306,7 +306,7 @@ func (c *codec) annotateMethod(m *api.Method) (*methodAnnotation, error) {
 	if err := c.annotatePathInfo(m); err != nil {
 		return nil, err
 	}
-	for _, routing := range m.Routing {
+	for _, routing := range m.Routing() {
 		for _, variant := range routing.Variants() {
 			fieldAccessors, err := c.annotateRoutingAccessors(variant, m)
 			if err != nil {
@@ -321,35 +321,35 @@ func (c *codec) annotateMethod(m *api.Method) (*methodAnnotation, error) {
 			variant.SetAnnotations(routingVariantAnnotations)
 		}
 	}
-	returnType, err := c.methodInOutTypeName(m.OutputTypeID, m.Model, m.Model.PackageName)
+	returnType, err := c.methodInOutTypeName(m.OutputTypeID(), m.Model(), m.Model().PackageName)
 	if err != nil {
 		return nil, err
 	}
-	if m.ReturnsEmpty {
+	if m.ReturnsEmpty() {
 		returnType = "()"
 	}
-	serviceName := c.ServiceName(m.Service)
+	serviceName := c.ServiceName(m.Service())
 	systemParameters := slices.Clone(c.systemParameters)
-	if m.APIVersion != "" {
+	if m.APIVersion() != "" {
 		systemParameters = append(systemParameters, systemParameter{
 			Name:  "$apiVersion",
-			Value: m.APIVersion,
+			Value: m.APIVersion(),
 		})
 	}
-	docLines, err := c.formatDocComments(m.Documentation, m.ID, m.Model, m.Scopes())
+	docLines, err := c.formatDocComments(m.Documentation(), m.ID(), m.Model(), m.Scopes())
 	if err != nil {
 		return nil, err
 	}
-	hasVeneer := c.serviceHasVeneer(m.Service.ID)
-	internalBuilders := c.serviceInternalBuilders(m.Service.ID)
-	generateRpcSamples := c.serviceGenerateRpcSamples(m.Service.ID)
+	hasVeneer := c.serviceHasVeneer(m.Service().ID)
+	internalBuilders := c.serviceInternalBuilders(m.Service().ID)
+	generateRpcSamples := c.serviceGenerateRpcSamples(m.Service().ID)
 	annotation := &methodAnnotation{
-		Name:                      toSnake(m.Name),
-		NameNoMangling:            toSnakeNoMangling(m.Name),
-		BuilderName:               toPascal(m.Name),
+		Name:                      toSnake(m.Name()),
+		NameNoMangling:            toSnakeNoMangling(m.Name()),
+		BuilderName:               toPascal(m.Name()),
 		Body:                      bodyAccessor(m),
 		DocLines:                  docLines,
-		PathInfo:                  m.PathInfo,
+		PathInfo:                  m.PathInfo(),
 		ServiceNameToPascal:       toPascal(serviceName),
 		ServiceNameToCamel:        toCamel(serviceName),
 		ServiceNameToSnake:        toSnake(serviceName),
@@ -360,11 +360,11 @@ func (c *codec) annotateMethod(m *api.Method) (*methodAnnotation, error) {
 		DetailedTracingAttributes: c.detailedTracingAttributes,
 		InternalBuilders:          internalBuilders,
 		GenerateRpcSamples:        generateRpcSamples,
-		IsLroPoller:               m.IsLroPoller,
+		IsLroPoller:               m.IsLroPoller(),
 		IsDiscoveryLro:            isDiscoveryLro(m),
-		ExtensibleBuilder:         slices.Contains(c.extensibleBuilders, m.ID),
-		ClientSideStreaming:       m.ClientSideStreaming,
-		ServerSideStreaming:       m.ServerSideStreaming,
+		ExtensibleBuilder:         slices.Contains(c.extensibleBuilders, m.ID()),
+		ClientSideStreaming:       m.ClientSideStreaming(),
+		ServerSideStreaming:       m.ServerSideStreaming(),
 		IsGrpc:                    c.methodUsesGrpc(m),
 	}
 
@@ -381,51 +381,51 @@ func (c *codec) annotateMethod(m *api.Method) (*methodAnnotation, error) {
 		// a recommendation that is not applicable to generated code.
 		annotation.Attributes = []string{"#[allow(clippy::should_implement_trait)]"}
 	}
-	if m.OperationInfo != nil {
-		metadataType, err := c.methodInOutTypeName(m.OperationInfo.MetadataTypeID(), m.Model, m.Model.PackageName)
+	if m.OperationInfo() != nil {
+		metadataType, err := c.methodInOutTypeName(m.OperationInfo().MetadataTypeID(), m.Model(), m.Model().PackageName)
 		if err != nil {
 			return nil, err
 		}
-		responseType, err := c.methodInOutTypeName(m.OperationInfo.ResponseTypeID(), m.Model, m.Model.PackageName)
+		responseType, err := c.methodInOutTypeName(m.OperationInfo().ResponseTypeID(), m.Model(), m.Model().PackageName)
 		if err != nil {
 			return nil, err
 		}
 		opInfo := &operationInfo{
 			MetadataType:     metadataType,
 			ResponseType:     responseType,
-			PackageNamespace: c.rootModuleName(m.Model),
+			PackageNamespace: c.rootModuleName(m.Model()),
 		}
-		m.OperationInfo.SetAnnotations(opInfo)
+		m.OperationInfo().SetAnnotations(opInfo)
 		annotation.OperationInfo = opInfo
 	}
-	if m.DiscoveryLro != nil {
+	if m.DiscoveryLro() != nil {
 		lroAnnotation := &discoveryLroAnnotations{
 			MethodName:          annotation.Name,
 			ReturnType:          returnType,
 			ServiceNameToPascal: annotation.ServiceNameToPascal,
 		}
-		for _, p := range m.DiscoveryLro.PollingPathParameters() {
+		for _, p := range m.DiscoveryLro().PollingPathParameters() {
 			a := discoveryLroPathParameter{
 				Name:       toSnake(p),
 				SetterName: toSnakeNoMangling(p),
 			}
 			lroAnnotation.PollingPathParameters = append(lroAnnotation.PollingPathParameters, a)
 		}
-		m.DiscoveryLro.SetAnnotations(lroAnnotation)
+		m.DiscoveryLro().SetAnnotations(lroAnnotation)
 	}
-	m.Codec = annotation
+	m.SetAnnotations(annotation)
 	return annotation, nil
 }
 
 func isDiscoveryLro(m *api.Method) bool {
-	if !m.IsLroPoller {
+	if !m.IsLroPoller() {
 		return false
 	}
-	if m.Service == nil {
+	if m.Service() == nil {
 		return false
 	}
-	return slices.ContainsFunc(m.Service.Methods, func(meth *api.Method) bool {
-		return meth.DiscoveryLro != nil
+	return slices.ContainsFunc(m.Service().Methods, func(meth *api.Method) bool {
+		return meth.DiscoveryLro() != nil
 	})
 }
 
@@ -443,7 +443,7 @@ func makeAccessors(fields []string, m *api.Method) ([]string, error) {
 		return nil
 	}
 	var accessors []string
-	message := m.InputType
+	message := m.InputType()
 	for _, name := range fields {
 		field := findField(name, message)
 		rustFieldName := toSnake(name)
@@ -461,7 +461,7 @@ func makeAccessors(fields []string, m *api.Method) ([]string, error) {
 			accessors = append(accessors, ".map(|s| s.as_str())")
 		}
 		if field.Typez() == api.TypezMessage {
-			if fieldMessage := m.Model.Message(field.TypezID()); fieldMessage != nil {
+			if fieldMessage := m.Model().Message(field.TypezID()); fieldMessage != nil {
 				message = fieldMessage
 			}
 		}
@@ -523,7 +523,7 @@ func makeBindingSubstitution(v *api.PathVariable, m *api.Method) (*bindingSubsti
 		rustNames = append(rustNames, toSnakeNoMangling(n))
 	}
 	var pathExtraction *PathExtraction
-	fullBody := m.PathInfo != nil && m.PathInfo.BodyFieldPath() == "*"
+	fullBody := m.PathInfo() != nil && m.PathInfo().BodyFieldPath() == "*"
 	if fullBody {
 		clears, err := makeClearAccessors(v.FieldPath(), m)
 		if err != nil {
@@ -555,7 +555,7 @@ func makeClearAccessors(fields []string, m *api.Method) ([]string, error) {
 		return nil
 	}
 	var clears []string
-	message := m.InputType
+	message := m.InputType()
 	for _, name := range fields {
 		field := findField(name, message)
 		rustFieldName := toSnake(name)
@@ -575,7 +575,7 @@ func makeClearAccessors(fields []string, m *api.Method) ([]string, error) {
 			}
 		}
 		if field.Typez() == api.TypezMessage {
-			if fieldMessage := m.Model.Message(field.TypezID()); fieldMessage != nil {
+			if fieldMessage := m.Model().Message(field.TypezID()); fieldMessage != nil {
 				message = fieldMessage
 			}
 		}
@@ -604,13 +604,13 @@ func (c *codec) annotatePathBinding(b *api.PathBinding, m *api.Method) (*pathBin
 }
 
 func (c *codec) annotatePathInfo(m *api.Method) error {
-	if m.PathInfo == nil {
+	if m.PathInfo() == nil {
 		return nil
 	}
 	seen := make(map[string]bool)
 	var uniqueParameters []*bindingSubstitution
 
-	for _, b := range m.PathInfo.Bindings() {
+	for _, b := range m.PathInfo().Bindings() {
 		if b.PathTemplate() == nil {
 			continue
 		}
@@ -629,10 +629,10 @@ func (c *codec) annotatePathInfo(m *api.Method) error {
 		b.SetAnnotations(ann)
 	}
 
-	m.PathInfo.SetAnnotations(&pathInfoAnnotation{
-		HasBody:          m.PathInfo.BodyFieldPath() != "",
+	m.PathInfo().SetAnnotations(&pathInfoAnnotation{
+		HasBody:          m.PathInfo().BodyFieldPath() != "",
 		UniqueParameters: uniqueParameters,
-		IsIdempotent:     isIdempotent(m.PathInfo),
+		IsIdempotent:     isIdempotent(m.PathInfo()),
 	})
 	return nil
 }
@@ -640,7 +640,7 @@ func (c *codec) annotatePathInfo(m *api.Method) error {
 func (c *codec) annotateSampleInfo(si *api.SampleInfo, m *api.Method) {
 	var parameters []string
 	var formatResourceName bool
-	if rn := si.ResourceNameField; rn != nil {
+	if rn := si.ResourceNameField(); rn != nil {
 		fieldAnn := rn.Codec().(*fieldAnnotations)
 		if fieldAnn.FormattedResource != nil && len(fieldAnn.FormattedResource.FormatArgs) > 0 {
 			parameters = fieldAnn.FormattedResource.FormatArgs
@@ -648,7 +648,7 @@ func (c *codec) annotateSampleInfo(si *api.SampleInfo, m *api.Method) {
 		} else {
 			parameters = []string{fieldAnn.SetterName}
 		}
-	} else if m.IsAIPStandardUpdate {
+	} else if m.IsAIPStandardUpdate() {
 		parameters = []string{"name"}
 	} else {
 		parameters = []string{}
@@ -658,16 +658,16 @@ func (c *codec) annotateSampleInfo(si *api.SampleInfo, m *api.Method) {
 		StringParameters:   parameters,
 		FormatResourceName: formatResourceName,
 	}
-	si.Codec = ann
+	si.SetAnnotations(ann)
 }
 
 func (c *codec) annotateResourceNameGeneration(m *api.Method, annotation *methodAnnotation) error {
 	if !annotation.DetailedTracingAttributes {
 		return nil
 	}
-	if m.PathInfo != nil {
+	if m.PathInfo() != nil {
 		var firstBindingWithTargetResource *api.PathBinding
-		for _, b := range m.PathInfo.Bindings() {
+		for _, b := range m.PathInfo().Bindings() {
 			if b.TargetResource() != nil {
 				annotation.HasResourceNameGeneration = true
 				firstBindingWithTargetResource = b
@@ -697,7 +697,7 @@ func (c *codec) annotateResourceNameGeneration(m *api.Method, annotation *method
 			}
 			annotation.GrpcResourceNameArgs = grpcArgs
 
-			for _, b := range m.PathInfo.Bindings() {
+			for _, b := range m.PathInfo().Bindings() {
 				bAnn, ok := b.Codec().(*pathBindingAnnotation)
 				if !ok {
 					continue
@@ -723,7 +723,7 @@ func (c *codec) annotateResourceNameGeneration(m *api.Method, annotation *method
 
 func formatResourceNameTemplateFromPath(m *api.Method, b *api.PathBinding) (string, error) {
 	if b.TargetResource() == nil || len(b.TargetResource().Template()) == 0 {
-		return "", fmt.Errorf("missing target resource template for method %s", m.ID)
+		return "", fmt.Errorf("missing target resource template for method %s", m.ID())
 	}
 
 	var sb strings.Builder
@@ -770,12 +770,12 @@ func (c *codec) methodUsesGrpc(m *api.Method) bool {
 		return false
 	}
 	// TODO(googleapis/google-cloud-rust#6470): Support LROs on gRPC transport in default template.
-	if c.templateOverride != "templates/grpc-client" && (m.OperationInfo != nil || m.IsLroPoller || isDiscoveryLro(m)) {
+	if c.templateOverride != "templates/grpc-client" && (m.OperationInfo() != nil || m.IsLroPoller() || isDiscoveryLro(m)) {
 		return false
 	}
 	if c.defaultTransport == "grpc" {
 		return true
 	}
 	// Client side only streaming is not yet supported, only include if specifically enabled.
-	return m.ServerSideStreaming || c.includeStreamingMethods
+	return m.ServerSideStreaming() || c.includeStreamingMethods
 }

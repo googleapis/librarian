@@ -71,7 +71,9 @@ func Service() *api.Service {
 
 // MethodCreate returns a sample create method.
 func MethodCreate() *api.Method {
-	m := api.NewTestMethod("CreateSecret").
+	// Note: InputType and OutputType are intentionally left nil because OpenAPI parser tests
+	// (e.g. TestOpenAPI_MakeAPI) assert against this fixture before CrossReference runs.
+	return api.NewTestMethod("CreateSecret").
 		WithID("..Service.CreateSecret").
 		WithDocumentation("Creates a new Secret containing no SecretVersions.").
 		WithVerb(http.MethodPost).
@@ -82,33 +84,29 @@ func MethodCreate() *api.Method {
 			WithLiteral("secrets").
 			Build()).
 		WithQueryParameters("secretId").
-		WithBodyFieldPath("body")
-	// Note: InputType and OutputType are intentionally left nil because OpenAPI parser tests
-	// (e.g. TestOpenAPI_MakeAPI) assert against this fixture before CrossReference runs.
-	m.InputTypeID = CreateRequest().ID()
-	m.OutputTypeID = Secret().ID()
-	return m
+		WithBodyFieldPath("body").
+		WithInputTypeID(CreateRequest().ID()).
+		WithOutputTypeID(Secret().ID())
 }
 
 // MethodUpdate returns a sample update method.
 func MethodUpdate() *api.Method {
-	m := api.NewTestMethod("UpdateSecret").
+	return api.NewTestMethod("UpdateSecret").
 		WithID("..Service.UpdateSecret").
 		WithDocumentation("Updates metadata of an existing Secret.").
 		WithInput(UpdateRequest()).
+		WithOutputTypeID(".google.protobuf.Empty").
 		WithVerb(http.MethodPatch).
 		WithPathTemplate(api.NewPathTemplateBuilder().
 			WithLiteral("v1").
 			WithVariableNamed("secret", "name").
 			Build()).
 		WithQueryParameters("field_mask")
-	m.OutputTypeID = ".google.protobuf.Empty"
-	return m
 }
 
 // MethodAddSecretVersion returns a sample add secret version method.
 func MethodAddSecretVersion() *api.Method {
-	m := api.NewTestMethod("AddSecretVersion").
+	return api.NewTestMethod("AddSecretVersion").
 		WithID("..Service.AddSecretVersion").
 		WithDocumentation("Creates a new SecretVersion containing secret data and attaches\nit to an existing Secret.").
 		WithVerb(http.MethodPost).
@@ -121,10 +119,9 @@ func MethodAddSecretVersion() *api.Method {
 			WithVerb("addVersion").
 			Build()).
 		WithQueryParameters().
-		WithBodyFieldPath("body")
-	m.InputTypeID = "..Service.AddSecretVersionRequest"
-	m.OutputTypeID = "..SecretVersion"
-	return m
+		WithBodyFieldPath("body").
+		WithInputTypeID("..Service.AddSecretVersionRequest").
+		WithOutputTypeID("..SecretVersion")
 }
 
 // MethodListSecretVersions returns a sample list secret versions method.

@@ -22,9 +22,9 @@ type methodAnnotations struct {
 }
 
 func (c *codec) annotateMethod(m *api.Method, sAnn *serviceAnnotations) error {
-	m.Codec = &methodAnnotations{
+	m.SetAnnotations(&methodAnnotations{
 		Service: sAnn,
-		Name:    m.Name + "Sample",
-	}
+		Name:    m.Name() + "Sample",
+	})
 	return nil
 }

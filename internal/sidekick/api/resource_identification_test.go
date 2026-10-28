@@ -30,7 +30,7 @@ func setupTestModel(serviceID string, pathTemplate *PathTemplate, fields []*Fiel
 		WithID(serviceID).
 		WithMethods(method)
 	model := NewTestAPI(nil, nil, []*Service{service}).WithName("test-api")
-	method.Model = model
+	method.model = model
 	service.Model = model
 	return model, binding
 }
@@ -485,8 +485,8 @@ func TestIdentifyTargetResources_Heuristic(t *testing.T) {
 			for _, p := range test.getPaths {
 				m := NewTestMethod("GetSomething").
 					WithBindings(NewPathBindingBuilder().WithPathTemplate(p).Build())
-				m.IsAIPStandard = true
-				m.Service = model.Services[0]
+				m.isAIPStandard = true
+				m.service = model.Services[0]
 				model.Services[0].Methods = append(model.Services[0].Methods, m)
 			}
 			IdentifyTargetResources(model, true)

@@ -65,13 +65,13 @@ func newAIPTestFixture() *aipTestFixture {
 
 func newAIPTestMethod(name string, input, output *Message, model *API) *Method {
 	m := NewTestMethod(name).WithInput(input).WithOutput(output)
-	m.Model = model
+	m.model = model
 	return m
 }
 
 func newAIPTestDeleteMethod(input *Message, model *API) *Method {
 	m := NewTestMethod("DeleteSecret").WithInput(input).ReturnEmpty()
-	m.Model = model
+	m.model = model
 	return m
 }
 
@@ -136,7 +136,7 @@ func TestIsAIPStandard(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			enrichMethodSamples(tc.method)
-			if got := tc.method.IsAIPStandard; got != tc.want {
+			if got := tc.method.IsAIPStandard(); got != tc.want {
 				t.Errorf("IsAIPStandard() = %v, want %v", got, tc.want)
 			}
 		})
@@ -162,8 +162,8 @@ func TestAIPStandardGetInfo(t *testing.T) {
 				f.model,
 			),
 			want: &SampleInfo{
-				ResourceNameField:     f.wildcardResourceField,
-				IsRequestResourceName: true,
+				resourceNameField:     f.wildcardResourceField,
+				isRequestResourceName: true,
 			},
 		},
 		{
@@ -175,8 +175,8 @@ func TestAIPStandardGetInfo(t *testing.T) {
 				f.model,
 			),
 			want: &SampleInfo{
-				ResourceNameField:     f.resourceNameField,
-				IsRequestResourceName: true,
+				resourceNameField:     f.resourceNameField,
+				isRequestResourceName: true,
 			},
 		},
 		{
@@ -188,8 +188,8 @@ func TestAIPStandardGetInfo(t *testing.T) {
 				f.model,
 			),
 			want: &SampleInfo{
-				ResourceNameField:     f.resourceNameNoSingularField,
-				IsRequestResourceName: true,
+				resourceNameField:     f.resourceNameNoSingularField,
+				isRequestResourceName: true,
 			},
 		},
 		{
@@ -296,7 +296,7 @@ func TestAIPStandardGetInfo(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			enrichMethodSamples(tc.method)
-			got := tc.method.SampleInfo
+			got := tc.method.SampleInfo()
 			if diff := cmp.Diff(tc.want, got, allowUnexported()); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
@@ -319,8 +319,8 @@ func TestAIPStandardDeleteInfo(t *testing.T) {
 				f.model,
 			),
 			want: &SampleInfo{
-				ResourceNameField:     f.wildcardResourceField,
-				IsRequestResourceName: true,
+				resourceNameField:     f.wildcardResourceField,
+				isRequestResourceName: true,
 			},
 		},
 		{
@@ -330,8 +330,8 @@ func TestAIPStandardDeleteInfo(t *testing.T) {
 				f.model,
 			),
 			want: &SampleInfo{
-				ResourceNameField:     f.resourceNameField,
-				IsRequestResourceName: true,
+				resourceNameField:     f.resourceNameField,
+				isRequestResourceName: true,
 			},
 		},
 		{
@@ -341,8 +341,8 @@ func TestAIPStandardDeleteInfo(t *testing.T) {
 				f.model,
 			),
 			want: &SampleInfo{
-				ResourceNameField:     f.resourceNameNoSingularField,
-				IsRequestResourceName: true,
+				resourceNameField:     f.resourceNameNoSingularField,
+				isRequestResourceName: true,
 			},
 		},
 		{
@@ -354,8 +354,8 @@ func TestAIPStandardDeleteInfo(t *testing.T) {
 				f.model,
 			).WithOperationInfo(NewTestOperationInfo("", "")),
 			want: &SampleInfo{
-				ResourceNameField:     f.resourceNameField,
-				IsRequestResourceName: true,
+				resourceNameField:     f.resourceNameField,
+				isRequestResourceName: true,
 			},
 		},
 		{
@@ -365,8 +365,8 @@ func TestAIPStandardDeleteInfo(t *testing.T) {
 				f.model,
 			),
 			want: &SampleInfo{
-				ResourceNameField:     f.resourceOtherNameField,
-				IsRequestResourceName: true,
+				resourceNameField:     f.resourceOtherNameField,
+				isRequestResourceName: true,
 			},
 		},
 		{
@@ -417,7 +417,7 @@ func TestAIPStandardDeleteInfo(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			enrichMethodSamples(tc.method)
-			got := tc.method.SampleInfo
+			got := tc.method.SampleInfo()
 			if diff := cmp.Diff(tc.want, got, allowUnexported()); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
@@ -442,8 +442,8 @@ func TestAIPStandardUndeleteInfo(t *testing.T) {
 				f.model,
 			),
 			want: &SampleInfo{
-				ResourceNameField:     f.wildcardResourceField,
-				IsRequestResourceName: true,
+				resourceNameField:     f.wildcardResourceField,
+				isRequestResourceName: true,
 			},
 		},
 		{
@@ -455,8 +455,8 @@ func TestAIPStandardUndeleteInfo(t *testing.T) {
 				f.model,
 			),
 			want: &SampleInfo{
-				ResourceNameField:     f.resourceNameField,
-				IsRequestResourceName: true,
+				resourceNameField:     f.resourceNameField,
+				isRequestResourceName: true,
 			},
 		},
 		{
@@ -468,8 +468,8 @@ func TestAIPStandardUndeleteInfo(t *testing.T) {
 				f.model,
 			),
 			want: &SampleInfo{
-				ResourceNameField:     f.resourceNameNoSingularField,
-				IsRequestResourceName: true,
+				resourceNameField:     f.resourceNameNoSingularField,
+				isRequestResourceName: true,
 			},
 		},
 		{
@@ -478,12 +478,12 @@ func TestAIPStandardUndeleteInfo(t *testing.T) {
 				m := NewTestMethod("UndeleteSecret").
 					WithInput(NewTestMessage("UndeleteSecretRequest").WithFields(f.resourceNameField)).
 					WithOperationInfo(NewTestOperationInfo("", ""))
-				m.Model = f.model
+				m.model = f.model
 				return m
 			}(),
 			want: &SampleInfo{
-				ResourceNameField:     f.resourceNameField,
-				IsRequestResourceName: true,
+				resourceNameField:     f.resourceNameField,
+				isRequestResourceName: true,
 			},
 		},
 		{
@@ -495,8 +495,8 @@ func TestAIPStandardUndeleteInfo(t *testing.T) {
 				f.model,
 			),
 			want: &SampleInfo{
-				ResourceNameField:     f.resourceOtherNameField,
-				IsRequestResourceName: true,
+				resourceNameField:     f.resourceOtherNameField,
+				isRequestResourceName: true,
 			},
 		},
 		{
@@ -504,7 +504,7 @@ func TestAIPStandardUndeleteInfo(t *testing.T) {
 			method: func() *Method {
 				m := NewTestMethod("RestoreSecret").
 					WithInput(NewTestMessage("UndeleteSecretRequest").WithFields(f.resourceNameField))
-				m.Model = f.model
+				m.model = f.model
 				return m
 			}(),
 			want: nil,
@@ -514,7 +514,7 @@ func TestAIPStandardUndeleteInfo(t *testing.T) {
 			method: func() *Method {
 				m := NewTestMethod("UndeleteSecret").
 					WithInput(NewTestMessage("RestoreSecretRequest").WithFields(f.resourceNameField))
-				m.Model = f.model
+				m.model = f.model
 				return m
 			}(),
 			want: nil,
@@ -524,7 +524,7 @@ func TestAIPStandardUndeleteInfo(t *testing.T) {
 			method: func() *Method {
 				m := NewTestMethod("UndeleteSecret").
 					WithInput(NewTestMessage("UndeleteSecretRequest").WithFields(f.nonExistentResourceField))
-				m.Model = f.model
+				m.model = f.model
 				return m
 			}(),
 			want: nil,
@@ -537,7 +537,7 @@ func TestAIPStandardUndeleteInfo(t *testing.T) {
 						f.nonExistentResourceField,
 						f.resourceOtherNameNoSingularField,
 					))
-				m.Model = f.model
+				m.model = f.model
 				return m
 			}(),
 			want: nil,
@@ -547,7 +547,7 @@ func TestAIPStandardUndeleteInfo(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			enrichMethodSamples(tc.method)
-			got := tc.method.SampleInfo
+			got := tc.method.SampleInfo()
 			if diff := cmp.Diff(tc.want, got, allowUnexported()); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
@@ -585,10 +585,10 @@ func TestAIPStandardCreateInfo(t *testing.T) {
 				f.model,
 			),
 			want: &SampleInfo{
-				ResourceNameField:     parentField,
-				IsRequestResourceName: true,
-				ResourceIDField:       idField,
-				MessageField:          resourceField,
+				resourceNameField:     parentField,
+				isRequestResourceName: true,
+				resourceIDField:       idField,
+				messageField:          resourceField,
 			},
 		},
 		{
@@ -600,9 +600,9 @@ func TestAIPStandardCreateInfo(t *testing.T) {
 				f.model,
 			),
 			want: &SampleInfo{
-				ResourceNameField:     parentField,
-				IsRequestResourceName: true,
-				MessageField:          resourceField,
+				resourceNameField:     parentField,
+				isRequestResourceName: true,
+				messageField:          resourceField,
 			},
 		},
 		{
@@ -620,7 +620,7 @@ func TestAIPStandardCreateInfo(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			enrichMethodSamples(tc.method)
-			got := tc.method.SampleInfo
+			got := tc.method.SampleInfo()
 			if diff := cmp.Diff(tc.want, got, allowUnexported()); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
@@ -657,10 +657,10 @@ func TestAIPStandardUpdateInfo(t *testing.T) {
 				f.model,
 			),
 			want: &SampleInfo{
-				ResourceNameField:     f.resourceNameField,
-				MessageField:          resourceField,
-				IsMessageResourceName: true,
-				UpdateMaskField:       updateMaskField,
+				resourceNameField:     f.resourceNameField,
+				messageField:          resourceField,
+				isMessageResourceName: true,
+				updateMaskField:       updateMaskField,
 			},
 		},
 		{
@@ -672,9 +672,9 @@ func TestAIPStandardUpdateInfo(t *testing.T) {
 				f.model,
 			),
 			want: &SampleInfo{
-				ResourceNameField:     f.resourceNameField,
-				MessageField:          resourceField,
-				IsMessageResourceName: true,
+				resourceNameField:     f.resourceNameField,
+				messageField:          resourceField,
+				isMessageResourceName: true,
 			},
 		},
 		{
@@ -712,7 +712,7 @@ func TestAIPStandardUpdateInfo(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			enrichMethodSamples(tc.method)
-			got := tc.method.SampleInfo
+			got := tc.method.SampleInfo()
 			if diff := cmp.Diff(tc.want, got, allowUnexported()); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
@@ -753,8 +753,8 @@ func TestAIPStandardListInfo(t *testing.T) {
 				f.model,
 			),
 			want: &SampleInfo{
-				ResourceNameField:     parentField,
-				IsRequestResourceName: true,
+				resourceNameField:     parentField,
+				isRequestResourceName: true,
 			},
 		},
 		{
@@ -766,8 +766,8 @@ func TestAIPStandardListInfo(t *testing.T) {
 				f.model,
 			),
 			want: &SampleInfo{
-				ResourceNameField:     otherParentField,
-				IsRequestResourceName: true,
+				resourceNameField:     otherParentField,
+				isRequestResourceName: true,
 			},
 		},
 		{
@@ -779,8 +779,8 @@ func TestAIPStandardListInfo(t *testing.T) {
 				f.model,
 			),
 			want: &SampleInfo{
-				ResourceNameField:     plainParentField,
-				IsRequestResourceName: true,
+				resourceNameField:     plainParentField,
+				isRequestResourceName: true,
 			},
 		},
 		{
@@ -841,7 +841,7 @@ func TestAIPStandardListInfo(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			enrichMethodSamples(tc.method)
-			got := tc.method.SampleInfo
+			got := tc.method.SampleInfo()
 			if diff := cmp.Diff(tc.want, got, allowUnexported()); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}

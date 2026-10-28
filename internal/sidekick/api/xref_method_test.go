@@ -60,7 +60,7 @@ func TestIsSimpleMethod(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			enrichMethodSamples(test.method)
-			if got := test.method.IsSimple; got != test.isSimple {
+			if got := test.method.IsSimple(); got != test.isSimple {
 				t.Errorf("IsSimple() = %v, want %v", got, test.isSimple)
 			}
 		})
@@ -91,7 +91,7 @@ func TestIsLRO(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			enrichMethodSamples(test.method)
-			if got := test.method.IsLRO; got != test.want {
+			if got := test.method.IsLRO(); got != test.want {
 				t.Errorf("IsLRO() = %v, want %v", got, test.want)
 			}
 		})
@@ -113,7 +113,7 @@ func TestLongRunningHelpers(t *testing.T) {
 			name: "LRO with empty response",
 			method: func() *Method {
 				m := NewTestMethod("test").WithOperationInfo(NewTestOperationInfo(emptyMsg.ID(), ""))
-				m.Model = model
+				m.model = model
 				return m
 			}(),
 			wantResponse: emptyMsg,
@@ -123,7 +123,7 @@ func TestLongRunningHelpers(t *testing.T) {
 			name: "LRO with non-empty response",
 			method: func() *Method {
 				m := NewTestMethod("test").WithOperationInfo(NewTestOperationInfo(responseMsg.ID(), ""))
-				m.Model = model
+				m.model = model
 				return m
 			}(),
 			wantResponse: responseMsg,
@@ -133,7 +133,7 @@ func TestLongRunningHelpers(t *testing.T) {
 			name: "non-LRO method",
 			method: func() *Method {
 				m := NewTestMethod("test")
-				m.Model = model
+				m.model = model
 				return m
 			}(),
 			wantResponse: nil,
@@ -142,11 +142,11 @@ func TestLongRunningHelpers(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			enrichMethodSamples(test.method)
-			if got := test.method.LongRunningResponseType; got != test.wantResponse {
+			if got := test.method.LongRunningResponseType(); got != test.wantResponse {
 				t.Errorf("LongRunningResponseType() = %v, want %v", got, test.wantResponse)
 			}
 			enrichMethodSamples(test.method)
-			if got := test.method.LongRunningReturnsEmpty; got != test.wantEmpty {
+			if got := test.method.LongRunningReturnsEmpty(); got != test.wantEmpty {
 				t.Errorf("LongRunningReturnsEmpty() = %v, want %v", got, test.wantEmpty)
 			}
 		})
@@ -180,7 +180,7 @@ func TestIsList(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			enrichMethodSamples(test.method)
-			if got := test.method.IsList; got != test.want {
+			if got := test.method.IsList(); got != test.want {
 				t.Errorf("IsList() = %v, want %v", got, test.want)
 			}
 		})
@@ -216,7 +216,7 @@ func TestIsStreaming(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			enrichMethodSamples(test.method)
-			if got := test.method.IsStreaming; got != test.want {
+			if got := test.method.IsStreaming(); got != test.want {
 				t.Errorf("IsStreaming() = %v, want %v", got, test.want)
 			}
 		})

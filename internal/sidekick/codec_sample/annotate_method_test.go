@@ -43,9 +43,9 @@ func TestAnnotateMethod(t *testing.T) {
 			if err := c.annotateModel(model); err != nil {
 				t.Fatal(err)
 			}
-			got, ok := test.method.Codec.(*methodAnnotations)
+			got, ok := test.method.Codec().(*methodAnnotations)
 			if !ok {
-				t.Fatalf("expected *methodAnnotations, got %T", test.method.Codec)
+				t.Fatalf("expected *methodAnnotations, got %T", test.method.Codec())
 			}
 			if diff := cmp.Diff(test.want, got, cmpopts.IgnoreFields(methodAnnotations{}, "Service")); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)

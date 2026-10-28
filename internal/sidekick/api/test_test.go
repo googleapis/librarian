@@ -29,10 +29,10 @@ func TestMethod_WithBindings_NilPathInfo(t *testing.T) {
 
 	method.WithBindings(b1, b2)
 
-	if method.PathInfo == nil {
+	if method.PathInfo() == nil {
 		t.Fatal("expected PathInfo to be initialized, got nil")
 	}
-	if diff := cmp.Diff([]*api.PathBinding{b1, b2}, method.PathInfo.Bindings(), cmp.AllowUnexported(api.PathBinding{}, api.PathTemplate{}, api.PathSegment{}, api.PathVariable{})); diff != "" {
+	if diff := cmp.Diff([]*api.PathBinding{b1, b2}, method.PathInfo().Bindings(), cmp.AllowUnexported(api.PathBinding{}, api.PathTemplate{}, api.PathSegment{}, api.PathVariable{})); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
@@ -43,7 +43,7 @@ func TestMethod_WithBindings_NonNilPathInfo(t *testing.T) {
 
 	method.WithBindings(b1)
 
-	if diff := cmp.Diff([]*api.PathBinding{b1}, method.PathInfo.Bindings(), cmp.AllowUnexported(api.PathBinding{}, api.PathTemplate{}, api.PathSegment{}, api.PathVariable{})); diff != "" {
+	if diff := cmp.Diff([]*api.PathBinding{b1}, method.PathInfo().Bindings(), cmp.AllowUnexported(api.PathBinding{}, api.PathTemplate{}, api.PathSegment{}, api.PathVariable{})); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
@@ -52,11 +52,11 @@ func TestMethod_WithBodyFieldPath_NilPathInfo(t *testing.T) {
 	method := api.NewTestMethod("Test").WithPathInfo(nil)
 	method.WithBodyFieldPath("data")
 
-	if method.PathInfo == nil {
+	if method.PathInfo() == nil {
 		t.Fatal("expected PathInfo to be initialized, got nil")
 	}
-	if method.PathInfo.BodyFieldPath() != "data" {
-		t.Errorf("expected BodyFieldPath to be 'data', got %q", method.PathInfo.BodyFieldPath())
+	if method.PathInfo().BodyFieldPath() != "data" {
+		t.Errorf("expected BodyFieldPath to be 'data', got %q", method.PathInfo().BodyFieldPath())
 	}
 }
 
@@ -64,11 +64,11 @@ func TestMethod_WithVerb_NilPathInfo(t *testing.T) {
 	method := api.NewTestMethod("Test").WithPathInfo(nil)
 	method.WithVerb("PUT")
 
-	if method.PathInfo == nil || len(method.PathInfo.Bindings()) == 0 {
+	if method.PathInfo() == nil || len(method.PathInfo().Bindings()) == 0 {
 		t.Fatal("expected PathInfo and at least one binding to be initialized")
 	}
-	if method.PathInfo.Bindings()[0].Verb() != "PUT" {
-		t.Errorf("expected Verb to be 'PUT', got %q", method.PathInfo.Bindings()[0].Verb())
+	if method.PathInfo().Bindings()[0].Verb() != "PUT" {
+		t.Errorf("expected Verb to be 'PUT', got %q", method.PathInfo().Bindings()[0].Verb())
 	}
 }
 
@@ -77,10 +77,10 @@ func TestMethod_WithPathTemplate_NilPathInfo(t *testing.T) {
 	pt := api.NewPathTemplateBuilder().WithLiteral("v1").Build()
 	method.WithPathTemplate(pt)
 
-	if method.PathInfo == nil || len(method.PathInfo.Bindings()) == 0 {
+	if method.PathInfo() == nil || len(method.PathInfo().Bindings()) == 0 {
 		t.Fatal("expected PathInfo and at least one binding to be initialized")
 	}
-	if method.PathInfo.Bindings()[0].PathTemplate() != pt {
+	if method.PathInfo().Bindings()[0].PathTemplate() != pt {
 		t.Errorf("expected PathTemplate to match")
 	}
 }
@@ -89,19 +89,19 @@ func TestMethod_WithQueryParameters_NilPathInfo(t *testing.T) {
 	method := api.NewTestMethod("Test").WithPathInfo(nil)
 	method.WithQueryParameters("page_size")
 
-	if method.PathInfo == nil || len(method.PathInfo.Bindings()) == 0 {
+	if method.PathInfo() == nil || len(method.PathInfo().Bindings()) == 0 {
 		t.Fatal("expected PathInfo and at least one binding to be initialized")
 	}
 	want := map[string]bool{"page_size": true}
-	if diff := cmp.Diff(want, method.PathInfo.Bindings()[0].QueryParameters()); diff != "" {
+	if diff := cmp.Diff(want, method.PathInfo().Bindings()[0].QueryParameters()); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
 
 func TestMethod_WithDocumentation(t *testing.T) {
 	method := api.NewTestMethod("Test").WithDocumentation("A test method.")
-	if method.Documentation != "A test method." {
-		t.Errorf("expected Documentation 'A test method.', got %q", method.Documentation)
+	if method.Documentation() != "A test method." {
+		t.Errorf("expected Documentation 'A test method.', got %q", method.Documentation())
 	}
 }
 
@@ -239,8 +239,8 @@ func TestService_WithDocumentation(t *testing.T) {
 
 func TestMethod_ReturnEmpty(t *testing.T) {
 	m := api.NewTestMethod("Delete").ReturnEmpty()
-	if got := m.ReturnsEmpty; !got {
-		t.Errorf("m.ReturnsEmpty = %v, want true", got)
+	if got := m.ReturnsEmpty(); !got {
+		t.Errorf("m.ReturnsEmpty() = %v, want true", got)
 	}
 }
 
@@ -417,20 +417,20 @@ func TestMethod_FluentSetters(t *testing.T) {
 		WithRouting(routing).
 		WithAutoPopulated(reqID)
 
-	if got, want := m.ID, ".custom.Service.Create"; got != want {
-		t.Errorf("m.ID = %q, want %q", got, want)
+	if got, want := m.ID(), ".custom.Service.Create"; got != want {
+		t.Errorf("m.ID() = %q, want %q", got, want)
 	}
-	if got, want := m.APIVersion, "v1_20260101"; got != want {
-		t.Errorf("m.APIVersion = %q, want %q", got, want)
+	if got, want := m.APIVersion(), "v1_20260101"; got != want {
+		t.Errorf("m.APIVersion() = %q, want %q", got, want)
 	}
-	if m.PathInfo != nil {
-		t.Errorf("m.PathInfo = %v, want nil", m.PathInfo)
+	if m.PathInfo() != nil {
+		t.Errorf("m.PathInfo() = %v, want nil", m.PathInfo())
 	}
-	if len(m.Routing) != 1 || m.Routing[0] != routing {
-		t.Errorf("m.Routing = %v, want [%v]", m.Routing, routing)
+	if len(m.Routing()) != 1 || m.Routing()[0] != routing {
+		t.Errorf("m.Routing() = %v, want [%v]", m.Routing(), routing)
 	}
-	if len(m.AutoPopulated) != 1 || m.AutoPopulated[0] != reqID {
-		t.Errorf("m.AutoPopulated = %v, want [%v]", m.AutoPopulated, reqID)
+	if len(m.AutoPopulated()) != 1 || m.AutoPopulated()[0] != reqID {
+		t.Errorf("m.AutoPopulated() = %v, want [%v]", m.AutoPopulated(), reqID)
 	}
 	if !reqID.AutoPopulated() {
 		t.Errorf("reqID.AutoPopulated() = false, want true")
@@ -468,14 +468,14 @@ func TestMethod_TypeIDSetters(t *testing.T) {
 		WithOutputTypeID(".test.Response").
 		WithSourceServiceID(".test.Service")
 
-	if m.InputTypeID != ".test.Request" {
-		t.Errorf("m.InputTypeID = %q, want %q", m.InputTypeID, ".test.Request")
+	if m.InputTypeID() != ".test.Request" {
+		t.Errorf("m.InputTypeID() = %q, want %q", m.InputTypeID(), ".test.Request")
 	}
-	if m.OutputTypeID != ".test.Response" {
-		t.Errorf("m.OutputTypeID = %q, want %q", m.OutputTypeID, ".test.Response")
+	if m.OutputTypeID() != ".test.Response" {
+		t.Errorf("m.OutputTypeID() = %q, want %q", m.OutputTypeID(), ".test.Response")
 	}
-	if m.SourceServiceID != ".test.Service" {
-		t.Errorf("m.SourceServiceID = %q, want %q", m.SourceServiceID, ".test.Service")
+	if m.SourceServiceID() != ".test.Service" {
+		t.Errorf("m.SourceServiceID() = %q, want %q", m.SourceServiceID(), ".test.Service")
 	}
 }
 
@@ -601,9 +601,158 @@ func TestDiscoveryLro_Builder(t *testing.T) {
 
 func TestSampleInfo_Builder(t *testing.T) {
 	f := api.NewTestField("name")
-	s := api.NewTestSampleInfo(f)
-	if s.ResourceNameField != f {
-		t.Errorf("s.ResourceNameField = %v, want %v", s.ResourceNameField, f)
+	msgField := api.NewTestField("book")
+	idField := api.NewTestField("book_id")
+	maskField := api.NewTestField("update_mask")
+	s := api.NewSampleInfoBuilder().
+		WithResourceNameField(f).
+		WithMessageField(msgField).
+		WithResourceIDField(idField).
+		WithUpdateMaskField(maskField).
+		WithIsRequestResourceName(true).
+		WithIsMessageResourceName(true).
+		Build()
+	if s.ResourceNameField() != f {
+		t.Errorf("s.ResourceNameField() = %v, want %v", s.ResourceNameField(), f)
+	}
+	if s.MessageField() != msgField {
+		t.Errorf("s.MessageField() = %v, want %v", s.MessageField(), msgField)
+	}
+	if s.ResourceIDField() != idField {
+		t.Errorf("s.ResourceIDField() = %v, want %v", s.ResourceIDField(), idField)
+	}
+	if s.UpdateMaskField() != maskField {
+		t.Errorf("s.UpdateMaskField() = %v, want %v", s.UpdateMaskField(), maskField)
+	}
+	if !s.IsRequestResourceName() {
+		t.Errorf("s.IsRequestResourceName() = false, want true")
+	}
+	if !s.IsMessageResourceName() {
+		t.Errorf("s.IsMessageResourceName() = false, want true")
+	}
+
+	testSample := api.NewTestSampleInfo(f)
+	if testSample.ResourceNameField() != f {
+		t.Errorf("testSample.ResourceNameField() = %v, want %v", testSample.ResourceNameField(), f)
+	}
+}
+
+func TestMethod_Builder(t *testing.T) {
+	inMsg := api.NewTestMessage("Req")
+	outMsg := api.NewTestMessage("Resp")
+	pi := api.NewPathInfoBuilder().WithBodyFieldPath("*").Build()
+	pag := api.NewTestField("page_token")
+	op := api.NewTestOperationInfo(".test.LroResp", ".test.LroMeta")
+	dlro := api.NewTestDiscoveryLro("project")
+	routing := api.NewTestRoutingInfo("name")
+	autoPop := api.NewTestField("request_id")
+	sig := api.NewTestMethodSignature("name")
+	sample := api.NewSampleInfoBuilder().WithResourceNameField(pag).Build()
+	svc := api.NewTestService("Svc")
+	srcSvc := api.NewTestService("SrcSvc")
+
+	m := api.NewMethodBuilder().
+		WithName("Create").
+		WithID(".test.Svc.Create").
+		WithDocumentation("Create docs").
+		WithDeprecated(true).
+		WithInputTypeID(".test.Req").
+		WithOutputTypeID(".test.Resp").
+		WithInputType(inMsg).
+		WithOutputType(outMsg).
+		WithReturnsEmpty(true).
+		WithPathInfo(pi).
+		WithPagination(pag).
+		WithClientSideStreaming(true).
+		WithServerSideStreaming(true).
+		WithOperationInfo(op).
+		WithDiscoveryLro(dlro).
+		WithIsLroPoller(true).
+		WithRouting([]*api.RoutingInfo{routing}).
+		WithAutoPopulated([]*api.Field{autoPop}).
+		WithSignatures([]*api.MethodSignature{sig}).
+		WithService(svc).
+		WithSourceServiceID(".test.SrcSvc").
+		WithSourceService(srcSvc).
+		WithAPIVersion("v1").
+		WithSampleInfo(sample).
+		Build()
+	m.SetAnnotations("method-codec")
+
+	if m.Name() != "Create" {
+		t.Errorf("m.Name() = %q, want Create", m.Name())
+	}
+	if m.ID() != ".test.Svc.Create" {
+		t.Errorf("m.ID() = %q, want .test.Svc.Create", m.ID())
+	}
+	if m.Documentation() != "Create docs" {
+		t.Errorf("m.Documentation() = %q, want Create docs", m.Documentation())
+	}
+	if !m.Deprecated() {
+		t.Errorf("m.Deprecated() = false, want true")
+	}
+	if m.InputTypeID() != ".test.Req" {
+		t.Errorf("m.InputTypeID() = %q, want .test.Req", m.InputTypeID())
+	}
+	if m.OutputTypeID() != ".test.Resp" {
+		t.Errorf("m.OutputTypeID() = %q, want .test.Resp", m.OutputTypeID())
+	}
+	if m.InputType() != inMsg {
+		t.Errorf("m.InputType() = %v, want %v", m.InputType(), inMsg)
+	}
+	if m.OutputType() != outMsg {
+		t.Errorf("m.OutputType() = %v, want %v", m.OutputType(), outMsg)
+	}
+	if !m.ReturnsEmpty() {
+		t.Errorf("m.ReturnsEmpty() = false, want true")
+	}
+	if m.PathInfo() != pi {
+		t.Errorf("m.PathInfo() = %v, want %v", m.PathInfo(), pi)
+	}
+	if m.Pagination() != pag {
+		t.Errorf("m.Pagination() = %v, want %v", m.Pagination(), pag)
+	}
+	if !m.ClientSideStreaming() {
+		t.Errorf("m.ClientSideStreaming() = false, want true")
+	}
+	if !m.ServerSideStreaming() {
+		t.Errorf("m.ServerSideStreaming() = false, want true")
+	}
+	if m.OperationInfo() != op {
+		t.Errorf("m.OperationInfo() = %v, want %v", m.OperationInfo(), op)
+	}
+	if m.DiscoveryLro() != dlro {
+		t.Errorf("m.DiscoveryLro() = %v, want %v", m.DiscoveryLro(), dlro)
+	}
+	if !m.IsLroPoller() {
+		t.Errorf("m.IsLroPoller() = false, want true")
+	}
+	if len(m.Routing()) != 1 || m.Routing()[0] != routing {
+		t.Errorf("m.Routing() = %v, want [%v]", m.Routing(), routing)
+	}
+	if len(m.AutoPopulated()) != 1 || m.AutoPopulated()[0] != autoPop {
+		t.Errorf("m.AutoPopulated() = %v, want [%v]", m.AutoPopulated(), autoPop)
+	}
+	if len(m.Signatures()) != 1 || m.Signatures()[0] != sig {
+		t.Errorf("m.Signatures() = %v, want [%v]", m.Signatures(), sig)
+	}
+	if m.Service() != svc {
+		t.Errorf("m.Service() = %v, want %v", m.Service(), svc)
+	}
+	if m.SourceServiceID() != ".test.SrcSvc" {
+		t.Errorf("m.SourceServiceID() = %q, want .test.SrcSvc", m.SourceServiceID())
+	}
+	if m.SourceService() != srcSvc {
+		t.Errorf("m.SourceService() = %v, want %v", m.SourceService(), srcSvc)
+	}
+	if m.APIVersion() != "v1" {
+		t.Errorf("m.APIVersion() = %q, want v1", m.APIVersion())
+	}
+	if m.SampleInfo() != sample {
+		t.Errorf("m.SampleInfo() = %v, want %v", m.SampleInfo(), sample)
+	}
+	if m.Codec() != "method-codec" {
+		t.Errorf("m.Codec() = %v, want method-codec", m.Codec())
 	}
 }
 

@@ -32,12 +32,12 @@ type GeneratedFile struct {
 
 // PathParams returns the path parameters for a method.
 func PathParams(m *api.Method, model *api.API) ([]*api.Field, error) {
-	msg := model.Message(m.InputTypeID)
+	msg := model.Message(m.InputTypeID())
 	if msg == nil {
-		return nil, fmt.Errorf("unable to lookup request type: %q", m.InputTypeID)
+		return nil, fmt.Errorf("unable to lookup request type: %q", m.InputTypeID())
 	}
 	pathNames := []string{}
-	t := m.PathInfo.Bindings()[0].PathTemplate()
+	t := m.PathInfo().Bindings()[0].PathTemplate()
 	for _, s := range t.Segments() {
 		if s.Variable() != nil {
 			pathNames = append(pathNames, s.Variable().FieldPath()[0])
@@ -61,7 +61,7 @@ func PathParams(m *api.Method, model *api.API) ([]*api.Field, error) {
 // QueryParams returns the query parameters for a method.
 func QueryParams(m *api.Method, b *api.PathBinding) []*api.Field {
 	var queryParams []*api.Field
-	for _, field := range m.InputType.Fields() {
+	for _, field := range m.InputType().Fields() {
 		if !b.QueryParameters()[field.Name()] {
 			continue
 		}

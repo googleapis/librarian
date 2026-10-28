@@ -102,8 +102,8 @@ func TestServiceAnnotationsHasVeneer(t *testing.T) {
 				t.Errorf("Service0 HasVeneer = %v, want %v", ann0.HasVeneer, test.wantService0)
 			}
 			for _, m := range ann0.Methods {
-				if mAnn := m.Codec.(*methodAnnotation); mAnn.HasVeneer != test.wantService0 {
-					t.Errorf("method %s HasVeneer = %v, want %v", m.Name, mAnn.HasVeneer, test.wantService0)
+				if mAnn := m.Codec().(*methodAnnotation); mAnn.HasVeneer != test.wantService0 {
+					t.Errorf("method %s HasVeneer = %v, want %v", m.Name(), mAnn.HasVeneer, test.wantService0)
 				}
 			}
 
@@ -112,8 +112,8 @@ func TestServiceAnnotationsHasVeneer(t *testing.T) {
 				t.Errorf("Service1 HasVeneer = %v, want %v", ann1.HasVeneer, test.wantService1)
 			}
 			for _, m := range ann1.Methods {
-				if mAnn := m.Codec.(*methodAnnotation); mAnn.HasVeneer != test.wantService1 {
-					t.Errorf("method %s HasVeneer = %v, want %v", m.Name, mAnn.HasVeneer, test.wantService1)
+				if mAnn := m.Codec().(*methodAnnotation); mAnn.HasVeneer != test.wantService1 {
+					t.Errorf("method %s HasVeneer = %v, want %v", m.Name(), mAnn.HasVeneer, test.wantService1)
 				}
 			}
 		})
@@ -308,7 +308,7 @@ func TestServiceAnnotationsNameOverrides(t *testing.T) {
 		ServiceNameToCamel:  "renamed",
 		ServiceNameToSnake:  "renamed",
 	}
-	if diff := cmp.Diff(wantMethod, method.Codec, methodFilter); diff != "" {
+	if diff := cmp.Diff(wantMethod, method.Codec(), methodFilter); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
@@ -344,7 +344,7 @@ func TestServiceAnnotations(t *testing.T) {
 	// Codec.
 	serviceAnn := service.Codec.(*serviceAnnotations)
 	wantMethodList := []*api.Method{method, emptyMethod}
-	if diff := cmp.Diff(wantMethodList, serviceAnn.Methods, cmpopts.IgnoreUnexported(pathBindingAnnotation{}, bindingSubstitution{}), apitest.AllowUnexported(), cmpopts.IgnoreFields(api.Method{}, "Model", "Service", "SourceService")); diff != "" {
+	if diff := cmp.Diff(wantMethodList, serviceAnn.Methods, cmpopts.IgnoreUnexported(pathBindingAnnotation{}, bindingSubstitution{}), apitest.AllowUnexported(), apitest.IgnoreMethodFields("model", "service", "sourceService")); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 
@@ -353,7 +353,7 @@ func TestServiceAnnotations(t *testing.T) {
 		NameNoMangling: "get_resource",
 		BuilderName:    "GetResource",
 		Body:           "None::<gaxi::http::NoBody>",
-		PathInfo:       method.PathInfo,
+		PathInfo:       method.PathInfo(),
 		SystemParameters: []systemParameter{
 			{Name: "$alt", Value: "json;enum-encoding=int"},
 		},
@@ -362,7 +362,7 @@ func TestServiceAnnotations(t *testing.T) {
 		ServiceNameToSnake:  "resource_service",
 		ReturnType:          "crate::model::Response",
 	}
-	if diff := cmp.Diff(wantMethod, method.Codec, cmpopts.IgnoreUnexported(pathBindingAnnotation{}, bindingSubstitution{}), apitest.AllowUnexported()); diff != "" {
+	if diff := cmp.Diff(wantMethod, method.Codec(), cmpopts.IgnoreUnexported(pathBindingAnnotation{}, bindingSubstitution{}), apitest.AllowUnexported()); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 
@@ -371,7 +371,7 @@ func TestServiceAnnotations(t *testing.T) {
 		NameNoMangling: "delete_resource",
 		BuilderName:    "DeleteResource",
 		Body:           "None::<gaxi::http::NoBody>",
-		PathInfo:       emptyMethod.PathInfo,
+		PathInfo:       emptyMethod.PathInfo(),
 		SystemParameters: []systemParameter{
 			{Name: "$alt", Value: "json;enum-encoding=int"},
 		},
@@ -380,7 +380,7 @@ func TestServiceAnnotations(t *testing.T) {
 		ServiceNameToSnake:  "resource_service",
 		ReturnType:          "()",
 	}
-	if diff := cmp.Diff(wantMethod, emptyMethod.Codec, cmpopts.IgnoreUnexported(pathBindingAnnotation{}, bindingSubstitution{}), apitest.AllowUnexported()); diff != "" {
+	if diff := cmp.Diff(wantMethod, emptyMethod.Codec(), cmpopts.IgnoreUnexported(pathBindingAnnotation{}, bindingSubstitution{}), apitest.AllowUnexported()); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
