@@ -37,21 +37,17 @@ func TestAnnotateSampleInfo(t *testing.T) {
 			method: func() *api.Method {
 				field := api.NewTestField("secret").
 					WithType(api.TypezString).
-					WithResourceNamePattern(&api.ResourceNamePattern{
-						Segments: []api.ResourceNameSegment{
-							{Literal: "projects"},
-							{Variable: "project"},
-							{Literal: "secrets"},
-							{Variable: "secret"},
-						},
-					})
+					WithResourceNamePattern(api.NewTestResourceNamePattern(
+						api.ResourceNameSegment{Literal: "projects"},
+						api.ResourceNameSegment{Variable: "project"},
+						api.ResourceNameSegment{Literal: "secrets"},
+						api.ResourceNameSegment{Variable: "secret"},
+					))
 				field.Codec = &fieldAnnotations{
 					Name: "secretField",
 				}
 				return api.NewTestMethod("TestMethod").
-					WithSampleInfo(&api.SampleInfo{
-						ResourceNameField: field,
-					})
+					WithSampleInfo(api.NewTestSampleInfo(field))
 			}(),
 			want: &sampleInfoAnnotation{
 				Parameters:   []string{"projectId", "secretId"},

@@ -18,7 +18,11 @@ package dart
 
 import (
 	"context"
+	"errors"
+	"io/fs"
+	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 
 	"github.com/googleapis/librarian/internal/command"
@@ -27,6 +31,11 @@ import (
 	"github.com/googleapis/librarian/internal/sidekick/parser"
 	"github.com/googleapis/librarian/internal/sources"
 )
+
+// changelogFile is the changelog associated with the Dart package.
+//
+// `librarian bump` appends to this file so it should not be deleted.
+const changelogFile = "CHANGELOG.md"
 
 // Generate generates a Dart client library.
 func Generate(ctx context.Context, cfg *config.Config, library *config.Library, sources *sources.Sources) error {
@@ -54,6 +63,21 @@ func Format(ctx context.Context, library *config.Library) error {
 		return err
 	}
 	return nil
+}
+
+// Keep returns the files to preserve when cleaning the library's output.
+func Keep(library *config.Library) ([]string, error) {
+	if slices.Contains(library.Keep, changelogFile) {
+		return library.Keep, nil
+	}
+	_, err := os.Stat(filepath.Join(library.Output, changelogFile))
+	if errors.Is(err, fs.ErrNotExist) {
+		return library.Keep, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	return append(slices.Clone(library.Keep), changelogFile), nil
 }
 
 // DeriveAPIPath derives an api path from a library name.

@@ -274,7 +274,7 @@ func getCommitsSince(ctx context.Context, lastReleaseTagCommit, packageDir strin
 }
 
 func updateChangelog(ctx context.Context, packageDir, version, lastReleaseTagCommit string, depsChanged bool) error {
-	changelogPath := filepath.Join(packageDir, "CHANGELOG.md")
+	changelogPath := filepath.Join(packageDir, changelogFile)
 
 	if lastReleaseTagCommit == "" {
 		return os.WriteFile(changelogPath, fmt.Appendf(nil, `# Changelog

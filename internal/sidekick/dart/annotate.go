@@ -712,10 +712,8 @@ func (annotate *annotateModel) annotateService(s *api.Service) {
 }
 
 func (annotate *annotateModel) annotateMessage(m *api.Message) {
-	if _, omit := omitGeneration[m.ID]; omit && !m.IsMap {
-		// If the message is allowlisted as omitted, and it's not a map,
-		// skip it completely. Map messages still need to be processed for their
-		// value types to generate imports.
+	if _, omit := omitGeneration[m.ID]; omit {
+		// If the message is allowlisted as omitted, skip it completely.
 		m.Codec = &messageAnnotation{
 			OmitGeneration: true,
 		}
@@ -750,7 +748,6 @@ func (annotate *annotateModel) annotateMessage(m *api.Message) {
 		Name:            messageName(m),
 		QualifiedName:   qualifiedName(m),
 		DocLines:        formatDocComments(m.Documentation, annotate.model),
-		OmitGeneration:  m.IsMap,
 		ConstructorBody: constructorBody,
 		ToStringLines:   toStringLines,
 		Model:           annotate.model,
@@ -1088,6 +1085,18 @@ func canBeNull(field *api.Field) bool {
 	return !field.Repeated && canHaveNullJsonSerialization[field.TypezID]
 }
 
+func lookupMap(model *api.API, f *api.Field) *api.Map {
+	if f.MapType != nil {
+		return f.MapType
+	}
+	if model != nil {
+		if m := model.Map(f.TypezID); m != nil {
+			return m
+		}
+	}
+	panic(fmt.Sprintf("unable to lookup map type %q for field %q", f.TypezID, f.ID))
+}
+
 func (annotate *annotateModel) createFromJsonLine(field *api.Field, required bool) string {
 	data := fmt.Sprintf("json['%s']", field.JSONName)
 
@@ -1128,11 +1137,11 @@ func (annotate *annotateModel) createFromJsonLine(field *api.Field, required boo
 				"_ => throw const FormatException('\"%s\" is not a list') }",
 			data, defaultValue, decoder, field.JSONName)
 	case field.Map:
-		message := annotate.model.Message(field.TypezID)
-		keyType := message.Fields[0].Typez
+		mapType := lookupMap(annotate.model, field)
+		keyType := mapType.Key.Typez
 		keyDecoder := annotate.keyDecoder(keyType)
-		valueType := message.Fields[1].Typez
-		valueTypeID := message.Fields[1].TypezID
+		valueType := mapType.Value.Typez
+		valueTypeID := mapType.Value.TypezID
 		valueDecoder := annotate.decoder(valueType, valueTypeID)
 
 		return fmt.Sprintf(
@@ -1160,10 +1169,10 @@ func createNonNullableToJson(field *api.Field, model *api.API) string {
 			rhs = name
 		}
 	case field.Map:
-		message := model.Message(field.TypezID)
-		keyType := message.Fields[0].Typez
+		mapType := lookupMap(model, field)
+		keyType := mapType.Key.Typez
 		keyEncoder, keyEncodingRequired := keyEncoder(keyType, "e.key")
-		valueType := message.Fields[1].Typez
+		valueType := mapType.Value.Typez
 		valueEncoder, valueEncodingRequired := encoder(valueType, "e.value")
 
 		if keyEncodingRequired || valueEncodingRequired {
@@ -1259,9 +1268,6 @@ func (annotate *annotateModel) buildQueryLines(
 	result []string, refPrefix string, couldRefPrefixBeNull bool,
 	paramPrefix string, field *api.Field,
 ) []string {
-	message := annotate.model.Message(field.TypezID)
-	isMap := message != nil && message.IsMap
-
 	if field.Codec == nil {
 		annotate.annotateField(field)
 	}
@@ -1301,7 +1307,7 @@ func (annotate *annotateModel) buildQueryLines(
 			return append(result, fmt.Sprintf("/* unhandled list query param type: %d */", field.Typez))
 		}
 
-	case isMap:
+	case field.Map || field.Typez == api.TypezMap:
 		// Maps are not supported.
 		slog.Error("unhandled query param", "type", "map")
 		return append(result, fmt.Sprintf("/* unhandled query param type: %d */", field.Typez))
@@ -1318,6 +1324,7 @@ func (annotate *annotateModel) buildQueryLines(
 			return append(result, fmt.Sprintf("%s: $1.toJson()", preamble))
 		}
 
+		message := annotate.model.Message(field.TypezID)
 		// Unroll the fields for messages.
 		for _, field := range message.Fields {
 			result = annotate.buildQueryLines(
@@ -1430,19 +1437,25 @@ func (annotate *annotateModel) fieldType(f *api.Field) string {
 		out = "String"
 	case api.TypezBytes:
 		out = "Uint8List"
+	case api.TypezMap:
+		mapType := lookupMap(annotate.model, f)
+		key := annotate.fieldType(mapType.Key)
+		val := annotate.fieldType(mapType.Value)
+		out = "Map<" + key + ", " + val + ">"
 	case api.TypezMessage:
+		if f.Map {
+			mapType := lookupMap(annotate.model, f)
+			key := annotate.fieldType(mapType.Key)
+			val := annotate.fieldType(mapType.Value)
+			out = "Map<" + key + ", " + val + ">"
+			break
+		}
 		message := annotate.model.Message(f.TypezID)
 		if message == nil {
 			slog.Error("unable to lookup type", "id", f.TypezID)
 			return ""
 		}
-		if message.IsMap {
-			key := annotate.fieldType(message.Fields[0])
-			val := annotate.fieldType(message.Fields[1])
-			out = "Map<" + key + ", " + val + ">"
-		} else {
-			out = annotate.resolveMessageName(message, false)
-		}
+		out = annotate.resolveMessageName(message, false)
 	case api.TypezEnum:
 		e := annotate.model.Enum(f.TypezID)
 		if e == nil {

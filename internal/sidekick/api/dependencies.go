@@ -40,7 +40,8 @@ import (
 // - a service to each of its methods
 // - a method to its request/response messages
 // - an LRO method to its metadata/response type messages
-// - a message to each of its fields' types (if they are a message or enum)
+// - a message to each of its fields' types (if they are a message, enum, or map)
+// - a map to its key and value types (if they are a message, enum, or map)
 //
 // In the second pass, we compute the reachable set of the nodes found from the
 // first pass. This time, the graph has edges from...
@@ -48,9 +49,11 @@ import (
 // - a method to its service
 // - a child message to its parent message
 // - a child enum to its parent message
-// - a message to each of its fields' types (if they are a message or enum)
+// - a message to each of its fields' types (if they are a message, enum, or map)
 //   - this edge is only necessary because we are too lazy to support pruning
 //     the fields of a message.
+//
+// - a map to its key and value types (if they are a message, enum, or map)
 //
 // [reachable set]: https://en.wikipedia.org/wiki/Reachability
 func FindDependencies(model *API, ids []string) (map[string]bool, error) {
@@ -62,6 +65,17 @@ func FindDependencies(model *API, ids []string) (map[string]bool, error) {
 			candidates = append(candidates, id)
 		}
 		includedIDs[id] = true
+	}
+
+	addFieldDependencies := func(fields ...*Field) {
+		for _, field := range fields {
+			if field == nil {
+				continue
+			}
+			if field.Typez == TypezEnum || field.Typez == TypezMessage || field.Typez == TypezMap {
+				add(field.TypezID)
+			}
+		}
 	}
 
 	// Seed with the given ids
@@ -93,15 +107,16 @@ func FindDependencies(model *API, ids []string) (map[string]bool, error) {
 		}
 
 		if message := model.Message(id); message != nil {
-			for _, field := range message.Fields {
-				if field.Typez == TypezEnum || field.Typez == TypezMessage {
-					add(field.TypezID)
-				}
-			}
+			addFieldDependencies(message.Fields...)
 			continue
 		}
 
 		if model.Enum(id) != nil {
+			continue
+		}
+
+		if m := model.Map(id); m != nil {
+			addFieldDependencies(m.Key, m.Value)
 			continue
 		}
 
@@ -129,11 +144,7 @@ func FindDependencies(model *API, ids []string) (map[string]bool, error) {
 			}
 			// In the current definition of APIState, a message must
 			// includes all of its fields.
-			for _, field := range message.Fields {
-				if field.Typez == TypezEnum || field.Typez == TypezMessage {
-					add(field.TypezID)
-				}
-			}
+			addFieldDependencies(message.Fields...)
 			continue
 		}
 
@@ -141,6 +152,11 @@ func FindDependencies(model *API, ids []string) (map[string]bool, error) {
 			if enum.Parent != nil {
 				add(enum.Parent.ID)
 			}
+			continue
+		}
+
+		if m := model.Map(id); m != nil {
+			addFieldDependencies(m.Key, m.Value)
 			continue
 		}
 	}

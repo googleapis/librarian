@@ -68,10 +68,10 @@ type Method struct {
 	//
 	// If this is empty, then the method does not have a version annotation.
 	APIVersion string
-	// Model is the model this method belongs to, mustache templates use this field to
+	// Model is the model this method belongs to, Go templates use this field to
 	// navigate the data structure.
 	Model *API
-	// Service is the service this method belongs to, mustache templates use this field to
+	// Service is the service this method belongs to, Go templates use this field to
 	// navigate the data structure.
 	Service *Service
 	// `SourceService` is the original service this method belongs to. For most

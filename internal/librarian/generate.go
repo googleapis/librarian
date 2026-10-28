@@ -152,7 +152,11 @@ func cleanLibraries(language string, libraries []*config.Library) error {
 	for _, library := range libraries {
 		switch language {
 		case config.LanguageDart:
-			err = checkAndClean(library.Output, library.Keep)
+			keep, keepErr := dart.Keep(library)
+			if keepErr != nil {
+				return fmt.Errorf("generating keep list: %w", keepErr)
+			}
+			err = checkAndClean(library.Output, keep)
 		case config.LanguageFake:
 			err = fakeClean(library)
 		case config.LanguageGo:
@@ -241,10 +245,18 @@ func generateLibraries(ctx context.Context, cfg *config.Config, libraries []*con
 		}
 		return g.Wait()
 	case config.LanguageJava:
+		g, gctx := errgroup.WithContext(ctx)
+		g.SetLimit(runtime.GOMAXPROCS(0))
 		for _, library := range libraries {
-			if err := java.Generate(ctx, cfg, library, src); err != nil {
-				return fmt.Errorf("generate library %q (%s): %w", library.Name, cfg.Language, err)
-			}
+			g.Go(func() error {
+				if err := java.Generate(gctx, cfg, library, src); err != nil {
+					return fmt.Errorf("generate library %q (%s): %w", library.Name, cfg.Language, err)
+				}
+				return nil
+			})
+		}
+		if err := g.Wait(); err != nil {
+			return err
 		}
 		if err := java.Format(ctx, libraries...); err != nil {
 			return fmt.Errorf("format java libraries (%s): %w", cfg.Language, err)

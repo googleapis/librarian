@@ -34,6 +34,7 @@ func NewTestAPI(messages []*Message, enums []*Enum, services []*Service) *API {
 		enumByID:       make(map[string]*Enum),
 		serviceByID:    make(map[string]*Service),
 		resourceByType: make(map[string]*Resource),
+		mapByID:        make(map[string]*Map),
 	}
 
 	var indexMessage func(m *Message)
@@ -41,6 +42,11 @@ func NewTestAPI(messages []*Message, enums []*Enum, services []*Service) *API {
 		model.messageByID[m.ID] = m
 		if m.Resource != nil {
 			model.resourceByType[m.Resource.Type] = m.Resource
+		}
+		for _, f := range m.Fields {
+			if f.MapType != nil {
+				model.AddMap(f.MapType)
+			}
 		}
 		for _, e := range m.Enums {
 			model.enumByID[e.ID] = e
@@ -144,6 +150,14 @@ func (a *API) WithRubyPackage(name string) *API {
 	return a
 }
 
+// WithMaps adds maps to the API.
+func (a *API) WithMaps(maps ...*Map) *API {
+	for _, m := range maps {
+		a.AddMap(m)
+	}
+	return a
+}
+
 // parentName returns the parent's name from a fully qualified identifier.
 func parentName(id string) string {
 	if lastIndex := strings.LastIndex(id, "."); lastIndex != -1 {
@@ -205,6 +219,16 @@ func (m *Message) withParentRecursive(parent *Message) {
 	m.Package = parent.Package
 	if strings.HasPrefix(m.ID, ".test.") || m.ID == "" {
 		m.ID = fmt.Sprintf("%s.%s", parent.ID, m.Name)
+	}
+	for _, f := range m.Fields {
+		if strings.HasPrefix(f.ID, ".test.") || f.ID == "" {
+			f.ID = fmt.Sprintf("%s.%s", m.ID, f.Name)
+		}
+	}
+	for _, o := range m.OneOfs {
+		if strings.HasPrefix(o.ID, ".test.") || o.ID == "" {
+			o.ID = fmt.Sprintf("%s.%s", m.ID, o.Name)
+		}
 	}
 	for _, c := range m.Messages {
 		c.withParentRecursive(m)
@@ -274,6 +298,43 @@ func (m *Message) WithIsMap() *Message {
 	return m
 }
 
+// NewTestMap creates a synthetic Map with "key" and "value" fields.
+func NewTestMap(name string, keyType, valueType Typez) *Map {
+	return NewTestMapWithFields(
+		name,
+		NewTestField("key").WithType(keyType),
+		NewTestField("value").WithType(valueType),
+	)
+}
+
+// NewTestMapWithFields creates a synthetic Map with custom key and value fields.
+func NewTestMapWithFields(name string, key, value *Field) *Map {
+	id := name
+	if !strings.HasPrefix(name, ".") && !strings.HasPrefix(name, "$") {
+		id = fmt.Sprintf(".test.%s", name)
+	}
+	if key != nil && (strings.HasPrefix(key.ID, ".test.") || key.ID == "") {
+		key.ID = fmt.Sprintf("%s.%s", id, key.Name)
+	}
+	if value != nil && (strings.HasPrefix(value.ID, ".test.") || value.ID == "") {
+		value.ID = fmt.Sprintf("%s.%s", id, value.Name)
+	}
+	return &Map{ID: id, Key: key, Value: value}
+}
+
+// WithID overrides the map's ID.
+func (m *Map) WithID(id string) *Map {
+	oldID := m.ID
+	m.ID = id
+	if m.Key != nil && (strings.HasPrefix(m.Key.ID, oldID+".") || strings.HasPrefix(m.Key.ID, ".test.") || m.Key.ID == "") {
+		m.Key.ID = fmt.Sprintf("%s.%s", id, m.Key.Name)
+	}
+	if m.Value != nil && (strings.HasPrefix(m.Value.ID, oldID+".") || strings.HasPrefix(m.Value.ID, ".test.") || m.Value.ID == "") {
+		m.Value.ID = fmt.Sprintf("%s.%s", id, m.Value.Name)
+	}
+	return m
+}
+
 // NewTestMapMessage creates a synthetic map entry Message with "key" and "value" fields.
 func NewTestMapMessage(name string, keyType, valueType Typez) *Message {
 	return NewTestMapMessageWithFields(
@@ -300,6 +361,12 @@ func NewTestService(name string) *Service {
 func (s *Service) WithPackage(pkg string) *Service {
 	s.Package = pkg
 	s.ID = fmt.Sprintf(".%s.%s", pkg, s.Name)
+	return s
+}
+
+// WithID overrides the service's ID.
+func (s *Service) WithID(id string) *Service {
+	s.ID = id
 	return s
 }
 
@@ -461,8 +528,8 @@ func (m *Method) WithBodyFieldPath(path string) *Method {
 
 // WithQueryParameters sets the query parameters on the first binding of the method.
 // It initializes PathInfo if it is nil, and creates a binding if none exists.
-func (m *Method) WithQueryParameters(params map[string]bool) *Method {
-	m.ensureFirstBinding().QueryParameters = params
+func (m *Method) WithQueryParameters(params ...string) *Method {
+	m.ensureFirstBinding().WithQueryParameters(params...)
 	return m
 }
 
@@ -589,8 +656,11 @@ func (b *PathBinding) WithPathTemplate(pt *PathTemplate) *PathBinding {
 }
 
 // WithQueryParameters sets the query parameters for the binding.
-func (b *PathBinding) WithQueryParameters(params map[string]bool) *PathBinding {
-	b.QueryParameters = params
+func (b *PathBinding) WithQueryParameters(params ...string) *PathBinding {
+	b.QueryParameters = make(map[string]bool, len(params))
+	for _, p := range params {
+		b.QueryParameters[p] = true
+	}
 	return b
 }
 
@@ -637,6 +707,18 @@ func NewTestField(name string) *Field {
 	}
 }
 
+// WithID overrides the field's ID.
+func (f *Field) WithID(id string) *Field {
+	f.ID = id
+	return f
+}
+
+// WithOneOf marks the field as belonging to a oneof.
+func (f *Field) WithOneOf() *Field {
+	f.IsOneOf = true
+	return f
+}
+
 // WithType sets the type of the field.
 func (f *Field) WithType(t Typez) *Field {
 	f.Typez = t
@@ -664,6 +746,20 @@ func (f *Field) WithMap() *Field {
 	f.Map = true
 	f.Repeated = false
 	f.Optional = false
+	return f
+}
+
+// WithMapType sets the field's map type.
+// It sets MapType, Typez=TypezMap, Map=true, and TypezID.
+func (f *Field) WithMapType(m *Map) *Field {
+	f.MapType = m
+	f.Typez = TypezMap
+	f.Map = true
+	f.Repeated = false
+	f.Optional = false
+	if m != nil {
+		f.TypezID = m.ID
+	}
 	return f
 }
 

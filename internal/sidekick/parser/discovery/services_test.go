@@ -43,7 +43,7 @@ func TestService(t *testing.T) {
 			WithVariableNamed("project").
 			WithLiteral("zones").
 			WithVariableNamed("zone")).
-		WithQueryParameters(map[string]bool{}).
+		WithQueryParameters().
 		WithBodyFieldPath("")
 	getMethod.InputTypeID = "..zones.getRequest"
 	getMethod.OutputTypeID = "..Zone"
@@ -59,13 +59,13 @@ func TestService(t *testing.T) {
 			WithLiteral("projects").
 			WithVariableNamed("project").
 			WithLiteral("zones")).
-		WithQueryParameters(map[string]bool{
-			"filter":               true,
-			"maxResults":           true,
-			"orderBy":              true,
-			"pageToken":            true,
-			"returnPartialSuccess": true,
-		}).
+		WithQueryParameters(
+			"filter",
+			"maxResults",
+			"orderBy",
+			"pageToken",
+			"returnPartialSuccess",
+		).
 		WithBodyFieldPath("")
 	listMethod.InputTypeID = "..zones.listRequest"
 	listMethod.OutputTypeID = "..ZoneList"

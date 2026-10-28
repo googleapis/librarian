@@ -493,11 +493,7 @@ func TestOpenAPI_MakeAPI(t *testing.T) {
 			WithLiteral("projects").
 			WithVariableNamed("project").
 			WithLiteral("locations")).
-		WithQueryParameters(map[string]bool{
-			"filter":    true,
-			"pageSize":  true,
-			"pageToken": true,
-		}).
+		WithQueryParameters("filter", "pageSize", "pageToken").
 		WithPagination(pageToken)
 	wantListLocationsMethod.IsList = false
 	wantListLocationsMethod.InputTypeID = "..Service.ListLocationsRequest"
@@ -690,7 +686,7 @@ func TestOpenAPI_Pagination(t *testing.T) {
 				WithVariableNamed("project").
 				WithLiteral("foos"),
 		).
-		WithQueryParameters(map[string]bool{"pageSize": true, "pageToken": true}).
+		WithQueryParameters("pageSize", "pageToken").
 		WithPagination(
 			api.NewTestField("pageToken").
 				WithDocumentation("The `{pageToken}` component of the target path.\n\nThe full target path will be in the form `/v1/projects/{project}/foos`.").
@@ -862,7 +858,7 @@ func TestOpenAPI_Deprecated(t *testing.T) {
 				WithLiteral("rpc").
 				WithLiteral("a"),
 		).
-		WithQueryParameters(map[string]bool{"filter": true})
+		WithQueryParameters("filter")
 	rpcA.InputTypeID = "..Service.RpcARequest"
 	rpcA.OutputTypeID = "..Response"
 	apitest.CheckMethod(t, service, "RpcA", rpcA)
@@ -879,7 +875,7 @@ func TestOpenAPI_Deprecated(t *testing.T) {
 				WithLiteral("rpc").
 				WithLiteral("b"),
 		).
-		WithQueryParameters(map[string]bool{})
+		WithQueryParameters()
 	rpcB.InputTypeID = "..Service.RpcBRequest"
 	rpcB.OutputTypeID = "..Response"
 	apitest.CheckMethod(t, service, "RpcB", rpcB)

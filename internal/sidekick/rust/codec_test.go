@@ -683,8 +683,7 @@ func TestMethodInOut(t *testing.T) {
 
 func rustFieldTypesCases() *api.API {
 	target := api.NewTestMessage("Target").WithPackage("")
-	mapMessage := api.NewTestMapMessage("$MapMessage", api.TypezInt32, api.TypezInt32).
-		WithPackage("")
+	mapType := api.NewTestMap("$MapMessage", api.TypezInt32, api.TypezInt32)
 
 	message := api.NewTestMessage("Message").WithPackage("")
 	timestamp := api.NewTestMessage("Timestamp").WithPackage("google.protobuf")
@@ -708,9 +707,9 @@ func rustFieldTypesCases() *api.API {
 			WithRecursive(),
 		api.NewTestField("f_timestamp").WithMessageType(timestamp).WithOptional(),
 		api.NewTestField("f_timestamp_repeated").WithMessageType(timestamp).WithRepeated(),
-		api.NewTestField("f_map").WithMessageType(mapMessage),
+		api.NewTestField("f_map").WithMapType(mapType),
 	)
-	return api.NewTestAPI([]*api.Message{target, message, mapMessage}, nil, nil)
+	return api.NewTestAPI([]*api.Message{target, message}, nil, nil).WithMaps(mapType)
 }
 
 func TestFieldType(t *testing.T) {
@@ -847,15 +846,15 @@ func TestFieldMapTypeValues(t *testing.T) {
 		},
 	} {
 		t.Run(test.want, func(t *testing.T) {
-			mapThing := api.NewTestMapMessageWithFields(
+			mapThing := api.NewTestMapWithFields(
 				"$MapThing",
 				api.NewTestField("key").WithType(api.TypezInt32),
 				test.value,
 			)
 
-			field := api.NewTestField("indexed").WithMessageType(mapThing)
+			field := api.NewTestField("indexed").WithMapType(mapThing)
 			message := api.NewTestMessage("Message").WithFields(field)
-			model := api.NewTestAPI([]*api.Message{message, otherMessage, mapThing}, nil, nil)
+			model := api.NewTestAPI([]*api.Message{message, otherMessage}, nil, nil).WithMaps(mapThing)
 			api.LabelRecursiveFields(model)
 			c := createRustCodec()
 			got, err := c.fieldType(field, model, false, model.PackageName)
@@ -889,16 +888,16 @@ func TestFieldMapTypeKey(t *testing.T) {
 			api.NewTestField("key").WithEnumType(enum),
 		},
 	} {
-		mapThing := api.NewTestMapMessageWithFields(
+		mapThing := api.NewTestMapWithFields(
 			"$MapThing",
 			test.key,
 			api.NewTestField("value").WithType(api.TypezInt64),
 		)
 
-		field := api.NewTestField("indexed").WithMessageType(mapThing)
+		field := api.NewTestField("indexed").WithMapType(mapThing)
 		message := api.NewTestMessage("Message").WithFields(field)
 
-		model := api.NewTestAPI([]*api.Message{message, mapThing}, []*api.Enum{enum}, nil)
+		model := api.NewTestAPI([]*api.Message{message}, []*api.Enum{enum}, nil).WithMaps(mapThing)
 		api.LabelRecursiveFields(model)
 		c := createRustCodec()
 		got, err := c.fieldType(field, model, false, model.PackageName)
@@ -1101,6 +1100,7 @@ func TestToPascal(t *testing.T) {
 
 func TestToProstPascal(t *testing.T) {
 	var tests = []rustCaseConvertTest{
+		{"", ""},
 		{"foo_bar", "FooBar"},
 		{"FooBar", "FooBar"},
 		{"True", "True"},
@@ -1115,11 +1115,87 @@ func TestToProstPascal(t *testing.T) {
 		{"VertexAISearch", "VertexAiSearch"},
 		{"IPVersion", "IpVersion"},
 		{"DNSConfig", "DnsConfig"},
+		{"CVSSv3", "CvsSv3"},
+		{"V2Beta1", "V2Beta1"},
+		{"HTTP2Frame", "Http2Frame"},
+		{"OAuth2Config", "OAuth2Config"},
+		{"XMLHttpRequest", "XmlHttpRequest"},
+		{"FIELD_NAME11", "FieldName11"},
+		{"99BOTTLES", "_99bottles"},
 	}
 	for _, test := range tests {
 		if output := toProstPascal(test.Input); output != test.Expected {
 			t.Errorf("toProstPascal(%q) = %q, want %q", test.Input, output, test.Expected)
 		}
+	}
+}
+
+func TestToProstSnake(t *testing.T) {
+	for _, test := range []struct {
+		input string
+		want  string
+	}{
+		{"", ""},
+		{"FooBar", "foo_bar"},
+		{"FooBarBAZ", "foo_bar_baz"},
+		{"XMLHttpRequest", "xml_http_request"},
+		{"While", "r#while"},
+		{"Mod", "r#mod"},
+		{"Gen", "r#gen"},
+		{"Self", "self_"},
+		{"self", "self_"},
+		{"crate", "crate_"},
+		{"super", "super_"},
+		{"CVSSv3", "cvs_sv3"},
+		{"V2Beta1", "v2_beta1"},
+		{"HTTP2Frame", "http2_frame"},
+		{"OAuth2Config", "o_auth2_config"},
+		{"VertexAISearch", "vertex_ai_search"},
+		{"FIELD_NAME11", "field_name11"},
+		{"FieldTagE11", "field_tag_e11"},
+		{"99BOTTLES", "_99bottles"},
+		{"abc123def456", "abc123def456"},
+		{"abc123DEF456", "abc123_def456"},
+		{"abc123Def456", "abc123_def456"},
+		{"abc123DEf456", "abc123_d_ef456"},
+		{"ABC123def456", "abc123def456"},
+		{"ABC123DEF456", "abc123def456"},
+		{"ABC123Def456", "abc123_def456"},
+		{"ABC123DEf456", "abc123d_ef456"},
+		{"ABC123dEEf456FOO", "abc123d_e_ef456_foo"},
+	} {
+		t.Run(test.input, func(t *testing.T) {
+			if got := toProstSnake(test.input); got != test.want {
+				t.Errorf("toProstSnake(%q) = %q, want %q", test.input, got, test.want)
+			}
+		})
+	}
+}
+
+func TestProstMessageModulePath(t *testing.T) {
+	cvss := api.NewTestMessage("CVSSv3")
+	vulnDetails := api.NewTestMessage("VulnerabilityDetails").WithMessages(cvss)
+	vulnReport := api.NewTestMessage("VulnerabilityReport").WithMessages(vulnDetails)
+	selfMsg := api.NewTestMessage("Self")
+	modMsg := api.NewTestMessage("Mod").WithMessages(selfMsg)
+	_ = api.NewTestAPI([]*api.Message{vulnReport, modMsg}, nil, nil)
+
+	for _, test := range []struct {
+		name string
+		msg  *api.Message
+		want string
+	}{
+		{"nil", nil, ""},
+		{"top_level", vulnReport, "vulnerability_report"},
+		{"nested", vulnDetails, "vulnerability_report::vulnerability_details"},
+		{"nested_acronyms_and_digits", cvss, "vulnerability_report::vulnerability_details::cvs_sv3"},
+		{"keywords", selfMsg, "r#mod::self_"},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			if got := prostMessageModulePath(test.msg); got != test.want {
+				t.Errorf("prostMessageModulePath() = %q, want %q", got, test.want)
+			}
+		})
 	}
 }
 

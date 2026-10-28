@@ -53,9 +53,7 @@ type serviceAnnotations struct {
 	// A snippet is a standalone executable. Nothing in it is deprecated, so it
 	// needs the attribute even when the service itself is. The name avoids
 	// colliding with `methodAnnotations.DiagnoseSnippet`, which means
-	// something different: mustache resolves `{{#Codec.X}}` by walking the
-	// context stack, so two same-named fields on different annotation types
-	// can be confused.
+	// something different.
 	DiagnoseClientSnippet bool
 
 	// DiagnoseSnippetRunner guards `SnippetRunner.main()` in the generated
@@ -269,6 +267,20 @@ func (c *codec) annotateService(service *api.Service, model *modelAnnotations) (
 		if method.IsLRO && method.OperationInfo != nil {
 			if err := c.addLroDependencies(annotations, method); err != nil {
 				return nil, err
+			}
+		}
+		// When a wrapper request message in this package embeds a
+		// google.api.HttpBody field, the generated transport reads body.data and
+		// body.contentType directly. Swift's MemberImportVisibility requires
+		// importing the defining module (GoogleApi) in the transport file even if
+		// GoogleApi does not appear in the service's public signatures.
+		if ma, ok := method.Codec.(*methodAnnotations); ok && ma.IsHTTPBodyRequest && c.Model.PackageName != "google.api" {
+			dep, err := c.addApiPackageDependency("google.api")
+			if err != nil {
+				return nil, err
+			}
+			if dep != nil {
+				annotations.DependsOn[dep.Name] = dep
 			}
 		}
 		for _, signature := range method.Signatures {

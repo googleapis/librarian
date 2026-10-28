@@ -82,9 +82,7 @@ func TestGenerateService_APIVersion(t *testing.T) {
 				WithPathTemplate((&api.PathTemplate{}).WithLiteral("v1").WithLiteral("method")).
 				WithAPIVersion(test.apiVersion)
 			if test.hasQueryParams {
-				method.WithQueryParameters(map[string]bool{
-					"name": true,
-				})
+				method.WithQueryParameters("name")
 			}
 			service := api.NewTestService("TestService").WithMethods(method)
 			model := api.NewTestAPI([]*api.Message{requestType, responseType}, nil, []*api.Service{service}).

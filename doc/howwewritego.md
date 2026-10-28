@@ -423,7 +423,7 @@ environments, logging, and error handling.
 When generating code for other languages (e.g., Rust, Python, Swift), avoid
 embedding large blocks of foreign code directly as formatted inline strings.
 Move these code templates into package-level constants or separate template
-files (e.g., mustache templates) to keep the Go logic clean.
+files (e.g., Go templates / .gotmpl) to keep the Go logic clean.
 
 ### Follow the latest concurrency best practices
 

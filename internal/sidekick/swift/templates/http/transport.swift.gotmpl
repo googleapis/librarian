@@ -135,7 +135,15 @@ extension Clients {
       var req = try await self.inner.newRequest(percentEncodedPath: path, query: query, options: options)
       configure(&req)
       {{- if .Codec.HasBody }}
+      {{- if .Codec.IsHTTPBodyRequest }}
       {{- if .Codec.IsBodyWildcard }}
+      req.setBody(data: request.data, ofContentType: request.contentType)
+      {{- else }}
+      if let body = request.{{ .Codec.BodyField }} {
+        req.setBody(data: body.data, ofContentType: body.contentType)
+      }
+      {{- end }}
+      {{- else if .Codec.IsBodyWildcard }}
       {{- if .Codec.HasOmittedBodyFields }}
       try req.setBody(json: request, omitting: omitted)
       {{- else }}
@@ -147,7 +155,13 @@ extension Clients {
       }
       {{- end }}
       {{- end }}
-      {{- if not .ReturnsEmpty }}
+      {{- if .Codec.IsHTTPBodyResponse }}
+      let raw = try await req.rpcRaw(timeout: options.attemptTimeout).get()
+      return {{ .Codec.ReturnType }}().with {
+        $0.data = raw.data
+        $0.contentType = raw.contentType
+      }
+      {{- else if not .ReturnsEmpty }}
       return try await req.rpc(
         {{ .Codec.ReturnType }}.self, timeout: options.attemptTimeout
       ).get()

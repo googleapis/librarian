@@ -158,7 +158,7 @@ func defaultHost(model *libopenapi.DocumentModel[v3.Document]) string {
 			defaultHost = server.URL
 		}
 	}
-	// The mustache template adds https:// because Protobuf does not include
+	// The Go template adds https:// because Protobuf does not include
 	// the scheme.
 	return strings.TrimPrefix(defaultHost, "https://")
 }

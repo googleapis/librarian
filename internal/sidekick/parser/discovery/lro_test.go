@@ -46,11 +46,11 @@ func TestLroAnnotations(t *testing.T) {
 			WithLiteral("zones").
 			WithVariableNamed("zone").
 			WithLiteral("instances")).
-		WithQueryParameters(map[string]bool{
-			"requestId":              true,
-			"sourceInstanceTemplate": true,
-			"sourceMachineImage":     true,
-		}).
+		WithQueryParameters(
+			"requestId",
+			"sourceInstanceTemplate",
+			"sourceMachineImage",
+		).
 		WithBodyFieldPath("body").
 		WithDiscoveryLro(&api.DiscoveryLro{
 			PollingPathParameters: []string{"project", "zone"},
@@ -79,7 +79,7 @@ func TestLroAnnotations(t *testing.T) {
 			WithVariableNamed("zone").
 			WithLiteral("operations").
 			WithVariableNamed("operation")).
-		WithQueryParameters(map[string]bool{}).
+		WithQueryParameters().
 		WithBodyFieldPath("")
 	wantMixin.InputTypeID = "..zoneOperations.getRequest"
 	wantMixin.OutputTypeID = "..Operation"
@@ -118,7 +118,7 @@ func TestLroAnnotationsError(t *testing.T) {
 					WithVariableNamed("zone").
 					WithLiteral("foo").
 					WithVariableNamed("id")).
-				WithQueryParameters(map[string]bool{}),
+				WithQueryParameters(),
 			api.NewTestMethod("create_bar").
 				WithOutput(operation).
 				WithVerb("GET").
@@ -129,7 +129,7 @@ func TestLroAnnotationsError(t *testing.T) {
 					WithVariableNamed("region").
 					WithLiteral("foo").
 					WithVariableNamed("id")).
-				WithQueryParameters(map[string]bool{}),
+				WithQueryParameters(),
 		)
 	pollerService := newDiscoveryTestService("Operations").
 		WithMethods(
@@ -143,7 +143,7 @@ func TestLroAnnotationsError(t *testing.T) {
 					WithVariableNamed("zone").
 					WithLiteral("operations").
 					WithVariableNamed("operation")).
-				WithQueryParameters(map[string]bool{}),
+				WithQueryParameters(),
 			api.NewTestMethod("get_2").
 				WithOutput(operation).
 				WithVerb("GET").
@@ -154,7 +154,7 @@ func TestLroAnnotationsError(t *testing.T) {
 					WithVariableNamed("region").
 					WithLiteral("operations").
 					WithVariableNamed("operation")).
-				WithQueryParameters(map[string]bool{}),
+				WithQueryParameters(),
 		)
 
 	model := api.NewTestAPI([]*api.Message{operation}, nil, []*api.Service{badService, pollerService})
