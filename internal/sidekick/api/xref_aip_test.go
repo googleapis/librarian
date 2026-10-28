@@ -297,7 +297,7 @@ func TestAIPStandardGetInfo(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			enrichMethodSamples(tc.method)
 			got := tc.method.SampleInfo
-			if diff := cmp.Diff(tc.want, got); diff != "" {
+			if diff := cmp.Diff(tc.want, got, allowUnexported()); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
@@ -418,7 +418,7 @@ func TestAIPStandardDeleteInfo(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			enrichMethodSamples(tc.method)
 			got := tc.method.SampleInfo
-			if diff := cmp.Diff(tc.want, got); diff != "" {
+			if diff := cmp.Diff(tc.want, got, allowUnexported()); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
@@ -548,7 +548,7 @@ func TestAIPStandardUndeleteInfo(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			enrichMethodSamples(tc.method)
 			got := tc.method.SampleInfo
-			if diff := cmp.Diff(tc.want, got); diff != "" {
+			if diff := cmp.Diff(tc.want, got, allowUnexported()); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
@@ -621,7 +621,7 @@ func TestAIPStandardCreateInfo(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			enrichMethodSamples(tc.method)
 			got := tc.method.SampleInfo
-			if diff := cmp.Diff(tc.want, got); diff != "" {
+			if diff := cmp.Diff(tc.want, got, allowUnexported()); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
@@ -713,7 +713,7 @@ func TestAIPStandardUpdateInfo(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			enrichMethodSamples(tc.method)
 			got := tc.method.SampleInfo
-			if diff := cmp.Diff(tc.want, got); diff != "" {
+			if diff := cmp.Diff(tc.want, got, allowUnexported()); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
@@ -845,7 +845,7 @@ func TestAIPStandardListInfo(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			enrichMethodSamples(tc.method)
 			got := tc.method.SampleInfo
-			if diff := cmp.Diff(tc.want, got); diff != "" {
+			if diff := cmp.Diff(tc.want, got, allowUnexported()); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})

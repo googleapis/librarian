@@ -761,12 +761,12 @@ func TestFormattedResourceAnnotations(t *testing.T) {
 	}{
 		{name: "standard",
 			segments: []api.ResourceNameSegment{
-				{Literal: "projects"},
-				{Variable: "project"},
-				{Literal: "locations"},
-				{Variable: "location"},
-				{Literal: "secrets"},
-				{Variable: "secret"},
+				api.NewResourceNameSegment("projects", ""),
+				api.NewResourceNameSegment("", "project"),
+				api.NewResourceNameSegment("locations", ""),
+				api.NewResourceNameSegment("", "location"),
+				api.NewResourceNameSegment("secrets", ""),
+				api.NewResourceNameSegment("", "secret"),
 			},
 			wantString: "projects/{project_id}/locations/{location_id}/secrets/{secret_id}",
 			wantArgs:   []string{"project_id", "location_id", "secret_id"},
@@ -774,8 +774,8 @@ func TestFormattedResourceAnnotations(t *testing.T) {
 		{
 			name: "with name suffix",
 			segments: []api.ResourceNameSegment{
-				{Literal: "topics"},
-				{Variable: "topicName"},
+				api.NewResourceNameSegment("topics", ""),
+				api.NewResourceNameSegment("", "topicName"),
 			},
 			wantString: "topics/{topic_name}",
 			wantArgs:   []string{"topic_name"},
@@ -783,8 +783,8 @@ func TestFormattedResourceAnnotations(t *testing.T) {
 		{
 			name: "already has id suffix",
 			segments: []api.ResourceNameSegment{
-				{Literal: "projects"},
-				{Variable: "projectId"},
+				api.NewResourceNameSegment("projects", ""),
+				api.NewResourceNameSegment("", "projectId"),
 			},
 			wantString: "projects/{project_id}",
 			wantArgs:   []string{"project_id"},

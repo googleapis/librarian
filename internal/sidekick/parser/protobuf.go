@@ -835,10 +835,10 @@ func processResourceReference(f *descriptorpb.FieldDescriptorProto, field *api.F
 	if !ok {
 		return fmt.Errorf("in field %q: unexpected type for eResourceReference extension: %T", field.ID, ext)
 	}
-	field.ResourceReference = &api.ResourceReference{
-		Type:      ref.Type,
-		ChildType: ref.ChildType,
-	}
+	field.ResourceReference = api.NewResourceReferenceBuilder().
+		WithType(ref.Type).
+		WithChildType(ref.ChildType).
+		Build()
 	return nil
 }
 

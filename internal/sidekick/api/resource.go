@@ -58,38 +58,74 @@ type ResourcePattern []PathSegment
 
 // ResourceNameSegment is a segment of a resource name pattern.
 //
-// This should be a union type, either `Literal` or `Variable` are set, but not both.
+// This should be a union type, either `literal` or `variable` are set, but not both.
 type ResourceNameSegment struct {
-	// Literal is the literal part of the segment.
+	// literal is the literal part of the segment.
 	//
 	// When formatting a resource name this should be used, well, literally.
-	Literal string
+	literal string
 
-	// Variable is the name of the variable part of the segment.
+	// variable is the name of the variable part of the segment.
 	//
 	// When formatting a resource name, this names a variable used to populate the resource name.
-	Variable string
+	variable string
 }
+
+// NewResourceNameSegment creates a new [ResourceNameSegment].
+func NewResourceNameSegment(literal, variable string) ResourceNameSegment {
+	return ResourceNameSegment{
+		literal:  literal,
+		variable: variable,
+	}
+}
+
+// Literal returns the literal part of the segment.
+func (s ResourceNameSegment) Literal() string { return s.literal }
+
+// Variable returns the variable name part of the segment.
+func (s ResourceNameSegment) Variable() string { return s.variable }
 
 // ResourceNamePattern describes the structure of a resource name.
 type ResourceNamePattern struct {
-	Segments []ResourceNameSegment
+	segments []ResourceNameSegment
 }
+
+// NewResourceNamePattern creates a new [ResourceNamePattern].
+func NewResourceNamePattern(segments ...ResourceNameSegment) *ResourceNamePattern {
+	return &ResourceNamePattern{
+		segments: segments,
+	}
+}
+
+// Segments returns the segments of the resource name pattern.
+func (p *ResourceNamePattern) Segments() []ResourceNameSegment { return p.segments }
 
 // ResourceReference describes a field's relationship to another resource type.
 // It acts as a foreign key, indicating that the field's value identifies an instance of another resource.
 // This relationship is established via the `google.api.resource_reference` annotation in Protobuf.
 type ResourceReference struct {
-	// Type is the unique identifier of the referenced resource's kind (e.g., "library.googleapis.com/Shelf").
+	// typez is the unique identifier of the referenced resource's kind (e.g., "library.googleapis.com/Shelf").
 	// This string matches the `Type` field in the corresponding `Resource` definition.
-	Type string
-	// ChildType is the unique identifier of a *child* resource's kind.
+	typez string
+	// childType is the unique identifier of a *child* resource's kind.
 	// This is used when a field references a parent resource (e.g., "Shelf"), but the context
 	// implies interaction with a specific child type (e.g., "Book" within that shelf).
-	ChildType string
+	childType string
 	// Language specific annotations.
-	Codec any
+	codec any
 }
+
+// Type returns the unique identifier of the referenced resource's kind.
+func (r *ResourceReference) Type() string { return r.typez }
+
+// ChildType returns the unique identifier of the referenced child resource's kind.
+func (r *ResourceReference) ChildType() string { return r.childType }
+
+// Codec returns the language-specific annotations.
+func (r *ResourceReference) Codec() any { return r.codec }
+
+// SetAnnotations sets the language-specific annotations.
+func (r *ResourceReference) SetAnnotations(codec any) { r.codec = codec }
 
 // TargetResource contains the results of the resource name identification.
 // It provides the sequences of fields used by language-specific generators to inject tracing attributes.

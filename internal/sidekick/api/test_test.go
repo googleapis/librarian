@@ -429,7 +429,7 @@ func TestMethod_FluentSetters(t *testing.T) {
 
 func TestField_FluentSetters(t *testing.T) {
 	enum := api.NewTestEnum("State").WithPackage("test.v1")
-	pattern := &api.ResourceNamePattern{Segments: []api.ResourceNameSegment{{Literal: "items"}}}
+	pattern := api.NewTestResourceNamePattern(api.NewResourceNameSegment("items", ""))
 	f := api.NewTestField("state").
 		WithEnumType(enum).
 		WithAutoPopulated().
@@ -523,14 +523,29 @@ func TestMethodSignature_Builders(t *testing.T) {
 
 func TestResourceNamePattern_Builder(t *testing.T) {
 	p := api.NewTestResourceNamePattern(
-		api.ResourceNameSegment{Literal: "projects"},
-		api.ResourceNameSegment{Variable: "project"},
+		api.NewResourceNameSegment("projects", ""),
+		api.NewResourceNameSegment("", "project"),
 	)
-	if len(p.Segments) != 2 {
-		t.Fatalf("len(p.Segments) = %d, want 2", len(p.Segments))
+	if len(p.Segments()) != 2 {
+		t.Fatalf("len(p.Segments()) = %d, want 2", len(p.Segments()))
 	}
-	if p.Segments[0].Literal != "projects" || p.Segments[1].Variable != "project" {
-		t.Errorf("unexpected segments: %+v", p.Segments)
+	if p.Segments()[0].Literal() != "projects" || p.Segments()[1].Variable() != "project" {
+		t.Errorf("unexpected segments: %+v", p.Segments())
+	}
+
+	rr := api.NewResourceReferenceBuilder().
+		WithType("test.googleapis.com/Book").
+		WithChildType("test.googleapis.com/Page").
+		Build()
+	rr.SetAnnotations("rr-codec")
+	if rr.Type() != "test.googleapis.com/Book" {
+		t.Errorf("rr.Type() = %q, want test.googleapis.com/Book", rr.Type())
+	}
+	if rr.ChildType() != "test.googleapis.com/Page" {
+		t.Errorf("rr.ChildType() = %q, want test.googleapis.com/Page", rr.ChildType())
+	}
+	if rr.Codec() != "rr-codec" {
+		t.Errorf("rr.Codec() = %v, want rr-codec", rr.Codec())
 	}
 }
 
