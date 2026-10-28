@@ -398,6 +398,47 @@ func TestFindDependenciesService(t *testing.T) {
 	}
 }
 
+func TestFindDependenciesMapFields(t *testing.T) {
+	valMsg := NewTestMessage("ValueMessage")
+	valEnum := NewTestEnum("ValueEnum")
+
+	msgMap := NewTestMapWithFields("StringMsgMap",
+		NewTestField("key").WithType(TypezString),
+		NewTestField("value").WithMessageType(valMsg),
+	)
+	enumMap := NewTestMapWithFields("StringEnumMap",
+		NewTestField("key").WithType(TypezString),
+		NewTestField("value").WithEnumType(valEnum),
+	)
+
+	msgField := NewTestField("msg_map").WithMapType(msgMap)
+	enumField := NewTestField("enum_map").WithMapType(enumMap)
+
+	container := NewTestMessage("Container").WithFields(msgField, enumField)
+
+	model := NewTestAPI([]*Message{container, valMsg}, []*Enum{valEnum}, nil).
+		WithMaps(msgMap, enumMap)
+	less := func(a, b string) bool { return a < b }
+
+	got, err := FindDependencies(model, []string{container.ID})
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := []string{container.ID, msgMap.ID, enumMap.ID, valMsg.ID, valEnum.ID}
+	if diff := cmp.Diff(want, flatten(got), cmpopts.SortSlices(less)); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+
+	gotFromMap, err := FindDependencies(model, []string{msgMap.ID})
+	if err != nil {
+		t.Fatal(err)
+	}
+	wantFromMap := []string{msgMap.ID, valMsg.ID}
+	if diff := cmp.Diff(wantFromMap, flatten(gotFromMap), cmpopts.SortSlices(less)); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+}
+
 // Simplify the test expectations.
 func flatten(m map[string]bool) []string {
 	var arr []string

@@ -93,23 +93,27 @@ func TestEnrichSamplesEnumValues(t *testing.T) {
 func TestEnrichSamplesOneOfExampleField(t *testing.T) {
 	deprecated := NewTestField("deprecated_field").
 		WithType(TypezString).
+		WithOneOf().
 		WithDeprecated(true)
-	mapMessage := NewTestMapMessage("$map<string, string>", TypezString, TypezString).
-		WithID("$map<string, string>")
+	mapType := NewTestMap("$map<string, string>", TypezString, TypezString)
 	mapField := NewTestField("map_field").
-		WithMessageType(mapMessage).
-		WithMap()
+		WithMapType(mapType).
+		WithOneOf()
 	repeated := NewTestField("repeated_field").
 		WithType(TypezString).
-		WithRepeated()
+		WithRepeated().
+		WithOneOf()
 	scalar := NewTestField("scalar_field").
-		WithType(TypezInt32)
+		WithType(TypezInt32).
+		WithOneOf()
+	oneMessage := NewTestMessage("OneMessage")
 	messageField := NewTestField("message_field").
-		WithType(TypezMessage).
-		WithTypezID(".test.OneMessage")
+		WithMessageType(oneMessage).
+		WithOneOf()
+	anotherMessage := NewTestMessage("AnotherMessage")
 	anotherMessageField := NewTestField("another_message_field").
-		WithType(TypezMessage).
-		WithTypezID(".test.AnotherMessage")
+		WithMessageType(anotherMessage).
+		WithOneOf()
 
 	for _, test := range []struct {
 		name   string
@@ -152,9 +156,7 @@ func TestEnrichSamplesOneOfExampleField(t *testing.T) {
 			message := NewTestMessage("Message").
 				WithFields(test.fields...).
 				WithOneOfs(group)
-			oneMessage := NewTestMessage("OneMessage")
-			anotherMessage := NewTestMessage("AnotherMessage")
-			model := NewTestAPI([]*Message{message, oneMessage, anotherMessage, mapMessage}, []*Enum{}, []*Service{})
+			model := NewTestAPI([]*Message{message, oneMessage, anotherMessage}, nil, nil).WithMaps(mapType)
 			if err := CrossReference(model); err != nil {
 				t.Fatal(err)
 			}
