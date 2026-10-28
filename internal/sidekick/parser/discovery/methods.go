@@ -140,7 +140,7 @@ func makeMethod(model *api.API, parent *api.Message, doc *document, input *metho
 	// convenience overload is not a big problem.
 	signatures := []*api.MethodSignature{}
 	if len(signatureNames) != 0 {
-		signatures = append(signatures, &api.MethodSignature{Names: signatureNames})
+		signatures = append(signatures, api.NewMethodSignatureBuilder().WithNames(signatureNames...).Build())
 	}
 
 	method := &api.Method{

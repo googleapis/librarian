@@ -24,20 +24,29 @@ package api
 // These overloads select a subset of the fields in the request message, and the
 // generator emits a function for each list.
 type MethodSignature struct {
-	// Names define the list of field names from the request message included in
+	// names define the list of field names from the request message included in
 	// this signature.
-	Names []string
+	names []string
 
-	// Fields define the list of fields from the request message included in
+	// fields define the list of fields from the request message included in
 	// this signature.
 	//
 	// This is initialized in the cross-reference phase, as the fields may not
 	// exist when the method is first parsed.
-	Fields []*Field
+	fields []*Field
 
-	// Method cross-references the method containing this signature.
+	// method cross-references the method containing this signature.
 	//
 	// This is useful in Go templates, as the template can access the
 	// method and the method's annotations from within a signature.
-	Method *Method
+	method *Method
 }
+
+// Names returns the list of field names from the request message included in this signature.
+func (s *MethodSignature) Names() []string { return s.names }
+
+// Fields returns the list of fields from the request message included in this signature.
+func (s *MethodSignature) Fields() []*Field { return s.fields }
+
+// Method returns the method containing this signature.
+func (s *MethodSignature) Method() *Method { return s.method }

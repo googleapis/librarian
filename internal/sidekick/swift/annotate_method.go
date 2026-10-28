@@ -230,7 +230,7 @@ func (c *codec) annotateMethod(method *api.Method, modelAnn *modelAnnotations) e
 		}
 	}
 	for _, sig := range method.Signatures {
-		for _, field := range sig.Fields {
+		for _, field := range sig.Fields() {
 			if field.Codec == nil {
 				if _, err := c.annotateField(field, modelAnn); err != nil {
 					return err

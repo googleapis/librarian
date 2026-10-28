@@ -499,11 +499,25 @@ func TestMethodSignature_Builders(t *testing.T) {
 		WithFields(f1).
 		WithFields(f2)
 
-	if diff := cmp.Diff([]string{"name", "parent"}, sig.Names); diff != "" {
+	if diff := cmp.Diff([]string{"name", "parent"}, sig.Names()); diff != "" {
 		t.Errorf("mismatch in Names (-want +got):\n%s", diff)
 	}
-	if diff := cmp.Diff([]*api.Field{f1, f2}, sig.Fields); diff != "" {
+	if diff := cmp.Diff([]*api.Field{f1, f2}, sig.Fields()); diff != "" {
 		t.Errorf("mismatch in Fields (-want +got):\n%s", diff)
+	}
+	if sig.Method() != nil {
+		t.Errorf("sig.Method() = %v, want nil", sig.Method())
+	}
+
+	built := api.NewMethodSignatureBuilder().
+		WithNames("name").
+		WithFields(f1).
+		Build()
+	if diff := cmp.Diff([]string{"name"}, built.Names()); diff != "" {
+		t.Errorf("mismatch in built.Names (-want +got):\n%s", diff)
+	}
+	if diff := cmp.Diff([]*api.Field{f1}, built.Fields()); diff != "" {
+		t.Errorf("mismatch in built.Fields (-want +got):\n%s", diff)
 	}
 }
 
