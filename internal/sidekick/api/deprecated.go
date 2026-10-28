@@ -49,7 +49,7 @@ func (message *Message) hasDeprecatedEntities() bool {
 		}
 	}
 	for _, f := range message.Fields {
-		if f.Deprecated {
+		if f.deprecated {
 			return true
 		}
 	}

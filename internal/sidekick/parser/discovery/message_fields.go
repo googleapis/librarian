@@ -64,17 +64,17 @@ func makeScalarFieldWithOptions(model *api.API, message *api.Message, name strin
 	if err != nil {
 		return nil, err
 	}
-	return &api.Field{
-		Name:          name,
-		JSONName:      name, // Discovery doc field names are always camelCase
-		ID:            fmt.Sprintf("%s.%s", message.ID, name),
-		Documentation: description,
-		Typez:         typez,
-		TypezID:       typezID,
-		Deprecated:    schema.Deprecated,
-		Optional:      optional,
-		Repeated:      repeated,
-	}, nil
+	return api.NewFieldBuilder().
+		WithName(name).
+		WithJSONName(name). // Discovery doc field names are always camelCase
+		WithID(fmt.Sprintf("%s.%s", message.ID, name)).
+		WithDocumentation(description).
+		WithTypez(typez).
+		WithTypezID(typezID).
+		WithDeprecated(schema.Deprecated).
+		WithOptional(optional).
+		WithRepeated(repeated).
+		Build(), nil
 }
 
 func scalarType(model *api.API, messageID, name string, input *schema) (api.Typez, string, error) {

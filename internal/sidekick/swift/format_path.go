@@ -75,28 +75,28 @@ func (c *codec) newPathVariable(message *api.Message, variable *api.PathVariable
 			return nil, err
 		}
 		expression.WriteString(expr)
-		optional = field.Optional
-		switch field.Typez {
+		optional = field.Optional()
+		switch field.Typez() {
 		case api.TypezMessage:
-			if !field.Optional {
+			if !field.Optional() {
 				// Panics are the right way to deal with bugs in other parts of the code.
-				panic(fmt.Sprintf("invalid state: field %s in message %s has message type but is not optional", field.Name, current.ID))
+				panic(fmt.Sprintf("invalid state: field %s in message %s has message type but is not optional", field.Name(), current.ID))
 			}
-			current, err = lookupMessage(c.Model, field.TypezID)
+			current, err = lookupMessage(c.Model, field.TypezID())
 			if err != nil {
 				return nil, err
 			}
 		case api.TypezString:
 			test = fmt.Sprintf("!%s.isEmpty", name)
 		case api.TypezBytes:
-			return nil, fmt.Errorf("unsupported path parameter type %q, message=%q, path=%q", field.Typez.String(), message.ID, strings.Join(variable.FieldPath(), "."))
+			return nil, fmt.Errorf("unsupported path parameter type %q, message=%q, path=%q", field.Typez().String(), message.ID, strings.Join(variable.FieldPath(), "."))
 		default:
 			test = ""
 		}
 	}
 	var matchingSegments []string
 	var templateString string
-	if lastField != nil && lastField.Typez == api.TypezString {
+	if lastField != nil && lastField.Typez() == api.TypezString {
 		matchingSegments = annotateSegments(variable.Segments(), false, false)
 		if len(variable.Segments()) > 0 {
 			templateString = strings.Join(variable.Segments(), "/")
@@ -119,27 +119,27 @@ func (c *codec) newPathVariable(message *api.Message, variable *api.PathVariable
 // The generated `CodingKeys` use this name. Some models (mostly in tests) leave `JSONName` unset,
 // in that case the Swift property name is also the ProtoJSON name.
 func jsonFieldName(field *api.Field) string {
-	if field.JSONName != "" {
-		return field.JSONName
+	if field.JSONName() != "" {
+		return field.JSONName()
 	}
-	return camelCase(field.Name)
+	return camelCase(field.Name())
 }
 
 func (*codec) fieldPathParameterExpression(optional bool, field *api.Field) (string, error) {
-	if field.IsOneOf {
-		return "", fmt.Errorf("unsupported path parameter: field %s", field.ID)
+	if field.IsOneOf() {
+		return "", fmt.Errorf("unsupported path parameter: field %s", field.ID())
 	}
-	fieldCodec, ok := field.Codec.(*fieldAnnotations)
+	fieldCodec, ok := field.Codec().(*fieldAnnotations)
 	if !ok {
-		return "", fmt.Errorf("internal error: field %s does not have swift fieldAnnotations", field.ID)
+		return "", fmt.Errorf("internal error: field %s does not have swift fieldAnnotations", field.ID())
 	}
-	if optional && field.Optional {
+	if optional && field.Optional() {
 		return fmt.Sprintf(".flatMap({ $0.%s })", fieldCodec.Name), nil
 	}
 	if optional {
 		return fmt.Sprintf(".map({ $0.%s })", fieldCodec.Name), nil
 	}
-	if field.Optional {
+	if field.Optional() {
 		return fmt.Sprintf(".%s", fieldCodec.Name), nil
 	}
 	return fmt.Sprintf(".%s as %s?", fieldCodec.Name, fieldCodec.FieldType), nil

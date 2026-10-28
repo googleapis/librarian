@@ -253,7 +253,7 @@ func (b *pathBindingAnnotation) HasResourceNameArgs() bool {
 // returns a `Result<>`.
 func (b *pathBindingAnnotation) QueryParamsCanFail() bool {
 	for _, f := range b.QueryParams {
-		if f.Typez == api.TypezMessage {
+		if f.Typez() == api.TypezMessage {
 			return true
 		}
 	}
@@ -436,7 +436,7 @@ func (c *codec) annotateRoutingAccessors(variant *api.RoutingInfoVariant, m *api
 func makeAccessors(fields []string, m *api.Method) ([]string, error) {
 	findField := func(name string, message *api.Message) *api.Field {
 		for _, f := range message.Fields {
-			if f.Name == name {
+			if f.Name() == name {
 				return f
 			}
 		}
@@ -450,18 +450,18 @@ func makeAccessors(fields []string, m *api.Method) ([]string, error) {
 		if field == nil {
 			return nil, fmt.Errorf("invalid routing/path field (%q) for request message %s", rustFieldName, message.ID)
 		}
-		if field.IsOneOf {
+		if field.IsOneOf() {
 			accessors = append(accessors, fmt.Sprintf(".and_then(|m| m.%s())", rustFieldName))
-		} else if field.Optional {
+		} else if field.Optional() {
 			accessors = append(accessors, fmt.Sprintf(".and_then(|m| m.%s.as_ref())", rustFieldName))
 		} else {
 			accessors = append(accessors, fmt.Sprintf(".map(|m| &m.%s)", rustFieldName))
 		}
-		if field.Typez == api.TypezString {
+		if field.Typez() == api.TypezString {
 			accessors = append(accessors, ".map(|s| s.as_str())")
 		}
-		if field.Typez == api.TypezMessage {
-			if fieldMessage := m.Model.Message(field.TypezID); fieldMessage != nil {
+		if field.Typez() == api.TypezMessage {
+			if fieldMessage := m.Model.Message(field.TypezID()); fieldMessage != nil {
 				message = fieldMessage
 			}
 		}
@@ -548,7 +548,7 @@ func makeBindingSubstitution(v *api.PathVariable, m *api.Method) (*bindingSubsti
 func makeClearAccessors(fields []string, m *api.Method) ([]string, error) {
 	findField := func(name string, message *api.Message) *api.Field {
 		for _, f := range message.Fields {
-			if f.Name == name {
+			if f.Name() == name {
 				return f
 			}
 		}
@@ -562,20 +562,20 @@ func makeClearAccessors(fields []string, m *api.Method) ([]string, error) {
 		if field == nil {
 			return nil, fmt.Errorf("invalid routing/path field (%q) for request message %s", rustFieldName, message.ID)
 		}
-		if field.IsOneOf {
+		if field.IsOneOf() {
 			return nil, fmt.Errorf("taking from a one-of is unsupported (%q) for request message %s", rustFieldName, message.ID)
 		}
-		if field.Typez != api.TypezMessage {
+		if field.Typez() != api.TypezMessage {
 			clears = append(clears, fmt.Sprintf(".map(|m| std::mem::take(&mut m.%s))", rustFieldName))
 		} else {
-			if field.Optional {
+			if field.Optional() {
 				clears = append(clears, fmt.Sprintf(".and_then(|m| m.%s.as_mut())", rustFieldName))
 			} else {
 				clears = append(clears, fmt.Sprintf(".map(|m| &mut m.%s)", rustFieldName))
 			}
 		}
-		if field.Typez == api.TypezMessage {
-			if fieldMessage := m.Model.Message(field.TypezID); fieldMessage != nil {
+		if field.Typez() == api.TypezMessage {
+			if fieldMessage := m.Model.Message(field.TypezID()); fieldMessage != nil {
 				message = fieldMessage
 			}
 		}
@@ -641,7 +641,7 @@ func (c *codec) annotateSampleInfo(si *api.SampleInfo, m *api.Method) {
 	var parameters []string
 	var formatResourceName bool
 	if rn := si.ResourceNameField; rn != nil {
-		fieldAnn := rn.Codec.(*fieldAnnotations)
+		fieldAnn := rn.Codec().(*fieldAnnotations)
 		if fieldAnn.FormattedResource != nil && len(fieldAnn.FormattedResource.FormatArgs) > 0 {
 			parameters = fieldAnn.FormattedResource.FormatArgs
 			formatResourceName = true

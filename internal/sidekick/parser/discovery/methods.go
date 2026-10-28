@@ -102,7 +102,7 @@ func makeMethod(model *api.API, parent *api.Message, doc *document, input *metho
 			return nil, err
 		}
 		requestMessage.Fields = append(requestMessage.Fields, field)
-		fieldNames[field.Name] = true
+		fieldNames[field.Name()] = true
 	}
 	binding := bindingBuilder.Build()
 
@@ -117,15 +117,15 @@ func makeMethod(model *api.API, parent *api.Message, doc *document, input *metho
 		if err != nil {
 			return nil, err
 		}
-		body := &api.Field{
-			Documentation: fmt.Sprintf("Synthetic request body field for the [%s()][%s] method.", input.Name, id[1:]),
-			Name:          name,
-			JSONName:      name,
-			ID:            fmt.Sprintf("%s.%s", requestMessage.ID, name),
-			Typez:         api.TypezMessage,
-			TypezID:       bodyID,
-			Optional:      true,
-		}
+		body := api.NewFieldBuilder().
+			WithDocumentation(fmt.Sprintf("Synthetic request body field for the [%s()][%s] method.", input.Name, id[1:])).
+			WithName(name).
+			WithJSONName(name).
+			WithID(fmt.Sprintf("%s.%s", requestMessage.ID, name)).
+			WithTypez(api.TypezMessage).
+			WithTypezID(bodyID).
+			WithOptional(true).
+			Build()
 		requestMessage.Fields = append(requestMessage.Fields, body)
 		bodyPathField = name
 		if len(signatureNames) != 0 {

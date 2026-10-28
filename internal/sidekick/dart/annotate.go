@@ -759,11 +759,11 @@ func createToStringLines(message *api.Message) []string {
 	lines := []string{}
 
 	for _, field := range message.Fields {
-		codec := field.Codec.(*fieldAnnotation)
+		codec := field.Codec().(*fieldAnnotation)
 		name := codec.Name
 
 		// Don't generate toString() entries for lists, maps, or messages.
-		if field.Repeated || field.Typez == api.TypezMessage || field.Typez == api.TypezMap {
+		if field.Repeated() || field.Typez() == api.TypezMessage || field.Typez() == api.TypezMap {
 			continue
 		}
 
@@ -776,11 +776,11 @@ func createToStringLines(message *api.Message) []string {
 
 		if codec.Required {
 			// 'name=$name',
-			lines = append(lines, fmt.Sprintf("'%s=%s',", field.JSONName, value))
+			lines = append(lines, fmt.Sprintf("'%s=%s',", field.JSONName(), value))
 		} else {
 			// if (name != null) 'name=$name',
 			lines = append(lines,
-				fmt.Sprintf("if (%s != null) '%s=%s',", name, field.JSONName, value))
+				fmt.Sprintf("if (%s != null) '%s=%s',", name, field.JSONName(), value))
 		}
 	}
 
@@ -887,18 +887,18 @@ func (annotate *annotateModel) annotateField(field *api.Field) {
 
 	var implicitPresence bool
 
-	if field.Repeated || field.Map {
+	if field.Repeated() || field.Map() {
 		// Repeated fields and maps have implicit presence (non-nullable).
 		implicitPresence = true
-	} else if field.Typez == api.TypezMessage {
+	} else if field.Typez() == api.TypezMessage {
 		// In proto3, singular message fields have explicit presence and are nullable.
 		implicitPresence = false
 	} else {
-		if field.IsOneOf {
+		if field.IsOneOf() {
 			// If this field is part of a oneof, it may or may not have a value; we
 			// translate that as nullable (explicit presence).
 			implicitPresence = false
-		} else if field.Optional {
+		} else if field.Optional() {
 			// The optional keyword makes the field have explicit presence (nullable).
 			implicitPresence = false
 		} else {
@@ -910,21 +910,21 @@ func (annotate *annotateModel) annotateField(field *api.Field) {
 	// Calculate the default field value.
 	defaultValue := ""
 	constDefault := true
-	fieldRequired := slices.Contains(field.Behavior, api.FieldBehaviorRequired)
+	fieldRequired := slices.Contains(field.Behavior(), api.FieldBehaviorRequired)
 	if implicitPresence && !fieldRequired {
 		switch {
-		case field.Repeated:
+		case field.Repeated():
 			defaultValue = "const []"
-		case field.Map:
+		case field.Map():
 			defaultValue = "const {}"
-		case field.Typez == api.TypezEnum:
+		case field.Typez() == api.TypezEnum:
 			// The default value for enums are the generated MyEnum.$default field,
 			// always set to the first value of that enum.
-			typeName := annotate.resolveEnumName(annotate.model.Enum(field.TypezID))
+			typeName := annotate.resolveEnumName(annotate.model.Enum(field.TypezID()))
 			defaultValue = fmt.Sprintf("%s.$default", typeName)
 		default:
-			defaultValue = defaultValues[field.Typez].Value
-			constDefault = defaultValues[field.Typez].IsConst
+			defaultValue = defaultValues[field.Typez()].Value
+			constDefault = defaultValues[field.Typez()].IsConst
 		}
 	}
 	var toJson string
@@ -933,10 +933,10 @@ func (annotate *annotateModel) annotateField(field *api.Field) {
 	} else {
 		toJson = createNonNullableToJson(field, annotate.model)
 	}
-	field.Codec = &fieldAnnotation{
+	field.SetAnnotations(&fieldAnnotation{
 		Name:                  fieldName(field),
 		Type:                  annotate.fieldType(field),
-		DocLines:              formatDocComments(field.Documentation, annotate.model),
+		DocLines:              formatDocComments(field.Documentation(), annotate.model),
 		Required:              implicitPresence,
 		Nullable:              !implicitPresence,
 		FieldBehaviorRequired: fieldRequired,
@@ -944,7 +944,7 @@ func (annotate *annotateModel) annotateField(field *api.Field) {
 		FromJson:              annotate.createFromJsonLine(field, implicitPresence),
 		ToJson:                toJson,
 		ConstDefault:          constDefault,
-	}
+	})
 }
 
 func (annotate *annotateModel) decoder(typez api.Typez, typeid string) string {
@@ -1083,37 +1083,37 @@ func keyEncoder(typez api.Typez, name string) (string, bool) {
 
 // canBeNull returns whether the given field can have a `null` JSON serialization.
 func canBeNull(field *api.Field) bool {
-	return !field.Repeated && canHaveNullJsonSerialization[field.TypezID]
+	return !field.Repeated() && canHaveNullJsonSerialization[field.TypezID()]
 }
 
 func lookupMap(model *api.API, f *api.Field) *api.Map {
-	if f.MapType != nil {
-		return f.MapType
+	if f.MapType() != nil {
+		return f.MapType()
 	}
 	if model != nil {
-		if m := model.Map(f.TypezID); m != nil {
+		if m := model.Map(f.TypezID()); m != nil {
 			return m
 		}
 	}
-	panic(fmt.Sprintf("unable to lookup map type %q for field %q", f.TypezID, f.ID))
+	panic(fmt.Sprintf("unable to lookup map type %q for field %q", f.TypezID(), f.ID()))
 }
 
 func (annotate *annotateModel) createFromJsonLine(field *api.Field, required bool) string {
-	data := fmt.Sprintf("json['%s']", field.JSONName)
+	data := fmt.Sprintf("json['%s']", field.JSONName())
 
 	defaultValue := "null"
 	if required {
 		switch {
-		case field.Repeated:
+		case field.Repeated():
 			defaultValue = "[]"
-		case field.Map:
+		case field.Map():
 			defaultValue = "{}"
-		case field.Typez == api.TypezEnum:
+		case field.Typez() == api.TypezEnum:
 			// 'ExecutableCode_Language.$default'
-			typeName := annotate.resolveEnumName(annotate.model.Enum(field.TypezID))
+			typeName := annotate.resolveEnumName(annotate.model.Enum(field.TypezID()))
 			defaultValue = fmt.Sprintf("%s.$default", typeName)
 		default:
-			defaultValue = defaultValues[field.Typez].Value
+			defaultValue = defaultValues[field.Typez()].Value
 		}
 	}
 
@@ -1123,57 +1123,57 @@ func (annotate *annotateModel) createFromJsonLine(field *api.Field, required boo
 	//
 	// See https://protobuf.dev/programming-guides/json/#null-value
 	if canBeNull(field) {
-		decoder := annotate.decoder(field.Typez, field.TypezID)
+		decoder := annotate.decoder(field.Typez(), field.TypezID())
 		return fmt.Sprintf("switch ((json.containsKey('%s'), json['%s'])) "+
 			"{(false,_) => %s, "+
-			"(true, Object? $1) => %s($1)}", field.JSONName, field.JSONName, defaultValue, decoder)
+			"(true, Object? $1) => %s($1)}", field.JSONName(), field.JSONName(), defaultValue, decoder)
 	}
 
 	switch {
 	// Value.NullValue is encoded as null in JSON so lists and map values must match on nullable objects.
-	case field.Repeated:
-		decoder := annotate.decoder(field.Typez, field.TypezID)
+	case field.Repeated():
+		decoder := annotate.decoder(field.Typez(), field.TypezID())
 		return fmt.Sprintf(
 			"switch (%s) { null => %s, List<Object?> $1 => [for (final i in $1) %s(i)], "+
 				"_ => throw const FormatException('\"%s\" is not a list') }",
-			data, defaultValue, decoder, field.JSONName)
-	case field.Map:
+			data, defaultValue, decoder, field.JSONName())
+	case field.Map():
 		mapType := lookupMap(annotate.model, field)
-		keyType := mapType.Key.Typez
+		keyType := mapType.Key.Typez()
 		keyDecoder := annotate.keyDecoder(keyType)
-		valueType := mapType.Value.Typez
-		valueTypeID := mapType.Value.TypezID
+		valueType := mapType.Value.Typez()
+		valueTypeID := mapType.Value.TypezID()
 		valueDecoder := annotate.decoder(valueType, valueTypeID)
 
 		return fmt.Sprintf(
 			"switch (%s) { null => %s, Map<String, Object?> $1 => {for (final e in $1.entries) %s(e.key): %s(e.value)}, "+
 				"_ => throw const FormatException('\"%s\" is not an object') }",
-			data, defaultValue, keyDecoder, valueDecoder, field.JSONName)
+			data, defaultValue, keyDecoder, valueDecoder, field.JSONName())
 	}
 
-	decoder := annotate.decoder(field.Typez, field.TypezID)
+	decoder := annotate.decoder(field.Typez(), field.TypezID())
 	return fmt.Sprintf("switch (%s) { null => %s, Object $1 => %s($1)}", data, defaultValue, decoder)
 }
 
 func createNonNullableToJson(field *api.Field, model *api.API) string {
 	name := fieldName(field)
-	jsonName := field.JSONName
+	jsonName := field.JSONName()
 
 	var rhs string
 	switch {
-	case field.Repeated:
-		if encoder, encodingRequired := encoder(field.Typez, "i"); encodingRequired {
+	case field.Repeated():
+		if encoder, encodingRequired := encoder(field.Typez(), "i"); encodingRequired {
 			rhs = fmt.Sprintf(
 				"[for (final i in %s) %s]",
 				name, encoder)
 		} else {
 			rhs = name
 		}
-	case field.Map:
+	case field.Map():
 		mapType := lookupMap(model, field)
-		keyType := mapType.Key.Typez
+		keyType := mapType.Key.Typez()
 		keyEncoder, keyEncodingRequired := keyEncoder(keyType, "e.key")
-		valueType := mapType.Value.Typez
+		valueType := mapType.Value.Typez()
 		valueEncoder, valueEncodingRequired := encoder(valueType, "e.value")
 
 		if keyEncodingRequired || valueEncodingRequired {
@@ -1184,11 +1184,11 @@ func createNonNullableToJson(field *api.Field, model *api.API) string {
 			rhs = name
 		}
 	default:
-		enc, _ := encoder(field.Typez, name)
+		enc, _ := encoder(field.Typez(), name)
 		rhs = enc
 	}
 
-	fieldRequired := slices.Contains(field.Behavior, api.FieldBehaviorRequired)
+	fieldRequired := slices.Contains(field.Behavior(), api.FieldBehaviorRequired)
 	if fieldRequired {
 		return fmt.Sprintf("'%s': %s", jsonName, rhs)
 	}
@@ -1200,7 +1200,7 @@ func createToJsonNullAwareLine(field *api.Field) string {
 	name := fieldName(field)
 
 	// Check if the type requires encoding.
-	_, required := encoder(field.Typez, name)
+	_, required := encoder(field.Typez(), name)
 	if !required {
 		return name
 	}
@@ -1208,22 +1208,22 @@ func createToJsonNullAwareLine(field *api.Field) string {
 	// For types that require encoding (like Messages or 64-bit ints),
 	// encoder appends ".toJson()" or ".toString()".
 	// Passing "name?" results in "name?.toJson()" or "name?.toString()".
-	enc, _ := encoder(field.Typez, name+"?")
+	enc, _ := encoder(field.Typez(), name+"?")
 	return enc
 }
 
 // createNullableToJson creates a JSON element expression for map literals for nullable fields.
 func createNullableToJson(field *api.Field) string {
 	name := fieldName(field)
-	jsonName := field.JSONName
+	jsonName := field.JSONName()
 
 	// Float, Double, and Bytes use function-based encoders (e.g., `encodeDouble`, `encodeBytes`),
 	// and certain fields (like `NullValue` or `Value`) can serialize to `null`.
 	// Standalone function calls are not null-aware expressions, so we cannot use Dart's null-aware
 	// map element syntax `?expression` with them. Instead, we use `if (name case final $1?)`
 	// to safely extract the value before encoding.
-	if field.Typez == api.TypezFloat || field.Typez == api.TypezDouble || field.Typez == api.TypezBytes || canBeNull(field) {
-		enc, _ := encoder(field.Typez, "$1")
+	if field.Typez() == api.TypezFloat || field.Typez() == api.TypezDouble || field.Typez() == api.TypezBytes || canBeNull(field) {
+		enc, _ := encoder(field.Typez(), "$1")
 		return fmt.Sprintf("if (%s case final $1?) '%s': %s", name, jsonName, enc)
 	}
 
@@ -1269,13 +1269,13 @@ func (annotate *annotateModel) buildQueryLines(
 	result []string, refPrefix string, couldRefPrefixBeNull bool,
 	paramPrefix string, field *api.Field,
 ) []string {
-	if field.Codec == nil {
+	if field.Codec() == nil {
 		annotate.annotateField(field)
 	}
-	codec := field.Codec.(*fieldAnnotation)
+	codec := field.Codec().(*fieldAnnotation)
 
 	ref := fmt.Sprintf("%s%s", refPrefix, fieldName(field))
-	param := fmt.Sprintf("%s%s", paramPrefix, field.JSONName)
+	param := fmt.Sprintf("%s%s", paramPrefix, field.JSONName())
 
 	var preamble string
 	if codec.Nullable {
@@ -1289,9 +1289,9 @@ func (annotate *annotateModel) buildQueryLines(
 	}
 
 	switch {
-	case field.Repeated:
+	case field.Repeated():
 		// Handle lists; these should be lists of strings or other primitives.
-		switch field.Typez {
+		switch field.Typez() {
 		case api.TypezString:
 			return append(result, fmt.Sprintf("%s: $1", preamble))
 		case api.TypezEnum:
@@ -1304,28 +1304,28 @@ func (annotate *annotateModel) buildQueryLines(
 		case api.TypezBytes:
 			return append(result, fmt.Sprintf("%s: $1.map((e) => encodeBytes(e)!)", preamble))
 		default:
-			slog.Error("unhandled list query param", "type", field.Typez)
-			return append(result, fmt.Sprintf("/* unhandled list query param type: %d */", field.Typez))
+			slog.Error("unhandled list query param", "type", field.Typez())
+			return append(result, fmt.Sprintf("/* unhandled list query param type: %d */", field.Typez()))
 		}
 
-	case field.Typez == api.TypezMap:
+	case field.Typez() == api.TypezMap:
 		// Maps are not supported.
 		slog.Error("unhandled query param", "type", "map")
-		return append(result, fmt.Sprintf("/* unhandled query param type: %d */", field.Typez))
+		return append(result, fmt.Sprintf("/* unhandled query param type: %d */", field.Typez()))
 
-	case field.Typez == api.TypezMessage:
+	case field.Typez() == api.TypezMessage:
 		deref := "."
 		if codec.Nullable {
 			deref = "?."
 		}
 
-		_, hasCustomEncoding := usesCustomEncoding[field.TypezID]
+		_, hasCustomEncoding := usesCustomEncoding[field.TypezID()]
 		if hasCustomEncoding {
 			// Example: 'fieldMask': fieldMask!.toJson()
 			return append(result, fmt.Sprintf("%s: $1.toJson()", preamble))
 		}
 
-		message := annotate.model.Message(field.TypezID)
+		message := annotate.model.Message(field.TypezID())
 		// Unroll the fields for messages.
 		for _, field := range message.Fields {
 			result = annotate.buildQueryLines(
@@ -1333,33 +1333,33 @@ func (annotate *annotateModel) buildQueryLines(
 		}
 		return result
 
-	case field.Typez == api.TypezString:
+	case field.Typez() == api.TypezString:
 		if codec.Nullable {
 			return append(result, fmt.Sprintf("'%s': ?%s", param, ref))
 		}
 		return append(result, fmt.Sprintf("%s: $1", preamble))
-	case field.Typez == api.TypezEnum:
+	case field.Typez() == api.TypezEnum:
 		if codec.Nullable {
 			return append(result, fmt.Sprintf("'%s': ?%s?.value", param, ref))
 		}
 		return append(result, fmt.Sprintf("%s: $1.value", preamble))
-	case field.Typez == api.TypezBool ||
-		field.Typez == api.TypezInt32 ||
-		field.Typez == api.TypezUint32 || field.Typez == api.TypezSint32 ||
-		field.Typez == api.TypezFixed32 || field.Typez == api.TypezSfixed32 ||
-		field.Typez == api.TypezInt64 ||
-		field.Typez == api.TypezUint64 || field.Typez == api.TypezSint64 ||
-		field.Typez == api.TypezFixed64 || field.Typez == api.TypezSfixed64 ||
-		field.Typez == api.TypezFloat || field.Typez == api.TypezDouble:
+	case field.Typez() == api.TypezBool ||
+		field.Typez() == api.TypezInt32 ||
+		field.Typez() == api.TypezUint32 || field.Typez() == api.TypezSint32 ||
+		field.Typez() == api.TypezFixed32 || field.Typez() == api.TypezSfixed32 ||
+		field.Typez() == api.TypezInt64 ||
+		field.Typez() == api.TypezUint64 || field.Typez() == api.TypezSint64 ||
+		field.Typez() == api.TypezFixed64 || field.Typez() == api.TypezSfixed64 ||
+		field.Typez() == api.TypezFloat || field.Typez() == api.TypezDouble:
 		if codec.Nullable {
 			return append(result, fmt.Sprintf("if (%s case final $1?) '%s': '${$1}'", ref, param))
 		}
 		return append(result, fmt.Sprintf("%s: '${$1}'", preamble))
-	case field.Typez == api.TypezBytes:
+	case field.Typez() == api.TypezBytes:
 		return append(result, fmt.Sprintf("%s: encodeBytes($1)!", preamble))
 	default:
-		slog.Error("unhandled query param", "type", field.Typez)
-		return append(result, fmt.Sprintf("/* unhandled query param type: %d */", field.Typez))
+		slog.Error("unhandled query param", "type", field.Typez())
+		return append(result, fmt.Sprintf("/* unhandled query param type: %d */", field.Typez()))
 	}
 }
 
@@ -1422,7 +1422,7 @@ func (annotate *annotateModel) annotateEnumValue(ev *api.EnumValue, enumValueToN
 func (annotate *annotateModel) fieldType(f *api.Field) string {
 	var out string
 
-	switch f.Typez {
+	switch f.Typez() {
 	case api.TypezBool:
 		out = "bool"
 	case api.TypezInt32, api.TypezUint32, api.TypezSint32,
@@ -1444,24 +1444,24 @@ func (annotate *annotateModel) fieldType(f *api.Field) string {
 		val := annotate.fieldType(mapType.Value)
 		out = "Map<" + key + ", " + val + ">"
 	case api.TypezMessage:
-		message := annotate.model.Message(f.TypezID)
+		message := annotate.model.Message(f.TypezID())
 		if message == nil {
-			slog.Error("unable to lookup type", "id", f.TypezID)
+			slog.Error("unable to lookup type", "id", f.TypezID())
 			return ""
 		}
 		out = annotate.resolveMessageName(message, false)
 	case api.TypezEnum:
-		e := annotate.model.Enum(f.TypezID)
+		e := annotate.model.Enum(f.TypezID())
 		if e == nil {
-			slog.Error("unable to lookup type", "id", f.TypezID)
+			slog.Error("unable to lookup type", "id", f.TypezID())
 			return ""
 		}
 		out = annotate.resolveEnumName(e)
 	default:
-		slog.Error("unhandled fieldType", "type", f.Typez, "id", f.TypezID)
+		slog.Error("unhandled fieldType", "type", f.Typez(), "id", f.TypezID())
 	}
 
-	if f.Repeated {
+	if f.Repeated() {
 		out = "List<" + out + ">"
 	}
 
@@ -1552,7 +1552,7 @@ func findExampleMethod(services []*api.Service) (*api.Service, *api.Method) {
 			return false
 		}
 		for _, f := range m.Fields {
-			if slices.Contains(f.Behavior, api.FieldBehaviorRequired) {
+			if slices.Contains(f.Behavior(), api.FieldBehaviorRequired) {
 				return true
 			}
 		}

@@ -94,16 +94,16 @@ func (c *codec) tryFieldDocLink(id string) (string, error) {
 		return "", nil
 	}
 	for _, f := range m.Fields {
-		if f.Name == fieldName {
+		if f.Name() == fieldName {
 			messageName, err := c.messageTypeName(m)
 			if err != nil {
 				return "", err
 			}
-			swiftName := camelCase(f.Name)
-			if f.Group == nil {
+			swiftName := camelCase(f.Name())
+			if f.Group() == nil {
 				return c.docLink(m.Package, fmt.Sprintf("%s/%s", messageName, swiftName)), nil
 			}
-			groupName := OneOfName(f.Group.Name)
+			groupName := OneOfName(f.Group().Name)
 			return c.docLink(m.Package, fmt.Sprintf("%s/%s/%s(_:)", messageName, groupName, swiftName)), nil
 		}
 	}

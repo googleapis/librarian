@@ -38,10 +38,10 @@ func TestBigQueryQueryFieldOverride(t *testing.T) {
 
 	newTestMsg := func(msgName string) *api.Message {
 		queryField := api.NewTestField("query").WithType(api.TypezString)
-		queryField.Codec = &fieldAnnotations{}
+		queryField.SetAnnotations(&fieldAnnotations{})
 
 		overrideField := api.NewTestField("bad_query").WithType(api.TypezString)
-		overrideField.Codec = &fieldAnnotations{}
+		overrideField.SetAnnotations(&fieldAnnotations{})
 
 		return api.NewTestMessage(msgName).
 			WithPackage("google.cloud.bigquery.v2").
@@ -109,7 +109,7 @@ func TestBigQueryFiltering(t *testing.T) {
 		if outputOnly {
 			f.WithBehavior(api.FieldBehaviorOutputOnly)
 		}
-		f.Codec = &fieldAnnotations{}
+		f.SetAnnotations(&fieldAnnotations{})
 		return f
 	}
 	newTestMsg := func(msgName string, fields []*api.Field) *api.Message {
@@ -134,7 +134,7 @@ func TestBigQueryFiltering(t *testing.T) {
 	})
 
 	model := api.NewTestAPI([]*api.Message{qrMsg, jcqMsg, jcMsg}, nil, nil)
-	builder, err := newQueryBuilder(c, model, []string{"skip", skipField.ID})
+	builder, err := newQueryBuilder(c, model, []string{"skip", skipField.ID()})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -161,11 +161,11 @@ func TestBigQuerySyntheticMessages(t *testing.T) {
 	for i := range 40 {
 		name := fmt.Sprintf("field_%02d", i)
 		f1 := api.NewTestField(name).WithType(api.TypezBool)
-		f1.Codec = &fieldAnnotations{FieldName: name, FieldType: "bool"}
+		f1.SetAnnotations(&fieldAnnotations{FieldName: name, FieldType: "bool"})
 		qrFields = append(qrFields, f1)
 		if i < 20 {
 			f2 := api.NewTestField(name).WithType(api.TypezBool)
-			f2.Codec = &fieldAnnotations{FieldName: name, FieldType: "bool"}
+			f2.SetAnnotations(&fieldAnnotations{FieldName: name, FieldType: "bool"})
 			jcFields = append(jcFields, f2)
 		}
 	}
@@ -208,17 +208,17 @@ func TestBigQuerySyntheticMessages(t *testing.T) {
 		t.Fatalf("expected 40 fields, got %d", len(syntheticMsg.Fields))
 	}
 	for _, f := range syntheticMsg.Fields {
-		wantID := fmt.Sprintf(".synthetic.google.cloud.bigquery.v2.QueryRequest.%s", f.Name)
-		if f.ID != wantID {
-			t.Errorf("expected field ID %q, got %q", wantID, f.ID)
+		wantID := fmt.Sprintf(".synthetic.google.cloud.bigquery.v2.QueryRequest.%s", f.Name())
+		if f.ID() != wantID {
+			t.Errorf("expected field ID %q, got %q", wantID, f.ID())
 		}
 	}
 
 	// Verify that synthetic messages point to crate::model_ext
 	for _, f := range syntheticMsg.Fields {
-		fAnn, ok := f.Codec.(*fieldAnnotations)
+		fAnn, ok := f.Codec().(*fieldAnnotations)
 		if !ok {
-			t.Fatalf("expected fieldAnnotations on the field %q", f.ID)
+			t.Fatalf("expected fieldAnnotations on the field %q", f.ID())
 		}
 		if fAnn.FQMessageName != "crate::model_ext::MySyntheticMessage" {
 			t.Errorf("expected FQMessageName to be 'crate::model_ext::MySyntheticMessage', got %q", fAnn.FQMessageName)
@@ -240,7 +240,7 @@ func TestBigQuerySyntheticMessages(t *testing.T) {
 	if len(msgAnn.BasicFields) != 40 {
 		t.Fatalf("expected 40 basic field annotations, got %d", len(msgAnn.BasicFields))
 	}
-	fAnn, ok := msgAnn.BasicFields[0].Codec.(*fieldAnnotations)
+	fAnn, ok := msgAnn.BasicFields[0].Codec().(*fieldAnnotations)
 	if !ok {
 		t.Fatalf("expected fieldAnnotations on the basic field")
 	}
@@ -259,9 +259,9 @@ func TestBigQuerySyntheticMessages(t *testing.T) {
 		t.Errorf("expected name 'QueryRequest', got %q", queryRequest.Name)
 	}
 	for _, f := range queryRequest.Fields {
-		wantID := fmt.Sprintf(".synthetic.google.cloud.bigquery.v2.QueryRequest.%s", f.Name)
-		if f.ID != wantID {
-			t.Errorf("expected field ID %q, got %q", wantID, f.ID)
+		wantID := fmt.Sprintf(".synthetic.google.cloud.bigquery.v2.QueryRequest.%s", f.Name())
+		if f.ID() != wantID {
+			t.Errorf("expected field ID %q, got %q", wantID, f.ID())
 		}
 	}
 	reqMsgAnn, ok := queryRequest.Codec.(*messageAnnotation)
@@ -271,7 +271,7 @@ func TestBigQuerySyntheticMessages(t *testing.T) {
 	if len(reqMsgAnn.BasicFields) != 40 {
 		t.Fatalf("expected 40 basic field annotations, got %d", len(reqMsgAnn.BasicFields))
 	}
-	reqfAnn, ok := reqMsgAnn.BasicFields[0].Codec.(*fieldAnnotations)
+	reqfAnn, ok := reqMsgAnn.BasicFields[0].Codec().(*fieldAnnotations)
 	if !ok {
 		t.Fatalf("expected fieldAnnotations on the basic field")
 	}
@@ -291,7 +291,7 @@ func TestBigQueryQueryMetadata(t *testing.T) {
 
 	newTestField := func(name string) *api.Field {
 		f := api.NewTestField(name).WithType(api.TypezString)
-		f.Codec = &fieldAnnotations{}
+		f.SetAnnotations(&fieldAnnotations{})
 		return f
 	}
 	newTestMsg := func(msgName string, fields []*api.Field) *api.Message {
@@ -314,7 +314,7 @@ func TestBigQueryQueryMetadata(t *testing.T) {
 		})
 
 		model := api.NewTestAPI([]*api.Message{gqrMsg, qrMsg}, nil, nil)
-		skipped := []string{"skip_by_name", skipByID.ID}
+		skipped := []string{"skip_by_name", skipByID.ID()}
 
 		cqm, err := newCompleteQueryMetadata(c, model, skipped)
 		if err != nil {
@@ -351,7 +351,7 @@ func TestBigQueryQueryMetadata(t *testing.T) {
 		})
 
 		model := api.NewTestAPI([]*api.Message{jobMsg, qrMsg}, nil, nil)
-		skipped := []string{"skip_by_name", skipByID.ID}
+		skipped := []string{"skip_by_name", skipByID.ID()}
 
 		qm, err := newQueryMetadata(c, model, skipped)
 		if err != nil {

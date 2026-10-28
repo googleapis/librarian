@@ -48,15 +48,15 @@ func CrossReference(model *API) error {
 	}
 	for m := range model.AllMessages() {
 		for _, f := range m.Fields {
-			f.Parent = m
+			f.parent = m
 			if err := crossReferenceField(model, f); err != nil {
 				return err
 			}
 		}
 		for _, o := range m.OneOfs {
 			for _, f := range o.Fields {
-				f.Group = o
-				f.Parent = m
+				f.group = o
+				f.parent = m
 			}
 		}
 	}
@@ -77,7 +77,7 @@ func CrossReference(model *API) error {
 		for _, signature := range m.Signatures {
 			signature.method = m
 			for _, name := range signature.names {
-				idx := slices.IndexFunc(input.Fields, func(f *Field) bool { return f.Name == name })
+				idx := slices.IndexFunc(input.Fields, func(f *Field) bool { return f.name == name })
 				if idx == -1 {
 					return fmt.Errorf("cannot find field %s in method signature for method %s", name, m.ID)
 				}
@@ -349,16 +349,16 @@ func sortOneOfFieldForExamples(f1, f2 *Field) int {
 			return 1
 		}
 	}
-	if v := compare(f1.Deprecated, f2.Deprecated); v != 0 {
+	if v := compare(f1.deprecated, f2.deprecated); v != 0 {
 		return v
 	}
-	if v := compare(f1.Map, f2.Map); v != 0 {
+	if v := compare(f1.mapz, f2.mapz); v != 0 {
 		return v
 	}
-	if v := compare(f1.Repeated, f2.Repeated); v != 0 {
+	if v := compare(f1.repeated, f2.repeated); v != 0 {
 		return v
 	}
-	return compare(f1.MessageType != nil, f2.MessageType != nil)
+	return compare(f1.messageType != nil, f2.messageType != nil)
 }
 
 func enrichMethodSamples(m *Method) {
@@ -403,21 +403,21 @@ func enrichWithResourceNamePattern(f *Field, m *Message, model *API) {
 	var resource *Resource
 	truncateChild := false
 
-	if f.ResourceReference != nil {
+	if f.resourceReference != nil {
 		// The field is a resource reference.
-		if res := model.Resource(f.ResourceReference.Type()); res != nil {
+		if res := model.Resource(f.resourceReference.Type()); res != nil {
 			resource = res
-		} else if res := model.Resource(f.ResourceReference.ChildType()); res != nil {
+		} else if res := model.Resource(f.resourceReference.ChildType()); res != nil {
 			resource = res
 			truncateChild = true
 		}
-	} else if f.Name == StandardFieldNameForResourceRef {
+	} else if f.name == StandardFieldNameForResourceRef {
 		// The field is the `name` field.
 		resource = m.Resource
 	}
 
 	if resource != nil && len(resource.Patterns()) > 0 {
-		f.ResourceNamePattern = toResourceNamePattern(resource.Patterns()[0], truncateChild)
+		f.resourceNamePattern = toResourceNamePattern(resource.Patterns()[0], truncateChild)
 	}
 }
 
@@ -626,16 +626,16 @@ func aipStandardUpdateInfo(m *Method) *SampleInfo {
 	}
 	var updateMaskField *Field
 	for _, f := range m.InputType.Fields {
-		if f.Name == StandardFieldNameForUpdateMask && f.TypezID == ".google.protobuf.FieldMask" {
+		if f.name == StandardFieldNameForUpdateMask && f.typezID == ".google.protobuf.FieldMask" {
 			updateMaskField = f
 			break
 		}
 	}
 
 	var resourceNameField *Field
-	if resourceField.MessageType != nil {
-		for _, f := range resourceField.MessageType.Fields {
-			if f.Name == StandardFieldNameForResourceRef {
+	if resourceField.messageType != nil {
+		for _, f := range resourceField.messageType.Fields {
+			if f.name == StandardFieldNameForResourceRef {
 				resourceNameField = f
 				break
 			}
@@ -669,10 +669,10 @@ func aipStandardListInfo(m *Method) *SampleInfo {
 	}
 
 	pageableItem := m.OutputType.Pagination.PageableItem
-	if pageableItem == nil || pageableItem.MessageType == nil || pageableItem.MessageType.Resource == nil {
+	if pageableItem == nil || pageableItem.messageType == nil || pageableItem.messageType.Resource == nil {
 		return nil
 	}
-	resourceType := pageableItem.MessageType.Resource.Type()
+	resourceType := pageableItem.messageType.Resource.Type()
 
 	parentField := findBestParentFieldByType(m.InputType, resourceType)
 
@@ -689,18 +689,18 @@ func aipStandardListInfo(m *Method) *SampleInfo {
 func findBestResourceFieldByType(message *Message, model *API, targetType string) *Field {
 	var bestField *Field
 	for _, field := range message.Fields {
-		if field.ResourceReference == nil {
+		if field.resourceReference == nil {
 			continue
 		}
-		if field.ResourceReference.Type() == GenericResourceType && field.Name == StandardFieldNameForResourceRef {
+		if field.resourceReference.Type() == GenericResourceType && field.name == StandardFieldNameForResourceRef {
 			return field
 		}
-		resource := model.Resource(field.ResourceReference.Type())
+		resource := model.Resource(field.resourceReference.Type())
 		if resource == nil {
 			continue
 		}
 		if resource.Type() == targetType {
-			if field.Name == StandardFieldNameForResourceRef {
+			if field.name == StandardFieldNameForResourceRef {
 				return field
 			}
 			bestField = field
@@ -712,19 +712,19 @@ func findBestResourceFieldByType(message *Message, model *API, targetType string
 func findBestResourceFieldBySingular(message *Message, model *API, targetSingular string) *Field {
 	var bestField *Field
 	for _, field := range message.Fields {
-		if field.ResourceReference == nil {
+		if field.resourceReference == nil {
 			continue
 		}
-		if field.ResourceReference.Type() == GenericResourceType && field.Name == StandardFieldNameForResourceRef {
+		if field.resourceReference.Type() == GenericResourceType && field.name == StandardFieldNameForResourceRef {
 			return field
 		}
-		resource := model.Resource(field.ResourceReference.Type())
+		resource := model.Resource(field.resourceReference.Type())
 		if resource == nil {
 			continue
 		}
 		actualSingular := strings.ToLower(resource.Singular())
 		matchesTarget := actualSingular == targetSingular
-		if field.Name == StandardFieldNameForResourceRef && (matchesTarget || actualSingular == "") {
+		if field.name == StandardFieldNameForResourceRef && (matchesTarget || actualSingular == "") {
 			return field
 		}
 		if matchesTarget {
@@ -737,10 +737,10 @@ func findBestResourceFieldBySingular(message *Message, model *API, targetSingula
 func findBestParentFieldByType(message *Message, childType string) *Field {
 	var bestField *Field
 	for _, field := range message.Fields {
-		if field.Name == StandardFieldNameForParentResourceRef {
+		if field.name == StandardFieldNameForParentResourceRef {
 			return field
 		}
-		if field.ResourceReference != nil && field.ResourceReference.ChildType() == childType {
+		if field.resourceReference != nil && field.resourceReference.ChildType() == childType {
 			bestField = field
 		}
 	}
@@ -755,10 +755,10 @@ func findBodyField(message *Message, pathInfo *PathInfo, targetTypeID string, si
 	}
 
 	for _, f := range message.Fields {
-		if f.Name == bodyFieldPath {
+		if f.name == bodyFieldPath {
 			return f
 		}
-		if f.Name == singular && f.TypezID == targetTypeID {
+		if f.name == singular && f.typezID == targetTypeID {
 			if resourceField == nil {
 				resourceField = f
 			}
@@ -770,7 +770,7 @@ func findBodyField(message *Message, pathInfo *PathInfo, targetTypeID string, si
 func findResourceIDField(message *Message, singular string) *Field {
 	expectedIDName := fmt.Sprintf("%s_id", singular)
 	for _, f := range message.Fields {
-		if f.Name == expectedIDName && f.Typez == TypezString {
+		if f.name == expectedIDName && f.typez == TypezString {
 			return f
 		}
 	}
@@ -790,25 +790,25 @@ func standardMethodOutputResource(m *Method) *Resource {
 }
 
 func crossReferenceField(model *API, f *Field) error {
-	switch f.Typez {
+	switch f.typez {
 	case TypezMessage:
-		t := model.Message(f.TypezID)
+		t := model.Message(f.typezID)
 		if t == nil {
-			return fmt.Errorf("unknown message type %s for field %s", f.TypezID, f.ID)
+			return fmt.Errorf("unknown message type %s for field %s", f.typezID, f.id)
 		}
-		f.MessageType = t
+		f.messageType = t
 	case TypezEnum:
-		t := model.Enum(f.TypezID)
+		t := model.Enum(f.typezID)
 		if t == nil {
-			return fmt.Errorf("unknown enum type %s for field %s", f.TypezID, f.ID)
+			return fmt.Errorf("unknown enum type %s for field %s", f.typezID, f.id)
 		}
-		f.EnumType = t
+		f.enumType = t
 	case TypezMap:
-		t := model.Map(f.TypezID)
+		t := model.Map(f.typezID)
 		if t == nil {
-			return fmt.Errorf("unknown map type %s for field %s", f.TypezID, f.ID)
+			return fmt.Errorf("unknown map type %s for field %s", f.typezID, f.id)
 		}
-		f.MapType = t
+		f.mapType = t
 	}
 	return nil
 }

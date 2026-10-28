@@ -72,11 +72,11 @@ func skipModelElementsImpl(model *API, skip func(id string) bool, skipField func
 	for service := range model.AllServices() {
 		service.Methods = slices.DeleteFunc(service.Methods, func(x *Method) bool { return skip(x.ID) })
 		for _, method := range service.Methods {
-			if method.Pagination != nil && skipField(method.Pagination.ID) {
-				return fmt.Errorf("unsupported: skipping field %s which enables pagination", method.Pagination.ID)
+			if method.Pagination != nil && skipField(method.Pagination.id) {
+				return fmt.Errorf("unsupported: skipping field %s which enables pagination", method.Pagination.id)
 			}
 			idx := slices.IndexFunc(method.Signatures, func(s *MethodSignature) bool {
-				return slices.ContainsFunc(s.Fields(), func(f *Field) bool { return skipField(f.ID) })
+				return slices.ContainsFunc(s.Fields(), func(f *Field) bool { return skipField(f.id) })
 			})
 			if idx != -1 {
 				return fmt.Errorf("unsupported: skipping field that is in one of the method signatures for method: %s", method.ID)
@@ -97,10 +97,10 @@ func skipMessageElements(message *Message, skip func(id string) bool, skipField 
 	message.Enums = slices.DeleteFunc(message.Enums, func(x *Enum) bool { return skip(x.id) })
 	previous := slices.Clone(message.Fields)
 	skipped := func(x *Field) bool {
-		if skipField(x.ID) {
+		if skipField(x.id) {
 			return true
 		}
-		if x.Group != nil && skipField(x.Group.ID) {
+		if x.group != nil && skipField(x.group.ID) {
 			return true
 		}
 		return false
@@ -109,7 +109,7 @@ func skipMessageElements(message *Message, skip func(id string) bool, skipField 
 	message.SkippedFields = slices.DeleteFunc(previous, func(x *Field) bool { return !skipped(x) })
 	for _, oneof := range message.OneOfs {
 		oneof.Fields = slices.DeleteFunc(oneof.Fields, func(x *Field) bool {
-			return skipField(x.ID)
+			return skipField(x.id)
 		})
 		if len(oneof.Fields) > 0 {
 			oneof.ExampleField = slices.MaxFunc(oneof.Fields, sortOneOfFieldForExamples)

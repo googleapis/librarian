@@ -150,7 +150,7 @@ func qualifiedName(m *api.Message) string {
 }
 
 func fieldName(field *api.Field) string {
-	name := strcase.ToLowerCamel(field.Name)
+	name := strcase.ToLowerCamel(field.Name())
 	if _, hasConflict := reservedNames[name]; hasConflict {
 		name = name + deconflictChar
 	}

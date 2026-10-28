@@ -132,8 +132,8 @@ func TestPathBinding_Fluent(t *testing.T) {
 
 func TestField_WithJSONName(t *testing.T) {
 	f := api.NewTestField("foo_bar").WithJSONName("customName")
-	if f.JSONName != "customName" {
-		t.Errorf("expected JSONName 'customName', got %q", f.JSONName)
+	if f.JSONName() != "customName" {
+		t.Errorf("expected JSONName 'customName', got %q", f.JSONName())
 	}
 }
 
@@ -153,7 +153,7 @@ func TestOneOf_WithDocumentation(t *testing.T) {
 
 func TestField_WithRecursive(t *testing.T) {
 	f := api.NewTestField("child").WithRecursive()
-	if !f.Recursive {
+	if !f.Recursive() {
 		t.Errorf("expected Recursive to be true")
 	}
 }
@@ -249,18 +249,18 @@ func TestNewTestMap(t *testing.T) {
 	got := api.NewTestMap("TestMap", api.TypezString, api.TypezInt32)
 	want := &api.Map{
 		ID: ".test.TestMap",
-		Key: &api.Field{
-			Name:     "key",
-			JSONName: "key",
-			ID:       ".test.TestMap.key",
-			Typez:    api.TypezString,
-		},
-		Value: &api.Field{
-			Name:     "value",
-			JSONName: "value",
-			ID:       ".test.TestMap.value",
-			Typez:    api.TypezInt32,
-		},
+		Key: api.NewFieldBuilder().
+			WithName("key").
+			WithJSONName("key").
+			WithID(".test.TestMap.key").
+			WithTypez(api.TypezString).
+			Build(),
+		Value: api.NewFieldBuilder().
+			WithName("value").
+			WithJSONName("value").
+			WithID(".test.TestMap.value").
+			WithTypez(api.TypezInt32).
+			Build(),
 	}
 	apitest.CheckMap(t, got, want)
 }
@@ -272,20 +272,20 @@ func TestNewTestMapWithFields(t *testing.T) {
 	got := api.NewTestMapWithFields(".custom.package.MyMap", key, val)
 	want := &api.Map{
 		ID: ".custom.package.MyMap",
-		Key: &api.Field{
-			Name:     "custom_key",
-			JSONName: "customKey",
-			ID:       ".custom.package.MyMap.custom_key",
-			Typez:    api.TypezString,
-		},
-		Value: &api.Field{
-			Name:        "custom_val",
-			JSONName:    "customVal",
-			ID:          ".custom.package.MyMap.custom_val",
-			Typez:       api.TypezMessage,
-			TypezID:     valMsg.ID,
-			MessageType: valMsg,
-		},
+		Key: api.NewFieldBuilder().
+			WithName("custom_key").
+			WithJSONName("customKey").
+			WithID(".custom.package.MyMap.custom_key").
+			WithTypez(api.TypezString).
+			Build(),
+		Value: api.NewFieldBuilder().
+			WithName("custom_val").
+			WithJSONName("customVal").
+			WithID(".custom.package.MyMap.custom_val").
+			WithTypez(api.TypezMessage).
+			WithTypezID(valMsg.ID).
+			WithMessageType(valMsg).
+			Build(),
 	}
 	apitest.CheckMap(t, got, want)
 }
@@ -296,50 +296,50 @@ func TestMap_WithID(t *testing.T) {
 	if got, want := m.ID, ".new.package.TestMap"; got != want {
 		t.Errorf("m.ID = %q, want %q", got, want)
 	}
-	if got, want := m.Key.ID, ".new.package.TestMap.key"; got != want {
-		t.Errorf("m.Key.ID = %q, want %q", got, want)
+	if got, want := m.Key.ID(), ".new.package.TestMap.key"; got != want {
+		t.Errorf("m.Key.ID() = %q, want %q", got, want)
 	}
-	if got, want := m.Value.ID, ".new.package.TestMap.value"; got != want {
-		t.Errorf("m.Value.ID = %q, want %q", got, want)
+	if got, want := m.Value.ID(), ".new.package.TestMap.value"; got != want {
+		t.Errorf("m.Value.ID() = %q, want %q", got, want)
 	}
 }
 
 func TestField_WithMap(t *testing.T) {
 	f := api.NewTestField("test_field").WithRepeated().WithOptional().WithMap()
-	if got, want := f.Typez, api.TypezMap; got != want {
-		t.Errorf("f.Typez = %v, want %v", got, want)
+	if got, want := f.Typez(), api.TypezMap; got != want {
+		t.Errorf("f.Typez() = %v, want %v", got, want)
 	}
-	if !f.Map {
-		t.Errorf("f.Map = %v, want true", f.Map)
+	if !f.Map() {
+		t.Errorf("f.Map() = %v, want true", f.Map())
 	}
-	if f.Repeated {
-		t.Errorf("f.Repeated = %v, want false", f.Repeated)
+	if f.Repeated() {
+		t.Errorf("f.Repeated() = %v, want false", f.Repeated())
 	}
-	if f.Optional {
-		t.Errorf("f.Optional = %v, want false", f.Optional)
+	if f.Optional() {
+		t.Errorf("f.Optional() = %v, want false", f.Optional())
 	}
 }
 
 func TestField_WithMapType(t *testing.T) {
 	m := api.NewTestMap("TestMap", api.TypezString, api.TypezInt32)
 	f := api.NewTestField("test_field").WithRepeated().WithOptional().WithMapType(m)
-	if got := f.MapType; got != m {
-		t.Errorf("f.MapType = %v, want %v", got, m)
+	if got := f.MapType(); got != m {
+		t.Errorf("f.MapType() = %v, want %v", got, m)
 	}
-	if got, want := f.Typez, api.TypezMap; got != want {
-		t.Errorf("f.Typez = %v, want %v", got, want)
+	if got, want := f.Typez(), api.TypezMap; got != want {
+		t.Errorf("f.Typez() = %v, want %v", got, want)
 	}
-	if !f.Map {
-		t.Errorf("f.Map = %v, want true", f.Map)
+	if !f.Map() {
+		t.Errorf("f.Map() = %v, want true", f.Map())
 	}
-	if f.Repeated {
-		t.Errorf("f.Repeated = %v, want false", f.Repeated)
+	if f.Repeated() {
+		t.Errorf("f.Repeated() = %v, want false", f.Repeated())
 	}
-	if f.Optional {
-		t.Errorf("f.Optional = %v, want false", f.Optional)
+	if f.Optional() {
+		t.Errorf("f.Optional() = %v, want false", f.Optional())
 	}
-	if got, want := f.TypezID, m.ID; got != want {
-		t.Errorf("f.TypezID = %q, want %q", got, want)
+	if got, want := f.TypezID(), m.ID; got != want {
+		t.Errorf("f.TypezID() = %q, want %q", got, want)
 	}
 }
 
@@ -422,8 +422,8 @@ func TestMethod_FluentSetters(t *testing.T) {
 	if len(m.AutoPopulated) != 1 || m.AutoPopulated[0] != reqID {
 		t.Errorf("m.AutoPopulated = %v, want [%v]", m.AutoPopulated, reqID)
 	}
-	if !reqID.AutoPopulated {
-		t.Errorf("reqID.AutoPopulated = false, want true")
+	if !reqID.AutoPopulated() {
+		t.Errorf("reqID.AutoPopulated() = false, want true")
 	}
 }
 
@@ -435,20 +435,20 @@ func TestField_FluentSetters(t *testing.T) {
 		WithAutoPopulated().
 		WithResourceNamePattern(pattern)
 
-	if f.EnumType != enum {
-		t.Errorf("f.EnumType = %v, want %v", f.EnumType, enum)
+	if f.EnumType() != enum {
+		t.Errorf("f.EnumType() = %v, want %v", f.EnumType(), enum)
 	}
-	if f.Typez != api.TypezEnum {
-		t.Errorf("f.Typez = %v, want %v", f.Typez, api.TypezEnum)
+	if f.Typez() != api.TypezEnum {
+		t.Errorf("f.Typez() = %v, want %v", f.Typez(), api.TypezEnum)
 	}
-	if got, want := f.TypezID, enum.ID(); got != want {
-		t.Errorf("f.TypezID = %q, want %q", got, want)
+	if got, want := f.TypezID(), enum.ID(); got != want {
+		t.Errorf("f.TypezID() = %q, want %q", got, want)
 	}
-	if !f.AutoPopulated {
-		t.Errorf("f.AutoPopulated = false, want true")
+	if !f.AutoPopulated() {
+		t.Errorf("f.AutoPopulated() = false, want true")
 	}
-	if f.ResourceNamePattern != pattern {
-		t.Errorf("f.ResourceNamePattern = %v, want %v", f.ResourceNamePattern, pattern)
+	if f.ResourceNamePattern() != pattern {
+		t.Errorf("f.ResourceNamePattern() = %v, want %v", f.ResourceNamePattern(), pattern)
 	}
 }
 
@@ -502,7 +502,7 @@ func TestMethodSignature_Builders(t *testing.T) {
 	if diff := cmp.Diff([]string{"name", "parent"}, sig.Names()); diff != "" {
 		t.Errorf("mismatch in Names (-want +got):\n%s", diff)
 	}
-	if diff := cmp.Diff([]*api.Field{f1, f2}, sig.Fields()); diff != "" {
+	if diff := cmp.Diff([]*api.Field{f1, f2}, sig.Fields(), cmp.AllowUnexported(api.Field{})); diff != "" {
 		t.Errorf("mismatch in Fields (-want +got):\n%s", diff)
 	}
 	if sig.Method() != nil {
@@ -516,7 +516,7 @@ func TestMethodSignature_Builders(t *testing.T) {
 	if diff := cmp.Diff([]string{"name"}, built.Names()); diff != "" {
 		t.Errorf("mismatch in built.Names (-want +got):\n%s", diff)
 	}
-	if diff := cmp.Diff([]*api.Field{f1}, built.Fields()); diff != "" {
+	if diff := cmp.Diff([]*api.Field{f1}, built.Fields(), cmp.AllowUnexported(api.Field{})); diff != "" {
 		t.Errorf("mismatch in built.Fields (-want +got):\n%s", diff)
 	}
 }
@@ -815,5 +815,129 @@ func TestEnum_Builder(t *testing.T) {
 	}
 	if enum.Codec() != "enum-codec" {
 		t.Errorf("enum.Codec() = %v, want %q", enum.Codec(), "enum-codec")
+	}
+}
+
+func TestField_Builder(t *testing.T) {
+	parent := api.NewTestMessage("Parent")
+	msgType := api.NewTestMessage("Child")
+	enumType := api.NewTestEnum("Status")
+	group := api.NewTestOneOf("choice")
+	rr := api.NewResourceReferenceBuilder().WithType("test.googleapis.com/Book").Build()
+	rnp := api.NewTestResourceNamePattern(api.NewResourceNameSegment("books", "book"))
+
+	f := api.NewFieldBuilder().
+		WithName("my_field").
+		WithID(".test.Parent.my_field").
+		WithDocumentation("Field docs").
+		WithJSONName("myField").
+		WithDeprecated(true).
+		WithTypez(api.TypezMessage).
+		WithTypezID(".test.Child").
+		WithOptional(true).
+		WithProto2Optional(true).
+		WithRepeated(true).
+		WithMap(true).
+		WithIsOneOf(true).
+		WithAutoPopulated(true).
+		WithSkipProtoConversion(true).
+		WithRecursive(true).
+		WithBehavior(api.FieldBehaviorRequired, api.FieldBehaviorOutputOnly).
+		WithGroup(group).
+		WithMessageType(msgType).
+		WithEnumType(enumType).
+		WithParent(parent).
+		WithResourceReference(rr).
+		WithResourceNamePattern(rnp).
+		Build()
+	f.SetAnnotations("field-codec")
+
+	if f.Name() != "my_field" {
+		t.Errorf("f.Name() = %q, want %q", f.Name(), "my_field")
+	}
+	if f.ID() != ".test.Parent.my_field" {
+		t.Errorf("f.ID() = %q, want %q", f.ID(), ".test.Parent.my_field")
+	}
+	if f.Documentation() != "Field docs" {
+		t.Errorf("f.Documentation() = %q, want %q", f.Documentation(), "Field docs")
+	}
+	if f.JSONName() != "myField" {
+		t.Errorf("f.JSONName() = %q, want %q", f.JSONName(), "myField")
+	}
+	if !f.Deprecated() {
+		t.Errorf("f.Deprecated() = false, want true")
+	}
+	if f.Typez() != api.TypezMessage {
+		t.Errorf("f.Typez() = %v, want %v", f.Typez(), api.TypezMessage)
+	}
+	if f.TypezID() != ".test.Child" {
+		t.Errorf("f.TypezID() = %q, want %q", f.TypezID(), ".test.Child")
+	}
+	if !f.Optional() {
+		t.Errorf("f.Optional() = false, want true")
+	}
+	if !f.Proto2Optional() {
+		t.Errorf("f.Proto2Optional() = false, want true")
+	}
+	if !f.Repeated() {
+		t.Errorf("f.Repeated() = false, want true")
+	}
+	if !f.Map() {
+		t.Errorf("f.Map() = false, want true")
+	}
+	if !f.IsOneOf() {
+		t.Errorf("f.IsOneOf() = false, want true")
+	}
+	if !f.AutoPopulated() {
+		t.Errorf("f.AutoPopulated() = false, want true")
+	}
+	if !f.SkipProtoConversion() {
+		t.Errorf("f.SkipProtoConversion() = false, want true")
+	}
+	if !f.Recursive() {
+		t.Errorf("f.Recursive() = false, want true")
+	}
+	if len(f.Behavior()) != 2 {
+		t.Errorf("f.Behavior() = %v, want 2 elements", f.Behavior())
+	}
+	if f.Group() != group {
+		t.Errorf("f.Group() = %v, want %v", f.Group(), group)
+	}
+	if f.MessageType() != msgType {
+		t.Errorf("f.MessageType() = %v, want %v", f.MessageType(), msgType)
+	}
+	if f.EnumType() != enumType {
+		t.Errorf("f.EnumType() = %v, want %v", f.EnumType(), enumType)
+	}
+	if f.Parent() != parent {
+		t.Errorf("f.Parent() = %v, want %v", f.Parent(), parent)
+	}
+	if f.ResourceReference() != rr {
+		t.Errorf("f.ResourceReference() = %v, want %v", f.ResourceReference(), rr)
+	}
+	if f.ResourceNamePattern() != rnp {
+		t.Errorf("f.ResourceNamePattern() = %v, want %v", f.ResourceNamePattern(), rnp)
+	}
+	if f.Codec() != "field-codec" {
+		t.Errorf("f.Codec() = %v, want %q", f.Codec(), "field-codec")
+	}
+
+	cloned := api.NewFieldBuilderFrom(f).WithID(".synthetic" + f.ID()).Build()
+	if cloned.ID() != ".synthetic.test.Parent.my_field" {
+		t.Errorf("cloned.ID() = %q, want %q", cloned.ID(), ".synthetic.test.Parent.my_field")
+	}
+	if cloned.Name() != f.Name() {
+		t.Errorf("cloned.Name() = %q, want %q", cloned.Name(), f.Name())
+	}
+
+	f2 := api.NewFieldBuilder().WithName("other").WithID(".test.Msg.other").Build()
+	if api.MarkSkipProtoConversionIfAllowed(f2, ".test.Msg.other", []string{".test.Msg.unrelated"}) {
+		t.Errorf("MarkSkipProtoConversionIfAllowed returned true for unrelated field")
+	}
+	if !api.MarkSkipProtoConversionIfAllowed(f2, ".test.Msg.other", []string{"test.Msg.other"}) {
+		t.Errorf("MarkSkipProtoConversionIfAllowed returned false for matching field")
+	}
+	if !f2.SkipProtoConversion() {
+		t.Errorf("f2.SkipProtoConversion() = false, want true")
 	}
 }

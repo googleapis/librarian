@@ -43,16 +43,16 @@ func makeInlineObjectField(model *api.API, parent *api.Message, name string, inp
 	parent.Messages = append(parent.Messages, message)
 	model.AddMessage(message)
 
-	field := &api.Field{
-		Name:          name,
-		JSONName:      name,
-		ID:            id,
-		Documentation: description,
-		Deprecated:    input.Deprecated,
-		Optional:      optional,
-		Repeated:      repeated,
-		Typez:         api.TypezMessage,
-		TypezID:       id,
-	}
+	field := api.NewFieldBuilder().
+		WithName(name).
+		WithJSONName(name).
+		WithID(id).
+		WithDocumentation(description).
+		WithDeprecated(input.Deprecated).
+		WithOptional(optional).
+		WithRepeated(repeated).
+		WithTypez(api.TypezMessage).
+		WithTypezID(id).
+		Build()
 	return field, nil
 }

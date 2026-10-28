@@ -102,18 +102,18 @@ func TestAnnotateLROAnyFields_OnlyOperationAnyFields(t *testing.T) {
 			t.Fatalf("message %q not found in the test model", id)
 		}
 		for _, field := range message.Fields {
-			annotations, ok := field.Codec.(*fieldAnnotations)
+			annotations, ok := field.Codec().(*fieldAnnotations)
 			if !ok {
-				t.Fatalf("field %q of %q is missing its Swift annotations", field.Name, id)
+				t.Fatalf("field %q of %q is missing its Swift annotations", field.Name(), id)
 			}
 			if annotations.LROAnyConverter == "" {
 				continue
 			}
 			if annotations.LROAnyConverter != "StorageControlLROAnyConverter" {
 				t.Errorf("field %q of %q names converter %q, want %q",
-					field.Name, id, annotations.LROAnyConverter, "StorageControlLROAnyConverter")
+					field.Name(), id, annotations.LROAnyConverter, "StorageControlLROAnyConverter")
 			}
-			got = append(got, fmt.Sprintf("%s.%s", message.Name, field.Name))
+			got = append(got, fmt.Sprintf("%s.%s", message.Name, field.Name()))
 		}
 	}
 	want := []string{"Operation.metadata", "Operation.response"}

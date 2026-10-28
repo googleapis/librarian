@@ -110,15 +110,15 @@ func (a *fieldAnnotations) MessageNameInExamples() string {
 		ma, _ := a.MessageType.Codec.(*messageAnnotation)
 		return ma.Name
 	}
-	if a.ValueField != nil && a.ValueField.MessageType != nil {
-		ma, _ := a.ValueField.MessageType.Codec.(*messageAnnotation)
+	if a.ValueField != nil && a.ValueField.MessageType() != nil {
+		ma, _ := a.ValueField.MessageType().Codec.(*messageAnnotation)
 		return ma.Name
 	}
 	return ""
 }
 
 func (c *codec) primitiveSerdeAs(field *api.Field) string {
-	switch field.Typez {
+	switch field.Typez() {
 	case api.TypezInt32, api.TypezSfixed32, api.TypezSint32:
 		return "wkt::internal::I32"
 	case api.TypezInt64, api.TypezSfixed64, api.TypezSint64:
@@ -142,21 +142,21 @@ func (c *codec) primitiveSerdeAs(field *api.Field) string {
 }
 
 func (c *codec) mapKeySerdeAs(field *api.Field) string {
-	if field.Typez == api.TypezBool {
+	if field.Typez() == api.TypezBool {
 		return "serde_with::DisplayFromStr"
 	}
 	return c.primitiveSerdeAs(field)
 }
 
 func (c *codec) mapValueSerdeAs(field *api.Field) string {
-	if field.Typez == api.TypezMessage {
+	if field.Typez() == api.TypezMessage {
 		return c.messageFieldSerdeAs(field)
 	}
 	return c.primitiveSerdeAs(field)
 }
 
 func (c *codec) messageFieldSerdeAs(field *api.Field) string {
-	switch field.TypezID {
+	switch field.TypezID() {
 	case ".google.protobuf.BytesValue":
 		if c.bytesUseUrlSafeAlphabet {
 			return "serde_with::base64::Base64<serde_with::base64::UrlSafe>"
@@ -186,7 +186,7 @@ func (c *codec) annotateField(field *api.Field, message *api.Message, model *api
 	if err != nil {
 		return nil, err
 	}
-	docLines, err := c.formatDocComments(field.Documentation, field.ID, model, field.Scopes())
+	docLines, err := c.formatDocComments(field.Documentation(), field.ID(), model, field.Scopes())
 	if err != nil {
 		return nil, err
 	}
@@ -204,45 +204,45 @@ func (c *codec) annotateField(field *api.Field, message *api.Message, model *api
 		SetterName:            toSnakeNoMangling(fieldName),
 		FQMessageName:         fqMessageName,
 		BranchName:            toPascal(fieldName),
-		ProstBranchName:       toProstPascal(field.Name),
+		ProstBranchName:       toProstPascal(field.Name()),
 		DocLines:              docLines,
 		FieldType:             fieldType,
 		PrimitiveFieldType:    primitiveFieldType,
 		AddQueryParameter:     c.addQueryParameter(field),
 		SerdeAs:               c.primitiveSerdeAs(field),
-		SkipIfIsDefault:       field.Typez != api.TypezString && field.Typez != api.TypezBytes,
-		IsWktValue:            field.Typez == api.TypezMessage && field.TypezID == ".google.protobuf.Value",
-		IsWktNullValue:        field.Typez == api.TypezEnum && field.TypezID == ".google.protobuf.NullValue",
+		SkipIfIsDefault:       field.Typez() != api.TypezString && field.Typez() != api.TypezBytes,
+		IsWktValue:            field.Typez() == api.TypezMessage && field.TypezID() == ".google.protobuf.Value",
+		IsWktNullValue:        field.Typez() == api.TypezEnum && field.TypezID() == ".google.protobuf.NullValue",
 		GenerateSetterSamples: c.generateSetterSamples,
 	}
-	if field.Recursive || (field.Typez == api.TypezMessage && field.IsOneOf) {
+	if field.Recursive() || (field.Typez() == api.TypezMessage && field.IsOneOf()) {
 		ann.IsBoxed = true
 	}
 	ann.MapToBoxed = mapToBoxed(field, message, model)
-	field.Codec = ann
-	switch field.Typez {
+	field.SetAnnotations(ann)
+	switch field.Typez() {
 	case api.TypezMap:
 		if err := c.annotateMapField(field, ann, message, model); err != nil {
 			return nil, err
 		}
 	case api.TypezMessage:
 		ann.SerdeAs = c.messageFieldSerdeAs(field)
-		ann.MessageType = field.MessageType
+		ann.MessageType = field.MessageType()
 	}
-	if field.Group != nil {
-		ann.OtherFieldsInGroup = language.FilterSlice(field.Group.Fields, func(f *api.Field) bool { return field != f })
+	if field.Group() != nil {
+		ann.OtherFieldsInGroup = language.FilterSlice(field.Group().Fields, func(f *api.Field) bool { return field != f })
 	}
-	ann.FieldTypeIsParentType = (field.MessageType == message || // Single or repeated field whose type is the same as the containing type.
+	ann.FieldTypeIsParentType = (field.MessageType() == message || // Single or repeated field whose type is the same as the containing type.
 		// Map field whose value type is the same as the containing type.
-		(ann.ValueField != nil && ann.ValueField.MessageType == message))
+		(ann.ValueField != nil && ann.ValueField.MessageType() == message))
 	if !ann.FieldTypeIsParentType {
 		parentRustName := unqualifiedRustName(fqMessageName)
 		var isNameConflict bool
 		var targetType *api.Message
-		if ann.ValueField != nil && ann.ValueField.MessageType != nil {
-			targetType = ann.ValueField.MessageType
+		if ann.ValueField != nil && ann.ValueField.MessageType() != nil {
+			targetType = ann.ValueField.MessageType()
 		} else {
-			targetType = field.MessageType
+			targetType = field.MessageType()
 		}
 
 		if targetType != nil {
@@ -264,11 +264,11 @@ func (c *codec) annotateField(field *api.Field, message *api.Message, model *api
 		}
 	}
 
-	if field.ResourceNamePattern != nil && len(field.ResourceNamePattern.Segments()) > 0 {
+	if field.ResourceNamePattern() != nil && len(field.ResourceNamePattern().Segments()) > 0 {
 		fr := &FormattedResource{}
 		var formatString []string
 		hasLiterals := false
-		for _, s := range field.ResourceNamePattern.Segments() {
+		for _, s := range field.ResourceNamePattern().Segments() {
 			if s.Literal() != "" {
 				hasLiterals = true
 				formatString = append(formatString, s.Literal())
@@ -293,12 +293,12 @@ func (c *codec) annotateField(field *api.Field, message *api.Message, model *api
 }
 
 func (c *codec) annotateMapField(field *api.Field, ann *fieldAnnotations, m *api.Message, model *api.API) error {
-	mapType := field.MapType
+	mapType := field.MapType()
 	if mapType == nil {
-		mapType = model.Map(field.TypezID)
+		mapType = model.Map(field.TypezID())
 	}
 	if mapType == nil {
-		return fmt.Errorf("missing map type for field %s (%s)", field.ID, field.TypezID)
+		return fmt.Errorf("missing map type for field %s (%s)", field.ID(), field.TypezID())
 	}
 	keyAnn, err := c.annotateField(mapType.Key, m, model)
 	if err != nil {
@@ -327,7 +327,7 @@ func (c *codec) annotateMapField(field *api.Field, ann *fieldAnnotations, m *api
 }
 
 func mapToBoxed(field *api.Field, message *api.Message, model *api.API) bool {
-	if field.Typez != api.TypezMessage || field.Repeated || field.Map {
+	if field.Typez() != api.TypezMessage || field.Repeated() || field.Map() {
 		return false
 	}
 
@@ -345,10 +345,10 @@ func mapToBoxed(field *api.Field, message *api.Message, model *api.API) bool {
 			return false
 		}
 		for _, f := range msg.Fields {
-			if f.Typez != api.TypezMessage || f.Repeated || f.Map {
+			if f.Typez() != api.TypezMessage || f.Repeated() || f.Map() {
 				continue
 			}
-			if check(f.TypezID, targetID, visited) {
+			if check(f.TypezID(), targetID, visited) {
 				return true
 			}
 		}
@@ -356,7 +356,7 @@ func mapToBoxed(field *api.Field, message *api.Message, model *api.API) bool {
 	}
 
 	visited := make(map[string]bool)
-	return check(field.TypezID, message.ID, visited)
+	return check(field.TypezID(), message.ID, visited)
 }
 
 func unqualifiedRustName(qualifiedName string) string {

@@ -43,9 +43,9 @@ func TestAnnotateField(t *testing.T) {
 			if err := c.annotateModel(model); err != nil {
 				t.Fatal(err)
 			}
-			got, ok := test.field.Codec.(*fieldAnnotations)
+			got, ok := test.field.Codec().(*fieldAnnotations)
 			if !ok {
-				t.Fatalf("expected *fieldAnnotations, got %T", test.field.Codec)
+				t.Fatalf("expected *fieldAnnotations, got %T", test.field.Codec())
 			}
 			if diff := cmp.Diff(test.want, got, cmpopts.IgnoreFields(fieldAnnotations{}, "Message")); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
