@@ -36,6 +36,10 @@ type Field struct {
 	JSONName string
 	// Optional indicates that the field is marked as optional in proto3.
 	Optional bool
+	// Proto2Optional indicates that the field is a scalar or enum declared
+	// optional in a proto2 file. Unlike `Optional`, it does not make the
+	// field optional in the generated model.
+	Proto2Optional bool
 
 	// For a given field, at most one of `Repeated` or `Map` is true.
 	//

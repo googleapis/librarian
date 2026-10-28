@@ -741,6 +741,12 @@ func (f *Field) WithOptional() *Field {
 	return f
 }
 
+// WithProto2Optional marks the field as a proto2 optional field.
+func (f *Field) WithProto2Optional() *Field {
+	f.Proto2Optional = true
+	return f
+}
+
 // WithMap marks the field as a map.
 func (f *Field) WithMap() *Field {
 	f.Map = true

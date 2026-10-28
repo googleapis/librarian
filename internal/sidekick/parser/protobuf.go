@@ -297,7 +297,7 @@ func makeAPIForProtobuf(serviceConfig *serviceconfig.Service, req *pluginpb.Code
 		fFQN := "." + f.GetPackage()
 		for _, m := range f.MessageType {
 			mFQN := fFQN + "." + m.GetName()
-			if _, err := processMessage(result, m, mFQN, f.GetPackage(), nil); err != nil {
+			if _, err := processMessage(result, m, mFQN, f.GetPackage(), isProto2(f), nil); err != nil {
 				return nil, err
 			}
 		}
@@ -619,7 +619,12 @@ func processMethod(model *api.API, m *descriptorpb.MethodDescriptorProto, mFQN, 
 	return method, nil
 }
 
-func processMessage(model *api.API, m *descriptorpb.DescriptorProto, mFQN, packagez string, parent *api.Message) (*api.Message, error) {
+func isProto2(f *descriptorpb.FileDescriptorProto) bool {
+	// protoc leaves the syntax field empty for proto2 files.
+	return f.GetSyntax() == "" || f.GetSyntax() == "proto2"
+}
+
+func processMessage(model *api.API, m *descriptorpb.DescriptorProto, mFQN, packagez string, proto2 bool, parent *api.Message) (*api.Message, error) {
 	message := &api.Message{
 		Name:       m.GetName(),
 		ID:         mFQN,
@@ -640,7 +645,7 @@ func processMessage(model *api.API, m *descriptorpb.DescriptorProto, mFQN, packa
 	if len(m.GetNestedType()) > 0 {
 		for _, nm := range m.GetNestedType() {
 			nmFQN := mFQN + "." + nm.GetName()
-			nmsg, err := processMessage(model, nm, nmFQN, packagez, message)
+			nmsg, err := processMessage(model, nm, nmFQN, packagez, proto2, message)
 			if err != nil {
 				return nil, err
 			}
@@ -677,6 +682,10 @@ func processMessage(model *api.API, m *descriptorpb.DescriptorProto, mFQN, packa
 			return nil, err
 		}
 		normalizeTypes(model, mf, field)
+		// protoc labels map entry fields optional, but they have no presence.
+		field.Proto2Optional = proto2 && !message.IsMap && !field.IsOneOf &&
+			mf.GetLabel() == descriptorpb.FieldDescriptorProto_LABEL_OPTIONAL &&
+			field.Typez != api.TypezMessage && field.Typez != api.TypezGroup
 		message.Fields = append(message.Fields, field)
 		if field.IsOneOf {
 			message.OneOfs[*mf.OneofIndex].Fields = append(message.OneOfs[*mf.OneofIndex].Fields, field)
