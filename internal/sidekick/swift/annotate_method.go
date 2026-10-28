@@ -353,7 +353,7 @@ func (c *codec) annotateMethod(method *api.Method, modelAnn *modelAnnotations) e
 	}
 	var lro *lroAnnotations
 	if method.IsLRO && method.OperationInfo != nil {
-		respMsg, err := lookupMessage(c.Model, method.OperationInfo.ResponseTypeID)
+		respMsg, err := lookupMessage(c.Model, method.OperationInfo.ResponseTypeID())
 		if err != nil {
 			return err
 		}
@@ -364,7 +364,7 @@ func (c *codec) annotateMethod(method *api.Method, modelAnn *modelAnnotations) e
 		if err != nil {
 			return err
 		}
-		metaMsg, err := lookupMessage(c.Model, method.OperationInfo.MetadataTypeID)
+		metaMsg, err := lookupMessage(c.Model, method.OperationInfo.MetadataTypeID())
 		if err != nil {
 			return err
 		}
@@ -394,7 +394,7 @@ func (c *codec) annotateMethod(method *api.Method, modelAnn *modelAnnotations) e
 		discoveryLRO = &discoveryLroAnnotations{
 			ReturnType: returnType,
 		}
-		for _, p := range method.DiscoveryLro.PollingPathParameters {
+		for _, p := range method.DiscoveryLro.PollingPathParameters() {
 			discoveryLRO.PollingPathParameters = append(discoveryLRO.PollingPathParameters, camelCase(p))
 		}
 	}

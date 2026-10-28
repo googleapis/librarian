@@ -116,8 +116,8 @@ func TestAddDiscoveryLroAnnotations(t *testing.T) {
 		t.Fatal(err)
 	}
 	gotInsert := model.Method("..instances.insert")
-	wantLro := &DiscoveryLro{PollingPathParameters: []string{"project", "zone"}}
-	if diff := cmp.Diff(wantLro, gotInsert.DiscoveryLro); diff != "" {
+	wantLro := NewDiscoveryLroBuilder().WithPollingPathParameters("project", "zone").Build()
+	if diff := cmp.Diff(wantLro, gotInsert.DiscoveryLro, allowUnexported()); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 	gotPoller := model.Method("..instances.getOperation")

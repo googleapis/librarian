@@ -52,19 +52,13 @@ func lroAnyTestModel(t *testing.T) *api.API {
 		WithInput(folder).
 		WithOutput(operation).
 		WithPathInfo(nil).
-		WithOperationInfo(&api.OperationInfo{
-			MetadataTypeID: metadata.ID,
-			ResponseTypeID: folder.ID,
-		})
+		WithOperationInfo(api.NewTestOperationInfo(folder.ID, metadata.ID))
 	// A long-running operation can also resolve to a well-known type.
 	deleteMethod := api.NewTestMethod("DeleteFolderRecursive").
 		WithInput(folder).
 		WithOutput(operation).
 		WithPathInfo(nil).
-		WithOperationInfo(&api.OperationInfo{
-			MetadataTypeID: metadata.ID,
-			ResponseTypeID: emptyMessage.ID,
-		})
+		WithOperationInfo(api.NewTestOperationInfo(emptyMessage.ID, metadata.ID))
 	service := api.NewTestService("StorageControl").
 		WithPackage("google.storage.control.v2").
 		WithMethods(method, deleteMethod)
@@ -199,12 +193,9 @@ func lroAnyTwoServiceTestModel(t *testing.T) *api.API {
 		WithInput(folder).
 		WithOutput(operation).
 		WithPathInfo(nil).
-		WithOperationInfo(&api.OperationInfo{
-			// The same metadata type as the other service, so the union has
-			// something to deduplicate.
-			MetadataTypeID: ".google.storage.control.v2.RenameFolderMetadata",
-			ResponseTypeID: managedFolder.ID,
-		})
+		// The same metadata type as the other service, so the union has
+		// something to deduplicate.
+		WithOperationInfo(api.NewTestOperationInfo(managedFolder.ID, ".google.storage.control.v2.RenameFolderMetadata"))
 	service := api.NewTestService("StorageLayout").
 		WithPackage("google.storage.control.v2").
 		WithMethods(method)

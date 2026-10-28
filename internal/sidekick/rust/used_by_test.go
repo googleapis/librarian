@@ -81,7 +81,7 @@ func TestUsedByServicesNoServices(t *testing.T) {
 }
 
 func TestUsedByLROsWithLRO(t *testing.T) {
-	method := api.NewTestMethod("CreateResource").WithOperationInfo(&api.OperationInfo{})
+	method := api.NewTestMethod("CreateResource").WithOperationInfo(api.NewOperationInfoBuilder().Build())
 	service := api.NewTestService("TestService").WithMethods(method)
 	model := api.NewTestAPI(nil, nil, []*api.Service{service})
 	c, err := newCodec(libconfig.SpecProtobuf, map[string]string{
@@ -377,10 +377,10 @@ func TestFindUsedPackages(t *testing.T) {
 	method := api.NewTestMethod("CreateResource").
 		WithInput(createResourceReq).
 		WithOutput(operation).
-		WithOperationInfo(&api.OperationInfo{
-			MetadataTypeID: operationMetadata.ID,
-			ResponseTypeID: resource.ID,
-		})
+		WithOperationInfo(api.NewOperationInfoBuilder().
+			WithMetadataTypeID(operationMetadata.ID).
+			WithResponseTypeID(resource.ID).
+			Build())
 	service := api.NewTestService("LroService").
 		WithPackage("test").
 		WithMethods(method)

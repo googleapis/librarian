@@ -1968,7 +1968,7 @@ func TestFindExampleMethod(t *testing.T) {
 		WithPackage("otherpackage").
 		WithFields(api.NewTestField("optional"))
 
-	lroMethod := api.NewTestMethod("LroMethod").WithOperationInfo(&api.OperationInfo{})
+	lroMethod := api.NewTestMethod("LroMethod").WithOperationInfo(api.NewOperationInfoBuilder().Build())
 
 	streamingMethod := api.NewTestMethod("StreamingMethod")
 	streamingMethod.IsSimple = false

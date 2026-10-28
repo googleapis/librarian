@@ -200,13 +200,13 @@ func (c *codec) annotateService(s *api.Service) (*serviceAnnotations, error) {
 	var lroTypes []*api.Message
 	for _, m := range methods {
 		if m.OperationInfo != nil {
-			if _, ok := seenLROTypes[m.OperationInfo.MetadataTypeID]; !ok {
-				seenLROTypes[m.OperationInfo.MetadataTypeID] = true
-				lroTypes = append(lroTypes, s.Model.Message(m.OperationInfo.MetadataTypeID))
+			if _, ok := seenLROTypes[m.OperationInfo.MetadataTypeID()]; !ok {
+				seenLROTypes[m.OperationInfo.MetadataTypeID()] = true
+				lroTypes = append(lroTypes, s.Model.Message(m.OperationInfo.MetadataTypeID()))
 			}
-			if _, ok := seenLROTypes[m.OperationInfo.ResponseTypeID]; !ok {
-				seenLROTypes[m.OperationInfo.ResponseTypeID] = true
-				lroTypes = append(lroTypes, s.Model.Message(m.OperationInfo.ResponseTypeID))
+			if _, ok := seenLROTypes[m.OperationInfo.ResponseTypeID()]; !ok {
+				seenLROTypes[m.OperationInfo.ResponseTypeID()] = true
+				lroTypes = append(lroTypes, s.Model.Message(m.OperationInfo.ResponseTypeID()))
 			}
 		}
 	}

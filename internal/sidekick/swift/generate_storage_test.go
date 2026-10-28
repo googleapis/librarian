@@ -123,10 +123,7 @@ func TestGenerateStorage_MultiModel(t *testing.T) {
 				WithOutput(operation).
 				WithVerb("POST").
 				WithPathTemplate(api.NewPathTemplateBuilder().WithLiteral("v2").WithVariableNamed("name").WithLiteral(":rename").Build()).
-				WithOperationInfo(&api.OperationInfo{
-					ResponseTypeID: folder.ID,
-					MetadataTypeID: renameFolderMetadata.ID,
-				}),
+				WithOperationInfo(api.NewTestOperationInfo(folder.ID, renameFolderMetadata.ID)),
 			api.NewTestMethod("GetOperation").
 				WithInput(getOperationRequest).
 				WithOutput(operation).
