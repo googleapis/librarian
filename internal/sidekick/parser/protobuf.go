@@ -853,30 +853,30 @@ func processEnum(model *api.API, e *descriptorpb.EnumDescriptorProto, eFQN, pack
 	}
 	model.AddEnum(enum)
 	for i, ev := range e.Value {
-		enumValue := &api.EnumValue{
-			Name:          ev.GetName(),
-			Number:        ev.GetNumber(),
-			Parent:        enum,
-			Documentation: lookupComment(comments, append(pathPrefix, enumDescriptorValue, int32(i))),
-			Deprecated:    ev.GetOptions().GetDeprecated(),
-		}
+		enumValue := api.NewEnumValueBuilder().
+			WithName(ev.GetName()).
+			WithNumber(ev.GetNumber()).
+			WithParent(enum).
+			WithDocumentation(lookupComment(comments, append(pathPrefix, enumDescriptorValue, int32(i)))).
+			WithDeprecated(ev.GetOptions().GetDeprecated()).
+			Build()
 		enum.Values = append(enum.Values, enumValue)
 	}
 	numbers := map[int32]*api.EnumValue{}
 	for _, v := range enum.Values {
 		matchesStyle := func(v *api.EnumValue) bool {
-			return strings.ToUpper(v.Name) == v.Name
+			return strings.ToUpper(v.Name()) == v.Name()
 		}
-		if ev, ok := numbers[v.Number]; ok {
-			if len(ev.Name) > len(v.Name) || (matchesStyle(v) && !matchesStyle(ev)) {
-				numbers[v.Number] = v
+		if ev, ok := numbers[v.Number()]; ok {
+			if len(ev.Name()) > len(v.Name()) || (matchesStyle(v) && !matchesStyle(ev)) {
+				numbers[v.Number()] = v
 			}
 		} else {
-			numbers[v.Number] = v
+			numbers[v.Number()] = v
 		}
 	}
 	unique := slices.Collect(maps.Values(numbers))
-	slices.SortFunc(unique, func(a, b *api.EnumValue) int { return int(a.Number - b.Number) })
+	slices.SortFunc(unique, func(a, b *api.EnumValue) int { return int(a.Number() - b.Number()) })
 	enum.UniqueNumberValues = unique
 	return enum
 }

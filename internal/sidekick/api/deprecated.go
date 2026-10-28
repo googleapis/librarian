@@ -61,7 +61,7 @@ func (enum *Enum) hasDeprecatedEntities() bool {
 		return true
 	}
 	for _, v := range enum.Values {
-		if v.Deprecated {
+		if v.Deprecated() {
 			return true
 		}
 	}

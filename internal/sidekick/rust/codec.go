@@ -719,7 +719,7 @@ func (c *codec) fullyQualifiedEnumName(e *api.Enum, sourceSpecificationPackageNa
 func enumValueName(e *api.EnumValue) string {
 	// The Protobuf naming convention is to use SCREAMING_SNAKE_CASE, but
 	// sometimes it is not followed.
-	return escapeKeyword(toScreamingSnake(e.Name))
+	return escapeKeyword(toScreamingSnake(e.Name()))
 }
 
 // enumValueVariantName returns the name of the Rust enumeration variant for a
@@ -764,24 +764,24 @@ func enumValueVariantName(e *api.EnumValue) string {
 	// `INSTANCE_PRIVATE_IPV6_GOOGLE_ACCESS` in enum values, while the automatic
 	// transformation would map it as `INSTANCE_PRIVATE_IPV_6_GOOGLE_ACCESS`.
 	// Note the extra `_` in `IPV_6` in the second case.
-	prefix := toScreamingSnake(e.Parent.Name) + "_"
-	if trimmed, ok := strings.CutPrefix(e.Name, prefix); ok && strings.IndexFunc(trimmed, unicode.IsLetter) == 0 {
+	prefix := toScreamingSnake(e.Parent().Name) + "_"
+	if trimmed, ok := strings.CutPrefix(e.Name(), prefix); ok && strings.IndexFunc(trimmed, unicode.IsLetter) == 0 {
 		return toPascal(trimmed)
 	}
 	trimNumbers := regexp.MustCompile(`_([0-9])`)
 	prefix = trimNumbers.ReplaceAllString(prefix, `$1`)
-	if trimmed, ok := strings.CutPrefix(e.Name, prefix); ok && strings.IndexFunc(trimmed, unicode.IsLetter) == 0 {
+	if trimmed, ok := strings.CutPrefix(e.Name(), prefix); ok && strings.IndexFunc(trimmed, unicode.IsLetter) == 0 {
 		return toPascal(trimmed)
 	}
-	return toPascal(e.Name)
+	return toPascal(e.Name())
 }
 
 func (c *codec) fullyQualifiedEnumValueName(v *api.EnumValue, sourceSpecificationPackageName string) (string, error) {
-	p, err := c.enumScopeName(v.Parent, sourceSpecificationPackageName)
+	p, err := c.enumScopeName(v.Parent(), sourceSpecificationPackageName)
 	if err != nil {
 		return "", err
 	}
-	return fmt.Sprintf("%s::%s::%s", p, enumName(v.Parent), enumValueVariantName(v)), nil
+	return fmt.Sprintf("%s::%s::%s", p, enumName(v.Parent()), enumValueVariantName(v)), nil
 }
 
 func bodyAccessor(m *api.Method) string {
@@ -1485,7 +1485,7 @@ func (c *codec) tryEnumValueRustdocLink(id string, model *api.API, scope string)
 		return "", nil
 	}
 	for _, v := range e.Values {
-		if v.Name == valueName {
+		if v.Name() == valueName {
 			return c.fullyQualifiedEnumValueName(v, scope)
 		}
 	}

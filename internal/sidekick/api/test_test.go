@@ -187,8 +187,8 @@ func TestNewTestAPI_IndexesNestedEnums(t *testing.T) {
 	if nestedEnum.Parent != parent {
 		t.Errorf("nestedEnum.Parent = %v, want %v", nestedEnum.Parent, parent)
 	}
-	if val.Parent != nestedEnum {
-		t.Errorf("val.Parent = %v, want %v", val.Parent, nestedEnum)
+	if val.Parent() != nestedEnum {
+		t.Errorf("val.Parent() = %v, want %v", val.Parent(), nestedEnum)
 	}
 }
 
@@ -716,5 +716,48 @@ func TestResource_Builder(t *testing.T) {
 	}
 	if res.Codec() != "res-codec" {
 		t.Errorf("res.Codec() = %v, want %q", res.Codec(), "res-codec")
+	}
+}
+
+func TestEnumValue_Builder(t *testing.T) {
+	enum := api.NewTestEnum("Status")
+	ev := api.NewEnumValueBuilder().
+		WithName("ACTIVE").
+		WithID(".test.Status.ACTIVE").
+		WithDocumentation("Active status").
+		WithDeprecated(true).
+		WithNumber(1).
+		WithParent(enum).
+		Build()
+	ev.SetAnnotations("ev-codec")
+
+	if ev.Name() != "ACTIVE" {
+		t.Errorf("ev.Name() = %q, want %q", ev.Name(), "ACTIVE")
+	}
+	if ev.ID() != ".test.Status.ACTIVE" {
+		t.Errorf("ev.ID() = %q, want %q", ev.ID(), ".test.Status.ACTIVE")
+	}
+	if ev.Documentation() != "Active status" {
+		t.Errorf("ev.Documentation() = %q, want %q", ev.Documentation(), "Active status")
+	}
+	if !ev.Deprecated() {
+		t.Errorf("ev.Deprecated() = false, want true")
+	}
+	if ev.Number() != 1 {
+		t.Errorf("ev.Number() = %d, want 1", ev.Number())
+	}
+	if ev.Parent() != enum {
+		t.Errorf("ev.Parent() = %v, want %v", ev.Parent(), enum)
+	}
+	if ev.Codec() != "ev-codec" {
+		t.Errorf("ev.Codec() = %v, want %q", ev.Codec(), "ev-codec")
+	}
+
+	sv := api.NewSampleValue(ev, 2)
+	if sv.EnumValue() != ev {
+		t.Errorf("sv.EnumValue() = %v, want %v", sv.EnumValue(), ev)
+	}
+	if sv.Index() != 2 {
+		t.Errorf("sv.Index() = %d, want 2", sv.Index())
 	}
 }

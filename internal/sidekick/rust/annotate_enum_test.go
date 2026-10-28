@@ -18,10 +18,17 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
-	"github.com/google/go-cmp/cmp/cmpopts"
 	libconfig "github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/sidekick/api"
+	"github.com/googleapis/librarian/internal/sidekick/api/apitest"
 )
+
+func ignoreEnumValueCodecParent() cmp.Option {
+	return cmp.FilterPath(func(p cmp.Path) bool {
+		s := p.Last().String()
+		return s == ".codec" || s == ".parent"
+	}, cmp.Ignore())
+}
 
 func TestEnumAnnotations(t *testing.T) {
 	// Verify we can handle values that are not in SCREAMING_SNAKE_CASE style.
@@ -50,7 +57,7 @@ func TestEnumAnnotations(t *testing.T) {
 		UniqueNames:       []*api.EnumValue{v0, v1, v2, v3, v4},
 		NameInExamples:    "google_cloud_test_v1::model::TestEnum",
 	}
-	if diff := cmp.Diff(wantEnumCodec, enum.Codec, cmpopts.IgnoreFields(api.EnumValue{}, "Codec", "Parent")); diff != "" {
+	if diff := cmp.Diff(wantEnumCodec, enum.Codec, apitest.AllowUnexported(), ignoreEnumValueCodecParent()); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 
@@ -60,7 +67,7 @@ func TestEnumAnnotations(t *testing.T) {
 		EnumType:    "TestEnum",
 		DocLines:    []string{"/// week5 is also documented."},
 	}
-	if diff := cmp.Diff(wantEnumValueCodec, v0.Codec); diff != "" {
+	if diff := cmp.Diff(wantEnumValueCodec, v0.Codec()); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 
@@ -70,7 +77,7 @@ func TestEnumAnnotations(t *testing.T) {
 		EnumType:    "TestEnum",
 		DocLines:    []string{"/// MULTI_WORD_VALUE is also documented."},
 	}
-	if diff := cmp.Diff(wantEnumValueCodec, v1.Codec); diff != "" {
+	if diff := cmp.Diff(wantEnumValueCodec, v1.Codec()); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 
@@ -80,7 +87,7 @@ func TestEnumAnnotations(t *testing.T) {
 		EnumType:    "TestEnum",
 		DocLines:    []string{"/// VALUE is also documented."},
 	}
-	if diff := cmp.Diff(wantEnumValueCodec, v2.Codec); diff != "" {
+	if diff := cmp.Diff(wantEnumValueCodec, v2.Codec()); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 
@@ -89,7 +96,7 @@ func TestEnumAnnotations(t *testing.T) {
 		VariantName: "V3",
 		EnumType:    "TestEnum",
 	}
-	if diff := cmp.Diff(wantEnumValueCodec, v3.Codec); diff != "" {
+	if diff := cmp.Diff(wantEnumValueCodec, v3.Codec()); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 
@@ -98,7 +105,7 @@ func TestEnumAnnotations(t *testing.T) {
 		VariantName: "TestEnum2025",
 		EnumType:    "TestEnum",
 	}
-	if diff := cmp.Diff(wantEnumValueCodec, v4.Codec); diff != "" {
+	if diff := cmp.Diff(wantEnumValueCodec, v4.Codec()); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
@@ -130,7 +137,7 @@ func TestDuplicateEnumValueAnnotations(t *testing.T) {
 		NameInExamples:    "google_cloud_test_v1::model::TestEnum",
 	}
 
-	if diff := cmp.Diff(want, enum.Codec, cmpopts.IgnoreFields(api.EnumValue{}, "Codec", "Parent")); diff != "" {
+	if diff := cmp.Diff(want, enum.Codec, apitest.AllowUnexported(), ignoreEnumValueCodecParent()); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
@@ -159,7 +166,7 @@ func TestNestedEnumAnnotations(t *testing.T) {
 		NameInExamples:    "google_cloud_test_v1::model::vertex_ai_search::IPMode",
 	}
 
-	if diff := cmp.Diff(want, enum.Codec, cmpopts.IgnoreFields(api.EnumValue{}, "Codec", "Parent")); diff != "" {
+	if diff := cmp.Diff(want, enum.Codec, apitest.AllowUnexported(), ignoreEnumValueCodecParent()); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
@@ -187,7 +194,7 @@ func TestDiscoveryEnumAnnotations(t *testing.T) {
 		NameInExamples:    "google_cloud_test_v1::model::Status",
 	}
 
-	if diff := cmp.Diff(want, enum.Codec, cmpopts.IgnoreFields(api.EnumValue{}, "Codec", "Parent")); diff != "" {
+	if diff := cmp.Diff(want, enum.Codec, apitest.AllowUnexported(), ignoreEnumValueCodecParent()); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }

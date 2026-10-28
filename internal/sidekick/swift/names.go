@@ -221,15 +221,15 @@ func pascalCaseNoMangling(s string) string {
 
 // enumValueCaseName returns the name of the Swift enumeration case for a given enumeration value.
 func enumValueCaseName(e *api.EnumValue) string {
-	prefix := strcase.ToScreamingSnake(e.Parent.Name) + "_"
-	if trimmed, ok := strings.CutPrefix(e.Name, prefix); ok && strings.IndexFunc(trimmed, unicode.IsLetter) == 0 {
+	prefix := strcase.ToScreamingSnake(e.Parent().Name) + "_"
+	if trimmed, ok := strings.CutPrefix(e.Name(), prefix); ok && strings.IndexFunc(trimmed, unicode.IsLetter) == 0 {
 		return camelCase(trimmed)
 	}
 	prefix = trimNumbers.ReplaceAllString(prefix, `$1`)
-	if trimmed, ok := strings.CutPrefix(e.Name, prefix); ok && strings.IndexFunc(trimmed, unicode.IsLetter) == 0 {
+	if trimmed, ok := strings.CutPrefix(e.Name(), prefix); ok && strings.IndexFunc(trimmed, unicode.IsLetter) == 0 {
 		return camelCase(trimmed)
 	}
-	return camelCase(e.Name)
+	return camelCase(e.Name())
 }
 
 // ProtoPackagePrefix returns the SwiftProtobuf prefix for a given protobuf package name.

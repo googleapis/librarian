@@ -103,11 +103,11 @@ func CheckEnum(t *testing.T, got api.Enum, want api.Enum) {
 	); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
-	less := func(a, b *api.EnumValue) bool { return a.Name < b.Name }
+	less := func(a, b *api.EnumValue) bool { return a.Name() < b.Name() }
 	if diff := cmp.Diff(want.Values, got.Values,
 		AllowUnexported(),
 		cmpopts.SortSlices(less),
-		cmpopts.IgnoreFields(api.EnumValue{}, "Parent"),
+		cmp.FilterPath(func(p cmp.Path) bool { return p.Last().String() == ".parent" }, cmp.Ignore()),
 	); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}

@@ -52,7 +52,7 @@ func NewTestAPI(messages []*Message, enums []*Enum, services []*Service) *API {
 			model.enumByID[e.ID] = e
 			e.Parent = m
 			for _, ev := range e.Values {
-				ev.Parent = e
+				ev.parent = e
 			}
 		}
 		for _, child := range m.Messages {
@@ -94,7 +94,7 @@ func NewTestAPI(messages []*Message, enums []*Enum, services []*Service) *API {
 			}
 		}
 		for _, ev := range e.Values {
-			ev.Parent = e
+			ev.parent = e
 		}
 	}
 
@@ -868,9 +868,9 @@ func (e *Enum) WithParent(parent *Message) *Enum {
 			e.ID = fmt.Sprintf("%s.%s", parent.ID, e.Name)
 		}
 		for _, v := range e.Values {
-			v.Parent = e
-			if strings.HasPrefix(v.ID, ".test.") || v.ID == "" {
-				v.ID = fmt.Sprintf("%s.%s", e.ID, v.Name)
+			v.parent = e
+			if strings.HasPrefix(v.id, ".test.") || v.id == "" {
+				v.id = fmt.Sprintf("%s.%s", e.ID, v.name)
 			}
 		}
 	}
@@ -880,20 +880,20 @@ func (e *Enum) WithParent(parent *Message) *Enum {
 // WithValues adds values to the enum, setting their Parent, ID, and populating UniqueNumberValues.
 func (e *Enum) WithValues(values ...*EnumValue) *Enum {
 	for _, v := range values {
-		v.Parent = e
-		if strings.HasPrefix(v.ID, ".test.") || v.ID == "" {
-			v.ID = fmt.Sprintf("%s.%s", e.ID, v.Name)
+		v.parent = e
+		if strings.HasPrefix(v.id, ".test.") || v.id == "" {
+			v.id = fmt.Sprintf("%s.%s", e.ID, v.name)
 		}
 	}
 	e.Values = append(e.Values, values...)
 	seen := make(map[int32]bool)
 	for _, v := range e.UniqueNumberValues {
-		seen[v.Number] = true
+		seen[v.number] = true
 	}
 	for _, v := range values {
-		if !seen[v.Number] {
+		if !seen[v.number] {
 			e.UniqueNumberValues = append(e.UniqueNumberValues, v)
-			seen[v.Number] = true
+			seen[v.number] = true
 		}
 	}
 	return e
@@ -907,28 +907,28 @@ func (e *Enum) WithUniqueNumberValues(values ...*EnumValue) *Enum {
 
 // NewTestEnumValue creates an EnumValue with defaults for testing.
 func NewTestEnumValue(name string, number int32) *EnumValue {
-	return &EnumValue{
-		Name:   name,
-		Number: number,
-		ID:     fmt.Sprintf(".test.%s", name),
-	}
+	return NewEnumValueBuilder().
+		WithName(name).
+		WithNumber(number).
+		WithID(fmt.Sprintf(".test.%s", name)).
+		Build()
 }
 
 // WithID overrides the enum value's ID.
 func (ev *EnumValue) WithID(id string) *EnumValue {
-	ev.ID = id
+	ev.id = id
 	return ev
 }
 
 // WithDocumentation sets the documentation for the enum value.
 func (ev *EnumValue) WithDocumentation(doc string) *EnumValue {
-	ev.Documentation = doc
+	ev.documentation = doc
 	return ev
 }
 
 // WithDeprecated sets whether the enum value is deprecated.
 func (ev *EnumValue) WithDeprecated(deprecated bool) *EnumValue {
-	ev.Deprecated = deprecated
+	ev.deprecated = deprecated
 	return ev
 }
 
