@@ -136,6 +136,7 @@ func TestStubSuffixes(t *testing.T) {
 		{suffix: "Retry"},
 		{suffix: "ClientSignals"},
 		{suffix: "TransportSignals"},
+		{suffix: "OneOf"},
 	} {
 		for keyword := range keywords {
 			t.Run(fmt.Sprintf("%s : %s", test.suffix, keyword), func(t *testing.T) {
@@ -207,9 +208,8 @@ func TestEnumValueCaseName(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			enum := &api.Enum{Name: tt.enumName}
-			ev := &api.EnumValue{Name: tt.valName, Parent: enum}
-			got := enumValueCaseName(ev)
+			enum := api.NewTestEnum(tt.enumName).WithValues(api.NewTestEnumValue(tt.valName, 0))
+			got := enumValueCaseName(enum.Values[0])
 			if got != tt.want {
 				t.Errorf("enumValueCaseName() = %q, want %q", got, tt.want)
 			}
@@ -243,15 +243,145 @@ func TestOneOfName(t *testing.T) {
 		input string
 		want  string
 	}{
-		{input: "branches", want: "OneOf_Branches"},
-		{input: "several_things", want: "OneOf_SeveralThings"},
-		{input: "type", want: "OneOf_Type"},
-		{input: "self", want: "OneOf_Self"},
+		{input: "branches", want: "BranchesOneOf"},
+		{input: "several_things", want: "SeveralThingsOneOf"},
+		{input: "type", want: "TypeOneOf"},
+		{input: "self", want: "SelfOneOf"},
+		// Keywords need no escaping, as no Swift keyword ends in `OneOf`.
+		{input: "protocol", want: "ProtocolOneOf"},
+		{input: "Any", want: "AnyOneOf"},
+		// The suffix is applied uniformly, even when the group name already
+		// ends in `oneof`. `strcase` treats `oneof` as a single word.
+		{input: "key_oneof", want: "KeyOneofOneOf"},
 	} {
 		t.Run(test.input, func(t *testing.T) {
 			got := OneOfName(test.input)
 			if got != test.want {
 				t.Errorf("OneOfName(%q) = %q, want %q", test.input, got, test.want)
+			}
+		})
+	}
+}
+
+func TestMessageName(t *testing.T) {
+	wktField := api.NewTestMessage("Field").WithPackage(wellKnownProtobufPackage)
+	wktNested := api.NewTestMessage("Nested").WithPackage(wellKnownProtobufPackage)
+	wktNested.Parent = wktField
+
+	for _, test := range []struct {
+		name string
+		msg  *api.Message
+		want string
+	}{
+		{
+			name: "standard message",
+			msg:  api.NewTestMessage("Secret").WithPackage("google.cloud.secretmanager.v1"),
+			want: "Secret",
+		},
+		{
+			name: "standard keyword message Any",
+			msg:  api.NewTestMessage("Any").WithPackage("google.cloud.test.v1"),
+			want: "`Any`",
+		},
+		{
+			name: "standard keyword message Type",
+			msg:  api.NewTestMessage("Type").WithPackage("google.cloud.test.v1"),
+			want: "Type_",
+		},
+		{
+			name: "wkt top-level message Any",
+			msg:  api.NewTestMessage("Any").WithPackage(wellKnownProtobufPackage),
+			want: "WKTAny",
+		},
+		{
+			name: "wkt top-level message Type",
+			msg:  api.NewTestMessage("Type").WithPackage(wellKnownProtobufPackage),
+			want: "WKTType",
+		},
+		{
+			name: "wkt top-level message Duration",
+			msg:  api.NewTestMessage("Duration").WithPackage(wellKnownProtobufPackage),
+			want: "WKTDuration",
+		},
+		{
+			name: "wkt nested message does not get WKT prefix",
+			msg:  wktNested,
+			want: "Nested",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := messageName(test.msg)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestMessageSimpleName(t *testing.T) {
+	servicePlaceholder := api.NewTestMessage("Advice").WithPackage("google.cloud.compute.v1")
+	servicePlaceholder.ServicePlaceholder = true
+
+	for _, test := range []struct {
+		name string
+		msg  *api.Message
+		want string
+	}{
+		{
+			name: "standard message",
+			msg:  api.NewTestMessage("Secret").WithPackage("google.cloud.secretmanager.v1"),
+			want: "Secret",
+		},
+		{
+			name: "service placeholder message",
+			msg:  servicePlaceholder,
+			want: "AdviceClient",
+		},
+		{
+			name: "wkt message",
+			msg:  api.NewTestMessage("Duration").WithPackage(wellKnownProtobufPackage),
+			want: "WKTDuration",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := messageSimpleName(test.msg)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestEnumName(t *testing.T) {
+	wktField := api.NewTestMessage("Field").WithPackage(wellKnownProtobufPackage)
+	wktKind := api.NewTestEnum("Kind").WithPackage(wellKnownProtobufPackage)
+	wktKind.Parent = wktField
+
+	for _, test := range []struct {
+		name string
+		enum *api.Enum
+		want string
+	}{
+		{
+			name: "standard enum",
+			enum: api.NewTestEnum("Color").WithPackage("google.cloud.test.v1"),
+			want: "Color",
+		},
+		{
+			name: "wkt top-level enum Syntax",
+			enum: api.NewTestEnum("Syntax").WithPackage(wellKnownProtobufPackage),
+			want: "WKTSyntax",
+		},
+		{
+			name: "wkt nested enum Kind does not get WKT prefix",
+			enum: wktKind,
+			want: "Kind",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := enumName(test.enum)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}

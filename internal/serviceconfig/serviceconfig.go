@@ -81,9 +81,9 @@ func Read(serviceConfigPath string) (*Service, error) {
 	return cfg, nil
 }
 
-// findAPI looks up the API by path in sdk.yaml. If the API is not explicitly
+// FindAPI looks up the API by path in sdk.yaml. If the API is not explicitly
 // configured in sdk.yaml, an entry is returned.
-func findAPI(path string) *API {
+func FindAPI(path string) *API {
 	if path == "" {
 		return &API{}
 	}
@@ -116,7 +116,7 @@ func findAPI(path string) *API {
 // it does not live under https://github.com/googleapis/googleapis.
 // For this API only, googleapisDir should point to showcase source dir instead.
 func Find(googleapisDir, path string, language string) (*API, error) {
-	result := findAPI(path)
+	result := FindAPI(path)
 
 	// Find the service config if it hasn't been specified.
 	if result.ServiceConfig == "" {

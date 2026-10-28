@@ -16,8 +16,12 @@
 package proto
 
 import (
+	"bufio"
+	"bytes"
+	"io/fs"
 	"os"
 	"path/filepath"
+	"regexp"
 	"slices"
 )
 
@@ -57,4 +61,48 @@ func Gather(root, relPath string) ([]string, error) {
 	}
 	slices.Sort(protos)
 	return protos, nil
+}
+
+// Search looks for a regex in the first .proto file in the API directory.
+// Returns the value of the first match found, and a boolean indicating if a match was found.
+func Search(googleapisDir, apiPath string, regex *regexp.Regexp) (string, bool, error) {
+	file, err := searchForProto(googleapisDir, apiPath)
+	if err != nil {
+		return "", false, err
+	}
+	f, err := os.Open(file)
+	if err != nil {
+		return "", false, err
+	}
+	defer f.Close()
+	scanner := bufio.NewScanner(f)
+	for scanner.Scan() {
+		line := bytes.TrimSpace(scanner.Bytes())
+		// Ignore comments.
+		if bytes.HasPrefix(line, []byte("//")) {
+			continue
+		}
+		if matches := regex.FindSubmatch(line); len(matches) > 1 {
+			return string(matches[1]), true, nil
+		}
+	}
+	if scanner.Err() != nil {
+		return "", false, scanner.Err()
+	}
+	return "", false, nil
+}
+
+// searchForProto finds the first .proto file in the API directory.
+func searchForProto(googleapisDir, apiPath string) (string, error) {
+	dir := filepath.Join(googleapisDir, apiPath)
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		return "", err
+	}
+	for _, entry := range entries {
+		if !entry.IsDir() && filepath.Ext(entry.Name()) == ".proto" {
+			return filepath.Join(dir, entry.Name()), nil
+		}
+	}
+	return "", fs.ErrNotExist
 }

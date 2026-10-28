@@ -46,8 +46,6 @@ type repoMetadata struct {
 
 	// Optional fields (appended in this order in Python)
 	// Java-specific field.
-	APIReference string `json:"api_reference,omitempty"`
-	// Java-specific field.
 	CodeownerTeam string `json:"codeowner_team,omitempty"`
 	IssueTracker  string `json:"issue_tracker,omitempty"`
 	// Java-specific field.
@@ -55,11 +53,7 @@ type repoMetadata struct {
 	// Java-specific field.
 	RpcDocumentation string `json:"rpc_documentation,omitempty"`
 	// Java-specific field.
-	ExtraVersionedModules string `json:"extra_versioned_modules,omitempty"`
-	// Java-specific field.
 	RecommendedPackage string `json:"recommended_package,omitempty"`
-	// Java-specific field.
-	MinJavaVersion int `json:"min_java_version,omitempty"`
 }
 
 // write writes the given repoMetadata into libraryOutputDir/.repo-metadata.json.
@@ -103,6 +97,8 @@ func deriveRepoMetadata(cfg *config.Config, library *config.Library, sourceDir s
 		APIID:                sharedMetadata.APIID,
 		LibraryType:          repometadata.GAPICAutoLibraryType,
 		RecommendedPackage:   sharedMetadata.RecommendedPackage,
+		RestDocumentation:    sharedMetadata.RestDocumentation,
+		RpcDocumentation:     sharedMetadata.RpcDocumentation,
 	}
 
 	// Java-specific overrides and optional fields
@@ -137,12 +133,7 @@ func deriveRepoMetadata(cfg *config.Config, library *config.Library, sourceDir s
 			metadata.ClientDocumentation = library.Java.ClientDocumentationOverride
 		}
 		// Java only fields
-		metadata.APIReference = library.Java.APIReference
 		metadata.CodeownerTeam = library.Java.CodeownerTeam
-		metadata.ExtraVersionedModules = library.Java.ExtraVersionedModules
-		metadata.MinJavaVersion = library.Java.MinJavaVersion
-		metadata.RestDocumentation = library.Java.RestDocumentation
-		metadata.RpcDocumentation = library.Java.RpcDocumentation
 	}
 
 	// Default ClientDocumentation uses artifact ID

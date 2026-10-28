@@ -16,6 +16,7 @@ package api
 
 import (
 	"fmt"
+	"slices"
 	"strings"
 
 	"github.com/iancoleman/strcase"
@@ -35,12 +36,27 @@ func NewTestAPI(messages []*Message, enums []*Enum, services []*Service) *API {
 		resourceByType: make(map[string]*Resource),
 	}
 
-	for _, m := range messages {
-		model.PackageName = m.Package
+	var indexMessage func(m *Message)
+	indexMessage = func(m *Message) {
 		model.messageByID[m.ID] = m
 		if m.Resource != nil {
 			model.resourceByType[m.Resource.Type] = m.Resource
 		}
+		for _, e := range m.Enums {
+			model.enumByID[e.ID] = e
+			e.Parent = m
+			for _, ev := range e.Values {
+				ev.Parent = e
+			}
+		}
+		for _, child := range m.Messages {
+			child.Parent = m
+			indexMessage(child)
+		}
+	}
+	for _, m := range messages {
+		model.PackageName = m.Package
+		indexMessage(m)
 	}
 	for _, e := range enums {
 		model.PackageName = e.Package
@@ -58,14 +74,18 @@ func NewTestAPI(messages []*Message, enums []*Enum, services []*Service) *API {
 		parent := model.messageByID[parentID]
 		if parent != nil {
 			m.Parent = parent
-			parent.Messages = append(parent.Messages, m)
+			if !slices.Contains(parent.Messages, m) {
+				parent.Messages = append(parent.Messages, m)
+			}
 		}
 	}
 	for _, e := range enums {
 		parent := model.messageByID[parentName(e.ID)]
 		if parent != nil {
 			e.Parent = parent
-			parent.Enums = append(parent.Enums, e)
+			if !slices.Contains(parent.Enums, e) {
+				parent.Enums = append(parent.Enums, e)
+			}
 		}
 		for _, ev := range e.Values {
 			ev.Parent = e
@@ -74,6 +94,30 @@ func NewTestAPI(messages []*Message, enums []*Enum, services []*Service) *API {
 
 	model.LoadWellKnownTypes()
 	return model
+}
+
+// WithName changes the name of an API instance.
+func (a *API) WithName(name string) *API {
+	a.Name = name
+	return a
+}
+
+// WithTitle changes the title of an API instance.
+func (a *API) WithTitle(title string) *API {
+	a.Title = title
+	return a
+}
+
+// WithDescription changes the description of an API instance.
+func (a *API) WithDescription(description string) *API {
+	a.Description = description
+	return a
+}
+
+// WithQuickstartService sets the quickstart service on an API instance.
+func (a *API) WithQuickstartService(service *Service) *API {
+	a.QuickstartService = service
+	return a
 }
 
 // WithPackageName changes the package name of an API instance.
@@ -153,6 +197,51 @@ func (m *Message) WithOneOfs(oneofs ...*OneOf) *Message {
 	return m
 }
 
+func (m *Message) withParentRecursive(parent *Message) {
+	m.Parent = parent
+	if m.Parent == nil {
+		return
+	}
+	m.Package = parent.Package
+	if strings.HasPrefix(m.ID, ".test.") || m.ID == "" {
+		m.ID = fmt.Sprintf("%s.%s", parent.ID, m.Name)
+	}
+	for _, f := range m.Fields {
+		if strings.HasPrefix(f.ID, ".test.") || f.ID == "" {
+			f.ID = fmt.Sprintf("%s.%s", m.ID, f.Name)
+		}
+	}
+	for _, o := range m.OneOfs {
+		if strings.HasPrefix(o.ID, ".test.") || o.ID == "" {
+			o.ID = fmt.Sprintf("%s.%s", m.ID, o.Name)
+		}
+	}
+	for _, c := range m.Messages {
+		c.withParentRecursive(m)
+	}
+	for _, e := range m.Enums {
+		_ = e.WithParent(m)
+	}
+}
+
+// WithMessages adds nested messages to the message and updates their parent/ID.
+func (m *Message) WithMessages(messages ...*Message) *Message {
+	for _, child := range messages {
+		child.withParentRecursive(m)
+	}
+	m.Messages = append(m.Messages, messages...)
+	return m
+}
+
+// WithEnums adds enums to the message and updates their parent/ID.
+func (m *Message) WithEnums(enums ...*Enum) *Message {
+	for _, e := range enums {
+		e.WithParent(m)
+	}
+	m.Enums = append(m.Enums, enums...)
+	return m
+}
+
 // WithPagination items and page token fields for a pagination response.
 func (m *Message) WithPagination(nextPageToken *Field, items *Field) *Message {
 	if nextPageToken.Parent != m {
@@ -177,6 +266,40 @@ func (m *Message) WithResource(resource *Resource) *Message {
 	return m
 }
 
+// WithDeprecated sets whether the message is deprecated.
+func (m *Message) WithDeprecated(deprecated bool) *Message {
+	m.Deprecated = deprecated
+	return m
+}
+
+// WithDocumentation sets the documentation for the message.
+func (m *Message) WithDocumentation(doc string) *Message {
+	m.Documentation = doc
+	return m
+}
+
+// WithIsMap sets whether the message represents a map entry.
+func (m *Message) WithIsMap() *Message {
+	m.IsMap = true
+	return m
+}
+
+// NewTestMapMessage creates a synthetic map entry Message with "key" and "value" fields.
+func NewTestMapMessage(name string, keyType, valueType Typez) *Message {
+	return NewTestMapMessageWithFields(
+		name,
+		NewTestField("key").WithType(keyType),
+		NewTestField("value").WithType(valueType),
+	)
+}
+
+// NewTestMapMessageWithFields creates a synthetic map entry Message with custom key and value fields.
+func NewTestMapMessageWithFields(name string, key, value *Field) *Message {
+	return NewTestMessage(name).
+		WithIsMap().
+		WithFields(key, value)
+}
+
 // NewTestService creates a service with defaults for testing.
 // Default package is "test".
 func NewTestService(name string) *Service {
@@ -187,6 +310,12 @@ func NewTestService(name string) *Service {
 func (s *Service) WithPackage(pkg string) *Service {
 	s.Package = pkg
 	s.ID = fmt.Sprintf(".%s.%s", pkg, s.Name)
+	return s
+}
+
+// WithID overrides the service's ID.
+func (s *Service) WithID(id string) *Service {
+	s.ID = id
 	return s
 }
 
@@ -203,6 +332,24 @@ func (s *Service) WithMethods(methods ...*Method) *Service {
 	return s
 }
 
+// WithDeprecated sets whether the service is deprecated.
+func (s *Service) WithDeprecated(deprecated bool) *Service {
+	s.Deprecated = deprecated
+	return s
+}
+
+// WithDocumentation sets the documentation for the service.
+func (s *Service) WithDocumentation(doc string) *Service {
+	s.Documentation = doc
+	return s
+}
+
+// WithDefaultHost sets the default host for the service.
+func (s *Service) WithDefaultHost(host string) *Service {
+	s.DefaultHost = host
+	return s
+}
+
 // NewTestMethod creates a method with defaults for testing.
 // Default package is "test" (implies ID .test.Name).
 func NewTestMethod(name string) *Method {
@@ -215,11 +362,58 @@ func NewTestMethod(name string) *Method {
 	}
 }
 
+// WithID overrides the method's ID.
+func (m *Method) WithID(id string) *Method {
+	m.ID = id
+	return m
+}
+
+// WithAPIVersion sets the APIVersion for the method.
+func (m *Method) WithAPIVersion(version string) *Method {
+	m.APIVersion = version
+	return m
+}
+
+// WithPathInfo sets the PathInfo for the method.
+func (m *Method) WithPathInfo(pathInfo *PathInfo) *Method {
+	m.PathInfo = pathInfo
+	return m
+}
+
+// WithRouting adds routing info to the method.
+func (m *Method) WithRouting(routing ...*RoutingInfo) *Method {
+	m.Routing = append(m.Routing, routing...)
+	return m
+}
+
+// WithAutoPopulated adds auto-populated fields to the method and marks them as auto-populated.
+func (m *Method) WithAutoPopulated(fields ...*Field) *Method {
+	for _, f := range fields {
+		f.AutoPopulated = true
+	}
+	m.AutoPopulated = append(m.AutoPopulated, fields...)
+	return m
+}
+
+// WithDocumentation sets the documentation for the method.
+func (m *Method) WithDocumentation(doc string) *Method {
+	m.Documentation = doc
+	return m
+}
+
+func (m *Method) ensureFirstBinding() *PathBinding {
+	if m.PathInfo == nil {
+		m.PathInfo = &PathInfo{}
+	}
+	if len(m.PathInfo.Bindings) == 0 {
+		m.PathInfo.Bindings = append(m.PathInfo.Bindings, &PathBinding{})
+	}
+	return m.PathInfo.Bindings[0]
+}
+
 // WithVerb sets the HTTP verb for the first binding.
 func (m *Method) WithVerb(verb string) *Method {
-	if len(m.PathInfo.Bindings) > 0 {
-		m.PathInfo.Bindings[0].Verb = verb
-	}
+	m.ensureFirstBinding().Verb = verb
 	return m
 }
 
@@ -243,11 +437,48 @@ func (m *Method) WithOutput(msg *Message) *Method {
 	return m
 }
 
+// WithInputTypeID sets the input type ID for the method.
+func (m *Method) WithInputTypeID(id string) *Method {
+	m.InputTypeID = id
+	return m
+}
+
+// WithOutputTypeID sets the output type ID for the method.
+func (m *Method) WithOutputTypeID(id string) *Method {
+	m.OutputTypeID = id
+	return m
+}
+
 // WithPathTemplate sets the path template for the first binding.
 func (m *Method) WithPathTemplate(pt *PathTemplate) *Method {
-	if len(m.PathInfo.Bindings) > 0 {
-		m.PathInfo.Bindings[0].PathTemplate = pt
+	m.ensureFirstBinding().PathTemplate = pt
+	return m
+}
+
+// WithBindings sets the HTTP bindings for the method.
+// It initializes PathInfo if it is nil.
+func (m *Method) WithBindings(bindings ...*PathBinding) *Method {
+	if m.PathInfo == nil {
+		m.PathInfo = &PathInfo{}
 	}
+	m.PathInfo.Bindings = bindings
+	return m
+}
+
+// WithBodyFieldPath sets the body field path for the method.
+// It initializes PathInfo if it is nil.
+func (m *Method) WithBodyFieldPath(path string) *Method {
+	if m.PathInfo == nil {
+		m.PathInfo = &PathInfo{}
+	}
+	m.PathInfo.BodyFieldPath = path
+	return m
+}
+
+// WithQueryParameters sets the query parameters on the first binding of the method.
+// It initializes PathInfo if it is nil, and creates a binding if none exists.
+func (m *Method) WithQueryParameters(params map[string]bool) *Method {
+	m.ensureFirstBinding().QueryParameters = params
 	return m
 }
 
@@ -259,6 +490,12 @@ func (m *Method) WithSourceMethod(source *Method) *Method {
 		m.SourceServiceID = m.SourceService.ID
 	}
 	m.PathInfo = source.PathInfo
+	return m
+}
+
+// WithSourceServiceID sets the source service ID for the method.
+func (m *Method) WithSourceServiceID(id string) *Method {
+	m.SourceServiceID = id
 	return m
 }
 
@@ -329,6 +566,56 @@ func (m *Method) WithSignatures(signatures ...*MethodSignature) *Method {
 	return m
 }
 
+// WithDeprecated sets whether the method is deprecated.
+func (m *Method) WithDeprecated(deprecated bool) *Method {
+	m.Deprecated = deprecated
+	return m
+}
+
+// WithSampleInfo sets the sample info for the method.
+func (m *Method) WithSampleInfo(sampleInfo *SampleInfo) *Method {
+	m.SampleInfo = sampleInfo
+	return m
+}
+
+// ReturnEmpty marks the method as returning an empty response.
+func (m *Method) ReturnEmpty() *Method {
+	m.ReturnsEmpty = true
+	return m
+}
+
+// NewTestPathBinding creates a PathBinding with the given verb and path template.
+func NewTestPathBinding(verb string, pt *PathTemplate) *PathBinding {
+	return &PathBinding{
+		Verb:         verb,
+		PathTemplate: pt,
+	}
+}
+
+// WithVerb sets the HTTP verb for the binding.
+func (b *PathBinding) WithVerb(verb string) *PathBinding {
+	b.Verb = verb
+	return b
+}
+
+// WithPathTemplate sets the path template for the binding.
+func (b *PathBinding) WithPathTemplate(pt *PathTemplate) *PathBinding {
+	b.PathTemplate = pt
+	return b
+}
+
+// WithQueryParameters sets the query parameters for the binding.
+func (b *PathBinding) WithQueryParameters(params map[string]bool) *PathBinding {
+	b.QueryParameters = params
+	return b
+}
+
+// WithTargetResource sets the target resource for the binding.
+func (b *PathBinding) WithTargetResource(tr *TargetResource) *PathBinding {
+	b.TargetResource = tr
+	return b
+}
+
 // NewTestOneOf creates a OneOf with defaults for testing.
 func NewTestOneOf(name string) *OneOf {
 	return &OneOf{
@@ -347,6 +634,12 @@ func (o *OneOf) WithFields(fields ...*Field) *OneOf {
 		f.Group = o
 		o.Fields = append(o.Fields, f)
 	}
+	return o
+}
+
+// WithDocumentation sets the documentation for the oneof group.
+func (o *OneOf) WithDocumentation(doc string) *OneOf {
+	o.Documentation = doc
 	return o
 }
 
@@ -390,6 +683,12 @@ func (f *Field) WithMap() *Field {
 	return f
 }
 
+// WithRecursive marks the field as recursive.
+func (f *Field) WithRecursive() *Field {
+	f.Recursive = true
+	return f
+}
+
 // WithBehavior adds behavior(s) to the field.
 func (f *Field) WithBehavior(behaviors ...FieldBehavior) *Field {
 	f.Behavior = append(f.Behavior, behaviors...)
@@ -407,6 +706,47 @@ func (f *Field) WithMessageType(msg *Message) *Field {
 	return f
 }
 
+// WithEnumType sets the field's enum type.
+// It sets EnumType, Typez=TypezEnum, and TypezID.
+func (f *Field) WithEnumType(enum *Enum) *Field {
+	f.EnumType = enum
+	f.Typez = TypezEnum
+	if enum != nil {
+		f.TypezID = enum.ID
+	}
+	return f
+}
+
+// WithAutoPopulated marks the field as auto-populated.
+func (f *Field) WithAutoPopulated() *Field {
+	f.AutoPopulated = true
+	return f
+}
+
+// WithResourceNamePattern sets the resource name pattern on the field.
+func (f *Field) WithResourceNamePattern(pattern *ResourceNamePattern) *Field {
+	f.ResourceNamePattern = pattern
+	return f
+}
+
+// WithTypezID sets the field's TypezID.
+func (f *Field) WithTypezID(id string) *Field {
+	f.TypezID = id
+	return f
+}
+
+// WithJSONName sets the JSON name of the field.
+func (f *Field) WithJSONName(name string) *Field {
+	f.JSONName = name
+	return f
+}
+
+// WithSkipProtoConversion marks the field as skipping proto conversion.
+func (f *Field) WithSkipProtoConversion() *Field {
+	f.SkipProtoConversion = true
+	return f
+}
+
 // WithResourceReference sets the resource reference on a field.
 func (f *Field) WithResourceReference(refType string) *Field {
 	f.ResourceReference = &ResourceReference{Type: refType}
@@ -416,6 +756,18 @@ func (f *Field) WithResourceReference(refType string) *Field {
 // WithChildTypeReference sets the child type resource reference on a field.
 func (f *Field) WithChildTypeReference(childType string) *Field {
 	f.ResourceReference = &ResourceReference{ChildType: childType}
+	return f
+}
+
+// WithDeprecated sets whether the field is deprecated.
+func (f *Field) WithDeprecated(deprecated bool) *Field {
+	f.Deprecated = deprecated
+	return f
+}
+
+// WithDocumentation sets the documentation of the field.
+func (f *Field) WithDocumentation(documentation string) *Field {
+	f.Documentation = documentation
 	return f
 }
 
@@ -444,6 +796,110 @@ func (r *Resource) WithPlural(name string) *Resource {
 	return r
 }
 
+// NewTestEnum creates an Enum with defaults for testing.
+// Default package is "test".
+func NewTestEnum(name string) *Enum {
+	return (&Enum{Name: name}).WithPackage("test")
+}
+
+// WithPackage sets the package for the enum and updates its ID.
+func (e *Enum) WithPackage(pkg string) *Enum {
+	e.Package = pkg
+	e.ID = fmt.Sprintf(".%s.%s", pkg, e.Name)
+	return e
+}
+
+// WithID overrides the enum's ID.
+func (e *Enum) WithID(id string) *Enum {
+	e.ID = id
+	return e
+}
+
+// WithDocumentation sets the documentation for the enum.
+func (e *Enum) WithDocumentation(doc string) *Enum {
+	e.Documentation = doc
+	return e
+}
+
+// WithDeprecated sets whether the enum is deprecated.
+func (e *Enum) WithDeprecated(deprecated bool) *Enum {
+	e.Deprecated = deprecated
+	return e
+}
+
+// WithParent sets the parent message for the enum and updates its ID.
+func (e *Enum) WithParent(parent *Message) *Enum {
+	e.Parent = parent
+	if parent != nil {
+		e.Package = parent.Package
+		if strings.HasPrefix(e.ID, ".test.") || e.ID == "" {
+			e.ID = fmt.Sprintf("%s.%s", parent.ID, e.Name)
+		}
+		for _, v := range e.Values {
+			v.Parent = e
+			if strings.HasPrefix(v.ID, ".test.") || v.ID == "" {
+				v.ID = fmt.Sprintf("%s.%s", e.ID, v.Name)
+			}
+		}
+	}
+	return e
+}
+
+// WithValues adds values to the enum, setting their Parent, ID, and populating UniqueNumberValues.
+func (e *Enum) WithValues(values ...*EnumValue) *Enum {
+	for _, v := range values {
+		v.Parent = e
+		if strings.HasPrefix(v.ID, ".test.") || v.ID == "" {
+			v.ID = fmt.Sprintf("%s.%s", e.ID, v.Name)
+		}
+	}
+	e.Values = append(e.Values, values...)
+	seen := make(map[int32]bool)
+	for _, v := range e.UniqueNumberValues {
+		seen[v.Number] = true
+	}
+	for _, v := range values {
+		if !seen[v.Number] {
+			e.UniqueNumberValues = append(e.UniqueNumberValues, v)
+			seen[v.Number] = true
+		}
+	}
+	return e
+}
+
+// WithUniqueNumberValues overrides UniqueNumberValues on the enum.
+func (e *Enum) WithUniqueNumberValues(values ...*EnumValue) *Enum {
+	e.UniqueNumberValues = values
+	return e
+}
+
+// NewTestEnumValue creates an EnumValue with defaults for testing.
+func NewTestEnumValue(name string, number int32) *EnumValue {
+	return &EnumValue{
+		Name:   name,
+		Number: number,
+		ID:     fmt.Sprintf(".test.%s", name),
+	}
+}
+
+// WithID overrides the enum value's ID.
+func (ev *EnumValue) WithID(id string) *EnumValue {
+	ev.ID = id
+	return ev
+}
+
+// WithDocumentation sets the documentation for the enum value.
+func (ev *EnumValue) WithDocumentation(doc string) *EnumValue {
+	ev.Documentation = doc
+	return ev
+}
+
+// WithDeprecated sets whether the enum value is deprecated.
+func (ev *EnumValue) WithDeprecated(deprecated bool) *EnumValue {
+	ev.Deprecated = deprecated
+	return ev
+}
+
 // ParseTemplateForTest converts a string literal into a []PathSegment slice for testing purposes.
 func ParseTemplateForTest(template string) []PathSegment {
 	var segments []PathSegment
@@ -465,4 +921,56 @@ func ParseTemplateForTest(template string) []PathSegment {
 		}
 	}
 	return segments
+}
+
+// NewTestMethodSignature creates a MethodSignature with parameter names.
+func NewTestMethodSignature(names ...string) *MethodSignature {
+	return &MethodSignature{Names: names}
+}
+
+// WithFields appends the resolved fields to the signature.
+func (s *MethodSignature) WithFields(fields ...*Field) *MethodSignature {
+	s.Fields = append(s.Fields, fields...)
+	return s
+}
+
+// NewTestResourceNamePattern creates a ResourceNamePattern with segments.
+func NewTestResourceNamePattern(segments ...ResourceNameSegment) *ResourceNamePattern {
+	return &ResourceNamePattern{Segments: segments}
+}
+
+// NewTestRoutingInfo creates a RoutingInfo struct with variants.
+func NewTestRoutingInfo(name string, variants ...*RoutingInfoVariant) *RoutingInfo {
+	return &RoutingInfo{Name: name, Variants: variants}
+}
+
+// NewTestRoutingInfoVariant creates a RoutingInfoVariant with a field path.
+func NewTestRoutingInfoVariant(fieldPath ...string) *RoutingInfoVariant {
+	return &RoutingInfoVariant{FieldPath: fieldPath}
+}
+
+// NewTestOperationInfo creates an OperationInfo with response and metadata type IDs.
+func NewTestOperationInfo(responseTypeID, metadataTypeID string) *OperationInfo {
+	return &OperationInfo{
+		ResponseTypeID: responseTypeID,
+		MetadataTypeID: metadataTypeID,
+	}
+}
+
+// NewTestDiscoveryLro creates a DiscoveryLro with polling path parameters.
+func NewTestDiscoveryLro(pollingParams ...string) *DiscoveryLro {
+	return &DiscoveryLro{PollingPathParameters: pollingParams}
+}
+
+// NewTestSampleInfo creates a SampleInfo initialized with a resource name field.
+func NewTestSampleInfo(resourceNameField *Field) *SampleInfo {
+	return &SampleInfo{ResourceNameField: resourceNameField}
+}
+
+// NewTestPaginationInfo creates a PaginationInfo for pagination responses.
+func NewTestPaginationInfo(nextPageToken, pageableItem *Field) *PaginationInfo {
+	return &PaginationInfo{
+		NextPageToken: nextPageToken,
+		PageableItem:  pageableItem,
+	}
 }

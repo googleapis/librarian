@@ -425,6 +425,11 @@ embedding large blocks of foreign code directly as formatted inline strings.
 Move these code templates into package-level constants or separate template
 files (e.g., mustache templates) to keep the Go logic clean.
 
+### Follow the latest concurrency best practices
+
+Follow the latest recommendations for the current Go version, such as using
+`runtime.GOMAXPROCS(0)` instead of `runtime.NumCPU()` to respect CPU quotas. 
+
 ## Writing Tests
 
 When writing tests, we follow the patterns below to ensure consistency,

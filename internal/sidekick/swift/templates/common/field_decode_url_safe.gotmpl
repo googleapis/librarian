@@ -1,0 +1,50 @@
+{{/*
+Copyright 2026 Google LLC
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    https://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/}}
+{{- if .Singular }}
+if let s = try container.decodeIfPresent(Swift.String.self, forKey: .{{ .Codec.Name }}) {
+  guard let v = {{ .Codec.Model.WktPackage }}._DiscoveryBase64.decode(s) else {
+    throw DecodingError.dataCorrupted(
+      DecodingError.Context(codingPath: decoder.codingPath, debugDescription: "Expected url-safe encoded value")
+    )
+  }
+  self.{{ .Codec.Name }} = v
+}
+{{- end }}
+{{- if .Repeated }}
+if let strings = try container.decodeIfPresent([Swift.String].self, forKey: .{{ .Codec.Name }}) {
+  self.{{ .Codec.Name }} = try strings.map {
+    guard let v = {{ .Codec.Model.WktPackage }}._DiscoveryBase64.decode($0) else {
+      throw DecodingError.dataCorrupted(
+        DecodingError.Context(codingPath: decoder.codingPath, debugDescription: "Expected url-safe encoded value")
+      )
+    }
+    return v
+  }
+}
+{{- end }}
+{{- if .Map }}
+{{- /* Discovery-based services only have string-key maps, we only need to map the values */}}
+if let strings = try container.decodeIfPresent([Swift.String:Swift.String].self, forKey: .{{ .Codec.Name }}) {
+  self.{{ .Codec.Name }} = try strings.mapValues {
+    guard let v = {{ .Codec.Model.WktPackage }}._DiscoveryBase64.decode($0) else {
+      throw DecodingError.dataCorrupted(
+        DecodingError.Context(codingPath: decoder.codingPath, debugDescription: "Expected url-safe encoded value")
+      )
+    }
+    return v
+  }
+}
+{{- end }}

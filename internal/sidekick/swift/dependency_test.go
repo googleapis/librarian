@@ -61,3 +61,47 @@ func TestLocalName(t *testing.T) {
 		})
 	}
 }
+
+func TestDependency_Mode(t *testing.T) {
+	for _, test := range []struct {
+		name              string
+		dep               Dependency
+		wantLocalOrRemote bool
+		wantLocalOnly     bool
+		wantRemoteOnly    bool
+	}{
+		{
+			name:              "local only",
+			dep:               Dependency{SwiftDependency: config.SwiftDependency{Path: "pkgs/swift-google-auth"}},
+			wantLocalOrRemote: false,
+			wantLocalOnly:     true,
+			wantRemoteOnly:    false,
+		},
+		{
+			name:              "remote only",
+			dep:               Dependency{SwiftDependency: config.SwiftDependency{URL: "https://github.com/apple/swift-log", Version: "1.12.0"}},
+			wantLocalOrRemote: false,
+			wantLocalOnly:     false,
+			wantRemoteOnly:    true,
+		},
+		{
+			name:              "local or remote",
+			dep:               Dependency{SwiftDependency: config.SwiftDependency{URL: "https://github.com/googleapis/swift-google-auth", Path: "pkgs/swift-google-auth", Version: "0.2.0"}},
+			wantLocalOrRemote: true,
+			wantLocalOnly:     false,
+			wantRemoteOnly:    false,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			if got := test.dep.IsLocalOrRemote(); got != test.wantLocalOrRemote {
+				t.Errorf("IsLocalOrRemote() = %v, want %v", got, test.wantLocalOrRemote)
+			}
+			if got := test.dep.IsLocalOnly(); got != test.wantLocalOnly {
+				t.Errorf("IsLocalOnly() = %v, want %v", got, test.wantLocalOnly)
+			}
+			if got := test.dep.IsRemoteOnly(); got != test.wantRemoteOnly {
+				t.Errorf("IsRemoteOnly() = %v, want %v", got, test.wantRemoteOnly)
+			}
+		})
+	}
+}

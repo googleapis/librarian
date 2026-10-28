@@ -37,8 +37,8 @@ func TestModelAnnotations(t *testing.T) {
 		},
 	}
 	model := api.NewTestAPI(
-		[]*api.Message{}, []*api.Enum{},
-		[]*api.Service{{Name: "Workflows", Package: "google.cloud.workflows.v1"}})
+		nil, nil,
+		[]*api.Service{api.NewTestService("Workflows").WithPackage("google.cloud.workflows.v1")})
 	codec := newCodec(cfg)
 	if err := codec.annotateModel(model, cfg); err != nil {
 		t.Fatal(err)
@@ -68,13 +68,9 @@ func TestServiceAnnotations(t *testing.T) {
 		},
 	}
 	model := api.NewTestAPI(
-		[]*api.Message{}, []*api.Enum{},
+		nil, nil,
 		[]*api.Service{
-			{
-				Name:    "Workflows",
-				Package: "google.cloud.workflows.v1",
-				ID:      ".google.cloud.workflows.v1.Workflows",
-			},
+			api.NewTestService("Workflows").WithPackage("google.cloud.workflows.v1"),
 		})
 	codec := newCodec(cfg)
 	if err := codec.annotateModel(model, cfg); err != nil {
@@ -104,19 +100,11 @@ func TestMethodAnnotations(t *testing.T) {
 		},
 	}
 	model := api.NewTestAPI(
-		[]*api.Message{}, []*api.Enum{},
+		nil, nil,
 		[]*api.Service{
-			{
-				Name:    "Workflows",
-				Package: "google.cloud.workflows.v1",
-				ID:      ".google.cloud.workflows.v1.Workflows",
-				Methods: []*api.Method{
-					{
-						Name: "GetWorkflow",
-						ID:   ".google.cloud.workflows.v1.Workflows.GetWorkflow",
-					},
-				},
-			},
+			api.NewTestService("Workflows").
+				WithPackage("google.cloud.workflows.v1").
+				WithMethods(api.NewTestMethod("GetWorkflow")),
 		})
 	codec := newCodec(cfg)
 	if err := codec.annotateModel(model, cfg); err != nil {

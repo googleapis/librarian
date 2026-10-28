@@ -1291,6 +1291,16 @@ func TestBuildModuleCodec(t *testing.T) {
 			},
 		},
 		{
+			name:    "with HandwrittenSurface",
+			library: &config.Library{},
+			module: &config.RustModule{
+				HandwrittenSurface: "true",
+			},
+			want: map[string]string{
+				"handwritten-surface": "true",
+			},
+		},
+		{
 			name:    "with InternalBuilders",
 			library: &config.Library{},
 			module: &config.RustModule{
@@ -1439,6 +1449,7 @@ func TestBuildCodec(t *testing.T) {
 								Ignore:  true,
 							},
 						},
+						GrpcClient: "crate::storage::bidi::GrpcClient",
 					},
 					ModulePath:                "gcs",
 					TemplateOverride:          "custom-template",
@@ -1446,11 +1457,13 @@ func TestBuildCodec(t *testing.T) {
 					IncludeStreamingMethods:   true,
 					PerServiceFeatures:        true,
 					HasVeneer:                 true,
+					ExtensibleBuilders:        []string{".a.b.Service.Method1", ".a.b.Service.Method2"},
 					RoutingRequired:           true,
 					NameOverrides:             "foo=bar",
 					QuickstartServiceOverride: "OverriddenService",
 					DefaultFeatures:           []string{"feature1", "feature2"},
 					DisabledClippyWarnings:    []string{"clippy1", "clippy2"},
+					InternalModules:           []string{"internal_mod1", "internal_mod2"},
 				},
 			},
 			want: map[string]string{
@@ -1462,14 +1475,17 @@ func TestBuildCodec(t *testing.T) {
 				"per-service-features":        "true",
 				"detailed-tracing-attributes": "true",
 				"has-veneer":                  "true",
+				"extensible-builders":         ".a.b.Service.Method1,.a.b.Service.Method2",
 				"routing-required":            "true",
 				"generate-setter-samples":     "true",
 				"generate-rpc-samples":        "true",
 				"name-overrides":              "foo=bar",
 				"quickstart-service-override": "OverriddenService",
+				"grpc-client":                 "crate::storage::bidi::GrpcClient",
 				"default-features":            "feature1,feature2",
 				"disabled-rustdoc-warnings":   "warning1,warning2",
 				"disabled-clippy-warnings":    "clippy1,clippy2",
+				"internal-modules":            "internal_mod1,internal_mod2",
 				"release-level":               "stable",
 				"package:dep1":                "package=pkg1,source=1.0",
 				"package:dep2":                "feature=feat2,ignore=true",
@@ -1532,6 +1548,148 @@ func TestModuleToModelConfig_SkippedIds(t *testing.T) {
 		expected := []string{".google.cloud.secretmanager.v1.Secret.name"}
 		if diff := cmp.Diff(expected, modelCfg.Override.SkippedIDs); diff != "" {
 			t.Errorf("moduleToModelConfig() mismatch (-want +got):\n%s", diff)
+		}
+	})
+}
+
+func TestBuildModuleCodec_GrpcClient(t *testing.T) {
+	t.Run("module level grpc_client", func(t *testing.T) {
+		library := &config.Library{
+			Name: "google-cloud-storage",
+		}
+		module := &config.RustModule{
+			GrpcClient: "crate::storage::bidi::GrpcClient",
+		}
+		got := buildModuleCodec(library, module)
+		if got["grpc-client"] != "crate::storage::bidi::GrpcClient" {
+			t.Errorf("expected grpc-client to be %q, got %q", "crate::storage::bidi::GrpcClient", got["grpc-client"])
+		}
+	})
+
+	t.Run("crate level fallback grpc_client", func(t *testing.T) {
+		library := &config.Library{
+			Name: "google-cloud-storage",
+			Rust: &config.RustCrate{
+				RustDefault: config.RustDefault{
+					GrpcClient: "crate::storage::bidi::GrpcClient",
+				},
+			},
+		}
+		module := &config.RustModule{}
+		got := buildModuleCodec(library, module)
+		if got["grpc-client"] != "crate::storage::bidi::GrpcClient" {
+			t.Errorf("expected grpc-client to be %q, got %q", "crate::storage::bidi::GrpcClient", got["grpc-client"])
+		}
+	})
+
+	t.Run("module overrides crate level grpc_client", func(t *testing.T) {
+		library := &config.Library{
+			Name: "google-cloud-storage",
+			Rust: &config.RustCrate{
+				RustDefault: config.RustDefault{
+					GrpcClient: "crate::storage::default::GrpcClient",
+				},
+			},
+		}
+		module := &config.RustModule{
+			GrpcClient: "crate::storage::bidi::GrpcClient",
+		}
+		got := buildModuleCodec(library, module)
+		if got["grpc-client"] != "crate::storage::bidi::GrpcClient" {
+			t.Errorf("expected grpc-client to be %q, got %q", "crate::storage::bidi::GrpcClient", got["grpc-client"])
+		}
+	})
+}
+
+func TestBuildModuleCodec_IdempotencyHook(t *testing.T) {
+	t.Run("module level idempotency_hook", func(t *testing.T) {
+		library := &config.Library{
+			Name: "google-cloud-storage",
+		}
+		module := &config.RustModule{
+			IdempotencyHook: "resolve_idempotency",
+		}
+		got := buildModuleCodec(library, module)
+		if got["idempotency-hook"] != "resolve_idempotency" {
+			t.Errorf("expected idempotency-hook to be %q, got %q", "resolve_idempotency", got["idempotency-hook"])
+		}
+	})
+
+	t.Run("crate level fallback idempotency_hook", func(t *testing.T) {
+		library := &config.Library{
+			Name: "google-cloud-storage",
+			Rust: &config.RustCrate{
+				IdempotencyHook: "resolve_idempotency",
+			},
+		}
+		module := &config.RustModule{}
+		got := buildModuleCodec(library, module)
+		if got["idempotency-hook"] != "resolve_idempotency" {
+			t.Errorf("expected idempotency-hook to be %q, got %q", "resolve_idempotency", got["idempotency-hook"])
+		}
+	})
+
+	t.Run("module overrides crate level idempotency_hook", func(t *testing.T) {
+		library := &config.Library{
+			Name: "google-cloud-storage",
+			Rust: &config.RustCrate{
+				IdempotencyHook: "crate_hook",
+			},
+		}
+		module := &config.RustModule{
+			IdempotencyHook: "module_hook",
+		}
+		got := buildModuleCodec(library, module)
+		if got["idempotency-hook"] != "module_hook" {
+			t.Errorf("expected idempotency-hook to be %q, got %q", "module_hook", got["idempotency-hook"])
+		}
+	})
+}
+
+func TestBuildModuleCodec_ExtensibleBuilders(t *testing.T) {
+	t.Run("module level extensible_builders", func(t *testing.T) {
+		library := &config.Library{
+			Name: "google-cloud-bigquery",
+		}
+		module := &config.RustModule{
+			ExtensibleBuilders: []string{".google.cloud.bigquery.storage.v1.BigQueryRead.ReadRows"},
+		}
+		got := buildModuleCodec(library, module)
+		want := ".google.cloud.bigquery.storage.v1.BigQueryRead.ReadRows"
+		if got["extensible-builders"] != want {
+			t.Errorf("expected extensible-builders to be %q, got %q", want, got["extensible-builders"])
+		}
+	})
+
+	t.Run("crate level fallback extensible_builders", func(t *testing.T) {
+		library := &config.Library{
+			Name: "google-cloud-bigquery",
+			Rust: &config.RustCrate{
+				ExtensibleBuilders: []string{".google.cloud.bigquery.storage.v1.BigQueryRead.ReadRows"},
+			},
+		}
+		module := &config.RustModule{}
+		got := buildModuleCodec(library, module)
+		want := ".google.cloud.bigquery.storage.v1.BigQueryRead.ReadRows"
+		if got["extensible-builders"] != want {
+			t.Errorf("expected extensible-builders to be %q, got %q", want, got["extensible-builders"])
+		}
+	})
+
+	t.Run("module overrides crate level extensible_builders", func(t *testing.T) {
+		library := &config.Library{
+			Name: "google-cloud-bigquery",
+			Rust: &config.RustCrate{
+				ExtensibleBuilders: []string{".a.b.CrateMethod"},
+			},
+		}
+		module := &config.RustModule{
+			ExtensibleBuilders: []string{".a.b.ModuleMethod"},
+		}
+		got := buildModuleCodec(library, module)
+		want := ".a.b.ModuleMethod"
+		if got["extensible-builders"] != want {
+			t.Errorf("expected extensible-builders to be %q, got %q", want, got["extensible-builders"])
 		}
 	})
 }

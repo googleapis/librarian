@@ -19,6 +19,7 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"regexp"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -133,5 +134,186 @@ func TestGather_Error(t *testing.T) {
 	_, err := Gather("/non/existent/path", "google/cloud/foo")
 	if !errors.Is(err, fs.ErrNotExist) {
 		t.Errorf("Gather() error = %v, want %v", err, fs.ErrNotExist)
+	}
+}
+
+func TestSearch(t *testing.T) {
+	t.Parallel()
+	phpNamespaceRe := regexp.MustCompile(`option\s+php_namespace\s*=\s*"([^"]+)";`)
+	for _, test := range []struct {
+		name      string
+		regex     *regexp.Regexp
+		files     map[string]string
+		want      string
+		wantFound bool
+	}{
+		{
+			name:  "match found",
+			regex: phpNamespaceRe,
+			files: map[string]string{
+				"service.proto": `option php_namespace = "Google\\Cloud\\SecretManager\\V1";`,
+			},
+			want:      `Google\\Cloud\\SecretManager\\V1`,
+			wantFound: true,
+		},
+		{
+			name:  "extra whitespace",
+			regex: phpNamespaceRe,
+			files: map[string]string{
+				"service.proto": `  option   php_namespace   =   "Google\\Cloud\\Storage\\V1";`,
+			},
+			want:      `Google\\Cloud\\Storage\\V1`,
+			wantFound: true,
+		},
+		{
+			name:  "first match returned",
+			regex: phpNamespaceRe,
+			files: map[string]string{
+				"service.proto": "option php_namespace = \"Google\\\\Cloud\\\\First\";\noption php_namespace = \"Google\\\\Cloud\\\\Second\";",
+			},
+			want:      `Google\\Cloud\\First`,
+			wantFound: true,
+		},
+		{
+			name:  "ignores comments",
+			regex: phpNamespaceRe,
+			files: map[string]string{
+				"service.proto": "// option php_namespace = \"Google\\\\Cloud\\\\Ignored\";\noption php_namespace = \"Google\\\\Cloud\\\\SecretManager\\\\V1\";",
+			},
+			want:      `Google\\Cloud\\SecretManager\\V1`,
+			wantFound: true,
+		},
+		{
+			name:  "ignores non-proto files",
+			regex: phpNamespaceRe,
+			files: map[string]string{
+				"README.md":     `option php_namespace = "Google\\Cloud\\Ignored";`,
+				"service.yaml":  `type: google.api.Service`,
+				"service.proto": `option php_namespace = "Google\\Cloud\\SecretManager\\V1";`,
+			},
+			want:      `Google\\Cloud\\SecretManager\\V1`,
+			wantFound: true,
+		},
+		{
+			name:  "no match in proto",
+			regex: phpNamespaceRe,
+			files: map[string]string{
+				"service.proto": `syntax = "proto3";` + "\n" + `package google.cloud.secretmanager.v1;`,
+			},
+			want:      "",
+			wantFound: false,
+		},
+		{
+			name:  "only commented match",
+			regex: phpNamespaceRe,
+			files: map[string]string{
+				"service.proto": `// option php_namespace = "Google\\Cloud\\SecretManager\\V1";`,
+			},
+			want:      "",
+			wantFound: false,
+		},
+		{
+			name:  "different option regex",
+			regex: regexp.MustCompile(`option\s+go_package\s*=\s*"([^"]+)";`),
+			files: map[string]string{
+				"service.proto": `option go_package = "cloud.google.com/go/secretmanager/apiv1;secretmanager";`,
+			},
+			want:      "cloud.google.com/go/secretmanager/apiv1;secretmanager",
+			wantFound: true,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			tmpDir := t.TempDir()
+			apiPath := "google/cloud/secretmanager/v1"
+			dir := filepath.Join(tmpDir, apiPath)
+			if err := os.MkdirAll(dir, 0o755); err != nil {
+				t.Fatal(err)
+			}
+			for name, content := range test.files {
+				if err := os.WriteFile(filepath.Join(dir, name), []byte(content), 0o644); err != nil {
+					t.Fatal(err)
+				}
+			}
+			got, found, err := Search(tmpDir, apiPath, test.regex)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if found != test.wantFound {
+				t.Errorf("found = %v, want %v", found, test.wantFound)
+			}
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestSearch_Error(t *testing.T) {
+	t.Parallel()
+	phpNamespaceRe := regexp.MustCompile(`option\s+php_namespace\s*=\s*"([^"]+)";`)
+	for _, test := range []struct {
+		name    string
+		setup   func(t *testing.T) (string, string)
+		wantErr error
+	}{
+		{
+			name: "nonexistent directory",
+			setup: func(t *testing.T) (string, string) {
+				return t.TempDir(), "google/cloud/nonexistent/v1"
+			},
+			wantErr: fs.ErrNotExist,
+		},
+		{
+			name: "no proto files in directory",
+			setup: func(t *testing.T) (string, string) {
+				tmpDir := t.TempDir()
+				apiPath := "google/cloud/test/v1"
+				dir := filepath.Join(tmpDir, apiPath)
+				if err := os.MkdirAll(dir, 0o755); err != nil {
+					t.Fatal(err)
+				}
+				if err := os.WriteFile(filepath.Join(dir, "README.md"), []byte("# docs"), 0o644); err != nil {
+					t.Fatal(err)
+				}
+				return tmpDir, apiPath
+			},
+			wantErr: fs.ErrNotExist,
+		},
+		{
+			name: "unreadable proto file",
+			setup: func(t *testing.T) (string, string) {
+				if os.Geteuid() == 0 {
+					t.Skip("skipping permission test when running as root")
+				}
+				tmpDir := t.TempDir()
+				apiPath := "google/cloud/test/v1"
+				dir := filepath.Join(tmpDir, apiPath)
+				if err := os.MkdirAll(dir, 0o755); err != nil {
+					t.Fatal(err)
+				}
+				file := filepath.Join(dir, "service.proto")
+				if err := os.WriteFile(file, []byte("syntax = \"proto3\";"), 0o000); err != nil {
+					t.Fatal(err)
+				}
+				return tmpDir, apiPath
+			},
+			wantErr: fs.ErrPermission,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			googleapisDir, apiPath := test.setup(t)
+			got, found, err := Search(googleapisDir, apiPath, phpNamespaceRe)
+			if !errors.Is(err, test.wantErr) {
+				t.Errorf("Search() error = %v, want %v", err, test.wantErr)
+			}
+			if found {
+				t.Errorf("Search() found = %v, want false", found)
+			}
+			if got != "" {
+				t.Errorf("Search() got = %q, want empty string", got)
+			}
+		})
 	}
 }

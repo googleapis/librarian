@@ -416,6 +416,85 @@ func TestBump_VersionMismatch(t *testing.T) {
 	}
 }
 
+func TestUpdateLibraryVersion(t *testing.T) {
+	for _, test := range []struct {
+		name       string
+		initial    string
+		newVersion string
+		want       string
+	}{
+		{
+			name: "prerelease",
+			initial: `// Copyright 2026 Google LLC
+
+/// The version of the a client library.
+const packageVersion = '0.9.0';
+`,
+			newVersion: "0.9.1",
+			want: `// Copyright 2026 Google LLC
+
+/// The version of the a client library.
+const packageVersion = '0.9.1';
+`,
+		},
+		{
+			name: "release",
+			initial: `// Copyright 2026 Google LLC
+
+/// The version of the a client library.
+const packageVersion = '1.0.0';
+`,
+			newVersion: "1.1.0",
+			want: `// Copyright 2026 Google LLC
+
+/// The version of the a client library.
+const packageVersion = '1.1.0';
+`,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			tempDir := t.TempDir()
+			srcDir := filepath.Join(tempDir, "lib", "src")
+			if err := os.MkdirAll(srcDir, 0755); err != nil {
+				t.Fatal(err)
+			}
+			versionPath := filepath.Join(srcDir, "version.dart")
+			if err := os.WriteFile(versionPath, []byte(test.initial), 0644); err != nil {
+				t.Fatal(err)
+			}
+
+			if err := updateLibraryVersion(tempDir, test.newVersion); err != nil {
+				t.Fatalf("updateLibraryVersion failed: %v", err)
+			}
+
+			content, err := os.ReadFile(versionPath)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if got := string(content); got != test.want {
+				t.Errorf("version.dart content mismatch:\ngot:\n%s\nwant:\n%s", got, test.want)
+			}
+		})
+	}
+}
+
+func TestUpdateLibraryVersion_NoMatch(t *testing.T) {
+	tempDir := t.TempDir()
+	srcDir := filepath.Join(tempDir, "lib", "src")
+	if err := os.MkdirAll(srcDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	versionPath := filepath.Join(srcDir, "version.dart")
+	if err := os.WriteFile(versionPath, []byte("// no version here\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	err := updateLibraryVersion(tempDir, "1.1.0")
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+}
+
 func setupRepoFromDir(t *testing.T, sourceDir string) {
 	t.Helper()
 

@@ -36,6 +36,8 @@ type oneOfAnnotation struct {
 	// The fully qualified name, relative to `codec.modulePath`. Typically this
 	// is the `QualifiedName` with the `crate::model::` prefix removed.
 	RelativeName string
+	// The type name relative to the prost module (e.g. `message_module::OneofName`).
+	ProstRelativeName string
 	// The Rust `struct` that contains this oneof, fully qualified
 	StructQualifiedName string
 	// The fully qualified name for examples. For messages in external packages
@@ -50,8 +52,10 @@ type oneOfAnnotation struct {
 	FieldType          string
 	DocLines           []string
 	// If set, this enum is only enabled when some features are enabled.
-	FeatureGates   []string
-	FeatureGatesOp string
+	FeatureGates               []string
+	FeatureGatesOp             string
+	GenerateSetterSamples      bool
+	GenerateBranchConstructors bool
 }
 
 // MultiFeatureGates returns true if there are multiple feature gates.
@@ -83,15 +87,18 @@ func (c *codec) annotateOneOf(oneof *api.OneOf, message *api.Message, model *api
 	}
 
 	ann := &oneOfAnnotation{
-		FieldName:           toSnake(oneof.Name),
-		SetterName:          toSnakeNoMangling(oneof.Name),
-		EnumName:            enumName,
-		QualifiedName:       qualifiedName,
-		RelativeName:        relativeEnumName,
-		StructQualifiedName: structQualifiedName,
-		NameInExamples:      nameInExamples,
-		FieldType:           fmt.Sprintf("%s::%s", scope, enumName),
-		DocLines:            docLines,
+		FieldName:                  toSnake(oneof.Name),
+		SetterName:                 toSnakeNoMangling(oneof.Name),
+		EnumName:                   enumName,
+		QualifiedName:              qualifiedName,
+		RelativeName:               relativeEnumName,
+		ProstRelativeName:          prostMessageModulePath(message) + "::" + toProstPascal(enumName),
+		StructQualifiedName:        structQualifiedName,
+		NameInExamples:             nameInExamples,
+		FieldType:                  fmt.Sprintf("%s::%s", scope, enumName),
+		DocLines:                   docLines,
+		GenerateSetterSamples:      c.generateSetterSamples,
+		GenerateBranchConstructors: c.templateOverride == "templates/grpc-client",
 	}
 	// Note that this is different from OneOf name-overrides
 	// as those solve for fully qualified name clashes where a oneof

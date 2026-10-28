@@ -70,9 +70,9 @@ func TestAnnotateMethodNames(t *testing.T) {
 		{
 			MethodID: ".test.v1.ResourceService.Self",
 			Want: &methodAnnotation{
-				Name:                "r#self",
+				Name:                "self_",
 				NameNoMangling:      "self",
-				BuilderName:         "r#Self",
+				BuilderName:         "Self_",
 				Body:                "None::<gaxi::http::NoBody>",
 				ServiceNameToPascal: "ResourceService",
 				ServiceNameToCamel:  "resourceService",
@@ -141,7 +141,7 @@ func TestAnnotateMethodAPIVersion(t *testing.T) {
 	if gotMethod == nil {
 		t.Fatalf("missing method %s", methodID)
 	}
-	gotMethod.APIVersion = "v1_20260205"
+	gotMethod.WithAPIVersion("v1_20260205")
 
 	codec := newTestCodec(t, libconfig.SpecDiscovery, "", map[string]string{})
 	_, err = annotateModel(model, codec)
@@ -190,102 +190,67 @@ func TestAnnotateMethodInternalBuilders(t *testing.T) {
 
 func annotateMethodModel(t *testing.T) *api.API {
 	t.Helper()
-	request := &api.Message{
-		Name:    "Request",
-		Package: "test.v1",
-		ID:      ".test.v1.Request",
-		Fields: []*api.Field{
-			{Name: "project", ID: ".test.v1.Request.project", Typez: api.TypezString},
-			{Name: "zone", ID: ".test.v1.Request.zone", Typez: api.TypezString},
-			{Name: "type", ID: ".test.v1.Request.type", Typez: api.TypezString},
-			{Name: "name", ID: ".test.v1.Request.name", Typez: api.TypezString},
-			{Name: "location", ID: ".test.v1.Request.location", Typez: api.TypezString},
-			{Name: "cluster", ID: ".test.v1.Request.cluster", Typez: api.TypezString},
-		},
-	}
-	response := &api.Message{
-		Name:    "Response",
-		Package: "test.v1",
-		ID:      ".test.v1.Response",
-	}
-	methodMove := &api.Method{
-		Name:         "move",
-		ID:           ".test.v1.ResourceService.move",
-		InputType:    request,
-		InputTypeID:  ".test.v1.Request",
-		OutputTypeID: ".test.v1.Response",
-		PathInfo: &api.PathInfo{
-			Bindings: []*api.PathBinding{
-				{
-					Verb:         "POST",
-					PathTemplate: &api.PathTemplate{},
-				},
-			},
-		},
-	}
-	methodDelete := &api.Method{
-		Name:         "Delete",
-		ID:           ".test.v1.ResourceService.Delete",
-		InputType:    request,
-		InputTypeID:  ".test.v1.Request",
-		OutputTypeID: ".google.protobuf.Empty",
-		ReturnsEmpty: true,
-		PathInfo: &api.PathInfo{
-			Bindings: []*api.PathBinding{
-				{
-					Verb: "DELETE",
-					PathTemplate: (&api.PathTemplate{}).
-						WithLiteral("projects").
-						WithVariableNamed("project").
-						WithLiteral("zones").
-						WithVariableNamed("zone").
-						// This is unlikely, but want to test variables that
-						// are reserved words.
-						WithLiteral("types").
-						WithVariableNamed("type"),
-				},
-			},
-		},
-		DiscoveryLro: &api.DiscoveryLro{
+	request := api.NewTestMessage("Request").
+		WithPackage("test.v1").
+		WithFields(
+			api.NewTestField("project").WithType(api.TypezString),
+			api.NewTestField("zone").WithType(api.TypezString),
+			api.NewTestField("type").WithType(api.TypezString),
+			api.NewTestField("name").WithType(api.TypezString),
+			api.NewTestField("location").WithType(api.TypezString),
+			api.NewTestField("cluster").WithType(api.TypezString),
+		)
+	response := api.NewTestMessage("Response").
+		WithPackage("test.v1")
+	empty := api.NewTestMessage("Empty").
+		WithPackage("google.protobuf")
+
+	methodMove := api.NewTestMethod("move").
+		WithInput(request).
+		WithOutput(response).
+		WithVerb("POST").
+		WithPathTemplate(&api.PathTemplate{})
+
+	methodDelete := api.NewTestMethod("Delete").
+		WithInput(request).
+		WithOutput(empty).
+		WithVerb("DELETE").
+		WithPathTemplate((&api.PathTemplate{}).
+			WithLiteral("projects").
+			WithVariableNamed("project").
+			WithLiteral("zones").
+			WithVariableNamed("zone").
+			// This is unlikely, but want to test variables that
+			// are reserved words.
+			WithLiteral("types").
+			WithVariableNamed("type")).
+		WithDiscoveryLro(&api.DiscoveryLro{
 			PollingPathParameters: []string{"project", "zone", "type"},
-		},
-	}
-	methodSelf := &api.Method{
-		Name:         "Self",
-		ID:           ".test.v1.ResourceService.Self",
-		InputType:    request,
-		InputTypeID:  ".test.v1.Request",
-		OutputTypeID: ".test.v1.Response",
-		PathInfo: &api.PathInfo{
-			Bindings: []*api.PathBinding{
-				{
-					Verb:         "GET",
-					PathTemplate: &api.PathTemplate{},
-				},
-			},
-		},
-	}
-	service := &api.Service{
-		Name:    "ResourceService",
-		ID:      ".test.v1.ResourceService",
-		Package: "test.v1",
-		Methods: []*api.Method{methodMove, methodDelete, methodSelf},
-	}
+		}).
+		ReturnEmpty()
+
+	methodSelf := api.NewTestMethod("Self").
+		WithInput(request).
+		WithOutput(response).
+		WithVerb("GET").
+		WithPathTemplate(&api.PathTemplate{})
+
+	service := api.NewTestService("ResourceService").
+		WithPackage("test.v1").
+		WithMethods(methodMove, methodDelete, methodSelf)
 
 	model := api.NewTestAPI(
 		[]*api.Message{request, response},
-		[]*api.Enum{},
+		nil,
 		[]*api.Service{service})
-	api.CrossReference(model)
+	if err := api.CrossReference(model); err != nil {
+		t.Fatal(err)
+	}
 	return model
 }
 
 func TestAnnotateMethodResourceNameTemplate(t *testing.T) {
 	model := annotateMethodModel(t)
-	err := api.CrossReference(model)
-	if err != nil {
-		t.Fatal(err)
-	}
 
 	// Helper to inject TargetResource
 	injectTargetResource := func(methodID string, template string, fields [][]string) {
@@ -352,8 +317,7 @@ func TestAnnotateMethodResourceNameTemplate(t *testing.T) {
 	codec := newTestCodec(t, libconfig.SpecProtobuf, "", map[string]string{
 		"detailed-tracing-attributes": "true",
 	})
-	_, err = annotateModel(model, codec)
-	if err != nil {
+	if _, err := annotateModel(model, codec); err != nil {
 		t.Fatal(err)
 	}
 
@@ -431,76 +395,50 @@ func TestAnnotateMethodResourceNameTemplate(t *testing.T) {
 }
 
 func TestFormatResourceNameTemplateFromPath(t *testing.T) {
+	method := api.NewTestMethod("method")
 	for _, test := range []struct {
 		name    string
-		method  *api.Method
 		binding *api.PathBinding
 		want    string
 		wantErr bool
 	}{
 		{
 			name: "Basic",
-			method: &api.Method{
-				Model: &api.API{Name: "test"},
-				Service: &api.Service{
-					DefaultHost: "test.googleapis.com",
-				},
-			},
-			binding: &api.PathBinding{
-				TargetResource: &api.TargetResource{
-					Template: api.ParseTemplateForTest("//test.googleapis.com/projects/{project}/zones/{zone}"),
-				},
-			},
+			binding: api.NewTestPathBinding("", nil).WithTargetResource(&api.TargetResource{
+				Template: api.ParseTemplateForTest("//test.googleapis.com/projects/{project}/zones/{zone}"),
+			}),
 			want: "//test.googleapis.com/projects/{}/zones/{}",
 		},
 		{
 			name: "With Extended Field Path",
-			method: &api.Method{
-				Model:   &api.API{Name: "test"},
-				Service: &api.Service{},
-			},
-			binding: &api.PathBinding{
-				TargetResource: &api.TargetResource{
-					Template: api.ParseTemplateForTest("//test.googleapis.com/items/{item.id}"),
-				},
-			},
+			binding: api.NewTestPathBinding("", nil).WithTargetResource(&api.TargetResource{
+				Template: api.ParseTemplateForTest("//test.googleapis.com/items/{item.id}"),
+			}),
 			want: "//test.googleapis.com/items/{}",
 		},
 		{
 			name: "Discovery API Compute V1 Example",
-			method: &api.Method{
-				Model: &api.API{Name: "compute"},
-				Service: &api.Service{
-					DefaultHost: "compute.googleapis.com",
-				},
-			},
-			binding: &api.PathBinding{
-				PathTemplate: (&api.PathTemplate{}).
-					WithLiteral("compute").
-					WithLiteral("v1").
-					WithLiteral("projects").
-					WithVariableNamed("project").
-					WithLiteral("zones").
-					WithVariableNamed("zone"),
-				TargetResource: &api.TargetResource{
+			binding: api.NewTestPathBinding("", (&api.PathTemplate{}).
+				WithLiteral("compute").
+				WithLiteral("v1").
+				WithLiteral("projects").
+				WithVariableNamed("project").
+				WithLiteral("zones").
+				WithVariableNamed("zone")).
+				WithTargetResource(&api.TargetResource{
 					// Notice that constructTemplate already stripped out "compute/v1"
 					Template: api.ParseTemplateForTest("//compute.googleapis.com/projects/{project}/zones/{zone}"),
-				},
-			},
+				}),
 			want: "//compute.googleapis.com/projects/{}/zones/{}",
 		},
 		{
-			name: "Missing TargetResource",
-			method: &api.Method{
-				ID:    "test.method",
-				Model: &api.API{Name: "test"},
-			},
-			binding: &api.PathBinding{},
+			name:    "Missing TargetResource",
+			binding: api.NewTestPathBinding("", nil),
 			wantErr: true,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got, err := formatResourceNameTemplateFromPath(test.method, test.binding)
+			got, err := formatResourceNameTemplateFromPath(method, test.binding)
 			if (err != nil) != test.wantErr {
 				t.Fatalf("formatResourceNameTemplateFromPath() error = %v, wantErr %v", err, test.wantErr)
 			}
@@ -512,35 +450,30 @@ func TestFormatResourceNameTemplateFromPath(t *testing.T) {
 }
 
 func TestAnnotateSampleInfo(t *testing.T) {
-	field := &api.Field{
-		Name:  "name",
-		ID:    ".test.v1.Message.name",
-		Typez: api.TypezString,
-		ResourceNamePattern: &api.ResourceNamePattern{
+	field := api.NewTestField("name").
+		WithType(api.TypezString).
+		WithResourceNamePattern(&api.ResourceNamePattern{
 			Segments: []api.ResourceNameSegment{
 				{Literal: "projects"},
 				{Variable: "project"},
 			},
-		},
-	}
-	message := &api.Message{
-		Name:    "TestMessage",
-		Package: "test.v1",
-		ID:      ".test.v1.TestMessage",
-		Fields:  []*api.Field{field},
-	}
-	method := &api.Method{
-		Name: "TestMethod",
-		ID:   ".test.v1.Service.TestMethod",
-	}
+		})
+	message := api.NewTestMessage("TestMessage").
+		WithPackage("test.v1").
+		WithFields(field)
+	method := api.NewTestMethod("TestMethod")
 	si := &api.SampleInfo{
 		ResourceNameField: field,
 	}
 
-	model := api.NewTestAPI([]*api.Message{message}, []*api.Enum{}, []*api.Service{})
-	api.CrossReference(model)
+	model := api.NewTestAPI([]*api.Message{message}, nil, nil)
+	if err := api.CrossReference(model); err != nil {
+		t.Fatal(err)
+	}
 	codec := newTestCodec(t, libconfig.SpecProtobuf, "test", map[string]string{})
-	annotateModel(model, codec)
+	if _, err := annotateModel(model, codec); err != nil {
+		t.Fatal(err)
+	}
 
 	codec.annotateSampleInfo(si, method)
 
@@ -575,15 +508,21 @@ func TestIsBidiStreaming(t *testing.T) {
 		name   string
 		client bool
 		server bool
+		isGrpc bool
 		want   bool
 	}{
-		{"bidi streaming", true, true, true},
-		{"client-only streaming", true, false, false},
-		{"server-only streaming", false, true, false},
-		{"unary", false, false, false},
+		{"bidi streaming with gRPC", true, true, true, true},
+		{"bidi streaming without gRPC", true, true, false, false},
+		{"client-only streaming", true, false, true, false},
+		{"server-only streaming", false, true, true, false},
+		{"unary", false, false, true, false},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			ann := &methodAnnotation{ClientSideStreaming: test.client, ServerSideStreaming: test.server}
+			ann := &methodAnnotation{
+				ClientSideStreaming: test.client,
+				ServerSideStreaming: test.server,
+				IsGrpc:              test.isGrpc,
+			}
 			if got := ann.IsBidiStreaming(); got != test.want {
 				t.Errorf("methodAnnotation.IsBidiStreaming() = %v, want %v", got, test.want)
 			}
@@ -596,18 +535,204 @@ func TestIsServerStreaming(t *testing.T) {
 		name   string
 		client bool
 		server bool
+		isGrpc bool
 		want   bool
 	}{
-		{"bidi streaming", true, true, false},
-		{"client-only streaming", true, false, false},
-		{"server-only streaming", false, true, true},
-		{"unary", false, false, false},
+		{"bidi streaming", true, true, true, false},
+		{"client-only streaming", true, false, true, false},
+		{"server-only streaming with gRPC", false, true, true, true},
+		{"server-only streaming without gRPC", false, true, false, false},
+		{"unary", false, false, true, false},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			ann := &methodAnnotation{ClientSideStreaming: test.client, ServerSideStreaming: test.server}
+			ann := &methodAnnotation{
+				ClientSideStreaming: test.client,
+				ServerSideStreaming: test.server,
+				IsGrpc:              test.isGrpc,
+			}
 			if got := ann.IsServerStreaming(); got != test.want {
 				t.Errorf("methodAnnotation.IsServerStreaming() = %v, want %v", got, test.want)
 			}
 		})
+	}
+}
+
+func TestIsHttp(t *testing.T) {
+	for _, test := range []struct {
+		name   string
+		isGrpc bool
+		want   bool
+	}{
+		{"gRPC method", true, false},
+		{"HTTP method", false, true},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			ann := &methodAnnotation{IsGrpc: test.isGrpc}
+			if got := ann.IsHttp(); got != test.want {
+				t.Errorf("methodAnnotation.IsHttp() = %v, want %v", got, test.want)
+			}
+		})
+	}
+}
+
+func TestMethodUsesGrpc(t *testing.T) {
+	msg := api.NewTestMessage("Message").WithPackage("test.v1")
+	unaryMethod := api.NewTestMethod("Unary").WithInput(msg).WithOutput(msg).WithPathTemplate(&api.PathTemplate{})
+	bidiMethod := api.NewTestMethod("Bidi").WithInput(msg).WithOutput(msg).WithBidiStreaming()
+	serverMethod := api.NewTestMethod("Server").WithInput(msg).WithOutput(msg).WithServerSideStreaming()
+	clientMethod := api.NewTestMethod("Client").WithInput(msg).WithOutput(msg).WithClientSideStreaming()
+
+	lroMethod := api.NewTestMethod("Lro").WithInput(msg).WithOutput(msg).WithOperationInfo(&api.OperationInfo{ResponseTypeID: msg.ID, MetadataTypeID: msg.ID})
+
+	for _, test := range []struct {
+		name             string
+		method           *api.Method
+		templateOverride string
+		options          map[string]string
+		want             bool
+	}{
+		{
+			name:    "unary method defaults to HTTP",
+			method:  unaryMethod,
+			options: map[string]string{},
+			want:    false,
+		},
+		{
+			name:    "bidi streaming by default",
+			method:  bidiMethod,
+			options: map[string]string{},
+			want:    true,
+		},
+		{
+			name:    "server streaming by default",
+			method:  serverMethod,
+			options: map[string]string{},
+			want:    true,
+		},
+		{
+			name:    "client streaming not included by default",
+			method:  clientMethod,
+			options: map[string]string{},
+			want:    false,
+		},
+		{
+			name:   "client streaming with include-streaming-methods",
+			method: clientMethod,
+			options: map[string]string{
+				"include-streaming-methods": "true",
+			},
+			want: true,
+		},
+		{
+			name:             "template without grpc ignores streaming",
+			method:           bidiMethod,
+			templateOverride: "templates/http-client",
+			options:          map[string]string{},
+			want:             false,
+		},
+		{
+			name:   "LRO method defaults to HTTP on default template with default_transport grpc",
+			method: lroMethod,
+			options: map[string]string{
+				"default-transport": "grpc",
+			},
+			want: false,
+		},
+		{
+			name:             "LRO method uses gRPC on grpc-client template",
+			method:           lroMethod,
+			templateOverride: "templates/grpc-client",
+			options: map[string]string{
+				"default-transport": "grpc",
+			},
+			want: true,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			c := newTestCodec(t, libconfig.SpecProtobuf, "", test.options)
+			c.templateOverride = test.templateOverride
+			if got := c.methodUsesGrpc(test.method); got != test.want {
+				t.Errorf("methodUsesGrpc() = %v, want %v", got, test.want)
+			}
+		})
+	}
+}
+
+func TestAnnotateMethodIdempotencyHook(t *testing.T) {
+	// 1. When idempotency-hook is configured:
+	modelWithHook := annotateMethodModel(t)
+	if err := api.CrossReference(modelWithHook); err != nil {
+		t.Fatal(err)
+	}
+	codecWithHook := newTestCodec(t, libconfig.SpecProtobuf, "", map[string]string{
+		"include-grpc-only-methods": "true",
+		"idempotency-hook":          "resolve_idempotency",
+	})
+	if _, err := annotateModel(modelWithHook, codecWithHook); err != nil {
+		t.Fatal(err)
+	}
+	methodWithHook := modelWithHook.Method(".test.v1.ResourceService.Delete")
+	if methodWithHook == nil {
+		t.Fatalf("missing method .test.v1.ResourceService.Delete")
+	}
+	got := methodWithHook.Codec.(*methodAnnotation)
+	if !got.HasIdempotencyHook {
+		t.Errorf("got.HasIdempotencyHook = false, want true")
+	}
+	if got.IdempotencyHook != "resolve_idempotency" {
+		t.Errorf("got.IdempotencyHook = %q, want %q", got.IdempotencyHook, "resolve_idempotency")
+	}
+
+	// 2. When idempotency-hook is NOT configured:
+	modelWithoutHook := annotateMethodModel(t)
+	if err := api.CrossReference(modelWithoutHook); err != nil {
+		t.Fatal(err)
+	}
+	codecWithoutHook := newTestCodec(t, libconfig.SpecProtobuf, "", map[string]string{
+		"include-grpc-only-methods": "true",
+	})
+	if _, err := annotateModel(modelWithoutHook, codecWithoutHook); err != nil {
+		t.Fatal(err)
+	}
+	methodWithoutHook := modelWithoutHook.Method(".test.v1.ResourceService.Delete")
+	if methodWithoutHook == nil {
+		t.Fatalf("missing method .test.v1.ResourceService.Delete")
+	}
+	gotDefault := methodWithoutHook.Codec.(*methodAnnotation)
+	if gotDefault.HasIdempotencyHook {
+		t.Errorf("gotDefault.HasIdempotencyHook = true, want false")
+	}
+	if gotDefault.IdempotencyHook != "" {
+		t.Errorf("gotDefault.IdempotencyHook = %q, want empty", gotDefault.IdempotencyHook)
+	}
+}
+
+func TestAnnotateMethodExtensibleBuilders(t *testing.T) {
+	model := annotateMethodModel(t)
+	if err := api.CrossReference(model); err != nil {
+		t.Fatal(err)
+	}
+	codec := newTestCodec(t, libconfig.SpecProtobuf, "", map[string]string{
+		"include-grpc-only-methods": "true",
+		"extensible-builders":       ".test.v1.ResourceService.Delete",
+	})
+	if _, err := annotateModel(model, codec); err != nil {
+		t.Fatal(err)
+	}
+
+	deleteMethod := model.Method(".test.v1.ResourceService.Delete")
+	if deleteMethod == nil {
+		t.Fatal("missing method .test.v1.ResourceService.Delete")
+	}
+	if !deleteMethod.Codec.(*methodAnnotation).ExtensibleBuilder {
+		t.Error("expected ExtensibleBuilder to be true for .test.v1.ResourceService.Delete")
+	}
+
+	moveMethod := model.Method(".test.v1.ResourceService.move")
+	if moveMethod == nil {
+		t.Fatal("missing method .test.v1.ResourceService.move")
+	}
+	if moveMethod.Codec.(*methodAnnotation).ExtensibleBuilder {
+		t.Error("expected ExtensibleBuilder to be false for .test.v1.ResourceService.move")
 	}
 }

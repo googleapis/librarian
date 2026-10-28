@@ -57,19 +57,65 @@ func TestServiceAnnotationsDetailedTracing(t *testing.T) {
 }
 
 func TestServiceAnnotationsHasVeneer(t *testing.T) {
-	model := serviceAnnotationsModel()
-	service := model.Service(".test.v1.ResourceService")
-	if service == nil {
-		t.Fatal("cannot find .test.v1.ResourceService")
-	}
-	codec := newTestCodec(t, libconfig.SpecProtobuf, "", map[string]string{
-		"has-veneer": "true",
-	})
-	annotateModel(model, codec)
-	serviceAnn := service.Codec.(*serviceAnnotations)
+	for _, test := range []struct {
+		name         string
+		hasVeneer    string
+		wantService0 bool
+		wantService1 bool
+	}{
+		{
+			name:         "all services via true",
+			hasVeneer:    "true",
+			wantService0: true,
+			wantService1: true,
+		},
+		{
+			name:         "false",
+			hasVeneer:    "false",
+			wantService0: false,
+			wantService1: false,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			model := newTestAnnotateModelAPI(t)
+			service0 := model.Service("..Service0")
+			if service0 == nil {
+				t.Fatal("cannot find ..Service0")
+			}
+			service1 := model.Service("..Service1")
+			if service1 == nil {
+				t.Fatal("cannot find ..Service1")
+			}
 
-	if !serviceAnn.HasVeneer {
-		t.Errorf("expected `has-veneer` to be set on the service.")
+			options := map[string]string{}
+			if test.hasVeneer != "" {
+				options["has-veneer"] = test.hasVeneer
+			}
+			codec := newTestCodec(t, libconfig.SpecProtobuf, "", options)
+			if _, err := annotateModel(model, codec); err != nil {
+				t.Fatal(err)
+			}
+
+			ann0 := service0.Codec.(*serviceAnnotations)
+			if ann0.HasVeneer != test.wantService0 {
+				t.Errorf("Service0 HasVeneer = %v, want %v", ann0.HasVeneer, test.wantService0)
+			}
+			for _, m := range ann0.Methods {
+				if mAnn := m.Codec.(*methodAnnotation); mAnn.HasVeneer != test.wantService0 {
+					t.Errorf("method %s HasVeneer = %v, want %v", m.Name, mAnn.HasVeneer, test.wantService0)
+				}
+			}
+
+			ann1 := service1.Codec.(*serviceAnnotations)
+			if ann1.HasVeneer != test.wantService1 {
+				t.Errorf("Service1 HasVeneer = %v, want %v", ann1.HasVeneer, test.wantService1)
+			}
+			for _, m := range ann1.Methods {
+				if mAnn := m.Codec.(*methodAnnotation); mAnn.HasVeneer != test.wantService1 {
+					t.Errorf("method %s HasVeneer = %v, want %v", m.Name, mAnn.HasVeneer, test.wantService1)
+				}
+			}
+		})
 	}
 }
 
@@ -89,6 +135,7 @@ func TestServiceAnnotationsPerServiceFeatures(t *testing.T) {
 		ModuleName:         "resource_service",
 		PerServiceFeatures: true,
 		Incomplete:         true,
+		GrpcClient:         "gaxi::grpc::Client",
 	}
 	if diff := cmp.Diff(wantService, service.Codec, cmpopts.IgnoreFields(serviceAnnotations{}, "Methods")); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
@@ -103,7 +150,7 @@ func TestServiceAnnotationsAPIVersions(t *testing.T) {
 		if method == nil {
 			t.Fatalf("cannot find method %s", id)
 		}
-		method.APIVersion = "v1_20260205"
+		method.WithAPIVersion("v1_20260205")
 	}
 	setMultipleMethodVersions := func(t *testing.T, model *api.API) {
 		t.Helper()
@@ -113,7 +160,7 @@ func TestServiceAnnotationsAPIVersions(t *testing.T) {
 		if method == nil {
 			t.Fatalf("cannot find method %s", id)
 		}
-		method.APIVersion = "v1_20270305"
+		method.WithAPIVersion("v1_20270305")
 	}
 
 	for _, test := range []struct {
@@ -168,65 +215,35 @@ func TestServiceAnnotationsAPIVersions(t *testing.T) {
 }
 
 func TestServiceAnnotationsLROTypes(t *testing.T) {
-	create := &api.Message{
-		Name:    "CreateResourceRequest",
-		ID:      ".test.CreateResourceRequest",
-		Package: "test",
-	}
-	delete := &api.Message{
-		Name:    "DeleteResourceRequest",
-		ID:      ".test.DeleteResourceRequest",
-		Package: "test",
-	}
-	resource := &api.Message{
-		Name:    "Resource",
-		ID:      ".test.Resource",
-		Package: "test",
-	}
-	metadata := &api.Message{
-		Name:    "OperationMetadata",
-		ID:      ".test.OperationMetadata",
-		Package: "test",
-	}
-	operation := &api.Message{
-		Name:    "Operation",
-		ID:      ".google.longrunning.Operation",
-		Package: "google.longrunning",
-	}
-	service := &api.Service{
-		Name:    "LroService",
-		ID:      ".test.LroService",
-		Package: "test",
-		Methods: []*api.Method{
-			{
-				Name:         "CreateResource",
-				ID:           ".test.LroService.CreateResource",
-				PathInfo:     &api.PathInfo{},
-				InputType:    create,
-				InputTypeID:  ".test.CreateResourceRequest",
-				OutputTypeID: ".google.longrunning.Operation",
-				OperationInfo: &api.OperationInfo{
-					MetadataTypeID: ".test.OperationMetadata",
-					ResponseTypeID: ".test.Resource",
-				},
-			},
-			{
-				Name:         "DeleteResource",
-				ID:           ".test.LroService.DeleteResource",
-				PathInfo:     &api.PathInfo{},
-				InputType:    delete,
-				InputTypeID:  ".test.DeleteResourceRequest",
-				OutputTypeID: ".google.longrunning.Operation",
-				OperationInfo: &api.OperationInfo{
-					MetadataTypeID: ".test.OperationMetadata",
-					ResponseTypeID: ".google.protobuf.Empty",
-				},
-			},
-		},
-	}
-	model := api.NewTestAPI([]*api.Message{create, delete, resource, metadata, operation}, []*api.Enum{}, []*api.Service{service})
-	err := api.CrossReference(model)
-	if err != nil {
+	createReq := api.NewTestMessage("CreateResourceRequest")
+	deleteReq := api.NewTestMessage("DeleteResourceRequest")
+	resource := api.NewTestMessage("Resource")
+	metadata := api.NewTestMessage("OperationMetadata")
+	operation := api.NewTestMessage("Operation").WithPackage("google.longrunning")
+
+	methodCreate := api.NewTestMethod("CreateResource").
+		WithInput(createReq).
+		WithOutput(operation).
+		WithOperationInfo(&api.OperationInfo{
+			MetadataTypeID: metadata.ID,
+			ResponseTypeID: resource.ID,
+		}).
+		WithBindings()
+
+	methodDelete := api.NewTestMethod("DeleteResource").
+		WithInput(deleteReq).
+		WithOutput(operation).
+		WithOperationInfo(&api.OperationInfo{
+			MetadataTypeID: metadata.ID,
+			ResponseTypeID: api.WktEmptyID,
+		}).
+		WithBindings()
+
+	service := api.NewTestService("LroService").
+		WithMethods(methodCreate, methodDelete)
+
+	model := api.NewTestAPI([]*api.Message{createReq, deleteReq, resource, metadata, operation}, nil, []*api.Service{service})
+	if err := api.CrossReference(model); err != nil {
 		t.Fatal(err)
 	}
 
@@ -234,8 +251,10 @@ func TestServiceAnnotationsLROTypes(t *testing.T) {
 		"include-grpc-only-methods": "true",
 	})
 	codec.packageMapping["google.longrunning"] = &packagez{name: "google-cloud-longrunning"}
-	annotateModel(model, codec)
-	empty := model.Message(".google.protobuf.Empty")
+	if _, err := annotateModel(model, codec); err != nil {
+		t.Fatal(err)
+	}
+	empty := model.Message(api.WktEmptyID)
 	wantService := &serviceAnnotations{
 		Name:              "LroService",
 		PackageModuleName: "test",
@@ -245,6 +264,7 @@ func TestServiceAnnotationsLROTypes(t *testing.T) {
 			resource,
 			empty,
 		},
+		GrpcClient: "gaxi::grpc::Client",
 	}
 	if !wantService.HasLROs() {
 		t.Errorf("HasLRO should be true. The service has several LROs.")
@@ -275,12 +295,13 @@ func TestServiceAnnotationsNameOverrides(t *testing.T) {
 		Name:       "Renamed",
 		ModuleName: "renamed",
 		Incomplete: true,
+		GrpcClient: "gaxi::grpc::Client",
 	}
 	if diff := cmp.Diff(wantService, service.Codec, serviceFilter); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 
-	methodFilter := cmpopts.IgnoreFields(methodAnnotation{}, "Name", "NameNoMangling", "BuilderName", "Body", "PathInfo", "SystemParameters", "ReturnType")
+	methodFilter := cmpopts.IgnoreFields(methodAnnotation{}, "Name", "NameNoMangling", "BuilderName", "Body", "PathInfo", "SystemParameters", "ReturnType", "IsGrpc")
 	wantMethod := &methodAnnotation{
 		ServiceNameToPascal: "Renamed",
 		ServiceNameToCamel:  "renamed",
@@ -312,6 +333,7 @@ func TestServiceAnnotations(t *testing.T) {
 		PackageModuleName: "test::v1",
 		ModuleName:        "resource_service",
 		Incomplete:        true,
+		GrpcClient:        "gaxi::grpc::Client",
 	}
 	if diff := cmp.Diff(wantService, service.Codec, cmpopts.IgnoreFields(serviceAnnotations{}, "Methods")); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
@@ -363,87 +385,41 @@ func TestServiceAnnotations(t *testing.T) {
 }
 
 func TestServiceAnnotationsStreaming(t *testing.T) {
-	msg := &api.Message{
-		Name:    "Request",
-		ID:      ".test.v1.Request",
-		Package: "test.v1",
-	}
-	bidiService := &api.Service{
-		Name:    "BidiService",
-		ID:      ".test.v1.BidiService",
-		Package: "test.v1",
-		Methods: []*api.Method{
-			{
-				Name:                "Chat",
-				ID:                  ".test.v1.BidiService.Chat",
-				InputTypeID:         msg.ID,
-				OutputTypeID:        msg.ID,
-				InputType:           msg,
-				OutputType:          msg,
-				ClientSideStreaming: true,
-				ServerSideStreaming: true,
-				PathInfo:            &api.PathInfo{},
-			},
-			{
-				Name:                "Unary",
-				ID:                  ".test.v1.BidiService.Unary",
-				InputTypeID:         msg.ID,
-				OutputTypeID:        msg.ID,
-				InputType:           msg,
-				OutputType:          msg,
-				ClientSideStreaming: false,
-				ServerSideStreaming: false,
-				PathInfo:            &api.PathInfo{},
-			},
-		},
-	}
-	serverService := &api.Service{
-		Name:    "ServerService",
-		ID:      ".test.v1.ServerService",
-		Package: "test.v1",
-		Methods: []*api.Method{
-			{
-				Name:                "Expand",
-				ID:                  ".test.v1.ServerService.Expand",
-				InputTypeID:         msg.ID,
-				OutputTypeID:        msg.ID,
-				InputType:           msg,
-				OutputType:          msg,
-				ClientSideStreaming: false,
-				ServerSideStreaming: true,
-				PathInfo:            &api.PathInfo{},
-			},
-			{
-				Name:                "Unary",
-				ID:                  ".test.v1.ServerService.Unary",
-				InputTypeID:         msg.ID,
-				OutputTypeID:        msg.ID,
-				InputType:           msg,
-				OutputType:          msg,
-				ClientSideStreaming: false,
-				ServerSideStreaming: false,
-				PathInfo:            &api.PathInfo{},
-			},
-		},
-	}
-	unaryService := &api.Service{
-		Name:    "UnaryService",
-		ID:      ".test.v1.UnaryService",
-		Package: "test.v1",
-		Methods: []*api.Method{
-			{
-				Name:                "Get",
-				ID:                  ".test.v1.UnaryService.Get",
-				InputTypeID:         msg.ID,
-				OutputTypeID:        msg.ID,
-				InputType:           msg,
-				OutputType:          msg,
-				ClientSideStreaming: false,
-				ServerSideStreaming: false,
-				PathInfo:            &api.PathInfo{},
-			},
-		},
-	}
+	msg := api.NewTestMessage("Request").WithPackage("test.v1")
+
+	bidiChat := api.NewTestMethod("Chat").
+		WithInput(msg).
+		WithOutput(msg).
+		WithBidiStreaming().
+		WithBindings()
+	bidiUnary := api.NewTestMethod("Unary").
+		WithInput(msg).
+		WithOutput(msg).
+		WithBindings()
+	bidiService := api.NewTestService("BidiService").
+		WithPackage("test.v1").
+		WithMethods(bidiChat, bidiUnary)
+
+	serverExpand := api.NewTestMethod("Expand").
+		WithInput(msg).
+		WithOutput(msg).
+		WithServerSideStreaming().
+		WithBindings()
+	serverUnary := api.NewTestMethod("Unary").
+		WithInput(msg).
+		WithOutput(msg).
+		WithBindings()
+	serverService := api.NewTestService("ServerService").
+		WithPackage("test.v1").
+		WithMethods(serverExpand, serverUnary)
+
+	unaryGet := api.NewTestMethod("Get").
+		WithInput(msg).
+		WithOutput(msg).
+		WithBindings()
+	unaryService := api.NewTestService("UnaryService").
+		WithPackage("test.v1").
+		WithMethods(unaryGet)
 
 	for _, test := range []struct {
 		name          string
@@ -454,91 +430,258 @@ func TestServiceAnnotationsStreaming(t *testing.T) {
 		wantStreaming bool
 	}{
 		{
-			name:    "bidi service with option enabled",
-			service: bidiService,
-			options: map[string]string{
-				"include-bidi-streaming-methods": "true",
-			},
+			name:          "bidi service",
+			service:       bidiService,
+			options:       map[string]string{},
 			wantBidi:      true,
 			wantServer:    false,
 			wantStreaming: true,
 		},
 		{
-			name:          "bidi service with option omitted",
-			service:       bidiService,
-			options:       map[string]string{},
-			wantBidi:      false,
-			wantServer:    false,
-			wantStreaming: false,
-		},
-		{
-			name:    "server streaming service with option enabled",
-			service: serverService,
-			options: map[string]string{
-				"include-server-streaming-methods": "true",
-			},
-			wantBidi:      false,
-			wantServer:    true,
-			wantStreaming: true,
-		},
-		{
-			name:          "server streaming service with option omitted",
+			name:          "server streaming service",
 			service:       serverService,
 			options:       map[string]string{},
 			wantBidi:      false,
-			wantServer:    false,
-			wantStreaming: false,
-		},
-		{
-			name:    "non-streaming service with options enabled",
-			service: unaryService,
-			options: map[string]string{
-				"include-bidi-streaming-methods":   "true",
-				"include-server-streaming-methods": "true",
-			},
-			wantBidi:      false,
-			wantServer:    false,
-			wantStreaming: false,
-		},
-		{
-			name:    "both options enabled with bidi service",
-			service: bidiService,
-			options: map[string]string{
-				"include-bidi-streaming-methods":   "true",
-				"include-server-streaming-methods": "true",
-			},
-			wantBidi:      true,
-			wantServer:    false,
-			wantStreaming: true,
-		},
-		{
-			name:    "both options enabled with server streaming service",
-			service: serverService,
-			options: map[string]string{
-				"include-bidi-streaming-methods":   "true",
-				"include-server-streaming-methods": "true",
-			},
-			wantBidi:      false,
 			wantServer:    true,
 			wantStreaming: true,
 		},
+		{
+			name:          "non-streaming service",
+			service:       unaryService,
+			options:       map[string]string{},
+			wantBidi:      false,
+			wantServer:    false,
+			wantStreaming: false,
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			model := api.NewTestAPI([]*api.Message{msg}, []*api.Enum{}, []*api.Service{test.service})
+			model := api.NewTestAPI([]*api.Message{msg}, nil, []*api.Service{test.service})
 			if err := api.CrossReference(model); err != nil {
 				t.Fatal(err)
 			}
 			codec := newTestCodec(t, libconfig.SpecProtobuf, "", test.options)
-			annotateModel(model, codec)
+			if _, err := annotateModel(model, codec); err != nil {
+				t.Fatal(err)
+			}
 			serviceAnn := test.service.Codec.(*serviceAnnotations)
-			if got := serviceAnn.HasBidiStreaming; got != test.wantBidi {
-				t.Errorf("serviceAnnotations.HasBidiStreaming = %v, want %v", got, test.wantBidi)
+			if got := serviceAnn.HasBidiStreaming(); got != test.wantBidi {
+				t.Errorf("serviceAnnotations.HasBidiStreaming() = %v, want %v", got, test.wantBidi)
 			}
-			if got := serviceAnn.HasServerStreaming; got != test.wantServer {
-				t.Errorf("serviceAnnotations.HasServerStreaming = %v, want %v", got, test.wantServer)
+			if got := serviceAnn.HasServerStreaming(); got != test.wantServer {
+				t.Errorf("serviceAnnotations.HasServerStreaming() = %v, want %v", got, test.wantServer)
 			}
-			if got := serviceAnn.HasStreaming; got != test.wantStreaming {
-				t.Errorf("serviceAnnotations.HasStreaming = %v, want %v", got, test.wantStreaming)
+			if got := serviceAnn.HasStreaming(); got != test.wantStreaming {
+				t.Errorf("serviceAnnotations.HasStreaming() = %v, want %v", got, test.wantStreaming)
+			}
+		})
+	}
+}
+
+func TestServiceAnnotationsMethodKinds(t *testing.T) {
+	msg := api.NewTestMessage("Request").WithPackage("test.v1")
+	bidiMethod := api.NewTestMethod("Chat").WithInput(msg).WithOutput(msg).WithBidiStreaming().WithPathTemplate(&api.PathTemplate{})
+	serverMethod := api.NewTestMethod("Expand").WithInput(msg).WithOutput(msg).WithServerSideStreaming().WithPathTemplate(&api.PathTemplate{})
+	unaryMethod := api.NewTestMethod("Get").WithInput(msg).WithOutput(msg).WithVerb("GET").WithPathTemplate(&api.PathTemplate{})
+
+	for _, test := range []struct {
+		name                  string
+		methods               []*api.Method
+		options               map[string]string
+		wantRequestBuilder    bool
+		wantBidiStreamBuilder bool
+	}{
+		{
+			name:                  "bidi only",
+			methods:               []*api.Method{bidiMethod},
+			options:               map[string]string{},
+			wantRequestBuilder:    false,
+			wantBidiStreamBuilder: true,
+		},
+		{
+			name:                  "bidi and unary",
+			methods:               []*api.Method{bidiMethod, unaryMethod},
+			options:               map[string]string{},
+			wantRequestBuilder:    true,
+			wantBidiStreamBuilder: true,
+		},
+		{
+			name:                  "server streaming only",
+			methods:               []*api.Method{serverMethod},
+			options:               map[string]string{},
+			wantRequestBuilder:    true,
+			wantBidiStreamBuilder: false,
+		},
+		{
+			name:                  "server streaming and bidi",
+			methods:               []*api.Method{serverMethod, bidiMethod},
+			options:               map[string]string{},
+			wantRequestBuilder:    true,
+			wantBidiStreamBuilder: true,
+		},
+		{
+			name:                  "unary only",
+			methods:               []*api.Method{unaryMethod},
+			options:               map[string]string{},
+			wantRequestBuilder:    true,
+			wantBidiStreamBuilder: false,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			service := api.NewTestService("TestService").WithPackage("test.v1").WithMethods(test.methods...)
+			model := api.NewTestAPI([]*api.Message{msg}, []*api.Enum{}, []*api.Service{service})
+			if err := api.CrossReference(model); err != nil {
+				t.Fatal(err)
+			}
+			codec := newTestCodec(t, libconfig.SpecProtobuf, "", test.options)
+			if _, err := annotateModel(model, codec); err != nil {
+				t.Fatal(err)
+			}
+			serviceAnn := service.Codec.(*serviceAnnotations)
+			if got := serviceAnn.NeedsRequestBuilder(); got != test.wantRequestBuilder {
+				t.Errorf("serviceAnnotations.NeedsRequestBuilder() = %v, want %v", got, test.wantRequestBuilder)
+			}
+			if got := serviceAnn.NeedsBidiStreamBuilder(); got != test.wantBidiStreamBuilder {
+				t.Errorf("serviceAnnotations.NeedsBidiStreamBuilder() = %v, want %v", got, test.wantBidiStreamBuilder)
+			}
+		})
+	}
+}
+
+func TestServiceAnnotationsClassification(t *testing.T) {
+	msg := api.NewTestMessage("Request").WithPackage("test.v1")
+	bidiMethod := api.NewTestMethod("Chat").WithInput(msg).WithOutput(msg).WithBidiStreaming().WithPathTemplate(&api.PathTemplate{})
+	unaryMethod := api.NewTestMethod("Get").WithInput(msg).WithOutput(msg).WithVerb("GET").WithPathTemplate(&api.PathTemplate{})
+
+	for _, test := range []struct {
+		name       string
+		methods    []*api.Method
+		options    map[string]string
+		isPureGrpc bool
+		isPureHttp bool
+		isHybrid   bool
+	}{
+		{
+			name:       "pure gRPC service with only streaming methods",
+			methods:    []*api.Method{bidiMethod},
+			options:    map[string]string{},
+			isPureGrpc: true,
+			isPureHttp: false,
+			isHybrid:   false,
+		},
+		{
+			name:       "pure HTTP service with only unary methods",
+			methods:    []*api.Method{unaryMethod},
+			options:    map[string]string{},
+			isPureGrpc: false,
+			isPureHttp: true,
+			isHybrid:   false,
+		},
+		{
+			name:       "hybrid service with unary and streaming methods",
+			methods:    []*api.Method{unaryMethod, bidiMethod},
+			options:    map[string]string{},
+			isPureGrpc: false,
+			isPureHttp: false,
+			isHybrid:   true,
+		},
+		{
+			name:    "default transport grpc marks unary service as pure gRPC",
+			methods: []*api.Method{unaryMethod},
+			options: map[string]string{
+				"default-transport": "grpc",
+			},
+			isPureGrpc: true,
+			isPureHttp: false,
+			isHybrid:   false,
+		},
+		{
+			name:    "default transport grpc with streaming is pure gRPC",
+			methods: []*api.Method{unaryMethod, bidiMethod},
+			options: map[string]string{
+				"default-transport": "grpc",
+			},
+			isPureGrpc: true,
+			isPureHttp: false,
+			isHybrid:   false,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			service := api.NewTestService("TestService").WithPackage("test.v1").WithMethods(test.methods...)
+			model := api.NewTestAPI([]*api.Message{msg}, []*api.Enum{}, []*api.Service{service})
+			if err := api.CrossReference(model); err != nil {
+				t.Fatal(err)
+			}
+			codec := newTestCodec(t, libconfig.SpecProtobuf, "", test.options)
+			if _, err := annotateModel(model, codec); err != nil {
+				t.Fatal(err)
+			}
+			serviceAnn := service.Codec.(*serviceAnnotations)
+			if got := serviceAnn.IsPureGrpc(); got != test.isPureGrpc {
+				t.Errorf("serviceAnnotations.IsPureGrpc() = %v, want %v", got, test.isPureGrpc)
+			}
+			if got := serviceAnn.IsPureHttp(); got != test.isPureHttp {
+				t.Errorf("serviceAnnotations.IsPureHttp() = %v, want %v", got, test.isPureHttp)
+			}
+			if got := serviceAnn.IsHybrid(); got != test.isHybrid {
+				t.Errorf("serviceAnnotations.IsHybrid() = %v, want %v", got, test.isHybrid)
+			}
+		})
+	}
+}
+
+func TestServiceAnnotationsHasExtensibleBuilder(t *testing.T) {
+	for _, test := range []struct {
+		name               string
+		extensibleBuilders string
+		wantService0       bool
+		wantService1       bool
+	}{
+		{
+			name:               "none",
+			extensibleBuilders: "",
+			wantService0:       false,
+			wantService1:       false,
+		},
+		{
+			name:               "only Service0 method",
+			extensibleBuilders: "..Service0.get",
+			wantService0:       true,
+			wantService1:       false,
+		},
+		{
+			name:               "both services",
+			extensibleBuilders: "..Service0.get,..Service1.get",
+			wantService0:       true,
+			wantService1:       true,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			model := newTestAnnotateModelAPI(t)
+			service0 := model.Service("..Service0")
+			if service0 == nil {
+				t.Fatal("cannot find ..Service0")
+			}
+			service1 := model.Service("..Service1")
+			if service1 == nil {
+				t.Fatal("cannot find ..Service1")
+			}
+			options := map[string]string{
+				"include-grpc-only-methods": "true",
+			}
+			if test.extensibleBuilders != "" {
+				options["extensible-builders"] = test.extensibleBuilders
+			}
+			codec := newTestCodec(t, libconfig.SpecProtobuf, "", options)
+			if _, err := annotateModel(model, codec); err != nil {
+				t.Fatal(err)
+			}
+			ann0 := service0.Codec.(*serviceAnnotations)
+			if got := ann0.HasExtensibleBuilder(); got != test.wantService0 {
+				t.Errorf("Service0 HasExtensibleBuilder() = %v, want %v", got, test.wantService0)
+			}
+			ann1 := service1.Codec.(*serviceAnnotations)
+			if got := ann1.HasExtensibleBuilder(); got != test.wantService1 {
+				t.Errorf("Service1 HasExtensibleBuilder() = %v, want %v", got, test.wantService1)
 			}
 		})
 	}

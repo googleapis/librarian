@@ -28,17 +28,12 @@ const (
 )
 
 type messageAnnotations struct {
-	Name                string
-	DocLines            []string
-	Model               *modelAnnotations
-	TypeURL             string
-	CustomSerialization bool
+	Name     string
+	DocLines []string
+	Model    *modelAnnotations
+	TypeURL  string
 
-	// HasConvertedFields is true if any field or oneof in the message emits code in
-	// toProto(). This prevents the Swift compiler warning "variable 'proto' was never mutated"
-	// for empty messages by emitting "let" instead of "var" in convert_message.mustache.
-	HasConvertedFields bool
-
+	HasData             bool
 	IsPaginatedResponse bool
 	PageableItemField   string
 	PageableItemType    string
@@ -77,18 +72,40 @@ type messageAnnotations struct {
 	ParameterTypeName string
 	ProtoTypeName     string
 	ModulePath        string
+
+	// DiagnoseCodable is true when the `Codable` members need `@diagnose` to
+	// suppress a deprecation warning.
+	//
+	// `init(from:)` and `encode(to:)` must name every field, including the
+	// deprecated ones, and the proto conversions do the same. The name avoids
+	// colliding with `methodAnnotations.DiagnoseFields`, which means something
+	// different: mustache resolves `{{#Codec.X}}` by walking the context
+	// stack, so two same-named fields on different annotation types can be
+	// confused.
+	DiagnoseCodable bool
+
+	// DiagnosePagination is true when the `GoogleGax._PaginatedResponse`
+	// members need `@diagnose` to suppress a deprecation warning.
+	//
+	// `_getPaginatedItems()` names the item type in its return type, so it
+	// warns even when the property that holds the items is guarded.
+	DiagnosePagination bool
 }
 
 // ConvertImports returns the sorted list of dynamic import statements for message conversions.
 func (ann *messageAnnotations) ConvertImports() []string {
 	importMap := map[string]bool{}
 	for _, dep := range ann.DependsOn {
-		if dep.Name == "GoogleCloudGax" || dep.Name == ann.ModulePath {
+		if dep.Name == "GoogleGax" || dep.Name == ann.ModulePath {
 			continue
 		}
-		importMap["import "+dep.Name] = true
-		if dep.Name == "GoogleCloudWkt" {
-			importMap["internal import GoogleCloudWktConvert"] = true
+		if dep.SpiAttribute != "" {
+			importMap[fmt.Sprintf("@_spi(%s) import %s", dep.SpiAttribute, dep.Name)] = true
+		} else {
+			importMap["@_spi(GoogleCloudInternal) import "+dep.Name] = true
+		}
+		if dep.Name == "GoogleWKT" {
+			importMap["@_spi(GoogleCloudInternal) import GoogleWKTConvert"] = true
 		}
 	}
 	var result []string
@@ -151,23 +168,20 @@ func (c *codec) annotateMessage(message *api.Message, model *modelAnnotations) e
 	if len(message.Fields) != 0 {
 		sampleField = camelCase(message.Fields[0].Name)
 	}
-	hasConvertedFields := len(message.Fields) > 0
 	parameterTypeName, err := c.messageTypeName(message)
 	if err != nil {
 		return err
 	}
 	annotations := &messageAnnotations{
-		Name:                pascalCase(message.Name),
-		DocLines:            docLines,
-		Model:               model,
-		TypeURL:             typeURLPrefix + strings.TrimPrefix(message.ID, "."),
-		CustomSerialization: len(message.OneOfs) > 0,
-		HasConvertedFields:  hasConvertedFields,
-		DependsOn:           map[string]*Dependency{},
-		SampleField:         sampleField,
-		ParameterTypeName:   parameterTypeName,
-		ProtoTypeName:       c.protoMessageTypeName(message),
-		ModulePath:          c.ModulePath,
+		Name:              messageName(message),
+		DocLines:          docLines,
+		Model:             model,
+		TypeURL:           typeURLPrefix + strings.TrimPrefix(message.ID, "."),
+		DependsOn:         map[string]*Dependency{},
+		SampleField:       sampleField,
+		ParameterTypeName: parameterTypeName,
+		ProtoTypeName:     c.protoMessageTypeName(message),
+		ModulePath:        c.ModulePath,
 	}
 	if message.ServicePlaceholder {
 		annotations.PlaceholderName = pascalCase(message.Name + "Client")
@@ -181,7 +195,7 @@ func (c *codec) annotateMessage(message *api.Message, model *modelAnnotations) e
 	if dep != nil {
 		annotations.DependsOn[dep.Name] = dep
 	}
-	// All messages require the well known types for GoogleCloudWkt._AnyPackable.
+	// All messages require the well known types for GoogleWKT._AnyPackable.
 	wktDep, err := c.addApiPackageDependency(wellKnownProtobufPackage)
 	if err != nil {
 		return err
@@ -198,20 +212,22 @@ func (c *codec) annotateMessage(message *api.Message, model *modelAnnotations) e
 			return err
 		}
 	}
+	var hasData bool
 	for _, field := range message.Fields {
 		fieldCodec, err := c.annotateField(field, model)
 		if err != nil {
 			return err
 		}
-		if fieldCodec.Name != field.JSONName || fieldCodec.UrlSafeValue {
-			annotations.CustomSerialization = true
+		// `message.Fields` includes the oneof variants, so this covers them too.
+		if !message.Deprecated && (field.Deprecated || fieldCodec.DiagnoseType) {
+			annotations.DiagnoseCodable = true
 		}
-		if field.Map && !fieldCodec.IsStringKeyed() {
-			// In ProtoJSON map fields with non-string keys need to be
-			// serialized as JSON objects with key fields. In the generated
-			// Swift code, that requires a custom implementation of the
-			// `Decodable` and `Encodable` protocol.
-			annotations.CustomSerialization = true
+		// A deprecated message suppresses deprecation diagnostics in its whole
+		// scope, so its property declarations need nothing. `annotateField`
+		// cannot see the enclosing message, so clear the flag here, after it
+		// has been consumed above.
+		if message.Deprecated {
+			fieldCodec.DiagnoseType = false
 		}
 		if fieldCodec.PackageName != "" && fieldCodec.PackageName != c.Model.PackageName {
 			dep, err := c.addApiPackageDependency(fieldCodec.PackageName)
@@ -221,6 +237,9 @@ func (c *codec) annotateMessage(message *api.Message, model *modelAnnotations) e
 			if dep != nil {
 				annotations.DependsOn[dep.Name] = dep
 			}
+		}
+		if strings.Contains(fieldCodec.FieldType, "Foundation.Data") {
+			hasData = true
 		}
 	}
 
@@ -251,6 +270,18 @@ func (c *codec) annotateMessage(message *api.Message, model *modelAnnotations) e
 		default:
 			return fmt.Errorf("pageable item field should be a map or a repeated field: %s", message.ID)
 		}
+
+		// `_getPaginatedItems()` returns the item type and reads the item
+		// field, `_nextPageToken()` reads the page token field. A deprecated
+		// message suppresses the warning for its whole scope.
+		itemTypeDeprecated, err := c.fieldTypeDeprecated(itemField)
+		if err != nil {
+			return err
+		}
+		tokenDeprecated := message.Pagination.NextPageToken != nil &&
+			message.Pagination.NextPageToken.Deprecated
+		annotations.DiagnosePagination = !message.Deprecated &&
+			(itemField.Deprecated || itemTypeDeprecated || tokenDeprecated)
 	}
 
 	for _, nested := range message.Messages {
@@ -265,8 +296,12 @@ func (c *codec) annotateMessage(message *api.Message, model *modelAnnotations) e
 				}
 				annotations.DependsOn[dep.Name] = dep
 			}
+			if nestedCodec.HasData {
+				hasData = true
+			}
 		}
 	}
+	annotations.HasData = hasData
 	for _, enum := range message.Enums {
 		if err := c.annotateEnum(enum, model); err != nil {
 			return err

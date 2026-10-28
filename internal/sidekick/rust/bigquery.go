@@ -30,7 +30,8 @@ type unifiedMessage struct {
 }
 
 type fieldGroup struct {
-	name string
+	gapicFieldName     string
+	syntheticFieldName string
 	// fields with the same name from the various messages
 	fields map[string]*api.Field
 }
@@ -56,14 +57,22 @@ func newUnifiedMessage(c *codec, model *api.API, msgNames []string, skipFieldFn 
 			if skipFieldFn(f) {
 				continue
 			}
-			msg.fields = append(msg.fields, f)
-			if _, ok := msg.fieldGroups[f.Name]; !ok {
-				msg.fieldGroups[f.Name] = &fieldGroup{
-					name:   f.Name,
-					fields: make(map[string]*api.Field),
+			// The synthetic field can be renamed independently of the GAPIC
+			// field, using a ".synthetic" prefix in the name overrides.
+			gapicFieldName := c.FieldName(f)
+			fClone := *f
+			fClone.ID = ".synthetic" + f.ID
+			syntheticFieldName := c.FieldName(&fClone)
+
+			msg.fields = append(msg.fields, &fClone)
+			if _, ok := msg.fieldGroups[syntheticFieldName]; !ok {
+				msg.fieldGroups[syntheticFieldName] = &fieldGroup{
+					gapicFieldName:     gapicFieldName,
+					syntheticFieldName: syntheticFieldName,
+					fields:             make(map[string]*api.Field),
 				}
 			}
-			msg.fieldGroups[f.Name].fields[msgName] = f
+			msg.fieldGroups[syntheticFieldName].fields[msgName] = &fClone
 		}
 	}
 
@@ -101,6 +110,7 @@ func (m *unifiedMessage) createSyntheticMessage(name string) (*api.Message, erro
 			return nil, fmt.Errorf("expected field annotation for %q", f.ID)
 		}
 		fAnn.FQMessageName = fmt.Sprintf("crate::model_ext::%s", name)
+		fAnn.GenerateSetterSamples = false
 	}
 	return msg, nil
 }
@@ -108,7 +118,8 @@ func (m *unifiedMessage) createSyntheticMessage(name string) (*api.Message, erro
 func (m *unifiedMessage) fieldGroupList() []*fieldGroup {
 	list := make([]*fieldGroup, 0, len(m.fields))
 	for _, f := range m.fields {
-		list = append(list, m.fieldGroups[f.Name])
+		fieldName := m.c.FieldName(f)
+		list = append(list, m.fieldGroups[fieldName])
 	}
 	return list
 }
@@ -164,7 +175,11 @@ func createQueryBuilderMessage(m *unifiedMessage) (*api.Message, error) {
 
 // Accessors for template files.
 func (f *fieldGroup) FieldName() string {
-	return toSnake(f.name)
+	return toSnake(f.syntheticFieldName)
+}
+
+func (f *fieldGroup) GapicFieldName() string {
+	return toSnake(f.gapicFieldName)
 }
 
 func (f *fieldGroup) JobOnly() bool {

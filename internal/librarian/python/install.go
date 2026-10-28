@@ -16,10 +16,28 @@ package python
 
 import (
 	"context"
+	"embed"
 	"errors"
+	"fmt"
+	"io/fs"
+	"os"
+	"path/filepath"
 
+	"runtime"
+	"slices"
+
+	"github.com/googleapis/librarian/internal/cache"
 	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/filesystem"
 	"github.com/googleapis/librarian/internal/tool/pip"
+)
+
+//go:embed all:templates
+var templatesFS embed.FS
+
+const (
+	toolsDir  = "python_tools"
+	templates = "templates"
 )
 
 var (
@@ -27,10 +45,166 @@ var (
 	ErrNoToolsSpecified = errors.New("no tools.pip field specified in configuration")
 )
 
-// Install installs Python pip tool dependencies.
+// Install installs Python pip tool dependencies and extracts templates.
 func Install(ctx context.Context, tools *config.Tools) error {
 	if tools == nil || len(tools.Pip) == 0 {
 		return ErrNoToolsSpecified
 	}
-	return pip.Install(ctx, tools.Pip)
+	if err := pip.Install(ctx, tools.Pip); err != nil {
+		return err
+	}
+	if err := extractTemplates(); err != nil {
+		return err
+	}
+	return installPandocBinary(ctx, tools.Pip)
+}
+
+// binDir gets the directory where Python tool executables are stored.
+func binDir() (string, error) {
+	installDir, err := InstallDir()
+	if err != nil {
+		return "", err
+	}
+	return filepath.Join(installDir, "bin"), nil
+}
+
+// pandocPath returns the deterministic path to the pandoc executable in the tools directory.
+func pandocPath() (string, error) {
+	bin, err := binDir()
+	if err != nil {
+		return "", err
+	}
+	pandoc := filepath.Join(bin, "pandoc")
+	if runtime.GOOS == "windows" {
+		pandoc += ".exe"
+	}
+	return pandoc, nil
+}
+
+// toolsEnv returns an environment map with the Python tools bin directory prepended to PATH
+// and PYPANDOC_PANDOC set to the deterministic pandoc binary path if available.
+func toolsEnv() (map[string]string, error) {
+	bin, err := binDir()
+	if err != nil {
+		return nil, err
+	}
+	env := map[string]string{
+		"PATH": bin,
+	}
+	if envVal := os.Getenv("PYPANDOC_PANDOC"); envVal != "" {
+		env["PYPANDOC_PANDOC"] = envVal
+		return env, nil
+	}
+	pandoc, err := pandocPath()
+	if err != nil {
+		return nil, err
+	}
+	if _, err := os.Stat(pandoc); err == nil {
+		env["PYPANDOC_PANDOC"] = pandoc
+	}
+	return env, nil
+}
+
+// installPandocBinary extracts the pandoc binary from pypandoc-binary into the tools bin directory.
+func installPandocBinary(ctx context.Context, tools []*config.PipTool) error {
+	idx := slices.IndexFunc(tools, func(tool *config.PipTool) bool {
+		return tool.Name == "pypandoc-binary"
+	})
+	if idx == -1 {
+		return nil
+	}
+	pypandocTool := tools[idx]
+
+	bin, err := binDir()
+	if err != nil {
+		return err
+	}
+	if err := os.MkdirAll(bin, 0o755); err != nil {
+		return fmt.Errorf("failed to create bin directory: %w", err)
+	}
+
+	dest, err := pandocPath()
+	if err != nil {
+		return err
+	}
+
+	versionFile := filepath.Join(bin, ".pypandoc-binary-version")
+	if pypandocTool.Version != "" {
+		if data, err := os.ReadFile(versionFile); err == nil && string(data) == pypandocTool.Version {
+			if _, err := os.Stat(dest); err == nil {
+				return nil
+			}
+		}
+	}
+
+	tmpDir, err := os.MkdirTemp("", "pypandoc-binary-*")
+	if err != nil {
+		return fmt.Errorf("failed to create temp directory for pypandoc-binary: %w", err)
+	}
+	defer os.RemoveAll(tmpDir)
+
+	if err := pip.InstallToTarget(ctx, pypandocTool, tmpDir); err != nil {
+		return fmt.Errorf("failed to extract pandoc binary from %s: %w", pypandocTool.Name, err)
+	}
+
+	binaryName := "pandoc"
+	if runtime.GOOS == "windows" {
+		binaryName = "pandoc.exe"
+	}
+	src := filepath.Join(tmpDir, "pypandoc", "files", binaryName)
+	if _, err := os.Stat(src); err != nil {
+		return fmt.Errorf("pandoc binary not found in %s: %w", pypandocTool.Name, err)
+	}
+
+	if err := filesystem.CopyFile(src, dest); err != nil {
+		return fmt.Errorf("failed to copy pandoc binary: %w", err)
+	}
+	if err := os.Chmod(dest, 0o755); err != nil {
+		return fmt.Errorf("failed to make pandoc binary executable: %w", err)
+	}
+	if pypandocTool.Version != "" {
+		_ = os.WriteFile(versionFile, []byte(pypandocTool.Version), 0o644)
+	}
+	return nil
+}
+
+// InstallDir gets the directory where tools should be installed.
+func InstallDir() (string, error) {
+	dir, err := cache.BinDirectory()
+	if err != nil {
+		return "", err
+	}
+	absDir, err := filepath.Abs(filepath.Join(dir, toolsDir))
+	if err != nil {
+		return "", fmt.Errorf("failed to get install directory: %w", err)
+	}
+	return absDir, nil
+}
+
+// extractTemplates extracts embedded templates into the tools directory.
+func extractTemplates() error {
+	dest, err := templateDirectory()
+	if err != nil {
+		return err
+	}
+	sub, err := fs.Sub(templatesFS, templates)
+	if err != nil {
+		return fmt.Errorf("failed to get templates sub-filesystem: %w", err)
+	}
+	if err := os.RemoveAll(dest); err != nil {
+		return fmt.Errorf("failed to clean templates directory: %w", err)
+	}
+	if err := os.CopyFS(dest, sub); err != nil {
+		return fmt.Errorf("failed to extract templates: %w", err)
+	}
+	return nil
+}
+
+// templateDirectory gets the directory where templates are stored.
+func templateDirectory() (string, error) {
+	installDir, err := InstallDir()
+	if err != nil {
+		return "", err
+	}
+	return filepath.Join(installDir, templates), nil
 }

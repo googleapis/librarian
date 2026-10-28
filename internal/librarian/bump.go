@@ -186,20 +186,22 @@ func findLibrariesToBump(ctx context.Context, cfg *config.Config, all bool, libr
 }
 
 func libraryChanged(cfg *config.Config, library *config.Library, filesChanged []string) bool {
-	var (
-		output    string
-		exclusion string
-	)
-	switch cfg.Language {
-	case config.LanguageGo:
-		output = libraryOutput(cfg.Language, library, cfg.Default)
-		if library.Go != nil && library.Go.NestedModule != "" {
-			exclusion = filepath.Clean(filepath.Join(output, library.Go.NestedModule)) + "/"
-		}
-	default:
-		output = libraryOutput(cfg.Language, library, cfg.Default)
+	output := bumpLibraryOutput(cfg, library)
+	var exclusion string
+	if cfg.Language == config.LanguageGo && library.Go != nil && library.Go.NestedModule != "" {
+		exclusion = filepath.Clean(filepath.Join(output, library.Go.NestedModule)) + "/"
 	}
 	return git.HasChangesIn(output, exclusion, filesChanged)
+}
+
+// bumpLibraryOutput returns the output path used for checking changes and bumping.
+// For Swift, it resolves the root directory of the package containing the library output.
+func bumpLibraryOutput(cfg *config.Config, lib *config.Library) string {
+	output := libraryOutput(cfg.Language, lib, cfg.Default)
+	if cfg.Language == config.LanguageSwift {
+		return swift.PackageDirectory(output)
+	}
+	return output
 }
 
 // bumpLibrary determines the next version of a library (using versionOverride
@@ -388,7 +390,7 @@ func legacySidekickBumpAll(ctx context.Context, cfg *config.Config, lastTag stri
 		if lib.SkipRelease {
 			continue
 		}
-		output := libraryOutput(cfg.Language, lib, cfg.Default)
+		output := bumpLibraryOutput(cfg, lib)
 		if !git.HasChangesIn(output, "", filesChanged) {
 			continue
 		}
@@ -401,7 +403,7 @@ func legacySidekickBumpAll(ctx context.Context, cfg *config.Config, lastTag stri
 
 // legacySidekickBumpLibrary applies the legacy (but still in use) approach of
 // assuming a single tag for the latest release, and passing that tag into the
-// rust.Bump code.
+// rust.Bump or swift.Bump code.
 //
 // Compare this with bumpLibrary, which only uses git to derive the next version.
 func legacySidekickBumpLibrary(ctx context.Context, cfg *config.Config, lib *config.Library, lastTag, versionOverride string) error {
@@ -410,7 +412,7 @@ func legacySidekickBumpLibrary(ctx context.Context, cfg *config.Config, lib *con
 	if err != nil {
 		return err
 	}
-	output := libraryOutput(cfg.Language, lib, cfg.Default)
+	output := bumpLibraryOutput(cfg, lib)
 	switch cfg.Language {
 	case config.LanguageRust:
 		return rust.Bump(ctx, lib, output, version, command.Git, lastTag)

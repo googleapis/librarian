@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/config"
@@ -36,31 +37,75 @@ var (
 
 // Install installs a list of pip tools into the environment.
 func Install(ctx context.Context, tools []*config.PipTool) error {
-	var installTargets []string
+	var stdPackages []string
+	var gitPackages []string
 	for _, tool := range tools {
-		if tool.LocalPath != "" {
-			absPath, err := filepath.Abs(tool.LocalPath)
-			if err != nil {
-				return fmt.Errorf("failed to resolve absolute path for %s: %w", tool.LocalPath, err)
-			}
-			if _, err := os.Stat(absPath); err != nil {
-				return fmt.Errorf("%w: %w", ErrLocalPathNotFound, err)
-			}
-			installTargets = append(installTargets, absPath)
-			continue
+		spec, err := packageSpec(tool)
+		if err != nil {
+			return err
 		}
-		if tool.Package != "" {
-			installTargets = append(installTargets, tool.Package)
-			continue
+		if tool.Package != "" && strings.Contains(tool.Package, "git+") {
+			gitPackages = append(gitPackages, spec)
+		} else {
+			stdPackages = append(stdPackages, spec)
 		}
-		if tool.Version != "" {
-			installTargets = append(installTargets, fmt.Sprintf("%s==%s", tool.Name, tool.Version))
-			continue
+	}
+	if err := installPackages(ctx, stdPackages); err != nil {
+		return err
+	}
+	return forceInstallPackages(ctx, gitPackages)
+}
+
+// InstallToTarget installs a pip tool into a specific target directory with --no-deps.
+func InstallToTarget(ctx context.Context, tool *config.PipTool, targetDir string) error {
+	spec, err := packageSpec(tool)
+	if err != nil {
+		return err
+	}
+	return runPip(ctx, "install", "--no-deps", "--target", targetDir, spec)
+}
+
+func packageSpec(tool *config.PipTool) (string, error) {
+	switch {
+	case tool.LocalPath != "":
+		absPath, err := filepath.Abs(tool.LocalPath)
+		if err != nil {
+			return "", fmt.Errorf("failed to resolve absolute path for %s: %w", tool.LocalPath, err)
 		}
-		installTargets = append(installTargets, tool.Name)
+		if _, err := os.Stat(absPath); err != nil {
+			return "", fmt.Errorf("%w: %w", ErrLocalPathNotFound, err)
+		}
+		return absPath, nil
+	case tool.Package != "":
+		return tool.Package, nil
+	case tool.Version != "":
+		return fmt.Sprintf("%s==%s", tool.Name, tool.Version), nil
+	default:
+		return tool.Name, nil
+	}
+}
+
+// installPackages installs non-git packages.
+func installPackages(ctx context.Context, targets []string) error {
+	if len(targets) == 0 {
+		return nil
 	}
 	args := []string{"install"}
-	args = append(args, installTargets...)
+	args = append(args, targets...)
+	return runPip(ctx, args...)
+}
+
+// forceInstallPackages forces the installation of packages from git repositories.
+func forceInstallPackages(ctx context.Context, targets []string) error {
+	if len(targets) == 0 {
+		return nil
+	}
+	args := []string{"install", "--force-reinstall"}
+	args = append(args, targets...)
+	return runPip(ctx, args...)
+}
+
+func runPip(ctx context.Context, args ...string) error {
 	if err := command.RunStreaming(ctx, "pip", args...); err != nil {
 		return fmt.Errorf("%w: %w", ErrInstall, err)
 	}

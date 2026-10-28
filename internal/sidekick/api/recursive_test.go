@@ -19,26 +19,11 @@ import (
 )
 
 func TestSimple(t *testing.T) {
-	field0 := &Field{
-		Name:  "a",
-		Typez: TypezString,
-	}
-	field1 := &Field{
-		Name:     "b",
-		Typez:    TypezMessage,
-		TypezID:  ".test.Message",
-		Optional: true,
-	}
-	messages := []*Message{
-		{
-			Name: "Message",
-			ID:   ".test.Message",
-			Fields: []*Field{
-				field0, field1,
-			},
-		},
-	}
-	model := NewTestAPI(messages, []*Enum{}, []*Service{})
+	msg := NewTestMessage("Message")
+	field0 := NewTestField("a").WithType(TypezString)
+	field1 := NewTestField("b").WithMessageType(msg).WithOptional()
+	msg.WithFields(field0, field1)
+	model := NewTestAPI([]*Message{msg}, nil, nil)
 	LabelRecursiveFields(model)
 	if field0.Recursive {
 		t.Errorf("mismatched IsRecursive field for %v", field0)
@@ -49,42 +34,16 @@ func TestSimple(t *testing.T) {
 }
 
 func TestSimpleMap(t *testing.T) {
-	field0 := &Field{
-		Repeated: false,
-		Optional: false,
-		Name:     "children",
-		ID:       ".test.ParentMessage.children",
-		Typez:    TypezMessage,
-		TypezID:  ".test.ParentMessage.SingularMapEntry",
-	}
-	parent := &Message{
-		Name:   "ParentMessage",
-		ID:     ".test.ParentMessage",
-		Fields: []*Field{field0},
-	}
+	parent := NewTestMessage("ParentMessage")
+	key := NewTestField("key").WithType(TypezString)
+	value := NewTestField("value").WithMessageType(parent)
+	mapMessage := NewTestMapMessageWithFields("SingularMapEntry", key, value)
+	parent.WithMessages(mapMessage)
 
-	key := &Field{
-		Name:     "key",
-		JSONName: "key",
-		ID:       ".test.ParentMessage.SingularMapEntry.key",
-		Typez:    TypezString,
-	}
-	value := &Field{
-		Name:     "value",
-		JSONName: "value",
-		ID:       ".test.ParentMessage.SingularMapEntry.value",
-		Typez:    TypezMessage,
-		TypezID:  ".test.ParentMessage",
-	}
-	map_message := &Message{
-		Name:    "SingularMapEntry",
-		Package: "test",
-		ID:      ".test.ParentMessage.SingularMapEntry",
-		IsMap:   true,
-		Fields:  []*Field{key, value},
-	}
+	field0 := NewTestField("children").WithMessageType(mapMessage)
+	parent.WithFields(field0)
 
-	model := NewTestAPI([]*Message{parent, map_message}, []*Enum{}, []*Service{})
+	model := NewTestAPI([]*Message{parent, mapMessage}, nil, nil)
 	LabelRecursiveFields(model)
 	for _, field := range []*Field{value, field0} {
 		if !field.Recursive {
@@ -97,42 +56,19 @@ func TestSimpleMap(t *testing.T) {
 }
 
 func TestIndirect(t *testing.T) {
-	field0 := &Field{
-		Name:     "child",
-		Typez:    TypezMessage,
-		TypezID:  ".test.ChildMessage",
-		Optional: true,
-	}
-	field1 := &Field{
-		Name:     "grand_child",
-		Typez:    TypezMessage,
-		TypezID:  ".test.GrandChildMessage",
-		Optional: true,
-	}
-	field2 := &Field{
-		Name:     "back_to_grand_parent",
-		Typez:    TypezMessage,
-		TypezID:  ".test.Message",
-		Optional: true,
-	}
-	messages := []*Message{
-		{
-			Name:   "Message",
-			ID:     ".test.Message",
-			Fields: []*Field{field0},
-		},
-		{
-			Name:   "ChildMessage",
-			ID:     ".test.ChildMessage",
-			Fields: []*Field{field1},
-		},
-		{
-			Name:   "GrandChildMessage",
-			ID:     ".test.GrandChildMessage",
-			Fields: []*Field{field2},
-		},
-	}
-	model := NewTestAPI(messages, []*Enum{}, []*Service{})
+	msg := NewTestMessage("Message")
+	child := NewTestMessage("ChildMessage")
+	grandChild := NewTestMessage("GrandChildMessage")
+
+	field0 := NewTestField("child").WithMessageType(child).WithOptional()
+	field1 := NewTestField("grand_child").WithMessageType(grandChild).WithOptional()
+	field2 := NewTestField("back_to_grand_parent").WithMessageType(msg).WithOptional()
+
+	msg.WithFields(field0)
+	child.WithFields(field1)
+	grandChild.WithFields(field2)
+
+	model := NewTestAPI([]*Message{msg, child, grandChild}, nil, nil)
 	LabelRecursiveFields(model)
 	for _, field := range []*Field{field0, field1, field2} {
 		if !field.Recursive {
@@ -142,58 +78,21 @@ func TestIndirect(t *testing.T) {
 }
 
 func TestViaMap(t *testing.T) {
-	field0 := &Field{
-		Name:    "parent",
-		ID:      ".test.ChildMessage.parent",
-		Typez:   TypezMessage,
-		TypezID: ".test.ParentMessage",
-	}
-	child := &Message{
-		Name:   "ChildMessage",
-		ID:     ".test.ChildMessage",
-		Fields: []*Field{field0},
-	}
+	parent := NewTestMessage("ParentMessage")
+	child := NewTestMessage("ChildMessage")
 
-	field1 := &Field{
-		Repeated: false,
-		Optional: false,
-		Name:     "children",
-		ID:       ".test.ParentMessage.children",
-		Typez:    TypezMessage,
-		TypezID:  ".test.ParentMessage.SingularMapEntry",
-	}
-	parent := &Message{
-		Name:   "ParentMessage",
-		ID:     ".test.ParentMessage",
-		Fields: []*Field{field1},
-	}
+	field0 := NewTestField("parent").WithMessageType(parent)
+	child.WithFields(field0)
 
-	key := &Field{
-		Repeated: false,
-		Optional: false,
-		Name:     "key",
-		JSONName: "key",
-		ID:       ".test.ParentMessage.SingularMapEntry.key",
-		Typez:    TypezString,
-	}
-	value := &Field{
-		Repeated: false,
-		Optional: false,
-		Name:     "value",
-		JSONName: "value",
-		ID:       ".test.ParentMessage.SingularMapEntry.value",
-		Typez:    TypezMessage,
-		TypezID:  ".test.ChildMessage",
-	}
-	map_message := &Message{
-		Name:    "SingularMapEntry",
-		Package: "test",
-		ID:      ".test.ParentMessage.SingularMapEntry",
-		IsMap:   true,
-		Fields:  []*Field{key, value},
-	}
+	key := NewTestField("key").WithType(TypezString)
+	value := NewTestField("value").WithMessageType(child)
+	mapMessage := NewTestMapMessageWithFields("SingularMapEntry", key, value)
+	parent.WithMessages(mapMessage)
 
-	model := NewTestAPI([]*Message{parent, child, map_message}, []*Enum{}, []*Service{})
+	field1 := NewTestField("children").WithMessageType(mapMessage)
+	parent.WithFields(field1)
+
+	model := NewTestAPI([]*Message{parent, child, mapMessage}, nil, nil)
 	LabelRecursiveFields(model)
 	for _, field := range []*Field{value, field0, field1} {
 		if !field.Recursive {
@@ -206,42 +105,19 @@ func TestViaMap(t *testing.T) {
 }
 
 func TestReferencedCycle(t *testing.T) {
-	field0 := &Field{
-		Name:    "parent",
-		ID:      ".test.ChildMessage.parent",
-		Typez:   TypezMessage,
-		TypezID: ".test.ParentMessage",
-	}
-	child := &Message{
-		Name:   "ChildMessage",
-		ID:     ".test.ChildMessage",
-		Fields: []*Field{field0},
-	}
-	field1 := &Field{
-		Name:    "child",
-		ID:      ".test.ParentMessage.child",
-		Typez:   TypezMessage,
-		TypezID: ".test.ChildMessage",
-	}
-	parent := &Message{
-		Name:   "ParentdMessage",
-		ID:     ".test.ParentMessage",
-		Fields: []*Field{field1},
-	}
+	parent := NewTestMessage("ParentMessage")
+	child := NewTestMessage("ChildMessage")
 
-	field2 := &Field{
-		Name:    "ref",
-		ID:      ".test.Holder.ref",
-		Typez:   TypezMessage,
-		TypezID: ".test.ParentMessage",
-	}
-	holder := &Message{
-		Name:   "Holder",
-		ID:     ".test.Holder",
-		Fields: []*Field{field2},
-	}
+	field0 := NewTestField("parent").WithMessageType(parent)
+	child.WithFields(field0)
 
-	model := NewTestAPI([]*Message{holder, parent, child}, []*Enum{}, []*Service{})
+	field1 := NewTestField("child").WithMessageType(child)
+	parent.WithFields(field1)
+
+	field2 := NewTestField("ref").WithMessageType(parent)
+	holder := NewTestMessage("Holder").WithFields(field2)
+
+	model := NewTestAPI([]*Message{holder, parent, child}, nil, nil)
 	LabelRecursiveFields(model)
 	for _, field := range []*Field{field0, field1} {
 		if !field.Recursive {

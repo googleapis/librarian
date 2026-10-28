@@ -1,0 +1,95 @@
+{{/*
+Copyright 2025 Google LLC
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    https://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/}}
+// Copyright {{ .Codec.Storage.Codec.CopyrightYear }} Google LLC
+{{- range .Codec.Storage.Codec.BoilerPlate }}
+//{{ . }}
+{{- end }}
+
+/// Defines the trait used to implement [crate::client::StorageControl].
+///
+/// Application developers may need to implement this trait to mock
+/// `client::StorageControl`. In other use-cases, application developers only
+/// use `client::StorageControl` and need not be concerned with this trait or
+/// its implementations.
+///
+/// Services gain new RPCs routinely. Consequently, this trait gains new methods
+/// too. To avoid breaking applications the trait provides a default
+/// implementation of each method. Most of these implementations just return an
+/// error.
+pub trait StorageControl: std::fmt::Debug + Send + Sync {
+    {{- range .Codec.Storage.Services }}
+    {{- range .Methods }}
+    {{- "\n" }}
+    /// Implements [crate::client::StorageControl::{{ .Codec.Name }}].
+    fn {{ .Codec.Name }}(
+        &self,
+        _req: {{ .InputType.Codec.QualifiedName }},
+        _options: crate::RequestOptions,
+    ) -> impl std::future::Future<Output = crate::Result<crate::Response<{{ .Codec.ReturnType }}>>> + Send {
+        gaxi::unimplemented::unimplemented_stub()
+    }
+    {{- end }}
+    {{- end }}
+    {{- range .Codec.Control.Services }}
+    {{- range .Methods }}
+    {{- "\n" }}
+    /// Implements [crate::client::StorageControl::{{ .Codec.Name }}].
+    fn {{ .Codec.Name }}(
+        &self,
+        _req: {{ .InputType.Codec.QualifiedName }},
+        _options: crate::RequestOptions,
+    ) -> impl std::future::Future<Output = crate::Result<crate::Response<{{ .Codec.ReturnType }}>>> + Send {
+        gaxi::unimplemented::unimplemented_stub()
+    }
+    {{- end }}
+    {{- end }}
+}
+
+impl<T> crate::generated::gapic::stub::StorageControl for std::sync::Arc<T>
+where
+    T: StorageControl,
+{
+    {{- range .Codec.Storage.Services }}
+    {{- range .Methods }}
+    {{- "\n" }}
+    fn {{ .Codec.Name }}(
+        &self,
+        req: {{ .InputType.Codec.QualifiedName }},
+        options: crate::RequestOptions,
+    ) -> impl std::future::Future<Output = crate::Result<crate::Response<{{ .Codec.ReturnType }}>>> + Send {
+        T::{{ .Codec.Name }}(self, req, options)
+    }
+    {{- end }}
+    {{- end }}
+}
+
+impl<T> crate::generated::gapic_control::stub::StorageControl for std::sync::Arc<T>
+where
+    T: StorageControl,
+{
+    {{- range .Codec.Control.Services }}
+    {{- range .Methods }}
+    {{- "\n" }}
+    fn {{ .Codec.Name }}(
+        &self,
+        req: {{ .InputType.Codec.QualifiedName }},
+        options: crate::RequestOptions,
+    ) -> impl std::future::Future<Output = crate::Result<crate::Response<{{ .Codec.ReturnType }}>>> + Send {
+        T::{{ .Codec.Name }}(self, req, options)
+    }
+    {{- end }}
+    {{- end }}
+}

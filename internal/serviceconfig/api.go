@@ -85,6 +85,14 @@ type API struct {
 	// Defaults to true.
 	RequiresBilling *bool `yaml:"requires_billing,omitempty"`
 
+	// RestDocumentation overrides the REST reference documentation URI from the
+	// service config's publishing section.
+	RestDocumentation string `yaml:"rest_documentation,omitempty"`
+
+	// RpcDocumentation overrides the RPC reference documentation URI from the
+	// service config's publishing section.
+	RpcDocumentation string `yaml:"rpc_documentation,omitempty"`
+
 	// SampleURIs is the documentation URI for code samples per language.
 	// Map key is the language name (e.g., "go", "python").
 	// Optional. If omitted, a default URI for the language is used.
@@ -209,7 +217,7 @@ func HasAPIPath(path, language string) bool {
 // FindTransport looks up the API by path in sdk.yaml and returns its configured transport.
 // If the API is not explicitly configured in sdk.yaml, it is assumed to default to GRPCRest.
 func FindTransport(path, language string) (Transport, error) {
-	api := findAPI(path)
+	api := FindAPI(path)
 	return api.Transport(language), nil
 }
 

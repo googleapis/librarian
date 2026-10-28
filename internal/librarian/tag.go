@@ -18,7 +18,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"regexp"
 
 	"github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/config"
@@ -27,11 +26,7 @@ import (
 	"github.com/urfave/cli/v3"
 )
 
-var (
-	errNoLibrariesAtReleaseCommit = errors.New("commit does not release any libraries")
-	errCannotDeriveReleaseTag     = errors.New("unable to derive release tag")
-	pullRequestCommitSubjectRegex = regexp.MustCompile(`\(#(\d+)\)$`)
-)
+var errNoLibrariesAtReleaseCommit = errors.New("commit does not release any libraries")
 
 func tagCommand() *cli.Command {
 	return &cli.Command{
@@ -47,29 +42,18 @@ Run tag after librarian publish has succeeded. By default, the most
 recent release commit reachable from HEAD is used; --release-commit
 overrides this with a specific commit.
 
-The --create-release-tag flag additionally creates a tag of the form
-release-<PR number>; this is used by the legacy release jobs and will be
-removed once those jobs are retired.
-
 Examples:
 
 	librarian tag
-	librarian tag --release-commit=<sha>
-	librarian tag --create-release-tag`,
+	librarian tag --release-commit=<sha>`,
 		Flags: []cli.Flag{
 			&cli.StringFlag{
 				Name:  "release-commit",
 				Usage: "the release commit to tag; default finds latest release commit",
 			},
-			// TODO(https://github.com/googleapis/librarian/issues/4472): remove
-			// this when we've migrated off the legacy release jobs.
-			&cli.BoolFlag{
-				Name:  "create-release-tag",
-				Usage: "whether to create a tag of the form release-{PR number}",
-			},
 		},
 		Action: func(ctx context.Context, cmd *cli.Command) error {
-			return tag(ctx, cmd.String("release-commit"), cmd.Bool("create-release-tag"))
+			return tag(ctx, cmd.String("release-commit"))
 		},
 	}
 }
@@ -77,7 +61,7 @@ Examples:
 // tag implements the tag command. It finds the release commit to publish
 // (unless already specified). The configuration at the release commit is used
 // for all further operations.
-func tag(ctx context.Context, releaseCommit string, createReleaseTag bool) error {
+func tag(ctx context.Context, releaseCommit string) error {
 	if err := git.AssertGitStatusClean(ctx, command.Git); err != nil {
 		return err
 	}
@@ -115,24 +99,6 @@ func tag(ctx context.Context, releaseCommit string, createReleaseTag bool) error
 	}
 	if len(librariesToTag) == 0 {
 		return fmt.Errorf("error tagging %s: %w", releaseCommit, errNoLibrariesAtReleaseCommit)
-	}
-
-	// If we need to create a release tag, do that first - in case we can't
-	// determine the tag name.
-	if createReleaseTag {
-		commitSubject, err := git.GetCommitSubject(ctx, command.Git, releaseCommit)
-		if err != nil {
-			return fmt.Errorf("can't get commit subject for %s: %w, %w", releaseCommit, errCannotDeriveReleaseTag, err)
-		}
-		matches := pullRequestCommitSubjectRegex.FindStringSubmatch(commitSubject)
-		if len(matches) != 2 {
-			return fmt.Errorf("commit subject has unexpected format '%s': %w", commitSubject, errCannotDeriveReleaseTag)
-		}
-		tagName := "release-" + matches[1]
-		err = git.Tag(ctx, command.Git, tagName, releaseCommit)
-		if err != nil {
-			return fmt.Errorf("error creating tag %s: %w", tagName, err)
-		}
 	}
 
 	tagFormat := releaseCommitCfg.Default.TagFormat

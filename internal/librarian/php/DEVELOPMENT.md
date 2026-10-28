@@ -36,29 +36,7 @@ sibling repositories (typically under a common parent directory, e.g.,
 When modifying the PHP generator or adding PHP support, use the following
 workflow to test and verify your changes:
 
-### Step 0: Check out a specific commit (Optional, for consistency testing)
-
-If you want to verify the generator output against a known baseline, check out a specific commit of `google-cloud-php` before running `migrate`:
-
-```bash
-cd ../google-cloud-php
-git checkout 1831905d
-cd ../librarian
-```
-
-### Step 1: Run the Migration Tool
-Before running generation, you must first generate the `librarian.yaml`
-configuration file for the `google-cloud-php` repository. This tool will
-auto-discover PHP libraries and map their API paths by parsing `.OwlBot.yaml`
-files.
-
-From the `librarian/` repository root:
-```bash
-go run ./tool/cmd/migrate ../google-cloud-php
-```
-This writes or updates the `google-cloud-php/librarian.yaml` config.
-
-### Step 2: Build the Librarian CLI
+### Step 1: Build the Librarian CLI
 Compile the `librarian` binary locally:
 ```bash
 go build -o bin/librarian ./cmd/librarian
@@ -70,7 +48,7 @@ go build -o bin/librarian ./cmd/librarian
 > inside the local project folder and prevents it from overwriting any
 > globally installed production version of `librarian` in `~/go/bin`.
 
-### Step 3: Install Generator Tools
+### Step 2: Install Generator Tools
 Before generating code, you must install the language-specific generator
 tools and plugins (e.g. `gapic-generator-php` and `protoc`).
 
@@ -88,7 +66,7 @@ source .venv/bin/activate
 
 This downloads the PHP generator, writes a wrapper script, and installs required formatting and synthesis tools in your local workspace.
 
-### Step 4: Run Code Generation
+### Step 3: Run Code Generation
 Run the compiled `librarian` binary to generate code for a target library
 (e.g., `Ces`):
 
@@ -97,7 +75,7 @@ Run the compiled `librarian` binary to generate code for a target library
 ```
 *(Replace `Ces` with the name of the library you are testing).*
 
-### Step 5: Verify and Format Configuration
+### Step 4: Verify and Format Configuration
 If you modified `librarian.yaml`, you can format and validate it using the
 `tidy` command:
 

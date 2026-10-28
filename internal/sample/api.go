@@ -42,366 +42,271 @@ const (
 
 // API returns a sample API.
 func API() *api.API {
-	return &api.API{
-		Name:        APIName,
-		Title:       APITitle,
-		PackageName: APIPackageName,
-		Description: APIDescription,
-		Services:    []*api.Service{Service()},
-		Messages: []*api.Message{
+	return api.NewTestAPI(
+		[]*api.Message{
 			Replication(),
 			Automatic(),
 		},
-		Enums: []*api.Enum{EnumState()},
-	}
+		[]*api.Enum{EnumState()},
+		[]*api.Service{Service()},
+	).
+		WithName(APIName).
+		WithTitle(APITitle).
+		WithPackageName(APIPackageName).
+		WithDescription(APIDescription)
 }
 
 // Service returns a sample service.
 func Service() *api.Service {
-	return &api.Service{
-		Name:          ServiceName,
-		Documentation: APIDescription,
-		DefaultHost:   DefaultHost,
-		Methods: []*api.Method{
+	return api.NewTestService(ServiceName).
+		WithPackage(Package).
+		WithDocumentation(APIDescription).
+		WithDefaultHost(DefaultHost).
+		WithMethods(
 			MethodCreate(),
 			MethodUpdate(),
 			MethodListSecretVersions(),
-		},
-		Package: Package,
-	}
+		)
 }
 
 // MethodCreate returns a sample create method.
 func MethodCreate() *api.Method {
-	return &api.Method{
-		Name:          "CreateSecret",
-		Documentation: "Creates a new Secret containing no SecretVersions.",
-		ID:            "..Service.CreateSecret",
-		InputTypeID:   CreateRequest().ID,
-		OutputTypeID:  Secret().ID,
-		PathInfo: &api.PathInfo{
-			Bindings: []*api.PathBinding{
-				{
-					Verb: http.MethodPost,
-					PathTemplate: (&api.PathTemplate{}).
-						WithLiteral("v1").
-						WithLiteral("projects").
-						WithVariableNamed("project").
-						WithLiteral("secrets"),
-					QueryParameters: map[string]bool{"secretId": true},
-				},
-			},
-			BodyFieldPath: "body",
-		},
-	}
+	m := api.NewTestMethod("CreateSecret").
+		WithID("..Service.CreateSecret").
+		WithDocumentation("Creates a new Secret containing no SecretVersions.").
+		WithVerb(http.MethodPost).
+		WithPathTemplate((&api.PathTemplate{}).
+			WithLiteral("v1").
+			WithLiteral("projects").
+			WithVariableNamed("project").
+			WithLiteral("secrets")).
+		WithQueryParameters(map[string]bool{"secretId": true}).
+		WithBodyFieldPath("body")
+	// Note: InputType and OutputType are intentionally left nil because OpenAPI parser tests
+	// (e.g. TestOpenAPI_MakeAPI) assert against this fixture before CrossReference runs.
+	m.InputTypeID = CreateRequest().ID
+	m.OutputTypeID = Secret().ID
+	return m
 }
 
 // MethodUpdate returns a sample update method.
 func MethodUpdate() *api.Method {
-	return &api.Method{
-		Name:          "UpdateSecret",
-		Documentation: "Updates metadata of an existing Secret.",
-		ID:            "..Service.UpdateSecret",
-		InputTypeID:   UpdateRequest().ID,
-		OutputTypeID:  ".google.protobuf.Empty",
-		PathInfo: &api.PathInfo{
-			Bindings: []*api.PathBinding{
-				{
-					Verb: http.MethodPatch,
-					PathTemplate: (&api.PathTemplate{}).
-						WithLiteral("v1").
-						WithVariableNamed("secret", "name"),
-					QueryParameters: map[string]bool{
-						"field_mask": true,
-					},
-				},
-			},
-		},
-	}
+	m := api.NewTestMethod("UpdateSecret").
+		WithID("..Service.UpdateSecret").
+		WithDocumentation("Updates metadata of an existing Secret.").
+		WithInput(UpdateRequest()).
+		WithVerb(http.MethodPatch).
+		WithPathTemplate((&api.PathTemplate{}).
+			WithLiteral("v1").
+			WithVariableNamed("secret", "name")).
+		WithQueryParameters(map[string]bool{
+			"field_mask": true,
+		})
+	m.OutputTypeID = ".google.protobuf.Empty"
+	return m
 }
 
 // MethodAddSecretVersion returns a sample add secret version method.
 func MethodAddSecretVersion() *api.Method {
-	return &api.Method{
-		Name:          "AddSecretVersion",
-		ID:            "..Service.AddSecretVersion",
-		Documentation: "Creates a new SecretVersion containing secret data and attaches\nit to an existing Secret.",
-		InputTypeID:   "..Service.AddSecretVersionRequest",
-		OutputTypeID:  "..SecretVersion",
-		PathInfo: &api.PathInfo{
-			Bindings: []*api.PathBinding{
-				{
-					Verb: http.MethodPost,
-					PathTemplate: (&api.PathTemplate{}).
-						WithLiteral("v1").
-						WithLiteral("projects").
-						WithVariableNamed("project").
-						WithLiteral("secrets").
-						WithVariableNamed("secret").
-						WithVerb("addVersion"),
-					QueryParameters: map[string]bool{},
-				},
-			},
-			BodyFieldPath: "body",
-		},
-	}
+	m := api.NewTestMethod("AddSecretVersion").
+		WithID("..Service.AddSecretVersion").
+		WithDocumentation("Creates a new SecretVersion containing secret data and attaches\nit to an existing Secret.").
+		WithVerb(http.MethodPost).
+		WithPathTemplate((&api.PathTemplate{}).
+			WithLiteral("v1").
+			WithLiteral("projects").
+			WithVariableNamed("project").
+			WithLiteral("secrets").
+			WithVariableNamed("secret").
+			WithVerb("addVersion")).
+		WithQueryParameters(map[string]bool{}).
+		WithBodyFieldPath("body")
+	m.InputTypeID = "..Service.AddSecretVersionRequest"
+	m.OutputTypeID = "..SecretVersion"
+	return m
 }
 
 // MethodListSecretVersions returns a sample list secret versions method.
 func MethodListSecretVersions() *api.Method {
-	return &api.Method{
-		Name:          "ListSecretVersions",
-		ID:            "..Service.ListVersion",
-		Documentation: "Lists [SecretVersions][google.cloud.secretmanager.v1.SecretVersion]. This call does not return secret data.",
-		InputTypeID:   ListSecretVersionsRequest().ID,
-		InputType:     ListSecretVersionsRequest(),
-		OutputTypeID:  ListSecretVersionsResponse().ID,
-		OutputType:    ListSecretVersionsResponse(),
-		PathInfo: &api.PathInfo{
-			Bindings: []*api.PathBinding{
-				{
-					Verb: http.MethodPost,
-					PathTemplate: (&api.PathTemplate{}).
-						WithLiteral("v1").
-						WithLiteral("projects").
-						WithVariableNamed("parent").
-						WithLiteral("secrets").
-						WithVariableNamed("secret").
-						WithVerb("listSecretVersions"),
-					QueryParameters: map[string]bool{},
-				},
-			},
-			BodyFieldPath: "*",
-		},
-	}
+	return api.NewTestMethod("ListSecretVersions").
+		WithID("..Service.ListVersion").
+		WithDocumentation("Lists [SecretVersions][google.cloud.secretmanager.v1.SecretVersion]. This call does not return secret data.").
+		WithInput(ListSecretVersionsRequest()).
+		WithOutput(ListSecretVersionsResponse()).
+		WithVerb(http.MethodPost).
+		WithPathTemplate((&api.PathTemplate{}).
+			WithLiteral("v1").
+			WithLiteral("projects").
+			WithVariableNamed("parent").
+			WithLiteral("secrets").
+			WithVariableNamed("secret").
+			WithVerb("listSecretVersions")).
+		WithQueryParameters(map[string]bool{}).
+		WithBodyFieldPath("*")
 }
 
 // CreateRequest returns a sample create request.
 func CreateRequest() *api.Message {
-	return &api.Message{
-		Name:          "CreateSecretRequest",
-		ID:            "..Service.CreateSecretRequest",
-		Documentation: "Request message for SecretManagerService.CreateSecret",
-		Package:       Package,
-		Fields: []*api.Field{
-			{
-				Name:     "project",
-				JSONName: "project",
-				Typez:    api.TypezString,
-			},
-			{
-				Name:     "secret_id",
-				JSONName: "secretId",
-				Typez:    api.TypezString,
-			},
-		},
-	}
+	return api.NewTestMessage("CreateSecretRequest").
+		WithPackage(Package).
+		WithID("..Service.CreateSecretRequest").
+		WithDocumentation("Request message for SecretManagerService.CreateSecret").
+		WithFields(
+			api.NewTestField("project").
+				WithType(api.TypezString),
+			api.NewTestField("secret_id").
+				WithType(api.TypezString),
+		)
 }
 
 // UpdateRequest returns a sample update request.
 func UpdateRequest() *api.Message {
-	return &api.Message{
-		Name:          "UpdateSecretRequest",
-		ID:            "..UpdateRequest",
-		Documentation: "Request message for SecretManagerService.UpdateSecret",
-		Package:       Package,
-		Fields: []*api.Field{
-			{
-				Name:     "secret",
-				JSONName: "secret",
-				Typez:    api.TypezMessage,
-				TypezID:  Secret().ID,
-			},
-			{
-				Name:     "field_mask",
-				JSONName: "fieldMask",
-				Typez:    api.TypezMessage,
-				TypezID:  ".google.protobuf.FieldMask",
-				Optional: true,
-			},
-		},
-	}
+	return api.NewTestMessage("UpdateSecretRequest").
+		WithPackage(Package).
+		WithID("..UpdateRequest").
+		WithDocumentation("Request message for SecretManagerService.UpdateSecret").
+		WithFields(
+			api.NewTestField("secret").
+				WithType(api.TypezMessage).
+				WithTypezID(Secret().ID),
+			api.NewTestField("field_mask").
+				WithType(api.TypezMessage).
+				WithTypezID(".google.protobuf.FieldMask").
+				WithOptional(),
+		)
 }
 
 // ListSecretVersionsRequest returns a sample list secret versions request.
 func ListSecretVersionsRequest() *api.Message {
-	return &api.Message{
-		Name:          "ListSecretVersionRequest",
-		ID:            "..ListSecretVersionsRequest",
-		Documentation: "Lists SecretVersions. This call does not return secret data.",
-		Package:       Package,
-		Fields: []*api.Field{
-			{
-				Name:     "parent",
-				JSONName: "parent",
-				ID:       Secret().ID + ".parent",
-				Typez:    api.TypezMessage,
-				TypezID:  Secret().ID,
-			},
-		},
-	}
+	return api.NewTestMessage("ListSecretVersionRequest").
+		WithPackage(Package).
+		WithID("..ListSecretVersionsRequest").
+		WithDocumentation("Lists SecretVersions. This call does not return secret data.").
+		WithFields(
+			api.NewTestField("parent").
+				WithType(api.TypezMessage).
+				WithTypezID(Secret().ID),
+		)
 }
 
 // ListSecretVersionsResponse returns a sample list secret versions response.
 func ListSecretVersionsResponse() *api.Message {
-	return &api.Message{
-		Name:    "ListSecretVersionsResponse",
-		ID:      "..ListSecretVersionsResponse",
-		Package: Package,
-		Fields: []*api.Field{
-			{
-				Name:     "versions",
-				JSONName: "versions",
-				Typez:    api.TypezMessage,
-				TypezID:  SecretVersion().ID,
-				Repeated: true,
-			},
-		},
-	}
+	return api.NewTestMessage("ListSecretVersionsResponse").
+		WithPackage(Package).
+		WithID("..ListSecretVersionsResponse").
+		WithFields(
+			api.NewTestField("versions").
+				WithType(api.TypezMessage).
+				WithTypezID(SecretVersion().ID).
+				WithRepeated(),
+		)
 }
 
 // Secret returns a sample secret.
 func Secret() *api.Message {
-	return &api.Message{
-		Name:    "Secret",
-		ID:      "..Secret",
-		Package: Package,
-		Fields: []*api.Field{
-			{
-				Name:     "name",
-				JSONName: "name",
-				Typez:    api.TypezString,
-			},
-			{
-				Name:     "replication",
-				JSONName: "replication",
-				Typez:    api.TypezMessage,
-				TypezID:  Replication().ID,
-			},
-		},
-	}
+	return api.NewTestMessage("Secret").
+		WithPackage(Package).
+		WithID("..Secret").
+		WithFields(
+			api.NewTestField("name").
+				WithType(api.TypezString),
+			api.NewTestField("replication").
+				WithType(api.TypezMessage).
+				WithTypezID(Replication().ID),
+		)
 }
 
 // SecretVersion returns a sample secret version.
 func SecretVersion() *api.Message {
-	return &api.Message{
-		Name:    "SecretVersion",
-		Package: Package,
-		ID:      "google.cloud.secretmanager.v1.SecretVersion",
-		Enums:   []*api.Enum{EnumState()},
-		Fields: []*api.Field{
-			{
-				Name:     "name",
-				JSONName: "name",
-				Typez:    api.TypezString,
-			},
-			{
-				Name:     "state",
-				JSONName: "state",
-				Typez:    api.TypezEnum,
-				TypezID:  EnumState().ID,
-			},
-		},
-	}
+	state := EnumState()
+	m := api.NewTestMessage("SecretVersion").
+		WithPackage(Package).
+		WithID("google.cloud.secretmanager.v1.SecretVersion").
+		WithEnums(state)
+	return m.WithFields(
+		api.NewTestField("name").
+			WithType(api.TypezString),
+		api.NewTestField("state").
+			WithType(api.TypezEnum).
+			WithTypezID(state.ID),
+	)
 }
 
 // EnumState returns a sample enum state.
 func EnumState() *api.Enum {
-	var (
-		stateEnabled = &api.EnumValue{
-			Name:   "Enabled",
-			Number: 1,
-		}
-		stateDisabled = &api.EnumValue{
-			Name:   "Disabled",
-			Number: 2,
-		}
-	)
-	return &api.Enum{
-		Name:    "State",
-		ID:      ".test.EnumState",
-		Package: Package,
-		Values: []*api.EnumValue{
-			stateEnabled,
-			stateDisabled,
-		},
-	}
+	return api.NewTestEnum("State").
+		WithPackage(Package).
+		WithID(".test.EnumState").
+		WithValues(
+			api.NewTestEnumValue("Enabled", 1),
+			api.NewTestEnumValue("Disabled", 2),
+		)
 }
 
 // Replication returns a sample replication.
 func Replication() *api.Message {
-	return &api.Message{
-		Name:    "Replication",
-		Package: Package,
-		ID:      "google.cloud.secretmanager.v1.Replication",
-		Fields: []*api.Field{
-			{
-				Name:     "automatic",
-				Typez:    api.TypezMessage,
-				TypezID:  "..Automatic",
-				Optional: true,
-				Repeated: false,
-			},
-		},
+	msg := api.NewTestMessage("Replication").
+		WithPackage(Package).
+		WithID("google.cloud.secretmanager.v1.Replication").
+		WithFields(
+			api.NewTestField("automatic").
+				WithType(api.TypezMessage).
+				WithTypezID("..Automatic").
+				WithOptional(),
+		)
+	for _, f := range msg.Fields {
+		f.Parent = nil
 	}
+	return msg
 }
 
 // Automatic returns a sample automatic.
 func Automatic() *api.Message {
-	return &api.Message{
-		Name:          "Automatic",
-		ID:            "..Automatic",
-		Package:       Package,
-		Documentation: "A replication policy that replicates the Secret payload without any restrictions.",
-		Parent:        Replication(),
-		Fields: []*api.Field{
-			{
-				Name:          "customerManagedEncryption",
-				ID:            "..Automatic.customerManagedEncryption",
-				JSONName:      "customerManagedEncryption",
-				Documentation: "Optional. The customer-managed encryption configuration of the Secret.",
-				Typez:         api.TypezMessage,
-				TypezID:       "..CustomerManagedEncryption",
-				Optional:      true,
-			},
-		},
+	msg := api.NewTestMessage("Automatic").
+		WithPackage(Package).
+		WithID("..Automatic").
+		WithDocumentation("A replication policy that replicates the Secret payload without any restrictions.").
+		WithFields(
+			api.NewTestField("customerManagedEncryption").
+				WithDocumentation("Optional. The customer-managed encryption configuration of the Secret.").
+				WithType(api.TypezMessage).
+				WithTypezID("..CustomerManagedEncryption").
+				WithOptional(),
+		)
+	for _, f := range msg.Fields {
+		f.Parent = nil
 	}
+	msg.Parent = Replication()
+	return msg
 }
 
 // CustomerManagedEncryption returns a sample customer managed encryption.
 func CustomerManagedEncryption() *api.Message {
-	return &api.Message{
-		Name:    "CustomerManagedEncryption",
-		ID:      "..CustomerManagedEncryption",
-		Package: Package,
-	}
+	return api.NewTestMessage("CustomerManagedEncryption").
+		WithPackage(Package).
+		WithID("..CustomerManagedEncryption")
 }
 
 // SecretPayload returns a sample secret payload.
 func SecretPayload() *api.Message {
-	return &api.Message{
-		Name:          "SecretPayload",
-		ID:            "..SecretPayload",
-		Documentation: "A secret payload resource in the Secret Manager API. This contains the\nsensitive secret payload that is associated with a SecretVersion.",
-		Fields: []*api.Field{
-			{
-				Name:          "data",
-				ID:            "..SecretPayload.data",
-				JSONName:      "data",
-				Documentation: "The secret data. Must be no larger than 64KiB.",
-				Typez:         api.TypezBytes,
-				TypezID:       "bytes",
-				Optional:      true,
-			},
-			{
-				Name:          "dataCrc32c",
-				ID:            "..SecretPayload.dataCrc32c",
-				JSONName:      "dataCrc32c",
-				Documentation: "Optional. If specified, SecretManagerService will verify the integrity of the\nreceived data on SecretManagerService.AddSecretVersion calls using\nthe crc32c checksum and store it to include in future\nSecretManagerService.AccessSecretVersion responses. If a checksum is\nnot provided in the SecretManagerService.AddSecretVersion request, the\nSecretManagerService will generate and store one for you.\n\nThe CRC32C value is encoded as a Int64 for compatibility, and can be\nsafely downconverted to uint32 in languages that support this type.\nhttps://cloud.google.com/apis/design/design_patterns#integer_types",
-				Typez:         api.TypezInt64,
-				TypezID:       "int64",
-				Optional:      true,
-			},
-		},
+	msg := api.NewTestMessage("SecretPayload").
+		WithPackage("").
+		WithDocumentation("A secret payload resource in the Secret Manager API. This contains the\nsensitive secret payload that is associated with a SecretVersion.").
+		WithFields(
+			api.NewTestField("data").
+				WithDocumentation("The secret data. Must be no larger than 64KiB.").
+				WithType(api.TypezBytes).
+				WithTypezID("bytes").
+				WithOptional(),
+			api.NewTestField("dataCrc32c").
+				WithJSONName("dataCrc32c").
+				WithDocumentation("Optional. If specified, SecretManagerService will verify the integrity of the\nreceived data on SecretManagerService.AddSecretVersion calls using\nthe crc32c checksum and store it to include in future\nSecretManagerService.AccessSecretVersion responses. If a checksum is\nnot provided in the SecretManagerService.AddSecretVersion request, the\nSecretManagerService will generate and store one for you.\n\nThe CRC32C value is encoded as a Int64 for compatibility, and can be\nsafely downconverted to uint32 in languages that support this type.\nhttps://cloud.google.com/apis/design/design_patterns#integer_types").
+				WithType(api.TypezInt64).
+				WithTypezID("int64").
+				WithOptional(),
+		)
+	for _, f := range msg.Fields {
+		f.Parent = nil
 	}
+	return msg
 }

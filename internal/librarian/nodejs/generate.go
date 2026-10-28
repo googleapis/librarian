@@ -31,6 +31,7 @@ import (
 	"github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/filesystem"
+	"github.com/googleapis/librarian/internal/proto"
 	"github.com/googleapis/librarian/internal/serviceconfig"
 	"github.com/googleapis/librarian/internal/sources"
 	"github.com/googleapis/librarian/internal/tool/protoc"
@@ -39,7 +40,24 @@ import (
 const (
 	cloudCommonResourcesProto = "google/cloud/common_resources.proto"
 	protosPathPrefix          = "protos/"
+	stagingDirName            = ".librarian-staging"
 )
+
+var (
+	errToolNotInstalled    = errors.New("tool not installed in librarian cache")
+	errProtoNotFound       = errors.New("no proto is found in api")
+	errPackageNameRequired = errors.New("nodejs.package_name is required; non-cloud libraries must be configured in librarian.yaml or populated during librarian add")
+)
+
+type buildGeneratorArgsParams struct {
+	generatorPath string
+	protoc        *config.Protoc
+	api           *config.API
+	library       *config.Library
+	googleapisDir string
+	stagingDir    string
+	nodejsAPI     *config.NodejsAPI
+}
 
 // IsMixedLibrary reports whether the library has handwritten code wrapping
 // generated or librarian-managed code.
@@ -49,6 +67,9 @@ func IsMixedLibrary(lib *config.Library) bool {
 
 // Generate generates a Node.js client library.
 func Generate(ctx context.Context, cfg *config.Config, library *config.Library, srcs *sources.Sources) error {
+	if library.Nodejs == nil || library.Nodejs.PackageName == "" {
+		return fmt.Errorf("library %q: %w", library.Name, errPackageNameRequired)
+	}
 	googleapisDir := srcs.Googleapis
 	outdir, err := filepath.Abs(library.Output)
 	if err != nil {
@@ -93,10 +114,6 @@ func Generate(ctx context.Context, cfg *config.Config, library *config.Library, 
 	return nil
 }
 
-var (
-	errToolNotInstalled = errors.New("tool not installed in librarian cache")
-)
-
 func requireCachedTool(toolName string) (string, error) {
 	binDir, err := getBinDir()
 	if err != nil {
@@ -138,38 +155,19 @@ func generateAPI(ctx context.Context, params generateAPIParams) error {
 	if _, err := requireCachedTool("gapic-node-processing"); err != nil {
 		return err
 	}
-
-	stagingDir := filepath.Join(params.repoRoot, "owl-bot-staging", params.library.Name, buildStagingSubdirName(params.apiIndex, params.api.Path))
+	stagingDir := filepath.Join(params.repoRoot, stagingDirName, params.library.Name, buildStagingSubdirName(params.apiIndex, params.api.Path))
 	if err := os.MkdirAll(stagingDir, 0o755); err != nil {
 		return err
 	}
-
-	nodejsAPI := resolveNodejsAPI(params.library, params.api)
-
 	absGoogleapisDir, err := filepath.Abs(params.googleapisDir)
 	if err != nil {
 		return fmt.Errorf("failed to resolve googleapis directory path: %w", err)
 	}
-
-	apiDir := filepath.Join(absGoogleapisDir, params.api.Path)
-	protos, err := filepath.Glob(apiDir + "/*.proto")
+	nodejsAPI := resolveNodejsAPI(params.library, params.api)
+	protos, err := collectProtos(absGoogleapisDir, nodejsAPI)
 	if err != nil {
-		return fmt.Errorf("failed to find protos: %w", err)
+		return err
 	}
-	if len(protos) == 0 {
-		return fmt.Errorf("no protos found in api %q", params.api.Path)
-	}
-	for index := range protos {
-		rel, err := filepath.Rel(absGoogleapisDir, protos[index])
-		if err != nil {
-			return fmt.Errorf("failed to make path %s relative: %w", protos[index], err)
-		}
-		protos[index] = rel
-	}
-
-	// Add additional protos from configuration.
-	protos = append(protos, nodejsAPI.AdditionalProtos...)
-
 	args, err := buildGeneratorArgs(buildGeneratorArgsParams{
 		generatorPath: generatorPath,
 		protoc:        params.protoc,
@@ -196,47 +194,27 @@ func resolveNodejsAPI(library *config.Library, api *config.API) *config.NodejsAP
 	res := &config.NodejsAPI{
 		Path: api.Path,
 	}
-
-	var apiConfig *config.NodejsAPI
-	if api.Nodejs != nil {
-		apiConfig = api.Nodejs
-	} else if library.Nodejs != nil {
-		for _, nodejsAPI := range library.Nodejs.NodejsAPIs {
-			if nodejsAPI.Path == api.Path {
-				apiConfig = nodejsAPI
-				break
-			}
-		}
-	}
-
 	omitCommon := false
-	if apiConfig != nil {
-		omitCommon = apiConfig.OmitCommonResources
-		res.DIREGAPIC = apiConfig.DIREGAPIC
-		if apiConfig.Mixins != "" {
-			res.Mixins = apiConfig.Mixins
+	if api.Nodejs != nil {
+		res.ExcludeProtos = append(res.ExcludeProtos, api.Nodejs.ExcludeProtos...)
+		omitCommon = api.Nodejs.OmitCommonResources
+		res.DIREGAPIC = api.Nodejs.DIREGAPIC
+		if api.Nodejs.Mixins != "" {
+			res.Mixins = api.Nodejs.Mixins
 		}
-		res.OmitCommonResources = apiConfig.OmitCommonResources
+		res.OmitCommonResources = api.Nodejs.OmitCommonResources
 	}
-
 	var protos []string
 	if !omitCommon {
 		protos = append(protos, cloudCommonResourcesProto)
 	}
-
-	if library.Nodejs == nil {
-		res.AdditionalProtos = protos
-		return res
-	}
-
 	// Add package-level additional protos.
-	protos = append(protos, library.Nodejs.AdditionalProtos...)
-
-	// Add API-level additional protos.
-	if apiConfig != nil {
-		protos = append(protos, apiConfig.AdditionalProtos...)
+	if library.Nodejs != nil {
+		protos = append(protos, library.Nodejs.AdditionalProtos...)
 	}
-
+	if api.Nodejs != nil {
+		protos = append(protos, api.Nodejs.AdditionalProtos...)
+	}
 	res.AdditionalProtos = unique(protos)
 	return res
 }
@@ -253,14 +231,27 @@ func unique(ss []string) []string {
 	return res
 }
 
-type buildGeneratorArgsParams struct {
-	generatorPath string
-	protoc        *config.Protoc
-	api           *config.API
-	library       *config.Library
-	googleapisDir string
-	stagingDir    string
-	nodejsAPI     *config.NodejsAPI
+func collectProtos(absGoogleapisDir string, nodejsAPI *config.NodejsAPI) ([]string, error) {
+	apiDir := filepath.Join(absGoogleapisDir, nodejsAPI.Path)
+	protos, err := proto.Gather(apiDir, nodejsAPI.Path)
+	if err != nil {
+		return nil, fmt.Errorf("failed to find protos: %w", err)
+	}
+	if len(protos) == 0 {
+		return nil, fmt.Errorf("%w: %s", errProtoNotFound, nodejsAPI.Path)
+	}
+	for index := range protos {
+		rel, err := filepath.Rel(absGoogleapisDir, protos[index])
+		if err != nil {
+			return nil, fmt.Errorf("failed to make path %s relative: %w", protos[index], err)
+		}
+		protos[index] = rel
+	}
+	protos = append(protos, nodejsAPI.AdditionalProtos...)
+	protos = slices.DeleteFunc(protos, func(p string) bool {
+		return slices.Contains(nodejsAPI.ExcludeProtos, p)
+	})
+	return protos, nil
 }
 
 // buildGeneratorArgs constructs the gapic-generator-typescript arguments,
@@ -295,7 +286,7 @@ func buildGeneratorArgs(params buildGeneratorArgsParams) ([]string, error) {
 		args = append(args, "--service-yaml", apiMetadata.ServiceConfig)
 	}
 
-	args = append(args, "--package-name", derivePackageName(params.library))
+	args = append(args, "--package-name", params.library.Nodejs.PackageName)
 	args = append(args, "--metadata")
 
 	// Only pass --transport for non-default values (default is grpc+rest).
@@ -330,14 +321,14 @@ func buildGeneratorArgs(params buildGeneratorArgsParams) ([]string, error) {
 		if params.library.Nodejs.MainService != "" {
 			args = append(args, "--main-service", params.library.Nodejs.MainService)
 		}
-		if params.nodejsAPI.Mixins != "" {
-			args = append(args, "--mixins", params.nodejsAPI.Mixins)
-		}
+	}
+	if params.nodejsAPI.Mixins != "" {
+		args = append(args, "--mixins", params.nodejsAPI.Mixins)
 	}
 	return args, nil
 }
 
-// runPostProcessor combines versioned API outputs from owl-bot-staging/ into
+// runPostProcessor combines versioned API outputs from the staging directory into
 // the output directory using gapic-node-processing, then compiles protos.
 func runPostProcessor(ctx context.Context, cfg *config.Config, library *config.Library, googleapisDir, repoRoot, outDir string) error {
 	if err := movePackageFromStaging(ctx, library, repoRoot, outDir); err != nil {
@@ -361,14 +352,7 @@ func runPostProcessor(ctx context.Context, cfg *config.Config, library *config.L
 	if err := copyMissingProtos(googleapisDir, outDir); err != nil {
 		return fmt.Errorf("failed to copy missing protos: %w", err)
 	}
-	protoDir := "src"
-	compileArgs := []string{"--no-comments"}
-	if library.Nodejs != nil && library.Nodejs.ESM {
-		protoDir = "esm/src"
-		compileArgs = append(compileArgs, "--esm")
-	}
-	runArgs := append([]string{protoDir}, compileArgs...)
-
+	runArgs := compileProtosArgs(library)
 	toolsEnv, err := getToolsEnv()
 	if err != nil {
 		return err
@@ -402,10 +386,6 @@ func runPostProcessor(ctx context.Context, cfg *config.Config, library *config.L
 			return fmt.Errorf("failed to generate README.md: %w", err)
 		}
 	}
-	if err := removeRedundantLinterFiles(library, outDir); err != nil {
-		return fmt.Errorf("failed to remove redundant linter files: %w", err)
-	}
-
 	// Remove google/cloud/common_resources.proto from the protos directory.
 	// We don't need it in the repo (it isn't in googleapis-gen) and we don't
 	// want it to be in the diff.
@@ -415,8 +395,15 @@ func runPostProcessor(ctx context.Context, cfg *config.Config, library *config.L
 	return nil
 }
 
+func compileProtosArgs(library *config.Library) []string {
+	if library.Nodejs != nil && library.Nodejs.ESM {
+		return []string{"esm/src", "--no-comments", "--esm"}
+	}
+	return []string{"src", "--no-comments"}
+}
+
 // movePackageFromStaging moves the generated code for a single package from
-// owl-bot-staging (in the repo root) to the package-specific directory.
+// the staging directory (in the repo root) to the package-specific directory.
 func movePackageFromStaging(ctx context.Context, library *config.Library, repoRoot, outDir string) error {
 	// combine-library wipes the destination directory before writing generated
 	// files (src/, protos/). Save the keep files it would delete, then restore
@@ -431,7 +418,7 @@ func movePackageFromStaging(ctx context.Context, library *config.Library, repoRo
 		return err
 	}
 
-	stagingDir := filepath.Join(repoRoot, "owl-bot-staging", library.Name)
+	stagingDir := filepath.Join(repoRoot, stagingDirName, library.Name)
 	combineArgs := []string{
 		"combine-library",
 		"--source-path", stagingDir,
@@ -464,39 +451,6 @@ func movePackageFromStaging(ctx context.Context, library *config.Library, repoRo
 	}
 	if err := os.RemoveAll(stagingDir); err != nil && !errors.Is(err, fs.ErrNotExist) {
 		return fmt.Errorf("failed to remove package staging: %w", err)
-	}
-	return nil
-}
-
-// TODO(https://github.com/googleapis/google-cloud-node/issues/8286): gapic-generator-typescript
-// unconditionally generates redundant linter configuration files (.eslintignore, .eslintrc.json, etc.).
-// This post-processing cleanup function removes them unless explicitly kept in librarian.yaml.
-// Once gapic-generator-typescript is updated to stop generating them, this function must be removed.
-func removeRedundantLinterFiles(library *config.Library, outDir string) error {
-	keepSet := make(map[string]bool)
-	for _, k := range library.Keep {
-		keepSet[filepath.Clean(k)] = true
-	}
-
-	linterFiles := []string{
-		".eslintignore",
-		".eslintrc.json",
-		".prettierignore",
-		".prettierrc.js",
-		".prettierrc.cjs",
-	}
-
-	for _, lf := range linterFiles {
-		if keepSet[lf] {
-			continue
-		}
-		path := filepath.Join(outDir, lf)
-		if err := os.Remove(path); err != nil {
-			if errors.Is(err, fs.ErrNotExist) {
-				continue
-			}
-			return fmt.Errorf("failed to remove redundant linter file %s: %w", path, err)
-		}
 	}
 	return nil
 }
@@ -623,7 +577,7 @@ func copyMissingProtos(googleapisDir, outDir string) error {
 
 // copySamplesFromStaging copies generated sample files from the staging
 // directory into the output directory. The generator writes samples to
-// owl-bot-staging/<lib>/<version>/samples/generated/<version>/ but
+// <stagingDir>/<version>/samples/generated/<version>/ but
 // combine-library does not move them.
 func copySamplesFromStaging(stagingDir, outDir string) error {
 	versions, err := os.ReadDir(stagingDir)
@@ -669,31 +623,6 @@ func copySamplesFromStaging(stagingDir, outDir string) error {
 		}
 	}
 	return nil
-}
-
-// derivePackageName returns the npm package name for a library.
-// It uses nodejs.package_name if set, otherwise derives it by splitting the
-// library name on the second dash (e.g. "google-cloud-batch" → "@google-cloud/batch").
-func derivePackageName(library *config.Library) string {
-	if library.Nodejs != nil && library.Nodejs.PackageName != "" {
-		return library.Nodejs.PackageName
-	}
-	return derivePackageNameFromLibraryName(library.Name)
-}
-
-func derivePackageNameFromLibraryName(name string) string {
-	firstDash := strings.Index(name, "-")
-	if firstDash < 0 {
-		return name
-	}
-	secondDash := strings.Index(name[firstDash+1:], "-")
-	if secondDash < 0 {
-		return name
-	}
-	secondDash += firstDash + 1
-	scope := name[:secondDash]
-	pkg := name[secondDash+1:]
-	return fmt.Sprintf("@%s/%s", scope, pkg)
 }
 
 // DefaultOutput returns the output path for a library.

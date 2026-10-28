@@ -29,62 +29,39 @@ import (
 func TestGenerateOneOf(t *testing.T) {
 	outDir := t.TempDir()
 
-	inner := &api.Message{
-		Name:    "Inner",
-		Package: "google.cloud.test.v1",
-		ID:      ".google.cloud.test.v1.Inner",
-	}
+	inner := api.NewTestMessage("Inner").
+		WithPackage("google.cloud.test.v1")
 
-	oneof := &api.OneOf{
-		Name:          "choice",
-		Documentation: "A group of fields where only one is set.",
-	}
+	oneofField1 := api.NewTestField("string_field").
+		WithType(api.TypezString).
+		WithDocumentation("A string field that is part of the oneof.")
 
-	outer := &api.Message{
-		Name:    "Outer",
-		Package: "google.cloud.test.v1",
-		ID:      ".google.cloud.test.v1.Outer",
-		Fields: []*api.Field{
-			{
-				Name:          "string_field",
-				JSONName:      "stringField",
-				ID:            ".google.cloud.test.v1.Outer.string_field",
-				Documentation: "A string field that is part of the oneof.",
-				Typez:         api.TypezString,
-				IsOneOf:       true,
-				Group:         oneof,
-			},
-			{
-				Name:          "message_field",
-				JSONName:      "messageField",
-				ID:            ".google.cloud.test.v1.Outer.message_field",
-				Documentation: "A message field that is part of the oneof.",
-				Typez:         api.TypezMessage,
-				TypezID:       ".google.cloud.test.v1.Inner",
-				IsOneOf:       true,
-				Group:         oneof,
-			},
-			{
-				Name:          "regular_int32",
-				JSONName:      "regularInt32",
-				ID:            ".google.cloud.test.v1.Outer.regular_int32",
-				Documentation: "A regular field.",
-				Typez:         api.TypezInt32,
-			},
-			{
-				Name:          "regular_string",
-				JSONName:      "regularStringSpecial",
-				ID:            ".google.cloud.test.v1.Outer.regular_string",
-				Documentation: "Another regular field.",
-				Typez:         api.TypezString,
-			},
-		},
-		OneOfs: []*api.OneOf{oneof},
-	}
-	oneof.Fields = []*api.Field{outer.Fields[0], outer.Fields[1]}
+	// Intentionally marked WithOptional() to verify that oneof enum cases always use
+	// BaseFieldType, guaranteeing non-optional associated values even if Optional is set.
+	oneofField2 := api.NewTestField("message_field").
+		WithMessageType(inner).
+		WithOptional().
+		WithDocumentation("A message field that is part of the oneof.")
 
-	model := api.NewTestAPI([]*api.Message{outer, inner}, []*api.Enum{}, []*api.Service{})
-	model.PackageName = "google.cloud.test.v1"
+	oneof := api.NewTestOneOf("choice").
+		WithFields(oneofField1, oneofField2).
+		WithDocumentation("A group of fields where only one is set.")
+
+	regField1 := api.NewTestField("regular_int32").
+		WithType(api.TypezInt32).
+		WithDocumentation("A regular field.")
+
+	regField2 := api.NewTestField("regular_string").
+		WithType(api.TypezString).
+		WithJSONName("regularStringSpecial").
+		WithDocumentation("Another regular field.")
+
+	outer := api.NewTestMessage("Outer").
+		WithPackage("google.cloud.test.v1").
+		WithOneOfs(oneof).
+		WithFields(regField1, regField2)
+
+	model := api.NewTestAPI([]*api.Message{outer, inner}, nil, nil)
 	library := &config.Library{
 		Swift: swiftConfig(t, nil),
 	}
@@ -114,7 +91,7 @@ func TestGenerateOneOf(t *testing.T) {
 	// test.
 	//
 	// To verify the code compile, use something like: https://godbolt.org/z/EE9G7KTr8
-	want := `public struct Outer: Codable, Equatable, GoogleCloudWkt._AnyPackable,
+	want := `public struct Outer: Codable, Equatable, GoogleWKT._AnyPackable,
   Sendable {
 
   /// A regular field.
@@ -124,7 +101,9 @@ func TestGenerateOneOf(t *testing.T) {
   public var regularString: Swift.String = Swift.String()
 
   /// A group of fields where only one is set.
-  public var choice: OneOf_Choice? = nil
+  public var choice: ChoiceOneOf? = nil
+
+  @_spi(GoogleCloudInternal) public var _unknownFields: GoogleWKT._UnknownFields = .init()
 
   /// Initialize a new instance of ` + "`Outer`" + `.
   public init() {}
@@ -136,25 +115,42 @@ func TestGenerateOneOf(t *testing.T) {
   /// ` + "```" + `
   /// let value = Outer().with { $0.stringField = ... }
   /// ` + "```" + `
+  @inlinable
   public func with(_ config: (inout Self) throws -> Swift.Void) rethrows -> Self {
     var copy = self
     try config(&copy)
     return copy
   }
 
-  private enum CodingKeys: Swift.String, CodingKey {
-    case stringField = "stringField"
-    case messageField = "messageField"
-    case regularInt32 = "regularInt32"
-    case regularString = "regularStringSpecial"
+  private struct CodingKeys: CodingKey {
+    var stringValue: Swift.String
+    var intValue: Swift.Int? { nil }
+    init(stringValue: Swift.String) { self.stringValue = stringValue }
+    init?(intValue: Swift.Int) { nil }
+
+    static let stringField = CodingKeys(stringValue: "stringField")
+    static let messageField = CodingKeys(stringValue: "messageField")
+    static let regularInt32 = CodingKeys(stringValue: "regularInt32")
+    static let regularString = CodingKeys(stringValue: "regularStringSpecial")
+
+    static let _knownKeys: Set<Swift.String> = [
+      "stringField",
+      "messageField",
+      "regularInt32",
+      "regularStringSpecial",
+    ]
   }
 
-  public init(from decoder: Decoder) throws {
+  public init(from decoder: any Decoder) throws {
     let container = try decoder.container(keyedBy: CodingKeys.self)
-    self.regularInt32 = try container.decode(Swift.Int32.self, forKey: .regularInt32)
-    self.regularString = try container.decode(Swift.String.self, forKey: .regularString)
+    if let value = try container.decodeIfPresent(Swift.Int32.self, forKey: .regularInt32) {
+      self.regularInt32 = value
+    }
+    if let value = try container.decodeIfPresent(Swift.String.self, forKey: .regularString) {
+      self.regularString = value
+    }
 
-    var choice: OneOf_Choice? = nil
+    var choice: ChoiceOneOf? = nil
     let choiceCheckAndSet = {
       if choice != nil {
         throw DecodingError.dataCorrupted(DecodingError.Context(codingPath: decoder.codingPath, debugDescription: "Multiple values set for oneof 'choice'"))
@@ -168,9 +164,13 @@ func TestGenerateOneOf(t *testing.T) {
       try choiceCheckAndSet(.messageField(messageField))
     }
     self.choice = choice
+    for key in container.allKeys where !CodingKeys._knownKeys.contains(key.stringValue) {
+      self._unknownFields.json[key.stringValue] = try container.decode(
+        GoogleWKT.WKTValue.self, forKey: key)
+    }
   }
 
-  public func encode(to encoder: Encoder) throws {
+  public func encode(to encoder: any Encoder) throws {
     var container = encoder.container(keyedBy: CodingKeys.self)
     try container.encode(self.regularInt32, forKey: .regularInt32)
     try container.encode(self.regularString, forKey: .regularString)
@@ -183,25 +183,39 @@ func TestGenerateOneOf(t *testing.T) {
         try container.encode(value, forKey: .messageField)
       }
     }
+    for (key, value) in self._unknownFields.json {
+      try container.encode(value, forKey: CodingKeys(stringValue: key))
+    }
   }
 
 
   /// A group of fields where only one is set.
-  public enum OneOf_Choice: Codable, Equatable, Sendable {
+  public enum ChoiceOneOf: Codable, Equatable, Sendable {
     /// A string field that is part of the oneof.
     case stringField(Swift.String)
     /// A message field that is part of the oneof.
     indirect case messageField(Inner)
   }
 
+  /// The type URL for ` + "`Outer`: `\"type.googleapis.com/google.cloud.test.v1.Outer\"`." + `
   public static var _anyTypeUrl: Swift.String {
     return "type.googleapis.com/google.cloud.test.v1.Outer"
   }
-  public init(fromAny any: GoogleCloudWkt.` + "`Any`" + `) throws {
-    self = try GoogleCloudWkt._slowAnyDeserialize(Self.self, from: any)
+
+  /// Initialize an instance of ` + "`Outer` by unpacking from a `GoogleWKT.WKTAny`." + `
+  ///
+  /// - Parameter any: The ` + "`GoogleWKT.WKTAny` instance to unpack." + `
+  /// - Throws: An error if the type URL in ` + "`any` does not match `\"type.googleapis.com/google.cloud.test.v1.Outer\"`," + `
+  ///   or if deserialization fails.
+  public init(fromAny any: GoogleWKT.WKTAny) throws {
+    self = try GoogleWKT._slowAnyDeserialize(Self.self, from: any)
   }
-  public func _pack() throws -> GoogleCloudWkt.Struct {
-    return try GoogleCloudWkt._slowAnySerialize(message: self)
+
+  /// Packs this ` + "`Outer` into a `GoogleWKT.WKTStruct` representation." + `
+  ///
+  /// - Throws: An error if serialization fails.
+  public func _pack() throws -> GoogleWKT.WKTStruct {
+    return try GoogleWKT._slowAnySerialize(message: self)
   }
 }
 `
@@ -214,46 +228,26 @@ func TestGenerateOneOf(t *testing.T) {
 func TestGenerateOneOfWithKeyword(t *testing.T) {
 	outDir := t.TempDir()
 
-	oneof := &api.OneOf{Name: "in"}
-	jwtLocation := &api.Message{
-		Name:    "JwtLocation",
-		Package: "google.api",
-		ID:      ".google.api",
-		Fields: []*api.Field{
-			{
-				Name:          "header",
-				JSONName:      "header",
-				ID:            ".google.api.JwtLocation.header",
-				Documentation: "Specifies HTTP header name to extract JWT token.",
-				Typez:         api.TypezString,
-				IsOneOf:       true,
-				Group:         oneof,
-			},
-			{
-				Name:          "query",
-				JSONName:      "query",
-				ID:            ".google.api.JwtLocation.query",
-				Documentation: "Specifies URL query parameter name to extract JWT token.",
-				Typez:         api.TypezString,
-				IsOneOf:       true,
-				Group:         oneof,
-			},
-			{
-				Name:          "cookie",
-				JSONName:      "cookie",
-				ID:            ".google.api.JwtLocation.cookie",
-				Documentation: "Specifies cookie name to extract JWT token.",
-				Typez:         api.TypezString,
-				IsOneOf:       true,
-				Group:         oneof,
-			},
-		},
-		OneOfs: []*api.OneOf{oneof},
-	}
-	oneof.Fields = jwtLocation.Fields
+	headerField := api.NewTestField("header").
+		WithType(api.TypezString).
+		WithDocumentation("Specifies HTTP header name to extract JWT token.")
 
-	model := api.NewTestAPI([]*api.Message{jwtLocation}, []*api.Enum{}, []*api.Service{})
-	model.PackageName = "google.api"
+	queryField := api.NewTestField("query").
+		WithType(api.TypezString).
+		WithDocumentation("Specifies URL query parameter name to extract JWT token.")
+
+	cookieField := api.NewTestField("cookie").
+		WithType(api.TypezString).
+		WithDocumentation("Specifies cookie name to extract JWT token.")
+
+	oneof := api.NewTestOneOf("in").
+		WithFields(headerField, queryField, cookieField)
+
+	jwtLocation := api.NewTestMessage("JwtLocation").
+		WithPackage("google.api").
+		WithOneOfs(oneof)
+
+	model := api.NewTestAPI([]*api.Message{jwtLocation}, nil, nil)
 	library := &config.Library{
 		Swift: swiftConfig(t, nil),
 	}
@@ -269,7 +263,7 @@ func TestGenerateOneOfWithKeyword(t *testing.T) {
 		t.Fatal(err)
 	}
 	contentStr := string(content)
-	got := extractBlock(t, contentStr, "public struct JwtLocation", "public enum OneOf_In")
+	got := extractBlock(t, contentStr, "public struct JwtLocation", "public enum InOneOf")
 
 	// I (coryan@) don't particularly like testing a big string like this. It is a bit of a change
 	// detector test. On the other hand, checking that the oneof fields are defined properly, and
@@ -277,10 +271,12 @@ func TestGenerateOneOfWithKeyword(t *testing.T) {
 	// test.
 	//
 	// To verify the code compile, use something like: https://godbolt.org/z/EE9G7KTr8
-	want := `public struct JwtLocation: Codable, Equatable, GoogleCloudWkt._AnyPackable,
+	want := `public struct JwtLocation: Codable, Equatable, GoogleWKT._AnyPackable,
   Sendable {
 
-  public var ` + "`in`" + `: OneOf_In? = nil
+  public var ` + "`in`" + `: InOneOf? = nil
+
+  @_spi(GoogleCloudInternal) public var _unknownFields: GoogleWKT._UnknownFields = .init()
 
   /// Initialize a new instance of ` + "`JwtLocation`" + `.
   public init() {}
@@ -292,22 +288,34 @@ func TestGenerateOneOfWithKeyword(t *testing.T) {
   /// ` + "```" + `
   /// let value = JwtLocation().with { $0.header = ... }
   /// ` + "```" + `
+  @inlinable
   public func with(_ config: (inout Self) throws -> Swift.Void) rethrows -> Self {
     var copy = self
     try config(&copy)
     return copy
   }
 
-  private enum CodingKeys: Swift.String, CodingKey {
-    case header = "header"
-    case query = "query"
-    case cookie = "cookie"
+  private struct CodingKeys: CodingKey {
+    var stringValue: Swift.String
+    var intValue: Swift.Int? { nil }
+    init(stringValue: Swift.String) { self.stringValue = stringValue }
+    init?(intValue: Swift.Int) { nil }
+
+    static let header = CodingKeys(stringValue: "header")
+    static let query = CodingKeys(stringValue: "query")
+    static let cookie = CodingKeys(stringValue: "cookie")
+
+    static let _knownKeys: Set<Swift.String> = [
+      "header",
+      "query",
+      "cookie",
+    ]
   }
 
-  public init(from decoder: Decoder) throws {
+  public init(from decoder: any Decoder) throws {
     let container = try decoder.container(keyedBy: CodingKeys.self)
 
-    var ` + "`in`" + `: OneOf_In? = nil
+    var ` + "`in`" + `: InOneOf? = nil
     let inCheckAndSet = {
       if ` + "`in`" + ` != nil {
         throw DecodingError.dataCorrupted(DecodingError.Context(codingPath: decoder.codingPath, debugDescription: "Multiple values set for oneof '` + "`in`" + `'"))
@@ -324,9 +332,13 @@ func TestGenerateOneOfWithKeyword(t *testing.T) {
       try inCheckAndSet(.cookie(cookie))
     }
     self.` + "`in` = `in`" + `
+    for key in container.allKeys where !CodingKeys._knownKeys.contains(key.stringValue) {
+      self._unknownFields.json[key.stringValue] = try container.decode(
+        GoogleWKT.WKTValue.self, forKey: key)
+    }
   }
 
-  public func encode(to encoder: Encoder) throws {
+  public func encode(to encoder: any Encoder) throws {
     var container = encoder.container(keyedBy: CodingKeys.self)
 
     if let choice = self.` + "`in`" + ` {
@@ -339,10 +351,13 @@ func TestGenerateOneOfWithKeyword(t *testing.T) {
         try container.encode(value, forKey: .cookie)
       }
     }
+    for (key, value) in self._unknownFields.json {
+      try container.encode(value, forKey: CodingKeys(stringValue: key))
+    }
   }
 
 
-  public enum OneOf_In`
+  public enum InOneOf`
 
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)

@@ -17,6 +17,7 @@ package rust
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -27,31 +28,18 @@ import (
 
 func TestGenerateConvert(t *testing.T) {
 	for _, test := range []struct {
-		name       string
-		message    *api.Message
-		skippedIDs []string
-		want       string
+		name        string
+		makeMessage func() (*api.Message, []string)
+		want        string
 	}{
 		{
 			name: "simple message with two string fields",
-			message: &api.Message{
-				Name:    "SimpleMessage",
-				Package: "test.v1",
-				ID:      ".test.v1.SimpleMessage",
-				Fields: []*api.Field{
-					{
-						Name:     "field1",
-						JSONName: "field1",
-						ID:       ".test.v1.SimpleMessage.field1",
-						Typez:    api.TypezString,
-					},
-					{
-						Name:     "field2",
-						JSONName: "field2",
-						ID:       ".test.v1.SimpleMessage.field2",
-						Typez:    api.TypezString,
-					},
-				},
+			makeMessage: func() (*api.Message, []string) {
+				msg := api.NewTestMessage("SimpleMessage").WithPackage("test.v1").WithFields(
+					api.NewTestField("field1").WithType(api.TypezString),
+					api.NewTestField("field2").WithType(api.TypezString),
+				)
+				return msg, nil
 			},
 			want: `impl gaxi::prost::ToProto<SimpleMessage> for crate::model::SimpleMessage {
     type Output = SimpleMessage;
@@ -75,26 +63,14 @@ impl gaxi::prost::FromProto<crate::model::SimpleMessage> for SimpleMessage {
 		},
 		{
 			name: "message with two singular string fields and one skipped",
-			message: &api.Message{
-				Name:    "MessageWithSkippedString",
-				Package: "test.v1",
-				ID:      ".test.v1.MessageWithSkippedString",
-				Fields: []*api.Field{
-					{
-						Name:     "field1",
-						JSONName: "field1",
-						ID:       ".test.v1.MessageWithSkippedString.field1",
-						Typez:    api.TypezString,
-					},
-					{
-						Name:     "field2",
-						JSONName: "field2",
-						ID:       ".test.v1.MessageWithSkippedString.field2",
-						Typez:    api.TypezString,
-					},
-				},
+			makeMessage: func() (*api.Message, []string) {
+				skippedField := api.NewTestField("field2").WithType(api.TypezString)
+				msg := api.NewTestMessage("MessageWithSkippedString").WithPackage("test.v1").WithFields(
+					api.NewTestField("field1").WithType(api.TypezString),
+					skippedField,
+				)
+				return msg, []string{skippedField.ID}
 			},
-			skippedIDs: []string{".test.v1.MessageWithSkippedString.field2"},
 			want: `impl gaxi::prost::ToProto<MessageWithSkippedString> for crate::model::MessageWithSkippedString {
     type Output = MessageWithSkippedString;
     fn to_proto(self) -> std::result::Result<MessageWithSkippedString, gaxi::prost::ConvertError> {
@@ -116,27 +92,15 @@ impl gaxi::prost::FromProto<crate::model::MessageWithSkippedString> for MessageW
 		},
 		{
 			name: "message with skipped any field",
-			message: &api.Message{
-				Name:    "MessageWithSkippedAny",
-				Package: "test.v1",
-				ID:      ".test.v1.MessageWithSkippedAny",
-				Fields: []*api.Field{
-					{
-						Name:     "field1",
-						JSONName: "field1",
-						ID:       ".test.v1.MessageWithSkippedAny.field1",
-						Typez:    api.TypezString,
-					},
-					{
-						Name:     "field2",
-						JSONName: "field2",
-						ID:       ".test.v1.MessageWithSkippedAny.field2",
-						Typez:    api.TypezMessage,
-						TypezID:  api.WktAnyID,
-					},
-				},
+			makeMessage: func() (*api.Message, []string) {
+				anyMsg := api.NewTestMessage("Any").WithID(api.WktAnyID)
+				skippedField := api.NewTestField("field2").WithMessageType(anyMsg)
+				msg := api.NewTestMessage("MessageWithSkippedAny").WithPackage("test.v1").WithFields(
+					api.NewTestField("field1").WithType(api.TypezString),
+					skippedField,
+				)
+				return msg, []string{skippedField.ID}
 			},
-			skippedIDs: []string{".test.v1.MessageWithSkippedAny.field2"},
 			want: `impl gaxi::prost::ToProto<MessageWithSkippedAny> for crate::model::MessageWithSkippedAny {
     type Output = MessageWithSkippedAny;
     fn to_proto(self) -> std::result::Result<MessageWithSkippedAny, gaxi::prost::ConvertError> {
@@ -158,14 +122,14 @@ impl gaxi::prost::FromProto<crate::model::MessageWithSkippedAny> for MessageWith
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
+			message, skippedIDs := test.makeMessage()
 			outDir := t.TempDir()
-			model := api.NewTestAPI([]*api.Message{test.message}, []*api.Enum{}, []*api.Service{})
-			model.PackageName = "test.v1"
+			model := api.NewTestAPI([]*api.Message{message}, nil, nil)
 			if err := api.CrossReference(model); err != nil {
 				t.Fatal(err)
 			}
-			if len(test.skippedIDs) > 0 {
-				if err := api.SkipModelElements(model, api.ModelOverride{SkippedIDs: test.skippedIDs}); err != nil {
+			if len(skippedIDs) > 0 {
+				if err := api.SkipModelElements(model, api.ModelOverride{SkippedIDs: skippedIDs}); err != nil {
 					t.Fatal(err)
 				}
 			}
@@ -185,10 +149,380 @@ impl gaxi::prost::FromProto<crate::model::MessageWithSkippedAny> for MessageWith
 			if err != nil {
 				t.Fatal(err)
 			}
-			got := extractBlock(t, string(contents), "impl gaxi::prost::ToProto<"+test.message.Name+">", "\n        )\n    }\n}")
+			got := extractBlock(t, string(contents), "impl gaxi::prost::ToProto<"+message.Name+">", "\n        )\n    }\n}")
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
+}
+
+func TestGenerateConvertOneOf(t *testing.T) {
+	typeSchemaMsg := api.NewTestMessage("TypeSchema")
+	inlineSchemaMsg := api.NewTestMessage("InlineSchema").WithFields(
+		api.NewTestField("items").WithMessageType(typeSchemaMsg).WithOptional(),
+	)
+	refSchemaMsg := api.NewTestMessage("ReferenceSchema").WithFields(
+		api.NewTestField("tool").WithType(api.TypezString),
+	)
+	typeSchemaMsg.WithOneOfs(
+		api.NewTestOneOf("schema").WithFields(
+			api.NewTestField("inline_schema").WithMessageType(inlineSchemaMsg),
+			api.NewTestField("reference_schema").WithMessageType(refSchemaMsg),
+			api.NewTestField("name").WithType(api.TypezString),
+		),
+	)
+
+	outDir := t.TempDir()
+	model := api.NewTestAPI([]*api.Message{typeSchemaMsg, inlineSchemaMsg, refSchemaMsg}, nil, nil)
+	if err := api.CrossReference(model); err != nil {
+		t.Fatal(err)
+	}
+
+	cfg := &parser.ModelConfig{
+		SpecificationFormat: libconfig.SpecProtobuf,
+		Codec: map[string]string{
+			"package:wkt":       "source=google.protobuf,package=google-cloud-wkt",
+			"template-override": "templates/convert-prost",
+		},
+	}
+	if err := Generate(t.Context(), model, outDir, cfg); err != nil {
+		t.Fatal(err)
+	}
+
+	contents, err := os.ReadFile(filepath.Join(outDir, "convert.rs"))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	wantToProto := `impl gaxi::prost::ToProto<type_schema::Schema> for crate::model::type_schema::Schema {
+    type Output = type_schema::Schema;
+    fn to_proto(self) -> std::result::Result<Self::Output, gaxi::prost::ConvertError> {
+        match self {
+            Self::InlineSchema(v) => Ok(Self::Output::InlineSchema(std::boxed::Box::new((*v).to_proto()?))),
+            Self::ReferenceSchema(v) => Ok(Self::Output::ReferenceSchema((*v).to_proto()?)),
+            Self::Name(v) => Ok(Self::Output::Name(v.to_proto()?)),
+        }
+    }
+}`
+	gotToProto := extractBlock(t, string(contents), "impl gaxi::prost::ToProto<type_schema::Schema>", "\n        }\n    }\n}")
+	if diff := cmp.Diff(wantToProto, gotToProto); diff != "" {
+		t.Errorf("mismatch ToProto (-want +got):\n%s", diff)
+	}
+}
+
+func TestGenerateConvertAcronyms(t *testing.T) {
+	dataStoreSpecMsg := api.NewTestMessage("DataStoreSpec").
+		WithFields(
+			api.NewTestField("data_store").WithType(api.TypezString),
+		)
+
+	nestedEnum := api.NewTestEnum("IPMode").
+		WithValues(
+			api.NewTestEnumValue("IP_MODE_UNSPECIFIED", 0),
+			api.NewTestEnumValue("DYNAMIC_IP", 1),
+		)
+
+	vertexAISearchMsg := api.NewTestMessage("VertexAISearch").
+		WithPackage("test.v1").
+		WithFields(
+			api.NewTestField("serving_config").WithType(api.TypezString),
+		).
+		WithMessages(dataStoreSpecMsg).
+		WithEnums(nestedEnum)
+
+	ipVersionEnum := api.NewTestEnum("IPVersion").
+		WithPackage("test.v1").
+		WithValues(
+			api.NewTestEnumValue("IP_VERSION_UNSPECIFIED", 0),
+			api.NewTestEnumValue("IPV4", 1),
+			api.NewTestEnumValue("IPV6", 2),
+		)
+
+	retrievalMsg := api.NewTestMessage("Retrieval").
+		WithPackage("test.v1").
+		WithOneOfs(
+			api.NewTestOneOf("source").WithFields(
+				api.NewTestField("vertex_ai_search").WithMessageType(vertexAISearchMsg),
+				api.NewTestField("disable_attribution").WithType(api.TypezBool),
+			),
+		)
+
+	extDNSConfigMsg := api.NewTestMessage("DNSConfig").WithPackage("google.type")
+
+	dnsMethod := api.NewTestMethod("GetDNS").WithInput(extDNSConfigMsg).WithOutput(extDNSConfigMsg)
+	dnsService := api.NewTestService("DNSService").WithPackage("test.v1").WithMethods(dnsMethod)
+
+	outDir := t.TempDir()
+	model := api.NewTestAPI([]*api.Message{vertexAISearchMsg, retrievalMsg}, []*api.Enum{ipVersionEnum}, []*api.Service{dnsService})
+	model.ExternalMessages = []*api.Message{extDNSConfigMsg}
+	model.AddMessage(extDNSConfigMsg)
+	if err := api.CrossReference(model); err != nil {
+		t.Fatal(err)
+	}
+
+	cfg := &parser.ModelConfig{
+		SpecificationFormat: libconfig.SpecProtobuf,
+		Codec: map[string]string{
+			"package:wkt":               "source=google.protobuf,package=google-cloud-wkt",
+			"package:google-cloud-type": "source=google.type,package=google-cloud-type",
+			"template-override":         "templates/convert-prost",
+		},
+	}
+	if err := Generate(t.Context(), model, outDir, cfg); err != nil {
+		t.Fatal(err)
+	}
+
+	contents, err := os.ReadFile(filepath.Join(outDir, "convert.rs"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	contentStr := string(contents)
+
+	for _, test := range []struct {
+		name      string
+		start     string
+		end       string
+		wantBlock string
+	}{
+		{
+			name:  "top-level message with acronym ToProto",
+			start: "impl gaxi::prost::ToProto<VertexAiSearch>",
+			end:   "\n        })\n    }\n}",
+			wantBlock: `impl gaxi::prost::ToProto<VertexAiSearch> for crate::model::VertexAISearch {
+    type Output = VertexAiSearch;
+    fn to_proto(self) -> std::result::Result<VertexAiSearch, gaxi::prost::ConvertError> {
+        Ok(Self::Output {
+            serving_config: self.serving_config.to_proto()?,
+        })
+    }
+}`,
+		},
+		{
+			name:  "top-level message with acronym FromProto",
+			start: "impl gaxi::prost::FromProto<crate::model::VertexAISearch>",
+			end:   "\n        )\n    }\n}",
+			wantBlock: `impl gaxi::prost::FromProto<crate::model::VertexAISearch> for VertexAiSearch {
+    fn cnv(self) -> std::result::Result<crate::model::VertexAISearch, gaxi::prost::ConvertError> {
+        Ok(
+            crate::model::VertexAISearch::new()
+                .set_serving_config(self.serving_config)
+        )
+    }
+}`,
+		},
+		{
+			name:  "nested message inside message with acronym ToProto",
+			start: "impl gaxi::prost::ToProto<vertex_ai_search::DataStoreSpec>",
+			end:   "\n        })\n    }\n}",
+			wantBlock: `impl gaxi::prost::ToProto<vertex_ai_search::DataStoreSpec> for crate::model::vertex_ai_search::DataStoreSpec {
+    type Output = vertex_ai_search::DataStoreSpec;
+    fn to_proto(self) -> std::result::Result<vertex_ai_search::DataStoreSpec, gaxi::prost::ConvertError> {
+        Ok(Self::Output {
+            data_store: self.data_store.to_proto()?,
+        })
+    }
+}`,
+		},
+		{
+			name:  "enum with acronym ToProto",
+			start: "impl gaxi::prost::ToProto<IpVersion>",
+			end:   "    }\n}",
+			wantBlock: `impl gaxi::prost::ToProto<IpVersion> for crate::model::IPVersion {
+    type Output = i32;
+    fn to_proto(self) -> std::result::Result<Self::Output, gaxi::prost::ConvertError> {
+        self.value().ok_or(gaxi::prost::ConvertError::EnumNoIntegerValue("crate::model::IPVersion"))
+    }
+}`,
+		},
+		{
+			name:  "nested enum with acronym inside message with acronym ToProto",
+			start: "impl gaxi::prost::ToProto<vertex_ai_search::IpMode>",
+			end:   "    }\n}",
+			wantBlock: `impl gaxi::prost::ToProto<vertex_ai_search::IpMode> for crate::model::vertex_ai_search::IPMode {
+    type Output = i32;
+    fn to_proto(self) -> std::result::Result<Self::Output, gaxi::prost::ConvertError> {
+        self.value().ok_or(gaxi::prost::ConvertError::EnumNoIntegerValue("crate::model::vertex_ai_search::IPMode"))
+    }
+}`,
+		},
+		{
+			name:  "oneof on message with branch referencing message with acronym ToProto",
+			start: "impl gaxi::prost::ToProto<retrieval::Source>",
+			end:   "\n        }\n    }\n}",
+			wantBlock: `impl gaxi::prost::ToProto<retrieval::Source> for crate::model::retrieval::Source {
+    type Output = retrieval::Source;
+    fn to_proto(self) -> std::result::Result<Self::Output, gaxi::prost::ConvertError> {
+        match self {
+            Self::VertexAiSearch(v) => Ok(Self::Output::VertexAiSearch((*v).to_proto()?)),
+            Self::DisableAttribution(v) => Ok(Self::Output::DisableAttribution(v.to_proto()?)),
+        }
+    }
+}`,
+		},
+		{
+			name:  "external message with acronym ToProto",
+			start: "impl gaxi::prost::ToProto<crate::prost::google::r#type::DnsConfig>",
+			end:   "\n        })\n    }\n}",
+			wantBlock: `impl gaxi::prost::ToProto<crate::prost::google::r#type::DnsConfig> for google_cloud_type::model::DNSConfig {
+    type Output = crate::prost::google::r#type::DnsConfig;
+    fn to_proto(self) -> std::result::Result<crate::prost::google::r#type::DnsConfig, gaxi::prost::ConvertError> {
+        Ok(Self::Output {
+        })
+    }
+}`,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := extractBlock(t, contentStr, test.start, test.end)
+			if diff := cmp.Diff(test.wantBlock, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestGenerateConvertOneOfWithSkippedProtoConversion(t *testing.T) {
+	typeSchemaMsg := api.NewTestMessage("TypeSchema").WithOneOfs(
+		api.NewTestOneOf("schema").WithFields(
+			api.NewTestField("name").WithType(api.TypezString),
+			api.NewTestField("details").WithType(api.TypezString).WithSkipProtoConversion(),
+		),
+	)
+
+	outDir := t.TempDir()
+	model := api.NewTestAPI([]*api.Message{typeSchemaMsg}, nil, nil)
+	if err := api.CrossReference(model); err != nil {
+		t.Fatal(err)
+	}
+
+	cfg := &parser.ModelConfig{
+		SpecificationFormat: libconfig.SpecProtobuf,
+		Codec: map[string]string{
+			"package:wkt":       "source=google.protobuf,package=google-cloud-wkt",
+			"template-override": "templates/convert-prost",
+		},
+	}
+	if err := Generate(t.Context(), model, outDir, cfg); err != nil {
+		t.Fatal(err)
+	}
+
+	contents, err := os.ReadFile(filepath.Join(outDir, "convert.rs"))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	wantToProto := `impl gaxi::prost::ToProto<type_schema::Schema> for crate::model::type_schema::Schema {
+    type Output = type_schema::Schema;
+    fn to_proto(self) -> std::result::Result<Self::Output, gaxi::prost::ConvertError> {
+        match self {
+            Self::Name(v) => Ok(Self::Output::Name(v.to_proto()?)),
+            Self::Details(_) => Ok(Self::Output::Details(std::default::Default::default())),
+        }
+    }
+}`
+	gotToProto := extractBlock(t, string(contents), "impl gaxi::prost::ToProto<type_schema::Schema>", "\n        }\n    }\n}")
+	if diff := cmp.Diff(wantToProto, gotToProto); diff != "" {
+		t.Errorf("mismatch ToProto (-want +got):\n%s", diff)
+	}
+}
+
+func TestGenerateConvertImports(t *testing.T) {
+	msg := api.NewTestMessage("SimpleMessage").WithPackage("google.cloud.speech.v2")
+	outDir := t.TempDir()
+	model := api.NewTestAPI([]*api.Message{msg}, nil, nil).
+		WithPackageName("google.cloud.speech.v2")
+	if err := api.CrossReference(model); err != nil {
+		t.Fatal(err)
+	}
+
+	cfg := &parser.ModelConfig{
+		SpecificationFormat: libconfig.SpecProtobuf,
+		Codec: map[string]string{
+			"package:wkt":       "source=google.protobuf,package=google-cloud-wkt",
+			"template-override": "templates/convert-prost",
+			"prost-path":        "super::prost",
+		},
+	}
+	if err := Generate(t.Context(), model, outDir, cfg); err != nil {
+		t.Fatal(err)
+	}
+
+	contents, err := os.ReadFile(filepath.Join(outDir, "convert.rs"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	contentStr := string(contents)
+
+	wantImports := "use super::prost::google::cloud::speech::v2::*;"
+	if !strings.Contains(contentStr, wantImports) {
+		t.Errorf("convert.rs missing expected imports %q, got:\n%s", wantImports, contentStr)
+	}
+}
+
+func TestGenerateConvertOneOf_ReservedRawIdentifiers(t *testing.T) {
+	primaryDataSource := api.NewTestMessage("PrimaryProductDataSource").WithOneOfs(
+		api.NewTestOneOf("default_rule").WithFields(
+			api.NewTestField("self").WithType(api.TypezBool),
+			api.NewTestField("crate").WithType(api.TypezString),
+			api.NewTestField("super").WithType(api.TypezInt32),
+		),
+	)
+
+	outDir := t.TempDir()
+	model := api.NewTestAPI([]*api.Message{primaryDataSource}, nil, nil)
+	if err := api.CrossReference(model); err != nil {
+		t.Fatal(err)
+	}
+
+	cfg := &parser.ModelConfig{
+		SpecificationFormat: libconfig.SpecProtobuf,
+		Codec: map[string]string{
+			"package:wkt":       "source=google.protobuf,package=google-cloud-wkt",
+			"template-override": "templates/convert-prost",
+		},
+	}
+	if err := Generate(t.Context(), model, outDir, cfg); err != nil {
+		t.Fatal(err)
+	}
+
+	contents, err := os.ReadFile(filepath.Join(outDir, "convert.rs"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	contentStr := string(contents)
+
+	wantToProto := `impl gaxi::prost::ToProto<primary_product_data_source::DefaultRule> for crate::model::primary_product_data_source::DefaultRule {
+    type Output = primary_product_data_source::DefaultRule;
+    fn to_proto(self) -> std::result::Result<Self::Output, gaxi::prost::ConvertError> {
+        match self {
+            Self::Self_(v) => Ok(Self::Output::Self_(v.to_proto()?)),
+            Self::Crate(v) => Ok(Self::Output::Crate(v.to_proto()?)),
+            Self::Super(v) => Ok(Self::Output::Super(v.to_proto()?)),
+        }
+    }
+}`
+	t.Run("ToProto", func(t *testing.T) {
+		gotToProto := extractBlock(t, contentStr, "impl gaxi::prost::ToProto<primary_product_data_source::DefaultRule>", "\n        }\n    }\n}")
+		if diff := cmp.Diff(wantToProto, gotToProto); diff != "" {
+			t.Errorf("mismatch (-want +got):\n%s", diff)
+		}
+	})
+
+	wantFromProto := `impl gaxi::prost::FromProto<crate::model::primary_product_data_source::DefaultRule> for primary_product_data_source::DefaultRule {
+    fn cnv(self) -> std::result::Result<crate::model::primary_product_data_source::DefaultRule, gaxi::prost::ConvertError> {
+        use crate::model::primary_product_data_source::DefaultRule as T;
+        match self {
+            Self::Self_(v) => Ok(T::Self_(v.cnv()?)),
+            Self::Crate(v) => Ok(T::Crate(v.cnv()?)),
+            Self::Super(v) => Ok(T::Super(v.cnv()?)),
+        }
+    }
+}`
+	t.Run("FromProto", func(t *testing.T) {
+		gotFromProto := extractBlock(t, contentStr, "impl gaxi::prost::FromProto<crate::model::primary_product_data_source::DefaultRule>", "\n        }\n    }\n}")
+		if diff := cmp.Diff(wantFromProto, gotFromProto); diff != "" {
+			t.Errorf("mismatch (-want +got):\n%s", diff)
+		}
+	})
 }

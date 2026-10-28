@@ -20,6 +20,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/googleapis/librarian/internal/cache"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/tool/pnpm"
 )
@@ -254,6 +255,17 @@ func TestInstallDir(t *testing.T) {
 	}
 }
 
+func TestGetBinDir_Error(t *testing.T) {
+	t.Setenv(cache.EnvLibrarianBin, "")
+	t.Setenv(cache.EnvLibrarianCache, "")
+	t.Setenv("XDG_CACHE_HOME", "")
+	t.Setenv("HOME", "")
+	_, err := getBinDir()
+	if err == nil {
+		t.Fatalf("getBinDir() expected error")
+	}
+}
+
 func TestGetToolsEnv(t *testing.T) {
 	for _, test := range []struct {
 		name string
@@ -274,5 +286,16 @@ func TestGetToolsEnv(t *testing.T) {
 				t.Errorf("getToolsEnv()[PATH] = %q, want %q", got, want)
 			}
 		})
+	}
+}
+
+func TestGetToolsEnv_Error(t *testing.T) {
+	t.Setenv(cache.EnvLibrarianBin, "")
+	t.Setenv(cache.EnvLibrarianCache, "")
+	t.Setenv("XDG_CACHE_HOME", "")
+	t.Setenv("HOME", "")
+	_, err := getToolsEnv()
+	if err == nil {
+		t.Fatalf("getToolsEnv() expected error")
 	}
 }

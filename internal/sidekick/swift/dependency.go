@@ -43,3 +43,19 @@ func (dep *Dependency) LocalName() string {
 	}
 	return source[idx+1:]
 }
+
+// IsLocalOrRemote returns true when both URL and Path are configured, indicating
+// the dependency should use localOrRemotePackage in Package.swift.
+func (dep *Dependency) IsLocalOrRemote() bool {
+	return dep.URL != "" && dep.Path != ""
+}
+
+// IsLocalOnly returns true when only a local Path is configured.
+func (dep *Dependency) IsLocalOnly() bool {
+	return dep.Path != "" && dep.URL == ""
+}
+
+// IsRemoteOnly returns true when only a remote URL is configured.
+func (dep *Dependency) IsRemoteOnly() bool {
+	return dep.URL != "" && dep.Path == ""
+}

@@ -20,43 +20,72 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	libconfig "github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/sidekick/api"
 )
 
 func TestBigQueryQueryFieldOverride(t *testing.T) {
-	c, err := newCodec("protobuf", nil)
+	c, err := newCodec(libconfig.SpecProtobuf, map[string]string{
+		"name-overrides": ".synthetic.google.cloud.bigquery.v2.QueryRequest.bad_query=good_query," +
+			".synthetic.google.cloud.bigquery.v2.JobConfigurationQuery.bad_query=good_query," +
+			".synthetic.google.cloud.bigquery.v2.JobConfiguration.bad_query=good_query," +
+			".google.cloud.bigquery.v2.QueryRequest.query=gapic_query," +
+			".google.cloud.bigquery.v2.JobConfigurationQuery.query=gapic_query",
+	})
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	newTestMsgWithQuery := func(msgName string) *api.Message {
-		field := &api.Field{Name: "query", Codec: &fieldAnnotations{}}
+	newTestMsg := func(msgName string) *api.Message {
+		queryField := api.NewTestField("query").WithType(api.TypezString)
+		queryField.Codec = &fieldAnnotations{}
 
-		return &api.Message{
-			ID:      ".google.cloud.bigquery.v2." + msgName,
-			Name:    msgName,
-			Package: "google.cloud.bigquery.v2",
-			Fields:  []*api.Field{field},
-		}
+		overrideField := api.NewTestField("bad_query").WithType(api.TypezString)
+		overrideField.Codec = &fieldAnnotations{}
+
+		return api.NewTestMessage(msgName).
+			WithPackage("google.cloud.bigquery.v2").
+			WithFields(queryField, overrideField)
 	}
 
-	qrMsg := newTestMsgWithQuery("QueryRequest")
-	jcqMsg := newTestMsgWithQuery("JobConfigurationQuery")
-	jcMsg := newTestMsgWithQuery("JobConfiguration")
+	qrMsg := newTestMsg("QueryRequest")
+	jcqMsg := newTestMsg("JobConfigurationQuery")
+	jcMsg := newTestMsg("JobConfiguration")
 
-	model := api.NewTestAPI([]*api.Message{qrMsg, jcqMsg, jcMsg}, []*api.Enum{}, []*api.Service{})
+	model := api.NewTestAPI([]*api.Message{qrMsg, jcqMsg, jcMsg}, nil, nil)
 	builder, err := newQueryBuilder(c, model, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	if len(builder.fieldGroups) != 1 {
-		t.Fatalf("expected 1 queryField, got %d", len(builder.fieldGroups))
+	if len(builder.fieldGroups) != 2 {
+		t.Fatalf("expected 2 queryFields, got %d", len(builder.fieldGroups))
 	}
 
-	qf := builder.fieldGroupList()[0]
+	fgList := builder.fieldGroupList()
+	overriddenFg := fgList[0]
+	if overriddenFg.FieldName() != "good_query" {
+		t.Errorf("expected field name 'good_query', got %q", overriddenFg.FieldName())
+	}
+	if overriddenFg.GapicFieldName() != "bad_query" {
+		t.Errorf("expected gapic field name 'bad_query', got %q", overriddenFg.GapicFieldName())
+	}
+	if overriddenFg.QueryRequest() == nil {
+		t.Error("expected QueryRequest to be set on overriddenFg")
+	}
+	if overriddenFg.JobConfigurationQuery() == nil {
+		t.Error("expected JobConfigurationQuery to be set on overriddenFg")
+	}
+	if overriddenFg.JobConfiguration() == nil {
+		t.Error("expected JobConfiguration to be set on overriddenFg")
+	}
+
+	qf := fgList[1]
 	if qf.FieldName() != "query" {
 		t.Errorf("expected field name 'query', got %q", qf.FieldName())
+	}
+	if qf.GapicFieldName() != "gapic_query" {
+		t.Errorf("expected gapic field name 'gapic_query', got %q", qf.GapicFieldName())
 	}
 	if qf.QueryRequest() == nil {
 		t.Error("expected QueryRequest to be set")
@@ -75,43 +104,37 @@ func TestBigQueryFiltering(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	newTestField := func(name, id string, outputOnly bool) *api.Field {
-		b := []api.FieldBehavior{}
+	newTestField := func(name string, outputOnly bool) *api.Field {
+		f := api.NewTestField(name).WithType(api.TypezString)
 		if outputOnly {
-			b = append(b, api.FieldBehaviorOutputOnly)
+			f.WithBehavior(api.FieldBehaviorOutputOnly)
 		}
-		return &api.Field{
-			ID:       id,
-			Name:     name,
-			Behavior: b,
-			Codec:    &fieldAnnotations{},
-		}
+		f.Codec = &fieldAnnotations{}
+		return f
 	}
 	newTestMsg := func(msgName string, fields []*api.Field) *api.Message {
-		return &api.Message{
-			ID:      ".google.cloud.bigquery.v2." + msgName,
-			Name:    msgName,
-			Package: "google.cloud.bigquery.v2",
-			Fields:  fields,
-		}
+		return api.NewTestMessage(msgName).
+			WithPackage("google.cloud.bigquery.v2").
+			WithFields(fields...)
 	}
 
 	qrMsg := newTestMsg("QueryRequest", []*api.Field{
-		newTestField("output_only", ".google.cloud.bigquery.v2.QueryRequest.output_only", true),
-		newTestField("foo", ".google.cloud.bigquery.v2.QueryRequest.foo", false),
+		newTestField("output_only", true),
+		newTestField("foo", false),
 	})
+	skipField := newTestField("skip", false)
 	jcqMsg := newTestMsg("JobConfigurationQuery", []*api.Field{
-		newTestField("output_only", ".google.cloud.bigquery.v2.JobConfigurationQuery.output_only", true),
-		newTestField("foo", ".google.cloud.bigquery.v2.JobConfigurationQuery.foo", false),
-		newTestField("skip", ".google.cloud.bigquery.v2.JobConfigurationQuery.skip", false),
+		newTestField("output_only", true),
+		newTestField("foo", false),
+		skipField,
 	})
 	jcMsg := newTestMsg("JobConfiguration", []*api.Field{
-		newTestField("output_only", ".google.cloud.bigquery.v2.JobConfiguration.output_only", true),
-		newTestField("skip", ".google.cloud.bigquery.v2.JobConfiguration.skip", false),
+		newTestField("output_only", true),
+		newTestField("skip", false),
 	})
 
-	model := api.NewTestAPI([]*api.Message{qrMsg, jcqMsg, jcMsg}, []*api.Enum{}, []*api.Service{})
-	builder, err := newQueryBuilder(c, model, []string{"skip", ".google.cloud.bigquery.v2.JobConfigurationQuery.skip"})
+	model := api.NewTestAPI([]*api.Message{qrMsg, jcqMsg, jcMsg}, nil, nil)
+	builder, err := newQueryBuilder(c, model, []string{"skip", skipField.ID})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -137,44 +160,31 @@ func TestBigQuerySyntheticMessages(t *testing.T) {
 	// this causes stable sort order to matter and de-duplication to be exercised.
 	for i := range 40 {
 		name := fmt.Sprintf("field_%02d", i)
-		qrFields = append(qrFields, &api.Field{
-			ID:    fmt.Sprintf(".google.cloud.bigquery.v2.QueryRequest.%s", name),
-			Name:  name,
-			Typez: api.TypezBool,
-			Codec: &fieldAnnotations{FieldName: name, FieldType: "bool"},
-		})
+		f1 := api.NewTestField(name).WithType(api.TypezBool)
+		f1.Codec = &fieldAnnotations{FieldName: name, FieldType: "bool"}
+		qrFields = append(qrFields, f1)
 		if i < 20 {
-			jcFields = append(jcFields, &api.Field{
-				ID:    fmt.Sprintf(".google.cloud.bigquery.v2.JobConfiguration.%s", name),
-				Name:  name,
-				Typez: api.TypezBool,
-				Codec: &fieldAnnotations{FieldName: name, FieldType: "bool"},
-			})
+			f2 := api.NewTestField(name).WithType(api.TypezBool)
+			f2.Codec = &fieldAnnotations{FieldName: name, FieldType: "bool"}
+			jcFields = append(jcFields, f2)
 		}
 	}
 	slices.Reverse(jcFields)
 
-	qrMsg := &api.Message{
-		ID:      ".google.cloud.bigquery.v2.QueryRequest",
-		Name:    "QueryRequest",
-		Package: "google.cloud.bigquery.v2",
-		Fields:  qrFields,
-	}
-	jcqMsg := &api.Message{
-		ID:      ".google.cloud.bigquery.v2.JobConfigurationQuery",
-		Name:    "JobConfigurationQuery",
-		Package: "google.cloud.bigquery.v2",
-		Fields:  []*api.Field{},
-	}
-	jcMsg := &api.Message{
-		ID:      ".google.cloud.bigquery.v2.JobConfiguration",
-		Name:    "JobConfiguration",
-		Package: "google.cloud.bigquery.v2",
-		Fields:  jcFields,
-	}
+	qrMsg := api.NewTestMessage("QueryRequest").
+		WithPackage("google.cloud.bigquery.v2").
+		WithFields(qrFields...)
+	jcqMsg := api.NewTestMessage("JobConfigurationQuery").
+		WithPackage("google.cloud.bigquery.v2")
+	jcMsg := api.NewTestMessage("JobConfiguration").
+		WithPackage("google.cloud.bigquery.v2").
+		WithFields(jcFields...)
 
-	model := api.NewTestAPI([]*api.Message{qrMsg, jcqMsg, jcMsg}, []*api.Enum{}, []*api.Service{})
-	c, err := newCodec("protobuf", nil)
+	model := api.NewTestAPI([]*api.Message{qrMsg, jcqMsg, jcMsg}, nil, nil)
+	c, err := newCodec("protobuf", map[string]string{
+		"name-overrides": ".synthetic.google.cloud.bigquery.v2.QueryRequest.field_00=good_field_00," +
+			".synthetic.google.cloud.bigquery.v2.JobConfiguration.field_00=good_field_00",
+	})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -198,7 +208,7 @@ func TestBigQuerySyntheticMessages(t *testing.T) {
 		t.Fatalf("expected 40 fields, got %d", len(syntheticMsg.Fields))
 	}
 	for _, f := range syntheticMsg.Fields {
-		wantID := fmt.Sprintf(".google.cloud.bigquery.v2.QueryRequest.%s", f.Name)
+		wantID := fmt.Sprintf(".synthetic.google.cloud.bigquery.v2.QueryRequest.%s", f.Name)
 		if f.ID != wantID {
 			t.Errorf("expected field ID %q, got %q", wantID, f.ID)
 		}
@@ -234,8 +244,8 @@ func TestBigQuerySyntheticMessages(t *testing.T) {
 	if !ok {
 		t.Fatalf("expected fieldAnnotations on the basic field")
 	}
-	if fAnn.FieldName != "request.field_00" {
-		t.Errorf("expected FieldName to be 'request.field_00', got %q", fAnn.FieldName)
+	if fAnn.FieldName != "request.good_field_00" {
+		t.Errorf("expected FieldName to be 'request.good_field_00', got %q", fAnn.FieldName)
 	}
 	if fAnn.FQMessageName != "crate::builder::bigquery::QueryRequest" {
 		t.Errorf("expected FQMessageName to be 'crate::builder::bigquery::QueryRequest', got %q", fAnn.FQMessageName)
@@ -249,7 +259,7 @@ func TestBigQuerySyntheticMessages(t *testing.T) {
 		t.Errorf("expected name 'QueryRequest', got %q", queryRequest.Name)
 	}
 	for _, f := range queryRequest.Fields {
-		wantID := fmt.Sprintf(".google.cloud.bigquery.v2.QueryRequest.%s", f.Name)
+		wantID := fmt.Sprintf(".synthetic.google.cloud.bigquery.v2.QueryRequest.%s", f.Name)
 		if f.ID != wantID {
 			t.Errorf("expected field ID %q, got %q", wantID, f.ID)
 		}
@@ -265,47 +275,46 @@ func TestBigQuerySyntheticMessages(t *testing.T) {
 	if !ok {
 		t.Fatalf("expected fieldAnnotations on the basic field")
 	}
-	if reqfAnn.FieldName != "field_00" {
-		t.Errorf("expected FieldName to remain 'field_00', got %q", reqfAnn.FieldName)
+	if reqfAnn.FieldName != "good_field_00" {
+		t.Errorf("expected FieldName to be 'good_field_00', got %q", reqfAnn.FieldName)
 	}
 }
 
 func TestBigQueryQueryMetadata(t *testing.T) {
-	c, err := newCodec("protobuf", nil)
+	c, err := newCodec("protobuf", map[string]string{
+		"name-overrides": ".synthetic.google.cloud.bigquery.v2.GetQueryResultsResponse.job_reference=job_ref_renamed," +
+			".synthetic.google.cloud.bigquery.v2.Job.job_ref=job_ref_renamed",
+	})
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	newTestField := func(name, id string) *api.Field {
-		return &api.Field{
-			ID:    id,
-			Name:  name,
-			Codec: &fieldAnnotations{},
-		}
+	newTestField := func(name string) *api.Field {
+		f := api.NewTestField(name).WithType(api.TypezString)
+		f.Codec = &fieldAnnotations{}
+		return f
 	}
 	newTestMsg := func(msgName string, fields []*api.Field) *api.Message {
-		return &api.Message{
-			ID:      ".google.cloud.bigquery.v2." + msgName,
-			Name:    msgName,
-			Package: "google.cloud.bigquery.v2",
-			Fields:  fields,
-		}
+		return api.NewTestMessage(msgName).
+			WithPackage("google.cloud.bigquery.v2").
+			WithFields(fields...)
 	}
 
 	t.Run("CompleteQueryMetadata", func(t *testing.T) {
+		skipByID := newTestField("skip_by_id")
 		gqrMsg := newTestMsg("GetQueryResultsResponse", []*api.Field{
-			newTestField("job_reference", ".google.cloud.bigquery.v2.GetQueryResultsResponse.job_reference"),
-			newTestField("shared_field", ".google.cloud.bigquery.v2.GetQueryResultsResponse.shared_field"),
-			newTestField("skip_by_name", ".google.cloud.bigquery.v2.GetQueryResultsResponse.skip_by_name"),
-			newTestField("skip_by_id", ".google.cloud.bigquery.v2.GetQueryResultsResponse.skip_by_id"),
+			newTestField("job_reference"),
+			newTestField("shared_field"),
+			newTestField("skip_by_name"),
+			skipByID,
 		})
 		qrMsg := newTestMsg("QueryResponse", []*api.Field{
-			newTestField("query_id", ".google.cloud.bigquery.v2.QueryResponse.query_id"),
-			newTestField("shared_field", ".google.cloud.bigquery.v2.QueryResponse.shared_field"),
+			newTestField("query_id"),
+			newTestField("shared_field"),
 		})
 
-		model := api.NewTestAPI([]*api.Message{gqrMsg, qrMsg}, []*api.Enum{}, []*api.Service{})
-		skipped := []string{"skip_by_name", ".google.cloud.bigquery.v2.GetQueryResultsResponse.skip_by_id"}
+		model := api.NewTestAPI([]*api.Message{gqrMsg, qrMsg}, nil, nil)
+		skipped := []string{"skip_by_name", skipByID.ID}
 
 		cqm, err := newCompleteQueryMetadata(c, model, skipped)
 		if err != nil {
@@ -313,29 +322,36 @@ func TestBigQueryQueryMetadata(t *testing.T) {
 		}
 
 		var names []string
+		var gapicNames []string
 		for _, fg := range cqm.fieldGroupList() {
-			names = append(names, fg.name)
+			names = append(names, fg.FieldName())
+			gapicNames = append(gapicNames, fg.GapicFieldName())
 		}
-		wantNames := []string{"job_reference", "query_id", "shared_field"}
+		wantNames := []string{"job_ref_renamed", "query_id", "shared_field"}
 		if diff := cmp.Diff(wantNames, names); diff != "" {
 			t.Errorf("field names mismatch (-want +got):\n%s", diff)
+		}
+		wantGapicNames := []string{"job_reference", "query_id", "shared_field"}
+		if diff := cmp.Diff(wantGapicNames, gapicNames); diff != "" {
+			t.Errorf("gapic field names mismatch (-want +got):\n%s", diff)
 		}
 	})
 
 	t.Run("QueryMetadata", func(t *testing.T) {
+		skipByID := newTestField("skip_by_id")
 		jobMsg := newTestMsg("Job", []*api.Field{
-			newTestField("job_ref", ".google.cloud.bigquery.v2.Job.job_ref"),
-			newTestField("common_field", ".google.cloud.bigquery.v2.Job.common_field"),
-			newTestField("skip_by_name", ".google.cloud.bigquery.v2.Job.skip_by_name"),
-			newTestField("skip_by_id", ".google.cloud.bigquery.v2.Job.skip_by_id"),
+			newTestField("job_ref"),
+			newTestField("common_field"),
+			newTestField("skip_by_name"),
+			skipByID,
 		})
 		qrMsg := newTestMsg("QueryResponse", []*api.Field{
-			newTestField("kind", ".google.cloud.bigquery.v2.QueryResponse.kind"),
-			newTestField("common_field", ".google.cloud.bigquery.v2.QueryResponse.common_field"),
+			newTestField("kind"),
+			newTestField("common_field"),
 		})
 
-		model := api.NewTestAPI([]*api.Message{jobMsg, qrMsg}, []*api.Enum{}, []*api.Service{})
-		skipped := []string{"skip_by_name", ".google.cloud.bigquery.v2.Job.skip_by_id"}
+		model := api.NewTestAPI([]*api.Message{jobMsg, qrMsg}, nil, nil)
+		skipped := []string{"skip_by_name", skipByID.ID}
 
 		qm, err := newQueryMetadata(c, model, skipped)
 		if err != nil {
@@ -343,12 +359,18 @@ func TestBigQueryQueryMetadata(t *testing.T) {
 		}
 
 		var names []string
+		var gapicNames []string
 		for _, fg := range qm.fieldGroupList() {
-			names = append(names, fg.name)
+			names = append(names, fg.FieldName())
+			gapicNames = append(gapicNames, fg.GapicFieldName())
 		}
-		wantNames := []string{"common_field", "job_ref", "kind"}
+		wantNames := []string{"common_field", "job_ref_renamed", "kind"}
 		if diff := cmp.Diff(wantNames, names); diff != "" {
 			t.Errorf("field names mismatch (-want +got):\n%s", diff)
+		}
+		wantGapicNames := []string{"common_field", "job_ref", "kind"}
+		if diff := cmp.Diff(wantGapicNames, gapicNames); diff != "" {
+			t.Errorf("gapic field names mismatch (-want +got):\n%s", diff)
 		}
 	})
 }

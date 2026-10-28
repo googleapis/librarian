@@ -22,8 +22,8 @@ import (
 )
 
 func TestLookupMessage(t *testing.T) {
-	msg := &api.Message{Name: "Secret", ID: ".test.Secret"}
-	model := api.NewTestAPI([]*api.Message{msg}, []*api.Enum{}, []*api.Service{})
+	msg := api.NewTestMessage("Secret")
+	model := api.NewTestAPI([]*api.Message{msg}, nil, nil)
 
 	got, err := lookupMessage(model, ".test.Secret")
 	if err != nil {
@@ -35,7 +35,7 @@ func TestLookupMessage(t *testing.T) {
 }
 
 func TestLookupMessage_Error(t *testing.T) {
-	model := api.NewTestAPI([]*api.Message{}, []*api.Enum{}, []*api.Service{})
+	model := api.NewTestAPI(nil, nil, nil)
 
 	_, err := lookupMessage(model, ".test.Missing")
 	if err == nil {
@@ -44,8 +44,8 @@ func TestLookupMessage_Error(t *testing.T) {
 }
 
 func TestLookupEnum(t *testing.T) {
-	enum := &api.Enum{Name: "SecretType", ID: ".test.SecretType"}
-	model := api.NewTestAPI([]*api.Message{}, []*api.Enum{enum}, []*api.Service{})
+	enum := api.NewTestEnum("SecretType")
+	model := api.NewTestAPI(nil, []*api.Enum{enum}, nil)
 
 	got, err := lookupEnum(model, ".test.SecretType")
 	if err != nil {
@@ -57,7 +57,7 @@ func TestLookupEnum(t *testing.T) {
 }
 
 func TestLookupEnum_Error(t *testing.T) {
-	model := api.NewTestAPI([]*api.Message{}, []*api.Enum{}, []*api.Service{})
+	model := api.NewTestAPI(nil, nil, nil)
 
 	_, err := lookupEnum(model, ".test.Missing")
 	if err == nil {
@@ -66,12 +66,8 @@ func TestLookupEnum_Error(t *testing.T) {
 }
 
 func TestLookupField(t *testing.T) {
-	field := &api.Field{Name: "name", ID: ".test.Secret.name", Typez: api.TypezString}
-	msg := &api.Message{
-		Name:   "Secret",
-		ID:     ".test.Secret",
-		Fields: []*api.Field{field},
-	}
+	field := api.NewTestField("name").WithType(api.TypezString)
+	msg := api.NewTestMessage("Secret").WithFields(field)
 
 	got, err := lookupField(msg, "name")
 	if err != nil {
@@ -83,11 +79,7 @@ func TestLookupField(t *testing.T) {
 }
 
 func TestLookupField_Error(t *testing.T) {
-	msg := &api.Message{
-		Name:   "Secret",
-		ID:     ".test.Secret",
-		Fields: []*api.Field{},
-	}
+	msg := api.NewTestMessage("Secret")
 
 	_, err := lookupField(msg, "missing")
 	if err == nil {

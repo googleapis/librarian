@@ -34,7 +34,7 @@ type fieldAnnotations struct {
 
 	// BaseFieldType is `FieldType` without optional/repeated decorations.
 	//
-	// This is used in the mustache templates, which sometimes need to refer to the underlying type.
+	// This is used in the templates, which sometimes need to refer to the underlying type.
 	BaseFieldType string
 
 	// KeyType is the key's Swift type for maps and empty otherwise.
@@ -79,13 +79,28 @@ type fieldAnnotations struct {
 	// PrimitiveFieldType is the raw Swift type name without any decorators or boxing wrappers (e.g. `Node`).
 	//
 	// This differs from `BaseFieldType` for recursive message fields: for recursive fields,
-	// `BaseFieldType` is boxed as `GoogleCloudWkt.Recursive<Node>` for struct property declarations,
+	// `BaseFieldType` is boxed as `GoogleWKT.WKTRecursive<Node>` for struct property declarations,
 	// whereas `PrimitiveFieldType` remains the raw unwrapped type `Node` so that conversions can call
-	// `WktPackage.Recursive(value: try Node(proto: proto.childNode))`.
+	// `WktPackage.WKTRecursive(value: try Node(proto: proto.childNode))`.
 	PrimitiveFieldType string
 
 	// ValueField holds the value field of a map, for inspecting whether the value is an object or enum.
 	ValueField *api.Field
+
+	// LROAnyConverter names the converter to use for this `Any` field, or is
+	// empty to convert it generically.
+	//
+	// Only the `Any` fields of `google.longrunning.Operation` set this. See
+	// `annotateLROAnyFields`.
+	LROAnyConverter string
+
+	// DiagnoseType is true when declarations naming this field's type need
+	// `@diagnose` to suppress a deprecation warning.
+	//
+	// Naming a deprecated message or enum warns even when the field itself is
+	// not deprecated. A deprecated field needs nothing: Swift does not report
+	// deprecated references inside a deprecated declaration.
+	DiagnoseType bool
 }
 
 // DecodingStyle defines an enumeration for decoding fields.
@@ -123,32 +138,27 @@ func (a *fieldAnnotations) IsStringKeyed() bool {
 	return a.KeyType == "Swift.String"
 }
 
-// IsDecodingSimple is used in mustache templates, where it is not possible to
-// compare a field to a constant.
+// IsDecodingSimple is used in templates to check for simple decoding.
 func (a *fieldAnnotations) IsDecodingSimple() bool {
 	return a.Decoding == DecodingSimple
 }
 
-// IsDecodingOptional is used in mustache templates, where it is not possible to
-// compare a field to a constant.
+// IsDecodingOptional is used in templates to check for optional decoding.
 func (a *fieldAnnotations) IsDecodingOptional() bool {
 	return a.Decoding == DecodingOptional
 }
 
-// IsDecodingMapCustomKey is used in mustache templates, where it is not
-// possible to compare a field to a constant.
+// IsDecodingMapCustomKey is used in templates to check for custom-key map decoding.
 func (a *fieldAnnotations) IsDecodingMapCustomKey() bool {
 	return a.Decoding == DecodingMapCustomKey
 }
 
-// IsEncodingSimple is used in mustache templates, where it is not possible to
-// compare a field to a constant.
+// IsEncodingSimple is used in templates to check for simple encoding.
 func (a *fieldAnnotations) IsEncodingSimple() bool {
 	return a.Encoding == EncodingSimple
 }
 
-// IsEncodingMapCustomKey is used in mustache templates, where it is not
-// possible to compare a field to a constant.
+// IsEncodingMapCustomKey is used in templates to check for custom-key map encoding.
 func (a *fieldAnnotations) IsEncodingMapCustomKey() bool {
 	return a.Encoding == EncodingMapCustomKey
 }
@@ -191,7 +201,7 @@ func (c *codec) annotateField(field *api.Field, model *modelAnnotations) (*field
 	//    automatically using the native indirect case mechanism.
 	if field.Recursive && field.Singular() && !field.IsOneOf {
 		annotations.Recursive = true
-		annotations.BaseFieldType = fmt.Sprintf("%s.Recursive<%s>", wellKnownSwiftPackage, parts.Base)
+		annotations.BaseFieldType = fmt.Sprintf("%s.WKTRecursive<%s>", wellKnownSwiftPackage, parts.Base)
 		annotations.FieldType = annotations.BaseFieldType + "?"
 		annotations.Decoding = DecodingOptional
 	}
@@ -233,8 +243,40 @@ func (c *codec) annotateField(field *api.Field, model *modelAnnotations) (*field
 	if !field.Map {
 		annotations.PrimitiveFieldType = parts.Base
 	}
+	deprecatedType, err := c.fieldTypeDeprecated(field)
+	if err != nil {
+		return nil, err
+	}
+	annotations.DiagnoseType = deprecatedType && !field.Deprecated
 	field.Codec = annotations
 	return annotations, nil
+}
+
+// fieldTypeDeprecated reports whether the message or enum naming this field's
+// type is deprecated. For maps it inspects the value type.
+func (c *codec) fieldTypeDeprecated(field *api.Field) (bool, error) {
+	switch field.Typez {
+	case api.TypezMessage:
+		m, err := lookupMessage(c.Model, field.TypezID)
+		if err != nil {
+			return false, err
+		}
+		if !m.IsMap {
+			return m.Deprecated, nil
+		}
+		fields, err := decomposeMap(m)
+		if err != nil {
+			return false, err
+		}
+		return c.fieldTypeDeprecated(fields.Value)
+	case api.TypezEnum:
+		e, err := lookupEnum(c.Model, field.TypezID)
+		if err != nil {
+			return false, err
+		}
+		return e.Deprecated, nil
+	}
+	return false, nil
 }
 
 func (c *codec) fieldPackage(field *api.Field) (string, error) {

@@ -209,6 +209,7 @@ func TestPublishErrorGreaterPublishedVersion(t *testing.T) {
 
 func TestPublishSemverFailure(t *testing.T) {
 	testhelper.RequireCommand(t, "git")
+	testhelper.RequireCommand(t, "jq")
 
 	publishedVersions := map[string]string{
 		"a": "0.9.0",
@@ -252,6 +253,7 @@ func TestPublishSemverFailure(t *testing.T) {
 
 func TestPublishSemverSkipByFlag(t *testing.T) {
 	testhelper.RequireCommand(t, "git")
+	testhelper.RequireCommand(t, "jq")
 
 	publishedVersions := map[string]string{
 		"a": "0.9.0",

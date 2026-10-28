@@ -30,13 +30,6 @@ type GeneratedFile struct {
 	OutputPath string
 }
 
-// TemplateProvider is a provider for Mustache template contents.
-//
-// The function is expected to accept a template name, including its full path
-// and the `.mustache` extension, such as `rust/crate/src/lib.rs.mustache` and
-// then return the full contents of the template (or an error).
-type TemplateProvider func(templateName string) (string, error)
-
 // PathParams returns the path parameters for a method.
 func PathParams(m *api.Method, model *api.API) ([]*api.Field, error) {
 	msg := model.Message(m.InputTypeID)

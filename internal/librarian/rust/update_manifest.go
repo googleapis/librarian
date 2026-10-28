@@ -37,9 +37,15 @@ type CrateInfo struct {
 	Publish bool   `toml:"publish"`
 }
 
+// CargoLib contains the library target configuration.
+type CargoLib struct {
+	ProcMacro bool `toml:"proc-macro"`
+}
+
 // Cargo is a wrapper for CrateInfo for parsing Cargo.toml files.
 type Cargo struct {
 	Package *CrateInfo `toml:"package"`
+	Lib     *CargoLib  `toml:"lib"`
 }
 
 // updateCargoVersion updates the version in a Cargo.toml file. It uses a

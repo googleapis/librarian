@@ -203,18 +203,8 @@ func deleteUnlessKept(lib *config.Library, path string) error {
 // deriveGAPICGenerationInfo derives a gapicGenerationInfo for a single API within a library,
 // using the API path and the options from the configuration.
 func deriveGAPICGenerationInfo(api *config.API, lib *config.Library) *gapicGenerationInfo {
-	options := []string{}
-	if lib.Python != nil {
-		options = lib.Python.OptArgsByAPI[api.Path]
-	}
-	namespace, ok := findOption(options, gapicNamespaceOption)
-	if !ok {
-		namespace = deriveGAPICNamespace(api.Path)
-	}
-	name, ok := findOption(options, gapicNameOption)
-	if !ok {
-		name = deriveGAPICName(api.Path)
-	}
+	namespace := gapicNamespace(api.Path, lib)
+	name := gapicName(api.Path, lib)
 	version := serviceconfig.ExtractVersion(api.Path)
 	versionDir := ""
 	if version != "" {

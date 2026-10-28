@@ -23,22 +23,14 @@ import (
 )
 
 func TestMessageAnnotations(t *testing.T) {
-	message := &api.Message{
-		Name:          "TestMessage",
-		Package:       "test.v1",
-		ID:            ".test.v1.TestMessage",
-		Documentation: "A test message.",
-	}
-	nested := &api.Message{
-		Name:          "NestedMessage",
-		Package:       "test.v1",
-		ID:            ".test.v1.TestMessage.NestedMessage",
-		Documentation: "A nested message.",
-		Parent:        message,
-	}
-	message.Messages = []*api.Message{nested}
+	nested := api.NewTestMessage("NestedMessage").
+		WithDocumentation("A nested message.")
+	message := api.NewTestMessage("TestMessage").
+		WithPackage("test.v1").
+		WithDocumentation("A test message.").
+		WithMessages(nested)
 
-	model := api.NewTestAPI([]*api.Message{message}, []*api.Enum{}, []*api.Service{})
+	model := api.NewTestAPI([]*api.Message{message}, nil, nil)
 	api.CrossReference(model)
 	codec := newTestCodec(t, libconfig.SpecProtobuf, "test.v1", map[string]string{})
 	annotateModel(model, codec)
@@ -47,6 +39,7 @@ func TestMessageAnnotations(t *testing.T) {
 		ModuleName:        "test_message",
 		QualifiedName:     "crate::model::TestMessage",
 		RelativeName:      "TestMessage",
+		ProstRelativeName: "TestMessage",
 		NameInExamples:    "google_cloud_test_v1::model::TestMessage",
 		PackageModuleName: "test::v1",
 		SourceFQN:         "test.v1.TestMessage",
@@ -63,6 +56,7 @@ func TestMessageAnnotations(t *testing.T) {
 		ModuleName:        "nested_message",
 		QualifiedName:     "crate::model::test_message::NestedMessage",
 		RelativeName:      "test_message::NestedMessage",
+		ProstRelativeName: "test_message::NestedMessage",
 		NameInExamples:    "google_cloud_test_v1::model::test_message::NestedMessage",
 		PackageModuleName: "test::v1",
 		SourceFQN:         "test.v1.TestMessage.NestedMessage",
@@ -76,32 +70,14 @@ func TestMessageAnnotations(t *testing.T) {
 }
 
 func TestSetterSampleAnnotations(t *testing.T) {
-	enum := &api.Enum{
-		Name:    "TestEnum",
-		ID:      ".test.v1.TestEnum",
-		Package: "test.v1",
-	}
-	message := &api.Message{
-		Name:    "TestMessage",
-		ID:      ".test.v1.TestMessage",
-		Package: "test.v1",
-		Fields: []*api.Field{
-			{
-				Name:    "enum_field",
-				ID:      ".test.v1.TestMessage.enum_field",
-				Typez:   api.TypezEnum,
-				TypezID: ".test.v1.TestEnum",
-			},
-			{
-				Name:    "message_field",
-				ID:      ".test.v1.TestMessage.message_field",
-				Typez:   api.TypezMessage,
-				TypezID: ".test.v1.TestMessage",
-			},
-		},
-	}
+	enum := api.NewTestEnum("TestEnum").WithPackage("test.v1")
+	message := api.NewTestMessage("TestMessage").WithPackage("test.v1")
+	message.WithFields(
+		api.NewTestField("enum_field").WithEnumType(enum),
+		api.NewTestField("message_field").WithMessageType(message),
+	)
 
-	model := api.NewTestAPI([]*api.Message{message}, []*api.Enum{enum}, []*api.Service{})
+	model := api.NewTestAPI([]*api.Message{message}, []*api.Enum{enum}, nil)
 	api.CrossReference(model)
 	codec := newTestCodec(t, libconfig.SpecProtobuf, "", map[string]string{
 		"generate-setter-samples": "true",
@@ -133,21 +109,10 @@ func TestSetterSampleAnnotations(t *testing.T) {
 }
 
 func TestInternalMessageOverrides(t *testing.T) {
-	public := &api.Message{
-		Name: "Public",
-		ID:   ".test.Public",
-	}
-	private1 := &api.Message{
-		Name: "Private1",
-		ID:   ".test.Private1",
-	}
-	private2 := &api.Message{
-		Name: "Private2",
-		ID:   ".test.Private2",
-	}
-	model := api.NewTestAPI([]*api.Message{public, private1, private2},
-		[]*api.Enum{},
-		[]*api.Service{})
+	public := api.NewTestMessage("Public")
+	private1 := api.NewTestMessage("Private1")
+	private2 := api.NewTestMessage("Private2")
+	model := api.NewTestAPI([]*api.Message{public, private1, private2}, nil, nil)
 	codec := newTestCodec(t, libconfig.SpecProtobuf, "", map[string]string{
 		"internal-types": ".test.Private1,.test.Private2",
 	})
@@ -161,5 +126,61 @@ func TestInternalMessageOverrides(t *testing.T) {
 	}
 	if !private2.Codec.(*messageAnnotation).Internal {
 		t.Errorf("Private method should not be flagged as internal")
+	}
+}
+
+func TestMessageModuleNameOverrides(t *testing.T) {
+	childReq := api.NewTestMessage("GetRequest")
+	servicePlaceholder := api.NewTestMessage("globalFrontendSettings").
+		WithPackage("google.cloud.compute.v1").
+		WithMessages(childReq)
+	servicePlaceholder.ServicePlaceholder = true
+
+	schemaChild := api.NewTestMessage("NestedType")
+	schemaMessage := api.NewTestMessage("GlobalFrontendSettings").
+		WithPackage("google.cloud.compute.v1").
+		WithMessages(schemaChild)
+
+	model := api.NewTestAPI([]*api.Message{servicePlaceholder, schemaMessage}, nil, nil)
+	codec := newTestCodec(t, libconfig.SpecDiscovery, "", nil)
+	codec.messageModuleNameOverrides = map[string]string{
+		".google.cloud.compute.v1.globalFrontendSettings": "global_frontend_settings_requests",
+	}
+	if _, err := annotateModel(model, codec); err != nil {
+		t.Fatalf("failed to annotate model: %v", err)
+	}
+
+	placeholderAnn, ok := servicePlaceholder.Codec.(*messageAnnotation)
+	if !ok {
+		t.Fatalf("expected messageAnnotation on servicePlaceholder")
+	}
+	if placeholderAnn.ModuleName != "global_frontend_settings_requests" {
+		t.Errorf("got servicePlaceholder.ModuleName = %q, want %q", placeholderAnn.ModuleName, "global_frontend_settings_requests")
+	}
+
+	childAnn, ok := childReq.Codec.(*messageAnnotation)
+	if !ok {
+		t.Fatalf("expected messageAnnotation on childReq")
+	}
+	if childAnn.QualifiedName != "crate::model::global_frontend_settings_requests::GetRequest" {
+		t.Errorf("got childReq.QualifiedName = %q, want %q", childAnn.QualifiedName, "crate::model::global_frontend_settings_requests::GetRequest")
+	}
+
+	schemaAnn, ok := schemaMessage.Codec.(*messageAnnotation)
+	if !ok {
+		t.Fatalf("expected messageAnnotation on schemaMessage")
+	}
+	if schemaAnn.ModuleName != "global_frontend_settings" {
+		t.Errorf("got schemaMessage.ModuleName = %q, want %q", schemaAnn.ModuleName, "global_frontend_settings")
+	}
+	if schemaAnn.QualifiedName != "crate::model::GlobalFrontendSettings" {
+		t.Errorf("got schemaMessage.QualifiedName = %q, want %q", schemaAnn.QualifiedName, "crate::model::GlobalFrontendSettings")
+	}
+	schemaChildAnn, ok := schemaChild.Codec.(*messageAnnotation)
+	if !ok {
+		t.Fatalf("expected messageAnnotation on schemaChild")
+	}
+	if schemaChildAnn.QualifiedName != "crate::model::global_frontend_settings::NestedType" {
+		t.Errorf("got schemaChild.QualifiedName = %q, want %q", schemaChildAnn.QualifiedName, "crate::model::global_frontend_settings::NestedType")
 	}
 }

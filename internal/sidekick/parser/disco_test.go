@@ -116,14 +116,11 @@ func TestDisco_ParsePagination(t *testing.T) {
 	if got == nil {
 		t.Fatalf("expected method %s in the API model", wantID)
 	}
-	wantPagination := &api.Field{
-		Name:     "pageToken",
-		JSONName: "pageToken",
-		ID:       "..zones.listRequest.pageToken",
-		Typez:    api.TypezString,
-		TypezID:  "string",
-		Optional: true,
-	}
+	wantPagination := api.NewTestField("pageToken").
+		WithType(api.TypezString).
+		WithTypezID("string").
+		WithOptional()
+	wantPagination.ID = "..zones.listRequest.pageToken"
 	if diff := cmp.Diff(wantPagination, got.Pagination, cmpopts.IgnoreFields(api.Field{}, "Documentation")); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
@@ -143,14 +140,11 @@ func TestDisco_ParsePaginationAggregate(t *testing.T) {
 	if got == nil {
 		t.Fatalf("expected method %s in the API model", wantID)
 	}
-	wantPagination := &api.Field{
-		Name:     "pageToken",
-		JSONName: "pageToken",
-		ID:       "..machineTypes.aggregatedListRequest.pageToken",
-		Typez:    api.TypezString,
-		TypezID:  "string",
-		Optional: true,
-	}
+	wantPagination := api.NewTestField("pageToken").
+		WithType(api.TypezString).
+		WithTypezID("string").
+		WithOptional()
+	wantPagination.ID = "..machineTypes.aggregatedListRequest.pageToken"
 	if diff := cmp.Diff(wantPagination, got.Pagination, cmpopts.IgnoreFields(api.Field{}, "Documentation")); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
@@ -164,9 +158,8 @@ func TestDisco_ParseDeprecatedEnum(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	wantEnum := &api.Enum{
-		ID: "..AcceleratorTypeAggregatedList.warning.code",
-	}
+	wantEnum := api.NewTestEnum("code").
+		WithID("..AcceleratorTypeAggregatedList.warning.code")
 	got := model.Enum(wantEnum.ID)
 	if got == nil {
 		t.Fatalf("expected method %s in the API model", wantEnum.ID)

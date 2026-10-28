@@ -33,21 +33,9 @@ func Tidy(lib *config.Library) (*config.Library, error) {
 			slices.Sort(api.PHP.AdditionalProtos)
 			api.PHP.AdditionalProtos = slices.Compact(api.PHP.AdditionalProtos)
 		}
-		empty, err := yaml.Empty(api.PHP)
-		if err != nil {
+		var err error
+		if api.PHP, err = yaml.ClearIfEmpty(api.PHP); err != nil {
 			return nil, err
-		}
-		if empty {
-			api.PHP = nil
-		}
-	}
-	if lib.PHP != nil {
-		empty, err := yaml.Empty(lib.PHP)
-		if err != nil {
-			return nil, err
-		}
-		if empty {
-			lib.PHP = nil
 		}
 	}
 	return lib, nil

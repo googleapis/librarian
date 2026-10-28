@@ -16,32 +16,95 @@ package swift
 
 import (
 	"fmt"
+	"slices"
+	"strings"
 
 	"github.com/googleapis/librarian/internal/sidekick/api"
 	"github.com/googleapis/librarian/internal/sidekick/language"
 )
 
 type methodAnnotations struct {
-	Name           string
-	DocLines       []string
-	PathVariables  []*pathVariable
-	RoutingParams  []*routingParam
-	PathExpression string
-	HTTPMethod     string
-	HasBody        bool
-	IsBodyWildcard bool
-	BodyField      string
-	QueryParams    []*api.Field
-	Pagination     *paginationAnnotations
-	LRO            *lroAnnotations
-	DiscoveryLRO   *discoveryLroAnnotations
-	ReturnType     string
+	Name                string
+	DocLines            []string
+	PathVariables       []*pathVariable
+	PathBindings        []*pathBindingAnnotations
+	HasMultipleBindings bool
+	RoutingParams       []*routingParam
+	PathExpression      string
+	HTTPMethod          string
+	HasBody             bool
+	IsBodyWildcard      bool
+	BodyField           string
+	// IsHTTPBodyRequest reports whether the HTTP request body is a
+	// google.api.HttpBody message, which transcodes as raw bytes and Content-Type
+	// rather than JSON.
+	IsHTTPBodyRequest bool
+	// IsHTTPBodyResponse reports whether the method returns a
+	// google.api.HttpBody message, which receives raw response bytes and
+	// Content-Type rather than decoding JSON.
+	IsHTTPBodyResponse     bool
+	QueryParams            []*api.Field
+	Pagination             *paginationAnnotations
+	LRO                    *lroAnnotations
+	DiscoveryLRO           *discoveryLroAnnotations
+	ReturnType             string
+	HasAutoPopulatedFields bool
+	HasIdempotencyHook     bool
+	IdempotencyHook        string
 
 	// ResponseEncoding sets the `$alt` query parameter value.
 	//
 	// To understand the motivation, see the field by the same in the the
 	// `codec` data structure.
 	ResponseEncoding string
+
+	// --- Diagnose flags ---
+	//
+	// These mark the generated declarations that need `@diagnose` to suppress
+	// a deprecation warning. They vary along two axes.
+	//
+	// The first is what the declaration names. Every declaration names the
+	// request and response types, and the pagination and LRO signatures also
+	// name the item type and the operation response type; all of those form
+	// the *types* axis. Some declarations additionally name individual request
+	// fields, either as parameters or by reading and writing them; those form
+	// the *fields* axis.
+	//
+	// The second is whether the declaration is itself deprecated when the
+	// method or its service is. The public client and protocol declarations
+	// carry `@available(*, deprecated)`, and Swift does not report deprecated
+	// references inside a deprecated declaration. The internal stub, retry,
+	// logging and transport declarations never carry it, so they always need
+	// the attribute.
+
+	// DiagnoseTypes guards the public declarations that name only types.
+	DiagnoseTypes bool
+
+	// DiagnoseFields guards the public declarations that also name individual
+	// request fields, such as the generated overloads.
+	//
+	// This is deliberately an over-approximation for the per-signature
+	// overloads. It is computed over every request field, while each overload
+	// names only the subset its `api.MethodSignature` selects, and the
+	// pagination overload names only the page token. An overload whose own
+	// fields are all live can therefore carry the attribute. Suppressing a
+	// warning that is not raised is inert, and the alternative is a separate
+	// annotation computed per signature.
+	DiagnoseFields bool
+
+	// DiagnoseStubTypes guards the internal declarations that name only types.
+	DiagnoseStubTypes bool
+
+	// DiagnoseStubFields guards the internal declarations that also name
+	// individual request fields, such as the transports.
+	DiagnoseStubFields bool
+
+	// DiagnoseSnippet guards the sample function in the generated snippet.
+	//
+	// A snippet is a standalone executable. Nothing in it is deprecated, so
+	// unlike the public client it needs the attribute even when the method or
+	// its service is.
+	DiagnoseSnippet bool
 }
 
 type paginationAnnotations struct {
@@ -89,11 +152,57 @@ type pathVariable struct {
 	Expression string
 	Test       string
 	FieldPath  string
+	// JSONFieldPath is FieldPath using the ProtoJSON field names, e.g. `secret.name`.
+	//
+	// The generated code uses this to skip the path parameters when serializing the request body.
+	JSONFieldPath    string
+	MatchingSegments []string
+	TemplateString   string
+}
+
+func (p *pathVariable) HasMatchingSegments() bool {
+	return len(p.MatchingSegments) > 0
+}
+
+func (p *pathVariable) MatchingSegmentsExpression() string {
+	return "[" + strings.Join(p.MatchingSegments, ", ") + "]"
+}
+
+type pathBindingAnnotations struct {
+	HTTPMethod       string
+	PathExpression   string
+	PathVariables    []*pathVariable
+	QueryParams      []*api.Field
+	HasQueryParams   bool
+	HasPathVariables bool
+	ResponseEncoding string
+	// OmittedBodyFields are the ProtoJSON paths bound by this binding's path template.
+	//
+	// Only set for methods using `body: "*"`. Per the `google.api.http` rules the request body
+	// contains the fields *not* bound by the path template.
+	OmittedBodyFields []string
+}
+
+// OmittedBodyFieldsExpression returns OmittedBodyFields as a Swift array literal.
+func (b *pathBindingAnnotations) OmittedBodyFieldsExpression() string {
+	quoted := make([]string, 0, len(b.OmittedBodyFields))
+	for _, field := range b.OmittedBodyFields {
+		quoted = append(quoted, fmt.Sprintf("%q", field))
+	}
+	return "[" + strings.Join(quoted, ", ") + "]"
+}
+
+// HasOmittedBodyFields returns true if the request body must skip some path parameters.
+func (ann *methodAnnotations) HasOmittedBodyFields() bool {
+	idx := slices.IndexFunc(ann.PathBindings, func(b *pathBindingAnnotations) bool {
+		return len(b.OmittedBodyFields) > 0
+	})
+	return idx != -1
 }
 
 // HasQueryParams returns true if the method's default binding has query parameters
 //
-// The mustache templates use this to (1) use a `var query` vs. `let query` for the collection of
+// The templates use this to (1) use a `var query` vs. `let query` for the collection of
 // query parameters, and (2) generate the query parameter encoder only once, and only if needed.
 func (ann *methodAnnotations) HasQueryParams() bool {
 	return len(ann.QueryParams) != 0
@@ -120,6 +229,15 @@ func (c *codec) annotateMethod(method *api.Method, modelAnn *modelAnnotations) e
 			return err
 		}
 	}
+	for _, sig := range method.Signatures {
+		for _, field := range sig.Fields {
+			if field.Codec == nil {
+				if _, err := c.annotateField(field, modelAnn); err != nil {
+					return err
+				}
+			}
+		}
+	}
 	var returnType string
 	if method.OutputType != nil {
 		if err := c.annotateMessage(method.OutputType, modelAnn); err != nil {
@@ -142,7 +260,9 @@ func (c *codec) annotateMethod(method *api.Method, modelAnn *modelAnnotations) e
 	var hasBody bool
 	var isBodyWildcard bool
 	var bodyField string
+	var isHTTPBodyRequest bool
 	var queryParams []*api.Field
+	isHTTPBodyResponse := method.OutputType != nil && method.OutputType.ID == ".google.api.HttpBody"
 
 	// Extract routing parameters for gRPC per AIP-4222:
 	// - Prefer explicit google.api.routing annotations if present.
@@ -159,22 +279,60 @@ func (c *codec) annotateMethod(method *api.Method, modelAnn *modelAnnotations) e
 	//   queryParams, and pathVariables as before.
 	// - Pure gRPC methods (without HTTP annotations): Safely bypass the HTTP
 	//   extraction without crashing, leaving those fields as their default zero values.
+	var pathBindings []*pathBindingAnnotations
 	if method.PathInfo != nil && len(method.PathInfo.Bindings) > 0 {
-		binding := method.PathInfo.Bindings[0]
 		hasBody = method.PathInfo.BodyFieldPath != ""
 		isBodyWildcard = method.PathInfo.BodyFieldPath == "*"
 		if hasBody && !isBodyWildcard {
 			bodyField = camelCase(method.PathInfo.BodyFieldPath)
+			// Wrapper requests (or body: "*" rules resolved by the protobuf parser)
+			// point BodyFieldPath at a top-level google.api.HttpBody field.
+			if method.InputType != nil {
+				isHTTPBodyRequest = slices.ContainsFunc(method.InputType.Fields, func(f *api.Field) bool {
+					return f.Name == method.PathInfo.BodyFieldPath && f.Typez == api.TypezMessage && f.TypezID == ".google.api.HttpBody"
+				})
+			}
+		} else if isBodyWildcard && method.InputType != nil && method.InputType.ID == ".google.api.HttpBody" {
+			// When the request message itself is google.api.HttpBody, BodyFieldPath
+			// remains "*".
+			isHTTPBodyRequest = true
 		}
-		var err error
-		pathVariables, err = c.pathVariables(method.InputType, binding.PathTemplate)
-		if err != nil {
-			return err
+		for _, binding := range method.PathInfo.Bindings {
+			pVars, err := c.pathVariables(method.InputType, binding.PathTemplate)
+			if err != nil {
+				return err
+			}
+			pExpr := pathExpression(binding.PathTemplate)
+			qParams := language.QueryParams(method, binding)
+			// With `body: "*"` the request body only contains the fields not bound by the path
+			// template.
+			var omittedBodyFields []string
+			if isBodyWildcard && !isHTTPBodyRequest {
+				for _, pVar := range pVars {
+					omittedBodyFields = append(omittedBodyFields, pVar.JSONFieldPath)
+				}
+			}
+			pathBindings = append(pathBindings, &pathBindingAnnotations{
+				HTTPMethod:        binding.Verb,
+				PathExpression:    pExpr,
+				PathVariables:     pVars,
+				QueryParams:       qParams,
+				HasQueryParams:    len(qParams) > 0,
+				HasPathVariables:  len(pVars) > 0,
+				ResponseEncoding:  c.ResponseEncoding,
+				OmittedBodyFields: omittedBodyFields,
+			})
 		}
-		pathExpressionStr = pathExpression(binding.PathTemplate)
-		httpMethod = binding.Verb
-		queryParams = language.QueryParams(method, binding)
+		primary := pathBindings[0]
+		pathVariables = primary.PathVariables
+		pathExpressionStr = primary.PathExpression
+		httpMethod = primary.HTTPMethod
+		queryParams = primary.QueryParams
 	}
+
+	// The pagination and LRO signatures name a type that is neither the input
+	// nor the output type, so `diagnoseMethodTypes` cannot see it.
+	diagnoseSignatureTypes := false
 
 	var pagination *paginationAnnotations
 	if method.Pagination != nil && method.OutputType != nil && method.OutputType.Pagination != nil {
@@ -186,6 +344,12 @@ func (c *codec) annotateMethod(method *api.Method, modelAnn *modelAnnotations) e
 		pagination = &paginationAnnotations{
 			ItemType: itemFieldCodec.BaseFieldType,
 		}
+		// The pagination signatures return `any AsyncSequence<ItemType, ...>`.
+		itemTypeDeprecated, err := c.fieldTypeDeprecated(itemField)
+		if err != nil {
+			return err
+		}
+		diagnoseSignatureTypes = diagnoseSignatureTypes || itemTypeDeprecated
 	}
 	var lro *lroAnnotations
 	if method.IsLRO && method.OperationInfo != nil {
@@ -220,6 +384,9 @@ func (c *codec) annotateMethod(method *api.Method, modelAnn *modelAnnotations) e
 			MetadataType:    metaTypeName,
 			ResponseIsEmpty: responseIsEmpty,
 		}
+		// The LRO signatures return `ReturnType` (or Void if empty).
+		// `MetadataType` needs nothing: no template names it.
+		diagnoseSignatureTypes = diagnoseSignatureTypes || respMsg.Deprecated
 	}
 
 	var discoveryLRO *discoveryLroAnnotations
@@ -231,22 +398,41 @@ func (c *codec) annotateMethod(method *api.Method, modelAnn *modelAnnotations) e
 			discoveryLRO.PollingPathParameters = append(discoveryLRO.PollingPathParameters, camelCase(p))
 		}
 	}
+	diagnoseTypes := diagnoseMethodTypes(method) || diagnoseSignatureTypes
+	diagnoseFields, err := c.diagnoseRequestFields(method)
+	if err != nil {
+		return err
+	}
+	diagnoseFields = diagnoseFields || diagnoseTypes
+	deprecatedScope := inDeprecatedScope(method)
 	method.Codec = &methodAnnotations{
-		Name:             camelCase(method.Name),
-		DocLines:         docLines,
-		PathExpression:   pathExpressionStr,
-		PathVariables:    pathVariables,
-		RoutingParams:    routingParams,
-		HTTPMethod:       httpMethod,
-		HasBody:          hasBody,
-		IsBodyWildcard:   isBodyWildcard,
-		BodyField:        bodyField,
-		QueryParams:      queryParams,
-		Pagination:       pagination,
-		LRO:              lro,
-		ReturnType:       returnType,
-		DiscoveryLRO:     discoveryLRO,
-		ResponseEncoding: c.ResponseEncoding,
+		Name:                   camelCase(method.Name),
+		DocLines:               docLines,
+		PathExpression:         pathExpressionStr,
+		PathVariables:          pathVariables,
+		PathBindings:           pathBindings,
+		HasMultipleBindings:    len(pathBindings) > 1,
+		RoutingParams:          routingParams,
+		HTTPMethod:             httpMethod,
+		HasBody:                hasBody,
+		IsBodyWildcard:         isBodyWildcard,
+		BodyField:              bodyField,
+		IsHTTPBodyRequest:      isHTTPBodyRequest,
+		IsHTTPBodyResponse:     isHTTPBodyResponse,
+		QueryParams:            queryParams,
+		Pagination:             pagination,
+		LRO:                    lro,
+		ReturnType:             returnType,
+		DiscoveryLRO:           discoveryLRO,
+		HasAutoPopulatedFields: method.HasAutoPopulatedFields(),
+		HasIdempotencyHook:     c.IdempotencyHook != "",
+		IdempotencyHook:        c.IdempotencyHook,
+		ResponseEncoding:       c.ResponseEncoding,
+		DiagnoseTypes:          diagnoseTypes && !deprecatedScope,
+		DiagnoseFields:         diagnoseFields && !deprecatedScope,
+		DiagnoseStubTypes:      diagnoseTypes,
+		DiagnoseStubFields:     diagnoseFields,
+		DiagnoseSnippet:        diagnoseFields || deprecatedScope,
 	}
 	if method.SampleInfo != nil {
 		c.annotateSampleInfo(method)
@@ -254,6 +440,63 @@ func (c *codec) annotateMethod(method *api.Method, modelAnn *modelAnnotations) e
 	return nil
 }
 
+// diagnoseMethodTypes reports whether the request or the response type is
+// deprecated.
+//
+// Every generated signature names both. The pagination item type and the LRO
+// response type also appear in generated signatures, but they are neither the
+// input nor the output type; `annotateMethod` folds them in separately, where
+// they have already been resolved.
+func diagnoseMethodTypes(method *api.Method) bool {
+	return (method.InputType != nil && method.InputType.Deprecated) ||
+		(method.OutputType != nil && method.OutputType.Deprecated)
+}
+
+// diagnoseRequestFields reports whether any field of the request message is
+// deprecated, or names a deprecated type.
+//
+// The generated overloads assign the selected request fields by name, and the
+// transports read them to build the path and the query string.
+//
+// This is the same predicate as `messageAnnotations.DiagnoseCodable` for the
+// request message. It is recomputed rather than read from the annotation to
+// keep `annotateMethod` independent of whether the request message has been
+// annotated yet, which is not guaranteed for mixin methods whose request types
+// live outside this model.
+//
+// Returning early for a deprecated request message is an optimisation, not a
+// correctness requirement: `diagnoseMethodTypes` already covers that case, and
+// the caller ORs the two together.
+func (c *codec) diagnoseRequestFields(method *api.Method) (bool, error) {
+	if method.InputType == nil || method.InputType.Deprecated {
+		return false, nil
+	}
+	for _, field := range method.InputType.Fields {
+		if field.Deprecated {
+			return true, nil
+		}
+		deprecatedType, err := c.fieldTypeDeprecated(field)
+		if err != nil {
+			return false, err
+		}
+		if deprecatedType {
+			return true, nil
+		}
+	}
+	return false, nil
+}
+
+// inDeprecatedScope reports whether the public declarations generated for this
+// method are themselves deprecated.
+//
+// Swift does not report deprecated references inside a deprecated declaration,
+// so those declarations need no attribute. Every public declaration that this
+// governs is preceded by `{{- if .Deprecated }} @available(*, deprecated) {{- end }}`
+// in the templates.
+func inDeprecatedScope(method *api.Method) bool {
+	return method.Deprecated || (method.Service != nil && method.Service.Deprecated)
+}
+
 func (a *methodAnnotations) Idempotent() bool {
-	return a.HTTPMethod == "GET" || a.HTTPMethod == "PUT"
+	return a.HTTPMethod == "GET" || a.HTTPMethod == "PUT" || a.HasAutoPopulatedFields
 }

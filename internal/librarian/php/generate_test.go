@@ -144,8 +144,6 @@ func TestGenerate_GenerateGAPICFalse(t *testing.T) {
 	}
 }
 
-// TODO(https://github.com/googleapis/librarian/issues/6978): Revise this test
-// once the install steps for the dev tool are ready.
 func TestGenerate_NewLibrary(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skipping slow integration test")
@@ -205,8 +203,6 @@ cp %s SecretManager/owlbot.py
 	}
 }
 
-// TODO(https://github.com/googleapis/librarian/issues/6978): Revise this test
-// once the install steps for the dev tool are ready.
 func TestGenerate_InitComponentError(t *testing.T) {
 	requirePHPGenerator(t)
 	googleapisDir := "../../testdata/googleapis"
@@ -276,10 +272,7 @@ func TestGenerate_StatError(t *testing.T) {
 	})
 	library := &config.Library{
 		Name:   "secretmanager",
-		Output: componentDir,
-		PHP: &config.PHPPackage{
-			ComponentName: "SecretManager/nested",
-		},
+		Output: nestedDir,
 		APIs: []*config.API{
 			{
 				Path: "google/cloud/secretmanager/v1",
@@ -338,14 +331,31 @@ func TestGenerate_Error(t *testing.T) {
 		{
 			name: "no APIs configured",
 			lib: &config.Library{
-				Name: "empty",
+				Name:   "empty",
+				Output: "SecretManager",
 			},
 			wantErr: errNoAPIs,
 		},
 		{
-			name: "missing PHP config (requires staging_subdir)",
+			name: "missing output directory",
 			lib: &config.Library{
 				Name: "SecretManager",
+				APIs: []*config.API{
+					{
+						Path: "google/cloud/secretmanager/v1",
+						PHP: &config.PHPAPI{
+							StagingSubdir: "v1",
+						},
+					},
+				},
+			},
+			wantErr: ErrMissingOutput,
+		},
+		{
+			name: "missing PHP config (requires staging_subdir)",
+			lib: &config.Library{
+				Name:   "SecretManager",
+				Output: "SecretManager",
 				APIs: []*config.API{
 					{
 						Path: "google/cloud/secretmanager/v1",
@@ -357,10 +367,8 @@ func TestGenerate_Error(t *testing.T) {
 		{
 			name: "missing common_resources config",
 			lib: &config.Library{
-				Name: "SecretManager",
-				PHP: &config.PHPPackage{
-					ComponentName: "SecretManager",
-				},
+				Name:   "SecretManager",
+				Output: "SecretManager",
 				APIs: []*config.API{
 					{
 						Path: "google/cloud/secretmanager/v1",
@@ -776,6 +784,49 @@ func TestShouldGenerateSamples(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			got := shouldGenerateSamples(test.api)
 			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestGRPCServiceConfigPath(t *testing.T) {
+	googleapisDir := "../../testdata/googleapis"
+	absGoogleapis, err := filepath.Abs(googleapisDir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, test := range []struct {
+		name     string
+		api      *config.API
+		wantFile string
+	}{
+		{
+			name: "grpc config found",
+			api: &config.API{
+				Path: "google/cloud/secretmanager/v1",
+				PHP:  &config.PHPAPI{},
+			},
+			wantFile: "google/cloud/secretmanager/v1/secretmanager_grpc_service_config.json",
+		},
+		{
+			name: "grpc config not found",
+			api: &config.API{
+				Path: "google/apps/meet/v2",
+				PHP:  &config.PHPAPI{},
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got, err := grpcServiceConfigPath(test.api, absGoogleapis)
+			if err != nil {
+				t.Fatal(err)
+			}
+			var want string
+			if test.wantFile != "" {
+				want = filepath.Join(absGoogleapis, test.wantFile)
+			}
+			if diff := cmp.Diff(want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})

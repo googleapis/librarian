@@ -35,37 +35,29 @@ func TestLroAnnotations(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	want := &api.Method{
-		ID:           "..instances.insert",
-		Name:         "insert",
-		InputTypeID:  "..instances.insertRequest",
-		OutputTypeID: "..Operation",
-		PathInfo: &api.PathInfo{
-			Bindings: []*api.PathBinding{
-				{
-					Verb: "POST",
-					PathTemplate: (&api.PathTemplate{}).
-						WithLiteral("compute").
-						WithLiteral("v1").
-						WithLiteral("projects").
-						WithVariableNamed("project").
-						WithLiteral("zones").
-						WithVariableNamed("zone").
-						WithLiteral("instances"),
-					QueryParameters: map[string]bool{
-						"requestId":              true,
-						"sourceInstanceTemplate": true,
-						"sourceMachineImage":     true,
-					},
-				},
-			},
-			BodyFieldPath: "body",
-		},
-		DiscoveryLro: &api.DiscoveryLro{
+	want := api.NewTestMethod("insert").
+		WithID("..instances.insert").
+		WithVerb("POST").
+		WithPathTemplate((&api.PathTemplate{}).
+			WithLiteral("compute").
+			WithLiteral("v1").
+			WithLiteral("projects").
+			WithVariableNamed("project").
+			WithLiteral("zones").
+			WithVariableNamed("zone").
+			WithLiteral("instances")).
+		WithQueryParameters(map[string]bool{
+			"requestId":              true,
+			"sourceInstanceTemplate": true,
+			"sourceMachineImage":     true,
+		}).
+		WithBodyFieldPath("body").
+		WithDiscoveryLro(&api.DiscoveryLro{
 			PollingPathParameters: []string{"project", "zone"},
-		},
-		Signatures: []*api.MethodSignature{{Names: []string{"project", "zone", "body"}}},
-	}
+		})
+	want.InputTypeID = "..instances.insertRequest"
+	want.OutputTypeID = "..Operation"
+	want.Signatures = []*api.MethodSignature{{Names: []string{"project", "zone", "body"}}}
 	got := model.Method(want.ID)
 	if got == nil {
 		t.Fatalf("missing method %s in model", want.ID)
@@ -75,32 +67,24 @@ func TestLroAnnotations(t *testing.T) {
 	}
 
 	// The parser should have injected a mixin method.
-	wantMixin := &api.Method{
-		ID:              "..instances.getOperation",
-		Name:            "getOperation",
-		InputTypeID:     "..zoneOperations.getRequest",
-		OutputTypeID:    "..Operation",
-		SourceServiceID: "..zoneOperations",
-		IsLroPoller:     true,
-		PathInfo: &api.PathInfo{
-			Bindings: []*api.PathBinding{
-				{
-					Verb: "GET",
-					PathTemplate: (&api.PathTemplate{}).
-						WithLiteral("compute").
-						WithLiteral("v1").
-						WithLiteral("projects").
-						WithVariableNamed("project").
-						WithLiteral("zones").
-						WithVariableNamed("zone").
-						WithLiteral("operations").
-						WithVariableNamed("operation"),
-					QueryParameters: map[string]bool{},
-				},
-			},
-			BodyFieldPath: "",
-		},
-	}
+	wantMixin := api.NewTestMethod("getOperation").
+		WithID("..instances.getOperation").
+		WithVerb("GET").
+		WithPathTemplate((&api.PathTemplate{}).
+			WithLiteral("compute").
+			WithLiteral("v1").
+			WithLiteral("projects").
+			WithVariableNamed("project").
+			WithLiteral("zones").
+			WithVariableNamed("zone").
+			WithLiteral("operations").
+			WithVariableNamed("operation")).
+		WithQueryParameters(map[string]bool{}).
+		WithBodyFieldPath("")
+	wantMixin.InputTypeID = "..zoneOperations.getRequest"
+	wantMixin.OutputTypeID = "..Operation"
+	wantMixin.SourceServiceID = "..zoneOperations"
+	wantMixin.IsLroPoller = true
 	gotMixin := model.Method(wantMixin.ID)
 	if gotMixin == nil {
 		t.Fatalf("missing method %s in model", wantMixin.ID)
@@ -121,104 +105,59 @@ func TestLroAnnotationsError(t *testing.T) {
 
 	// None of the real services does this, but we want the parser to report an
 	// error if it ever does.
-	badService := &api.Service{
-		ID:   "..Service",
-		Name: "Service",
-		Methods: []*api.Method{
-			{
-				Name:         "create_foo",
-				ID:           "..Service.create_foo",
-				OutputTypeID: "..Operation",
-				PathInfo: &api.PathInfo{
-					Bindings: []*api.PathBinding{
-						{
-							Verb: "GET",
-							PathTemplate: (&api.PathTemplate{}).
-								WithLiteral("p").
-								WithVariableNamed("project").
-								WithLiteral("l").
-								WithVariableNamed("zone").
-								WithLiteral("foo").
-								WithVariableNamed("id"),
-							QueryParameters: map[string]bool{},
-						},
-					},
-				},
-			},
-			{
-				Name:         "create_bar",
-				ID:           "..Service.create_bar",
-				OutputTypeID: "..Operation",
-				PathInfo: &api.PathInfo{
-					Bindings: []*api.PathBinding{
-						{
-							Verb: "GET",
-							PathTemplate: (&api.PathTemplate{}).
-								WithLiteral("p").
-								WithVariableNamed("project").
-								WithLiteral("l").
-								WithVariableNamed("region").
-								WithLiteral("foo").
-								WithVariableNamed("id"),
-							QueryParameters: map[string]bool{},
-						},
-					},
-				},
-			},
-		},
-	}
-	pollerService := &api.Service{
-		ID:   "..Operations",
-		Name: "Operations",
-		Methods: []*api.Method{
-			{
-				Name:         "get_1",
-				ID:           "..Operations.get_1",
-				OutputTypeID: "..Operation",
-				PathInfo: &api.PathInfo{
-					Bindings: []*api.PathBinding{
-						{
-							Verb: "GET",
-							PathTemplate: (&api.PathTemplate{}).
-								WithLiteral("p").
-								WithVariableNamed("project").
-								WithLiteral("l").
-								WithVariableNamed("zone").
-								WithLiteral("operations").
-								WithVariableNamed("operation"),
-							QueryParameters: map[string]bool{},
-						},
-					},
-				},
-			},
-			{
-				Name:         "get_2",
-				ID:           "..Operations.get_2",
-				OutputTypeID: "..Operation",
-				PathInfo: &api.PathInfo{
-					Bindings: []*api.PathBinding{
-						{
-							Verb: "GET",
-							PathTemplate: (&api.PathTemplate{}).
-								WithLiteral("p").
-								WithVariableNamed("project").
-								WithLiteral("l").
-								WithVariableNamed("region").
-								WithLiteral("operations").
-								WithVariableNamed("operation"),
-							QueryParameters: map[string]bool{},
-						},
-					},
-				},
-			},
-		},
-	}
-	operation := &api.Message{
-		ID:   "..Operation",
-		Name: "Operation",
-	}
+	operation := newDiscoveryTestMessage("Operation")
+	badService := newDiscoveryTestService("Service").
+		WithMethods(
+			api.NewTestMethod("create_foo").
+				WithOutput(operation).
+				WithVerb("GET").
+				WithPathTemplate((&api.PathTemplate{}).
+					WithLiteral("p").
+					WithVariableNamed("project").
+					WithLiteral("l").
+					WithVariableNamed("zone").
+					WithLiteral("foo").
+					WithVariableNamed("id")).
+				WithQueryParameters(map[string]bool{}),
+			api.NewTestMethod("create_bar").
+				WithOutput(operation).
+				WithVerb("GET").
+				WithPathTemplate((&api.PathTemplate{}).
+					WithLiteral("p").
+					WithVariableNamed("project").
+					WithLiteral("l").
+					WithVariableNamed("region").
+					WithLiteral("foo").
+					WithVariableNamed("id")).
+				WithQueryParameters(map[string]bool{}),
+		)
+	pollerService := newDiscoveryTestService("Operations").
+		WithMethods(
+			api.NewTestMethod("get_1").
+				WithOutput(operation).
+				WithVerb("GET").
+				WithPathTemplate((&api.PathTemplate{}).
+					WithLiteral("p").
+					WithVariableNamed("project").
+					WithLiteral("l").
+					WithVariableNamed("zone").
+					WithLiteral("operations").
+					WithVariableNamed("operation")).
+				WithQueryParameters(map[string]bool{}),
+			api.NewTestMethod("get_2").
+				WithOutput(operation).
+				WithVerb("GET").
+				WithPathTemplate((&api.PathTemplate{}).
+					WithLiteral("p").
+					WithVariableNamed("project").
+					WithLiteral("l").
+					WithVariableNamed("region").
+					WithLiteral("operations").
+					WithVariableNamed("operation")).
+				WithQueryParameters(map[string]bool{}),
+		)
 
-	model := api.NewTestAPI([]*api.Message{operation}, []*api.Enum{}, []*api.Service{badService, pollerService})
+	model := api.NewTestAPI([]*api.Message{operation}, nil, []*api.Service{badService, pollerService})
 	if lroAnnotations(model, discoveryConfig) == nil {
 		t.Errorf("expected an error, got %v", badService)
 	}

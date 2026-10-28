@@ -68,6 +68,9 @@ func libraryToModelConfig(library *config.Library, ch *config.API, srcs *sources
 	}
 
 	if library.Rust != nil {
+		if len(library.Rust.IncludedIds) > 0 {
+			modelCfg.Override.IncludedIDs = library.Rust.IncludedIds
+		}
 		if len(library.Rust.SkippedIds) > 0 {
 			modelCfg.Override.SkippedIDs = library.Rust.SkippedIds
 		}
@@ -89,6 +92,9 @@ func libraryToModelConfig(library *config.Library, ch *config.API, srcs *sources
 					ItemField: override.ItemField,
 				}
 			}
+		}
+		if len(library.Rust.MessageModuleNameOverrides) > 0 {
+			modelCfg.MessageModuleNameOverrides = library.Rust.MessageModuleNameOverrides
 		}
 		if library.Rust.Discovery != nil {
 			pollers := make([]*api.Poller, len(library.Rust.Discovery.Pollers))
@@ -123,6 +129,9 @@ func buildCodec(library *config.Library, releaseLevel string) map[string]string 
 		return codec
 	}
 	rust := library.Rust
+	if len(rust.InternalModules) > 0 {
+		codec["internal-modules"] = strings.Join(rust.InternalModules, ",")
+	}
 	if rust.ModulePath != "" {
 		codec["module-path"] = rust.ModulePath
 	}
@@ -135,14 +144,11 @@ func buildCodec(library *config.Library, releaseLevel string) map[string]string 
 	if rust.IncludeStreamingMethods {
 		codec["include-streaming-methods"] = "true"
 	}
-	if rust.IncludeBidiStreamingMethods {
-		codec["include-bidi-streaming-methods"] = "true"
-	}
-	if rust.IncludeServerStreamingMethods {
-		codec["include-server-streaming-methods"] = "true"
-	}
 	if rust.PerServiceFeatures {
 		codec["per-service-features"] = "true"
+	}
+	if rust.IdempotencyHook != "" {
+		codec["idempotency-hook"] = rust.IdempotencyHook
 	}
 	if len(rust.DefaultFeatures) > 0 {
 		codec["default-features"] = strings.Join(rust.DefaultFeatures, ",")
@@ -152,6 +158,12 @@ func buildCodec(library *config.Library, releaseLevel string) map[string]string 
 	}
 	if rust.LroStubOptions != nil && *rust.LroStubOptions {
 		codec["lro-stub-options"] = "true"
+	}
+	if rust.DefaultTransport != "" {
+		codec["default-transport"] = rust.DefaultTransport
+	}
+	if rust.HandwrittenSurface != "" {
+		codec["handwritten-surface"] = rust.HandwrittenSurface
 	}
 	if rust.HasVeneer {
 		codec["has-veneer"] = "true"
@@ -170,6 +182,9 @@ func buildCodec(library *config.Library, releaseLevel string) map[string]string 
 	}
 	if rust.QuickstartServiceOverride != "" {
 		codec["quickstart-service-override"] = rust.QuickstartServiceOverride
+	}
+	if rust.GrpcClient != "" {
+		codec["grpc-client"] = rust.GrpcClient
 	}
 	return codec
 }
@@ -191,6 +206,9 @@ func newLibraryCodec(library *config.Library) map[string]string {
 		}
 		if len(library.Rust.DisabledClippyWarnings) > 0 {
 			codec["disabled-clippy-warnings"] = strings.Join(library.Rust.DisabledClippyWarnings, ",")
+		}
+		if len(library.Rust.ExtensibleBuilders) > 0 {
+			codec["extensible-builders"] = strings.Join(library.Rust.ExtensibleBuilders, ",")
 		}
 	}
 	return codec
@@ -301,6 +319,13 @@ func moduleToModelConfig(library *config.Library, module *config.RustModule, src
 			}
 		}
 	}
+	messageModuleNameOverrides := module.MessageModuleNameOverrides
+	if len(messageModuleNameOverrides) == 0 && len(library.Rust.MessageModuleNameOverrides) > 0 {
+		messageModuleNameOverrides = library.Rust.MessageModuleNameOverrides
+	}
+	if len(messageModuleNameOverrides) > 0 {
+		modelCfg.MessageModuleNameOverrides = messageModuleNameOverrides
+	}
 	return modelCfg, nil
 }
 
@@ -321,11 +346,15 @@ func buildModuleCodec(library *config.Library, module *config.RustModule) map[st
 	if module.IncludeStreamingMethods {
 		codec["include-streaming-methods"] = "true"
 	}
-	if module.IncludeBidiStreamingMethods {
-		codec["include-bidi-streaming-methods"] = "true"
+	idempotencyHook := ""
+	if library.Rust != nil {
+		idempotencyHook = library.Rust.IdempotencyHook
 	}
-	if module.IncludeServerStreamingMethods {
-		codec["include-server-streaming-methods"] = "true"
+	if module.IdempotencyHook != "" {
+		idempotencyHook = module.IdempotencyHook
+	}
+	if idempotencyHook != "" {
+		codec["idempotency-hook"] = idempotencyHook
 	}
 	detailedTracingAttributes := library.Rust != nil && library.Rust.DetailedTracingAttributes != nil && *library.Rust.DetailedTracingAttributes
 	if module.DetailedTracingAttributes != nil {
@@ -365,8 +394,34 @@ func buildModuleCodec(library *config.Library, module *config.RustModule) map[st
 	if module.RootName != "" {
 		codec["root-name"] = module.RootName
 	}
+	if module.HandwrittenSurface != "" {
+		codec["handwritten-surface"] = module.HandwrittenSurface
+	}
 	if module.InternalBuilders {
 		codec["internal-builders"] = "true"
+	}
+	if len(module.ExtensibleBuilders) > 0 {
+		codec["extensible-builders"] = strings.Join(module.ExtensibleBuilders, ",")
+	}
+	grpcClient := ""
+	if library.Rust != nil {
+		grpcClient = library.Rust.GrpcClient
+	}
+	if module.GrpcClient != "" {
+		grpcClient = module.GrpcClient
+	}
+	if grpcClient != "" {
+		codec["grpc-client"] = grpcClient
+	}
+	defaultTransport := ""
+	if library.Rust != nil && library.Rust.DefaultTransport != "" {
+		defaultTransport = library.Rust.DefaultTransport
+	}
+	if module.DefaultTransport != "" {
+		defaultTransport = module.DefaultTransport
+	}
+	if defaultTransport != "" {
+		codec["default-transport"] = defaultTransport
 	}
 	return codec
 }

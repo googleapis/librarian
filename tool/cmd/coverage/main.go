@@ -43,13 +43,9 @@ import (
 const defaultTarget = 80
 
 // targets lists components whose coverage target differs from defaultTarget.
-// The key is a package path suffix that identifies the component.
-var targets = map[string]float64{
-	// TODO(https://github.com/googleapis/librarian/issues/4664): raise to 80.
-	"internal/librarian/nodejs": 70,
-	// TODO(https://github.com/googleapis/librarian/issues/6759): raise to 80.
-	"internal/librarian/ruby": 65,
-}
+// The key is a package path suffix that identifies the component, and the value is the coverage target percentage.
+// For example, "internal/librarian/foo": 70.
+var targets = map[string]float64{}
 
 func main() {
 	targetFlag := flag.Float64("target", 0, "override coverage target (0 means use per-package default)")

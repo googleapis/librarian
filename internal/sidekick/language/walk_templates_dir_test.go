@@ -17,24 +17,56 @@ package language
 import (
 	"path/filepath"
 	"testing"
+	"testing/fstest"
 
 	"github.com/google/go-cmp/cmp"
 )
 
 func TestWalkDir(t *testing.T) {
-	// It should get the `*.md.mustache` files and skip `partial.mustache`
+	// It should get the `*.md.gotmpl` files and skip `partial.gotmpl`
 	got := WalkTemplatesDir(templates, "testTemplates")
 	want := []GeneratedFile{
 		{
-			TemplatePath: "testTemplates/README.md.mustache",
+			TemplatePath: "testTemplates/README.md.gotmpl",
 			OutputPath:   filepath.FromSlash("/README.md"),
 		},
 		{
-			TemplatePath: "testTemplates/test001.txt.mustache",
+			TemplatePath: "testTemplates/test001.txt.gotmpl",
 			OutputPath:   filepath.FromSlash("/test001.txt"),
 		},
 	}
 	if diff := cmp.Diff(want, got); len(diff) != 0 {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+}
+
+func TestWalkDir_GoTemplates(t *testing.T) {
+	fsys := fstest.MapFS{
+		"templates/package/.spi.yml.gotmpl":      &fstest.MapFile{Data: []byte("spi")},
+		"templates/package/Package.swift.gotmpl": &fstest.MapFile{Data: []byte("pkg")},
+		"templates/package/partial.gotmpl":       &fstest.MapFile{Data: []byte("partial")},
+		"templates/package/ignored.txt":          &fstest.MapFile{Data: []byte("ignored")},
+	}
+	got := WalkTemplatesDir(fsys, "templates/package")
+	want := []GeneratedFile{
+		{
+			TemplatePath: "templates/package/.spi.yml.gotmpl",
+			OutputPath:   filepath.FromSlash("/.spi.yml"),
+		},
+		{
+			TemplatePath: "templates/package/Package.swift.gotmpl",
+			OutputPath:   filepath.FromSlash("/Package.swift"),
+		},
+	}
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+}
+
+func TestWalkDir_Error(t *testing.T) {
+	fsys := fstest.MapFS{}
+	got := WalkTemplatesDir(fsys, "nonexistent")
+	if len(got) != 0 {
+		t.Errorf("WalkTemplatesDir(nonexistent) = %v, want empty", got)
 	}
 }

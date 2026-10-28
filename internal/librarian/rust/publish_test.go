@@ -20,7 +20,6 @@ import (
 	"path"
 	"path/filepath"
 	"runtime"
-	"strings"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -295,9 +294,10 @@ func TestPublishCratesDryRunKeepGoing(t *testing.T) {
 	// Create a fake cargo that captures its arguments.
 	script := `#!/bin/bash
 if [ "$1" == "workspaces" ] && [ "$2" == "plan" ]; then
+	echo "google-cloud-wkt"
 	echo "google-cloud-storage"
-elif [ "$1" == "workspaces" ] && [ "$2" == "publish" ]; then
-	echo $@ >> "` + filepath.Join(tmpDir, "cargo_args.txt") + `"
+elif [ "$1" == "publish" ]; then
+	echo "$@" >> "` + filepath.Join(tmpDir, "cargo_args.txt") + `"
 else
 	exit 0
 fi
@@ -307,7 +307,10 @@ fi
 	cfg := &config.Config{}
 	remoteDir := testhelper.SetupRepoWithChange(t, "release-2001-02-03")
 	testhelper.CloneRepository(t, remoteDir)
+	testhelper.AddCrate(t, path.Join("src", "wkt"), "google-cloud-wkt")
 	files := []string{
+		path.Join("src", "wkt", "Cargo.toml"),
+		path.Join("src", "wkt", "src", "lib.rs"),
 		path.Join("src", "storage", "Cargo.toml"),
 		path.Join("src", "storage", "src", "lib.rs"),
 	}
@@ -321,16 +324,14 @@ fi
 		t.Fatal(err)
 	}
 
-	// Verify that arguments were passed to cargo workspaces publish.
+	// Verify that arguments were passed to cargo publish.
 	output, err := os.ReadFile(filepath.Join(tmpDir, "cargo_args.txt"))
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !strings.Contains(string(output), "--keep-going") {
-		t.Errorf("expected cargo command to contain '--keep-going', got: %s", string(output))
-	}
-	if count := strings.Count(string(output), "--dry-run"); count != 1 {
-		t.Errorf("expected cargo command to contain '--dry-run' once, but found %d times: %s", count, string(output))
+	want := "publish --dry-run --keep-going -p google-cloud-wkt -p google-cloud-storage\n"
+	if diff := cmp.Diff(want, string(output)); diff != "" {
+		t.Errorf("cargo args mismatch (-want +got):\n%s", diff)
 	}
 }
 
@@ -457,8 +458,12 @@ func TestRunSemverChecks(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
+			t.Chdir(t.TempDir())
+			for name, manifest := range test.manifests {
+				testhelper.AddCrate(t, filepath.Dir(manifest), name)
+			}
 			script := `#!/bin/bash
-if [[ "$*" == *"fail-me"* ]]; then
+if [[ "$1" == "semver-checks" ]] && [[ "$*" == *"fail-me"* ]]; then
 	exit 1
 fi
 exit 0
@@ -477,12 +482,17 @@ exit 0
 }
 
 func TestRunSemverChecks_Errors(t *testing.T) {
+	t.Chdir(t.TempDir())
+	testhelper.AddCrate(t, "fail", "fail-me")
 	manifests := map[string]string{
 		"fail-me": "fail/Cargo.toml",
 	}
 	wantErr := errSemverCheck
 
 	script := `#!/bin/bash
+if [ "$1" == "info" ]; then
+	exit 0
+fi
 exit 1
 `
 	setupFakeCargoScript(t, script)
@@ -495,6 +505,80 @@ exit 1
 	}
 	if !errors.Is(err, wantErr) {
 		t.Errorf("runSemverChecks() error = %v, want to contain %v", err, wantErr)
+	}
+}
+
+func TestRunSemverChecks_CargoInfoCrateNotFoundSkips(t *testing.T) {
+	t.Chdir(t.TempDir())
+	testhelper.AddCrate(t, "new", "new-crate")
+	manifests := map[string]string{
+		"new-crate": "new/Cargo.toml",
+	}
+
+	// Exit code 101 with 'could not find' in stderr matches the crate not found error.
+	script := `#!/bin/bash
+echo "error: could not find 'new-crate' in registry" >&2
+exit 101
+`
+	setupFakeCargoScript(t, script)
+	sData := semverData{
+		manifests: manifests,
+	}
+	// Because the crate is not found, we should skip semver check and return nil error.
+	if err := runSemverChecks(t.Context(), sData); err != nil {
+		t.Errorf("runSemverChecks() expected nil error when cargo info fails with crate not found, got %v", err)
+	}
+}
+
+func TestRunSemverChecks_CargoInfoNetworkErrorDoesNotSkip(t *testing.T) {
+	t.Chdir(t.TempDir())
+	testhelper.AddCrate(t, "existing", "existing-crate")
+	manifests := map[string]string{
+		"existing-crate": "existing/Cargo.toml",
+	}
+
+	// Some other failure like connection timeout or lock failure shouldn't match "could not find".
+	script := `#!/bin/bash
+echo "error: failed to connect to registry" >&2
+exit 1
+`
+	setupFakeCargoScript(t, script)
+	sData := semverData{
+		manifests: manifests,
+	}
+	// Because of a network error, we should NOT skip, so we expect an error from cargo info.
+	if err := runSemverChecks(t.Context(), sData); err == nil {
+		t.Error("runSemverChecks() expected error when cargo info fails with network error, got nil")
+	}
+}
+
+func TestRunSemverChecks_ProcMacroSkips(t *testing.T) {
+	t.Chdir(t.TempDir())
+	testhelper.AddCrate(t, "macro", "macro-crate")
+	manifest := path.Join("macro", "Cargo.toml")
+	contents := `[package]
+name = "macro-crate"
+version = "1.0.0"
+
+[lib]
+proc-macro = true
+`
+	if err := os.WriteFile(manifest, []byte(contents), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	// Fail on any cargo invocation to verify both cargo info and cargo semver-checks are skipped.
+	script := `#!/bin/bash
+exit 1
+`
+	setupFakeCargoScript(t, script)
+	sData := semverData{
+		manifests: map[string]string{
+			"macro-crate": manifest,
+		},
+	}
+	if err := runSemverChecks(t.Context(), sData); err != nil {
+		t.Errorf("runSemverChecks() expected nil error for proc-macro crate, got %v", err)
 	}
 }
 

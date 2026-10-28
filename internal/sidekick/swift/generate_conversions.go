@@ -35,24 +35,17 @@ func GenerateConversions(ctx context.Context, model *api.API, outdir string, lib
 	if err := codec.annotateModel(); err != nil {
 		return err
 	}
-	provider := func(name string) (string, error) {
-		contents, err := templates.ReadFile(name)
-		if err != nil {
-			return "", err
-		}
-		return string(contents), nil
-	}
 
-	if err := codec.generateEnumConversions(outdir, provider); err != nil {
+	if err := codec.generateEnumConversions(outdir); err != nil {
 		return err
 	}
-	if err := codec.generateMessageConversions(outdir, provider); err != nil {
+	if err := codec.generateMessageConversions(outdir); err != nil {
 		return err
 	}
 	return nil
 }
 
-func (c *codec) generateEnumConversions(outdir string, provider language.TemplateProvider) error {
+func (c *codec) generateEnumConversions(outdir string) error {
 	for _, e := range c.Model.Enums {
 		if e.Parent != nil {
 			continue
@@ -60,17 +53,17 @@ func (c *codec) generateEnumConversions(outdir string, provider language.Templat
 		name := c.enumFileName(e)
 		output := c.conversionOutputPath(name)
 		generated := language.GeneratedFile{
-			TemplatePath: "templates/convert/convert_enum_file.swift.mustache",
+			TemplatePath: "templates/convert/convert_enum_file.swift.gotmpl",
 			OutputPath:   output,
 		}
-		if err := language.GenerateEnum(outdir, e, provider, generated); err != nil {
+		if err := parsedTemplates.GenerateElement(outdir, e, generated); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func (c *codec) generateMessageConversions(outdir string, provider language.TemplateProvider) error {
+func (c *codec) generateMessageConversions(outdir string) error {
 	for _, m := range c.Model.Messages {
 		if m.Parent != nil || m.IsMap || m.ServicePlaceholder {
 			continue
@@ -78,10 +71,10 @@ func (c *codec) generateMessageConversions(outdir string, provider language.Temp
 		name := c.messageFileName(m)
 		output := c.conversionOutputPath(name)
 		generated := language.GeneratedFile{
-			TemplatePath: "templates/convert/convert_message_file.swift.mustache",
+			TemplatePath: "templates/convert/convert_message_file.swift.gotmpl",
 			OutputPath:   output,
 		}
-		if err := language.GenerateMessage(outdir, m, provider, generated); err != nil {
+		if err := parsedTemplates.GenerateElement(outdir, m, generated); err != nil {
 			return err
 		}
 	}

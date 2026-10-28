@@ -34,13 +34,12 @@ func TestProtobuf_FileOptions(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	want := &api.API{
-		Name:            "testdata",
-		Title:           "A test-only API",
-		CsharpNamespace: "Google.Cloud.TestData.V1",
-		PhpNamespace:    "Google\\Cloud\\TestData\\V1",
-		RubyPackage:     "Google::Cloud::TestData::V1",
-	}
+	want := api.NewTestAPI(nil, nil, nil).
+		WithName("testdata").
+		WithTitle("A test-only API").
+		WithCsharpNamespace("Google.Cloud.TestData.V1").
+		WithPhpNamespace("Google\\Cloud\\TestData\\V1").
+		WithRubyPackage("Google::Cloud::TestData::V1")
 	if diff := cmp.Diff(want, got, cmpopts.IgnoreUnexported(api.API{})); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}

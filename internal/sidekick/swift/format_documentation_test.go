@@ -64,12 +64,8 @@ func TestFormatDocumentation(t *testing.T) {
 }
 
 func TestFormatDocumentationWithLinks(t *testing.T) {
-	someMessage := &api.Message{
-		Name:    "SomeMessage",
-		ID:      ".test.v1.SomeMessage",
-		Package: "test.v1",
-	}
-	model := api.NewTestAPI([]*api.Message{someMessage}, []*api.Enum{}, []*api.Service{})
+	someMessage := api.NewTestMessage("SomeMessage").WithPackage("test.v1")
+	model := api.NewTestAPI([]*api.Message{someMessage}, nil, nil)
 	c := newTestCodec(t, model, nil)
 
 	input := `Refer to [SomeMessage][] for details.`

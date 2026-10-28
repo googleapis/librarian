@@ -14,6 +14,8 @@
 - path: google/ads/admanager/v1
   transports:
     all: rest
+- path: google/ads/datamanager/v1
+  rpc_documentation: https://developers.google.com/data-manager/api/reference/rpc
 - path: google/analytics/admin/v1alpha
   documentation_uri: https://developers.google.com/analytics/
   new_issue_uri: https://issuetracker.google.com/issues?q=componentid:187400
@@ -58,6 +60,8 @@
   skip_rest_numeric_enums:
     - python
   title: Google Apps Card
+- path: google/apps/events/subscriptions/v1
+  rest_documentation: https://developers.google.com/workspace/events/reference/rest
 - path: google/apps/script/type
   documentation_uri: https://developers.google.com/apps-script/
   skip_rest_numeric_enums:
@@ -120,6 +124,8 @@
 - path: google/bigtable/v2
   transports:
     java: grpc
+- path: google/chat/v1
+  rest_documentation: https://developers.google.com/chat/api/reference/rest
 - path: google/cloud/abuseevent/logging/v1
   skip_rest_numeric_enums:
     - python
@@ -131,6 +137,8 @@
     go: grpc
     java: grpc
     nodejs: grpc
+  rest_documentation: https://cloud.google.com/vertex-ai/docs/reference/rest
+  rpc_documentation: https://cloud.google.com/vertex-ai/docs/reference/rpc
 - path: google/cloud/aiplatform/v1/schema/predict/instance
   skip_rest_numeric_enums:
     - python
@@ -177,6 +185,7 @@
     - python
   release_level:
     java: stable
+  rest_documentation: https://cloud.google.com/alloydb/docs/reference/rest
 - path: google/cloud/alloydb/connectors/v1alpha
   description: AlloyDB connectors ensure a secure connection to your AlloyDB instances using IAM.
   skip_rest_numeric_enums:
@@ -188,9 +197,11 @@
 - path: google/cloud/alloydb/v1
   release_level:
     java: stable
+  rest_documentation: https://cloud.google.com/alloydb/docs/reference/rest
 - path: google/cloud/apigateway/v1
   description: API Gateway enables you to provide secure access to your backend services through a well-defined REST API that is consistent across all of your services, regardless of the service implementation.
   documentation_uri: https://cloud.google.com/api-gateway
+  rest_documentation: https://cloud.google.com/api-gateway/docs/reference/rest
 - path: google/cloud/apigeeconnect/v1
   description: Apigee Connect allows the Apigee hybrid management plane to connect securely to the MART service in the runtime plane without requiring you to expose the MART endpoint on the internet.
   documentation_uri: https://cloud.google.com/apigee/docs/hybrid/v1.4/apigee-connect
@@ -211,6 +222,7 @@
     ruby: rest
 - path: google/cloud/apphub/v1
   description: App Hub acts as the foundational data model and central registry for your applications on Google Cloud.
+  rpc_documentation: https://cloud.google.com/app-hub/docs/reference/rpc
 - path: google/cloud/asset/v1
   documentation_uri: https://cloud.google.com/resource-manager/docs/cloud-asset-inventory/overview
   new_issue_uri: https://issuetracker.google.com/savedsearches/559757
@@ -229,6 +241,7 @@
 - path: google/cloud/assuredworkloads/v1
   description: Assured Workloads lets you secure your workloads and accelerate your path to running compliant workloads on Google Cloud.
   documentation_uri: https://cloud.google.com/assured-workloads/
+  rest_documentation: https://cloud.google.com/assured-workloads/docs/reference/rest
 - path: google/cloud/assuredworkloads/v1beta1
   description: Assured Workloads lets you secure your workloads and accelerate your path to running compliant workloads on Google Cloud.
   documentation_uri: https://cloud.google.com/assured-workloads/
@@ -237,6 +250,8 @@
 - path: google/cloud/automl/v1
   documentation_uri: https://cloud.google.com/automl/docs/
   new_issue_uri: https://issuetracker.google.com/savedsearches/559744
+  rest_documentation: https://cloud.google.com/automl/docs/reference/rest
+  rpc_documentation: https://cloud.google.com/automl/docs/reference/rpc
 - path: google/cloud/automl/v1beta1
   documentation_uri: https://cloud.google.com/automl/docs/
   new_issue_uri: https://issuetracker.google.com/savedsearches/559744
@@ -249,6 +264,8 @@
     java: stable
 - path: google/cloud/baremetalsolution/v2
   documentation_uri: https://cloud.google.com/bare-metal/docs
+  rest_documentation: https://cloud.google.com/bare-metal/docs/reference/rest
+  rpc_documentation: https://cloud.google.com/bare-metal/docs/reference/rpc
 - path: google/cloud/batch/v1
   documentation_uri: https://cloud.google.com/batch/docs
 - path: google/cloud/batch/v1alpha
@@ -339,6 +356,7 @@
     go: grpc
     nodejs: grpc
     python: grpc
+  rest_documentation: https://cloud.google.com/bigquery/docs/reference/rest
 - path: google/cloud/bigquery/migration/v2alpha
   documentation_uri: https://cloud.google.com/bigquery/docs/reference/migration/
   new_issue_uri: https://issuetracker.google.com/savedsearches/559654
@@ -398,17 +416,25 @@
     ruby: grpc
 - path: google/cloud/billing/v1
   documentation_uri: https://cloud.google.com/billing
+  rest_documentation: https://cloud.google.com/billing/docs/reference/rest
+  rpc_documentation: https://cloud.google.com/billing/docs/reference/rpc
 - path: google/cloud/binaryauthorization/v1
   documentation_uri: https://cloud.google.com/binary-authorization
+  rest_documentation: https://cloud.google.com/binary-authorization/docs/reference/rest
+  rpc_documentation: https://cloud.google.com/binary-authorization/docs/reference/rpc
 - path: google/cloud/binaryauthorization/v1beta1
   documentation_uri: https://cloud.google.com/binary-authorization
 - path: google/cloud/certificatemanager/v1
   description: Certificate Manager simplifies the acquisition, deployment, and management of Transport Layer Security (TLS) certificates.
   documentation_uri: https://docs.cloud.google.com/certificate-manager/docs/overview
+- path: google/cloud/ces/v1
+  rpc_documentation: https://docs.cloud.google.com/customer-engagement-ai/conversational-agents/ps/reference/rpc
 - path: google/cloud/channel/v1
   documentation_uri: https://cloud.google.com/channel/
   transports:
     python: grpc
+  rest_documentation: https://cloud.google.com/channel/docs/reference/rest
+  rpc_documentation: https://cloud.google.com/channel/docs/reference/rpc
 - path: google/cloud/cloudcontrolspartner/v1
   release_level:
     java: stable
@@ -421,6 +447,7 @@
     nodejs: grpc
     python: grpc
     ruby: grpc
+  rest_documentation: https://cloud.google.com/database-migration/docs/reference/rest
 - path: google/cloud/cloudsecuritycompliance/v1
   description: Compliance Manager uses software-defined controls that let you assess support for multiple compliance programs and security requirements within a Google Cloud organization.
 - path: google/cloud/commerce/consumer/procurement/v1alpha1
@@ -453,6 +480,8 @@
 - path: google/cloud/config/v1
   release_level:
     java: stable
+- path: google/cloud/configdelivery/v1
+  rest_documentation: https://cloud.google.com/kubernetes-engine/enterprise/config-sync/docs/reference/rest
 - path: google/cloud/contactcenterinsights/v1
   description: Contact Center Insights provides out-of-the-box and custom modeling techniques to make it easier for contact center teams to better understand customer interaction data.
   documentation_uri: https://cloud.google.com/contact-center/insights/docs
@@ -477,6 +506,7 @@
     python: grpc
 - path: google/cloud/datafusion/v1
   documentation_uri: https://cloud.google.com/data-fusion
+  rest_documentation: https://cloud.google.com/data-fusion/docs/reference/rest
 - path: google/cloud/datalabeling/v1beta1
   documentation_uri: https://cloud.google.com/data-labeling/docs/
   transports:
@@ -484,12 +514,17 @@
     java: grpc
     python: grpc
     ruby: grpc
+- path: google/cloud/dataplex/v1
+  rest_documentation: https://cloud.google.com/dataplex/docs/reference/rest
+  rpc_documentation: https://cloud.google.com/dataplex/docs/reference/rpc
 - path: google/cloud/dataproc/logging
   skip_rest_numeric_enums:
     - python
 - path: google/cloud/dataproc/v1
   documentation_uri: https://cloud.google.com/dataproc
   new_issue_uri: https://issuetracker.google.com/savedsearches/559745
+  rest_documentation: https://cloud.google.com/dataproc/docs/reference/rest
+  rpc_documentation: https://cloud.google.com/dataproc/docs/reference/rpc
 - path: google/cloud/dataqna/v1alpha
   documentation_uri: https://cloud.google.com/bigquery/docs/dataqna
   skip_rest_numeric_enums:
@@ -500,6 +535,7 @@
 - path: google/cloud/datastream/v1
   description: Datastream is a serverless and easy-to-use change data capture (CDC) and replication service that lets you synchronize data reliably, and with minimal latency.
   documentation_uri: https://cloud.google.com/datastream/
+  rest_documentation: https://cloud.google.com/datastream/docs/reference/rest
 - path: google/cloud/datastream/v1alpha1
   description: Datastream is a serverless and easy-to-use change data capture (CDC) and replication service that lets you synchronize data reliably, and with minimal latency.
   documentation_uri: https://cloud.google.com/datastream/
@@ -509,6 +545,8 @@
 - path: google/cloud/dialogflow/cx/v3
   documentation_uri: https://cloud.google.com/dialogflow/cx/docs
   new_issue_uri: https://issuetracker.google.com/savedsearches/5300385
+  rest_documentation: https://cloud.google.com/dialogflow/cx/docs/reference/rest
+  rpc_documentation: https://cloud.google.com/dialogflow/cx/docs/reference/rpc
 - path: google/cloud/dialogflow/cx/v3beta1
   documentation_uri: https://cloud.google.com/dialogflow/cx/docs
   new_issue_uri: https://issuetracker.google.com/savedsearches/5300385
@@ -542,10 +580,15 @@
     - python
 - path: google/cloud/eventarc/publishing/v1
   documentation_uri: https://cloud.google.com/eventarc/docs
+  rest_documentation: https://cloud.google.com/eventarc/docs/reference/rest
+  rpc_documentation: https://cloud.google.com/eventarc/docs/reference/rpc
 - path: google/cloud/eventarc/v1
   documentation_uri: https://cloud.google.com/eventarc/
+  rest_documentation: https://cloud.google.com/eventarc/docs/reference/rest
+  rpc_documentation: https://cloud.google.com/eventarc/docs/reference/rpc
 - path: google/cloud/filestore/v1
   documentation_uri: https://cloud.google.com/filestore/
+  rest_documentation: https://cloud.google.com/filestore/docs/reference/rest
 - path: google/cloud/financialservices/v1
   description: A unified AI platform for financial services, leveraging Google's global framework for security and compliance.
 - path: google/cloud/ftp/v1
@@ -557,8 +600,13 @@
 - path: google/cloud/functions/v2
   documentation_uri: https://cloud.google.com/functions/
   new_issue_uri: https://issuetracker.google.com/savedsearches/559729
+  rest_documentation: https://cloud.google.com/functions/docs/reference/rest
+  rpc_documentation: https://cloud.google.com/functions/docs/reference/rpc
 - path: google/cloud/gdchardwaremanagement/v1alpha
   description: GDC is a fully managed software and hardware solution for data centers and edge locations to address regulatory, local data processing, survivability, and low-latency needs.
+  rpc_documentation: https://cloud.google.com/distributed-cloud/edge/latest/docs/reference/hardware/rpc
+- path: google/cloud/geminidataanalytics/v1
+  rpc_documentation: https://cloud.google.com/gemini/docs/conversational-analytics-api/reference
 - path: google/cloud/geminidataanalytics/v1alpha
   description: Developers can use the Conversational Analytics API, accessed through geminidataanalytics.googleapis.com, to build an artificial intelligence (AI)-powered chat interface, or data agent, that answers questions about structured data in BigQuery, Looker, and Looker Studio using natural language.
 - path: google/cloud/geminidataanalytics/v1beta
@@ -663,6 +711,8 @@
     - python
 - path: google/cloud/kms/inventory/v1
   description: Cloud Key Management Service (Cloud KMS) lets you create and manage cryptographic keys for use in compatible Google Cloud services and in your own applications.
+  rest_documentation: https://cloud.google.com/kms/docs/reference/rest
+  rpc_documentation: https://cloud.google.com/kms/docs/reference/rpc
 - path: google/cloud/kms/v1
   documentation_uri: https://cloud.google.com/kms
   new_issue_uri: https://issuetracker.google.com/savedsearches/5264932
@@ -673,12 +723,19 @@
   new_issue_uri: https://issuetracker.google.com/savedsearches/559753
 - path: google/cloud/language/v2
   new_issue_uri: https://issuetracker.google.com/savedsearches/559753
+  rest_documentation: https://cloud.google.com/natural-language/docs/reference/rest
+  rpc_documentation: https://cloud.google.com/natural-language/docs/reference/rpc
 - path: google/cloud/lifesciences/v2beta
   documentation_uri: https://cloud.google.com/life-sciences/
+  rest_documentation: https://cloud.google.com/life-sciences/docs/reference/rest
+  rpc_documentation: https://cloud.google.com/life-sciences/docs/reference/rpc
 - path: google/cloud/locationfinder/v1
   description: Cloud Location Finder is a public API that offers a repository of all Google Cloud and Google Distributed Cloud locations, as well as cloud locations for other cloud providers.
+  rpc_documentation: https://cloud.google.com/locationfinder/docs/reference/rest
 - path: google/cloud/lustre/v1
   description: Google Cloud Managed Lustre delivers a high-performance, fully managed parallel file system optimized for AI and HPC applications.
+- path: google/cloud/maintenance/api/v1
+  rpc_documentation: https://cloud.google.com/unified-maintenance/docs/reference/rpc
 - path: google/cloud/managedidentities/v1
   documentation_uri: https://cloud.google.com/managed-microsoft-ad/
   transports:
@@ -709,10 +766,13 @@
   description: Memorystore for Valkey is a fully managed Valkey service for Google Cloud which supports both Cluster Mode Enabled and Cluster Mode Disabled instances.
   release_level:
     java: stable
+  rest_documentation: https://cloud.google.com/memorystore/docs/valkey/reference/rest
 - path: google/cloud/memorystore/v1beta
   description: Memorystore for Valkey is a fully managed Valkey service for Google Cloud which supports both Cluster Mode Enabled and Cluster Mode Disabled instances.
 - path: google/cloud/metastore/v1
   documentation_uri: https://cloud.google.com/dataproc-metastore/
+  rest_documentation: https://cloud.google.com/dataproc-metastore/docs/reference/rest
+  rpc_documentation: https://cloud.google.com/dataproc-metastore/docs/reference/rpc
 - path: google/cloud/metastore/v1alpha
   documentation_uri: https://cloud.google.com/dataproc-metastore/
 - path: google/cloud/metastore/v1beta
@@ -769,8 +829,12 @@
     ruby: grpc
 - path: google/cloud/optimization/v1
   documentation_uri: https://cloud.google.com/optimization/docs
+  rest_documentation: https://cloud.google.com/optimization/docs/reference/rest
+  rpc_documentation: https://cloud.google.com/optimization/docs/reference/rpc
 - path: google/cloud/orchestration/airflow/service/v1
   documentation_uri: https://cloud.google.com/composer/
+  rest_documentation: https://cloud.google.com/composer/docs/reference/rest
+  rpc_documentation: https://cloud.google.com/composer/docs/reference/rpc
 - path: google/cloud/orchestration/airflow/service/v1beta1
   documentation_uri: https://cloud.google.com/composer/
 - path: google/cloud/orgpolicy/v1
@@ -810,6 +874,8 @@
   description: Policy Troubleshooter helps you understand whether a principal can access a resource. Given a principal, a resource, and a permission, Policy Troubleshooter examines the allow policies, deny policies, and principal access boundary (PAB) policies that impact the principal's access.
 - path: google/cloud/privatecatalog/v1beta1
   documentation_uri: https://cloud.google.com/private-catalog/
+- path: google/cloud/privilegedaccessmanager/v1
+  rpc_documentation: https://cloud.google.com/iam/docs/reference/pam/rpc
 - path: google/cloud/pubsublite/v1
   skip_rest_numeric_enums:
     - csharp
@@ -831,6 +897,8 @@
     nodejs: grpc
     python: grpc
     ruby: grpc
+  rest_documentation: https://cloud.google.com/recaptcha-enterprise/docs/reference/rest
+  rpc_documentation: https://cloud.google.com/recaptcha-enterprise/docs/reference/rpc
 - path: google/cloud/recommendationengine/v1beta1
   documentation_uri: https://cloud.google.com/recommendations-ai/
 - path: google/cloud/recommender/v1
@@ -852,9 +920,15 @@
   documentation_uri: https://cloud.google.com/retail/docs/
 - path: google/cloud/run/v2
   documentation_uri: https://cloud.google.com/run/docs
+  rest_documentation: https://cloud.google.com/run/docs/reference/rest
+  rpc_documentation: https://cloud.google.com/run/docs/reference/rpc
+- path: google/cloud/saasplatform/saasservicemgmt/v1beta1
+  rpc_documentation: https://cloud.google.com/saas-runtime/docs/apis
 - path: google/cloud/scheduler/v1
   documentation_uri: https://cloud.google.com/scheduler/docs
   new_issue_uri: https://issuetracker.google.com/savedsearches/5411429
+  rest_documentation: https://cloud.google.com/scheduler/docs/reference/rest
+  rpc_documentation: https://cloud.google.com/scheduler/docs/reference/rpc
 - path: google/cloud/scheduler/v1beta1
   documentation_uri: https://cloud.google.com/scheduler/docs
   new_issue_uri: https://issuetracker.google.com/savedsearches/5411429
@@ -865,17 +939,21 @@
     java: stable
 - path: google/cloud/security/privateca/v1
   documentation_uri: https://cloud.google.com/certificate-authority-service
+  rest_documentation: https://cloud.google.com/certificate-authority-service/docs/reference/rest
+  rpc_documentation: https://cloud.google.com/certificate-authority-service/docs/reference/rpc
 - path: google/cloud/security/privateca/v1beta1
   documentation_uri: https://cloud.google.com/certificate-authority-service
 - path: google/cloud/security/publicca/v1
   release_level:
     go: preview
     java: stable
+  rpc_documentation: https://cloud.google.com/certificate-manager/docs/reference/public-ca/rpc
 - path: google/cloud/securitycenter/settings/v1beta1
   skip_rest_numeric_enums:
     - all
   transports:
     java: grpc
+  rest_documentation: https://cloud.google.com/security-command-center/docs/reference/rest
 - path: google/cloud/securitycenter/v1beta1
   documentation_uri: https://cloud.google.com/security-command-center
   new_issue_uri: https://issuetracker.google.com/savedsearches/559748
@@ -885,6 +963,7 @@
 - path: google/cloud/securitycenter/v2
   release_level:
     go: preview
+  rest_documentation: https://cloud.google.com/security-command-center/docs/reference/rest
 - path: google/cloud/securitycentermanagement/v1
   release_level:
     java: stable
@@ -893,10 +972,16 @@
     java: stable
 - path: google/cloud/servicedirectory/v1
   documentation_uri: https://cloud.google.com/service-directory/
+  rest_documentation: https://cloud.google.com/service-directory/docs/reference/rest
+  rpc_documentation: https://cloud.google.com/service-directory/docs/reference/rpc
 - path: google/cloud/servicedirectory/v1beta1
   documentation_uri: https://cloud.google.com/service-directory/
+- path: google/cloud/servicehealth/v1
+  rpc_documentation: https://cloud.google.com/service-health/docs/reference/rpc
 - path: google/cloud/shell/v1
   documentation_uri: https://cloud.google.com/shell/
+  rest_documentation: https://cloud.google.com/shell/docs/reference/rest
+  rpc_documentation: https://cloud.google.com/shell/docs/reference/rpc
 - path: google/cloud/speech/v1
   documentation_uri: https://cloud.google.com/speech-to-text/docs/
   new_issue_uri: https://issuetracker.google.com/savedsearches/559758
@@ -906,6 +991,8 @@
 - path: google/cloud/speech/v2
   documentation_uri: https://cloud.google.com/speech-to-text/docs/
   new_issue_uri: https://issuetracker.google.com/savedsearches/559758
+  rest_documentation: https://cloud.google.com/speech-to-text/docs/reference/rest
+  rpc_documentation: https://cloud.google.com/speech-to-text/docs/reference/rpc
 - path: google/cloud/sql/v1
   transports:
     python: grpc
@@ -920,6 +1007,8 @@
 - path: google/cloud/tasks/v2
   documentation_uri: https://cloud.google.com/tasks/docs/
   new_issue_uri: https://issuetracker.google.com/savedsearches/5433985
+  rest_documentation: https://cloud.google.com/tasks/docs/reference/rest
+  rpc_documentation: https://cloud.google.com/tasks/docs/reference/rpc
 - path: google/cloud/tasks/v2beta2
   documentation_uri: https://cloud.google.com/tasks/docs/
   new_issue_uri: https://issuetracker.google.com/savedsearches/5433985
@@ -934,6 +1023,8 @@
   new_issue_uri: https://issuetracker.google.com/savedsearches/5235428
   skip_rest_numeric_enums:
     - python
+  rest_documentation: https://cloud.google.com/text-to-speech/docs/reference/rest
+  rpc_documentation: https://cloud.google.com/text-to-speech/docs/reference/rpc
 - path: google/cloud/texttospeech/v1beta1
   documentation_uri: https://cloud.google.com/text-to-speech
   new_issue_uri: https://issuetracker.google.com/savedsearches/5235428
@@ -950,6 +1041,7 @@
     ruby: grpc
 - path: google/cloud/tpu/v2
   documentation_uri: https://cloud.google.com/tpu/
+  rest_documentation: https://cloud.google.com/tpu/docs/reference/rest
 - path: google/cloud/tpu/v2alpha1
   documentation_uri: https://cloud.google.com/tpu/
   skip_rest_numeric_enums:
@@ -964,6 +1056,8 @@
 - path: google/cloud/translate/v3
   documentation_uri: https://cloud.google.com/translate/docs/
   new_issue_uri: https://issuetracker.google.com/savedsearches/559749
+  rest_documentation: https://cloud.google.com/translate/docs/reference/rest
+  rpc_documentation: https://cloud.google.com/translate/docs/reference/rpc
 - path: google/cloud/translate/v3beta1
   documentation_uri: https://cloud.google.com/translate/docs/
   new_issue_uri: https://issuetracker.google.com/savedsearches/559749
@@ -983,9 +1077,13 @@
     ruby: grpc
 - path: google/cloud/video/transcoder/v1
   documentation_uri: https://cloud.google.com/transcoder
+  rest_documentation: https://cloud.google.com/transcoder/docs/reference/rest
+  rpc_documentation: https://cloud.google.com/transcoder/docs/reference/rpc
 - path: google/cloud/videointelligence/v1
   documentation_uri: https://cloud.google.com/video-intelligence/docs/
   new_issue_uri: https://issuetracker.google.com/savedsearches/5084810
+  rest_documentation: https://cloud.google.com/video-intelligence/docs/reference/rest
+  rpc_documentation: https://cloud.google.com/video-intelligence/docs/reference/rpc
 - path: google/cloud/videointelligence/v1beta2
   documentation_uri: https://cloud.google.com/video-intelligence/docs/
   new_issue_uri: https://issuetracker.google.com/savedsearches/5084810
@@ -1003,6 +1101,8 @@
 - path: google/cloud/vision/v1
   documentation_uri: https://cloud.google.com/vision/docs/
   new_issue_uri: https://issuetracker.google.com/issues?q=status:open%20componentid:187174
+  rest_documentation: https://cloud.google.com/vision/docs/reference/rest
+  rpc_documentation: https://cloud.google.com/vision/docs/reference/rpc
 - path: google/cloud/vision/v1p1beta1
   documentation_uri: https://cloud.google.com/vision/docs/
   new_issue_uri: https://issuetracker.google.com/issues?q=status:open%20componentid:187174
@@ -1017,6 +1117,7 @@
   new_issue_uri: https://issuetracker.google.com/issues?q=status:open%20componentid:187174
 - path: google/cloud/visionai/v1
   description: Vertex AI Vision is an AI-powered platform to ingest, analyze and store video data.
+  rpc_documentation: https://cloud.google.com/vision-ai/docs/reference/rpc
 - path: google/cloud/visionai/v1alpha1
   description: Vertex AI Vision is an AI-powered platform to ingest, analyze and store video data.
   documentation_uri: https://cloud.google.com/vision-ai/docs
@@ -1027,11 +1128,14 @@
   documentation_uri: https://cloud.google.com/vmware-engine/
   release_level:
     python: preview
+  rest_documentation: https://cloud.google.com/vmware-engine/docs/reference/rest
 - path: google/cloud/vpcaccess/v1
   documentation_uri: https://cloud.google.com/vpc/
 - path: google/cloud/webrisk/v1
   description: Web Risk is an enterprise security product that lets your client applications check URLs against Google's constantly updated lists of unsafe web resources.
   documentation_uri: https://cloud.google.com/web-risk/docs/
+  rest_documentation: https://cloud.google.com/web-risk/docs/reference/rest
+  rpc_documentation: https://cloud.google.com/web-risk/docs/reference/rpc
 - path: google/cloud/webrisk/v1beta1
   description: Web Risk is an enterprise security product that lets your client applications check URLs against Google's constantly updated lists of unsafe web resources.
   documentation_uri: https://cloud.google.com/web-risk/docs/
@@ -1053,6 +1157,7 @@
     go: grpc
     nodejs: grpc
     python: grpc
+  rest_documentation: https://cloud.google.com/workflows/docs/reference/rest
 - path: google/cloud/workflows/executions/v1beta
   documentation_uri: https://cloud.google.com/workflows/
   new_issue_uri: https://issuetracker.google.com/savedsearches/559729
@@ -1063,15 +1168,21 @@
 - path: google/cloud/workflows/v1
   documentation_uri: https://cloud.google.com/workflows/
   new_issue_uri: https://issuetracker.google.com/savedsearches/559729
+  rest_documentation: https://cloud.google.com/workflows/docs/reference/rest
 - path: google/cloud/workflows/v1beta
   documentation_uri: https://cloud.google.com/workflows/
   new_issue_uri: https://issuetracker.google.com/savedsearches/559729
+- path: google/cloud/workloadmanager/v1
+  rpc_documentation: https://docs.cloud.google.com/workload-manager/docs/reference/rest
 - path: google/cloud/workstations/v1
   release_level:
     java: stable
+  rest_documentation: https://cloud.google.com/workstations/docs/reference/rest
+  rpc_documentation: https://cloud.google.com/workstations/docs/reference/rpc
 - path: google/container/v1
   documentation_uri: https://cloud.google.com/kubernetes-engine/
   new_issue_uri: https://issuetracker.google.com/savedsearches/559746
+  rest_documentation: https://cloud.google.com/kubernetes-engine/docs/reference/rest
 - path: google/container/v1beta1
   documentation_uri: https://cloud.google.com/kubernetes-engine/
   new_issue_uri: https://issuetracker.google.com/savedsearches/559746
@@ -1084,14 +1195,20 @@
     ruby: grpc
 - path: google/dataflow/v1beta3
   documentation_uri: https://cloud.google.com/dataflow/
+  rest_documentation: https://cloud.google.com/dataflow/docs/reference/rest
+  rpc_documentation: https://cloud.google.com/dataflow/docs/reference/rpc
 - path: google/datastore/admin/v1
   documentation_uri: https://cloud.google.com/datastore
   new_issue_uri: https://issuetracker.google.com/savedsearches/559768
 - path: google/datastore/v1
   documentation_uri: https://cloud.google.com/datastore
   new_issue_uri: https://issuetracker.google.com/savedsearches/559768
+- path: google/devicesandservices/health/v4
+  rpc_documentation: https://developers.google.com/health/api/reference/rpc
 - path: google/devtools/artifactregistry/v1
   documentation_uri: https://cloud.google.com/artifact-registry
+  rest_documentation: https://cloud.google.com/artifact-registry/docs/reference/rest
+  rpc_documentation: https://cloud.google.com/artifact-registry/docs/reference/rpc
 - path: google/devtools/artifactregistry/v1beta2
   documentation_uri: https://cloud.google.com/artifact-registry
 - path: google/devtools/cloudbuild/v1
@@ -1239,8 +1356,12 @@
 - path: google/maps/routeoptimization/v1
   release_level:
     go: preview
+  rest_documentation: https://developers.google.com/maps/documentation/route-optimization/reference/rest/
+  rpc_documentation: https://developers.google.com/maps/documentation/route-optimization/reference/rpc
 - path: google/maps/routing/v2
   documentation_uri: https://mapsplatform.google.com/maps-products/#routes-section
+- path: google/maps/solar/v1
+  rpc_documentation: https://developers.google.com/maps/documentation/solar/reference/rest
 - path: google/monitoring/dashboard/v1
   documentation_uri: https://cloud.google.com/monitoring/dashboards/
   new_issue_uri: https://issuetracker.google.com/savedsearches/559785
@@ -1268,6 +1389,8 @@
     ruby: grpc
 - path: google/privacy/dlp/v2
   documentation_uri: https://cloud.google.com/dlp/docs/
+  rest_documentation: https://cloud.google.com/dlp/docs/reference/rest
+  rpc_documentation: https://cloud.google.com/dlp/docs/reference/rpc
 - path: google/protobuf
   description: Core Protobuf types used by most services.
 - path: google/rpc/context

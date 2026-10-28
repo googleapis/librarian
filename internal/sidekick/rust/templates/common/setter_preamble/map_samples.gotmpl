@@ -1,0 +1,236 @@
+{{/*
+Copyright 2025 Google LLC
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    https://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/}}
+{{- if .Codec.KeyField.IsString }}
+{{- if .Codec.ValueField.IsString }}
+/// # use {{ .Parent.Codec.NameInExamples }};
+/// let x = {{ .Parent.Codec.Name }}::new().set_{{ .Codec.SetterName }}([
+///     ("key0", "abc"),
+///     ("key1", "xyz"),
+/// ]);
+{{- else if .Codec.ValueField.IsBytes }}
+/// # use {{ .Parent.Codec.NameInExamples }};
+/// let x = {{ .Parent.Codec.Name }}::new().set_{{ .Codec.SetterName }}([
+///     ("key0", bytes::Bytes::from_static(b"abc")),
+///     ("key1", bytes::Bytes::from_static(b"xyz")),
+/// ]);
+{{- else if .Codec.ValueField.IsBool }}
+/// # use {{ .Parent.Codec.NameInExamples }};
+/// let x = {{ .Parent.Codec.Name }}::new().set_{{ .Codec.SetterName }}([
+///     ("key0", true),
+///     ("key1", false),
+/// ]);
+{{- else if .Codec.ValueField.IsLikeInt }}
+/// # use {{ .Parent.Codec.NameInExamples }};
+/// let x = {{ .Parent.Codec.Name }}::new().set_{{ .Codec.SetterName }}([
+///     ("key0", 123),
+///     ("key1", 456),
+/// ]);
+{{- else if .Codec.ValueField.IsLikeUInt }}
+/// # use {{ .Parent.Codec.NameInExamples }};
+/// let x = {{ .Parent.Codec.Name }}::new().set_{{ .Codec.SetterName }}([
+///     ("key0", 123_u32),
+///     ("key1", 456_u32),
+/// ]);
+{{- else if .Codec.ValueField.IsLikeFloat }}
+/// # use {{ .Parent.Codec.NameInExamples }};
+/// let x = {{ .Parent.Codec.Name }}::new().set_{{ .Codec.SetterName }}([
+///     ("key0", 123.5),
+///     ("key1", 456.5),
+/// ]);
+{{- else if .Codec.ValueField.IsEnum }}
+/// # use {{ .Parent.Codec.NameInExamples }};
+/// use {{ .Codec.ValueField.EnumType.Codec.NameInExamples }};
+/// let x = {{ .Parent.Codec.Name }}::new().set_{{ .Codec.SetterName }}([
+{{- range .Codec.ValueField.EnumType.ValuesForExamples }}
+///     ("key{{ .Index }}", {{ .EnumValue.Codec.EnumType }}::{{ .EnumValue.Codec.VariantName }}),
+{{- end }}
+/// ]);
+{{- else if .Codec.ValueField.IsObject }}
+/// # use {{ .Parent.Codec.NameInExamples }};
+{{- if not .Codec.FieldTypeIsParentType }}
+/// use {{ .Codec.ValueField.MessageType.Codec.NameInExamples }}{{- if .Codec.AliasInExamples }} as {{ .Codec.AliasInExamples }}{{- end }};
+{{- end }}
+/// let x = {{ .Parent.Codec.Name }}::new().set_{{ .Codec.SetterName }}([
+///     ("key0", {{ .Codec.MessageNameInExamples }}::default()/* use setters */),
+///     ("key1", {{ .Codec.MessageNameInExamples }}::default()/* use (different) setters */),
+/// ]);
+{{- end }}
+{{- else if .Codec.KeyField.IsBool }}
+{{- if .Codec.ValueField.IsString }}
+/// # use {{ .Parent.Codec.NameInExamples }};
+/// let x = {{ .Parent.Codec.Name }}::new().set_{{ .Codec.SetterName }}([
+///     (true, "abc"),
+///     (false, "xyz"),
+/// ]);
+{{- else if .Codec.ValueField.IsBytes }}
+/// # use {{ .Parent.Codec.NameInExamples }};
+/// let x = {{ .Parent.Codec.Name }}::new().set_{{ .Codec.SetterName }}([
+///     (true, bytes::Bytes::from_static(b"abc")),
+///     (false, bytes::Bytes::from_static(b"xyz")),
+/// ]);
+{{- else if .Codec.ValueField.IsBool }}
+/// # use {{ .Parent.Codec.NameInExamples }};
+/// let x = {{ .Parent.Codec.Name }}::new().set_{{ .Codec.SetterName }}([
+///     (true, true),
+///     (false, false),
+/// ]);
+{{- else if .Codec.ValueField.IsLikeInt }}
+/// # use {{ .Parent.Codec.NameInExamples }};
+/// let x = {{ .Parent.Codec.Name }}::new().set_{{ .Codec.SetterName }}([
+///     (true, 123),
+///     (false, 456),
+/// ]);
+{{- else if .Codec.ValueField.IsLikeUInt }}
+/// # use {{ .Parent.Codec.NameInExamples }};
+/// let x = {{ .Parent.Codec.Name }}::new().set_{{ .Codec.SetterName }}([
+///     (true, 123_u32),
+///     (false, 456_u32),
+/// ]);
+{{- else if .Codec.ValueField.IsLikeFloat }}
+/// # use {{ .Parent.Codec.NameInExamples }};
+/// let x = {{ .Parent.Codec.Name }}::new().set_{{ .Codec.SetterName }}([
+///     (true, 123.5),
+///     (false, 456.5),
+/// ]);
+{{- else if .Codec.ValueField.IsEnum }}
+/// # use {{ .Parent.Codec.NameInExamples }};
+/// use {{ .Codec.ValueField.EnumType.Codec.NameInExamples }};
+/// let x = {{ .Parent.Codec.Name }}::new().set_{{ .Codec.SetterName }}([
+{{- range .Codec.ValueField.EnumType.ValuesForExamples }}
+///     (true, {{ .EnumValue.Codec.EnumType }}::{{ .EnumValue.Codec.VariantName }}),
+{{- end }}
+/// ]);
+{{- else if .Codec.ValueField.IsObject }}
+/// # use {{ .Parent.Codec.NameInExamples }};
+{{- if not .Codec.FieldTypeIsParentType }}
+/// use {{ .Codec.ValueField.MessageType.Codec.NameInExamples }}{{- if .Codec.AliasInExamples }} as {{ .Codec.AliasInExamples }}{{- end }};
+{{- end }}
+/// let x = {{ .Parent.Codec.Name }}::new().set_{{ .Codec.SetterName }}([
+///     (true, {{ .Codec.MessageNameInExamples }}::default()/* use setters */),
+///     (false, {{ .Codec.MessageNameInExamples }}::default()/* use (different) setters */),
+/// ]);
+{{- end }}
+{{- else if .Codec.KeyField.IsLikeInt }}
+{{- if .Codec.ValueField.IsString }}
+/// # use {{ .Parent.Codec.NameInExamples }};
+/// let x = {{ .Parent.Codec.Name }}::new().set_{{ .Codec.SetterName }}([
+///     (0, "abc"),
+///     (1, "xyz"),
+/// ]);
+{{- else if .Codec.ValueField.IsBytes }}
+/// # use {{ .Parent.Codec.NameInExamples }};
+/// let x = {{ .Parent.Codec.Name }}::new().set_{{ .Codec.SetterName }}([
+///     (0, bytes::Bytes::from_static(b"abc")),
+///     (1, bytes::Bytes::from_static(b"xyz")),
+/// ]);
+{{- else if .Codec.ValueField.IsBool }}
+/// # use {{ .Parent.Codec.NameInExamples }};
+/// let x = {{ .Parent.Codec.Name }}::new().set_{{ .Codec.SetterName }}([
+///     (0, true),
+///     (1, false),
+/// ]);
+{{- else if .Codec.ValueField.IsLikeInt }}
+/// # use {{ .Parent.Codec.NameInExamples }};
+/// let x = {{ .Parent.Codec.Name }}::new().set_{{ .Codec.SetterName }}([
+///     (0, 123),
+///     (1, 456),
+/// ]);
+{{- else if .Codec.ValueField.IsLikeUInt }}
+/// # use {{ .Parent.Codec.NameInExamples }};
+/// let x = {{ .Parent.Codec.Name }}::new().set_{{ .Codec.SetterName }}([
+///     (0, 123_u32),
+///     (1, 456_u32),
+/// ]);
+{{- else if .Codec.ValueField.IsLikeFloat }}
+/// # use {{ .Parent.Codec.NameInExamples }};
+/// let x = {{ .Parent.Codec.Name }}::new().set_{{ .Codec.SetterName }}([
+///     (0, 123.5),
+///     (1, 456.5),
+/// ]);
+{{- else if .Codec.ValueField.IsEnum }}
+/// # use {{ .Parent.Codec.NameInExamples }};
+/// use {{ .Codec.ValueField.EnumType.Codec.NameInExamples }};
+/// let x = {{ .Parent.Codec.Name }}::new().set_{{ .Codec.SetterName }}([
+{{- range .Codec.ValueField.EnumType.ValuesForExamples }}
+///     ({{ .Index }}, {{ .EnumValue.Codec.EnumType }}::{{ .EnumValue.Codec.VariantName }}),
+{{- end }}
+/// ]);
+{{- else if .Codec.ValueField.IsObject }}
+/// # use {{ .Parent.Codec.NameInExamples }};
+{{- if not .Codec.FieldTypeIsParentType }}
+/// use {{ .Codec.ValueField.MessageType.Codec.NameInExamples }}{{- if .Codec.AliasInExamples }} as {{ .Codec.AliasInExamples }}{{- end }};
+{{- end }}
+/// let x = {{ .Parent.Codec.Name }}::new().set_{{ .Codec.SetterName }}([
+///     (0, {{ .Codec.MessageNameInExamples }}::default()/* use setters */),
+///     (1, {{ .Codec.MessageNameInExamples }}::default()/* use (different) setters */),
+/// ]);
+{{- end }}
+{{- else if .Codec.KeyField.IsLikeUInt }}
+{{- if .Codec.ValueField.IsString }}
+/// # use {{ .Parent.Codec.NameInExamples }};
+/// let x = {{ .Parent.Codec.Name }}::new().set_{{ .Codec.SetterName }}([
+///     (0_u32, "abc"),
+///     (1_u32, "xyz"),
+/// ]);
+{{- else if .Codec.ValueField.IsBytes }}
+/// # use {{ .Parent.Codec.NameInExamples }};
+/// let x = {{ .Parent.Codec.Name }}::new().set_{{ .Codec.SetterName }}([
+///     (0_u32, bytes::Bytes::from_static(b"abc")),
+///     (1_u32, bytes::Bytes::from_static(b"xyz")),
+/// ]);
+{{- else if .Codec.ValueField.IsBool }}
+/// # use {{ .Parent.Codec.NameInExamples }};
+/// let x = {{ .Parent.Codec.Name }}::new().set_{{ .Codec.SetterName }}([
+///     (0_u32, true),
+///     (1_u32, false),
+/// ]);
+{{- else if .Codec.ValueField.IsLikeInt }}
+/// # use {{ .Parent.Codec.NameInExamples }};
+/// let x = {{ .Parent.Codec.Name }}::new().set_{{ .Codec.SetterName }}([
+///     (0_u32, 123),
+///     (1_u32, 456),
+/// ]);
+{{- else if .Codec.ValueField.IsLikeUInt }}
+/// # use {{ .Parent.Codec.NameInExamples }};
+/// let x = {{ .Parent.Codec.Name }}::new().set_{{ .Codec.SetterName }}([
+///     (0_u32, 123_u32),
+///     (1_u32, 456_u32),
+/// ]);
+{{- else if .Codec.ValueField.IsLikeFloat }}
+/// # use {{ .Parent.Codec.NameInExamples }};
+/// let x = {{ .Parent.Codec.Name }}::new().set_{{ .Codec.SetterName }}([
+///     (0_u32, 123.5),
+///     (1_u32, 456.5),
+/// ]);
+{{- else if .Codec.ValueField.IsEnum }}
+/// # use {{ .Parent.Codec.NameInExamples }};
+/// use {{ .Codec.ValueField.EnumType.Codec.NameInExamples }};
+/// let x = {{ .Parent.Codec.Name }}::new().set_{{ .Codec.SetterName }}([
+{{- range .Codec.ValueField.EnumType.ValuesForExamples }}
+///     ({{ .Index }}_u32, {{ .EnumValue.Codec.EnumType }}::{{ .EnumValue.Codec.VariantName }}),
+{{- end }}
+/// ]);
+{{- else if .Codec.ValueField.IsObject }}
+/// # use {{ .Parent.Codec.NameInExamples }};
+{{- if not .Codec.FieldTypeIsParentType }}
+/// use {{ .Codec.ValueField.MessageType.Codec.NameInExamples }}{{- if .Codec.AliasInExamples }} as {{ .Codec.AliasInExamples }}{{- end }};
+{{- end }}
+/// let x = {{ .Parent.Codec.Name }}::new().set_{{ .Codec.SetterName }}([
+///     (0_u32, {{ .Codec.MessageNameInExamples }}::default()/* use setters */),
+///     (1_u32, {{ .Codec.MessageNameInExamples }}::default()/* use (different) setters */),
+/// ]);
+{{- end }}
+{{- end }}

@@ -47,19 +47,15 @@ const (
 
 type modelAnnotations struct {
 	PackageName                string
+	PackageModuleName          string
 	PackageVersion             string
 	ReleaseLevel               string
 	PackageNamespace           string
 	RequiredPackages           []string
 	ExternPackages             []string
 	HasLROs                    bool
-	HasBidiStreaming           bool
-	HasServerStreaming         bool
-	HasStreaming               bool
+	ProstPath                  string
 	IncludeRpcStatusConversion bool
-	BidiStreamingServices      []*api.Service
-	ServerStreamingServices    []*api.Service
-	StreamingServices          []*api.Service
 	CopyrightYear              string
 	BoilerPlate                []string
 	DefaultHost                string
@@ -90,6 +86,8 @@ type modelAnnotations struct {
 	ExtraFeatures []string
 	// A list of additional modules loaded by the `lib.rs` file.
 	ExtraModules []string
+	// A list of additional `pub(crate)` modules loaded by the `lib.rs` file.
+	InternalModules []string
 	// If true, at lease one service has a method we cannot wrap (yet).
 	Incomplete bool
 	// If true, the generator will produce reference documentation samples for message fields setters.
@@ -103,6 +101,8 @@ type modelAnnotations struct {
 	LroStubOptions bool
 	// If true, the generated builders's visibility should be restricted to the crate.
 	InternalBuilders bool
+	// The Rust type used for the inner gRPC client in generated transports.
+	GrpcClient string
 	// The service to use for the package-level quickstart sample.
 	// Rust generation may decide not to generate some services,
 	// e.g. if the methods have no bindings. On occasion the service
@@ -130,6 +130,26 @@ func (m *modelAnnotations) HasServices() bool {
 	return len(m.Services) > 0
 }
 
+// HasGrpc returns true if any service in the model has at least one gRPC method.
+func (m *modelAnnotations) HasGrpc() bool {
+	return slices.ContainsFunc(m.Services, func(s *api.Service) bool {
+		if ann, ok := s.Codec.(*serviceAnnotations); ok {
+			return ann.HasGrpc()
+		}
+		return false
+	})
+}
+
+// HasHttp returns true if any service in the model has at least one HTTP method.
+func (m *modelAnnotations) HasHttp() bool {
+	return slices.ContainsFunc(m.Services, func(s *api.Service) bool {
+		if ann, ok := s.Codec.(*serviceAnnotations); ok {
+			return ann.HasHttp()
+		}
+		return false
+	})
+}
+
 // IsGaxiCrate returns true if we handle references to `gaxi` traits from within the `gaxi` crate, by
 // injecting some ad-hoc code.
 func (m *modelAnnotations) IsGaxiCrate() bool {
@@ -142,6 +162,35 @@ func (m *modelAnnotations) ReleaseLevelIsGA() bool {
 	return m.ReleaseLevel == "GA" || m.ReleaseLevel == "stable"
 }
 
+// GrpcServices returns the subset of services that have at least one gRPC method.
+func (m *modelAnnotations) GrpcServices() []*api.Service {
+	return language.FilterSlice(m.Services, func(s *api.Service) bool {
+		if ann, ok := s.Codec.(*serviceAnnotations); ok {
+			return ann.HasGrpc()
+		}
+		return false
+	})
+}
+
+// GrpcRootTypeIDs returns the root message type IDs for all generated gRPC methods in the model.
+func GrpcRootTypeIDs(model *api.API) []string {
+	var rootTypeIDs []string
+	for _, s := range model.Services {
+		for _, m := range s.Methods {
+			if ann, ok := m.Codec.(*methodAnnotation); ok && ann.IsGrpc {
+				if m.InputTypeID != "" {
+					rootTypeIDs = append(rootTypeIDs, m.InputTypeID)
+				}
+				if m.OutputTypeID != "" {
+					rootTypeIDs = append(rootTypeIDs, m.OutputTypeID)
+				}
+			}
+		}
+	}
+	slices.Sort(rootTypeIDs)
+	return slices.Compact(rootTypeIDs)
+}
+
 // annotateModel creates a struct used as input for Mustache templates.
 // Fields and methods defined in this struct directly correspond to Mustache
 // tags. For example, the Mustache tag {{#Services}} uses the
@@ -149,7 +198,7 @@ func (m *modelAnnotations) ReleaseLevelIsGA() bool {
 func annotateModel(model *api.API, codec *codec) (*modelAnnotations, error) {
 	codec.hasServices = len(model.Services) > 0
 
-	resolveUsedPackages(model, codec.extraPackages, codec.hasStreaming(model))
+	resolveUsedPackages(model, codec.extraPackages, codec.hasGrpc(model))
 	// Annotate enums and messages that we intend to generate. In the
 	// process we discover the external dependencies and trim the list of
 	// packages used by this API.
@@ -163,10 +212,6 @@ func annotateModel(model *api.API, codec *codec) (*modelAnnotations, error) {
 		if err := codec.annotateEnum(e, model, true); err != nil {
 			return nil, err
 		}
-		// ExternalEnums (e.g. google.type.Date) are populated for convert-prost generation in hybrid crates.
-		// Override RelativeName so ToProto and FromProto resolve to crate::prost::<pkg>::<TypeName>.
-		ann := e.Codec.(*enumAnnotation)
-		ann.RelativeName = "crate::prost::" + packageToModuleName(e.Package) + "::" + enumName(e)
 	}
 	for _, m := range model.Messages {
 		if err := codec.annotateMessage(m, model, true); err != nil {
@@ -177,10 +222,6 @@ func annotateModel(model *api.API, codec *codec) (*modelAnnotations, error) {
 		if err := codec.annotateMessage(m, model, true); err != nil {
 			return nil, err
 		}
-		// ExternalMessages (e.g. google.type.LatLng) are populated for convert-prost generation in hybrid crates.
-		// Override RelativeName so ToProto and FromProto resolve to crate::prost::<pkg>::<TypeName>.
-		ann := m.Codec.(*messageAnnotation)
-		ann.RelativeName = "crate::prost::" + packageToModuleName(m.Package) + "::" + toPascal(m.Name)
 	}
 	// External enums and messages get only basic annotations
 	// used for sample generation.
@@ -235,6 +276,25 @@ func annotateModel(model *api.API, codec *codec) (*modelAnnotations, error) {
 		}
 	}
 
+	// ExternalEnums (e.g. google.type.Date) and ExternalMessages (e.g. google.api.HttpBody)
+	// are populated for convert-prost generation in hybrid crates.
+	// Override ProstRelativeName after all method annotations so ToProto and FromProto
+	// resolve to crate::prost::<pkg>::<TypeName>.
+	prostPrefix := "crate::prost::"
+	if codec.prostPath != "" {
+		prostPrefix = codec.prostPath + "::"
+	}
+	for _, e := range model.ExternalEnums {
+		if ann, ok := e.Codec.(*enumAnnotation); ok {
+			ann.ProstRelativeName = prostPrefix + packageToModuleName(e.Package) + "::" + prostEnumRelativePath(e)
+		}
+	}
+	for _, m := range model.ExternalMessages {
+		if ann, ok := m.Codec.(*messageAnnotation); ok {
+			ann.ProstRelativeName = prostPrefix + packageToModuleName(m.Package) + "::" + prostMessageRelativePath(m)
+		}
+	}
+
 	servicesSubset := language.FilterSlice(model.Services, func(s *api.Service) bool {
 		return slices.ContainsFunc(s.Methods, func(m *api.Method) bool { return codec.generateMethod(m) })
 	})
@@ -277,26 +337,13 @@ func annotateModel(model *api.API, codec *codec) (*modelAnnotations, error) {
 		}
 	}
 
-	var bidiStreamingServices []*api.Service
-	var serverStreamingServices []*api.Service
-	var streamingServices []*api.Service
-	for _, s := range servicesSubset {
-		isBidi := codec.includeBidiStreamingMethods && s.HasBidiStreaming()
-		isServer := codec.includeServerStreamingMethods && s.HasServerSideStreaming()
-		if isBidi {
-			bidiStreamingServices = append(bidiStreamingServices, s)
+	hasGrpc := slices.ContainsFunc(servicesSubset, func(s *api.Service) bool {
+		if sAnn, ok := s.Codec.(*serviceAnnotations); ok {
+			return sAnn.HasGrpc()
 		}
-		if isServer {
-			serverStreamingServices = append(serverStreamingServices, s)
-		}
-		if isBidi || isServer {
-			streamingServices = append(streamingServices, s)
-		}
-	}
-	hasBidiStreaming := codec.templateOverride == "" && len(bidiStreamingServices) > 0
-	hasServerStreaming := codec.templateOverride == "" && len(serverStreamingServices) > 0
-	hasStreaming := hasBidiStreaming || hasServerStreaming
-	if hasStreaming {
+		return false
+	})
+	if hasGrpc {
 		for _, pkg := range codec.extraPackages {
 			if pkg.name == gaxiPackageName {
 				if !slices.Contains(pkg.features, "_internal-grpc-client") {
@@ -316,22 +363,24 @@ func annotateModel(model *api.API, codec *codec) (*modelAnnotations, error) {
 	if hasDiscoveryLROs && perServiceFeatures {
 		extraFeatures = []string{lroOperationFeature}
 	}
+	var extraModules []string
+	for _, mod := range codec.extraModules {
+		if !slices.Contains(codec.internalModules, mod) {
+			extraModules = append(extraModules, mod)
+		}
+	}
 
 	ann := &modelAnnotations{
 		PackageName:                codec.packageName(model),
+		PackageModuleName:          packageToModuleName(model.PackageName),
 		PackageNamespace:           codec.rootModuleName(model),
 		PackageVersion:             codec.version,
 		ReleaseLevel:               codec.releaseLevel,
 		RequiredPackages:           requiredPackages(codec.extraPackages),
 		ExternPackages:             externPackages(codec.extraPackages),
 		HasLROs:                    hasLROs,
-		HasBidiStreaming:           hasBidiStreaming,
-		HasServerStreaming:         hasServerStreaming,
-		HasStreaming:               hasStreaming,
+		ProstPath:                  codec.prostPath,
 		IncludeRpcStatusConversion: includeRpcStatusConversion,
-		BidiStreamingServices:      bidiStreamingServices,
-		ServerStreamingServices:    serverStreamingServices,
-		StreamingServices:          streamingServices,
 		CopyrightYear:              codec.generationYear,
 		BoilerPlate: append(license.HeaderBulk(),
 			"",
@@ -345,7 +394,8 @@ func annotateModel(model *api.API, codec *codec) (*modelAnnotations, error) {
 		DisabledClippyWarnings:  codec.disabledClippyWarnings,
 		PerServiceFeatures:      perServiceFeatures,
 		ExtraFeatures:           extraFeatures,
-		ExtraModules:            codec.extraModules,
+		ExtraModules:            extraModules,
+		InternalModules:         codec.internalModules,
 		Incomplete: slices.ContainsFunc(model.Services, func(s *api.Service) bool {
 			return slices.ContainsFunc(s.Methods, func(m *api.Method) bool { return !codec.generateMethod(m) })
 		}),
@@ -354,6 +404,7 @@ func annotateModel(model *api.API, codec *codec) (*modelAnnotations, error) {
 		DetailedTracingAttributes: codec.detailedTracingAttributes,
 		LroStubOptions:            codec.lroStubOptions,
 		InternalBuilders:          codec.internalBuilders,
+		GrpcClient:                codec.grpcClient,
 		QuickstartService:         quickstartService,
 	}
 

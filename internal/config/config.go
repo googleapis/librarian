@@ -59,6 +59,11 @@ type Config struct {
 
 // Sources references external source repositories.
 type Sources struct {
+	// Comment is an optional comment explaining configuration choices.
+	// It supports UTF-8 text. Multiline comments are supported, but may
+	// be reformatted when tidying.
+	Comment string `yaml:"comment,omitempty"`
+
 	// Conformance is the path to the `conformance-tests` repository, used as include directory for `protoc`.
 	Conformance *Source `yaml:"conformance,omitempty"`
 
@@ -94,6 +99,11 @@ type Source struct {
 
 // Tools defines required tools.
 type Tools struct {
+	// Comment is an optional comment explaining configuration choices.
+	// It supports UTF-8 text. Multiline comments are supported, but may
+	// be reformatted when tidying.
+	Comment string `yaml:"comment,omitempty"`
+
 	// Cargo defines tools to install via cargo.
 	Cargo []*CargoTool `yaml:"cargo,omitempty"`
 
@@ -285,7 +295,7 @@ type Default struct {
 	Java *JavaDefault `yaml:"java,omitempty"`
 
 	// Nodejs contains Node.js-specific default configuration.
-	Nodejs *NodejsPackage `yaml:"nodejs,omitempty"`
+	Nodejs *NodejsDefault `yaml:"nodejs,omitempty"`
 
 	// PHP contains PHP-specific default configuration.
 	PHP *PHPDefault `yaml:"php,omitempty"`
@@ -311,6 +321,17 @@ type Library struct {
 
 	// Version is the library version.
 	Version string `yaml:"version,omitempty"`
+
+	// Comment is an optional comment explaining configuration choices.
+	// It supports UTF-8 text. Multiline comments are supported, but may
+	// be reformatted when tidying.
+	//
+	// For example, it can be used in pair with [Library.SkipGenerate] to record
+	// a reason or link to a bug:
+	//
+	//	skip_generate: true
+	//	comment: "Generation is skipped due to https://github.com/googleapis/librarian/issues/1234"
+	Comment string `yaml:"comment,omitempty"`
 
 	// Preview signifies that this API has a preview variant, and it contains
 	// overrides specific to the preview API variant. This is merged with the
@@ -385,9 +406,6 @@ type Library struct {
 	// Nodejs contains Node.js-specific library configuration.
 	Nodejs *NodejsPackage `yaml:"nodejs,omitempty"`
 
-	// PHP contains PHP-specific library configuration.
-	PHP *PHPPackage `yaml:"php,omitempty"`
-
 	// Python contains Python-specific library configuration.
 	Python *PythonPackage `yaml:"python,omitempty"`
 
@@ -415,22 +433,22 @@ type Postprocess struct {
 	// RemoveFile contains glob patterns of files to remove.
 	RemoveFile []string `yaml:"remove_file,omitempty"`
 
-	// MethodOperations contains method-level operations (`delete`, `duplicate`, `deprecate`).
+	// MethodOperations contains method-level operations (`delete`, `copy_and_rename`, `deprecate`).
 	MethodOperations []MethodOperation `yaml:"method_operations,omitempty"`
 }
 
-// MethodOperation represents a method-level operation like delete, duplicate, or deprecate.
+// MethodOperation represents a method-level operation like delete, copy_and_rename, or deprecate.
 type MethodOperation struct {
 	// Path specifies the relative file path to modify.
 	Path string `yaml:"path"`
 
-	// Action specifies the operation (`delete`, `duplicate`, or `deprecate`).
+	// Action specifies the operation (`delete`, `copy_and_rename`, or `deprecate`).
 	Action string `yaml:"action"`
 
 	// FuncName specifies the target method name.
 	FuncName string `yaml:"func_name"`
 
-	// NewName specifies the new method name for duplicate operations.
+	// NewName specifies the new method name for copy_and_rename operations.
 	NewName string `yaml:"new_name,omitempty"`
 
 	// DeprecationMessage specifies the deprecation message for deprecate operations.

@@ -43,14 +43,6 @@ func GenerateStorage(
 	controlModule *config.SwiftModule,
 	library *config.Library,
 ) error {
-	provider := func(name string) (string, error) {
-		contents, err := templates.ReadFile(name)
-		if err != nil {
-			return "", err
-		}
-		return string(contents), nil
-	}
-
 	storageCodec, err := newCodec(storageModel, library, storageModule, outdir)
 	if err != nil {
 		return err
@@ -88,8 +80,10 @@ func GenerateStorage(
 	for _, model := range []*api.API{storageModel, controlModel} {
 		for _, s := range model.Services {
 			if sa, ok := s.Codec.(*serviceAnnotations); ok {
-				for _, imp := range sa.ServiceImports() {
-					if !importSet[imp] && imp != "GoogleCloudGax" && imp != "GoogleCloudAuth" && imp != "Foundation" {
+				for _, imp := range sa.PublicServiceImports() {
+					// StorageControl only defines unified methods for bucket, folder, and IAM operations,
+					// none of which expose GoogleWKT types in their public signatures.
+					if !importSet[imp] && imp != "GoogleGax" && imp != "GoogleAuth" && imp != "Foundation" && imp != "GoogleWKT" {
 						importSet[imp] = true
 						serviceImports = append(serviceImports, imp)
 					}
@@ -124,8 +118,8 @@ func GenerateStorage(
 
 	generatedFiles := language.WalkTemplatesDir(templates, "templates/storage")
 	generatedFiles = append(generatedFiles, language.GeneratedFile{
-		TemplatePath: "templates/common/clients.swift.mustache",
+		TemplatePath: "templates/common/clients.swift.gotmpl",
 		OutputPath:   "Clients.swift",
 	})
-	return language.GenerateFromModel(outdir, mergedModel, provider, generatedFiles)
+	return parsedTemplates.GenerateFromModel(outdir, mergedModel, generatedFiles)
 }

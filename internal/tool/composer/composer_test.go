@@ -28,7 +28,6 @@ import (
 )
 
 func TestInstall(t *testing.T) {
-	testhelper.RequireCommand(t, "composer")
 	cache := t.TempDir()
 	t.Setenv("LIBRARIAN_CACHE", cache)
 	repoDir := filepath.Join(cache, "github.com/googleapis/gapic-generator-php@1.0.0")
@@ -79,7 +78,6 @@ func TestInstall_Error(t *testing.T) {
 }
 
 func TestInstall_NoEntrypoint(t *testing.T) {
-	testhelper.RequireCommand(t, "composer")
 	cache := t.TempDir()
 	t.Setenv("LIBRARIAN_CACHE", cache)
 	repoDir := filepath.Join(cache, "github.com/googleapis/google-cloud-php@1.0.0")
@@ -253,7 +251,6 @@ func TestVerify_Error(t *testing.T) {
 }
 
 func TestInstall_LocalPath(t *testing.T) {
-	testhelper.RequireCommand(t, "composer")
 	bin := t.TempDir()
 	// Create a dummy composer executable that just exits 0 to simulate success.
 	testhelper.WriteExecutable(t, filepath.Join(bin, "composer"), "#!/bin/sh\nexit 0\n")
@@ -287,7 +284,6 @@ func TestInstall_LocalPath(t *testing.T) {
 }
 
 func TestInstall_LocalPath_Error(t *testing.T) {
-	testhelper.RequireCommand(t, "composer")
 	bin := t.TempDir()
 	// Create a dummy composer executable that exits 1 to simulate failure.
 	testhelper.WriteExecutable(t, filepath.Join(bin, "composer"), "#!/bin/sh\nexit 1\n")

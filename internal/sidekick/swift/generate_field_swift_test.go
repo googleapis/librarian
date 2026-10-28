@@ -29,33 +29,23 @@ func TestGenerateField_InitFromDecoder(t *testing.T) {
 	outDir := t.TempDir()
 
 	// Field 1: Normal field with JSONName override to trigger CustomSerialization
-	field1 := &api.Field{
-		Name:          "normal_field",
-		Documentation: "A normal field.",
-		ID:            ".test.TestMessage.normal_field",
-		Typez:         api.TypezString,
-		JSONName:      "normal_field", // Differs from camelCase "normalField"
-	}
+	field1 := api.NewTestField("normal_field").
+		WithType(api.TypezString).
+		WithJSONName("normal_field"). // Differs from camelCase "normalField"
+		WithDocumentation("A normal field.")
 
 	// Field 2: Optional field with JSONName override
-	field2 := &api.Field{
-		Name:          "optional_field",
-		Documentation: "An optional field.",
-		ID:            ".test.TestMessage.optional_field",
-		Typez:         api.TypezString,
-		Optional:      true,
-		JSONName:      "optional_field", // Differs from camelCase "optionalField"
-	}
+	field2 := api.NewTestField("optional_field").
+		WithType(api.TypezString).
+		WithOptional().
+		WithJSONName("optional_field"). // Differs from camelCase "optionalField"
+		WithDocumentation("An optional field.")
 
-	msg := &api.Message{
-		Name:    "TestMessage",
-		Package: "google.cloud.test.v1",
-		ID:      ".google.cloud.test.v1.TestMessage",
-		Fields:  []*api.Field{field1, field2},
-	}
+	msg := api.NewTestMessage("TestMessage").
+		WithPackage("google.cloud.test.v1").
+		WithFields(field1, field2)
 
-	model := api.NewTestAPI([]*api.Message{msg}, []*api.Enum{}, []*api.Service{})
-	model.PackageName = "google.cloud.test.v1"
+	model := api.NewTestAPI([]*api.Message{msg}, nil, nil)
 
 	library := &config.Library{
 		Swift: swiftConfig(t, nil),
@@ -73,12 +63,18 @@ func TestGenerateField_InitFromDecoder(t *testing.T) {
 	}
 	contentStr := string(content)
 
-	// Verify init(from decoder: Decoder) content
-	gotBlock := extractBlock(t, contentStr, "  public init(from decoder: Decoder) throws {", "\n  }")
-	wantBlock := `  public init(from decoder: Decoder) throws {
+	// Verify init(from decoder: any Decoder) content
+	gotBlock := extractBlock(t, contentStr, "  public init(from decoder: any Decoder) throws {", "\n  }")
+	wantBlock := `  public init(from decoder: any Decoder) throws {
     let container = try decoder.container(keyedBy: CodingKeys.self)
-    self.normalField = try container.decode(Swift.String.self, forKey: .normalField)
+    if let value = try container.decodeIfPresent(Swift.String.self, forKey: .normalField) {
+      self.normalField = value
+    }
     self.optionalField = try container.decodeIfPresent(Swift.String.self, forKey: .optionalField)
+    for key in container.allKeys where !CodingKeys._knownKeys.contains(key.stringValue) {
+      self._unknownFields.json[key.stringValue] = try container.decode(
+        GoogleWKT.WKTValue.self, forKey: key)
+    }
   }`
 
 	if diff := cmp.Diff(wantBlock, gotBlock); diff != "" {
@@ -89,38 +85,24 @@ func TestGenerateField_InitFromDecoder(t *testing.T) {
 func TestGenerateField_DocComments(t *testing.T) {
 	outDir := t.TempDir()
 
-	field1 := &api.Field{
-		Name:          "normal_field",
-		Documentation: "Documentation for normal_field.",
-		ID:            ".google.cloud.test.v1.TestMessage.normal_field",
-		Typez:         api.TypezString,
-	}
+	field1 := api.NewTestField("normal_field").
+		WithType(api.TypezString).
+		WithDocumentation("Documentation for normal_field.")
 
-	field2 := &api.Field{
-		Name:          "oneof_field",
-		Documentation: "Documentation for oneof_field.",
-		ID:            ".google.cloud.test.v1.TestMessage.oneof_field",
-		Typez:         api.TypezString,
-		IsOneOf:       true,
-	}
+	field2 := api.NewTestField("oneof_field").
+		WithType(api.TypezString).
+		WithDocumentation("Documentation for oneof_field.")
 
-	oneof := &api.OneOf{
-		Name:          "my_oneof",
-		Documentation: "Documentation for my_oneof.",
-		Fields:        []*api.Field{field2},
-	}
-	field2.Group = oneof
+	oneof := api.NewTestOneOf("my_oneof").
+		WithFields(field2).
+		WithDocumentation("Documentation for my_oneof.")
 
-	msg := &api.Message{
-		Name:    "TestMessage",
-		Package: "google.cloud.test.v1",
-		ID:      ".google.cloud.test.v1.TestMessage",
-		Fields:  []*api.Field{field1, field2},
-		OneOfs:  []*api.OneOf{oneof},
-	}
+	msg := api.NewTestMessage("TestMessage").
+		WithPackage("google.cloud.test.v1").
+		WithFields(field1).
+		WithOneOfs(oneof)
 
-	model := api.NewTestAPI([]*api.Message{msg}, []*api.Enum{}, []*api.Service{})
-	model.PackageName = "google.cloud.test.v1"
+	model := api.NewTestAPI([]*api.Message{msg}, nil, nil)
 
 	library := &config.Library{}
 	if err := Generate(t.Context(), model, outDir, library, nil); err != nil {
@@ -142,8 +124,8 @@ func TestGenerateField_DocComments(t *testing.T) {
 	}
 
 	// Verify oneof documentation in the message
-	want = "  /// Documentation for my_oneof.\n  public var myOneof: OneOf_MyOneof?"
-	got = extractBlock(t, contentStr, "  /// Documentation for my_oneof.", "public var myOneof: OneOf_MyOneof?")
+	want = "  /// Documentation for my_oneof.\n  public var myOneof: MyOneofOneOf?"
+	got = extractBlock(t, contentStr, "  /// Documentation for my_oneof.", "public var myOneof: MyOneofOneOf?")
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}

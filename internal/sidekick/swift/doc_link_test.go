@@ -17,58 +17,40 @@ package swift
 import (
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/sidekick/api"
 )
 
 func TestDocLink(t *testing.T) {
-	enumValue := &api.EnumValue{
-		Name: "ENUM_VALUE",
-		ID:   ".test.v1.SomeMessage.SomeEnum.ENUM_VALUE",
-	}
-	someEnum := &api.Enum{
-		Name:    "SomeEnum",
-		ID:      ".test.v1.SomeMessage.SomeEnum",
-		Values:  []*api.EnumValue{enumValue},
-		Package: "test.v1",
-	}
-	enumValue.Parent = someEnum
-	response := &api.Field{
-		Name:    "response",
-		ID:      ".test.v1.SomeMessage.response",
-		IsOneOf: true,
-	}
-	errorz := &api.Field{
-		Name:    "error",
-		ID:      ".test.v1.SomeMessage.error",
-		IsOneOf: true,
-	}
-	result := api.NewTestOneOf("result").WithFields(response, errorz)
+	enumValue := api.NewTestEnumValue("ENUM_VALUE", 0)
+	publicValue := api.NewTestEnumValue("SOME_ENUM_PUBLIC", 1)
+	someEnum := api.NewTestEnum("SomeEnum").WithValues(enumValue, publicValue)
+	response := api.NewTestField("response")
+	errorz := api.NewTestField("error")
+	defaultField := api.NewTestField("default")
+	result := api.NewTestOneOf("result").WithFields(response, errorz, defaultField)
 	someMessage := api.NewTestMessage("SomeMessage").
 		WithPackage("test.v1").
 		WithFields(
 			api.NewTestField("unused"),
 			api.NewTestField("field"),
 			api.NewTestField("typez"),
+			api.NewTestField("protocol"),
+			api.NewTestField("Self"),
 		).
-		WithOneOfs(result)
-	someMessage.Enums = append(someMessage.Enums, someEnum)
-	otherMessage := &api.Message{
-		Name:    "OtherMessage",
-		ID:      ".other.v1.OtherMessage",
-		Package: "other.v1",
-	}
-	someService := &api.Service{
-		Name:    "SomeService",
-		ID:      ".test.v1.SomeService",
-		Package: "test.v1",
-		Methods: []*api.Method{
-			{
-				Name: "CreateFoo",
-				ID:   ".test.v1.SomeService.CreateFoo",
-			},
-		},
-	}
+		WithOneOfs(result).
+		WithEnums(someEnum)
+	otherMessage := api.NewTestMessage("OtherMessage").
+		WithPackage("other.v1").
+		WithFields(api.NewTestField("protocol"))
+	someService := api.NewTestService("SomeService").
+		WithPackage("test.v1").
+		WithMethods(
+			api.NewTestMethod("CreateFoo"),
+			api.NewTestMethod("get"),
+			api.NewTestMethod("StreamFoo").WithServerSideStreaming(),
+		)
 
 	model := api.NewTestAPI(
 		[]*api.Message{otherMessage, someMessage},
@@ -105,16 +87,34 @@ func TestDocLink(t *testing.T) {
 			want:   "<doc:SomeMessage/field>",
 		},
 		{
+			name:   "escaped keyword field link",
+			link:   "SomeMessage.protocol",
+			scopes: []string{"test.v1"},
+			want:   "<doc:SomeMessage/protocol>",
+		},
+		{
+			name:   "metatype keyword field link",
+			link:   "SomeMessage.Self",
+			scopes: []string{"test.v1"},
+			want:   "<doc:SomeMessage/self_>",
+		},
+		{
 			name:   "oneof field link (1)",
 			link:   "SomeMessage.error",
 			scopes: []string{"test.v1"},
-			want:   "<doc:SomeMessage/OneOf_Result/error(_:)>",
+			want:   "<doc:SomeMessage/ResultOneOf/error(_:)>",
 		},
 		{
 			name:   "oneof field link (2)",
 			link:   "SomeMessage.response",
 			scopes: []string{"test.v1"},
-			want:   "<doc:SomeMessage/OneOf_Result/response(_:)>",
+			want:   "<doc:SomeMessage/ResultOneOf/response(_:)>",
+		},
+		{
+			name:   "escaped keyword oneof field link",
+			link:   "SomeMessage.default",
+			scopes: []string{"test.v1"},
+			want:   "<doc:SomeMessage/ResultOneOf/default(_:)>",
 		},
 		{
 			name:   "enum value link",
@@ -123,10 +123,28 @@ func TestDocLink(t *testing.T) {
 			want:   "<doc:SomeMessage/SomeEnum/enumValue>",
 		},
 		{
+			name:   "escaped keyword enum value link",
+			link:   "SomeMessage.SomeEnum.SOME_ENUM_PUBLIC",
+			scopes: []string{"test.v1"},
+			want:   "<doc:SomeMessage/SomeEnum/public>",
+		},
+		{
 			name:   "method link",
 			link:   "SomeService.CreateFoo",
 			scopes: []string{"test.v1"},
 			want:   "<doc:SomeServiceClient/createFoo(request:options:)>",
+		},
+		{
+			name:   "escaped keyword method link",
+			link:   "SomeService.get",
+			scopes: []string{"test.v1"},
+			want:   "<doc:SomeServiceClient/get(request:options:)>",
+		},
+		{
+			name:   "streaming method link",
+			link:   "SomeService.StreamFoo",
+			scopes: []string{"test.v1"},
+			want:   "",
 		},
 		{
 			name:   "service link",
@@ -146,6 +164,12 @@ func TestDocLink(t *testing.T) {
 			scopes: []string{},
 			want:   "https://www.google.com/search?q=Swift+other.v1+OtherPrefix.OtherMessage",
 		},
+		{
+			name:   "different package escaped keyword field link",
+			link:   "other.v1.OtherMessage.protocol",
+			scopes: []string{},
+			want:   "https://www.google.com/search?q=Swift+other.v1+OtherPrefix.OtherMessage/protocol",
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			got, err := c.linkDefinition(test.link, test.scopes)
@@ -160,37 +184,22 @@ func TestDocLink(t *testing.T) {
 }
 
 func TestDocLinkAmbiguity(t *testing.T) {
-	globalAmbiguous2 := &api.Message{
-		Name:    "Ambiguous2",
-		ID:      ".test.v1.Ambiguous2",
-		Package: "test.v1",
-	}
-	nestedAmbiguous1 := &api.Message{
-		Name:    "Ambiguous1",
-		ID:      ".test.v1.Parent.Ambiguous1",
-		Package: "test.v1",
-	}
-	nestedAmbiguous2 := &api.Message{
-		Name:    "Ambiguous2",
-		ID:      ".test.v1.Parent.Ambiguous2",
-		Package: "test.v1",
-		Fields: []*api.Field{
-			{Name: "field_name"},
-		},
-	}
-	parent := &api.Message{
-		Name:     "Parent",
-		ID:       ".test.v1.Parent",
-		Package:  "test.v1",
-		Messages: []*api.Message{nestedAmbiguous1, nestedAmbiguous2},
-	}
-	nestedAmbiguous1.Parent = parent
-	nestedAmbiguous2.Parent = parent
+	globalAmbiguous2 := api.NewTestMessage("Ambiguous2").
+		WithPackage("test.v1")
+	nestedAmbiguous1 := api.NewTestMessage("Ambiguous1").
+		WithPackage("test.v1").
+		WithID(".test.v1.Parent.Ambiguous1")
+	nestedAmbiguous2 := api.NewTestMessage("Ambiguous2").
+		WithPackage("test.v1").
+		WithID(".test.v1.Parent.Ambiguous2").
+		WithFields(api.NewTestField("field_name"))
+	parent := api.NewTestMessage("Parent").
+		WithPackage("test.v1")
 
 	model := api.NewTestAPI(
 		[]*api.Message{globalAmbiguous2, parent, nestedAmbiguous1, nestedAmbiguous2},
-		[]*api.Enum{},
-		[]*api.Service{})
+		nil,
+		nil)
 
 	c := newTestCodec(t, model, nil)
 
@@ -228,19 +237,13 @@ func TestDocLinkAmbiguity(t *testing.T) {
 }
 
 func TestDocLink_NameOverrides(t *testing.T) {
-	service := &api.Service{
-		Name:    "Storage",
-		ID:      ".google.storage.v2.Storage",
-		Package: "google.storage.v2",
-		Methods: []*api.Method{
-			{
-				Name: "CreateBucket",
-				ID:   ".google.storage.v2.Storage.CreateBucket",
-			},
-		},
-	}
+	service := api.NewTestService("Storage").
+		WithPackage("google.storage.v2").
+		WithMethods(
+			api.NewTestMethod("CreateBucket"),
+		)
 
-	model := api.NewTestAPI([]*api.Message{}, []*api.Enum{}, []*api.Service{service})
+	model := api.NewTestAPI(nil, nil, []*api.Service{service})
 	library := &config.Library{
 		Swift: &config.SwiftPackage{
 			NameOverrides: map[string]string{
@@ -271,19 +274,13 @@ func TestDocLink_NameOverrides(t *testing.T) {
 }
 
 func TestDocLink_ModuleNameOverrides(t *testing.T) {
-	service := &api.Service{
-		Name:    "Storage",
-		ID:      ".google.storage.v2.Storage",
-		Package: "google.storage.v2",
-		Methods: []*api.Method{
-			{
-				Name: "CreateBucket",
-				ID:   ".google.storage.v2.Storage.CreateBucket",
-			},
-		},
-	}
+	service := api.NewTestService("Storage").
+		WithPackage("google.storage.v2").
+		WithMethods(
+			api.NewTestMethod("CreateBucket"),
+		)
 
-	model := api.NewTestAPI([]*api.Message{}, []*api.Enum{}, []*api.Service{service})
+	model := api.NewTestAPI(nil, nil, []*api.Service{service})
 	library := &config.Library{
 		Swift: &config.SwiftPackage{
 			NameOverrides: map[string]string{
@@ -306,5 +303,39 @@ func TestDocLink_ModuleNameOverrides(t *testing.T) {
 	wantService := "<doc:ModuleOverrideClient>"
 	if gotService != wantService {
 		t.Errorf("serviceDocLink() = %q, want %q", gotService, wantService)
+	}
+}
+
+func TestDocLink_TrimsLibraryName(t *testing.T) {
+	msg := api.NewTestMessage("CapacityHistoryRequest").WithPackage("google.cloud.compute.v1")
+	model := api.NewTestAPI([]*api.Message{msg}, nil, nil)
+	c := newTestCodec(t, model, nil)
+	c.LibraryName = "GoogleCloudComputeV1"
+
+	for _, test := range []struct {
+		name        string
+		packageName string
+		typeName    string
+		want        string
+	}{
+		{
+			name:        "qualified with LibraryName",
+			packageName: "google.cloud.compute.v1",
+			typeName:    "GoogleCloudComputeV1.CapacityHistoryRequest",
+			want:        "<doc:CapacityHistoryRequest>",
+		},
+		{
+			name:        "unqualified in current package",
+			packageName: "google.cloud.compute.v1",
+			typeName:    "Instance",
+			want:        "<doc:Instance>",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := c.docLink(test.packageName, test.typeName)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
 	}
 }

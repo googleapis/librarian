@@ -28,7 +28,7 @@ import (
 func swiftConfig(t *testing.T, extraDependencies []config.SwiftDependency) *config.SwiftPackage {
 	t.Helper()
 	deps := []config.SwiftDependency{
-		{Name: "GoogleCloudWkt", ApiPackage: wellKnownProtobufPackage},
+		{Name: "GoogleWKT", ApiPackage: wellKnownProtobufPackage},
 	}
 	deps = append(deps, extraDependencies...)
 	return &config.SwiftPackage{
@@ -41,14 +41,13 @@ func swiftConfig(t *testing.T, extraDependencies []config.SwiftDependency) *conf
 func TestGenerateMessage_Files(t *testing.T) {
 	outDir := t.TempDir()
 
-	secret := &api.Message{Name: "Secret", Package: "google.cloud.test.v1", ID: ".google.cloud.test.v1.Secret"}
-	volume := &api.Message{Name: "Volume", Package: "google.cloud.test.v1", ID: ".google.cloud.test.v1.Volume"}
-	clash0 := &api.Message{Name: "HttpHealthCheck", Package: "google.cloud.test.v1", ID: ".google.cloud.test.v1.HttpHealthCheck"}
-	clash1 := &api.Message{Name: "HTTPHealthCheck", Package: "google.cloud.test.v1", ID: ".google.cloud.test.v1.HTTPHealthCheck"}
-	clash2 := &api.Message{Name: "httpHealthCheck", Package: "google.cloud.test.v1", ID: ".google.cloud.test.v1.httpHealthCheck"}
+	secret := api.NewTestMessage("Secret").WithPackage("google.cloud.test.v1")
+	volume := api.NewTestMessage("Volume").WithPackage("google.cloud.test.v1")
+	clash0 := api.NewTestMessage("HttpHealthCheck").WithPackage("google.cloud.test.v1")
+	clash1 := api.NewTestMessage("HTTPHealthCheck").WithPackage("google.cloud.test.v1")
+	clash2 := api.NewTestMessage("httpHealthCheck").WithPackage("google.cloud.test.v1")
 
-	model := api.NewTestAPI([]*api.Message{secret, volume, clash0, clash1, clash2}, []*api.Enum{}, []*api.Service{})
-	model.PackageName = "google.cloud.test.v1"
+	model := api.NewTestAPI([]*api.Message{secret, volume, clash0, clash1, clash2}, nil, nil)
 
 	library := &config.Library{
 		Swift: swiftConfig(t, nil),
@@ -76,17 +75,13 @@ func TestGenerateMessage_Files(t *testing.T) {
 func TestGenerateMessage_WithNestedMessages(t *testing.T) {
 	outDir := t.TempDir()
 
-	nested1 := &api.Message{Name: "Nested1", Package: "google.cloud.test.v1", ID: ".google.cloud.test.v1.WithNested.Nested1"}
-	nested2 := &api.Message{Name: "Nested2", Package: "google.cloud.test.v1", ID: ".google.cloud.test.v1.WithNested.Nested2"}
-	withNested := &api.Message{
-		Name:     "WithNested",
-		Package:  "google.cloud.test.v1",
-		ID:       ".google.cloud.test.v1.WithNested",
-		Messages: []*api.Message{nested1, nested2},
-	}
+	nested1 := api.NewTestMessage("Nested1")
+	nested2 := api.NewTestMessage("Nested2")
+	withNested := api.NewTestMessage("WithNested").
+		WithPackage("google.cloud.test.v1").
+		WithMessages(nested1, nested2)
 
-	model := api.NewTestAPI([]*api.Message{withNested}, []*api.Enum{}, []*api.Service{})
-	model.PackageName = "google.cloud.test.v1"
+	model := api.NewTestAPI([]*api.Message{withNested}, nil, nil)
 
 	library := &config.Library{
 		Swift: swiftConfig(t, nil),
@@ -119,7 +114,7 @@ func TestGenerateMessage_WithNestedMessages(t *testing.T) {
 		t.Fatal("missing { for Nested1")
 	}
 	decl1 := contentStr[startIdx1 : startIdx1+endIdx1]
-	for _, p := range []string{"Codable", "Equatable", "GoogleCloudWkt._AnyPackable", "Sendable"} {
+	for _, p := range []string{"Codable", "Equatable", "GoogleWKT._AnyPackable", "Sendable"} {
 		if !strings.Contains(decl1, p) {
 			t.Errorf("expected %q in Nested1 declaration, got: %s", p, decl1)
 		}
@@ -134,7 +129,7 @@ func TestGenerateMessage_WithNestedMessages(t *testing.T) {
 		t.Fatal("missing { for Nested2")
 	}
 	decl2 := contentStr[startIdx2 : startIdx2+endIdx2]
-	for _, p := range []string{"Codable", "Equatable", "GoogleCloudWkt._AnyPackable", "Sendable"} {
+	for _, p := range []string{"Codable", "Equatable", "GoogleWKT._AnyPackable", "Sendable"} {
 		if !strings.Contains(decl2, p) {
 			t.Errorf("expected %q in Nested2 declaration, got: %s", p, decl2)
 		}
@@ -144,19 +139,14 @@ func TestGenerateMessage_WithNestedMessages(t *testing.T) {
 func TestGenerateMessage_WithNestedEnum(t *testing.T) {
 	outDir := t.TempDir()
 
-	nestedEnum := &api.Enum{Name: "NestedEnum", Package: "google.cloud.test.v1", ID: ".google.cloud.test.v1.WithNestedEnum.NestedEnum"}
-	nestedEnum.Values = []*api.EnumValue{{Name: "NESTED_ENUM_UNSPECIFIED", Number: 0, Parent: nestedEnum}}
-	nestedEnum.UniqueNumberValues = nestedEnum.Values
+	nestedEnum := api.NewTestEnum("NestedEnum").
+		WithValues(api.NewTestEnumValue("NESTED_ENUM_UNSPECIFIED", 0))
 
-	withNested := &api.Message{
-		Name:    "WithNestedEnum",
-		Package: "google.cloud.test.v1",
-		ID:      ".google.cloud.test.v1.WithNestedEnum",
-		Enums:   []*api.Enum{nestedEnum},
-	}
+	withNested := api.NewTestMessage("WithNestedEnum").
+		WithPackage("google.cloud.test.v1").
+		WithEnums(nestedEnum)
 
-	model := api.NewTestAPI([]*api.Message{withNested}, []*api.Enum{}, []*api.Service{})
-	model.PackageName = "google.cloud.test.v1"
+	model := api.NewTestAPI([]*api.Message{withNested}, nil, nil)
 
 	library := &config.Library{
 		Swift: swiftConfig(t, nil),
@@ -179,7 +169,7 @@ func TestGenerateMessage_WithNestedEnum(t *testing.T) {
 	contentStr := string(content)
 
 	gotBlock := extractBlock(t, contentStr, "public enum NestedEnum", ", Sendable {")
-	wantBlock := "public enum NestedEnum: Codable, Equatable, Sendable {"
+	wantBlock := "public enum NestedEnum: Codable, Equatable, Hashable, Sendable {"
 	if diff := cmp.Diff(wantBlock, gotBlock); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
@@ -188,27 +178,16 @@ func TestGenerateMessage_WithNestedEnum(t *testing.T) {
 func TestGenerateMessage_WithExternalImports(t *testing.T) {
 	outDir := t.TempDir()
 
-	externalMessage := &api.Message{
-		Name:    "ExternalMessage",
-		Package: "google.cloud.external.v1",
-		ID:      ".google.cloud.external.v1.ExternalMessage",
-	}
+	externalMessage := api.NewTestMessage("ExternalMessage").
+		WithPackage("google.cloud.external.v1")
 
-	message := &api.Message{
-		Name:    "LocalMessage",
-		Package: "google.cloud.test.v1",
-		ID:      ".google.cloud.test.v1.LocalMessage",
-		Fields: []*api.Field{
-			{
-				Name:    "ext_field",
-				Typez:   api.TypezMessage,
-				TypezID: ".google.cloud.external.v1.ExternalMessage",
-			},
-		},
-	}
+	message := api.NewTestMessage("LocalMessage").
+		WithPackage("google.cloud.test.v1").
+		WithFields(
+			api.NewTestField("ext_field").WithMessageType(externalMessage),
+		)
 
-	model := api.NewTestAPI([]*api.Message{message}, []*api.Enum{}, []*api.Service{})
-	model.PackageName = "google.cloud.test.v1"
+	model := api.NewTestAPI([]*api.Message{message}, nil, nil)
 	model.AddMessage(externalMessage)
 
 	swiftCfg := swiftConfig(t, []config.SwiftDependency{
@@ -237,8 +216,8 @@ func TestGenerateMessage_WithExternalImports(t *testing.T) {
 	}
 	contentStr := string(content)
 
-	if !strings.Contains(contentStr, "import GoogleCloudExternalV1") {
-		t.Errorf("expected 'import GoogleCloudExternalV1' in %s", filename)
+	if !strings.Contains(contentStr, "public import GoogleCloudExternalV1") {
+		t.Errorf("expected 'public import GoogleCloudExternalV1' in %s", filename)
 	}
 	if strings.Contains(contentStr, "import GoogleCloudUnusedV1") {
 		t.Errorf("unexpected 'import GoogleCloudUnusedV1' in %s", filename)
@@ -248,41 +227,20 @@ func TestGenerateMessage_WithExternalImports(t *testing.T) {
 func TestGenerateMessage_WithRecursiveTypes(t *testing.T) {
 	outDir := t.TempDir()
 
-	nodeA := &api.Message{
-		Name:    "NodeA",
-		Package: "google.cloud.test.v1",
-		ID:      ".google.cloud.test.v1.NodeA",
-	}
-	nodeB := &api.Message{
-		Name:    "NodeB",
-		Package: "google.cloud.test.v1",
-		ID:      ".google.cloud.test.v1.NodeB",
-	}
+	nodeA := api.NewTestMessage("NodeA").WithPackage("google.cloud.test.v1")
+	nodeB := api.NewTestMessage("NodeB").WithPackage("google.cloud.test.v1")
 
-	fieldA := &api.Field{
-		Name:     "node_b",
-		Typez:    api.TypezMessage,
-		TypezID:  ".google.cloud.test.v1.NodeB",
-		Optional: true,
-		Parent:   nodeA,
-	}
-	nodeA.Fields = []*api.Field{fieldA}
+	fieldA := api.NewTestField("node_b").
+		WithMessageType(nodeB).
+		WithOptional()
+	nodeA.WithFields(fieldA)
 
-	fieldB := &api.Field{
-		Name:     "node_a",
-		Typez:    api.TypezMessage,
-		TypezID:  ".google.cloud.test.v1.NodeA",
-		Optional: true,
-		Parent:   nodeB,
-	}
-	nodeB.Fields = []*api.Field{fieldB}
+	fieldB := api.NewTestField("node_a").
+		WithMessageType(nodeA).
+		WithOptional()
+	nodeB.WithFields(fieldB)
 
-	// Set the MessageType fields correctly
-	fieldA.MessageType = nodeB
-	fieldB.MessageType = nodeA
-
-	model := api.NewTestAPI([]*api.Message{nodeA, nodeB}, []*api.Enum{}, []*api.Service{})
-	model.PackageName = "google.cloud.test.v1"
+	model := api.NewTestAPI([]*api.Message{nodeA, nodeB}, nil, nil)
 
 	// Run LabelRecursiveFields to mark recursive fields
 	api.LabelRecursiveFields(model)
@@ -302,8 +260,8 @@ func TestGenerateMessage_WithRecursiveTypes(t *testing.T) {
 	}
 	contentStrA := string(contentA)
 
-	// Verify struct property uses Recursive
-	wantProp := "public var nodeB: GoogleCloudWkt.Recursive<NodeB>?"
+	// Verify struct property uses WKTRecursive
+	wantProp := "public var nodeB: GoogleWKT.WKTRecursive<NodeB>?"
 	if !strings.Contains(contentStrA, wantProp) {
 		t.Errorf("property definition mismatch: want %q; got:\n%s", wantProp, contentStrA)
 	}
@@ -318,24 +276,14 @@ func TestGenerateMessage_WithRecursiveTypes(t *testing.T) {
 func TestGenerateMessage_SelfRecursive(t *testing.T) {
 	outDir := t.TempDir()
 
-	node := &api.Message{
-		Name:    "Node",
-		Package: "google.cloud.test.v1",
-		ID:      ".google.cloud.test.v1.Node",
-	}
+	node := api.NewTestMessage("Node").WithPackage("google.cloud.test.v1")
 
-	field := &api.Field{
-		Name:     "child",
-		Typez:    api.TypezMessage,
-		TypezID:  ".google.cloud.test.v1.Node",
-		Optional: true,
-		Parent:   node,
-	}
-	node.Fields = []*api.Field{field}
-	field.MessageType = node
+	field := api.NewTestField("child").
+		WithMessageType(node).
+		WithOptional()
+	node.WithFields(field)
 
-	model := api.NewTestAPI([]*api.Message{node}, []*api.Enum{}, []*api.Service{})
-	model.PackageName = "google.cloud.test.v1"
+	model := api.NewTestAPI([]*api.Message{node}, nil, nil)
 
 	// Run LabelRecursiveFields to mark recursive fields
 	api.LabelRecursiveFields(model)
@@ -355,8 +303,8 @@ func TestGenerateMessage_SelfRecursive(t *testing.T) {
 	}
 	contentStr := string(content)
 
-	// Verify struct property uses Recursive
-	wantProp := "public var child: GoogleCloudWkt.Recursive<Node>?"
+	// Verify struct property uses WKTRecursive
+	wantProp := "public var child: GoogleWKT.WKTRecursive<Node>?"
 	if !strings.Contains(contentStr, wantProp) {
 		t.Errorf("property definition mismatch: want %q; got:\n%s", wantProp, contentStr)
 	}
@@ -371,55 +319,26 @@ func TestGenerateMessage_SelfRecursive(t *testing.T) {
 func TestGenerateMessage_RecursiveChain(t *testing.T) {
 	outDir := t.TempDir()
 
-	nodeA := &api.Message{
-		Name:    "NodeA",
-		Package: "google.cloud.test.v1",
-		ID:      ".google.cloud.test.v1.NodeA",
-	}
-	nodeB := &api.Message{
-		Name:    "NodeB",
-		Package: "google.cloud.test.v1",
-		ID:      ".google.cloud.test.v1.NodeB",
-	}
-	nodeC := &api.Message{
-		Name:    "NodeC",
-		Package: "google.cloud.test.v1",
-		ID:      ".google.cloud.test.v1.NodeC",
-	}
+	nodeA := api.NewTestMessage("NodeA").WithPackage("google.cloud.test.v1")
+	nodeB := api.NewTestMessage("NodeB").WithPackage("google.cloud.test.v1")
+	nodeC := api.NewTestMessage("NodeC").WithPackage("google.cloud.test.v1")
 
-	fieldA := &api.Field{
-		Name:     "node_b",
-		Typez:    api.TypezMessage,
-		TypezID:  ".google.cloud.test.v1.NodeB",
-		Optional: true,
-		Parent:   nodeA,
-	}
-	nodeA.Fields = []*api.Field{fieldA}
+	fieldA := api.NewTestField("node_b").
+		WithMessageType(nodeB).
+		WithOptional()
+	nodeA.WithFields(fieldA)
 
-	fieldB := &api.Field{
-		Name:     "node_c",
-		Typez:    api.TypezMessage,
-		TypezID:  ".google.cloud.test.v1.NodeC",
-		Optional: true,
-		Parent:   nodeB,
-	}
-	nodeB.Fields = []*api.Field{fieldB}
+	fieldB := api.NewTestField("node_c").
+		WithMessageType(nodeC).
+		WithOptional()
+	nodeB.WithFields(fieldB)
 
-	fieldC := &api.Field{
-		Name:     "node_a",
-		Typez:    api.TypezMessage,
-		TypezID:  ".google.cloud.test.v1.NodeA",
-		Optional: true,
-		Parent:   nodeC,
-	}
-	nodeC.Fields = []*api.Field{fieldC}
+	fieldC := api.NewTestField("node_a").
+		WithMessageType(nodeA).
+		WithOptional()
+	nodeC.WithFields(fieldC)
 
-	fieldA.MessageType = nodeB
-	fieldB.MessageType = nodeC
-	fieldC.MessageType = nodeA
-
-	model := api.NewTestAPI([]*api.Message{nodeA, nodeB, nodeC}, []*api.Enum{}, []*api.Service{})
-	model.PackageName = "google.cloud.test.v1"
+	model := api.NewTestAPI([]*api.Message{nodeA, nodeB, nodeC}, nil, nil)
 
 	// Run LabelRecursiveFields to mark recursive fields
 	api.LabelRecursiveFields(model)
@@ -441,7 +360,7 @@ func TestGenerateMessage_RecursiveChain(t *testing.T) {
 	}
 	contentStrA := string(contentA)
 	// Verify NodeA contains wrapped NodeB
-	wantPropA := "public var nodeB: GoogleCloudWkt.Recursive<NodeB>?"
+	wantPropA := "public var nodeB: GoogleWKT.WKTRecursive<NodeB>?"
 	if !strings.Contains(contentStrA, wantPropA) {
 		t.Errorf("nodeB property definition mismatch: want %q; got:\n%s", wantPropA, contentStrA)
 	}
@@ -457,7 +376,7 @@ func TestGenerateMessage_RecursiveChain(t *testing.T) {
 		t.Fatal(err)
 	}
 	contentStrB := string(contentB)
-	wantPropB := "public var nodeC: GoogleCloudWkt.Recursive<NodeC>?"
+	wantPropB := "public var nodeC: GoogleWKT.WKTRecursive<NodeC>?"
 	if !strings.Contains(contentStrB, wantPropB) {
 		t.Errorf("nodeC property definition mismatch: want %q; got:\n%s", wantPropB, contentStrB)
 	}
@@ -473,7 +392,7 @@ func TestGenerateMessage_RecursiveChain(t *testing.T) {
 		t.Fatal(err)
 	}
 	contentStrC := string(contentC)
-	wantPropC := "public var nodeA: GoogleCloudWkt.Recursive<NodeA>? = nil"
+	wantPropC := "public var nodeA: GoogleWKT.WKTRecursive<NodeA>? = nil"
 	if !strings.Contains(contentStrC, wantPropC) {
 		t.Errorf("nodeA property definition mismatch: want %q; got:\n%s", wantPropC, contentStrC)
 	}
@@ -486,22 +405,15 @@ func TestGenerateMessage_RecursiveChain(t *testing.T) {
 func TestGenerateMessage_DocComments(t *testing.T) {
 	outDir := t.TempDir()
 
-	nested := &api.Message{
-		Name:          "NestedMessage",
-		Package:       "google.cloud.test.v1",
-		ID:            ".google.cloud.test.v1.TestMessage.NestedMessage",
-		Documentation: "Documentation for NestedMessage.",
-	}
-	msg := &api.Message{
-		Name:          "TestMessage",
-		Package:       "google.cloud.test.v1",
-		ID:            ".google.cloud.test.v1.TestMessage",
-		Documentation: "Documentation for TestMessage.",
-		Messages:      []*api.Message{nested},
-	}
+	nested := api.NewTestMessage("NestedMessage").
+		WithDocumentation("Documentation for NestedMessage.")
 
-	model := api.NewTestAPI([]*api.Message{msg}, []*api.Enum{}, []*api.Service{})
-	model.PackageName = "google.cloud.test.v1"
+	msg := api.NewTestMessage("TestMessage").
+		WithPackage("google.cloud.test.v1").
+		WithDocumentation("Documentation for TestMessage.").
+		WithMessages(nested)
+
+	model := api.NewTestAPI([]*api.Message{msg}, nil, nil)
 
 	library := &config.Library{
 		Swift: swiftConfig(t, nil),
@@ -528,6 +440,166 @@ func TestGenerateMessage_DocComments(t *testing.T) {
 	want = "  /// Documentation for NestedMessage.\n  public struct NestedMessage"
 	got = extractBlock(t, contentStr, "  /// Documentation for NestedMessage.", "public struct NestedMessage")
 	if diff := cmp.Diff(want, got); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+}
+
+func TestGenerateMessage_FoundationImport(t *testing.T) {
+	for _, test := range []struct {
+		name         string
+		message      *api.Message
+		wantImport   string
+		unwantImport string
+	}{
+		{
+			name: "without bytes field uses internal import Foundation",
+			message: api.NewTestMessage("StringMessage").
+				WithPackage("google.cloud.test.v1").
+				WithFields(api.NewTestField("name").WithType(api.TypezString)),
+			wantImport:   "\nimport Foundation\n",
+			unwantImport: "\npublic import Foundation\n",
+		},
+		{
+			name: "with bytes field uses public import Foundation",
+			message: api.NewTestMessage("DataMessage").
+				WithPackage("google.cloud.test.v1").
+				WithFields(api.NewTestField("payload").WithType(api.TypezBytes)),
+			wantImport:   "\npublic import Foundation\n",
+			unwantImport: "\nimport Foundation\n",
+		},
+		{
+			name: "with nested bytes message uses public import Foundation on parent",
+			message: api.NewTestMessage("ParentMessage").
+				WithPackage("google.cloud.test.v1").
+				WithMessages(
+					api.NewTestMessage("NestedData").
+						WithPackage("google.cloud.test.v1").
+						WithFields(api.NewTestField("payload").WithType(api.TypezBytes)),
+				),
+			wantImport:   "\npublic import Foundation\n",
+			unwantImport: "\nimport Foundation\n",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			outDir := t.TempDir()
+			model := api.NewTestAPI([]*api.Message{test.message}, nil, nil).
+				WithPackageName("google.cloud.test.v1")
+			library := &config.Library{
+				Swift: swiftConfig(t, nil),
+			}
+			if err := Generate(t.Context(), model, outDir, library, nil); err != nil {
+				t.Fatal(err)
+			}
+
+			filename := filepath.Join(outDir, "Sources", "GoogleCloudTestV1", test.message.Name+".swift")
+			content, err := os.ReadFile(filename)
+			if err != nil {
+				t.Fatal(err)
+			}
+			contentStr := string(content)
+
+			if !strings.Contains(contentStr, test.wantImport) {
+				t.Errorf("expected %q in %s, got:\n%s", test.wantImport, filename, contentStr)
+			}
+			if test.unwantImport != "" && strings.Contains(contentStr, test.unwantImport) {
+				t.Errorf("did not expect %q in %s, got:\n%s", test.unwantImport, filename, contentStr)
+			}
+		})
+	}
+}
+
+func TestGenerateMessage_WKT(t *testing.T) {
+	outDir := t.TempDir()
+
+	kindEnum := api.NewTestEnum("Kind").
+		WithPackage(wellKnownProtobufPackage).
+		WithValues(api.NewTestEnumValue("TYPE_UNKNOWN", 0))
+	fieldMsg := api.NewTestMessage("Field").
+		WithPackage(wellKnownProtobufPackage).
+		WithEnums(kindEnum)
+	typeMsg := api.NewTestMessage("Type").
+		WithPackage(wellKnownProtobufPackage).
+		WithFields(api.NewTestField("fields").WithMessageType(fieldMsg).WithRepeated())
+	syntaxEnum := api.NewTestEnum("Syntax").
+		WithPackage(wellKnownProtobufPackage).
+		WithValues(api.NewTestEnumValue("SYNTAX_PROTO2", 0))
+
+	model := api.NewTestAPI([]*api.Message{fieldMsg, typeMsg}, []*api.Enum{syntaxEnum}, nil).
+		WithPackageName(wellKnownProtobufPackage)
+	library := &config.Library{
+		Swift: &config.SwiftPackage{
+			LibraryNameOverride: wellKnownSwiftPackage,
+		},
+	}
+	module := &config.SwiftModule{
+		ModuleType: "default",
+	}
+	if err := Generate(t.Context(), model, outDir, library, module); err != nil {
+		t.Fatal(err)
+	}
+
+	for _, test := range []struct {
+		filename string
+		wantDecl string
+	}{
+		{filename: "WKTType.swift", wantDecl: "public struct WKTType:"},
+		{filename: "WKTType.swift", wantDecl: "public var fields: [WKTField] = []"},
+		{filename: "WKTField.swift", wantDecl: "public struct WKTField:"},
+		{filename: "WKTField.swift", wantDecl: "public enum Kind:"},
+		{filename: "WKTSyntax.swift", wantDecl: "public enum WKTSyntax:"},
+	} {
+		content, err := os.ReadFile(filepath.Join(outDir, test.filename))
+		if err != nil {
+			t.Fatalf("expected generated file %s: %v", test.filename, err)
+		}
+		if !strings.Contains(string(content), test.wantDecl) {
+			t.Errorf("expected %s to contain %q, got:\n%s", test.filename, test.wantDecl, string(content))
+		}
+	}
+}
+
+func TestGenerateMessage_AnyPackableDocComments(t *testing.T) {
+	outDir := t.TempDir()
+
+	msg := api.NewTestMessage("FooMessage").WithPackage("google.cloud.test.v1")
+	model := api.NewTestAPI([]*api.Message{msg}, nil, nil)
+	library := &config.Library{
+		Swift: swiftConfig(t, nil),
+	}
+	if err := Generate(t.Context(), model, outDir, library, nil); err != nil {
+		t.Fatal(err)
+	}
+
+	filename := filepath.Join(outDir, "Sources", "GoogleCloudTestV1", "FooMessage.swift")
+	content, err := os.ReadFile(filename)
+	if err != nil {
+		t.Fatal(err)
+	}
+	contentStr := string(content)
+
+	wantAnyBlock := `  /// The type URL for ` + "`FooMessage`: `\"type.googleapis.com/google.cloud.test.v1.FooMessage\"`." + `
+  public static var _anyTypeUrl: Swift.String {
+    return "type.googleapis.com/google.cloud.test.v1.FooMessage"
+  }
+
+  /// Initialize an instance of ` + "`FooMessage` by unpacking from a `GoogleWKT.WKTAny`." + `
+  ///
+  /// - Parameter any: The ` + "`GoogleWKT.WKTAny` instance to unpack." + `
+  /// - Throws: An error if the type URL in ` + "`any` does not match `\"type.googleapis.com/google.cloud.test.v1.FooMessage\"`," + `
+  ///   or if deserialization fails.
+  public init(fromAny any: GoogleWKT.WKTAny) throws {
+    self = try GoogleWKT._slowAnyDeserialize(Self.self, from: any)
+  }
+
+  /// Packs this ` + "`FooMessage` into a `GoogleWKT.WKTStruct` representation." + `
+  ///
+  /// - Throws: An error if serialization fails.
+  public func _pack() throws -> GoogleWKT.WKTStruct {
+    return try GoogleWKT._slowAnySerialize(message: self)
+  }`
+
+	got := extractBlock(t, contentStr, "  /// The type URL for `FooMessage`", "GoogleWKT._slowAnySerialize(message: self)\n  }")
+	if diff := cmp.Diff(wantAnyBlock, got); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }

@@ -29,37 +29,21 @@ import (
 func TestGenerateStub_Structure(t *testing.T) {
 	outDir := t.TempDir()
 
-	request := &api.Message{
-		Name:    "Request",
-		ID:      ".test.Request",
-		Package: "test",
-	}
-	response := &api.Message{
-		Name:    "Response",
-		ID:      ".test.Response",
-		Package: "test",
-	}
-	service := &api.Service{
-		Name:    "Protocol",
-		ID:      ".test.Prototocol",
-		Package: "test",
-		Methods: []*api.Method{
-			{
-				Name:         "GetThing",
-				ID:           ".test.IAM.CreateRole",
-				InputTypeID:  ".test.Request",
-				InputType:    request,
-				OutputTypeID: ".test.Response",
-				OutputType:   response,
-				PathInfo: &api.PathInfo{
-					Bindings: []*api.PathBinding{{Verb: "GET", PathTemplate: &api.PathTemplate{}}},
-				},
-			},
-		},
-	}
+	request := api.NewTestMessage("Request").WithPackage("test")
+	response := api.NewTestMessage("Response").WithPackage("test")
+	service := api.NewTestService("Protocol").
+		WithPackage("google.cloud.test.v1").
+		WithMethods(
+			api.NewTestMethod("GetThing").
+				WithInput(request).
+				WithOutput(response).
+				WithVerb("GET").
+				WithPathTemplate(&api.PathTemplate{}),
+		)
 
-	model := api.NewTestAPI([]*api.Message{request, response}, nil, []*api.Service{service})
-	model.PackageName = "google.cloud.test.v1"
+	model := api.NewTestAPI(nil, nil, []*api.Service{service})
+	model.AddMessage(request)
+	model.AddMessage(response)
 
 	swiftCfg := swiftConfig(t, []config.SwiftDependency{
 		{
@@ -81,10 +65,10 @@ func TestGenerateStub_Structure(t *testing.T) {
 	}
 	stubContentStr := string(stubContent)
 
-	got := extractBlock(t, stubContentStr, `  protocol ProtocolStub {`, "\n"+`  }`)
-	want := `  protocol ProtocolStub {
+	got := extractBlock(t, stubContentStr, `  protocol ProtocolStub: Sendable {`, "\n"+`  }`)
+	want := `  protocol ProtocolStub: Sendable {
     func getThing(
-    request: SomeTestPackage.Request, options: GoogleCloudGax.RequestOptions
+    request: SomeTestPackage.Request, options: GoogleGax.RequestOptions
 ) async throws -> SomeTestPackage.Response
 
   }`
@@ -99,9 +83,9 @@ func TestGenerateStub_Structure(t *testing.T) {
 	}
 	transportContentStr := string(transportContent)
 
-	got = extractBlock(t, transportContentStr, `  class ProtocolTransport: `, `HTTPClient`)
-	want = `  class ProtocolTransport: ProtocolStub {
-    let inner: GoogleCloudGax._HTTPClient`
+	got = extractBlock(t, transportContentStr, `  final class ProtocolTransport: `, `HTTPClient`)
+	want = `  final class ProtocolTransport: ProtocolStub {
+    let inner: GoogleGax._HTTPClient`
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
@@ -125,71 +109,35 @@ func TestGenerateStub_Structure(t *testing.T) {
 func TestGenerateStub_QueryParameters(t *testing.T) {
 	outDir := t.TempDir()
 
-	oneof := &api.OneOf{Name: "expiration"}
-	oneofField := &api.Field{
-		Name:     "ttl_days",
-		JSONName: "ttlDays",
-		ID:       ".google.test.Request.ttl_days",
-		Typez:    api.TypezString,
-		IsOneOf:  true,
-		Group:    oneof,
-	}
-	oneof.Fields = []*api.Field{oneofField}
+	oneof := api.NewTestOneOf("expiration").
+		WithFields(
+			api.NewTestField("ttl_days").WithType(api.TypezString),
+		)
 
-	request := &api.Message{
-		Name:    "Request",
-		ID:      ".test.Request",
-		Package: "test",
-		Fields: []*api.Field{
-			oneofField,
-			{
-				Name:     "project",
-				JSONName: "project",
-				ID:       ".google.test.Request.project",
-				Typez:    api.TypezString,
-			},
-			{
-				Name:     "enable",
-				JSONName: "enable",
-				ID:       ".google.test.Request.enable",
-				Typez:    api.TypezBool,
-			},
-		},
-		OneOfs: []*api.OneOf{oneof},
-	}
-	response := &api.Message{
-		Name:    "Response",
-		ID:      ".test.Response",
-		Package: "test",
-	}
-	service := &api.Service{
-		Name:    "Service",
-		ID:      ".test.Service",
-		Package: "test",
-		Methods: []*api.Method{
-			{
-				Name:         "GetThing",
-				ID:           ".test.Service.GetThing",
-				InputTypeID:  ".test.Request",
-				InputType:    request,
-				OutputTypeID: ".test.Response",
-				OutputType:   response,
-				PathInfo: &api.PathInfo{
-					Bindings: []*api.PathBinding{{
-						Verb:         "GET",
-						PathTemplate: (&api.PathTemplate{}).WithLiteral("v1").WithLiteral("projects").WithVariableNamed("project"),
-						QueryParameters: map[string]bool{
-							"ttl_days": true,
-							"enable":   true,
-						},
-					}},
-				},
-			},
-		},
-	}
+	request := api.NewTestMessage("Request").
+		WithPackage("test").
+		WithOneOfs(oneof).
+		WithFields(
+			api.NewTestField("project").WithType(api.TypezString),
+			api.NewTestField("enable").WithType(api.TypezBool),
+		)
+	response := api.NewTestMessage("Response").WithPackage("test")
+
+	getThing := api.NewTestMethod("GetThing").
+		WithInput(request).
+		WithOutput(response).
+		WithVerb("GET").
+		WithPathTemplate((&api.PathTemplate{}).WithLiteral("v1").WithLiteral("projects").WithVariableNamed("project")).
+		WithQueryParameters(map[string]bool{
+			"ttl_days": true,
+			"enable":   true,
+		})
+
+	service := api.NewTestService("Service").
+		WithPackage("test").
+		WithMethods(getThing)
 
 	model := api.NewTestAPI([]*api.Message{request, response}, nil, []*api.Service{service})
-	model.PackageName = "test"
 
 	swiftCfg := swiftConfig(t, []config.SwiftDependency{})
 	library := &config.Library{
@@ -214,18 +162,18 @@ func TestGenerateStub_QueryParameters(t *testing.T) {
 
 	got = extractBlock(t, contentStr, `request.expiration.flatMap {`, `prefix: "ttlDays")`)
 	want = `request.expiration.flatMap { (oneof) -> Swift.String? in
-            if case let .ttlDays(v) = oneof { v } else { nil }
-          }, prefix: "ttlDays")`
+                if case let .ttlDays(v) = oneof { v } else { nil }
+              }, prefix: "ttlDays")`
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 
 	got = extractBlock(t, contentStr, `var query = [`, `query.append(`)
 	want = `var query = [
-        URLQueryItem(name: "$alt", value: "json;enum-encoding=int"),
-      ]
-      let encoder = GoogleCloudGax._QueryParameterEncoder()
-      query.append(`
+            URLQueryItem(name: "$alt", value: "json;enum-encoding=int"),
+          ]
+          let encoder = GoogleGax._QueryParameterEncoder()
+          query.append(`
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
@@ -250,11 +198,11 @@ func TestGenerateStub_Discovery(t *testing.T) {
 
 	swiftCfg := swiftConfig(t, []config.SwiftDependency{
 		{
-			Name:               "GoogleCloudGax",
+			Name:               "GoogleGax",
 			RequiredByServices: true,
 		},
 		{
-			Name:               "GoogleCloudAuth",
+			Name:               "GoogleAuth",
 			RequiredByServices: true,
 		},
 	})
@@ -280,123 +228,68 @@ func TestGenerateStub_Discovery(t *testing.T) {
 func TestGenerateStub_Grpc(t *testing.T) {
 	outDir := t.TempDir()
 
-	parentField := &api.Field{
-		Name:     "parent",
-		JSONName: "parent",
-		ID:       ".google.storage.control.v2.CreateFolderRequest.parent",
-		Typez:    api.TypezString,
-	}
-	folderField := &api.Field{
-		Name:     "folder",
-		JSONName: "folder",
-		ID:       ".google.storage.control.v2.CreateFolderRequest.folder",
-		Typez:    api.TypezMessage,
-		TypezID:  ".google.storage.control.v2.Folder",
-		Optional: true,
-	}
-	nameField := &api.Field{
-		Name:     "name",
-		JSONName: "name",
-		ID:       ".google.storage.control.v2.DeleteFolderRequest.name",
-		Typez:    api.TypezString,
-	}
+	folder := api.NewTestMessage("Folder").
+		WithPackage("google.storage.control.v2")
+	createFolderRequest := api.NewTestMessage("CreateFolderRequest").
+		WithPackage("google.storage.control.v2").
+		WithFields(
+			api.NewTestField("parent").WithType(api.TypezString),
+			api.NewTestField("folder").
+				WithMessageType(folder).
+				WithOptional(),
+		)
+	deleteFolderRequest := api.NewTestMessage("DeleteFolderRequest").
+		WithPackage("google.storage.control.v2").
+		WithFields(
+			api.NewTestField("name").WithType(api.TypezString),
+		)
+	empty := api.NewTestMessage("Empty").
+		WithPackage("google.protobuf")
+	operation := api.NewTestMessage("Operation").
+		WithPackage("google.longrunning")
+	getOperationRequest := api.NewTestMessage("GetOperationRequest").
+		WithPackage("google.longrunning").
+		WithFields(
+			api.NewTestField("name").WithType(api.TypezString),
+		)
 
-	createFolderRequest := &api.Message{
-		Name:    "CreateFolderRequest",
-		ID:      ".google.storage.control.v2.CreateFolderRequest",
-		Package: "google.storage.control.v2",
-		Fields:  []*api.Field{parentField, folderField},
-	}
-	deleteFolderRequest := &api.Message{
-		Name:    "DeleteFolderRequest",
-		ID:      ".google.storage.control.v2.DeleteFolderRequest",
-		Package: "google.storage.control.v2",
-		Fields:  []*api.Field{nameField},
-	}
-	folder := &api.Message{
-		Name:    "Folder",
-		ID:      ".google.storage.control.v2.Folder",
-		Package: "google.storage.control.v2",
-	}
-	empty := &api.Message{
-		Name:    "Empty",
-		ID:      ".google.protobuf.Empty",
-		Package: "google.protobuf",
-	}
-	operation := &api.Message{
-		Name:    "Operation",
-		ID:      ".google.longrunning.Operation",
-		Package: "google.longrunning",
-	}
-	getOperationRequest := &api.Message{
-		Name:    "GetOperationRequest",
-		ID:      ".google.longrunning.GetOperationRequest",
-		Package: "google.longrunning",
-	}
+	deleteFolder := api.NewTestMethod("DeleteFolder").
+		WithInput(deleteFolderRequest).
+		WithOutput(empty).
+		WithPathInfo(nil).
+		ReturnEmpty().
+		WithRouting(api.NewTestRoutingInfo("bucket", api.NewTestRoutingInfoVariant("name")))
 
-	service := &api.Service{
-		Name:        "StorageControl",
-		ID:          ".google.storage.control.v2.StorageControl",
-		Package:     "google.storage.control.v2",
-		DefaultHost: "storage.googleapis.com",
-		Methods: []*api.Method{
-			{
-				Name:         "CreateFolder",
-				ID:           ".google.storage.control.v2.StorageControl.CreateFolder",
-				InputTypeID:  createFolderRequest.ID,
-				InputType:    createFolderRequest,
-				OutputTypeID: folder.ID,
-				OutputType:   folder,
-				PathInfo: &api.PathInfo{
-					Bindings: []*api.PathBinding{{
-						Verb:         "POST",
-						PathTemplate: (&api.PathTemplate{}).WithLiteral("v2").WithLiteral("projects").WithVariableNamed("parent").WithLiteral("folders"),
-					}},
-				},
-			},
-			{
-				Name:         "DeleteFolder",
-				ID:           ".google.storage.control.v2.StorageControl.DeleteFolder",
-				InputTypeID:  deleteFolderRequest.ID,
-				InputType:    deleteFolderRequest,
-				OutputTypeID: empty.ID,
-				OutputType:   empty,
-				ReturnsEmpty: true,
-				Routing: []*api.RoutingInfo{
-					{
-						Name: "bucket",
-						Variants: []*api.RoutingInfoVariant{
-							{
-								FieldPath: []string{"name"},
-							},
-						},
-					},
-				},
-			},
-			{
-				Name:            "GetOperation",
-				ID:              ".google.longrunning.Operations.GetOperation",
-				SourceServiceID: ".google.longrunning.Operations",
-				SourceService: &api.Service{
-					Name:    "Operations",
-					Package: "google.longrunning",
-					ID:      ".google.longrunning.Operations",
-				},
-				InputTypeID:  getOperationRequest.ID,
-				InputType:    getOperationRequest,
-				OutputTypeID: operation.ID,
-				OutputType:   operation,
-			},
-		},
-	}
+	sourceGetOperation := api.NewTestMethod("GetOperation").
+		WithInput(getOperationRequest).
+		WithOutput(operation).
+		WithPathInfo(nil)
+	operationsService := api.NewTestService("Operations").
+		WithPackage("google.longrunning").
+		WithMethods(sourceGetOperation)
 
-	operationsService := &api.Service{
-		Name:    "Operations",
-		ID:      ".google.longrunning.Operations",
-		Package: "google.longrunning",
-	}
-	model := api.NewTestAPI([]*api.Message{createFolderRequest, deleteFolderRequest, folder, empty, operation, getOperationRequest}, nil, []*api.Service{service, operationsService})
-	model.PackageName = "google.storage.control.v2"
+	getOperation := api.NewTestMethod("GetOperation").
+		WithSourceMethod(sourceGetOperation).
+		WithID(".google.longrunning.Operations.GetOperation")
+
+	service := api.NewTestService("StorageControl").
+		WithPackage("google.storage.control.v2").
+		WithDefaultHost("storage.googleapis.com").
+		WithMethods(
+			api.NewTestMethod("CreateFolder").
+				WithInput(createFolderRequest).
+				WithOutput(folder).
+				WithVerb("POST").
+				WithPathTemplate((&api.PathTemplate{}).WithLiteral("v2").WithLiteral("projects").WithVariableNamed("parent").WithLiteral("folders")),
+			deleteFolder,
+			getOperation,
+		)
+
+	model := api.NewTestAPI([]*api.Message{folder, createFolderRequest, deleteFolderRequest}, nil, []*api.Service{service})
+	model.AddService(operationsService)
+	model.AddMessage(empty)
+	model.AddMessage(operation)
+	model.AddMessage(getOperationRequest)
 	if err := api.CrossReference(model); err != nil {
 		t.Fatal(err)
 	}
@@ -426,7 +319,7 @@ func TestGenerateStub_Grpc(t *testing.T) {
 		t.Fatal(err)
 	}
 	stubStr := string(stubContent)
-	if !strings.Contains(stubStr, "protocol StorageControlStub {") {
+	if !strings.Contains(stubStr, "protocol StorageControlStub: Sendable {") {
 		t.Errorf("stub file missing StorageControlStub protocol:\n%s", stubStr)
 	}
 	if !strings.Contains(stubStr, "func createFolder(") || !strings.Contains(stubStr, "func deleteFolder(") || !strings.Contains(stubStr, "func getOperation(") {
@@ -441,22 +334,23 @@ func TestGenerateStub_Grpc(t *testing.T) {
 	transportStr := string(transportContent)
 
 	// Check imports
-	if !strings.Contains(transportStr, "@_spi(GoogleCloudInternal) import GoogleCloudGax") {
-		t.Errorf("transport missing @_spi(GoogleCloudInternal) import GoogleCloudGax:\n%s", transportStr)
+	if !strings.Contains(transportStr, "@_spi(GoogleCloudInternal) import GoogleGax") {
+		t.Errorf("transport missing @_spi(GoogleCloudInternal) import GoogleGax:\n%s", transportStr)
 	}
 	if !strings.Contains(transportStr, "internal import StorageControlProtos") {
 		t.Errorf("transport missing internal import StorageControlProtos:\n%s", transportStr)
 	}
 
 	// Check gRPC Transport class definition and inner client
-	if !strings.Contains(transportStr, "class StorageControlTransport: StorageControlStub {") {
+	if !strings.Contains(transportStr, "final class StorageControlTransport: StorageControlStub {") {
 		t.Errorf("transport missing StorageControlTransport class declaration:\n%s", transportStr)
 	}
-	if !strings.Contains(transportStr, "let inner: GoogleCloudGaxGRPC._GRPCClient") {
-		t.Errorf("transport missing inner: GoogleCloudGaxGRPC._GRPCClient field:\n%s", transportStr)
+	if !strings.Contains(transportStr, "let inner: GoogleGaxGRPC._GRPCClient") {
+		t.Errorf("transport missing inner: GoogleGaxGRPC._GRPCClient field:\n%s", transportStr)
 	}
-	if !strings.Contains(transportStr, `self.inner = try GoogleCloudGaxGRPC._GRPCClient(`) ||
-		!strings.Contains(transportStr, `withDefaultEndpoint: "https://storage.googleapis.com"`) {
+	if !strings.Contains(transportStr, `self.inner = try GoogleGaxGRPC._GRPCClient(`) ||
+		!strings.Contains(transportStr, `withDefaultEndpoint: "https://storage.googleapis.com"`) ||
+		!strings.Contains(transportStr, `clientHeader: Clients.clientHeader`) {
 		t.Errorf("transport missing _GRPCClient initialization with default endpoint:\n%s", transportStr)
 	}
 
@@ -464,8 +358,8 @@ func TestGenerateStub_Grpc(t *testing.T) {
 	if !strings.Contains(transportStr, "let protoRequest = try request.toProto()") {
 		t.Errorf("transport missing request.toProto() call:\n%s", transportStr)
 	}
-	if !strings.Contains(transportStr, "GoogleCloudGaxGRPC._RoutingMatcher.value(") {
-		t.Errorf("transport missing GoogleCloudGaxGRPC._RoutingMatcher.value for routing params:\n%s", transportStr)
+	if !strings.Contains(transportStr, "GoogleGaxGRPC._RoutingMatcher.value(") {
+		t.Errorf("transport missing GoogleGaxGRPC._RoutingMatcher.value for routing params:\n%s", transportStr)
 	}
 	if !strings.Contains(transportStr, `path: "/google.storage.control.v2.StorageControl/CreateFolder"`) {
 		t.Errorf("transport missing CreateFolder gRPC path in execute:\n%s", transportStr)
@@ -485,5 +379,81 @@ func TestGenerateStub_Grpc(t *testing.T) {
 	}
 	if !strings.Contains(transportStr, `("bucket",`) {
 		t.Errorf("transport missing bucket routing parameter extraction in method body:\n%s", transportStr)
+	}
+}
+
+func TestGenerateStub_MultipleBindings(t *testing.T) {
+	outDir := t.TempDir()
+
+	request := api.NewTestMessage("Request").
+		WithPackage("test").
+		WithFields(
+			api.NewTestField("name").WithType(api.TypezString),
+			api.NewTestField("parent").WithType(api.TypezString),
+		)
+	response := api.NewTestMessage("Response").
+		WithPackage("test")
+
+	getResource := api.NewTestMethod("GetResource").
+		WithInput(request).
+		WithOutput(response).
+		WithBindings(
+			api.NewTestPathBinding("GET", (&api.PathTemplate{}).
+				WithLiteral("v1").
+				WithVariableNamed("name")),
+			api.NewTestPathBinding("POST", (&api.PathTemplate{}).
+				WithLiteral("v1").
+				WithVariableNamed("parent").
+				WithLiteral("resources")),
+		)
+
+	service := api.NewTestService("Service").
+		WithPackage("google.cloud.test.v1").
+		WithMethods(getResource)
+
+	model := api.NewTestAPI(nil, nil, []*api.Service{service})
+	model.AddMessage(request)
+	model.AddMessage(response)
+
+	swiftCfg := swiftConfig(t, []config.SwiftDependency{
+		{
+			Name:       "SomeTestPackage",
+			ApiPackage: "test",
+		},
+	})
+	library := &config.Library{
+		Swift: swiftCfg,
+	}
+	if err := Generate(t.Context(), model, outDir, library, nil); err != nil {
+		t.Fatal(err)
+	}
+
+	transportFilename := filepath.Join(outDir, "Sources", "GoogleCloudTestV1", "Service+Transport.swift")
+	transportContent, err := os.ReadFile(transportFilename)
+	if err != nil {
+		t.Fatal(err)
+	}
+	transportStr := string(transportContent)
+
+	if !strings.Contains(transportStr, "GoogleGax._RoutingMatcher.pathValue(") {
+		t.Errorf("transport missing _RoutingMatcher.pathValue:\n%s", transportStr)
+	}
+	if !strings.Contains(transportStr, "GoogleGax._PathMismatchBuilder()") {
+		t.Errorf("transport missing _PathMismatchBuilder:\n%s", transportStr)
+	}
+	if !strings.Contains(transportStr, "builder.maybeAdd(") {
+		t.Errorf("transport missing builder.maybeAdd:\n%s", transportStr)
+	}
+	if !strings.Contains(transportStr, "throw GoogleGax.RequestError.binding(GoogleGax.BindingError(paths: paths))") {
+		t.Errorf("transport missing throw RequestError.binding:\n%s", transportStr)
+	}
+	if !strings.Contains(transportStr, "$0.setMethod(.GET)") {
+		t.Errorf("transport missing $0.setMethod(.GET):\n%s", transportStr)
+	}
+	if !strings.Contains(transportStr, "$0.setMethod(.POST)") {
+		t.Errorf("transport missing $0.setMethod(.POST):\n%s", transportStr)
+	}
+	if !strings.Contains(transportStr, "configure(&req)") {
+		t.Errorf("transport missing configure(&req):\n%s", transportStr)
 	}
 }

@@ -98,14 +98,30 @@ func Write(path string, v any) error {
 	return os.WriteFile(path, data, 0o644)
 }
 
-// Empty returns whether the given value serializes to an empty YAML object
+// empty returns whether the given value serializes to an empty YAML object
 // (i.e. "{}" with a line break).
-func Empty(v any) (bool, error) {
+func empty(v any) (bool, error) {
 	data, err := Marshal(v)
 	if err != nil {
 		return false, err
 	}
 	return string(data) == "{}\n", nil
+}
+
+// ClearIfEmpty returns nil if v is nil or serializes to an empty YAML object.
+// Otherwise it returns v.
+func ClearIfEmpty[T any](v *T) (*T, error) {
+	if v == nil {
+		return nil, nil
+	}
+	empty, err := empty(v)
+	if err != nil {
+		return nil, err
+	}
+	if empty {
+		return nil, nil
+	}
+	return v, nil
 }
 
 // format runs yamlfmt on the given YAML content and returns the formatted output.

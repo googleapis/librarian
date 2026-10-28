@@ -19,25 +19,23 @@ import (
 	"context"
 	"embed"
 
+	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/sidekick/api"
 	"github.com/googleapis/librarian/internal/sidekick/language"
-	"github.com/googleapis/librarian/internal/sidekick/parser"
 )
 
-//go:embed all:templates
-var templates embed.FS
+var (
+	//go:embed all:templates
+	templates       embed.FS
+	parsedTemplates = language.MustParseTemplates(templates)
+)
 
-// Generate generates code from the model.
-func Generate(ctx context.Context, model *api.API, outdir string, cfg *parser.ModelConfig) error {
-	// A template provide converts a template name into the contents.
-	provider := func(name string) (string, error) {
-		contents, err := templates.ReadFile(name)
-		if err != nil {
-			return "", err
-		}
-		return string(contents), nil
+// Generate generates code from the model into outdir.
+func Generate(_ context.Context, model *api.API, outdir string, cfg *config.Library) error {
+	c := newCodec(cfg)
+	if err := c.annotateModel(model); err != nil {
+		return err
 	}
-	// The list of files to generate, just load them from the embedded templates.
 	generatedFiles := language.WalkTemplatesDir(templates, "templates/readme")
-	return language.GenerateFromModel(outdir, model, provider, generatedFiles)
+	return parsedTemplates.GenerateFromModel(outdir, model, generatedFiles)
 }

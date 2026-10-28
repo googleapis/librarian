@@ -127,6 +127,25 @@ func OutputWithEnv(ctx context.Context, env map[string]string, command string, a
 	return runCmd(ctx, "", env, command, arg...)
 }
 
+// OutputWithStdin executes a program (with arguments) and stdin input and returns stdout.
+func OutputWithStdin(ctx context.Context, stdin io.Reader, command string, arg ...string) (string, error) {
+	return OutputWithStdinAndEnv(ctx, stdin, nil, command, arg...)
+}
+
+// OutputWithStdinAndEnv executes a program with stdin and optional environment variables and returns stdout.
+func OutputWithStdinAndEnv(ctx context.Context, stdin io.Reader, env map[string]string, command string, arg ...string) (string, error) {
+	cmd := buildCmd(ctx, "", env, command, arg...)
+	cmd.Stdin = stdin
+	output, err := cmd.Output()
+	if err != nil {
+		if exitErr, ok := errors.AsType[*exec.ExitError](err); ok {
+			return "", fmt.Errorf("%s: %s: %w", cmd, exitErr.Stderr, err)
+		}
+		return "", fmt.Errorf("%s: %w", cmd, err)
+	}
+	return string(output), nil
+}
+
 func buildCmd(ctx context.Context, dir string, env map[string]string, command string, arg ...string) *exec.Cmd {
 	// Merge system PATH env with the provided environment variables.
 	pathEnv := os.Getenv(envPath)

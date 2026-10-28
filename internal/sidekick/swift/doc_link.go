@@ -38,9 +38,15 @@ func (c *codec) linkDefinition(link string, scopes []string) (string, error) {
 
 // docLink returns the documentation link for a symbol.
 func (c *codec) docLink(packageName, name string) string {
+	// Swift keywords are escaped with backticks in code (e.g. `get`, `protocol`),
+	// but DocC symbol links require unescaped symbol names.
+	name = strings.ReplaceAll(name, "`", "")
 	if packageName != c.Model.PackageName {
 		// TODO(#5072) - we have not implemented cross-reference links to external packages.
 		return fmt.Sprintf("https://www.google.com/search?q=Swift+%s+%s", packageName, name)
+	}
+	if c.LibraryName != "" {
+		name = strings.TrimPrefix(name, c.LibraryName+".")
 	}
 	swiftyName := strings.ReplaceAll(name, ".", "/")
 	return fmt.Sprintf("<doc:%s>", swiftyName)
@@ -137,6 +143,11 @@ func (c *codec) tryEnumValueDocLink(id string) (string, error) {
 }
 
 func (c *codec) methodDocLink(m *api.Method) (string, error) {
+	// Swift does not yet support streaming RPCs.
+	// See https://github.com/googleapis/google-cloud-swift/issues/451
+	if m.ClientSideStreaming || m.ServerSideStreaming {
+		return "", nil
+	}
 	idx := strings.LastIndex(m.ID, ".")
 	if idx == -1 {
 		return "", nil

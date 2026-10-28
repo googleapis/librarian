@@ -20,9 +20,9 @@ import (
 
 func TestDeprecatedAPI(t *testing.T) {
 	newAPI := func() *API {
-		enums := []*Enum{{Name: "e1", Package: "p1"}}
-		messages := []*Message{{Name: "m1", Package: "p1"}}
-		services := []*Service{{Name: "s1"}}
+		enums := []*Enum{NewTestEnum("e1").WithPackage("p1")}
+		messages := []*Message{NewTestMessage("m1").WithPackage("p1")}
+		services := []*Service{NewTestService("s1")}
 		return NewTestAPI(messages, enums, services)
 	}
 
@@ -32,175 +32,119 @@ func TestDeprecatedAPI(t *testing.T) {
 	}
 
 	model = newAPI()
-	model.Enums[0].Deprecated = true
+	model.Enums[0].WithDeprecated(true)
 	if !model.HasDeprecatedEntities() {
 		t.Errorf("deprecated enum should result in deprecated entities for model %v", model)
 	}
 
 	model = newAPI()
-	model.Messages[0].Deprecated = true
+	model.Messages[0].WithDeprecated(true)
 	if !model.HasDeprecatedEntities() {
 		t.Errorf("deprecated message should result in deprecated entities for model %v", model)
 	}
 
 	model = newAPI()
-	model.Services[0].Deprecated = true
+	model.Services[0].WithDeprecated(true)
 	if !model.HasDeprecatedEntities() {
 		t.Errorf("deprecated service should result in deprecated entities for model %v", model)
 	}
 }
 
 func TestDeprecatedMessage(t *testing.T) {
-	m1 := &Message{
-		Name:       "m1",
-		Package:    "p1",
-		Deprecated: true,
-		Fields: []*Field{
-			{Name: "f1"},
-			{Name: "f2"},
-		},
-	}
+	m1 := NewTestMessage("m1").
+		WithPackage("p1").
+		WithDeprecated(true).
+		WithFields(NewTestField("f1"), NewTestField("f2"))
 	if !m1.hasDeprecatedEntities() {
 		t.Errorf("expected deprecated entities in message %v", m1)
 	}
 
-	m2 := &Message{
-		Name:    "m2",
-		Package: "p1",
-		Fields: []*Field{
-			{Name: "f1", Deprecated: true},
-			{Name: "f2"},
-		},
-	}
+	m2 := NewTestMessage("m2").
+		WithPackage("p1").
+		WithFields(
+			NewTestField("f1").WithDeprecated(true),
+			NewTestField("f2"),
+		)
 	if !m2.hasDeprecatedEntities() {
 		t.Errorf("expected deprecated entities in message %v", m2)
 	}
 
-	m3 := &Message{
-		Name:    "m3",
-		Package: "p1",
-		Messages: []*Message{
-			{Name: "child1", Deprecated: true},
-		},
-		Fields: []*Field{
-			{Name: "f1"},
-			{Name: "f2"},
-		},
-	}
+	m3 := NewTestMessage("m3").
+		WithPackage("p1").
+		WithMessages(NewTestMessage("child1").WithDeprecated(true)).
+		WithFields(NewTestField("f1"), NewTestField("f2"))
 	if !m3.hasDeprecatedEntities() {
 		t.Errorf("expected deprecated entities in message %v", m3)
 	}
 
-	m4 := &Message{
-		Name:    "m4",
-		Package: "p1",
-		Messages: []*Message{
-			{Name: "child1"},
-		},
-		Enums: []*Enum{
-			{Name: "enum1", Deprecated: true},
-		},
-		Fields: []*Field{
-			{Name: "f1"},
-			{Name: "f2"},
-		},
-	}
+	m4 := NewTestMessage("m4").
+		WithPackage("p1").
+		WithMessages(NewTestMessage("child1")).
+		WithEnums(NewTestEnum("enum1").WithDeprecated(true)).
+		WithFields(NewTestField("f1"), NewTestField("f2"))
 	if !m4.hasDeprecatedEntities() {
 		t.Errorf("expected deprecated entities in message %v", m4)
 	}
 
-	m5 := &Message{
-		Name:    "m5",
-		Package: "p1",
-		Messages: []*Message{
-			{Name: "child1"},
-		},
-		Enums: []*Enum{
-			{Name: "enum1"},
-		},
-		Fields: []*Field{
-			{Name: "f1"},
-			{Name: "f2"},
-		},
-	}
+	m5 := NewTestMessage("m5").
+		WithPackage("p1").
+		WithMessages(NewTestMessage("child1")).
+		WithEnums(NewTestEnum("enum1")).
+		WithFields(NewTestField("f1"), NewTestField("f2"))
 	if m5.hasDeprecatedEntities() {
 		t.Errorf("expected no deprecated entities in message %v", m5)
 	}
 }
 
 func TestDeprecatedEnum(t *testing.T) {
-	e1 := &Enum{
-		Name:       "e1",
-		Package:    "p1",
-		Deprecated: true,
-		Values: []*EnumValue{
-			{Name: "V1", Number: 1},
-			{Name: "V2", Number: 2},
-		},
-	}
+	e1 := NewTestEnum("e1").
+		WithPackage("p1").
+		WithDeprecated(true).
+		WithValues(NewTestEnumValue("V1", 1), NewTestEnumValue("V2", 2))
 	if !e1.hasDeprecatedEntities() {
 		t.Errorf("expected deprecated entities in enum %v", e1)
 	}
 
-	e2 := &Enum{
-		Name:    "e2",
-		Package: "p1",
-		Values: []*EnumValue{
-			{Name: "V1", Number: 1},
-			{Name: "V2", Number: 2, Deprecated: true},
-		},
-	}
+	e2 := NewTestEnum("e2").
+		WithPackage("p1").
+		WithValues(
+			NewTestEnumValue("V1", 1),
+			NewTestEnumValue("V2", 2).WithDeprecated(true),
+		)
 	if !e2.hasDeprecatedEntities() {
 		t.Errorf("expected deprecated entities in enum %v", e2)
 	}
 
-	e3 := &Enum{
-		Name:    "e3",
-		Package: "p1",
-		Values: []*EnumValue{
-			{Name: "V1", Number: 1},
-			{Name: "V2", Number: 2},
-		},
-	}
+	e3 := NewTestEnum("e3").
+		WithPackage("p1").
+		WithValues(NewTestEnumValue("V1", 1), NewTestEnumValue("V2", 2))
 	if e3.hasDeprecatedEntities() {
 		t.Errorf("expected no deprecated entities in enum %v", e3)
 	}
 }
 
 func TestDeprecatedService(t *testing.T) {
-	s1 := &Service{
-		Name:       "s1",
-		Package:    "p1",
-		Deprecated: true,
-		Methods: []*Method{
-			{Name: "m1"},
-			{Name: "m2"},
-		},
-	}
+	s1 := NewTestService("s1").
+		WithPackage("p1").
+		WithDeprecated(true).
+		WithMethods(NewTestMethod("m1"), NewTestMethod("m2"))
 	if !s1.hasDeprecatedEntities() {
 		t.Errorf("expected deprecated entities in enum %v", s1)
 	}
 
-	s2 := &Service{
-		Name:    "s2",
-		Package: "p1",
-		Methods: []*Method{
-			{Name: "m1", Deprecated: true},
-			{Name: "m2"},
-		},
-	}
+	s2 := NewTestService("s2").
+		WithPackage("p1").
+		WithMethods(
+			NewTestMethod("m1").WithDeprecated(true),
+			NewTestMethod("m2"),
+		)
 	if !s2.hasDeprecatedEntities() {
 		t.Errorf("expected deprecated entities in enum %v", s2)
 	}
 
-	s3 := &Service{
-		Name:    "s3",
-		Package: "p1",
-		Methods: []*Method{
-			{Name: "m1"},
-			{Name: "m2"},
-		},
-	}
+	s3 := NewTestService("s3").
+		WithPackage("p1").
+		WithMethods(NewTestMethod("m1"), NewTestMethod("m2"))
 	if s3.hasDeprecatedEntities() {
 		t.Errorf("expected no deprecated entities in enum %v", s3)
 	}

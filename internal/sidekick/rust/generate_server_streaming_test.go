@@ -29,34 +29,23 @@ import (
 func TestGenerateServerStreaming(t *testing.T) {
 	outDir := t.TempDir()
 
-	request := api.NewTestMessage("ExpandRequest").WithPackage("test.v1")
-	requestId := &api.Field{
-		Name:          "request_id",
-		JSONName:      "requestId",
-		ID:            ".test.v1.ExpandRequest.request_id",
-		Typez:         api.TypezString,
-		AutoPopulated: true,
-	}
-	request.Fields = []*api.Field{
-		{
-			Name:     "content",
-			JSONName: "content",
-			ID:       ".test.v1.ExpandRequest.content",
-			Typez:    api.TypezString,
-		},
-		requestId,
-	}
+	requestID := api.NewTestField("request_id").WithType(api.TypezString).WithAutoPopulated()
+	content := api.NewTestField("content").WithType(api.TypezString)
+	request := api.NewTestMessage("ExpandRequest").
+		WithPackage("test.v1").
+		WithFields(content, requestID)
 	response := api.NewTestMessage("EchoResponse").WithPackage("test.v1")
 
-	serverMethod := api.NewTestMethod("Expand").WithInput(request).WithOutput(response).WithServerSideStreaming()
-	serverMethod.AutoPopulated = []*api.Field{requestId}
-	serverMethod.PathInfo = &api.PathInfo{
-		Bindings: []*api.PathBinding{{Verb: "POST", PathTemplate: &api.PathTemplate{}}},
-	}
+	serverMethod := api.NewTestMethod("Expand").
+		WithInput(request).
+		WithOutput(response).
+		WithServerSideStreaming().
+		WithVerb("POST").
+		WithPathTemplate(&api.PathTemplate{}).
+		WithAutoPopulated(requestID)
 	service := api.NewTestService("Echo").WithPackage("test.v1").WithMethods(serverMethod)
 
-	model := api.NewTestAPI([]*api.Message{request, response}, []*api.Enum{}, []*api.Service{service})
-	model.PackageName = "test.v1"
+	model := api.NewTestAPI([]*api.Message{request, response}, nil, []*api.Service{service})
 	if err := api.CrossReference(model); err != nil {
 		t.Fatal(err)
 	}
@@ -64,10 +53,11 @@ func TestGenerateServerStreaming(t *testing.T) {
 	cfg := &parser.ModelConfig{
 		SpecificationFormat: libconfig.SpecProtobuf,
 		Codec: map[string]string{
-			"package:wkt":                      "source=google.protobuf,package=google-cloud-wkt",
-			"package:prost":                    "package=prost,used-if=streaming",
-			"package:prost-types":              "package=prost-types,used-if=streaming",
-			"include-server-streaming-methods": "true",
+			"package:wkt":                 "source=google.protobuf,package=google-cloud-wkt",
+			"package:prost":               "package=prost,used-if=streaming",
+			"package:prost-types":         "package=prost-types,used-if=streaming",
+			"generate-rpc-samples":        "true",
+			"detailed-tracing-attributes": "true",
 		},
 	}
 	if err := Generate(t.Context(), model, outDir, cfg); err != nil {
@@ -95,22 +85,75 @@ func TestGenerateServerStreaming(t *testing.T) {
 		want     string
 	}{
 		{
-			name:     "client: method definition",
+			name:     "client: method doc example",
 			file:     "src/client.rs",
-			startStr: "    #[cfg(google_cloud_unstable_gapic_streaming)]\n    pub fn expand(&self) -> super::builder::echo::Expand",
-			endStr:   "    }",
-			want: `    #[cfg(google_cloud_unstable_gapic_streaming)]
+			startStr: "    ///\n    /// # Example",
+			endStr:   "        super::builder::echo::Expand::new(self.inner.clone())\n    }",
+			want: `    ///
+    /// # Example
+    /// ` + "```" + `
+    /// # use google_cloud_test_v1::client::Echo;
+    /// use google_cloud_test_v1::Result;
+    /// async fn sample(
+    ///    client: &Echo
+    /// ) -> Result<()> {
+    ///     let mut resp_stream = client.expand()
+    ///         /* set fields */
+    ///         .send().await?;
+    ///     while let Some(response) = resp_stream.next().await {
+    ///         let response = response?;
+    ///         println!("response {:?}", response);
+    ///     }
+    ///     Ok(())
+    /// }
+    /// ` + "```" + `
     pub fn expand(&self) -> super::builder::echo::Expand
     {
         super::builder::echo::Expand::new(self.inner.clone())
     }`,
 		},
 		{
+			name:     "client: method definition",
+			file:     "src/client.rs",
+			startStr: "    pub fn expand(&self) -> super::builder::echo::Expand",
+			endStr:   "    }",
+			want: `    pub fn expand(&self) -> super::builder::echo::Expand
+    {
+        super::builder::echo::Expand::new(self.inner.clone())
+    }`,
+		},
+		{
+			name:     "builder: doc example",
+			file:     "src/builder.rs",
+			startStr: "    /// The request builder for [Echo::expand][crate::client::Echo::expand] calls.\n    ///\n    /// # Example",
+			endStr:   "    #[derive(Clone, Debug)]",
+			want: `    /// The request builder for [Echo::expand][crate::client::Echo::expand] calls.
+    ///
+    /// # Example
+    /// ` + "```" + `
+    /// # use google_cloud_test_v1::builder::echo::Expand;
+    /// # async fn sample() -> google_cloud_test_v1::Result<()> {
+    /// let builder = prepare_request_builder();
+    /// let mut resp_stream = builder.send().await?;
+    /// while let Some(response) = resp_stream.next().await {
+    ///     let response = response?;
+    ///     println!("response {:?}", response);
+    /// }
+    /// # Ok(()) }
+    ///
+    /// fn prepare_request_builder() -> Expand {
+    ///   # panic!();
+    ///   // ... details omitted ...
+    /// }
+    /// ` + "```" + `
+    #[derive(Clone, Debug)]`,
+		},
+		{
 			name:     "builder: struct definition",
 			file:     "src/builder.rs",
-			startStr: "    #[cfg(google_cloud_unstable_gapic_streaming)]\n    #[derive(Clone, Debug)]\n    pub struct Expand(",
+			startStr: "    #[derive(Clone, Debug)]\n    pub struct Expand(",
 			endStr:   ");",
-			want:     "    #[cfg(google_cloud_unstable_gapic_streaming)]\n    #[derive(Clone, Debug)]\n    pub struct Expand(RequestBuilder<crate::model::ExpandRequest>);",
+			want:     "    #[derive(Clone, Debug)]\n    pub struct Expand(RequestBuilder<crate::model::ExpandRequest>);",
 		},
 		{
 			name:     "builder: send method",
@@ -120,17 +163,16 @@ func TestGenerateServerStreaming(t *testing.T) {
 			want: `        /// Initiates the server stream.
         pub async fn send(
             self,
-        ) -> Result<google_cloud_gax::streaming::ResponseReceiver<crate::model::EchoResponse>> {
+        ) -> Result<google_cloud_gax::streaming::ResponseStream<crate::model::EchoResponse>> {
             (*self.0.stub).expand(self.0.request, self.0.options).await
         }`,
 		},
 		{
 			name:     "builder: RequestBuilder trait impl",
 			file:     "src/builder.rs",
-			startStr: "    #[cfg(google_cloud_unstable_gapic_streaming)]\n    #[doc(hidden)]\n    impl crate::RequestBuilder for Expand {",
+			startStr: "    #[doc(hidden)]\n    impl crate::RequestBuilder for Expand {",
 			endStr:   "        }\n    }",
-			want: `    #[cfg(google_cloud_unstable_gapic_streaming)]
-    #[doc(hidden)]
+			want: `    #[doc(hidden)]
     impl crate::RequestBuilder for Expand {
         fn request_options(&mut self) -> &mut crate::RequestOptions {
             &mut self.0.options
@@ -140,15 +182,14 @@ func TestGenerateServerStreaming(t *testing.T) {
 		{
 			name:     "stub: method signature",
 			file:     "src/stub.rs",
-			startStr: "    #[cfg(google_cloud_unstable_gapic_streaming)]\n    fn expand(",
+			startStr: "    fn expand(",
 			endStr:   "    }",
-			want: `    #[cfg(google_cloud_unstable_gapic_streaming)]
-    fn expand(
+			want: `    fn expand(
         &self,
         _req: crate::model::ExpandRequest,
         _options: crate::RequestOptions,
     ) -> impl std::future::Future<Output = crate::Result<
-        google_cloud_gax::streaming::ResponseReceiver<crate::model::EchoResponse>,
+        google_cloud_gax::streaming::ResponseStream<crate::model::EchoResponse>,
     >> + Send {
         gaxi::unimplemented::unimplemented_server_streaming_stub()
     }`,
@@ -156,30 +197,28 @@ func TestGenerateServerStreaming(t *testing.T) {
 		{
 			name:     "stub/dynamic: trait method",
 			file:     "src/stub/dynamic.rs",
-			startStr: "    #[cfg(google_cloud_unstable_gapic_streaming)]\n    async fn expand(",
+			startStr: "    async fn expand(",
 			endStr:   ">;",
-			want: `    #[cfg(google_cloud_unstable_gapic_streaming)]
-    async fn expand(
+			want: `    async fn expand(
         &self,
         req: crate::model::ExpandRequest,
         options: crate::RequestOptions,
     ) -> crate::Result<
-        google_cloud_gax::streaming::ResponseReceiver<crate::model::EchoResponse>,
+        google_cloud_gax::streaming::ResponseStream<crate::model::EchoResponse>,
     >;`,
 		},
 		{
 			name:     "stub dynamic: blanket forwarding impl",
 			file:     "src/stub/dynamic.rs",
-			startStr: "    /// Forwards the call to the implementation provided by `T`.\n    #[cfg(google_cloud_unstable_gapic_streaming)]\n    async fn expand(",
+			startStr: "    /// Forwards the call to the implementation provided by `T`.\n    async fn expand(",
 			endStr:   "    }",
 			want: `    /// Forwards the call to the implementation provided by ` + "`T`." + `
-    #[cfg(google_cloud_unstable_gapic_streaming)]
     async fn expand(
         &self,
         req: crate::model::ExpandRequest,
         options: crate::RequestOptions,
     ) -> crate::Result<
-        google_cloud_gax::streaming::ResponseReceiver<crate::model::EchoResponse>,
+        google_cloud_gax::streaming::ResponseStream<crate::model::EchoResponse>,
     > {
         T::expand(self, req, options).await
     }`,
@@ -187,28 +226,26 @@ func TestGenerateServerStreaming(t *testing.T) {
 		{
 			name:     "tracing: forwarder method",
 			file:     "src/tracing.rs",
-			startStr: "    #[cfg(google_cloud_unstable_gapic_streaming)]\n    async fn expand(",
+			startStr: "    async fn expand(",
 			endStr:   "    }",
-			want: `    #[cfg(google_cloud_unstable_gapic_streaming)]
-    async fn expand(
+			want: `    async fn expand(
         &self,
         req: crate::model::ExpandRequest,
         options: crate::RequestOptions,
-    ) -> Result<google_cloud_gax::streaming::ResponseReceiver<crate::model::EchoResponse>> {
+    ) -> Result<google_cloud_gax::streaming::ResponseStream<crate::model::EchoResponse>> {
         self.inner.expand(req, options).await
     }`,
 		},
 		{
 			name:     "transport: method implementation",
 			file:     "src/transport.rs",
-			startStr: "    #[cfg(google_cloud_unstable_gapic_streaming)]\n    async fn expand(",
+			startStr: "    async fn expand(",
 			endStr:   "            .await\n    }",
-			want: `    #[cfg(google_cloud_unstable_gapic_streaming)]
-    async fn expand(
+			want: `    async fn expand(
         &self,
         req: crate::model::ExpandRequest,
         options: crate::RequestOptions,
-    ) -> Result<google_cloud_gax::streaming::ResponseReceiver<crate::model::EchoResponse>> {
+    ) -> Result<google_cloud_gax::streaming::ResponseStream<crate::model::EchoResponse>> {
         let x_goog_request_params = [
             None::<String>; 0
         ]
@@ -239,7 +276,7 @@ func TestGenerateServerStreaming(t *testing.T) {
                 path,
                 req,
                 options,
-                &crate::info::X_GOOG_API_CLIENT_HEADER,
+                &crate::info::X_GOOG_API_CLIENT_GRPC_HEADER,
                 &x_goog_request_params,
             )
             .await
@@ -282,4 +319,111 @@ prost.workspace      = true
 			t.Errorf("expected builder.rs not to contain auto_populate helper for server streaming method")
 		}
 	})
+
+	t.Run("builder: contains use crate::Result and RequestBuilder for server streaming", func(t *testing.T) {
+		builderContent := readFile("src/builder.rs")
+		if !strings.Contains(builderContent, "use crate::Result;") {
+			t.Errorf("expected builder.rs to contain 'use crate::Result;' for server-streaming method")
+		}
+		if !strings.Contains(builderContent, "pub(crate) struct RequestBuilder<") {
+			t.Errorf("expected builder.rs to contain 'pub(crate) struct RequestBuilder<' for server-streaming method")
+		}
+		if strings.Contains(builderContent, "BidiStreamBuilder") {
+			t.Errorf("expected builder.rs not to contain 'BidiStreamBuilder' for server-streaming only service")
+		}
+	})
+
+	t.Run("tracing: contains allow(dead_code) on duration for server-streaming only service", func(t *testing.T) {
+		tracingContent := readFile("src/tracing.rs")
+		if !strings.Contains(tracingContent, "#[allow(dead_code)]\n    duration: gaxi::observability::DurationMetric,") {
+			t.Errorf("expected tracing.rs to contain allow(dead_code) on duration metric")
+		}
+	})
+}
+
+func TestGenerateGrpcClientServerStreaming(t *testing.T) {
+	outDir := t.TempDir()
+
+	request := api.NewTestMessage("ExpandRequest").
+		WithPackage("test.v1").
+		WithFields(
+			api.NewTestField("content").WithType(api.TypezString),
+		)
+	response := api.NewTestMessage("EchoResponse").WithPackage("test.v1")
+
+	serverMethod := api.NewTestMethod("Expand").
+		WithInput(request).
+		WithOutput(response).
+		WithServerSideStreaming().
+		WithVerb("POST").
+		WithPathTemplate(&api.PathTemplate{})
+	service := api.NewTestService("Echo").WithPackage("test.v1").WithMethods(serverMethod)
+
+	model := api.NewTestAPI([]*api.Message{request, response}, nil, []*api.Service{service})
+	if err := api.CrossReference(model); err != nil {
+		t.Fatal(err)
+	}
+
+	cfg := &parser.ModelConfig{
+		SpecificationFormat: libconfig.SpecProtobuf,
+		Codec: map[string]string{
+			"template-override": "templates/grpc-client",
+			"package:wkt":       "source=google.protobuf,package=google-cloud-wkt",
+		},
+	}
+	if err := Generate(t.Context(), model, outDir, cfg); err != nil {
+		t.Fatal(err)
+	}
+
+	files := make(map[string]string)
+	readFile := func(relPath string) string {
+		if content, ok := files[relPath]; ok {
+			return content
+		}
+		b, err := os.ReadFile(filepath.Join(outDir, relPath))
+		if err != nil {
+			t.Fatal(err)
+		}
+		files[relPath] = string(b)
+		return files[relPath]
+	}
+
+	for _, test := range []struct {
+		name     string
+		file     string
+		startStr string
+		endStr   string
+		want     string
+	}{
+		{
+			name:     "grpc-client transport: execute_server_streaming call",
+			file:     "transport.rs",
+			startStr: "        self.inner\n            .execute_server_streaming::<",
+			endStr:   "&x_goog_request_params,\n            )\n            .await\n    }",
+			want: `        self.inner
+            .execute_server_streaming::<
+                crate::model::ExpandRequest,
+                crate::model::EchoResponse,
+                crate::test::v1::ExpandRequest,
+                crate::test::v1::EchoResponse,
+            >(
+                extensions,
+                path,
+                req,
+                options,
+                &info::X_GOOG_API_CLIENT_HEADER,
+                &x_goog_request_params,
+            )
+            .await
+    }`,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			content := readFile(test.file)
+			got := extractBlock(t, content, test.startStr, test.endStr)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
 }

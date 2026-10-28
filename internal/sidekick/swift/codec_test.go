@@ -42,6 +42,7 @@ func TestParseOptions(t *testing.T) {
 				LibraryName:        "Test",
 				TargetLibraryName:  "Test",
 				PackageName:        "test",
+				PackageRepoName:    "swift-test",
 				PackageVersion:     "0.0.0",
 				MonorepoRoot:       ".",
 				Model:              model,
@@ -63,6 +64,7 @@ func TestParseOptions(t *testing.T) {
 				LibraryName:        "Test",
 				TargetLibraryName:  "Test",
 				PackageName:        "google-cloud-bigtable",
+				PackageRepoName:    "swift-google-cloud-bigtable",
 				PackageVersion:     "0.0.0",
 				MonorepoRoot:       ".",
 				Model:              model,
@@ -77,7 +79,7 @@ func TestParseOptions(t *testing.T) {
 				Name:          "google-cloud-wkt",
 				CopyrightYear: "2038",
 				Swift: &config.SwiftPackage{
-					LibraryNameOverride: "GoogleCloudWkt",
+					LibraryNameOverride: "GoogleWKT",
 				},
 			},
 			module: &config.SwiftModule{
@@ -86,8 +88,9 @@ func TestParseOptions(t *testing.T) {
 			want: &codec{
 				Module:             true,
 				GenerationYear:     "2038",
-				TargetLibraryName:  "GoogleCloudWkt",
+				TargetLibraryName:  "GoogleWKT",
 				PackageName:        "test",
+				PackageRepoName:    "swift-google-cloud-wkt",
 				PackageVersion:     "0.0.0",
 				MonorepoRoot:       ".",
 				Model:              model,
@@ -115,6 +118,7 @@ func TestParseOptions(t *testing.T) {
 				GenerationYear:     "2038",
 				TargetLibraryName:  "GoogleCloudBigQuery",
 				PackageName:        "GoogleCloudBigQuery",
+				PackageRepoName:    "swift-google-cloud-bigquery",
 				PackageVersion:     "0.0.0",
 				MonorepoRoot:       ".",
 				Model:              model,
@@ -144,6 +148,7 @@ func TestParseOptions(t *testing.T) {
 				GenerationYear:     "2038",
 				TargetLibraryName:  "GoogleCloudStorage",
 				PackageName:        "GoogleCloudStorage",
+				PackageRepoName:    "swift-google-cloud-storage",
 				PackageVersion:     "0.0.0",
 				MonorepoRoot:       ".",
 				Model:              model,
@@ -164,6 +169,7 @@ func TestParseOptions(t *testing.T) {
 				LibraryName:        "Test",
 				TargetLibraryName:  "Test",
 				PackageName:        "test",
+				PackageRepoName:    "swift-test",
 				PackageVersion:     "0.0.0",
 				MonorepoRoot:       ".",
 				Model:              model,
@@ -171,6 +177,7 @@ func TestParseOptions(t *testing.T) {
 				DependenciesByName: map[string]*Dependency{},
 				UrlSafeForBytes:    true,
 				ResponseEncoding:   discoveryResponseEncoding,
+				UseStringEnums:     true,
 			},
 		},
 		{
@@ -189,6 +196,7 @@ func TestParseOptions(t *testing.T) {
 				LibraryName:        "Test",
 				TargetLibraryName:  "Test",
 				PackageName:        "test",
+				PackageRepoName:    "swift-test",
 				PackageVersion:     "0.0.0",
 				MonorepoRoot:       ".",
 				Model:              model,
@@ -199,6 +207,55 @@ func TestParseOptions(t *testing.T) {
 					".google.storage.v2.Storage":                "StorageAdmin",
 					".google.storage.control.v2.StorageControl": "StorageAdmin",
 				},
+			},
+		},
+		{
+			name: "idempotency hook in package",
+			library: &config.Library{
+				CopyrightYear: "2038",
+				Swift: &config.SwiftPackage{
+					IdempotencyHook: "resolveIdempotency",
+				},
+			},
+			want: &codec{
+				GenerationYear:     "2038",
+				LibraryName:        "Test",
+				TargetLibraryName:  "Test",
+				PackageName:        "test",
+				PackageRepoName:    "swift-test",
+				PackageVersion:     "0.0.0",
+				MonorepoRoot:       ".",
+				Model:              model,
+				ApiPackages:        map[string]*Dependency{},
+				DependenciesByName: map[string]*Dependency{},
+				ResponseEncoding:   defaultResponseEncoding,
+				IdempotencyHook:    "resolveIdempotency",
+			},
+		},
+		{
+			name: "idempotency hook module override",
+			library: &config.Library{
+				CopyrightYear: "2038",
+				Swift: &config.SwiftPackage{
+					IdempotencyHook: "packageHook",
+				},
+			},
+			module: &config.SwiftModule{
+				IdempotencyHook: "moduleHook",
+			},
+			want: &codec{
+				Module:             true,
+				GenerationYear:     "2038",
+				TargetLibraryName:  "Test",
+				PackageName:        "test",
+				PackageRepoName:    "swift-test",
+				PackageVersion:     "0.0.0",
+				MonorepoRoot:       ".",
+				Model:              model,
+				ApiPackages:        map[string]*Dependency{},
+				DependenciesByName: map[string]*Dependency{},
+				ResponseEncoding:   defaultResponseEncoding,
+				IdempotencyHook:    "moduleHook",
 			},
 		},
 	} {
@@ -293,47 +350,41 @@ func (c *codec) withExtraDependencies(t *testing.T, deps []config.SwiftDependenc
 
 func makeGatedTestModel() *api.API {
 	makeEnum := func(name string) *api.Enum {
-		e := &api.Enum{
-			Name: name, ID: ".google.cloud.test.v1." + name, Package: "google.cloud.test.v1",
-			Values: []*api.EnumValue{{Name: "UNSPECIFIED", Number: 0}},
-		}
-		e.UniqueNumberValues = e.Values
-		return e
+		return api.NewTestEnum(name).
+			WithPackage("google.cloud.test.v1").
+			WithValues(api.NewTestEnumValue("UNSPECIFIED", 0))
 	}
 	sharedEnum := makeEnum("SharedEnum")
 	s1Enum := makeEnum("Service1Enum")
 	s2Enum := makeEnum("Service2Enum")
 	unusedEnum := makeEnum("UnusedEnum")
 
-	sharedMessage := &api.Message{
-		Name: "SharedMessage", ID: ".google.cloud.test.v1.SharedMessage", Package: "google.cloud.test.v1",
-		Fields: []*api.Field{{Name: "e", Typez: api.TypezEnum, TypezID: sharedEnum.ID}},
+	makeMsg := func(name string, e *api.Enum) *api.Message {
+		return api.NewTestMessage(name).
+			WithPackage("google.cloud.test.v1").
+			WithFields(api.NewTestField("e").WithEnumType(e))
 	}
-	s1Message := &api.Message{
-		Name: "Service1Message", ID: ".google.cloud.test.v1.Service1Message", Package: "google.cloud.test.v1",
-		Fields: []*api.Field{{Name: "e", Typez: api.TypezEnum, TypezID: s1Enum.ID}},
-	}
-	s2Message := &api.Message{
-		Name: "Service2Message", ID: ".google.cloud.test.v1.Service2Message", Package: "google.cloud.test.v1",
-		Fields: []*api.Field{{Name: "e", Typez: api.TypezEnum, TypezID: s2Enum.ID}},
-	}
-	unusedMessage := &api.Message{
-		Name: "UnusedMessage", ID: ".google.cloud.test.v1.UnusedMessage", Package: "google.cloud.test.v1",
-		Fields: []*api.Field{{Name: "e", Typez: api.TypezEnum, TypezID: unusedEnum.ID}},
-	}
+	sharedMessage := makeMsg("SharedMessage", sharedEnum)
+	s1Message := makeMsg("Service1Message", s1Enum)
+	s2Message := makeMsg("Service2Message", s2Enum)
+	unusedMessage := makeMsg("UnusedMessage", unusedEnum)
 
-	s1 := &api.Service{
-		Name: "Service1", ID: ".google.cloud.test.v1.Service1", Package: "google.cloud.test.v1",
-		Methods: []*api.Method{
-			{Name: "M1", ID: ".google.cloud.test.v1.Service1.M1", InputTypeID: sharedMessage.ID, OutputTypeID: s1Message.ID},
-		},
-	}
-	s2 := &api.Service{
-		Name: "Service2", ID: ".google.cloud.test.v1.Service2", Package: "google.cloud.test.v1",
-		Methods: []*api.Method{
-			{Name: "M2", ID: ".google.cloud.test.v1.Service2.M2", InputTypeID: sharedMessage.ID, OutputTypeID: s2Message.ID},
-		},
-	}
+	s1 := api.NewTestService("Service1").
+		WithPackage("google.cloud.test.v1").
+		WithMethods(
+			api.NewTestMethod("M1").
+				WithInput(sharedMessage).
+				WithOutput(s1Message).
+				WithPathTemplate(&api.PathTemplate{}),
+		)
+	s2 := api.NewTestService("Service2").
+		WithPackage("google.cloud.test.v1").
+		WithMethods(
+			api.NewTestMethod("M2").
+				WithInput(sharedMessage).
+				WithOutput(s2Message).
+				WithPathTemplate(&api.PathTemplate{}),
+		)
 
 	model := api.NewTestAPI(
 		[]*api.Message{sharedMessage, s1Message, s2Message, unusedMessage},
@@ -356,23 +407,14 @@ func makeRequiredServicesTestModel() *api.API {
 		WithPackage("external").
 		WithMethods(externalMethod)
 
-	placeholder := &api.Message{
-		Name:               "zoneOperations",
-		ID:                 ".test.zoneOperations",
-		Package:            "test",
-		ServicePlaceholder: true,
-	}
-	inputType := &api.Message{
-		Name:    "GetOperationRequest",
-		ID:      ".test.zoneOperations.GetOperationRequest",
-		Package: "test",
-		Parent:  placeholder,
-	}
-	outputType := &api.Message{
-		Name:    "Operation",
-		ID:      ".test.Operation",
-		Package: "test",
-	}
+	placeholder := api.NewTestMessage("zoneOperations")
+	placeholder.ServicePlaceholder = true
+
+	inputType := api.NewTestMessage("GetOperationRequest").
+		WithID(".test.zoneOperations.GetOperationRequest")
+
+	outputType := api.NewTestMessage("Operation")
+
 	sourceMethod := api.NewTestMethod("GetOperation").
 		WithInput(inputType).
 		WithOutput(outputType).
@@ -411,11 +453,11 @@ func TestSkipDependency(t *testing.T) {
 		wantSkip          bool
 	}{
 		{
-			name:              "multi-module self import skipped (e.g. wkt messages importing GoogleCloudWkt)",
-			targetLibraryName: "GoogleCloudWkt",
+			name:              "multi-module self import skipped (e.g. wkt messages importing GoogleWKT)",
+			targetLibraryName: "GoogleWKT",
 			packageName:       "google-protobuf",
 			module:            true,
-			depName:           "GoogleCloudWkt",
+			depName:           "GoogleWKT",
 			wantSkip:          true,
 		},
 		{
@@ -441,7 +483,7 @@ func TestSkipDependency(t *testing.T) {
 			libraryName:       "GoogleCloudSecretManagerV1",
 			packageName:       "google-cloud-secretmanager-v1",
 			module:            false,
-			depName:           "GoogleCloudGax",
+			depName:           "GoogleGax",
 			wantSkip:          false,
 		},
 	} {

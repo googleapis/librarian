@@ -1,0 +1,77 @@
+{{/*
+Copyright 2025 Google LLC
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    https://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/}}
+{{- range .Codec.DocLines }}
+{{ . }}
+{{- end }}
+///
+/// Throws a [http.ClientException] if there were problems communicating with
+/// the API service. Throws a [ServiceException] if the API method failed for
+/// any reason.
+{{- if .Codec.ServerSideStreaming }}
+Stream<{{ .Codec.ResponseType }}> {{ .Codec.Name }}({{ .Codec.RequestType }} request) {
+  final url = _endPoint.replace(path: '{{ .PathInfo.Codec.PathFmt }}'
+    {{- if .Codec.HasQueryLines }}, queryParameters: {
+      {{- range .Codec.QueryLines }}
+      {{ . }},
+      {{- end }}
+    }
+    {{- end }}
+  );
+  return _client
+      .{{ .Codec.RequestMethod }}Streaming(url{{- if .Codec.HasBody }},
+        body: {{ .Codec.BodyMessageName }}{{- end }},
+        enableSse: {{ .Codec.EnableSSE }})
+      .map({{ .Codec.ResponseType }}.fromJson);
+}
+{{- else if .Codec.IsLROGetOperation }}
+///
+/// This method can be used to get the current status of a long-running
+/// operation.
+Future<Operation<T, S>> getOperation<T extends {{ .Model.Codec.ProtoPrefix }}ProtoMessage, S extends {{ .Model.Codec.ProtoPrefix }}ProtoMessage>(Operation<T, S> request) async {
+  final url = _endPoint.replace(path: '{{ .PathInfo.Codec.PathFmt }}');
+  {{- if .Codec.ReturnsValue }}
+  final response = await _client.{{ .Codec.RequestMethod }}(url{{- if .Codec.HasBody }}, body: {{ .Codec.BodyMessageName }}{{- end }});
+  {{- else }}
+  await _client.{{ .Codec.RequestMethod }}(url{{- if .Codec.HasBody }}, body: {{ .Codec.BodyMessageName }}{{- end }});
+  {{- end }}
+  return Operation.fromJson(response, request.operationHelper);
+}
+{{- else }}
+{{- if .OperationInfo }}
+///
+/// Returns an [Operation] representing the status of the long-running
+/// operation.
+///
+/// When complete, [Operation.done] will be `true`. If successful,
+/// [Operation.responseAsMessage] will contain the operation's result.
+{{- end }}
+Future<{{ .Codec.ResponseType }}{{- if .OperationInfo }}<{{ .OperationInfo.Codec.ResponseType }}, {{ .OperationInfo.Codec.MetadataType }}>{{- end }}> {{ .Codec.Name }}({{ .Codec.RequestType }} request) async {
+  final url = _endPoint.replace(path: '{{ .PathInfo.Codec.PathFmt }}'
+    {{- if .Codec.HasQueryLines }}, queryParameters: {
+      {{- range .Codec.QueryLines }}
+      {{ . }},
+      {{- end }}
+    }
+    {{- end }}
+  );
+  {{- if .Codec.ReturnsValue }}
+  final response = await _client.{{ .Codec.RequestMethod }}(url{{- if .Codec.HasBody }}, body: {{ .Codec.BodyMessageName }}{{- end }});
+  return {{ .Codec.ResponseType }}.fromJson(response{{- if .OperationInfo }}, OperationHelper({{ .OperationInfo.Codec.ResponseType }}.fromJson, {{ .OperationInfo.Codec.MetadataType }}.fromJson),{{- end }});
+  {{- else }}
+  await _client.{{ .Codec.RequestMethod }}(url{{- if .Codec.HasBody }}, body: {{ .Codec.BodyMessageName }}{{- end }});
+  {{- end }}
+}
+{{- end }}

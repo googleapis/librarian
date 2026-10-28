@@ -16,18 +16,26 @@ package swift
 
 import (
 	"cmp"
+	"errors"
+	"fmt"
 	"log/slog"
 	"maps"
 	"slices"
+	"strings"
 
 	"github.com/googleapis/librarian/internal/license"
+	"github.com/googleapis/librarian/internal/sidekick/api"
 )
+
+// errQuickstartServiceNotFound is returned when the requested quickstart service override is not found.
+var errQuickstartServiceNotFound = errors.New("quickstart_service_override not found")
 
 type modelAnnotations struct {
 	CopyrightYear    string
 	BoilerPlate      []string
 	LibraryName      string
 	PackageName      string
+	PackageRepoName  string
 	PackageVersion   string
 	MonorepoRoot     string
 	DependsOn        map[string]*Dependency
@@ -35,6 +43,21 @@ type modelAnnotations struct {
 	PerServiceTraits bool
 	DefaultTraits    []string
 	AllTraits        []*traitDefinition
+
+	// ModulePath is the generated Protobuf module for this package, if the
+	// package has one (e.g. "StorageControlProtos").
+	ModulePath string
+
+	// LROAnyTypes are the payload types that this package's long-running
+	// operations can carry in an `Any`, sorted by type URL.
+	//
+	// The set is unioned across the services of the package, because the
+	// package has a single converter for all of them.
+	LROAnyTypes []*lroAnyType
+
+	// LROAnyConverterName is the name of the generated converter for
+	// `LROAnyTypes` (e.g. "StorageControlLROAnyConverter").
+	LROAnyConverterName string
 }
 
 // traitDefinition provides information about each package trait.
@@ -47,16 +70,30 @@ type modelAnnotations struct {
 type traitDefinition struct {
 	// The name of this trait.
 	Name string
+	// The name of the client class enabled by this trait.
+	ClientName string
+	// Whether this trait is enabled by default.
+	IsDefault bool
 	// The set of additional traits enabled by the service's trait.
 	EnabledTraits []string
 }
 
 // HasDependencies returns true if the package has dependencies on other packages.
 //
-// The mustache templates use this to omit code that goes unused when the package has no
+// The templates use this to omit code that goes unused when the package has no
 // dependencies.
 func (ann *modelAnnotations) HasDependencies() bool {
 	return len(ann.DependsOn) != 0
+}
+
+// HasLocalOrRemoteDependencies returns true if any dependency is configured with both URL and Path.
+func (ann *modelAnnotations) HasLocalOrRemoteDependencies() bool {
+	for _, dep := range ann.DependsOn {
+		if dep.IsLocalOrRemote() {
+			return true
+		}
+	}
+	return false
 }
 
 // EnablesOtherTraits returns true if this service's trait enables other traits too.
@@ -75,17 +112,48 @@ func (ann *modelAnnotations) HasTraits() bool {
 	return len(ann.AllTraits) != 0
 }
 
+func (ann *modelAnnotations) HasDefaultTraits() bool {
+	return len(ann.DefaultTraits) != 0
+}
+
+// HasLROAnyTypes returns true if the package has long-running operations whose
+// payload types are generated in it.
+func (ann *modelAnnotations) HasLROAnyTypes() bool {
+	return len(ann.LROAnyTypes) != 0
+}
+
+// PackageImports returns the list of dependencies for the package as a whole.
+//
+// This is the model-level counterpart of `serviceAnnotations.ServiceImports`,
+// for files that are generated once per package rather than once per service.
+// It applies the same filter, and for the same reason: dependencies configured
+// in the librarian.yaml file are needed in some files but not others, and
+// sometimes only a specific type is imported to minimize clashes.
+func (ann *modelAnnotations) PackageImports() []string {
+	result := make([]string, 0, len(ann.DependsOn))
+	for _, dep := range ann.DependsOn {
+		if dep.RequiredByServices {
+			continue
+		}
+		result = append(result, dep.Name)
+	}
+	slices.Sort(result)
+	return result
+}
+
 func (c *codec) annotateModel() error {
 	annotations := &modelAnnotations{
-		CopyrightYear:  c.GenerationYear,
-		BoilerPlate:    license.HeaderBulk(),
-		LibraryName:    c.LibraryName,
-		PackageName:    c.PackageName,
-		PackageVersion: c.PackageVersion,
-		MonorepoRoot:   c.MonorepoRoot,
-		DependsOn:      map[string]*Dependency{},
-		WktPackage:     wellKnownSwiftPackage,
-		DefaultTraits:  c.DefaultTraits,
+		CopyrightYear:   c.GenerationYear,
+		BoilerPlate:     license.HeaderBulk(),
+		LibraryName:     c.LibraryName,
+		PackageName:     c.PackageName,
+		PackageRepoName: c.PackageRepoName,
+		PackageVersion:  c.PackageVersion,
+		MonorepoRoot:    c.MonorepoRoot,
+		DependsOn:       map[string]*Dependency{},
+		WktPackage:      wellKnownSwiftPackage,
+		DefaultTraits:   c.DefaultTraits,
+		ModulePath:      c.ModulePath,
 	}
 	if dep, ok := c.ApiPackages[wellKnownProtobufPackage]; ok {
 		annotations.WktPackage = dep.Name
@@ -101,14 +169,33 @@ func (c *codec) annotateModel() error {
 			return err
 		}
 	}
+	c.annotateLROAnyFields()
+	if c.QuickstartServiceOverride != "" {
+		idx := slices.IndexFunc(c.Model.Services, func(s *api.Service) bool {
+			clientName := pascalCase(c.ServiceName(s) + "Client")
+			return strings.EqualFold(s.Name, c.QuickstartServiceOverride) ||
+				strings.EqualFold(c.ServiceName(s), c.QuickstartServiceOverride) ||
+				strings.EqualFold(clientName, c.QuickstartServiceOverride)
+		})
+		if idx == -1 {
+			return fmt.Errorf("%w: %q not found in services for package %q", errQuickstartServiceNotFound, c.QuickstartServiceOverride, c.PackageName)
+		}
+		c.Model.QuickstartService = c.Model.Services[idx]
+	} else if c.Model.QuickstartService == nil && len(c.Model.Services) > 0 {
+		c.Model.QuickstartService = c.Model.Services[0]
+	}
 	// The services are annotated last because the annotation assumes messages
 	// and enums are already annotated.
 	allTraits := make([]*traitDefinition, 0, len(c.Model.Services))
+	var generatedMethods []*api.Method
 	for _, service := range c.Model.Services {
 		ann, err := c.annotateService(service, annotations)
 		if err != nil {
 			return err
 		}
+		// Take the methods from the annotations: that list is already filtered
+		// down to the methods this module generates.
+		generatedMethods = append(generatedMethods, ann.Methods...)
 		var enabledTraits []string
 		for _, svc := range ann.RequiredServices {
 			enabledTraits = append(enabledTraits, c.traitName(svc))
@@ -116,9 +203,14 @@ func (c *codec) annotateModel() error {
 		slices.Sort(enabledTraits)
 		trait := &traitDefinition{
 			Name:          c.traitName(service),
+			ClientName:    ann.ClientName,
+			IsDefault:     slices.Contains(c.DefaultTraits, c.traitName(service)),
 			EnabledTraits: enabledTraits,
 		}
 		allTraits = append(allTraits, trait)
+	}
+	if err := c.annotateLROAnyConverter(annotations, generatedMethods); err != nil {
+		return err
 	}
 	if !c.PerServiceTraits {
 		// The maximum (15) was chosen more or less arbitrarily circa 2026-05. At

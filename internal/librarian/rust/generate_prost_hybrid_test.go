@@ -17,7 +17,7 @@ package rust
 import (
 	"os"
 	"path/filepath"
-	"strings"
+	"slices"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -33,69 +33,32 @@ func TestGenerateProstHybrid(t *testing.T) {
 	testhelper.RequireCommand(t, "protoc")
 	testhelper.RequireCommand(t, "cargo")
 	msg := api.NewTestMessage("Request").WithPackage("google.cloud.test.v1")
-
-	chatMethod := api.NewTestMethod("Chat").WithInput(msg).WithOutput(msg).WithBidiStreaming()
-
-	bidiService := api.NewTestService("BidiService").WithPackage("google.cloud.test.v1").WithMethods(chatMethod)
-
-	getMethod := api.NewTestMethod("Get").WithInput(msg).WithOutput(msg)
-	nonBidiService := api.NewTestService("UnaryService").WithPackage("google.cloud.test.v1").WithMethods(getMethod)
-
-	bidiModel := api.NewTestAPI([]*api.Message{msg}, []*api.Enum{}, []*api.Service{bidiService})
-	if err := api.CrossReference(bidiModel); err != nil {
-		t.Fatal(err)
-	}
-
-	nonBidiModel := api.NewTestAPI([]*api.Message{msg}, []*api.Enum{}, []*api.Service{nonBidiService})
-	if err := api.CrossReference(nonBidiModel); err != nil {
-		t.Fatal(err)
-	}
-
-	expandMethod := api.NewTestMethod("Expand").WithInput(msg).WithOutput(msg).WithServerSideStreaming()
-	serverService := api.NewTestService("ServerService").WithPackage("google.cloud.test.v1").WithMethods(expandMethod)
-	serverStreamingModel := api.NewTestAPI([]*api.Message{msg}, []*api.Enum{}, []*api.Service{serverService})
-	if err := api.CrossReference(serverStreamingModel); err != nil {
+	model := api.NewTestAPI([]*api.Message{msg}, []*api.Enum{}, []*api.Service{})
+	if err := api.CrossReference(model); err != nil {
 		t.Fatal(err)
 	}
 
 	for _, test := range []struct {
-		name                          string
-		model                         *api.API
-		includeBidiStreamingMethods   bool
-		includeServerStreamingMethods bool
-		templateOverride              string
-		wantProstDir                  bool
+		name             string
+		rootTypeIDs      []string
+		templateOverride string
+		wantProstDir     bool
 	}{
 		{
-			name:                        "feature disabled does not create prost dir",
-			model:                       bidiModel,
-			includeBidiStreamingMethods: false,
-			wantProstDir:                false,
+			name:         "empty rootTypeIDs does not create prost dir",
+			rootTypeIDs:  nil,
+			wantProstDir: false,
 		},
 		{
-			name:                        "model without bidi streaming does not create prost dir",
-			model:                       nonBidiModel,
-			includeBidiStreamingMethods: true,
-			wantProstDir:                false,
+			name:             "template override tonic does not create prost dir",
+			rootTypeIDs:      []string{msg.ID},
+			templateOverride: "tonic",
+			wantProstDir:     false,
 		},
 		{
-			name:                        "template override tonic does not create prost dir",
-			model:                       bidiModel,
-			includeBidiStreamingMethods: true,
-			templateOverride:            "tonic",
-			wantProstDir:                false,
-		},
-		{
-			name:                        "feature enabled creates prost dir",
-			model:                       bidiModel,
-			includeBidiStreamingMethods: true,
-			wantProstDir:                true,
-		},
-		{
-			name:                          "server streaming enabled creates prost dir",
-			model:                         serverStreamingModel,
-			includeServerStreamingMethods: true,
-			wantProstDir:                  true,
+			name:         "valid rootTypeIDs creates prost dir",
+			rootTypeIDs:  []string{msg.ID},
+			wantProstDir: true,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
@@ -103,9 +66,7 @@ func TestGenerateProstHybrid(t *testing.T) {
 			lib := &config.Library{
 				Name: "test-package",
 				Rust: &config.RustCrate{
-					IncludeBidiStreamingMethods:   test.includeBidiStreamingMethods,
-					IncludeServerStreamingMethods: test.includeServerStreamingMethods,
-					TemplateOverride:              test.templateOverride,
+					TemplateOverride: test.templateOverride,
 				},
 			}
 			absSpecSource, err := filepath.Abs("../../testdata/googleapis/google/type")
@@ -115,7 +76,7 @@ func TestGenerateProstHybrid(t *testing.T) {
 			srcs := &sources.Sources{
 				Googleapis: filepath.Dir(filepath.Dir(absSpecSource)),
 			}
-			err = generateProstHybrid(t.Context(), test.model, lib, outDir, &parser.ModelConfig{
+			modelConfig := &parser.ModelConfig{
 				SpecificationFormat: config.SpecProtobuf,
 				SpecificationSource: absSpecSource,
 				Source:              sources.NewSourceConfig(srcs, []string{"googleapis"}),
@@ -123,7 +84,8 @@ func TestGenerateProstHybrid(t *testing.T) {
 					"package-name-override": "google-cloud-test",
 					"package:g3-wkt":        "package=google-cloud-wkt,source=google.protobuf",
 				},
-			})
+			}
+			err = generateProstHybrid(t.Context(), model, test.rootTypeIDs, lib, outDir, modelConfig)
 			if err != nil {
 				t.Fatalf("unexpected error: %v", err)
 			}
@@ -144,16 +106,13 @@ func TestGenerateProstHybrid(t *testing.T) {
 	}
 }
 
-func TestFilterModelToStreaming(t *testing.T) {
+func TestFilterModelToTypes(t *testing.T) {
 	streamingMsg := api.NewTestMessage("StreamMsg").WithPackage("google.test.v1")
 	unusedMsg := api.NewTestMessage("UnusedMsg").WithPackage("google.test.v1")
 
-	chatMethod := api.NewTestMethod("Chat").WithInput(streamingMsg).WithOutput(streamingMsg).WithBidiStreaming()
+	model := api.NewTestAPI([]*api.Message{streamingMsg, unusedMsg}, []*api.Enum{}, []*api.Service{})
 
-	bidiService := api.NewTestService("BidiService").WithPackage("google.test.v1").WithMethods(chatMethod)
-	model := api.NewTestAPI([]*api.Message{streamingMsg, unusedMsg}, []*api.Enum{}, []*api.Service{bidiService})
-
-	filtered, unused, _, err := filterModelToStreaming(model, true, true)
+	filtered, unused, _, err := filterModelToTypes(model, []string{streamingMsg.ID}, nil)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -170,33 +129,20 @@ func TestFilterModelToStreaming(t *testing.T) {
 	}
 }
 
-func TestFilterModelToStreamingNonStreamingFieldLookup(t *testing.T) {
+func TestFilterModelToTypesUnusedFieldLookup(t *testing.T) {
 	streamMsg := api.NewTestMessage("StreamMsg").WithPackage("google.test.v1")
 	childData := api.NewTestMessage("ChildData").WithPackage("google.test.v1")
 	unaryReq := api.NewTestMessage("UnaryReq").WithPackage("google.test.v1").WithFields(
-		&api.Field{
-			Name:    "info",
-			TypezID: childData.ID,
-			Typez:   api.TypezMessage,
-		},
+		api.NewTestField("info").WithMessageType(childData),
 	)
 
-	chatMethod := api.NewTestMethod("Chat").WithInput(streamMsg).WithOutput(streamMsg).WithBidiStreaming()
-	bidiService := api.NewTestService("BidiService").WithPackage("google.test.v1").WithMethods(chatMethod)
+	model := api.NewTestAPI([]*api.Message{streamMsg, unaryReq, childData}, []*api.Enum{}, []*api.Service{})
 
-	unaryMethod := api.NewTestMethod("UnaryMethod").WithInput(unaryReq).WithOutput(unaryReq)
-	unaryService := api.NewTestService("UnaryService").WithPackage("google.test.v1").WithMethods(unaryMethod)
-
-	model := api.NewTestAPI([]*api.Message{streamMsg, unaryReq, childData}, []*api.Enum{}, []*api.Service{bidiService, unaryService})
-
-	filtered, _, _, err := filterModelToStreaming(model, true, true)
+	filtered, _, _, err := filterModelToTypes(model, []string{streamMsg.ID}, nil)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
-	if len(filtered.Services) != 1 || filtered.Services[0].ID != bidiService.ID {
-		t.Errorf("got services %v, want [%s]", filtered.Services, bidiService.ID)
-	}
 	if len(filtered.Messages) != 1 || filtered.Messages[0].ID != streamMsg.ID {
 		t.Errorf("got messages %v, want [%s]", filtered.Messages, streamMsg.ID)
 	}
@@ -208,35 +154,22 @@ func TestFilterModelToStreamingNonStreamingFieldLookup(t *testing.T) {
 	}
 }
 
-func TestFilterModelToStreamingExternalTypes(t *testing.T) {
-	streamMsg := api.NewTestMessage("StreamMsg").WithPackage("google.test.v1")
+func TestFilterModelToTypesExternalTypes(t *testing.T) {
 	externalMsg := api.NewTestMessage("LatLng").WithPackage("google.type")
-	externalEnum := &api.Enum{Name: "DayOfWeek", ID: ".google.type.DayOfWeek", Package: "google.type"}
+	externalEnum := api.NewTestEnum("DayOfWeek").WithPackage("google.type")
+	streamMsg := api.NewTestMessage("StreamMsg").WithPackage("google.test.v1").WithFields(
+		api.NewTestField("location").WithMessageType(externalMsg),
+		api.NewTestField("day").WithEnumType(externalEnum),
+	)
 
-	streamMsg.Fields = []*api.Field{
-		{
-			Name:    "location",
-			TypezID: externalMsg.ID,
-			Typez:   api.TypezMessage,
-		},
-		{
-			Name:    "day",
-			TypezID: externalEnum.ID,
-			Typez:   api.TypezEnum,
-		},
-	}
-
-	chatMethod := api.NewTestMethod("Chat").WithInput(streamMsg).WithOutput(streamMsg).WithBidiStreaming()
-	bidiService := api.NewTestService("BidiService").WithPackage("google.test.v1").WithMethods(chatMethod)
-
-	model := api.NewTestAPI([]*api.Message{streamMsg}, []*api.Enum{}, []*api.Service{bidiService})
+	model := api.NewTestAPI([]*api.Message{streamMsg}, []*api.Enum{}, []*api.Service{})
 	model.AddMessage(externalMsg)
 	model.AddEnum(externalEnum)
 	if err := api.CrossReference(model); err != nil {
 		t.Fatal(err)
 	}
 
-	filtered, _, _, err := filterModelToStreaming(model, true, true)
+	filtered, _, _, err := filterModelToTypes(model, []string{streamMsg.ID}, nil)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -252,63 +185,169 @@ func TestFilterModelToStreamingExternalTypes(t *testing.T) {
 	}
 }
 
-func TestFilterModelToStreamingAnyError(t *testing.T) {
-	// Verify google.protobuf.Any in streaming path returns error with recommendation
+func TestFilterModelToTypesAnyError(t *testing.T) {
 	anyMsg := api.NewTestMessage("AnyReq").WithPackage("google.test.v1").WithFields(
-		&api.Field{
-			Name:    "details",
-			TypezID: ".google.protobuf.Any",
-			Typez:   api.TypezMessage,
-		},
+		api.NewTestField("details").WithType(api.TypezMessage).WithTypezID(".google.protobuf.Any"),
+	)
+
+	anyModel := api.NewTestAPI([]*api.Message{anyMsg}, []*api.Enum{}, []*api.Service{})
+
+	_, _, _, err := filterModelToTypes(anyModel, []string{anyMsg.ID}, nil)
+	if err == nil {
+		t.Fatal("expected error for google.protobuf.Any, got nil")
+	}
+	wantErr := "cannot generate prost conversion: type google.protobuf.Any is unsupported:\n" +
+		"  - .google.test.v1.AnyReq.details\n\n" +
+		"To resolve this, allow dropping Any fields in prost conversion by adding them to allow_grpc_any_fields in librarian.yaml:\n" +
+		"    rust:\n" +
+		"      allow_grpc_any_fields:\n" +
+		"        - .google.test.v1.AnyReq.details"
+	if diff := cmp.Diff(wantErr, err.Error()); diff != "" {
+		t.Errorf("error message mismatch (-want +got):\n%s", diff)
+	}
+}
+
+func TestFilterModelToStreamingMultipleAnyError(t *testing.T) {
+	// Verify multiple unsupported Any fields are batched into a single sorted error
+	anyMsg := api.NewTestMessage("AnyReq").WithPackage("google.test.v1").WithFields(
+		api.NewTestField("metadata").WithType(api.TypezMessage).WithTypezID(".google.protobuf.Any"),
+		api.NewTestField("details").WithType(api.TypezMessage).WithTypezID(".google.protobuf.Any"),
 	)
 	chatAnyMethod := api.NewTestMethod("ChatAny").WithInput(anyMsg).WithOutput(anyMsg).WithBidiStreaming()
 	anyService := api.NewTestService("AnyService").WithPackage("google.test.v1").WithMethods(chatAnyMethod)
 
 	anyModel := api.NewTestAPI([]*api.Message{anyMsg}, []*api.Enum{}, []*api.Service{anyService})
 
-	_, _, _, err := filterModelToStreaming(anyModel, true, true)
+	_, _, _, err := filterModelToTypes(anyModel, []string{anyMsg.ID}, nil)
 	if err == nil {
 		t.Fatal("expected error for google.protobuf.Any, got nil")
 	}
-	if !strings.Contains(err.Error(), "skipped_ids") {
-		t.Errorf("expected error to contain recommendation 'skipped_ids', got: %v", err)
+
+	wantErr := "cannot generate prost conversion: type google.protobuf.Any is unsupported:\n" +
+		"  - .google.test.v1.AnyReq.details\n" +
+		"  - .google.test.v1.AnyReq.metadata\n\n" +
+		"To resolve this, allow dropping Any fields in prost conversion by adding them to allow_grpc_any_fields in librarian.yaml:\n" +
+		"    rust:\n" +
+		"      allow_grpc_any_fields:\n" +
+		"        - .google.test.v1.AnyReq.details\n" +
+		"        - .google.test.v1.AnyReq.metadata"
+
+	if diff := cmp.Diff(wantErr, err.Error()); diff != "" {
+		t.Errorf("error message mismatch (-want +got):\n%s", diff)
 	}
 }
 
-func TestFilterModelToStreamingGoogleRpcStatus(t *testing.T) {
-	// Verify google.rpc.Status in streaming path succeeds and does not error on Any details
+func TestFilterModelToStreamingPartialAllowedAny(t *testing.T) {
+	// Verify allowing one Any field still reports the remaining unallowed Any fields
+	anyMsg := api.NewTestMessage("AnyReq").WithPackage("google.test.v1").WithFields(
+		api.NewTestField("details").WithType(api.TypezMessage).WithTypezID(".google.protobuf.Any"),
+		api.NewTestField("metadata").WithType(api.TypezMessage).WithTypezID(".google.protobuf.Any"),
+	)
+	chatAnyMethod := api.NewTestMethod("ChatAny").WithInput(anyMsg).WithOutput(anyMsg).WithBidiStreaming()
+	anyService := api.NewTestService("AnyService").WithPackage("google.test.v1").WithMethods(chatAnyMethod)
+
+	anyModel := api.NewTestAPI([]*api.Message{anyMsg}, []*api.Enum{}, []*api.Service{anyService})
+
+	_, _, _, err := filterModelToTypes(anyModel, []string{anyMsg.ID}, []string{".google.test.v1.AnyReq.details"})
+	if err == nil {
+		t.Fatal("expected error for remaining google.protobuf.Any field, got nil")
+	}
+
+	wantErr := "cannot generate prost conversion: type google.protobuf.Any is unsupported:\n" +
+		"  - .google.test.v1.AnyReq.metadata\n\n" +
+		"To resolve this, allow dropping Any fields in prost conversion by adding them to allow_grpc_any_fields in librarian.yaml:\n" +
+		"    rust:\n" +
+		"      allow_grpc_any_fields:\n" +
+		"        - .google.test.v1.AnyReq.metadata"
+
+	if diff := cmp.Diff(wantErr, err.Error()); diff != "" {
+		t.Errorf("error message mismatch (-want +got):\n%s", diff)
+	}
+}
+
+func TestFilterModelToStreamingNestedAndOneofAnyError(t *testing.T) {
+	// Verify Any fields in nested messages and oneofs are all discovered and reported
+	childMsg := api.NewTestMessage("ChildReq").WithPackage("google.test.v1").WithFields(
+		api.NewTestField("extra").WithType(api.TypezMessage).WithTypezID(".google.protobuf.Any"),
+	)
+	oneofField := api.NewTestField("payload").WithType(api.TypezMessage).WithTypezID(".google.protobuf.Any")
+	oneof := api.NewTestOneOf("data").WithFields(oneofField)
+	parentMsg := api.NewTestMessage("ParentReq").WithPackage("google.test.v1").WithFields(
+		api.NewTestField("child").WithMessageType(childMsg),
+	).WithOneOfs(oneof)
+
+	chatMethod := api.NewTestMethod("Chat").WithInput(parentMsg).WithOutput(parentMsg).WithBidiStreaming()
+	service := api.NewTestService("Service").WithPackage("google.test.v1").WithMethods(chatMethod)
+
+	model := api.NewTestAPI([]*api.Message{parentMsg, childMsg}, []*api.Enum{}, []*api.Service{service})
+
+	_, _, _, err := filterModelToTypes(model, []string{parentMsg.ID}, nil)
+	if err == nil {
+		t.Fatal("expected error for google.protobuf.Any, got nil")
+	}
+
+	wantErr := "cannot generate prost conversion: type google.protobuf.Any is unsupported:\n" +
+		"  - .google.test.v1.ParentReq.child.extra\n" +
+		"  - .google.test.v1.ParentReq.payload\n\n" +
+		"To resolve this, allow dropping Any fields in prost conversion by adding them to allow_grpc_any_fields in librarian.yaml:\n" +
+		"    rust:\n" +
+		"      allow_grpc_any_fields:\n" +
+		"        - .google.test.v1.ParentReq.child.extra\n" +
+		"        - .google.test.v1.ParentReq.payload"
+
+	if diff := cmp.Diff(wantErr, err.Error()); diff != "" {
+		t.Errorf("error message mismatch (-want +got):\n%s", diff)
+	}
+}
+
+func TestFilterModelToTypesAllowedAny(t *testing.T) {
+	anyMsg := api.NewTestMessage("AnyReq").WithPackage("google.test.v1").WithFields(
+		api.NewTestField("details").WithType(api.TypezMessage).WithTypezID(".google.protobuf.Any"),
+		api.NewTestField("name").WithType(api.TypezString),
+	)
+
+	anyModel := api.NewTestAPI([]*api.Message{anyMsg}, []*api.Enum{}, []*api.Service{})
+
+	filtered, _, _, err := filterModelToTypes(anyModel, []string{anyMsg.ID}, []string{".google.test.v1.AnyReq.details"})
+	if err != nil {
+		t.Fatalf("expected success with allowGrpcAnyFields, got error: %v", err)
+	}
+
+	msg := filtered.Message(anyMsg.ID)
+	if msg == nil {
+		t.Fatalf("expected message %s in filtered model", anyMsg.ID)
+	}
+	if !msg.HasSkippedProtoConversionFields() {
+		t.Errorf("expected msg.HasSkippedProtoConversionFields() to be true")
+	}
+	if len(msg.Fields) != 2 {
+		t.Errorf("expected msg.Fields to retain all 2 fields, got: %v", msg.Fields)
+	}
+	detailsField := slices.IndexFunc(msg.Fields, func(f *api.Field) bool { return f.Name == "details" })
+	if detailsField == -1 || !msg.Fields[detailsField].SkipProtoConversion {
+		t.Errorf("expected 'details' field to have SkipProtoConversion == true")
+	}
+	nameField := slices.IndexFunc(msg.Fields, func(f *api.Field) bool { return f.Name == "name" })
+	if nameField == -1 || msg.Fields[nameField].SkipProtoConversion {
+		t.Errorf("expected 'name' field to have SkipProtoConversion == false")
+	}
+}
+
+func TestFilterModelToTypesGoogleRpcStatus(t *testing.T) {
 	statusMsg := api.NewTestMessage("Status").WithPackage("google.rpc").WithFields(
-		&api.Field{
-			Name:  "code",
-			Typez: api.TypezInt32,
-		},
-		&api.Field{
-			Name:  "message",
-			Typez: api.TypezString,
-		},
-		&api.Field{
-			Name:     "details",
-			TypezID:  ".google.protobuf.Any",
-			Typez:    api.TypezMessage,
-			Repeated: true,
-		},
+		api.NewTestField("code").WithType(api.TypezInt32),
+		api.NewTestField("message").WithType(api.TypezString),
+		api.NewTestField("details").WithType(api.TypezMessage).WithTypezID(".google.protobuf.Any").WithRepeated(),
 	)
 
 	reqMsg := api.NewTestMessage("StreamReq").WithPackage("google.test.v1").WithFields(
-		&api.Field{
-			Name:    "status",
-			TypezID: statusMsg.ID,
-			Typez:   api.TypezMessage,
-		},
+		api.NewTestField("status").WithMessageType(statusMsg),
 	)
 
-	chatMethod := api.NewTestMethod("ChatStatus").WithInput(reqMsg).WithOutput(reqMsg).WithBidiStreaming()
-	statusService := api.NewTestService("StatusService").WithPackage("google.test.v1").WithMethods(chatMethod)
-
-	statusModel := api.NewTestAPI([]*api.Message{reqMsg}, []*api.Enum{}, []*api.Service{statusService})
+	statusModel := api.NewTestAPI([]*api.Message{reqMsg}, []*api.Enum{}, []*api.Service{})
 	statusModel.AddMessage(statusMsg)
 
-	filtered, unused, hasStatus, err := filterModelToStreaming(statusModel, true, true)
+	filtered, unused, hasStatus, err := filterModelToTypes(statusModel, []string{reqMsg.ID}, nil)
 	if err != nil {
 		t.Fatalf("unexpected error for google.rpc.Status: %v", err)
 	}
@@ -318,7 +357,7 @@ func TestFilterModelToStreamingGoogleRpcStatus(t *testing.T) {
 	}
 
 	if !hasStatus {
-		t.Errorf("expected hasStatus boolean from filterModelToStreaming to be true, got false")
+		t.Errorf("expected hasStatus boolean from filterModelToTypes to be true, got false")
 	}
 
 	for _, u := range unused {
@@ -328,34 +367,22 @@ func TestFilterModelToStreamingGoogleRpcStatus(t *testing.T) {
 	}
 }
 
-func TestFilterModelToStreamingNestedTypeParentPreservation(t *testing.T) {
-	parent := api.NewTestMessage("Parent").WithPackage("google.test.v1")
-	child := api.NewTestMessage("Child").WithPackage("google.test.v1")
+func TestFilterModelToTypesNestedTypeParentPreservation(t *testing.T) {
+	child := api.NewTestMessage("Child")
+	parent := api.NewTestMessage("Parent").WithPackage("google.test.v1").WithMessages(child)
 	sibling := api.NewTestMessage("Sibling").WithPackage("google.test.v1")
-	child.Parent = parent
 
-	parent.Fields = []*api.Field{
-		{
-			Name:    "sibling_ref",
-			TypezID: sibling.ID,
-			Typez:   api.TypezMessage,
-		},
-	}
-
-	streamReq := api.NewTestMessage("StreamReq").WithPackage("google.test.v1").WithFields(
-		&api.Field{
-			Name:    "child_ref",
-			TypezID: child.ID,
-			Typez:   api.TypezMessage,
-		},
+	parent.WithFields(
+		api.NewTestField("sibling_ref").WithMessageType(sibling),
 	)
 
-	chatMethod := api.NewTestMethod("Chat").WithInput(streamReq).WithOutput(streamReq).WithBidiStreaming()
-	bidiService := api.NewTestService("BidiService").WithPackage("google.test.v1").WithMethods(chatMethod)
+	streamReq := api.NewTestMessage("StreamReq").WithPackage("google.test.v1").WithFields(
+		api.NewTestField("child_ref").WithMessageType(child),
+	)
 
-	model := api.NewTestAPI([]*api.Message{parent, child, sibling, streamReq}, []*api.Enum{}, []*api.Service{bidiService})
+	model := api.NewTestAPI([]*api.Message{parent, sibling, streamReq}, []*api.Enum{}, []*api.Service{})
 
-	_, unusedTypes, _, err := filterModelToStreaming(model, true, false)
+	_, unusedTypes, _, err := filterModelToTypes(model, []string{streamReq.ID}, nil)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -373,74 +400,46 @@ func TestFilterModelToStreamingNestedTypeParentPreservation(t *testing.T) {
 	}
 }
 
-func TestFilterModelToStreamingServerStreaming(t *testing.T) {
-	reqMsg := api.NewTestMessage("ExpandRequest").WithPackage("google.test.v1")
-	respMsg := api.NewTestMessage("EchoResponse").WithPackage("google.test.v1")
-	unusedMsg := api.NewTestMessage("UnusedMsg").WithPackage("google.test.v1")
-
-	expandMethod := api.NewTestMethod("Expand").WithInput(reqMsg).WithOutput(respMsg).WithServerSideStreaming()
-
-	serverService := api.NewTestService("EchoService").WithPackage("google.test.v1").WithMethods(expandMethod)
-	model := api.NewTestAPI([]*api.Message{reqMsg, respMsg, unusedMsg}, []*api.Enum{}, []*api.Service{serverService})
-
-	filtered, unused, _, err := filterModelToStreaming(model, false, true)
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-
-	if len(filtered.Services) != 1 || filtered.Services[0].ID != serverService.ID {
-		t.Errorf("got services %v, want [%s]", filtered.Services, serverService.ID)
-	}
-	if len(filtered.Messages) != 2 {
-		t.Errorf("got messages %v, want [%s, %s]", filtered.Messages, reqMsg.ID, respMsg.ID)
-	}
-	if len(unused) != 1 || unused[0] != unusedMsg.ID {
-		t.Errorf("got unused %v, want [%s]", unused, unusedMsg.ID)
-	}
-}
-
-func TestFilterModelToStreamingIsolation(t *testing.T) {
-	bidiMsg := api.NewTestMessage("BidiMsg").WithPackage("google.test.v1")
-	serverReq := api.NewTestMessage("ServerReq").WithPackage("google.test.v1")
-	serverResp := api.NewTestMessage("ServerResp").WithPackage("google.test.v1")
-
-	bidiMethod := api.NewTestMethod("Chat").WithInput(bidiMsg).WithOutput(bidiMsg).WithBidiStreaming()
-	serverMethod := api.NewTestMethod("Expand").WithInput(serverReq).WithOutput(serverResp).WithServerSideStreaming()
-
-	service := api.NewTestService("MixedService").WithPackage("google.test.v1").WithMethods(bidiMethod, serverMethod)
-	model := api.NewTestAPI([]*api.Message{bidiMsg, serverReq, serverResp}, []*api.Enum{}, []*api.Service{service})
-
+func TestFilterModelToTypesMultipleRoots(t *testing.T) {
 	for _, test := range []struct {
-		name          string
-		includeBidi   bool
-		includeServer bool
-		wantMessages  []string
-		wantUnused    []string
+		name         string
+		rootTypeIDs  []string
+		wantMessages []string
+		wantUnused   []string
 	}{
 		{
-			name:          "server streaming only ignores bidi types",
-			includeBidi:   false,
-			includeServer: true,
-			wantMessages:  []string{serverReq.ID, serverResp.ID},
-			wantUnused:    []string{bidiMsg.ID},
+			name:         "single root only includes reachable types",
+			rootTypeIDs:  []string{".google.test.v1.MsgA"},
+			wantMessages: []string{".google.test.v1.MsgA"},
+			wantUnused:   []string{".google.test.v1.MsgB", ".google.test.v1.MsgC"},
 		},
 		{
-			name:          "bidi streaming only ignores server streaming types",
-			includeBidi:   true,
-			includeServer: false,
-			wantMessages:  []string{bidiMsg.ID},
-			wantUnused:    []string{serverReq.ID, serverResp.ID},
+			name:         "multiple roots include all reachable types",
+			rootTypeIDs:  []string{".google.test.v1.MsgA", ".google.test.v1.MsgB"},
+			wantMessages: []string{".google.test.v1.MsgA", ".google.test.v1.MsgB"},
+			wantUnused:   []string{".google.test.v1.MsgC"},
 		},
 		{
-			name:          "both streaming types enabled includes all types",
-			includeBidi:   true,
-			includeServer: true,
-			wantMessages:  []string{bidiMsg.ID, serverReq.ID, serverResp.ID},
-			wantUnused:    nil,
+			name:         "all roots includes all messages",
+			rootTypeIDs:  []string{".google.test.v1.MsgA", ".google.test.v1.MsgB", ".google.test.v1.MsgC"},
+			wantMessages: []string{".google.test.v1.MsgA", ".google.test.v1.MsgB", ".google.test.v1.MsgC"},
+			wantUnused:   nil,
+		},
+		{
+			name:         "empty roots includes no messages",
+			rootTypeIDs:  nil,
+			wantMessages: nil,
+			wantUnused:   []string{".google.test.v1.MsgA", ".google.test.v1.MsgB", ".google.test.v1.MsgC"},
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			filtered, unused, _, err := filterModelToStreaming(model, test.includeBidi, test.includeServer)
+			msgA := api.NewTestMessage("MsgA").WithPackage("google.test.v1")
+			msgB := api.NewTestMessage("MsgB").WithPackage("google.test.v1")
+			msgC := api.NewTestMessage("MsgC").WithPackage("google.test.v1")
+
+			model := api.NewTestAPI([]*api.Message{msgA, msgB, msgC}, []*api.Enum{}, []*api.Service{})
+
+			filtered, unused, _, err := filterModelToTypes(model, test.rootTypeIDs, nil)
 			if err != nil {
 				t.Fatalf("unexpected error: %v", err)
 			}
@@ -456,5 +455,23 @@ func TestFilterModelToStreamingIsolation(t *testing.T) {
 				t.Errorf("mismatch in unused messages (-want +got):\n%s", diff)
 			}
 		})
+	}
+}
+
+func TestFilterModelToTypesCyclicRecursion(t *testing.T) {
+	// A message with a field referring back to itself or its parent should not infinite loop
+	parent := api.NewTestMessage("Node").WithPackage("google.test.v1")
+	parent.WithFields(
+		api.NewTestField("child").WithMessageType(parent),
+	)
+	model := api.NewTestAPI([]*api.Message{parent}, []*api.Enum{}, []*api.Service{})
+
+	filtered, _, _, err := filterModelToTypes(model, []string{parent.ID}, nil)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if len(filtered.Messages) != 1 {
+		t.Errorf("expected 1 parsed message, got %d", len(filtered.Messages))
 	}
 }

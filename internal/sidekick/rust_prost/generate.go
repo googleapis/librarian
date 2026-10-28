@@ -30,8 +30,11 @@ import (
 	"github.com/googleapis/librarian/internal/tool/protoc"
 )
 
-//go:embed all:templates
-var templates embed.FS
+var (
+	//go:embed all:templates
+	templates       embed.FS
+	parsedTemplates = language.MustParseTemplates(templates)
+)
 
 // Generate generates Rust code from the model using prost.
 func Generate(ctx context.Context, model *api.API, outdir string, template string, cfg *parser.ModelConfig) error {
@@ -49,14 +52,13 @@ func Generate(ctx context.Context, model *api.API, outdir string, template strin
 	if err := codec.annotateModel(model, cfg); err != nil {
 		return fmt.Errorf("annotating model: %w", err)
 	}
-	provider := templatesProvider()
 	generatedFiles := language.WalkTemplatesDir(templates, "templates/"+template)
 	tmpDir, err := os.MkdirTemp("", "rust-prost-*")
 	if err != nil {
 		return fmt.Errorf("cannot create temporary directory for rust+prost output: %w", err)
 	}
 	defer os.RemoveAll(tmpDir)
-	if err := language.GenerateFromModel(tmpDir, model, provider, generatedFiles); err != nil {
+	if err := parsedTemplates.GenerateFromModel(tmpDir, model, generatedFiles); err != nil {
 		return err
 	}
 	// Collect source root directories needed as include paths for protoc / prost-build
@@ -77,16 +79,6 @@ func Generate(ctx context.Context, model *api.API, outdir string, template strin
 		}
 	}
 	return buildRS(ctx, cfg.Protoc, rootPaths, tmpDir, outdir)
-}
-
-func templatesProvider() language.TemplateProvider {
-	return func(name string) (string, error) {
-		contents, err := templates.ReadFile(name)
-		if err != nil {
-			return "", err
-		}
-		return string(contents), nil
-	}
 }
 
 func buildRS(ctx context.Context, pc *libconfig.Protoc, rootPaths []string, tmpDir, outDir string) error {

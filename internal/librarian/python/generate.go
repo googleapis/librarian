@@ -38,8 +38,6 @@ const (
 	cloudGoogleComDocumentationTemplate = "https://cloud.google.com/python/docs/reference/%s/latest"
 	googleapisDevDocumentationTemplate  = "https://googleapis.dev/python/%s/latest"
 	transportOption                     = "transport"
-	gapicNamespaceOption                = "python-gapic-namespace"
-	gapicNameOption                     = "python-gapic-name"
 	warehousePackageNameOption          = "warehouse-package-name"
 
 	// changelog is the name of the changelog file to create. A regular file
@@ -289,8 +287,13 @@ func generateAPI(ctx context.Context, api *config.API, library *config.Library, 
 		return fmt.Errorf("failed to find protoc: %w", err)
 	}
 
+	env, err := toolsEnv()
+	if err != nil {
+		return err
+	}
+
 	cmdArgs := append(protos, protocOptions...)
-	if err := command.RunInDir(ctx, googleapisDir, protocCmd, cmdArgs...); err != nil {
+	if err := command.RunInDirWithEnv(ctx, googleapisDir, env, protocCmd, cmdArgs...); err != nil {
 		return fmt.Errorf("failed to execute protoc: %w", err)
 	}
 
@@ -424,7 +427,16 @@ func runPostProcessor(ctx context.Context, repoRoot, outDir, generationRoot stri
 from synthtool.languages import python_mono_repo
 python_mono_repo.owlbot_main(%q)
 `, outDir)
-	if err := command.RunInDir(ctx, generationRoot, "python3", "-c", pythonCode); err != nil {
+	templateDir, err := templateDirectory()
+	if err != nil {
+		return err
+	}
+	env, err := toolsEnv()
+	if err != nil {
+		return err
+	}
+	env["SYNTHTOOL_TEMPLATES"] = templateDir
+	if err := command.RunInDirWithEnv(ctx, generationRoot, env, "python3", "-c", pythonCode); err != nil {
 		return fmt.Errorf("failed to run post-processor: %w", err)
 	}
 
@@ -434,7 +446,7 @@ python_mono_repo.owlbot_main(%q)
 	// as well... we can do all of that after migration, when we remove
 	// synthtool entirely - see
 	// https://github.com/googleapis/librarian/issues/3008)
-	if err := command.RunInDir(ctx, outDir, "nox", "-s", "format", "--no-venv", "--no-install"); err != nil {
+	if err := command.RunInDirWithEnv(ctx, outDir, env, "nox", "-s", "format", "--no-venv", "--no-install"); err != nil {
 		return fmt.Errorf("failed to format code after post-processing: %w", err)
 	}
 	return nil
@@ -531,50 +543,6 @@ func DefaultLibraryName(api string) string {
 // preview library.
 func isPreview(output string) bool {
 	return strings.Contains(output, "preview-packages")
-}
-
-// deriveGAPICNamespace derives the value to pass as python-gapic-namespace when
-// it's not specified explicitly. This is the first two components of the API
-// path (excluding any trailing version), dot-separated.
-func deriveGAPICNamespace(path string) string {
-	version := serviceconfig.ExtractVersion(path)
-	if version != "" {
-		path = strings.TrimSuffix(path, "/"+version)
-	}
-	parts := strings.Split(path, "/")
-	if len(parts) < 2 {
-		return path
-	}
-	return parts[0] + "." + parts[1]
-}
-
-// deriveGAPICName derives the value to pass as python-gapic-name when it's not
-// specified explicitly. This is the path, without the leading namespace (after
-// replacing dots with slashes), and without any version suffix, and then
-// replacing slashes with underscores. Example:
-// a path of google/cloud/foo/bar/v1 would have a GAPIC name of "foo_bar".
-func deriveGAPICName(path string) string {
-	version := serviceconfig.ExtractVersion(path)
-	if version != "" {
-		path = strings.TrimSuffix(path, version)
-	}
-	derivedNamespace := deriveGAPICNamespace(path)
-	path = strings.TrimPrefix(path, strings.ReplaceAll(derivedNamespace, ".", "/"))
-	path = strings.Trim(path, "/")
-	return strings.ReplaceAll(path, "/", "_")
-}
-
-// findOption finds the value of a named option within a list of name=value
-// strings. If the option isn't found, an empty string is returned. The second
-// value indicates whether the option was found or not.
-func findOption(options []string, name string) (string, bool) {
-	prefix := name + "="
-	for _, candidate := range options {
-		if after, ok := strings.CutPrefix(candidate, prefix); ok {
-			return after, true
-		}
-	}
-	return "", false
 }
 
 // createChangelog creates a regular changelog file for the library with the

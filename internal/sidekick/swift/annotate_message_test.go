@@ -33,146 +33,115 @@ func TestAnnotateMessage(t *testing.T) {
 	}{
 		{
 			name: "simple",
-			message: &api.Message{
-				Name:          "Secret",
-				Documentation: "A secret message.\nWith two lines.",
-				ID:            ".test.Secret",
-				Package:       "test",
-				Fields: []*api.Field{
-					{Name: "secret_key", JSONName: "secretKey", Typez: api.TypezString},
-				},
-			},
+			message: api.NewTestMessage("Secret").
+				WithDocumentation("A secret message.\nWith two lines.").
+				WithFields(
+					api.NewTestField("secret_key").WithType(api.TypezString),
+				),
 			want: &messageAnnotations{
-				Name:                "Secret",
-				DocLines:            []string{"A secret message.", "With two lines."},
-				TypeURL:             "type.googleapis.com/test.Secret",
-				CustomSerialization: false,
-				SampleField:         "secretKey",
-				ParameterTypeName:   "Secret",
-				ProtoTypeName:       "Test_Secret",
-				ModulePath:          "",
+				Name:              "Secret",
+				DocLines:          []string{"A secret message.", "With two lines."},
+				TypeURL:           "type.googleapis.com/test.Secret",
+				SampleField:       "secretKey",
+				ParameterTypeName: "Secret",
+				ProtoTypeName:     "Test_Secret",
+				ModulePath:        "",
 			},
-			wantImports: []*dependencyImport{{Module: "GoogleCloudWkt"}},
+			wantImports: []*dependencyImport{{Module: "GoogleWKT"}},
 		},
 		{
 			name: "escaped name",
-			message: &api.Message{
-				Name:          "Protocol",
-				Documentation: "A message named Protocol.",
-				ID:            ".test.Protocol",
-				Package:       "test",
-			},
+			message: api.NewTestMessage("Protocol").
+				WithDocumentation("A message named Protocol."),
 			want: &messageAnnotations{
-				Name:                "Protocol_",
-				DocLines:            []string{"A message named Protocol."},
-				TypeURL:             "type.googleapis.com/test.Protocol",
-				CustomSerialization: false,
-				SampleField:         "<placeholder>",
-				ParameterTypeName:   "Protocol_",
-				ProtoTypeName:       "Test_Protocol_",
-				ModulePath:          "",
+				Name:              "Protocol_",
+				DocLines:          []string{"A message named Protocol."},
+				TypeURL:           "type.googleapis.com/test.Protocol",
+				SampleField:       "<placeholder>",
+				ParameterTypeName: "Protocol_",
+				ProtoTypeName:     "Test_Protocol_",
+				ModulePath:        "",
 			},
-			wantImports: []*dependencyImport{{Module: "GoogleCloudWkt"}},
+			wantImports: []*dependencyImport{{Module: "GoogleWKT"}},
 		},
 		{
 			name: "with oneof",
-			message: &api.Message{
-				Name:    "WithOneof",
-				ID:      ".test.WithOneof",
-				Package: "test",
-				OneOfs:  []*api.OneOf{{Name: "choice"}},
-			},
+			message: api.NewTestMessage("WithOneof").
+				WithOneOfs(api.NewTestOneOf("choice")),
 			want: &messageAnnotations{
-				Name:                "WithOneof",
-				TypeURL:             "type.googleapis.com/test.WithOneof",
-				CustomSerialization: true,
-				SampleField:         "<placeholder>",
-				ParameterTypeName:   "WithOneof",
-				ProtoTypeName:       "Test_WithOneof",
-				ModulePath:          "",
+				Name:              "WithOneof",
+				TypeURL:           "type.googleapis.com/test.WithOneof",
+				SampleField:       "<placeholder>",
+				ParameterTypeName: "WithOneof",
+				ProtoTypeName:     "Test_WithOneof",
+				ModulePath:        "",
 			},
-			wantImports: []*dependencyImport{{Module: "GoogleCloudWkt"}},
+			wantImports: []*dependencyImport{{Module: "GoogleWKT"}},
 		},
 		{
 			name: "with custom json name",
-			message: &api.Message{
-				Name:    "WithCustomJSON",
-				ID:      ".test.WithCustomJSON",
-				Package: "test",
-				Fields: []*api.Field{
-					{Name: "secret_key", JSONName: "specialKey", Typez: api.TypezString},
-				},
-			},
+			message: api.NewTestMessage("WithCustomJSON").
+				WithFields(
+					api.NewTestField("secret_key").
+						WithType(api.TypezString).
+						WithJSONName("specialKey"),
+				),
 			want: &messageAnnotations{
-				Name:                "WithCustomJSON",
-				TypeURL:             "type.googleapis.com/test.WithCustomJSON",
-				CustomSerialization: true,
-				SampleField:         "secretKey",
-				ParameterTypeName:   "WithCustomJSON",
-				ProtoTypeName:       "Test_WithCustomJSON",
-				ModulePath:          "",
+				Name:              "WithCustomJSON",
+				TypeURL:           "type.googleapis.com/test.WithCustomJSON",
+				SampleField:       "secretKey",
+				ParameterTypeName: "WithCustomJSON",
+				ProtoTypeName:     "Test_WithCustomJSON",
+				ModulePath:        "",
 			},
-			wantImports: []*dependencyImport{{Module: "GoogleCloudWkt"}},
+			wantImports: []*dependencyImport{{Module: "GoogleWKT"}},
 		},
 		{
 			name: "with pagination",
-			message: &api.Message{
-				Name:    "WithPagination",
-				ID:      ".test.WithPagination",
-				Package: "test",
-				Fields: []*api.Field{
-					{Name: "secret_key", JSONName: "secretKey", Typez: api.TypezString},
-				},
-				Pagination: &api.PaginationInfo{
-					NextPageToken: &api.Field{Name: "next_page_token", JSONName: "nextPageToken", Typez: api.TypezString},
-					PageableItem:  &api.Field{Name: "pageable_item", JSONName: "pageableItem", Typez: api.TypezString, Repeated: true, Codec: &fieldAnnotations{Name: "secretKey", BaseFieldType: "SecretKey"}},
-				},
-			},
+			message: api.NewTestMessage("WithPagination").
+				WithPagination(
+					api.NewTestField("next_page_token").WithType(api.TypezString),
+					api.NewTestField("secret_key").WithType(api.TypezString).WithRepeated(),
+				),
 			want: &messageAnnotations{
 				Name:                "WithPagination",
 				TypeURL:             "type.googleapis.com/test.WithPagination",
-				CustomSerialization: false,
 				IsPaginatedResponse: true,
 				PageableItemField:   "secretKey",
-				PageableItemType:    "SecretKey",
-				SampleField:         "secretKey",
+				PageableItemType:    "Swift.String",
+				SampleField:         "nextPageToken",
 				ParameterTypeName:   "WithPagination",
 				ProtoTypeName:       "Test_WithPagination",
 				ModulePath:          "",
 			},
-			wantImports: []*dependencyImport{{Module: "GoogleCloudGax"}, {Module: "GoogleCloudWkt"}},
+			wantImports: []*dependencyImport{{Module: "GoogleGax"}, {Module: "GoogleWKT"}},
 		},
 		{
 			name: "service placeholder",
-			message: &api.Message{
-				Name:               "Service",
-				ID:                 ".test.Service",
-				Package:            "test",
-				ServicePlaceholder: true,
-			},
+			message: func() *api.Message {
+				m := api.NewTestMessage("Service")
+				m.ServicePlaceholder = true
+				return m
+			}(),
 			want: &messageAnnotations{
-				Name:                "Service",
-				TypeURL:             "type.googleapis.com/test.Service",
-				CustomSerialization: false,
-				SampleField:         "<placeholder>",
-				ParameterTypeName:   "ServiceClient",
-				PlaceholderName:     "ServiceClient",
-				ProtoTypeName:       "Test_Service",
-				ModulePath:          "",
+				Name:              "Service",
+				TypeURL:           "type.googleapis.com/test.Service",
+				SampleField:       "<placeholder>",
+				ParameterTypeName: "ServiceClient",
+				PlaceholderName:   "ServiceClient",
+				ProtoTypeName:     "Test_Service",
+				ModulePath:        "",
 			},
-			wantImports: []*dependencyImport{{Module: "GoogleCloudWkt"}},
+			wantImports: []*dependencyImport{{Module: "GoogleWKT"}},
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			for _, f := range test.message.Fields {
-				f.Parent = test.message
-			}
-			model := api.NewTestAPI([]*api.Message{test.message}, []*api.Enum{}, []*api.Service{})
+			model := api.NewTestAPI([]*api.Message{test.message}, nil, nil)
 			codec := newTestCodec(t, model, nil)
 			if err := codec.annotateModel(); err != nil {
 				t.Fatal(err)
 			}
-			if diff := cmp.Diff(test.want, test.message.Codec, cmpopts.IgnoreFields(messageAnnotations{}, "Model", "DependsOn", "HasConvertedFields")); diff != "" {
+			if diff := cmp.Diff(test.want, test.message.Codec, cmpopts.IgnoreFields(messageAnnotations{}, "Model", "DependsOn")); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 			if diff := cmp.Diff(test.wantImports, test.message.Codec.(*messageAnnotations).MessageImports()); diff != "" {
@@ -214,13 +183,13 @@ func TestAnnotateMessage_ImportAttributes(t *testing.T) {
 			name:        "simple",
 			message:     api.NewTestMessage("Secret"),
 			config:      noSpiConfig,
-			wantImports: []*dependencyImport{{Module: "GoogleCloudWkt"}},
+			wantImports: []*dependencyImport{{Module: "GoogleWKT"}},
 		},
 		{
 			name:        "with spi attribute",
 			message:     api.NewTestMessage("Secret"),
 			config:      withSpiConfig,
-			wantImports: []*dependencyImport{{Module: "GoogleCloudWkt", Attributes: []string{"@_spi(Test001)"}}},
+			wantImports: []*dependencyImport{{Module: "GoogleWKT", Attributes: []string{"@_spi(Test001)"}}},
 		},
 		{
 			name: "with pagination",
@@ -229,7 +198,7 @@ func TestAnnotateMessage_ImportAttributes(t *testing.T) {
 				api.NewTestField("pageable_item").WithType(api.TypezString).WithRepeated(),
 			),
 			config:      noSpiConfig,
-			wantImports: []*dependencyImport{{Module: "GoogleCloudGax"}, {Module: "GoogleCloudWkt"}},
+			wantImports: []*dependencyImport{{Module: "GoogleGax"}, {Module: "GoogleWKT"}},
 		},
 		{
 			name: "with pagination and attributes",
@@ -239,8 +208,8 @@ func TestAnnotateMessage_ImportAttributes(t *testing.T) {
 			),
 			config: withSpiConfig,
 			wantImports: []*dependencyImport{
-				{Module: "GoogleCloudGax", Attributes: []string{"@_spi(Test002)"}},
-				{Module: "GoogleCloudWkt", Attributes: []string{"@_spi(Test001)"}},
+				{Module: "GoogleGax", Attributes: []string{"@_spi(Test002)"}},
+				{Module: "GoogleWKT", Attributes: []string{"@_spi(Test001)"}},
 			},
 		},
 	} {
@@ -260,16 +229,64 @@ func TestAnnotateMessage_ImportAttributes(t *testing.T) {
 	}
 }
 
-func TestAnnotateMessage_Discovery(t *testing.T) {
-	mapMessage := &api.Message{
-		Name:  "map<string, bytes>",
-		ID:    "$map<string, bytes>",
-		IsMap: true,
-		Fields: []*api.Field{
-			{Name: "key", JSONName: "key", Typez: api.TypezString},
-			{Name: "value", JSONName: "value", Typez: api.TypezBytes},
+func TestAnnotateMessage_ConvertImports(t *testing.T) {
+	for _, test := range []struct {
+		name        string
+		message     *api.Message
+		config      *config.Library
+		wantImports []string
+	}{
+		{
+			name:    "simple message with GoogleWKT",
+			message: api.NewTestMessage("SimpleMessage"),
+			config: &config.Library{
+				Swift: &config.SwiftPackage{
+					SwiftDefault: config.SwiftDefault{
+						Dependencies: []config.SwiftDependency{
+							{Name: wellKnownSwiftPackage, ApiPackage: wellKnownProtobufPackage},
+						},
+					},
+				},
+			},
+			wantImports: []string{
+				"@_spi(GoogleCloudInternal) import GoogleWKT",
+				"@_spi(GoogleCloudInternal) import GoogleWKTConvert",
+			},
 		},
+		{
+			name:    "message with custom SPI",
+			message: api.NewTestMessage("CustomSpi"),
+			config: &config.Library{
+				Swift: &config.SwiftPackage{
+					SwiftDefault: config.SwiftDefault{
+						Dependencies: []config.SwiftDependency{
+							{Name: wellKnownSwiftPackage, ApiPackage: wellKnownProtobufPackage, SpiAttribute: "CustomSPI"},
+						},
+					},
+				},
+			},
+			wantImports: []string{
+				"@_spi(CustomSPI) import GoogleWKT",
+				"@_spi(GoogleCloudInternal) import GoogleWKTConvert",
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			model := api.NewTestAPI([]*api.Message{test.message}, []*api.Enum{}, []*api.Service{})
+			codec := newTestCodec(t, model, test.config)
+			if err := codec.annotateModel(); err != nil {
+				t.Fatal(err)
+			}
+			if diff := cmp.Diff(test.wantImports, test.message.Codec.(*messageAnnotations).ConvertImports()); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
 	}
+}
+
+func TestAnnotateMessage_Discovery(t *testing.T) {
+	mapMessage := api.NewTestMapMessage("map<string, bytes>", api.TypezString, api.TypezBytes).
+		WithID("$map<string, bytes>")
 
 	for _, test := range []struct {
 		name    string
@@ -278,124 +295,83 @@ func TestAnnotateMessage_Discovery(t *testing.T) {
 	}{
 		{
 			name: "simple",
-			message: &api.Message{
-				Name:    "Secret",
-				ID:      ".test.Secret",
-				Package: "test",
-				Fields: []*api.Field{
-					{Name: "field", JSONName: "field", ID: ".test.Secret.field", Typez: api.TypezString},
-				},
-			},
+			message: api.NewTestMessage("Secret").
+				WithFields(api.NewTestField("field").WithType(api.TypezString)),
 			want: &messageAnnotations{
-				Name:                "Secret",
-				TypeURL:             "type.googleapis.com/test.Secret",
-				CustomSerialization: false,
-				SampleField:         "field",
-				ParameterTypeName:   "Secret",
-				ProtoTypeName:       "Test_Secret",
-				ModulePath:          "",
+				Name:              "Secret",
+				TypeURL:           "type.googleapis.com/test.Secret",
+				SampleField:       "field",
+				ParameterTypeName: "Secret",
+				ProtoTypeName:     "Test_Secret",
+				ModulePath:        "",
 			},
 		},
 		{
 			name: "required",
-			message: &api.Message{
-				Name:    "Secret",
-				ID:      ".test.Secret",
-				Package: "test",
-				Fields: []*api.Field{
-					{Name: "field", JSONName: "field", ID: ".test.Secret.field", Typez: api.TypezBytes},
-				},
-			},
+			message: api.NewTestMessage("Secret").
+				WithFields(api.NewTestField("field").WithType(api.TypezBytes)),
 			want: &messageAnnotations{
-				Name:                "Secret",
-				TypeURL:             "type.googleapis.com/test.Secret",
-				CustomSerialization: true,
-				SampleField:         "field",
-				ParameterTypeName:   "Secret",
-				ProtoTypeName:       "Test_Secret",
-				ModulePath:          "",
+				Name:              "Secret",
+				TypeURL:           "type.googleapis.com/test.Secret",
+				HasData:           true,
+				SampleField:       "field",
+				ParameterTypeName: "Secret",
+				ProtoTypeName:     "Test_Secret",
+				ModulePath:        "",
 			},
 		},
 		{
 			name: "optional",
-			message: &api.Message{
-				Name:    "Secret",
-				ID:      ".test.Secret",
-				Package: "test",
-				Fields: []*api.Field{
-					{Name: "field", JSONName: "field", ID: ".test.Secret.field", Typez: api.TypezBytes, Optional: true},
-				},
-			},
+			message: api.NewTestMessage("Secret").
+				WithFields(api.NewTestField("field").WithType(api.TypezBytes).WithOptional()),
 			want: &messageAnnotations{
-				Name:                "Secret",
-				TypeURL:             "type.googleapis.com/test.Secret",
-				CustomSerialization: true,
-				SampleField:         "field",
-				ParameterTypeName:   "Secret",
-				ProtoTypeName:       "Test_Secret",
-				ModulePath:          "",
+				Name:              "Secret",
+				TypeURL:           "type.googleapis.com/test.Secret",
+				HasData:           true,
+				SampleField:       "field",
+				ParameterTypeName: "Secret",
+				ProtoTypeName:     "Test_Secret",
+				ModulePath:        "",
 			},
 		},
 		{
 			name: "repeated",
-			message: &api.Message{
-				Name:    "Secret",
-				ID:      ".test.Secret",
-				Package: "test",
-				Fields: []*api.Field{
-					{Name: "field", JSONName: "field", ID: ".test.Secret.field", Typez: api.TypezBytes, Repeated: true},
-				},
-			},
+			message: api.NewTestMessage("Secret").
+				WithFields(api.NewTestField("field").WithType(api.TypezBytes).WithRepeated()),
 			want: &messageAnnotations{
-				Name:                "Secret",
-				TypeURL:             "type.googleapis.com/test.Secret",
-				CustomSerialization: true,
-				SampleField:         "field",
-				ParameterTypeName:   "Secret",
-				ProtoTypeName:       "Test_Secret",
-				ModulePath:          "",
+				Name:              "Secret",
+				TypeURL:           "type.googleapis.com/test.Secret",
+				HasData:           true,
+				SampleField:       "field",
+				ParameterTypeName: "Secret",
+				ProtoTypeName:     "Test_Secret",
+				ModulePath:        "",
 			},
 		},
 		{
 			name: "map",
-			message: &api.Message{
-				Name:    "Secret",
-				ID:      ".test.Secret",
-				Package: "test",
-				Fields: []*api.Field{
-					{
-						Name:     "field",
-						JSONName: "field",
-						ID:       ".test.Secret.field",
-						Typez:    api.TypezMessage,
-						TypezID:  mapMessage.ID,
-						Map:      true,
-					},
-				},
-			},
+			message: api.NewTestMessage("Secret").
+				WithFields(api.NewTestField("field").WithMessageType(mapMessage).WithMap()),
 			want: &messageAnnotations{
-				Name:                "Secret",
-				TypeURL:             "type.googleapis.com/test.Secret",
-				CustomSerialization: true,
-				SampleField:         "field",
-				ParameterTypeName:   "Secret",
-				ProtoTypeName:       "Test_Secret",
-				ModulePath:          "",
+				Name:              "Secret",
+				TypeURL:           "type.googleapis.com/test.Secret",
+				HasData:           true,
+				SampleField:       "field",
+				ParameterTypeName: "Secret",
+				ProtoTypeName:     "Test_Secret",
+				ModulePath:        "",
 			},
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			for _, f := range test.message.Fields {
-				f.Parent = test.message
-			}
-			model := api.NewTestAPI([]*api.Message{test.message}, []*api.Enum{}, []*api.Service{})
+			model := api.NewTestAPI([]*api.Message{test.message}, nil, nil)
 			model.AddMessage(mapMessage)
 			codec := newTestCodec(t, model, nil)
 			codec.UrlSafeForBytes = true
 			if err := codec.annotateModel(); err != nil {
 				t.Fatal(err)
 			}
-			if diff := cmp.Diff(test.want, test.message.Codec, cmpopts.IgnoreFields(messageAnnotations{}, "Model", "DependsOn", "HasConvertedFields")); diff != "" {
+			if diff := cmp.Diff(test.want, test.message.Codec, cmpopts.IgnoreFields(messageAnnotations{}, "Model", "DependsOn")); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
@@ -411,8 +387,12 @@ func TestAnnotateMessage_DiscoveryRequests(t *testing.T) {
 	}{
 		{
 			name:    "basic message",
-			service: &api.Service{Name: "Service", Package: "test", ID: ".test.Service"},
-			request: &api.Message{Name: "getRequest", Package: "test", ID: ".test.Service.getRequest", SyntheticRequest: true},
+			service: api.NewTestService("Service"),
+			request: func() *api.Message {
+				m := api.NewTestMessage("getRequest").WithID(".test.Service.getRequest")
+				m.SyntheticRequest = true
+				return m
+			}(),
 			want: &messageAnnotations{
 				Name:              "GetRequest",
 				TypeURL:           "type.googleapis.com/test.Service.getRequest",
@@ -424,8 +404,12 @@ func TestAnnotateMessage_DiscoveryRequests(t *testing.T) {
 		},
 		{
 			name:    "service with reserved name",
-			service: &api.Service{Name: "Protocol", Package: "test", ID: ".test.Protocol"},
-			request: &api.Message{Name: "listRequest", Package: "test", ID: ".test.Protocol.listRequest", SyntheticRequest: true},
+			service: api.NewTestService("Protocol"),
+			request: func() *api.Message {
+				m := api.NewTestMessage("listRequest").WithID(".test.Protocol.listRequest")
+				m.SyntheticRequest = true
+				return m
+			}(),
 			want: &messageAnnotations{
 				Name:              "ListRequest",
 				TypeURL:           "type.googleapis.com/test.Protocol.listRequest",
@@ -440,21 +424,18 @@ func TestAnnotateMessage_DiscoveryRequests(t *testing.T) {
 			// Discovery requests are synthetic. The messages are injected into the data
 			// model by sidekick. To avoid clashes, sidekick puts the request messages
 			// within a placeholder named after the service.
-			servicePlaceholder := &api.Message{
-				Name:               test.service.Name,
-				Package:            test.service.Package,
-				ID:                 test.service.ID,
-				ServicePlaceholder: true,
-			}
-			test.request.Parent = servicePlaceholder
-			servicePlaceholder.Messages = append(servicePlaceholder.Messages, test.request)
-			model := api.NewTestAPI([]*api.Message{servicePlaceholder}, []*api.Enum{}, []*api.Service{test.service})
+			servicePlaceholder := api.NewTestMessage(test.service.Name).
+				WithPackage(test.service.Package).
+				WithID(test.service.ID).
+				WithMessages(test.request)
+			servicePlaceholder.ServicePlaceholder = true
+			model := api.NewTestAPI([]*api.Message{servicePlaceholder}, nil, []*api.Service{test.service})
 			model.AddMessage(test.request)
 			codec := newTestCodec(t, model, nil)
 			if err := codec.annotateModel(); err != nil {
 				t.Fatal(err)
 			}
-			if diff := cmp.Diff(test.want, test.request.Codec, cmpopts.IgnoreFields(messageAnnotations{}, "Model", "DependsOn", "HasConvertedFields")); diff != "" {
+			if diff := cmp.Diff(test.want, test.request.Codec, cmpopts.IgnoreFields(messageAnnotations{}, "Model", "DependsOn")); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
@@ -462,62 +443,35 @@ func TestAnnotateMessage_DiscoveryRequests(t *testing.T) {
 }
 
 func TestAnnotateMessage_Pagination(t *testing.T) {
-	pageSizeField := &api.Field{Name: "page_size", JSONName: "pageSize", Typez: api.TypezInt32}
-	pageTokenField := &api.Field{Name: "page_token", JSONName: "pageToken", Typez: api.TypezString}
-	inputType := &api.Message{
-		Name:    "ListSecretsRequest",
-		Package: "google.cloud.secretmanager.v1",
-		ID:      ".google.cloud.secretmanager.v1.ListSecretsRequest",
-		Fields:  []*api.Field{pageSizeField, pageTokenField},
-	}
-	pageSizeField.Parent = inputType
-	pageTokenField.Parent = inputType
+	pageSizeField := api.NewTestField("page_size").WithType(api.TypezInt32)
+	pageTokenField := api.NewTestField("page_token").WithType(api.TypezString)
+	inputType := api.NewTestMessage("ListSecretsRequest").
+		WithPackage("google.cloud.secretmanager.v1").
+		WithFields(pageSizeField, pageTokenField)
 
-	itemField := &api.Field{Name: "secrets", JSONName: "secrets", Typez: api.TypezMessage, TypezID: ".google.cloud.secretmanager.v1.Secret", Repeated: true}
-	nextPageTokenField := &api.Field{Name: "next_page_token", JSONName: "nextPageToken", Typez: api.TypezString}
-	outputType := &api.Message{
-		Name:    "ListSecretsResponse",
-		Package: "google.cloud.secretmanager.v1",
-		ID:      ".google.cloud.secretmanager.v1.ListSecretsResponse",
-		Fields:  []*api.Field{itemField, nextPageTokenField},
-		Pagination: &api.PaginationInfo{
-			NextPageToken: nextPageTokenField,
-			PageableItem:  itemField,
-		},
-	}
-	itemField.Parent = outputType
-	nextPageTokenField.Parent = outputType
+	secretType := api.NewTestMessage("Secret").WithPackage("google.cloud.secretmanager.v1")
+	itemField := api.NewTestField("secrets").
+		WithMessageType(secretType).
+		WithRepeated()
+	nextPageTokenField := api.NewTestField("next_page_token").WithType(api.TypezString)
+	outputType := api.NewTestMessage("ListSecretsResponse").
+		WithPackage("google.cloud.secretmanager.v1").
+		WithFields(itemField, nextPageTokenField).
+		WithPagination(nextPageTokenField, itemField)
 
-	secretType := &api.Message{
-		Name:    "Secret",
-		Package: "google.cloud.secretmanager.v1",
-		ID:      ".google.cloud.secretmanager.v1.Secret",
-	}
+	method := api.NewTestMethod("ListSecrets").
+		WithInput(inputType).
+		WithOutput(outputType).
+		WithVerb("GET").
+		WithPathTemplate((&api.PathTemplate{}).WithLiteral("v1").WithLiteral("secrets")).
+		WithPagination(pageTokenField)
 
-	iam := &api.Service{
-		Name:    "SecretManagerService",
-		ID:      ".google.cloud.secretmanager.v1.SecretManagerService",
-		Package: "google.cloud.secretmanager.v1",
-		Methods: []*api.Method{
-			{
-				Name:         "ListSecrets",
-				InputTypeID:  inputType.ID,
-				InputType:    inputType,
-				OutputTypeID: outputType.ID,
-				OutputType:   outputType,
-				PathInfo: &api.PathInfo{
-					Bindings: []*api.PathBinding{{
-						Verb:         "GET",
-						PathTemplate: (&api.PathTemplate{}).WithLiteral("v1").WithLiteral("secrets"),
-					}},
-				},
-				Pagination: pageTokenField,
-			},
-		},
-	}
+	iam := api.NewTestService("SecretManagerService").
+		WithPackage("google.cloud.secretmanager.v1").
+		WithMethods(method)
 
-	model := api.NewTestAPI([]*api.Message{inputType, outputType, secretType}, nil, []*api.Service{iam})
-	model.PackageName = "google.cloud.secretmanager.v1"
+	model := api.NewTestAPI([]*api.Message{inputType, outputType, secretType}, nil, []*api.Service{iam}).
+		WithPackageName("google.cloud.secretmanager.v1")
 
 	codec := newTestCodec(t, model, nil)
 	if err := codec.annotateModel(); err != nil {
@@ -534,10 +488,10 @@ func TestAnnotateMessage_Pagination(t *testing.T) {
 		ProtoTypeName:     "Google_Cloud_Secretmanager_V1_ListSecretsRequest",
 		ModulePath:        "",
 	}
-	if diff := cmp.Diff(wantRequest, gotRequest, cmpopts.IgnoreFields(messageAnnotations{}, "Model", "DependsOn", "HasConvertedFields")); diff != "" {
+	if diff := cmp.Diff(wantRequest, gotRequest, cmpopts.IgnoreFields(messageAnnotations{}, "Model", "DependsOn")); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
-	wantRequestImports := []*dependencyImport{{Module: "GoogleCloudWkt"}}
+	wantRequestImports := []*dependencyImport{{Module: "GoogleWKT"}}
 	if diff := cmp.Diff(wantRequestImports, gotRequest.MessageImports()); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
@@ -555,46 +509,33 @@ func TestAnnotateMessage_Pagination(t *testing.T) {
 		ProtoTypeName:       "Google_Cloud_Secretmanager_V1_ListSecretsResponse",
 		ModulePath:          "",
 	}
-	if diff := cmp.Diff(wantResponse, gotResponse, cmpopts.IgnoreFields(messageAnnotations{}, "Model", "DependsOn", "HasConvertedFields")); diff != "" {
+	if diff := cmp.Diff(wantResponse, gotResponse, cmpopts.IgnoreFields(messageAnnotations{}, "Model", "DependsOn")); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
-	wantResponseImports := []*dependencyImport{{Module: "GoogleCloudGax"}, {Module: "GoogleCloudWkt"}}
+	wantResponseImports := []*dependencyImport{{Module: "GoogleGax"}, {Module: "GoogleWKT"}}
 	if diff := cmp.Diff(wantResponseImports, gotResponse.MessageImports()); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
 
 func TestAnnotateMessage_RecursiveNested(t *testing.T) {
-	itemField := &api.Field{Name: "secrets", JSONName: "secrets", Typez: api.TypezMessage, TypezID: ".google.cloud.secretmanager.v1.Secret", Repeated: true}
-	nextPageTokenField := &api.Field{Name: "next_page_token", JSONName: "nextPageToken", Typez: api.TypezString}
-	nestedOutputType := &api.Message{
-		Name:    "ListSecretsResponse",
-		Package: "google.cloud.secretmanager.v1",
-		ID:      ".google.cloud.secretmanager.v1.OuterMessage.ListSecretsResponse",
-		Fields:  []*api.Field{itemField, nextPageTokenField},
-		Pagination: &api.PaginationInfo{
-			NextPageToken: nextPageTokenField,
-			PageableItem:  itemField,
-		},
-	}
-	itemField.Parent = nestedOutputType
-	nextPageTokenField.Parent = nestedOutputType
+	secretType := api.NewTestMessage("Secret").WithPackage("google.cloud.secretmanager.v1")
+	itemField := api.NewTestField("secrets").
+		WithMessageType(secretType).
+		WithRepeated()
+	nextPageTokenField := api.NewTestField("next_page_token").WithType(api.TypezString)
+	nestedOutputType := api.NewTestMessage("ListSecretsResponse").
+		WithPackage("google.cloud.secretmanager.v1").
+		WithID(".google.cloud.secretmanager.v1.OuterMessage.ListSecretsResponse").
+		WithFields(itemField, nextPageTokenField).
+		WithPagination(nextPageTokenField, itemField)
 
-	outerMessage := &api.Message{
-		Name:     "OuterMessage",
-		Package:  "google.cloud.secretmanager.v1",
-		ID:       ".google.cloud.secretmanager.v1.OuterMessage",
-		Messages: []*api.Message{nestedOutputType},
-	}
+	outerMessage := api.NewTestMessage("OuterMessage").
+		WithPackage("google.cloud.secretmanager.v1").
+		WithMessages(nestedOutputType)
 
-	secretType := &api.Message{
-		Name:    "Secret",
-		Package: "google.cloud.secretmanager.v1",
-		ID:      ".google.cloud.secretmanager.v1.Secret",
-	}
-
-	model := api.NewTestAPI([]*api.Message{outerMessage, secretType}, nil, nil)
-	model.PackageName = "google.cloud.secretmanager.v1"
+	model := api.NewTestAPI([]*api.Message{outerMessage, secretType}, nil, nil).
+		WithPackageName("google.cloud.secretmanager.v1")
 
 	codec := newTestCodec(t, model, nil)
 	if err := codec.annotateModel(); err != nil {
@@ -610,11 +551,11 @@ func TestAnnotateMessage_RecursiveNested(t *testing.T) {
 		ProtoTypeName:     "Google_Cloud_Secretmanager_V1_OuterMessage",
 		ModulePath:        "",
 	}
-	if diff := cmp.Diff(wantOuter, gotOuter, cmpopts.IgnoreFields(messageAnnotations{}, "Model", "DependsOn", "HasConvertedFields")); diff != "" {
+	if diff := cmp.Diff(wantOuter, gotOuter, cmpopts.IgnoreFields(messageAnnotations{}, "Model", "DependsOn")); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 
-	wantImports := []*dependencyImport{{Module: "GoogleCloudGax"}, {Module: "GoogleCloudWkt"}}
+	wantImports := []*dependencyImport{{Module: "GoogleGax"}, {Module: "GoogleWKT"}}
 	if diff := cmp.Diff(wantImports, gotOuter.MessageImports()); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
@@ -701,124 +642,31 @@ func TestAnnotateMessage_PlaceholderGating(t *testing.T) {
 	}
 }
 
-func TestAnnotateMessage_HasConvertedFields(t *testing.T) {
-	for _, test := range []struct {
-		name   string
-		fields []*api.Field
-		want   bool
-	}{
-		{
-			name:   "empty_message",
-			fields: []*api.Field{},
-			want:   false,
-		},
-		{
-			name: "singular_field",
-			fields: []*api.Field{
-				{Name: "field1", ID: "1", Typez: api.TypezString},
-			},
-			want: true,
-		},
-		{
-			name: "repeated_field",
-			fields: []*api.Field{
-				{Name: "field1", ID: "1", Typez: api.TypezString, Repeated: true},
-			},
-			want: true,
-		},
-		{
-			name: "map_field",
-			fields: []*api.Field{
-				{Name: "field1", ID: "1", Typez: api.TypezString, Map: true},
-			},
-			want: true,
-		},
-		{
-			name: "oneof_field",
-			fields: []*api.Field{
-				{Name: "field1", ID: "1", Typez: api.TypezString, IsOneOf: true},
-			},
-			want: true,
-		},
-		{
-			name: "map_and_repeated_fields",
-			fields: []*api.Field{
-				{Name: "labels", ID: "1", Typez: api.TypezString, Map: true},
-				{Name: "names", ID: "2", Typez: api.TypezString, Repeated: true},
-			},
-			want: true,
-		},
-	} {
-		t.Run(test.name, func(t *testing.T) {
-			msg := &api.Message{
-				Name:    "TestMessage",
-				ID:      ".test.TestMessage",
-				Package: "test",
-				Fields:  test.fields,
-			}
-			for _, f := range msg.Fields {
-				f.Parent = msg
-			}
-			model := api.NewTestAPI([]*api.Message{msg}, []*api.Enum{}, []*api.Service{})
-			model.PackageName = "test"
-			codec := newTestCodec(t, model, nil)
-			if err := codec.annotateModel(); err != nil {
-				t.Fatal(err)
-			}
-			ann, ok := msg.Codec.(*messageAnnotations)
-			if !ok {
-				t.Fatalf("expected msg.Codec to be *messageAnnotations, got %T", msg.Codec)
-			}
-			if ann.HasConvertedFields != test.want {
-				t.Errorf("HasConvertedFields = %v, want %v", ann.HasConvertedFields, test.want)
-			}
-		})
-	}
-}
-
 func TestAnnotateMessage_ParameterTypeName_Qualification(t *testing.T) {
-	deepChild := &api.Message{
-		Name:    "DeepChild",
-		Package: "google.cloud.secretmanager.v1",
-		ID:      ".google.cloud.secretmanager.v1.Parent.Child.DeepChild",
-	}
-	child := &api.Message{
-		Name:     "Child",
-		Package:  "google.cloud.secretmanager.v1",
-		ID:       ".google.cloud.secretmanager.v1.Parent.Child",
-		Messages: []*api.Message{deepChild},
-	}
-	deepChild.Parent = child
-	parent := &api.Message{
-		Name:     "Parent",
-		Package:  "google.cloud.secretmanager.v1",
-		ID:       ".google.cloud.secretmanager.v1.Parent",
-		Messages: []*api.Message{child},
-	}
-	child.Parent = parent
+	deepChild := api.NewTestMessage("DeepChild").
+		WithPackage("google.cloud.secretmanager.v1").
+		WithID(".google.cloud.secretmanager.v1.Parent.Child.DeepChild")
+	child := api.NewTestMessage("Child").
+		WithPackage("google.cloud.secretmanager.v1").
+		WithID(".google.cloud.secretmanager.v1.Parent.Child").
+		WithMessages(deepChild)
+	parent := api.NewTestMessage("Parent").
+		WithPackage("google.cloud.secretmanager.v1").
+		WithMessages(child)
 
-	extDeepChild := &api.Message{
-		Name:    "ExtDeepChild",
-		Package: "google.type",
-		ID:      ".google.type.ExtParent.ExtChild.ExtDeepChild",
-	}
-	extChild := &api.Message{
-		Name:     "ExtChild",
-		Package:  "google.type",
-		ID:       ".google.type.ExtParent.ExtChild",
-		Messages: []*api.Message{extDeepChild},
-	}
-	extDeepChild.Parent = extChild
-	extParent := &api.Message{
-		Name:     "ExtParent",
-		Package:  "google.type",
-		ID:       ".google.type.ExtParent",
-		Messages: []*api.Message{extChild},
-	}
-	extChild.Parent = extParent
+	extDeepChild := api.NewTestMessage("ExtDeepChild").
+		WithPackage("google.type").
+		WithID(".google.type.ExtParent.ExtChild.ExtDeepChild")
+	extChild := api.NewTestMessage("ExtChild").
+		WithPackage("google.type").
+		WithID(".google.type.ExtParent.ExtChild").
+		WithMessages(extDeepChild)
+	extParent := api.NewTestMessage("ExtParent").
+		WithPackage("google.type").
+		WithMessages(extChild)
 
-	model := api.NewTestAPI([]*api.Message{parent, extParent}, nil, nil)
-	model.PackageName = "google.cloud.secretmanager.v1"
+	model := api.NewTestAPI([]*api.Message{parent, extParent}, nil, nil).
+		WithPackageName("google.cloud.secretmanager.v1")
 	swiftPkg := &config.SwiftPackage{
 		SwiftDefault: config.SwiftDefault{
 			Dependencies: []config.SwiftDependency{
@@ -860,8 +708,8 @@ func TestAnnotateMessage_ParameterTypeName_Qualification(t *testing.T) {
 	}
 
 	// Also verify module conversion for external packages (e.g. google/type inside GoogleCloudStorage)
-	extModuleModel := api.NewTestAPI([]*api.Message{extParent}, nil, nil)
-	extModuleModel.PackageName = "google.type"
+	extModuleModel := api.NewTestAPI([]*api.Message{extParent}, nil, nil).
+		WithPackageName("google.type")
 	extModuleCodec := newTestCodec(t, extModuleModel, &config.Library{
 		Name: "google-cloud-storage",
 		Swift: &config.SwiftPackage{
@@ -881,5 +729,147 @@ func TestAnnotateMessage_ParameterTypeName_Qualification(t *testing.T) {
 	extAnn := extParent.Codec.(*messageAnnotations)
 	if extAnn.ParameterTypeName != "GoogleType.ExtParent" {
 		t.Errorf("module conversion ParameterTypeName = %q, want %q", extAnn.ParameterTypeName, "GoogleType.ExtParent")
+	}
+}
+
+// messageDiagnoseFlags is the `Diagnose*` subset of messageAnnotations.
+//
+// The flags form a matrix that is far easier to read on its own than inside a
+// full messageAnnotations literal.
+type messageDiagnoseFlags struct {
+	Codable    bool
+	Pagination bool
+}
+
+func getMessageDiagnoseFlags(t *testing.T, message *api.Message) messageDiagnoseFlags {
+	t.Helper()
+	ann, ok := message.Codec.(*messageAnnotations)
+	if !ok {
+		t.Fatalf("message %q is not annotated", message.Name)
+	}
+	return messageDiagnoseFlags{
+		Codable:    ann.DiagnoseCodable,
+		Pagination: ann.DiagnosePagination,
+	}
+}
+
+func TestAnnotateMessage_DiagnoseCodable(t *testing.T) {
+	for _, test := range []struct {
+		name              string
+		messageDeprecated bool
+		fieldDeprecated   bool
+		typeDeprecated    bool
+		want              messageDiagnoseFlags
+	}{
+		{
+			name: "nothing-deprecated",
+			want: messageDiagnoseFlags{},
+		},
+		{
+			name:            "deprecated-field",
+			fieldDeprecated: true,
+			want:            messageDiagnoseFlags{Codable: true},
+		},
+		{
+			name:           "deprecated-field-type",
+			typeDeprecated: true,
+			want:           messageDiagnoseFlags{Codable: true},
+		},
+		{
+			// A deprecated message suppresses deprecation diagnostics in its
+			// whole scope, so its members need nothing.
+			name:              "deprecated-message",
+			messageDeprecated: true,
+			fieldDeprecated:   true,
+			typeDeprecated:    true,
+			want:              messageDiagnoseFlags{},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			payload := api.NewTestMessage("Payload").
+				WithDeprecated(test.typeDeprecated)
+			field := api.NewTestField("payload").
+				WithMessageType(payload).
+				WithDeprecated(test.fieldDeprecated)
+			message := api.NewTestMessage("Request").
+				WithFields(field).
+				WithDeprecated(test.messageDeprecated)
+
+			model := api.NewTestAPI([]*api.Message{message, payload}, nil, nil)
+			codec := newTestCodec(t, model, nil)
+			if err := codec.annotateModel(); err != nil {
+				t.Fatal(err)
+			}
+			got := getMessageDiagnoseFlags(t, message)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestAnnotateMessage_DiagnosePagination(t *testing.T) {
+	for _, test := range []struct {
+		name                string
+		messageDeprecated   bool
+		itemFieldDeprecated bool
+		itemTypeDeprecated  bool
+		tokenDeprecated     bool
+		want                messageDiagnoseFlags
+	}{
+		{
+			name: "nothing-deprecated",
+			want: messageDiagnoseFlags{},
+		},
+		{
+			name:                "deprecated-item-field",
+			itemFieldDeprecated: true,
+			want:                messageDiagnoseFlags{Codable: true, Pagination: true},
+		},
+		{
+			// `_getPaginatedItems()` names the item type in its return type.
+			name:               "deprecated-item-type",
+			itemTypeDeprecated: true,
+			want:               messageDiagnoseFlags{Codable: true, Pagination: true},
+		},
+		{
+			name:            "deprecated-page-token",
+			tokenDeprecated: true,
+			want:            messageDiagnoseFlags{Codable: true, Pagination: true},
+		},
+		{
+			name:                "deprecated-message",
+			messageDeprecated:   true,
+			itemFieldDeprecated: true,
+			itemTypeDeprecated:  true,
+			tokenDeprecated:     true,
+			want:                messageDiagnoseFlags{},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			itemType := api.NewTestMessage("Item").
+				WithDeprecated(test.itemTypeDeprecated)
+			itemField := api.NewTestField("items").
+				WithMessageType(itemType).
+				WithRepeated().
+				WithDeprecated(test.itemFieldDeprecated)
+			tokenField := api.NewTestField("next_page_token").
+				WithType(api.TypezString).
+				WithDeprecated(test.tokenDeprecated)
+			response := api.NewTestMessage("ListItemsResponse").
+				WithFields(itemField, tokenField).
+				WithPagination(tokenField, itemField).
+				WithDeprecated(test.messageDeprecated)
+
+			model := api.NewTestAPI([]*api.Message{response, itemType}, nil, nil)
+			codec := newTestCodec(t, model, nil)
+			if err := codec.annotateModel(); err != nil {
+				t.Fatal(err)
+			}
+			got := getMessageDiagnoseFlags(t, response)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
 	}
 }

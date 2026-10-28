@@ -42,25 +42,21 @@ func extractBlock(t *testing.T, content, startStr, endStr string) string {
 func TestGenerateBidiStreaming(t *testing.T) {
 	outDir := t.TempDir()
 
-	request := api.NewTestMessage("Request").WithPackage("test.v1")
-	request.Fields = []*api.Field{
-		{
-			Name:     "query",
-			JSONName: "query",
-			ID:       ".test.v1.Request.query",
-			Typez:    api.TypezString,
-		},
-	}
+	request := api.NewTestMessage("Request").
+		WithPackage("test.v1").
+		WithFields(api.NewTestField("query").WithType(api.TypezString))
 	response := api.NewTestMessage("Response").WithPackage("test.v1")
 
-	bidiMethod := api.NewTestMethod("Chat").WithInput(request).WithOutput(response).WithBidiStreaming()
-	bidiMethod.PathInfo = &api.PathInfo{
-		Bindings: []*api.PathBinding{{Verb: "GET", PathTemplate: &api.PathTemplate{}}},
-	}
+	bidiMethod := api.NewTestMethod("Chat").
+		WithInput(request).
+		WithOutput(response).
+		WithBidiStreaming().
+		WithVerb("GET").
+		WithPathTemplate(&api.PathTemplate{})
 	service := api.NewTestService("Protocol").WithPackage("test.v1").WithMethods(bidiMethod)
 
-	model := api.NewTestAPI([]*api.Message{request, response}, []*api.Enum{}, []*api.Service{service})
-	model.PackageName = "test.v1"
+	model := api.NewTestAPI([]*api.Message{request, response}, nil, []*api.Service{service}).
+		WithPackageName("test.v1")
 	if err := api.CrossReference(model); err != nil {
 		t.Fatal(err)
 	}
@@ -68,11 +64,11 @@ func TestGenerateBidiStreaming(t *testing.T) {
 	cfg := &parser.ModelConfig{
 		SpecificationFormat: libconfig.SpecProtobuf,
 		Codec: map[string]string{
-			"package:wkt":                    "source=google.protobuf,package=google-cloud-wkt",
-			"package:prost":                  "package=prost,used-if=streaming",
-			"package:prost-types":            "package=prost-types,used-if=streaming",
-			"include-bidi-streaming-methods": "true",
-			"generate-rpc-samples":           "true",
+			"package:wkt":                 "source=google.protobuf,package=google-cloud-wkt",
+			"package:prost":               "package=prost,used-if=streaming",
+			"package:prost-types":         "package=prost-types,used-if=streaming",
+			"generate-rpc-samples":        "true",
+			"detailed-tracing-attributes": "true",
 		},
 	}
 	if err := Generate(t.Context(), model, outDir, cfg); err != nil {
@@ -102,10 +98,9 @@ func TestGenerateBidiStreaming(t *testing.T) {
 		{
 			name:     "client: method docstring and example",
 			file:     "src/client.rs",
-			startStr: "    #[cfg(google_cloud_unstable_gapic_streaming)]\n    ///\n    /// # Example",
+			startStr: "    ///\n    /// # Example",
 			endStr:   "        super::builder::protocol::Chat::new(self.inner.clone())\n    }",
-			want: `    #[cfg(google_cloud_unstable_gapic_streaming)]
-    ///
+			want: `    ///
     /// # Example
     /// ` + "```" + `
     /// # use google_cloud_test_v1::client::Protocol;
@@ -113,13 +108,13 @@ func TestGenerateBidiStreaming(t *testing.T) {
     /// async fn sample(
     ///    client: &Protocol
     /// ) -> anyhow::Result<()> {
-    ///     let (sender, mut receiver) = client.chat()
+    ///     let (sender, mut resp_stream) = client.chat()
     ///         .build();
     ///
     ///     sender.send(Request::default()).await?;
     ///     drop(sender); // Half-close the stream
     ///
-    ///     while let Some(response) = receiver.recv().await {
+    ///     while let Some(response) = resp_stream.next().await {
     ///         let response = response?;
     ///         println!("response {:?}", response);
     ///     }
@@ -135,7 +130,7 @@ func TestGenerateBidiStreaming(t *testing.T) {
 			name:     "builder: struct docstring and example",
 			file:     "src/builder.rs",
 			startStr: "    /// The request builder for [Protocol::chat][crate::client::Protocol::chat] calls.\n    ///\n    /// # Example",
-			endStr:   "    #[cfg(google_cloud_unstable_gapic_streaming)]",
+			endStr:   "    #[derive(Clone, Debug)]",
 			want: `    /// The request builder for [Protocol::chat][crate::client::Protocol::chat] calls.
     ///
     /// # Example
@@ -144,12 +139,12 @@ func TestGenerateBidiStreaming(t *testing.T) {
     /// # use google_cloud_test_v1::model::Request;
     /// # async fn sample() -> anyhow::Result<()> {
     /// let builder = prepare_request_builder();
-    /// let (sender, mut receiver) = builder.build();
+    /// let (sender, mut resp_stream) = builder.build();
     ///
     /// sender.send(Request::default()).await?;
     /// drop(sender); // Half-close the stream
     ///
-    /// while let Some(response) = receiver.recv().await {
+    /// while let Some(response) = resp_stream.next().await {
     ///     let response = response?;
     ///     println!("response {:?}", response);
     /// }
@@ -160,7 +155,7 @@ func TestGenerateBidiStreaming(t *testing.T) {
     ///   // ... details omitted ...
     /// }
     /// ` + "```" + `
-    #[cfg(google_cloud_unstable_gapic_streaming)]`,
+    #[derive(Clone, Debug)]`,
 		},
 		{
 			name:     "builder: struct definition",
@@ -179,7 +174,7 @@ func TestGenerateBidiStreaming(t *testing.T) {
             self,
         ) -> (
             google_cloud_gax::streaming::RequestSender<crate::model::Request>,
-            google_cloud_gax::streaming::ResponseReceiver<crate::model::Response>,
+            google_cloud_gax::streaming::ResponseStream<crate::model::Response>,
         ) {
             (*self.0.stub).chat(self.0.options)
         }`,
@@ -187,10 +182,9 @@ func TestGenerateBidiStreaming(t *testing.T) {
 		{
 			name:     "builder: request builder impl",
 			file:     "src/builder.rs",
-			startStr: "    #[cfg(google_cloud_unstable_gapic_streaming)]\n    #[doc(hidden)]\n    impl crate::RequestBuilder for Chat",
+			startStr: "    #[doc(hidden)]\n    impl crate::RequestBuilder for Chat",
 			endStr:   "\n    }",
-			want: `    #[cfg(google_cloud_unstable_gapic_streaming)]
-    #[doc(hidden)]
+			want: `    #[doc(hidden)]
     impl crate::RequestBuilder for Chat {
         fn request_options(&mut self) -> &mut crate::RequestOptions {
             &mut self.0.options
@@ -200,15 +194,14 @@ func TestGenerateBidiStreaming(t *testing.T) {
 		{
 			name:     "stub: method signature and default body",
 			file:     "src/stub.rs",
-			startStr: "    #[cfg(google_cloud_unstable_gapic_streaming)]\n    fn chat(",
+			startStr: "    fn chat(",
 			endStr:   "    }",
-			want: `    #[cfg(google_cloud_unstable_gapic_streaming)]
-    fn chat(
+			want: `    fn chat(
         &self,
         _options: crate::RequestOptions,
     ) -> (
         google_cloud_gax::streaming::RequestSender<crate::model::Request>,
-        google_cloud_gax::streaming::ResponseReceiver<crate::model::Response>,
+        google_cloud_gax::streaming::ResponseStream<crate::model::Response>,
     ) {
         gaxi::unimplemented::unimplemented_bidi_stub()
     }`,
@@ -216,30 +209,28 @@ func TestGenerateBidiStreaming(t *testing.T) {
 		{
 			name:     "stub dynamic: trait method",
 			file:     "src/stub/dynamic.rs",
-			startStr: "    #[cfg(google_cloud_unstable_gapic_streaming)]\n    fn chat(",
+			startStr: "    fn chat(",
 			endStr:   ");",
-			want: `    #[cfg(google_cloud_unstable_gapic_streaming)]
-    fn chat(
+			want: `    fn chat(
         &self,
         options: crate::RequestOptions,
     ) -> (
         google_cloud_gax::streaming::RequestSender<crate::model::Request>,
-        google_cloud_gax::streaming::ResponseReceiver<crate::model::Response>,
+        google_cloud_gax::streaming::ResponseStream<crate::model::Response>,
     );`,
 		},
 		{
 			name:     "stub dynamic: blanket forwarding impl",
 			file:     "src/stub/dynamic.rs",
-			startStr: "    /// Forwards the call to the implementation provided by `T`.\n    #[cfg(google_cloud_unstable_gapic_streaming)]\n    fn chat(",
+			startStr: "    /// Forwards the call to the implementation provided by `T`.\n    fn chat(",
 			endStr:   "    }",
 			want: `    /// Forwards the call to the implementation provided by ` + "`T`." + `
-    #[cfg(google_cloud_unstable_gapic_streaming)]
     fn chat(
         &self,
         options: crate::RequestOptions,
     ) -> (
         google_cloud_gax::streaming::RequestSender<crate::model::Request>,
-        google_cloud_gax::streaming::ResponseReceiver<crate::model::Response>,
+        google_cloud_gax::streaming::ResponseStream<crate::model::Response>,
     ) {
         T::chat(self, options)
     }`,
@@ -247,15 +238,14 @@ func TestGenerateBidiStreaming(t *testing.T) {
 		{
 			name:     "tracing: method wrapper",
 			file:     "src/tracing.rs",
-			startStr: "    #[cfg(google_cloud_unstable_gapic_streaming)]\n    fn chat(",
+			startStr: "    fn chat(",
 			endStr:   "    }",
-			want: `    #[cfg(google_cloud_unstable_gapic_streaming)]
-    fn chat(
+			want: `    fn chat(
         &self,
         options: crate::RequestOptions,
     ) -> (
         google_cloud_gax::streaming::RequestSender<crate::model::Request>,
-        google_cloud_gax::streaming::ResponseReceiver<crate::model::Response>,
+        google_cloud_gax::streaming::ResponseStream<crate::model::Response>,
     ) {
         self.inner.chat(options)
     }`,
@@ -263,10 +253,9 @@ func TestGenerateBidiStreaming(t *testing.T) {
 		{
 			name:     "transport: method signature",
 			file:     "src/transport.rs",
-			startStr: "    #[cfg(google_cloud_unstable_gapic_streaming)]\n    fn chat(",
+			startStr: "    fn chat(",
 			endStr:   ") -> (",
-			want: `    #[cfg(google_cloud_unstable_gapic_streaming)]
-    fn chat(
+			want: `    fn chat(
         &self,
         options: crate::RequestOptions,
     ) -> (`,
@@ -286,7 +275,7 @@ func TestGenerateBidiStreaming(t *testing.T) {
                 extensions,
                 path,
                 options,
-                &crate::info::X_GOOG_API_CLIENT_HEADER,
+                &crate::info::X_GOOG_API_CLIENT_GRPC_HEADER,
                 x_goog_request_params,
             )
     }`,
@@ -300,6 +289,198 @@ func TestGenerateBidiStreaming(t *testing.T) {
 prost-types.workspace = true
 prost.workspace      = true
 `,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			content := readFile(test.file)
+			got := extractBlock(t, content, test.startStr, test.endStr)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+
+	builderContent := readFile("src/builder.rs")
+	if strings.Contains(builderContent, "use crate::Result;") {
+		t.Errorf("src/builder.rs should not contain 'use crate::Result;' for bidi-only service")
+	}
+	if strings.Contains(builderContent, "struct RequestBuilder<") {
+		t.Errorf("src/builder.rs should not contain 'struct RequestBuilder<' for bidi-only service")
+	}
+
+	tracingContent := readFile("src/tracing.rs")
+	if !strings.Contains(tracingContent, "#[allow(dead_code)]\n    duration: gaxi::observability::DurationMetric,") {
+		t.Errorf("src/tracing.rs should contain '#[allow(dead_code)]\\n    duration: gaxi::observability::DurationMetric,'")
+	}
+}
+
+func TestGenerateGrpcClientBidiStreaming(t *testing.T) {
+	outDir := t.TempDir()
+
+	request := api.NewTestMessage("Request").
+		WithPackage("test.v1").
+		WithFields(api.NewTestField("query").WithType(api.TypezString))
+	response := api.NewTestMessage("Response").WithPackage("test.v1")
+
+	bidiMethod := api.NewTestMethod("Chat").
+		WithInput(request).
+		WithOutput(response).
+		WithBidiStreaming().
+		WithVerb("GET").
+		WithPathTemplate(&api.PathTemplate{})
+	service := api.NewTestService("Protocol").WithPackage("test.v1").WithMethods(bidiMethod)
+
+	model := api.NewTestAPI([]*api.Message{request, response}, nil, []*api.Service{service}).
+		WithPackageName("test.v1")
+	if err := api.CrossReference(model); err != nil {
+		t.Fatal(err)
+	}
+
+	cfg := &parser.ModelConfig{
+		SpecificationFormat: libconfig.SpecProtobuf,
+		Codec: map[string]string{
+			"template-override": "templates/grpc-client",
+			"package:wkt":       "source=google.protobuf,package=google-cloud-wkt",
+		},
+	}
+	if err := Generate(t.Context(), model, outDir, cfg); err != nil {
+		t.Fatal(err)
+	}
+
+	files := make(map[string]string)
+	readFile := func(relPath string) string {
+		if content, ok := files[relPath]; ok {
+			return content
+		}
+		b, err := os.ReadFile(filepath.Join(outDir, relPath))
+		if err != nil {
+			t.Fatal(err)
+		}
+		files[relPath] = string(b)
+		return files[relPath]
+	}
+
+	for _, test := range []struct {
+		name     string
+		file     string
+		startStr string
+		endStr   string
+		want     string
+	}{
+		{
+			name:     "grpc-client builder: struct definition",
+			file:     "builder.rs",
+			startStr: "    pub(crate) struct BidiStreamBuilder {",
+			endStr:   "    }",
+			want: `    pub(crate) struct BidiStreamBuilder {
+        stub: std::sync::Arc<dyn super::super::stub::dynamic::Protocol>,
+        options: crate::RequestOptions,
+    }`,
+		},
+		{
+			name:     "grpc-client builder: request builder impl",
+			file:     "builder.rs",
+			startStr: "    pub struct Chat(BidiStreamBuilder);\n\n    impl Chat {",
+			endStr:   "        }\n    }",
+			want: `    pub struct Chat(BidiStreamBuilder);
+
+    impl Chat {
+        pub(crate) fn new(stub: std::sync::Arc<dyn super::super::stub::dynamic::Protocol>) -> Self {
+            Self(
+                BidiStreamBuilder::new(stub)
+            )
+        }
+
+
+        /// Sets all the options, replacing any prior values.
+        pub fn with_options<V: Into<crate::RequestOptions>>(mut self, v: V) -> Self {
+            self.0.options = v.into();
+            self
+        }
+
+        /// Initiates the bidirectional stream.
+        pub fn build(
+            self,
+        ) -> (
+            google_cloud_gax::streaming::RequestSender<crate::model::Request>,
+            google_cloud_gax::streaming::ResponseStream<crate::model::Response>,
+        ) {
+            (*self.0.stub).chat(self.0.options)
+        }
+    }`,
+		},
+		{
+			name:     "grpc-client client: method definition",
+			file:     "client.rs",
+			startStr: "    pub fn chat(&self) -> super::builder::protocol::Chat",
+			endStr:   "    }",
+			want: `    pub fn chat(&self) -> super::builder::protocol::Chat
+    {
+        super::builder::protocol::Chat::new(self.inner.clone())
+    }`,
+		},
+		{
+			name:     "grpc-client stub: method signature",
+			file:     "stub.rs",
+			startStr: "    fn chat(",
+			endStr:   "    }",
+			want: `    fn chat(
+        &self,
+        _options: crate::RequestOptions,
+    ) -> (
+        google_cloud_gax::streaming::RequestSender<crate::model::Request>,
+        google_cloud_gax::streaming::ResponseStream<crate::model::Response>,
+    ) {
+        gaxi::unimplemented::unimplemented_bidi_stub()
+    }`,
+		},
+		{
+			name:     "grpc-client stub dynamic: trait method",
+			file:     "stub/dynamic.rs",
+			startStr: "    fn chat(",
+			endStr:   ");",
+			want: `    fn chat(
+        &self,
+        options: crate::RequestOptions,
+    ) -> (
+        google_cloud_gax::streaming::RequestSender<crate::model::Request>,
+        google_cloud_gax::streaming::ResponseStream<crate::model::Response>,
+    );`,
+		},
+		{
+			name:     "grpc-client tracing: method wrapper",
+			file:     "tracing.rs",
+			startStr: "    fn chat(",
+			endStr:   "    }",
+			want: `    fn chat(
+        &self,
+        options: crate::RequestOptions,
+    ) -> (
+        google_cloud_gax::streaming::RequestSender<crate::model::Request>,
+        google_cloud_gax::streaming::ResponseStream<crate::model::Response>,
+    ) {
+        self.inner.chat(options)
+    }`,
+		},
+		{
+			name:     "grpc-client transport: execute_bidi_streaming call",
+			file:     "transport.rs",
+			startStr: "        self.inner\n            .execute_bidi_streaming::<",
+			endStr:   "x_goog_request_params,\n            )\n    }",
+			want: `        self.inner
+            .execute_bidi_streaming::<
+                crate::model::Request,
+                crate::model::Response,
+                crate::test::v1::Request,
+                crate::test::v1::Response,
+            >(
+                extensions,
+                path,
+                options,
+                &info::X_GOOG_API_CLIENT_HEADER,
+                x_goog_request_params,
+            )
+    }`,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {

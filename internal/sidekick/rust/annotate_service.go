@@ -56,12 +56,70 @@ type serviceAnnotations struct {
 	DetailedTracingAttributes bool
 	// If true, the generated builders's visibility should be restricted to the crate.
 	InternalBuilders bool
-	// If true, the service has at least one bidirectional streaming RPC in the API definition.
-	HasBidiStreaming bool
-	// If true, the service has at least one server-side streaming RPC in the API definition.
-	HasServerStreaming bool
-	// If true, the service has at least one streaming RPC (bidirectional or server-side) in the API definition.
-	HasStreaming bool
+	// If true, the generator will produce reference documentation samples for functions that correspond to RPCs.
+	GenerateRpcSamples bool
+	// The Rust type used for the inner gRPC client in generated transports.
+	GrpcClient string
+}
+
+// HasGrpc returns true if the service has at least one generated gRPC method.
+func (s *serviceAnnotations) HasGrpc() bool {
+	return slices.ContainsFunc(s.Methods, func(m *api.Method) bool {
+		if ann, ok := m.Codec.(*methodAnnotation); ok {
+			return ann.IsGrpc
+		}
+		return false
+	})
+}
+
+// HasHttp returns true if the service has at least one generated HTTP method.
+func (s *serviceAnnotations) HasHttp() bool {
+	return slices.ContainsFunc(s.Methods, func(m *api.Method) bool {
+		if ann, ok := m.Codec.(*methodAnnotation); ok {
+			return ann.IsHttp()
+		}
+		return false
+	})
+}
+
+// HasBidiStreaming returns true if the service has at least one generated bidirectional streaming method.
+func (s *serviceAnnotations) HasBidiStreaming() bool {
+	return slices.ContainsFunc(s.Methods, func(m *api.Method) bool {
+		if ann, ok := m.Codec.(*methodAnnotation); ok {
+			return ann.IsBidiStreaming()
+		}
+		return false
+	})
+}
+
+// HasServerStreaming returns true if the service has at least one generated server streaming method.
+func (s *serviceAnnotations) HasServerStreaming() bool {
+	return slices.ContainsFunc(s.Methods, func(m *api.Method) bool {
+		if ann, ok := m.Codec.(*methodAnnotation); ok {
+			return ann.IsServerStreaming()
+		}
+		return false
+	})
+}
+
+// HasStreaming returns true if the service has at least one generated streaming method.
+func (s *serviceAnnotations) HasStreaming() bool {
+	return s.HasBidiStreaming() || s.HasServerStreaming()
+}
+
+// IsPureGrpc returns true if the service has gRPC methods and no HTTP methods.
+func (s *serviceAnnotations) IsPureGrpc() bool {
+	return s.HasGrpc() && !s.HasHttp()
+}
+
+// IsPureHttp returns true if the service has HTTP methods and no gRPC methods.
+func (s *serviceAnnotations) IsPureHttp() bool {
+	return s.HasHttp() && !s.HasGrpc()
+}
+
+// IsHybrid returns true if the service has both gRPC and HTTP methods.
+func (s *serviceAnnotations) IsHybrid() bool {
+	return s.HasGrpc() && s.HasHttp()
 }
 
 // BuilderVisibility returns the visibility for client and request builders.
@@ -78,6 +136,34 @@ func (s *serviceAnnotations) HasLROs() bool {
 		return true
 	}
 	return slices.IndexFunc(s.Methods, func(m *api.Method) bool { return m.DiscoveryLro != nil }) != -1
+}
+
+// NeedsRequestBuilder returns true if the service has at least one method that uses RequestBuilder
+// (i.e. methods that are not bidirectional streaming, such as unary or server-streaming methods).
+func (s *serviceAnnotations) NeedsRequestBuilder() bool {
+	return slices.ContainsFunc(s.Methods, func(m *api.Method) bool {
+		ann, ok := m.Codec.(*methodAnnotation)
+		return !ok || !ann.IsBidiStreaming()
+	})
+}
+
+// NeedsBidiStreamBuilder returns true if the service has at least one method that uses BidiStreamBuilder
+// (i.e. bidirectional streaming methods).
+func (s *serviceAnnotations) NeedsBidiStreamBuilder() bool {
+	return slices.ContainsFunc(s.Methods, func(m *api.Method) bool {
+		ann, ok := m.Codec.(*methodAnnotation)
+		return ok && ann.IsBidiStreaming()
+	})
+}
+
+// HasExtensibleBuilder returns true if the service has at least one method with an extensible builder.
+func (s *serviceAnnotations) HasExtensibleBuilder() bool {
+	return slices.ContainsFunc(s.Methods, func(m *api.Method) bool {
+		if ann, ok := m.Codec.(*methodAnnotation); ok {
+			return ann.ExtensibleBuilder
+		}
+		return false
+	})
 }
 
 // MaximumAPIVersion returns the highest (in alphanumeric order) APIVersion of
@@ -106,15 +192,6 @@ func (a *serviceAnnotations) EnabledFeatures() []string {
 }
 
 func (c *codec) annotateService(s *api.Service) (*serviceAnnotations, error) {
-	// Check if the service has bidirectional or server-side streaming RPCs in its API definition
-	// before methods are filtered by generateMethod. We check this before filtering
-	// because we are incrementally adding streaming support (initializing transport
-	// stubs like grpc_inner first before generating streaming method implementations in
-	// subsequent steps).
-	hasBidiStreaming := c.includeBidiStreamingMethods && s.HasBidiStreaming()
-	hasServerStreaming := c.includeServerStreamingMethods && s.HasServerSideStreaming()
-	hasStreaming := hasBidiStreaming || hasServerStreaming
-
 	// Some codecs skip some methods.
 	methods := language.FilterSlice(s.Methods, func(m *api.Method) bool {
 		return c.generateMethod(m)
@@ -150,14 +227,13 @@ func (c *codec) annotateService(s *api.Service) (*serviceAnnotations, error) {
 		LROTypes:                  lroTypes,
 		APITitle:                  s.Model.Title,
 		PerServiceFeatures:        c.perServiceFeatures,
-		HasVeneer:                 c.hasVeneer,
+		HasVeneer:                 c.serviceHasVeneer(s.ID),
 		ExtendGrpcTransport:       c.extendGrpcTransport,
 		Incomplete:                slices.ContainsFunc(s.Methods, func(m *api.Method) bool { return !c.generateMethod(m) }),
 		DetailedTracingAttributes: c.detailedTracingAttributes,
-		InternalBuilders:          c.internalBuilders,
-		HasBidiStreaming:          hasBidiStreaming,
-		HasServerStreaming:        hasServerStreaming,
-		HasStreaming:              hasStreaming,
+		InternalBuilders:          c.serviceInternalBuilders(s.ID),
+		GenerateRpcSamples:        c.serviceGenerateRpcSamples(s.ID),
+		GrpcClient:                c.grpcClient,
 	}
 	s.Codec = ann
 	return ann, nil

@@ -15,6 +15,7 @@
 package golang
 
 import (
+	"errors"
 	"fmt"
 	"path"
 	"strings"
@@ -27,33 +28,74 @@ import (
 // This is set on the initial `librarian add` for a new API.
 const defaultVersion = "0.0.0"
 
+var (
+	errAPIVersionNotFound = errors.New("api version not found")
+)
+
 // Add initializes a Go library with default values.
-func Add(lib *config.Library) *config.Library {
+func Add(lib *config.Library, googleapisDir string) (*config.Library, error) {
 	if lib.Version == "" {
 		lib.Version = defaultVersion
 	}
 	for _, api := range lib.APIs {
-		addGoAPI(api)
+		if api.Go != nil {
+			continue
+		}
+		if err := addGoAPI(api, googleapisDir); err != nil {
+			return nil, fmt.Errorf("adding go api for %s: %w", api.Path, err)
+		}
 	}
-	return lib
+	return lib, nil
 }
 
 // addGoAPI initializes Go-specific API configuration when adding a new API.
 // It populates the ImportPath and sets ProtoOnly to true if the API path
 // is versionless (does not contain a version segment like "v1"). It does
 // nothing for versioned API paths.
-func addGoAPI(api *config.API) {
-	if serviceconfig.ExtractVersion(api.Path) != "" {
-		return
+func addGoAPI(api *config.API, googleapisDir string) error {
+	version := serviceconfig.ExtractVersion(api.Path)
+	if version == "" {
+		addVersionlessGoAPI(api)
+		return nil
 	}
-	if api.Go != nil {
-		return
-	}
+	return addVersionedGoAPI(api, googleapisDir, version)
+}
+
+func addVersionlessGoAPI(api *config.API) {
 	importPath := deriveVersionlessImportPath(api.Path)
 	api.Go = &config.GoAPI{
 		ImportPath: importPath,
 		ProtoOnly:  true,
 	}
+}
+
+func addVersionedGoAPI(api *config.API, googleapisDir, version string) error {
+	importPath, err := importPath(googleapisDir, api.Path, version)
+	if err != nil {
+		return err
+	}
+	defaultImportPath, _ := defaultImportPathAndClientPkg(api.Path)
+	if defaultImportPath != importPath {
+		api.Go = &config.GoAPI{
+			ImportPath: importPath,
+		}
+	}
+	return nil
+}
+
+// importPath returns the versioned import path from the go_package option
+// in the proto files in the given directory.
+func importPath(googleapisDir, apiPath, version string) (string, error) {
+	pkg, err := goPackage(googleapisDir, apiPath)
+	if err != nil {
+		return "", err
+	}
+	suffix := fmt.Sprintf("/api%s", version)
+	pkg, _, found := strings.Cut(pkg, suffix)
+	if !found {
+		return "", fmt.Errorf("%w: %s", errAPIVersionNotFound, apiPath)
+	}
+	return fmt.Sprintf("%s%s", pkg, suffix), nil
 }
 
 func deriveVersionlessImportPath(apiPath string) string {

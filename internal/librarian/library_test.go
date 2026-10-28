@@ -243,6 +243,7 @@ func TestFillDefaults_Rust(t *testing.T) {
 			DisabledRustdocWarnings: []string{"broken_intra_doc_links"},
 			GenerateSetterSamples:   "true",
 			GenerateRpcSamples:      "true",
+			AllowGrpcAnyFields:      []string{".google.test.Any.field"},
 		},
 	}
 	for _, test := range []struct {
@@ -267,6 +268,7 @@ func TestFillDefaults_Rust(t *testing.T) {
 						DisabledRustdocWarnings: []string{"broken_intra_doc_links"},
 						GenerateSetterSamples:   "true",
 						GenerateRpcSamples:      "true",
+						AllowGrpcAnyFields:      []string{".google.test.Any.field"},
 					},
 					Modules: []*config.RustModule{
 						{
@@ -301,6 +303,7 @@ func TestFillDefaults_Rust(t *testing.T) {
 						DisabledRustdocWarnings: []string{"broken_intra_doc_links"},
 						GenerateSetterSamples:   "true",
 						GenerateRpcSamples:      "true",
+						AllowGrpcAnyFields:      []string{".google.test.Any.field"},
 					},
 				},
 			},
@@ -328,6 +331,7 @@ func TestFillDefaults_Rust(t *testing.T) {
 						DisabledRustdocWarnings: []string{"broken_intra_doc_links"},
 						GenerateSetterSamples:   "false",
 						GenerateRpcSamples:      "false",
+						AllowGrpcAnyFields:      []string{".google.test.Any.field"},
 					},
 				},
 			},
@@ -351,6 +355,7 @@ func TestFillDefaults_Rust(t *testing.T) {
 						DisabledRustdocWarnings: []string{"custom_warning"},
 						GenerateSetterSamples:   "true",
 						GenerateRpcSamples:      "true",
+						AllowGrpcAnyFields:      []string{".google.test.Any.field"},
 					},
 				},
 			},
@@ -377,6 +382,7 @@ func TestFillDefaults_Rust(t *testing.T) {
 						DisabledRustdocWarnings: []string{"broken_intra_doc_links"},
 						GenerateSetterSamples:   "true",
 						GenerateRpcSamples:      "true",
+						AllowGrpcAnyFields:      []string{".google.test.Any.field"},
 					},
 					Modules: []*config.RustModule{
 						{
@@ -849,6 +855,24 @@ func TestApplyDefaults_Error(t *testing.T) {
 	}
 }
 
+func TestApplyDefaults_Nodejs(t *testing.T) {
+	lib := &config.Library{
+		Name: "google-cloud-secretmanager",
+		APIs: []*config.API{{Path: "google/cloud/secretmanager/v1"}},
+	}
+	got, err := applyDefaults(config.LanguageNodejs, lib, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.Nodejs == nil {
+		t.Fatal("got.Nodejs is nil")
+	}
+	wantPackageName := "@google-cloud/secretmanager"
+	if diff := cmp.Diff(wantPackageName, got.Nodejs.PackageName); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+}
+
 func TestCanDeriveAPIPath(t *testing.T) {
 	for _, test := range []struct {
 		name     string
@@ -1019,18 +1043,21 @@ func TestResolvePreview(t *testing.T) {
 			lib: &config.Library{
 				Name: "base-name",
 				Ruby: &config.RubyPackage{
-					WrapperOf: []string{"a"},
+					DeleteGenerationOutputPaths: []string{"a"},
+					WrapperOf:                   []string{"a"},
 				},
 				Preview: &config.Library{
 					Ruby: &config.RubyPackage{
-						WrapperOf: []string{"b"},
+						DeleteGenerationOutputPaths: []string{"b"},
+						WrapperOf:                   []string{"b"},
 					},
 				},
 			},
 			want: &config.Library{
 				Name: "base-name",
 				Ruby: &config.RubyPackage{
-					WrapperOf: []string{"b"},
+					DeleteGenerationOutputPaths: []string{"b"},
+					WrapperOf:                   []string{"b"},
 				},
 				Preview: nil,
 			},
@@ -1059,7 +1086,7 @@ func TestResolvePreview(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got := ResolvePreview(test.lib, test.language)
+			got := resolvePreview(test.lib, test.language)
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
@@ -1086,10 +1113,10 @@ func TestResolvePreview_NoMutation(t *testing.T) {
 
 	want := *lib
 
-	_ = ResolvePreview(lib, config.LanguageGo)
+	_ = resolvePreview(lib, config.LanguageGo)
 
 	if diff := cmp.Diff(want, *lib); diff != "" {
-		t.Errorf("ResolvePreview mutated the input library (-want +got):\n%s", diff)
+		t.Errorf("resolvePreview mutated the input library (-want +got):\n%s", diff)
 	}
 }
 
@@ -1392,18 +1419,15 @@ func TestMergeJava(t *testing.T) {
 			dst:  &config.JavaModule{GroupID: "com.google"},
 			src: &config.JavaModule{
 				APIIDOverride:                "id",
-				APIReference:                 "ref",
 				APIDescriptionOverride:       "desc",
 				APIShortnameOverride:         "short",
 				ArtifactID:                   "new-artifact",
 				ClientDocumentationOverride:  "doc",
 				CodeownerTeam:                "team",
 				ExcludedPOMs:                 []string{"ex-pom"},
-				ExtraVersionedModules:        "extra",
 				GroupID:                      "com.new",
 				IssueTrackerOverride:         "issue",
 				LibraryTypeOverride:          "type",
-				MinJavaVersion:               11,
 				NamePrettyOverride:           "pretty",
 				ProductDocumentationOverride: "prod-doc",
 				RecommendedPackage:           "rec",
@@ -1416,18 +1440,15 @@ func TestMergeJava(t *testing.T) {
 			},
 			want: &config.JavaModule{
 				APIIDOverride:                "id",
-				APIReference:                 "ref",
 				APIDescriptionOverride:       "desc",
 				APIShortnameOverride:         "short",
 				ArtifactID:                   "new-artifact",
 				ClientDocumentationOverride:  "doc",
 				CodeownerTeam:                "team",
 				ExcludedPOMs:                 []string{"ex-pom"},
-				ExtraVersionedModules:        "extra",
 				GroupID:                      "com.new",
 				IssueTrackerOverride:         "issue",
 				LibraryTypeOverride:          "type",
-				MinJavaVersion:               11,
 				NamePrettyOverride:           "pretty",
 				ProductDocumentationOverride: "prod-doc",
 				RecommendedPackage:           "rec",
@@ -1476,7 +1497,6 @@ func TestMergeNodejs(t *testing.T) {
 				Dependencies:                map[string]string{"d": "v"},
 				ExtraProtocParameters:       []string{"p"},
 				AdditionalProtos:            []string{"proto"},
-				NodejsAPIs:                  []*config.NodejsAPI{{AdditionalProtos: []string{"api-proto"}}},
 				HandwrittenLayer:            true,
 				MainService:                 "service",
 				PackageName:                 "bar",
@@ -1487,7 +1507,6 @@ func TestMergeNodejs(t *testing.T) {
 				Dependencies:                map[string]string{"d": "v"},
 				ExtraProtocParameters:       []string{"p"},
 				AdditionalProtos:            []string{"proto"},
-				NodejsAPIs:                  []*config.NodejsAPI{{AdditionalProtos: []string{"api-proto"}}},
 				HandwrittenLayer:            true,
 				MainService:                 "service",
 				PackageName:                 "bar",
@@ -1600,6 +1619,7 @@ func TestMergeRust(t *testing.T) {
 					GenerateRpcSamples:        "true",
 					DetailedTracingAttributes: &detailedTracing,
 					ResourceNameHeuristic:     &resourceHeuristic,
+					AllowGrpcAnyFields:        []string{".any.field"},
 				},
 				Modules:                   []*config.RustModule{{Output: "out"}},
 				PerServiceFeatures:        true,
@@ -1612,6 +1632,7 @@ func TestMergeRust(t *testing.T) {
 				IncludedIds:               []string{"iid"},
 				SkippedIds:                []string{"sid"},
 				DisabledClippyWarnings:    []string{"clip"},
+				ExtensibleBuilders:        []string{".a.b.C.D"},
 				HasVeneer:                 true,
 				RoutingRequired:           true,
 				IncludeGrpcOnlyMethods:    true,
@@ -1622,6 +1643,7 @@ func TestMergeRust(t *testing.T) {
 				NameOverrides:             "name",
 				Discovery:                 &config.RustDiscovery{OperationID: "op-new", Pollers: []config.RustPoller{{Prefix: "pre"}}},
 				QuickstartServiceOverride: "quick",
+				InternalModules:           []string{"internal_mod"},
 			},
 			want: &config.RustCrate{
 				RustDefault: config.RustDefault{
@@ -1631,6 +1653,7 @@ func TestMergeRust(t *testing.T) {
 					GenerateRpcSamples:        "true",
 					DetailedTracingAttributes: &detailedTracing,
 					ResourceNameHeuristic:     &resourceHeuristic,
+					AllowGrpcAnyFields:        []string{".any.field"},
 				},
 				Modules:                   []*config.RustModule{{Output: "out"}},
 				PerServiceFeatures:        true,
@@ -1643,6 +1666,7 @@ func TestMergeRust(t *testing.T) {
 				IncludedIds:               []string{"iid"},
 				SkippedIds:                []string{"sid"},
 				DisabledClippyWarnings:    []string{"clip"},
+				ExtensibleBuilders:        []string{".a.b.C.D"},
 				HasVeneer:                 true,
 				RoutingRequired:           true,
 				IncludeGrpcOnlyMethods:    true,
@@ -1653,6 +1677,7 @@ func TestMergeRust(t *testing.T) {
 				NameOverrides:             "name",
 				Discovery:                 &config.RustDiscovery{OperationID: "op-new", Pollers: []config.RustPoller{{Prefix: "pre"}}},
 				QuickstartServiceOverride: "quick",
+				InternalModules:           []string{"internal_mod"},
 			},
 		},
 		{
@@ -1693,44 +1718,28 @@ func TestMergeRust(t *testing.T) {
 				Discovery: &config.RustDiscovery{},
 			},
 		},
+		{
+			name: "replaces message module name overrides",
+			dst: &config.RustCrate{
+				MessageModuleNameOverrides: map[string]string{
+					"id1": "mod1",
+					"id2": "mod2",
+				},
+			},
+			src: &config.RustCrate{
+				MessageModuleNameOverrides: map[string]string{
+					"id3": "mod3",
+				},
+			},
+			want: &config.RustCrate{
+				MessageModuleNameOverrides: map[string]string{
+					"id3": "mod3",
+				},
+			},
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			got := mergeRust(test.dst, test.src)
-			if diff := cmp.Diff(test.want, got); diff != "" {
-				t.Errorf("mismatch (-want +got):\n%s", diff)
-			}
-		})
-	}
-}
-
-func TestMergePHP(t *testing.T) {
-	for _, test := range []struct {
-		name string
-		dst  *config.PHPPackage
-		src  *config.PHPPackage
-		want *config.PHPPackage
-	}{
-		{
-			name: "nil src returns dst",
-			dst:  &config.PHPPackage{},
-			src:  nil,
-			want: &config.PHPPackage{},
-		},
-		{
-			name: "nil dst returns src",
-			dst:  nil,
-			src:  &config.PHPPackage{},
-			want: &config.PHPPackage{},
-		},
-		{
-			name: "both non-nil",
-			dst:  &config.PHPPackage{},
-			src:  &config.PHPPackage{},
-			want: &config.PHPPackage{},
-		},
-	} {
-		t.Run(test.name, func(t *testing.T) {
-			got := mergePHP(test.dst, test.src)
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
@@ -1762,6 +1771,36 @@ func TestMergeRuby(t *testing.T) {
 			dst:  &config.RubyPackage{WrapperOf: []string{"a"}},
 			src:  &config.RubyPackage{WrapperOf: []string{"b"}},
 			want: &config.RubyPackage{WrapperOf: []string{"b"}},
+		},
+		{
+			name: "merges delete generation output paths",
+			dst:  &config.RubyPackage{DeleteGenerationOutputPaths: []string{"a"}},
+			src:  &config.RubyPackage{DeleteGenerationOutputPaths: []string{"b"}},
+			want: &config.RubyPackage{DeleteGenerationOutputPaths: []string{"b"}},
+		},
+		{
+			name: "merges toys tasks",
+			dst:  &config.RubyPackage{ToysTasks: []string{"a"}},
+			src:  &config.RubyPackage{ToysTasks: []string{"b"}},
+			want: &config.RubyPackage{ToysTasks: []string{"b"}},
+		},
+		{
+			name: "merges all fields",
+			dst: &config.RubyPackage{
+				DeleteGenerationOutputPaths: []string{"a"},
+				ToysTasks:                   []string{"a"},
+				WrapperOf:                   []string{"a"},
+			},
+			src: &config.RubyPackage{
+				DeleteGenerationOutputPaths: []string{"b"},
+				ToysTasks:                   []string{"b"},
+				WrapperOf:                   []string{"b"},
+			},
+			want: &config.RubyPackage{
+				DeleteGenerationOutputPaths: []string{"b"},
+				ToysTasks:                   []string{"b"},
+				WrapperOf:                   []string{"b"},
+			},
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
@@ -1806,6 +1845,7 @@ func TestMergeSwift(t *testing.T) {
 				Discovery: &config.SwiftDiscovery{
 					OperationID: "op1",
 				},
+				QuickstartServiceOverride: "Service1",
 			},
 			src: &config.SwiftPackage{
 				SwiftDefault: config.SwiftDefault{
@@ -1819,6 +1859,8 @@ func TestMergeSwift(t *testing.T) {
 				Discovery: &config.SwiftDiscovery{
 					OperationID: "op2",
 				},
+				QuickstartServiceOverride: "Service2",
+				IdempotencyHook:           "resolveIdempotency",
 			},
 			want: &config.SwiftPackage{
 				SwiftDefault: config.SwiftDefault{
@@ -1832,6 +1874,8 @@ func TestMergeSwift(t *testing.T) {
 				Discovery: &config.SwiftDiscovery{
 					OperationID: "op2",
 				},
+				QuickstartServiceOverride: "Service2",
+				IdempotencyHook:           "resolveIdempotency",
 			},
 		},
 	} {

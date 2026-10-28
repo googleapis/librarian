@@ -33,6 +33,8 @@ type fieldAnnotations struct {
 	// In Rust, fields that appear in a OneOf also appear as a enum branch.
 	// These must be in `PascalCase`.
 	BranchName string
+	// The enum branch name in prost generated enum.
+	ProstBranchName string
 	// The fully qualified name of the containing message.
 	FQMessageName      string
 	DocLines           []string
@@ -75,7 +77,8 @@ type fieldAnnotations struct {
 	// in the group.
 	OtherFieldsInGroup []*api.Field
 	// FormattedResource contains information on how to format the resource name.
-	FormattedResource *FormattedResource
+	FormattedResource     *FormattedResource
+	GenerateSetterSamples bool
 }
 
 // FormattedResource contain the format string and the format arguments of a resource name.
@@ -195,19 +198,22 @@ func (c *codec) annotateField(field *api.Field, message *api.Message, model *api
 	if err != nil {
 		return nil, err
 	}
+	fieldName := c.FieldName(field)
 	ann := &fieldAnnotations{
-		FieldName:          toSnake(field.Name),
-		SetterName:         toSnakeNoMangling(field.Name),
-		FQMessageName:      fqMessageName,
-		BranchName:         toPascal(field.Name),
-		DocLines:           docLines,
-		FieldType:          fieldType,
-		PrimitiveFieldType: primitiveFieldType,
-		AddQueryParameter:  addQueryParameter(field),
-		SerdeAs:            c.primitiveSerdeAs(field),
-		SkipIfIsDefault:    field.Typez != api.TypezString && field.Typez != api.TypezBytes,
-		IsWktValue:         field.Typez == api.TypezMessage && field.TypezID == ".google.protobuf.Value",
-		IsWktNullValue:     field.Typez == api.TypezEnum && field.TypezID == ".google.protobuf.NullValue",
+		FieldName:             toSnake(fieldName),
+		SetterName:            toSnakeNoMangling(fieldName),
+		FQMessageName:         fqMessageName,
+		BranchName:            toPascal(fieldName),
+		ProstBranchName:       toProstPascal(field.Name),
+		DocLines:              docLines,
+		FieldType:             fieldType,
+		PrimitiveFieldType:    primitiveFieldType,
+		AddQueryParameter:     c.addQueryParameter(field),
+		SerdeAs:               c.primitiveSerdeAs(field),
+		SkipIfIsDefault:       field.Typez != api.TypezString && field.Typez != api.TypezBytes,
+		IsWktValue:            field.Typez == api.TypezMessage && field.TypezID == ".google.protobuf.Value",
+		IsWktNullValue:        field.Typez == api.TypezEnum && field.TypezID == ".google.protobuf.NullValue",
+		GenerateSetterSamples: c.generateSetterSamples,
 	}
 	if field.Recursive || (field.Typez == api.TypezMessage && field.IsOneOf) {
 		ann.IsBoxed = true
@@ -253,15 +259,32 @@ func (c *codec) annotateField(field *api.Field, message *api.Message, model *api
 	ann.FieldTypeIsParentType = (field.MessageType == message || // Single or repeated field whose type is the same as the containing type.
 		// Map field whose value type is the same as the containing type.
 		(ann.ValueField != nil && ann.ValueField.MessageType == message))
-	if !ann.FieldTypeIsParentType && // When the type of the field is the same as the containing type we don't import twice. No alias needed.
-		// Single or repeated field whose type's unqualified name is the same as the containing message's.
-		((field.MessageType != nil && field.MessageType.Name == message.Name) ||
-			// Map field whose type's unqualified name is the same as the containing message's.
-			(ann.ValueField != nil && ann.ValueField.MessageType != nil && ann.ValueField.MessageType.Name == message.Name)) {
-		ann.AliasInExamples = toPascal(field.Name)
-		if ann.AliasInExamples == toPascal(message.Name) {
-			// The field name was the same as the type name so we still have to disambiguate.
-			ann.AliasInExamples = fmt.Sprintf("%sField", ann.AliasInExamples)
+	if !ann.FieldTypeIsParentType {
+		parentRustName := unqualifiedRustName(fqMessageName)
+		var isNameConflict bool
+		var targetType *api.Message
+		if ann.ValueField != nil && ann.ValueField.MessageType != nil {
+			targetType = ann.ValueField.MessageType
+		} else {
+			targetType = field.MessageType
+		}
+
+		if targetType != nil {
+			fieldFqName, err := c.fullyQualifiedMessageName(targetType, model.PackageName)
+			if err != nil {
+				return nil, err
+			}
+			if unqualifiedRustName(fieldFqName) == parentRustName {
+				isNameConflict = true
+			}
+		}
+
+		if isNameConflict {
+			ann.AliasInExamples = toPascal(fieldName)
+			if ann.AliasInExamples == parentRustName {
+				// The field name was the same as the type name so we still have to disambiguate.
+				ann.AliasInExamples = fmt.Sprintf("%sField", ann.AliasInExamples)
+			}
 		}
 	}
 
@@ -324,4 +347,9 @@ func mapToBoxed(field *api.Field, message *api.Message, model *api.API) bool {
 
 	visited := make(map[string]bool)
 	return check(field.TypezID, message.ID, visited)
+}
+
+func unqualifiedRustName(qualifiedName string) string {
+	parts := strings.Split(qualifiedName, "::")
+	return parts[len(parts)-1]
 }

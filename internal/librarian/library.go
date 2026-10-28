@@ -143,6 +143,9 @@ func fillRust(lib *config.Library, d *config.Default) *config.Library {
 	if lib.Rust.GenerateRpcSamples == "" {
 		lib.Rust.GenerateRpcSamples = d.Rust.GenerateRpcSamples
 	}
+	if len(lib.Rust.AllowGrpcAnyFields) == 0 {
+		lib.Rust.AllowGrpcAnyFields = d.Rust.AllowGrpcAnyFields
+	}
 	for _, mod := range lib.Rust.Modules {
 		if mod.GenerateSetterSamples == "" {
 			mod.GenerateSetterSamples = lib.Rust.GenerateSetterSamples
@@ -361,6 +364,8 @@ func fillLibraryDefaults(language string, lib *config.Library) (*config.Library,
 		return php.Fill(lib), nil
 	case config.LanguagePython:
 		return python.Fill(lib)
+	case config.LanguageNodejs:
+		return nodejs.Fill(lib), nil
 	default:
 		return lib, nil
 	}
@@ -379,10 +384,10 @@ func FindLibrary(c *config.Config, name string) (*config.Library, error) {
 	return nil, fmt.Errorf("%w: %q", ErrLibraryNotFound, name)
 }
 
-// ResolvePreview returns a library where fields from lib.Preview override
+// resolvePreview returns a library where fields from lib.Preview override
 // those in the base lib, if set. If lib.Preview is not set or lib itself is nil
 // this returns nil.
-func ResolvePreview(lib *config.Library, language string) *config.Library {
+func resolvePreview(lib *config.Library, language string) *config.Library {
 	if lib == nil || lib.Preview == nil {
 		return nil
 	}
@@ -433,8 +438,6 @@ func ResolvePreview(lib *config.Library, language string) *config.Library {
 		res.Python = mergePython(res.Python, p.Python)
 	case config.LanguageRust:
 		res.Rust = mergeRust(res.Rust, p.Rust)
-	case config.LanguagePhp:
-		res.PHP = mergePHP(res.PHP, p.PHP)
 	case config.LanguageRuby:
 		res.Ruby = mergeRuby(res.Ruby, p.Ruby)
 	case config.LanguageSwift:
@@ -597,9 +600,6 @@ func mergeJava(dst, src *config.JavaModule) *config.JavaModule {
 	if src.ArtifactID != "" {
 		res.ArtifactID = src.ArtifactID
 	}
-	if src.APIReference != "" {
-		res.APIReference = src.APIReference
-	}
 	if src.APIDescriptionOverride != "" {
 		res.APIDescriptionOverride = src.APIDescriptionOverride
 	}
@@ -615,9 +615,6 @@ func mergeJava(dst, src *config.JavaModule) *config.JavaModule {
 	if src.ExcludedPOMs != nil {
 		res.ExcludedPOMs = src.ExcludedPOMs
 	}
-	if src.ExtraVersionedModules != "" {
-		res.ExtraVersionedModules = src.ExtraVersionedModules
-	}
 	if src.GroupID != "" {
 		res.GroupID = src.GroupID
 	}
@@ -629,9 +626,6 @@ func mergeJava(dst, src *config.JavaModule) *config.JavaModule {
 	}
 	if src.LibraryTypeOverride != "" {
 		res.LibraryTypeOverride = src.LibraryTypeOverride
-	}
-	if src.MinJavaVersion != 0 {
-		res.MinJavaVersion = src.MinJavaVersion
 	}
 	if src.NamePrettyOverride != "" {
 		res.NamePrettyOverride = src.NamePrettyOverride
@@ -679,9 +673,6 @@ func mergeNodejs(dst, src *config.NodejsPackage) *config.NodejsPackage {
 	}
 	if src.AdditionalProtos != nil {
 		res.AdditionalProtos = src.AdditionalProtos
-	}
-	if src.NodejsAPIs != nil {
-		res.NodejsAPIs = src.NodejsAPIs
 	}
 	if src.ESM {
 		res.ESM = src.ESM
@@ -810,6 +801,12 @@ func mergeRust(dst, src *config.RustCrate) *config.RustCrate {
 	if src.DisabledClippyWarnings != nil {
 		res.DisabledClippyWarnings = src.DisabledClippyWarnings
 	}
+	if src.HandwrittenSurface != "" {
+		res.HandwrittenSurface = src.HandwrittenSurface
+	}
+	if src.ExtensibleBuilders != nil {
+		res.ExtensibleBuilders = src.ExtensibleBuilders
+	}
 	if src.HasVeneer {
 		res.HasVeneer = src.HasVeneer
 	}
@@ -822,6 +819,9 @@ func mergeRust(dst, src *config.RustCrate) *config.RustCrate {
 	if src.IncludeStreamingMethods {
 		res.IncludeStreamingMethods = src.IncludeStreamingMethods
 	}
+	if len(src.AllowGrpcAnyFields) > 0 {
+		res.AllowGrpcAnyFields = src.AllowGrpcAnyFields
+	}
 	if src.PostProcessProtos != "" {
 		res.PostProcessProtos = src.PostProcessProtos
 	}
@@ -831,12 +831,18 @@ func mergeRust(dst, src *config.RustCrate) *config.RustCrate {
 	if src.PaginationOverrides != nil {
 		res.PaginationOverrides = src.PaginationOverrides
 	}
+	if src.MessageModuleNameOverrides != nil {
+		res.MessageModuleNameOverrides = src.MessageModuleNameOverrides
+	}
 	if src.NameOverrides != "" {
 		res.NameOverrides = src.NameOverrides
 	}
 	res.Discovery = mergeCommonDiscovery(res.Discovery, src.Discovery)
 	if src.QuickstartServiceOverride != "" {
 		res.QuickstartServiceOverride = src.QuickstartServiceOverride
+	}
+	if src.InternalModules != nil {
+		res.InternalModules = src.InternalModules
 	}
 	return &res
 }
@@ -866,6 +872,12 @@ func mergeRuby(dst, src *config.RubyPackage) *config.RubyPackage {
 		return src
 	}
 	res := *dst
+	if src.DeleteGenerationOutputPaths != nil {
+		res.DeleteGenerationOutputPaths = src.DeleteGenerationOutputPaths
+	}
+	if src.ToysTasks != nil {
+		res.ToysTasks = src.ToysTasks
+	}
 	if src.WrapperOf != nil {
 		res.WrapperOf = src.WrapperOf
 	}
@@ -898,17 +910,12 @@ func mergeSwift(dst, src *config.SwiftPackage) *config.SwiftPackage {
 	if src.DefaultTraits != nil {
 		res.DefaultTraits = src.DefaultTraits
 	}
+	if src.QuickstartServiceOverride != "" {
+		res.QuickstartServiceOverride = src.QuickstartServiceOverride
+	}
+	if src.IdempotencyHook != "" {
+		res.IdempotencyHook = src.IdempotencyHook
+	}
 	res.Discovery = mergeCommonDiscovery(res.Discovery, src.Discovery)
-	return &res
-}
-
-func mergePHP(dst, src *config.PHPPackage) *config.PHPPackage {
-	if src == nil {
-		return dst
-	}
-	if dst == nil {
-		return src
-	}
-	res := *dst
 	return &res
 }

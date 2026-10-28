@@ -67,12 +67,12 @@ func TestGenerateService_MethodSignatures(t *testing.T) {
 			name: "Pagination",
 			want: []expectedBlock{
 				{
-					start: "public func paginationMethod(\n  name: Swift.String,\n  optionalField: Swift.String?,",
+					start: "public func paginationMethodByItems(\n  name: Swift.String,\n  optionalField: Swift.String?,",
 					end:   "    }\n",
-					want: `public func paginationMethod(
+					want: `public func paginationMethodByItems(
   name: Swift.String,
   optionalField: Swift.String?,
-) throws -> any AsyncSequence<Item, Swift.Error>
+) -> some AsyncSequence<Item, any Swift.Error> & Sendable
  {
     let request = Request().with {
       $0.name = name
@@ -81,12 +81,12 @@ func TestGenerateService_MethodSignatures(t *testing.T) {
 `,
 				},
 				{
-					start: "public func paginationMethod(\n  name: Swift.String,\n  normalField: Swift.String,",
+					start: "public func paginationMethodByItems(\n  name: Swift.String,\n  normalField: Swift.String,",
 					end:   "    }\n",
-					want: `public func paginationMethod(
+					want: `public func paginationMethodByItems(
   name: Swift.String,
   normalField: Swift.String,
-) throws -> any AsyncSequence<Item, Swift.Error>
+) -> some AsyncSequence<Item, any Swift.Error> & Sendable
  {
     let request = Request().with {
       $0.name = name
@@ -100,12 +100,12 @@ func TestGenerateService_MethodSignatures(t *testing.T) {
 			name: "LROs",
 			want: []expectedBlock{
 				{
-					start: "public func lroMethod(\n  name: Swift.String,\n  optionalField: Swift.String?,",
+					start: "public func lroMethodPollingUntilDone(\n  name: Swift.String,\n  optionalField: Swift.String?,",
 					end:   "    }\n",
-					want: `public func lroMethod(
+					want: `public func lroMethodPollingUntilDone(
   name: Swift.String,
   optionalField: Swift.String?,
-) async throws -> any GoogleCloudGax.PollableOperation<LROResult>
+) async throws -> LROResult
  {
     let request = Request().with {
       $0.name = name
@@ -114,12 +114,12 @@ func TestGenerateService_MethodSignatures(t *testing.T) {
 `,
 				},
 				{
-					start: "public func lroMethod(\n  name: Swift.String,\n  normalField: Swift.String,",
+					start: "public func lroMethodPollingUntilDone(\n  name: Swift.String,\n  normalField: Swift.String,",
 					end:   "    }\n",
-					want: `public func lroMethod(
+					want: `public func lroMethodPollingUntilDone(
   name: Swift.String,
   normalField: Swift.String,
-) async throws -> any GoogleCloudGax.PollableOperation<LROResult>
+) async throws -> LROResult
  {
     let request = Request().with {
       $0.name = name
@@ -133,12 +133,12 @@ func TestGenerateService_MethodSignatures(t *testing.T) {
 			name: "Discovery LROs",
 			want: []expectedBlock{
 				{
-					start: "public func lroDiscoveryMethod(\n  name: Swift.String,\n  optionalField: Swift.String?,",
+					start: "public func lroDiscoveryMethodPollingUntilDone(\n  name: Swift.String,\n  optionalField: Swift.String?,",
 					end:   "    }\n",
-					want: `public func lroDiscoveryMethod(
+					want: `public func lroDiscoveryMethodPollingUntilDone(
   name: Swift.String,
   optionalField: Swift.String?,
-) async throws -> any GoogleCloudGax.PollableOperation<GoogleCloudLongrunningV1.GetOperationRequest>
+) async throws -> GoogleCloudLongrunningV1.GetOperationRequest
  {
     let request = Request().with {
       $0.name = name
@@ -147,12 +147,12 @@ func TestGenerateService_MethodSignatures(t *testing.T) {
 `,
 				},
 				{
-					start: "public func lroDiscoveryMethod(\n  name: Swift.String,\n  normalField: Swift.String,",
+					start: "public func lroDiscoveryMethodPollingUntilDone(\n  name: Swift.String,\n  normalField: Swift.String,",
 					end:   "    }\n",
-					want: `public func lroDiscoveryMethod(
+					want: `public func lroDiscoveryMethodPollingUntilDone(
   name: Swift.String,
   normalField: Swift.String,
-) async throws -> any GoogleCloudGax.PollableOperation<GoogleCloudLongrunningV1.GetOperationRequest>
+) async throws -> GoogleCloudLongrunningV1.GetOperationRequest
  {
     let request = Request().with {
       $0.name = name
@@ -167,8 +167,8 @@ func TestGenerateService_MethodSignatures(t *testing.T) {
 			outDir := t.TempDir()
 			model := newModelWithSignatures(t)
 			swiftCfg := swiftConfig(t, []config.SwiftDependency{
-				{Name: "GoogleCloudGax", RequiredByServices: true},
-				{Name: "GoogleCloudAuth", RequiredByServices: true},
+				{Name: "GoogleGax", RequiredByServices: true},
+				{Name: "GoogleAuth", RequiredByServices: true},
 				{ApiPackage: "google.longrunning", Name: "GoogleCloudLongrunningV1"},
 				{ApiPackage: "google.rpc", Name: "GoogleRpc"},
 			})
@@ -220,8 +220,8 @@ func newModelWithSignatures(t *testing.T) *api.API {
 		WithOutput(responseType).
 		WithVerb("POST").
 		WithSignatures(
-			&api.MethodSignature{Names: []string{"name", "optional_field"}},
-			&api.MethodSignature{Names: []string{"name", "normal_field"}},
+			api.NewTestMethodSignature("name", "optional_field"),
+			api.NewTestMethodSignature("name", "normal_field"),
 		).
 		WithPathTemplate((&api.PathTemplate{}).WithLiteral("v1").WithLiteral("simple"))
 
@@ -237,8 +237,8 @@ func newModelWithSignatures(t *testing.T) *api.API {
 		WithPagination(pageToken).
 		WithVerb("GET").
 		WithSignatures(
-			&api.MethodSignature{Names: []string{"name", "optional_field"}},
-			&api.MethodSignature{Names: []string{"name", "normal_field"}},
+			api.NewTestMethodSignature("name", "optional_field"),
+			api.NewTestMethodSignature("name", "normal_field"),
 		).
 		WithPathTemplate((&api.PathTemplate{}).WithLiteral("v1").WithLiteral("page"))
 
@@ -252,28 +252,22 @@ func newModelWithSignatures(t *testing.T) *api.API {
 		WithOutput(getOperationInputType).
 		WithVerb("POST").
 		WithSignatures(
-			&api.MethodSignature{Names: []string{"name", "optional_field"}},
-			&api.MethodSignature{Names: []string{"name", "normal_field"}},
+			api.NewTestMethodSignature("name", "optional_field"),
+			api.NewTestMethodSignature("name", "normal_field"),
 		).
-		WithPathTemplate((&api.PathTemplate{}).WithLiteral("v1").WithLiteral("lro"))
-	lroMethod.IsLRO = true
-	lroMethod.OperationInfo = &api.OperationInfo{
-		ResponseTypeID: lroResultType.ID,
-		MetadataTypeID: lroMetadataType.ID,
-	}
+		WithPathTemplate((&api.PathTemplate{}).WithLiteral("v1").WithLiteral("lro")).
+		WithOperationInfo(api.NewTestOperationInfo(lroResultType.ID, lroMetadataType.ID))
 
 	discoveryLroMethod := api.NewTestMethod("LroDiscoveryMethod").
 		WithInput(requestType).
 		WithOutput(getOperationInputType).
 		WithVerb("POST").
 		WithSignatures(
-			&api.MethodSignature{Names: []string{"name", "optional_field"}},
-			&api.MethodSignature{Names: []string{"name", "normal_field"}},
+			api.NewTestMethodSignature("name", "optional_field"),
+			api.NewTestMethodSignature("name", "normal_field"),
 		).
-		WithPathTemplate((&api.PathTemplate{}).WithLiteral("v1").WithLiteral("discoveryLro"))
-	discoveryLroMethod.DiscoveryLro = &api.DiscoveryLro{
-		PollingPathParameters: []string{"test_only"},
-	}
+		WithPathTemplate((&api.PathTemplate{}).WithLiteral("v1").WithLiteral("discoveryLro")).
+		WithDiscoveryLro(api.NewTestDiscoveryLro("test_only"))
 
 	service := api.NewTestService("TestService").
 		WithPackage("test").
@@ -281,8 +275,8 @@ func newModelWithSignatures(t *testing.T) *api.API {
 	model := api.NewTestAPI([]*api.Message{
 		requestType, responseType, itemType, paginationResponseType,
 		operationType, lroResultType, lroMetadataType,
-	}, nil, []*api.Service{service})
-	model.PackageName = "test"
+	}, nil, []*api.Service{service}).
+		WithPackageName("test")
 	model.AddMessage(getOperationInputType)
 	model.AddMessage(operationType)
 	return model

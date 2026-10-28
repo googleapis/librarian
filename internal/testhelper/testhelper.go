@@ -69,10 +69,10 @@ version = "1.0.0"
 	testRemoteURL = "https://example.com/git.git"
 
 	// initialClientsSwiftContents defines the initial content for a Clients.swift file.
-	initialClientsSwiftContents = `import GoogleCloudGax
+	initialClientsSwiftContents = `import GoogleGax
 
 public enum Clients {
-  static let clientHeader: Swift.String = GoogleCloudGax._gapicApiClientHeader(packageVersion: "1.0.0")
+  static let clientHeader: Swift.String = GoogleGax._gapicApiClientHeader(packageVersion: "1.0.0")
 }`
 )
 

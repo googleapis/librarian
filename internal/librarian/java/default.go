@@ -24,6 +24,7 @@ import (
 
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/semver"
+	"github.com/googleapis/librarian/internal/serviceconfig"
 	"github.com/googleapis/librarian/internal/yaml"
 )
 
@@ -101,15 +102,13 @@ func FillDefaultJava(lib *config.Library, d *config.Default) *config.Library {
 // It matches the library's API paths against the custom group ID prefixes in default
 // and assigns the first matching group ID.
 func fillGroupIDIfEmpty(lib *config.Library, d *config.Default) {
-	if lib.Java.GroupID != "" || d == nil || d.Java == nil || d.Java.CustomGroupIDs == nil {
+	if lib.Java.GroupID != "" || d == nil || d.Java == nil || len(d.Java.CustomGroupIDs) == 0 {
 		return
 	}
 	for _, api := range lib.APIs {
-		for apiPrefix, groupID := range d.Java.CustomGroupIDs {
-			if api.Path == apiPrefix || strings.HasPrefix(api.Path, apiPrefix+"/") {
-				lib.Java.GroupID = groupID
-				return
-			}
+		if groupID, _, ok := serviceconfig.MatchPrefix(api.Path, d.Java.CustomGroupIDs); ok {
+			lib.Java.GroupID = groupID
+			return
 		}
 	}
 }
@@ -126,12 +125,11 @@ func Tidy(library *config.Library) (*config.Library, error) {
 			library.Java.GroupID = ""
 		}
 		tidyReleasedVersion(library)
-		empty, err := yaml.Empty(library.Java)
-		if err != nil {
+		tidyDocumentation(library)
+		tidyIssueTrackerOverride(library)
+		var err error
+		if library.Java, err = yaml.ClearIfEmpty(library.Java); err != nil {
 			return nil, err
-		}
-		if empty {
-			library.Java = nil
 		}
 	}
 	for _, api := range library.APIs {
@@ -156,12 +154,9 @@ func Tidy(library *config.Library) (*config.Library, error) {
 		api.Java.AdditionalProtos = slices.DeleteFunc(api.Java.AdditionalProtos, func(p *config.AdditionalProto) bool {
 			return p == nil || p.Path == ""
 		})
-		empty, err := yaml.Empty(api.Java)
-		if err != nil {
+		var err error
+		if api.Java, err = yaml.ClearIfEmpty(api.Java); err != nil {
 			return nil, err
-		}
-		if empty {
-			api.Java = nil
 		}
 	}
 	return library, nil
@@ -196,6 +191,24 @@ var (
 	ErrCannotDeriveReleasedVersion = errors.New("cannot derive released version")
 	// errBOMVersionMissing is returned when libraries_bom_version is not set.
 	errBOMVersionMissing = errors.New("libraries bom version not found in config")
+	// errDuplicateAPIPath is returned when there are duplicate API paths.
+	errDuplicateAPIPath = errors.New("duplicate api path")
+
+	// javaSkipDuplicatePaths lists special API paths that are allowed to appear in multiple
+	// libraries in Java without triggering the duplicate API path error.
+	// These are paths are duplicated in java because their generated code splits
+	// between java-iam and java-iam-policy.
+	javaSkipDuplicatePaths = map[string]bool{
+		"google/iam/v1":     true,
+		"google/iam/v2":     true,
+		"google/iam/v2beta": true,
+		"google/iam/v3":     true,
+		"google/iam/v3beta": true,
+	}
+	// errLibraryNotFound is returned when a required library is not found in librarian.yaml.
+	errLibraryNotFound = errors.New("library not found in librarian.yaml")
+	// errLibraryMissingVersion is returned when a required library is missing a version.
+	errLibraryMissingVersion = errors.New("library must have a version")
 )
 
 // Validate checks that the Java-specific configuration for a library and global config is
@@ -206,7 +219,10 @@ func Validate(cfg *config.Config) error {
 	if cfg.Default == nil || cfg.Default.Java == nil || cfg.Default.Java.LibrariesBOMVersion == "" {
 		errs = append(errs, errBOMVersionMissing)
 	}
-
+	pathCount := make(map[string]int)
+	if err := verifyRequiredLibraries(cfg); err != nil {
+		errs = append(errs, err)
+	}
 	for _, library := range cfg.Libraries {
 		if library.Version != "" {
 			if _, err := semver.Parse(library.Version); err != nil {
@@ -219,6 +235,9 @@ func Validate(cfg *config.Config) error {
 			}
 		}
 		for _, api := range library.APIs {
+			if api.Path != "" {
+				pathCount[api.Path]++
+			}
 			if api.Java == nil || !api.Java.OmitCommonResources {
 				continue
 			}
@@ -227,7 +246,11 @@ func Validate(cfg *config.Config) error {
 					errs = append(errs, fmt.Errorf("%s: %w", api.Path, ErrOmitCommonResourcesConflict))
 				}
 			}
-
+		}
+	}
+	for path, count := range pathCount {
+		if count > 1 && !javaSkipDuplicatePaths[path] {
+			errs = append(errs, fmt.Errorf("%w: %s (appears %d times)", errDuplicateAPIPath, path, count))
 		}
 	}
 	if len(errs) > 0 {
@@ -284,4 +307,69 @@ func tidyReleasedVersion(library *config.Library) {
 	if err == nil && library.Java.ReleasedVersion == derived {
 		library.Java.ReleasedVersion = ""
 	}
+}
+
+// TODO(https://github.com/googleapis/librarian/issues/6692): Remove this temporary method
+// once google-cloud-java/librarian.yaml has been tidied and rest_documentation / rpc_documentation
+// fields are removed from config.JavaModule.
+//
+// tidyDocumentation clears the Java module's rest_documentation and rpc_documentation
+// if they match the primary API's service config / sdk.yaml.
+func tidyDocumentation(library *config.Library) {
+	if library.Java == nil || len(library.APIs) == 0 {
+		return
+	}
+	if library.Java.RestDocumentation == "" && library.Java.RpcDocumentation == "" {
+		return
+	}
+
+	apis := slices.Clone(library.APIs)
+	serviceconfig.SortAPIs(apis)
+	primaryPath := apis[0].Path
+
+	api := serviceconfig.FindAPI(primaryPath)
+	if api.RestDocumentation != "" && library.Java.RestDocumentation == api.RestDocumentation {
+		library.Java.RestDocumentation = ""
+	}
+	if api.RpcDocumentation != "" && library.Java.RpcDocumentation == api.RpcDocumentation {
+		library.Java.RpcDocumentation = ""
+	}
+}
+
+// tidyIssueTrackerOverride clears the Java module's issue_tracker_override if it
+// matches the new_issue_uri in sdk.yaml for the library's primary API.
+func tidyIssueTrackerOverride(library *config.Library) {
+	if library.Java.IssueTrackerOverride == "" || len(library.APIs) == 0 {
+		return
+	}
+	apis := slices.Clone(library.APIs)
+	serviceconfig.SortAPIs(apis)
+	primaryPath := apis[0].Path
+	if primaryPath == "" {
+		return
+	}
+	api := serviceconfig.FindAPI(primaryPath)
+	if api.NewIssueURI != "" && library.Java.IssueTrackerOverride == api.NewIssueURI {
+		library.Java.IssueTrackerOverride = ""
+	}
+}
+
+// verifyRequiredLibraries checks that the java configuration includes all mandatory java libraries.
+func verifyRequiredLibraries(cfg *config.Config) error {
+	seenLibraries := make(map[string]bool)
+	for _, library := range cfg.Libraries {
+		switch library.Name {
+		case rootLibrary, parentPOM:
+			seenLibraries[library.Name] = true
+			if library.Version == "" {
+				return fmt.Errorf("%w: %s", errLibraryMissingVersion, library.Name)
+			}
+		}
+	}
+	for _, requiredLibrary := range []string{rootLibrary, parentPOM} {
+		if !seenLibraries[requiredLibrary] {
+			return fmt.Errorf("%w: %s", errLibraryNotFound, requiredLibrary)
+		}
+	}
+	return nil
 }

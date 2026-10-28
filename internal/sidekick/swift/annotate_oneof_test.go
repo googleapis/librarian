@@ -22,25 +22,20 @@ import (
 )
 
 func TestAnnotateOneOf(t *testing.T) {
-	oneof := &api.OneOf{
-		Name:          "test_alternatives",
-		Documentation: "A test oneof.",
-	}
-	message := &api.Message{
-		Name:    "TestMessage",
-		Package: "google.cloud.test.v1",
-		ID:      ".google.cloud.test.v1.TestMessage",
-		OneOfs:  []*api.OneOf{oneof},
-	}
-	model := api.NewTestAPI([]*api.Message{message}, nil, nil)
-	model.PackageName = "google.cloud.test.v1"
+	oneof := api.NewTestOneOf("test_alternatives").
+		WithDocumentation("A test oneof.")
+	message := api.NewTestMessage("TestMessage").
+		WithPackage("google.cloud.test.v1").
+		WithOneOfs(oneof)
+	model := api.NewTestAPI([]*api.Message{message}, nil, nil).
+		WithPackageName("google.cloud.test.v1")
 	codec := newTestCodec(t, model, nil)
 	if err := codec.annotateModel(); err != nil {
 		t.Fatal(err)
 	}
 
 	want := &oneOfAnnotations{
-		Name:         "OneOf_TestAlternatives",
+		Name:         "TestAlternativesOneOf",
 		PropertyName: "testAlternatives",
 		DocLines:     []string{"A test oneof."},
 		Checker:      "testAlternativesCheckAndSet",

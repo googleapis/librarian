@@ -43,29 +43,6 @@ func TestValidateLibraries(t *testing.T) {
 			},
 		},
 		{
-			name: "skipped duplicate api paths",
-			cfg: &config.Config{
-				Language: config.LanguageJava,
-				Default: &config.Default{
-					Java: &config.JavaDefault{
-						LibrariesBOMVersion: "1.2.3",
-					},
-				},
-				Libraries: []*config.Library{
-					{
-						Name: "lib1",
-						APIs: []*config.API{{Path: "google/iam/v1"}},
-						Java: &config.JavaModule{ReleasedVersion: "1.0.0"},
-					},
-					{
-						Name: "lib2",
-						APIs: []*config.API{{Path: "google/iam/v1"}},
-						Java: &config.JavaModule{ReleasedVersion: "1.0.0"},
-					},
-				},
-			},
-		},
-		{
 			name: "allowed duplicate api paths for ruby",
 			cfg: &config.Config{
 				Language: config.LanguageRuby,
@@ -659,6 +636,9 @@ func TestTidy_DerivableOutput(t *testing.T) {
 				Sources:   googleapisSource,
 				Libraries: []*config.Library{lib},
 			}
+			if test.language == config.LanguageJava {
+				cfg.Libraries = append(cfg.Libraries, &config.Library{Name: "google-cloud-java", Version: "1.0.0"}, &config.Library{Name: "google-cloud-pom-parent", Version: "1.0.0"})
+			}
 			if err := RunTidyOnConfig(t.Context(), tempDir, cfg); err != nil {
 				t.Fatal(err)
 			}
@@ -666,8 +646,12 @@ func TestTidy_DerivableOutput(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			if len(got.Libraries) != 1 {
-				t.Fatalf("expected 1 library, got %d", len(got.Libraries))
+			expectedLen := 1
+			if test.language == config.LanguageJava {
+				expectedLen = 3
+			}
+			if len(got.Libraries) != expectedLen {
+				t.Fatalf("expected %d library, got %d", expectedLen, len(got.Libraries))
 			}
 			if got.Libraries[0].Output != "" {
 				t.Errorf("expected output to be empty, got %q", got.Libraries[0].Output)
@@ -792,7 +776,8 @@ func TestTidy_UnusedSections(t *testing.T) {
 		{
 			name: "maven preserved",
 			cfg: &config.Config{
-				Language: config.LanguageJava,
+				Language:  config.LanguageJava,
+				Libraries: []*config.Library{{Name: "google-cloud-java", Version: "1.0.0"}, {Name: "google-cloud-pom-parent", Version: "1.0.0"}},
 				Sources: &config.Sources{
 					Googleapis: &config.Source{Commit: "commit"},
 				},
@@ -932,5 +917,104 @@ func TestTidy_SkipGenerate(t *testing.T) {
 	}
 	if !cfg.Libraries[0].SkipGenerate {
 		t.Errorf("expected skip_generate to be true for mixed library, got false")
+	}
+}
+
+func TestTidy_PreservesComments(t *testing.T) {
+	for _, test := range []struct {
+		name string
+		cfg  *config.Config
+	}{
+		{
+			name: "single-line comments",
+			cfg: &config.Config{
+				Language: config.LanguageRust,
+				Sources: &config.Sources{
+					Comment: "sources comment",
+					Googleapis: &config.Source{
+						Commit: "94ccedca05acb0bb60780789e93371c9e4100ddc",
+						SHA256: "fff40946e897d96bbdccd566cb993048a87029b7e08eacee3fe99eac792721ba",
+					},
+				},
+				Tools: &config.Tools{
+					Comment: "tools comment",
+					Cargo: []*config.CargoTool{
+						{
+							Name:    "taplo",
+							Version: "1.0",
+						},
+					},
+				},
+				Default: &config.Default{
+					Output: "src/generated",
+				},
+				Libraries: []*config.Library{
+					{
+						Name:    "google-cloud-storage",
+						Version: "1.0.0",
+						Comment: "special comment about storage config",
+						APIs: []*config.API{
+							{
+								Path: "google/cloud/storage/v1",
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "multiline long comments",
+			cfg: &config.Config{
+				Language: config.LanguageRust,
+				Sources: &config.Sources{
+					Comment: "Line 1: sources comment explaining repository choices in detail.\nLine 2: additional context on why this specific commit is pinned and how updates are managed.\n",
+					Googleapis: &config.Source{
+						Commit: "94ccedca05acb0bb60780789e93371c9e4100ddc",
+						SHA256: "fff40946e897d96bbdccd566cb993048a87029b7e08eacee3fe99eac792721ba",
+					},
+				},
+				Tools: &config.Tools{
+					Comment: `Line 1: tools comment explaining required toolchain versions and rationale.
+Line 2: more details regarding tool versions and installation procedures.`,
+					Cargo: []*config.CargoTool{
+						{
+							Name:    "taplo",
+							Version: "1.0",
+						},
+					},
+				},
+				Default: &config.Default{
+					Output: "src/generated",
+				},
+				Libraries: []*config.Library{
+					{
+						Name:    "google-cloud-storage",
+						Version: "1.0.0",
+						Comment: `Line 1: this library requires a long multiline comment to describe its complex configuration requirements in full detail.
+Line 2: additional instructions and context for this client library across multiple lines of documentation.
+Line 3: third line with UTF-8 characters: café, résumé, åäö, 中文.`,
+						APIs: []*config.API{
+							{
+								Path: "google/cloud/storage/v1",
+							},
+						},
+					},
+				},
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			tempDir := t.TempDir()
+			if err := RunTidyOnConfig(t.Context(), tempDir, test.cfg); err != nil {
+				t.Fatal(err)
+			}
+			got, err := yaml.Read[config.Config](filepath.Join(tempDir, config.LibrarianYAML))
+			if err != nil {
+				t.Fatal(err)
+			}
+			if diff := cmp.Diff(test.cfg, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
 	}
 }

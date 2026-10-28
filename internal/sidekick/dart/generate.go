@@ -24,8 +24,11 @@ import (
 	"github.com/googleapis/librarian/internal/sidekick/language"
 )
 
-//go:embed all:templates
-var dartTemplates embed.FS
+var (
+	//go:embed all:templates
+	dartTemplates   embed.FS
+	parsedTemplates = language.MustParseTemplates(dartTemplates)
+)
 
 // Generate generates Dart code from the model.
 func Generate(ctx context.Context, model *api.API, outdir string, codec map[string]string) error {
@@ -34,8 +37,7 @@ func Generate(ctx context.Context, model *api.API, outdir string, codec map[stri
 		return err
 	}
 
-	provider := templatesProvider()
-	err := language.GenerateFromModel(outdir, model, provider, generatedFiles(model))
+	err := parsedTemplates.GenerateFromModel(outdir, model, generatedFiles(model))
 	if err == nil {
 		// Check if we're configured to skip formatting.
 		skipFormat := codec["skip-format"]
@@ -44,17 +46,6 @@ func Generate(ctx context.Context, model *api.API, outdir string, codec map[stri
 		}
 	}
 	return err
-}
-
-func templatesProvider() language.TemplateProvider {
-	return func(name string) (string, error) {
-		name = filepath.ToSlash(name)
-		contents, err := dartTemplates.ReadFile(name)
-		if err != nil {
-			return "", err
-		}
-		return string(contents), nil
-	}
 }
 
 func generatedFiles(model *api.API) []language.GeneratedFile {
@@ -66,7 +57,7 @@ func generatedFiles(model *api.API) []language.GeneratedFile {
 	var result []language.GeneratedFile
 	for _, fileInfo := range files {
 		// Replace 'main.dart' with '{servicename}.dart'
-		if filepath.Base(fileInfo.TemplatePath) == "main.dart.mustache" {
+		if filepath.Base(fileInfo.TemplatePath) == "main.dart.gotmpl" {
 			outDir := filepath.Dir(fileInfo.OutputPath)
 			fileInfo.OutputPath = filepath.Join(outDir, mainFileNameWithExtension)
 		}
@@ -76,7 +67,7 @@ func generatedFiles(model *api.API) []language.GeneratedFile {
 			fileInfo.OutputPath = filepath.Join(outDir, "LICENSE")
 		}
 		// Skip 'testing.dart' if the API has no services.
-		if filepath.Base(fileInfo.TemplatePath) == "testing.dart.mustache" && !model.HasServices() {
+		if filepath.Base(fileInfo.TemplatePath) == "testing.dart.gotmpl" && !model.HasServices() {
 			continue
 		}
 		isSkill := false

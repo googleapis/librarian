@@ -25,6 +25,7 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/filesystem"
 	"github.com/googleapis/librarian/internal/proto"
@@ -35,7 +36,12 @@ import (
 
 const commonResourcesProto = "google/cloud/common_resources.proto"
 
-var errNoAPIs = errors.New("no apis configured for library")
+var (
+	errNoAPIs         = errors.New("no apis configured for library")
+	errInvalidPath    = errors.New("invalid path: must be a relative path within the directory")
+	errEmptyToysTask  = errors.New("toys task must not be empty")
+	errToysTaskFailed = errors.New("failed to run toys")
+)
 
 // DefaultOutput derives an output path from a library name and a default
 // output path.
@@ -50,14 +56,14 @@ func Generate(ctx context.Context, cfg *config.Config, library *config.Library, 
 	}
 	outDir, err := filepath.Abs(library.Output)
 	if err != nil {
-		return fmt.Errorf("failed to get absolute path of output directory: %w", err)
+		return err
 	}
 	if err := os.MkdirAll(outDir, 0o755); err != nil {
-		return fmt.Errorf("failed to create output directory: %w", err)
+		return err
 	}
 	tempDir, err := os.MkdirTemp(outDir, "librarian-ruby-")
 	if err != nil {
-		return fmt.Errorf("failed to create temp directory: %w", err)
+		return err
 	}
 	defer func() {
 		if removeErr := os.RemoveAll(tempDir); removeErr != nil {
@@ -70,19 +76,63 @@ func Generate(ctx context.Context, cfg *config.Config, library *config.Library, 
 		pc = cfg.Tools.Protoc
 	}
 
-	for _, api := range library.APIs {
-		if err := generateAPI(ctx, api, library, pc, googleapisDir, tempDir); err != nil {
-			return fmt.Errorf("api %q: %w", api.Path, err)
+	if isMultiWrapper(library) {
+		if err := generateMultiWrapper(ctx, library, pc, googleapisDir, tempDir); err != nil {
+			return err
 		}
+	} else {
+		for _, api := range library.APIs {
+			if err := generateAPI(ctx, api, library, pc, googleapisDir, tempDir); err != nil {
+				return err
+			}
+		}
+	}
+	if err := deleteLibraryAfterGeneration(library, tempDir, outDir); err != nil {
+		return err
 	}
 	keepSet := buildKeepSet(library.Name, library.Keep)
 	keepFunc := func(rel string) bool {
 		return isKept(rel, keepSet)
 	}
 	if err := filesystem.MoveAndMergeWithKeep(tempDir, outDir, outDir, keepFunc); err != nil {
-		return fmt.Errorf("failed to move generated files: %w", err)
+		return err
 	}
-	return nil
+	return runToysTasks(ctx, library, outDir)
+}
+
+func isWrapperLibrary(library *config.Library) bool {
+	if library.Ruby != nil && len(library.Ruby.WrapperOf) > 0 {
+		return true
+	}
+	for _, api := range library.APIs {
+		if api.Ruby != nil && api.Ruby.RubyCloudOpts != nil && api.Ruby.RubyCloudOpts.WrapperOf != "" {
+			return true
+		}
+	}
+	return false
+}
+
+func isMultiWrapper(library *config.Library) bool {
+	if !isWrapperLibrary(library) {
+		return false
+	}
+	return len(library.APIs) > 1
+}
+
+func generateMultiWrapper(ctx context.Context, library *config.Library, pc *config.Protoc, googleapisDir, stagingDir string) error {
+	var sourceGems []string
+	for _, api := range library.APIs {
+		gemName := apiGemName(library, api)
+		sourceGems = append(sourceGems, gemName)
+		apiStagingDir := filepath.Join(stagingDir, gemName)
+		if err := os.MkdirAll(apiStagingDir, 0o755); err != nil {
+			return err
+		}
+		if err := generateAPI(ctx, api, library, pc, googleapisDir, apiStagingDir); err != nil {
+			return err
+		}
+	}
+	return prepareMultiWrapper(stagingDir, sourceGems, library.TitleOverride, library.Name)
 }
 
 func generateAPI(ctx context.Context, api *config.API, library *config.Library, pc *config.Protoc, googleapisDir, stagingDir string) error {
@@ -94,7 +144,11 @@ func generateAPI(ctx context.Context, api *config.API, library *config.Library, 
 	if err != nil {
 		return err
 	}
-	gapicOpts, err := buildGAPICOpts(api, library, googleapisDir)
+	serviceConfig, err := serviceconfig.Find(googleapisDir, api.Path, config.LanguageRuby)
+	if err != nil {
+		return err
+	}
+	gapicOpts, err := buildGAPICOpts(api, library, googleapisDir, serviceConfig)
 	if err != nil {
 		return err
 	}
@@ -107,27 +161,11 @@ func generateAPI(ctx context.Context, api *config.API, library *config.Library, 
 	// https://github.com/googleapis/gapic-generator-ruby/blob/8fed6b7c1/rules_ruby_gapic/ruby_gapic_pkg.bzl#L39-L41
 	libStagingDir := filepath.Join(stagingDir, "lib")
 	if err := os.MkdirAll(libStagingDir, 0o755); err != nil {
-		return fmt.Errorf("failed to create lib staging directory: %w", err)
+		return err
 	}
 	// A main client is a wrapper of a versioned client
-	isWrapper := library.Ruby != nil && len(library.Ruby.WrapperOf) > 0
-	args := []string{
-		"--experimental_allow_proto3_optional",
-		"-I=" + googleapisDir,
-		"--ruby_cloud_out=" + stagingDir,
-	}
-	if !isWrapper {
-		grpcPluginPath := filepath.Join(installDir, "bin", "grpc_tools_ruby_protoc_plugin")
-		args = append(args,
-			"--ruby_out="+libStagingDir,
-			"--grpc_out="+libStagingDir,
-			"--plugin=protoc-gen-grpc="+grpcPluginPath,
-		)
-	}
-	if len(gapicOpts) > 0 {
-		args = append(args, "--ruby_cloud_opt="+strings.Join(gapicOpts, ","))
-	}
-	args = append(args, protoFiles...)
+	isWrapper := isWrapperLibrary(library)
+	args := buildProtocArgs(googleapisDir, stagingDir, libStagingDir, installDir, isWrapper, serviceConfig, gapicOpts, protoFiles)
 	env, err := toolsEnv()
 	if err != nil {
 		return err
@@ -145,38 +183,42 @@ func generateAPI(ctx context.Context, api *config.API, library *config.Library, 
 	// protobuf definitions, which would cause class redefinition warnings and collisions.
 	commonResourcesPB := filepath.Join(stagingDir, "lib", "google", "cloud", "common_resources_pb.rb")
 	if err := os.Remove(commonResourcesPB); err != nil && !errors.Is(err, fs.ErrNotExist) {
-		return fmt.Errorf("failed to remove %s: %w", commonResourcesPB, err)
+		return err
 	}
 	return nil
 }
 
-func buildGAPICOpts(api *config.API, library *config.Library, googleapisDir string) ([]string, error) {
-	sc, err := serviceconfig.Find(googleapisDir, api.Path, config.LanguageRuby)
-	if err != nil {
-		return nil, err
+func apiGemName(library *config.Library, api *config.API) string {
+	if api.Ruby != nil && api.Ruby.RubyCloudOpts != nil && api.Ruby.RubyCloudOpts.GemName != "" {
+		return api.Ruby.RubyCloudOpts.GemName
 	}
+	return library.Name
+}
+
+func buildGAPICOpts(api *config.API, library *config.Library, googleapisDir string, serviceConfig *serviceconfig.API) ([]string, error) {
 	gc, err := serviceconfig.FindGRPCServiceConfig(googleapisDir, api.Path)
 	if err != nil {
 		return nil, err
 	}
+	gemName := apiGemName(library, api)
 	opts := []string{
-		"ruby-cloud-gem-name=" + library.Name,
+		"ruby-cloud-gem-name=" + gemName,
 	}
-	if sc != nil && sc.ServiceConfig != "" {
-		opts = append(opts, "service-yaml="+filepath.Join(googleapisDir, sc.ServiceConfig))
+	if serviceConfig != nil && serviceConfig.ServiceConfig != "" {
+		opts = append(opts, "service-yaml="+filepath.Join(googleapisDir, serviceConfig.ServiceConfig))
 	}
-	if sc != nil && sc.Description != "" {
-		desc := escapeRubyCloudOptValue(strings.Join(strings.Fields(sc.Description), " "))
+	if serviceConfig != nil && serviceConfig.Description != "" {
+		desc := escapeRubyCloudOptValue(strings.Join(strings.Fields(serviceConfig.Description), " "))
 		opts = append(opts, "ruby-cloud-description="+desc, "ruby-cloud-summary="+desc)
 	}
 	if gc != "" {
 		opts = append(opts, "grpc-service-config="+filepath.Join(googleapisDir, gc))
 	}
-	if trans := transport(sc); trans != "" {
+	if trans := transport(serviceConfig); trans != "" {
 		transports := strings.ReplaceAll(string(trans), "+", ";")
 		opts = append(opts, "ruby-cloud-generate-transports="+transports)
 	}
-	if sc != nil && sc.HasRESTNumericEnums(config.LanguageRuby) {
+	if serviceConfig != nil && serviceConfig.HasRESTNumericEnums(config.LanguageRuby) {
 		opts = append(opts, "ruby-cloud-rest-numeric-enums=true")
 	}
 	if api.Ruby != nil && api.Ruby.RubyCloudOpts != nil {
@@ -192,6 +234,9 @@ func buildGAPICOpts(api *config.API, library *config.Library, googleapisDir stri
 		if api.Ruby.RubyCloudOpts.GemNamespace != "" {
 			opts = append(opts, "ruby-cloud-gem-namespace="+api.Ruby.RubyCloudOpts.GemNamespace)
 		}
+		if api.Ruby.RubyCloudOpts.GenericEndpoint {
+			opts = append(opts, "ruby-cloud-generic-endpoint=true")
+		}
 		if api.Ruby.RubyCloudOpts.MigrationVersion != "" {
 			opts = append(opts, "ruby-cloud-migration-version="+api.Ruby.RubyCloudOpts.MigrationVersion)
 		}
@@ -200,6 +245,9 @@ func buildGAPICOpts(api *config.API, library *config.Library, googleapisDir stri
 		}
 		if api.Ruby.RubyCloudOpts.PathOverride != "" {
 			opts = append(opts, "ruby-cloud-path-override="+api.Ruby.RubyCloudOpts.PathOverride)
+		}
+		if api.Ruby.RubyCloudOpts.RenamedFrom != "" {
+			opts = append(opts, "ruby-cloud-renamed-from="+api.Ruby.RubyCloudOpts.RenamedFrom)
 		}
 		if api.Ruby.RubyCloudOpts.ServiceOverride != "" {
 			opts = append(opts, "ruby-cloud-service-override="+api.Ruby.RubyCloudOpts.ServiceOverride)
@@ -215,16 +263,41 @@ func buildGAPICOpts(api *config.API, library *config.Library, googleapisDir stri
 			opts = append(opts, "ruby-cloud-yard-strict="+api.Ruby.RubyCloudOpts.YardStrict)
 		}
 	}
-	if library.Ruby != nil && len(library.Ruby.WrapperOf) > 0 {
+	if api.Ruby != nil && api.Ruby.RubyCloudOpts != nil && api.Ruby.RubyCloudOpts.WrapperOf != "" {
+		opts = append(opts, "ruby-cloud-wrapper-of="+api.Ruby.RubyCloudOpts.WrapperOf)
+	} else if library.Ruby != nil && len(library.Ruby.WrapperOf) > 0 {
 		// This controls the dependency range declaration in the gemspec file.
 		opts = append(opts, "ruby-cloud-wrapper-of="+strings.Join(library.Ruby.WrapperOf, ";"))
 	}
 	return opts, nil
 }
 
-func transport(sc *serviceconfig.API) serviceconfig.Transport {
-	if sc != nil {
-		return sc.Transport(config.LanguageRuby)
+func buildProtocArgs(googleapisDir, stagingDir, libStagingDir, installDir string, isWrapper bool, serviceConfig *serviceconfig.API, gapicOpts, protoFiles []string) []string {
+	args := []string{
+		"--experimental_allow_proto3_optional",
+		"-I=" + googleapisDir,
+		"--ruby_cloud_out=" + stagingDir,
+	}
+	if !isWrapper {
+		args = append(args, "--ruby_out="+libStagingDir)
+		if trans := transport(serviceConfig); trans != serviceconfig.Rest {
+			grpcPluginPath := filepath.Join(installDir, "bin", "grpc_tools_ruby_protoc_plugin")
+			args = append(args,
+				"--grpc_out="+libStagingDir,
+				"--plugin=protoc-gen-grpc="+grpcPluginPath,
+			)
+		}
+	}
+	if len(gapicOpts) > 0 {
+		args = append(args, "--ruby_cloud_opt="+strings.Join(gapicOpts, ","))
+	}
+	args = append(args, protoFiles...)
+	return args
+}
+
+func transport(serviceConfig *serviceconfig.API) serviceconfig.Transport {
+	if serviceConfig != nil {
+		return serviceConfig.Transport(config.LanguageRuby)
 	}
 	return serviceconfig.GRPCRest
 }
@@ -280,20 +353,78 @@ func escapeRubyCloudOptValue(val string) string {
 	return strings.ReplaceAll(val, ",", "\\,")
 }
 
+func cleanRelativePath(path string) (string, error) {
+	clean := filepath.Clean(path)
+	if filepath.IsAbs(clean) || strings.HasPrefix(clean, "..") || clean == "." {
+		return "", fmt.Errorf("%w: %q", errInvalidPath, path)
+	}
+	return clean, nil
+}
+
 // deleteAfterGeneration removes files from the staging directory after generation.
 func deleteAfterGeneration(api *config.API, stagingDir string) error {
 	if api.Ruby == nil {
 		return nil
 	}
 	for _, path := range api.Ruby.DeleteGenerationOutputPaths {
-		target := filepath.Join(stagingDir, "lib", path)
+		cleanPath, err := cleanRelativePath(path)
+		if err != nil {
+			return err
+		}
+		target := filepath.Join(stagingDir, "lib", cleanPath)
 		// Return an error for non-existent paths to keep the configurations
 		// up to date.
 		if _, err := os.Stat(target); err != nil {
-			return fmt.Errorf("failed to stat %s: %w", path, err)
+			return err
 		}
 		if err := os.RemoveAll(target); err != nil {
-			return fmt.Errorf("failed to remove %s: %w", path, err)
+			return err
+		}
+	}
+	return nil
+}
+
+// deleteLibraryAfterGeneration removes configured paths from the staging and
+// output directories after generation.
+func deleteLibraryAfterGeneration(library *config.Library, stagingDir, outDir string) error {
+	if library.Ruby == nil {
+		return nil
+	}
+	for _, path := range library.Ruby.DeleteGenerationOutputPaths {
+		cleanPath, err := cleanRelativePath(path)
+		if err != nil {
+			return err
+		}
+		target := filepath.Join(stagingDir, cleanPath)
+		if _, err := os.Stat(target); err != nil {
+			return err
+		}
+		if err := os.RemoveAll(target); err != nil {
+			return err
+		}
+		if err := os.RemoveAll(filepath.Join(outDir, cleanPath)); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func runToysTasks(ctx context.Context, library *config.Library, outDir string) error {
+	if library.Ruby == nil || len(library.Ruby.ToysTasks) == 0 {
+		return nil
+	}
+	env, err := toolsEnv()
+	if err != nil {
+		return err
+	}
+	for _, task := range library.Ruby.ToysTasks {
+		task = strings.TrimSpace(task)
+		if task == "" {
+			return errEmptyToysTask
+		}
+		args := strings.Fields(task)
+		if err := command.RunInDirWithEnv(ctx, outDir, env, "toys", args...); err != nil {
+			return fmt.Errorf("%w %s: %w", errToysTaskFailed, task, err)
 		}
 	}
 	return nil

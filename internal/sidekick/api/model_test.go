@@ -21,19 +21,10 @@ import (
 )
 
 func TestRoutingCombosSimpleOr(t *testing.T) {
-	v1 := &RoutingInfoVariant{
-		FieldPath: []string{"v1"},
-	}
-	v2 := &RoutingInfoVariant{
-		FieldPath: []string{"v2"},
-	}
-	info := &RoutingInfo{
-		Name:     "key",
-		Variants: []*RoutingInfoVariant{v1, v2},
-	}
-	method := Method{
-		Routing: []*RoutingInfo{info},
-	}
+	v1 := NewTestRoutingInfoVariant("v1")
+	v2 := NewTestRoutingInfoVariant("v2")
+	info := NewTestRoutingInfo("key", v1, v2)
+	method := NewTestMethod("test").WithRouting(info)
 
 	want := []*RoutingInfoCombo{
 		{
@@ -59,23 +50,11 @@ func TestRoutingCombosSimpleOr(t *testing.T) {
 }
 
 func TestRoutingCombosSimpleAnd(t *testing.T) {
-	v1 := &RoutingInfoVariant{
-		FieldPath: []string{"v1"},
-	}
-	i1 := &RoutingInfo{
-		Name:     "key1",
-		Variants: []*RoutingInfoVariant{v1},
-	}
-	v2 := &RoutingInfoVariant{
-		FieldPath: []string{"v2"},
-	}
-	i2 := &RoutingInfo{
-		Name:     "key2",
-		Variants: []*RoutingInfoVariant{v2},
-	}
-	method := Method{
-		Routing: []*RoutingInfo{i1, i2},
-	}
+	v1 := NewTestRoutingInfoVariant("v1")
+	i1 := NewTestRoutingInfo("key1", v1)
+	v2 := NewTestRoutingInfoVariant("v2")
+	i2 := NewTestRoutingInfo("key2", v2)
+	method := NewTestMethod("test").WithRouting(i1, i2)
 
 	want := []*RoutingInfoCombo{
 		{
@@ -97,42 +76,19 @@ func TestRoutingCombosSimpleAnd(t *testing.T) {
 }
 
 func TestRoutingCombosFull(t *testing.T) {
-	va1 := &RoutingInfoVariant{
-		FieldPath: []string{"va1"},
-	}
-	va2 := &RoutingInfoVariant{
-		FieldPath: []string{"va2"},
-	}
-	va3 := &RoutingInfoVariant{
-		FieldPath: []string{"va3"},
-	}
-	a := &RoutingInfo{
-		Name:     "a",
-		Variants: []*RoutingInfoVariant{va1, va2, va3},
-	}
+	va1 := NewTestRoutingInfoVariant("va1")
+	va2 := NewTestRoutingInfoVariant("va2")
+	va3 := NewTestRoutingInfoVariant("va3")
+	a := NewTestRoutingInfo("a", va1, va2, va3)
 
-	vb1 := &RoutingInfoVariant{
-		FieldPath: []string{"vb1"},
-	}
-	vb2 := &RoutingInfoVariant{
-		FieldPath: []string{"vb2"},
-	}
-	b := &RoutingInfo{
-		Name:     "b",
-		Variants: []*RoutingInfoVariant{vb1, vb2},
-	}
+	vb1 := NewTestRoutingInfoVariant("vb1")
+	vb2 := NewTestRoutingInfoVariant("vb2")
+	b := NewTestRoutingInfo("b", vb1, vb2)
 
-	vc1 := &RoutingInfoVariant{
-		FieldPath: []string{"vc1"},
-	}
-	c := &RoutingInfo{
-		Name:     "c",
-		Variants: []*RoutingInfoVariant{vc1},
-	}
+	vc1 := NewTestRoutingInfoVariant("vc1")
+	c := NewTestRoutingInfo("c", vc1)
 
-	method := Method{
-		Routing: []*RoutingInfo{a, b, c},
-	}
+	method := NewTestMethod("test").WithRouting(a, b, c)
 
 	make_combo := func(va *RoutingInfoVariant, vb *RoutingInfoVariant, vc *RoutingInfoVariant) *RoutingInfoCombo {
 		return &RoutingInfoCombo{
@@ -301,22 +257,22 @@ func TestService_HasClientSideStreaming(t *testing.T) {
 		{
 			name: "no streaming methods",
 			methods: []*Method{
-				{Name: "m1", ClientSideStreaming: false},
-				{Name: "m2", ClientSideStreaming: false},
+				NewTestMethod("m1"),
+				NewTestMethod("m2"),
 			},
 			want: false,
 		},
 		{
 			name: "one streaming method",
 			methods: []*Method{
-				{Name: "m1", ClientSideStreaming: false},
-				{Name: "m2", ClientSideStreaming: true},
+				NewTestMethod("m1"),
+				NewTestMethod("m2").WithClientSideStreaming(),
 			},
 			want: true,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			s := &Service{Methods: test.methods}
+			s := NewTestService("test").WithMethods(test.methods...)
 			got := s.HasClientSideStreaming()
 			if got != test.want {
 				t.Errorf("got %v, want %v", got, test.want)
@@ -338,34 +294,34 @@ func TestService_HasBidiStreaming(t *testing.T) {
 		{
 			name: "unary only",
 			methods: []*Method{
-				{Name: "m1", ClientSideStreaming: false, ServerSideStreaming: false},
+				NewTestMethod("m1"),
 			},
 			want: false,
 		},
 		{
 			name: "server only streaming",
 			methods: []*Method{
-				{Name: "m1", ClientSideStreaming: false, ServerSideStreaming: true},
+				NewTestMethod("m1").WithServerSideStreaming(),
 			},
 			want: false,
 		},
 		{
 			name: "client only streaming",
 			methods: []*Method{
-				{Name: "m1", ClientSideStreaming: true, ServerSideStreaming: false},
+				NewTestMethod("m1").WithClientSideStreaming(),
 			},
 			want: false,
 		},
 		{
 			name: "bidi streaming",
 			methods: []*Method{
-				{Name: "m1", ClientSideStreaming: true, ServerSideStreaming: true},
+				NewTestMethod("m1").WithBidiStreaming(),
 			},
 			want: true,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			s := &Service{Methods: test.methods}
+			s := NewTestService("test").WithMethods(test.methods...)
 			got := s.HasBidiStreaming()
 			if got != test.want {
 				t.Errorf("got %v, want %v", got, test.want)
@@ -387,34 +343,34 @@ func TestService_HasServerSideStreaming(t *testing.T) {
 		{
 			name: "unary only",
 			methods: []*Method{
-				{Name: "m1", ClientSideStreaming: false, ServerSideStreaming: false},
+				NewTestMethod("m1"),
 			},
 			want: false,
 		},
 		{
 			name: "bidi streaming (not server-only)",
 			methods: []*Method{
-				{Name: "m1", ClientSideStreaming: true, ServerSideStreaming: true},
+				NewTestMethod("m1").WithBidiStreaming(),
 			},
 			want: false,
 		},
 		{
 			name: "client only streaming",
 			methods: []*Method{
-				{Name: "m1", ClientSideStreaming: true, ServerSideStreaming: false},
+				NewTestMethod("m1").WithClientSideStreaming(),
 			},
 			want: false,
 		},
 		{
 			name: "server-side streaming",
 			methods: []*Method{
-				{Name: "m1", ClientSideStreaming: false, ServerSideStreaming: true},
+				NewTestMethod("m1").WithServerSideStreaming(),
 			},
 			want: true,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			s := &Service{Methods: test.methods}
+			s := NewTestService("test").WithMethods(test.methods...)
 			got := s.HasServerSideStreaming()
 			if got != test.want {
 				t.Errorf("got %v, want %v", got, test.want)

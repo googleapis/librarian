@@ -1,0 +1,51 @@
+{{/*
+Copyright 2025 Google LLC
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    https://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/}}
+{{- "\n" }}
+{{- include "templates/common/feature_gate" . }}
+impl gaxi::prost::ToProto<{{ .Codec.ProstRelativeName }}> for {{ .Codec.QualifiedName }} {
+    type Output = {{ .Codec.ProstRelativeName }};
+    fn to_proto(self) -> std::result::Result<Self::Output, gaxi::prost::ConvertError> {
+        match self {
+            {{- range .Fields }}
+            {{- if .SkipProtoConversion }}
+            Self::{{ .Codec.BranchName }}(_) => Ok(Self::Output::{{ .Codec.ProstBranchName }}(std::default::Default::default())),
+            {{- else }}
+            Self::{{ .Codec.BranchName }}(v) => Ok(Self::Output::{{ .Codec.ProstBranchName }}({{- if .Codec.MapToBoxed }}std::boxed::Box::new({{- end }}{{- if .Codec.IsBoxed }}(*v){{- else }}v{{- end }}.to_proto()?{{- if .Codec.MapToBoxed }}){{- end }})),
+            {{- end }}
+            {{- end }}
+        }
+    }
+}
+{{- "\n" }}
+{{- include "templates/common/feature_gate" . }}
+impl gaxi::prost::FromProto<{{ .Codec.QualifiedName }}> for {{ .Codec.ProstRelativeName }} {
+    fn cnv(self) -> std::result::Result<{{ .Codec.QualifiedName }}, gaxi::prost::ConvertError> {
+        use {{ .Codec.QualifiedName }} as T;
+        match self {
+            {{- range .Fields }}
+            {{- if .SkipProtoConversion }}
+            Self::{{ .Codec.BranchName }}(_) => Ok(T::{{ .Codec.BranchName }}(std::default::Default::default())),
+            {{- else if .IsEnum }}
+            Self::{{ .Codec.ProstBranchName }}(v) => Ok(T::{{ .Codec.BranchName }}(v.into())),
+            {{- else if .Codec.IsBoxed }}
+            Self::{{ .Codec.ProstBranchName }}(v) => Ok(T::{{ .Codec.BranchName }}(std::boxed::Box::new(v.cnv()?))),
+            {{- else }}
+            Self::{{ .Codec.ProstBranchName }}(v) => Ok(T::{{ .Codec.BranchName }}(v.cnv()?)),
+            {{- end }}
+            {{- end }}
+        }
+    }
+}

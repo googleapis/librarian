@@ -173,6 +173,34 @@ func pascalCase(s string) string {
 	return escapeKeyword(pascalCaseNoMangling(s))
 }
 
+// messageName returns the Swift type name for a message, prefixing top-level
+// well-known protobuf types (google.protobuf) with "WKT".
+func messageName(m *api.Message) string {
+	if m.Parent == nil && m.Package == wellKnownProtobufPackage {
+		return escapeKeyword("WKT" + pascalCaseNoMangling(m.Name))
+	}
+	return pascalCase(m.Name)
+}
+
+// messageSimpleName returns the simple Swift type name for a message, taking
+// into account well-known types and service placeholders.
+func messageSimpleName(m *api.Message) string {
+	name := messageName(m)
+	if m.ServicePlaceholder {
+		return pascalCase(name + "Client")
+	}
+	return name
+}
+
+// enumName returns the Swift type name for an enum, prefixing top-level
+// well-known protobuf types (google.protobuf) with "WKT".
+func enumName(e *api.Enum) string {
+	if e.Parent == nil && e.Package == wellKnownProtobufPackage {
+		return escapeKeyword("WKT" + pascalCaseNoMangling(e.Name))
+	}
+	return pascalCase(e.Name)
+}
+
 // pascalCaseNoMangling converts an identifier to PascalCase (note the leading uppercase).
 func pascalCaseNoMangling(s string) string {
 	// In Swift, it is conventional to preserve ALL CAPS names:
@@ -224,6 +252,13 @@ func ProtoPackagePrefix(packageName string) string {
 // message that contains it. This function computes the (unqualified) name. By
 // convention, `oneof` names are `snake_case`, while Swift types are
 // `PascalCase`.
+//
+// The name is the group name in `PascalCase` with a `OneOf` suffix, so `oneof
+// source_code` becomes `SourceCodeOneOf`. The suffix is applied uniformly: a
+// group named `key_oneof` becomes `KeyOneofOneOf`.
+//
+// The result never needs keyword escaping. No Swift keyword ends in `OneOf`, so
+// unlike `pascalCase`, this function calls `pascalCaseNoMangling`.
 func OneOfName(oneOfName string) string {
-	return "OneOf_" + pascalCaseNoMangling(oneOfName)
+	return pascalCaseNoMangling(oneOfName) + "OneOf"
 }

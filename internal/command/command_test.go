@@ -337,3 +337,26 @@ func TestLookPath_Error(t *testing.T) {
 		})
 	}
 }
+
+func TestOutputWithStdin(t *testing.T) {
+	input := "hello world\n"
+	got, err := OutputWithStdin(t.Context(), strings.NewReader(input), "cat")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got != input {
+		t.Errorf("OutputWithStdin() = %q, want %q", got, input)
+	}
+}
+
+func TestOutputWithStdinAndEnv(t *testing.T) {
+	input := "input data\n"
+	got, err := OutputWithStdinAndEnv(t.Context(), strings.NewReader(input), map[string]string{"FOO": "bar"}, "sh", "-c", "echo $FOO && cat")
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := "bar\ninput data\n"
+	if got != want {
+		t.Errorf("OutputWithStdinAndEnv() = %q, want %q", got, want)
+	}
+}

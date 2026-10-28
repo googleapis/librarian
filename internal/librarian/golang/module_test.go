@@ -16,6 +16,8 @@ package golang
 
 import (
 	"errors"
+	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"testing"
@@ -270,6 +272,20 @@ func TestFill_Error(t *testing.T) {
 				}},
 			},
 			wantErr: errClientPackageNotFound,
+		},
+		{
+			name: "internal copy in a public package",
+			library: &config.Library{
+				Name:   "oslogin",
+				Output: "repo/oslogin",
+				APIs: []*config.API{{
+					Path: "google/cloud/oslogin/v1",
+					Go: &config.GoAPI{
+						InternalCopies: []*config.GoInternalCopy{{ImportPath: "oslogin/apiv1/fastpb", Plugin: "go-vtproto", ProtoPackage: "google.cloud.oslogin.v1.fastinternal"}},
+					},
+				}},
+			},
+			wantErr: errInternalCopyImportPath,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
@@ -684,51 +700,131 @@ func TestInitModule(t *testing.T) {
 }
 
 func TestDefaultLibraryName(t *testing.T) {
+	t.Parallel()
 	for _, test := range []struct {
-		name string
-		api  string
-		want string
+		name      string
+		api       string
+		goPackage string
+		want      string
 	}{
 		{
-			name: "cloud API",
-			api:  "google/cloud/secretmanager/v1",
-			want: "secretmanager",
+			name:      "cloud API",
+			api:       "google/cloud/secretmanager/v1",
+			goPackage: "cloud.google.com/go/secretmanager/apiv1/secretmanagerpb;secretmanagerpb",
+			want:      "secretmanager",
 		},
 		{
-			name: "devtools API",
-			api:  "google/devtools/artifactregistry/v1",
-			want: "artifactregistry",
+			name:      "devtools API",
+			api:       "google/devtools/artifactregistry/v1",
+			goPackage: "cloud.google.com/go/artifactregistry/apiv1/artifactregistrypb;artifactregistry",
+			want:      "artifactregistry",
 		},
 		{
-			name: "google/api API",
-			api:  "google/api/cloudquotas/v1",
-			want: "cloudquotas",
+			name:      "google/api API",
+			api:       "google/api/cloudquotas/v1",
+			goPackage: "cloud.google.com/go/cloudquotas/apiv1/cloudquotaspb;cloudquotaspb",
+			want:      "cloudquotas",
 		},
 		{
-			name: "maps API",
-			api:  "google/maps/geocode/v4",
-			want: "maps",
+			name:      "maps API",
+			api:       "google/maps/geocode/v4",
+			goPackage: "cloud.google.com/go/maps/geocode/apiv4/geocodepb;geocodepb",
+			want:      "maps",
 		},
 		{
-			name: "other API",
-			api:  "google/other/v4",
-			want: "other",
+			name:      "shopping API",
+			api:       "google/shopping/merchant/accounts/v1beta",
+			goPackage: "cloud.google.com/go/shopping/merchant/accounts/apiv1/accountspb;accountspb",
+			want:      "shopping",
 		},
 		{
-			name: "shopping API",
-			api:  "google/shopping/type",
-			want: "shopping",
-		},
-		{
-			name: "non existent API",
-			api:  "google/random",
-			want: "random",
+			name:      "developerknowledge API",
+			api:       "google/developers/knowledge/v1",
+			goPackage: "cloud.google.com/go/developerknowledge/apiv1/developerknowledgepb",
+			want:      "developerknowledge",
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got := DefaultLibraryName(test.api)
+			t.Parallel()
+			tmpDir := t.TempDir()
+			protoDir := filepath.Join(tmpDir, test.api)
+			if err := os.MkdirAll(protoDir, 0o755); err != nil {
+				t.Fatal(err)
+			}
+			content := fmt.Sprintf(`option go_package = %q;`, test.goPackage)
+			if err := os.WriteFile(filepath.Join(protoDir, "service.proto"), []byte(content), 0o644); err != nil {
+				t.Fatal(err)
+			}
+			got, err := DefaultLibraryName(tmpDir, test.api)
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestDefaultLibraryName_Error(t *testing.T) {
+	t.Parallel()
+	for _, test := range []struct {
+		name    string
+		setup   func(t *testing.T) (string, string)
+		wantErr error
+	}{
+		{
+			name: "go_package option not found",
+			setup: func(t *testing.T) (string, string) {
+				tmpDir := t.TempDir()
+				apiPath := "google/cloud/secretmanager/v1"
+				dir := filepath.Join(tmpDir, apiPath)
+				if err := os.MkdirAll(dir, 0o755); err != nil {
+					t.Fatal(err)
+				}
+				if err := os.WriteFile(filepath.Join(dir, "service.proto"), []byte("syntax = \"proto3\";"), 0o644); err != nil {
+					t.Fatal(err)
+				}
+				return tmpDir, apiPath
+			},
+			wantErr: errGoPackageNotFound,
+		},
+		{
+			name: "nonexistent directory",
+			setup: func(t *testing.T) (string, string) {
+				return t.TempDir(), "google/cloud/nonexistent/v1"
+			},
+			wantErr: fs.ErrNotExist,
+		},
+		{
+			name: "unreadable proto file",
+			setup: func(t *testing.T) (string, string) {
+				if os.Geteuid() == 0 {
+					t.Skip("skipping permission test when running as root")
+				}
+				tmpDir := t.TempDir()
+				apiPath := "google/cloud/secretmanager/v1"
+				dir := filepath.Join(tmpDir, apiPath)
+				if err := os.MkdirAll(dir, 0o755); err != nil {
+					t.Fatal(err)
+				}
+				if err := os.WriteFile(filepath.Join(dir, "service.proto"), []byte("syntax = \"proto3\";"), 0o000); err != nil {
+					t.Fatal(err)
+				}
+				return tmpDir, apiPath
+			},
+			wantErr: fs.ErrPermission,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			googleapisDir, apiPath := test.setup(t)
+			got, err := DefaultLibraryName(googleapisDir, apiPath)
+			if !errors.Is(err, test.wantErr) {
+				t.Errorf("DefaultLibraryName() error = %v, want %v", err, test.wantErr)
+			}
+			if got != "" {
+				t.Errorf("DefaultLibraryName() got = %q, want empty string", got)
 			}
 		})
 	}

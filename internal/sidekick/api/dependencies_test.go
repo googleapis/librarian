@@ -40,24 +40,11 @@ func TestFindDependenciesUnknownIdErrors(t *testing.T) {
 }
 
 func TestFindDependenciesEnumFields(t *testing.T) {
-	enums := []*Enum{
-		{
-			Name: "OrphanEnum",
-			ID:   ".test.OrphanEnum",
-		},
-	}
+	enums := []*Enum{NewTestEnum("OrphanEnum")}
 	messages := []*Message{
-		{
-			Name: "MessageWithEnumField",
-			ID:   ".test.MessageWithEnumField",
-			Fields: []*Field{
-				{
-					Name:    "enum",
-					Typez:   TypezEnum,
-					TypezID: ".test.OrphanEnum",
-				},
-			},
-		},
+		NewTestMessage("MessageWithEnumField").WithFields(
+			NewTestField("enum").WithType(TypezEnum).WithTypezID(".test.OrphanEnum"),
+		),
 	}
 	services := []*Service{}
 	model := NewTestAPI(messages, enums, services)
@@ -86,18 +73,8 @@ func TestFindDependenciesEnumFields(t *testing.T) {
 }
 
 func TestFindDependenciesNestedEnum(t *testing.T) {
-	enums := []*Enum{
-		{
-			Name: "ChildEnum",
-			ID:   ".test.ParentMessage.ChildEnum",
-		},
-	}
-	messages := []*Message{
-		{
-			Name: "ParentMessage",
-			ID:   ".test.ParentMessage",
-		},
-	}
+	enums := []*Enum{NewTestEnum("ChildEnum").WithID(".test.ParentMessage.ChildEnum")}
+	messages := []*Message{NewTestMessage("ParentMessage")}
 	services := []*Service{}
 	model := NewTestAPI(messages, enums, services)
 	less := func(a, b string) bool { return a < b }
@@ -126,18 +103,9 @@ func TestFindDependenciesNestedEnum(t *testing.T) {
 func TestFindDependenciesNestedMessage(t *testing.T) {
 	enums := []*Enum{}
 	messages := []*Message{
-		{
-			Name: "Grandparent",
-			ID:   ".test.Grandparent",
-		},
-		{
-			Name: "Grandparent.Parent",
-			ID:   ".test.Grandparent.Parent",
-		},
-		{
-			Name: "Grandparent.Parent.Child",
-			ID:   ".test.Grandparent.Parent.Child",
-		},
+		NewTestMessage("Grandparent"),
+		NewTestMessage("Grandparent.Parent"),
+		NewTestMessage("Grandparent.Parent.Child"),
 	}
 	services := []*Service{}
 	model := NewTestAPI(messages, enums, services)
@@ -178,21 +146,10 @@ func TestFindDependenciesNestedMessage(t *testing.T) {
 func TestFindDependenciesMessage(t *testing.T) {
 	enums := []*Enum{}
 	messages := []*Message{
-		{
-			Name: "MessageWithMessageField",
-			ID:   ".test.MessageWithMessageField",
-			Fields: []*Field{
-				{
-					Name:    "message",
-					Typez:   TypezMessage,
-					TypezID: ".test.Orphan",
-				},
-			},
-		},
-		{
-			Name: "Orphan",
-			ID:   ".test.Orphan",
-		},
+		NewTestMessage("MessageWithMessageField").WithFields(
+			NewTestField("message").WithType(TypezMessage).WithTypezID(".test.Orphan"),
+		),
+		NewTestMessage("Orphan"),
 	}
 	services := []*Service{}
 	model := NewTestAPI(messages, enums, services)
@@ -222,17 +179,9 @@ func TestFindDependenciesMessage(t *testing.T) {
 func TestFindDependenciesHandlesCycles1(t *testing.T) {
 	enums := []*Enum{}
 	messages := []*Message{
-		{
-			Name: "Recursive",
-			ID:   ".test.Recursive",
-			Fields: []*Field{
-				{
-					Name:    "self",
-					Typez:   TypezMessage,
-					TypezID: ".test.Recursive",
-				},
-			},
-		},
+		NewTestMessage("Recursive").WithFields(
+			NewTestField("self").WithType(TypezMessage).WithTypezID(".test.Recursive"),
+		),
 	}
 	services := []*Service{}
 	model := NewTestAPI(messages, enums, services)
@@ -251,33 +200,13 @@ func TestFindDependenciesHandlesCycles1(t *testing.T) {
 func TestFindDependenciesHandlesCycles2(t *testing.T) {
 	enums := []*Enum{}
 	messages := []*Message{
-		{
-			Name: "A",
-			ID:   ".test.A",
-			Fields: []*Field{
-				{
-					Name:    "left",
-					Typez:   TypezMessage,
-					TypezID: ".test.B",
-				},
-				{
-					Name:    "right",
-					Typez:   TypezMessage,
-					TypezID: ".test.B",
-				},
-			},
-		},
-		{
-			Name: "B",
-			ID:   ".test.B",
-			Fields: []*Field{
-				{
-					Name:    "value",
-					Typez:   TypezMessage,
-					TypezID: ".test.A",
-				},
-			},
-		},
+		NewTestMessage("A").WithFields(
+			NewTestField("left").WithType(TypezMessage).WithTypezID(".test.B"),
+			NewTestField("right").WithType(TypezMessage).WithTypezID(".test.B"),
+		),
+		NewTestMessage("B").WithFields(
+			NewTestField("value").WithType(TypezMessage).WithTypezID(".test.A"),
+		),
 	}
 	services := []*Service{}
 	model := NewTestAPI(messages, enums, services)
@@ -301,34 +230,15 @@ func TestFindDependenciesHandlesCycles2(t *testing.T) {
 
 func TestFindDependenciesHandlesCycles3(t *testing.T) {
 	enums := []*Enum{
-		{
-			Name: "Triangle1",
-			ID:   ".test.Triangle2.Triangle1",
-		},
+		NewTestEnum("Triangle1").WithID(".test.Triangle2.Triangle1"),
 	}
 	messages := []*Message{
-		{
-			Name: "Triangle2",
-			ID:   ".test.Triangle2",
-			Fields: []*Field{
-				{
-					Name:    "triangle3",
-					Typez:   TypezMessage,
-					TypezID: ".test.Triangle3",
-				},
-			},
-		},
-		{
-			Name: "Triangle3",
-			ID:   ".test.Triangle3",
-			Fields: []*Field{
-				{
-					Name:    "triangle1",
-					Typez:   TypezEnum,
-					TypezID: ".test.Triangle2.Triangle1",
-				},
-			},
-		},
+		NewTestMessage("Triangle2").WithFields(
+			NewTestField("triangle3").WithType(TypezMessage).WithTypezID(".test.Triangle3"),
+		),
+		NewTestMessage("Triangle3").WithFields(
+			NewTestField("triangle1").WithType(TypezEnum).WithTypezID(".test.Triangle2.Triangle1"),
+		),
 	}
 	services := []*Service{}
 	model := NewTestAPI(messages, enums, services)
@@ -354,34 +264,14 @@ func TestFindDependenciesHandlesCycles3(t *testing.T) {
 func TestFindDependenciesMethod(t *testing.T) {
 	enums := []*Enum{}
 	messages := []*Message{
-		{
-			Name: "Request",
-			ID:   ".test.Request",
-		},
-		{
-			Name: "Response",
-			ID:   ".test.Response",
-		},
+		NewTestMessage("Request"),
+		NewTestMessage("Response"),
 	}
 	services := []*Service{
-		{
-			Name: "Service",
-			ID:   ".test.Service",
-			Methods: []*Method{
-				{
-					Name:         "Method",
-					ID:           ".test.Service.Method",
-					InputTypeID:  ".test.Request",
-					OutputTypeID: ".test.Response",
-				},
-				{
-					Name:         "Sibling",
-					ID:           ".test.Service.Sibling",
-					InputTypeID:  ".test.Request",
-					OutputTypeID: ".test.Response",
-				},
-			},
-		},
+		NewTestService("Service").WithMethods(
+			NewTestMethod("Method").WithInputTypeID(".test.Request").WithOutputTypeID(".test.Response"),
+			NewTestMethod("Sibling").WithInputTypeID(".test.Request").WithOutputTypeID(".test.Response"),
+		),
 	}
 	model := NewTestAPI(messages, enums, services)
 	CrossReference(model)
@@ -411,36 +301,17 @@ func TestFindDependenciesMethod(t *testing.T) {
 func TestFindDependenciesLroMethod(t *testing.T) {
 	enums := []*Enum{}
 	messages := []*Message{
-		{
-			Name: "Empty",
-			ID:   ".test.Empty",
-		},
-		{
-			Name: "OpMetadata",
-			ID:   ".test.OpMetadata",
-		},
-		{
-			Name: "OpResponse",
-			ID:   ".test.OpResponse",
-		},
+		NewTestMessage("Empty"),
+		NewTestMessage("OpMetadata"),
+		NewTestMessage("OpResponse"),
 	}
 	services := []*Service{
-		{
-			Name: "Service",
-			ID:   ".test.Service",
-			Methods: []*Method{
-				{
-					Name:         "Lro",
-					ID:           ".test.Service.Lro",
-					InputTypeID:  ".test.Empty",
-					OutputTypeID: ".test.Empty",
-					OperationInfo: &OperationInfo{
-						MetadataTypeID: ".test.OpMetadata",
-						ResponseTypeID: ".test.OpResponse",
-					},
-				},
-			},
-		},
+		NewTestService("Service").WithMethods(
+			NewTestMethod("Lro").
+				WithInputTypeID(".test.Empty").
+				WithOutputTypeID(".test.Empty").
+				WithOperationInfo(NewTestOperationInfo(".test.OpResponse", ".test.OpMetadata")),
+		),
 	}
 	model := NewTestAPI(messages, enums, services)
 	CrossReference(model)
@@ -458,85 +329,29 @@ func TestFindDependenciesLroMethod(t *testing.T) {
 
 func TestFindDependenciesService(t *testing.T) {
 	enums := []*Enum{
-		{
-			Name: "Enum",
-			ID:   ".test.Enum",
-		},
+		NewTestEnum("Enum"),
 	}
 	messages := []*Message{
-		{
-			Name: "Request",
-			ID:   ".test.Request",
-			Fields: []*Field{
-				{
-					Name:    "message",
-					Typez:   TypezMessage,
-					TypezID: ".test.ParentMessage.ChildMessage",
-				},
-			},
-		},
-		{
-			Name: "ParentMessage",
-			ID:   ".test.ParentMessage",
-			Fields: []*Field{
-				{
-					Name:    "enum",
-					Typez:   TypezEnum,
-					TypezID: ".test.Enum",
-				},
-			},
-		},
-		{
-			Name: "ParentMessage.ChildMessage",
-			ID:   ".test.ParentMessage.ChildMessage",
-		},
-		{
-			Name: "Response",
-			ID:   ".test.Response",
-		},
-		{
-			Name: "OtherRequest",
-			ID:   ".test.OtherRequest",
-		},
-		{
-			Name: "OtherResponse",
-			ID:   ".test.OtherResponse",
-		},
-		{
-			Name: "Ignored",
-			ID:   ".test.Ignored",
-		},
+		NewTestMessage("Request").WithFields(
+			NewTestField("message").WithType(TypezMessage).WithTypezID(".test.ParentMessage.ChildMessage"),
+		),
+		NewTestMessage("ParentMessage").WithFields(
+			NewTestField("enum").WithType(TypezEnum).WithTypezID(".test.Enum"),
+		),
+		NewTestMessage("ParentMessage.ChildMessage"),
+		NewTestMessage("Response"),
+		NewTestMessage("OtherRequest"),
+		NewTestMessage("OtherResponse"),
+		NewTestMessage("Ignored"),
 	}
 	services := []*Service{
-		{
-			Name: "Service",
-			ID:   ".test.Service",
-			Methods: []*Method{
-				{
-					Name:         "Method",
-					ID:           ".test.Service.Method",
-					InputTypeID:  ".test.Request",
-					OutputTypeID: ".test.Response",
-				},
-				{
-					Name:         "Sibling",
-					ID:           ".test.Service.Sibling",
-					InputTypeID:  ".test.Request",
-					OutputTypeID: ".test.Response",
-				},
-			},
-		}, {
-			Name: "OtherService",
-			ID:   ".test.OtherService",
-			Methods: []*Method{
-				{
-					Name:         "OtherMethod",
-					ID:           ".test.OtherService.OtherMethod",
-					InputTypeID:  ".test.OtherRequest",
-					OutputTypeID: ".test.OtherResponse",
-				},
-			},
-		},
+		NewTestService("Service").WithMethods(
+			NewTestMethod("Method").WithInputTypeID(".test.Request").WithOutputTypeID(".test.Response"),
+			NewTestMethod("Sibling").WithInputTypeID(".test.Request").WithOutputTypeID(".test.Response"),
+		),
+		NewTestService("OtherService").WithMethods(
+			NewTestMethod("OtherMethod").WithInputTypeID(".test.OtherRequest").WithOutputTypeID(".test.OtherResponse"),
+		),
 	}
 	model := NewTestAPI(messages, enums, services)
 	CrossReference(model)

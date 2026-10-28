@@ -885,7 +885,6 @@ func TestRenderREADME(t *testing.T) {
 		DistributionName: "com.google.cloud:google-cloud-myapi",
 		Repo:             "googleapis/google-cloud-java",
 		APIShortname:     "myapi",
-		MinJavaVersion:   8,
 	}
 	defaultBOMVersion := "1.0.0-BOM"
 	defaultLibraryVersion := "1.2.3-LIB"
@@ -1030,6 +1029,38 @@ func TestRenderREADME_Error(t *testing.T) {
 			err := renderREADME(test.params, test.keepSet)
 			if !errors.Is(err, test.wantErr) {
 				t.Errorf("renderREADME() error = %v, wantErr %v", err, test.wantErr)
+			}
+		})
+	}
+}
+
+func TestGetMinJavaVersion(t *testing.T) {
+	for _, test := range []struct {
+		name string
+		d    *config.JavaDefault
+		want int
+	}{
+		{
+			name: "nil java default returns default",
+			d:    nil,
+			want: 8,
+		},
+		{
+			name: "unspecified min java version returns default",
+			d:    &config.JavaDefault{},
+			want: 8,
+		},
+		{
+			name: "configured min java version returns value",
+			d: &config.JavaDefault{
+				MinJavaVersion: 17,
+			},
+			want: 17,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			if got := getMinJavaVersion(test.d); got != test.want {
+				t.Errorf("getMinJavaVersion() = %d, want %d", got, test.want)
 			}
 		})
 	}
