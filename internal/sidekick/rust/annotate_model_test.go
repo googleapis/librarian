@@ -232,7 +232,7 @@ func TestInternalBuildersAnnotation(t *testing.T) {
 		if got.InternalBuilders != test.Want {
 			t.Errorf("mismatch in InternalBuilders, want=%v, got=%v", test.Want, got.InternalBuilders)
 		}
-		svcAnn := model.Services[0].Codec().(*serviceAnnotations)
+		svcAnn := model.Services()[0].Codec().(*serviceAnnotations)
 		if svcAnn.InternalBuilders != test.Want {
 			t.Errorf("mismatch in service InternalBuilders, want=%v, got=%v", test.Want, svcAnn.InternalBuilders)
 		}
@@ -290,7 +290,7 @@ func TestHandwrittenSurfaceAnnotation(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			svc0Ann := model.Services[0].Codec().(*serviceAnnotations)
+			svc0Ann := model.Services()[0].Codec().(*serviceAnnotations)
 			if svc0Ann.HasVeneer != test.wantService0Veneer {
 				t.Errorf("mismatch in Service0 HasVeneer, want=%v, got=%v", test.wantService0Veneer, svc0Ann.HasVeneer)
 			}
@@ -301,7 +301,7 @@ func TestHandwrittenSurfaceAnnotation(t *testing.T) {
 				t.Errorf("mismatch in Service0 GenerateRpcSamples, want=%v, got=%v", test.wantService0Samples, svc0Ann.GenerateRpcSamples)
 			}
 
-			svc1Ann := model.Services[1].Codec().(*serviceAnnotations)
+			svc1Ann := model.Services()[1].Codec().(*serviceAnnotations)
 			if svc1Ann.HasVeneer != test.wantService1Veneer {
 				t.Errorf("mismatch in Service1 HasVeneer, want=%v, got=%v", test.wantService1Veneer, svc1Ann.HasVeneer)
 			}
@@ -340,7 +340,7 @@ func TestGrpcClientAnnotation(t *testing.T) {
 		if got.GrpcClient != test.Want {
 			t.Errorf("mismatch in GrpcClient, want=%v, got=%v", test.Want, got.GrpcClient)
 		}
-		svcAnn := model.Services[0].Codec().(*serviceAnnotations)
+		svcAnn := model.Services()[0].Codec().(*serviceAnnotations)
 		if svcAnn.GrpcClient != test.Want {
 			t.Errorf("mismatch in service GrpcClient, want=%v, got=%v", test.Want, svcAnn.GrpcClient)
 		}
@@ -350,8 +350,8 @@ func TestGrpcClientAnnotation(t *testing.T) {
 func TestQuickstartServiceAnnotation(t *testing.T) {
 	t.Run("survives filtering", func(t *testing.T) {
 		model := newTestAnnotateModelAPI(t)
-		// model.Services[0] is Service0, model.Services[1] is Service1
-		model.WithQuickstartService(model.Services[1])
+		// model.Services()[0] is Service0, model.Services()[1] is Service1
+		model.WithQuickstartService(model.Services()[1])
 
 		codec := newTestCodec(t, libconfig.SpecProtobuf, "", nil)
 		got, err := annotateModel(model, codec)
@@ -362,7 +362,7 @@ func TestQuickstartServiceAnnotation(t *testing.T) {
 		if got.QuickstartService == nil {
 			t.Fatal("QuickstartService should not be nil")
 		}
-		if got.QuickstartService != model.Services[1] {
+		if got.QuickstartService != model.Services()[1] {
 			t.Errorf("expected QuickstartService to be Service1, got %v", got.QuickstartService.Name())
 		}
 	})
@@ -379,7 +379,7 @@ func TestQuickstartServiceAnnotation(t *testing.T) {
 		filteredService := api.NewTestService("FilteredService").
 			WithPackage("").
 			WithMethods(noBindingsMethod)
-		model.AddService(filteredService)
+		model = api.NewAPIBuilderFrom(model).AddService(filteredService).BuildSyntaxTree()
 		if err := api.CrossReference(model); err != nil {
 			t.Fatal(err)
 		}
@@ -400,7 +400,7 @@ func TestQuickstartServiceAnnotation(t *testing.T) {
 
 	t.Run("with override", func(t *testing.T) {
 		model := newTestAnnotateModelAPI(t)
-		model.WithQuickstartService(model.Services[0]) // Set default to 0
+		model.WithQuickstartService(model.Services()[0]) // Set default to 0
 
 		codec := newTestCodec(t, libconfig.SpecProtobuf, "", nil)
 		// Set override to Service1
@@ -414,7 +414,7 @@ func TestQuickstartServiceAnnotation(t *testing.T) {
 		if got.QuickstartService == nil {
 			t.Fatal("QuickstartService should not be nil")
 		}
-		if got.QuickstartService != model.Services[1] {
+		if got.QuickstartService != model.Services()[1] {
 			t.Errorf("expected QuickstartService to be overridden to Service1, got %v", got.QuickstartService.Name())
 		}
 	})
@@ -625,7 +625,7 @@ func TestGenerateRpcSamples(t *testing.T) {
 		"generate-rpc-samples": "true",
 	})
 	annotateModel(model, codec)
-	if !model.Codec.(*modelAnnotations).GenerateRpcSamples {
+	if !model.Codec().(*modelAnnotations).GenerateRpcSamples {
 		t.Errorf("GenerateRpcSamples should be true")
 	}
 }
@@ -636,7 +636,7 @@ func TestGenerateSetterSamples(t *testing.T) {
 		"generate-setter-samples": "true",
 	})
 	annotateModel(model, codec)
-	if !model.Codec.(*modelAnnotations).GenerateSetterSamples {
+	if !model.Codec().(*modelAnnotations).GenerateSetterSamples {
 		t.Errorf("GenerateSetterSamples should be true")
 	}
 }
@@ -883,9 +883,9 @@ func TestExternalTypesAnnotations(t *testing.T) {
 	extMsg := api.NewTestMessage("LatLng").WithPackage("google.type")
 	extEnum := api.NewTestEnum("DayOfWeek").WithPackage("google.type")
 
-	model := api.NewTestAPI(nil, nil, nil)
-	model.ExternalMessages = []*api.Message{extMsg}
-	model.ExternalEnums = []*api.Enum{extEnum}
+	model := api.NewTestAPI(nil, nil, nil).
+		WithExternalMessages(extMsg).
+		WithExternalEnums(extEnum)
 
 	codec := newTestCodec(t, libconfig.SpecProtobuf, "", map[string]string{
 		"template-override": "templates/convert-prost",
@@ -917,9 +917,9 @@ func TestExternalTypesAnnotations(t *testing.T) {
 	t.Run("with prost-path option", func(t *testing.T) {
 		extMsg2 := api.NewTestMessage("LatLng").WithPackage("google.type")
 		extEnum2 := api.NewTestEnum("DayOfWeek").WithPackage("google.type")
-		model2 := api.NewTestAPI(nil, nil, nil)
-		model2.ExternalMessages = []*api.Message{extMsg2}
-		model2.ExternalEnums = []*api.Enum{extEnum2}
+		model2 := api.NewTestAPI(nil, nil, nil).
+			WithExternalMessages(extMsg2).
+			WithExternalEnums(extEnum2)
 
 		codec2 := newTestCodec(t, libconfig.SpecProtobuf, "", map[string]string{
 			"template-override": "templates/convert-prost",

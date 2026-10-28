@@ -119,7 +119,7 @@ func AddDiscoveryLroAnnotations(model *API, discoveryConfig *Discovery) error {
 		return nil
 	}
 	lroServices := discoveryConfig.LroServices()
-	for _, svc := range model.Services {
+	for _, svc := range model.services {
 		if _, ok := lroServices[svc.id]; ok {
 			continue
 		}
@@ -163,7 +163,7 @@ func AddDiscoveryLroAnnotations(model *API, discoveryConfig *Discovery) error {
 			isLroPoller:     true,
 		}
 		svc.methods = append(svc.methods, method)
-		model.AddMethod(method)
+		model.addMethod(method)
 	}
 	return nil
 }

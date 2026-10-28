@@ -68,7 +68,7 @@ func (a *messageAnnotation) SingleFeatureGate() bool {
 // are also annotated.
 // Basic annotations are useful for annotating external messages with information used in samples.
 func (c *codec) annotateMessage(m *api.Message, model *api.API, full bool) error {
-	qualifiedName, err := c.fullyQualifiedMessageName(m, model.PackageName)
+	qualifiedName, err := c.fullyQualifiedMessageName(m, model.PackageName())
 	if err != nil {
 		return err
 	}

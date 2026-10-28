@@ -43,7 +43,7 @@ func newAIPTestFixture() *aipTestFixture {
 	wildcardResourceField := NewTestField("name").WithResourceReference("*")
 
 	model := &API{
-		ResourceDefinitions: []*Resource{resource, resourceWithoutSingular},
+		resourceDefinitions: []*Resource{resource, resourceWithoutSingular},
 		resourceByType: map[string]*Resource{
 			resource.Type():                resource,
 			resourceWithoutSingular.Type(): resourceWithoutSingular,

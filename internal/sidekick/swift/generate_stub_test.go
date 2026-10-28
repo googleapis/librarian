@@ -41,9 +41,10 @@ func TestGenerateStub_Structure(t *testing.T) {
 				WithPathTemplate(api.NewPathTemplateBuilder().Build()),
 		)
 
-	model := api.NewTestAPI(nil, nil, []*api.Service{service})
-	model.AddMessage(request)
-	model.AddMessage(response)
+	model := api.NewAPIBuilderFrom(api.NewTestAPI(nil, nil, []*api.Service{service})).
+		AddMessage(request).
+		AddMessage(response).
+		BuildSyntaxTree()
 
 	swiftCfg := swiftConfig(t, []config.SwiftDependency{
 		{
@@ -282,11 +283,12 @@ func TestGenerateStub_Grpc(t *testing.T) {
 			getOperation,
 		)
 
-	model := api.NewTestAPI([]*api.Message{folder, createFolderRequest, deleteFolderRequest}, nil, []*api.Service{service})
-	model.AddService(operationsService)
-	model.AddMessage(empty)
-	model.AddMessage(operation)
-	model.AddMessage(getOperationRequest)
+	model := api.NewAPIBuilderFrom(api.NewTestAPI([]*api.Message{folder, createFolderRequest, deleteFolderRequest}, nil, []*api.Service{service})).
+		AddService(operationsService).
+		AddMessage(empty).
+		AddMessage(operation).
+		AddMessage(getOperationRequest).
+		BuildSyntaxTree()
 	if err := api.CrossReference(model); err != nil {
 		t.Fatal(err)
 	}
@@ -416,9 +418,10 @@ func TestGenerateStub_MultipleBindings(t *testing.T) {
 		WithPackage("google.cloud.test.v1").
 		WithMethods(getResource)
 
-	model := api.NewTestAPI(nil, nil, []*api.Service{service})
-	model.AddMessage(request)
-	model.AddMessage(response)
+	model := api.NewAPIBuilderFrom(api.NewTestAPI(nil, nil, []*api.Service{service})).
+		AddMessage(request).
+		AddMessage(response).
+		BuildSyntaxTree()
 
 	swiftCfg := swiftConfig(t, []config.SwiftDependency{
 		{

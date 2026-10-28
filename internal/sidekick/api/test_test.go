@@ -381,17 +381,17 @@ func TestAPI_FluentSetters(t *testing.T) {
 		WithDescription("Custom Description").
 		WithQuickstartService(svc)
 
-	if got, want := model.Name, "custom-name"; got != want {
-		t.Errorf("model.Name = %q, want %q", got, want)
+	if got, want := model.Name(), "custom-name"; got != want {
+		t.Errorf("model.Name() = %q, want %q", got, want)
 	}
-	if got, want := model.Title, "Custom Title"; got != want {
-		t.Errorf("model.Title = %q, want %q", got, want)
+	if got, want := model.Title(), "Custom Title"; got != want {
+		t.Errorf("model.Title() = %q, want %q", got, want)
 	}
-	if got, want := model.Description, "Custom Description"; got != want {
-		t.Errorf("model.Description = %q, want %q", got, want)
+	if got, want := model.Description(), "Custom Description"; got != want {
+		t.Errorf("model.Description() = %q, want %q", got, want)
 	}
-	if got := model.QuickstartService; got != svc {
-		t.Errorf("model.QuickstartService = %v, want %v", got, svc)
+	if got := model.QuickstartService(); got != svc {
+		t.Errorf("model.QuickstartService() = %v, want %v", got, svc)
 	}
 }
 
@@ -1193,5 +1193,120 @@ func TestMessage_Builder(t *testing.T) {
 	}
 	if cloned.ID() != msg.ID() {
 		t.Errorf("cloned.ID() = %q, want %q", cloned.ID(), msg.ID())
+	}
+}
+
+func TestAPI_Builder(t *testing.T) {
+	req := api.NewTestMessage("CreateBookRequest").
+		WithPackage("test.v1").
+		WithFields(api.NewTestField("name").WithType(api.TypezString))
+	resp := api.NewTestMessage("Book").
+		WithPackage("test.v1").
+		WithFields(api.NewTestField("name").WithType(api.TypezString))
+	enum := api.NewTestEnum("BookState").
+		WithPackage("test.v1").
+		WithValues(api.NewTestEnumValue("ACTIVE", 1))
+	method := api.NewTestMethod("CreateBook").
+		WithID(".test.v1.Library.CreateBook").
+		WithInputTypeID(req.ID()).
+		WithOutputTypeID(resp.ID())
+	svc := api.NewTestService("Library").
+		WithPackage("test.v1").
+		WithMethods(method)
+	res := api.NewResourceBuilder().WithType("library.googleapis.com/Book").Build()
+	map1 := api.NewTestMap("LabelsEntry", api.TypezString, api.TypezString).WithID(".test.v1.Book.LabelsEntry")
+	map2 := api.NewTestMap("TagsEntry", api.TypezString, api.TypezInt32).WithID(".test.v1.Book.TagsEntry")
+
+	b := api.NewAPIBuilder().
+		WithName("library").
+		WithPackageName("test.v1").
+		WithTitle("Library API").
+		WithDescription("Library docs").
+		WithRevision("20260101").
+		WithRubyPackage("Google::Cloud::Library::V1").
+		WithPhpNamespace("Google\\Cloud\\Library\\V1").
+		WithCsharpNamespace("Google.Cloud.Library.V1").
+		WithMessages(req).
+		AppendMessage(resp).
+		WithEnums(enum).
+		WithServices(svc).
+		WithResourceDefinitions(res).
+		LoadWellKnownTypes().
+		AddMessage(req).
+		AddMessage(resp).
+		AddEnum(enum).
+		AddService(svc).
+		AddMethod(method).
+		AddResource(res).
+		AddMap(map1).
+		WithMaps(map2).
+		WithOverride(api.ModelOverride{
+			Name:        "library-override",
+			Title:       "Library Override Title",
+			Description: "Library Override Description",
+		})
+	if b.Map(map1.ID()) != map1 {
+		t.Errorf("b.Map(%q) = %v, want %v", map1.ID(), b.Map(map1.ID()), map1)
+	}
+	mapCount := 0
+	for range b.AllMaps() {
+		mapCount++
+	}
+	if mapCount != 2 {
+		t.Errorf("b.AllMaps() count = %d, want 2", mapCount)
+	}
+
+	model, err := b.Build()
+	if err != nil {
+		t.Fatal(err)
+	}
+	model.SetAnnotations("api-codec")
+
+	if model.Name() != "library-override" {
+		t.Errorf("model.Name() = %q, want library-override", model.Name())
+	}
+	if model.PackageName() != "test.v1" {
+		t.Errorf("model.PackageName() = %q, want test.v1", model.PackageName())
+	}
+	if model.Title() != "Library Override Title" {
+		t.Errorf("model.Title() = %q, want Library Override Title", model.Title())
+	}
+	if model.Description() != "Library Override Description" {
+		t.Errorf("model.Description() = %q, want Library Override Description", model.Description())
+	}
+	if model.Revision() != "20260101" {
+		t.Errorf("model.Revision() = %q, want 20260101", model.Revision())
+	}
+	if model.RubyPackage() != "Google::Cloud::Library::V1" {
+		t.Errorf("model.RubyPackage() = %q, want Google::Cloud::Library::V1", model.RubyPackage())
+	}
+	if model.PhpNamespace() != "Google\\Cloud\\Library\\V1" {
+		t.Errorf("model.PhpNamespace() = %q, want Google\\Cloud\\Library\\V1", model.PhpNamespace())
+	}
+	if model.CsharpNamespace() != "Google.Cloud.Library.V1" {
+		t.Errorf("model.CsharpNamespace() = %q, want Google.Cloud.Library.V1", model.CsharpNamespace())
+	}
+	if !model.HasMessages() || len(model.Messages()) != 2 {
+		t.Errorf("model.Messages() = %v, want 2 messages", model.Messages())
+	}
+	if !model.HasServices() || len(model.Services()) != 1 {
+		t.Errorf("model.Services() = %v, want 1 service", model.Services())
+	}
+	if len(model.Enums()) != 1 {
+		t.Errorf("model.Enums() = %v, want 1 enum", model.Enums())
+	}
+	if len(model.ResourceDefinitions()) != 1 {
+		t.Errorf("model.ResourceDefinitions() = %v, want 1 resource", model.ResourceDefinitions())
+	}
+	if model.Codec() != "api-codec" || model.ModelCodec() != "api-codec" {
+		t.Errorf("model.Codec() = %v, want api-codec", model.Codec())
+	}
+	if method.InputType() != req || method.OutputType() != resp {
+		t.Errorf("CrossReference did not wire method input/output types")
+	}
+
+	annotated := api.NewAnnotatedAPI("annotated-codec")
+	if annotated.Codec() != "annotated-codec" {
+		t.Errorf("annotated.Codec() = %v, want annotated-codec", annotated.Codec())
 	}
 }

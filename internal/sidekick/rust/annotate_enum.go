@@ -65,7 +65,7 @@ func (c *codec) annotateEnum(e *api.Enum, model *api.API, full bool) error {
 		}
 	}
 
-	qualifiedName, err := c.fullyQualifiedEnumName(e, model.PackageName)
+	qualifiedName, err := c.fullyQualifiedEnumName(e, model.PackageName())
 	if err != nil {
 		return err
 	}

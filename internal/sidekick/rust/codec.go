@@ -419,10 +419,10 @@ type packagez struct {
 }
 
 func resolveUsedPackages(model *api.API, extraPackages []*packagez, hasGrpc bool) {
-	hasServices := len(model.Services) > 0
+	hasServices := len(model.Services()) > 0
 	hasLROs := false
 	hasAutoPopulation := false
-	for _, s := range model.Services {
+	for _, s := range model.Services() {
 		// In practice, barely any services have auto-population. We are
 		// almost always performing the full loop. `break`ing early does
 		// not save us any computations.
@@ -558,11 +558,11 @@ func (c *codec) mapType(f *api.Field, model *api.API) (string, error) {
 	if mapType == nil || mapType.Key() == nil || mapType.Value() == nil {
 		return "", fmt.Errorf("missing map type for field %s (%s)", f.ID(), f.TypezID())
 	}
-	key, err := c.fieldType(mapType.Key(), model, true, model.PackageName)
+	key, err := c.fieldType(mapType.Key(), model, true, model.PackageName())
 	if err != nil {
 		return "", err
 	}
-	val, err := c.fieldType(mapType.Value(), model, true, model.PackageName)
+	val, err := c.fieldType(mapType.Value(), model, true, model.PackageName())
 	if err != nil {
 		return "", err
 	}
@@ -1523,7 +1523,7 @@ func (c *codec) serviceRustdocLink(s *api.Service, model *api.API) string {
 	if ok {
 		return fmt.Sprintf("%s::client::%s", mapped.name, toPascal(name))
 	}
-	if !slices.Contains(model.Services, s) {
+	if !slices.Contains(model.Services(), s) {
 		return ""
 	}
 	return fmt.Sprintf("crate::client::%s", toPascal(name))
@@ -1531,7 +1531,7 @@ func (c *codec) serviceRustdocLink(s *api.Service, model *api.API) string {
 
 func usePackage(source string, model *api.API, c *codec) {
 	mapped, ok := c.packageMapping[source]
-	if ok && source != model.PackageName {
+	if ok && source != model.PackageName() {
 		mapped.used = true
 	}
 }
@@ -1581,13 +1581,13 @@ func findUsedPackagesField(f *api.Field, model *api.API, c *codec) {
 }
 
 func findUsedPackages(model *api.API, c *codec) {
-	for _, message := range model.Messages {
+	for _, message := range model.Messages() {
 		findUsedPackagesMessage(message, model, c, map[string]bool{})
 	}
-	for _, enum := range model.Enums {
+	for _, enum := range model.Enums() {
 		usePackage(enum.Package(), model, c)
 	}
-	for _, s := range model.Services {
+	for _, s := range model.Services() {
 		for _, method := range s.Methods() {
 			if m := model.Message(method.InputTypeID()); m != nil {
 				findUsedPackagesMessage(m, model, c, map[string]bool{})
@@ -1647,11 +1647,11 @@ func PackageName(api *api.API, packageNameOverride string) string {
 	if len(packageNameOverride) > 0 {
 		return packageNameOverride
 	}
-	name := strings.TrimPrefix(api.PackageName, "google.cloud.")
+	name := strings.TrimPrefix(api.PackageName(), "google.cloud.")
 	name = strings.TrimPrefix(name, "google.")
 	name = strings.ReplaceAll(name, ".", "-")
 	if name == "" {
-		name = api.Name
+		name = api.Name()
 	}
 	return "google-cloud-" + name
 }
@@ -1737,11 +1737,11 @@ func (c *codec) templateSupportsGrpc() bool {
 }
 
 func (c *codec) hasBidiStreaming(model *api.API) bool {
-	return c.templateSupportsGrpc() && slices.ContainsFunc(model.Services, (*api.Service).HasBidiStreaming)
+	return c.templateSupportsGrpc() && slices.ContainsFunc(model.Services(), (*api.Service).HasBidiStreaming)
 }
 
 func (c *codec) hasServerStreaming(model *api.API) bool {
-	return c.templateSupportsGrpc() && slices.ContainsFunc(model.Services, (*api.Service).HasServerSideStreaming)
+	return c.templateSupportsGrpc() && slices.ContainsFunc(model.Services(), (*api.Service).HasServerSideStreaming)
 }
 
 func (c *codec) hasStreaming(model *api.API) bool {
@@ -1753,7 +1753,7 @@ func (c *codec) hasGrpc(model *api.API) bool {
 		return false
 	}
 	if c.defaultTransport == "grpc" {
-		return len(model.Services) > 0
+		return len(model.Services()) > 0
 	}
 	return c.hasStreaming(model)
 }

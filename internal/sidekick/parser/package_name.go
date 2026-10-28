@@ -19,15 +19,6 @@ import "github.com/googleapis/librarian/internal/sidekick/api"
 // updatePackageName() sets the PackageName field if it is not set. This happens
 // often with protobuf libraries that lack a service config YAML file, typically
 // type-only libraries.
-func updatePackageName(model *api.API) {
-	if model.PackageName != "" {
-		return
-	}
-	if len(model.Services) > 0 {
-		model.PackageName = model.Services[0].Package()
-	} else if len(model.Messages) > 0 {
-		model.PackageName = model.Messages[0].Package()
-	} else if len(model.Enums) > 0 {
-		model.PackageName = model.Enums[0].Package()
-	}
+func updatePackageName(model *api.APIBuilder) {
+	model.UpdatePackageName()
 }

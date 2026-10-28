@@ -102,7 +102,7 @@ func TestSkipMessages(t *testing.T) {
 	})
 	want := []*Message{m0, m2}
 
-	if diff := cmp.Diff(want, model.Messages, allowUnexported()); diff != "" {
+	if diff := cmp.Diff(want, model.Messages(), allowUnexported()); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
@@ -119,7 +119,7 @@ func TestSkipEnums(t *testing.T) {
 
 	want := []*Enum{e0, e2}
 
-	if diff := cmp.Diff(want, model.Enums, allowUnexported()); diff != "" {
+	if diff := cmp.Diff(want, model.Enums(), allowUnexported()); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
@@ -174,7 +174,7 @@ func TestSkipServices(t *testing.T) {
 
 	want := []*Service{s0, s2}
 
-	if diff := cmp.Diff(want, model.Services, allowUnexported(), ignoreServiceFields("model")); diff != "" {
+	if diff := cmp.Diff(want, model.Services(), allowUnexported(), ignoreServiceFields("model")); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
@@ -217,7 +217,7 @@ func TestSkipMethods(t *testing.T) {
 	})
 
 	wantServices := []*Service{s0, s1, s2}
-	if diff := cmp.Diff(wantServices, model.Services, allowUnexported(), ignoreServiceFields("model")); diff != "" {
+	if diff := cmp.Diff(wantServices, model.Services(), allowUnexported(), ignoreServiceFields("model")); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 
@@ -295,7 +295,7 @@ func TestIncludeMethods(t *testing.T) {
 	})
 
 	wantServices := []*Service{s1}
-	if diff := cmp.Diff(wantServices, model.Services, allowUnexported(), ignoreMethodFields(methodIgnoreFields...), ignoreServiceFields("model", "quickstartMethod")); diff != "" {
+	if diff := cmp.Diff(wantServices, model.Services(), allowUnexported(), ignoreMethodFields(methodIgnoreFields...), ignoreServiceFields("model", "quickstartMethod")); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 
@@ -473,7 +473,7 @@ func TestSkipPreservesExternalAndDependencyMessagesInSymbolTable(t *testing.T) {
 	f1 := NewTestField("field1").WithType(TypezString)
 	m0 := NewTestMessage("Message0").WithFields(f0, f1)
 	model := NewTestAPI([]*Message{m0}, []*Enum{}, []*Service{})
-	model.AddMessage(timestamp)
+	model.addMessage(timestamp)
 	CrossReference(model)
 
 	if err := SkipModelElements(model, ModelOverride{

@@ -25,10 +25,10 @@ import (
 // NewTestAPI creates a new test API.
 func NewTestAPI(messages []*Message, enums []*Enum, services []*Service) *API {
 	model := &API{
-		Name:           "Test",
-		Messages:       messages,
-		Enums:          enums,
-		Services:       services,
+		name:           "Test",
+		messages:       messages,
+		enums:          enums,
+		services:       services,
 		messageByID:    make(map[string]*Message),
 		methodByID:     make(map[string]*Method),
 		enumByID:       make(map[string]*Enum),
@@ -36,6 +36,7 @@ func NewTestAPI(messages []*Message, enums []*Enum, services []*Service) *API {
 		resourceByType: make(map[string]*Resource),
 		mapByID:        make(map[string]*Map),
 	}
+	model.loadWellKnownTypes()
 
 	var indexMessage func(m *Message)
 	indexMessage = func(m *Message) {
@@ -45,7 +46,7 @@ func NewTestAPI(messages []*Message, enums []*Enum, services []*Service) *API {
 		}
 		for _, f := range m.fields {
 			if f.mapType != nil {
-				model.AddMap(f.mapType)
+				model.addMap(f.mapType)
 			}
 		}
 		for _, e := range m.enums {
@@ -61,15 +62,15 @@ func NewTestAPI(messages []*Message, enums []*Enum, services []*Service) *API {
 		}
 	}
 	for _, m := range messages {
-		model.PackageName = m.packagez
+		model.packageName = m.packagez
 		indexMessage(m)
 	}
 	for _, e := range enums {
-		model.PackageName = e.packagez
+		model.packageName = e.packagez
 		model.enumByID[e.id] = e
 	}
 	for _, s := range services {
-		model.PackageName = s.packagez
+		model.packageName = s.packagez
 		model.serviceByID[s.id] = s
 		for _, m := range s.methods {
 			model.methodByID[m.id] = m
@@ -98,62 +99,85 @@ func NewTestAPI(messages []*Message, enums []*Enum, services []*Service) *API {
 		}
 	}
 
-	model.LoadWellKnownTypes()
 	return model
 }
 
 // WithName changes the name of an API instance.
 func (a *API) WithName(name string) *API {
-	a.Name = name
+	a.name = name
 	return a
 }
 
 // WithTitle changes the title of an API instance.
 func (a *API) WithTitle(title string) *API {
-	a.Title = title
+	a.title = title
 	return a
 }
 
 // WithDescription changes the description of an API instance.
 func (a *API) WithDescription(description string) *API {
-	a.Description = description
+	a.description = description
+	return a
+}
+
+// WithRevision changes the revision of an API instance.
+func (a *API) WithRevision(revision string) *API {
+	a.revision = revision
 	return a
 }
 
 // WithQuickstartService sets the quickstart service on an API instance.
 func (a *API) WithQuickstartService(service *Service) *API {
-	a.QuickstartService = service
+	a.quickstartService = service
 	return a
 }
 
 // WithPackageName changes the package name of an API instance.
 func (a *API) WithPackageName(name string) *API {
-	a.PackageName = name
+	a.packageName = name
 	return a
 }
 
 // WithCsharpNamespace changes the CsharpNamespace of an API instance.
 func (a *API) WithCsharpNamespace(name string) *API {
-	a.CsharpNamespace = name
+	a.csharpNamespace = name
 	return a
 }
 
 // WithPhpNamespace changes the PhpNamespace of an API instance.
 func (a *API) WithPhpNamespace(name string) *API {
-	a.PhpNamespace = name
+	a.phpNamespace = name
 	return a
 }
 
 // WithRubyPackage changes the RubyNamespace of an API instance.
 func (a *API) WithRubyPackage(name string) *API {
-	a.RubyPackage = name
+	a.rubyPackage = name
+	return a
+}
+
+// WithResourceDefinitions sets the resource definitions on an API instance.
+func (a *API) WithResourceDefinitions(resources ...*Resource) *API {
+	a.resourceDefinitions = resources
+	return a
+}
+
+// WithExternalMessages sets the external messages on an API instance.
+func (a *API) WithExternalMessages(messages ...*Message) *API {
+	a.externalMessages = messages
+	return a
+}
+
+// WithExternalEnums sets the external enums on an API instance.
+func (a *API) WithExternalEnums(enums ...*Enum) *API {
+	a.externalEnums = enums
 	return a
 }
 
 // WithMaps adds maps to the API.
 func (a *API) WithMaps(maps ...*Map) *API {
 	for _, m := range maps {
-		a.AddMap(m)
+		a.addMap(m)
 	}
 	return a
 }

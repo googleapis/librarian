@@ -21,7 +21,7 @@ import (
 	"github.com/googleapis/librarian/internal/sidekick/api"
 )
 
-func makeServiceMethods(model *api.API, service *api.ServiceBuilder, doc *document, resource *resource) error {
+func makeServiceMethods(model *api.APIBuilder, service *api.ServiceBuilder, doc *document, resource *resource) error {
 	// It is Okay to reuse the ID, sidekick uses different the namespaces
 	// for messages vs. services.
 	parentBuilder := api.NewMessageBuilder().
@@ -32,7 +32,7 @@ func makeServiceMethods(model *api.API, service *api.ServiceBuilder, doc *docume
 		WithServicePlaceholder(true)
 	parent := parentBuilder.Build()
 	model.AddMessage(parent)
-	model.Messages = append(model.Messages, parent)
+	model.AppendMessage(parent)
 	for _, input := range resource.Methods {
 		method, err := makeMethod(model, parentBuilder, doc, input)
 		if err != nil {
@@ -45,7 +45,7 @@ func makeServiceMethods(model *api.API, service *api.ServiceBuilder, doc *docume
 	return nil
 }
 
-func makeMethod(model *api.API, parentBuilder *api.MessageBuilder, doc *document, input *method) (*api.Method, error) {
+func makeMethod(model *api.APIBuilder, parentBuilder *api.MessageBuilder, doc *document, input *method) (*api.Method, error) {
 	parent := parentBuilder.Build()
 	id := fmt.Sprintf("%s.%s", parent.ID(), input.Name)
 	if input.MediaUpload != nil {
@@ -65,7 +65,7 @@ func makeMethod(model *api.API, parentBuilder *api.MessageBuilder, doc *document
 	requestBuilder := api.NewMessageBuilder().
 		WithName(fmt.Sprintf("%sRequest", input.Name)).
 		WithID(requestMessageID).
-		WithPackage(model.PackageName).
+		WithPackage(model.PackageName()).
 		WithSyntheticRequest(true).
 		WithDocumentation(fmt.Sprintf("Synthetic request message for the [%s()][%s] method.", input.Name, id[1:])).
 		WithParent(parent).
@@ -170,12 +170,12 @@ func bodyFieldName(fieldNames map[string]bool) (string, error) {
 	return "body", nil
 }
 
-func getMethodType(model *api.API, methodID, name string, typez *schema) (string, error) {
+func getMethodType(model *api.APIBuilder, methodID, name string, typez *schema) (string, error) {
 	if typez == nil {
 		return ".google.protobuf.Empty", nil
 	}
 	if typez.Ref == "" {
 		return "", fmt.Errorf("expected a ref-like schema for %s in method %s", name, methodID)
 	}
-	return fmt.Sprintf(".%s.%s", model.PackageName, typez.Ref), nil
+	return fmt.Sprintf(".%s.%s", model.PackageName(), typez.Ref), nil
 }

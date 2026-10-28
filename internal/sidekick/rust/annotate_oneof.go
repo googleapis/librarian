@@ -69,14 +69,14 @@ func (a *oneOfAnnotation) SingleFeatureGate() bool {
 }
 
 func (c *codec) annotateOneOf(oneof *api.OneOf, message *api.Message, model *api.API) (*oneOfAnnotation, error) {
-	scope, err := c.messageScopeName(message, "", model.PackageName)
+	scope, err := c.messageScopeName(message, "", model.PackageName())
 	if err != nil {
 		return nil, err
 	}
 	enumName := c.OneOfEnumName(oneof)
 	qualifiedName := fmt.Sprintf("%s::%s", scope, enumName)
 	relativeEnumName := strings.TrimPrefix(qualifiedName, c.modulePath+"::")
-	structQualifiedName, err := c.fullyQualifiedMessageName(message, model.PackageName)
+	structQualifiedName, err := c.fullyQualifiedMessageName(message, model.PackageName())
 	if err != nil {
 		return nil, err
 	}
