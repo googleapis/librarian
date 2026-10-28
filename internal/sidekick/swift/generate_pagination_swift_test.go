@@ -63,12 +63,10 @@ func TestGenerateService_MapPagination(t *testing.T) {
 
 			keyField := api.NewTestField("key").WithType(api.TypezString)
 			valueField := api.NewTestField("value").WithMessageType(secretType)
-			mapEntryType := api.NewTestMapMessageWithFields("SecretsEntry", keyField, valueField)
-			outputType.WithMessages(mapEntryType)
+			mapEntryType := api.NewTestMapWithFields("SecretsEntry", keyField, valueField)
 
 			itemField := api.NewTestField("secrets").
-				WithMessageType(mapEntryType).
-				WithMap()
+				WithMapType(mapEntryType)
 			nextPageTokenField := api.NewTestField("next_page_token").
 				WithType(api.TypezString)
 			if test.optional {
@@ -90,7 +88,8 @@ func TestGenerateService_MapPagination(t *testing.T) {
 				WithPackage("google.cloud.secretmanager.v1").
 				WithMethods(method)
 
-			model := api.NewTestAPI([]*api.Message{inputType, outputType, secretType}, nil, []*api.Service{iam})
+			model := api.NewTestAPI([]*api.Message{inputType, outputType, secretType}, nil, []*api.Service{iam}).
+				WithMaps(mapEntryType)
 
 			swiftCfg := swiftConfig(t, []config.SwiftDependency{
 				{

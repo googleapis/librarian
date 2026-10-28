@@ -285,7 +285,7 @@ func TestAnnotateMessage_ConvertImports(t *testing.T) {
 }
 
 func TestAnnotateMessage_Discovery(t *testing.T) {
-	mapMessage := api.NewTestMapMessage("map<string, bytes>", api.TypezString, api.TypezBytes).
+	mapType := api.NewTestMap("map<string, bytes>", api.TypezString, api.TypezBytes).
 		WithID("$map<string, bytes>")
 
 	for _, test := range []struct {
@@ -351,7 +351,7 @@ func TestAnnotateMessage_Discovery(t *testing.T) {
 		{
 			name: "map",
 			message: api.NewTestMessage("Secret").
-				WithFields(api.NewTestField("field").WithMessageType(mapMessage).WithMap()),
+				WithFields(api.NewTestField("field").WithMapType(mapType)),
 			want: &messageAnnotations{
 				Name:              "Secret",
 				TypeURL:           "type.googleapis.com/test.Secret",
@@ -364,8 +364,7 @@ func TestAnnotateMessage_Discovery(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			model := api.NewTestAPI([]*api.Message{test.message}, nil, nil)
-			model.AddMessage(mapMessage)
+			model := api.NewTestAPI([]*api.Message{test.message}, nil, nil).WithMaps(mapType)
 			codec := newTestCodec(t, model, nil)
 			codec.UrlSafeForBytes = true
 			if err := codec.annotateModel(); err != nil {

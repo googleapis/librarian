@@ -360,11 +360,11 @@ func TestAnnotateService_Pagination(t *testing.T) {
 
 func TestAnnotateService_MapPagination(t *testing.T) {
 	itemType := api.NewTestMessage("Item").WithPackage("external")
-	mapType := api.NewTestMapMessageWithFields(
+	mapType := api.NewTestMapWithFields(
 		"$map<string, Item>",
 		api.NewTestField("key").WithType(api.TypezString),
 		api.NewTestField("value").WithMessageType(itemType),
-	).WithPackage("test")
+	)
 
 	pageToken := api.NewTestField("page_token").WithType(api.TypezString)
 	inputType := api.NewTestMessage("ListItemsRequest").
@@ -373,7 +373,7 @@ func TestAnnotateService_MapPagination(t *testing.T) {
 	outputType := api.NewTestMessage("ListItemsResponse").
 		WithPagination(
 			api.NewTestField("next_page_token").WithType(api.TypezString),
-			api.NewTestField("items").WithMessageType(mapType).WithMap(),
+			api.NewTestField("items").WithMapType(mapType),
 		)
 	list := api.NewTestMethod("ListItems").
 		WithInput(inputType).
@@ -385,9 +385,9 @@ func TestAnnotateService_MapPagination(t *testing.T) {
 	service := api.NewTestService("TestService").WithMethods(list)
 
 	model := api.NewTestAPI([]*api.Message{inputType, outputType}, nil, []*api.Service{service}).
-		WithPackageName("test")
+		WithPackageName("test").
+		WithMaps(mapType)
 	model.AddMessage(itemType)
-	model.AddMessage(mapType)
 	if err := api.CrossReference(model); err != nil {
 		t.Fatal(err)
 	}
@@ -523,12 +523,9 @@ func TestAnnotateService_WktImports(t *testing.T) {
 }
 
 func TestAnnotateService_MapFieldDependencies(t *testing.T) {
-	mapEntry := api.NewTestMapMessage("DataMapEntry", api.TypezString, api.TypezBytes).
-		WithPackage("test")
+	mapEntry := api.NewTestMap("DataMapEntry", api.TypezString, api.TypezBytes)
 
-	mapField := api.NewTestField("data_map").
-		WithMap().
-		WithMessageType(mapEntry)
+	mapField := api.NewTestField("data_map").WithMapType(mapEntry)
 
 	signature := api.NewTestMethodSignature().WithFields(mapField)
 	inputType := api.NewTestMessage("Request").
@@ -544,8 +541,9 @@ func TestAnnotateService_MapFieldDependencies(t *testing.T) {
 		WithSignatures(signature)
 
 	service := api.NewTestService("MapService").WithMethods(method)
-	model := api.NewTestAPI([]*api.Message{inputType, outputType, mapEntry}, nil, []*api.Service{service}).
-		WithPackageName("test")
+	model := api.NewTestAPI([]*api.Message{inputType, outputType}, nil, []*api.Service{service}).
+		WithPackageName("test").
+		WithMaps(mapEntry)
 	if err := api.CrossReference(model); err != nil {
 		t.Fatal(err)
 	}
